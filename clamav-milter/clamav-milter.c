@@ -125,9 +125,18 @@
  *	0.60g	26/9/03	Handle sendmail calling abort after calling cleanup
  *			(Should never happen - but it does)
  *			Added -noxheader patch from dirk.meyer@dinoex.sub.org
+ *	0.60h	28/9/03	Support MaxThreads option in config file,
+ *			overriden by --max-children.
+ *			Patch from "Richard G. Roberto" <rgr@dedlegend.com>
+ * Change History:
+ * $Log: clamav-milter.c,v $
+ * Revision 1.6  2003/09/28 16:37:23  nigelhorne
+ * Added -f flag use MaxThreads if --max-children not set
+ *
  */
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.6 2003/09/28 16:37:23 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.60g"
+#define	CM_VERSION	"0.60h"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -173,7 +182,6 @@
  * TODO: check security - which UID will this run under?
  * TODO: bounce message should optionally be read from a file
  * TODO: optionally add a signature that the message has been scanned with ClamAV
- * TODO: Use MaxThreads from the conf file rather than max-children
  * TODO: Support ThreadTimeout, LogTime and Logfile from the conf
  *	 file
  * TODO: Allow more than one clamdscan server to be given
@@ -209,6 +217,7 @@ static	int		clamfi_send(const struct privdata *privdata, size_t len, const char 
 static	char		*strrcpy(char *dest, const char *source);
 
 static	char	clamav_version[64];
+static	int	fflag = 0;	/* force a scan, whatever */
 static	int	oflag = 0;	/* scan messages from our machine? */
 static	int	lflag = 0;	/* scan messages from our site? */
 static	int	bflag = 0;	/*
@@ -256,6 +265,7 @@ help(void)
 
 	puts("\t--bounce\t\t-b\tSend a failure message to the sender.");
 	puts("\t--config-file=FILE\t-c FILE\tRead configuration from FILE.");
+	puts("\t--force-scan\tForce scan all messages (overrides (-o and -l).");
 	puts("\t--help\t\t\t-h\tThis message.");
 	puts("\t--local\t\t\t-l\tScan messages sent from machines on our LAN.");
 	puts("\t--outgoing\t\t-o\tScan outgoing messages from this machine.");
@@ -298,9 +308,9 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "bc:lnopPqdhs:Vx:";
+		const char *args = "bc:flnopPqdhs:Vx:";
 #else
-		const char *args = "bc:lnopPqdhs:V";
+		const char *args = "bc:flnopPqdhs:V";
 #endif
 		static struct option long_options[] = {
 			{
@@ -308,6 +318,9 @@ main(int argc, char **argv)
 			},
 			{
 				"config-file", 1, NULL, 'c'
+			},
+			{
+				"force-scan", 1, NULL, 'f'
 			},
 			{
 				"help", 0, NULL, 'h'
@@ -362,6 +375,9 @@ main(int argc, char **argv)
 				break;
 			case 'c':	/* where is clamav.conf? */
 				cfgfile = optarg;
+				break;
+			case 'f':	/* force the scan */
+				fflag++;
 				break;
 			case 'h':
 				help();
@@ -434,6 +450,14 @@ main(int argc, char **argv)
 			argv[0], cfgfile);
 		return EX_CONFIG;
 	}
+
+	/*
+	 * patch from "Richard G. Roberto" <rgr@dedlegend.com>
+	 * If the --max-children flag isn't set, see if MaxThreads
+	 * is set in the config file
+	 */
+	if((cpt = cfgopt(copt, "MaxThreads")) != NULL)
+		max_children = atoi(cpt->strarg);
 
 	/*
 	 * Get the outgoing socket details - the way to talk to clamd
@@ -602,15 +626,22 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	char buf[INET_ADDRSTRLEN];	/* IPv4 only */
 	const char *remoteIP = inet_ntop(AF_INET, &((struct sockaddr_in *)(hostaddr))->sin_addr, buf, sizeof(buf));
 
-#ifdef	CL_DEBUG
-	assert(remoteIP != NULL);
-#endif
-
 	if(use_syslog)
 		syslog(LOG_NOTICE, "clamfi_connect: connection from %s [%s]", hostname, remoteIP);
 #ifdef	CL_DEBUG
 	if(debug_level >= 4)
 		printf("clamfi_connect: connection from %s [%s]\n", hostname, remoteIP);
+#endif
+
+	if(fflag)
+		/*
+		 * Patch from "Richard G. Roberto" <rgr@dedlegend.com>
+		 * Always scan whereever the message is from
+		 */
+		return SMFIS_CONTINUE;
+
+#ifdef	CL_DEBUG
+	assert(remoteIP != NULL);
 #endif
 
 	if(!oflag)

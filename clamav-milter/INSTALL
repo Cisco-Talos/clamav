@@ -120,6 +120,9 @@ Changes
 0.60g	26/9/03	Handle sendmail calling abort after calling cleanup
 		(Should never happen - but it does)
 		Added -noxheader patch from dirk.meyer@dinoex.sub.org
+0.60h	28/9/03	Support MaxThreads option in config file,
+		overriden by --max-children.
+		Patch from "Richard G. Roberto" <rgr@dedlegend.com>
 
 BUG REPORTS
 
