@@ -1,3 +1,7 @@
+Tue Dec  7 19:25:06 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter:	Ensure that the daily quarantine directory is created
+
 Tue Dec  7 02:48:08 CET 2004 (tk)
 ---------------------------------
   * clamd: added support for file descriptor passing (patch by Richard Lyons
