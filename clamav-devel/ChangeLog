@@ -1,3 +1,7 @@
+Wed Sep 22 16:24:08 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Correct typo in previous fix
+
 Tue Sep 21 21:49:06 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	FOLLOWURL: Set a default username and password for
