@@ -35,6 +35,7 @@ char *cli_md5file(const char *filename);
 int cli_readn(int fd, void *buff, unsigned int count);
 int cli_writen(int fd, void *buff, unsigned int count);
 int32_t cli_readint32(const char *buff);
+void cli_writeint32(char *offset, uint32_t value);
 char *cli_gentemp(const char *dir);
 unsigned int cli_rndnum(unsigned int max);
 int cli_memstr(const char *haystack, int hs, const char *needle, int ns);

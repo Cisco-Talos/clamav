@@ -59,8 +59,6 @@ static inline uint16_t EC16(uint16_t v)
 }
 #endif
 
-#define cli_writeint32(offset,value) *(uint32_t *)(offset) = EC32(value)
-
 struct IMAGE_PE_HEADER {
     uint32_t Signature;
     /* FILE HEADER */

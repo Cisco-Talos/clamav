@@ -68,17 +68,6 @@
 \x63\x6C\x61\x6D\x61\x76\x2E\x6E\x65\x74\x0D\x0A\x24\x00\x00\x00\
 "
 
-#if WORDS_BIGENDIAN == 0
-#define EC32(v) (v)
-#else
-static inline uint32_t EC32(uint32_t v)
-{
-    return ((v >> 24) | ((v & 0x00FF0000) >> 8) | ((v & 0x0000FF00) << 8) | (v << 24));
-}
-#endif
-
-#define cli_writeint32(offset,value) *(uint32_t *)(offset) = EC32(value)
-
 /* PE from UPX */
 
 int pefromupx (char *src, char *dst, int *dsize, uint32_t ep, uint32_t upx0, uint32_t upx1, uint32_t magic)
