@@ -1,3 +1,9 @@
+Sun May 16 03:00:45 CEST 2004 (tk)
+----------------------------------
+  * clamd: fix logging wording in poll() error message (Joe Maimon
+	   <jmaimon*ttec.com>)
+  * configure: improve tcpwrappers compilation test
+
 Fri May 14 09:16:12 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Use mkstemp() on Cygwin

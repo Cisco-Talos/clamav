@@ -344,11 +344,11 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 
     switch(retval) {
 	case 0: /* timeout */
-	    mdprintf(odesc, "Accept timeout ERROR\n");
-	    logg("!ScanStream: accept timeout.\n");
+	    mdprintf(odesc, "read timeout ERROR\n");
+	    logg("!ScanStream: read timeout.\n");
 	case -1:
-	    mdprintf(odesc, "accept poll ERROR\n");
-	    logg("!ScanStream: accept poll failed.\n");
+	    mdprintf(odesc, "read poll ERROR\n");
+	    logg("!ScanStream: read poll failed.\n");
     }
 
     lseek(tmpd, 0, SEEK_SET);

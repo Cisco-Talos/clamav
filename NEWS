@@ -2,6 +2,53 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.71
+----
+
+This release fixes all bugs found in 0.70 and introduces a few new features,
+the noteworthy changes include:
+
+-) libclamav:
+    + support nested OLE2 files 
+    + support Word6 macro code
+    + ignore popular file types (media, graphics)
+    + support compress.exe (SZDD) compression (test/test1.msc)
+    + improve virus detection in e-mails
+
+-) clamscan:
+    + automatically decide (by comparing daily.cvd version numbers) which
+      database directory (hardcoded or clamav.conf's one) to use
+    + support compression ratio feature (--max-ratio)
+    + allow regular expressions in --[in|ex]clude
+    + do not overwrite old files in a quarantine directory but add a numerical
+      extension to new files
+    + respect --tempdir in libclamav
+    + fix access problem when calling external unpackers in a superuser mode
+    + fix file permission corruption with --deb in a superuser mode
+
+-) clamd
+    + support log facility specification in syslog style (LogFacility)
+    + new directive LeaveTemporaryFiles (Debug no longer leaves temporary
+      files not removed)
+
+-) clamav-milter:
+    + include the virus name in the 550 rejection
+    + support user defined template for virus notifications (--template-file)
+    + sort quarantine messages by date
+    + improve thread management
+    + add X-Virus-Scanned and X-Infected-Received-From: headers
+    + improve load balancing (when using remote servers with --server)
+    + send 554 after DATA received, not 550
+    + save PID (--pidfile)
+
+-) documentation:
+    + new Japanese documentation
+
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
+
 
 0.70
 ----
@@ -60,7 +107,7 @@ of mirrors by looking at their ip source address when they try to resolve
 database.clamav.net. Our DNS servers can answer with a CNAME to:
 europe.clamav.net, america.clamav.net, asia.clamav.net or other.clamav.net.
 Our advanced push-mirroring mechanism (maintained by Luca Gibelli) allows
-database maintainers to update all the mirrors in less then one minute !
+database maintainers to update all the mirrors in less than one minute !
 
 
 There will be no major feature enhancements in the 0.7x series. Our work
