@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.70  2004/08/08 19:13:15  nigelhorne
+ * Better handling of bounces
+ *
  * Revision 1.69  2004/08/04 18:59:19  nigelhorne
  * Tidy up multipart handling
  *
@@ -204,7 +207,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.69 2004/08/04 18:59:19 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.70 2004/08/08 19:13:15 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -851,7 +854,7 @@ messageAddLine(message *m, const char *line, int takeCopy)
 		   (strncasecmp(line, encoding, sizeof(encoding) - 1) == 0) &&
 		   (strstr(line, "7bit") == NULL))
 			m->encoding = m->body_last;
-		else if((m->bounce == NULL) &&
+		else if(/*(m->bounce == NULL) &&*/
 			(cli_filetype(line, strlen(line)) == CL_MAILFILE))
 				m->bounce = m->body_last;
 		else if((m->binhex == NULL) &&

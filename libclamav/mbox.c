@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.92  2004/08/08 19:13:14  nigelhorne
+ * Better handling of bounces
+ *
  * Revision 1.91  2004/08/04 18:59:19  nigelhorne
  * Tidy up multipart handling
  *
@@ -261,7 +264,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.91 2004/08/04 18:59:19 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.92 2004/08/08 19:13:14 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1681,7 +1684,8 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				for(t = t_line; t; t = t->t_next)
 					if(t->t_text &&
 					   (strncasecmp(t->t_text, encoding, sizeof(encoding) - 1) == 0) &&
-					   (strstr(t->t_text, "7bit") == NULL))
+					   (strstr(t->t_text, "7bit") == NULL) &&
+					   (strstr(t->t_text, "8bit") == NULL))
 						break;
 				if(t && ((b = textToBlob(t_line, NULL)) != NULL)) {
 					cli_dbgmsg("Found a bounce message\n");
