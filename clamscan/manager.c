@@ -349,6 +349,11 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
     else
 	options |= CL_ARCHIVE;
 
+    if(optl(opt, "no-ole2"))
+	options &= ~CL_OLE2;
+    else
+	options |= CL_OLE2;
+
     if(optc(opt, 'm'))
 	options |= CL_MAIL;
 

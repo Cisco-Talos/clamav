@@ -211,6 +211,7 @@ void help(void)
     mprintf("    --no-summary                         Disable summary at end of scanning\n");
     mprintf("    --mbox                -m             Treat stdin as a mailbox\n");
     mprintf("\n");
+    mprintf("    --no-ole2                            Disable OLE2 support\n");
     mprintf("    --no-archive                         Disable libclamav archive support\n");
     mprintf("    --max-space=#n                       Extract first #n kilobytes only\n");
     mprintf("    --max-files=#n                       Extract first #n files only\n");

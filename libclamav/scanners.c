@@ -37,6 +37,8 @@ int cli_scanrar_inuse = 0;
 #include "others.h"
 #include "matcher.h"
 #include "unrarlib.h"
+#include "ole2_extract.h"
+#include "vba_extract.h"
 
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>
@@ -49,6 +51,7 @@ int cli_scanrar_inuse = 0;
 
 #define SCAN_ARCHIVE	(options & CL_ARCHIVE)
 #define SCAN_MAIL	(options & CL_MAIL)
+#define SCAN_OLE2	(options & CL_OLE2)
 #define DISABLE_RAR	(options & CL_DISABLERAR)
 
 #define MAGIC_BUFFER_SIZE 14
@@ -60,6 +63,7 @@ int cli_scanrar_inuse = 0;
 #define MAILDIR_MAGIC_STR "Return-Path: "
 #define DELIVERED_MAGIC_STR "Delivered-To: "
 #define BZIP_MAGIC_STR "BZh"
+#define OLE2_MAGIC_STR "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1"
 
 int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev);
 
@@ -535,6 +539,78 @@ int cli_scanbzip(int desc, char **virname, long int *scanned, const struct cl_no
 }
 #endif
 
+int cli_scanole2(int desc, char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+{
+	const char *tmpdir;
+	char *dir, *fullname;
+	unsigned char *data;
+	int ret = CL_CLEAN, fd, i;
+	vba_project_t *vba_project;
+
+    cli_dbgmsg("in cli_scanole2()\n");
+
+    tmpdir = getenv("TMPDIR");
+
+    if(tmpdir == NULL)
+#ifdef P_tmpdir
+	tmpdir = P_tmpdir;
+#else
+	tmpdir = "/tmp";
+#endif
+
+	/* generate the temporary directory */
+	dir = cl_gentemp(tmpdir);
+	if(mkdir(dir, 0700)) {
+	    cli_errmsg("ScanOLE2 -> Can't create temporary directory %s\n", dir);
+	    return CL_ETMPDIR;
+	}
+
+	if((ret = cli_ole2_extract(desc, dir))) {
+	    cli_errmsg("ScanOLE2 -> %s\n", cl_strerror(ret));
+	    cli_rmdirs(dir);
+	    free(dir);
+	    return ret;
+	}
+
+	if((vba_project = (vba_project_t *) vba56_dir_read(dir))) {
+
+	    for(i = 0; i < vba_project->count; i++) {
+		fullname = (char *) malloc(strlen(vba_project->dir) + strlen(vba_project->name[i]) + 2);
+		sprintf(fullname, "%s/%s", vba_project->dir, vba_project->name[i]);
+		fd = open(fullname, O_RDONLY);
+		if(fd == -1) {
+			cli_errmsg("Scan->OLE2 -> Can't open file %s\n", fullname);
+			free(fullname);
+			ret = CL_EOPEN;
+			break;
+		}
+		free(fullname);
+		data = (unsigned char *) vba_decompress(fd, vba_project->offset[i]);
+
+		if(cl_scanbuff(data, strlen(data), virname, root) == CL_VIRUS) {
+		    free(data);
+		    ret = CL_VIRUS;
+		    break;
+		}
+
+		free(data);
+	    }
+
+	} else {
+	    cli_errmsg("ScanOLE2 -> Can't decode VBA streams.\n");
+	    ret = CL_EOLE2;
+	}
+
+	for(i = 0; i < vba_project->count; i++)
+	    free(vba_project->name[i]);
+	free(vba_project->name);
+	free(vba_project->dir);
+	free(vba_project->offset);
+
+	cli_rmdirs(dir);
+	free(dir);
+	return ret;
+}
 int cli_scandir(char *dirname, char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
 {
 	DIR *dd;
@@ -700,6 +776,10 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
 	    ret = cli_scanbzip(desc, virname, scanned, root, limits, options, reclev);
 	}
 #endif
+	else if(SCAN_OLE2 && !strncmp(magic, OLE2_MAGIC_STR, 8)) {
+	    cli_dbgmsg("Recognized OLE2 file.\n");
+	    ret = cli_scanole2(desc, virname, scanned, root, limits, options, reclev);
+	}
 	else if(SCAN_MAIL && !strncmp(magic, MAIL_MAGIC_STR, strlen(MAIL_MAGIC_STR))) {
 	    cli_dbgmsg("Recognized mail file.\n");
 	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);

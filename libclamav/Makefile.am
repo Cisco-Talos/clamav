@@ -70,6 +70,10 @@ libclamav_la_SOURCES = \
 	table.c \
 	table.h \
 	text.c \
-	text.h
+	text.h \
+	ole2_extract.c \
+	ole2_extract.h \
+	vba_extract.c \
+	vba_extract.h
 
 lib_LTLIBRARIES = libclamav.la
