@@ -86,6 +86,7 @@ struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 	    {"StreamMaxLength", OPT_COMPSIZE},
 	    {"MaxThreads", OPT_NUM},
 	    {"ReadTimeout", OPT_NUM},
+	    {"IdleTimeout", OPT_NUM},
 	    {"MaxDirectoryRecursion", OPT_NUM},
 	    {"FollowDirectorySymlinks", OPT_NOARG},
 	    {"FollowFileSymlinks", OPT_NOARG},

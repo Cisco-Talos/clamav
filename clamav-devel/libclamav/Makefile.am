@@ -20,7 +20,7 @@ INCLUDES = -I$(top_srcdir) -I@srcdir@/zziplib -I@srcdir@/mspack
 
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@
 
-libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@
+libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 include_HEADERS = clamav.h
 

@@ -821,6 +821,7 @@ int checkstdin(const struct cl_node *root, const struct cl_limits *limits, int o
 
     fclose(fs);
 
+    mprintf("*Checking %s\n", file);
     claminfo.files++;
 
     if((ret = cl_scanfile(file, &virname, &claminfo.blocks, root, limits, options)) == CL_VIRUS) {

@@ -211,6 +211,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	unsigned int selfchk;
 	time_t start_time, current_time;
 	pid_t mainpid;
+	int idletimeout;
 
 #if defined(C_BIGSTACK) || defined(C_BSD)
         size_t stacksize;
@@ -452,7 +453,13 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     pthread_mutex_init(&exit_mutex, NULL);
     pthread_mutex_init(&reload_mutex, NULL);
 
-    if((thr_pool=thrmgr_new(max_threads, 30, scanner_thread)) == NULL) {
+
+    if((cpt = cfgopt(copt, "IdleTimeout")))
+	idletimeout = cpt->numarg;
+    else
+	idletimeout = CL_DEFAULT_IDLETIMEOUT;
+
+    if((thr_pool=thrmgr_new(max_threads, idletimeout, scanner_thread)) == NULL) {
 	logg("!thrmgr_new failed\n");
 	exit(-1);
     }
