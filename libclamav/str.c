@@ -120,6 +120,9 @@ void cli_chomp(char *string)
 {
     if(string[strlen(string) - 1] == 10 || string[strlen(string) - 1 ] == 13)
 	string[strlen(string) -1] = 0;
+
+    if(string[strlen(string) - 1] == '\r')
+	string[strlen(string) -1] = 0;
 }
 
 char *cli_tok(const char *line, int field, char delimiter)
