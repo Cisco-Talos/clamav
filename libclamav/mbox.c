@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.211  2005/01/19 17:41:25  nigelhorne
+ * Downgraded warning message
+ *
  * Revision 1.210  2005/01/09 21:23:21  nigelhorne
  * Catch HTML.Phishing.Bank-41
  *
@@ -618,7 +621,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.210 2005/01/09 21:23:21 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.211 2005/01/19 17:41:25 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1563,7 +1566,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine)
 			case CONTENT_TRANSFER_ENCODING:
 			case CONTENT_DISPOSITION:
 			case CONTENT_TYPE:
-				cli_warnmsg("parseEmailFile: Fullline set '%s' - report to bugs@clamav.net\n", fullline);
+				cli_dbgmsg("parseEmailHeaders: Fullline unparsed '%s'\n", fullline);
 		}
 		free(fullline);
 	}
@@ -1727,7 +1730,7 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 			case CONTENT_TRANSFER_ENCODING:
 			case CONTENT_DISPOSITION:
 			case CONTENT_TYPE:
-				cli_warnmsg("parseEmailHeaders: Fullline set '%s' - report to bugs@clamav.net\n", fullline);
+				cli_dbgmsg("parseEmailHeaders: Fullline unparsed '%s'\n", fullline);
 		}
 		free(fullline);
 	}
