@@ -328,7 +328,7 @@ int cl_cvdverify(const char *file)
     return ret;
 }
 
-int cli_cvdload(FILE *fd, struct cl_node **root, unsigned int *signo)
+int cli_cvdload(FILE *fd, struct cl_node **root, unsigned int *signo, short warn)
 {
         char *dir, *tmp, *buffer;
 	struct cl_cvd cvd;
@@ -345,7 +345,7 @@ int cli_cvdload(FILE *fd, struct cl_node **root, unsigned int *signo)
     if((ret = cli_cvdverify(fd, &cvd)))
 	return ret;
 
-    if(cvd.stime) {
+    if(cvd.stime && warn) {
 	time(&stime);
 	if((int) stime - cvd.stime > 604800) {
 	    cli_warnmsg("**************************************************\n");

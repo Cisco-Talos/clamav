@@ -1,3 +1,7 @@
+Tue Sep 14 22:32:50 CEST 2004 (tk)
+----------------------------------
+  * libclamav: do not print outdate warning for main.cvd
+
 Tue Sep 14 13:10:38 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	FOLLOWURL: include the text of the old HTML 
