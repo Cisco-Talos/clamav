@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.22  2003/12/13 16:42:23  nigelhorne
+ * call new cli_chomp
+ *
  * Revision 1.21  2003/12/11 14:35:48  nigelhorne
  * Better handling of encapsulated messages
  *
@@ -54,7 +57,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.21 2003/12/11 14:35:48 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.22 2003/12/13 16:42:23 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -340,18 +343,7 @@ cl_mbox(const char *dir, int desc)
 		 * It's a single message, parse the headers then the body
 		 */
 		do {
-			/*
-			 * cli_chomp coredumps for cli_chomp("")
-			 * or cli_chomp("\r");
-			 */
-			/*cli_chomp(buffer);*/
-			char *ptr = strrchr(buffer, '\n');
-			if(ptr)
-				*ptr = '\0';
-			ptr = strrchr(buffer, '\r');
-			if(ptr)
-				*ptr = '\0';
-
+			cli_chomp(buffer);
 			messageAddLine(m, buffer);
 		} while(fgets(buffer, sizeof(buffer), fd) != NULL);
 
@@ -391,9 +383,7 @@ cl_mbox(const char *dir, int desc)
 static void
 parseEmailHeaders(message *m, table_t *rfc821Table)
 {
-	/* !isMbox => single mail message */
-	bool inHeader = TRUE;
-	bool inMimeHeader = FALSE;
+	bool inContinuationHeader = FALSE;
 	text *t, *msgText = messageToText(m);
 
 	t = msgText;
@@ -405,42 +395,27 @@ parseEmailHeaders(message *m, table_t *rfc821Table)
 		char *strptr;
 #endif
 
-		/*cli_chomp(buffer);*/
-		char *ptr = strrchr(buffer, '\n');
-		if(ptr)
-			*ptr = '\0';
-		ptr = strrchr(buffer, '\r');
-		if(ptr)
-			*ptr = '\0';
-		/*
-		 * State machine:
-		 *	inMimeHeader	= handling mime commands over
-		 *				more than one line
-		 *	inHeader	= handling e-mail header
-		 *	otherwise	= handling e-mail body
-		 */
+		cli_chomp(buffer);
 
 		/*
 		 * Section B.2 of RFC822 says TAB or SPACE means
-		 * a continuation of the previous entry
+		 * a continuation of the previous entry.
 		 */
-		if(inHeader && ((buffer[0] == '\t') || (buffer[0] == ' ')))
-			inMimeHeader = TRUE;
-		if(inMimeHeader) {
+		if((buffer[0] == '\t') || (buffer[0] == ' '))
+			inContinuationHeader = TRUE;
+
+		if(inContinuationHeader) {
 			const char *ptr;
 
-			assert(inHeader);
-
 			if(!continuationMarker(buffer))
-				inMimeHeader = FALSE;	 /* no more args */
+				inContinuationHeader = FALSE;	 /* no more args */
 
 			/*
 			 * Add all the arguments on the line
 			 */
 			for(ptr = strtok_r(buffer, ";", &strptr); ptr; ptr = strtok_r(NULL, ":", &strptr))
 				messageAddArgument(m, ptr);
-		} else if(inHeader) {
-
+		} else {
 			cli_dbgmsg("Deal with header %s\n", buffer);
 
 			/*
@@ -448,6 +423,7 @@ parseEmailHeaders(message *m, table_t *rfc821Table)
 			 * the start of the text
 			 */
 			if(strstrip(buffer) == 0) {
+				free(buffer);
 				cli_dbgmsg("End of header information\n");
 				break;
 			} else {
@@ -459,10 +435,11 @@ parseEmailHeaders(message *m, table_t *rfc821Table)
 
 					if(arg)
 						if(parseMimeHeader(m, cmd, rfc821Table, arg) == CONTENT_TYPE)
-							inMimeHeader = !isLastLine;
+							inContinuationHeader = !isLastLine;
 				}
 			}
 		}
+		free(buffer);
 	} while((t = t->t_next) != NULL);
 
 	textDestroy(msgText);
@@ -473,7 +450,8 @@ parseEmailHeaders(message *m, table_t *rfc821Table)
  *
  * This function parses the body of mainMessage and saves its attachments in dir
  *
- * mainMessage is the buffer to be parsed. First time of calling it'll be
+ * mainMessage is the buffer to be parsed, it contains an e-mail's body. First
+ * time of calling it'll be
  *	the whole message. Later it'll be parts of a multipart message
  * textIn is the plain text message being built up so far
  * blobsIn contains the array of attachments found so far
@@ -1055,14 +1033,7 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 				do {
 					char *buffer = strdup(t->t_text);
 
-					/*cli_chomp(buffer);*/
-					char *ptr = strrchr(buffer, '\n');
-					if(ptr)
-						*ptr = '\0';
-					ptr = strrchr(buffer, '\r');
-					if(ptr)
-						*ptr = '\0';
-
+					cli_chomp(buffer);
 					messageAddLine(m, buffer);
 					free(buffer);
 				} while((t = t->t_next) != NULL);
