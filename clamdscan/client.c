@@ -23,6 +23,7 @@
 #include <sys/un.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 
 #include "others.h"
 #include "cfgfile.h"
@@ -34,6 +35,7 @@ int client(const struct optstruct *opt)
 	char buff[4096], cwd[200], *file, *scancmd, *pt;
 	struct sockaddr_un server;
         struct sockaddr_in server2;
+	struct hostent *he;
 	struct cfgstruct *copt, *cpt;
 	int sockd, wsockd, loopw = 60, bread, port;
 	const char *clamav_conf = getargl(opt, "config-file");
@@ -87,8 +89,18 @@ int client(const struct optstruct *opt)
 	}
 
 	server2.sin_family = AF_INET;
-	server2.sin_addr.s_addr = inet_addr("127.0.0.1");
 	server2.sin_port = htons(cpt->numarg);
+
+	if((cpt = cfgopt(copt, "TCPAddr"))) {
+	    if ((he = gethostbyname(cpt->strarg)) == 0) {
+		close(sockd);
+		perror("gethostbyname()");
+		mprintf("@Can't lookup clamd hostname.\n");
+		return 2;
+	    }
+	    server2.sin_addr = *(struct in_addr *) he->h_addr_list[0];
+
+	} else server2.sin_addr.s_addr = inet_addr("127.0.0.1");
 
 	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
 	    close(sockd);
