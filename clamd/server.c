@@ -117,7 +117,7 @@ void *threadwatcher(void *arg)
 	struct thrwarg *thwarg = (struct thrwarg *) arg;
 	struct cfgstruct *cpt;
 	sigset_t sigset;
-	int i, j, ret, maxwait;
+	int i, j, ret, maxwait, virnum;
 	unsigned long int timer = 0;
 	unsigned int timeout, threads, selfchk;
 	short int need_wait = 0, do_loop = 0, db_problem = 0;
