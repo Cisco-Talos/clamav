@@ -302,6 +302,17 @@ Changes
 		Prefer cli_dbgmsg/cli_warnmsg over printf
 0.70d	29/3/04	Print the sendmail ID with the virus note in syslog
 		config file location has changed
+0.70e	1/4/04	Fix a remote possibility of a file descriptor leak
+		in PingServer() if clamd has died
+		Fix by Andrey J. Melnikoff (TEMHOTA) <temnota@kmv.ru>
+		Corrected some debug messages reported by
+		Sergey Y. Afonin <asy@kraft-s.ru>
+0.70f	1/4/04	Added auto-submitted header to messages generated here
+		Suggested by "Andrey J. Melnikoff (TEMHOTA)"
+		<temnota@kmv.ru>
+		Add advice that --quarantine-dir may improve
+		performance when LocalSocket is used
+		ThreadTimeout seems to have been changed to ReadTimeout
 
 BUG REPORTS
 

@@ -1,3 +1,9 @@
+Thu Apr  1 16:46:22 BST 2004 (njh)
+----------------------------------
+  * libclamav:	Stop gracefully if messageAddLine() fails
+  * clamav-milter:	ThreadTimeout has been replaced by ReadTimeout -
+  	clamav-milter now supports this
+
 Thu Apr  1 11:37:25 BST 2004 (trog)
 -----------------------------------
   * clamd: add writen() function for wrapping write()
