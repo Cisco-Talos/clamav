@@ -1,3 +1,7 @@
+Tue Mar  2 13:12:57 GMT 2004 (trog)
+-----------------------------------
+  * libclamav/vba_extract.c: #include others.h
+
 Tue Mar  2 13:04:15 GMT 2004 (trog)
 -----------------------------------
   * clamd: intercept but ignore SIGPIPE, FreeBSD barfs

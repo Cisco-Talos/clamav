@@ -34,6 +34,7 @@
 #endif
 
 #include "vba_extract.h"
+#include "others.h"
 
 #define FALSE (0)
 #define TRUE (1)
