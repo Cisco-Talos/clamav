@@ -17,8 +17,8 @@
  *
  * Change History:
  * $Log: mbox.c,v $
- * Revision 1.70  2004/05/10 11:24:18  nigelhorne
- * Handle bounce message false positives
+ * Revision 1.71  2004/05/10 11:35:11  nigelhorne
+ * No need to update mbox.c for cli_filetype problem
  *
  * Revision 1.69  2004/05/06 11:26:49  nigelhorne
  * Force attachments marked as RFC822 messages to be scanned
@@ -201,7 +201,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.70 2004/05/10 11:24:18 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.71 2004/05/10 11:35:11 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1435,28 +1435,26 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					}
 					blobDestroy(b);
 				}
+			} else if((encodingLine(mainMessage) != NULL) &&
+				  ((t_line = bounceBegin(mainMessage)) != NULL)) {
+				/*
+				 * Attempt to save the original (unbounced)
+				 * message - clamscan will find that in the
+				 * directory and call us again (with any luck)
+				 * having found an e-mail message to handle
+				 */
+				if((b = textToBlob(t_line, NULL)) != NULL) {
+					cli_dbgmsg("Found a bounce message\n");
+
+					saveFile(b, dir);
+
+					blobDestroy(b);
+				}
 			} else {
 				bool saveIt;
-				bool savedBounce = FALSE;
 
 				cli_dbgmsg("Not found uuencoded file\n");
 
-				if((encodingLine(mainMessage) != NULL) &&
-				   ((t_line = bounceBegin(mainMessage)) != NULL))
-					/*
-					 * Attempt to save the original (unbounced)
-					 * message - clamscan will find that in the
-					 * directory and call us again (with any luck)
-					 * having found an e-mail message to handle
-					 */
-					if((b = textToBlob(t_line, NULL)) != NULL) {
-						cli_dbgmsg("Found a bounce message\n");
-
-						saveFile(b, dir);
-
-						blobDestroy(b);
-						savedBounce = TRUE;
-					}
 				if(messageGetMimeType(mainMessage) == MESSAGE)
 					/*
 					 * Quick peek, if the encapsulated
@@ -1470,7 +1468,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					 * Some bounces include the message
 					 * body without the headers
 					 */
-					if((!savedBounce) && ((b = blobCreate()) != NULL)) {
+					if((b = blobCreate()) != NULL) {
 						cli_dbgmsg("Found a bounce message with no header\n");
 						blobAddData(b, "Received: by clamd\n", 19);
 
