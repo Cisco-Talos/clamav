@@ -1,5 +1,5 @@
 .\" Manual page created by Tomasz Kojm, 20021001.
-.TH "clamd.conf" "5" "January 26, 2005" "Tomasz Kojm" "Clam AntiVirus"
+.TH "clamd.conf" "5" "February 13, 2005" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 \fBclamd.conf\fR \- Configuration file for Clam AntiVirus Daemon
@@ -187,7 +187,7 @@ Default: 1024
 \fBStreamMaxPort NUMBER\fR
 Limit data port range.
 .br 
-Default: 65535
+Default: 2048
 .TP 
 \fBDisableDefaultScanOptions\fR
 By default clamd uses scan options recommended by libclamav. This option disables recommended options and allows you to enable selected options. DO NOT ENABLE IT unless you know what you are doing.

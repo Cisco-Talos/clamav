@@ -22,7 +22,7 @@ AM_INIT_AUTOMAKE(clamav, "devel-`date +%Y%m%d`")
 AM_CONFIG_HEADER(clamav-config.h)
 
 LC_CURRENT=1
-LC_REVISION=7
+LC_REVISION=8
 LC_AGE=0
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 AC_SUBST(LIBCLAMAV_VERSION)
@@ -74,6 +74,7 @@ fi
 have_pthreads=no
 AC_CHECK_HEADER(pthread.h,[have_pthreads=yes],)
 
+AM_MAINTAINER_MODE
 dnl Check for zlib
 AC_MSG_CHECKING(for zlib installation)
 AC_ARG_WITH(zlib,
