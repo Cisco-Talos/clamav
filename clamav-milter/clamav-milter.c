@@ -18,32 +18,35 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Install into /usr/local/sbin/clamav-milter, mode 744
+ * Install into /usr/local/sbin/clamav-milter
  *
  * See http://www.nmt.edu/~wcolburn/sendmail-8.12.5/libmilter/docs/sample.html
  *
  * Installations for RedHat Linux and it's derivatives such as YellowDog:
  * 1) Ensure that you have the sendmail-devel RPM installed
  * 2) Add to /etc/mail/sendmail.mc:
- *	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav.sock, F=, T=S:4m;R:4m')dnl
+ *	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clamav.sock, F=, T=S:4m;R:4m')dnl
  *	define(`confINPUT_MAIL_FILTERS', `clamav')
  * 3) Check entry in /usr/local/etc/clamav.conf of the form:
  *	LocalSocket /var/run/clamd.sock
  *	StreamSaveToDisk
  * 4) If you already have a filter (such as spamassassin-milter from
  * http://savannah.nongnu.org/projects/spamass-milt) add it thus:
- *	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav.sock, F=, T=S:4m;R:4m')dnl
+ *	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clamav.sock, F=, T=S:4m;R:4m')dnl
  *	INPUT_MAIL_FILTER(`spamassassin', `S=local:/var/run/spamass.sock, F=, T=C:15m;S:4m;R:4m;E:10m')
  *	define(`confINPUT_MAIL_FILTERS', `spamassassin,clamav')dnl
+ *	mkdir /var/run/clamav
+ *	chown clamav /var/run/clamav	(if you use User clamav in clamav.conf)
+ *	chmod 700 /var/run/clamav
  * 5) You may find INPUT_MAIL_FILTERS is not needed on your machine, however it
  * is recommended by the Sendmail documentation and I suggest going along
  * with that.
  * 6) I suggest putting SpamAssassin first since you're more likely to get spam
  * than a virus/worm sent to you.
  * 7) Add to /etc/sysconfig/clamav-milter
- *	CLAMAV_FLAGS="--max-children=2 local:/var/run/clamav.sock"
+ *	CLAMAV_FLAGS="--max-children=2 local:/var/run/clamav/clamav.sock"
  * or if clamd is on a different machine
- *	CLAMAV_FLAGS="--max-children=2 --server=192.168.1.9 local:/var/run/clamav.sock"
+ *	CLAMAV_FLAGS="--max-children=2 --server=192.168.1.9 local:/var/run/clamav/clamav.sock"
  * 8) You should have received a script to put into /etc/init.d with this
  * software.
  * 9) run 'chown clamav /usr/local/sbin/clamav-milter; chmod 4700 /usr/local/sbin/clamav-milter
@@ -245,6 +248,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.54  2004/02/22 17:27:40  nigelhorne
+ * Updated installation instructions now that privileges are dropped
+ *
  * Revision 1.53  2004/02/21 11:03:23  nigelhorne
  * Error if quarantine-dir is publically accessable
  *
@@ -389,7 +395,7 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.53 2004/02/21 11:03:23 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.54 2004/02/22 17:27:40 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.67g"
 
@@ -903,6 +909,8 @@ main(int argc, char **argv)
 				initgroups(cpt->strarg, user->pw_gid);
 			else
 				setgroups(1, &user->pw_gid);
+
+			cli_dbgmsg("Dropping user privileges\n");
 
 			setgid(user->pw_gid);
 			setuid(user->pw_uid);

@@ -1,3 +1,8 @@
+Sun Feb 22 17:34:08 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter/docs:	Documented the need to ensure that the directory
+	  containing the sockets must be read/writeable by clamav if User is set
+
 Sat Feb 21 16:05:42 CET 2004 (tk)
 ---------------------------------
   * freshclam: fixed problem with -u handling (missing `else' in logical block)
