@@ -1,3 +1,8 @@
+Sun Jul  4 16:52:45 CEST 2004 (tk)
+----------------------------------
+  * libclamav: Do not scan mail files twice. Separate archive and mail
+	       recursion limits.
+
 Sat Jul  3 17:20:45 CEST 2004 (tk)
 ----------------------------------
   * libclamav: use new method to detect mail files

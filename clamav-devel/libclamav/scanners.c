@@ -73,9 +73,11 @@ extern short cli_leavetemps_flag;
 #define DISABLE_RAR	    (options & CL_DISABLERAR)
 #define DETECT_ENCRYPTED    (options & CL_ENCRYPTED)
 
+#define MAX_MAIL_RECURSION  10
 
-static int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev);
-static int cli_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev);
+
+static int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec);
+static int cli_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec);
 
 static int cli_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, int typerec)
 {
@@ -144,7 +146,7 @@ static void cli_unlock_mutex(void *mtx)
 }
 #endif
 
-static int cli_scanrar(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_scanrar(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
 {
 	FILE *tmp = NULL;
 	int files = 0, fd, ret = CL_CLEAN, afiles;
@@ -247,7 +249,7 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 	    }
 
 	    lseek(fd, 0, SEEK_SET);
-	    if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, reclev)) == CL_VIRUS ) {
+	    if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, arec, mrec)) == CL_VIRUS ) {
 		cli_dbgmsg("RAR -> Found %s virus.\n", *virname);
 
 		fclose(tmp);
@@ -286,7 +288,7 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 }
 
 #ifdef HAVE_ZLIB_H
-static int cli_scanzip(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_scanzip(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
 {
 	ZZIP_DIR *zdir;
 	ZZIP_DIRENT zdirent;
@@ -408,7 +410,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	fd = fileno(tmp);
 
 	lseek(fd, 0, SEEK_SET);
-	if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, reclev)) == CL_VIRUS ) {
+	if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, arec, mrec)) == CL_VIRUS ) {
 	    cli_dbgmsg("Zip -> Found %s virus.\n", *virname);
 	    ret = CL_VIRUS;
 	    break;
@@ -440,7 +442,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
     return ret;
 }
 
-static int cli_scangzip(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_scangzip(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
 {
 	int fd, bytes, ret = CL_CLEAN;
 	long int size = 0;
@@ -497,7 +499,7 @@ static int cli_scangzip(int desc, const char **virname, long int *scanned, const
     }
 
     lseek(fd, 0, SEEK_SET);
-    if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, reclev)) == CL_VIRUS ) {
+    if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, arec, mrec)) == CL_VIRUS ) {
 	cli_dbgmsg("Gzip -> Found %s virus.\n", *virname);
 	fclose(tmp);
 	return CL_VIRUS;
@@ -516,7 +518,7 @@ static int cli_scangzip(int desc, const char **virname, long int *scanned, const
 #define BZ2_bzRead bzRead
 #endif
 
-static int cli_scanbzip(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_scanbzip(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
 {
 	int fd, bytes, ret = CL_CLEAN, bzerror = 0;
 	short memlim = 0;
@@ -587,7 +589,7 @@ static int cli_scanbzip(int desc, const char **virname, long int *scanned, const
     }
 
     lseek(fd, 0, SEEK_SET);
-    if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, reclev)) == CL_VIRUS ) {
+    if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, arec, mrec)) == CL_VIRUS ) {
 	cli_dbgmsg("Bzip2 -> Found %s virus.\n", *virname);
     }
     fclose(tmp);
@@ -597,7 +599,7 @@ static int cli_scanbzip(int desc, const char **virname, long int *scanned, const
 }
 #endif
 
-static int cli_scanmscomp(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_scanmscomp(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
 {
 	int fd, ret = CL_CLEAN;
 	FILE *tmp = NULL, *in;
@@ -629,7 +631,7 @@ static int cli_scanmscomp(int desc, const char **virname, long int *scanned, con
 
     fd = fileno(tmp);
     lseek(fd, 0, SEEK_SET);
-    if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, reclev)) == CL_VIRUS) {
+    if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, arec, mrec)) == CL_VIRUS) {
 	cli_dbgmsg("MSCompress -> Found %s virus.\n", *virname);
 	fclose(tmp);
 	return CL_VIRUS;
@@ -639,7 +641,7 @@ static int cli_scanmscomp(int desc, const char **virname, long int *scanned, con
     return ret;
 }
 
-static int cli_scanmscab(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_scanmscab(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
 {
 	struct mscab_decompressor *cabd = NULL;
 	struct mscabd_cabinet *base, *cab;
@@ -676,7 +678,7 @@ static int cli_scanmscab(int desc, const char **virname, long int *scanned, cons
 	    if(cabd->extract(cabd, file, tempname)) {
 		cli_dbgmsg("libmscab error code: %d\n", cabd->last_error(cabd));
 	    } else {
-		ret = cli_scanfile(tempname, virname, scanned, root, limits, options, reclev);
+		ret = cli_scanfile(tempname, virname, scanned, root, limits, options, arec, mrec);
 	    }
 	    if(!cli_leavetemps_flag)
 		unlink(tempname);
@@ -694,7 +696,7 @@ static int cli_scanmscab(int desc, const char **virname, long int *scanned, cons
     return ret;
 }
 
-static int cli_scanhtml(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_scanhtml(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
 {
 	unsigned char *membuff, *newbuff, *newbuff2;
 	struct stat statbuf;
@@ -741,7 +743,7 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
     return ret;
 }
 
-static int cli_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
 {
 	DIR *dd;
 	struct dirent *dent;
@@ -763,14 +765,14 @@ static int cli_scandir(const char *dirname, const char **virname, long int *scan
 		    /* stat the file */
 		    if(lstat(fname, &statbuf) != -1) {
 			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
-			    if (cli_scandir(fname, virname, scanned, root, limits, options, reclev) == CL_VIRUS) {
+			    if (cli_scandir(fname, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS) {
 				free(fname);
 				closedir(dd);
 				return CL_VIRUS;
 			    }
 			} else
 			    if(S_ISREG(statbuf.st_mode))
-				if(cli_scanfile(fname, virname, scanned, root, limits, options, reclev) == CL_VIRUS) {
+				if(cli_scanfile(fname, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS) {
 				    free(fname);
 				    closedir(dd);
 				    return CL_VIRUS;
@@ -790,7 +792,7 @@ static int cli_scandir(const char *dirname, const char **virname, long int *scan
     return 0;
 }
 
-static int cli_vba_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_vba_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
 {
 	int ret = CL_CLEAN, i, fd, data_len;
 	vba_project_t *vba_project;
@@ -838,7 +840,7 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 	free(vba_project->offset);
 	free(vba_project);
     } else if ((fullname = ppt_vba_read(dirname))) {
-    	if(cli_scandir(fullname, virname, scanned, root, limits, options, reclev) == CL_VIRUS) {
+    	if(cli_scandir(fullname, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS) {
 	    ret = CL_VIRUS;
 	}
 	cli_rmdirs(fullname);
@@ -897,7 +899,7 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 		    /* stat the file */
 		    if(lstat(fname, &statbuf) != -1) {
 			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode))
-			    if (cli_vba_scandir(fname, virname, scanned, root, limits, options, reclev) == CL_VIRUS) {
+			    if (cli_vba_scandir(fname, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS) {
 			    	ret = CL_VIRUS;
 				free(fname);
 				break;
@@ -916,7 +918,7 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
     return ret;
 }
 
-static int cli_scanole2(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_scanole2(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
 {
 	const char *tmpdir;
 	char *dir;
@@ -945,8 +947,8 @@ static int cli_scanole2(int desc, const char **virname, long int *scanned, const
 	return ret;
     }
 
-    if((ret = cli_vba_scandir(dir, virname, scanned, root, limits, options, reclev)) != CL_VIRUS) {
-	if(cli_scandir(dir, virname, scanned, root, limits, options, reclev) == CL_VIRUS) {
+    if((ret = cli_vba_scandir(dir, virname, scanned, root, limits, options, arec, mrec)) != CL_VIRUS) {
+	if(cli_scandir(dir, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS) {
 	    ret = CL_VIRUS;
 	}
     }
@@ -956,17 +958,14 @@ static int cli_scanole2(int desc, const char **virname, long int *scanned, const
     return ret;
 }
 
-static int cli_scanmail(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_scanmail(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
 {
 	const char *tmpdir;
 	char *dir;
 	int ret;
 
 
-    cli_dbgmsg("Starting cli_scanmail(), reclev %d\n", *reclev);
-
-    if(*reclev > 5) /* FIXME: a temporary workaround */
-	return CL_CLEAN;
+    cli_dbgmsg("Starting cli_scanmail(), mrec == %d, arec == %d\n", mrec, arec);
 
     if((tmpdir = getenv("TMPDIR")) == NULL)
 #ifdef P_tmpdir
@@ -988,7 +987,7 @@ static int cli_scanmail(int desc, const char **virname, long int *scanned, const
 	ret = cl_mbox(dir, desc);
 	/* FIXME: check mbox return code */
 
-	ret = cli_scandir(dir, virname, scanned, root, limits, options, reclev);
+	ret = cli_scandir(dir, virname, scanned, root, limits, options, arec, mrec);
 
 	cli_rmdirs(dir);
 	free(dir);
@@ -996,7 +995,7 @@ static int cli_scanmail(int desc, const char **virname, long int *scanned, const
 	return ret;
 }
 
-static int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
 {
 	char magic[MAGIC_BUFFER_SIZE+1];
 	int ret = CL_CLEAN, nret;
@@ -1017,10 +1016,18 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
     }
 
     if(SCAN_ARCHIVE && limits && limits->maxreclevel)
-	if(*reclev > limits->maxreclevel)
+	if(*arec > limits->maxreclevel) {
+	    cli_dbgmsg("Archive recursion limit exceeded (arec == %d).\n", *arec);
 	    /* return CL_EMAXREC; */
 	    return CL_CLEAN;
+	}
 
+    if(SCAN_MAIL)
+	if(*mrec > MAX_MAIL_RECURSION) {
+	    cli_dbgmsg("Mail recursion level exceeded (mrec == %d).\n", *mrec);
+	    /* return CL_EMAXREC; */
+	    return CL_CLEAN;
+	}
 
     lseek(desc, 0, SEEK_SET);
     bread = read(desc, magic, MAGIC_BUFFER_SIZE);
@@ -1037,54 +1044,54 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
 
     type = cli_filetype(magic, bread);
 
-    (*reclev)++;
+    type == CL_MAILFILE ? (*mrec)++ : (*arec)++;
 
     switch(type) {
 	case CL_DOSEXE:
 	    /* temporarily the return code is ignored */
-	    cli_scanpe(desc, virname, scanned, root, limits, options, reclev);
+	    cli_scanpe(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
 	case CL_RARFILE:
 	    if(!DISABLE_RAR && SCAN_ARCHIVE && !cli_scanrar_inuse)
-		ret = cli_scanrar(desc, virname, scanned, root, limits, options, reclev);
+		ret = cli_scanrar(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
 	case CL_ZIPFILE:
 	    if(SCAN_ARCHIVE)
-		ret = cli_scanzip(desc, virname, scanned, root, limits, options, reclev);
+		ret = cli_scanzip(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
 	case CL_GZFILE:
 	    if(SCAN_ARCHIVE)
-		ret = cli_scangzip(desc, virname, scanned, root, limits, options, reclev);
+		ret = cli_scangzip(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
 	case CL_BZFILE:
 #ifdef HAVE_BZLIB_H
 	    if(SCAN_ARCHIVE)
-		ret = cli_scanbzip(desc, virname, scanned, root, limits, options, reclev);
+		ret = cli_scanbzip(desc, virname, scanned, root, limits, options, arec, mrec);
 #endif
 	    break;
 
 	case CL_MSCFILE:
 	    if(SCAN_ARCHIVE)
-		ret = cli_scanmscomp(desc, virname, scanned, root, limits, options, reclev);
+		ret = cli_scanmscomp(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
 	case CL_MSCABFILE:
 	    if(SCAN_ARCHIVE)
-		ret = cli_scanmscab(desc, virname, scanned, root, limits, options, reclev);
+		ret = cli_scanmscab(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
 	case CL_MAILFILE:
 	    if(SCAN_MAIL)
-		ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
+		ret = cli_scanmail(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
 	case CL_OLE2FILE:
 	    if(SCAN_OLE2)
-		ret = cli_scanole2(desc, virname, scanned, root, limits, options, reclev);
+		ret = cli_scanole2(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
 	case CL_DATAFILE:
@@ -1099,12 +1106,14 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
 	    break;
     }
 
-    (*reclev)--;
+    type == CL_MAILFILE ? (*mrec)-- : (*arec)--;
 
     if(type != CL_DATAFILE && ret != CL_VIRUS) { /* scan the raw file */
 	lseek(desc, 0, SEEK_SET);
 
-	if((nret = cli_scandesc(desc, virname, scanned, root, 1)) == CL_VIRUS) {
+	type == CL_UNKNOWN_TYPE ? (type = 1) : (type = 0);
+
+	if((nret = cli_scandesc(desc, virname, scanned, root, type)) == CL_VIRUS) {
 	    cli_dbgmsg("%s virus found in descriptor %d.\n", *virname, desc);
 	    return CL_VIRUS;
 
@@ -1114,13 +1123,13 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
 	    switch(nret) {
 		case CL_HTMLFILE:
 		    if(SCAN_HTML)
-			if(cli_scanhtml(desc, virname, scanned, root, limits, options, reclev) == CL_VIRUS)
+			if(cli_scanhtml(desc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS)
 			    return CL_VIRUS;
 		    break;
 
 		case CL_MAILFILE:
 		    if(SCAN_MAIL)
-			if(cli_scanmail(desc, virname, scanned, root, limits, options, reclev) == CL_VIRUS)
+			if(cli_scanmail(desc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS)
 			    return CL_VIRUS;
 		    break;
 	    }
@@ -1132,20 +1141,20 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
 
 int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options)
 {
-	int reclev = 0;
+	int arec = 0, mrec = 0;
 
-    return cli_magic_scandesc(desc, virname, scanned, root, limits, options, &reclev);
+    return cli_magic_scandesc(desc, virname, scanned, root, limits, options, &arec, &mrec);
 }
 
-static int cli_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
 {
 	int fd, ret;
 
-    /* internal version of cl_scanfile with reclev preserved */
+    /* internal version of cl_scanfile with arec/mrec preserved */
     if((fd = open(filename, O_RDONLY)) == -1)
 	return CL_EOPEN;
 
-    ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, reclev);
+    ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, arec, mrec);
 
     close(fd);
     return ret;
