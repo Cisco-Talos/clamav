@@ -560,6 +560,12 @@ Changes
 			localSocket and not quarantine_dir
 0.80s	13/11/04 Use SCAN when UNIX socket (localSocket) is used or when the
 			load balancing algorithm favours localhost
+0.80t	20/11/04 Use the improved cli_gentemp(NULL)
+		Added more samples to ignoredEmailAddresses list, from
+			"Sergey Y. Afonin" <asy@kraft-s.ru>
+		Added validation for the reply from clamd
+		Include the sendmail ID in the quarantine file name, for easier
+			cross matching with the sendmail log file
 
 INTERNATIONALISATION
 
