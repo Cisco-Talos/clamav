@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.170  2004/11/09 10:08:02  nigelhorne
+ * Added basic handling of folded headers in the main message
+ *
  * Revision 1.169  2004/11/08 16:27:09  nigelhorne
  * Fix crash with correctly encoded uuencode files
  *
@@ -495,7 +498,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.169 2004/11/08 16:27:09 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.170 2004/11/09 10:08:02 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -984,6 +987,7 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 	bool anyHeadersFound = FALSE;
 	bool Xheader = FALSE;
 	int commandNumber = -1;
+	char *fullline = NULL;
 
 	cli_dbgmsg("parseEmailHeaders\n");
 
@@ -1034,8 +1038,18 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 						continue;
 				}
 
-				assert(strlen(buffer) < sizeof(copy));
-				strcpy(copy, buffer);
+				if(fullline) {
+					/*
+					 * FIXME: Handle more than one line spanned by
+					 * quote marks, and handle two very long lines
+					 */
+					snprintf(copy, sizeof(copy) - 1, "%s%s", fullline, buffer);
+					free(fullline);
+					fullline = NULL;
+				} else {
+					assert(strlen(buffer) < sizeof(copy));
+					strcpy(copy, buffer);
+				}
 
 				/*
 				 * Ensure that the colon in headers such as
@@ -1073,23 +1087,45 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 					}
 #endif
 			} else {
+				const char *qptr;
+				int quotes = 0;
+				bool parsed = FALSE;
+				char cmd[LINE_LENGTH + 1];
+
 				Xheader = (bool)(buffer[0] == 'X');
 				contMarker = continuationMarker(buffer);
-				if((parseEmailHeader(ret, buffer, rfc821) >= 0) ||
-				   (strncasecmp(buffer, "From ", 5) == 0)) {
-				   	char cmd[LINE_LENGTH + 1];
 
+				if(!Xheader)
+					for(qptr = buffer; *qptr; qptr++)
+						if(*qptr == '\"')
+							quotes++;
+
+				fullline = NULL;
+
+				if(quotes & 1) {
+					contMarker = TRUE;
+					fullline = strdup(buffer);
+					parsed = TRUE;
+				} else if((parseEmailHeader(ret, buffer, rfc821) >= 0) ||
+					  (strncasecmp(buffer, "From ", 5) == 0))
+					parsed = TRUE;
+
+				if(parsed)
 					if(cli_strtokbuf(buffer, 0, ":", cmd) != NULL) {
 						anyHeadersFound = TRUE;
 						commandNumber = tableFind(rfc821, cmd);
 					}
-				}
 			}
 		} else {
 			/*cli_dbgmsg("Add line to body '%s'\n", buffer);*/
 			if(messageAddLine(ret, t->t_line) < 0)
 				break;
 		}
+	}
+
+	if(fullline) {
+		cli_warnmsg("parseEmailHeaders: Fullline set '%s' - report to bugs@clamav.net\n");
+		free(fullline);
 	}
 
 	if(!anyHeadersFound) {
