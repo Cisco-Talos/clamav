@@ -1,3 +1,25 @@
+This is a small Windows client for ClamAV that I hope will turn into
+something bigger with time.
+
+Since it's so early I'm only releasing the Debug version (you'll need to
+install the MFC Debug libary in \windows\system32 if you don't already
+have it) and am yet to release the source code.
+
+You will need a clamd server machine where the clamd daemon is listening
+on port 3310. When firing up the Windows client you will be asked to
+enter in the hostname/IPv4 address of the clamd server. Once you have done
+that simply drag 'n' drop files or folders on to the program, they will
+then be scanned for viruses.
+
+I only have an old copy of Visual C/C++ (version 2), so I can only accept
+patches compatible with that version.
+
+Nigel Horne njh@bandsman.co.uk
+
+29/01/04
+
+-----------------------------
+
 23/2/04
 Version 0.14
 Handles the ERROR status from clamd
@@ -33,19 +55,3 @@ allows a full system scan to be done either manually or via the Windows
 scheduler, for example
 	clamav.exe 192.168.1.1 eicar.com
 	clamav.exe 192.168.1.1 c:\
-----------------------------------
-This is a small Windows client for ClamAV that I hope will turn into
-something bigger with time.
-
-Since it's so early I'm only releasing the Debug version (you'll need to
-install the MFC Debug libary in \windows\system32 if you don't already
-have it) and am yet to release the source code.
-
-You will need a clamd server machine where the clamd daemon is listening
-on port 3310. When firing up the Windows client you will be asked to
-enter in the hostname/IPv4 address of the clamd server. Once you have done
-that simply drag 'n' drop files or folders on to the program, they will
-then be scanned for viruses.
-
-Nigel Horne njh@bandsman.co.uk
-29/01/04
