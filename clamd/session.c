@@ -32,10 +32,6 @@
 #include <signal.h>
 #include <errno.h>
 
-#if HAVE_SYS_SELECT_H
-#include <sys/select.h>
-#endif
-
 #include "cfgfile.h"
 #include "others.h"
 #include "defaults.h"
@@ -62,30 +58,17 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
 {
 	char buff[1025];
 	int bread, opt, ret, retval;
-	fd_set rfds;
-	struct timeval tv;
 
-    while (1) {
-	FD_ZERO(&rfds);
-	FD_SET(desc, &rfds);
-	tv.tv_sec = CL_DEFAULT_SCANTIMEOUT;
-	tv.tv_usec = 0;
-
-	retval = select(desc+1, &rfds, NULL, NULL, &tv);
-	switch (retval) {
-	case 0: /* timeout */
-	    mdprintf(desc, "ERROR\n");
-	    logg("!Command: command timeout.\n");
-	    return -1;
-	case -1:
-	    if (errno == EINTR) {
-		continue;
-	    }
-	    mdprintf(desc, "ERROR\n");
-	    logg("!Command: select failed.\n");
-	    return -1;
-	}
-	break;
+    retval = poll_fd(desc, CL_DEFAULT_SCANTIMEOUT);
+    switch (retval) {
+    case 0: /* timeout */
+	mdprintf(desc, "ERROR\n");
+	logg("!Command: command timeout.\n");
+	return -1;
+    case -1:
+	mdprintf(desc, "ERROR\n");
+	logg("!Command: poll_fd failed.\n");
+	return -1;
     }
 
     if((bread = read(desc, buff, 1024)) == -1) {
