@@ -651,7 +651,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	    mprintf("%s: Infected Archive FOUND\n", filename);
 
 	    if(bell)
-		printf("\007");
+		fprintf(stderr, "\007");
 
 	    if(optl(opt, "remove")) {
 		if(unlink(filename)) {
@@ -780,7 +780,7 @@ int checkfile(const char *filename, const struct cl_node *root, const struct cl_
 	claminfo.ifiles++;
 
 	if(bell)
-	    printf("\007");
+	    fprintf(stderr, "\007");
 
     } else if(ret == CL_CLEAN) {
 	if(!printinfected)
@@ -806,7 +806,7 @@ int checkstdin(const struct cl_node *root, const struct cl_limits *limits)
 	claminfo.ifiles++;
 
 	if(bell)
-	    printf("\007");
+	    fprintf(stderr, "\007");
 
     } else if(ret == CL_CLEAN) {
 	if(!printinfected)

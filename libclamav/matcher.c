@@ -4,7 +4,7 @@
  *  http://www-sr.informatik.uni-tuebingen.de/~buehler/AC/AC.html
  *  Thanks to Kurt Huwig for pointing me to this page.
  *
- *  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -193,23 +193,19 @@ void cl_freetrie(struct cl_node *root)
     free(root);
 }
 
-int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *pcnt)
+int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *partcnt)
 {
 	struct cl_node *current;
 	struct cli_patt *pt;
-	int position, *partcnt, extpartcnt = 0;
+	int position;
         unsigned int i;
+
 
     current = (struct cl_node *) root;
 
-    if(pcnt) {
-	partcnt = pcnt;
-	extpartcnt = 1;
-    } else {
-	if((partcnt = (int *) cli_calloc(root->partsigs + 1, sizeof(int))) == NULL) {
-	    cli_dbgmsg("cl_scanbuff(): unable to calloc(%d, %d)\n", root->partsigs + 1, sizeof(int));
-	    return CL_EMEM;
-	}
+    if(!partcnt) {
+	cli_dbgmsg("cli_scanbuff(): partcnt == NULL\n");
+	return CL_EMEM;
     }
 
     for(i = 0; i < length; i++)  {
@@ -223,19 +219,15 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 		if(cli_findpos(buffer, position, length, pt)) {
 		    if(pt->sigid) { /* it's a partial signature */
 			if(partcnt[pt->sigid] + 1 == pt->partno) {
-			    if(++partcnt[pt->sigid] == pt->parts) { /* last */
+			    if(++partcnt[pt->sigid] == pt->parts) { /* the last one */
 				if(virname)
 				    *virname = pt->virname;
-				if(!extpartcnt)
-				    free(partcnt);
 				return CL_VIRUS;
 			    }
 			}
 		    } else { /* old type signature */
 			if(virname)
 			    *virname = pt->virname;
-			if(!extpartcnt)
-			    free(partcnt);
 			return CL_VIRUS;
 		    }
 		}
@@ -247,15 +239,23 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 	}
     }
 
-    if(!extpartcnt)
-	free(partcnt);
     return CL_CLEAN;
 }
 
 int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root)
 
 {
-    return cli_scanbuff(buffer, length, virname, root, NULL);
+	int ret, *partcnt;
+
+    if((partcnt = (int *) cli_calloc(root->partsigs + 1, sizeof(int))) == NULL) {
+	cli_dbgmsg("cli_scanbuff(): unable to cli_calloc(%d, %d)\n", root->partsigs + 1, sizeof(int));
+	return CL_EMEM;
+    }
+
+    ret = cli_scanbuff(buffer, length, virname, root, partcnt);
+
+    free(partcnt);
+    return ret;
 }
 
 int cli_findpos(const char *buffer, int offset, int length, const struct cli_patt *pattern)

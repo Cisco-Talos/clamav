@@ -9573,6 +9573,7 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   echo "$as_me:$LINENO: result: -lwrap" >&5
 echo "${ECHO_T}-lwrap" >&6
                 have_wrappers=yes
+		LIBS="$save_LIBS"
                 CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lwrap"
 else
   echo "$as_me: failed program was:" >&5
@@ -9819,11 +9820,13 @@ openbsd3.3*)
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread"
 	fi
 	TH_SAFE="-thread-safe"
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define CL_THREAD_SAFE 1
 _ACEOF
 
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _REENTRANT 1
 _ACEOF
 
@@ -9863,9 +9866,21 @@ _ACEOF
 
     ;;
 netbsd*)
-    echo "$as_me:$LINENO: result: NetBSD detected. Disabling thread support." >&5
-echo "${ECHO_T}NetBSD detected. Disabling thread support." >&6
-    have_pthreads="no"
+     if test "$have_pthreads" = "yes"; then
+ 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
+ 	CLAMD_LIBS="-lpthread"
+ 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
+
+cat >>confdefs.h <<\_ACEOF
+#define CL_THREAD_SAFE 1
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define _REENTRANT 1
+_ACEOF
+
+     fi
 
 cat >>confdefs.h <<\_ACEOF
 #define C_BSD 1

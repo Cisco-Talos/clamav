@@ -1,8 +1,6 @@
 #! /bin/sh
-
-# -- ntw2007:/etc/init.d/clamd, 17.06.2003 shw --
-
-
+# v1.1 03-2004, martin fuxa, yeti@email.cz
+#
 ### BEGIN INIT INFO
 # Provides:       clamd
 # Required-Start: 
@@ -12,85 +10,57 @@
 # Description:    Control clamav daemon.
 ### END INIT INFO
 
+# Variables
+PID="/var/run/clamd.pid"
+SBIN="/usr/local/sbin/clamd"
+CONF="/etc/clamav.conf"
+WHAT="Clam AntiVirus"
 
-# -- variables --
-_what="Clam AntiVirus"
+# Source SuSE config
+. /etc/rc.status
 
-# -- see whether we are installed --
-_cnf="/etc/clamav.conf"
+test -x $SBIN || exit 5
+test -e $CONF || exit 5
 
-_pid="$(awk '/^PidFile/ {print $2}' ${_cnf})"
-_port="$(awk '/^TCPSocket/ {print $2}' ${_cnf})"
-
-if [ -s "${_cnf}" -a -r "${_cnf}" ]
-   then
-      _srv="$(\which clamd | sed -e 's+/*+/+' | head -1)"
-      test -x "${_srv}" || exit 5
-
-      _clnt="$(\which clamdscan | sed -e 's+/*+/+' | head -1)"
-      test -x "${_clnt}" || exit 5
-
-      _cnf="-c ${_cnf}"
-   else
-      exit 6
-fi
-
-
-# -- fetch LSB compliant functions (hope they get our environment) --
-. /lib/lsb/init-functions
-
-
-# -- first reset status of this service --
+# First reset status of this service
 rc_reset
 
+# Process request
+case "$1" in
+    start)
+        echo -n "Starting ${WHAT} ${CONF} "
+        ## Start daemon with startproc(8). If this fails
+        ## the echo return value is set appropriate.
+        startproc $SBIN $CONF
+        # Remember status and be verbose
+        rc_status -v
+    ;;
+    stop)
+        echo -n "Shutting down ${WHAT} "
+        ## Stop daemon with killproc(8) and if this fails
+        ## set echo the echo return value.
+        killproc -TERM $SBIN
+        # Remember status and be verbose
+        rc_status -v
+    ;;
+    restart)
+        ## Stop the service and regardless of whether it was
+        ## running or not, start it again.
+        $0 stop
+        $0 start
+        # Remember status and be quiet
+        rc_status
+    ;;
+    status)
+        echo -n "Checking for ${WHAT} "
+        checkproc $SBIN
+        rc_status -v
+    ;;
 
-# -- process request --
-case "${1}" in
-   start)
-      echo -n "Starting ${_what} ${_cnf}."
-
-      "${_srv}" "${_cfg}"
-
-      rc_status -v
-   ;;
-   stop)
-      echo -n "Shutting down ${_what}: "
-
-      "${_clnt}" +QUIT
-
-      rc_status -v
-   ;;
-   try-restart)
-      ${0} status 1>/dev/null && ${0} restart
-
-      rc_status
-   ;;
-   restart)
-      ${0} stop; sleep 3
-
-      ${0} start
-
-      rc_status
-   ;;
-   status)
-      echo -n "Checking ${_what}: "
-
-      "${_clnt}" +VERSION
-
-      rc_status -v
-
-      test -s "${_pid}" && echo "ProcessID claims to be: $(cat ${_pid})."
-   ;;
-   *)
-      (echo; echo "Usage: ${0} {start|stop|status|try-restart|restart}") 2>&1
-
-      exit 1
-   ;;
+    *)
+        echo "Usage: $0 {start|stop|status|restart}"
+        exit 1
+    ;;
 esac
-
-
-# -- inform caller --
 rc_exit
-
-
-# -- end of clamd --
+### END

@@ -118,12 +118,12 @@ cl_node *root)
     /* prepare the buffer */
     buffsize = root->maxpatlen + SCANBUFF;
     if(!(buffer = (char *) cli_calloc(buffsize, sizeof(char)))) {
-	cli_dbgmsg("cli_scandesc(): unable to malloc(%d)\n", buffsize);
+	cli_dbgmsg("cli_scandesc(): unable to cli_malloc(%d)\n", buffsize);
 	return CL_EMEM;
     }
 
     if((partcnt = (int *) cli_calloc(root->partsigs + 1, sizeof(int))) == NULL) {
-	cli_dbgmsg("cl_scandesc(): unable to calloc(%d, %d)\n", root->partsigs + 1, sizeof(int));
+	cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%d, %d)\n", root->partsigs + 1, sizeof(int));
 	free(buffer);
 	return CL_EMEM;
     }
