@@ -1,3 +1,7 @@
+Thu Apr  1 11:37:25 BST 2004 (trog)
+-----------------------------------
+  * clamd: add writen() function for wrapping write()
+
 Wed Mar 31 22:00:05 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Handle new location of config file parser
@@ -22,6 +26,7 @@ Tue Mar 30 23:18:49 CEST 2004 (tk)
 Tue Mar 30 08:40:10 BST 2004 (trog)
 -----------------------------------
   * clamav.conf, shared/cfgparser.c: recognise ReadTimeout option
+	remove ThreadTimeout option
 
 Mon Mar 29 18:11:08 CEST 2004 (tk)
 ----------------------------------

@@ -30,5 +30,6 @@
 int poll_fd(int fd, int timeout_sec);
 int is_fd_connected(int fd);
 void virusaction(const char *filename, const char *virname, const struct cfgstruct *copt);
+int writen(int fd, void *buff, unsigned int count);
 
 #endif

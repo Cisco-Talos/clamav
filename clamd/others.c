@@ -182,3 +182,30 @@ int is_fd_connected(int fd)
     return 1;
 #endif
 }
+
+/* Function: writen
+	Try hard to write the specified number of bytes
+*/
+int writen(int fd, void *buff, unsigned int count)
+{
+	int retval;
+	unsigned int todo;
+	unsigned char *current;
+ 
+    todo = count;
+    current = (unsigned char *) buff;
+ 
+    do {
+	retval = write(fd, current, todo);
+	if (retval < 0) {
+	    if (errno == EINTR) {
+		continue;
+	    }
+	    return -1;
+	}
+	todo -= retval;
+	current += retval;
+    } while (todo > 0);
+ 
+    return count;
+}
