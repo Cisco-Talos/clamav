@@ -73,7 +73,7 @@ static const struct cli_magic_s cli_magic[] = {
 
     /* Executables */
 
-    /* {0,  "MZ",				2,  "DOS/W32 executable", CL_DOSEXE}, */
+    {0,  "MZ",				2,  "DOS/W32 executable", CL_DOSEXE},
 
     /* Archives */
 
@@ -401,8 +401,9 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	}
 
 	if(limits && limits->maxratio > 0 && ((unsigned) zdirent.st_size / (unsigned) zdirent.d_csize) >= limits->maxratio) {
-            files++;
-            continue;
+	    *virname = "Oversized.Zip";
+	    ret = CL_VIRUS;
+	    break;
         }
 
 	/* work-around for problematic zips (zziplib crashes with them) */
@@ -965,6 +966,12 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
     if(!root) {
 	cli_errmsg("root == NULL\n");
 	return -1;
+    }
+
+    if(!options) { /* raw mode (stdin, etc.) */
+	if((ret = cli_scandesc(desc, virname, scanned, root) == CL_VIRUS))
+	    cli_dbgmsg("%s virus found in descriptor %d.\n", *virname, desc);
+	return ret;
     }
 
     if(SCAN_ARCHIVE && limits && limits->maxreclevel)

@@ -134,6 +134,7 @@ install_sh = @install_sh@
 
 @BUILD_CLAMD_TRUE@clamdscan_LDADD = $(top_builddir)/clamscan/options.o $(top_builddir)/clamscan/getopt.o
 
+DEFS = @DEFS@ -DCL_NOTHREADS
 INCLUDES = -I$(top_srcdir)/clamscan -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 LIBS = -L$(top_builddir)/libclamav -lclamav @FRESHCLAM_LIBS@ @ADDITIONAL_LIBS@
 subdir = clamdscan
@@ -153,8 +154,6 @@ clamdscan_OBJECTS = $(am_clamdscan_OBJECTS)
 @BUILD_CLAMD_TRUE@	$(top_builddir)/clamscan/getopt.o
 @BUILD_CLAMD_FALSE@clamdscan_DEPENDENCIES =
 clamdscan_LDFLAGS =
-
-DEFS = @DEFS@
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@

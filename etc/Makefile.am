@@ -23,8 +23,8 @@ CFGINST = @CFGDIR@
 install:
 	$(mkinstalldirs) $(DESTDIR)$(CFGINST)
 if INSTALL_CLAMAV_CONF
-	@$(INSTALL_DATA) clamav.conf $(DESTDIR)$(CFGINST)
+	@$(INSTALL_DATA) $(srcdir)/clamav.conf $(DESTDIR)$(CFGINST)
 endif
 if INSTALL_FRESHCLAM_CONF
-	@$(INSTALL_DATA) freshclam.conf $(DESTDIR)$(CFGINST)
+	@$(INSTALL_DATA) $(srcdir)/freshclam.conf $(DESTDIR)$(CFGINST)
 endif
