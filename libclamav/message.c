@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.135  2005/01/01 12:52:58  nigelhorne
+ * Some uuencoded viruses were getting through
+ *
  * Revision 1.134  2004/12/19 23:19:54  nigelhorne
  * Tidy
  *
@@ -399,7 +402,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.134 2004/12/19 23:19:54 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.135 2005/01/01 12:52:58 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -484,6 +487,7 @@ static	const	struct	encoding_map {
 	{	"x-binhex",		BINHEX		},
 	{	"us-ascii",		NOENCODING	},	/* incorrect */
 	{	"x-uue",		UUENCODE	},	/* incorrect */
+	{	"uuencode",		UUENCODE	},	/* incorrect */
 	{	NULL,			NOENCODING	}
 };
 
@@ -1042,6 +1046,8 @@ messageSetEncoding(message *m, const char *enctype)
 	while((*enctype == '\t') || (*enctype == ' '))
 		enctype++;
 
+	cli_dbgmsg("messageSetEncoding: '%s'\n", enctype);
+
 	if(strcasecmp(enctype, "8 bit") == 0) {
 		cli_dbgmsg("Broken content-transfer-encoding: '8 bit' changed to '8bit'\n");
 		enctype = "8bit";
@@ -1378,8 +1384,8 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 
 	if((t_line = binhexBegin(m)) != NULL) {
 		unsigned char byte;
-		unsigned long len, l, newlen = 0L;
-		unsigned char *uptr, *data;
+		unsigned long newlen = 0L, len, l;
+		unsigned char *data;
 		char *ptr;
 		int bytenumber;
 		blob *tmp;
@@ -1400,13 +1406,6 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		/* 70-7f */	0x3d,0x3e,0x3f,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
 		};
 
-		tmp = blobCreate();
-
-		if(tmp == NULL) {
-			(*destroy)(ret);
-			return NULL;
-		}
-
 		/*
 		 * Decode BinHex4. First create a temporary blob which contains
 		 * the encoded message. Then decode that blob to the target
@@ -1414,11 +1413,15 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		 *
 		 * See RFC1741
 		 */
-		while((t_line = t_line->t_next) != NULL)
-			if(t_line->t_line) {
-				const char *d = lineGetData(t_line->t_line);
-				blobAddData(tmp, (unsigned char *)d, strlen(d));
-			}
+		while(((t_line = t_line->t_next) != NULL) &&
+		      (t_line->t_line == NULL))
+			;
+
+		tmp = textToBlob(t_line, NULL);
+		if(tmp == NULL) {
+			(*destroy)(ret);
+			return NULL;
+		}
 
 		data = blobGetData(tmp);
 
@@ -1428,92 +1431,89 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			(*destroy)(ret);
 			return NULL;
 		}
-		if(data[0] != ':') {
-			/*
-			 * TODO: Need an example of this before I can be
-			 * sure it works
-			 * Possibly data[0] = '#'
-			 */
-			cli_warnmsg("8 bit binhex code is not yet supported\n");
-			blobDestroy(tmp);
-			(*destroy)(ret);
-			return NULL;
-		}
-
 		len = blobGetDataSize(tmp);
 
-		/*
-		 * FIXME: this is dirty code, modification of the contents
-		 * of a member of the blob object should be done through blob.c
-		 *
-		 * Convert 7 bit data into 8 bit
-		 */
-		cli_dbgmsg("decode HQX7 message (%lu bytes)\n", len);
-
-		uptr = cli_malloc(len);
-		if(uptr == NULL) {
-			blobDestroy(tmp);
-			(*destroy)(ret);
-			return NULL;
-		}
-		memcpy(uptr, data, len);
-		bytenumber = 0;
-
-		/*
-		 * uptr now contains the encoded (7bit) data - len bytes long
-		 * data will contain the unencoded (8bit) data
-		 */
-		for(l = 1; l < len; l++) {
-			unsigned char c = uptr[l];
-
-			if(c == ':')
-				break;
-
-			if((c == '\n') || (c == '\r'))
-				continue;
-
-			if((c < 0x20) || (c > 0x7f) || (hqxtbl[c] == 0xff)) {
-				cli_warnmsg("Invalid HQX7 character '%c' (0x%02x)\n", c, c);
-				break;
-			}
-			c = hqxtbl[c];
-			assert(c <= 63);
+		if(data[0] == ':') {
+			unsigned char *uptr;
+			/* 7 bit (ala RFC1741) */
 
 			/*
-			 * These masks probably aren't needed, but
-			 * they're here to verify the code is correct
+			 * FIXME: this is dirty code, modification of the
+			 * contents of a member of the blob object should be
+			 * done through blob.c
+			 *
+			 * Convert 7 bit data into 8 bit
 			 */
-			switch(bytenumber) {
-				case 0:
-					data[newlen] = (c << 2) & 0xFC;
-					bytenumber = 1;
-					break;
-				case 1:
-					data[newlen++] |= (c >> 4) & 0x3;
-					data[newlen] = (c << 4) & 0xF0;
-					bytenumber = 2;
-					break;
-				case 2:
-					data[newlen++] |= (c >> 2) & 0xF;
-					data[newlen] = (c << 6) & 0xC0;
-					bytenumber = 3;
-					break;
-				case 3:
-					data[newlen++] |= c & 0x3F;
-					bytenumber = 0;
-					break;
+			cli_dbgmsg("decode HQX7 message (%lu bytes)\n", len);
+
+			uptr = cli_malloc(len);
+			if(uptr == NULL) {
+				blobDestroy(tmp);
+				(*destroy)(ret);
+				return NULL;
 			}
+			memcpy(uptr, data, len);
+			bytenumber = 0;
+
+			/*
+			 * uptr now contains the encoded (7bit) data - len bytes long
+			 * data will contain the unencoded (8bit) data
+			 */
+			for(l = 1; l < len; l++) {
+				unsigned char c = uptr[l];
+
+				if(c == ':')
+					break;
+
+				if((c == '\n') || (c == '\r'))
+					continue;
+
+				if((c < 0x20) || (c > 0x7f) || (hqxtbl[c] == 0xff)) {
+					cli_warnmsg("Invalid HQX7 character '%c' (0x%02x)\n", c, c);
+					break;
+				}
+				c = hqxtbl[c];
+				assert(c <= 63);
+
+				/*
+				 * These masks probably aren't needed, but
+				 * they're here to verify the code is correct
+				 */
+				switch(bytenumber) {
+					case 0:
+						data[newlen] = (c << 2) & 0xFC;
+						bytenumber = 1;
+						break;
+					case 1:
+						data[newlen++] |= (c >> 4) & 0x3;
+						data[newlen] = (c << 4) & 0xF0;
+						bytenumber = 2;
+						break;
+					case 2:
+						data[newlen++] |= (c >> 2) & 0xF;
+						data[newlen] = (c << 6) & 0xC0;
+						bytenumber = 3;
+						break;
+					case 3:
+						data[newlen++] |= c & 0x3F;
+						bytenumber = 0;
+						break;
+				}
+			}
+
+			cli_dbgmsg("decoded HQX7 message (now %lu bytes)\n", newlen);
+
+			/*
+			 * Throw away the old encoded (7bit) data
+			 * data now points to the encoded (8bit) data - newlen bytes
+			 *
+			 * The data array may contain repetitive characters
+			 */
+			free(uptr);
+		} else {
+			cli_warnmsg("HQX8 messages not yet supported - send to bugs@clamav.net\n", len);
+			newlen = len;
 		}
-
-		cli_dbgmsg("decoded HQX7 message (now %lu bytes)\n", newlen);
-
-		/*
-		 * Throw away the old encoded (7bit) data
-		 * data now points to the encoded (8bit) data - newlen bytes
-		 *
-		 * The data array may contain repetitive characters
-		 */
-		free(uptr);
 
 		/*
 		 * Uncompress repetitive characters
@@ -1700,7 +1700,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		/*
 		 * Find the filename to decode
 		 */
-		if((enctype == UUENCODE) || ((enctype == NOENCODING) && (i == 0) && uuencodeBegin(m))) {
+		if((enctype == UUENCODE) || uuencodeBegin(m)) {
 			t_line = uuencodeBegin(m);
 
 			if(t_line == NULL) {
