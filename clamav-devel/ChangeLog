@@ -1,3 +1,7 @@
+Thu Oct  7 12:18:59 BST 2004 (trog)
+-----------------------------------
+  * libclamav/filetypes.c: Add more HTML markers
+
 Thu Oct  7 03:03:26 CEST 2004 (tk)
 ----------------------------------
   * configure: disable support for readdir_r by default (can be enabled with
