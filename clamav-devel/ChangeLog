@@ -1,3 +1,8 @@
+Sun Oct 17 15:31:59 CEST 2004 (tk)
+----------------------------------
+  * libclamav/chmunpack.c: better handling of broken files (problem reported
+			   by Tomasz Papszun)
+
 Sun Oct 17 10:30:36 BST 2004 (njh)
 ----------------------------------
   * libclamav:		Added advice to report mails that can't be scanned
