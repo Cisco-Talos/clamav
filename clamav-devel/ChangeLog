@@ -1,3 +1,7 @@
+Wed May 19 09:10:12 BST 2004 (trog)
+-----------------------------------
+  * libclamav/ole2_extract.c: use mmap() when available.
+
 Tue May 18 23:14:28 CEST 2004 (tk)
 ----------------------------------
   V 0.71
