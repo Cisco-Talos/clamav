@@ -20,6 +20,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.12  2004/10/04 10:53:15  nigelhorne
+ * Handle tar files less than 512 bytes
+ *
  * Revision 1.11  2004/10/01 13:50:47  nigelhorne
  * Minor code tidy
  *
@@ -54,7 +57,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.11 2004/10/01 13:50:47 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.12 2004/10/04 10:53:15 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -106,7 +109,7 @@ cli_untar(const char *dir, int desc)
 	int size = 0;
 	int in_block = 0;
 	char fullname[NAME_MAX + 1];
-	FILE *outfile = (FILE*)0;
+	FILE *outfile = NULL;
 
 	cli_dbgmsg("In untar(%s, %d)\n", dir ? dir : "", desc);
 
@@ -117,10 +120,10 @@ cli_untar(const char *dir, int desc)
 		if(!in_block && nread == 0)
 			break;
 
-		if(nread != BLOCKSIZE) {
+		if(nread < 0) {
 			if(outfile)
 				fclose(outfile);
-			cli_errmsg("cli_untar: incomplete block read\n");
+			cli_errmsg("cli_untar: block read error\n");
 			return CL_EIO;
 		}
 
