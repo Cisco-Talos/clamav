@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.11  2004/04/17 14:18:58  nigelhorne
+ * Some filenames not scanned in MACOS/X
+ *
  * Revision 1.10  2004/03/25 22:40:46  nigelhorne
  * Removed even more calls to realloc and some duplicated code
  *
@@ -32,7 +35,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.10 2004/03/25 22:40:46 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.11 2004/04/17 14:18:58 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -118,6 +121,8 @@ blobSetFilename(blob *b, const char *filename)
 		for(ptr = b->name; *ptr; ptr++) {
 #if	defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32)
 			if(strchr("*?<>|\"+=,;: ", *ptr))
+#elif   defined(C_DARWIN)
+			if((*ptr == '/') || (*ptr >= '\200'))
 #else
 			if(*ptr == '/')
 #endif
