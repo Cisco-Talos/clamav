@@ -1,3 +1,7 @@
+Thu Jul 29 02:43:13 CEST 2004 (tk)
+----------------------------------
+  * configure: improve gethostbyname_r check; cleanups
+
 Wed Jul 28 22:21:10 CEST 2004 (tk)
 ----------------------------------
   * clamdscan: fix stdin scanning in local mode (patch by Stephen Gran

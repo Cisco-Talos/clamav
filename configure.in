@@ -42,11 +42,11 @@ AC_TYPE_OFF_T
 AC_COMPILE_CHECK_SIZEOF(short)
 AC_COMPILE_CHECK_SIZEOF(int)
 AC_COMPILE_CHECK_SIZEOF(long)
-AC_CHECK_FUNCS(poll setsid memcpy snprintf vsnprintf strerror_r strlcpy strlcat inet_ntop setgroups initgroups gethostbyname_r)
+AC_CHECK_FUNCS(poll setsid memcpy snprintf vsnprintf strerror_r strlcpy strlcat inet_ntop setgroups initgroups)
 AC_FUNC_MMAP
 AC_FUNC_FSEEKO
 
-# Check for broken snprintf
+dnl Check for broken snprintf (code from Phil Oleson <oz*nixil.net>)
 if test "x$ac_cv_func_snprintf" = "xyes" ; then
         AC_MSG_CHECKING([whether snprintf correctly terminates long strings])
         AC_TRY_RUN(
@@ -66,7 +66,7 @@ fi
 have_pthreads=no
 AC_CHECK_HEADER(pthread.h,[have_pthreads=yes],)
 
-AC_CHECK_HEADER(zlib.h,[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lz"; AC_DEFINE(HAVE_ZLIB_H,1,zlib installed)],[echo "Please install zlib and zlib-devel packages."; exit 1])
+AC_CHECK_HEADER(zlib.h,[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lz"; AC_DEFINE(HAVE_ZLIB_H,1,zlib installed)],AC_MSG_ERROR(Please install zlib and zlib-devel packages))
 
 want_bzip2="yes"
 AC_ARG_ENABLE(bzip2,
@@ -75,8 +75,8 @@ want_bzip2="no",)
 
 if test "$want_bzip2" = "yes"
 then
-    AC_CHECK_HEADER(bzlib.h,[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lbz2"; AC_DEFINE(HAVE_BZLIB_H,1,have bzip2)],[echo "WARNING: Bzip2 support disabled"])
     AC_CHECK_LIB(bz2, bzReadOpen, AC_DEFINE(NOBZ2PREFIX,1,bzip funtions do not have bz2 prefix),)
+    AC_CHECK_HEADER(bzlib.h,[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lbz2"; AC_DEFINE(HAVE_BZLIB_H,1,have bzip2)], AC_MSG_WARN([****** bzip2 support disabled]))
 fi
 
 want_clamuko="yes"
@@ -97,7 +97,7 @@ want_dsig="no",)
 
 if test "$want_dsig" = "yes"
 then
-    AC_CHECK_LIB(gmp, __gmpz_init, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; AC_DEFINE(HAVE_GMP,1,have gmp installed)], [AC_CHECK_LIB(gmp, mpz_init, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; AC_DEFINE(HAVE_GMP,1,have gmp installed)], [echo "WARNING: GNU MP 2 or newer NOT FOUND - digital signature support will be disabled !"; want_dsig="no"])])
+    AC_CHECK_LIB(gmp, __gmpz_init, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; AC_DEFINE(HAVE_GMP,1,have gmp installed)], [AC_CHECK_LIB(gmp, mpz_init, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; AC_DEFINE(HAVE_GMP,1,have gmp installed)], AC_MSG_WARN([****** GNU MP 2 or newer NOT FOUND - digital signature support will be disabled !]); want_dsig="no")])
 fi
 
 AC_CHECK_HEADER(syslog.h,AC_DEFINE(USE_SYSLOG,1,[use syslog]),)
@@ -174,7 +174,7 @@ AC_DEFINE_UNQUOTED(DATADIR,"$db_dir", [Path to virus database directory.])
 DBDIR="$db_dir"
 AC_SUBST(DBDIR)
 
-# config file
+dnl configure config directory
 cfg_dir=`echo $sysconfdir | grep prefix`
 
 if test -n "$cfg_dir"; then
@@ -196,15 +196,12 @@ dnl Do not overwrite current config files
 AM_CONDITIONAL(INSTALL_CLAMAV_CONF, test ! -r "$cfg_dir/clamav.conf")
 AM_CONDITIONAL(INSTALL_FRESHCLAM_CONF, test ! -r "$cfg_dir/freshclam.conf")
 
-# check for in_port_t definition
+dnl check for in_port_t definition
 AC_TRY_RUN([
 #include <sys/types.h>
 #include <netinet/in.h>
 int main(int argc, char **argv) { in_port_t pt; pt = 0; return pt; }
 ], AC_DEFINE(HAVE_IN_PORT_T,1,[in_port_t is defined]), AC_MSG_RESULT(in_port_t is not defined))
-
-AC_CHECK_LIB(socket, bind, [LIBS="$LIBS -lsocket"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsocket"; LDFLAGS="$LDFLAGS -lsocket"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsocket"; CLAMD_LIBS="$CLAMD_LIBS -lsocket"])
-AC_CHECK_LIB(nsl, gethostent, [LIBS="$LIBS -lnsl"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lnsl"; LDFLAGS="$LDFLAGS -lnsl"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lnsl"; CLAMD_LIBS="$CLAMD_LIBS -lnsl"])
 
 case "$target_os" in
 linux*)
@@ -381,19 +378,22 @@ AC_SUBST(FRESHCLAM_LIBS)
 AC_SUBST(TH_SAFE)
 AC_SUBST(ADDITIONAL_LIBS)
 
-# --enable-milter
-if test "$have_milter" = "yes"; then
-    # libmilter checking code adapted from spamass-milter by
-    # Tom G. Christensen <tgc@statsbiblioteket.dk>
+AC_CHECK_LIB(socket, bind, [LIBS="$LIBS -lsocket"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsocket"; LDFLAGS="$LDFLAGS -lsocket"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsocket"; CLAMD_LIBS="$CLAMD_LIBS -lsocket"])
+AC_CHECK_LIB(nsl, gethostent, [LIBS="$LIBS -lnsl"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lnsl"; LDFLAGS="$LDFLAGS -lnsl"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lnsl"; CLAMD_LIBS="$CLAMD_LIBS -lnsl"])
 
-    # Check for libmilter and it's header files in the usual locations
+dnl --enable-milter
+if test "$have_milter" = "yes"; then
+    dnl libmilter checking code adapted from spamass-milter by
+    dnl Tom G. Christensen <tgc@statsbiblioteket.dk>
+
+    dnl Check for libmilter and it's header files in the usual locations
     save_LDFLAGS="$LDFLAGS"
     if test -d /usr/lib/libmilter ; then
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -L/usr/lib/libmilter"
     fi
     LDFLAGS="$LDFLAGS -lmilter $CLAMAV_MILTER_LIBS"
     AC_CHECK_LIB(milter, mi_stop,[CLAMAV_MILTER_LIBS="-lmilter $CLAMAV_MILTER_LIBS"],[
-	# Older sendmails require libsm or libsmutil for support functions
+	dnl Older sendmails require libsm or libsmutil for support functions
 	AC_SEARCH_LIBS(strlcpy, [sm smutil], [test "$ac_cv_search_strlcpy" = "none required" || CLAMAV_MILTER_XLIB="$ac_cv_search_strlcpy"])
 	LDFLAGS="$save_LDFLAGS $CLAMAV_MILTER_LIBS $CLAMAV_MILTER_XLIB"
 	$as_unset ac_cv_lib_milter_mi_stop
@@ -420,8 +420,8 @@ then
     AC_PATH_PROG(SENDMAIL, sendmail, /usr/lib/sendmail, $PATH:/usr/lib:/usr/sbin:/etc:/usr/local/lib:/usr/local/sbin:/usr/bin:/usr/local/bin)
 fi
 
-# tcpwrappers support
-# rules from http://ma.ph-freiburg.de/tng/tng-technical/2002-01/msg00094.html
+dnl tcpwrappers support
+dnl rules from http://ma.ph-freiburg.de/tng/tng-technical/2002-01/msg00094.html
 AC_ARG_WITH(tcpwrappers,
 [  --with-tcpwrappers      Support hosts.allow / hosts.deny (default=auto)],
 [ case "$withval" in
@@ -474,20 +474,78 @@ hosts_access(req)
         fi
 fi
 
-dnl Check for clamav in /etc/passwd
+dnl Check for gethostbyname_r and number of its arguments
+dnl Code from libwww/configure.in
+AC_MSG_CHECKING(for gethostbyname_r)
+if test -z "$ac_cv_gethostbyname_args"; then
+AC_TRY_COMPILE(
+[
+#include <sys/types.h>
+#include <netdb.h>
+],[
+struct hostent *hp;
+struct hostent h;
+char *name;
+char buffer[10];
+int  h_errno;
+hp = gethostbyname_r(name, &h, buffer, 10, &h_errno);
+], ac_cv_gethostbyname_args=5)
+fi
+if test -z "$ac_cv_gethostbyname_args"; then
+AC_TRY_COMPILE(
+[
+#include <sys/types.h>
+#include <netdb.h>
+],[
+struct hostent h;
+struct hostent_data hdata;
+char *name;
+int  rc;
+rc = gethostbyname_r(name, &h, &hdata);
+], ac_cv_gethostbyname_args=3)
+fi
+if test -z "$ac_cv_gethostbyname_args"; then
+AC_TRY_COMPILE(
+[
+#include <sys/types.h>
+#include <netdb.h>
+], [
+struct hostent h;
+struct hostent *hp;
+char *name;
+char buf[10];
+int rc;
+int h_errno;
 
+rc = gethostbyname_r(name, &h, buf, 10, &hp, &h_errno);
+], ac_cv_gethostbyname_args=6)
+fi
+if test -z "$ac_cv_gethostbyname_args"; then
+    AC_MSG_RESULT(no)
+else
+    if test "$ac_cv_gethostbyname_args" = 3; then
+	AC_DEFINE(HAVE_GETHOSTBYNAME_R_3,1,[gethostbyname_r takes 3 arguments])
+    elif test "$ac_cv_gethostbyname_args" = 5; then
+	AC_DEFINE(HAVE_GETHOSTBYNAME_R_5,1,[gethostbyname_r takes 5 arguments])
+    elif test "$ac_cv_gethostbyname_args" = 6; then
+	AC_DEFINE(HAVE_GETHOSTBYNAME_R_6,1,[gethostbyname_r takes 6 arguments])
+    fi
+    AC_MSG_RESULT([yes, and it takes $ac_cv_gethostbyname_args arguments])
+fi
+
+dnl Check for clamav in /etc/passwd
 if test "$test_clamav" = "yes"
 then
-    # parse /etc/passwd
-    if test "$use_id" = no
+    dnl parse /etc/passwd
+    if test "$use_id" = "no"
     then
-	AC_MSG_RESULT(Checking /etc/passwd...)
+	AC_MSG_CHECKING(for $clamav_user in /etc/passwd)
 	if test -r /etc/passwd; then
-	    clamavuser=`cat /etc/passwd|grep ${clamav_user}`
-	    clamavgroup=`cat /etc/group|grep ${clamav_group}`
+	    clamavuser=`cat /etc/passwd|grep $clamav_user`
+	    clamavgroup=`cat /etc/group|grep $clamav_group`
 	fi
     else
-	AC_MSG_RESULT(Checking id output...)
+	AC_MSG_CHECKING(for $clamav_user using id)
 	id $clamav_user > /dev/null 2>&1
 	if test "$?" = 0 ; then
 	    clamavuser=1
@@ -502,23 +560,26 @@ then
 
     if test "$use_netinfo" = "yes"
     then
+	AC_MSG_CHECKING(for $clamav_user using netinfo)
         clamavuser=`/usr/bin/nidump passwd . |grep ${clamav_user}`
         clamavgroup=`/usr/bin/nidump group . |grep ${clamav_group}`
     fi
 
     if test "$use_yp" = "yes"
     then
+	AC_MSG_CHECKING(for $clamav_user using ypmatch)
         clamavuser=`ypmatch ${clamav_user} passwd`
         clamavgroup=`ypmatch ${clamav_group} group`
     fi
 
     if test -z "$clamavuser" || test -z "$clamavgroup"
     then
-        echo "ERROR: User \"$clamav_user\" (and/or group \"$clamav_group\") doesn't exist. Please create it. You can omit this check with the --disable-clamav option."
-        exit 1
+	AC_MSG_RESULT(no)
+	AC_MSG_ERROR(User $clamav_user (and/or group $clamav_group) doesn't exist. Please read the documentation !)
     else
-        CLAMAVUSER="${clamav_user}"
-        CLAMAVGROUP="${clamav_group}"
+	AC_MSG_RESULT([yes, user $clamav_user and group $clamav_group])
+        CLAMAVUSER="$clamav_user"
+        CLAMAVGROUP="$clamav_group"
         AC_SUBST(CLAMAVUSER)
         AC_SUBST(CLAMAVGROUP)
     fi
@@ -563,7 +624,7 @@ if test "$have_attrib_packed" = yes; then
 	AC_DEFINE(HAVE_ATTRIB_PACKED, 1, "attrib packed")
 fi
 
-# Check if <sys/select.h> needs to be included for fd_set
+dnl Check if <sys/select.h> needs to be included for fd_set
 AC_MSG_CHECKING([for fd_set])
 AC_TRY_COMPILE([#include <sys/types.h>],
         [fd_set readMask, writeMask;], have_fd_set=yes, have_fd_set=no)
@@ -580,7 +641,7 @@ else
     fi
 fi
 
-AC_MSG_CHECKING(Default FD_SETSIZE value)
+AC_MSG_CHECKING(default FD_SETSIZE value)
 AC_TRY_RUN([
 #include <stdio.h>
 #include <unistd.h>
