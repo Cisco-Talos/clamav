@@ -45,6 +45,7 @@
 #include "freshclam.h"
 #include "output.h"
 #include "target.h"
+#include "misc.h"
 
 static short terminate = 0;
 
@@ -188,7 +189,7 @@ int freshclam(struct optstruct *opt)
 	mprintf_stdout = 1;
 
     if(optc(opt, 'V')) {
-	mprintf("freshclam / ClamAV version "VERSION"\n");
+	print_version();
 	exit(0);
     }
 

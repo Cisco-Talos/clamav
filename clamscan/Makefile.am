@@ -27,6 +27,8 @@ clamscan_SOURCES = \
     $(top_srcdir)/shared/memory.h \
     $(top_srcdir)/shared/cfgparser.c \
     $(top_srcdir)/shared/cfgparser.h \
+    $(top_srcdir)/shared/misc.c \
+    $(top_srcdir)/shared/misc.h \
     clamscan.c \
     options.c \
     options.h \

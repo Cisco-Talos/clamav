@@ -54,6 +54,7 @@
 #include "output.h"
 #include "shared.h"
 #include "target.h"
+#include "misc.h"
 
 void help(void);
 void daemonize(void);
@@ -75,7 +76,7 @@ void clamd(struct optstruct *opt)
     /* initialize some important variables */
 
     if(optc(opt, 'V')) {
-	printf("clamd / ClamAV version "VERSION"\n");
+	print_version();
 	exit(0);
     }
 

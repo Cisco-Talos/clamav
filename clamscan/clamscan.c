@@ -33,6 +33,7 @@
 #include "manager.h"
 #include "defaults.h"
 #include "treewalk.h"
+#include "misc.h"
 
 #include "output.h"
 
@@ -79,7 +80,7 @@ int clamscan(struct optstruct *opt)
     }
 
     if(optc(opt, 'V')) {
-	mprintf("clamscan / ClamAV version "VERSION"\n");
+	print_version();
 	return 0;
     }
 
