@@ -138,6 +138,7 @@ int poll_fd(int fd, int timeout_sec)
 
 int is_fd_connected(int fd)
 {
+#undef HAVE_POLL /* temporarily disabled */
 #ifdef HAVE_POLL
 	struct pollfd poll_data[1];
 
@@ -146,7 +147,7 @@ int is_fd_connected(int fd)
     poll_data[0].revents = 0;
 
     if (poll(poll_data, 1, 0) == -1) {
-	return 1;
+	return 0;
     }
     if (poll_data[0].revents & POLLHUP) {
 	return 0;
