@@ -116,18 +116,20 @@ static const struct cli_smagic_s cli_smagic[] = {
     {"46726f6d3a20*436f6e74656e742d547970653a20",    "Mail file", CL_MAILFILE},
 
     /* remember the matcher is case sensitive */
-    {"3c62723e",    "HTML data", CL_HTMLFILE},	/* <br> */
-    {"3c42723e",    "HTML data", CL_HTMLFILE},	/* <Br> */
-    {"3c42523e",    "HTML data", CL_HTMLFILE},	/* <BR> */
-    {"3c703e",	    "HTML data", CL_HTMLFILE},	/* <p> */
-    {"3c503e",	    "HTML data", CL_HTMLFILE},	/* <P> */
-    {"68726566",    "HTML data", CL_HTMLFILE},	/* href */
-    {"48726566",    "HTML data", CL_HTMLFILE},	/* Href */
-    {"48524546",    "HTML data", CL_HTMLFILE},	/* HREF */
-    {"3c666f6e74",  "HTML data", CL_HTMLFILE},	/* <font */
-    {"3c466f6e74",  "HTML data", CL_HTMLFILE},	/* <Font */
-    {"3c464f4e54",  "HTML data", CL_HTMLFILE},	/* <FONT */
-
+    {"3c62723e",       "HTML data", CL_HTMLFILE},	/* <br> */
+    {"3c42723e",       "HTML data", CL_HTMLFILE},	/* <Br> */
+    {"3c42523e",       "HTML data", CL_HTMLFILE},	/* <BR> */
+    {"3c703e",	       "HTML data", CL_HTMLFILE},	/* <p> */
+    {"3c503e",	       "HTML data", CL_HTMLFILE},	/* <P> */
+    {"68726566",       "HTML data", CL_HTMLFILE},	/* href */
+    {"48726566",       "HTML data", CL_HTMLFILE},	/* Href */
+    {"48524546",       "HTML data", CL_HTMLFILE},	/* HREF */
+    {"3c666f6e74",     "HTML data", CL_HTMLFILE},	/* <font */
+    {"3c466f6e74",     "HTML data", CL_HTMLFILE},	/* <Font */
+    {"3c464f4e54",     "HTML data", CL_HTMLFILE},	/* <FONT */
+    {"3c736372697074", "HTML data", CL_HTMLFILE},	/* <script */
+    {"3c536372697074", "HTML data", CL_HTMLFILE},	/* <Script */
+    {"3c534352495054", "HTML data", CL_HTMLFILE},	/* <SCRIPT */
 
     {NULL,  NULL,   CL_UNKNOWN_TYPE}
 };

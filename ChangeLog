@@ -1,3 +1,9 @@
+Mon Jul 12 16:03:11 BST 2004 (trog)
+-----------------------------------
+  * libclamav/htmlnorm.c: fix decoding of hex char encoding
+	(spotted by Tomasz Klim)
+  * libclamav/filetypes.c: add '<script' tags to HTML rule set
+
 Sun Jul 11 16:39:42 CEST 2004 (tk)
 ----------------------------------
   * libclamav: scanners: scan raw executables before trying to unpack them
