@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.96  2004/08/10 08:14:00  nigelhorne
+ * Enable CHECKURL
+ *
  * Revision 1.95  2004/08/09 21:37:21  kojm
  * libclamav: add new option CL_MAILURL
  *
@@ -273,7 +276,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.95 2004/08/09 21:37:21 kojm Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.96 2004/08/10 08:14:00 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -303,6 +306,8 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.95 2004/08/09 21:37:21 kojm Exp $";
 #include <sys/types.h>
 #include <sys/param.h>
 #include <clamav.h>
+
+#include <curl/curl.h>
 
 #ifdef	CL_THREAD_SAFE
 #include <pthread.h>
@@ -346,6 +351,10 @@ static	void	print_trace(int use_syslog);
 #undef FALSE
 #endif
 
+#define	SAVE_TO_DISC	/* multipart/message are saved in a temporary file */
+#define	CHECKURLS	/* If an email contains URLs, check them */
+/*#define	LIBCURL	/* Needs support from "configure" */
+
 typedef enum    { FALSE = 0, TRUE = 1 } bool;
 
 static	message	*parseEmailHeaders(message *m, const table_t *rfc821Table, bool destroy);
@@ -360,7 +369,14 @@ static	bool	continuationMarker(const char *line);
 static	int	parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg);
 static	void	saveTextPart(message *m, const char *dir);
 static	bool	saveFile(const blob *b, const char *dir);
+
+#ifdef	CHECKURLS
 static	void	checkURLs(message *m, const char *dir);
+#ifdef	LIBCURL
+static	void	getURL(const char *url, const char *dir, const char *filename);
+#endif
+#endif
+
 
 /* Maximum number of attachments that we accept */
 #define	MAX_ATTACHMENTS	10
@@ -437,9 +453,6 @@ static	table_t	*rfc821Table, *subtypeTable;
 #ifndef	O_BINARY
 #define	O_BINARY	0
 #endif
-
-#define	SAVE_TO_DISC	/* multipart/message are saved in a temporary file */
-#define SCAN_MAILURL	(options & CL_MAILURL)
 
 /*
  * TODO: when signal handling is added, need to remove temp files when a
@@ -1269,7 +1282,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 									addAttachment = TRUE;
 								}
 							} else {
-								if(SCAN_MAILURL)
+								/*if(options&CL_MAILURL) */
 									checkURLs(aMessage, dir);
 								messageAddArgument(aMessage, "filename=textportion");
 								addAttachment = TRUE;
@@ -1343,8 +1356,8 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 									messageDestroy(mainMessage);
 
 								/*t = messageToText(body);
-								rc = parseEmailBody(body, blobs, nBlobs, t, dir, rfc821Table, subtypeTable);*/
-								rc = parseEmailBody(body, blobs, nBlobs, aText, dir, rfc821Table, subtypeTable);
+								rc = parseEmailBody(body, blobs, nBlobs, t, dir, rfc821Table, subtypeTable, options);*/
+								rc = parseEmailBody(body, blobs, nBlobs, aText, dir, rfc821Table, subtypeTable, options);
 								/*textDestroy(t);*/
 
 								cli_dbgmsg("Finished recursion\n");
@@ -2205,6 +2218,7 @@ saveFile(const blob *b, const char *dir)
 	return (close(fd) >= 0);
 }
 
+#ifdef	CHECKURLS
 static void
 checkURLs(message *m, const char *dir)
 {
@@ -2220,8 +2234,8 @@ checkURLs(message *m, const char *dir)
 
 	/*
 	 * cli_memstr(ptr, len, "<a href=", 8)
-	 * Don't use cli_memstr() until bounds problem sorted and it becomes
-	 * case independant
+	 * Don't use cli_memstr() until bounds problem sorted, it becomes
+	 * case independant and it returns the place that the 'needle' was found
 	 */
 	while(len >= 8) {
 		/* FIXME: allow any number of white space */
@@ -2257,6 +2271,12 @@ checkURLs(message *m, const char *dir)
 				if(*p3 == '/')
 					*p3 = '_';
 
+#ifdef	LIBCURL
+			getURL(p2, dir, name);
+#else
+			/*
+			 * TODO: maximum size and timeouts
+			 */
 			snprintf(cmd, sizeof(cmd), "GET %s > %s/%s", p2, dir, name);
 			cli_dbgmsg("%s\n", cmd);
 #ifdef	CL_THREAD_SAFE
@@ -2275,12 +2295,63 @@ checkURLs(message *m, const char *dir)
 					 */
 					(void)unlink(cmd);
 				}
+#endif
 		}
 		ptr++;
 		len--;
 	}
 	blobDestroy(b);
 }
+
+#ifdef	LIBCURL
+static void
+getURL(const char *url, const char *dir, const char *filename)
+{
+	char *fout;
+	static CURL *curl;
+	FILE *fp;
+
+	if(curl == NULL) {
+		if(curl_global_init(CURL_GLOBAL_NOTHING) != 0)
+			return;
+		/* easy isn't the word I'd use... */
+		curl = curl_easy_init();
+		if(curl == NULL) {
+			curl_global_cleanup();
+			return;
+		}
+		(void)curl_easy_setopt(curl, CURLOPT_USERAGENT, "www.clamav.net");
+
+	}
+	fout = cli_malloc(strlen(dir) + strlen(filename) + 2);
+
+	if(fout == NULL)
+		return;
+
+	sprintf(fout, "%s/%s", dir, filename);
+
+	fp = fopen(fout, "w");
+
+	if(fp == NULL) {
+		perror(fout);
+		free(fout);
+		return;
+	}
+	free(fout);
+
+	if(curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp) != 0)
+		return;
+
+	(void)curl_easy_perform(curl);
+}
+#endif
+
+#else
+static void
+checkURLs(message *m, const char *dir)
+{
+}
+#endif
 
 #ifdef HAVE_BACKTRACE
 	static void
