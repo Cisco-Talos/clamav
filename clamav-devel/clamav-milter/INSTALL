@@ -465,6 +465,7 @@ Changes
 			"Denis Ustimenko" <den@uzsci.net>
 		Quarantined file's names now contain the name of the virus
 0.75h	07/8/04	Some tweaking of the load balancing code
+0.75i	11/8/04	Added David Champion <dgc@uchicago.edu> isLocalAddr routine
 
 BUG REPORTS
 

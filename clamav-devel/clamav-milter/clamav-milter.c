@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.117  2004/08/11 10:34:07  nigelhorne
+ * Better isLocal handler
+ *
  * Revision 1.116  2004/08/07 13:10:33  nigelhorne
  * Better load balancing
  *
@@ -359,9 +362,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.116 2004/08/07 13:10:33 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.117 2004/08/11 10:34:07 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.75h"
+#define	CM_VERSION	"0.75i"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -459,6 +462,29 @@ struct header_list_struct {
 typedef struct header_list_struct *header_list_t;
 
 /*
+ * Local addresses are those not scanned if --local is not set
+ * 127.0.0.0 is not in this table since that's goverend by --outgoing
+ * Andy Fiddaman <clam@fiddaman.net> added 69.254.0.0/16
+ *	(Microsoft default DHCP)
+ *
+ * TODO: read this table in from a file (clamav.conf?)
+ */
+#define PACKADDR(a, b, c, d) (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
+#define MAKEMASK(bits)       (0xffffffff << (bits))
+
+static const struct cidr_net {
+	uint32_t	base;
+	uint32_t	mask;
+} localNets[] = {
+	/*{ PACKADDR(127,   0,   0,   0), MAKEMASK(24) },	/*   127.0.0.0/24 */
+	{ PACKADDR(192, 168,   0,   0), MAKEMASK(16) },	/* 192.168.0.0/16 */
+	{ PACKADDR( 10,   0,   0,   0), MAKEMASK(24) },	/*    10.0.0.0/24 */
+	{ PACKADDR(172,  16,   0,   0), MAKEMASK(20) },	/*  172.16.0.0/20 */
+	{ PACKADDR(169,  254,  0,   0), MAKEMASK(16) },	/* 169.254.0.0/16 */
+	{ 0, 0 }
+};
+
+/*
  * Each thread has one of these
  */
 struct	privdata {
@@ -511,6 +537,7 @@ static	int	sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, cons
 static	int	qfile(struct privdata *privdata, const char *virusname);
 static	void	setsubject(SMFICTX *ctx, const char *virusname);
 static	int	clamfi_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
+static	int	isLocalAddr(in_addr_t addr);
 
 static	char	clamav_version[128];
 static	int	fflag = 0;	/* force a scan, whatever */
@@ -1609,53 +1636,14 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 #endif
 			return SMFIS_ACCEPT;
 		}
-	if(!lflag) {
-		/*
-		 * Decide what constitutes a local IP address. Emails from
-		 * local machines are not scanned.
-		 *
-		 * TODO: read these from clamav.conf
-		 *
-		 * Better table by Damian Menscher <menscher@uiuc.edu>
-		 *
-		 * Andy Fiddaman <clam@fiddaman.net> added
-		 *	169.254.0.0/16 (Microsoft default DHCP)
-		 */
-		static const char *localAddresses[] = {
-			"^127\\.0\\.0\\.1$",
-			"^192\\.168\\.[0-9]+\\.[0-9]+$",
-			"^10\\.[0-9]+\\.[0-9]+\\.[0-9]+$",
-			"^172\\.1[6-9]\\.[0-9]+\\.[0-9]+$",
-			"^172\\.2[0-9]\\.[0-9]+\\.[0-9]+$",
-			"^172\\.3[0-1]\\.[0-9]+\\.[0-9]+$",
-			"^169\\.254\\.[0-9]+\\.[0-9]+$",
-			NULL
-		};
-		const char **possible;
 
-		for(possible = localAddresses; *possible; possible++) {
-			int rc;
-			regex_t reg;
-
-			if(regcomp(&reg, *possible, REG_EXTENDED) != 0) {
-				if(use_syslog)
-					syslog(LOG_ERR, "Couldn't parse local regexp");
-				return cl_error;
-			}
-
-			rc = (regexec(&reg, remoteIP, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
-
-			regfree(&reg);
-
-			if(rc) {
+	if((!lflag) && isLocalAddr(inet_addr(remoteIP))) {
 #ifdef	CL_DEBUG
-				if(use_syslog)
-					syslog(LOG_DEBUG, "clamfi_connect: not scanning local messages");
-				cli_dbgmsg("clamfi_connect: not scanning outgoing messages\n");
+		if(use_syslog)
+			syslog(LOG_DEBUG, "clamfi_connect: not scanning local messages");
+		cli_dbgmsg("clamfi_connect: not scanning outgoing messages\n");
 #endif
-				return SMFIS_ACCEPT;
-			}
-		}
+		return SMFIS_ACCEPT;
 	}
 
 	return SMFIS_CONTINUE;
@@ -2218,7 +2206,7 @@ clamfi_eom(SMFICTX *ctx)
 			(void)strcpy(ptr, "\n");
 
 			/* Include the sendmail queue ID in the log */
-			syslog(LOG_NOTICE, "%s: %s%s", sendmailId, mess, err);
+			syslog(LOG_NOTICE, "%s: %s %s", sendmailId, mess, err);
 #ifdef	CL_DEBUG
 			cli_dbgmsg("%s\n", err);
 #endif
@@ -3257,4 +3245,25 @@ clamfi_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t
 #endif
 
 	return 0;
+}
+
+/*
+ * David Champion <dgc@uchicago.edu>
+ *
+ * Check whether addr is on network by applying netmasks.
+ * addr must be a 32-bit integer-packed IPv4 address in network order.
+ * For example:
+ *     struct in_addr IPAddress;
+ *     isLocal = isLocalAddr(IPAddress.s_addr);
+ */
+static int
+isLocalAddr(in_addr_t addr)
+{
+	const struct cidr_net *net;
+
+	for(net = localNets; net->base; net++)
+		if(htonl(net->base & net->mask) == (addr & htonl(net->mask)))
+			return 1;
+
+	return 0;	/* is non-local */
 }
