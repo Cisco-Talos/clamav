@@ -1,4 +1,11 @@
-Fri Feb 13 14:28:05 GMT 2004 (njh
+Fri Feb 13 22:35:55 CET 2004 (tk)
+---------------------------------
+  * Makefile: don't use non standard id flags (thanks to Andy Fiddaman
+	      <clam*fiddaman.net>)
+  * clamscan: manager.c - include clamav-config.h, it fixes a problem with
+	      hardcoded clamav user (thanks to Reinhard Max <max*suse.de>)
+
+Fri Feb 13 14:28:05 GMT 2004 (njh)
 ----------------------------------
   * libclamav: Added a new bounce delimeter
 
@@ -9,12 +16,12 @@ Thu Feb 12 18:47:44 GMT 2004 (njh)
 Wed Feb 11 18:00:13 CET 2004 (tk)
 ---------------------------------
   * libclamav: enabled autodetection of Eserv/2 mail files (thanks to
-	       Andrey Cherezov <andrey@cherezov.koenig.su>)
+	       Andrey Cherezov <andrey*cherezov.koenig.su>)
 
 Wed Feb 11 08:19:54 GMT 2004 (njh)
 ----------------------------------
   * libclamav: Use O_BINARY when saving attachments which is required for
-	Cygwin. Thanks to "Andrey Cherezov" <andrey@cherezov.koenig.su>
+	Cygwin. Thanks to "Andrey Cherezov" <andrey*cherezov.koenig.su>
 
 Wed Feb 11 00:08:26 CET 2004 (tk)
 ---------------------------------

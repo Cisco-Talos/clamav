@@ -28,7 +28,7 @@ install:
 	@test -f $(DESTDIR)$(DBINST)/daily.cvd || $(INSTALL_DATA) daily.cvd $(DESTDIR)$(DBINST)
 	@test -f $(DESTDIR)$(DBINST)/viruses.db && rm -f $(DESTDIR)$(DBINST)/viruses.db || true
 	@test -f $(DESTDIR)$(DBINST)/viruses.db2 && rm -f $(DESTDIR)$(DBINST)/viruses.db2 || true
-	@if test `id -u` -eq 0 && test -n "${CLAMAVUSER}" && test -n "${CLAMAVGROUP}"; then \
+	@if test `id|sed -e 's/^.[^(]*(\([^)]*\)).*/\1/'` = "root" && test -n "${CLAMAVUSER}" && test -n "${CLAMAVGROUP}"; then \
 	    chmod 775 $(DESTDIR)$(DBINST); \
 	    chown ${CLAMAVUSER} $(DESTDIR)$(DBINST); \
 	    chgrp ${CLAMAVGROUP} $(DESTDIR)$(DBINST); \
