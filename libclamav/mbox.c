@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.218  2005/02/06 18:21:18  nigelhorne
+ * Some W95.Matrix.SCR were not being found
+ *
  * Revision 1.217  2005/02/06 09:45:53  nigelhorne
  * Speed up the (not implemented) next generation of mbox code
  *
@@ -639,7 +642,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.217 2005/02/06 09:45:53 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.218 2005/02/06 18:21:18 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1017,6 +1020,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		memcpy(buf, ptr, bodysize);
 		munmap(start, size);
 		ptr = start = buf;
+		last = &start[size - 1];
 	} else
 		wasAlloced = 0;
 
@@ -1024,13 +1028,17 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		cli_dbgmsg("Header base64\n");
 		decoder |= 1;
 		b64start = &p[6];
+		cli_dbgmsg("last 0x%p b64start 0x%p\n", last, b64start);
 		b64size = (size_t)(last - b64start) + 1;
+		assert(b64size <= size);
 	}
 	if((p = (char *)cli_pmemstr(ptr, bodysize, "quoted-printable", 16)) != NULL) {
 		cli_dbgmsg("Header quoted-printable\n");
 		decoder |= 2;
-		quotedstart = p;
+		quotedstart = &p[16];
+		cli_dbgmsg("last 0x%p quotedstart 0x%p\n", last, quotedstart);
 		quotedsize = (size_t)(last - quotedstart) + 1;
+		assert(quotedsize <= size);
 	}
 	if(!(decoder&1))
 		if((p = (char *)cli_pmemstr(ptr, bodysize, "base64", 6)) != NULL) {
@@ -1038,6 +1046,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			decoder |= 1;
 			b64start = &p[6];
 			b64size = (unsigned long)(last - b64start) + 1;
+			assert(b64size <= size);
 		}
 	if(!(decoder&2))
 		if((p = (char *)cli_pmemstr(ptr, bodysize, "quoted-printable", 16)) != NULL) {
@@ -1045,6 +1054,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			decoder |= 2;
 			quotedstart = &p[16];
 			quotedsize = (unsigned long)(last - quotedstart) + 1;
+			assert(quotedsize <= size);
 		}
 
 	if(decoder == 0) {
@@ -1052,12 +1062,12 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			free(start);
 		else
 			munmap(start, size);
-		cli_dbgmsg("cli_mbox: unknown encoder\n");
-		printf("cli_mbox: unknown encoder\n");
+		cli_warnmsg("cli_mbox: unknown encoder\n");
 		return cli_parse_mbox(dir, desc, options);
 	}
 
 	if(b64start) {
+		cli_dbgmsg("b64size = %lu\n", b64size);
 		while(*b64start != '\n') {
 			b64start++;
 			b64size--;
@@ -1082,16 +1092,17 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			b64size--;
 		}
 
-		while(!isalnum(*b64start)) {
-			b64start++;
-			b64size--;
-		}
+		if(b64size > 0L)
+			while(!isalnum(*b64start)) {
+				if(b64size-- == 0L)
+					break;
+				b64start++;
+			}
 
 		if(b64size > 0L) {
 			cli_dbgmsg("cli_mbox: decoding %ld base64 bytes\n", b64size);
 
 			line = NULL;
-			length = 0;
 
 			m = messageCreate();
 			if(m == NULL)
@@ -1101,7 +1112,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			while(b64size > 0L) {
 				length = 0;
 
-				/*printf("%ld: ", bytesleft); fflush(stdout);*/
+				/*printf("%ld: ", b64size); fflush(stdout);*/
 
 				for(ptr = b64start; b64size && (*ptr != '\n') && (*ptr != '\r'); ptr++) {
 					length++;
@@ -1129,6 +1140,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				if(strchr(line, '='))
 					break;
 			}
+			free(line);
 			fb = messageToFileblob(m, dir);
 			messageDestroy(m);
 
@@ -1139,6 +1151,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		}
 	}
 	if(quotedstart) {
+		cli_dbgmsg("quotedsize = %lu\n", quotedsize);
 		while(*quotedstart != '\n') {
 			quotedstart++;
 			quotedsize--;
@@ -1177,12 +1190,11 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			messageSetEncoding(m, "quoted-printable");
 
 			line = NULL;
-			length = 0;
 
 			while(quotedsize > 0L) {
 				length = 0;
 
-				/*printf("%ld: ", bytesleft); fflush(stdout);*/
+				/*printf("%ld: ", quotedsize); fflush(stdout);*/
 
 				for(ptr = quotedstart; quotedsize && (*ptr != '\n') && (*ptr != '\r'); ptr++) {
 					length++;
@@ -1208,6 +1220,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				quotedstart = ++ptr;
 				--quotedsize;
 			}
+			free(line);
 			fb = messageToFileblob(m, dir);
 			messageDestroy(m);
 
@@ -2152,6 +2165,14 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							next = t_line->t_next;
 							if(next && next->t_line) {
 								const char *data = lineGetData(next->t_line);
+
+								if((messageGetEncoding(aMessage) == NOENCODING) &&
+								   (messageGetMimeType(aMessage) == APPLICATION))
+								   	if(strstr(data, "base64")) {
+										messageSetEncoding(aMessage, "base64");
+										cli_dbgmsg("Ignoring fake end of headers\n");
+										continue;
+									}
 								if(strncmp(data, "Content", 7) == 0) {
 									cli_dbgmsg("Ignoring fake end of headers\n");
 									continue;
