@@ -1,3 +1,7 @@
+Fri Mar 26 21:32:28 CET 2004 (tk)
+---------------------------------
+  * libclamav: scan VPOP3 mail files (thanks to Steve <steveb*webtribe.net>)
+
 Fri Mar 26 16:22:45 CET 2004 (tk)
 ---------------------------------
   * libclamav: scanners: use cli_writen()

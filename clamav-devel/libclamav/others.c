@@ -273,7 +273,6 @@ char *cl_gentemp(const char *dir)
 	int i;
 	struct stat foo;
 
-    cli_dbgmsg("in cl_gentemp()\n");
 
     if(!dir)
 	mdir = "/tmp";
