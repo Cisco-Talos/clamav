@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: message.h,v $
+ * Revision 1.13  2004/08/21 11:57:57  nigelhorne
+ * Use line.[ch]
+ *
  * Revision 1.12  2004/07/20 14:35:29  nigelhorne
  * Some MYDOOM.I were getting through
  *
@@ -83,8 +86,9 @@ void	messageAddArguments(message *m, const char *arg);
 const	char	*messageFindArgument(const message *m, const char *variable);
 void	messageSetEncoding(message *m, const char *enctype);
 encoding_type	messageGetEncoding(const message *m);
-int	messageAddLine(message *m, const char *line, int takeCopy);
-int	messageAddLineAtTop(message *m, const char *line);
+int	messageAddLine(message *m, line_t *line);
+int	messageAddStr(message *m, const char *data);
+int	messageAddStrAtTop(message *m, const char *data);
 const	text	*messageGetBody(const message *m);
 void	messageClean(message *m);
 blob	*messageToBlob(message *m);

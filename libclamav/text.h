@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: text.h,v $
+ * Revision 1.5  2004/08/21 11:57:57  nigelhorne
+ * Use line.[ch]
+ *
  * Revision 1.4  2004/07/20 14:35:29  nigelhorne
  * Some MYDOOM.I were getting through
  *
@@ -25,7 +28,7 @@
  */
 
 typedef struct text {
-	char	*t_text;	/* NULL if the line is empty */
+	line_t	*t_line;	/* NULL if the line is empty */
 	struct	text	*t_next;
 } text;
 

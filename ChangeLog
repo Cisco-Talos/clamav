@@ -1,3 +1,9 @@
+Sat Aug 21 12:59:43 BST 2004 (njh)
+----------------------------------
+  * libclamav:	Changed the handling of miltipart messages, that is scanning
+  			emails with attachments. Reports on impact on memory
+			usage and speed welcome to clamav-devel@clamav.net
+
 Fri Aug 20 21:05:04 CEST 2004 (tk)
 ----------------------------------
   * libclamav/Makefile.am: add line.[ch]
