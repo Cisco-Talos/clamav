@@ -265,7 +265,7 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 
 	if(!zdirent.d_name || !strlen(zdirent.d_name)) { /* Mimail fix */
 	    cli_dbgmsg("strlen(zdirent.d_name) == %d\n", strlen(zdirent.d_name));
-	    *virname = "Seriously Broken Zip";
+	    *virname = "Suspected.Zip";
 	    ret = CL_VIRUS;
 	    break;
 	}
@@ -273,7 +273,7 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	cli_dbgmsg("Zip -> %s, compressed: %d, normal: %d.\n", zdirent.d_name, zdirent.d_csize, zdirent.st_size);
 
 	if(source.st_size && (zdirent.st_size / source.st_size) >= ZIPOSDET) {
-	    *virname = "Oversized Zip";
+	    *virname = "Oversized.Zip";
 	    ret = CL_VIRUS;
 	    break;
 	}
@@ -289,7 +289,7 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	    cli_dbgmsg("Zip -> Malformed archive detected.\n");
 	    /* ret = CL_EMALFZIP; */
 	    /* report it as a virus */
-	    *virname = "Seriously Broken Zip";
+	    *virname = "Suspected.Zip";
 	    ret = CL_VIRUS;
 	    break;
 	}
@@ -355,7 +355,7 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	     * recursion limit level.
 	     */
 	    cli_dbgmsg("Zip -> Malformed Zip, scanning stopped.\n");
-	    *virname = "Malformed Zip";
+	    *virname = "Suspected.Zip";
 	    ret = CL_VIRUS;
 	    break;
 	}
