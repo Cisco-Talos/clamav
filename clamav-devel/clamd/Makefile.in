@@ -74,7 +74,8 @@ am__clamd_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 	$(top_srcdir)/shared/output.h $(top_srcdir)/shared/cfgparser.c \
 	$(top_srcdir)/shared/cfgparser.h $(top_srcdir)/shared/getopt.c \
 	$(top_srcdir)/shared/getopt.h $(top_srcdir)/shared/memory.c \
-	$(top_srcdir)/shared/memory.h options.c options.h clamd.c \
+	$(top_srcdir)/shared/memory.h $(top_srcdir)/shared/misc.c \
+	$(top_srcdir)/shared/misc.h options.c options.h clamd.c \
 	defaults.h tcpserver.c tcpserver.h localserver.c localserver.h \
 	session.c session.h thrmgr.c thrmgr.h server-th.c server.h \
 	scanner.c scanner.h others.c others.h clamuko.c clamuko.h \
@@ -82,12 +83,12 @@ am__clamd_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 	dazuko_xp.h dazukoio_xp.h tests.c tests.h shared.h
 @BUILD_CLAMD_TRUE@am_clamd_OBJECTS = output.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	cfgparser.$(OBJEXT) getopt.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	memory.$(OBJEXT) options.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	clamd.$(OBJEXT) tcpserver.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	localserver.$(OBJEXT) session.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	thrmgr.$(OBJEXT) server-th.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	scanner.$(OBJEXT) others.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	clamuko.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	memory.$(OBJEXT) misc.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	options.$(OBJEXT) clamd.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	tcpserver.$(OBJEXT) localserver.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	session.$(OBJEXT) thrmgr.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	server-th.$(OBJEXT) scanner.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	others.$(OBJEXT) clamuko.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	dazukoio_compat12.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	dazukoio.$(OBJEXT) tests.$(OBJEXT)
 clamd_OBJECTS = $(am_clamd_OBJECTS)
@@ -99,11 +100,12 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/clamuko.Po ./$(DEPDIR)/dazukoio.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/dazukoio_compat12.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/getopt.Po ./$(DEPDIR)/localserver.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/memory.Po ./$(DEPDIR)/options.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/others.Po ./$(DEPDIR)/output.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/scanner.Po ./$(DEPDIR)/server-th.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/session.Po ./$(DEPDIR)/tcpserver.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/tests.Po ./$(DEPDIR)/thrmgr.Po
+@AMDEP_TRUE@	./$(DEPDIR)/memory.Po ./$(DEPDIR)/misc.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/options.Po ./$(DEPDIR)/others.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/output.Po ./$(DEPDIR)/scanner.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/server-th.Po ./$(DEPDIR)/session.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/tcpserver.Po ./$(DEPDIR)/tests.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/thrmgr.Po
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) \
@@ -233,6 +235,8 @@ target_vendor = @target_vendor@
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/getopt.h \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/memory.c \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/memory.h \
+@BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/misc.c \
+@BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/misc.h \
 @BUILD_CLAMD_TRUE@    options.c \
 @BUILD_CLAMD_TRUE@    options.h \
 @BUILD_CLAMD_TRUE@    clamd.c \
@@ -343,6 +347,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/localserver.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/memory.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/options.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/others.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/output.Po@am__quote@
@@ -472,6 +477,30 @@ memory.lo: $(top_srcdir)/shared/memory.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/memory.Plo' tmpdepfile='$(DEPDIR)/memory.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o memory.lo `test -f '$(top_srcdir)/shared/memory.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/memory.c
+
+misc.o: $(top_srcdir)/shared/misc.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT misc.o -MD -MP -MF "$(DEPDIR)/misc.Tpo" -c -o misc.o `test -f '$(top_srcdir)/shared/misc.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/misc.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/misc.Tpo" "$(DEPDIR)/misc.Po"; else rm -f "$(DEPDIR)/misc.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/misc.c' object='misc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/misc.Po' tmpdepfile='$(DEPDIR)/misc.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o misc.o `test -f '$(top_srcdir)/shared/misc.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/misc.c
+
+misc.obj: $(top_srcdir)/shared/misc.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT misc.obj -MD -MP -MF "$(DEPDIR)/misc.Tpo" -c -o misc.obj `if test -f '$(top_srcdir)/shared/misc.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/misc.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/misc.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/misc.Tpo" "$(DEPDIR)/misc.Po"; else rm -f "$(DEPDIR)/misc.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/misc.c' object='misc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/misc.Po' tmpdepfile='$(DEPDIR)/misc.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o misc.obj `if test -f '$(top_srcdir)/shared/misc.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/misc.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/misc.c'; fi`
+
+misc.lo: $(top_srcdir)/shared/misc.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT misc.lo -MD -MP -MF "$(DEPDIR)/misc.Tpo" -c -o misc.lo `test -f '$(top_srcdir)/shared/misc.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/misc.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/misc.Tpo" "$(DEPDIR)/misc.Plo"; else rm -f "$(DEPDIR)/misc.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/misc.c' object='misc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/misc.Plo' tmpdepfile='$(DEPDIR)/misc.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o misc.lo `test -f '$(top_srcdir)/shared/misc.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/misc.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

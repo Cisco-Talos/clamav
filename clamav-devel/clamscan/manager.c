@@ -52,7 +52,7 @@
 #include "strrcpy.h"
 #include "memory.h"
 #include "output.h"
-#include "cfgparser.h"
+#include "misc.h"
 #include "../libclamav/others.h"
 
 #ifdef C_LINUX
@@ -69,9 +69,7 @@ int scanmanager(const struct optstruct *opt)
 	struct passwd *user = NULL;
 	struct stat sb;
 	char *fullpath = NULL, cwd[1024];
-	struct cfgstruct *copt, *cpt;
-	struct cl_cvd *d1, *d2;
-	const char *dbdir;
+
 
 /* njh@bandsman.co.uk: BeOS */
 #if !defined(C_CYGWIN) && !defined(C_BEOS)
@@ -111,42 +109,12 @@ int scanmanager(const struct optstruct *opt)
 	}
 
     } else {
-	/* try to find fresh directory */
-	dbdir = cl_retdbdir();
-	if((copt = parsecfg(CONFDIR"/clamav.conf", 0))) {
-	    if((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory"))) {
-		if(strcmp(cl_retdbdir(), cpt->strarg)) {
-			char *daily = (char *) mmalloc(strlen(cpt->strarg) + strlen(cl_retdbdir()) + 15);
-		    sprintf(daily, "%s/daily.cvd", cpt->strarg);
-		    if((d1 = cl_cvdhead(daily))) {
-			sprintf(daily, "%s/daily.cvd", cl_retdbdir());
-			if((d2 = cl_cvdhead(daily))) {
-			    free(daily);
-			    if(d1->version > d2->version)
-				dbdir = cpt->strarg;
-			    else
-				dbdir = cl_retdbdir();
-			    cl_cvdfree(d2);
-			} else {
-			    free(daily);
-			    dbdir = cpt->strarg;
-			}
-			cl_cvdfree(d1);
-		    } else {
-			free(daily);
-			dbdir = cl_retdbdir();
-		    }
-		}
-	    }
-	}
 
-	if((ret = cl_loaddbdir(dbdir, &trie, &claminfo.signs))) {
+	if((ret = cl_loaddbdir(freshdbdir(), &trie, &claminfo.signs))) {
 	    mprintf("@%s\n", cl_strerror(ret));
 	    return 50;
 	}
 
-	if(copt)
-	    freecfg(copt);
     }
 
 

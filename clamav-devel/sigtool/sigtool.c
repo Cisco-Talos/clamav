@@ -47,6 +47,7 @@
 #include "memory.h"
 #include "output.h"
 #include "cfgparser.h"
+#include "misc.h"
 #include "../clamscan/others.h"
 #include "../libclamav/others.h"
 #include "../libclamav/str.h"
@@ -84,7 +85,7 @@ void sigtool(struct optstruct *opt)
 	cl_debug();
 
     if(optc(opt, 'V')) {
-	mprintf("sigtool / ClamAV version "VERSION"\n");
+	print_version();
 	exit(0);
     }
 

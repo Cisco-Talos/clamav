@@ -34,6 +34,7 @@
 #include "defaults.h"
 #include "client.h"
 #include "output.h"
+#include "misc.h"
 
 void help(void);
 
@@ -61,7 +62,7 @@ void clamscan(struct optstruct *opt)
 	mprintf_stdout = 1;
 
     if(optc(opt, 'V')) {
-	mprintf("clamdscan / ClamAV version "VERSION"\n");
+	print_version();
 	exit(0);
     }
 
