@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.61  2004/06/22 04:08:02  nigelhorne
+ * Optimise empty lines
+ *
  * Revision 1.60  2004/06/16 08:07:39  nigelhorne
  * Added thread safety
  *
@@ -177,7 +180,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.60 2004/06/16 08:07:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.61 2004/06/22 04:08:02 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -244,7 +247,7 @@ static	const	struct	encoding_map {
 	{	"7bit",			NOENCODING	},
 	{	"text/plain",		NOENCODING	},
 	{	"quoted-printable",	QUOTEDPRINTABLE	},	/* rfc1522 */
-	{	"base64",		BASE64		},
+	{	"base64",		BASE64		},	/* rfc2045 */
 	{	"8bit",			EIGHTBIT	},
 	{	"8 bit",		EIGHTBIT	},	/* incorrect */
 	{	"x-uuencode",		UUENCODE	},
@@ -792,23 +795,21 @@ messageAddLine(message *m, const char *line, int takeCopy)
 
 	m->body_last->t_next = NULL;
 
-	if(takeCopy) {
-		m->body_last->t_text = strdup((line) ? line : "");
-		if(m->body_last->t_text == NULL) {
-			cli_errmsg("messageAddLine: out of memory\n");
-			return -1;
-		}
-		assert(m->body_last->t_text != NULL);
-	} else {
-		assert(line != NULL);
-		m->body_last->t_text = (char *)line;
-	}
-
-	/*
-	 * See if this line marks the start of a non MIME inclusion that
-	 * will need to be scanned
-	 */
 	if(line && *line) {
+		if(takeCopy) {
+			m->body_last->t_text = strdup(line);
+			if(m->body_last->t_text == NULL) {
+				cli_errmsg("messageAddLine: out of memory\n");
+				return -1;
+			}
+			// cli_chomp(m->body_last->t_text);
+		} else
+			m->body_last->t_text = (char *)line;
+
+		/*
+		 * See if this line marks the start of a non MIME inclusion that
+		 * will need to be scanned
+		 */
 		if((m->encoding == NULL) &&
 		   (strncasecmp(line, encoding, sizeof(encoding) - 1) == 0) &&
 		   (strstr(line, "7bit") == NULL))
@@ -826,7 +827,9 @@ messageAddLine(message *m, const char *line, int takeCopy)
 			(isdigit(line[8])) &&
 			(line[9] == ' ')))
 				m->uuencode = m->body_last;
-	}
+	} else
+		m->body_last->t_text = NULL;
+
 	return 1;
 }
 
@@ -961,7 +964,8 @@ messageToBlob(message *m)
 		 * See RFC1741
 		 */
 		while((t_line = t_line->t_next) != NULL)
-			blobAddData(tmp, (unsigned char *)t_line->t_text, strlen(t_line->t_text));
+			if(t_line->t_text)
+				blobAddData(tmp, (unsigned char *)t_line->t_text, strlen(t_line->t_text));
 
 		data = blobGetData(tmp);
 
@@ -1324,13 +1328,12 @@ messageToText(const message *m)
 				last = last->t_next;
 			}
 
-			if(last)
-				last->t_text = strdup((char *)data);
-
-			if((last == NULL) || (last->t_text == NULL))
+			if(last == NULL)
 				break;
 
-			if(messageGetEncoding(m) == BASE64)
+			last->t_text = data[0] ? strdup((char *)data) : NULL;
+
+			if(line && messageGetEncoding(m) == BASE64)
 				if(strchr(line, '='))
 					break;
 		}
@@ -1471,7 +1474,6 @@ decodeLine(const message *m, const char *line, unsigned char *buf, size_t buflen
 	char *copy;
 
 	assert(m != NULL);
-	assert(line != NULL);
 	assert(buf != NULL);
 
 	switch(messageGetEncoding(m)) {
@@ -1483,11 +1485,20 @@ decodeLine(const message *m, const char *line, unsigned char *buf, size_t buflen
 		case NOENCODING:
 		case EIGHTBIT:
 		default:	/* unknown encoding type - try our best */
+			if(line == NULL) {	/* empty line */
+				*buf++ = '\n';
+				break;
+			}
 			buf = (unsigned char *)strrcpy((char *)buf, line);
 			/* Put the new line back in */
 			return (unsigned char *)strrcpy((char *)buf, "\n");
 
 		case QUOTEDPRINTABLE:
+			if(line == NULL) {	/* empty line */
+				*buf++ = '\n';
+				break;
+			}
+			
 			softbreak = FALSE;
 			while(*line) {
 				if(*line == '=') {
@@ -1523,6 +1534,8 @@ decodeLine(const message *m, const char *line, unsigned char *buf, size_t buflen
 			break;
 
 		case BASE64:
+			if(line == NULL)
+				break;
 			/*
 			 * RFC1521 sets the maximum length to 76 bytes
 			 * but many e-mail clients ignore that
@@ -1537,14 +1550,14 @@ decodeLine(const message *m, const char *line, unsigned char *buf, size_t buflen
 			/*
 			 * Klez doesn't always put "=" on the last line
 			 */
-			/*buf = decode(line, buf, base64, p2 == NULL);*/
-			buf = decode(copy, buf, base64, FALSE);
+			buf = decode(copy, buf, base64, (p2 == NULL) && ((strlen(copy) & 3) == 0));
+			/*buf = decode(copy, buf, base64, FALSE);*/
 
 			free(copy);
 			break;
 
 		case UUENCODE:
-			if(*line == '\0')	/* empty line */
+			if((line == NULL) || (*line == '\0'))	/* empty line */
 				break;
 			if(strncasecmp(line, "begin ", 6) == 0)
 				break;
@@ -1580,6 +1593,7 @@ decode(const char *in, unsigned char *out, unsigned char (*decoder)(char), bool 
 {
 	unsigned char b1, b2, b3, b4;
 
+	/*cli_dbgmsg("decode %s (len %d ifFast %d)\n", in, strlen(in), isFast);*/
 	if(isFast)
 		/* Fast decoding if not last line */
 		while(*in) {
@@ -1609,23 +1623,17 @@ decode(const char *in, unsigned char *out, unsigned char (*decoder)(char), bool 
 				b2 = '\0';
 				nbytes = 1;
 			} else {
-				assert(*in != '\0');
-
 				b2 = (*decoder)(*in++);
 				if(*in == '\0') {
 					b3 = '\0';
 					nbytes = 2;
 				} else {
-					assert(*in != '\0');
-
 					b3 = (*decoder)(*in++);
 
 					if(*in == '\0') {
 						b4 = '\0';
 						nbytes = 3;
 					} else {
-						assert(*in != '\0');
-
 						b4 = (*decoder)(*in++);
 						nbytes = 4;
 					}

@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: text.c,v $
+ * Revision 1.7  2004/06/22 04:08:02  nigelhorne
+ * Optimise empty lines
+ *
  * Revision 1.6  2004/05/05 09:37:52  nigelhorne
  * Removed textClean - not needed in clamAV
  *
@@ -27,7 +30,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: text.c,v 1.6 2004/05/05 09:37:52 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: text.c,v 1.7 2004/06/22 04:08:02 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -56,7 +59,8 @@ textDestroy(text *t_head)
 {
 	while(t_head) {
 		text *t_next = t_head->t_next;
-		free(t_head->t_text);
+		if(t_head->t_text)
+			free(t_head->t_text);
 		free(t_head);
 		t_head = t_next;
 	}
@@ -147,9 +151,11 @@ textCopy(const text *t_head)
 
 		assert(last != NULL);
 
-		last->t_text = strdup(t_head->t_text);
-
-		assert(last->t_text != NULL);
+		if(t_head->t_text) {
+			last->t_text = strdup(t_head->t_text);
+			assert(last->t_text != NULL);
+		} else
+			last->t_text = NULL;
 
 		t_head = t_head->t_next;
 	}
@@ -183,9 +189,11 @@ textAdd(text *t_head, const text *t)
 
 		assert(t_head != NULL);
 
-		t_head->t_text = strdup(t->t_text);
-
-		assert(t_head->t_text != NULL);
+		if(t->t_text) {
+			t_head->t_text = strdup(t->t_text);
+			assert(t_head->t_text != NULL);
+		} else
+			t_head->t_text = NULL;
 
 		t = t->t_next;
 	}
@@ -237,12 +245,16 @@ textToBlob(const text *t, blob *b)
 	}
 
 	for(t1 = t; t1; t1 = t1->t_next)
-		s += strlen(t1->t_text) + 1;
+		if(t1->t_text)
+			s += strlen(t1->t_text) + 1;
+		else
+			s++;
 
 	blobGrow(b, s);
 
 	do {
-		blobAddData(b, (unsigned char *)t->t_text, strlen(t->t_text));
+		if(t->t_text)
+			blobAddData(b, (unsigned char *)t->t_text, strlen(t->t_text));
 		blobAddData(b, (unsigned char *)"\n", 1);
 	} while((t = t->t_next) != NULL);
 
