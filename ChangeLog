@@ -1,4 +1,10 @@
+Wed Aug 25 11:06:42 BST 2004 (trog)
+-----------------------------------
+  * libclamac/ole2_extract.c: fix error path memory leaks
+	(thanks to acab and njh)
+
 Wed Aug 25 10:13:43 CEST 2004 (acab)
+------------------------------------
   * libclamav/petite.c: memory leaks fixed
 
 Tue Aug 24 13:47:07 CEST 2004 (tk)

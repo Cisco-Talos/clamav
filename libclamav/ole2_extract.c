@@ -604,6 +604,8 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 
 	ofd = open(newname, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
 	if (ofd < 0) {
+		cli_errmsg("ERROR: failed to create file: %s\n", newname);
+		free(newname);
 		return FALSE;
 	}
 	free(newname);
@@ -767,6 +769,11 @@ int cli_ole2_extract(int fd, const char *dirname, const struct cl_limits *limits
 	
 	if (strncmp(hdr.magic, magic_id, 8) != 0) {
 		cli_dbgmsg("OLE2 magic failed!\n");
+#ifdef HAVE_MMAP
+		if (hdr.m_area != NULL) {
+			munmap(hdr.m_area, hdr.m_length);
+		}
+#endif
 		return CL_EOLE2;
 	}
 
