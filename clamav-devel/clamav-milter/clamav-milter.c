@@ -24,7 +24,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.189 2005/03/18 08:41:42 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.190 2005/03/28 08:15:41 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.84c"
 
@@ -3579,7 +3579,7 @@ connect2clamd(struct privdata *privdata)
 			freeServer = findServer();
 			if(freeServer < 0)
 				return 0;
-			assert(freeServer < max_children);
+			assert(freeServer < (int)max_children);
 #else
 			struct sockaddr_in server;
 
@@ -3592,7 +3592,7 @@ connect2clamd(struct privdata *privdata)
 			freeServer = findServer();
 			if(freeServer < 0)
 				return 0;
-			assert(freeServer < max_children);
+			assert(freeServer < (int)max_children);
 
 			server.sin_addr.s_addr = serverIPs[freeServer];
 
