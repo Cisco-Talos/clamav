@@ -1,3 +1,9 @@
+Sat Apr  2 22:19:12 BST 2005 (njh)
+----------------------------------
+  * libclamav/tnef.c:	Handle attachments where the data are before the title
+				(bug report and samples thanks to Stefan
+				Kaltenbrunner <stefan at kaltenbrunner.cc>
+
 Tue Mar 29 02:50:30 CEST 2005 (tk)
 ----------------------------------
   * libclamav/filetypes.c: try to detect international text data
