@@ -1,6 +1,4 @@
 clamav.elektrapro.com
 clamav.ozforces.com
 clamav.essentkabel.com
-clamav.linux-sxs.org
-clamav.rulez.pl
 clamav.org
