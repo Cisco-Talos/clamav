@@ -214,7 +214,17 @@ scanning to quit. In practice the timeout set by sendmail will then take over.
 When neither \-\-force, \-\-local nor \-\-outgoing is given,
 this option intercepts incoming mails that incorrectly claim to be from the
 local domain.
+.TP
+\fB\-\-whitelist-file=FILE, \-W file
+This option specifies a file which contains a list of e-mail addresses.
+E-mails sent to these addresses will NOT be checked.
 While this is not an Anti-Virus function, it is quite useful for some systems.
+The address given to the \-\-quarantine directive is always whitelisted.
+.TP
+\fB\-\-sendmail-cf=FILE
+When starting, clamav\-milter runs some sanity checks against the sendmail.cf
+file, usually in /etc/sendmail.cf or /etc/mail/sendmail.cf. This directive
+tells clamav\-milter where to find the sendmail.cf file.
 .SH "BUGS"
 There is no support for IPv6.
 .SH "EXAMPLES"
