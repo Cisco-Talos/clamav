@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.65  2004/04/07 18:18:07  nigelhorne
+ * Some occurances of W97M.Lexar were let through
+ *
  * Revision 1.64  2004/04/05 09:32:20  nigelhorne
  * Added SCAN_TO_DISC define
  *
@@ -183,7 +186,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.64 2004/04/05 09:32:20 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.65 2004/04/07 18:18:07 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -734,8 +737,22 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						inMimeHead, inhead, boundary, line, t_line->t_next ? t_line->t_next->t_text : "(null)");*/
 
 					if(inMimeHead) {
+						/*
+						 * Handle continuation lines
+						 * because the previous line
+						 * ended with a ;
+						 */
 						cli_dbgmsg("About to add mime Argument '%s'\n",
 							line);
+						/*
+						 * Handle the case when it
+						 * isn't really a continuation
+						 * line:
+						 * Content-Type: application/octet-stream;
+						 * Content-Transfer-Encoding: base64
+						 */
+						parseEmailHeader(aMessage, line, rfc821Table);
+
 						while(isspace((int)*line))
 							line++;
 

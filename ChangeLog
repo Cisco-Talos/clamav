@@ -1,3 +1,7 @@
+Wed Apr  7 19:31:29 BST 2004 (njh)
+----------------------------------
+  * Handle continuation markers placed incorrectly by W97M.Lexar
+
 Wed Apr  7 00:51:11 CEST 2004 (tk)
 ----------------------------------
   * reverse the last patch
