@@ -1,3 +1,8 @@
+Wed Aug 18 08:45:38 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	If CHECKURLS is compiled in, use libcurl automatically
+  				if it is detected
+
 Tue Aug 17 21:02:06 CEST 2004 (tk)
 ----------------------------------
   * configure: Test for libcurl. Define foo "inline" if needed.

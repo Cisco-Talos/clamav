@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.102  2004/08/18 07:45:20  nigelhorne
+ * Use configure WITH_CURL value
+ *
  * Revision 1.101  2004/08/17 08:28:32  nigelhorne
  * Support multitype/fax-message
  *
@@ -291,7 +294,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.101 2004/08/17 08:28:32 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.102 2004/08/18 07:45:20 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -367,18 +370,23 @@ static	void	print_trace(int use_syslog);
 typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 
 #define	SAVE_TO_DISC	/* multipart/message are saved in a temporary file */
-#define	CHECKURLS	/* If an email contains URLs, check them */
 
-#ifdef	CHECKURLS
-#define	LIBCURL		/* To build with LIBCURL:
-			 * LDFLAGS=`curl-config --libs` ./configure ...
+#define	CHECKURLS	/*
+			 * If an email contains URLs, check them - helps to
+			 * find Dialer.gen-45
 			 */
 
-#define	MAX_URLS	10	/*
+#ifdef	CHECKURLS
+
+#define	MAX_URLS	5	/*
 				 * Maximum number of URLs scanned in a message
 				 * part
 				 */
-#ifdef	LIBCURL
+#ifdef	WITH_CURL	/* Set in configure */
+/*
+ * To build with WITH_CURL:
+ * LDFLAGS=`curl-config --libs` ./configure ...
+ */
 #include <curl/curl.h>
 #endif
 #endif
@@ -397,7 +405,7 @@ static	void	saveTextPart(message *m, const char *dir);
 static	bool	saveFile(const blob *b, const char *dir);
 
 static	void	checkURLs(message *m, const char *dir);
-#ifdef	LIBCURL
+#ifdef	WITH_CURL
 static	void	getURL(const char *url, const char *dir, const char *filename);
 #endif
 
@@ -775,21 +783,21 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool destroy)
 static int
 parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 {
-	char *copy, *cmd;
+	char *cmd;
 	int ret = -1;
 #ifdef CL_THREAD_SAFE
 	char *strptr;
 #endif
+	char copy[LINE_LENGTH+1];
 
 	cli_dbgmsg("parseEmailHeader '%s'\n", line);
 
 	if(strchr(line, ':') == NULL)
 		return -1;
 
-	copy = strdup(line);
+	assert(strlen(line) <= LINE_LENGTH);	/* RFC 821 */
 
-	if(copy == NULL)
-		return -1;
+	strcpy(copy, line);
 
 	cmd = strtok_r(copy, ":", &strptr);
 
@@ -806,8 +814,6 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 			 */
 			ret = parseMimeHeader(m, cmd, rfc821, arg);
 	}
-	free(copy);
-
 	return ret;
 }
 
@@ -2116,7 +2122,6 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 				 * Some clients are broken and
 				 * put white space after the ;
 				 */
-				/*strstrip(copy);*/
 				if(*arg == '/') {
 					cli_warnmsg("Content-type '/' received, assuming application/octet-stream\n");
 					messageSetMimeType(m, "application");
@@ -2317,7 +2322,7 @@ checkURLs(message *m, const char *dir)
 	while(len >= 8) {
 		/* FIXME: allow any number of white space */
 		if(strncasecmp(ptr, "<a href=", 8) == 0) {
-#ifndef	LIBCURL
+#ifndef	WITH_CURL
 #ifdef	CL_THREAD_SAFE
 			static pthread_mutex_t system_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
@@ -2358,7 +2363,7 @@ checkURLs(message *m, const char *dir)
 				if(*p3 == '/')
 					*p3 = '_';
 
-#ifdef	LIBCURL
+#ifdef	WITH_CURL
 			getURL(p2, dir, name);
 #else
 			/*
@@ -2395,7 +2400,7 @@ checkURLs(message *m, const char *dir)
 	tableDestroy(t);
 }
 
-#ifdef	LIBCURL
+#ifdef	WITH_CURL
 static void
 getURL(const char *url, const char *dir, const char *filename)
 {
@@ -2414,6 +2419,7 @@ getURL(const char *url, const char *dir, const char *filename)
 	curl = curl_easy_init();
 	if(curl == NULL)
 		return;
+
 	(void)curl_easy_setopt(curl, CURLOPT_USERAGENT, "www.clamav.net");
 
 	if(curl_easy_setopt(curl, CURLOPT_URL, url) != 0)
@@ -2421,8 +2427,10 @@ getURL(const char *url, const char *dir, const char *filename)
 
 	fout = cli_malloc(strlen(dir) + strlen(filename) + 2);
 
-	if(fout == NULL)
+	if(fout == NULL) {
+		curl_easy_cleanup(curl);
 		return;
+	}
 
 	sprintf(fout, "%s/%s", dir, filename);
 
@@ -2431,6 +2439,7 @@ getURL(const char *url, const char *dir, const char *filename)
 	if(fp == NULL) {
 		perror(fout);
 		free(fout);
+		curl_easy_cleanup(curl);
 		return;
 	}
 	/*
@@ -2443,6 +2452,7 @@ getURL(const char *url, const char *dir, const char *filename)
 	if(curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp) != 0) {
 		fclose(fp);
 		free(fout);
+		curl_easy_cleanup(curl);
 		return;
 	}
 
