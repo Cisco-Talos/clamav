@@ -415,6 +415,7 @@ Changes
 		Remove warning message on FreeBSD5.2
 0.73d	28/6/04	Don't error when creating the quarantine directory if it
 			already exists
+0.80	29/6/04	Up-issued
 
 BUG REPORTS
 

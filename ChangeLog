@@ -1,3 +1,7 @@
+Tue Jun 29 09:27:42 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Up-issued
+
 Mon Jun 28 12:46:18 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Optimise the scanning of empty sections of e-mails
