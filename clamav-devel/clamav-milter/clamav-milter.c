@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.150  2004/11/08 20:35:12  nigelhorne
+ * Don't start watchdog monitor in localSocket mode
+ *
  * Revision 1.149  2004/11/04 14:20:37  nigelhorne
  * Fix typo in error message
  *
@@ -458,9 +461,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.149 2004/11/04 14:20:37 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.150 2004/11/08 20:35:12 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80p"
+#define	CM_VERSION	"0.80q"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1361,6 +1364,8 @@ main(int argc, char **argv)
 				syslog(LOG_ERR, _("Can't create a clamd session"));
 			return EX_UNAVAILABLE;
 		}
+		cmdSocketsStatus = (int *)cli_malloc(sizeof(int));
+		cmdSocketsStatus[0] = CMDSOCKET_FREE;
 #endif
 		/*
 		 * FIXME: Allow connection to remote servers by TCP/IP whilst
@@ -1533,7 +1538,9 @@ main(int argc, char **argv)
 	atexit(quit);
 
 #ifdef	SESSION
-	pthread_create(&tid, NULL, watchdog, NULL);
+	/* FIXME: add localSocket support to watchdog */
+	if(!localSocket)
+		pthread_create(&tid, NULL, watchdog, NULL);
 #endif
 
 	if((cpt = cfgopt(copt, "PidFile")) != NULL)
@@ -1629,7 +1636,7 @@ main(int argc, char **argv)
 /*
  * Use the SESSION command of clamd.
  * Returns -1 for terminal failure, 0 for OK, 1 for nonterminal failure
- * The caller must take care of locking the cmdSocketStatus array
+ * The caller must take care of locking the cmdSocketsStatus array
  */
 static int
 createSession(int session)
@@ -4020,6 +4027,8 @@ clamdIsDown(void)
  *
  * It is woken up when the milter goes idle, when there are no free servers
  * available and once every readTimeout-1 seconds
+ *
+ * TODO: localSocket support
  */
 static void *
 watchdog(void *a)
@@ -4227,7 +4236,7 @@ quit(void)
 		syslog(LOG_INFO, _("Stopping %s"), clamav_version);
 
 	pthread_mutex_lock(&sstatus_mutex);
-	for(i = 0; i < max_children; i++) {
+	for(i = 0; i < (localSocket != NULL) ? 1 : max_children; i++) {
 		const int sock = cmdSockets[i];
 
 		/*

@@ -554,6 +554,7 @@ Changes
 		When changing a subject, keep the original subject in
 			X-Original-Subject
 0.80p	4/11/04	SESSION: Fix bug causing crash when using LocalSocket mode
+0.80q	8/11/04	SESSION: Ensure watchdog only started in TCPSocket mode
 
 INTERNATIONALISATION
 
