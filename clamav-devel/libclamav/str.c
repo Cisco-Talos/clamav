@@ -270,7 +270,7 @@ char *cli_strtokbuf(const char *input, int fieldno, const char *delim, char *out
     return output;
 }
 
-int cli_memstr(const char *haystack, int hs, const char *needle, int ns)
+char *cli_memstr(const char *haystack, int hs, const char *needle, int ns)
 {
 	const char *pt, *hay;
 	int n;
