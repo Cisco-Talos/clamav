@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.163  2004/10/31 09:28:56  nigelhorne
+ * Handle unbalanced quotes in multipart headers
+ *
  * Revision 1.162  2004/10/24 04:35:15  nigelhorne
  * Handle multipart/knowbot as multipart/mixed
  *
@@ -474,7 +477,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.162 2004/10/24 04:35:15 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.163 2004/10/31 09:28:56 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1339,7 +1342,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					/*cli_dbgmsg("inMimeHead %d inhead %d boundary %s line '%s' next '%s'\n",
 						inMimeHead, inhead, boundary, line, t_line->t_next ? t_line->t_next->t_text : "(null)");*/
 
-					if(inMimeHead) {
+					if(inMimeHead) {	/* continuation line */
 						if(line == NULL) {
 							inhead = inMimeHead = 0;
 							continue;
@@ -1375,7 +1378,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						 */
 						inMimeHead = continuationMarker(line);
 						messageAddArgument(aMessage, line);
-					} else if(inhead) {
+					} else if(inhead) {	/* handling normal headers */
 						if(line == NULL) {
 							/* empty line */
 							inhead = 0;
@@ -1415,17 +1418,28 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						if(!inMimeHead) {
 							const text *next = t_line->t_next;
 							char *fullline = strdup(line);
+							int quotes = 0;
+							const char *qptr;
 
 							assert(strlen(line) <= LINE_LENGTH);
+
+							for(qptr = line; *qptr; qptr++)
+								if(*qptr == '\"')
+									quotes++;
+
 							/*
 							 * Fold next lines to the end of this
 							 * if they start with a white space
+							 * or if this line has an odd number of quotes:
+							 * Content-Type: application/octet-stream; name="foo
+							 * "
 							 */
 							while(next && next->t_line) {
 								const char *data = lineGetData(next->t_line);
 								char *ptr;
 
-								if(!isspace(data[0]))
+								if((!isspace(data[0])) &&
+								   ((quotes & 1) == 0))
 									break;
 
 								ptr = cli_realloc(fullline,
@@ -1436,6 +1450,10 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 
 								fullline = ptr;
 								strcat(fullline, data);
+
+								for(qptr = data; *qptr; qptr++)
+									if(*qptr == '\"')
+										quotes++;
 
 								t_line = next;
 								next = next->t_next;
