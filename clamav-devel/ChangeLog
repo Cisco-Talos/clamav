@@ -1,3 +1,9 @@
+Wed Jul 21 20:45:49 CEST 2004 (tk)
+----------------------------------
+  * libclamav: pe: enhance UPX skew detection (aCaB)
+  * configure: fix milter test on Solaris 9 (problem reported by
+	       Fletcher Mattox <fletcher*cs.utexas.edu>)
+
 Wed Jul 21 18:46:36 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Add a note about using sendmail -d0 to see if

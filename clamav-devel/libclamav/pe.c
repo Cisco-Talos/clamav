@@ -537,7 +537,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	if(upxfn) {
 		int skew = cli_readint32(buff + 2) - EC32(optional_hdr.ImageBase) - EC32(section_hdr[i+1].VirtualAddress);
 
-	    if(buff[1] != '\xbe' || skew <= 0 || skew > 0x2e ) { /* FIXME: legit skews?? */
+	    if(buff[1] != '\xbe' || skew <= 0 || skew > 0xfff ) { /* FIXME: legit skews?? */
 		skew = 0; 
 		if(!upxfn(src, ssize, dest, dsize))
 		    upx_success = 1;
