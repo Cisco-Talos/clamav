@@ -1,3 +1,8 @@
+Wed Oct 20 21:00:37 CEST 2004 (tk)
+----------------------------------
+  * clamdscan: fix error messages (problem reported by Jason Haar
+	       <Jason.Haar*trimble.co.nz>)
+
 Wed Oct 20 13:23:33 BST 2004 (njh)
 ----------------------------------
   * libclamav/untar.c:	Print warning message about unsopported (yet) formats

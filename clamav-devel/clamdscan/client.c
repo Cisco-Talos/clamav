@@ -85,7 +85,7 @@ int dsfile(int sockd, const char *filename)
 
     fclose(fd);
 
-    if(!infected)
+    if(!infected && !waserror)
 	mprintf("%s: OK\n", filename);
 
     return infected ? infected : (waserror ? -1 : 0);
