@@ -26,6 +26,8 @@ clamav_milter_SOURCES = \
     $(top_srcdir)/shared/cfgparser.h \
     $(top_srcdir)/shared/getopt.c \
     $(top_srcdir)/shared/getopt.h \
+    $(top_srcdir)/shared/memory.c \
+    $(top_srcdir)/shared/memory.h \
     clamav-milter.c
 
 man_MANS = $(top_srcdir)/docs/man/clamav-milter.8
