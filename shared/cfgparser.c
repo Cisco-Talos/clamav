@@ -93,7 +93,7 @@ struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 	    {"FollowDirectorySymlinks", OPT_NOARG},
 	    {"FollowFileSymlinks", OPT_NOARG},
 	    {"ExitOnOOM", OPT_NOARG},
-	    {"Foreground", OPT_NOARG},
+	    {"Foreground", OPT_NOARG}, /* clamd + freshclam */
 	    {"Debug", OPT_NOARG},
 	    {"LeaveTemporaryFiles", OPT_NOARG},
 	    {"FixStaleSocket", OPT_NOARG},
