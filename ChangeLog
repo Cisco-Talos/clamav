@@ -1,3 +1,8 @@
+Sat Nov 27 12:01:03 GMT 2004 (njh)
+----------------------------------
+ * libclamav/mbox.c:	Handle RFC822 comments in the commands, e.g.:
+				Co(foo)ntent-Type: text/plain
+
 Fri Nov 26 23:00:42 GMT 2004 (njh)
 ----------------------------------
  * libclamav/mbox.c:	Scan binHexes after the final MIME section
