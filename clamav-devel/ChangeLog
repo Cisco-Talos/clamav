@@ -1,3 +1,7 @@
+Tue Feb 17 09:59:03 GMT 2004 (njh)
+----------------------------------
+  * libclamav: Added a new bounce delimeter
+
 Tue Feb 17 01:06:58 CET 2004 (tk)
 ---------------------------------
   * clamd: + integrated new thread manager from Trog
