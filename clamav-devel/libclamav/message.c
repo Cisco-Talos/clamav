@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.121  2004/11/26 16:58:52  nigelhorne
+ * Tidy
+ *
  * Revision 1.120  2004/11/26 12:04:22  nigelhorne
  * Fix small typo
  *
@@ -357,7 +360,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.120 2004/11/26 12:04:22 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.121 2004/11/26 16:58:52 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1233,12 +1236,6 @@ messageIsEncoding(message *m)
 	   (strstr(line, "7bit") == NULL))
 		m->encoding = m->body_last;
 	else if((m->bounce == NULL) &&
-			/*
-			 * Don't match received since emails have a lot of
-			 * these headersa and one could get a match for each
-			 * header which would generate umpteen false bounce
-			 * matches
-			 */
 		(strncasecmp(line, "Received: ", 10) == 0) &&
 		(cli_filetype(line, strlen(line)) == CL_TYPE_MAIL))
 			m->bounce = m->body_last;
