@@ -22,8 +22,12 @@
 #include "cltypes.h"
 #include "matcher.h"
 
-#define BM_MIN_LENGTH	10
-#define BM_TEST_OFFSET	5
+/* TODO: Check prefix regularity and automatically transfer some signatures
+ *	 to AC
+ */
+
+#define BM_MIN_LENGTH	3
+/* #define BM_TEST_OFFSET	5 */
 #define BM_BLOCK_SIZE	3
 
 #define MIN(a,b) (a < b) ? a : b
@@ -156,10 +160,12 @@ int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virnam
 		off = i - BM_MIN_LENGTH + BM_BLOCK_SIZE;
 		bp = buffer + off;
 
+#ifdef BM_TEST_OFFSET
 		if(bp[BM_TEST_OFFSET] != p->pattern[BM_TEST_OFFSET]) {
 		    p = p->next;
 		    continue;
 		}
+#endif
 
 		found = 1;
 		for(j = 0; j < p->length && off < length; j++, off++) {
