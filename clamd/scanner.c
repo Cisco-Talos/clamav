@@ -264,9 +264,9 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_node 
 int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt)
 {
 	int ret, portscan = CL_DEFAULT_MAXPORTSCAN, sockfd, port, acceptd;
-	int tmpd, bread, retval, timeout, btread;
+	int tmpd, bread, retval, timeout, btread, min_port, max_port;
 	long int size = 0, maxsize = 0;
-	short bound = 0;
+	short bound = 0, rnd_port_first = 1;
 	const char *virname;
 	char buff[FILEBUFF];
 	struct sockaddr_in server;
@@ -275,9 +275,35 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	FILE *tmp = NULL;
 
 
+    /* get min port */
+    if((cpt = cfgopt(copt, "StreamMinPort"))) {
+	if(cpt->numarg < 1024 || cpt->numarg > 65535)
+	    min_port = 1024;
+	else 
+	    min_port = cpt->numarg;
+    } else 
+	min_port = 1024;
+
+    /* get max port */
+    if((cpt = cfgopt(copt, "StreamMaxPort"))) {
+	if(cpt->numarg < min_port || cpt->numarg > 65535)
+	    max_port = 65535;
+	else
+	    max_port = cpt->numarg;
+    } else
+	max_port = 65535;
+
+    /* bind to a free port */
     while(!bound && portscan--) {
-	if((port = cli_rndnum(60000)) < 1024)
-	    port += 2139;
+	if(rnd_port_first) {
+	    /* try a random port first */
+	    port = min_port + cli_rndnum(max_port - min_port + 1);
+	    rnd_port_first = 0;
+	} else {
+	    /* try the neighbor ports */
+	    if(--port < min_port)
+		port=max_port;
+	}
 
 	memset((char *) &server, 0, sizeof(server));
 	server.sin_family = AF_INET;
@@ -303,7 +329,6 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	    close(sockfd);
 	else
 	    bound = 1;
-
     }
 
     if((cpt = cfgopt(copt, "ReadTimeout")))

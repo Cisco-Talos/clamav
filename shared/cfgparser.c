@@ -84,6 +84,8 @@ struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 	    {"LocalSocket", OPT_STR},
 	    {"MaxConnectionQueueLength", OPT_NUM},
 	    {"StreamMaxLength", OPT_COMPSIZE},
+	    {"StreamMinPort", OPT_NUM},
+	    {"StreamMaxPort", OPT_NUM},
 	    {"MaxThreads", OPT_NUM},
 	    {"ReadTimeout", OPT_NUM},
 	    {"IdleTimeout", OPT_NUM},

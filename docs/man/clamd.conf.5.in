@@ -1,5 +1,5 @@
 .\" Manual page created by Tomasz Kojm, 20021001.
-.TH "clamd.conf" "5" "September 27, 2004" "Tomasz Kojm" "Clam AntiVirus"
+.TH "clamd.conf" "5" "November 25, 2004" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 \fBclamd.conf\fR \- Configuration file for Clam AntiVirus Daemon
@@ -160,9 +160,19 @@ Default: disabled
 Enable debug messages from libclamav.
 .TP 
 \fBStreamMaxLength SIZE\fR
-Close the connection when this limit is exceeded.
+Clamd uses FTP\-like protocol to receive data from remote clients. If you are using clamav\-milter to balance load between remote clamd daemons on firewall servers you may need to tune the Stream* options. This option allows you to specify the maximal limit for data transfered to remote daemon when scanning a single file.
 .br 
 Default: 10M
+.TP 
+\fBStreamMinPort NUMBER\fR
+Limit data port range.
+.br 
+Default: 1024
+.TP 
+\fBStreamMaxPort NUMBER\fR
+Limit data port range.
+.br 
+Default: 65535
 .TP 
 \fBDisableDefaultScanOptions\fR
 By default clamd uses scan options recommended by libclamav. This option disables recommended options and allows you to enable selected options. DO NOT ENABLE IT unless you know what you are doing.
