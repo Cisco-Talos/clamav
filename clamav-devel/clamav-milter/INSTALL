@@ -23,6 +23,15 @@ Compiles OK on Linux/ppc (YDL2.3) with gcc2.95.4. Needs -lsmutil to link.
 I haven't tested it further on this platform yet.
 YDL3.0 should compile out of the box
 
+Linux/sparc (Gentoo 2004.2) comes with a sendmail that doesn't support MILTER,
+so *before* running "configure --enable-milter", download from
+http://www.sendmail.org/ftp, then:
+	cd .../sendmail-source-directory
+	sh Build
+	make install
+	cd libmilter
+	make install
+
 Sendmail on MacOS/X (10.1) is provided without a development package so this
 can't be run "out of the box"
 
