@@ -42,7 +42,7 @@
 
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
 
-#ifdef WORDS_LITTLEENDIAN
+#if WORDS_BIGENDIAN == 0
 #define ole2_endian_convert_16(v)	(v)
 #else
 static uint16_t ole2_endian_convert_16(uint16_t v)
@@ -51,7 +51,7 @@ static uint16_t ole2_endian_convert_16(uint16_t v)
 }
 #endif
 
-#ifdef WORDS_LITTLEENDIAN
+#if WORDS_BIGENDIAN == 0
 #define ole2_endian_convert_32(v)    (v)
 #else
 static uint32_t ole2_endian_convert_32(uint32_t v)

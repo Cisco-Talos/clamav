@@ -1,3 +1,10 @@
+Mon Feb  9 13:52:30 GMT 2004 (trog)
+-----------------------------------
+
+  * libclamav/ole2_extract.c: Change directives in
+	accordance with clamav-config.h - should fix-up
+	what (tk) was trying to do.
+
 Mon Feb  9 13:40:37 GMT 2004 (trog)
 -----------------------------------
 
