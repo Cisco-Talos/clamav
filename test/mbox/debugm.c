@@ -10,14 +10,7 @@
 #include <fcntl.h>
 #include <malloc.h>
 #include <clamav.h>
-#include <signal.h>
 #include <sys/resource.h>
-
-static void
-cleanup()
-{
-	exit(SIGINT);
-}
 
 int
 main(int argc, char **argv)
@@ -36,7 +29,6 @@ main(int argc, char **argv)
 		perror("/tmp/mboxtest");
 		return errno;
 	}
-	signal(SIGINT, cleanup);
 	while(*++argv) {
 		int fd = open(*argv, 0);
 
@@ -52,4 +44,3 @@ main(int argc, char **argv)
 
 	exit(0);
 }
-
