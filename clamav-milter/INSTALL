@@ -435,6 +435,8 @@ Changes
 0.74c	14/7/04	Added --dont-wait
 		Added --advisory
 0.74d	18/7/04	Added sanity check in clamfi_connect
+0.74e	21/7/04	Fixed thread unsafe code causing problems with multi-CPU
+		machines running Solaris
 
 BUG REPORTS
 
