@@ -1,3 +1,7 @@
+Sun Nov  7 16:42:10 GMT 2004 (njh)
+----------------------------------
+  * libclamav/message.c:	Handle paragraph 4 of RFC2231
+
 Sat Nov  6 21:45:21 GMT 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Fix possible crash when handling illegal RFC2047 header

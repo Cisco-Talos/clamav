@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.109  2004/11/07 16:39:00  nigelhorne
+ * Handle para 4 of RFC2231
+ *
  * Revision 1.108  2004/10/31 09:28:27  nigelhorne
  * Improve the handling of blank filenames
  *
@@ -321,7 +324,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.108 2004/10/31 09:28:27 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.109 2004/11/07 16:39:00 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -383,6 +386,7 @@ static	const	char	*messageGetArgument(const message *m, int arg);
 static	void	*messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), void (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(const text *, void *));
 static	int	usefulArg(const char *arg);
 static	void	messageDedup(message *m);
+static	char	*rfc2231(const char *in);
 static	int	simil(const char *str1, const char *str2);
 
 /*
@@ -695,7 +699,7 @@ messageAddArgument(message *m, const char *arg)
 		m->mimeArguments = ptr;
 	}
 
-	m->mimeArguments[offset] = strdup(arg);
+	m->mimeArguments[offset] = rfc2231(arg);
 
 	/*
 	 * This is terribly broken from an RFC point of view but is useful
@@ -2531,12 +2535,93 @@ messageDedup(message *m)
 }
 
 /*
+ * Handle RFC2231 encoding. Returns a malloc'd buffer that the caller must
+ * free, or NULL on error.
+ *
+ * TODO: Currently only handles paragraph 4 of RFC2231 e.g.
+ *	 protocol*=ansi-x3.4-1968''application%2Fpgp-signature;
+ */
+static char *
+rfc2231(const char *in)
+{
+	char *out;
+	char *ptr;
+	char *ret;
+	enum { LANGUAGE, CHARSET, CONTENTS } field = LANGUAGE;
+
+	ptr = strstr(in, "*=");
+
+	if(ptr == NULL)	/* quick return */
+		return strdup(in);
+
+	cli_dbgmsg("rfc2231 '%s'\n", in);
+
+	ret = cli_malloc(strlen(in) + 1);
+
+	if(ret == NULL)
+		return NULL;
+
+	for(out = ret; in != ptr; in++)
+		*out++ = *in;
+
+	*out++ = '=';
+
+	/*
+	 * We don't do anything with the language and character set, just skip
+	 * over them!
+	 */
+	while(*in) {
+		switch(field) {
+			case LANGUAGE:
+				if(*in == '\'')
+					field = CHARSET;
+				break;
+			case CHARSET:
+				if(*in == '\'')
+					field = CONTENTS;
+				break;
+			case CONTENTS:
+				if(*in == '%') {
+					unsigned char byte;
+
+					if((*++in == '\0') || (*in == '\n'))
+						break;
+
+					byte = hex(*in);
+
+					if((*++in == '\0') || (*in == '\n')) {
+						*out++ = byte;
+						break;
+					}
+
+					byte <<= 4;
+					byte += hex(*in);
+					*out++ = byte;
+				} else
+					*out++ = *in;
+		}
+		in++;
+	}
+
+	if(field != CONTENTS) {
+		cli_warnmsg("Invalid RFC2231 header: '%s'\n", in);
+		free(ret);
+		return strdup("");
+	}
+				
+	*out = '\0';
+
+	cli_dbgmsg("rfc2231 returns '%s'\n", ret);
+
+	return ret;
+}
+
+/*
  * common/simil:
  *	From Computing Magazine 20/8/92
  * Returns %ge number from 0 to 100 - how similar are 2 strings?
  * 100 for exact match, < for error
  */
-
 struct	pstr_list {	/* internal stack */
 	char	*d1;
 	struct	pstr_list	*next;
