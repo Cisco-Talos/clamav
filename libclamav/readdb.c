@@ -91,7 +91,7 @@ static int cli_addsig(struct cl_node *root, const char *virname, const char *hex
 	    new->alt++;
 	    new->altn = (unsigned short int *) realloc(new->altn, new->alt * sizeof(unsigned short int));
 	    new->altn[new->alt - 1] = 0;
-	    new->altc = (char **) realloc(new->altc, new->alt);
+	    new->altc = (char **) realloc(new->altc, new->alt * sizeof(char *));
 
 	    for(i = 0; i < strlen(pt); i++)
 		if(pt[i] == '|')
