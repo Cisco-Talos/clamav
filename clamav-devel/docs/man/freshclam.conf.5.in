@@ -28,6 +28,11 @@ If this option is set freshclam will not run.
 When started by root, drop privileges to a specified user. .br 
 Default: @CLAMAVUSER@
 .TP 
+\fBAllowSupplementaryGroups\fR
+Initialize supplementary group access (freshclam must be started by root).
+.br 
+Default: disabled
+.TP 
 \fBDatabaseDirectory STRING\fR
 Path to a directory containing database files.
 .br 
