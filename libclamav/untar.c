@@ -20,6 +20,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.6  2004/09/08 16:02:34  nigelhorne
+ * fclose on error
+ *
  * Revision 1.5  2004/09/06 14:16:48  nigelhorne
  * Added CYGWIN support
  *
@@ -36,7 +39,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.5 2004/09/06 14:16:48 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.6 2004/09/08 16:02:34 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -94,6 +97,8 @@ cli_untar(const char *dir, int desc)
 			break;
 
 		if(nread != BLOCKSIZE) {
+			if(outfile)
+				fclose(outfile);
 			cli_errmsg("cli_untar: incomplete block read\n");
 			return CL_EIO;
 		}
@@ -189,7 +194,7 @@ cli_untar(const char *dir, int desc)
 			strncpy(osize, block+124, 12);
 			osize[12] = '\0';
 			size = octal(osize);
-			if(size < 0){
+			if(size < 0) {
 				cli_errmsg("Invalid size in tar header\n");
 				fclose(outfile);
 				return CL_EDSIG;
