@@ -42,9 +42,9 @@
 void freshclam(struct optstruct *opt)
 {
 	int ret;
+	char *newdir;
 #ifndef C_CYGWIN
 	struct passwd *user;
-	char *newdir;
 	char *unpuser;
 
     if(optc(opt, 'u'))

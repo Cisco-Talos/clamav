@@ -29,6 +29,11 @@
 # endif
 #endif
 
+#include <target.h>
+#ifdef TARGET_OS_FREEBSD
+#include <sys/types.h>
+#endif
+
 /* especially win32 platforms do not declare off_t so far - see zzip-msvc.h */
 #ifndef _zzip_off_t
 #ifdef   ZZIP_off_t
