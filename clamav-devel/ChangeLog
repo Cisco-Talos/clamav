@@ -1,3 +1,8 @@
+Wed Nov 19 16:34:04 GMT 2003 (njh)
+---------------------------------
+  * clamav-milter: Close cmdSocket earlier
+		Added setpgrp()
+
 Mon Nov 17 13:28:16 IST 2003 (njh)
 ----------------------------------
   * libclamav:	Prevent buffer overflow in broken uuencoded files

@@ -151,9 +151,14 @@
  *	0.60q	11/11/03 Fixed handling of % characters in e-mail addresses
  *			pointed out by dotslash@snosoft.com
  *	0.65	15/11/03 Upissue of clamav
+ *	0.65a	19/11/03 Close cmdSocket earlier
+ *			Added setpgrp()
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.20  2003/11/19 16:32:22  nigelhorne
+ * Close cmdSocket earlier
+ *
  * Revision 1.19  2003/11/17 04:48:30  nigelhorne
  * Up issue to version 0.65
  *
@@ -196,9 +201,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.19 2003/11/17 04:48:30 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.20 2003/11/19 16:32:22 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.65"
+#define	CM_VERSION	"0.65a"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -603,6 +608,7 @@ main(int argc, char **argv)
 		open("/dev/null", O_RDONLY);
 		if(open("/dev/console", O_WRONLY) == 1)
 			dup(1);
+		setpgrp();
 	}
 
 	if(smfi_setconn(port) == MI_FAILURE) {
@@ -1186,6 +1192,9 @@ clamfi_eom(SMFICTX *ctx)
 #endif
 		mess[0] = '\0';
 	}
+
+	close(privdata->cmdSocket);
+	privdata->cmdSocket = -1;
 
 	if(strstr(mess, "FOUND") == NULL) {
 		if(!nflag)
