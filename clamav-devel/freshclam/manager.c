@@ -196,9 +196,9 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 		if(!strstr(cl_retver(), "devel")) {
 		    if(strcmp(cl_retver(), pt)) {
 			mprintf("WARNING: Your ClamAV installation is OUTDATED - please update immediately!\n");
-			mprintf("WARNING: Local version: %s Recommended version: %sin", cl_retver(), pt);
+			mprintf("WARNING: Local version: %s Recommended version: %s\n", cl_retver(), pt);
 			logg("WARNING: Your ClamAV installation is OUTDATED - please update immediately!\n");
-			logg("WARNING: Local version: %s Recommended version: %sin", cl_retver(), pt);
+			logg("WARNING: Local version: %s Recommended version: %s\n", cl_retver(), pt);
 		    }
 		}
 		free(pt);
