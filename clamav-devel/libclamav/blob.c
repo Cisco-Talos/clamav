@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.34  2005/02/18 20:41:59  nigelhorne
+ * Added debug statement
+ *
  * Revision 1.33  2005/02/18 18:10:39  nigelhorne
  * Comment about QNX
  *
@@ -101,7 +104,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.33 2005/02/18 18:10:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.34 2005/02/18 20:41:59 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -509,6 +512,7 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 	cli_dbgmsg("fileblobSetFilename: mkstemp(%s)\n", fullname);
 	fd = mkstemp(fullname);
 #else
+	cli_dbgmsg("fileblobSetFilename: mktemp(%s)\n", fullname);
 	(void)mktemp(fullname);
 	fd = open(fullname, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
 #endif
