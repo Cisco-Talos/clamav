@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: message.h,v $
+ * Revision 1.11  2004/05/06 18:01:25  nigelhorne
+ * Force attachments marked as RFC822 messages to be scanned
+ *
  * Revision 1.10  2004/04/05 12:04:56  nigelhorne
  * Scan attachments with no filename
  *
@@ -75,6 +78,7 @@ const	char	*messageFindArgument(const message *m, const char *variable);
 void	messageSetEncoding(message *m, const char *enctype);
 encoding_type	messageGetEncoding(const message *m);
 int	messageAddLine(message *m, const char *line, int takeCopy);
+int	messageAddLineAtTop(message *m, const char *line);
 const	text	*messageGetBody(const message *m);
 void	messageClean(message *m);
 blob	*messageToBlob(message *m);
