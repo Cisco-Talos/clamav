@@ -14,7 +14,10 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * $LOG$
  */
+static	char	const	rcsid[] = "$Id: blob.c,v 1.3 2004/01/14 10:08:59 nigelhorne Exp $";
 
 #include <stdlib.h>
 #include <string.h>
@@ -146,7 +149,7 @@ blobAddData(blob *b, const unsigned char *data, size_t len)
 #else
 		b->size += 128 * 1024;
 #endif
-		b->data = realloc(b->data, b->size);
+		b->data = cli_realloc(b->data, b->size);
 	}
 
 	assert(b->data != NULL);
@@ -155,7 +158,7 @@ blobAddData(blob *b, const unsigned char *data, size_t len)
 	b->len += len;
 }
 
-const unsigned char *
+unsigned char *
 blobGetData(const blob *b)
 {
 	assert(b != NULL);

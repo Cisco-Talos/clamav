@@ -1,3 +1,7 @@
+Wed Jan 14 10:09:30 GMT 2004 (njh)
+----------------------------------
+  * libclamav: blobGetData now allows contents to be changed - tuttut
+
 Wed Jan 14 04:44:03 CET 2004 (tk)
 ---------------------------------
   * libclamav: reversed zziplib patch from 20031224 (due to a problem reported

@@ -14,6 +14,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * $LOG$
  */
 
 typedef struct blob {
@@ -32,5 +34,5 @@ void	blobArrayDestroy(blob *b[], int n);
 void	blobSetFilename(blob *b, const char *filename);
 const	char	*blobGetFilename(const blob *b);
 void	blobAddData(blob *b, const unsigned char *data, size_t len);
-const	unsigned char *blobGetData(const blob *b);
+unsigned char *blobGetData(const blob *b);
 unsigned	long	blobGetDataSize(const blob *b);
