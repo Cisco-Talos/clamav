@@ -146,7 +146,7 @@ maximum time a pending thread will be held up is 1 minute, so the number
 of threads can exceed this number for short periods of time.
 There is no default, if this argument is not \fBclamav\-milter\fR will
 spawn as many children as is necessary.
-.TP
+.LP
 Most users will not need this option, if in doubt do not set it.
 .TP
 \fB\-\-template\-file=file \-t file\fR
@@ -154,6 +154,9 @@ File points to a file whose contents is sent as the warning message whenever a
 virus is intercepted.
 The first occurance of %v within the file is replaced with the message
 returned from clamd, which includes the name of the virus.
+The %v string can be escaped, thus \\%v, to send the string %v.
+Any occurance of strings in braces are replaced with the appropriate
+{sendmail-variable}.
 If the \-t option is not given, clamav\-milter defaults to a hardcoded message.
 .SH "EXAMPLES"
 .LP
