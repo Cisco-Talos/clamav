@@ -53,10 +53,12 @@
 int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname)
 {
 	time_t currtime;
-	int ret, updated = 0, signo = 0, usedns;
-	char ipaddr[16];
+	int ret, updated = 0, signo = 0, ttl = -1;
+	char ipaddr[16], *dnsreply = NULL, *pt;
 	struct cfgstruct *cpt;
-
+#ifdef HAVE_RESOLV_H
+	const char *dnsdbinfo;
+#endif
 
     time(&currtime);
     mprintf("ClamAV update process started at %s", ctime(&currtime));
@@ -69,20 +71,87 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
     logg("See the FAQ at http://www.clamav.net/faq.html for an explanation.\n");
 #endif
 
-    optl(opt, "no-dns") ? (usedns = 0) : (usedns = 1);
+#ifdef HAVE_RESOLV_H
+    if((cpt = cfgopt(copt, "DNSDatabaseInfo")))
+	dnsdbinfo = cpt->strarg;
+    else
+	dnsdbinfo = "current.cvd.clamav.net";
+
+    if(optl(opt, "no-dns")) {
+	dnsreply = NULL;
+    } else {
+	if((dnsreply = txtquery(dnsdbinfo, &ttl))) {
+	    mprintf("*TTL: %d\n", ttl);
+
+	    if((pt = cli_strtok(dnsreply, 3, ":"))) {
+		    int rt;
+		    time_t ct;
+
+		rt = atoi(pt);
+		free(pt);
+		time(&ct);
+		if((int) ct - rt > 10800) {
+		    mprintf("WARNING: DNS record is older than 3 hours.\n");
+		    logg("WARNING: DNS record is older than 3 hours.\n");
+		    free(dnsreply);
+		    dnsreply = NULL;
+		}
+
+	    } else {
+		free(dnsreply);
+		dnsreply = NULL;
+	    }
+
+	    if(dnsreply && (pt = cli_strtok(dnsreply, 0, ":"))) {
+		mprintf("*Software version from DNS: %s\n", pt);
+		if(!strstr(cl_retver(), "devel")) {
+		    if(strcmp(cl_retver(), pt)) {
+			mprintf("WARNING: Your ClamAV installation is OUTDATED - please update immediately!\n");
+			mprintf("WARNING: Local version: %s Recommended version: %s\n", cl_retver(), pt);
+			logg("WARNING: Your ClamAV installation is OUTDATED - please update immediately!\n");
+			logg("WARNING: Local version: %s Recommended version: %s\n", cl_retver(), pt);
+		    }
+		}
+		free(pt);
+
+	    } else {
+		if(dnsreply) {
+		    free(dnsreply);
+		    dnsreply = NULL;
+		}
+	    }
+	}
+
+	if(!dnsreply) {
+	    mprintf("WARNING: Invalid DNS reply. Falling back to HTTP mode.\n");
+	    logg("WARNING: Invalid DNS reply. Falling back to HTTP mode.\n");
+	}
+    }
+#endif /* HAVE_RESOLV_H */
 
     memset(ipaddr, 0, sizeof(ipaddr));
 
-    if((ret = downloaddb(DB1NAME, "main.cvd", hostname, ipaddr, &signo, copt, usedns)) > 50)
+    if((ret = downloaddb(DB1NAME, "main.cvd", hostname, ipaddr, &signo, copt, dnsreply)) > 50) {
+	if(dnsreply)
+	    free(dnsreply);
+
 	return ret;
-    else if(ret == 0)
+
+    } else if(ret == 0)
 	updated = 1;
 
     /* if ipaddr[0] != 0 it will use it to connect to the web host */
-    if((ret = downloaddb(DB2NAME, "daily.cvd", hostname, ipaddr, &signo, copt, usedns)) > 50)
+    if((ret = downloaddb(DB2NAME, "daily.cvd", hostname, ipaddr, &signo, copt, dnsreply)) > 50) {
+	if(dnsreply)
+	    free(dnsreply);
+
 	return ret;
-    else if(ret == 0)
+
+    } else if(ret == 0)
 	updated = 1;
+
+    if(dnsreply)
+	free(dnsreply);
 
     if(updated) {
 	if(cfgopt(copt, "HTTPProxyServer")) {
@@ -131,12 +200,12 @@ static int isnumb(const char *str)
     return 1;
 }
 
-int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, int usedns)
+int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, const char *dnsreply)
 {
 	struct cl_cvd *current, *remote;
 	struct cfgstruct *cpt;
-	int hostfd, nodb = 0, dbver = -1, ret, port = 0, ttl;
-	char  *tempname, ipaddr[16], *dnsreply, *pt;
+	int hostfd, nodb = 0, dbver = -1, ret, port = 0;
+	char  *tempname, ipaddr[16], *pt;
 	const char *proxy = NULL, *user = NULL, *pass = NULL;
 	int flevel = cl_retflevel();
 
@@ -144,68 +213,32 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     if((current = cl_cvdhead(localname)) == NULL)
 	nodb = 1;
 
+    if(!nodb && dnsreply) {
+	    int field = 0;
 
-    if(!nodb && usedns && (cpt = cfgopt(copt, "DNSDatabaseInfo"))) {
-	if((dnsreply = txtquery(cpt->strarg, &ttl))) {
-		int field = 0;
-
-	    mprintf("*TTL: %d\n", ttl);
-
-	    if(!strcmp(remotename, "main.cvd")) {
-		field = 1;
-	    } else if(!strcmp(remotename, "daily.cvd")) {
-		field = 2;
-	    } else {
-		mprintf("WARNING: Unknown database name (%s) passed.\n", remotename);
-		logg("WARNING: Unknown database name (%s) passed.\n", remotename);
-	    }
-
-	    if(field && (pt = cli_strtok(dnsreply, 3, ":"))) {
-		    int rt;
-		    time_t ct;
-
-		rt = atoi(pt);
-		free(pt);
-		time(&ct);
-		if((int) ct - rt > 10800) {
-		    mprintf("WARNING: DNS record is older than 3 hours.\n");
-		    logg("WARNING: DNS record is older than 3 hours.\n");
-		    field = 0;
-		}
-
-	    } else {
-		field = 0;
-	    }
-
-	    if(field && (pt = cli_strtok(dnsreply, field, ":"))) {
-		if(!isnumb(pt)) {
-		    mprintf("WARNING: Broken database version in TXT record.\n");
-		    logg("WARNING: Broken database version in TXT record.\n");
-		} else {
-		    dbver = atoi(pt);
-		    mprintf("*%s version from DNS: %d\n", remotename, dbver);
-		}
-		free(pt);
-	    } else {
-		mprintf("WARNING: Invalid DNS reply.\n");
-		logg("WARNING: Invalid DNS reply.\n");
-	    }
-
-	    if(field == 1 && (pt = cli_strtok(dnsreply, 0, ":"))) {
-		mprintf("*Software version from DNS: %s\n", pt);
-		if(!strstr(cl_retver(), "devel")) {
-		    if(strcmp(cl_retver(), pt)) {
-			mprintf("WARNING: Your ClamAV installation is OUTDATED - please update immediately!\n");
-			mprintf("WARNING: Local version: %s Recommended version: %s\n", cl_retver(), pt);
-			logg("WARNING: Your ClamAV installation is OUTDATED - please update immediately!\n");
-			logg("WARNING: Local version: %s Recommended version: %s\n", cl_retver(), pt);
-		    }
-		}
-		free(pt);
-	    }
-
-	    free(dnsreply);
+	if(!strcmp(remotename, "main.cvd")) {
+	    field = 1;
+	} else if(!strcmp(remotename, "daily.cvd")) {
+	    field = 2;
+	} else {
+	    mprintf("WARNING: Unknown database name (%s) passed.\n", remotename);
+	    logg("WARNING: Unknown database name (%s) passed.\n", remotename);
 	}
+
+	if(field && (pt = cli_strtok(dnsreply, field, ":"))) {
+	    if(!isnumb(pt)) {
+		mprintf("WARNING: Broken database version in TXT record.\n");
+		logg("WARNING: Broken database version in TXT record.\n");
+	    } else {
+		dbver = atoi(pt);
+		mprintf("*%s version from DNS: %d\n", remotename, dbver);
+	    }
+	    free(pt);
+	} else {
+	    mprintf("WARNING: Invalid DNS reply. Falling back to HTTP mode.\n");
+	    logg("WARNING: Invalid DNS reply. Falling back to HTTP mode.\n");
+	}
+
     }
 
     /* Initialize proxy settings */

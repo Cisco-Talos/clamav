@@ -64,9 +64,9 @@ Enable verbose logging.
 Default: disabled
 .TP 
 \fBDNSDatabaseInfo STRING\fR
-This directive enables database and software version verification through DNS TXT records. We highly recommend enabling it. Please use the current.cvd.clamav.net record.
+This directive enables database and software version verification through DNS TXT records.
 .br 
-Default: disabled
+Default: enabled, pointing to current.cvd.clamav.net
 .TP 
 \fBDatabaseMirror STRING\fR
 Server name where database updates are downloaded from. database.clamav.net is a round\-robin record which points ClamAV users to most reliable mirrors. If this option is given multiple times, freshclam(1) tries them in the order given if one download fails.
