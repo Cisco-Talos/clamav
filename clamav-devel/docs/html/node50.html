@@ -1,0 +1,87 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 99.2beta8 (1.46)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>AMaViS - "Next Generation"</TITLE>
+<META NAME="description" CONTENT="AMaViS - "Next Generation"">
+<META NAME="keywords" CONTENT="clamdoc">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v99.2beta8">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="clamdoc.css">
+
+<LINK REL="next" HREF="node51.html">
+<LINK REL="previous" HREF="node49.html">
+<LINK REL="up" HREF="node48.html">
+<LINK REL="next" HREF="node51.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html1233"
+  HREF="node51.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html1229"
+  HREF="node48.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html1223"
+  HREF="node49.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html1231"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html1234"
+  HREF="node51.html">ClamdMail</A>
+<B> Up:</B> <A NAME="tex2html1230"
+  HREF="node48.html">MTA + ClamAV</A>
+<B> Previous:</B> <A NAME="tex2html1224"
+  HREF="node49.html">amavisd-new</A>
+ &nbsp <B>  <A NAME="tex2html1232"
+  HREF="node1.html">Contents</A></B> 
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H3><A NAME="SECTION00091200000000000000">
+AMaViS - "Next Generation"</A>
+</H3>
+    <B>Homepage:</B> <TT><A NAME="tex2html52"
+  HREF="http://sourceforge.net/projects/amavis/">http://sourceforge.net/projects/amavis/</A></TT>
+<BR>    <B>Supports:</B> clamscan
+<BR>
+AMaViS-ng is a rewritten, more modular version of amavis-perl/amavisd,
+    developed by Hilko Bengen.
+    <B>Installation:</B>
+<BR>
+<P>
+Please download the newest version (at least 0.1.4).
+    After installation (which is quite easy), please uncomment the following
+    line in amavis.conf:
+    <PRE>
+	virus-scanner = CLAM
+</PRE>
+    and if it's needed change the path to clamscan in the <code>[CLAM]</code> section:
+    <PRE>
+	[CLAM]
+
+	clamscan = /usr/local/bin/clamscan
+</PRE>
+
+<P>
+<BR><HR>
+<ADDRESS>
+Tomasz Kojm
+2005-02-06
+</ADDRESS>
+</BODY>
+</HTML>
