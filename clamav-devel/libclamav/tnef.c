@@ -20,7 +20,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.3 2005/03/25 15:17:13 kojm Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.4 2005/03/25 15:54:59 nigelhorne Exp $";
 
 #include "tnef.h"
 #include "clamav.h"
@@ -28,7 +28,7 @@ static	char	const	rcsid[] = "$Id: tnef.c,v 1.3 2005/03/25 15:17:13 kojm Exp $";
 int
 cli_tnef(const char *dir, int desc)
 {
-	cli_warnmsg("TNEF not scanned yet\n");
+	cli_warnmsg("TNEF not scanned yet - virus samples are welcome\n");
 
 	return CL_CLEAN;
 }
