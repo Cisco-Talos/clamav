@@ -1,3 +1,10 @@
+Sat Jun 12 19:21:44 CEST 2004 (tk)
+----------------------------------
+  * shared/cfgparser: freecfg: fix loop when some directives are doubled in
+		      config file (bug found by Ole Craig <olc*cs.umass.edu>)
+  * libclamav: scanners: add 'X-Real-To: ' mail type (thanks to Andrey
+			 J. Melnikoff (TEMHOTA) <temnota*kmv.ru>)
+
 Sat Jun 12 17:32:31 CEST 2004 (tk)
 ----------------------------------
   * libclamav: fix problem with {set,init}groups on Windows SFU 3.5 (reported

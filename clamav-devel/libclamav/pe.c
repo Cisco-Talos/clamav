@@ -446,7 +446,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    }
 
 	    if(upxfn(src, ssize, dest, dsize)) {
-		cli_dbg("UPX decompression failed\n");
+		cli_dbgmsg("UPX decompression failed\n");
 	    } else {
 		    int ndesc;
 
