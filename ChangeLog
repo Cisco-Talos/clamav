@@ -1,3 +1,13 @@
+Sun Feb 15 08:50:21 GMT 2004 (njh)
+----------------------------------
+  * libclamav:	added blobClose and blobCmp to reduce likelyhood of scanning the
+			same file twice and reducing the runtime memory usage
+	support video within multiparts
+	better warning of unsupported types that may need to be added later
+	removed some unneeded recursiveness that resulted in some needless
+		scanning twice of the same attachment on messages without
+		any text content
+
 Sun Feb 15 02:03:47 CET 2004 (tk)
 ---------------------------------
   * freshclam: use O_BINARY when saving database under Cygwin

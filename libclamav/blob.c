@@ -16,11 +16,14 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.7  2004/02/15 08:45:53  nigelhorne
+ * Avoid scanning the same file twice
+ *
  * Revision 1.6  2004/02/10 19:23:54  nigelhorne
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.6 2004/02/10 19:23:54 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.7 2004/02/15 08:45:53 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -139,6 +142,14 @@ blobAddData(blob *b, const unsigned char *data, size_t len)
 	if(len == 0)
 		return;
 
+	if(b->isClosed) {
+		/*
+		 * Should be cli_dbgmsg, but I want to see them for now,
+		 * and cli_dbgmsg doesn't support debug levels
+		 */
+		cli_warnmsg("Reopening closed blob\n");
+		b->isClosed = 0;
+	}
 	if(b->data == NULL) {
 		assert(b->len == 0);
 		b->size = len * 4;
@@ -170,4 +181,38 @@ blobGetDataSize(const blob *b)
 	assert(b->magic == BLOB);
 
 	return(b->len);
+}
+
+void
+blobClose(blob *b)
+{
+	b->isClosed = 1;
+
+	if(b->size != b->len) {
+		b->size = b->len;
+		b->data = cli_realloc(b->data, b->size);
+	}
+}
+
+/*
+ * Returns 0 if the blobs are the same
+ */
+int
+blobcmp(const blob *b1, const blob *b2)
+{
+	unsigned long s1, s2;
+
+	assert(b1 != NULL);
+	assert(b2 != NULL);
+
+	if(b1 == b2)
+		return 0;
+
+	s1 = blobGetDataSize(b1);
+	s2 = blobGetDataSize(b2);
+
+	if(s1 != s2)
+		return 1;
+
+	return memcmp(blobGetData(b1), blobGetData(b2), s1);
 }
