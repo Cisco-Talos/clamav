@@ -118,6 +118,8 @@ libclamav_la_SOURCES = \
 	untar.c \
 	untar.h \
 	special.c \
-	special.h
+	special.h \
+	binhex.c \
+	binhex.h
 
 lib_LTLIBRARIES = libclamav.la
