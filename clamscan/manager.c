@@ -49,6 +49,7 @@
 #include "strrcpy.h"
 #include "memory.h"
 #include "output.h"
+#include "strutil.h"
 
 #ifdef C_LINUX
 dev_t procdev;
@@ -133,7 +134,7 @@ int scanmanager(const struct optstruct *opt)
 	ptr = getargl(opt, "max-space");
 	if(tolower(ptr[strlen(ptr) - 1]) == 'm') {
 	    cpy = mcalloc(strlen(ptr), sizeof(char));
-	    strncpy(cpy, ptr, strlen(ptr) - 1);
+	    strlcpy(cpy, ptr, strlen(ptr));
 	    limits->maxfilesize = atoi(cpy) * 1024 * 1024;
 	    free(cpy);
 	} else
@@ -842,7 +843,7 @@ int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struc
 	ptr = getargl(opt, "max-space");
 	if(tolower(ptr[strlen(ptr) - 1]) == 'm') { /* megabytes */
 	    cpy = mcalloc(strlen(ptr), sizeof(char));
-	    strncpy(cpy, ptr, strlen(ptr) - 1);
+	    strlcpy(cpy, ptr, strlen(ptr));
 	    maxspace = atoi(cpy) * 1024;
 	    free(cpy);
 	} else /* default - kilobytes */

@@ -69,6 +69,7 @@
 
 #include "unrarlib.h"                       /* include global configuration */
 #include "others.h"
+#include "strutil.h"
 /* ------------------------------------------------------------------------ */
 
 
@@ -1180,8 +1181,8 @@ int stricomp(char *Str1,char *Str2)
   char S1[512],S2[512];
   char *chptr;
 
-  strncpy(S1,Str1,sizeof(S1));
-  strncpy(S2,Str2,sizeof(S2));
+  strlcpy(S1,Str1,sizeof(S1));
+  strlcpy(S2,Str2,sizeof(S2));
 
   while((chptr = strchr(S1, '\\')) != NULL) /* ignore backslash             */
   {

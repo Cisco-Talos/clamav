@@ -1,3 +1,8 @@
+Tue Apr  6 14:19:16 CEST 2004 (tk)
+----------------------------------
+  * global hardening patch: use strlcpy/strlcat instead of strncpy/strncat
+    (Bastian Kleineidam <calvin*debian.org>)
+
 Mon Apr  5 23:49:23 CEST 2004 (tk)
 ----------------------------------
   * contrib: new init script for SuSE (by Martin Fuxa <yeti*email.cz>)

@@ -33,6 +33,7 @@
 
 #include "options.h"
 #include "others.h"
+#include "strutil.h"
 
 void sigtool(struct optstruct *opt);
 
@@ -113,9 +114,9 @@ int main(int argc, char **argv)
 	opt->filename=(char*)mcalloc(len + 256, sizeof(char));
 
         for(i=optind; i<argc; i++) {
-	    strncat(opt->filename, argv[i], strlen(argv[i]));
+	    strlcat(opt->filename, argv[i], len+256);
 	    if(i != argc-1)
-		strncat(opt->filename, " ", 1);
+		strlcat(opt->filename, " ", len+256);
 	}
 
     } else

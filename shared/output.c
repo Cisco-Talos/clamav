@@ -42,6 +42,7 @@
 
 #include "output.h"
 #include "memory.h"
+#include "strutil.h"
 
 #ifdef CL_THREAD_SAFE
 #include <pthread.h>
@@ -136,7 +137,7 @@ int logg(const char *str, ...)
 	    time(&currtime);
 	    pt = ctime(&currtime);
 	    timestr = mcalloc(strlen(pt), sizeof(char));
-	    strncpy(timestr, pt, strlen(pt) - 1);
+	    strlcpy(timestr, pt, strlen(pt));
 	    fprintf(logg_fd, "%s -> ", timestr);
 	    free(timestr);
 	}

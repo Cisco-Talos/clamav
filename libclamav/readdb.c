@@ -37,6 +37,7 @@
 #include "others.h"
 #include "str.h"
 #include "defaults.h"
+#include "strutil.h"
 
 static int cli_parse_add(struct cl_node *root, const char *virname, const char *hexstr, int sigid, int parts, int partno)
 {
@@ -78,7 +79,7 @@ static int cli_parse_add(struct cl_node *root, const char *virname, const char *
 	return CL_EMEM;
     }
 
-    strncpy(new->virname, virname, virlen);
+    strlcpy(new->virname, virname, virlen);
 
     if((ret = cli_addpatt(root, new))) {
 	free(new->virname);
