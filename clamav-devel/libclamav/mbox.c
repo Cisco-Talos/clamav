@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.157  2004/10/16 20:53:28  nigelhorne
+ * Tidy up
+ *
  * Revision 1.156  2004/10/16 19:09:39  nigelhorne
  * Handle BeMail (BeOS) files
  *
@@ -456,7 +459,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.156 2004/10/16 19:09:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.157 2004/10/16 20:53:28 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -927,6 +930,7 @@ static message *
 parseEmailHeaders(const message *m, const table_t *rfc821)
 {
 	bool inHeader = TRUE;
+	bool contMarker = FALSE;
 	const text *t;
 	message *ret;
 	bool anyHeadersFound = FALSE;
@@ -956,7 +960,7 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 				 */
 				cli_dbgmsg("End of header information\n");
 				inHeader = FALSE;
-			} else if(((buffer[0] == '\t') || (buffer[0] == ' ')) &&
+			} else if(((buffer[0] == '\t') || (buffer[0] == ' ') || contMarker) &&
 				  (!Xheader)) {
 				/*
 				 * Section B.2 of RFC822 says TAB or SPACE means
@@ -970,6 +974,7 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 #ifdef CL_THREAD_SAFE
 				char *strptr;
 #endif
+				contMarker = continuationMarker(buffer);
 				switch(commandNumber) {
 					case CONTENT_TRANSFER_ENCODING:
 					case CONTENT_DISPOSITION:
@@ -1013,6 +1018,7 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 #endif
 			} else {
 				Xheader = (bool)(buffer[0] == 'X');
+				contMarker = continuationMarker(buffer);
 				if((parseEmailHeader(ret, buffer, rfc821) >= 0) ||
 				   (strncasecmp(buffer, "From ", 5) == 0)) {
 				   	char cmd[LINE_LENGTH + 1];
