@@ -1,3 +1,8 @@
+Sun Jun 13 04:03:01 CEST 2004 (tk)
+----------------------------------
+  * freshclam, clamd: log version and platform information (requested by
+		      Tomasz Papszun <tomek*clamav.net>)
+
 Sat Jun 12 21:08:55 CEST 2004 (tk)
 ----------------------------------
   * libclamav: mspack: fix bounds error (found by Nigel). Original author

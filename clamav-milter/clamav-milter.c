@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.94  2004/06/13 02:11:25  kojm
+ * improve output
+ *
  * Revision 1.93  2004/06/08 21:44:59  nigelhorne
  * Ensure --from takes an argument
  *
@@ -290,7 +293,7 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.93 2004/06/08 21:44:59 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.94 2004/06/13 02:11:25 kojm Exp $";
 
 #define	CM_VERSION	"0.72a"
 
@@ -820,7 +823,7 @@ main(int argc, char **argv)
 	/*
 	 * Sanity checks on the clamav configuration file
 	 */
-	if((copt = parsecfg(cfgfile)) == NULL) {
+	if((copt = parsecfg(cfgfile, 1)) == NULL) {
 		fprintf(stderr, "%s: Can't parse the config file %s\n",
 			argv[0], cfgfile);
 		return EX_CONFIG;
