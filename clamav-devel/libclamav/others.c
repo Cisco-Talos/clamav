@@ -47,6 +47,7 @@ pthread_mutex_t cl_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
 #include "clamav.h"
 #include "others.h"
 #include "md5.h"
+#include "cltypes.h"
 
 #define CL_FLEVEL 2 /* don't touch it */
 
@@ -453,3 +454,19 @@ int cli_writen(int fd, void *buff, unsigned int count)
         return count;
 }
 
+int32_t cli_readint32(const char *buff)
+{
+	int32_t ret, shift, i = 0;
+
+#if WORDS_BIGENDIAN == 0
+    ret = *(int32_t *) buff;
+#else
+    ret = 0;
+    for(shift = 0; shift < 32; shift += 8) {
+      ret |= (buff[i] & 0xff ) << shift;
+      i++;
+    }
+#endif
+
+    return ret;
+}

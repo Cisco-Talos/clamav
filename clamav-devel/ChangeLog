@@ -1,3 +1,8 @@
+Fri Jul  9 04:14:37 CEST 2004 (tk)
+----------------------------------
+  * libclamav: pe: detect skewed UPX1 (patch by aCaB)
+  * libclamav: use new rule set for HTML detection (thanks to Trog)
+
 Thu Jul  8 23:23:34 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Validate arguments given to inet_ntop. This

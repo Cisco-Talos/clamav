@@ -234,7 +234,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	struct pe_image_optional_hdr optional_hdr;
 	struct pe_image_section_hdr *section_hdr;
 	struct stat sb;
-	char sname[9], buff[24], *tempfile;
+	char sname[9], buff[126], *tempfile;
 	int i, found, upx_success = 0, broken = 0;
 	int (*upxfn)(char *, int , char *, int) = NULL;
 
@@ -470,6 +470,12 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    return CL_CLEAN;
 	}
 
+	if(ssize <= 0x19 || dsize <= ssize) { /* FIXME: What are reasonable values? */
+	    cli_dbgmsg("UPX: Size mismatch (ssize: %d, dsize: %d)\n", ssize, dsize);
+	    return CL_CLEAN;
+	}
+
+
 	/* FIXME: use file operations in case of big files */
 	if((src = (char *) cli_malloc(ssize)) == NULL) {
 	    free(section_hdr);
@@ -493,39 +499,50 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
 	/* try to detect UPX code */
 
-	if(lseek(desc, ep + 0x69, SEEK_SET) == -1) {
+	if(lseek(desc, ep, SEEK_SET) == -1) {
 	    cli_dbgmsg("lseek() failed\n");
 	    free(section_hdr);
 	    return CL_EIO;
 	}
 
-	if(read(desc, buff, 21) != 21) {
-	    cli_dbgmsg("UPX: Can't read 21 bytes at 0x%x (%d)\n", ep + 0x69, ep + 0x78);
+	if(read(desc, buff, 126) != 126) { /* i.e. 0x69 + 13 + 8 */
+	    cli_dbgmsg("UPX: Can't read 126 bytes at 0x%x (%d)\n", ep, ep);
 	    return CL_EIO;
 	} else {
-	    if(cli_memstr(UPX_NRV2B, 24, buff, 13) || cli_memstr(UPX_NRV2B, 24, buff + 8, 13)) {
+	    if(cli_memstr(UPX_NRV2B, 24, buff + 0x69, 13) || cli_memstr(UPX_NRV2B, 24, buff + 0x69 + 8, 13)) {
 		cli_dbgmsg("UPX: Looks like a NRV2B decompression routine\n");
 		upxfn = upx_inflate2b;
-	    } else if(cli_memstr(UPX_NRV2D, 24, buff, 13) || cli_memstr(UPX_NRV2D, 24, buff + 8, 13)) {
+	    } else if(cli_memstr(UPX_NRV2D, 24, buff + 0x69, 13) || cli_memstr(UPX_NRV2D, 24, buff + 0x69 + 8, 13)) {
 		cli_dbgmsg("UPX: Looks like a NRV2D decompression routine\n");
 		upxfn = upx_inflate2d;
-	    } else if(cli_memstr(UPX_NRV2E, 24, buff, 13) || cli_memstr(UPX_NRV2E, 24, buff + 8, 13)) {
+	    } else if(cli_memstr(UPX_NRV2E, 24, buff + 0x69, 13) || cli_memstr(UPX_NRV2E, 24, buff + 0x69 + 8, 13)) {
 		cli_dbgmsg("UPX: Looks like a NRV2E decompression routine\n");
 		upxfn = upx_inflate2e;
 	    }
 	}
 
 	if(upxfn) {
-	    if(upxfn(src, ssize, dest, dsize)) {
-		cli_dbgmsg("UPX: Prefered decompressor failed\n");
+		int ret, skew = cli_readint32(buff + 2) - EC32(optional_hdr.ImageBase) - EC32(section_hdr[i+1].VirtualAddress);
+
+	    if(buff[1] != '\xbe' || skew <= 0 || skew > 0x2e ) { /* FIXME: legit skews?? */
+		skew = 0; 
+		if(!upxfn(src, ssize, dest, dsize))
+		    upx_success = 1;
+
 	    } else {
-		upx_success = 1;
-		cli_dbgmsg("UPX: Successfully decompressed\n");
+		cli_dbgmsg("UPX: UPX1 seems skewed by %d bytes\n", skew);
+		if(!upxfn(src + skew, ssize - skew, dest, dsize) || !upxfn(src, ssize, dest, dsize))
+		    upx_success = 1;
 	    }
+
+	    if(upx_success)
+		cli_dbgmsg("UPX: Successfully decompressed\n");
+	    else
+		cli_dbgmsg("UPX: Prefered decompressor failed\n");
 	}
 
 	if(!upx_success && upxfn != upx_inflate2b) {
-	    if(upx_inflate2b(src, ssize, dest, dsize)) {
+	    if(upx_inflate2b(src, ssize, dest, dsize) && upx_inflate2b(src + 0x15, ssize - 0x15, dest, dsize) ) {
 		cli_dbgmsg("UPX: NRV2B decompressor failed\n");
 	    } else {
 		upx_success = 1;
@@ -534,7 +551,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	}
 
 	if(!upx_success && upxfn != upx_inflate2d) {
-	    if(upx_inflate2d(src, ssize, dest, dsize)) {
+	    if(upx_inflate2d(src, ssize, dest, dsize) && upx_inflate2d(src+0x15, ssize-0x15, dest, dsize) ) {
 		cli_dbgmsg("UPX: NRV2D decompressor failed\n");
 	    } else {
 		upx_success = 1;
@@ -543,7 +560,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	}
 
 	if(!upx_success && upxfn != upx_inflate2e) {
-	    if(upx_inflate2e(src, ssize, dest, dsize)) {
+	    if(upx_inflate2e(src, ssize, dest, dsize) && upx_inflate2e(src + 0x15, ssize - 0x15, dest, dsize) ) {
 		cli_dbgmsg("UPX: NRV2E decompressor failed\n");
 	    } else {
 		upx_success = 1;
