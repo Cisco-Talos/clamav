@@ -1,6 +1,8 @@
 Mon Feb 23 22:29:16 GMT 2004 (tl)
 ---------------------------------
-  * freshclam:  Fix bug in -p option recognition
+  * freshclam:	Fix bug in -p option recognition
+		No longer starts download after SIGHUP (thanks to
+		Stephen Gran)
 
 Mon Feb 23 19:28:33 GMT 2004 (njh)
 ----------------------------------
