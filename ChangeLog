@@ -1,3 +1,7 @@
+Sun Sep 12 20:54:05 BST 2004 (njh)
+----------------------------------
+  * libclamav/untar.c:	Now builds with configure --enable-debug
+
 Sun Sep 12 16:37:04 CEST 2004 (tk)
 ----------------------------------
   * docs/MacOSX: include Mac OS X instructions (thanks to Dale Enterprise L.L.C)
@@ -13,7 +17,7 @@ Sun Sep 12 15:25:12 BST 2004 (njh)
 Wed Sep  8 21:47:09 BST 2004 (njh)
 ----------------------------------
   * contrib/init/RedHat:	Start clamav before sendmail and shut it down
-  					afterwards
+					afterwards
 
 Wed Sep  8 17:05:08 BST 2004 (njh)
 ----------------------------------
