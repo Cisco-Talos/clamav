@@ -714,9 +714,10 @@ int cli_ole2_extract(int fd, const char *dirname)
 		hdr.m_area = (unsigned char *) mmap(NULL, hdr.m_length, PROT_READ, MAP_PRIVATE, fd, 0);
 		if (hdr.m_area == MAP_FAILED) {
 			hdr.m_area = NULL;
+		} else {
+			cli_dbgmsg("mmap'ed file\n");
+			memcpy(&hdr, hdr.m_area, hdr_size);
 		}
-		cli_dbgmsg("mmap'ed file\n");
-		memcpy(&hdr, hdr.m_area, hdr_size);
 	}
 #endif
 

@@ -1,3 +1,8 @@
+Sat Jun 12 15:29:37 CEST 2004 (tk)
+----------------------------------
+  * libclamav: ole2_extract: fix segfault when mmap() fails (problem reported
+	       by Mehmet Ekiz <ekizm*tbmm.gov.tr>)
+
 Sat Jun 12 02:51:42 CEST 2004 (tk)
 ----------------------------------
   * contrib/trashscan: removed due to security reasons:
