@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.108  2004/10/31 09:28:27  nigelhorne
+ * Improve the handling of blank filenames
+ *
  * Revision 1.107  2004/10/24 03:51:48  nigelhorne
  * Change encoding guess from warn to debug
  *
@@ -318,7 +321,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.107 2004/10/24 03:51:48 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.108 2004/10/31 09:28:27 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1537,7 +1540,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 				messageSetEncoding(m, "base64");
 		}
 
-		(*setFilename)(ret, dir, (filename) ? filename : "attachment");
+		(*setFilename)(ret, dir, (filename && *filename) ? filename : "attachment");
 
 		if(filename)
 			free((char *)filename);
@@ -1596,7 +1599,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 				}
 			}
 
-			(*setFilename)(ret, dir, (filename) ? filename : "attchment");
+			(*setFilename)(ret, dir, (filename && *filename) ? filename : "attachment");
 			if(filename) {
 				free((char *)filename);
 				filename = NULL;
@@ -1619,7 +1622,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 					messageSetEncoding(m, "base64");
 			}
 
-			(*setFilename)(ret, dir, (filename) ? filename : "attchment");
+			(*setFilename)(ret, dir, (filename && *filename) ? filename : "attachment");
 
 			t_line = messageGetBody(m);
 		}
@@ -2186,7 +2189,7 @@ sanitiseBase64(char *s)
 {
 #ifdef	USE_TABLE
 	for(; *s; s++)
-		if(base64Table[*s] == 255) {
+		if(base64Table[(int)*s] == 255) {
 			char *p1;
 
 			for(p1 = s; p1[0] != '\0'; p1++)
@@ -2581,10 +2584,12 @@ simil(const char *str1, const char *str2)
 
 	total += len2;
 
-	if(push(&top, s1) == OUT_OF_MEMORY)
+	if((push(&top, s1) == OUT_OF_MEMORY) ||
+	   (push(&top, s2) == OUT_OF_MEMORY)) {
+		free(s1);
+		free(s2);
 		return OUT_OF_MEMORY;
-	if(push(&top, s2) == OUT_OF_MEMORY)
-		return OUT_OF_MEMORY;
+	}
 
 	while(pop(&top, ls2) == SUCCESS) {
 		pop(&top, ls1);
