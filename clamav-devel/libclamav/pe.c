@@ -157,7 +157,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	struct pe_image_optional_hdr optional_hdr;
 	struct pe_image_section_hdr *section_hdr;
 	struct stat sb;
-	char sname[9], buff[8192], *tempfile;
+	char sname[9], buff[4096], *tempfile;
 	unsigned int i, found, upx_success = 0, min = 0, max = 0, err, broken = 0;
 	unsigned int ssize = 0, dsize = 0, dll = 0;
 	int (*upxfn)(char *, int , char *, int *, uint32_t, uint32_t, uint32_t) = NULL;
