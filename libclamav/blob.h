@@ -53,6 +53,7 @@ void	blobGrow(blob *b, size_t len);
 typedef	struct fileblob {
 	FILE	*fp;
 	blob	b;
+	int	isNotEmpty;
 } fileblob;
 
 fileblob	*fileblobCreate(void);
