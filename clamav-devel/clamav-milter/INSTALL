@@ -575,6 +575,7 @@ Changes
 		The default value for --timeout has been changed from 60
 			seconds to 0 (wait forever)
 0.80w	3/12/04: --internal now honours scanning modes and archive limits
+0.80x	4/12/04: findServer() could return values out of range
 
 INTERNATIONALISATION
 
