@@ -1,3 +1,9 @@
+Sat Dec  6 00:43:08 CET 2003 (tk)
+---------------------------------
+  * Applied a patch from David S. Madole <david*madole.net>:
+    + clamd: accept a hostname for the "TCPAddr" parameter
+    + clamdscan: use the "TCPAddr" parameter
+
 Fri Dec  5 19:16:08 GMT 2003 (njh)
 ----------------------------------
   * clamav-milter: Added call to umask to ensure that the local socket

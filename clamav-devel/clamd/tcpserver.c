@@ -24,6 +24,7 @@
 #include <arpa/inet.h>
 #include <clamav.h>
 #include <errno.h>
+#include <netdb.h>
 
 
 #include "options.h"
@@ -38,6 +39,7 @@ int tcpserver(const struct optstruct *opt, const struct cfgstruct *copt, struct 
 	int sockfd, backlog;
 	struct cfgstruct *cpt;
 	struct cfgstruct *taddr;
+	struct hostent *he;
 	char *estr;
 	int true = 1;
 
@@ -46,13 +48,14 @@ int tcpserver(const struct optstruct *opt, const struct cfgstruct *copt, struct 
     server.sin_port = htons(cfgopt(copt, "TCPSocket")->numarg);
 
 
-    if((taddr = cfgopt(copt, "TCPAddr")))
-    {
-	server.sin_addr.s_addr = inet_addr( taddr->strarg );
-    }else
-    {
+    if((taddr = cfgopt(copt, "TCPAddr"))) {
+	if ((he = gethostbyname(taddr->strarg)) == 0) {
+	    logg("!gethostbyname(%s) error: %s\n", taddr->strarg, strerror(errno));
+	    exit(1);
+	}
+	server.sin_addr = *(struct in_addr *) he->h_addr_list[0];
+    } else
 	server.sin_addr.s_addr = INADDR_ANY;
-    }
 
 
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
