@@ -1,3 +1,8 @@
+Tue Nov  4 08:27:00 GMT 2003 (njh)
+----------------------------------
+  * libclamav: Handle multipart messages that have no text portion
+  	(Fix by NJH, Bug notified by Laurent Wacrenier <lwa@teaser.fr>)
+
 Tue Nov  4 00:37:03 CET 2003 (tk)
 ---------------------------------
   * clamd: fixed signature counter (thanks to Dirk Kraemer)

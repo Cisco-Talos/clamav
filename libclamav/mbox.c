@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.16  2003/11/04 08:24:00  nigelhorne
+ * Handle multipart messages that have no text portion
+ *
  * Revision 1.15  2003/10/12 20:13:49  nigelhorne
  * Use NO_STRTOK_R consistent with message.c
  *
@@ -36,7 +39,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.15 2003/10/12 20:13:49 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.16 2003/11/04 08:24:00 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -649,7 +652,8 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 			switch(tableFind(subtypeTable, mimeSubtype)) {
 			case RELATED:
 				/*
-				 * Look for the text bit
+				 * Have a look to see if there's HTML code
+				 * which will need scanning
 				 */
 				aMessage = NULL;
 				assert(multiparts > 0);
@@ -660,9 +664,9 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 					aText = textAddMessage(aText, messages[htmltextPart]);
 				else
 					/*
-					 * There isn't a text bit. If there's a
-					 * multipart bit, it'll probably be in
-					 * there somewhere
+					 * There isn't an HTML bit. If there's a
+					 * multipart bit, it'll may be in there
+					 * somewhere
 					 */
 					for(i = 0; i < multiparts; i++)
 						if(messageGetMimeType(messages[i]) == MULTIPART) {
@@ -671,9 +675,11 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 							break;
 						}
 
-				assert(htmltextPart != -1);
-
-				rc = insert(aMessage, blobs, nBlobs, aText, dir, rfc821Table, subtypeTable);
+				if(htmltextPart == -1) {
+					cli_dbgmsg("No HTML code found to be scanned");
+					rc = 0;
+				} else
+					rc = insert(aMessage, blobs, nBlobs, aText, dir, rfc821Table, subtypeTable);
 				blobArrayDestroy(blobs, nBlobs);
 				blobs = NULL;
 				nBlobs = 0;
