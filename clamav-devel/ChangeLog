@@ -1,3 +1,8 @@
+Fri Apr 16 17:42:51 CEST 2004 (tk)
+----------------------------------
+  * clamd: rename ArchiveDetectEncrypted to ArchiveBlockEncrypted
+  * clamscan: rename --detect-encrypted to --block-encrypted
+
 Fri Apr 16 14:43:25 CEST 2004 (tk)
 ----------------------------------
   * libclamav: scan ">From " messages

@@ -70,7 +70,7 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 	    {"ArchiveMaxFiles", OPT_NUM},
 	    {"ArchiveMaxCompressionRatio", OPT_NUM},
 	    {"ArchiveLimitMemoryUsage", OPT_NOARG},
-	    {"ArchiveDetectEncrypted", OPT_NOARG},
+	    {"ArchiveBlockEncrypted", OPT_NOARG},
 	    {"DataDirectory", OPT_STR}, /* obsolete */
 	    {"DatabaseDirectory", OPT_STR}, /* clamd + freshclam */
 	    {"TCPAddr", OPT_STR},
