@@ -1,3 +1,8 @@
+Thu Jul 29 03:31:22 CEST 2004 (tk)
+----------------------------------
+  * freshclam/clamd: fix crash on PPC when LogFile was enabled together with
+		     LogSyslog
+
 Thu Jul 29 02:43:13 CEST 2004 (tk)
 ----------------------------------
   * configure: improve gethostbyname_r check; cleanups
