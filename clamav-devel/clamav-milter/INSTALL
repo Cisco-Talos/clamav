@@ -702,6 +702,7 @@ Changes
 				found, stop accepting inputs to quiten the
 				system for the database reload, rather than
 				wait for it to happen by itself
+0.84	3/3/05:		Up-issue
 
 INTERNATIONALISATION
 
