@@ -1,3 +1,8 @@
+Mon Feb  2 08:28:41 GMT 2004 (njh)
+----------------------------------
+  * contrib: added CLI to the Windows client to allow integration with
+  	download managers, or scheduled scanning of an entire disc
+
 Sun Feb  1 17:50:30 CET 2004 (tk)
 ---------------------------------
   * clamd: use putenv() instead of setenv() while setting TemporaryDirectory
