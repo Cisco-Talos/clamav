@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.188  2004/11/27 14:17:35  nigelhorne
+ * Handle attachments before the first mime section
+ *
  * Revision 1.187  2004/11/27 13:16:56  nigelhorne
  * uuencode failures no longer fatal
  *
@@ -549,7 +552,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.187 2004/11/27 13:16:56 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.188 2004/11/27 14:17:35 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1393,6 +1396,19 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							if(fb)
 								fileblobDestroy(fb);
 						}
+					} else if(encodingLine(mainMessage) == t_line->t_next) {
+						/*
+						 * We look for the next line
+						 * since later on we'll skip
+						 * over the important line when
+						 * we think it's a blank line
+						 * at the top of the message -
+						 * which it would have been in
+						 * an RFC compliant world
+						 */
+						cli_dbgmsg("Found MIME attachment before the first MIME section\n");
+						if(messageGetEncoding(mainMessage) == NOENCODING)
+							break;
 					}
 				}
 			while((t_line = t_line->t_next) != NULL);
