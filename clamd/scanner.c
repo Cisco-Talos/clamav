@@ -108,15 +108,12 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 			    if(S_ISREG(statbuf.st_mode) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 2) && cfgopt(copt, "FollowFileSymlinks"))) {
 
 #ifdef C_LINUX
-				if(procdev) {
-				    if(statbuf.st_dev == procdev)
-					scanret = CL_CLEAN;
-				    else
-					scanret = cl_scanfile(fname, virname, scanned, root, limits, options);
-				}
-#else
-				scanret = cl_scanfile(fname, virname, scanned, root, limits, options);
+				if(procdev && (statbuf.st_dev == procdev))
+				    scanret = CL_CLEAN;
+				else
 #endif
+				    scanret = cl_scanfile(fname, virname, scanned, root, limits, options);
+
 				if(scanret == CL_VIRUS) {
 
 				    mdprintf(odesc, "%s: %s FOUND\n", fname, *virname);
@@ -183,15 +180,11 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_node 
 		return 0;
 	    }
 #ifdef C_LINUX
-	    if(procdev) {
-		if(sb.st_dev == procdev)
-		    ret = CL_CLEAN;
-		else
-		    ret = cl_scanfile(filename, &virname, scanned, root, limits, options);
-	    }
-#else
-	    ret = cl_scanfile(filename, &virname, scanned, root, limits, options);
+	    if(procdev && (sb.st_dev == procdev))
+		ret = CL_CLEAN;
+	    else
 #endif
+		ret = cl_scanfile(filename, &virname, scanned, root, limits, options);
 
 	    if(ret == CL_VIRUS) {
 		mdprintf(odesc, "%s: %s FOUND\n", filename, virname);

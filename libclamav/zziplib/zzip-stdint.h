@@ -18,24 +18,24 @@
 #elif defined ZZIP_HAVE_INTTYPES_H /*freebsd*/
 #include <inttypes.h>
 #else
-    typedef unsigned char uint8_t;      typedef signed char int8_t;
+    typedef unsigned char uint8_tz;      typedef signed char int8_tz;
 
 # if ZZIP_SIZEOF_INT && ZZIP_SIZEOF_INT == 2
-    typedef unsigned int uint16_t;      typedef signed int int16_t;
+    typedef unsigned int uint16_tz;      typedef signed int int16_tz;
 # elif ZZIP_SIZEOF_SHORT && ZZIP_SIZEOF_SHORT == 2
-    typedef unsigned short uint16_t;    typedef signed short int16_t;
+    typedef unsigned short uint16_tz;    typedef signed short int16_tz;
 # else
-#   error unable to typedef int16_t from either int or short
-    typedef unsigned short uint16_t;    typedef signed short int16_t;
+#   error unable to typedef int16_tz from either int or short
+    typedef unsigned short uint16_tz;    typedef signed short int16_tz;
 # endif
 
 # if defined ZZIP_SIZEOF_INT && ZZIP_SIZEOF_INT == 4
-    typedef unsigned int uint32_t;      typedef signed int int32_t;
+    typedef unsigned int uint32_tz;      typedef signed int int32_tz;
 # elif defined ZZIP_SIZEOF_LONG && ZZIP_SIZEOF_LONG == 4
-    typedef unsigned long uint32_t;     typedef signed long int32_t;
+    typedef unsigned long uint32_tz;     typedef signed long int32_tz;
 # else
-#   error unable to typedef int32_t from either int or long
-    typedef unsigned long uint32_t;     typedef signed long int32_t;
+#   error unable to typedef int32_tz from either int or long
+    typedef unsigned long uint32_tz;     typedef signed long int32_tz;
 # endif
 #endif
 
