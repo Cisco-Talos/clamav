@@ -75,7 +75,7 @@ int scanfile(const char *cmd, const char *str, const char *file)
 
 char *cut(const char *file, long int start, long int end)
 {
-	char *fname = NULL, buffer[FBUFFSIZE];
+	char *fname = NULL, buffer[FILEBUFF];
 	int bytes, size, sum;
 	FILE *rd, *wd;
 
@@ -100,7 +100,7 @@ char *cut(const char *file, long int start, long int end)
     size = end - start;
     sum = 0;
 
-    while((bytes = fread(buffer, 1, FBUFFSIZE, rd)) > 0) {
+    while((bytes = fread(buffer, 1, FILEBUFF, rd)) > 0) {
 	if(sum + bytes >= size) {
 	    fwrite(buffer, 1, size - sum, wd);
 	    break;
@@ -118,7 +118,7 @@ char *cut(const char *file, long int start, long int end)
 
 char *change(const char *file, long int x)
 {
-	char *fname = NULL, buffer[FBUFFSIZE];
+	char *fname = NULL, buffer[FILEBUFF];
 	int bytes, size, sum, ch;
 	FILE *rd, *wd;
 
@@ -138,7 +138,7 @@ char *change(const char *file, long int x)
 	exit(14);
     }
 
-    while((bytes = fread(buffer, 1, FBUFFSIZE, rd)) > 0)
+    while((bytes = fread(buffer, 1, FILEBUFF, rd)) > 0)
 	fwrite(buffer, 1, bytes, wd);
 
     fclose(rd);
@@ -157,7 +157,7 @@ char *change(const char *file, long int x)
 
 void sigtool(struct optstruct *opt)
 {
-	    char buffer[FBUFFSIZE];
+	    char buffer[FILEBUFF];
 	    int bytes;
 	    char *pt;
 
@@ -183,7 +183,7 @@ void sigtool(struct optstruct *opt)
 
     if(optl(opt, "hex-dump")) {
 
-	while((bytes = read(0, buffer, FBUFFSIZE)) > 0) {
+	while((bytes = read(0, buffer, FILEBUFF)) > 0) {
 	    pt = cl_str2hex(buffer, bytes);
 	    write(1, pt, 2 * bytes);
 	    free(pt);
@@ -420,7 +420,7 @@ void sigtool(struct optstruct *opt)
 
 	mprintf("Saving signature in %s file.\n", signame);
 
-	while((bytes = fread(buffer, 1, FBUFFSIZE, fd)) > 0) {
+	while((bytes = fread(buffer, 1, FILEBUFF, fd)) > 0) {
 	    pt = cl_str2hex(buffer, bytes);
 	    fwrite(pt, 1, 2 * bytes, wd);
 	    free(pt);
@@ -459,7 +459,7 @@ int build(struct optstruct *opt)
 {
 	int ret, no = 0, realno = 0, bytes, itmp;
 	struct stat foo;
-	char buffer[BUFFSIZE], *tarfile = NULL, *gzfile = NULL, header[257],
+	char buffer[FILEBUFF], *tarfile = NULL, *gzfile = NULL, header[257],
 	     smbuff[25], *pt;
         struct cl_node *root = NULL;
 	FILE *tar, *cvd, *fd;
@@ -542,7 +542,7 @@ int build(struct optstruct *opt)
 	exit(1);
     }
 
-    while((bytes = fread(buffer, 1, BUFFSIZE, tar)) > 0)
+    while((bytes = fread(buffer, 1, FILEBUFF, tar)) > 0)
 	gzwrite(gz, buffer, bytes);
 
     fclose(tar);
@@ -647,7 +647,7 @@ int build(struct optstruct *opt)
 	exit(1);
     }
 
-    while((bytes = fread(buffer, 1, BUFFSIZE, tar)) > 0)
+    while((bytes = fread(buffer, 1, FILEBUFF, tar)) > 0)
 	fwrite(buffer, 1, bytes, cvd);
 
     fclose(tar);

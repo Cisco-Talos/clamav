@@ -1,52 +1,60 @@
-Tomasz Kojm <zolw@konarski.edu.pl>
+Tomasz Kojm <tkojm*clamav.net>
 home page : http://www.konarski.edu.pl/~zolw
-gpg key   : http://www.konarski.edu.pl/~zolw/tkojm.gpg
+gpg key   : http://www.clamav.net/gpg/tkojm.gpg
 GPG = 0DCA 5A08 407D 5288 279D  B434 5482 2DC8 985A 444B
 
-Nigel Horne <njh@bandsman.co.uk>
+Nigel Horne <njh*clamav.net>
 home page : http://bandsman.co.uk
 Author of clamav-milter and the whole mbox code.
 
 System administrator (www, mailing lists, mirror issues, virus
-submission mechanisms): Luca 'NERvOus' Gibelli <nervous@nervous.it>
+submission mechanisms): Luca 'NERvOus' Gibelli <nervous*clamav.net>
+
+Submission management interface (for database developers only): Thomas Madsen
+<tm*softcom.dk>
+
 
 Database developers:
 
-aCaB <acab@digitalfuture.it>
-Diego D'Ambra <da@softcom.dk>
-Jason Englander <jason@englanders.cc>
-Tomasz Kojm <zolw@konarski.edu.pl>
-Tomasz Papszun <tomek@lodz.tpsa.pl>
+aCaB <acab*clamav.net>
+Diego D'Ambra <diego*clamav.net>
+Jason Englander <jason*clamav.net>
+Tomasz Kojm <tkojm*clamav.net>
+Tomasz Papszun <tomek*clamav.net>
 
+ClamAV logo: Mia Kalenius and Sergei Pronin <sp*finndesign.fi>
+TrashScan was written by Trashware <trashware*gmx.net>.
 
-TrashScan was written by Trashware <trashware@gmx.net>.
+libclamav/zziplib: Guido Draheim <guidod*gmx.de>
+libclamav/unrarlib.c: Christian Scheurer and Johannes Winkelmann (jw*tks6.net)
 
 ClamAV patches were submitted by (in alphabetical order):
 
-Kamil Andrusz <wizz@mniam.net>
-Patrick Bihan-Faou <patrick@mindstep.com>
-Damien Curtain <damien@pagefault.org>
-Michael Dankov <misha@btrc.ru>
-Alejandro Dubrovsky <s328940@student.uq.edu.au>
-Magnus Ekdahl <magnus@debian.org>
-Jason Englander <jason@englanders.cc>
-David Ford <david+cert@blue-labs.org>
-Nigel Horne <njh@smsltd.demon.co.uk>
-Hrvoje Habjanic <hrvoje.habjanic@zg.hinet.hr>
-Nicholas M. Kirsch <nick@kirsch.org>
-Robbert Kouprie <robbert@exx.nl>
-Thomas Lamy <Thomas.Lamy@in-online.net>
-Peter N Lewis <peter@stairways.com.au>
-Mark Mielke <mark@mark.mielke.cc>
-Arkadiusz Miskiewicz <misiek@pld.org.pl>
-Hendrik Muhs <Hendrik.Muhs@student.uni-magdeburg.de>
-Masaki Ogawa <proc@mac.com>
-Ed Phillips <ed@UDel.Edu>
-Andreas Piesk <Andreas.Piesk@heise.de>
-Ant La Porte <ant@dvere.net>
-Thomas Quinot <thomas@cuivre.fr.eu.org>
-Joe Talbott <josepht@cstone.net>
-Gernot Tenchio <g.tenchio@telco-tech.de>
-Laurent Wacrenier <lwa@teaser.fr>
-David Woakes <david@mitredata.co.uk>
-Andoni Zubimendi <andoni@lpsat.net>
+Kamil Andrusz <wizz*mniam.net>
+Patrick Bihan-Faou <patrick*mindstep.com>
+Damien Curtain <damien*pagefault.org>
+Michael Dankov <misha*btrc.ru>
+Alejandro Dubrovsky <s328940*student.uq.edu.au>
+Magnus Ekdahl <magnus*debian.org>
+Jason Englander <jason*englanders.cc>
+David Ford <david+cert*blue-labs.org>
+Nigel Horne <njh*smsltd.demon.co.uk>
+Hrvoje Habjanic <hrvoje.habjanic*zg.hinet.hr>
+Nicholas M. Kirsch <nick*kirsch.org>
+Robbert Kouprie <robbert*exx.nl>
+Thomas Lamy <Thomas.Lamy*in-online.net>
+Peter N Lewis <peter*stairways.com.au>
+Mark Mielke <mark*mark.mielke.cc>
+Arkadiusz Miskiewicz <misiek*pld.org.pl>
+Hendrik Muhs <Hendrik.Muhs*student.uni-magdeburg.de>
+Masaki Ogawa <proc*mac.com>
+Ed Phillips <ed*UDel.Edu>
+Andreas Piesk <Andreas.Piesk*heise.de>
+Ant La Porte <ant*dvere.net>
+Thomas Quinot <thomas*cuivre.fr.eu.org>
+Matt Sullivan <matt*sullivan.gen.nz>
+Joe Talbott <josepht*cstone.net>
+Gernot Tenchio <g.tenchio*telco-tech.de>
+Laurent Wacrenier <lwa*teaser.fr>
+David Woakes <david*mitredata.co.uk>
+Andoni Zubimendi <andoni*lpsat.net>

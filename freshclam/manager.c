@@ -316,7 +316,7 @@ int wwwconnect(const char *server, const char *proxy, char *ip)
 /* TODO: use a HEAD instruction to see if the file has been changed */
 struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostname, const char *proxy, const char *user)
 {
-	char cmd[512], head[513], buffer[FBUFFSIZE], *ch, *tmp;
+	char cmd[512], head[513], buffer[FILEBUFF], *ch, *tmp;
 	int i, j, bread, cnt;
 	char *remotename = NULL, *authorization = NULL;
 	struct cl_cvd *cvd;
@@ -359,7 +359,7 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
     free(authorization);
 
     tmp = buffer;
-    cnt = FBUFFSIZE;
+    cnt = FILEBUFF;
     while ((bread = recv(socketfd, tmp, cnt, 0)) > 0) {
 	tmp+=bread;
 	cnt-=bread;
@@ -411,7 +411,7 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
 int
 get_database(const char *dbfile, int socketfd, const char *file, const char *hostname, const char *proxy, const char *user)
 {
-	char cmd[512], buffer[FBUFFSIZE];
+	char cmd[512], buffer[FILEBUFF];
 	char *ch;
 	int bread, fd, i, rot = 0;
 	char *remotename = NULL, *authorization = NULL;
@@ -459,7 +459,7 @@ get_database(const char *dbfile, int socketfd, const char *file, const char *hos
     free(remotename);
     free(authorization);
 
-    if ((bread = recv(socketfd, buffer, FBUFFSIZE, 0)) == -1) {
+    if ((bread = recv(socketfd, buffer, FILEBUFF, 0)) == -1) {
       mprintf("@Error while reading database from %s\n", hostname);
       return -1;
     }
@@ -482,7 +482,7 @@ get_database(const char *dbfile, int socketfd, const char *file, const char *hos
     }  
 
     write(fd, ch, bread - i);
-    while((bread = read(socketfd, buffer, FBUFFSIZE))) {
+    while((bread = read(socketfd, buffer, FILEBUFF))) {
 	write(fd, buffer, bread);
 	mprintf("Downloading %s [%c]\r", dbfile, rotation[rot]);
 	fflush(stdout);
