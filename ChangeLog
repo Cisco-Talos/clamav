@@ -1,3 +1,9 @@
+Sat Dec 13 16:45:44 GMT 2003 (njh)
+----------------------------------
+  * libclamav: use new cl_chomp() and fixed memory leak
+  * clamav-milter: up issue to 0.66 ready for the new release
+  * docs: Cover what happens if max-children not set in clamav-milter
+
 Fri Dec 12 21:07:49 CET 2003 (tk)
 ---------------------------------
   * libclamav: new cl_chomp() from Nigel
