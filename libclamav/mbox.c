@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.148  2004/10/05 15:41:53  nigelhorne
+ * First draft of code to handle RFC1341
+ *
  * Revision 1.147  2004/10/04 12:18:09  nigelhorne
  * Better warning message about PGP attachments not being scanned
  *
@@ -429,7 +432,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.147 2004/10/04 12:18:09 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.148 2004/10/05 15:41:53 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -459,6 +462,7 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.147 2004/10/04 12:18:09 nigelhorne 
 #include <sys/types.h>
 #include <sys/param.h>
 #include <clamav.h>
+#include <dirent.h>
 
 #ifdef	CL_THREAD_SAFE
 #include <pthread.h>
@@ -538,6 +542,13 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 #undef	WITH_CURL
 #endif
 
+/*
+ * Define this to handle RFC1341 messages.
+ *	This is experimental code so it is up to YOU to (1) ensure it's secure
+ * (2) peridically trim the directory of old files
+ */
+/*#define	PARTIAL_DIR	"/tmp/partial"	/* FIXME: should be config based on TMPDIR */
+
 static	message	*parseEmailHeaders(const message *m, const table_t *rfc821Table);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
 static	int	parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, unsigned int options);
@@ -551,6 +562,9 @@ static	int	parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Tab
 static	void	saveTextPart(message *m, const char *dir);
 static	char	*rfc2047(const char *in);
 static	char	*rfc822comments(const char *in);
+#ifdef	PARTIAL_DIR
+static	int	rfc1341(message *m, const char *dir);
+#endif
 
 static	void	checkURLs(message *m, const char *dir);
 #ifdef	WITH_CURL
@@ -876,9 +890,6 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 
 	for(t = messageGetBody(m); t; t = t->t_next) {
 		const char *buffer;
-#ifdef CL_THREAD_SAFE
-		char *strptr;
-#endif
 
 		if(t->t_line)
 			buffer = lineGetData(t->t_line);
@@ -903,6 +914,9 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 				 */
 				const char *ptr;
 				char copy[LINE_LENGTH + 1];
+#ifdef CL_THREAD_SAFE
+				char *strptr;
+#endif
 
 				assert(strlen(buffer) < sizeof(copy));
 				strcpy(copy, buffer);
@@ -1787,6 +1801,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					cli_warnmsg("MIME type 'message' cannot be decoded\n");
 					break;
 			}
+			rc = 0;
 			if((strcasecmp(mimeSubtype, "rfc822") == 0) ||
 			   (strcasecmp(mimeSubtype, "delivery-status") == 0)) {
 				message *m = parseEmailHeaders(mainMessage, rfc821Table);
@@ -1807,26 +1822,27 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			} else if(strcasecmp(mimeSubtype, "disposition-notification") == 0)
 				/* RFC 2298 - handle like a normal email */
 				break;
-			else if(strcasecmp(mimeSubtype, "partial") == 0)
-				/*
-				 * How can we be expected to reassemble a message when in
-				 * practice we'll be called once for each email so we won't
-				 * have all the parts for reassembly. It is up to the
-				 * calling program to reassemble full messages and pass
-				 * them on to us for scanning
-				 */
+			else if(strcasecmp(mimeSubtype, "partial") == 0) {
+#ifdef	PARTIAL_DIR
+				/* RFC1341 message split over many emails */
+				if(rfc1341(mainMessage, dir) >= 0)
+					rc = 1;
+#else
 				cli_warnmsg("Partial message received from MUA/MTA - message cannot be scanned\n");
-			else if(strcasecmp(mimeSubtype, "external-body") == 0)
+				rc = 0;
+#endif
+			} else if(strcasecmp(mimeSubtype, "external-body") == 0)
 				/* TODO */
 				cli_warnmsg("Attempt to send Content-type message/external-body trapped");
 			else
 				cli_warnmsg("Unsupported message format `%s' - please report to bugs@clamav.net\n", mimeSubtype);
 
+
 			if(mainMessage && (mainMessage != messageIn))
 				messageDestroy(mainMessage);
 			if(messages)
 				free(messages);
-			return 0;
+			return rc;
 
 		case APPLICATION:
 			cptr = messageGetMimeSubtype(mainMessage);
@@ -2584,6 +2600,157 @@ rfc2047(const char *in)
 	return out;
 }
 
+#ifdef	PARTIAL_DIR
+/*
+ * Handle partial messages
+ */
+static int
+rfc1341(message *m, const char *dir)
+{
+	fileblob *fb;
+	char *arg;
+	char *id;
+	char *number;
+	char *total;
+	char *oldfilename;
+
+	if((mkdir(PARTIAL_DIR, 0700) < 0) && (errno != EEXIST)) {
+		/*perror(PARTIAL_DIR);*/
+		return -1;
+	}
+
+	id = (char *)messageFindArgument(m, "id");
+	if(id == NULL)
+		return -1;
+	number = (char *)messageFindArgument(m, "number");
+	if(number == NULL) {
+		free(id);
+		return -1;
+	}
+
+	oldfilename = (char *)messageFindArgument(m, "filename");
+	if(oldfilename == NULL)
+		oldfilename = (char *)messageFindArgument(m, "name");
+
+	arg = cli_malloc(10 + strlen(id) + strlen(number));
+	sprintf(arg, "filename=%s%s", id, number);
+	messageAddArgument(m, arg);
+	free(arg);
+
+	if(oldfilename) {
+		cli_warnmsg("Must reset to %s\n", oldfilename);
+		free(oldfilename);
+	}
+
+	if((fb = messageToFileblob(m, PARTIAL_DIR)) == NULL) {
+		free(id);
+		free(number);
+		return -1;
+	}
+
+	fileblobDestroy(fb);
+
+	total = (char *)messageFindArgument(m, "total");
+	cli_dbgmsg("rfc1341: %s, %s of %s\n", id, number, (total) ? total : "?");
+	if(total) {
+		int n = atoi(number);
+		int t = atoi(total);
+		DIR *dd = NULL;
+		struct dirent *dent;
+#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
+		struct dirent result;
+#endif
+
+		/*
+		 * If it's the last one - reassemble it
+		 */
+		if((n == t) && ((dd = opendir(PARTIAL_DIR)) != NULL)) {
+			FILE *fout;
+			char outname[NAME_MAX + 1];
+
+			snprintf(outname, sizeof(outname) - 1, "%s/%s", dir, id);
+
+			cli_dbgmsg("outname: %s\n", outname);
+
+			fout = fopen(outname, "wb");
+			if(fout == NULL) {
+				/*perror(outname);*/
+				free(id);
+				free(total);
+				free(number);
+				closedir(dd);
+				return -1;
+			}
+
+			for(n = 1; n <= t; n++) {
+				char filename[NAME_MAX + 1];
+
+				snprintf(filename, sizeof(filename), "%s%d", id, n);
+#ifdef HAVE_READDIR_R_3
+				while((readdir_r(dd, &result, &dent) == 0) && dent) {
+#elif defined(HAVE_READDIR_R_2)
+				while((dent = (struct dirent *)readdir_r(dd, &result))) {
+#else
+				while((dent = readdir(dd))) {
+#endif
+					char fullname[NAME_MAX + 1];
+					FILE *fin;
+					char buffer[BUFSIZ];
+					int nblanks;
+
+					if(dent->d_ino == 0)
+						continue;
+
+					if(strncmp(filename, dent->d_name, strlen(filename)) != 0)
+						continue;
+
+					sprintf(fullname, "%s/%s", PARTIAL_DIR, dent->d_name);
+					fin = fopen(fullname, "rb");
+					if(fin == NULL) {
+						/*perror(fullname);*/
+						fclose(fout);
+						unlink(outname);
+						free(id);
+						free(total);
+						free(number);
+						closedir(dd);
+
+						return -1;
+					}
+					nblanks = 0;
+					while(fgets(buffer, sizeof(buffer), fin) != NULL)
+						/*
+						 * Ensure that trailing newlines
+						 * aren't copied
+						 */
+						if(buffer[0] == '\n') {
+							nblanks++;
+						} else {
+							if(nblanks)
+								do
+									putc('\n', fout);
+								while(--nblanks > 0);
+							fputs(buffer, fout);
+						}
+					fclose(fin);
+					/* FIXME: don't unlink if leave temps */
+					unlink(fullname);
+					break;
+				}
+				rewinddir(dd);
+			}
+			closedir(dd);
+			fclose(fout);
+		}
+		free(number);
+	}
+	free(id);
+	free(total);
+
+	return 0;
+}
+#endif
+
 #ifdef	FOLLOWURLS
 static void
 checkURLs(message *m, const char *dir)
@@ -2783,7 +2950,7 @@ getURL(struct arg *arg)
 	fp = fopen(fout, "w");
 
 	if(fp == NULL) {
-		perror(fout);
+		/*perror(fout);*/
 		free(fout);
 		curl_easy_cleanup(curl);
 		return NULL;

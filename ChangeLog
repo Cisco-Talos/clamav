@@ -1,3 +1,13 @@
+Tue Oct  5 16:45:28 BST 2004 (njh)
+----------------------------------
+  * libclamav:		First draft of RFC1341 code. It is not enabled by
+				default. To enable it, locate PARTIAL_DIR
+				in libclamav/mbox.c, uncomment the line and set
+				that to some nice place.
+			Note that it is up to YOU to ensure that the PARTIAL_DIR
+				directory is secure and to trim out old files
+				in there from time to time.
+
 Tue Oct  5 11:59:09 BST 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Faster base64 decoding
@@ -60,7 +70,7 @@ Fri Oct  1 02:28:08 CEST 2004 (tk)
 ----------------------------------
   * clamd: add new directive IdleTimeout (patch by Andrey J. Melnikoff (TEMHOTA)
 	   <temnota*kmv.ru>)
-  * clamscan/others.c: preserve Mac OS X resource forks in filecopy() 
+  * clamscan/others.c: preserve Mac OS X resource forks in filecopy()
 		       (thanks to Remi Mommsen <remigius.mommsen*cern.ch>)
   * cosmetic fixes (thanks to Damian Menscher <menscherr*uiuc.edu>)
 

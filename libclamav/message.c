@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.96  2004/10/05 15:46:18  nigelhorne
+ * First draft of code to handle RFC1341
+ *
  * Revision 1.95  2004/10/05 10:58:00  nigelhorne
  * Table driven base64 decoding
  *
@@ -282,7 +285,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.95 2004/10/05 10:58:00 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.96 2004/10/05 15:46:18 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2333,6 +2336,9 @@ usefulArg(const char *arg)
 	   (strncasecmp(arg, "filename", 8) != 0) &&
 	   (strncasecmp(arg, "boundary", 8) != 0) &&
 	   (strncasecmp(arg, "protocol", 8) != 0) &&
+	   (strncasecmp(arg, "id", 2) != 0) &&
+	   (strncasecmp(arg, "number", 6) != 0) &&
+	   (strncasecmp(arg, "total", 5) != 0) &&
 	   (strncasecmp(arg, "type", 4) != 0)) {
 		cli_dbgmsg("Discarding unwanted argument '%s'\n", arg);
 		return 0;
