@@ -85,6 +85,7 @@ static const struct cl_magic_s cl_magic[] = {
     {0,  "From ",           5, "MBox file",       CL_MAILFILE},
     {0,  "Received: ",     10, "Raw mail",        CL_MAILFILE},
     {0,  "Return-Path: ",  13, "Maildir file",    CL_MAILFILE},
+    {0,  "Return-path: ",  13, "Maildir file",    CL_MAILFILE},
     {0,  "Delivered-To: ", 14, "Mail file",       CL_MAILFILE},
     {0,  "X-UIDL: ",	    8, "Mail file",       CL_MAILFILE},
     {0,  "\320\317\021\340\241\261\032\341",
