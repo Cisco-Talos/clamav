@@ -147,6 +147,12 @@
 /* "pragma pack" */
 #undef HAVE_PRAGMA_PACK
 
+/* readdir_r takes 2 arguments */
+#undef HAVE_READDIR_R_2
+
+/* readdir_r takes 3 arguments */
+#undef HAVE_READDIR_R_3
+
 /* Define to 1 if you have the <regex.h> header file. */
 #undef HAVE_REGEX_H
 

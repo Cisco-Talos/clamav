@@ -359,6 +359,9 @@ int cli_rmdirs(const char *dirname)
 {
 	DIR *dd;
 	struct dirent *dent;
+#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
+	struct dirent result;
+#endif
 	struct stat maind, statbuf;
 	char *fname;
 
@@ -371,7 +374,13 @@ int cli_rmdirs(const char *dirname)
 	while(stat(dirname, &maind) != -1) {
 	    if(!rmdir(dirname)) break;
 
+#ifdef HAVE_READDIR_R_3
+	    while(!readdir_r(dd, &result, &dent) && dent) {
+#elif defined(HAVE_READDIR_R_2)
+	    while((dent = (struct dirent *) readdir_r(dd, &result))) {
+#else
 	    while((dent = readdir(dd))) {
+#endif
 #ifndef C_INTERIX
 		if(dent->d_ino)
 #endif

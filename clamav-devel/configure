@@ -1028,6 +1028,7 @@ Optional Features:
   --enable-debug	  enable debug code
   --enable-bigstack	  increase thread stack size
   --disable-gethostbyname_r	  disable support for gethostbyname_r
+  --disable-readdir_r		  disable support for readdir_r
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -5016,7 +5017,7 @@ test "x$enable_libtool_lock" != xno && enable_libtool_lock=yes
 case $host in
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5019 "configure"' > conftest.$ac_ext
+  echo '#line 5020 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -5589,7 +5590,7 @@ chmod -w .
 save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -o out/conftest2.$ac_objext"
 compiler_c_o=no
-if { (eval echo configure:5592: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
+if { (eval echo configure:5593: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
   # The compiler can only warn and ignore the option if not recognized
   # So say no if there are warnings
   if test -s out/conftest.err; then
@@ -7516,7 +7517,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 7519 "configure"
+#line 7520 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -7614,7 +7615,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 7617 "configure"
+#line 7618 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12717,6 +12718,142 @@ _ACEOF
     fi
     echo "$as_me:$LINENO: result: yes, and it takes $ac_cv_gethostbyname_args arguments" >&5
 echo "${ECHO_T}yes, and it takes $ac_cv_gethostbyname_args arguments" >&6
+fi
+
+
+echo "$as_me:$LINENO: checking for readdir_r" >&5
+echo $ECHO_N "checking for readdir_r... $ECHO_C" >&6
+if test -z "$ac_cv_readdir_args"; then
+    cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+#include <sys/types.h>
+#include <dirent.h>
+
+int
+main ()
+{
+
+    struct dirent dir, *dirp;
+    DIR *mydir;
+    dirp = readdir_r(mydir, &dir);
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+  (eval $ac_compile) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest.$ac_objext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_readdir_args=2
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+fi
+rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+if test -z "$ac_cv_readdir_args"; then
+    cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+#include <sys/types.h>
+#include <dirent.h>
+
+int
+main ()
+{
+
+        struct dirent dir, *dirp;
+        DIR *mydir;
+        int rc;
+        rc = readdir_r(mydir, &dir, &dirp);
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+  (eval $ac_compile) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest.$ac_objext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_readdir_args=3
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+fi
+rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+
+# Check whether --enable-readdir_r or --disable-readdir_r was given.
+if test "${enable_readdir_r+set}" = set; then
+  enableval="$enable_readdir_r"
+  ac_cv_readdir_args=""
+fi;
+
+if test -z "$ac_cv_readdir_args"; then
+    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+else
+    if test "$ac_cv_readdir_args" = 2; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_READDIR_R_2 1
+_ACEOF
+
+    elif test "$ac_cv_readdir_args" = 3; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_READDIR_R_3 1
+_ACEOF
+
+    fi
+    echo "$as_me:$LINENO: result: yes, and it takes $ac_cv_readdir_args arguments" >&5
+echo "${ECHO_T}yes, and it takes $ac_cv_readdir_args arguments" >&6
 fi
 
 if test "$test_clamav" = "yes"
