@@ -1,3 +1,8 @@
+Wed Jan 26 10:15:47 CET 2005 (tk)
+---------------------------------
+  * shared/output.c: change output modes (more stdout output). Patch by
+		     Stephen Gran <steve*lobefin.net>.
+
 Wed Jan 26 09:23:48 CET 2005 (tk)
 ---------------------------------
   * libclamav/snprintf.c: add missing MAX macro (thanks to Ted Mittelstaedt

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -240,10 +240,7 @@ void mprintf(const char *str, ...)
 	return;
     }
 
-    if(mprintf_stdout)
-	fd = stdout;
-    else
-	fd = stderr;
+    fd = stdout;
 
 /* legend:
  * ! - error
@@ -253,11 +250,11 @@ void mprintf(const char *str, ...)
 
 /*
  *             ERROR    WARNING    STANDARD
- * normal       yes       yes        yes
+ * normal      stderr   stderr     stdout
  * 
- * verbose      yes       yes        yes
+ * verbose     stderr   stderr     stdout
  * 
- * quiet        yes       no         no
+ * quiet       stderr     no         no
  */
 
 
@@ -266,9 +263,13 @@ void mprintf(const char *str, ...)
     va_start(argscpy, str);
 
     if(*str == '!') {
+       if(!mprintf_stdout)
+           fd = stderr;
 	fprintf(fd, "ERROR: ");
 	vfprintf(fd, ++str, args);
     } else if(*str == '@') {
+       if(!mprintf_stdout)
+           fd = stderr;
 	fprintf(fd, "ERROR: ");
 	vfprintf(fd, ++str, args);
 #ifdef NO_SNPRINTF
@@ -279,6 +280,8 @@ void mprintf(const char *str, ...)
 	logg("ERROR: %s", logbuf);
     } else if(!mprintf_quiet) {
 	if(*str == '^') {
+           if(!mprintf_stdout)
+               fd = stderr;
 	    fprintf(fd, "WARNING: ");
 	    vfprintf(fd, ++str, args);
 	} else if(*str == '*') {
