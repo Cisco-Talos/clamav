@@ -64,7 +64,9 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 
 #ifndef HAVE_GMP
     mprintf("SECURITY WARNING: NO SUPPORT FOR DIGITAL SIGNATURES\n");
+    mprintf("See the FAQ at http://www.clamav.net/faq.html for an explanation.\n");
     logg("SECURITY WARNING: NO SUPPORT FOR DIGITAL SIGNATURES\n");
+    logg("See the FAQ at http://www.clamav.net/faq.html for an explanation.\n");
 #endif
 
     optl(opt, "no-dns") ? (usedns = 0) : (usedns = 1);

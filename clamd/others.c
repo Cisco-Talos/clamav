@@ -35,6 +35,9 @@
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+#if HAVE_SYS_FILIO_H
+#include <sys/filio.h>
+#endif
 
 /* submitted by breiter@wolfereiter.com: do not use poll(2) on Interix */
 #ifdef C_INTERIX
