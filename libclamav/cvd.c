@@ -355,10 +355,10 @@ int cli_cvdload(FILE *fd, struct cl_node **root, unsigned int *signo, short warn
     }
 
     if(cvd.fl > cl_retflevel()) {
-	cli_warnmsg("****************************************************\n");
-	cli_warnmsg("***  This version of ClamAV engine is outdated.  ***\n");
-	cli_warnmsg("***         Please update it IMMEDIATELY!        ***\n");
-	cli_warnmsg("****************************************************\n");
+	cli_warnmsg("********************************************************\n");
+	cli_warnmsg("***  This version of the ClamAV engine is outdated.  ***\n");
+	cli_warnmsg("*** DON'T PANIC! Read http://www.clamav.net/faq.html ***\n");
+	cli_warnmsg("********************************************************\n");
     }
 
     fseek(fd, 512, SEEK_SET);
