@@ -315,6 +315,12 @@ messageAddArguments(message *m, const char *s)
 
 		string++;
 
+		/*
+		 * Handle white space to the right of the equals sign
+		 */
+		while(isspace(*string) && (*string != '\0'))
+			string++;
+
 		cptr = string++;
 
 		if(*cptr == '"') {
@@ -375,10 +381,10 @@ messageAddArguments(message *m, const char *s)
 			 * The field is not in quotes, so look for the closing
 			 * white space
 			 */
-			assert(*cptr != '\0');
-
 			while((*string != '\0') && !isspace(*string))
 				string++;
+
+			assert(*cptr != '\0');
 
 			len = (size_t)string - (size_t)key + 1;
 			field = cli_malloc(len);
@@ -429,7 +435,10 @@ messageFindArgument(const message *m, const char *variable)
 			ptr = &ptr[len];
 			while(isspace(*ptr))
 				ptr++;
-			assert(*ptr == '=');
+			if(*ptr != '=') {
+				cli_warnmsg("messageFindArgument: no '=' sign found in MIME header\n");
+				return NULL;
+			}
 			if((*++ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {
 				/* Remove any quote characters */
 				char *ret = strdup(++ptr);
@@ -609,6 +618,7 @@ messageToBlob(const message *m)
 			if(messageGetEncoding(m) == UUENCODE)
 				if(strcasecmp(line, "end") == 0)
 					break;
+
 			uptr = decodeLine(m, line, data);
 
 			if(uptr == NULL)
@@ -617,6 +627,17 @@ messageToBlob(const message *m)
 			assert(uptr <= &data[sizeof(data)]);
 
 			blobAddData(b, data, (size_t)(uptr - data));
+			/*
+			 * According to RFC1521, '=' is used to pad out
+			 * the last byte and should be used as evidence
+			 * of the end of the data. Some mail clients
+			 * annoyingly then put plain text after the '='
+			 * bytes. Sigh
+			 */
+			if(messageGetEncoding(m) == BASE64)
+				if(strchr(line, '='))
+					break;
+
 		} while((t_line = t_line->t_next) != NULL);
 	return b;
 }
@@ -676,6 +697,7 @@ messageToText(const message *m)
 			if(messageGetEncoding(m) == UUENCODE)
 				if(strcasecmp(line, "end") == 0)
 					break;
+
 			uptr = decodeLine(m, line, data);
 
 			if(uptr == NULL)
@@ -693,6 +715,10 @@ messageToText(const message *m)
 
 			last->t_text = strdup((char *)data);
 			assert(last->t_text != NULL);
+
+			if(messageGetEncoding(m) == BASE64)
+				if(strchr(line, '='))
+					break;
 		}
 	}
 
@@ -737,6 +763,7 @@ decodeLine(const message *m, const char *line, unsigned char *ptr)
 {
 	int len;
 	char *p2;
+	char *copy;
 
 	assert(m != NULL);
 	assert(line != NULL);
@@ -759,7 +786,17 @@ decodeLine(const message *m, const char *line, unsigned char *ptr)
 						/* soft line break */
 						break;
 
-					byte = hex(*line++);
+					byte = hex(*line);
+
+					if((*++line == '\0') || (*line == '\n')) {
+						/*
+						 * broken e-mail, not
+						 * adhering to RFC1522
+						 */
+						*ptr++ = byte;
+						break;
+					}
+
 					byte <<= 4;
 					byte += hex(*line);
 					*ptr++ = byte;
@@ -770,16 +807,21 @@ decodeLine(const message *m, const char *line, unsigned char *ptr)
 			break;
 
 		case BASE64:
-			assert(strlen(line) <= 76);
-
-			p2 = strchr(line, '=');
+			/*
+			 * RFC1521 sets the maximum length to 76 bytes
+			 * but many e-mail clients ignore that
+			 */
+			copy = strdup(line);
+			p2 = strchr(copy, '=');
 			if(p2)
 				*p2 = '\0';
 			/*
 			 * Klez doesn't always put "=" on the last line
 			 */
 			/*ptr = decode(line, ptr, base64, p2 == NULL);*/
-			ptr = decode(line, ptr, base64, 0);
+			ptr = decode(copy, ptr, base64, 0);
+
+			free(copy);
 			break;
 
 		case UUENCODE:
@@ -912,7 +954,8 @@ base64(char c)
 	if(c == '+')
 		return 62;
 
-	assert(c == '/');
+	if(c != '/')
+		cli_warnmsg("Illegal character <%c> in base64 encoding\n", c);
 
 	return 63;
 }

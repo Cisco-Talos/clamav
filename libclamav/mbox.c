@@ -1277,7 +1277,7 @@ continuationMarker(const char *line)
 
 	assert(ptr != NULL);
 
-	while(ptr >= line)
+	while(ptr > line)
 		switch(*--ptr) {
 			case '\n':
 			case '\r':
