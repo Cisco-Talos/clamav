@@ -1,3 +1,7 @@
+Fri Apr 16 22:21:14 CEST 2004 (tk)
+----------------------------------
+  * docs: update
+
 Fri Apr 16 17:42:51 CEST 2004 (tk)
 ----------------------------------
   * clamd: rename ArchiveDetectEncrypted to ArchiveBlockEncrypted
