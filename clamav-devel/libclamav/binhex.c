@@ -17,11 +17,14 @@
  *
  * Change History:
  * $Log: binhex.c,v $
+ * Revision 1.3  2004/11/18 18:24:45  nigelhorne
+ * Added binhex.h
+ *
  * Revision 1.2  2004/11/18 18:09:06  nigelhorne
  * First draft of binhex.c
  *
  */
-static	char	const	rcsid[] = "$Id: binhex.c,v 1.2 2004/11/18 18:09:06 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: binhex.c,v 1.3 2004/11/18 18:24:45 nigelhorne Exp $";
 
 #include "clamav.h"
 
@@ -55,6 +58,7 @@ static	char	const	rcsid[] = "$Id: binhex.c,v 1.2 2004/11/18 18:09:06 nigelhorne 
 #include "table.h"
 #include "blob.h"
 #include "text.h"
+#include "binhex.h"
 #include "others.h"
 
 int
