@@ -163,11 +163,11 @@ int logg(const char *str, ...)
 	va_end(args);
 
 	fflush(logg_fd);
-    }
 
 #ifdef CL_THREAD_SAFE
-    pthread_mutex_unlock(&logg_mutex);
+	pthread_mutex_unlock(&logg_mutex);
 #endif
+    }
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
     if(logg_syslog) {

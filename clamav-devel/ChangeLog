@@ -1,3 +1,8 @@
+Mon Mar 29 18:11:08 CEST 2004 (tk)
+----------------------------------
+  * shared/output.c: don't try to unlock free mutex (bug reported
+		     by Nigel)
+
 Mon Mar 29 16:17:05 BST 2004 (trog)
 -----------------------------------
   * clamd: disable timeout when ReadTimeout=0
