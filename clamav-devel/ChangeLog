@@ -1,3 +1,7 @@
+Sat Feb  7 13:00:20 CET 2004 (tk)
+---------------------------------
+  * libclamav: fixed compilation error (reported by Nigel)
+
 Fri Feb  6 20:50:43 CET 2004 (tk)
 ---------------------------------
   * libclamav: ole2 wrapper: fixed segfault with some documents (Thomas Lamy)

@@ -637,7 +637,7 @@ int cli_scanole2(int desc, char **virname, long int *scanned, const struct cl_no
 
 		if(!data) {
 		    cli_dbgmsg("WARNING: VBA project '%s' decompressed to NULL\n", vba_project->name[i]);
-    +           } else {
+		} else {
 		    if(cl_scanbuff(data, strlen(data), virname, root) == CL_VIRUS) {
 			free(data);
 			ret = CL_VIRUS;
