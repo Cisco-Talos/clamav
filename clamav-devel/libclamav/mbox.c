@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.129  2004/09/17 09:48:53  nigelhorne
+ * Handle attempts to hide mime type
+ *
  * Revision 1.128  2004/09/17 09:09:44  nigelhorne
  * Better handling of RFC822 comments
  *
@@ -372,7 +375,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.128 2004/09/17 09:09:44 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.129 2004/09/17 09:48:53 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2145,7 +2148,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 					if(copy[0] == '\"')
 						copy++;
 					if(copy[0] != '/') {
-						messageSetMimeType(m, strtok_r(copy, "/", &strptr));
+						int set = messageSetMimeType(m, strtok_r(copy, "/", &strptr));
 
 						/*
 						 * Stephen White <stephen@earth.li>
@@ -2154,7 +2157,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 						 * the ;
 						 */
 						s = strtok_r(NULL, ";", &strptr);
-						if(s) {
+						if(s && set) {
 							len = strstrip(s) - 1;
 							if(s[len] == '\"') {
 								s[len] = '\0';
