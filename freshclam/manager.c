@@ -53,7 +53,7 @@
 int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname)
 {
 	time_t currtime;
-	int ret, updated = 0, signo = 0;
+	int ret, updated = 0, signo = 0, usedns;
 	char ipaddr[16];
 	struct cfgstruct *cpt;
 
@@ -67,15 +67,17 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
     logg("SECURITY WARNING: NO SUPPORT FOR DIGITAL SIGNATURES\n");
 #endif
 
+    optl(opt, "no-dns") ? (usedns = 0) : (usedns = 1);
+
     memset(ipaddr, 0, sizeof(ipaddr));
 
-    if((ret = downloaddb(DB1NAME, "main.cvd", hostname, ipaddr, &signo, copt)) > 50)
+    if((ret = downloaddb(DB1NAME, "main.cvd", hostname, ipaddr, &signo, copt, usedns)) > 50)
 	return ret;
     else if(ret == 0)
 	updated = 1;
 
     /* if ipaddr[0] != 0 it will use it to connect to the web host */
-    if((ret = downloaddb(DB2NAME, "daily.cvd", hostname, ipaddr, &signo, copt)) > 50)
+    if((ret = downloaddb(DB2NAME, "daily.cvd", hostname, ipaddr, &signo, copt, usedns)) > 50)
 	return ret;
     else if(ret == 0)
 	updated = 1;
@@ -127,7 +129,7 @@ static int isnumb(const char *str)
     return 1;
 }
 
-int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt)
+int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, int usedns)
 {
 	struct cl_cvd *current, *remote;
 	struct cfgstruct *cpt;
@@ -140,7 +142,8 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     if((current = cl_cvdhead(localname)) == NULL)
 	nodb = 1;
 
-    if(!nodb && (cpt = cfgopt(copt, "DNSDatabaseInfo"))) {
+
+    if(!nodb && usedns && (cpt = cfgopt(copt, "DNSDatabaseInfo"))) {
 	if((dnsreply = txtquery(cpt->strarg, &ttl))) {
 		int field = 0;
 
@@ -249,11 +252,14 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     if(current)
 	cl_cvdfree(current);
 
-    if(ipaddr[0])
+    if(ipaddr[0]) {
 	/* use ipaddr in order to connect to the same mirror */
 	hostfd = wwwconnect(ipaddr, proxy, port, NULL);
-    else
-	hostfd = wwwconnect(hostname, proxy, port, NULL);
+    } else {
+	hostfd = wwwconnect(hostname, proxy, port, ipaddr);
+	if(!ip[0])
+	    strcpy(ip, ipaddr);
+    }
 
     if(hostfd < 0) {
 	if(ipaddr[0])

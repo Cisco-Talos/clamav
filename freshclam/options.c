@@ -58,6 +58,7 @@ int main(int argc, char **argv)
 	    {"pid", 1, 0, 'p'},
 	    {"user", 1, 0, 'u'}, /* not used */
 	    {"config-file", 1, 0, 0},
+	    {"no-dns", 0, 0, 0},
 	    {"checks", 1, 0, 'c'},
 	    {"http-proxy", 1, 0, 0},
 	    {"proxy-user", 1, 0, 0},
