@@ -175,9 +175,13 @@
  *			clamd will think it is an mbox and not handle
  *			unescaped From at the start of lines properly
  *			Thanks to Michael Dankov <misha@btrc.ru>
+ *	0.65i	9/12/03	Use the location of sendmail discovered by configure
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.28  2003/12/09 09:22:14  nigelhorne
+ * Use the location of sendmail discovered by configure
+ *
  * Revision 1.27  2003/12/05 19:14:07  nigelhorne
  * Set umask; handle unescaped From in mailboxes
  *
@@ -244,9 +248,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.27 2003/12/05 19:14:07 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.28 2003/12/09 09:22:14 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.65h"
+#define	CM_VERSION	"0.65i"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -288,6 +292,10 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.27 2003/12/05 19:14:07 nig
 
 #define _GNU_SOURCE
 #include "getopt.h"
+
+#ifndef	SENDMAIL_BIN
+#define	SENDMAIL_BIN	"/usr/lib/sendmail"
+#endif
 
 /*
  * TODO: optional: xmessage on console when virus stopped (SNMP would be real nice!)
@@ -1467,7 +1475,12 @@ clamfi_eom(SMFICTX *ctx)
 		free(err);
 
 		if(!qflag) {
-			sendmail = popen("/usr/lib/sendmail -t", "w");
+			char cmd[128];
+
+			snprintf(cmd, sizeof(cmd), "%s -t", SENDMAIL_BIN);
+
+			sendmail = popen(cmd, "w");
+
 			if(sendmail) {
 				/*
 				 * TODO: Make this e-mail message customisable
