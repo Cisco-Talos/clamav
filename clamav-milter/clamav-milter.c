@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.161  2004/12/07 19:23:48  nigelhorne
+ * Ensure that the qurantine daily directory is created
+ *
  * Revision 1.160  2004/12/06 22:31:13  nigelhorne
  * Keep date in quarantine directory path
  *
@@ -491,9 +494,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.160 2004/12/06 22:31:13 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.161 2004/12/07 19:23:48 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80z"
+#define	CM_VERSION	"0.80aa"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -4162,6 +4165,13 @@ qfile(struct privdata *privdata, const char *sendmailId, const char *virusname)
 	YY = tm->tm_year - 100;
 	DD = tm->tm_mday;
 
+	sprintf(newname, "%s/%02d%02d%02d", quarantine_dir, YY, MM, DD);
+	if((mkdir(newname, 0700) < 0) && (errno != EEXIST)) {
+		perror(newname);
+		if(use_syslog)
+			syslog(LOG_ERR, _("mkdir %s failed"), newname);
+		return -1;
+	}
 	sprintf(newname, "%s/%02d%02d%02d/%s.%s",
 		quarantine_dir, YY, MM, DD, sendmailId, virusname);
 
@@ -4187,6 +4197,16 @@ qfile(struct privdata *privdata, const char *sendmailId, const char *virusname)
 	 * FIXME: handle cross file linking failure meaning that we'd have
 	 *	to copy
 	 */
+#ifdef	C_LINUX
+	if(rename(privdata->filename, newname) < 0) {
+		perror(newname);
+		if(use_syslog)
+			syslog(LOG_WARNING, _("Can't rename %1$s to %2$s"),
+				privdata->filename, newname);
+		free(newname);
+		return -1;
+	}
+#else
 	if(link(privdata->filename, newname) < 0) {
 		perror(newname);
 		if(use_syslog)
@@ -4196,6 +4216,7 @@ qfile(struct privdata *privdata, const char *sendmailId, const char *virusname)
 		return -1;
 	}
 	unlink(privdata->filename);
+#endif
 	free(privdata->filename);
 	privdata->filename = newname;
 

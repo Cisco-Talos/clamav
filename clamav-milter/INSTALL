@@ -583,6 +583,7 @@ Changes
 			name if --quiet is given
 		Fix compilation error if is SESSION not defined.
 		Quarantine files could lose the date from the path
+0.80aa	7/12/04: Daily quarantine directories were not always being created
 
 INTERNATIONALISATION
 
