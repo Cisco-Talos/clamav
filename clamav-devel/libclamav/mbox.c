@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.186  2004/11/27 11:59:28  nigelhorne
+ * Handle comments in the command part of headers
+ *
  * Revision 1.185  2004/11/26 23:00:29  nigelhorne
  * Handle spaces after the final MIME boundary and binHex attachments after that boundary
  *
@@ -543,7 +546,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.185 2004/11/26 23:00:29 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.186 2004/11/27 11:59:28 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1049,6 +1052,8 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 		else
 			buffer = NULL;
 
+		cli_dbgmsg("parseEmailHeaders: check '%s'\n", buffer ? buffer : "");
+
 		if(inHeader) {
 			if((buffer == NULL) && !contMarker) {
 				/*
@@ -1088,7 +1093,10 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 						continue;
 					}
 
-					commandNumber = tableFind(rfc821, cmd);
+					ptr = rfc822comments(cmd);
+					commandNumber = tableFind(rfc821, ptr ? ptr : cmd);
+					if(ptr)
+						free(ptr);
 
 					switch(commandNumber) {
 						case CONTENT_TRANSFER_ENCODING:
