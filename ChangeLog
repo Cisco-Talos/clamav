@@ -1,3 +1,7 @@
+Sun Dec 14 18:07:44 GMT 2003 (njh)
+----------------------------------
+  * libclamav: not all viruses were being found in embedded RFC822 messages
+
 Sat Dec 13 16:45:44 GMT 2003 (njh)
 ----------------------------------
   * libclamav: use new cl_chomp() and fixed memory leak
