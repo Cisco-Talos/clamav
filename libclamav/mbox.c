@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.154  2004/10/16 09:01:05  nigelhorne
+ * Improved handling of wraparound headers
+ *
  * Revision 1.153  2004/10/14 21:18:49  nigelhorne
  * Harden the test for RFC2047 encoded headers
  *
@@ -447,7 +450,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.153 2004/10/14 21:18:49 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.154 2004/10/16 09:01:05 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -659,7 +662,7 @@ static	const	struct tableinit {
 	{	"Content-Transfer-Encoding",	CONTENT_TRANSFER_ENCODING	},
 	{	"Content-Disposition",		CONTENT_DISPOSITION	},
 	{	NULL,				0			}
-}, mimeSubtypes[] = {
+}, mimeSubtypes[] = {	/* see RFC2045 */
 		/* subtypes of Text */
 	{	"plain",	PLAIN		},
 	{	"enriched",	ENRICHED	},
@@ -912,6 +915,7 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 	message *ret;
 	bool anyHeadersFound = FALSE;
 	bool Xheader = FALSE;
+	int commandNumber = -1;
 
 	cli_dbgmsg("parseEmailHeaders\n");
 
@@ -949,6 +953,14 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 #ifdef CL_THREAD_SAFE
 				char *strptr;
 #endif
+				switch(commandNumber) {
+					case CONTENT_TRANSFER_ENCODING:
+					case CONTENT_DISPOSITION:
+					case CONTENT_TYPE:
+						break;
+					default:
+						continue;
+				}
 
 				assert(strlen(buffer) < sizeof(copy));
 				strcpy(copy, buffer);
@@ -964,10 +976,15 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 #endif
 			} else {
 				Xheader = (bool)(buffer[0] == 'X');
-				messageAddArgument(ret, buffer);
 				if((parseEmailHeader(ret, buffer, rfc821) >= 0) ||
-				   (strncasecmp(buffer, "From ", 5) == 0))
-					anyHeadersFound = TRUE;
+				   (strncasecmp(buffer, "From ", 5) == 0)) {
+				   	char cmd[LINE_LENGTH + 1];
+
+					if(cli_strtokbuf(buffer, 0, ":", cmd) != NULL) {
+						anyHeadersFound = TRUE;
+						commandNumber = tableFind(rfc821, cmd);
+					}
+				}
 			}
 		} else {
 			/*cli_dbgmsg("Add line to body '%s'\n", buffer);*/
