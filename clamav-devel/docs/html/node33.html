@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>ClamdMail</TITLE>
-<META NAME="description" CONTENT="ClamdMail">
+<TITLE>AMaViS - "Next Generation"</TITLE>
+<META NAME="description" CONTENT="AMaViS - "Next Generation"">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -21,55 +21,71 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node34.html">
 <LINK REL="previous" HREF="node32.html">
-<LINK REL="up" HREF="node23.html">
+<LINK REL="up" HREF="node27.html">
 <LINK REL="next" HREF="node34.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html611"
+<A NAME="tex2html707"
   HREF="node34.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html607"
-  HREF="node23.html">
+<A NAME="tex2html703"
+  HREF="node27.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html601"
+<A NAME="tex2html697"
   HREF="node32.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html609"
+<A NAME="tex2html705"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html612"
-  HREF="node34.html">BlackHole</A>
-<B> Up:</B> <A NAME="tex2html608"
-  HREF="node23.html">Certified software</A>
-<B> Previous:</B> <A NAME="tex2html602"
-  HREF="node32.html">Sagator</A>
- &nbsp <B>  <A NAME="tex2html610"
+<B> Next:</B> <A NAME="tex2html708"
+  HREF="node34.html">amavisd-new</A>
+<B> Up:</B> <A NAME="tex2html704"
+  HREF="node27.html">ClamAV-certified software</A>
+<B> Previous:</B> <A NAME="tex2html698"
+  HREF="node32.html">TrashScan</A>
+ &nbsp <B>  <A NAME="tex2html706"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION000610000000000000000">
-ClamdMail</A>
+<H2><A NAME="SECTION00066000000000000000">
+AMaViS - "Next Generation"</A>
 </H2>
-    <B>Homepage:</B> <TT><A NAME="tex2html45"
-  HREF="http://clamdmail.sf.net">http://clamdmail.sf.net</A></TT>
-<BR>    <B>Supports:</B> clamd
+    <B>Homepage:</B> <TT><A NAME="tex2html61"
+  HREF="http://sourceforge.net/projects/amavis">http://sourceforge.net/projects/amavis</A></TT>
+<BR>    <B>Supports:</B> clamscan
 <BR>
-A mail processing client for ClamAV. Small, fast and easy to install.
+AMaViS-ng is a rewritten, more modular version of amavis-perl/amavisd,
+    developed by Hilko Bengen. Home site:
+<BR>    <B>Installation:</B>
+<BR>
+<P>
+Please download the newest version (at least 0.1.4).
+    After installation (which is quite easy), please uncomment the following
+    line in amavis.conf:
+    <PRE>
+	virus-scanner = CLAM
+</PRE>
+    and eventually change the path to clamscan in the <code>[CLAM]</code> section:
+    <PRE>
+	[CLAM]
+
+	clamscan = /usr/local/bin/clamscan
+</PRE>
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-02-11
+2004-03-13
 </ADDRESS>
 </BODY>
 </HTML>

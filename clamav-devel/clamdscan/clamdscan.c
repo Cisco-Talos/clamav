@@ -124,7 +124,7 @@ void help(void)
 
     mprintf("\n");
     mprintf("                          ClamAV Daemon Client "VERSION"\n");
-    mprintf("                (c) 2002, 2003 Tomasz Kojm <tkojm@clamav.net>\n\n");
+    mprintf("                (c) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>\n\n");
 
     mprintf("    --help              -h             Show help\n");
     mprintf("    --version           -V             Print version number and exit\n");

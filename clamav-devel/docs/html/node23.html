@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Certified software</TITLE>
-<META NAME="description" CONTENT="Certified software">
+<TITLE>Output format</TITLE>
+<META NAME="description" CONTENT="Output format">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,101 +19,125 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node44.html">
-<LINK REL="previous" HREF="node21.html">
-<LINK REL="up" HREF="clamdoc.html">
+<LINK REL="next" HREF="node24.html">
+<LINK REL="previous" HREF="node22.html">
+<LINK REL="up" HREF="node17.html">
 <LINK REL="next" HREF="node24.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html471"
+<A NAME="tex2html556"
   HREF="node24.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html467"
-  HREF="clamdoc.html">
+<A NAME="tex2html552"
+  HREF="node17.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html461"
+<A NAME="tex2html546"
   HREF="node22.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html469"
+<A NAME="tex2html554"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html472"
-  HREF="node24.html">clamav-milter</A>
-<B> Up:</B> <A NAME="tex2html468"
-  HREF="clamdoc.html">clamdoc</A>
-<B> Previous:</B> <A NAME="tex2html462"
-  HREF="node22.html">Return codes</A>
- &nbsp <B>  <A NAME="tex2html470"
+<B> Next:</B> <A NAME="tex2html557"
+  HREF="node24.html">Signature Tool</A>
+<B> Up:</B> <A NAME="tex2html553"
+  HREF="node17.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html547"
+  HREF="node22.html">Mail files</A>
+ &nbsp <B>  <A NAME="tex2html555"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H1><A NAME="SECTION00060000000000000000">
-Certified software</A>
-</H1>
-    There are many projects that support ClamAV. Here is a list of software
-    that was tested and is known to work well.
+<H2><A NAME="SECTION00046000000000000000">
+Output format</A>
+</H2>
+    <I>clamd</I> uses a clamscan compatible output format:
+    <PRE>
+	zolw@Wierszokleta:~$ telnet localhost 3310
+	Trying 127.0.0.1...
+	Connected to localhost.
+	Escape character is '^]'.
+	SCAN /home/zolw/infected
+	/home/zolw/infected/sobre.com: W32.Magistr.B FOUND
+	Connection closed by foreign host.
+</PRE>
+    In the <B>SCAN</B> mode it closes the connection when first virus
+    is found. In the case of archives the output is exactly the same as
+    with normal files because archive support is transparent:
+    <PRE>
+	SCAN /home/zolw/Clam/test/test2.zip
+	/home/zolw/Clam/test/test2.zip: ClamAV-Test-Signature FOUND
+</PRE>
+    <B>CONTSCAN</B> displays all infected files found.
+<BR>
+Error messages are printed in the following format:
+    <PRE>
+	SCAN /no/such/file
+	/no/such/file: Can't stat() the file ERROR
+</PRE>
+    and they can be easily parsed.
 
 <P>
-<BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+<I>clamscan</I> writes all messages to <B>stderr</B> (only help is
+    written to <B>stdout</B> by default). You may want to redirect it to
+    <B>stdout</B> - this is handled with <code>--stdout</code>.  An example
+    of the clamscan output is:
+    <PRE>
+	/tmp/test/removal-tool.exe: Worm.Sober FOUND
+	/tmp/test/md5.o: OK
+	/tmp/test/blob.c: OK
+	/tmp/test/message.c: OK
+	/tmp/test/error.hta: VBS.Inor.D FOUND
+</PRE>
+    When a virus is found its name is printed between the <code>filename:</code> and
+    <code>FOUND</code> strings. If a virus is found in an archive that has been
+    extracted with an external unpacker it's noticed with
+    <code>Infected Archive</code>. "Infected Archives" are not counted as infected
+    files - only files within them are. Notice the difference with built-in
+    unarchiver - extraction process is realized transparently by libclamav
+    and clamscan doesn't know which concrete file is infected - just marks
+    whole archives as infected.
 
-<UL>
-<LI><A NAME="tex2html473"
-  HREF="node24.html">clamav-milter</A>
-<LI><A NAME="tex2html474"
-  HREF="node25.html">IVS Milter</A>
-<LI><A NAME="tex2html475"
-  HREF="node26.html">smtp-vilter</A>
-<LI><A NAME="tex2html476"
-  HREF="node27.html">mod_clamav</A>
-<LI><A NAME="tex2html477"
-  HREF="node28.html">TrashScan</A>
-<LI><A NAME="tex2html478"
-  HREF="node29.html">AMaViS - "Next Generation"</A>
-<LI><A NAME="tex2html479"
-  HREF="node30.html">amavisd-new</A>
-<LI><A NAME="tex2html480"
-  HREF="node31.html">Qmail-Scanner</A>
-<LI><A NAME="tex2html481"
-  HREF="node32.html">Sagator</A>
-<LI><A NAME="tex2html482"
-  HREF="node33.html">ClamdMail</A>
-<LI><A NAME="tex2html483"
-  HREF="node34.html">BlackHole</A>
-<LI><A NAME="tex2html484"
-  HREF="node35.html">MailScanner</A>
-<LI><A NAME="tex2html485"
-  HREF="node36.html">MIMEDefang</A>
-<LI><A NAME="tex2html486"
-  HREF="node37.html">exiscan</A>
-<LI><A NAME="tex2html487"
-  HREF="node38.html">scanexi</A>
-<LI><A NAME="tex2html488"
-  HREF="node39.html">Mail::ClamAV</A>
-<LI><A NAME="tex2html489"
-  HREF="node40.html">OpenAntiVirus samba-vscan</A>
-<LI><A NAME="tex2html490"
-  HREF="node41.html">Sylpheed Claws</A>
-<LI><A NAME="tex2html491"
-  HREF="node42.html">nclamd</A>
-<LI><A NAME="tex2html492"
-  HREF="node43.html">cgpav</A>
-</UL>
-<!--End of Table of Child-Links-->
-<BR><HR>
+<P>
+<HR>
+<!--Navigation Panel-->
+<A NAME="tex2html556"
+  HREF="node24.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html552"
+  HREF="node17.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html546"
+  HREF="node22.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html554"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html557"
+  HREF="node24.html">Signature Tool</A>
+<B> Up:</B> <A NAME="tex2html553"
+  HREF="node17.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html547"
+  HREF="node22.html">Mail files</A>
+ &nbsp <B>  <A NAME="tex2html555"
+  HREF="node1.html">Contents</A></B> 
+<!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2004-02-11
+2004-03-13
 </ADDRESS>
 </BODY>
 </HTML>

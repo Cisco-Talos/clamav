@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>amavisd-new</TITLE>
-<META NAME="description" CONTENT="amavisd-new">
+<TITLE>smtp-vilter</TITLE>
+<META NAME="description" CONTENT="smtp-vilter">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -21,61 +21,58 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node31.html">
 <LINK REL="previous" HREF="node29.html">
-<LINK REL="up" HREF="node23.html">
+<LINK REL="up" HREF="node27.html">
 <LINK REL="next" HREF="node31.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html575"
+<A NAME="tex2html671"
   HREF="node31.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html571"
-  HREF="node23.html">
+<A NAME="tex2html667"
+  HREF="node27.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html565"
+<A NAME="tex2html661"
   HREF="node29.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html573"
+<A NAME="tex2html669"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html576"
-  HREF="node31.html">Qmail-Scanner</A>
-<B> Up:</B> <A NAME="tex2html572"
-  HREF="node23.html">Certified software</A>
-<B> Previous:</B> <A NAME="tex2html566"
-  HREF="node29.html">AMaViS - "Next Generation"</A>
- &nbsp <B>  <A NAME="tex2html574"
+<B> Next:</B> <A NAME="tex2html672"
+  HREF="node31.html">mod_clamav</A>
+<B> Up:</B> <A NAME="tex2html668"
+  HREF="node27.html">ClamAV-certified software</A>
+<B> Previous:</B> <A NAME="tex2html662"
+  HREF="node29.html">IVS Milter</A>
+ &nbsp <B>  <A NAME="tex2html670"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00067000000000000000">
-amavisd-new</A>
+<H2><A NAME="SECTION00063000000000000000">
+smtp-vilter</A>
 </H2>
-    <B>Homepage:</B> <TT><A NAME="tex2html42"
-  HREF="http://www.ijs.si/software/amavisd">http://www.ijs.si/software/amavisd</A></TT>
-<BR>    <B>Supports:</B> clamd, clamscan
+    <B>Homepage:</B> <TT><A NAME="tex2html59"
+  HREF="http://www.etc.msys.ch/software/smtp-vilter">http://www.etc.msys.ch/software/smtp-vilter</A></TT>
+<BR>    <B>Supports:</B> clamd
 <BR>
-amavisd-new is a rewritten version of amavis maintained by
-    Mark Martinec.
-<BR>    <B>Installation:</B>
-<BR>
-clamscan is enabled automatically if clamscan binary is found
-    at amavisd-new starup time. clamd is activated by uncommenting
-    its entry in the @av_scanners list, file /etc/amavisd.conf.
+smtp-vilter is a high performance content filter for sendmail
+    using the milter API.  The software scans e-mail messages for
+    viruses and drops or marks infected messages. ClamAV is the default
+    scanner backend.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-02-11
+2004-03-13
 </ADDRESS>
 </BODY>
 </HTML>

@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>General API</TITLE>
-<META NAME="description" CONTENT="General API">
+<TITLE>Sylpheed Claws</TITLE>
+<META NAME="description" CONTENT="Sylpheed Claws">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -21,192 +21,58 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node46.html">
 <LINK REL="previous" HREF="node44.html">
-<LINK REL="up" HREF="node44.html">
+<LINK REL="up" HREF="node27.html">
 <LINK REL="next" HREF="node46.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html757"
+<A NAME="tex2html851"
   HREF="node46.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html753"
-  HREF="node44.html">
+<A NAME="tex2html847"
+  HREF="node27.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html747"
+<A NAME="tex2html841"
   HREF="node44.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html755"
+<A NAME="tex2html849"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html758"
-  HREF="node46.html">Database reloading</A>
-<B> Up:</B> <A NAME="tex2html754"
-  HREF="node44.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html748"
-  HREF="node44.html">LibClamAV</A>
- &nbsp <B>  <A NAME="tex2html756"
+<B> Next:</B> <A NAME="tex2html852"
+  HREF="node46.html">nclamd</A>
+<B> Up:</B> <A NAME="tex2html848"
+  HREF="node27.html">ClamAV-certified software</A>
+<B> Previous:</B> <A NAME="tex2html842"
+  HREF="node44.html">OpenAntiVirus samba-vscan</A>
+ &nbsp <B>  <A NAME="tex2html850"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00071000000000000000">
-General API</A>
+<H2><A NAME="SECTION000618000000000000000">
+Sylpheed Claws</A>
 </H2>
-    Every program based on libclamav must include the <I>clamav.h</I> header
-    file:
-    <PRE>
-	#include &lt;clamav.h&gt;
-</PRE>
-    A first step is to initialize the scanning engine. There are three
-    functions available:
-    <PRE>
-	int cl_loaddb(const char *filename, struct cl_node **root,
-	int *virnum);
-
-	int cl_loaddbdir(const char *dirname, struct cl_node **root,
-	int *virnum);
-
-	char *cl_retdbdir(void);
-</PRE>
-    <I>cl_loaddb()</I> loads a particular database, <I>cl_loaddbdir()</I>
-    loads all <I>.cvd</I> (and older <I>.db</I>, .db2) databases from a
-    directory <I>dirname</I>. <I>cl_retdbdir()</I> returns a hardcoded
-    database directory path. Initial internal database (Aho-Corasick tree,
-    trie; see <A HREF="node47.html#engine">6.3</A>) will be saved under <I>root</I> and a number of
-    signatures loaded will be <B>added</B> <A NAME="tex2html56"
-  HREF="footnode.html#foot537"><SUP>7</SUP></A> to <I>virnum</I>. Pointer to the trie
-    must initially point to NULL. If you don't care about number of signatures
-    pass NULL as a third argument. <I>cl_loaddb</I> functions return 0 on
-    success and other value on failure.
-    <PRE>
-	    struct cl_node *root = NULL;
-	    int ret;
-
-	ret = cl_loaddbdir(cl_retdbdir(), &amp;root, NULL);
-</PRE>
-    There's an elegant way to print libclamav's error codes:
-    <PRE>
-	char *cl_strerror(int clerror);
-</PRE>
-    <I>cl_strerror()</I> returns a (statically allocated) string describing
-    a <I>clerror</I> code:
-    <PRE>
-	if(ret) {
-	    printf("cl_loaddbdir() error: %s\n", cl_strerror(ret));
-	    exit(1);
-	}
-</PRE>
-    When database is loaded you must build the final trie with:
-    <PRE>
-	void cl_buildtrie(struct cl_node *root);
-</PRE>
-    In our example:
-    <PRE>
-	cl_buildtrie(root);
-</PRE>
-    OK, now you can scan a buffer, a descriptor or a file with:
-    <PRE>
-	int cl_scanbuff(const char *buffer, unsigned int length,
-	char **virname, const struct cl_node *root);
-
-	int cl_scandesc(int desc, char **virname, unsigned long int
-	*scanned, const struct cl_node *root, const struct cl_limits
-	*limits, int options);
-
-	int cl_scanfile(const char *filename, char **virname,
-	unsigned long int *scanned, const struct cl_node *root,
-	const struct cl_limits *limits, int options);
-</PRE>
-    All the functions save a virus name address under <I>virname</I> pointer.
-    <I>virname</I> points to a name in the trie structure thus it can't be
-    released directly. <I>cl_scandesc()</I> and <I>cl_scanfile()</I> can
-    increase the <I>scanned</I> value in CL_COUNT_PRECISION units, they also
-    support archive limits:
-    <PRE>
-	struct cl_limits {
-	    int maxreclevel;
-	    int maxfiles;
-	    long int maxfilesize;
-	};
-</PRE>
-    The last argument configures scan engine. Currently it supports
-    <B>CL_ARCHIVE</B> (enables archive scanning), <B>CL_RAW</B>
-    (disables archive scanning) and <B>CL_MAIL</B> (enables mbox
-    and Maildir scanning) and <B>CL_DISABLERAR</B> (disables the built-in
-    RAR unpacker which leaks like hell). These functions return 0
-    (<B>CL_CLEAN</B>) when no virus is found, <B>CL_VIRUS</B> when virus
-    is found and other value on failure.
-    <PRE>
-	    struct cl_limits limits;
-	    char *virname;
-
-	memset(&amp;limits, 0, sizeof(struct cl_limits));
-	/* maximal number of files in archive */;
-	limits.maxfiles = 1000
-	/* maximal archived file size == 10 MB */
-	limits.maxfilesize = 10 * 1048576;
-	/* maximal recursion level */
-	limits.maxreclevel = 5;
-
-	if((ret = cl_scanfile("/home/zolw/test", &amp;virname, NULL, root,
-	&amp;limits, CL_ARCHIVE)) == CL_VIRUS) {
-	    printf("Detected %s virus.\n", virname);
-	} else {
-	    printf("No virus detected.\n");
-	    if(ret != CL_CLEAN)
-	        printf("Error: %s\n", cl_strerror(ret));
-	}
-</PRE>
-    Release the trie if you no longer need it:
-    <PRE>
-	void cl_freetrie(struct cl_node *root);
-</PRE>
-    You will find an example scanner in clamav sources (/example). Program
-    based on libclamav must be linked against it:
-    <PRE>
-	gcc -Wall ex1.c -o ex1 -lclamav
-</PRE>
-    Enjoy !
+    <B>Homepage:</B> <TT><A NAME="tex2html73"
+  HREF="http://claws.sylpheed.org">http://claws.sylpheed.org</A></TT>
+<BR>    <B>Supports:</B> libclamav
+<BR>
+Sylpheed Claws is a bleeding edge branch of Sylpheed, a light weight mail
+    user agent for UNIX. It can scan attachments in mail received from POP,
+    IMAP or a local account and optionally delete the mail or save it to a
+    designated folder.
 
 <P>
-<HR>
-<!--Navigation Panel-->
-<A NAME="tex2html757"
-  HREF="node46.html">
-<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
- SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html753"
-  HREF="node44.html">
-<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
- SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html747"
-  HREF="node44.html">
-<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
- SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html755"
-  HREF="node1.html">
-<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
- SRC="/usr/share/latex2html/icons/contents.png"></A>  
-<BR>
-<B> Next:</B> <A NAME="tex2html758"
-  HREF="node46.html">Database reloading</A>
-<B> Up:</B> <A NAME="tex2html754"
-  HREF="node44.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html748"
-  HREF="node44.html">LibClamAV</A>
- &nbsp <B>  <A NAME="tex2html756"
-  HREF="node1.html">Contents</A></B> 
-<!--End of Navigation Panel-->
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-02-11
+2004-03-13
 </ADDRESS>
 </BODY>
 </HTML>

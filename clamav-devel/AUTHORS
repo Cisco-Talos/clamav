@@ -15,7 +15,7 @@ System administrator (WWW, mailing lists, mirror mechanism, virus
 submission mechanism)
 
 Trog <trog*clamav.net>
-OLE2 and VBA decoders.
+OLE2 and VBA decoders, new thread manager in clamd.
 
 Thomas Lamy <tlamy*clamav.net>
 gpg key   : http://www.clamav.net/gpg/tlamy.gpg

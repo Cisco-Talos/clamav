@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Database reloading</TITLE>
-<META NAME="description" CONTENT="Database reloading">
+<TITLE>nclamd</TITLE>
+<META NAME="description" CONTENT="nclamd">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -21,74 +21,57 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node47.html">
 <LINK REL="previous" HREF="node45.html">
-<LINK REL="up" HREF="node44.html">
+<LINK REL="up" HREF="node27.html">
 <LINK REL="next" HREF="node47.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html769"
+<A NAME="tex2html863"
   HREF="node47.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html765"
-  HREF="node44.html">
+<A NAME="tex2html859"
+  HREF="node27.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html759"
+<A NAME="tex2html853"
   HREF="node45.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html767"
+<A NAME="tex2html861"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html770"
-  HREF="node47.html">Scan engine</A>
-<B> Up:</B> <A NAME="tex2html766"
-  HREF="node44.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html760"
-  HREF="node45.html">General API</A>
- &nbsp <B>  <A NAME="tex2html768"
+<B> Next:</B> <A NAME="tex2html864"
+  HREF="node47.html">cgpav</A>
+<B> Up:</B> <A NAME="tex2html860"
+  HREF="node27.html">ClamAV-certified software</A>
+<B> Previous:</B> <A NAME="tex2html854"
+  HREF="node45.html">Sylpheed Claws</A>
+ &nbsp <B>  <A NAME="tex2html862"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00072000000000000000">
-Database reloading</A>
+<H2><A NAME="SECTION000619000000000000000">
+nclamd</A>
 </H2>
-    The most important thing is to keep the memory database representation up
-    to date. You can watch database changes with the <I>cl_stat</I> functions
-    family:
-    <PRE>
-	int cl_statinidir(const char *dirname, struct cl_stat *dbstat);
-	int cl_statchkdir(const struct cl_stat *dbstat);
-	int cl_statfree(struct cl_stat *dbstat);
-</PRE>
-    Initialization:
-    <PRE>
-	    struct cl_stat dbstat;
-    
-	memset(&amp;dbstat, 0, sizeof(struct cl_stat));
-	cl_statinidir(dbdir, &amp;dbstat);
-</PRE>
-    To check for a change you only need to call the following function:
-    <PRE>
-	if(cl_statchkdir(&amp;dbstat) == 1) {
-	    reload_database...;
-	    cl_statfree(&amp;dbstat);
-	    cl_statinidir(cl_retdbdir(), &amp;dbstat);
-	}
-</PRE>
-    Remember to reinitialize the structure after a reload.
+    <B>Homepage:</B> <TT><A NAME="tex2html74"
+  HREF="http://www.kyzo.com/nclamd/">http://www.kyzo.com/nclamd/</A></TT>
+<BR>    <B>Supports:</B> libclamav
+<BR>
+nclamd, nclamav-milter and nclamdscan are rewritten versions of the
+    original tools and use processes instead of threads and ripMIME instead
+    of the clamav built-in MIME decoder.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-02-11
+2004-03-13
 </ADDRESS>
 </BODY>
 </HTML>

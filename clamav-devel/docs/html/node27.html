@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>mod_clamav</TITLE>
-<META NAME="description" CONTENT="mod_clamav">
+<TITLE>ClamAV-certified software</TITLE>
+<META NAME="description" CONTENT="ClamAV-certified software">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,59 +19,129 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node28.html">
-<LINK REL="previous" HREF="node26.html">
-<LINK REL="up" HREF="node23.html">
+<LINK REL="next" HREF="node62.html">
+<LINK REL="previous" HREF="node25.html">
+<LINK REL="up" HREF="clamdoc.html">
 <LINK REL="next" HREF="node28.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html539"
+<A NAME="tex2html601"
   HREF="node28.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html535"
-  HREF="node23.html">
+<A NAME="tex2html597"
+  HREF="clamdoc.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html529"
+<A NAME="tex2html591"
   HREF="node26.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html537"
+<A NAME="tex2html599"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html540"
-  HREF="node28.html">TrashScan</A>
-<B> Up:</B> <A NAME="tex2html536"
-  HREF="node23.html">Certified software</A>
-<B> Previous:</B> <A NAME="tex2html530"
-  HREF="node26.html">smtp-vilter</A>
- &nbsp <B>  <A NAME="tex2html538"
+<B> Next:</B> <A NAME="tex2html602"
+  HREF="node28.html">clamav-milter</A>
+<B> Up:</B> <A NAME="tex2html598"
+  HREF="clamdoc.html">clamdoc</A>
+<B> Previous:</B> <A NAME="tex2html592"
+  HREF="node26.html">Return codes</A>
+ &nbsp <B>  <A NAME="tex2html600"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00064000000000000000">
-mod_clamav</A>
-</H2>
-    <B>Homepage:</B> <TT><A NAME="tex2html40"
-  HREF="http://software.othello.ch/mod_clamav">http://software.othello.ch/mod_clamav</A></TT>
-<BR>    <B>Supports:</B> libclamav, clamd
-<BR>
-mod_clamav is an Apache virus scanning filter. It was written
-    and is currently maintained by Andreas Muller. The project is very well
-    documented and the installation is quite easy.
+<H1><A NAME="SECTION00060000000000000000">
+ClamAV-certified software</A>
+</H1>
+    There are many projects that support ClamAV. Here is a list of software
+    that was tested and is known to work well.
 
 <P>
 <BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL>
+<LI><A NAME="tex2html603"
+  HREF="node28.html">clamav-milter</A>
+<LI><A NAME="tex2html604"
+  HREF="node29.html">IVS Milter</A>
+<LI><A NAME="tex2html605"
+  HREF="node30.html">smtp-vilter</A>
+<LI><A NAME="tex2html606"
+  HREF="node31.html">mod_clamav</A>
+<LI><A NAME="tex2html607"
+  HREF="node32.html">TrashScan</A>
+<LI><A NAME="tex2html608"
+  HREF="node33.html">AMaViS - "Next Generation"</A>
+<LI><A NAME="tex2html609"
+  HREF="node34.html">amavisd-new</A>
+<LI><A NAME="tex2html610"
+  HREF="node35.html">Qmail-Scanner</A>
+<LI><A NAME="tex2html611"
+  HREF="node36.html">Sagator</A>
+<LI><A NAME="tex2html612"
+  HREF="node37.html">ClamdMail</A>
+<LI><A NAME="tex2html613"
+  HREF="node38.html">BlackHole</A>
+<LI><A NAME="tex2html614"
+  HREF="node39.html">MailScanner</A>
+<LI><A NAME="tex2html615"
+  HREF="node40.html">MIMEDefang</A>
+<LI><A NAME="tex2html616"
+  HREF="node41.html">exiscan</A>
+<LI><A NAME="tex2html617"
+  HREF="node42.html">scanexi</A>
+<LI><A NAME="tex2html618"
+  HREF="node43.html">Mail::ClamAV</A>
+<LI><A NAME="tex2html619"
+  HREF="node44.html">OpenAntiVirus samba-vscan</A>
+<LI><A NAME="tex2html620"
+  HREF="node45.html">Sylpheed Claws</A>
+<LI><A NAME="tex2html621"
+  HREF="node46.html">nclamd</A>
+<LI><A NAME="tex2html622"
+  HREF="node47.html">cgpav</A>
+<LI><A NAME="tex2html623"
+  HREF="node48.html">j-chkmail</A>
+<LI><A NAME="tex2html624"
+  HREF="node49.html">qscanq</A>
+<LI><A NAME="tex2html625"
+  HREF="node50.html">clamavr</A>
+<LI><A NAME="tex2html626"
+  HREF="node51.html">DansGuardian Anti-Virus Plugin</A>
+<LI><A NAME="tex2html627"
+  HREF="node52.html">ClamAssassin</A>
+<LI><A NAME="tex2html628"
+  HREF="node53.html">Gadoyanvirus</A>
+<LI><A NAME="tex2html629"
+  HREF="node54.html">OpenProtect</A>
+<LI><A NAME="tex2html630"
+  HREF="node55.html">POP3 Virus Scanner Daemon</A>
+<LI><A NAME="tex2html631"
+  HREF="node56.html">mailman-clamav</A>
+<LI><A NAME="tex2html632"
+  HREF="node57.html">wbmclamav</A>
+<LI><A NAME="tex2html633"
+  HREF="node58.html">Scan Log Analyzer</A>
+<LI><A NAME="tex2html634"
+  HREF="node59.html">mailgraph</A>
+<LI><A NAME="tex2html635"
+  HREF="node60.html">INSERT</A>
+<LI><A NAME="tex2html636"
+  HREF="node61.html">Local Area Security</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-02-11
+2004-03-13
 </ADDRESS>
 </BODY>
 </HTML>

@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>freshclam: Setting up auto-updating</TITLE>
-<META NAME="description" CONTENT="freshclam: Setting up auto-updating">
+<TITLE>Configuration</TITLE>
+<META NAME="description" CONTENT="Configuration">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -27,118 +27,118 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html351"
+<A NAME="tex2html431"
   HREF="node14.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html347"
+<A NAME="tex2html427"
   HREF="node6.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html341"
+<A NAME="tex2html421"
   HREF="node12.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html349"
+<A NAME="tex2html429"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html352"
-  HREF="node14.html">Database mirrors</A>
-<B> Up:</B> <A NAME="tex2html348"
+<B> Next:</B> <A NAME="tex2html432"
+  HREF="node14.html">Testing</A>
+<B> Up:</B> <A NAME="tex2html428"
   HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html342"
-  HREF="node12.html">Testing</A>
- &nbsp <B>  <A NAME="tex2html350"
+<B> Previous:</B> <A NAME="tex2html422"
+  HREF="node12.html">Compilation</A>
+ &nbsp <B>  <A NAME="tex2html430"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
 <H2><A NAME="SECTION00037000000000000000">
-freshclam: Setting up auto-updating</A>
+Configuration</A>
 </H2>
-    <I>freshclam</I> is a default database updater for Clam AntiVirus.
-    It may work in two modes:
-    
-<UL>
-<LI>interactively - from command line, verbosly
-</LI>
-<LI>daemon - alone, silently
-    
-</LI>
-</UL>
-    When started by a superuser it (by default) drops privileges and switches
-    to the <I>clamav</I> user. <I>freshclam</I> uses the
-    <TT><A NAME="tex2html13"
-  HREF="database.clamav.net">database.clamav.net</A></TT> round-robin DNS which automatically selects
-    a database mirror<A HREF="node14.html#mirrors">2.8</A>. freshclam is an advanced tool: supports
-    proxy servers (with authentication), digital signature verification and
-    various error scenarious. <B>Quick test: run <I>freshclam</I> (as
-    superuser) with no parameters and check the output.</B> If everything
-    is OK you may create the log file in /var/log (owned by <I>clamav</I> or
-    another user freshclam is running as (<I>-user</I>):
+    If you are going to use the daemon you have to configure it because
+    it won't run with default settings:
     <PRE>
-	# touch /var/log/clam-update.log
-	# chmod 600 /var/log/clam-update.log
-	# chown clamav /var/log/clam-update.log
+	$ clamd
+	ERROR: Please edit the example config file
+	       /etc/clamav.conf.
 </PRE>
-    Now you <I>should</I> edit the configuration file (usually
-    <I>freshclam.conf</I>) and configure the <I>UpdateLogFile</I> directive
-    to point the created log file (it's highly recommended). Optionally you
-    may force the log file path with <I>-l</I>. Finally, to run freshclam
-    in a daemon mode execute:
+    This shows a location of the configuration file. The format and
+    options of this file are fully described in the <I>clamav.conf(5)</I>
+    manual. clamd configuration is very easy because the config file is well
+    commented. Remember - you must remove the "Example" directive.
+
+<P>
+Another feature of clamd is on-access scanning based on the Dazuko module,
+    available from <TT><A NAME="tex2html18"
+  HREF="http://dazuko.org">http://dazuko.org</A></TT>. <B>This is not required to
+    run clamd - furthermore, you shouldn't run Dazuko on production systems</B>.
+    A special thread in clamd responsible for a communication with Dazuko
+    is called "Clamuko" (it's due to the funny name of Dazuko - we don't know
+    what Clamuko means). Clamuko is supported on Linux and FreeBSD only.
+    To compile dazuko execute:
     <PRE>
-	# freshclam -d
+	$ tar zxpvf dazuko-a.b.c.tar.gz
+	$ cd dazuko-a.b.c
+	$ make dazuko
+	or
+	$ make dazuko-smp (for smp kernels)
+	$ su
+	# insmod dazuko.o
+	# cp dazuko.o /lib/modules/`uname -r`/misc
+	# depmod -a
 </PRE>
-    The other method is to use the <I>cron</I> daemon.  You have to add the
-    following line to the crontab of the <B>root</B> or <B>clamav</B> users:
-    <FONT SIZE="-1">    </FONT><PRE>
-0 * * * *	/usr/local/bin/freshclam --quiet
-</PRE>
-    to check for a new database every hour. Proxy settings are only
-    configurable via the configuration file (so you can setup proper permissions
-    to protect your proxy password):
+    Depending on your Linux distribution you have to add a "dazuko" entry to
+<BR>    <I>/etc/modules</I> or something like:
     <PRE>
-	HTTPProxyServer myproxyserver.com
-	HTTPProxyPort 1234
-	HTTPProxyUsername myusername
-	HTTPProxyPassword mypass
+	modprobe dazuko
 </PRE>
+    to some startup file in order to load dazuko at a boot time. Compilation
+    on FreeBSD is very similar. You must also create the <I>/dev/dazuko</I>
+    device:
+    <PRE>
+	$ cat /proc/devices | grep dazuko
+	254 dazuko
+	$ su -c "mknod -m 600 /dev/dazuko c 254 0"
+</PRE>
+    Now just configure Clamuko in <I>clamav.conf</I> and see the <A HREF="node20.html#clamuko">3.3</A>
+    section.
 
 <P>
 <HR>
 <!--Navigation Panel-->
-<A NAME="tex2html351"
+<A NAME="tex2html431"
   HREF="node14.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html347"
+<A NAME="tex2html427"
   HREF="node6.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html341"
+<A NAME="tex2html421"
   HREF="node12.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html349"
+<A NAME="tex2html429"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html352"
-  HREF="node14.html">Database mirrors</A>
-<B> Up:</B> <A NAME="tex2html348"
+<B> Next:</B> <A NAME="tex2html432"
+  HREF="node14.html">Testing</A>
+<B> Up:</B> <A NAME="tex2html428"
   HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html342"
-  HREF="node12.html">Testing</A>
- &nbsp <B>  <A NAME="tex2html350"
+<B> Previous:</B> <A NAME="tex2html422"
+  HREF="node12.html">Compilation</A>
+ &nbsp <B>  <A NAME="tex2html430"
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2004-02-11
+2004-03-13
 </ADDRESS>
 </BODY>
 </HTML>
