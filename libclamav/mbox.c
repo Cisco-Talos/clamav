@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.38  2004/02/04 13:29:48  nigelhorne
+ * Handle partial writes - and print when write fails
+ *
  * Revision 1.37  2004/02/03 22:54:59  nigelhorne
  * Catch another example of Worm.Dumaru.Y
  *
@@ -102,7 +105,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.37 2004/02/03 22:54:59 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.38 2004/02/04 13:29:48 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -1596,6 +1599,7 @@ saveFile(const blob *b, const char *dir)
 	size_t len = 0;
 	int fd;
 	const char *cptr, *suffix;
+	unsigned char *data;
 	char filename[NAME_MAX + 1];
 
 	assert(dir != NULL);
@@ -1660,9 +1664,20 @@ saveFile(const blob *b, const char *dir)
 #endif
 	}
 
-	write(fd, blobGetData(b), (size_t)nbytes);
-	cli_dbgmsg("Attachment saved as %s (%lu bytes long)\n",
+	cli_dbgmsg("Saving attachment as %s (%lu bytes long)\n",
 		filename, nbytes);
+
+	data = blobGetData(b);
+	while(nbytes > 0) {
+		int rc = write(fd, data, (size_t)nbytes);
+		if(rc < 0) {
+			perror(filename);
+			close(fd);
+			return FALSE;
+		}
+		nbytes -= rc;
+		data = &data[rc];
+	}
 
 	return (close(fd) >= 0);
 }
