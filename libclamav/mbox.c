@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.49  2004/03/04 13:01:58  nigelhorne
+ * Ensure all bounces are rescanned by cl_mbox
+ *
  * Revision 1.48  2004/02/27 12:16:26  nigelhorne
  * Catch lines just containing ':'
  *
@@ -135,7 +138,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.48 2004/02/27 12:16:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.49 2004/03/04 13:01:58 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1317,6 +1320,17 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					saveTextPart(mainMessage, dir);
 				} else if((b = blobCreate()) != NULL) {
 					cli_dbgmsg("Found a bounce message\n");
+					/*
+					 * Ensure the when any bounce messages
+					 * that have been saved in the
+					 * temporary directory are passed to
+					 * cl_mbox() by inserting a header line
+					 * that scanners.c recognises as a mail
+					 *
+					 * Fix thanks to "Andrey J. Melnikoff
+					 * (TEMHOTA)" <temnota@kmv.ru>
+					 */
+					blobAddData(b, (unsigned char *)"Received: by clamd\n", 19);
 					do {
 						blobAddData(b, (unsigned char *)t_line->t_text, strlen(t_line->t_text));
 						blobAddData(b, (unsigned char *)"\n", 1);
