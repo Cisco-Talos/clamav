@@ -1,3 +1,7 @@
+Mon Sep 29 13:59:13 BST 2003 (njh)
+---------------------------------
+  * libclamav:	Handle Content-Type: /; name="eicar.com"
+
 Mon Sep 29 13:42:51 CEST 2003 (tk)
 ----------------------------------
   * libclamav: initial support for cvd file format (a database container file

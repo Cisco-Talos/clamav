@@ -17,11 +17,14 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.11  2003/09/29 12:58:32  nigelhorne
+ * Handle Content-Type: /; name="eicar.com"
+ *
  * Revision 1.10  2003/09/28 10:06:34  nigelhorne
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.10 2003/09/28 10:06:34 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.11 2003/09/29 12:58:32 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -544,13 +547,18 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 								else
 									cli_warnmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", arg);
 								messageSetMimeType(aMessage, "text");
-								messageSetMimeType(aMessage, "text");
 								messageSetMimeSubtype(aMessage, "plain");
 							} else {
-								messageSetMimeType(aMessage, strtok_r(arg, "/", &strptr));
-								messageSetMimeSubtype(aMessage, strtok_r(NULL, ";", &strptr));
-								ptr = strtok_r(NULL, "\r\n", &strptr);
-								if(ptr)
+								if(*arg == '/') {
+									cli_warnmsg("Content-type '/' received, assuming application/octet-stream\n");
+									messageSetMimeType(aMessage, "application");
+									messageSetMimeSubtype(aMessage, "octet-stream");
+									ptr = strtok_r(arg, ";", &strptr);
+								} else {
+									messageSetMimeType(aMessage, strtok_r(arg, "/", &strptr));
+									messageSetMimeSubtype(aMessage, strtok_r(NULL, ";", &strptr));
+								}
+								if((ptr = strtok_r(NULL, "\r\n", &strptr)) != NULL)
 									messageAddArguments(aMessage, ptr);
 							}
 							break;
