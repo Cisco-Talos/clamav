@@ -14,7 +14,14 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * $Log: text.c,v $
+ * Revision 1.4  2004/02/26 13:26:34  nigelhorne
+ * Handle spaces at the end of uuencoded lines
+ *
  */
+
+static	char	const	rcsid[] = "$Id: text.c,v 1.4 2004/02/26 13:26:34 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -66,8 +73,12 @@ textClean(text *t_head)
 		if(len > 0) {
 			int last = len;
 
-			while((--last >= 0) && isspace(line[last]))
-				;
+			/*
+			 * Don't remove trailing spaces since that
+			 * may break uuencoded files
+			 */
+			/*while((--last >= 0) && isspace(line[last]))
+				;*/
 
 			if(++last > 0) {
 				t_lastnonempty = t_head;
