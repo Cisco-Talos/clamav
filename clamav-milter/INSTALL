@@ -439,6 +439,11 @@ Changes
 		machines running Solaris
 0.74f	22/7/04	Use gethostbyname_r() if available
 0.75	22/7/04	Up-issue
+0.75a	25/7/04	Fixed warning message when building on FreeBSD4.9
+		Closed (small) memory leak
+		Fix crash when the 1st remote service goes down
+		Only use gethostbyname_r on LINUX for now
+		Load balancing - improved a bit - but still some way to go
 
 BUG REPORTS
 
