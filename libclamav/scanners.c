@@ -585,7 +585,7 @@ int cli_scanmail(int desc, char **virname, long int *scanned, const struct cl_no
 
     cli_dbgmsg("Starting cli_scanmail()\n");
 
-    if(reclev > 5) /* FIXME: a temporary workaround */
+    if(*reclev > 5) /* FIXME: a temporary workaround */
 	return CL_CLEAN;
 
 /*
