@@ -415,10 +415,6 @@ static int cli_loaddb(FILE *fd, struct cl_node **root, int *virnum)
     }
 
     while(fgets(buffer, FILEBUFF, fd)) {
-
-	if(strstr(buffer, "Eicar")) /* FIXME: Remove me some day! */
-	    continue;
-
 	line++;
 	cli_chomp(buffer);
 

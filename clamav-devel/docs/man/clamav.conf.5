@@ -1,5 +1,5 @@
 .\" Manual page created by Tomasz Kojm, 20021001.
-.TH "clamav.conf" "5" "August 18, 2004" "Tomasz Kojm" "Clam AntiVirus"
+.TH "clamav.conf" "5" "September 2, 2004" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 \fBclamav.conf\fR \- a configuration file for Clam AntiVirus Daemon
@@ -7,19 +7,19 @@
 .LP 
 clamav.conf configures the Clam AntiVirus daemon, clamd(8).
 .SH "FILE FORMAT"
-The file consists of comments and options with optional arguments. Each line that starts with a hash (\fB#\fR) symbol is ignored. Option names are case sensitive and of the form \fBOption Argument\fR. There are a few types of arguments:
+The file consists of comments and options with arguments. Each line that starts with a hash (\fB#\fR) symbol is a comment. Options are are case sensitive and of the form \fBOption Argument\fR. The (possibly optional) arguments are are of the following types:
 .TP 
 \fBSTRING\fR
 String without blank characters.
 .TP 
 \fBSIZE\fR
-Size in bytes. You can use the 'M' or 'm' modifiers for megabytes and 'K' or 'k' for kilobytes.
+Size in bytes. You can use a 'M' or 'm' modifiers for megabytes and a 'K' or 'k' for kilobytes.
 .TP 
 \fBNUMBER\fR
 Unsigned integer.
 .SH "DIRECTIVES"
 .LP 
-If some option is not used (hashed or doesn't exist in the configuration file), clamd takes a default action.
+When an option is not used (hashed or doesn't exist in the configuration file) freshclam takes a default action.
 .TP 
 \fBExample\fR
 If this option is set clamd will not run.
@@ -30,7 +30,7 @@ Enable logging to selected file.
 Default: disabled.
 .TP 
 \fBLogFileUnlock\fR
-Disable a system lock that protects against running clamd with a same configuration multiple times.
+Disable a system lock that protects against running clamd with a same configuration file multiple times.
 .br 
 Default: disabled.
 .TP 
