@@ -16,11 +16,13 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __STRINGS_H
-#define __STRINGS_H
+#ifndef __STR_H
+#define __STR_H
 
 int cli_strbcasestr(const char *haystack, const char *needle);
-int	cli_chomp(char *string);
+int cli_chomp(char *string);
 char *cli_strtok(const char *line, int field, const char *delim);
+short int *cli_hex2si(const char *hex);
+char *cli_hex2str(const char *hex);
 
 #endif

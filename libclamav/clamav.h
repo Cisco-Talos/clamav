@@ -85,15 +85,25 @@ struct cli_patt {
     struct cli_patt *next;
 };
 
-struct cl_node {
+struct cli_ac_node {
     char islast;
     struct cli_patt *list;
-    struct cl_node *trans[CL_NUM_CHILDS], *fail;
+    struct cli_ac_node *trans[CL_NUM_CHILDS], *fail;
+};
 
-    /* FIXME: these variables are only used in a root node */
+struct cli_md5_node {
+    char *virname, *viralias, *md5;
+    struct cli_md5_node *next;
+};
+
+struct cl_node {
+    /* Aho-Corasick */
+    struct cli_ac_node *ac_root, **nodetable;
     unsigned int maxpatlen, partsigs;
     unsigned int nodes;
-    struct cl_node **nodetable;
+
+    /* MD5 */
+    struct cli_md5_node *hlist[256];
 };
 
 struct cl_limits {
@@ -166,15 +176,6 @@ extern int cl_mbox(const char *dir, int desc);
 
 /* compute MD5 message digest from file (compatible with md5sum(1)) */
 extern char *cl_md5file(const char *filename);
-
-/* decode hexadecimal string */
-extern short int *cl_hex2str(const char *hex);
-
-/* encode a buffer 'string' length of 'len' to a hexadecimal string */
-extern char *cl_str2hex(const char *string, unsigned int len);
-
-/* generate a pseudo-random number */
-extern unsigned int cl_rndnum(unsigned int max);
 
 /* generate unique file name in temporary directory */
 char *cl_gentemp(const char *dir);

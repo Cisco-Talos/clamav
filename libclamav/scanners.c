@@ -57,6 +57,7 @@ extern short cli_leavetemps_flag;
 #include "pe.h"
 #include "filetypes.h"
 #include "htmlnorm.h"
+#include "md5.h"
 
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>
@@ -77,15 +78,38 @@ extern short cli_leavetemps_flag;
 
 #define MAX_MAIL_RECURSION  15
 
+#define MD5_BLOCKSIZE 4096
 
 static int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec);
 static int cli_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec);
+
+
+struct cli_md5_node *cli_vermd5(const char *md5, const struct cl_node *root)
+{
+	struct cli_md5_node *pt;
+
+
+    if(!(pt = root->hlist[md5[0] & 0xff]))
+	return NULL;
+
+    while(pt) {
+	if(!memcmp(pt->md5, md5, 16))
+	    return pt;
+
+	pt = pt->next;
+    }
+
+    return NULL;
+}
 
 static int cli_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, int typerec)
 {
  	char *buffer, *buff, *endbl, *pt;
 	int bytes, buffsize, length, ret, *partcnt, type = CL_CLEAN;
 	unsigned long int *partoff, offset = 0;
+	struct md5_ctx ctx;
+        unsigned char md5buff[16];
+	struct cli_md5_node *md5_node;
 
 
     /* prepare the buffer */
@@ -105,6 +129,8 @@ static int cli_scandesc(int desc, const char **virname, long int *scanned, const
 	cli_dbgmsg("cli_scanbuff(): unable to cli_calloc(%d, %d)\n", root->partsigs + 1, sizeof(unsigned long int));
 	return CL_EMEM;
     }
+
+    md5_init_ctx (&ctx);
 
     buff = buffer;
     buff += root->maxpatlen; /* pointer to read data block */
@@ -139,10 +165,36 @@ static int cli_scandesc(int desc, const char **virname, long int *scanned, const
 
         pt = buffer;
         length = buffsize;
+
+	/* compute MD5 */
+
+	if(bytes % 64 == 0) {
+	    md5_process_block(buff, bytes, &ctx);
+	} else {
+		int block = bytes;
+		char *mpt = buff;
+
+	    while(block >= MD5_BLOCKSIZE) {
+		md5_process_block(mpt, MD5_BLOCKSIZE, &ctx);
+		mpt += MD5_BLOCKSIZE;
+		block -= MD5_BLOCKSIZE;
+	    }
+
+	    if(block)
+		md5_process_bytes(mpt, block, &ctx);
+	}
     }
 
     free(buffer);
     free(partcnt);
+
+    md5_finish_ctx(&ctx, &md5buff);
+
+    if((md5_node = cli_vermd5(md5buff, root))) {
+	if(virname)
+	    *virname = md5_node->virname;
+	return CL_VIRUS;
+    }
 
     return typerec ? type : CL_CLEAN;
 }
