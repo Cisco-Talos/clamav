@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.31  2004/01/22 22:13:06  nigelhorne
+ * Prevent infinite recursion on broken uuencoded files
+ *
  * Revision 1.30  2004/01/13 10:12:05  nigelhorne
  * Remove duplicate code when handling multipart messages
  *
@@ -81,7 +84,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.30 2004/01/13 10:12:05 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.31 2004/01/22 22:13:06 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -919,7 +922,18 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 					blobList[numberOfAttachments++] = blobs[i];
 				}
 
-				rc = parseEmailBody(mainMessage, blobList, numberOfAttachments, aText, dir, rfc821Table, subtypeTable);
+				/*
+				 * If there's only one part of the MULTIPART
+				 * we already have the body to decode so
+				 * there's no more work to do.
+				 *
+				 * This is mostly for the situation where
+				 * broken code which claim to be multipart
+				 * which aren't was causing us to go into
+				 * infinite recursion
+				 */
+				if(multiparts > 1)
+					rc = parseEmailBody(mainMessage, blobList, numberOfAttachments, aText, dir, rfc821Table, subtypeTable);
 				break;
 			case DIGEST:
 				/*
