@@ -24,7 +24,7 @@ use strict;
 use IO::Socket::INET;
 use Tk;
 use Tk::Dialog;
-use threads;
+use threads;	# Tk isn't thread safe :-( This will need some careful work
 
 my $mw = MainWindow->new;
 my $history = "";
