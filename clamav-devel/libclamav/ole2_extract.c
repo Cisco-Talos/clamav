@@ -544,7 +544,7 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 			free(dirname);
 			break;
 		default:
-			cli_errmsg("ERROR: unknown OLE2 entry type: %d\n", prop_block[index].type);
+			cli_dbgmsg("ERROR: unknown OLE2 entry type: %d\n", prop_block[index].type);
 			break;
 	}
 	return;

@@ -1,3 +1,8 @@
+Sat Jun 12 21:08:55 CEST 2004 (tk)
+----------------------------------
+  * libclamav: mspack: fix bounds error (found by Nigel). Original author
+		       contacted.
+
 Sat Jun 12 19:21:44 CEST 2004 (tk)
 ----------------------------------
   * shared/cfgparser: freecfg: fix loop when some directives are doubled in
