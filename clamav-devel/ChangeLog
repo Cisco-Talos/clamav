@@ -1,3 +1,7 @@
+Wed May 12 12:20:50 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	More bounce false positives removed
+
 Wed May 12 01:27:56 CEST 2004 (tk)
 ----------------------------------
   * libclamav: initial PE parser/dumper (not yet activated). It will be

@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.72  2004/05/12 11:20:37  nigelhorne
+ * More bounce message false positives handled
+ *
  * Revision 1.71  2004/05/10 11:35:11  nigelhorne
  * No need to update mbox.c for cli_filetype problem
  *
@@ -201,7 +204,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.71 2004/05/10 11:35:11 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.72 2004/05/12 11:20:37 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1436,14 +1439,32 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					blobDestroy(b);
 				}
 			} else if((encodingLine(mainMessage) != NULL) &&
-				  ((t_line = bounceBegin(mainMessage)) != NULL)) {
+				  ((t_line = bounceBegin(mainMessage)) != NULL))  {
+				const text *t;
+				static const char encoding[] = "Content-Transfer-Encoding";
 				/*
 				 * Attempt to save the original (unbounced)
 				 * message - clamscan will find that in the
 				 * directory and call us again (with any luck)
 				 * having found an e-mail message to handle
+				 *
+				 * This finds a lot of false positives, the
+				 * search that an encoding line is in the
+				 * bounce (i.e. it's after the bounce header)
+				 * helps a bit, but at the expense of scanning
+				 * the entire message. messageAddLine
+				 * optimisation could help here, but needs
+				 * careful thought, do it with line numbers
+				 * would be best, since the current method in
+				 * messageAddLine of checking encoding first
+				 * must remain otherwise non bounce messages
+				 * won't be scanned
 				 */
-				if((b = textToBlob(t_line, NULL)) != NULL) {
+				for(t = t_line; t; t = t->t_next)
+					if((strncasecmp(t->t_text, encoding, sizeof(encoding) - 1) == 0) &&
+					   (strstr(t->t_text, "7bit") == NULL))
+					   	break;
+				if(t && ((b = textToBlob(t_line, NULL)) != NULL)) {
 					cli_dbgmsg("Found a bounce message\n");
 
 					saveFile(b, dir);
@@ -1466,7 +1487,10 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				else if((t_line = encodingLine(mainMessage)) != NULL) {
 					/*
 					 * Some bounces include the message
-					 * body without the headers
+					 * body without the headers.
+					 * Unfortunately this generates a
+					 * lot of false positives that a bounce
+					 * has been found when it hasn't.
 					 */
 					if((b = blobCreate()) != NULL) {
 						cli_dbgmsg("Found a bounce message with no header\n");
@@ -1479,14 +1503,13 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						blobDestroy(b);
 					}
 					saveIt = FALSE;
-				} else {
+				} else
 					/*
 					 * Save the entire text portion,
-					 * since it it may be an HTML
-					 * file with a JavaScript virus
+					 * since it it may be an HTML file with
+					 * a JavaScript virus
 					 */
 					saveIt = TRUE;
-				}
 
 				if(saveIt) {
 					cli_dbgmsg("Saving text part to scan\n");
@@ -1827,6 +1850,11 @@ saveTextPart(message *m, const char *dir)
 
 /*
  * Save some data as a unique file in the given directory.
+ *
+ * TODO: don't save archive files if archive scanning is disabled, or
+ *	OLE2 files if that is disabled or pattern match --exclude, but
+ *	we need access to the command line options/clamav.conf here to
+ *	be able to do that
  */
 static bool
 saveFile(const blob *b, const char *dir)
