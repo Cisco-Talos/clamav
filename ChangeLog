@@ -1,3 +1,7 @@
+Thu Jul 29 16:27:01 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Don't say "waiting for some to exit" if dont_wait is set
+
 Thu Jul 29 07:38:42 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Use GETHOSTBYNAME_R_6
