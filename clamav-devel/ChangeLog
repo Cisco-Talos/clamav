@@ -1,3 +1,8 @@
+Fri Jan 30 12:45:10 GMT 2004 (njh)
+----------------------------------
+  * contrib:	   Recursive scan into folders by the Windows client is now
+  		optional (File->Options). Default=TRUE
+
 Thu Jan 29 12:54:08 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter: added --noreject flag, thanks to
