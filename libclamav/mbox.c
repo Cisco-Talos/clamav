@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.172  2004/11/09 13:33:38  nigelhorne
+ * Tidy
+ *
  * Revision 1.171  2004/11/09 12:24:32  nigelhorne
  * Better handling of mail-follow-urls when CURL is not installed
  *
@@ -501,7 +504,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.171 2004/11/09 12:24:32 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.172 2004/11/09 13:33:38 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3058,6 +3061,7 @@ checkURLs(message *m, const char *dir)
 			(void)tableInsert(t, url, 1);
 			cli_dbgmsg("Downloading URL %s to be scanned\n", url);
 			strncpy(name, url, sizeof(name) - 1);
+			name[sizeof(name) - 1] = '\0';
 			for(ptr = name; *ptr; ptr++)
 				if(*ptr == '/')
 					*ptr = '_';
