@@ -45,6 +45,7 @@
 #include <unistd.h>
 #include "dazukoio_xp.h"
 #include "dazukoio.h"
+#include "others.h"
 
 #if !defined(NO_COMPAT12)
 #include "dazukoio_compat12.h"
@@ -276,7 +277,7 @@ int dazukoRegister_TS(dazuko_id_t **dazuko_id, const char *groupName, const char
 	buffer[sizeof(buffer)-1] = 0;
 	size = strlen(buffer) + 1;
 
-	if (write(temp_id->device, buffer, size) != size)
+	if (writen(temp_id->device, buffer, size) != size)
 	{
 		close(temp_id->device);
 		free(temp_id);
@@ -393,7 +394,7 @@ int dazukoSetAccessMask_TS(dazuko_id_t *dazuko_id, unsigned long accessMask)
 	buffer[sizeof(buffer)-1] = 0;
 	size = strlen(buffer) + 1;
 
-	if (write(dazuko_id->device, buffer, size) != size)
+	if (writen(dazuko_id->device, buffer, size) != size)
 	{
 		free(request->buffer);
 		free(request);
@@ -448,7 +449,7 @@ static int dazuko_set_path(dazuko_id_t *dazuko_id, const char *path, int type)
 	buffer[sizeof(buffer)-1] = 0;
 	size = strlen(buffer) + 1;
 
-	if (write(dazuko_id->device, buffer, size) != size)
+	if (writen(dazuko_id->device, buffer, size) != size)
 	{
 		free(request->buffer);
 		free(request);
@@ -539,7 +540,7 @@ int dazukoRemoveAllPaths_TS(dazuko_id_t *dazuko_id)
 	buffer[sizeof(buffer)-1] = 0;
 	size = strlen(buffer) + 1;
 
-	if (write(dazuko_id->device, buffer, size) != size)
+	if (writen(dazuko_id->device, buffer, size) != size)
 	{
 		free(request->buffer);
 		free(request);
@@ -656,7 +657,7 @@ int dazukoGetAccess_TS(dazuko_id_t *dazuko_id, struct dazuko_access **acc)
 	buffer[sizeof(buffer)-1] = 0;
 	size = strlen(buffer) + 1;
 
-	if (write(dazuko_id->device, buffer, size) != size)
+	if (writen(dazuko_id->device, buffer, size) != size)
 	{
 		free(temp_acc->filename);
 		free(temp_acc);
@@ -795,7 +796,7 @@ int dazukoReturnAccess_TS(dazuko_id_t *dazuko_id, struct dazuko_access **acc)
 		buffer[sizeof(buffer)-1] = 0;
 		size = strlen(buffer) + 1;
 
-		if (write(dazuko_id->device, buffer, size) != size)
+		if (writen(dazuko_id->device, buffer, size) != size)
 		{
 			/* there could be big problems if this happens */
 
@@ -873,7 +874,7 @@ int dazukoUnregister_TS(dazuko_id_t **dazuko_id)
 		buffer[sizeof(buffer)-1] = 0;
 		size = strlen(buffer) + 1;
 
-		if (write((*dazuko_id)->device, buffer, size) != size)
+		if (writen((*dazuko_id)->device, buffer, size) != size)
 		{
 			/* there could be big problems if this happens */
 
