@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.99  2004/10/12 10:40:48  nigelhorne
+ * Remove shadow declaration of isblank
+ *
  * Revision 1.98  2004/10/11 10:56:17  nigelhorne
  * Reimplement squeeze ads sanisiseBase64
  *
@@ -291,7 +294,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.98 2004/10/11 10:56:17 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.99 2004/10/12 10:40:48 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1015,15 +1018,15 @@ messageAddStr(message *m, const char *data)
 	assert(m != NULL);
 
 	if(data) {
-		int isblank = 1;
+		int iswhite = 1;
 		const char *p;
 
 		for(p = data; *p != '\0'; p++)
 			if(!isspace(*p)) {
-				isblank = 0;
+				iswhite = 0;
 				break;
 			}
-		if(isblank) {
+		if(iswhite) {
 			/*cli_dbgmsg("messageAddStr: empty line: '%s'\n", data);*/
 			data = NULL;
 		}
