@@ -67,7 +67,10 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
     } else {
 	timeout = CL_DEFAULT_SCANTIMEOUT;
     }
-    
+    if (timeout == 0) {
+    	timeout = -1;
+    }
+       
     retval = poll_fd(desc, timeout);
     switch (retval) {
     case 0: /* timeout */
