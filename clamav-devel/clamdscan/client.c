@@ -312,6 +312,9 @@ int dconnect(const struct optstruct *opt)
 	return -1;
     }
 
+    memset((char *) &server, 0, sizeof(server));
+    memset((char *) &server2, 0, sizeof(server2));
+
     /* Set default address to connect to */
     server2.sin_addr.s_addr = inet_addr("127.0.0.1");    
 
@@ -435,7 +438,7 @@ int client(const struct optstruct *opt, int *infected)
 		perror(fullpath);
 		errors++;
 	    } else {
-		if(fullpath[0] != '/') {
+		if(strlen(fullpath) < 2 || (fullpath[0] != '/' && fullpath[0] != '\\' && fullpath[1] != ':')) {
 		    fullpath = abpath(thefilename);
 		    free(thefilename);
 

@@ -151,6 +151,7 @@ struct cl_stat {
     char *dir;
     int no;
     struct stat *stattab;
+    char **statdname;
 };
 
 struct cl_cvd {

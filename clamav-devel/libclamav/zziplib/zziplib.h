@@ -16,6 +16,10 @@
  * you need to add an include path to the dir containing (!!) the ./zzip/ dir
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #ifndef _ZZIP_ZZIP_H /* zziplib.h */
 #define _ZZIP_ZZIP_H
 
@@ -24,6 +28,10 @@
 #include <fcntl.h>
 #include <stddef.h> /* size_t and friends */
 /* msvc6 has neither ssize_t (we assume "int") nor off_t (assume "long") */
+
+#ifdef CL_OS2
+#include <types.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {

@@ -136,7 +136,7 @@ void clamd(struct optstruct *opt)
 
     if((cpt = cfgopt(copt, "LogFile"))) {
 	logg_file = cpt->strarg;
-	if(logg_file[0] != '/') {
+	if(strlen(logg_file) < 2 || (logg_file[0] != '/' && logg_file[0] != '\\' && logg_file[1] != ':')) {
 	    fprintf(stderr, "ERROR: LogFile requires full path.\n");
 	    exit(1);
 	}
@@ -274,11 +274,9 @@ void clamd(struct optstruct *opt)
 	exit(1);
     }
 
-
     /* fork into background */
     if(!cfgopt(copt, "Foreground"))
 	daemonize();
-
 
     if(tcpsock)
 	ret = tcpserver(opt, copt, root);
@@ -312,6 +310,10 @@ void daemonize(void)
 	int i;
 
 
+#ifdef C_OS2
+    return;
+#else
+
     if((i = open("/dev/null", O_WRONLY)) == -1) {
 	logg("!Cannot open /dev/null. Only use Debug if Foreground is enabled.\n");
 	for(i = 0; i <= 2; i++)
@@ -330,4 +332,5 @@ void daemonize(void)
 	exit(0);
 
     setsid();
+#endif
 }

@@ -11764,6 +11764,32 @@ _ACEOF
     use_netinfo="yes"
     disable_gethostbyname_r="yes"
     ;;
+os2*)
+    FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsyslog"
+    CLAMD_LIBS="$CLAMD_LIBS -lsyslog"
+    CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsyslog"
+    if test "$have_pthreads" = "yes"; then
+	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
+	CLAMD_LIBS="$CLAMD_LIBS -lpthread"
+	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
+	TH_SAFE="-thread-safe"
+
+cat >>confdefs.h <<\_ACEOF
+#define CL_THREAD_SAFE 1
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define _REENTRANT 1
+_ACEOF
+
+    fi
+
+cat >>confdefs.h <<\_ACEOF
+#define C_OS2 1
+_ACEOF
+
+    ;;
 sco*)
                     ;;
 hpux*)
