@@ -320,9 +320,22 @@
  *	0.70j	15/4/04	Handle systems without inet_ntop
  *	0.70k	17/4/04	Put the virus message in the 550 rejection
  *	0.70l	19/4/04	Started coding e-mail template support
+ *	0.70m	19/4/04	Started code to parse header to find the real infected
+ *			machine
+ *			Added the --from flag
+ *			Return SMFIS_TEMPFAIL when out of memory idea by
+ *				Joe Maimon <jmaimon@ttec.com>
+ *				Some still to be done
+ *			Based on an idea by Christian Pelissier
+ *				<Christian.Pelissier@onera.fr>. Store different
+ *				day's quarantines in different directories to
+ *				make them easier to manage
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.77  2004/04/19 22:11:20  nigelhorne
+ * Many changes
+ *
  * Revision 1.76  2004/04/19 13:28:41  nigelhorne
  * Started coding e-mail template support
  *
@@ -536,9 +549,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.76 2004/04/19 13:28:41 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.77 2004/04/19 22:11:20 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70l"
+#define	CM_VERSION	"0.70m"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -619,6 +632,7 @@ typedef	unsigned short	in_port_t;
  *	found. Those with faked addresses, such as SCO.A want discarding,
  *	others could be bounced properly.
  * TODO: Encrypt mails sent to clamd to stop sniffers
+ * TODO: Test with IPv6
  */
 
 struct header_node_t {
@@ -650,6 +664,7 @@ struct	privdata {
 	size_t	bodyLen;	/* number of bytes in body */
 	header_list_t headers;	/* Message headers */
 	long	numBytes;	/* Number of bytes sent so far */
+	char	*received;	/* keep track of received from */
 };
 
 static	int		pingServer(int serverNumber);
@@ -764,6 +779,7 @@ static	const	char	*serverHostNames = "127.0.0.1";
 static	long	*serverIPs;	/* IPv4 only */
 static	int	numServers;	/* numer of elements in serverIPs */
 static	const	char	*postmaster = "postmaster";
+static	const	char	*from = "MAILER-DAEMON";
 
 /*
  * Whitelist of source e-mail addresses that we do NOT scan
@@ -786,6 +802,7 @@ help(void)
 	puts("\t--debug\t\t\t-D\tPrint debug messages.");
 	puts("\t--dont-log-clean\t-C\tDon't add an entry to syslog that a mail is clean.");
 	puts("\t--dont-scan-on-error\t-d\tPass e-mails through unscanned if a system error occurs.");
+	puts("\t--from=EMAIL\t\t-a EMAIL\tError messages come from here.");
 	puts("\t--force-scan\t\t-f\tForce scan all messages (overrides (-o and -l).");
 	puts("\t--help\t\t\t-h\tThis message.");
 	puts("\t--headers\t\t-H\tInclude original message headers in the report.");
@@ -800,8 +817,8 @@ help(void)
 	puts("\t--quarantine-dir=DIR\t-U DIR\tDirectory to store infected emails.");
 	puts("\t--server=SERVER\t\t-s SERVER\tHostname/IP address of server(s) running clamd (when using TCPsocket).");
 	puts("\t--sign\t\t\t-S\tAdd a hard-coded signature to each scanned message.");
-	puts("\t--signature-file\t-F\tLocation of signature file.");
-	puts("\t--template-file\t-t\tLocation of e-mail template file.");
+	puts("\t--signature-file=FILE\t-F FILE\tLocation of signature file.");
+	puts("\t--template-file=FILE\t-t FILE\tLocation of e-mail template file.");
 	puts("\t--version\t\t-V\tPrint the version number of this software.");
 #ifdef	CL_DEBUG
 	puts("\t--debug-level=n\t\t-x n\tSets the debug level to 'n'.");
@@ -855,6 +872,9 @@ main(int argc, char **argv)
 #endif
 
 		static struct option long_options[] = {
+			{
+				"from", 0, NULL, 'a'
+			},
 			{
 				"bounce", 0, NULL, 'b'
 			},
@@ -942,6 +962,9 @@ main(int argc, char **argv)
 			ret = long_options[opt_index].val;
 
 		switch(ret) {
+			case 'a':	/* e-mail errors from here */
+				from = optarg;
+				break;
 			case 'b':	/* bounce worms/viruses */
 				bflag++;
 				break;
@@ -1734,6 +1757,9 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 	}
 
 	privdata = (struct privdata *)cli_calloc(1, sizeof(struct privdata));
+	if(privdata == NULL)
+		return SMFIS_TEMPFAIL;
+
 	privdata->dataSocket = -1;	/* 0.4 */
 	privdata->cmdSocket = -1;	/* 0.4 */
 
@@ -1769,6 +1795,9 @@ clamfi_envrcpt(SMFICTX *ctx, char **argv)
 		assert(privdata->numTo == 0);
 	} else
 		privdata->to = cli_realloc(privdata->to, sizeof(char *) * (privdata->numTo + 2));
+
+	if(privdata->to == NULL)
+		return SMFIS_TEMPFAIL;
 
 	privdata->to[privdata->numTo] = strdup(argv[0]);
 	privdata->to[++privdata->numTo] = NULL;
@@ -1812,6 +1841,13 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 
 	if(hflag)
 		header_list_add(privdata->headers, headerf, headerv);
+
+	if((strcasecmp(headerf, "Received") == 0) &&
+	   (strncasecmp(headerv, "from ", 5) == 0)) {
+	   	if(privdata->received)
+			free(privdata->received);
+		privdata->received = strdup(headerv);
+	}
 
 	return SMFIS_CONTINUE;
 }
@@ -2072,6 +2108,11 @@ clamfi_eom(SMFICTX *ctx)
 		 */
 		err = (char *)cli_malloc(1024);
 
+		if(err == NULL) {
+			clamfi_cleanup(ctx);
+			return SMFIS_TEMPFAIL;
+		}
+
 		/*
 		 * Use snprintf rather than printf since we don't know the
 		 * length of privdata->from and may get a buffer overrun
@@ -2132,7 +2173,7 @@ clamfi_eom(SMFICTX *ctx)
 				 * TODO: Make this e-mail message customisable
 				 * perhaps by means of a template
 				 */
-				fputs("From: MAILER-DAEMON\n", sendmail);
+				fprintf(sendmail, "From: %s\n", from);
 				if(bflag) {
 					fprintf(sendmail, "To: %s\n", privdata->from);
 					fprintf(sendmail, "Cc: %s\n", postmaster);
@@ -2172,6 +2213,20 @@ clamfi_eom(SMFICTX *ctx)
 
 					if(privdata->filename != NULL)
 						fprintf(sendmail, "\nThe message in question has been quarantined as %s\n", privdata->filename);
+
+					if(privdata->received)
+						/*
+						 * TODO: parse this to find
+						 * real infected machine.
+						 * Need to decide how to find
+						 * if it's a dynamic IP from a
+						 * dial up account in which
+						 * case there may not be much
+						 * we can do if that DHCP has
+						 * set the hostname...
+						 */
+						fprintf(sendmail, "\nThe infected machine is likely to be here:\n%s\t\n",
+							privdata->received);
 
 					if(hflag) {
 						fprintf(sendmail, "\nThe message was received by %s from %s via %s\n\n",
@@ -2347,6 +2402,8 @@ clamfi_free(struct privdata *privdata)
 		if(debug_level >= 9)
 			cli_dbgmsg("Free privdata\n");
 #endif
+	   	if(privdata->received)
+			free(privdata->received);
 		free(privdata);
 	}
 
@@ -2534,8 +2591,10 @@ header_list_new(void)
 	header_list_t ret;
 
 	ret = (header_list_t)cli_malloc(sizeof(struct header_list_struct));
-	ret->first = NULL;
-	ret->last = NULL;
+	if(ret) {
+		ret->first = NULL;
+		ret->last = NULL;
+	}
 	return ret;
 }
 
@@ -2564,8 +2623,15 @@ header_list_add(header_list_t list, const char *headerf, const char *headerv)
 	len = strlen(headerf) + strlen(headerv) + 3;
 
 	header = (char *)cli_malloc(len);
+	if(header == NULL)
+		return;
+
 	sprintf(header, "%s: %s", headerf, headerv);
 	new_node = (struct header_node_t *)cli_malloc(sizeof(struct header_node_t));
+	if(new_node == NULL) {
+		free(header);
+		return;
+	}
 	new_node->header = header;
 	new_node->next = NULL;
 	if(!list->first)
@@ -2611,11 +2677,32 @@ connect2clamd(struct privdata *privdata)
 		 * store message in a temporary file
 		 */
 		int ntries = 5;
+		long t;
+		int MM, YY, DD;
+		const struct tm *tm;
 
-		privdata->filename = (char *)cli_malloc(strlen(quarantine_dir) + 12);
+		/*
+		 * Based on an idea by Christian Pelissier
+		 * <Christian.Pelissier@onera.fr>. Store different days
+		 * in different directories to make them easier to manage
+		 */
+		t = time((long *)0);
+		tm = localtime(&t);
+		MM = tm->tm_mon + 1;
+		YY = tm->tm_year - 100;
+		DD = tm->tm_mday;
+
+		privdata->filename = (char *)cli_malloc(strlen(quarantine_dir) + 19);
+
+		sprintf(privdata->filename, "%s/%02d%02d%02d", quarantine_dir,
+			YY, MM, DD); 
+
+		(void)mkdir(privdata->filename, 0700);
 
 		do {
-			sprintf(privdata->filename, "%s/msg.XXXXXX", quarantine_dir);
+			sprintf(privdata->filename,
+				"%s/%02d%02d%02d/msg.XXXXXX",
+				quarantine_dir, YY, MM, DD);
 #if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS)
 			privdata->dataSocket = mkstemp(privdata->filename);
 #else
@@ -2817,6 +2904,10 @@ checkClamd(void)
  * Send a templated message about an intercepted message. Very basic for
  * now, just to prove it works, will enhance the flexability later, only
  * supports %v at present. And only one instance of %v at that
+ *
+ * TODO: more template features
+ * TODO: allow filename to start with a '|' taken to mean the output of
+ *	a program
  */
 static int
 sendtemplate(const char *filename, FILE *sendmail, const char *clamdMessage)

@@ -320,6 +320,15 @@ Changes
 0.70j	15/4/04	Handle systems without inet_ntop
 0.70k	17/4/04	Put the virus message in the 550 rejection
 0.70l	19/4/04	Started coding e-mail template support
+0.70m	19/4/04	Started code to parse header to find the real infected machine
+		Added the --from flag
+		Return SMFIS_TEMPFAIL when out of memory idea by
+			Joe Maimon <jmaimon@ttec.com>
+			Some still to be done
+		Based on an idea by Christian Pelissier
+			<Christian.Pelissier@onera.fr>. Store different
+			day's quarantines in different directories to
+			make them easier to manage
 
 BUG REPORTS
 
