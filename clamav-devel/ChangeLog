@@ -1,3 +1,8 @@
+Wed Apr  6 23:58:29 CEST 2005 (tk)
+----------------------------------
+  * clamd/scanner.c: fix possible crash when MaxStreamLength < FILEBUFF
+		     (patch by "Andrey J. Melnikoff (TEMHOTA)" <temnota*kmv.ru>)
+
 Wed Apr  6 16:11:50 CEST 2005 (tk)
 ----------------------------------
   * libclamav/readdb.c: initialise refcount in cli_loadmd()
