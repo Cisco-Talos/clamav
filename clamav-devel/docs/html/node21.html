@@ -59,7 +59,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <H2><A NAME="SECTION00054000000000000000">
 Setting up auto-updating</A>
 </H2>
-    <code>freshclam</code> is a default database updater for Clam AntiVirus.
+    <code>freshclam</code> is the default database updater for Clam AntiVirus.
     It can work in two modes:
     
 <UL>
@@ -73,8 +73,8 @@ Setting up auto-updating</A>
     to the <I>clamav</I> user. <code>freshclam</code> uses the
     <TT><A NAME="tex2html30"
   HREF="database.clamav.net">database.clamav.net</A></TT> round-robin DNS which automatically selects
-    a database mirror<A HREF="node106.html#mirrors">9.1</A>. <code>freshclam</code> is an advanced tool:
-    supports database version verification through DNS, proxy servers (with
+    a database mirror<A HREF="node105.html#mirrors">9.1</A>. <code>freshclam</code> is an advanced tool:
+    it supports database version verification through DNS, proxy servers (with
     authentication), digital signatures and various error scenarios.
     <B>Quick test: run freshclam (as superuser) with no parameters
     and check the output.</B> If everything is OK you may create the log file in
@@ -88,18 +88,18 @@ Setting up auto-updating</A>
     Now you <I>should</I> edit the configuration file (<code>freshclam.conf</code> or
     <code>clamd.conf</code> if they're merged) and configure the
     <I>UpdateLogFile</I> directive to point to the created log file.
-    Finally, to run <code>freshclam</code> in the daemon mode execute:
+    Finally, to run <code>freshclam</code> in the daemon mode, execute:
     <PRE>
 	# freshclam -d
 </PRE>
-    The other method is to use the <I>cron</I> daemon.  You have to add the
+    The other method is to use the <I>cron</I> daemon. You have to add the
     following line to the crontab of the <B>root</B> or <B>clamav</B> users:
     <FONT SIZE="-1">    </FONT><PRE>
 N * * * *	/usr/local/bin/freshclam --quiet
 </PRE>
     to check for a new database every hour. <B>N should be a
-    number between 1 and 59 of your choice. Please don't choose any multiple
-    of 10, because there are already too many servers using those time slots.</B>
+    number between 3 and 57 of your choice. Please don't choose any multiple
+    of 10, because there are already too many clients using those time slots.</B>
     Proxy settings are only configurable via the configuration file and
     <code>freshclam</code> will require strict permissions on the config file when
     <code>HTTPProxyPassword</code> is enabled.
@@ -141,7 +141,7 @@ N * * * *	/usr/local/bin/freshclam --quiet
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2004-10-11
+2004-10-17
 </ADDRESS>
 </BODY>
 </HTML>
