@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.138  2004/10/04 10:53:58  nigelhorne
+ * Better SMTP message when virus is found
+ *
  * Revision 1.137  2004/10/02 17:54:06  nigelhorne
  * Fix crash if %h is used in a template and --headers is not set
  *
@@ -422,9 +425,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.137 2004/10/02 17:54:06 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.138 2004/10/04 10:53:58 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80f"
+#define	CM_VERSION	"0.80g"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -2770,7 +2773,7 @@ clamfi_eom(SMFICTX *ctx)
 		} else
 			rc = SMFIS_DISCARD;
 
-		snprintf(reject, sizeof(reject) - 1, _("%s detected by ClamAV - http://www.clamav.net"), virusname);
+		snprintf(reject, sizeof(reject) - 1, _("virus %s detected by ClamAV - http://www.clamav.net"), virusname);
 		smfi_setreply(ctx, (char *)privdata->rejectCode, "5.7.1", reject);
 		broadcast(mess);
 	}
