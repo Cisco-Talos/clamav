@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.55  2004/03/20 17:39:23  nigelhorne
+ * First attempt to handle all bounces
+ *
  * Revision 1.54  2004/03/19 15:40:45  nigelhorne
  * Handle empty content-disposition types
  *
@@ -153,7 +156,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.54 2004/03/19 15:40:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.55 2004/03/20 17:39:23 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1003,6 +1006,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 							rc = parseEmailBody(body, blobs, nBlobs, NULL, dir, rfc821Table, subtypeTable);
 							messageDestroy(body);
 						}
+
 						continue;
 					case MULTIPART:
 						/*
@@ -1355,7 +1359,8 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					}
 					blobDestroy(b);
 				}
-			} else if((t_line = bounceBegin(mainMessage)) != NULL) {
+			} else if((!isAllText(mainMessage)) &&
+				  ((t_line = bounceBegin(mainMessage)) != NULL)) {
 				/*
 				 * Attempt to save the original (unbounced)
 				 * message - clamscan will find that in the
@@ -1367,9 +1372,9 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				 * Ignore the blank lines before the message
 				 * proper
 				 */
-				while((t_line = t_line->t_next) != NULL)
+				/*while((t_line = t_line->t_next) != NULL)
 					if(strcmp(t_line->t_text, "") != 0)
-						break;
+						break;*/
 
 				if(t_line == NULL) {
 					cli_dbgmsg("Not found bounce message\n");
@@ -1386,7 +1391,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					 * Fix thanks to "Andrey J. Melnikoff
 					 * (TEMHOTA)" <temnota@kmv.ru>
 					 */
-					blobAddData(b, (unsigned char *)"Received: by clamd\n", 19);
+					/*blobAddData(b, (unsigned char *)"Received: by clamd\n", 19);*/
 					do {
 						blobAddData(b, (unsigned char *)t_line->t_text, strlen(t_line->t_text));
 						blobAddData(b, (unsigned char *)"\n", 1);
@@ -1863,10 +1868,10 @@ static bool
 isAllText(const message *m)
 {
 	const text *t;
-	
+
 	for(t = messageGetBody(m); t; t = t->t_next)
 		if(strncasecmp(t->t_text,
-			"Content-Transfer-Encoding", 
+			"Content-Transfer-Encoding",
 			strlen("Content-Transfer-Encoding")) == 0)
 				return FALSE;
 
