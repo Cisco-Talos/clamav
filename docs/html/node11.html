@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2K.1beta (1.48)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Installation</TITLE>
+<META NAME="description" CONTENT="Installation">
+<META NAME="keywords" CONTENT="clamdoc">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2K.1beta">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="clamdoc.css">
+
+<LINK REL="next" HREF="node12.html">
+<LINK REL="previous" HREF="node10.html">
+<LINK REL="up" HREF="node6.html">
+<LINK REL="next" HREF="node12.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html265"
+  HREF="node12.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html261"
+  HREF="node6.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html255"
+  HREF="node10.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html263"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html266"
+  HREF="node12.html">Configuration</A>
+<B> Up:</B> <A NAME="tex2html262"
+  HREF="node6.html">Installation</A>
+<B> Previous:</B> <A NAME="tex2html256"
+  HREF="node10.html">Binary packages</A>
+ &nbsp <B>  <A NAME="tex2html264"
+  HREF="node1.html">Contents</A></B> 
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00035000000000000000">
+Installation</A>
+</H2>
+
+<P>
+Please read the README file in the current version, because it probably
+    contains some important release notes.
+    If you are installing Clam AV for the first time, you have to add a new user
+    and group to your system - <I>clamav</I>: <A NAME="tex2html10"
+  HREF="footnode.html#foot575"><SUP>2</SUP></A>
+<P>
+<PRE>
+	# groupadd clamav
+	# useradd -g clamav -s /bin/false -c "Clam AntiVirus" clamav
+</PRE>
+
+<P>
+The above method works on Linux and Solaris, if you don't have
+    <I>groupadd, useradd</I> please consult your system manual - the section
+    about creating new users and groups.
+    If you are not a system administrator or won't be using <B>clamscan</B>
+    in superuser mode, you may omit this step with the option
+    <I>-disable-clamav</I> passed to the <I>configure</I> script:
+    <PRE>
+	$ ./configure --disable-clamav
+</PRE>
+    This disables test for the <I>clamav</I> user and group. <B>clamscan</B>
+    still requires <I>clamav</I> for superuser mode. Please don't set a password
+    on this account, just assure it's locked with "<B>!</B>" in
+    <I>/etc/passwd</I> or <I>/etc/shadow</I>. It must be a normal, unprivileged
+    user. Don't add it to any supplementary groups.
+<BR>
+<BR>
+
+<P>
+After you have created the clamav user/group, extract the archive:
+    <PRE>
+	$ zcat clamav-x.yz.tar.gz | tar xvf -
+	$ cd clamav-x.yz
+</PRE>
+    Assuming you want the configuration file installed in /etc, configure
+    the package as follows:
+    <PRE>
+	$ ./configure --sysconfdir=/etc
+</PRE>
+    Currently <I>gcc</I> is required for the compilation. Support for other
+    compilers will be added in a near future.
+    <PRE>
+	$ make
+	$ su -c "make install"
+</PRE>
+    In the last step the software is installed in the /usr/local directory
+    and the config file in /etc.
+    <B>WARNING: Never set SUID/SGID bit on Clam AntiVirus programs.</B>
+
+<P>
+<HR>
+<!--Navigation Panel-->
+<A NAME="tex2html265"
+  HREF="node12.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html261"
+  HREF="node6.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html255"
+  HREF="node10.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html263"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html266"
+  HREF="node12.html">Configuration</A>
+<B> Up:</B> <A NAME="tex2html262"
+  HREF="node6.html">Installation</A>
+<B> Previous:</B> <A NAME="tex2html256"
+  HREF="node10.html">Binary packages</A>
+ &nbsp <B>  <A NAME="tex2html264"
+  HREF="node1.html">Contents</A></B> 
+<!--End of Navigation Panel-->
+<ADDRESS>
+Tomasz Kojm
+2003-06-21
+</ADDRESS>
+</BODY>
+</HTML>

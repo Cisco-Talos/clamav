@@ -1,0 +1,10 @@
+If you want to help, compile clamav with:
+./configure --enable-debug
+and enable Foreground option in clamav.conf.
+
+Known bugs:
+-----------
+
+-) unrarlib doesn't work on 64-bit systems
+-) clamd stability problems on BSD
+-) clamav-milter stability problems

@@ -1,0 +1,54 @@
+.\" Manual page created by Tomasz Kojm, 29.06.2002
+.TH "sigtool" "1" "October 1, 2002" "Tomasz Kojm" "Clam Antivirus"
+.SH "NAME"
+.LP 
+sigtool \- generate virus signature
+.SH "SYNOPSIS"
+.LP 
+sigtool [options]
+.SH "DESCRIPTION"
+.LP 
+sigtool generates virus signature using an external anti\-virus scanner, which is able to detect the virus. It's a part of the Clam AntiVirus package. Its purpose is the simplification of signature creation process when infected file and console scanner which recognizes it are available. Its speed depends on scanner, and file and signature sizes. sigtool may generate hexadecimal strings from input data, also.
+.SH "OPTIONS"
+.LP 
+
+.TP 
+\fB\-h, \-\-help\fR
+Output help information and exit.
+.TP 
+\fB\-V, \-\-version\fR
+Print the version number and exit.
+.TP 
+\fB\-\-quiet\fR
+Be quiet \- output only error messages.
+.TP 
+\fB\-\-stdout\fR
+Write all messages to standard output (stdout), instead of standard error output (stderr).
+.TP 
+\fB\-\-hex\-dump\fR
+Read data from stdin and write hex string to stdout.
+.TP 
+\fB\-c, \-\-command\fR
+Scanner command with options. Remember about quotes, if the argument string contains spaces. Command should contain everything except infected file.
+.TP 
+\fB\-f, \-\-file\fR
+Infected file.
+.TP 
+\fB\-s, \-\-string\fR
+Unique string from anti\-virus scanner's output when it detects the virus. In most cases it should be the virus name.
+.SH "EXAMPLES"
+.LP 
+.TP 
+(0) Generate hex string from testfile and save it to testfile.hex:
+
+\fBcat testfile | sigtool \-\-hex\-dump > testfile.hex\fR
+.TP 
+(1) Please check clamdoc for example of usage.
+.SH "CREDITS"
+Please check the full documentation for credits.
+.SH "AUTHOR"
+.LP 
+Tomasz Kojm <zolw@konarski.edu.pl>
+.SH "SEE ALSO"
+.LP 
+clamd(8), clamdscan(1), clamscan(1), freshclam(1), clamav.conf(5)

@@ -1,0 +1,210 @@
+.\" Manual page created by Tomasz Kojm, 1.10.2002.
+.TH "clamav.conf" "5" "June 6, 2003" "Tomasz Kojm" "Clam AntiVirus"
+.SH "NAME"
+.LP 
+\fBclamav.conf\fR \- Configuration file for Clam AntiVirus Daemon
+.SH "DESCRIPTION"
+.LP 
+The clamav.conf configures the Clam AntiVirus daemon, clamd(8).
+.SH "FILE FORMAT"
+The file consists of comments and options with arguments. Each line that starts with a hash (\fB#\fR) symbol is ignored. Everything is case sensitive. Options are of the form \fBOption Argument\fR, some options don't use arguments. There are few types of the arguments:
+.TP 
+\fBSTRING\fR
+String without a blank characters.
+.TP 
+\fBSIZE\fR
+Size in bytes. You can use a 'M' or 'm' modifiers for megabytes and a 'K' or 'k' for kilobytes.
+.TP 
+\fBNUMBER\fR
+Unsigned integer.
+.SH "OPTIONS"
+.LP 
+When some option is not used (hashed or doesn't exist in the configuration file), clamd takes a default action.
+.TP 
+\fBExample\fR
+When this option is set, clamd will stop and ask you to modify the configuration file.
+.TP 
+\fBLogFile STRING\fR
+Enable logging to a specified file.
+.br 
+Default: disabled.
+.TP 
+\fBLogFileUnlock\fR
+Disable the lock, that protects against running clamd with the same configuration multiple times. Enabling this option is not recommended.
+.br 
+Default: disabled.
+.TP 
+\fBLogFileMaxSize SIZE\fR
+Limit the size of the log file. When SIZE is reached, the logger is automatically disabled. Value of 0 disables the limit.
+.br 
+Default: 1M
+.TP 
+\fBLogTime\fR
+Log time information with each message.
+.br 
+Default: disabled.
+.TP 
+\fBLogSyslog\fR
+Use system logger (can work together with LogFile).
+.br 
+Default: disabled.
+.TP 
+\fBPidFile STRING\fR
+Save the process identifier of the listening daemon (main thread) to a specified file.
+.br 
+Default: disabled.
+.TP 
+\fBDataDirectory STRING\fR
+Path to the directory containing database files.
+.br 
+Default: hardcoded directory.
+.TP 
+\fBLocalSocket STRING\fR
+Path to the local (Unix) socket the daemon will listen on.
+.br 
+Default: disabled.
+.TP 
+\fBTCPSocket NUMBER\fR
+TCP port number the daemon will listen on.
+.br 
+Default: disabled.
+.TP 
+\fBMaxConnectionQueueLength NUMBER\fR
+Maximum length the queue of pending connections may grow to.
+.br 
+Default: 15
+.TP 
+\fBMaxThreads NUMBER\fR
+Maximal number of a threads running at the same time.
+.br 
+Default: 5.
+.TP 
+\fBThreadTimeout NUMBER\fR
+Stop thread\-scanner after specified time (in seconds). Value of 0 disables the timeout.
+.br 
+Default: 180
+.TP 
+\fBMaxDirectoryRecursion NUMBER\fR
+Maximal depth the directories are scanned at.
+.br 
+Default: disabled.
+.TP 
+\fBFollowDirectorySymlinks\fR
+Follow a directory symlinks. You should have enabled directory recursion limit to avoid a potential problems.
+.br 
+Default: disabled.
+.TP 
+\fBFollowFileSymlinks\fR
+Follow a regular file symlinks.
+.br 
+Default: disabled.
+.TP 
+\fBSelfCheck NUMBER\fR
+Do internal checks every NUMBER seconds. In some cases it's able to fix a problem (eg. rebuild a broken graph).
+.br 
+Default: 3600
+.TP 
+\fBUser STRING\fR
+When started by root, drop priviledges to a specified user.
+.br 
+Default: disabled.
+.TP 
+\fBAllowSupplementaryGroups\fR
+When started by root and the User option is activated, it will initialize all the groups from /etc/group for which user is a member.
+.br 
+Default: disabled.
+.TP 
+\fBForeground\fR
+Don't fork into background. Useful in debugging.
+.br 
+Default: disabled.
+.TP 
+\fBStreamSaveToDisk\fR
+When activated, input stream (see STREAM command) will be saved to disk before scanning \- this allows scanning within archives.
+.br 
+Default: disabled.
+.TP 
+\fBStreamMaxLength SIZE\fR
+Close the connection if this limit is exceeded
+.br 
+Default: disabled.
+\fBScanMail\fR
+Enable scanning of mail files.
+.br 
+Default: disabled.
+.TP 
+\fBScanArchive\fR
+Enable archive scanning.
+.br 
+Default: disabled.
+.TP 
+\fBArchiveMaxFileSize SIZE\fR
+Files in archives larger than this limit won't be scanned. Value of 0 disables the limit.
+.br 
+Default: 10M
+.TP 
+\fBArchiveMaxRecursion NUMBER\fR
+Limit archive recursion level. Value of 0 disables the limit.
+.br 
+Default: 5
+.TP 
+\fBArchiveMaxFiles NUMBER\fR
+Number of files to be scanned within archive. Value of 0 disables the limit.
+.br 
+Default: 1000
+.TP 
+\fBArchiveLimitMemoryUsage\fR
+Use slower decompression algorithm which uses less memory. This option affects bzip2 decompressor only.
+.br 
+Default: disabled
+.TP 
+\fBClamukoScanOnLine\fR
+Enable Clamuko \- on\-access scanner for Linux. Dazuko must be already running.
+.br 
+Default: disabled.
+.TP 
+\fBClamukoScanOnOpen\fR
+Scan a file on open.
+.br 
+Default: disabled.
+.TP 
+\fBClamukoScanOnClose\fR
+Scan a file on close.
+.br 
+Default: disabled.
+.TP 
+\fBClamukoScanOnExec\fR
+Scan a file on execute.
+.br 
+Default: disabled.
+.TP 
+\fBClamukoIncludePath STRING\fR
+Set the include paths (all files and directories in them will be scanned). You can have multiple ClamukoIncludePath options, but each directory must be added in a seperate option.
+.br 
+Default: disabled. Required.
+.TP 
+\fBClamukoExcludePath\fR
+Set the exclude paths. All subdirectories are also excluded.
+.br 
+Default: disabled.
+.TP 
+\fBClamukoMaxFileSize SIZE\fR
+Don't scan files larger than SIZE.
+.br 
+Default: 5M
+.TP 
+\fBClamukoScanArchive\fR
+Enable archive scanning. It uses ArchiveMax* limits.
+.br 
+Default: disabled.
+.SH "FILES"
+.LP 
+/etc/clamav.conf
+.br 
+/usr/local/etc/clamav.conf
+.SH "AUTHOR"
+.LP 
+Tomasz Kojm <zolw@konarski.edu.pl>
+.SH "SEE ALSO"
+.LP 
+clamd(8), clamdscan(1), clamscan(1), freshclam(1), sigtool(1)

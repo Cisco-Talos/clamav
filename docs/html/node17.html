@@ -1,0 +1,152 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2K.1beta (1.48)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Clam daemon</TITLE>
+<META NAME="description" CONTENT="Clam daemon">
+<META NAME="keywords" CONTENT="clamdoc">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2K.1beta">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="clamdoc.css">
+
+<LINK REL="next" HREF="node18.html">
+<LINK REL="previous" HREF="node16.html">
+<LINK REL="up" HREF="node16.html">
+<LINK REL="next" HREF="node18.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html340"
+  HREF="node18.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html336"
+  HREF="node16.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html330"
+  HREF="node16.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html338"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html341"
+  HREF="node18.html">Clamuko</A>
+<B> Up:</B> <A NAME="tex2html337"
+  HREF="node16.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html331"
+  HREF="node16.html">Usage</A>
+ &nbsp <B>  <A NAME="tex2html339"
+  HREF="node1.html">Contents</A></B> 
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00041000000000000000"></A><A NAME="clamd"></A>
+<BR>
+Clam daemon
+</H2>
+    <I>clamd</I> is a fully multi-threaded daemon, based on <I>libclamav</I>.
+    It's able to work in one of the two modes, using:
+    
+<UL>
+<LI>Unix (local) sockets
+</LI>
+<LI>TCP sockets
+    
+</LI>
+</UL>
+    The daemon is configured by the <I>clamav.conf</I> file. You will find
+    a description of all the options in the <B>clamav.conf(5)</B> manual.
+    <I>clamd</I> recognizes the following commands:
+    
+<UL>
+<LI><B>PING</B>
+<BR>
+Check server's state. It should reply with "PONG".
+</LI>
+<LI><B>VERSION</B>
+<BR>
+Print the version information.
+</LI>
+<LI><B>RELOAD</B>
+<BR>
+Reload the databases.
+</LI>
+<LI><B>QUIT</B>
+<BR>
+Perform a clean exit.
+</LI>
+<LI><B>SCAN file/directory</B>
+	    Scan a file or directory (recursively) with archive support. A
+	    full path is required.
+</LI>
+<LI><B>RAWSCAN file/directory</B>
+	    Scan a file or directory (recursively) with archive support
+	    disabled. A full path is required.
+</LI>
+<LI><B>CONTSCAN file/directory</B>
+	    Scan a file or directory (recursively) with archive
+	    support enabled and  continue  scanning  even  when
+	    virus was found. A full path is required.
+</LI>
+<LI><B>STREAM</B>
+	    Scan stream - on this command clamd will return "PORT number"
+	    and you can connect to that port and send a data to scan.
+
+<P>
+</LI>
+</UL>
+    Internal threads (except clamuko) are ignoring all external signals.
+    The main thread handles <I>SIGTERM</I> and <I>SIGINT</I> signals
+    and performs a proper exit when one of them is caught.
+
+<P>
+<HR>
+<!--Navigation Panel-->
+<A NAME="tex2html340"
+  HREF="node18.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html336"
+  HREF="node16.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html330"
+  HREF="node16.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html338"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html341"
+  HREF="node18.html">Clamuko</A>
+<B> Up:</B> <A NAME="tex2html337"
+  HREF="node16.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html331"
+  HREF="node16.html">Usage</A>
+ &nbsp <B>  <A NAME="tex2html339"
+  HREF="node1.html">Contents</A></B> 
+<!--End of Navigation Panel-->
+<ADDRESS>
+Tomasz Kojm
+2003-06-21
+</ADDRESS>
+</BODY>
+</HTML>

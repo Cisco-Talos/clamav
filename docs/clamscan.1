@@ -1,0 +1,186 @@
+.\" Manual page created by Tomasz Kojm, 14/15 IV 2002
+.TH "clamscan" "1" "October 1, 2002" "Tomasz Kojm" "Clam AntiVirus"
+.SH "NAME"
+.LP 
+clamscan \- scan files/directories against viruses
+.SH "SYNOPSIS"
+.LP 
+clamscan [options] [file/directory/\-]
+.SH "DESCRIPTION"
+.LP 
+clamscan is a console anti\-virus scanner. It's a part of the Clam AntiVirus package.
+.SH "OPTIONS"
+.LP 
+
+.TP 
+\fB\-h, \-\-help\fR
+Output help information and exit.
+.TP 
+\fB\-V, \-\-version\fR
+Print the version number and exit.
+.TP 
+\fB\-v, \-\-verbose\fR
+Be verbose. This option causes clamscan to print many additional informations.
+.TP 
+\fB\-\-quiet\fR
+Be quiet \- output only error messages.
+.TP 
+\fB\-\-stdout\fR
+Write all messages to the standard output (stdout), instead of the standard error output (stderr). The buffer is automatically flushed (stdout unlike stderr is buffered), to avoid a race conditions on output.
+.TP 
+\fB\-d FILE/DIR, \-\-database=FILE/DIR\fR
+Load the virus database from FILE or load all .db and .db2 files from DIR.
+.TP 
+\fB\-l FILE, \-\-log=FILE\fR
+Save the scan report to FILE. By default the log isn't saved.
+.TP 
+\fB\-\-log\-verbose\fR
+Save an additional information (mostly needless) to the report file.
+.TP 
+\fB\-\-tempdir=DIRECTORY\fR
+Create temporary files in DIRECTORY. Directory must be writeable for the 'clamav' user or unprivileged user running clamscan.
+.TP 
+\fB\-r, \-\-recursive\fR
+Scan directories recursively. All the files in the given directory will be scanned. \fBThis option affects on scanning subdirectories in archives, if you are using unpackers just turn it on.\fR
+.TP 
+\fB\-\-disable\-summary\fR
+Disable summary printing at the end of the scanning.
+.TP 
+\fB\-\-exclude=PATT\fR
+Don't scan file names containing PATT. It may be used multiple times.
+.TP 
+\fB\-\-include=PATT\fR
+Only scan file names containing PATT. It may be used multiple times.
+.TP 
+\fB\-\-mbox\fR
+Enable scanning of mbox and Maildir files. (also treat stdin as a mailbox, for backward compatibility).
+\fB\-i, \-\-infected\fR
+Print infected files only.
+.TP 
+\fB\-\-remove\fR
+Remove infected files. \fBBe careful.\fR
+.TP
+\fB\-\-move=DIRECTORY\fR
+Move infected files into DIRECTORY. Directory must be writeable for the 'clamav' user or unprivileged user running clamscan.
+.TP 
+\fB\-\-force\fR
+With this option you may ignore some errors. \fBBe careful.\fR
+.TP 
+EXTRACTION OPTIONS:
+.TP 
+\fB\-\-disable\-archive\fR
+Disable archive support built in libclamav.
+.TP 
+\fB\-\-max\-files=#n\fR
+Extract first #n files from each archive. This option should be used to protect your system against DoS attacks. Note: always few files more are extracted due to the limit implementation (expecially when archive contains small files). All file types are counted.
+.TP 
+\fB\-\-max\-space=#n\fR
+Extract first #n kilobytes from each archive. You may give the number in megabytes in format xM or xm, where x is a number.
+.TP 
+\fB\-\-max\-recursion=#n\fR
+Set the archive recursion level.
+.TP 
+\fB\-\-unzip[=FULLPATH]\fR
+With this option all zipped files are scanned. If you turn on this option without the argument, unzip program will be searched in $PATH. If unzip is outside $PATH, please supply it with =pathname. Remember about '=' between option and argument. (This is needed due to the implementation of getopt_long() and optional arguments to long options).
+.TP 
+\fB\-\-unrar[=FULLPATH]\fR
+Supports .rar files.
+.TP 
+\fB\-\-unace[=FULLPATH]\fR
+Supports .ace files.
+.TP 
+\fB\-\-unarj[=FULLPATH]\fR
+Supports .arj files.
+.TP 
+\fB\-\-unzoo[=FULLPATH]\fR
+Supports .zoo files.
+.TP 
+\fB\-\-lha[=FULLPATH]\fR
+Supports .lzh files.
+.TP 
+\fB\-\-jar[=FULLPATH]\fR
+clamscan uses unzip for .jar files, so optionally give a full path to unzip.
+.TP 
+\fB\-\-deb[=FULLPATH]\fR
+This option supports debian binary packages. Implies \-\-tgz, but doesn't conflict with \-\-tgz=FULLPATH. It requires ar utility.
+.TP 
+\fB\-\-tar[=FULLPATH]\fR
+This option supports non\-compressed archives.
+.TP 
+\fB\-\-tgz[=FULLPATH]\fR
+This option supports tar.gz and .tgz files. You need GNU tar, on non\-Linux system you probably have it as gtar. If it's in $PATH, please use \-\-tgz=gtar in other case please use a full pathname.
+.SH "EXAMPLES"
+.LP 
+.TP 
+(0) To scan one file:
+
+\fBclamscan file\fR
+.TP 
+(1) To scan current directory:
+
+\fBclamscan\fR
+.TP 
+(2) To scan all files in /home:
+
+\fBclamscan \-r /home\fR
+.TP 
+(3) Load the database from another file and limit the disk usage to 50 Mb:
+
+\fBclamscan \-d /tmp/newclamdb \-\-max-space=50m \-r /tmp\fR
+.TP 
+(4) Scan a data stream:
+
+\fBcat testfile | clamscan \-\fR
+.TP 
+(5) Scan the mail spool directory:
+
+\fBclamscan \-r \-\-mbox /var/spool/mail\fR
+.SH "RETURN CODES"
+.LP 
+Note: some return codes may appear only in a one file mode (clamscan is started with file argument). These one are marked with \fB(ofm)\fR.
+
+0 : No virus found.
+.TP 
+1 : Virus(es) found.
+.TP 
+40: Unknown option passed.
+.TP 
+50: The database can't be initialized.
+.TP 
+51: Wrong number of threads given.
+.TP 
+52: Not supported file type.
+.TP 
+53: Can't open directory.
+.TP 
+54: Can't open file. (ofm)
+.TP 
+55: Error reading file. (ofm)
+.TP 
+56: Can't stat input file / directory.
+.TP 
+57: Can't get absolute pathname of current working directory.
+.TP 
+58: I/O error, check your filesystem.
+.TP 
+59: Can't get information about current user from /etc/passwd.
+.TP 
+60: Can't get information about user 'clamav' (default name) from /etc/passwd.
+.TP 
+61: Can't fork.
+.TP 
+63: Can't create temporary files/directories (check permissions).
+.TP 
+64: Can't write to temporary directory, please specify another one.
+.TP 
+70: Can't allocate and clear memory (calloc).
+.TP 
+71: Can't allocate memory (malloc).
+.SH "CREDITS"
+Please check the full documentation for credits.
+.SH "AUTHOR"
+.LP 
+Tomasz Kojm <zolw@konarski.edu.pl>
+.SH "SEE ALSO"
+.LP 
+clamd(8), clamdscan(1), freshclam(1), sigtool(1), clamav.conf(5)

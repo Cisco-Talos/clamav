@@ -1,0 +1,588 @@
+Note: This README/NEWS file refers to the source tarball. Some things described
+here may not be available in the binary packages.
+--
+
+0.60
+----
+
+Hello again...
+
+This is a new, (very?) stable release of Clam AntiVirus. 0.60 was developed
+and stabilized for over seven months and many people had contributed to the
+final release. This version introduces many enhancements and a new program:
+clamav-milter written by ClamAV developer Nigel Horne. This is a mail scanner
+for Sendmail/milter written entirely in C, which uses clamd for virus scanning.
+Clamav-milter and clamd duet is a powerful solution for systems where high
+performance is required. Please check clamdoc for more detail.
+
+
+    Many people get confused with ClamAV database status because of
+    the OpenAntiVirus update information at:
+	    http://openantivirus.org/latest.php
+    (last update at 17 October, 2002). The ClamAV virus database contains
+    the OAV database (with some signatures fixed or removed) but we
+    develop it independently of the OAV project. Our database is updated
+    frequently (on average 4-5 times a week). You can help (or join) us -
+    will find some basic but useful instructions at
+	    http://clamav.elektrapro.com/doc/signatures.pdf
+
+
+News from ClamAV world:
+
+-) New email address for virus submitting: virus@clamav.elektrapro.com
+   You don't need to encrypt a virus sample, but if your system doesn't allow
+   you to send infected files just put it into an encrypted zip archive
+   (password: virus)
+
+   Special thanks to Nicholas Chua, Diego D'Ambra, Hrvoje Habjanic, Nigel Kukard
+   and Chris van Meerendonk for a big number of samples submitted.
+
+-) New mailing list: virusdb@clamav.elektrapro.com
+   After each update an email with subject "[clamav-virusdb] Update" and a list
+   of viruses added is sent to it. You can set up a procmail rule for freshclam
+   to react on such a mails (and update the database just after an update).
+
+-) New official mirrors:
+    + clamav.ozforces.com: database mirror updated manually (thanks to
+      Andrew <andrew@ozforces.com>)
+    + clamav.essentkabel.com: full (automatic) mirror of clamav.elektrapro.com
+      (thanks to Chris van Meerendonk <cvm@castel.nl>)
+    + clamav.linux-sxs.org: database mirror - rsync from clamav.ozforces.com
+      (thanks to Douglas J Hunley <doug@hunley.homeip.net>)
+
+    Freshclam will automatically use them when the main server is not
+    accessible.
+
+-) Official port in FreeBSD available ! (maintained by Masahiro Teramoto
+   <markun@onohara.to>)
+
+-) Unofficial port for OpenBSD is available at:
+	http://www.activeintra.net/openbsd/article.php?id=5
+   (maintained by Flinn Mueller <flinn@activeintra.net>)
+
+-) there are many new programs that use ClamAV, eg. mod_clamav (Apache
+   virus scanning filter), clamdmail or Sagator. You will find more
+   info in clamdoc.
+
+Changes:
+
+-) libclamav:
+    + fixed buffer overflow in unrarlib (patch by Robbert Kouprie
+      <robbert@exx.nl>)
+
+    + various mbox code updates (fixed memory leak; added support for decoding
+      viruses sent in message bodies, detection of viruses that put their
+      payloads after the end of message marker (thanks to Stephen White
+      <stephen@earth.li> for the bug report and useful CGI tools); 
+
+    + zziplib updated to 0.10.81 (some problems with older version were reported
+      by Martin Schitter)
+    + direct scanning of mbox/maildir files (new directive CL_MAIL)
+    + file scanner optimization (patch by Hendrik Muhs
+      <Hendrik.Muhs@student.uni-magdeburg.de>)
+    + bzip2 support
+    + faster detection of malformed Zip archives (eg. 'Zip of Death'), they are
+      reported as a viruses
+    + fixed strcasecmp() compile problem in zziplib on Free/NetBSD and others
+
+
+-) clamd:
+    + fixed descriptor leak in directory scanner - it was causing random
+      clamd crashes and locks, especially on highly loaded servers. Reported
+      by Kristof Petr <Kristof.P@fce.vutbr.cz>.
+
+    + fixed crash with archive scanning on BSD (increased thread stack size)
+      (Nigel Horne)
+    + fixed CONTSCAN command (used by clamdscan) - it had archive support
+      disabled (hardcoded)
+    + fixed SelfCheck option (there was a logic bug, and the option was
+      disabled) it now checks a databases time stamps and reloads them
+      if needed.
+    + fixed possible writing to undefined descriptors (bug found by
+      Brian May <bam@debian.org>)
+    + new STREAM command (scanning data on socket) and directives:
+      StreamSaveToDisk (save stream to disk to allow scanning within archives),
+      StreamMaxLength. This option allows scanning data on socket (might be
+      sent from another host), currently only clamav-milter uses this.
+
+    + new ScanMail directive for scanning into mbox/Maildir files
+    + new directive: ArchiveLimitMemoryUsage (limit memory usage with bzip2)
+    + new directive: AllowSupplementaryGroups (feature requested by Exiscan
+      users)
+    + syslog support (LogSyslog) (patch by Hrvoje Habjanic
+      <hrvoje.habjanic@zg.hinet.hr>)
+    + fixed parser segfault with extra space between option and argument
+      in config file (Magnus Ekdahl <magnus@debian.org>)
+
+
+-) clamscan:
+    + fixed --remove option (didn't work when the file was scanned with an
+      internal unpacker) (patch by Damien Curtain <damien@pagefault.org>)
+    + --move option for moving infected files into a specified directory
+      (by Damien Curtain <damien@pagefault.org>)
+    + --mbox enables a direct support for mbox files
+      (ex. clamscan --mbox /var/spool/mail)
+    + fixed --log (-l) option
+    + fixed -i option (patch by Magnus Ekdahl <magnus@debian.org>)
+    + enabled default archive limits (max-files = 500, max-size = 10M,
+      max-recursion = 5)
+    + use arj instead of non-free unarj (patch by Magnus Ekdahl)
+    + use unzoo instead of non-free zoo (patch by Magnus Ekdahl)
+    + removed thread support
+
+freshclam:
+    + mirror support (implemented by Damien Curtain <damien@pagefault.org>)
+    + --proxy-user: proxy authorization support (implemented by Gernot Tenchio
+      <g.tenchio@telco-tech.de>)
+    + new options --on-error-execute, --on-update-execute
+      (ex. freshclam -d -c 6 --on-error-execute "sendsms 23332243 Can't
+      update virus database"). Idea by Douglas J Hunley <doug@hunley.homeip.net>
+
+configure:
+    + --disable-cr (don't link with C reentrant library (needed on some newer
+      versions of OpenBSD))
+
+-) Enhanced AIX (thanks to Mike Loewen <mloewen@sturgeon.cac.psu.edu>) and
+   Tru64 support (thanks to Christophe Varoqui <ext.devoteam.varoqui@sncf.fr>)
+
+-) documentation:
+    + included how-to in Portugese by Alexandre de Jesus Marcolino
+    + clamdoc.pdf and system manual updates
+
+Many thanks to Luca 'NERvOus' Gibelli from ElektraPro for his support,
+to Ken McKittrick from USA DataNet for a fully accessible FreeBSD box and
+to mailing list subscribers for a constructive discussions.
+
+--
+Tomasz Kojm
+June 21, 2003
+
+
+0.54
+----
+Many major changes this time...
+
+-) libclamav:
+    + fixed segfault with some strange zip archives (there is a bug in zziplib,
+      libclamav contains a work around for it) (the problem was reported by
+      Oliver Paukstadt <pstadt@stud.fh-heilbronn.de>)
+    + engine improvements (better support for a detection of new viruses,
+      limited memory usage (consumes ~ 5 Mb now))
+    + mbox code updated and moved into the library: fixed core dump when an
+      embedded message includes a mime header with the line Content-Type:
+      without specifying the type of content, fixed (theoretical) memory leak,
+      support for multipart/report messages, fixed bug causing some formats to
+      fail to scan) (Nigel)
+-) clamd:
+    + new commands: CONTSCAN (it doesn't stop scanning even when virus is
+      found), VERSION
+    + disable logging of a unnecessary time stamps with LogTime when
+      LogVerbose isn't used (patch by Ed Phillips <ed@UDel.Edu>)
+-) freshclam:
+    + "Cache-Control: no-cache" enabled by default
+    + Cygwin support fix
+-) clamdscan:
+    + initial version
+-) all tools:
+    + removed huge printf() in help() (there was a buffer overflow problem with
+      --help option under Windows and SCO Unix (reported by Wojciech Noworyta
+      <wnow@konarski.edu.pl> and Nigel respectively)
+-) configure:
+    + allow configuration of the clamav user and group with --with-user and
+      --with-group (patch by Patrick Bihan-Faou <patrick@mindstep.com>)
+    + --enable-id-check - it uses the check procedure from Jason Englander
+      <jason@englanders.cc>, currently it will fail on systems with getent
+      which doesn't detect clamav group.
+    + do not overwrite the existing config file
+
+
+There are initial packages for Windows available at:
+    http://clamav.elektrapro.com/binary
+
+--tk
+
+
+0.53
+----
+This release has removed the limit for a file name length in clamscan. Some
+viruses (eg. W32/Yaha.E) are using very long file names, and they were
+ignored in mbox mode. Users of AMaViS-ng and other wrappers were not
+vulnerable to this problem, because that programs don't use original
+attachement file names.
+
+-) clamscan:
+    + removed limit for a file name length (thanks to Odhiambo Washington
+      <wash@wananchi.com> for the test files and extensive mbox testing)
+    + mbox: adapted to the new changes, enabled thread support (Nigel),
+	    re-enabled temporary directory removing.
+
+0.52
+----
+
+This version contains a portability fixes - it should compile on OpenBSD,
+MacOSX and NetBSD (support for them was broken in 0.51). 
+
+-) clamd: various fixes:
+	+ drop supplementary groups (suggested by Enrico Scholz
+	  <enrico.scholz@informatik.tu-chemnitz.de>) (this has been implemented
+	  in freshclam, too)
+	+ work-around for the segmentation fault at QUIT under FreeBSD
+	+ check timeouts when waiting for threads in RELOAD mode
+	+ SelfCheck - internal integrity check (by default every 1 hour)
+	+ fixed problem with directory scanning on non typical file systems
+	  (bug reported by Jason Englander <jason@englanders.cc>)
+	+ clamd is a system command (clamd.1 -> clamd.8, /usr/local/bin ->
+	  /usr/local/sbin) (Magnus Ekdahl)
+-) clamscan:
+	+ mbox code updates (Nigel Horne) - it fixes some problems on *BSD
+	  systems (see mailing lists archives for the details)
+	+ enable core dumping (Nigel Horne) [ with --enable-debug ]
+-) freshclam:
+	+ applied http-proxy patch from http://bugs.debian.org/clamav (by
+	  Martin Lesser <admin-debian@bettercom.de>)
+	+ when configured with --disable-cache, freshclam forces 'no-cache'
+	  option in proxy servers (patch by Ant La Porte <ant@dvere.net>)
+
+-) HPUX (10.20/11.0 tested) support (thanks to Joe Oaks <joe.oaks@hp.com>)
+-) fixed support for SCO Unix and BeOS (Nigel Horne)
+-) support/mboxscan: new version with SpamAssassin support (Nigel Horne)
+-) re-included TrashScan 0.08 (by Trashware <trashware@gmx.de>) - the security
+   issue has been fixed.
+-) included "Installing qmail-scanner, Clam Antivirus and SpamAssassin under
+   FreeBSD" how-to by Paul Hoadley and Eric Parsonage
+
+
+0.51
+----
+
+OAV database is up to date ! There was a problem with signature parsing,
+because some hex strings were upper case. Anyway, I still recommend you
+freshclam for a database updating.
+
+-) support for the genuine OAV database
+-) limited memory usage (at the cost of speed, increase CL_MIN_LENGTH in
+   libclamav/clamav.h to make it faster, it's safe to set it on 3-4 for
+   the OAV database)
+-) fixed compile problem on TurboLinux 6.5 (probably others, too), the bug
+   was reported by Henk Kuipers <henk@opensourcesolutions.nl>.
+-) clamd: fixed THREXIT (thanks to Piotr Gackiewicz <gacek@intertele.pl>)
+-) clamd: fixed serious bug with thread argument type
+-) clamscan: mbox: don't scan empty attachments (Nigel Horne)
+-) configure: --with-db1, --with-db2 (suggested by Magnus Ekdahl)
+
+
+0.50
+----
+
+Here it is...
+Clam AntiVirus 0.50 contains an anti-virus library - libclamav, a fully
+multi-threaded daemon clamd(1) and a quite long list of changes. The
+documentation was rewritten and you _should_ review it. By courtesy of
+NERvOus <nervous@nervous.it> and ElektraPro, there are three mailing lists
+available - you can subscribe via www at http://clamav.elektrapro.com/ml.
+Please check the manual for more information.
+
+
+New software:
+
+-) libclamav with RAR, Zip and Gzip support built-in. The library is thread
+   safe and should be very secure, also. It uses UniquE RAR File
+   Library by Christian Scheurer and Johannes Winkelmann (RAR 2.0 support only)
+   and zziplib library by Guido Draheim and Tomi Ollila. Both of them are
+   included and slightly modified in the clamav sources. You need the zlib
+   library for the Zip/Gzip support, though. The API is described with
+   examples in the clamdoc.
+
+-) clamd: a modern anti-virus daemon. It uses configuration file clamav.conf
+   described in the clamav.conf(5) manual. The program was written with
+   security as a goal. 
+
+-) clamuko: on-access scanning under Linux. It utilizes Dazuko kernel module
+   (GPL, http://dazuko.org) and is clamd-based.
+
+New features / improvements:
+
+-) enhanced scanner engine (better detection of some complex polymorphic
+   viruses)
+
+-) clamscan: Nigel Horne <njh@bandsman.co.uk> has added the ability to scan
+   mail attachments in a filter. For example:
+
+   $ clamscan -i --mbox - < /var/spool/mail/john
+   /tmp/aa6b9fc06bc477ae/setup.exe: Worm/Klez.H FOUND
+
+   Nigel is the author of the whole mbox code in clamscan. Currently it only
+   works in a filter mode, but there are plans to move the code into the
+   libclamav and allow clamd using it. Please check support/mboxscan, also.
+
+-) clamscan: support for including and excluding multiple patterns with
+   --include and --exclude (patch by Alejandro Dubrovsky
+   <s328940@student.uq.edu.au>).
+   Example: clamscan --include .exe --include .obj --include .scr /mnt/windows
+
+-) clamscan: don't scan /proc files (Linux, st_dev comparing). No more
+   /proc/kcore related mails :))
+
+-) clamscan: use libclamav's archive support by default (it's enabled by default
+   and may be disabled with --disable-archive) and switch to the external
+   unpackers (if specified) in the case of libclamav archive code error.
+
+-) freshclam: proxy support (via $http_proxy variable and --http-proxy).
+   I started implementing proxy support some time ago, but never finished.
+   Nigel Horne did the great job and has finished the proxy support !
+
+-) freshclam: --daemon-notify. freshclam will send the RELOAD command to the
+   daemon after database update (supports both tcp and local sockets, it reads
+   clamav.conf to determine the socket type).
+
+-) freshclam: support for viruses.db2
+
+Bug fixes:
+
+-) freshclam: log 'Database updated' message (thanks to Jeffrey Moskot
+    <jef@math.miami.edu> for the bug report). It now prints a number
+    of signatures in a database, also.
+
+-) clamscan: fixed compile problem on Solaris 8 and some other systems -
+   #include <signal.h> lack in others.c (thanks Mike Loewen
+   <mloewen@sturgeon.cac.psu.edu> for the bug report)
+
+Documentation:
+
+-) included Japanese documentation by Masaki Ogawa <proc@mac.com>
+
+-) updated Spanish "Sendmail + Amavis + ClamAv - Como" by Erick I. Lopez
+   Carreon <elopezc@technitrade.com>
+
+-) rewritten clamdoc, included clamdoc-html, removed PostScript version (.ps)
+
+-) Clam-Mutant ;) logo update by Michal Hajduczenia <michalis@mat.uni.torun.pl>
+
+-) new man pages: clamd(1), clamav.conf(5); others updated
+
+
+!!!
+    Please don't use the oav-update script with this version. It doesn't
+update viruses.db2 and supports OpenAntiVirus.org site only (the last
+update of the OAV database was 1 July !). Nicholas Chua <nicholas@ncmbox.net>
+has generated over 200 new signatures, ClamAV's database is also frequently
+updated (expecially when new wild virus/worm appears, eg. W32/BugBear.A).
+
+    This software is still in developement (new software == new bugs), however
+clamscan should be very stable. You shouldn't use clamd/clamuko (well, clamd is
+stable, clamuko isn't) on production systems, yet. Please wait for 0.51 at
+least ;). ClamAV 0.50 was tested on Linux and Solaris and should work fine.
+There is a problem with clamd on FreeBSD (tested on my FreeBSD 5.0-CURRENT) -
+the daemon crashes with Zip/Gzip files (disabling ScanArchive should help).
+
+Enjoy !
+--
+Tomasz Kojm
+October 5, 2002
+
+
+0.24
+----
+
+-) fixed threads deadlock in a critical error situation (bug found by David
+   Sanchez <dsanchez@veloxia.com>)
+-) fixed sigtool bug (negative seeking)
+-) fixed potential clamscan segfault in the case of memory allocation error
+-) unpacker execution error is no longer treated as critical - few programs
+   (eg. Qmail-Scanner, TrashScan) have clamscan command hardcoded with all
+   archive options turned on. Now, if unpacker can't be executed, raw file is
+   scanned and scan process is continued.
+-) reverted to pthread.h detection
+-) TrashScan 0.07 (Trashware <trashware@gmx.net>)
+-) --exclude (regular expressions are not supported !)
+   [ex: clamscan --exclude="/proc/kcore" /], but please use it with care.
+-) included html documentation
+
+IMPORTANT NOTE:
+~~~~~~~~~~~~~~~
+You will probably have a problem with a default Qmail-Scanner (1.13 or newer)
+installation. You need to increase qmail-smtpd softlimit or disable it. You
+can force clamscan to use only half of the memory which it uses by default, too.
+Please change the following line in the clamscan/matcher.h file:
+    #define MIN_LENGTH 5
+to:
+    #define MIN_LENGTH 3
+and recompile the program. Unhappily, scanning may be a little slower in some
+cases, but it shouldn't be significant. Then you can safely set the qmail
+softlimit to 8 MB. I want to thank Doug Monroe <doug@planetconnect.com> for
+his contribution in the problem analysis.
+---
+
+New ClamAV version is in a heavy development. It has currently built-in
+support for RAR, Zip, Gzip and tar. The daemon will support only built-in
+compression/archive support. Snapshot will be available for a few days.
+
+0.23
+----
+
+-) fixed compile problem on FreeBSD (thanks to Wieslaw Glod <wkg@x2.pl> and
+   Ken McKittrick <klmac@usadatanet.com>)
+-) clamscan reads all .db files from data directory, so you can put your
+   own databases there and they won't be overwrited by the updaters. viruses.db
+   is still the main database file (if --database isn't used).
+-) --deb (debian binary packages scanning) by Magnus Ekdahl <magnus@debian.org>
+-) --remove option, but be careful with it !
+-) new clam logo ;) (GPL) by Michal Hajduczenia <michalis@mat.uni.torun.pl>.
+-) TrashScan 0.06 (by Trashware <trashware@gmx.net>) - a script for scanning
+   mail with procmail. I recommend it. (support/trashscan)
+-) documentation updates
+
+0.30 release will contain a daemon and an anti-virus library (with simple API),
+so you can use it directly in your projects. I want to build in zip and rar
+support, also.
+
+There are binary packages for AIX available. Please check the documentation.
+
+0.22
+----
+
+This release fixes bug with scanning archives in unaccessible directories with
+*superuser* priviledges (after dropping priviledges scanner wasn't able to
+access the archive, although the same archive was accessible), thanks
+for Sergei Pronin <sp@finndesign.fi> for the problem description. Now all
+archives unaccessible directly by the clamav user are copied (with a respect to
+--max-space) to the temporary directory. All old filesystem tricks were removed.
+
+Other fixes / improvements:
+
+-) better error handling, new error codes
+-) improved -i (--infected) option
+-) removed --strange-unzip option
+-) removed eicar test files and logos from the documentation due to the GPL
+   (thanks for Magnus Ekdahl <magnus@debian.org>), ClamAV-Test-Signature is
+   used instead
+-) removed Qmail-Scanner patch, ClamAV is supported by Q-S 1.13 (thanks guys!)
+-) code cleanups
+
+
+0.21 Release
+------------
+
+It fixes following problems:
+
+-) database downloading in freshclam/0.20
+-) malformed amavis-perl patch from 0.20
+-) clamscan problems with some unzip versions, please try --strange-unzip
+   option
+
+ClamAV 0.21 source package contains initial support for NetBSD
+(thanks to Marc Baudoin <babafou@babafou.eu.org>, Jean-Edouard BABIN
+<Jeb@jeb.com.fr>), better support for Mac OS X (Masaki Ogawa <proc@mac.com>),
+and clamdoc documentation corrected by Dennis Leeuw <dleeuw@made-it.com>.
+
+
+0.20 Release
+------------
+
+The most important change in this release is a new, linear pattern matching
+algorithm. You will find more informations about it in clamscan/matcher.c -
+in the sources and in clamdoc. Summary (since 0.15):
+
+New features:
+
+-) fast pattern matching algorithm
+-) sigtool utility, check `man sigtool` and clamdoc
+-) Linux: threads autodetection on various architectures
+          (Magnus Ekdahl <magnus@debian.org>)
+-) -i, --infected: clamscan prints only infected files
+-) 'Data scanned' in summary, size in megabytes with 16 Kb precision
+-) configure: --with-dbdir sets the database location
+-) support/sigmake shell script by Dennis Leeuw <leeuw@stone-it.com>
+-) Spanish "Sendmail+Amavis+ClamAv installation how-to" by
+   Erick I. Lopez Carreon <elopezc@technitrade.com>
+
+Updates:
+
+-) "Debian GNU/Linux Mail Server v. 0.2.0" by Dennis Leeuw <leeuw@stone-it.com>
+-) qmail-scanner patch from Kazuhiko <kazuhiko@fdiary.net>
+-) general documentation cleanups / updates
+-) freshclam / Internet database location
+
+Fixes:
+
+-) threads autodetection on not-x86 Linux systems
+-) gcc 3.x support (David Ford <david+cert@blue-labs.org>)
+-) data type fix on Mac OS X (Peter N Lewis <peter@stairways.com.au>)
+-) removed -w, --whole-file, now clamscan scans whole files by default
+   -w is still supported by internal getopt(), because it is used in
+   various patches
+-) removed --one-virus, still supported by getopt(); removed 'Found viruses'
+   from summary, clamscan stops file scanning after first virus
+-) fixed old problem with scanning stdin
+-) removed amavisd-patch - strange problems have been reported
+
+OpenAntiVirus Update is a great tool written by Matthew A. Grant
+<grantma@anathoth.gen.nz> and it will be the primary updater for ClamAV
+in the near future. In contrast to freshclam it has proxy support and many
+specific features. Please check clamdoc for more informations and how to
+obtain it.
+
+
+0.15 Notes
+----------
+
+This version contains minor bugfixes only, such as:
+    -) multiple fixes in freshclam (it has problems, when one of the
+       hosts wasn't accessible), there were logic flaws in the code
+    -) fixed problem with password protected archives (unpackers were waiting
+       for password)
+
+New features:
+    -) OpenBSD support (thanks to Kamil Andrusz <wizz@mniam.net>)
+    -) added support for amavisd, qmail-scanner (see ./support)
+
+There were no major bugs and I was very busy, that's why new version is
+released just today. In the next 2 months, clamav development will be much
+faster. Here are some of my plans:
+
+    ~ 0.20 : New pattern-matching algorithm
+    ~ 0.30 : clamlib; clamscan and the daemon based on it
+
+There is a new homepage:
+
+		http://clamav.elektrapro.com
+
+Thanks to ElektraPro.com for sponsoring this site (it's very fast).
+Thanks to NERvOus <nervous@nervous.it>.
+
+If you are interested in current development versions, please check
+snapshots link.
+
+Resource usage limits in 0.14
+-----------------------------
+
+Two new features: --max-files, --max-space have been implemented. If you have
+enabled one of this options, clamscan monitors resource usage (number of
+created files and used space) and stops extractor when it has exceeded
+the limit. You should use these options to protect your machine against
+Denial of Service attacks. In the near future --max-levels (limit for
+recursive archives extracting) and --max-time (spent on checking/extracting
+files) will be implemented.
+
+
+FreeBSD: AMaViS compile problems
+--------------------------------
+
+Please check FAQ.
+
+!!! Strange signatures in VirusSignatures-2002.04.15.10.51.zip !!!
+------------------------------------------------------------------
+
+Last version of signatures was ~90 kb, this version is ~474 kb.
+But I don't understand, why some signatures are mega-huge. When I decoded
+them, they looked like regular files. In CA they were removed from the
+database and I probably add them later, in normal sizes.
+
+Installation :
+--------------
+
+Please view documentation in ./docs. There are several formats - pdf, ps
+and plain latex, if you want to compile it yourself.
+
+You need GNU make (on Solaris you should have gmake).
+It was tested only with gcc 2.9x compilers.
