@@ -207,9 +207,13 @@
  *			Added --signature-file option
  *	0.66e	12/1/04	FixStaleSocket: no longer complain if asked to remove
  *			an old socket when there was none to remove
+ *	0.66f	24/1/04	-s: Allow clamd server name as well as IPaddress
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.37  2004/01/24 18:09:39  nigelhorne
+ * Allow clamd server name as well as IPaddress in -s option
+ *
  * Revision 1.36  2004/01/12 15:30:53  nigelhorne
  * FixStaleSocket no longer complains on ENOENT
  *
@@ -303,9 +307,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.36 2004/01/12 15:30:53 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.37 2004/01/24 18:09:39 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.66d"
+#define	CM_VERSION	"0.66f"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -344,6 +348,7 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.36 2004/01/12 15:30:53 nig
 #include <fcntl.h>
 #include <pwd.h>
 #include <grp.h>
+#include <netdb.h>
 
 #define _GNU_SOURCE
 #include "getopt.h"
@@ -357,7 +362,6 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.36 2004/01/12 15:30:53 nig
  *	Having said that, with LogSysLog you can (on Linux) configure the system
  *	to get messages on the system console, see syslog.conf(5), also you
  *	can use wall(1) in the VirusEvent entry in clamav.conf
- * TODO: allow -s server to use a name as well as an IP address
  * TODO: build with libclamav.so rather than libclamav.a
  * TODO: bounce message should optionally be read from a file
  * TODO: Support ThreadTimeout, LogTime and Logfile from the conf
@@ -466,11 +470,12 @@ static	int	logVerbose = 0;
 static	struct	cfgstruct	*copt;
 static	const	char	*localSocket;
 static	in_port_t	tcpSocket;
-static	const	char	*serverIP = "127.0.0.1";
+static	const	char	*serverHostName = "127.0.0.1";
+static	long	serverIP = -1L;	/* IPv4 only */
 static	const	char	*postmaster = "postmaster";
 
 /*
- * Whitelist of e-mail addresses that we do NOT scan
+ * Whitelist of source e-mail addresses that we do NOT scan
  * TODO: read in from a file
  */
 static	const	char	*ignoredEmailAddresses[] = {
@@ -498,7 +503,7 @@ help(void)
 	puts("\t--quiet\t\t\t-q\tDon't send e-mail notifications of interceptions.");
 	puts("\t--quarantine=USER\t-Q EMAIL\tQuanrantine e-mail account.");
 	puts("\t--quarantine-dir=DIR\t-U DIR\tDirectory to store infected emails.");
-	puts("\t--server=ADDRESS\t-s ADDR\tIP address of server running clamd (when using TCPsocket).");
+	puts("\t--server=ADDRESS\t-s ADDR\tHostname/IP address of server running clamd (when using TCPsocket).");
 	puts("\t--sign\t\t\t-S\tAdd a hard-coded signature to each scanned message.");
 	puts("\t--signature-file\t-F\tLocation of signature file.");
 	puts("\t--version\t\t-V\tPrint the version number of this software.");
@@ -662,7 +667,7 @@ main(int argc, char **argv)
 				smfilter.xxfi_flags |= SMFIF_CHGHDRS|SMFIF_ADDRCPT|SMFIF_DELRCPT;
 				break;
 			case 's':	/* server running clamd */
-				serverIP = optarg;
+				serverHostName = optarg;
 				break;
 			case 'F':	/* signature file */
 				sigFilename = optarg;
@@ -795,11 +800,27 @@ main(int argc, char **argv)
 			return EX_CONFIG;
 		}
 
+		/*
+		 * Translate server's name to IP address
+		 */
+		serverIP = inet_addr(serverHostName);
+		if(serverIP == -1L) {
+			const struct hostent *h = gethostbyname(serverHostName);
+
+			if(h == NULL) {
+				fprintf(stderr, "%s: Unknown host %s\n",
+					argv[0], serverHostName);
+				return EX_USAGE;
+			}
+
+			memcpy((char *)&serverIP, h->h_addr, sizeof(serverIP));
+		}
+
 		tcpSocket = cpt->numarg;
 
 		if(!pingServer()) {
 			fprintf(stderr, "Can't talk to clamd server at %s on port %d\n",
-				serverIP, tcpSocket);
+				serverHostName, tcpSocket);
 			fprintf(stderr, "Check your entry for TCPSocket in %s\n",
 				cfgfile);
 			return EX_CONFIG;
@@ -930,7 +951,10 @@ pingServer(void)
 		memset((char *)&server, 0, sizeof(struct sockaddr_in));
 		server.sin_family = AF_INET;
 		server.sin_port = htons(tcpSocket);
-		server.sin_addr.s_addr = inet_addr(serverIP);
+		
+		assert(serverIP != -1L);
+
+		server.sin_addr.s_addr = serverIP;
 
 		if((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 			perror("socket");
@@ -1210,7 +1234,10 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			memset((char *)&server, 0, sizeof(struct sockaddr_in));
 			server.sin_family = AF_INET;
 			server.sin_port = htons(tcpSocket);
-			server.sin_addr.s_addr = inet_addr(serverIP);
+
+			assert(serverIP != -1L);
+
+			server.sin_addr.s_addr = serverIP;
 
 			if((privdata->cmdSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 				perror("socket");
@@ -1280,7 +1307,9 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		reply.sin_family = AF_INET;
 		reply.sin_port = ntohs(port);
 
-		reply.sin_addr.s_addr = inet_addr(serverIP);
+		assert(serverIP != -1L);
+
+		reply.sin_addr.s_addr = serverIP;
 
 #ifdef	CL_DEBUG
 		if(debug_level >= 4)
