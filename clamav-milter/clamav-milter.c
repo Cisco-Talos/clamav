@@ -167,9 +167,20 @@
  *			Thanks to Michael Dankov <misha@btrc.ru>.
  *	0.65g	2/12/03	Use setsid if setpgrp is not present.
  *			Thanks to Eugene Crosser <crosser@rol.ru>
+ *	0.65h	4/12/03	Added call to umask to ensure that the local socket
+ *			is not publically writeable. If it is sendmail
+ *			will (correctly!) refuse to start this program
+ *			Thanks for Nicklaus Wicker <n.wicker@cnk-networks.de>
+ *			Don't sent From as the first line since that means
+ *			clamd will think it is an mbox and not handle
+ *			unescaped From at the start of lines properly
+ *			Thanks to Michael Dankov <misha@btrc.ru>
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.27  2003/12/05 19:14:07  nigelhorne
+ * Set umask; handle unescaped From in mailboxes
+ *
  * Revision 1.26  2003/12/02 06:37:26  nigelhorne
  * Use setsid if setpgrp not present
  *
@@ -233,9 +244,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.26 2003/12/02 06:37:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.27 2003/12/05 19:14:07 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.65g"
+#define	CM_VERSION	"0.65h"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -249,9 +260,11 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.26 2003/12/02 06:37:26 nig
 
 #include <stdio.h>
 #include <sysexits.h>
-#ifndef TARGET_OS_FREEBSD
+#ifndef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <syslog.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -664,6 +677,7 @@ main(int argc, char **argv)
 				cfgfile);
 			return EX_CONFIG;
 		}
+		umask(022);
 	} else if((cpt = cfgopt(copt, "TCPSocket")) != NULL) {
 		/*
 		 * TCPSocket is in fact a port number not a full socket
@@ -1176,7 +1190,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		}
 	}
 
-	clamfi_send(privdata, 0, "From %s\n", argv[0]);
+	clamfi_send(privdata, 0, "Received: by clamav-milter\n");
 	clamfi_send(privdata, 0, "From: %s\n", argv[0]);
 
 	privdata->from = strdup(argv[0]);
