@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.80  2004/09/16 11:35:08  nigelhorne
+ * Minor code tidy
+ *
  * Revision 1.79  2004/09/16 10:05:59  nigelhorne
  * Use default decoders
  *
@@ -234,7 +237,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.79 2004/09/16 10:05:59 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.80 2004/09/16 11:35:08 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -372,14 +375,15 @@ messageReset(message *m)
 
 	assert(m->base64chars == 0);
 
-	memset(m, '\0', sizeof(message));
-	m->mimeType = NOMIME;
-
 	if(m->encodingTypes) {
 		assert(m->numberOfEncTypes > 0);
 		free(m->encodingTypes);
+		m->encodingTypes = NULL;
 		m->numberOfEncTypes = 0;
 	}
+
+	memset(m, '\0', sizeof(message));
+	m->mimeType = NOMIME;
 }
 
 void
