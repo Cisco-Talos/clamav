@@ -203,6 +203,9 @@ AC_TRY_RUN([
 int main(int argc, char **argv) { in_port_t pt; pt = 0; return pt; }
 ], AC_DEFINE(HAVE_IN_PORT_T,1,[in_port_t is defined]), AC_MSG_RESULT(in_port_t is not defined))
 
+AC_CHECK_LIB(socket, bind, [LIBS="$LIBS -lsocket"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsocket"; LDFLAGS="$LDFLAGS -lsocket"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsocket"; CLAMD_LIBS="$CLAMD_LIBS -lsocket"])
+AC_CHECK_LIB(nsl, gethostent, [LIBS="$LIBS -lnsl"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lnsl"; LDFLAGS="$LDFLAGS -lnsl"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lnsl"; CLAMD_LIBS="$CLAMD_LIBS -lnsl"])
+
 case "$target_os" in
 linux*)
     AC_DEFINE(C_LINUX,1,[target is linux])
@@ -211,12 +214,12 @@ linux*)
 	TH_SAFE="-thread-safe"
 	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
 	AC_DEFINE(_REENTRANT,1,[thread safe])
-	CLAMD_LIBS="-lpthread"
+	CLAMD_LIBS="$CLAMD_LIBS -lpthread"
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
 	if test "$want_clamuko" = "yes"; then
 	    AC_DEFINE(CLAMUKO,1,[enable clamuko])
 	fi
-	CLAMSCAN_LIBS="-lpthread"
+	CLAMSCAN_LIBS="$CLAMSCAN_LIBS -lpthread"
     fi
     ;;
 cygwin*)
@@ -234,11 +237,11 @@ cygwin*)
     fi
     ;;
 solaris*)
-    FRESHCLAM_LIBS="-lsocket -lnsl -lresolv"
+    FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lresolv"
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
-	CLAMD_LIBS="-lpthread -lsocket -lnsl -lresolv"
-	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread -lsocket -lnsl -lresolv"
+	CLAMD_LIBS="$CLAMD_LIBS -lpthread -lresolv"
+	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread -lresolv"
 	TH_SAFE="-thread-safe"
 	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
 	AC_DEFINE(_REENTRANT,1,[thread safe])
@@ -248,7 +251,7 @@ solaris*)
 freebsd*)
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread -lc_r"
-	CLAMD_LIBS="-pthread -lc_r"
+	CLAMD_LIBS="$CLAMD_LIBS -pthread -lc_r"
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread -lc_r"
 	TH_SAFE="-thread-safe"
 	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
@@ -263,7 +266,7 @@ openbsd3.3*)
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread"
 	if test "$disable_cr" = "yes"; then
-	    CLAMD_LIBS="-pthread"
+	    CLAMD_LIBS="$CLAMD_LIBS -pthread"
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread"
 	fi
 	TH_SAFE="-thread-safe"
@@ -276,10 +279,10 @@ openbsd*)
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread"
 	if test "$disable_cr" = "yes"; then
-	    CLAMD_LIBS="-pthread"
+	    CLAMD_LIBS="$CLAMD_LIBS -pthread"
 	    CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread"
 	else
-	    CLAMD_LIBS="-pthread -lc_r"
+	    CLAMD_LIBS="$CLAMD_LIBS -pthread -lc_r"
 	    CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread -lc_r"
 	fi
 	TH_SAFE="-thread-safe"
@@ -316,14 +319,14 @@ darwin*)
     ;;
 sco*)
     dnl njh@bandsman.sco.uk: SCO Unix port
-    FRESHCLAM_LIBS="-lsocket"
-    CLAMD_LIBS="-lsocket"
-    CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsocket"
+    dnl FRESHCLAM_LIBS="-lsocket"
+    dnl CLAMD_LIBS="-lsocket"
+    dnl CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsocket"
     ;;
 hpux*)
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
-	CLAMD_LIBS="-lpthread"
+	CLAMD_LIBS="$CLAMD_LIBS -lpthread"
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
 	TH_SAFE="-thread-safe"
 	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
@@ -334,7 +337,7 @@ hpux*)
 aix*)
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
-	CLAMD_LIBS="-lpthread"
+	CLAMD_LIBS="$CLAMD_LIBS -lpthread"
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
 	TH_SAFE="-thread-safe"
 	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
@@ -345,7 +348,7 @@ aix*)
 irix*)
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
-	CLAMD_LIBS="-lpthread"
+	CLAMD_LIBS="$CLAMD_LIBS -lpthread"
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
 	TH_SAFE="-thread-safe"
 	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
