@@ -999,6 +999,8 @@ int html_screnc_decode(int fd, const char *dirname)
 	
 	snprintf(filename, 1024, "%s/screnc.html", dirname);
 	file_buff.fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
+	file_buff.length = 0;
+	
 	if (!file_buff.fd) {
 		cli_dbgmsg("open failed: %s\n", filename);
 		fclose(stream_in);

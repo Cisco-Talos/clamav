@@ -1,3 +1,7 @@
+Thu Sep 16 14:30:15 BST 2004 (trog)
+-----------------------------------
+  * libclamav/htmlnorm.c: properly initialise output buffer
+
 Thu Sep 16 14:00:05 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Handle broken email headers that use equals signs or
