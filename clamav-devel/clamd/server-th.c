@@ -314,6 +314,12 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     if(cfgopt(copt, "ScanPE")) {
 	logg("Portable Executable support enabled.\n");
 	options |= CL_PE;
+
+	if(cfgopt(copt, "DetectBrokenExecutables")) {
+	    logg("Detection of broken executables enabled.\n");
+	    options |= CL_BROKEN;
+	}
+
     } else {
 	logg("Portable Executable support disabled.\n");
     }

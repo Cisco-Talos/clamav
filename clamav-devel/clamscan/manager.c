@@ -421,6 +421,9 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
     else
 	options |= CL_ARCHIVE;
 
+    if(optl(opt, "detect-broken"))
+	options |= CL_BROKEN;
+
     if(optl(opt, "block-encrypted"))
 	options |= CL_ENCRYPTED;
 

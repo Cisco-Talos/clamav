@@ -224,10 +224,12 @@ void help(void)
     mprintf("    --no-ole2                            Disable OLE2 support\n");
     mprintf("    --no-html                            Disable HTML support\n");
     mprintf("    --no-archive                         Disable libclamav archive support\n");
-    mprintf("    --block-encrypted                    Block encrypted archives.\n");
+    mprintf("    --detect-broken                      Try to detect broken executable files\n");
+    mprintf("    --block-encrypted                    Block encrypted archives\n");
     mprintf("    --max-space=#n                       Extract first #n kilobytes only\n");
     mprintf("    --max-files=#n                       Extract first #n files only\n");
     mprintf("    --max-recursion=#n                   Maximal recursion level\n");
+    mprintf("    --max-ratio=#n                       Maximum compression ratio limit\n");
     mprintf("    --unzip[=FULLPATH]                   Enable support for .zip files\n");
     mprintf("    --unrar[=FULLPATH]                   Enable support for .rar files\n");
     mprintf("    --arj[=FULLPATH]                     Enable support for .arj files\n");

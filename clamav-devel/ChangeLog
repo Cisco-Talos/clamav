@@ -1,3 +1,12 @@
+Wed Aug  4 22:03:56 CEST 2004 (tk)
+----------------------------------
+  * libclamav: pe: improve detection of broken executable files
+  * libclamav: new scan option CL_BROKEN (report broken executables as
+	       Broken.Executable)
+  * clamscan: new option --detect-broken
+  * clamd: new directive DetectBrokenExecutables
+  * docs: update manual pages
+
 Wed Aug  4 19:59:54 BST 2004 (njh)
 ----------------------------------
   * libclamav:	Improved the decoding of multipart messages and MIME headers

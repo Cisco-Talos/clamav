@@ -73,6 +73,7 @@ extern "C"
 #define CL_ENCRYPTED    16
 #define CL_HTML		32
 #define CL_PE		64
+#define CL_BROKEN	128
 
 
 struct cli_bm_patt {

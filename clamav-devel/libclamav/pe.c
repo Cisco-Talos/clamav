@@ -42,6 +42,8 @@
 #define IMAGE_NT_SIGNATURE	    0x00004550
 #define IMAGE_OPTIONAL_SIGNATURE    0x010b
 
+#define DETECT_BROKEN		    (options & CL_BROKEN)
+
 #define UPX_NRV2B "\x11\xdb\x11\xc9\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9\x11\xc9\x75\x20\x41\x01\xdb"
 #define UPX_NRV2D "\x83\xf0\xff\x74\x78\xd1\xf8\x89\xc5\xeb\x0b\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9"
 #define UPX_NRV2E "\xeb\x52\x31\xc9\x83\xe8\x03\x72\x11\xc1\xe0\x08\x8a\x06\x46\x83\xf0\xff\x74\x75\xd1\xf8\x89\xc5"
@@ -213,7 +215,6 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	return CL_CLEAN;
     }
 
-    /* cli_dbgmsg("Machine type: "); */
     switch(EC16(file_hdr.Machine)) {
 	case 0x14c:
 	    cli_dbgmsg("Machine type: 80386\n");
@@ -253,12 +254,22 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
     if(EC16(file_hdr.SizeOfOptionalHeader) != sizeof(struct pe_image_optional_hdr)) {
 	cli_warnmsg("Broken PE header detected.\n");
+	if(DETECT_BROKEN) {
+	    if(virname)
+		*virname = "Broken.Executable";
+	    return CL_VIRUS;
+	}
 	return CL_CLEAN;
     }
 
     if(read(desc, &optional_hdr, sizeof(struct pe_image_optional_hdr)) != sizeof(struct pe_image_optional_hdr)) {
 	cli_dbgmsg("Can't optional file header\n");
-	return CL_EIO;
+	if(DETECT_BROKEN) {
+	    if(virname)
+		*virname = "Broken.Executable";
+	    return CL_VIRUS;
+	}
+	return CL_CLEAN;
     }
 
     cli_dbgmsg("MajorLinkerVersion: %d\n", optional_hdr.MajorLinkerVersion);
@@ -304,12 +315,23 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	return CL_EMEM;
     }
 
+    if(fstat(desc, &sb) == -1) {
+	cli_dbgmsg("fstat failed\n");
+	free(section_hdr);
+	return CL_EIO;
+    }
+
     for(i = 0; i < nsections; i++) {
 
 	if(read(desc, &section_hdr[i], sizeof(struct pe_image_section_hdr)) != sizeof(struct pe_image_section_hdr)) {
 	    cli_dbgmsg("Can't read section header\n");
 	    cli_dbgmsg("Possibly broken PE file\n");
 	    free(section_hdr);
+	    if(DETECT_BROKEN) {
+		if(virname)
+		    *virname = "Broken.Executable";
+		return CL_VIRUS;
+	    }
 	    return CL_CLEAN;
 	}
 
@@ -339,6 +361,17 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    cli_dbgmsg("Section's memory is executable\n");
 	cli_dbgmsg("------------------------------------\n");
 
+	if(EC32(section_hdr[i].PointerToRawData) + EC32(section_hdr[i].SizeOfRawData) > sb.st_size) {
+	    cli_dbgmsg("Possibly broken PE file - Section %d out of file (Offset@ %d, Rsize %d, Total filesize %d)\n", i, EC32(section_hdr[i].PointerToRawData), EC32(section_hdr[i].SizeOfRawData), sb.st_size);
+	    free(section_hdr);
+	    if(DETECT_BROKEN) {
+		if(virname)
+		    *virname = "Broken.Executable";
+		return CL_VIRUS;
+	    }
+	    return CL_CLEAN;
+	}
+
 	if(!i) {
 	    min = EC32(section_hdr[i].VirtualAddress);
 	    max = EC32(section_hdr[i].VirtualAddress) + EC32(section_hdr[i].SizeOfRawData);
@@ -349,32 +382,21 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    if(EC32(section_hdr[i].VirtualAddress) + EC32(section_hdr[i].SizeOfRawData) > max)
 		max = EC32(section_hdr[i].VirtualAddress) + EC32(section_hdr[i].SizeOfRawData);
 	}
-    }
 
-    if(fstat(desc, &sb) == -1) {
-	cli_dbgmsg("fstat failed\n");
-	free(section_hdr);
-	return CL_EIO;
     }
 
     if((ep = cli_rawaddr(EC32(optional_hdr.AddressOfEntryPoint), section_hdr, nsections)) == -1) {
 	cli_dbgmsg("Possibly broken PE file\n");
-	broken = 1;
-    }
-
-    /* simple sanity check */
-    if(!broken && EC32(section_hdr[nsections - 1].PointerToRawData) + EC32(section_hdr[nsections - 1].SizeOfRawData) > sb.st_size) {
-	cli_dbgmsg("Possibly broken PE file - Section %d out of file (Offset@ %d, Rsize %d, Total filesize %d, EP@ %d)\n", nsections - 1, EC32(section_hdr[nsections - 1].PointerToRawData), EC32(section_hdr[nsections - 1].SizeOfRawData), sb.st_size, ep);
-	broken = 1;
-    }
-
-    if(broken) {
 	free(section_hdr);
+	if(DETECT_BROKEN) {
+	    if(virname)
+		*virname = "Broken.Executable";
+	    return CL_VIRUS;
+	}
 	return CL_CLEAN;
     }
 
     cli_dbgmsg("EntryPoint offset: 0x%x (%d)\n", ep, ep);
-
 
     /* UPX support */
 
@@ -559,8 +581,10 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     found = 2;
 
     lseek(desc, ep, SEEK_SET);
-    if(read(desc, buff, 200) != 200)
+    if(read(desc, buff, 200) != 200) {
+	free(section_hdr);
 	return CL_EIO;
+    }
 
     if(buff[0] != '\xb8' || cli_readint32(buff + 1) != EC32(section_hdr[nsections - 1].VirtualAddress) + EC32(optional_hdr.ImageBase)) {
 	if(buff[0] != '\xb8' || cli_readint32(buff + 1) != EC32(section_hdr[nsections - 2].VirtualAddress) + EC32(optional_hdr.ImageBase))
