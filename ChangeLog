@@ -1,3 +1,7 @@
+Wed Aug 11 16:29:05 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	No longer needs curl.h to compile (thanks to TK)
+
 Wed Aug 11 15:46:56 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Better handling of false positive emails, that is
