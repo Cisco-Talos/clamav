@@ -318,6 +318,7 @@ Changes
 0.70h	8/4/04	Cleanup StreamMaxLength code
 0.70i	9/4/04	Handle clamd giving up on StreamMaxLength before clamav-milter
 0.70j	15/4/04	Handle systems without inet_ntop
+0.70k	17/4/04	Put the virus message in the 550 rejection
 
 BUG REPORTS
 

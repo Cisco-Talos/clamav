@@ -318,9 +318,13 @@
  *	0.70i	9/4/04	Handle clamd giving up on StreamMaxLength before
  *			clamav-milter
  *	0.70j	15/4/04	Handle systems without inet_ntop
+ *	0.70k	17/4/04	Put the virus message in the 550 rejection
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.74  2004/04/17 20:39:04  nigelhorne
+ * Add the virus name into the 550 rejection if sent
+ *
  * Revision 1.73  2004/04/15 09:53:25  nigelhorne
  * Handle systems without inet_ntop
  *
@@ -525,9 +529,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.73 2004/04/15 09:53:25 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.74 2004/04/17 20:39:04 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70j"
+#define	CM_VERSION	"0.70k"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -2034,6 +2038,7 @@ clamfi_eom(SMFICTX *ctx)
 	} else {
 		int i;
 		char **to, *err;
+		char reject[1024];
 
 		/*
 		 * Setup err as a list of recipients
@@ -2186,7 +2191,8 @@ clamfi_eom(SMFICTX *ctx)
 		else
 			rc = SMFIS_DISCARD;
 
-		smfi_setreply(ctx, "550", "5.7.1", "Virus detected by ClamAV - http://www.clamav.net");
+		snprintf(reject, sizeof(reject) - 1, "Virus detected by ClamAV - http://www.clamav.net - %s", mess);
+		smfi_setreply(ctx, "550", "5.7.1", reject);
 	}
 	clamfi_cleanup(ctx);
 
