@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.24  2003/12/20 13:55:36  nigelhorne
+ * Ensure multipart just save the bodies of attachments
+ *
  * Revision 1.23  2003/12/14 18:07:01  nigelhorne
  * Some viruses in embedded messages were not being found
  *
@@ -60,7 +63,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.23 2003/12/14 18:07:01 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.24 2003/12/20 13:55:36 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -200,22 +203,17 @@ static	const	struct tableinit {
  * TODO: parse .msg format files
  * TODO: fully handle AppleDouble format, see
  * http://www.lazerware.com/formats/Specs/AppleSingle_AppleDouble.pdf
+ * TODO: ensure parseEmailHeaders is always called before parseEmailBody
+ * TODO: create parseEmail which calls parseEmailHeaders then parseEmailBody
  */
 int
 cl_mbox(const char *dir, int desc)
 {
 	int retcode, i;
-	bool isMbox;	/*
-			 * is it a UNIX style mbox with more than one
-			 * mail message, or just a single mail message?
-			 */
-	message *m;
+	message *m, *body;
 	table_t	*rfc821Table, *subtypeTable;
 	FILE *fd;
 	char buffer[LINE_LENGTH];
-#ifdef CL_THREAD_SAFE
-	char *strptr;
-#endif
 
 	cli_dbgmsg("in mbox()\n");
 
@@ -239,140 +237,71 @@ cl_mbox(const char *dir, int desc)
 		return -1;
 	}
 
-	isMbox = (strncmp(buffer, "From ", 5) == 0);
-
-	if(isMbox) {
+	/*
+	 * is it a UNIX style mbox with more than one
+	 * mail message, or just a single mail message?
+	 */
+	if(strncmp(buffer, "From ", 5) == 0) {
 		/*
 		 * Have been asked to check a UNIX style mbox file, which
 		 * may contain more than one e-mail message to decode
 		 */
-		bool inHeader = FALSE;
-		bool inMimeHeader = FALSE;
-		bool lastLineWasEmpty = TRUE;
-		bool first = TRUE;
+		bool lastLineWasEmpty = FALSE;
 
 		do {
 			/*cli_dbgmsg("read: %s", buffer);*/
 
-			/*
-			 * Handle this where we're mid point through this stuff
-			 *	Content-Type: multipart/alternative;
-			 *		boundary="----foo"
-			 */
-			if(inHeader && ((buffer[0] == '\t') || (buffer[0] == ' ')))
-				inMimeHeader = TRUE;
-			if(inMimeHeader) {
-				const char *ptr;
-
-				assert(!first);
-
-				if(!continuationMarker(buffer))
-					inMimeHeader = FALSE;	 /* no more args */
-
+			cli_chomp(buffer);
+			if(lastLineWasEmpty && (strncmp(buffer, "From ", 5) == 0)) {
 				/*
-				 * Add all the arguments on the line
+				 * End of a message in the mail box
 				 */
-				for(ptr = strtok_r(buffer, ";\r\n", &strptr); ptr; ptr = strtok_r(NULL, ":\r\n", &strptr))
-					messageAddArgument(m, ptr);
-
-			} else if((!inHeader) && lastLineWasEmpty && (strncmp(buffer, "From ", 5) == 0)) {
+				body = parseEmailHeaders(m, rfc821Table);
+				messageDestroy(m);
+				messageClean(body);
+				if(messageGetBody(body))
+					if(!parseEmailBody(body,  NULL, 0, NULL, dir, rfc821Table, subtypeTable))
+						break;
 				/*
-				 * New message, save the previous message, if any
+				 * Starting a new message, throw away all the
+				 * information about the old one
 				 */
-				if(!first) {
-					/*
-					 * End of the current message, add it and look
-					 * for the start of the next one
-					 */
-					messageClean(m);
-					if(messageGetBody(m))
-						if(!parseEmailBody(m,  NULL, 0, NULL, dir, rfc821Table, subtypeTable))
-							break;
-					/*
-					 * Starting a new message, throw away all the
-					 * information about the old one
-					 */
-					messageReset(m);
-				} else
-					first = FALSE;
+				m = body;
+				messageReset(body);
 
-				lastLineWasEmpty = inHeader = TRUE;
+				lastLineWasEmpty = TRUE;
 				cli_dbgmsg("Finished processing message\n");
-			} else if(inHeader) {
-
-				cli_dbgmsg("Deal with header %s", buffer);
-
-				/*
-				 * A blank line signifies the end of the header and
-				 * the start of the text
-				 */
-				if((strstrip(buffer) == 0) || (buffer[0] == '\n') || (buffer[0] == '\r')) {
-					cli_dbgmsg("End of header information\n");
-					inHeader = FALSE;
-				} else {
-					const bool isLastLine = !continuationMarker(buffer);
-					const char *cmd = strtok_r(buffer, " \t", &strptr);
-
-					if (cmd && *cmd) {
-						const char *arg = strtok_r(NULL, "\r\n", &strptr);
-
-						if(arg)
-							if(parseMimeHeader(m, cmd, rfc821Table, arg) == CONTENT_TYPE)
-								inMimeHeader = !isLastLine;
-					}
-				}
-			} else {
-				assert(!first);
-
-				/*cli_dbgmsg("adding line %s", buffer);*/
-
-				lastLineWasEmpty = ((buffer[0] == '\n') || (buffer[0] == '\r'));
-				/*
-				 * Add this line to the end of the linked list
-				 * of lines. This isn't needed when using
-				 * .forward since the rest of the file *must*
-				 * be the text so a single fread() should
-				 * suffice. Still, it does no harm and is more
-				 * flexible this way
-				 *
-				 * Note that the terminating newline is not
-				 * added
-				 */
-				messageAddLine(m, strtok_r(buffer, "\r\n", &strptr));
-			}
+			} else
+				lastLineWasEmpty = (buffer[0] == '\0');
+			messageAddLine(m, buffer);
 		} while(fgets(buffer, sizeof(buffer), fd) != NULL);
-	} else {
+	} else
 		/*
 		 * It's a single message, parse the headers then the body
 		 */
-		message *body;
-
 		do {
 			cli_chomp(buffer);
 			messageAddLine(m, buffer);
 		} while(fgets(buffer, sizeof(buffer), fd) != NULL);
 
-		body = parseEmailHeaders(m, rfc821Table);
-		messageDestroy(m);
-		m = body;
-	}
-
 	fclose(fd);
 
 	retcode = 0;
 
+	body = parseEmailHeaders(m, rfc821Table);
+	messageDestroy(m);
 	/*
 	 * Write out the last entry in the mailbox
 	 */
-	messageClean(m);
-	if(messageGetBody(m))
-		if(!parseEmailBody(m, NULL, 0, NULL, dir, rfc821Table, subtypeTable))
+	messageClean(body);
+	if(messageGetBody(body))
+		if(!parseEmailBody(body, NULL, 0, NULL, dir, rfc821Table, subtypeTable))
 			retcode = -1;
 
 	/*
 	 * Tidy up and quit
 	 */
-	messageDestroy(m);
+	messageDestroy(body);
 
 	tableDestroy(rfc821Table);
 	tableDestroy(subtypeTable);
@@ -394,11 +323,18 @@ parseEmailHeaders(const message *m, const table_t *rfc821Table)
 {
 	bool inContinuationHeader = FALSE;
 	bool inHeader = TRUE;
-	text *t, *msgText = messageToText(m);
-	message *ret = messageCreate();
+	text *t, *msgText;
+	message *ret;
+
+	if(m == NULL)
+		return NULL;
+
+	msgText = messageToText(m);
+	if(msgText == NULL)
+		return NULL;
 
 	t = msgText;
-	assert(t != NULL);
+	ret = messageCreate();
 
 	do {
 		char *buffer = strdup(t->t_text);
@@ -836,6 +772,7 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 					bool addToText = FALSE;
 					const char *dtype;
 					text *t;
+					message *body;
 
 					aMessage = messages[i];
 
@@ -900,7 +837,11 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 						break;
 					case MESSAGE:
 						cli_dbgmsg("Found message inside multipart\n");
-						rc = parseEmailBody(aMessage, blobs, nBlobs, NULL, dir, rfc821Table, subtypeTable);
+						body = parseEmailHeaders(aMessage, rfc821Table);
+						if(body) {
+							rc = parseEmailBody(body, blobs, nBlobs, NULL, dir, rfc821Table, subtypeTable);
+							messageDestroy(body);
+						}
 						continue;
 					case MULTIPART:
 						/*
@@ -910,11 +851,19 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 						 *
 						 */
 						cli_dbgmsg("Found multipart inside multipart\n");
-						t = messageToText(aMessage);
-						rc = parseEmailBody(aMessage, blobs, nBlobs, t, dir, rfc821Table, subtypeTable);
-						textDestroy(t);
+						if(aMessage) {
+							body = parseEmailHeaders(aMessage, rfc821Table);
+							if(body) {
+								t = messageToText(body);
+								rc = parseEmailBody(body, blobs, nBlobs, t, dir, rfc821Table, subtypeTable);
+								textDestroy(t);
 
-						mainMessage = aMessage;
+								mainMessage = body;
+							}
+						} else {
+							rc = parseEmailBody(NULL, blobs, nBlobs, NULL, dir, rfc821Table, subtypeTable);
+							mainMessage = NULL;
+						}
 						continue;
 					case AUDIO:
 					case IMAGE:
@@ -971,6 +920,12 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 				rc = parseEmailBody(mainMessage, blobList, numberOfAttachments, aText, dir, rfc821Table, subtypeTable);
 				break;
 			case DIGEST:
+				/*
+				 * TODO:
+				 * According to section 5.1.5 RFC2046, the
+				 * default mime type of multipart/digest parts
+				 * is message/rfc822
+				 */
 			case SIGNED:
 			case PARALLEL:
 				/*

@@ -1,3 +1,7 @@
+Sat Dec 20 13:56:27 GMT 2003 (njh)
+----------------------------------
+  * libclamav: Ensure multipart just save the bodies of attachments
+
 Sat Dec 20 13:25:23 CET 2003
 ----------------------------------
   * clamdscan: fixed a segmentation fault when invoked without arguments
