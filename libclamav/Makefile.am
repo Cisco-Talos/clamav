@@ -45,6 +45,7 @@ libclamav_la_SOURCES = \
 	str.h \
 	defaults.h \
 	scanners.c \
+	scanners.h \
 	filetypes.c \
 	filetypes.h \
 	unrarlib.c \
@@ -104,6 +105,10 @@ libclamav_la_SOURCES = \
 	htmlnorm.c \
 	htmlnorm.h \
 	chmunpack.c \
-	chmunpack.h
+	chmunpack.h \
+	rebuildpe.c \
+	rebuildpe.h \
+	petite.c \
+	petite.h
 
 lib_LTLIBRARIES = libclamav.la

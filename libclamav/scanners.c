@@ -51,6 +51,7 @@ extern int cli_mbox(const char *dir, int desc); /* FIXME */
 
 #include "clamav.h"
 #include "others.h"
+#include "scanners.h"
 #include "matcher-ac.h"
 #include "matcher-bm.h"
 #include "matcher.h"
@@ -83,7 +84,6 @@ extern int cli_mbox(const char *dir, int desc); /* FIXME */
 #define MAX_MAIL_RECURSION  15
 
 
-static int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec);
 static int cli_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec);
 
 
@@ -977,7 +977,7 @@ static int cli_scanmail(int desc, const char **virname, long int *scanned, const
 	return ret;
 }
 
-static int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
 {
 	char magic[MAGIC_BUFFER_SIZE+1];
 	int ret = CL_CLEAN, nret;
