@@ -588,7 +588,10 @@ static int cli_scangzip(int desc, const char **virname, long int *scanned, const
 	if(limits)
 	    if(limits->maxfilesize && (size + FILEBUFF > limits->maxfilesize)) {
 		cli_dbgmsg("GZip: Size exceeded (stopped at %ld, max: %ld)\n", size, limits->maxfilesize);
-		/* ret = CL_EMAXSIZE; */
+		if(BLOCKMAX) {
+		    *virname = "GZip.ExceededFileSize";
+		    ret = CL_VIRUS;
+		}
 		break;
 	    }
 
@@ -603,6 +606,12 @@ static int cli_scangzip(int desc, const char **virname, long int *scanned, const
 
     free(buff);
     gzclose(gd);
+
+    if(ret == CL_VIRUS) {
+	fclose(tmp);
+	return ret;
+    }
+
     if(fsync(fd) == -1) {
 	cli_dbgmsg("GZip: Can't synchronise descriptor %d\n", fd);
 	fclose(tmp);
@@ -676,7 +685,10 @@ static int cli_scanbzip(int desc, const char **virname, long int *scanned, const
 	if(limits)
 	    if(limits->maxfilesize && (size + FILEBUFF > limits->maxfilesize)) {
 		cli_dbgmsg("Bzip: Size exceeded (stopped at %ld, max: %ld)\n", size, limits->maxfilesize);
-		/* ret = CL_EMAXSIZE; */
+		if(BLOCKMAX) {
+		    *virname = "BZip.ExceededFileSize";
+		    ret = CL_VIRUS;
+		}
 		break;
 	    }
 
@@ -692,6 +704,13 @@ static int cli_scanbzip(int desc, const char **virname, long int *scanned, const
 
     free(buff);
     BZ2_bzReadClose(&bzerror, bfd);
+
+    if(ret == CL_VIRUS) {
+	fclose(tmp);
+	fclose(fs);
+	return ret;
+    }
+
     if(fsync(fd) == -1) {
 	cli_dbgmsg("Bzip: Synchronisation failed for descriptor %d\n", fd);
 	fclose(tmp);

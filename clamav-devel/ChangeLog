@@ -1,3 +1,8 @@
+Thu Apr  7 00:46:14 CEST 2005 (tk)
+----------------------------------
+  * libclamav/scanners.c: support ArchiveBlockMax in scan(g|b)zip()
+			  (reported by Rudolph Pereira <rudolph*usyd.edu.au>)
+
 Wed Apr  6 23:58:29 CEST 2005 (tk)
 ----------------------------------
   * clamd/scanner.c: fix possible crash when MaxStreamLength < FILEBUFF
