@@ -1,3 +1,11 @@
+Mon Dec 13 11:21:28 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter:	INSTALL: Added notes about FreeBSD5
+			On Linux store the -ve process group in the pid file to
+				ensure that all threads are sent signals
+			Support the temporary and quarantine directories being
+				on different filesystems
+
 Sun Dec 12 20:34:03 GMT 2004 (njh)
 ----------------------------------
   * contrib/init/FreeBSD5:	Added startup and shutdown scripts for FreeBSD5
