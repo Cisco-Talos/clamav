@@ -1,3 +1,10 @@
+Sat Feb 14 17:28:15 GMT 2004 (njh)
+----------------------------------
+  * libclamav:	Had deleted O_BINARY by mistake
+  * clamav-milter:	Added TCPwrappers support
+			Removed duplication in version string
+			Handle machines that don't have in_port_t
+
 Sat Feb 14 10:28:47 CET 2004 (tk)
 ---------------------------------
   * configure: check for tcpwrappers and definition of in_port_t (requested
