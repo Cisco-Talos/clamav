@@ -1,3 +1,8 @@
+Sat Oct 16 20:11:15 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Rudimentary handling of BeMail (BeOS) messages.
+				Documentation of the format would be appreciated
+
 Sat Oct 16 18:24:33 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Handle headers such as boundary="=.J:gysAG)N(3_zv"
