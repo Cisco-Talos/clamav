@@ -21,6 +21,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.15  2004/10/16 16:08:46  nigelhorne
+ * Handle empty files in the middle of archives
+ *
  * Revision 1.14  2004/10/13 10:18:54  nigelhorne
  * Added a few extra file types
  *
@@ -64,7 +67,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.14 2004/10/13 10:18:54 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.15 2004/10/16 16:08:46 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -241,6 +244,7 @@ cli_untar(const char *dir, int desc)
 				fclose(outfile);
 				return CL_EFORMAT;
 			}
+			cli_dbgmsg("cli_untar: size = %d\n", size);
 		} else { /* write or continue writing file contents */
 			const int nbytes = size>512? 512:size;
 			const int nwritten = fwrite(block, 1, nbytes, outfile);
@@ -250,9 +254,9 @@ cli_untar(const char *dir, int desc)
 					nwritten, fullname);
 			}
 			size -= nbytes;
-			if (size == 0)
-				in_block = 0;
 		}
+		if (size == 0)
+			in_block = 0;
 	}
 	if(outfile)
 		fclose(outfile);
