@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.33  2004/02/18 10:07:40  nigelhorne
+ * Find some Yaha
+ *
  * Revision 1.32  2004/02/17 20:43:50  nigelhorne
  * Added bounce message
  *
@@ -93,7 +96,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.32 2004/02/17 20:43:50 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.33 2004/02/18 10:07:40 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -980,9 +983,9 @@ messageToBlob(const message *m)
 			 * annoyingly then put plain text after the '='
 			 * bytes. Sigh
 			 */
-			if(messageGetEncoding(m) == BASE64)
+			/*if(messageGetEncoding(m) == BASE64)
 				if(strchr(line, '='))
-					break;
+					break;*/
 
 		} while((t_line = t_line->t_next) != NULL);
 	return b;
