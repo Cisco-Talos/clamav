@@ -1,7 +1,11 @@
+Fri May 21 12:32:24 BST 2004 (njh)
+----------------------------------
+  * libclamav/blob.c:	Fixed logic error in blobClose()
+
 Fri May 21 10:16:27 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	--from wasn't always recognised
-  			write failures to quarantine area were not correctly
+			write failures to quarantine area were not correctly
 	reported
 
 Thu May 20 11:23:23 BST 2004 (trog)
@@ -11,7 +15,7 @@ Thu May 20 11:23:23 BST 2004 (trog)
 Wed May 19 11:02:53 BST 2004 (njh)
 ---------------------------------
   * libclamav/message.c:	Assume attachments which don't declare how
-  	they've been encoded are base64
+	they've been encoded are base64
 
 Wed May 19 09:10:12 BST 2004 (trog)
 -----------------------------------
@@ -71,7 +75,7 @@ Tue May 11 02:07:55 CEST 2004 (tk)
 Mon May 10 12:25:09 BST 2004 (njh)
 ----------------------------------
   * libclamav:		Don't call cli_filetype() so often since the latest
-  		chanves give false positives about the start of bounce messages
+		chanves give false positives about the start of bounce messages
 		which opens up DoS attacks, and allows worms hidden in bounce
 		messages to be hidden with ease
 
@@ -101,7 +105,7 @@ Sun May  9 18:40:55 BST 2004 (njh)
 			Also added X-Infected-Received-From: header by Sergey
 			Report an error if inet_ntop fails in tcp_wrappers
  * docs/man:		Clarified suggested use of max-children only on
- 		small machines
+		small machines
 
 Fri May  7 19:46:05 CEST 2004 (tk)
 ----------------------------------
