@@ -1,3 +1,7 @@
+Mon Feb 14 00:32:02 CET 2005 (tk)
+---------------------------------
+  * docs: update
+
 Sun Feb 13 23:55:45 CET 2005 (tk)
 ---------------------------------
   * clamd: change default value of StreamMaxPort to 2048
