@@ -68,10 +68,9 @@ tableInsert(table_t *table, const char *key, int value)
 
 	if(table->tableHead == NULL)
 		table->tableLast = table->tableHead = (tableEntry *)cli_calloc(1, sizeof(tableEntry));
-	else {
-		table->tableLast->next = (tableEntry *)cli_calloc(1, sizeof(tableEntry));
-		table->tableLast = table->tableLast->next;
-	}
+	else
+		table->tableLast = table->tableLast->next =
+			(tableEntry *)cli_calloc(1, sizeof(tableEntry));
 
 	table->tableLast->next = NULL;
 	table->tableLast->key = strdup(key);

@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.74  2004/06/09 18:18:59  nigelhorne
+ * Find uuencoded viruses in multipart/mixed that have no start of message boundaries
+ *
  * Revision 1.73  2004/05/14 08:15:55  nigelhorne
  * Use mkstemp on cygwin
  *
@@ -207,7 +210,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.73 2004/05/14 08:15:55 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.74 2004/06/09 18:18:59 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -327,6 +330,7 @@ static	const	struct tableinit {
 	{	"appledouble",	APPLEDOUBLE	},
 	{	NULL,		0		}
 };
+static	table_t	*rfc821Table, *subtypeTable;
 
 /* Maximum filenames under various systems */
 #ifndef	NAME_MAX	/* e.g. Linux */
@@ -369,7 +373,6 @@ cl_mbox(const char *dir, int desc)
 {
 	int retcode, i;
 	message *m, *body;
-	table_t	*rfc821Table, *subtypeTable;
 	FILE *fd;
 	char buffer[LINE_LENGTH];
 
@@ -387,12 +390,19 @@ cl_mbox(const char *dir, int desc)
 		return 0;
 	}
 	m = messageCreate();
-	assert(m != NULL);
-
-	if(initialiseTables(&rfc821Table, &subtypeTable) < 0) {
-		messageDestroy(m);
+	if(m == NULL) {
 		fclose(fd);
-		return -1;
+		return 0;
+	}
+
+	if(rfc821Table == NULL) {
+		assert(subtypeTable == NULL);
+
+		if(initialiseTables(&rfc821Table, &subtypeTable) < 0) {
+			messageDestroy(m);
+			fclose(fd);
+			return -1;
+		}
 	}
 
 	/*
@@ -475,9 +485,6 @@ cl_mbox(const char *dir, int desc)
 	 * Tidy up and quit
 	 */
 	messageDestroy(body);
-
-	tableDestroy(rfc821Table);
-	tableDestroy(subtypeTable);
 
 	cli_dbgmsg("cli_mbox returning %d\n", retcode);
 
@@ -946,6 +953,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				aText = textAddMessage(aText, aMessage);
 
 				rc = parseEmailBody(NULL, blobs, nBlobs, aText, dir, rfc821Table, subtypeTable);
+
 				if(rc == 1) {
 					/*
 					 * Alternative message has saved its
@@ -1021,9 +1029,25 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 
 						break;
 					case NOMIME:
-						if(mainMessage && (mainMessage != messageIn))
-							messageDestroy(mainMessage);
-						mainMessage = NULL;
+						if(mainMessage) {
+							const text *t_line = uuencodeBegin(mainMessage);
+							if(t_line) {
+								blob *aBlob;
+
+								cli_dbgmsg("Found uuencoded message in multipart/mixed mainMessage\n");
+								messageSetEncoding(mainMessage, "x-uuencode");
+								aBlob = messageToBlob(mainMessage);
+
+								if(aBlob) {
+									assert(blobGetFilename(aBlob) != NULL);
+									blobClose(aBlob);
+									blobList[numberOfAttachments++] = aBlob;
+								}
+							}
+							if(mainMessage != messageIn)
+								messageDestroy(mainMessage);
+							mainMessage = NULL;
+						}
 						addToText = TRUE;
 						if(messageGetBody(aMessage) == NULL)
 							/*
@@ -1181,9 +1205,9 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					assert(addToText || addAttachment);
 					assert(!(addToText && addAttachment));
 
-					if(addToText)
+					if(addToText) {
 						aText = textAdd(aText, messageGetBody(aMessage));
-					else if(addAttachment) {
+					} else if(addAttachment) {
 						blob *aBlob = messageToBlob(aMessage);
 
 						if(aBlob) {
@@ -1466,7 +1490,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				for(t = t_line; t; t = t->t_next)
 					if((strncasecmp(t->t_text, encoding, sizeof(encoding) - 1) == 0) &&
 					   (strstr(t->t_text, "7bit") == NULL))
-					   	break;
+						break;
 				if(t && ((b = textToBlob(t_line, NULL)) != NULL)) {
 					cli_dbgmsg("Found a bounce message\n");
 
@@ -1618,8 +1642,10 @@ initialiseTables(table_t **rfc821Table, table_t **subtypeTable)
 	assert(*rfc821Table != NULL);
 
 	for(tableinit = rfc821headers; tableinit->key; tableinit++)
-		if(tableInsert(*rfc821Table, tableinit->key, tableinit->value) < 0)
+		if(tableInsert(*rfc821Table, tableinit->key, tableinit->value) < 0) {
+			tableDestroy(*rfc821Table);
 			return -1;
+		}
 
 	*subtypeTable = tableCreate();
 	assert(*subtypeTable != NULL);
@@ -1627,6 +1653,7 @@ initialiseTables(table_t **rfc821Table, table_t **subtypeTable)
 	for(tableinit = mimeSubtypes; tableinit->key; tableinit++)
 		if(tableInsert(*subtypeTable, tableinit->key, tableinit->value) < 0) {
 			tableDestroy(*rfc821Table);
+			tableDestroy(*subtypeTable);
 			return -1;
 		}
 
