@@ -21,6 +21,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.22  2005/03/10 08:52:10  nigelhorne
+ * Tidy
+ *
  * Revision 1.21  2005/02/16 22:19:21  nigelhorne
  * Check file close
  *
@@ -85,7 +88,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.21 2005/02/16 22:19:21 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.22 2005/03/10 08:52:10 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -127,7 +130,7 @@ octal(const char *str)
 {
 	int ret = -1;
 
-	sscanf(str, "%o", (unsigned int *)&ret);
+	(void)sscanf(str, "%o", (unsigned int *)&ret);
 	return ret;
 }
 
@@ -143,7 +146,7 @@ cli_untar(const char *dir, int desc)
 
 	for(;;) {
 		char block[BLOCKSIZE];
-		const int nread = cli_readn(desc, block, sizeof(block));
+		const int nread = cli_readn(desc, block, (unsigned int)sizeof(block));
 
 		if(!in_block && nread == 0)
 			break;
