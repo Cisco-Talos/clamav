@@ -1,3 +1,7 @@
+Wed Sep  1 16:11:40 CEST 2004 (tk)
+----------------------------------
+  * libclamav: replace current MD5 implementation with another one
+
 Wed Sep  1 03:32:28 CEST 2004 (tk)
 ----------------------------------
   * libclamav/cvd.c: display warning if loaded database is older than 7 days

@@ -1,164 +1,37 @@
-/* Declaration of functions and data types used for MD5 sum computing
-   library functions.
-   Copyright (C) 1995, 1996, 1997, 1999, 2000 Free Software Foundation, Inc.
-   This file is part of the GNU C Library.
-
-   The GNU C Library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Library General Public License as
-   published by the Free Software Foundation; either version 2 of the
-   License, or (at your option) any later version.
-
-   The GNU C Library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
-
-   You should have received a copy of the GNU Library General Public
-   License along with the GNU C Library; see the file COPYING.LIB.  If not,
-   write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-   Boston, MA 02111-1307, USA.  */
-
-#ifndef _MD5_H
-#define _MD5_H 1
-
-#include <stdio.h>
-
-#if defined HAVE_LIMITS_H || _LIBC
-# include <limits.h>
-#endif
-
-/* The following contortions are an attempt to use the C preprocessor
-   to determine an unsigned integral type that is 32 bits wide.  An
-   alternative approach is to use autoconf's AC_CHECK_SIZEOF macro, but
-   doing that would require that the configure script compile and *run*
-   the resulting executable.  Locally running cross-compiled executables
-   is usually not possible.  */
-
-#ifdef _LIBC
-# include <sys/types.h>
-typedef u_int32_t md5_uint32;
-#else
-# if defined __STDC__ && __STDC__
-#  define UINT_MAX_32_BITS 4294967295U
-# else
-#  define UINT_MAX_32_BITS 0xFFFFFFFF
-# endif
-
-/* If UINT_MAX isn't defined, assume it's a 32-bit type.
-   This should be valid for all systems GNU cares about because
-   that doesn't include 16-bit systems, and only modern systems
-   (that certainly have <limits.h>) have 64+-bit integral types.  */
-
-# ifndef UINT_MAX
-#  define UINT_MAX UINT_MAX_32_BITS
-# endif
-
-# if UINT_MAX == UINT_MAX_32_BITS
-   typedef unsigned int md5_uint32;
-# else
-#  if USHRT_MAX == UINT_MAX_32_BITS
-    typedef unsigned short md5_uint32;
-#  else
-#   if ULONG_MAX == UINT_MAX_32_BITS
-     typedef unsigned long md5_uint32;
-#   else
-     /* The following line is intended to evoke an error.
-        Using #error is not portable enough.  */
-     "Cannot determine unsigned 32-bit data type."
-#   endif
-#  endif
-# endif
-#endif
-
-#undef __P
-#if defined (__STDC__) && __STDC__
-# define __P(x) x
-#else
-# define __P(x) ()
-#endif
-
-/* Structure to save state of computation between the single steps.  */
-struct md5_ctx
-{
-  md5_uint32 A;
-  md5_uint32 B;
-  md5_uint32 C;
-  md5_uint32 D;
-
-  md5_uint32 total[2];
-  md5_uint32 buflen;
-#ifndef __attribute__
-  char buffer[128];
-#else
-  char buffer[128] __attribute__ ((__aligned__ (__alignof__ (md5_uint32))));
-#endif
-};
-
-#ifndef __attribute__
-#define __alignof__(a)	sizeof(a)
-#endif
-
 /*
- * The following three functions are build up the low level used in
- * the functions `md5_stream' and `md5_buffer'.
+ * This is the header file for the MD5 message-digest algorithm.
+ * The algorithm is due to Ron Rivest.  This code was
+ * written by Colin Plumb in 1993, no copyright is claimed.
+ * This code is in the public domain; do with it what you wish.
+ *
+ * Equivalent code is available from RSA Data Security, Inc.
+ * This code has been tested against that, and is equivalent,
+ * except that you don't need to include two pages of legalese
+ * with every copy.
+ *
+ * To compute the message digest of a chunk of bytes, declare an
+ * MD5Context structure, pass it to MD5Init, call MD5Update as
+ * needed on buffers full of bytes, and then call MD5Final, which
+ * will fill a supplied 16-byte array with the digest.
+ *
  */
 
-/* Initialize structure containing state of computation.
-   (RFC 1321, 3.3: Step 3)  */
-extern void __md5_init_ctx __P ((struct md5_ctx *ctx));
+#ifndef __MD5_H
+#define __MD5_H
 
-/* Starting with the result of former calls of this function (or the
-   initialization function update the context for the next LEN bytes
-   starting at BUFFER.
-   It is necessary that LEN is a multiple of 64!!! */
-extern void __md5_process_block __P ((const void *buffer, size_t len,
-				      struct md5_ctx *ctx));
+#define md5byte unsigned char
 
-/* Starting with the result of former calls of this function (or the
-   initialization function update the context for the next LEN bytes
-   starting at BUFFER.
-   It is NOT required that LEN is a multiple of 64.  */
-extern void __md5_process_bytes __P ((const void *buffer, size_t len,
-				      struct md5_ctx *ctx));
+#include "cltypes.h"
 
-/* Process the remaining bytes in the buffer and put result from CTX
-   in first 16 bytes following RESBUF.  The result is always in little
-   endian byte order, so that a byte-wise output yields to the wanted
-   ASCII representation of the message digest.
+struct MD5Context {
+	uint32_t buf[4];
+	uint32_t bytes[2];
+	uint32_t in[16];
+};
 
-   IMPORTANT: On some systems it is required that RESBUF is correctly
-   aligned for a 32 bits value.  */
-extern void *__md5_finish_ctx __P ((struct md5_ctx *ctx, void *resbuf));
+void MD5Init(struct MD5Context *context);
+void MD5Update(struct MD5Context *context, md5byte const *buf, unsigned len);
+void MD5Final(unsigned char *digest, struct MD5Context *context);
+void MD5Transform(uint32_t buf[4], uint32_t const in[16]);
 
-
-/* Put result from CTX in first 16 bytes following RESBUF.  The result is
-   always in little endian byte order, so that a byte-wise output yields
-   to the wanted ASCII representation of the message digest.
-
-   IMPORTANT: On some systems it is required that RESBUF is correctly
-   aligned for a 32 bits value.  */
-extern void *__md5_read_ctx __P ((const struct md5_ctx *ctx, void *resbuf));
-
-
-/* Compute MD5 message digest for bytes read from STREAM.  The
-   resulting message digest number will be written into the 16 bytes
-   beginning at RESBLOCK.  */
-extern int __md5_stream __P ((FILE *stream, void *resblock));
-
-/* Compute MD5 message digest for LEN bytes beginning at BUFFER.  The
-   result is always in little endian byte order, so that a byte-wise
-   output yields to the wanted ASCII representation of the message
-   digest.  */
-extern void *__md5_buffer __P ((const char *buffer, size_t len,
-				void *resblock));
-
-
-# define md5_init_ctx __md5_init_ctx
-# define md5_process_block __md5_process_block
-# define md5_process_bytes __md5_process_bytes
-# define md5_finish_ctx __md5_finish_ctx
-# define md5_read_ctx __md5_read_ctx
-# define md5_stream __md5_stream
-# define md5_buffer __md5_buffer
-
-#endif /* md5.h */
+#endif
