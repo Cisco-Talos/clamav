@@ -1,3 +1,8 @@
+Tue Jan 27 22:36:31 CET 2004 (tk)
+---------------------------------
+  * clamd: clamuko: support VirusEvent (requested by Matt Butt
+		    <mattb*cre8tiv.com>)
+
 Tue Jan 27 14:04:51 GMT 2004 (trog)
 -----------------------------------
   * libclamav:  OLE2 unpacker - add big-endian support
