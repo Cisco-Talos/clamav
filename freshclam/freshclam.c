@@ -284,7 +284,7 @@ void help(void)
 
     mprintf("\n");
     mprintf("                          Clam AntiVirus: freshclam  "VERSION"\n");
-    mprintf("                (c) 2002, 2003 Tomasz Kojm <tkojm@clamav.net>\n\n");
+    mprintf("                (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>\n\n");
 
     mprintf("    --help               -h              show help\n");
     mprintf("    --version            -V              print version number and exit\n");
@@ -294,12 +294,12 @@ void help(void)
     mprintf("    --stdout                             write to stdout instead of stderr\n");
     mprintf("                                         (this help is always written to stdout)\n");
     mprintf("\n");
-    mprintf("    --config-file=FILE   -c FILE         Read configuration from FILE.\n");
+    mprintf("    --config-file=FILE                   Read configuration from FILE.\n");
     mprintf("    --log=FILE           -l FILE         log into FILE\n");
     mprintf("    --log-verbose                        log additional information\n");
     mprintf("    --daemon             -d              run in daemon mode\n");
     mprintf("    --user=USER          -u USER         run as USER\n");
-    mprintf("    --checks=#n          -c #n           #n checks by day, 1 <= n <= 50\n");
+    mprintf("    --checks=#n          -c #n           number of checks per day, 1 <= n <= 50\n");
     mprintf("    --datadir=DIRECTORY                  download new databases into DIRECTORY\n");
 #ifdef BUILD_CLAMD
     mprintf("    --daemon-notify[=/path/clamav.conf]  send RELOAD command to clamd\n");

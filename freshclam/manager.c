@@ -262,7 +262,7 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip)
 	int socketfd, port;
 	struct sockaddr_in name;
 	struct hostent *host;
-	char *portpt, *proxycpy = NULL, ipaddr[16];
+	char ipaddr[16];
 	unsigned char *ia;
 	const char *hostpt;
 
@@ -330,7 +330,7 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip)
 /* TODO: use a HEAD instruction to see if the file has been changed */
 struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostname, const char *proxy, const char *user, const char *pass)
 {
-	char cmd[512], head[513], buffer[FILEBUFF], *ch, *tmp, *userpass;
+	char cmd[512], head[513], buffer[FILEBUFF], *ch, *tmp;
 	int i, j, bread, cnt;
 	char *remotename = NULL, *authorization = NULL;
 	struct cl_cvd *cvd;
@@ -504,7 +504,9 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
 	write(fd, buffer, bread);
 	mprintf("Downloading %s [%c]\r", dbfile, rotation[rot]);
 	fflush(stdout);
-	rot = ++rot % 4;
+	/* rot = ++rot % 4; -> operation on `rot' may be undefined (why ?) */
+	rot %= 4;
+	rot++;
     }
 
     mprintf("Downloading %s [*]\n", dbfile);
