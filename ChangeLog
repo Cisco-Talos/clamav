@@ -1,3 +1,7 @@
+Wed Oct 20 22:31:10 CEST 2004 (tk)
+----------------------------------
+  * docs/MacOSX: update (Dale Enterprise L.L.C)
+
 Wed Oct 20 22:16:58 CEST 2004 (tk)
 ----------------------------------
   * libclamav, clamd: fix possible stack corruption under Solaris (only when
