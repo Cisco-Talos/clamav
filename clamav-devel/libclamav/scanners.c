@@ -451,6 +451,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	/* generate temporary file and get its descriptor */
 	if((tmp = tmpfile()) == NULL) {
 	    cli_dbgmsg("Zip: Can't generate tmpfile().\n");
+	    zzip_file_close(zfp);
 	    ret = CL_ETMPFILE;
 	    break;
 	}
@@ -467,7 +468,6 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	}
 
 	zzip_file_close(zfp);
-
 
 	if(fflush(tmp) != 0) {
 	    cli_dbgmsg("Zip: fflush() failed: %s\n", strerror(errno));

@@ -1,3 +1,8 @@
+Fri Mar  4 02:08:45 CET 2005 (tk)
+---------------------------------
+  * libclamav/scanners.c: close zzip descriptor when tmpfile() fails
+			  (patch by <ocherechin*ukr.net>)
+
 Fri Mar  4 01:57:28 CET 2005 (tk)
 ---------------------------------
   * libclamav, freshclam: "DON'T PANIC!" warnings (idea by Luca Gibelli)
