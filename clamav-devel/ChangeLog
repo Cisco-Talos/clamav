@@ -1,3 +1,8 @@
+Tue Jun  1 10:09:02 BST 2004 (njh)
+----------------------------------
+  * libclamav/message.c:	Corrupted BinHex could still cause crash on
+  	some non Linux systems (thanks to Trog for spotting this one)
+
 Sun May 30 03:35:38 CEST 2004 (tk)
 ----------------------------------
   * libclamav: cli_findpos: do not use modulo inside the loop; inline

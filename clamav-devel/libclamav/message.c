@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.58  2004/06/01 09:07:19  nigelhorne
+ * Corrupted binHex could crash on non Linux systems
+ *
  * Revision 1.57  2004/05/27 16:52:47  nigelhorne
  * Short binhex data could confuse things
  *
@@ -168,7 +171,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.57 2004/05/27 16:52:47 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.58 2004/06/01 09:07:19 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -195,6 +198,7 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.57 2004/05/27 16:52:47 nigelhorn
 #include <stdio.h>
 
 #include "mbox.h"
+#include "table.h"
 #include "blob.h"
 #include "text.h"
 #include "strrcpy.h"
@@ -303,7 +307,8 @@ messageReset(message *m)
 void
 messageSetMimeType(message *mess, const char *type)
 {
-	const struct mime_map *m;
+	static table_t *mime_table;
+	int typeval;
 
 	assert(mess != NULL);
 	assert(type != NULL);
@@ -317,11 +322,23 @@ messageSetMimeType(message *mess, const char *type)
 		if(*type++ == '\0')
 			return;
 
-	for(m = mime_map; m->string; m++)
-		if(strcasecmp(type, m->string) == 0) {
-			mess->mimeType = m->type;
-			break;
-		}
+	if(mime_table == NULL) {
+		const struct mime_map *m;
+
+		mime_table = tableCreate();
+		if(mime_table == NULL)
+			return;
+
+		for(m = mime_map; m->string; m++)
+			if(!tableInsert(mime_table, m->string, m->type)) {
+				tableDestroy(mime_table);
+				return;
+			}
+	}
+
+	typeval = tableFind(mime_table, type);
+
+	mess->mimeType = (mime_type)((typeval == -1) ? (int)NOMIME : typeval);
 
 	if(mess->mimeType == NOMIME) {
 		if(strncasecmp(type, "x-", 2) == 0)
@@ -641,18 +658,19 @@ const char *
 messageFindArgument(const message *m, const char *variable)
 {
 	int i;
+	size_t len;
 
 	assert(m != NULL);
 	assert(variable != NULL);
 
+	len = strlen(variable);
+
 	for(i = 0; i < m->numberOfArguments; i++) {
 		const char *ptr;
-		size_t len;
 
 		ptr = messageGetArgument(m, i);
 		if((ptr == NULL) || (*ptr == '\0'))
-			return(NULL);
-		len = strlen(variable);
+			continue;
 #ifdef	CL_DEBUG
 		cli_dbgmsg("messageFindArgument: compare %d bytes of %s with %s\n",
 			len, variable, ptr);
@@ -1070,6 +1088,12 @@ messageToBlob(message *m)
 			cli_dbgmsg("HQX7 message (%lu bytes) is not compressed\n",
 				len);
 		}
+		if(len == 0) {
+			cli_warnmsg("Discarding empty binHex attachment\n");
+			blobDestroy(b);
+			blobDestroy(tmp);
+			return NULL;
+		}
 
 		/*
 		 * The blob tmp now contains the uncompressed data
@@ -1091,7 +1115,8 @@ messageToBlob(message *m)
 		memcpy(filename, &data[1], byte);
 		filename[byte] = '\0';
 		blobSetFilename(b, filename);
-		ptr = cli_malloc(strlen(filename) + 6);
+		/*ptr = cli_malloc(strlen(filename) + 6);*/
+		ptr = cli_malloc(byte + 6);
 		if(ptr) {
 			sprintf(ptr, "name=%s", filename);
 			messageAddArgument(m, ptr);
@@ -1121,7 +1146,7 @@ messageToBlob(message *m)
 		 */
 		byte += 10;
 
-		l = blobGetDataSize(tmp);
+		l = blobGetDataSize(tmp) - byte;
 
 		if(l < len) {
 			cli_warnmsg("Corrupt BinHex file, claims it is %lu bytes long in a message of %lu bytes\n",
@@ -1532,7 +1557,6 @@ static unsigned char *
 decode(const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast)
 {
 	unsigned char b1, b2, b3, b4;
-	int nbytes;
 
 	if(isFast)
 		/* Fast decoding if not last line */
@@ -1540,14 +1564,24 @@ decode(const char *in, unsigned char *out, unsigned char (*decoder)(char), bool 
 			b1 = (*decoder)(*in++);
 			b2 = (*decoder)(*in++);
 			b3 = (*decoder)(*in++);
-			b4 = (*decoder)(*in++);
+			/*
+			 * Put this line here to help on some compilers which
+			 * can make use of some architecure's ability to
+			 * multiprocess when different variables can be
+			 * updated at the same time - here b3 is used in
+			 * one line, b1/b2 in the next and b4 in the next after
+			 * that, b3 and b4 rely on in but b1/b2 don't
+			 */
 			*out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
+			b4 = (*decoder)(*in++);
 			*out++ = (b2 << 4) | ((b3 >> 2) & 0xF);
 			*out++ = (b3 << 6) | (b4 & 0x3F);
 		}
 	else
 		/* Slower decoding for last line */
 		while(*in) {
+			int nbytes;
+
 			b1 = (*decoder)(*in++);
 			if(*in == '\0') {
 				b2 = '\0';
