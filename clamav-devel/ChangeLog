@@ -1,3 +1,7 @@
+Wed Nov 10 10:12:18 GMT 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Fix escaped parenthesis in rfc822 comments
+
 Tue Nov  9 19:43:38 GMT 2004 (njh)
 ----------------------------------
   * libclamav:		Scan uuencoded files in preambles to multipart messages
