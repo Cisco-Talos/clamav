@@ -131,6 +131,10 @@ Changes
 		who's e-mail is not scanned
 0.60k	5/10/03	Only remove old UNIX domain socket if FixStaleSocket
 		is set
+0.60l	11/10/03 port is now unsigned
+		Removed remote possibility of crash if the target
+		e-mail address is very long
+		No longer calls clamdscan to get the version
 
 BUG REPORTS
 
