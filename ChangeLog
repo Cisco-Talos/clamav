@@ -1,3 +1,7 @@
+Thu Feb 17 19:28:46 GMT 2005 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Prescan some bounces before saving for full scanning
+
 Thu Feb 17 16:13:29 CET 2005 (tk)
 ---------------------------------
   * freshclam/freshclam.c: do not call logg() in daemon_sighandler()
