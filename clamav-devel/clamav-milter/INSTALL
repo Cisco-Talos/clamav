@@ -492,7 +492,9 @@ Changes
 			environment.
 0.75p	13/9/04	Updated SESSION code.
 0.75q	13/9/04	Use pthread_cond_broadcast() instead of pthread_cond_signal()
-0.75r	15/9/04	--help didn't include information about --max-children
+0.75r	17/9/04	--help didn't include information about --max-children
+		Fix problem in the template file handling where sendmail
+		variables did't work after clamav variables.
 
 INTERNATIONALISATION
 
