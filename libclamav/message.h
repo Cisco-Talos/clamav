@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: message.h,v $
+ * Revision 1.21  2004/10/16 17:24:15  nigelhorne
+ * Handle colons in quotes in headers
+ *
  * Revision 1.20  2004/10/14 17:45:55  nigelhorne
  * Try to reclaim some memory if it becomes low when decoding
  *
@@ -88,12 +91,12 @@ typedef struct message {
 	 * Markers for the start of various non MIME messages that could
 	 * be included within this message
 	 */
-	text	*bounce;	/* start of a bounced message */
-	text	*binhex;	/* start of a binhex message */
-	text	*uuencode;	/* start of a uuencoded message */
-	text	*yenc;		/* start of a yEnc message */
-	text	*encoding;	/* is the non MIME message encoded? */
-	text	*dedupedThisFar;
+	const text	*bounce;	/* start of a bounced message */
+	const text	*binhex;	/* start of a binhex message */
+	const text	*uuencode;	/* start of a uuencoded message */
+	const text	*yenc;		/* start of a yEnc message */
+	const text	*encoding;	/* is the non MIME message encoded? */
+	const text	*dedupedThisFar;
 } message;
 
 message	*messageCreate(void);
