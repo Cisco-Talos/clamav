@@ -1,3 +1,8 @@
+Thu Sep 30 10:01:25 BST 2004 (njh)
+----------------------------------
+  * libclamav:		Further small speed and size optimisations with MIME
+				decoding
+
 Thu Sep 30 09:24:26 BST 2004 (trog)
 -----------------------------------
   * libclamav/special.c: match obfuscated JPEG files

@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: line.c,v $
+ * Revision 1.5  2004/09/30 08:58:56  nigelhorne
+ * Remove empty lines
+ *
  * Revision 1.4  2004/09/21 14:55:26  nigelhorne
  * Handle blank lines in text/plain messages
  *
@@ -30,7 +33,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: line.c,v 1.4 2004/09/21 14:55:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: line.c,v 1.5 2004/09/30 08:58:56 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -113,11 +116,12 @@ line_t *
 lineLink(line_t *line)
 {
 	assert(line != NULL);
-	if(line[0] == 127) {
-		cli_warnmsg("lineLink: linkcount too large\n");
-		return NULL;
+	if((unsigned char)line[0] == 255) {
+		cli_dbgmsg("lineLink: linkcount too large (%s)\n", lineGetData(line));
+		return lineCreate(lineGetData(line));
 	}
 	line[0]++;
+	/*printf("%d:\n\t'%s'\n", (int)line[0], &line[1]);*/
 	return line;
 }
 

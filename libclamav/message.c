@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.92  2004/09/30 08:58:56  nigelhorne
+ * Remove empty lines
+ *
  * Revision 1.91  2004/09/28 18:39:48  nigelhorne
  * Don't copy if the decoded == the encoded
  *
@@ -270,7 +273,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.91 2004/09/28 18:39:48 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.92 2004/09/30 08:58:56 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -966,12 +969,31 @@ messageAddLine(message *m, line_t *line)
 int
 messageAddStr(message *m, const char *data)
 {
+	line_t *repeat = NULL;
+
 	assert(m != NULL);
+
+	if(data) {
+		int isblank = 1;
+		char *p;
+
+		for(p = data; *p != '\0'; p++)
+			if(!isspace(*p)) {
+				isblank = 0;
+				break;
+			}
+		if(isblank) {
+			/*cli_dbgmsg("messageAddStr: empty line: '%s'\n", data);*/
+			data = NULL;
+		}
+	}
 
 	if(m->body_first == NULL)
 		m->body_last = m->body_first = (text *)cli_malloc(sizeof(text));
 	else {
 		m->body_last->t_next = (text *)cli_malloc(sizeof(text));
+		if(data && m->body_last->t_line && (strcmp(data, lineGetData(m->body_last->t_line)) == 0))
+			repeat = m->body_last->t_line;
 		m->body_last = m->body_last->t_next;
 	}
 
@@ -981,9 +1003,18 @@ messageAddStr(message *m, const char *data)
 	m->body_last->t_next = NULL;
 
 	if(data && *data) {
-		m->body_last->t_line = lineCreate(data);
+		if(repeat)
+			m->body_last->t_line = lineLink(repeat);
+		else
+			m->body_last->t_line = lineCreate(data);
 
 		if(m->body_last->t_line == NULL) {
+			/*
+			 * TODO: Here we could go through all the message
+			 * looking for duplicate lines we can line. It'd be
+			 * very slow, but it could save enough memory to
+			 * continue...
+			 */
 			cli_errmsg("messageAddStr: out of memory\n");
 			return -1;
 		}
