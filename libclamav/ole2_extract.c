@@ -598,7 +598,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 #ifdef  C_DARWIN
                         *newname &= '\177';
 #endif
-#if     defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32)
+#if     defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32) || defined(C_OS2)
                         if(strchr("/*?<>|\"+=,;: ", *newname))
 #else
                         if(*newname == '/')

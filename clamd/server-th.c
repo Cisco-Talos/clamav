@@ -562,12 +562,15 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     shutdown(socketd, 2);
     logg("*Closing the main socket.\n");
     close(socketd);
+
+#ifndef C_OS2
     if((cpt = cfgopt(copt, "LocalSocket"))) {
 	if(unlink(cpt->strarg) == -1)
 	    logg("!Can't unlink the socket file %s\n", cpt->strarg);
 	else
 	     logg("Socket file removed.\n");
-	}
+    }
+#endif
 
     if((cpt = cfgopt(copt, "PidFile"))) {
 	if(unlink(cpt->strarg) == -1)

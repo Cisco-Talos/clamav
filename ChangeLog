@@ -1,3 +1,7 @@
+Mon Dec 20 02:32:30 CET 2004 (tk)
+---------------------------------
+  * improved OS/2 support (thanks to Yuri Dario <mc6530*mclink.it>)
+
 Sun Dec 19 17:01:56 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter: Correctly warn that --max_childen must be given in SESSION

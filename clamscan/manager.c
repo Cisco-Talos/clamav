@@ -231,7 +231,7 @@ int scanmanager(const struct optstruct *opt)
 	    } else {
 		fmode = (mode_t) fmodeint;
 
-		if(compression && (thefilename[0] != '/')) {
+		if(compression && (strlen(thefilename) < 2 || (thefilename[0] != '/' && thefilename[0] != '\\' && thefilename[1] != ':'))) {
 		    /* we need to complete the path */
 		    if(!getcwd(cwd, sizeof(cwd))) {
 			mprintf("@Can't get absolute pathname of current working directory.\n");
@@ -263,7 +263,7 @@ int scanmanager(const struct optstruct *opt)
 			ret = 52;
 		}
 
-		if(compression && thefilename[0] != '/') {
+		if(compression && (strlen(thefilename) < 2 || (thefilename[0] != '/' && thefilename[0] != '\\' && thefilename[1] != ':'))) {
 		    free(fullpath);
 		    fullpath = NULL;
 		}
@@ -291,7 +291,7 @@ int match_regex(const char *filename, const char *pattern)
 #ifdef HAVE_REGEX_H
 	regex_t reg;
 	int match, flags;
-#ifndef C_CYGWIN
+#if !defined(C_CYGWIN) && !defined(C_OS2)
 	flags = 0;
 #else
 	flags = REG_ICASE; /* case insensitive on Windows */
@@ -500,9 +500,10 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	exit(63); /* critical */
     }
 
+#ifndef C_OS2
     if(user)
 	chown(gendir, user->pw_uid, user->pw_gid);
-
+#endif
 
     /* unpack file  - as unprivileged user */
     if(cli_strbcasestr(filename, ".zip")) {
@@ -722,10 +723,12 @@ int scandenied(const char *filename, struct cl_node *root, const struct passwd *
 
     fixperms(gendir);
 
+#ifndef C_OS2
     if(user) {
 	chown(gendir, user->pw_uid, user->pw_gid);
 	chown(tmpfile, user->pw_uid, user->pw_gid);
     }
+#endif
 
     if((ret = treewalk(gendir, root, user, opt, limits, options)) == 1) {
 	logg("(Real infected archive: %s)\n", filename);
@@ -1045,7 +1048,9 @@ void move_infected(const char *filename, const struct optstruct *opt)
 	}
 
 	chmod(movefilename, fstat.st_mode);
+#ifndef C_OS2
 	chown(movefilename, fstat.st_uid, fstat.st_gid);
+#endif
 
 	ubuf.actime = fstat.st_atime;
 	ubuf.modtime = fstat.st_mtime;

@@ -826,6 +826,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
     if(dbstat) {
 	dbstat->no = 0;
 	dbstat->stattab = NULL;
+	dbstat->statdname = NULL;
 	dbstat->dir = strdup(dirname);
     } else {
         cli_errmsg("cl_statdbdir(): Null argument passed.\n");
@@ -860,8 +861,16 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 
 		dbstat->no++;
 		dbstat->stattab = (struct stat *) realloc(dbstat->stattab, dbstat->no * sizeof(struct stat));
+#if defined(CL_INTERIX) || defined(CL_OS2)
+		dbstat->statdname = (char **) realloc(dbstat->statdname, dbstat->no * sizeof(char *));
+#endif
+
                 fname = cli_calloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
 		sprintf(fname, "%s/%s", dirname, dent->d_name);
+#if defined(CL_INTERIX) || defined(CL_OS2)
+		dbstat->statdname[dbstat->no - 1] = (char *) calloc(strlen(dent->d_name) + 1, sizeof(char));
+		strcpy(dbstat->statdname[dbstat->no - 1], dent->d_name);
+#endif
 		stat(fname, &dbstat->stattab[dbstat->no - 1]);
 		free(fname);
 	    }
@@ -925,7 +934,11 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 
 		found = 0;
 		for(i = 0; i < dbstat->no; i++)
+#if defined(CL_INTERIX) || defined(CL_OS2)
+		    if(!strcmp(dbstat->statdname[i], dent->d_name)) {
+#else
 		    if(dbstat->stattab[i].st_ino == sb.st_ino) {
+#endif
 			found = 1;
 			if(dbstat->stattab[i].st_mtime != sb.st_mtime) {
 			    closedir(dd);
@@ -949,6 +962,18 @@ int cl_statfree(struct cl_stat *dbstat)
 {
 
     if(dbstat) {
+
+#if defined(CL_INTERIX) || defined(CL_OS2)
+	    int i;
+
+	for(i = 0;i < dbstat->no; i++) {
+	    free(dbstat->statdname[i]);
+	    dbstat->statdname[i] = NULL;
+	}
+	free(dbstat->statdname);
+	dbstat->statdname = NULL;
+#endif
+
 	free(dbstat->stattab);
 	dbstat->stattab = NULL;
 	dbstat->no = 0;

@@ -571,7 +571,7 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
         }
     }
 
-#ifdef C_CYGWIN
+#if defined(C_CYGWIN) || defined(C_OS2)
     if((fd = open(file, O_WRONLY|O_CREAT|O_EXCL|O_BINARY, 0644)) == -1) {
 #else
     if((fd = open(file, O_WRONLY|O_CREAT|O_EXCL, 0644)) == -1) {
