@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.100  2004/06/29 08:27:02  nigelhorne
+ * Up issued
+ *
  * Revision 1.99  2004/06/28 08:30:18  nigelhorne
  * Don't error when creating the quarantine directory if it already exists
  *
@@ -308,9 +311,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.99 2004/06/28 08:30:18 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.100 2004/06/29 08:27:02 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.73d"
+#define	CM_VERSION	"0.80"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -323,6 +326,7 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.99 2004/06/28 08:30:18 nig
 #include "../target.h"
 #include "str.h"
 #include "../libclamav/others.h"
+#include "../libclamav/strrcpy.h"
 #include "clamav.h"
 
 #ifndef	CL_DEBUG
@@ -447,7 +451,6 @@ static	sfsistat	clamfi_close(SMFICTX *ctx);
 static	void		clamfi_cleanup(SMFICTX *ctx);
 static	void		clamfi_free(struct privdata *privdata);
 static	int		clamfi_send(struct privdata *privdata, size_t len, const char *format, ...);
-static	char		*strrcpy(char *dest, const char *source);
 static	int		clamd_recv(int sock, char *buf, size_t len);
 static	off_t		updateSigFile(void);
 static	header_list_t	header_list_new(void);
@@ -2475,6 +2478,7 @@ clamfi_send(struct privdata *privdata, size_t len, const char *format, ...)
  * Like strcpy, but return the END of the destination, allowing a quicker
  * means of adding to the end of a string than strcat
  */
+#if	0
 static char *
 strrcpy(char *dest, const char *source)
 {
@@ -2487,6 +2491,7 @@ strrcpy(char *dest, const char *source)
 		;
 	return(--dest);
 }
+#endif
 
 /*
  * Read from clamav - timeout if necessary
