@@ -522,7 +522,9 @@ void help(void)
     mprintf("    --log-verbose			save additional informations\n");
     mprintf("    --http-proxy=hostname[:port]	use proxy server hostname\n");
     mprintf("    --proxy-user=username:passwd	use username/password for proxy auth\n");
+#ifdef BUILD_CLAMD
     mprintf("    --daemon-notify[=/path/clamav.conf] send RELOAD command to clamd\n");
+#endif
     mprintf("    --on-update-execute=[COMMAND]	execute the COMMAND after successful update\n");
     mprintf("    --on-error-execute=[COMMAND]	execute the COMMAND if errors occured\n");
     mprintf("\n");

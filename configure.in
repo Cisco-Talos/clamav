@@ -320,10 +320,13 @@ AC_SUBST(CLAMD_LIBS)
 AC_SUBST(FRESHCLAM_LIBS)
 AC_SUBST(TH_SAFE)
 
-AM_CONDITIONAL(USE_PTHREAD, test "$have_pthreads" = "yes")
+AM_CONDITIONAL(BUILD_CLAMD, test "$have_pthreads" = "yes")
 AM_CONDITIONAL(HAVE_MILTER, test "$have_milter" = "yes")
 
-
+if test "$have_pthreads" = "yes"
+then
+    AC_DEFINE(BUILD_CLAMD)
+fi
 
 dnl Check for clamav in /etc/passwd
 

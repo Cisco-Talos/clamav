@@ -125,11 +125,11 @@ freshclam_SOURCES = \
     manager.h \
     defaults.h \
     notify.c \
-    notify.h \
-    cfgfile.c
+    notify.h
 
 
-freshclam_LDADD = ../clamscan/getopt.o ../clamscan/others.o
+@BUILD_CLAMD_TRUE@freshclam_LDADD = ../clamscan/getopt.o ../clamscan/others.o ../clamd/cfgfile.o
+@BUILD_CLAMD_FALSE@freshclam_LDADD = ../clamscan/getopt.o ../clamscan/others.o
 
 DEFS = @DEFS@
 INCLUDES = -I../clamscan -I../clamd -I../libclamav
@@ -141,18 +141,20 @@ bin_PROGRAMS = freshclam$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
 
 am_freshclam_OBJECTS = freshclam.$(OBJEXT) options.$(OBJEXT) \
-	manager.$(OBJEXT) notify.$(OBJEXT) cfgfile.$(OBJEXT)
+	manager.$(OBJEXT) notify.$(OBJEXT)
 freshclam_OBJECTS = $(am_freshclam_OBJECTS)
-freshclam_DEPENDENCIES = ../clamscan/getopt.o ../clamscan/others.o
+@BUILD_CLAMD_TRUE@freshclam_DEPENDENCIES = ../clamscan/getopt.o \
+@BUILD_CLAMD_TRUE@	../clamscan/others.o ../clamd/cfgfile.o
+@BUILD_CLAMD_FALSE@freshclam_DEPENDENCIES = ../clamscan/getopt.o \
+@BUILD_CLAMD_FALSE@	../clamscan/others.o
 freshclam_LDFLAGS =
 DEFAULT_INCLUDES =  -I. -I$(srcdir)
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
-@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/cfgfile.Po ./$(DEPDIR)/freshclam.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/manager.Po ./$(DEPDIR)/notify.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/options.Po
+@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/freshclam.Po ./$(DEPDIR)/manager.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/notify.Po ./$(DEPDIR)/options.Po
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
@@ -211,7 +213,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cfgfile.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/freshclam.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/manager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/notify.Po@am__quote@

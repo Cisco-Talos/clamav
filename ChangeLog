@@ -1,3 +1,16 @@
+Fri Oct 17 05:08:22 CEST 2003 (tk)
+----------------------------------
+  * new Spanish documentation on ClamAV + Sendmail integration by
+    Erick Ivaan Lopez Carreon
+  * freshclam: share cfgfile.o with clamd. Makefile conditions allow building
+	       without clamd (if pthread library is not available). The problem
+	       with outdated cfgfile.c in freshclam was reported by Jim C.
+  * clamd: fixed a segmentation fault with TCPAddr. Problem reported by
+	   Stefan Kaltenbrunner and fixed by Damien Curtain.
+  * libclamav: zziplib downgroaded to 0.10.81 with Martin Schitter's hardening
+	       patches
+  * sigtool: major stability fixes
+
 Sun Oct 12 21:14:21 BST 2003 (njh)
 ---------------------------------
   * libclamav: mbox.c now uses NO_STRTOK_R consistently with message.c

@@ -26,10 +26,14 @@ freshclam_SOURCES = \
     manager.h \
     defaults.h \
     notify.c \
-    notify.h \
-    cfgfile.c
+    notify.h
 
+if BUILD_CLAMD
+freshclam_LDADD = ../clamscan/getopt.o ../clamscan/others.o ../clamd/cfgfile.o
+else
 freshclam_LDADD = ../clamscan/getopt.o ../clamscan/others.o
+endif
+
 
 DEFS = @DEFS@
 INCLUDES = -I../clamscan -I../clamd -I../libclamav

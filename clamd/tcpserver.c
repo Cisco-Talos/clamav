@@ -35,16 +35,16 @@ int tcpserver(const struct optstruct *opt, const struct cfgstruct *copt, struct 
 	struct sockaddr_in server;
 	int sockfd, backlog;
 	struct cfgstruct *cpt;
+	struct cfgstruct *taddr;
 	char *estr;
-	const char *taddr;
 
     memset((char *) &server, 0, sizeof(server));
     server.sin_family = AF_INET;
     server.sin_port = htons(cfgopt(copt, "TCPSocket")->numarg);
-    taddr = cfgopt(copt, "TCPAddr")->strarg;
-    if ( taddr != NULL && *taddr )
+
+    if (taddr = cfgopt(copt, "TCPAddr"))
     {
-	server.sin_addr.s_addr = inet_addr( taddr );
+	server.sin_addr.s_addr = inet_addr( taddr->strarg );
     }else
     {
 	server.sin_addr.s_addr = INADDR_ANY;
@@ -64,8 +64,8 @@ int tcpserver(const struct optstruct *opt, const struct cfgstruct *copt, struct 
 	logg("!bind() error: %s\n", estr);
 	exit(1);
     } else {
-	if ( taddr != NULL && *taddr )
-	    logg("Bound to address %s on port %d\n", taddr, cfgopt(copt, "TCPSocket")->numarg);
+	if ( taddr != NULL && *taddr->strarg )
+	    logg("Bound to address %s on port %d\n", taddr->strarg, cfgopt(copt, "TCPSocket")->numarg);
 	else
 	    logg("Bound to port %d\n", cfgopt(copt, "TCPSocket")->numarg);
     }

@@ -16,7 +16,7 @@
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 # FIXME: check automake for 'and' (&&)
-if USE_PTHREAD
+if BUILD_CLAMD
 if HAVE_MILTER
 
 sbin_PROGRAMS = clamav-milter

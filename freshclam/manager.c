@@ -291,6 +291,7 @@ int downloadmanager(const struct optstruct *opt, const char *hostname)
     mprintf("Database updated (containing in total %d signatures).\n", vir);
     logg("Database updated (containing in total %d signatures).\n", vir);
 
+#ifdef BUILD_CLAMD
     if(optl(opt, "daemon-notify")) {
 	    const char *clamav_conf = getargl(opt, "daemon-notify");
 	if(!clamav_conf)
@@ -298,6 +299,7 @@ int downloadmanager(const struct optstruct *opt, const char *hostname)
 
 	notify(clamav_conf);
     }
+#endif
 
     if(optl(opt, "on-update-execute"))
 	system(getargl(opt, "on-update-execute"));

@@ -15,5 +15,5 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-SUBDIRS = libclamav clamscan freshclam database docs sigtool clamd clamdscan clamav-milter etc
+SUBDIRS = libclamav clamscan clamd clamdscan freshclam sigtool database docs etc clamav-milter
 EXTRA_DIST = FAQ contrib test examples BUGS
