@@ -41,7 +41,7 @@ void freshclam(struct optstruct *opt)
 #ifndef C_CYGWIN
 	struct passwd *user;
 	char *newdir;
-    char *unpuser;
+	char *unpuser;
 
     if(optc(opt, 'u'))
         unpuser = getargc(opt, 'u');

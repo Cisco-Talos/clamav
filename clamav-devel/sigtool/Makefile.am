@@ -26,4 +26,4 @@ sigtool_SOURCES = \
 sigtool_LDADD = ../clamscan/getopt.o ../clamscan/others.o
 
 DEFS = @DEFS@
-LIBS = -L../libclamav -lclamav
+LIBS = -L../libclamav -lclamav @FRESHCLAM_LIBS@

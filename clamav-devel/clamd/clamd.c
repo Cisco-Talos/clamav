@@ -49,7 +49,7 @@ void clamd(struct optstruct *opt)
 	time_t currtime;
 	struct cl_node *root = NULL;
 	const char *dbdir, *cfgfile;
-	int ret, virnum, tcpsock;
+	int ret, virnum = 0, tcpsock;
 
     /* initialize some important variables */
 
