@@ -21,6 +21,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.20  2005/02/13 22:25:41  kojm
+ * do not try to continue if there's no space on device
+ *
  * Revision 1.19  2004/12/16 15:34:57  nigelhorne
  * Tidy
  *
@@ -79,7 +82,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.19 2004/12/16 15:34:57 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.20 2005/02/13 22:25:41 kojm Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -277,8 +280,10 @@ cli_untar(const char *dir, int desc)
 			const int nwritten = fwrite(block, 1, nbytes, outfile);
 
 			if(nwritten != nbytes) {
-				cli_errmsg("cli_untar: only wrote %d bytes to file %s\n",
+				cli_errmsg("cli_untar: only wrote %d bytes to file %s (out of disk space?)\n",
 					nwritten, fullname);
+				fclose(outfile);
+				return CL_EIO;
 			}
 			size -= nbytes;
 		}
