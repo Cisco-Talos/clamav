@@ -20,8 +20,10 @@
 # Usage "clamavmon [machines...]" where machines is an optional list of machine
 # running clamd. These will turn from green to red if clamd dies. Clicking on
 # the machine name gives the version of clamd running there.
-# FIXME: clicking should give the data base information and date of last
+
+# TODO: clicking should give the data base information and date of last
 #	freshclam
+# TODO:	Resizing the program should resize the text area
 
 eval 'exec /usr/bin/perl -w -S $0 ${1+"$@"}' if 0;
 
@@ -70,23 +72,27 @@ my $sock = IO::Socket::INET->new(
 	Proto => 'udp',
 	Type => SOCK_DGRAM) or die "$0: socket: $!\n";
 
+$sock->shutdown(SHUT_WR);
 $mw->fileevent($sock, 'readable', [ \&packet_ready, $sock ]);
 
 MainLoop;
 
 sub packet_ready {
+	# print "packet_ready\n";
 	my $sock = shift;
 
+	# my $mess = <$sock>;
 	my $mess;
 	$sock->recv($mess, 128);
 
 	my $peeraddr = $sock->peerhost;
 
-	# print "From " . $peeraddr . " $mess\n";
+	# print "From $peeraddr $mess\n";
 	$text->insert('end', "From $peeraddr: $mess\n");
 }
 
 sub pinger {
+	# print "pinger\n";
 	foreach(@machines) {
 		my $machine = $_->cget('-text');
 		my $sock = IO::Socket::INET->new(
@@ -96,32 +102,50 @@ sub pinger {
 			Timeout => 5,
 			Type => SOCK_STREAM);
 
-		my $mess;
-
-		my $background = $_->cget('-background');
-
 		if($sock) {
+			$mw->fileevent($sock, 'readable', [ \&pinger_ready, $_, $sock ]);
 			print $sock "PING\n";
 
-			$mess = <$sock>;
+			$sock->shutdown(SHUT_WR);
 
-			close $sock;
-		}
+			$mw->update;
+		} else {
+			my $background = $_->cget('-background');
 
-		if($mess && ($mess ne "PONG\n")) {
-			# print "$machine is down\n";
 			if($background ne 'red') {
 				$_->configure(-background => 'red');
-			}
-		} else {
-			# print "$machine is up\n";
-			if($background ne 'green') {
-				$_->configure(-background => 'green');
 			}
 		}
 	}
 }
 
+sub pinger_ready {
+	# print "pinger_ready\n";
+	my $machine = shift;
+	my $sock = shift;
+
+	# my $mess = <$sock>;
+	my $mess;
+	$sock->recv($mess, 6);
+
+	my $peeraddr = $sock->peerhost;
+
+	close $sock;
+
+	my $background = $machine->cget('-background');
+
+	if($mess && ($mess ne "PONG\n")) {
+		# print "$machine is down\n";
+		if($background ne 'red') {
+			$machine->configure(-background => 'red');
+		}
+	} else {
+		# print "$machine is up\n";
+		if($background ne 'green') {
+			$machine->configure(-background => 'green');
+		}
+	}
+}
 
 # TODO: this should be modeless
 sub about {
@@ -159,8 +183,8 @@ sub drill {
 	print $mess;
 
 	my $state = $mw->DialogBox(
-		-title=>$machine,
-		-buttons=>["OK"]
+		-title => $machine,
+		-buttons => ["OK"]
 	);
 
 	$state->add('Label',
