@@ -111,7 +111,7 @@ else
 
     if test -n "$vuln"; then
 	if test "$zlib_check" = "yes"; then
-	    AC_MSG_ERROR(The installed zlib version may contain a security bug. Please upgrade to 1.2.2 or later: http://www.zlib.net. You can omit this check with --disable-zlib-vcheck but DO NOT REPORT any stablility issues then!)
+	    AC_MSG_ERROR(The installed zlib version may contain a security bug. Please upgrade to 1.2.2 or later: http://www.zlib.net. You can omit this check with --disable-zlib-vcheck but DO NOT REPORT any stability issues then!)
 	else
 	    AC_MSG_WARN([****** This ClamAV installation may be linked against])
 	    AC_MSG_WARN([****** a broken zlib version. Please DO NOT report any])
@@ -474,6 +474,13 @@ aix*)
 	AC_DEFINE(_REENTRANT,1,[thread safe])
     fi
     AC_DEFINE(C_AIX,1,[os is aix])
+    ;;
+nto-qnx*)
+     if test "$have_pthreads" = "yes"; then
+       AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
+       AC_DEFINE(_REENTRANT,1,[thread safe])
+     fi
+    AC_DEFINE(C_QNX6,1,[os is QNX 6.x.x])
     ;;
 irix*)
     if test "$have_pthreads" = "yes"; then
