@@ -1,3 +1,9 @@
+Wed Jan 21 09:38:01 CET 2004 (tk)
+---------------------------------
+  * sigtool: --list-sigs: list virus signature names from all databases.
+	     Optionally it can list signatures from selected database
+	     (--list-sigs=/path/to/database)
+
 Tue Jan 20 11:34:38 CET 2004 (tk)
 ---------------------------------
   * clamd: new commands: SESSION, END: SESSION starts a clamd session and
