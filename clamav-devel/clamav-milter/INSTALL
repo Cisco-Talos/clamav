@@ -470,6 +470,13 @@ Changes
 			reported by "Sergey Y. Afonin" <asy@kraft-s.ru>
 0.75k	13/8/04	Single thread through tcp_wrappers, reported by
 			David Champion <dgc@uchicago.edu>
+0.75l	24/8/04	Give hint about what do to if the running as root warning
+			appears
+		Optimise the sending of the To and From headers to clamd
+		Give better SMTP status message when asking for retransmit
+			when --dont-wait is set
+		Quarantine files, now handle operating system filename
+			restrictions
 
 BUG REPORTS
 
