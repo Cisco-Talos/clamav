@@ -152,6 +152,8 @@ Changes
 		Added setpgrp()
 0.65b	22/11/03 Ensure milter is not run as root if requested
 		Added quarantine support
+0.65c	24/11/03 Support AllowSupplementaryGroups
+		Fix warning about root usage
 
 BUG REPORTS
 
