@@ -1,3 +1,7 @@
+Wed Oct 13 22:57:21 CEST 2004 (tk)
+----------------------------------
+  * libclamav/matcher-bm.c: bound memory usage
+
 Wed Oct 13 22:20:17 CEST 2004 (tk)
 ----------------------------------
   * libclamav/str.c: include cli_strtokbuf() from Nigel
