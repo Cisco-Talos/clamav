@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.182  2005/02/11 22:15:24  nigelhorne
+ * Added whitelist-file
+ *
  * Revision 1.181  2005/02/08 12:05:28  nigelhorne
  * Tidy some code and debug statements
  *
@@ -554,9 +557,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.181 2005/02/08 12:05:28 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.182 2005/02/11 22:15:24 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.82c"
+#define	CM_VERSION	"0.82d"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -564,11 +567,12 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.181 2005/02/08 12:05:28 ni
 
 #include "defaults.h"
 #include "cfgparser.h"
-#include "../target.h"
+#include "target.h"
 #include "str.h"
 #include "../libclamav/others.h"
-#include "../libclamav/strrcpy.h"
+#include "strrcpy.h"
 #include "clamav.h"
+#include "../libclamav/table.h"
 
 #ifndef	CL_DEBUG
 #define	NDEBUG
@@ -940,19 +944,11 @@ static	const	char	*postmaster = "postmaster";
 static	const	char	*from = "MAILER-DAEMON";
 static	int	quitting;
 
-/*
- * NULL terminated whitelist of target ("to") addresses that we do NOT scan
- * TODO: read in from a file
- * TODO: add white list of source e-mail addresses that we do NOT scan
- * TODO: items in the list should be regular expressions
- */
-static	const	char	*ignoredEmailAddresses[] = {
-	/*"Mailer-Daemon@bandsman.co.uk",
-	"postmaster@bandsman.co.uk",
-	"<Mailer-Daemon@bandsman.co.uk>",
-	"<postmaster@bandsman.co.uk>",*/
-	NULL
-};
+static	const	char	*whitelistFile;	/*
+					 * file containing destination email
+					 * addresses that we don't scan
+					 */
+static	const	char	*sendmailCF;	/* location of sendmail.cf to verify */
 
 #ifdef	CL_DEBUG
 #if __GLIBC__ == 2 && __GLIBC_MINOR__ >= 1
@@ -1005,10 +1001,12 @@ help(void)
 	puts(_("\t--quarantine=USER\t-Q EMAIL\tQuanrantine e-mail account."));
 	puts(_("\t--quarantine-dir=DIR\t-U DIR\tDirectory to store infected emails."));
 	puts(_("\t--server=SERVER\t\t-s SERVER\tHostname/IP address of server(s) running clamd (when using TCPsocket)."));
+	puts(_("\t--sendmail-cf=FILE\t\tLocation of the sendmail.cf file to verify"));
 	puts(_("\t--sign\t\t\t-S\tAdd a hard-coded signature to each scanned message."));
 	puts(_("\t--signature-file=FILE\t-F FILE\tLocation of signature file."));
 	puts(_("\t--template-file=FILE\t-t FILE\tLocation of e-mail template file."));
 	puts(_("\t--timeout=SECS\t\t-T SECS\tTimeout waiting to childen to die."));
+	puts(_("\t--whitelist-file=FILE\t-W FILE\tLocation of the file of whitelisted addresses"));
 	puts(_("\t--version\t\t-V\tPrint the version number of this software."));
 #ifdef	CL_DEBUG
 	puts(_("\t--debug-level=n\t\t-x n\tSets the debug level to 'n'."));
@@ -1067,9 +1065,9 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "a:AbB:c:CdDefF:lLm:nNop:PqQ:hHs:St:T:U:Vx:";
+		const char *args = "a:AbB:c:CdDefF:lLm:nNop:PqQ:hHs:St:T:U:VwW:x:0:";
 #else
-		const char *args = "a:AbB:c:CdDefF:lLm:nNop:PqQ:hHs:St:T:U:V";
+		const char *args = "a:AbB:c:CdDefF:lLm:nNop:PqQ:hHs:St:T:U:VwW:0:";
 #endif
 
 		static struct option long_options[] = {
@@ -1164,7 +1162,13 @@ main(int argc, char **argv)
 				"timeout", 1, NULL, 'T'
 			},
 			{
+				"whitelist-file", 1, NULL, 'W'
+			},
+			{
 				"version", 0, NULL, 'V'
+			},
+			{
+				"sendmail-cf", 1, NULL, '0'
 			},
 #ifdef	CL_DEBUG
 			{
@@ -1293,6 +1297,12 @@ main(int argc, char **argv)
 				return EX_OK;
 			case 'w':
 				dont_wait++;
+				break;
+			case 'W':
+				whitelistFile = optarg;
+				break;
+			case '0':
+				sendmailCF = optarg;
 				break;
 #ifdef	CL_DEBUG
 			case 'x':
@@ -1765,7 +1775,7 @@ main(int argc, char **argv)
 	strcpy(clamav_version, version);
 #endif
 
-	if(((quarantine_dir == NULL) && localSocket) || (!external)) {
+	if(((quarantine_dir == NULL) && localSocket) || !external) {
 		/* set the temporary dir */
 		if((cpt = cfgopt(copt, "TemporaryDirectory"))) {
 			tmpdir = cpt->strarg;
@@ -1780,6 +1790,8 @@ main(int argc, char **argv)
 #endif
 
 		tmpdir = cli_gentemp(NULL);
+
+		cli_dbgmsg("Making %s\n", tmpdir);
 
 		if(mkdir(tmpdir, 0700)) {
 			perror(tmpdir);
@@ -1826,7 +1838,7 @@ main(int argc, char **argv)
 		} else
 			logFile = "/dev/console";
 
-		if((open(logFile, O_WRONLY) == 1) ||
+		if((open(logFile, O_WRONLY|O_APPEND) == 1) ||
 		   (open("/dev/null", O_WRONLY) == 1))
 			dup(1);
 #endif
@@ -4375,7 +4387,6 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 
 	free(buf);
 
-
 	return 0;
 }
 
@@ -4466,18 +4477,14 @@ move(const char *oldfile, const char *newfile)
 	struct stat statb;
 	int fin, fout;
 	off_t offset;
+#else
+	FILE *fin, *fout;
+	int c;
+#endif
 
 	ret = rename(oldfile, newfile);
 	if(ret >= 0)
 		return 0;
-#else
-	FILE *fin, *fout;
-	int c;
-
-	ret = link(oldfile, newfile);
-	if(ret >= 0)
-		return unlink(oldfile);
-#endif
 
 	if((ret < 0) && (errno != EXDEV)) {
 		perror(newfile);
@@ -4691,6 +4698,8 @@ clamdIsDown(void)
  * It is woken up when the milter goes idle, when there are no free servers
  * available and once every readTimeout-1 seconds
  *
+ * TODO: reload the whiteList file if it's been changed
+ *
  * TODO: localSocket support
  */
 static void *
@@ -4836,6 +4845,8 @@ watchdog(void *a)
 #else	/*!SESSION*/
 /*
  * Reload the database from time to time, when using the internal scanner
+ *
+ * TODO: reload the whiteList file if it's been changed
  */
 static void *
 watchdog(void *a)
@@ -5022,13 +5033,15 @@ quit(void)
 				close(sock);
 				pthread_mutex_lock(&sstatus_mutex);
 			}
+			session++;
 		}
 		pthread_mutex_unlock(&sstatus_mutex);
 #endif
 	}
 
 	if(tmpdir && !cli_leavetemps_flag)
-		rmdir(tmpdir);
+		if(rmdir(tmpdir) < 0)
+			perror(tmpdir);
 
 	broadcast(_("Stopping clamav-milter"));
 }
@@ -5215,10 +5228,14 @@ verifyIncomingSocketName(const char *sockName)
 		 */
 		return 1;
 
-	fd = open("/etc/mail/sendmail.cf", O_RDONLY);
+	if(sendmailCF)
+		fd = open(sendmailCF, O_RDONLY);
+	else {
+		fd = open("/etc/mail/sendmail.cf", O_RDONLY);
+		if(fd < 0)
+			fd = open("/etc/sendmail.cf", O_RDONLY);
+	}
 
-	if(fd < 0)
-		fd = open("/etc/sendmail.cf", O_RDONLY);
 	if(fd < 0)
 		return 1;
 
@@ -5254,18 +5271,46 @@ verifyIncomingSocketName(const char *sockName)
 
 /*
  * If the given email address is whitelisted don't scan their emails
+ *
+ * TODO: Allow regular expressions in the emails
+ * TODO: Syntax check the contents of the files
  */
 static int
 isWhitelisted(const char *emailaddress)
 {
-	const char **a;
+	static table_t *whitelist;
 
-	for(a = ignoredEmailAddresses; *a; a++)
-		if(strcasecmp(*a, emailaddress) == 0)
-			/*
-			 * This recipient is on the whitelist
-			 */
-			return 1;
+	if((whitelist == NULL) && whitelistFile) {
+		FILE *fin;
+		char buf[BUFSIZ + 1];
+
+		fin = fopen(whitelistFile, "r");
+
+		if(fin == NULL) {
+			perror(whitelistFile);
+			return 0;
+		}
+		whitelist = tableCreate();
+
+		while(fgets(buf, sizeof(buf), fin) != NULL) {
+			/* comment line? */
+			switch(buf[0]) {
+				case '#':
+				case '/':
+				case ':':
+					continue;
+			}
+			cli_chomp(buf);
+
+			(void)tableInsert(whitelist, buf, 1);
+		}
+		fclose(fin);
+	}
+	if(whitelist && (tableFind(whitelist, emailaddress) == 1))
+		/*
+		 * This recipient is on the whitelist
+		 */
+		return 1;
 
 	/*
 	 * Don't scan messages to the quarantine email address

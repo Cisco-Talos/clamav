@@ -685,6 +685,10 @@ Changes
 			NUL terminate the string read from clamd
 0.82b	8/2/05:		Don't use clamd's SESSION command
 0.82c	8/2/05:		Tidy some code and debug statements
+0.82d	11/2/05:	Added --whitelist-file=file
+			Added --sendmail-cf=file
+			Debug around mkdir/rmdir of tmpdir
+			SESSION mode: not all sessions were closed when quitting
 
 INTERNATIONALISATION
 
