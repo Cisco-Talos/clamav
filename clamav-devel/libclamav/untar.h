@@ -17,7 +17,11 @@
  *
  * Change History:
  * $Log: untar.h,v $
+ * Revision 1.2  2004/09/05 18:58:22  nigelhorne
+ * Extract files completed
+ *
  * Revision 1.1  2004/09/05 15:28:10  nigelhorne
  * First draft
  *
  */
+int	cli_untar(const char *dir, int desc);
