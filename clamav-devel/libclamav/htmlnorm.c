@@ -252,7 +252,13 @@ static void html_output_str(file_buff_t *fbuff, unsigned char *str, int len)
 		if ((fbuff->length + len) >= HTML_FILE_BUFF_LEN) {
 			html_output_flush(fbuff);
 		}
-		memcpy(fbuff->buffer + fbuff->length, str, len);
+		if (len >= HTML_FILE_BUFF_LEN) {
+			html_output_flush(fbuff);
+			cli_writen(fbuff->fd, str, len);
+		} else {
+			memcpy(fbuff->buffer + fbuff->length, str, len);
+			fbuff->length += len;
+		}
 	}
 }
 
@@ -769,11 +775,11 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					}
 				} else if (strcmp(tag, "script") == 0) {
 					arg_value = html_tag_arg_value(&tag_args, "language");
-					if (arg_value && (strcmp(arg_value, "jscript.encode") == 0)) {
+					if (arg_value && (strcasecmp(arg_value, "jscript.encode") == 0)) {
 						html_tag_arg_set(&tag_args, "language", "javascript");
 						state = HTML_SKIP_WS;
 						next_state = HTML_JSDECODE;
-					} else if (arg_value && (strcmp(arg_value, "vbscript.encode") == 0)) {
+					} else if (arg_value && (strcasecmp(arg_value, "vbscript.encode") == 0)) {
 						html_tag_arg_set(&tag_args, "language", "vbscript");
 						state = HTML_SKIP_WS;
 						next_state = HTML_JSDECODE;
