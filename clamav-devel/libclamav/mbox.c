@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.153  2004/10/14 21:18:49  nigelhorne
+ * Harden the test for RFC2047 encoded headers
+ *
  * Revision 1.152  2004/10/14 17:45:13  nigelhorne
  * RFC2047 on long lines produced by continuation headers
  *
@@ -444,7 +447,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.152 2004/10/14 17:45:13 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.153 2004/10/14 21:18:49 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2540,7 +2543,7 @@ rfc2047(const char *in)
 	char *out, *pout;
 	size_t len;
 
-	if(strstr(in, "=?") == NULL)
+	if((strstr(in, "=?") == NULL) || (strstr(in, "?=") == NULL))
 		return strdup(in);
 
 	cli_dbgmsg("rfc2047 '%s'\n", in);
