@@ -178,7 +178,8 @@ int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virnam
 		if(found && p->length == j) {
 
 		    if(p->target || p->offset) {
-			    int off = offset + i - BM_MIN_LENGTH + BM_BLOCK_SIZE;
+			off = offset + i - BM_MIN_LENGTH + BM_BLOCK_SIZE;
+
 			if(fd == -1 || !cli_validatesig(p->target, ftype, p->offset, off, fd, p->virname)) {
 			    p = p->next;
 			    continue;
