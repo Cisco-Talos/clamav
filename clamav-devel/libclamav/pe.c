@@ -172,7 +172,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	struct pe_image_section_hdr *section_hdr;
 	struct stat sb;
 	char sname[9], buff[256], *tempfile;
-	int i, found, upx_success = 0, min = 0, max = 0;
+	int i, found, upx_success = 0, min = 0, max = 0, ret;
 	int (*upxfn)(char *, int , char *, int) = NULL;
 	char *src, *dest;
 	int ssize, dsize, ndesc;
@@ -885,15 +885,11 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		free(tempfile);
 	    }
 
-	    if(cl_scanbuff(dest, dsize, virname, root) == CL_VIRUS) {
-		free(section_hdr);
-		free(src);
-		free(dest);
-		return CL_VIRUS;
-	    }
-
+	    ret = cl_scanbuff(dest, dsize, virname, root);
+	    free(section_hdr);
 	    free(src);
 	    free(dest);
+	    return ret;
 	}
     }
 
@@ -936,8 +932,15 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    }
 
 	    for(i = 0 ; i < nsections; i++) {
-		lseek(desc, cli_rawaddr(EC32(section_hdr[i].VirtualAddress), section_hdr, nsections), SEEK_SET);
-		read(desc, dest + EC32(section_hdr[i].VirtualAddress) - min, EC32(section_hdr[i].SizeOfRawData));
+		if(section_hdr[i].SizeOfRawData) {
+			uint32_t offset = cli_rawaddr(EC32(section_hdr[i].VirtualAddress), section_hdr, nsections);
+
+		    if(offset == -1 || lseek(desc, offset, SEEK_SET) == -1 || read(desc, dest + EC32(section_hdr[i].VirtualAddress) - min, EC32(section_hdr[i].SizeOfRawData)) != EC32(section_hdr[i].SizeOfRawData)) {
+			free(section_hdr);
+			free(dest);
+			return CL_EIO;
+		    }
+		}
 	    }
 
 	    tempfile = cli_gentemp(NULL);
@@ -949,8 +952,9 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		return CL_EIO;
 	    }
 
+	    /* aCaB: Fixed to allow petite v2.1 unpacking (last section is a ghost) */
 	    switch(petite_inflate2x_1to9(dest, min, max - min, section_hdr,
-		    nsections, EC32(optional_hdr.ImageBase),
+		    nsections - (found == 1 ? 1 : 0), EC32(optional_hdr.ImageBase),
 		    EC32(optional_hdr.AddressOfEntryPoint), ndesc,
 		    found, EC32(optional_hdr.DataDirectory[2].VirtualAddress),
 		    EC32(optional_hdr.DataDirectory[2].Size))) {
