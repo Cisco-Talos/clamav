@@ -1,0 +1,196 @@
+/* clamav-config.h.in.  Generated from configure.in by autoheader.  */
+
+/* "build clamd" */
+#undef BUILD_CLAMD
+
+/* name of the clamav group */
+#undef CLAMAVGROUP
+
+/* name of the clamav user */
+#undef CLAMAVUSER
+
+/* use syslog */
+#undef CLAMD_USE_SYSLOG
+
+/* enable clamuko */
+#undef CLAMUKO
+
+/* enable debugging */
+#undef CL_DEBUG
+
+/* thread safe */
+#undef CL_THREAD_SAFE
+
+/* where to look for the config file */
+#undef CONFDIR
+
+/* os is aix */
+#undef C_AIX
+
+/* os is beos */
+#undef C_BEOS
+
+/* Increase thread stack size. */
+#undef C_BIGSTACK
+
+/* os is bsd flavor */
+#undef C_BSD
+
+/* os is cygwin */
+#undef C_CYGWIN
+
+/* os is darwin */
+#undef C_DARWIN
+
+/* os is hpux */
+#undef C_HPUX
+
+/* os is irix */
+#undef C_IRIX
+
+/* target is linux */
+#undef C_LINUX
+
+/* os is solaris */
+#undef C_SOLARIS
+
+/* use /dev/urandom */
+#undef C_URANDOM
+
+/* Path to virus database directory. */
+#undef DATADIR
+
+/* Name of the main database */
+#undef DB1NAME
+
+/* Name of the daily database */
+#undef DB2NAME
+
+/* file i/o buffer size */
+#undef FILEBUFF
+
+/* "attrib packed" */
+#undef HAVE_ATTRIB_PACKED
+
+/* have bzip2 */
+#undef HAVE_BZLIB_H
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
+
+/* have gmp installed */
+#undef HAVE_GMP
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the <malloc.h> header file. */
+#undef HAVE_MALLOC_H
+
+/* Define to 1 if you have the `memcpy' function. */
+#undef HAVE_MEMCPY
+
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
+/* Define to 1 if you have the <ndir.h> header file. */
+#undef HAVE_NDIR_H
+
+/* "pragma pack" */
+#undef HAVE_PRAGMA_PACK
+
+/* Define to 1 if you have the `setsid' function. */
+#undef HAVE_SETSID
+
+/* Define to 1 if you have the `snprintf' function. */
+#undef HAVE_SNPRINTF
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if you have the <sys/inttypes.h> header file. */
+#undef HAVE_SYS_INTTYPES_H
+
+/* Define to 1 if you have the <sys/int_types.h> header file. */
+#undef HAVE_SYS_INT_TYPES_H
+
+/* Define to 1 if you have the <sys/mman.h> header file. */
+#undef HAVE_SYS_MMAN_H
+
+/* Define to 1 if you have the <sys/param.h> header file. */
+#undef HAVE_SYS_PARAM_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* zlib installed */
+#undef HAVE_ZLIB_H
+
+/* bzip funtions do not have bz2 prefix */
+#undef NOBZ2PREFIX
+
+/* Name of package */
+#undef PACKAGE
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* scan buffer size */
+#undef SCANBUFF
+
+/* Define to 1 if the `setpgrp' function takes no argument. */
+#undef SETPGRP_VOID
+
+/* The number of bytes in type int */
+#undef SIZEOF_INT
+
+/* The number of bytes in type long */
+#undef SIZEOF_LONG
+
+/* The number of bytes in type short */
+#undef SIZEOF_SHORT
+
+/* Define to 1 if you have the ANSI C header files. */
+#undef STDC_HEADERS
+
+/* Version number of package */
+#undef VERSION
+
+/* endianess */
+#undef WORDS_BIGENDIAN
+
+/* thread safe */
+#undef _REENTRANT
+
+/* Define to empty if `const' does not conform to ANSI C. */
+#undef const
+
+/* Define to `long' if <sys/types.h> does not define. */
+#undef off_t
