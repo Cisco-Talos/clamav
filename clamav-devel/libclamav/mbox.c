@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.214  2005/02/01 14:46:06  nigelhorne
+ * Decode encapsulated bounce messages that have been base64 encoded (needlessly :-) )
+ *
  * Revision 1.213  2005/01/31 11:02:43  nigelhorne
  * Handle blank lines in multipart headers
  *
@@ -627,7 +630,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.213 2005/01/31 11:02:43 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.214 2005/02/01 14:46:06 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2501,8 +2504,11 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						break;
 					case MESSAGE:
 						/* Content-Type: message/rfc822 */
-						cli_dbgmsg("Found message inside multipart\n");
-						if(encodingLine(aMessage) == NULL) {
+						cli_dbgmsg("Found message inside multipart (encoding type %d)\n",
+							messageGetEncoding(aMessage));
+#if	0
+						if(messageGetEncoding(aMessage) == NOMIME) {
+							cli_dbgmsg("No encoding line found in the multipart/message\n");
 							assert(aMessage == messages[i]);
 							messageDestroy(messages[i]);
 							messages[i] = NULL;
@@ -2510,6 +2516,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						}
 						messageAddStrAtTop(aMessage,
 							"Received: by clamd (message/rfc822)");
+#endif
 #ifdef	SAVE_TO_DISC
 						/*
 						 * Save this embedded message
