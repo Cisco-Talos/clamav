@@ -1,5 +1,5 @@
 dnl
-dnl   Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+dnl   Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
 dnl
 dnl   This program is free software; you can redistribute it and/or modify
 dnl   it under the terms of the GNU General Public License as published by
@@ -208,6 +208,35 @@ then
 	AC_MSG_RESULT(/dev/(u)random not detected - using weak software rand())
     fi
 fi
+
+# tcpwrappers support
+# rules from http://ma.ph-freiburg.de/tng/tng-technical/2002-01/msg00094.html
+AC_ARG_WITH(tcpwrappers,
+[  --with-tcpwrappers      Support hosts.allow / hosts.deny (default=auto)],
+[ case "$withval" in
+  yes|no) tcpw="$withval" ;;
+  *)      AC_MSG_ERROR([--with-tcpwrappers does not take an argument]) ;;
+  esac],
+[ tcpw=auto ])
+
+if test x"$tcpw" != xno; then
+  err=no
+  AC_CHECK_HEADER(tcpd.h,,err=yes)
+  AC_CHECK_LIB(wrap,hosts_ctl,true,err=yes)
+  if test x"$err" = xyes; then
+    if test x"$tcpw" = xyes; then
+      AC_MSG_ERROR([tcpwrappers not available])
+    fi
+  else
+    AC_DEFINE(WITH_TCPWRAP,1,[tcpwrappers support])
+    LIBS="$LIBS -lwrap"
+  fi
+fi
+
+# check for in_port_t definition
+AC_TRY_RUN([#include <netinet/in.h>
+int main(int argc, char **argv) { in_port_t pt; pt = 0; return pt; }],
+AC_DEFINE(HAVE_IN_PORT_T,1,[in_port_t is defined]), AC_MSG_RESULT(in_port_t is not defined))
 
 dnl CLAMSCAN_LIBS=""
 dnl FRESHCLAM_LIBS=""
@@ -438,7 +467,7 @@ AC_MSG_RESULT($have_attrib_packed)
 if test "$have_attrib_packed" = no; then
 	AC_MSG_CHECKING(for structure packing via pragma)
 	AC_CACHE_VAL(have_pragma_pack,[
-		AC_TRY_RUN([int main(void) {
+		AC_TRY_RUN([int main(int argc, char **argv) {
 #pragma pack(1)			/* has to be in column 1 ! */
 			struct { char c; long l; } s;
 			return sizeof(s)==sizeof(s.c)+sizeof(s.l) ? 0:1; } ],
