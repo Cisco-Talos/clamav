@@ -1,3 +1,8 @@
+Wed Oct  6 20:48:17 CEST 2004 (tk)
+----------------------------------
+  * freshclam/manager.c: fix download problems with some proxy servers
+			 (patch by Alexander Marx <mad-ml*madness.at>)
+
 Wed Oct  6 18:25:46 CEST 2004 (tk)
 ----------------------------------
   * libclamav/pe.c: do not report I/O error for small files with empty

@@ -599,24 +599,21 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
     free(remotename);
     free(authorization);
 
-    if ((bread = recv(socketfd, buffer, FILEBUFF, 0)) == -1) {
-      mprintf("@Error while reading database from %s\n", hostname);
-      close(fd);
-      unlink(file);
-      return 52;
-    }
-
-    if ((strstr(buffer, "HTTP/1.1 404")) != NULL) { 
-      mprintf("@%s not found on remote server\n", dbfile);
-      close(fd);
-      unlink(file);
-      return 58;
-    }
+    /* read all the http headers */
 
     ch = buffer;
     i = 0;
     while (1) {
-      if (*ch == '\n' && *(ch - 1) == '\r' && *(ch - 2) == '\n' && *(ch - 3) == '\r') {
+      /* recv one byte at a time, until we reach \r\n\r\n */
+
+      if(recv(socketfd, buffer + i, 1, 0) == -1) {
+        mprintf("@Error while reading database from %s\n", hostname);
+        close(fd);
+        unlink(file);
+        return 52;
+      }
+
+      if (i>2 && *ch == '\n' && *(ch - 1) == '\r' && *(ch - 2) == '\n' && *(ch - 3) == '\r') {
 	ch++;
 	i++;
 	break;
@@ -625,7 +622,17 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
       i++;
     }
 
-    write(fd, ch, bread - i);
+    /* check whether the resource actually existed or not */
+
+    if ((strstr(buffer, "HTTP/1.1 404")) != NULL) { 
+      mprintf("@%s not found on remote server\n", dbfile);
+      close(fd);
+      unlink(file);
+      return 58;
+    }
+
+    /* receive body and write it to disk */
+
     while((bread = read(socketfd, buffer, FILEBUFF))) {
 	write(fd, buffer, bread);
 	mprintf("Downloading %s [%c]\r", dbfile, rotation[rot]);
