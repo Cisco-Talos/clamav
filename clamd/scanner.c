@@ -29,10 +29,10 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <dirent.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <errno.h>
+#include <arpa/inet.h>
+#include <netdb.h>
 #include <clamav.h>
 
 #include "cfgparser.h"
@@ -198,8 +198,9 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	long int size = 0, maxsize = 0;
 	short bound = 0;
 	const char *virname;
-	char buff[32768];
+	char buff[FILEBUFF];
 	struct sockaddr_in server;
+	struct hostent *he;
 	struct cfgstruct *cpt;
 	FILE *tmp = NULL;
 
@@ -210,7 +211,16 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	memset((char *) &server, 0, sizeof(server));
 	server.sin_family = AF_INET;
 	server.sin_port = htons(port);
-	server.sin_addr.s_addr = INADDR_ANY;
+
+	if((cpt = cfgopt(copt, "TCPAddr"))) {
+	    if ((he = gethostbyname(cpt->strarg)) == 0) {
+		logg("!gethostbyname(%s) error: %s\n", cpt->strarg);
+		mdprintf(odesc, "gethostbyname(%s) ERROR\n", cpt->strarg);
+		return -1;
+	    }
+	    server.sin_addr = *(struct in_addr *) he->h_addr_list[0];
+	} else
+	    server.sin_addr.s_addr = INADDR_ANY;
 
 	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	    continue;
@@ -232,8 +242,8 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
     }
 
     if(!bound && !portscan) {
-	mdprintf(odesc, "ERROR\n");
 	logg("!ScanStream: Can't find any free port.\n");
+	mdprintf(odesc, "Can't find any free port ERROR\n");
 	return -1;
     } else {
 	listen(sockfd, 1);
@@ -243,11 +253,11 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
     retval = poll_fd(sockfd, timeout);
     switch (retval) {
     case 0: /* timeout */
-	mdprintf(sockfd, "ERROR\n");
+	mdprintf(sockfd, "Accept timeout ERROR\n");
 	logg("!ScanStream: accept timeout.\n");
 	return -1;
     case -1:
-	mdprintf(sockfd, "ERROR\n");
+	mdprintf(sockfd, "accept poll ERROR\n");
 	logg("!ScanStream: accept poll failed.\n");
 	return -1;
     }
