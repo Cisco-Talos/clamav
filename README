@@ -42,8 +42,13 @@ here may not be available in the binary packages.
       Erick Ivaan Lopez Carreon
 
 
-
-
+New list of compatible software (see clamdoc.pdf for details):
+    + IVS Milter
+    + smtp-vilter
+    + scanexi
+    + Mail::ClamAV
+    + OpenAntiVirus samba-vscan
+    
 
 
 
