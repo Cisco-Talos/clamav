@@ -1240,6 +1240,18 @@ static int cli_scanriff(int desc, const char **virname)
     return ret;
 }
 
+static int cli_scanjpeg(int desc, const char **virname)
+{
+	int ret = CL_CLEAN;
+
+    if(cli_check_jpeg_exploit(desc) == 1) {
+	ret = CL_VIRUS;
+	*virname = "Exploit.W32.MS04-028";
+    }
+
+    return ret;
+}
+
 static int cli_scanmail(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	char *dir;
@@ -1392,6 +1404,10 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 
 	case CL_TYPE_RIFF:
 	    ret = cli_scanriff(desc, virname);
+	    break;
+
+	case CL_TYPE_GRAPHICS:
+	    ret = cli_scanjpeg(desc, virname);
 	    break;
 
 	case CL_TYPE_DATA:

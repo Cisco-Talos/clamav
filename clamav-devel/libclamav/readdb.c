@@ -534,6 +534,10 @@ static int cli_loadndb(FILE *fd, struct cl_node **root, unsigned int *signo)
 
     while(fgets(buffer, FILEBUFF, fd)) {
 	line++;
+
+	if(!strncmp(buffer, "Exploit.JPEG.Comment", 20)) /* temporary */
+	    continue;
+
 	sigs++;
 	cli_chomp(buffer);
 

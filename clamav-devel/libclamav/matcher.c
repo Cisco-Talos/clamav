@@ -218,22 +218,6 @@ int cli_validatesig(unsigned short target, unsigned short ftype, const char *off
 	}
     }
 
-    if(ftype == CL_TYPE_GRAPHICS && virname && !strncmp(virname, "Exploit.JPEG.Comment", 20)) {
-	    int old;
-
-	if((old = lseek(desc, 0, SEEK_CUR)) == -1) {
-	    cli_dbgmsg("Invalid descriptor\n");
-	    return 0;
-	}
-	lseek(desc, 0, SEEK_SET);
-	if(cli_check_jpeg_exploit(desc) != 1) {
-	    cli_dbgmsg("Eliminated false positive match of Exploit.JPEG.Comment\n");
-	    lseek(desc, old, SEEK_SET);
-	    return 0;
-	}
-	lseek(desc, old, SEEK_SET);
-    }
-
     return 1;
 }
 
