@@ -14,7 +14,14 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * Change History:
+ * $Log: mbox.c,v $
+ * Revision 1.10  2003/09/28 10:06:34  nigelhorne
+ * Compilable under SCO; removed duplicate code with message.c
+ *
  */
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.10 2003/09/28 10:06:34 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -123,6 +130,21 @@ static	const	struct tableinit {
 	{	"report",	REPORT		},
 	{	NULL,		0		}
 };
+
+/* Maximum filenames under various systems */
+#ifndef	NAME_MAX	/* e.g. Linux */
+
+#ifdef	MAXNAMELEN	/* e.g. Solaris */
+#define	NAME_MAX	MAXNAMELEN
+#else
+
+#ifdef	FILENAME_MAX	/* e.g. SCO */
+#define	NAME_MAX	FILENAME_MAX
+#endif
+
+#endif
+
+#endif
 
 /*
  * TODO: when signal handling is added, need to remove temp files when a
@@ -1040,18 +1062,7 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 			/*
 			 * Look for uu-encoded main file
 			 */
-			const text *t_line;
-
-			for(t_line = messageGetBody(mainMessage); t_line; t_line = t_line->t_next) {
-				const char *line = t_line->t_text;
-
-				if((strncasecmp(line, "begin ", 6) == 0) &&
-				   (isdigit(line[6])) &&
-				   (isdigit(line[7])) &&
-				   (isdigit(line[8])) &&
-				   (line[9] == ' '))
-					break;
-			}
+			const text *t_line = uuencodeBegin(mainMessage);
 
 			if(t_line != NULL) {
 				/*
@@ -1376,13 +1387,7 @@ saveFile(const blob *b, const char *dir)
 	unsigned long nbytes = blobGetDataSize(b);
 	int fd;
 	const char *cptr, *suffix;
-#ifdef	NAME_MAX	/* e.g. Linux */
 	char filename[NAME_MAX + 1];
-#else
-#ifdef	MAXNAMELEN	/* e.g. Solaris */
-	char filename[MAXNAMELEN + 1];
-#endif
-#endif
 
 	assert(dir != NULL);
 
