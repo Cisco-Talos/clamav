@@ -1291,6 +1291,13 @@ static int cli_scanmail(int desc, const char **virname, long int *scanned, const
     return ret;
 }
 
+static int cli_scantnef(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+{
+    cli_warnmsg("TNEF not scanned yet\n");
+
+    return CL_CLEAN;
+}
+
 int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	int ret = CL_CLEAN, nret;
@@ -1380,6 +1387,11 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 	case CL_TYPE_MAIL:
 	    if(SCAN_MAIL)
 		ret = cli_scanmail(desc, virname, scanned, root, limits, options, arec, mrec);
+	    break;
+
+	case CL_TYPE_TNEF:
+	    if(SCAN_MAIL)
+		ret = cli_scantnef(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
 	case CL_TYPE_MSCHM:

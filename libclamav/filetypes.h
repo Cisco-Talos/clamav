@@ -42,6 +42,7 @@ typedef enum {
     CL_TYPE_GRAPHICS,
     CL_TYPE_RIFF,
     CL_TYPE_BINHEX,
+    CL_TYPE_TNEF,
 
     /* bigger numbers have higher priority (in o-t-f detection) */
     CL_TYPE_HTML, /* on the fly */
