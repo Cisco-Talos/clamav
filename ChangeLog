@@ -1,3 +1,9 @@
+Tue Dec 14 11:36:43 GMT 2004 (trog)
+-----------------------------------
+  * libclamav/vba_extract.c:
+	- Add signature for MacOffice 2004
+	- Guess endianness of unknown versions of MS Office.
+			
 Tue Dec 14 11:15:22 GMT 2004 (trog)
 -----------------------------------
   * sigtool/options.c sigtool/sigtool.c: New options: --vba and --vba-hex

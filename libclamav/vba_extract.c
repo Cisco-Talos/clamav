@@ -91,7 +91,7 @@ typedef struct byte_array_tag {
 	unsigned char *data;
 } byte_array_t;
 
-#define NUM_VBA_VERSIONS 13
+#define NUM_VBA_VERSIONS 14
 vba_version_t vba_version[] = {
 	{ { 0x5e, 0x00, 0x00, 0x01 }, "Office 97",              5, FALSE},
 	{ { 0x5f, 0x00, 0x00, 0x01 }, "Office 97 SR1",          5, FALSE },
@@ -106,6 +106,7 @@ vba_version_t vba_version[] = {
 	{ { 0x60, 0x00, 0x00, 0x0e }, "MacOffice 98",           5, TRUE },
 	{ { 0x62, 0x00, 0x00, 0x0e }, "MacOffice 2001",         5, TRUE },
 	{ { 0x63, 0x00, 0x00, 0x0e }, "MacOffice X",		6, TRUE },
+	{ { 0x64, 0x00, 0x00, 0x0e }, "MacOffice 2004",         6, TRUE },
 };
 
 #define VBA56_DIRENT_RECORD_COUNT (2 + /* magic */              \
@@ -315,16 +316,24 @@ vba_project_t *vba56_dir_read(const char *dir)
 	}
 
 	if (i == NUM_VBA_VERSIONS) {
-		cli_dbgmsg("Unknown VBA version signature %x %x %x %x\n",
+		cli_warnmsg("Unknown VBA version signature %x %x %x %x\n",
 			version[0], version[1], version[2], version[3]);
-		close(fd);
-		return NULL;
+		if (version[3] == 0x01) {
+			cli_warnmsg("Guessing little-endian\n");
+			is_mac = FALSE;
+		} else if (version[3] == 0x0e) {
+			cli_warnmsg("Guessing big-endian\n");
+			is_mac = TRUE;
+		} else {
+			cli_warnmsg("Unable to guess VBA type\n");
+			close(fd);
+			return NULL;
+		}	
+	} else {
+		cli_dbgmsg("VBA Project: %s, VBA Version=%d\n", vba_version[i].name,
+                                vba_version[i].vba_version);
+		is_mac = vba_version[i].is_mac;
 	}
-
-	cli_dbgmsg("VBA Project: %s, VBA Version=%d\n", vba_version[i].name,
-				vba_version[i].vba_version);
-
-	is_mac = vba_version[i].is_mac;
 
 	/*****************************************/
 
