@@ -1,3 +1,7 @@
+Fri Jan  9 14:46:29 GMT 2004 (njh)
+----------------------------------
+  * libclamav: Removed duplicated code in multipart handler in mbox.c
+
 Fri Jan  9 10:21:27 GMT 2004 (njh)
 ----------------------------------
   * libclamav: Locate uuencoded viruses hidden in text poritions of
