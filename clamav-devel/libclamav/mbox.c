@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.161  2004/10/21 10:18:40  nigelhorne
+ * PARTIAL: readdir_r even more options :-(
+ *
  * Revision 1.160  2004/10/21 09:41:07  nigelhorne
  * PARTIAL: add readdir_r fix to BeOS
  *
@@ -468,7 +471,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.160 2004/10/21 09:41:07 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.161 2004/10/21 10:18:40 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2812,10 +2815,21 @@ rfc1341(message *m, const char *dir)
 
 				snprintf(filename, sizeof(filename), "%s%d", id, n);
 #ifdef HAVE_READDIR_R_3
+#if	defined(C_SOLARIS) || defined(C_BEOS)
+				while((readdir_r(dd, (struct dirent *)result, &dent) == 0) && dent) {
+#else
 				while((readdir_r(dd, (struct dirent *)&result, &dent) == 0) && dent) {
+#endif
+
 #elif defined(HAVE_READDIR_R_2)
+
+#if	defined(C_SOLARIS) || defined(C_BEOS)
 				while((dent = (struct dirent *)readdir_r(dd, (struct dirent *)&result))) {
 #else
+				while((dent = (struct dirent *)readdir_r(dd, (struct dirent *)result))) {
+#endif
+
+#else	/*!HAVE_READDIR_R*/
 				while((dent = readdir(dd))) {
 #endif
 					char fullname[NAME_MAX + 1];
