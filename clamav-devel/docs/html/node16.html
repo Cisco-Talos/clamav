@@ -27,30 +27,30 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html370"
+<A NAME="tex2html390"
   HREF="node17.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html366"
+<A NAME="tex2html386"
   HREF="node15.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html360"
+<A NAME="tex2html380"
   HREF="node15.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html368"
+<A NAME="tex2html388"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html371"
+<B> Next:</B> <A NAME="tex2html391"
   HREF="node17.html">Clamuko</A>
-<B> Up:</B> <A NAME="tex2html367"
+<B> Up:</B> <A NAME="tex2html387"
   HREF="node15.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html361"
+<B> Previous:</B> <A NAME="tex2html381"
   HREF="node15.html">Usage</A>
- &nbsp <B>  <A NAME="tex2html369"
+ &nbsp <B>  <A NAME="tex2html389"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
@@ -61,7 +61,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 Clam daemon
 </H2>
     <I>clamd</I> is a multi-threaded daemon based on <I>libclamav</I>.
-    It may work in one of the two following two modes, listening on:
+    It may work in one of the two following modes, listening on:
     
 <UL>
 <LI>Unix (local) socket
@@ -108,7 +108,13 @@ Perform a clean exit.
 	    connect to and send a data to scan. <I>The protocol is
 	    obsolete and there will be a new version soon (however this one
 	    will still be supported).</I>
-    
+</LI>
+<LI><B>SESSION, END</B>
+	    Start/end a clamd session - you can do multiple commands per TCP
+	    session, however due to the clamd implementation the
+	    <B>RELOAD</B> command will break the session.
+
+<P>
 </LI>
 </UL>
     Internal threads (except clamuko) ignore all external signals. The main
@@ -118,35 +124,35 @@ Perform a clean exit.
 <P>
 <HR>
 <!--Navigation Panel-->
-<A NAME="tex2html370"
+<A NAME="tex2html390"
   HREF="node17.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html366"
+<A NAME="tex2html386"
   HREF="node15.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html360"
+<A NAME="tex2html380"
   HREF="node15.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html368"
+<A NAME="tex2html388"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html371"
+<B> Next:</B> <A NAME="tex2html391"
   HREF="node17.html">Clamuko</A>
-<B> Up:</B> <A NAME="tex2html367"
+<B> Up:</B> <A NAME="tex2html387"
   HREF="node15.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html361"
+<B> Previous:</B> <A NAME="tex2html381"
   HREF="node15.html">Usage</A>
- &nbsp <B>  <A NAME="tex2html369"
+ &nbsp <B>  <A NAME="tex2html389"
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2003-11-11
+2004-02-11
 </ADDRESS>
 </BODY>
 </HTML>

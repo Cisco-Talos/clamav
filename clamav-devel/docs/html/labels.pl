@@ -7,7 +7,7 @@ $external_labels{$key} = "$URL/" . q|node16.html|;
 $noresave{$key} = "$nosave";
 
 $key = q/cite_acwww/;
-$external_labels{$key} = "$URL/" . q|node55.html|; 
+$external_labels{$key} = "$URL/" . q|node57.html|; 
 $noresave{$key} = "$nosave";
 
 $key = q/clamuko/;
@@ -15,7 +15,7 @@ $external_labels{$key} = "$URL/" . q|node17.html|;
 $noresave{$key} = "$nosave";
 
 $key = q/cite_clr/;
-$external_labels{$key} = "$URL/" . q|node55.html|; 
+$external_labels{$key} = "$URL/" . q|node57.html|; 
 $noresave{$key} = "$nosave";
 
 $key = q/samba-vscan/;

@@ -27,30 +27,30 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html331"
+<A NAME="tex2html351"
   HREF="node14.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html327"
+<A NAME="tex2html347"
   HREF="node6.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html321"
+<A NAME="tex2html341"
   HREF="node12.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html329"
+<A NAME="tex2html349"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html332"
-  HREF="node14.html">freshclam: Mirrors and mirrors.txt</A>
-<B> Up:</B> <A NAME="tex2html328"
+<B> Next:</B> <A NAME="tex2html352"
+  HREF="node14.html">Database mirrors</A>
+<B> Up:</B> <A NAME="tex2html348"
   HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html322"
+<B> Previous:</B> <A NAME="tex2html342"
   HREF="node12.html">Testing</A>
- &nbsp <B>  <A NAME="tex2html330"
+ &nbsp <B>  <A NAME="tex2html350"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
@@ -63,77 +63,82 @@ freshclam: Setting up auto-updating</A>
     It may work in two modes:
     
 <UL>
-<LI>interactively - from command line
+<LI>interactively - from command line, verbosly
 </LI>
 <LI>daemon - alone, silently
     
 </LI>
 </UL>
-    When started by a superuser it drops privileges and by default switches
+    When started by a superuser it (by default) drops privileges and switches
     to the <I>clamav</I> user. <I>freshclam</I> uses the
     <TT><A NAME="tex2html13"
   HREF="database.clamav.net">database.clamav.net</A></TT> round-robin DNS which automatically selects
-    a database mirror<A HREF="node14.html#mirrors">2.8</A>. freshclam is advanced tool: supports
+    a database mirror<A HREF="node14.html#mirrors">2.8</A>. freshclam is an advanced tool: supports
     proxy servers (with authentication), digital signature verification and
     various error scenarious. <B>Quick test: run <I>freshclam</I> (as
-    a superuser) with no parameters and check the output.</B> If everythin
-    is OK, you may create a log file in /var/log (owned by <I>clamav</I> or
+    superuser) with no parameters and check the output.</B> If everything
+    is OK you may create the log file in /var/log (owned by <I>clamav</I> or
     another user freshclam is running as (<I>-user</I>):
     <PRE>
 	# touch /var/log/clam-update.log
 	# chmod 600 /var/log/clam-update.log
 	# chown clamav /var/log/clam-update.log
 </PRE>
-    Now you can start <I>freshclam</I> in the daemon mode:
+    Now you <I>should</I> edit the configuration file (usually
+    <I>freshclam.conf</I>) and configure the <I>UpdateLogFile</I> directive
+    to point the created log file (it's highly recommended). Optionally you
+    may force the log file path with <I>-l</I>. Finally, to run freshclam
+    in a daemon mode execute:
     <PRE>
-	# freshclam -d -c 6 -l /var/log/clam-update.log
+	# freshclam -d
 </PRE>
-    This enables checking for a new database six times per day (and this is a
-    minimal suggested value). You should add that line to your startup scripts.
-    The other way is to use the <I>cron</I> daemon.  You have to add the
-    following line to the crontab of <B>root</B> or <B>clamav</B>:
+    The other method is to use the <I>cron</I> daemon.  You have to add the
+    following line to the crontab of the <B>root</B> or <B>clamav</B> users:
     <FONT SIZE="-1">    </FONT><PRE>
-0 * * * *	/usr/local/bin/freshclam --quiet -l /var/log/clam-update.log
+0 * * * *	/usr/local/bin/freshclam --quiet
 </PRE>
-    to check for a new database every hour. To setup proxy support
-    you may set the environment variable <I>$http_proxy</I>:
+    to check for a new database every hour. Proxy settings are only
+    configurable via the configuration file (so you can setup proper permissions
+    to protect your proxy password):
     <PRE>
-	export http_proxy="my.proxy.server:8080"
+	HTTPProxyServer myproxyserver.com
+	HTTPProxyPort 1234
+	HTTPProxyUsername myusername
+	HTTPProxyPassword mypass
 </PRE>
-    or use <I>-http-proxy</I> and <I>-proxy-user</I> options.
 
 <P>
 <HR>
 <!--Navigation Panel-->
-<A NAME="tex2html331"
+<A NAME="tex2html351"
   HREF="node14.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html327"
+<A NAME="tex2html347"
   HREF="node6.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html321"
+<A NAME="tex2html341"
   HREF="node12.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html329"
+<A NAME="tex2html349"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html332"
-  HREF="node14.html">freshclam: Mirrors and mirrors.txt</A>
-<B> Up:</B> <A NAME="tex2html328"
+<B> Next:</B> <A NAME="tex2html352"
+  HREF="node14.html">Database mirrors</A>
+<B> Up:</B> <A NAME="tex2html348"
   HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html322"
+<B> Previous:</B> <A NAME="tex2html342"
   HREF="node12.html">Testing</A>
- &nbsp <B>  <A NAME="tex2html330"
+ &nbsp <B>  <A NAME="tex2html350"
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2003-11-11
+2004-02-11
 </ADDRESS>
 </BODY>
 </HTML>
