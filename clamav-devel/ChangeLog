@@ -1,3 +1,11 @@
+Sat Jun 12 02:11:12 CEST 2004 (tk)
+----------------------------------
+  * libclamav: pe: integrate with UPX decompressor from aCaB <acab*clamav.net>
+	           (with support for NRV2B, NRV2D and NRV2E compression).
+		   To protect against compressed files with hacked headers,
+		   the PE parser tries to find a signature of the UPX
+		   decompression routine at EP + 0x78.
+
 Fri Jun 11 22:11:31 CEST 2004 (tk)
 ----------------------------------
   * libclamav: pe: add dumper; RVA calculation; fix error codes

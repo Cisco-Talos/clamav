@@ -94,6 +94,8 @@ libclamav_la_SOURCES = \
 	mspack/qtmd.c \
 	mspack/qtm.h \
 	mspack/system.c \
-	mspack/system.h
+	mspack/system.h \
+	upx.c \
+	upx.h
 
 lib_LTLIBRARIES = libclamav.la
