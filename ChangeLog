@@ -1,3 +1,7 @@
+Mon Jan 31 19:15:48 CET 2005 (tk)
+---------------------------------
+  * libclamav/readdb.c: update error message
+
 Mon Jan 31 11:05:20 GMT 2005 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Empty lines should the end of the headers,

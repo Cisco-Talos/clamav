@@ -736,7 +736,7 @@ int cl_loaddb(const char *filename, struct cl_node **root, unsigned int *signo)
     }
 
     if(ret)
-	cli_errmsg("Malformed database file %s\n", filename);
+	cli_errmsg("Can't load %s: %s\n", filename, cl_strerr(ret));
 
     fclose(fd);
     return ret;
