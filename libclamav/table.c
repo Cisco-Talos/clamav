@@ -109,7 +109,9 @@ tableFind(const table_t *table, const char *key)
 	if(table->tableHead == NULL)
 		return -1;	/* not populated yet */
 
+#ifdef	CL_DEBUG
 	cost = 0;
+#endif
 
 	for(tableItem = table->tableHead; tableItem; tableItem = tableItem->next) {
 #ifdef	CL_DEBUG

@@ -1,3 +1,7 @@
+Sat Oct  2 16:41:02 BST 2004 (njh)
+----------------------------------
+  * libclamav/table.c:	Fix compilation problem when --enable-debug is not set
+
 Fri Oct  1 14:50:55 BST 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Fixed handling of the end of yEnc attachments
