@@ -56,8 +56,8 @@ int treewalk(const char *dirname, struct cl_node *root, const struct passwd *use
 	char *argument;
 
 
-    if(optl(opt, "exclude")) {
-	argument = getfirstargl(opt, "exclude", &optnode);
+    if(optl(opt, "exclude-dir")) {
+	argument = getfirstargl(opt, "exclude-dir", &optnode);
 	while(argument) {
 	    if(match_regex(dirname, argument) == 1) {
 		if(!printinfected)
@@ -68,9 +68,9 @@ int treewalk(const char *dirname, struct cl_node *root, const struct passwd *use
 	}
     }
 
-   if(optl(opt, "include")) {
+   if(optl(opt, "include-dir")) {
 	included = 0;
-	argument = getfirstargl(opt, "include", &optnode);
+	argument = getfirstargl(opt, "include-dir", &optnode);
 	while(argument && !included) {
 	    if(match_regex(dirname, argument) == 1) {
 		included = 1;
