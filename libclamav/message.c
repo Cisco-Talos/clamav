@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.124  2004/11/28 16:24:12  nigelhorne
+ * Allow lowercase hex characters in quoted-printable
+ *
  * Revision 1.123  2004/11/27 21:54:27  nigelhorne
  * Tidy
  *
@@ -366,7 +369,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.123 2004/11/27 21:54:27 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.124 2004/11/28 16:24:12 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -440,7 +443,7 @@ static	const	struct	encoding_map {
 } encoding_map[] = {	/* rfc1521 */
 	{	"7bit",			NOENCODING	},
 	{	"text/plain",		NOENCODING	},
-	{	"quoted-printable",	QUOTEDPRINTABLE	},	/* rfc1522 */
+	{	"quoted-printable",	QUOTEDPRINTABLE	},	/* rfc1521 */
 	{	"base64",		BASE64		},	/* rfc2045 */
 	{	"8bit",			EIGHTBIT	},
 	{	"binary",		BINARY		},
@@ -2161,7 +2164,7 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 					if((*++line == '\0') || (*line == '\n')) {
 						/*
 						 * broken e-mail, not
-						 * adhering to RFC1522
+						 * adhering to RFC1521
 						 */
 						*buf++ = byte;
 						break;
@@ -2471,9 +2474,12 @@ hex(char c)
 		return c - '0';
 	if((c >= 'A') && (c <= 'F'))
 		return c - 'A' + 10;
+	if((c >= 'a') && (c <= 'f'))
+		return c - 'a' + 10;
+	cli_dbgmsg("Illegal hex character '%c'\n", c);
 
 	/*
-	 * Some mails (notably some spam) break RFC1522 by failing to encode
+	 * Some mails (notably some spam) break RFC1521 by failing to encode
 	 * the '=' character
 	 */
 	return '=';
