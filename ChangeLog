@@ -1,3 +1,7 @@
+Tue Nov 16 18:24:06 CET 2004 (tk)
+---------------------------------
+  * libclamav/filetypes.c: add new mail detection rule
+
 Tue Nov 16 18:07:39 CET 2004 (tk)
 ---------------------------------
   * libclamav: improve generating of temporary file names (as requested by
