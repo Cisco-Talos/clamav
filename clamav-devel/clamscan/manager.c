@@ -394,8 +394,12 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 
 	    return 1;
 
-	} else if(ret == CL_CLEAN)
+	} else if(ret == CL_CLEAN) {
 	    return 0;
+	} else if(ret == 54) {
+	    return ret;
+	}
+
 	/* in other case try to continue with external archivers */
 	options &= ~CL_SCAN_ARCHIVE; /* and disable decompression for the below checkfile() */
     }
