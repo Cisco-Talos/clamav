@@ -143,6 +143,9 @@ When using UNIX domain sockets via the LocalSocket option of clamav.conf,
 we recommend that you use the --quarantine-dir option since that may improve
 performance.
 
+To test that your clamAV system is now intercepting viruses, visit
+http://www.testvirus.org
+
 CHANGE HISTORY
 
 Changes
@@ -449,6 +452,15 @@ Changes
 		Use HAVE_GETHOSTBYNAME_R_6
 0.75d	29/7/04	Don't say "waiting for some to exit" if --dont-wait
 0.75e	30/7/04	Handle new clamd message when StreamMaxLength is exceeded
+0.75f	02/8/04	Use HAVE_GETHOSTBYNAME_R_5 and HAVE_GETHOSTBYNAME_R_3
+		Try to ensure that the fully qualified domain name is used idea
+		by christian laubscher <christian.laubscher@tiscalinet.ch>
+		Template files can now contain more than one variable
+		Template files sendmail variables handling changed to allow
+			access to variables not in braces. All sendmail
+			variables are now delimeted by dollars, e.g.  ${j}$
+		Better local IP table by Damian Menscher <menscher@uiuc.edu> and
+			Andy Fiddaman <clam@fiddaman.net>
 
 BUG REPORTS
 

@@ -1,3 +1,16 @@
+Thu Aug  5 08:44:51 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Handle more variants of gethostbyname_r
+  			Try harder to get fully qualified hostname
+			Template files can now contain more than one variable
+			Template files sendmail variables handling changed to
+				allow access to variables not in braces. All
+				sendmail variables are now delimeted by
+				dollars, e.g.  ${j}$
+			Better local IP table by Damian Menscher
+				<menscher@uiuc.edu> and Andy Fiddaman
+				<clam@fiddaman.net>
+
 Thu Aug  5 03:10:32 CEST 2004 (tk)
 ----------------------------------
   * libclamav: include FSG unpacker from aCaB
