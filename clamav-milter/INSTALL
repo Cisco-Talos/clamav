@@ -396,6 +396,10 @@ Changes
 		Commented out TKs advice about using quarantine when using
 			localSocket, sys admins were confused by it
 0.71b	24/5/04	Add which host did the virus scanning
+0.71c	25/5/04	X-Virus-Status: Not Scanned - StreamMaxLength exceeded was not
+			always being added
+		Now says host running clamd rather than host running
+			clamav-milter, useful for checking load balancing etc.
 
 BUG REPORTS
 

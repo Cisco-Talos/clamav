@@ -1,3 +1,10 @@
+Tue May 25 17:24:48 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	X-Virus-Status: Not Scanned - StreamMaxLength exceeded
+  	was not always being added
+			Now says host running clamd rather than host running
+	clamav-milter, useful for checking load balancing etc.
+
 Mon May 24 18:09:23 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Include hostname of the scanner (clamav-milter not

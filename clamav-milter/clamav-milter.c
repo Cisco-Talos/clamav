@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.91  2004/05/25 16:24:21  nigelhorne
+ * X-Virus-Scanned wasn't being added in maxstreamlength was exceeded
+ *
  * Revision 1.90  2004/05/24 17:05:18  nigelhorne
  * Include the hostname of the scanner in the headers
  *
@@ -281,9 +284,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.90 2004/05/24 17:05:18 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.91 2004/05/25 16:24:21 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.71b"
+#define	CM_VERSION	"0.71c"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -403,6 +406,7 @@ struct	privdata {
 				 * looks like the remote end is playing ping
 				 * pong with us
 				 */
+	int	serverNumber;	/* Index into serverIPs */
 };
 
 static	int		pingServer(int serverNumber);
@@ -1876,11 +1880,23 @@ clamfi_eom(SMFICTX *ctx)
 
 		/*
 		 * Include the hostname where the scan took place:
-		 * TODO: this should be where clamd is running, not where
-		 * clamav-milter is running
 		 */
-		snprintf(buf, sizeof(buf) - 1, "%s\n\ton %s", clamav_version,
-			smfi_getsymval(ctx, "{j}"));
+		if(localSocket)
+			snprintf(buf, sizeof(buf) - 1, "%s\n\ton %s",
+				clamav_version,
+				smfi_getsymval(ctx, "{j}"));
+		else {
+			char *hostname = cli_strtok(serverHostNames, privdata->serverNumber, ":");
+
+			if(hostname) {
+				snprintf(buf, sizeof(buf) - 1, "%s\n\ton %s",
+					clamav_version,
+					hostname);
+				free(hostname);
+			} else
+				/* sanity check failed - should issue warning */
+				strcpy(buf, "Error determining host");
+		}
 		smfi_addheader(ctx, "X-Virus-Scanned", buf);
 	}
 
@@ -1892,9 +1908,9 @@ clamfi_eom(SMFICTX *ctx)
 			if(use_syslog)
 				syslog(LOG_NOTICE, "%s: Message more than StreamMaxLength (%ld) bytes - not scanned",
 					sendmailId, streamMaxLength);
-			clamfi_cleanup(ctx);	/* not needed, but just to be safe */
 			if(!nflag)
 				smfi_addheader(ctx, "X-Virus-Status", "Not Scanned - StreamMaxLength exceeded");
+			clamfi_cleanup(ctx);	/* not needed, but just to be safe */
 			return SMFIS_ACCEPT;
 		}
 		if(!nflag)
@@ -2631,6 +2647,7 @@ connect2clamd(struct privdata *privdata)
 				syslog(LOG_ERR, "Temporary quarantine file %s creation failed", privdata->filename);
 			return 0;
 		}
+		privdata->serverNumber = -1;
 	} else {
 		int freeServer, nbytes;
 		struct sockaddr_in reply;
@@ -2659,6 +2676,7 @@ connect2clamd(struct privdata *privdata)
 				return 0;
 			}
 			freeServer = 0;
+			privdata->serverNumber = -1;
 		} else {
 			struct sockaddr_in server;
 
@@ -2682,6 +2700,7 @@ connect2clamd(struct privdata *privdata)
 				perror("connect");
 				return 0;
 			}
+			privdata->serverNumber = freeServer;
 		}
 
 		/*
