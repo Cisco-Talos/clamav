@@ -74,7 +74,10 @@ Note - this option only works when using LocalSocket.
 IP address of server running clamd (when using TCPsocket).
 .TP
 \fB\-\-sign, \-S\fR
-Add a signature to each scanned file.
+Add a hard\-coded signature to each scanned file.
+.TP
+\fB\-\-signature-file, \-F\fR
+Location of file to be appended to each scanned message. Overrides \-S.
 .TP 
 \fB\-\-max\-children=n, \-m n\fR
 Maximum number of children.
