@@ -57,7 +57,24 @@ AC_TYPE_OFF_T
 AC_COMPILE_CHECK_SIZEOF(short)
 AC_COMPILE_CHECK_SIZEOF(int)
 AC_COMPILE_CHECK_SIZEOF(long)
-AC_CHECK_FUNCS(poll setsid memcpy snprintf strerror_r)
+AC_CHECK_FUNCS(poll setsid memcpy snprintf vsnprintf strerror_r)
+
+# Check for broken snprintf
+if test "x$ac_cv_func_snprintf" = "xyes" ; then
+        AC_MSG_CHECKING([whether snprintf correctly terminates long strings])
+        AC_TRY_RUN(
+                [
+#include <stdio.h>
+int main(void){char b[5];snprintf(b,5,"123456789");return(b[4]!='\0');}
+                ],
+                [AC_MSG_RESULT(yes)],
+                [
+                        AC_MSG_RESULT(no)
+                        AC_DEFINE(BROKEN_SNPRINTF,1,[Define if your snprintf is busted])
+                        AC_MSG_WARN([****** Your snprintf() function is broken, complain to your vendor])
+                ]
+        )
+fi
 
 have_pthreads=no
 AC_CHECK_HEADER(pthread.h,[have_pthreads=yes],)
@@ -99,7 +116,7 @@ then
     AC_CHECK_LIB(gmp, __gmpz_init, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; AC_DEFINE(HAVE_GMP,1,have gmp installed)], [AC_CHECK_LIB(gmp, mpz_init, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; AC_DEFINE(HAVE_GMP,1,have gmp installed)], [echo "WARNING: GNU MP 2 or newer NOT FOUND - digital signature support will be disabled !"; want_dsig="no"])])
 fi
 
-AC_CHECK_HEADER(syslog.h,AC_DEFINE(CLAMD_USE_SYSLOG,1,[use syslog]),)
+AC_CHECK_HEADER(syslog.h,AC_DEFINE(USE_SYSLOG,1,[use syslog]),)
 
 dnl AC_CHECK_LIB(c, strtok_r,, AC_DEFINE(NO_STRTOK_R))
 dnl AC_CHECK_LIB(c, mkstemp, AC_DEFINE(HAVE_MKSTEMP),)
@@ -336,7 +353,7 @@ openbsd3.3*)
 	AC_DEFINE(CL_THREAD_SAFE)
 	AC_DEFINE(_REENTRANT)
     fi
-    AC_DEFINE(C_BSD)
+    AC_DEFINE(C_BSD,1,[os is bsd flavor])
     ;;
 openbsd*)
     if test "$have_pthreads" = "yes"; then

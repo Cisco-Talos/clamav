@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+#  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -16,4 +16,4 @@
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 SUBDIRS = libclamav clamscan clamd clamdscan freshclam sigtool database docs etc clamav-milter
-EXTRA_DIST = FAQ contrib test examples BUGS
+EXTRA_DIST = FAQ contrib test examples BUGS shared

@@ -120,9 +120,18 @@ install_sh = @install_sh@
 bin_PROGRAMS = freshclam
 
 freshclam_SOURCES = \
+    $(top_srcdir)/shared/output.c \
+    $(top_srcdir)/shared/output.h \
+    $(top_srcdir)/shared/cfgparser.c \
+    $(top_srcdir)/shared/cfgparser.h \
+    $(top_srcdir)/shared/getopt.c \
+    $(top_srcdir)/shared/getopt.h \
+    $(top_srcdir)/shared/memory.c \
+    $(top_srcdir)/shared/memory.h \
     freshclam.c \
     freshclam.h \
     options.c \
+    options.h \
     manager.c \
     manager.h \
     defaults.h \
@@ -130,11 +139,8 @@ freshclam_SOURCES = \
     notify.h
 
 
-@BUILD_CLAMD_TRUE@freshclam_LDADD = $(top_builddir)/clamscan/getopt.o $(top_builddir)/clamscan/others.o $(top_builddir)/clamd/cfgfile.o
-@BUILD_CLAMD_FALSE@freshclam_LDADD = $(top_builddir)/clamscan/getopt.o $(top_builddir)/clamscan/others.o
-
 DEFS = @DEFS@
-INCLUDES = -I$(top_srcdir)/clamscan -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 LIBS = -L$(top_builddir)/libclamav -lclamav @FRESHCLAM_LIBS@
 subdir = freshclam
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
@@ -143,24 +149,23 @@ CONFIG_CLEAN_FILES =
 bin_PROGRAMS = freshclam$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
 
-am_freshclam_OBJECTS = freshclam.$(OBJEXT) options.$(OBJEXT) \
-	manager.$(OBJEXT) notify.$(OBJEXT)
+am_freshclam_OBJECTS = output.$(OBJEXT) cfgparser.$(OBJEXT) \
+	getopt.$(OBJEXT) memory.$(OBJEXT) freshclam.$(OBJEXT) \
+	options.$(OBJEXT) manager.$(OBJEXT) notify.$(OBJEXT)
 freshclam_OBJECTS = $(am_freshclam_OBJECTS)
-@BUILD_CLAMD_TRUE@freshclam_DEPENDENCIES = \
-@BUILD_CLAMD_TRUE@	$(top_builddir)/clamscan/getopt.o \
-@BUILD_CLAMD_TRUE@	$(top_builddir)/clamscan/others.o \
-@BUILD_CLAMD_TRUE@	$(top_builddir)/clamd/cfgfile.o
-@BUILD_CLAMD_FALSE@freshclam_DEPENDENCIES = \
-@BUILD_CLAMD_FALSE@	$(top_builddir)/clamscan/getopt.o \
-@BUILD_CLAMD_FALSE@	$(top_builddir)/clamscan/others.o
+freshclam_LDADD = $(LDADD)
+freshclam_DEPENDENCIES =
 freshclam_LDFLAGS =
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
-@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/freshclam.Po ./$(DEPDIR)/manager.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/notify.Po ./$(DEPDIR)/options.Po
+@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/cfgparser.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/freshclam.Po ./$(DEPDIR)/getopt.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/manager.Po ./$(DEPDIR)/memory.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/notify.Po ./$(DEPDIR)/options.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/output.Po
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
@@ -209,6 +214,10 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+output.$(OBJEXT): $(top_srcdir)/shared/output.c
+cfgparser.$(OBJEXT): $(top_srcdir)/shared/cfgparser.c
+getopt.$(OBJEXT): $(top_srcdir)/shared/getopt.c
+memory.$(OBJEXT): $(top_srcdir)/shared/memory.c
 freshclam$(EXEEXT): $(freshclam_OBJECTS) $(freshclam_DEPENDENCIES) 
 	@rm -f freshclam$(EXEEXT)
 	$(LINK) $(freshclam_LDFLAGS) $(freshclam_OBJECTS) $(freshclam_LDADD) $(LIBS)
@@ -219,10 +228,14 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cfgparser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/freshclam.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/manager.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/memory.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/notify.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/options.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/output.Po@am__quote@
 
 distclean-depend:
 	-rm -rf ./$(DEPDIR)
@@ -244,6 +257,78 @@ distclean-depend:
 @AMDEP_TRUE@	depfile='$(DEPDIR)/$*.Plo' tmpdepfile='$(DEPDIR)/$*.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(LTCOMPILE) -c -o $@ `test -f '$<' || echo '$(srcdir)/'`$<
+
+output.o: $(top_srcdir)/shared/output.c
+@AMDEP_TRUE@	source='$(top_srcdir)/shared/output.c' object='output.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/output.Po' tmpdepfile='$(DEPDIR)/output.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o output.o `test -f '$(top_srcdir)/shared/output.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/output.c
+
+output.obj: $(top_srcdir)/shared/output.c
+@AMDEP_TRUE@	source='$(top_srcdir)/shared/output.c' object='output.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/output.Po' tmpdepfile='$(DEPDIR)/output.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o output.obj `cygpath -w $(top_srcdir)/shared/output.c`
+
+output.lo: $(top_srcdir)/shared/output.c
+@AMDEP_TRUE@	source='$(top_srcdir)/shared/output.c' object='output.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/output.Plo' tmpdepfile='$(DEPDIR)/output.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o output.lo `test -f '$(top_srcdir)/shared/output.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/output.c
+
+cfgparser.o: $(top_srcdir)/shared/cfgparser.c
+@AMDEP_TRUE@	source='$(top_srcdir)/shared/cfgparser.c' object='cfgparser.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/cfgparser.Po' tmpdepfile='$(DEPDIR)/cfgparser.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cfgparser.o `test -f '$(top_srcdir)/shared/cfgparser.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/cfgparser.c
+
+cfgparser.obj: $(top_srcdir)/shared/cfgparser.c
+@AMDEP_TRUE@	source='$(top_srcdir)/shared/cfgparser.c' object='cfgparser.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/cfgparser.Po' tmpdepfile='$(DEPDIR)/cfgparser.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cfgparser.obj `cygpath -w $(top_srcdir)/shared/cfgparser.c`
+
+cfgparser.lo: $(top_srcdir)/shared/cfgparser.c
+@AMDEP_TRUE@	source='$(top_srcdir)/shared/cfgparser.c' object='cfgparser.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/cfgparser.Plo' tmpdepfile='$(DEPDIR)/cfgparser.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cfgparser.lo `test -f '$(top_srcdir)/shared/cfgparser.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/cfgparser.c
+
+getopt.o: $(top_srcdir)/shared/getopt.c
+@AMDEP_TRUE@	source='$(top_srcdir)/shared/getopt.c' object='getopt.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/getopt.Po' tmpdepfile='$(DEPDIR)/getopt.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o getopt.o `test -f '$(top_srcdir)/shared/getopt.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/getopt.c
+
+getopt.obj: $(top_srcdir)/shared/getopt.c
+@AMDEP_TRUE@	source='$(top_srcdir)/shared/getopt.c' object='getopt.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/getopt.Po' tmpdepfile='$(DEPDIR)/getopt.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o getopt.obj `cygpath -w $(top_srcdir)/shared/getopt.c`
+
+getopt.lo: $(top_srcdir)/shared/getopt.c
+@AMDEP_TRUE@	source='$(top_srcdir)/shared/getopt.c' object='getopt.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/getopt.Plo' tmpdepfile='$(DEPDIR)/getopt.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o getopt.lo `test -f '$(top_srcdir)/shared/getopt.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/getopt.c
+
+memory.o: $(top_srcdir)/shared/memory.c
+@AMDEP_TRUE@	source='$(top_srcdir)/shared/memory.c' object='memory.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/memory.Po' tmpdepfile='$(DEPDIR)/memory.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o memory.o `test -f '$(top_srcdir)/shared/memory.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/memory.c
+
+memory.obj: $(top_srcdir)/shared/memory.c
+@AMDEP_TRUE@	source='$(top_srcdir)/shared/memory.c' object='memory.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/memory.Po' tmpdepfile='$(DEPDIR)/memory.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o memory.obj `cygpath -w $(top_srcdir)/shared/memory.c`
+
+memory.lo: $(top_srcdir)/shared/memory.c
+@AMDEP_TRUE@	source='$(top_srcdir)/shared/memory.c' object='memory.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/memory.Plo' tmpdepfile='$(DEPDIR)/memory.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o memory.lo `test -f '$(top_srcdir)/shared/memory.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/memory.c
 CCDEPMODE = @CCDEPMODE@
 
 mostlyclean-libtool:

@@ -24,7 +24,7 @@
 #define COMMAND_END 3
 
 #include <clamav.h>
-#include "cfgfile.h"
+#include "cfgparser.h"
 
 int command(int desc, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt);
 

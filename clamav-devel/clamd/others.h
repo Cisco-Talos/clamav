@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,26 +24,11 @@
 #endif
 
 #include <stdlib.h>
-#include "cfgfile.h"
+#include "cfgparser.h"
 
-int mdprintf(int desc, const char *str, ...);
-int isnumb(const char *str);
-void *mmalloc(size_t size);
-void *mcalloc(size_t nmemb, size_t size);
-void chomp(char *string);
 
-short int logverbose, logcompressed, loglock, logtime, logok, debug_mode;
-int logsize;
-const char *logfile;
-int logg(const char *str, ...);
-void logg_close(void);
 int poll_fd(int fd, int timeout_sec);
 int is_fd_connected(int fd);
-
-#if defined(CLAMD_USE_SYSLOG) && !defined(C_AIX)
-short use_syslog;
-#endif
-
 void virusaction(const char *filename, const char *virname, const struct cfgstruct *copt);
 
 #endif

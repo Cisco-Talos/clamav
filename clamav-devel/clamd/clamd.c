@@ -33,7 +33,7 @@
 #include <grp.h>
 #include <clamav.h>
 
-#if defined(CLAMD_USE_SYSLOG) && !defined(C_AIX)
+#if defined(USE_SYSLOG) && !defined(C_AIX)
 #include <syslog.h>
 #endif
 
@@ -42,7 +42,7 @@
 #endif
 
 #include "options.h"
-#include "cfgfile.h"
+#include "cfgparser.h"
 #include "others.h"
 /* Fixes gcc warning */
 #include "../libclamav/others.h"
@@ -50,7 +50,9 @@
 #include "localserver.h"
 #include "others.h"
 #include "defaults.h"
-
+#include "memory.h"
+#include "output.h"
+#include "shared.h"
 
 void help(void);
 void daemonize(void);
@@ -107,14 +109,14 @@ void clamd(struct optstruct *opt)
     /* initialize logger */
 
     if(cfgopt(copt, "LogFileUnlock"))
-	loglock = 0;
+	logg_lock = 0;
     else
-	loglock = 1;
+	logg_lock = 1;
 
     if(cfgopt(copt, "LogTime"))
-	logtime = 1;
+	logg_time = 1;
     else
-	logtime = 0;
+	logg_time = 0;
 
     if(cfgopt(copt, "LogClean"))
 	logok = 1;
@@ -122,45 +124,44 @@ void clamd(struct optstruct *opt)
 	logok = 0;
 
     if((cpt = cfgopt(copt, "LogFileMaxSize")))
-	logsize = cpt->numarg;
+	logg_size = cpt->numarg;
     else
-	logsize = CL_DEFAULT_LOGSIZE;
+	logg_size = CL_DEFAULT_LOGSIZE;
 
     if(cfgopt(copt, "Debug")) /* enable debug messages in libclamav */
 	cl_debug();
 
     if(cfgopt(copt, "LogVerbose"))
-	logverbose = 1;
+	logg_verbose = 1;
     else
-	logverbose = 0;
+	logg_verbose = 0;
 
     if((cpt = cfgopt(copt, "LogFile"))) {
-	logfile = cpt->strarg;
-	if(logfile[0] != '/') {
+	logg_file = cpt->strarg;
+	if(logg_file[0] != '/') {
 	    fprintf(stderr, "ERROR: LogFile requires full path.\n");
 	    exit(1);
 	}
 	time(&currtime);
 	if(logg("+++ Started at %s", ctime(&currtime))) {
-	    fprintf(stderr, "ERROR: Problem with internal logger. Please check the permissions on the %s file.\n", logfile);
+	    fprintf(stderr, "ERROR: Problem with internal logger. Please check the permissions on the %s file.\n", logg_file);
 	    exit(1);
 	}
     } else
-	logfile = NULL;
+	logg_file = NULL;
 
 
-#if defined(CLAMD_USE_SYSLOG) && !defined(C_AIX)
+#if defined(USE_SYSLOG) && !defined(C_AIX)
     if((cpt = cfgopt(copt, "LogSyslog"))) {
 	openlog("clamd", LOG_PID, LOG_LOCAL6);
-	use_syslog = 1;
+	logg_syslog = 1;
 	syslog(LOG_INFO, "Daemon started.\n");
     } else
-	use_syslog = 0;
+	logg_syslog = 0;
 #endif
 
-
-    if(logsize)
-	logg("Log file size limited to %d bytes.\n", logsize);
+    if(logg_size)
+	logg("Log file size limited to %d bytes.\n", logg_size);
     else
 	logg("Log file size limit disabled.\n");
 

@@ -19,22 +19,25 @@
 bin_PROGRAMS = freshclam
 
 freshclam_SOURCES = \
+    $(top_srcdir)/shared/output.c \
+    $(top_srcdir)/shared/output.h \
+    $(top_srcdir)/shared/cfgparser.c \
+    $(top_srcdir)/shared/cfgparser.h \
+    $(top_srcdir)/shared/getopt.c \
+    $(top_srcdir)/shared/getopt.h \
+    $(top_srcdir)/shared/memory.c \
+    $(top_srcdir)/shared/memory.h \
     freshclam.c \
     freshclam.h \
     options.c \
+    options.h \
     manager.c \
     manager.h \
     defaults.h \
     notify.c \
     notify.h
 
-if BUILD_CLAMD
-freshclam_LDADD = $(top_builddir)/clamscan/getopt.o $(top_builddir)/clamscan/others.o $(top_builddir)/clamd/cfgfile.o
-else
-freshclam_LDADD = $(top_builddir)/clamscan/getopt.o $(top_builddir)/clamscan/others.o
-endif
-
 
 DEFS = @DEFS@
-INCLUDES = -I$(top_srcdir)/clamscan -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 LIBS = -L$(top_builddir)/libclamav -lclamav @FRESHCLAM_LIBS@

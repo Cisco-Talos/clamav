@@ -167,6 +167,8 @@ libclamav_la_SOURCES = \
 	mbox.h \
 	message.c \
 	message.h \
+	snprintf.c \
+	snprintf.h \
 	strrcpy.c \
 	strrcpy.h \
 	table.c \
@@ -191,8 +193,8 @@ libclamav_la_DEPENDENCIES =
 am_libclamav_la_OBJECTS = matcher.lo md5.lo others.lo readdb.lo cvd.lo \
 	dsig.lo str.lo scanners.lo unrarlib.lo zzip-dir.lo zzip-err.lo \
 	zzip-file.lo zzip-info.lo zzip-io.lo zzip-stat.lo zzip-zip.lo \
-	strc.lo blob.lo mbox.lo message.lo strrcpy.lo table.lo text.lo \
-	ole2_extract.lo vba_extract.lo
+	strc.lo blob.lo mbox.lo message.lo snprintf.lo strrcpy.lo \
+	table.lo text.lo ole2_extract.lo vba_extract.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 
 DEFS = @DEFS@
@@ -208,9 +210,10 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/message.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/ole2_extract.Plo ./$(DEPDIR)/others.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/readdb.Plo ./$(DEPDIR)/scanners.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/str.Plo ./$(DEPDIR)/strc.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/strrcpy.Plo ./$(DEPDIR)/table.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/text.Plo ./$(DEPDIR)/unrarlib.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/snprintf.Plo ./$(DEPDIR)/str.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/strc.Plo ./$(DEPDIR)/strrcpy.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/table.Plo ./$(DEPDIR)/text.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/unrarlib.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/vba_extract.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/zzip-dir.Plo ./$(DEPDIR)/zzip-err.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/zzip-file.Plo ./$(DEPDIR)/zzip-info.Plo \
@@ -289,6 +292,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/others.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/readdb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scanners.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/snprintf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/str.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strrcpy.Plo@am__quote@

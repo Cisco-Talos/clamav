@@ -32,10 +32,11 @@
 
 #include "server.h"
 #include "others.h"
-#include "cfgfile.h"
+#include "cfgparser.h"
 #include "dazukoio.h"
 #include "clamuko.h"
 #include "defaults.h"
+#include "output.h"
 
 struct dazuko_access *acc;
 

@@ -34,6 +34,8 @@
 #include "defaults.h"
 #include "treewalk.h"
 
+#include "output.h"
+
 #ifdef C_LINUX
 #include <sys/resource.h>
 #endif
@@ -53,8 +55,13 @@ int clamscan(struct optstruct *opt)
 
     mprintf_disabled = 0;
 
-    if(optc(opt, 'v')) mprintf_verbose = 1;
-    else mprintf_verbose = 0;
+    if(optc(opt, 'v')) {
+	mprintf_verbose = 1;
+	logg_verbose = 1;
+    } else {
+	mprintf_verbose = 0;
+	logg_verbose = 0;
+    }
 
     if(optl(opt, "quiet")) mprintf_quiet = 1;
     else mprintf_quiet = 0;
@@ -96,14 +103,19 @@ int clamscan(struct optstruct *opt)
 
     /* initialize logger */
 
+    /* FIXME: enable in the future */
+    logg_size = 0;
+    logg_lock = 0;
+    logg_time = 0;
+
     if(optc(opt, 'l')) {
-	logfile = getargc(opt, 'l');
+	logg_file = getargc(opt, 'l');
 	if(logg("--------------------------------------\n")) {
 	    mprintf("!Problem with internal logger.\n");
 	    return 1;
 	}
     } else 
-	logfile = NULL;
+	logg_file = NULL;
 
     /* we need some pre-checks */
     if(optl(opt, "max-space"))

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,17 +16,29 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __SCANNER_H
-#define __SCANNER_H
+#ifndef __OUTPUT_H
+#define __OUTPUT_H
 
-#include <clamav.h>
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#include <stdlib.h>
 #include "cfgparser.h"
 
+int mdprintf(int desc, const char *str, ...);
 
-int dirscan(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt, int odesc, unsigned int *reclev, short contscan);
+int logg(const char *str, ...);
+void logg_close(void);
+short int logg_verbose, logg_lock, logg_time;
+int logg_size;
+const char *logg_file;
 
-int scan(const char *filename, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt, int odesc, short contscan);
+#if defined(USE_SYSLOG) && !defined(C_AIX)
+short logg_syslog;
+#endif
 
-int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt);
+void mprintf(const char *str, ...);
+short int mprintf_disabled, mprintf_verbose, mprintf_quiet, mprintf_stdout;
 
 #endif

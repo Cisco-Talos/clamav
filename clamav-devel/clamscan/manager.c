@@ -47,6 +47,8 @@
 #include "mbox.h"
 #include "str.h"
 #include "strrcpy.h"
+#include "memory.h"
+#include "output.h"
 
 #ifdef C_LINUX
 dev_t procdev;
@@ -374,7 +376,7 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
      * external (if provided) when internal cannot extract data.
      */
 
-    if((strbcasestr(filename, ".zip") || strbcasestr(filename, ".rar")) && (options & CL_ARCHIVE)) {
+    if((cli_strbcasestr(filename, ".zip") || cli_strbcasestr(filename, ".rar")) && (options & CL_ARCHIVE)) {
 	/* try to use internal archivers */
 	if((ret = checkfile(filename, root, limits, options)) == CL_VIRUS) {
 	    if(optl(opt, "remove")) {
@@ -398,16 +400,16 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	claminfo.files--; /* don't count it */
     }
 
-    if((strbcasestr(filename, ".zip") && optl(opt, "unzip"))
-    || (strbcasestr(filename, ".rar") && optl(opt, "unrar"))
-    || (strbcasestr(filename, ".ace") && optl(opt, "unace"))
-    || (strbcasestr(filename, ".arj") && optl(opt, "arj"))
-    || (strbcasestr(filename, ".zoo") && optl(opt, "unzoo"))
-    || (strbcasestr(filename, ".jar") && optl(opt, "jar"))
-    || (strbcasestr(filename, ".lzh") && optl(opt, "lha"))
-    || (strbcasestr(filename, ".tar") && optl(opt, "tar"))
-    || (strbcasestr(filename, ".deb") && optl(opt, "deb"))
-    || ((strbcasestr(filename, ".tar.gz") || strbcasestr(filename, ".tgz")) 
+    if((cli_strbcasestr(filename, ".zip") && optl(opt, "unzip"))
+    || (cli_strbcasestr(filename, ".rar") && optl(opt, "unrar"))
+    || (cli_strbcasestr(filename, ".ace") && optl(opt, "unace"))
+    || (cli_strbcasestr(filename, ".arj") && optl(opt, "arj"))
+    || (cli_strbcasestr(filename, ".zoo") && optl(opt, "unzoo"))
+    || (cli_strbcasestr(filename, ".jar") && optl(opt, "jar"))
+    || (cli_strbcasestr(filename, ".lzh") && optl(opt, "lha"))
+    || (cli_strbcasestr(filename, ".tar") && optl(opt, "tar"))
+    || (cli_strbcasestr(filename, ".deb") && optl(opt, "deb"))
+    || ((cli_strbcasestr(filename, ".tar.gz") || cli_strbcasestr(filename, ".tgz")) 
 	 && (optl(opt, "tgz") || optl(opt, "deb"))) ) {
 
 	/* check permissions */
@@ -511,7 +513,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 
 
     /* unpack file  - as unprivileged user */
-    if(strbcasestr(filename, ".zip")) {
+    if(cli_strbcasestr(filename, ".zip")) {
 	char *args[] = { "unzip", "-P", "clam", "-o", (char *) filename, NULL };
 
 	if((userprg = getargl(opt, "unzip")))
@@ -519,63 +521,63 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	else
 	    ret = clamav_unpack("unzip", args, gendir, user, opt);
 
-    } else if(strbcasestr(filename, ".rar")) { 
+    } else if(cli_strbcasestr(filename, ".rar")) { 
 	char *args[] = { "unrar", "x", "-p-", "-y", (char *) filename, NULL };
 	if((userprg = getargl(opt, "unrar")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("unrar", args, gendir, user, opt);
 
-    } else if(strbcasestr(filename, ".ace")) { 
+    } else if(cli_strbcasestr(filename, ".ace")) { 
 	char *args[] = { "unace", "x", "-y", (char *) filename, NULL };
 	if((userprg = getargl(opt, "unace")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("unace", args, gendir, user, opt);
 
-    } else if(strbcasestr(filename, ".arj")) { 
+    } else if(cli_strbcasestr(filename, ".arj")) { 
         char *args[] = { "arj", "x","-y", (char *) filename, NULL };
         if((userprg = getargl(opt, "arj")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("arj", args, gendir, user, opt);
 
-    } else if(strbcasestr(filename, ".zoo")) { 
+    } else if(cli_strbcasestr(filename, ".zoo")) { 
 	char *args[] = { "unzoo", "-x","-j","./", (char *) filename, NULL };
 	if((userprg = getargl(opt, "unzoo")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("unzoo", args, gendir, user, opt);
 
-    } else if(strbcasestr(filename, ".jar")) { 
+    } else if(cli_strbcasestr(filename, ".jar")) { 
 	char *args[] = { "unzip", "-P", "clam", "-o", (char *) filename, NULL };
 	if((userprg = getargl(opt, "jar")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("unzip", args, gendir, user, opt);
 
-    } else if(strbcasestr(filename, ".lzh")) { 
+    } else if(cli_strbcasestr(filename, ".lzh")) { 
 	char *args[] = { "lha", "xf", (char *) filename, NULL };
 	if((userprg = getargl(opt, "lha")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("lha", args, gendir, user, opt);
 
-    } else if(strbcasestr(filename, ".tar")) { 
+    } else if(cli_strbcasestr(filename, ".tar")) { 
 	char *args[] = { "tar", "-xpvf", (char *) filename, NULL };
 	if((userprg = getargl(opt, "tar")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("tar", args, gendir, user, opt);
 
-    } else if(strbcasestr(filename, ".deb")) { 
+    } else if(cli_strbcasestr(filename, ".deb")) { 
 	char *args[] = { "ar", "x", (char *) filename, NULL };
 	if((userprg = getargl(opt, "deb")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("ar", args, gendir, user, opt);
 
-    } else if((strbcasestr(filename, ".tar.gz") || strbcasestr(filename, ".tgz"))) {
+    } else if((cli_strbcasestr(filename, ".tar.gz") || cli_strbcasestr(filename, ".tgz"))) {
 	char *args[] = { "tar", "-zxpvf", (char *) filename, NULL };
 	if((userprg = getargl(opt, "tgz")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);

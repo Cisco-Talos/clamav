@@ -33,7 +33,7 @@
 #include <string.h>
 
 #include "others.h"
-#include "cfgfile.h"
+#include "cfgparser.h"
 
 int notify(const char *cfgfile)
 {

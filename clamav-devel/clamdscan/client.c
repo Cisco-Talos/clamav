@@ -21,8 +21,9 @@
 #endif
 
 #include <stdio.h>
-#include <unistd.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
@@ -31,9 +32,12 @@
 #include <string.h>
 
 #include "others.h"
-#include "cfgfile.h"
 #include "defaults.h"
 #include "shared.h"
+#include "options.h"
+#include "cfgparser.h"
+#include "memory.h"
+#include "output.h"
 
 #ifdef PF_INET
 # define SOCKET_INET	PF_INET
@@ -202,7 +206,9 @@ int client(const struct optstruct *opt)
     } else if(opt->filename[0] == '/') {
 	file = (char *) strdup(opt->filename);
     } else {
-	if(fileinfo(opt->filename, 2) == -1) {
+	    struct stat foo;
+
+	if(stat(opt->filename, &foo) == -1) {
 	    mprintf("@Can't access file %s\n", opt->filename);
 	    perror(opt->filename);
 	    return 2;

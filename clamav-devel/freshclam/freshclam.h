@@ -19,7 +19,7 @@
 #ifndef __FRESHCLAM_H
 #define __FRESHCLAM_H
 
-#include "cfgfile.h"
+#include "cfgparser.h"
 
 void help(void);
 void daemonize(void);

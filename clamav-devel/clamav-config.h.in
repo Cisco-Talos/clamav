@@ -1,5 +1,8 @@
 /* clamav-config.h.in.  Generated from configure.in by autoheader.  */
 
+/* Define if your snprintf is busted */
+#undef BROKEN_SNPRINTF
+
 /* "build clamd" */
 #undef BUILD_CLAMD
 
@@ -8,9 +11,6 @@
 
 /* name of the clamav user */
 #undef CLAMAVUSER
-
-/* use syslog */
-#undef CLAMD_USE_SYSLOG
 
 /* enable clamuko */
 #undef CLAMUKO
@@ -150,8 +150,14 @@
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
 
+/* Define to 1 if you have the <tcpd.h> header file. */
+#undef HAVE_TCPD_H
+
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* Define to 1 if you have the `vsnprintf' function. */
+#undef HAVE_VSNPRINTF
 
 /* zlib installed */
 #undef HAVE_ZLIB_H
@@ -197,6 +203,9 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
+
+/* use syslog */
+#undef USE_SYSLOG
 
 /* Version number of package */
 #undef VERSION

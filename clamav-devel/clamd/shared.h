@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,11 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __CLIENT_H
-#define __CLIENT_H
+#ifndef __SHARED_H
+#define __SHARED_H
 
-#include "options.h"
-
-int client(const struct optstruct *opt);
+short debug_mode, logok;
 
 #endif

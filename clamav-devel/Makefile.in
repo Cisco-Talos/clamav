@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 #
-#  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+#  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -117,7 +117,7 @@ am__quote = @am__quote@
 install_sh = @install_sh@
 
 SUBDIRS = libclamav clamscan clamd clamdscan freshclam sigtool database docs etc clamav-milter
-EXTRA_DIST = FAQ contrib test examples BUGS
+EXTRA_DIST = FAQ contrib test examples BUGS shared
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs

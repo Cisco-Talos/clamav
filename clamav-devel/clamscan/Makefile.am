@@ -1,6 +1,6 @@
 #
-#  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
-#  Fixes - Arkadiusz Miskiewicz <misiek@pld.org.pl>
+#  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+#  Fixes by Arkadiusz Miskiewicz <misiek@pld.org.pl>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -19,11 +19,15 @@
 bin_PROGRAMS = clamscan
 
 clamscan_SOURCES = \
+    $(top_srcdir)/shared/output.c \
+    $(top_srcdir)/shared/output.h \
+    $(top_srcdir)/shared/getopt.c \
+    $(top_srcdir)/shared/getopt.h \
+    $(top_srcdir)/shared/memory.c \
+    $(top_srcdir)/shared/memory.h \
     clamscan.c \
     options.c \
     options.h \
-    getopt.c \
-    getopt.h \
     others.c \
     others.h \
     shared.h \
@@ -35,4 +39,4 @@ clamscan_SOURCES = \
 
 DEFS = @DEFS@
 LIBS = -L$(top_builddir)/libclamav -lclamav
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/libclamav
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav

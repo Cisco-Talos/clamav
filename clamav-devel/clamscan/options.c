@@ -32,8 +32,9 @@
 
 
 #include "options.h"
-#include "others.h"
 #include "shared.h"
+#include "memory.h"
+#include "output.h"
 
 extern int clamscan(struct optstruct *opt);
 

@@ -15,15 +15,21 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-INCLUDES = -I$(top_srcdir)/clamscan -I$(top_srcdir)/libclamav
-
 bin_PROGRAMS = sigtool
 
 sigtool_SOURCES = \
+    $(top_srcdir)/shared/output.c \
+    $(top_srcdir)/shared/output.h \
+    $(top_srcdir)/shared/getopt.c \
+    $(top_srcdir)/shared/getopt.h \
+    $(top_srcdir)/shared/memory.c \
+    $(top_srcdir)/shared/memory.h \
     options.c \
+    options.h \
     sigtool.c
 
-sigtool_LDADD = $(top_builddir)/clamscan/getopt.o $(top_builddir)/clamscan/others.o
+sigtool_LDADD = $(top_builddir)/clamscan/others.o 
 
 DEFS = @DEFS@
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 LIBS = -L$(top_builddir)/libclamav -lclamav @FRESHCLAM_LIBS@

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,7 +32,6 @@ struct s_info {
     long int blocks; /* number of read 16kb blocks */
 } claminfo;
 
-short int mprintf_disabled, mprintf_verbose, mprintf_quiet, mprintf_stdout, recursion, printinfected, bell;
-const char *logfile;
+short recursion, printinfected, bell;
 
 #endif

@@ -34,18 +34,15 @@
 #include <pwd.h>
 #include <grp.h>
 
-#if defined(CLAMD_USE_SYSLOG) && !defined(C_AIX)
+#if defined(USE_SYSLOG) && !defined(C_AIX)
 #include <syslog.h>
 #endif
 
 #include "options.h"
-#include "shared.h"
-#include "others.h"
-#include "clamd/others.h"
 #include "manager.h"
 #include "defaults.h"
 #include "freshclam.h"
-
+#include "output.h"
 
 static short terminate = 0;
 
@@ -183,33 +180,38 @@ int freshclam(struct optstruct *opt)
 
     /* initialize logger */
 
+    /* FIXME: enable in config file */
+    logg_size = 0;
+    logg_lock = 0;
+    logg_time = 0;
+
     if(cfgopt(copt, "LogVerbose"))
-	logverbose = 1;
+	logg_verbose = 1;
     else
-	logverbose = 0;
+	logg_verbose = 0;
 
     if(optc(opt, 'l')) {
-	logfile = getargc(opt, 'l');
+	logg_file = getargc(opt, 'l');
 	if(logg("--------------------------------------\n")) {
 	    mprintf("!Problem with internal logger.\n");
 	    mexit(1);
 	}
     } else if((cpt = cfgopt(copt, "UpdateLogFile"))) {
-	logfile = cpt->strarg; 
+	logg_file = cpt->strarg; 
 	if(logg("--------------------------------------\n")) {
 	    mprintf("!Problem with internal logger.\n");
 	    mexit(1);
 	}
     } else
-	logfile = NULL;
+	logg_file = NULL;
 
-#if defined(CLAMD_USE_SYSLOG) && !defined(C_AIX)
+#if defined(USE_SYSLOG) && !defined(C_AIX)
     if((cpt = cfgopt(copt, "LogSyslog"))) {
 	openlog("freshclam", LOG_PID, LOG_LOCAL6);
-	use_syslog = 1;
+	logg_syslog = 1;
 	syslog(LOG_INFO, "Freshclam started.\n");
     } else
-	use_syslog = 0;
+	logg_syslog = 0;
 #endif
 
     /* change the current working directory */

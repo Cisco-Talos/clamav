@@ -35,10 +35,13 @@
 #include <errno.h>
 #include <clamav.h>
 
-#include "cfgfile.h"
+#include "cfgparser.h"
 #include "others.h"
 #include "scanner.h"
 #include "defaults.h"
+#include "memory.h"
+#include "shared.h"
+#include "output.h"
 
 int checksymlink(const char *path)
 {
@@ -86,7 +89,7 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 	    if(dent->d_ino) {
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
-		    fname = mcalloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
+		    fname = (char *) mcalloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
 		    sprintf(fname, "%s/%s", dirname, dent->d_name);
 
 		    /* stat the file */
