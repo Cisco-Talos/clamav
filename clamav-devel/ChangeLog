@@ -1,3 +1,8 @@
+Wed Apr 14 03:24:44 CEST 2004 (tk)
+----------------------------------
+  * clamd: VirusEvent: disable support for %f
+	   (http://www.securitytracker.com/alerts/2004/Apr/1009615.html)
+
 Tue Apr 13 14:16:42 CEST 2004 (tk)
 ----------------------------------
   * libclamav: scan EVS mails
