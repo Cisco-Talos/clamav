@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.27  2004/01/09 14:45:59  nigelhorne
+ * Removed duplicated code in multipart handler
+ *
  * Revision 1.26  2004/01/09 10:20:54  nigelhorne
  * Locate uuencoded viruses hidden in text poritions of multipart/mixed mime messages
  *
@@ -69,7 +72,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.26 2004/01/09 10:20:54 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.27 2004/01/09 14:45:59 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -162,6 +165,7 @@ static	const	struct tableinit {
 	const	char	*key;
 	int	value;
 } rfc821headers[] = {
+	/* TODO: make these regular expressions */
 	{	"Content-Type:",		CONTENT_TYPE		},
 	{	"Content-Transfer-Encoding:",	CONTENT_TRANSFER_ENCODING	},
 	{	"Content-Disposition:",		CONTENT_DISPOSITION	},
@@ -446,7 +450,6 @@ parseEmailHeaders(const message *m, const table_t *rfc821Table)
 static int	/* success or fail */
 parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const char *dir, table_t *rfc821Table, table_t *subtypeTable)
 {
-	char *ptr;
 	message *messages[MAXALTERNATIVE];
 	int inhead, inMimeHead, i, rc, htmltextPart, multiparts = 0;
 	text *aText;
@@ -581,7 +584,7 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 						inMimeHead = continuationMarker(line);
 						messageAddArgument(aMessage, line);
 					} else if(inhead) {
-						char *copy, *arg;
+						char *copy, *cmd;
 
 						if(strlen(line) == 0) {
 							inhead = 0;
@@ -595,71 +598,47 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 						if(!inMimeHead)
 							if(t_line->t_next && ((t_line->t_next->t_text[0] == '\t') || (t_line->t_next->t_text[0] == ' ')))
 								inMimeHead = TRUE;
+
 						copy = strdup(line);
-						ptr = strtok_r(copy, " \t", &strptr);
 
-						switch(tableFind(rfc821Table, ptr)) {
-						case CONTENT_TYPE:
-							cli_dbgmsg("insert content-type: parse line '%s'\n", line);
-							arg = strtok_r(NULL, "\r\n", &strptr);
-							if((arg == NULL) || (strchr(arg, '/') == NULL)) {
-								if(arg == NULL)
-									cli_warnmsg("Empty content-type received, assuming text/plain; charset=us-ascii\n", arg);
-								else
-									cli_warnmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", arg);
-								messageSetMimeType(aMessage, "text");
-								messageSetMimeSubtype(aMessage, "plain");
-							} else {
-								if(*arg == '/') {
-									cli_warnmsg("Content-type '/' received, assuming application/octet-stream\n");
-									messageSetMimeType(aMessage, "application");
-									messageSetMimeSubtype(aMessage, "octet-stream");
-									ptr = strtok_r(arg, ";", &strptr);
-								} else {
-									messageSetMimeType(aMessage, strtok_r(arg, "/", &strptr));
-									messageSetMimeSubtype(aMessage, strtok_r(NULL, ";", &strptr));
+						cmd = strtok_r(copy, " \t", &strptr);
+
+						/*
+						 * TODO: duplication of code in
+						 * parseEmailHeaders
+						 */
+						if(*cmd) {
+							char *arg = strtok_r(NULL, "", &strptr);
+
+							if(arg)
+								/*
+								 * Found a header such as
+								 * Content-Type: multipart/mixed;
+								 * set arg to be
+								 * "multipart/mixed" and cmd to
+								 * be "Content-Type:"
+								 */
+								parseMimeHeader(aMessage, cmd, rfc821Table, arg);
+							else {
+								/*
+								 * Handle the case where the
+								 * header does not have a space
+								 * after the ':', e.g.
+								 * Content-Type:multipart/mixed;
+								 */
+								arg = strchr(cmd, ':');
+								if(arg && (*++arg != '\0')) {
+									char *p;
+
+									cmd = strdup(cmd);
+									p = strchr(cmd, ':');
+									*++p = '\0';
+									parseMimeHeader(aMessage, cmd, rfc821Table, arg);
+									free(cmd);
 								}
-								if((ptr = strtok_r(NULL, "\r\n", &strptr)) != NULL)
-									messageAddArguments(aMessage, ptr);
 							}
-							break;
-						case CONTENT_TRANSFER_ENCODING:
-							ptr = strtok_r(NULL, "", &strptr);
-							if(ptr) {
-								messageSetEncoding(aMessage, ptr);
-								break;
-							}
-							/*
-							 * Encoding type not found
-							 */
-							if(!inMimeHead) {
-								cli_warnmsg("Empty encoding type, assuming none");
-								messageSetEncoding(aMessage, "7bit");
-								break;
-							}
-							/*
-							 * Handle the case
-							 * when it flows over
-							 * to the next line.
-							 *
-							 * Content-type:
-							 *	quoted-printable
-							 */
-							if(t_line->t_next) {
-								t_line = t_line->t_next;
-								messageSetEncoding(aMessage, t_line->t_text);
-
-								break;
-							}
-							cli_warnmsg("Empty encoding type, assuming none");
-							messageSetEncoding(aMessage, "7bit");
-
-							break;
-						case CONTENT_DISPOSITION:
-							messageSetDispositionType(aMessage, strtok_r(NULL, ";", &strptr));
-							messageAddArgument(aMessage, strtok_r(NULL, "", &strptr));
-							break;
 						}
+
 						free(copy);
 					} else if(boundaryStart(line, boundary)) {
 						inhead = 1;
