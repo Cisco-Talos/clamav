@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.28  2004/01/09 15:07:42  nigelhorne
+ * Re-engineered update 1.11 lost in recent changes
+ *
  * Revision 1.27  2004/01/09 14:45:59  nigelhorne
  * Removed duplicated code in multipart handler
  *
@@ -72,7 +75,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.27 2004/01/09 14:45:59 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.28 2004/01/09 15:07:42 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -1414,23 +1417,31 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 			else if(strchr(copy, '/') == NULL)
 				  cli_warnmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", copy);
 			else {
-				char *s;
 				/*
 				 * Some clients are broken and
 				 * put white space after the ;
 				 */
 				strstrip(copy);
-				messageSetMimeType(m, strtok_r(copy, "/", &strptr));
+				if(*arg == '/') {
+					cli_warnmsg("Content-type '/' received, assuming application/octet-stream\n");
+					messageSetMimeType(m, "application");
+					messageSetMimeSubtype(m, "octet-stream");
+					(void)strtok_r(arg, ";", &strptr);
+				} else {
+					char *s;
 
-				/*
-				 * Stephen White <stephen@earth.li>
-				 * Some clients put space after
-				 * the mime type but before
-				 * the ;
-				 */
-				s = strtok_r(NULL, ";", &strptr);
-				strstrip(s);
-				messageSetMimeSubtype(m, s);
+					messageSetMimeType(m, strtok_r(copy, "/", &strptr));
+
+					/*
+					 * Stephen White <stephen@earth.li>
+					 * Some clients put space after
+					 * the mime type but before
+					 * the ;
+					 */
+					s = strtok_r(NULL, ";", &strptr);
+					strstrip(s);
+					messageSetMimeSubtype(m, s);
+				}
 
 				/*
 				 * Add in all the arguments.
