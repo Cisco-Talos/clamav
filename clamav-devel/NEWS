@@ -2,6 +2,17 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.72
+----
+
+Major bugfixes in this release include crashes with corrupted BinHex messages
+and some Excel documents. Protection against archive bombs (not fully
+functional since 0.70) was improved and a number of other improvements were
+made.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
 0.71
 ----
 
@@ -12,7 +23,7 @@ the noteworthy changes include:
     + support nested OLE2 files 
     + support Word6 macro code
     + ignore popular file types (media, graphics)
-    + support compress.exe (SZDD) compression (test/test1.msc)
+    + support compress.exe (SZDD) compression (test/test.msc)
     + improve virus detection in e-mails
 
 -) clamscan:
