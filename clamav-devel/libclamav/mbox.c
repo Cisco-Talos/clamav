@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.141  2004/09/23 08:43:25  nigelhorne
+ * Scan multipart/digest messages
+ *
  * Revision 1.140  2004/09/22 16:09:51  nigelhorne
  * Build if CURLOPT_DNS_USE_GLOBAL_CACHE isn't supported
  *
@@ -408,7 +411,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.140 2004/09/22 16:09:51 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.141 2004/09/23 08:43:25 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1391,6 +1394,18 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				free((char *)cptr);
 				if(!isAlternative)
 					break;*/
+			case DIGEST:
+				/*
+				 * According to section 5.1.5 RFC2046, the
+				 * default mime type of multipart/digest parts
+				 * is message/rfc822
+				 *
+				 * We consider them as alternative, wrong in
+				 * the strictest sense since they aren't
+				 * alternatives - all parts a valid - but it's
+				 * OK for our needs since it means each part
+				 * will be scanned
+				 */
 			case ALTERNATIVE:
 				cli_dbgmsg("Multipart alternative handler\n");
 
@@ -1656,13 +1671,6 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 
 				/* rc = parseEmailBody(NULL, NULL, dir, rfc821Table, subtypeTable, options); */
 				break;
-			case DIGEST:
-				/*
-				 * TODO:
-				 * According to section 5.1.5 RFC2046, the
-				 * default mime type of multipart/digest parts
-				 * is message/rfc822
-				 */
 			case SIGNED:
 			case PARALLEL:
 				/*
@@ -2642,6 +2650,7 @@ checkURLs(message *m, const char *dir)
 	tableDestroy(t);
 
 #if	defined(WITH_CURL) && defined(CL_THREAD_SAFE)
+	assert(n <= MAX_URLS);
 	cli_dbgmsg("checkURLs: waiting for %d thread(s) to finish\n", n);
 	while(--n >= 0) {
 		pthread_join(tid[n], NULL);
