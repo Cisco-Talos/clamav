@@ -336,9 +336,17 @@
  *			Always add X-Virus-Scanned
  *			If hostaddr is NULL assume it's a local connection. This
  *			is probably a safe assumption but it should be verified
+ *	0.70p	20/4/04	If /dev/console fails to open, open /dev/null instead on
+ *			fds 1 and 2
+ *			TCP_WRAPPERS code now uses inet_ntop()
+ *			Simplify virus string
+ *			Sort out tabs in the hard coded e-mail message
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.80  2004/04/21 15:27:02  nigelhorne
+ * Various changes
+ *
  * Revision 1.79  2004/04/20 14:15:01  nigelhorne
  * Sorted out X- headers and handle hostaddr == NULL
  *
@@ -561,9 +569,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.79 2004/04/20 14:15:01 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.80 2004/04/21 15:27:02 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70o"
+#define	CM_VERSION	"0.70p"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1291,7 +1299,8 @@ main(int argc, char **argv)
 		close(1);
 		close(2);
 		open("/dev/null", O_RDONLY);
-		if(open("/dev/console", O_WRONLY) == 1)
+		if((open("/dev/console", O_WRONLY) == 1) ||
+		   (open("/dev/null", O_WRONLY) == 1))
 			dup(1);
 #ifdef HAVE_SETPGRP
 #ifdef SETPGRP_VOID
@@ -1635,11 +1644,14 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		if((hp = gethostbyname(hostmail)) == NULL) {
 			if(use_syslog)
 				syslog(LOG_WARNING, "Access Denied: Host Unknown (%s)", hostname);
-			return SMFIS_TEMPFAIL;
+			return cl_error;
 		}
 
-		/* inet_ntop? */
+#ifdef HAVE_INET_NTOP
+		(void)inet_ntop(AF_INET, &((struct sockaddr_in *)(hp->h_addr))->sin_addr, ip, sizeof(ip));
+#else
 		strcpy(ip, (char *)inet_ntoa(*(struct in_addr *)hp->h_addr));
+#endif
 
 		/*
 		 * Ask is this is a allowed name or IP number
@@ -2097,7 +2109,7 @@ clamfi_eom(SMFICTX *ctx)
 		return cl_error;
 	}
 
-	if(strstr(mess, "FOUND") == NULL) {
+	if((ptr = strstr(mess, "FOUND")) == NULL) {
 		if(!nflag)
 			smfi_addheader(ctx, "X-Virus-Status", "Clean");
 
@@ -2127,55 +2139,58 @@ clamfi_eom(SMFICTX *ctx)
 			}
 		}
 	} else {
-		int i;
-		char **to, *err;
 		char reject[1024];
+		char **to;
+
+		*ptr = '\0';	/* Remove the "FOUND" word */
 
 		if(!nflag)
 			smfi_addheader(ctx, "X-Virus-Status", "Infected");
 
-		/*
-		 * Setup err as a list of recipients
-		 */
-		err = (char *)cli_malloc(1024);
-
-		if(err == NULL) {
-			clamfi_cleanup(ctx);
-			return cl_error;
-		}
-
-		/*
-		 * Use snprintf rather than printf since we don't know the
-		 * length of privdata->from and may get a buffer overrun
-		 */
-		snprintf(err, 1023, "Intercepted virus from %s to",
-			privdata->from);
-
-		ptr = strchr(err, '\0');
-
-		i = 1024;
-
-		for(to = privdata->to; *to; to++) {
+		if(use_syslog) {
 			/*
-			 * Re-alloc if we are about run out of buffer space
+			 * Setup err as a list of recipients
 			 */
-			if(&ptr[strlen(*to) + 2] >= &err[i]) {
-				i += 1024;
-				err = realloc(err, i);
-				ptr = strchr(err, '\0');
-			}
-			ptr = strrcpy(ptr, " ");
-			ptr = strrcpy(ptr, *to);
-		}
-		(void)strcpy(ptr, "\n");
+			char *err = (char *)cli_malloc(1024);
+			int i;
 
-		if(use_syslog)
+			if(err == NULL) {
+				clamfi_cleanup(ctx);
+				return cl_error;
+			}
+
+			/*
+			 * Use snprintf rather than printf since we don't know the
+			 * length of privdata->from and may get a buffer overrun
+			 */
+			snprintf(err, 1023, "Intercepted virus from %s to",
+				privdata->from);
+
+			ptr = strchr(err, '\0');
+
+			i = 1024;
+
+			for(to = privdata->to; *to; to++) {
+				/*
+				 * Re-alloc if we are about run out of buffer space
+				 */
+				if(&ptr[strlen(*to) + 2] >= &err[i]) {
+					i += 1024;
+					err = realloc(err, i);
+					ptr = strchr(err, '\0');
+				}
+				ptr = strrcpy(ptr, " ");
+				ptr = strrcpy(ptr, *to);
+			}
+			(void)strcpy(ptr, "\n");
+
 			/* Include the sendmail queue ID in the log */
 			syslog(LOG_NOTICE, "%s: %s %s", sendmailId, mess, err);
 #ifdef	CL_DEBUG
-		cli_dbgmsg("%s\n", err);
+			cli_dbgmsg("%s\n", err);
 #endif
-		free(err);
+			free(err);
+		}
 
 		if(!qflag) {
 			char cmd[128];
@@ -2224,23 +2239,23 @@ clamfi_eom(SMFICTX *ctx)
 				if((templatefile == NULL) ||
 				   (sendtemplate(templatefile, sendmail, mess) < 0)) {
 					if(bflag)
-						fputs("A message you sent to\n\t", sendmail);
+						fputs("A message you sent to\n", sendmail);
 					else if(pflag)
 						/*
 						 * The message is only going to the
 						 * postmaster, so include some useful
 						 * information
 						 */
-						fprintf(sendmail, "The message %s sent from %s to\n\t",
+						fprintf(sendmail, "The message %s sent from %s to\n",
 							sendmailId, from);
 					else
-						fprintf(sendmail, "A message sent from %s to\n\t",
+						fprintf(sendmail, "A message sent from %s to\n",
 							from);
 
 					for(to = privdata->to; *to; to++)
-						fprintf(sendmail, "%s\n", *to);
-					fputs("contained a virus and has not been delivered.\n\t", sendmail);
-					fputs(mess, sendmail);
+						fprintf(sendmail, "\t%s\n", *to);
+					/* skip over 'stream: ' at the start */
+					fprintf(sendmail, "contained %sand has not been delivered.\n", &mess[8]);
 
 					if(privdata->filename != NULL)
 						fprintf(sendmail, "\nThe message in question has been quarantined as %s\n", privdata->filename);
@@ -2307,7 +2322,8 @@ clamfi_eom(SMFICTX *ctx)
 		else
 			rc = SMFIS_DISCARD;
 
-		snprintf(reject, sizeof(reject) - 1, "Virus detected by ClamAV - http://www.clamav.net - %s", mess);
+		/* skip over 'stream: ' at the start */
+		snprintf(reject, sizeof(reject) - 1, "%sdetected by ClamAV - http://www.clamav.net", &mess[8]);
 		smfi_setreply(ctx, "550", "5.7.1", reject);
 	}
 	clamfi_cleanup(ctx);

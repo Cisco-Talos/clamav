@@ -335,6 +335,11 @@ Changes
 		Always add X-Virus-Scanned
 		If hostaddr is NULL assume it's a local connection. This
 		is probably a safe assumption but it should be verified
+0.70p	20/4/04	If /dev/console fails to open, open /dev/null instead on fds 1
+			and 2
+		TCP_WRAPPERS code now uses inet_ntop()
+		Simplify virus string
+		Sort out tabs in the hard coded e-mail message
 
 BUG REPORTS
 
