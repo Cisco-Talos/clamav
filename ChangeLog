@@ -1,3 +1,7 @@
+Sun Dec 19 12:46:23 CET 2004 (tk)
+---------------------------------
+  * contrib/clamdwatch: updated to 0.7
+
 Sun Dec 19 03:12:50 CET 2004 (tk)
 ---------------------------------
   * sigtool: fixed compilation error
