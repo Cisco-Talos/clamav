@@ -1,3 +1,11 @@
+Mon Mar  1 01:25:03 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter:	Removed duplicate /etc/rc.d/init.d/clamd that had
+	also been put in the contrib directory
+	Moved clamav-milter init.d to contrib directory for consistency
+	Updated INSTALL instructions to mention connecting via TCP/IP
+	Updated init.d to ensure clamav-milter is started after clamd
+
 Sun Feb 29 18:28:22 CET 2004 (tk)
 ---------------------------------
   * clamd, configure: enabled support for on-access scanning under Linux and
