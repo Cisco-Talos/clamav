@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: line.c,v $
+ * Revision 1.6  2004/10/14 17:45:55  nigelhorne
+ * Try to reclaim some memory if it becomes low when decoding
+ *
  * Revision 1.5  2004/09/30 08:58:56  nigelhorne
  * Remove empty lines
  *
@@ -33,7 +36,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: line.c,v 1.5 2004/09/30 08:58:56 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: line.c,v 1.6 2004/10/14 17:45:55 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -141,5 +144,11 @@ const char *
 lineGetData(const line_t *line)
 {
 	return line ? &line[1] : NULL;
+}
+
+unsigned char
+lineGetRefCount(const line_t *line)
+{
+	return line[0];
 }
 #endif

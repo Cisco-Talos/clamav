@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.100  2004/10/14 17:45:55  nigelhorne
+ * Try to reclaim some memory if it becomes low when decoding
+ *
  * Revision 1.99  2004/10/12 10:40:48  nigelhorne
  * Remove shadow declaration of isblank
  *
@@ -294,7 +297,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.99 2004/10/12 10:40:48 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.100 2004/10/14 17:45:55 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -355,6 +358,7 @@ static	unsigned	char	uudecode(char c);
 static	const	char	*messageGetArgument(const message *m, int arg);
 static	void	*messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), void (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(const text *, void *));
 static	int	usefulArg(const char *arg);
+static	void	messageDedup(message *m);
 
 /*
  * These maps are ordered in decreasing likelyhood of their appearance
@@ -1035,14 +1039,26 @@ messageAddStr(message *m, const char *data)
 	if(m->body_first == NULL)
 		m->body_last = m->body_first = (text *)cli_malloc(sizeof(text));
 	else {
+		assert(m->body_last != NULL);
 		m->body_last->t_next = (text *)cli_malloc(sizeof(text));
+		if(m->body_last->t_next == NULL) {
+			messageDedup(m);
+			m->body_last->t_next = (text *)cli_malloc(sizeof(text));
+			if(m->body_last->t_next == NULL) {
+				cli_errmsg("messageAddStr: out of memory\n");
+				return -1;
+			}
+		}
+
 		if(data && m->body_last->t_line && (strcmp(data, lineGetData(m->body_last->t_line)) == 0))
 			repeat = m->body_last->t_line;
 		m->body_last = m->body_last->t_next;
 	}
 
-	if(m->body_last == NULL)
+	if(m->body_last == NULL) {
+		cli_errmsg("messageAddStr: out of memory\n");
 		return -1;
+	}
 
 	m->body_last->t_next = NULL;
 
@@ -1052,15 +1068,14 @@ messageAddStr(message *m, const char *data)
 		else
 			m->body_last->t_line = lineCreate(data);
 
-		if(m->body_last->t_line == NULL) {
-			/*
-			 * TODO: Here we could go through all the message
-			 * looking for duplicate lines we can line. It'd be
-			 * very slow, but it could save enough memory to
-			 * continue...
-			 */
-			cli_errmsg("messageAddStr: out of memory\n");
-			return -1;
+		if((m->body_last->t_line == NULL) && (repeat == NULL)) {
+			messageDedup(m);
+			m->body_last->t_line = lineCreate(data);
+
+			if(m->body_last->t_line == NULL) {
+				cli_errmsg("messageAddStr: out of memory\n");
+				return -1;
+			}
 		}
 		/* cli_chomp(m->body_last->t_text); */
 
@@ -1638,7 +1653,7 @@ fileblob *
 messageToFileblob(message *m, const char *dir)
 {
 	cli_dbgmsg("messageToFileblob\n");
-	return messageExport(m, dir, fileblobCreate, fileblobDestroy, fileblobSetFilename, fileblobAddData, textToFileblob);
+	return messageExport(m, dir, (void *)fileblobCreate, (void *)fileblobDestroy, (void *)fileblobSetFilename, (void *)fileblobAddData, (void *)textToFileblob);
 }
 
 /*
@@ -1648,7 +1663,7 @@ messageToFileblob(message *m, const char *dir)
 blob *
 messageToBlob(message *m)
 {
-	return messageExport(m, NULL, blobCreate, blobDestroy, blobSetFilename, blobAddData, textToBlob);
+	return messageExport(m, NULL, (void *)blobCreate, (void *)blobDestroy, (void *)blobSetFilename, (void *)blobAddData, (void *)textToBlob);
 }
 
 /*
@@ -2350,4 +2365,73 @@ usefulArg(const char *arg)
 		return 0;
 	}
 	return 1;
+}
+
+/*
+ * We've run out of memory. Try to recover some by
+ * deduping the message
+ */
+static void
+messageDedup(message *m)
+{
+	const text *t1;
+	size_t saved = 0;
+
+	t1 = m->dedupedThisFar ? m->dedupedThisFar : m->body_first;
+
+	for(t1 = m->body_first; t1; t1 = t1->t_next) {
+		const char *d1;
+		text *t2;
+		line_t *l1;
+		unsigned int r1;
+
+		if(saved >= 100*1000)
+			break;	/* that's enough */
+		l1 = t1->t_line;
+		if(l1 == NULL)
+			continue;
+		d1 = lineGetData(l1);
+		if(strlen(d1) < 8)
+			continue;	/* wouldn't recover many bytes */
+		r1 = (unsigned int)lineGetRefCount(l1);
+		if(r1 == 255)
+			continue;
+		/*
+		 * We don't want to foul up any pointers
+		 */
+		if(t1 == m->encoding)
+			continue;
+		if(t1 == m->bounce)
+			continue;
+		if(t1 == m->uuencode)
+			continue;
+		if(t1 == m->binhex)
+			continue;
+		if(t1 == m->yenc)
+			continue;
+
+		for(t2 = t1->t_next; t2; t2 = t2->t_next) {
+			const char *d2;
+			line_t *l2 = t2->t_line;
+
+			if(l2 == NULL)
+				continue;
+			if((r1 + (unsigned int)lineGetRefCount(l2)) > 255)
+				continue;
+			d2 = lineGetData(l2);
+			if(d1 == d2)
+				/* already linked */
+				continue;
+			if(strcmp(d1, d2) == 0) {
+				if(lineUnlink(l2) == NULL)
+					saved += strlen(d1);
+				t2->t_line = lineLink(l1);
+				if(t2->t_line == NULL) {
+					cli_errmsg("messageDedup: out of memory\n");
+					return;
+				}
+			}
+		}
+	}
+	m->dedupedThisFar = t1;
 }

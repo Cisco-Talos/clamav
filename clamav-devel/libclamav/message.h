@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: message.h,v $
+ * Revision 1.20  2004/10/14 17:45:55  nigelhorne
+ * Try to reclaim some memory if it becomes low when decoding
+ *
  * Revision 1.19  2004/09/17 13:47:19  nigelhorne
  * Handle yEnc attachments
  *
@@ -90,6 +93,7 @@ typedef struct message {
 	text	*uuencode;	/* start of a uuencoded message */
 	text	*yenc;		/* start of a yEnc message */
 	text	*encoding;	/* is the non MIME message encoded? */
+	text	*dedupedThisFar;
 } message;
 
 message	*messageCreate(void);
