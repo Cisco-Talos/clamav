@@ -67,14 +67,14 @@ int cli_check_jpeg_exploit(int fd)
 	unsigned char buffer[4];
 	off_t offset;
 	int retval;
-	
+
 
 	cli_dbgmsg("in cli_check_jpeg_exploit()\n");
 
 	if (cli_readn(fd, buffer, 2) != 2) {
 		return 0;
 	}
-	
+
 	if ((buffer[0] != 0xff) || (buffer[1] != 0xd8)) {
 		return 0;
 	}
@@ -104,7 +104,7 @@ int cli_check_jpeg_exploit(int fd)
 		}
 		offset = ((unsigned int) buffer[2] << 8) + buffer[3];
 		if (offset < 2) {
-			return 2;
+			return 1;
 		}
 		offset -= 2;
 		offset += lseek(fd, 0, SEEK_CUR);
