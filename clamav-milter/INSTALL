@@ -27,19 +27,22 @@ can't be run "out of the box"
 
 Solaris 8 doesn't have milter support so clamav-milter won't work unless you
 rebuild sendmail from source.
-Solaris 9 has milter support in the supplied sendmail, but doesn't include
-libmilter so you can't develop milter applications on it. Go to sendmail.org,
-download the lastest sendmail, cd to libmilter and "make install" there.
-Needs -lresolv
 
 FreeBSD4.7 use /usr/local/bin/gcc30. GCC3.0 is an optional extra on
 FreeBSD. It comes with getopt.h which is handy. To link you need
 -lgnugetopt
 	gcc30 -O3 -DCONFDIR=\"/usr/local/etc\" -I. -I.. -I../clamd -I../libclamav -pedantic -Wuninitialized -Wall -pipe -mcpu=pentium -march=pentium -fomit-frame-pointer -ffast-math -finline-functions -funroll-loops clamav-milter.c -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o -lgnugetopt
 
-FreeBSD4.8: should compile out of the box
+FreeBSD4.8: compiles out of the box with either gcc2.95 or gcc3
 OpenBSD3.3: the supplied sendmail does not come with Milter support. You
 will need to rebuild sendmail from source
+
+Solaris 9 and FreeBSD5 have milter support in the supplied sendmail, but
+doesn't include libmilter so you can't develop milter applications on it.
+Go to sendmail.org, download the lastest sendmail, cd to libmilter and
+"make install" there.
+
+Needs -lresolv on Solaris
 
 INSTALLATION
 
@@ -179,6 +182,8 @@ Changes
 0.66	13/12/03 Upissue
 0.66a	22/12/03 Added --sign
 0.66b	27/12/03 --sign moved to privdata
+0.66c	31/12/03 Included the sendmail queue ID in the log, from an
+		idea by Andy Fiddaman <af@jeamland.org>
 
 BUG REPORTS
 
