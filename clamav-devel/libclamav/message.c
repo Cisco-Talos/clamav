@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.117  2004/11/18 10:39:56  nigelhorne
+ * Added binhex filetype decoding
+ *
  * Revision 1.116  2004/11/17 17:32:15  nigelhorne
  * Find more bounce messages
  *
@@ -345,7 +348,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.116 2004/11/17 17:32:15 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.117 2004/11/18 10:39:56 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -384,6 +387,14 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.116 2004/11/17 17:32:15 nigelhor
 #include "others.h"
 #include "str.h"
 #include "filetypes.h"
+
+#if HAVE_MMAP
+#if HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#else /* HAVE_SYS_MMAN_H */
+#undef HAVE_MMAP
+#endif
+#endif
 
 /* required for AIX and Tru64 */
 #ifdef TRUE
@@ -426,6 +437,7 @@ static	const	struct	encoding_map {
 	{	"binary",		BINARY		},
 	{	"x-uuencode",		UUENCODE	},
 	{	"x-yencode",		YENCODE		},
+	{	"x-binhex",		BINHEX		},
 	{	"us-ascii",		NOENCODING	},	/* incorrect */
 	{	NULL,			NOENCODING	}
 };
@@ -1225,9 +1237,9 @@ messageIsEncoding(message *m)
 			m->bounce = m->body_last;
 	else if((m->uuencode == NULL) &&
 		((strncasecmp(line, "begin ", 6) == 0) &&
-		(isdigit(line[6])) &&
-		(isdigit(line[7])) &&
-		(isdigit(line[8])) &&
+		isdigit(line[6]) &&
+		isdigit(line[7]) &&
+		isdigit(line[8]) &&
 		(line[9] == ' ')))
 			m->uuencode = m->body_last;
 	else if((m->binhex == NULL) &&
@@ -1555,6 +1567,11 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		blobDestroy(tmp);
 
 		m->binhex = NULL;
+
+		if((m->numberOfEncTypes == 1) && (m->encodingTypes[0] == BINHEX)) {
+			cli_dbgmsg("Finished exporting binhex file\n");
+			return ret;
+		}
 	}
 
 	if(m->numberOfEncTypes == 0) {
@@ -2839,4 +2856,81 @@ pop(LINK1 *top, char *buffer)
 		return SUCCESS;
 	}
 	return FAILURE;
+}
+
+int
+cli_binhex(const char *dir, int desc)
+{
+	struct stat statb;
+	char *buf, *start;
+	size_t size, bytesleft;
+	message *m;
+	fileblob *fb;
+
+#ifndef HAVE_MMAP
+	cli_errmsg("Binhex decoding needs mmap() (for now)\n");
+	return CL_EMEM;
+#else
+	if(fstat(desc, &statb) < 0)
+		return CL_EOPEN;
+
+	m = messageCreate();
+	if(m == NULL)
+		return CL_EMEM;
+
+	size = statb.st_size;
+	start = buf = mmap(NULL, size, PROT_READ, MAP_PRIVATE, desc, 0);
+	if (buf == MAP_FAILED)
+		return CL_EMEM;
+
+	cli_dbgmsg("mmap'ed binhex file\n");
+
+	bytesleft = size;
+
+	while(bytesleft) {
+		int length = 0;
+		char *ptr, *line;
+
+		for(ptr = buf; bytesleft && *ptr != '\r'; ptr++) {
+			length++;
+			--bytesleft;
+		}
+
+		printf("%d: ", length);
+
+		line = cli_malloc(length + 1);
+
+		memcpy(line, buf, length);
+		line[length] = '\0';
+
+		puts(line);
+
+		if(messageAddStr(m, line) < 0)
+			break;
+
+		free(line);
+
+		buf = ++ptr;
+	}
+	munmap(start, size);
+
+	if(m->binhex == NULL) {
+		messageDestroy(m);
+		cli_errmsg("No binhex line found\n");
+		return CL_EFORMAT;
+	}
+	messageSetEncoding(m, "x-binhex");
+
+	fb = messageToFileblob(m, dir);
+	if(fb) {
+		cli_dbgmsg("Binhex file decoded to %s\n", fileblobGetFilename(fb));
+		fileblobDestroy(fb);
+	} else
+		cli_errmsg("Couldn't decode binhex file to %s\n", fileblobGetFilename(fb));
+	messageDestroy(m);
+
+	if(fb)
+		return CL_CLEAN;	/* a lie - but it gets things going */
+	return CL_EOPEN;
+#endif
 }
