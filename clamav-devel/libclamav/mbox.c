@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.142  2004/09/28 18:40:12  nigelhorne
+ * Use stack rather than heap where possible
+ *
  * Revision 1.141  2004/09/23 08:43:25  nigelhorne
  * Scan multipart/digest messages
  *
@@ -411,7 +414,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.141 2004/09/23 08:43:25 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.142 2004/09/28 18:40:12 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -877,7 +880,10 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 				 * Add all the arguments on the line
 				 */
 				const char *ptr;
-				char *copy = strdup(buffer);
+				char copy[LINE_LENGTH + 1];
+
+				assert(strlen(buffer) < sizeof(copy));
+				strcpy(copy, buffer);
 
 #ifdef	CL_THREAD_SAFE
 				for(ptr = strtok_r(copy, ";", &strptr); ptr; ptr = strtok_r(NULL, ":", &strptr))
@@ -888,7 +894,6 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 					if(strchr(ptr, '='))
 						messageAddArguments(ret, ptr);
 #endif
-				free(copy);
 			} else {
 				Xheader = (bool)(buffer[0] == 'X');
 				messageAddArgument(ret, buffer);
@@ -1056,12 +1061,9 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				 * able to scan anyway and we lose nothing
 				 */
 				aText = textCopy(messageGetBody(mainMessage));
-			/*
-			 * TODO
-			else if(options&CL_MAILURL)
+			else if(options&CL_SCAN_MAILURL)
 				if(tableFind(subtypeTable, mimeSubtype) == HTML)
 					checkURLs(mainMessage, dir);
-			 */
 			break;
 		case MULTIPART:
 			boundary = messageFindArgument(mainMessage, "boundary");
@@ -1252,6 +1254,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							const text *next = t_line->t_next;
 							char *fullline = strdup(line);
 
+							assert(strlen(line) <= LINE_LENGTH);
 							/*
 							 * Fold next lines to the end of this
 							 * if they start with a white space
@@ -2355,7 +2358,7 @@ saveTextPart(message *m, const char *dir)
 		/*
 		 * Save main part to scan that
 		 */
-		cli_dbgmsg("Saving main message, encoded with scheme\n");
+		cli_dbgmsg("Saving main message\n");
 
 		fileblobDestroy(fb);
 	}
@@ -2447,9 +2450,10 @@ rfc2047(const char *in)
 
 	/* For each RFC2047 string */
 	while(*in) {
-		char encoding, *enctext, *ptr;
+		char encoding, *ptr;
 		message *m;
 		blob *b;
+		char enctext[LINE_LENGTH + 1];
 
 		/* Find next RFC2047 string */
 		while(*in) {
@@ -2477,12 +2481,11 @@ rfc2047(const char *in)
 		if(*++in == '\0')
 			break;
 
-		enctext = strdup(in);
+		assert(strlen(in) < sizeof(enctext));
+		strcpy(enctext, in);
 		in = strstr(in, "?=");
-		if(in == NULL) {
-			free(enctext);
+		if(in == NULL)
 			break;
-		}
 		in += 2;
 		ptr = strstr(enctext, "?=");
 		assert(ptr != NULL);
@@ -2490,12 +2493,9 @@ rfc2047(const char *in)
 		/*cli_dbgmsg("Need to decode '%s' with method '%c'\n", enctext, encoding);*/
 
 		m = messageCreate();
-		if(m == NULL) {
-			free(enctext);
+		if(m == NULL)
 			break;
-		}
 		messageAddStr(m, enctext);
-		free(enctext);
 		switch(encoding) {
 			case 'q':
 				messageSetEncoding(m, "quoted-printable");
