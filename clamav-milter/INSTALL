@@ -2,7 +2,8 @@ BUILD INSTRUCTIONS
 
 A makefile was supplied with this which should have built the program. If it
 fails please let us know, and here are some hints for building on different
-platforms.
+platforms. You will need to set --enable-milter when running configure for
+the automatic build to work.
 
 Tested OK on Linux/x86 with gcc3.2.
 	cc -O3 -pedantic -Wuninitialized -Wall -pipe -mcpu=pentium -march=pentium -fomit-frame-pointer -ffast-math -finline-functions -funroll-loops clamav-milter.c -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o
