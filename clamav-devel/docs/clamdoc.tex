@@ -69,7 +69,7 @@
     \vspace{3cm}
     \begin{flushright}
 	\rule[-1ex]{8cm}{3pt}\\
-	\huge Clam AntiVirus 0.81\\
+	\huge Clam AntiVirus 0.83\\
 	\huge \emph{User Manual}\\
     \end{flushright}
 
@@ -121,7 +121,7 @@
 	\item{POSIX compliant, portable}
 	\item{Fast scanning}
 	\item{Supports on-access scanning (Linux and FreeBSD only)}
-	\item{Detects over 29000 viruses, worms, and trojans, including
+	\item{Detects over 30000 viruses, worms, and trojans, including
 	      Microsoft Office and MacOffice macro viruses}
 	\item{Scans within archives and compressed files (also protects
 	      against archive bombs), built-in support includes:
@@ -287,6 +287,9 @@
 	a very simple GUI. Get it at \url{http://www.bebits.com/app/3930/}
 
 	\item \textbf{MS Windows - Cygwin}\\
+	ClamAV is a part of the official Cygwin port repository.
+
+	\item \textbf{MS Windows - cygwin.dll based}\\
 	All major features of ClamAV are implemented under Win32 using the
 	Cygwin compatibility layer. You can download a self-installing
 	package at\\ \url{http://www.sosdg.org/clamav-win32/index.php}
@@ -719,9 +722,9 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	\item Petite (2.x)
     \end{itemize}
     Due to license issues, support for RAR 3.0 archives is currently not
-    available in libclamav (they will cause \verb+RAR module failure.+
-    error message). You can scan them with help of external unpackers
-    in \verb+clamscan+, though.
+    available in libclamav (such archives will trigger the
+    \verb+RAR module failure.+ error message). You can scan them with the help
+    of external unpackers in \verb+clamscan+, though.
     \begin{verbatim}
 	$ clamscan --unrar clam-error.rar
 	/home/zolw/test/clam-error.rar: RAR module failure.
@@ -1163,7 +1166,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	Basically, there are two ways:
 	\begin{itemize}
 	    \item Run\\
-	    \verb+cvs -d:pserver:anonymous @ cvs.sourceforge.net:/cvsroot/clamav co clamav-devel+
+	    \verb+cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/clamav co clamav-devel+
 	    \item Visit \url{http://www.clamav.net/snapshot/}
 	\end{itemize}
 
@@ -2027,15 +2030,13 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\hline
 	Mirror & IP & Location & Administrator\\ \hline\hline
 
-	\url{clamav.coldmoon.net} & 204.89.193.10 & Chicago, & Scott J. Lopez\\
-				  &		  & USA	     & \email{<scott*coldmoon.net>}\\ \hline
 	\url{clamav.mirrors.webpartner.dk} & 195.184.96.15 & Denmark & Nicolai Gylling \email{<nsg*webpartner.dk>}\\
 					   &		   &	     & Lasse Brandt \email{<lb*webpartner.dk>}\\ \hline
 	\url{mirror.etf.bg.ac.yu} & 147.91.8.58 & Belgrade, Serbia & Ljubisa Radivojevic\\
 				  &		& and Montenegro   & \email{<ljubisa*etf.bg.ac.yu>}\\ \hline
 	\url{clamav.bridgeband.net} & 63.166.28.8 & Montana, & Mikel Bauer\\
 				    &		  & USA	     & \email{<mikel*bridgeband.net>}\\ \hline
-	\url{clamav.kgt.org} & 217.20.122.250 & Germany & Thomas Koeppe\\
+	\url{clamav.kgt.org} & 62.112.154.203 & Germany & Thomas Koeppe\\
 			     &		      &		& \email{<thomas*kgt.org>}\\ \hline
 	\url{clamav.mirror.waycom.net} & 195.214.240.53 & France & Frederic Deletang\\
 				       &		&	 & \email{<fd*waycom.net>}\\ \hline
@@ -2073,6 +2074,8 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 					&		&     & \email{<dave*opteqint.net>}\\ \hline
 	\url{clamav.ubak.gov.tr} & 212.174.131.5 & Turkey & Ali Erdinc Koroglu\\
 				 &		 &	  & \email{<erdinc*erdinc.info>}\\ \hline
+	\url{clamav.ecualinux.com} & 66.111.57.40 & Ecuador & E. Perez Estevez\\
+				   &		  &	    & \email{<info*ecualinux.com>}\\ \hline
     \end{tabular}}
     \end{center}
 
@@ -2091,6 +2094,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Rene Bellora \email{<rbellora*tecnoaccion.com.ar>}
 	\item Carlo Marcelo Arenas Belon \email{<carenas*sajinet.com.pe>}
 	\item Hilko Bengen \email{<bengen*vdst-ka.inka.de>}
+	\item Hank Beatty \email{<hbeatty*starband.net>}
 	\item Patrick Bihan-Faou \email{<patrick*mindstep.com>}
 	\item Martin Blapp \email{<mb*imp.ch>}
 	\item Dale Blount \email{<dale*velocity.net>}
@@ -2120,6 +2124,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item David \email{<djgardner*users.sourceforge.net>}
 	\item Maxim Dounin \email{<mdounin*rambler-co.ru>}
 	\item Alejandro Dubrovsky \email{<s328940*student.uq.edu.au>}
+	\item James P. Dugal \email{<jpd*louisiana.edu>}
 	\item Magnus Ekdahl \email{<magnus*debian.org>}
 	\item Mehmet Ekiz \email{<ekizm*tbmm.gov.tr>}
 	\item Jens Elkner \email{<elkner*linofee.org>}
@@ -2151,6 +2156,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Hrvoje Habjanic \email{<hrvoje.habjanic*zg.hinet.hr>}
 	\item Michal Hajduczenia \email{<michalis*mat.uni.torun.pl>}
 	\item Jean-Christophe Heger \email{<jcheger*acytec.com>}
+	\item Martin Heinz \email{<Martin*hemag.ch>}
 	\item Anders Herbjornsen \email{<andersh*gar.no>}
 	\item Paul Hoadley \email{<paulh*logixsquad.net>}
 	\item Robert Hogan \email{<robert*roberthogan.net>}
@@ -2160,6 +2166,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Douglas J Hunley \email{<doug*hunley.homeip.net>}
 	\item Kurt Huwig \email{<kurt*iku-netz.de>}
 	\item Andy Igoshin \email{<ai*vsu.ru>}
+	\item Michal Jaegermann \email{<michal*harddata.com>}
 	\item Jay \email{<sysop-clamav*coronastreet.net>}
 	\item Stephane Jeannenot \email{<stephane.jeannenot*wanadoo.fr>}
 	\item Dave Jones \email{<dave*kalkbay.co.za>}
@@ -2168,6 +2175,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Stefan Kaltenbrunner \email{<stefan*kaltenbrunner.cc>}
 	\item Lloyd Kamara \email{<l.kamara*imperial.ac.uk>}
 	\item Kazuhiko \email{<kazuhiko*fdiary.net>}
+	\item Jeremy Kitchen \email{<kitchen*scriptkitchen.com>}
 	\item Tomasz Klim \email{<tomek*euroneto.pl>}
 	\item Robbert Kouprie \email{<robbert*exx.nl>}
 	\item Martin Kraft \email{<martin.kraft*fal.de>}
@@ -2184,6 +2192,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Peter N Lewis \email{<peter*stairways.com.au>}
 	\item Matt Leyda \email{<mfleyda*e-one.com>}
 	\item James Lick \email{<jlick*drivel.com>}
+	\item Jerome Limozin \email{<jerome*limozin.net>}
 	\item Mike Loewen \email{<mloewen*sturgeon.cac.psu.edu>}
 	\item Roger Lucas \email{<roger*planbit.co.uk>}
 	\item Richard Lyons \email{<frob-clamav*webcentral.com.au>}
@@ -2235,8 +2244,10 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Rudolph Pereira \email{<r.pereira*isu.usyd.edu.au>}
 	\item Ed Phillips \email{<ed*UDel.Edu>}
 	\item Andreas Piesk \email{<Andreas.Piesk*heise.de>}
+	\item Mark Pizzolato \email{<clamav-devel*subscriptions.pizzolato.net>}
 	\item Alex Pleiner \email{<pleiner*zeitform.de>}
 	\item Ant La Porte \email{<ant*dvere.net>}
+	\item Jef Poskanzer \email{<jef*acme.com>}
 	\item Christophe Poujol \email{<Christophe.Poujol*atosorigin.com>}
 	\item Sergei Pronin \email{<sp*finndesign.fi>}
 	\item Thomas Quinot \email{<thomas*cuivre.fr.eu.org>}
@@ -2262,6 +2273,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Adam Stein \email{<adam*scan.mc.xerox.com>}
 	\item Steve \email{<steveb*webtribe.net>}
 	\item Richard Stevenson \email{<richard*endace.com>}
+	\item Sven Strickroth \email{<sstrickroth*gym-oha.de>}
 	\item Matt Sullivan \email{<matt*sullivan.gen.nz>}
 	\item Dr Zbigniew Szewczak \email{<zssz*mat.uni.torun.pl>}
 	\item Joe Talbott \email{<josepht*cstone.net>}
@@ -2401,6 +2413,9 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     \begin{itemize}
 	\item aCaB \email{<acab*clamav.net>}, Italy\\
 	Role: virus database maintainer, coder
+
+	\item Boguslaw Brandys \email{<bbrandys*clamav.net>}, Poland\\
+	Role: Win32 development
 
 	\item Mike Cathey \email{<mike*clamav.net>}, USA\\
 	Role: co-sysadmin

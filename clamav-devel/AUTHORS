@@ -35,6 +35,10 @@ gpg key   : http://www.clamav.net/gpg/cathey.gpg
 GPG fingerprint = A23A D4AA DFEC ACF8 2F7C  B82F 7C9E 12F7 DDD9 BCFD
 Co-sysadmin.
 
+Boguslaw Brandys <bbrandys*clamav.net>
+gpg key   : http://www.clamav.net/gpg/bbrandys.gpg
+GPG fingerprint = 8C74 BC27 3C68 DD3E F7E4  78D0 B6E1 880B 31CE 87E6
+Win32 development
 
 Submission management interface (for database developers only): Diego d'Ambra
 <diego*clamav.net>, Thomas Madsen <tm*softcom.dk>
