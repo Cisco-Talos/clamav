@@ -1,3 +1,7 @@
+Thu Nov  4 10:14:57 GMT 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Applied readdir_r patch from TK
+
 Thu Nov  4 08:24:21 GMT 2004 (njh)
 ----------------------------------
   * libclamav/clamav-milter:	Fix segfault on startup in LocalSocket mode in

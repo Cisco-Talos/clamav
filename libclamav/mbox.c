@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.164  2004/11/04 10:13:41  nigelhorne
+ * Rehashed readdir_r patch
+ *
  * Revision 1.163  2004/10/31 09:28:56  nigelhorne
  * Handle unbalanced quotes in multipart headers
  *
@@ -477,7 +480,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.163 2004/10/31 09:28:56 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.164 2004/11/04 10:13:41 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -509,6 +512,10 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.163 2004/10/31 09:28:56 nigelhorne 
 #include <clamav.h>
 #include <dirent.h>
 #include <limits.h>
+
+#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
+#include <stddef.h>
+#endif
 
 #ifdef	CL_THREAD_SAFE
 #include <pthread.h>
@@ -2836,30 +2843,18 @@ rfc1341(message *m, const char *dir)
 				char filename[NAME_MAX + 1];
 				const struct dirent *dent;
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-#if	defined(C_SOLARIS) || defined(C_BEOS)
-				char result[sizeof(struct dirent) + PATH_MAX + 1];
-#else
-				struct dirent result;
-#endif
+				union {
+					struct dirent d;
+					char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
+				} result;
 #endif
 
 				snprintf(filename, sizeof(filename), "%s%d", id, n);
+
 #ifdef HAVE_READDIR_R_3
-
-#if	defined(C_SOLARIS) || defined(C_BEOS)
-				while((readdir_r(dd, (struct dirent *)result, &dent) == 0) && dent) {
-#else
-				while((readdir_r(dd, (struct dirent *)&result, &dent) == 0) && dent) {
-#endif
-
+				while((readdir_r(dd, &result.d, &dent) == 0) && dent) {
 #elif defined(HAVE_READDIR_R_2)
-
-#if	defined(C_SOLARIS) || defined(C_BEOS)
-				while((dent = (struct dirent *)readdir_r(dd, (struct dirent *)&result))) {
-#else
-				while((dent = (struct dirent *)readdir_r(dd, (struct dirent *)result))) {
-#endif
-
+				while((dent = (struct dirent *)readdir_r(dd, &result.d))) {
 #else	/*!HAVE_READDIR_R*/
 				while((dent = readdir(dd))) {
 #endif
@@ -2975,7 +2970,7 @@ checkURLs(message *m, const char *dir)
 	n = 0;
 
 	for(i = 0; i < hrefs.count; i++) {
-		const char *url = hrefs.value[i];
+		const char *url = (const char *)hrefs.value[i];
 
 		if(strncasecmp("http://", url, 7) == 0) {
 			char *ptr;
