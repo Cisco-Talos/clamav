@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.30  2005/01/19 05:30:50  nigelhorne
+ * Better handling of empty data
+ *
  * Revision 1.29  2004/12/21 16:52:45  nigelhorne
  * Patch for OS/2
  *
@@ -89,7 +92,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.29 2004/12/21 16:52:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.30 2005/01/19 05:30:50 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -303,6 +306,8 @@ blobGetData(const blob *b)
 	assert(b != NULL);
 	assert(b->magic == BLOB);
 
+	if(b->len == 0)
+		return NULL;
 	return(b->data);
 }
 
