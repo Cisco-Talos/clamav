@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.47  2004/03/21 17:19:49  nigelhorne
+ * Handle bounce messages with no headers
+ *
  * Revision 1.46  2004/03/21 09:41:27  nigelhorne
  * Faster scanning for non MIME messages
  *
@@ -135,7 +138,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.46 2004/03/21 09:41:27 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.47 2004/03/21 17:19:49 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1251,10 +1254,10 @@ messageIsAllText(const message *m)
 	return 1;
 }
 #else
-int
-messageIsAllText(const message *m)
+const text *
+encodingLine(const message *m)
 {
-	return (m->encoding == NULL);
+	return m->encoding;
 }
 #endif
 
@@ -1475,7 +1478,7 @@ base64(char c)
 		return 62;
 
 	if(c != '/')
-		cli_warnmsg("Illegal character <%c> in base64 encoding\n", c);
+		cli_dbgmsg("Illegal character <%c> in base64 encoding\n", c);
 
 	return 63;
 }

@@ -1,3 +1,7 @@
+Sun Mar 21 17:30:22 GMT 2004 (njh)
+----------------------------------
+  * libclamav:	Scan bounce messages with no headers for encoded viruses/worms
+
 Sun Mar 21 09:51:45 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Faster scanning for non MIME messages, only scan the message
