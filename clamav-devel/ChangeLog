@@ -1,3 +1,7 @@
+Wed Feb  4 16:33:08 GMT 2004 (trog)
+-----------------------------------
+  * libclamav: ole2_extract.c: Improve error handling
+
 Wed Feb  4 13:34:28 GMT 2004 (njh)
   * libclamav:	Binhex now removes repetitive characters before handling the
 			header (used to be the other way around)
