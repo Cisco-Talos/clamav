@@ -38,7 +38,7 @@ AC_DEFINE(SCANBUFF, 131072, [scan buffer size])
 AC_DEFINE(FILEBUFF, 8192,   [file i/o buffer size])
 
 AC_HEADER_STDC
-AC_CHECK_HEADERS(stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h poll.h regex.h limits.h sys/filio.h)
+AC_CHECK_HEADERS(stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h poll.h regex.h limits.h sys/filio.h uio.h)
 AC_CHECK_HEADER(syslog.h,AC_DEFINE(USE_SYSLOG,1,[use syslog]),)
 
 AC_TYPE_OFF_T
@@ -314,6 +314,11 @@ linux*)
 	fi
 	CLAMSCAN_LIBS="$CLAMSCAN_LIBS -lpthread"
     fi
+    case `uname -r` in
+    1.*|2.0.*)
+       AC_DEFINE(INCOMPLETE_CMSG,1,[Early Linux doesn't set cmsg fields])
+       ;;
+    esac
     ;;
 cygwin*)
     AC_DEFINE(C_CYGWIN,1,[os is cygwin])
@@ -516,6 +521,57 @@ fi
 if test "$have_milter" = "yes"
 then
     AC_PATH_PROG(SENDMAIL, sendmail, /usr/lib/sendmail, $PATH:/usr/lib:/usr/sbin:/etc:/usr/local/lib:/usr/local/sbin:/usr/bin:/usr/local/bin)
+fi
+
+dnl Check if we can do fd passing
+dnl Submitted by Richard Lyons <frob-clamav@webcentral.com.au>
+AC_CHECK_FUNCS(recvmsg sendmsg)
+AC_CACHE_CHECK([for msg_accrights field in struct msghdr],
+	ac_cv_have_accrights_in_msghdr, [
+    AC_TRY_RUN(
+	[
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/uio.h>
+int main() {
+#ifdef msg_accrights
+exit(1);
+#endif
+struct msghdr m;
+m.msg_accrights = 0;
+exit(0);
+}
+	],
+	[ ac_cv_have_accrights_in_msghdr="yes" ],
+	[ ac_cv_have_accrights_in_msghdr="no" ]
+    )
+])
+if test "x$ac_cv_have_accrights_in_msghdr" = "xyes" ; then
+    AC_DEFINE(HAVE_ACCRIGHTS_IN_MSGHDR,1,[access rights in msghdr])
+fi
+
+AC_CACHE_CHECK([for msg_control field in struct msghdr],
+	ac_cv_have_control_in_msghdr, [
+    AC_TRY_RUN(
+	[
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/uio.h>
+int main() {
+#ifdef msg_control
+exit(1);
+#endif
+struct msghdr m;
+m.msg_control = 0;
+exit(0);
+}
+	],
+	[ ac_cv_have_control_in_msghdr="yes" ],
+	[ ac_cv_have_control_in_msghdr="no" ]
+    )
+])
+if test "x$ac_cv_have_control_in_msghdr" = "xyes" ; then
+    AC_DEFINE(HAVE_CONTROL_IN_MSGHDR,1,[ancillary data style fd pass])
 fi
 
 dnl tcpwrappers support

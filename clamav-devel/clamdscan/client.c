@@ -33,6 +33,10 @@
 #include <utime.h>
 #include <errno.h>
 
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
+
 #include "others.h"
 #include "defaults.h"
 #include "shared.h"
@@ -50,26 +54,17 @@
 # define SOCKET_INET	AF_INET
 #endif
 
+/* #define ENABLE_FD_PASSING	    FIXME: Doesn't work yet */
+
 void move_infected(const char *filename, const struct optstruct *opt);
 int notremoved = 0, notmoved = 0;
 
-int dsfile(int sockd, const char *filename, const struct optstruct *opt)
+int dsresult(int sockd, const struct optstruct *opt)
 {
 	int infected = 0, waserror = 0;
-	char buff[4096], *scancmd, *pt;
+	char buff[4096], *pt;
 	FILE *fd;
 
-
-    scancmd = mcalloc(strlen(filename) + 20, sizeof(char));
-    sprintf(scancmd, "CONTSCAN %s", filename);
-
-    if(write(sockd, scancmd, strlen(scancmd)) <= 0) {
-	mprintf("@Can't write to the socket.\n");
-	free(scancmd);
-	return -1;
-    }
-
-    free(scancmd);
 
     if((fd = fdopen(dup(sockd), "r")) == NULL) {
 	mprintf("@Can't open descriptor for reading.\n");
@@ -99,6 +94,7 @@ int dsfile(int sockd, const char *filename, const struct optstruct *opt)
 		}
 	    }
 	}
+
 	if(strstr(buff, "ERROR\n")) {
 	    logg("%s", buff);
 	    mprintf("%s", buff);
@@ -108,11 +104,77 @@ int dsfile(int sockd, const char *filename, const struct optstruct *opt)
 
     fclose(fd);
 
-    if(!infected && !waserror)
-	mprintf("%s: OK\n", filename);
-
     return infected ? infected : (waserror ? -1 : 0);
 }
+
+int dsfile(int sockd, const char *filename, const struct optstruct *opt)
+{
+	int ret;
+	char buff[4096], *scancmd, *pt;
+	FILE *fd;
+
+
+    scancmd = mcalloc(strlen(filename) + 20, sizeof(char));
+    sprintf(scancmd, "CONTSCAN %s", filename);
+
+    if(write(sockd, scancmd, strlen(scancmd)) <= 0) {
+	mprintf("@Can't write to the socket.\n");
+	free(scancmd);
+	return -1;
+    }
+
+    free(scancmd);
+
+    ret = dsresult(sockd, opt);
+
+    if(!ret)
+	mprintf("%s: OK\n", filename);
+
+    return ret;
+}
+
+#if defined(ENABLE_FD_PASSING) && defined(HAVE_SENDMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN)
+
+/* Submitted by Richard Lyons <frob-clamav*webcentral.com.au> */
+int dsfd(int sockfd, int fd, const struct optstruct *opt)
+{
+	struct iovec iov[1];
+	struct msghdr msg;
+#ifdef HAVE_CONTROL_IN_MSGHDR
+	struct cmsghdr *cmsg;
+	char tmp[CMSG_SPACE(sizeof(fd))];
+#endif
+
+    iov[0].iov_base = "";
+    iov[0].iov_len = 1;
+    memset(&msg, 0, sizeof(msg));
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+#ifdef HAVE_CONTROL_IN_MSGHDR
+    msg.msg_control = tmp;
+    msg.msg_controllen = sizeof(tmp);
+    cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type = SCM_RIGHTS;
+    cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
+    *(int *)CMSG_DATA(cmsg) = fd;
+#endif
+#ifdef HAVE_ACCRIGHTS_IN_MSGHDR
+    msg.msg_accrights = (caddr_t)&fd;
+    msg.msg_accrightslen = sizeof(fd);
+#endif
+    if (sendmsg(sockfd, &msg, 0) != iov[0].iov_len) {
+	mprintf("@Can't write to the socket.\n");
+	return -1;
+    }
+    return dsresult(sockfd, opt);
+}
+#else
+int dsfd(int sockfd, int fd, const struct optstruct *opt)
+{
+    return -1;
+}
+#endif
 
 int dsstream(int sockd, const struct optstruct *opt)
 {
@@ -121,6 +183,7 @@ int dsstream(int sockd, const struct optstruct *opt)
 	struct sockaddr_in peer;
 	int peer_size;
 	char buff[4096], *pt;
+
 
     if(write(sockd, "STREAM", 6) <= 0) {
 	mprintf("@Can't write to the socket.\n");
@@ -195,25 +258,8 @@ int dsstream(int sockd, const struct optstruct *opt)
 	if(strstr(buff, "FOUND\n")) {
 	    infected++;
 	    logg("%s", buff);
-	    if(optl(opt, "move")) {
-		pt = strrchr(buff, ':');
-		*pt = 0;
-		move_infected(buff, opt);
 
-	    } else if(optl(opt, "remove")) {
-		pt = strrchr(buff, ':');
-		*pt = 0;
-		if(unlink(buff)) {
-		    mprintf("%s: Can't remove.\n", buff);
-		    logg("%s: Can't remove.\n", buff);
-		    notremoved++;
-		} else {
-		    mprintf("%s: Removed.\n", buff);
-		    logg("%s: Removed.\n", buff);
-		}
-	    }
-	}
-	if(strstr(buff, "ERROR\n")) {
+	} else if(strstr(buff, "ERROR\n")) {
 	    logg("%s", buff);
 	    return -1;
 	}
@@ -354,6 +400,18 @@ int client(const struct optstruct *opt, int *infected)
 
 	close(sockd);
 
+#if defined(ENABLE_FD_PASSING) && defined(HAVE_SENDMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN)
+    } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
+	if((sockd = dconnect(opt)) < 0)
+	    return 2;
+
+	if((ret = dsfd(sockd, 0, opt)) >= 0)
+	    *infected += ret;
+	else
+	    errors++;
+
+	close(sockd);
+#else
     } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
 	if((sockd = dconnect(opt)) < 0)
 	    return 2;
@@ -364,6 +422,7 @@ int client(const struct optstruct *opt, int *infected)
 	    errors++;
 
 	close(sockd);
+#endif
 
     } else {
 	int x;

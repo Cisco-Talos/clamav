@@ -23,6 +23,19 @@
 #define COMMAND_RELOAD 2
 #define COMMAND_END 3
 
+#define CMD1 "SCAN"
+#define CMD2 "RAWSCAN"
+#define CMD3 "QUIT" /* deprecated */
+#define CMD4 "RELOAD"
+#define CMD5 "PING"
+#define CMD6 "CONTSCAN"
+#define CMD7 "VERSION"
+#define CMD8 "STREAM"
+#define CMD9 "SESSION"
+#define CMD10 "END"
+#define CMD11 "SHUTDOWN"
+#define CMD12 "FD"
+
 #include <clamav.h>
 #include "cfgparser.h"
 
