@@ -1,3 +1,9 @@
+Wed Mar 10 22:14:45 GMT 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Fixed segfault which happens when a UNIX mailbox
+  	with more than one message quits because a message before the last
+	one can't be parsed
+
 Wed Mar 10 20:51:54 CET 2004 (tk)
 ---------------------------------
   * doc: + Polish sendmail_clamav how-to updated (Przemyslaw Holowczyc
