@@ -29,6 +29,8 @@
 #include <time.h>
 #include <locale.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
@@ -127,6 +129,18 @@ void sigtool(struct optstruct *opt)
 	    mprintf("%s\n", md5);
 	    free(md5);
 	}
+
+    } else if(optl(opt, "html-normalise")) {
+	    int fd;
+
+	if((fd = open(getargl(opt, "html-normalise"), O_RDONLY)) == -1) {
+	    mprintf("Can't open file %s\n", getargl(opt, "html-normalise"));
+	    exit(1);
+	}
+
+	html_normalise_fd(fd, ".", NULL);
+
+	close(fd);
 
     } else if(optc(opt, 'b')) {
 	if(!optl(opt, "server")) {
@@ -785,6 +799,7 @@ void help(void)
     mprintf("                                           string and print it on stdout\n");
     mprintf("    --md5 [FILES]                          generate MD5 checksum from stdin\n");
     mprintf("                                           or MD5 sigs for FILES\n");
+    mprintf("    --html-normalise=FILE                  create normalised parts of HTML file\n");
     mprintf("    --info=FILE            -i FILE         print database information\n");
     mprintf("    --build=NAME           -b NAME         build a CVD file\n");
     mprintf("    --server=ADDR                          ClamAV Signing Service address\n");

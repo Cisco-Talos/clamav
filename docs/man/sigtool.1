@@ -1,5 +1,5 @@
 .\" Manual page created by Tomasz Kojm, 20020629
-.TH "sigtool" "1" "August 31, 2004" "Tomasz Kojm" "Clam AntiVirus"
+.TH "sigtool" "1" "September 18, 2004" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 sigtool \- signature and database management tool
@@ -9,7 +9,7 @@ sigtool [options]
 .SH "DESCRIPTION"
 .LP 
 sigtool can be used to generate MD5 checksums, convert data 
-into hexadecimal format, and build/unpack CVD databases. Also it can verify digital signatures of databases and list virus signature names.
+into hexadecimal format, and build/unpack CVD databases. It's  also to verify digital signatures of databases and list virus signature names.
 .SH "OPTIONS"
 .LP 
 
@@ -31,6 +31,9 @@ Read data from stdin and write hex string to stdout.
 .TP 
 \fB\-\-md5 [FILES]\fR
 Generate MD5 checksum from stdin or MD5 sigs for FILES.
+.TP 
+\fB\-\-html\-normalise=FILE\fR
+Create normalised HTML files comment.html, nocomment.html, and script.html in current working directory.
 .TP 
 \fB\-i, \-\-info\fR
 Print a CVD information and verify MD5 and a digital signature.

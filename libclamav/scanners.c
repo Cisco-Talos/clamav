@@ -82,7 +82,7 @@ extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME *
 #define SCAN_HTML	    (options & CL_SCAN_HTML)
 #define SCAN_PE		    (options & CL_SCAN_PE)
 #define DISABLE_RAR	    (options & CL_SCAN_DISABLERAR)
-#define DETECT_ENCRYPTED    (options & CL_SCAN_ENCRYPTED)
+#define DETECT_ENCRYPTED    (options & CL_SCAN_BLOCKENCRYPTED)
 #define BLOCKMAX	    (options & CL_SCAN_BLOCKMAX)
 
 #define MAX_MAIL_RECURSION  15
@@ -1108,14 +1108,17 @@ static int cli_scanmail(int desc, const char **virname, long int *scanned, const
 	dir = cli_gentemp(tmpdir);
 	if(mkdir(dir, 0700)) {
 	    cli_dbgmsg("Mail: Can't create temporary directory %s\n", dir);
+	    free(dir);
 	    return CL_ETMPDIR;
 	}
 
 	/*
 	 * Extract the attachments into the temporary directory
 	 */
-	if((ret = cli_mbox(dir, desc, options)))
+	if((ret = cli_mbox(dir, desc, options))) {
+	    free(dir);
 	    return ret;
+	}
 
 	ret = cli_scandir(dir, virname, scanned, root, limits, options, arec, mrec);
 

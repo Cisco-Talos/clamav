@@ -51,6 +51,7 @@ int main(int argc, char **argv)
 	    {"tempdir", 1, 0, 0},
 	    {"hex-dump", 0, 0, 0},
 	    {"md5", 0, 0, 0},
+	    {"html-normalise", 1, 0, 0},
 	    {"build", 1, 0, 'b'},
 	    {"server", 1, 0, 0},
 	    {"unpack", 1, 0, 'u'},
