@@ -28,6 +28,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/wait.h>
+#include <sys/param.h>
 #include <dirent.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -53,6 +54,17 @@
 
 #ifdef C_LINUX
 dev_t procdev; /* /proc device */
+#endif
+
+/* Maximum filenames under various systems - njh */
+#ifndef	NAME_MAX	/* e.g. Linux */
+# ifdef	MAXNAMELEN	/* e.g. Solaris */
+#   define	NAME_MAX	MAXNAMELEN
+# else
+#   ifdef	FILENAME_MAX	/* e.g. SCO */
+#     define	NAME_MAX	FILENAME_MAX
+#   endif
+# endif
 #endif
 
 pthread_mutex_t gh_mutex = PTHREAD_MUTEX_INITIALIZER;

@@ -28,6 +28,7 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/param.h>
 #include <fcntl.h>
 
 #include "clamav.h"
@@ -42,6 +43,17 @@
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #include <limits.h>
 #include <stddef.h>
+#endif
+
+/* Maximum filenames under various systems - njh */
+#ifndef	NAME_MAX	/* e.g. Linux */
+# ifdef	MAXNAMELEN	/* e.g. Solaris */
+#   define	NAME_MAX	MAXNAMELEN
+# else
+#   ifdef	FILENAME_MAX	/* e.g. SCO */
+#     define	NAME_MAX	FILENAME_MAX
+#   endif
+# endif
 #endif
 
 /* TODO: clean up the code */

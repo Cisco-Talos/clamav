@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/param.h>
 #include <fcntl.h>
 #include <dirent.h>
 #include <netinet/in.h>
@@ -82,6 +83,16 @@ extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME *
 #include <stddef.h>
 #endif
 
+/* Maximum filenames under various systems - njh */
+#ifndef	NAME_MAX	/* e.g. Linux */
+# ifdef	MAXNAMELEN	/* e.g. Solaris */
+#   define	NAME_MAX	MAXNAMELEN
+# else
+#   ifdef	FILENAME_MAX	/* e.g. SCO */
+#     define	NAME_MAX	FILENAME_MAX
+#   endif
+# endif
+#endif
 
 #define SCAN_ARCHIVE	    (options & CL_SCAN_ARCHIVE)
 #define SCAN_MAIL	    (options & CL_SCAN_MAIL)
