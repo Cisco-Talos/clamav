@@ -105,6 +105,7 @@ typedef unsigned short   UWORD;
 typedef unsigned long    UDWORD;
 #endif
 
+#define RAR_FENTRY_ATTR_DIRECTORY ( 0x10 | 0x4000 )
 
 /* This structure is used for listing archive content                       */
 struct RAR20_archive_entry                  /* These infos about files are  */

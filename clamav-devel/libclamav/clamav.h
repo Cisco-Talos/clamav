@@ -116,14 +116,14 @@ struct cl_cvd {
 /* file scanning */
 extern int cl_scanbuff(const char *buffer, unsigned int length, char **virname, const struct cl_node *root);
 
-extern int cl_scandesc(int desc, char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options);
+extern int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options);
 
-extern int cl_scanfile(const char *filename, char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options);
+extern int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options);
 
 /* database loading */
 extern int cl_loaddb(const char *filename, struct cl_node **root, int *virnum);
 extern int cl_loaddbdir(const char *dirname, struct cl_node **root, int *virnum);
-extern char *cl_retdbdir(void);
+extern const char *cl_retdbdir(void);
 extern int cl_retflevel(void);
 
 extern struct cl_cvd *cl_cvdhead(const char *file);
@@ -144,8 +144,8 @@ extern int cl_buildtrie(struct cl_node *root);
 
 extern void cl_freetrie(struct cl_node *root);
 
-extern char *cl_strerror(int clerror);
-extern char *cl_perror(int clerror); /* deprecated */
+extern const char *cl_strerror(int clerror);
+extern const char *cl_perror(int clerror); /* deprecated */
 
 extern char *cl_md5buff(const char *buffer, unsigned int length);
 

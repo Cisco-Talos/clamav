@@ -38,7 +38,7 @@
 #include "str.h"
 #include "defaults.h"
 
-int cli_parse_add(struct cl_node *root, const char *virname, const char *hexstr, int sigid, int parts, int partno)
+static int cli_parse_add(struct cl_node *root, const char *virname, const char *hexstr, int sigid, int parts, int partno)
 {
 	struct cli_patt *new;
 	const char *pt;
@@ -170,7 +170,7 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 	    (*root)->partsigs++;
 	    sigid++;
 	    parts = 0;
-	    for(i = 0; i < strlen(pt); i++)
+	    for(i = 0; i < (int) strlen(pt); i++)
 		if(pt[i] == '*')
 		    parts++;
 
@@ -218,7 +218,7 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
     return 0;
 }
 
-char *cl_retdbdir(void)
+const char *cl_retdbdir(void)
 {
     return DATADIR;
 }

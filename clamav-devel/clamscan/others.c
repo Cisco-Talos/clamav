@@ -1,6 +1,5 @@
 /*
- *  Copyright (C) 1999-2003 Tomasz Kojm <zolw@konarski.edu.pl>
- *			    Magnus Ekdahl <magnus@debian.org>
+ *  Copyright (C) 1999 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -127,6 +126,8 @@ int logg(const char *str, ...)
 {
 	va_list args;
 	static FILE *fd = NULL;
+	mode_t old_umask;
+
 
     if(logfile) {
 
@@ -136,10 +137,13 @@ int logg(const char *str, ...)
 	    fd = NULL;
 	}
 	if(!fd) {
+            old_umask = umask(0037);
 	    if((fd = fopen(logfile, "a")) == NULL) {
+                umask(old_umask);
 		mprintf("!LOGGER: Can't open %s for writing: %s.\n", logfile, strerror(errno));
 		return 1;
 	    }
+	    umask(old_umask);
 	}
 	if (str == NULL) {
 	    return 0;
@@ -172,7 +176,7 @@ void *mmalloc(size_t size)
     alloc = malloc(size);
 
     if(!alloc) {
-	printf("CRITICAL: Can't allocate memory (%ld bytes).\n", size);
+	printf("CRITICAL: Can't allocate memory (%ld bytes).\n", (long int) size);
 	exit(71);
 	return NULL;
     } else return alloc;
@@ -185,7 +189,7 @@ void *mcalloc(size_t nmemb, size_t size)
     alloc = calloc(nmemb, size);
 
     if(!alloc) {
-	printf("CRITICAL: Can't allocate memory (%ld bytes).\n", nmemb * size);
+	printf("CRITICAL: Can't allocate memory (%ld bytes).\n", (long int) nmemb * size);
 	exit(70);
 	return NULL;
     } else return alloc;

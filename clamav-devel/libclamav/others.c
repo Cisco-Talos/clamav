@@ -90,7 +90,7 @@ int cl_retflevel(void)
     return CL_FLEVEL;
 }
 
-char *cl_strerror(int clerror)
+const char *cl_strerror(int clerror)
 {
     switch(clerror) {
 	case CL_CLEAN:
@@ -142,7 +142,7 @@ char *cl_strerror(int clerror)
     }
 }
 
-char *cl_perror(int clerror)
+const char *cl_perror(int clerror)
 {
     return cl_strerror(clerror);
 }
@@ -291,7 +291,8 @@ unsigned int cl_rndnum(unsigned int max)
 /* it uses MD5 to avoid potential races in tmp */
 char *cl_gentemp(const char *dir)
 {
-	char *name, *mdir, *tmp;
+	char *name, *tmp;
+        const char *mdir;
 	unsigned char salt[32];
 	int cnt=0, i;
 	struct stat foo;
@@ -312,7 +313,7 @@ char *cl_gentemp(const char *dir)
 	for(i = 0; i < 32; i++)
 	    salt[i] = cl_rndnum(255);
 
-	tmp = cl_md5buff(salt, 32);
+	tmp = cl_md5buff(( char* ) salt, 32);
 	strncat(name, tmp, 16);
 	free(tmp);
     } while(stat(name, &foo) != -1);
