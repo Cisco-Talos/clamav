@@ -150,7 +150,7 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 				copt = regcfg(copt, name, arg, 0);
 				break;
 			    case OPT_NUM:
-				if(!isnumb(arg)) {
+				if(!arg || !isnumb(arg)) {
 				    fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires numerical argument.\n", line, name);
 				    return NULL;
 				}
