@@ -204,17 +204,23 @@ void clamd(struct optstruct *opt)
 	}
 
 	if(cfgopt(copt, "AllowSupplementaryGroups")) {
+#ifdef HAVE_INITGROUPS
 	    if(initgroups(cpt->strarg, user->pw_gid)) {
 		fprintf(stderr, "ERROR: initgroups() failed.\n");
 		logg("!initgroups() failed.\n");
 		exit(1);
 	    }
+#else
+	    logg("AllowSupplementaryGroups: initgroups() not supported.\n");
+#endif
 	} else {
+#ifdef HAVE_SETGROUPS
 	    if(setgroups(1, &user->pw_gid)) {
 		fprintf(stderr, "ERROR: setgroups() failed.\n");
 		logg("!setgroups() failed.\n");
 		exit(1);
 	    }
+#endif
 	}
 
 	if(setgid(user->pw_gid)) {
