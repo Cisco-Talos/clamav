@@ -8,10 +8,13 @@ clamav\-milter [options] socket_address
 .SH "DESCRIPTION"
 .LP 
 clamav\-milter is a filter for sendmail mail server. It uses a mail scanning engine built into clamd.
-.TP
+.LP
 clamav\-milter requires \fBclamd(8)\fR to run.
 When starting, clamav\-milter verifies that it can communicate with clamd;
 if it cannot it terminates.
+.LP
+clamav\-milter supports tcpwrappers, the value for \fIdaemon_list\fR
+is "clamav\-milter".
 .SH "OPTIONS"
 .LP 
 
@@ -110,10 +113,10 @@ There is no default, if this argument is not \fBclamav\-milter\fR will
 spawn as many children as is necessary.
 .SH "EXAMPLES"
 .LP 
-clamav\-milter \-\-max\-children=2 \-obl local:/var/run/clmilter.sock
+clamav\-milter \-\-max\-children=2 \-ol local:/var/run/clmilter.sock
 .SH "AUTHOR"
 .LP 
 clamav\-milter was written by Nigel Horne <njh@bandsman.co.uk>, the manual page was created by Tomasz Kojm <zolw@konarski.edu.pl>.
 .SH "SEE ALSO"
 .LP 
-clamd(8), clamscan(1), freshclam(1), sigtool(1), clamav.conf(5)
+clamd(8), clamscan(1), freshclam(1), sigtool(1), clamav.conf(5), hosts_access(5)
