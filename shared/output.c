@@ -99,7 +99,7 @@ void logg_close(void) {
 
 int logg(const char *str, ...)
 {
-	va_list args;
+	va_list args, argscpy;
 	struct flock fl;
 	char *pt, *timestr, vbuff[1025];
 	time_t currtime;
@@ -108,6 +108,8 @@ int logg(const char *str, ...)
 
 
     va_start(args, str);
+    /* va_copy is less portable so we just use va_start once more */
+    va_start(argscpy, str);
 
     if(logg_file) {
 #ifdef CL_THREAD_SAFE
@@ -193,7 +195,7 @@ int logg(const char *str, ...)
 	 *
 	 * FIXME: substitute %% instead of _
 	 */
-	vsnprintf(vbuff, 1024, str, args);
+	vsnprintf(vbuff, 1024, str, argscpy);
 	vbuff[1024] = 0;
 
 	while((pt = strchr(vbuff, '%')))
@@ -213,12 +215,13 @@ int logg(const char *str, ...)
 #endif
 
     va_end(args);
+    va_end(argscpy);
     return 0;
 }
 
 void mprintf(const char *str, ...)
 {
-	va_list args;
+	va_list args, argscpy;
 	FILE *fd;
 	char logbuf[512];
 
@@ -259,6 +262,8 @@ void mprintf(const char *str, ...)
 
 
     va_start(args, str);
+    /* va_copy is less portable so we just use va_start once more */
+    va_start(argscpy, str);
 
     if(*str == '!') {
 	fprintf(fd, "ERROR: ");
@@ -267,9 +272,9 @@ void mprintf(const char *str, ...)
 	fprintf(fd, "ERROR: ");
 	vfprintf(fd, ++str, args);
 #ifdef NO_SNPRINTF
-	vsprintf(logbuf, str, args);
+	vsprintf(logbuf, str, argscpy);
 #else
-	vsnprintf(logbuf, sizeof(logbuf), str, args);
+	vsnprintf(logbuf, sizeof(logbuf), str, argscpy);
 #endif
 	logg("ERROR: %s", logbuf);
     } else if(!mprintf_quiet) {
@@ -283,6 +288,7 @@ void mprintf(const char *str, ...)
     }
 
     va_end(args);
+    va_end(argscpy);
 
     if(fd == stdout)
 	fflush(stdout);
