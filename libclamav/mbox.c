@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.229 2005/03/18 18:12:25 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.230 2005/03/20 09:09:25 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -289,21 +289,6 @@ static	const	struct tableinit {
 
 #ifdef	CL_THREAD_SAFE
 static	pthread_mutex_t	tables_mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
-
-/* Maximum filenames under various systems */
-#ifndef	NAME_MAX	/* e.g. Linux */
-
-#ifdef	MAXNAMELEN	/* e.g. Solaris */
-#define	NAME_MAX	MAXNAMELEN
-#else
-
-#ifdef	FILENAME_MAX	/* e.g. SCO */
-#define	NAME_MAX	FILENAME_MAX
-#endif
-
-#endif
-
 #endif
 
 #ifndef	O_BINARY

@@ -21,6 +21,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.23  2005/03/20 09:09:25  nigelhorne
+ * Consolidate NAME_MAX
+ *
  * Revision 1.22  2005/03/10 08:52:10  nigelhorne
  * Tidy
  *
@@ -88,7 +91,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.22 2005/03/10 08:52:10 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.23 2005/03/20 09:09:25 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -105,21 +108,6 @@ static	char	const	rcsid[] = "$Id: untar.c,v 1.22 2005/03/10 08:52:10 nigelhorne 
 #include "blob.h"
 
 #define BLOCKSIZE 512
-
-/* Maximum filenames under various systems */
-#ifndef	NAME_MAX	/* e.g. Linux */
-
-#ifdef	MAXNAMELEN	/* e.g. Solaris */
-#define	NAME_MAX	MAXNAMELEN
-#else
-
-#ifdef	FILENAME_MAX	/* e.g. SCO */
-#define	NAME_MAX	FILENAME_MAX
-#endif
-
-#endif
-
-#endif
 
 #ifndef	O_BINARY
 #define	O_BINARY	0

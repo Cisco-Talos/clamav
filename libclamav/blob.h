@@ -63,4 +63,17 @@ const	char	*fileblobGetFilename(const fileblob *fb);
 void	fileblobAddData(fileblob *fb, const unsigned char *data, size_t len);
 void	sanitiseName(char *name);
 
+/* Maximum filenames under various systems */
+#ifndef NAME_MAX        /* e.g. Linux */
+# ifdef MAXNAMELEN      /* e.g. Solaris */
+#   define      NAME_MAX        MAXNAMELEN
+# else
+#   ifdef       FILENAME_MAX    /* e.g. SCO */
+#     define    NAME_MAX        FILENAME_MAX
+#   else
+#     define    NAME_MAX        256
+#   endif
+# endif
+#endif
+
 #endif /*_BLOB_H*/
