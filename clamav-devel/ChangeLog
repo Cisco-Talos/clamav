@@ -1,3 +1,8 @@
+Mon Dec 27 05:01:54 CET 2004 (tk)
+---------------------------------
+  * freshclam/manager.c: use If-Modified-Since in --no-dns mode (based on code
+			 by Reini Urban <rurban*x-ray.at>)
+
 Mon Dec 27 01:09:20 CET 2004 (tk)
 ---------------------------------
   * libclamav/scanners.c: Add missing ArchiveBlockMax rule for recursion limit
