@@ -118,7 +118,7 @@ void sighandler_th(int sig)
 
 static struct cl_node *reload_db(struct cl_node *root, const struct cfgstruct *copt, int do_check)
 {
-	char *dbdir;
+	const char *dbdir;
 	int virnum=0, retval;
 	struct cfgstruct *cpt;
 	static struct cl_stat *dbstat=NULL;

@@ -57,7 +57,7 @@ int checksymlink(const char *path)
 }
 
 /* :set nowrap, if you don't like this style ;)) */
-int dirscan(const char *dirname, char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt, int odesc, unsigned int *reclev, short contscan)
+int dirscan(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt, int odesc, unsigned int *reclev, short contscan)
 {
 	DIR *dd;
 	struct dirent *dent;
@@ -132,7 +132,7 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_node 
 {
 	struct stat sb;
 	int ret = 0, reclev = 0;
-	char *virname;
+	const char *virname;
 
 
     /* check permissions  */
@@ -189,7 +189,8 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	int ret, portscan = CL_DEFAULT_MAXPORTSCAN, sockfd, port, acceptd, tmpd, bread, retval;
 	long int size = 0, maxsize = 0;
 	short bound = 0;
-	char *virname, buff[32768];
+	const char *virname;
+	char buff[32768];
 	struct sockaddr_in server;
 	struct cfgstruct *cpt;
 	FILE *tmp = NULL;

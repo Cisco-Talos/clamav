@@ -61,7 +61,7 @@ void *clamukoth(void *arg)
 {
 	struct thrarg *tharg = (struct thrarg *) arg;
 	sigset_t sigset;
-	char *virname;
+	const char *virname;
         struct sigaction act;
 	unsigned long mask = 0;
 	const struct cfgstruct *pt;

@@ -1,5 +1,5 @@
 .\" Manual page created by Tomasz Kojm, 20021001.
-.TH "clamav.conf" "5" "November 11, 2003" "Tomasz Kojm" "Clam AntiVirus"
+.TH "clamav.conf" "5" "March 14, 2004" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 \fBclamav.conf\fR \- a configuration file for Clam AntiVirus Daemon
@@ -44,8 +44,18 @@ Log time with each message.
 .br 
 Default: disabled.
 .TP 
+\fBLogClean\fR
+Log clean files.
+.br 
+Default: disabled.
+.TP 
 \fBLogSyslog\fR
 Use system logger (can work together with LogFile).
+.br 
+Default: disabled.
+.TP 
+\fBLogVerbose\fR
+Enable verbose logging.
 .br 
 Default: disabled.
 .TP 
@@ -54,7 +64,7 @@ Save a process identifier of a listening daemon (main thread) to a specified fil
 .br 
 Default: disabled.
 .TP 
-\fBDataDirectory STRING\fR
+\fBDatabaseDirectory STRING\fR
 Path to a directory containing database files.
 .br 
 Default: hardcoded directory.
@@ -149,6 +159,11 @@ Close the connection when this limit is exceeded.
 .br 
 Default: disabled.
 .TP 
+\fBScanOLE2\fR
+Enables scanning of Microsoft Office document macros.
+.br 
+Default: enabled.
+.TP 
 \fBScanMail\fR
 Enable scanning of Mbox, Maildir and raw mail files.
 .br 
@@ -179,8 +194,18 @@ Number of files to be scanned within archive. Value of 0 disables the limit.
 .br 
 Default: 1000
 .TP 
+\fBArchiveMaxCompressionRatio NUMBER\fR
+Analyze compression ratio and mark potential archive bombs as viruses (0 disables the limit).
+.br 
+Default: 200
+.TP 
 \fBArchiveLimitMemoryUsage\fR
 Use slower decompression algorithm which uses less memory. This option affects bzip2 decompressor only.
+.br 
+Default: disabled
+.TP 
+\fBArchiveDetectEncrypted\fR
+Mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).
 .br 
 Default: disabled
 .TP 

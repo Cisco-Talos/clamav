@@ -19,6 +19,10 @@
 #ifndef __CLAMD_OTHERS_H
 #define __CLAMD_OTHERS_H
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <stdlib.h>
 #include "cfgfile.h"
 
