@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: line.c,v $
+ * Revision 1.4  2004/09/21 14:55:26  nigelhorne
+ * Handle blank lines in text/plain messages
+ *
  * Revision 1.3  2004/08/25 12:30:36  nigelhorne
  * Use memcpy rather than strcpy
  *
@@ -27,7 +30,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: line.c,v 1.3 2004/08/25 12:30:36 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: line.c,v 1.4 2004/09/21 14:55:26 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -35,9 +38,14 @@ static	char	const	rcsid[] = "$Id: line.c,v 1.3 2004/08/25 12:30:36 nigelhorne Ex
 
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #include "line.h"
 #include "others.h"
+
+#ifndef	CL_DEBUG
+#define	NDEBUG	/* map CLAMAV debug onto standard */
+#endif
 
 #ifdef	OLD
 line_t *
@@ -104,6 +112,7 @@ lineCreate(const char *data)
 line_t *
 lineLink(line_t *line)
 {
+	assert(line != NULL);
 	if(line[0] == 127) {
 		cli_warnmsg("lineLink: linkcount too large\n");
 		return NULL;
