@@ -1,3 +1,7 @@
+Thu Sep 30 09:24:26 BST 2004 (trog)
+-----------------------------------
+  * libclamav/special.c: match obfuscated JPEG files
+
 Thu Sep 30 10:01:23 CEST 2004 (tk)
 ----------------------------------
   * libclamav/matcher: handle Exploit.JPEG.Comment.*

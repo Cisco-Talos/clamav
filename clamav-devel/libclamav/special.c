@@ -82,6 +82,12 @@ int cli_check_jpeg_exploit(int fd)
 		if ((retval=cli_readn(fd, buffer, 4)) != 4) {
 			return 0;
 		}
+		/* Check for multiple 0xFF values, we need to skip them */
+		if ((buffer[0] == 0xff) && (buffer[1] == 0xff)) {
+			lseek(fd, -3, SEEK_CUR);
+			continue;
+		}
+		
 		if ((buffer[0] == 0xff) && (buffer[1] == 0xfe)) {
 			if (buffer[2] == 0x00) {
 				if ((buffer[3] == 0x00) || (buffer[3] == 0x01)) {
