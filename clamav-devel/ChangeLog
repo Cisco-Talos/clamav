@@ -1,3 +1,7 @@
+Mon Mar 28 12:05:17 BST 2005 (njh)
+----------------------------------
+ * libclamav:	Added fast track visa technology to files that are not mboxs
+
 Sat Mar 26 09:53:34 GMT 2005 (njh)
 ----------------------------------
   * libclamav/tnef.c:	Now works on PPC architecture

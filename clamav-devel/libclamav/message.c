@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.151 2005/03/18 18:12:24 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.152 2005/03/28 11:03:15 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1951,6 +1951,8 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 			break;
 
 		case UUENCODE:
+			assert(m->base64chars == 0);
+
 			if((line == NULL) || (*line == '\0'))	/* empty line */
 				break;
 			if(strcasecmp(line, "end") == 0)
@@ -1983,6 +1985,7 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 				(void)decode(m, line, buf, uudecode, (len & 3) == 0);
 				buf = &buf[reallen];
 			}
+			m->base64chars = 0;	/* this happens with broken uuencoded files */
 			break;
 		case YENCODE:
 			if((line == NULL) || (*line == '\0'))	/* empty line */
