@@ -96,6 +96,8 @@ void clamscan(struct optstruct *opt)
     if(optc(opt, 'i')) printinfected = 1;
     else printinfected = 0;
 
+    if(optl(opt, "bell")) bell = 1;
+
     /* initialize logger */
 
     if(optl(opt, "log-verbose")) logverbose = 1;
@@ -140,7 +142,7 @@ void clamscan(struct optstruct *opt)
     gettimeofday(&t1, &tz);
     ret = scanmanager(opt);
 
-    if(!optl(opt, "disable-summary")) {
+    if(!optl(opt, "disable-summary") && !optl(opt, "no-summary")) {
 	gettimeofday(&t2, &tz);
 	ds = t2.tv_sec - t1.tv_sec;
 	dms = t2.tv_usec - t1.tv_usec;
@@ -205,10 +207,11 @@ void help(void)
     mprintf("    --move=DIRECTORY                     Move infected files into DIRECTORY\n");
     mprintf("    --exclude=PATT                       Don't scan file names containing PATT\n");
     mprintf("    --include=PATT                       Only scan file names containing PATT\n");
-    mprintf("    --disable-summary                    Disable summary at end of scanning\n");
+    mprintf("    --bell                               Sound bell on virus detection\n");
+    mprintf("    --no-summary                         Disable summary at end of scanning\n");
     mprintf("    --mbox                -m             Treat stdin as a mailbox\n");
     mprintf("\n");
-    mprintf("    --disable-archive                    Disable libclamav archive support\n");
+    mprintf("    --no-archive                         Disable libclamav archive support\n");
     mprintf("    --max-space=#n                       Extract first #n kilobytes only\n");
     mprintf("    --max-files=#n                       Extract first #n files only\n");
     mprintf("    --max-recursion=#n                   Maximal recursion level\n");

@@ -64,12 +64,19 @@ int freshclam(struct optstruct *opt)
 	return 56;
     }
 
+    if(optl(opt, "http-proxy") || optl(opt, "proxy-user"))
+	mprintf("WARNING: Proxy settings are now only configurable in the config file.\n");
+
+
 #ifndef C_CYGWIN
     /* freshclam shouldn't work with root priviledges */
-    if((cpt = cfgopt(copt, "DatabaseOwner")) == NULL)
-	unpuser = UNPUSER;
-    else 
+    if(optc(opt, 'u')) {
+	unpuser = getargc(opt, 'u');
+    } if((cpt = cfgopt(copt, "DatabaseOwner"))) {
 	unpuser = cpt->strarg;
+    } else {
+	unpuser = UNPUSER;
+    }
 
     if(!getuid()) {
 	if((user = getpwnam(unpuser)) == NULL) {
@@ -116,7 +123,13 @@ int freshclam(struct optstruct *opt)
     else
 	logverbose = 0;
 
-    if((cpt = cfgopt(copt, "UpdateLogFile"))) {
+    if(optc(opt, 'l')) {
+	logfile = getargc(opt, 'l');
+	if(logg("--------------------------------------\n")) {
+	    mprintf("!Problem with internal logger.\n");
+	    mexit(1);
+	}
+    } else if((cpt = cfgopt(copt, "UpdateLogFile"))) {
 	logfile = cpt->strarg; 
 	if(logg("--------------------------------------\n")) {
 	    mprintf("!Problem with internal logger.\n");
@@ -145,10 +158,14 @@ int freshclam(struct optstruct *opt)
     if(optc(opt, 'd')) {
 	    int bigsleep, checks;
 
-	if((cpt = cfgopt(copt, "Checks")))
+
+	if(optc(opt, 'c')) {
+	    checks = atoi(getargc(opt, 'c'));
+	} if((cpt = cfgopt(copt, "Checks"))) {
 	    checks = cpt->numarg;
-	else
+	} else {
 	    checks = CL_DEFAULT_CHECKS;
+	}
 
 	if(checks <= 0 || checks > 50) {
 	    mprintf("@Number of checks must be between 1 and 50.\n");
@@ -159,22 +176,33 @@ int freshclam(struct optstruct *opt)
 	daemonize();
 
 	while(1) {
-	    ret = download(copt);
+	    ret = download(copt, opt);
 
-	    if((cpt = cfgopt(copt, "OnErrorExecute")))
+
+	    if(optl(opt, "on-error-execute")) {
+		if(ret > 1)
+		    system(getargl(opt, "on-error-execute"));
+
+	    } else if((cpt = cfgopt(copt, "OnErrorExecute"))) {
 		if(ret > 1)
 		    system(cpt->strarg);
+	    }
 
 	    logg("\n--------------------------------------\n");
 	    sleep(bigsleep);
 	}
 
     } else
-	ret = download(copt);
+	ret = download(copt, opt);
 
-    if((cpt = cfgopt(copt, "OnErrorExecute")))
+    if(optl(opt, "on-error-execute")) {
+	if(ret > 1)
+	    system(getargl(opt, "on-error-execute"));
+
+    } else if((cpt = cfgopt(copt, "OnErrorExecute"))) {
 	if(ret > 1)
 	    system(cpt->strarg);
+    }
 
     return(ret);
 }
@@ -185,7 +213,7 @@ void d_timeout(int sig)
     exit(1);
 }
 
-int download(const struct cfgstruct *copt)
+int download(const struct cfgstruct *copt, const struct optstruct *opt)
 {
 	int ret = 0, try = 0, maxattempts = 0;
 	struct sigaction sigalrm;
@@ -207,7 +235,7 @@ int download(const struct cfgstruct *copt)
 
 	while(cpt) {
 	    alarm(TIMEOUT);
-	    ret = downloadmanager(copt, cpt->strarg);
+	    ret = downloadmanager(copt, opt, cpt->strarg);
 	    alarm(0);
 
 	    if(ret == 52 || ret == 54) {
@@ -266,8 +294,19 @@ void help(void)
     mprintf("    --stdout                             write to stdout instead of stderr\n");
     mprintf("                                         (this help is always written to stdout)\n");
     mprintf("\n");
+    mprintf("    --config-file=FILE   -c FILE         Read configuration from FILE.\n");
+    mprintf("    --log=FILE           -l FILE         log into FILE\n");
+    mprintf("    --log-verbose                        log additional information\n");
     mprintf("    --daemon             -d              run in daemon mode\n");
+    mprintf("    --user=USER          -u USER         run as USER\n");
+    mprintf("    --checks=#n          -c #n           #n checks by day, 1 <= n <= 50\n");
     mprintf("    --datadir=DIRECTORY                  download new databases into DIRECTORY\n");
+#ifdef BUILD_CLAMD
+    mprintf("    --daemon-notify[=/path/clamav.conf]  send RELOAD command to clamd\n");
+#endif
+    mprintf("    --on-update-execute=COMMAND          execute COMMAND after successful update\n");
+    mprintf("    --on-error-execute=COMMAND           execute COMMAND if errors occured\n");
+
     mprintf("\n");
     exit(0);
 }

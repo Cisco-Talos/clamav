@@ -1,3 +1,9 @@
+Fri Jan  9 02:07:53 CET 2004 (tk)
+---------------------------------
+  * freshclam: restored old command line options (except for proxy settings) -
+	       if activated, they will overwrite settings from freshclam.conf
+  * clamscan: --beep
+
 Wed Jan  7 21:50:28 CET 2004 (tk)
 ---------------------------------
   * clamscan: removed support for sendfile() under Linux
