@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.46  2004/03/21 09:41:27  nigelhorne
+ * Faster scanning for non MIME messages
+ *
  * Revision 1.45  2004/03/20 19:26:48  nigelhorne
  * Second attempt to handle all bounces
  *
@@ -132,7 +135,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.45 2004/03/20 19:26:48 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.46 2004/03/21 09:41:27 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -259,6 +262,7 @@ messageReset(message *m)
 
 	memset(m, '\0', sizeof(message));
 	m->mimeType = NOMIME;
+	m->encodingType = NOENCODING;
 }
 
 void
@@ -668,6 +672,8 @@ messageGetEncoding(const message *m)
 void
 messageAddLine(message *m, const char *line)
 {
+	static const char encoding[] = "Content-Transfer-Encoding";
+	static const char binhex[] = "(This file must be converted with BinHex 4.0)";
 	assert(m != NULL);
 
 	if(m->body_first == NULL)
@@ -677,12 +683,38 @@ messageAddLine(message *m, const char *line)
 		m->body_last = m->body_last->t_next;
 	}
 
+	if(m->body_last == NULL)
+		return;
+
 	m->body_last->t_next = NULL;
 
 	m->body_last->t_text = strdup((line) ? line : "");
 
 	assert(m->body_last->t_text != NULL);
 	assert(m->body_first != NULL);
+
+	/*
+	 * See if this line marks the start of a non MIME inclusion that
+	 * will need to be scanned
+	 */
+	if(line) {
+		if((m->encoding == NULL) &&
+		   (strncasecmp(line, encoding, sizeof(encoding) - 1) == 0))
+			m->encoding = m->body_last;
+		else if((m->bounce == NULL) &&
+			(cli_filetype(line, strlen(line)) == CL_MAILFILE))
+				m->bounce = m->body_last;
+		else if((m->binhex == NULL) &&
+			(strncasecmp(line, binhex, sizeof(binhex) - 1) == 0))
+				m->binhex = m->body_last;
+		else if((m->uuencode == NULL) &&
+			((strncasecmp(line, "begin ", 6) == 0) &&
+			(isdigit(line[6])) &&
+			(isdigit(line[7])) &&
+			(isdigit(line[8])) &&
+			(line[9] == ' ')))
+				m->uuencode = m->body_last;
+	}
 }
 
 const text *
@@ -1115,6 +1147,7 @@ messageToText(const message *m)
 /*
  * Scan to find the UUENCODED message (if any)
  */
+#if	0
 const text *
 uuencodeBegin(const message *m)
 {
@@ -1138,10 +1171,18 @@ uuencodeBegin(const message *m)
 	}
 	return NULL;
 }
+#else
+const text *
+uuencodeBegin(const message *m)
+{
+	return m->uuencode;
+}
+#endif
 
 /*
  * Scan to find the BINHEX message (if any)
  */
+#if	0
 const text *
 binhexBegin(const message *m)
 {
@@ -1153,11 +1194,19 @@ binhexBegin(const message *m)
 
 	return NULL;
 }
+#else
+const text *
+binhexBegin(const message *m)
+{
+	return m->binhex;
+}
+#endif
 
 /*
  * Scan to find a bounce message. There is no standard for these, not
  * even a convention, so don't expect this to be foolproof
  */
+#if	0
 const text *
 bounceBegin(const message *m)
 {
@@ -1169,6 +1218,45 @@ bounceBegin(const message *m)
 
 	return NULL;
 }
+#else
+const text *
+bounceBegin(const message *m)
+{
+	return m->bounce;
+}
+#endif
+
+/*
+ * If a message doesn't not contain another message which could be harmful
+ * it is deemed to be safe.
+ *
+ * TODO: ensure nothing can get through this
+ *
+ * TODO: check to see if we need to
+ * find anything else, perhaps anything
+ * from the RFC821 table?
+ */
+#if	0
+int
+messageIsAllText(const message *m)
+{
+	const text *t;
+
+	for(t = messageGetBody(m); t; t = t->t_next)
+		if(strncasecmp(t->t_text,
+			"Content-Transfer-Encoding",
+			strlen("Content-Transfer-Encoding")) == 0)
+				return 0;
+
+	return 1;
+}
+#else
+int
+messageIsAllText(const message *m)
+{
+	return (m->encoding == NULL);
+}
+#endif
 
 /*
  * Decode a line and add it to a buffer, return the end of the buffer

@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.56  2004/03/21 09:41:26  nigelhorne
+ * Faster scanning for non MIME messages
+ *
  * Revision 1.55  2004/03/20 17:39:23  nigelhorne
  * First attempt to handle all bounces
  *
@@ -156,7 +159,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.55 2004/03/20 17:39:23 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.56 2004/03/21 09:41:26 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -225,7 +228,6 @@ static	bool	continuationMarker(const char *line);
 static	int	parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg);
 static	void	saveTextPart(message *m, const char *dir);
 static	bool	saveFile(const blob *b, const char *dir);
-static	bool	isAllText(const message *m);
 
 /* Maximum number of attachments that we accept */
 #define	MAX_ATTACHMENTS	10
@@ -987,7 +989,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						break;
 					case MESSAGE:
 						cli_dbgmsg("Found message inside multipart\n");
-						if(isAllText(aMessage))
+						if(messageIsAllText(aMessage))
 							continue;
 
 						body = parseEmailHeaders(aMessage, rfc821Table);
@@ -1359,7 +1361,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					}
 					blobDestroy(b);
 				}
-			} else if((!isAllText(mainMessage)) &&
+			} else if((!messageIsAllText(mainMessage)) &&
 				  ((t_line = bounceBegin(mainMessage)) != NULL)) {
 				/*
 				 * Attempt to save the original (unbounced)
@@ -1367,31 +1369,9 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				 * directory and call us again (with any luck)
 				 * having found an e-mail message to handle
 				 */
-
-				/*
-				 * Ignore the blank lines before the message
-				 * proper
-				 */
-				/*while((t_line = t_line->t_next) != NULL)
-					if(strcmp(t_line->t_text, "") != 0)
-						break;*/
-
-				if(t_line == NULL) {
-					cli_dbgmsg("Not found bounce message\n");
-					saveTextPart(mainMessage, dir);
-				} else if((b = blobCreate()) != NULL) {
+				if((b = blobCreate()) != NULL) {
 					cli_dbgmsg("Found a bounce message\n");
-					/*
-					 * Ensure the when any bounce messages
-					 * that have been saved in the
-					 * temporary directory are passed to
-					 * cl_mbox() by inserting a header line
-					 * that scanners.c recognises as a mail
-					 *
-					 * Fix thanks to "Andrey J. Melnikoff
-					 * (TEMHOTA)" <temnota@kmv.ru>
-					 */
-					/*blobAddData(b, (unsigned char *)"Received: by clamd\n", 19);*/
+
 					do {
 						blobAddData(b, (unsigned char *)t_line->t_text, strlen(t_line->t_text));
 						blobAddData(b, (unsigned char *)"\n", 1);
@@ -1413,7 +1393,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					 * content encoding statement don't
 					 * bother saving to scan, it's safe
 					 */
-					saveIt = !isAllText(mainMessage);
+					saveIt = !messageIsAllText(mainMessage);
 				else
 					saveIt = TRUE;
 
@@ -1852,28 +1832,4 @@ saveFile(const blob *b, const char *dir)
 	}
 
 	return (close(fd) >= 0);
-}
-
-/*
- * If a message doesn't not contain another message which could be harmful
- * it is deemed to be safe.
- *
- * TODO: ensure nothing can get through this
- *
- * TODO: check to see if we need to
- * find anything else, perhaps anything
- * from the RFC821 table?
- */
-static bool
-isAllText(const message *m)
-{
-	const text *t;
-
-	for(t = messageGetBody(m); t; t = t->t_next)
-		if(strncasecmp(t->t_text,
-			"Content-Transfer-Encoding",
-			strlen("Content-Transfer-Encoding")) == 0)
-				return FALSE;
-
-	return TRUE;
 }
