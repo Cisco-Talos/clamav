@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.122  2004/09/08 16:03:36  nigelhorne
+ * i18n
+ *
  * Revision 1.121  2004/08/26 10:22:00  nigelhorne
  * Fix overflow To:
  *
@@ -374,9 +377,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.121 2004/08/26 10:22:00 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.122 2004/09/08 16:03:36 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.75m"
+#define	CM_VERSION	"0.75n"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -422,6 +425,20 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.121 2004/08/26 10:22:00 ni
 #include <grp.h>
 #include <netdb.h>
 
+#ifdef	C_LINUX
+#include <libintl.h>
+
+#define	gettext_noop(s)	s
+#define	_(s)	gettext(s)
+#define	N_(s)	gettext_noop(s)
+
+#else
+
+#define	_(s)	s
+#define	N_(s)	s
+
+#endif
+
 #ifdef	WITH_TCPWRAP
 #include <tcpd.h>
 
@@ -435,7 +452,7 @@ int	deny_severity = LOG_NOTICE;
 #endif
 
 #define _GNU_SOURCE
-#include "getopt.h"
+#include <getopt.h>
 
 #ifndef	SENDMAIL_BIN
 #define	SENDMAIL_BIN	"/usr/lib/sendmail"
@@ -614,7 +631,7 @@ static	long	streamMaxLength = -1;	/* StreamMaxLength from clamav.conf */
 static	int	logClean = 1;	/*
 				 * Add clean items to the log file
 				 */
-static	char	*signature = "-- \nScanned by ClamAv - http://www.clamav.net\n";
+static	char	*signature = N_("-- \nScanned by ClamAv - http://www.clamav.net\n");
 static	time_t	signatureStamp;
 static	char	*templatefile;	/* e-mail to be sent when virus detected */
 
@@ -671,38 +688,38 @@ help(void)
 	printf("\n\tclamav-milter version %s\n", CM_VERSION);
 	puts("\tCopyright (C) 2004 Nigel Horne <njh@despammed.com>\n");
 
-	puts("\t--advisory\t\t-A\tFlag viruses rather than deleting them.");
-	puts("\t--bounce\t\t-b\tSend a failure message to the sender.");
-	puts("\t--config-file=FILE\t-c FILE\tRead configuration from FILE.");
-	puts("\t--debug\t\t\t-D\tPrint debug messages.");
-	puts("\t--dont-log-clean\t-C\tDon't add an entry to syslog that a mail is clean.");
-	puts("\t--dont-scan-on-error\t-d\tPass e-mails through unscanned if a system error occurs.");
-	puts("\t--dont-wait\t\t\tAsk remote end to resend if max-children exceeded.");
-	puts("\t--from=EMAIL\t\t-a EMAIL\tError messages come from here.");
-	puts("\t--force-scan\t\t-f\tForce scan all messages (overrides (-o and -l).");
-	puts("\t--help\t\t\t-h\tThis message.");
-	puts("\t--headers\t\t-H\tInclude original message headers in the report.");
-	puts("\t--local\t\t\t-l\tScan messages sent from machines on our LAN.");
-	puts("\t--outgoing\t\t-o\tScan outgoing messages from this machine.");
-	puts("\t--noreject\t\t-N\tDon't reject viruses, silently throw them away.");
-	puts("\t--noxheader\t\t-n\tSuppress X-Virus-Scanned/X-Virus-Status headers.");
-	puts("\t--pidfile=FILE\t\t-i FILE\tLocation of pidfile.");
-	puts("\t--postmaster\t\t-p EMAIL\tPostmaster address [default=postmaster].");
-	puts("\t--postmaster-only\t-P\tSend warnings only to the postmaster.");
-	puts("\t--quiet\t\t\t-q\tDon't send e-mail notifications of interceptions.");
-	puts("\t--quarantine=USER\t-Q EMAIL\tQuanrantine e-mail account.");
-	puts("\t--quarantine-dir=DIR\t-U DIR\tDirectory to store infected emails.");
-	puts("\t--server=SERVER\t\t-s SERVER\tHostname/IP address of server(s) running clamd (when using TCPsocket).");
-	puts("\t--sign\t\t\t-S\tAdd a hard-coded signature to each scanned message.");
-	puts("\t--signature-file=FILE\t-F FILE\tLocation of signature file.");
-	puts("\t--template-file=FILE\t-t FILE\tLocation of e-mail template file.");
-	puts("\t--timeout=SECS\t\t-T SECS\tTimeout waiting to childen to die.");
-	puts("\t--version\t\t-V\tPrint the version number of this software.");
+	puts(_("\t--advisory\t\t-A\tFlag viruses rather than deleting them."));
+	puts(_("\t--bounce\t\t-b\tSend a failure message to the sender."));
+	puts(_("\t--config-file=FILE\t-c FILE\tRead configuration from FILE."));
+	puts(_("\t--debug\t\t\t-D\tPrint debug messages."));
+	puts(_("\t--dont-log-clean\t-C\tDon't add an entry to syslog that a mail is clean."));
+	puts(_("\t--dont-scan-on-error\t-d\tPass e-mails through unscanned if a system error occurs."));
+	puts(_("\t--dont-wait\t\t\tAsk remote end to resend if max-children exceeded."));
+	puts(_("\t--from=EMAIL\t\t-a EMAIL\tError messages come from here."));
+	puts(_("\t--force-scan\t\t-f\tForce scan all messages (overrides (-o and -l)."));
+	puts(_("\t--help\t\t\t-h\tThis message."));
+	puts(_("\t--headers\t\t-H\tInclude original message headers in the report."));
+	puts(_("\t--local\t\t\t-l\tScan messages sent from machines on our LAN."));
+	puts(_("\t--outgoing\t\t-o\tScan outgoing messages from this machine."));
+	puts(_("\t--noreject\t\t-N\tDon't reject viruses, silently throw them away."));
+	puts(_("\t--noxheader\t\t-n\tSuppress X-Virus-Scanned/X-Virus-Status headers."));
+	puts(_("\t--pidfile=FILE\t\t-i FILE\tLocation of pidfile."));
+	puts(_("\t--postmaster\t\t-p EMAIL\tPostmaster address [default=postmaster]."));
+	puts(_("\t--postmaster-only\t-P\tSend warnings only to the postmaster."));
+	puts(_("\t--quiet\t\t\t-q\tDon't send e-mail notifications of interceptions."));
+	puts(_("\t--quarantine=USER\t-Q EMAIL\tQuanrantine e-mail account."));
+	puts(_("\t--quarantine-dir=DIR\t-U DIR\tDirectory to store infected emails."));
+	puts(_("\t--server=SERVER\t\t-s SERVER\tHostname/IP address of server(s) running clamd (when using TCPsocket)."));
+	puts(_("\t--sign\t\t\t-S\tAdd a hard-coded signature to each scanned message."));
+	puts(_("\t--signature-file=FILE\t-F FILE\tLocation of signature file."));
+	puts(_("\t--template-file=FILE\t-t FILE\tLocation of e-mail template file."));
+	puts(_("\t--timeout=SECS\t\t-T SECS\tTimeout waiting to childen to die."));
+	puts(_("\t--version\t\t-V\tPrint the version number of this software."));
 #ifdef	CL_DEBUG
-	puts("\t--debug-level=n\t\t-x n\tSets the debug level to 'n'.");
+	puts(_("\t--debug-level=n\t\t-x n\tSets the debug level to 'n'."));
 #endif
-	puts("\nFor more information type \"man clamav-milter\".");
-	puts("Report bugs to bugs@clamav.net.");
+	puts(_("\nFor more information type \"man clamav-milter\"."));
+	puts(_("Report bugs to bugs@clamav.net."));
 }
 
 int
@@ -743,6 +760,12 @@ main(int argc, char **argv)
 	snprintf(clamav_version, sizeof(clamav_version),
 		"ClamAV version %s, clamav-milter version %s",
 		VERSION, CM_VERSION);
+
+#ifdef	C_LINUX
+	setlocale(LC_ALL, "");
+	bindtextdomain("clamav-milter", "locale");
+	textdomain("clamav-milter");
+#endif
 
 	for(;;) {
 		int opt_index = 0;
@@ -960,7 +983,7 @@ main(int argc, char **argv)
 	}
 
 	if (optind == argc) {
-		fprintf(stderr, "%s: No socket-addr given\n", argv[0]);
+		fprintf(stderr, _("%s: No socket-addr given\n"), argv[0]);
 		return EX_USAGE;
 	}
 	port = argv[optind];
@@ -969,7 +992,7 @@ main(int argc, char **argv)
 	 * Sanity checks on the clamav configuration file
 	 */
 	if((copt = parsecfg(cfgfile, 1)) == NULL) {
-		fprintf(stderr, "%s: Can't parse the config file %s\n",
+		fprintf(stderr, _("%s: Can't parse the config file %s\n"),
 			argv[0], cfgfile);
 		return EX_CONFIG;
 	}
@@ -980,7 +1003,7 @@ main(int argc, char **argv)
 	if(getuid() == 0) {
 		if((cpt = cfgopt(copt, "User")) != NULL) {
 			if((user = getpwnam(cpt->strarg)) == NULL) {
-				fprintf(stderr, "%s: Can't get information about user %s\n", argv[0], cpt->strarg);
+				fprintf(stderr, _("%s: Can't get information about user %s\n"), argv[0], cpt->strarg);
 				return EX_CONFIG;
 			}
 
@@ -991,7 +1014,7 @@ main(int argc, char **argv)
 					return EX_CONFIG;
 				}
 #else
-				fprintf(stderr, "%s: AllowSupplementaryGroups: initgroups not supported.\n",
+				fprintf(stderr, _("%s: AllowSupplementaryGroups: initgroups not supported.\n"),
 					argv[0]);
 				return EX_CONFIG;
 #endif
@@ -1008,20 +1031,20 @@ main(int argc, char **argv)
 			if(setuid(user->pw_uid) < 0)
 				perror(cpt->strarg);
 			else
-				cli_dbgmsg("Running as user %s (UID %d, GID %d)\n",
+				cli_dbgmsg(_("Running as user %s (UID %d, GID %d)\n"),
 					cpt->strarg, user->pw_uid, user->pw_gid);
 		} else
-			fprintf(stderr, "%s: running as root is not recommended (check \"User\" in clamav.conf)\n", argv[0]);
+			fprintf(stderr, _("%s: running as root is not recommended (check \"User\" in clamav.conf)\n"), argv[0]);
 	}
 	if(advisory && quarantine) {
-		fprintf(stderr, "%s: Advisory mode doesn't work with quarantine mode\n", argv[0]);
+		fprintf(stderr, _("%s: Advisory mode doesn't work with quarantine mode\n"), argv[0]);
 		return EX_USAGE;
 	}
 	if(quarantine_dir) {
 		struct stat statb;
 
 		if(advisory) {
-			fprintf(stderr, "%s: Advisory mode doesn't work with quarantine directories\n", argv[0]);
+			fprintf(stderr, _("%s: Advisory mode doesn't work with quarantine directories\n"), argv[0]);
 			return EX_USAGE;
 		}
 		if(access(quarantine_dir, W_OK) < 0) {
@@ -1037,8 +1060,8 @@ main(int argc, char **argv)
 		 * or writeable
 		 */
 		if(statb.st_mode & 077) {
-			fprintf(stderr, "%s: unsafe quarantine directory %s\n",
-				argv[0], quarantine_dir);
+			fprintf(stderr, _("%s: insecure quarantine directory %s (mode 0%o)\n"),
+				argv[0], quarantine_dir, statb.st_mode & 0777);
 			return EX_CONFIG;
 		}
 	}
@@ -1052,7 +1075,7 @@ main(int argc, char **argv)
 	}
 
 	if(!cfgopt(copt, "StreamSaveToDisk")) {
-		fprintf(stderr, "%s: StreamSavetoDisk not enabled in %s\n",
+		fprintf(stderr, _("%s: StreamSavetoDisk not enabled in %s\n"),
 			argv[0], cfgfile);
 		return EX_CONFIG;
 	}
@@ -1062,7 +1085,7 @@ main(int argc, char **argv)
 		 * In fact ScanMail isn't needed if this machine doesn't run
 		 * clamd.
 		 */
-		fprintf(stderr, "%s: ScanMail not enabled in %s\n",
+		fprintf(stderr, _("%s: ScanMail not enabled in %s\n"),
 			argv[0], cfgfile);
 		return EX_CONFIG;
 	}
@@ -1079,14 +1102,14 @@ main(int argc, char **argv)
 		readTimeout = cpt->numarg;
 
 		if(readTimeout < 0) {
-			fprintf(stderr, "%s: ReadTimeout must not be negative in %s\n",
+			fprintf(stderr, _("%s: ReadTimeout must not be negative in %s\n"),
 				argv[0], cfgfile);
 			return EX_CONFIG;
 		}
 	}
 	if((cpt = cfgopt(copt, "StreamMaxLength")) != NULL) {
 		if(cpt->numarg < 0) {
-			fprintf(stderr, "%s: StreamMaxLength must not be negative in %s\n",
+			fprintf(stderr, _("%s: StreamMaxLength must not be negative in %s\n"),
 				argv[0], cfgfile);
 			return EX_CONFIG;
 		}
@@ -1097,7 +1120,7 @@ main(int argc, char **argv)
 	 */
 	if((cpt = cfgopt(copt, "LocalSocket")) != NULL) {
 		if(cfgopt(copt, "TCPSocket") != NULL) {
-			fprintf(stderr, "%s: You can select one server type only (local/TCP) in %s\n",
+			fprintf(stderr, _("%s: You can select one server type only (local/TCP) in %s\n"),
 				argv[0], cfgfile);
 			return EX_CONFIG;
 		}
@@ -1106,14 +1129,14 @@ main(int argc, char **argv)
 		 */
 		localSocket = cpt->strarg;
 		if(!pingServer(-1)) {
-			fprintf(stderr, "Can't talk to clamd server via %s\n",
+			fprintf(stderr, _("Can't talk to clamd server via %s\n"),
 				localSocket);
-			fprintf(stderr, "Check your entry for LocalSocket in %s\n",
+			fprintf(stderr, _("Check your entry for LocalSocket in %s\n"),
 				cfgfile);
 			return EX_CONFIG;
 		}
 		/*if(quarantine_dir == NULL)
-			fprintf(stderr, "When using Localsocket in %s\nyou may improve performance if you use the --quarantine-dir option\n", cfgfile);*/
+			fprintf(stderr, _("When using Localsocket in %s\nyou may improve performance if you use the --quarantine-dir option\n"), cfgfile);*/
 
 		umask(077);
 
@@ -1126,7 +1149,7 @@ main(int argc, char **argv)
 		 * TCPSocket is in fact a port number not a full socket
 		 */
 		if(quarantine_dir) {
-			fprintf(stderr, "%s: --quarantine-dir not supported for remote scanning - use --quarantine\n", argv[0]);
+			fprintf(stderr, _("%s: --quarantine-dir not supported for remote scanning - use --quarantine\n"), argv[0]);
 			return EX_CONFIG;
 		}
 
@@ -1159,7 +1182,7 @@ main(int argc, char **argv)
 				const struct hostent *h = gethostbyname(hostname);
 
 				if(h == NULL) {
-					fprintf(stderr, "%s: Unknown host %s\n",
+					fprintf(stderr, _("%s: Unknown host %s\n"),
 						argv[0], hostname);
 					return EX_USAGE;
 				}
@@ -1170,27 +1193,27 @@ main(int argc, char **argv)
 			if(pingServer(i))
 				activeServers++;
 			else {
-				cli_warnmsg("Can't talk to clamd server %s on port %d\n",
+				cli_warnmsg(_("Can't talk to clamd server %s on port %d\n"),
 					hostname, tcpSocket);
 			}
 			free(hostname);
 		}
 		if(activeServers == 0) {
-			cli_errmsg("Can't find any clamd servers\n");
-			cli_errmsg("Check your entry for TCPSocket in %s\n",
+			cli_errmsg(_("Can't find any clamd servers\n"));
+			cli_errmsg(_("Check your entry for TCPSocket in %s\n"),
 				cfgfile);
 			return EX_CONFIG;
 		}
 	} else {
-		fprintf(stderr, "%s: You must select server type (local/TCP) in %s\n",
+		fprintf(stderr, _("%s: You must select server type (local/TCP) in %s\n"),
 			argv[0], cfgfile);
 		return EX_CONFIG;
 	}
 
 	if(!cfgopt(copt, "Foreground")) {
 #ifdef	CL_DEBUG
-		printf("When debugging it is recommended that you use Foreground mode in %s\n", cfgfile);
-		puts("So that you can see all of the messages");
+		printf(_("When debugging it is recommended that you use Foreground mode in %s\n"), cfgfile);
+		puts(_("So that you can see all of the messages"));
 #endif
 
 		switch(fork()) {
@@ -1236,16 +1259,16 @@ main(int argc, char **argv)
 
 		openlog("clamav-milter", LOG_CONS|LOG_PID, LOG_MAIL);
 		if(logVerbose)
-			syslog(LOG_INFO, "Starting: %s", clamav_version);
+			syslog(LOG_INFO, _("Starting: %s"), clamav_version);
 		else
 			syslog(LOG_INFO, "%s", clamav_version);
 #ifdef	CL_DEBUG
 		if(debug_level > 0)
-			syslog(LOG_DEBUG, "Debugging is on");
+			syslog(LOG_DEBUG, _("Debugging is on"));
 #endif
 	} else {
 		if(qflag)
-			fprintf(stderr, "%s: (-q && !LogSyslog): warning - all interception message methods are off\n",
+			fprintf(stderr, _("%s: (-q && !LogSyslog): warning - all interception message methods are off\n"),
 				argv[0]);
 		use_syslog = 0;
 	}
@@ -1257,9 +1280,9 @@ main(int argc, char **argv)
 
 		if((fd = fopen(pidfile, "w")) == NULL) {
 			if(use_syslog)
-				syslog(LOG_WARNING, "Can't save PID in file %s",
+				syslog(LOG_WARNING, _("Can't save PID in file %s"),
 					pidfile);
-			cli_warnmsg("Can't save PID in file %s\n", pidfile);
+			cli_warnmsg(_("Can't save PID in file %s\n"), pidfile);
 		} else {
 			fprintf(fd, "%d\n", (int)getpid());
 			fclose(fd);
@@ -1287,7 +1310,7 @@ main(int argc, char **argv)
 	}
 
 	if(smfi_setconn(port) == MI_FAILURE) {
-		fprintf(stderr, "%s: smfi_setconn failed\n",
+		fprintf(stderr, _("%s: smfi_setconn failed\n"),
 			argv[0]);
 		return EX_SOFTWARE;
 	}
@@ -1300,7 +1323,7 @@ main(int argc, char **argv)
 	signal(SIGPIPE, SIG_IGN);
 
 	if(logVerbose)
-		syslog(LOG_INFO, "Started: %s", clamav_version);
+		syslog(LOG_INFO, _("Started: %s"), clamav_version);
 
 	return smfi_main();
 }
@@ -1472,10 +1495,10 @@ findServer(void)
 		if((connect(sock, (struct sockaddr *)server, sizeof(struct sockaddr)) < 0) ||
 		   (send(sock, "PING\n", 5, 0) < 5)) {
 			char *hostname = cli_strtok(serverHostNames, i, ":");
-			cli_warnmsg("Check clamd server %s - it may be down\n", hostname);
+			cli_warnmsg(_("Check clamd server %s - it may be down\n"), hostname);
 			if(use_syslog)
 				syslog(LOG_WARNING,
-					"Check clamd server %s - it may be down",
+					_("Check clamd server %s - it may be down"),
 					hostname);
 			close(sock);
 			free(hostname);
@@ -1519,9 +1542,9 @@ findServer(void)
 		 * no more than say one message every 15 minutes
 		 */
 		free(socks);
-		cli_dbgmsg("findServer: No response from any server\n");
+		cli_dbgmsg(_("findServer: No response from any server\n"));
 		if(use_syslog)
-			syslog(LOG_WARNING, "findServer: No response from any server");
+			syslog(LOG_WARNING, _("findServer: No response from any server"));
 
 		time(&thistime);
 		pthread_mutex_lock(&time_mutex);
@@ -1539,17 +1562,17 @@ findServer(void)
 			if(sendmail) {
 				fprintf(sendmail, "To: %s\n", postmaster);
 				fprintf(sendmail, "From: %s\n", postmaster);
-				fputs("Subject: ClamAV Down\n", sendmail);
+				fputs(_("Subject: ClamAV Down\n"), sendmail);
 				fputs("Priority: High\n\n", sendmail);
 
-				fputs("This is an automatic message\n\n", sendmail);
+				fputs(_("This is an automatic message\n\n"), sendmail);
 
 				if(numServers == 1)
-					fputs("The clamd program cannot be contacted.\n", sendmail);
+					fputs(_("The clamd program cannot be contacted.\n"), sendmail);
 				else
-					fputs("No clamd server can be contacted.\n", sendmail);
+					fputs(_("No clamd server can be contacted.\n"), sendmail);
 
-				fputs("Emails may not be being scanned, please check your servers.\n", sendmail);
+				fputs(_("Emails may not be being scanned, please check your servers.\n"), sendmail);
 
 				if(pclose(sendmail) == 0) {
 					pthread_mutex_lock(&time_mutex);
@@ -1562,7 +1585,7 @@ findServer(void)
 	} else if(retval < 0) {
 		free(socks);
 		if(use_syslog)
-			syslog(LOG_ERR, "findServer: select failed");
+			syslog(LOG_ERR, _("findServer: select failed"));
 		return 0;
 	}
 
@@ -1571,14 +1594,14 @@ findServer(void)
 			const int s = (i + j) % numServers;
 
 			free(socks);
-			cli_dbgmsg("findServer: using server %d\n", s);
+			cli_dbgmsg(_("findServer: using server %d\n"), s);
 			return s;
 		}
 
 	free(socks);
-	cli_dbgmsg("findServer: No response from any server\n");
+	cli_dbgmsg(_("findServer: No response from any server\n"));
 	if(use_syslog)
-		syslog(LOG_WARNING, "findServer: No response from any server");
+		syslog(LOG_WARNING, _("findServer: No response from any server"));
 	return 0;
 }
 
@@ -1591,16 +1614,16 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 #if	defined(HAVE_INET_NTOP) || defined(WITH_TCPWRAP)
 	char ip[INET_ADDRSTRLEN];	/* IPv4 only */
 #endif
-	char *remoteIP;
+	const char *remoteIP;
 
 	if(ctx == NULL) {
 		if(use_syslog)
-			syslog(LOG_ERR, "clamfi_connect: ctx is null");
+			syslog(LOG_ERR, _("clamfi_connect: ctx is null"));
 		return cl_error;
 	}
 	if(hostname == NULL) {
 		if(use_syslog)
-			syslog(LOG_ERR, "clamfi_connect: hostname is null");
+			syslog(LOG_ERR, _("clamfi_connect: hostname is null"));
 		return cl_error;
 	}
 	if((hostaddr == NULL) || (&(((struct sockaddr_in *)(hostaddr))->sin_addr) == NULL))
@@ -1621,7 +1644,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 
 		if(remoteIP == NULL) {
 			if(use_syslog)
-				syslog(LOG_ERR, "clamfi_connect: remoteIP is null");
+				syslog(LOG_ERR, _("clamfi_connect: remoteIP is null"));
 			return cl_error;
 		}
 	}
@@ -1629,8 +1652,8 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 #ifdef	CL_DEBUG
 	if(debug_level >= 4) {
 		if(use_syslog)
-			syslog(LOG_NOTICE, "clamfi_connect: connection from %s [%s]", hostname, remoteIP);
-		cli_dbgmsg("clamfi_connect: connection from %s [%s]\n", hostname, remoteIP);
+			syslog(LOG_NOTICE, _("clamfi_connect: connection from %s [%s]"), hostname, remoteIP);
+		cli_dbgmsg(_("clamfi_connect: connection from %s [%s]\n"), hostname, remoteIP);
 	}
 #endif
 
@@ -1649,12 +1672,12 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		 */
 		if((hostmail = smfi_getsymval(ctx, "{if_name}")) == NULL) {
 			if(use_syslog)
-				syslog(LOG_ERR, "Can't get sendmail hostname");
+				syslog(LOG_ERR, _("Can't get sendmail hostname"));
 			return cl_error;
 		}
 		if(clamfi_gethostbyname(hostmail, &hostent, buf, sizeof(buf)) != 0) {
 			if(use_syslog)
-				syslog(LOG_WARNING, "Access Denied: Host Unknown (%s)", hostname);
+				syslog(LOG_WARNING, _("Access Denied: Host Unknown (%s)"), hostname);
 			return cl_error;
 		}
 
@@ -1664,7 +1687,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 			perror(hostent.h_name);
 			/*strcpy(ip, (char *)inet_ntoa(*(struct in_addr *)hostent.h_addr));*/
 			if(use_syslog)
-				syslog(LOG_WARNING, "Access Denied: Can't get IP address for (%s)", hostent.h_name);
+				syslog(LOG_WARNING, _("Access Denied: Can't get IP address for (%s)"), hostent.h_name);
 			return cl_error;
 		}
 #else
@@ -1681,7 +1704,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		if(!hosts_ctl("clamav-milter", hostent.h_name, ip, STRING_UNKNOWN)) {
 			pthread_mutex_unlock(&wrap_mutex);
 			if(use_syslog)
-				syslog(LOG_WARNING, "Access Denied for %s[%s]", hostent.h_name, ip);
+				syslog(LOG_WARNING, _("Access Denied for %s[%s]"), hostent.h_name, ip);
 			return SMFIS_TEMPFAIL;
 		}
 		pthread_mutex_unlock(&wrap_mutex);
@@ -1699,8 +1722,8 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		if(strcmp(remoteIP, "127.0.0.1") == 0) {
 #ifdef	CL_DEBUG
 			if(use_syslog)
-				syslog(LOG_DEBUG, "clamfi_connect: not scanning outgoing messages");
-			cli_dbgmsg("clamfi_connect: not scanning outgoing messages\n");
+				syslog(LOG_DEBUG, _("clamfi_connect: not scanning outgoing messages"));
+			cli_dbgmsg(_("clamfi_connect: not scanning outgoing messages\n"));
 #endif
 			return SMFIS_ACCEPT;
 		}
@@ -1708,8 +1731,8 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	if((!lflag) && isLocalAddr(inet_addr(remoteIP))) {
 #ifdef	CL_DEBUG
 		if(use_syslog)
-			syslog(LOG_DEBUG, "clamfi_connect: not scanning local messages");
-		cli_dbgmsg("clamfi_connect: not scanning outgoing messages\n");
+			syslog(LOG_DEBUG, _("clamfi_connect: not scanning local messages"));
+		cli_dbgmsg(_("clamfi_connect: not scanning outgoing messages\n"));
 #endif
 		return SMFIS_ACCEPT;
 	}
@@ -1745,13 +1768,13 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			if(use_syslog)
 				syslog(LOG_NOTICE,
 					((dont_wait) ?
-						"hit max-children limit (%u >= %u)" :
-						"hit max-children limit (%u >= %u): waiting for some to exit"),
+						_("hit max-children limit (%u >= %u)") :
+						_("hit max-children limit (%u >= %u): waiting for some to exit")),
 					n_children, max_children);
 
 			if(dont_wait) {
 				pthread_mutex_unlock(&n_children_mutex);
-				smfi_setreply(ctx, "451", "4.3.2", "AV system temporarily overloaded - please try later");
+				smfi_setreply(ctx, "451", "4.3.2", _("AV system temporarily overloaded - please try later"));
 				return SMFIS_TEMPFAIL;
 			}
 			/*
@@ -1781,15 +1804,15 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		}
 		n_children++;
 
-		cli_dbgmsg(">n_children = %d\n", n_children);
+		cli_dbgmsg(_(">n_children = %d\n"), n_children);
 		pthread_mutex_unlock(&n_children_mutex);
 
 		if(child_timeout && (rc == ETIMEDOUT)) {
 #ifdef	CL_DEBUG
 			if(use_syslog)
-				syslog(LOG_NOTICE, "Timeout waiting for a child to die");
+				syslog(LOG_NOTICE, _("Timeout waiting for a child to die"));
 #endif
-			cli_dbgmsg("Timeout waiting for a child to die\n");
+			cli_dbgmsg(_("Timeout waiting for a child to die\n"));
 		}
 	}
 
@@ -1906,10 +1929,10 @@ clamfi_eoh(SMFICTX *ctx)
 	char **to;
 
 	if(logVerbose)
-		syslog(LOG_DEBUG, "clamfi_eoh");
+		syslog(LOG_DEBUG, _("clamfi_eoh"));
 #ifdef	CL_DEBUG
 	if(debug_level >= 4)
-		cli_dbgmsg("clamfi_eoh\n");
+		cli_dbgmsg(_("clamfi_eoh\n"));
 #endif
 
 	/*
@@ -1966,9 +1989,9 @@ clamfi_eoh(SMFICTX *ctx)
 	 * must be on the white list, so just accept the e-mail
 	 */
 	if(use_syslog)
-		syslog(LOG_NOTICE, "clamfi_eoh: ignoring whitelisted message");
+		syslog(LOG_NOTICE, _("clamfi_eoh: ignoring whitelisted message"));
 #ifdef	CL_DEBUG
-	cli_dbgmsg("clamfi_eoh: not scanning outgoing messages\n");
+	cli_dbgmsg(_("clamfi_eoh: not scanning outgoing messages\n"));
 #endif
 	clamfi_cleanup(ctx);
 
@@ -1982,9 +2005,9 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 	int nbytes;
 
 	if(logVerbose)
-		syslog(LOG_DEBUG, "clamfi_envbody: %u bytes", len);
+		syslog(LOG_DEBUG, _("clamfi_envbody: %u bytes"), len);
 #ifdef	CL_DEBUG
-	cli_dbgmsg("clamfi_envbody: %u bytes\n", len);
+	cli_dbgmsg(_("clamfi_envbody: %u bytes\n"), len);
 #endif
 
 	nbytes = clamfi_send(privdata, len, (char *)bodyp);
@@ -1994,11 +2017,11 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 				const char *sendmailId = smfi_getsymval(ctx, "i");
 				if(sendmailId == NULL)
 					sendmailId = "Unknown";
-				syslog(LOG_NOTICE, "%s: Message more than StreamMaxLength (%ld) bytes - not scanned",
+				syslog(LOG_NOTICE, _("%s: Message more than StreamMaxLength (%ld) bytes - not scanned"),
 					sendmailId, streamMaxLength);
 			}
 			if(!nflag)
-				smfi_addheader(ctx, "X-Virus-Status", "Not Scanned - StreamMaxLength exceeded");
+				smfi_addheader(ctx, "X-Virus-Status", _("Not Scanned - StreamMaxLength exceeded"));
 
 			return SMFIS_ACCEPT;	/* clamfi_close will be called */
 		}
@@ -2078,7 +2101,7 @@ clamfi_eom(SMFICTX *ctx)
 			perror("send");
 			clamfi_cleanup(ctx);
 			if(use_syslog)
-				syslog(LOG_ERR, "send failed to clamd");
+				syslog(LOG_ERR, _("send failed to clamd"));
 			return cl_error;
 		}
 
@@ -2090,8 +2113,8 @@ clamfi_eom(SMFICTX *ctx)
 			*ptr = '\0';
 
 		if(logVerbose)
-			syslog(LOG_DEBUG, "clamfi_eom: read %s", mess);
-		cli_dbgmsg("clamfi_eom: read %s\n", mess);
+			syslog(LOG_DEBUG, _("clamfi_eom: read %s"), mess);
+		cli_dbgmsg(_("clamfi_eom: read %s\n"), mess);
 	} else {
 		/*
 		 * TODO: if more than one host has been specified, try
@@ -2099,9 +2122,9 @@ clamfi_eom(SMFICTX *ctx)
 		 * by forcing a retry
 		 */
 		clamfi_cleanup(ctx);
-		syslog(LOG_NOTICE, "clamfi_eom: read nothing from clamd");
+		syslog(LOG_NOTICE, _("clamfi_eom: read nothing from clamd"));
 #ifdef	CL_DEBUG
-		cli_dbgmsg("clamfi_eom: read nothing from clamd\n");
+		cli_dbgmsg(_("clamfi_eom: read nothing from clamd\n"));
 #endif
 		return cl_error;
 	}
@@ -2129,7 +2152,7 @@ clamfi_eom(SMFICTX *ctx)
 					strncpy(hostname, j,
 						sizeof(hostname) - 1);
 				else
-					strcpy(buf, "Error determining host");
+					strcpy(buf, _("Error determining host"));
 			} else if(strchr(hostname, '.') == NULL) {
 				/*
 				 * Determine fully qualified name
@@ -2152,7 +2175,7 @@ clamfi_eom(SMFICTX *ctx)
 				free(hostname);
 			} else
 				/* sanity check failed - should issue warning */
-				strcpy(buf, "Error determining host");
+				strcpy(buf, _("Error determining host"));
 		}
 		smfi_addheader(ctx, "X-Virus-Scanned", buf);
 	}
@@ -2163,15 +2186,15 @@ clamfi_eom(SMFICTX *ctx)
 			 * Clamd has stopped on StreamMaxLength before us
 			 */
 			if(use_syslog)
-				syslog(LOG_NOTICE, "%s: Message more than StreamMaxLength (%ld) bytes - not scanned",
+				syslog(LOG_NOTICE, _("%s: Message more than StreamMaxLength (%ld) bytes - not scanned"),
 					sendmailId, streamMaxLength);
 			if(!nflag)
-				smfi_addheader(ctx, "X-Virus-Status", "Not Scanned - StreamMaxLength exceeded");
+				smfi_addheader(ctx, "X-Virus-Status", _("Not Scanned - StreamMaxLength exceeded"));
 			clamfi_cleanup(ctx);	/* not needed, but just to be safe */
 			return SMFIS_ACCEPT;
 		}
 		if(!nflag)
-			smfi_addheader(ctx, "X-Virus-Status", "Not Scanned");
+			smfi_addheader(ctx, "X-Virus-Status", _("Not Scanned"));
 
 		cli_warnmsg("%s: %s\n", sendmailId, mess);
 		if(use_syslog)
@@ -2182,13 +2205,13 @@ clamfi_eom(SMFICTX *ctx)
 
 	if((ptr = strstr(mess, "FOUND")) == NULL) {
 		if(!nflag)
-			smfi_addheader(ctx, "X-Virus-Status", "Clean");
+			smfi_addheader(ctx, "X-Virus-Status", _("Clean"));
 
 		if(use_syslog && logClean)
 			/* Include the sendmail queue ID in the log */
-			syslog(LOG_NOTICE, "%s: clean message from %s",
+			syslog(LOG_NOTICE, _("%s: clean message from %s"),
 				sendmailId,
-				(privdata->from) ? privdata->from : "an unknown sender");
+				(privdata->from) ? privdata->from : _("an unknown sender"));
 
 		if(privdata->body) {
 			/*
@@ -2222,7 +2245,7 @@ clamfi_eom(SMFICTX *ctx)
 			virusname = mess;
 
 		if(!nflag)
-			smfi_addheader(ctx, "X-Virus-Status", "Infected");
+			smfi_addheader(ctx, "X-Virus-Status", _("Infected"));
 
 		if(use_syslog) {
 			/*
@@ -2240,7 +2263,7 @@ clamfi_eom(SMFICTX *ctx)
 			 * Use snprintf rather than printf since we don't know the
 			 * length of privdata->from and may get a buffer overrun
 			 */
-			snprintf(err, 1023, "Intercepted virus from %s to",
+			snprintf(err, 1023, _("Intercepted virus from %s to"),
 				privdata->from);
 
 			ptr = strchr(err, '\0');
@@ -2331,7 +2354,7 @@ clamfi_eom(SMFICTX *ctx)
 					fprintf(sendmail,
 						"X-Infected-Received-From: %s\n",
 						ptr);
-				fputs("Subject: Virus intercepted\n\n", sendmail);
+				fputs(_("Subject: Virus intercepted\n\n"), sendmail);
 
 				if((templatefile == NULL) ||
 				   (sendtemplate(ctx, templatefile, sendmail, virusname) < 0)) {
@@ -2353,32 +2376,32 @@ clamfi_eom(SMFICTX *ctx)
 						sender = smfi_getsymval(ctx, "_");
 
 					if(bflag)
-						fputs("A message you sent to\n", sendmail);
+						fputs(_("A message you sent to\n"), sendmail);
 					else if(pflag)
 						/*
 						 * The message is only going to
 						 * the postmaster, so include
 						 * some useful information
 						 */
-						fprintf(sendmail, "The message %s sent from %s to\n",
+						fprintf(sendmail, _("The message %1$s sent from %2$s to\n"),
 							sendmailId, sender);
 					else
-						fprintf(sendmail, "A message sent from %s to\n",
+						fprintf(sendmail, _("A message sent from %s to\n"),
 							sender);
 
 					for(to = privdata->to; *to; to++)
 						fprintf(sendmail, "\t%s\n", *to);
-					fprintf(sendmail, "contained %s and has not been delivered.\n", virusname);
+					fprintf(sendmail, _("contained %s and has not been delivered.\n"), virusname);
 
 					if(privdata->filename != NULL)
 						if(qfile(privdata, virusname) == 0)
-							fprintf(sendmail, "\nThe message in question has been quarantined as %s\n", privdata->filename);
+							fprintf(sendmail, _("\nThe message in question has been quarantined as %s\n"), privdata->filename);
 
 					if(hflag) {
-						fprintf(sendmail, "\nThe message was received by %s from %s via %s\n\n",
+						fprintf(sendmail, _("\nThe message was received by %1$s from %2$s via %3$s\n\n"),
 							smfi_getsymval(ctx, "j"), sender,
 							smfi_getsymval(ctx, "_"));
-						fputs("For your information, the original message headers were:\n\n", sendmail);
+						fputs(_("For your information, the original message headers were:\n\n"), sendmail);
 						header_list_print(privdata->headers, sendmail);
 					} else if(privdata->received)
 						/*
@@ -2391,7 +2414,7 @@ clamfi_eom(SMFICTX *ctx)
 						 * we can do if that DHCP has
 						 * set the hostname...
 						 */
-						fprintf(sendmail, "\nThe infected machine is likely to be here:\n%s\t\n",
+						fprintf(sendmail, _("\nThe infected machine is likely to be here:\n%s\t\n"),
 							privdata->received);
 
 				}
@@ -2404,7 +2427,7 @@ clamfi_eom(SMFICTX *ctx)
 			assert(quarantine_dir != NULL);
 
 			if(use_syslog)
-				syslog(LOG_NOTICE, "Quarantined infected mail as %s", privdata->filename);
+				syslog(LOG_NOTICE, _("Quarantined infected mail as %s"), privdata->filename);
 			/*
 			 * Cleanup filename here otherwise clamfi_free() will
 			 * delete the file that we wish to keep because it
@@ -2428,9 +2451,9 @@ clamfi_eom(SMFICTX *ctx)
 			 */
 			if(smfi_addrcpt(ctx, quarantine) == MI_FAILURE) {
 				if(use_syslog)
-					syslog(LOG_DEBUG, "Can't set quarantine user %s", quarantine);
+					syslog(LOG_DEBUG, _("Can't set quarantine user %s"), quarantine);
 				else
-					cli_warnmsg("Can't set quarantine user %s\n", quarantine);
+					cli_warnmsg(_("Can't set quarantine user %s\n"), quarantine);
 			} else
 				setsubject(ctx, virusname);
 		} else if(advisory)
@@ -2443,7 +2466,7 @@ clamfi_eom(SMFICTX *ctx)
 		} else
 			rc = SMFIS_DISCARD;
 
-		snprintf(reject, sizeof(reject) - 1, "%s detected by ClamAV - http://www.clamav.net", virusname);
+		snprintf(reject, sizeof(reject) - 1, _("%s detected by ClamAV - http://www.clamav.net"), virusname);
 		smfi_setreply(ctx, (char *)privdata->rejectCode, "5.7.1", reject);
 	}
 	clamfi_cleanup(ctx);
@@ -2522,7 +2545,7 @@ clamfi_free(struct privdata *privdata)
 				perror(privdata->filename);
 				if(use_syslog)
 					syslog(LOG_ERR,
-						"Can't remove clean file %s",
+						_("Can't remove clean file %s"),
 						privdata->filename);
 			}
 			free(privdata->filename);
@@ -2652,10 +2675,10 @@ clamfi_send(struct privdata *privdata, size_t len, const char *format, ...)
 					char buf[32];
 					strerror_r(errno, buf, sizeof(buf));
 					syslog(LOG_ERR,
-						"write failure (%u bytes) to %s: %s",
+						_("write failure (%u bytes) to %s: %s"),
 						len, privdata->filename, buf);
 #else
-					syslog(LOG_ERR, "write failure (%u bytes) to %s: %s",
+					syslog(LOG_ERR, _("write failure (%u bytes) to %s: %s"),
 						len, privdata->filename,
 						strerror(errno));
 #endif
@@ -2669,10 +2692,10 @@ clamfi_send(struct privdata *privdata, size_t len, const char *format, ...)
 					char buf[32];
 					strerror_r(errno, buf, sizeof(buf));
 					syslog(LOG_ERR,
-						"write failure (%u bytes) to clamd: %s",
+						_("write failure (%u bytes) to clamd: %s"),
 						len, buf);
 #else
-					syslog(LOG_ERR, "write failure (%u bytes) to clamd: %s", len, strerror(errno));
+					syslog(LOG_ERR, _("write failure (%u bytes) to clamd: %s"), len, strerror(errno));
 #endif
 				}
 				checkClamd();
@@ -2736,7 +2759,7 @@ clamd_recv(int sock, char *buf, size_t len)
 			return -1;
 		case 0:
 			if(use_syslog)
-				syslog(LOG_ERR, "No data received from clamd in %d seconds\n", readTimeout);
+				syslog(LOG_ERR, _("No data received from clamd in %d seconds\n"), readTimeout);
 			return 0;
 	}
 	return recv(sock, buf, len, 0);
@@ -2758,7 +2781,7 @@ updateSigFile(void)
 	if(stat(sigFilename, &statb) < 0) {
 		perror(sigFilename);
 		if(use_syslog)
-			syslog(LOG_ERR, "Can't stat %s", sigFilename);
+			syslog(LOG_ERR, _("Can't stat %s"), sigFilename);
 		return 0;
 	}
 
@@ -2769,7 +2792,7 @@ updateSigFile(void)
 	if(fd < 0) {
 		perror(sigFilename);
 		if(use_syslog)
-			syslog(LOG_ERR, "Can't open %s", sigFilename);
+			syslog(LOG_ERR, _("Can't open %s"), sigFilename);
 		return 0;
 	}
 
@@ -2904,7 +2927,7 @@ connect2clamd(struct privdata *privdata)
 		if((mkdir(privdata->filename, 0700) < 0) && (errno != EEXIST)) {
 			perror(privdata->filename);
 			if(use_syslog)
-				syslog(LOG_ERR, "mkdir %s failed", privdata->filename);
+				syslog(LOG_ERR, _("mkdir %s failed"), privdata->filename);
 			return 0;
 		}
 
@@ -2917,7 +2940,7 @@ connect2clamd(struct privdata *privdata)
 #else
 			if(mktemp(privdata->filename) == NULL) {
 				if(use_syslog)
-					syslog(LOG_ERR, "mktemp %s failed", privdata->filename);
+					syslog(LOG_ERR, _("mktemp %s failed"), privdata->filename);
 				return 0;
 			}
 			privdata->dataSocket = open(privdata->filename, O_CREAT|O_EXCL|O_WRONLY|O_TRUNC, 0600);
@@ -2927,7 +2950,7 @@ connect2clamd(struct privdata *privdata)
 		if(privdata->dataSocket < 0) {
 			perror(privdata->filename);
 			if(use_syslog)
-				syslog(LOG_ERR, "Temporary quarantine file %s creation failed", privdata->filename);
+				syslog(LOG_ERR, _("Temporary quarantine file %s creation failed"), privdata->filename);
 			return 0;
 		}
 		privdata->serverNumber = -1;
@@ -2992,7 +3015,7 @@ connect2clamd(struct privdata *privdata)
 		if((privdata->dataSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 			perror("socket");
 			if(use_syslog)
-				syslog(LOG_ERR, "failed to create socket");
+				syslog(LOG_ERR, _("failed to create socket"));
 			return 0;
 		}
 
@@ -3001,7 +3024,7 @@ connect2clamd(struct privdata *privdata)
 		if(send(privdata->cmdSocket, "STREAM\n", 7, 0) < 7) {
 			perror("send");
 			if(use_syslog)
-				syslog(LOG_ERR, "send failed to clamd");
+				syslog(LOG_ERR, _("send failed to clamd"));
 			return 0;
 		}
 
@@ -3011,7 +3034,7 @@ connect2clamd(struct privdata *privdata)
 		if(nbytes < 0) {
 			perror("recv");
 			if(use_syslog)
-				syslog(LOG_ERR, "recv failed from clamd getting PORT");
+				syslog(LOG_ERR, _("recv failed from clamd getting PORT"));
 			return 0;
 		}
 		buf[nbytes] = '\0';
@@ -3021,10 +3044,10 @@ connect2clamd(struct privdata *privdata)
 #endif
 		if(sscanf(buf, "PORT %hu\n", &p) != 1) {
 			if(use_syslog)
-				syslog(LOG_ERR, "Expected port information from clamd, got '%s'",
+				syslog(LOG_ERR, _("Expected port information from clamd, got '%s'"),
 					buf);
 			else
-				cli_warnmsg("Expected port information from clamd, got '%s'\n",
+				cli_warnmsg(_("Expected port information from clamd, got '%s'\n"),
 					buf);
 			return 0;
 		}
@@ -3039,7 +3062,7 @@ connect2clamd(struct privdata *privdata)
 
 #ifdef	CL_DEBUG
 		if(debug_level >= 4)
-			cli_dbgmsg("Connecting to local port %d\n", p);
+			cli_dbgmsg(_("Connecting to local port %d\n"), p);
 #endif
 
 		if(connect(privdata->dataSocket, (struct sockaddr *)&reply, sizeof(struct sockaddr_in)) < 0) {
@@ -3050,10 +3073,10 @@ connect2clamd(struct privdata *privdata)
 #ifdef HAVE_STRERROR_R
 				strerror_r(errno, buf, sizeof(buf));
 				syslog(LOG_ERR,
-					"Failed to connect to port %d given by clamd: %s",
+					_("Failed to connect to port %d given by clamd: %s"),
 					p, buf);
 #else
-				syslog(LOG_ERR, "Failed to connect to port %d given by clamd: %s", p, strerror(errno));
+				syslog(LOG_ERR, _("Failed to connect to port %d given by clamd: %s"), p, strerror(errno));
 #endif
 			}
 			return 0;
@@ -3120,7 +3143,7 @@ checkClamd(void)
 	if(fd < 0) {
 		perror(pidFile);
 		if(use_syslog)
-			syslog(LOG_ERR, "Can't open %s", pidFile);
+			syslog(LOG_ERR, _("Can't open %s"), pidFile);
 		return;
 	}
 	nbytes = read(fd, buf, sizeof(buf) - 1);
@@ -3132,7 +3155,7 @@ checkClamd(void)
 	pid = atoi(buf);
 	if((kill(pid, 0) < 0) && (errno == ESRCH)) {
 		if(use_syslog)
-			syslog(LOG_ERR, "Clamd (pid %d) seems to have died",
+			syslog(LOG_ERR, _("Clamd (pid %d) seems to have died"),
 				pid);
 		perror("clamd");
 	}
@@ -3158,7 +3181,7 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 	if(fin == NULL) {
 		perror(filename);
 		if(use_syslog)
-			syslog(LOG_ERR, "Can't open e-mail template file %s",
+			syslog(LOG_ERR, _("Can't open e-mail template file %s"),
 				filename);
 		return -1;
 	}
@@ -3167,7 +3190,7 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 		/* File disappeared in race condition? */
 		perror(filename);
 		if(use_syslog)
-			syslog(LOG_ERR, "Can't stat e-mail template file %s",
+			syslog(LOG_ERR, _("Can't stat e-mail template file %s"),
 				filename);
 		fclose(fin);
 		return -1;
@@ -3176,7 +3199,7 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 	if(buf == NULL) {
 		fclose(fin);
 		if(use_syslog)
-			syslog(LOG_ERR, "Out of memory");
+			syslog(LOG_ERR, _("Out of memory"));
 		return -1;
 	}
 	fread(buf, sizeof(char), statb.st_size, fin);
@@ -3203,7 +3226,7 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 						continue;
 					default:
 						syslog(LOG_ERR,
-							"%s: Unknown clamAV variable \"%c\"\n",
+							_("%s: Unknown clamAV variable \"%c\"\n"),
 							filename, *ptr);
 						break;
 				}
@@ -3213,7 +3236,7 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 
 				if(end == NULL) {
 					syslog(LOG_ERR,
-						"%s: Unterminated sendmail variable \"%s\"\n",
+						_("%s: Unterminated sendmail variable \"%s\"\n"),
 							filename, ptr);
 					continue;
 				}
@@ -3224,7 +3247,7 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 					fputs(ptr, sendmail);
 					if(use_syslog)
 						syslog(LOG_ERR,
-							"%s: Unknown sendmail variable \"%s\"\n",
+							_("%s: Unknown sendmail variable \"%s\"\n"),
 							filename, ptr);
 				} else
 					fputs(val, sendmail);
@@ -3273,10 +3296,11 @@ qfile(struct privdata *privdata, const char *virusname)
 	 * of the virus is included in the filename
 	 */
 	for(ptr = newname; *ptr; ptr++) {
+#ifdef	C_DARWIN
+		*ptr &= '\177';
+#endif
 #if	defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32)
 		if(strchr("/*?<>|\"+=,;: ", *ptr))
-#elif   defined(C_DARWIN)
-		if((*ptr == '/') || (*ptr >= '\200'))
 #else
 		if(*ptr == '/')
 #endif
@@ -3285,7 +3309,7 @@ qfile(struct privdata *privdata, const char *virusname)
 	if(link(privdata->filename, newname) < 0) {
 		perror(newname);
 		if(use_syslog)
-			syslog(LOG_WARNING, "Can't rename %s to %s",
+			syslog(LOG_WARNING, _("Can't rename %1$s to %2$s"),
 				privdata->filename, newname);
 		free(newname);
 		return -1;
@@ -3307,7 +3331,7 @@ setsubject(SMFICTX *ctx, const char *virusname)
 	/*
 	 * FIXME: doesn't work if there's no subject in the email
 	 */
-	snprintf(subject, sizeof(subject) - 1, "[Virus] %s", virusname);
+	snprintf(subject, sizeof(subject) - 1, _("[Virus] %s"), virusname);
 	smfi_chgheader(ctx, "Subject", 1, subject);
 }
 

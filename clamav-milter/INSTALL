@@ -482,6 +482,18 @@ Changes
 		Handle %h (headers) in the template file
 		Fix bug in optimisation when more than one To line is
 			received
+0.75n	8/9/04	Better quarantine filename handling on MACOS/X
+		Added i18n support
+		Better error message if the quarantine directory is publically
+			accessable
+
+INTERNATIONALISATION
+
+The .po file was created with the command
+	xgettext --msgid-bugs-address=bugs@clamav.net --copyright-holder=njh@bandsman.co.uk -L c -d clamav-milter -k_ clamav-milter.c
+
+If you're interested in helping to translate this program please drop the
+author an e-mail.
 
 BUG REPORTS
 
