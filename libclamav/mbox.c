@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.69  2004/05/06 11:26:49  nigelhorne
+ * Force attachments marked as RFC822 messages to be scanned
+ *
  * Revision 1.68  2004/04/29 08:59:24  nigelhorne
  * Tidied up SetDispositionType
  *
@@ -195,7 +198,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.68 2004/04/29 08:59:24 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.69 2004/05/06 11:26:49 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1068,6 +1071,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						}
 						break;
 					case MESSAGE:
+						/* Content-Type: message/rfc822 */
 						cli_dbgmsg("Found message inside multipart\n");
 						if(encodingLine(aMessage) == NULL) {
 							assert(aMessage == messages[i]);
@@ -1075,6 +1079,8 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 							messages[i] = NULL;
 							continue;
 						}
+						messageAddLineAtTop(aMessage,
+							"Received: by clamd");
 #ifdef	SAVE_TO_DISC
 						/*
 						 * Save this embedded message
