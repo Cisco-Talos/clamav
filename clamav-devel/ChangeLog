@@ -1,3 +1,8 @@
+Thu Jun 24 09:09:27 BST 2004 (trog)
+-----------------------------------
+  * libclamav ole2_extract.[ch],scanners.c: proper file accounting (original patch
+	from Maxim Dounin)
+
 Wed Jun 23 17:23:59 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Further optimisation in the handling of empty lines
