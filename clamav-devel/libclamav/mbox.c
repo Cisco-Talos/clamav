@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.169  2004/11/08 16:27:09  nigelhorne
+ * Fix crash with correctly encoded uuencode files
+ *
  * Revision 1.168  2004/11/08 10:26:22  nigelhorne
  * Fix crash if x-yencode is mistakenly guessed
  *
@@ -492,7 +495,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.168 2004/11/08 10:26:22 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.169 2004/11/08 16:27:09 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3037,7 +3040,7 @@ checkURLs(message *m, const char *dir)
 			/*
 			 * TODO: maximum size and timeouts
 			 */
-			snprintf(cmd, sizeof(cmd), "GET -t10 %s > %s/%s 2>/dev/null", url, dir, name);
+			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 %s > %s/%s 2>/dev/null", url, dir, name);
 			cli_dbgmsg("%s\n", cmd);
 #ifdef	CL_THREAD_SAFE
 			pthread_mutex_lock(&system_mutex);

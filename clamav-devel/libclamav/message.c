@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.111  2004/11/08 16:27:09  nigelhorne
+ * Fix crash with correctly encoded uuencode files
+ *
  * Revision 1.110  2004/11/08 10:26:22  nigelhorne
  * Fix crash if x-yencode is mistakenly guessed
  *
@@ -327,7 +330,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.110 2004/11/08 10:26:22 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.111 2004/11/08 16:27:09 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2155,7 +2158,9 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 			if((line[0] & 0x3F) == ' ')
 				break;
 
-			len = *line++ - ' ';
+			/* Don't trust the encoded length */
+			/*len = *line++ - ' ';*/
+			len = strlen(++line);
 
 			if(len > buflen)
 				/*
@@ -2239,9 +2244,9 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
 	unsigned char b1, b2, b3, b4;
 	unsigned char cb1, cb2, cb3;	/* carried over from last line */
 
-	/*cli_dbgmsg("decode %s (len %d ifFast %d base64chars %d)\n", in,
+	cli_dbgmsg("decode %s (len %d isFast %d base64chars %d)\n", in,
 		in ? strlen(in) : 0,
-		isFast, m->base64chars);*/
+		isFast, m->base64chars);
 
 	cb1 = cb2 = cb3 = '\0';
 
