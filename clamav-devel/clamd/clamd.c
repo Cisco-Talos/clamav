@@ -22,6 +22,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #include <time.h>
 #include <pwd.h>
 #include <grp.h>
@@ -222,8 +223,17 @@ void daemonize(void)
 {
 	int i;
 
-    for(i = 0; i <= 2; i++)
-	close(i);
+
+    if((i = open("/dev/null", O_WRONLY)) == -1) {
+	logg("!Cannot open /dev/null. Only use Debug if Foreground is enabled.\n");
+	for(i = 0; i <= 2; i++)
+	    close(i);
+
+    } else {
+	close(0);
+	dup2(i, 1);
+	dup2(i, 2);
+    }
 
     chdir("/");
 

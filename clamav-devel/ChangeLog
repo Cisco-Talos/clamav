@@ -1,3 +1,8 @@
+Sun Nov 23 23:40:53 CET 2003 (tk)
+---------------------------------
+  * clamd: redirect the descriptors 1 and 2 to /dev/null by default, to
+	   protect against a lock with Debug when Foreground is not enabled
+
 Sat Nov 22 17:23:10 IST 2003 (njh)
 ----------------------------------
   * clamav-milter: Drop root privileges and support quarantine
