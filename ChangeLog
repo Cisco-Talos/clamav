@@ -1,3 +1,7 @@
+Tue Jul  6 17:46:39 CEST 2004 (tk)
+----------------------------------
+  * libclamav: disable quoted-printable decoder in HTML normaliser
+
 Tue Jul  6 17:19:15 CEST 2004 (tk)
 ----------------------------------
   * libclamav: improve HTML detection

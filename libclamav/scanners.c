@@ -704,6 +704,7 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
 	struct stat statbuf;
 	int ret;
 
+
     cli_dbgmsg("in cli_scanhtml()\n");
 
     if(fstat(desc, &statbuf) != 0) {
@@ -723,9 +724,7 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
         return CL_EMEM;
     }
 
-    newbuff2 = quoted_decode(membuff, statbuf.st_size);
-    newbuff = html_normalize(newbuff2, strlen(newbuff2));
-    free(newbuff2);
+    newbuff = html_normalize(membuff, statbuf.st_size);
 
     if(newbuff) {
 	newbuff2 = remove_html_comments(newbuff);
@@ -737,11 +736,12 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
 	 */
 	newbuff2 = html_normalize(newbuff, strlen(newbuff));
 	free(newbuff);
+	newbuff = newbuff2;
     }
 
-    ret = cl_scanbuff(newbuff2, strlen(newbuff2), virname, root);
+    ret = cl_scanbuff(newbuff, strlen(newbuff), virname, root);
 
-    free(newbuff2);
+    free(newbuff);
     return ret;
 }
 
