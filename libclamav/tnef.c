@@ -24,7 +24,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.13 2005/04/02 21:16:25 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.14 2005/04/04 13:29:02 nigelhorne Exp $";
 
 #include <stdio.h>
 
@@ -211,8 +211,10 @@ tnef_message(FILE *fp)
 			break;
 		case attMSGCLASS:
 			string = cli_malloc(length + 1);
-			if(fread(string, 1, length, fp) != length)
+			if(fread(string, 1, length, fp) != length) {
+				free(string);
 				return -1;
+			}
 			string[length] = '\0';
 			cli_dbgmsg("TNEF class %s\n", string);
 			free(string);
@@ -260,14 +262,18 @@ tnef_attachment(FILE *fp, const char *dir, fileblob **fbref)
 	switch(tag) {
 		case attATTACHTITLE:
 			string = cli_malloc(length + 1);
-			if(fread(string, 1, length, fp) != length)
+			if(fread(string, 1, length, fp) != length) {
+				free(string);
 				return -1;
+			}
 			string[length] = '\0';
 			cli_dbgmsg("TNEF filename %s\n", string);
 			if(*fbref == NULL) {
 				*fbref = fileblobCreate();
-				if(*fbref == NULL)
+				if(*fbref == NULL) {
+					free(string);
 					return -1;
+				}
 			}
 			fileblobSetFilename(*fbref, dir, string);
 			free(string);
