@@ -93,7 +93,7 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "v:\015\012Received: ",	14, "VPOP3 Mail (DOS)",	  CL_TYPE_MAIL},
     {0,  "v:\012Received: ",		13, "VPOP3 Mail (UNIX)",  CL_TYPE_MAIL},
     {0,  "Hi. This is the qmail-send",  26, "Qmail bounce",	  CL_TYPE_MAIL},
-    {0,  "\042\076\237\170",		4,  "TNEF",		  CL_TYPE_TNEF},
+    {0,  "\170\237\076\042",		 4, "TNEF",               CL_TYPE_TNEF},
 
     /* Others */
 
