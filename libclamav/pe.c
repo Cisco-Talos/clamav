@@ -141,25 +141,6 @@ static int cli_ddump(int desc, int offset, int size, const char *file)
     return 0;
 }
 
-int cli_memstr(const char *haystack, int hs, const char *needle, int ns)
-{
-	const char *pt;
-	int n;
-
-    if(!memcmp(haystack, needle, ns))
-	return 1;
-
-    pt = haystack;
-    n = hs;
-    while(n && (pt = memchr(pt, needle[0], n))) {
-	n--;
-	if(!memcmp(pt, needle, ns))
-	    return 1;
-    }
-
-    return 0;
-}
-
 int cli_scanpe(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
 {
 	uint16_t e_magic; /* DOS signature ("MZ") */
