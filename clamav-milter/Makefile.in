@@ -125,6 +125,8 @@ install_sh = @install_sh@
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/cfgparser.h \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/getopt.c \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/getopt.h \
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/memory.c \
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/memory.h \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    clamav-milter.c
 
 
@@ -149,6 +151,7 @@ PROGRAMS = $(sbin_PROGRAMS)
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@am_clamav_milter_OBJECTS = \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	cfgparser.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	getopt.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	memory.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	clamav-milter.$(OBJEXT)
 clamav_milter_OBJECTS = $(am_clamav_milter_OBJECTS)
 clamav_milter_LDADD = $(LDADD)
@@ -160,7 +163,8 @@ LDFLAGS = @LDFLAGS@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/cfgparser.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/clamav-milter.Po ./$(DEPDIR)/getopt.Po
+@AMDEP_TRUE@	./$(DEPDIR)/clamav-milter.Po ./$(DEPDIR)/getopt.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/memory.Po
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
@@ -214,6 +218,7 @@ clean-sbinPROGRAMS:
 	-test -z "$(sbin_PROGRAMS)" || rm -f $(sbin_PROGRAMS)
 cfgparser.$(OBJEXT): $(top_srcdir)/shared/cfgparser.c
 getopt.$(OBJEXT): $(top_srcdir)/shared/getopt.c
+memory.$(OBJEXT): $(top_srcdir)/shared/memory.c
 clamav-milter$(EXEEXT): $(clamav_milter_OBJECTS) $(clamav_milter_DEPENDENCIES) 
 	@rm -f clamav-milter$(EXEEXT)
 	$(LINK) $(clamav_milter_LDFLAGS) $(clamav_milter_OBJECTS) $(clamav_milter_LDADD) $(LIBS)
@@ -227,6 +232,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cfgparser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamav-milter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/memory.Po@am__quote@
 
 distclean-depend:
 	-rm -rf ./$(DEPDIR)
@@ -284,6 +290,24 @@ getopt.lo: $(top_srcdir)/shared/getopt.c
 @AMDEP_TRUE@	depfile='$(DEPDIR)/getopt.Plo' tmpdepfile='$(DEPDIR)/getopt.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o getopt.lo `test -f '$(top_srcdir)/shared/getopt.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/getopt.c
+
+memory.o: $(top_srcdir)/shared/memory.c
+@AMDEP_TRUE@	source='$(top_srcdir)/shared/memory.c' object='memory.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/memory.Po' tmpdepfile='$(DEPDIR)/memory.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o memory.o `test -f '$(top_srcdir)/shared/memory.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/memory.c
+
+memory.obj: $(top_srcdir)/shared/memory.c
+@AMDEP_TRUE@	source='$(top_srcdir)/shared/memory.c' object='memory.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/memory.Po' tmpdepfile='$(DEPDIR)/memory.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o memory.obj `cygpath -w $(top_srcdir)/shared/memory.c`
+
+memory.lo: $(top_srcdir)/shared/memory.c
+@AMDEP_TRUE@	source='$(top_srcdir)/shared/memory.c' object='memory.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/memory.Plo' tmpdepfile='$(DEPDIR)/memory.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o memory.lo `test -f '$(top_srcdir)/shared/memory.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/memory.c
 CCDEPMODE = @CCDEPMODE@
 
 mostlyclean-libtool:
