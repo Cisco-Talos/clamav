@@ -69,7 +69,7 @@ int main(int argc, char **argv)
 	    {"max-recursion", 1, 0, 0},
 	    {"disable-archive", 0, 0, 0},
 	    {"no-archive", 0, 0, 0},
-
+	    {"no-ole2", 0, 0, 0},
 	    {"mbox", 0, 0, 'm'},
 	    {"stdout", 0, 0, 0},
 	    {"unzip", 2, 0, 0},

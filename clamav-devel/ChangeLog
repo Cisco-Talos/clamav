@@ -1,3 +1,14 @@
+Fri Jan 23 12:12:30 CET 2004 (tk)
+---------------------------------
+  * libclamav: added support for OLE2 / VBA streams scanning (!!), based on
+	       code written by Trog <trog@uncon.org>. It may be enabled
+	       with CL_OLE2 passed in options to cli_scandesc().
+  * clamscan: support for OLE2 scanning is enabled by default and may be
+	      disabled with --no-ole2
+  * clamd: support for OLE2 scanning is disabled by default and may be enabled
+	   with ScanOLE2 in clamav.conf.
+  * clamd: included Darwin fix from Nigel
+
 Fri Jan 23 10:50:51 GMT 2004 (njh)
 ----------------------------------
   * libclamav: Fixed memory leak in handling some multipart messages

@@ -46,6 +46,7 @@ extern "C"
 #define	CL_EMALFZIP	102 /* malformed zip */
 #define CL_EGZIP	103 /* gzip handler error */
 #define CL_EBZIP	104 /* bzip2 handler error */
+#define CL_EOLE2	105 /* OLE2 handler error */
 #define CL_EACCES	200 /* access denied */
 #define CL_ENULLARG	300 /* null argument error */
 
@@ -62,10 +63,11 @@ extern "C"
 #define CL_EDSIG	-11 /* digital signature verification error */
 
 /* options */
-#define CL_RAW		  00
-#define CL_ARCHIVE	  01
-#define CL_MAIL		0100
-#define CL_DISABLERAR  01000
+#define CL_RAW		0
+#define CL_ARCHIVE	1
+#define CL_MAIL		2
+#define CL_DISABLERAR	4
+#define CL_OLE2		8
 
 struct cli_patt {
     short int *pattern;
