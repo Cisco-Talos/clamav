@@ -975,7 +975,92 @@ static int ppt_unlzw(const char *dir, int fd, uint32_t length)
 	return TRUE;
 }
 
+static char *ppt_stream_iter(int fd)
+{
+	atom_header_t atom_header;
+	uint32_t ole_id;
+	char *tmpdir, *out_dir;
+	
+	/* Create a directory to store the extracted OLE2 objects */
+	tmpdir = getenv("TMPDIR");
+
+	if(tmpdir == NULL)
+#ifdef P_tmpdir
+		tmpdir = P_tmpdir;
+#else
+		tmpdir = "/tmp";
+#endif
+
+	/* generate the temporary directory */
+	out_dir = cl_gentemp(tmpdir);
+	if(mkdir(out_dir, 0700)) {
+	    printf("ScanOLE2 -> Can't create temporary directory %s\n", out_dir);
+	    close(fd);
+	    return NULL;
+	}
+
+	while (1) {
+		if (!ppt_read_atom_header(fd, &atom_header)) {
+			break;
+		}
+		ppt_print_atom_header(&atom_header);
+
+		if (atom_header.type == 0x1011) {
+			if (cli_readn(fd, &ole_id, 4) != 4) {
+				cli_dbgmsg("read ole_id failed\n");
+				cli_rmdirs(out_dir);
+				free(out_dir);
+				return NULL;
+			}
+			ole_id = vba_endian_convert_32(ole_id, FALSE);
+			cli_dbgmsg("OleID: %d, length: %d\n",
+					ole_id, atom_header.length-4);
+			if (!ppt_unlzw(out_dir, fd, atom_header.length-4)) {
+				cli_dbgmsg("ppt_unlzw failed\n");
+				cli_rmdirs(out_dir);
+				free(out_dir);
+				return NULL;
+			}
+
+		} else {
+			if (lseek(fd, atom_header.length, SEEK_CUR) == -1 ) {
+				break;
+			}
+		}
+	}
+	return out_dir;
+}
+
 char *ppt_vba_read(const char *dir)
+{
+	char *fullname, *out_dir;
+	int fd;
+	atom_header_t atom_header;
+	uint32_t ole_id;
+
+	fullname = (char *) cli_malloc(strlen(dir) + 21);
+	if (!fullname) {
+		return NULL;
+	}
+	sprintf(fullname, "%s/PowerPoint Document", dir);
+	fd = open(fullname, O_RDONLY);
+	free(fullname);
+	if (fd == -1) {
+		cli_dbgmsg("Open  PowerPoint Document failed\n");
+		return NULL;
+	}
+	
+	out_dir = ppt_stream_iter(fd);
+	close(fd);
+	return out_dir;
+}
+	
+	
+/* Strictly speaking, the method below is the correct way to access the
+	componenets of a PowerPoint file. However, it appears Microsoft
+	don't do it that way.
+	
+char *ppt_vba_read_strict(const char *dir)
 {
 	ppt_currentuser_t ppt_current_user;
 	ppt_useredit_t ppt_useredit;
@@ -1014,9 +1099,10 @@ char *ppt_vba_read(const char *dir)
 	fd = open(fullname, O_RDONLY);
 	free(fullname);
 	if (fd == -1) {
-		cli_dbgmsg("Open Current User failed\n");
+		cli_dbgmsg("Open PowerPoint Document failed\n");
 		return NULL;
 	}
+		
 	if (lseek(fd, ppt_current_user.current_edit_offset, SEEK_SET) !=
 					ppt_current_user.current_edit_offset) {
 		cli_dbgmsg("lseek cli_ppt_vbaread failed\n");
@@ -1024,7 +1110,6 @@ char *ppt_vba_read(const char *dir)
 		return FALSE;
 	}
 
-	/* Create a directory to store the extracted OLE2 objects */
 	tmpdir = getenv("TMPDIR");
 
 	if(tmpdir == NULL)
@@ -1034,7 +1119,6 @@ char *ppt_vba_read(const char *dir)
 		tmpdir = "/tmp";
 #endif
 
-	/* generate the temporary directory */
 	out_dir = cl_gentemp(tmpdir);
 	if(mkdir(out_dir, 0700)) {
 	    printf("ScanOLE2 -> Can't create temporary directory %s\n", dir);
@@ -1107,6 +1191,8 @@ char *ppt_vba_read(const char *dir)
 	close(fd);
 	return out_dir;
 }	
+*/
+
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /* Code to extract Word6 macros
