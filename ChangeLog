@@ -1,3 +1,7 @@
+Thu Sep  4 20:50:20 CEST 2003
+-----------------------------
+  * libclamav: mbox: fix for OE messages (Nigel)
+
 Mon Sep  1 21:45:48 CEST 2003
 -----------------------------
   * clamav.rulez.pl and clamav.linux-sxs.org removed from mirrors.txt
