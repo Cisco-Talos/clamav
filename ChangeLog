@@ -1,3 +1,10 @@
+Wed Mar 10 20:51:54 CET 2004 (tk)
+---------------------------------
+  * doc: + Polish sendmail_clamav how-to updated (Przemyslaw Holowczyc
+	   <doozer*skc.com.pl>)
+	 + included new Polish how-to on ClamAV and Samba integration (by
+	   Przemyslaw Holowczyc)
+
 Wed Mar 10 20:06:35 CET 2004 (tk)
 ---------------------------------
   * doc: clamav-mirror-howto.pdf and signatures.pdf updated
