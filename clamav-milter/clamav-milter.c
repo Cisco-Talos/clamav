@@ -286,6 +286,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.61  2004/03/15 19:54:12  kojm
+ * 0.70-rc
+ *
  * Revision 1.60  2004/03/10 11:31:03  nigelhorne
  * Use HAVE_STRERROR_R
  *
@@ -451,9 +454,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.60 2004/03/10 11:31:03 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.61 2004/03/15 19:54:12 kojm Exp $";
 
-#define	CM_VERSION	"0.67l"
+#define	CM_VERSION	"0.70"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
