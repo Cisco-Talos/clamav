@@ -85,7 +85,7 @@ extern "C"
 #define CL_MAIL		CL_SCAN_MAIL
 #define CL_DISABLERAR	CL_SCAN_DISABLERAR
 #define CL_OLE2		CL_SCAN_OLE2
-#define CL_ENCRYPTED    CL_SCAN_ENCRYPTED
+#define CL_ENCRYPTED    CL_SCAN_BLOCKENCRYPTED
 
 
 struct cli_bm_patt {
