@@ -203,7 +203,11 @@ static int vba_read_project_strings(int fd, int is_mac)
 			break;
 		}
 		name = get_unicode_name(buff, length, is_mac);
-		cli_dbgmsg("name: %s\n", name);
+		if (name) {
+			cli_dbgmsg("name: %s\n", name);
+		} else {
+			cli_dbgmsg("name: [null]\n");
+		}
 		free(buff);
 
 		/* Ignore twelve bytes from entries of type 'G'.
@@ -478,6 +482,11 @@ vba_project_t *vba56_dir_read(const char *dir)
 			goto out_error;
 		}
 		vba_project->name[i] = get_unicode_name(buff, length, is_mac);
+		if (!vba_project->name[i]) {
+			offset = lseek(fd, 0, SEEK_CUR);
+			vba_project->name[i] = (char *) cli_malloc(18);
+			snprintf(vba_project->name[i], 18, "clamav-%.10d", offset);
+		}
 		cli_dbgmsg("project name: %s, ", vba_project->name[i]);
 		free(buff);
 

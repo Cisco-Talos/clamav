@@ -1,3 +1,7 @@
+Fri Jun 25 15:17:37 BST 2004 (trog)
+-----------------------------------
+  * libclamav/vba_extract.c: fix error path crash
+
 Fri Jun 25 14:57:06 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Optimise the scanning of emails that don't have
