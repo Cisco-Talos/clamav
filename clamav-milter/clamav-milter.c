@@ -289,9 +289,15 @@
  *			in string.h says it returns a char *
  *			Say how many bytes can't be written to clamd - it may
  *			give a clue what's wrong
+ *	0.70b	26/3/04	Display errno information on write failure to clamd
+ *			Ensure errno is passed to strerror
+ *			Print fd in clamfi_send debug
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.64  2004/03/26 11:10:27  nigelhorne
+ * Added debug information
+ *
  * Revision 1.63  2004/03/20 12:30:00  nigelhorne
  * strerror_r is confused on Linux
  *
@@ -466,9 +472,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.63 2004/03/20 12:30:00 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.64 2004/03/26 11:10:27 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70a"
+#define	CM_VERSION	"0.70b"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1426,7 +1432,7 @@ findServer(void)
 
 static sfsistat
 clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
-{
+
 	char ip[INET_ADDRSTRLEN];	/* IPv4 only */
 	char *remoteIP;
 
@@ -1773,19 +1779,18 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		if(rc < 0) {
 			perror("connect");
 
-			clamfi_free(privdata);
-
 			/* 0.4 - use better error message */
 			if(use_syslog) {
 #ifdef HAVE_STRERROR_R
-				strerror_r(rc, buf, sizeof(buf));
-                                syslog(LOG_ERR,
+				strerror_r(errno, buf, sizeof(buf));
+				syslog(LOG_ERR,
 					"Failed to connect to port %d given by clamd: %s",
 					port, buf);
 #else
-                               syslog(LOG_ERR, "Failed to connect to port %d given by clamd: %s", port, strerror(rc));
+				syslog(LOG_ERR, "Failed to connect to port %d given by clamd: %s", port, strerror(errno));
 #endif
 			}
+			clamfi_free(privdata);
 
 			return cl_error;
 		}
@@ -1796,10 +1801,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 	privdata->from = strdup(argv[0]);
 	privdata->to = NULL;
 
-	if (hflag)
-		privdata->headers = header_list_new();
-	else
-		privdata->headers = NULL;
+	privdata->headers = (hflag) ? header_list_new() : NULL;
 
 	if(smfi_setpriv(ctx, privdata) == MI_SUCCESS)
 		return SMFIS_CONTINUE;
@@ -1818,7 +1820,7 @@ clamfi_envrcpt(SMFICTX *ctx, char **argv)
 		syslog(LOG_DEBUG, "clamfi_envrcpt: %s", argv[0]);
 
 #ifdef	CL_DEBUG
-	printf("clamfi_envrcpt: %s \n", argv[0]);
+	printf("clamfi_envrcpt: %s\n", argv[0]);
 #endif
 
 	clamfi_send(privdata, 0, "To: %s\n", argv[0]);
@@ -1828,7 +1830,7 @@ clamfi_envrcpt(SMFICTX *ctx, char **argv)
 
 		assert(privdata->numTo == 0);
 	} else
-		privdata->to = realloc(privdata->to, sizeof(char *) * (privdata->numTo + 2));
+		privdata->to = cli_realloc(privdata->to, sizeof(char *) * (privdata->numTo + 2));
 
 	privdata->to[privdata->numTo] = strdup(argv[0]);
 	privdata->to[++privdata->numTo] = NULL;
@@ -2398,7 +2400,8 @@ clamfi_send(const struct privdata *privdata, size_t len, const char *format, ...
 	}
 #ifdef	CL_DEBUG
 	if(debug_level >= 9)
-		printf("clamfi_send: len=%u bufsiz=%u\n", len, sizeof(output));
+		printf("clamfi_send: len=%u bufsiz=%u, fd=%d\n",
+			len, sizeof(output), privdata->dataSocket);
 #endif
 
 	while(len > 0) {
@@ -2406,13 +2409,24 @@ clamfi_send(const struct privdata *privdata, size_t len, const char *format, ...
 			write(privdata->dataSocket, ptr, len) :
 			send(privdata->dataSocket, ptr, len, 0);
 
+		assert(privdata->dataSocket >= 0);
+
 		if(nbytes == -1) {
 			if(errno == EINTR)
 				continue;
 			perror("send");
+			if(use_syslog) {
+#ifdef HAVE_STRERROR_R
+				char buf[32];
+				strerror_r(errno, buf, sizeof(buf));
+				syslog(LOG_ERR,
+					"write failure (%u bytes) to clamd: %s",
+					len, buf);
+#else
+				syslog(LOG_ERR, "write failure (%u bytes) to clamd: %s", len, strerror(errno));
+#endif
+			}
 			checkClamd();
-			if(use_syslog)
-				syslog(LOG_ERR, "write failure (%u bytes) to clamd", len);
 
 			return -1;
 		}
@@ -2577,10 +2591,10 @@ checkClamd(void)
 	char buf[9];
 
 	if(!localSocket)
-		return;
+		return;	/* communicating via TCP */
 
 	if(pidFile == NULL)
-		return;
+		return;	/* PidFile directive missing from clamav.conf */
 
 	fd = open(pidFile, O_RDONLY);
 	if(fd < 0) {
