@@ -24,10 +24,15 @@ Print the version number and exit.
 .TP 
 \fB\-c FILE, \-\-config\-file=FILE\fR
 By default clamav\-milter uses a default configuration file, this option allows you to specify another one.
+.TP
+\fB\-x n, \-\-debug\fR
+Enables debugging.
 .TP 
 \fB\-x n, \-\-debug\-level=n\fR
-Set the debug level to n (where n from [0..9]) if \fBclamav\-miter\fR was
+Set the debug level to n (where n from [0..9]) if \fBclamav\-milter\fR was
 configured with \-\-clamav-debug.
+Will be replaced by \-\-debug for compatability with other programs in the
+suite.
 .TP 
 \fB\-b, \-\-bounce\fR
 Send a failure message to the sender, and to the postmaster.
@@ -74,8 +79,9 @@ redirected to it.
 If this option is given, infected files are left in this directory.
 Note - this option only works when using LocalSocket.
 .TP 
-\fB\-\-server=ADDRESS, \-s ADDRESS\fR
-IP address of server running clamd (when using TCPsocket).
+\fB\-\-server=HOSTNAME/ADDRESS, \-s HOSTNAME/ADDRESS\fR
+IP address or hostname of server(s) running clamd (when using TCPsocket).
+More than one server may be specified, separating the servers by colons.
 .TP
 \fB\-\-sign, \-S\fR
 Add a hard\-coded signature to each scanned file.
