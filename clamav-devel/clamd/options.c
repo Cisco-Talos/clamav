@@ -50,6 +50,7 @@ int main(int argc, char **argv)
 	    {"help", 0, 0, 'h'},
 	    {"config-file", 1, 0, 'c'},
 	    {"version", 0, 0, 'V'},
+	    {"debug", 0, 0, 0},
 	    {0, 0, 0, 0}
     	};
 
