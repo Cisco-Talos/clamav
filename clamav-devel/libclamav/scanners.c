@@ -642,7 +642,7 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
     if(SCAN_ARCHIVE || SCAN_MAIL) {
         /* Need to examine file type */
 
-	if(limits && limits->maxreclevel)
+	if(SCAN_ARCHIVE && limits && limits->maxreclevel)
 	    if(*reclev > limits->maxreclevel)
 		return CL_EMAXREC;
 

@@ -1,3 +1,8 @@
+Sun Nov 16 02:34:12 CET 2003 (tk)
+---------------------------------
+  * libclamav, clamd: fixed limit initialization when ScanArchive is disabled
+		      (thanks to Igor Brezac <igor*ipass.net>)
+
 Sat Nov 15 03:54:39 CET 2003 (tk)
 ---------------------------------
   * sigtool: fixed --build problems introduced in 0.65
