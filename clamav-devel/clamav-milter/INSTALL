@@ -1,0 +1,109 @@
+BUILD INSTRUCTIONS
+
+A makefile was supplied with this which should have built the program. If it
+fails please let us know, and here are some hints for building on different
+platforms.
+
+Tested OK on Linux/x86 with gcc3.2.
+	cc -O3 -pedantic -Wuninitialized -Wall -pipe -mcpu=pentium -march=pentium -fomit-frame-pointer -ffast-math -finline-functions -funroll-loops clamav-milter.c -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o
+
+Compiles OK on Linux/x86 with tcc 0.9.16, but fails to link errors with 'atexit'
+	tcc -g -b -lmilter -lpthread clamav-milter.c...
+
+Fails to compile on Linux/x86 with icc6.0 (complains about stdio.h...)
+	icc -O3 -tpp7 -xiMKW -ipo -parallel -i_dynamic -w2 clamav-milter.c...
+Fails to build on Linux/x86 with icc7.1 with -ipo (fails on libclamav.a - keeps saying run ranlib). Otherwise it builds and runs OK.
+	icc -O2 -tpp7 -xiMKW -parallel -i_dynamic -w2 -march=pentium4 -mcpu=pentium4 clamav-milter.c...
+
+Tested with Electric Fence 2.2.2
+
+Compiles OK on Linux/ppc (YDL2.3) with gcc2.95.4. Needs -lsmutil to link.
+I haven't tested it further on this platform yet.
+	cc -O3 -pedantic -Wuninitialized -Wall -pipe -fomit-frame-pointer -ffast-math -finline-functions -funroll-loop -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o -lsmutil
+
+Sendmail on MacOS/X (10.1) is provided without a development package so this
+can't be run "out of the box"
+
+Solaris 8 needs -lresolv to link, and doesn't have strerror_r, so you'll
+need to replace strerror_r with strerror.
+
+FreeBSD4.7 use /usr/local/bin/gcc30. GCC3.0 is an optional extra on
+FreeBSD. It comes with getopt.h which is handy. To link you need
+-lgnugetopt
+	gcc30 -O3 -DCONFDIR=\"/usr/local/etc\" -I. -I.. -I../clamd -I../libclamav -pedantic -Wuninitialized -Wall -pipe -mcpu=pentium -march=pentium -fomit-frame-pointer -ffast-math -finline-functions -funroll-loops clamav-milter.c -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o -lgnugetopt
+
+INSTALLATION
+
+Install into /usr/local/sbin/clamav-milter, mode 744
+
+See http://www.nmt.edu/~wcolburn/sendmail-8.12.5/libmilter/docs/sample.html
+
+Installations for RedHat Linux and it's derivatives such as YellowDog:
+	Add to /etc/mail/sendmail.mc:
+	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav.sock, F=, T=S:4m;R:4m')dnl
+	define(`confINPUT_MAIL_FILTERS', `clamav')
+
+	Check entry in /usr/local/etc/clamav.conf of the form:
+	LocalSocket /var/run/clamd.sock
+	StreamSaveToDisk
+
+	If you already have a filter (such as spamassassin-milter from
+	http://savannah.nongnu.org/projects/spamass-milt) add it thus:
+	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav.sock, F=, T=S:4m;R:4m')dnl
+	INPUT_MAIL_FILTER(`spamassassin', `S=local:/var/run/spamass.sock, F=, T=C:15m;S:4m;R:4m;E:10m')
+	define(`confINPUT_MAIL_FILTERS', `spamassassin,clamav')dnl
+
+You may find INPUT_MAIL_FILTERS is not needed on your machine, however it
+is recommended by the Sendmail documentation and I recommend going along
+with that.
+
+I suggest putting SpamAssassin first since you're more likely to get spam
+than a virus/worm sent to you.
+
+Add to /etc/sysconfig/clamav-milter
+	CLAMAV_FLAGS="--max-children=2 local:/var/run/clamav.sock"
+or if clamd is on a different machine
+	CLAMAV_FLAGS="--max-children=2 --server=192.168.1.9 local:/var/run/clamav.sock"
+
+You should have received a script to put into /etc/init.d with this software.
+
+CHANGE HISTORY
+
+Changes
+0.2:	4/3/03	clamfi_abort() now always calls pthread_mutex_unlock
+	5/3/03	Only send a bounce if -b is set
+		Version now uses -v not -V
+		--config-file couldn't be set by -c
+0.3	7/3/03	Enhanced the Solaris compile time comment
+		No need to save the return result of LogSyslog
+		Use LogVerbose
+0.4	9/3/03	Initialise dataSocket/cmdSocket correctly
+	10/3/03	Say why we don't connect() to clamd
+		Enhanced '-l' usage message
+0.5	18/3/03	Ported to FreeBSD 4.7
+		Source no longer in support, so remove one .. from
+		the build instructions
+		Corrected the use of strerror_r
+0.51	20/3/03	Mention StreamSaveToDisk in the installation
+		Added -s option which allows clamd to run on a
+		different machine from the milter
+0.52	20/3/03	-b flag now only stops the bounce, sends warning
+		to recipient and postmaster
+0.53	24/3/03	%d->%u in syslog call
+	27/3/03	tcpSocket is now of type in_port_t
+	27/3/03	Use PING/PONG
+0.54	23/5/03	Allow a range of IP addresses as outgoing ones
+		that need not be checked
+0.55	24/5/03	Use inet_ntop() instead of inet_ntoa()
+		Thanks to Krzysztof Olędzki <ole@ans.pl>
+0.60	11/7/03	Some TODOs done by Nigel Kukard <nkukard@lbsd.net>
+		Should stop a couple of remote chances of crashes
+
+BUG REPORTS
+
+Please send bug reports and/or comments to Nigel Horne <njh@despammed.com>
+
+TODO
+
+There are several ideas marked as TODO in the source code. If anyone has
+any other suggestions please feel free to contact me.
