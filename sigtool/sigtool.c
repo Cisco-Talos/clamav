@@ -217,7 +217,7 @@ int build(struct optstruct *opt)
 {
 	int ret, no = 0, realno = 0, bytes, itmp;
 	struct stat foo;
-	char buffer[FILEBUFF], *tarfile = NULL, *gzfile = NULL, header[257],
+	char buffer[FILEBUFF], *tarfile = NULL, *gzfile = NULL, header[512],
 	     smbuff[30], *pt;
         struct cl_node *root = NULL;
 	FILE *tar, *cvd, *fd;
@@ -236,7 +236,7 @@ int build(struct optstruct *opt)
 	exit(1);
     }
 
-    if(stat("viruses.db", &foo) == -1 && stat("viruses.db2", &foo) == -1) {
+    if(stat("viruses.db", &foo) == -1 && stat("viruses.db2", &foo) == -1 && stat("malware.hdb", &foo) == -1) {
 	mprintf("Virus database not found in current working directory.\n");
 	exit(1);
     }
@@ -256,7 +256,7 @@ int build(struct optstruct *opt)
 	mprintf("WARNING: There are no signatures in the database(s).\n");
     } else {
 	mprintf("Signatures: %d\n", no);
-	realno = countlines("viruses.db") + countlines("viruses.db2");
+	realno = countlines("viruses.db") + countlines("viruses.db2") + countlines("malware.hdb");
 
 	if(realno != no) {
 	    mprintf("!Signatures in database: %d. Loaded: %d.\n", realno, no);
@@ -274,7 +274,7 @@ int build(struct optstruct *opt)
 	    exit(1);
 	case 0:
 	    {
-		char *args[] = { "tar", "-cvf", NULL, "COPYING", "viruses.db", "viruses.db2", "Notes", "viruses.db3", NULL };
+		char *args[] = { "tar", "-cvf", NULL, "COPYING", "viruses.db", "viruses.db2", "Notes", "viruses.db3", "malware.hdb", NULL };
 		args[2] = tarfile;
 		execv("/bin/tar", args);
 		mprintf("!Can't execute tar\n");
@@ -358,7 +358,7 @@ int build(struct optstruct *opt)
     free(pt);
     strcat(header, ":");
 
-    /* builder - question */
+    /* ask for builder name */
     fflush(stdin);
     mprintf("Builder id: ");
     fscanf(stdin, "%s", smbuff);
@@ -377,8 +377,11 @@ int build(struct optstruct *opt)
     free(pt);
     strcat(header, ":");
 
-    /* builder - add */
+    /* add builder */
     strcat(header, smbuff);
+
+    /* add current time */
+    sprintf(header + strlen(header), ":%d", (int) timet);
 
     /* fill up with spaces */
 
@@ -638,26 +641,49 @@ int listdb(const char *filename)
 	return 0;
     }
 
+    if(cli_strbcasestr(filename, ".db") || cli_strbcasestr(filename, ".db2")) {
+	/* old style database */
 
-    /* old style database */
+	while(fgets(buffer, FILEBUFF, fd)) {
+	    line++;
+	    pt = strchr(buffer, '=');
+	    if(!pt) {
+		mprintf("!listdb(): Malformed pattern line %d (file %s).\n", line, filename);
+		fclose(fd);
+		free(buffer);
+		return -1;
+	    }
 
-    while(fgets(buffer, FILEBUFF, fd)) {
-	line++;
-	pt = strchr(buffer, '=');
-	if(!pt) {
-	    mprintf("!listdb(): Malformed pattern line %d (file %s).\n", line, filename);
-	    fclose(fd);
-	    free(buffer);
-	    return -1;
-	}
-
-	start = buffer;
-	*pt = 0;
-
-	if((pt = strstr(start, " (Clam)")))
+	    start = buffer;
 	    *pt = 0;
 
-	mprintf("%s\n", start);
+	    if((pt = strstr(start, " (Clam)")))
+		*pt = 0;
+
+	    mprintf("%s\n", start);
+	}
+
+    } else if(cli_strbcasestr(filename, ".hdb")) {
+
+	while(fgets(buffer, FILEBUFF, fd)) {
+	    line++;
+	    cli_chomp(buffer);
+	    start = cli_strtok(buffer, 2, ":");
+
+	    if(!start) {
+		mprintf("!listdb(): Malformed pattern line %d (file %s).\n", line, filename);
+		fclose(fd);
+		free(buffer);
+		return -1;
+	    }
+
+	    if((pt = strstr(start, " (Clam)")))
+		*pt = 0;
+
+	    mprintf("%s\n", start);
+	    free(start);
+	}
+
     }
 
     fclose(fd);
@@ -685,6 +711,7 @@ int listdir(const char *dirname)
 	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") &&
 	    (cli_strbcasestr(dent->d_name, ".db")  ||
 	     cli_strbcasestr(dent->d_name, ".db2") ||
+	     cli_strbcasestr(dent->d_name, ".hdb") ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbfile = (char *) mcalloc(strlen(dent->d_name) + strlen(dirname) + 2, sizeof(char));
