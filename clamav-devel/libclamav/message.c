@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.139  2005/01/27 20:20:58  nigelhorne
+ * Some Worm.Mydoom.Gen-unp were getting through
+ *
  * Revision 1.138  2005/01/24 13:54:22  nigelhorne
  * Some Exploit.IE.CrashSOS were getting through
  *
@@ -411,7 +414,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.138 2005/01/24 13:54:22 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.139 2005/01/27 20:20:58 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2506,8 +2509,7 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
 				nbytes = 2;
 				m->base64chars--;
 				b3 = cb3;
-				if(b3)
-					nbytes = 3;
+				nbytes = 3;
 			} else if(b2)
 				nbytes = 2;
 		}
