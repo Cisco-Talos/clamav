@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.123  2004/09/16 08:56:19  nigelhorne
+ * Handle RFC822 Comments
+ *
  * Revision 1.122  2004/09/15 22:09:26  nigelhorne
  * Handle spaces before colons
  *
@@ -354,7 +357,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.122 2004/09/15 22:09:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.123 2004/09/16 08:56:19 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2014,16 +2017,75 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 #ifdef CL_THREAD_SAFE
 	char *strptr;
 #endif
-	char *copy = strdup(arg ? arg : "");
-	char *ptr = copy;
+	char *copy, *ptr;
+	int commandNumber;
 
+	cli_dbgmsg("parseMimeHeader: cmd='%s', arg='%s'\n", cmd, arg);
+
+	if(strchr(cmd, '(')) {
+		/*
+		 * The command includes comments, see section 3.4.3 of RFC822
+		 * Remove the comment from the command
+		 */
+		char *ccopy = strdup(cmd);
+		char *cptr;
+		int backslash, inquote, commentlevel;
+		char *newcmd, *nptr;
+
+		if(ccopy == NULL)
+			return -1;
+
+		newcmd = cli_malloc(strlen(cmd) + 1);
+		if(newcmd == NULL) {
+			free(ccopy);
+			return -1;
+		}
+
+		backslash = commentlevel = inquote = 0;
+		nptr = newcmd;
+
+		cli_dbgmsg("parseMimeHeader: cmd contains a comment\n");
+
+		for(cptr = ccopy; *cptr; cptr++)
+			if(backslash) {
+				*nptr++ = *cptr;
+				backslash = 0;
+			} else switch(*cptr) {
+				case '\\':
+					backslash = 1;
+					break;
+				case '\"':
+					inquote = !inquote;
+					break;
+				case '(':
+					commentlevel++;
+					break;
+				case ')':
+					if(commentlevel > 0)
+						commentlevel--;
+					break;
+				default:
+					if(commentlevel == 0)
+						*nptr++ = *cptr;
+			}
+
+		if(backslash)	/* last character was a single backslash */
+			*nptr++ = '\\';
+		*nptr = '\0';
+
+		free(ccopy);
+		commandNumber = tableFind(rfc821Table, newcmd);
+		free(newcmd);
+	} else
+		commandNumber = tableFind(rfc821Table, cmd);
+
+	copy = strdup(arg ? arg : "");
+	strstrip(copy);
+	ptr = copy;
 	if(copy == NULL)
 		return -1;
 
-	cli_dbgmsg("parseMimeHeader: cmd='%s', arg='%s'\n", cmd, arg);
-	strstrip(copy);
-
-	switch(tableFind(rfc821Table, cmd)) {
+	switch(commandNumber) {
 		case CONTENT_TYPE:
 			/*
 			 * Fix for non RFC1521 compliant mailers
