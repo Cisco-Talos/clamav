@@ -665,7 +665,7 @@ int cl_loaddb(const char *filename, struct cl_node **root, unsigned int *signo)
 
 	ret = cli_cvdload(fd, root, signo, warn);
 
-    } else if(cli_strbcasestr(filename, ".hdb")) {
+    } else if(cli_strbcasestr(filename, ".hdb") || cli_strbcasestr(filename, ".hdb2")) {
 	ret = cli_loadhdb(fd, root, signo);
 
     } else if(cli_strbcasestr(filename, ".ndb")) {
@@ -704,11 +704,12 @@ int cl_loaddbdir(const char *dirname, struct cl_node **root, unsigned int *signo
 #endif
 	{
 	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") &&
-	    (cli_strbcasestr(dent->d_name, ".db")  ||
-	     cli_strbcasestr(dent->d_name, ".db2") ||
-	     cli_strbcasestr(dent->d_name, ".db3") ||
-	     cli_strbcasestr(dent->d_name, ".hdb") ||
-	     cli_strbcasestr(dent->d_name, ".ndb") ||
+	    (cli_strbcasestr(dent->d_name, ".db")   ||
+	     cli_strbcasestr(dent->d_name, ".db2")  ||
+	     cli_strbcasestr(dent->d_name, ".db3")  ||
+	     cli_strbcasestr(dent->d_name, ".hdb")  ||
+	     cli_strbcasestr(dent->d_name, ".hdb2") ||
+	     cli_strbcasestr(dent->d_name, ".ndb")  ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbfile = (char *) cli_calloc(strlen(dent->d_name) + strlen(dirname) + 2, sizeof(char));
@@ -772,6 +773,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".db2")  || 
 	    cli_strbcasestr(dent->d_name, ".db3")  || 
 	    cli_strbcasestr(dent->d_name, ".hdb")  || 
+	    cli_strbcasestr(dent->d_name, ".hdb2") || 
 	    cli_strbcasestr(dent->d_name, ".ndb")  || 
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
@@ -820,6 +822,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".db2")  || 
 	    cli_strbcasestr(dent->d_name, ".db3")  || 
 	    cli_strbcasestr(dent->d_name, ".hdb")  || 
+	    cli_strbcasestr(dent->d_name, ".hdb2") || 
 	    cli_strbcasestr(dent->d_name, ".ndb")  || 
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
