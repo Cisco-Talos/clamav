@@ -1,3 +1,7 @@
+Fri Nov 26 21:07:19 CET 2004 (tk)
+---------------------------------
+  * libclamav/pe.c: do not trigger a warning on IMAGE_SUBSYSTEM_UNKNOWN
+
 Thu Nov 25 18:38:06 CET 2004 (tk)
 ---------------------------------
   * clamd: new directives StreamMinPort and StreamMaxPort (allow port range
