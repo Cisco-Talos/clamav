@@ -377,15 +377,19 @@ int download(const struct cfgstruct *copt, const struct optstruct *opt)
 
 	    if(ret == 52 || ret == 54 || ret == 58 || ret == 59) {
 		if(try < maxattempts - 1) {
-		    mprintf("Trying again...\n");
-		    logg("Trying again...\n");
+		    mprintf("Trying again in 5 secs...\n");
+		    logg("Trying again in 5 secs...\n");
 		    try++;
-		    sleep(1);
+		    sleep(5);
 		    continue;
 		} else {
-		    mprintf("Giving up...\n");
-		    logg("Giving up...\n");
+		    mprintf("Giving up on %s...\n", cpt->strarg);
+		    logg("Giving up on %s...\n", cpt->strarg);
 		    cpt = (struct cfgstruct *) cpt->nextarg;
+		    if(!cpt) {
+			mprintf("@Update failed. Your network may be down or none of the mirrors listed in freshclam.conf is working.\n");
+			logg("ERROR: Update failed. Your network may be down or none of the mirrors listed in freshclam.conf is working.\n");
+		    }
 		    try = 0;
 		}
 

@@ -1,3 +1,7 @@
+Mon Jan 24 20:12:06 CET 2005 (tk)
+---------------------------------
+  * freshclam: improve error messages (patch by Luca Gibelli <luca*clamav.net>)
+
 Mon Jan 24 17:54:14 CET 2005 (tk)
 ---------------------------------
   * clamd/thrmgr.c: unlock mutex if thread->state != POOL_VALID in
