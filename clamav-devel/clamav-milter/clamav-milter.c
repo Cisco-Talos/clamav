@@ -376,9 +376,19 @@
  *				one to return
  *	0.70u	29/4/04	When changing from realloc to cli_realloc I forgot
  *			to keep the assignment of signature
+ *	0.70v	6/5/04	clamfi_close now always checks privdata is NULL, not
+ *				only when debugging
+ *			Allow transfers of exactly streamMaxLength
+ *			Warn if a clean file can't be removed from the
+ *				quarantine
+ *			When streamMaxLength is exceeded add a header where
+ *				possible, unless --noxheader is given
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.86  2004/05/06 11:25:20  nigelhorne
+ * Some work on maxStreamLength
+ *
  * Revision 1.85  2004/04/29 07:35:27  nigelhorne
  * Change from realloc to cli_realloc - keep assignment
  *
@@ -619,9 +629,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.85 2004/04/29 07:35:27 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.86 2004/05/06 11:25:20 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70u"
+#define	CM_VERSION	"0.70v"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -755,7 +765,7 @@ static	sfsistat	clamfi_abort(SMFICTX *ctx);
 static	sfsistat	clamfi_close(SMFICTX *ctx);
 static	void		clamfi_cleanup(SMFICTX *ctx);
 static	void		clamfi_free(struct privdata *privdata);
-static	int		clamfi_send(const struct privdata *privdata, size_t len, const char *format, ...);
+static	int		clamfi_send(struct privdata *privdata, size_t len, const char *format, ...);
 static	char		*strrcpy(char *dest, const char *source);
 static	int		clamd_recv(int sock, char *buf, size_t len);
 static	off_t		updateSigFile(void);
@@ -857,8 +867,10 @@ static	const	char	*postmaster = "postmaster";
 static	const	char	*from = "MAILER-DAEMON";
 
 /*
- * Whitelist of source e-mail addresses that we do NOT scan
+ * NULL terminated whitelist of source e-mail addresses that we do NOT scan
  * TODO: read in from a file
+ * TODO: add white list of target e-mail addresses that we do NOT scan
+ * TODO: items in the list should be regular expressions
  */
 static	const	char	*ignoredEmailAddresses[] = {
 	/*"Mailer-Daemon@bandsman.co.uk",
@@ -1895,9 +1907,6 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 	privdata->from = strdup(argv[0]);
 
-	if(streamMaxLength > 0L)
-		privdata->numBytes = (long)(strlen(argv[0]) + 6);
-
 	if(hflag)
 		privdata->headers = header_list_new();
 
@@ -1932,9 +1941,6 @@ clamfi_envrcpt(SMFICTX *ctx, char **argv)
 	privdata->to[privdata->numTo] = strdup(argv[0]);
 	privdata->to[++privdata->numTo] = NULL;
 
-	if(streamMaxLength > 0L)
-		privdata->numBytes += (long)(strlen(argv[0]) + 4);
-
 	return SMFIS_CONTINUE;
 }
 
@@ -1966,13 +1972,10 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 			return cl_error;
 		}
 
-	if(clamfi_send(privdata, 0, "%s: %s\n", headerf, headerv) < 0) {
+	if(clamfi_send(privdata, 0, "%s: %s\n", headerf, headerv) <= 0) {
 		clamfi_cleanup(ctx);
 		return cl_error;
 	}
-
-	if(streamMaxLength > 0L)
-		privdata->numBytes += (long)(strlen(headerf) + strlen(headerv) + 3);
 
 	if(hflag)
 		header_list_add(privdata->headers, headerf, headerv);
@@ -2021,12 +2024,10 @@ clamfi_eoh(SMFICTX *ctx)
 			return cl_error;
 		}
 
-	if(clamfi_send(privdata, 1, "\n") < 0) {
+	if(clamfi_send(privdata, 1, "\n") != 1) {
 		clamfi_cleanup(ctx);
 		return cl_error;
 	}
-	if(streamMaxLength > 0L)
-		privdata->numBytes++;
 
 	/*
 	 * See if the e-mail is only going to members of the list
@@ -2076,6 +2077,7 @@ static sfsistat
 clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 {
 	struct privdata *privdata = (struct privdata *)smfi_getpriv(ctx);
+	int nbytes;
 
 	if(logVerbose)
 		syslog(LOG_DEBUG, "clamfi_envbody: %u bytes", len);
@@ -2083,8 +2085,8 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 	cli_dbgmsg("clamfi_envbody: %u bytes\n", len);
 #endif
 
+	nbytes = clamfi_send(privdata, len, (char *)bodyp);
 	if(streamMaxLength > 0L) {
-		privdata->numBytes += (long)len;
 		if(privdata->numBytes > streamMaxLength) {
 			if(use_syslog) {
 				const char *sendmailId = smfi_getsymval(ctx, "i");
@@ -2093,11 +2095,13 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 				syslog(LOG_NOTICE, "%s: Message more than StreamMaxLength (%ld) bytes - not scanned",
 					sendmailId, streamMaxLength);
 			}
-			clamfi_cleanup(ctx);	/* not needed, but just to be safe */
-			return SMFIS_ACCEPT;
+			if(!nflag)
+				smfi_addheader(ctx, "X-Virus-Status", "Not Scanned - StreamMaxLength exceeded");
+
+			return SMFIS_ACCEPT;	/* clamfi_close will be called */
 		}
 	}
-	if(clamfi_send(privdata, len, (char *)bodyp) < 0) {
+	if(nbytes < len) {
 		clamfi_cleanup(ctx);	/* not needed, but just to be safe */
 		return cl_error;
 	}
@@ -2206,9 +2210,6 @@ clamfi_eom(SMFICTX *ctx)
 		smfi_addheader(ctx, "X-Virus-Scanned", clamav_version);
 
 	if(strstr(mess, "ERROR") != NULL) {
-		if(!nflag)
-			smfi_addheader(ctx, "X-Virus-Status", "Not Scanned");
-
 		if(strstr(mess, "Size exceeded") != NULL) {
 			/*
 			 * Clamd has stopped on StreamMaxLength before us
@@ -2217,8 +2218,12 @@ clamfi_eom(SMFICTX *ctx)
 				syslog(LOG_NOTICE, "%s: Message more than StreamMaxLength (%ld) bytes - not scanned",
 					sendmailId, streamMaxLength);
 			clamfi_cleanup(ctx);	/* not needed, but just to be safe */
+			if(!nflag)
+				smfi_addheader(ctx, "X-Virus-Status", "Not Scanned - StreamMaxLength exceeded");
 			return SMFIS_ACCEPT;
 		}
+		if(!nflag)
+			smfi_addheader(ctx, "X-Virus-Status", "Not Scanned");
 
 		cli_warnmsg("%s: %s\n", sendmailId, mess);
 		if(use_syslog)
@@ -2430,7 +2435,9 @@ clamfi_eom(SMFICTX *ctx)
 			if(use_syslog)
 				syslog(LOG_NOTICE, "Quarantined infected mail as %s", privdata->filename);
 			/*
-			 * Cleanup filename here! Default procedure would delete quarantine file
+			 * Cleanup filename here otherwise clamfi_free() will
+			 * delete the file that we wish to keep because it
+			 * is infected
 			 */
 			free(privdata->filename);
 			privdata->filename = NULL;
@@ -2504,17 +2511,11 @@ clamfi_abort(SMFICTX *ctx)
 static sfsistat
 clamfi_close(SMFICTX *ctx)
 {
-#ifdef	CL_DEBUG
 	struct privdata *privdata = (struct privdata *)smfi_getpriv(ctx);
 
 	cli_dbgmsg("clamfi_close\n");
-	if(privdata != NULL) {
-		if(use_syslog)
-			syslog(LOG_DEBUG, "clamfi_close, privdata != NULL");
-		else
-			cli_warnmsg("clamfi_close, privdata != NULL");
-	}
-#endif
+	if(privdata != NULL)
+		clamfi_cleanup(ctx);
 
 	if(logVerbose)
 		syslog(LOG_DEBUG, "clamfi_close");
@@ -2546,8 +2547,13 @@ clamfi_free(struct privdata *privdata)
 		}
 
 		if(privdata->filename != NULL) {
-			if(unlink(privdata->filename) < 0)
+			if(unlink(privdata->filename) < 0) {
 				perror(privdata->filename);
+				if(use_syslog)
+					syslog(LOG_ERR,
+						"Can't remove clean file %s",
+						privdata->filename);
+			}
 			free(privdata->filename);
 			privdata->filename = NULL;
 		}
@@ -2621,13 +2627,14 @@ clamfi_free(struct privdata *privdata)
 }
 
 /*
- * Returns < 0 for failure
+ * Returns < 0 for failure, otherwise the number of bytes sent
  */
 static int
-clamfi_send(const struct privdata *privdata, size_t len, const char *format, ...)
+clamfi_send(struct privdata *privdata, size_t len, const char *format, ...)
 {
 	char output[BUFSIZ];
 	const char *ptr;
+	int ret = 0;
 
 	assert(format != NULL);
 
@@ -2687,10 +2694,17 @@ clamfi_send(const struct privdata *privdata, size_t len, const char *format, ...
 
 			return -1;
 		}
+		ret += nbytes;
 		len -= nbytes;
 		ptr = &ptr[nbytes];
+
+		if(streamMaxLength > 0L) {
+			privdata->numBytes += nbytes;
+			if(privdata->numBytes >= streamMaxLength)
+				break;
+		}
 	}
-	return 0;
+	return ret;
 }
 
 /*
@@ -3057,7 +3071,7 @@ connect2clamd(struct privdata *privdata)
 		privdata->from);
 
 	for(to = privdata->to; *to; to++)
-		if(clamfi_send(privdata, 0, "To: %s\n", *to) < 0)
+		if(clamfi_send(privdata, 0, "To: %s\n", *to) <= 0)
 			return 0;
 
 	cli_dbgmsg("connect2clamd OK\n");
