@@ -44,18 +44,18 @@
  * Make 32 bit value in host byteorder from little-endian mapped octet-data
  * (works also on machines which SIGBUS on misaligned data access (eg. 68000))
  */
-uint32_tz __zzip_get32(unsigned char * s)
+uint32_t __zzip_get32(unsigned char * s)
 {
-  return ((uint32_tz)s[3] << 24) | ((uint32_tz)s[2] << 16)
-    |    ((uint32_tz)s[1] << 8)  |  (uint32_tz)s[0];
+  return ((uint32_t)s[3] << 24) | ((uint32_t)s[2] << 16)
+    |    ((uint32_t)s[1] << 8)  |  (uint32_t)s[0];
 }
 
 /** => __zzip_get32
  * This function does the same for a 16 bit value.
  */
-uint16_tz __zzip_get16(unsigned char * s)
+uint16_t __zzip_get16(unsigned char * s)
 {
-    return ((uint16_tz)s[1] << 8) | (uint16_tz)s[0];
+    return ((uint16_t)s[1] << 8) | (uint16_t)s[0];
 }
 
 /* ---------------------------  internals  -------------------------------- */
@@ -342,14 +342,14 @@ __zzip_parse_root_directory(int fd,
     auto struct zzip_root_dirent dirent;
     struct zzip_dir_hdr * hdr;
     struct zzip_dir_hdr * hdr0;
-    uint16_tz * p_reclen = 0;
+    uint16_t * p_reclen = 0;
     short entries; 
     long offset;          /* offset from start of root directory */
     char* fd_map = 0; 
-    int32_tz  fd_gap = 0;
-    uint16_tz u_entries  = ZZIP_GET16(trailer->z_entries);   
-    uint32_tz u_rootsize = ZZIP_GET32(trailer->z_rootsize);  
-    uint32_tz u_rootseek = ZZIP_GET32(trailer->z_rootseek);
+    int32_t  fd_gap = 0;
+    uint16_t u_entries  = ZZIP_GET16(trailer->z_entries);   
+    uint32_t u_rootsize = ZZIP_GET32(trailer->z_rootsize);  
+    uint32_t u_rootseek = ZZIP_GET32(trailer->z_rootseek);
     __correct_rootseek (u_rootseek, u_rootsize, trailer);
 
     hdr0 = (struct zzip_dir_hdr*) malloc(u_rootsize);
@@ -375,8 +375,8 @@ __zzip_parse_root_directory(int fd,
     for (entries=u_entries, offset=0; entries > 0; entries--)
     {
         register struct zzip_root_dirent * d;
-        uint16_tz u_extras, u_comment, u_namlen;
-	uint16_tz u_flags;
+        uint16_t u_extras, u_comment, u_namlen;
+	uint16_t u_flags;
 
         if (fd_map) 
 	{ d = (void*)(fd_map+fd_gap+offset); } /* fd_map+fd_gap==u_rootseek */
@@ -414,10 +414,10 @@ __zzip_parse_root_directory(int fd,
         hdr->d_csize = ZZIP_GET32(d->z_csize); 
         hdr->d_usize = ZZIP_GET32(d->z_usize); 
         hdr->d_off   = ZZIP_GET32(d->z_off);
-        hdr->d_compr = (uint8_tz)ZZIP_GET16(d->z_compr);
+        hdr->d_compr = (uint8_t)ZZIP_GET16(d->z_compr);
 	hdr->d_flags = u_flags;
 
-        /* bull: hdr->d_compr is uint8_tz
+        /* bull: hdr->d_compr is uint8_t
 	 * if (hdr->d_compr > 255) hdr->d_compr = 255; */
 
 	if (offset+sizeof(*d) + u_namlen > u_rootsize)
@@ -448,7 +448,7 @@ __zzip_parse_root_directory(int fd,
     
         {   register char* p = (char*) hdr; 
             register char* q = aligned4 (p + sizeof(*hdr) + u_namlen + 1);
-            *p_reclen = (uint16_tz)(q - p);
+            *p_reclen = (uint16_t)(q - p);
             hdr = (struct zzip_dir_hdr*) q;
         }
     }/*for*/

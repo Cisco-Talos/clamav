@@ -54,7 +54,6 @@ libclamav_la_SOURCES = \
 	zziplib/zzip-io.c \
 	zziplib/zzip-io.h \
 	zziplib/zzip-stat.c \
-	zziplib/zzip-stdint.h \
 	zziplib/zzip-zip.c \
 	zziplib/zzip.h \
 	zziplib/zzipformat.h \

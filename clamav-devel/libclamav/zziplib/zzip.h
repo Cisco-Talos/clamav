@@ -20,21 +20,21 @@
 
 #include <zziplib.h>
 #include <zzip-io.h>
-#include <zzip-stdint.h>
+#include "cltypes.h"
 
 /*
  * this structure cannot be wildly enlarged... (see zzip-zip.c)
  */
 struct zzip_dir_hdr
 {
-    uint32_tz    d_usize;        /* uncompressed size */
-    uint32_tz    d_csize;        /* compressed size */
-    uint32_tz    d_crc32;        /* the adler32-checksum */
-    uint32_tz    d_off;          /* offset of file in zipfile */
-    uint16_tz    d_reclen;       /* next dir_hdr structure offset */
-    uint16_tz    d_namlen;       /* explicit namelen of d_name */
-    uint8_tz     d_compr;        /* the compression type, 0 = store, 8 = inflate */
-    uint16_tz	d_flags;	/* general purpose flags */
+    uint32_t    d_usize;        /* uncompressed size */
+    uint32_t    d_csize;        /* compressed size */
+    uint32_t    d_crc32;        /* the adler32-checksum */
+    uint32_t    d_off;          /* offset of file in zipfile */
+    uint16_t    d_reclen;       /* next dir_hdr structure offset */
+    uint16_t    d_namlen;       /* explicit namelen of d_name */
+    uint8_t     d_compr;        /* the compression type, 0 = store, 8 = inflate */
+    uint16_t	d_flags;	/* general purpose flags */
     char        d_name[1];      /* the actual name of the entry, may contain DIRSEPs */
 };
 #define _ZZIP_DIRENT_HAVE_D_NAMLEN
@@ -80,12 +80,12 @@ ZZIP_DIR* /*depracated*/
 zzip_dir_alloc_ext_io (zzip_strings_t* ext, const zzip_plugin_io_t io);
 
 /* get 16/32 bits from little-endian zip-file to host byteorder */
-uint32_tz __zzip_get32(unsigned char * s);
-uint16_tz __zzip_get16(unsigned char * s);
+uint32_t __zzip_get32(unsigned char * s);
+uint16_t __zzip_get16(unsigned char * s);
 
 #ifdef __i386__
-#define ZZIP_GET32(x) (*(uint32_tz*)(x))
-#define ZZIP_GET16(x) (*(uint16_tz*)(x))
+#define ZZIP_GET32(x) (*(uint32_t*)(x))
+#define ZZIP_GET16(x) (*(uint16_t*)(x))
 #else
 #define ZZIP_GET32(x) (__zzip_get32(x))
 #define ZZIP_GET16(x) (__zzip_get16(x))
