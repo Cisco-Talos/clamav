@@ -107,11 +107,13 @@ void *clamukoth(void *arg)
 
     if(!mask) {
 	logg("!Access mask is not configured properly.\n");
+	dazukoUnregister();
 	return NULL;
     }
 
     if(dazukoSetAccessMask(mask)) {
 	logg("!Clamuko: Can't set access mask in Dazuko.\n");
+	dazukoUnregister();
 	return NULL;
     }
 
@@ -119,6 +121,7 @@ void *clamukoth(void *arg)
 	while(pt) {
 	    if((dazukoAddIncludePath(pt->strarg))) {
 		logg("!Clamuko: Dazuko -> Can't include path %s\n", pt->strarg);
+		dazukoUnregister();
 		return NULL;
 	    } else
 		logg("Clamuko: Included path %s\n", pt->strarg);
@@ -127,6 +130,7 @@ void *clamukoth(void *arg)
 	}
     } else {
 	logg("!Clamuko: please include at least one path.\n");
+	dazukoUnregister();
 	return NULL;
     }
 
@@ -134,6 +138,7 @@ void *clamukoth(void *arg)
 	while(pt) {
 	    if((dazukoAddExcludePath(pt->strarg))) {
 		logg("!Clamuko: Dazuko -> Can't exclude path %s\n", pt->strarg);
+		dazukoUnregister();
 		return NULL;
 	    } else
 		logg("Clamuko: Excluded path %s\n", pt->strarg);
