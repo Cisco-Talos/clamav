@@ -437,6 +437,7 @@ Changes
 0.74d	18/7/04	Added sanity check in clamfi_connect
 0.74e	21/7/04	Fixed thread unsafe code causing problems with multi-CPU
 		machines running Solaris
+0.74f	22/7/04	Use gethostbyname_r() if available
 
 BUG REPORTS
 

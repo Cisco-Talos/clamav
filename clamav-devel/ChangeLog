@@ -1,7 +1,10 @@
+Thu Jul 22 10:17:01 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Use gethostbyname_r when available
+
 Wed Jul 21 22:23:58 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Add mutex around gethostbyname
-
 
 Wed Jul 21 23:18:51 CEST 2004 (tk)
 ----------------------------------
