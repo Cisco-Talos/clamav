@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.204  2004/12/19 23:19:54  nigelhorne
+ * Tidy
+ *
  * Revision 1.203  2004/12/19 13:50:08  nigelhorne
  * Tidy
  *
@@ -597,7 +600,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.203 2004/12/19 13:50:08 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.204 2004/12/19 23:19:54 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2333,7 +2336,6 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 
 				cli_dbgmsg("Mixed message with %d parts\n", multiparts);
 				for(i = 0; i < multiparts; i++) {
-					bool addAttachment = FALSE;
 					bool addToText = FALSE;
 					const char *dtype;
 #ifndef	SAVE_TO_DISC
@@ -2350,7 +2352,6 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 
 					switch(messageGetMimeType(aMessage)) {
 					case APPLICATION:
-						addAttachment = TRUE;
 						break;
 					case NOMIME:
 						cli_dbgmsg("No mime headers found in multipart part %d\n", i);
@@ -2400,8 +2401,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						cli_dbgmsg("Mixed message text part disposition \"%s\"\n",
 							dtype);
 						if(strcasecmp(dtype, "attachment") == 0)
-							addAttachment = TRUE;
-						else if((*dtype == '\0') || (strcasecmp(dtype, "inline") == 0)) {
+							break;
+						if((*dtype == '\0') || (strcasecmp(dtype, "inline") == 0)) {
 							if(mainMessage && (mainMessage != messageIn))
 								messageDestroy(mainMessage);
 							mainMessage = NULL;
@@ -2410,7 +2411,6 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							if(uuencodeBegin(aMessage)) {
 								cli_dbgmsg("Found uuencoded message in multipart/mixed text portion\n");
 								messageSetEncoding(aMessage, "x-uuencode");
-								addAttachment = TRUE;
 							} else if((tableFind(subtypeTable, cptr) == PLAIN) &&
 								  (messageGetEncoding(aMessage) == NOENCODING)) {
 								char *filename;
@@ -2433,14 +2433,12 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 									cli_dbgmsg("Treating %s as attachment\n",
 										filename);
 									free(filename);
-									addAttachment = TRUE;
 								}
 							} else {
 								if(options&CL_SCAN_MAILURL)
 									if(tableFind(subtypeTable, cptr) == HTML)
 										checkURLs(aMessage, dir);
 								messageAddArgument(aMessage, "filename=textportion");
-								addAttachment = TRUE;
 							}
 						} else {
 							cli_dbgmsg("Text type %s is not supported\n", dtype);
@@ -2519,20 +2517,12 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					case AUDIO:
 					case IMAGE:
 					case VIDEO:
-						addAttachment = TRUE;
 						break;
 					default:
 						cli_warnmsg("Only text and application attachments are supported, type = %d\n",
 							messageGetMimeType(aMessage));
 						continue;
 					}
-
-					/*
-					 * It must be either text or
-					 * an attachment. It can't be both
-					 */
-					assert(addToText || addAttachment);
-					assert(!(addToText && addAttachment));
 
 					if(addToText) {
 						cli_dbgmsg("Adding to non mime-part\n");
@@ -2578,7 +2568,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						cli_warnmsg("Unknown encryption protocol '%s' - report to bugs@clamav.net\n");
 					free(protocol);
 				} else
-					cli_warnmsg("Encryption method missing protocol name - report to bugs@clamav.net\n");
+					cli_dbgmsg("Encryption method missing protocol name\n");
 
 				break;
 			default:
@@ -2668,9 +2658,9 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			return rc;
 
 		case APPLICATION:
-			cptr = messageGetMimeSubtype(mainMessage);
+			/*cptr = messageGetMimeSubtype(mainMessage);
 
-			/*if((strcasecmp(cptr, "octet-stream") == 0) ||
+			if((strcasecmp(cptr, "octet-stream") == 0) ||
 			   (strcasecmp(cptr, "x-msdownload") == 0)) {*/
 			{
 				fb = messageToFileblob(mainMessage, dir);

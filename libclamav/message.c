@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.134  2004/12/19 23:19:54  nigelhorne
+ * Tidy
+ *
  * Revision 1.133  2004/12/19 13:50:08  nigelhorne
  * Tidy
  *
@@ -396,7 +399,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.133 2004/12/19 13:50:08 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.134 2004/12/19 23:19:54 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1057,7 +1060,7 @@ messageSetEncoding(message *m, const char *enctype)
 		for(e = encoding_map; e->string; e++) {
 			int sim;
 			const char lowertype = tolower(type[0]);
-			
+
 			if((lowertype != tolower(e->string[0])) && (lowertype != 'x'))
 				/*
 				 * simil is expensive, I'm yet to encounter only
@@ -1820,15 +1823,15 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			 */
 			datasize = (line) ? strlen(line) + 2 : 0;
 
-			if(line && (datasize >= sizeof(smallbuf)))
-				data = bigbuf = cli_malloc(datasize);
+			if(datasize >= sizeof(smallbuf))
+				data = bigbuf = (unsigned char *)cli_malloc(datasize);
 			else {
 				bigbuf = NULL;
 				data = smallbuf;
 				datasize = sizeof(smallbuf);
 			}
 
-			uptr = decodeLine(m, enctype, line, data, datasize); 
+			uptr = decodeLine(m, enctype, line, data, datasize);
 			if(uptr == NULL) {
 				if(data == bigbuf)
 					free(data);
@@ -2213,8 +2216,7 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 {
 	size_t len;
 	bool softbreak;
-	char *p2;
-	char *copy;
+	char *p2, *copy;
 	char base64buf[RFC2045LENGTH + 1];
 
 	/*printf("decodeLine(et = %d buflen = %u)\n", (int)et, buflen);*/
@@ -2243,7 +2245,7 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 			}
 
 			softbreak = FALSE;
-			while((line < (char *)&buf[buflen]) && *line) {
+			while(buflen && *line) {
 				if(*line == '=') {
 					unsigned char byte;
 
@@ -2269,7 +2271,8 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 					*buf++ = byte;
 				} else
 					*buf++ = *line;
-				line++;
+				++line;
+				--buflen;
 			}
 			if(!softbreak)
 				/* Put the new line back in */
