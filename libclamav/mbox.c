@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.181  2004/11/22 15:18:51  nigelhorne
+ * Performance work
+ *
  * Revision 1.180  2004/11/19 11:32:16  nigelhorne
  * Scan email footers (portions after the last MIME boundary
  *
@@ -528,7 +531,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.180 2004/11/19 11:32:16 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.181 2004/11/22 15:18:51 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1043,14 +1046,14 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 				cli_dbgmsg("End of header information\n");
 				inHeader = FALSE;
 			} else {
-				char *ptr, *p;
-				bool inquotes = FALSE;
-				bool arequotes = FALSE;
+				char *ptr;
 				const char *qptr;
 				int quotes;
-#ifdef CL_THREAD_SAFE
-				char *strptr;
-#endif
+
+				if(buffer == NULL) {
+					contMarker = FALSE;
+					continue;
+				}
 
 				if(fullline == NULL) {
 					char cmd[LINE_LENGTH + 1];
@@ -1066,18 +1069,28 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 					/*
 					 * Is this a header we're interested in?
 					 */
-					if(cli_strtokbuf(buffer, 0, ":", cmd) == NULL)
+					if((strchr(buffer, ':') == NULL) ||
+					   (cli_strtokbuf(buffer, 0, ":", cmd) == NULL)) {
+						if(strncmp(buffer, "From ", 5) == 0)
+							anyHeadersFound = TRUE;
 						continue;
+					}
 
-					anyHeadersFound = TRUE;
 					commandNumber = tableFind(rfc821, cmd);
 
 					switch(commandNumber) {
 						case CONTENT_TRANSFER_ENCODING:
 						case CONTENT_DISPOSITION:
 						case CONTENT_TYPE:
+							anyHeadersFound = TRUE;
 							break;
 						default:
+							if(strcasecmp(cmd, "From") == 0)
+								anyHeadersFound = TRUE;
+							else if(strcasecmp(cmd, "Received") == 0)
+								anyHeadersFound = TRUE;
+							else if(strcasecmp(cmd, "De") == 0)
+								anyHeadersFound = TRUE;
 							continue;
 					}
 					fullline = strdup(buffer);
@@ -1086,9 +1099,6 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 					fulllinelength += strlen(buffer);
 					fullline = cli_realloc(fullline, fulllinelength);
 					strcat(fullline, buffer);
-				} else {
-					contMarker = FALSE;
-					continue;
 				}
 
 				contMarker = continuationMarker(buffer);
@@ -1100,8 +1110,9 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 					const char *next = lineGetData(t->t_next->t_line);
 
 					/*
-					 * Section B.2 of RFC822 says TAB or SPACE means
-					 * a continuation of the previous entry.
+					 * Section B.2 of RFC822 says TAB or
+					 * SPACE means a continuation of the
+					 * previous entry.
 					 *
 					 * Add all the arguments on the line
 					 */
@@ -1126,49 +1137,8 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 				if(parseEmailHeader(ret, fullline, rfc821) < 0)
 					continue;
 
-				/*
-				 * Ensure that the colon in headers such as
-				 * this doesn't get mistaken for a token
-				 * separator
-				 *	boundary="=.J:gysAG)N(3_zv"
-				 */
-				for(ptr = fullline; *ptr; ptr++)
-					if(*ptr == '\"')
-						inquotes = !inquotes;
-					else if(inquotes) {
-						*ptr |= '\200';
-						arequotes = TRUE;
-					}
-
-				p = cli_strtok(fullline, 1, ":");
-
 				free(fullline);
 				fullline = NULL;
-
-				if(p == NULL)
-					continue;
-#ifdef	CL_THREAD_SAFE
-				for(ptr = strtok_r(p, ";", &strptr); ptr; ptr = strtok_r(NULL, ":", &strptr))
-					if(strchr(ptr, '=')) {
-						if(arequotes) {
-							char *p2;
-							for(p2 = ptr; *p2; p2++)
-								*p2 &= '\177';
-						}
-						messageAddArguments(ret, ptr);
-					}
-#else
-				for(ptr = strtok(p, ";"); ptr; ptr = strtok(NULL, ":"))
-					if(strchr(ptr, '=')) {
-						if(arequotes) {
-							char *p2;
-							for(p2 = ptr; *p2; p2++)
-								*p2 &= '\177';
-						}
-						messageAddArguments(ret, ptr);
-					}
-#endif
-				free(p);
 			}
 		} else
 			/*cli_dbgmsg("Add line to body '%s'\n", buffer);*/
@@ -1381,10 +1351,10 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					if(boundaryStart(lineGetData(t_line->t_line), boundary))
 						break;
 					/*
-					 * Found a uuencoded file before the first multipart
-					 * TODO: check yEnc and binhex here
+					 * Found a uuencoded/binhex file before the first multipart
+					 * TODO: check yEnc
 					 */
-					if(uuencodeBegin(mainMessage) == t_line)
+					if(uuencodeBegin(mainMessage) == t_line) {
 						if(messageGetEncoding(mainMessage) == NOENCODING) {
 							messageSetEncoding(mainMessage, "x-uuencode");
 							fb = messageToFileblob(mainMessage, dir);
@@ -1392,6 +1362,15 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							if(fb)
 								fileblobDestroy(fb);
 						}
+					} else if(binhexBegin(mainMessage) == t_line) {
+						if(messageGetEncoding(mainMessage) == NOENCODING) {
+							messageSetEncoding(mainMessage, "x-binhex");
+							fb = messageToFileblob(mainMessage, dir);
+
+							if(fb)
+								fileblobDestroy(fb);
+						}
+					}
 				}
 			while((t_line = t_line->t_next) != NULL);
 
@@ -1923,7 +1902,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							continue;
 						}
 						messageAddStrAtTop(aMessage,
-							"Received: by clamd");
+							"Received: by clamd (message/rfc822)");
 #ifdef	SAVE_TO_DISC
 						/*
 						 * Save this embedded message
@@ -2058,10 +2037,6 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				rc = 0;
 			}
 
-			for(i = 0; i < multiparts; i++)
-				if(messages[i])
-					messageDestroy(messages[i]);
-
 			if(mainMessage && (mainMessage != messageIn))
 				messageDestroy(mainMessage);
 
@@ -2069,7 +2044,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				if((fb = fileblobCreate()) != NULL) {
 					cli_dbgmsg("Save non mime part\n");
 					fileblobSetFilename(fb, dir, "textpart");
-					fileblobAddData(fb, "Received: by clamd\n", 19);
+					fileblobAddData(fb, "Received: by clamd (textpart)\n", 30);
 
 					fb = textToFileblob(aText, fb);
 
@@ -2077,6 +2052,10 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				}
 				textDestroy(aText);
 			}
+
+			for(i = 0; i < multiparts; i++)
+				if(messages[i])
+					messageDestroy(messages[i]);
 
 			if(messages)
 				free(messages);
@@ -2169,7 +2148,16 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 	}
 
 	if(aText && (textIn == NULL)) {
-		cli_dbgmsg("Non mime part not saved - report to bugs@clamav.net\n");
+		cli_dbgmsg("Non mime part not scanned - if you believe this file contains a virus report to bugs@clamav.net\n");
+		/*if((fb = fileblobCreate()) != NULL) {
+			cli_dbgmsg("Save non mime part\n");
+			fileblobSetFilename(fb, dir, "textpart");
+			fileblobAddData(fb, "Received: by clamd (textpart)\n", 30);
+
+			fb = textToFileblob(aText, fb);
+
+			fileblobDestroy(fb);
+		}*/
 		textDestroy(aText);
 		aText = NULL;
 	}
@@ -2208,10 +2196,10 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					cli_dbgmsg("Found uuencoded message %s\n", cptr);
 				fileblobDestroy(fb);
 			}
+			rc = 1;
 		} else if((encodingLine(mainMessage) != NULL) &&
 			  ((t_line = bounceBegin(mainMessage)) != NULL)) {
-			const text *t;
-			static const char type[] = "Content-Type:";
+			const text *t, *start;
 			/*
 			 * Attempt to save the original (unbounced)
 			 * message - clamscan will find that in the
@@ -2231,22 +2219,42 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			 * must remain otherwise non bounce messages
 			 * won't be scanned
 			 */
-			for(t = t_line; t; t = t->t_next) {
+			for(t = start = t_line; t; t = t->t_next) {
+				char cmd[LINE_LENGTH + 1];
 				const char *txt = lineGetData(t->t_line);
 
-				if(txt == NULL) {
-					t = NULL;
-					break;
+				if(txt == NULL)
+					continue;
+				if(cli_strtokbuf(txt, 0, ":", cmd) == NULL)
+					continue;
+
+				switch(tableFind(rfc821Table, cmd)) {
+					case CONTENT_TRANSFER_ENCODING:
+						if((strstr(txt, "7bit") == NULL) &&
+						   (strstr(txt, "8bit") == NULL))
+							break;
+						continue;
+					case CONTENT_DISPOSITION:
+						break;
+					case CONTENT_TYPE:
+						if(strstr(txt, "text/plain") != NULL)
+							t = NULL;
+						break;
+					default:
+						if(strcasecmp(cmd, "From") == 0)
+							start = t_line;
+						else if(strcasecmp(cmd, "Received") == 0)
+							start = t_line;
+						continue;
 				}
-				if(txt &&
-				  (strncasecmp(txt, type, sizeof(type) - 1)))
-					break;
+				break;
 			}
 			if(t && ((fb = fileblobCreate()) != NULL)) {
 				cli_dbgmsg("Found a bounce message\n");
 				fileblobSetFilename(fb, dir, "bounce");
-				fb = textToFileblob(t_line, fb);
+				fb = textToFileblob(start, fb);
 				fileblobDestroy(fb);
+				rc = 1;
 			} else
 				cli_dbgmsg("Not found a bounce message\n");
 		} else {
@@ -2273,7 +2281,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				if((fb = fileblobCreate()) != NULL) {
 					cli_dbgmsg("Found a bounce message with no header\n");
 					fileblobSetFilename(fb, dir, "bounce");
-					fileblobAddData(fb, "Received: by clamd\n", 19);
+					fileblobAddData(fb, "Received: by clamd (bounce)\n", 28);
 
 					fb = textToFileblob(t_line, fb);
 
@@ -3394,17 +3402,9 @@ getURL(struct arg *arg)
 	 * Perhaps Curl_resolv() isn't thread safe?
 	 */
 	/*
-	 * Curl 7.12.1 has a memory leak here :-(
-	 *	==10634==    at 0x1B904A90: malloc (vg_replace_malloc.c:131)
-	 *	==10634==    by 0x1BCA2AEF: strdup (in /lib/tls/libc-2.3.3.so)
-	 *	==10634==    by 0x1BCE7CDD: gaih_inet (in /lib/tls/libc-2.3.3.so)
-	 *	==10634==    by 0x1BCE96D0: getaddrinfo (in /lib/tls/libc-2.3.3.so)
-	 *	==10634==    by 0x1B9CCF23: Curl_getaddrinfo (in /usr/lib/libcurl.so.3.0.0)
-	 *	==10634==    by 0x1B9AC7C9: Curl_resolv (in /usr/lib/libcurl.so.3.0.0)
-	 *	==10634==    by 0x1B9BC1BD: Curl_connect (in /usr/lib/libcurl.so.3.0.0)
-	 *	==10634==    by 0x1B9C734C: (within /usr/lib/libcurl.so.3.0.0)
-	 *	==10634==    by 0x1B9C7573: Curl_perform (in /usr/lib/libcurl.so.3.0.0)
-	 *	==10634==    by 0x1B9C7CC1: curl_easy_perform (in /usr/lib/libcurl.so.3.0.0)
+	 * On some C libraries (notably with FC3) you get a memory leak
+	 * here in getaddrinfo(), see
+	 *	https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=139559
 	 */
 
 	if(curl_easy_perform(curl) != CURLE_OK) {

@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.119  2004/11/22 15:18:51  nigelhorne
+ * Performance work
+ *
  * Revision 1.118  2004/11/18 18:09:08  nigelhorne
  * First draft of binhex.c
  *
@@ -351,7 +354,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.118 2004/11/18 18:09:08 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.119 2004/11/22 15:18:51 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -402,7 +405,6 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.118 2004/11/18 18:09:08 nigelhor
 typedef enum { FALSE = 0, TRUE = 1 } bool;
 
 static	void	messageIsEncoding(message *m);
-static	const	text	*binhexBegin(const message *m);
 static	unsigned char	*decodeLine(message *m, encoding_type enctype, const char *line, unsigned char *buf, size_t buflen);
 static unsigned char *decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast);
 static	void	sanitiseBase64(char *s);
@@ -1228,6 +1230,13 @@ messageIsEncoding(message *m)
 	   (strstr(line, "7bit") == NULL))
 		m->encoding = m->body_last;
 	else if((m->bounce == NULL) &&
+			/*
+			 * Don't match received since emails have a lot of
+			 * these headersa and one could get a match for each
+			 * header which would generate umpteen false bounce
+			 * matches
+			 */
+		(strncasecmp(line, "Received: ", 10) == NULL) &&
 		(cli_filetype(line, strlen(line)) == CL_TYPE_MAIL))
 			m->bounce = m->body_last;
 	else if((m->uuencode == NULL) &&
@@ -2020,7 +2029,7 @@ binhexBegin(const message *m)
 	return NULL;
 }
 #else
-static const text *
+const text *
 binhexBegin(const message *m)
 {
 	return m->binhex;

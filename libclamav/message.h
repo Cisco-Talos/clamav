@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: message.h,v $
+ * Revision 1.22  2004/11/22 15:18:51  nigelhorne
+ * Performance work
+ *
  * Revision 1.21  2004/10/16 17:24:15  nigelhorne
  * Handle colons in quotes in headers
  *
@@ -121,6 +124,7 @@ void	messageClean(message *m);
 fileblob	*messageToFileblob(message *m, const char *dir);
 blob	*messageToBlob(message *m);
 text	*messageToText(message *m);
+const	text	*binhexBegin(const message *m);
 const	text	*uuencodeBegin(const message *m);
 const	text	*yEncBegin(const message *m);
 const	text	*bounceBegin(const message *m);
