@@ -46,6 +46,7 @@
  *	CLAMAV_FLAGS="--max-children=2 --server=192.168.1.9 local:/var/run/clamav.sock"
  * 8) You should have received a script to put into /etc/init.d with this
  * software.
+ * 9) run 'chown clamav /usr/local/sbin/clamav-milter; chmod 4700 /usr/local/sbin/clamav-milter
  *
  * Tested OK on Linux/x86 (RH8.0) with gcc3.2.
  *	cc -O3 -pedantic -Wuninitialized -Wall -pipe -mcpu=pentium -march=pentium -fomit-frame-pointer -ffast-math -finline-functions -funroll-loops clamav-milter.c -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o
@@ -153,9 +154,14 @@
  *	0.65	15/11/03 Upissue of clamav
  *	0.65a	19/11/03 Close cmdSocket earlier
  *			Added setpgrp()
+ *	0.65b	22/11/03 Ensure milter is not run as root if requested
+ *			Added quarantine support
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.21  2003/11/22 11:47:45  nigelhorne
+ * Drop root priviliges and support quanrantine
+ *
  * Revision 1.20  2003/11/19 16:32:22  nigelhorne
  * Close cmdSocket earlier
  *
@@ -201,9 +207,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.20 2003/11/19 16:32:22 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.21 2003/11/22 11:47:45 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.65a"
+#define	CM_VERSION	"0.65b"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -238,6 +244,7 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.20 2003/11/19 16:32:22 nig
 #include <signal.h>
 #include <regex.h>
 #include <fcntl.h>
+#include <pwd.h>
 
 #define _GNU_SOURCE
 #include "getopt.h"
@@ -252,7 +259,6 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.20 2003/11/19 16:32:22 nig
  * TODO: Support ThreadTimeout, LogTime and Logfile from the conf
  *	 file
  * TODO: Allow more than one clamdscan server to be given
- * TODO: Optionally quanrantine infected e-mails
  */
 
 /*
@@ -303,6 +309,10 @@ static	int	qflag = 0;	/*
 				 * found is the syslog, so it's best to
 				 * enable LogSyslog in clamav.conf
 				 */
+static	char *quarantine;	/*
+				 * If a virus is found in an email redirect
+				 * it to this account
+				 */
 static	int	nflag = 0;	/*
 				 * Don't add X-Virus-Scanned to header. Patch
 				 * from Dirk Meyer <dirk.meyer@dinoex.sub.org>
@@ -347,16 +357,17 @@ help(void)
 
 	puts("\t--bounce\t\t-b\tSend a failure message to the sender.");
 	puts("\t--config-file=FILE\t-c FILE\tRead configuration from FILE.");
-	puts("\t--dont-scan-on-error\t\t-d\tPass e-mails through unscanned if a system error occurs.");
-	puts("\t--force-scan\tForce scan all messages (overrides (-o and -l).");
+	puts("\t--dont-scan-on-error\t-d\tPass e-mails through unscanned if a system error occurs.");
+	puts("\t--force-scan\t\t-f\tForce scan all messages (overrides (-o and -l).");
 	puts("\t--help\t\t\t-h\tThis message.");
 	puts("\t--local\t\t\t-l\tScan messages sent from machines on our LAN.");
 	puts("\t--outgoing\t\t-o\tScan outgoing messages from this machine.");
 	puts("\t--noxheader\t\t-n\tSuppress X-Virus-Scanned header.");
 	puts("\t--postmaster\t\t-p\tPostmaster address [default=postmaster].");
-	puts("\t--postmaster-only\t\t-P\tSend warnings only to the postmaster.");
+	puts("\t--postmaster-only\t-P\tSend warnings only to the postmaster.");
+	puts("\t--quarantine=USER\t-Q USER\tQuanrantine e-mail account.");
 	puts("\t--quiet\t\t\t-q\tDon't send e-mail notifications of interceptions.");
-	puts("\t--server=ADDRESS\t-s ADDRESS\tIP address of server running clamd (when using TCPsocket).");
+	puts("\t--server=ADDRESS\t-s ADDR\tIP address of server running clamd (when using TCPsocket).");
 	puts("\t--version\t\t-V\tPrint the version number of this software.");
 #ifdef	CL_DEBUG
 	puts("\t--debug-level=n\t\t-x n\tSets the debug level to 'n'.");
@@ -370,6 +381,7 @@ main(int argc, char **argv)
 	char *port = NULL;
 	const char *cfgfile = CL_DEFAULT_CFG;
 	struct cfgstruct *cpt;
+        struct passwd *user;
 	struct smfiDesc smfilter = {
 		"ClamAv", /* filter name */
 		SMFI_VERSION,	/* version code -- leave untouched */
@@ -397,10 +409,11 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "bc:flnopPqdhs:Vx:";
+		const char *args = "bc:flnopPqQdhs:Vx:";
 #else
-		const char *args = "bc:flnopPqdhs:V";
+		const char *args = "bc:flnopPqQdhs:V";
 #endif
+
 		static struct option long_options[] = {
 			{
 				"bounce", 0, NULL, 'b'
@@ -434,6 +447,9 @@ main(int argc, char **argv)
 			},
 			{
 				"quiet", 0, NULL, 'q'
+			},
+			{
+				"quarantine", 1, NULL, 'Q',
 			},
 			{
 				"max-children", 1, NULL, 'm'
@@ -485,6 +501,7 @@ main(int argc, char **argv)
 				break;
 			case 'n':	/* don't add X-Virus-Scanned */
 				nflag++;
+				smfilter.xxfi_flags &= ~SMFIF_ADDHDRS;
 				break;
 			case 'o':	/* scan outgoing mail */
 				oflag++;
@@ -497,6 +514,10 @@ main(int argc, char **argv)
 				break;
 			case 'q':	/* send NO notification email */
 				qflag++;
+				break;
+			case 'Q':	/* quarantine e-mail address */
+				quarantine = optarg;
+				smfilter.xxfi_flags |= SMFIF_CHGHDRS|SMFIF_ADDRCPT|SMFIF_DELRCPT;
 				break;
 			case 's':	/* server running clamd */
 				serverIP = optarg;
@@ -511,9 +532,9 @@ main(int argc, char **argv)
 #endif
 			default:
 #ifdef	CL_DEBUG
-				fprintf(stderr, "Usage: %s [-b] [-c=FILE] [--max-children=num] [-l] [-o] [-p=address] [-P] [-q] [-x#] socket-addr\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-b] [-c FILE] [--max-children=num] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-x#] socket-addr\n", argv[0]);
 #else
-				fprintf(stderr, "Usage: %s [-b] [-c=FILE] [--max-children=num] [-l] [-o] [-p=address] [-P] [-q] socket-addr\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-b] [-c FILE] [--max-children=num] [-l] [-o] [-p address] [-P] [-q] [-Q USER] socket-addr\n", argv[0]);
 #endif
 				return EX_USAGE;
 		}
@@ -533,6 +554,17 @@ main(int argc, char **argv)
 			argv[0], cfgfile);
 		return EX_CONFIG;
 	}
+
+	/* drop priviledges */
+	if((getuid() == 0) && (cpt = cfgopt(copt, "User"))) {
+		if((user = getpwnam(cpt->strarg)) == NULL) {
+			fprintf(stderr, "%s: Can't get information about user %s.\n", argv[0], cpt->strarg);
+			return EX_CONFIG;
+		}
+
+		setuid(user->pw_uid);
+	} else
+		fprintf(stderr, "%s: running as root is not recommended\n", argv[0]);
 
 	if(!cfgopt(copt, "StreamSaveToDisk")) {
 		fprintf(stderr, "%s: StreamSavetoDisk not enabled in %s\n",
@@ -743,7 +775,7 @@ pingServer(void)
 	snprintf(clamav_version, sizeof(clamav_version),
 		"ClamAV version '%s', clamav-milter version '%s'",
 		buf, CM_VERSION);
-		
+
 	return 1;
 }
 
@@ -1254,6 +1286,7 @@ clamfi_eom(SMFICTX *ctx)
 #ifdef	CL_DEBUG
 		puts(err);
 #endif
+		free(err);
 
 		if(!qflag) {
 			sendmail = popen("/usr/lib/sendmail -t", "w");
@@ -1287,10 +1320,28 @@ clamfi_eom(SMFICTX *ctx)
 				pclose(sendmail);
 			}
 		}
+		if(quarantine) {
+			for(to = privdata->to; *to; to++) {
+				smfi_delrcpt(ctx, *to);
+				free(*to);
+			}
+			free(privdata->to);
+			privdata->to = NULL;
+			if(smfi_addrcpt(ctx, quarantine) == MI_FAILURE) {
+				if(use_syslog)
+					syslog(LOG_DEBUG, "Can't set quarantine user %s", quarantine);
+				else
+					fprintf(stderr, "Can't set quarantine user %s\n", quarantine);
+			} else {
+				/*
+				 * FIXME: doesn't work if there's no subject
+				 */
+				smfi_chgheader(ctx, "Subject", 1, mess);
+			}
+		} else
+			rc = SMFIS_REJECT;	/* Delete the e-mail */
 
 		smfi_setreply(ctx, "550", "5.7.1", "Virus detected by ClamAV - http://clamav.elektrapro.com");
-		rc = SMFIS_REJECT;
-		free(err);
 	}
 	clamfi_cleanup(ctx);
 
