@@ -1,3 +1,7 @@
+Tue Feb  8 09:03:19 GMT 2005 (njh)
+----------------------------------
+  * clamav-milter:	Don't use clamd's SESSION command
+
 Mon Feb  7 22:13:47 GMT 2005 (njh)
 ----------------------------------
   * clamav-milter:	--detect-forged-email-address

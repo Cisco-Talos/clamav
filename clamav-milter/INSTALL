@@ -683,6 +683,7 @@ Changes
 			Up issue
 0.82a	7/2/05:		Added --detect-forged-email-address
 			NUL terminate the string read from clamd
+0.82b	8/2/05:		Don't use clamd's SESSION command
 
 INTERNATIONALISATION
 
