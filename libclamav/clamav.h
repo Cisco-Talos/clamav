@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -174,7 +174,7 @@ extern int cl_scanfile(const char *filename, const char **virname, unsigned long
 
 /* software versions */
 extern int cl_retflevel(void);
-const char *cl_retver(void);
+extern const char *cl_retver(void);
 
 /* database */
 extern int cl_loaddb(const char *filename, struct cl_node **root, unsigned int *signo);
