@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.160  2004/12/06 22:31:13  nigelhorne
+ * Keep date in quarantine directory path
+ *
  * Revision 1.159  2004/12/05 14:58:18  nigelhorne
  * Fix array overrun on startup
  *
@@ -488,9 +491,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.159 2004/12/05 14:58:18 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.160 2004/12/06 22:31:13 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80y"
+#define	CM_VERSION	"0.80z"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -626,7 +629,7 @@ typedef struct header_list_struct *header_list_t;
  * TODO: read this table in from a file (clamd.conf?)
  */
 #define PACKADDR(a, b, c, d) (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
-#define MAKEMASK(bits)       ((uint32_t)(0xffffffff << (bits)))
+#define MAKEMASK(bits)	((uint32_t)(0xffffffff << (bits)))
 
 static const struct cidr_net {
 	uint32_t	base;
@@ -1305,7 +1308,27 @@ main(int argc, char **argv)
 		struct stat statb;
 
 		if(advisory) {
-			fprintf(stderr, _("%s: Advisory mode doesn't work with quarantine directories\n"), argv[0]);
+			fprintf(stderr,
+				_("%s: Advisory mode doesn't work with quarantine directories\n"),
+				argv[0]);
+			return EX_USAGE;
+		}
+		if(strstr(quarantine_dir, "ERROR") != NULL) {
+			fprintf(stderr,
+				_("%s: the quarantine directory must not contain the string 'ERROR'\n"),
+				argv[0]);
+			return EX_USAGE;
+		}
+		if(strstr(quarantine_dir, "FOUND") != NULL) {
+			fprintf(stderr,
+				_("%s: the quarantine directory must not contain the string 'FOUND'\n"),
+				argv[0]);
+			return EX_USAGE;
+		}
+		if(strstr(quarantine_dir, "OK") != NULL) {
+			fprintf(stderr,
+				_("%s: the quarantine directory must not contain the string 'OK'\n"),
+				argv[0]);
 			return EX_USAGE;
 		}
 		if(access(quarantine_dir, W_OK) < 0) {
@@ -1388,7 +1411,7 @@ main(int argc, char **argv)
 	 */
 	if(internal) {
 		if(!cfgopt(copt, "ScanMail")) {
-			fprintf(stderr, _("%s: ScanMail not defined in %s\n"),
+			fprintf(stderr, _("%s: ScanMail not defined in %s (needed with --internal)\n"),
 				argv[0], cfgfile);
 			return EX_CONFIG;
 		}
@@ -1590,12 +1613,17 @@ main(int argc, char **argv)
 	}
 
 	if(internal) {
+#ifdef	SESSION
 		if(clamav_versions == NULL) {
 			clamav_versions = (char **)cli_malloc(sizeof(char *));
 			if(clamav_versions == NULL)
 				return EX_TEMPFAIL;
 			clamav_version = strdup(version);
 		}
+#else
+		strcpy(clamav_version, version);
+#endif
+
 #ifdef	SESSION
 	} else {
 		clamav_versions = (char **)cli_malloc(max_children * sizeof(char *));
@@ -1972,7 +2000,7 @@ pingServer(int serverNumber)
  * It is best to weight the order of the servers from most wanted to least
  * wanted
  *
- * Return value is from 0 - index into serverIPs
+ * Return value is from 0 - index into sessions array
  *
  * If the load balancing fails return the first server in the list, not
  * an error, to be on the safe side
@@ -2008,6 +2036,10 @@ findServer(void)
 	}
 	pthread_mutex_unlock(&sstatus_mutex);
 
+	/*
+	 * No session free - wait until one comes available. Only
+	 * retries once.
+	 */
 	if(pthread_cond_broadcast(&watchdog_cond) < 0)
 		perror("pthread_cond_broadcast");
 
@@ -2029,6 +2061,9 @@ findServer(void)
 	return -1;	/* none available - must fail */
 }
 #else
+/*
+ * Return value is from 0 - index into serverIPs
+ */
 static int
 findServer(void)
 {
@@ -2885,6 +2920,11 @@ clamfi_eom(SMFICTX *ctx)
 			syslog(LOG_ERR, "%s: %s\n", sendmailId, mess);
 		rc = cl_error;
 	} else if((ptr = strstr(mess, "FOUND")) != NULL) {
+		/*
+		 * Fixme: This will give false positives if the
+		 *	word "FOUND" is in the email, e.g. the
+		 *	quarantine directory is /tmp/VIRUSES-FOUND
+		 */
 		char reject[1024];
 		char **to, *virusname;
 
@@ -2950,6 +2990,9 @@ clamfi_eom(SMFICTX *ctx)
 #endif
 			free(err);
 		}
+
+		if(quarantine_dir != NULL)
+			qfile(privdata, sendmailId, virusname);
 
 		if(!qflag) {
 			char cmd[128];
@@ -3052,8 +3095,7 @@ clamfi_eom(SMFICTX *ctx)
 					fprintf(sendmail, _("contained %s and has not been delivered.\n"), virusname);
 
 					if(quarantine_dir != NULL)
-						if(qfile(privdata, sendmailId, virusname) == 0)
-							fprintf(sendmail, _("\nThe message in question has been quarantined as %s\n"), privdata->filename);
+						fprintf(sendmail, _("\nThe message in question has been quarantined as %s\n"), privdata->filename);
 
 					if(hflag) {
 						fprintf(sendmail, _("\nThe message was received by %1$s from %2$s via %3$s\n\n"),
@@ -3219,6 +3261,7 @@ static void
 clamfi_free(struct privdata *privdata)
 {
 	cli_dbgmsg("clamfi_free\n");
+
 	if(privdata) {
 #ifdef	SESSION
 		struct session *session;
@@ -3279,8 +3322,8 @@ clamfi_free(struct privdata *privdata)
 			privdata->to = NULL;
 		}
 
-#ifdef	SESSION
 		if(!internal) {
+#ifdef	SESSION
 			session = &sessions[privdata->serverNumber];
 			pthread_mutex_lock(&sstatus_mutex);
 			if(session->status == CMDSOCKET_INUSE) {
@@ -3650,38 +3693,18 @@ connect2clamd(struct privdata *privdata)
 
 	if(quarantine_dir || tmpdir) {	/* store message in a temporary file */
 		int ntries = 5;
-		time_t t;
-		int MM, YY, DD;
-		const struct tm *tm;
 		const char *dir = (tmpdir) ? tmpdir : quarantine_dir;
 
-		/*
-		 * Based on an idea by Christian Pelissier
-		 * <Christian.Pelissier@onera.fr>. Store different days
-		 * in different directories to make them easier to manage
-		 */
-		t = time((time_t *)0);
-		tm = localtime(&t);
-		MM = tm->tm_mon + 1;
-		YY = tm->tm_year - 100;
-		DD = tm->tm_mday;
-
-		privdata->filename = (char *)cli_malloc(strlen(dir) + 19);
-
-		sprintf(privdata->filename, "%s/%02d%02d%02d", dir,
-			YY, MM, DD);
-
-		if((mkdir(privdata->filename, 0700) < 0) && (errno != EEXIST)) {
-			perror(privdata->filename);
+		if((mkdir(dir, 0700) < 0) && (errno != EEXIST)) {
+			perror(dir);
 			if(use_syslog)
-				syslog(LOG_ERR, _("mkdir %s failed"), privdata->filename);
+				syslog(LOG_ERR, _("mkdir %s failed"), dir);
 			return 0;
 		}
+		privdata->filename = (char *)cli_malloc(strlen(dir) + 12);
 
 		do {
-			sprintf(privdata->filename,
-				"%s/%02d%02d%02d/msg.XXXXXX",
-				dir, YY, MM, DD);
+			sprintf(privdata->filename, "%s/msg.XXXXXX", dir);
 #if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS)
 			privdata->dataSocket = mkstemp(privdata->filename);
 #else
@@ -3707,9 +3730,10 @@ connect2clamd(struct privdata *privdata)
 		struct sockaddr_in reply;
 		unsigned short p;
 		char buf[64];
-		struct session *session;
 
-#ifndef	SESSION
+#ifdef	SESSION
+		struct session *session;
+#else
 		assert(privdata->cmdSocket == -1);
 #endif
 
@@ -3829,10 +3853,13 @@ connect2clamd(struct privdata *privdata)
 
 #ifdef	SESSION
 		nbytes = clamd_recv(session->sock, buf, sizeof(buf));
-		if(nbytes < 0) {
-			perror("recv");
-			if(use_syslog)
-				syslog(LOG_ERR, _("recv failed from clamd getting PORT"));
+		if(nbytes <= 0) {
+			if(nbytes < 0) {
+				perror("recv");
+				if(use_syslog)
+					syslog(LOG_ERR, _("recv failed from clamd getting PORT"));
+			} else if(use_syslog)
+				syslog(LOG_ERR, _("EOF from clamd getting PORT"));
 			pthread_mutex_lock(&sstatus_mutex);
 			session->status = CMDSOCKET_DOWN;
 			pthread_mutex_unlock(&sstatus_mutex);
@@ -3840,10 +3867,13 @@ connect2clamd(struct privdata *privdata)
 		}
 #else
 		nbytes = clamd_recv(privdata->cmdSocket, buf, sizeof(buf));
-		if(nbytes < 0) {
-			perror("recv");
-			if(use_syslog)
-				syslog(LOG_ERR, _("recv failed from clamd getting PORT"));
+		if(nbytes <= 0) {
+			if(nbytes < 0) {
+				perror("recv");
+				if(use_syslog)
+					syslog(LOG_ERR, _("recv failed from clamd getting PORT"));
+			} else if(use_syslog)
+				syslog(LOG_ERR, _("EOF from clamd getting PORT"));
 			return 0;
 		}
 #endif
@@ -3908,7 +3938,9 @@ connect2clamd(struct privdata *privdata)
 		}
 	}
 
+#ifdef	SESSION
 end:
+#endif
 	/*
 	 * Combine the To and From into one clamfi_send to save bandwidth
 	 * when sending using TCP/IP to connect to a remote clamd, by band
@@ -4104,29 +4136,41 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 static int
 qfile(struct privdata *privdata, const char *sendmailId, const char *virusname)
 {
-	char *newname, *ptr;
+	int MM, YY, DD;
+	time_t t;
 	size_t len;
+	char *newname, *ptr;
+	const struct tm *tm;
 
 	assert(privdata != NULL);
 
 	if((privdata->filename == NULL) || (virusname == NULL))
 		return -1;
 
-	len = strlen(privdata->filename);
+	cli_dbgmsg("qfile filename '%s' sendmailId '%s' virusname '%s'\n", privdata->filename, sendmailId, virusname);
 
-	newname = cli_malloc(len + strlen(sendmailId) + strlen(virusname) + 3);
+	len = strlen(quarantine_dir);
+
+	newname = cli_malloc(len + strlen(sendmailId) + strlen(virusname) + 10);
 
 	if(newname == NULL)
 		return -1;
 
-	sprintf(newname, "%s.%s.%s", privdata->filename, sendmailId, virusname);
+	t = time((time_t *)0);
+	tm = localtime(&t);
+	MM = tm->tm_mon + 1;
+	YY = tm->tm_year - 100;
+	DD = tm->tm_mday;
+
+	sprintf(newname, "%s/%02d%02d%02d/%s.%s",
+		quarantine_dir, YY, MM, DD, sendmailId, virusname);
 
 	/*
 	 * Strip out funnies that may be in the name of the virus, such as '/'
 	 * that would cause the quarantine to fail to save since the name
 	 * of the virus is included in the filename
 	 */
-	for(ptr = &newname[len]; *ptr; ptr++) {
+	for(ptr = &newname[len + 8]; *ptr; ptr++) {
 #ifdef	C_DARWIN
 		*ptr &= '\177';
 #endif
@@ -4137,6 +4181,12 @@ qfile(struct privdata *privdata, const char *sendmailId, const char *virusname)
 #endif
 			*ptr = '_';
 	}
+	cli_dbgmsg("qfile move '%s' to '%s'\n", privdata->filename, newname);
+
+	/*
+	 * FIXME: handle cross file linking failure meaning that we'd have
+	 *	to copy
+	 */
 	if(link(privdata->filename, newname) < 0) {
 		perror(newname);
 		if(use_syslog)
@@ -4148,6 +4198,9 @@ qfile(struct privdata *privdata, const char *sendmailId, const char *virusname)
 	unlink(privdata->filename);
 	free(privdata->filename);
 	privdata->filename = newname;
+
+	if(use_syslog)
+		syslog(LOG_INFO, _("File quarantined as %s"), newname);
 
 	return 0;
 }
@@ -4445,7 +4498,7 @@ watchdog(void *a)
 			clamdIsDown();
 		pthread_mutex_unlock(&sstatus_mutex);
 	}
-	cli_errmsg("watchdog quits\n");
+	cli_dbgmsg("watchdog quits\n");
 	return NULL;
 }
 #endif
