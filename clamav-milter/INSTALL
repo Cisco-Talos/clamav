@@ -169,9 +169,9 @@ or if clamd is on a different machine
 If you want clamav-milter to listen on TCP for communication with sendmail,
 for example if they are on different machines use inet:<port>.
 On machine A (running sendmail) you would have in sendmail.mc:
-INPUT_MAIL_FILTER(`clamav', `S=inet:3311@machineb, F=, T=S:4m;R:4m')dnl
+	INPUT_MAIL_FILTER(`clamav', `S=inet:3311@machineb, F=, T=S:4m;R:4m')dnl
 On machine B (running clamav-milter) you would start up clamav-milter thus:
-clamav-milter inet:3311
+	clamav-milter inet:3311
 
 You should have received a script to put into /etc/init.d with this software.
 
@@ -703,6 +703,9 @@ Changes
 				system for the database reload, rather than
 				wait for it to happen by itself
 0.84	3/3/05:		Up-issue
+0.84a	5/3/05:		Note that when the connection to sendmail is via TCP/IP
+				rather than a UNIX domain socket, that --local
+				must be given
 
 INTERNATIONALISATION
 

@@ -24,9 +24,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.186 2005/03/03 09:21:34 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.187 2005/03/05 11:06:03 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.83b"
+#define	CM_VERSION	"0.84a"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -802,6 +802,18 @@ main(int argc, char **argv)
 		fprintf(stderr, _("%s: socket-addr (%s) doesn't agree with sendmail.cf\n"), argv[0], port);
 		return EX_CONFIG;
 	}
+	if(strncasecmp(port, "inet:", 5) == 0)
+		if(!lflag) {
+			/*
+			 * Barmy but true. It seems that clamfi_connect will,
+			 * in this case, get the IP address of the machine
+			 * running sendmail, not of the machine sending the
+			 * mail, so the remote end will be a local address so
+			 * we must scan by enabling --local
+			 */
+			fprintf(stderr, _("%s: when using inet: connection to sendmail you must enable --local\n"), argv[0]);
+			return EX_USAGE;
+		}
 
 	/*
 	 * Sanity checks on the clamav configuration file
@@ -1408,9 +1420,10 @@ main(int argc, char **argv)
 
 		if((fd = fopen(pidfile, "w")) == NULL) {
 			if(use_syslog)
-				syslog(LOG_WARNING, _("Can't save PID in file %s"),
+				syslog(LOG_ERR, _("Can't save PID in file %s"),
 					pidfile);
-			cli_warnmsg(_("Can't save PID in file %s\n"), pidfile);
+			cli_errmsg(_("Can't save PID in file %s\n"), pidfile);
+			return EX_CONFIG;
 		} else {
 #ifdef	C_LINUX
 			/* Ensure that all threads are kill()ed */
