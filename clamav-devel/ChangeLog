@@ -1,3 +1,8 @@
+Sun Nov  2 01:07:46 CET 2003 (tk)
+---------------------------------
+  * freshclam: do not use IP address in database request (thanks to Luca
+	       'NERvOus' Gibelli)
+
 Sat Nov  1 04:14:14 CET 2003 (tk)
 ---------------------------------
   * clamd: scanner: close a whole file stream and not only a file descriptor;

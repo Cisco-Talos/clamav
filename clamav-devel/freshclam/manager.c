@@ -58,12 +58,15 @@ int downloadmanager(const struct optstruct *opt, const char *hostname)
     logg("SECURITY WARNING: NO SUPPORT FOR DIGITAL SIGNATURES\n");
 #endif
 
+    memset(ipaddr, 0, sizeof(ipaddr));
+
     if((ret = downloaddb(DB1NAME, "main.cvd", hostname, ipaddr, &signo, opt)) > 50)
 	return ret;
     else if(ret == 0)
 	updated = 1;
 
-    if((ret = downloaddb(DB2NAME, "daily.cvd", ipaddr, NULL, &signo, opt)) > 50)
+    /* if ipaddr[0] != 0 it will use ipaddr to connect to the web host */
+    if((ret = downloaddb(DB2NAME, "daily.cvd", hostname, ipaddr, &signo, opt)) > 50)
 	return ret;
     else if(ret == 0)
 	updated = 1;
@@ -134,15 +137,18 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     if(proxy)
 	mprintf("Connecting via %s\n", proxy);
 
-    hostfd = wwwconnect(hostname, proxy, ipaddr);
+    if(ip[0])
+	hostfd = wwwconnect(ip, proxy, NULL); /* we use ip to connect */
+    else
+	hostfd = wwwconnect(hostname, proxy, ipaddr);
 
     if(hostfd < 0) {
-	mprintf("@Connection with %s (%s) failed.\n", hostname, ipaddr);
+	mprintf("@Connection with %s (IP: %s) failed.\n", hostname, ipaddr);
 	return 52;
     } else
 	mprintf("*Connected to %s (%s).\n", hostname, ipaddr);
 
-    if(ip)
+    if(!ip[0])
 	strcpy(ip, ipaddr);
 
     if(!(remote = remote_cvdhead(remotename, hostfd, hostname, proxy, user))) {
@@ -294,7 +300,7 @@ int wwwconnect(const char *server, const char *proxy, char *ip)
     name.sin_port = htons(port);
 
     if(connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in)) == -1) {
-	mprintf("@Can't connect to port %d of host %s (IP: %s)\n", port, hostpt, ipaddr);
+	mprintf("@Can't connect to port %d of host %s (%s)\n", port, hostpt, ipaddr);
 	close(socketfd);
 	if(proxycpy)
 	    free(proxycpy);
