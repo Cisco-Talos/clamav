@@ -54,6 +54,7 @@ static void daemon_sighandler(int sig) {
 	case SIGALRM:
 	case SIGUSR1:
 	    action = "wake up";
+	    terminate = -1;
 	    break;
 
 	case SIGHUP:
@@ -203,6 +204,7 @@ int freshclam(struct optstruct *opt)
 
     if(optc(opt, 'd')) {
 	    int bigsleep, checks;
+	    time_t now, wakeup;
 
 	memset(&sigact, 0, sizeof(struct sigaction));
 	sigact.sa_handler = daemon_sighandler;
@@ -251,8 +253,16 @@ int freshclam(struct optstruct *opt)
 	    logg("\n--------------------------------------\n");
 	    sigaction(SIGALRM, &sigact, &oldact);
 	    sigaction(SIGUSR1, &sigact, &oldact);
+	    time(&wakeup);
+	    wakeup += bigsleep;
 	    alarm(bigsleep);
-	    pause();
+	    do {
+		pause();
+		time(&now);
+	    } while (!terminate && now < wakeup);
+	    if (terminate == -1) {
+		terminate = 0;
+	    }
 	    sigaction(SIGALRM, &oldact, NULL);
 	    sigaction(SIGUSR1, &oldact, NULL);
 	}
