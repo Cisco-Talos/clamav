@@ -1,3 +1,8 @@
+Mon Jun 21 11:21:48 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:		Fix crash when a multipart/mixed message
+	contains many parts that need to be scanned as attachments
+
 Fri Jun 18 11:08:26 BST 2004 (njh)
 ----------------------------------
   * libclamav:			Allow any number of alternatives in
