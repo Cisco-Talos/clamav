@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.178  2004/11/15 13:58:50  nigelhorne
+ * Fix obscure chance of memory leak
+ *
  * Revision 1.177  2004/11/12 22:22:21  nigelhorne
  * Performance speeded up
  *
@@ -519,7 +522,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.177 2004/11/12 22:22:21 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.178 2004/11/15 13:58:50 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2302,6 +2305,7 @@ static int
 boundaryStart(const char *line, const char *boundary)
 {
 	char *ptr, *p;
+	int rc;
 
 	if(line == NULL)
 		return 0;	/* empty line */
@@ -2333,17 +2337,20 @@ boundaryStart(const char *line, const char *boundary)
 	 * boundary="1" we want to ensure that we don't break out of every line
 	 * that has -1 in it instead of starting --1. This needs some more work.
 	 */
-	if(strstr(ptr, boundary) != NULL) {
-		cli_dbgmsg("boundaryStart: found %s in %s\n", boundary, line);
-		if(p)
-			free(p);
-		return 1;
-	}
-	if(*ptr++ != '-')
-		return 0;
+	if(strstr(ptr, boundary) != NULL)
+		rc = 1;
+	else if(*ptr++ != '-')
+		rc = 0;
+	else
+		rc = (strcasecmp(line, boundary) == 0);
+
 	if(p)
 		free(p);
-	return strcasecmp(line, boundary) == 0;
+
+	if(rc == 1)
+		cli_dbgmsg("boundaryStart: found %s in %s\n", boundary, line);
+
+	return rc;
 }
 
 /*
