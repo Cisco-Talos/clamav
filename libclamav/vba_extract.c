@@ -88,13 +88,14 @@ typedef struct byte_array_tag {
 	unsigned char *data;
 } byte_array_t;
 
-#define NUM_VBA_VERSIONS 11
+#define NUM_VBA_VERSIONS 12
 vba_version_t vba_version[] = {
 	{ { 0x5e, 0x00, 0x00, 0x01 }, "Office 97",              5, FALSE},
 	{ { 0x5f, 0x00, 0x00, 0x01 }, "Office 97 SR1",          5, FALSE },
 	{ { 0x65, 0x00, 0x00, 0x01 }, "Office 2000 alpha?",     6, FALSE },
 	{ { 0x6b, 0x00, 0x00, 0x01 }, "Office 2000 beta?",      6, FALSE },
 	{ { 0x6d, 0x00, 0x00, 0x01 }, "Office 2000",            6, FALSE },
+	{ { 0x6f, 0x00, 0x00, 0x01 }, "Office 2000",            6, FALSE },
 	{ { 0x70, 0x00, 0x00, 0x01 }, "Office XP beta 1/2",     6, FALSE },
 	{ { 0x73, 0x00, 0x00, 0x01 }, "Office XP",              6, FALSE },
 	{ { 0x79, 0x00, 0x00, 0x01 }, "Office 2003",            6, FALSE },
