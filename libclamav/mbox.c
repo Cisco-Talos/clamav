@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.177  2004/11/12 22:22:21  nigelhorne
+ * Performance speeded up
+ *
  * Revision 1.176  2004/11/12 09:41:45  nigelhorne
  * Parial mode now on by default
  *
@@ -516,7 +519,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.176 2004/11/12 09:41:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.177 2004/11/12 22:22:21 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1023,7 +1026,7 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 			buffer = NULL;
 
 		if(inHeader) {
-			if(buffer == NULL) {
+			if((buffer == NULL) && !contMarker) {
 				/*
 				 * A blank line signifies the end of the header
 				 * and the start of the text
@@ -1031,7 +1034,7 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 				cli_dbgmsg("End of header information\n");
 				inHeader = FALSE;
 			} else {
-				char *ptr;
+				char *ptr, *p;
 				bool inquotes = FALSE;
 				bool arequotes = FALSE;
 				const char *qptr;
@@ -1039,18 +1042,48 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 #ifdef CL_THREAD_SAFE
 				char *strptr;
 #endif
-				char cmd[LINE_LENGTH + 1];
 
 				if(fullline == NULL) {
-					commandNumber = tableFind(rfc821, buffer);
-					fullline = strdup("");
-					fulllinelength = 1;
+					char cmd[LINE_LENGTH + 1];
+
+					/*
+					 * Continuation of line we're ignoring?
+					 */
+					if((buffer[0] == '\t') || (buffer[0] == ' ') || contMarker) {
+						contMarker = continuationMarker(buffer);
+						continue;
+					}
+
+					/*
+					 * Is this a header we're interested in?
+					 */
+					if(cli_strtokbuf(buffer, 0, ":", cmd) == NULL)
+						continue;
+
+					anyHeadersFound = TRUE;
+					commandNumber = tableFind(rfc821, cmd);
+
+					switch(commandNumber) {
+						case CONTENT_TRANSFER_ENCODING:
+						case CONTENT_DISPOSITION:
+						case CONTENT_TYPE:
+							break;
+						default:
+							continue;
+					}
+					fullline = strdup(buffer);
+					fulllinelength = strlen(buffer) + 1;
+				} else if(buffer) {
+					fulllinelength += strlen(buffer);
+					fullline = cli_realloc(fullline, fulllinelength);
+					strcat(fullline, buffer);
+				} else {
+					contMarker = FALSE;
+					continue;
 				}
-				fulllinelength += strlen(buffer);
-				fullline = cli_realloc(fullline, fulllinelength);
-				strcat(fullline, buffer);
 
 				contMarker = continuationMarker(buffer);
+
 				if(contMarker)
 					continue;
 
@@ -1072,30 +1105,13 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 					if(*qptr == '\"')
 						quotes++;
 
-				if(quotes & 1) {
-					contMarker = TRUE;
+				if(quotes & 1)
 					continue;
-				}
 
 				ptr = rfc822comments(fullline);
 				if(ptr) {
 					free(fullline);
 					fullline = ptr;
-				}
-				if(cli_strtokbuf(fullline, 0, ":", cmd) != NULL) {
-					anyHeadersFound = TRUE;
-					commandNumber = tableFind(rfc821, cmd);
-				}
-
-				switch(commandNumber) {
-					case CONTENT_TRANSFER_ENCODING:
-					case CONTENT_DISPOSITION:
-					case CONTENT_TYPE:
-						break;
-					default:
-						free(fullline);
-						fullline = NULL;
-						continue;
 				}
 
 				if(parseEmailHeader(ret, fullline, rfc821) < 0)
@@ -1115,8 +1131,15 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 						arequotes = TRUE;
 					}
 
+				p = cli_strtok(fullline, 1, ":");
+
+				free(fullline);
+				fullline = NULL;
+
+				if(p == NULL)
+					continue;
 #ifdef	CL_THREAD_SAFE
-				for(ptr = strtok_r(fullline, ";", &strptr); ptr; ptr = strtok_r(NULL, ":", &strptr))
+				for(ptr = strtok_r(p, ";", &strptr); ptr; ptr = strtok_r(NULL, ":", &strptr))
 					if(strchr(ptr, '=')) {
 						if(arequotes) {
 							char *p2;
@@ -1126,7 +1149,7 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 						messageAddArguments(ret, ptr);
 					}
 #else
-				for(ptr = strtok(fullline, ";"); ptr; ptr = strtok(NULL, ":"))
+				for(ptr = strtok(p, ";"); ptr; ptr = strtok(NULL, ":"))
 					if(strchr(ptr, '=')) {
 						if(arequotes) {
 							char *p2;
@@ -1136,14 +1159,12 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 						messageAddArguments(ret, ptr);
 					}
 #endif
-				free(fullline);
-				fullline = NULL;
+				free(p);
 			}
-		} else {
+		} else
 			/*cli_dbgmsg("Add line to body '%s'\n", buffer);*/
 			if(messageAddLine(ret, t->t_line) < 0)
 				break;
-		}
 	}
 
 	if(fullline) {
@@ -2890,25 +2911,26 @@ rfc1341(message *m, const char *dir)
 	char *pdir;
 
 #ifdef  CYGWIN
-        if((tmpdir = getenv("TEMP")) == (char *)NULL)
-                if((tmpdir = getenv("TMP")) == (char *)NULL)
-                        if((tmpdir = getenv("TMPDIR")) == (char *)NULL)
-                                tmpdir = "C:\\";
+	if((tmpdir = getenv("TEMP")) == (char *)NULL)
+		if((tmpdir = getenv("TMP")) == (char *)NULL)
+			if((tmpdir = getenv("TMPDIR")) == (char *)NULL)
+				tmpdir = "C:\\";
 #else
-        if((tmpdir = getenv("TMPDIR")) == (char *)NULL)
-                if((tmpdir = getenv("TMP")) == (char *)NULL)
-                        if((tmpdir = getenv("TEMP")) == (char *)NULL)
+	if((tmpdir = getenv("TMPDIR")) == (char *)NULL)
+		if((tmpdir = getenv("TMP")) == (char *)NULL)
+			if((tmpdir = getenv("TEMP")) == (char *)NULL)
 #ifdef	P_tmpdir
-                                tmpdir = P_tmpdir;
+				tmpdir = P_tmpdir;
 #else
-                                tmpdir = "/tmp";
+				tmpdir = "/tmp";
 #endif
 #endif
 
-    	pdir = cli_malloc(strlen(tmpdir) + 16);
+	pdir = cli_malloc(strlen(tmpdir) + 16);
 	if(pdir == NULL)
 		return -1;
-                                                                                	sprintf(pdir, "%s/clamav-partial", tmpdir);
+
+	sprintf(pdir, "%s/clamav-partial", tmpdir);
 
 	if((mkdir(pdir, 0700) < 0) && (errno != EEXIST)) {
 		cli_errmsg("Can't create the directory '%s'\n", pdir);
