@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.44  2004/02/15 08:45:54  nigelhorne
+ * Avoid scanning the same file twice
+ *
  * Revision 1.43  2004/02/14 19:04:05  nigelhorne
  * Handle spaces in boundaries
  *
@@ -120,7 +123,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.43 2004/02/14 19:04:05 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.44 2004/02/15 08:45:54 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -548,7 +551,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 
 	/* Anything left to be parsed? */
 	if(mainMessage && (messageGetBody(mainMessage) != NULL)) {
-		int numberOfAttachments = 0;
+		int numberOfAttachments = 0, numberOfNewAttachments;
 		mime_type mimeType;
 		const char *mimeSubtype;
 		const text *t_line;
@@ -988,6 +991,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						continue;
 					case AUDIO:
 					case IMAGE:
+					case VIDEO:
 						/*
 						 * TODO: it may be nice to
 						 * have an option to throw
@@ -997,7 +1001,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						addAttachment = TRUE;
 						break;
 					default:
-						cli_dbgmsg("Only text and application attachments are supported, type = %d\n",
+						cli_warnmsg("Only text and application attachments are supported, type = %d\n",
 							messageGetMimeType(aMessage));
 						continue;
 					}
@@ -1016,8 +1020,8 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 
 						if(aBlob) {
 							assert(blobGetFilename(aBlob) != NULL);
-							/*if(blobGetDataSize(aBlob) > 0)*/
-								blobList[numberOfAttachments++] = aBlob;
+							blobClose(aBlob);
+							blobList[numberOfAttachments++] = aBlob;
 						}
 					}
 				}
@@ -1027,17 +1031,43 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					rc = parseEmailBody(NULL, NULL, 0, aText, dir, rfc821Table, subtypeTable);
 					break;
 				}
+
 				/*
 				 * Store any existing attachments at the end of
 				 * the list we've just built up
 				 */
+				numberOfNewAttachments = 0;
 				for(i = 0; i < nBlobs; i++) {
+					int j;
 #ifdef	CL_DEBUG
 					assert(blobs[i]->magic == BLOB);
 #endif
-					blobList[numberOfAttachments++] = blobs[i];
+					for(j = 0; j < numberOfAttachments; j++)
+						if(blobcmp(blobs[i], blobList[j]) == 0)
+							break;
+					if(j >= numberOfAttachments) {
+						assert(numberOfAttachments < MAX_ATTACHMENTS);
+						cli_dbgmsg("Attaching %s to list of blobs\n",
+							blobGetFilename(blobs[i]));
+						blobClose(blobs[i]);
+						blobList[numberOfAttachments++] = blobs[i];
+						numberOfNewAttachments++;
+					} else {
+						cli_warnmsg("Don't scan the same file twice as '%s' and '%s'\n",
+							blobGetFilename(blobs[i]),
+							blobGetFilename(blobList[j]));
+						blobDestroy(blobs[i]);
+					}
 				}
 
+				/*
+				 * If we've found nothing new save what we have
+				 * and quit - that's this part all done.
+				 */
+				if(numberOfNewAttachments == 0) {
+					rc = parseEmailBody(NULL, blobList, numberOfAttachments, NULL, dir, rfc821Table, subtypeTable);
+					break;
+				}
 				/*
 				 * If there's only one part of the MULTIPART
 				 * we already have the body to decode so
@@ -1199,6 +1229,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					for(i = 0; i < nBlobs; i++)
 						if(blobs[i] == NULL)
 							break;
+					blobClose(aBlob);
 					blobs[i] = aBlob;
 					if(i == nBlobs) {
 						nBlobs++;

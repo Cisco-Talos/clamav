@@ -23,6 +23,7 @@ typedef struct blob {
 	unsigned	char	*data;	/* the stuff itself */
 	unsigned	long	len;	/* number of bytes of data so far */
 	unsigned	long	size;	/* number of bytes allocated to data so far */
+	int	isClosed;
 #ifdef	CL_DEBUG
 	object_type	magic;	/* verify that this is a blob */
 #endif
@@ -36,3 +37,5 @@ const	char	*blobGetFilename(const blob *b);
 void	blobAddData(blob *b, const unsigned char *data, size_t len);
 unsigned char *blobGetData(const blob *b);
 unsigned	long	blobGetDataSize(const blob *b);
+void	blobClose(blob *b);
+int	blobcmp(const blob *b1, const blob *b2);
