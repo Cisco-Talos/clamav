@@ -91,6 +91,8 @@ extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME *
 # else
 #   ifdef	FILENAME_MAX	/* e.g. SCO */
 #     define	NAME_MAX	FILENAME_MAX
+#   else
+#     define	NAME_MAX	256
 #   endif
 # endif
 #endif
