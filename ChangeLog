@@ -1,3 +1,9 @@
+Tue Feb 10 19:17:53 CET 2004 (tk)
+---------------------------------
+  * docs: complete clamdoc.pdf French translation by Stephane Jeannenot
+  * docs: Polish how-to on ClamAV and Sendmail integration (with clamav-milter)
+	  by  Przemyslaw Holowczyc
+
 Tue Feb 10 17:05:31 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Recognised new kind of bounce message
@@ -19,6 +25,7 @@ Tue Feb 10 10:21:02 GMT 2004 (njh)
 ----------------------------------
   * contrib:	The Windows client now recovers better from errors during
   	scanning
+
 Mon Feb  9 17:46:29 GMT 2004 (njh)
 ----------------------------------
   * contrib:	The Windows client now allows the port to be specified
@@ -44,7 +51,7 @@ Mon Feb  9 13:40:37 GMT 2004 (trog)
 Mon Feb  9 11:09:56 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	Added --headers patch from "Leonid Zeitlin"
-	<lz@europe.com>, though a lot of people have requested it!
+	<lz*europe.com>, though a lot of people have requested it!
 
 Mon Feb  9 02:04:36 CET 2004 (tk)
 ---------------------------------
