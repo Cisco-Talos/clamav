@@ -1,3 +1,9 @@
+Thu Sep 30 02:19:12 CEST 2004 (tk)
+----------------------------------
+  * libclamav/special.c: add cli_check_jpeg_exploit (by Trog)
+  * libclamav/matcher.c: add additional check to eliminate false positive
+			 matches of Exploit.JPEG.Comment
+
 Tue Sep 28 19:41:39 BST 2004 (njh)
 ----------------------------------
   * libclamav:		Some small speed and size optimisations in MIME decoding

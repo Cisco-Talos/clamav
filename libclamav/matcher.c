@@ -34,6 +34,7 @@
 #include "filetypes.h"
 #include "matcher.h"
 #include "pe.h"
+#include "special.h"
 
 #define MD5_BLOCKSIZE 4096
 
@@ -174,6 +175,22 @@ int cli_validatesig(unsigned short target, unsigned short ftype, const char *off
 	    cli_dbgmsg("Virus offset: %d, expected: %d (%s)\n", fileoff, off, virname);
 	    return 0;
 	}
+    }
+
+    if(ftype == CL_TYPE_GRAPHICS && virname && !strcmp(virname, "Exploit.JPEG.Comment")) {
+	    int old;
+
+	if((old = lseek(desc, 0, SEEK_CUR)) == -1) {
+	    cli_dbgmsg("Invalid descriptor\n");
+	    return 0;
+	}
+	lseek(desc, 0, SEEK_SET);
+	if(cli_check_jpeg_exploit(desc) != 1) {
+	    cli_dbgmsg("Eliminated false positive match of Exploit.JPEG.Comment\n");
+	    lseek(desc, old, SEEK_SET);
+	    return 0;
+	}
+	lseek(desc, old, SEEK_SET);
     }
 
     return 1;
