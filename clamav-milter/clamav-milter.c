@@ -205,9 +205,14 @@
  *			idea by Andy Fiddaman <af@jeamland.org>
  *	0.66d	10/1/04	Added OpenBSD instructions
  *			Added --signature-file option
+ *	0.66e	12/1/04	FixStaleSocket: no longer complain if asked to remove
+ *			an old socket when there was none to remove
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.36  2004/01/12 15:30:53  nigelhorne
+ * FixStaleSocket no longer complains on ENOENT
+ *
  * Revision 1.35  2004/01/10 16:22:14  nigelhorne
  * Added OpenBSD instructions and --signature-file
  *
@@ -298,7 +303,7 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.35 2004/01/10 16:22:14 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.36 2004/01/12 15:30:53 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.66d"
 
@@ -874,10 +879,12 @@ main(int argc, char **argv)
 		 */
 		if(strncasecmp(port, "unix:", 5) == 0) {
 			if(unlink(&port[5]) < 0)
-				perror(&port[5]);
+				if(errno != ENOENT)
+					perror(&port[5]);
 		} else if(strncasecmp(port, "local:", 6) == 0) {
 			if(unlink(&port[6]) < 0)
-				perror(&port[6]);
+				if(errno != ENOENT)
+					perror(&port[6]);
 		}
 	}
 

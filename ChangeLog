@@ -1,3 +1,8 @@
+Mon Jan 12 15:31:32 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter: FixStaleSocket: no longer complain if asked to remove
+	an old socket when there was none to remove
+
 Mon Jan 12 08:58:59 GMT 2004 (njh)
 ----------------------------------
   * docs:	Note that clamav-milter requires clamd
