@@ -15,9 +15,12 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * $LOG$
+ * $Log: blob.c,v $
+ * Revision 1.6  2004/02/10 19:23:54  nigelhorne
+ * Change LOG to Log
+ *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.5 2004/02/10 19:22:25 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.6 2004/02/10 19:23:54 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
