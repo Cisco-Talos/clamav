@@ -331,6 +331,7 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	     */
 	    cli_dbgmsg("Zip -> Malformed Zip, scanning stopped.\n");
 	    fclose(tmp);
+	    tmp = NULL;
 	    *virname = "Malformed Zip";
 	    ret = CL_VIRUS;
 	    break;
@@ -615,6 +616,10 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
 	lseek(desc, 0, SEEK_SET);
 
 
+	if (bread != MAGIC_BUFFER_SIZE) {
+	    /* short read: No need to do magic */
+	    return ret;
+	}
 #ifdef CL_THREAD_SAFE
 	/* this check protects against recursive deadlock */
 	if(SCAN_ARCHIVE && !cli_scanrar_inuse && !strncmp(magic, RAR_MAGIC_STR, strlen(RAR_MAGIC_STR))) {

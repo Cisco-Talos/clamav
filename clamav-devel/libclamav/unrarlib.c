@@ -316,10 +316,8 @@ char Password[255];                         /* password to decrypt files    */
 unsigned char *temp_output_buffer;          /* extract files to this pointer*/
 unsigned long *temp_output_buffer_offset;   /* size of temp. extract buffer */
 
-BOOL FileFound;                             /* TRUE=use current extracted   */
-                                            /* data FALSE=throw data away,  */
-                                            /* wrong file                   */
 int MainHeadSize;
+
 long CurBlockPos,NextBlockPos;
 
 unsigned long CurUnpRead, CurUnpWrite;
@@ -349,7 +347,7 @@ int IsArchive(void);
 int ReadBlock(int BlockType);
 unsigned int UnpRead(unsigned char *Addr,unsigned int Count);
 void UnpInitData(void);
-void Unpack(unsigned char *UnpAddr);
+void Unpack(unsigned char *UnpAddr, BOOL FileFound);
 UBYTE DecodeAudio(int Delta);
 static void DecodeNumber(struct Decode *Dec);
 void UpdKeys(UBYTE *Buf);
@@ -916,7 +914,9 @@ int IsArchive(void)
 BOOL ExtrFile(int desc)
 {
   BOOL ReturnCode=TRUE;
-  FileFound=FALSE;                          /* no file found by default     */
+  BOOL FileFound=FALSE;                     /* TRUE=use current extracted   */
+                                            /* data FALSE=throw data away,  */
+                                            /* wrong file                   */
   int newdesc;
 
 #ifdef  _USE_MEMORY_TO_MEMORY_DECOMPRESSION
@@ -1036,7 +1036,7 @@ BOOL ExtrFile(int desc)
         UnstoreFile();
       } else
       {
-        Unpack(UnpMemory);
+        Unpack(UnpMemory, FileFound);
       }
 
 
@@ -1349,7 +1349,7 @@ static struct MultDecode *MDPtr[4]={&MD[0],&MD[1],&MD[2],&MD[3]};
 int UnpAudioBlock,UnpChannels,CurChannel,ChannelDelta;
 
 
-void Unpack(unsigned char *UnpAddr)
+void Unpack(unsigned char *UnpAddr, BOOL FileFound)
 /* *** 38.3% of all CPU time is spent within this function!!!               */
 {
   static unsigned char LDecode[]={0,1,2,3,4,5,6,7,8,10,12,14,16,20,24,28,32,
