@@ -1,3 +1,7 @@
+Tue Aug 24 13:47:07 CEST 2004 (tk)
+----------------------------------
+  * libclamav: fix logic error in cli_filetype() (thanks to Tomasz Papszun)
+
 Tue Aug 24 02:30:28 CEST 2004 (tk)
 ----------------------------------
   * libclamav: only enable signature file type recognition for text files
