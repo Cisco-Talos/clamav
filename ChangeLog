@@ -1,3 +1,7 @@
+Sun Dec  5 15:00:35 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter:	Fix array overrun on startup
+
 Sat Dec  4 23:34:54 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	Fix possible mishandling of multiple children when
