@@ -1,3 +1,8 @@
+Thu Dec  2 11:10:31 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter:	--internal now notices when the database has been
+				updated
+
 Wed Dec  1 22:29:33 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	Added --internal flag (some functionality to do)

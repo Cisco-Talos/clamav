@@ -571,6 +571,9 @@ Changes
 		Not all previous X-Virus-Status headers were removed
 		Added the --internal flag
 			TODO: freshclam notification and version headers
+0.80v	2/12/04: --internal now notices when freshclam has been run
+		The default value for --timeout has been changed from 60
+			seconds to 0 (wait forever)
 
 INTERNATIONALISATION
 

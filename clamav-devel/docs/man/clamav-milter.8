@@ -199,7 +199,7 @@ If the \-t option is not given, clamav\-milter defaults to a hardcoded message.
 .TP
 \fB\-\-timeout=n \-T n\fR
 Used in conjuction with max\-children. If clamav\-milter waits for more than
-\fIn\fR seconds (default 60) it proceeds with scanning. Setting \fIn\fR to zero
+\fIn\fR seconds (default 0) it proceeds with scanning. Setting \fIn\fR to zero
 will turn off the timeout and clamav\-milter will wait indefinately for the
 scanning to quit. In practice the timeout set by sendmail will then take over.
 .SH "BUGS"
