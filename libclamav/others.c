@@ -103,55 +103,57 @@ const char *cl_strerror(int clerror)
 {
     switch(clerror) {
 	case CL_CLEAN:
-	    return "Virus NOT found.";
+	    return "No viruses detected";
 	case CL_VIRUS:
-	    return "Virus(es) detected.";
+	    return "Virus(es) detected";
 	case CL_EMAXREC:
-	    return "Recursion limit exceeded.";
+	    return "Recursion limit exceeded";
 	case CL_EMAXSIZE:
-	    return "File size limit exceeded.";
+	    return "File size limit exceeded";
 	case CL_EMAXFILES:
-	    return "Files number limit exceeded.";
+	    return "Files number limit exceeded";
 	case CL_ERAR:
-	    return "RAR module failure.";
+	    return "RAR module failure";
 	case CL_EZIP:
-	    return "Zip module failure.";
+	    return "Zip module failure";
 	case CL_EMALFZIP:
-	    return "Malformed Zip detected.";
+	    return "Malformed Zip detected";
 	case CL_EGZIP:
-	    return "GZip module failure.";
+	    return "GZip module failure";
 	case CL_EMSCOMP:
-	    return "MS Expand module failure.";
+	    return "MS Expand module failure";
 	case CL_EMSCAB:
-	    return "MS CAB module failure.";
+	    return "MS CAB module failure";
 	case CL_EOLE2:
-	    return "OLE2 module failure.";
+	    return "OLE2 module failure";
 	case CL_ETMPFILE:
-	    return "Unable to create temporary file.";
+	    return "Unable to create temporary file";
 	case CL_ETMPDIR:
-	    return "Unable to create temporary directory.";
+	    return "Unable to create temporary directory";
 	case CL_EFSYNC:
-	    return "Unable to synchronize file <-> disk.";
+	    return "Unable to synchronize file <-> disk";
 	case CL_EMEM:
-	    return "Unable to allocate memory.";
+	    return "Unable to allocate memory";
 	case CL_EOPEN:
-	    return "Unable to open file or directory.";
+	    return "Unable to open file or directory";
 	case CL_EMALFDB:
-	    return "Malformed database.";
+	    return "Malformed database";
 	case CL_EPATSHORT:
-	    return "Too short pattern detected.";
+	    return "Too short pattern detected";
 	case CL_ECVD:
-	    return "Broken or not a CVD file.";
+	    return "Broken or not a CVD file";
 	case CL_ECVDEXTR:
-	    return "CVD extraction failure.";
+	    return "CVD extraction failure";
 	case CL_EMD5:
-	    return "MD5 verification error.";
+	    return "MD5 verification error";
 	case CL_EDSIG:
-	    return "Digital signature verification error.";
+	    return "Digital signature verification error";
 	case CL_ENULLARG:
-	    return "Null argument passed while initialized is required.";
+	    return "Null argument passed while initialized is required";
+	case CL_EIO:
+	    return "Input/Output error";
 	default:
-	    return "Unknown error code.";
+	    return "Unknown error code";
     }
 }
 

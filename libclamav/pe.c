@@ -109,7 +109,28 @@ struct pe_image_section_hdr {
     uint32_t Characteristics;
 };
 
-int ddump(int desc, int offset, int size, const char *file)
+
+static uint32_t cli_rawaddr(uint32_t rva, struct pe_image_section_hdr *shp, uint16_t nos)
+{
+	int i, found = 0;
+
+
+    for(i = 0; i < nos; i++) {
+	if(shp[i].VirtualAddress <= rva && shp[i].VirtualAddress + shp[i].SizeOfRawData > rva) {
+	    found = 1;
+	    break;
+	}
+    }
+
+    if(!found) {
+	cli_dbgmsg("Can't calculate raw address from RVA 0x%x\n", rva);
+	return -1;
+    }
+
+    return rva - shp[i].VirtualAddress + shp[i].PointerToRawData;
+}
+
+static int cli_ddump(int desc, int offset, int size, const char *file)
 {
 	int pos, ndesc, bread, sum = 0;
 	char buff[FILEBUFF];
@@ -165,9 +186,10 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 {
 	uint16_t e_magic; /* DOS signature ("MZ") */
 	uint32_t e_lfanew; /* address of new exe header */
+	uint32_t ep; /* entry point (raw) */
 	struct pe_image_file_hdr file_hdr;
 	struct pe_image_optional_hdr optional_hdr;
-	struct pe_image_section_hdr section_hdr;
+	struct pe_image_section_hdr *section_hdr;
 	struct stat sb;
 	char sname[9];
 	int i;
@@ -175,7 +197,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
     if(read(desc, &e_magic, sizeof(e_magic)) != sizeof(e_magic)) {
 	cli_dbgmsg("Can't read DOS signature\n");
-	return -1;
+	return CL_EIO;
     }
 
     if(e_magic != IMAGE_DOS_SIGNATURE) {
@@ -288,26 +310,34 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
     cli_dbgmsg("NumberOfRvaAndSizes: %d\n", optional_hdr.NumberOfRvaAndSizes);
 
+    section_hdr = (struct pe_image_section_hdr *) cli_calloc(file_hdr.NumberOfSections, sizeof(struct pe_image_section_hdr));
+
+    if(!section_hdr) {
+	cli_dbgmsg("Can't allocate memory for section headers\n");
+	return CL_EMEM;
+    }
+
     for(i = 0; i < file_hdr.NumberOfSections; i++) {
 
-	if(read(desc, &section_hdr, sizeof(struct pe_image_section_hdr)) != sizeof(struct pe_image_section_hdr)) {
+	if(read(desc, &section_hdr[i], sizeof(struct pe_image_section_hdr)) != sizeof(struct pe_image_section_hdr)) {
 	    cli_dbgmsg("Can't read section header\n");
+	    free(section_hdr);
 	    return -1;
 	}
 
-	strncpy(sname, section_hdr.Name, 8);
+	strncpy(sname, section_hdr[i].Name, 8);
 	sname[8] = 0;
 	cli_dbgmsg("------------------------------------\n");
 	cli_dbgmsg("Section name: %s\n", sname);
-	cli_dbgmsg("VirtualSize: %d\n", section_hdr.VirtualSize);
-	cli_dbgmsg("VirtualAddress: 0x%x\n", section_hdr.VirtualAddress);
-	cli_dbgmsg("Section size: %d\n", section_hdr.SizeOfRawData);
-	cli_dbgmsg("PointerToRawData: 0x%x (%d)\n", section_hdr.PointerToRawData, section_hdr.PointerToRawData);
+	cli_dbgmsg("VirtualSize: %d\n", section_hdr[i].VirtualSize);
+	cli_dbgmsg("VirtualAddress: 0x%x\n", section_hdr[i].VirtualAddress);
+	cli_dbgmsg("Section size: %d\n", section_hdr[i].SizeOfRawData);
+	cli_dbgmsg("PointerToRawData: 0x%x (%d)\n", section_hdr[i].PointerToRawData, section_hdr[i].PointerToRawData);
 
-	if(section_hdr.Characteristics & 0x20) {
+	if(section_hdr[i].Characteristics & 0x20) {
 	    cli_dbgmsg("Section contains executable code\n");
 
-	    if(section_hdr.VirtualSize < section_hdr.SizeOfRawData) {
+	    if(section_hdr[i].VirtualSize < section_hdr[i].SizeOfRawData) {
 		cli_dbgmsg("Section contains free space\n");
 		/*
 		cli_dbgmsg("Dumping %d bytes\n", section_hdr.SizeOfRawData - section_hdr.VirtualSize);
@@ -317,7 +347,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    }
 	}
 
-	if(section_hdr.Characteristics & 0x20000000)
+	if(section_hdr[i].Characteristics & 0x20000000)
 	    cli_dbgmsg("Section's memory is executable\n");
 
 /*
@@ -333,15 +363,22 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
     if(fstat(desc, &sb) == -1) {
 	cli_dbgmsg("fstat failed\n");
+	free(section_hdr);
 	return -1;
     }
 
-    if(section_hdr.PointerToRawData + section_hdr.SizeOfRawData > sb.st_size) {
+    ep = cli_rawaddr(optional_hdr.AddressOfEntryPoint, section_hdr, file_hdr.NumberOfSections);
+
+    if(section_hdr[i].PointerToRawData + section_hdr[i].SizeOfRawData > sb.st_size || ep == -1) {
 	cli_warnmsg("Possibly broken PE file\n");
+	free(section_hdr);
 	return -1;
     }
+
+    cli_dbgmsg("EntryPoint: 0x%x (%d)\n", ep, ep);
 
     /* to be continued ... */
 
+    free(section_hdr);
     return 0;
 }
