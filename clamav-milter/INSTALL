@@ -45,6 +45,8 @@ FreeBSD. It comes with getopt.h which is handy. To link you need
 
 FreeBSD4.8: compiles out of the box with either gcc2.95 or gcc3
 
+NetBSD2.0: compiles out of the box
+
 OpenBSD3.4: the supplied sendmail does not come with Milter support.
 Do this *before* running configure (thanks for Per-Olov Sjöhol
 <peo_s@incedo.org> for these instructions).
