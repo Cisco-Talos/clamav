@@ -132,6 +132,8 @@ static	const	struct tableinit {
  * signal is received
  * TODO: add option to scan in memory not via temp files, perhaps with a
  * named pipe or memory mapped file?
+ * TODO: if debug is enabled, catch a segfault and dump the current e-mail
+ * in it's entirety, then call abort()
  */
 int
 cl_mbox(const char *dir, int desc)
@@ -913,22 +915,21 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 		blob *b;
 
 		/*
-		 * No attachements - look for a text that we can save to scan
+		 * No attachments - scan the text portions, often files
+		 * are hidden in HTML code
 		 */
 
 #ifdef	CL_DEBUG
 		cli_dbgmsg("%d multiparts found\n", multiparts);
 #endif
-		htmltextPart = getTextPart(messages, multiparts);
-
-		if(htmltextPart > 0) {
-			b = messageToBlob(messages[htmltextPart]);
+		for(i = 0; i < multiparts; i++) {
+			b = messageToBlob(messages[i]);
 
 			assert(b != NULL);
 
 #ifdef	CL_DEBUG
-			cli_dbgmsg("Found HTML part in %d, encoded with scheme %d\n",
-				htmltextPart, messageGetEncoding(messages[htmltextPart]));
+			cli_dbgmsg("Saving multipart %d, encoded with scheme %d\n",
+				i, messageGetEncoding(messages[i]));
 #endif
 
 			(void)saveFile(b, dir);
@@ -954,6 +955,9 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 			}
 
 			if(t_line != NULL) {
+				/*
+				 * Main part contains uuencoded section
+				 */
 				messageSetEncoding(mainMessage,	"x-uuencode");
 
 				if((b = messageToBlob(mainMessage)) != NULL) {
@@ -962,6 +966,19 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 
 						(void)saveFile(b, dir);
 					}
+					blobDestroy(b);
+				}
+			} else {
+				messageAddArgument(mainMessage, "filename=textportion");
+				if((b = messageToBlob(mainMessage)) != NULL) {
+					/*
+					 * Save main part to scan that
+					 */
+					cli_dbgmsg("Saving main message, encoded with scheme %d\n",
+						messageGetEncoding(mainMessage));
+
+					(void)saveFile(b, dir);
+
 					blobDestroy(b);
 				}
 			}
@@ -1356,3 +1373,4 @@ newMessageStart(const char *buf)
 
 	return FALSE;
 }
+

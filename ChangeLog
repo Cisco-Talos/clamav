@@ -1,3 +1,7 @@
+Wed Aug  6 23:20:08 CEST 2003
+-----------------------------
+  * libclamav: updated mbox code (Nigel)
+
 Wed Aug  6 03:01:51 CEST 2003
 -----------------------------
   * clamd: new directives: VirusAction, Debug
