@@ -26,10 +26,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdint.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <clamav.h>
+
+#include "cltypes.h"
 
 #define FALSE (0)
 #define TRUE (1)

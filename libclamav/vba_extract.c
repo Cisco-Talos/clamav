@@ -1,5 +1,5 @@
 /*
- *  Extract VBA source code for component MS Office Documents)
+ *  Extract VBA source code for component MS Office Documents
  *
  *  Copyright (C) 2004 trog@uncon.org
  *
@@ -26,7 +26,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <ctype.h>
 
@@ -175,15 +174,18 @@ vba_project_t *vba56_dir_read(const char *dir)
 	unsigned char fixed_octet[8] = { 0x06, 0x02, 0x01, 0x00, 0x08, 0x02, 0x00, 0x00 };
 
 
+	cli_dbgmsg("in vba56_dir_read()\n");
+
 	fullname = (char *) cli_malloc(strlen(dir) + 14);
 	sprintf(fullname, "%s/_VBA_PROJECT", dir);
         fd = open(fullname, O_RDONLY);
-	free(fullname);
 
         if (fd == -1) {
-                cli_errmsg("Open failed\n");
+                cli_dbgmsg("Can't open %s\n", fullname);
+		free(fullname);
                 return NULL;
         }
+	free(fullname);
 
 	if (vba_readn(fd, &magic, 2) != 2) {
 		return NULL;
@@ -202,7 +204,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 	}
 
 	if (i == NUM_VBA_VERSIONS) {
-		cli_errmsg("Unknown VBA version signature x0%x0x%x0x%x0x%x\n",
+		cli_dbgmsg("Unknown VBA version signature x0%x0x%x0x%x0x%x\n",
 			version[0], version[1], version[2], version[3]);
 		return NULL;
 	}

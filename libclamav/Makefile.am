@@ -74,6 +74,7 @@ libclamav_la_SOURCES = \
 	ole2_extract.c \
 	ole2_extract.h \
 	vba_extract.c \
-	vba_extract.h
+	vba_extract.h \
+	cltypes.h
 
 lib_LTLIBRARIES = libclamav.la

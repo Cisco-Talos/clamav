@@ -1,5 +1,5 @@
 /*
- *  Extract VBA source code for component MS Office Documents)
+ *  Extract VBA source code for component MS Office Documents
  *
  *  Copyright (C) 2004 trog@uncon.org
  *
@@ -23,10 +23,7 @@
 #ifndef __VBA_EXTRACT_H
 #define __VBA_EXTRACT_H
 
-#include <unistd.h>
-#include <sys/types.h>
-#include <stdint.h>
-#include <stdlib.h>
+#include "cltypes.h"
 
 typedef struct vba_project_tag {
 	int count;
