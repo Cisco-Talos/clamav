@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.128  2004/12/01 12:12:27  nigelhorne
+ * Part of rule 3 of paragraph 5.1 of RFC1521 was not being implemented
+ *
  * Revision 1.127  2004/11/30 12:03:57  nigelhorne
  * Handle unbalanced quote characters in headers better
  *
@@ -378,7 +381,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.127 2004/11/30 12:03:57 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.128 2004/12/01 12:12:27 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -394,7 +397,7 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.127 2004/11/30 12:03:57 nigelhor
 #endif
 #endif
 
-#if	C_DARWIN
+#ifdef	C_DARWIN
 #include <sys/types.h>
 #endif
 #include <stdlib.h>
@@ -611,7 +614,7 @@ messageSetMimeType(message *mess, const char *type)
 	typeval = tableFind(mime_table, type);
 
 	if(typeval != -1) {
-		mess->mimeType = typeval;
+		mess->mimeType = (mime_type)typeval;
 		return 1;
 	} else if(mess->mimeType == NOMIME) {
 		if(strncasecmp(type, "x-", 2) == 0)
@@ -2166,14 +2169,36 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 				break;
 			}
 
-			softbreak = FALSE;
-			while(*line) {
+			/*
+			 * Section 5.1 of RFC1521 states that any number of white
+			 * space characters may appear on the end of the line
+			 * before the final '=' which indicates a soft break.
+			 * This means that we have to do a look ahead here.
+			 */
+			p2 = strchr(line, '\0');
+			if(p2 == line) {	/* empty line */
+				*buf++ = '\n';
+				break;
+			}
+			if(*--p2 == '=') {
+				softbreak = TRUE;
+				do
+					--p2;
+				while(isspace(*p2) && (p2 > line));
+			} else
+				softbreak = FALSE;
+
+			/*
+			 * p2 now points to the last significant character on the line
+			 */
+			while(line <= p2) {
 				if(*line == '=') {
 					unsigned char byte;
 
 					if((*++line == '\0') || (*line == '\n')) {
-						softbreak = TRUE;
-						/* soft line break */
+						/* soft line break detected */
+						if(!softbreak)
+							cli_warnmsg("Unexpected soft line break\n");
 						break;
 					}
 
@@ -2330,9 +2355,9 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
 	unsigned char cb1, cb2, cb3;	/* carried over from last line */
 
 #ifdef	CL_DEBUG
-	cli_dbgmsg("decode %s (len %d isFast %d base64chars %d)\n", in,
+	/*cli_dbgmsg("decode %s (len %d isFast %d base64chars %d)\n", in,
 		in ? strlen(in) : 0,
-		isFast, m->base64chars);
+		isFast, m->base64chars);*/
 #endif
 
 	cb1 = cb2 = cb3 = '\0';
