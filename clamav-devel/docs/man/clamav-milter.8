@@ -141,9 +141,13 @@ Add a hard\-coded signature to each scanned file.
 Location of file to be appended to each scanned message. Overrides \-S.
 .TP
 \fB\-\-max\-children=n, \-m n\fR
-Maximum number of children.
+Set a hint of the maximum number of children. If the number is hit the
+maximum time a pending thread will be held up is 1 minute, so the number
+of threads can exceed this number for short periods of time.
 There is no default, if this argument is not \fBclamav\-milter\fR will
 spawn as many children as is necessary.
+.TP
+Most users will not need this option, if in doubt do not set it.
 .TP
 \fB\-\-template\-file=file \-t file\fR
 File points to a file whose contents is sent whenever a virus is intercepted.
