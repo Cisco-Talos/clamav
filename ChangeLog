@@ -1,3 +1,8 @@
+Wed Feb 16 00:28:23 CET 2005 (tk)
+---------------------------------
+  * clamd/clamuko.c: properly unregister with Dazuko (patch by John Ogness
+		     <jogness*antivir.de>)
+
 Mon Feb 14 00:46:16 CET 2005 (tk)
 ---------------------------------
   V 0.83
