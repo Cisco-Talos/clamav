@@ -165,7 +165,7 @@ void *threadwatcher(void *arg)
     } else
 	logg("Timeout set to %d seconds.\n", timeout);
 
-    if((cpt = cfgopt(thwarg->copt, "DataDirectory")))
+    if((cpt = cfgopt(thwarg->copt, "DatabaseDirectory")) || (cpt = cfgopt(thwarg->copt, "DataDirectory")))
 	dbdir = cpt->strarg;
     else
 	dbdir = cl_retdbdir();

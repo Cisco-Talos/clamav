@@ -19,18 +19,18 @@
 #ifndef __MANAGER_H
 #define __MANAGER_H
 
-#include "options.h"
+#include "cfgfile.h"
 #include "clamav.h"
 
-int downloadmanager(const struct optstruct *opt, const char *hostname);
+int downloadmanager(const struct cfgstruct *copt, const char *hostname);
 
-int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct optstruct *opt);
+int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt);
 
-int wwwconnect(const char *server, const char *proxy, char *ip);
+int wwwconnect(const char *server, const char *proxy, int pport, char *ip);
 
-struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostname, const char *proxy, const char *user);
+struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostname, const char *proxy, const char *user, const char *pass);
 
-int get_database(const char *dbfile, int socketfd, const char *file, const char *hostname, const char *proxy, const char *user);
+int get_database(const char *dbfile, int socketfd, const char *file, const char *hostname, const char *proxy, const char *user, const char *pass);
 
 unsigned int fmt_base64(char* dest,const char* src,unsigned int len);
 

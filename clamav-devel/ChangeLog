@@ -1,3 +1,10 @@
+Mon Dec 29 06:19:54 CET 2003 (tk)
+---------------------------------
+  * freshclam: it's now configurable via freshclam.conf (which may be merged
+	       with clamav.conf). The old command line options are accepted
+	       but most of them will have no effect. WARNING: Some things
+	       may be temporary broken.
+
 Sat Dec 27 17:29:30 GMT 2003 (njh)
 ----------------------------------
   * clamav-devel: Moved --sign data to private area

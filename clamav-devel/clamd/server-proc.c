@@ -113,7 +113,7 @@ int acceptloop_proc(int socketd, struct cl_node *root, const struct cfgstruct *c
     logg("Maximal number of childs: %d\n", childs);
     session = (int *) mcalloc(childs, sizeof(int));
 
-    if((cpt = cfgopt(copt, "DataDirectory")))
+    if((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory")))
 	dbdir = cpt->strarg;
     else
         dbdir = cl_retdbdir();

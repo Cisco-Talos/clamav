@@ -19,34 +19,12 @@
 #ifndef __FRESHCLAM_H
 #define __FRESHCLAM_H
 
-typedef struct _mirrors mirrors;
-
-struct _mirrors {
-
-    char * mirror;
-    mirrors *next;
-};
+#include "cfgfile.h"
 
 void help(void);
 void daemonize(void);
-int download(struct optstruct *opt);
-char * parse_mirror(struct optstruct *opt);
-mirrors* parse_mirrorcfg(struct optstruct *opt);
-void write_mirror(struct optstruct *opt, char *mirror);
+int download(const struct cfgstruct *copt);
 
 #define mexit(i)    exit(i)
-
-mirrors *n;
-#define FREE_MIRROR(m) \
-while(m) \
-{ \
-    n = m->next; \
-    if(m->mirror != NULL) \
-    { \
-        free(m->mirror); \
-    } \
-    free(m); \
-    m = n; \
-}
 
 #endif

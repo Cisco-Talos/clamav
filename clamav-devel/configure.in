@@ -196,7 +196,8 @@ AC_SUBST(CFGDIR)
 AC_DEFINE_UNQUOTED(CONFDIR,"$cfg_dir",)
 
 dnl Do not overwrite the current config file
-AM_CONDITIONAL(INSTALL_CONF, test ! -r "$cfg_dir/clamav.conf")
+AM_CONDITIONAL(INSTALL_CLAMAV_CONF, test ! -r "$cfg_dir/clamav.conf")
+AM_CONDITIONAL(INSTALL_FRESHCLAM_CONF, test ! -r "$cfg_dir/freshclam.conf")
 
 if test "$test_urandom" = "yes"
 then

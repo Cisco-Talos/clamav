@@ -47,7 +47,8 @@ int main(int argc, char **argv)
 	    {"log-verbose", 0, 0, 0},
 	    {"stdout", 0, 0, 0},
 	    {"daemon", 0, 0, 'd'},
-	    {"user", 1, 0, 'u'},
+	    {"user", 1, 0, 'u'}, /* not used */
+	    {"config-file", 1, 0, 'c'}, /* not used */
 	    {"checks", 1, 0, 'c'},
 	    {"http-proxy", 1, 0, 0},
 	    {"proxy-user", 1, 0, 0},

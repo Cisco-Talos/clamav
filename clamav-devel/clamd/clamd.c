@@ -70,7 +70,7 @@ void clamd(struct optstruct *opt)
 	cfgfile = CL_DEFAULT_CFG;
 
     if((copt = parsecfg(cfgfile)) == NULL) {
-	fprintf(stderr, "ERROR: Can't parse the config file %s\n", cfgfile);
+	fprintf(stderr, "ERROR: Can't open/parse the config file %s\n", cfgfile);
 	exit(1);
     }
 
@@ -170,7 +170,7 @@ void clamd(struct optstruct *opt)
 
     /* load the database(s) */
 
-    if((cpt = cfgopt(copt, "DataDirectory")))
+    if((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory")))
 	dbdir = cpt->strarg;
     else
 	dbdir = cl_retdbdir();

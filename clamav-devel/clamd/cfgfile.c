@@ -41,7 +41,7 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 	    {"LogFileUnlock", OPT_NOARG},
 	    {"LogFileMaxSize", OPT_COMPSIZE},
 	    {"LogTime", OPT_NOARG},
-	    {"LogVerbose", OPT_NOARG},
+	    {"LogVerbose", OPT_NOARG}, /* clamd + freshclam */
 	    {"LogSyslog", OPT_NOARG},
 	    {"PidFile", OPT_STR},
 	    {"MaxFileSize", OPT_COMPSIZE},
@@ -53,7 +53,8 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 	    {"ArchiveMaxFiles", OPT_NUM},
 	    {"ArchiveMaxCompressionRatio", OPT_NUM},
 	    {"ArchiveLimitMemoryUsage", OPT_NOARG},
-	    {"DataDirectory", OPT_STR},
+	    {"DataDirectory", OPT_STR}, /* obsolete */
+	    {"DatabaseDirectory", OPT_STR}, /* clamd + freshclam */
 	    {"TCPAddr", OPT_STR},
 	    {"TCPSocket", OPT_NUM},
 	    {"LocalSocket", OPT_STR},
@@ -81,12 +82,23 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 	    {"ClamukoExcludePath", OPT_STR},
 	    {"ClamukoMaxFileSize", OPT_COMPSIZE},
 	    {"ClamukoScanArchive", OPT_NOARG},
+	    {"DatabaseOwner", OPT_STR}, /* freshclam */
+	    {"Checks", OPT_NUM}, /* freshclam */
+	    {"UpdateLogFile", OPT_STR}, /* freshclam */
+	    {"DatabaseMirror", OPT_STR}, /* freshclam */
+	    {"MaxAttempts", OPT_NUM}, /* freshclam */
+	    {"HTTPProxyServer", OPT_STR}, /* freshclam */
+	    {"HTTPProxyPort", OPT_STR}, /* freshclam */
+	    {"HTTPProxyUsername", OPT_STR}, /* freshclam */
+	    {"HTTPProxyPassword", OPT_STR}, /* freshclam */
+	    {"NotifyClamd", OPT_OPTARG}, /* freshclam */
+	    {"OnUpdateExecute", OPT_FULLSTR}, /* freshclam */
+	    {"OnErrorExecute", OPT_FULLSTR}, /* freshclam */
 	    {0, 0}
 	};
 
 
     if((fs = fopen(cfgfile, "r")) == NULL) {
-	fprintf(stderr, "ERROR: Can't open config file %s !\n", cfgfile);
 	return NULL;
     }
 

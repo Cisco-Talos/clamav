@@ -17,12 +17,14 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-EXTRA_DIST = clamav.conf
+EXTRA_DIST = clamav.conf freshclam.conf
 CFGINST = @CFGDIR@
  
-if INSTALL_CONF
-
 install:
 	$(mkinstalldirs) $(DESTDIR)$(CFGINST)
+if INSTALL_CLAMAV_CONF
 	@$(INSTALL_DATA) clamav.conf $(DESTDIR)$(CFGINST)
+endif
+if INSTALL_FRESHCLAM_CONF
+	@$(INSTALL_DATA) freshclam.conf $(DESTDIR)$(CFGINST)
 endif
