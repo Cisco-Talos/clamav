@@ -1,3 +1,11 @@
+Wed Apr 21 16:28:49 BST 2004 (njh)
+----------------------------------
+ * clamav-milter: If /dev/console fails to open, open /dev/null instead on fds 1
+ 			and 2
+		TCP_WRAPPERS code now uses inet_ntop()
+		Simplify virus string
+		Sort out tabs in the hard coded e-mail message
+
 Wed Apr 21 09:10:07 BST 2004 (trog)
 -----------------------------------
   * libclamav/vba_extract.c: Add another Office2000 signature
