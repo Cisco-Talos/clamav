@@ -1,3 +1,9 @@
+Mon Dec 27 05:12:29 CET 2004 (tk)
+---------------------------------
+  * freshclam/manager.c: Remove "Cache-Control: no-cache" from remote_cvdhead()
+			 Users behind proxies should only use the DNS method
+			 (now default, hardcoded)
+
 Mon Dec 27 05:01:54 CET 2004 (tk)
 ---------------------------------
   * freshclam/manager.c: use If-Modified-Since in --no-dns mode (based on code
