@@ -32,6 +32,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <sys/socket.h>
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -331,4 +332,46 @@ int poll_fd(int fd, int timeout_sec)
 #endif
 
     return -1;
+}
+
+int is_fd_connected(int fd)
+{
+#ifdef HAVE_POLL
+	struct pollfd poll_data[1];
+
+    poll_data[0].fd = fd;
+    poll_data[0].events = POLLIN;
+    poll_data[0].revents = 0;
+
+    if (poll(poll_data, 1, 0) == -1) {
+	return 1;
+    }
+    if (poll_data[0].revents & POLLHUP) {
+	return 0;
+    }
+    return 1;
+
+#else
+	fd_set rfds;
+	struct timeval tv;
+	char buff[1];
+
+    if (fd >= DEFAULT_FD_SETSIZE) {
+        return 1;
+    }
+
+    FD_ZERO(&rfds);
+    FD_SET(fd, &rfds);
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
+    if (select(fd+1, &rfds, NULL, NULL, &tv) <= 0) {
+	return 1;
+    }
+    if (FD_ISSET(fd, &rfds)) {
+	if (recv(fd, buff, 1, MSG_PEEK) != 1) {
+	    return 0;
+	}
+    }
+    return 1;
+#endif
 }

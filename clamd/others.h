@@ -38,6 +38,7 @@ const char *logfile;
 int logg(const char *str, ...);
 void logg_close(void);
 int poll_fd(int fd, int timeout_sec);
+int is_fd_connected(int fd);
 
 #if defined(CLAMD_USE_SYSLOG) && !defined(C_AIX)
 short use_syslog;
