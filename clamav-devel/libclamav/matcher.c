@@ -193,6 +193,32 @@ void cl_freetrie(struct cl_node *root)
     free(root);
 }
 
+int inline cli_findpos(const char *buffer, int offset, int length, const struct cli_patt *pattern)
+{
+	int bufferpos = offset + CL_MIN_LENGTH;
+	int postfixend = offset + length;
+	unsigned int i;
+
+    if (bufferpos >= length)
+	bufferpos %= length;
+
+    for(i = CL_MIN_LENGTH; i < pattern->length; i++) {
+
+	if(bufferpos == postfixend)
+	    return 0;
+
+	if(pattern->pattern[i] != CLI_IGN && (char) pattern->pattern[i] != buffer[bufferpos])
+	    return 0;
+
+	bufferpos++;
+
+	if (bufferpos == length)
+	    bufferpos = 0;
+    }
+
+    return 1;
+}
+
 int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *partcnt)
 {
 	struct cl_node *current;
@@ -256,27 +282,4 @@ int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, c
 
     free(partcnt);
     return ret;
-}
-
-int cli_findpos(const char *buffer, int offset, int length, const struct cli_patt *pattern)
-{
-	int bufferpos = offset + CL_MIN_LENGTH;
-	int postfixend = offset + length;
-	unsigned int i;
-
-
-    for(i = CL_MIN_LENGTH; i < pattern->length; i++) {
-
-	bufferpos %= length;
-
-	if(bufferpos == postfixend)
-	    return 0;
-
-	if(pattern->pattern[i] != CLI_IGN && (char) pattern->pattern[i] != buffer[bufferpos])
-	    return 0;
-
-	bufferpos++;
-    }
-
-    return 1;
 }
