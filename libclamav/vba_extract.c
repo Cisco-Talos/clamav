@@ -757,7 +757,7 @@ static int ppt_unlzw(const char *dir, int fd, uint32_t length)
 	stream.next_in = inbuff;
 	bufflen = stream.avail_in = MIN(length, PPT_LZW_BUFFSIZE);
 	
-	if (cli_readn(fd, inbuff, stream.avail_in) != stream.avail_in) {
+	if (cli_readn(fd, inbuff, stream.avail_in) != (int64_t)stream.avail_in) {
 		close(ofd);
 		return FALSE;
 	}
@@ -785,7 +785,7 @@ static int ppt_unlzw(const char *dir, int fd, uint32_t length)
 		if (stream.avail_in == 0) {
 			stream.next_in = inbuff;
 			bufflen = stream.avail_in = MIN(length, PPT_LZW_BUFFSIZE);
-			if (cli_readn(fd, inbuff, stream.avail_in) != stream.avail_in) {
+			if (cli_readn(fd, inbuff, stream.avail_in) != (int64_t)stream.avail_in) {
 				close(ofd);
 				inflateEnd(&stream);
 				return FALSE;
@@ -795,7 +795,7 @@ static int ppt_unlzw(const char *dir, int fd, uint32_t length)
 		retval = inflate(&stream, Z_NO_FLUSH);
 	} while (retval == Z_OK);
 	
-	if (cli_writen(ofd, outbuff, bufflen) != bufflen) {
+	if (cli_writen(ofd, outbuff, bufflen) != (int64_t)bufflen) {
 		close(ofd);
 		inflateEnd(&stream);
 		return FALSE;
@@ -853,7 +853,7 @@ static char *ppt_stream_iter(int fd)
 		} else {
 			offset = lseek(fd, 0, SEEK_CUR);
 			/* Check we don't wrap */
-			if ((offset + atom_header.length) < offset) {
+			if ((offset + (off_t)atom_header.length) < offset) {
 				break;
 			}
 			offset += atom_header.length;
@@ -1470,7 +1470,7 @@ vba_project_t *wm_dir_read(const char *dir)
 	}
 	wm_print_fib(&fib);
 	
-	if (lseek(fd, fib.macro_offset, SEEK_SET) != fib.macro_offset) {
+	if (lseek(fd, fib.macro_offset, SEEK_SET) != (int64_t)fib.macro_offset) {
 		cli_dbgmsg("lseek macro_offset failed\n");
 		close(fd);
 		return NULL;
@@ -1611,7 +1611,7 @@ unsigned char *wm_decrypt_macro(int fd, uint32_t offset, uint32_t len,
 	unsigned char *buff;
 	uint32_t i;
 	
-	if (lseek(fd, offset, SEEK_SET) != offset) {
+	if (lseek(fd, offset, SEEK_SET) != (int64_t)offset) {
 		return NULL;
 	}
 	buff = (unsigned char *) cli_malloc(len);
@@ -1619,7 +1619,7 @@ unsigned char *wm_decrypt_macro(int fd, uint32_t offset, uint32_t len,
 		return NULL;
 	}
 
-	if (cli_readn(fd, buff, len) != len) {
+	if (cli_readn(fd, buff, len) != (int64_t)len) {
 		free(buff);
 		return NULL;
 	}

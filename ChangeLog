@@ -1,3 +1,11 @@
+Fri Mar 18 13:48:40 GMT 2005 (trog)
+-----------------------------------
+  * clamd/scanner.c: fix ports scan loop
+
+  * clamd/server-th.c, libclamav/vba_extract.c, libclamav/special.c,
+	libclamav/chmunpack.c, libclamav/ole2_extract.c:
+		Fix compiler warnings.
+
 Fri Mar 18 12:46:49 CET 2005 (tk)
 ---------------------------------
   * update copyright information

@@ -325,7 +325,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	max_port = 2048;
 
     /* bind to a free port */
-    while(!bound && portscan--) {
+    while(!bound && --portscan) {
 	if(rnd_port_first) {
 	    /* try a random port first */
 	    port = min_port + cli_rndnum(max_port - min_port + 1);
