@@ -124,6 +124,9 @@ int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virnam
 	char prefix;
 
 
+    if(!root->bm_shift)
+	return CL_CLEAN;
+
     if(length < BM_MIN_LENGTH)
 	return CL_CLEAN;
 

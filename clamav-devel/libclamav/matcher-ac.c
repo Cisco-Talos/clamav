@@ -269,10 +269,8 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
         unsigned int i;
 
 
-    if(!root->ac_root) {
-	cli_dbgmsg("cli_ac_scanbuff: Pattern matcher not initialised\n");
+    if(!root->ac_root)
 	return CL_CLEAN;
-    }
 
     if(!partcnt || !partoff) {
 	cli_dbgmsg("cli_ac_scanbuff(): partcnt == NULL || partoff == NULL\n");

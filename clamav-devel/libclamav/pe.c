@@ -299,17 +299,16 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr.NumberOfRvaAndSizes));
     cli_dbgmsg("------------------------------------\n");
 
+    if(fstat(desc, &sb) == -1) {
+	cli_dbgmsg("fstat failed\n");
+	return CL_EIO;
+    }
+
     section_hdr = (struct pe_image_section_hdr *) cli_calloc(nsections, sizeof(struct pe_image_section_hdr));
 
     if(!section_hdr) {
 	cli_dbgmsg("Can't allocate memory for section headers\n");
 	return CL_EMEM;
-    }
-
-    if(fstat(desc, &sb) == -1) {
-	cli_dbgmsg("fstat failed\n");
-	free(section_hdr);
-	return CL_EIO;
     }
 
     for(i = 0; i < nsections; i++) {
@@ -1181,4 +1180,133 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
     free(section_hdr);
     return CL_CLEAN;
+}
+
+int cli_peheader(int desc, struct cli_pe_info **peinfo)
+{
+	uint16_t e_magic; /* DOS signature ("MZ") */
+	uint32_t e_lfanew; /* address of new exe header */
+	struct pe_image_file_hdr file_hdr;
+	struct pe_image_optional_hdr optional_hdr;
+	struct pe_image_section_hdr *section_hdr;
+	struct stat sb;
+	struct cli_pe_info *info;
+	int i;
+
+
+    cli_dbgmsg("in cli_peheader\n");
+
+    if(read(desc, &e_magic, sizeof(e_magic)) != sizeof(e_magic)) {
+	cli_dbgmsg("Can't read DOS signature\n");
+	return -1;
+    }
+
+    if(EC16(e_magic) != IMAGE_DOS_SIGNATURE && EC16(e_magic) != IMAGE_DOS_SIGNATURE_OLD) {
+	cli_dbgmsg("Invalid DOS signature\n");
+	return -1;
+    }
+
+    lseek(desc, 58, SEEK_CUR); /* skip to the end of the DOS header */
+
+    if(read(desc, &e_lfanew, sizeof(e_lfanew)) != sizeof(e_lfanew)) {
+	cli_dbgmsg("Can't read new header address\n");
+	/* truncated header? */
+	return -1;
+    }
+
+    e_lfanew = EC32(e_lfanew);
+    if(!e_lfanew) {
+	cli_dbgmsg("Not a PE file\n");
+	return -1;
+    }
+
+    if(lseek(desc, e_lfanew, SEEK_SET) < 0) {
+	/* probably not a PE file */
+	cli_dbgmsg("Can't lseek to e_lfanew\n");
+	return -1;
+    }
+
+    if(read(desc, &file_hdr, sizeof(struct pe_image_file_hdr)) != sizeof(struct pe_image_file_hdr)) {
+	/* bad information in e_lfanew - probably not a PE file */
+	cli_dbgmsg("Can't read file header\n");
+	return -1;
+    }
+
+    if(EC32(file_hdr.Magic) != IMAGE_NT_SIGNATURE) {
+	cli_dbgmsg("Invalid PE signature (probably NE file)\n");
+	return -1;
+    }
+
+    if(EC16(file_hdr.SizeOfOptionalHeader) != sizeof(struct pe_image_optional_hdr)) {
+	cli_warnmsg("Broken PE header detected.\n");
+	return -1;
+    }
+
+    if(!(info = cli_calloc(1, sizeof(struct cli_pe_info)))) {
+	cli_dbgmsg("Can't alloc memory\n");
+	return -1;
+    }
+
+    info->nsections = EC16(file_hdr.NumberOfSections);
+
+    if(read(desc, &optional_hdr, sizeof(struct pe_image_optional_hdr)) != sizeof(struct pe_image_optional_hdr)) {
+	cli_dbgmsg("Can't optional file header\n");
+	free(info);
+	return -1;
+    }
+
+    info->section = (struct SECTION *) cli_calloc(info->nsections, sizeof(struct SECTION));
+
+    if(!info->section) {
+	cli_dbgmsg("Can't allocate memory for section headers\n");
+	free(info);
+	return -1;
+    }
+
+    if(fstat(desc, &sb) == -1) {
+	cli_dbgmsg("fstat failed\n");
+	free(info->section);
+	free(info);
+	return -1;
+    }
+
+    section_hdr = (struct pe_image_section_hdr *) cli_calloc(info->nsections, sizeof(struct pe_image_section_hdr));
+
+    if(!section_hdr) {
+	cli_dbgmsg("Can't allocate memory for section headers\n");
+	free(info->section);
+	free(info);
+	return -1;
+    }
+
+    for(i = 0; i < info->nsections; i++) {
+
+	if(read(desc, &section_hdr[i], sizeof(struct pe_image_section_hdr)) != sizeof(struct pe_image_section_hdr)) {
+	    cli_dbgmsg("Can't read section header\n");
+	    cli_dbgmsg("Possibly broken PE file\n");
+	    free(section_hdr);
+	    free(info->section);
+	    free(info);
+	    return -1;
+	}
+
+	info->section[i].rva = EC32(section_hdr[i].VirtualAddress);
+	info->section[i].vsz = EC32(section_hdr[i].VirtualSize);
+	info->section[i].raw = EC32(section_hdr[i].PointerToRawData);
+	info->section[i].rsz = EC32(section_hdr[i].SizeOfRawData);
+
+    }
+
+    if((info->ep = cli_rawaddr(EC32(optional_hdr.AddressOfEntryPoint), section_hdr, info->nsections)) == -1) {
+	cli_dbgmsg("Possibly broken PE file\n");
+	free(section_hdr);
+	free(info->section);
+	free(info);
+	return -1;
+    }
+
+    free(section_hdr);
+    *peinfo = info;
+
+    return 0;
 }
