@@ -1,3 +1,7 @@
+Wed Apr  6 16:11:50 CEST 2005 (tk)
+----------------------------------
+  * libclamav/readdb.c: initialise refcount in cli_loadmd()
+
 Tue Apr  5 14:27:32 BST 2005 (trog)
 -----------------------------------
   * libclamav/vba_extract.c: fix possible crash
