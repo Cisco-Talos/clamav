@@ -1,3 +1,7 @@
+Tue Mar 30 08:40:10 BST 2004 (trog)
+-----------------------------------
+  * clamav.conf, shared/cfgparser.c: recognise ReadTimeout option
+
 Mon Mar 29 18:11:08 CEST 2004 (tk)
 ----------------------------------
   * shared/output.c: don't try to unlock free mutex (bug reported

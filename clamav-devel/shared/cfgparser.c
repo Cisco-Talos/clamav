@@ -80,7 +80,7 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 	    {"StreamSaveToDisk", OPT_NOARG},
 	    {"StreamMaxLength", OPT_COMPSIZE},
 	    {"MaxThreads", OPT_NUM},
-	    {"ThreadTimeout", OPT_NUM},
+	    {"ReadTimeout", OPT_NUM},
 	    {"MaxDirectoryRecursion", OPT_NUM},
 	    {"FollowDirectorySymlinks", OPT_NOARG},
 	    {"FollowFileSymlinks", OPT_NOARG},
