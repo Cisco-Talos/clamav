@@ -1,3 +1,8 @@
+Sun Feb 13 10:55:35 CET 2005 (tk)
+---------------------------------
+  * freshclam: add support for Foreground (requested by Jeremy Kitchen
+	       <kitchen*scriptkitchen.com>)
+
 Sun Feb 13 09:32:51 GMT 2005 (njh)
 ----------------------------------
   * libclamav/message.c:	Some files wouldn't uudecode correctly (reported
