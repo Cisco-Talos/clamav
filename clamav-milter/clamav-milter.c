@@ -39,10 +39,15 @@
  *	chown clamav /var/run/clamav	(if you use User clamav in clamav.conf)
  *	chmod 700 /var/run/clamav
  *
+ * If you see an unsafe socket error from sendmail, it means that the
+ * permissions of the /var/run/clamav directory are too open. Check you have
+ * correctly run chown and chmod.
+ *
  * The above example shows clamav-milter, clamd and sendmail all on the
  * same machine, however using TCP they may reside on different machines,
  * indeed clamav-milter is capable of talking to multiple clamds for redundancy
  * and load balancing.
+ *
  * 5) You may find INPUT_MAIL_FILTERS is not needed on your machine, however it
  * is recommended by the Sendmail documentation and I suggest going along
  * with that.
@@ -343,7 +348,7 @@
  *			Sort out tabs in the hard coded e-mail message
  *	0.70q	22/4/04	No need to parse the received line if --headers is
  *				given
- *			If -outgoing is given put generated emails in the
+ *			If --outgoing is given put generated emails in the
  *				deferred queue to avoid the milter being called
  *			twice at the same time (one on the incoming one on the
  *				outgoing)
@@ -354,9 +359,15 @@
  *				can be reached (used to fail if any one server
  *				could not be reached)
  *			Not all servers were load balanced
+ *	0.70r	23/4/04	Ensure only From lines are escaped
+ *			Also defer generated emails if --force-scan is given
+ *			Better subject for quarantine e-mails
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.82  2004/04/23 09:13:30  nigelhorne
+ * Better quarantine email subject
+ *
  * Revision 1.81  2004/04/22 16:47:04  nigelhorne
  * Various changes
  *
@@ -585,9 +596,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.81 2004/04/22 16:47:04 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.82 2004/04/23 09:13:30 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70q"
+#define	CM_VERSION	"0.70r"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1547,10 +1558,10 @@ findServer(void)
 		if((connect(sock, (struct sockaddr *)server, sizeof(struct sockaddr)) < 0) ||
 		   (send(sock, "PING\n", 5, 0) < 5)) {
 			const char *hostname = cli_strtok(serverHostNames, i, ":");
-			cli_warnmsg("findServer: Check clamd server %s - it may be down\n", hostname);
+			cli_warnmsg("Check clamd server %s - it may be down\n", hostname);
 			if(use_syslog)
 				syslog(LOG_WARNING,
-					"findServer: Check clamd server %s - it may be down",
+					"Check clamd server %s - it may be down",
 					hostname);
 			socks[i] = -1;
 			close(sock);
@@ -1586,7 +1597,7 @@ findServer(void)
 	} else if(retval < 0) {
 		free(socks);
 		if(use_syslog)
-			syslog(LOG_ERR, "findServer: select failed\n");
+			syslog(LOG_ERR, "findServer: select failed");
 		return 0;
 	}
 
@@ -1998,7 +2009,7 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 				const char *sendmailId = smfi_getsymval(ctx, "i");
 				if(sendmailId == NULL)
 					sendmailId = "Unknown";
-				syslog(LOG_NOTICE, "%s: Message more than StreamMaxLength (%ld) bytes - not scanned\n",
+				syslog(LOG_NOTICE, "%s: Message more than StreamMaxLength (%ld) bytes - not scanned",
 					sendmailId, streamMaxLength);
 			}
 			clamfi_cleanup(ctx);	/* not needed, but just to be safe */
@@ -2122,7 +2133,7 @@ clamfi_eom(SMFICTX *ctx)
 			 * Clamd has stopped on StreamMaxLength before us
 			 */
 			if(use_syslog)
-				syslog(LOG_NOTICE, "%s: Message more than StreamMaxLength (%ld) bytes - not scanned\n",
+				syslog(LOG_NOTICE, "%s: Message more than StreamMaxLength (%ld) bytes - not scanned",
 					sendmailId, streamMaxLength);
 			clamfi_cleanup(ctx);	/* not needed, but just to be safe */
 			return SMFIS_ACCEPT;
@@ -2237,7 +2248,8 @@ clamfi_eom(SMFICTX *ctx)
 			 * not at the same time as the incoming message
 			 */
 			snprintf(cmd, sizeof(cmd) - 1,
-				(oflag) ? "%s -t -odq" : "%s -t", SENDMAIL_BIN);
+				(oflag || fflag) ? "%s -t -odq" : "%s -t",
+				SENDMAIL_BIN);
 
 			sendmail = popen(cmd, "w");
 
@@ -2346,16 +2358,25 @@ clamfi_eom(SMFICTX *ctx)
 			}
 			free(privdata->to);
 			privdata->to = NULL;
+			/*
+			 * NOTE: on a closed relay this will not work
+			 * if the recipient is a remote address
+			 */
 			if(smfi_addrcpt(ctx, quarantine) == MI_FAILURE) {
 				if(use_syslog)
 					syslog(LOG_DEBUG, "Can't set quarantine user %s", quarantine);
 				else
 					cli_warnmsg("Can't set quarantine user %s\n", quarantine);
-			} else
+			} else {
+				char subject[128];
+
 				/*
 				 * FIXME: doesn't work if there's no subject
 				 */
-				smfi_chgheader(ctx, "Subject", 1, mess);
+				snprintf(subject, sizeof(subject) - 1,
+					"[Virus] %s", virusname);
+				smfi_chgheader(ctx, "Subject", 1, subject);
+			}
 		} else if(rejectmail)
 			rc = SMFIS_REJECT;	/* Delete the e-mail */
 		else
@@ -2646,7 +2667,7 @@ updateSigFile(void)
 	if(stat(sigFilename, &statb) < 0) {
 		perror(sigFilename);
 		if(use_syslog)
-			syslog(LOG_ERR, "Can't stat %s\n", sigFilename);
+			syslog(LOG_ERR, "Can't stat %s", sigFilename);
 		return 0;
 	}
 
@@ -2657,7 +2678,7 @@ updateSigFile(void)
 	if(fd < 0) {
 		perror(sigFilename);
 		if(use_syslog)
-			syslog(LOG_ERR, "Can't open %s\n", sigFilename);
+			syslog(LOG_ERR, "Can't open %s", sigFilename);
 		return 0;
 	}
 
@@ -2733,7 +2754,7 @@ header_list_print(header_list_t list, FILE *fp)
 	const struct header_node_t *iter;
 
 	for(iter = list->first; iter; iter = iter->next) {
-		if(strncmp(iter->header, "From", 4) == 0)
+		if(strncmp(iter->header, "From ", 5) == 0)
 			putc('>', fp);
 		fprintf(fp, "%s\n", iter->header);
 	}
@@ -2973,7 +2994,7 @@ checkClamd(void)
 	if(fd < 0) {
 		perror(pidFile);
 		if(use_syslog)
-			syslog(LOG_ERR, "Can't open %s\n", pidFile);
+			syslog(LOG_ERR, "Can't open %s", pidFile);
 		return;
 	}
 	nbytes = read(fd, buf, sizeof(buf) - 1);
@@ -2982,7 +3003,7 @@ checkClamd(void)
 	pid = atoi(buf);
 	if((kill(pid, 0) < 0) && (errno == ESRCH)) {
 		if(use_syslog)
-			syslog(LOG_ERR, "Clamd (pid %d) seems to have died\n",
+			syslog(LOG_ERR, "Clamd (pid %d) seems to have died",
 				pid);
 		perror("clamd");
 	}
@@ -3008,7 +3029,7 @@ sendtemplate(const char *filename, FILE *sendmail, const char *clamdMessage)
 	if(fin == NULL) {
 		perror(filename);
 		if(use_syslog)
-			syslog(LOG_ERR, "Can't open e-mail template file %s\n",
+			syslog(LOG_ERR, "Can't open e-mail template file %s",
 				filename);
 		return -1;
 	}
@@ -3017,7 +3038,7 @@ sendtemplate(const char *filename, FILE *sendmail, const char *clamdMessage)
 		/* File disappeared in race condition? */
 		perror(filename);
 		if(use_syslog)
-			syslog(LOG_ERR, "Can't stat e-mail template file %s\n",
+			syslog(LOG_ERR, "Can't stat e-mail template file %s",
 				filename);
 		fclose(fin);
 		return -1;
@@ -3025,7 +3046,7 @@ sendtemplate(const char *filename, FILE *sendmail, const char *clamdMessage)
 	buf = cli_malloc(statb.st_size + 1);
 	if(buf == NULL) {
 		if(use_syslog)
-			syslog(LOG_ERR, "Out of memory\n");
+			syslog(LOG_ERR, "Out of memory");
 		fclose(fin);
 		return -1;
 	}
