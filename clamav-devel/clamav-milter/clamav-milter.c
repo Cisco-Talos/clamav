@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.145  2004/10/30 06:49:08  nigelhorne
+ * Fix crash when a server can't be contacted
+ *
  * Revision 1.144  2004/10/29 18:09:14  nigelhorne
  * Fix X-VIRUS-STATUS deletion
  *
@@ -443,9 +446,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.144 2004/10/29 18:09:14 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.145 2004/10/30 06:49:08 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80m"
+#define	CM_VERSION	"0.80n"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1801,7 +1804,7 @@ findServer(void)
 		perror("pthread_cond_broadcast");
 
 	pthread_mutex_lock(&sstatus_mutex);
-	for(; i < max_children; i++)
+	for(i = 0; i < max_children; i++)
 		if(cmdSocketsStatus[i] == CMDSOCKET_FREE) {
 			cmdSocketsStatus[i] = CMDSOCKET_INUSE;
 			pthread_mutex_unlock(&sstatus_mutex);

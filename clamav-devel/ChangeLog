@@ -1,3 +1,8 @@
+Sat Oct 30 07:50:33 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Fix possible crash when one or more servers can't be
+				contacted
+
 Fri Oct 29 19:11:07 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Fix problem with deleting X-VIRUS-STATUS not setting
