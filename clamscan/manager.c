@@ -64,7 +64,7 @@ dev_t procdev;
 int scanmanager(const struct optstruct *opt)
 {
 	mode_t fmode;
-	int ret = 0, compression = 0, fmodeint, options = 0;
+	int ret = 0, compression = 0, fmodeint, options = 0, i;
 	struct cl_node *trie = NULL;
 	struct cl_limits *limits = NULL;
 	struct passwd *user = NULL;
@@ -117,7 +117,6 @@ int scanmanager(const struct optstruct *opt)
 	}
 
     }
-
 
     if(!trie) {
 	mprintf("@Can't initialize the virus database.\n");
@@ -221,17 +220,24 @@ int scanmanager(const struct optstruct *opt)
 	ret = checkstdin(trie, limits, options);
 
     } else {
-	int x;
 	char *thefilename;
-	for (x=0; (thefilename = cli_strtok(opt->filename, x, "\t")) != NULL; x++) {
+	for (i = 0; (thefilename = cli_strtok(opt->filename, i, "\t")) != NULL; i++) {
 	    if((fmodeint = fileinfo(thefilename, 2)) == -1) {
 		mprintf("@Can't access file %s\n", thefilename);
 		perror(thefilename);
 		ret = 56;
 	    } else {
+		int slash = 1;
+		for(i = strlen(thefilename) - 1; i > 0 && slash; i--) {
+		    if(thefilename[i] == '/')
+			thefilename[i] = 0;
+		    else
+			slash = 0;
+		}
+
 		fmode = (mode_t) fmodeint;
 
-		if(compression && (strlen(thefilename) < 2 || (thefilename[0] != '/' && thefilename[0] != '\\' && thefilename[1] != ':'))) {
+		if(compression && (thefilename[0] != '/' && thefilename[0] != '\\' && thefilename[1] != ':')) {
 		    /* we need to complete the path */
 		    if(!getcwd(cwd, sizeof(cwd))) {
 			mprintf("@Can't get absolute pathname of current working directory.\n");
@@ -247,7 +253,7 @@ int scanmanager(const struct optstruct *opt)
 			mprintf("*Full path: %s\n", fullpath);
 		    }
 		} else
-		    fullpath = (char *) thefilename;
+		    fullpath = thefilename;
 
 		switch(fmode & S_IFMT) {
 		    case S_IFREG:
@@ -263,7 +269,7 @@ int scanmanager(const struct optstruct *opt)
 			ret = 52;
 		}
 
-		if(compression && (strlen(thefilename) < 2 || (thefilename[0] != '/' && thefilename[0] != '\\' && thefilename[1] != ':'))) {
+		if(compression && (thefilename[0] != '/' && thefilename[0] != '\\' && thefilename[1] != ':')) {
 		    free(fullpath);
 		    fullpath = NULL;
 		}
