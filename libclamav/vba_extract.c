@@ -205,8 +205,8 @@ static int vba_read_project_strings(int fd, int is_mac)
 		   Type 'C' entries come in pairs, the second also
 		   having a 12 byte trailer */
 		/* TODO: Need to check if types H(same as G) and D(same as C) exist */
-		if (!strncmp ("*\\G", name, 3) || !strncmp ("*\\H", name, 3)
-			 	|| !strncmp("*\\C", name, 3) || !strncmp("*\\D", name, 3)) {
+		if (name && (!strncmp ("*\\G", name, 3) || !strncmp ("*\\H", name, 3)
+			 	|| !strncmp("*\\C", name, 3) || !strncmp("*\\D", name, 3))) {
 			if (cli_readn(fd, &length, 2) != 2) {
 				return FALSE;
 			}
