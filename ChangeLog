@@ -1,3 +1,12 @@
+Sun Jan 30 15:18:02 GMT 2005 (njh)
+----------------------------------
+  * clamav-milter:	SESSION is on now by default, to test clamd
+			PACKADDR is now uses unsinged to remove warning on
+				Sun's C compiler, patch by
+				"Dugal James P." <jpd@louisiana.edu>
+			Don't check compatibility with sendmail.cf if sendmail
+				is running on a different machine
+
 Fri Jan 28 22:44:17 CET 2005 (tk)
 ---------------------------------
   * docs/MacOSX: updated (Dale Enterprise L.L.C)
