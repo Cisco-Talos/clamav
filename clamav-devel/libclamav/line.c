@@ -16,12 +16,15 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: line.c,v $
+ * Revision 1.2  2004/08/21 11:57:57  nigelhorne
+ * Use line.[ch]
+ *
  * Revision 1.1  2004/08/20 11:58:20  nigelhorne
  * First draft
  *
  */
 
-static	char	const	rcsid[] = "$Id: line.c,v 1.1 2004/08/20 11:58:20 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: line.c,v 1.2 2004/08/21 11:57:57 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -33,16 +36,17 @@ static	char	const	rcsid[] = "$Id: line.c,v 1.1 2004/08/20 11:58:20 nigelhorne Ex
 #include "line.h"
 #include "others.h"
 
+#ifdef	OLD
 line_t *
 lineCreate(const char *data)
 {
-	line_t *ret = cli_malloc(sizeof(struct line));
+	line_t *ret = (line_t *)li_malloc(sizeof(struct line));
 
 	if(ret == NULL)
 		return NULL;
 
-	ret->l_data = strdup(data);
-	if(ret->l_data == NULL) {
+	ret->l_str = strdup(data);
+	if(ret->l_str == NULL) {
 		free(ret);
 		return NULL;
 	}
@@ -61,8 +65,10 @@ lineLink(line_t *line)
 line_t *
 lineUnlink(line_t *line)
 {
+	/*printf("%d:\n\t'%s'\n", line->l_refs, line->l_str);*/
+
 	if(--line->l_refs == 0) {
-		free(line->l_data);
+		free(line->l_str);
 		free(line);
 		return NULL;
 	}
@@ -72,5 +78,49 @@ lineUnlink(line_t *line)
 const char *
 lineGetData(const line_t *line)
 {
-	return line ? line->l_data : NULL;
+	return line ? line->l_str : NULL;
 }
+#else
+line_t *
+lineCreate(const char *data)
+{
+	line_t *ret = (line_t *)cli_malloc(strlen(data) + 2);
+
+	if(ret == NULL)
+		return NULL;
+
+	ret[0] = (char)1;
+	strcpy(&ret[1], data);
+
+	return ret;
+}
+
+line_t *
+lineLink(line_t *line)
+{
+	if(line[0] == 127) {
+		cli_warnmsg("lineLink: linkcount too large\n");
+		return NULL;
+	}
+	line[0]++;
+	return line;
+}
+
+line_t *
+lineUnlink(line_t *line)
+{
+	/*printf("%d:\n\t'%s'\n", (int)line[0], &line[1]);*/
+
+	if(--line[0] == 0) {
+		free(line);
+		return NULL;
+	}
+	return line;
+}
+
+const char *
+lineGetData(const line_t *line)
+{
+	return line ? &line[1] : NULL;
+}
+#endif

@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.108  2004/08/21 11:57:57  nigelhorne
+ * Use line.[ch]
+ *
  * Revision 1.107  2004/08/20 04:55:07  nigelhorne
  * FOLLOWURL
  *
@@ -309,7 +312,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.107 2004/08/20 04:55:07 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.108 2004/08/21 11:57:57 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -347,6 +350,7 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.107 2004/08/20 04:55:07 nigelhorne 
 #include "table.h"
 #include "mbox.h"
 #include "blob.h"
+#include "line.h"
 #include "text.h"
 #include "message.h"
 #include "others.h"
@@ -409,9 +413,9 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 #undef	WITH_CURL
 #endif
 
-static	message	*parseEmailHeaders(message *m, const table_t *rfc821Table, bool destroy);
+static	message	*parseEmailHeaders(const message *m, const table_t *rfc821Table);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
-static	int	parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, const char *dir, table_t *rfc821Table, table_t *subtypeTable, unsigned int options);
+static	int	parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, unsigned int options);
 static	int	boundaryStart(const char *line, const char *boundary);
 static	int	endOfMessage(const char *line, const char *boundary);
 static	int	initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
@@ -615,7 +619,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				/*
 				 * End of a message in the mail box
 				 */
-				body = parseEmailHeaders(m, rfc821, TRUE);
+				body = parseEmailHeaders(m, rfc821);
 				if(body == NULL) {
 					messageReset(m);
 					continue;
@@ -637,7 +641,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				cli_dbgmsg("Finished processing message\n");
 			} else
 				lastLineWasEmpty = (bool)(buffer[0] == '\0');
-			if(messageAddLine(m, buffer, 1) < 0)
+			if(messageAddStr(m, buffer) < 0)
 				break;
 		} while(fgets(buffer, sizeof(buffer), fd) != NULL);
 
@@ -655,27 +659,25 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		 * FIXME: files full of new lines and nothing else are
 		 * handled ungracefully...
 		 */
-		do
+		do {
 			/*
-			 * No need to preprocess such as cli_chomp() since
-			 * that'll be done by parseEmailHeaders()
-			 *
 			 * TODO: this needlessly creates a message object,
 			 * it'd be better if parseEmailHeaders could also
 			 * read in from a file. I do not want to lump the
 			 * parseEmailHeaders code here, that'd be a duplication
 			 * of code I want to avoid
 			 */
-			if(messageAddLine(m, buffer, 1) < 0)
+			(void)cli_chomp(buffer);
+			if(messageAddStr(m, buffer) < 0)
 				break;
-		while(fgets(buffer, sizeof(buffer), fd) != NULL);
+		} while(fgets(buffer, sizeof(buffer), fd) != NULL);
 	}
 
 	fclose(fd);
 
 	retcode = 0;
 
-	body = parseEmailHeaders(m, rfc821, TRUE);
+	body = parseEmailHeaders(m, rfc821);
 	messageDestroy(m);
 	if(body) {
 		/*
@@ -711,14 +713,12 @@ cli_mbox(const char *dir, int desc, unsigned int options)
  * of the message in memory, the upside is that it makes for easier parsing
  * of encapsulated messages, and in the long run uses less memory in those
  * scenarios
- * BUT: if 'destroy' is set, the caller has given us a hint than 'm' will
- * not be used again before it is destroyed, so we can trash it
  */
 static message *
-parseEmailHeaders(message *m, const table_t *rfc821, bool destroy)
+parseEmailHeaders(const message *m, const table_t *rfc821)
 {
 	bool inHeader = TRUE;
-	text *t;
+	const text *t;
 	message *ret;
 	bool anyHeadersFound = FALSE;
 
@@ -729,26 +729,15 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool destroy)
 
 	ret = messageCreate();
 
-	for(t = (text *)messageGetBody(m); t; t = t->t_next) {
-		char *buffer;
+	for(t = messageGetBody(m); t; t = t->t_next) {
+		const char *buffer;
 #ifdef CL_THREAD_SAFE
 		char *strptr;
 #endif
 
-		if(t->t_text) {
-			if(destroy) {
-				buffer = t->t_text;
-				t->t_text = NULL;
-			} else {
-				buffer = strdup(t->t_text);
-				if(buffer == NULL)
-					break;
-			}
-			if(cli_chomp(buffer) == 0) {
-				free(buffer);
-				buffer = NULL;
-			}
-		} else
+		if(t->t_line)
+			buffer = lineGetData(t->t_line);
+		else
 			buffer = NULL;
 
 		/*
@@ -760,13 +749,12 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool destroy)
 			/*
 			 * Add all the arguments on the line
 			 */
-			if(buffer) {
-				const char *ptr;
+			const char *ptr;
+			char *copy = strdup(buffer);
 
-				for(ptr = strtok_r(buffer, ";", &strptr); ptr; ptr = strtok_r(NULL, ":", &strptr))
-					messageAddArgument(ret, ptr);
-				free(buffer);
-			}
+			for(ptr = strtok_r(copy, ";", &strptr); ptr; ptr = strtok_r(NULL, ":", &strptr))
+				messageAddArgument(ret, ptr);
+			free(copy);
 		} else if(inHeader) {
 			/*
 			 * A blank line signifies the end of the header and
@@ -779,11 +767,10 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool destroy)
 				if((parseEmailHeader(ret, buffer, rfc821) >= 0) ||
 				   (strncasecmp(buffer, "From ", 5) == 0))
 					anyHeadersFound = TRUE;
-				free(buffer);
 			}
 		} else {
 			/*cli_dbgmsg("Add line to body '%s'\n", buffer);*/
-			if(messageAddLine(ret, buffer, 0) < 0)
+			if(messageAddLine(ret, t->t_line) < 0)
 				break;
 		}
 	}
@@ -861,7 +848,7 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
  *	2 for success, attachments not saved
  */
 static int	/* success or fail */
-parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, const char *dir, table_t *rfc821Table, table_t *subtypeTable, unsigned int options)
+parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, unsigned int options)
 {
 	message **messages;	/* parts of a multipart message */
 	int inhead, inMimeHead, i, rc = 1, htmltextPart, multiparts = 0;
@@ -965,7 +952,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 			}
 
 			do
-				if(boundaryStart(t_line->t_text, boundary))
+				if(boundaryStart(lineGetData(t_line->t_line), boundary))
 					break;
 			while((t_line = t_line->t_next) != NULL);
 
@@ -1017,8 +1004,9 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				 * but some viruses insert them
 				 */
 				while((t_line = t_line->t_next) != NULL)
-					if(t_line->t_text &&
-					   (cli_chomp(t_line->t_text) > 0))
+					if(t_line->t_line &&
+					   /*(cli_chomp(t_line->t_text) > 0))*/
+					   (strlen(lineGetData(t_line->t_line)) > 0))
 						break;
 
 				if(t_line == NULL) {
@@ -1038,7 +1026,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				}
 
 				do {
-					const char *line = t_line->t_text;
+					const char *line = lineGetData(t_line->t_line);
 
 					/*cli_dbgmsg("inMimeHead %d inhead %d boundary %s line '%s' next '%s'\n",
 						inMimeHead, inhead, boundary, line, t_line->t_next ? t_line->t_next->t_text : "(null)");*/
@@ -1115,11 +1103,16 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						 * put white space after the ;
 						 */
 						inMimeHead = continuationMarker(line);
-						if(!inMimeHead)
-							if(t_line->t_next &&
-							   t_line->t_next->t_text &&
-							  ((t_line->t_next->t_text[0] == '\t') || (t_line->t_next->t_text[0] == ' ')))
-								inMimeHead = TRUE;
+						if(!inMimeHead) {
+							const text *next = t_line->t_next;
+
+							if(next && next->t_line) {
+								const char *data = lineGetData(next->t_line);
+
+								if((data[0] == '\t') || (data[0] == ' '))
+									inMimeHead = TRUE;
+							}
+						}
 
 						parseEmailHeader(aMessage, line, rfc821Table);
 					} else if(boundaryStart(line, boundary)) {
@@ -1137,7 +1130,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						/* t_line = NULL;*/
 						break;
 					} else {
-						if(messageAddLine(aMessage, line, 1) < 0)
+						if(messageAddLine(aMessage, t_line->t_line) < 0)
 							break;
 						lines++;
 					}
@@ -1342,7 +1335,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 							/*
 							 * No plain text version
 							 */
-							messageAddLine(aMessage, "No plain text alternative", 1);
+							messageAddStr(aMessage, "No plain text alternative");
 						assert(messageGetBody(aMessage) != NULL);
 						break;
 					case TEXT:
@@ -1404,7 +1397,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 							messages[i] = NULL;
 							continue;
 						}
-						messageAddLineAtTop(aMessage,
+						messageAddStrAtTop(aMessage,
 							"Received: by clamd");
 #ifdef	SAVE_TO_DISC
 						/*
@@ -1447,27 +1440,6 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						 * be an attachment
 						 */
 						cli_dbgmsg("Found multipart inside multipart\n");
-#if	0
-						if(aMessage) {
-							body = parseEmailHeaders(aMessage, rfc821Table, TRUE);
-							if(body) {
-								assert(aMessage == messages[i]);
-								messageDestroy(messages[i]);
-								messages[i] = NULL;
-
-								if(mainMessage && (mainMessage != messageIn))
-									messageDestroy(mainMessage);
-
-								/*t = messageToText(body);
-								rc = parseEmailBody(body, blobs, nBlobs, t, dir, rfc821Table, subtypeTable, options);*/
-								rc = parseEmailBody(body, blobs, nBlobs, aText, dir, rfc821Table, subtypeTable, options);
-								/*textDestroy(t);*/
-
-								cli_dbgmsg("Finished recursion\n");
-
-								mainMessage = body;
-							}
-#else
 						if(aMessage) {
 							/*
 							 * The headers were parsed when reading in the
@@ -1478,7 +1450,6 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 							assert(aMessage == messages[i]);
 							messageDestroy(messages[i]);
 							messages[i] = NULL;
-#endif
 						} else {
 							rc = parseEmailBody(NULL, blobs, nBlobs, NULL, dir, rfc821Table, subtypeTable, options);
 							if(mainMessage && (mainMessage != messageIn))
@@ -1663,7 +1634,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 			}
 			if((strcasecmp(mimeSubtype, "rfc822") == 0) ||
 			   (strcasecmp(mimeSubtype, "delivery-status") == 0)) {
-				message *m = parseEmailHeaders(mainMessage, rfc821Table, FALSE);
+				message *m = parseEmailHeaders(mainMessage, rfc821Table);
 				if(m) {
 					cli_dbgmsg("Decode rfc822");
 
@@ -1810,12 +1781,15 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				 * must remain otherwise non bounce messages
 				 * won't be scanned
 				 */
-				for(t = t_line; t; t = t->t_next)
-					if(t->t_text &&
-					   (strncasecmp(t->t_text, encoding, sizeof(encoding) - 1) == 0) &&
-					   (strstr(t->t_text, "7bit") == NULL) &&
-					   (strstr(t->t_text, "8bit") == NULL))
+				for(t = t_line; t; t = t->t_next) {
+					const char *txt = lineGetData(t->t_line);
+
+					if(txt &&
+					   (strncasecmp(txt, encoding, sizeof(encoding) - 1) == 0) &&
+					   (strstr(txt, "7bit") == NULL) &&
+					   (strstr(txt, "8bit") == NULL))
 						break;
+				}
 				if(t && ((b = textToBlob(t_line, NULL)) != NULL)) {
 					cli_dbgmsg("Found a bounce message\n");
 
@@ -2399,13 +2373,13 @@ checkURLs(message *m, const char *dir)
 				continue;
 			if(*p2 == '\0')
 				continue;
-			if(n == MAX_URLS) {
-				cli_warnmsg("Not all URLs will be scanned\n");
-				break;
-			}
 			if(tableFind(t, p2) == 1) {
 				cli_dbgmsg("URL %s already downloaded\n", p2);
 				continue;
+			}
+			if(n == MAX_URLS) {
+				cli_warnmsg("Not all URLs will be scanned\n");
+				break;
 			}
 			(void)tableInsert(t, p2, 1);
 			cli_dbgmsg("Downloading URL %s to be scanned\n", p2);

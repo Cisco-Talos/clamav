@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: line.h,v $
+ * Revision 1.3  2004/08/21 11:57:57  nigelhorne
+ * Use line.[ch]
+ *
  * Revision 1.2  2004/08/20 19:06:45  kojm
  * add line.[ch]
  *
@@ -27,10 +30,16 @@
 #ifndef __LINE_H
 #define __LINE_H
 
+#ifdef	OLD
+/* easier to read, but slower */
+
 typedef struct line {
-	char	*l_data;	/* the line's contents */
+	char	*l_str;	/* the line's contents */
 	unsigned int	l_refs;	/* the number of references to the data */
 } line_t;
+#else
+typedef	char	line_t;	/* first byte is the ref count */
+#endif
 
 line_t	*lineCreate(const char *data);
 line_t	*lineLink(line_t *line);

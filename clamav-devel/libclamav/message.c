@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.72  2004/08/21 11:57:57  nigelhorne
+ * Use line.[ch]
+ *
  * Revision 1.71  2004/08/13 09:28:16  nigelhorne
  * Remove incorrect comment style
  *
@@ -210,7 +213,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.71 2004/08/13 09:28:16 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.72 2004/08/21 11:57:57 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -240,6 +243,7 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.71 2004/08/13 09:28:16 nigelhorn
 #include <pthread.h>
 #endif
 
+#include "line.h"
 #include "mbox.h"
 #include "table.h"
 #include "blob.h"
@@ -259,6 +263,7 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.71 2004/08/13 09:28:16 nigelhorn
 
 typedef enum { FALSE = 0, TRUE = 1 } bool;
 
+static	void	messageIsEncoding(message *m);
 static	unsigned char	*decodeLine(message *m, const char *line, unsigned char *buf, size_t buflen);
 static unsigned char *decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast);
 static	void	squeeze(char *s);
@@ -814,16 +819,9 @@ messageGetEncoding(const message *m)
 	return(m->encodingType);
 }
 
-/*
- * Add the given line to the end of the given message
- * If needed a copy of the given line is taken which the caller must free
- * Line must not be terminated by a \n
- */
 int
-messageAddLine(message *m, const char *line, int takeCopy)
+messageAddLine(message *m, line_t *line)
 {
-	static const char encoding[] = "Content-Transfer-Encoding";
-	static const char binhex[] = "(This file must be converted with BinHex 4.0)";
 	assert(m != NULL);
 
 	if(m->body_first == NULL)
@@ -838,40 +836,50 @@ messageAddLine(message *m, const char *line, int takeCopy)
 
 	m->body_last->t_next = NULL;
 
-	if(line && *line) {
-		if(takeCopy) {
-			m->body_last->t_text = strdup(line);
-			if(m->body_last->t_text == NULL) {
-				cli_errmsg("messageAddLine: out of memory\n");
-				return -1;
-			}
-			/* cli_chomp(m->body_last->t_text); */
-		} else
-			m->body_last->t_text = (char *)line;
+	if(line && lineGetData(line)) {
+		m->body_last->t_line = lineLink(line);
 
-		/*
-		 * See if this line marks the start of a non MIME inclusion that
-		 * will need to be scanned
-		 */
-		if((m->encoding == NULL) &&
-		   (strncasecmp(line, encoding, sizeof(encoding) - 1) == 0) &&
-		   (strstr(line, "7bit") == NULL))
-			m->encoding = m->body_last;
-		else if(/*(m->bounce == NULL) &&*/
-			(cli_filetype(line, strlen(line)) == CL_MAILFILE))
-				m->bounce = m->body_last;
-		else if((m->binhex == NULL) &&
-			(strncasecmp(line, binhex, sizeof(binhex) - 1) == 0))
-				m->binhex = m->body_last;
-		else if((m->uuencode == NULL) &&
-			((strncasecmp(line, "begin ", 6) == 0) &&
-			(isdigit(line[6])) &&
-			(isdigit(line[7])) &&
-			(isdigit(line[8])) &&
-			(line[9] == ' ')))
-				m->uuencode = m->body_last;
+		messageIsEncoding(m);
 	} else
-		m->body_last->t_text = NULL;
+		m->body_last->t_line = NULL;
+
+	return 1;
+}
+
+/*
+ * Add the given line to the end of the given message
+ * If needed a copy of the given line is taken which the caller must free
+ * Line must not be terminated by a \n
+ */
+int
+messageAddStr(message *m, const char *data)
+{
+	assert(m != NULL);
+
+	if(m->body_first == NULL)
+		m->body_last = m->body_first = (text *)cli_malloc(sizeof(text));
+	else {
+		m->body_last->t_next = (text *)cli_malloc(sizeof(text));
+		m->body_last = m->body_last->t_next;
+	}
+
+	if(m->body_last == NULL)
+		return -1;
+
+	m->body_last->t_next = NULL;
+
+	if(data && *data) {
+		m->body_last->t_line = lineCreate(data);
+
+		if(m->body_last->t_line == NULL) {
+			cli_errmsg("messageAddStr: out of memory\n");
+			return -1;
+		}
+		/* cli_chomp(m->body_last->t_text); */
+
+		messageIsEncoding(m);
+	} else
+		m->body_last->t_line = NULL;
 
 	return 1;
 }
@@ -882,14 +890,14 @@ messageAddLine(message *m, const char *line, int takeCopy)
  * Line must not be terminated by a \n
  */
 int
-messageAddLineAtTop(message *m, const char *line)
+messageAddStrAtTop(message *m, const char *data)
 {
 	text *oldfirst;
 
 	assert(m != NULL);
 
 	if(m->body_first == NULL)
-		return messageAddLine(m, line, 1);
+		return messageAddLine(m, lineCreate(data));
 
 	oldfirst = m->body_first;
 	m->body_first = (text *)cli_malloc(sizeof(text));
@@ -899,13 +907,43 @@ messageAddLineAtTop(message *m, const char *line)
 	}
 
 	m->body_first->t_next = oldfirst;
-	m->body_first->t_text = strdup((line) ? line : "");
+	m->body_first->t_line = lineCreate((data) ? data : "");
 
-	if(m->body_first->t_text == NULL) {
-		cli_errmsg("messageAddLineAtTop: out of memory\n");
+	if(m->body_first->t_line == NULL) {
+		cli_errmsg("messageAddStrAtTop: out of memory\n");
 		return -1;
 	}
 	return 1;
+}
+
+/*
+ * See if the last line marks the start of a non MIME inclusion that
+ * will need to be scanned
+ */
+static void
+messageIsEncoding(message *m)
+{
+	static const char encoding[] = "Content-Transfer-Encoding";
+	static const char binhex[] = "(This file must be converted with BinHex 4.0)";
+	const char *line = lineGetData(m->body_last->t_line);
+
+	if((m->encoding == NULL) &&
+	   (strncasecmp(line, encoding, sizeof(encoding) - 1) == 0) &&
+	   (strstr(line, "7bit") == NULL))
+		m->encoding = m->body_last;
+	else if(/*(m->bounce == NULL) &&*/
+		(cli_filetype(line, strlen(line)) == CL_MAILFILE))
+			m->bounce = m->body_last;
+	else if((m->binhex == NULL) &&
+		(strncasecmp(line, binhex, sizeof(binhex) - 1) == 0))
+			m->binhex = m->body_last;
+	else if((m->uuencode == NULL) &&
+		((strncasecmp(line, "begin ", 6) == 0) &&
+		(isdigit(line[6])) &&
+		(isdigit(line[7])) &&
+		(isdigit(line[8])) &&
+		(line[9] == ' ')))
+			m->uuencode = m->body_last;
 }
 
 /*
@@ -961,7 +999,7 @@ messageToBlob(message *m)
 			return NULL;
 		}
 
-		filename = cli_strtok(t_line->t_text, 2, " ");
+		filename = cli_strtok(lineGetData(t_line->t_line), 2, " ");
 
 		if(filename == NULL) {
 			cli_dbgmsg("UUencoded attachment sent with no filename\n");
@@ -1013,8 +1051,10 @@ messageToBlob(message *m)
 		 * See RFC1741
 		 */
 		while((t_line = t_line->t_next) != NULL)
-			if(t_line->t_text)
-				blobAddData(tmp, (unsigned char *)t_line->t_text, strlen(t_line->t_text));
+			if(t_line->t_line) {
+				const char *d = lineGetData(t_line->t_line);
+				blobAddData(tmp, (unsigned char *)d, strlen(d));
+			}
 
 		data = blobGetData(tmp);
 
@@ -1239,9 +1279,6 @@ messageToBlob(message *m)
 
 		return b;
 	} else {
-		/*
-		 * Discard attachments with no filename
-		 */
 		filename = (char *)messageFindArgument(m, "filename");
 		if(filename == NULL) {
 			filename = (char *)messageFindArgument(m, "name");
@@ -1282,7 +1319,7 @@ messageToBlob(message *m)
 	do {
 		unsigned char data[1024];
 		unsigned char *uptr;
-		const char *line = t_line->t_text;
+		const char *line = lineGetData(t_line->t_line);
 
 		if(messageGetEncoding(m) == UUENCODE) {
 			/*
@@ -1353,14 +1390,12 @@ messageToText(message *m)
 				last = last->t_next;
 			}
 
-			if((last == NULL) ||
-			   ((last->t_text = strdup(t_line->t_text)) == NULL)) {
-				if(last)
-					free(last);
+			if(last == NULL) {
 				if(first)
 					textDestroy(first);
 				return NULL;
 			}
+			last->t_line = lineLink(t_line->t_line);
 		}
 	else {
 		if(messageGetEncoding(m) == UUENCODE) {
@@ -1380,7 +1415,7 @@ messageToText(message *m)
 		for(; t_line; t_line = t_line->t_next) {
 			unsigned char data[1024];
 			unsigned char *uptr;
-			const char *line = t_line->t_text;
+			const char *line = lineGetData(t_line->t_line);
 
 			if(messageGetEncoding(m) == BASE64) {
 				/*
@@ -1410,7 +1445,7 @@ messageToText(message *m)
 			if(last == NULL)
 				break;
 
-			last->t_text = data[0] ? strdup((char *)data) : NULL;
+			last->t_line = ((data[0] != '\n') && data[0]) ? lineCreate((char *)data) : NULL;
 
 			if(line && messageGetEncoding(m) == BASE64)
 				if(strchr(line, '='))
@@ -1418,11 +1453,9 @@ messageToText(message *m)
 		}
 		if(m->base64chars) {
 			unsigned char data[4];
-			unsigned char *ptr;
 
 			memset(data, '\0', sizeof(data));
-			ptr = decode(m, NULL, data, base64, FALSE);
-			if(ptr) {
+			if(decode(m, NULL, data, base64, FALSE)) {
 				if(first == NULL)
 					first = last = cli_malloc(sizeof(text));
 				else {
@@ -1431,7 +1464,7 @@ messageToText(message *m)
 				}
 
 				if(last != NULL)
-					last->t_text = data[0] ? strdup((char *)data) : NULL;
+					last->t_line = data[0] ? lineCreate((char *)data) : NULL;
 			}
 			m->base64chars = 0;
 		}
@@ -1642,10 +1675,11 @@ decodeLine(message *m, const char *line, unsigned char *buf, size_t buflen)
 			if(copy == NULL)
 				break;
 
+			squeeze(copy);
+
 			p2 = strchr(copy, '=');
 			if(p2)
 				*p2 = '\0';
-			squeeze(copy);
 
 			/*
 			 * Klez doesn't always put "=" on the last line
@@ -1714,7 +1748,6 @@ squeeze(char *s)
  * decoded. After the last line is found, decode will be called with in = NULL
  * to flush these out
  */
-#if	1
 static unsigned char *
 decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast)
 {
@@ -1866,84 +1899,6 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
 	}
 	return out;
 }
-#else
-static unsigned char *
-decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast)
-{
-	unsigned char b1, b2, b3, b4;
-
-	/*cli_dbgmsg("decode %s (len %d ifFast %d)\n", in, strlen(in), isFast);*/
-	if(isFast)
-		/* Fast decoding if not last line */
-		while(*in) {
-			b1 = (*decoder)(*in++);
-			b2 = (*decoder)(*in++);
-			b3 = (*decoder)(*in++);
-			/*
-			 * Put this line here to help on some compilers which
-			 * can make use of some architecure's ability to
-			 * multiprocess when different variables can be
-			 * updated at the same time - here b3 is used in
-			 * one line, b1/b2 in the next and b4 in the next after
-			 * that, b3 and b4 rely on in but b1/b2 don't
-			 */
-			*out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
-			b4 = (*decoder)(*in++);
-			*out++ = (b2 << 4) | ((b3 >> 2) & 0xF);
-			*out++ = (b3 << 6) | (b4 & 0x3F);
-		}
-	else
-		/* Slower decoding for last line */
-		while(*in) {
-			int nbytes;
-
-			b1 = (*decoder)(*in++);
-			if(*in == '\0') {
-				b2 = '\0';
-				nbytes = 1;
-			} else {
-				b2 = (*decoder)(*in++);
-				if(*in == '\0') {
-					b3 = '\0';
-					nbytes = 2;
-				} else {
-					b3 = (*decoder)(*in++);
-
-					if(*in == '\0') {
-						b4 = '\0';
-						nbytes = 3;
-					} else {
-						b4 = (*decoder)(*in++);
-						nbytes = 4;
-					}
-				}
-			}
-
-			switch(nbytes) {
-				case 3:
-					b4 = '\0';
-					/* fall through */
-				case 4:
-					*out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
-					*out++ = (b2 << 4) | ((b3 >> 2) & 0xF);
-					*out++ = (b3 << 6) | (b4 & 0x3F);
-					break;
-				case 2:
-					*out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
-					*out++ = b2 << 4;
-					break;
-				case 1:
-					*out++ = b1 << 2;
-					break;
-				default:
-					assert(0);
-			}
-			if(nbytes != 4)
-				break;
-		}
-	return out;
-}
-#endif
 
 static unsigned char
 hex(char c)

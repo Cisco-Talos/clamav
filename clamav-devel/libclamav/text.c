@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: text.c,v $
+ * Revision 1.9  2004/08/21 11:57:57  nigelhorne
+ * Use line.[ch]
+ *
  * Revision 1.8  2004/07/20 14:35:29  nigelhorne
  * Some MYDOOM.I were getting through
  *
@@ -33,7 +36,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: text.c,v 1.8 2004/07/20 14:35:29 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: text.c,v 1.9 2004/08/21 11:57:57 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -45,13 +48,16 @@ static	char	const	rcsid[] = "$Id: text.c,v 1.8 2004/07/20 14:35:29 nigelhorne Ex
 #include <sys/malloc.h>
 #else
 #ifdef HAVE_MALLOC_H /* tk: FreeBSD-CURRENT doesn't support malloc.h */
+#ifndef	C_BSD	/* BSD now uses stdlib.h */
 #include <malloc.h>
+#endif
 #endif
 #endif
 #include <string.h>
 #include <ctype.h>
 #include <assert.h>
 
+#include "line.h"
 #include "mbox.h"
 #include "blob.h"
 #include "text.h"
@@ -62,8 +68,8 @@ textDestroy(text *t_head)
 {
 	while(t_head) {
 		text *t_next = t_head->t_next;
-		if(t_head->t_text)
-			free(t_head->t_text);
+		if(t_head->t_line)
+			lineUnlink(t_head->t_line);
 		free(t_head);
 		t_head = t_next;
 	}
@@ -154,11 +160,10 @@ textCopy(const text *t_head)
 
 		assert(last != NULL);
 
-		if(t_head->t_text) {
-			last->t_text = strdup(t_head->t_text);
-			assert(last->t_text != NULL);
-		} else
-			last->t_text = NULL;
+		if(t_head->t_line)
+			last->t_line = lineLink(t_head->t_line);
+		else
+			last->t_line = NULL;
 
 		t_head = t_head->t_next;
 	}
@@ -192,11 +197,10 @@ textAdd(text *t_head, const text *t)
 
 		assert(t_head != NULL);
 
-		if(t->t_text) {
-			t_head->t_text = strdup(t->t_text);
-			assert(t_head->t_text != NULL);
-		} else
-			t_head->t_text = NULL;
+		if(t->t_line)
+			t_head->t_line = lineLink(t->t_line);
+		else
+			t_head->t_line = NULL;
 
 		t = t->t_next;
 	}
@@ -248,16 +252,19 @@ textToBlob(const text *t, blob *b)
 	}
 
 	for(t1 = t; t1; t1 = t1->t_next)
-		if(t1->t_text)
-			s += strlen(t1->t_text) + 1;
+		if(t1->t_line)
+			s += strlen(lineGetData(t1->t_line)) + 1;
 		else
 			s++;
 
 	blobGrow(b, s);
 
 	do {
-		if(t->t_text)
-			blobAddData(b, (unsigned char *)t->t_text, strlen(t->t_text));
+		if(t->t_line) {
+			const char *l = lineGetData(t->t_line);
+
+			blobAddData(b, (unsigned char *)l, strlen(l));
+		}
 		blobAddData(b, (unsigned char *)"\n", 1);
 	} while((t = t->t_next) != NULL);
 
