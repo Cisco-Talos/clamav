@@ -379,6 +379,7 @@ netbsd*)
  	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
 	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
 	AC_DEFINE(_REENTRANT,1,[thread safe])
+	LIBS="$LIBS -lpthread"
      fi
     AC_DEFINE(C_BSD,1,[os is bsd flavor])
     ;;
