@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.179  2004/11/18 18:09:07  nigelhorne
+ * First draft of binhex.c
+ *
  * Revision 1.178  2004/11/15 13:58:50  nigelhorne
  * Fix obscure chance of memory leak
  *
@@ -522,7 +525,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.178 2004/11/15 13:58:50 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.179 2004/11/18 18:09:07 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2192,18 +2195,19 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 		} else if((encodingLine(mainMessage) != NULL) &&
 			  ((t_line = bounceBegin(mainMessage)) != NULL)) {
 			const text *t;
-			static const char encoding[] = "Content-Transfer-Encoding";
+			static const char type[] = "Content-Type:";
 			/*
 			 * Attempt to save the original (unbounced)
 			 * message - clamscan will find that in the
 			 * directory and call us again (with any luck)
-			 * having found an e-mail message to handle
+			 * having found an e-mail message to handle.
 			 *
 			 * This finds a lot of false positives, the
-			 * search that an encoding line is in the
+			 * search that a content type is in the
 			 * bounce (i.e. it's after the bounce header)
-			 * helps a bit, but at the expense of scanning
-			 * the entire message. messageAddLine
+			 * helps a bit.
+			 *
+			 * messageAddLine
 			 * optimisation could help here, but needs
 			 * careful thought, do it with line numbers
 			 * would be best, since the current method in
@@ -2214,10 +2218,12 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			for(t = t_line; t; t = t->t_next) {
 				const char *txt = lineGetData(t->t_line);
 
+				if(txt == NULL) {
+					t = NULL;
+					break;
+				}
 				if(txt &&
-				   (strncasecmp(txt, encoding, sizeof(encoding) - 1) == 0) &&
-				   (strstr(txt, "7bit") == NULL) &&
-				   (strstr(txt, "8bit") == NULL))
+				  (strncasecmp(txt, type, sizeof(type) - 1)))
 					break;
 			}
 			if(t && ((fb = fileblobCreate()) != NULL)) {
@@ -3371,6 +3377,20 @@ getURL(struct arg *arg)
 	 * quit. But the program seems to work OK without valgrind...
 	 * Perhaps Curl_resolv() isn't thread safe?
 	 */
+	/*
+	 * Curl 7.12.1 has a memory leak here :-(
+	 *	==10634==    at 0x1B904A90: malloc (vg_replace_malloc.c:131)
+	 *	==10634==    by 0x1BCA2AEF: strdup (in /lib/tls/libc-2.3.3.so)
+	 *	==10634==    by 0x1BCE7CDD: gaih_inet (in /lib/tls/libc-2.3.3.so)
+	 *	==10634==    by 0x1BCE96D0: getaddrinfo (in /lib/tls/libc-2.3.3.so)
+	 *	==10634==    by 0x1B9CCF23: Curl_getaddrinfo (in /usr/lib/libcurl.so.3.0.0)
+	 *	==10634==    by 0x1B9AC7C9: Curl_resolv (in /usr/lib/libcurl.so.3.0.0)
+	 *	==10634==    by 0x1B9BC1BD: Curl_connect (in /usr/lib/libcurl.so.3.0.0)
+	 *	==10634==    by 0x1B9C734C: (within /usr/lib/libcurl.so.3.0.0)
+	 *	==10634==    by 0x1B9C7573: Curl_perform (in /usr/lib/libcurl.so.3.0.0)
+	 *	==10634==    by 0x1B9C7CC1: curl_easy_perform (in /usr/lib/libcurl.so.3.0.0)
+	 */
+
 	if(curl_easy_perform(curl) != CURLE_OK) {
 		cli_warnmsg("URL %s failed to download\n", url);
 		unlink(fout);
