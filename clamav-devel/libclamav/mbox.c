@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.114  2004/09/03 15:59:00  nigelhorne
+ * Handle boundary= "foo"
+ *
  * Revision 1.113  2004/08/26 09:33:20  nigelhorne
  * Scan Communigate Pro files
  *
@@ -327,7 +330,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.113 2004/08/26 09:33:20 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.114 2004/09/03 15:59:00 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -439,9 +442,6 @@ static	size_t	strip(char *buf, int len);
 static	bool	continuationMarker(const char *line);
 static	int	parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg);
 static	void	saveTextPart(message *m, const char *dir);
-#if	0
-static	bool	saveFile(const blob *b, const char *dir);
-#endif
 
 static	void	checkURLs(message *m, const char *dir);
 #ifdef	WITH_CURL
@@ -746,6 +746,7 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 	const text *t;
 	message *ret;
 	bool anyHeadersFound = FALSE;
+	bool Xheader = FALSE;
 
 	cli_dbgmsg("parseEmailHeaders\n");
 
@@ -765,30 +766,31 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 		else
 			buffer = NULL;
 
-		/*
-		 * Section B.2 of RFC822 says TAB or SPACE means
-		 * a continuation of the previous entry.
-		 */
-		if(inHeader && buffer &&
-		  ((buffer[0] == '\t') || (buffer[0] == ' '))) {
-			/*
-			 * Add all the arguments on the line
-			 */
-			const char *ptr;
-			char *copy = strdup(buffer);
-
-			for(ptr = strtok_r(copy, ";", &strptr); ptr; ptr = strtok_r(NULL, ":", &strptr))
-				messageAddArgument(ret, ptr);
-			free(copy);
-		} else if(inHeader) {
-			/*
-			 * A blank line signifies the end of the header and
-			 * the start of the text
-			 */
+		if(inHeader) {
 			if(buffer == NULL) {
+				/*
+				 * A blank line signifies the end of the header
+				 * and the start of the text
+				 */
 				cli_dbgmsg("End of header information\n");
 				inHeader = FALSE;
+			} else if(((buffer[0] == '\t') || (buffer[0] == ' ')) &&
+				  (!Xheader)) {
+				/*
+				 * Section B.2 of RFC822 says TAB or SPACE means
+				 * a continuation of the previous entry.
+				 *
+				 * Add all the arguments on the line
+				 */
+				const char *ptr;
+				char *copy = strdup(buffer);
+
+				for(ptr = strtok_r(copy, ";", &strptr); ptr; ptr = strtok_r(NULL, ":", &strptr))
+					if(strchr(ptr, '='))
+						messageAddArguments(ret, ptr);
+				free(copy);
 			} else {
+				Xheader = (bool)(buffer[0] == 'X');
 				if((parseEmailHeader(ret, buffer, rfc821) >= 0) ||
 				   (strncasecmp(buffer, "From ", 5) == 0))
 					anyHeadersFound = TRUE;
@@ -973,7 +975,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			while((t_line = t_line->t_next) != NULL);
 
 			if(t_line == NULL) {
-				cli_warnmsg("Multipart MIME message contains no boundary lines\n");
+				cli_dbgmsg("Multipart MIME message contains no boundary lines\n");
 				/*
 				 * Free added by Thomas Lamy
 				 * <Thomas.Lamy@in-online.net>
@@ -1389,7 +1391,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 								addAttachment = TRUE;
 							}
 						} else {
-							cli_warnmsg("Text type %s is not supported\n", dtype);
+							cli_dbgmsg("Text type %s is not supported\n", dtype);
 							continue;
 						}
 						break;
@@ -1870,18 +1872,17 @@ static int
 getTextPart(message *const messages[], size_t size)
 {
 	size_t i;
+	int textpart = -1;
 
 	for(i = 0; i < size; i++) {
 		assert(messages[i] != NULL);
-		if((messageGetMimeType(messages[i]) == TEXT) &&
-		   (strcasecmp(messageGetMimeSubtype(messages[i]), "html") == 0))
-			return (int)i;
+		if(messageGetMimeType(messages[i]) == TEXT) {
+			if(strcasecmp(messageGetMimeSubtype(messages[i]), "html") == 0)
+				return (int)i;
+			textpart = (int)i;
+		}
 	}
-	for(i = 0; i < size; i++)
-		if(messageGetMimeType(messages[i]) == TEXT)
-			return (int)i;
-
-	return -1;
+	return textpart;
 }
 
 /*
@@ -1981,11 +1982,10 @@ continuationMarker(const char *line)
 static int
 parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg)
 {
-	const int type = tableFind(rfc821Table, cmd);
 #ifdef CL_THREAD_SAFE
 	char *strptr;
 #endif
-	char *copy = strdup(arg);
+	char *copy = strdup(arg ? arg : "");
 	char *ptr = copy;
 
 	if(copy == NULL)
@@ -1994,7 +1994,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 	cli_dbgmsg("parseMimeHeader: cmd='%s', arg='%s'\n", cmd, arg);
 	strstrip(copy);
 
-	switch(type) {
+	switch(tableFind(rfc821Table, cmd)) {
 		case CONTENT_TYPE:
 			/*
 			 * Fix for non RFC1521 compliant mailers
@@ -2020,7 +2020,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 				 * which I believe is illegal according to
 				 * RFC1521
 				 */
-				cli_warnmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", copy);
+				cli_dbgmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", copy);
 			else {
 				/*
 				 * Some clients are broken and
@@ -2092,108 +2092,6 @@ saveTextPart(message *m, const char *dir)
 		fileblobDestroy(fb);
 	}
 }
-
-#if	0
-/*
- * Save some data as a unique file in the given directory.
- *
- * TODO: don't save archive files if archive scanning is disabled, or
- *	OLE2 files if that is disabled or pattern match --exclude, but
- *	we need access to the command line options/clamav.conf here to
- *	be able to do that
- *
- * FIXME: duplicated code with fileblobSetFilename()
- */
-static bool
-saveFile(const blob *b, const char *dir)
-{
-	const unsigned long nbytes = blobGetDataSize(b);
-	size_t suffixLen = 0;
-	int fd;
-	const char *cptr, *suffix;
-	char filename[NAME_MAX + 1];
-
-	assert(dir != NULL);
-
-	if(nbytes == 0)
-		return TRUE;
-
-	cptr = blobGetFilename(b);
-
-	if(cptr == NULL) {
-		cptr = "unknown";
-		suffix = "";
-	} else {
-		/*
-		 * Some programs are broken and use an idea of a ".suffix"
-		 * to determine the file type rather than looking up the
-		 * magic number. CPM has a lot to answer for...
-		 * FIXME: the suffix now appears twice in the filename...
-		 */
-		suffix = strrchr(cptr, '.');
-		if(suffix == NULL)
-			suffix = "";
-		else {
-			suffixLen = strlen(suffix);
-			if(suffixLen > 4) {
-				/* Found a full stop which isn't a suffix */
-				suffix = "";
-				suffixLen = 0;
-			}
-		}
-	}
-	cli_dbgmsg("Saving attachment in %s/%s\n", dir, cptr);
-
-	/*
-	 * Allow for very long filenames. We have to truncate them to fit
-	 */
-	snprintf(filename, sizeof(filename) - 1 - suffixLen, "%s/%.*sXXXXXX", dir,
-		(int)(sizeof(filename) - 9 - suffixLen - strlen(dir)), cptr);
-
-	/*
-	 * TODO: add a HAVE_MKSTEMP property
-	 */
-#if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN)
-	fd = mkstemp(filename);
-#else
-	(void)mktemp(filename);
-	fd = open(filename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
-#endif
-
-	if(fd < 0) {
-		cli_errmsg("Can't create temporary file %s: %s\n", filename, strerror(errno));
-		cli_dbgmsg("%lu %d %d\n", suffixLen, sizeof(filename), strlen(filename));
-		return FALSE;
-	}
-
-	/*
-	 * Add the suffix back to the end of the filename. Tut-tut, filenames
-	 * should be independant of their usage on UNIX type systems.
-	 */
-	if(suffixLen > 1) {
-		char stub[NAME_MAX + 1];
-
-		snprintf(stub, sizeof(stub), "%s%s", filename, suffix);
-#ifdef	C_LINUX
-		rename(stub, filename);
-#else
-		link(stub, filename);
-		unlink(stub);
-#endif
-	}
-
-	cli_dbgmsg("Saving attachment as %s (%lu bytes long)\n",
-		filename, nbytes);
-
-	if(cli_writen(fd, blobGetData(b), (size_t)nbytes) != nbytes) {
-		perror(filename);
-		close(fd);
-		return FALSE;
-	}
-
-	return (close(fd) >= 0);
-}
-#endif
 
 #ifdef	FOLLOWURLS
 static void
