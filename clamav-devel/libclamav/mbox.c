@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.90  2004/07/26 17:02:56  nigelhorne
+ * Fix crash when debugging on SPARC
+ *
  * Revision 1.89  2004/07/26 09:12:12  nigelhorne
  * Fix crash when debugging on Solaris
  *
@@ -255,7 +258,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.89 2004/07/26 09:12:12 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.90 2004/07/26 17:02:56 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -870,8 +873,14 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 			 */
 			for(multiparts = 0; t_line; multiparts++) {
 				int lines = 0;
+				message **m;
 
-				messages = cli_realloc(messages, ((multiparts + 1) * sizeof(message *)));
+				m = cli_realloc(messages, ((multiparts + 1) * sizeof(message *)));
+				if(m == NULL) {
+					multiparts--;
+					break;
+				}
+				messages = m;
 
 				aMessage = messages[multiparts] = messageCreate();
 				if(aMessage == NULL) {
@@ -1006,7 +1015,8 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						/* t_line = NULL;*/
 						break;
 					} else {
-						messageAddLine(aMessage, line, 1);
+						if(messageAddLine(aMessage, line, 1) < 0)
+							break;
 						lines++;
 					}
 				} while((t_line = t_line->t_next) != NULL);
@@ -1796,9 +1806,9 @@ endOfMessage(const char *line, const char *boundary)
 {
 	size_t len;
 
-	cli_dbgmsg("endOfMessage: line = '%s' boundary = '%s'\n", line, boundary);
 	if(line == NULL)
 		return 0;
+	cli_dbgmsg("endOfMessage: line = '%s' boundary = '%s'\n", line, boundary);
 	if(*line++ != '-')
 		return 0;
 	if(*line++ != '-')
