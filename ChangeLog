@@ -1,3 +1,8 @@
+Tue Sep 30 12:54:32 BST 2003 (njh)
+----------------------------------
+  * clamav-milter: clamfi_envfrom was returning EX_TEMPFAIL in some places
+	  rather than SMFIS_TEMPFAIL
+
 Mon Sep 29 18:10:39 BST 2003 (njh)
 ----------------------------------
   * libclamav: moved stub from heap to stack since its mazimum size is known

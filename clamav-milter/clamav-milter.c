@@ -128,8 +128,15 @@
  *	0.60h	28/9/03	Support MaxThreads option in config file,
  *			overriden by --max-children.
  *			Patch from "Richard G. Roberto" <rgr@dedlegend.com>
+ *	0.60i	30/9/03	clamfi_envfrom() now correctly returns SMFIS_TEMPFAIL,
+ *			in a few circumstances it used to return EX_TEMPFAIL
+ *			Patch from Matt Sullivan <matt@sullivan.gen.nz>
+ *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.9  2003/09/30 11:53:55  nigelhorne
+ * clamfi_envfrom was returning EX_TEMPFAIL in some places rather than SMFIS_TEMPFAIL
+ *
  * Revision 1.8  2003/09/29 06:20:17  nigelhorne
  * max_children now overrides MaxThreads
  *
@@ -140,9 +147,9 @@
  * Added -f flag use MaxThreads if --max-children not set
  *
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.8 2003/09/29 06:20:17 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.9 2003/09/30 11:53:55 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.60h"
+#define	CM_VERSION	"0.60i"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -805,11 +812,11 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 		if((privdata->cmdSocket = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 			perror("socket");
-			return EX_TEMPFAIL;
+			return SMFIS_TEMPFAIL;
 		}
 		if(connect(privdata->cmdSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
 			perror(localSocket);
-			return EX_TEMPFAIL;
+			return SMFIS_TEMPFAIL;
 		}
 	} else {
 		struct sockaddr_in server;
@@ -821,11 +828,11 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 		if((privdata->cmdSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 			perror("socket");
-			return EX_TEMPFAIL;
+			return SMFIS_TEMPFAIL;
 		}
 		if(connect(privdata->cmdSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
 			perror("connect");
-			return EX_TEMPFAIL;
+			return SMFIS_TEMPFAIL;
 		}
 	}
 
