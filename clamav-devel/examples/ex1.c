@@ -28,7 +28,7 @@
 
 int main(int argc, char **argv)
 {
-	int fd, ret, no;
+	int fd, ret, no = 0;
 	unsigned long int size = 0;
 	long double mb;
 	char *virname;

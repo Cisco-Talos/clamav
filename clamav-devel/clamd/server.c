@@ -322,6 +322,8 @@ void *threadwatcher(void *arg)
 
 	    logg("Reading databases from %s\n", dbdir);
 
+	    cl_statfree(&dbstat);
+	    cl_statinidir(dbdir, &dbstat);
 	    virnum = 0;
 	    if((ret = cl_loaddbdir(dbdir, &*thwarg->root, &virnum))) {
 		logg("!%s\n", cl_strerror(ret));

@@ -1,3 +1,11 @@
+Thu Nov 27 00:51:03 CET 2003 (tk)
+---------------------------------
+  * clamd: also update database timestamps after RELOAD and not only SelfCheck
+	   (problem with double reloading reported by Ole Stanstrup
+	   <ole*stanstrup.dk> and Alex Pleiner <pleiner*zeitform.de>)
+  * examples/ex1.c: initialize the signature counter to 0 (thanks to Rainer
+		    Link) [I should read clamdoc.pdf more carefully ;-)]
+
 Wed Nov 26 14:31:49 CET 2003 (tk)
 ---------------------------------
   * examples/ex1.c: fixed a compilation warning (thanks to Rainer Link)
