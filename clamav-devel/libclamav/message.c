@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.136  2005/01/05 21:07:15  nigelhorne
+ * Fix crash when looking for uuencoded attachment fails
+ *
  * Revision 1.135  2005/01/01 12:52:58  nigelhorne
  * Some uuencoded viruses were getting through
  *
@@ -402,7 +405,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.135 2005/01/01 12:52:58 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.136 2005/01/05 21:07:15 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1959,8 +1962,10 @@ messageToText(message *m)
 				}
 
 				if(last == NULL) {
-					if(first)
+					if(first) {
+						last->t_next = NULL;
 						textDestroy(first);
+					}
 					return NULL;
 				}
 				if(t_line->t_line)
@@ -1975,8 +1980,10 @@ messageToText(message *m)
 
 			if(t_line == NULL) {
 				/*cli_warnmsg("UUENCODED attachment is missing begin statement\n");*/
-				if(first)
+				if(first) {
+					last->t_next = NULL;
 					textDestroy(first);
+				}
 				return NULL;
 			}
 			t_line = t_line->t_next;
@@ -1985,8 +1992,10 @@ messageToText(message *m)
 
 			if(t_line == NULL) {
 				/*cli_warnmsg("YENCODED attachment is missing begin statement\n");*/
-				if(first)
+				if(first) {
+					last->t_next = NULL;
 					textDestroy(first);
+				}
 				return NULL;
 			}
 			t_line = t_line->t_next;
@@ -2219,7 +2228,7 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 	char *p2, *copy;
 	char base64buf[RFC2045LENGTH + 1];
 
-	/*printf("decodeLine(et = %d buflen = %u)\n", (int)et, buflen);*/
+	/*cli_dbgmsg("decodeLine(et = %d buflen = %u)\n", (int)et, buflen);*/
 
 	assert(m != NULL);
 	assert(buf != NULL);
@@ -2365,8 +2374,9 @@ static void
 sanitiseBase64(char *s)
 {
 #ifdef	USE_TABLE
+	/*cli_dbgmsg("sanitiseBase64 '%s'\n", s);*/
 	for(; *s; s++)
-		if(base64Table[(int)*s] == 255) {
+		if(base64Table[(unsigned int)(*s & 0xFF)] == 255) {
 			char *p1;
 
 			for(p1 = s; p1[0] != '\0'; p1++)
@@ -2407,7 +2417,7 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
 	unsigned char b1, b2, b3, b4;
 	unsigned char cb1, cb2, cb3;	/* carried over from last line */
 
-	/*printf("decode %s (len %d isFast %d base64chars %d)\n", in,
+	/*cli_dbgmsg("decode %s (len %d isFast %d base64chars %d)\n", in,
 		in ? strlen(in) : 0,
 		isFast, m->base64chars);*/
 
@@ -2580,7 +2590,7 @@ hex(char c)
 static unsigned char
 base64(char c)
 {
-	const unsigned char ret = base64Table[(int)c];
+	const unsigned char ret = base64Table[(unsigned int)(c & 0xFF)];
 
 	if(ret == 255) {
 		/*cli_dbgmsg("Illegal character <%c> in base64 encoding\n", c);*/

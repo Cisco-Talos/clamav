@@ -1,3 +1,10 @@
+Wed Jan  5 21:09:14 GMT 2005 (njh)
+----------------------------------
+  * libclamav/message.c:	Fix crash caused when looking for non-existant
+			uuencoded files. This happens when the stated encoding
+			method is wrong so we have to try all methods and
+			including those which will fail
+
 Sat Jan  1 15:56:48 GMT 2005 (njh)
 ----------------------------------
   * libclamav/mbox.c:		Changes handling of unbalanced quotes in
