@@ -136,9 +136,16 @@
  *			who's e-mail is not scanned
  *	0.60k	5/10/03	Only remove old UNIX domain socket if FixStaleSocket
  *			is set
+ *	0.60l	11/10/03 port is now unsigned
+ *			Removed remote possibility of crash if the target
+ *			e-mail address is very long
+ *			No longer calls clamdscan to get the version
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.13  2003/10/11 15:42:15  nigelhorne
+ * Don't call clamdscan
+ *
  * Revision 1.12  2003/10/05 17:30:04  nigelhorne
  * Only fix old socket when FixStaleSocket is set
  *
@@ -161,7 +168,7 @@
  * Added -f flag use MaxThreads if --max-children not set
  *
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.12 2003/10/05 17:30:04 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.13 2003/10/11 15:42:15 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.60k"
 
@@ -318,11 +325,9 @@ int
 main(int argc, char **argv)
 {
 	extern char *optarg;
-	char *port = NULL, *ptr;
-	FILE *clamd;
+	char *port = NULL;
 	const char *cfgfile = CL_DEFAULT_CFG;
 	struct cfgstruct *cpt;
-	char cmd[64];
 	struct smfiDesc smfilter = {
 		"ClamAv", /* filter name */
 		SMFI_VERSION,	/* version code -- leave untouched */
@@ -338,6 +343,10 @@ main(int argc, char **argv)
 		clamfi_abort, /* message aborted callback */
 		clamfi_close, /* connection cleanup callback */
 	};
+
+	snprintf(clamav_version, sizeof(clamav_version),
+		"ClamAV version %s, clamav-milter version %s",
+		VERSION, CM_VERSION);
 
 	for(;;) {
 		int opt_index = 0;
@@ -441,7 +450,7 @@ main(int argc, char **argv)
 				serverIP = optarg;
 				break;
 			case 'V':
-				printf("%s version %s\n", argv[0], CM_VERSION);
+				puts(clamav_version);
 				return EX_OK;
 #ifdef	CL_DEBUG
 			case 'x':
@@ -524,28 +533,6 @@ main(int argc, char **argv)
 			argv[0], cfgfile);
 		return EX_CONFIG;
 	}
-
-	/*
-	 * call clamdscan to get the version number of clamd.
-	 * TODO: there's probably a better way of doing this!
-	 */
-	snprintf(cmd, sizeof(cmd), "clamdscan --version 2>&1");
-	clamd = popen(cmd, "r");
-
-	if(clamd == NULL) {
-		/*
-		 * TODO: if this happens we should continue, allowing
-		 * everything through with a warning
-		 */
-		fprintf(stderr, "%s: can't find clamdscan\n", argv[0]);
-		return EX_TEMPFAIL;
-	}
-
-	fgets(clamav_version, sizeof(clamav_version), clamd);
-	pclose(clamd);
-
-	if((ptr = strchr(clamav_version, '\n')) != NULL)
-		*ptr = '\0';
 
 	if(!cfgopt(copt, "Foreground"))
 		switch(fork()) {
@@ -741,7 +728,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 {
 	struct privdata *privdata;
 	struct sockaddr_in reply;
-	short port;
+	unsigned short port;
 	int nbytes, rc;
 	char buf[64];
 
@@ -914,7 +901,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 	if(debug_level >= 4)
 		printf("Received: %s", buf);
 #endif
-	if(sscanf(buf, "PORT %hd\n", &port) != 1) {
+	if(sscanf(buf, "PORT %hu\n", &port) != 1) {
 		close(privdata->dataSocket);
 		close(privdata->cmdSocket);
 		free(privdata);
@@ -1157,7 +1144,12 @@ clamfi_eom(SMFICTX *ctx)
 		 */
 		err = (char *)malloc(1024);
 
-		sprintf(err, "Intercepted virus from %s to", privdata->from);
+		/*
+		 * Use snprintf rather than printf since we don't know the
+		 * length of privdata->from and may get a buffre overrun
+		 * causing a crash
+		 */
+		snprintf(err, 1024, "Intercepted virus from %s to", privdata->from);
 
 		ptr = strchr(err, '\0');
 
@@ -1185,6 +1177,10 @@ clamfi_eom(SMFICTX *ctx)
 		if(!qflag) {
 			sendmail = popen("/usr/lib/sendmail -t", "w");
 			if(sendmail) {
+				/*
+				 * TODO: Make this e-mail message customisable
+				 * perhaps by means of a template
+				 */
 				fputs("From: MAILER-DAEMON\n", sendmail);
 				if(bflag) {
 					fprintf(sendmail, "To: %s\n", privdata->from);
@@ -1319,6 +1315,8 @@ clamfi_cleanup(SMFICTX *ctx)
 		pthread_mutex_lock(&n_children_mutex);
 		/*
 		 * Deliberately errs on the side of broadcasting too many times
+		 *
+		 * No need to check for underflow since n_children must be > 0
 		 */
 		--n_children;
 		if((n_children < max_children) && (n_children > 0)) {
