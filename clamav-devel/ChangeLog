@@ -1,3 +1,7 @@
+Sun Feb 15 02:03:47 CET 2004 (tk)
+---------------------------------
+  * freshclam: use O_BINARY when saving database under Cygwin
+
 Sat Feb 14 19:08:44 GMT 2004 (njh)
 ---------------------------------
   * libclamav:	Handle spaces in boundaries
