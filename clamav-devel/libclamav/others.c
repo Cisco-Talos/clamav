@@ -100,6 +100,11 @@ int cl_retflevel(void)
     return CL_FLEVEL;
 }
 
+const char *cl_retver(void)
+{
+    return VERSION;
+}
+
 const char *cl_strerror(int clerror)
 {
     switch(clerror) {
