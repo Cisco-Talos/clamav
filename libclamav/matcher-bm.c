@@ -52,13 +52,13 @@ int cli_bm_addpatt(struct cl_node *root, struct cli_bm_patt *pattern)
     prev = next = root->bm_suffix[idx];
 
     while(next) {
-	if(pt[0] > next->pattern[0])
+	if(pt[0] >= next->pattern[0])
 	    break;
 	prev = next;
 	next = next->next;
     }
 
-    if(prev == root->bm_suffix[idx]) {
+    if(next == root->bm_suffix[idx]) {
 	pattern->next = root->bm_suffix[idx];
 	root->bm_suffix[idx] = pattern;
     } else {

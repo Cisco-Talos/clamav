@@ -1,3 +1,7 @@
+Mon Aug  9 02:32:49 CEST 2004 (tk)
+----------------------------------
+  * libclamav: matcher-bm: fix another bug in node sorting (spotted by Nigel)
+
 Sun Aug  8 22:31:12 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox:	Started code (not yet enabled by default) to scan URLs
