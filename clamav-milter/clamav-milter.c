@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.135  2004/09/28 14:44:35  nigelhorne
+ * Handle operating systems that don't support SO_BINDTODEVICE
+ *
  * Revision 1.134  2004/09/27 17:08:31  nigelhorne
  * Add iface option to --broadcast
  *
@@ -413,9 +416,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.134 2004/09/27 17:08:31 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.135 2004/09/28 14:44:35 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80c"
+#define	CM_VERSION	"0.80d"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -554,7 +557,7 @@ typedef struct header_list_struct *header_list_t;
  * TODO: read this table in from a file (clamd.conf?)
  */
 #define PACKADDR(a, b, c, d) (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
-#define MAKEMASK(bits)       (0xffffffff << (bits))
+#define MAKEMASK(bits)       ((uint32_t)(0xffffffff << (bits)))
 
 static const struct cidr_net {
 	uint32_t	base;
@@ -1123,6 +1126,7 @@ main(int argc, char **argv)
 	 * Drop privileges
 	 */
 	if(getuid() == 0) {
+#ifdef	SO_BINDTODEVICE
 		if(iface) {
 			struct ifreq ifr;
 
@@ -1133,6 +1137,9 @@ main(int argc, char **argv)
 				return EX_UNAVAILABLE;
 			}
 		}
+#else
+		fprintf(stderr, _("%s: The iface option to --broadcast is not supported on your operating system\n"), argv[0]);
+#endif
 		if((cpt = cfgopt(copt, "User")) != NULL) {
 			if((user = getpwnam(cpt->strarg)) == NULL) {
 				fprintf(stderr, _("%s: Can't get information about user %s\n"), argv[0], cpt->strarg);
@@ -1471,6 +1478,7 @@ main(int argc, char **argv)
 				argv[0]);
 		use_syslog = 0;
 	}
+	broadcast(_("Starting clamav-milter"));
 
 	if(pidfile) {
 		/* save the PID */
@@ -1561,6 +1569,8 @@ createSession(int session)
 		char *hostname = cli_strtok(serverHostNames, serverNumber, ":");
 		cli_warnmsg(_("Check clamd server %s - it may be down\n"), hostname);
 		free(hostname);
+
+		broadcast(_("Check clamd server - it may be down\n"));
 
 		cmdSocketsStatus[session] = CMDSOCKET_DOWN;
 	}
@@ -1796,6 +1806,7 @@ findServer(void)
 					hostname);
 			close(sock);
 			free(hostname);
+			broadcast(_("Check clamd server - it may be down\n"));
 			socks[i] = -1;
 			continue;
 		}
@@ -2747,8 +2758,7 @@ clamfi_eom(SMFICTX *ctx)
 
 		snprintf(reject, sizeof(reject) - 1, _("%s detected by ClamAV - http://www.clamav.net"), virusname);
 		smfi_setreply(ctx, (char *)privdata->rejectCode, "5.7.1", reject);
-		if(broadcastSock >= 0)
-			broadcast(mess);
+		broadcast(mess);
 	}
 	clamfi_cleanup(ctx);
 
@@ -4015,7 +4025,7 @@ quit(void)
 	quitting++;
 
 	if(use_syslog)
-		syslog(LOG_INFO, _("Stopping: %s"), clamav_version);
+		syslog(LOG_INFO, _("Stopping %s"), clamav_version);
 
 	pthread_mutex_lock(&sstatus_mutex);
 	for(i = 0; i < max_children; i++) {
@@ -4046,12 +4056,16 @@ quit(void)
 	if(use_syslog)
 		syslog(LOG_INFO, _("Stopping %s"), clamav_version);
 #endif
+	broadcast(_("Stopping clamav-milter"));
 }
 
 static void
 broadcast(const char *mess)
 {
 	struct sockaddr_in s;
+
+	if(broadcastSock < 0)
+		return;
 
 	memset(&s, '\0', sizeof(struct sockaddr_in));
 	s.sin_family = AF_INET;

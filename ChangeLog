@@ -1,3 +1,9 @@
+Tue Sep 28 15:46:18 BST 2004 (njh)
+---------------------------------
+  * contrib/clamavmon:	No longer multithreaded
+  * clamav-milter:	Added support for operating systems without
+				SO_BINDTODEVICE
+
 Tue Sep 28 10:57:13 BST 2004 (njh)
 ----------------------------------
   * contrib/clamavmon:	Added monitor of clamd status
