@@ -34,6 +34,14 @@
 #include <stdlib.h>
 #include <clamav.h>
 
+#if HAVE_MMAP
+#if HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#else /* HAVE_SYS_MMAN_H */
+#undef HAVE_MMAP
+#endif
+#endif
+
 #include "cltypes.h"
 #include "others.h"
 
@@ -101,6 +109,8 @@ typedef struct ole2_header_tag
 	/* must take account of the size of variables below here when
 	   reading the header */
 	int32_t sbat_root_start __attribute__ ((packed));
+	unsigned char *m_area;
+	off_t m_length;
 } ole2_header_t;
 
 typedef struct property_tag
@@ -256,11 +266,19 @@ static int ole2_read_block(int fd, ole2_header_t *hdr, void *buff, int32_t block
 	
 	/* other methods: (blockno+1) * 512 or (blockno * block_size) + 512; */
 	offset = (blockno << hdr->log2_big_block_size) + 512;	/* 512 is header size */
-	if (lseek(fd, offset, SEEK_SET) != offset) {
-		return FALSE;
-	}
-	if (cli_readn(fd, buff, (1 << hdr->log2_big_block_size)) != (1 << hdr->log2_big_block_size)) {
-		return FALSE;
+	
+	if (hdr->m_area == NULL) {
+		if (lseek(fd, offset, SEEK_SET) != offset) {
+			return FALSE;
+		}
+		if (cli_readn(fd, buff, (1 << hdr->log2_big_block_size)) != (1 << hdr->log2_big_block_size)) {
+			return FALSE;
+		}
+	} else {
+		if ((offset + (1 << hdr->log2_big_block_size)) > hdr->m_length) {
+			return FALSE;
+		}
+		memcpy(buff, hdr->m_area+offset, (1 << hdr->log2_big_block_size));
 	}
 	return TRUE;
 }
@@ -673,22 +691,40 @@ int cli_ole2_extract(int fd, const char *dirname)
 {
 	ole2_header_t hdr;
 	int hdr_size;
+	struct stat statbuf;
 	
 	cli_dbgmsg("in cli_ole2_extract()\n");
 	
 	/* size of header - size of other values in struct */
-	hdr_size = sizeof(struct ole2_header_tag) - sizeof(int32_t);
+	hdr_size = sizeof(struct ole2_header_tag) - sizeof(int32_t) -
+			sizeof(unsigned char *) - sizeof(off_t);
 
-#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK)
-	if (cli_readn(fd, &hdr, hdr_size) != hdr_size) {
-		return 0;
-	}
-#else
-	if (!ole2_read_header(fd, &hdr)) {
-		return 0;
+	hdr.m_area = NULL;
+
+#ifdef HAVE_MMAP
+	if (fstat(fd, &statbuf) == 0) {
+		hdr.m_length = statbuf.st_size;
+		hdr.m_area = (unsigned char *) mmap(NULL, hdr.m_length, PROT_READ, MAP_PRIVATE, fd, 0);
+		if (hdr.m_area == MAP_FAILED) {
+			hdr.m_area = NULL;
+		}
+		cli_dbgmsg("mmap'ed file\n");
+		memcpy(&hdr, hdr.m_area, hdr_size);
 	}
 #endif
 
+	if (hdr.m_area == NULL) {
+#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK)
+		if (cli_readn(fd, &hdr, hdr_size) != hdr_size) {
+			return 0;
+		}
+#else
+		if (!ole2_read_header(fd, &hdr)) {
+			return 0;
+		}
+#endif
+	}
+	
 	hdr.minor_version = ole2_endian_convert_16(hdr.minor_version);
 	hdr.dll_version = ole2_endian_convert_16(hdr.dll_version);
 	hdr.byte_order = ole2_endian_convert_16(hdr.byte_order);
@@ -703,7 +739,7 @@ int cli_ole2_extract(int fd, const char *dirname)
 	hdr.xbat_count = ole2_endian_convert_32(hdr.xbat_count);
 
 	hdr.sbat_root_start = -1;
-
+	
 	if (strncmp(hdr.magic, magic_id, 8) != 0) {
 		cli_dbgmsg("OLE2 magic failed!\n");
 		return CL_EOLE2;
@@ -718,7 +754,7 @@ int cli_ole2_extract(int fd, const char *dirname)
 	if (hdr.sbat_cutoff != 4096) {
 		cli_dbgmsg("WARNING: untested sbat cutoff - please report\n\n");
 	}
-
+	
 	print_ole2_header(&hdr);
 
 	/* NOTE: Select only ONE of the following two methods */
@@ -728,6 +764,11 @@ int cli_ole2_extract(int fd, const char *dirname)
 	/* OR */
 	
 	ole2_walk_property_tree(fd, &hdr, dirname, 0, handler_writefile, 0, 0);
-	
+
+#ifdef HAVE_MMAP
+	if (hdr.m_area != NULL) {
+		munmap(hdr.m_area, hdr.m_length);
+	}
+#endif
 	return 0;
 }
