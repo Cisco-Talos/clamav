@@ -147,6 +147,7 @@ struct cl_cvd {
     char *md5;	    /* 6 */
     char *dsig;	    /* 7 */
     char *builder;  /* 8 */
+    int stime;	    /* 9 */
 };
 
 /* file scanning */
