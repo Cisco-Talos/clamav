@@ -20,7 +20,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.6 2005/03/25 19:47:35 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.7 2005/03/25 21:58:01 nigelhorne Exp $";
 
 #include <stdio.h>
 
@@ -53,6 +53,7 @@ static	int	tnef_attachment(int desc, const char *dir, fileblob **fbref);
 #define	attOEMCODEPAGE	0x9007
 
 /* FIXME: use stdio */
+/* FIXME: only works on little endian machines */
 int
 cli_tnef(const char *dir, int desc)
 {
@@ -67,7 +68,8 @@ cli_tnef(const char *dir, int desc)
 	if(cli_readn(desc, &i32, sizeof(uint32_t)) != sizeof(uint32_t))
 		return CL_EIO;
 
-#ifdef	WORDS_BIGENDIAN
+#if	WORDS_BIGENDIAN == 0
+	/* little endian */
 	if(i32 != TNEF_SIGNATURE)
 		return CL_EFORMAT;
 #else
