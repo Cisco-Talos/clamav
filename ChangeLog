@@ -1,3 +1,6 @@
+Mon Dec 22 14:06:09 GMT 2003 (njh)
+  * clamav-milter: Added --sign option
+
 Sun Dec 21 05:52:12 CET 2003 (tk)
 ---------------------------------
   * libclamav: fixed a mail recursion loop - problem reported by Alex Kah

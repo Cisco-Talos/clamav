@@ -180,9 +180,13 @@
  *	0.65k	12/12/03 A couple of calls to clamfi_cleanup were missing
  *			before return cl_error
  *	0.66	13/12/03 Upissue
+ *	0.66a	22/12/03 Added --sign
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.32  2003/12/22 14:05:31  nigelhorne
+ * Added --sign option
+ *
  * Revision 1.31  2003/12/13 16:43:21  nigelhorne
  * Upissue
  *
@@ -261,9 +265,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.31 2003/12/13 16:43:21 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.32 2003/12/22 14:05:31 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.66"
+#define	CM_VERSION	"0.66a"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -318,7 +322,6 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.31 2003/12/13 16:43:21 nig
  * TODO: allow -s server to use a name as well as an IP address
  * TODO: build with libclamav.so rather than libclamav.a
  * TODO: bounce message should optionally be read from a file
- * TODO: optionally add a signature that the message has been scanned with ClamAV
  * TODO: Support ThreadTimeout, LogTime and Logfile from the conf
  *	 file
  * TODO: Allow more than one clamdscan server to be given
@@ -374,6 +377,10 @@ static	int	qflag = 0;	/*
 				 * found is the syslog, so it's best to
 				 * enable LogSyslog in clamav.conf
 				 */
+static	int	Sflag = 0;	/*
+				 * Add a signature to each message that
+				 * has been scanned
+				 */
 static	char	*quarantine;	/*
 				 * If a virus is found in an email redirect
 				 * it to this account
@@ -398,6 +405,10 @@ static	int	threadtimeout = CL_DEFAULT_SCANTIMEOUT; /*
 				 * number of seconds to wait for clamd to
 				 * respond
 				 */
+static	u_char	*body;		/* body of the message if Sflag is set */
+static	size_t	bodyLen;	/* number of bytes in body */
+static	const	char	signature[] =	/* TODO: read in from a file */
+	"-- \nScanned by ClamAv - http://clamav.elektrapro.com\n";
 
 #ifdef	CL_DEBUG
 static	int	debug_level = 0;
@@ -445,6 +456,7 @@ help(void)
 	puts("\t--quarantine=USER\t-Q EMAIL\tQuanrantine e-mail account.");
 	puts("\t--quarantine-dir=DIR\t-U DIR\tDirectory to store infected emails.");
 	puts("\t--server=ADDRESS\t-s ADDR\tIP address of server running clamd (when using TCPsocket).");
+	puts("\t--sign\t\t\t-S\tAdd a signature to each scanned message.");
 	puts("\t--version\t\t-V\tPrint the version number of this software.");
 #ifdef	CL_DEBUG
 	puts("\t--debug-level=n\t\t-x n\tSets the debug level to 'n'.");
@@ -486,9 +498,9 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "bc:flm:nop:PqQ:dhs:U:Vx:";
+		const char *args = "bc:flm:nop:PqQ:dhs:S:U:Vx:";
 #else
-		const char *args = "bc:flm:nop:PqQ:dhs:U:V";
+		const char *args = "bc:flm:nop:PqQ:dhs:S:U:V";
 #endif
 
 		static struct option long_options[] = {
@@ -536,6 +548,9 @@ main(int argc, char **argv)
 			},
 			{
 				"server", 1, NULL, 's'
+			},
+			{
+				"sign", 1, NULL, 'S'
 			},
 			{
 				"version", 0, NULL, 'V'
@@ -602,6 +617,10 @@ main(int argc, char **argv)
 			case 's':	/* server running clamd */
 				serverIP = optarg;
 				break;
+			case 'S':	/* sign */
+				smfilter.xxfi_flags |= SMFIF_CHGBODY;
+				Sflag++;
+				break;
 			case 'U':	/* quarantine path */
 				quarantine_dir = optarg;
 				break;
@@ -615,9 +634,9 @@ main(int argc, char **argv)
 #endif
 			default:
 #ifdef	CL_DEBUG
-				fprintf(stderr, "Usage: %s [-b] [-c FILE] [--max-children=num] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-x#] [-U PATH] socket-addr\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-b] [-c FILE] [--max-children=num] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-S] [-x#] [-U PATH] socket-addr\n", argv[0]);
 #else
-				fprintf(stderr, "Usage: %s [-b] [-c FILE] [--max-children=num] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-U PATH] socket-addr\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-b] [-c FILE] [--max-children=num] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-S] [-U PATH] socket-addr\n", argv[0]);
 #endif
 				return EX_USAGE;
 		}
@@ -1093,7 +1112,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			}
 			privdata->dataSocket = open(privdata->filename, O_CREAT|O_EXCL|O_WRONLY,0600);
 #endif
-		} while(--ntries > 0 && privdata->dataSocket < 0);
+		} while((--ntries > 0) && (privdata->dataSocket < 0));
 
 		if(privdata->dataSocket < 0) {
 			if(use_syslog)
@@ -1216,12 +1235,12 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 			/* 0.4 - use better error message */
 			if(use_syslog) {
-	#ifdef TARGET_OS_SOLARIS	/* no strerror_r */
+#ifdef TARGET_OS_SOLARIS	/* no strerror_r */
 				syslog(LOG_ERR, "Failed to connect to port %d given by clamd: %s", port, strerror(rc));
-	#else
+#else
 				strerror_r(rc, buf, sizeof(buf));
 				syslog(LOG_ERR, "Failed to connect to port %d given by clamd: %s", port, buf);
-	#endif
+#endif
 			}
 
 			return cl_error;
@@ -1361,6 +1380,19 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 		clamfi_cleanup(ctx);
 		return cl_error;
 	}
+	if(Sflag) {
+		if(body) {
+			assert(bodyLen > 0);
+			body = realloc(body, bodyLen + len);
+			memcpy(&body[bodyLen], bodyp, len);
+			bodyLen += len;
+		} else {
+			assert(bodyLen == 0);
+			body = malloc(len);
+			memcpy(body, bodyp, len);
+			bodyLen = len;
+		}
+	}
 	return SMFIS_CONTINUE;
 }
 
@@ -1457,6 +1489,16 @@ clamfi_eom(SMFICTX *ctx)
 		if(use_syslog)
 			syslog(LOG_NOTICE, "clean message from %s",
 				(privdata->from) ? privdata->from : "an unknown sender");
+
+		if(body) {
+			assert(Sflag != 0);
+
+			body = realloc(body, bodyLen + sizeof(signature));
+			memcpy(&body[bodyLen], signature, sizeof(signature));
+
+			smfi_replacebody(ctx, body, bodyLen + sizeof(signature));
+
+		}
 	} else {
 		int i;
 		char **to, *err;
@@ -1630,6 +1672,12 @@ static void
 clamfi_cleanup(SMFICTX *ctx)
 {
 	struct privdata *privdata = (struct privdata *)smfi_getpriv(ctx);
+
+	if(body) {
+		free(body);
+		body = NULL;
+		bodyLen = 0;
+	}
 
 	if(privdata) {
 		if(privdata->dataSocket >= 0) {
