@@ -1,3 +1,9 @@
+Thu Mar 11 00:16:11 CET 2004 (tk)
+---------------------------------
+  * libclamav: rar support: due to a bug only first file in archive was
+	       scanned. Fixed and improved by Dirk Mueller <dmuell*gmx.net>.
+  * freshclam, clamscan: fixed logfile permissions (Dirk Mueller)
+
 Wed Mar 10 22:14:45 GMT 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Fixed segfault which happens when a UNIX mailbox

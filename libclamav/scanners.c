@@ -70,9 +70,9 @@ typedef enum {
 
 struct cl_magic_s {
     int offset;
-    char *magic;
+    const char *magic;
     size_t length;
-    char *descr;
+    const char *descr;
     cl_file_t type;
 };
 
@@ -97,7 +97,7 @@ static const struct cl_magic_s cl_magic[] = {
     {-1, NULL,              0, NULL,              CL_UNKNOWN_TYPE}
 };
 
-cl_file_t cl_filetype(const char *buf, size_t buflen)
+static cl_file_t cl_filetype(const char *buf, size_t buflen)
 {
 	int i;
 
@@ -113,9 +113,9 @@ cl_file_t cl_filetype(const char *buf, size_t buflen)
     return CL_UNKNOWN_TYPE;
 }
 
-int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev);
+static int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev);
 
-int cli_scandesc(int desc, char **virname, long int *scanned, const struct 
+static int cli_scandesc(int desc, const char **virname, long int *scanned, const struct 
 cl_node *root)
 {
  	char *buffer, *buff, *endbl, *pt;
@@ -163,18 +163,19 @@ cl_node *root)
 }
 
 #ifdef CL_THREAD_SAFE
-void cli_unlock_mutex(void *mtx)
+static void cli_unlock_mutex(void *mtx)
 {
     cli_dbgmsg("Pthread cancelled. Unlocking mutex.\n");
     pthread_mutex_unlock(mtx);
 }
 #endif
 
-int cli_scanrar(int desc, char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_scanrar(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
 {
 	FILE *tmp = NULL;
 	int files = 0, fd, ret = CL_CLEAN;
 	ArchiveList_struct *rarlist = NULL;
+	ArchiveList_struct *rarlist_head = NULL;
 	char *rar_data_ptr;
 	unsigned long rar_data_size;
 
@@ -195,6 +196,8 @@ int cli_scanrar(int desc, char **virname, long int *scanned, const struct cl_nod
 	return CL_ERAR;
     }
 
+    rarlist_head = rarlist;
+
     while(rarlist) {
 
 	if(limits) {
@@ -213,6 +216,12 @@ int cli_scanrar(int desc, char **virname, long int *scanned, const struct cl_nod
 	    }
 	}
 
+        if(!!( rarlist->item.FileAttr & RAR_FENTRY_ATTR_DIRECTORY)) {
+            rarlist = rarlist->next;
+            files++;
+            continue;
+        }
+
 	if((tmp = tmpfile()) == NULL) {
 	    cli_dbgmsg("RAR -> Can't generate tmpfile().\n");
 #ifdef CL_THREAD_SAFE
@@ -223,9 +232,9 @@ int cli_scanrar(int desc, char **virname, long int *scanned, const struct cl_nod
 	}
 	fd = fileno(tmp);
 
-	if(urarlib_get(&rar_data_ptr, &rar_data_size, rarlist->item.Name, desc, "clam")) {
+	if( urarlib_get(&rar_data_ptr, &rar_data_size, rarlist->item.Name, desc, "clam")) {
 	    cli_dbgmsg("RAR -> Extracted: %s, size: %d\n", rarlist->item.Name, rar_data_size);
-	    if(fwrite(rar_data_ptr, rar_data_size, 1, tmp) != 1) {
+	    if(fwrite(rar_data_ptr, 1, rar_data_size, tmp) != rar_data_size) {
 		cli_dbgmsg("RAR -> Can't write() file.\n");
 		fclose(tmp);
 		tmp = NULL;
@@ -244,7 +253,7 @@ int cli_scanrar(int desc, char **virname, long int *scanned, const struct cl_nod
 	    if(fflush(tmp) != 0) {
 		cli_dbgmsg("fflush() failed: %s\n", strerror(errno));
 		fclose(tmp);
-		urarlib_freelist(rarlist);
+		urarlib_freelist(rarlist_head);
 #ifdef CL_THREAD_SAFE
 		pthread_mutex_unlock(&cli_scanrar_mutex);
 		cli_scanrar_inuse = 0;
@@ -253,9 +262,8 @@ int cli_scanrar(int desc, char **virname, long int *scanned, const struct cl_nod
 	    }
 
 	    lseek(fd, 0, SEEK_SET);
-	    if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, reclev)) == CL_CLEAN ) {
-		if(ret == CL_VIRUS)
-		    cli_dbgmsg("RAR -> Found %s virus.\n", *virname);
+	    if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, reclev)) == CL_VIRUS ) {
+		cli_dbgmsg("RAR -> Found %s virus.\n", *virname);
 
 		fclose(tmp);
 		urarlib_freelist(rarlist);
@@ -263,7 +271,7 @@ int cli_scanrar(int desc, char **virname, long int *scanned, const struct cl_nod
 		pthread_mutex_unlock(&cli_scanrar_mutex);
 		cli_scanrar_inuse = 0;
 #endif
-		return ret;
+  		return ret;
 	    }
 
 	} else {
@@ -279,7 +287,7 @@ int cli_scanrar(int desc, char **virname, long int *scanned, const struct cl_nod
 	files++;
     }
 
-    urarlib_freelist(rarlist);
+    urarlib_freelist(rarlist_head);
 #ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&cli_scanrar_mutex);
     cli_scanrar_inuse = 0;
@@ -289,7 +297,7 @@ int cli_scanrar(int desc, char **virname, long int *scanned, const struct cl_nod
 }
 
 #ifdef HAVE_ZLIB_H
-int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_scanzip(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
 {
 	ZZIP_DIR *zdir;
 	ZZIP_DIRENT zdirent;
@@ -441,7 +449,7 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
     return ret;
 }
 
-int cli_scangzip(int desc, char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_scangzip(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
 {
 	int fd, bytes, ret = CL_CLEAN;
 	long int size = 0;
@@ -475,7 +483,7 @@ int cli_scangzip(int desc, char **virname, long int *scanned, const struct cl_no
 
 	if(limits)
 	    if(limits->maxfilesize && (size + FILEBUFF > limits->maxfilesize)) {
-		cli_dbgmsg("Gzip->desc(%d): Size exceeded (stopped at %d, max: %d)\n", desc, size, limits->maxfilesize);
+		cli_dbgmsg("Gzip->desc(%d): Size exceeded (stopped at %ld, max: %ld)\n", desc, size, limits->maxfilesize);
 		/* ret = CL_EMAXSIZE; */
 		break;
 	    }
@@ -517,7 +525,7 @@ int cli_scangzip(int desc, char **virname, long int *scanned, const struct cl_no
 #define BZ2_bzRead bzRead
 #endif
 
-int cli_scanbzip(int desc, char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_scanbzip(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
 {
 	int fd, bytes, ret = CL_CLEAN, bzerror = 0;
 	short memlim = 0;
@@ -563,7 +571,7 @@ int cli_scanbzip(int desc, char **virname, long int *scanned, const struct cl_no
 
 	if(limits)
 	    if(limits->maxfilesize && (size + FILEBUFF > limits->maxfilesize)) {
-		cli_dbgmsg("Bzip2->desc(%d): Size exceeded (stopped at %d, max: %d)\n", desc, size, limits->maxfilesize);
+		cli_dbgmsg("Bzip2->desc(%d): Size exceeded (stopped at %ld, max: %ld)\n", desc, size, limits->maxfilesize);
 		/* ret = CL_EMAXSIZE; */
 		break;
 	    }
@@ -598,7 +606,7 @@ int cli_scanbzip(int desc, char **virname, long int *scanned, const struct cl_no
 }
 #endif
 
-int cli_scanole2(int desc, char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_scanole2(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
 {
 	const char *tmpdir;
 	char *dir, *fullname;
@@ -674,7 +682,7 @@ int cli_scanole2(int desc, char **virname, long int *scanned, const struct cl_no
 	free(dir);
 	return ret;
 }
-int cli_scandir(char *dirname, char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_scandir(char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
 {
 	DIR *dd;
 	struct dirent *dent;
@@ -716,7 +724,7 @@ int cli_scandir(char *dirname, char **virname, long int *scanned, const struct c
     return 0;
 }
 
-int cli_scanmail(int desc, char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_scanmail(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
 {
 	const char *tmpdir;
 	char *dir;
@@ -758,7 +766,7 @@ int cli_scanmail(int desc, char **virname, long int *scanned, const struct cl_no
 	return ret;
 }
 
-int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
 {
 	char magic[MAGIC_BUFFER_SIZE+1];
 	int ret = CL_CLEAN;
@@ -816,13 +824,13 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
 		}
 		break;
 
-#ifdef HAVE_BZLIB_H
 	    case CL_BZFILE:
+#ifdef HAVE_BZLIB_H
 		if(SCAN_ARCHIVE) {
 		    ret = cli_scanbzip(desc, virname, scanned, root, limits, options, reclev);
 		}
-		break;
 #endif
+		break;
 
 	    case CL_MAILFILE:
 		if (SCAN_MAIL) {
@@ -834,6 +842,7 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
 		if(SCAN_OLE2) {
 		    ret = cli_scanole2(desc, virname, scanned, root, limits, options, reclev);
 		}
+            case CL_UNKNOWN_TYPE:
 		break;
 	}
 
@@ -851,14 +860,14 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
     return ret;
 }
 
-int cl_scandesc(int desc, char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options)
+int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options)
 {
 	int reclev = 0;
 
     return cli_magic_scandesc(desc, virname, scanned, root, limits, options, &reclev);
 }
 
-int cl_scanfile(const char *filename, char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options)
+int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options)
 {
 	int fd, ret;
 

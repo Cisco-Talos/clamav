@@ -102,7 +102,7 @@ int logg(const char *str, ...)
 	pthread_mutex_lock(&logg_mutex);
 
 	if(!log_fd) {
-	    old_umask = umask(0036);
+	    old_umask = umask(0037);
 	    if((log_fd = fopen(logfile, "a")) == NULL) {
 		umask(old_umask);
 		pthread_mutex_unlock(&logg_mutex);
