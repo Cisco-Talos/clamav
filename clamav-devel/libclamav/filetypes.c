@@ -148,6 +148,11 @@ static const struct cli_smagic_s cli_smagic[] = {
     {"3c736372697074", "HTML data", CL_TYPE_HTML},	/* <script */
     {"3c536372697074", "HTML data", CL_TYPE_HTML},	/* <Script */
     {"3c534352495054", "HTML data", CL_TYPE_HTML},	/* <SCRIPT */
+    {"3c6f626a656374", "HTML data", CL_TYPE_HTML},      /* <object */
+    {"3c4f626a656374", "HTML data", CL_TYPE_HTML},      /* <Object */
+    {"3c4f424a454354", "HTML data", CL_TYPE_HTML},      /* <OBJECT */
+    {"3c696672616d65", "HTML data", CL_TYPE_HTML},      /* <iframe */
+    {"3c494652414d45", "HTML data", CL_TYPE_HTML},      /* <IFRAME */
 
     {NULL,  NULL,   CL_TYPE_UNKNOWN_DATA}
 };
