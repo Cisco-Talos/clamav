@@ -1033,6 +1033,7 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
     tempname = cli_gentemp(NULL);
     if(mkdir(tempname, 0700)) {
         cli_dbgmsg("ScanHTML -> Can't create temporary directory %s\n", tempname);
+	free(tempname);
         return CL_ETMPDIR;
     }
 
@@ -1107,6 +1108,7 @@ static int cli_scanole2(int desc, const char **virname, long int *scanned, const
     dir = cli_gentemp(NULL);
     if(mkdir(dir, 0700)) {
 	cli_dbgmsg("OLE2: Can't create temporary directory %s\n", dir);
+	free(dir);
 	return CL_ETMPDIR;
     }
 
@@ -1142,6 +1144,7 @@ static int cli_scantar(int desc, const char **virname, long int *scanned, const 
     dir = cli_gentemp(NULL);
     if(mkdir(dir, 0700)) {
 	cli_errmsg("Tar: Can't create temporary directory %s\n", dir);
+	free(dir);
 	return CL_ETMPDIR;
     }
 
@@ -1170,6 +1173,7 @@ static int cli_scanbinhex(int desc, const char **virname, long int *scanned, con
 
     if(mkdir(dir, 0700)) {
 	cli_errmsg("Binhex: Can't create temporary directory %s\n", dir);
+	free(dir);
 	return CL_ETMPDIR;
     }
 
@@ -1196,6 +1200,7 @@ static int cli_scanmschm(int desc, const char **virname, long int *scanned, cons
     tempname = cli_gentemp(NULL);
     if(mkdir(tempname, 0700)) {
 	cli_dbgmsg("CHM: Can't create temporary directory %s\n", tempname);
+	free(tempname);
 	return CL_ETMPDIR;
     }
 
@@ -1219,6 +1224,7 @@ static int cli_scanscrenc(int desc, const char **virname, long int *scanned, con
     tempname = cli_gentemp(NULL);
     if(mkdir(tempname, 0700)) {
 	cli_dbgmsg("CHM: Can't create temporary directory %s\n", tempname);
+	free(tempname);
 	return CL_ETMPDIR;
     }
 
@@ -1256,6 +1262,30 @@ static int cli_scanjpeg(int desc, const char **virname)
     return ret;
 }
 
+static int cli_scantnef(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+{
+	int ret;
+	char *dir = cli_gentemp(NULL);
+
+
+    if(mkdir(dir, 0700)) {
+	cli_dbgmsg("Can't create temporary directory for tnef file %s\n", dir);
+	free(dir);
+	return CL_ETMPDIR;
+    }
+
+    ret = cli_tnef(dir, desc);
+
+    if(ret == CL_CLEAN)
+	ret = cli_scandir(dir, virname, scanned, root, limits, options, arec, mrec);
+
+    if(!cli_leavetemps_flag)
+	cli_rmdirs(dir);
+
+    free(dir);
+    return ret;
+}
+
 static int cli_scanmail(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	char *dir;
@@ -1289,13 +1319,6 @@ static int cli_scanmail(int desc, const char **virname, long int *scanned, const
 
     free(dir);
     return ret;
-}
-
-static int cli_scantnef(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
-{
-    cli_warnmsg("TNEF not scanned yet\n");
-
-    return CL_CLEAN;
 }
 
 int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)

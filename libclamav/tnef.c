@@ -15,9 +15,15 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.2 2005/03/23 08:41:31 nigelhorne Exp $";
+
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.3 2005/03/25 15:17:13 kojm Exp $";
 
 #include "tnef.h"
+#include "clamav.h"
 
 int
 cli_tnef(const char *dir, int desc)

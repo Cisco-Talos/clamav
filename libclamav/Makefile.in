@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 #
-#  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+#  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -80,7 +80,7 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	text.lo ole2_extract.lo vba_extract.lo msexpand.lo pe.lo \
 	cabd.lo lzxd.lo mszipd.lo qtmd.lo system.lo upx.lo htmlnorm.lo \
 	chmunpack.lo rebuildpe.lo petite.lo fsg.lo line.lo untar.lo \
-	special.lo binhex.lo is_tar.lo
+	special.lo binhex.lo is_tar.lo tnef.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -104,9 +104,9 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/special.Plo ./$(DEPDIR)/str.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/strc.Plo ./$(DEPDIR)/strrcpy.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/system.Plo ./$(DEPDIR)/table.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/text.Plo ./$(DEPDIR)/unrarlib.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/untar.Plo ./$(DEPDIR)/upx.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/vba_extract.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/text.Plo ./$(DEPDIR)/tnef.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/unrarlib.Plo ./$(DEPDIR)/untar.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/upx.Plo ./$(DEPDIR)/vba_extract.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/zzip-dir.Plo ./$(DEPDIR)/zzip-err.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/zzip-file.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/zzip-info.Plo ./$(DEPDIR)/zzip-io.Plo \
@@ -334,7 +334,9 @@ libclamav_la_SOURCES = \
 	binhex.c \
 	binhex.h \
 	is_tar.c \
-	is_tar.h
+	is_tar.h \
+	tnef.c \
+	tnef.h
 
 lib_LTLIBRARIES = libclamav.la
 all: all-am
@@ -442,6 +444,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/system.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/table.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/text.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tnef.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrarlib.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/untar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/upx.Plo@am__quote@
