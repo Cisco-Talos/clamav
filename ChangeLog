@@ -1,7 +1,13 @@
+Mon Jan 24 17:54:14 CET 2005 (tk)
+---------------------------------
+  * clamd/thrmgr.c: unlock mutex if thread->state != POOL_VALID in
+		    thrmgr_dispatch() (thanks to "Andrey J. Melnikoff
+		    (TEMHOTA)" <temnota*kmv.ru>)
+
 Mon Jan 24 13:56:19 GMT 2005 (njh)
 ----------------------------------
   * libclamav/message.c:	Some Exploit.IE.CrashSOS were not being caught,
-			found by Carsten.Borchardt@drs-systemberatung.de
+			found by Carsten.Borchardt*drs-systemberatung.de
 
 Sat Jan 22 13:45:42 GMT 2005 (njh)
 ----------------------------------
@@ -12,7 +18,7 @@ Sat Jan 22 13:45:42 GMT 2005 (njh)
 			Redirect stdout and stderr to LogFile, if that is set
 			--quarantine didn't redirect to the given email address
 				if --internal was used (reported by N Fung
-				<nsfung@yahoo.com>)
+				<nsfung*yahoo.com>)
 
 Thu Jan 20 01:22:48 CET 2005 (tk)
 ---------------------------------

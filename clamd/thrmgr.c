@@ -222,22 +222,26 @@ void *thrmgr_worker(void *arg)
 int thrmgr_dispatch(threadpool_t *threadpool, void *user_data)
 {
 	pthread_t thr_id;
-	
+
 	if (!threadpool) {
 		return FALSE;
 	}
-	
+
 	/* Lock the threadpool */
 	if (pthread_mutex_lock(&(threadpool->pool_mutex)) != 0) {
 		logg("!Mutex lock failed\n");
 		return FALSE;
 	}
-	
+
 	if (threadpool->state != POOL_VALID) {
+		if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
+			logg("!Mutex unlock failed\n");
+			return FALSE;
+		}
 		return FALSE;
 	}
 	work_queue_add(threadpool->queue, user_data);
-	
+
 	if ((threadpool->thr_idle == 0) &&
 			(threadpool->thr_alive < threadpool->thr_max)) {
 		/* Start a new thread */
@@ -249,7 +253,7 @@ int thrmgr_dispatch(threadpool_t *threadpool, void *user_data)
 		}
 	}
 	pthread_cond_signal(&(threadpool->pool_cond));
-	
+
 	if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
 		logg("!Mutex unlock failed\n");
 		return FALSE;
