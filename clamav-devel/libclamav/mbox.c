@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.196  2004/12/01 13:12:35  nigelhorne
+ * Decode text/plain parts marked as being encoded
+ *
  * Revision 1.195  2004/11/29 13:21:20  nigelhorne
  * Remove the old continuation marker method
  *
@@ -573,7 +576,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.195 2004/11/29 13:21:20 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.196 2004/12/01 13:12:35 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -967,8 +970,6 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 		cli_dbgmsg("Deal with email number %d\n", messagenumber);
 	} else {
-		int inHeader = 1;
-
 		/*
 		 * It's a single message, parse the headers then the body
 		 * Ignore blank lines at the start of the message
@@ -1019,8 +1020,6 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			 */
 			if(messageAddStr(m, ptr) < 0)
 				break;
-			if(*ptr == '\0')
-				inHeader = 0;
 		} while(fgets(buffer, sizeof(buffer) - 1, fd) != NULL);
 	}
 
@@ -1378,6 +1377,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				checkURLs(mainMessage, dir);
 			break;
 		case MULTIPART:
+			cli_dbgmsg("Content-type 'multipart' handler\n");
 			boundary = messageFindArgument(mainMessage, "boundary");
 
 			if(boundary == NULL) {
@@ -1568,7 +1568,10 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						inMimeHead = continuationMarker(line);
 						messageAddArgument(aMessage, line);
 					} else if(inhead) {	/* handling normal headers */
-						char *ptr;
+						int quotes;
+						char *fullline, *ptr;
+						const char *qptr;
+						const text *next;
 
 						if(line == NULL) {
 							/* empty line */
@@ -1603,73 +1606,55 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							continue;
 						}
 
+						inMimeHead = FALSE;
+
+						assert(strlen(line) <= LINE_LENGTH);
+
+						fullline = rfc822comments(line);
+						if(fullline == NULL)
+							fullline = strdup(line);
+
+						quotes = 0;
+						for(qptr = fullline; *qptr; qptr++)
+							if(*qptr == '\"')
+								quotes++;
+
 						/*
-						 * Some clients are broken and
-						 * put white space after the ;
+						 * Fold next lines to the end of this
+						 * if they start with a white space
+						 * or if this line has an odd number of quotes:
+						 * Content-Type: application/octet-stream; name="foo
+						 * "
 						 */
-						inMimeHead = continuationMarker(line);
-						if(!inMimeHead) {
-							const text *next = t_line->t_next;
-							char *fullline;
-							int quotes = 0;
-							const char *qptr;
+						next = t_line->t_next;
+						while(next && next->t_line) {
+							const char *data = lineGetData(next->t_line);
 
-							assert(strlen(line) <= LINE_LENGTH);
+							if((!isspace(data[0])) &&
+							   ((quotes & 1) == 0))
+								break;
 
-							fullline = rfc822comments(line);
-							if(fullline == NULL)
-								fullline = strdup(line);
+							ptr = cli_realloc(fullline,
+								strlen(fullline) + strlen(data) + 1);
 
-							for(qptr = fullline; *qptr; qptr++)
+							if(ptr == NULL)
+								break;
+
+							fullline = ptr;
+							strcat(fullline, data);
+
+							for(qptr = data; *qptr; qptr++)
 								if(*qptr == '\"')
 									quotes++;
 
-							/*
-							 * Fold next lines to the end of this
-							 * if they start with a white space
-							 * or if this line has an odd number of quotes:
-							 * Content-Type: application/octet-stream; name="foo
-							 * "
-							 */
-							while(next && next->t_line) {
-								const char *data = lineGetData(next->t_line);
-
-								if((!isspace(data[0])) &&
-								   ((quotes & 1) == 0))
-									break;
-
-								ptr = cli_realloc(fullline,
-									strlen(fullline) + strlen(data) + 1);
-
-								if(ptr == NULL)
-									break;
-
-								fullline = ptr;
-								strcat(fullline, data);
-
-								for(qptr = data; *qptr; qptr++)
-									if(*qptr == '\"')
-										quotes++;
-
-								t_line = next;
-								next = next->t_next;
-							}
-							cli_dbgmsg("Multipart %d: About to parse folded header '%s'\n",
-								multiparts, fullline);
-
-							parseEmailHeader(aMessage, fullline, rfc821Table);
-							free(fullline);
-						} else {
-							cli_dbgmsg("Multipart %d: About to parse header '%s'\n",
-								multiparts, line);
-
-							ptr = rfc822comments(line);
-
-							parseEmailHeader(aMessage, (ptr) ? ptr : line, rfc821Table);
-
-							if(ptr)
-								free(ptr);
+							t_line = next;
+							next = next->t_next;
 						}
+						cli_dbgmsg("Multipart %d: About to parse folded header '%s'\n",
+							multiparts, fullline);
+
+						parseEmailHeader(aMessage, fullline, rfc821Table);
+						free(fullline);
 					} else if(endOfMessage(line, boundary)) {
 						/*
 						 * Some viruses put information
@@ -1930,7 +1915,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 								cli_dbgmsg("Found uuencoded message in multipart/mixed text portion\n");
 								messageSetEncoding(aMessage, "x-uuencode");
 								addAttachment = TRUE;
-							} else if(tableFind(subtypeTable, cptr) == PLAIN) {
+							} else if((tableFind(subtypeTable, cptr) == PLAIN) &&
+								  (messageGetEncoding(aMessage) == NOENCODING)) {
 								char *filename;
 								/*
 								 * Strictly speaking
@@ -2108,7 +2094,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 
 			if(aText && (textIn == NULL)) {
 				if((fb = fileblobCreate()) != NULL) {
-					cli_dbgmsg("Save non mime part\n");
+					cli_dbgmsg("Save non mime and/or text/plain part\n");
 					fileblobSetFilename(fb, dir, "textpart");
 					/*fileblobAddData(fb, "Received: by clamd (textpart)\n", 30);*/
 
@@ -2600,11 +2586,41 @@ strstrip(char *s)
 }
 
 /*
- * No longer used - TODO: remove it
+ * Some broken email headers use ';' at the end of a line to continue
+ * to the next line and don't add a leading white space on the next line
  */
 static bool
 continuationMarker(const char *line)
 {
+	const char *ptr;
+
+	if(line == NULL)
+		return FALSE;
+
+#ifdef	CL_DEBUG
+	cli_dbgmsg("continuationMarker(%s)\n", line);
+#endif
+
+	if(strlen(line) == 0)
+		return FALSE;
+
+	ptr = strchr(line, '\0');
+
+	assert(ptr != NULL);
+
+	while(ptr > line)
+		switch(*--ptr) {
+			case '\n':
+			case '\r':
+			case ' ':
+			case '\t':
+				continue;
+			case ';':
+				return TRUE;
+			default:
+				return FALSE;
+		}
+
 	return FALSE;
 }
 
