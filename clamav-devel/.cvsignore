@@ -1,6 +1,8 @@
 Makefile
 autom4te.cache
 clamav-config.h
+clamav-config.h.in
+clamav-config
 config.log
 config.status
 libclamav.pc
