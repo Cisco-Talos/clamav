@@ -49,7 +49,7 @@ pthread_mutex_t cli_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
 #include "md5.h"
 #include "cltypes.h"
 
-#define CL_FLEVEL 2 /* don't touch it */
+#define CL_FLEVEL 3 /* don't touch it */
 
 #define MAX_ALLOCATION 134217728
 
