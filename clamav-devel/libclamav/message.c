@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.144  2005/02/18 21:27:26  nigelhorne
+ * Handle broken RFC2231 messages
+ *
  * Revision 1.143  2005/02/13 09:31:36  nigelhorne
  * Some lines wouldn't uudecode correctly
  *
@@ -426,7 +429,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.143 2005/02/13 09:31:36 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.144 2005/02/18 21:27:26 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2832,7 +2835,8 @@ rfc2231(const char *in)
 				} else
 					*out++ = *in;
 		}
-		in++;
+		if(*in++ == '\0')
+			break;
 	}
 
 	if(field != CONTENTS) {
