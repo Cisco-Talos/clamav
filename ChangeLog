@@ -1,3 +1,7 @@
+Thu Mar 25 13:53:37 CET 2004 (tk)
+---------------------------------
+  * libclamav: scanners: scan "X-Apparently-To: " mail files
+
 Thu Mar 25 12:20:05 CET 2004 (tk)
 ---------------------------------
   * freshclam: use HTTP Range to limit data transfer for cvd headers
