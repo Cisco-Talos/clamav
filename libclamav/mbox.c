@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.53  2004/03/19 08:08:02  nigelhorne
+ * If a message part of a multipart contains an RFC822 message that has no encoding don't scan it
+ *
  * Revision 1.52  2004/03/18 21:51:41  nigelhorne
  * If a message only contains a single RFC822 message that has no encoding don't save for scanning
  *
@@ -147,7 +150,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.52 2004/03/18 21:51:41 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.53 2004/03/19 08:08:02 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -216,6 +219,7 @@ static	bool	continuationMarker(const char *line);
 static	int	parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg);
 static	void	saveTextPart(message *m, const char *dir);
 static	bool	saveFile(const blob *b, const char *dir);
+static	bool	isAllText(const message *m);
 
 /* Maximum number of attachments that we accept */
 #define	MAX_ATTACHMENTS	10
@@ -977,6 +981,9 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						break;
 					case MESSAGE:
 						cli_dbgmsg("Found message inside multipart\n");
+						if(isAllText(aMessage))
+							continue;
+
 						body = parseEmailHeaders(aMessage, rfc821Table);
 						/*
 						 * We've fininished with the
@@ -999,7 +1006,6 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						 * It's a multi part within a multi part
 						 * Run the message parser on this bit, it won't
 						 * be an attachment
-						 *
 						 */
 						cli_dbgmsg("Found multipart inside multipart\n");
 						if(aMessage) {
@@ -1392,29 +1398,15 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 
 				cli_dbgmsg("Not found uuencoded file\n");
 
-				if(messageGetMimeType(mainMessage) == MESSAGE) {
+				if(messageGetMimeType(mainMessage) == MESSAGE)
 					/*
 					 * Quick peek, if the encapsulated
 					 * message has no
 					 * content encoding statement don't
 					 * bother saving to scan, it's safe
-					 *
-					 * TODO: check to see if we need to
-					 * find anything else, perhaps anything
-					 * from the RFC821 table?
 					 */
-					const text *t;
-
-					saveIt = FALSE;
-					
-					for(t = messageGetBody(mainMessage); t; t = t->t_next)
-						if(strncasecmp(t->t_text,
-							"Content-Transfer-Encoding", 
-							strlen("Content-Transfer-Encoding")) == 0) {
-								saveIt = TRUE;
-								break;
-						}
-				} else
+					saveIt = !isAllText(mainMessage);
+				else
 					saveIt = TRUE;
 
 				if(saveIt) {
@@ -1849,4 +1841,28 @@ saveFile(const blob *b, const char *dir)
 	}
 
 	return (close(fd) >= 0);
+}
+
+/*
+ * If a message doesn't not contain another message which could be harmful
+ * it is deemed to be safe.
+ *
+ * TODO: ensure nothing can get through this
+ *
+ * TODO: check to see if we need to
+ * find anything else, perhaps anything
+ * from the RFC821 table?
+ */
+static bool
+isAllText(const message *m)
+{
+	const text *t;
+	
+	for(t = messageGetBody(m); t; t = t->t_next)
+		if(strncasecmp(t->t_text,
+			"Content-Transfer-Encoding", 
+			strlen("Content-Transfer-Encoding")) == 0)
+				return FALSE;
+
+	return TRUE;
 }
