@@ -32,6 +32,10 @@
 ** Raw alignment is a waste and therefore is not performed.
 */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -40,7 +44,21 @@
 #include "rebuildpe.h"
 #include "others.h"
 
-#define cli_writeint32(offset,value) *(uint32_t *)(offset) = (value)
+#if WORDS_BIGENDIAN == 0
+#define EC32(v) (v)
+#define EC16(v) (v)
+#else
+static inline uint32_t EC32(uint32_t v)
+{
+    return ((v >> 24) | ((v & 0x00FF0000) >> 8) | ((v & 0x0000FF00) << 8) | (v << 24));
+}
+static inline uint16_t EC16(uint16_t v)
+{
+    return ((v >> 8) + (v << 8));
+}
+#endif
+
+#define cli_writeint32(offset,value) *(uint32_t *)(offset) = EC32(value)
 
 struct IMAGE_PE_HEADER {
     uint32_t Signature;
@@ -126,12 +144,12 @@ char *rebuildpe(char *buffer, struct SECTION *sections, int sects, uint32_t base
     memcpy(pefile, HEADERS, 0x148);
 
     fakepe = (struct IMAGE_PE_HEADER *)(pefile+0xd0);
-    fakepe->NumberOfSections=sects;
-    fakepe->AddressOfEntryPoint=ep;
-    fakepe->ImageBase=base;
+    fakepe->NumberOfSections = EC16(sects);
+    fakepe->AddressOfEntryPoint = EC32(ep);
+    fakepe->ImageBase = EC32(base);
     memset(pefile+0x148, 0, 0x80);
-    *(uint32_t*)(pefile+0x148+0x10) = ResRva;
-    *(uint32_t*)(pefile+0x148+0x14) = ResSize;
+    cli_writeint32(pefile+0x148+0x10, ResRva);
+    cli_writeint32(pefile+0x148+0x14, ResSize);
     curpe = pefile+0x148+0x80;
 
     for (i=0; i < sects; i++) {

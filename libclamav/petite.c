@@ -60,14 +60,8 @@
 #include "others.h"
 
 #if WORDS_BIGENDIAN == 0
-#define EC16(v)	(v)
 #define EC32(v) (v)
 #else
-static inline uint16_t EC16(uint16_t v)
-{
-    return ((v >> 8) + (v << 8));
-}
-
 static inline uint32_t EC32(uint32_t v)
 {
     return ((v >> 24) | ((v & 0x00FF0000) >> 8) | ((v & 0x0000FF00) << 8) | (v << 24));
@@ -178,18 +172,19 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
 
 	  while ( (char *)thunk >=buf && (char *)thunk<buf+bufsz-4 && dummy ) {
 	    uint32_t api;
-	    
+
 	    if (! *thunk ) {
 	      workdone = 1;
 	      break;
 	    }
 
-	    imports = (uint32_t *) (adjbuf + *thunk++);
+	    imports = (uint32_t *) (adjbuf + EC32(*thunk++));
 	    dummy = 0;
 
 	    while ( (char *)imports >=buf && (char *)imports<buf+bufsz-4 ) {
 	      dummy = 0;	    
-	      if ( ! (api = *imports++) ) {
+
+	      if ( ! (api = EC32(*imports++)) ) {
 		dummy  = 1;
 		break;
 	      }

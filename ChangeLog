@@ -1,3 +1,8 @@
+Wed Aug  4 17:34:46 CEST 2004 (tk)
+----------------------------------
+  * libclamav: petite: big-endian fixes
+  * libclamav: pe: activate Petite unpacker
+
 Tue Aug  3 20:20:11 CEST 2004 (tk)
 ----------------------------------
   * libclamav: matcher-bm: fix segfault with short files (problem reported by
