@@ -1,3 +1,7 @@
+Fri Jul 16 02:30:03 CEST 2004 (tk)
+----------------------------------
+  * libclamav: fix bug in memory management (thanks to Nigel)
+
 Fri Jul 16 00:38:46 CEST 2004 (tk)
 ----------------------------------
   * libclamav: pe: do not report I/O error on bad e_lfanew's
