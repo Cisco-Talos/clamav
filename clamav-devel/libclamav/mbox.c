@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.152  2004/10/14 17:45:13  nigelhorne
+ * RFC2047 on long lines produced by continuation headers
+ *
  * Revision 1.151  2004/10/10 11:10:20  nigelhorne
  * Remove perror - replace with cli_errmsg
  *
@@ -441,7 +444,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.151 2004/10/10 11:10:20 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.152 2004/10/14 17:45:13 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -567,7 +570,11 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 /*
  * Define this to handle RFC1341 messages.
  *	This is experimental code so it is up to YOU to (1) ensure it's secure
- * (2) peridically trim the directory of old files
+ * (2) periodically trim the directory of old files
+ *
+ * If you use the load balancing feature of clamav-milter to run clamd on
+ * more than one machine you must make sure that /tmp/partial is on a shared
+ * network filesystem
  */
 /*#define	PARTIAL_DIR	"/tmp/partial"	/* FIXME: should be config based on TMPDIR */
 
@@ -1010,8 +1017,6 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 
 	if(*separater == '\0')
 		return -1;
-
-	assert(strlen(line) <= LINE_LENGTH);	/* RFC 821 */
 
 	copy = rfc2047(line);
 	if(copy == NULL)
@@ -2364,7 +2369,6 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 							int set = messageSetMimeType(m, strtok(s, "/"));
 #endif
 
-
 							/*
 							 * Stephen White <stephen@earth.li>
 							 * Some clients put space after
@@ -2549,10 +2553,9 @@ rfc2047(const char *in)
 
 	/* For each RFC2047 string */
 	while(*in) {
-		char encoding, *ptr;
+		char encoding, *ptr, *enctext;
 		message *m;
 		blob *b;
-		char enctext[LINE_LENGTH + 1];
 
 		/* Find next RFC2047 string */
 		while(*in) {
@@ -2582,11 +2585,17 @@ rfc2047(const char *in)
 		if(*++in == '\0')
 			break;
 
-		assert(strlen(in) < sizeof(enctext));
-		strcpy(enctext, in);
-		in = strstr(in, "?=");
-		if(in == NULL)
+		enctext = strdup(in);
+		if(enctext == NULL) {
+			free(out);
+			out = NULL;
 			break;
+		}
+		in = strstr(in, "?=");
+		if(in == NULL) {
+			free(enctext);
+			break;
+		}
 		in += 2;
 		ptr = strstr(enctext, "?=");
 		assert(ptr != NULL);
@@ -2597,6 +2606,7 @@ rfc2047(const char *in)
 		if(m == NULL)
 			break;
 		messageAddStr(m, enctext);
+		free(enctext);
 		switch(encoding) {
 			case 'q':
 				messageSetEncoding(m, "quoted-printable");
