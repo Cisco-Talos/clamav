@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.9  2004/03/24 09:08:25  nigelhorne
+ * Reduce number of calls to cli_realloc for FreeBSD performance
+ *
  * Revision 1.8  2004/03/23 10:58:52  nigelhorne
  * More restrictive about which characters can be used in filename on DOS based systems
  *
@@ -26,7 +29,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.8 2004/03/23 10:58:52 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.9 2004/03/24 09:08:25 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -153,7 +156,8 @@ blobAddData(blob *b, const unsigned char *data, size_t len)
 		b->size = len * 4;
 		b->data = cli_malloc(b->size);
 	} else if(b->size < b->len + len) {
-		b->size += len * 4;
+		/*b->size += len * 4;*/
+		b->size += 1024 * 1024;
 		b->data = cli_realloc(b->data, b->size);
 	}
 
