@@ -1,3 +1,13 @@
+Mon Nov  8 15:24:18 CET 2004 (tk)
+---------------------------------
+  * clamd: new directive ExitOnOOM (stop deamon when libclamav reports out of
+	   memory condition)
+
+Mon Nov  8 11:32:11 CET 2004 (tk)
+---------------------------------
+  * clamd/server-th.c: SIGHUP: also re-open log file closed due to exceeded
+		       file size
+
 Mon Nov  8 10:29:02 GMT 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Fix crash if the guessed encoder is incorrectly

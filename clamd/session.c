@@ -94,12 +94,14 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
 
     if(!strncmp(buff, CMD1, strlen(CMD1))) { /* SCAN */
 	if(scan(buff + strlen(CMD1) + 1, NULL, root, limits, options, copt, desc, 0) == -2)
-	    return COMMAND_SHUTDOWN;
+	    if(cfgopt(copt, "ExitOnOOM"))
+		return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD2, strlen(CMD2))) { /* RAWSCAN */
 	opt = options & ~CL_SCAN_ARCHIVE;
 	if(scan(buff + strlen(CMD2) + 1, NULL, root, NULL, opt, copt, desc, 0) == -2)
-	    return COMMAND_SHUTDOWN;
+	    if(cfgopt(copt, "ExitOnOOM"))
+		return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD3, strlen(CMD3))) { /* QUIT */
 	return COMMAND_SHUTDOWN;
@@ -113,7 +115,8 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
 
     } else if(!strncmp(buff, CMD6, strlen(CMD6))) { /* CONTSCAN */
 	if(scan(buff + strlen(CMD6) + 1, NULL, root, limits, options, copt, desc, 1) == -2)
-	    return COMMAND_SHUTDOWN;
+	    if(cfgopt(copt, "ExitOnOOM"))
+		return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD7, strlen(CMD7))) { /* VERSION */
 	    const char *dbdir;
@@ -147,7 +150,8 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
 
     } else if(!strncmp(buff, CMD8, strlen(CMD8))) { /* STREAM */
 	if(scanstream(desc, NULL, root, limits, options, copt) == CL_EMEM)
-	    return COMMAND_SHUTDOWN;
+	    if(cfgopt(copt, "ExitOnOOM"))
+		return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD9, strlen(CMD9))) { /* SESSION */
 	do {
