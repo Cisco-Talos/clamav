@@ -1,6 +1,6 @@
 Wed Apr 14 09:32:50 BST 2004 (njh)
 ----------------------------------
-  * libclamav/clamav-milter:	When debugging print the email number when
+  * libclamav/mbox.c:	When debugging print the email number when
 	handling UNIX style mailboxes
 
 Wed Apr 14 03:24:44 CEST 2004 (tk)
