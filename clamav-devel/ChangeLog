@@ -1,3 +1,8 @@
+Tue Mar 15 18:50:14 CET 2005 (tk)
+---------------------------------
+  * contrib/clamdmon: add clamdmon 1.0 by Eugene Kurmanin
+		      <smfs*users.sourceforge.net>
+
 Tue Mar 15 17:39:28 CET 2005 (tk)
 ---------------------------------
   * libclamav/pe.c: fix section handling
