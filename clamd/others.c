@@ -69,32 +69,61 @@
 #include "cfgparser.h"
 #include "session.h"
 
-void virusaction(const char *virname, const struct cfgstruct *copt)
-{
-	char *buffer, *pt, *cmd;
-	struct cfgstruct *cpt;
+#define ENV_FILE  "CLAM_VIRUSEVENT_FILENAME"
+#define ENV_VIRUS "CLAM_VIRUSEVENT_VIRUSNAME"
 
+void virusaction(const char *filename, const char *virname, const struct cfgstruct *copt)
+{
+	pid_t pid;
+	struct cfgstruct *cpt;
 
     if(!(cpt = cfgopt(copt, "VirusEvent")))
 	return;
 
-    cmd = strdup(cpt->strarg);
+    /* NB: we need to fork here since this function modifies the environment. 
+       (Modifications to the env. are not reentrant, but we need to be.) */
+    pid = fork();
 
-    if((pt = strstr(cmd, "%v"))) {
-	buffer = (char *) mcalloc(strlen(cmd) + strlen(virname) + 10, sizeof(char));
-	*pt = 0; pt += 2;
-	strcpy(buffer, cmd);
-	strcat(buffer, virname);
-	strcat(buffer, pt);
+    if ( pid == 0 ) {
+	/* child... */
+	char *buffer, *pt, *cmd;
+
+	cmd = strdup(cpt->strarg);
+
+	if((pt = strstr(cmd, "%v"))) {
+	    buffer = (char *) mcalloc(strlen(cmd) + strlen(virname) + 10, sizeof(char));
+	    *pt = 0; pt += 2;
+	    strcpy(buffer, cmd);
+	    strcat(buffer, virname);
+	    strcat(buffer, pt);
+	    free(cmd);
+	    cmd = strdup(buffer);
+	    free(buffer);
+	}
+	
+	/* Allocate env vars.. to be portable env vars should not be freed */
+	buffer = (char *) mcalloc(strlen(ENV_FILE) + strlen(filename) + 2, sizeof(char));
+	sprintf(buffer, "%s=%s", ENV_FILE, filename);
+	putenv(buffer);
+
+	buffer = (char *) mcalloc(strlen(ENV_VIRUS) + strlen(virname) + 2, sizeof(char));
+	sprintf(buffer, "%s=%s", ENV_VIRUS, virname);
+	putenv(buffer);
+	
+    
+	/* WARNING: this is uninterruptable ! */
+	exit(system(cmd));
+	
+	/* The below is not reached but is here for completeness to remind
+	   maintainers that this buffer is still allocated.. */
 	free(cmd);
-	cmd = strdup(buffer);
-	free(buffer);
+    } else if (pid > 0) {
+	/* parent */      
+	waitpid(pid, NULL, 0);
+    } else {
+	/* error.. */
+	logg("!VirusAction: fork failed.\n");
     }
-
-    /* WARNING: this is uninterruptable ! */
-    system(cmd);
-
-    free(cmd);
 }
 
 int poll_fd(int fd, int timeout_sec)

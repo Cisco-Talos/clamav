@@ -1,3 +1,9 @@
+Sat Mar 19 21:30:33 CET 2005 (tk)
+---------------------------------
+  * clamd: add support for environment variables CLAM_VIRUSEVENT_FILENAME and
+	   CLAM_VIRUSEVENT_VIRUSNAME in virusaction() (patch by
+	   Calin A. Culianu" <calin*ajvar.org>)
+
 Sat Mar 19 01:35:04 CET 2005 (tk)
 ---------------------------------
   * clamscan: fix detection logic in treewalk() to properly work with external
