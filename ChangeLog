@@ -1,3 +1,17 @@
+Sun May  9 18:40:55 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Ensure a thread wakes up when another thread dies
+		Fix from Damian Menscher <menscher@uiuc.edu> ensures
+			Only report that we've dropped privilege if the setuid
+		succeeded, fix by Jens Elkner <elkner@linofee.org>
+			If logVerbose is set state both starting and started
+		messages (based on an idea by "Sergey Y.  Afonin"
+			<asy@kraft-s.ru>
+			Also added X-Infected-Received-From: header by Sergey
+			Report an error if inet_ntop fails in tcp_wrappers
+ * docs/man:		Clarified suggested use of max-children only on
+ 		small machines
+
 Fri May  7 19:46:05 CEST 2004 (tk)
 ----------------------------------
   * clamscan: fixperms(): do not follow file symlinks (Debian Bug #247574)
@@ -14,7 +28,7 @@ Thu May  6 16:22:32 BST 2004 (trog)
 Thu May  6 12:27:03 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Ensure all attachements marked as RFC822 emails will
-  			be recognised as email messages by libclamav/scanners.c
+			be recognised as email messages by libclamav/scanners.c
 			and hence be scanned
   * clamav-milter:	Fixed boundary cases for streamMaxLength
 			Warn if a clean file can't be removed from the
@@ -37,7 +51,7 @@ Wed May  5 11:32:22 BST 2004 (trog)
 Wed May  5 10:39:58 BST 2004 (njh)
 ----------------------------------
   * libclamav/text.c:	Removed the functionality of textClean, it isn't needed
-  	in clamAV
+	in clamAV
 
 Sun May  2 02:48:04 CEST 2004 (tk)
 ----------------------------------
@@ -62,13 +76,13 @@ Thu Apr 29 21:59:36 CEST 2004 (tk)
 Thu Apr 29 09:59:41 BST 2004 (njh)
 ----------------------------------
   * libclamav:		Tidied the handling of content disposition type:
-  				better handling of out of memory
+				better handling of out of memory
 				right chop white space
 
 Thu Apr 29 08:36:49 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Fixed typo, remove but introduced yesterday where the
-  				result of cli_realloc was not used
+				result of cli_realloc was not used
 
 Wed Apr 28 15:29:29 BST 2004 (njh)
 ----------------------------------
@@ -1184,7 +1198,7 @@ Sat Feb  7 23:18:51 GMT 2004 (njh)
   * libclamav: Handle empty content-type subtypes, e.g. headers such as
 		Content-Type: text/
 		Noted by Stefan Kaltenbrunner <mm-mailinglist*madness.at>
- 
+
 Sat Feb  7 23:37:52 CET 2004 (tk)
 ---------------------------------
   * libclamav: scan "Return-path: " mail files (detection was broken due to
