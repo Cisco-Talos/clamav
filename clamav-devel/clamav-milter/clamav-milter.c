@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.99  2004/06/28 08:30:18  nigelhorne
+ * Don't error when creating the quarantine directory if it already exists
+ *
  * Revision 1.98  2004/06/22 04:09:12  nigelhorne
  * Avoid unlocking unlocked mutex in clamfi_abort
  *
@@ -305,9 +308,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.98 2004/06/22 04:09:12 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.99 2004/06/28 08:30:18 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.73c"
+#define	CM_VERSION	"0.73d"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -2672,7 +2675,7 @@ connect2clamd(struct privdata *privdata)
 		sprintf(privdata->filename, "%s/%02d%02d%02d", quarantine_dir,
 			YY, MM, DD);
 
-		if(mkdir(privdata->filename, 0700) < 0) {
+		if((mkdir(privdata->filename, 0700) < 0) && (errno != EEXIST)) {
 			perror(privdata->filename);
 			if(use_syslog)
 				syslog(LOG_ERR, "mkdir %s failed", privdata->filename);

@@ -413,6 +413,8 @@ Changes
 			to unlock not locked mutex since we have no control
 			over when clamfi_abort() is called
 		Remove warning message on FreeBSD5.2
+0.73d	28/6/04	Don't error when creating the quarantine directory if it
+			already exists
 
 BUG REPORTS
 
