@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2001-2003 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2001-2002 Tomasz Kojm <zolw@konarski.edu.pl>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -14,6 +14,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
  */
 
 #if HAVE_CONFIG_H
@@ -27,14 +28,9 @@
 #define _GNU_SOURCE
 #include "getopt.h"
 
-#if defined(C_LINUX) && defined(CL_DEBUG)
-#include <sys/resource.h>
-#endif
-
 #include "options.h"
-#include "others.h"
-#include "output.h"
 #include "memory.h"
+#include "output.h"
 
 void sigtool(struct optstruct *opt);
 
@@ -43,7 +39,7 @@ int main(int argc, char **argv)
 	int ret, opt_index, i, len;
 	struct optstruct *opt;
 
-	const char *getopt_parameters = "hvVc:s:f:b:i:u:l::";
+	const char *getopt_parameters = "hvVb:i:u:l::";
 
 	static struct option long_options[] = {
 	    {"help", 0, 0, 'h'},
@@ -64,17 +60,10 @@ int main(int argc, char **argv)
 	    {0, 0, 0, 0}
     	};
 
-#if defined(C_LINUX) && defined(CL_DEBUG)
-	/* njh@bandsman.co.uk: create a dump if needed */
-	struct rlimit rlim;
 
-    rlim.rlim_cur = rlim.rlim_max = RLIM_INFINITY;
-    if(setrlimit(RLIMIT_CORE, &rlim) < 0)
-	perror("setrlimit");
-#endif
-
-    opt=(struct optstruct*)mcalloc(1, sizeof(struct optstruct));
+    opt=(struct optstruct*) mcalloc(1, sizeof(struct optstruct));
     opt->optlist = NULL;
+
 
     while(1) {
 
@@ -90,9 +79,13 @@ int main(int argc, char **argv)
 		break;
 
     	    default:
-		if(strchr(getopt_parameters, ret))
-		    register_char_option(opt, ret);
-		else {
+		if(strchr(getopt_parameters, ret)) {
+		    if(opt_index)
+			register_char_option(opt, ret, long_options[opt_index].name);
+		    else
+			register_char_option(opt, ret, NULL);
+
+		} else {
 		    mprintf("!Unknown option passed.\n");
 		    free_opt(opt);
 		    exit(40);
@@ -115,22 +108,21 @@ int main(int argc, char **argv)
         for(i=optind; i<argc; i++) {
 	    strncat(opt->filename, argv[i], strlen(argv[i]));
 	    if(i != argc-1)
-		strncat(opt->filename, " ", 1);
+		strncat(opt->filename, "\t", 1);
 	}
 
-    } else
-	/* FIXME !!! Without this, we have segfault */
-	opt->filename=(char*)mcalloc(1, sizeof(char));
-
+    }
 
     sigtool(opt);
+    free_opt(opt);
 
-    return(0);
+    return 0;
 }
 
-void register_char_option(struct optstruct *opt, char ch)
+void register_char_option(struct optstruct *opt, char ch, const char *longname)
 {
 	struct optnode *newnode;
+
 
     newnode = (struct optnode *) mmalloc(sizeof(struct optnode));
     newnode->optchar = ch;
@@ -147,6 +139,7 @@ void register_char_option(struct optstruct *opt, char ch)
 void register_long_option(struct optstruct *opt, const char *optname)
 {
 	struct optnode *newnode;
+
 
     newnode = (struct optnode *) mmalloc(sizeof(struct optnode));
     newnode->optchar = 0;
@@ -231,10 +224,9 @@ void free_opt(struct optstruct *opt)
 {
 	struct optnode *handler, *prev;
 
-    if(!opt || !opt->optlist)
+    if(!opt)
 	return;
 
-    mprintf("*Freeing option list... ");
     handler = opt->optlist;
 
     while(handler != NULL) {
@@ -246,7 +238,7 @@ void free_opt(struct optstruct *opt)
 	free(prev);
     }
 
-    free(opt->filename);
+    if (opt->filename)
+    	free(opt->filename);
     free(opt);
-    mprintf("*done\n");
 }

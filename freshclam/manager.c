@@ -564,11 +564,15 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
 
     if ((bread = recv(socketfd, buffer, FILEBUFF, 0)) == -1) {
       mprintf("@Error while reading database from %s\n", hostname);
+      close(fd);
+      unlink(file);
       return 52;
     }
 
     if ((strstr(buffer, "HTTP/1.1 404")) != NULL) { 
       mprintf("@%s not found on remote server\n", dbfile);
+      close(fd);
+      unlink(file);
       return 58;
     }
 

@@ -21,7 +21,6 @@
 #include "clamav-config.h"
 #endif
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,10 +51,6 @@
 #include "../libclamav/others.h"
 #include "../libclamav/str.h"
 
-#define LINE 1024
-
-#define MIN_LENGTH 15
-#define MAX_LENGTH 200
 
 void help(void);
 char *getdsig(const char *host, const char *user, const char *data);
@@ -65,21 +60,16 @@ int unpack(struct optstruct *opt);
 int listdb(const char *filename);
 int listdir(const char *dirname);
 void listsigs(struct optstruct *opt);
-int cli_rmdirs(const char *dirname); /* libclamav's internal */
 
 
 void sigtool(struct optstruct *opt)
 {
-	    char buffer[FILEBUFF];
-	    int bytes;
-	    char *pt;
 
+    if(optl(opt, "quiet"))
+	mprintf_quiet = 1;
 
-    if(optl(opt, "quiet")) mprintf_quiet = 1;
-    else mprintf_quiet = 0;
-
-    if(optl(opt, "stdout")) mprintf_stdout = 1;
-    else mprintf_stdout = 0;
+    if(optl(opt, "stdout"))
+	mprintf_stdout = 1;
 
     if(optl(opt, "debug"))
 	cl_debug();
@@ -95,6 +85,9 @@ void sigtool(struct optstruct *opt)
     }
 
     if(optl(opt, "hex-dump")) {
+	    char buffer[FILEBUFF];
+	    int bytes;
+	    char *pt;
 
 	while((bytes = read(0, buffer, FILEBUFF)) > 0) {
 	    pt = cli_str2hex(buffer, bytes);
@@ -103,10 +96,37 @@ void sigtool(struct optstruct *opt)
 	}
 
     } else if(optl(opt, "md5")) {
+	    char *md5, *filename;
+	    int i;
+	    struct stat sb;
 
-	char *md5 = cli_md5stream(stdin);
-	mprintf("%s\n", md5);
-	free(md5);
+	mprintf_stdout = 1;
+
+	if(opt->filename) {
+
+	    for(i = 0; (filename = cli_strtok(opt->filename, i, "\t")); i++) {
+		if(stat(filename, &sb) == -1) {
+		    mprintf("!Can't access file %s\n", filename);
+		    perror(filename);
+		} else {
+		    if((sb.st_mode & S_IFMT) == S_IFREG) {
+			if((md5 = cli_md5file(filename))) {
+			    mprintf("%s:%d:%s\n", md5, sb.st_size, filename);
+			    free(md5);
+			} else
+			    mprintf("!Can't generate MD5 checksum for %s\n", filename);
+		    }
+		}
+
+		free(filename);
+	    }
+
+	} else {
+
+	    md5 = cli_md5stream(stdin);
+	    mprintf("%s\n", md5);
+	    free(md5);
+	}
 
     } else if(optc(opt, 'b')) {
 	if(!optl(opt, "server")) {
@@ -137,7 +157,6 @@ void sigtool(struct optstruct *opt)
 	help();
     }
 
-    free_opt(opt);
 }
 
 int countlines(const char *filename)
@@ -539,6 +558,7 @@ int listdb(const char *filename)
 
     if(!(buffer = (char *) mmalloc(FILEBUFF))) {
 	mprintf("!listdb(): Can't allocate memory.\n");
+	fclose(fd);
 	return -1;
     }
 
@@ -596,6 +616,7 @@ int listdb(const char *filename)
 	    mprintf("!listdb(): Can't unpack CVD file.\n");
 	    cli_rmdirs(dir);
 	    free(dir);
+	    fclose(tmpd);
 	    unlink(tmp);
 	    free(tmp);
 	    free(buffer);
@@ -718,7 +739,8 @@ void help(void)
     mprintf("    --stdout                               write to stdout instead of stderr\n");
     mprintf("    --hex-dump                             convert data from stdin to a hex\n");
     mprintf("                                           string and print it on stdout\n");
-    mprintf("    --md5                                  generate MD5 checksum from stdin\n");
+    mprintf("    --md5 [FILES]                          generate MD5 checksum from stdin\n");
+    mprintf("                                           or MD5 sigs for FILES\n");
     mprintf("    --info=FILE            -i FILE         print database information\n");
     mprintf("    --build=NAME           -b NAME         build a CVD file\n");
     mprintf("    --server=ADDR                          ClamAV Signing Service address\n");
