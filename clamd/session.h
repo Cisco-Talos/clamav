@@ -22,6 +22,8 @@
 #define COMMAND_SHUTDOWN 1
 #define COMMAND_RELOAD 2
 #define COMMAND_END 3
+#define COMMAND_SESSION 4
+#define COMMAND_TIMEOUT 5
 
 #define CMD1 "SCAN"
 #define CMD2 "RAWSCAN"

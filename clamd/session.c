@@ -56,9 +56,7 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
     retval = poll_fd(desc, timeout);
     switch (retval) {
     case 0: /* timeout */
-	mdprintf(desc, "ERROR\n");
-	logg("!Command: command timeout.\n");
-	return -1;
+	return COMMAND_TIMEOUT;
     case -1:
 	mdprintf(desc, "ERROR\n");
 	logg("!Command: poll_fd failed.\n");
@@ -67,8 +65,10 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
 
     while((bread = readsock(desc, buff, 1024)) == -1 && errno == EINTR);
 
-    if(!bread)
-	return 0;
+    if(bread == 0) {
+	/* Connection closed */
+	return -1;
+    }
 
     if(bread < 0) {
 	logg("!Command parser: read() failed.\n");
@@ -142,33 +142,7 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
 		return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD9, strlen(CMD9))) { /* SESSION */
-	do {
-	    if(!is_fd_connected(desc)) {
-		logg("SESSION: Client disconnected without END\n");
-		return 0;
-	    }
-	    ret = command(desc, root, limits, options, copt, -1);
-	} while(!ret);
-
-	switch(ret) {
-	    case COMMAND_SHUTDOWN:
-		mdprintf(desc, "SESSION TERMINATED (SHUTDOWN)\n");
-		break;
-
-	    case COMMAND_RELOAD:
-		mdprintf(desc, "SESSION TERMINATED (DATABASE RELOADING)\n");
-		break;
-
-	    case COMMAND_END:
-		mdprintf(desc, "BYE\n");
-		break;
-
-	    default:
-		mdprintf(desc, "SESSION TERMINATED (INTERNAL ERROR)\n");
-		break;
-	}
-
-	return ret;
+	return COMMAND_SESSION;
 
     } else if(!strncmp(buff, CMD10, strlen(CMD10))) { /* END */
 	return COMMAND_END;
