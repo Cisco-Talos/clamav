@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.19  2003/11/21 07:26:31  nigelhorne
+ * Scan multipart alternatives that have no boundaries, finds some uuencoded happy99
+ *
  * Revision 1.18  2003/11/17 08:13:21  nigelhorne
  * Handle spaces at the end of lines of MIME headers
  *
@@ -45,7 +48,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.18 2003/11/17 08:13:21 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.19 2003/11/21 07:26:31 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -489,9 +492,14 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 
 			if(boundary == NULL) {
 				cli_warnmsg("Multipart MIME message contains no boundaries\n");
-				return 2;	/* Broken e-mail message */
+				/* Broken e-mail message */
+				mimeType = NOMIME;
+				/*
+				 * The break means that we will still
+				 * check if the file contains a uuencoded file
+				 */
+				break;
 			}
-
 
 			/*
 			 * Get to the start of the first message
@@ -507,7 +515,12 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 				 * <Thomas.Lamy@in-online.net>
 				 */
 				free((char *)boundary);
-				return 2;	/* Nothing to do */
+				mimeType = NOMIME;
+				/*
+				 * The break means that we will still
+				 * check if the file contains a uuencoded file
+				 */
+				break;
 			}
 			/*
 			 * Build up a table of all of the parts of this
@@ -1097,9 +1110,7 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 		}
 	}
 
-#ifdef	CL_DEBUG
 	cli_dbgmsg("%d attachments found\n", nBlobs);
-#endif
 
 	if(nBlobs == 0) {
 		blob *b;
@@ -1134,6 +1145,8 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 			const text *t_line = uuencodeBegin(mainMessage);
 
 			if(t_line != NULL) {
+				cli_dbgmsg("Found uuencoded file\n");
+
 				/*
 				 * Main part contains uuencoded section
 				 */
@@ -1148,6 +1161,8 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 					blobDestroy(b);
 				}
 			} else {
+				cli_dbgmsg("Not found uuencoded file\n");
+
 				messageAddArgument(mainMessage, "filename=textportion");
 				if((b = messageToBlob(mainMessage)) != NULL) {
 					/*
