@@ -1,3 +1,8 @@
+Fri Mar  4 02:21:42 CET 2005 (tk)
+---------------------------------
+  * clamd/others.c: include <sys/param.h> to fix compilation error on FreeBSD
+		    4.2 (Sergey Smitienko <hunter@comsys.com.ua>
+
 Fri Mar  4 02:08:45 CET 2005 (tk)
 ---------------------------------
   * libclamav/scanners.c: close zzip descriptor when tmpfile() fails
