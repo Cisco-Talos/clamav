@@ -1,3 +1,7 @@
+Wed Mar 17 09:32:45 GMT 2004 (trog)
+-----------------------------------
+  * libclamav/vba_extract.c: Add support for MacOffice98 documents
+
 Tue Mar 16 20:43:20 CET 2004 (tk)
 ---------------------------------
   * libclamav: unrarlib: don't use UnstoreFile() because it causes memory
