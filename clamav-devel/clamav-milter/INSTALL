@@ -220,6 +220,7 @@ Changes
 		<Jim.Allen@Heartsine.co.uk>
 0.66l	7/2/04	Updated URL reference
  		Added new config.h mechanism
+0.66m	9/2/04	Added Hflag from "Leonid Zeitlin" <lz@europe.com>
 
 BUG REPORTS
 
