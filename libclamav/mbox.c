@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.225 2005/03/07 11:23:12 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.226 2005/03/15 18:01:25 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -689,6 +689,10 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 	void (*segv)(int);
 #endif
 	static table_t *rfc821, *subtype;
+#ifdef	CL_DEBUG
+	char tmpfilename[16];
+	int tmpfd;
+#endif
 
 	cli_dbgmsg("in mbox()\n");
 
@@ -698,9 +702,37 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 		close(i);
 		return CL_EOPEN;
 	}
+#ifdef	CL_DEBUG
+	/*
+	 * Copy the incoming mail for debugging, so that if it falls over
+	 * we have a copy of the offending email. This is debugging code
+	 * that you shouldn't of course install in a live environment. I am
+	 * not interested in hearing about security issues with this section
+	 * of the parser.
+	 */
+	strcpy(tmpfilename, "/tmp/mboxXXXXXX");
+	tmpfd = mkstemp(tmpfilename);
+	if(tmpfd < 0) {
+		perror(tmpfilename);
+		cli_errmsg("Can't make debugging file\n");
+	} else {
+		FILE *tmpfp = fdopen(tmpfd, "w");
+
+		if(tmpfp) {
+			while(fgets(buffer, sizeof(buffer) - 1, fd) != NULL)
+				fputs(buffer, tmpfp);
+			fclose(tmpfp);
+			rewind(fd);
+		} else
+			cli_errmsg("Can't fdopen debugging file\n");
+	}
+#endif
 	if(fgets(buffer, sizeof(buffer) - 1, fd) == NULL) {
 		/* empty message */
 		fclose(fd);
+#ifdef	CL_DEBUG
+		unlink(tmpfilename);
+#endif
 		return CL_CLEAN;
 	}
 #ifdef	CL_THREAD_SAFE
@@ -716,6 +748,9 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 			pthread_mutex_unlock(&tables_mutex);
 #endif
 			fclose(fd);
+#ifdef	CL_DEBUG
+			unlink(tmpfilename);
+#endif
 			return CL_EMEM;
 		}
 	}
@@ -758,6 +793,9 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 			fclose(fd);
 #ifdef HAVE_BACKTRACE
 			signal(SIGSEGV, segv);
+#endif
+#ifdef	CL_DEBUG
+			unlink(tmpfilename);
 #endif
 			return CL_EMEM;
 		}
@@ -892,6 +930,9 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 	signal(SIGSEGV, segv);
 #endif
 
+#ifdef	CL_DEBUG
+	unlink(tmpfilename);
+#endif
 	return retcode;
 }
 
@@ -1631,7 +1672,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 										cli_dbgmsg("Ignoring fake end of headers\n");
 										continue;
 									}
-								if(strncmp(data, "Content", 7) == 0) {
+								if((strncmp(data, "Content", 7) == 0) ||
+								   (strncmp(data, "filename=", 9) == 0)) {
 									cli_dbgmsg("Ignoring fake end of headers\n");
 									continue;
 								}
