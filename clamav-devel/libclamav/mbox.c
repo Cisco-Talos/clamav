@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.149  2004/10/06 17:21:30  nigelhorne
+ * Fix RFC2298 handling broken by RFC1341 code
+ *
  * Revision 1.148  2004/10/05 15:41:53  nigelhorne
  * First draft of code to handle RFC1341
  *
@@ -432,7 +435,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.148 2004/10/05 15:41:53 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.149 2004/10/06 17:21:30 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -547,7 +550,7 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
  *	This is experimental code so it is up to YOU to (1) ensure it's secure
  * (2) peridically trim the directory of old files
  */
-/*#define	PARTIAL_DIR	"/tmp/partial"	/* FIXME: should be config based on TMPDIR */
+#define	PARTIAL_DIR	"/tmp/partial"	/* FIXME: should be config based on TMPDIR */
 
 static	message	*parseEmailHeaders(const message *m, const table_t *rfc821Table);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
@@ -1819,10 +1822,11 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					messageDestroy(m);
 				}
 				break;
-			} else if(strcasecmp(mimeSubtype, "disposition-notification") == 0)
+			} else if(strcasecmp(mimeSubtype, "disposition-notification") == 0) {
 				/* RFC 2298 - handle like a normal email */
+				rc = 1;
 				break;
-			else if(strcasecmp(mimeSubtype, "partial") == 0) {
+			} else if(strcasecmp(mimeSubtype, "partial") == 0) {
 #ifdef	PARTIAL_DIR
 				/* RFC1341 message split over many emails */
 				if(rfc1341(mainMessage, dir) >= 0)
