@@ -1,7 +1,14 @@
+Thu Aug 12 16:10:31 CEST 2004 (tk)
+----------------------------------
+  * etc/freshclam.conf: add example of PidFile directive (thanks to Youza
+			Youzovic <youza*post.cz>)
+  * libclamav: readdb: fix possible memory leaks (patch by Igor Brezac
+	       <igor*ypass.net>)
+
 Thu Aug 12 13:19:37 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	--from=EMAIL option didn't always work, reported by
-				"Sergey Y. Afonin" <asy@kraft-s.ru>
+				"Sergey Y. Afonin" <asy*kraft-s.ru>
 
 Thu Aug 12 11:36:36 BST 2004 (njh)
 ----------------------------------
@@ -22,7 +29,7 @@ Wed Aug 11 15:46:56 BST 2004 (njh)
 Wed Aug 11 11:34:57 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Installed a new isLocalAddr checker written by
-				David Champion <dgc@uchicago.edu>
+				David Champion <dgc*uchicago.edu>
 
 Tue Aug 10 15:53:25 CEST 2004 (tk)
 ----------------------------------

@@ -138,7 +138,6 @@ static int cli_addsig(struct cl_node *root, const char *virname, const char *hex
 	free(hexcpy);
 
 	if(error) {
-	    free(hexcpy);
 	    free(hexnew);
 	    if(new->alt) {
 		free(new->altn);
@@ -177,6 +176,7 @@ static int cli_addsig(struct cl_node *root, const char *virname, const char *hex
 	virlen = strlen(virname);
 
     if(virlen <= 0) {
+	free(new->pattern);
 	if(new->alt) {
 	    free(new->altn);
 	    for(i = 0; i < new->alt; i++)
@@ -189,6 +189,7 @@ static int cli_addsig(struct cl_node *root, const char *virname, const char *hex
     }
 
     if((new->virname = cli_calloc(virlen + 1, sizeof(char))) == NULL) {
+	free(new->pattern);
 	if(new->alt) {
 	    free(new->altn);
 	    for(i = 0; i < new->alt; i++)
@@ -203,6 +204,7 @@ static int cli_addsig(struct cl_node *root, const char *virname, const char *hex
     strncpy(new->virname, virname, virlen);
 
     if((ret = cli_ac_addpatt(root, new))) {
+	free(new->pattern);
 	free(new->virname);
 	if(new->alt) {
 	    free(new->altn);
