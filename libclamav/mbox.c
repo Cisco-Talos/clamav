@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.151  2004/10/10 11:10:20  nigelhorne
+ * Remove perror - replace with cli_errmsg
+ *
  * Revision 1.150  2004/10/09 08:01:37  nigelhorne
  * Needs libcurl >= 7.11
  *
@@ -438,7 +441,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.150 2004/10/09 08:01:37 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.151 2004/10/10 11:10:20 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -551,7 +554,7 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 #undef	WITH_CURL	/* also undef FOLLOWURLS? */
 #endif
 
-#if	(LIBCURL_VERSION_MAJOR == 7) && (LIBCURL_VERSION_MINOR < 11)
+#if	(LIBCURL_VERSION_MAJOR == 7) && (LIBCURL_VERSION_MINOR < 10)
 #undef	WITH_CURL	/* also undef FOLLOWURLS? */
 #endif
 
@@ -2635,7 +2638,7 @@ rfc1341(message *m, const char *dir)
 	char *oldfilename;
 
 	if((mkdir(PARTIAL_DIR, 0700) < 0) && (errno != EEXIST)) {
-		/*perror(PARTIAL_DIR);*/
+		cli_errmsg("Can't create the directory '%s'", PARTIAL_DIR);
 		return -1;
 	}
 
@@ -2683,6 +2686,7 @@ rfc1341(message *m, const char *dir)
 
 		/*
 		 * If it's the last one - reassemble it
+		 * FIXME: this assumes that we receive the parts in order
 		 */
 		if((n == t) && ((dd = opendir(PARTIAL_DIR)) != NULL)) {
 			FILE *fout;
@@ -2694,7 +2698,7 @@ rfc1341(message *m, const char *dir)
 
 			fout = fopen(outname, "wb");
 			if(fout == NULL) {
-				/*perror(outname);*/
+				cli_errmsg("Can't open '%s' for writing", outname);
 				free(id);
 				free(total);
 				free(number);
@@ -2727,7 +2731,7 @@ rfc1341(message *m, const char *dir)
 					sprintf(fullname, "%s/%s", PARTIAL_DIR, dent->d_name);
 					fin = fopen(fullname, "rb");
 					if(fin == NULL) {
-						/*perror(fullname);*/
+						cli_errmsg("Can't open '%s' for reading", fullname);
 						fclose(fout);
 						unlink(outname);
 						free(id);
@@ -2970,7 +2974,7 @@ getURL(struct arg *arg)
 	fp = fopen(fout, "w");
 
 	if(fp == NULL) {
-		/*perror(fout);*/
+		cli_errmsg("Can't open '%s' for writing", fout);
 		free(fout);
 		curl_easy_cleanup(curl);
 		return NULL;
