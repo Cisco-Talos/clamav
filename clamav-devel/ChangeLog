@@ -1,3 +1,8 @@
+Tue Mar 23 11:09:30 GMT 2004 (njh)
+----------------------------------
+  * libclamav/blob.c:	More restrictive about which characters can be used
+	in filenames on DOS based systems
+
 Tue Mar 23 09:26:18 GMT 2004 (njh)
 ----------------------------------
   * docs/man/clamav-milter.8:	Document the default value for --server, and
