@@ -135,7 +135,7 @@
  *	0.60b	17/8/03	Optionally set postmaster address. Usually one uses
  *			/etc/aliases, but not everyone want's to...
  *	0.60c	22/8/03	Another go at Solaris support
- *	0.60d	26/8/03	Removed superflous buffer and unneeded strerror call
+ *	0.60d	26/8/03	Removed superfluous buffer and unneeded strerror call
  *			ETIMEDOUT isn't an error, but should give a warning
  *	0.60e	09/9/03	Added -P and -q flags by "Nicholas M. Kirsch"
  *			<nick@kirsch.org>
@@ -235,9 +235,16 @@
  *	0.67d	19/2/04	Reworked TCPwrappers code
  *			Thanks to "Hector M. Rulot Segovia" <Hector.Rulot@uv.es>
  *			Changed some printf/puts to cli_dbgmsg
+ *	0.67e	20/2/04	Moved the definition of the sendmail pipe
+ *			The recent changes to the configure script changed
+ *			the order of includes sosome prototypes weren't
+ *			getting in
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.51  2004/02/20 09:50:42  nigelhorne
+ * Removed warnings added by new configuration script
+ *
  * Revision 1.50  2004/02/19 10:00:26  nigelhorne
  * Rework TCPWrappers support
  *
@@ -373,9 +380,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.50 2004/02/19 10:00:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.51 2004/02/20 09:50:42 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.67d"
+#define	CM_VERSION	"0.67e"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -387,7 +394,8 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.50 2004/02/19 10:00:26 nig
 #include "cfgfile.h"
 #include "../target.h"
 #include "str.h"
-#include "others.h"
+#include "../libclamav/others.h"
+#include "clamav.h"
 
 #ifndef	CL_DEBUG
 #define	NDEBUG
@@ -1945,7 +1953,6 @@ clamfi_eom(SMFICTX *ctx)
 	} else {
 		int i;
 		char **to, *err;
-		FILE *sendmail;
 
 		if(use_syslog)
 			syslog(LOG_NOTICE, mess);
@@ -1992,6 +1999,7 @@ clamfi_eom(SMFICTX *ctx)
 
 		if(!qflag) {
 			char cmd[128];
+			FILE *sendmail;
 
 			snprintf(cmd, sizeof(cmd), "%s -t", SENDMAIL_BIN);
 

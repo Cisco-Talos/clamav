@@ -1,3 +1,8 @@
+Fri Feb 20 09:55:58 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter: The recent changes to the configure script changed
+	the order of includes so some prototypes weren't getting in
+
 Thu Feb 19 16:03:59 GMT 2004 (trog)
 -----------------------------------
   * libclamav/vba_extract.c: tidy up error handling
