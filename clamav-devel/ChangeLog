@@ -1,3 +1,9 @@
+Fri Nov 26 23:00:42 GMT 2004 (njh)
+----------------------------------
+ * libclamav/mbox.c:	Scan binHexes after the final MIME section
+			Handle spaces incorrectly added to the final MIME
+				section marker
+
 Fri Nov 26 21:53:03 GMT 2004 (njh)
 ----------------------------------
  * libclamav/mbox.c:	Scan uuencodes after the final MIME section

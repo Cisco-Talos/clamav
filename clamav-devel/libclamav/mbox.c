@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.185  2004/11/26 23:00:29  nigelhorne
+ * Handle spaces after the final MIME boundary and binHex attachments after that boundary
+ *
  * Revision 1.184  2004/11/26 21:51:48  nigelhorne
  * Scan uuencodes after the final MIME section
  *
@@ -540,7 +543,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.184 2004/11/26 21:51:48 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.185 2004/11/26 23:00:29 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1459,7 +1462,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				do {
 					const char *line = lineGetData(t_line->t_line);
 
-					/*printf("inMimeHead %d inhead %d boundary %s line '%s' next '%s'\n",
+					/*printf("inMimeHead %d inhead %d boundary '%s' line '%s' next '%s'\n",
 						inMimeHead, inhead, boundary, line,
 						t_line->t_next && t_line->t_next->t_line ? lineGetData(t_line->t_next->t_line) : "(null)");*/
 
@@ -1832,8 +1835,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					case NOMIME:
 						cli_dbgmsg("No mime headers found in multipart part %d\n", i);
 						if(mainMessage) {
-							const text *u_line = uuencodeBegin(mainMessage);
-							if(u_line) {
+							if(uuencodeBegin(aMessage)) {
 								cli_dbgmsg("Found uuencoded message in multipart/mixed mainMessage\n");
 								messageSetEncoding(mainMessage, "x-uuencode");
 								fb = messageToFileblob(mainMessage, dir);
@@ -1845,10 +1847,18 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 								messageDestroy(mainMessage);
 							mainMessage = NULL;
 						} else if(aMessage) {
-							const text *u_line = uuencodeBegin(aMessage);
-							if(u_line) {
+							if(uuencodeBegin(aMessage)) {
 								cli_dbgmsg("Found uuencoded message in multipart/mixed non mime part\n");
 								messageSetEncoding(aMessage, "x-uuencode");
+								fb = messageToFileblob(aMessage, dir);
+
+								if(fb)
+									fileblobDestroy(fb);
+								assert(aMessage == messages[i]);
+								messageReset(messages[i]);
+							} else if(binhexBegin(aMessage)) {
+								cli_dbgmsg("Found binhex message in multipart/mixed non mime part\n");
+								messageSetEncoding(aMessage, "x-binhex");
 								fb = messageToFileblob(aMessage, dir);
 
 								if(fb)
@@ -2427,7 +2437,7 @@ endOfMessage(const char *line, const char *boundary)
 	len = strlen(boundary);
 	if(strncasecmp(line, boundary, len) != 0)
 		return 0;
-	if(strlen(line) != (len + 2))
+	if(strlen(line) < (len + 2))
 		return 0;
 	line = &line[len];
 	if(*line++ != '-')
