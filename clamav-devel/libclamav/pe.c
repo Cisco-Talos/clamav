@@ -1,9 +1,6 @@
 /*
  *  Copyright (C) 2004 Tomasz Kojm <tkojm@clamav.net>
  *
- *  Implementation (header structures) based on the PE format description
- *  by B. Luevelsmeyer
- *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -35,7 +32,10 @@
 #include "cltypes.h"
 #include "clamav.h"
 #include "others.h"
+#include "pe.h"
 #include "upx.h"
+#include "petite.h"
+#include "scanners.h"
 
 #define IMAGE_DOS_SIGNATURE	    0x5a4d	    /* MZ */
 #define IMAGE_DOS_SIGNATURE_OLD	    0x4d5a          /* ZM */
@@ -62,75 +62,6 @@ static inline uint32_t EC32(uint32_t v)
 #endif
 
 extern short cli_leavetemps_flag;
-
-struct pe_image_file_hdr {
-    uint32_t Magic;
-    uint16_t Machine;
-    uint16_t NumberOfSections;
-    uint32_t TimeDateStamp;		    /* unreliable */
-    uint32_t PointerToSymbolTable;	    /* debug */
-    uint32_t NumberOfSymbols;		    /* debug */
-    uint16_t SizeOfOptionalHeader;	    /* == 224 */
-    uint16_t Characteristics;
-};
-
-struct pe_image_data_dir {
-    uint32_t VirtualAddress;
-    uint32_t Size;
-};
-
-struct pe_image_optional_hdr {
-    uint16_t Magic;
-    uint8_t  MajorLinkerVersion;		    /* unreliable */
-    uint8_t  MinorLinkerVersion;		    /* unreliable */
-    uint32_t SizeOfCode;			    /* unreliable */
-    uint32_t SizeOfInitializedData;		    /* unreliable */
-    uint32_t SizeOfUninitializedData;		    /* unreliable */
-    uint32_t AddressOfEntryPoint;
-    uint32_t BaseOfCode;
-    uint32_t BaseOfData;
-    uint32_t ImageBase;				    /* multiple of 64 KB */
-    uint32_t SectionAlignment;			    /* usually 32 or 4096 */
-    uint32_t FileAlignment;			    /* usually 32 or 512 */
-    uint16_t MajorOperatingSystemVersion;	    /* not used */
-    uint16_t MinorOperatingSystemVersion;	    /* not used */
-    uint16_t MajorImageVersion;			    /* unreliable */
-    uint16_t MinorImageVersion;			    /* unreliable */
-    uint16_t MajorSubsystemVersion;
-    uint16_t MinorSubsystemVersion;
-    uint32_t Win32VersionValue;			    /* ? */
-    uint32_t SizeOfImage;
-    uint32_t SizeOfHeaders;
-    uint32_t CheckSum;				    /* NT drivers only */
-    uint16_t Subsystem;
-    uint16_t DllCharacteristics;
-    uint32_t SizeOfStackReserve;
-    uint32_t SizeOfStackCommit;
-    uint32_t SizeOfHeapReserve;
-    uint32_t SizeOfHeapCommit;
-    uint32_t LoaderFlags;			    /* ? */
-    uint32_t NumberOfRvaAndSizes;		    /* unreliable */
-    struct pe_image_data_dir DataDirectory[16];
-};
-
-struct pe_image_section_hdr {
-    uint8_t Name[8];			    /* may not end with NULL */
-    /*
-    union {
-	uint32_t PhysicalAddress;
-	uint32_t VirtualSize;
-    } AddrSize;
-    */
-    uint32_t VirtualSize;
-    uint32_t VirtualAddress;
-    uint32_t SizeOfRawData;		    /* multiple of FileAlignment */
-    uint32_t PointerToRawData;		    /* offset to the section's data */
-    uint32_t PointerToRelocations;	    /* object files only */
-    uint32_t PointerToLinenumbers;	    /* object files only */
-    uint16_t NumberOfRelocations;	    /* object files only */
-    uint16_t NumberOfLinenumbers;	    /* object files only */
-    uint32_t Characteristics;
-};
 
 static uint32_t cli_rawaddr(uint32_t rva, struct pe_image_section_hdr *shp, uint16_t nos)
 {
@@ -234,9 +165,11 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	struct pe_image_optional_hdr optional_hdr;
 	struct pe_image_section_hdr *section_hdr;
 	struct stat sb;
-	char sname[9], buff[126], *tempfile;
-	int i, found, upx_success = 0, broken = 0;
+	char sname[9], buff[256], *tempfile;
+	int i, found, upx_success = 0, broken = 0, min = 0, max = 0;
 	int (*upxfn)(char *, int , char *, int) = NULL;
+	char *src, *dest;
+	int ssize, dsize, ndesc;
 
 
     if(read(desc, &e_magic, sizeof(e_magic)) != sizeof(e_magic)) {
@@ -362,6 +295,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     }
 
     cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr.NumberOfRvaAndSizes));
+    cli_dbgmsg("------------------------------------\n");
 
     section_hdr = (struct pe_image_section_hdr *) cli_calloc(nsections, sizeof(struct pe_image_section_hdr));
 
@@ -381,7 +315,6 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
 	strncpy(sname, section_hdr[i].Name, 8);
 	sname[8] = 0;
-	cli_dbgmsg("------------------------------------\n");
 	cli_dbgmsg("Section %d\n", i);
 	cli_dbgmsg("Section name: %s\n", sname);
 	cli_dbgmsg("VirtualSize: %d\n", EC32(section_hdr[i].VirtualSize));
@@ -404,16 +337,18 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
 	if(EC32(section_hdr[i].Characteristics) & 0x20000000)
 	    cli_dbgmsg("Section's memory is executable\n");
+	cli_dbgmsg("------------------------------------\n");
 
-/*
-	if(!strcmp(sname, "_winzip_")) {
-	    int ptrd = section_hdr.PointerToRawData & ~(optional_hdr.FileAlignment - 1);
+	if(!i) {
+	    min = EC32(section_hdr[i].VirtualAddress);
+	    max = EC32(section_hdr[i].VirtualAddress) + EC32(section_hdr[i].SizeOfRawData);
+	} else {
+	    if(EC32(section_hdr[i].VirtualAddress) < min)
+		min = EC32(section_hdr[i].VirtualAddress);
 
-	    cli_dbgmsg("WinZip section\n");
-	    ddump(desc, ptrd, section_hdr.SizeOfRawData, cli_gentemp(NULL));
+	    if(EC32(section_hdr[i].VirtualAddress) + EC32(section_hdr[i].SizeOfRawData) > max)
+		max = EC32(section_hdr[i].VirtualAddress) + EC32(section_hdr[i].SizeOfRawData);
 	}
-*/
-
     }
 
     if(fstat(desc, &sb) == -1) {
@@ -423,7 +358,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     }
 
     if((ep = cli_rawaddr(EC32(optional_hdr.AddressOfEntryPoint), section_hdr, nsections)) == -1) {
-	cli_dbgmsg("Possibly broken PE file - Entry Point @%d out of file.\n", ep);
+	cli_dbgmsg("Possibly broken PE file\n");
 	broken = 1;
     }
 
@@ -454,9 +389,6 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     }
 
     if(found) {
-	    int ssize, dsize;
-	    char *src, *dest;
-
 	strncpy(sname, section_hdr[i].Name, 8);
 	sname[8] = 0;
 	cli_dbgmsg("UPX: Section %d name: %s\n", i, sname);
@@ -482,7 +414,6 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    free(section_hdr);
 	    return CL_CLEAN;
 	}
-
 
 	/* FIXME: use file operations in case of big files */
 	if((src = (char *) cli_malloc(ssize)) == NULL) {
@@ -590,6 +521,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		tempfile = cli_gentemp(NULL);
 		if((ndesc = open(tempfile, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
 		    cli_dbgmsg("UPX: Can't create file %s\n", tempfile);
+		    free(tempfile);
 		    free(section_hdr);
 		    free(src);
 		    free(dest);
@@ -598,6 +530,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
 		if(write(ndesc, dest, dsize) != dsize) {
 		    cli_dbgmsg("Can't write %d bytes\n", dsize);
+		    free(tempfile);
 		    free(section_hdr);
 		    free(src);
 		    free(dest);
@@ -620,6 +553,100 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	free(src);
 	free(dest);
     }
+
+    /* Petite */
+
+    /*
+    found = 2;
+
+    lseek(desc, ep, SEEK_SET);
+    if(read(desc, buff, 200) != 200)
+	return CL_EIO;
+
+    if(buff[0] != '\xb8' || cli_readint32(buff + 1) != EC32(section_hdr[nsections - 1].VirtualAddress) + EC32(optional_hdr.ImageBase)) {
+	if(buff[0] != '\xb8' || cli_readint32(buff + 1) != EC32(section_hdr[nsections - 2].VirtualAddress) + EC32(optional_hdr.ImageBase))
+	    found = 0;
+	else
+	    found = 1;
+    }
+
+    if(found) {
+	cli_dbgmsg("Petite: v2.%d compression detected\n", found);
+
+	if(cli_readint32(buff + 0x80) == 0x163c988d) {
+	    cli_dbgmsg("Petite: level zero compression is not supported yet\n");
+	} else {
+	    dsize = max - min;
+
+	    if(limits && limits->maxfilesize && dsize > limits->maxfilesize) {
+		cli_dbgmsg("Petite: Size exceeded (dsize: %d, max: %lu)\n", dsize, limits->maxfilesize);
+		free(section_hdr);
+		return CL_CLEAN;
+	    }
+
+	    if((dest = (char *) cli_calloc(dsize, sizeof(char))) == NULL) {
+		cli_dbgmsg("Petite: Can't allocate %d bytes\n", dsize);
+		free(section_hdr);
+		return CL_EMEM;
+	    }
+
+	    for(i = 0 ; i < nsections; i++) {
+		lseek(desc, cli_rawaddr(EC32(section_hdr[i].VirtualAddress), section_hdr, nsections), SEEK_SET);
+		read(desc, dest + EC32(section_hdr[i].VirtualAddress) - min, EC32(section_hdr[i].SizeOfRawData));
+	    }
+
+	    tempfile = cli_gentemp(NULL);
+	    if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+		cli_dbgmsg("Petite: Can't create file %s\n", tempfile);
+		free(tempfile);
+		free(section_hdr);
+		free(dest);
+		return CL_EIO;
+	    }
+
+	    switch(petite_inflate2x_1to9(dest, min, max - min, section_hdr,
+		    nsections, EC32(optional_hdr.ImageBase), ep, ndesc,
+		    found, EC32(optional_hdr.DataDirectory[2].VirtualAddress),
+		    EC32(optional_hdr.DataDirectory[2].Size))) {
+		case 1:
+		    cli_dbgmsg("Petite: Unpacked and rebuilt executable saved in %s\n", tempfile);
+		    break;
+
+		case 0:
+		    cli_dbgmsg("Petite: Unpacked data saved in %s\n", tempfile);
+		    break;
+
+		default:
+		    cli_dbgmsg("Petite: Unpacking failed\n");
+	    }
+
+	    free(dest);
+	    fsync(ndesc);
+	    lseek(ndesc, 0, SEEK_SET);
+
+	    if(cli_magic_scandesc(ndesc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS) {
+		free(section_hdr);
+		close(ndesc);
+		if(!cli_leavetemps_flag) {
+		    unlink(tempfile);
+		    free(tempfile);
+		} else {
+		    free(tempfile);
+		}
+		return CL_VIRUS;
+	    }
+
+	    close(ndesc);
+
+	    if(!cli_leavetemps_flag) {
+		unlink(tempfile);
+		free(tempfile);
+	    } else {
+		free(tempfile);
+	    }
+	}
+    }
+    */
 
     /* to be continued ... */
 

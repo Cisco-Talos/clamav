@@ -79,7 +79,7 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	blob.lo mbox.lo message.lo snprintf.lo strrcpy.lo table.lo \
 	text.lo ole2_extract.lo vba_extract.lo msexpand.lo pe.lo \
 	cabd.lo lzxd.lo mszipd.lo qtmd.lo system.lo upx.lo htmlnorm.lo \
-	chmunpack.lo
+	chmunpack.lo rebuildpe.lo petite.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -95,7 +95,8 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/mszipd.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/ole2_extract.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/others.Plo ./$(DEPDIR)/pe.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/qtmd.Plo ./$(DEPDIR)/readdb.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/petite.Plo ./$(DEPDIR)/qtmd.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/readdb.Plo ./$(DEPDIR)/rebuildpe.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/scanners.Plo ./$(DEPDIR)/snprintf.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/str.Plo ./$(DEPDIR)/strc.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/strrcpy.Plo ./$(DEPDIR)/system.Plo \
@@ -253,6 +254,7 @@ libclamav_la_SOURCES = \
 	str.h \
 	defaults.h \
 	scanners.c \
+	scanners.h \
 	filetypes.c \
 	filetypes.h \
 	unrarlib.c \
@@ -312,7 +314,11 @@ libclamav_la_SOURCES = \
 	htmlnorm.c \
 	htmlnorm.h \
 	chmunpack.c \
-	chmunpack.h
+	chmunpack.h \
+	rebuildpe.c \
+	rebuildpe.h \
+	petite.c \
+	petite.h
 
 lib_LTLIBRARIES = libclamav.la
 all: all-am
@@ -403,8 +409,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ole2_extract.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/others.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pe.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/petite.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qtmd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/readdb.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rebuildpe.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scanners.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/snprintf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/str.Plo@am__quote@

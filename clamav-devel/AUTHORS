@@ -22,12 +22,19 @@ OLE2 and VBA decoders, new thread manager in clamd.
 
 Thomas Lamy <tlamy*clamav.net>
 gpg key   : http://www.clamav.net/gpg/tlamy.gpg
+GPG fingerprint = C489 3262 31CE 85B3 98BF  7E4C 53C6 9727 0F48 F821
 Random hacker.
+
+aCaB <acab*clamav.net>
+gpg key   : http://www.clamav.net/gpg/acab.gpg
+GPG fingerprint = 977D EAED 219F F275 6DAF  F83A BA15 97C6 9D6D E6DGPG
+Executable unpackers.
 
 Submission management interface (for database developers only): Diego d'Ambra
 <diego*clamav.net>, Thomas Madsen <tm*softcom.dk>
 
-Database developers:
+Database maintainers:
+---------------------
 
 aCaB <acab*clamav.net>
 
