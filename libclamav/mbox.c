@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.106  2004/08/20 04:53:18  nigelhorne
+ * Tidy up
+ *
  * Revision 1.105  2004/08/18 21:35:08  nigelhorne
  * Multithread the FollowURL calls
  *
@@ -303,7 +306,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.105 2004/08/18 21:35:08 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.106 2004/08/20 04:53:18 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -380,7 +383,7 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 
 #define	SAVE_TO_DISC	/* multipart/message are saved in a temporary file */
 
-/*#define	FOLLOWURLS	/*
+#define	FOLLOWURLS	/*
 			 * If an email contains URLs, check them - helps to
 			 * find Dialer.gen-45
 			 */
@@ -919,6 +922,12 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				 * able to scan anyway and we lose nothing
 				 */
 				aText = textCopy(messageGetBody(mainMessage));
+			/*
+			 * TODO
+			else if(options&CL_MAILURL)
+				if(tableFind(subtypeTable, mimeSubtype) == HTML)
+					checkURLs(mainMessage, dir);
+			 */
 			break;
 		case MULTIPART:
 			boundary = messageFindArgument(mainMessage, "boundary");
@@ -1348,11 +1357,11 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 								cli_dbgmsg("Found uuencoded message in multipart/mixed text portion\n");
 								messageSetEncoding(aMessage, "x-uuencode");
 								addAttachment = TRUE;
-							} else if(strcasecmp(messageGetMimeSubtype(aMessage), "plain") == 0) {
+							} else if(tableFind(subtypeTable, cptr) == PLAIN) {
 								char *filename;
 								/*
 								 * Strictly speaking
-								 * a text/html part is
+								 * a text/plain part is
 								 * not an attachment. We
 								 * pretend it is so that
 								 * we can decode and
@@ -1373,7 +1382,8 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 								}
 							} else {
 								if(options&CL_MAILURL)
-									checkURLs(aMessage, dir);
+									if(tableFind(subtypeTable, cptr) == HTML)
+										checkURLs(aMessage, dir);
 								messageAddArgument(aMessage, "filename=textportion");
 								addAttachment = TRUE;
 							}
