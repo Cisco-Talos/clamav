@@ -402,6 +402,7 @@ int acceptloop(int socketd, struct cl_node *root, const struct cfgstruct *copt)
     if(cfgopt(copt, "ScanArchive") || cfgopt(copt, "ClamukoScanArchive")) {
 
 	/* set up limits */
+	memset(&limits, 0, sizeof(struct cl_limits));
 
 	if((cpt = cfgopt(copt, "ArchiveMaxFileSize"))) {
 	    if((limits.maxfilesize = cpt->numarg))
