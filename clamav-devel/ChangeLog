@@ -1,3 +1,8 @@
+Thu Oct  7 03:03:26 CEST 2004 (tk)
+----------------------------------
+  * configure: disable support for readdir_r by default (can be enabled with
+	       --enable-readdir_r)
+
 Wed Oct  6 21:36:59 CEST 2004 (tk)
 ----------------------------------
   * configure: improve --disable-dns behaviour (patch by Tom G. Christensen

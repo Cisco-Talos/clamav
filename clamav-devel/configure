@@ -1029,7 +1029,7 @@ Optional Features:
   --enable-debug	  enable debug code
   --enable-bigstack	  increase thread stack size
   --disable-gethostbyname_r	  disable support for gethostbyname_r
-  --disable-readdir_r		  disable support for readdir_r
+  --enable-gethostbyname_r	  enable support for readdir_r
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -11407,7 +11407,7 @@ cat >>confdefs.h <<\_ACEOF
 #define C_BSD 1
 _ACEOF
 
-    bad_gethostbyname_r="yes"
+    disable_gethostbyname_r="yes"
     ;;
 openbsd3.3*)
     if test "$have_pthreads" = "yes"; then
@@ -11433,7 +11433,7 @@ cat >>confdefs.h <<\_ACEOF
 #define C_BSD 1
 _ACEOF
 
-    bad_gethostbyname_r="yes"
+    disable_gethostbyname_r="yes"
     ;;
 openbsd*)
     if test "$have_pthreads" = "yes"; then
@@ -11462,7 +11462,7 @@ cat >>confdefs.h <<\_ACEOF
 #define C_BSD 1
 _ACEOF
 
-    bad_gethostbyname_r="yes"
+    disable_gethostbyname_r="yes"
     ;;
 netbsd*)
      if test "$have_pthreads" = "yes"; then
@@ -11486,7 +11486,7 @@ cat >>confdefs.h <<\_ACEOF
 #define C_BSD 1
 _ACEOF
 
-    bad_gethostbyname_r="yes"
+    disable_gethostbyname_r="yes"
     ;;
 bsd*)
     echo "$as_me:$LINENO: result: Unknown BSD detected. Disabling thread support." >&5
@@ -11497,7 +11497,7 @@ cat >>confdefs.h <<\_ACEOF
 #define C_BSD 1
 _ACEOF
 
-    bad_gethostbyname_r="yes"
+    disable_gethostbyname_r="yes"
     ;;
 beos*)
     echo "$as_me:$LINENO: result: BeOS detected. Disabling thread support." >&5
@@ -11526,7 +11526,7 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
     use_netinfo="yes"
-    bad_gethostbyname_r="yes"
+    disable_gethostbyname_r="yes"
     ;;
 sco*)
                     ;;
@@ -12622,10 +12622,13 @@ fi
 # Check whether --enable-gethostbyname_r or --disable-gethostbyname_r was given.
 if test "${enable_gethostbyname_r+set}" = set; then
   enableval="$enable_gethostbyname_r"
-  ac_cv_gethostbyname_args=""
+  disable_gethostbyname_r="yes"
 fi;
 
-if test -z "$ac_cv_gethostbyname_args" || test "$bad_gethostbyname_r" = "yes"; then
+if test "$disable_gethostbyname_r" = "yes"; then
+    echo "$as_me:$LINENO: result: support disabled" >&5
+echo "${ECHO_T}support disabled" >&6
+elif test -z "$ac_cv_gethostbyname_args"; then
     echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
 else
@@ -12764,10 +12767,15 @@ fi
 # Check whether --enable-readdir_r or --disable-readdir_r was given.
 if test "${enable_readdir_r+set}" = set; then
   enableval="$enable_readdir_r"
-  ac_cv_readdir_args=""
+
+else
+  disable_readdir_r="yes"
 fi;
 
-if test -z "$ac_cv_readdir_args"; then
+if test "$disable_readdir_r" = "yes"; then
+    echo "$as_me:$LINENO: result: support disabled" >&5
+echo "${ECHO_T}support disabled" >&6
+elif test -z "$ac_cv_readdir_args"; then
     echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
 else

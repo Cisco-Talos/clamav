@@ -292,7 +292,7 @@ freebsd*)
 	fi
     fi
     AC_DEFINE(C_BSD,1,[os is freebsd])
-    bad_gethostbyname_r="yes"
+    disable_gethostbyname_r="yes"
     ;;
 openbsd3.3*)
     if test "$have_pthreads" = "yes"; then
@@ -306,7 +306,7 @@ openbsd3.3*)
 	AC_DEFINE(_REENTRANT,1,[thread safe])
     fi
     AC_DEFINE(C_BSD,1,[os is bsd flavor])
-    bad_gethostbyname_r="yes"
+    disable_gethostbyname_r="yes"
     ;;
 openbsd*)
     if test "$have_pthreads" = "yes"; then
@@ -323,7 +323,7 @@ openbsd*)
 	AC_DEFINE(_REENTRANT,1,[thread safe])
     fi
     AC_DEFINE(C_BSD,1,[os is bsd flavor])
-    bad_gethostbyname_r="yes"
+    disable_gethostbyname_r="yes"
     ;;
 netbsd*)
      if test "$have_pthreads" = "yes"; then
@@ -335,13 +335,13 @@ netbsd*)
 	ADDITIONAL_LIBS="$LIBS -lpthread"
      fi
     AC_DEFINE(C_BSD,1,[os is bsd flavor])
-    bad_gethostbyname_r="yes"
+    disable_gethostbyname_r="yes"
     ;;
 bsd*)
     AC_MSG_RESULT(Unknown BSD detected. Disabling thread support.)
     have_pthreads="no"
     AC_DEFINE(C_BSD,1,[os is bsd flavor])
-    bad_gethostbyname_r="yes"
+    disable_gethostbyname_r="yes"
     ;;
 beos*)
     AC_MSG_RESULT(BeOS detected. Disabling thread support.)
@@ -353,7 +353,7 @@ darwin*)
     AC_DEFINE(C_DARWIN,1,[os is darwin])
     AC_DEFINE(BIND_8_COMPAT,1,[enable bind8 compatibility])
     use_netinfo="yes"
-    bad_gethostbyname_r="yes"
+    disable_gethostbyname_r="yes"
     ;;
 sco*)
     dnl njh@bandsman.sco.uk: SCO Unix port
@@ -561,9 +561,11 @@ fi
 
 AC_ARG_ENABLE(gethostbyname_r,
 [  --disable-gethostbyname_r	  disable support for gethostbyname_r],
-ac_cv_gethostbyname_args="",)
+disable_gethostbyname_r="yes", )
 
-if test -z "$ac_cv_gethostbyname_args" || test "$bad_gethostbyname_r" = "yes"; then
+if test "$disable_gethostbyname_r" = "yes"; then
+    AC_MSG_RESULT(support disabled)
+elif test -z "$ac_cv_gethostbyname_args"; then
     AC_MSG_RESULT(no)
 else
     if test "$ac_cv_gethostbyname_args" = 3; then
@@ -607,10 +609,12 @@ if test -z "$ac_cv_readdir_args"; then
 fi
 
 AC_ARG_ENABLE(readdir_r,
-[  --disable-readdir_r		  disable support for readdir_r],
-ac_cv_readdir_args="",)
+[  --enable-gethostbyname_r	  enable support for readdir_r],,
+disable_readdir_r="yes")
 
-if test -z "$ac_cv_readdir_args"; then
+if test "$disable_readdir_r" = "yes"; then
+    AC_MSG_RESULT(support disabled)
+elif test -z "$ac_cv_readdir_args"; then
     AC_MSG_RESULT(no)
 else
     if test "$ac_cv_readdir_args" = 2; then
