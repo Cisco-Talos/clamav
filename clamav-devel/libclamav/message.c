@@ -59,7 +59,7 @@
 #undef FALSE
 #endif
 
-typedef enum    { FALSE = 0, TRUE = 1 } bool;
+typedef enum { FALSE = 0, TRUE = 1 } bool;
 
 static	const	text	*uuencodeBegin(const message *m);
 static	unsigned char	*decodeLine(const message *m, const char *line, unsigned char *ptr);
@@ -377,14 +377,18 @@ messageAddArguments(message *m, const char *s)
 			free(data);
 		} else {
 			size_t len;
+
+			if(*cptr == '\0') {
+				cli_warnmsg("Ignoring empty field in \"%s\"\n", s);
+				return;
+			}
+
 			/*
 			 * The field is not in quotes, so look for the closing
 			 * white space
 			 */
 			while((*string != '\0') && !isspace(*string))
 				string++;
-
-			assert(*cptr != '\0');
 
 			len = (size_t)string - (size_t)key + 1;
 			field = cli_malloc(len);
@@ -440,12 +444,23 @@ messageFindArgument(const message *m, const char *variable)
 				return NULL;
 			}
 			if((*++ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {
-				/* At least two quotes in string, assume quoted argument */
+				/* Remove any quote characters */
 				char *ret = strdup(++ptr);
-				/* end string at next quote */
-				if ((ptr = strchr(ret, '"')) != NULL) {
-					*ptr = '\0';
-				}
+				char *p;
+
+				ret[strlen(ret) - 1] = '\0';
+				/*
+				 * Thomas Lamy <Thomas.Lamy@in-online.net>:
+				 * fix un-quoting of boundary strings from
+				 * header, occurs if boundary was given as
+				 *	'boundary="_Test_";'
+				 *
+				 * At least two quotes in string, assume
+				 * quoted argument
+				 * end string at next quote
+				 */
+				if((p = strchr(ret, '"')) != NULL)
+					*p = '\0';
 				return(ret);
 			}
 			return(strdup(ptr));
@@ -764,6 +779,7 @@ static unsigned char *
 decodeLine(const message *m, const char *line, unsigned char *ptr)
 {
 	int len;
+	bool softbreak;
 	char *p2;
 	char *copy;
 
@@ -780,13 +796,16 @@ decodeLine(const message *m, const char *line, unsigned char *ptr)
 			return (unsigned char *)strrcpy((char *)ptr, "\n");
 
 		case QUOTEDPRINTABLE:
+			softbreak = FALSE;
 			while(*line) {
 				if(*line == '=') {
 					unsigned char byte;
 
-					if((*++line == '\0') || (*line == '\n'))
+					if((*++line == '\0') || (*line == '\n')) {
+						softbreak = TRUE;
 						/* soft line break */
 						break;
+					}
 
 					byte = hex(*line);
 
@@ -802,10 +821,13 @@ decodeLine(const message *m, const char *line, unsigned char *ptr)
 					byte <<= 4;
 					byte += hex(*line);
 					*ptr++ = byte;
-				} else if((*line != '\n') && (*line != '\r')) /* hard line break */
+				} else
 					*ptr++ = *line;
 				line++;
 			}
+			if(!softbreak)
+				/* Put the new line back in */
+				*ptr++ = '\n';
 			break;
 
 		case BASE64:
