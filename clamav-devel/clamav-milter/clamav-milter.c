@@ -312,9 +312,14 @@
  *			Add advice that --quarantine-dir may improve
  *			performance when LocalSocket is used
  *			ThreadTimeout seems to have been changed to ReadTimeout
+ *	0.70g	3/4/04	Error if ReadTimeout is -ve
+ *			Honour StreamMaxLength
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.68  2004/04/03 04:47:22  nigelhorne
+ * Honour StreamMaxLength
+ *
  * Revision 1.67  2004/04/01 15:34:00  nigelhorne
  * ThreadTimeout has been renamed ReadTimeout
  *
@@ -501,9 +506,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.67 2004/04/01 15:34:00 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.68 2004/04/03 04:47:22 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70f"
+#define	CM_VERSION	"0.70g"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -613,6 +618,7 @@ struct	privdata {
 	u_char	*body;		/* body of the message if Sflag is set */
 	size_t	bodyLen;	/* number of bytes in body */
 	header_list_t headers;	/* Message headers */
+	off_t	numBytes;	/* Number of bytes sent so far */
 };
 
 static	int		pingServer(int serverNumber);
@@ -695,10 +701,11 @@ static	int	cl_error = SMFIS_TEMPFAIL; /*
 				 * an error. Patch from
 				 * Joe Talbott <josepht@cstone.net>
 				 */
-static	int	threadtimeout = CL_DEFAULT_SCANTIMEOUT; /*
+static	int	readTimeout = CL_DEFAULT_SCANTIMEOUT; /*
 				 * number of seconds to wait for clamd to
 				 * respond, see ReadTimeout in clamav.conf
 				 */
+static	off_t	streamMaxLength = -1;	/* StreamMaxLength from clamav.conf */
 static	int	logClean = 1;	/*
 				 * Add clean items to the log file
 				 */
@@ -1053,6 +1060,10 @@ main(int argc, char **argv)
 	}
 
 	if(!cfgopt(copt, "ScanMail")) {
+		/*
+		 * In fact ScanMail isn't needed if this machine doesn't run
+		 * clamd.
+		 */
 		fprintf(stderr, "%s: ScanMail not enabled in %s\n",
 			argv[0], cfgfile);
 		return EX_CONFIG;
@@ -1067,14 +1078,22 @@ main(int argc, char **argv)
 		max_children = cpt->numarg;
 
 	if((cpt = cfgopt(copt, "ReadTimeout")) != NULL) {
-		threadtimeout = cpt->numarg;
+		readTimeout = cpt->numarg;
 
-		if(threadtimeout < 0) {
+		if(readTimeout < 0) {
 			fprintf(stderr, "%s: ReadTimeout must not be negative in %s\n",
 				argv[0], cfgfile);
+			return EX_CONFIG;
 		}
 	}
-
+	if((cpt = cfgopt(copt, "StreamMaxLength")) != NULL) {
+		if(cpt->numarg < 0) {
+			fprintf(stderr, "%s: StreamMaxLength must not be negative in %s\n",
+				argv[0], cfgfile);
+			return EX_CONFIG;
+		}
+		streamMaxLength = cpt->numarg;
+	}
 	/*
 	 * Get the outgoing socket details - the way to talk to clamd
 	 */
@@ -1426,7 +1445,7 @@ findServer(void)
 
 	free(servers);
 
-	tv.tv_sec = threadtimeout;
+	tv.tv_sec = readTimeout;
 	tv.tv_usec = 0;
 
 	retval = select(maxsock, &rfds, NULL, NULL, &tv);
@@ -1662,9 +1681,12 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 	privdata->cmdSocket = -1;	/* 0.4 */
 
 	privdata->from = strdup(argv[0]);
-	privdata->to = NULL;
 
-	privdata->headers = (hflag) ? header_list_new() : NULL;
+	if(streamMaxLength > 0)
+		privdata->numBytes = strlen(argv[0]) + 6;
+
+	if(hflag)
+		privdata->headers = header_list_new();
 
 	if(smfi_setpriv(ctx, privdata) == MI_SUCCESS)
 		return SMFIS_CONTINUE;
@@ -1693,6 +1715,9 @@ clamfi_envrcpt(SMFICTX *ctx, char **argv)
 
 	privdata->to[privdata->numTo] = strdup(argv[0]);
 	privdata->to[++privdata->numTo] = NULL;
+
+	if(streamMaxLength > 0)
+		privdata->numBytes += strlen(argv[0]) + 4;
 
 	return SMFIS_CONTINUE;
 }
@@ -1724,6 +1749,9 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 		clamfi_cleanup(ctx);
 		return cl_error;
 	}
+
+	if(streamMaxLength > 0)
+		privdata->numBytes += strlen(headerf) + strlen(headerv) + 3;
 
 	if(hflag)
 		header_list_add(privdata->headers, headerf, headerv);
@@ -1757,6 +1785,8 @@ clamfi_eoh(SMFICTX *ctx)
 		clamfi_cleanup(ctx);
 		return cl_error;
 	}
+	if(streamMaxLength > 0)
+		privdata->numBytes++;
 
 	/*
 	 * See if the e-mail is only going to members of the list
@@ -1813,8 +1843,19 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 	cli_dbgmsg("clamfi_envbody: %u bytes\n", len);
 #endif
 
+	if(streamMaxLength > 0) {
+		privdata->numBytes += len;
+		if(privdata->numBytes > streamMaxLength) {
+			if(use_syslog)
+				syslog(LOG_NOTICE, "%s: Message more than StreamMaxLength (%ld) bytes - not scanned\n",
+					smfi_getsymval(ctx, "i"),
+					streamMaxLength);
+			clamfi_cleanup(ctx);	/* not needed, but just to be safe */
+			return SMFIS_ACCEPT;
+		}
+	}
 	if(clamfi_send(privdata, len, (char *)bodyp) < 0) {
-		clamfi_cleanup(ctx);
+		clamfi_cleanup(ctx);	/* not needed, but just to be safe */
 		return cl_error;
 	}
 	if(Sflag) {
@@ -2355,13 +2396,13 @@ clamd_recv(int sock, char *buf, size_t len)
 	fd_set rfds;
 	struct timeval tv;
 
-	if(threadtimeout == 0)
+	if(readTimeout == 0)
 		return recv(sock, buf, len, 0);
 
 	FD_ZERO(&rfds);
 	FD_SET(sock, &rfds);
 
-	tv.tv_sec = threadtimeout;
+	tv.tv_sec = readTimeout;
 	tv.tv_usec = 0;
 
 	switch(select(sock + 1, &rfds, NULL, NULL, &tv)) {
@@ -2370,7 +2411,7 @@ clamd_recv(int sock, char *buf, size_t len)
 			return -1;
 		case 0:
 			if(use_syslog)
-				syslog(LOG_ERR, "No data received from clamd in %d seconds\n", threadtimeout);
+				syslog(LOG_ERR, "No data received from clamd in %d seconds\n", readTimeout);
 			return 0;
 	}
 	return recv(sock, buf, len, 0);

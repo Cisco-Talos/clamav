@@ -1,3 +1,8 @@
+Sat Apr  3 06:00:19 BST 2004 (njh)
+----------------------------------
+  * clamav-milter: Error if ReadTimeout is -ve
+		Honour StreamMaxLength
+
 Thu Apr  1 16:46:22 BST 2004 (njh)
 ----------------------------------
   * libclamav:	Stop gracefully if messageAddLine() fails
