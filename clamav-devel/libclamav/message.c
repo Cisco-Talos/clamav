@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.49  2004/03/29 09:22:03  nigelhorne
+ * Tidy up code and reduce shuffling of data
+ *
  * Revision 1.48  2004/03/25 22:40:46  nigelhorne
  * Removed even more calls to realloc and some duplicated code
  *
@@ -141,7 +144,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.48 2004/03/25 22:40:46 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.49 2004/03/29 09:22:03 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -671,12 +674,12 @@ messageGetEncoding(const message *m)
 }
 
 /*
- * Add a copy of the given line to the end of the given message
- * The caller will need to free the copy
+ * Add the given line to the current message
+ * If needed a copy of the given line is taken which the caller must free
  * Line should not be terminated by a \n
  */
 void
-messageAddLine(message *m, const char *line)
+messageAddLine(message *m, const char *line, int takeCopy)
 {
 	static const char encoding[] = "Content-Transfer-Encoding";
 	static const char binhex[] = "(This file must be converted with BinHex 4.0)";
@@ -694,9 +697,14 @@ messageAddLine(message *m, const char *line)
 
 	m->body_last->t_next = NULL;
 
-	m->body_last->t_text = strdup((line) ? line : "");
+	if(takeCopy) {
+		m->body_last->t_text = strdup((line) ? line : "");
+		assert(m->body_last->t_text != NULL);
+	} else {
+		assert(line != NULL);
+		m->body_last->t_text = (char *)line;
+	}
 
-	assert(m->body_last->t_text != NULL);
 	assert(m->body_first != NULL);
 
 	/*
@@ -723,11 +731,15 @@ messageAddLine(message *m, const char *line)
 	}
 }
 
+/*
+ * Returns a pointer to the body of the message. Note that it does NOT return
+ * a copy of the data
+ */
 const text *
 messageGetBody(const message *m)
 {
 	assert(m != NULL);
-	return(m->body_first);
+	return m->body_first;
 }
 
 /*
@@ -939,9 +951,11 @@ messageToBlob(const message *m)
 					if(count == 0) {
 						c = 0x90;
 						blobAddData(u, &c, 1);
-					} else
+					} else {
+						blobGrow(u, count);
 						while(--count > 0)
 							blobAddData(u, &c, 1);
+					}
 				}
 			}
 			blobDestroy(tmp);
@@ -1070,6 +1084,7 @@ messageToBlob(const message *m)
 
 /*
  * Decode and transfer the contents of the message into a text area
+ * The caller must free the returned text
  */
 text *
 messageToText(const message *m)

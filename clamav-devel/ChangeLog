@@ -1,3 +1,7 @@
+Mon Mar 29 10:33:52 BST 2004 (njh)
+----------------------------------
+  * libclamav:	Tidy up code and reduce shuffling of data
+
 Mon Mar 29 02:05:39 CEST 2004 (tk)
 ----------------------------------
   * big cleanup: remove duplicated code and move it to /shared (fixes
