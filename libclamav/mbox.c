@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.104  2004/08/18 15:53:43  nigelhorne
+ * Honour CL_MAILURL
+ *
  * Revision 1.103  2004/08/18 10:49:45  nigelhorne
  * CHECKURLs was mistakenly turned on
  *
@@ -297,7 +300,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.103 2004/08/18 10:49:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.104 2004/08/18 15:53:43 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -374,12 +377,12 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 
 #define	SAVE_TO_DISC	/* multipart/message are saved in a temporary file */
 
-/*#define	CHECKURLS	/*
+/*#define	FOLLOWURLS	/*
 			 * If an email contains URLs, check them - helps to
 			 * find Dialer.gen-45
 			 */
 
-#ifdef	CHECKURLS
+#ifdef	FOLLOWURLS
 
 #define	MAX_URLS	5	/*
 				 * Maximum number of URLs scanned in a message
@@ -392,6 +395,9 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
  */
 #include <curl/curl.h>
 #endif
+
+#else	/*!FOLLOWURLS*/
+#undef	WITH_CURL
 #endif
 
 static	message	*parseEmailHeaders(message *m, const table_t *rfc821Table, bool destroy);
@@ -1354,7 +1360,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 									addAttachment = TRUE;
 								}
 							} else {
-								/*if(options&CL_MAILURL) */
+								if(options&CL_MAILURL)
 									checkURLs(aMessage, dir);
 								messageAddArgument(aMessage, "filename=textportion");
 								addAttachment = TRUE;
@@ -2292,7 +2298,7 @@ saveFile(const blob *b, const char *dir)
 	return (close(fd) >= 0);
 }
 
-#ifdef	CHECKURLS
+#ifdef	FOLLOWURLS
 static void
 checkURLs(message *m, const char *dir)
 {
@@ -2305,8 +2311,10 @@ checkURLs(message *m, const char *dir)
 	if(b == NULL)
 		return;
 
-	ptr = (char *)blobGetData(b);
 	len = blobGetDataSize(b);
+
+	if(len == 0)
+		return;
 
 	/* TODO: make this size customisable */
 	if(len > 100*1024) {
@@ -2315,12 +2323,14 @@ checkURLs(message *m, const char *dir)
 	}
 
 	t = tableCreate();
+
 	n = 0;
+	ptr = (char *)blobGetData(b);
 
 	/*
 	 * cli_memstr(ptr, len, "<a href=", 8)
-	 * Don't use cli_memstr() until bounds problem sorted, it becomes
-	 * case independant and it returns the place that the 'needle' was found
+	 * Don't use cli_memstr() until bounds problem sorted
+	 * and it returns the place that the 'needle' was found
 	 */
 	while(len >= 8) {
 		/* FIXME: allow any number of white space */
@@ -2446,7 +2456,7 @@ getURL(const char *url, const char *dir, const char *filename)
 		return;
 	}
 	/*
-	 * If an item is in squid's cache get it from there (TCP_HIT/200) but
+	 * If an item is in squid's cache get it from there (TCP_HIT/200)
 	 * by default curl doesn't (TCP_CLIENT_REFRESH_MISS/200)
 	 */
 	headers = curl_slist_append(NULL, "Pragma:");
