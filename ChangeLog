@@ -1,3 +1,7 @@
+Mon Jan 17 23:18:17 CET 2005 (tk)
+---------------------------------
+  * clamscan/manager.c: increase default compression ratio limit from 200 to 250
+
 Sun Jan 16 06:28:59 CET 2005 (tk)
 ---------------------------------
   * libclamav/pe.c: attempt to detect W32.Parite.B using cryptanalysis (thanks
