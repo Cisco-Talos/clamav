@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.130  2004/12/14 10:27:57  nigelhorne
+ * Better reclaiming when running short of memory
+ *
  * Revision 1.129  2004/12/10 15:20:23  nigelhorne
  * Handle empty content-type fields
  *
@@ -384,7 +387,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.129 2004/12/10 15:20:23 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.130 2004/12/14 10:27:57 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1975,7 +1978,7 @@ messageToText(message *m)
 			 */
 			if((data[0] == '\n') || (data[0] == '\0'))
 				last->t_line = NULL;
-			else if(line && (strncmp(data, line, strlen(line)) == 0)) {
+			else if(line && (strncmp((const char *)data, line, strlen(line)) == 0)) {
 #ifdef	CL_DEBUG
 				cli_dbgmsg("messageToText: decoded line is the same(%s)\n", data);
 #endif
@@ -2606,6 +2609,8 @@ messageDedup(message *m)
 	const text *t1;
 	size_t saved = 0;
 
+	cli_dbgmsg("messageDedup\n");
+
 	t1 = m->dedupedThisFar ? m->dedupedThisFar : m->body_first;
 
 	for(t1 = m->body_first; t1; t1 = t1->t_next) {
@@ -2622,6 +2627,7 @@ messageDedup(message *m)
 		d1 = lineGetData(l1);
 		if(strlen(d1) < 8)
 			continue;	/* wouldn't recover many bytes */
+
 		r1 = (unsigned int)lineGetRefCount(l1);
 		if(r1 == 255)
 			continue;
@@ -2645,23 +2651,25 @@ messageDedup(message *m)
 
 			if(l2 == NULL)
 				continue;
-			if((r1 + (unsigned int)lineGetRefCount(l2)) > 255)
-				continue;
 			d2 = lineGetData(l2);
 			if(d1 == d2)
 				/* already linked */
 				continue;
 			if(strcmp(d1, d2) == 0) {
 				if(lineUnlink(l2) == NULL)
-					saved += strlen(d1);
+					saved += strlen(d1) + 1;
 				t2->t_line = lineLink(l1);
 				if(t2->t_line == NULL) {
 					cli_errmsg("messageDedup: out of memory\n");
 					return;
 				}
+				if(++r1 == 255)
+					break;
 			}
 		}
 	}
+
+	cli_dbgmsg("messageDedup reclaimed %u bytes\n", saved);
 	m->dedupedThisFar = t1;
 }
 

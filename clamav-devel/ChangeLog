@@ -1,3 +1,7 @@
+Tue Dec 14 10:30:15 GMT 2004 (njh)
+----------------------------------
+  * libclamav/message.c:	better recovery if memory softlimit is hit
+
 Mon Dec 13 11:21:28 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	INSTALL: Added notes about FreeBSD5
