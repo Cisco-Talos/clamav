@@ -37,8 +37,8 @@ struct cfgoption {
 };
 
 struct cfgstruct {
-    const char *optname;
-    const char *strarg;
+    char *optname;
+    char *strarg;
     int numarg;
     struct cfgstruct *nextarg;
     struct cfgstruct *next;
@@ -47,9 +47,11 @@ struct cfgstruct {
 
 struct cfgstruct *parsecfg(const char *cfgfile);
 
-struct cfgstruct *regcfg(struct cfgstruct *copt, const char *optname, const char *strarg, int numarg);
+struct cfgstruct *regcfg(struct cfgstruct *copt, char *optname, char *strarg, int numarg);
 
 struct cfgstruct *cfgopt(const struct cfgstruct *copt, const char *optname);
 char *tok(const char *line, int field);
+
+void freecfg(struct cfgstruct *copt);
 
 #endif

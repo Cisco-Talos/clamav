@@ -1,3 +1,12 @@
+Mon Dec  1 20:26:45 CET 2003 (tk)
+---------------------------------
+  * A bunch of patches from Thomas Lamy <Thomas.Lamy*in-online.net>:
+    + fixed on error descriptor leak in cli_untgz()
+    + added missing mpz_clear() in cli_versig()
+    + more error messages in scanners.c and others.c
+    + properly free file stream in cli_scanbzip()
+    + clamd: clean up resources on exit (added freecfg() and logg_close())
+
 Sun Nov 30 06:13:28 GMT 2003 (njh)
 ----------------------------------
   * clamav-milter: Added --quarantine-dir

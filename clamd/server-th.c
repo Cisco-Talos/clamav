@@ -84,8 +84,12 @@ void *threadscanner(void *arg)
 	scan(buff + strlen(CMD2) + 1, NULL, tharg->root, NULL, options, tharg->copt, ths[tharg->sid].desc, 0);
 
     } else if(!strncmp(buff, CMD3, strlen(CMD3))) { /* QUIT */
-	if(!progexit)
-	    kill(progpid, SIGTERM);
+	if(!progexit) {
+	    /* was: kill(progpid, SIGTERM);
+	     * Now we break out of the loop to clean up resources
+	     * thomas@in-online.net 20031201 */
+	    progexit=1;
+	}
 
     } else if(!strncmp(buff, CMD4, strlen(CMD4))) { /* RELOAD */
 	mdprintf(ths[tharg->sid].desc, "RELOADING\n");
@@ -229,6 +233,9 @@ void *threadwatcher(void *arg)
 		else
 		    logg("Pid file removed.\n");
 	    }
+
+	    logg("*Freeing stat structure.\n");
+            cl_statfree(&dbstat);
 
 	    progexit = 2;
 	    logg("*Exit level %d, ThreadWatcher termination.\n", progexit);
@@ -374,6 +381,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	size_t stacksize;
 #endif
 
+    memset (&sigact, 0, sizeof(struct sigaction));
 
     /* save the PID */
     if((cpt = cfgopt(copt, "PidFile"))) {
@@ -440,7 +448,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 
 	if(cfgopt(copt, "ArchiveLimitMemoryUsage")) {
 	    limits.archivememlim = 1;
-	    logg("Archive: Limited memory usage.\n", limits.maxfiles);
+	    logg("Archive: Limited memory usage.\n");
 	} else
 	    limits.archivememlim = 0;
     }
@@ -540,7 +548,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     pthread_attr_setstacksize(&thattr, stacksize + SCANBUFF + 64 * 1024);
 #endif
 
-    while(1) {
+    while(progexit != 2) {
 
 	/* find a free session */
 	for(i = 0; ; i++) {
@@ -604,6 +612,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	    ths[i].active = 0;
 	}
     }
+    free(ths);
 }
 
 void sighandler_th(int sig)

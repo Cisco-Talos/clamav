@@ -62,6 +62,7 @@ int cli_untgz(int fd, const char *destdir)
 	if(nread != TAR_BLOCKSIZE) {
 	    cli_errmsg("Incomplete block read.\n");
 	    free(fullname);
+	    gzclose(infile);
 	    return -1;
 	}
 
@@ -84,10 +85,12 @@ int cli_untgz(int fd, const char *destdir)
 		case '5':
 		    cli_errmsg("Directories in CVD are not supported.\n");
 		    free(fullname);
+	            gzclose(infile);
 		    return -1;
 		default:
 		    cli_errmsg("Unknown type flag %c.\n",type);
 		    free(fullname);
+	            gzclose(infile);
 		    return -1;
 	    }
 
@@ -97,6 +100,7 @@ int cli_untgz(int fd, const char *destdir)
 		if(fclose(outfile)) {
 		    cli_errmsg("Cannot close file %s.\n", fullname);
 		    free(fullname);
+	            gzclose(infile);
 		    return -1;
 		}
 		outfile = NULL;
@@ -105,6 +109,7 @@ int cli_untgz(int fd, const char *destdir)
 	    if(!(outfile = fopen(fullname, "wb"))) {
 		cli_errmsg("Cannot create file %s.\n", fullname);
 		free(fullname);
+	        gzclose(infile);
 		return -1;
 	    }
 
@@ -116,6 +121,7 @@ int cli_untgz(int fd, const char *destdir)
 	    if(size < 0) {
 		cli_errmsg("Invalid size in header.\n");
 		free(fullname);
+	        gzclose(infile);
 		return -1;
 	    }
 
@@ -126,6 +132,7 @@ int cli_untgz(int fd, const char *destdir)
 	    if(nwritten != nbytes) {
 		cli_errmsg("Wrote %d instead of %d (%s).\n", nwritten, nbytes, fullname);
 		free(fullname);
+	        gzclose(infile);
 		return -1;
 	    }
 
@@ -138,6 +145,8 @@ int cli_untgz(int fd, const char *destdir)
     if(outfile)
 	fclose(outfile);
 
+    gzclose(infile);
+    free(fullname);
     return 0;
 }
 
@@ -224,8 +233,9 @@ struct cl_cvd *cl_cvdhead(const char *file)
 	return NULL;
     }
 
-    if(fread(head, 1, 512, fd) != 512) {
-	cli_dbgmsg("Can't read CVD head from stream\n");
+    if((i=fread(head, 1, 512, fd)) != 512) {
+	cli_dbgmsg("Short read (%d) while reading CVD head from %s\n", i, file);
+	fclose(fd);
 	return NULL;
     }
 
@@ -270,18 +280,22 @@ int cli_cvdverify(FILE *fd)
 
     if(strncmp(md5, cvd->md5, 32)) {
 	cli_dbgmsg("MD5 verification error.\n");
+	free(md5);
+	cl_cvdfree(cvd);
 	return CL_EMD5;
     }
 
 #ifdef HAVE_GMP
     if(cli_versig(md5, cvd->dsig)) {
 	cli_dbgmsg("Digital signature verification error.\n");
+	free(md5);
+	cl_cvdfree(cvd);
 	return CL_EDSIG;
     }
 #endif
 
     free(md5);
-    free(cvd);
+    cl_cvdfree(cvd);
     return 0;
 }
 

@@ -71,11 +71,12 @@ cl_node *root)
  	char *buffer, *buff, *endbl, *pt;
 	int bytes, buffsize, length;
 
-
     /* prepare the buffer */
     buffsize = root->maxpatlen + SCANBUFF;
-    if(!(buffer = (char *) cli_calloc(buffsize, sizeof(char))))
+    if(!(buffer = (char *) cli_calloc(buffsize, sizeof(char)))) {
+	cli_dbgmsg("cli_scandesc(): unable to malloc(%d)\n", buffsize);
 	return CL_EMEM;
+    }
 
     buff = buffer;
     buff += root->maxpatlen; /* pointer to read data block */
@@ -257,6 +258,7 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
     fstat(desc, &source);
 
     if(!(buff = (char *) cli_malloc(FILEBUFF))) {
+	cli_dbgmsg("cli_scanzip(): unable to malloc(%d)\n", FILEBUFF);
 	zzip_dir_close(zdir);
 	return CL_EMEM;
     }
@@ -401,6 +403,7 @@ int cli_scangzip(int desc, char **virname, long int *scanned, const struct cl_no
     fd = fileno(tmp);
 
     if(!(buff = (char *) cli_malloc(FILEBUFF))) {
+	cli_dbgmsg("cli_scangzip(): unable to malloc(%d)\n", FILEBUFF);
 	gzclose(gd);
 	return CL_EMEM;
     }
@@ -462,7 +465,7 @@ int cli_scanbzip(int desc, char **virname, long int *scanned, const struct cl_no
 	BZFILE *bfd;
 
 
-    if((fs = fdopen(desc, "rb")) == NULL) {
+    if((fs = fdopen(dup(desc), "rb")) == NULL) {
 	cli_errmsg("Can't fdopen() descriptor %d.\n", desc);
 	return CL_EBZIP;
     }
@@ -473,18 +476,25 @@ int cli_scanbzip(int desc, char **virname, long int *scanned, const struct cl_no
 
     if((bfd = BZ2_bzReadOpen(&bzerror, fs, memlim, 0, NULL, 0)) == NULL) {
 	cli_dbgmsg("Can't initialize bzip2 library (descriptor %d).\n", desc);
+	fclose(fs);
 	return CL_EBZIP;
     }
 
     if((tmp = tmpfile()) == NULL) {
 	cli_dbgmsg("Can't generate tmpfile().\n");
 	BZ2_bzReadClose(&bzerror, bfd);
+	fclose(fs);
 	return CL_ETMPFILE;
     }
     fd = fileno(tmp);
 
-    if(!(buff = (char *) cli_malloc(FILEBUFF)))
+    if(!(buff = (char *) malloc(FILEBUFF))) {
+	cli_dbgmsg("cli_scanbzip(): unable to malloc(%d)\n", FILEBUFF);
+	fclose(tmp);
+	fclose(fs);
+	BZ2_bzReadClose(&bzerror, bfd);
 	return CL_EMEM;
+    }
 
     while((bytes = BZ2_bzRead(&bzerror, bfd, buff, FILEBUFF)) > 0) {
 	size += bytes;
@@ -501,6 +511,7 @@ int cli_scanbzip(int desc, char **virname, long int *scanned, const struct cl_no
 	    BZ2_bzReadClose(&bzerror, bfd);
 	    fclose(tmp);
 	    free(buff);
+	    fclose(fs);
 	    return CL_EGZIP;
 	}
     }
@@ -510,16 +521,16 @@ int cli_scanbzip(int desc, char **virname, long int *scanned, const struct cl_no
     if(fsync(fd) == -1) {
 	cli_dbgmsg("fsync() failed for descriptor %d\n", fd);
 	fclose(tmp);
+	fclose(fs);
 	return CL_EFSYNC;
     }
 
     lseek(fd, 0, SEEK_SET);
     if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, reclev)) == CL_VIRUS ) {
 	cli_dbgmsg("Bzip2 -> Found %s virus.\n", *virname);
-	fclose(tmp);
-	return CL_VIRUS;
     }
     fclose(tmp);
+    fclose(fs);
 
     return ret;
 }
@@ -663,29 +674,36 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
 #ifdef CL_THREAD_SAFE
 	/* this check protects against recursive deadlock */
 	if(!DISABLE_RAR && SCAN_ARCHIVE && !cli_scanrar_inuse && !strncmp(magic, RAR_MAGIC_STR, strlen(RAR_MAGIC_STR))) {
+	    cli_dbgmsg("Recognized rar file.\n");
 	    ret = cli_scanrar(desc, virname, scanned, root, limits, options, reclev);
 	}
 #else
 	if(!DISABLE_RAR && SCAN_ARCHIVE && !strncmp(magic, RAR_MAGIC_STR, strlen(RAR_MAGIC_STR))) {
+	    cli_dbgmsg("Recognized rar file.\n");
 	    ret = cli_scanrar(desc, virname, scanned, root, limits, options, reclev);
 	}
 #endif
 #ifdef HAVE_ZLIB_H
 	else if(SCAN_ARCHIVE && !strncmp(magic, ZIP_MAGIC_STR, strlen(ZIP_MAGIC_STR))) {
+	    cli_dbgmsg("Recognized zip file.\n");
 	    ret = cli_scanzip(desc, virname, scanned, root, limits, options, reclev);
 	} else if(SCAN_ARCHIVE && !strncmp(magic, GZIP_MAGIC_STR, strlen(GZIP_MAGIC_STR))) {
+	    cli_dbgmsg("Recognized gzip file.\n");
 	    ret = cli_scangzip(desc, virname, scanned, root, limits, options, reclev);
 	}
 #endif
 #ifdef HAVE_BZLIB_H
 	else if(SCAN_ARCHIVE && !strncmp(magic, BZIP_MAGIC_STR, strlen(BZIP_MAGIC_STR))) {
+	    cli_dbgmsg("Recognized bzip file.\n");
 	    ret = cli_scanbzip(desc, virname, scanned, root, limits, options, reclev);
 	}
 #endif
 	else if(SCAN_MAIL && !strncmp(magic, MAIL_MAGIC_STR, strlen(MAIL_MAGIC_STR))) {
+	    cli_dbgmsg("Recognized mail file.\n");
 	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
 	}
 	else if(SCAN_MAIL && !strncmp(magic, RAWMAIL_MAGIC_STR, strlen(RAWMAIL_MAGIC_STR))) {
+	    cli_dbgmsg("Recognized raw mail file.\n");
 	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
 	} else if(SCAN_MAIL && !strncmp(magic, MAILDIR_MAGIC_STR, strlen(MAILDIR_MAGIC_STR))) {
 	    cli_dbgmsg("Recognized Maildir mail file.\n");
