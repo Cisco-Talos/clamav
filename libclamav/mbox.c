@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.46  2004/02/18 13:29:19  nigelhorne
+ * Stop buffer overflows for files with very long suffixes
+ *
  * Revision 1.45  2004/02/18 10:07:40  nigelhorne
  * Find some Yaha
  *
@@ -126,7 +129,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.45 2004/02/18 10:07:40 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.46 2004/02/18 13:29:19 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1677,7 +1680,7 @@ static bool
 saveFile(const blob *b, const char *dir)
 {
 	unsigned long nbytes = blobGetDataSize(b);
-	size_t len = 0;
+	size_t suffixLen = 0;
 	int fd;
 	const char *cptr, *suffix;
 	unsigned char *data;
@@ -1703,16 +1706,22 @@ saveFile(const blob *b, const char *dir)
 		suffix = strrchr(cptr, '.');
 		if(suffix == NULL)
 			suffix = "";
-		else
-			len = strlen(suffix);
+		else {
+			suffixLen = strlen(suffix);
+			if(suffixLen > 4) {
+				/* Found a full stop which isn't a suffix */
+				suffix = "";
+				suffixLen = 0;
+			}
+		}
 	}
 	cli_dbgmsg("Saving attachment in %s/%s\n", dir, cptr);
 
 	/*
 	 * Allow for very long filenames. We have to truncate them to fit
 	 */
-	snprintf(filename, sizeof(filename) - 1 - len, "%s/%.*sXXXXXX", dir,
-		(int)(sizeof(filename) - 9 - len - strlen(dir)), cptr);
+	snprintf(filename, sizeof(filename) - 1 - suffixLen, "%s/%.*sXXXXXX", dir,
+		(int)(sizeof(filename) - 9 - suffixLen - strlen(dir)), cptr);
 
 	/*
 	 * TODO: add a HAVE_MKSTEMP property
@@ -1726,6 +1735,7 @@ saveFile(const blob *b, const char *dir)
 
 	if(fd < 0) {
 		cli_errmsg("Can't create temporary file %s: %s\n", filename, strerror(errno));
+		printf("%d %d %d\n", suffixLen, sizeof(filename), strlen(filename));
 		return FALSE;
 	}
 
@@ -1733,7 +1743,7 @@ saveFile(const blob *b, const char *dir)
 	 * Add the suffix back to the end of the filename. Tut-tut, filenames
 	 * should be independant of their usage on UNIX type systems.
 	 */
-	if(len > 1) {
+	if(suffixLen > 1) {
 		char stub[NAME_MAX + 1];
 
 		snprintf(stub, sizeof(stub), "%s%s", filename, suffix);
