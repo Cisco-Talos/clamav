@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -88,6 +88,11 @@ void clamd(struct optstruct *opt)
     else
 	logtime = 0;
 
+    if(cfgopt(copt, "LogClean"))
+	logok = 1;
+    else
+	logok = 0;
+
     if((cpt = cfgopt(copt, "LogFileMaxSize")))
 	logsize = cpt->numarg;
     else
@@ -168,8 +173,15 @@ void clamd(struct optstruct *opt)
 	logg("Running as user %s (UID %d, GID %d)\n", cpt->strarg, user->pw_uid, user->pw_gid);
     }
 
-    /* load the database(s) */
+    /* set the temporary dir */
+    if((cpt = cfgopt(copt, "TemporaryDirectory"))) {
+	if(!setenv("TMPDIR", cpt->strarg, 1))
+	    logg("Setting %s as global temporary directory\n", cpt->strarg);
+	else
+	    logg("!Can't set TMPDIR variable - insufficient space in the environment.\n");
+    }
 
+    /* load the database(s) */
     if((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory")))
 	dbdir = cpt->strarg;
     else

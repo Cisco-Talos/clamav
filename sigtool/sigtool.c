@@ -220,7 +220,7 @@ void sigtool(struct optstruct *opt)
 
 	cvdinfo(opt);
 
-    } else if(optl(opt, "list-sigs")) {
+    } else if(optc(opt, 'l')) {
 
 	listsigs(opt);
 
@@ -710,34 +710,6 @@ void cvdinfo(struct optstruct *opt)
     /* free */
 }
 
-void help(void)
-{
-    mprintf("\n");
-    mprintf("                Clam AntiVirus: Signature Tool (sigtool)  "VERSION"\n");
-    mprintf("                (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>\n\n");
-
-    mprintf("    --help                 -h              show help\n");
-    mprintf("    --version              -V              print version number and exit\n");
-    mprintf("    --quiet                                be quiet, output only error messages\n");
-    mprintf("    --debug                                enable debug messages\n");
-    mprintf("    --stdout                               write to stdout instead of stderr\n");
-    mprintf("                                           (this help is always written to stdout)\n");
-    mprintf("    --hex-dump                             convert data from stdin to a hex\n");
-    mprintf("                                           string and print it on stdout\n");
-    mprintf("    --command              -c              scanner command string, with options\n");
-    mprintf("    --string               -s              'virus found' string in scan. output\n");
-    mprintf("    --file                 -f              infected file\n");
-    mprintf("    --info=FILE            -i FILE         print database information\n");
-    mprintf("    --build=NAME           -b NAME         build a CVD file\n");
-    mprintf("    --server=ADDR                          ClamAV Signing Service address\n");
-    mprintf("    --unpack=FILE          -u FILE         Unpack a CVD file\n");
-    mprintf("    --unpack-current=NAME                  Unpack local CVD\n");
-    mprintf("    --list-sigs[=FILE]                     List virus signatures\n");
-    mprintf("\n");
-
-    exit(0);
-}
-
 char *getdsig(const char *host, const char *user, const char *data)
 {
 	char buff[300], cmd[100], *pass, *pt;
@@ -1002,10 +974,38 @@ void listsigs(struct optstruct *opt)
 
     mprintf_stdout = 1;
 
-    if((name = getargl(opt, "list-sigs")))
+    if((name = getargc(opt, 'l')))
 	ret = listdb(name);
     else
 	ret = listdir(cl_retdbdir());
 
-    return ret ? exit(1) : exit(0);
+    ret ? exit(1) : exit(0);
+}
+
+void help(void)
+{
+    mprintf("\n");
+    mprintf("                Clam AntiVirus: Signature Tool (sigtool)  "VERSION"\n");
+    mprintf("                (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>\n\n");
+
+    mprintf("    --help                 -h              show help\n");
+    mprintf("    --version              -V              print version number and exit\n");
+    mprintf("    --quiet                                be quiet, output only error messages\n");
+    mprintf("    --debug                                enable debug messages\n");
+    mprintf("    --stdout                               write to stdout instead of stderr\n");
+    mprintf("                                           (this help is always written to stdout)\n");
+    mprintf("    --hex-dump                             convert data from stdin to a hex\n");
+    mprintf("                                           string and print it on stdout\n");
+    mprintf("    --command              -c              scanner command string, with options\n");
+    mprintf("    --string               -s              'virus found' string in scan. output\n");
+    mprintf("    --file                 -f              infected file\n");
+    mprintf("    --info=FILE            -i FILE         print database information\n");
+    mprintf("    --build=NAME           -b NAME         build a CVD file\n");
+    mprintf("    --server=ADDR                          ClamAV Signing Service address\n");
+    mprintf("    --unpack=FILE          -u FILE         Unpack a CVD file\n");
+    mprintf("    --unpack-current=NAME                  Unpack local CVD\n");
+    mprintf("    --list-sigs[=FILE]     -l[FILE]        List signature names\n");
+    mprintf("\n");
+
+    exit(0);
 }

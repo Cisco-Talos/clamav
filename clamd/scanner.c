@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -101,6 +101,8 @@ int dirscan(const char *dirname, char **virname, unsigned long int *scanned, con
 				} else if(scanret != CL_CLEAN) {
 				    mdprintf(odesc, "%s: %s ERROR\n", fname, cl_strerror(scanret));
 				    logg("%s: %s ERROR\n", fname, cl_strerror(scanret));
+				} else if (logok) {
+				    logg("%s: OK\n", fname);
 				}
 			    }
 			}
@@ -158,7 +160,9 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_node 
 	    } else if(ret != CL_CLEAN) {
 		mdprintf(odesc, "%s: %s ERROR\n", filename, cl_strerror(ret));
 		logg("%s: %s ERROR\n", filename, cl_strerror(ret));
-	    } 
+	    } else if (logok) {
+		logg("%s: OK\n", filename);
+	    }
 	    break;
 	case S_IFDIR:
 	    ret = dirscan(filename, &virname, scanned, root, limits, options, copt, odesc, &reclev, contscan);
@@ -282,8 +286,11 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
     } else if(ret != CL_CLEAN) {
 	mdprintf(odesc, "stream: %s ERROR\n", cl_strerror(ret));
 	logg("stream: %s ERROR\n", cl_strerror(ret));
-    } else
+    } else {
 	mdprintf(odesc, "stream: OK\n");
+        if (logok)
+	    logg("stream: OK\n"); 
+    }
 
     return ret;
 }

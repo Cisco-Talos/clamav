@@ -24,6 +24,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <string.h>
 
 #include "others.h"
 #include "cfgfile.h"
@@ -193,10 +194,14 @@ int client(const struct optstruct *opt)
 		claminfo.ifiles++;
 		logg("%s", buff);
 	    }
+	    if (strstr(buff, "ERROR\n")) {
+		claminfo.errors++;
+		logg("%s", buff);
+	    }
 	    memset(buff, 0, sizeof(buff));
 	}
 
-	return claminfo.ifiles ? 1 : 0;
+	return claminfo.ifiles ? 1 : (claminfo.errors ? 2 : 0);
 
     } else if(opt->filename[0] == '/') {
 	file = (char *) strdup(opt->filename);
@@ -231,10 +236,14 @@ int client(const struct optstruct *opt)
 	    claminfo.ifiles++;
 	    logg("%s", buff);
 	}
+	if (strstr(buff, "ERROR\n")) {
+	    claminfo.errors++;
+	    logg("%s", buff);
+	}
 	mprintf("%s", buff);
     }
 
     fclose(fd);
 
-    return claminfo.ifiles ? 1 : 0;
+    return claminfo.ifiles ? 1 : (claminfo.errors ? 2 : 0);
 }

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -41,9 +41,11 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 	    {"LogFileUnlock", OPT_NOARG},
 	    {"LogFileMaxSize", OPT_COMPSIZE},
 	    {"LogTime", OPT_NOARG},
+	    {"LogClean", OPT_NOARG},
 	    {"LogVerbose", OPT_NOARG}, /* clamd + freshclam */
 	    {"LogSyslog", OPT_NOARG},
 	    {"PidFile", OPT_STR},
+	    {"TemporaryDirectory", OPT_STR},
 	    {"MaxFileSize", OPT_COMPSIZE},
 	    {"ScanMail", OPT_NOARG},
 	    {"ScanOLE2", OPT_NOARG},

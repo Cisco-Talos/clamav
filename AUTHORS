@@ -14,6 +14,9 @@ GPG fingerprint = C782 121E 8C3A 90E3 7A87  D802 6277 8FF4 5EFC 5582
 System administrator (WWW, mailing lists, mirror mechanism, virus
 submission mechanism)
 
+Trog <trog*clamav.net>
+OLE2 and VBA decoders.
+
 Submission management interface (for database developers only): Diego D'Ambra
 <diego*clamav.net>, Thomas Madsen <tm*softcom.dk>
 
@@ -44,6 +47,7 @@ ClamAV patches were submitted by (in alphabetical order):
 
 Kamil Andrusz <wizz*mniam.net>
 Patrick Bihan-Faou <patrick*mindstep.com>
+Len Budney <lbudney*pobox.com>
 Damien Curtain <damien*pagefault.org>
 Michael Dankov <misha*btrc.ru>
 Alejandro Dubrovsky <s328940*student.uq.edu.au>
@@ -52,15 +56,19 @@ Jason Englander <jason*englanders.cc>
 David Ford <david+cert*blue-labs.org>
 Nigel Horne <njh*smsltd.demon.co.uk>
 Hrvoje Habjanic <hrvoje.habjanic*zg.hinet.hr>
+Andy Igoshin <ai*vsu.ru>
 Nicholas M. Kirsch <nick*kirsch.org>
 Robbert Kouprie <robbert*exx.nl>
 Thomas Lamy <Thomas.Lamy*in-online.net>
 Marty Lee <marty*maui.co.uk>
 Peter N Lewis <peter*stairways.com.au>
 David S. Madole <david*madole.net>
+Andrey V. Malyshev" <amal*krasn.ru>
+Everton da Silva Marques <everton*lab.ipaccess.diveo.net.br>
 Denis De Messemacker <ddm*clamav.net>
 Mark Mielke <mark*mark.mielke.cc>
 Arkadiusz Miskiewicz <misiek*pld.org.pl>
+Dustin Mollo <dustin.mollo*sonoma.edu>
 Hendrik Muhs <Hendrik.Muhs*student.uni-magdeburg.de>
 Masaki Ogawa <proc*mac.com>
 Rudolph Pereira <r.pereira*isu.usyd.edu.au>
