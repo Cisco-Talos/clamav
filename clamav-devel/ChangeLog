@@ -1,3 +1,8 @@
+Sun Aug 22 21:20:43 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	All email attachments are now scanned, previously only
+				the first ten attachments were scanned
+
 Sun Aug 22 19:03:12 CEST 2004 (tk)
 ----------------------------------
   * freshclam: Fix compilation errors
