@@ -21,6 +21,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.21  2005/02/16 22:19:21  nigelhorne
+ * Check file close
+ *
  * Revision 1.20  2005/02/13 22:25:41  kojm
  * do not try to continue if there's no space on device
  *
@@ -82,7 +85,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.20 2005/02/13 22:25:41 kojm Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.21 2005/02/16 22:19:21 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -291,6 +294,7 @@ cli_untar(const char *dir, int desc)
 			in_block = 0;
 	}
 	if(outfile)
-		fclose(outfile);
+		return fclose(outfile);
+
 	return 0;
 }
