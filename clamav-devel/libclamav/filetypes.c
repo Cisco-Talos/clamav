@@ -55,7 +55,7 @@ static const struct cli_magic_s cli_magic[] = {
 
     {0,	    "Rar!",			4,  "RAR",		CL_TYPE_RAR},
     {0,	    "PK\003\004",		4,  "ZIP",		CL_TYPE_ZIP},
-    {0,	    "PK00PK\003\004",		4,  "ZIP",		CL_TYPE_ZIP},
+    {0,	    "PK00PK\003\004",		8,  "ZIP",		CL_TYPE_ZIP},
     {0,	    "\037\213",			2,  "GZip",		CL_TYPE_GZ},
     {0,	    "BZh",			3,  "BZip",		CL_TYPE_BZ},
     {0,	    "SZDD",			4,  "compress.exe'd",	CL_TYPE_MSSZDD},
