@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.38  2004/03/17 19:47:32  nigelhorne
+ * Handle spaces in disposition type
+ *
  * Revision 1.37  2004/03/10 05:35:03  nigelhorne
  * Implemented a couple of small speed improvements
  *
@@ -108,7 +111,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.37 2004/03/10 05:35:03 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.38 2004/03/17 19:47:32 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -331,8 +334,12 @@ messageSetDispositionType(message *m, const char *disptype)
 	 * that something is wrong if we get that - maybe we should force a
 	 * scan of this part
 	 */
-	if(disptype)
-		m->mimeDispositionType = strdup(disptype);
+	if(disptype) {
+		while(isspace((int)*disptype))
+			disptype++;
+		if(*disptype)
+			m->mimeDispositionType = strdup(disptype);
+	}
 }
 
 const char *
@@ -646,6 +653,8 @@ messageGetEncoding(const message *m)
 }
 
 /*
+ * Add a copy of the given line to the end of the given message
+ * The caller will need to free the copy
  * Line should not be terminated by a \n
  */
 void
