@@ -177,9 +177,14 @@
  *			Thanks to Michael Dankov <misha@btrc.ru>
  *	0.65i	9/12/03	Use the location of sendmail discovered by configure
  *	0.65j	10/12/03 Timeout on waiting for data from clamd
+ *	0.65k	12/12/03 A couple of calls to clamfi_cleanup were missing
+ *			before return cl_error
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.30  2003/12/12 13:42:47  nigelhorne
+ * alls to clamfi_cleanup were missing
+ *
  * Revision 1.29  2003/12/10 12:00:39  nigelhorne
  * Timeout on waiting for data from clamd
  *
@@ -252,9 +257,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.29 2003/12/10 12:00:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.30 2003/12/12 13:42:47 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.65j"
+#define	CM_VERSION	"0.65k"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1392,10 +1397,12 @@ clamfi_eom(SMFICTX *ctx)
 
 		if((privdata->cmdSocket = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 			perror("socket");
+			clamfi_cleanup(ctx);
 			return cl_error;
 		}
 		if(connect(privdata->cmdSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
 			perror(localSocket);
+			clamfi_cleanup(ctx);
 			return cl_error;
 		}
 
@@ -1424,6 +1431,7 @@ clamfi_eom(SMFICTX *ctx)
 		printf("clamfi_eom: read %s\n", mess);
 #endif
 	} else {
+		clamfi_cleanup(ctx);
 		syslog(LOG_NOTICE, "clamfi_eom: read nothing from clamd");
 #ifdef	CL_DEBUG
 		puts("clamfi_eom: read nothing from clamd");

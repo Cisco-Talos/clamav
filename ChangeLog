@@ -1,3 +1,8 @@
+Fri Dec 12 13:43:50 GMT 2003 (njh)
+----------------------------------
+  * clamav-milter: A couple of calls to clamfi_cleanup were missing before
+	return cl_error
+
 Thu Dec 11 14:36:32 GMT 2003 (njh)
 ----------------------------------
   * libclamav: better handling of encapsulated messages, i.e. emails
