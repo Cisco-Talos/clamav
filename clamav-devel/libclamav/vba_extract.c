@@ -195,9 +195,8 @@ static void vba56_test_middle(int fd)
 {
 	char test_middle[20];
 	static const uint8_t middle_str[20] = {
-		0x00, 0x00, 0xe1, 0x2e, 0x45, 0x0d, 0x8f, 0xe0,
-		0x1a, 0x10, 0x85, 0x2e, 0x02, 0x60, 0x8c, 0x4d,
-		0x0b, 0xb4, 0x00, 0x00
+		0x00, 0x01, 0x0d, 0x45, 0x2e, 0xe1, 0xe0, 0x8f, 0x10, 0x1a,
+		0x85, 0x2e, 0x02, 0x60, 0x8c, 0x4d, 0x0b, 0xb4, 0x00, 0x00
 	};
 
         if (vba_readn(fd, &test_middle, 20) != 20) {
@@ -205,7 +204,10 @@ static void vba56_test_middle(int fd)
         }
 
 	if (memcmp(test_middle, middle_str, 20) != 0) {
+		cli_dbgmsg("middle not found\n");
 	        lseek(fd, -20, SEEK_CUR);
+	} else {
+		cli_dbgmsg("middle found\n");
 	}
 	return;
 }
@@ -230,6 +232,73 @@ static void vba56_test_end(int fd)
         return;
 }
 
+int vba_read_project_strings(int fd, int is_mac)
+{
+	uint16_t length;
+	unsigned char *buff, *name;
+	uint32_t offset;
+
+	for (;;) {
+		if (vba_readn(fd, &length, 2) != 2) {
+			return FALSE;
+		}
+		length = vba_endian_convert_16(length, is_mac);
+		if (length < 6) {
+			lseek(fd, -2, SEEK_CUR);
+			break;
+		}
+		cli_dbgmsg ("length: %d, ", length);
+		buff = (unsigned char *) cli_malloc(length);
+		if (!buff) {
+			cli_errmsg("cli_malloc failed\n");
+			return FALSE;
+		}
+		offset = lseek(fd, 0, SEEK_CUR);
+		if (vba_readn(fd, buff, length) != length) {
+			cli_dbgmsg("read name failed - rewinding\n");
+			lseek(fd, offset, SEEK_SET);
+			break;
+		}
+		name = get_unicode_name(buff, length, is_mac);
+		cli_dbgmsg("name: %s\n", name);
+		free(buff);
+
+                /* Ignore twelve bytes from entries of type 'G'.
+		   Type 'C' entries come in pairs, the second also
+		   having a 12 byte trailer */
+		/* TODO: Need to check if types H(same as G) and D(same as C) exist */
+                if (!strncmp ("*\\G", name, 3) || !strncmp ("*\\H", name, 3)
+			 	|| !strncmp("*\\C", name, 3) || !strncmp("*\\D", name, 3)) {
+			if (vba_readn(fd, &length, 2) != 2) {
+				return FALSE;
+			}
+			length = vba_endian_convert_16(length, is_mac);
+			if (length != 0) {
+				lseek(fd, -2, SEEK_CUR);
+				continue;
+			}
+			buff = (unsigned char *) cli_malloc(10);
+                        if (vba_readn(fd, buff, 10) != 10) {
+				cli_errmsg("failed to read blob\n");
+                                free(buff);
+				free(name);
+				close(fd);
+				return FALSE;
+                        }
+			free(buff);
+		} else {
+			/* Unknown type - probably ran out of strings - rewind */
+			lseek(fd, -(length+2), SEEK_CUR);
+			free(name);
+			break;
+		}
+		free(name);
+		offset = lseek(fd, 0, SEEK_CUR);
+		cli_dbgmsg("offset: %d\n", offset);
+		vba56_test_middle(fd);
+	}
+	return TRUE;
+}
 
 vba_project_t *vba56_dir_read(const char *dir)
 {
@@ -362,130 +431,12 @@ vba_project_t *vba56_dir_read(const char *dir)
 	cli_dbgmsg(" LenB: %d\n LenC: %d\n LenD: %d\n", LenB, LenC, LenD);
 
 	record_count = LenC;
-	/*******************************************/
 
-	/* REPLACED THIS CODE WITH THE CODE ABOVE */
-	/* read the rest of the header. most of this is unknown */
-/*	buff = (char *) cli_malloc(24);
-	if (!buff || vba_readn(fd, buff, 24) != 24) {
+	if (!vba_read_project_strings(fd, is_mac)) {
 		close(fd);
 		return NULL;
 	}
-	free(buff);
-
-	if (vba_readn(fd, &record_count, 2) != 2) {
-		close(fd);
-		return NULL;
-	}
-	cli_dbgmsg("Record count: %d\n", record_count); */
-	/* read two bytes and throw them away */
-/*	if (vba_readn(fd, &length, 2) != 2) {
-		close(fd);
-		return NULL;
-	}*/
-
-	for (;;) {
-
-		if (vba_readn(fd, &length, 2) != 2) {
-			return NULL;
-		}
-		length = vba_endian_convert_16(length, is_mac);
-		if (length < 6) {
-			lseek(fd, -2, SEEK_CUR);
-			break;
-		}
-		cli_dbgmsg ("record: %d.%d, length: %d, ", record_count, i, length);
-		buff = (unsigned char *) cli_malloc(length);
-		if (!buff) {
-			cli_errmsg("cli_malloc failed\n");
-			close(fd);
-			return NULL;
-		}
-		if (vba_readn(fd, buff, length) != length) {
-			cli_errmsg("read name failed\n");
-			close(fd);
-			return NULL;
-		}
-		name = get_unicode_name(buff, length, is_mac);
-		cli_dbgmsg("name: %s\n", name);
-		free(buff);
-
-                /* Ignore twelve bytes from entries of type 'G'.
-		   Type 'C' entries come in pairs, the second also
-		   having a 12 byte trailer */
-		/* TODO: Need to check if types H(same as G) and D(same as C) exist */
-                if (!strncmp ("*\\G", name, 3) || !strncmp ("*\\H", name, 3)) {
-			buff = (unsigned char *) cli_malloc(12);
-                        if (vba_readn(fd, buff, 12) != 12) {
-				cli_errmsg("failed to read blob\n");
-                                free(buff);
-				free(name);
-				close(fd);
-				return NULL;
-                        }
-			free(buff);
-                } else if (!strncmp("*\\C", name, 3) || !strncmp("*\\D", name, 3)) {
-			if (i == 1) {
-				buff = (unsigned char *) cli_malloc(12);
-                        	if (vba_readn(fd, buff, 12) != 12) {
-					cli_errmsg("failed to read blob\n");
-                                	free(buff);
-					free(name);
-					close(fd);
-					return NULL;
-                        	}
-				free(buff);
-				i = 0;
-			} else {
-				i = 1;
-				record_count++;
-			}
-		} else {
-			/* Unknown type - probably ran out of strings - rewind */
-			lseek(fd, -(length+2), SEEK_CUR);
-			free(name);
-			break;
-		}
-		free(name);
-		vba56_test_middle(fd);
-	}
-
-	/* may need to seek forward 20 bytes here. Bleh! */
-	vba56_test_end(fd);
-
-	if (vba_readn(fd, &record_count, 2) != 2) {
-		close(fd);
-		return NULL;
-	}
-	record_count = vba_endian_convert_16(record_count, is_mac);
-	cli_dbgmsg("\nVBA Record count: %d\n", record_count);
-	/*if (record_count <= 0) {
-		close(fd);
-		return TRUE;
-	}*/
-
-	lseek(fd, 2*record_count, SEEK_CUR);
-	lseek(fd, 4, SEEK_CUR);
-
-	/* Read fixed octet */
-	buff = (unsigned char *) cli_malloc(8);
-	if (!buff) {
-		close(fd);
-		return NULL;
-	}
-	if (vba_readn(fd, buff, 8) != 8) {
-		free(buff);
-		close(fd);
-		return NULL;
-	}
-	if (!memcmp(buff, fixed_octet, 8)) {
-		free(buff);
-		close(fd);
-		return NULL;
-	}
-	free(buff);
-	cli_dbgmsg("Read fixed octet ok\n");
-
+	
 	/* junk some more stuff */
 	do {
 		if (vba_readn(fd, &ooff, 2) != 2) {
