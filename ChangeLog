@@ -1,3 +1,8 @@
+Wed Mar 24 09:19:12 GMT 2004 (njh)
+----------------------------------
+  * libclamav/blob.c:	Reduce the number of calls to cli_realloc, since realloc
+  	seems to be very slow on FreeBSD
+
 Tue Mar 23 15:39:09 GMT 2004 (trog)
 -----------------------------------
   * clamd: stop scanning if the client disconnects
