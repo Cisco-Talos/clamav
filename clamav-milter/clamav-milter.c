@@ -143,9 +143,13 @@
  *	0.60m	12/10/03 Now does sanity check if using localSocket
  *			Gets version info from clamd
  *			Only reset fd's 0/1/2 if !ForeGround
+ *	0.60n	22/10/03 Call pthread_cont_broadcast more often
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.15  2003/10/22 19:44:01  nigelhorne
+ * more calls to pthread_cond_broadcast
+ *
  * Revision 1.14  2003/10/12 08:37:21  nigelhorne
  * Uses VERSION command to get version information
  *
@@ -174,9 +178,9 @@
  * Added -f flag use MaxThreads if --max-children not set
  *
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.14 2003/10/12 08:37:21 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.15 2003/10/22 19:44:01 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.60m"
+#define	CM_VERSION	"0.60n"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1372,17 +1376,14 @@ clamfi_cleanup(SMFICTX *ctx)
 		pthread_mutex_lock(&n_children_mutex);
 		/*
 		 * Deliberately errs on the side of broadcasting too many times
-		 *
-		 * No need to check for underflow since n_children must be > 0
 		 */
-		--n_children;
-		if((n_children < max_children) && (n_children > 0)) {
+		if(n_children > 0)
+			--n_children;
 #ifdef	CL_DEBUG
-			puts("pthread_cond_broadcast");
+		puts("pthread_cond_broadcast");
 #endif
-			if(pthread_cond_broadcast(&n_children_cond) < 0)
-				perror("pthread_cond_broadcast");
-		}
+		if(pthread_cond_broadcast(&n_children_cond) < 0)
+			perror("pthread_cond_broadcast");
 #ifdef	CL_DEBUG
 		printf("<n_children = %d\n", n_children);
 #endif
