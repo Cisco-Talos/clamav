@@ -1,3 +1,8 @@
+Mon Jun 28 09:36:34 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Don't error when creating the quarantine directory if it
+	already exists
+
 Sun Jun 27 09:12:29 CEST 2004 (tk)
 ----------------------------------
   * support Windows SFU (thanks to Brian A. Reiter <breiter*wolfereiter.com>)
