@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: binhex.c,v $
+ * Revision 1.12  2004/12/27 14:17:14  nigelhorne
+ * Fix segfault if write to temporary file fails
+ *
  * Revision 1.11  2004/12/17 12:03:38  nigelhorne
  * Tidy up for machines without MMAP
  *
@@ -48,7 +51,7 @@
  * First draft of binhex.c
  *
  */
-static	char	const	rcsid[] = "$Id: binhex.c,v 1.11 2004/12/17 12:03:38 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: binhex.c,v 1.12 2004/12/27 14:17:14 nigelhorne Exp $";
 
 #include "clamav.h"
 
@@ -165,7 +168,7 @@ cli_binhex(const char *dir, int desc)
 		cli_dbgmsg("Binhex file decoded to %s\n", fileblobGetFilename(fb));
 		fileblobDestroy(fb);
 	} else
-		cli_errmsg("Couldn't decode binhex file to %s\n", fileblobGetFilename(fb));
+		cli_errmsg("Couldn't decode binhex file to %s\n", dir);
 	messageDestroy(m);
 
 	if(fb)
