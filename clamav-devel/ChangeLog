@@ -1,3 +1,7 @@
+Mon Mar  1 13:22:30 GMT 2004 (trog)
+-----------------------------------
+  * clamd: Cleanup signal handling
+
 Mon Mar  1 13:08:04 GMT 2004 (trog)
 -----------------------------------
   * clamd: Cleanup local socket and clamd.run on exit

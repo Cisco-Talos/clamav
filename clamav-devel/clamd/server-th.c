@@ -29,6 +29,7 @@
 #include <time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 #include "server.h"
 #include "thrmgr.h"
@@ -89,27 +90,22 @@ void scanner_thread(void *arg)
 
 void sighandler_th(int sig)
 {
-	time_t currtime;
+	//time_t currtime;
 
     switch(sig) {
 	case SIGINT:
 	case SIGTERM:
 	    progexit = 1;
-	    logg("*Signal %d caught -> exiting.\n", sig);
-	    time(&currtime);
-	    logg("--- Stopped at %s", ctime(&currtime));
-	    exit(0);
+	    break;
+
+	case SIGSEGV:
+	    logg("Segmentation fault :-( Bye..\n");
+	    _exit(11); /* probably not reached at all */
 	    break; /* not reached */
 
-	    case SIGSEGV:
-		logg("Segmentation fault :-( Bye..\n");
-		exit(11); /* probably not reached at all */
-		break; /* not reached */
-
-	    case SIGHUP:
-		sighup = 1;
-		/*logg("SIGHUP caught: log file re-opened.\n"); */
-		break;
+	case SIGHUP:
+	    sighup = 1;
+	    break;
     }
 }
 
@@ -483,5 +479,8 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     }
 
     logg("Exiting (clean)\n");
+    time(&current_time);
+    logg("--- Stopped at %s", ctime(&current_time));
+
     return 0;
 }
