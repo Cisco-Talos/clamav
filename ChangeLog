@@ -1,3 +1,8 @@
+Wed Sep 22 16:58:05 BST 2004 (trog)
+-----------------------------------
+  * libclamav/htmlnorm.c: fix possible crash with broken html
+		(can only trigger when using FOLLOWURL)
+
 Wed Sep 22 16:53:02 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Scan RFC2298 messages

@@ -783,7 +783,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					html_output_tag(file_buff_script, tag, &tag_args);
 				} else if (hrefs && strcmp(tag, "a") == 0) {
 					arg_value = html_tag_arg_value(&tag_args, "href");
-					if (strlen(arg_value) > 0) {
+					if (arg_value && strlen(arg_value) > 0) {
 						html_tag_arg_add(hrefs, "href", arg_value);
 					}
 				}
