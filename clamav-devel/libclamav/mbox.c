@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.135  2004/09/21 08:14:00  nigelhorne
+ * Now compiles in machines with libcurl but without threads
+ *
  * Revision 1.134  2004/09/20 17:08:43  nigelhorne
  * Some performance enhancements
  *
@@ -390,14 +393,14 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.134 2004/09/20 17:08:43 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.135 2004/09/21 08:14:00 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
 
 #ifndef	CL_DEBUG
-/*#define	NDEBUG	/* map CLAMAV debug onto standard */
+#define	NDEBUG	/* map CLAMAV debug onto standard */
 #endif
 
 #ifdef CL_THREAD_SAFE
@@ -858,9 +861,15 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 				const char *ptr;
 				char *copy = strdup(buffer);
 
+#ifdef	CL_THREAD_SAFE
 				for(ptr = strtok_r(copy, ";", &strptr); ptr; ptr = strtok_r(NULL, ":", &strptr))
 					if(strchr(ptr, '='))
 						messageAddArguments(ret, ptr);
+#else
+				for(ptr = strtok(copy, ";"); ptr; ptr = strtok(NULL, ":"))
+					if(strchr(ptr, '='))
+						messageAddArguments(ret, ptr);
+#endif
 				free(copy);
 			} else {
 				Xheader = (bool)(buffer[0] == 'X');
@@ -930,10 +939,18 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 	tokenseparater[0] = *separater;
 	tokenseparater[1] = '\0';
 
+#ifdef	CL_THREAD_SAFE
 	cmd = strtok_r(copy, tokenseparater, &strptr);
+#else
+	cmd = strtok(copy, tokenseparater);
+#endif
 
 	if(cmd && (strstrip(cmd) > 0)) {
+#ifdef	CL_THREAD_SAFE
 		char *arg = strtok_r(NULL, "", &strptr);
+#else
+		char *arg = strtok(NULL, "");
+#endif
 
 		if(arg)
 			/*
@@ -2213,7 +2230,11 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 						 * Content-Type: multipart/mixed foo/bar
 						 */
 						for(;;) {
+#ifdef	CL_THREAD_SAFE
 							int set = messageSetMimeType(m, strtok_r(s, "/", &strptr));
+#else
+							int set = messageSetMimeType(m, strtok(s, "/"));
+#endif
 
 
 							/*
@@ -2222,7 +2243,11 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 							 * the mime type but before
 							 * the ;
 							 */
+#ifdef	CL_THREAD_SAFE
 							s = strtok_r(NULL, ";", &strptr);
+#else
+							s = strtok(NULL, ";");
+#endif
 							if(s == NULL)
 								break;
 							if(set) {
@@ -2272,11 +2297,19 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 			messageSetEncoding(m, copy);
 			break;
 		case CONTENT_DISPOSITION:
+#ifdef	CL_THREAD_SAFE
 			arg = strtok_r(copy, ";", &strptr);
 			if(arg && *arg) {
 				messageSetDispositionType(m, arg);
 				messageAddArgument(m, strtok_r(NULL, "\r\n", &strptr));
 			}
+#else
+			arg = strtok(copy, ";");
+			if(arg && *arg) {
+				messageSetDispositionType(m, arg);
+				messageAddArgument(m, strtok(NULL, "\r\n"));
+			}
+#endif
 	}
 	free(ptr);
 
@@ -2606,7 +2639,6 @@ static void *
 #ifdef	CL_THREAD_SAFE
 getURL(void *a)
 #else
-static void
 getURL(struct arg *arg)
 #endif
 {
