@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.124  2004/09/13 13:14:34  nigelhorne
+ * Updated SESSION Code
+ *
  * Revision 1.123  2004/09/12 14:23:47  nigelhorne
  * Added SESSION Code
  *
@@ -380,9 +383,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.123 2004/09/12 14:23:47 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.124 2004/09/13 13:14:34 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.75o"
+#define	CM_VERSION	"0.75p"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -465,11 +468,30 @@ int	deny_severity = LOG_NOTICE;
 typedef	unsigned short	in_port_t;
 #endif
 
-/* Do not define SESSION - it puts clamd/acceptloop_th() into a loop */
+/*
+ * Do not define SESSION in a production environment - it has been known to put
+ * clamd/ into a loop and sending STREAM often returns EPIPE
+ *
+ * It is however OK for testing: code is now in place to reopen as session
+ * that has gone bad, and it would be useful to find out the set of
+ * circumstances that causes clamd to loop, unless it's the SESSION close
+ * without END bug
+ */
 /*#define	SESSION	/*
 		 * Keep one command connection open to clamd, otherwise a new
 		 * command connection is created for each new email
 		 */
+
+#ifdef	SESSION
+#define	WATCHDOG_SECONDS	300	/*
+					 * How often (in seconds) to try to
+					 * fix broken clamd sessions.
+					 * We may try more often than this
+					 * e.g. when we're idle or all
+					 * connections are down, so you can
+					 * put this figure quite high
+					 */
+#endif
 
 /*
  * TODO: optional: xmessage on console when virus stopped (SNMP would be real nice!)
@@ -550,7 +572,11 @@ struct	privdata {
 	int	serverNumber;	/* Index into serverIPs */
 };
 
+#ifdef	SESSION
+static	int		createSession(int session);
+#else
 static	int		pingServer(int serverNumber);
+#endif
 static	int		findServer(void);
 static	sfsistat	clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr);
 static	sfsistat	clamfi_envfrom(SMFICTX *ctx, char **argv);
@@ -577,6 +603,10 @@ static	int	qfile(struct privdata *privdata, const char *virusname);
 static	void	setsubject(SMFICTX *ctx, const char *virusname);
 static	int	clamfi_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
 static	int	isLocalAddr(in_addr_t addr);
+static	void	clamdIsDown(void);
+#ifdef	SESSION
+static	void	*watchdog(void *a);
+#endif
 
 static	char	clamav_version[128];
 static	int	fflag = 0;	/* force a scan, whatever */
@@ -678,10 +708,19 @@ static	char	*port = NULL;	/* sendmail->milter comms */
 
 static	const	char	*serverHostNames = "127.0.0.1";
 static	long	*serverIPs;	/* IPv4 only */
+static	int	numServers;	/* number of elements in serverIPs/cmdSockets */
+
 #ifdef	SESSION
 static	int	*cmdSockets;
+static	int	*cmdSocketsStatus;
+static	pthread_mutex_t sstatus_mutex = PTHREAD_MUTEX_INITIALIZER;
+#define	CMDSOCKET_FREE	0
+#define	CMDSOCKET_INUSE	1
+#define	CMDSOCKET_DOWN	2
+
+static	pthread_cond_t	watchdog_cond = PTHREAD_COND_INITIALIZER;
+
 #endif	/*SESSION*/
-static	int	numServers;	/* number of elements in serverIPs/cmdSockets */
 
 static	const	char	*postmaster = "postmaster";
 static	const	char	*from = "MAILER-DAEMON";
@@ -747,6 +786,9 @@ main(int argc, char **argv)
 	struct cfgstruct *cpt;
 	struct passwd *user;
 	const char *pidfile = NULL;
+#ifdef	SESSION
+	pthread_t tid;
+#endif
 	struct smfiDesc smfilter = {
 		"ClamAv", /* filter name */
 		SMFI_VERSION,	/* version code -- leave untouched */
@@ -1136,6 +1178,10 @@ main(int argc, char **argv)
 	 * Get the outgoing socket details - the way to talk to clamd
 	 */
 	if((cpt = cfgopt(copt, "LocalSocket")) != NULL) {
+#ifdef	SESSION
+		struct sockaddr_un server;
+#endif
+
 		if(cfgopt(copt, "TCPSocket") != NULL) {
 			fprintf(stderr, _("%s: You can select one server type only (local/TCP) in %s\n"),
 				argv[0], cfgfile);
@@ -1145,6 +1191,7 @@ main(int argc, char **argv)
 		 * TODO: check --server hasn't been set
 		 */
 		localSocket = cpt->strarg;
+#ifndef	SESSION
 		if(!pingServer(-1)) {
 			fprintf(stderr, _("Can't talk to clamd server via %s\n"),
 				localSocket);
@@ -1152,6 +1199,7 @@ main(int argc, char **argv)
 				cfgfile);
 			return EX_CONFIG;
 		}
+#endif
 		/*if(quarantine_dir == NULL)
 			fprintf(stderr, _("When using Localsocket in %s\nyou may improve performance if you use the --quarantine-dir option\n"), cfgfile);*/
 
@@ -1159,6 +1207,33 @@ main(int argc, char **argv)
 
 		serverIPs = (long *)cli_malloc(sizeof(long));
 		serverIPs[0] = inet_addr("127.0.0.1");
+
+#ifdef	SESSION
+		memset((char *)&server, 0, sizeof(struct sockaddr_un));
+		server.sun_family = AF_UNIX;
+		strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
+
+		cmdSockets = (int *)cli_malloc(sizeof(int));
+		if((cmdSockets[0] = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+			perror(localSocket);
+			fprintf(stderr, _("Can't talk to clamd server via %s\n"),
+				localSocket);
+			fprintf(stderr, _("Check your entry for LocalSocket in %s\n"),
+				cfgfile);
+			return EX_CONFIG;
+		}
+		if(connect(cmdSockets[0], (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
+			perror(localSocket);
+			return EX_UNAVAILABLE;
+		}
+		if(send(cmdSockets[0], "SESSION\n", 7, 0) < 7) {
+			perror("send");
+			if(use_syslog)
+				syslog(LOG_ERR, _("Can't create a clamd session"));
+			return EX_UNAVAILABLE;
+		}
+#endif
+		numServers = 1;
 	} else if((cpt = cfgopt(copt, "TCPSocket")) != NULL) {
 		int activeServers;
 
@@ -1188,6 +1263,16 @@ main(int argc, char **argv)
 		serverIPs = (long *)cli_malloc(numServers * sizeof(long));
 		activeServers = 0;
 
+#ifdef	SESSION
+		/*
+		 * We need to know how many connections to establish to clamd
+		 */
+		if(max_children == 0) {
+			fprintf(stderr, _("%s: Sessions does not multiplex\n"), argv[0]);
+			return EX_CONFIG;
+		}
+#endif
+
 		for(i = 0; i < numServers; i++) {
 			char *hostname = cli_strtok(serverHostNames, i, ":");
 
@@ -1207,20 +1292,31 @@ main(int argc, char **argv)
 				memcpy((char *)&serverIPs[i], h->h_addr, sizeof(serverIPs[i]));
 			}
 
+#ifndef	SESSION
 			if(pingServer(i))
 				activeServers++;
 			else {
 				cli_warnmsg(_("Can't talk to clamd server %s on port %d\n"),
 					hostname, tcpSocket);
 			}
+#endif
 			free(hostname);
 		}
+#ifdef	SESSION
+		activeServers = numServers;
+		cmdSockets = (int *)cli_malloc(max_children * sizeof(int));
+		cmdSocketsStatus = (int *)cli_calloc(max_children, sizeof(int));
+		for(i = 0; i < max_children; i++)
+			if(createSession(i) < 0)
+				return EX_UNAVAILABLE;
+#else
 		if(activeServers == 0) {
 			cli_errmsg(_("Can't find any clamd servers\n"));
 			cli_errmsg(_("Check your entry for TCPSocket in %s\n"),
 				cfgfile);
 			return EX_CONFIG;
 		}
+#endif
 	} else {
 		fprintf(stderr, _("%s: You must select server type (local/TCP) in %s\n"),
 			argv[0], cfgfile);
@@ -1228,70 +1324,7 @@ main(int argc, char **argv)
 	}
 
 #ifdef	SESSION
-	if(localSocket) {
-		struct sockaddr_un server;
-
-		memset((char *)&server, 0, sizeof(struct sockaddr_un));
-		server.sun_family = AF_UNIX;
-		strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
-
-		cmdSockets = (int *)cli_malloc(sizeof(int));
-		if((cmdSockets[0] = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-			perror(localSocket);
-			return EX_UNAVAILABLE;
-		}
-		if(connect(cmdSockets[0], (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
-			perror(localSocket);
-			return EX_UNAVAILABLE;
-		}
-		if(send(cmdSockets[0], "SESSION\n", 7, 0) < 7) {
-			perror("send");
-			if(use_syslog)
-				syslog(LOG_ERR, _("Can't create a clamd session"));
-			return EX_UNAVAILABLE;
-		}
-	} else {
-		/*
-		 * FIXME: Sessions code doesn't allow more than one datastream
-		 * at a time to a server
-		 */
-		if(max_children > numServers) {
-			fprintf(stderr, _("%s: Sessions does not multiplex\n"), argv[0]);
-			return EX_CONFIG;
-		}
-
-		cmdSockets = (int *)cli_malloc(numServers * sizeof(int));
-
-		assert(serverIPs != NULL);
-
-		for(i = 0; i < numServers; i++) {
-			struct sockaddr_in server;
-
-			memset((char *)&server, 0, sizeof(struct sockaddr_in));
-			server.sin_family = AF_INET;
-			server.sin_port = (in_port_t)htons(tcpSocket);
-
-			server.sin_addr.s_addr = serverIPs[i];
-
-			if((cmdSockets[i] = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-				perror("socket");
-				return EX_UNAVAILABLE;
-			}
-			if(connect(cmdSockets[i], (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
-				perror("connect");
-				return EX_UNAVAILABLE;
-			}
-			if(send(cmdSockets[i], "SESSION\n", 7, 0) < 7) {
-				char *hostname = cli_strtok(serverHostNames, i, ":");
-				perror("send");
-				cli_warnmsg(_("Check clamd server %s - it may be down\n"), hostname);
-				free(hostname);
-
-				close(cmdSockets[i]);
-				cmdSockets[i] = -1;
-			}
-		}
-	}
+	pthread_create(&tid, NULL, watchdog, NULL);
 #endif
 
 	if(!cfgopt(copt, "Foreground")) {
@@ -1412,6 +1445,47 @@ main(int argc, char **argv)
 	return smfi_main();
 }
 
+#ifdef	SESSION
+/*
+ * Use the SESSION command of clamd.
+ * Returns -1 for terminal failure, 0 for OK, 1 for nonterminal failure
+ * The caller must take care of locking the cmdSocketStatus array
+ */
+static int
+createSession(int session)
+{
+	struct sockaddr_in server;
+	const int serverNumber = session % numServers;
+
+	memset((char *)&server, 0, sizeof(struct sockaddr_in));
+	server.sin_family = AF_INET;
+	server.sin_port = (in_port_t)htons(tcpSocket);
+
+	server.sin_addr.s_addr = serverIPs[serverNumber];
+
+	if((cmdSockets[session] = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+		perror("socket");
+		return -1;
+	}
+	if(connect(cmdSockets[session], (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
+		perror("connect");
+		return -1;
+	}
+	if(send(cmdSockets[session], "SESSION\n", 7, 0) < 7) {
+		char *hostname = cli_strtok(serverHostNames, serverNumber, ":");
+		perror("send");
+		cli_warnmsg(_("Check clamd server %s - it may be down\n"), hostname);
+		free(hostname);
+
+		cmdSocketsStatus[session] = CMDSOCKET_DOWN;
+		return 1;
+	}
+	cli_dbgmsg("cmdSockets[%d] = %d\n", session, cmdSockets[session]);
+	return 0;
+}
+
+#else
+
 /*
  * Verify that the server is where we think it is
  * Returns true or false
@@ -1513,6 +1587,7 @@ pingServer(int serverNumber)
 
 	return 1;
 }
+#endif
 
 /*
  * Find the best server to connect to. No intelligence to this.
@@ -1524,6 +1599,47 @@ pingServer(int serverNumber)
  * If the load balancing fails return the first server in the list, not
  * an error, to be on the safe side
  */
+#ifdef	SESSION
+static int
+findServer(void)
+{
+	int i;
+
+	/*
+	 * FIXME: Sessions code isn't flexible at handling servers
+	 *	appearing and disappearing, e.g. cmdSockets[n_children] == -1
+	 */
+	pthread_mutex_lock(&n_children_mutex);
+	assert(n_children > 0);
+	assert(n_children <= max_children);
+	i = n_children - 1;
+	pthread_mutex_unlock(&n_children_mutex);
+
+	pthread_mutex_lock(&sstatus_mutex);
+	for(; i < max_children; i++)
+		if(cmdSocketsStatus[i] == CMDSOCKET_FREE) {
+			cmdSocketsStatus[i] = CMDSOCKET_INUSE;
+			pthread_mutex_unlock(&sstatus_mutex);
+			return i;
+		}
+	pthread_mutex_unlock(&sstatus_mutex);
+
+	pthread_cond_signal(&watchdog_cond);
+
+	pthread_mutex_lock(&sstatus_mutex);
+	for(; i < max_children; i++)
+		if(cmdSocketsStatus[i] == CMDSOCKET_FREE) {
+			cmdSocketsStatus[i] = CMDSOCKET_INUSE;
+			pthread_mutex_unlock(&sstatus_mutex);
+			return i;
+		}
+	pthread_mutex_unlock(&sstatus_mutex);
+
+	cli_warnmsg(_("No free clamd sessions\n"));
+
+	return -1;	/* none available - must fail */
+}
+#else
 static int
 findServer(void)
 {
@@ -1544,9 +1660,16 @@ findServer(void)
 
 	FD_ZERO(&rfds);
 
-	if(max_children > 0)
-		j = n_children - 1;	/* Don't worry about no lock */
-	else
+	if(max_children > 0) {
+		assert(n_children > 0);
+		assert(n_children <= max_children);
+
+		/*
+		 * Don't worry about no lock - it's doesn't matter if it's
+		 * not really accurate
+		 */
+		j = n_children - 1;
+	} else
 		/*
 		 * cli_rndnum returns 0..(max-1) - the max argument is not
 		 * the maximum number you want it to return, it is in fact
@@ -1557,16 +1680,6 @@ findServer(void)
 	for(i = 0, server = servers; i < numServers; i++, server++) {
 		int sock;
 
-#ifdef	SESSION
-		/*
-		 * FIXME: Sessions code isn't flexible at handling servers
-		 *	appearing and disappearing
-		 * FIXME: ensure we don't try scanning with a server that's
-		 *	already scanning
-		 */
-		if(cmdSockets[i] == -1)
-			continue;
-#endif
 		server->sin_family = AF_INET;
 		server->sin_port = (in_port_t)htons(tcpSocket);
 		server->sin_addr.s_addr = serverIPs[(i + j) % numServers];
@@ -1575,6 +1688,7 @@ findServer(void)
 			(i + j) % numServers);
 
 		sock = socks[i] = socket(AF_INET, SOCK_STREAM, 0);
+
 		if(sock < 0) {
 			perror("socket");
 			do
@@ -1625,56 +1739,8 @@ findServer(void)
 			close(socks[i]);
 
 	if(retval == 0) {
-		static time_t lasttime;
-		time_t thistime, diff;
-		static pthread_mutex_t time_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-		/*
-		 * This is serious, we need to inform someone.
-		 * In the absence of SNMP the best way is by e-mail. We
-		 * don't want to flood so there's a need to restrict to
-		 * no more than say one message every 15 minutes
-		 */
 		free(socks);
-		cli_dbgmsg(_("findServer: No response from any server\n"));
-		if(use_syslog)
-			syslog(LOG_WARNING, _("findServer: No response from any server"));
-
-		time(&thistime);
-		pthread_mutex_lock(&time_mutex);
-		diff = thistime - lasttime;
-		pthread_mutex_unlock(&time_mutex);
-
-		if(diff >= (time_t)(15 * 60)) {
-			char cmd[128];
-			FILE *sendmail;
-
-			snprintf(cmd, sizeof(cmd) - 1, "%s -t", SENDMAIL_BIN);
-
-			sendmail = popen(cmd, "w");
-
-			if(sendmail) {
-				fprintf(sendmail, "To: %s\n", postmaster);
-				fprintf(sendmail, "From: %s\n", postmaster);
-				fputs(_("Subject: ClamAV Down\n"), sendmail);
-				fputs("Priority: High\n\n", sendmail);
-
-				fputs(_("This is an automatic message\n\n"), sendmail);
-
-				if(numServers == 1)
-					fputs(_("The clamd program cannot be contacted.\n"), sendmail);
-				else
-					fputs(_("No clamd server can be contacted.\n"), sendmail);
-
-				fputs(_("Emails may not be being scanned, please check your servers.\n"), sendmail);
-
-				if(pclose(sendmail) == 0) {
-					pthread_mutex_lock(&time_mutex);
-					time(&lasttime);
-					pthread_mutex_unlock(&time_mutex);
-				}
-			}
-		}
+		clamdIsDown();
 		return 0;
 	} else if(retval < 0) {
 		free(socks);
@@ -1698,6 +1764,7 @@ findServer(void)
 		syslog(LOG_WARNING, _("findServer: No response from any server"));
 	return 0;
 }
+#endif
 
 /*
  * Sendmail wants to establish a connection to us
@@ -1826,7 +1893,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 #ifdef	CL_DEBUG
 		if(use_syslog)
 			syslog(LOG_DEBUG, _("clamfi_connect: not scanning local messages"));
-		cli_dbgmsg(_("clamfi_connect: not scanning outgoing messages\n"));
+		cli_dbgmsg(_("clamfi_connect: not scanning local messages\n"));
 #endif
 		return SMFIS_ACCEPT;
 	}
@@ -1859,11 +1926,16 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			struct timespec timeout;
 			struct timezone tz;
 
+			cli_dbgmsg((dont_wait) ?
+					_("hit max-children limit (%u >= %u)\n") :
+					_("hit max-children limit (%u >= %u): waiting for some to exit\n"),
+				n_children, max_children);
+
 			if(use_syslog)
 				syslog(LOG_NOTICE,
-					((dont_wait) ?
+					(dont_wait) ?
 						_("hit max-children limit (%u >= %u)") :
-						_("hit max-children limit (%u >= %u): waiting for some to exit")),
+						_("hit max-children limit (%u >= %u): waiting for some to exit"),
 					n_children, max_children);
 
 			if(dont_wait) {
@@ -2240,7 +2312,12 @@ clamfi_eom(SMFICTX *ctx)
 		return cl_error;
 	}
 
-#ifndef	SESSION
+#ifdef	SESSION
+	pthread_mutex_lock(&sstatus_mutex);
+	if(cmdSocketsStatus[privdata->serverNumber] == CMDSOCKET_INUSE)
+		cmdSocketsStatus[privdata->serverNumber] = CMDSOCKET_FREE;
+	pthread_mutex_unlock(&sstatus_mutex);
+#else
 	close(privdata->cmdSocket);
 	privdata->cmdSocket = -1;
 #endif
@@ -2404,7 +2481,7 @@ clamfi_eom(SMFICTX *ctx)
 			/* Include the sendmail queue ID in the log */
 			syslog(LOG_NOTICE, "%s: %s %s", sendmailId, mess, err);
 #ifdef	CL_DEBUG
-			cli_dbgmsg("%s\n", err);
+			cli_dbgmsg("%s", err);
 #endif
 			free(err);
 		}
@@ -2640,6 +2717,7 @@ clamfi_cleanup(SMFICTX *ctx)
 static void
 clamfi_free(struct privdata *privdata)
 {
+	cli_dbgmsg("clamfi_free\n");
 	if(privdata) {
 		if(privdata->body)
 			free(privdata->body);
@@ -2693,15 +2771,23 @@ clamfi_free(struct privdata *privdata)
 		}
 
 #ifdef	SESSION
-		if(readTimeout && (cmdSockets[privdata->serverNumber] >= 0)) for(;;) {
-			char buf[64];
+		pthread_mutex_lock(&sstatus_mutex);
+		if(cmdSocketsStatus[privdata->serverNumber] == CMDSOCKET_INUSE) {
+			pthread_mutex_unlock(&sstatus_mutex);
+			if(readTimeout) {
+				char buf[64];
+				const int fd = cmdSockets[privdata->serverNumber];
 
-			cli_dbgmsg("clamfi_free: Flush cmd server %d (fd %d)\n",
-				privdata->serverNumber, cmdSockets[privdata->serverNumber]);
+				cli_dbgmsg("clamfi_free: flush server %d fd %d\n",
+					privdata->serverNumber, fd);
 
-			while(clamd_recv(cmdSockets[privdata->serverNumber], buf, sizeof(buf)) > 0)
-				puts(buf);
+				while(clamd_recv(fd, buf, sizeof(buf)) > 0)
+					;
+			}
+			pthread_mutex_lock(&sstatus_mutex);
+			cmdSocketsStatus[privdata->serverNumber] = CMDSOCKET_FREE;
 		}
+		pthread_mutex_unlock(&sstatus_mutex);
 #else
 		if(privdata->cmdSocket >= 0) {
 			char buf[64];
@@ -2730,11 +2816,17 @@ clamfi_free(struct privdata *privdata)
 
 	if(max_children > 0) {
 		pthread_mutex_lock(&n_children_mutex);
+		cli_dbgmsg("clamfi_free: n_children = %d\n", n_children);
 		/*
 		 * Deliberately errs on the side of broadcasting too many times
 		 */
-		if(n_children > 0)
+		if(n_children > 0) {
 			--n_children;
+#ifdef	SESSION
+			if(n_children == 0)
+				pthread_cond_signal(&watchdog_cond);
+#endif
+		}
 #ifdef	CL_DEBUG
 		cli_dbgmsg("pthread_cond_broadcast\n");
 #endif
@@ -3149,9 +3241,12 @@ connect2clamd(struct privdata *privdata)
 
 #ifdef	SESSION
 		if(send(cmdSockets[freeServer], "STREAM\n", 7, 0) < 7) {
-			cli_dbgmsg("Sending stream to server %d (fd %d)\n",
-				freeServer, cmdSockets[freeServer]);
 			perror("send");
+			pthread_mutex_lock(&sstatus_mutex);
+			cmdSocketsStatus[privdata->serverNumber] = CMDSOCKET_DOWN;
+			pthread_mutex_unlock(&sstatus_mutex);
+			cli_warnmsg("Failed sending stream to server %d (fd %d) errno %d\n",
+				freeServer, cmdSockets[freeServer], errno);
 			if(use_syslog)
 				syslog(LOG_ERR, _("send failed to clamd"));
 			return 0;
@@ -3270,7 +3365,7 @@ connect2clamd(struct privdata *privdata)
 				return 0;
 	}
 
-	cli_dbgmsg("connect2clamd OK\n");
+	cli_dbgmsg("connect2clamd: serverNumber = %d\n", privdata->serverNumber);
 
 	return 1;
 }
@@ -3559,3 +3654,141 @@ isLocalAddr(in_addr_t addr)
 
 	return 0;	/* is non-local */
 }
+
+/*
+ * Can't connect to any clamd server. This is serious, we need to inform
+ * someone. In the absence of SNMP the best way is by e-mail. We
+ * don't want to flood so there's a need to restrict to
+ * no more than say one message every 15 minutes
+ */
+static void
+clamdIsDown(void)
+{
+	static time_t lasttime;
+	time_t thistime, diff;
+	static pthread_mutex_t time_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+	cli_errmsg(_("No response from any clamd server - your AV system is not scanning emails\n"));
+
+	if(use_syslog)
+		syslog(LOG_ERR, _("No response from any clamd server - your AV system is not scanning emails"));
+
+	time(&thistime);
+	pthread_mutex_lock(&time_mutex);
+	diff = thistime - lasttime;
+	pthread_mutex_unlock(&time_mutex);
+
+	if(diff >= (time_t)(15 * 60)) {
+		char cmd[128];
+		FILE *sendmail;
+
+		snprintf(cmd, sizeof(cmd) - 1, "%s -t", SENDMAIL_BIN);
+
+		sendmail = popen(cmd, "w");
+
+		if(sendmail) {
+			fprintf(sendmail, "To: %s\n", postmaster);
+			fprintf(sendmail, "From: %s\n", postmaster);
+			fputs(_("Subject: ClamAV Down\n"), sendmail);
+			fputs("Priority: High\n\n", sendmail);
+
+			fputs(_("This is an automatic message\n\n"), sendmail);
+
+			if(numServers == 1)
+				fputs(_("The clamd program cannot be contacted.\n"), sendmail);
+			else
+				fputs(_("No clamd server can be contacted.\n"), sendmail);
+
+			fputs(_("Emails may not be being scanned, please check your servers.\n"), sendmail);
+
+			if(pclose(sendmail) == 0) {
+				pthread_mutex_lock(&time_mutex);
+				time(&lasttime);
+				pthread_mutex_unlock(&time_mutex);
+			}
+		}
+	}
+}
+
+#ifdef	SESSION
+/*
+ * Thread to monitor the links to clamd sessions. Any marked as being in
+ * an error state because of previous I/O errors are restarted, and a heartbeat
+ * is sent the others
+ */
+static void *
+watchdog(void *a)
+{
+	static pthread_mutex_t watchdog_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+	pthread_mutex_lock(&watchdog_mutex);
+	for(;;) {
+		int i;
+		struct timespec ts;
+		struct timeval tp;
+
+		gettimeofday(&tp, NULL);
+		ts.tv_sec = tp.tv_sec + WATCHDOG_SECONDS;
+		ts.tv_nsec = tp.tv_usec * 1000;
+		cli_dbgmsg("watchdog sleeps\n");
+		if(pthread_cond_timedwait(&watchdog_cond, &watchdog_mutex, &ts) == ETIMEDOUT)
+			pthread_mutex_lock(&watchdog_mutex);
+		cli_dbgmsg("watchdog wakes\n");
+
+		pthread_mutex_lock(&sstatus_mutex);
+		for(i = 0; i < max_children; i++) {
+			const int sock = cmdSockets[i];
+
+			/*
+			 * Check all free sessions are still usable
+			 * This could take some time with many free
+			 * sessions to slow remote servers, so only do this
+			 * when the system is quiet (not 100% accurate when
+			 * determining this since n_children isn't locked but
+			 * that doesn't really matter)
+			 */
+			cli_dbgmsg("watchdog: check server %d\n", i);
+			if((n_children == 0) && (cmdSocketsStatus[i] == CMDSOCKET_FREE)) {
+				if(send(sock, "PING\n", 5, 0) == 5) {
+					char buf[6];
+
+					buf[5] = '\0';
+					if(clamd_recv(sock, buf, 5) != 5)
+						cmdSocketsStatus[i] = CMDSOCKET_DOWN;
+					else if(strcmp(buf, "PONG\n") != 0)
+						cmdSocketsStatus[i] = CMDSOCKET_DOWN;
+				} else
+					cmdSocketsStatus[i] = CMDSOCKET_DOWN;
+
+				if(cmdSocketsStatus[i] == CMDSOCKET_DOWN)
+					cli_warnmsg("Session %d has gone down\n", i);
+			}
+			/*
+			 * Reset all all dead sessions
+			 */
+			if(cmdSocketsStatus[i] == CMDSOCKET_DOWN) {
+				/*
+				 * The END command probably won't get through,
+				 * but let's give it a go anyway
+				 */
+				send(sock, "END\n", 4, 0);
+				close(sock);
+
+				cli_dbgmsg("Trying to restart session %d\n", i);
+				if(createSession(i) == 0) {
+					cmdSocketsStatus[i] = CMDSOCKET_FREE;
+					cli_warnmsg("Session %d restarted OK\n", i);
+				}
+			}
+		}
+		for(i = 0; i < max_children; i++)
+			if(cmdSocketsStatus[i] != CMDSOCKET_DOWN)
+				break;
+
+		if(i == max_children)
+			clamdIsDown();
+		pthread_mutex_unlock(&sstatus_mutex);
+	}
+	return NULL;
+}
+#endif
