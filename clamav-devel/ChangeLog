@@ -1,3 +1,10 @@
+Fri Oct 31 02:51:59 CET 2003 (tk)
+---------------------------------
+  * clamd: initialize a session start-time in proper order (thanks to Michael
+	   Dankov). The fix eliminates potential termination (because of
+	   time out) of just started threads.
+  * sigtool: fixes
+
 Mon Oct 27 22:08:53 CET 2003 (tk)
 ---------------------------------
   * freshclam: fixed a segmentation fault (thanks to Graham Murray); only

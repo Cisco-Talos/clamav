@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 	int ret, opt_index, i, len;
 	struct optstruct *opt;
 
-	const char *getopt_parameters = "hvVc:s:f:b:i:s:";
+	const char *getopt_parameters = "hvVc:s:f:b:i:s:u:";
 
 	static struct option long_options[] = {
 	    {"help", 0, 0, 'h'},
@@ -54,6 +54,7 @@ int main(int argc, char **argv)
 	    {"file", 1, 0, 'f'},
 	    {"build", 1, 0, 'b'},
 	    {"server", 1, 0, 's'},
+	    {"unpack", 1, 0, 'u'},
 	    {"info", 1, 0, 'i'},
 	    {0, 0, 0, 0}
     	};

@@ -582,9 +582,21 @@ int acceptloop(int socketd, struct cl_node *root, const struct cfgstruct *copt)
 	tharg->options = options;
 
 	ths[i].desc = acceptd;
-	ths[i].active = 1;
-	pthread_create(&ths[i].id, &thattr, threadscanner, tharg);
 	ths[i].start = time(NULL);
+	ths[i].active = 1; /* the structure must be activated exactly here
+			    * because we will surely create a race condition 
+			    * in other places (if activated in the new thread
+			    * there * will be a race in the main thread (it
+			    * may assign the same thread session once more);
+			    * if activated after pthread_create() the new
+			    * thread may be already finished).
+			    */
+
+	if(pthread_create(&ths[i].id, &thattr, threadscanner, tharg)) {
+	    logg("!Session(%d) did not start. Dropping connection.", i);
+	    close(acceptd);
+	    ths[i].active = 0;
+	}
     }
 }
 
