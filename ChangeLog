@@ -1,3 +1,10 @@
+Thu Oct 14 18:46:10 BST 2004 (njh)
+----------------------------------
+  * libclamav:		Handle RFC2047 on long lines produced by continuation
+				headers
+			Try to reclaim some memory if it becomes low when
+				decoding very large files
+
 Wed Oct 13 22:57:21 CEST 2004 (tk)
 ----------------------------------
   * libclamav/matcher-bm.c: bound memory usage
