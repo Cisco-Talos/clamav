@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: binhex.c,v $
+ * Revision 1.5  2004/11/18 20:11:34  nigelhorne
+ * Fix segfault
+ *
  * Revision 1.4  2004/11/18 19:30:29  kojm
  * add support for Mac's HQX file format
  *
@@ -27,7 +30,7 @@
  * First draft of binhex.c
  *
  */
-static	char	const	rcsid[] = "$Id: binhex.c,v 1.4 2004/11/18 19:30:29 kojm Exp $";
+static	char	const	rcsid[] = "$Id: binhex.c,v 1.5 2004/11/18 20:11:34 nigelhorne Exp $";
 
 #include "clamav.h"
 
@@ -97,7 +100,9 @@ cli_binhex(const char *dir, int desc)
 		int length = 0;
 		char *ptr, *line;
 
-		for(ptr = buf; bytesleft && *ptr != '\r'; ptr++) {
+		/* printf("%d: ", bytesleft); */
+
+		for(ptr = buf; bytesleft && (*ptr != '\r') && (*ptr != '\n'); ptr++) {
 			length++;
 			--bytesleft;
 		}
@@ -117,6 +122,7 @@ cli_binhex(const char *dir, int desc)
 		free(line);
 
 		buf = ++ptr;
+		bytesleft--;
 	}
 	munmap(start, size);
 
