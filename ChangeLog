@@ -1,3 +1,11 @@
+Sun Sep 12 15:25:12 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Use .../share/clamav/clamav-milter/locale for the locale
+				information
+			Added first draft of SESSION code. Do NOT use in a
+				production environment. It is disabled by
+				default.
+
 Wed Sep  8 21:47:09 BST 2004 (njh)
 ----------------------------------
   * contrib/init/RedHat:	Start clamav before sendmail and shut it down

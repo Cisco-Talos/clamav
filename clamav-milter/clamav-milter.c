@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.123  2004/09/12 14:23:47  nigelhorne
+ * Added SESSION Code
+ *
  * Revision 1.122  2004/09/08 16:03:36  nigelhorne
  * i18n
  *
@@ -377,9 +380,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.122 2004/09/08 16:03:36 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.123 2004/09/12 14:23:47 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.75n"
+#define	CM_VERSION	"0.75o"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -462,6 +465,12 @@ int	deny_severity = LOG_NOTICE;
 typedef	unsigned short	in_port_t;
 #endif
 
+/* Do not define SESSION - it puts clamd/acceptloop_th() into a loop */
+/*#define	SESSION	/*
+		 * Keep one command connection open to clamd, otherwise a new
+		 * command connection is created for each new email
+		 */
+
 /*
  * TODO: optional: xmessage on console when virus stopped (SNMP would be real nice!)
  *	Having said that, with LogSysLog you can (on Linux) configure the system
@@ -519,10 +528,12 @@ struct	privdata {
 	char	*from;	/* Who sent the message */
 	char	**to;	/* Who is the message going to */
 	int	numTo;	/* Number of people the message is going to */
+#ifndef	SESSION
 	int	cmdSocket;	/*
 				 * Socket to send/get commands e.g. PORT for
 				 * dataSocket
 				 */
+#endif
 	int	dataSocket;	/* Socket to send data to clamd */
 	char	*filename;	/* Where to store the message in quarantine */
 	u_char	*body;		/* body of the message if Sflag is set */
@@ -664,9 +675,14 @@ static	struct	cfgstruct	*copt;
 static	const	char	*localSocket;	/* milter->clamd comms */
 static	in_port_t	tcpSocket;	/* milter->clamd comms */
 static	char	*port = NULL;	/* sendmail->milter comms */
+
 static	const	char	*serverHostNames = "127.0.0.1";
 static	long	*serverIPs;	/* IPv4 only */
-static	int	numServers;	/* numer of elements in serverIPs */
+#ifdef	SESSION
+static	int	*cmdSockets;
+#endif	/*SESSION*/
+static	int	numServers;	/* number of elements in serverIPs/cmdSockets */
+
 static	const	char	*postmaster = "postmaster";
 static	const	char	*from = "MAILER-DAEMON";
 
@@ -726,6 +742,7 @@ int
 main(int argc, char **argv)
 {
 	extern char *optarg;
+	int i;
 	const char *cfgfile = CL_DEFAULT_CFG;
 	struct cfgstruct *cpt;
 	struct passwd *user;
@@ -763,7 +780,7 @@ main(int argc, char **argv)
 
 #ifdef	C_LINUX
 	setlocale(LC_ALL, "");
-	bindtextdomain("clamav-milter", "locale");
+	bindtextdomain("clamav-milter", DATADIR"/clamav-milter/locale");
 	textdomain("clamav-milter");
 #endif
 
@@ -1143,7 +1160,7 @@ main(int argc, char **argv)
 		serverIPs = (long *)cli_malloc(sizeof(long));
 		serverIPs[0] = inet_addr("127.0.0.1");
 	} else if((cpt = cfgopt(copt, "TCPSocket")) != NULL) {
-		int i, activeServers;
+		int activeServers;
 
 		/*
 		 * TCPSocket is in fact a port number not a full socket
@@ -1209,6 +1226,73 @@ main(int argc, char **argv)
 			argv[0], cfgfile);
 		return EX_CONFIG;
 	}
+
+#ifdef	SESSION
+	if(localSocket) {
+		struct sockaddr_un server;
+
+		memset((char *)&server, 0, sizeof(struct sockaddr_un));
+		server.sun_family = AF_UNIX;
+		strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
+
+		cmdSockets = (int *)cli_malloc(sizeof(int));
+		if((cmdSockets[0] = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+			perror(localSocket);
+			return EX_UNAVAILABLE;
+		}
+		if(connect(cmdSockets[0], (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
+			perror(localSocket);
+			return EX_UNAVAILABLE;
+		}
+		if(send(cmdSockets[0], "SESSION\n", 7, 0) < 7) {
+			perror("send");
+			if(use_syslog)
+				syslog(LOG_ERR, _("Can't create a clamd session"));
+			return EX_UNAVAILABLE;
+		}
+	} else {
+		/*
+		 * FIXME: Sessions code doesn't allow more than one datastream
+		 * at a time to a server
+		 */
+		if(max_children > numServers) {
+			fprintf(stderr, _("%s: Sessions does not multiplex\n"), argv[0]);
+			return EX_CONFIG;
+		}
+
+		cmdSockets = (int *)cli_malloc(numServers * sizeof(int));
+
+		assert(serverIPs != NULL);
+
+		for(i = 0; i < numServers; i++) {
+			struct sockaddr_in server;
+
+			memset((char *)&server, 0, sizeof(struct sockaddr_in));
+			server.sin_family = AF_INET;
+			server.sin_port = (in_port_t)htons(tcpSocket);
+
+			server.sin_addr.s_addr = serverIPs[i];
+
+			if((cmdSockets[i] = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+				perror("socket");
+				return EX_UNAVAILABLE;
+			}
+			if(connect(cmdSockets[i], (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
+				perror("connect");
+				return EX_UNAVAILABLE;
+			}
+			if(send(cmdSockets[i], "SESSION\n", 7, 0) < 7) {
+				char *hostname = cli_strtok(serverHostNames, i, ":");
+				perror("send");
+				cli_warnmsg(_("Check clamd server %s - it may be down\n"), hostname);
+				free(hostname);
+
+				close(cmdSockets[i]);
+				cmdSockets[i] = -1;
+			}
+		}
+	}
+#endif
 
 	if(!cfgopt(copt, "Foreground")) {
 #ifdef	CL_DEBUG
@@ -1349,7 +1433,7 @@ pingServer(int serverNumber)
 		strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
 
 		if((sock = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-			perror("socket");
+			perror(localSocket);
 			return 0;
 		}
 		checkClamd();
@@ -1424,7 +1508,7 @@ pingServer(int serverNumber)
 	 *	are out of date (say more than a month old)
 	 */
 	snprintf(clamav_version, sizeof(clamav_version),
-		"%s, clamav-milter version %s",
+		"%s\n\tclamav-milter version %s",
 		buf, CM_VERSION);
 
 	return 1;
@@ -1473,6 +1557,16 @@ findServer(void)
 	for(i = 0, server = servers; i < numServers; i++, server++) {
 		int sock;
 
+#ifdef	SESSION
+		/*
+		 * FIXME: Sessions code isn't flexible at handling servers
+		 *	appearing and disappearing
+		 * FIXME: ensure we don't try scanning with a server that's
+		 *	already scanning
+		 */
+		if(cmdSockets[i] == -1)
+			continue;
+#endif
 		server->sin_family = AF_INET;
 		server->sin_port = (in_port_t)htons(tcpSocket);
 		server->sin_addr.s_addr = serverIPs[(i + j) % numServers];
@@ -1821,7 +1915,9 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		return cl_error;
 
 	privdata->dataSocket = -1;	/* 0.4 */
+#ifndef	SESSION
 	privdata->cmdSocket = -1;	/* 0.4 */
+#endif
 
 	/*
 	 * Rejection is via 550 until DATA is received. We know that
@@ -2060,8 +2156,10 @@ clamfi_eom(SMFICTX *ctx)
 #ifdef	CL_DEBUG
 	cli_dbgmsg("clamfi_eom\n");
 	assert(privdata != NULL);
+#ifndef	SESSION
 	assert((privdata->cmdSocket >= 0) || (privdata->filename != NULL));
 	assert(!((privdata->cmdSocket >= 0) && (privdata->filename != NULL)));
+#endif
 	assert(privdata->dataSocket >= 0);
 #endif
 
@@ -2082,6 +2180,19 @@ clamfi_eom(SMFICTX *ctx)
 		server.sun_family = AF_UNIX;
 		strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
 
+		snprintf(cmdbuf, sizeof(cmdbuf) - 1, "SCAN %s", privdata->filename);
+
+		nbytes = (int)strlen(cmdbuf);
+
+#ifdef	SESSION
+		if(send(cmdSockets[0], cmdbuf, nbytes, 0) < nbytes) {
+			perror("send");
+			clamfi_cleanup(ctx);
+			if(use_syslog)
+				syslog(LOG_ERR, _("send failed to clamd"));
+			return cl_error;
+		}
+#else
 		if((privdata->cmdSocket = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 			perror("socket");
 			clamfi_cleanup(ctx);
@@ -2092,11 +2203,6 @@ clamfi_eom(SMFICTX *ctx)
 			clamfi_cleanup(ctx);
 			return cl_error;
 		}
-
-		snprintf(cmdbuf, sizeof(cmdbuf) - 1, "SCAN %s", privdata->filename);
-
-		nbytes = (int)strlen(cmdbuf);
-
 		if(send(privdata->cmdSocket, cmdbuf, nbytes, 0) < nbytes) {
 			perror("send");
 			clamfi_cleanup(ctx);
@@ -2106,9 +2212,14 @@ clamfi_eom(SMFICTX *ctx)
 		}
 
 		shutdown(privdata->cmdSocket, SHUT_WR);
+#endif
 	}
 
+#ifdef	SESSION
+	if(clamd_recv(cmdSockets[privdata->serverNumber], mess, sizeof(mess)) > 0) {
+#else
 	if(clamd_recv(privdata->cmdSocket, mess, sizeof(mess)) > 0) {
+#endif
 		if((ptr = strchr(mess, '\n')) != NULL)
 			*ptr = '\0';
 
@@ -2129,8 +2240,10 @@ clamfi_eom(SMFICTX *ctx)
 		return cl_error;
 	}
 
+#ifndef	SESSION
 	close(privdata->cmdSocket);
 	privdata->cmdSocket = -1;
+#endif
 
 	sendmailId = smfi_getsymval(ctx, "i");
 	if(sendmailId == NULL)
@@ -2579,17 +2692,30 @@ clamfi_free(struct privdata *privdata)
 			privdata->to = NULL;
 		}
 
+#ifdef	SESSION
+		if(readTimeout && (cmdSockets[privdata->serverNumber] >= 0)) for(;;) {
+			char buf[64];
+
+			cli_dbgmsg("clamfi_free: Flush cmd server %d (fd %d)\n",
+				privdata->serverNumber, cmdSockets[privdata->serverNumber]);
+
+			while(clamd_recv(cmdSockets[privdata->serverNumber], buf, sizeof(buf)) > 0)
+				puts(buf);
+		}
+#else
 		if(privdata->cmdSocket >= 0) {
 			char buf[64];
 
 			/*
 			 * Flush the remote end so that clamd doesn't get a SIGPIPE
 			 */
-			while(clamd_recv(privdata->cmdSocket, buf, sizeof(buf)) > 0)
-				;
+			if(readTimeout)
+				while(clamd_recv(privdata->cmdSocket, buf, sizeof(buf)) > 0)
+					;
 			close(privdata->cmdSocket);
 			privdata->cmdSocket = -1;
 		}
+#endif
 		if(privdata->headers)
 			header_list_free(privdata->headers);
 
@@ -2743,6 +2869,8 @@ clamd_recv(int sock, char *buf, size_t len)
 {
 	fd_set rfds;
 	struct timeval tv;
+
+	assert(sock >= 0);
 
 	if(readTimeout == 0)
 		return recv(sock, buf, len, 0);
@@ -2953,20 +3081,23 @@ connect2clamd(struct privdata *privdata)
 				syslog(LOG_ERR, _("Temporary quarantine file %s creation failed"), privdata->filename);
 			return 0;
 		}
-		privdata->serverNumber = -1;
+		privdata->serverNumber = 0;
 	} else {
 		int freeServer, nbytes;
 		struct sockaddr_in reply;
 		unsigned short p;
 		char buf[64];
 
+#ifndef	SESSION
 		assert(privdata->cmdSocket == -1);
+#endif
 
 		/*
 		 * Create socket to talk to clamd. It will tell us the port to
 		 * use to send the data. That will require another socket.
 		 */
 		if(localSocket) {
+#ifndef	SESSION
 			struct sockaddr_un server;
 
 			memset((char *)&server, 0, sizeof(struct sockaddr_un));
@@ -2981,9 +3112,15 @@ connect2clamd(struct privdata *privdata)
 				perror(localSocket);
 				return 0;
 			}
+			privdata->serverNumber = 0;
+#endif
 			freeServer = 0;
-			privdata->serverNumber = -1;
 		} else {
+#ifdef	SESSION
+			freeServer = findServer();
+			if(freeServer < 0)
+				return 0;
+#else
 			struct sockaddr_in server;
 
 			memset((char *)&server, 0, sizeof(struct sockaddr_in));
@@ -3006,8 +3143,28 @@ connect2clamd(struct privdata *privdata)
 				perror("connect");
 				return 0;
 			}
+#endif
 			privdata->serverNumber = freeServer;
 		}
+
+#ifdef	SESSION
+		if(send(cmdSockets[freeServer], "STREAM\n", 7, 0) < 7) {
+			cli_dbgmsg("Sending stream to server %d (fd %d)\n",
+				freeServer, cmdSockets[freeServer]);
+			perror("send");
+			if(use_syslog)
+				syslog(LOG_ERR, _("send failed to clamd"));
+			return 0;
+		}
+#else
+		if(send(privdata->cmdSocket, "STREAM\n", 7, 0) < 7) {
+			perror("send");
+			if(use_syslog)
+				syslog(LOG_ERR, _("send failed to clamd"));
+			return 0;
+		}
+		shutdown(privdata->cmdSocket, SHUT_WR);
+#endif
 
 		/*
 		 * Create socket that we'll use to send the data to clamd
@@ -3015,22 +3172,17 @@ connect2clamd(struct privdata *privdata)
 		if((privdata->dataSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 			perror("socket");
 			if(use_syslog)
-				syslog(LOG_ERR, _("failed to create socket"));
+				syslog(LOG_ERR, _("failed to create TCPSocket to talk to clamd"));
 			return 0;
 		}
 
 		shutdown(privdata->dataSocket, SHUT_RD);
 
-		if(send(privdata->cmdSocket, "STREAM\n", 7, 0) < 7) {
-			perror("send");
-			if(use_syslog)
-				syslog(LOG_ERR, _("send failed to clamd"));
-			return 0;
-		}
-
-		shutdown(privdata->cmdSocket, SHUT_WR);
-
+#ifdef	SESSION
+		nbytes = clamd_recv(cmdSockets[privdata->serverNumber], buf, sizeof(buf));
+#else
 		nbytes = clamd_recv(privdata->cmdSocket, buf, sizeof(buf));
+#endif
 		if(nbytes < 0) {
 			perror("recv");
 			if(use_syslog)

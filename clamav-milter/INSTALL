@@ -486,6 +486,10 @@ Changes
 		Added i18n support
 		Better error message if the quarantine directory is publically
 			accessable
+0.75o	12/9/04	Use .../share/clamav/clamav-milter/locale for the locale
+			information
+		Added first draft of SESSION code. Do NOT use in a production
+			environment.
 
 INTERNATIONALISATION
 
