@@ -155,8 +155,8 @@ void clamscan(struct optstruct *opt)
 	mprintf("Data scanned: %2.2lf MB\n", mb);
 	    logg("Data scanned: %2.2lf MB\n", mb);
 
-	mprintf("I/O buffer size: %d bytes\n", BUFFSIZE);
-	    logg("I/O buffer size: %d bytes\n", BUFFSIZE);
+	mprintf("I/O buffer size: %d bytes\n", SCANBUFF);
+	    logg("I/O buffer size: %d bytes\n", SCANBUFF);
 	mprintf("Time: %d.%3.3d sec (%d m %d s)\n", ds, dms/1000, ds/60, ds%60);
 	    logg("Time: %d.%3.3d sec (%d m %d s)\n", ds, dms/1000, ds/60, ds%60);
     }

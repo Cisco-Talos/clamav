@@ -79,7 +79,7 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexstr,
 int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 {
 	FILE *fd;
-	char buffer[BUFFSIZE], *pt, *start, *pt2;
+	char *buffer, *pt, *start, *pt2;
 	int line = 0, ret, parts, i, sigid = 0;
 
 
@@ -90,6 +90,9 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 
     cli_dbgmsg("Loading %s\n", filename);
 
+    if(!(buffer = (char *) cli_malloc(FILEBUFF)))
+	return CL_EMEM;
+
     /* check for CVD file */
     fgets(buffer, 12, fd);
     rewind(fd);
@@ -98,10 +101,11 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 	cli_dbgmsg("%s: CVD file detected\n", filename);
 	ret = cli_cvdload(fd, root, virnum);
 	fclose(fd);
+	free(buffer);
 	return ret;
     }
 
-    while(fgets(buffer, BUFFSIZE, fd)) {
+    while(fgets(buffer, FILEBUFF, fd)) {
 
 	/* for forward compatibility */
 	if(strchr(buffer, '{') || strchr(buffer, '}')) {
@@ -115,6 +119,7 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 	pt = strchr(buffer, '=');
 	if(!pt) {
 	    cli_errmsg("readdb(): Malformed pattern line %d (file %s).\n", line, filename);
+	    free(buffer);
 	    return CL_EMALFDB;
 	}
 
@@ -126,8 +131,10 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 	if(!*root) {
 	    cli_dbgmsg("Initializing trie.\n");
 	    *root = (struct cl_node *) cli_calloc(1, sizeof(struct cl_node));
-	    if(!*root)
+	    if(!*root) {
+		free(buffer);
 		return CL_EMEM;
+	    }
 	    (*root)->maxpatlen = 0;
 	}
 
@@ -146,6 +153,7 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 		if((ret = cli_parse_add(*root, start, pt2, sigid, parts, i))) {
 		    cli_dbgmsg("parse_add() return code: %d\n", ret);
 		    cli_errmsg("readdb(): Malformed pattern line %d (file %s).\n", line, filename);
+		    free(buffer);
 		    return ret;
 		}
 		//cli_dbgmsg("Added part %d of partial signature (id %d)\n", i, sigid);
@@ -156,11 +164,13 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 	    if((ret = cli_parse_add(*root, start, pt, 0, 0, 0))) {
 		cli_dbgmsg("parse_add() return code: %d\n", ret);
 		cli_errmsg("readdb(): Malformed pattern line %d (file %s).\n", line, filename);
+		free(buffer);
 		return ret;
 	    }
 	}
     }
 
+    free(buffer);
     fclose(fd);
     if(virnum != NULL)
 	*virnum += line;

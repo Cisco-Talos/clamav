@@ -1,5 +1,5 @@
 Note: This README/NEWS file refers to the source tarball. Some things described
-here may not be available in the binary packages.
+here may not be available in a binary packages.
 --
 
 
@@ -8,7 +8,7 @@ here may not be available in the binary packages.
 ----
 
 -) clamd:
-    + fixed a race condition in the database reloading code (random hangs
+    + fixed a race condition in database reloading code (random hangs
       under high load)
     + fixed PidFile permissions (Magnus Ekdahl, bug reported by Tomasz Papszun)
     + fixed LogFile permissions (Magnus Ekdahl)
@@ -19,17 +19,15 @@ here may not be available in the binary packages.
     + new directive Debug
 
 -) clamav-milter:
-    + 
     + new --force-scan flag
     + new -P and -q flags by Nicholas M. Kirsch
 
 -) libclamav:
     + multiple mbox fixes (thanks to Rene Bellora, Bernd Kuhls, Thomas Lamy, 
-      Tomasz Papszun,
-
+      Tomasz Papszun)
     + memory leak fixes (Thomas Lamy)
-    + support for a new database container format (CVD) with support for
-      digital signatures, 
+    + support for a new database container format (CVD) - compressed and
+      digitally signed
     + new scan option CL_DISABLERAR (disables built-in RAR unpacker)
 
 -) freshclam:

@@ -1,5 +1,16 @@
+Sun Nov  9 03:21:48 CET 2003 (tk)
+---------------------------------
+  * libclamav: archive wrapper and database parsing functions were using a
+	       huge buffers of size BUFFSIZE instead of FBUFFSIZE. These
+	       defines have been renamed to SCANBUFF and FILEBUFF respectively.
+	       The bug was responsible (e.g.) for clamd lockups (due to a stack
+	       size overflow) with CVD under FreeBSD (reported by Tim Wilde
+	       twilde*dyndns.org). The fix also makes all that buffers
+	       dynamically allocable (this is a part of Rudolph Pereira's
+	       patch that will be included soon).
+
 Thu Nov  6 22:40:58 CET 2003 (tk)
-----------------------------------
+---------------------------------
   * libclamav: zziplib: reverted to 0.12.83
 
 Thu Nov  6 10:36:57 IST 2003 (njh)

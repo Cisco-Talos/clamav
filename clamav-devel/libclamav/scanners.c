@@ -72,33 +72,33 @@ cl_node *root)
 
 
     /* prepare the buffer */
-    buffsize = root->maxpatlen + BUFFSIZE;
+    buffsize = root->maxpatlen + SCANBUFF;
     if(!(buffer = (char *) cli_calloc(buffsize, sizeof(char))))
 	return CL_EMEM;
 
     buff = buffer;
     buff += root->maxpatlen; /* pointer to read data block */
-    endbl = buff + BUFFSIZE - root->maxpatlen; /* pointer to the last block
+    endbl = buff + SCANBUFF - root->maxpatlen; /* pointer to the last block
 						* length of root->maxpatlen
 						*/
 
     pt= buff;
-    length = BUFFSIZE;
+    length = SCANBUFF;
 
-    while((bytes = read(desc, buff, BUFFSIZE)) > 0) {
+    while((bytes = read(desc, buff, SCANBUFF)) > 0) {
 
 	if(scanned != NULL)
 	    *scanned += bytes / CL_COUNT_PRECISION;
 
-	if(bytes < BUFFSIZE)
-	    length -= BUFFSIZE - bytes;
+	if(bytes < SCANBUFF)
+	    length -= SCANBUFF - bytes;
 
 	if(cl_scanbuff(pt, length, virname, root) == CL_VIRUS) {
 	    free(buffer);
 	    return CL_VIRUS;
 	}
 
-	if(bytes == BUFFSIZE)
+	if(bytes == SCANBUFF)
 	    memmove(buffer, endbl, root->maxpatlen);
 
         pt = buffer;
@@ -241,7 +241,7 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	ZZIP_DIRENT zdirent;
 	ZZIP_FILE *zfp;
 	FILE *tmp;
-	char buff[BUFFSIZE];
+	char *buff;
 	int fd, bytes, files = 0, ret = CL_CLEAN, err;
 
 
@@ -297,17 +297,22 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	    continue;
 	}
 
-	while((bytes = zzip_file_read(zfp, buff, BUFFSIZE)) > 0) {
+	if(!(buff = (char *) cli_malloc(FILEBUFF)))
+	    return CL_EMEM;
+
+	while((bytes = zzip_file_read(zfp, buff, FILEBUFF)) > 0) {
 	    if(fwrite(buff, bytes, 1, tmp)*bytes != bytes) {
 		cli_dbgmsg("Zip -> Can't fwrite() file: %s\n", strerror(errno));
 		zzip_file_close(zfp);
 		zzip_dir_close(zdir);
 		files++;
 		fclose(tmp);
+		free(buff);
 		return CL_EZIP;
 	    }
 	}
 
+	free(buff);
 	zzip_file_close(zfp);
 
 	if(fflush(tmp) != 0) {
@@ -358,7 +363,7 @@ int cli_scangzip(int desc, char **virname, long int *scanned, const struct cl_no
 {
 	int fd, bytes, ret = CL_CLEAN;
 	long int size = 0;
-	char buff[BUFFSIZE];
+	char *buff;
 	FILE *tmp;
 	gzFile gd;
 
@@ -375,11 +380,14 @@ int cli_scangzip(int desc, char **virname, long int *scanned, const struct cl_no
     }
     fd = fileno(tmp);
 
-    while((bytes = gzread(gd, buff, BUFFSIZE)) > 0) {
+    if(!(buff = (char *) cli_malloc(FILEBUFF)))
+	return CL_EMEM;
+
+    while((bytes = gzread(gd, buff, SCANBUFF)) > 0) {
 	size += bytes;
 
 	if(limits)
-	    if(limits->maxfilesize && (size + BUFFSIZE > limits->maxfilesize)) {
+	    if(limits->maxfilesize && (size + SCANBUFF > limits->maxfilesize)) {
 		cli_dbgmsg("Gzip->desc(%d): Size exceeded (stopped at %d, max: %d)\n", desc, size, limits->maxfilesize);
 		ret = CL_EMAXSIZE;
 		break;
@@ -389,10 +397,12 @@ int cli_scangzip(int desc, char **virname, long int *scanned, const struct cl_no
 	    cli_dbgmsg("Gzip -> Can't write() file.\n");
 	    fclose(tmp);
 	    gzclose(gd);
+	    free(buff);
 	    return CL_EGZIP;
 	}
     }
 
+    free(buff);
     gzclose(gd);
     if(fsync(fd) == -1) {
 	cli_dbgmsg("fsync() failed for descriptor %d\n", fd);
@@ -425,7 +435,7 @@ int cli_scanbzip(int desc, char **virname, long int *scanned, const struct cl_no
 	int fd, bytes, ret = CL_CLEAN, bzerror = 0;
 	short memlim = 0;
 	long int size = 0;
-	char buff[BUFFSIZE];
+	char *buff;
 	FILE *fs, *tmp;
 	BZFILE *bfd;
 
@@ -451,11 +461,14 @@ int cli_scanbzip(int desc, char **virname, long int *scanned, const struct cl_no
     }
     fd = fileno(tmp);
 
-    while((bytes = BZ2_bzRead(&bzerror, bfd, buff, BUFFSIZE)) > 0) {
+    if(!(buff = (char *) cli_malloc(FILEBUFF)))
+	return CL_EMEM;
+
+    while((bytes = BZ2_bzRead(&bzerror, bfd, buff, SCANBUFF)) > 0) {
 	size += bytes;
 
 	if(limits)
-	    if(limits->maxfilesize && (size + BUFFSIZE > limits->maxfilesize)) {
+	    if(limits->maxfilesize && (size + SCANBUFF > limits->maxfilesize)) {
 		cli_dbgmsg("Bzip2->desc(%d): Size exceeded (stopped at %d, max: %d)\n", desc, size, limits->maxfilesize);
 		ret = CL_EMAXSIZE;
 		break;
@@ -465,10 +478,12 @@ int cli_scanbzip(int desc, char **virname, long int *scanned, const struct cl_no
 	    cli_dbgmsg("Bzip2 -> Can't write() file.\n");
 	    BZ2_bzReadClose(&bzerror, bfd);
 	    fclose(tmp);
+	    free(buff);
 	    return CL_EGZIP;
 	}
     }
 
+    free(buff);
     BZ2_bzReadClose(&bzerror, bfd);
     if(fsync(fd) == -1) {
 	cli_dbgmsg("fsync() failed for descriptor %d\n", fd);

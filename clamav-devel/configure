@@ -7692,11 +7692,11 @@ LIBTOOL='$(SHELL) $(top_builddir)/libtool'
 
 
 cat >>confdefs.h <<\_ACEOF
-#define BUFFSIZE 131072
+#define SCANBUFF 131072
 _ACEOF
 
 cat >>confdefs.h <<\_ACEOF
-#define FBUFFSIZE 16384
+#define FILEBUFF 8192
 _ACEOF
 
 

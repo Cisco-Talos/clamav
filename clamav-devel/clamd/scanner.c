@@ -100,7 +100,7 @@ int dirscan(const char *dirname, char **virname, unsigned long int *scanned, con
 					ret = 2;
 				} else if(scanret != CL_CLEAN) {
 				    mdprintf(odesc, "%s: %s ERROR\n", fname, cl_strerror(scanret));
-				    logg("*%s: %s\n ERROR", fname, cl_strerror(scanret));
+				    logg("%s: %s\n ERROR", fname, cl_strerror(scanret));
 				}
 		    }
 

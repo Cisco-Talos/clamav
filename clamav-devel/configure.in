@@ -48,8 +48,8 @@ dnl AC_SUBST(LT_AGE)
 
 dnl BUFFSIZE must be at least 16 kb !!!
 
-AC_DEFINE(BUFFSIZE, 131072)
-AC_DEFINE(FBUFFSIZE, 16384)
+AC_DEFINE(SCANBUFF, 131072)
+AC_DEFINE(FILEBUFF, 8192)
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS(stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h)

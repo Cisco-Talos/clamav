@@ -263,7 +263,7 @@ int cl_cvdverify(const char *file)
 
 int cli_cvdload(FILE *fd, struct cl_node **root, int *virnum)
 {
-        char *dir, *tmp, buffer[BUFFSIZE];
+        char *dir, *tmp, *buffer;
 	int bytes, ret;
 	const char *tmpdir;
 	FILE *tmpd;
@@ -310,10 +310,16 @@ int cli_cvdload(FILE *fd, struct cl_node **root, int *virnum)
 		cli_errmsg("Can't create temporary file %s\n", tmp);
 		free(dir);
 		free(tmp);
-		return -1;
+		return CL_ETMPFILE;
 	    }
-	    while((bytes = fread(buffer, 1, BUFFSIZE, fd)) > 0)
+
+	    if(!(buffer = (char *) cli_malloc(FILEBUFF)))
+		return CL_EMEM;
+
+	    while((bytes = fread(buffer, 1, FILEBUFF, fd)) > 0)
 		fwrite(buffer, 1, bytes, tmpd);
+
+	    free(buffer);
 
 	    fflush(tmpd);
 	    fseek(tmpd, 0L, SEEK_SET);
