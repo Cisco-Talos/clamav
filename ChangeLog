@@ -1,3 +1,10 @@
+Thu May 27 18:01:28 BST 2004 (njh)
+----------------------------------
+  * docs/man/clamav-milter.8:	Clarify usage of when to use template files
+  * libclamav/message.c:	Fixed bug where a truncated BinHex file could
+	crash the scanner (bug found by Stefan Kaltenbrunner
+		<mm-mailinglist@madness.at>)
+
 Thu May 27 16:38:14 BST 2004 (trog)
 -----------------------------------
   *  libclamav/vba_extract.c: Add code to extract OLE2 objects embedded
@@ -22,14 +29,14 @@ Tue May 25 22:30:33 CEST 2004 (tk)
 Tue May 25 17:24:48 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	X-Virus-Status: Not Scanned - StreamMaxLength exceeded
-  	was not always being added
+	was not always being added
 			Now says host running clamd rather than host running
 	clamav-milter, useful for checking load balancing etc.
 
 Mon May 24 18:09:23 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Include hostname of the scanner (clamav-milter not
-  	clamd for now) in the headers if --noxheader is not given
+	clamd for now) in the headers if --noxheader is not given
 
 Fri May 21 12:32:24 BST 2004 (njh)
 ----------------------------------
