@@ -183,7 +183,7 @@ static void print_property_name(char *pname, int size)
         if (!name) {
                 return;
         }
-        cli_dbgmsg("%34s", name);
+        cli_dbgmsg("%34s ", name);
         free(name);
         return;
 }
@@ -197,26 +197,26 @@ static void print_ole2_property(property_t *property)
 	print_property_name(property->name, property->name_size);
 	switch (property->type) {
 	case 2:
-		cli_dbgmsg(" [file]");
+		cli_dbgmsg(" [file] ");
 		break;
 	case 1:
-		cli_dbgmsg(" [dir ]");
+		cli_dbgmsg(" [dir ] ");
 		break;
 	case 5:
-		cli_dbgmsg(" [root]");
+		cli_dbgmsg(" [root] ");
 		break;
 	default:
 		cli_dbgmsg(" [%d]", property->type);
 	}
 	switch (property->color) {
 	case 0:
-		cli_dbgmsg(" r");
+		cli_dbgmsg(" r ");
 		break;
 	case 1:
-		cli_dbgmsg(" b");
+		cli_dbgmsg(" b ");
 		break;
 	default:
-		cli_dbgmsg(" u");
+		cli_dbgmsg(" u ");
 	}
 	cli_dbgmsg(" %d %x\n", property->size, property->user_flags);
 }
@@ -458,14 +458,19 @@ static void ole2_read_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 
 static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir, int32_t prop_index,
 				int (*handler)(int fd, ole2_header_t *hdr, property_t *prop, const char *dir),
-				int rec_level, int file_count)
+				int rec_level, int *file_count, const struct cl_limits *limits)
 {
 	property_t prop_block[4];
 	int32_t index, current_block, count=0, i;
 	unsigned char *dirname;
 	current_block = hdr->prop_start;
 	
-	if ((prop_index < 0) || (rec_level > 100) || (file_count > 100000)) {
+	if ((prop_index < 0) || (rec_level > 100) || (*file_count > 100000)) {
+		return;
+	}
+	
+	if(limits && limits->maxfiles && (*file_count > limits->maxfiles)) {
+		cli_dbgmsg("OLE2: File limit reached (max: %d)\n", limits->maxfiles);
 		return;
 	}
 	
@@ -500,33 +505,35 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 	switch (prop_block[index].type) {
 		case 5: /* Root Entry */
 			if ((prop_index != 0) || (rec_level !=0) ||
-					(file_count != 0)) {
+					(*file_count != 0)) {
 				/* Can only have RootEntry as the top */
 				cli_dbgmsg("ERROR: illegal Root Entry\n");
 				return;
 			}
 			hdr->sbat_root_start = prop_block[index].start_block;
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[index].prev, handler, rec_level+1, file_count);
+				prop_block[index].prev, handler, rec_level+1, file_count, limits);
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[index].next, handler, rec_level+1, file_count);
+				prop_block[index].next, handler, rec_level+1, file_count, limits);
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[index].child, handler, rec_level+1, file_count);
+				prop_block[index].child, handler, rec_level+1, file_count, limits);
 			break;
 		case 2: /* File */
+			(*file_count)++;
 			if (!handler(fd, hdr, &prop_block[index], dir)) {
 				cli_dbgmsg("ERROR: handler failed\n");
 				/* If we don't return on this error then
 					we can sometimes pull VBA code
 					from corrupted files.
 				*/
+			
 			}
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[index].prev, handler, rec_level, file_count+1);
+				prop_block[index].prev, handler, rec_level, file_count, limits);
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[index].next, handler, rec_level, file_count+1);
+				prop_block[index].next, handler, rec_level, file_count, limits);
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[index].child, handler, rec_level, file_count+1);
+				prop_block[index].child, handler, rec_level, file_count, limits);
 			break;
 		case 1: /* Directory */
 			dirname = (char *) cli_malloc(strlen(dir)+8);
@@ -540,11 +547,11 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 			}
 			cli_dbgmsg("OLE2 dir entry: %s\n",dirname);
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[index].prev, handler, rec_level+1, file_count);
+				prop_block[index].prev, handler, rec_level+1, file_count, limits);
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[index].next, handler, rec_level+1, file_count);
+				prop_block[index].next, handler, rec_level+1, file_count, limits);
 			ole2_walk_property_tree(fd, hdr, dirname,
-				prop_block[index].child, handler, rec_level+1, file_count);
+				prop_block[index].child, handler, rec_level+1, file_count, limits);
 			free(dirname);
 			break;
 		default:
@@ -695,11 +702,12 @@ static int ole2_read_header(int fd, ole2_header_t *hdr)
 	return TRUE;
 }
 
-int cli_ole2_extract(int fd, const char *dirname)
+int cli_ole2_extract(int fd, const char *dirname, const struct cl_limits *limits)
 {
 	ole2_header_t hdr;
 	int hdr_size;
 	struct stat statbuf;
+	int file_count=0;
 	
 	cli_dbgmsg("in cli_ole2_extract()\n");
 	
@@ -778,7 +786,7 @@ int cli_ole2_extract(int fd, const char *dirname)
 	
 	/* OR */
 	
-	ole2_walk_property_tree(fd, &hdr, dirname, 0, handler_writefile, 0, 0);
+	ole2_walk_property_tree(fd, &hdr, dirname, 0, handler_writefile, 0, &file_count, limits);
 
 abort:
 #ifdef HAVE_MMAP

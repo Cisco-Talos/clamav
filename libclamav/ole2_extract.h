@@ -23,6 +23,8 @@
 #ifndef __OLE2_EXTRACT_H
 #define __OLE2_EXTRACT_H
 
-int cli_ole2_extract(int fd, const char *dirname);
+#include "clamav.h"
+
+int cli_ole2_extract(int fd, const char *dirname, const struct cl_limits *limits);
 
 #endif

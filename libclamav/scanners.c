@@ -961,7 +961,7 @@ static int cli_scanole2(int desc, const char **virname, long int *scanned, const
 	return CL_ETMPDIR;
     }
 
-    if((ret = cli_ole2_extract(desc, dir))) {
+    if((ret = cli_ole2_extract(desc, dir, limits))) {
 	cli_dbgmsg("ScanOLE2 -> %s\n", cl_strerror(ret));
 	cli_rmdirs(dir);
 	free(dir);
