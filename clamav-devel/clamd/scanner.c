@@ -43,6 +43,10 @@
 #include "shared.h"
 #include "output.h"
 
+#ifdef C_LINUX
+dev_t procdev; /* /proc device */
+#endif
+
 int checksymlink(const char *path)
 {
 	struct stat statbuf;
@@ -102,7 +106,19 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 			    }
 			} else {
 			    if(S_ISREG(statbuf.st_mode) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 2) && cfgopt(copt, "FollowFileSymlinks"))) {
-				if((scanret = cl_scanfile(fname, virname, scanned, root, limits, options)) == CL_VIRUS) {
+
+#ifdef C_LINUX
+				if(procdev) {
+				    if(statbuf.st_dev == procdev)
+					scanret = CL_CLEAN;
+				    else
+					scanret = cl_scanfile(fname, virname, scanned, root, limits, options);
+				}
+#else
+				scanret = cl_scanfile(fname, virname, scanned, root, limits, options);
+#endif
+				if(scanret == CL_VIRUS) {
+
 				    mdprintf(odesc, "%s: %s FOUND\n", fname, *virname);
 				    logg("%s: %s FOUND\n", fname, *virname);
 				    virusaction(*virname, copt);
@@ -115,7 +131,7 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 				} else if(scanret != CL_CLEAN) {
 				    mdprintf(odesc, "%s: %s ERROR\n", fname, cl_strerror(scanret));
 				    logg("%s: %s ERROR\n", fname, cl_strerror(scanret));
-				} else if (logok) {
+				} else if(logok) {
 				    logg("%s: OK\n", fname);
 				}
 			    }
@@ -166,7 +182,17 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_node 
 		mdprintf(odesc, "%s: Empty file\n", filename);
 		return 0;
 	    }
+#ifdef C_LINUX
+	    if(procdev) {
+		if(sb.st_dev == procdev)
+		    ret = CL_CLEAN;
+		else
+		    ret = cl_scanfile(filename, &virname, scanned, root, limits, options);
+	    }
+#else
 	    ret = cl_scanfile(filename, &virname, scanned, root, limits, options);
+#endif
+
 	    if(ret == CL_VIRUS) {
 		mdprintf(odesc, "%s: %s FOUND\n", filename, virname);
 		logg("%s: %s FOUND\n", filename, virname);

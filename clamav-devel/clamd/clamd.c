@@ -68,6 +68,9 @@ void clamd(struct optstruct *opt)
 	const char *dbdir, *cfgfile;
 	int ret, virnum = 0, tcpsock;
 	char *var;
+#ifdef C_LINUX
+	struct stat sb;
+#endif
 
     /* initialize some important variables */
 
@@ -146,12 +149,20 @@ void clamd(struct optstruct *opt)
 
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
-    if((cpt = cfgopt(copt, "LogSyslog"))) {
-	openlog("clamd", LOG_PID, LOG_LOCAL6);
+    if(cfgopt(copt, "LogSyslog")) {
+	    int fac = LOG_LOCAL6;
+
+	if((cpt = cfgopt(copt, "LogFacility"))) {
+	    if((fac = logg_facility(cpt->strarg)) == -1) {
+		fprintf(stderr, "ERROR: LogFacility: %s: No such facility.\n", cpt->strarg);
+		exit(1);
+	    }
+	}
+
+	openlog("clamd", LOG_PID, fac);
 	logg_syslog = 1;
 	syslog(LOG_INFO, "Daemon started.\n");
-    } else
-	logg_syslog = 0;
+    }
 #endif
 
     if(logg_size)
@@ -161,6 +172,12 @@ void clamd(struct optstruct *opt)
 
     logg("*Verbose logging activated.\n");
 
+#ifdef C_LINUX
+    if(stat("/proc", &sb) == -1)
+	procdev = 0;
+    else
+	procdev = sb.st_dev;
+#endif
 
     /* check socket type */
 

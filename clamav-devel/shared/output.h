@@ -36,6 +36,7 @@ extern const char *logg_file;
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
 extern short logg_syslog;
+int logg_facility(const char *name);
 #endif
 
 void mprintf(const char *str, ...);

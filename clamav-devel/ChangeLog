@@ -1,3 +1,9 @@
+Tue May 11 02:07:55 CEST 2004 (tk)
+----------------------------------
+  * libclamav: scanners: revert to old X-* magic strings
+  * clamd, freshclam: allow facility specification with LogFacility
+  * clamd: do not scan files in /proc under Linux
+
 Mon May 10 12:25:09 BST 2004 (njh)
 ----------------------------------
   * libclamav:		Don't call cli_filetype() so often since the latest

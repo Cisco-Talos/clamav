@@ -197,10 +197,19 @@ int freshclam(struct optstruct *opt)
 	logg_file = NULL;
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
-    if((cpt = cfgopt(copt, "LogSyslog"))) {
-	openlog("freshclam", LOG_PID, LOG_LOCAL6);
+    if(cfgopt(copt, "LogSyslog")) {
+	    int fac = LOG_LOCAL6;
+
+	if((cpt = cfgopt(copt, "LogFacility"))) {
+	    if((fac = logg_facility(cpt->strarg)) == -1) {
+		mprintf("!LogFacility: %s: No such facility.\n", cpt->strarg);
+		exit(1);
+	    }
+	}
+
+	openlog("freshclam", LOG_PID, fac);
 	logg_syslog = 1;
-	syslog(LOG_INFO, "Freshclam started.\n");
+	syslog(LOG_INFO, "Daemon started.\n");
     }
 #endif
 
