@@ -73,20 +73,19 @@ int main(int argc, char **argv)
     limits.maxratio = 200; /* maximal compression ratio */
     limits.archivememlim = 0; /* disable memory limit for bzip2 scanner */
 
-    /* scan descriptor (with archive and mail scanning enabled) */
-    if((ret = cl_scandesc(fd, &virname, &size, root, &limits, CL_ARCHIVE | CL_MAIL | CL_OLE2)) == CL_VIRUS)
+    /* scan descriptor */
+    if((ret = cl_scandesc(fd, &virname, &size, root, &limits, CL_STDOPT)) == CL_VIRUS)
 	printf("Virus detected: %s\n", virname);
     else {
 	printf("No virus detected.\n");
 	if(ret != CL_CLEAN)
 	    printf("Error: %s\n", cl_perror(ret));
     }
+    close(fd);
 
     mb = size * (CL_COUNT_PRECISION / 1024) / 1024.0;
     printf("Data scanned: %2.2Lf Mb\n", mb);
 
     cl_free(root);
-
-    close(fd);
     exit(ret == CL_VIRUS ? 1 : 0);
 }
