@@ -445,6 +445,8 @@ Changes
 		Only use gethostbyname_r on LINUX for now
 		Load balancing - improved a bit - but still some way to go
 0.75b	26/7/04	Template file: %v now prints the virus name without the trailer
+0.75c	29/7/04	Better load balancing if max_children = 0
+		Use HAVE_GETHOSTBYNAME_R_6
 
 BUG REPORTS
 
