@@ -1,3 +1,8 @@
+Sat Dec  4 15:52:08 GMT 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Handle text/rfc822-headers incorrectly sent as
+				message/rfc822-headers
+
 Fri Dec  3 17:36:08 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	internal: Honour scanning modes and archive limits

@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.197  2004/12/04 15:50:39  nigelhorne
+ * Handle text/rfc822-headers incorrectly sent as message/rfc822-headers
+ *
  * Revision 1.196  2004/12/01 13:12:35  nigelhorne
  * Decode text/plain parts marked as being encoded
  *
@@ -576,7 +579,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.196 2004/12/01 13:12:35 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.197 2004/12/04 15:50:39 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1345,6 +1348,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 		mimeSubtype = messageGetMimeSubtype(mainMessage);
 
 		subtype = tableFind(subtypeTable, mimeSubtype);
+		/* pre-process */
 		if((mimeType == TEXT) && (subtype == PLAIN)) {
 			/*
 			 * This is effectively no encoding, notice that we
@@ -1353,6 +1357,15 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			cli_dbgmsg("assume no encoding\n");
 			mimeType = NOMIME;
 			messageSetMimeSubtype(mainMessage, NULL);
+		} else if((mimeType == MESSAGE) &&
+			  (strcasecmp(mimeSubtype, "rfc822-headers") == 0)) {
+			/*
+			 * RFC1892/RFC3462: section 2 text/rfc822-headers
+			 * incorrectly sent as message/rfc822-headers
+			 */
+			cli_dbgmsg("Changing message/rfc822-headers to text/rfc822-headers\n");
+			mimeType = TEXT;
+			subtype = PLAIN;	/* parse as text/plain */
 		}
 
 		cli_dbgmsg("mimeType = %d\n", mimeType);
