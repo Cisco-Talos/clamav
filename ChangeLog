@@ -1,3 +1,8 @@
+Wed Aug  4 20:01:26 CEST 2004 (tk)
+----------------------------------
+  * libclamav: fix compilation error with Sun's compiler (reported by
+	       Alex S Moore <asmoore*edge.net>)
+
 Wed Aug  4 19:06:52 CEST 2004 (tk)
 ----------------------------------
   * libclamav: re-activate new mail detection mechanism

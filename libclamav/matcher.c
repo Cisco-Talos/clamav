@@ -57,7 +57,7 @@ int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, c
     return ret;
 }
 
-static struct cli_md5_node *cli_vermd5(const char *md5, const struct cl_node *root)
+static struct cli_md5_node *cli_vermd5(const unsigned char *md5, const struct cl_node *root)
 {
 	struct cli_md5_node *pt;
 
@@ -242,5 +242,5 @@ int cl_buildtrie(struct cl_node *root) /* for backward compatibility */
 
 void cl_freetrie(struct cl_node *root) /* for backward compatibility */
 {
-    return cl_free(root);
+    cl_free(root);
 }
