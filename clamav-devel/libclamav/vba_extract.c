@@ -111,33 +111,6 @@ vba_version_t vba_version[] = {
                                   2 +  /* type1 record count */ \
                                   2)   /* unknown */
 
-/* Function: vba_readn
-        Try hard to read the requested number of bytes
-*/
-static int vba_readn(int fd, void *buff, unsigned int count)
-{
-        int retval;
-        unsigned int todo;
-        unsigned char *current;
- 
-        todo = count;
-        current = (unsigned char *) buff;
- 
-        do {
-                retval = read(fd, current, todo);
-                if (retval == 0) {
-                        return (count - todo);
-                }
-                if (retval < 0) {
-                        return -1;
-                }
-                todo -= retval;
-                current += retval;
-        } while (todo > 0);
- 
-        return count;
-}
-
 static char *get_unicode_name(char *name, int size, int is_mac)
 {
         int i, j;
@@ -175,7 +148,7 @@ static void vba56_test_middle(int fd)
 		0x85, 0x2e, 0x02, 0x60, 0x8c, 0x4d, 0x0b, 0xb4, 0x00, 0x00
 	};
 
-        if (vba_readn(fd, &test_middle, 20) != 20) {
+        if (cli_readn(fd, &test_middle, 20) != 20) {
                 return;
         }
 
@@ -195,7 +168,7 @@ static int vba_read_project_strings(int fd, int is_mac)
 	uint32_t offset;
 
 	for (;;) {
-		if (vba_readn(fd, &length, 2) != 2) {
+		if (cli_readn(fd, &length, 2) != 2) {
 			return FALSE;
 		}
 		length = vba_endian_convert_16(length, is_mac);
@@ -210,9 +183,10 @@ static int vba_read_project_strings(int fd, int is_mac)
 			return FALSE;
 		}
 		offset = lseek(fd, 0, SEEK_CUR);
-		if (vba_readn(fd, buff, length) != length) {
+		if (cli_readn(fd, buff, length) != length) {
 			cli_dbgmsg("read name failed - rewinding\n");
 			lseek(fd, offset, SEEK_SET);
+			free(buff);
 			break;
 		}
 		name = get_unicode_name(buff, length, is_mac);
@@ -225,16 +199,17 @@ static int vba_read_project_strings(int fd, int is_mac)
 		/* TODO: Need to check if types H(same as G) and D(same as C) exist */
 		if (!strncmp ("*\\G", name, 3) || !strncmp ("*\\H", name, 3)
 			 	|| !strncmp("*\\C", name, 3) || !strncmp("*\\D", name, 3)) {
-			if (vba_readn(fd, &length, 2) != 2) {
+			if (cli_readn(fd, &length, 2) != 2) {
 				return FALSE;
 			}
 			length = vba_endian_convert_16(length, is_mac);
 			if (length != 0) {
 				lseek(fd, -2, SEEK_CUR);
+				free(name);
 				continue;
 			}
 			buff = (unsigned char *) cli_malloc(10);
-			if (vba_readn(fd, buff, 10) != 10) {
+			if (cli_readn(fd, buff, 10) != 10) {
 				cli_errmsg("failed to read blob\n");
 				free(buff);
 				free(name);
@@ -292,7 +267,7 @@ vba_project_t *vba56_dir_read(const char *dir)
         }
 	free(fullname);
 
-	if (vba_readn(fd, &magic, 2) != 2) {
+	if (cli_readn(fd, &magic, 2) != 2) {
 		close(fd);
 		return NULL;
 	}
@@ -301,7 +276,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 		return NULL;
 	}
 
-	if (vba_readn(fd, &version, 4) != 4) {
+	if (cli_readn(fd, &version, 4) != 4) {
 		close(fd);
 		return NULL;
 	}
@@ -326,48 +301,48 @@ vba_project_t *vba56_dir_read(const char *dir)
 	/*****************************************/
 
 	/* two bytes, should be equal to 0x00ff */
-	if (vba_readn(fd, &ooff, 2) != 2) {
+	if (cli_readn(fd, &ooff, 2) != 2) {
 		close(fd);
 		return NULL;
 	}
 
-	if (vba_readn(fd, &LidA, 4) != 4) {
+	if (cli_readn(fd, &LidA, 4) != 4) {
 		close(fd);
 		return NULL;
 	}
 
-	if (vba_readn(fd, &LidB, 4) != 4) {
+	if (cli_readn(fd, &LidB, 4) != 4) {
 		close(fd);
 		return NULL;
 	}
 
-	if (vba_readn(fd, &CharSet, 2) != 2) {
+	if (cli_readn(fd, &CharSet, 2) != 2) {
 		close(fd);
 		return NULL;
 	}
-	if (vba_readn(fd, &LenA, 2) != 2) {
-		close(fd);
-		return NULL;
-	}
-
-	if (vba_readn(fd, &UnknownB, 4) != 4) {
-		close(fd);
-		return NULL;
-	}
-	if (vba_readn(fd, &UnknownC, 4) != 4) {
+	if (cli_readn(fd, &LenA, 2) != 2) {
 		close(fd);
 		return NULL;
 	}
 
-	if (vba_readn(fd, &LenB, 2) != 2) {
+	if (cli_readn(fd, &UnknownB, 4) != 4) {
 		close(fd);
 		return NULL;
 	}
-	if (vba_readn(fd, &LenC, 2) != 2) {
+	if (cli_readn(fd, &UnknownC, 4) != 4) {
 		close(fd);
 		return NULL;
 	}
-	if (vba_readn(fd, &LenD, 2) != 2) {
+
+	if (cli_readn(fd, &LenB, 2) != 2) {
+		close(fd);
+		return NULL;
+	}
+	if (cli_readn(fd, &LenC, 2) != 2) {
+		close(fd);
+		return NULL;
+	}
+	if (cli_readn(fd, &LenD, 2) != 2) {
 		close(fd);
 		return NULL;
 	}
@@ -393,7 +368,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 	
 	/* junk some more stuff */
 	do {
-		if (vba_readn(fd, &ooff, 2) != 2) {
+		if (cli_readn(fd, &ooff, 2) != 2) {
 			close(fd);
 			return NULL;
 		}
@@ -401,7 +376,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 
 	/* check for alignment error */
 	lseek(fd, -3, SEEK_CUR);
-	if (vba_readn(fd, &ooff, 2) != 2) {
+	if (cli_readn(fd, &ooff, 2) != 2) {
  		close(fd);
 		return NULL;
 	}
@@ -409,7 +384,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 		lseek(fd, 1, SEEK_CUR);
 	}
 	
-	if (vba_readn(fd, &ooff, 2) != 2) {
+	if (cli_readn(fd, &ooff, 2) != 2) {
 		close(fd);
 		return NULL;
 	}
@@ -419,7 +394,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 		ooff = vba_endian_convert_16(ooff, is_mac);
 		lseek(fd, ooff, SEEK_CUR);
 	}
-	if (vba_readn(fd, &ooff, 2) != 2) {
+	if (cli_readn(fd, &ooff, 2) != 2) {
 		close(fd);
 		return NULL;
 	}
@@ -429,7 +404,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 	}
 	lseek(fd, 100, SEEK_CUR);
 
-	if (vba_readn(fd, &record_count, 2) != 2) {
+	if (cli_readn(fd, &record_count, 2) != 2) {
 		close(fd);
 		return NULL;
 	}
@@ -443,7 +418,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 					record_count);
 	vba_project->count = record_count;
 	for (i=0 ; i < record_count ; i++) {
-		if (vba_readn(fd, &length, 2) != 2) {
+		if (cli_readn(fd, &length, 2) != 2) {
 			goto out_error;
 		}
 		length = vba_endian_convert_16(length, is_mac);
@@ -452,7 +427,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 			cli_dbgmsg("cli_malloc failed\n");
 			goto out_error;
 		}
-		if (vba_readn(fd, buff, length) != length) {
+		if (cli_readn(fd, buff, length) != length) {
 			cli_dbgmsg("read name failed\n");
 			free(buff);
 			goto out_error;
@@ -462,7 +437,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 		free(buff);
 
 		/* some kind of string identifier ?? */
-		if (vba_readn(fd, &length, 2) != 2) {
+		if (cli_readn(fd, &length, 2) != 2) {
 			free(vba_project->name[i]);
 			goto out_error;
 		}
@@ -470,14 +445,14 @@ vba_project_t *vba56_dir_read(const char *dir)
 		lseek(fd, length, SEEK_CUR);
 
 		/* unknown stuff */
-		if (vba_readn(fd, &ooff, 2) != 2) {
+		if (cli_readn(fd, &ooff, 2) != 2) {
 			free(vba_project->name[i]);
 			goto out_error;
 		}
 		ooff = vba_endian_convert_16(ooff, is_mac);
 		if (ooff == 0xFFFF) {
 			lseek(fd, 2, SEEK_CUR);
-			if (vba_readn(fd, &ooff, 2) != 2) {
+			if (cli_readn(fd, &ooff, 2) != 2) {
 				free(vba_project->name[i]);
 				goto out_error;
 			}
@@ -488,7 +463,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 		}
 
 		lseek(fd, 8, SEEK_CUR);
-		if (vba_readn(fd, &byte_count, 1) != 1) {
+		if (cli_readn(fd, &byte_count, 1) != 1) {
 			free(vba_project->name[i]);
 			goto out_error;
 		}
@@ -496,7 +471,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 			lseek(fd, 8, SEEK_CUR);
 		}
 		lseek(fd, 6, SEEK_CUR);
-		if (vba_readn(fd, &offset, 4) != 4) {
+		if (cli_readn(fd, &offset, 4) != 4) {
 			free(vba_project->name[i]);
 			goto out_error;
 		}
@@ -559,10 +534,10 @@ unsigned char *vba_decompress(int fd, uint32_t offset, int *size)
 	
 	lseek(fd, offset+3, SEEK_SET); /* 1byte ?? , 2byte length ?? */ 
 	
-	while (vba_readn(fd, &flag, 1) == 1) {
+	while (cli_readn(fd, &flag, 1) == 1) {
 		for (mask = 1; mask < 0x100; mask<<=1) {
 			if (flag & mask) {
-				if (vba_readn(fd, &token, 2) != 2) {
+				if (cli_readn(fd, &token, 2) != 2) {
 					if (result.data) {
 						free(result.data);
 					}
@@ -604,7 +579,7 @@ unsigned char *vba_decompress(int fd, uint32_t offset, int *size)
 				if ((pos != 0) &&
 					((pos % VBA_COMPRESSION_WINDOW) == 0) && clean) {
 					
-					if (vba_readn(fd, &token, 2) != 2) {
+					if (cli_readn(fd, &token, 2) != 2) {
 						if (result.data) {
 							free(result.data);
 						}
@@ -617,7 +592,7 @@ unsigned char *vba_decompress(int fd, uint32_t offset, int *size)
 					byte_array_append(&result, buffer, VBA_COMPRESSION_WINDOW);
 					break;
 				}
-				if (vba_readn(fd, buffer+(pos%VBA_COMPRESSION_WINDOW), 1) == 1){
+				if (cli_readn(fd, buffer+(pos%VBA_COMPRESSION_WINDOW), 1) == 1){
 					pos++;
 				}
 				clean = TRUE;

@@ -131,57 +131,6 @@ typedef struct property_tag
 
 unsigned char magic_id[] = { 0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1};
 
-/* Function: readn
-	Try hard to read the requested number of bytes
-*/
-static int readn(int fd, void *buff, unsigned int count)
-{
-	int retval;
-	unsigned int todo;
-	unsigned char *current;
-
-	todo = count;
-	current = (unsigned char *) buff;
-
-	do {
-		retval = read(fd, current, todo);
-		if (retval == 0) {
-			return (count - todo);
-		}
-		if (retval < 0) {
-			return -1;
-		}
-		todo -= retval;
-		current += retval;
-	} while (todo > 0);
-
-	return count;
-}
-
-/* Function: writen
-	Try hard to write the specified number of bytes
-*/
-static int writen(int fd, void *buff, unsigned int count)
-{
-	int retval;
-	unsigned int todo;
-	unsigned char *current;
-
-	todo = count;
-	current = (unsigned char *) buff;
-
-	do {
-		retval = write(fd, current, todo);
-		if (retval < 0) {
-			return -1;
-		}
-		todo -= retval;
-		current += retval;
-	} while (todo > 0);
-
-	return count;
-}
-
 static char *get_property_name(char *name, int size)
 {
 	int i, j;
@@ -310,7 +259,7 @@ static int ole2_read_block(int fd, ole2_header_t *hdr, void *buff, int32_t block
 	if (lseek(fd, offset, SEEK_SET) != offset) {
 		return FALSE;
 	}
-	if (readn(fd, buff, (1 << hdr->log2_big_block_size)) != (1 << hdr->log2_big_block_size)) {
+	if (cli_readn(fd, buff, (1 << hdr->log2_big_block_size)) != (1 << hdr->log2_big_block_size)) {
 		return FALSE;
 	}
 	return TRUE;
@@ -539,7 +488,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 			}
 			/* buff now contains the block with 8 small blocks in it */
 			offset = 64 * (current_block % 8);
-			if (writen(ofd, &buff[offset], MIN(len,64)) != MIN(len,64)) {
+			if (cli_writen(ofd, &buff[offset], MIN(len,64)) != MIN(len,64)) {
 				close(ofd);
 				return FALSE;
 			}
@@ -552,7 +501,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 				close(ofd);
 				return FALSE;
 			}
-			if (writen(ofd, &buff, MIN(len,(1 << hdr->log2_big_block_size))) !=
+			if (cli_writen(ofd, &buff, MIN(len,(1 << hdr->log2_big_block_size))) !=
 							MIN(len,(1 << hdr->log2_big_block_size))) {
 				close(ofd);
 				return FALSE;
@@ -570,56 +519,56 @@ static int ole2_read_header(int fd, ole2_header_t *hdr)
 {
 	int i;
 	
-	if (readn(fd, &hdr->magic, 8) != 8) {
+	if (cli_readn(fd, &hdr->magic, 8) != 8) {
 		return FALSE;
 	}
-	if (readn(fd, &hdr->clsid, 16) != 16) {
+	if (cli_readn(fd, &hdr->clsid, 16) != 16) {
 		return FALSE;
 	}
-	if (readn(fd, &hdr->minor_version, 2) != 2) {
+	if (cli_readn(fd, &hdr->minor_version, 2) != 2) {
 		return FALSE;
 	}
-	if (readn(fd, &hdr->dll_version, 2) != 2) {
+	if (cli_readn(fd, &hdr->dll_version, 2) != 2) {
 		return FALSE;
 	}
-	if (readn(fd, &hdr->byte_order, 2) != 2) {
+	if (cli_readn(fd, &hdr->byte_order, 2) != 2) {
 		return FALSE;
 	}
-	if (readn(fd, &hdr->log2_big_block_size, 2) != 2) {
+	if (cli_readn(fd, &hdr->log2_big_block_size, 2) != 2) {
 		return FALSE;
 	}
-	if (readn(fd, &hdr->log2_small_block_size, 4) != 4) {
+	if (cli_readn(fd, &hdr->log2_small_block_size, 4) != 4) {
 		return FALSE;
 	}
-	if (readn(fd, &hdr->reserved, 8) != 8) {
+	if (cli_readn(fd, &hdr->reserved, 8) != 8) {
 		return FALSE;
 	}
-	if (readn(fd, &hdr->bat_count, 4) != 4) {
+	if (cli_readn(fd, &hdr->bat_count, 4) != 4) {
 		return FALSE;
 	}
-	if (readn(fd, &hdr->prop_start, 4) != 4) {
+	if (cli_readn(fd, &hdr->prop_start, 4) != 4) {
 		return FALSE;
 	}
-	if (readn(fd, &hdr->signature, 4) != 4) {
+	if (cli_readn(fd, &hdr->signature, 4) != 4) {
 		return FALSE;
 	}
-	if (readn(fd, &hdr->sbat_cutoff, 4) != 4) {
+	if (cli_readn(fd, &hdr->sbat_cutoff, 4) != 4) {
 		return FALSE;
 	}
-	if (readn(fd, &hdr->sbat_start, 4) != 4) {
+	if (cli_readn(fd, &hdr->sbat_start, 4) != 4) {
 		return FALSE;
 	}
-	if (readn(fd, &hdr->sbat_block_count, 4) != 4) {
+	if (cli_readn(fd, &hdr->sbat_block_count, 4) != 4) {
 		return FALSE;
 	}
-	if (readn(fd, &hdr->xbat_start, 4) != 4) {
+	if (cli_readn(fd, &hdr->xbat_start, 4) != 4) {
 		return FALSE;
 	}
-	if (readn(fd, &hdr->xbat_count, 4) != 4) {
+	if (cli_readn(fd, &hdr->xbat_count, 4) != 4) {
 		return FALSE;
 	}
 	for (i=0 ; i < 109 ; i++) {
-		if (readn(fd, &hdr->bat_array[i], 4) != 4) {
+		if (cli_readn(fd, &hdr->bat_array[i], 4) != 4) {
 			return FALSE;
 		}
 	}
@@ -637,7 +586,7 @@ int cli_ole2_extract(int fd, const char *dirname)
 	hdr_size = sizeof(struct ole2_header_tag) - sizeof(int32_t);
 
 #if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK)
-	if (readn(fd, &hdr, hdr_size) != hdr_size) {
+	if (cli_readn(fd, &hdr, hdr_size) != hdr_size) {
 		return 0;
 	}
 #else
