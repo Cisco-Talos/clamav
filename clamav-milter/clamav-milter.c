@@ -223,9 +223,13 @@
  *			<Jim.Allen@Heartsine.co.uk>
  *	0.66l	7/2/04	Updated URL reference
  *			Added new config.h mechanism
+ *	0.66m	9/2/04	Added Hflag from "Leonid Zeitlin" <lz@europe.com>
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.44  2004/02/09 11:05:33  nigelhorne
+ * Added Hflag
+ *
  * Revision 1.43  2004/02/07 12:16:20  nigelhorne
  * Added config.h
  *
@@ -340,9 +344,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.43 2004/02/07 12:16:20 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.44 2004/02/09 11:05:33 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.66l"
+#define	CM_VERSION	"0.66m"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -415,6 +419,18 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.43 2004/02/07 12:16:20 nig
  *	others could be bounced properly.
  */
 
+struct header_node_t {
+	char *header;
+	struct header_node_t *next;
+};
+
+struct header_list_struct {
+	struct header_node_t *first;
+	struct header_node_t *last;
+};
+
+typedef struct header_list_struct *header_list_t;
+
 /*
  * Each thread has one of these
  */
@@ -430,6 +446,7 @@ struct	privdata {
 	char	*filename;	/* Where to store the message in quarantine */
 	u_char	*body;		/* body of the message if Sflag is set */
 	size_t	bodyLen;	/* number of bytes in body */
+	header_list_t headers;	/* Message headers */
 };
 
 static	int		pingServer(int serverNumber);
@@ -448,6 +465,10 @@ static	int		clamfi_send(const struct privdata *privdata, size_t len, const char 
 static	char		*strrcpy(char *dest, const char *source);
 static	int		clamd_recv(int sock, char *buf, size_t len);
 static	off_t		updateSigFile(void);
+static	header_list_t	header_list_new(void);
+static	void	header_list_free(header_list_t list);
+static	void	header_list_add(header_list_t list, const char *headerf, const char *headerv);
+static	void	header_list_print(header_list_t list, FILE *fp);
 
 static	char	clamav_version[128];
 static	int	fflag = 0;	/* force a scan, whatever */
@@ -492,6 +513,10 @@ static	int	nflag = 0;	/*
 static	int	rejectmail = 1;	/*
 				 * Send a 550 rejection when a virus is
 				 * found
+				 */
+static	int	hflag = 0;	/*
+				 * Include original message headers in
+				 * report
 				 */
 static	int	cl_error = SMFIS_TEMPFAIL; /*
 				 * If an error occurs, return
@@ -548,6 +573,7 @@ help(void)
 	puts("\t--dont-scan-on-error\t-d\tPass e-mails through unscanned if a system error occurs.");
 	puts("\t--force-scan\t\t-f\tForce scan all messages (overrides (-o and -l).");
 	puts("\t--help\t\t\t-h\tThis message.");
+	puts("\t--headers\t\t-H\tInclude original message headers in the report.");
 	puts("\t--local\t\t\t-l\tScan messages sent from machines on our LAN.");
 	puts("\t--outgoing\t\t-o\tScan outgoing messages from this machine.");
 	puts("\t--noreject\t\t-N\tDon't reject viruses, silently throw them away.");
@@ -608,9 +634,9 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "bc:DfF:lm:nNop:PqQ:dhs:SU:Vx:";
+		const char *args = "bc:DfF:lm:nNop:PqQ:dhHs:SU:Vx:";
 #else
-		const char *args = "bc:DfF:lm:nNop:PqQ:dhs:SU:V";
+		const char *args = "bc:DfF:lm:nNop:PqQ:dhHs:SU:V";
 #endif
 
 		static struct option long_options[] = {
@@ -628,6 +654,9 @@ main(int argc, char **argv)
 			},
 			{
 				"force-scan", 0, NULL, 'f'
+			},
+			{
+			  	"headers", 0, NULL, 'H'
 			},
 			{
 				"help", 0, NULL, 'h'
@@ -710,6 +739,9 @@ main(int argc, char **argv)
 			case 'h':
 				help();
 				return EX_OK;
+			case 'H':
+				hflag++;
+				break;
 			case 'l':	/* scan mail from the lan */
 				lflag++;
 				break;
@@ -1561,6 +1593,10 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 	privdata->from = strdup(argv[0]);
 	privdata->to = NULL;
 
+	if (hflag) 
+        	privdata->headers = header_list_new();
+	else privdata->headers = NULL;
+
 	return (smfi_setpriv(ctx, privdata) == MI_SUCCESS) ? SMFIS_CONTINUE : cl_error;
 }
 
@@ -1609,6 +1645,10 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 		clamfi_cleanup(ctx);
 		return cl_error;
 	}
+
+	if(hflag)
+		header_list_add(privdata->headers, headerf, headerv);	
+
 	return SMFIS_CONTINUE;
 }
 
@@ -1897,10 +1937,15 @@ clamfi_eom(SMFICTX *ctx)
 					 */
 					fprintf(sendmail, "The message %s sent from %s to\n\t",
 						smfi_getsymval(ctx, "i"),
-						privdata->from);
+						/*privdata->from,*/
+						smfi_getsymval(ctx, "_")
+						);
 				else
 
-					fprintf(sendmail, "A message sent from %s to\n\t", privdata->from);
+					fprintf(sendmail, "A message sent from %s to\n\t",
+						/*privdata->from,*/
+						smfi_getsymval(ctx, "_")
+						);
 
 				for(to = privdata->to; *to; to++)
 					fprintf(sendmail, "%s\n", *to);
@@ -1908,7 +1953,15 @@ clamfi_eom(SMFICTX *ctx)
 				fputs(mess, sendmail);
 
 				if(privdata->filename != NULL)
-					fprintf(sendmail, "\nThe message in question is quarantined as %s\n", privdata->filename);
+					fprintf(sendmail, "\nThe message in question has been quarantined as %s\n", privdata->filename);
+
+				if (hflag) {
+					fprintf(sendmail, "\nThe message was received by %s from %s\n\n",
+						smfi_getsymval(ctx, "j"),
+						smfi_getsymval(ctx, "_"));
+					fputs("For your information, the original message headers were:\n\n", sendmail);
+					header_list_print(privdata->headers, sendmail);
+				}
 
 				pclose(sendmail);
 			}
@@ -2053,6 +2106,8 @@ clamfi_cleanup(SMFICTX *ctx)
 			close(privdata->cmdSocket);
 			privdata->cmdSocket = -1;
 		}
+		if(privdata->headers)
+			header_list_free(privdata->headers);
 
 #ifdef	CL_DEBUG
 		if(debug_level >= 9)
@@ -2214,4 +2269,61 @@ updateSigFile(void)
 	close(fd);
 
 	return statb.st_size;
+}
+
+static header_list_t
+header_list_new(void) 
+{
+	header_list_t ret;
+
+	ret = (header_list_t)cli_malloc(sizeof(struct header_list_struct));
+	ret->first = NULL;
+	ret->last = NULL;
+	return ret;
+}
+
+static void
+header_list_free(header_list_t list)
+{
+	struct header_node_t *iter;
+
+	iter = list->first;
+	while (iter) {
+		struct header_node_t *iter2 = iter->next;
+		free(iter->header);
+		free(iter);
+		iter = iter2;
+	}
+	free(list);
+}
+
+static void
+header_list_add(header_list_t list, const char *headerf, const char *headerv)
+{
+	char *header;
+	size_t len;
+	struct header_node_t *new_node;
+
+	len = strlen(headerf) + strlen(headerv) + 3;
+
+	header = (char *)cli_malloc(len);
+	snprintf(header, len, "%s: %s", headerf, headerv);
+	new_node = (struct header_node_t *) malloc(sizeof(struct header_node_t));
+	new_node->header = header;
+	new_node->next = NULL;
+	if(!list->first)
+		list->first = new_node;
+	if(list->last)
+		list->last->next = new_node;
+
+	list->last = new_node;
+}
+
+static void
+header_list_print(header_list_t list, FILE *fp)
+{
+	const struct header_node_t *iter;
+
+	for(iter = list->first; iter; iter = iter->next)
+		fprintf(fp, "%s\n", iter->header);
 }
