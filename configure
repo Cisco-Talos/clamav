@@ -9364,25 +9364,28 @@ else
    tcpw=auto
 fi;
 
-if test x"$tcpw" != xno; then
-  err=no
-  if test "${ac_cv_header_tcpd_h+set}" = set; then
-  echo "$as_me:$LINENO: checking for tcpd.h" >&5
-echo $ECHO_N "checking for tcpd.h... $ECHO_C" >&6
-if test "${ac_cv_header_tcpd_h+set}" = set; then
+if test $tcpw != no ; then
+
+for ac_header in tcpd.h
+do
+as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
+if eval "test \"\${$as_ac_Header+set}\" = set"; then
+  echo "$as_me:$LINENO: checking for $ac_header" >&5
+echo $ECHO_N "checking for $ac_header... $ECHO_C" >&6
+if eval "test \"\${$as_ac_Header+set}\" = set"; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 fi
-echo "$as_me:$LINENO: result: $ac_cv_header_tcpd_h" >&5
-echo "${ECHO_T}$ac_cv_header_tcpd_h" >&6
+echo "$as_me:$LINENO: result: `eval echo '${'$as_ac_Header'}'`" >&5
+echo "${ECHO_T}`eval echo '${'$as_ac_Header'}'`" >&6
 else
   # Is the header compilable?
-echo "$as_me:$LINENO: checking tcpd.h usability" >&5
-echo $ECHO_N "checking tcpd.h usability... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking $ac_header usability" >&5
+echo $ECHO_N "checking $ac_header usability... $ECHO_C" >&6
 cat >conftest.$ac_ext <<_ACEOF
 #line $LINENO "configure"
 #include "confdefs.h"
 $ac_includes_default
-#include <tcpd.h>
+#include <$ac_header>
 _ACEOF
 rm -f conftest.$ac_objext
 if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
@@ -9407,12 +9410,12 @@ echo "$as_me:$LINENO: result: $ac_header_compiler" >&5
 echo "${ECHO_T}$ac_header_compiler" >&6
 
 # Is the header present?
-echo "$as_me:$LINENO: checking tcpd.h presence" >&5
-echo $ECHO_N "checking tcpd.h presence... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking $ac_header presence" >&5
+echo $ECHO_N "checking $ac_header presence... $ECHO_C" >&6
 cat >conftest.$ac_ext <<_ACEOF
 #line $LINENO "configure"
 #include "confdefs.h"
-#include <tcpd.h>
+#include <$ac_header>
 _ACEOF
 if { (eval echo "$as_me:$LINENO: \"$ac_cpp conftest.$ac_ext\"") >&5
   (eval $ac_cpp conftest.$ac_ext) 2>conftest.er1
@@ -9444,54 +9447,48 @@ echo "${ECHO_T}$ac_header_preproc" >&6
 # So?  What about this header?
 case $ac_header_compiler:$ac_header_preproc in
   yes:no )
-    { echo "$as_me:$LINENO: WARNING: tcpd.h: accepted by the compiler, rejected by the preprocessor!" >&5
-echo "$as_me: WARNING: tcpd.h: accepted by the compiler, rejected by the preprocessor!" >&2;}
-    { echo "$as_me:$LINENO: WARNING: tcpd.h: proceeding with the preprocessor's result" >&5
-echo "$as_me: WARNING: tcpd.h: proceeding with the preprocessor's result" >&2;};;
+    { echo "$as_me:$LINENO: WARNING: $ac_header: accepted by the compiler, rejected by the preprocessor!" >&5
+echo "$as_me: WARNING: $ac_header: accepted by the compiler, rejected by the preprocessor!" >&2;}
+    { echo "$as_me:$LINENO: WARNING: $ac_header: proceeding with the preprocessor's result" >&5
+echo "$as_me: WARNING: $ac_header: proceeding with the preprocessor's result" >&2;};;
   no:yes )
-    { echo "$as_me:$LINENO: WARNING: tcpd.h: present but cannot be compiled" >&5
-echo "$as_me: WARNING: tcpd.h: present but cannot be compiled" >&2;}
-    { echo "$as_me:$LINENO: WARNING: tcpd.h: check for missing prerequisite headers?" >&5
-echo "$as_me: WARNING: tcpd.h: check for missing prerequisite headers?" >&2;}
-    { echo "$as_me:$LINENO: WARNING: tcpd.h: proceeding with the preprocessor's result" >&5
-echo "$as_me: WARNING: tcpd.h: proceeding with the preprocessor's result" >&2;};;
+    { echo "$as_me:$LINENO: WARNING: $ac_header: present but cannot be compiled" >&5
+echo "$as_me: WARNING: $ac_header: present but cannot be compiled" >&2;}
+    { echo "$as_me:$LINENO: WARNING: $ac_header: check for missing prerequisite headers?" >&5
+echo "$as_me: WARNING: $ac_header: check for missing prerequisite headers?" >&2;}
+    { echo "$as_me:$LINENO: WARNING: $ac_header: proceeding with the preprocessor's result" >&5
+echo "$as_me: WARNING: $ac_header: proceeding with the preprocessor's result" >&2;};;
 esac
-echo "$as_me:$LINENO: checking for tcpd.h" >&5
-echo $ECHO_N "checking for tcpd.h... $ECHO_C" >&6
-if test "${ac_cv_header_tcpd_h+set}" = set; then
+echo "$as_me:$LINENO: checking for $ac_header" >&5
+echo $ECHO_N "checking for $ac_header... $ECHO_C" >&6
+if eval "test \"\${$as_ac_Header+set}\" = set"; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  ac_cv_header_tcpd_h=$ac_header_preproc
+  eval "$as_ac_Header=$ac_header_preproc"
 fi
-echo "$as_me:$LINENO: result: $ac_cv_header_tcpd_h" >&5
-echo "${ECHO_T}$ac_cv_header_tcpd_h" >&6
+echo "$as_me:$LINENO: result: `eval echo '${'$as_ac_Header'}'`" >&5
+echo "${ECHO_T}`eval echo '${'$as_ac_Header'}'`" >&6
 
 fi
-if test $ac_cv_header_tcpd_h = yes; then
-  :
-else
-  err=yes
-fi
+if test `eval echo '${'$as_ac_Header'}'` = yes; then
+  cat >>confdefs.h <<_ACEOF
+#define `echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
 
-
-  echo "$as_me:$LINENO: checking for hosts_ctl in -lwrap" >&5
-echo $ECHO_N "checking for hosts_ctl in -lwrap... $ECHO_C" >&6
-if test "${ac_cv_lib_wrap_hosts_ctl+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lwrap  $LIBS"
-cat >conftest.$ac_ext <<_ACEOF
+                echo "$as_me:$LINENO: checking for TCP wrappers library" >&5
+echo $ECHO_N "checking for TCP wrappers library... $ECHO_C" >&6
+                save_LIBS="$LIBS"
+                LIBS="$LIBS -lwrap"
+                cat >conftest.$ac_ext <<_ACEOF
 #line $LINENO "configure"
 #include "confdefs.h"
 
-/* Override any gcc2 internal prototype to avoid an error.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-/* We use char because int might match the return type of a gcc2
-   builtin and then its argument prototype would still apply.  */
-char hosts_ctl ();
+#include <tcpd.h>
+int allow_severity = 0;
+int deny_severity  = 0;
+
+struct request_info *req;
+
 #ifdef F77_DUMMY_MAIN
 #  ifdef __cplusplus
      extern "C"
@@ -9501,7 +9498,9 @@ char hosts_ctl ();
 int
 main ()
 {
-hosts_ctl ();
+
+hosts_access(req)
+
   ;
   return 0;
 }
@@ -9518,37 +9517,90 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  ac_cv_lib_wrap_hosts_ctl=yes
+  echo "$as_me:$LINENO: result: -lwrap" >&5
+echo "${ECHO_T}-lwrap" >&6
+                have_wrappers=yes
+                CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lwrap"
 else
   echo "$as_me: failed program was:" >&5
 cat conftest.$ac_ext >&5
-ac_cv_lib_wrap_hosts_ctl=no
+
+                                LIBS="$LIBS -lnsl"
+                cat >conftest.$ac_ext <<_ACEOF
+#line $LINENO "configure"
+#include "confdefs.h"
+
+#include <tcpd.h>
+int allow_severity = 0;
+int deny_severity  = 0;
+
+struct request_info *req;
+
+#ifdef F77_DUMMY_MAIN
+#  ifdef __cplusplus
+     extern "C"
+#  endif
+   int F77_DUMMY_MAIN() { return 1; }
+#endif
+int
+main ()
+{
+
+hosts_access(req)
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+         { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  echo "$as_me:$LINENO: result: -lwrap -lnsl" >&5
+echo "${ECHO_T}-lwrap -lnsl" >&6
+                have_wrappers=yes
+                CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lwrap"
+else
+  echo "$as_me: failed program was:" >&5
+cat conftest.$ac_ext >&5
+
+                echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+                have_wrappers=no
+                LIBS=$save_LIBS
 fi
 rm -f conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
 fi
-echo "$as_me:$LINENO: result: $ac_cv_lib_wrap_hosts_ctl" >&5
-echo "${ECHO_T}$ac_cv_lib_wrap_hosts_ctl" >&6
-if test $ac_cv_lib_wrap_hosts_ctl = yes; then
-  true
+rm -f conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext
 else
-  err=yes
+  have_wrappers=no
 fi
 
-  if test x"$err" = xyes; then
-    if test x"$tcpw" = xyes; then
-      { { echo "$as_me:$LINENO: error: tcpwrappers not available" >&5
-echo "$as_me: error: tcpwrappers not available" >&2;}
-   { (exit 1); exit 1; }; }
-    fi
-  else
+done
+
+
+        if test $have_wrappers = yes ; then
 
 cat >>confdefs.h <<\_ACEOF
 #define WITH_TCPWRAP 1
 _ACEOF
 
-    CLAMAV_MILTER_LIBS="-lwrap"
-  fi
+        elif test $tcpw = yes ; then
+                { { echo "$as_me:$LINENO: error: could not find TCP wrappers" >&5
+echo "$as_me: error: could not find TCP wrappers" >&2;}
+   { (exit 1); exit 1; }; }
+        else
+                { echo "$as_me:$LINENO: WARNING: could not find TCP wrappers, support disabled" >&5
+echo "$as_me: WARNING: could not find TCP wrappers, support disabled" >&2;}
+        fi
 fi
 
 # check for in_port_t definition
