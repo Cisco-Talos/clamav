@@ -429,7 +429,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
     /* simple sanity check */
     if(!broken && EC32(section_hdr[nsections - 1].PointerToRawData) + EC32(section_hdr[nsections - 1].SizeOfRawData) > sb.st_size) {
-	cli_dbgmsg("Possibly broken PE file - Section %d out of file (Offset@ %d, Rsize %d, Total filesize %d, EP@ %d)\n", i, EC32(section_hdr[i].PointerToRawData), EC32(section_hdr[i].SizeOfRawData), sb.st_size, ep);
+	cli_dbgmsg("Possibly broken PE file - Section %d out of file (Offset@ %d, Rsize %d, Total filesize %d, EP@ %d)\n", nsections - 1, EC32(section_hdr[nsections - 1].PointerToRawData), EC32(section_hdr[nsections - 1].SizeOfRawData), sb.st_size, ep);
 	broken = 1;
     }
 
