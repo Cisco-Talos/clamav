@@ -1,3 +1,7 @@
+Mon Apr 12 19:12:27 CEST 2004 (tk)
+----------------------------------
+  * doc: update the ClamAV and Samba how-two (Przemyslaw Holowczyc)
+
 Sat Apr 10 21:28:40 CEST 2004 (tk)
 ----------------------------------
   * libclamav: do not remove temporary directories in debug mode
