@@ -120,6 +120,7 @@ struct RAR20_archive_entry                  /* These infos about files are  */
   UBYTE  UnpVer;
   UBYTE  Method;
   UDWORD FileAttr;
+  UWORD  Flags;
 };
 
 typedef struct  archivelist                 /* used to list archives        */

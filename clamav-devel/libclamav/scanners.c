@@ -199,6 +199,13 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
     rarlist_head = rarlist;
 
     while(rarlist) {
+	if(DETECT_ENCRYPTED && (rarlist->item.Flags & 4)) {
+	    files++;
+	    cli_dbgmsg("Rar -> Encrypted files found in archive.\n");
+	    *virname = "Encrypted.RAR";
+	    ret = CL_VIRUS;
+	    break;
+	}
 
 	if(limits) {
 	    if(limits->maxfilesize && (rarlist->item.UnpSize > limits->maxfilesize)) {

@@ -193,7 +193,7 @@ void cl_freetrie(struct cl_node *root)
     free(root);
 }
 
-int cl_scanbuff(const char *buffer, unsigned int length, char **virname, const struct cl_node *root)
+int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root)
 {
 	struct cl_node *current;
 	struct cli_patt *pt;

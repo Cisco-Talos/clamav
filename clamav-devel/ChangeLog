@@ -1,3 +1,8 @@
+Thu Mar 11 21:50:32 CET 2004 (tk)
+---------------------------------
+  * libclamav: rar: added support for encrypted archive (Encrypted.RAR)
+	       detection
+
 Thu Mar 11 00:16:11 CET 2004 (tk)
 ---------------------------------
   * libclamav: rar support: due to a bug only first file in archive was
