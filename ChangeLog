@@ -1,3 +1,9 @@
+Thu Mar 18 15:04:41 CET 2004 (tk)
+---------------------------------
+  * clamdscan: in the LocalSocket mode the server2 address struct was not
+	       properly initialized. Fixed by "Nemosoft Unv."
+	       <nemosoft*smcc.demon.nl>.
+
 Thu Mar 18 09:56:24 GMT 2004 (trog)
 -----------------------------------
   * libclamav/vba_extract.c: Simplify the code, and make it work all relevant
