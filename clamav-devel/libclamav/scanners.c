@@ -57,6 +57,7 @@ int cli_scanrar_inuse = 0;
 #define MAIL_MAGIC_STR "From "
 #define RAWMAIL_MAGIC_STR "Received: "
 #define MAILDIR_MAGIC_STR "Return-Path: "
+#define DELIVERED_MAGIC_STR "Delivered-To: "
 #define BZIP_MAGIC_STR "BZh"
 
 
@@ -649,6 +650,9 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
 	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
 	} else if(!strncmp(magic, MAILDIR_MAGIC_STR, strlen(MAILDIR_MAGIC_STR))) {
 	    cli_dbgmsg("Recognized Maildir mail file.\n");
+	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
+	} else if(!strncmp(magic, DELIVERED_MAGIC_STR, strlen(DELIVERED_MAGIC_STR))) {
+	    cli_dbgmsg("Recognized (Delivered-To) mail file.\n");
 	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
 	}
 	(*reclev)--;
