@@ -1,3 +1,8 @@
+Sat Sep  4 23:27:12 CEST 2004 (tk)
+----------------------------------
+  * libclamav/clamav.h: define set of recommended scan options (CL_STDOPT)
+  * examples/ex1.c: update
+
 Sat Sep  4 23:07:05 CEST 2004 (tk)
 ----------------------------------
   * clamscan: add support for special files in stdin mode

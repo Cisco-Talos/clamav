@@ -76,6 +76,8 @@ extern "C"
 #define CL_BROKEN	128
 #define CL_MAILURL	256
 
+/* recommended options */
+#define CL_STDOPT	(CL_ARCHIVE | CL_MAIL | CL_OLE2 | CL_HTML | CL_PE) 
 
 struct cli_bm_patt {
     char *pattern;
