@@ -369,10 +369,11 @@ int cli_readn(int fd, void *buff, unsigned int count)
         int retval;
         unsigned int todo;
         unsigned char *current;
-                                                                                                                                    
+
+
         todo = count;
         current = (unsigned char *) buff;
-                                                                                                                                    
+
         do {
                 retval = read(fd, current, todo);
                 if (retval == 0) {
@@ -387,10 +388,11 @@ int cli_readn(int fd, void *buff, unsigned int count)
                 todo -= retval;
                 current += retval;
         } while (todo > 0);
-                                                                                                                                    
+
+
         return count;
 }
-                                                                                                                                    
+
 /* Function: writen
         Try hard to write the specified number of bytes
 */
@@ -399,10 +401,11 @@ int cli_writen(int fd, void *buff, unsigned int count)
         int retval;
         unsigned int todo;
         unsigned char *current;
-                                                                                                                                    
+
+
         todo = count;
         current = (unsigned char *) buff;
-                                                                                                                                    
+
         do {
                 retval = write(fd, current, todo);
                 if (retval < 0) {
@@ -414,7 +417,8 @@ int cli_writen(int fd, void *buff, unsigned int count)
                 todo -= retval;
                 current += retval;
         } while (todo > 0);
-                                                                                                                                    
+
+
         return count;
 }
 

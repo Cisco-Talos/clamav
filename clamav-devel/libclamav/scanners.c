@@ -492,7 +492,7 @@ static int cli_scangzip(int desc, const char **virname, long int *scanned, const
 		break;
 	    }
 
-	if(write(fd, buff, bytes) != bytes) {
+	if(cli_writen(fd, buff, bytes) != bytes) {
 	    cli_dbgmsg("Gzip -> Can't write() file.\n");
 	    fclose(tmp);
 	    gzclose(gd);
@@ -580,7 +580,7 @@ static int cli_scanbzip(int desc, const char **virname, long int *scanned, const
 		break;
 	    }
 
-	if(write(fd, buff, bytes) != bytes) {
+	if(cli_writen(fd, buff, bytes) != bytes) {
 	    cli_dbgmsg("Bzip2 -> Can't write() file.\n");
 	    BZ2_bzReadClose(&bzerror, bfd);
 	    fclose(tmp);
