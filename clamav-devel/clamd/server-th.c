@@ -109,22 +109,19 @@ void scanner_thread(void *arg)
 	    case COMMAND_END:
 		session = FALSE;
 		break;
-
-	    case COMMAND_TIMEOUT:
-		if (session) {
-		    pthread_mutex_lock(&exit_mutex);
-		    if(progexit) {
-			session = FALSE;
-		    }
-		    pthread_mutex_unlock(&exit_mutex);
-                    pthread_mutex_lock(&reload_mutex);
-                    if(reload) {
-			session = FALSE;
-		    }
-                    pthread_mutex_unlock(&reload_mutex);
-		}
-		break;
-        }
+	}
+	if (session) {
+	    pthread_mutex_lock(&exit_mutex);
+	    if(progexit) {
+		session = FALSE;
+	    }
+	    pthread_mutex_unlock(&exit_mutex);
+	    pthread_mutex_lock(&reload_mutex);
+	    if(reload) {
+		session = FALSE;
+	    }
+	    pthread_mutex_unlock(&reload_mutex);
+	}
     } while (session);
 
     close(conn->sd);
