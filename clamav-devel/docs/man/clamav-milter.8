@@ -1,4 +1,4 @@
-.TH "clamav-milter" "8" "January 12, 2004" "" "Clam AntiVirus"
+.TH "clamav-milter" "8" "March 23, 2004" "" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 clamav\-milter \- milter compatible mail scanner
@@ -114,6 +114,12 @@ clamav\-milter will issue an error and fail to start.
 \fB\-\-server=HOSTNAME/ADDRESS, \-s HOSTNAME/ADDRESS\fR
 IP address or hostname of server(s) running clamd (when using TCPsocket).
 More than one server may be specified, separating the servers by colons.
+If more than one server is specified, clamav\-milter will load balance
+between the available servers. All the servers must be up when clamav\-milter
+starts, however afterwards it is fault tolerant to a server becoming
+unavailable, and will only raise an error if all of the servers cannot be
+reached.
+The default value for ADDRESS is 127.0.0.1 (localhost).
 .TP
 \fB\-\-sign, \-S\fR
 Add a hard\-coded signature to each scanned file.
