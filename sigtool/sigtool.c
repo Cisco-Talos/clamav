@@ -190,8 +190,8 @@ void sigtool(struct optstruct *opt)
 	}
 
     } else if(optc(opt, 'b')) {
-	if(!optc(opt, 's')) {
-	    mprintf("!--server, -s is required in this mode\n");
+	if(!optl(opt, "server")) {
+	    mprintf("!--server is required in this mode\n");
 	    exit(10);
 	}
 
@@ -460,7 +460,7 @@ int build(struct optstruct *opt)
 	int ret, no = 0, realno = 0, bytes, itmp;
 	struct stat foo;
 	char buffer[FILEBUFF], *tarfile = NULL, *gzfile = NULL, header[257],
-	     smbuff[25], *pt;
+	     smbuff[30], *pt;
         struct cl_node *root = NULL;
 	FILE *tar, *cvd, *fd;
 	gzFile *gz;
@@ -568,7 +568,7 @@ int build(struct optstruct *opt)
     time(&timet);
     brokent = localtime(&timet);
     setlocale(LC_TIME, "C");
-    strftime(smbuff, 24, "%d %b %Y %H-%M %z:", brokent);
+    strftime(smbuff, 30, "%d %b %Y %H-%M %z", brokent);
     strcat(header, smbuff);
 
     /* version number */
@@ -576,7 +576,7 @@ int build(struct optstruct *opt)
     /* ... increment version number by one */
 
     if(oldcvd) {
-	sprintf(smbuff, "%d:", oldcvd->version + 1);
+	sprintf(smbuff, ":%d:", oldcvd->version + 1);
     } else {
 	fflush(stdin);
 	mprintf("Version number: ");
@@ -608,7 +608,7 @@ int build(struct optstruct *opt)
     fd = fopen(gzfile, "rb");
     __md5_stream(fd, &buffer);
     fclose(fd);
-    if(!(pt = getdsig(getargc(opt, 's'), smbuff, buffer))) {
+    if(!(pt = getdsig(getargl(opt, "server"), smbuff, buffer))) {
 	mprintf("No digital signature - no CVD file...\n");
 	unlink(gzfile);
 	exit(1);

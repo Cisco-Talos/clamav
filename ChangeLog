@@ -1,3 +1,7 @@
+Sat Nov 15 03:54:39 CET 2003 (tk)
+---------------------------------
+  * sigtool: fixed --build problems introduced in 0.65
+
 Sat Nov 15 01:17:29 CET 2003 (tk)
 ---------------------------------
   * libclamav: cli_scanzip: do malloc() outside of the zip scanning loop;
