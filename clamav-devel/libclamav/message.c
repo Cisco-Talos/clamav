@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.126  2004/11/28 22:06:39  nigelhorne
+ * Tidy space only headers code
+ *
  * Revision 1.125  2004/11/28 21:05:49  nigelhorne
  * Handle headers with only spaces
  *
@@ -372,7 +375,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.125 2004/11/28 21:05:49 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.126 2004/11/28 22:06:39 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1128,43 +1131,35 @@ messageAddLine(message *m, line_t *line)
  * Line must not be terminated by a \n
  */
 int
-messageAddStr(message *m, const char *data, int stripSpaces)
+messageAddStr(message *m, const char *data)
 {
 	line_t *repeat = NULL;
 
 	assert(m != NULL);
 
-#if	0	/* Not sure why this doesn't work, it would save some RAM */
 	if(data) {
-		int iswhite = 1;
-		const char *p;
-
-		for(p = data; *p != '\0'; p++)
-			if(!isspace(*p)) {
-				iswhite = 0;
-				break;
-			}
-		if(iswhite) {
-			/*cli_dbgmsg("messageAddStr: empty line: '%s'\n", data);*/
-			data = (stripSpaces) ? NULL : " ";
-		}
-	}
-#else
-	if(stripSpaces && data) {
-		int iswhite = 1;
-		const char *p;
-
-		for(p = data; *p != '\0'; p++)
-			if(!isspace(*p)) {
-				iswhite = 0;
-				break;
-			}
-		if(iswhite) {
-			/*cli_dbgmsg("messageAddStr: empty line: '%s'\n", data);*/
+		if(*data == '\0')
 			data = NULL;
+		else {
+			/*
+			 * If it's only white space, just store one space to
+			 * save memory. You must store something since it may
+			 * be a header line
+			 */
+			int iswhite = 1;
+			const char *p;
+
+			for(p = data; *p; p++)
+				if(!isspace(*p)) {
+					iswhite = 0;
+					break;
+				}
+			if(iswhite) {
+				/*cli_dbgmsg("messageAddStr: empty line: '%s'\n", data);*/
+				data = " ";
+			}
 		}
 	}
-#endif
 
 	if(m->body_first == NULL)
 		m->body_last = m->body_first = (text *)cli_malloc(sizeof(text));

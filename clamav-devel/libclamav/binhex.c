@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: binhex.c,v $
+ * Revision 1.9  2004/11/28 22:06:39  nigelhorne
+ * Tidy space only headers code
+ *
  * Revision 1.8  2004/11/28 21:05:50  nigelhorne
  * Handle headers with only spaces
  *
@@ -39,7 +42,7 @@
  * First draft of binhex.c
  *
  */
-static	char	const	rcsid[] = "$Id: binhex.c,v 1.8 2004/11/28 21:05:50 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: binhex.c,v 1.9 2004/11/28 22:06:39 nigelhorne Exp $";
 
 #include "clamav.h"
 
@@ -127,7 +130,7 @@ cli_binhex(const char *dir, int desc)
 
 		/*puts(line);*/
 
-		if(messageAddStr(m, line, 1) < 0)
+		if(messageAddStr(m, line) < 0)
 			break;
 
 		buf = ++ptr;

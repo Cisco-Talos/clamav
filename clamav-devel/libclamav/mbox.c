@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.194  2004/11/28 22:06:38  nigelhorne
+ * Tidy space only headers code
+ *
  * Revision 1.193  2004/11/28 21:05:50  nigelhorne
  * Handle headers with only spaces
  *
@@ -567,7 +570,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.193 2004/11/28 21:05:50 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.194 2004/11/28 22:06:38 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -955,7 +958,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				cli_dbgmsg("Finished processing message\n");
 			} else
 				lastLineWasEmpty = (bool)(buffer[0] == '\0');
-			if(messageAddStr(m, buffer, 1) < 0)
+			if(messageAddStr(m, buffer) < 0)
 				break;
 		} while(fgets(buffer, sizeof(buffer) - 1, fd) != NULL);
 
@@ -1011,9 +1014,9 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			 * headers, otherwise they'll be treated as the end of
 			 * header marker
 			 */
-			if(messageAddStr(m, ptr, !inHeader) < 0)
+			if(messageAddStr(m, ptr) < 0)
 				break;
-			if(*ptr == '\n')
+			if(*ptr == '\0')
 				inHeader = 0;
 		} while(fgets(buffer, sizeof(buffer) - 1, fd) != NULL);
 	}
@@ -1905,7 +1908,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							/*
 							 * No plain text version
 							 */
-							messageAddStr(aMessage, "No plain text alternative", 0);
+							messageAddStr(aMessage, "No plain text alternative");
 						assert(messageGetBody(aMessage) != NULL);
 						break;
 					case TEXT:
@@ -2966,7 +2969,7 @@ rfc2047(const char *in)
 		m = messageCreate();
 		if(m == NULL)
 			break;
-		messageAddStr(m, enctext, 0);
+		messageAddStr(m, enctext);
 		free(enctext);
 		switch(encoding) {
 			case 'q':
