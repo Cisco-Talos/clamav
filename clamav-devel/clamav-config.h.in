@@ -255,6 +255,9 @@
 /* Version number of package */
 #undef VERSION
 
+/* use libcurl in mbox code */
+#undef WITH_CURL
+
 /* tcpwrappers support */
 #undef WITH_TCPWRAP
 
@@ -269,6 +272,12 @@
 
 /* Define to empty if `const' does not conform to ANSI C. */
 #undef const
+
+/* Define to `__inline__' or `__inline' if that's what the C compiler
+   calls it, or to nothing if 'inline' is not supported under any name.  */
+#ifndef __cplusplus
+#undef inline
+#endif
 
 /* Define to `long' if <sys/types.h> does not define. */
 #undef off_t
