@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.61  2004/03/30 22:45:13  nigelhorne
+ * Better handling of multipart/multipart messages
+ *
  * Revision 1.60  2004/03/29 09:22:03  nigelhorne
  * Tidy up code and reduce shuffling of data
  *
@@ -171,7 +174,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.60 2004/03/29 09:22:03 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.61 2004/03/30 22:45:13 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -316,7 +319,9 @@ static	const	struct tableinit {
  * TODO: when signal handling is added, need to remove temp files when a
  * signal is received
  * TODO: add option to scan in memory not via temp files, perhaps with a
- * named pipe or memory mapped file?
+ * named pipe or memory mapped file, though this won't work on big e-mails
+ * containing many levels of encapsulated messages - it'd just take too much
+ * RAM
  * TODO: if debug is enabled, catch a segfault and dump the current e-mail
  * in it's entirety, then call abort()
  * TODO: parse .msg format files
@@ -515,14 +520,18 @@ parseEmailHeaders(const message *m, const table_t *rfc821Table)
 static int
 parseEmailHeader(message *m, const char *line, const table_t *rfc821Table)
 {
-	char *copy = strdup(line);
-	char *cmd;
+	char *copy, *cmd;
 	int ret = -1;
 #ifdef CL_THREAD_SAFE
 	char *strptr;
 #endif
 
 	cli_dbgmsg("parseEmailHeader '%s'\n", line);
+
+	if(strchr(line, ':') == NULL)
+		return -1;
+
+	copy = strdup(line);
 
 	cmd = strtok_r(copy, ":", &strptr);
 
@@ -1030,13 +1039,18 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						if(aMessage) {
 							body = parseEmailHeaders(aMessage, rfc821Table);
 							if(body) {
-								t = messageToText(body);
+								assert(aMessage == messages[i]);
+								messageDestroy(messages[i]);
+								messages[i] = NULL;
 
-								rc = parseEmailBody(body, blobs, nBlobs, t, dir, rfc821Table, subtypeTable);
-								cli_dbgmsg("Finished recursion\n");
-								textDestroy(t);
 								if(mainMessage && (mainMessage != messageIn))
 									messageDestroy(mainMessage);
+
+								t = messageToText(body);
+								rc = parseEmailBody(body, blobs, nBlobs, t, dir, rfc821Table, subtypeTable);
+								textDestroy(t);
+
+								cli_dbgmsg("Finished recursion\n");
 
 								mainMessage = body;
 							}
@@ -1213,46 +1227,6 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 			}
 			if((strcasecmp(mimeSubtype, "rfc822") == 0) ||
 			   (strcasecmp(mimeSubtype, "delivery-status") == 0)) {
-#if	0
-				/*
-				 * Found a message encapsulated within
-				 * another message
-				 *
-				 * Thomas Lamy <Thomas.Lamy@in-online.net>:
-				 * ensure t is correctly freed
-				 */
-				text *t, *msgText = messageToText(mainMessage);
-				message *m, *body;
-
-				t = msgText;
-				assert(t != NULL);
-
-				m = messageCreate();
-				assert(m != NULL);
-
-				do {
-					/*char *buffer = strdup(t->t_text);
-
-					cli_chomp(buffer);
-					messageAddLine(m, buffer);
-					free(buffer);*/
-					messageAddLine(m, t->t_text);
-				} while((t = t->t_next) != NULL);
-
-				textDestroy(msgText);
-
-				body = parseEmailHeaders(m, rfc821Table);
-
-				messageDestroy(m);
-				m = body;
-
-				messageClean(m);
-
-				if(messageGetBody(m))
-					rc = parseEmailBody(m, NULL, 0, NULL, dir, rfc821Table, subtypeTable);
-
-				messageDestroy(m);
-#else
 				message *m = parseEmailHeaders(mainMessage, rfc821Table);
 				if(m) {
 					cli_dbgmsg("Decode rfc822");
@@ -1264,8 +1238,6 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 
 					messageDestroy(m);
 				}
-#endif
-
 				break;
 			} else if(strcasecmp(mimeSubtype, "partial") == 0)
 				/* TODO */
