@@ -111,6 +111,10 @@ Installations for RedHat Linux and it's derivatives such as YellowDog:
 	Where /var/run/spamass.sock is the location of the spamass-milt
 	socket file (on some systems it is in /var/run/sendmail/spamass.sock).
 
+Installations for Debian Linux:
+	As above for RedHat, except that you need the libmilter-dev package:
+		apt-get install libmilter-dev
+
 Installations for FreeBSD5 (may be true for other BSDs)
 	Add to /etc/mail/freebsd.mc:
 	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clmilter.sock, F=, T=S:4m;R:4m')dnl
