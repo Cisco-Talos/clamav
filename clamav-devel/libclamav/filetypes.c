@@ -155,7 +155,7 @@ cli_file_t cli_filetype(const char *buf, size_t buflen)
     }
 
     for(i = 0; i < buflen; i++)
-	if(isprint(buf[i])) { /* FIXME: do we need to handle intern. chars? */
+	if(!isprint(buf[i])) { /* FIXME: do we need to handle intern. chars? */
 	    ascii = 0;
 	    break;
 	}
