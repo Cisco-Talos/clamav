@@ -222,8 +222,8 @@ int freshclam(struct optstruct *opt)
 
 	bigsleep = 24 * 3600 / checks;
 	daemonize();
-	if (optl(opt, "pid")) {
-	    pidfile = getargl(opt, "pid");
+	if (optc(opt, 'p')) {
+	    pidfile = getargc(opt, 'p');
 	} else if (cpt = cfgopt(copt, "PidFile")) {
 	    pidfile = cpt->strarg;
 	}
