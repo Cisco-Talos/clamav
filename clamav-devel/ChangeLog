@@ -1,3 +1,7 @@
+Fri Aug 20 12:58:41 BST 2004 (njh)
+----------------------------------
+  * libclamav:		Added line.[ch]
+
 Fri Aug 20 05:53:51 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Code tidy
