@@ -1,3 +1,8 @@
+Tue Mar  1 02:29:54 CET 2005 (tk)
+---------------------------------
+  * clamscan: use --include-dir/exclude-dir for directories instead of
+	      --include/exclude
+
 Tue Mar  1 02:16:15 CET 2005 (tk)
 ---------------------------------
   * clamscan: respect --exclude/include when entering directories (requested
