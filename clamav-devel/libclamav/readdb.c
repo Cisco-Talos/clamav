@@ -480,7 +480,7 @@ static int cli_loaddb(FILE *fd, struct cl_node **root, unsigned int *signo)
 static int cli_loadndb(FILE *fd, struct cl_node **root, unsigned int *signo)
 {
 	char buffer[FILEBUFF], *sig, *virname, *offset, *pt;
-	int line = 0, ret = 0;
+	int line = 0, sigs = 0, ret = 0;
 	unsigned short target;
 
 
@@ -511,6 +511,7 @@ static int cli_loadndb(FILE *fd, struct cl_node **root, unsigned int *signo)
 
     while(fgets(buffer, FILEBUFF, fd)) {
 	line++;
+	sigs++;
 	cli_chomp(buffer);
 
 	if(!(virname = cli_strtok(buffer, 0, ":"))) {
@@ -518,8 +519,29 @@ static int cli_loadndb(FILE *fd, struct cl_node **root, unsigned int *signo)
 	    break;
 	}
 
+	if((pt = cli_strtok(buffer, 4, ":"))) {
+	    if(!isdigit(*pt)) {
+		free(virname);
+		free(pt);
+		ret = CL_EMALFDB;
+		break;
+	    }
+
+	    if(atoi(pt) > cl_retflevel()) {
+		cli_warnmsg("Signature for %s requires new ClamAV version. Please update!\n", virname);
+		sigs--;
+		free(virname);
+		free(pt);
+		continue;
+	    }
+
+	    free(pt);
+	}
+
 	if(!(pt = cli_strtok(buffer, 1, ":")) || !isdigit(*pt)) {
 	    free(virname);
+	    if(pt)
+		free(pt);
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -568,7 +590,7 @@ static int cli_loadndb(FILE *fd, struct cl_node **root, unsigned int *signo)
     }
 
     if(signo)
-	*signo += line;
+	*signo += sigs;
 
     return 0;
 }
