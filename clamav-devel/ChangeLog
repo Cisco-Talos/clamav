@@ -1,3 +1,8 @@
+Mon Aug  2 12:28:31 CEST 2004 (tk)
+----------------------------------
+  * clamd: scanstream: protect access to static memory referenced by
+	   gethostbyname (thanks to David Champion <dgc*uchicago.edu>)
+
 Sun Aug  1 09:21:50 BST 2004 (njh)
 ----------------------------------
   * libclamav/blob.c:	Ensure attachments with pathnames are scanned under
