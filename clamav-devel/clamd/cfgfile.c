@@ -143,8 +143,7 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 				    fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires string as argument.\n", line, name);
 				    return NULL;
 				}
-				// FIXME: this one is an ugly hack of the above
-				// case
+				/* FIXME: this one is an ugly hack of the above case */
 				free(arg);
 				arg = strstr(buff, " ");
 				arg = strdup(++arg);

@@ -49,7 +49,9 @@ int localserver(const struct optstruct *opt, const struct cfgstruct *copt, struc
 
     if((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
 	estr = strerror(errno);
-	//fprintf(stderr, "ERROR: socket() error: %s\n", estr);
+	/* 
+	fprintf(stderr, "ERROR: socket() error: %s\n", estr);
+	*/
 	logg("!Socket allocation error: %s\n", estr);
 	exit(1);
     }
@@ -95,7 +97,9 @@ int localserver(const struct optstruct *opt, const struct cfgstruct *copt, struc
 
     if(listen(sockfd, backlog) == -1) {
 	estr = strerror(errno);
-	//fprintf(stderr, "ERROR: listen() error: %s\n", estr);
+	/*
+	fprintf(stderr, "ERROR: listen() error: %s\n", estr);
+	*/
 	logg("!listen() error: %s\n", estr);
 	exit(1);
     }

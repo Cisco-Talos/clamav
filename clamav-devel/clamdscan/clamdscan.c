@@ -99,7 +99,7 @@ void clamscan(struct optstruct *opt)
     gettimeofday(&t1, &tz);
     ret = client(opt);
 
-//Implement STATUS in clamd
+/* Implement STATUS in clamd */
     if(!optl(opt, "disable-summary")) {
 	gettimeofday(&t2, &tz);
 	ds = t2.tv_sec - t1.tv_sec;

@@ -418,9 +418,11 @@ int urarlib_get(void *output,
   if (ArcPtr!=NULL){
       /* FIXME: possible FILE* leak */
       cli_dbgmsg("%s:%d NOT Close ArcPtr from fd %d\n", __FILE__, __LINE__, desc);
-      // fclose(ArcPtr);
-      // lseek(desc, 0, SEEK_SET);
-      // ArcPtr = NULL;
+      /*
+      fclose(ArcPtr);
+      lseek(desc, 0, SEEK_SET);
+      ArcPtr = NULL;
+      */
   }
 #endif
 
@@ -1814,66 +1816,66 @@ static void DecodeNumber(struct Decode *Deco)
  __asm {
 
     xor eax, eax
-    mov eax, BitField                       // N=BitField & 0xFFFE;
+    mov eax, BitField                       /* N=BitField & 0xFFFE; */
     and eax, 0xFFFFFFFE
     mov [N], eax
-    mov edx, [Deco]                         // EAX=N, EDX=Deco
+    mov edx, [Deco]                         /* EAX=N, EDX=Deco */
 
-          cmp  eax, dword ptr[edx + 8*4 + 4]// if (N<Dec->DecodeLen[8])
+          cmp  eax, dword ptr[edx + 8*4 + 4] /* if (N<Dec->DecodeLen[8]) */
           jae  else_G
 
-             cmp  eax, dword ptr[edx + 4*4 + 4]// if (N<Dec->DecodeLen[4])
+             cmp  eax, dword ptr[edx + 4*4 + 4] /* if (N<Dec->DecodeLen[4]) */
              jae  else_F
 
 
-                cmp  eax, dword ptr[edx + 2*4 + 4]// if (N<Dec->DecodeLen[2])
+                cmp  eax, dword ptr[edx + 2*4 + 4] /* if (N<Dec->DecodeLen[2]) */
                 jae  else_C
 
-                   cmp  eax, dword ptr[edx + 1*4 + 4]// if (N<Dec->DecodeLen[1])
+                   cmp  eax, dword ptr[edx + 1*4 + 4] /* if (N<Dec->DecodeLen[1]) */
                    jae  else_1
-                   mov  I, 1                         //  I=1;
+                   mov  I, 1                         /*  I=1; */
                    jmp  next_1
-                 else_1:                             // else
-                   mov  I, 2                         //  I=2;
+                 else_1:                             /* else */
+                   mov  I, 2                         /*  I=2; */
                  next_1:
 
                 jmp  next_C
-              else_C:                             // else
+              else_C:                             /* else */
 
-                   cmp  eax, dword ptr[edx + 3*4 + 4]// if (N<Dec->DecodeLen[3])
+                   cmp  eax, dword ptr[edx + 3*4 + 4] /* if (N<Dec->DecodeLen[3]) */
                    jae  else_2
-                   mov  I, 3                         //  I=3;
+                   mov  I, 3                         /*  I=3; */
                    jmp  next_2
-                 else_2:                             // else
-                   mov  I, 4                         //  I=4;
+                 else_2:                             /* else */
+                   mov  I, 4                         /*  I=4; */
                  next_2:
 
-              next_C:                             // else
+              next_C:                             /* else */
 
              jmp  next_F
            else_F:
 
 
-             cmp  eax, dword ptr[edx + 6*4 + 4]// if (N<Dec->DecodeLen[6])
+             cmp  eax, dword ptr[edx + 6*4 + 4] /* if (N<Dec->DecodeLen[6]) */
              jae  else_E
 
-                cmp  eax, dword ptr[edx + 5*4 + 4]// if (N<Dec->DecodeLen[5])
+                cmp  eax, dword ptr[edx + 5*4 + 4] /* if (N<Dec->DecodeLen[5]) */
                 jae  else_3
-                mov  I, 5                         //  I=5;
+                mov  I, 5                         /*  I=5; */
                 jmp  next_3
-              else_3:                             // else
-                mov  I, 6                         //  I=6;
+              else_3:                             /* else */
+                mov  I, 6                         /*  I=6; */
               next_3:
 
              jmp  next_E
-           else_E:                             // else
+           else_E:                             /* else */
 
-                cmp  eax, dword ptr[edx + 7*4 + 4]// if (N<Dec->DecodeLen[7])
+                cmp  eax, dword ptr[edx + 7*4 + 4] /* if (N<Dec->DecodeLen[7]) */
                 jae  else_4
-                mov  I, 7                         //  I=7;
+                mov  I, 7                         /*  I=7; */
                 jmp  next_4
-              else_4:                             // else
-                mov  I, 8                         //  I=8;
+              else_4:                             /* else */
+                mov  I, 8                         /*  I=8; */
               next_4:
 
            next_E:
@@ -1883,51 +1885,51 @@ static void DecodeNumber(struct Decode *Deco)
           jmp  next_G
         else_G:
 
-          cmp  eax, dword ptr[edx + 12*4 + 4] // if (N<Dec->DecodeLen[12])
+          cmp  eax, dword ptr[edx + 12*4 + 4] /* if (N<Dec->DecodeLen[12]) */
           jae  else_D
 
-             cmp  eax, dword ptr[edx + 10*4 + 4]// if (N<Dec->DecodeLen[10])
+             cmp  eax, dword ptr[edx + 10*4 + 4] /* if (N<Dec->DecodeLen[10]) */
              jae  else_B
 
-                cmp  eax, dword ptr[edx + 9*4 + 4]// if (N<Dec->DecodeLen[9])
+                cmp  eax, dword ptr[edx + 9*4 + 4] /* if (N<Dec->DecodeLen[9]) */
                 jae  else_5
-                mov  I, 9                         //  I=9;
+                mov  I, 9                         /*  I=9; */
                 jmp  next_5
-              else_5:                             // else
-                mov  I, 10                         //  I=10;
+              else_5:                             /* else */
+                mov  I, 10                         /*  I=10; */
               next_5:
 
              jmp  next_B
-           else_B:                             // else
+           else_B:                             /* else */
 
-                cmp  eax, dword ptr[edx + 11*4 + 4]// if (N<Dec->DecodeLen[11])
+                cmp  eax, dword ptr[edx + 11*4 + 4] /* if (N<Dec->DecodeLen[11]) */
                 jae  else_6
-                mov  I, 11                         //  I=11;
+                mov  I, 11                         /*  I=11; */
                 jmp  next_6
-              else_6:                             // else
-                mov  I, 12                         //  I=12;
+              else_6:                              /* else */
+                mov  I, 12                         /*  I=12; */
               next_6:
 
            next_B:
 
 
           jmp  next_D
-        else_D:                             // else
+        else_D:                             /* else */
 
-               cmp  eax, dword ptr[edx + 14*4 + 4]// if (N<Dec->DecodeLen[14])
+               cmp  eax, dword ptr[edx + 14*4 + 4] /* if (N<Dec->DecodeLen[14]) */
                jae  else_A
 
-                  cmp  eax, dword ptr[edx + 13*4 + 4]// if (N<Dec->DecodeLen[13])
+                  cmp  eax, dword ptr[edx + 13*4 + 4] /* if (N<Dec->DecodeLen[13]) */
                   jae  else_7
-                  mov  I, 13                         //  I=13;
+                  mov  I, 13                         /*  I=13; */
                   jmp  next_7
-                 else_7:                             // else
-                  mov  I, 14                         //  I=14;
+                 else_7:                             /* else */
+                  mov  I, 14                         /*  I=14; */
                  next_7:
 
                jmp  next_A
-              else_A:                             // else
-               mov  I, 15                         //  I=15;
+              else_A:                             /* else */
+               mov  I, 15                         /*  I=15; */
               next_A:
 
         next_D:
@@ -2546,19 +2548,19 @@ void SetCryptKeys(char *Password)
                     mov ebx, Offset SubstTable
                     mov edx, ebx
 
-                    xor ecx, ecx            // read SubstTable[N1]...
+                    xor ecx, ecx            /* read SubstTable[N1]... */
                     mov cl, N1
                     add ebx, ecx
                     mov al, byte ptr[ebx]
 
-                    mov cl, N1              // read SubstTable[(N1+I+K)&0xFF]...
+                    mov cl, N1              /* read SubstTable[(N1+I+K)&0xFF]... */
                     add ecx, I
                     add ecx, K
                     and ecx, 0xFF
                     add edx, ecx
                     mov ah, byte ptr[edx]
 
-                    mov  byte ptr[ebx], ah  // and write back
+                    mov  byte ptr[ebx], ah  /* and write back */
                     mov  byte ptr[edx], al
 
                }

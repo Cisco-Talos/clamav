@@ -223,7 +223,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 	uint16_t ooff;
 	uint8_t byte_count;
 	uint32_t offset;
-	uint32_t LidA;  //Language identifiers
+	uint32_t LidA;  /* Language identifiers */
 	uint32_t LidB;
 	uint16_t CharSet;
 	uint16_t LenA;
