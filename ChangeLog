@@ -1,3 +1,7 @@
+Tue Mar  2 13:04:15 GMT 2004 (trog)
+-----------------------------------
+  * clamd: intercept but ignore SIGPIPE, FreeBSD barfs
+
 Tue Mar  2 09:35:39 CET 2004 (tk)
 ---------------------------------
   * clamd: removed x86 dazuko object files (thanks to Fajar A. Nugraha

@@ -90,8 +90,6 @@ void scanner_thread(void *arg)
 
 void sighandler_th(int sig)
 {
-	//time_t currtime;
-
     switch(sig) {
 	case SIGINT:
 	case SIGTERM:
@@ -106,6 +104,9 @@ void sighandler_th(int sig)
 	case SIGHUP:
 	    sighup = 1;
 	    break;
+
+	default:
+	    break; /* Take no action on other signals - e.g. SIGPIPE */
     }
 }
 
@@ -343,6 +344,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     sigdelset(&sigset, SIGTERM);
     sigdelset(&sigset, SIGSEGV);
     sigdelset(&sigset, SIGHUP);
+    sigdelset(&sigset, SIGPIPE);
     sigprocmask(SIG_SETMASK, &sigset, NULL);
  
     /* SIGINT, SIGTERM, SIGSEGV */
@@ -351,13 +353,14 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     sigaddset(&sigact.sa_mask, SIGINT);
     sigaddset(&sigact.sa_mask, SIGTERM);
     sigaddset(&sigact.sa_mask, SIGHUP);
+    sigaddset(&sigact.sa_mask, SIGPIPE);
     sigaction(SIGINT, &sigact, NULL);
     sigaction(SIGTERM, &sigact, NULL);
-
+    sigaction(SIGHUP, &sigact, NULL);
+    sigaction(SIGPIPE, &sigact, NULL);
+    
     if(!debug_mode)
 	sigaction(SIGSEGV, &sigact, NULL);
-
-    sigaction(SIGHUP, &sigact, NULL);
 
 #if defined(C_BIGSTACK) || defined(C_BSD)
     /*
