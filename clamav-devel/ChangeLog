@@ -1,3 +1,17 @@
+Thu Apr 22 17:48:49 BST 2004 (njh)
+----------------------------------
+ * clamav-milter: No need to parse the received line if --headers is given
+		If -outgoing is given put generated emails in the deferred
+			queue to avoid the milter being called twice at the
+			same time (one on the incoming one on the outgoing)
+		header_list_print, ensure From lines are escaped, may not be
+			needed but it is better to be on the safe side
+		When loadbalancing, fail to start only if no servers can be
+			reached (used to fail if any one server could not be
+			reached)
+		Not all servers were load balanced
+ * docs/man:	Clarified load balancing specification
+
 Wed Apr 21 16:28:49 BST 2004 (njh)
 ----------------------------------
  * clamav-milter: If /dev/console fails to open, open /dev/null instead on fds 1
