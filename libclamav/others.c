@@ -360,3 +360,55 @@ int cli_rmdirs(const char *dirname)
     closedir(dd);
     return 0;
 }
+
+/* Function: readn
+        Try hard to read the requested number of bytes
+*/
+int cli_readn(int fd, void *buff, unsigned int count)
+{
+        int retval;
+        unsigned int todo;
+        unsigned char *current;
+                                                                                                                                    
+        todo = count;
+        current = (unsigned char *) buff;
+                                                                                                                                    
+        do {
+                retval = read(fd, current, todo);
+                if (retval == 0) {
+                        return (count - todo);
+                }
+                if (retval < 0) {
+                        return -1;
+                }
+                todo -= retval;
+                current += retval;
+        } while (todo > 0);
+                                                                                                                                    
+        return count;
+}
+                                                                                                                                    
+/* Function: writen
+        Try hard to write the specified number of bytes
+*/
+int cli_writen(int fd, void *buff, unsigned int count)
+{
+        int retval;
+        unsigned int todo;
+        unsigned char *current;
+                                                                                                                                    
+        todo = count;
+        current = (unsigned char *) buff;
+                                                                                                                                    
+        do {
+                retval = write(fd, current, todo);
+                if (retval < 0) {
+                        return -1;
+                }
+                todo -= retval;
+                current += retval;
+        } while (todo > 0);
+                                                                                                                                    
+        return count;
+}
+

@@ -1,3 +1,6 @@
+Fri Mar 26 09:47:50 GMT 2004 (trog)
+  * libclamav: Remove duplicate code. Fix memory leak.
+
 Thu Mar 25 22:51:53 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Removed even more calls to realloc and some duplicate code
