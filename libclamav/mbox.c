@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.82  2004/06/25 13:56:38  nigelhorne
+ * Optimise messages without other messages encapsulated within them
+ *
  * Revision 1.81  2004/06/24 21:36:38  nigelhorne
  * Plug memory leak with large number of attachments
  *
@@ -231,7 +234,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.81 2004/06/24 21:36:38 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.82 2004/06/25 13:56:38 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -306,7 +309,7 @@ static	void	print_trace(int use_syslog);
 
 typedef enum    { FALSE = 0, TRUE = 1 } bool;
 
-static	message	*parseEmailHeaders(const message *m, const table_t *rfc821Table);
+static	message	*parseEmailHeaders(message *m, const table_t *rfc821Table, bool destroy);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
 static	int	parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, const char *dir, table_t *rfc821Table, table_t *subtypeTable);
 static	int	boundaryStart(const char *line, const char *boundary);
@@ -488,7 +491,7 @@ cl_mbox(const char *dir, int desc)
 				/*
 				 * End of a message in the mail box
 				 */
-				body = parseEmailHeaders(m, rfc821Table);
+				body = parseEmailHeaders(m, rfc821Table, TRUE);
 				messageDestroy(m);
 				if(messageGetBody(body))
 					if(!parseEmailBody(body,  NULL, 0, NULL, dir, rfc821Table, subtypeTable)) {
@@ -534,7 +537,7 @@ cl_mbox(const char *dir, int desc)
 
 	retcode = 0;
 
-	body = parseEmailHeaders(m, rfc821Table);
+	body = parseEmailHeaders(m, rfc821Table, TRUE);
 	messageDestroy(m);
 	/*
 	 * Write out the last entry in the mailbox
@@ -563,13 +566,20 @@ cl_mbox(const char *dir, int desc)
  * This function parses the headers of m and sets the message's arguments
  *
  * Returns the message's body with the correct arguments set
+ *
+ * The downside of this approach is that for a short time we have two copies
+ * of the message in memory, the upside is that it makes for easier parsing
+ * of encapsulated messages, and in the long run uses less memory in those
+ * scenarios
+ * BUT: if 'destroy' is set, the caller has given us a hint than 'm' will
+ * not be used again before it is destroyed, so we can trash it
  */
 static message *
-parseEmailHeaders(const message *m, const table_t *rfc821Table)
+parseEmailHeaders(message *m, const table_t *rfc821Table, bool destroy)
 {
 	bool inContinuationHeader = FALSE;	/* state machine: ugh */
 	bool inHeader = TRUE;
-	const text *t;
+	text *t;
 	message *ret;
 
 	cli_dbgmsg("parseEmailHeaders\n");
@@ -579,16 +589,21 @@ parseEmailHeaders(const message *m, const table_t *rfc821Table)
 
 	ret = messageCreate();
 
-	for(t = messageGetBody(m); t; t = t->t_next) {
+	for(t = (text *)messageGetBody(m); t; t = t->t_next) {
 		char *buffer;
 #ifdef CL_THREAD_SAFE
 		char *strptr;
 #endif
 
 		if(t->t_text) {
-			buffer = strdup(t->t_text);
-			if(buffer == NULL)
-				break;
+			if(destroy) {
+				buffer = t->t_text;
+				t->t_text = NULL;
+			} else {
+				buffer = strdup(t->t_text);
+				if(buffer == NULL)
+					break;
+			}
 			if(cli_chomp(buffer) == 0) {
 				free(buffer);
 				buffer = NULL;
@@ -605,8 +620,6 @@ parseEmailHeaders(const message *m, const table_t *rfc821Table)
 			inContinuationHeader = TRUE;
 
 		if(inContinuationHeader) {
-			const char *ptr;
-
 			if(!continuationMarker(buffer))
 				inContinuationHeader = FALSE;	 /* no more args */
 
@@ -614,6 +627,8 @@ parseEmailHeaders(const message *m, const table_t *rfc821Table)
 			 * Add all the arguments on the line
 			 */
 			if(buffer) {
+				const char *ptr;
+
 				for(ptr = strtok_r(buffer, ";", &strptr); ptr; ptr = strtok_r(NULL, ":", &strptr))
 					messageAddArgument(ret, ptr);
 				free(buffer);
@@ -1221,7 +1236,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						 * many nested levels are
 						 * involved.
 						 */
-						body = parseEmailHeaders(aMessage, rfc821Table);
+						body = parseEmailHeaders(aMessage, rfc821Table, TRUE);
 						/*
 						 * We've fininished with the
 						 * original copy of the message,
@@ -1247,7 +1262,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						 */
 						cli_dbgmsg("Found multipart inside multipart\n");
 						if(aMessage) {
-							body = parseEmailHeaders(aMessage, rfc821Table);
+							body = parseEmailHeaders(aMessage, rfc821Table, TRUE);
 							if(body) {
 								assert(aMessage == messages[i]);
 								messageDestroy(messages[i]);
@@ -1449,7 +1464,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 			}
 			if((strcasecmp(mimeSubtype, "rfc822") == 0) ||
 			   (strcasecmp(mimeSubtype, "delivery-status") == 0)) {
-				message *m = parseEmailHeaders(mainMessage, rfc821Table);
+				message *m = parseEmailHeaders(mainMessage, rfc821Table, FALSE);
 				if(m) {
 					cli_dbgmsg("Decode rfc822");
 
@@ -2116,7 +2131,7 @@ print_trace(int use_syslog)
 
 	if(use_syslog == 0)
 		cli_dbgmsg("Backtrace of pid %d:\n", pid);
-	else 
+	else
 		syslog(LOG_ERR, "Backtrace of pid %d:", pid);
 
 	for(i = 0; i < size; i++)
