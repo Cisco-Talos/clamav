@@ -1,3 +1,7 @@
+Mon Mar 29 15:45:15 BST 2004 (trog)
+-----------------------------------
+  * clamd: add support for ReadTimeout option
+
 Mon Mar 29 10:33:52 BST 2004 (njh)
 ----------------------------------
   * libclamav:	Tidy up code and reduce shuffling of data

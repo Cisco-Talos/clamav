@@ -194,7 +194,7 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_node 
 
 int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt)
 {
-	int ret, portscan = CL_DEFAULT_MAXPORTSCAN, sockfd, port, acceptd, tmpd, bread, retval;
+	int ret, portscan = CL_DEFAULT_MAXPORTSCAN, sockfd, port, acceptd, tmpd, bread, retval, timeout;
 	long int size = 0, maxsize = 0;
 	short bound = 0;
 	const char *virname;
@@ -221,6 +221,12 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	    bound = 1;
 
     }
+    
+    if((cpt = cfgopt(copt, "ReadTimeout"))) {
+	timeout = cpt->numarg;
+    } else {
+	timeout = CL_DEFAULT_SCANTIMEOUT;
+    }
 
     if(!bound && !portscan) {
 	mdprintf(odesc, "ERROR\n");
@@ -231,7 +237,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	mdprintf(odesc, "PORT %d\n", port);
     }
 
-    retval = poll_fd(sockfd, CL_DEFAULT_SCANTIMEOUT);
+    retval = poll_fd(sockfd, timeout);
     switch (retval) {
     case 0: /* timeout */
 	mdprintf(sockfd, "ERROR\n");
@@ -268,7 +274,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	if((cpt = cfgopt(copt, "StreamMaxLength")))
 	    maxsize = cpt->numarg;
 
-	while((retval = poll_fd(acceptd, CL_DEFAULT_SCANTIMEOUT)) == 1) {
+	while((retval = poll_fd(acceptd, timeout)) == 1) {
 	    bread = read(acceptd, buff, sizeof(buff));
 	    if (bread <= 0) {
 		break;
