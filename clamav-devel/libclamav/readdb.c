@@ -336,12 +336,16 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 		for(i = 0; i < dbstat->no; i++)
 		    if(dbstat->stattab[i].st_ino == sb.st_ino) {
 			found = 1;
-			if(dbstat->stattab[i].st_mtime != sb.st_mtime)
+			if(dbstat->stattab[i].st_mtime != sb.st_mtime) {
+			    closedir(dd);
 			    return 1;
+			}
 		    }
 
-		if(!found)
+		if(!found) {
+		    closedir(dd);
 		    return 1;
+		}
 	    }
 	}
     }
