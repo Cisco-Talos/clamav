@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: binhex.c,v $
+ * Revision 1.10  2004/12/16 15:29:51  nigelhorne
+ * Tidy
+ *
  * Revision 1.9  2004/11/28 22:06:39  nigelhorne
  * Tidy space only headers code
  *
@@ -42,7 +45,7 @@
  * First draft of binhex.c
  *
  */
-static	char	const	rcsid[] = "$Id: binhex.c,v 1.9 2004/11/28 22:06:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: binhex.c,v 1.10 2004/12/16 15:29:51 nigelhorne Exp $";
 
 #include "clamav.h"
 
@@ -85,7 +88,7 @@ cli_binhex(const char *dir, int desc)
 	struct stat statb;
 	char *buf, *start, *line;
 	size_t size;
-	int bytesleft;
+	long bytesleft;
 	message *m;
 	fileblob *fb;
 
@@ -102,8 +105,10 @@ cli_binhex(const char *dir, int desc)
 
 	size = statb.st_size;
 	start = buf = mmap(NULL, size, PROT_READ, MAP_PRIVATE, desc, 0);
-	if (buf == MAP_FAILED)
+	if(buf == MAP_FAILED) {
+		messageDestroy(m);
 		return CL_EMEM;
+	}
 
 	cli_dbgmsg("mmap'ed binhex file\n");
 
@@ -116,7 +121,7 @@ cli_binhex(const char *dir, int desc)
 
 		/*printf("%d: ", bytesleft);*/
 
-		for(ptr = buf; bytesleft && *ptr && (*ptr != '\r') && (*ptr != '\n'); ptr++) {
+		for(ptr = buf; bytesleft && (*ptr != '\n') && (*ptr != '\r'); ptr++) {
 			length++;
 			--bytesleft;
 		}
@@ -133,6 +138,10 @@ cli_binhex(const char *dir, int desc)
 		if(messageAddStr(m, line) < 0)
 			break;
 
+		if((bytesleft > 0) && (*ptr == '\r')) {
+			ptr++;
+			bytesleft--;
+		}
 		buf = ++ptr;
 		bytesleft--;
 	}

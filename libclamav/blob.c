@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.27  2004/12/16 15:29:51  nigelhorne
+ * Tidy
+ *
  * Revision 1.26  2004/12/04 17:03:19  nigelhorne
  * Fix filename handling on MACOS/X
  *
@@ -80,7 +83,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.26 2004/12/04 17:03:19 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.27 2004/12/16 15:29:51 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -209,7 +212,8 @@ void
 blobAddData(blob *b, const unsigned char *data, size_t len)
 {
 #ifdef	HAVE_GETPAGESIZE
-	const int pagesize = getpagesize();
+	static int pagesize;
+	int growth;
 #endif
 
 	assert(b != NULL);
@@ -237,19 +241,30 @@ blobAddData(blob *b, const unsigned char *data, size_t len)
 	 * the most optimum
 	 */
 #ifdef	HAVE_GETPAGESIZE
+	if(pagesize == 0) {
+		pagesize = getpagesize();
+		if(pagesize == 0)
+			pagesize = 4096;
+	}
+	growth = pagesize;
+	if(len >= pagesize)
+		growth = ((len / pagesize) + 1) * pagesize;
+
+	/*printf("len %u, growth = %u\n", len, growth);*/
+
 	if(b->data == NULL) {
 		assert(b->len == 0);
 		assert(b->size == 0);
 
-		b->size = pagesize;
-		b->data = cli_malloc(pagesize);
+		b->size = growth;
+		b->data = cli_malloc(growth);
 	} else if(b->size < b->len + len) {
-		unsigned char *p = cli_realloc(b->data, b->size + pagesize);
+		unsigned char *p = cli_realloc(b->data, b->size + growth);
 
 		if(p == NULL)
 			return;
 
-		b->size += pagesize;
+		b->size += growth;
 		b->data = p;
 	}
 #else
@@ -467,6 +482,7 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 	snprintf(fullname, sizeof(fullname) - 1 - suffixLen, "%s/%.*sXXXXXX", dir,
 		(int)(sizeof(fullname) - 9 - suffixLen - strlen(dir)), filename);
 #if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN)
+	cli_dbgmsg("fileblobSetFilename: mkstemp(%s)\n", fullname);
 	fd = mkstemp(fullname);
 #else
 	(void)mktemp(fullname);
@@ -553,4 +569,3 @@ sanitiseName(char *name)
 		name++;
 	}
 }
-
