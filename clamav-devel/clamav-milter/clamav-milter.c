@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.176  2005/02/02 08:30:24  nigelhorne
+ * Call watchdog when neither SESSION not external is given
+ *
  * Revision 1.175  2005/02/01 08:54:45  nigelhorne
  * X-Virus-Status work
  *
@@ -536,9 +539,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.175 2005/02/01 08:54:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.176 2005/02/02 08:30:24 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.81f"
+#define	CM_VERSION	"0.81g"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -764,9 +767,7 @@ static	void	setsubject(SMFICTX *ctx, const char *virusname);
 static	int	clamfi_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
 static	int	isLocalAddr(in_addr_t addr);
 static	void	clamdIsDown(void);
-#ifdef	SESSION
 static	void	*watchdog(void *a);
-#endif
 static	int	logg_facility(const char *name);
 static	void	quit(void);
 static	void	broadcast(const char *mess);
@@ -901,9 +902,9 @@ static	struct	session {
 } *sessions;	/* max_children elements in the array */
 static	pthread_mutex_t sstatus_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static	pthread_cond_t	watchdog_cond = PTHREAD_COND_INITIALIZER;
-
 #endif	/*SESSION*/
+
+static	pthread_cond_t	watchdog_cond = PTHREAD_COND_INITIALIZER;
 
 #ifndef	SHUT_RD
 #define	SHUT_RD		0
@@ -1004,9 +1005,7 @@ main(int argc, char **argv)
 	const struct cfgstruct *cpt;
 	const char *pidfile = NULL;
 	char version[VERSION_LENGTH + 1];
-#ifdef	SESSION
 	pthread_t tid;
-#endif
 	struct smfiDesc smfilter = {
 		"ClamAv", /* filter name */
 		SMFI_VERSION,	/* version code -- leave untouched */
@@ -1877,8 +1876,8 @@ main(int argc, char **argv)
 #ifdef	SESSION
 	/* FIXME: add localSocket support to watchdog */
 	if(localSocket == NULL)
-		pthread_create(&tid, NULL, watchdog, NULL);
 #endif
+		pthread_create(&tid, NULL, watchdog, NULL);
 
 	if((cpt = cfgopt(copt, "PidFile")) != NULL)
 		pidFile = cpt->strarg;
@@ -4362,8 +4361,8 @@ qfile(struct privdata *privdata, const char *sendmailId, const char *virusname)
 #ifdef	C_DARWIN
 		*ptr &= '\177';
 #endif
-#if	defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32)
-		if(strchr("/*?<>|\"+=,;: ", *ptr))
+#if	defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32) || defined(C_OS2)
+		if(strchr("/*?<>|\\\"+=,;:\t ", *ptr))
 #else
 		if(*ptr == '/')
 #endif
@@ -4758,6 +4757,64 @@ watchdog(void *a)
 		if(i == max_children)
 			clamdIsDown();
 		pthread_mutex_unlock(&sstatus_mutex);
+	}
+	cli_dbgmsg("watchdog quits\n");
+	return NULL;
+}
+#else	/*!SESSION*/
+/*
+ * Reload the database from time to time, when using the internal scanner
+ */
+static void *
+watchdog(void *a)
+{
+	static pthread_mutex_t watchdog_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+	if(external)
+		return NULL;
+
+	while(!quitting) {
+		struct timespec ts;
+		struct timeval tp;
+
+		gettimeofday(&tp, NULL);
+
+		ts.tv_sec = tp.tv_sec + readTimeout - 1;
+		ts.tv_nsec = tp.tv_usec * 1000;
+		cli_dbgmsg("watchdog sleeps\n");
+		pthread_mutex_lock(&watchdog_mutex);
+		/*
+		 * Sometimes this returns EPIPE which isn't listed as a
+		 * return value in the Linux man page for pthread_cond_timedwait
+		 * so I'm not sure why it happens
+		 */
+		switch(pthread_cond_timedwait(&watchdog_cond, &watchdog_mutex, &ts)) {
+			case ETIMEDOUT:
+			case 0:
+				break;
+			default:
+				perror("pthread_cond_timedwait");
+		}
+		cli_dbgmsg("watchdog wakes\n");
+		pthread_mutex_unlock(&watchdog_mutex);
+
+		/*
+		 * Re-load the database if the server's not busy.
+		 * TODO: If a reload is needed go into a mode when
+		 *	new scans aren't accepted, to force the number
+		 *	of children to 0 so that we can reload,
+		 *	otherwise a reload may not occur on overloaded
+		 *	servers
+		 */
+		pthread_mutex_lock(&n_children_mutex);
+		if((n_children == 0) && (cl_statchkdir(&dbstat) == 1)) {
+			cl_statfree(&dbstat);
+			if(use_syslog)
+				syslog(LOG_WARNING, _("Loading new database"));
+			if(loadDatabase() != 0)
+				exit(EX_CONFIG);
+		}
+		pthread_mutex_unlock(&n_children_mutex);
 	}
 	cli_dbgmsg("watchdog quits\n");
 	return NULL;

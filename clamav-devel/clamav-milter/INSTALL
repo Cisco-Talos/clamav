@@ -675,6 +675,7 @@ Changes
 			X-Virus-Status now says that virus that it's infected
 				with, suggestion by "Hank Beatty"
 				<hbeatty@starband.net>
+0.81g	2/2/05:		Call watchdog if neither --external nor SESSION
 
 INTERNATIONALISATION
 
