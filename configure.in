@@ -355,6 +355,11 @@ then
     AC_DEFINE(BUILD_CLAMD)
 fi
 
+if test "$have_milter" = "yes"
+then
+    AC_PATH_PROG(SENDMAIL, sendmail, /usr/lib/sendmail, $PATH:/usr/lib:/usr/sbin:/etc:/usr/local/lib:/usr/local/sbin:/usr/bin:/usr/local/bin)
+fi
+
 dnl Check for clamav in /etc/passwd
 
 if test "$test_clamav" = "yes"

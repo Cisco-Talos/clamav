@@ -1,3 +1,7 @@
+Mon Dec  8 19:51:23 CET 2003 (tk)
+---------------------------------
+  * configure: locate the sendmail executable
+
 Sun Dec  7 22:46:15 CET 2003 (tk)
 ---------------------------------
   * freshclam: use the TCPAddr parameter (patch from David S. Madole)

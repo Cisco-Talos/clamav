@@ -30,7 +30,7 @@ man_MANS = ../docs/man/clamav-milter.8
 endif
 endif
 
-DEFS = @DEFS@
+DEFS = @DEFS@ -DSENDMAIL_BIN=\"@SENDMAIL@\"
 # CLAMD_LIBS is used, because clamav-milter requires the same libraries as clamd
 LIBS = -L../libclamav -lclamav -L/usr/lib/libmilter -lmilter @CLAMD_LIBS@
 INCLUDES = -I../clamd -I../libclamav -I../clamscan
