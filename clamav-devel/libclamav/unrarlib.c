@@ -303,11 +303,11 @@ static struct NewMainArchiveHeader NewMhd;
 static struct NewFileHeader NewLhd;
 static struct BlockHeader BlockHead;
 
-static UBYTE *TempMemory;                          /* temporary unpack-buffer      */
-static char *CommMemory;
+static UBYTE *TempMemory = NULL;                          /* temporary unpack-buffer      */
+static char *CommMemory = NULL;
 
 
-static UBYTE *UnpMemory;
+static UBYTE *UnpMemory = NULL;
 static char ArgName[NM];                           /* current file in rar archive  */
 static char ArcFileName[NM];                       /* file to decompress           */
 
@@ -407,7 +407,8 @@ int urarlib_get(void *output,
   temp_output_buffer = NULL;
   temp_output_buffer_offset=size;           /* set size of the temp buffer  */
 
-  retcode = ExtrFile(desc);                     /* unpack file now!             */
+  retcode = ExtrFile(desc);                     /* unpack file now! */
+
 
   memset(Password,0,sizeof(Password));      /* clear password               */
 
@@ -423,9 +424,15 @@ int urarlib_get(void *output,
   }
 #endif
 
-  free(UnpMemory);                          /* free memory                  */
-  free(TempMemory);
-  free(CommMemory);
+  if(UnpMemory)
+    free(UnpMemory);
+
+  if(TempMemory)
+    free(TempMemory);
+
+  if(CommMemory)
+    free(CommMemory);
+
   UnpMemory=NULL;
   TempMemory=NULL;
   CommMemory=NULL;
@@ -433,7 +440,8 @@ int urarlib_get(void *output,
 
   if(retcode == FALSE)
   {
-    free(temp_output_buffer);               /* free memory and return NULL  */
+    if(temp_output_buffer)
+	free(temp_output_buffer);               /* free memory and return NULL  */
     temp_output_buffer=NULL;
     *(DWORD*)output=0;                      /* pointer on errors            */
     *size=0;
@@ -533,7 +541,6 @@ int urarlib_list(int desc, ArchiveList_struct *list)
     if ((ReadBlockResult = ReadBlock(FILE_HEAD | READSUBBLOCK)) <= 0) /* read name of the next  */
     {                                       /* file within the RAR archive  */
       cli_dbgmsg("Couldn't read next filename from archive (I/O error): %d\n", ReadBlockResult);
-      NoOfFilesInArchive = 0;
       break;                                /* error, file not found in     */
     }                                       /* archive or I/O error         */
     if (BlockHead.HeadType==SUB_HEAD)
@@ -590,9 +597,15 @@ int urarlib_list(int desc, ArchiveList_struct *list)
   }
 #endif
 
-  free(UnpMemory);                          /* free memory                  */
-  free(TempMemory);
-  free(CommMemory);
+  if(UnpMemory)
+    free(UnpMemory);
+
+  if(TempMemory)
+    free(TempMemory);
+
+  if(CommMemory)
+    free(CommMemory);
+
   UnpMemory=NULL;
   TempMemory=NULL;
   CommMemory=NULL;
@@ -957,9 +970,9 @@ BOOL ExtrFile(int desc)
 
   if ((UnpMemory=malloc(UNP_MEMORY))==NULL)
   {
-    debug_log("Can't allocate memory for decompression!");
+    cli_dbgmsg("unrarlib: Can't allocate memory for decompression!");
     return FALSE;
-  }
+  } else cli_dbgmsg("unrarlib: Allocated %d bytes.\n", UNP_MEMORY);
 
 #ifdef _USE_MEMORY_TO_MEMORY_DECOMPRESSION
   MemRARFile->offset+=NewMhd.HeadSize-MainHeadSize;
@@ -999,19 +1012,15 @@ BOOL ExtrFile(int desc)
     /* *** file found! ***                                                  */
     {
       {
-        temp_output_buffer=malloc(NewLhd.UnpSize);/* allocate memory for the*/
+	cli_dbgmsg("unrarlib: Allocating %d bytes\n", NewLhd.UnpSize);
+        if((temp_output_buffer=malloc(NewLhd.UnpSize)) == NULL) { ;/* allocate memory for the*/
+	    cli_errmsg("unrarlib: Can't malloc %d bytes\n", NewLhd.UnpSize);
+	    ReturnCode = FALSE;
+	    break;
+	}
       }
       *temp_output_buffer_offset=0;         /* file. The default offset     */
                                             /* within the buffer is 0       */
-
-      if(temp_output_buffer == NULL)
-      {
-        debug_log("can't allocate memory for the file decompression");
-        ReturnCode=FALSE;
-        break;                              /* error, can't extract file!   */
-      }
-
-
     }
 
     /* in case of a solid archive, we need to decompress any single file till
@@ -1040,12 +1049,15 @@ BOOL ExtrFile(int desc)
 
       if (NewLhd.Method==0x30)
       {
-        UnstoreFile();
+	cli_dbgmsg("unrarlib: Unstore method temporarily not supported\n");
+        /* UnstoreFile(); */
+        ReturnCode=FALSE;
+        break;                              /* error, can't extract file! */
       } else
       {
+	cli_dbgmsg("unrarlib: Unpack()\n");
         Unpack(UnpMemory, FileFound);
       }
-
 
 
 #ifdef _DO_CRC32_CHECK                      /* calculate CRC32              */
@@ -1072,7 +1084,9 @@ BOOL ExtrFile(int desc)
   } while(stricomp(ArgName, ArcFileName) != 0);/* exit if file is extracted */
 
   /* free memory, clear password and close archive                          */
-  free(UnpMemory);
+  if(UnpMemory)
+    free(UnpMemory);
+
   UnpMemory=NULL;
 #ifndef _USE_MEMORY_TO_MEMORY_DECOMPRESSION
   if (ArcPtr!=NULL){
@@ -1082,7 +1096,7 @@ BOOL ExtrFile(int desc)
   }
 #endif
 
-  return ReturnCode;                        /* file extracted successful!   */
+  return ReturnCode;
 }
 
 /* **************************************************************************
@@ -1241,7 +1255,7 @@ BOOL UnstoreFile(void)
   if ((long)(*temp_output_buffer_offset=UnpRead(temp_output_buffer,
                                                 NewLhd.UnpSize))==-1)
   {
-    debug_log("Read error of stored file!");
+    cli_dbgmsg("unrarlib: Read error of stored file!");
     return FALSE;
   }
   return TRUE;
@@ -1612,6 +1626,7 @@ unsigned int UnpRead(unsigned char *Addr,unsigned int Count)
     ReadSize=(unsigned int)((Count>(unsigned long)UnpPackedSize) ?
                                                   UnpPackedSize : Count);
 #ifdef _USE_MEMORY_TO_MEMORY_DECOMPRESSION
+    cli_dbgmsg("unrarlib: UnpREAD: Using memory->memory decompression\n");
     if(MemRARFile->data == NULL)
       return(0);
     RetCode=tread(MemRARFile, ReadAddr, ReadSize);
@@ -1627,6 +1642,9 @@ unsigned int UnpRead(unsigned char *Addr,unsigned int Count)
     UnpPackedSize-=RetCode;
       break;
   }
+
+  cli_dbgmsg("CurUnpRead == %d, TotalRead == %d, Count == %d, UnpPackedSize == %d\n", CurUnpRead, TotalRead, Count, UnpPackedSize);
+
   if (RetCode!= -1)
   {
     RetCode=TotalRead;
@@ -1634,7 +1652,7 @@ unsigned int UnpRead(unsigned char *Addr,unsigned int Count)
     {
       if (Encryption<20)
           {
-            debug_log("Old Crypt() not supported!");
+            cli_dbgmsg("unrarlib: Old Crypt() not supported!");
           }
       else
       {

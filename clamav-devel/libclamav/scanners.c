@@ -136,7 +136,6 @@ cl_node *root)
 
     pt= buff;
     length = SCANBUFF;
-
     while((bytes = read(desc, buff, SCANBUFF)) > 0) {
 
 	if(scanned != NULL)
@@ -286,6 +285,7 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 	} else {
 	    cli_dbgmsg("RAR -> Can't decompress file %s\n", rarlist->item.Name);
 	    fclose(tmp);
+	    tmp = NULL;
 	    ret = CL_ERAR; /* WinRAR 3.0 ? */
 	    break;
 	}
@@ -302,6 +302,9 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
     cli_scanrar_inuse = 0;
     pthread_cleanup_pop(0);
 #endif
+    
+    cli_dbgmsg("RAR -> Exit code: %d\n", ret);
+
     return ret;
 }
 
@@ -883,7 +886,6 @@ int cl_scanfile(const char *filename, const char **virname, unsigned long int *s
     if((fd = open(filename, O_RDONLY)) == -1)
 	return CL_EOPEN;
 
-    cli_dbgmsg("Scanning %s\n", filename);
     ret = cl_scandesc(fd, virname, scanned, root, limits, options);
     close(fd);
 
