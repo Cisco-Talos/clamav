@@ -1,3 +1,7 @@
+Mon Feb 16 14:19:42 CET 2004 (tk)
+---------------------------------
+  V 0.67-1 (increased version number of clamav-milter)
+
 Mon Feb 16 12:00:06 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	Added clamfi_free, this helps to ease the task
