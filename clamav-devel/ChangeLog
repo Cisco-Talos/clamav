@@ -1,3 +1,8 @@
+Fri Mar 19 16:00:51 CET 2004 (tk)
+---------------------------------
+  * libclamav: small cosmetic fixes in format strings, also added some
+	       statics (thanks to Dirk Mueller <dmuell*gmx.net>)
+
 Fri Mar 19 08:18:24 GMT 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	If an RFC822 message is found as part of a multipart
