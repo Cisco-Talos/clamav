@@ -1,3 +1,7 @@
+Tue Jul  6 04:22:02 CEST 2004 (tk)
+----------------------------------
+  * libclamav: pe: optimise UPX recognition. Respect archive limits.
+
 Tue Jul  6 01:46:41 CEST 2004 (tk)
 ----------------------------------
   * libclamav: pe, upx: add big-endian support

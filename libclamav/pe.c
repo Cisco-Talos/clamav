@@ -427,29 +427,6 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
     /* UPX support */
 
-    /* try to detect UPX code */
-
-    if(lseek(desc, ep + 0x78, SEEK_SET) == -1) {
-	cli_dbgmsg("lseek() failed\n");
-	free(section_hdr);
-	return CL_EIO;
-    }
-
-    if(read(desc, buff, 13) != 13) {
-	cli_dbgmsg("UPX: Can't read 13 bytes at 0x%x (%d)\n", ep + 0x78, ep + 0x78);
-    } else {
-	if(cli_memstr(UPX_NRV2B, 24, buff, 13)) {
-	    cli_dbgmsg("UPX: Looks like a NRV2B decompressor\n");
-	    upxfn = upx_inflate2b;
-	} else if(cli_memstr(UPX_NRV2D, 24, buff, 13)) {
-	    cli_dbgmsg("UPX: Looks like a NRV2D decompressor\n");
-	    upxfn = upx_inflate2d;
-	} else if(cli_memstr(UPX_NRV2E, 24, buff, 13)) {
-            cli_dbgmsg("UPX: Looks like a NRV2E decompressor\n");
-	    upxfn = upx_inflate2e;
-	}
-    }
-
     /* try to find the first section with physical size == 0 */
     found = 0;
     for(i = 0; i < nsections - 1; i++) {
@@ -478,6 +455,11 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	ssize = EC32(section_hdr[i + 1].SizeOfRawData);
 	dsize = EC32(section_hdr[i].VirtualSize) + EC32(section_hdr[i + 1].VirtualSize);
 
+	if(limits && limits->maxfilesize && (ssize > limits->maxfilesize || dsize > limits->maxfilesize)) {
+	    cli_dbgmsg("UPX: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize , limits->maxfilesize);
+	    return CL_CLEAN;
+	}
+
 	/* FIXME: use file operations in case of big files */
 	if((src = (char *) cli_malloc(ssize)) == NULL) {
 	    free(section_hdr);
@@ -497,6 +479,30 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    free(src);
 	    free(dest);
 	    return CL_EIO;
+	}
+
+	/* try to detect UPX code */
+
+	if(lseek(desc, ep + 0x78, SEEK_SET) == -1) {
+	    cli_dbgmsg("lseek() failed\n");
+	    free(section_hdr);
+	    return CL_EIO;
+	}
+
+	if(read(desc, buff, 13) != 13) {
+	    cli_dbgmsg("UPX: Can't read 13 bytes at 0x%x (%d)\n", ep + 0x78, ep + 0x78);
+	    return CL_EIO;
+	} else {
+	    if(cli_memstr(UPX_NRV2B, 24, buff, 13)) {
+		cli_dbgmsg("UPX: Looks like a NRV2B decompression routine\n");
+		upxfn = upx_inflate2b;
+	    } else if(cli_memstr(UPX_NRV2D, 24, buff, 13)) {
+		cli_dbgmsg("UPX: Looks like a NRV2D decompression routine\n");
+		upxfn = upx_inflate2d;
+	    } else if(cli_memstr(UPX_NRV2E, 24, buff, 13)) {
+		cli_dbgmsg("UPX: Looks like a NRV2E decompression routine\n");
+		upxfn = upx_inflate2e;
+	    }
 	}
 
 	if(upxfn) {
