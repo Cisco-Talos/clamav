@@ -1,3 +1,8 @@
+Sat Apr 10 08:02:20 BST 2004 (njh)
+----------------------------------
+  * docs/man/clamav-milter.8:	Clarified --force-scan (thanks to
+	Søren Thing Andersen <soeren@thing.dk>)
+
 Fri Apr  9 09:50:52 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Handle clamd giving up on StreamMaxLength too early
