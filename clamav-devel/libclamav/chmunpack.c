@@ -920,7 +920,8 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 	lzxd_free(stream);
 	
 	entry = file_l->next;
-	close(mf_out.desc);
+	fclose(mf_out.fh);
+	mf_out.fh = NULL;
 	
 	/* Reopen the file for reading */
 	mf_out.desc = open(filename, O_RDONLY);
@@ -978,7 +979,9 @@ abort:
 	free(mf_in.name);
 	fclose(mf_in.fh);
 	free(mf_out.name);
-	fclose(mf_out.fh);
+	if (mf_out.fh) {
+		fclose(mf_out.fh);
+	}
 	close(mf_out.desc);
 	return retval;
 }
