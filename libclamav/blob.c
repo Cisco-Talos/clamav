@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.26  2004/12/04 17:03:19  nigelhorne
+ * Fix filename handling on MACOS/X
+ *
  * Revision 1.25  2004/11/29 13:15:41  nigelhorne
  * Avoid crash if the output file didn't open
  *
@@ -77,7 +80,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.25 2004/11/29 13:15:41 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.26 2004/12/04 17:03:19 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -91,7 +94,7 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.25 2004/11/29 13:15:41 nigelhorne E
 
 #include <sys/param.h>	/* for NAME_MAX */
 
-#if	C_DARWIN
+#ifdef	C_DARWIN
 #include <sys/types.h>
 #endif
 
@@ -540,7 +543,8 @@ sanitiseName(char *name)
 	while(*name) {
 #ifdef	C_DARWIN
 		*name &= '\177';
-#elif	defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32)
+#endif
+#if	defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32)
 		if(strchr("/*?<>|\\\"+=,;: ", *name))
 #else
 		if(*name == '/')
