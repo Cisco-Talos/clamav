@@ -176,7 +176,11 @@ unsigned int decode_html_char_ref(unsigned char *cref,
 		} else {
 			value *= 10;
 		}
-		value += (*cref - '0');
+		if (isdigit(*cref)) {
+			value += (*cref - '0');
+		} else {
+			value += (tolower(*cref) - 'a' + 10);
+		}
 		cref++;
 		count++;
 	}
