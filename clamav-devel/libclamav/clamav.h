@@ -119,7 +119,8 @@ extern void cl_buildtrie(struct cl_node *root);
 
 extern void cl_freetrie(struct cl_node *root);
 
-extern char *cl_perror(int clerror);
+extern char *cl_strerror(int clerror);
+extern char *cl_perror(int clerror); /* deprecated */
 
 extern char *cl_md5buff(const char *buffer, unsigned int length);
 
@@ -133,6 +134,9 @@ extern short int *cl_hex2str(const char *hex);
 
 /* encode a buffer 'string' length of 'len' to a hexadecimal string */
 extern char *cl_str2hex(const char *string, unsigned int len);
+
+/* generate a pseudo-random number */
+extern unsigned int cl_rndnum(unsigned int max);
 
 #ifdef __cplusplus
 };

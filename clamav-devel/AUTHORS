@@ -9,10 +9,11 @@ Author of clamav-milter and the whole mbox code.
 
 Database developers:
 
+aCaB <acab@digitalfuture.it>
 Diego D'Ambra <da@softcom.dk>
 Jason Englander <jason@englanders.cc>
 Tomasz Kojm <zolw@konarski.edu.pl>
-
+Tomasz Papszun <tomek@lodz.tpsa.pl>
 
 TrashScan was written by Trashware <trashware@gmx.net>.
 
@@ -28,13 +29,16 @@ David Ford <david+cert@blue-labs.org>
 Nigel Horne <njh@smsltd.demon.co.uk>
 Hrvoje Habjanic <hrvoje.habjanic@zg.hinet.hr>
 Robbert Kouprie <robbert@exx.nl>
+Thomas Lamy <Thomas.Lamy@in-online.net>
 Peter N Lewis <peter@stairways.com.au>
+Mark Mielke <mark@mark.mielke.cc>
 Arkadiusz Miskiewicz <misiek@pld.org.pl>
 Hendrik Muhs <Hendrik.Muhs@student.uni-magdeburg.de>
 Masaki Ogawa <proc@mac.com>
 Ed Phillips <ed@UDel.Edu>
 Andreas Piesk <Andreas.Piesk@heise.de>
 Ant La Porte <ant@dvere.net>
-Gernot Tenchio <g.tenchio@telco-tech.de>
 Thomas Quinot <thomas@cuivre.fr.eu.org>
+Gernot Tenchio <g.tenchio@telco-tech.de>
+David Woakes <david@mitredata.co.uk>
 Andoni Zubimendi <andoni@lpsat.net>

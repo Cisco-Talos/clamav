@@ -84,7 +84,7 @@ void cl_debug(void)
     cli_debug_flag = 1;
 }
 
-char *cl_perror(int clerror)
+char *cl_strerror(int clerror)
 {
     switch(clerror) {
 	case CL_CLEAN:
@@ -124,6 +124,11 @@ char *cl_perror(int clerror)
 	default:
 	    return "Unknown error code.";
     }
+}
+
+char *cl_perror(int clerror)
+{
+    return cl_strerror(clerror);
 }
 
 char *cl_md5file(const char *filename)
@@ -197,8 +202,9 @@ void *cli_calloc(size_t nmemb, size_t size)
 
 #ifndef C_URANDOM
 /* it's very weak */
+#include <sys/time.h>
 
-unsigned int cli_rndnum(unsigned int max)
+unsigned int cl_rndnum(unsigned int max)
 {
     struct timeval tv;
 
@@ -210,7 +216,7 @@ unsigned int cli_rndnum(unsigned int max)
 
 #else
 
-int cli_rndnum(unsigned int max)
+unsigned int cl_rndnum(unsigned int max)
 {
 	static FILE *fd = NULL;
 	unsigned int generated;
@@ -264,7 +270,7 @@ char *cli_gentemp(const char *dir)
 
     do {
 	for(i = 0; i < 32; i++)
-	    salt[i] = cli_rndnum(255);
+	    salt[i] = cl_rndnum(255);
 
 	tmp = cl_md5buff(salt, 32);
 	strncat(name, tmp, 16);
@@ -298,6 +304,7 @@ int cli_rmdirs(const char *dirname)
 				    if(errno == EACCES) {
 					cli_errmsg("Can't remove some temporary directories due to access problem.\n");
 					closedir(dd);
+					free(fname);
 					return 0;
 				    }
 				    cli_rmdirs(fname);

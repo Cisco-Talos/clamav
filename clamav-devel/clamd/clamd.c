@@ -175,8 +175,8 @@ void clamd(struct optstruct *opt)
     logg("Reading databases from %s\n", dbdir);
 
     if((ret = cl_loaddbdir(dbdir, &root, &virnum))) {
-	fprintf(stderr, "ERROR: %s\n", cl_perror(ret));
-	logg("!%s\n", cl_perror(ret));
+	fprintf(stderr, "ERROR: %s\n", cl_strerror(ret));
+	logg("!%s\n", cl_strerror(ret));
 	exit(1);
     }
 

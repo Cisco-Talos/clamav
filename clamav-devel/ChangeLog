@@ -1,6 +1,44 @@
-Wed Aug  6 23:20:08 CEST 2003
+Fri Aug 29 06:00:01 CEST 2003
 -----------------------------
-  * libclamav: updated mbox code (Nigel)
+  * clamav-milter: 0.60d: Removed superflous buffer and unneeded strerror
+		   call (Nigel)
+  * libclamav: enabled support for Maildir files (thanks to Tomasz Papszun
+	       for samples and to Nigel for making his code so flexible)
+  * libclamav: mbox: fixed a problem in saveFile() - extremely long file names
+	       were causing snprintf() to truncate the last XXXXXX characters
+	       required for mkstemp(). As a result the file was not scanned -
+	       I found the problem in the old sample from Wash Odhiambo.
+
+Wed Aug 27 23:25:52 CEST 2003
+-----------------------------
+  * libclamav: message.c/h - allow any number of arguments to mime
+	       commands (Nigel)
+  * libclamav: mbox - parseMimeHeader() potential memory problem fixed (Nigel)
+  * clamd, clamscan: removed duplicated rndnum() and switched to cl_rndnum()
+  * clamd: new directive FixStaleSocket by Thomas Lamy and Mark Mielke
+
+Sat Aug 23 21:17:33 CEST 2003
+-----------------------------
+  * freshclam: fixed --on-error-execute (don't run a command on "no update"
+	       event). Fixed by David Woakes.
+
+Wed Aug 20 02:30:37 CEST 2003
+-----------------------------
+  * libclamav: mbox - support for "raw" messages (Nigel)
+  * sigtool: fixed a segmentation fault when a signature reaches end
+	     of file (thanks to Tomasz Papszun for an example)
+
+Tue Aug 19 02:33:48 CEST 2003
+-----------------------------
+  * clamav-milter: 0.60b - support for CC bounces to an e-mail address other
+		   than. Now compiles out of the box on FreeBSD 4.x (Nigel)
+  * Various fixes for Tru64 support (5.1a tested) by Hrvoje Habjanic
+
+Wed Aug 13 16:07:39 CEST 2003
+-----------------------------
+  * clamav-milter: 0.60a - tidied up message when sender is unknown (Nigel)
+  * libclamav: mbox updates: fixed an assertion error with some mail
+	       files (Nigel)
 
 Wed Aug  6 03:01:51 CEST 2003
 -----------------------------
@@ -21,7 +59,7 @@ Sat Jul 26 17:11:46 CEST 2003
 Thu Jul 24 13:29:39 CEST 2003
 -----------------------------
   * libclamav: mbox: fixed detection of the Gibe virus (bug reported
-	       by Rene Bellora); support for log file names (problem
+	       by Rene Bellora); support for long file names (problem
 	       reported by Tomasz Papszun)
 
 Sun Jul 20 23:43:38 CEST 2003

@@ -46,23 +46,41 @@ int localserver(const struct optstruct *opt, const struct cfgstruct *copt, struc
     if((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
 	estr = strerror(errno);
 	//fprintf(stderr, "ERROR: socket() error: %s\n", estr);
-	logg("!socket() error: %s\n", estr);
+	logg("!Socket allocation error: %s\n", estr);
 	exit(1);
     }
 
     if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) == -1) {
-	if(stat(server.sun_path, &foo) != -1) {
-	    //fprintf(stderr, "ERROR: Socket file %s already exists. Please remove it or use another one.\n", server.sun_path);
-	    logg("!Socket file %s already exists. Please remove it or use another one.\n", server.sun_path);
+	if(errno == EADDRINUSE) {
+	    if(connect(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) >= 0) {
+		close(sockfd);
+		logg("!Socket file %s is in use by another process.\n", server.sun_path);
+		exit(1);
+	    }
+	    if(cfgopt(copt, "FixStaleSocket")) {
+		logg("^Socket file %s exists. Unclean shutdown? Removing...\n", server.sun_path);
+		if(unlink(server.sun_path) == -1) {
+		    estr = strerror(errno);
+		    logg("!Socket file %s could not be removed: %s\n", server.sun_path, estr);
+		    exit(1);
+		}
+		if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) == -1) {
+		    estr = strerror(errno);
+		    logg("!Socket file %s could not be bound: %s (unlink tried)\n", server.sun_path, estr);
+		    exit(1);
+		}
+	    } else if(stat(server.sun_path, &foo) != -1) {
+		logg("!Socket file %s exists. Either remove it, or configure a different one.\n", server.sun_path);
+		exit(1);
+	    }
+	} else {
+	    estr = strerror(errno);
+	    logg("!Socket file %s could not be bound: %s\n", server.sun_path, estr);
 	    exit(1);
 	}
+    }
 
-	estr = strerror(errno);
-	//fprintf(stderr, "ERROR: can't bind(): %s\n", estr);
-	logg("!bind() error: %s\n", estr);
-	exit(1);
-    } else
-	logg("Unix socket file %s\n", server.sun_path);
+    logg("Unix socket file %s\n", server.sun_path);
 
     if((cpt = cfgopt(copt, "MaxConnectionQueueLength")))
 	backlog = cpt->numarg;

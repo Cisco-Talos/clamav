@@ -133,7 +133,7 @@ void freshclam(struct optstruct *opt)
 	    ret = download(opt);
 
 	    if(optl(opt, "on-error-execute"))
-		if(ret)
+		if(ret > 1)
 		    system(getargl(opt, "on-error-execute"));
 
 	    logg("\n--------------------------------------\n");
@@ -144,7 +144,7 @@ void freshclam(struct optstruct *opt)
 	ret = download(opt);
 
     if(optl(opt, "on-error-execute"))
-	if(ret)
+	if(ret > 1)
 	    system(getargl(opt, "on-error-execute"));
 
     mexit(ret);

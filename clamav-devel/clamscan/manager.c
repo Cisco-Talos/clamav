@@ -82,13 +82,13 @@ int scanmanager(const struct optstruct *opt)
 	switch(sb.st_mode & S_IFMT) {
 	    case S_IFREG:
 		if((ret = cl_loaddb(getargc(opt, 'd'), &trie, &claminfo.signs))) {
-		    mprintf("@%s\n", cl_perror(ret));
+		    mprintf("@%s\n", cl_strerror(ret));
 		    return 50;
 		}
 		break;
             case S_IFDIR:
 		if((ret = cl_loaddbdir(getargc(opt, 'd'), &trie, &claminfo.signs))) {
-		    mprintf("@%s\n", cl_perror(ret));
+		    mprintf("@%s\n", cl_strerror(ret));
 		    return 50;
 		}
 		break;
@@ -99,7 +99,7 @@ int scanmanager(const struct optstruct *opt)
 
     } else {
 	if((ret = cl_loaddbdir(cl_retdbdir(), &trie, &claminfo.signs))) {
-	    mprintf("@%s\n", cl_perror(ret));
+	    mprintf("@%s\n", cl_strerror(ret));
 	    return 50;
 	}
     }
@@ -750,7 +750,7 @@ int checkfile(const char *filename, const struct cl_node *root, const struct cl_
 	    mprintf("%s: OK\n", filename);
     } else
 	if(!printinfected)
-	    mprintf("%s: %s\n", filename, cl_perror(ret));
+	    mprintf("%s: %s\n", filename, cl_strerror(ret));
 
     close(fd);
     return ret;
@@ -772,7 +772,7 @@ int checkstdin(const struct cl_node *root, const struct cl_limits *limits)
 	    mprintf("stdin: OK\n");
     } else
 	if(!printinfected)
-	    mprintf("stdin: %s\n", cl_perror(ret));
+	    mprintf("stdin: %s\n", cl_strerror(ret));
 
     return ret;
 }

@@ -24,8 +24,8 @@ CLAMAVGROUP = @CLAMAVGROUP@
  
 install:
 	$(mkinstalldirs) $(DESTDIR)$(DBINST)
-	@$(INSTALL_DATA) viruses.db $(DESTDIR)$(DBINST)
-	@$(INSTALL_DATA) viruses.db2 $(DESTDIR)$(DBINST)
+#	@$(INSTALL_DATA) viruses.db $(DESTDIR)$(DBINST)
+#	@$(INSTALL_DATA) viruses.db2 $(DESTDIR)$(DBINST)
 	@$(INSTALL_DATA) mirrors.txt $(DESTDIR)$(DBINST)
 	@if test -n "${CLAMAVUSER}" && test -n "${CLAMAVGROUP}"; then \
 	    chmod 775 $(DESTDIR)$(DBINST); \

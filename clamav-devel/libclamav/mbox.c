@@ -74,7 +74,6 @@ static	size_t	strstrip(char *s);
 static	bool	continuationMarker(const char *line);
 static	int	parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg);
 static	bool	saveFile(const blob *b, const char *dir);
-static	bool	newMessageStart(const char *buf);
 
 /* Maximum number of attachements that we accept */
 #define	MAX_ATTACHMENTS	10
@@ -86,8 +85,6 @@ static	bool	newMessageStart(const char *buf);
 #define	CONTENT_TYPE			1
 #define	CONTENT_TRANSFER_ENCODING	2
 #define	CONTENT_DISPOSITION		3
-
-/*#define	VALIDATE_MBOX	/* validate the file is a UNIX mbox */
 
 /* Mime sub types */
 #define	PLAIN		1
@@ -134,152 +131,222 @@ static	const	struct tableinit {
  * named pipe or memory mapped file?
  * TODO: if debug is enabled, catch a segfault and dump the current e-mail
  * in it's entirety, then call abort()
+ * TODO: parse .msg format files
  */
 int
 cl_mbox(const char *dir, int desc)
 {
-	int retcode;
-	char buffer[LINE_LENGTH];
-	bool first = TRUE;
-	bool inHeader = FALSE;
-	bool inMimeHeader = FALSE;
-	bool lastLineWasEmpty = TRUE;
+	int retcode, i;
+	bool isMbox;	/*
+			 * is it a UNIX style mbox with more than one
+			 * mail message, or just a single mail message?
+			 */
 	message *m;
 	table_t	*rfc821Table, *subtypeTable;
 	FILE *fd;
+	char buffer[LINE_LENGTH];
+#ifdef CL_THREAD_SAFE
+	char *strptr;
+#endif
 
 	cli_dbgmsg("in mbox()\n");
 
-	if(initialiseTables(&rfc821Table, &subtypeTable) < 0)
+	i = dup(desc);
+	if((fd = fdopen(i, "rb")) == NULL) {
+		cli_errmsg("Can't open descriptor %d\n", desc);
+		close(i);
 		return -1;
-
+	}
+	if(fgets(buffer, sizeof(buffer), fd) == NULL) {
+		/* empty message */
+		fclose(fd);
+		return 0;
+	}
 	m = messageCreate();
 	assert(m != NULL);
 
-	retcode = 0;
-
-	if((fd = fdopen(dup(desc), "rb")) == NULL) {
-		cli_errmsg("Can't open descriptor %d\n", desc);
+	if(initialiseTables(&rfc821Table, &subtypeTable) < 0) {
+		messageDestroy(m);
+		fclose(fd);
 		return -1;
 	}
 
-	/*
-	 * handle more than one message in the filter. Probably a waste of time
-	 */
-	while(fgets(buffer, sizeof(buffer), fd) != NULL) {
-#ifdef CL_THREAD_SAFE
-		char *strptr;
-#endif
-		/*cli_dbgmsg("read: %s", buffer);*/
-#ifdef	VALIDATE_MBOX
-		if(first)
-			/*
-			 * Check it is a mail box.
-			 * tm@softcom.dk: check for a single mail message
-			 */
-			if(!newMessageStart(buffer)) {
-				cli_errmsg("Not a valid mail message");
-				retcode = -1;
-				break;
-			}
-#endif
+	isMbox = (strncmp(buffer, "From ", 5) == 0);
 
+	if(isMbox) {
 		/*
-		 * Handle this where we're mid point through this stuff
-		 *	Content-Type: multipart/alternative;
-		 *		boundary="----foo"
+		 * Have been asked to check a UNIX style mbox file, which
+		 * may contain more than one e-mail message to decode
 		 */
-		if(inMimeHeader) {
-			const char *ptr;
+		bool inHeader = FALSE;
+		bool inMimeHeader = FALSE;
+		bool lastLineWasEmpty = TRUE;
+		bool first = TRUE;
 
-			assert(!first);
-
-			if(!continuationMarker(buffer))
-				inMimeHeader = FALSE;	 /* no more args */
+		do {
+			/*cli_dbgmsg("read: %s", buffer);*/
 
 			/*
-			 * Add all the arguments on the line
+			 * Handle this where we're mid point through this stuff
+			 *	Content-Type: multipart/alternative;
+			 *		boundary="----foo"
 			 */
-			for(ptr = strtok_r(buffer, ";\r\n", &strptr); ptr; ptr = strtok_r(NULL, ":\r\n", &strptr))
-				messageAddArgument(m, ptr);
+			if(inHeader && ((buffer[0] == '\t') || (buffer[0] == ' ')))
+				inMimeHeader = TRUE;
+			if(inMimeHeader) {
+				const char *ptr;
 
-		} else if((!inHeader) && lastLineWasEmpty && newMessageStart(buffer)) {
-			/*
-			 * New message, save the previous message, if any
-			 */
-			if(!first) {
+				assert(!first);
+
+				if(!continuationMarker(buffer))
+					inMimeHeader = FALSE;	 /* no more args */
+
 				/*
-				 * End of the current message, add it and look
-				 * for the start of the next one
+				 * Add all the arguments on the line
 				 */
-				messageClean(m);
-				if(messageGetBody(m))
-					if(!insert(m,  NULL, 0, NULL, dir, rfc821Table, subtypeTable))
-						break;
+				for(ptr = strtok_r(buffer, ";\r\n", &strptr); ptr; ptr = strtok_r(NULL, ":\r\n", &strptr))
+					messageAddArgument(m, ptr);
+
+			} else if((!inHeader) && lastLineWasEmpty && (strncmp(buffer, "From ", 5) == 0)) {
 				/*
-				 * Starting a new message, throw away all the
-				 * information about the old one
+				 * New message, save the previous message, if any
 				 */
-				messageReset(m);
-			} else
-				first = FALSE;
+				if(!first) {
+					/*
+					 * End of the current message, add it and look
+					 * for the start of the next one
+					 */
+					messageClean(m);
+					if(messageGetBody(m))
+						if(!insert(m,  NULL, 0, NULL, dir, rfc821Table, subtypeTable))
+							break;
+					/*
+					 * Starting a new message, throw away all the
+					 * information about the old one
+					 */
+					messageReset(m);
+				} else
+					first = FALSE;
 
-			lastLineWasEmpty = inHeader = TRUE;
-#ifdef	CL_DEBUG
-			cli_dbgmsg("Finished processing message\n");
-#endif
-		} else if(inHeader) {
-			/*
-			 * A blank line signifies the end of the header and
-			 * the start of the text
-			 */
-			if((strstrip(buffer) == 0) || (buffer[0] == '\n') || (buffer[0] == '\r')) {
-				cli_dbgmsg("End of header information\n");
-				inHeader = FALSE;
-			} else {
-				const bool isLastLine = !continuationMarker(buffer);
-				const char *cmd = strtok_r(buffer, " \t", &strptr);
+				lastLineWasEmpty = inHeader = TRUE;
+				cli_dbgmsg("Finished processing message\n");
+			} else if(inHeader) {
 
-				if (cmd && *cmd) {
-					const char *arg = strtok_r(NULL, "\r\n", &strptr);
+				cli_dbgmsg("Deal with header %s", buffer);
 
-					if(arg)
-						if(parseMimeHeader(m, cmd, rfc821Table, arg) == CONTENT_TYPE)
-							inMimeHeader = !isLastLine;
+				/*
+				 * A blank line signifies the end of the header and
+				 * the start of the text
+				 */
+				if((strstrip(buffer) == 0) || (buffer[0] == '\n') || (buffer[0] == '\r')) {
+					cli_dbgmsg("End of header information\n");
+					inHeader = FALSE;
+				} else {
+					const bool isLastLine = !continuationMarker(buffer);
+					const char *cmd = strtok_r(buffer, " \t", &strptr);
+
+					if (cmd && *cmd) {
+						const char *arg = strtok_r(NULL, "\r\n", &strptr);
+
+						if(arg)
+							if(parseMimeHeader(m, cmd, rfc821Table, arg) == CONTENT_TYPE)
+								inMimeHeader = !isLastLine;
+					}
 				}
+			} else {
+				assert(!first);
+
+				/*cli_dbgmsg("adding line %s", buffer);*/
+
+				lastLineWasEmpty = ((buffer[0] == '\n') || (buffer[0] == '\r'));
+				/*
+				 * Add this line to the end of the linked list
+				 * of lines. This isn't needed when using
+				 * .forward since the rest of the file *must*
+				 * be the text so a single fread() should
+				 * suffice. Still, it does no harm and is more
+				 * flexible this way
+				 *
+				 * Note that the terminating newline is not
+				 * added
+				 */
+				messageAddLine(m, strtok_r(buffer, "\r\n", &strptr));
 			}
-		} else {
-			assert(!first);
+		} while(fgets(buffer, sizeof(buffer), fd) != NULL);
+	} else {
+		/* !isMbox => single mail message */
+		bool inHeader = TRUE;
+		bool inMimeHeader = FALSE;
 
-			/*cli_dbgmsg("adding line %s", buffer);*/
-
-			lastLineWasEmpty = ((buffer[0] == '\n') || (buffer[0] == '\r'));
+		do {
 			/*
-			 * Add this line to the end of the linked list
-			 * of lines. This isn't needed when using
-			 * .forward since the rest of the file *must*
-			 * be the text so a single fread() should
-			 * suffice. Still, it does no harm and is more
-			 * flexible this way
-			 *
-			 * Note that the terminating newline is not
-			 * added
+			 * State machine:
+			 *	inMimeHeader	= handling mime commands over
+			 *				more than one line
+			 *	inHeader	= handling e-mail header
+			 *	otherwise	= handling e-mail body
 			 */
-			messageAddLine(m, strtok_r(buffer, "\r\n", &strptr));
-		}
+			/*
+			 * Section B.2 of RFC822 says TAB or SPACE means
+			 * a continuation of the previous entry
+			 */
+			if(inHeader && ((buffer[0] == '\t') || (buffer[0] == ' ')))
+				inMimeHeader = TRUE;
+			if(inMimeHeader) {
+				const char *ptr;
+
+				assert(inHeader);
+
+				if(!continuationMarker(buffer))
+					inMimeHeader = FALSE;	 /* no more args */
+
+				/*
+				 * Add all the arguments on the line
+				 */
+				for(ptr = strtok_r(buffer, ";\r\n", &strptr); ptr; ptr = strtok_r(NULL, ":\r\n", &strptr))
+					messageAddArgument(m, ptr);
+			} else if(inHeader) {
+
+				cli_dbgmsg("Deal with header %s", buffer);
+
+				/*
+				 * A blank line signifies the end of the header and
+				 * the start of the text
+				 */
+				if((strstrip(buffer) == 0) || (buffer[0] == '\n') || (buffer[0] == '\r')) {
+					cli_dbgmsg("End of header information\n");
+					inHeader = FALSE;
+				} else {
+					const bool isLastLine = !continuationMarker(buffer);
+					const char *cmd = strtok_r(buffer, " \t", &strptr);
+
+					if (cmd && *cmd) {
+						const char *arg = strtok_r(NULL, "\r\n", &strptr);
+
+						if(arg)
+							if(parseMimeHeader(m, cmd, rfc821Table, arg) == CONTENT_TYPE)
+								inMimeHeader = !isLastLine;
+					}
+				}
+			} else {
+				/*cli_dbgmsg("adding line %s", buffer);*/
+
+				messageAddLine(m, strtok_r(buffer, "\r\n", &strptr));
+			}
+		} while(fgets(buffer, sizeof(buffer), fd) != NULL);
 	}
 
 	fclose(fd);
 
+	retcode = 0;
+
 	/*
 	 * Write out the last entry in the mailbox
 	 */
-	if(retcode == 0) {
-		messageClean(m);
-		if(messageGetBody(m))
-			if(!insert(m, NULL, 0, NULL, dir, rfc821Table, subtypeTable))
-				retcode = -1;
-	}
+	messageClean(m);
+	if(messageGetBody(m))
+		if(!insert(m, NULL, 0, NULL, dir, rfc821Table, subtypeTable))
+			retcode = -1;
 
 	/*
 	 * Tidy up and quit
@@ -341,6 +408,8 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 		char *strptr;
 #endif
 
+		cli_dbgmsg("Parsing mail file\n");
+
 		mimeType = messageGetMimeType(mainMessage);
 		mimeSubtype = messageGetMimeSubtype(mainMessage);
 
@@ -353,6 +422,8 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 			mimeType = NOMIME;
 		}
 
+		cli_dbgmsg("mimeType = %d\n", mimeType);
+
 		switch(mimeType) {
 		case NOMIME:
 			aText = textAddMessage(aText, mainMessage);
@@ -362,6 +433,7 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 				aText = textCopy(messageGetBody(mainMessage));
 			break;
 		case MULTIPART:
+
 			assert(mimeSubtype[0] != '\0');
 
 			boundary = messageFindArgument(mainMessage, "boundary");
@@ -517,6 +589,8 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 
 				rc = insert(aMessage, blobs, nBlobs, aText, dir, rfc821Table, subtypeTable);
 				blobArrayDestroy(blobs, nBlobs);
+				blobs = NULL;
+				nBlobs = 0;
 
 				/*
 				 * Fixed based on an idea from Stephen White <stephen@earth.li>
@@ -588,6 +662,7 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 					bool addAttachment = FALSE;
 					bool addToText = FALSE;
 					const char *dtype;
+					text *t;
 
 					aMessage = messages[i];
 
@@ -603,14 +678,19 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 
 					switch(messageGetMimeType(aMessage)) {
 					case APPLICATION:
+#if	0
+						/* strict checking... */
 						if((strcasecmp(dtype, "attachment") == 0) ||
 						   (strcasecmp(cptr, "x-msdownload") == 0) ||
+						   (strcasecmp(cptr, "octet-stream") == 0) ||
 						   (strcasecmp(dtype, "octet-stream") == 0))
 							addAttachment = TRUE;
 						else {
-							cli_dbgmsg("Discarded application not sent as attachment\n");
+							cli_dbgmsg("Discarded mixed/application not sent as attachment\n");
 							continue;
 						}
+#endif
+						addAttachment = TRUE;
 
 						break;
 					case NOMIME:
@@ -659,8 +739,9 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 						 *
 						 */
 						cli_dbgmsg("Found multipart inside multipart\n");
-						/*rc = insert(NULL, blobs, nBlobs, messageToText(aMessage), dir, rfc821Table, subtypeTable);*/
-						rc = insert(aMessage, blobs, nBlobs, messageToText(aMessage), dir, rfc821Table, subtypeTable);
+						t = messageToText(aMessage);
+						rc = insert(aMessage, blobs, nBlobs, t, dir, rfc821Table, subtypeTable);
+						textDestroy(t);
 
 						mainMessage = aMessage;
 						continue;
@@ -735,6 +816,8 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 
 				rc = insert(messages[htmltextPart], blobs, nBlobs, aText, dir, rfc821Table, subtypeTable);
 				blobArrayDestroy(blobs, nBlobs);
+				blobs = NULL;
+				nBlobs = 0;
 				break;
 			default:
 				/*
@@ -753,6 +836,9 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 			if(blobs && (blobsIn == NULL))
 				puts("arraydestroy");
 
+			if(aText && (textIn == NULL))
+				textDestroy(aText);
+
 			return rc;
 
 		case MESSAGE:
@@ -765,15 +851,16 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 				case BINARY:
 					break;
 				default:
-					cli_warnmsg("MIME type 'message' can not be decoded\n");
+					cli_warnmsg("MIME type 'message' cannot be decoded\n");
 					break;
 			}
-			if(strcasecmp(mimeSubtype, "rfc822") == 0) {
+			if((strcasecmp(mimeSubtype, "rfc822") == 0) ||
+			   (strcasecmp(mimeSubtype, "delivery-status") == 0)) {
 				/*
 				 * TODO: Tidy this up, it's just a duplicate
 				 * of the cl_mbox code....
 				 */
-				const text *t = messageToText(mainMessage);
+				text *t = messageToText(mainMessage);
 				bool inHeader = TRUE;
 				bool inMimeHeader = FALSE;
 				message *m;
@@ -837,21 +924,11 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 							}
 						}
 					} else
-						/*
-						 * Add this line to the end of the linked list
-						 * of lines. This isn't needed when using
-						 * .forward since the rest of the file *must*
-						 * be the text so a single fread() should
-						 * suffice. Still, it does no harm and is more
-						 * flexible this way
-						 *
-						 * Note that the terminating newline is not
-						 * added
-						 */
 						messageAddLine(m, strtok_r(buffer, "\r\n", &strptr));
 					free(buffer);
 				} while((t = t->t_next) != NULL);
 
+				textDestroy(t);
 				messageClean(m);
 				if(messageGetBody(m))
 					rc = insert(m, NULL, 0, NULL, dir, rfc821Table, subtypeTable);
@@ -890,7 +967,14 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 					 */
 					if(blobs == NULL)
 						blobs = blobList;
-					blobs[nBlobs++] = aBlob;
+					for(i = 0; i < nBlobs; i++)
+						if(blobs[i] == NULL)
+							break;
+					blobs[i] = aBlob;
+					if(i == nBlobs) {
+						nBlobs++;
+						assert(nBlobs < MAX_ATTACHMENTS);
+					}
 				}
 			} else
 				cli_warnmsg("Discarded application not sent as attachment\n");
@@ -989,11 +1073,12 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 		for(attachmentNumber = 0; attachmentNumber < nBlobs; attachmentNumber++) {
 			blob *b = blobs[attachmentNumber];
 
-			assert(b != NULL);
-
-			if(!saveFile(b, dir))
-				break;
-			blobDestroy(b);
+			if(b) {
+				if(!saveFile(b, dir))
+					break;
+				blobDestroy(b);
+				blobs[attachmentNumber] = NULL;
+			}
 		}
 	}
 
@@ -1001,8 +1086,8 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 		textDestroy(aText);
 
 	/* Already done */
-	/*if(blobs && (blobsIn == NULL))
-		blobArrayDestroy(blobs, nBlobs);*/
+	if(blobs && (blobsIn == NULL))
+		blobArrayDestroy(blobs, nBlobs);
 
 	cli_dbgmsg("insert() returning 1\n");
 
@@ -1049,9 +1134,9 @@ endOfMessage(const char *line, const char *boundary)
 		return 0;
 	if(*line++ != '-')
 		return 0;
-	if(strncasecmp(line, boundary, strlen(boundary)) != 0)
-		return 0;
 	len = strlen(boundary);
+	if(strncasecmp(line, boundary, len) != 0)
+		return 0;
 	if(strlen(line) != (len + 2))
 		return 0;
 	line = &line[len];
@@ -1216,7 +1301,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 	char *strptr;
 #endif
 	char *copy = strdup(arg);
-
+	char *ptr = copy;
 
 	cli_dbgmsg("parseMimeHeader: cmd='%s', arg='%s'\n", cmd, arg);
 
@@ -1265,7 +1350,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 			messageSetDispositionType(m, strtok_r(copy, ";", &strptr));
 			messageAddArgument(m, strtok_r(NULL, "\r\n", &strptr));
 	}
-	free(copy);
+	free(ptr);
 
 	return type;
 }
@@ -1277,10 +1362,10 @@ saveFile(const blob *b, const char *dir)
 	int fd;
 	const char *cptr, *suffix;
 #ifdef	NAME_MAX	/* e.g. Linux */
-	char filename[NAME_MAX + 1];
+	char filename[NAME_MAX + 6 + 1];
 #else
 #ifdef	MAXNAMELEN	/* e.g. Solaris */
-	char filename[MAXNAMELEN + 1];
+	char filename[MAXNAMELEN + 6 + 1];
 #endif
 #endif
 
@@ -1320,7 +1405,7 @@ saveFile(const blob *b, const char *dir)
 	fd = mkstemp(filename);
 #else
 	(void)mktemp(filename);
-	fd = open(filename, O_WRONLY|O_CREAT|O_EXCL, 0600);
+	fd = open(filename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC, 0600);
 #endif
 
 	if(fd < 0) {
@@ -1329,10 +1414,12 @@ saveFile(const blob *b, const char *dir)
 	}
 
 	/*
-	 * Add the suffix back to the end of the filename. Sigh.
+	 * Add the suffix back to the end of the filename. Tut-tut, filenames
+	 * should be independant of their usage on UNIX type systems.
 	 */
 	if(strlen(suffix) > 1) {
 		char *stub = strdup(filename);
+
 		strcat(filename, suffix);
 		link(stub, filename);
 		unlink(stub);
@@ -1340,37 +1427,8 @@ saveFile(const blob *b, const char *dir)
 	}
 
 	write(fd, blobGetData(b), (size_t)nbytes);
-	close(fd);
-	cli_dbgmsg("Attachment saved as %s (%ul bytes long)\n",
+	cli_dbgmsg("Attachment saved as %s (%lu bytes long)\n",
 		filename, nbytes);
 
-	return TRUE;
+	return (close(fd) >= 0);
 }
-
-static bool
-newMessageStart(const char *buf)
-{
-	if(strncmp(buf, "From ", 5) == 0)
-		return TRUE;
-
-	/*
-	 * Do NOT enable this code, it gets confused by RFC822 messages
-	 * enapsulated in other messages e.g.
-	 *
-	 * ....
-	 * --NAB47372.960554223/xxx
-	 * Content-Type: message/rfc822
-	 *
-	 * Return-Path: MAILER-DAEMON
-	 * ....
-	 */
-#if	0
-	if(strncmp(buf, "Return-Path: ", 13) == 0)
-		return TRUE;
-	if(strncmp(buf, "Received: ", 10) == 0)
-		return TRUE;
-#endif
-
-	return FALSE;
-}
-

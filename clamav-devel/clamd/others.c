@@ -132,6 +132,14 @@ int logg(const char *str, ...)
 
       /* SYSLOG logging - no need for locking, mutexes, times & stuff ... :-) */
 
+#ifndef vsyslog
+#define vsyslog(a,b,c)	{ \
+	char my_tmp[4096]; \
+	vsnprintf(my_tmp,4095,b,c); \
+	my_tmp[4095]=0; \
+	syslog(a,my_tmp); }
+#endif
+
 	va_start(args, str);
 
 	if(*str == '!') {
@@ -198,66 +206,18 @@ void chomp(char *string)
 	*pt = 0;
 }
 
-#ifndef C_URANDOM
-/* it's very weak */
-
-int rndnum(unsigned int max)
-{
-    struct timeval tv;
-
-  gettimeofday(&tv, (struct timezone *) 0);
-  srand(tv.tv_usec+clock());
-
-  return rand() % max;
-}
-
-#else
-
-int rndnum(unsigned int max)
-{
-	static FILE *fd = NULL;
-	unsigned int generated;
-	char *byte;
-	int size;
-
-    pthread_mutex_lock(&rand_mutex);
-
-    if(fd == NULL) {
-	if((fd = fopen("/dev/urandom", "rb")) == NULL) {
-	    printf("ERROR: Can't open /dev/urandom.\n");
-	    pthread_mutex_unlock(&rand_mutex);
-	    return -1;
-	}
-    }
-
-    byte = (char *) &generated;
-    size = sizeof(generated);
-    do {
-	int bread;
-	bread = fread(byte, 1, size, fd);
-	size -= bread;
-	byte += bread;
-    } while(size > 0);
-
-    pthread_mutex_unlock(&rand_mutex);
-    return generated % max;
-}
-#endif
-
 void virusaction(const char *filename, const char *virname, const struct cfgstruct *copt)
 {
 	char *buffer, *pt, *cmd;
 	struct cfgstruct *cpt;
 
 
-    logg("InVirusAction\n", cmd);
     if(!(cpt = cfgopt(copt, "VirusEvent")))
 	return;
 
     cmd = strdup(cpt->strarg);
-    logg("COMMAND: %s\n", cmd);
 
-    buffer = (char *) cli_malloc(strlen(cmd) + strlen(filename) + strlen(virname) + 10, sizeof(char));
+    buffer = (char *) mcalloc(strlen(cmd) + strlen(filename) + strlen(virname) + 10, sizeof(char));
 
     if((pt = strstr(cmd, "%f"))) {
 	*pt = 0; pt += 2;
@@ -279,7 +239,6 @@ void virusaction(const char *filename, const char *virname, const struct cfgstru
 
     free(buffer);
 
-    logg("Executing: %s\n", cmd);
     /* WARNING: this is uninterruptable ! */
     system(cmd);
 

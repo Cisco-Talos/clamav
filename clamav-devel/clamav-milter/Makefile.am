@@ -23,7 +23,7 @@ sbin_PROGRAMS = clamav-milter
 
 clamav_milter_SOURCES = clamav-milter.c
 
-clamav_milter_LDADD = ../clamd/cfgfile.o ../clamd/others.o
+clamav_milter_LDADD = ../clamd/cfgfile.o ../clamd/others.o ../clamscan/getopt.o
 
 man_MANS = ../docs/clamav-milter.1
 
@@ -33,5 +33,5 @@ endif
 DEFS = @DEFS@
 # CLAMD_LIBS is used, because clamav-milter requires the same libraries as clamd
 LIBS = -L../libclamav -L/usr/lib/libmilter -lmilter @CLAMD_LIBS@
-INCLUDES = -I../clamd -I../libclamav
+INCLUDES = -I../clamd -I../libclamav -I../clamscan
 EXTRA_DIST = clamav-milter.c clamd.sh clamav-milter.sh INSTALL

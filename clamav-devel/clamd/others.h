@@ -32,7 +32,6 @@ short int logverbose, logcompressed, loglock, logtime;
 int logsize;
 const char *logfile;
 int logg(const char *str, ...);
-int rndnum(unsigned int max);
 
 #if defined(CLAMD_USE_SYSLOG) && !defined(C_AIX)
 short use_syslog;
