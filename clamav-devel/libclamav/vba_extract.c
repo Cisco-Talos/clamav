@@ -620,3 +620,719 @@ unsigned char *vba_decompress(int fd, uint32_t offset, int *size)
 	return result.data;
 
 }
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+/* Code to extract Word6 macros
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+typedef struct mso_fib_tag {
+	uint16_t magic;
+	uint16_t version;
+	uint16_t product;
+	uint16_t lid;
+	uint16_t next;
+	uint16_t status;
+	/* block of 268 bytes - ignore */
+	uint32_t macro_offset;
+	uint32_t macro_len;
+} mso_fib_t;
+
+typedef struct macro_entry_tag {
+	unsigned char version;
+	unsigned char key;
+	uint16_t intname_i;
+	uint16_t extname_i;
+	uint16_t xname_i;
+	uint32_t unknown;
+	uint32_t len;
+	uint32_t state;
+	uint32_t offset;
+} macro_entry_t;
+
+typedef struct macro_info_tag {
+	uint16_t count;
+	struct macro_entry_tag *macro_entry;
+} macro_info_t;
+
+typedef struct macro_extname_tag {
+	uint8_t length;
+	unsigned char *extname;
+	uint16_t numref;
+} macro_extname_t;
+
+typedef struct macro_extnames_tag {
+	uint16_t count;
+	struct macro_extname_tag *macro_extname;
+} macro_extnames_t;
+
+typedef struct macro_intnames_tag {
+	uint16_t count;
+	struct macro_intname_tag *macro_intname;
+} macro_intnames_t;
+
+typedef struct macro_intname_tag {
+	uint16_t id;
+	uint8_t length;
+	unsigned char *intname;
+} macro_intname_t;
+
+typedef struct menu_entry_tag {
+	uint16_t context;
+	uint16_t menu;
+	uint16_t extname_i;
+	uint16_t unknown;
+	uint16_t intname_i;
+	uint16_t pos;
+} menu_entry_t;
+
+typedef struct menu_info_tag {
+	uint16_t count;
+	struct menu_entry_tag *menu_entry;
+} menu_info_t;
+
+typedef struct mac_token_tag {
+	unsigned char token;
+	unsigned char *str;
+} mac_token_t;
+
+typedef struct mac_token2_tag {
+	uint16_t token;
+	unsigned char *str;
+
+} mac_token2_t;
+
+static void wm_print_fib(mso_fib_t *fib)
+{
+	cli_dbgmsg("magic: 0x%.4x\n", fib->magic);
+	cli_dbgmsg("version: 0x%.4x\n", fib->version);
+	cli_dbgmsg("product: 0x%.4x\n", fib->product);
+	cli_dbgmsg("lid: 0x%.4x\n", fib->lid);
+	cli_dbgmsg("macro offset: 0x%.4x\n", fib->macro_offset);
+	cli_dbgmsg("macro len: 0x%.4x\n\n", fib->macro_len);
+}
+	
+static int wm_read_fib(int fd, mso_fib_t *fib)
+{
+	if (cli_readn(fd, &fib->magic, 2) != 2) {
+		printf("read wm_fib failed\n");
+		return FALSE;
+	}
+	if (cli_readn(fd, &fib->version, 2) != 2) {
+		printf("read wm_fib failed\n");
+		return FALSE;
+	}
+	if (cli_readn(fd, &fib->product, 2) != 2) {
+		printf("read wm_fib failed\n");
+		return FALSE;
+	}
+	if (cli_readn(fd, &fib->lid, 2) != 2) {
+		printf("read wm_fib failed\n");
+		return FALSE;
+	}	
+	if (cli_readn(fd, &fib->next, 2) != 2) {
+		printf("read wm_fib failed\n");
+		return FALSE;
+	}
+	if (cli_readn(fd, &fib->status, 2) != 2) {
+		printf("read wm_fib failed\n");
+		return FALSE;
+	}
+	
+	/* don't need the information is this block, so seek forward */
+	if (lseek(fd, 0x118, SEEK_SET) != 0x118) {
+		printf("lseek wm_fib failed\n");
+		return FALSE;
+	}
+	
+	if (cli_readn(fd, &fib->macro_offset, 4) != 4) {
+		printf("read wm_fib failed\n");
+		return FALSE;
+	}
+	if (cli_readn(fd, &fib->macro_len, 4) != 4) {
+		printf("read wm_fib failed\n");
+		return FALSE;
+	}
+	fib->magic = vba_endian_convert_16(fib->magic, FALSE);
+	fib->version = vba_endian_convert_16(fib->version, FALSE);
+	fib->product = vba_endian_convert_16(fib->product, FALSE);
+	fib->lid = vba_endian_convert_16(fib->lid, FALSE);
+	fib->next = vba_endian_convert_16(fib->next, FALSE);
+	fib->status = vba_endian_convert_16(fib->status, FALSE);
+	fib->macro_offset = vba_endian_convert_32(fib->macro_offset, FALSE);
+	fib->macro_len = vba_endian_convert_32(fib->macro_len, FALSE);
+	
+	return TRUE;
+}
+
+static int wm_read_macro_entry(int fd, macro_entry_t *macro_entry)
+{
+	if (cli_readn(fd, &macro_entry->version, 1) != 1) {
+		printf("read macro_entry failed\n");
+		return FALSE;
+	}
+	if (cli_readn(fd, &macro_entry->key, 1) != 1) {
+		printf("read macro_entry failed\n");
+		return FALSE;
+	}
+	if (cli_readn(fd, &macro_entry->intname_i, 2) != 2) {
+		printf("read macro_entry failed\n");
+		return FALSE;
+	}	
+	if (cli_readn(fd, &macro_entry->extname_i, 2) != 2) {
+		printf("read macro_entry failed\n");
+		return FALSE;
+	}
+	if (cli_readn(fd, &macro_entry->xname_i, 2) != 2) {
+		printf("read macro_entry failed\n");
+		return FALSE;
+	}
+	if (cli_readn(fd, &macro_entry->unknown, 4) != 4) {
+		printf("read macro_entry failed\n");
+		return FALSE;
+	}
+	if (cli_readn(fd, &macro_entry->len, 4) != 4) {
+		printf("read macro_entry failed\n");
+		return FALSE;
+	}
+	if (cli_readn(fd, &macro_entry->state, 4) != 4) {
+		printf("read macro_entry failed\n");
+		return FALSE;
+	}
+	if (cli_readn(fd, &macro_entry->offset, 4) != 4) {
+		printf("read macro_entry failed\n");
+		return FALSE;
+	}
+	return TRUE;
+}
+
+static macro_info_t *wm_read_macro_info(int fd)
+{
+	int i;
+	macro_info_t *macro_info;
+
+	macro_info = (macro_info_t *) cli_malloc(sizeof(macro_info_t));
+	if (!macro_info) {
+		return NULL;
+	}
+	if (cli_readn(fd, &macro_info->count, 2) != 2) {
+		printf("read macro_info failed\n");
+		return NULL;
+	}
+	
+	cli_dbgmsg("macro count: %d\n", macro_info->count);
+	macro_info->macro_entry = (macro_entry_t *)
+			cli_malloc(sizeof(macro_entry_t) * macro_info->count);
+	if (!macro_info->macro_entry) {
+		free(macro_info);
+		return NULL;
+	}
+	for (i=0 ; i < macro_info->count ; i++) {
+		if (!wm_read_macro_entry(fd,
+				&macro_info->macro_entry[i])) {
+			free(macro_info->macro_entry);
+			free(macro_info);
+			return NULL;
+		}
+	}
+	return macro_info;
+}
+
+static void wm_free_macro_info(macro_info_t *macro_info)
+{
+	if (macro_info) {
+		free(macro_info->macro_entry);
+		free(macro_info);
+	}
+	return;
+}
+
+static int wm_read_oxo3(int fd)
+{
+	uint8_t count;
+
+	if (cli_readn(fd, &count, 1) != 1) {
+		cli_dbgmsg("read oxo3 record1 failed\n");
+		return FALSE;
+	}
+	if (lseek(fd, count*14, SEEK_CUR) == -1) {
+		cli_dbgmsg("lseek oxo3 record1 failed\n");
+		return FALSE;
+	}
+	cli_dbgmsg("oxo3 records1: %d\n", count);
+	
+	if (cli_readn(fd, &count, 1) != 1) {
+		printf("read oxo3 record2 failed\n");
+		return FALSE;
+	}
+	if (count == 0) {
+		if (cli_readn(fd, &count, 1) != 1) {
+			printf("read oxo3 failed\n");
+			return FALSE;
+		}
+		if (count != 2) {
+			lseek(fd, -1, SEEK_CUR);
+			return TRUE;
+		}
+		if (cli_readn(fd, &count, 1) != 1) {
+			printf("read oxo3 failed\n");
+			return FALSE;
+		}
+	}
+	if (count > 0) {
+		if (lseek(fd, (count*4)+1, SEEK_CUR) == -1) {
+			printf("lseek oxo3 failed\n");
+			return FALSE;
+		}
+	}				
+	cli_dbgmsg("oxo3 records2: %d\n", count);
+	return TRUE;
+}
+
+static menu_info_t *wm_read_menu_info(int fd)
+{
+	int i;
+	menu_info_t *menu_info;
+	menu_entry_t *menu_entry;
+	
+	menu_info = (menu_info_t *) cli_malloc(sizeof(menu_info_t));
+	if (!menu_info) {
+		return NULL;
+	}
+	
+	if (cli_readn(fd, &menu_info->count, 2) != 2) {
+		printf("read menu_info failed\n");
+		free(menu_info);
+		return NULL;
+	}
+	printf("menu_info count: %d\n", menu_info->count);
+	
+	menu_info->menu_entry =
+		(menu_entry_t *) cli_malloc(sizeof(menu_entry_t) * menu_info->count);
+	if (!menu_info->menu_entry) {
+		free(menu_info);
+		return NULL;
+	}
+	
+	for (i=0 ; i < menu_info->count ; i++) {
+		menu_entry = &menu_info->menu_entry[i];
+		if (cli_readn(fd, &menu_entry->context, 2) != 2) {
+			goto abort;
+		}
+		if (cli_readn(fd, &menu_entry->menu, 2) != 2) {
+			goto abort;
+		}
+		if (cli_readn(fd, &menu_entry->extname_i, 2) != 2) {
+			goto abort;
+		}
+		if (cli_readn(fd, &menu_entry->unknown, 2) != 2) {
+			goto abort;
+		}
+		if (cli_readn(fd, &menu_entry->intname_i, 2) != 2) {
+			goto abort;
+		}
+		if (cli_readn(fd, &menu_entry->pos, 2) != 2) {
+			goto abort;
+		}
+		cli_dbgmsg("menu entry: %d.%d\n", menu_entry->menu, menu_entry->pos);
+	}
+	return menu_info;
+	
+abort:
+	cli_dbgmsg("read menu_entry failed\n");
+	free(menu_info->menu_entry);
+	free(menu_info);
+	return NULL;
+}
+
+static void wm_free_menu_info(menu_info_t *menu_info)
+{
+	if (menu_info) {
+		free(menu_info->menu_entry);
+		free(menu_info);
+	}
+	return;
+}
+
+static macro_extnames_t *wm_read_macro_extnames(int fd)
+{
+	int i, is_unicode=0;
+	int16_t size;
+	uint8_t length_tmp;
+	off_t offset_end;	
+	macro_extnames_t *macro_extnames;
+	macro_extname_t *macro_extname;
+	unsigned char *name_tmp;
+	
+	macro_extnames = (macro_extnames_t *) cli_malloc(sizeof(macro_extnames_t));
+	if (!macro_extnames) {
+		return NULL;
+	}
+	macro_extnames->count = 0;
+	macro_extnames->macro_extname = NULL;
+	
+	offset_end = lseek(fd, 0, SEEK_CUR);
+	if (cli_readn(fd, &size, 2) != 2) {
+		cli_dbgmsg("read macro_extnames failed\n");
+		free(macro_extnames);
+		return NULL;
+	}
+	if (size == -1) { /* Unicode flag */
+		is_unicode=1;
+		if (cli_readn(fd, &size, 2) != 2) {
+			printf("read macro_extnames failed\n");
+			free(macro_extnames);
+			return NULL;
+		}
+	}
+	cli_dbgmsg("ext names size: 0x%x\n", size);
+
+	offset_end += size;
+	while (lseek(fd, 0, SEEK_CUR) < offset_end) {
+		macro_extnames->count++;
+		if (macro_extnames->count > 0) {
+			macro_extnames->macro_extname = (macro_extname_t *)
+				cli_realloc(macro_extnames->macro_extname,
+					sizeof(macro_extname_t) * macro_extnames->count);
+			if (macro_extnames->macro_extname == NULL) {
+				free(macro_extnames);
+				return NULL;
+			}
+		} else {
+			macro_extnames->macro_extname =
+				(macro_extname_t *) cli_malloc(sizeof(macro_extname_t));
+			if (macro_extnames->macro_extname == NULL) {
+				free(macro_extnames);
+				return NULL;
+			}
+		}
+		macro_extname = &macro_extnames->macro_extname[macro_extnames->count-1];
+		if (is_unicode) {
+			if (cli_readn(fd, &macro_extname->length, 2) != 2) {
+				printf("read macro_extnames failed\n");
+				return NULL;
+			}
+			name_tmp = (char *) cli_malloc(macro_extname->length*2);
+			if (name_tmp == NULL) {
+				goto abort;
+			}
+			if (cli_readn(fd, name_tmp, macro_extname->length*2) != 
+						macro_extname->length*2) {
+				printf("read macro_extnames failed\n");
+				free(name_tmp);
+				goto abort;
+			}
+			macro_extname->extname =
+			get_unicode_name(name_tmp, macro_extname->length*2, FALSE);
+			free(name_tmp);
+		} else {
+			if (cli_readn(fd, &length_tmp, 1) != 1) {
+				printf("read macro_extnames failed\n");
+				goto abort;
+			}
+			macro_extname->length = (uint16_t) length_tmp;
+			macro_extname->extname = (char *) cli_malloc(macro_extname->length+1);
+			if (!macro_extname->extname) {
+				macro_extnames->count--;
+				goto abort;
+			}
+			if (cli_readn(fd, macro_extname->extname, macro_extname->length) != 
+						macro_extname->length) {
+				printf("read macro_extnames failed\n");
+				goto abort;
+			}
+			macro_extname->extname[macro_extname->length] = '\0';
+		}
+		if (cli_readn(fd, &macro_extname->numref, 2) != 2) {
+			printf("read macro_extnames failed\n");
+			return NULL;
+		}		
+		cli_dbgmsg("ext name: %s\n", macro_extname->extname);
+	}
+	return macro_extnames;
+	
+abort:
+	if (macro_extnames->macro_extname != NULL) {
+		for (i=0 ; i < macro_extnames->count ; i++) {
+			free(macro_extnames->macro_extname[i].extname);
+		}
+		free(macro_extname);
+	}
+	free(macro_extnames);
+	return NULL;
+}
+
+static void wm_free_extnames(macro_extnames_t *macro_extnames)
+{
+	int i;
+	
+	if (macro_extnames) {
+		for (i=0 ; i < macro_extnames->count ; i++) {
+			free(macro_extnames->macro_extname[i].extname);
+		}
+		free(macro_extnames->macro_extname);
+		free(macro_extnames);
+	}
+	return;
+}
+
+static macro_intnames_t *wm_read_macro_intnames(int fd)
+{
+	int i;
+	macro_intnames_t *macro_intnames;
+	macro_intname_t *macro_intname;
+	uint16_t junk;
+	
+	macro_intnames = (macro_intnames_t *) cli_malloc(sizeof(macro_intnames_t));
+	if (!macro_intnames) {
+		return NULL;
+	}
+	
+	if (cli_readn(fd, &macro_intnames->count, 2) != 2) {
+		printf("read macro_intnames failed\n");
+		return NULL;
+	}
+	cli_dbgmsg("int names count: %d\n", macro_intnames->count);
+	
+	macro_intnames->macro_intname =
+		(macro_intname_t *) cli_malloc(sizeof(macro_intname_t) * macro_intnames->count);
+	if (!macro_intnames->macro_intname) {
+		free(macro_intnames);
+		return NULL;
+	}
+	for (i=0 ; i < macro_intnames->count ; i++) {
+		macro_intname = &macro_intnames->macro_intname[i];
+		if (cli_readn(fd, &macro_intname->id, 2) != 2) {
+			printf("read macro_intnames failed\n");
+			macro_intnames->count = i;
+			goto abort;
+		}		
+		if (cli_readn(fd, &macro_intname->length, 1) != 1) {
+			printf("read macro_intnames failed\n");
+			macro_intnames->count = i;
+			goto abort;;
+		}	
+		macro_intname->intname = (char *) cli_malloc(macro_intname->length+1);
+		if (!macro_intname->intname) {
+			macro_intnames->count = i;
+			goto abort;
+		}
+		if (cli_readn(fd, macro_intname->intname, macro_intname->length) != macro_intname->length) {
+			printf("read macro_intnames failed\n");
+			macro_intnames->count = i+1;
+			goto abort;
+		}
+		macro_intname->intname[macro_intname->length] = '\0';
+		if (cli_readn(fd, &junk, 1) != 1) {
+			printf("read macro_intnames failed\n");
+			macro_intnames->count = i+1;
+			goto abort;
+		}
+		printf ("int name: %s\n", macro_intname->intname);
+	}
+	return macro_intnames;
+abort:
+	for (i=0 ; i < macro_intnames->count ; i++) {
+		free(macro_intnames->macro_intname[i].intname);
+	}
+	free(macro_intnames->macro_intname);
+	free(macro_intnames);
+	return NULL;
+}
+
+static void wm_free_intnames(macro_intnames_t *macro_intnames)
+{
+	int i;
+	
+	if (macro_intnames) {
+		for (i=0 ; i < macro_intnames->count ; i++) {
+			free(macro_intnames->macro_intname[i].intname);
+		}
+		free(macro_intnames->macro_intname);
+		free(macro_intnames);
+	}
+	return;
+}
+
+vba_project_t *wm_dir_read(const char *dir)
+{
+	int fd, done=FALSE, i;
+	mso_fib_t fib;
+	off_t end_offset;
+	unsigned char start_id, info_id;
+	macro_info_t *macro_info=NULL;
+	menu_info_t *menu_info=NULL;
+	macro_extnames_t *macro_extnames=NULL;
+	macro_intnames_t *macro_intnames=NULL;
+	vba_project_t *vba_project=NULL;
+	char *fullname;
+	
+	fullname = (char *) cli_malloc(strlen(dir) + 15);
+	sprintf(fullname, "%s/WordDocument", dir);
+	fd = open(fullname, O_RDONLY);
+	free(fullname);
+	if (fd == -1) {
+		cli_dbgmsg("Open WordDocument failed\n");
+		return NULL;
+	}
+	
+	if (!wm_read_fib(fd, &fib)) {
+		return NULL;
+	}
+	wm_print_fib(&fib);
+	
+	if (lseek(fd, fib.macro_offset, SEEK_SET) != fib.macro_offset) {
+		cli_dbgmsg("lseek macro_offset failed\n");
+		return NULL;
+	}
+	
+	end_offset = fib.macro_offset + fib.macro_len;
+	
+	if (cli_readn(fd, &start_id, 1) != 1) {
+		printf("read start_id failed\n");
+		return NULL;
+	}
+	cli_dbgmsg("start_id: %d\n", start_id);
+	
+	while ((lseek(fd, 0, SEEK_CUR) < end_offset) && !done) {
+		if (cli_readn(fd, &info_id, 1) != 1) {
+			printf("read macro_info failed\n");
+			return NULL;
+		}
+		switch (info_id) {
+			case 0x01:
+				macro_info = wm_read_macro_info(fd);
+				if (macro_info == NULL) {
+					done = TRUE;
+				}
+				break;
+			case 0x03:
+				if (!wm_read_oxo3(fd)) {
+					done = TRUE;
+				}
+				break;
+			case 0x05:
+				menu_info = wm_read_menu_info(fd);
+				if (menu_info == NULL) {
+					done = TRUE;
+				}
+				break;
+			case 0x10:
+				macro_extnames = wm_read_macro_extnames(fd);
+				if (macro_extnames == NULL) {
+					done = TRUE;
+				}
+				break;
+			case 0x11:
+				macro_intnames = wm_read_macro_intnames(fd);
+				if (macro_intnames == NULL) {
+					done = TRUE;
+				}				
+				break;
+			case 0x12:
+				/* No sure about these, always seems to
+				come after the macros though, so finish
+				*/
+				done = 1;
+				break;
+			case 0x40:
+				/* end marker */
+				done = 1;
+				break;
+			default:
+				cli_dbgmsg("\nunknown type: 0x%x\n", info_id);
+				done = 1;
+		}
+	}
+	
+	if (macro_info) {
+		vba_project = (vba_project_t *) cli_malloc(sizeof(struct vba_project_tag));
+		if (!vba_project) {
+			goto abort;
+		}
+		vba_project->name = (char **) cli_malloc(sizeof(char *) *macro_info->count);
+		if (!vba_project->name) {
+			free(vba_project);
+			vba_project = NULL;
+			goto abort;
+		}
+		vba_project->dir = strdup(dir);
+		vba_project->offset = (uint32_t *) cli_malloc(sizeof(uint32_t) *
+					macro_info->count);
+		if (!vba_project->offset) {
+			free(vba_project->name);
+			free(vba_project->dir);
+			free(vba_project);
+			vba_project = NULL;
+			goto abort;
+		}
+		vba_project->length = (uint32_t *) cli_malloc(sizeof(uint32_t) *
+					macro_info->count);
+		if (!vba_project->length) {
+			free(vba_project->offset);
+			free(vba_project->name);
+			free(vba_project->dir);
+			free(vba_project);
+			vba_project = NULL;
+			goto abort;
+		}
+		vba_project->key = (unsigned char *) cli_malloc(sizeof(unsigned char) *
+					macro_info->count);
+		if (!vba_project->key) {
+			free(vba_project->length);
+			free(vba_project->offset);
+			free(vba_project->name);
+			free(vba_project->dir);
+			free(vba_project);
+			vba_project = NULL;
+			goto abort;
+		}
+		vba_project->count = macro_info->count;
+		for (i=0 ; i < macro_info->count ; i++) {
+			vba_project->name[i] = strdup("WordDocument");
+			vba_project->offset[i] = macro_info->macro_entry[i].offset;
+			vba_project->length[i] = macro_info->macro_entry[i].len;
+			vba_project->key[i] = macro_info->macro_entry[i].key;
+		}
+	}
+	/* Fall through */
+abort:
+	if (macro_info) {
+		wm_free_macro_info(macro_info);
+	}
+	if (menu_info) {
+		wm_free_menu_info(menu_info);
+	}
+	if (macro_extnames) {
+		wm_free_extnames(macro_extnames);
+	}
+	if (macro_intnames) {
+		wm_free_intnames(macro_intnames);
+	}
+	return vba_project;
+}
+
+unsigned char *wm_decrypt_macro(int fd, uint32_t offset, uint32_t len,
+					unsigned char key)
+{
+	unsigned char *buff;
+	uint32_t i;
+	
+	if (lseek(fd, offset, SEEK_SET) != offset) {
+		return NULL;
+	}
+	buff = (unsigned char *) cli_malloc(len);
+	if (!buff) {
+		return NULL;
+	}
+
+	if (cli_readn(fd, buff, len) != len) {
+		free(buff);
+		return NULL;
+	}
+	if (key != 0) {
+		for (i=0 ; i < len; i++) {
+			buff[i] = buff[i] ^ key;
+		}
+	}
+	return buff;
+}

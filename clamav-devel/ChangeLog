@@ -1,6 +1,10 @@
+Tue Apr 27 12:42:14 BST 2004 (trog)
+-----------------------------------
+ * libclamav/vba_extract.[ch]: Word6 macro extraction code (not yet activated)
+
 Mon Apr 26 11:51:28 BST 2004 (trog)
 -----------------------------------
- libclamav/ole2_extract.c: Better support for non-standard OLE2 archives
+ * libclamav/ole2_extract.c: Better support for non-standard OLE2 archives
 
 Sun Apr 25 13:58:35 BST 2004 (njh)
 ----------------------------------

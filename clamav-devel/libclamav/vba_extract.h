@@ -29,10 +29,16 @@ typedef struct vba_project_tag {
 	int count;
 	char **name;
 	uint32_t *offset;
+	uint32_t *length;	/* for Word 6 macros */
+	unsigned char *key;	/* for Word 6 macros */
 	char *dir;
 } vba_project_t;
 
 vba_project_t *vba56_dir_read(const char *dir);
 unsigned char *vba_decompress(int fd, uint32_t offset, int *size);
+
+vba_project_t *wm_dir_read(const char *dir);
+unsigned char *wm_decrypt_macro(int fd, uint32_t offset, uint32_t len,
+					unsigned char key);
 
 #endif
