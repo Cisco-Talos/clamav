@@ -1,3 +1,15 @@
+Sat May  1 21:29:29 CEST 2004 (tk)
+----------------------------------
+  * clamd: stream scanner:
+	+ scan exactly up to StreamMaxLength (patch by Joe Maimon
+	  <jmaimon*ttec.com>)
+	+ fix description leak on ReadTimeout (patch by Maxim Dounin
+	  <mdounin@rambler-co.ru>)
+  * contrib/trashscan: v. 0.12 (Trashware <trashware*gmx.de>)
+  * libclamav: in block-encrypted mode scan a raw encrypted archive before
+	       marking it as encrypted (requested by Andy Fiddaman
+	       <clam*fiddaman.net>)
+
 Thu Apr 29 21:59:36 CEST 2004 (tk)
 ----------------------------------
   * libclamav: detect more mail file types

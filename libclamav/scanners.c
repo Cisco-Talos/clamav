@@ -76,10 +76,10 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "PK\003\004",			4,  "ZIP",		  CL_ZIPFILE},
     {0,  "\037\213",			2,  "GZip",		  CL_GZFILE},
     {0,  "BZh",				3,  "BZip",		  CL_BZFILE},
-    {0,  "From ",			5,  "MBox",		  CL_MAILFILE},
 
     /* Mail */
 
+    {0,  "From ",			5,  "MBox",		  CL_MAILFILE},
     {0,  "Received",			8,  "Raw mail",		  CL_MAILFILE},
     {0,  "Return-Path: ",		13, "Maildir",		  CL_MAILFILE},
     {0,  "Return-path: ",		13, "Maildir",		  CL_MAILFILE},
@@ -107,20 +107,21 @@ static const struct cli_magic_s cli_magic[] = {
 
     {0,  "\320\317\021\340\241\261\032\341",
 	                    8, "OLE2 container",  CL_OLE2FILE},
+
     /* Ignored types */
 
     {0,  "\000\000\001\263",             4, "MPEG video stream",  CL_DATAFILE},
     {0,  "\000\000\001\272",             4, "MPEG sys stream",    CL_DATAFILE},
     {0,  "RIFF",                         4, "RIFF",		  CL_DATAFILE},
-    {0,  "GIF87a",                       6, "GIF (87a)",          CL_DATAFILE},
-    {0,  "GIF89a",                       6, "GIF (89a)",          CL_DATAFILE},
-    {0,  "\x89PNG\r\n\x1a\n",            8, "PNG",                CL_DATAFILE},
-    {0,  "\377\330\377\340",             4, "JPEG",               CL_DATAFILE},
-    {0,  "\377\330\377\356",             4, "JPG",                CL_DATAFILE},
+    {0,  "GIF",				 3, "GIF",		  CL_DATAFILE},
+    {0,  "\x89PNG",			 4, "PNG",                CL_DATAFILE},
+    {0,  "\377\330\377",		 4, "JPEG",               CL_DATAFILE},
+    {0,  "BM",				 2, "BMP",                CL_DATAFILE},
     {0,  "OggS",                         4, "Ogg Stream",         CL_DATAFILE},
     {0,  "ID3",				 3, "MP3",		  CL_DATAFILE},
     {0,  "\377\373\220",		 3, "MP3",		  CL_DATAFILE},
     {0,  "\%PDF-",			 5, "PDF document",	  CL_DATAFILE},
+    {0,  "\%!PS-Adobe-",		11, "PostScript",	  CL_DATAFILE},
     {0,  "\060\046\262\165\216\146\317", 7, "WMA/WMV/ASF",	  CL_DATAFILE},
     {0,  ".RMF" ,			 4, "Real Media File",	  CL_DATAFILE},
 
@@ -146,8 +147,7 @@ cli_file_t cli_filetype(const char *buf, size_t buflen)
 static int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev);
 static int cli_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev);
 
-static int cli_scandesc(int desc, const char **virname, long int *scanned, const struct 
-cl_node *root)
+static int cli_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root)
 {
  	char *buffer, *buff, *endbl, *pt;
 	int bytes, buffsize, length, ret, *partcnt;
@@ -242,7 +242,9 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 	if(DETECT_ENCRYPTED && (rarlist->item.Flags & 4)) {
 	    files++;
 	    cli_dbgmsg("Rar -> Encrypted files found in archive.\n");
-	    *virname = "Encrypted.RAR";
+	    lseek(desc, 0, SEEK_SET);
+	    if(cli_scandesc(desc, virname, scanned, root) != CL_VIRUS)
+		*virname = "Encrypted.RAR";
 	    ret = CL_VIRUS;
 	    break;
 	}
@@ -411,7 +413,9 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	if(DETECT_ENCRYPTED && (zdirent.d_flags & 1 )) {
 	    files++;
 	    cli_dbgmsg("Zip -> Encrypted files found in archive.\n");
-	    *virname = "Encrypted.Zip";
+	    lseek(desc, 0, SEEK_SET);
+	    if(cli_scandesc(desc, virname, scanned, root) != CL_VIRUS)
+		*virname = "Encrypted.Zip";
 	    ret = CL_VIRUS;
 	    break;
 	}
