@@ -89,6 +89,7 @@ static const struct cl_magic_s cl_magic[] = {
     {0,  "Delivered-To: ", 14, "Mail",		    CL_MAILFILE},
     {0,  "X-UIDL: ",	    8, "Mail",		    CL_MAILFILE},
     {0,  "For: ",           5, "Eserv mail",	    CL_MAILFILE},
+    {0,  "X-Symantec-",    11, "Symantec",	    CL_MAILFILE},
     {0,  "\320\317\021\340\241\261\032\341",
 	                    8, "OLE2 container",  CL_OLE2FILE},
     {-1, NULL,              0, NULL,              CL_UNKNOWN_TYPE}
