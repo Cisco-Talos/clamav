@@ -283,6 +283,10 @@ static void cabd_close(struct mscab_decompressor *base,
   struct mscabd_file *fi, *nfi;
   struct mspack_system *sys;
 
+
+  if(origcab->desc)
+      close(origcab->desc);
+
   if (!base) return;
   sys = this->system;
 
