@@ -1,3 +1,8 @@
+Sat Feb 21 13:38:23 CET 2004 (tk)
+---------------------------------
+  * libclamav: fixed various segmentation faults introduced by a small bug
+	       in the yesterday's patch from Phil Oleson. Thanks to Nigel.
+
 Sat Feb 21 11:09:12 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	Don't run if the quarantine-dir is publically accessable
