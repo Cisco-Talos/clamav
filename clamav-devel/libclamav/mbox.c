@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.199  2004/12/07 09:01:24  nigelhorne
+ * Tidy
+ *
  * Revision 1.198  2004/12/04 16:03:55  nigelhorne
  * Text/plain now handled as no encoding
  *
@@ -582,7 +585,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.198 2004/12/04 16:03:55 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.199 2004/12/07 09:01:24 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1203,11 +1206,13 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 					fullline = ptr;
 				}
 
-				if(parseEmailHeader(ret, fullline, rfc821) < 0)
-					continue;
+				if(fullline) {
+					if(parseEmailHeader(ret, fullline, rfc821) < 0)
+						continue;
 
-				free(fullline);
-				fullline = NULL;
+					free(fullline);
+					fullline = NULL;
+				}
 			}
 		} else
 			/*cli_dbgmsg("Add line to body '%s'\n", buffer);*/
@@ -1365,10 +1370,11 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			/*
 			 * RFC1892/RFC3462: section 2 text/rfc822-headers
 			 * incorrectly sent as message/rfc822-headers
+			 *
+			 * Parse as text/plain, i.e. no mime
 			 */
 			cli_dbgmsg("Changing message/rfc822-headers to text/rfc822-headers\n");
-			mimeType = TEXT;
-			subtype = PLAIN;	/* parse as text/plain */
+			mimeType = NOMIME;
 		}
 
 		cli_dbgmsg("mimeType = %d\n", mimeType);
