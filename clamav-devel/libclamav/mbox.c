@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.81  2004/06/24 21:36:38  nigelhorne
+ * Plug memory leak with large number of attachments
+ *
  * Revision 1.80  2004/06/23 16:23:25  nigelhorne
  * Further empty line optimisation
  *
@@ -228,7 +231,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.80 2004/06/23 16:23:25 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.81 2004/06/24 21:36:38 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -711,7 +714,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 	/* Pre-assertions */
 	if(nBlobs >= MAX_ATTACHMENTS) {
 		cli_warnmsg("Not all attachments will be scanned\n");
-		return 2;
+		/*return 2;*/
 	}
 
 	aText = textIn;
@@ -1347,6 +1350,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 							blobGetFilename(blobs[i]),
 							blobGetFilename(blobList[j]));
 						blobDestroy(blobs[i]);
+						blobs[i] = NULL;
 					}
 				}
 
