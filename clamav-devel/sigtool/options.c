@@ -33,6 +33,8 @@
 
 #include "options.h"
 #include "others.h"
+#include "output.h"
+#include "memory.h"
 
 void sigtool(struct optstruct *opt);
 

@@ -126,6 +126,8 @@ sigtool_SOURCES = \
     $(top_srcdir)/shared/getopt.h \
     $(top_srcdir)/shared/memory.c \
     $(top_srcdir)/shared/memory.h \
+    $(top_srcdir)/shared/cfgparser.c \
+    $(top_srcdir)/shared/cfgparser.h \
     options.c \
     options.h \
     sigtool.c
@@ -144,7 +146,7 @@ bin_PROGRAMS = sigtool$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
 
 am_sigtool_OBJECTS = output.$(OBJEXT) getopt.$(OBJEXT) memory.$(OBJEXT) \
-	options.$(OBJEXT) sigtool.$(OBJEXT)
+	cfgparser.$(OBJEXT) options.$(OBJEXT) sigtool.$(OBJEXT)
 sigtool_OBJECTS = $(am_sigtool_OBJECTS)
 sigtool_DEPENDENCIES = $(top_builddir)/clamscan/others.o
 sigtool_LDFLAGS =
@@ -153,9 +155,9 @@ CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
-@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/getopt.Po ./$(DEPDIR)/memory.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/options.Po ./$(DEPDIR)/output.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/sigtool.Po
+@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/cfgparser.Po ./$(DEPDIR)/getopt.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/memory.Po ./$(DEPDIR)/options.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/output.Po ./$(DEPDIR)/sigtool.Po
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
@@ -207,6 +209,7 @@ clean-binPROGRAMS:
 output.$(OBJEXT): $(top_srcdir)/shared/output.c
 getopt.$(OBJEXT): $(top_srcdir)/shared/getopt.c
 memory.$(OBJEXT): $(top_srcdir)/shared/memory.c
+cfgparser.$(OBJEXT): $(top_srcdir)/shared/cfgparser.c
 sigtool$(EXEEXT): $(sigtool_OBJECTS) $(sigtool_DEPENDENCIES) 
 	@rm -f sigtool$(EXEEXT)
 	$(LINK) $(sigtool_LDFLAGS) $(sigtool_OBJECTS) $(sigtool_LDADD) $(LIBS)
@@ -217,6 +220,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cfgparser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/memory.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/options.Po@am__quote@
@@ -297,6 +301,24 @@ memory.lo: $(top_srcdir)/shared/memory.c
 @AMDEP_TRUE@	depfile='$(DEPDIR)/memory.Plo' tmpdepfile='$(DEPDIR)/memory.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o memory.lo `test -f '$(top_srcdir)/shared/memory.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/memory.c
+
+cfgparser.o: $(top_srcdir)/shared/cfgparser.c
+@AMDEP_TRUE@	source='$(top_srcdir)/shared/cfgparser.c' object='cfgparser.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/cfgparser.Po' tmpdepfile='$(DEPDIR)/cfgparser.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cfgparser.o `test -f '$(top_srcdir)/shared/cfgparser.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/cfgparser.c
+
+cfgparser.obj: $(top_srcdir)/shared/cfgparser.c
+@AMDEP_TRUE@	source='$(top_srcdir)/shared/cfgparser.c' object='cfgparser.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/cfgparser.Po' tmpdepfile='$(DEPDIR)/cfgparser.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cfgparser.obj `cygpath -w $(top_srcdir)/shared/cfgparser.c`
+
+cfgparser.lo: $(top_srcdir)/shared/cfgparser.c
+@AMDEP_TRUE@	source='$(top_srcdir)/shared/cfgparser.c' object='cfgparser.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/cfgparser.Plo' tmpdepfile='$(DEPDIR)/cfgparser.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cfgparser.lo `test -f '$(top_srcdir)/shared/cfgparser.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/cfgparser.c
 CCDEPMODE = @CCDEPMODE@
 
 mostlyclean-libtool:
