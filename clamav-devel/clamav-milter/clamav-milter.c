@@ -163,9 +163,14 @@
  *	0.65e	29/11/03 Fix problem of possible confused pointers if large
  *			number of recipients given.
  *			Fix by Michael Dankov <misha@btrc.ru>.
+ *	0.65f	29/11/03 Added --quarantine-dir
+ *			Thanks to Michael Dankov <misha@btrc.ru>.
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.25  2003/11/30 06:12:06  nigelhorne
+ * Added --quarantine-dir option
+ *
  * Revision 1.24  2003/11/29 11:51:19  nigelhorne
  * Fix problem of possible confused pointers if large number of recipients given
  *
@@ -223,9 +228,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.24 2003/11/29 11:51:19 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.25 2003/11/30 06:12:06 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.65e"
+#define	CM_VERSION	"0.65f"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -292,6 +297,7 @@ struct	privdata {
 				 * dataSocket
 				 */
 	int	dataSocket;	/* Socket to send data to clamd */
+	char	*filename;	/* Where to store the message in quarantine */
 };
 
 static	int	pingServer(void);
@@ -328,9 +334,13 @@ static	int	qflag = 0;	/*
 				 * found is the syslog, so it's best to
 				 * enable LogSyslog in clamav.conf
 				 */
-static	char *quarantine;	/*
+static	char	*quarantine;	/*
 				 * If a virus is found in an email redirect
 				 * it to this account
+				 */
+static	char	*quarantine_dir; /*
+				 * Path to store messages before scanning.
+				 * Infected ones will be left there.
 				 */
 static	int	nflag = 0;	/*
 				 * Don't add X-Virus-Scanned to header. Patch
@@ -389,6 +399,7 @@ help(void)
 	puts("\t--postmaster-only\t-P\tSend warnings only to the postmaster.");
 	puts("\t--quiet\t\t\t-q\tDon't send e-mail notifications of interceptions.");
 	puts("\t--quarantine=USER\t-Q EMAIL\tQuanrantine e-mail account.");
+	puts("\t--quarantine-dir=DIR\t-U DIR\tDirectory to store infected emails.");
 	puts("\t--server=ADDRESS\t-s ADDR\tIP address of server running clamd (when using TCPsocket).");
 	puts("\t--version\t\t-V\tPrint the version number of this software.");
 #ifdef	CL_DEBUG
@@ -403,7 +414,7 @@ main(int argc, char **argv)
 	char *port = NULL;
 	const char *cfgfile = CL_DEFAULT_CFG;
 	struct cfgstruct *cpt;
-        struct passwd *user;
+	struct passwd *user;
 	struct smfiDesc smfilter = {
 		"ClamAv", /* filter name */
 		SMFI_VERSION,	/* version code -- leave untouched */
@@ -431,9 +442,9 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "bc:flnopPqQdhs:Vx:";
+		const char *args = "bc:flm:nop:PqQ:dhs:U:Vx:";
 #else
-		const char *args = "bc:flnopPqQdhs:V";
+		const char *args = "bc:flm:nop:PqQ:dhs:U:V";
 #endif
 
 		static struct option long_options[] = {
@@ -447,7 +458,7 @@ main(int argc, char **argv)
 				"dont-scan-on-error", 0, NULL, 'd'
 			},
 			{
-				"force-scan", 1, NULL, 'f'
+				"force-scan", 0, NULL, 'f'
 			},
 			{
 				"help", 0, NULL, 'h'
@@ -472,6 +483,9 @@ main(int argc, char **argv)
 			},
 			{
 				"quarantine", 1, NULL, 'Q',
+			},
+			{
+				"quarantine-dir", 1, NULL, 'U',
 			},
 			{
 				"max-children", 1, NULL, 'm'
@@ -544,6 +558,9 @@ main(int argc, char **argv)
 			case 's':	/* server running clamd */
 				serverIP = optarg;
 				break;
+			case 'U':	/* quarantine path */
+				quarantine_dir = optarg;
+				break;
 			case 'V':
 				puts(clamav_version);
 				return EX_OK;
@@ -554,9 +571,9 @@ main(int argc, char **argv)
 #endif
 			default:
 #ifdef	CL_DEBUG
-				fprintf(stderr, "Usage: %s [-b] [-c FILE] [--max-children=num] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-x#] socket-addr\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-b] [-c FILE] [--max-children=num] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-x#] [-U PATH] socket-addr\n", argv[0]);
 #else
-				fprintf(stderr, "Usage: %s [-b] [-c FILE] [--max-children=num] [-l] [-o] [-p address] [-P] [-q] [-Q USER] socket-addr\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-b] [-c FILE] [--max-children=num] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-U PATH] socket-addr\n", argv[0]);
 #endif
 				return EX_USAGE;
 		}
@@ -596,6 +613,10 @@ main(int argc, char **argv)
 			setuid(user->pw_uid);
 		} else
 			fprintf(stderr, "%s: running as root is not recommended\n", argv[0]);
+	}
+	if(quarantine_dir && (access(quarantine_dir, W_OK) < 0)) {
+		perror(quarantine_dir);
+		return EX_CONFIG;
 	}
 
 	if(!cfgopt(copt, "StreamSaveToDisk")) {
@@ -642,7 +663,13 @@ main(int argc, char **argv)
 		/*
 		 * TCPSocket is in fact a port number not a full socket
 		 */
-		tcpSocket = (in_port_t)cpt->numarg;
+		if(quarantine_dir) {
+			fprintf(stderr, "%s: --quarantine-dir not supported for remote scanning - use --quarantine\n", argv[0]);
+			return EX_CONFIG;
+		}
+
+		tcpSocket = cpt->numarg;
+
 		if(!pingServer()) {
 			fprintf(stderr, "Can't talk to clamd server at %s on port %d\n",
 				serverIP, tcpSocket);
@@ -976,128 +1003,162 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 	privdata->dataSocket = -1;	/* 0.4 */
 	privdata->cmdSocket = -1;	/* 0.4 */
 
-	/*
-	 * Create socket to talk to clamd. It will tell us the port to use
-	 * to send the data. That will require another socket.
-	 */
-	if(localSocket) {
-		struct sockaddr_un server;
+	if(quarantine_dir) {
+		/*
+		 * quarantine_dir is specified
+		 * store message in a temporary file
+		 */
+		int ntries = 5;
 
-		memset((char *)&server, 0, sizeof(struct sockaddr_un));
-		server.sun_family = AF_UNIX;
-		strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
+		privdata->filename = malloc(strlen(quarantine_dir) + 12);
 
-		if((privdata->cmdSocket = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-			perror("socket");
-			return cl_error;
-		}
-		if(connect(privdata->cmdSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
-			perror(localSocket);
+		do {
+			sprintf(privdata->filename, "%s/msg.XXXXXX", quarantine_dir);
+#if	defined(C_LINUX) || defined(C_BSD)
+			privdata->dataSocket = mkstemp(privdata->filename);
+#else
+			if(mktemp(privdata->filename) == NULL) {
+				if(use_syslog)
+					syslog(LOG_ERR, "mktemp %s failed", privdata->filename);
+				free(privdata->filename);
+				privdata->filename = NULL;
+				return cl_error;
+			}
+			privdata->dataSocket = open(privdata->filename, O_CREAT|O_EXCL|O_WRONLY,0600);
+#endif
+		} while(--ntries > 0 && privdata->dataSocket < 0);
+
+		if(privdata->dataSocket < 0) {
+			if(use_syslog)
+				syslog(LOG_ERR, "tempfile %s creation failed", privdata->filename);
+			free(privdata->filename);
+			privdata->filename = NULL;
 			return cl_error;
 		}
 	} else {
-		struct sockaddr_in server;
+		/*
+		 * Create socket to talk to clamd. It will tell us the port to use
+		 * to send the data. That will require another socket.
+		 */
+		if(localSocket) {
+			struct sockaddr_un server;
 
-		memset((char *)&server, 0, sizeof(struct sockaddr_in));
-		server.sin_family = AF_INET;
-		server.sin_port = htons(tcpSocket);
-		server.sin_addr.s_addr = inet_addr(serverIP);
+			memset((char *)&server, 0, sizeof(struct sockaddr_un));
+			server.sun_family = AF_UNIX;
+			strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
 
-		if((privdata->cmdSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+			if((privdata->cmdSocket = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+				perror("socket");
+				return cl_error;
+			}
+			if(connect(privdata->cmdSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
+				perror(localSocket);
+				return cl_error;
+			}
+		} else {
+			struct sockaddr_in server;
+
+			memset((char *)&server, 0, sizeof(struct sockaddr_in));
+			server.sin_family = AF_INET;
+			server.sin_port = htons(tcpSocket);
+			server.sin_addr.s_addr = inet_addr(serverIP);
+
+			if((privdata->cmdSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+				perror("socket");
+				return cl_error;
+			}
+			if(connect(privdata->cmdSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
+				perror("connect");
+				return cl_error;
+			}
+		}
+
+		/*
+		 * Create socket that we'll use to send the data to clamd
+		 */
+		if((privdata->dataSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 			perror("socket");
+			close(privdata->cmdSocket);
+			free(privdata);
+			if(use_syslog)
+				syslog(LOG_ERR, "failed to create socket");
 			return cl_error;
 		}
-		if(connect(privdata->cmdSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
+
+		shutdown(privdata->dataSocket, SHUT_RD);
+
+		if(send(privdata->cmdSocket, "STREAM\n", 7, 0) < 7) {
+			perror("send");
+			close(privdata->dataSocket);
+			close(privdata->cmdSocket);
+			free(privdata);
+			if(use_syslog)
+				syslog(LOG_ERR, "send failed to clamd");
+			return cl_error;
+		}
+
+		shutdown(privdata->cmdSocket, SHUT_WR);
+
+		nbytes = recv(privdata->cmdSocket, buf, sizeof(buf), 0);
+		if(nbytes < 0) {
+			perror("recv");
+			close(privdata->dataSocket);
+			close(privdata->cmdSocket);
+			free(privdata);
+			if(use_syslog)
+				syslog(LOG_ERR, "recv failed from clamd getting PORT");
+			return cl_error;
+		}
+		buf[nbytes] = '\0';
+	#ifdef	CL_DEBUG
+		if(debug_level >= 4)
+			printf("Received: %s", buf);
+	#endif
+		if(sscanf(buf, "PORT %hu\n", &port) != 1) {
+			close(privdata->dataSocket);
+			close(privdata->cmdSocket);
+			free(privdata);
+			if(use_syslog)
+				syslog(LOG_ERR, "Expected port information from clamd, got '%s'",
+					buf);
+			else
+				fprintf(stderr, "Expected port information from clamd, got '%s'\n",
+					buf);
+			return cl_error;
+		}
+
+		memset((char *)&reply, 0, sizeof(struct sockaddr_in));
+		reply.sin_family = AF_INET;
+		reply.sin_port = ntohs(port);
+
+		reply.sin_addr.s_addr = inet_addr(serverIP);
+
+	#ifdef	CL_DEBUG
+		if(debug_level >= 4)
+			printf("Connecting to local port %d\n", port);
+	#endif
+
+		rc = connect(privdata->dataSocket, (struct sockaddr *)&reply, sizeof(struct sockaddr_in));
+
+		if(rc < 0) {
 			perror("connect");
+
+			close(privdata->dataSocket);
+			close(privdata->cmdSocket);
+			free(privdata);
+
+			/* 0.4 - use better error message */
+			if(use_syslog) {
+	#ifdef TARGET_OS_SOLARIS	/* no strerror_r */
+				syslog(LOG_ERR, "Failed to connect to port %d given by clamd: %s", port, strerror(rc));
+	#else
+				strerror_r(rc, buf, sizeof(buf));
+				syslog(LOG_ERR, "Failed to connect to port %d given by clamd: %s", port, buf);
+	#endif
+			}
+
 			return cl_error;
 		}
-	}
-
-	/*
-	 * Create socket that we'll use to send the data to clamd
-	 */
-	if((privdata->dataSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		perror("socket");
-		close(privdata->cmdSocket);
-		free(privdata);
-		if(use_syslog)
-			syslog(LOG_ERR, "failed to create socket");
-		return cl_error;
-	}
-
-	shutdown(privdata->dataSocket, SHUT_RD);
-
-	if(send(privdata->cmdSocket, "STREAM\n", 7, 0) < 7) {
-		perror("send");
-		close(privdata->dataSocket);
-		close(privdata->cmdSocket);
-		free(privdata);
-		if(use_syslog)
-			syslog(LOG_ERR, "send failed to clamd");
-		return cl_error;
-	}
-
-	shutdown(privdata->cmdSocket, SHUT_WR);
-
-	nbytes = recv(privdata->cmdSocket, buf, sizeof(buf), 0);
-	if(nbytes < 0) {
-		perror("recv");
-		close(privdata->dataSocket);
-		close(privdata->cmdSocket);
-		free(privdata);
-		if(use_syslog)
-			syslog(LOG_ERR, "recv failed from clamd getting PORT");
-		return cl_error;
-	}
-	buf[nbytes] = '\0';
-#ifdef	CL_DEBUG
-	if(debug_level >= 4)
-		printf("Received: %s", buf);
-#endif
-	if(sscanf(buf, "PORT %hu\n", &port) != 1) {
-		close(privdata->dataSocket);
-		close(privdata->cmdSocket);
-		free(privdata);
-		if(use_syslog)
-			syslog(LOG_ERR, "Expected port information from clamd, got '%s'",
-				buf);
-		else
-			fprintf(stderr, "Expected port information from clamd, got '%s'\n",
-				buf);
-		return cl_error;
-	}
-
-	memset((char *)&reply, 0, sizeof(struct sockaddr_in));
-	reply.sin_family = AF_INET;
-	reply.sin_port = ntohs(port);
-
-	reply.sin_addr.s_addr = inet_addr(serverIP);
-
-#ifdef	CL_DEBUG
-	if(debug_level >= 4)
-		printf("Connecting to local port %d\n", port);
-#endif
-
-	rc = connect(privdata->dataSocket, (struct sockaddr *)&reply, sizeof(struct sockaddr_in));
-
-	if(rc < 0) {
-		perror("connect");
-
-		close(privdata->dataSocket);
-		close(privdata->cmdSocket);
-		free(privdata);
-
-		/* 0.4 - use better error message */
-		if(use_syslog) {
-#ifdef TARGET_OS_SOLARIS	/* no strerror_r */
-			syslog(LOG_ERR, "Failed to connect to port %d given by clamd: %s", port, strerror(rc));
-#else
-			strerror_r(rc, buf, sizeof(buf));
-			syslog(LOG_ERR, "Failed to connect to port %d given by clamd: %s", port, buf);
-#endif
-		}
-
-		return cl_error;
 	}
 
 	clamfi_send(privdata, 0, "From %s\n", argv[0]);
@@ -1249,12 +1310,51 @@ clamfi_eom(SMFICTX *ctx)
 #ifdef	CL_DEBUG
 	puts("clamfi_eom");
 	assert(privdata != NULL);
-	assert(privdata->cmdSocket >= 0);
+	assert((privdata->cmdSocket >= 0) || (privdata->filename != NULL));
+	assert(!((privdata->cmdSocket >= 0) && (privdata->filename != NULL)));
 	assert(privdata->dataSocket >= 0);
 #endif
 
 	close(privdata->dataSocket);
 	privdata->dataSocket = -1;
+
+	if(quarantine_dir != NULL) {
+		char cmdbuf[1024];
+		/*
+		 * Create socket to talk to clamd.
+		 */
+		struct sockaddr_un server;
+		int nbytes;
+
+		assert(localSocket != NULL);
+
+		memset((char *)&server, 0, sizeof(struct sockaddr_un));
+		server.sun_family = AF_UNIX;
+		strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
+
+		if((privdata->cmdSocket = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+			perror("socket");
+			return cl_error;
+		}
+		if(connect(privdata->cmdSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
+			perror(localSocket);
+			return cl_error;
+		}
+
+		snprintf(cmdbuf, sizeof(cmdbuf) - 1, "SCAN %s", privdata->filename);
+
+		nbytes = (int)strlen(cmdbuf);
+
+		if(send(privdata->cmdSocket, cmdbuf, nbytes, 0) < nbytes) {
+			perror("send");
+			clamfi_cleanup(ctx);
+			if(use_syslog)
+				syslog(LOG_ERR, "send failed to clamd");
+			return cl_error;
+		}
+
+		shutdown(privdata->cmdSocket, SHUT_WR);
+	}
 
 	if(recv(privdata->cmdSocket, mess, sizeof(mess), 0) > 0) {
 		if((ptr = strchr(mess, '\n')) != NULL)
@@ -1366,12 +1466,29 @@ clamfi_eom(SMFICTX *ctx)
 				fputs("contained a virus and has not been delivered.\n\t", sendmail);
 				fputs(mess, sendmail);
 
+				if(privdata->filename != NULL)
+					fprintf(sendmail, "\nThe message in question is quarantined as %s\n", privdata->filename);
+
 				pclose(sendmail);
 			}
 		}
+
+		if(privdata->filename) {
+			assert(quarantine_dir != NULL);
+
+			if(use_syslog)
+				syslog(LOG_NOTICE, "Quarantined infected mail as %s", privdata->filename);
+			/*
+			 * Cleanup filename here! Default procedure would delete quarantine file
+			 */
+			free(privdata->filename);
+			privdata->filename = NULL;
+		}
+
 		if(quarantine) {
 			for(to = privdata->to; *to; to++) {
 				smfi_delrcpt(ctx, *to);
+				smfi_addheader(ctx, "X-Original-To", *to);
 				free(*to);
 			}
 			free(privdata->to);
@@ -1381,12 +1498,11 @@ clamfi_eom(SMFICTX *ctx)
 					syslog(LOG_DEBUG, "Can't set quarantine user %s", quarantine);
 				else
 					fprintf(stderr, "Can't set quarantine user %s\n", quarantine);
-			} else {
+			} else
 				/*
 				 * FIXME: doesn't work if there's no subject
 				 */
 				smfi_chgheader(ctx, "Subject", 1, mess);
-			}
 		} else
 			rc = SMFIS_REJECT;	/* Delete the e-mail */
 
@@ -1444,6 +1560,13 @@ clamfi_cleanup(SMFICTX *ctx)
 		if(privdata->dataSocket >= 0) {
 			close(privdata->dataSocket);
 			privdata->dataSocket = -1;
+		}
+
+		if(privdata->filename != NULL) {
+			if(unlink(privdata->filename) < 0)
+				perror(privdata->filename);
+			free(privdata->filename);
+			privdata->filename = NULL;
 		}
 
 		if(privdata->from) {
@@ -1541,7 +1664,9 @@ clamfi_send(const struct privdata *privdata, size_t len, const char *format, ...
 #endif
 
 	while(len > 0) {
-		int nbytes = send(privdata->dataSocket, ptr, len, 0);
+		int nbytes = (quarantine_dir) ?
+			write(privdata->dataSocket, ptr, len) :
+			send(privdata->dataSocket, ptr, len, 0);
 
 		if(nbytes == -1) {
 			if(errno == EINTR)
