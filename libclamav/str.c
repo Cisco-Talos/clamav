@@ -231,3 +231,41 @@ char *cli_strtok(const char *line, int fieldno, const char *delim)
 
     return buffer;
 }
+
+/*
+ * Like cli_strtok, but this puts the output into a given argument, rather
+ * than allocating fresh memory
+ * Returns NULL for error, or a pointer to output
+ * njh@bandsman.co.uk
+ */
+char *cli_strtokbuf(const char *input, int fieldno, const char *delim, char *output)
+{
+    int counter = 0, i, j;
+
+    /* step to arg # <fieldno> */
+    for (i=0; input[i] && counter != fieldno; i++) {
+	if (strchr(delim, input[i])) {
+	    counter++;
+	    while(input[i+1] && strchr(delim, input[i+1])) {
+		i++;
+	    }
+	}
+    }
+    if (input[i] == '\0') {
+	/* end of buffer before field reached */
+	return NULL;
+    }
+
+    for (j=i; input[j]; j++) {
+	if (strchr(delim, input[j])) {
+	    break;
+	}
+    }
+    if (i == j) {
+	return NULL;
+    }
+    strncpy(output, input+i, j-i);
+    output[j-i] = '\0';
+
+    return output;
+}
