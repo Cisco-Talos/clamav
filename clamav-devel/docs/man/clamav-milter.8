@@ -203,6 +203,8 @@ The % character can be escaped thus, %%, to send the % character.
 Any occurance of strings in dollar signs are replaced with the appropriate
 sendmail-variable, e.g. ${if_addr}$.
 If the \-t option is not given, clamav\-milter defaults to a hardcoded message.
+Note that to send warning messages, clamav\-milter must be able to execute
+sendmail.
 .TP
 \fB\-\-timeout=n \-T n\fR
 Used in conjuction with max\-children. If clamav\-milter waits for more than
