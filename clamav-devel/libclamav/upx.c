@@ -24,6 +24,7 @@
 ** 09/05/2k4 - Moved code outta main(), got rid of globals for thread safety, added bound checking, minor cleaning
 ** 04/06/2k4 - Now we handle 2B, 2D and 2E :D
 ** 28/08/2k4 - PE rebuild for nested packers
+** 12/12/2k4 - Improved PE rebuild code and added some debug info on failure
 */
 
 /*
@@ -90,8 +91,10 @@ int pefromupx (char *src, char *dst, int *dsize, uint32_t ep, uint32_t upx0, uin
 
   realstuffsz = imports-dst;
   
-  if ( realstuffsz < 0 || realstuffsz > *dsize )
+  if ( realstuffsz < 0 || realstuffsz > *dsize ) {
+    cli_dbgmsg("UPX: wrong realstuff size - giving up rebuild\n");
     return 0;
+  }
   
   pehdr = imports;
   while (pehdr+7 < dst+*dsize && cli_readint32(pehdr)) {
@@ -106,23 +109,33 @@ int pefromupx (char *src, char *dst, int *dsize, uint32_t ep, uint32_t upx0, uin
   }
 
   pehdr+=4;
-  if (pehdr+0xf8 > dst+*dsize)
+  if (pehdr+0xf8 > dst+*dsize) {
+    cli_dbgmsg("UPX: sections out of bounds - giving up rebuild\n");
     return 0;
+  }
   
-  if ( cli_readint32(pehdr) != 0x4550 )
+  if ( cli_readint32(pehdr) != 0x4550 ) {
+    cli_dbgmsg("UPX: No magic for PE - giving up rebuild\n");
     return 0;
+  }
   
-  if (! (align = cli_readint32(pehdr+0x38)))
+  if (! (align = cli_readint32(pehdr+0x38))) {
+    cli_dbgmsg("UPX: Cant align to a NULL bound - giving up rebuild\n");
     return 0;
+  }
   
   sections = pehdr+0xf8;
-  if ( ! (sectcnt = pehdr[6]+256*pehdr[7]))
+  if ( ! (sectcnt = pehdr[6]+256*pehdr[7])) {
+    cli_dbgmsg("UPX: No sections? - giving up rebuild\n");
     return 0;
+  }
   
   foffset+=0x28*sectcnt;
   
-  if (pehdr + 0xf8 + 0x28*sectcnt >= dst + *dsize)
+  if (pehdr + 0xf8 + 0x28*sectcnt >= dst + *dsize) {
+    cli_dbgmsg("UPX: Not enough space for all sects - giving up rebuild\n");
     return 0;
+  }
   
   for (upd = 0; upd <sectcnt ; upd++) {
     uint32_t vsize=cli_readint32(sections+8)-1;
@@ -132,16 +145,22 @@ int pefromupx (char *src, char *dst, int *dsize, uint32_t ep, uint32_t upx0, uin
     vsize=(((vsize/0x1000)+1)*0x1000); /* FIXME: get bounds from header */
     
     /* Within bounds ? */
-    if ( urva < upx0 || urva + vsize > upx0 + realstuffsz)
+    if ( urva < upx0 || urva + vsize > upx0 + realstuffsz) {
+      cli_dbgmsg("UPX: Sect %d out of bounds - giving up rebuild\n", upd);
       return 0;
+    }
     
     /* Rsize -gt Vsize ? */
-    if ( rsize > vsize )
+    if ( rsize > vsize ) {
+      cli_dbgmsg("UPX: Raw size for sect %d is greater than virtual (%x / %x) - giving up rebuild\n", upd, rsize, vsize);
       return 0;
+    }
     
     /* Am i been fooled? There are better ways ;) */
-    if ( rsize+4 < vsize && cli_readint32(dst+urva-upx0+rsize) )
+    if ( rsize+4 < vsize && cli_readint32(dst+urva-upx0+rsize) ) {
+      cli_dbgmsg("UPX: Am i been fooled? - giving up rebuild\n", upd);
       return 0;
+    }
     
     cli_writeint32(sections+8, vsize);
     cli_writeint32(sections+20, foffset);
@@ -152,9 +171,11 @@ int pefromupx (char *src, char *dst, int *dsize, uint32_t ep, uint32_t upx0, uin
 
   cli_writeint32(pehdr+8, 0x4d414c43);
 
-  if (!(newbuf = (char *) cli_malloc(foffset)))
+  if (!(newbuf = (char *) cli_malloc(foffset))) {
+    cli_dbgmsg("UPX: malloc failed - giving up rebuild\n", upd);
     return 0;
-
+  }
+  
   memcpy(newbuf, HEADERS, 0xd0);
   memcpy(newbuf+0xd0, pehdr,0xf8+0x28*sectcnt);
   sections = pehdr+0xf8;
@@ -283,12 +304,12 @@ int upx_inflate2b(char *src, int ssize, char *dst, int *dsize, uint32_t upx0, ui
   }
 
 
-  if ( ep - upx1 + 0x14f <= ssize-5  &&    /* Wondering how we got so far?! */
-       src[ep - upx1 + 0x14f] == '\xe9' && /* JMP OldEip                    */
+  if ( ep - upx1 + 0x108 <= ssize-5  &&    /* Wondering how we got so far?! */
        src[ep - upx1 + 0x106] == '\x8d' && /* lea edi, ...                  */
        src[ep - upx1 + 0x107] == '\xbe' )  /* ... [esi + offset]          */
     return pefromupx (src, dst, dsize, ep, upx0, upx1, 0x108);
 
+  cli_dbgmsg("UPX: bad magic for 2b\n");
   return 0;
 }
 
@@ -372,12 +393,13 @@ int upx_inflate2d(char *src, int ssize, char *dst, int *dsize, uint32_t upx0, ui
     dcur+=backsize;
   }
 
-  if ( ep - upx1 + 0x139 <= ssize-5  &&    /* Wondering how we got so far?! */
-       src[ep - upx1 + 0x139] == '\xe9' && /* JMP OldEip                    */
-       src[ep - upx1 + 0xe7] == '\x8d' && /* lea edi, ...                  */
-       src[ep - upx1 + 0xe8] == '\xbe' )  /* ... [esi + offset]          */
-    return pefromupx (src, dst, dsize, ep, upx0, upx1, 0xe9);
-
+  if ( ep - upx1 + 0x124 <= ssize-5 ) {   /* Wondering how we got so far?! */
+    if ( src[ep - upx1 + 0x11a] == '\x8d' && src[ep - upx1 + 0x11b] == '\xbe' )
+      return pefromupx (src, dst, dsize, ep, upx0, upx1, 0x11c);
+    if ( src[ep - upx1 + 0x122] == '\x8d' && src[ep - upx1 + 0x123] == '\xbe' )
+      return pefromupx (src, dst, dsize, ep, upx0, upx1, 0x124);
+  }
+  cli_dbgmsg("UPX: bad magic for 2d\n");
   return 0;
 }
 
@@ -470,11 +492,12 @@ int upx_inflate2e(char *src, int ssize, char *dst, int *dsize, uint32_t upx0, ui
     dcur+=backsize;
   }
 
-  if ( ep - upx1 + 0x145 <= ssize-5  &&    /* Wondering how we got so far?! */
-       src[ep - upx1 + 0x145] == '\xe9' && /* JMP OldEip                    */
-       src[ep - upx1 + 0xf3] == '\x8d' && /* lea edi, ...                  */
-       src[ep - upx1 + 0xf4] == '\xbe' )  /* ... [esi + offset]          */
-    return pefromupx (src, dst, dsize, ep, upx0, upx1, 0xf5);
-
+  if ( ep - upx1 + 0x130 <= ssize-5 ) {   /* Wondering how we got so far?! */
+    if ( src[ep - upx1 + 0x126] == '\x8d' && src[ep - upx1 + 0x127] == '\xbe' )
+      return pefromupx (src, dst, dsize, ep, upx0, upx1, 0x128);
+    if ( src[ep - upx1 + 0x12e] == '\x8d' && src[ep - upx1 + 0x12f] == '\xbe' )
+      return pefromupx (src, dst, dsize, ep, upx0, upx1, 0x130);
+  }
+  cli_dbgmsg("UPX: bad magic for 2e\n");
   return 0;
 }
