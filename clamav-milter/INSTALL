@@ -69,16 +69,16 @@ See http://www.nmt.edu/~wcolburn/sendmail-8.12.5/libmilter/docs/sample.html
 Installations for RedHat Linux and it's derivatives such as YellowDog:
 	Ensure that you have the sendmail-devel RPM installed
 	Add to /etc/mail/sendmail.mc:
-	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clamav.sock, F=, T=S:4m;R:4m')dnl
+	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clmilter.sock, F=, T=S:4m;R:4m')dnl
 	define(`confINPUT_MAIL_FILTERS', `clamav')
 
 	Check entry in /usr/local/etc/clamav.conf of the form:
-	LocalSocket /var/run/clamd.sock
+	LocalSocket /var/run/clamav/clamd.sock
 	StreamSaveToDisk
 
 	If you already have a filter (such as spamassassin-milter from
 	http://savannah.nongnu.org/projects/spamass-milt) add it thus:
-	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clamav.sock, F=, T=S:4m;R:4m')dnl
+	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clmilter.sock, F=, T=S:4m;R:4m')dnl
 	INPUT_MAIL_FILTER(`spamassassin', `S=local:/var/run/spamass.sock, F=, T=C:15m;S:4m;R:4m;E:10m')
 	define(`confINPUT_MAIL_FILTERS', `spamassassin,clamav')dnl
 
@@ -94,14 +94,16 @@ I suggest putting SpamAssassin first since you're more likely to get spam
 than a virus/worm sent to you.
 
 Add to /etc/sysconfig/clamav-milter
-	CLAMAV_FLAGS="--max-children=2 local:/var/run/clamav/clamav.sock"
+	CLAMAV_FLAGS="--max-children=2 local:/var/run/clamav/clmilter.sock"
 or if clamd is on a different machine
-	CLAMAV_FLAGS="--max-children=2 --server=192.168.1.9 local:/var/run/clamav/clamav.sock"
+	CLAMAV_FLAGS="--max-children=2 --server=192.168.1.9 local:/var/run/clamav/clmilter.sock"
 
 You should have received a script to put into /etc/init.d with this software.
 
+You should always start clamd before clamav-milter.
+
 As with all software it is wise to ensure that clamav-milter has the least
-privlidges it needs to run. So don't run it as root and don't store the sockets
+privileges it needs to run. So don't run it as root and don't store the sockets
 in a directory that can be written by everyone. For example ensure that /var/run
 is owned and writable only by root and add entries for 'User' and
 'FixStaleSocket' in clamav.conf.
@@ -255,6 +257,11 @@ Changes
 0.67i	27/2/04	Dropping priv message now same as clamd
 		Only use TCPwrappers when using TCP/IP to establish
 		communications with the milter
+0.67j	27/2/04	Call checkClamd() before attempting to connect, it's a way of
+		warning the user if they've started the milter before clamd
+		checkClamd() now stashes pid in syslog
+		Ensure installation instructions tally with man page and put
+		sockets into subdirectory for security
 
 BUG REPORTS
 
