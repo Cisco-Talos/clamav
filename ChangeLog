@@ -13,6 +13,11 @@ Fri Feb 27 09:30:20 GMT 2004 (njh)
 		communications with the milter
 	Dropping priv message now same as clamd
 
+Thu Feb 26 22:22:43 CET 2004 (tl)
+---------------------------------
+  * freshclam:	cleaner and descriptive error messages for
+  		daemon notification failures
+
 Thu Feb 26 16:22:59 CET 2004 (tk)
 ---------------------------------
   * libclamav: detect "From: " (Exim) mail files
