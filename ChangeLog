@@ -1,3 +1,7 @@
+Fri Feb 18 18:04:30 GMT 2005 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Save separate bounces in separate files
+
 Thu Feb 17 19:28:46 GMT 2005 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Prescan some bounces before saving for full scanning
