@@ -22,7 +22,7 @@ typedef	enum {
 } mime_type;
 
 typedef enum {
-	NOENCODING, QUOTEDPRINTABLE, BASE64, EIGHTBIT, BINARY, UUENCODE, YENCODE, EEXTENSION
+	NOENCODING, QUOTEDPRINTABLE, BASE64, EIGHTBIT, BINARY, UUENCODE, YENCODE, EEXTENSION, BINHEX
 } encoding_type;
 
 /* tk: shut up manager.c warning */
