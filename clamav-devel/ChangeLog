@@ -1,3 +1,7 @@
+Mon Apr  5 15:39:12 BST 2004 (njh)
+----------------------------------
+  * contrib:	Windows client (finally!) open sourced
+
 Mon Apr  5 15:39:55 CEST 2004 (tk)
 ----------------------------------
   * clamd: respect TCPAddr in stream scanner (problem reported by
