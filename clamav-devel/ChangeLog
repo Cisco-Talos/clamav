@@ -1,3 +1,14 @@
+Sat Jul  3 00:37:28 CEST 2004 (tk)
+----------------------------------
+  * libclamav: matcher: add support for file type detection via signature
+	       scanning - it's required to detect data for which magic number
+	       tests are not possible (eg. HTML). Minor cleanup of signature
+	       parser.
+  * libclamav: integrate HTML normalizer from Trog
+  * clamd: new directive ScanHTML
+  * clamscan: new option --no-html
+  * docs: update man pages
+
 Thu Jul  1 03:18:04 CEST 2004 (tk)
 ----------------------------------
   * clamdscan: fix bug (introduced in -20040622) in stream scanning in TCP

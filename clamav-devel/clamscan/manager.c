@@ -427,6 +427,11 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
     else
 	options |= CL_OLE2;
 
+    if(optl(opt, "no-html"))
+	options &= ~CL_HTML;
+    else
+	options |= CL_HTML;
+
     if(optc(opt, 'm'))
 	options |= CL_MAIL;
 

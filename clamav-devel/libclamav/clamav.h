@@ -73,12 +73,13 @@ extern "C"
 #define CL_DISABLERAR	4
 #define CL_OLE2		8
 #define CL_ENCRYPTED    16
+#define CL_HTML		32
 
 struct cli_patt {
     short int *pattern;
     unsigned int length;
     char *virname;
-    unsigned short int sigid, parts, partno;
+    unsigned short int sigid, parts, partno, type;
     struct cli_patt *next;
 };
 

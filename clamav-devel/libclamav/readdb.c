@@ -38,27 +38,28 @@
 #include "str.h"
 #include "defaults.h"
 
-static int cli_parse_add(struct cl_node *root, const char *virname, const char *hexstr, int sigid, int parts, int partno)
+
+static int cli_addsig(struct cl_node *root, const char *virname, const char *hexsig, int sigid, int parts, int partno, int type)
 {
 	struct cli_patt *new;
-	const char *pt;
-	int ret, virlen;
+	char *pt;
+	int virlen, ret;
 
-    /* decode a hexstring and prepare a new entry */
 
     if((new = (struct cli_patt *) cli_calloc(1, sizeof(struct cli_patt))) == NULL)
 	return CL_EMEM;
 
+    new->type = type;
     new->sigid = sigid;
     new->parts = parts;
     new->partno = partno;
 
-    new->length = strlen(hexstr) / 2;
+    new->length = strlen(hexsig) / 2;
 
     if(new->length > root->maxpatlen)
 	root->maxpatlen = new->length;
 
-    if((new->pattern = cl_hex2str(hexstr)) == NULL) {
+    if((new->pattern = cl_hex2str(hexsig)) == NULL) {
 	free(new);
 	return CL_EMALFDB;
     }
@@ -89,13 +90,54 @@ static int cli_parse_add(struct cl_node *root, const char *virname, const char *
     return 0;
 }
 
-/* this functions returns a pointer to the root of trie */
+int cli_parse_add(struct cl_node *root, char *virname, const char *hexsig, int type)
+{
+	struct cli_patt *new;
+	char *pt;
+	int ret, virlen, parts = 0, i, len;
+
+
+    if(strchr(hexsig, '*')) {
+	root->partsigs++;
+
+	len = strlen(hexsig);
+	for(i = 0; i < len; i++)
+	    if(hexsig[i] == '*')
+		parts++;
+
+	if(parts) /* there's always one part more */
+	    parts++;
+
+	for(i = 1; i <= parts; i++) {
+	    if((pt = cli_strtok(hexsig, i - 1, "*")) == NULL) {
+		cli_errmsg("Can't extract part %d of partial signature.\n", i + 1);
+		return CL_EMALFDB;
+	    }
+
+	    if((ret = cli_addsig(root, virname, pt, root->partsigs, parts, i, type))) {
+		cli_errmsg("cli_parse_add(): Problem adding signature.\n");
+		free(pt);
+		return ret;
+	    }
+
+	    free(pt);
+	}
+
+    } else { /* static */
+	if((ret = cli_addsig(root, virname, hexsig, 0, 0, 0, type))) {
+	    cli_errmsg("cli_parse_add(): Problem adding signature.\n");
+	    return ret;
+	}
+    }
+
+    return 0;
+}
 
 int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 {
 	FILE *fd;
-	char *buffer, *pt, *start, *pt2;
-	int line = 0, ret, parts, i, sigid = 0;
+	char *buffer, *pt, *start;
+	int line = 0, ret;
 
 
     if((fd = fopen(filename, "rb")) == NULL) {
@@ -166,46 +208,11 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 	    (*root)->maxpatlen = 0;
 	}
 
-	if(strchr(pt, '*')) { /* new type signature */
-	    (*root)->partsigs++;
-	    sigid++;
-	    parts = 0;
-	    for(i = 0; i < (int) strlen(pt); i++)
-		if(pt[i] == '*')
-		    parts++;
-
-	    if(parts) /* there's always one part more */
-		parts++;
-	    for(i = 1; i <= parts; i++) {
-		if((pt2 = cli_strtok(pt, i - 1, "*")) == NULL) {
-		    cli_errmsg("Can't extract part %d of partial signature in line %d\n", i + 1, line);
-		    free(buffer);
-		    fclose(fd);
-		    return CL_EMALFDB;
-		}
-
-		if((ret = cli_parse_add(*root, start, pt2, sigid, parts, i))) {
-		    cli_dbgmsg("parse_add() return code: %d\n", ret);
-		    cli_errmsg("readdb(): Malformed pattern line %d (file %s).\n", line, filename);
-		    free(pt2);
-		    free(buffer);
-		    fclose(fd);
-		    return ret;
-		}
-/*
-		cli_dbgmsg("Added part %d of partial signature (id %d)\n", i, sigid);
-*/
-		free(pt2);
-	    }
-
-	} else { /* old type */
-	    if((ret = cli_parse_add(*root, start, pt, 0, 0, 0))) {
-		cli_dbgmsg("parse_add() return code: %d\n", ret);
-		cli_errmsg("readdb(): Malformed pattern line %d (file %s).\n", line, filename);
-		free(buffer);
-		fclose(fd);
-		return ret;
-	    }
+	if((ret = cli_parse_add(*root, start, pt, 0))) {
+	    cli_errmsg("readdb(): Problem parsing signature at line %d (file %s).\n", line, filename);
+	    free(buffer);
+	    fclose(fd);
+	    return ret;
 	}
     }
 

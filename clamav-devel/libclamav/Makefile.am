@@ -41,7 +41,8 @@ libclamav_la_SOURCES = \
 	str.h \
 	defaults.h \
 	scanners.c \
-	scanners.h \
+	filetypes.c \
+	filetypes.h \
 	unrarlib.c \
 	unrarlib.h \
 	zziplib/zzip-conf.h \
@@ -95,6 +96,8 @@ libclamav_la_SOURCES = \
 	mspack/system.c \
 	mspack/system.h \
 	upx.c \
-	upx.h
+	upx.h \
+	htmlnorm.c \
+	htmlnorm.h
 
 lib_LTLIBRARIES = libclamav.la

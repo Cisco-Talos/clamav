@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.64  2004/07/02 23:00:57  kojm
+ * new method of file type detection; HTML normalisation
+ *
  * Revision 1.63  2004/06/26 13:16:25  nigelhorne
  * Added newline to end of warning message
  *
@@ -186,7 +189,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.63 2004/06/26 13:16:25 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.64 2004/07/02 23:00:57 kojm Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -223,7 +226,7 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.63 2004/06/26 13:16:25 nigelhorn
 #include "strrcpy.h"
 #include "others.h"
 #include "str.h"
-#include "scanners.h"
+#include "filetypes.h"
 
 /* required for AIX and Tru64 */
 #ifdef TRUE

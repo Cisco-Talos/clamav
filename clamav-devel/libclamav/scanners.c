@@ -1,6 +1,5 @@
 /*
  *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
- *  With enhancements from Thomas Lamy <Thomas.Lamy@in-online.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,6 +29,14 @@
 #include <fcntl.h>
 #include <dirent.h>
 
+#if HAVE_MMAP
+#if HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#else /* HAVE_SYS_MMAN_H */
+#undef HAVE_MMAP
+#endif
+#endif
+
 #include <mspack.h>
 
 #ifdef CL_THREAD_SAFE
@@ -47,7 +54,8 @@ extern short cli_leavetemps_flag;
 #include "ole2_extract.h"
 #include "vba_extract.h"
 #include "msexpand.h"
-#include "scanners.h"
+#include "filetypes.h"
+#include "htmlnorm.h"
 
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>
@@ -61,109 +69,19 @@ extern short cli_leavetemps_flag;
 #define SCAN_ARCHIVE	    (options & CL_ARCHIVE)
 #define SCAN_MAIL	    (options & CL_MAIL)
 #define SCAN_OLE2	    (options & CL_OLE2)
+#define SCAN_HTML	    (options & CL_HTML)
 #define DISABLE_RAR	    (options & CL_DISABLERAR)
 #define DETECT_ENCRYPTED    (options & CL_ENCRYPTED)
 
-struct cli_magic_s {
-    int offset;
-    const char *magic;
-    size_t length;
-    const char *descr;
-    cli_file_t type;
-};
-
-#define MAGIC_BUFFER_SIZE 26
-static const struct cli_magic_s cli_magic[] = {
-
-    /* Executables */
-
-/*  {0,  "MZ",				2,  "DOS/W32 executable", CL_DOSEXE},*/
-
-    /* Archives */
-
-    {0,  "Rar!",			4,  "RAR",		  CL_RARFILE},
-    {0,  "PK\003\004",			4,  "ZIP",		  CL_ZIPFILE},
-    {0,  "\037\213",			2,  "GZip",		  CL_GZFILE},
-    {0,  "BZh",				3,  "BZip",		  CL_BZFILE},
-    {0,  "SZDD",			4,  "compress.exe'd",	  CL_MSCFILE},
-    {0,  "MSCF",			4,  "MS CAB",		  CL_MSCABFILE},
-
-    /* Mail */
-
-    {0,  "From ",			 5, "MBox",		  CL_MAILFILE},
-    {0,  "Received",			 8, "Raw mail",		  CL_MAILFILE},
-    {0,  "Return-Path: ",		13, "Maildir",		  CL_MAILFILE},
-    {0,  "Return-path: ",		13, "Maildir",		  CL_MAILFILE},
-    {0,  "Delivered-To: ",		14, "Mail",		  CL_MAILFILE},
-    {0,  "X-UIDL: ",			 8, "Mail",		  CL_MAILFILE},
-    {0,  "X-Apparently-To: ",		17, "Mail",		  CL_MAILFILE},
-    {0,  "X-Envelope-From: ",		17, "Mail",		  CL_MAILFILE},
-    {0,  "X-Original-To: ",		15, "Mail",		  CL_MAILFILE},
-    {0,  "X-Symantec-",			11, "Symantec",		  CL_MAILFILE},
-    {0,  "X-EVS",			 5, "EVS mail",		  CL_MAILFILE},
-    {0,  "X-Real-To: ",                 11, "Mail",               CL_MAILFILE},
-    {0,  ">From ",			 6, "Mail",		  CL_MAILFILE},
-    {0,  "Date: ",			 6, "Mail",		  CL_MAILFILE},
-    {0,  "Message-Id: ",		12, "Mail",		  CL_MAILFILE},
-    {0,  "Message-ID: ",		12, "Mail",		  CL_MAILFILE},
-    {0,  "Envelope-to: ",		13, "Mail",		  CL_MAILFILE},
-    {0,  "Delivery-date: ",		15, "Mail",		  CL_MAILFILE},
-    {0,  "To: ",			 4, "Mail",		  CL_MAILFILE},
-    {0,  "Subject: ",			 9, "Mail",		  CL_MAILFILE},
-    {0,  "For: ",			 5, "Eserv mail",	  CL_MAILFILE},
-    {0,  "From: ",			 6, "Exim mail",	  CL_MAILFILE},
-    {0,  "v:\015\012Received: ",	14, "VPOP3 Mail (DOS)",	  CL_MAILFILE},
-    {0,  "v:\012Received: ",		13, "VPOP3 Mail (UNIX)",  CL_MAILFILE},
-    {0,  "Hi. This is the qmail-send",  26, "Qmail bounce",	  CL_MAILFILE},
-
-    /* Others */
-
-    {0,  "\320\317\021\340\241\261\032\341",
-	                    8, "OLE2 container",  CL_OLE2FILE},
-
-    /* Ignored types */
-
-    {0,  "\000\000\001\263",             4, "MPEG video stream",  CL_DATAFILE},
-    {0,  "\000\000\001\272",             4, "MPEG sys stream",    CL_DATAFILE},
-    {0,  "RIFF",                         4, "RIFF",		  CL_DATAFILE},
-    {0,  "GIF",				 3, "GIF",		  CL_DATAFILE},
-    {0,  "\x89PNG",			 4, "PNG",                CL_DATAFILE},
-    {0,  "\377\330\377",		 4, "JPEG",               CL_DATAFILE},
-    {0,  "BM",				 2, "BMP",                CL_DATAFILE},
-    {0,  "OggS",                         4, "Ogg Stream",         CL_DATAFILE},
-    {0,  "ID3",				 3, "MP3",		  CL_DATAFILE},
-    {0,  "\377\373\220",		 3, "MP3",		  CL_DATAFILE},
-    {0,  "\%PDF-",			 5, "PDF document",	  CL_DATAFILE},
-    {0,  "\%!PS-Adobe-",		11, "PostScript",	  CL_DATAFILE},
-    {0,  "\060\046\262\165\216\146\317", 7, "WMA/WMV/ASF",	  CL_DATAFILE},
-    {0,  ".RMF" ,			 4, "Real Media File",	  CL_DATAFILE},
-
-    {-1, NULL,				 0, NULL,              CL_UNKNOWN_TYPE}
-};
-
-cli_file_t cli_filetype(const char *buf, size_t buflen)
-{
-	int i;
-
-    for (i = 0; cli_magic[i].magic; i++) {
-	if (buflen >= cli_magic[i].offset+cli_magic[i].length) {
-	    if (memcmp(buf+cli_magic[i].offset, cli_magic[i].magic, cli_magic[i].length) == 0) {
-		cli_dbgmsg("Recognized %s file\n", cli_magic[i].descr);
-		return cli_magic[i].type;
-	    }
-	}
-    }
-
-    return CL_UNKNOWN_TYPE;
-}
 
 static int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev);
 static int cli_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev);
 
-static int cli_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root)
+static int cli_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, int typerec)
 {
  	char *buffer, *buff, *endbl, *pt;
-	int bytes, buffsize, length, ret, *partcnt;
+	int bytes, buffsize, length, ret, *partcnt, type = CL_CLEAN;
+
 
     /* prepare the buffer */
     buffsize = root->maxpatlen + SCANBUFF;
@@ -194,10 +112,14 @@ static int cli_scandesc(int desc, const char **virname, long int *scanned, const
 	if(bytes < SCANBUFF)
 	    length -= SCANBUFF - bytes;
 
-	if((ret = cli_scanbuff(pt, length, virname, root, partcnt)) != CL_CLEAN) {
+	if((ret = cli_scanbuff(pt, length, virname, root, partcnt, typerec)) == CL_VIRUS) {
 	    free(buffer);
 	    free(partcnt);
 	    return ret;
+
+	} else if(typerec && ret >= CL_TYPENO) {
+	    if(ret >= type)
+		type = ret;
 	}
 
 	if(bytes == SCANBUFF)
@@ -210,7 +132,8 @@ static int cli_scandesc(int desc, const char **virname, long int *scanned, const
 
     free(buffer);
     free(partcnt);
-    return CL_CLEAN;
+
+    return typerec ? type : CL_CLEAN;
 }
 
 #ifdef CL_THREAD_SAFE
@@ -256,7 +179,7 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 	    files++;
 	    cli_dbgmsg("Rar -> Encrypted files found in archive.\n");
 	    lseek(desc, 0, SEEK_SET);
-	    if(cli_scandesc(desc, virname, scanned, root) != CL_VIRUS)
+	    if(cli_scandesc(desc, virname, scanned, root, 0) != CL_VIRUS)
 		*virname = "Encrypted.RAR";
 	    ret = CL_VIRUS;
 	    break;
@@ -278,7 +201,7 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 	    }
 	}
 
-        if(!!( rarlist->item.FileAttr & RAR_FENTRY_ATTR_DIRECTORY)) {
+        if(!(rarlist->item.FileAttr & RAR_FENTRY_ATTR_DIRECTORY)) {
             rarlist = rarlist->next;
             files++;
             continue;
@@ -428,7 +351,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	    files++;
 	    cli_dbgmsg("Zip -> Encrypted files found in archive.\n");
 	    lseek(desc, 0, SEEK_SET);
-	    if(cli_scandesc(desc, virname, scanned, root) != CL_VIRUS)
+	    if(cli_scandesc(desc, virname, scanned, root, 0) != CL_VIRUS)
 		*virname = "Encrypted.Zip";
 	    ret = CL_VIRUS;
 	    break;
@@ -771,6 +694,53 @@ static int cli_scanmscab(int desc, const char **virname, long int *scanned, cons
     return ret;
 }
 
+static int cli_scanhtml(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+{
+	unsigned char *membuff, *newbuff, *newbuff2;
+	struct stat statbuf;
+	int ret;
+
+    cli_dbgmsg("in cli_scanhtml()\n");
+
+    if(fstat(desc, &statbuf) != 0) {
+	cli_dbgmsg("fstat failed\n");
+        return CL_EIO;
+    }
+
+#ifdef HAVE_MMAP
+    membuff = mmap(NULL, statbuf.st_size, PROT_READ, MAP_PRIVATE, desc, 0);
+#else /* FIXME */
+    return CL_CLEAN;
+#endif
+
+    /* TODO: do file operations if mmap fails */
+    if(membuff == MAP_FAILED) {
+	cli_dbgmsg("mmap failed\n");
+        return CL_EMEM;
+    }
+
+    newbuff2 = quoted_decode(membuff, statbuf.st_size);
+    newbuff = html_normalize(newbuff2, strlen(newbuff2));
+    free(newbuff2);
+
+    if(newbuff) {
+	newbuff2 = remove_html_comments(newbuff);
+	free(newbuff);
+	newbuff = remove_html_char_ref(newbuff2);
+	free(newbuff2);
+	/* Normalise a second time as the above can leave inconsistent white
+	 * space
+	 */
+	newbuff2 = html_normalize(newbuff, strlen(newbuff));
+	free(newbuff);
+    }
+
+    ret = cl_scanbuff(newbuff2, strlen(newbuff2), virname, root);
+
+    free(newbuff2);
+    return ret;
+}
+
 static int cli_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
 {
 	DIR *dd;
@@ -1029,7 +999,7 @@ static int cli_scanmail(int desc, const char **virname, long int *scanned, const
 static int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
 {
 	char magic[MAGIC_BUFFER_SIZE+1];
-	int ret = CL_CLEAN;
+	int ret = CL_CLEAN, nret;
 	int bread = 0;
 	cli_file_t type;
 
@@ -1040,7 +1010,7 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
     }
 
     if(!options) { /* raw mode (stdin, etc.) */
-	if((ret = cli_scandesc(desc, virname, scanned, root) == CL_VIRUS))
+	if((ret = cli_scandesc(desc, virname, scanned, root, 0) == CL_VIRUS))
 	    cli_dbgmsg("%s virus found in descriptor %d.\n", *virname, desc);
 	return ret;
     }
@@ -1051,19 +1021,21 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
 	    return CL_CLEAN;
 
 
-    (*reclev)++;
     lseek(desc, 0, SEEK_SET);
     bread = read(desc, magic, MAGIC_BUFFER_SIZE);
     magic[MAGIC_BUFFER_SIZE] = '\0';
     lseek(desc, 0, SEEK_SET);
 
-    if (bread != MAGIC_BUFFER_SIZE) {
+    if(bread != MAGIC_BUFFER_SIZE) {
 	/* short read: No need to do magic */
-	(*reclev)--;
+	if((ret = cli_scandesc(desc, virname, scanned, root, 0) == CL_VIRUS))
+	    cli_dbgmsg("%s virus found in descriptor %d.\n", *virname, desc);
 	return ret;
     }
 
     type = cli_filetype(magic, bread);
+
+    (*reclev)++;
 
     switch(type) {
 	case CL_DOSEXE:
@@ -1128,10 +1100,22 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
     (*reclev)--;
 
     if(type != CL_DATAFILE && ret != CL_VIRUS) { /* scan the raw file */
-	lseek(desc, 0, SEEK_SET); /* If archive scan didn't rewind desc */
-	if(cli_scandesc(desc, virname, scanned, root) == CL_VIRUS) {
+	lseek(desc, 0, SEEK_SET);
+
+	if((nret = cli_scandesc(desc, virname, scanned, root, 1)) == CL_VIRUS) {
 	    cli_dbgmsg("%s virus found in descriptor %d.\n", *virname, desc);
 	    return CL_VIRUS;
+
+	} else if(nret >= CL_TYPENO) {
+	    lseek(desc, 0, SEEK_SET);
+
+	    switch(nret) {
+		case CL_HTMLFILE:
+		    if(SCAN_HTML)
+			if(cli_scanhtml(desc, virname, scanned, root, limits, options, reclev) == CL_VIRUS)
+			    return CL_VIRUS;
+		    break;
+	    }
 	}
     }
 
