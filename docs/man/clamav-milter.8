@@ -63,9 +63,12 @@ Send a failure message to the sender, and to the postmaster.
 fake their source address, so this option is not recommended ].
 See also \-\-noreject.
 .TP
-\fB\-B, \-\-broadcast\fR
+\fB\-B, \-\-broadcast[=<iface>]\fR
 When a virus is intercepted, broadcast a UDP message to the TCPSocket port set
 in \fBclamd.conf\fR.
+If the optional \fIiface\fR option is given, broadcasts will be sent on
+that interface. The default is set by the opertating system, usually to the
+first NIC.
 A future network management program (yet to be written) will intercept these
 broadcasts to raise a warning on the operator's desk.
 .TP
