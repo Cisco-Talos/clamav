@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.210  2005/01/09 21:23:21  nigelhorne
+ * Catch HTML.Phishing.Bank-41
+ *
  * Revision 1.209  2005/01/09 11:37:02  nigelhorne
  * Handle broken RFC2047 headers
  *
@@ -615,7 +618,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.209 2005/01/09 11:37:02 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.210 2005/01/09 21:23:21 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1597,7 +1600,6 @@ static message *
 parseEmailHeaders(const message *m, const table_t *rfc821)
 {
 	bool inHeader = TRUE;
-	bool contMarker = FALSE;
 	const text *t;
 	message *ret;
 	bool anyHeadersFound = FALSE;
@@ -1621,18 +1623,15 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 			buffer = NULL;
 
 		if(inHeader) {
-			cli_dbgmsg("parseEmailHeaders: check '%s' contMarker %d\n",
-				buffer ? buffer : "", (int)contMarker);
+			cli_dbgmsg("parseEmailHeaders: check '%s'\n",
+				buffer ? buffer : "");
 			if(buffer == NULL) {
-				if(!contMarker) {
-					/*
-					 * A blank line signifies the end of
-					 * the header and the start of the text
-					 */
-					cli_dbgmsg("End of header information\n");
-					inHeader = FALSE;
-				} else
-					contMarker = FALSE;
+				/*
+				 * A blank line signifies the end of
+				 * the header and the start of the text
+				 */
+				cli_dbgmsg("End of header information\n");
+				inHeader = FALSE;
 			} else {
 				char *ptr;
 				const char *qptr;
@@ -1644,10 +1643,8 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 					/*
 					 * Continuation of line we're ignoring?
 					 */
-					if((buffer[0] == '\t') || (buffer[0] == ' ') || contMarker) {
-						contMarker = continuationMarker(buffer);
+					if((buffer[0] == '\t') || (buffer[0] == ' '))
 						continue;
-					}
 
 					/*
 					 * Is this a header we're interested in?
@@ -1682,11 +1679,6 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 					fullline = cli_realloc(fullline, fulllinelength);
 					strcat(fullline, buffer);
 				}
-
-				contMarker = continuationMarker(buffer);
-
-				if(contMarker)
-					continue;
 
 				assert(fullline != NULL);
 
