@@ -38,7 +38,7 @@ AC_DEFINE(SCANBUFF, 131072, [scan buffer size])
 AC_DEFINE(FILEBUFF, 8192,   [file i/o buffer size])
 
 AC_HEADER_STDC
-AC_CHECK_HEADERS(stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h poll.h regex.h limits.h)
+AC_CHECK_HEADERS(stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h poll.h regex.h limits.h sys/filio.h)
 AC_CHECK_HEADER(syslog.h,AC_DEFINE(USE_SYSLOG,1,[use syslog]),)
 
 AC_TYPE_OFF_T
@@ -125,16 +125,35 @@ AC_ARG_WITH(libcurl,
   esac],
 [ lcurl=auto ])
 
+dnl Based on http://curl.signal42.com/libcurl/using/autoconf.html
 if test "$lcurl" != "no"
 then
-    AC_MSG_CHECKING([for libcurl])
+    my_cv_curl_vers=NONE
+    dnl check is the plain-text version of the required version
+    check="7.11.0"
+    dnl check_hex must be UPPERCASE if any hex letters are present
+    check_hex="070B00"
+
+    AC_MSG_CHECKING([for curl >= $check])
+
     if eval curl-config --version 2>/dev/null >/dev/null; then
-	AC_DEFINE(WITH_CURL,1,use libcurl in mbox code)
-	curl_libs=`curl-config --libs`
-	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $curl_libs"
-	AC_MSG_RESULT(yes)
+	ver=`curl-config --version | sed -e "s/libcurl //g"`
+	hex_ver=`curl-config --vernum | tr 'a-f' 'A-F'`
+	ok=`echo "ibase=16; if($hex_ver>=$check_hex) $hex_ver else 0" | bc`
+
+	if test x$ok != x0; then
+	    curl_libs=`curl-config --libs`
+	    LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $curl_libs"
+	    my_cv_curl_vers="$ver"
+	    AC_MSG_RESULT([$my_cv_curl_vers])
+	    AC_DEFINE(WITH_CURL,1,use libcurl in mbox code)
+	else
+	    AC_MSG_RESULT(FAILED)
+	    AC_MSG_WARN([$ver is too old. Need version $check or higher.])
+	fi
     else
-	AC_MSG_RESULT(no, curl-config not found)
+	AC_MSG_RESULT(FAILED)
+	AC_MSG_WARN([curl-config was not found])
     fi
 fi
 

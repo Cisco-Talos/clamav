@@ -1,3 +1,11 @@
+Sun Oct 10 01:12:04 CEST 2004 (tk)
+----------------------------------
+  * configure: check libcurl's version number
+  * clamd/others.c: fix compilation error on Solaris (thanks to "Christopher
+		    X. Candreva" <chris*westnet.com>)
+  * freshclam: display additional info for "SECURITY WARNING: NO SUPPORT..."
+	       (requested by Kevin Spicer <kevins*bmrb.co.uk>)
+
 Sat Oct  9 23:11:35 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Correct fix for systems where BINDTODEVICE is not

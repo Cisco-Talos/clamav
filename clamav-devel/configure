@@ -8544,7 +8544,8 @@ fi
 
 
 
-for ac_header in stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h poll.h regex.h limits.h
+
+for ac_header in stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h poll.h regex.h limits.h sys/filio.h
 do
 as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
 if eval "test \"\${$as_ac_Header+set}\" = set"; then
@@ -11018,21 +11019,40 @@ fi;
 
 if test "$lcurl" != "no"
 then
-    echo "$as_me:$LINENO: checking for libcurl" >&5
-echo $ECHO_N "checking for libcurl... $ECHO_C" >&6
+    my_cv_curl_vers=NONE
+        check="7.11.0"
+        check_hex="070B00"
+
+    echo "$as_me:$LINENO: checking for curl >= $check" >&5
+echo $ECHO_N "checking for curl >= $check... $ECHO_C" >&6
+
     if eval curl-config --version 2>/dev/null >/dev/null; then
+	ver=`curl-config --version | sed -e "s/libcurl //g"`
+	hex_ver=`curl-config --vernum | tr 'a-f' 'A-F'`
+	ok=`echo "ibase=16; if($hex_ver>=$check_hex) $hex_ver else 0" | bc`
+
+	if test x$ok != x0; then
+	    curl_libs=`curl-config --libs`
+	    LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $curl_libs"
+	    my_cv_curl_vers="$ver"
+	    echo "$as_me:$LINENO: result: $my_cv_curl_vers" >&5
+echo "${ECHO_T}$my_cv_curl_vers" >&6
 
 cat >>confdefs.h <<\_ACEOF
 #define WITH_CURL 1
 _ACEOF
 
-	curl_libs=`curl-config --libs`
-	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $curl_libs"
-	echo "$as_me:$LINENO: result: yes" >&5
-echo "${ECHO_T}yes" >&6
+	else
+	    echo "$as_me:$LINENO: result: FAILED" >&5
+echo "${ECHO_T}FAILED" >&6
+	    { echo "$as_me:$LINENO: WARNING: $ver is too old. Need version $check or higher." >&5
+echo "$as_me: WARNING: $ver is too old. Need version $check or higher." >&2;}
+	fi
     else
-	echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6
+	echo "$as_me:$LINENO: result: FAILED" >&5
+echo "${ECHO_T}FAILED" >&6
+	{ echo "$as_me:$LINENO: WARNING: curl-config was not found" >&5
+echo "$as_me: WARNING: curl-config was not found" >&2;}
     fi
 fi
 
