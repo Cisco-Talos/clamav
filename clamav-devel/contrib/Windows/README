@@ -1,3 +1,7 @@
+10/2/04
+Version 0.13
+Recovers better from errors during scanning such as timeouts sending to clamd
+----------------------------------
 9/2/04
 Version 0.12
 The port of the clamd server can now be specified. The default value is 3310.

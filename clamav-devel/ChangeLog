@@ -1,6 +1,10 @@
+Tue Feb 10 10:21:02 GMT 2004 (njh)
+----------------------------------
+  * contrib:	The Windows client now recovers better from errors during
+  	scanning
 Mon Feb  9 17:46:29 GMT 2004 (njh)
 ----------------------------------
-  * contrib:	   The Windows client now allows the port to be specified
+  * contrib:	The Windows client now allows the port to be specified
 
 Mon Feb  9 14:03:50 GMT 2004 (trog)
 -----------------------------------
