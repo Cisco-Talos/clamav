@@ -1,3 +1,7 @@
+Sat Nov 29 04:35:03 CET 2003 (tk)
+---------------------------------
+  * clamd: UseProcesses: use processes instead of threads (initial version)
+
 Thu Nov 27 00:51:03 CET 2003 (tk)
 ---------------------------------
   * clamd: also update database timestamps after RELOAD and not only SelfCheck
