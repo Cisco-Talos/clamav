@@ -3,7 +3,7 @@
 # crond   Start/Stop the clam antivirus daemon.
 #
 # chkconfig: 2345 90 60
-# description: clamdis a standard UNIX program that scans for Viruses.
+# description: clamd is a standard UNIX program that scans for Viruses.
 # processname: clamd
 # config: /usr/local/etc/clamd.conf
 # pidfile: /var/lock/subsys/clamd
