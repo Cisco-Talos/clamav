@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.23  2004/09/21 09:26:35  nigelhorne
+ * Closing a closed blob is no longer fatal
+ *
  * Revision 1.22  2004/09/18 14:59:26  nigelhorne
  * Code tidy
  *
@@ -68,7 +71,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.22 2004/09/18 14:59:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.23 2004/09/21 09:26:35 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -287,7 +290,11 @@ blobClose(blob *b)
 {
 	assert(b != NULL);
 	assert(b->magic == BLOB);
-	assert(!(b->isClosed));
+
+	if(b->isClosed) {
+		cli_dbgmsg("Attempt to close a previously closed blob\n");
+		return;
+	}
 
 	/*
 	 * Nothing more is going to be added to this blob. If it'll save more

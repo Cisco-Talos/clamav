@@ -1,3 +1,8 @@
+Tue Sep 21 10:27:29 BST 2004 (njh)
+----------------------------------
+  * libclamav/blob.c:	When built with "--enable-debug", closing a closed blob
+				is no longer fatal
+
 Tue Sep 21 09:15:48 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Now compiles in machines with libcurl but without
@@ -32,12 +37,12 @@ Mon Sep 20 10:44:35 BST 2004 (trog)
 Mon Sep 20 10:09:55 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Change to clamd.conf
-  			Remove StreamSaveToDisk check
+			Remove StreamSaveToDisk check
 
 Mon Sep 20 09:32:05 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	FOLLOWURLS is now compiled by default if libcurl
-  				is found
+				is found
 
 Mon Sep 20 01:44:47 CEST 2004 (tk)
 ----------------------------------
