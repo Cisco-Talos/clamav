@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.105  2004/10/22 15:53:45  nigelhorne
+ * Fuzzy logic match for unknown encoding types
+ *
  * Revision 1.104  2004/10/19 13:53:55  nigelhorne
  * Don't add trailing NUL bytes
  *
@@ -309,7 +312,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.104 2004/10/19 13:53:55 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.105 2004/10/22 15:53:45 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -371,6 +374,7 @@ static	const	char	*messageGetArgument(const message *m, int arg);
 static	void	*messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), void (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(const text *, void *));
 static	int	usefulArg(const char *arg);
 static	void	messageDedup(message *m);
+static	int	simil(const char *str1, const char *str2);
 
 /*
  * These maps are ordered in decreasing likelyhood of their appearance
@@ -600,7 +604,7 @@ messageSetMimeSubtype(message *m, const char *subtype)
 const char *
 messageGetMimeSubtype(const message *m)
 {
-	return((m->mimeSubtype) ? m->mimeSubtype : "");
+	return (m->mimeSubtype) ? m->mimeSubtype : "";
 }
 
 void
@@ -633,7 +637,7 @@ messageSetDispositionType(message *m, const char *disptype)
 const char *
 messageGetDispositionType(const message *m)
 {
-	return((m->mimeDispositionType) ? m->mimeDispositionType : "");
+	return (m->mimeDispositionType) ? m->mimeDispositionType : "";
 }
 
 /*
@@ -867,7 +871,7 @@ messageGetArgument(const message *m, int arg)
 	assert(arg >= 0);
 	assert(arg < m->numberOfArguments);
 
-	return((m->mimeArguments[arg]) ? m->mimeArguments[arg] : "");
+	return (m->mimeArguments[arg]) ? m->mimeArguments[arg] : "";
 }
 
 /*
@@ -958,6 +962,9 @@ messageSetEncoding(message *m, const char *enctype)
 	 */
 	i = 0;
 	while((type = cli_strtok(enctype, i++, " \t")) != NULL) {
+		int highestSimil = 0;
+		const char *closest = NULL;
+
 		for(e = encoding_map; e->string; e++)
 			if(strcasecmp(type, e->string) == 0) {
 				int j;
@@ -969,31 +976,44 @@ messageSetEncoding(message *m, const char *enctype)
 						break;
 					}
 				}
-				if(j < m->numberOfEncTypes)
-					break;
+
 				et = (encoding_type *)cli_realloc(m->encodingTypes, (m->numberOfEncTypes + 1) * sizeof(encoding_type));
-				if(et == NULL) {
-					free(type);
-					return;
-				}
+				if(et == NULL)
+					break;
 
 				m->encodingTypes = et;
 				m->encodingTypes[m->numberOfEncTypes++] = e->type;
 
 				cli_dbgmsg("Encoding type %d is \"%s\"\n", m->numberOfEncTypes, type);
 				break;
+
+			} else {
+				const int sim = simil(type, e->string);
+
+				if(sim > highestSimil) {
+					closest = e->string;
+					highestSimil = sim;
+				}
 			}
 
 		if(e->string == NULL) {
-			cli_warnmsg("Unknown encoding type \"%s\" - report to bugs@clamav.net\n", type);
-			free(type);
 			/*
-			 * Err on the side of safety, enable all decoding
-			 * modules
+			 * 50% is arbitary. For example 7bi will match as
+			 * 66% certain to be 7bit
 			 */
-			messageSetEncoding(m, "base64");
-			messageSetEncoding(m, "quoted-printable");
-			break;
+			if(closest && (highestSimil >= 50)) {
+				cli_warnmsg("Unknown encoding type \"%s\" - guessing as %s (%u%% certainty)\n",
+					type, closest, highestSimil);
+				messageSetEncoding(m, closest);
+			} else {
+				cli_warnmsg("Unknown encoding type \"%s\" - report to bugs@clamav.net\n", type);
+				/*
+				 * Err on the side of safety, enable all
+				 * decoding modules
+				 */
+				messageSetEncoding(m, "base64");
+				messageSetEncoding(m, "quoted-printable");
+			}
 		}
 
 		free(type);
@@ -2404,7 +2424,7 @@ base64(char c)
 static unsigned char
 uudecode(char c)
 {
-	return(c - ' ');
+	return c - ' ';
 }
 
 /*
@@ -2498,4 +2518,184 @@ messageDedup(message *m)
 		}
 	}
 	m->dedupedThisFar = t1;
+}
+
+/*
+ * common/simil:
+ *	From Computing Magazine 20/8/92
+ * Returns %ge number from 0 to 100 - how similar are 2 strings?
+ * 100 for exact match, < for error
+ */
+
+struct	pstr_list {	/* internal stack */
+	char	*d1;
+	struct	pstr_list	*next;
+};
+
+#define	OUT_OF_MEMORY	(-2)
+#define	FAILURE	(-3)
+#define	SUCCESS	(-4)
+#define	ARRAY_OVERFLOW	(-5)
+typedef	struct	pstr_list	ELEMENT1;
+typedef	ELEMENT1		*LINK1;
+
+static	int	push(LINK1 *top, const char *string);
+static	int	pop(LINK1 *top, char *buffer);
+static	unsigned	int	compare(char *ls1, char **rs1, char *ls2, char **rs2);
+
+#define	MAX_PATTERN_SIZ	40	/* maximum string lengths */
+
+static int
+simil(const char *str1, const char *str2)
+{
+	LINK1 top = NULL;
+	unsigned int score = 0;
+	unsigned int common, total, len1;
+	unsigned int len2;
+	char ls1[MAX_PATTERN_SIZ], ls2[MAX_PATTERN_SIZ];
+	char *rs1 = NULL, *rs2 = NULL;
+	char *s1, *s2;
+
+	if(strcasecmp(str1, str2) == 0)
+		return 100;
+
+	if((s1 = strdup(str1)) == NULL)
+		return OUT_OF_MEMORY;
+	if((s2 = strdup(str2)) == NULL) {
+		free(s1);
+		return OUT_OF_MEMORY;
+	}
+
+	if(((total = strstrip(s1)) > MAX_PATTERN_SIZ - 1) || ((len2 = strstrip(s2)) > MAX_PATTERN_SIZ - 1)) {
+		free(s1);
+		free(s2);
+		return ARRAY_OVERFLOW;
+	}
+
+	total += len2;
+
+	if(push(&top, s1) == OUT_OF_MEMORY)
+		return OUT_OF_MEMORY;
+	if(push(&top, s2) == OUT_OF_MEMORY)
+		return OUT_OF_MEMORY;
+
+	while(pop(&top, ls2) == SUCCESS) {
+		pop(&top, ls1);
+		common = compare(ls1, &rs1, ls2, &rs2);
+		if(common > 0) {
+			score += common;
+			len1 = strlen(ls1);
+			len2 = strlen(ls2);
+
+			if((len1 > 1 && len2 >= 1) || (len2 > 1 && len1 >= 1))
+				if((push(&top, ls1) == OUT_OF_MEMORY) || (push(&top, ls2) == OUT_OF_MEMORY)) {
+					free(s1);
+					free(s2);
+					return OUT_OF_MEMORY;
+				}
+			len1 = strlen(rs1);
+			len2 = strlen(rs2);
+
+			if((len1 > 1 && len2 >= 1) || (len2 > 1 && len1 >= 1))
+				if((push(&top, rs1) == OUT_OF_MEMORY) || (push(&top, rs2) == OUT_OF_MEMORY)) {
+					free(s1);
+					free(s2);
+					return OUT_OF_MEMORY;
+				}
+		}
+	}
+	free(s1);
+	free(s2);
+	return (total > 0) ? ((score * 200) / total) : 0;
+}
+
+static unsigned int
+compare(char *ls1, char **rs1, char *ls2, char **rs2)
+{
+	unsigned int common, diff, maxchars = 0;
+	bool some_similarity = FALSE;
+	char *s1, *s2;
+	char *maxs1 = NULL, *maxs2 = NULL, *maxe1 = NULL, *maxe2 = NULL;
+	char *cs1, *cs2, *start1, *end1, *end2;
+
+	end1 = ls1 + strlen(ls1);
+	end2 = ls2 + strlen(ls2);
+	start1 = ls1;
+
+	for(;;) {
+		s1 = start1;
+		s2 = ls2;
+
+		if(s1 < end1) {
+			while(s1 < end1 && s2 < end2) {
+				if(tolower(*s1) == tolower(*s2)) {
+					some_similarity = TRUE;
+					cs1 = s1;
+					cs2 = s2;
+					common = 0;
+					do
+						if(s1 == end1 || s2 == end2)
+							break;
+						else {
+							s1++;
+							s2++;
+							common++;
+						}
+					while(tolower(*s1) == tolower(*s2));
+
+					if(common > maxchars) {
+						diff = common - maxchars;
+						maxchars = common;
+						maxs1 = cs1;
+						maxs2 = cs2;
+						maxe1 = s1;
+						maxe2 = s2;
+						end1 -= diff;
+						end2 -= diff;
+					} else
+						s1 -= common;
+				} else
+					s2++;
+			}
+			start1++;
+		} else
+			break;
+	}
+	if(some_similarity) {
+		*maxs1 = '\0';
+		*maxs2 = '\0';
+		*rs1 = maxe1;
+		*rs2 = maxe2;
+	}
+	return maxchars;
+}
+
+static int
+push(LINK1 *top, const char *string)
+{
+	LINK1 element;
+
+	if((element = (LINK1)cli_malloc(sizeof(ELEMENT1))) == NULL)
+		return OUT_OF_MEMORY;
+	if((element->d1 = strdup(string)) == NULL)
+		return OUT_OF_MEMORY;
+	element->next = *top;
+	*top = element;
+
+	return SUCCESS;
+}
+
+static int
+pop(LINK1 *top, char *buffer)
+{
+	LINK1 t1;
+
+	if((t1 = *top) != NULL) {
+		(void)strcpy(buffer, t1->d1);
+		*top = t1->next;
+		free(t1->d1);
+		free((char *)t1);
+		return SUCCESS;
+	}
+	return FAILURE;
 }

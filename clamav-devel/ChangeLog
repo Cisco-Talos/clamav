@@ -1,6 +1,12 @@
+Fri Oct 22 16:57:13 BST 2004 (njh)
+----------------------------------
+  * libclamav/message.c:	If an unknown encoding type is found take
+  			a best guess for the decoder. If none can be guessed
+			invoke all decoders
+
 Thu Oct 21 11:14:35 BST 2004 (njh)
 ----------------------------------
-  libclamav/mbox.c:	PARTIAL MODE: Extend yesterday's Solaris fix to BeOS
+  * libclamav/mbox.c:	PARTIAL MODE: Extend yesterday's Solaris fix to BeOS
 
 Wed Oct 20 23:51:46 CEST 2004 (tk)
 ----------------------------------
