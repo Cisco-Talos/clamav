@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.131  2004/09/20 12:46:05  nigelhorne
+ * Up issued
+ *
  * Revision 1.130  2004/09/20 09:09:23  nigelhorne
  * Update clamav.conf references
  *
@@ -401,9 +404,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.130 2004/09/20 09:09:23 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.131 2004/09/20 12:46:05 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.75s"
+#define	CM_VERSION	"0.80"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
