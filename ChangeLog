@@ -1,3 +1,7 @@
+Wed Sep 24 18:35:29 CEST 2003 (tk)
+----------------------------------
+  * libclamav: disabled support for news messages
+
 Wed Sep 24 10:37:10 BST 2003 (njh)
 ----------------------------------
 
