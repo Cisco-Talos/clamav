@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.146  2004/10/04 10:52:39  nigelhorne
+ * Better error message on RFC2047 decode error
+ *
  * Revision 1.145  2004/10/01 13:49:22  nigelhorne
  * Minor code tidy
  *
@@ -423,7 +426,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.145 2004/10/01 13:49:22 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.146 2004/10/04 10:52:39 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2485,7 +2488,9 @@ rfc2047(const char *in)
 		encoding = tolower(encoding);
 
 		if((encoding != 'q') && (encoding != 'b')) {
-			cli_warnmsg("Unsupported RFC2047 encoding type - report to bugs@clamav.net\n");
+			cli_warnmsg("Unsupported RFC2047 encoding type '%c' - report to bugs@clamav.net\n", encoding);
+			free(out);
+			out = NULL;
 			break;
 		}
 		/* Skip to encoded text */
