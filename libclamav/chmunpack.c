@@ -48,6 +48,8 @@
 #define FALSE (0)
 #define TRUE (1)
 
+#define MIN(a,b) ((a < b) ? a : b)
+
 #ifndef HAVE_ATTRIB_PACKED
 #define __attribute__(x)
 #endif
@@ -198,6 +200,28 @@ int chm_read_data(int fd, unsigned char *dest, off_t offset, uint32_t len,
 		}
 	}
 	return TRUE;
+}
+
+int chm_copy_file_data(int ifd, int ofd, uint64_t len)
+{
+	unsigned char data[8192];
+	uint64_t count, rem;
+	unsigned int todo;
+	
+	rem = len;
+
+	while (rem > 0) {
+		todo = MIN(8192, rem);
+		count = cli_readn(ifd, data, todo);
+		if (count != todo) {
+			return len-rem;
+		}
+		if (cli_writen(ofd, data, count) != count) {
+			return len-rem-count;
+		}
+		rem -= count;
+	}
+	return len;
 }
 
 static void free_file_list(file_list_t *file_l)
@@ -433,7 +457,7 @@ static int read_chunk_entries(unsigned char *chunk, uint32_t chunk_len,
 					file_list_t *file_l, file_list_t *sys_file_l)
 {
 	unsigned char *current, *end;
-	uint64_t length, offset, section, name_len;
+	uint64_t name_len;
 	file_list_t *file_e;
 
 	end = chunk + chunk_len;
@@ -487,6 +511,7 @@ static int read_chunk_entries(unsigned char *chunk, uint32_t chunk_len,
 					file_e->section, file_e->offset,
 					file_e->length, file_e->name);
 	}
+	return TRUE;
 }
 
 static void print_chunk(chunk_header_t *chunk)
@@ -797,7 +822,7 @@ abort:
 	return NULL;
 }
 
-/* ******************************************************************
+/* *****************************************************************/
 /* This section interfaces to the mspack files. As such, this is a */
 /* little bit dirty compared to my usual code */
 
@@ -822,16 +847,20 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 	lzx_reset_table_t *lzx_reset_table=NULL;
 	lzx_control_t *lzx_control=NULL;
 	int window_bits, length, ofd, retval=FALSE;
-	uint64_t offset, com_offset;
+	uint64_t com_offset;
 	struct mspack_file_p mf_in, mf_out;
 	struct lzxd_stream * stream;
-	unsigned char *data, filename[1024];
+	unsigned char filename[1024];
 	
-	mf_in.fh = fdopen(fd, "r");
-	if (!mf_in.fh) {
+	mf_in.desc = dup(fd);
+	if (mf_in.desc < 0) {
 		return FALSE;
 	}
-	mf_in.desc = fd;
+	mf_in.fh = fdopen(mf_in.desc, "r");
+	if (!mf_in.fh) {
+		close(mf_in.desc);
+		return FALSE;
+	}
 	mf_in.name = strdup("input");
 	
 	snprintf(filename, 1024, "%s/clamav-unchm.bin", dirname);
@@ -943,27 +972,21 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 			entry = entry->next;
 			continue;
 		}
-		data = (unsigned char *) cli_malloc(entry->length);
-		if (!data) {
-			goto abort;
-		}
+		
 		snprintf(filename, 1024, "%s/%llu.chm", dirname, entry->offset);
 		ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
 		if (ofd < 0) {
-			free(data);
 			entry = entry->next;
 			continue;
 		}
-		if ((length=cli_readn(mf_out.desc, data, entry->length)) != entry->length) {
-			cli_dbgmsg("read %d of %d\n", length, entry->length);
+		if ((length=chm_copy_file_data(mf_out.desc, ofd, entry->length)) != entry->length) {
+			cli_dbgmsg("copied %d of %d\n", length, entry->length);
 		}
-		cli_writen(ofd, data, length);
-		close(ofd);
-		free(data);
 		
+		close(ofd);		
 		entry = entry->next;
 	}
-		
+	close(mf_out.desc);
 	retval = TRUE;
 	
 abort:
@@ -982,7 +1005,6 @@ abort:
 	if (mf_out.fh) {
 		fclose(mf_out.fh);
 	}
-	close(mf_out.desc);
 	return retval;
 }
 
@@ -992,13 +1014,12 @@ int chm_unpack(int fd, const char *dirname)
 {
 	int retval=FALSE;
 	unsigned char *m_area=NULL;
-	off_t m_length, offset;
+	off_t m_length=0, offset;
 	file_list_t *file_l, *sys_file_l;
 	struct stat statbuf;
 	itsf_header_t itsf_hdr;
 	itsp_header_t itsp_hdr;
 	uint32_t num_chunks;
-	chunk_header_t *chunk;
 
 	/* These two lists contain the list of files and system files in
 	the archive. The first entry in the list is an empty entry */
