@@ -56,8 +56,6 @@ clamd_SOURCES = \
     dazukoio.h \
     dazuko_xp.h \
     dazukoio_xp.h \
-    tests.c \
-    tests.h \
     shared.h
 
 endif

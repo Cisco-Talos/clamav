@@ -3,11 +3,10 @@
 #endif
 
 #ifdef CLAMUKO
-
 /* DazukoXP. Allow cross platform file access control for 3rd-party applications.
    Written by John Ogness <jogness@antivir.de>
 
-   Copyright (c) 2002, 2003 H+BEDV Datentechnik GmbH
+   Copyright (c) 2002, 2003, 2004 H+BEDV Datentechnik GmbH
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -41,7 +40,7 @@
 #ifndef DAZUKO_XP_H
 #define DAZUKO_XP_H
 
-#define VERSION	"2.0.0"
+#define VERSION	"2.0.4-pre3"
 
 #include "dazukoio_xp.h"
 
@@ -63,6 +62,12 @@
 #define	DAZUKO_DONE	4	/* daemon response is available */
 #define	DAZUKO_BROKEN	5	/* invalid state (interrupt from ready,waiting) */
 
+/* file types */
+#define DAZUKO_NONE		0
+#define DAZUKO_REGULAR		1
+#define DAZUKO_DIRECTORY	2
+#define DAZUKO_LINK		3
+
 
 /*********************************************************
  * structures that MUST be implemented by platform-layer *
@@ -75,6 +80,7 @@ struct xp_atomic;
 struct xp_file_struct;
 struct xp_queue;
 struct xp_rwlock;
+struct xp_daemon_id;
 */
 
 
@@ -82,14 +88,10 @@ struct xp_rwlock;
  * structures available to platform-layer *
  ******************************************/
 
-struct daemon_id
-{
-	int	pid;
-	int	unique;
-};
-
 struct event_properties
 {
+	int	thrown;
+
 	int	flags;
 	char	set_flags;
 	int	mode;
@@ -112,26 +114,15 @@ struct file_properties
 	char		set_mode;
 	int		device_type;
 	char		set_device_type;
+	int		type;
+	char		set_type;
 };
 
-struct slot
+struct dazuko_file_listnode
 {
-	/* A representation of a daemon. It holds
-	 * all information about the daemon, the
-	 * file that is scanned, and the state of
-	 * the scanning process. */
-
-	int			id;		
-	struct daemon_id	did;		/* identifier for our daemon */
-	int			write_mode;
-	int			state;
-	int			response;
-	int			event;
-	int			filenamelength;	/* not including terminator */
-	char			*filename;
-	struct event_properties	event_p;
-	struct file_properties	file_p;
-	struct xp_mutex		mutex;
+	char				*filename;
+	int				filename_length;
+	struct dazuko_file_listnode	*next;
 };
 
 struct dazuko_file_struct
@@ -140,11 +131,12 @@ struct dazuko_file_struct
 	 * intelligent memory management when
 	 * doing filename lookups in the kernel. */
 
-	int			should_scan;		/* already know we need to scan? */
-	char			*filename;		/* filename */
-	int			filename_length;	/* length of filename */
-	struct file_properties	file_p;			/* properties of file */
-	struct xp_file_struct	*extra_data;		/* extra platform-dependant data */
+	int				should_scan;		/* already know we need to scan? */
+	char				*filename;		/* filename to report (pointer in alias list) */
+	int				filename_length;	/* length of filename reported */
+	struct dazuko_file_listnode	*aliases;		/* list of file names (alias names) */
+	struct file_properties		file_p;			/* properties of file */
+	struct xp_file_struct		*extra_data;		/* extra platform-dependant data */
 };
 
 
@@ -201,6 +193,11 @@ int xp_sys_unhook(void);
 int xp_file_struct_check(struct dazuko_file_struct *dfs);
 int xp_file_struct_check_cleanup(struct dazuko_file_struct *dfs);
 
+/* daemon id */
+int xp_id_compare(struct xp_daemon_id *id1, struct xp_daemon_id *id2);
+int xp_id_free(struct xp_daemon_id *id);
+struct xp_daemon_id* xp_id_copy(struct xp_daemon_id *id);
+
 /* output */
 int xp_print(const char *fmt, ...);
 
@@ -216,22 +213,20 @@ int xp_print(const char *fmt, ...);
  * functions available to platform-layer *
  *****************************************/
 
-int dazuko_is_our_daemon(int pid);
+int dazuko_vsnprintf(char *str, size_t size, const char *format, va_list ap);
+int dazuko_snprintf(char *str, size_t size, const char *format, ...);
+int dazuko_is_our_daemon(struct xp_daemon_id *xp_id);
 int dazuko_get_value(const char *key, const char *string, char **value);
-int dazuko_register_daemon(struct daemon_id *did, const char *reg_name, int string_length, int write_mode);
-int dazuko_unregister_daemon(struct daemon_id *did);
-int dazuko_handle_user_request(struct dazuko_request *user_request, int pid);
-int dazuko_handle_user_request_compat12(void *ptr, int cmd, int pid);
-int get_ready_slot_condition(void *param);
+int dazuko_unregister_daemon(struct xp_daemon_id *xp_id);
+int dazuko_handle_user_request(struct dazuko_request *user_request, struct xp_daemon_id *xp_id);
+int dazuko_handle_user_request_compat12(void *ptr, int cmd, struct xp_daemon_id *xp_id);
 int dazuko_get_filename_length(char *filename);
-int dazuko_state_error(struct slot *s, int current_state);
 void dazuko_bzero(void *p, int len);
-int dazuko_sys_check(unsigned long event, int daemon_is_allowed, int pid);
-int dazuko_sys_pre(unsigned long event, struct dazuko_file_struct *kfs, struct event_properties *event_p);
+int dazuko_sys_check(unsigned long event, int daemon_is_allowed, struct xp_daemon_id *xp_id);
+int dazuko_sys_pre(unsigned long event, struct dazuko_file_struct *kfs, struct xp_file *file, struct event_properties *event_p);
 int dazuko_sys_post(unsigned long event, struct dazuko_file_struct *kfs, struct xp_file *file, struct event_properties *event_p);
 int dazuko_init(void);
 int dazuko_exit(void);
 
 #endif
-
 #endif

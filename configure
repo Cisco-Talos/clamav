@@ -11020,8 +11020,8 @@ fi;
 if test "$lcurl" != "no"
 then
     my_cv_curl_vers=NONE
-        check="7.11.0"
-        check_hex="070B00"
+        check="7.10.0"
+        check_hex="070A00"
 
     echo "$as_me:$LINENO: checking for curl >= $check" >&5
 echo $ECHO_N "checking for curl >= $check... $ECHO_C" >&6

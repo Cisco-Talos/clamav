@@ -80,7 +80,7 @@ am__clamd_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 	session.c session.h thrmgr.c thrmgr.h server-th.c server.h \
 	scanner.c scanner.h others.c others.h clamuko.c clamuko.h \
 	dazukoio_compat12.c dazukoio_compat12.h dazukoio.c dazukoio.h \
-	dazuko_xp.h dazukoio_xp.h tests.c tests.h shared.h
+	dazuko_xp.h dazukoio_xp.h shared.h
 @BUILD_CLAMD_TRUE@am_clamd_OBJECTS = output.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	cfgparser.$(OBJEXT) getopt.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	memory.$(OBJEXT) misc.$(OBJEXT) \
@@ -90,7 +90,7 @@ am__clamd_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 @BUILD_CLAMD_TRUE@	server-th.$(OBJEXT) scanner.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	others.$(OBJEXT) clamuko.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	dazukoio_compat12.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	dazukoio.$(OBJEXT) tests.$(OBJEXT)
+@BUILD_CLAMD_TRUE@	dazukoio.$(OBJEXT)
 clamd_OBJECTS = $(am_clamd_OBJECTS)
 clamd_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
@@ -104,8 +104,7 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/options.Po ./$(DEPDIR)/others.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/output.Po ./$(DEPDIR)/scanner.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/server-th.Po ./$(DEPDIR)/session.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/tcpserver.Po ./$(DEPDIR)/tests.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/thrmgr.Po
+@AMDEP_TRUE@	./$(DEPDIR)/tcpserver.Po ./$(DEPDIR)/thrmgr.Po
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) \
@@ -259,8 +258,6 @@ target_vendor = @target_vendor@
 @BUILD_CLAMD_TRUE@    dazukoio.h \
 @BUILD_CLAMD_TRUE@    dazuko_xp.h \
 @BUILD_CLAMD_TRUE@    dazukoio_xp.h \
-@BUILD_CLAMD_TRUE@    tests.c \
-@BUILD_CLAMD_TRUE@    tests.h \
 @BUILD_CLAMD_TRUE@    shared.h
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
@@ -351,7 +348,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/server-th.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/session.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tcpserver.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tests.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/thrmgr.Po@am__quote@
 
 .c.o:

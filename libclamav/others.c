@@ -51,6 +51,7 @@ pthread_mutex_t cli_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define CL_FLEVEL 2 /* don't touch it */
 
+#define MAX_ALLOCATION 134217728
 
 short cli_debug_flag = 0, cli_leavetemps_flag = 0;
 
@@ -247,6 +248,12 @@ void *cli_malloc(size_t size)
 {
 	void *alloc;
 
+
+    if(size > MAX_ALLOCATION) {
+	cli_errmsg("Attempt to allocate more than %d bytes. Please report to bugs@clamav.net\n", MAX_ALLOCATION);
+	return NULL;
+    }
+
     alloc = malloc(size);
 
     if(!alloc) {
@@ -261,6 +268,11 @@ void *cli_calloc(size_t nmemb, size_t size)
 {
 	void *alloc;
 
+    if(size > MAX_ALLOCATION) {
+	cli_errmsg("Attempt to allocate more than %d bytes. Please report to bugs@clamav.net\n", MAX_ALLOCATION);
+	return NULL;
+    }
+
     alloc = calloc(nmemb, size);
 
     if(!alloc) {
@@ -274,6 +286,11 @@ void *cli_calloc(size_t nmemb, size_t size)
 void *cli_realloc(void *ptr, size_t size)
 {
 	void *alloc;
+
+    if(size > MAX_ALLOCATION) {
+	cli_errmsg("Attempt to allocate more than %d bytes. Please report to bugs@clamav.net\n", MAX_ALLOCATION);
+	return NULL;
+    }
 
     alloc = realloc(ptr, size);
 
@@ -365,9 +382,6 @@ int cli_rmdirs(const char *dirname)
 	struct stat maind, statbuf;
 	char *fname;
 
-
-    if(cli_leavetemps_flag)
-	return 0;
 
     chmod(dirname, 0700);
     if((dd = opendir(dirname)) != NULL) {

@@ -130,9 +130,9 @@ if test "$lcurl" != "no"
 then
     my_cv_curl_vers=NONE
     dnl check is the plain-text version of the required version
-    check="7.11.0"
+    check="7.10.0"
     dnl check_hex must be UPPERCASE if any hex letters are present
-    check_hex="070B00"
+    check_hex="070A00"
 
     AC_MSG_CHECKING([for curl >= $check])
 

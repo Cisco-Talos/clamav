@@ -6,7 +6,7 @@
 /* Dazuko Interface. Interace with Dazuko for file access control.
    Written by John Ogness <jogness@antivir.de>
 
-   Copyright (c) 2002, 2003 H+BEDV Datentechnik GmbH
+   Copyright (c) 2002, 2003, 2004 H+BEDV Datentechnik GmbH
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
