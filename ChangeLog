@@ -1,3 +1,9 @@
+Sat Oct  2 23:02:39 CEST 2004 (tk)
+----------------------------------
+  * configure: improve config file installation (patch by Andrey J. Melnikoff
+	       (TEMHOTA) <temnota*kmv.ru>)
+  * sigtool: fix --unpack/--unpack-current problem on Cygwin and FreeBSD
+
 Sat Oct  2 18:52:32 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Fix crash if %h is used in a template and --headers is

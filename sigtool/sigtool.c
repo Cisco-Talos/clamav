@@ -53,6 +53,9 @@
 #include "../libclamav/others.h"
 #include "../libclamav/str.h"
 
+#ifndef	O_BINARY
+#define	O_BINARY	0
+#endif
 
 void help(void);
 char *getdsig(const char *host, const char *user, const char *data);
@@ -492,29 +495,31 @@ char *getdsig(const char *host, const char *user, const char *data)
 
 int unpack(struct optstruct *opt)
 {
-	FILE *fd;
+	int fd;
 	char *name;
 
     if(optl(opt, "unpack-current")) {
-	name = mcalloc(300, sizeof(char)); /* FIXME */
+	name = mcalloc(strlen(freshdbdir()) + strlen(getargl(opt, "unpack-current")) + 2, sizeof(char));
 	sprintf(name, "%s/%s", freshdbdir(), getargl(opt, "unpack-current"));
     } else
-	name = getargc(opt, 'u');
+	name = strdup(getargc(opt, 'u'));
 
-    if((fd = fopen(name, "rb")) == NULL) {
+    if((fd = open(name, O_RDONLY|O_BINARY)) == -1) {
 	mprintf("!Can't open CVD file %s\n", name);
+	free(name);
 	exit(1);
     }
 
-    fseek(fd, 512L, SEEK_SET);
+    free(name);
+    lseek(fd, 512, SEEK_SET);
 
-    if(cli_untgz(fileno(fd), ".")) {
+    if(cli_untgz(fd, ".")) {
 	mprintf("!Can't unpack file.\n");
-	fclose(fd);
+	close(fd);
 	exit(1);
     }
 
-    fclose(fd);
+    close(fd);
     exit(0);
 }
 
