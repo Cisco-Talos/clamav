@@ -1,3 +1,8 @@
+Mon Sep  1 21:45:48 CEST 2003
+-----------------------------
+  * clamav.rulez.pl and clamav.linux-sxs.org removed from mirrors.txt
+    (thanks to Tomasz Papszun and Benjamin Zwittnig for checking them)
+
 Mon Sep  1 21:33:25 CEST 2003
 -----------------------------
   * libclamav: fixed zziplib compilation error under OS/X (Nigel)
