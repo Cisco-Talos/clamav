@@ -1,3 +1,15 @@
+Tue Jun 22 05:09:54 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Avoid unlocking an already unlocked mutex in
+	clamfi_abort
+			Removed compilation warning in FreeBSD5.2
+  * libclamav:		Call cli_chomp() twice to ensure \r is also removed in
+  	emails
+  			Optimise handling of blank lines in emails
+			Trialing Andrey J. Melnikoff (TEMHOTA)
+	<temnota@kmv.ru>'s patch to print stack trace on SIGSEGV. Tidied,
+	optimised and applied the patch. Comments welcome.
+
 Tue Jun 22 00:35:38 EDT 2004 (tk)
 ---------------------------------
   * libclamav: reverse the last patch and fix glibc issue in more
