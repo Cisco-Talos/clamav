@@ -52,11 +52,12 @@ AC_DEFINE(SCANBUFF, 131072, [scan buffer size])
 AC_DEFINE(FILEBUFF, 8192,   [file i/o buffer size])
 
 AC_HEADER_STDC
-AC_CHECK_HEADERS(stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h)
+AC_CHECK_HEADERS(stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h poll.h)
 AC_TYPE_OFF_T
 AC_COMPILE_CHECK_SIZEOF(short)
 AC_COMPILE_CHECK_SIZEOF(int)
 AC_COMPILE_CHECK_SIZEOF(long)
+AC_CHECK_FUNCS(poll)
 
 have_pthreads=no
 AC_CHECK_HEADER(pthread.h,[have_pthreads=yes],)
@@ -532,6 +533,25 @@ else
         AC_MSG_RESULT(no)
     fi
 fi
+
+AC_MSG_CHECKING(Default FD_SETSIZE value)
+AC_TRY_RUN([
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/time.h>
+#include <sys/select.h>
+#include <sys/types.h>
+main() {
+        FILE *fp = fopen("conftestval", "w");
+        fprintf (fp, "%d\n", FD_SETSIZE);
+        exit(0);
+}
+],
+DEFAULT_FD_SETSIZE=`cat conftestval`,
+DEFAULT_FD_SETSIZE=256,
+DEFAULT_FD_SETSIZE=256)
+AC_MSG_RESULT($DEFAULT_FD_SETSIZE)
+AC_DEFINE_UNQUOTED(DEFAULT_FD_SETSIZE, $DEFAULT_FD_SETSIZE, "default FD_SETSIZE value")
 
 AC_OUTPUT([
 libclamav/Makefile
