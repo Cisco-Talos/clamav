@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.184  2005/02/23 09:41:39  nigelhorne
+ * Remove the pidfile
+ *
  * Revision 1.183  2005/02/13 20:50:15  nigelhorne
  * 0.83
  *
@@ -560,9 +563,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.183 2005/02/13 20:50:15 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.184 2005/02/23 09:41:39 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.83"
+#define	CM_VERSION	"0.83a"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -662,7 +665,7 @@ typedef	unsigned int	in_addr_t;
 
 #define	VERSION_LENGTH	128
 
-/*#define	SESSION	/*
+#define	SESSION	/*
 		 * Keep one command connection open to clamd, otherwise a new
 		 * command connection is created for each new email
 		 *
@@ -952,6 +955,7 @@ static	const	char	*whitelistFile;	/*
 					 * addresses that we don't scan
 					 */
 static	const	char	*sendmailCF;	/* location of sendmail.cf to verify */
+static	const	char	*pidfile;
 
 #ifdef	CL_DEBUG
 #if __GLIBC__ == 2 && __GLIBC_MINOR__ >= 1
@@ -1025,7 +1029,6 @@ main(int argc, char **argv)
 	int i, Bflag = 0;
 	const char *cfgfile = CL_DEFAULT_CFG;
 	const struct cfgstruct *cpt;
-	const char *pidfile = NULL;
 	char version[VERSION_LENGTH + 1];
 	pthread_t tid;
 	struct smfiDesc smfilter = {
@@ -1792,6 +1795,9 @@ main(int argc, char **argv)
 					tmpdir = "/tmp";
 #endif
 
+		/*
+		 * TODO: investigate mkdtemp on LINUX and possibly others
+		 */
 		tmpdir = cli_gentemp(NULL);
 
 		cli_dbgmsg("Making %s\n", tmpdir);
@@ -3365,7 +3371,8 @@ clamfi_eom(SMFICTX *ctx)
 
 				cli_dbgmsg("Waiting for %s to finish\n", cmd);
 				pclose(sendmail);
-			}
+			} else if(use_syslog)
+				syslog(LOG_WARNING, _("Can't execute '%s' to send virus notice"), cmd);
 		}
 
 		if(quarantine_dir) {
@@ -3955,6 +3962,9 @@ connect2clamd(struct privdata *privdata)
 		int ntries = 5;
 		const char *dir = (tmpdir) ? tmpdir : quarantine_dir;
 
+		/*
+		 * TODO: investigate mkdtemp on LINUX and possibly others
+		 */
 		if((mkdir(dir, 0700) < 0) && (errno != EEXIST)) {
 			perror(dir);
 			if(use_syslog)
@@ -5046,6 +5056,10 @@ quit(void)
 		if(rmdir(tmpdir) < 0)
 			perror(tmpdir);
 
+	if(pidfile)
+		if(unlink(pidfile) < 0)
+			perror(pidfile);
+
 	broadcast(_("Stopping clamav-milter"));
 }
 
@@ -5094,6 +5108,8 @@ loadDatabase(void)
 
 	daily = cli_malloc(strlen(dbdir) + 11);
 	sprintf(daily, "%s/daily.cvd", dbdir);
+
+	cli_dbgmsg("loadDatabase: check %s for updates\n", daily);
 
 	d = cl_cvdhead(daily);
 
@@ -5153,6 +5169,7 @@ loadDatabase(void)
 		cli_errmsg("Database initialization error: %s\n", cl_strerror(ret));
 		return -1;
 	}
+	cli_dbgmsg("Database updated\n");
 	if(use_syslog) {
 		syslog(LOG_INFO, _("ClamAV: Protecting against %u viruses"), signatures);
 
@@ -5277,6 +5294,7 @@ verifyIncomingSocketName(const char *sockName)
  *
  * TODO: Allow regular expressions in the emails
  * TODO: Syntax check the contents of the files
+ * TODO: Allow emails of the form "name <address>"
  */
 static int
 isWhitelisted(const char *emailaddress)
@@ -5303,9 +5321,8 @@ isWhitelisted(const char *emailaddress)
 				case ':':
 					continue;
 			}
-			cli_chomp(buf);
-
-			(void)tableInsert(whitelist, buf, 1);
+			if(cli_chomp(buf) > 0)
+				(void)tableInsert(whitelist, buf, 1);
 		}
 		fclose(fin);
 	}
