@@ -38,6 +38,8 @@ AC_DEFINE(FILEBUFF, 8192,   [file i/o buffer size])
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS(stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h poll.h regex.h limits.h)
+AC_CHECK_HEADER(syslog.h,AC_DEFINE(USE_SYSLOG,1,[use syslog]),)
+
 AC_TYPE_OFF_T
 AC_COMPILE_CHECK_SIZEOF(short)
 AC_COMPILE_CHECK_SIZEOF(int)
@@ -104,7 +106,27 @@ then
     AC_CHECK_LIB(gmp, __gmpz_init, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; AC_DEFINE(HAVE_GMP,1,have gmp installed)], [AC_CHECK_LIB(gmp, mpz_init, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; AC_DEFINE(HAVE_GMP,1,have gmp installed)], AC_MSG_WARN([****** GNU MP 2 or newer NOT FOUND - digital signature support will be disabled !]); want_dsig="no")])
 fi
 
-AC_CHECK_HEADER(syslog.h,AC_DEFINE(USE_SYSLOG,1,[use syslog]),)
+dnl libcurl
+AC_ARG_WITH(libcurl,
+[  --with-libcurl	    Support URLs downloading with libcurl (default=auto)],
+[ case "$withval" in
+  yes|no) lcurl="$withval" ;;
+  *)      AC_MSG_ERROR([--with-libcurl does not take an argument]) ;;
+  esac],
+[ lcurl=auto ])
+
+if test "$lcurl" != "no"
+then
+    AC_MSG_CHECKING([for libcurl])
+    if eval curl-config --version 2>/dev/null >/dev/null; then
+	AC_DEFINE(WITH_CURL,1,use libcurl in mbox code)
+	curl_libs=`curl-config --libs`
+	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $curl_libs"
+	AC_MSG_RESULT(yes)
+    else
+	AC_MSG_RESULT(no, curl-config not found)
+    fi
+fi
 
 AC_ARG_ENABLE(pthreads,
 [  --disable-pthreads      Disable POSIX threads support],
@@ -587,6 +609,7 @@ then
 fi
 
 AC_C_CONST
+AC_C_INLINE
 AC_C_BIGENDIAN
 if test $ac_cv_c_bigendian = yes; then
   AC_DEFINE(WORDS_BIGENDIAN,1,endianess)
