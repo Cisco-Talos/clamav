@@ -17,6 +17,11 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 #	clamavmon - monitor a network for virus intrusion
+# Usage "clamavmon [machines...]" where machines is an optional list of machine
+# running clamd. These will turn from green to red if clamd dies. Clicking on
+# the machine name gives the version of clamd running there.
+# FIXME: clicking should give the data base information and date of last
+#	freshclam
 
 eval 'exec /usr/bin/perl -w -S $0 ${1+"$@"}' if 0; 
 
@@ -24,50 +29,126 @@ use strict;
 use IO::Socket::INET;
 use Tk;
 use Tk::Dialog;
-use threads;	# Tk isn't thread safe :-( This will need some careful work
+use threads;	# Tk isn't thread safe, which really means it can't be used
+		# in applications such as this which gather and display data
+		# in real time. I would have prefered to use TCL, but that
+		# doesn't come with UDP support, so I'd have to build that in
+		# as extension.
 
 my $mw = MainWindow->new;
-my $history = "";
 
-my $text = $mw->Scrolled('Text', -width => 50, -scrollbars => 'ow')->pack;
+# $mw->bind('<Alt-F4>' => \&quit);
 
-my $button1 = $mw->Button(-text => 'About', -command => \&about)->pack(-side => 'left');
-# my $button2 = $mw->Button(-text => 'Quit', -command => \&quit)->pack(-side => 'left');
-my $button2 = $mw->Button(-text => 'Quit', -command => \&exit)->pack(-side => 'left');
+my $top = $mw->Frame();
+my $middle = $mw->Frame();
+my $bottom = $mw->Frame();
 
-my $t = threads->new(\&listener);
+my @machines;
+
+if(@ARGV) {
+	my $offset = 0;
+	foreach(@ARGV) {
+		$machines[$offset++] = $top->Button(-text => $_, -command => [ \&drill, $_ ])->pack(-side => 'left');
+	}
+}
+
+$top->pack();
+
+my $text = $middle->Scrolled('Text', -width => 50, -scrollbars => 'ow')->pack;
+# $text->bind('<Alt-F4>' => \&quit);
+
+$middle->pack();
+
+my $b1 = $bottom->Button(-text => 'About', -command => \&about)->pack(-side => 'left');
+# my $b2 = $bottom->Button(-text => 'Quit', -command => \&quit)->pack(-side => 'left');
+my $b2 = $bottom->Button(-text => 'Quit', -command => \&exit)->pack(-side => 'left');
+
+$bottom->pack();
+
+my $t1 = threads->new(\&listener);
+
+if(@ARGV) {
+	my $t2 = threads->new(\&pinger);
+}
+
+# $t->detach();
 
 my $quitting = 0;
+
+my $history = "";
 
 MainLoop;
 
 sub listener {
-	my $MySocket = IO::Socket::INET->new(
-		LocalPort => 3310,
-		Proto => 'udp',
-		Type => SOCK_DGRAM) or die "$0: socket: $!\n";
+	until($quitting) {
+		my $sock = IO::Socket::INET->new(
+			LocalPort => 3310,
+			Proto => 'udp',
+			Type => SOCK_DGRAM) or die "$0: socket: $!\n";
 
-	unless($quitting) {
 		my $mess;
-		$MySocket->recv($mess, 128);
+		$sock->recv($mess, 128);
 
-		my ($rport, $ipaddr) = sockaddr_in($MySocket->peername);
+		my ($rport, $ipaddr) = sockaddr_in($sock->peername);
+
+		close $sock;
 
 		$text->insert('end', "From " . inet_ntoa($ipaddr) . " $mess\n");
 
-		print "From " . inet_ntoa($ipaddr) . " $mess\n";
+		# print "From " . inet_ntoa($ipaddr) . " $mess\n";
  
 		# $text->Contents($history);
-		$text->pack;
+		# $text->pack;
+	}
+	print "quit\n";
+}
+
+sub pinger {
+	until($quitting) {
+		foreach(@machines) {
+			my $machine = $_->cget('-text');
+			my $sock = IO::Socket::INET->new(
+				PeerPort => 3310,
+				PeerAddr => $machine,
+				Proto => 'tcp',
+				Timeout => 10,
+				Type => SOCK_STREAM);
+
+			my $mess = "";
+
+			my $background = $_->cget('-background');
+
+			if($sock) {
+				print $sock "PING\n";
+
+				$mess = <$sock>;
+
+				close $sock;
+			}
+
+			if($mess ne "PONG\n") {
+				# print "$machine is down\n";
+				if($background ne 'red') {
+					$_->configure(-background => 'red');
+				}
+			} else {
+				# print "$machine is up\n";
+				if($background ne 'green') {
+					$_->configure(-background => 'green');
+				}
+			}
+		}
+		select(undef, undef, undef, 60);
 	}
 }
 
 sub quit {
 	$quitting = 1;
-	$t->join();
+	# $t->join();
 	exit;
 }
 
+# TODO: this should be modeless
 sub about {
 	my $about = $mw->DialogBox(
 		-title=>"About clamAVmon",
@@ -82,4 +163,35 @@ sub about {
 			"The GPL Licence will appear here")->pack;
 
 	$about->Show();
+}
+
+sub drill {
+	my $machine = shift;
+
+	my $sock = IO::Socket::INET->new(
+		PeerPort => 3310,
+		PeerAddr => $machine,
+		Proto => 'tcp',
+		Timeout => 10,
+		Type => SOCK_STREAM) or die "$0: socket: $!\n";
+
+	print $sock "VERSION\n";
+
+	my $mess = <$sock>;
+
+	close $sock;
+
+	print $mess;
+
+	my $state = $mw->DialogBox(
+		-title=>$machine,
+		-buttons=>["OK"]
+	);
+
+	$state->add('Label',
+		-anchor => 'w',
+		-justify => 'left',
+		-text => $mess)->pack;
+
+	$state->Show();
 }
