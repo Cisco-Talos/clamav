@@ -7,7 +7,425 @@
   <meta name="description" content="::: ClamAV / Sendmail / clamav-milter :::">
   <meta name="author" content="doozer">
   <title>::: ClamAV / Sendmail / clamav-milter :::</title>
-  <link rel="stylesheet" href="css/main.css">
+  
+  <style type="text/css">
+P 
+{
+	font-size : 12px;
+	font-style : normal;
+	color : #000000;
+	font-family : verdana, arial, helvetica, sans-serif;
+	text-decoration : none;
+	text-align : justify;
+}
+					  			  
+A 
+{
+	font-size : 12px;
+	font-style : normal;
+	font-weight : bold;
+	color : #4457c9;
+	font-family : verdana, arial, helvetica, sans-serif;
+	text-decoration : none;
+}
+									
+A:Visited 
+{
+	font-size : 12px;
+	font-style : normal;
+	font-weight : bold;
+	color : #4457c9;
+	font-family : verdana, arial, helvetica, sans-serif;
+	text-decoration : none;
+}
+	    
+A:Active 
+{
+	font-size : 12px;
+	font-style : normal;
+	font-weight : bold;
+	color : #4457c9;
+	font-family : verdana, arial, helvetica, sans-serif;
+	text-decoration : none;
+}
+
+A:Hover 
+{
+        color : #000000;
+	font-size : 12px;
+	font-style : normal;
+	font-weight : bold;
+	font-family : verdana, arial, helvetica, sans-serif;
+	text-decoration : none;
+}
+							
+BODY 
+{
+	font-size : 12px;
+	font-style : normal;
+	color : #000000;
+	font-family : verdana, arial, helvetica, sans-serif;
+	background-color : #ffffff;
+	text-decoration : none;
+	text-align : left;
+	margin: 0;
+}
+
+PRE
+{
+	color: #000080;
+	font-size: 12px;
+	border: 1px solid #000000;
+	padding: 3pt;
+	background-color: #dddddd;
+	font-family : verdana, arial, helvetica, sans-serif;
+}
+     
+TABLE  
+{
+	border-collapse: collapse;
+	border-color: #000000;
+	border: 0;
+}
+												   
+TD  
+{
+	font-size : 12px;
+	font-style : normal;
+	font-weight : normal;
+        color : #000000;
+	font-family : verdana, arial, helvetica, sans-serif;
+	text-decoration : none;
+	border-color: #000000;
+}
+
+TD.rtw  
+{
+	font-size : 12px;
+	font-style : normal;
+	font-weight : normal;
+        color : #ffffff;
+	font-family : verdana, arial, helvetica, sans-serif;
+	text-decoration : none;
+	border-color: #000000;
+}
+
+TD.rall
+{
+	border-left-width: 1pt;
+	border-left-style: solid;
+	border-top-width: 1pt;
+	border-top-style: solid;
+	border-right-width: 1pt;
+	border-right-style: solid;
+	border-bottom-width: 1pt;
+	border-bottom-style: solid;
+	border-color: #000000;
+}
+
+TD.rl
+{
+	border-left-width: 1pt;
+	border-left-style: solid;
+	border-top-width: 0pt;
+	border-top-style: none;
+	border-right-width: 0pt;
+	border-right-style: none;
+	border-bottom-width: 0pt;
+	border-bottom-style: none;
+	border-color: #000000;
+}
+
+TD.rt
+{
+	border-left-width: 0pt;
+	border-left-style: none;
+	border-top-width: 1pt;
+	border-top-style: solid;
+	border-right-width: 0pt;
+	border-right-style: none;
+	border-bottom-width: 0pt;
+	border-bottom-style: none;
+	border-color: #000000;
+}
+
+TD.rt_dddddd
+{
+	border-left-width: 0pt;
+	border-left-style: none;
+	border-top-width: 1pt;
+	border-top-style: solid;
+	border-right-width: 0pt;
+	border-right-style: none;
+	border-bottom-width: 0pt;
+	border-bottom-style: none;
+	border-color: #dddddd;;
+}
+
+TD.rlr
+{
+	border-left-width: 1pt;
+	border-left-style: solid;
+	border-right-width: 1pt;
+	border-right-style: solid;
+	border-color: #000000;
+}
+
+TD.rlr_b
+{
+	border-left-width: 4pt;
+	border-left-style: solid;
+	border-right-width: 4pt;
+	border-right-style: solid;
+	border-color: #000000;
+}
+
+TD.rlb
+{
+	border-left-width: 1pt;
+	border-left-style: solid;
+	border-top-width: 0pt;
+	border-top-style: none;
+	border-right-width: 0pt;
+	border-right-style: none;
+	border-bottom-width: 1pt;
+	border-bottom-style: solid;
+}
+
+TD.rltr
+{
+	border-left-width: 1pt;
+	border-left-style: solid;
+	border-top-width: 1pt;
+	border-top-style: solid;
+	border-right-width: 1pt;
+	border-right-style: solid;
+	border-bottom-width: 0pt;
+	border-bottom-style: none;
+}
+
+TD.rltr_b
+{
+	border-left-width: 4pt;
+	border-left-style: solid;
+	border-top-width: 1pt;
+	border-top-style: solid;
+	border-right-width: 4pt;
+	border-right-style: solid;
+	border-bottom-width: 0pt;
+	border-bottom-style: none;
+}
+
+TD.rrb
+{
+	border-left-width: 0pt;
+	border-left-style: none;
+	border-top-width: 0pt;
+	border-top-style: none;
+	border-right-width: 1pt;
+	border-right-style: solid;
+	border-bottom-width: 1pt;
+	border-bottom-style: solid;
+}
+
+TD.rr
+{
+	border-left-width: 0pt;
+	border-left-style: none;
+	border-top-width: 0pt;
+	border-top-style: none;
+	border-right-width: 1pt;
+	border-right-style: solid;
+	border-bottom-width: 0pt;
+	border-bottom-style: none;
+}
+
+TD.rltb
+{
+	border-left-width: 1pt;
+	border-left-style: solid;
+	border-top-width: 1pt;
+	border-top-style: solid;
+	border-right-width: 0pt;
+	border-right-style: none;
+	border-bottom-width: 1pt;
+	border-bottom-style: solid;
+}
+
+TD.rlt
+{
+	border-left-width: 1pt;
+	border-left-style: solid;
+	border-top-width: 1pt;
+	border-top-style: solid;
+	border-right-width: 0pt;
+	border-right-style: none;
+	border-bottom-width: 0pt;
+	border-bottom-style: none;
+}
+
+TD.rtr
+{
+	border-left-width: 0pt;
+	border-left-style: none;
+	border-top-width: 1pt;
+	border-top-style: solid;
+	border-right-width: 1pt;
+	border-right-style: solid;
+	border-bottom-width: 0pt;
+	border-bottom-style: none;
+}
+
+TD.rlrb
+{
+	border-left-width: 1pt;
+	border-left-style: solid;
+	border-top-width: 0pt;
+	border-top-style: none;
+	border-right-width: 1pt;
+	border-right-style: solid;
+	border-bottom-width: 1pt;
+	border-bottom-style: solid;
+}
+
+TD.rlrb_b
+{
+	border-left-width: 4pt;
+	border-left-style: solid;
+	border-top-width: 0pt;
+	border-top-style: none;
+	border-right-width: 4pt;
+	border-right-style: solid;
+	border-bottom-width: 1pt;
+	border-bottom-style: solid;
+}
+
+TD.rallwl
+{
+	border-top-width: 1pt;
+	border-top-style: solid;
+	border-bottom-width: 1pt;
+	border-bottom-style: solid;
+	border-right-width: 1pt;
+	border-right-style: solid;
+	border-left-width: 0pt;
+	border-left-style: none;
+}
+
+TD.rbottom
+{
+	border-bottom-width: 1pt;
+	border-bottom-style: solid;
+	border-left-width: 1pt;
+	border-left-style: solid;
+	border-right-width: 1pt;
+	border-right-style: solid;
+}
+
+TD.rlrbdotted
+{
+	border-left-width: 1pt;
+	border-left-style: dotted;
+	border-top-width: 0pt;
+	border-top-style: none;
+	border-right-width: 1pt;
+	border-right-style: dotted;
+	border-bottom-width: 1pt;
+	border-bottom-style: dotted;
+}
+
+TD.rbdotted
+{
+	border-left-width: 0pt;
+	border-left-style: none;
+	border-top-width: 0pt;
+	border-top-style: none;
+	border-right-width: 0pt;
+	border-right-style: none;
+	border-bottom-width: 1pt;
+	border-bottom-style: dotted;
+}
+
+TD.rn
+{
+	border-left-width: 0pt;
+	border-left-style: none;
+	border-top-width: 0pt;
+	border-top-style: none;
+	border-right-width: 0pt;
+	border-right-style: none;
+	border-bottom-width: 0pt;
+	border-bottom-style: none;
+	border-color: #dddddd;
+}
+
+IMG 
+{
+	padding: 0;
+	border: 0;
+	border-color: #000000;
+}      
+
+.rfoot
+{
+	border-left-width: 1pt;
+	border-left-style: solid;
+	border-top-width: 1pt;
+	border-top-style: solid;
+	border-right-width: 1pt;
+	border-right-style: solid;
+	border-bottom-width: 1pt;
+	border-bottom-style: solid;
+	border-color: #000000;
+}
+
+.rfoot:link
+{
+	color: #000000;
+	text-decoration: none;
+	border-left-width: 1pt;
+	border-left-style: solid;
+	border-top-width: 1pt;
+	border-top-style: solid;
+	border-right-width: 1pt;
+	border-right-style: solid;
+	border-bottom-width: 1pt;
+	border-bottom-style: solid;
+	border-color: #000000;
+}
+
+.rfoot:hover
+{
+	border: 1px solid #0A246A;
+	background-color: #B6BDD2;
+	color: #000000;
+	border-left-width: 1pt;
+	border-left-style: solid;
+	border-top-width: 1pt;
+	border-top-style: solid;
+	border-right-width: 1pt;
+	border-right-style: solid;
+	border-bottom-width: 1pt;
+	border-bottom-style: solid;
+	border-color: #000000;
+}
+
+.rfoot:visited
+{
+	color: #000000;
+	text-decoration: none;
+	border-left-width: 1pt;
+	border-left-style: solid;
+	border-top-width: 1pt;
+	border-top-style: solid;
+	border-right-width: 1pt;
+	border-right-style: solid;
+	border-bottom-width: 1pt;
+	border-bottom-style: solid;
+	border-color: #000000;
+}
+  </style>
+  
 </head>
 
 <body bgcolor="#ffffff">
@@ -24,7 +442,7 @@
 <table width="100%" align="center" cellpadding="10" cellspacing="0" border="0">
  <tr>
   <td  bgcolor="#dddddd" width="8%" align="left" height="100" class="rt_dddddd"></td>
-  <td  bgcolor="#ffffff" width="24%" align="left" height="100" class="rlt"><img src="files/clam.png" alt="ClamAV Logo"></td>
+  <td  bgcolor="#ffffff" width="24%" align="left" height="100" class="rlt"><img src="clam.png" alt="ClamAV Logo"></td>
   <td  bgcolor="#ffffff" width="60%" align="left" height="100" class="rtr">
    <b><font size="-1">ARTYKU£ Z SERII</font></b><br>
    <b><font size="+1">Ochrona antywirusowa poczty przychodz±cej</font></b><br><br>
@@ -45,6 +463,7 @@
   <td colspan="1" valign="top" align="left" width="84%" height="200" class="rlrb">
    <br>Mon Sep 15 22:34:21 CEST 2003 <b>Pierwsza wersja HOWTO</b>
    <br>Mon Feb  9 16:58:50 CET 2004 <b>Wersja aktualna</b>
+   <br>Aktualn± wersjê tego How-to znajdziecie zawsze pod <a href="http://clamav.skc.com.pl/howtos/sendmail_clamav.html">tym</a> adresem.
    
    <br><br><b>Spis tre¶ci</b>
    <br><b>1.</b>&nbsp;<a href="sendmail_clamav.html#a1">Wprowadzenie</a>
@@ -104,9 +523,9 @@ LocalSocket /var/run/clamav/clamd.sock		# Okre¶lenie pliku dla lokalnego socketu
  
 <br><br>&nbsp;<b>Skrypty startowe</b>
 <br> - Skrypty startowe, które uruchamiaj± Sendmaila, clamd i clamav-miltera:
-<br>&nbsp;&nbsp;&nbsp;<a href="files/rc.sendmail">rc.sendmail</a>
-<br>&nbsp;&nbsp;&nbsp;<a href="files/rc.clamd">rc.clamd</a>
-<br>&nbsp;&nbsp;&nbsp;<a href="files/rc.clamav-milter">rc.clamav-milter</a>
+<br>&nbsp;&nbsp;&nbsp;<a href="http://clamav.skc.com.pl/howtos/files/rc.sendmail">rc.sendmail</a>
+<br>&nbsp;&nbsp;&nbsp;<a href="http://clamav.skc.com.pl/howtos/files/rc.clamd">rc.clamd</a>
+<br>&nbsp;&nbsp;&nbsp;<a href="http://clamav.skc.com.pl/howtos/files/rc.clamav-milter">rc.clamav-milter</a>
 <br><br>Skrypty te zosta³y zrobione z my¶l± o dystrybucjach, które jako systemu startowego u¿ywaj± tego, który wywodzi siê z systemów BSD. Ja u¿ywam dwóch dystrybucji, Slackware i shtOS i w tych dystrybucjach skrypty bêd± dzia³aæ prawid³owo. Je¶li u¿ywacie systemu startowego System V, to musicie sami stworzyæ sobie odpowiednie skrypty startowe.
 <br>G³ównym skryptem startowym jest <i>rc.sendmail</i>. Po uruchomieniu go z opcj± <i>start</i> zostan± równie¿ uruchomione skrypty <i>rc.clamd</i> i <i>rc.clamav-milter</i>.
 
@@ -135,7 +554,7 @@ INPUT_MAIL_FILTER(`clmilter',`S=local:/var/run/clamav/clmilter.sock,F=, T=S:4m;R
 define(`confINPUT_MAIL_FILTERS', `clmilter')
 </pre>
 
-Oto mój przyk³adowy plik <a href="files/sendmail.mc">sendmail.mc</a>
+Oto mój przyk³adowy plik <a href="http://clamav.skc.com.pl/howtos/files/sendmail.mc">sendmail.mc</a>
 <br>Znajdziecie w nim jeszcze dwie linijki dotycz±ce SMTP-AUTH czyli autoryzacji SMTP. Je¶li kto¶ nie u¿ywa tego
 mechanizmu to proszê je usun±æ. Oto one:
 <pre>
@@ -199,7 +618,7 @@ root@linux: ln -s /usr/sbin/sendmail /usr/lib/sendmail
 </pre>
 
 Nale¿y jeszcze dokonaæ edycji pliku /etc/clamav/clamav.conf, czyli pliku konfiguracyjnego ClamAV.
-<a href="files/clamav.conf">Tutaj</a> dostêpny jest mój plik clamav.conf
+<a href="http://clamav.skc.com.pl/howtos/files/clamav.conf">Tutaj</a> dostêpny jest mój plik clamav.conf
 
 <br><br>UWAGA: clamav-milter do dzia³ania wymaga odhaszowania nastêpuj±cych wpisów w clamav.conf;
 <pre>
@@ -230,13 +649,7 @@ lub z którego¶ z <a href="http://www.clamav.net/mirrors.html">mirrorów</a>.
 <br><br><i>Polecam stosowanie baz sygnatur w formacie CVD. Poprzednie bazy by³y w formacie tekstowym, ale w przysz³o¶ci nie bêd± ju¿ obs³ugiwane przez ClamAV.</i>
 
 <br><br>Pliki baz danych to <b>main.cvd</b> i <b>daily.cvd</b>. Do main.cvd trafiaj± ju¿ sprawdzone sygnaturki, w których sporadycznie pojawiaj± siê jakie¶ b³êdy lub niedoci±gniêcia. W pliku daily.cvd znajduj± siê ostatnio dodane sygnaturki najnowszych wirusów.<br>
-Na chwilê obecn±, ClamAV rozpoznaje 
-<b>20673</b>
-ró¿nych wirusów, robaków i koni trojañskich a jego bazy sygnatur by³y ostatnio aktualizowane:<br>
-<b>main.cvd:</b> 27 Jan 2004 12-31 +0100
-<br><b>daily.cvd:</b> 09 Feb 2004 23-44 +0100
-
-<br>A oto <a href="/cgi-bin/clamdbl.cgi">lista sygnatur wirusów</a> rozpoznawanych w danej chwili przez ClamAV.
+W dniu tworzenia tego dokumentu, ClamAV rozpoznawa³ prawie <b>20700</b> ró¿nych wirusów, robaków i koni trojañskich.
 
 <br><br>
 Liczba rozpoznawanych wirusów ro¶nie bardzo szybko i tylko patrzeæ jak do¶cignie komercyjn± konkurencjê :-)
@@ -305,11 +718,7 @@ e-mail: <b>doozer (at) skc (dot) com (dot) pl</b>
 
 <br><br>
 <font style="font-size: 12px; color: #aaaaaa">
-
- 
- # sendmail_clamav.html v1.1; Last modified:
- Tue, 10 Feb, 2004 18:16:01 by
- doozer #
+ # sendmail_clamav.html v1.1; Last modified: Tue, 10 Feb, 2004 18:16:01 by doozer #
 </font>
 
 
@@ -324,11 +733,7 @@ e-mail: <b>doozer (at) skc (dot) com (dot) pl</b>
 <table width="100%" align="center" cellpadding="0" cellspacing="0" border="0">
  <tr>
   <td  bgcolor="#dddddd" width="100%" align="center" height="60" class="rn">
-   <a href="http://validator.w3.org/check?uri=http://clamav.skc.com.pl/howtos/sendmail_clamav.html">
-        <img src="files/valid-html401.gif" alt="Valid HTML 4.01"></a>
-   <a href="http://jigsaw.w3.org/css-validator/validator?uri=http://clamav.skc.com.pl/howtos/css/main.css">
-        <img src="files/vcss.png" alt="Valid CSS!">
- </a>	
+   &nbsp;
   </td>
  </tr>
 </table>

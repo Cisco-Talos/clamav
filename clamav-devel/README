@@ -18,6 +18,7 @@ use a CVS version or wait for a next stable release). Other noteworthy changes:
     + new directive: ArchiveMaxCompressionRatio
     + new command: SESSION (starts a clamd session and allows to do multiple
       commands per TCP session)
+    + new directives: TemporaryDirectory, LogClean (Andrey V. Malyshev)
 
 -) clamav-milter: (Nigel Horne)
     + added support for AllowSupplementaryGroups and ThreadTimeout
@@ -53,6 +54,9 @@ use a CVS version or wait for a next stable release). Other noteworthy changes:
     + work-around for potential database downgrade (subtle problem
       in r-r dns handling) - reported by Daniel Mario Vega and patched
       by Luca Gibelli
+
+-) sigtool:
+    + list virus names with --list-sigs (-l)
 
 -) contrib:
     + clamdwatch (by Mike Cathey)
