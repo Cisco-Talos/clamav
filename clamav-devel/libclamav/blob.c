@@ -44,6 +44,7 @@ blobCreate(void)
 #ifdef	CL_DEBUG
 	blob *b = (blob *)cli_calloc(1, sizeof(blob));
 	b->magic = BLOB;
+	cli_dbgmsg("blobCreate\n");
 	return b;
 #else
 	return (blob *)cli_calloc(1, sizeof(blob));
@@ -53,6 +54,12 @@ blobCreate(void)
 void
 blobDestroy(blob *b)
 {
+#ifdef	CL_DEBUG
+	cli_dbgmsg("blobDestroy %d\n", b->magic);
+#else
+	cli_dbgmsg("blobDestroy\n");
+#endif
+
 	assert(b != NULL);
 	assert(b->magic == BLOB);
 
@@ -69,8 +76,13 @@ blobDestroy(blob *b)
 void
 blobArrayDestroy(blob *blobList[], int n)
 {
-	while(--n >= 0)
-		blobDestroy(blobList[n]);
+	while(--n >= 0) {
+		cli_dbgmsg("blobArrayDestroy: %d\n", n);
+		if(blobList[n]) {
+			blobDestroy(blobList[n]);
+			blobList[n] = NULL;
+		}
+	}
 }
 
 void
