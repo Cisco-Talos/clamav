@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.63  2004/04/01 15:32:34  nigelhorne
+ * Graceful exit if messageAddLine fails in strdup
+ *
  * Revision 1.62  2004/03/31 17:00:20  nigelhorne
  * Code tidy up free memory earlier
  *
@@ -177,7 +180,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.62 2004/03/31 17:00:20 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.63 2004/04/01 15:32:34 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -402,7 +405,8 @@ cl_mbox(const char *dir, int desc)
 				cli_dbgmsg("Finished processing message\n");
 			} else
 				lastLineWasEmpty = (bool)(buffer[0] == '\0');
-			messageAddLine(m, buffer, 1);
+			if(messageAddLine(m, buffer, 1) < 0)
+				break;
 		} while(fgets(buffer, sizeof(buffer), fd) != NULL);
 	} else
 		/*
@@ -413,7 +417,8 @@ cl_mbox(const char *dir, int desc)
 			 * No need to preprocess such as cli_chomp() since
 			 * that'll be done by parseEmailHeaders()
 			 */
-			messageAddLine(m, buffer, 1);
+			if(messageAddLine(m, buffer, 1) < 0)
+				break;
 		while(fgets(buffer, sizeof(buffer), fd) != NULL);
 
 	fclose(fd);

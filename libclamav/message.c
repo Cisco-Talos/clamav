@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.51  2004/04/01 15:32:34  nigelhorne
+ * Graceful exit if messageAddLine fails in strdup
+ *
  * Revision 1.50  2004/03/31 17:00:20  nigelhorne
  * Code tidy up free memory earlier
  *
@@ -147,7 +150,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.50 2004/03/31 17:00:20 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.51 2004/04/01 15:32:34 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -681,7 +684,7 @@ messageGetEncoding(const message *m)
  * If needed a copy of the given line is taken which the caller must free
  * Line should not be terminated by a \n
  */
-void
+int
 messageAddLine(message *m, const char *line, int takeCopy)
 {
 	static const char encoding[] = "Content-Transfer-Encoding";
@@ -696,12 +699,16 @@ messageAddLine(message *m, const char *line, int takeCopy)
 	}
 
 	if(m->body_last == NULL)
-		return;
+		return -1;
 
 	m->body_last->t_next = NULL;
 
 	if(takeCopy) {
 		m->body_last->t_text = strdup((line) ? line : "");
+		if(m->body_last->t_text == NULL) {
+			cli_errmsg("messageAddLine: out of memory\n");
+			return -1;
+		}
 		assert(m->body_last->t_text != NULL);
 	} else {
 		assert(line != NULL);
@@ -733,6 +740,7 @@ messageAddLine(message *m, const char *line, int takeCopy)
 			(line[9] == ' ')))
 				m->uuencode = m->body_last;
 	}
+	return 1;
 }
 
 /*
