@@ -27,6 +27,9 @@ then that user must have the rights to create the file.
 .LP 
 
 .TP 
+.TP
+\fB-a FROM, \-\-from=EMAIL\fR
+Source email address of notices. The default is MAILER-DAEMON.
 \fB\-h, \-\-help\fR
 Output the help information and exit.
 .TP
@@ -73,8 +76,10 @@ Always scan, whereever the message came from (see also --local and --outgoing).
 Also scan messages sent from LAN.
 .TP
 \fB-n, \-\-noxheader\fR
-Usually clamav\-milter adds a heading to messages that are scanned.
-The header is of the form "X-Virus-Scanned: version", this option instructs
+Usually clamav\-milter adds headings to messages that are scanned.
+The headers are of the form "X-Virus-Scanned: version",
+and "X-Virus-Status: clean/infected/not-scanned".
+This option instructs
 clamav\-milter to refrain from adding this heading.
 .TP
 \fB-N, \-\-noreject\fR
