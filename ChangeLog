@@ -1,3 +1,8 @@
+Thu Aug  5 19:53:40 CEST 2004 (tk)
+----------------------------------
+  * libclamav: integrate Mydoom.M log detector from Trog (temporary feature)
+  * libclamav: pe: fix FSG detection (aCaB)
+
 Thu Aug  5 11:41:00 CEST 2004 (tk)
 ----------------------------------
   * libclamav: pe: pass virtual instead of raw address of entry point to
