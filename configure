@@ -9560,7 +9560,7 @@ cat >>confdefs.h <<\_ACEOF
 #define WITH_TCPWRAP 1
 _ACEOF
 
-    LIBS="$LIBS -lwrap"
+    CLAMAV_MILTER_LIBS="-lwrap"
   fi
 fi
 
@@ -9626,6 +9626,7 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 	CLAMD_LIBS="-lpthread"
+	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
 	if test "$want_clamuko" = "yes"; then
 
 cat >>confdefs.h <<\_ACEOF
@@ -9667,6 +9668,7 @@ solaris*)
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
 	CLAMD_LIBS="-lpthread -lsocket -lnsl -lresolv"
+	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread -lsocket -lnsl -lresolv"
 	TH_SAFE="-thread-safe"
 
 cat >>confdefs.h <<\_ACEOF
@@ -9689,6 +9691,7 @@ freebsd*)
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread -lc_r"
 	CLAMD_LIBS="-pthread -lc_r"
+	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread -lc_r"
 	TH_SAFE="-thread-safe"
 
 cat >>confdefs.h <<\_ACEOF
@@ -9712,6 +9715,7 @@ openbsd3.3*)
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread"
 	if test "$disable_cr" = "yes"; then
 	    CLAMD_LIBS="-pthread"
+	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread"
 	fi
 	TH_SAFE="-thread-safe"
 	cat >>confdefs.h <<\_ACEOF
@@ -9733,8 +9737,10 @@ openbsd*)
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread"
 	if test "$disable_cr" = "yes"; then
 	    CLAMD_LIBS="-pthread"
+	    CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread"
 	else
 	    CLAMD_LIBS="-pthread -lc_r"
+	    CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread -lc_r"
 	fi
 	TH_SAFE="-thread-safe"
 
@@ -9800,11 +9806,13 @@ _ACEOF
 sco*)
         FRESHCLAM_LIBS="-lsocket"
     CLAMD_LIBS="-lsocket"
+    CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsocket"
         ;;
 hpux*)
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
 	CLAMD_LIBS="-lpthread"
+	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
 	TH_SAFE="-thread-safe"
 
 cat >>confdefs.h <<\_ACEOF
@@ -9827,6 +9835,7 @@ aix*)
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
 	CLAMD_LIBS="-lpthread"
+	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
 	TH_SAFE="-thread-safe"
 
 cat >>confdefs.h <<\_ACEOF
@@ -9849,6 +9858,7 @@ irix*)
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
 	CLAMD_LIBS="-lpthread"
+	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
 	TH_SAFE="-thread-safe"
 
 cat >>confdefs.h <<\_ACEOF
@@ -9871,6 +9881,7 @@ _ACEOF
 *)
     ;;
 esac
+
 
 
 
@@ -11237,6 +11248,7 @@ s,@INSTALL_FRESHCLAM_CONF_TRUE@,$INSTALL_FRESHCLAM_CONF_TRUE,;t t
 s,@INSTALL_FRESHCLAM_CONF_FALSE@,$INSTALL_FRESHCLAM_CONF_FALSE,;t t
 s,@LIBCLAMAV_LIBS@,$LIBCLAMAV_LIBS,;t t
 s,@CLAMD_LIBS@,$CLAMD_LIBS,;t t
+s,@CLAMAV_MILTER_LIBS@,$CLAMAV_MILTER_LIBS,;t t
 s,@FRESHCLAM_LIBS@,$FRESHCLAM_LIBS,;t t
 s,@TH_SAFE@,$TH_SAFE,;t t
 s,@BUILD_CLAMD_TRUE@,$BUILD_CLAMD_TRUE,;t t

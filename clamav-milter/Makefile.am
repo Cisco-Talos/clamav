@@ -32,6 +32,6 @@ endif
 
 DEFS = @DEFS@ -DSENDMAIL_BIN=\"@SENDMAIL@\"
 # CLAMD_LIBS is used, because clamav-milter requires the same libraries as clamd
-LIBS = -L../libclamav -lclamav -L/usr/lib/libmilter -lmilter @CLAMD_LIBS@
+LIBS = -L../libclamav -lclamav -L/usr/lib/libmilter -lmilter @CLAMAV_MILTER_LIBS@
 INCLUDES = -I../clamd -I../libclamav -I../clamscan
 EXTRA_DIST = clamav-milter.c clamd.sh clamav-milter.sh INSTALL
