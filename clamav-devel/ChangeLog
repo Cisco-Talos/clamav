@@ -1,3 +1,11 @@
+Sat Mar 20 12:40:15 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter: strerror_r is a bit confused on Fedora Linux. The man page
+	says it returns an int, but the prototype in string.h says it returns
+	a char *
+		Say how many bytes can't be written to clamd - it may give a
+	clue what's wrong
+
 Sat Mar 20 00:16:26 CET 2004 (tk)
 ---------------------------------
   * libclamav: cl_gentemp(): do not use /dev/urandom
