@@ -50,6 +50,7 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 	    {"ArchiveMaxFileSize", OPT_COMPSIZE},
 	    {"ArchiveMaxRecursion", OPT_NUM},
 	    {"ArchiveMaxFiles", OPT_NUM},
+	    {"ArchiveMaxCompressionRatio", OPT_NUM},
 	    {"ArchiveLimitMemoryUsage", OPT_NOARG},
 	    {"DataDirectory", OPT_STR},
 	    {"TCPAddr", OPT_STR},

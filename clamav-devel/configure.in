@@ -74,6 +74,9 @@ then
     AC_CHECK_LIB(bz2, bzReadOpen, AC_DEFINE(NOBZ2PREFIX),)
 fi
 
+AC_CHECK_FUNCS(setsid)
+AC_FUNC_SETPGRP
+
 have_milter="no"
 AC_CHECK_HEADER(libmilter/mfapi.h,have_milter="yes",)
 

@@ -60,6 +60,7 @@ int main(int argc, char **argv)
     }
 
     /* set up archive limits */
+    memset(&limits, 0, sizeof(struct cl_limits));
     limits.maxfiles = 1000; /* max files */
     limits.maxfilesize = 10 * 1048576; /* maximal archived file size == 10 Mb */
     limits.maxreclevel = 8; /* maximal recursion level */

@@ -82,7 +82,7 @@ void cli_enqueue(struct nodelist **bfs, struct cl_node *n)
     new = (struct nodelist *) cli_calloc(1, sizeof(struct nodelist));
     if (new == NULL) {
 	cli_dbgmsg("Unable to allocate node list (%d)\n", sizeof(struct nodelist));
-	return CL_EMEM;
+	return; /* FIXME: should return CL_EMEM */
     }
 
     new->next = *bfs;

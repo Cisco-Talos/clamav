@@ -61,8 +61,6 @@ int cli_scanrar_inuse = 0;
 #define DELIVERED_MAGIC_STR "Delivered-To: "
 #define BZIP_MAGIC_STR "BZh"
 
-#define ZIPOSDET 50 /* FIXME: Make it user definable */
-
 int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev);
 
 int cli_scandesc(int desc, char **virname, long int *scanned, const struct 
@@ -274,7 +272,7 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 
 	cli_dbgmsg("Zip -> %s, compressed: %d, normal: %d.\n", zdirent.d_name, zdirent.d_csize, zdirent.st_size);
 
-	if(source.st_size && (zdirent.st_size / source.st_size) >= ZIPOSDET) {
+	if(limits && limits->maxratio > 0 && source.st_size && (zdirent.st_size / source.st_size) >= limits->maxratio) {
 	    *virname = "Oversized.Zip";
 	    ret = CL_VIRUS;
 	    break;
