@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.67  2004/04/23 10:47:41  nigelhorne
+ * If an inline text portion has a filename treat is as an attachment
+ *
  * Revision 1.66  2004/04/14 08:32:21  nigelhorne
  * When debugging print the email number in mailboxes
  *
@@ -189,7 +192,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.66 2004/04/14 08:32:21 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.67 2004/04/23 10:47:41 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1031,6 +1034,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 								messageSetEncoding(aMessage, "x-uuencode");
 								addAttachment = TRUE;
 							} else if(strcasecmp(messageGetMimeSubtype(aMessage), "plain") == 0) {
+								char *filename;
 								/*
 								 * Strictly speaking
 								 * a text/html part is
@@ -1039,8 +1043,19 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 								 * we can decode and
 								 * scan it
 								 */
-								cli_dbgmsg("Adding part to main message\n");
-								addToText = TRUE;
+								filename = (char *)messageFindArgument(aMessage, "filename");
+								if(filename == NULL)
+									filename = (char *)messageFindArgument(aMessage, "name");
+
+								if(filename == NULL) {
+									cli_dbgmsg("Adding part to main message\n");
+									addToText = TRUE;
+								} else {
+									cli_dbgmsg("Treating %s as attachment\n",
+										filename);
+									free(filename);
+									addAttachment = TRUE;
+								}
 							} else {
 								messageAddArgument(aMessage, "filename=textportion");
 								addAttachment = TRUE;

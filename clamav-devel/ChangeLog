@@ -1,3 +1,9 @@
+Fri Apr 23 11:48:07 BST 2004 (njh)
+----------------------------------
+ * libclamav/mbox.c:	If an inline text portion has been given a filename,
+ 	treat the disposition type as attachment not inline. Some
+	Worm.BadTrans.B1 need this.
+
 Fri Apr 23 10:14:00 BST 2004 (njh)
 ----------------------------------
  * clamav-milter:	Ensure only From lines are escaped
