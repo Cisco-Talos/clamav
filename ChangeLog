@@ -1,3 +1,9 @@
+Tue Feb  3 14:38:04 GMT 2004 (njh)
+----------------------------------
+  * libclamav:	Speeded up binhex decoding using table look up
+  		Fixed possible infinite loop when decoding compressed binhex
+		Both fixes thanks to Thomas Lamy <Thomas.Lamy@in-online.net>
+
 Tue Feb  3 02:31:55 CET 2004 (tk)
 ---------------------------------
   * libclamav: + don't report errors when archive limits are reached

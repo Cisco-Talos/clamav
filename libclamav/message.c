@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.21  2004/02/03 14:35:37  nigelhorne
+ * Fixed an infinite loop on binhex
+ *
  * Revision 1.20  2004/02/02 17:10:04  nigelhorne
  * Scan a rare form of bounce message
  *
@@ -57,7 +60,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.20 2004/02/02 17:10:04 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.21 2004/02/03 14:35:37 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -661,39 +664,41 @@ messageToBlob(const message *m)
 		 */
 		if(data[0] == ':') {
 			char *ptr;
-			unsigned long newlen = 0L;
 			int bytenumber = 0;
+			unsigned long newlen = 0L;
+			const unsigned char hqxtbl[] = {
+				     /*   00   01   02   03   04   05   06   07   08   09   0a   0b   0c   0d   0e   0f */
+			/* 00-0f */	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+			/* 10-1f */	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+			/* 20-2f */	0xff,0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0xff,0xff,
+			/* 30-3f */	0x0d,0x0e,0x0f,0x10,0x11,0x12,0x13,0xff,0x14,0x15,0xff,0xff,0xff,0xff,0xff,0xff,
+			/* 40-4f */	0x16,0x17,0x18,0x19,0x1a,0x1b,0x1c,0x1d,0x1e,0x1f,0x20,0x21,0x22,0x23,0x24,0xff,
+			/* 50-5f */	0x25,0x26,0x27,0x28,0x29,0x2a,0x2b,0xff,0x2c,0x2d,0x2e,0x2f,0xff,0xff,0xff,0xff,
+			/* 60-6f */	0x30,0x31,0x32,0x33,0x34,0x35,0x36,0xff,0x37,0x38,0x39,0x3a,0x3b,0x3c,0xff,0xff,
+			/* 70-7f */	0x3d,0x3e,0x3f,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+			};
 
 			/*
 			 * Convert 7 bit data into 8 bit
 			 */
-			cli_dbgmsg("decode HQX7 message");
+			cli_dbgmsg("decode HQX7 message (%d bytes)\n", len);
 
 			ptr = cli_malloc(len);
 			memcpy(ptr, data, len);
 
 			for(l = 1; l < len; l++) {
 				unsigned char c = ptr[l];
-				const unsigned char *tptr;
-
-				/* TODO: table look up would be quicker */
-				const unsigned char table[] =
-					"!\"#$%&'()*+,-012345689@ABCDEFGHIJKLMNPQRSTUVXYZ[`abcdefhijklmpqr";
 
 				if((c == '\n') || (c == '\r'))
 					continue;
 				if(c == ':')
 					break;
-				/*
-				 * TODO: at least post a sentinal!
-				 */
-				for(tptr = table; (*tptr != c) && (*tptr != '\0'); tptr++)
-					;
-				if(*tptr == '\0') {
-					cli_warnmsg("Invalid HQX7 character '%c'\n", c);
+
+				if((c < 0x20) || (c > 0x7f) || (hqxtbl[c] == 0xff)) {
+					cli_warnmsg("Invalid HQX7 character '%c' (0x%02x)\n", c, c);
 					break;
 				}
-				c = (unsigned char)(tptr - table);
+				c = hqxtbl[c];
 				assert(c <= 63);
 
 				/*
@@ -721,6 +726,7 @@ messageToBlob(const message *m)
 						break;
 				}
 			}
+			cli_dbgmsg("decoded HQX7 message (now %d bytes)\n", newlen);
 			free(ptr);
 		} else {
 			/*
@@ -747,6 +753,10 @@ messageToBlob(const message *m)
 		 * skip over length, filename, version, type, creator and flags
 		 */
 		byte = 1 + byte + 1 + 4 + 4 + 2;
+
+		/*
+		 * Set len to be the data fork length
+		 */
 		len = (data[byte] << 24) + (data[byte + 1] << 16) + (data[byte + 2] << 8) + data[byte + 3];
 
 		/*
@@ -756,11 +766,14 @@ messageToBlob(const message *m)
 		data = &data[byte];
 
 		/*
-		 * Check for compression of repetitive characters
+		 * Check for compression of repetitive characters in
+		 * the data fork
 		 */
 		if(memchr(data, 0x90, len))
 			/*
 			 * Includes compression
+			 * TODO: sections of data that are not compressed
+			 *	can be added to the blob all at once
 			 */
 			for(l = 0; l < len; l++) {
 				unsigned char c = data[l];
@@ -773,19 +786,22 @@ messageToBlob(const message *m)
 
 						l += 2;
 						count = data[l];
+						cli_dbgmsg("uncompress HQX7 at 0x%06x: %d repetitive bytes\n", l, count);
 
 						if(count == 0) {
 							c = 0x90;
 							blobAddData(b, &c, 1);
-						} else while(--l > 0)
+						} else while(--count > 0)
 							blobAddData(b, &c, 1);
 					}
 			}
-		else
+		else {
 			/*
 			 * No compression - quickly copy all across
 			 */
+			cli_dbgmsg("HQX7 message is not compressed...\n");
 			blobAddData(b, data, len);
+		}
 
 		blobDestroy(tmp);
 
