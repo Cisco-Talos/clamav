@@ -49,7 +49,7 @@ int cli_scanrar_inuse = 0;
 
 extern short cli_leavetemps_flag;
 
-extern int cli_mbox(const char *dir, int desc); /* FIXME */
+extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME */
 
 #include "clamav.h"
 #include "others.h"
@@ -1006,7 +1006,7 @@ static int cli_scanmail(int desc, const char **virname, long int *scanned, const
 	/*
 	 * Extract the attachments into the temporary directory
 	 */
-	ret = cli_mbox(dir, desc);
+	ret = cli_mbox(dir, desc, options);
 	/* FIXME: check mbox return code */
 
 	ret = cli_scandir(dir, virname, scanned, root, limits, options, arec, mrec);
