@@ -76,10 +76,12 @@ void *clamukoth(void *arg)
     /* ignore all signals except SIGUSR1 */
     sigfillset(&sigset);
     sigdelset(&sigset, SIGUSR1);
+    sigdelset(&sigset, SIGSEGV);
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
     act.sa_handler = clamuko_exit;
     sigfillset(&(act.sa_mask));
     sigaction(SIGUSR1, &act, NULL);
+    sigaction(SIGSEGV, &act, NULL);
 
 #ifdef C_LINUX
     logg("*Clamuko: Started in process %d\n", getpid());
