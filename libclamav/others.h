@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 1999 - 2004 Tomasz Kojm <tk@clamav.net>
+ *  Copyright (C) 1999 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -38,7 +38,6 @@ int32_t cli_readint32(const char *buff);
 void cli_writeint32(char *offset, uint32_t value);
 char *cli_gentemp(const char *dir);
 unsigned int cli_rndnum(unsigned int max);
-int cli_memstr(const char *haystack, int hs, const char *needle, int ns);
 int cli_filecopy(const char *src, const char *dest);
 
 #endif

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -268,4 +268,41 @@ char *cli_strtokbuf(const char *input, int fieldno, const char *delim, char *out
     output[j-i] = '\0';
 
     return output;
+}
+
+int cli_memstr(const char *haystack, int hs, const char *needle, int ns)
+{
+	const char *pt, *hay;
+	int n;
+
+
+    if(hs < ns)
+	return NULL;
+
+    if(haystack == needle)
+	return haystack;
+
+    if(!memcmp(haystack, needle, ns))
+	return haystack;
+
+    pt = hay = haystack;
+    n = hs;
+
+    while((pt = memchr(hay, needle[0], n)) != NULL) {
+	n -= (int) pt - (int) hay;
+	if(n < ns)
+	    break;
+
+	if(!memcmp(pt, needle, ns))
+	    return pt;
+
+	if(hay == pt) {
+	    n--;
+	    hay++;
+	} else {
+	    hay = pt;
+	}
+    }
+
+    return NULL;
 }
