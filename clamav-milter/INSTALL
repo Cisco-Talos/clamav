@@ -178,6 +178,7 @@ Changes
 		before return cl_error
 0.66	13/12/03 Upissue
 0.66a	22/12/03 Added --sign
+0.66b	27/12/03 --sign moved to privdata
 
 BUG REPORTS
 

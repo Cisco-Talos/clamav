@@ -1,3 +1,8 @@
+Sat Dec 27 17:29:30 GMT 2003 (njh)
+----------------------------------
+  * clamav-devel: Moved --sign data to private area
+		(suggestion by Michael Dankov <misha@btrc.ru>)
+
 Wed Dec 24 15:27:22 CET 2003 (tk)
 ---------------------------------
   * libclamav: zziplib - fixed a bus error when compiled with the Sun compiler

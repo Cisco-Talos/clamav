@@ -181,9 +181,13 @@
  *			before return cl_error
  *	0.66	13/12/03 Upissue
  *	0.66a	22/12/03 Added --sign
+ *	0.66b	27/12/03 --sign moved to privdata
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.33  2003/12/27 17:28:56  nigelhorne
+ * Moved --sign data to private area
+ *
  * Revision 1.32  2003/12/22 14:05:31  nigelhorne
  * Added --sign option
  *
@@ -265,9 +269,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.32 2003/12/22 14:05:31 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.33 2003/12/27 17:28:56 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.66a"
+#define	CM_VERSION	"0.66b"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -340,6 +344,8 @@ struct	privdata {
 				 */
 	int	dataSocket;	/* Socket to send data to clamd */
 	char	*filename;	/* Where to store the message in quarantine */
+	u_char	*body;		/* body of the message if Sflag is set */
+	size_t	bodyLen;	/* number of bytes in body */
 };
 
 static	int	pingServer(void);
@@ -405,8 +411,6 @@ static	int	threadtimeout = CL_DEFAULT_SCANTIMEOUT; /*
 				 * number of seconds to wait for clamd to
 				 * respond
 				 */
-static	u_char	*body;		/* body of the message if Sflag is set */
-static	size_t	bodyLen;	/* number of bytes in body */
 static	const	char	signature[] =	/* TODO: read in from a file */
 	"-- \nScanned by ClamAv - http://clamav.elektrapro.com\n";
 
@@ -1381,16 +1385,16 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 		return cl_error;
 	}
 	if(Sflag) {
-		if(body) {
-			assert(bodyLen > 0);
-			body = realloc(body, bodyLen + len);
-			memcpy(&body[bodyLen], bodyp, len);
-			bodyLen += len;
+		if(privdata->body) {
+			assert(privdata->bodyLen > 0);
+			privdata->body = realloc(privdata->body, privdata->bodyLen + len);
+			memcpy(&privdata->body[privdata->bodyLen], bodyp, len);
+			privdata->bodyLen += len;
 		} else {
-			assert(bodyLen == 0);
-			body = malloc(len);
-			memcpy(body, bodyp, len);
-			bodyLen = len;
+			assert(privdata->bodyLen == 0);
+			privdata->body = malloc(len);
+			memcpy(privdata->body, bodyp, len);
+			privdata->bodyLen = len;
 		}
 	}
 	return SMFIS_CONTINUE;
@@ -1490,13 +1494,13 @@ clamfi_eom(SMFICTX *ctx)
 			syslog(LOG_NOTICE, "clean message from %s",
 				(privdata->from) ? privdata->from : "an unknown sender");
 
-		if(body) {
+		if(privdata->body) {
 			assert(Sflag != 0);
 
-			body = realloc(body, bodyLen + sizeof(signature));
-			memcpy(&body[bodyLen], signature, sizeof(signature));
+			privdata->body = realloc(privdata->body, privdata->bodyLen + sizeof(signature));
+			memcpy(&privdata->body[privdata->bodyLen], signature, sizeof(signature));
 
-			smfi_replacebody(ctx, body, bodyLen + sizeof(signature));
+			smfi_replacebody(ctx, privdata->body, privdata->bodyLen + sizeof(signature));
 
 		}
 	} else {
@@ -1673,13 +1677,10 @@ clamfi_cleanup(SMFICTX *ctx)
 {
 	struct privdata *privdata = (struct privdata *)smfi_getpriv(ctx);
 
-	if(body) {
-		free(body);
-		body = NULL;
-		bodyLen = 0;
-	}
-
 	if(privdata) {
+		if(privdata->body)
+			free(privdata->body);
+
 		if(privdata->dataSocket >= 0) {
 			close(privdata->dataSocket);
 			privdata->dataSocket = -1;
