@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.126  2004/09/13 21:46:30  nigelhorne
+ * Session code tidy
+ *
  * Revision 1.125  2004/09/13 17:39:31  nigelhorne
  * User pthread_cond_broadcast rather than pthread_cond_signal
  *
@@ -386,7 +389,7 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.125 2004/09/13 17:39:31 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.126 2004/09/13 21:46:30 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.75q"
 
@@ -484,17 +487,6 @@ typedef	unsigned short	in_port_t;
 		 * Keep one command connection open to clamd, otherwise a new
 		 * command connection is created for each new email
 		 */
-
-#ifdef	SESSION
-#define	WATCHDOG_SECONDS	300	/*
-					 * How often (in seconds) to try to
-					 * fix broken clamd sessions.
-					 * We may try more often than this
-					 * e.g. when we're idle or all
-					 * connections are down, so you can
-					 * put this figure quite high
-					 */
-#endif
 
 /*
  * TODO: optional: xmessage on console when virus stopped (SNMP would be real nice!)
@@ -1326,10 +1318,6 @@ main(int argc, char **argv)
 		return EX_CONFIG;
 	}
 
-#ifdef	SESSION
-	pthread_create(&tid, NULL, watchdog, NULL);
-#endif
-
 	if(!cfgopt(copt, "Foreground")) {
 #ifdef	CL_DEBUG
 		printf(_("When debugging it is recommended that you use Foreground mode in %s\n"), cfgfile);
@@ -1368,6 +1356,10 @@ main(int argc, char **argv)
 #endif
 #endif
 	}
+
+#ifdef	SESSION
+	pthread_create(&tid, NULL, watchdog, NULL);
+#endif
 
 	if((cpt = cfgopt(copt, "PidFile")) != NULL)
 		pidFile = cpt->strarg;
@@ -1627,7 +1619,8 @@ findServer(void)
 		}
 	pthread_mutex_unlock(&sstatus_mutex);
 
-	pthread_cond_broadcast(&watchdog_cond);
+	if(pthread_cond_broadcast(&watchdog_cond) < 0)
+		perror("pthread_cond_broadcast");
 
 	pthread_mutex_lock(&sstatus_mutex);
 	for(; i < max_children; i++)
@@ -2784,6 +2777,11 @@ clamfi_free(struct privdata *privdata)
 				cli_dbgmsg("clamfi_free: flush server %d fd %d\n",
 					privdata->serverNumber, fd);
 
+				/*
+				 * FIXME: whenever this code gets executed,
+				 *	all of the PINGs fail in the next
+				 *	watchdog cycle
+				 */
 				while(clamd_recv(fd, buf, sizeof(buf)) > 0)
 					;
 			}
@@ -2827,13 +2825,15 @@ clamfi_free(struct privdata *privdata)
 			--n_children;
 #ifdef	SESSION
 			if(n_children == 0)
-				pthread_cond_broadcast(&watchdog_cond);
+				if(pthread_cond_broadcast(&watchdog_cond) < 0)
+					perror("pthread_cond_broadcast");
 #endif
 		}
 #ifdef	CL_DEBUG
 		cli_dbgmsg("pthread_cond_broadcast\n");
 #endif
-		pthread_cond_broadcast(&n_children_cond);
+		if(pthread_cond_broadcast(&n_children_cond) < 0)
+			perror("pthread_cond_broadcast");
 		cli_dbgmsg("<n_children = %d\n", n_children);
 		pthread_mutex_unlock(&n_children_mutex);
 	}
@@ -3724,19 +3724,39 @@ watchdog(void *a)
 {
 	static pthread_mutex_t watchdog_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-	pthread_mutex_lock(&watchdog_mutex);
+	assert(cmdSockets != NULL);
+
 	for(;;) {
 		int i;
 		struct timespec ts;
 		struct timeval tp;
 
 		gettimeofday(&tp, NULL);
-		ts.tv_sec = tp.tv_sec + WATCHDOG_SECONDS;
+		/*
+		 * How often (in seconds) to try to fix broken clamd sessions.
+		 * We may try more often than this e.g. when we're idle or all
+		 * connections are down, so you can put this figure quite high.
+		 * But can't be too high because a SESSION doesn't remain
+		 * open if no data goes down for ReadTimeout seconds
+		 */
+		ts.tv_sec = tp.tv_sec + readTimeout - 1;
 		ts.tv_nsec = tp.tv_usec * 1000;
 		cli_dbgmsg("watchdog sleeps\n");
-		if(pthread_cond_timedwait(&watchdog_cond, &watchdog_mutex, &ts) == ETIMEDOUT)
-			pthread_mutex_lock(&watchdog_mutex);
+		pthread_mutex_lock(&watchdog_mutex);
+		/*
+		 * Sometimes this returns EPIPE which isn't listed as a
+		 * return value in the Linux man page for pthread_cond_timedwait
+		 * so I'm not sure why it happens
+		 */
+		switch(pthread_cond_timedwait(&watchdog_cond, &watchdog_mutex, &ts)) {
+			case ETIMEDOUT:
+			case 0:
+				break;
+			default:
+				perror("pthread_cond_timedwait");
+		}
 		cli_dbgmsg("watchdog wakes\n");
+		pthread_mutex_unlock(&watchdog_mutex);
 
 		pthread_mutex_lock(&sstatus_mutex);
 		for(i = 0; i < max_children; i++) {
@@ -3758,10 +3778,14 @@ watchdog(void *a)
 					buf[5] = '\0';
 					if(clamd_recv(sock, buf, 5) != 5)
 						cmdSocketsStatus[i] = CMDSOCKET_DOWN;
-					else if(strcmp(buf, "PONG\n") != 0)
+					else if(strcmp(buf, "PONG\n") != 0) {
+						cli_dbgmsg("watchdog: expected \"PONG\", got \"%s\"\n", buf);
 						cmdSocketsStatus[i] = CMDSOCKET_DOWN;
-				} else
+					}
+				} else {
+					perror("send");
 					cmdSocketsStatus[i] = CMDSOCKET_DOWN;
+				}
 
 				if(cmdSocketsStatus[i] == CMDSOCKET_DOWN)
 					cli_warnmsg("Session %d has gone down\n", i);
@@ -3792,6 +3816,7 @@ watchdog(void *a)
 			clamdIsDown();
 		pthread_mutex_unlock(&sstatus_mutex);
 	}
+	cli_errmsg("watchdog quits\n");
 	return NULL;
 }
 #endif
