@@ -999,7 +999,6 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --disable-bzip2	  Disable bzip2 support.
   --enable-milter	  Build clamav-milter (if milter library found)
-  --disable-dsig	  Disable digital signature support.
   --disable-pthreads      Disable POSIX threads support
   --disable-cr      Don't link with C reentrant library (BSD)
   --disable-urandom       Disable test for /dev/urandom
@@ -1902,7 +1901,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=clamav
- VERSION="devel-`date +%Y%m%d`"
+ VERSION=20030829
 
 
 cat >>confdefs.h <<_ACEOF
@@ -4535,7 +4534,7 @@ test "x$enable_libtool_lock" != xno && enable_libtool_lock=yes
 case $host in
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 4538 "configure"' > conftest.$ac_ext
+  echo '#line 4537 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -5071,7 +5070,7 @@ chmod -w .
 save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -o out/conftest2.$ac_objext"
 compiler_c_o=no
-if { (eval echo configure:5074: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
+if { (eval echo configure:5073: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
   # The compiler can only warn and ignore the option if not recognized
   # So say no if there are warnings
   if test -s out/conftest.err; then
@@ -6864,7 +6863,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 6867 "configure"
+#line 6866 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -6962,7 +6961,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 6965 "configure"
+#line 6964 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -8733,84 +8732,6 @@ if test "${enable_milter+set}" = set; then
 else
   have_milter="no"
 fi;
-
-want_dsig="yes"
-# Check whether --enable-dsig or --disable-dsig was given.
-if test "${enable_dsig+set}" = set; then
-  enableval="$enable_dsig"
-  want_dsig="no"
-fi;
-
-if test "$want_dsig" = "yes"
-then
-    echo "$as_me:$LINENO: checking for __gmpz_init in -lgmp" >&5
-echo $ECHO_N "checking for __gmpz_init in -lgmp... $ECHO_C" >&6
-if test "${ac_cv_lib_gmp___gmpz_init+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lgmp  $LIBS"
-cat >conftest.$ac_ext <<_ACEOF
-#line $LINENO "configure"
-#include "confdefs.h"
-
-/* Override any gcc2 internal prototype to avoid an error.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-/* We use char because int might match the return type of a gcc2
-   builtin and then its argument prototype would still apply.  */
-char __gmpz_init ();
-#ifdef F77_DUMMY_MAIN
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-#endif
-int
-main ()
-{
-__gmpz_init ();
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext conftest$ac_exeext
-if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
-  (eval $ac_link) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } &&
-         { ac_try='test -s conftest$ac_exeext'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-  ac_cv_lib_gmp___gmpz_init=yes
-else
-  echo "$as_me: failed program was:" >&5
-cat conftest.$ac_ext >&5
-ac_cv_lib_gmp___gmpz_init=no
-fi
-rm -f conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-echo "$as_me:$LINENO: result: $ac_cv_lib_gmp___gmpz_init" >&5
-echo "${ECHO_T}$ac_cv_lib_gmp___gmpz_init" >&6
-if test $ac_cv_lib_gmp___gmpz_init = yes; then
-  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; cat >>confdefs.h <<\_ACEOF
-#define HAVE_GMP 1
-_ACEOF
-
-else
-  echo "WARNING: GNU MP 3 or newer NOT FOUND - digital signature support will be disabled !"; want_dsig="no"
-fi
-
-fi
-
-
-
 
 if test "${ac_cv_header_syslog_h+set}" = set; then
   echo "$as_me:$LINENO: checking for syslog.h" >&5
