@@ -41,6 +41,7 @@
 #include <target.h>
 
 #include "output.h"
+#include "others.h"
 
 int fileinfo(const char *filename, short i)
 {
