@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: text.h,v $
+ * Revision 1.7  2004/12/04 16:03:55  nigelhorne
+ * Text/plain now handled as no encoding
+ *
  * Revision 1.6  2004/08/22 10:34:24  nigelhorne
  * Use fileblob
  *
@@ -39,7 +42,6 @@ typedef struct text {
 
 void	textDestroy(text *t_head);
 text	*textClean(text *t_head);
-text	*textCopy(const text *t_head);
 text	*textAdd(text *t_head, const text *t);
 text	*textAddMessage(text *aText, message *aMessage);
 blob	*textToBlob(const text *t, blob *b);

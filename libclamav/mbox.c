@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.198  2004/12/04 16:03:55  nigelhorne
+ * Text/plain now handled as no encoding
+ *
  * Revision 1.197  2004/12/04 15:50:39  nigelhorne
  * Handle text/rfc822-headers incorrectly sent as message/rfc822-headers
  *
@@ -579,7 +582,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.197 2004/12/04 15:50:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.198 2004/12/04 16:03:55 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1009,7 +1012,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			 * of code I want to avoid
 			 */
 			(void)cli_chomp(buffer);
-			
+
 			/*
 			 * Ignore leading CR, e.g. if newlines are LFCR instead
 			 * or CRLF
@@ -1347,8 +1350,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 		mimeType = messageGetMimeType(mainMessage);
 		mimeSubtype = messageGetMimeSubtype(mainMessage);
 
-		subtype = tableFind(subtypeTable, mimeSubtype);
 		/* pre-process */
+		subtype = tableFind(subtypeTable, mimeSubtype);
 		if((mimeType == TEXT) && (subtype == PLAIN)) {
 			/*
 			 * This is effectively no encoding, notice that we
@@ -1375,18 +1378,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			aText = textAddMessage(aText, mainMessage);
 			break;
 		case TEXT:
-			if(subtype == PLAIN)
-				/*
-				 * Consider what to do if this fails
-				 * (i.e. aText == NULL):
-				 * We mustn't just return since that could
-				 * cause a virus to be missed that we
-				 * could be capable of scanning. Ignoring
-				 * the error is probably the safest, we may be
-				 * able to scan anyway and we lose nothing
-				 */
-				aText = textCopy(messageGetBody(mainMessage));
-			else if((options&CL_SCAN_MAILURL) && (subtype == HTML))
+			/* text/plain has been preprocessed as no encoding */
+			if((options&CL_SCAN_MAILURL) && (subtype == HTML))
 				checkURLs(mainMessage, dir);
 			break;
 		case MULTIPART:
