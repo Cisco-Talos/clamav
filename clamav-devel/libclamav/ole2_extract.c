@@ -592,7 +592,20 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 			return FALSE;
 		}
 		snprintf(name, 11, "%.10ld", i + (long int) prop);
+	} else {
+		/* Sanitize the file name */
+                for(newname = name; *newname; newname++) {
+#if     defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32)
+                        if(strchr("/*?<>|\"+=,;: ", *newname))
+#elif   defined(C_DARWIN)
+                        if((*newname == '/') || (*newname >= '\200'))
+#else
+                        if(*newname == '/')
+#endif
+                                *newname = '_';
+                }
 	}
+
 
 	newname = (char *) cli_malloc(strlen(name) + strlen(dir) + 2);
 	if (!newname) {

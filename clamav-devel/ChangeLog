@@ -1,3 +1,8 @@
+Thu Aug 26 15:17:03 BST 2004 (trog)
+-----------------------------------
+  * libclamav/ole2_extract.c: sanitize filenames
+  * libclamav/chmunpack.c: properly skip unneeded chunks
+
 Thu Aug 26 15:33:50 CEST 2004 (tk)
 ----------------------------------
   * libclamav/filetypes.c: Improve e-mail detection
