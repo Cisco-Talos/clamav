@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.124  2004/09/16 11:20:33  nigelhorne
+ * Better handling of folded headers in multipart messages
+ *
  * Revision 1.123  2004/09/16 08:56:19  nigelhorne
  * Handle RFC822 Comments
  *
@@ -357,7 +360,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.123 2004/09/16 08:56:19 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.124 2004/09/16 11:20:33 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1089,10 +1092,11 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						/*
 						 * Handle continuation lines
 						 * because the previous line
-						 * ended with a ;
+						 * ended with a ; or this line
+						 * starts with a white space
 						 */
-						cli_dbgmsg("About to add mime Argument '%s'\n",
-							line);
+						cli_dbgmsg("Multipart %d: About to add mime Argument '%s'\n",
+							multiparts, line);
 						/*
 						 * Handle the case when it
 						 * isn't really a continuation
@@ -1155,16 +1159,42 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						inMimeHead = continuationMarker(line);
 						if(!inMimeHead) {
 							const text *next = t_line->t_next;
+							char *fullline = strdup(line);
 
-							if(next && next->t_line) {
+							/*
+							 * Fold next lines to the end of this
+							 * if they start with a white space
+							 */
+							while(next && next->t_line) {
 								const char *data = lineGetData(next->t_line);
+								char *ptr;
 
-								if((data[0] == '\t') || (data[0] == ' '))
-									inMimeHead = TRUE;
+								if(!isspace(data[0]))
+									break;
+
+								ptr = cli_realloc(fullline,
+									strlen(fullline) + strlen(data) + 1);
+
+								if(ptr == NULL)
+									break;
+
+								fullline = ptr;
+								strcat(fullline, data);
+
+								t_line = next;
+								next = next->t_next;
 							}
-						}
+							cli_dbgmsg("Multipart %d: About to parse folded header '%s'\n",
+								multiparts, fullline);
 
-						parseEmailHeader(aMessage, line, rfc821Table);
+							parseEmailHeader(aMessage, fullline, rfc821Table);
+							free(fullline);
+						} else {
+							cli_dbgmsg("Multipart %d: About to parse header '%s'\n",
+								multiparts, line);
+
+							parseEmailHeader(aMessage, line, rfc821Table);
+						}
 					} else if(boundaryStart(line, boundary)) {
 						inhead = 1;
 						break;
@@ -2099,7 +2129,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 				 * "Note also that a subtype specification is
 				 * MANDATORY. There are no default subtypes"
 				 *
-				 * We have to break this an make an assumption
+				 * We have to break this and make an assumption
 				 * for the subtype because virus writers and
 				 * email client writers don't get it right
 				 */
