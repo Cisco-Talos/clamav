@@ -1,0 +1,26 @@
+#!/bin/sh
+. /etc/rc.common
+StartService ()
+{
+    if [ "${CLAMAV:=-NO-}" = "-YES-" ]; then
+    ConsoleMessage "Starting clamd-freshclam"
+	freshclam -d -c 4 -p /var/clamav/freshclam.pid -l /var/log/clam-update.log
+	clamd
+    fi
+}
+StopService ()
+{
+    ConsoleMessage "Stoping clamd-freshclam"
+	killall -u clamav
+}
+RestartService ()
+{
+    if [ "${CLAMAV:=-NO-}" = "-YES-" ]; then
+    ConsoleMessage "Restarting clamd-freshclam"
+    StopService
+    StartService
+    else
+    StopService
+    fi
+}
+RunService "$1"

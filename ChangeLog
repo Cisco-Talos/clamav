@@ -1,3 +1,7 @@
+Sun Sep 12 16:37:04 CEST 2004 (tk)
+----------------------------------
+  * docs/MacOSX: include Mac OS X instructions (thanks to Dale Enterprise L.L.C)
+
 Sun Sep 12 15:25:12 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Use .../share/clamav/clamav-milter/locale for the locale
