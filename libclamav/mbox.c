@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.29  2004/01/09 18:27:11  nigelhorne
+ * ParseMimeHeader could corrupt arg
+ *
  * Revision 1.28  2004/01/09 15:07:42  nigelhorne
  * Re-engineered update 1.11 lost in recent changes
  *
@@ -75,7 +78,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.28 2004/01/09 15:07:42 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.29 2004/01/09 18:27:11 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -1426,7 +1429,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 					cli_warnmsg("Content-type '/' received, assuming application/octet-stream\n");
 					messageSetMimeType(m, "application");
 					messageSetMimeSubtype(m, "octet-stream");
-					(void)strtok_r(arg, ";", &strptr);
+					strtok_r(copy, ";", &strptr);
 				} else {
 					char *s;
 
