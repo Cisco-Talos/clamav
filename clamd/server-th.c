@@ -400,7 +400,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     pthread_mutex_init(&reload_mutex, NULL);
 
     if((thr_pool=thrmgr_new(max_threads, 30, scanner_thread)) == NULL) {
-	logg("thrmgr_new failed");
+	logg("!thrmgr_new failed\n");
 	exit(-1);
     }
 
@@ -411,7 +411,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	if((new_sd == -1) && (errno != EINTR)) {
 	    /* very bad - need to exit or restart */
 #ifdef HAVE_STRERROR_R
-	    logg("!accept() failed: %s", strerror_r(errno, buff, BUFFSIZE));
+	    logg("!accept() failed: %s\n", strerror_r(errno, buff, BUFFSIZE));
 #else
 	    logg("!accept() failed\n");
 #endif
@@ -435,7 +435,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 		if (!thrmgr_dispatch(thr_pool, client_conn)) {
 		    close(client_conn->sd);
 		    free(client_conn);
-		    logg("!thread dispatch failed");
+		    logg("!thread dispatch failed\n");
 		}
 	}
 
@@ -468,7 +468,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	    thrmgr_destroy(thr_pool);
 	    root = reload_db(root, copt, FALSE);
 	    if((thr_pool=thrmgr_new(max_threads, 30, scanner_thread)) == NULL) {
-		logg("!thrmgr_new failed");
+		logg("!thrmgr_new failed\n");
 		pthread_mutex_unlock(&reload_mutex);
 		exit(-1);
 	    }
