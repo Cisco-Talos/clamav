@@ -1,3 +1,7 @@
+Wed Jan 26 10:38:08 CET 2005 (tk)
+---------------------------------
+  * configure: improve curl check (thanks to Martin Forssen <maf*appgate.com>)
+
 Wed Jan 26 10:15:47 CET 2005 (tk)
 ---------------------------------
   * shared/output.c: change output modes (more stdout output). Patch by
