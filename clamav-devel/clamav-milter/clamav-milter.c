@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.102  2004/06/29 15:26:14  nigelhorne
+ * Support the --timeout argument
+ *
  * Revision 1.101  2004/06/29 10:04:47  nigelhorne
  * Up issued
  *
@@ -314,9 +317,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.101 2004/06/29 10:04:47 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.102 2004/06/29 15:26:14 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.74"
+#define	CM_VERSION	"0.74a"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -540,6 +543,10 @@ static	pthread_mutex_t	n_children_mutex = PTHREAD_MUTEX_INITIALIZER;
 static	pthread_cond_t	n_children_cond = PTHREAD_COND_INITIALIZER;
 static	unsigned	int	n_children = 0;
 static	unsigned	int	max_children = 0;
+static	int	child_timeout = 60;	/* number of seconds to wait for
+					 * a child to die. Set to 0 to
+					 * wait forever
+					 */
 short	use_syslog = 0;
 static	const	char	*pidFile;
 static	int	logVerbose = 0;
@@ -594,6 +601,7 @@ help(void)
 	puts("\t--sign\t\t\t-S\tAdd a hard-coded signature to each scanned message.");
 	puts("\t--signature-file=FILE\t-F FILE\tLocation of signature file.");
 	puts("\t--template-file=FILE\t-t FILE\tLocation of e-mail template file.");
+	puts("\t--timeout=SECS\t-T SECS\tTimeout waiting to childen to die.");
 	puts("\t--version\t\t-V\tPrint the version number of this software.");
 #ifdef	CL_DEBUG
 	puts("\t--debug-level=n\t\t-x n\tSets the debug level to 'n'.");
@@ -642,9 +650,9 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "a:bc:CDfF:lm:nNop:PqQ:dhHs:St:U:Vx:";
+		const char *args = "a:bc:CDfF:lm:nNop:PqQ:dhHs:St:T:U:Vx:";
 #else
-		const char *args = "a:bc:CDfF:lm:nNop:PqQ:dhHs:St:U:V";
+		const char *args = "a:bc:CDfF:lm:nNop:PqQ:dhHs:St:T:U:V";
 #endif
 
 		static struct option long_options[] = {
@@ -719,6 +727,9 @@ main(int argc, char **argv)
 			},
 			{
 				"template-file", 1, NULL, 't'
+			},
+			{
+				"timeout", 1, NULL, 'T'
 			},
 			{
 				"version", 0, NULL, 'V'
@@ -813,6 +824,9 @@ main(int argc, char **argv)
 				break;
 			case 't':	/* e-mail template file */
 				templatefile = optarg;
+				break;
+			case 'T':	/* time to wait for child to die */
+				child_timeout = atoi(optarg);
 				break;
 			case 'U':	/* quarantine path */
 				quarantine_dir = optarg;
@@ -1570,25 +1584,28 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 					n_children, max_children);
 
 			/*
+			 * Wait for an amount of time for a child to go (default
+			 * 60 seconds).
+			 *
 			 * Use pthread_cond_timedwait rather than
 			 * pthread_cond_wait since the sendmail which calls
-			 * us will have a timeout that we don't want to exceed
-			 *
-			 * Wait for a maximum of 1 minute.
-			 *
-			 * TODO: this timeout should be configurable
-			 *
-			 * It stops sendmail getting fidgety.
+			 * us will have a timeout that we don't want to exceed,
+			 * stops sendmail getting fidgety.
 			 *
 			 * Patch from Damian Menscher <menscher@uiuc.edu> to
 			 * ensure it wakes up when a child goes away
 			 */
-			gettimeofday(&now, &tz);
-			timeout.tv_sec = now.tv_sec + 60;
-			timeout.tv_nsec = 0;
+			if(child_timeout) {
+				gettimeofday(&now, &tz);
+				timeout.tv_sec = now.tv_sec + child_timeout;
+				timeout.tv_nsec = 0;
+			}
 
 			do
-				rc = pthread_cond_timedwait(&n_children_cond, &n_children_mutex, &timeout);
+				if(child_timeout == 0)
+					rc = pthread_cond_wait(&n_children_cond, &n_children_mutex);
+				else
+					rc = pthread_cond_timedwait(&n_children_cond, &n_children_mutex, &timeout);
 			while((n_children >= max_children) && (rc != ETIMEDOUT));
 		}
 		n_children++;
@@ -1596,7 +1613,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		cli_dbgmsg(">n_children = %d\n", n_children);
 		pthread_mutex_unlock(&n_children_mutex);
 
-		if(rc == ETIMEDOUT) {
+		if(child_timeout && (rc == ETIMEDOUT)) {
 #ifdef	CL_DEBUG
 			if(use_syslog)
 				syslog(LOG_NOTICE, "Timeout waiting for a child to die");

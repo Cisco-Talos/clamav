@@ -416,6 +416,7 @@ Changes
 0.73d	28/6/04	Don't error when creating the quarantine directory if it
 			already exists
 0.74	29/6/04	Up-issued
+0.74a	29/6/04	Allow the child timeout to be configurable
 
 BUG REPORTS
 

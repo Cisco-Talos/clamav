@@ -142,10 +142,11 @@ Location of file to be appended to each scanned message. Overrides \-S.
 .TP
 \fB\-\-max\-children=n, \-m n\fR
 Set a hint of the maximum number of children. If the number is hit the
-maximum time a pending thread will be held up is 1 minute, so the number
-of threads can exceed this number for short periods of time.
+maximum time a pending thread will be held up is set by \-\-timeout, so the
+number of threads can exceed this number for short periods of time.
 There is no default, if this argument is not \fBclamav\-milter\fR will
-spawn as many children as is necessary.
+spawn as many children as is necessary up to the MaxThreads limit set
+in \fBclamav.conf\fR.
 .LP
 Most users will not need this option, if in doubt do not set it.
 .TP
@@ -158,9 +159,15 @@ The %v string can be escaped, thus \\%v, to send the string %v.
 Any occurance of strings in braces are replaced with the appropriate
 {sendmail-variable}.
 If the \-t option is not given, clamav\-milter defaults to a hardcoded message.
+.TP
+\fB\-\-timeout=n \-T n\fR
+Used in conjuction with max\-children. If clamav\-milter waits for more than
+\fIn\fR seconds (default 60) it proceeds with scanning. Setting \fIn\fR to zero
+will turn off the timeout and clamav\-milter will wait indefinately for the
+scanning to quit. In practice the timeout set by sendmail will then take over.
 .SH "EXAMPLES"
 .LP
-clamav\-milter \-\-max\-children=2 \-ol local:/var/run/clamav/clmilter.sock
+clamav\-milter \-ol local:/var/run/clamav/clmilter.sock
 .SH "AUTHOR"
 .LP
 clamav\-milter was written by Nigel Horne <njh@bandsman.co.uk>, the manual page was created by Tomasz Kojm <zolw@konarski.edu.pl>.
