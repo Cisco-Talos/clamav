@@ -187,10 +187,15 @@ zzip_file_open(ZZIP_DIR * dir, zzip_char_t* name, int o_mode)
             switch (hdr->d_compr)
             {
             case 0: /* store */
+	    case 1: /* shrink */	
+	    case 6: /* implode */
             case 8: /* inflate */
+	    case 9: /* deflate */
                 break;
             default:
-                { err = ZZIP_UNSUPP_COMPR; goto error; }
+		cli_dbgmsg("ZzipLib: Unsupported compression mode (%d)\n", hdr->d_compr);
+                err = ZZIP_UNSUPP_COMPR;
+		goto error;
             }
 
             if (dir->cache.fp) 
@@ -238,8 +243,13 @@ zzip_file_open(ZZIP_DIR * dir, zzip_char_t* name, int o_mode)
 		dataoff = dir->io->read(dir->fd, (void*)p, sizeof(*p));
 		if (dataoff < (zzip_ssize_t)sizeof(*p))
 		{ err = ZZIP_DIR_READ;  goto error; }
-                if (! ZZIP_FILE_HEADER_CHECKMAGIC(p)) /* PK\3\4 */
-		{ err = ZZIP_CORRUPTED; goto error; }
+
+		/* TODO: Improve header check for old archives
+                if (! ZZIP_FILE_HEADER_CHECKMAGIC(p))
+		{
+		    err = ZZIP_CORRUPTED; goto error;
+		}
+		*/
 
                 dataoff = ZZIP_GET16(p->z_namlen) + ZZIP_GET16(p->z_extras);
               
@@ -265,7 +275,7 @@ zzip_file_open(ZZIP_DIR * dir, zzip_char_t* name, int o_mode)
     dir->errcode = ZZIP_ENOENT;         zzip_errno(ZZIP_ENOENT);
     return NULL;
 error:
-    if (fp) zzip_file_close(fp);
+if (fp) zzip_file_close(fp);
     dir->errcode = err;                 zzip_errno(err);
     return NULL;
 }
