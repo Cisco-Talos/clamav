@@ -1,3 +1,7 @@
+Sun Dec 12 19:40:10 UTC 2004 (acab)
+-----------------------------------
+  * libclamav: upx:  improved PE rebuild - debug info on failure
+  
 Fri Dec 10 15:21:48 GMT 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Warn if the content-type contains a blank entry
