@@ -267,6 +267,16 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     }
 
     nsections = EC16(file_hdr.NumberOfSections);
+    if(nsections < 1) {
+	if(DETECT_BROKEN) {
+	    if(virname)
+		*virname = "Broken.Executable";
+	    return CL_VIRUS;
+	}
+	cli_warnmsg("PE file contains no sections\n");
+	return CL_CLEAN;
+    }
+
     cli_dbgmsg("NumberOfSections: %d\n", nsections);
 
     timestamp = (time_t) EC32(file_hdr.TimeDateStamp);
@@ -1167,7 +1177,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     }
 
     if(buff[0] != '\xb8' || cli_readint32(buff + 1) != EC32(section_hdr[nsections - 1].VirtualAddress) + EC32(optional_hdr.ImageBase)) {
-	if(buff[0] != '\xb8' || cli_readint32(buff + 1) != EC32(section_hdr[nsections - 2].VirtualAddress) + EC32(optional_hdr.ImageBase))
+	if(buff[0] != '\xb8' || (nsections > 1 && cli_readint32(buff + 1) != EC32(section_hdr[nsections - 2].VirtualAddress) + EC32(optional_hdr.ImageBase)))
 	    found = 0;
 	else
 	    found = 1;

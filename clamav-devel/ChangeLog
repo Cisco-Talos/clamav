@@ -1,3 +1,7 @@
+Tue Mar 15 17:39:28 CET 2005 (tk)
+---------------------------------
+  * libclamav/pe.c: fix section handling
+
 Fri Mar 11 19:15:47 GMT 2005 (trog)
 -----------------------------------
   * libclamav/vba_extract.c: fix possible seek loop
