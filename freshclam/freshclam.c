@@ -152,10 +152,12 @@ int freshclam(struct optstruct *opt)
 	    exit(60); /* this is critical problem, so we just exit here */
 	}
 
+#ifdef HAVE_SETGROUPS
 	if(setgroups(1, &user->pw_gid)) {
 	    mprintf("@setgroups() failed.\n");
 	    exit(61);
 	}
+#endif
 
 	if(setgid(user->pw_gid)) {
 	    mprintf("@setgid(%d) failed.\n", (int) user->pw_gid);

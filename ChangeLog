@@ -1,3 +1,8 @@
+Sat Jun 12 17:32:31 CEST 2004 (tk)
+----------------------------------
+  * libclamav: fix problem with {set,init}groups on Windows SFU 3.5 (reported
+	       by Brian A. Reiter" <breiter*wolfereiter.com>)
+
 Sat Jun 12 15:29:37 CEST 2004 (tk)
 ----------------------------------
   * libclamav: ole2_extract: fix segfault when mmap() fails (problem reported

@@ -160,10 +160,12 @@ int clamav_rmdirs(const char *dir)
 		if((user = getpwnam(UNPUSER)) == NULL)
 		    return -3;
 
+#ifdef HAVE_SETGROUPS
 		if(setgroups(1, &user->pw_gid)) {
 		    fprintf(stderr, "ERROR: setgroups() failed.\n");
 		    return -3;
 		}
+#endif
 
 		if(setgid(user->pw_gid)) {
 		    fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int) user->pw_gid);

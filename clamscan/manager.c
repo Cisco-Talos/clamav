@@ -912,10 +912,13 @@ int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struc
 	case 0:
 #ifndef C_CYGWIN
 	    if(!getuid() && user) {
+
+#ifdef HAVE_SETGROUPS
 		if(setgroups(1, &user->pw_gid)) {
 		    fprintf(stderr, "ERROR: setgroups() failed.\n");
 		    exit(1);
 		}
+#endif
 
 		if(setgid(user->pw_gid)) {
 		    fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int) user->pw_gid);
