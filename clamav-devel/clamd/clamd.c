@@ -37,6 +37,10 @@
 #include <syslog.h>
 #endif
 
+#ifdef C_LINUX
+#include <sys/resource.h>
+#endif
+
 #include "options.h"
 #include "cfgfile.h"
 #include "others.h"
@@ -72,10 +76,20 @@ void clamd(struct optstruct *opt)
     	help();
     }
 
-    if(optl(opt, "debug"))
+    if(optl(opt, "debug")) {
+#if defined(C_LINUX)
+	    /* njh@bandsman.co.uk: create a dump if needed */
+	    struct rlimit rlim;
+
+	rlim.rlim_cur = rlim.rlim_max = RLIM_INFINITY;
+	if(setrlimit(RLIMIT_CORE, &rlim) < 0)
+	    perror("setrlimit");
+#endif
 	debug_mode = 1;
-    else
+
+    } else {
 	debug_mode = 0;
+    }
 
     /* parse the config file */
     if(optc(opt, 'c'))
