@@ -120,7 +120,7 @@ void cli_bm_free(struct cl_node *root)
     }
 }
 
-int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, unsigned long int offset, struct cli_voffset *voffset)
+int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, unsigned long int offset, unsigned short ftype, int fd)
 {
 	int i, j, shift, off, found = 0;
 	uint16_t idx;
@@ -166,10 +166,13 @@ int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virnam
 		}
 
 		if(found && p->length == j) {
-		    if(voffset) {
-			voffset->offstr = p->offset;
-			voffset->fileoff = offset + i - BM_MIN_LENGTH + BM_BLOCK_SIZE;
-                        voffset->target = p->target;
+
+		    if(p->target || p->offset) {
+			    int off = offset + i - BM_MIN_LENGTH + BM_BLOCK_SIZE;
+			if(!cli_validatesig(p->target, ftype, p->offset, off, fd, p->virname)) {
+			    p = p->next;
+			    continue;
+			}
 		    }
 
 		    if(virname)

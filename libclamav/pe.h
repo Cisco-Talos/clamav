@@ -102,6 +102,6 @@ struct cli_pe_info {
 
 int cli_scanpe(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec);
 
-int cli_peheader(int desc, struct cli_pe_info **peinfo);
+int cli_peheader(int desc, struct cli_pe_info *peinfo);
 
 #endif

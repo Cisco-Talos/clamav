@@ -1182,7 +1182,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     return CL_CLEAN;
 }
 
-int cli_peheader(int desc, struct cli_pe_info **peinfo)
+int cli_peheader(int desc, struct cli_pe_info *peinfo)
 {
 	uint16_t e_magic; /* DOS signature ("MZ") */
 	uint32_t e_lfanew; /* address of new exe header */
@@ -1190,7 +1190,6 @@ int cli_peheader(int desc, struct cli_pe_info **peinfo)
 	struct pe_image_optional_hdr optional_hdr;
 	struct pe_image_section_hdr *section_hdr;
 	struct stat sb;
-	struct cli_pe_info *info;
 	int i;
 
 
@@ -1242,71 +1241,57 @@ int cli_peheader(int desc, struct cli_pe_info **peinfo)
 	return -1;
     }
 
-    if(!(info = cli_calloc(1, sizeof(struct cli_pe_info)))) {
-	cli_dbgmsg("Can't alloc memory\n");
-	return -1;
-    }
-
-    info->nsections = EC16(file_hdr.NumberOfSections);
+    peinfo->nsections = EC16(file_hdr.NumberOfSections);
 
     if(read(desc, &optional_hdr, sizeof(struct pe_image_optional_hdr)) != sizeof(struct pe_image_optional_hdr)) {
 	cli_dbgmsg("Can't optional file header\n");
-	free(info);
 	return -1;
     }
 
-    info->section = (struct SECTION *) cli_calloc(info->nsections, sizeof(struct SECTION));
+    peinfo->section = (struct SECTION *) cli_calloc(peinfo->nsections, sizeof(struct SECTION));
 
-    if(!info->section) {
+    if(!peinfo->section) {
 	cli_dbgmsg("Can't allocate memory for section headers\n");
-	free(info);
 	return -1;
     }
 
     if(fstat(desc, &sb) == -1) {
 	cli_dbgmsg("fstat failed\n");
-	free(info->section);
-	free(info);
+	free(peinfo->section);
 	return -1;
     }
 
-    section_hdr = (struct pe_image_section_hdr *) cli_calloc(info->nsections, sizeof(struct pe_image_section_hdr));
+    section_hdr = (struct pe_image_section_hdr *) cli_calloc(peinfo->nsections, sizeof(struct pe_image_section_hdr));
 
     if(!section_hdr) {
 	cli_dbgmsg("Can't allocate memory for section headers\n");
-	free(info->section);
-	free(info);
+	free(peinfo->section);
 	return -1;
     }
 
-    for(i = 0; i < info->nsections; i++) {
+    for(i = 0; i < peinfo->nsections; i++) {
 
 	if(read(desc, &section_hdr[i], sizeof(struct pe_image_section_hdr)) != sizeof(struct pe_image_section_hdr)) {
 	    cli_dbgmsg("Can't read section header\n");
 	    cli_dbgmsg("Possibly broken PE file\n");
 	    free(section_hdr);
-	    free(info->section);
-	    free(info);
+	    free(peinfo->section);
 	    return -1;
 	}
 
-	info->section[i].rva = EC32(section_hdr[i].VirtualAddress);
-	info->section[i].vsz = EC32(section_hdr[i].VirtualSize);
-	info->section[i].raw = EC32(section_hdr[i].PointerToRawData);
-	info->section[i].rsz = EC32(section_hdr[i].SizeOfRawData);
-
+	peinfo->section[i].rva = EC32(section_hdr[i].VirtualAddress);
+	peinfo->section[i].vsz = EC32(section_hdr[i].VirtualSize);
+	peinfo->section[i].raw = EC32(section_hdr[i].PointerToRawData);
+	peinfo->section[i].rsz = EC32(section_hdr[i].SizeOfRawData);
     }
 
-    if((info->ep = cli_rawaddr(EC32(optional_hdr.AddressOfEntryPoint), section_hdr, info->nsections)) == -1) {
+    if((peinfo->ep = cli_rawaddr(EC32(optional_hdr.AddressOfEntryPoint), section_hdr, peinfo->nsections)) == -1) {
 	cli_dbgmsg("Possibly broken PE file\n");
 	free(section_hdr);
-	free(info->section);
-	free(info);
+	free(peinfo->section);
 	return -1;
     }
 
     free(section_hdr);
-    *peinfo = info;
-
     return 0;
 }

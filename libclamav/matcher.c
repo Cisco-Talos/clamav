@@ -21,6 +21,10 @@
 #endif
 
 #include <string.h>
+#include <ctype.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "clamav.h"
 #include "others.h"
@@ -29,14 +33,15 @@
 #include "md5.h"
 #include "filetypes.h"
 #include "matcher.h"
+#include "pe.h"
 
 #define MD5_BLOCKSIZE 4096
 
-#define TARGET_TABLE_SIZE 5
-static int targettab[TARGET_TABLE_SIZE] = { 0, CL_TYPE_MSEXE, CL_TYPE_MSOLE2, CL_TYPE_HTML, CL_TYPE_MAIL };
+#define TARGET_TABLE_SIZE 6
+static int targettab[TARGET_TABLE_SIZE] = { 0, CL_TYPE_MSEXE, CL_TYPE_MSOLE2, CL_TYPE_HTML, CL_TYPE_MAIL, CL_TYPE_GRAPHICS };
 
 
-int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root)
+int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, unsigned short ftype)
 {
 	int ret, *partcnt;
 	unsigned long int *partoff;
@@ -53,12 +58,17 @@ int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, c
 	return CL_EMEM;
     }
 
-    if((ret = cli_bm_scanbuff(buffer, length, virname, root, 0, NULL)) != CL_VIRUS)
-	ret = cli_ac_scanbuff(buffer, length, virname, root, partcnt, 0, 0, partoff, NULL);
+    if((ret = cli_bm_scanbuff(buffer, length, virname, root, 0, ftype, -1)) != CL_VIRUS)
+	ret = cli_ac_scanbuff(buffer, length, virname, root, partcnt, 0, 0, partoff, ftype, -1);
 
     free(partcnt);
     free(partoff);
     return ret;
+}
+
+int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root)
+{
+    return cli_scanbuff(buffer, length, virname, root, 0);
 }
 
 static struct cli_md5_node *cli_vermd5(const unsigned char *md5, const struct cl_node *root)
@@ -79,6 +89,92 @@ static struct cli_md5_node *cli_vermd5(const unsigned char *md5, const struct cl
     return NULL;
 }
 
+static long int cli_caloff(const char *offstr, int fd)
+{
+	struct cli_pe_info peinfo;
+	long int offset = -1;
+	int n;
+
+
+    if(isdigit(offstr[0])) {
+	return atoi(offstr);
+    } if(!strncmp(offstr, "EP+", 3)) {
+	if((n = lseek(fd, 0, SEEK_CUR)) == -1) {
+	    cli_dbgmsg("Invalid descriptor\n");
+	    return -1;
+	}
+	lseek(fd, 0, SEEK_SET);
+	if(cli_peheader(fd, &peinfo))
+	    return -1;
+	free(peinfo.section);
+	lseek(fd, n, SEEK_SET);
+	return peinfo.ep + atoi(offstr + 3);
+    } else if(offstr[0] == 'S') {
+	if((n = lseek(fd, 0, SEEK_CUR)) == -1) {
+	    cli_dbgmsg("Invalid descriptor\n");
+	    return -1;
+	}
+	lseek(fd, 0, SEEK_SET);
+	if(cli_peheader(fd, &peinfo))
+	    return -1;
+	lseek(fd, n, SEEK_SET);
+
+	if(sscanf(offstr, "S%d+%ld", &n, &offset) != 2)
+	    return -1;
+
+	if(n >= peinfo.nsections) {
+	    free(peinfo.section);
+	    return -1;
+	}
+
+	offset += peinfo.section[n].raw;
+	free(peinfo.section);
+	return offset;
+    } else if(!strncmp(offstr, "EOF-", 4)) {
+	    struct stat sb;
+
+	if(fstat(fd, &sb) == -1)
+	    return -1;
+
+	return sb.st_size - atoi(offstr + 4);
+    }
+
+    return -1;
+}
+
+int cli_validatesig(unsigned short target, unsigned short ftype, const char *offstr, unsigned long int fileoff, int desc, const char *virname)
+{
+
+    if(target) {
+	if(target >= TARGET_TABLE_SIZE) {
+	    cli_errmsg("Bad target in signature (%s)\n", virname);
+	    return 0;
+	} else if(ftype) {
+	    if(targettab[target] != ftype) {
+		cli_dbgmsg("Type: %d, expected: %d (%s)\n", ftype, targettab[target], virname);
+		return 0;
+	    }
+	} 
+
+    }
+
+    if(offstr && desc != -1) {
+	    long int off = cli_caloff(offstr, desc);
+
+	if(off == -1) {
+	    cli_dbgmsg("Bad offset in signature (%s)\n", virname);
+	    return 0;
+	}
+
+	if(fileoff != off) {
+	    cli_dbgmsg("Virus offset: %d, expected: %d (%s)\n", fileoff, off, virname);
+	    return 0;
+	}
+    }
+
+    return 1;
+}
+
 int cli_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, short otfrec, unsigned short ftype)
 {
  	char *buffer, *buff, *endbl, *pt;
@@ -87,7 +183,6 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 	struct MD5Context ctx;
 	unsigned char digest[16];
 	struct cli_md5_node *md5_node;
-	struct cli_voffset voffset;
 
 
     if(!root) {
@@ -109,7 +204,7 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
     }
 
     if((partoff = (unsigned long int *) cli_calloc(root->ac_partsigs + 1, sizeof(unsigned long int))) == NULL) {
-	cli_dbgmsg("cli_scanbuff(): unable to cli_calloc(%d, %d)\n", root->ac_partsigs + 1, sizeof(unsigned long int));
+	cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%d, %d)\n", root->ac_partsigs + 1, sizeof(unsigned long int));
 	free(buffer);
 	free(partcnt);
 	return CL_EMEM;
@@ -118,7 +213,6 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
     if(root->md5_hlist)
 	MD5Init(&ctx);
 
-    memset(&voffset, 0, sizeof(struct cli_voffset));
 
     buff = buffer;
     buff += root->maxpatlen; /* pointer to read data block */
@@ -136,27 +230,11 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 	if(bytes < SCANBUFF)
 	    length -= SCANBUFF - bytes;
 
-	if(cli_bm_scanbuff(pt, length, virname, root, offset, &voffset) == CL_VIRUS ||
-	   (ret = cli_ac_scanbuff(pt, length, virname, root, partcnt, otfrec, offset, partoff, &voffset)) == CL_VIRUS) {
+	if(cli_bm_scanbuff(pt, length, virname, root, offset, ftype, desc) == CL_VIRUS ||
+	   (ret = cli_ac_scanbuff(pt, length, virname, root, partcnt, otfrec, offset, partoff, ftype, desc)) == CL_VIRUS) {
 	    free(buffer);
 	    free(partcnt);
 	    free(partoff);
-
-	    if(voffset.target) {
-		if(voffset.target >= TARGET_TABLE_SIZE) {
-		    cli_errmsg("Bad target (%d) in signature for %s\n", voffset.target, *virname);
-		} else if(ftype && ftype != CL_TYPE_UNKNOWN_TEXT) {
-		    if(targettab[voffset.target] != ftype) {
-			cli_dbgmsg("Expected target type (%d) for %s != %d\n", voffset.target, *virname, ftype);
-			return CL_CLEAN;
-		    }
-		} else if(type) {
-		    if(targettab[voffset.target] != type) {
-			cli_dbgmsg("Expected target type (%d) for %s != %d\n", voffset.target, *virname, type);
-			return CL_CLEAN;
-		    }
-		}
-	    }
 
 	    return CL_VIRUS;
 

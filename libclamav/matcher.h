@@ -23,10 +23,8 @@
 
 int cli_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, short otfrec, unsigned short ftype);
 
-struct cli_voffset {
-    const char *offstr;
-    unsigned long int fileoff;
-    unsigned short target;
-};
+int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, unsigned short ftype);
+
+int cli_validatesig(unsigned short target, unsigned short ftype, const char *offstr, unsigned long int fileoff, int desc, const char *virname);
 
 #endif

@@ -38,6 +38,7 @@ typedef enum {
     CL_TYPE_MSCAB,
     CL_TYPE_MSCHM,
     CL_TYPE_SCRENC,
+    CL_TYPE_GRAPHICS,
 
     /* bigger numbers have higher priority (in o-t-f detection) */
     CL_TYPE_HTML, /* on the fly */

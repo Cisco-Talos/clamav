@@ -24,7 +24,7 @@
 
 int cli_bm_addpatt(struct cl_node *root, struct cli_bm_patt *pattern);
 int cli_bm_init(struct cl_node *root);
-int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, unsigned long int offset, struct cli_voffset *voffset);
+int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, unsigned long int offset, unsigned short ftype, int fd);
 void cli_bm_free(struct cl_node *root);
 
 #endif
