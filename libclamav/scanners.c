@@ -83,6 +83,8 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "From: ",			6,  "Exim mail",	  CL_MAILFILE},
     {0,  "X-Symantec-",			11, "Symantec",		  CL_MAILFILE},
     {0,  "X-Apparently-To: ",		17, "Mail",		  CL_MAILFILE},
+    {0,  "For: ",			5,  "Eserv mail",	  CL_MAILFILE},
+    {0,  "X-EVS",			5,  "EVS mail",		  CL_MAILFILE},
     {0,  "v:\015\012Received: ",	14, "VPOP3 Mail (DOS)",	  CL_MAILFILE},
     {0,  "v:\012Received: ",		13, "VPOP3 Mail (UNIX)",  CL_MAILFILE},
     {0,  "Hi. This is the qmail-send",  26, "Qmail bounce",	  CL_MAILFILE},
