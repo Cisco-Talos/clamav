@@ -1,3 +1,7 @@
+Wed Jul 28 20:09:32 CEST 2004 (tk)
+----------------------------------
+  * libclamav: improve mail detection
+
 Wed Jul 28 01:10:46 CEST 2004 (tk)
 ----------------------------------
   * libclamav: md5: fix possible infinite loop in cl_free(); check file
