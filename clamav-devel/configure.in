@@ -508,6 +508,23 @@ if test "$have_attrib_packed" = yes; then
 	AC_DEFINE(HAVE_ATTRIB_PACKED, 1, "attrib packed")
 fi
 
+# Check if <sys/select.h> needs to be included for fd_set
+AC_MSG_CHECKING([for fd_set])
+AC_TRY_COMPILE([#include <sys/types.h>],
+        [fd_set readMask, writeMask;], have_fd_set=yes, have_fd_set=no)
+if test $have_fd_set = yes; then
+    AC_MSG_RESULT([yes, found in sys/types.h])
+else
+    AC_HEADER_EGREP(fd_mask, sys/select.h, have_fd_set=yes)
+    if test $have_fd_set = yes; then
+        AC_DEFINE(HAVE_SYS_SELECT_H, 1, "have <sys/select.h>")
+        AC_MSG_RESULT([yes, found in sys/select.h])
+    else
+        AC_DEFINE(NO_FD_SET, 1, "no fd_set")
+        AC_MSG_RESULT(no)
+    fi
+fi
+
 AC_OUTPUT([
 libclamav/Makefile
 clamscan/Makefile
