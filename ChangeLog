@@ -4,8 +4,9 @@ Tue May 25 22:30:33 CEST 2004 (tk)
 	       + do not trigger off file type recognizer in raw mode
 	         (fixes stdin scanning in clamscan - Debian Bug #250806)
   * clamd: harden read() in command parser
-  * Makefiles: fix *.cvd and *.conf installation in VPATHed directory
-	       (patch by Eugene Crosser <crosser*rol.ru>)
+  * Makefiles: + fix *.cvd and *.conf installation in VPATHed directory
+	         (patch by Eugene Crosser <crosser*rol.ru>)
+	       + disable pthread code in shared files if needed
   * doc: include manual page for freshclam.conf (from Debian)
 
 Tue May 25 17:24:48 BST 2004 (njh)
