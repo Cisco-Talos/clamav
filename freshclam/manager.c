@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *  HTTP/1.1 compliance by Arkadiusz Miskiewicz <misiek@pld.org.pl>
  *  Proxy support by Nigel Horne <njh@bandsman.co.uk>
  *  Proxy authorization support by Gernot Tenchio <g.tenchio@telco-tech.de>
@@ -290,9 +290,8 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	if(!nodb && !ims) {
 	    mprintf("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
 	    logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
-	    if(current)
-		cl_cvdfree(current);
-
+	    *signo += current->sigs;
+	    cl_cvdfree(current);
 	    return 1;
 	}
 
@@ -523,11 +522,12 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
         }
     }
 
-    if(stat(file, &sb) != -1) {
+    if(stat(file, &sb) != -1 && sb.st_mtime < time(NULL)) {
 	Rfc2822DateTime(last_modified, sb.st_mtime);
     } else {
 	    time_t mtime = 1104119530;
 	Rfc2822DateTime(last_modified, mtime);
+	mprintf("*Assuming modification time in the past\n");
     }
 
     mprintf("*If-Modified-Since: %s\n", last_modified);
