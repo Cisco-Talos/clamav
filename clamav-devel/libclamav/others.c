@@ -43,6 +43,8 @@
 pthread_mutex_t cli_rand_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
+int cli_debug_flag = 0;
+
 void cli_warnmsg(const char *str, ...)
 {
 	va_list args;
@@ -65,16 +67,21 @@ void cli_errmsg(const char *str, ...)
 
 void cli_dbgmsg(const char *str, ...)
 {
-#ifdef CL_DEBUG
 	va_list args;
 
-    va_start(args, str);
-    fprintf(stderr, "LibClamAV debug: ");
-    vfprintf(stderr, str, args);
-    va_end(args);
-#else
-    return;
-#endif
+    if(cli_debug_flag) {
+	va_start(args, str);
+	fprintf(stderr, "LibClamAV debug: ");
+	vfprintf(stderr, str, args);
+	va_end(args);
+    } else
+	return;
+
+}
+
+void cl_debug(void)
+{
+    cli_debug_flag = 1;
 }
 
 char *cl_perror(int clerror)

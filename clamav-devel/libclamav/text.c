@@ -139,9 +139,10 @@ textAdd(text *t_head, const text *t)
 	if(t_head == NULL)
 		return textCopy(t);
 
-	ret = t_head;
+	if(t == NULL)
+		return t_head;
 
-	assert(t != NULL);
+	ret = t_head;
 
 	while(t_head->t_next)
 		t_head = t_head->t_next;
@@ -170,6 +171,8 @@ textAdd(text *t_head, const text *t)
 text *
 textAddMessage(text *aText, const message *aMessage)
 {
+	assert(aMessage != NULL);
+
 	if(messageGetEncoding(aMessage) == NOENCODING)
 		return textAdd(aText, messageGetBody(aMessage));
 	else {

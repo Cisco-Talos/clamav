@@ -57,10 +57,9 @@ int downloadmanager(const struct optstruct *opt, const char *hostname)
     mprintf("Checking for a new database - started at %s", ctime(&currtime));
 
 
-
-    /* first thing we want, is a local file md5 checksum */
+    /* first thing we want is a local file md5 checksum */
     if(fileinfo(DB1NAME, 1) == -1) {
-	/* there is no database, so we just download new one */
+	/* there is no database, so we just download a new one */
 	nodb = 1; 
 	mprintf(DB1NAME" not found in the data directory.\n");
     } else {
@@ -70,9 +69,7 @@ int downloadmanager(const struct optstruct *opt, const char *hostname)
 	}
     }
 
-    /* second database */
     if(fileinfo(DB2NAME, 1) == -1) {
-	/* there is no database, so we just download new one */
 	nodb2 = 1; 
 	mprintf(DB2NAME" not found in the data directory.\n");
     } else {
@@ -82,10 +79,6 @@ int downloadmanager(const struct optstruct *opt, const char *hostname)
 	}
     }
 
-    /*
-     * Ok, we have local file md5 checksum, now we download md5sum of current
-     * database from Internet.
-     */
 
     if(optl(opt, "proxy-user")) {
 	user = getargl(opt, "proxy-user");

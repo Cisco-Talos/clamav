@@ -75,7 +75,7 @@ struct cl_node {
     struct patt *list;
     struct cl_node *trans[CL_NUM_CHILDS], *fail;
 
-    /* FIXME: these variables are only used in the root node */
+    /* FIXME: these variables are only used in a root node */
     unsigned int maxpatlen, partsigs;
     unsigned int nodes;
     struct cl_node **nodetable;
@@ -106,11 +106,13 @@ extern int cl_loaddb(const char *filename, struct cl_node **root, int *virnum);
 extern int cl_loaddbdir(const char *dirname, struct cl_node **root, int *virnum);
 extern char *cl_retdbdir(void);
 
-/* datadir stat functions */
+/* data dir stat functions */
 extern int cl_statinidir(const char *dirname, struct cl_stat *dbstat);
 extern int cl_statchkdir(const struct cl_stat *dbstat);
 extern int cl_statfree(struct cl_stat *dbstat);
 
+/* enable debug information */
+extern void cl_debug(void);
 
 /* build a trie */
 extern void cl_buildtrie(struct cl_node *root);

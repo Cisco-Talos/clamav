@@ -50,12 +50,12 @@ int cli_scanrar_inuse = 0;
 #define SCAN_ARCHIVE	(options & CL_ARCHIVE)
 #define SCAN_MAIL	(options & CL_MAIL)
 
-#define MAGIC_BUFFER_SIZE 6
+#define MAGIC_BUFFER_SIZE 10
 #define RAR_MAGIC_STR "Rar!"
 #define ZIP_MAGIC_STR "PK\003\004"
 #define GZIP_MAGIC_STR "\037\213"
 #define MAIL_MAGIC_STR "From "
-/*#define RAWMAIL_MAGIC_STR "Received: "*/
+#define RAWMAIL_MAGIC_STR "Received: "
 #define BZIP_MAGIC_STR "BZh"
 
 
@@ -637,12 +637,10 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
 	    cli_dbgmsg("Recognized mail file.\n");
 	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
 	}
-	/*
 	else if(!strncmp(magic, RAWMAIL_MAGIC_STR, strlen(RAWMAIL_MAGIC_STR))) {
 	    cli_dbgmsg("Recognized raw mail file.\n");
 	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
 	}
-	*/
 
 	lseek(desc, 0, SEEK_SET);
     }
