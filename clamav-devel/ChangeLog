@@ -1,10 +1,14 @@
+Wed Jan 26 19:27:57 CET 2005 (tk)
+---------------------------------
+  V 0.81
+
 Wed Jan 26 18:20:40 GMT 2005 (trog)
 -----------------------------------
   * clamd/server-th.c: always check if we need to end the SESSION.
 
 Wed Jan 26 19:01:27 CET 2005 (tk)
 ---------------------------------
-  * libclamav/others: increase flevel
+  * libclamav/others: increase f-level
 
 Wed Jan 26 18:37:45 CET 2005 (tk)
 ---------------------------------

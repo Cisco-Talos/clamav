@@ -9,6 +9,8 @@ data within HTML documents, block zip archives with modified information in
 local header, and scan HQX files. PE file structure rebuilding from compressed
 executables was improved.
 
+Important note to clamdwatch users: please upgrade to the latest version
+(contrib/clamdwatch) as soon as possible.
 
 -) libclamav:
     + major improvements in the mail scanning engine:
