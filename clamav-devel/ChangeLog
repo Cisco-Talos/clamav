@@ -1,5 +1,6 @@
 Mon Feb  2 13:46:51 GMT 2004 (njh)
 ----------------------------------
+  * libclamav:	   Carefully crafted binhex messages could have caused a crash
   * clamav-milter: Include the ID of the message when warnings are sent to
   	postmaster-only
 
