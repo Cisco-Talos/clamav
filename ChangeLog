@@ -1,3 +1,8 @@
+Thu Feb 26 11:02:46 GMT 2004 (trog)
+-----------------------------------
+ * libclamav/readdb.c: close directory descriptor leak - caused
+	"CVD extraction failure" error.
+
 Wed Feb 25 11:07:53 GMT 2004 (trog)
 -----------------------------------
  * clamd thrmgr: new clean reimplementation
