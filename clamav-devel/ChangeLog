@@ -1,4 +1,10 @@
+Wed Dec 24 02:28:42 CET 2003 (tk)
+---------------------------------
+  * libclamav: fixed my last patch (instead of a value, a pointer was compared)
+	       Thanks to Nigel.
+
 Mon Dec 22 14:06:09 GMT 2003 (njh)
+----------------------------------
   * clamav-milter: Added --sign option
 
 Sun Dec 21 05:52:12 CET 2003 (tk)
@@ -11,8 +17,8 @@ Sat Dec 20 13:56:27 GMT 2003 (njh)
 ----------------------------------
   * libclamav: Ensure multipart just save the bodies of attachments
 
-Sat Dec 20 13:25:23 CET 2003
-----------------------------------
+Sat Dec 20 13:25:23 CET 2003 (tk)
+---------------------------------
   * clamdscan: fixed a segmentation fault when invoked without arguments
 	       (patch by David Santinoli <david*santinoli.com>)
   * libclamav: the memory limit and verbosity arguments in bzReadOpen() were
