@@ -30,13 +30,13 @@ void *cli_malloc(size_t nmemb);
 void *cli_calloc(size_t nmemb, size_t size);
 void *cli_realloc(void *ptr, size_t size);
 int cli_rmdirs(const char *dirname);
-char *cli_md5stream(FILE *fd);
+char *cli_md5stream(FILE *fs, unsigned char *digcpy);
+char *cli_md5file(const char *filename);
 int cli_readn(int fd, void *buff, unsigned int count);
 int cli_writen(int fd, void *buff, unsigned int count);
 int32_t cli_readint32(const char *buff);
 char *cli_gentemp(const char *dir);
 unsigned int cli_rndnum(unsigned int max);
-char *cli_md5file(const char *filename);
 int cli_memstr(const char *haystack, int hs, const char *needle, int ns);
 
 #endif

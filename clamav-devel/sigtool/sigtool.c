@@ -123,7 +123,7 @@ void sigtool(struct optstruct *opt)
 
 	} else {
 
-	    md5 = cli_md5stream(stdin);
+	    md5 = cli_md5stream(stdin, NULL);
 	    mprintf("%s\n", md5);
 	    free(md5);
 	}
@@ -365,8 +365,9 @@ int build(struct optstruct *opt)
 
     /* digital signature */
     fd = fopen(gzfile, "rb");
-    __md5_stream(fd, &buffer);
+    pt = cli_md5stream(fd, buffer);
     fclose(fd);
+    free(pt);
     if(!(pt = getdsig(getargl(opt, "server"), smbuff, buffer))) {
 	mprintf("No digital signature - no CVD file...\n");
 	unlink(gzfile);

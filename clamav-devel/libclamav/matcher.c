@@ -80,8 +80,8 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
  	char *buffer, *buff, *endbl, *pt;
 	int bytes, buffsize, length, ret, *partcnt, type = CL_CLEAN;
 	unsigned long int *partoff, offset = 0;
-	struct md5_ctx ctx;
-        unsigned char md5buff[16];
+	struct MD5Context ctx;
+	unsigned char digest[16];
 	struct cli_md5_node *md5_node;
 
 
@@ -111,7 +111,7 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
     }
 
     if(root->md5_hlist)
-	md5_init_ctx (&ctx);
+	MD5Init(&ctx);
 
     buff = buffer;
     buff += root->maxpatlen; /* pointer to read data block */
@@ -119,7 +119,7 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 						* length of root->maxpatlen
 						*/
 
-    pt= buff;
+    pt = buff;
     length = SCANBUFF;
     while((bytes = read(desc, buff, SCANBUFF)) > 0) {
 
@@ -149,25 +149,8 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
         pt = buffer;
         length = buffsize;
 
-	/* compute MD5 */
-
-	if(root->md5_hlist) {
-	    if(bytes % 64 == 0) {
-		md5_process_block(buff, bytes, &ctx);
-	    } else {
-		    int block = bytes;
-		    char *mpt = buff;
-
-		while(block >= MD5_BLOCKSIZE) {
-		    md5_process_block(mpt, MD5_BLOCKSIZE, &ctx);
-		    mpt += MD5_BLOCKSIZE;
-		    block -= MD5_BLOCKSIZE;
-		}
-
-		if(block)
-		    md5_process_bytes(mpt, block, &ctx);
-	    }
-	}
+	if(root->md5_hlist)
+	    MD5Update(&ctx, buff, bytes);
     }
 
     free(buffer);
@@ -175,9 +158,9 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
     free(partoff);
 
     if(root->md5_hlist) {
-	md5_finish_ctx(&ctx, &md5buff);
+	MD5Final(digest, &ctx);
 
-	if((md5_node = cli_vermd5(md5buff, root))) {
+	if((md5_node = cli_vermd5(digest, root))) {
 		struct stat sb;
 
 	    if(fstat(desc, &sb))

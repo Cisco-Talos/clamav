@@ -288,7 +288,7 @@ int cli_cvdverify(FILE *fd, struct cl_cvd *cvdpt)
     if(cvdpt)
 	memcpy(cvdpt, cvd, sizeof(struct cl_cvd));
 
-    md5 = cli_md5stream(fd);
+    md5 = cli_md5stream(fd, NULL);
     cli_dbgmsg("MD5(.tar.gz) = %s\n", md5);
 
     if(strncmp(md5, cvd->md5, 32)) {

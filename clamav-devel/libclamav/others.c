@@ -163,65 +163,77 @@ const char *cl_perror(int clerror)
     return cl_strerror(clerror);
 }
 
-char *cli_md5stream(FILE *fd)
+char *cli_md5stream(FILE *fs, unsigned char *digcpy)
 {
-	unsigned char buffer[16];
-	char *md5str;
-	int i, cnt=0;
+	unsigned char digest[16];
+	char buff[FILEBUFF];
+	struct MD5Context ctx;
+	char *md5str, *pt;
+	int i, bytes;
 
-    md5_stream(fd, &buffer);
 
-    md5str = (char*) calloc(32 + 1, sizeof(char));
+    MD5Init(&ctx);
 
-    for(i=0; i<16; i++)
-	cnt += sprintf(md5str + cnt, "%02x", buffer[i]);
+    while((bytes = fread(buff, 1, FILEBUFF, fs)))
+	MD5Update(&ctx, buff, bytes);
 
-    return(md5str);
+    MD5Final(digest, &ctx);
+
+    if(!(md5str = (char *) cli_calloc(32 + 1, sizeof(char))))
+	return NULL;
+
+    pt = md5str;
+    for(i = 0; i < 16; i++) {
+	sprintf(pt, "%02x", digest[i]);
+	pt += 2;
+    }
+
+    if(digcpy)
+	memcpy(digcpy, digest, 16);
+
+    return md5str;
 }
 
 char *cli_md5file(const char *filename)
 {
-	FILE *fd;
-	unsigned char buffer[16];
+	FILE *fs;
 	char *md5str;
-	int i, cnt=0;
 
 
-    if((fd = fopen(filename, "rb")) == NULL) {
+    if((fs = fopen(filename, "rb")) == NULL) {
 	cli_errmsg("cli_md5file(): Can't read file %s\n", filename);
 	return NULL;
     }
 
-    md5_stream(fd, &buffer);
-    fclose(fd);
+    md5str = cli_md5stream(fs, NULL);
+    fclose(fs);
 
-    md5str = (char*) calloc(32 + 1, sizeof(char));
-
-    for(i=0; i<16; i++)
-	cnt += sprintf(md5str + cnt, "%02x", buffer[i]);
-
-    return(md5str);
+    return md5str;
 }
 
 static char *cli_md5buff(const char *buffer, unsigned int len)
 {
-	unsigned char md5buff[16];
-	char *md5str;
-	struct md5_ctx ctx;
-	int i, cnt=0;
+	unsigned char digest[16];
+	char *md5str, *pt;
+	struct MD5Context ctx;
+	int i;
 
 
-    md5_init_ctx(&ctx);
-    md5_process_bytes(buffer, len, &ctx);
-    md5_finish_ctx(&ctx, &md5buff);
-    memcpy(oldmd5buff, md5buff, 16);
+    MD5Init(&ctx);
+    MD5Update(&ctx, buffer, len);
+    MD5Final(digest, &ctx);
+    memcpy(oldmd5buff, digest, 16);
 
-    md5str = (char*) cli_calloc(32 + 1, sizeof(char));
+    if(!(md5str = (char *) cli_calloc(32 + 1, sizeof(char))))
+	return NULL;
 
-    for(i=0; i<16; i++)
-	cnt += sprintf(md5str + cnt, "%02x", md5buff[i]);
+    pt = md5str;
+    for(i = 0; i < 16; i++) {
+	sprintf(pt, "%02x", digest[i]);
+	pt += 2;
+    }
 
-    return(md5str);
+    return md5str;
 }
 
 void *cli_malloc(size_t size)
