@@ -1,3 +1,8 @@
+Tue Oct 19 02:53:46 CEST 2004 (tk)
+----------------------------------
+  * libclamav/matcher.c: fix signature target type validation for data files
+			 of unknown type
+
 Sun Oct 17 18:33:10 CEST 2004 (tk)
 ----------------------------------
   V 0.80
