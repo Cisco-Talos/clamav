@@ -176,7 +176,7 @@ static struct cl_node *reload_db(struct cl_node *root, const struct cfgstruct *c
 int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *copt)
 {
 	int new_sd, max_threads, options=0;
-	thrmgr_t thrmgr;
+	threadpool_t *thr_pool;
 	struct sigaction sigact;
 	mode_t old_umask;
 	struct cl_limits limits;
@@ -371,8 +371,8 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     pthread_mutex_init(&exit_mutex, NULL);
     pthread_mutex_init(&reload_mutex, NULL);
 
-    if(thrmgr_init(&thrmgr, max_threads, 1, scanner_thread) != 0) {
-	logg("thrmgr_init failed");
+    if((thr_pool=thrmgr_new(max_threads, 30, scanner_thread)) == NULL) {
+	logg("thrmgr_new failed");
 	exit(-1);
     }
 
@@ -400,7 +400,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 		client_conn->copt = copt;
 		client_conn->root = root;
 		client_conn->limits = &limits;
-		thrmgr_add(&thrmgr, client_conn);
+		thrmgr_dispatch(thr_pool, client_conn);
 	}
 
 	pthread_mutex_lock(&exit_mutex);
@@ -429,10 +429,10 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	    /* Destroy the thread manager.
 	     * This waits for all current tasks to end
 	     */
-	    thrmgr_destroy(&thrmgr);
+	    thrmgr_destroy(thr_pool);
 	    root = reload_db(root, copt, FALSE);
-	    if(thrmgr_init(&thrmgr, max_threads, 1, scanner_thread) != 0) {
-		logg("!thrmgr_init failed");
+	    if((thr_pool=thrmgr_new(max_threads, 30, scanner_thread)) == NULL) {
+		logg("!thrmgr_new failed");
 		pthread_mutex_unlock(&reload_mutex);
 		exit(-1);
 	    }

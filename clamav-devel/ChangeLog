@@ -1,3 +1,7 @@
+Wed Feb 25 11:07:53 GMT 2004 (trog)
+-----------------------------------
+ * clamd thrmgr: new clean reimplementation
+
 Wed Feb 25 08:57:35 GMT 2004 (trog)
 -----------------------------------
   * libclamav/vba_extract.c: add VBA signature for Office 2003
