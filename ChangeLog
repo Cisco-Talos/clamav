@@ -1,3 +1,8 @@
+Thu Jan 15 15:31:13 CET 2004 (tk)
+---------------------------------
+  * clamd: "ThreadTimeout 0" now properly disables the limit (thanks to
+	   Trog <trog*uncon.org>)
+
 Wed Jan 14 18:03:17 GMT 2004 (njh)
 ----------------------------------
   * libclamav: added definition of binhexBegin

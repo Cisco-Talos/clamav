@@ -59,8 +59,10 @@ int procscan(const char *name, const struct cl_node *root, const struct cl_limit
 	case 0:
 	    if((cpt = cfgopt(copt, "ThreadTimeout")))
 	        alarm(cpt->numarg);
+/* 0 should disable the limit
 	    else
 	        alarm(CL_DEFAULT_SCANTIMEOUT);
+*/
 
 	    if(!name)
 		scanstream(odesc, NULL, root, limits, options, copt);

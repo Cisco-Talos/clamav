@@ -179,7 +179,7 @@ void *threadwatcher(void *arg)
 	    i = 0;
 
 	/* check time */
-        if(ths[i].active) /* races are harmless here (timeout is re-set) */
+        if(timeout && ths[i].active) /* races are harmless here (timeout is re-set) */
 	    if(time(NULL) - ths[i].start > timeout) {
 		pthread_cancel(ths[i].id);
 		mdprintf(ths[i].desc, "Session(%d): Time out ERROR\n", i);
@@ -290,7 +290,7 @@ void *threadwatcher(void *arg)
 		need_wait = 0;
 		for(j = 0; j < threads; j++)
 		    if(ths[j].active) {
-			if(time(NULL) - ths[j].start > timeout) {
+			if(timeout && (time(NULL) - ths[j].start > timeout)) {
 			    do_loop = 1;
 			    break;
 			} else need_wait = 1;
