@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.102  2004/10/16 20:53:28  nigelhorne
+ * Tidy up
+ *
  * Revision 1.101  2004/10/16 13:53:52  nigelhorne
  * Handle '8 bit' and plain/text
  *
@@ -300,7 +303,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.101 2004/10/16 13:53:52 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.102 2004/10/16 20:53:28 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -534,20 +537,26 @@ messageSetMimeType(message *mess, const char *type)
 	} else if(mess->mimeType == NOMIME) {
 		if(strncasecmp(type, "x-", 2) == 0)
 			mess->mimeType = MEXTENSION;
-		else if(strcasecmp(type, "plain") != 0) {
+		else {
 			/*
 			 * Based on a suggestion by James Stevens
 			 *	<James@kyzo.com>
 			 * Force scanning of strange messages
-			 *
-			 * Don't handle broken e-mail probably sending
-			 *	Content-Type: plain/text
-			 * instead of
-			 *	Content-Type: text/plain
-			 * as an attachment
 			 */
-			cli_warnmsg("Unknown MIME type: `%s' - set to Application\n", type);
-			mess->mimeType = APPLICATION;
+			if(strcasecmp(type, "plain") == 0) {
+				cli_dbgmsg("Incorrect MIME type: `plain', set to Text\n", type);
+				mess->mimeType = TEXT;
+			} else {
+				/*
+				 * Don't handle broken e-mail probably sending
+				 *	Content-Type: plain/text
+				 * instead of
+				 *	Content-Type: text/plain
+				 * as an attachment
+				 */
+				cli_warnmsg("Unknown MIME type: `%s', set to Application - report to bugs@clamav.net\n", type);
+				mess->mimeType = APPLICATION;
+			}
 		}
 		return 1;
 	}
@@ -772,7 +781,7 @@ messageAddArguments(message *m, const char *s)
 
 			if((string == NULL) || (strlen(key) == 0)) {
 				if(usefulArg(key))
-					cli_warnmsg("Can't parse header (1) \"%s\"\n", s);
+					cli_warnmsg("Can't parse header (1) \"%s\" - report to bugs@clamav.net\n", s);
 				free((char *)key);
 				return;
 			}
@@ -931,12 +940,10 @@ messageSetEncoding(message *m, const char *enctype)
 	while((*enctype == '\t') || (*enctype == ' '))
 		enctype++;
 
-	/*
-	 * broken:
-	 *	Content-Transfer-Encoding: 8 bit
-	 */
-	if(strcasecmp(enctype, "8 bit") == 0)
+	if(strcasecmp(enctype, "8 bit") == 0) {
+		cli_dbgmsg("Broken content-transfer-encoding: '8 bit' changed to '8bit'\n");
 		enctype = "8bit";
+	}
 
 	/*
 	 * Iterate through
