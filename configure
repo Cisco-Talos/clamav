@@ -1901,7 +1901,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=clamav
- VERSION=20030829
+ VERSION="devel-`date +%Y%m%d`"
 
 
 cat >>confdefs.h <<_ACEOF
@@ -9075,7 +9075,7 @@ solaris*)
     FRESHCLAM_LIBS="-lsocket -lnsl -lresolv"
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
-	CLAMD_LIBS="-lpthread -lsocket -lnsl"
+	CLAMD_LIBS="-lpthread -lsocket -lnsl -lresolv"
 	TH_SAFE="-thread-safe"
 	cat >>confdefs.h <<\_ACEOF
 #define CL_THREAD_SAFE 1

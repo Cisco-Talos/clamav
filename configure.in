@@ -19,7 +19,7 @@ AC_INIT(clamscan/clamscan.c)
 AC_CREATE_TARGET_H(target.h)
 AC_CANONICAL_SYSTEM
 
-AM_INIT_AUTOMAKE(clamav, 20030829)
+AM_INIT_AUTOMAKE(clamav, "devel-`date +%Y%m%d`")
 dnl AM_INIT_AUTOMAKE(clamav, `date +%Y%m%d`)
 LC_CURRENT=1
 LC_REVISION=3
