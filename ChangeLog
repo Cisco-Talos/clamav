@@ -1,3 +1,7 @@
+Sun Dec  7 22:46:15 CET 2003 (tk)
+---------------------------------
+  * freshclam: use the TCPAddr parameter (patch from David S. Madole)
+
 Sat Dec  6 04:04:00 GMT 2003 (njh)
 ----------------------------------
   * libclamav: Handle hand crafted emails that incorrectly set multipart headers
