@@ -55,7 +55,7 @@ short int *cli_hex2si(const char *hex)
     len = strlen(hex);
 
     if(len % 2 != 0) {
-	cli_errmsg("cl_hex2si(): Malformed hexstring: %s (length: %d)\n", hex, len);
+	cli_errmsg("cli_hex2si(): Malformed hexstring: %s (length: %d)\n", hex, len);
 	return NULL;
     }
 
@@ -99,7 +99,7 @@ char *cli_hex2str(const char *hex)
     len = strlen(hex);
 
     if(len % 2 != 0) {
-	cli_errmsg("cl_hex2str(): Malformed hexstring: %s (length: %d)\n", hex, len);
+	cli_errmsg("cli_hex2str(): Malformed hexstring: %s (length: %d)\n", hex, len);
 	return NULL;
     }
 
@@ -129,7 +129,7 @@ char *cli_hex2str(const char *hex)
     return str;
 }
 
-char *cl_str2hex(const char *string, unsigned int len)
+char *cli_str2hex(const char *string, unsigned int len)
 {
 	char *hexstr;
 	char HEX[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',

@@ -47,8 +47,12 @@ int cli_scanrar_inuse = 0;
 
 extern short cli_leavetemps_flag;
 
+extern int cli_mbox(const char *dir, int desc); /* FIXME */
+
 #include "clamav.h"
 #include "others.h"
+#include "matcher-ac.h"
+#include "matcher-bm.h"
 #include "matcher.h"
 #include "unrarlib.h"
 #include "ole2_extract.h"
@@ -57,7 +61,6 @@ extern short cli_leavetemps_flag;
 #include "pe.h"
 #include "filetypes.h"
 #include "htmlnorm.h"
-#include "md5.h"
 
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>
@@ -78,130 +81,10 @@ extern short cli_leavetemps_flag;
 
 #define MAX_MAIL_RECURSION  15
 
-#define MD5_BLOCKSIZE 4096
 
 static int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec);
 static int cli_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec);
 
-
-struct cli_md5_node *cli_vermd5(const char *md5, const struct cl_node *root)
-{
-	struct cli_md5_node *pt;
-
-
-    if(!(pt = root->hlist[md5[0] & 0xff]))
-	return NULL;
-
-    while(pt) {
-	if(!memcmp(pt->md5, md5, 16))
-	    return pt;
-
-	pt = pt->next;
-    }
-
-    return NULL;
-}
-
-static int cli_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, int typerec)
-{
- 	char *buffer, *buff, *endbl, *pt;
-	int bytes, buffsize, length, ret, *partcnt, type = CL_CLEAN;
-	unsigned long int *partoff, offset = 0;
-	struct md5_ctx ctx;
-        unsigned char md5buff[16];
-	struct cli_md5_node *md5_node;
-
-
-    /* prepare the buffer */
-    buffsize = root->maxpatlen + SCANBUFF;
-    if(!(buffer = (char *) cli_calloc(buffsize, sizeof(char)))) {
-	cli_dbgmsg("cli_scandesc(): unable to cli_malloc(%d)\n", buffsize);
-	return CL_EMEM;
-    }
-
-    if((partcnt = (int *) cli_calloc(root->partsigs + 1, sizeof(int))) == NULL) {
-	cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%d, %d)\n", root->partsigs + 1, sizeof(int));
-	free(buffer);
-	return CL_EMEM;
-    }
-
-    if((partoff = (unsigned long int *) cli_calloc(root->partsigs + 1, sizeof(unsigned long int))) == NULL) {
-	cli_dbgmsg("cli_scanbuff(): unable to cli_calloc(%d, %d)\n", root->partsigs + 1, sizeof(unsigned long int));
-	free(buffer);
-	free(partcnt);
-	return CL_EMEM;
-    }
-
-    md5_init_ctx (&ctx);
-
-    buff = buffer;
-    buff += root->maxpatlen; /* pointer to read data block */
-    endbl = buff + SCANBUFF - root->maxpatlen; /* pointer to the last block
-						* length of root->maxpatlen
-						*/
-
-    pt= buff;
-    length = SCANBUFF;
-    while((bytes = read(desc, buff, SCANBUFF)) > 0) {
-
-	if(scanned != NULL)
-	    *scanned += bytes / CL_COUNT_PRECISION;
-
-	if(bytes < SCANBUFF)
-	    length -= SCANBUFF - bytes;
-
-	if((ret = cli_scanbuff(pt, length, virname, root, partcnt, typerec, offset, partoff)) == CL_VIRUS) {
-	    free(buffer);
-	    free(partcnt);
-	    free(partoff);
-	    return ret;
-
-	} else if(typerec && ret >= CL_TYPENO) {
-	    if(ret >= type)
-		type = ret;
-	}
-
-	if(bytes == SCANBUFF) {
-	    memmove(buffer, endbl, root->maxpatlen);
-	    offset += bytes - root->maxpatlen;
-	}
-
-        pt = buffer;
-        length = buffsize;
-
-	/* compute MD5 */
-
-	if(bytes % 64 == 0) {
-	    md5_process_block(buff, bytes, &ctx);
-	} else {
-		int block = bytes;
-		char *mpt = buff;
-
-	    while(block >= MD5_BLOCKSIZE) {
-		md5_process_block(mpt, MD5_BLOCKSIZE, &ctx);
-		mpt += MD5_BLOCKSIZE;
-		block -= MD5_BLOCKSIZE;
-	    }
-
-	    if(block)
-		md5_process_bytes(mpt, block, &ctx);
-	}
-    }
-
-    free(buffer);
-    free(partcnt);
-    free(partoff);
-
-    md5_finish_ctx(&ctx, &md5buff);
-
-    if((md5_node = cli_vermd5(md5buff, root))) {
-	if(virname)
-	    *virname = md5_node->virname;
-	return CL_VIRUS;
-    }
-
-    return typerec ? type : CL_CLEAN;
-}
 
 #ifdef CL_THREAD_SAFE
 static void cli_unlock_mutex(void *mtx)
@@ -738,7 +621,7 @@ static int cli_scanmscab(int desc, const char **virname, long int *scanned, cons
 
     for(cab = base; cab; cab = cab->next) {
 	for(file = cab->files; file; file = file->next) {
-	    tempname = cl_gentemp(tmpdir);
+	    tempname = cli_gentemp(tmpdir);
 	    cli_dbgmsg("Extracting data to %s\n", tempname);
 	    if(cabd->extract(cabd, file, tempname)) {
 		cli_dbgmsg("libmscab error code: %d\n", cabd->last_error(cabd));
@@ -781,7 +664,6 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
     return CL_CLEAN;
 #endif
 
-#ifdef HAVE_MMAP
     /* TODO: do file operations if mmap fails */
     if(membuff == MAP_FAILED) {
 	cli_dbgmsg("mmap failed\n");
@@ -807,7 +689,6 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
 
     free(newbuff);
     return ret;
-#endif
 }
 
 static int cli_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
@@ -1001,7 +882,7 @@ static int cli_scanole2(int desc, const char **virname, long int *scanned, const
 #endif
 
     /* generate the temporary directory */
-    dir = cl_gentemp(tmpdir);
+    dir = cli_gentemp(tmpdir);
     if(mkdir(dir, 0700)) {
 	cli_dbgmsg("ScanOLE2 -> Can't create temporary directory %s\n", dir);
 	return CL_ETMPDIR;
@@ -1042,7 +923,7 @@ static int cli_scanmail(int desc, const char **virname, long int *scanned, const
 #endif
 
 	/* generate the temporary directory */
-	dir = cl_gentemp(tmpdir);
+	dir = cli_gentemp(tmpdir);
 	if(mkdir(dir, 0700)) {
 	    cli_dbgmsg("ScanMail -> Can't create temporary directory %s\n", dir);
 	    return CL_ETMPDIR;
@@ -1051,7 +932,7 @@ static int cli_scanmail(int desc, const char **virname, long int *scanned, const
 	/*
 	 * Extract the attachments into the temporary directory
 	 */
-	ret = cl_mbox(dir, desc);
+	ret = cli_mbox(dir, desc);
 	/* FIXME: check mbox return code */
 
 	ret = cli_scandir(dir, virname, scanned, root, limits, options, arec, mrec);
@@ -1164,7 +1045,7 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
 		type = CL_UNKNOWN_TYPE;
 	    }
 
-        case CL_UNKNOWN_TYPE:
+	default:
 	    break;
     }
 
@@ -1208,6 +1089,9 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
 	case CL_DOSEXE:
 	    if(SCAN_PE)
 		ret = cli_scanpe(desc, virname, scanned, root, limits, options, arec, mrec);
+	    break;
+
+	default:
 	    break;
     }
     (*arec)--;

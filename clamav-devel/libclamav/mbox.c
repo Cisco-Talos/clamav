@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.87  2004/07/19 17:54:40  kojm
+ * Use new patter matching algorithm. Cleanup.
+ *
  * Revision 1.86  2004/07/06 09:32:45  nigelhorne
  * Better handling of Gibe.3 boundary exploit
  *
@@ -246,7 +249,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.86 2004/07/06 09:32:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.87 2004/07/19 17:54:40 kojm Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -428,7 +431,7 @@ static	table_t	*rfc821Table, *subtypeTable;
  * TODO: create parseEmail which calls parseEmailHeaders then parseEmailBody
  */
 int
-cl_mbox(const char *dir, int desc)
+cli_mbox(const char *dir, int desc)
 {
 	int retcode, i;
 	message *m, *body;

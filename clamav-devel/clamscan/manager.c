@@ -54,10 +54,13 @@
 #include "memory.h"
 #include "output.h"
 #include "cfgparser.h"
+#include "../libclamav/others.h"
 
 #ifdef C_LINUX
 dev_t procdev;
 #endif
+
+extern int cli_mbox(const char *dir, int desc); /* FIXME */
 
 int scanmanager(const struct optstruct *opt)
 {
@@ -154,8 +157,7 @@ int scanmanager(const struct optstruct *opt)
 	return 50;
     }
 
-    /* build the proper trie */
-    if((ret=cl_buildtrie(trie)) != 0) {
+    if((ret = cl_build(trie)) != 0) {
 	mprintf("@Database initialization error: %s\n", cl_strerror(ret));;
 	return 50;
     }
@@ -243,7 +245,7 @@ int scanmanager(const struct optstruct *opt)
 		}
 		/* generate the temporary directory */
 
-		dir = cl_gentemp(tmpdir);
+		dir = cli_gentemp(tmpdir);
 		if(mkdir(dir, 0700)) {
 			mprintf("@Can't create the temporary directory %s\n", dir);
 			exit(63); /* critical */
@@ -255,7 +257,7 @@ int scanmanager(const struct optstruct *opt)
 		/*
 		 * Extract the attachments into the temporary directory
 		 */
-		ret = cl_mbox(dir, 0);
+		ret = cli_mbox(dir, 0);
 
 		if(ret == 0) {
 			/* fix permissions of extracted files */
@@ -325,7 +327,7 @@ int scanmanager(const struct optstruct *opt)
     }
 
     /* free the trie */
-    cl_freetrie(trie);
+    cl_free(trie);
 
     free(limits);
 
@@ -566,7 +568,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 
     /* generate the temporary directory */
 
-    gendir = cl_gentemp(tmpdir);
+    gendir = cli_gentemp(tmpdir);
     if(mkdir(gendir, 0700)) {
 	mprintf("@Can't create the temporary directory %s\n", gendir);
 	exit(63); /* critical */
@@ -759,7 +761,7 @@ int scandenied(const char *filename, struct cl_node *root, const struct passwd *
     }
 
     /* generate the temporary directory */
-    gendir = cl_gentemp(tmpdir);
+    gendir = cli_gentemp(tmpdir);
     if(mkdir(gendir, 0700)) {
 	mprintf("@Can't create the temporary directory %s\n", gendir);
 	exit(63); /* critical */

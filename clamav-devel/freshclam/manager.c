@@ -44,6 +44,8 @@
 #include "manager.h"
 #include "notify.h"
 #include "memory.h"
+#include "output.h"
+#include "../libclamav/others.h"
 
 int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname)
 {
@@ -213,7 +215,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     /* temporary file is created in clamav's directory thus we don't need
      * to create it immediately because race condition is not possible here
      */
-    tempname = cl_gentemp(".");
+    tempname = cli_gentemp(".");
 
     if((ret = get_database(remotename, hostfd, tempname, hostname, proxy, user, pass))) {
         mprintf("@Can't download %s from %s\n", remotename, ipaddr);

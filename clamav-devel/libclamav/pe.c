@@ -229,7 +229,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	uint16_t nsections;
 	uint32_t e_lfanew; /* address of new exe header */
 	uint32_t ep; /* entry point (raw) */
-	uint32_t timestamp;
+	time_t timestamp;
 	struct pe_image_file_hdr file_hdr;
 	struct pe_image_optional_hdr optional_hdr;
 	struct pe_image_section_hdr *section_hdr;
@@ -313,8 +313,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     nsections = EC16(file_hdr.NumberOfSections);
     cli_dbgmsg("NumberOfSections: %d\n", nsections);
 
-    timestamp = EC32(file_hdr.TimeDateStamp);
-    cli_dbgmsg("TimeDateStamp: %s", ctime((time_t *) &timestamp));
+    timestamp = (time_t) EC32(file_hdr.TimeDateStamp);
+    cli_dbgmsg("TimeDateStamp: %s", ctime(&timestamp));
 
     cli_dbgmsg("SizeOfOptionalHeader: %d\n", EC16(file_hdr.SizeOfOptionalHeader));
 
@@ -396,7 +396,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		cli_dbgmsg("Section contains free space\n");
 		/*
 		cli_dbgmsg("Dumping %d bytes\n", section_hdr.SizeOfRawData - section_hdr.VirtualSize);
-		ddump(desc, section_hdr.PointerToRawData + section_hdr.VirtualSize, section_hdr.SizeOfRawData - section_hdr.VirtualSize, cl_gentemp(NULL));
+		ddump(desc, section_hdr.PointerToRawData + section_hdr.VirtualSize, section_hdr.SizeOfRawData - section_hdr.VirtualSize, cli_gentemp(NULL));
 		*/
 
 	    }
@@ -410,7 +410,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    int ptrd = section_hdr.PointerToRawData & ~(optional_hdr.FileAlignment - 1);
 
 	    cli_dbgmsg("WinZip section\n");
-	    ddump(desc, ptrd, section_hdr.SizeOfRawData, cl_gentemp(NULL));
+	    ddump(desc, ptrd, section_hdr.SizeOfRawData, cli_gentemp(NULL));
 	}
 */
 
@@ -528,7 +528,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	}
 
 	if(upxfn) {
-		int ret, skew = cli_readint32(buff + 2) - EC32(optional_hdr.ImageBase) - EC32(section_hdr[i+1].VirtualAddress);
+		int skew = cli_readint32(buff + 2) - EC32(optional_hdr.ImageBase) - EC32(section_hdr[i+1].VirtualAddress);
 
 	    if(buff[1] != '\xbe' || skew <= 0 || skew > 0x2e ) { /* FIXME: legit skews?? */
 		skew = 0; 
@@ -580,7 +580,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    int ndesc;
 
 	    if(cli_leavetemps_flag) {
-		tempfile = cl_gentemp(NULL);
+		tempfile = cli_gentemp(NULL);
 		if((ndesc = open(tempfile, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
 		    cli_dbgmsg("UPX: Can't create file %s\n", tempfile);
 		    free(section_hdr);

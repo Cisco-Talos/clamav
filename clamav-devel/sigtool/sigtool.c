@@ -48,6 +48,9 @@
 #include "memory.h"
 #include "output.h"
 #include "cfgparser.h"
+#include "../clamscan/others.h"
+#include "../libclamav/others.h"
+#include "../libclamav/str.h"
 
 #define LINE 1024
 
@@ -104,7 +107,7 @@ char *cut(const char *file, long int start, long int end)
 	exit(13);
     }
 
-    if((fname = cl_gentemp(".")) == NULL) {
+    if((fname = cli_gentemp(".")) == NULL) {
 	mprintf("!Can't generate temporary file name.\n");
 	exit(1);
     }
@@ -147,7 +150,7 @@ char *change(const char *file, long int x)
 	exit(13);
     }
 
-    if((fname = cl_gentemp(".")) == NULL) {
+    if((fname = cli_gentemp(".")) == NULL) {
 	mprintf("!Can't generate temporary file name.\n");
 	exit(1);
     }
@@ -203,7 +206,7 @@ void sigtool(struct optstruct *opt)
     if(optl(opt, "hex-dump")) {
 
 	while((bytes = read(0, buffer, FILEBUFF)) > 0) {
-	    pt = cl_str2hex(buffer, bytes);
+	    pt = cli_str2hex(buffer, bytes);
 	    write(1, pt, 2 * bytes);
 	    free(pt);
 	}
@@ -423,7 +426,7 @@ void sigtool(struct optstruct *opt)
 	if(fileinfo(signame, 1) != -1) {
 	    mprintf("File %s exists.\n", signame);
 	    free(signame);
-	    signame = cl_gentemp(".");
+	    signame = cli_gentemp(".");
 	}
 
 	bsigname = (char *) mcalloc(strlen(f) + 10, sizeof(char));
@@ -431,7 +434,7 @@ void sigtool(struct optstruct *opt)
 	if(fileinfo(bsigname, 1) != -1) {
 	    mprintf("File %s exists.\n", bsigname);
 	    free(bsigname);
-	    bsigname = cl_gentemp(".");
+	    bsigname = cli_gentemp(".");
 	}
 
 	if((wd = fopen(signame, "wb")) == NULL) {
@@ -444,7 +447,7 @@ void sigtool(struct optstruct *opt)
 	mprintf("Saving signature in %s file.\n", signame);
 
 	while((bytes = fread(buffer, 1, FILEBUFF, fd)) > 0) {
-	    pt = cl_str2hex(buffer, bytes);
+	    pt = cli_str2hex(buffer, bytes);
 	    fwrite(pt, 1, 2 * bytes, wd);
 	    free(pt);
 	}
@@ -551,7 +554,7 @@ int build(struct optstruct *opt)
 	exit(1);
     }
 
-    cl_freetrie(root);
+    cl_free(root);
 
     mprintf("Database properly parsed.\n");
 
@@ -569,7 +572,7 @@ int build(struct optstruct *opt)
 	}
     }
 
-    tarfile = cl_gentemp(".");
+    tarfile = cli_gentemp(".");
 
     switch(fork()) {
 	case -1:
@@ -597,7 +600,7 @@ int build(struct optstruct *opt)
 	exit(1);
     }
 
-    gzfile = cl_gentemp(".");
+    gzfile = cli_gentemp(".");
     if((gz = gzopen(gzfile, "wb")) == NULL) {
 	mprintf("!Can't open file %s to write.\n", gzfile);
 	exit(1);
@@ -655,7 +658,7 @@ int build(struct optstruct *opt)
     strcat(header, smbuff);
 
     /* MD5 */
-    pt = cl_md5file(gzfile);
+    pt = cli_md5file(gzfile);
     strcat(header, pt);
     free(pt);
     strcat(header, ":");
@@ -880,7 +883,7 @@ int listdb(const char *filename)
 	    tmpdir = "/tmp";
 #endif
 
-	dir = cl_gentemp(tmpdir);
+	dir = cli_gentemp(tmpdir);
 	if(mkdir(dir, 0700)) {
 	    mprintf("!listdb(): Can't create temporary directory %s\n", dir);
 	    free(buffer);
@@ -894,7 +897,7 @@ int listdb(const char *filename)
 
 	/* start */
 
-	tmp = cl_gentemp(tmpdir);
+	tmp = cli_gentemp(tmpdir);
 	if((tmpd = fopen(tmp, "wb+")) == NULL) {
 	    mprintf("!listdb(): Can't create temporary file %s\n", tmp);
 	    free(dir);

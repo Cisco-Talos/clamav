@@ -27,6 +27,8 @@
 
 #include "clamav.h"
 #include "filetypes.h"
+#include "others.h"
+#include "readdb.h"
 
 struct cli_magic_s {
     int offset;

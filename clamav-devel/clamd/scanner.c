@@ -43,6 +43,8 @@
 #include "shared.h"
 #include "output.h"
 
+#include "../libclamav/others.h"
+
 #ifdef C_LINUX
 dev_t procdev; /* /proc device */
 #endif
@@ -229,7 +231,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 
 
     while(!bound && portscan--) {
-	if((port = cl_rndnum(60000)) < 1024)
+	if((port = cli_rndnum(60000)) < 1024)
 	    port += 2139;
 
 	memset((char *) &server, 0, sizeof(server));

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,11 +16,14 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __MATCHER_H
-#define __MATCHER_H
+#ifndef __MATCHER_BM_H
+#define __MATCHER_BM_H
 
 #include "clamav.h"
 
-int cli_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, int typerec);
+int cli_bm_addpatt(struct cl_node *root, struct cli_bm_patt *pattern);
+int cli_bm_init(struct cl_node *root);
+int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root);
+void cli_bm_free(struct cl_node *root);
 
 #endif

@@ -29,8 +29,6 @@ extern "C"
 #endif
  
 
-#define CL_NUM_CHILDS 256
-#define CL_MIN_LENGTH 2
 
 #define CL_COUNT_PRECISION 4096
 
@@ -76,19 +74,27 @@ extern "C"
 #define CL_HTML		32
 #define CL_PE		64
 
-struct cli_patt {
+
+struct cli_bm_patt {
+    const char *pattern;
+    char *virname;
+    int length; 
+    struct cli_bm_patt *next;
+};
+
+struct cli_ac_patt {
     short int *pattern;
     unsigned int length, mindist, maxdist;
     char *virname;
     unsigned short int sigid, parts, partno, type, alt, *altn;
     char **altc;
-    struct cli_patt *next;
+    struct cli_ac_patt *next;
 };
 
 struct cli_ac_node {
     char islast;
-    struct cli_patt *list;
-    struct cli_ac_node *trans[CL_NUM_CHILDS], *fail;
+    struct cli_ac_patt *list;
+    struct cli_ac_node *trans[256], *fail;
 };
 
 struct cli_md5_node {
@@ -97,13 +103,18 @@ struct cli_md5_node {
 };
 
 struct cl_node {
-    /* Aho-Corasick */
-    struct cli_ac_node *ac_root, **nodetable;
-    unsigned int maxpatlen, partsigs;
-    unsigned int nodes;
+    unsigned int maxpatlen; /* maximal length of pattern in db */
+
+    /* Extended Boyer-Moore */
+    int *bm_shift;
+    struct cli_bm_patt **bm_suffix;
+
+    /* Extended Aho-Corasick */
+    struct cli_ac_node *ac_root, **ac_nodetable;
+    unsigned int ac_partsigs, ac_nodes;
 
     /* MD5 */
-    struct cli_md5_node *hlist[256];
+    struct cli_md5_node **md5_hlist;
 };
 
 struct cl_limits {
@@ -141,12 +152,13 @@ extern int cl_scandesc(int desc, const char **virname, unsigned long int *scanne
 
 extern int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options);
 
-/* database loading */
+/* database */
 extern int cl_loaddb(const char *filename, struct cl_node **root, int *virnum);
 extern int cl_loaddbdir(const char *dirname, struct cl_node **root, int *virnum);
 extern const char *cl_retdbdir(void);
 extern int cl_retflevel(void);
 
+/* CVD */
 extern struct cl_cvd *cl_cvdhead(const char *file);
 extern struct cl_cvd *cl_cvdparse(const char *head);
 extern int cl_cvdverify(const char *file);
@@ -162,23 +174,11 @@ extern void cl_debug(void);
 
 extern void cl_settempdir(const char *dir, short leavetemps);
 
-/* build a trie */
-extern int cl_buildtrie(struct cl_node *root);
-
-extern void cl_freetrie(struct cl_node *root);
+extern int cl_build(struct cl_node *root);
+extern void cl_free(struct cl_node *root);
 
 extern const char *cl_strerror(int clerror);
 extern const char *cl_perror(int clerror); /* deprecated */
-
-extern char *cl_md5buff(const char *buffer, unsigned int length);
-
-extern int cl_mbox(const char *dir, int desc);
-
-/* compute MD5 message digest from file (compatible with md5sum(1)) */
-extern char *cl_md5file(const char *filename);
-
-/* generate unique file name in temporary directory */
-char *cl_gentemp(const char *dir);
 
 #ifdef __cplusplus
 };

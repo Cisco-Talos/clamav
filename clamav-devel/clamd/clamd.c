@@ -68,7 +68,6 @@ void clamd(struct optstruct *opt)
 	struct cl_node *root = NULL;
 	const char *dbdir, *cfgfile;
 	int ret, virnum = 0, tcpsock;
-	char *var;
 #ifdef C_LINUX
 	struct stat sb;
 #endif
@@ -269,7 +268,7 @@ void clamd(struct optstruct *opt)
     }
 
     logg("Protecting against %d viruses.\n", virnum);
-    if((ret = cl_buildtrie(root)) != 0) {
+    if((ret = cl_build(root)) != 0) {
 	fprintf(stderr, "ERROR: Database initialization error: %s\n", cl_strerror(ret));;
 	logg("!Database initialization error: %s\n", cl_strerror(ret));;
 	exit(1);

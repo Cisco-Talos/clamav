@@ -144,7 +144,7 @@ static struct cl_node *reload_db(struct cl_node *root, const struct cfgstruct *c
 
     /* release old structure */
     if(root) {
-	cl_freetrie(root);
+	cl_free(root);
 	root = NULL;
     }
 
@@ -173,8 +173,8 @@ static struct cl_node *reload_db(struct cl_node *root, const struct cfgstruct *c
 	exit(-1);
     }
 
-    if((retval = cl_buildtrie(root)) != 0) {
-	logg("!Database initialization error: can't build the trie: %s\n",
+    if((retval = cl_build(root)) != 0) {
+	logg("!Database initialization error: can't build engine: %s\n",
 	cl_strerror(retval));
 	exit(-1);
     }

@@ -19,6 +19,6 @@
 #ifndef __READDB_H
 #define __READDB_H
 
-int cli_parse_add(struct cl_node *root, char *virname, const char *hexsig, int type);
+int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig, int type);
 
 #endif

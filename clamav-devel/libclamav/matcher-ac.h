@@ -16,11 +16,14 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __MATCHER_H
-#define __MATCHER_H
+#ifndef __MATCHER_AC_H
+#define __MATCHER_AC_H
 
 #include "clamav.h"
 
-int cli_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, int typerec);
+int cli_ac_addpatt(struct cl_node *root, struct cli_ac_patt *pattern);
+int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *partcnt, int typerec, unsigned long int offset, unsigned long int *partoff);
+int cli_ac_buildtrie(struct cl_node *root);
+void cli_ac_free(struct cl_node *root);
 
 #endif

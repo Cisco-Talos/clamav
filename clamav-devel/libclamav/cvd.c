@@ -342,7 +342,7 @@ int cli_cvdload(FILE *fd, struct cl_node **root, int *virnum)
 	tmpdir = "/tmp";
 #endif
 
-    dir = cl_gentemp(tmpdir);
+    dir = cli_gentemp(tmpdir);
     if(mkdir(dir, 0700)) {
 	cli_errmsg("cli_cvdload():  Can't create temporary directory %s\n", dir);
 	return CL_ETMPDIR;
@@ -361,7 +361,7 @@ int cli_cvdload(FILE *fd, struct cl_node **root, int *virnum)
 
 	    /* start */
 
-	    tmp = cl_gentemp(tmpdir);
+	    tmp = cli_gentemp(tmpdir);
 	    if((tmpd = fopen(tmp, "wb+")) == NULL) {
 		cli_errmsg("Can't create temporary file %s\n", tmp);
 		free(dir);

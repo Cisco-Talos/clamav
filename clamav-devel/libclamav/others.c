@@ -41,7 +41,7 @@
 
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
-pthread_mutex_t cl_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t cli_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 #include "clamav.h"
@@ -163,29 +163,6 @@ const char *cl_perror(int clerror)
     return cl_strerror(clerror);
 }
 
-char *cl_md5file(const char *filename)
-{
-	FILE *fd;
-	unsigned char buffer[16];
-	char *md5str;
-	int i, cnt=0;
-
-    if((fd = fopen(filename, "rb")) == NULL) {
-	cli_errmsg("md5_file(): Can't read file %s\n", filename);
-	return NULL;
-    }
-
-    md5_stream(fd, &buffer);
-    fclose(fd);
-
-    md5str = (char*) calloc(32 + 1, sizeof(char));
-
-    for(i=0; i<16; i++)
-	cnt += sprintf(md5str + cnt, "%02x", buffer[i]);
-
-    return(md5str);
-}
-
 char *cli_md5stream(FILE *fd)
 {
 	unsigned char buffer[16];
@@ -202,7 +179,31 @@ char *cli_md5stream(FILE *fd)
     return(md5str);
 }
 
-char *cl_md5buff(const char *buffer, unsigned int len)
+char *cli_md5file(const char *filename)
+{
+	FILE *fd;
+	unsigned char buffer[16];
+	char *md5str;
+	int i, cnt=0;
+
+
+    if((fd = fopen(filename, "rb")) == NULL) {
+	cli_errmsg("cli_md5file(): Can't read file %s\n", filename);
+	return NULL;
+    }
+
+    md5_stream(fd, &buffer);
+    fclose(fd);
+
+    md5str = (char*) calloc(32 + 1, sizeof(char));
+
+    for(i=0; i<16; i++)
+	cnt += sprintf(md5str + cnt, "%02x", buffer[i]);
+
+    return(md5str);
+}
+
+static char *cli_md5buff(const char *buffer, unsigned int len)
 {
 	unsigned char md5buff[16];
 	char *md5str;
@@ -264,7 +265,7 @@ void *cli_realloc(void *ptr, size_t size)
     } else return alloc;
 }
 
-unsigned int cl_rndnum(unsigned int max)
+unsigned int cli_rndnum(unsigned int max)
 {
     struct timeval tv;
 
@@ -292,7 +293,7 @@ void cl_settempdir(const char *dir, short leavetemps)
     cli_leavetemps_flag = leavetemps;
 }
 
-char *cl_gentemp(const char *dir)
+char *cli_gentemp(const char *dir)
 {
 	char *name, *tmp;
         const char *mdir;
@@ -308,28 +309,28 @@ char *cl_gentemp(const char *dir)
 
     name = (char*) cli_calloc(strlen(mdir) + 1 + 16 + 1 + 7, sizeof(char));
     if(name == NULL) {
-	cli_dbgmsg("cl_gentemp('%s'): out of memory\n", dir);
+	cli_dbgmsg("cli_gentemp('%s'): out of memory\n", dir);
 	return NULL;
     }
 
 #ifdef CL_THREAD_SAFE
-    pthread_mutex_lock(&cl_gentemp_mutex);
+    pthread_mutex_lock(&cli_gentemp_mutex);
 #endif
 
     memcpy(salt, oldmd5buff, 16);
 
     do {
 	for(i = 16; i < 48; i++)
-	    salt[i] = cl_rndnum(255);
+	    salt[i] = cli_rndnum(255);
 
-	tmp = cl_md5buff(( char* ) salt, 48);
+	tmp = cli_md5buff(( char* ) salt, 48);
 	sprintf(name, "%s/clamav-", mdir);
 	strncat(name, tmp, 16);
 	free(tmp);
     } while(stat(name, &foo) != -1);
 
 #ifdef CL_THREAD_SAFE
-    pthread_mutex_unlock(&cl_gentemp_mutex);
+    pthread_mutex_unlock(&cli_gentemp_mutex);
 #endif
 
     return(name);
@@ -456,11 +457,13 @@ int cli_writen(int fd, void *buff, unsigned int count)
 
 int32_t cli_readint32(const char *buff)
 {
-	int32_t ret, shift, i = 0;
+	int32_t ret;
 
 #if WORDS_BIGENDIAN == 0
     ret = *(int32_t *) buff;
 #else
+	int32_t shift, i = 0;
+
     ret = 0;
     for(shift = 0; shift < 32; shift += 8) {
       ret |= (buff[i] & 0xff ) << shift;

@@ -26,6 +26,10 @@ include_HEADERS = clamav.h
 
 libclamav_la_SOURCES = \
 	clamav.h \
+        matcher-ac.c \
+        matcher-ac.h \
+        matcher-bm.c \
+        matcher-bm.h \
         matcher.c \
         matcher.h \
         md5.c \

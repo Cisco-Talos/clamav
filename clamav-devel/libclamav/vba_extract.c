@@ -813,7 +813,7 @@ static char *ppt_stream_iter(int fd)
 #endif
 
 	/* generate the temporary directory */
-	out_dir = cl_gentemp(tmpdir);
+	out_dir = cli_gentemp(tmpdir);
 	if(mkdir(out_dir, 0700)) {
 	    printf("ScanOLE2 -> Can't create temporary directory %s\n", out_dir);
 	    close(fd);
