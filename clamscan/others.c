@@ -172,7 +172,7 @@ void *mmalloc(size_t size)
     alloc = malloc(size);
 
     if(!alloc) {
-	printf("CRITICAL: Can't allocate memory (%d bytes).\n", size);
+	printf("CRITICAL: Can't allocate memory (%ld bytes).\n", size);
 	exit(71);
 	return NULL;
     } else return alloc;
@@ -185,7 +185,7 @@ void *mcalloc(size_t nmemb, size_t size)
     alloc = calloc(nmemb, size);
 
     if(!alloc) {
-	printf("CRITICAL: Can't allocate memory (%d bytes).\n", nmemb * size);
+	printf("CRITICAL: Can't allocate memory (%ld bytes).\n", nmemb * size);
 	exit(70);
 	return NULL;
     } else return alloc;

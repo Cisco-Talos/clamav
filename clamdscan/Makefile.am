@@ -25,9 +25,9 @@ clamdscan_SOURCES = \
     client.h \
     defaults.h
 
-clamdscan_LDADD = ../clamscan/getopt.o ../clamscan/options.o ../clamscan/others.o ../clamd/cfgfile.o
+clamdscan_LDADD = $(top_builddir)/clamscan/getopt.o $(top_builddir)/clamscan/options.o $(top_builddir)/clamscan/others.o $(top_builddir)/clamd/cfgfile.o
 
 endif
 
-INCLUDES = -I../clamscan -I../clamd -I../libclamav
-LIBS = -L../libclamav -lclamav @FRESHCLAM_LIBS@
+INCLUDES = -I$(top_srcdir)/clamscan -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav
+LIBS = -L$(top_builddir)/libclamav -lclamav @FRESHCLAM_LIBS@

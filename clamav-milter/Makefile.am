@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+#  Copyright (C) 2003 - 2004 Tomasz Kojm <tkojm@clamav.net>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -23,15 +23,15 @@ sbin_PROGRAMS = clamav-milter
 
 clamav_milter_SOURCES = clamav-milter.c
 
-clamav_milter_LDADD = ../clamd/cfgfile.o ../clamd/others.o ../clamscan/getopt.o
+clamav_milter_LDADD = $(tpop_builddir)/clamd/cfgfile.o $(tpop_builddir)/clamd/others.o $(tpop_builddir)/clamscan/getopt.o
 
-man_MANS = ../docs/man/clamav-milter.8
+man_MANS = $(top_srcdir)/docs/man/clamav-milter.8
 
 endif
 endif
 
 DEFS = @DEFS@ -DSENDMAIL_BIN=\"@SENDMAIL@\"
 # CLAMD_LIBS is used, because clamav-milter requires the same libraries as clamd
-LIBS = -L../libclamav -lclamav -L/usr/lib/libmilter -lmilter @CLAMAV_MILTER_LIBS@
-INCLUDES = -I../clamd -I../libclamav -I../clamscan
+LIBS = -L$(top_builddir)/libclamav -lclamav -L/usr/lib/libmilter -lmilter @CLAMAV_MILTER_LIBS@
+INCLUDES = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_srcdir)/clamscan
 EXTRA_DIST = clamav-milter.c INSTALL

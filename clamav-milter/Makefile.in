@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 #
-#  Copyright (C) 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+#  Copyright (C) 2003 - 2004 Tomasz Kojm <tkojm@clamav.net>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -122,14 +122,14 @@ install_sh = @install_sh@
 
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@clamav_milter_SOURCES = clamav-milter.c
 
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@clamav_milter_LDADD = ../clamd/cfgfile.o ../clamd/others.o ../clamscan/getopt.o
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@clamav_milter_LDADD = $(tpop_builddir)/clamd/cfgfile.o $(tpop_builddir)/clamd/others.o $(tpop_builddir)/clamscan/getopt.o
 
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@man_MANS = ../docs/man/clamav-milter.8
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@man_MANS = $(top_srcdir)/docs/man/clamav-milter.8
 
 DEFS = @DEFS@ -DSENDMAIL_BIN=\"@SENDMAIL@\"
 # CLAMD_LIBS is used, because clamav-milter requires the same libraries as clamd
-LIBS = -L../libclamav -lclamav -L/usr/lib/libmilter -lmilter @CLAMAV_MILTER_LIBS@
-INCLUDES = -I../clamd -I../libclamav -I../clamscan
+LIBS = -L$(top_builddir)/libclamav -lclamav -L/usr/lib/libmilter -lmilter @CLAMAV_MILTER_LIBS@
+INCLUDES = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_srcdir)/clamscan
 EXTRA_DIST = clamav-milter.c INSTALL
 subdir = clamav-milter
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
@@ -148,9 +148,9 @@ clamav_milter_OBJECTS = $(am_clamav_milter_OBJECTS)
 @BUILD_CLAMD_FALSE@@HAVE_MILTER_TRUE@clamav_milter_DEPENDENCIES =
 @BUILD_CLAMD_FALSE@@HAVE_MILTER_FALSE@clamav_milter_DEPENDENCIES =
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@clamav_milter_DEPENDENCIES = \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	../clamd/cfgfile.o \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	../clamd/others.o \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	../clamscan/getopt.o
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	$(tpop_builddir)/clamd/cfgfile.o \
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	$(tpop_builddir)/clamd/others.o \
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	$(tpop_builddir)/clamscan/getopt.o
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_FALSE@clamav_milter_DEPENDENCIES =
 clamav_milter_LDFLAGS =
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)

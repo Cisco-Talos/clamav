@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+#  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-INCLUDES = -I../clamscan -I../libclamav
+INCLUDES = -I$(top_srcdir)/clamscan -I$(top_srcdir)/libclamav
 
 bin_PROGRAMS = sigtool
 
@@ -23,7 +23,7 @@ sigtool_SOURCES = \
     options.c \
     sigtool.c
 
-sigtool_LDADD = ../clamscan/getopt.o ../clamscan/others.o
+sigtool_LDADD = $(top_builddir)/clamscan/getopt.o $(top_builddir)/clamscan/others.o
 
 DEFS = @DEFS@
-LIBS = -L../libclamav -lclamav @FRESHCLAM_LIBS@
+LIBS = -L$(top_builddir)/libclamav -lclamav @FRESHCLAM_LIBS@

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+#  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 
-INCLUDES = -I.. -I@srcdir@/zziplib
+INCLUDES = -I$(top_srcdir) -I@srcdir@/zziplib
 
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@
 

@@ -119,10 +119,8 @@ int cli_untgz(int fd, const char *destdir)
 
 	    strncpy(osize, block + 124, 12);
 	    osize[12] = '\0';
-	    size = -1;
-	    sscanf(osize, "%o", &size);
 
-	    if(size < 0) {
+	    if((sscanf(osize, "%o", &size)) == 0) {
 		cli_errmsg("Invalid size in header.\n");
 		free(fullname);
 	        gzclose(infile);

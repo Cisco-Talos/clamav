@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+#  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -51,10 +51,10 @@ clamd_SOURCES = \
     tests.c \
     tests.h
 
-clamd_LDADD = ../clamscan/getopt.o
+clamd_LDADD = $(top_builddir)/clamscan/getopt.o
 
 endif
 
 DEFS = @DEFS@
-LIBS = -L../libclamav -lclamav @CLAMD_LIBS@
-INCLUDES = -I../clamscan -I../libclamav
+LIBS = -L$(top_builddir)/libclamav -lclamav @CLAMD_LIBS@
+INCLUDES = -I$(top_srcdir)/clamscan -I$(top_srcdir)/libclamav

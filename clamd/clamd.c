@@ -209,7 +209,7 @@ void clamd(struct optstruct *opt)
 	    logg("Setting %s as global temporary directory\n", cpt->strarg);
 	else
 	    logg("!Can't set TMPDIR variable - insufficient space in the environment.\n");
-	free(var);
+	/* DON'T CALL free(var) - see putenv(3) */
     }
 
     /* load the database(s) */

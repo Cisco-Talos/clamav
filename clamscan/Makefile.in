@@ -136,8 +136,8 @@ clamscan_SOURCES = \
 
 
 DEFS = @DEFS@
-LIBS = -L../libclamav -lclamav
-INCLUDES = -I.. -I../libclamav
+LIBS = -L$(top_builddir)/libclamav -lclamav
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/libclamav
 subdir = clamscan
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/clamav-config.h
