@@ -20,7 +20,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.7 2005/03/25 21:58:01 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.8 2005/03/25 23:00:48 nigelhorne Exp $";
 
 #include <stdio.h>
 
@@ -52,6 +52,20 @@ static	int	tnef_attachment(int desc, const char *dir, fileblob **fbref);
 #define	attTNEFVERSION	0x9006
 #define	attOEMCODEPAGE	0x9007
 
+#if WORDS_BIGENDIAN == 0
+#define host16(v)	(v)
+#define host32(v)	(v)
+#else
+#ifdef	__GNUC__
+#define	host16(v)	__bswap_16(x)
+#define	host32(v)	__bswap_32(x)
+#else
+#define	host16(v)	((v >> 8) | (v << 8))
+#define	host32(v)	((v >> 24) | ((v & 0x00FF0000) >> 8) | \
+				((v & 0x0000FF00) << 8) | (v << 24))
+#endif
+#endif
+
 /* FIXME: use stdio */
 /* FIXME: only works on little endian machines */
 int
@@ -68,13 +82,8 @@ cli_tnef(const char *dir, int desc)
 	if(cli_readn(desc, &i32, sizeof(uint32_t)) != sizeof(uint32_t))
 		return CL_EIO;
 
-#if	WORDS_BIGENDIAN == 0
-	/* little endian */
-	if(i32 != TNEF_SIGNATURE)
+	if(host32(i32) != host32(TNEF_SIGNATURE))
 		return CL_EFORMAT;
-#else
-	/* TODO */
-#endif
 
 	if(cli_readn(desc, &i16, sizeof(uint16_t)) != sizeof(uint16_t))
 		return CL_EIO;
