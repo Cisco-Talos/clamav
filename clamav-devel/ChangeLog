@@ -1,3 +1,8 @@
+Wed Feb 18 13:35:59 GMT 2004 (njh)
+----------------------------------
+  * libclamav:		Handle buffer overflows on files with long suffixes
+  * clamav-milter:	Added --dont-log-clean argument
+
 Wed Feb 18 10:12:54 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Found some occurances of Yaha
