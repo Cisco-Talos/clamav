@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <time.h>
+#include <signal.h>
 
 #include "options.h"
 #include "others.h"
@@ -36,12 +37,11 @@
 
 void help(void);
 
-struct s_info claminfo;
 short printinfected = 0;
 
 void clamscan(struct optstruct *opt)
 {
-	int ds, dms, ret;
+	int ds, dms, ret, infected;
 	struct timeval t1, t2;
 	struct timezone tz;
 	time_t starttime;
@@ -89,10 +89,9 @@ void clamscan(struct optstruct *opt)
     /* ctime() does \n, but I need it once more */
     logg("Scan started: %s\n", ctime(&starttime));
 
-    memset(&claminfo, 0, sizeof(struct s_info));
-
     gettimeofday(&t1, &tz);
-    ret = client(opt);
+
+    ret = client(opt, &infected);
 
 /* Implement STATUS in clamd */
     if(!optl(opt, "disable-summary")) {
@@ -103,8 +102,8 @@ void clamscan(struct optstruct *opt)
 	dms += (dms < 0) ? (1000000):(0);
 	mprintf("\n----------- SCAN SUMMARY -----------\n");
 	    logg("\n-- summary --\n");
-	mprintf("Infected files: %d\n", claminfo.ifiles);
-	    logg("Infected files: %d\n", claminfo.ifiles);
+	mprintf("Infected files: %d\n", infected);
+	    logg("Infected files: %d\n", infected);
 	mprintf("Time: %d.%3.3d sec (%d m %d s)\n", ds, dms/1000, ds/60, ds%60);
 	    logg("Time: %d.%3.3d sec (%d m %d s)\n", ds, dms/1000, ds/60, ds%60);
     }

@@ -21,6 +21,6 @@
 
 #include "options.h"
 
-int client(const struct optstruct *opt);
+int client(const struct optstruct *opt, int *infected);
 
 #endif

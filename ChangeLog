@@ -1,3 +1,8 @@
+Tue Jun 22 18:47:32 CEST 2004 (tk)
+----------------------------------
+  * clamdscan: support multiple arguments on command line (requested by
+	       Dan Egli <dan*eglifamily.dnsalias.net>); major cleanup
+
 Tue Jun 22 11:58:06 BST 2004 (njh/trog)
 ---------------------------------------
   * libclamav/str.c:	Rewrote cli_chomp() as discussed in the clamav-devel
