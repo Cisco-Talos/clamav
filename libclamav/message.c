@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.83  2004/09/16 15:56:45  nigelhorne
+ * Handle double colons
+ *
  * Revision 1.82  2004/09/16 14:23:57  nigelhorne
  * Handle quotes around mime type
  *
@@ -243,7 +246,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.82 2004/09/16 14:23:57 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.83 2004/09/16 15:56:45 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -410,7 +413,7 @@ messageSetMimeType(message *mess, const char *type)
 	cli_dbgmsg("messageSetMimeType: '%s'\n", type);
 
 	/* Ignore leading spaces */
-	while(isspace(*type))
+	while(!isalpha(*type))
 		if(*type++ == '\0')
 			return;
 
