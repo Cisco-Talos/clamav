@@ -517,6 +517,8 @@ Changes
 			once as 'msg.xxxxxx' and once as 'msg.xxxxxx.virusname'
 0.80i	5/10/04	ScanMail is no longer needed
 		Improved tracing of the infected machine
+0.80j	8/10/04	SESSION: reset the session if the PORT command fails
+		Correct --broadcast code if BINDTODEVICE isn't supported
 
 INTERNATIONALISATION
 

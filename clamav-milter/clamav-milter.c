@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.141  2004/10/09 22:10:08  nigelhorne
+ * BINDTODEVICE fix was broken
+ *
  * Revision 1.140  2004/10/07 15:36:43  nigelhorne
  * Remove scanmail requirement
  *
@@ -431,9 +434,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.140 2004/10/07 15:36:43 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.141 2004/10/09 22:10:08 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80i"
+#define	CM_VERSION	"0.80j"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1146,20 +1149,21 @@ main(int argc, char **argv)
 	 * Drop privileges
 	 */
 	if(getuid() == 0) {
-#ifdef	SO_BINDTODEVICE
 		if(iface) {
+#ifdef	SO_BINDTODEVICE
 			struct ifreq ifr;
 
 			memset(&ifr, '\0', sizeof(struct ifreq));
 			strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name) - 1);
 			if(setsockopt(broadcastSock, SOL_SOCKET, SO_BINDTODEVICE, &ifr, sizeof(ifr)) < 0) {
 				perror(iface);
-				return EX_UNAVAILABLE;
+				return EX_CONFIG;
 			}
-		}
 #else
-		fprintf(stderr, _("%s: The iface option to --broadcast is not supported on your operating system\n"), argv[0]);
+			fprintf(stderr, _("%s: The iface option to --broadcast is not supported on your operating system\n"), argv[0]);
+			return EX_CONFIG;
 #endif
+		}
 		if((cpt = cfgopt(copt, "User")) != NULL) {
 			if((user = getpwnam(cpt->strarg)) == NULL) {
 				fprintf(stderr, _("%s: Can't get information about user %s\n"), argv[0], cpt->strarg);
@@ -3423,6 +3427,11 @@ connect2clamd(struct privdata *privdata)
 			else
 				cli_warnmsg(_("Expected port information from clamd, got '%s'\n"),
 					buf);
+#ifdef	SESSION
+			pthread_mutex_lock(&sstatus_mutex);
+			cmdSocketsStatus[privdata->serverNumber] = CMDSOCKET_DOWN;
+			pthread_mutex_unlock(&sstatus_mutex);
+#endif
 			return 0;
 		}
 
