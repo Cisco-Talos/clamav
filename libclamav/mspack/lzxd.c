@@ -359,7 +359,8 @@ static void lzxd_static_init() {
 
   for (i = 0, j = 0; i < 51; i += 2) {
     extra_bits[i]   = j; /* 0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7... */
-    extra_bits[i+1] = j;
+    if(i < 50)
+	extra_bits[i+1] = j;
     if ((i != 0) && (j < 17)) j++; /* 0,0,1,2,3,4...15,16,17,17,17,17... */
   }
 
