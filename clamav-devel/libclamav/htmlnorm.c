@@ -150,7 +150,7 @@ static unsigned char *cli_readline(FILE *stream, m_area_t *m_area, unsigned int 
 	unsigned char *line, *ptr, *start, *end;
 	unsigned int line_len, count;
 
-	line = (unsigned char *) malloc(max_len);
+	line = (unsigned char *) cli_malloc(max_len);
 	if (!line) {
 		return NULL;
 	}
@@ -284,15 +284,17 @@ static void html_tag_arg_set(tag_arguments_t *tags, char *tag, char *value)
 static void html_tag_arg_add(tag_arguments_t *tags,
 		unsigned char *tag, unsigned char *value)
 {
-	int len;
+	int len, i;
 	tags->count++;
 	tags->tag = (unsigned char **) cli_realloc(tags->tag,
 				tags->count * sizeof(char *));
+	if (!tags->tag) {
+		goto abort;
+	}
 	tags->value = (unsigned char **) cli_realloc(tags->value,
 				tags->count * sizeof(char *));
-	if (!tags->tag || !tags->value) {
-		tags->count--;
-		return;
+	if (!tags->value) {
+		goto abort;
 	}
 	tags->tag[tags->count-1] = strdup(tag);
 	if (value) {
@@ -308,6 +310,28 @@ static void html_tag_arg_add(tag_arguments_t *tags,
 	} else {
 		tags->value[tags->count-1] = NULL;
 	}
+	return;
+	
+abort:
+	/* Bad error - can't do 100% recovery */
+	tags->count--;
+	for (i=0; i < tags->count; i++) {
+		if (tags->tag) {
+			free(tags->tag[i]);
+		}
+		if (tags->value) {
+			free(tags->value[i]);
+		}
+	}
+	if (tags->tag) {
+		free(tags->tag);
+	}
+	if (tags->value) {
+		free(tags->value);
+	}
+	tags->tag = tags->value = NULL;
+	tags->count = 0;	
+	return;
 }
 
 static void html_output_tag(file_buff_t *fbuff, char *tag, tag_arguments_t *tags)
@@ -381,21 +405,42 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 			return FALSE;
 		}
 	}
+
+	tag_args.count = 0;
+	tag_args.tag = NULL;
+	tag_args.value = NULL;
 	
 	if (dirname) {
 		file_buff_o1 = (file_buff_t *) cli_malloc(sizeof(file_buff_t));
+		if (!file_buff_o1) {
+			file_buff_o1 = file_buff_o2 = file_buff_script = NULL;
+			goto abort;
+		}
+		
 		file_buff_o2 = (file_buff_t *) cli_malloc(sizeof(file_buff_t));
+		if (!file_buff_o2) {
+			free(file_buff_o1);
+			file_buff_o1 = file_buff_o2 = file_buff_script = NULL;
+			goto abort;
+		}
+		
 		file_buff_script = (file_buff_t *) cli_malloc(sizeof(file_buff_t));
+		if (!file_buff_script) {
+			free(file_buff_o1);
+			free(file_buff_o2);
+			file_buff_o1 = file_buff_o2 = file_buff_script = NULL;
+			goto abort;
+		}
 		
 		snprintf(filename, 1024, "%s/comment.html", dirname);
 		file_buff_o1->fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
 		if (!file_buff_o1->fd) {
 			cli_dbgmsg("open failed: %s\n", filename);
-			fclose(stream_in);
 			free(file_buff_o1);
 			free(file_buff_o2);
 			free(file_buff_script);
-			return FALSE;
+			file_buff_o1 = file_buff_o2 = file_buff_script = NULL;
+			goto abort;
 		}
 
 		snprintf(filename, 1024, "%s/nocomment.html", dirname);
@@ -403,11 +448,11 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 		if (!file_buff_o2->fd) {
 			cli_dbgmsg("open failed: %s\n", filename);
 			close(file_buff_o1->fd);
-			fclose(stream_in);
 			free(file_buff_o1);
 			free(file_buff_o2);
 			free(file_buff_script);
-			return FALSE;
+			file_buff_o1 = file_buff_o2 = file_buff_script = NULL;
+			goto abort;
 		}
 
 		snprintf(filename, 1024, "%s/script.html", dirname);
@@ -416,11 +461,11 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 			cli_dbgmsg("open failed: %s\n", filename);
 			close(file_buff_o1->fd);
 			close(file_buff_o2->fd);
-			fclose(stream_in);
 			free(file_buff_o1);
 			free(file_buff_o2);
 			free(file_buff_script);
-			return FALSE;
+			file_buff_o1 = file_buff_o2 = file_buff_script = NULL;
+			goto abort;
 		}
 
 		file_buff_o1->length = 0;
@@ -431,11 +476,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 		file_buff_o2 = NULL;
 		file_buff_script = NULL;
 	}
-	
-	tag_args.count = 0;
-	tag_args.tag = NULL;
-	tag_args.value = NULL;
-		
+			
 	ptr = line = cli_readline(stream_in, m_area, 8192);
 	while (line) {
 		while (*ptr && isspace(*ptr)) {
@@ -519,7 +560,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						html_output_c(file_buff_script, NULL, '!');
 					}
 					/* Need to rewind in the no-comment output stream */
-					if (file_buff_o2->length > 0) {
+					if (file_buff_o2 && (file_buff_o2->length > 0)) {
 						file_buff_o2->length--;
 					}
 					state = HTML_COMMENT;
