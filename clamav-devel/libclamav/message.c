@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.120  2004/11/26 12:04:22  nigelhorne
+ * Fix small typo
+ *
  * Revision 1.119  2004/11/22 15:18:51  nigelhorne
  * Performance work
  *
@@ -354,7 +357,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.119 2004/11/22 15:18:51 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.120 2004/11/26 12:04:22 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1236,7 +1239,7 @@ messageIsEncoding(message *m)
 			 * header which would generate umpteen false bounce
 			 * matches
 			 */
-		(strncasecmp(line, "Received: ", 10) == NULL) &&
+		(strncasecmp(line, "Received: ", 10) == 0) &&
 		(cli_filetype(line, strlen(line)) == CL_TYPE_MAIL))
 			m->bounce = m->body_last;
 	else if((m->uuencode == NULL) &&
