@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.107  2004/10/24 03:51:48  nigelhorne
+ * Change encoding guess from warn to debug
+ *
  * Revision 1.106  2004/10/22 17:18:13  nigelhorne
  * Handle encoding type us-ascii - should be none
  *
@@ -315,7 +318,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.106 2004/10/22 17:18:13 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.107 2004/10/24 03:51:48 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1006,7 +1009,7 @@ messageSetEncoding(message *m, const char *enctype)
 			 * 66% certain to be 7bit
 			 */
 			if(closest && (highestSimil >= 50)) {
-				cli_warnmsg("Unknown encoding type \"%s\" - guessing as %s (%u%% certainty)\n",
+				cli_dbgmsg("Unknown encoding type \"%s\" - guessing as %s (%u%% certainty)\n",
 					type, closest, highestSimil);
 				messageSetEncoding(m, closest);
 			} else {
