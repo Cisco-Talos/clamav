@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.222  2005/02/18 18:00:55  nigelhorne
+ * Save separate bounces in separate files
+ *
  * Revision 1.221  2005/02/17 19:36:08  nigelhorne
  * Fix minor typo with bounce handlers
  *
@@ -651,7 +654,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.221 2005/02/17 19:36:08 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.222 2005/02/18 18:00:55 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2027,7 +2030,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					if(boundaryStart(lineGetData(t_line->t_line), boundary))
 						break;
 					/*
-					 * Found a uuencoded/binhex file before the first multipart
+					 * Found a uuencoded/binhex file before
+					 *	the first multipart
 					 * TODO: check yEnc
 					 */
 					if(uuencodeBegin(mainMessage) == t_line) {
@@ -2866,8 +2870,9 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 
 		for(t = aText; t; t = t->t_next) {
 			const line_t *l = t->t_line;
-			const text *lookahead;
+			const text *lookahead, *topofbounce;
 			const char *s;
+			bool inheader;
 
 			if(l == NULL)
 				continue;
@@ -2937,16 +2942,49 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				/* nothing here, move along please */
 				break;
 			}
-			if((fb = fileblobCreate()) != NULL) {
-				cli_dbgmsg("Save non mime part bounce message\n");
-				fileblobSetFilename(fb, dir, "bounce");
-				fileblobAddData(fb, (unsigned char *)"Received: by clamd (bounce)\n", 28);
+			if((fb = fileblobCreate()) == NULL)
+				break;
+			cli_dbgmsg("Save non mime part bounce message\n");
+			fileblobSetFilename(fb, dir, "bounce");
+			fileblobAddData(fb, (unsigned char *)"Received: by clamd (bounce)\n", 28);
 
-				fb = textToFileblob(t, fb);
+			inheader = TRUE;
+			topofbounce = NULL;
+			for(;;) {
+				l = t->t_line;
 
-				fileblobDestroy(fb);
+				if(l == NULL) {
+					if(inheader) {
+						inheader = FALSE;
+						topofbounce = t;
+					}
+				} else {
+					s = lineGetData(l);
+					fileblobAddData(fb, (unsigned char *)s, strlen(s));
+				}
+				fileblobAddData(fb, (unsigned char *)"\n", 1);
+				lookahead = t->t_next;
+				if(lookahead == NULL)
+					break;
+				t = lookahead;
+				l = t->t_line;
+				if((!inheader) && l) {
+					s = lineGetData(l);
+					if(cli_filetype(s, strlen(s)) == CL_TYPE_MAIL) {
+						cli_dbgmsg("Found the start of another bounce candidate\n");
+						break;
+					}
+				}
 			}
-			break;
+
+			fileblobDestroy(fb);
+			if(topofbounce)
+				t = topofbounce;
+			/*
+			 * Don't do this - it slows bugs.txt
+			 */
+			/*if(mainMessage)
+				mainMessage->bounce = NULL;*/
 		}
 		textDestroy(aText);
 		aText = NULL;
@@ -3064,7 +3102,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				/*
 				 * Some bounces include the message
 				 * body without the headers.
-				 * Unfortunately this generates a
+				 * FIXME: Unfortunately this generates a
 				 * lot of false positives that a bounce
 				 * has been found when it hasn't.
 				 */
@@ -3134,6 +3172,12 @@ boundaryStart(const char *line, const char *boundary)
 		return 0;	/* empty line */
 
 	/*cli_dbgmsg("boundaryStart: line = '%s' boundary = '%s'\n", line, boundary);*/
+
+	if((*line != '-') && (*line != '('))
+		return 0;
+
+	if(strchr(line, '-') == NULL)
+		return 0;
 
 	if(strlen(line) <= sizeof(buf)) {
 		out = NULL;
