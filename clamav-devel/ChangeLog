@@ -1,6 +1,10 @@
+Tue Mar 29 02:50:30 CEST 2005 (tk)
+----------------------------------
+  * libclamav/filetypes.c: try to detect international text data
+
 Tue Mar 29 02:02:05 CEST 2005 (tk)
 ----------------------------------
-  * libclamav: detect and ignore ISO 9660/High Sierra CD-ROM data
+  * libclamav/filetypes.c: detect and ignore ISO 9660/High Sierra CD-ROM data
 
 Mon Mar 28 12:05:17 BST 2005 (njh)
 ----------------------------------
