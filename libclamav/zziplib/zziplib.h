@@ -29,7 +29,7 @@
 #include <stddef.h> /* size_t and friends */
 /* msvc6 has neither ssize_t (we assume "int") nor off_t (assume "long") */
 
-#ifdef CL_OS2
+#ifdef C_OS2
 #include <types.h>
 #endif
 

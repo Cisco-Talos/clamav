@@ -1,3 +1,7 @@
+Wed Jan 19 00:48:48 CET 2005 (tk)
+---------------------------------
+  * improve OS/2 support (patch by Yuri Dario <mc6530*mclink.it>)
+
 Wed Jan 19 00:17:25 CET 2005 (tk)
 ---------------------------------
   * zziplib/zzip-zip.c: fix possible small memory leak (thanks to Trog)
@@ -28,7 +32,7 @@ Wed Jan 12 08:58:29 GMT 2005 (njh)
 ----------------------------------
   * clamav-milter:	Fixed DNS resolution error messages which could print
 		the incorrect hostname that is not being resolved. Patch from
-		Yar Tikhiy <yar@comp.chem.msu.su>
+		Yar Tikhiy <yar*comp.chem.msu.su>
 
 Tue Jan 11 20:24:36 CET 2005 (tk)
 ---------------------------------

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -197,7 +197,8 @@ void clamd(struct optstruct *opt)
 	exit(1);
     }
 
-    /* drop priviledges */
+    /* drop privileges */
+#ifndef C_OS2
     if(geteuid() == 0 && (cpt = cfgopt(copt, "User"))) {
 	if((user = getpwnam(cpt->strarg)) == NULL) {
 	    fprintf(stderr, "ERROR: Can't get information about user %s.\n", cpt->strarg);
@@ -239,6 +240,7 @@ void clamd(struct optstruct *opt)
 
 	logg("Running as user %s (UID %d, GID %d)\n", cpt->strarg, user->pw_uid, user->pw_gid);
     }
+#endif
 
     /* set the temporary dir */
     if((cpt = cfgopt(copt, "TemporaryDirectory")))

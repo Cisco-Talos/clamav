@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -861,13 +861,13 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 
 		dbstat->no++;
 		dbstat->stattab = (struct stat *) realloc(dbstat->stattab, dbstat->no * sizeof(struct stat));
-#if defined(CL_INTERIX) || defined(CL_OS2)
+#if defined(C_INTERIX) || defined(C_OS2)
 		dbstat->statdname = (char **) realloc(dbstat->statdname, dbstat->no * sizeof(char *));
 #endif
 
                 fname = cli_calloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
 		sprintf(fname, "%s/%s", dirname, dent->d_name);
-#if defined(CL_INTERIX) || defined(CL_OS2)
+#if defined(C_INTERIX) || defined(C_OS2)
 		dbstat->statdname[dbstat->no - 1] = (char *) calloc(strlen(dent->d_name) + 1, sizeof(char));
 		strcpy(dbstat->statdname[dbstat->no - 1], dent->d_name);
 #endif
@@ -934,7 +934,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 
 		found = 0;
 		for(i = 0; i < dbstat->no; i++)
-#if defined(CL_INTERIX) || defined(CL_OS2)
+#if defined(C_INTERIX) || defined(C_OS2)
 		    if(!strcmp(dbstat->statdname[i], dent->d_name)) {
 #else
 		    if(dbstat->stattab[i].st_ino == sb.st_ino) {
@@ -963,7 +963,7 @@ int cl_statfree(struct cl_stat *dbstat)
 
     if(dbstat) {
 
-#if defined(CL_INTERIX) || defined(CL_OS2)
+#if defined(C_INTERIX) || defined(C_OS2)
 	    int i;
 
 	for(i = 0;i < dbstat->no; i++) {

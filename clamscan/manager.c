@@ -73,7 +73,7 @@ int scanmanager(const struct optstruct *opt)
 
 
 /* njh@bandsman.co.uk: BeOS */
-#if !defined(C_CYGWIN) && !defined(C_BEOS)
+#if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_BEOS)
     if(!geteuid()) {
 	if((user = getpwnam(UNPUSER)) == NULL) {
 	    mprintf("@Can't get information about user "UNPUSER".\n");
