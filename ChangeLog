@@ -1,3 +1,7 @@
+Sat Sep  4 17:46:39 CEST 2004 (tk)
+----------------------------------
+  * clamd: make output of VERSION compatible with clamd --version
+
 Sat Sep  4 15:12:32 CEST 2004 (tk)
 ----------------------------------
   * freshclam: retry if mirrors are not fully synchronised
