@@ -14,103 +14,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- * $Log: blob.c,v $
- * Revision 1.36  2005/03/04 14:17:34  nigelhorne
- * QNX support
- *
- * Revision 1.35  2005/03/03 09:28:19  nigelhorne
- * Tidy
- *
- * Revision 1.34  2005/02/18 20:41:59  nigelhorne
- * Added debug statement
- *
- * Revision 1.33  2005/02/18 18:10:39  nigelhorne
- * Comment about QNX
- *
- * Revision 1.32  2005/02/16 22:21:59  nigelhorne
- * s/BLOB/BLOBCLASS/
- *
- * Revision 1.31  2005/02/01 14:45:24  nigelhorne
- * sanities tab characters
- *
- * Revision 1.30  2005/01/19 05:30:50  nigelhorne
- * Better handling of empty data
- *
- * Revision 1.29  2004/12/21 16:52:45  nigelhorne
- * Patch for OS/2
- *
- * Revision 1.28  2004/12/21 16:42:10  nigelhorne
- * Patch for OS/2
- *
- * Revision 1.27  2004/12/16 15:29:51  nigelhorne
- * Tidy
- *
- * Revision 1.26  2004/12/04 17:03:19  nigelhorne
- * Fix filename handling on MACOS/X
- *
- * Revision 1.25  2004/11/29 13:15:41  nigelhorne
- * Avoid crash if the output file didn't open
- *
- * Revision 1.24  2004/10/01 13:50:47  nigelhorne
- * Minor code tidy
- *
- * Revision 1.23  2004/09/21 09:26:35  nigelhorne
- * Closing a closed blob is no longer fatal
- *
- * Revision 1.22  2004/09/18 14:59:26  nigelhorne
- * Code tidy
- *
- * Revision 1.21  2004/09/06 08:34:47  nigelhorne
- * Randomise extracted file names from tar file
- *
- * Revision 1.20  2004/08/30 11:35:45  nigelhorne
- * Now compiles on AIX and OSF
- *
- * Revision 1.19  2004/08/27 16:39:38  nigelhorne
- * Fix MACOS/X filenames
- *
- * Revision 1.18  2004/08/27 09:41:44  nigelhorne
- * Better filename handling in MACOS/X
- *
- * Revision 1.17  2004/08/23 10:23:58  nigelhorne
- * Fix compilation problem on Cygwin
- *
- * Revision 1.16  2004/08/22 15:08:58  nigelhorne
- * messageExport
- *
- * Revision 1.15  2004/08/22 10:34:24  nigelhorne
- * Use fileblob
- *
- * Revision 1.14  2004/08/01 08:20:58  nigelhorne
- * Scan pathnames in Cygwin
- *
- * Revision 1.13  2004/06/16 08:07:39  nigelhorne
- * Added thread safety
- *
- * Revision 1.12  2004/05/21 11:31:48  nigelhorne
- * Fix logic error in blobClose
- *
- * Revision 1.11  2004/04/17 14:18:58  nigelhorne
- * Some filenames not scanned in MACOS/X
- *
- * Revision 1.10  2004/03/25 22:40:46  nigelhorne
- * Removed even more calls to realloc and some duplicated code
- *
- * Revision 1.9  2004/03/24 09:08:25  nigelhorne
- * Reduce number of calls to cli_realloc for FreeBSD performance
- *
- * Revision 1.8  2004/03/23 10:58:52  nigelhorne
- * More restrictive about which characters can be used in filename on DOS based systems
- *
- * Revision 1.7  2004/02/15 08:45:53  nigelhorne
- * Avoid scanning the same file twice
- *
- * Revision 1.6  2004/02/10 19:23:54  nigelhorne
- * Change LOG to Log
- *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.36 2005/03/04 14:17:34 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.37 2005/03/16 14:44:40 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -457,13 +362,15 @@ void
 fileblobDestroy(fileblob *fb)
 {
 	assert(fb != NULL);
+	assert(fb->b.magic == BLOBCLASS);
 
 	if(fb->b.name && fb->fp) {
-		if(ftell(fb->fp) == 0L) {
+		fclose(fb->fp);
+		cli_dbgmsg("fileblobDestroy: %s\n", fb->b.name);
+		if(!fb->isNotEmpty) {
 			cli_dbgmsg("fileblobDestroy: not saving empty file\n");
 			unlink(fb->b.name);
 		}
-		fclose(fb->fp);
 		free(fb->b.name);
 
 		assert(fb->b.data == NULL);
@@ -473,6 +380,9 @@ fileblobDestroy(fileblob *fb)
 		if(fb->b.name)
 			free(fb->b.name);
 	}
+#ifdef	CL_DEBUG
+	fb->b.magic = INVALIDCLASS;
+#endif
 	free(fb);
 }
 
@@ -480,8 +390,6 @@ void
 fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 {
 	int fd;
-	const char *suffix;
-	size_t suffixLen = 0;
 	char fullname[NAME_MAX + 1];
 
 	if(fb->b.name)
@@ -490,23 +398,6 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 	assert(filename != NULL);
 	assert(dir != NULL);
 
-	/*
-	 * Some programs are broken and use an idea of a ".suffix"
-	 * to determine the file type rather than looking up the
-	 * magic number. CPM has a lot to answer for...
-	 * FIXME: the suffix now appears twice in the filename...
-	 */
-	suffix = strrchr(filename, '.');
-	if(suffix == NULL)
-		suffix = "";
-	else {
-		suffixLen = strlen(suffix);
-		if(suffixLen > 4) {
-			/* Found a full stop which isn't a suffix */
-			suffix = "";
-			suffixLen = 0;
-		}
-	}
 	blobSetFilename(&fb->b, dir, filename);
 
 	/*
@@ -524,8 +415,8 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 	 */
 	snprintf(fullname, sizeof(fullname), "%s/clamavtmpXXXXXXXXXXXXX", dir);
 #else
-	snprintf(fullname, sizeof(fullname) - 1 - suffixLen, "%s/%.*sXXXXXX", dir,
-		(int)(sizeof(fullname) - 9 - suffixLen - strlen(dir)), filename);
+	snprintf(fullname, sizeof(fullname) - 1, "%s/%.*sXXXXXX", dir,
+		(int)(sizeof(fullname) - 9 - strlen(dir)), filename);
 #endif
 
 #if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN) || defined(C_QNX6)
@@ -539,7 +430,7 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 
 	if(fd < 0) {
 		cli_errmsg("Can't create temporary file %s: %s\n", fullname, strerror(errno));
-		cli_dbgmsg("%lu %d %d\n", suffixLen, sizeof(fullname), strlen(fullname));
+		cli_dbgmsg("%d %d\n", sizeof(fullname), strlen(fullname));
 		return;
 	}
 
@@ -549,7 +440,7 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 
 	if(fb->fp == NULL) {
 		cli_errmsg("Can't create file %s: %s\n", fullname, strerror(errno));
-		cli_dbgmsg("%lu %d %d\n", suffixLen, sizeof(fullname), strlen(fullname));
+		cli_dbgmsg("%d %d\n", sizeof(fullname), strlen(fullname));
 		close(fd);
 
 		return;
@@ -557,24 +448,12 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 	if(fb->b.data) {
 		if(fwrite(fb->b.data, fb->b.len, 1, fb->fp) != 1)
 			cli_errmsg("fileblobSetFilename: Can't write to temporary file %s: %s\n", fb->b.name, strerror(errno));
+		else
+			fb->isNotEmpty = 1;
 		free(fb->b.data);
 		fb->b.data = NULL;
 		fb->b.len = fb->b.size = 0;
 	}
-
-#if	0	/* I don't think this is needed */
-	/*
-	 * Add the suffix back to the end of the filename. Tut-tut, filenames
-	 * should be independant of their usage on UNIX type systems.
-	 */
-	if(suffixLen > 1) {
-		char stub[NAME_MAX + 1];
-
-		snprintf(stub, sizeof(stub), "%s%s", fullname, suffix);
-		if(rename(fullname, stub) < 0)
-			cli_errmsg("Can't rename %s to %s: %s\n", fullname, stub, strerror(errno));
-	}
-#endif
 }
 
 void
@@ -583,9 +462,13 @@ fileblobAddData(fileblob *fb, const unsigned char *data, size_t len)
 	if(len == 0)
 		return;
 
+	assert(data != NULL);
+
 	if(fb->fp) {
 		if(fwrite(data, len, 1, fb->fp) != 1)
 			cli_errmsg("fileblobAddData: Can't write %u bytes to temporary file %s: %s\n", len, fb->b.name, strerror(errno));
+		else
+			fb->isNotEmpty = 1;
 	} else
 		blobAddData(&(fb->b), data, len);
 }
