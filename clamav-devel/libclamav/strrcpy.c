@@ -19,6 +19,8 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "strrcpy.h"
+
 /*
  * Like strcpy, but return the END of the destination, allowing a quicker
  * means of adding to the end of a string than strcat

@@ -20,5 +20,7 @@
 
 #ifndef __STRRCPY_H
 #define __STRRCPY_H
-    char *strrcpy(char *dest, const char *source);
+
+char	*strrcpy(char *dest, const char *source);
+
 #endif

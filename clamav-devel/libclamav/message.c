@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.79  2004/09/16 10:05:59  nigelhorne
+ * Use default decoders
+ *
  * Revision 1.78  2004/09/15 18:08:23  nigelhorne
  * Handle multiple encoding types
  *
@@ -231,7 +234,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.78 2004/09/15 18:08:23 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.79 2004/09/16 10:05:59 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -859,8 +862,8 @@ messageSetEncoding(message *m, const char *enctype)
 			 * Err on the side of safety, enable all decoding
 			 * modules
 			 */
-			/*messageSetEncoding(m, "base64");
-			messageSetEncoding(m, "quoted-printable");*/
+			messageSetEncoding(m, "base64");
+			messageSetEncoding(m, "quoted-printable");
 			break;
 		}
 
