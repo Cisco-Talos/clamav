@@ -73,7 +73,42 @@ fi
 have_pthreads=no
 AC_CHECK_HEADER(pthread.h,[have_pthreads=yes],)
 
-AC_CHECK_HEADER(zlib.h,[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lz"; AC_DEFINE(HAVE_ZLIB_H,1,zlib installed)],AC_MSG_ERROR(Please install zlib and zlib-devel packages))
+dnl Check for zlib
+AC_MSG_CHECKING(for zlib installation)
+AC_ARG_WITH(zlib,
+[  --with-zlib=DIR	  path to directory containing zlib library (default=
+			  /usr/local or /usr if not found in /usr/local)],
+[
+if test "$withval"; then
+  ZLIB_HOME="$withval"
+  AC_MSG_RESULT(using $ZLIB_HOME)
+fi
+], [
+ZLIB_HOME=/usr/local
+if test ! -f "$ZLIB_HOME/include/zlib.h"
+then
+  ZLIB_HOME=/usr
+fi
+AC_MSG_RESULT($ZLIB_HOME)
+])
+
+if test ! -f "$ZLIB_HOME/include/zlib.h"
+then
+    AC_MSG_ERROR(Please install zlib and zlib-devel packages)
+else
+    vuln=`grep "ZLIB_VERSION \"1.2.0" $ZLIB_HOME/include/zlib.h`
+    if test -z "$vuln"; then
+	vuln=`grep "ZLIB_VERSION \"1.2.1" $ZLIB_HOME/include/zlib.h`
+    fi
+
+    if test -n "$vuln"; then
+	AC_MSG_ERROR(Installed zlib version contains a security bug. Please install version 1.2.2 or later.)
+    fi
+
+    LDFLAGS="$LDFLAGS -L$ZLIB_HOME/lib"
+    CPPFLAGS="$CPPFLAGS -I$ZLIB_HOME/include"
+    AC_CHECK_LIB(z, inflateEnd, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -L$ZLIB_HOME/lib -lz"; AC_DEFINE(HAVE_ZLIB_H,1,zlib installed)], AC_MSG_ERROR(Please install zlib and zlib-devel packages))
+fi
 
 want_bzip2="yes"
 AC_ARG_ENABLE(bzip2,
