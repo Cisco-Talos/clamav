@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.189  2004/11/27 14:39:01  nigelhorne
+ * Honour section 7.2.6 of RFC1521
+ *
  * Revision 1.188  2004/11/27 14:17:35  nigelhorne
  * Handle attachments before the first mime section
  *
@@ -552,7 +555,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.188 2004/11/27 14:17:35 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.189 2004/11/27 14:39:01 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1671,6 +1674,15 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					cli_dbgmsg("multipart/knowbot parsed as multipart/mixed for now\n");
 					mimeSubtype = "mixed";
 					break;
+				case -1:
+					/*
+					 * According to section 7.2.6 of
+					 * RFC1521, unrecognised multiparts
+					 * should be treated as multipart/mixed.
+					 */
+					cli_warnmsg("Unsupported multipart format `%s', parsed as mixed\n", mimeSubtype);
+					mimeSubtype = "mixed";
+					break;
 			}
 
 			/*
@@ -1773,30 +1785,11 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			case ALTERNATIVE:
 				cli_dbgmsg("Multipart alternative handler\n");
 
-#if	0
-				htmltextPart = getTextPart(messages, multiparts);
-
-				if(htmltextPart == -1)
-					htmltextPart = 0;
-
-				aMessage = messages[htmltextPart];
-				aText = textAddMessage(aText, aMessage);
-
-				rc = parseEmailBody(NULL, aText, dir, rfc821Table, subtypeTable, options);
-
-				if(rc == 1)
-					/*
-					 * Alternative message has saved its
-					 * attachments, ensure we don't do
-					 * the same thing
-					 */
-					rc = 2;
-#endif
-
 				/*
 				 * Fall through - some clients are broken and
 				 * say alternative instead of mixed. The Klez
-				 * virus is broken that way
+				 * virus is broken that way, and anyway we
+				 * wish to scan all of the alternatives
 				 */
 			case REPORT:
 				/*
@@ -2072,14 +2065,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 
 				break;
 			default:
-				/*
-				 * According to section 7.2.6 of RFC1521,
-				 * unrecognised multiparts should be treated as
-				 * multipart/mixed. I don't do this yet so
-				 * that I can see what comes along...
-				 */
-				cli_warnmsg("Unsupported multipart format `%s' - report to bugs@clamav.net\n", mimeSubtype);
-				rc = 0;
+				assert(0);
 			}
 
 			if(mainMessage && (mainMessage != messageIn))
