@@ -1,3 +1,8 @@
+Thu Nov 18 11:03:14 CET 2004 (tk)
+---------------------------------
+  * libclamav: try to detect (and mark as Suspected.Zip) zip archives with
+	       modified information in local header
+
 Thu Nov 18 00:05:37 CET 2004 (tk)
 ---------------------------------
   * libclamav/pe.c: recognize more subsystem/machine types

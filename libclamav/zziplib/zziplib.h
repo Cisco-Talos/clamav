@@ -93,6 +93,7 @@ struct zzip_dirent
     int	 	st_size;	/* file size / decompressed size */
     unsigned short d_flags;	/* general purpose flags */
     char * 	d_name;		/* file name / strdupped name */
+    int	        d_crc32;        /* the adler32-checksum */
 };
 
 /*
