@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.127  2004/09/14 07:57:29  nigelhorne
+ * Session code no longer needs all servers to be up on startup
+ *
  * Revision 1.126  2004/09/13 21:46:30  nigelhorne
  * Session code tidy
  *
@@ -389,7 +392,7 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.126 2004/09/13 21:46:30 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.127 2004/09/14 07:57:29 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.75q"
 
@@ -1449,6 +1452,7 @@ main(int argc, char **argv)
 static int
 createSession(int session)
 {
+	int ret = 0;
 	struct sockaddr_in server;
 	const int serverNumber = session % numServers;
 
@@ -1460,23 +1464,24 @@ createSession(int session)
 
 	if((cmdSockets[session] = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		perror("socket");
-		return -1;
-	}
-	if(connect(cmdSockets[session], (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
+		ret = -1;
+	} else if(connect(cmdSockets[session], (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
 		perror("connect");
-		return -1;
-	}
-	if(send(cmdSockets[session], "SESSION\n", 7, 0) < 7) {
-		char *hostname = cli_strtok(serverHostNames, serverNumber, ":");
+		ret = 1;
+	} else if(send(cmdSockets[session], "SESSION\n", 7, 0) < 7) {
 		perror("send");
+		ret = 1;
+	}
+
+	if(ret != 0) {
+		char *hostname = cli_strtok(serverHostNames, serverNumber, ":");
 		cli_warnmsg(_("Check clamd server %s - it may be down\n"), hostname);
 		free(hostname);
 
 		cmdSocketsStatus[session] = CMDSOCKET_DOWN;
-		return 1;
 	}
 	cli_dbgmsg("cmdSockets[%d] = %d\n", session, cmdSockets[session]);
-	return 0;
+	return ret;
 }
 
 #else
