@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.66  2004/07/20 15:17:44  nigelhorne
+ * Remove overlapping strcpy
+ *
  * Revision 1.65  2004/07/20 14:35:29  nigelhorne
  * Some MYDOOM.I were getting through
  *
@@ -192,7 +195,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.65 2004/07/20 14:35:29 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.66 2004/07/20 15:17:44 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1651,8 +1654,14 @@ decodeLine(message *m, const char *line, unsigned char *buf, size_t buflen)
 static void
 squeeze(char *s)
 {
-	while((s = strchr(s, ' ')) != NULL)
-		strcpy(s, &s[1]);
+	while((s = strchr(s, ' ')) != NULL) {
+		/*strcpy(s, &s[1]);*/	/* overlapping strcpy */
+
+		char *p1;
+
+		for(p1 = s; p1[0] != '\0'; p1++)
+			p1[0] = p1[1];
+	}
 }
 
 /*
