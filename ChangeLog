@@ -1,3 +1,7 @@
+Sun Sep  5 18:16:13 CEST 2004 (tk)
+----------------------------------
+  * libclamav/pe.c: fix pointer arithmetic in FSG block (bug reported by Nigel)
+
 Sun Sep  5 01:43:31 CEST 2004 (tk)
 ----------------------------------
   * libclamav/cvd.c: display warning if engine is outdated
