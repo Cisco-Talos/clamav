@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.119  2004/09/14 20:47:28  nigelhorne
+ * Use new normalise code
+ *
  * Revision 1.118  2004/09/14 12:09:37  nigelhorne
  * Include old normalise code
  *
@@ -342,7 +345,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.118 2004/09/14 12:09:37 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.119 2004/09/14 20:47:28 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -426,6 +429,8 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 			 */
 
 #ifdef	FOLLOWURLS
+
+#include "htmlnorm.h"
 
 #define	MAX_URLS	5	/*
 				 * Maximum number of URLs scanned in a message
@@ -2110,92 +2115,18 @@ saveTextPart(message *m, const char *dir)
 }
 
 #ifdef	FOLLOWURLS
-
-/*
- * TODO: Use the newer normalise code
- * This is the old normalise code which normalises in memory. The new
- * code uses temporary files and has a different API.
- * 
-* Normalize an HTML buffer using the following rules:
-	o Remove multiple contiguous spaces
-	o Remove spaces around '<' and '>' in tags
-	o Remove spaces around '=' in tags
-	o Replace single quote with double quote in tags
-	o Convert to lowercase
-	o Convert all white space to a space character
-*/
-static unsigned char *
-mbox_html_normalize(unsigned char *in_buff, off_t in_size)
-{
-	unsigned char *out_buff;
-	off_t out_size=0, i;
-	int had_space=FALSE, tag_depth=0, in_quote=FALSE;
-	
-	out_buff = (unsigned char *)cli_malloc(in_size+1);
-	if (!out_buff) {
-		cli_errmsg("malloc failed");
-		return NULL;
-	}
-	
-	for (i=0 ; i < in_size ; i++) {
-		if (in_buff[i] == '<') {
-			out_buff[out_size++] = '<';
-			tag_depth++;
-			if (tag_depth == 1) {
-				had_space=TRUE; /* consume spaces */
-			}
-		} else if ((in_buff[i] == '=') && (tag_depth == 1)) {
-			/* Remove preceeding spaces */
-			while ((out_size > 0) &&
-				(out_buff[out_size-1] == ' ')) {
-				out_size--;
-			}
-			out_buff[out_size++] = '=';
-			had_space=TRUE;
-		} else if (isspace(in_buff[i])) {
-			if (!had_space) {
-				out_buff[out_size++] = ' ';
-				had_space=TRUE;
-			}
-		} else if (in_buff[i] == '>') {
-			/* Remove preceeding spaces */
-			if (tag_depth == 1) {
-				while ((out_size > 0) &&
-					(out_buff[out_size-1] == ' ')) {
-					out_size--;
-				}
-			}
-			out_buff[out_size++] = '>';
-			tag_depth--;	
-		} else if ((in_buff[i] == '\'') && (tag_depth==1)) {
-			/* Convert single quotes to double quotes */
-			if (in_quote || out_buff[out_size-1] == '=') {
-				out_buff[out_size++] = '\"';
-				in_quote = !in_quote;
-			} else {
-				out_buff[out_size++] = '\'';
-			}
-		} else {
-			out_buff[out_size++] = tolower(in_buff[i]);
-			had_space=FALSE;
-		}
-	}
-	out_buff[out_size] = '\0';
-	return out_buff;
-}
-
 static void
 checkURLs(message *m, const char *dir)
 {
 	blob *b = messageToBlob(m);
-	char *ptr, *normalised;
 	size_t len;
 	table_t *t;
-	int n;
+	int i, n;
 #if	defined(WITH_CURL) && defined(CL_THREAD_SAFE)
 	pthread_t tid[MAX_URLS];
 	struct arg args[MAX_URLS];
 #endif
+	tag_arguments_t hrefs;
 
 	if(b == NULL)
 		return;
@@ -2213,23 +2144,26 @@ checkURLs(message *m, const char *dir)
 
 	t = tableCreate();
 
-	n = 0;
-	normalised = ptr = mbox_html_normalize(blobGetData(b), len);
+	memset(&hrefs, '\0', sizeof(hrefs));
 
-	if(normalised == NULL) {
+	cli_dbgmsg("checkURLs: calling html_normalise_mem\n");
+	html_normalise_mem(blobGetData(b), len, NULL, &hrefs);
+	cli_dbgmsg("checkURLs: html_normalise_mem returned\n");
+
+	/*if(href == NULL) {
 		blobDestroy(b);
 		tableDestroy(t);
 		return;
-	}
+	}*/
 	/* TODO: Do we need to call remove_html_comments? */
 
-	/*
-	 * cli_memstr(ptr, len, "<a href=", 8)
-	 * Don't use cli_memstr() until bounds problem sorted
-	 * and it returns the place that the 'needle' was found
-	 */
-	while(len >= 8) {
-		if(strncasecmp(ptr, "<a href=", 8) == 0) {
+	n = 0;
+
+	for(i = 0; i < hrefs.count; i++) {
+		const char *url = hrefs.value[i];
+
+		if(strncasecmp("http://", url, 7) == 0) {
+			char *ptr;
 #ifdef	WITH_CURL
 #ifndef	CL_THREAD_SAFE
 			struct arg arg;
@@ -2242,52 +2176,31 @@ checkURLs(message *m, const char *dir)
 			struct stat statb;
 			char cmd[512];
 #endif	/*WITH_CURL*/
-			char *p2 = &ptr[8];
-			char *p3;
-			char name[512];
+			char name[NAME_MAX];
 
-			len -= 8;
-			while((len > 0) && ((*p2 == '\"') || isspace(*p2))) {
-				len--;
-				p2++;
-			}
-			if(len == 0)
-				break;
-			ptr = p2;
-			while((len > 0) && (isalnum(*ptr) || strchr("./?:%", *ptr))) {
-				ptr++;
-				len--;
-			}
-			if(len == 0)
-				break;
-			*ptr = '\0';
-			if(strncasecmp(p2, "mailto:", 7) == 0)
-				continue;
-			if(*p2 == '\0')
-				continue;
-			if(tableFind(t, p2) == 1) {
-				cli_dbgmsg("URL %s already downloaded\n", p2);
+			if(tableFind(t, url) == 1) {
+				cli_dbgmsg("URL %s already downloaded\n", url);
 				continue;
 			}
 			if(n == MAX_URLS) {
 				cli_warnmsg("Not all URLs will be scanned\n");
 				break;
 			}
-			(void)tableInsert(t, p2, 1);
-			cli_dbgmsg("Downloading URL %s to be scanned\n", p2);
-			strncpy(name, p2, sizeof(name));
-			for(p3 = name; *p3; p3++)
-				if(*p3 == '/')
-					*p3 = '_';
+			(void)tableInsert(t, url, 1);
+			cli_dbgmsg("Downloading URL %s to be scanned\n", url);
+			strncpy(name, url, sizeof(name));
+			for(ptr = name; *ptr; ptr++)
+				if(*ptr == '/')
+					*ptr = '_';
 
 #ifdef	WITH_CURL
 #ifdef	CL_THREAD_SAFE
-			args[n].url = strdup(p2);
+			args[n].url = strdup(url);
 			args[n].dir = strdup(dir);
 			args[n].filename = strdup(name);
 			pthread_create(&tid[n], NULL, getURL, &args[n]);
 #else
-			arg.url = p2;
+			arg.url = url;
 			arg.dir = dir;
 			arg.filename = name;
 			getURL(&arg);
@@ -2297,7 +2210,7 @@ checkURLs(message *m, const char *dir)
 			/*
 			 * TODO: maximum size and timeouts
 			 */
-			snprintf(cmd, sizeof(cmd), "GET -t10 %s > %s/%s 2>/dev/null", p2, dir, name);
+			snprintf(cmd, sizeof(cmd), "GET -t10 %s > %s/%s 2>/dev/null", url, dir, name);
 			cli_dbgmsg("%s\n", cmd);
 #ifdef	CL_THREAD_SAFE
 			pthread_mutex_lock(&system_mutex);
@@ -2309,7 +2222,7 @@ checkURLs(message *m, const char *dir)
 			snprintf(cmd, sizeof(cmd), "%s/%s", dir, name);
 			if(stat(cmd, &statb) >= 0)
 				if(statb.st_size == 0) {
-					cli_warnmsg("URL %s failed to download\n", p2);
+					cli_warnmsg("URL %s failed to download\n", url);
 					/*
 					 * Don't bother scanning an empty file
 					 */
@@ -2318,12 +2231,10 @@ checkURLs(message *m, const char *dir)
 #endif
 			++n;
 		}
-		ptr++;
-		len--;
 	}
+	html_tag_arg_free(&hrefs);
 	blobDestroy(b);
 	tableDestroy(t);
-	free(normalised);
 
 #if	defined(WITH_CURL) && defined(CL_THREAD_SAFE)
 	cli_dbgmsg("checkURLs: waiting for %d thread(s) to finish\n", n);
