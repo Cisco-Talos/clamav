@@ -480,7 +480,8 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 	print_ole2_property(&prop_block[index]);
 	switch (prop_block[index].type) {
 		case 5: /* Root Entry */
-			if (prop_index != 0) {
+			if ((prop_index != 0) || (rec_level !=0) ||
+					(file_count != 0)) {
 				/* Can only have RootEntry as the top */
 				cli_dbgmsg("ERROR: illegal Root Entry\n");
 				return;
@@ -511,7 +512,10 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 				return;
 			}
 			snprintf(dirname, strlen(dir)+8, "%s/%.6d", dir, prop_index);
-			mkdir(dirname, 0700);
+			if (mkdir(dirname, 0700) != 0) {
+				free(dirname);
+				return;
+			}
 			cli_dbgmsg("OLE2 dir entry: %s\n",dirname);
 			ole2_walk_property_tree(fd, hdr, dir,
 				prop_block[index].prev, handler, rec_level+1, file_count);

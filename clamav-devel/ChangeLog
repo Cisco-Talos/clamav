@@ -1,3 +1,7 @@
+Mon Apr 26 11:51:28 BST 2004 (trog)
+-----------------------------------
+ libclamav/ole2_extract.c: Better support for non-standard OLE2 archives
+
 Sun Apr 25 13:58:35 BST 2004 (njh)
 ----------------------------------
  * clamav-milter:	Added --pidfile
