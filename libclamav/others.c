@@ -318,6 +318,9 @@ int cli_rmdirs(const char *dirname)
 	char *fname;
 
 
+    if(cli_debug_flag)
+	return 0;
+
     chmod(dirname, 0700);
     if((dd = opendir(dirname)) != NULL) {
 	while(stat(dirname, &maind) != -1) {

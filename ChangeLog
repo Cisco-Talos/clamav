@@ -1,7 +1,11 @@
+Sat Apr 10 21:28:40 CEST 2004 (tk)
+----------------------------------
+  * libclamav: do not remove temporary directories in debug mode
+
 Sat Apr 10 08:02:20 BST 2004 (njh)
 ----------------------------------
   * docs/man/clamav-milter.8:	Clarified --force-scan (thanks to
-	Søren Thing Andersen <soeren@thing.dk>)
+	Søren Thing Andersen <soeren*thing.dk>)
 
 Fri Apr  9 09:50:52 BST 2004 (njh)
 ----------------------------------
@@ -28,7 +32,7 @@ Mon Apr  5 23:49:23 CEST 2004 (tk)
 ----------------------------------
   * contrib: new init script for SuSE (by Martin Fuxa <yeti*email.cz>)
   * configure: fix linking problem under NetBSD (reported by Nigel);
-	       enable support for threads (pth is required and
+	       enable support for threads under NetBSD (pth is required and
 	       LDFLAGS="-L/usr/pkg/lib" and CPPFLAGS="-I/usr/pkg/include"
 	       must be exported). Thanks to Jorgen Norgaard <jnp*anneli.dk>.
   * clamscan: fix --bell behaviour ("one beep" problem reported by Tomasz
