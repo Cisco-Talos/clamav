@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2K.1beta (1.48)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Clamuko</TITLE>
+<META NAME="description" CONTENT="Clamuko">
+<META NAME="keywords" CONTENT="clamdoc">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2K.1beta">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="clamdoc.css">
+
+<LINK REL="next" HREF="node19.html">
+<LINK REL="previous" HREF="node17.html">
+<LINK REL="up" HREF="node16.html">
+<LINK REL="next" HREF="node19.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html352"
+  HREF="node19.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html348"
+  HREF="node16.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html342"
+  HREF="node17.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html350"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html353"
+  HREF="node19.html">Archives and compressed files</A>
+<B> Up:</B> <A NAME="tex2html349"
+  HREF="node16.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html343"
+  HREF="node17.html">Clam daemon</A>
+ &nbsp <B>  <A NAME="tex2html351"
+  HREF="node1.html">Contents</A></B> 
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00042000000000000000"></A><A NAME="clamuko"></A>
+<BR>
+Clamuko
+</H2>
+    Clamuko is a special thread in <I>clamd</I>, that performs on-access
+    scanning under Linux. It was implemented as a thread in clamd because
+    of Dazuko implementation. Client (clamuko) - server (clamd) model is
+    currently not supported by Dazuko. There are some benefits from
+    current implementation - clamuko is sharing the database with clamd,
+    and it's updated with the RELOAD command. <B>You must obey the
+    following principles when using clamuko:</B>
+    
+<UL>
+<LI>Always stop the daemon cleanly, with QUIT command or
+	      SIGTERM signal. In other case, you can lose an access
+	      to the protected files until the system is restarted.
+</LI>
+<LI>Never protect the directory your mail-scanner software
+	      uses for attachments unpacking. Access to all infected
+	      files will be blocked, and the scanner (even clamd)
+	      won't be able to detect a virus. Infected mail will be
+	      delivered.
+    
+</LI>
+</UL>
+    You need to enable clamuko in <I>clamav.conf</I>. To protect directory
+    /home, please use the option:
+    <PRE>
+	ClamukoIncludePath /home
+</PRE>
+    To protect the whole system:
+    <PRE>
+	ClamukoIncludePath /
+	ClamukoExcludePath /proc
+	ClamukoExcludePath /tempdir/of/mail/scanner
+</PRE>
+    You can use clamuko to protect file access on Samba/Netatalk. NFS
+    is not supported (Dazuko doesn't intercept NFS access calls). Another
+    idea - you can build a database containing a signatures of the popular
+    exploits, it will protect you against script-kiddies.
+
+<P>
+<HR>
+<!--Navigation Panel-->
+<A NAME="tex2html352"
+  HREF="node19.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html348"
+  HREF="node16.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html342"
+  HREF="node17.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html350"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html353"
+  HREF="node19.html">Archives and compressed files</A>
+<B> Up:</B> <A NAME="tex2html349"
+  HREF="node16.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html343"
+  HREF="node17.html">Clam daemon</A>
+ &nbsp <B>  <A NAME="tex2html351"
+  HREF="node1.html">Contents</A></B> 
+<!--End of Navigation Panel-->
+<ADDRESS>
+Tomasz Kojm
+2003-06-21
+</ADDRESS>
+</BODY>
+</HTML>

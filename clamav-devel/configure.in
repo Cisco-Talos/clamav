@@ -1,0 +1,392 @@
+dnl
+dnl   Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+dnl
+dnl   This program is free software; you can redistribute it and/or modify
+dnl   it under the terms of the GNU General Public License as published by
+dnl   the Free Software Foundation; either version 2 of the License, or
+dnl   (at your option) any later version.
+dnl
+dnl   This program is distributed in the hope that it will be useful,
+dnl   but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl   GNU General Public License for more details.
+dnl
+dnl   You should have received a copy of the GNU General Public License
+dnl   along with this program; if not, write to the Free Software
+dnl   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+AC_INIT(clamscan/clamscan.c)
+AC_CREATE_TARGET_H(target.h)
+AC_CANONICAL_SYSTEM
+
+AM_INIT_AUTOMAKE(clamav, 20030720)
+dnl AM_INIT_AUTOMAKE(clamav, `date +%Y%m%d`)
+LC_CURRENT=1
+LC_REVISION=3
+LC_AGE=0
+LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
+AC_SUBST(LIBCLAMAV_VERSION)
+
+AC_PROG_AWK
+AC_PROG_CC
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_PROG_MAKE_SET
+AC_PROG_LIBTOOL
+
+dnl Version numbers for libtool
+
+dnl LT_RELEASE=$CLAMAV_MAJOR_VERSION.$CLAMAV_MINOR_VERSION
+dnl LT_CURRENT=$CLAMAV_MINOR_VERSION
+dnl LT_REVISION=1
+dnl LT_AGE=2
+
+dnl AC_SUBST(LT_RELEASE)
+dnl AC_SUBST(LT_CURRENT)
+dnl AC_SUBST(LT_REVISION)
+dnl AC_SUBST(LT_AGE)
+
+dnl BUFFSIZE must be at least 16 kb !!!
+
+AC_DEFINE(BUFFSIZE, 131072)
+AC_DEFINE(FBUFFSIZE, 16384)
+
+AC_HEADER_STDC
+AC_CHECK_HEADERS(stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h)
+AC_TYPE_OFF_T
+AC_COMPILE_CHECK_SIZEOF(short)
+AC_COMPILE_CHECK_SIZEOF(int)
+AC_COMPILE_CHECK_SIZEOF(long)
+
+have_pthreads=no
+AC_CHECK_HEADER(pthread.h,[have_pthreads=yes],)
+
+AC_CHECK_HEADER(zlib.h,[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lz"; AC_DEFINE(HAVE_ZLIB_H)],[echo "Please install zlib and zlib-devel packages."; exit 1])
+
+want_bzip2="yes"
+AC_ARG_ENABLE(bzip2,
+[  --disable-bzip2	  Disable bzip2 support.],
+want_bzip2="no",)
+
+if test "$want_bzip2" = "yes"
+then
+    AC_CHECK_HEADER(bzlib.h,[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lbz2"; AC_DEFINE(HAVE_BZLIB_H)],)
+    AC_CHECK_LIB(bz2, bzReadOpen, AC_DEFINE(NOBZ2PREFIX),)
+fi
+
+have_milter="no"
+AC_CHECK_HEADER(libmilter/mfapi.h,have_milter="yes",)
+
+AC_ARG_ENABLE(milter,
+[  --enable-milter	  Build clamav-milter (if milter library found)],
+,have_milter="no")
+
+AC_CHECK_HEADER(syslog.h,AC_DEFINE(CLAMD_USE_SYSLOG),)
+
+dnl AC_CHECK_LIB(c, strtok_r,, AC_DEFINE(NO_STRTOK_R))
+dnl AC_CHECK_LIB(c, mkstemp, AC_DEFINE(HAVE_MKSTEMP),)
+
+AC_ARG_ENABLE(pthreads,
+[  --disable-pthreads      Disable POSIX threads support],
+have_pthreads=no,)
+
+AC_ARG_ENABLE(cr,
+[  --disable-cr      Don't link with C reentrant library (BSD) ],
+disable_cr=yes,)
+
+test_urandom=yes
+AC_ARG_ENABLE(urandom,
+[  --disable-urandom       Disable test for /dev/urandom],
+test_urandom=no,)
+
+AC_ARG_ENABLE(id-check,
+[  --enable-id-check	  Use id utility instead of /etc/passwd parsing],
+use_id="yes", use_id="no")
+
+dnl clamav user
+AC_ARG_WITH(user, 
+[  --with-user=uid	  name of the clamav user (default=clamav).],
+clamav_user="$withval", clamav_user="clamav")
+
+dnl clamav group
+AC_ARG_WITH(group, 
+[  --with-group=gid	  name of the clamav group (default=clamav).],
+clamav_group="$withval", clamav_group="clamav")
+
+AC_DEFINE_UNQUOTED(CLAMAVUSER,"$clamav_user",)
+AC_DEFINE_UNQUOTED(CLAMAVGROUP,"$clamav_group",)
+
+test_clamav=yes
+AC_ARG_ENABLE(clamav,
+[  --disable-clamav	  Disable test for clamav user/group],
+test_clamav=no,)
+
+want_clamuko=yes
+AC_ARG_ENABLE(clamuko,
+[  --disable-clamuko	  Don't include Clamuko code /Linux/],
+want_clamuko=no,)
+
+AC_ARG_ENABLE(debug,
+[  --enable-debug	  Enable debug messages.],
+AC_DEFINE(CL_DEBUG),)
+
+AC_ARG_ENABLE(bigstack,
+[  --enable-bigstack	  Increase thread stack size.],
+AC_DEFINE(C_BIGSTACK),)
+
+dnl database directory
+AC_ARG_WITH(dbdir, 
+[  --with-dbdir=path	  Path to virus database directory.],
+db_dir="$withval", db_dir="_default_")
+
+dnl viruses.db
+AC_ARG_WITH(db1, 
+[  --with-db1=name	  Name of the main database (viruses.db).],
+AC_DEFINE_UNQUOTED(DB1NAME,"$withval",), AC_DEFINE(DB1NAME, "viruses.db"))
+
+dnl viruses.db2
+AC_ARG_WITH(db2, 
+[  --with-db2=name	  Name of the new format database (viruses.db2).],
+AC_DEFINE_UNQUOTED(DB2NAME,"$withval",), AC_DEFINE(DB2NAME, "viruses.db2"))
+
+dnl I had problems with $pkgdatadir, that's why I'm using these funny checks
+if test "$db_dir" = "_default_"
+then
+    if test "$prefix" = "NONE"
+    then
+	db_dir="$ac_default_prefix/share/clamav"
+    else
+	db_dir="$prefix/share/clamav"
+    fi
+fi
+
+AC_DEFINE_UNQUOTED(DATADIR,"$db_dir", [Path to virus database directory.])
+DBDIR="$db_dir"
+AC_SUBST(DBDIR)
+
+# config file
+cfg_dir=`echo $sysconfdir | grep prefix`
+if test -n "$cfg_dir"; then
+    cfg_dir="$ac_default_prefix/etc"
+else
+    cfg_dir="$sysconfdir"
+fi
+
+CFGDIR=$cfg_dir
+AC_SUBST(CFGDIR)
+AC_DEFINE_UNQUOTED(CONFDIR,"$cfg_dir",)
+
+dnl Do not overwrite the current config file
+AM_CONDITIONAL(INSTALL_CONF, test ! -r "$cfg_dir/clamav.conf")
+
+if test "$test_urandom" = "yes"
+then
+    if test -r /dev/urandom ; then
+	AC_MSG_RESULT(/dev/(u)random detected.)
+	AC_DEFINE(C_URANDOM)
+    else
+	AC_MSG_RESULT(/dev/(u)random not detected - using weak software rand())
+    fi
+fi
+
+dnl CLAMSCAN_LIBS=""
+dnl FRESHCLAM_LIBS=""
+dnl CLAMD_LIBS=""
+dnl TH_SAFE=""
+
+case "$target_os" in
+linux*)
+    AC_DEFINE(C_LINUX)
+    if test "$have_pthreads" = "yes"; then
+	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
+	TH_SAFE="-thread-safe"
+	AC_DEFINE(CL_THREAD_SAFE)
+	CLAMD_LIBS="-lpthread"
+	if test "$want_clamuko" = "yes"; then
+	    AC_DEFINE(CLAMUKO)
+	fi
+	CLAMSCAN_LIBS="-lpthread"
+    fi
+    ;;
+cygwin*)
+    dnl It probably won't work.
+    AC_DEFINE(C_CYGWIN)
+    if test "$test_clamav" = "yes"; then
+	if test ! -r /etc/passwd; then
+	   test_clamav="no"
+	fi
+    fi
+    if test "$have_pthreads" = "yes"; then
+	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
+	TH_SAFE="-thread-safe"
+	AC_DEFINE(CL_THREAD_SAFE)
+    fi
+    ;;
+solaris*)
+    FRESHCLAM_LIBS="-lsocket -lnsl"
+    if test "$have_pthreads" = "yes"; then
+	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
+	CLAMD_LIBS="-lpthread -lsocket -lnsl"
+	TH_SAFE="-thread-safe"
+	AC_DEFINE(CL_THREAD_SAFE)
+    fi
+    AC_DEFINE(C_SOLARIS)
+    ;;
+freebsd*)
+    if test "$have_pthreads" = "yes"; then
+	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread -lc_r"
+	CLAMD_LIBS="-pthread -lc_r"
+	TH_SAFE="-thread-safe"
+	AC_DEFINE(CL_THREAD_SAFE)
+    fi
+    AC_DEFINE(C_BSD)
+    ;;
+openbsd*)
+    if test "$have_pthreads" = "yes"; then
+	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread"
+	if test "$disable_cr" = "yes"; then
+	    CLAMD_LIBS="-pthread"
+	else
+	    CLAMD_LIBS="-pthread -lc_r"
+	fi
+	TH_SAFE="-thread-safe"
+	AC_DEFINE(CL_THREAD_SAFE)
+    fi
+    AC_DEFINE(C_BSD)
+    ;;
+netbsd*)
+    AC_MSG_RESULT(NetBSD detected. Disabling thread support.)
+    have_pthreads="no"
+    AC_DEFINE(C_BSD)
+    ;;
+bsd*)
+    AC_MSG_RESULT(Unknown BSD detected. Disabling thread support.)
+    have_pthreads="no"
+    AC_DEFINE(C_BSD)
+    ;;
+beos*)
+    AC_MSG_RESULT(BeOS detected. Disabling thread support.)
+    have_pthreads="no"
+    AC_DEFINE(C_BEOS)
+    ;;
+darwin*)
+    AC_DEFINE(C_BSD)
+    AC_DEFINE(C_DARWIN)
+    use_netinfo="yes"
+    dnl have_pthreads="no"
+    dnl AC_MSG_RESULT(Darwin detected. Disabling thread support.)
+    ;;
+sco*)
+    dnl njh@bandsman.sco.uk: SCO Unix port
+    FRESHCLAM_LIBS="-lsocket"
+    CLAMD_LIBS="-lsocket"
+    AC_DEFINE(NO_SNPRINTF)
+    ;;
+hpux*)
+    if test "$have_pthreads" = "yes"; then
+	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
+	CLAMD_LIBS="-lpthread"
+	TH_SAFE="-thread-safe"
+	AC_DEFINE(CL_THREAD_SAFE)
+    fi
+    AC_DEFINE(C_HPUX)
+    ;;
+aix*)
+    if test "$have_pthreads" = "yes"; then
+	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
+	CLAMD_LIBS="-lpthread"
+	TH_SAFE="-thread-safe"
+	AC_DEFINE(CL_THREAD_SAFE)
+    fi
+    AC_DEFINE(C_AIX)
+    ;;
+irix*)
+    if test "$have_pthreads" = "yes"; then
+	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
+	CLAMD_LIBS="-lpthread"
+	TH_SAFE="-thread-safe"
+	AC_DEFINE(CL_THREAD_SAFE)
+    fi
+    AC_DEFINE(C_IRIX)
+    AC_DEFINE(NO_SNPRINTF)
+    ;;
+
+*)
+    ;;
+esac
+
+AC_SUBST(LIBCLAMAV_LIBS)
+AC_SUBST(CLAMD_LIBS)
+AC_SUBST(FRESHCLAM_LIBS)
+AC_SUBST(TH_SAFE)
+
+AM_CONDITIONAL(USE_PTHREAD, test "$have_pthreads" = "yes")
+AM_CONDITIONAL(HAVE_MILTER, test "$have_milter" = "yes")
+
+
+
+dnl Check for clamav in /etc/passwd
+
+if test "$test_clamav" = "yes"
+then
+    # parse /etc/passwd
+    if test "$use_id" = no
+    then
+	AC_MSG_RESULT(Checking /etc/passwd...)
+	if test -r /etc/passwd; then
+	    clamavuser=`cat /etc/passwd|grep ${clamav_user}`
+	    clamavgroup=`cat /etc/group|grep ${clamav_group}`
+	fi
+    else
+	AC_MSG_RESULT(Checking id output...)
+	id $clamav_user > /dev/null 2>&1
+	if test "$?" = 0 ; then
+	    clamavuser=1
+	    AC_PATH_PROG(GETENT, getent)
+	    if test -n "$GETENT" ; then
+		clamavgroup=`$GETENT group | grep "^${clamav_group}:"`
+	    else
+		clamavgroup=`cat /etc/group|grep $clamav_group`
+	    fi
+	fi
+    fi
+
+    if test "$use_netinfo" = "yes"
+    then
+        clamavuser=`/usr/bin/nidump passwd . |grep ${clamav_user}`
+        clamavgroup=`/usr/bin/nidump group . |grep ${clamav_group}`
+    fi
+
+    if test -z "$clamavuser" || test -z "$clamavgroup"
+    then
+        echo "ERROR: User \"$clamav_user\" (and/or group \"$clamav_group\") doesn't exist. Please create it. You can omit this check with the --disable-clamav option."
+        exit 1
+    else
+        CLAMAVUSER="${clamav_user}"
+        CLAMAVGROUP="${clamav_group}"
+        AC_SUBST(CLAMAVUSER)
+        AC_SUBST(CLAMAVGROUP)
+    fi
+fi
+
+AC_C_CONST
+AC_C_BIGENDIAN
+if test $ac_cv_c_bigendian = yes; then
+  AC_DEFINE(WORDS_BIGENDIAN)
+else
+  AC_DEFINE(WORDS_LITTLEENDIAN)
+fi
+
+AC_OUTPUT([
+libclamav/Makefile
+clamscan/Makefile
+database/Makefile
+docs/Makefile
+clamd/Makefile
+clamdscan/Makefile
+clamav-milter/Makefile
+freshclam/Makefile
+sigtool/Makefile
+etc/Makefile
+Makefile
+])

@@ -1,0 +1,8 @@
+Q: Does ClamAV repair infected files ?
+A: No. Due to the structure of used database, it can't repair infected files.
+   The database has no information about virus cleaning. However OLE2
+   (mainly Microsoft Office files) cleaning will be implemented !
+
+Q: Is ClamAV a C port of OpenAntiVirus ?
+A: No, but it has some common features with ScannerDaemon, such as a similar
+   pattern matching algorithm.

@@ -1,0 +1,145 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2K.1beta (1.48)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Return codes</TITLE>
+<META NAME="description" CONTENT="Return codes">
+<META NAME="keywords" CONTENT="clamdoc">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2K.1beta">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="clamdoc.css">
+
+<LINK REL="previous" HREF="node37.html">
+<LINK REL="up" HREF="node37.html">
+<LINK REL="next" HREF="node39.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html598"
+  HREF="node39.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html594"
+  HREF="node37.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html590"
+  HREF="node37.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html596"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html599"
+  HREF="node39.html">Technicals</A>
+<B> Up:</B> <A NAME="tex2html595"
+  HREF="node37.html">Problem solving</A>
+<B> Previous:</B> <A NAME="tex2html591"
+  HREF="node37.html">Problem solving</A>
+ &nbsp <B>  <A NAME="tex2html597"
+  HREF="node1.html">Contents</A></B> 
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00071000000000000000">
+Return codes</A>
+</H2>
+    Return codes are very useful, especially in system scripts. You may
+    check the return code from <I>clamscan</I>, by running the following
+    command directly after the scanner exits:
+    <PRE>
+	$ echo $?
+</PRE>
+    Here is a list of return codes from <I>clamscan</I>:
+<BR>
+<P>
+
+    <B>0: </B> No virus was found.
+<BR>    <B>1: </B> Virus(es) detected.
+<BR>    <B>40: </B> Unknown option was passed to <I>clamscan</I>. Please check
+	    <I>clamscan -help</I> or manual page for available options.
+<BR>    <B>50: </B> Problem with initialization of virus database. Probably
+	    it doesn't exist in the default place or wrong file was passed
+	    to <I>-database</I>.
+<BR>    <B>51: </B> Wrong number of threads was passed to <I>-threads</I>. It
+	    must be a natural number <IMG
+ WIDTH="33" HEIGHT="34" ALIGN="MIDDLE" BORDER="0"
+ SRC="img3.png"
+ ALT="$ \ge 0$">.
+<BR>    <B>52: </B> Not supported file type. Scanner supports regular files,
+	    directories and symlinks.
+<BR>    <B>53: </B> Can't open directory.
+<BR>    <B>54: </B> Can't open file.<IMG
+ WIDTH="13" HEIGHT="21" ALIGN="BOTTOM" BORDER="0"
+ SRC="img4.png"
+ ALT="$^5$">
+<BR>    <B>55: </B> Error reading file. Probably the medium you are reading is broken.
+	    <A NAME="tex2html28"
+  HREF="footnode.html#foot657"><SUP>5</SUP></A>
+<BR>    <B>56: </B> Can't stat input file or directory. File / directory you want to
+	    scan doesn't exist.
+<BR>    <B>57: </B> Can't get absolute pathname of current working directory. Your
+	    current pathname is longer then 200 characters. When clamscan
+	    is started without a input file / directory it scans the current
+	    directory. For some reasons it needs absolute pathnames, the buffer
+	    is hardcoded to 200 characters and that should be sufficient.
+<BR>    <B>58: </B> I/O error. Please check the filesystem.
+<BR>    <B>59: </B> Can't get information about current user (running clamscan).
+<BR>    <B>60: </B> Can't get information about user <I>clamav</I>. User <I>clamav</I>
+	    (default unprivileged user) doesn't exist in /etc/passwd.
+<BR>    <B>61: </B> Can't fork. Can't create new process, please check your limits.
+<BR>    <B>63: </B> Can't create temporary file or directory. Please check permissions.
+<BR>    <B>64: </B> Can't write to temporary directory. Please specify another one.
+<BR>    <B>70: </B> Can't allocate and clear memory. This is a critical error, please
+	    check your system.
+<BR>    <B>71: </B> Can't allocate memory. Look above.
+<BR>
+<P>
+<HR>
+<!--Navigation Panel-->
+<A NAME="tex2html598"
+  HREF="node39.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html594"
+  HREF="node37.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html590"
+  HREF="node37.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html596"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html599"
+  HREF="node39.html">Technicals</A>
+<B> Up:</B> <A NAME="tex2html595"
+  HREF="node37.html">Problem solving</A>
+<B> Previous:</B> <A NAME="tex2html591"
+  HREF="node37.html">Problem solving</A>
+ &nbsp <B>  <A NAME="tex2html597"
+  HREF="node1.html">Contents</A></B> 
+<!--End of Navigation Panel-->
+<ADDRESS>
+Tomasz Kojm
+2003-06-21
+</ADDRESS>
+</BODY>
+</HTML>

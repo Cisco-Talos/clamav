@@ -1,0 +1,5 @@
+Test files contain ClamAV-Test-Signature.
+You need unrar 3.0 to test rarfail.rar. Only clamscan is able to scan this
+file (clamd only depends libclamav, which has no support for the new RAR
+format). Please use clamscan --unrar, and it will automatically switch to the
+unrar utility after an internal (libclamav's) RAR error.

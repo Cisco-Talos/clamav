@@ -1,0 +1,183 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2K.1beta (1.48)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Archives and compressed files</TITLE>
+<META NAME="description" CONTENT="Archives and compressed files">
+<META NAME="keywords" CONTENT="clamdoc">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2K.1beta">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="clamdoc.css">
+
+<LINK REL="next" HREF="node20.html">
+<LINK REL="previous" HREF="node18.html">
+<LINK REL="up" HREF="node16.html">
+<LINK REL="next" HREF="node20.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html364"
+  HREF="node20.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html360"
+  HREF="node16.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html354"
+  HREF="node18.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html362"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html365"
+  HREF="node20.html">Output format</A>
+<B> Up:</B> <A NAME="tex2html361"
+  HREF="node16.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html355"
+  HREF="node18.html">Clamuko</A>
+ &nbsp <B>  <A NAME="tex2html363"
+  HREF="node1.html">Contents</A></B> 
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00043000000000000000">
+Archives and compressed files</A>
+</H2>
+    Clam AntiVirus depends on LibClamAV. It has built-in support for the
+    following formats:
+    
+<UL>
+<LI>Zip
+</LI>
+<LI>Gzip
+</LI>
+<LI>RAR (2.0 only)
+    
+</LI>
+</UL>
+    Archive files are detected by checking a magic strings.<A NAME="tex2html17"
+  HREF="footnode.html#foot233"><SUP>4</SUP></A>    You need the zlib library for the Zip/Gzip support. Zip archives are
+    accessed with the zziplib library by Guido Draheim and Tomi Ollila.
+    RAR support is based on the UniquE RAR File Library by Christian Scheurer
+    and Johannes Winkelmann. Both of them are included and slightly modified
+    in the clamav sources. Unrarlib supports RAR 2.0 archives only and
+    according to Christian the new format (introduced in WinRAR 3.0) won't
+    be supported. 
+
+<P>
+The daemon scans archives supported by libclamav only. Clamscan tries
+    to scan an archive with built-in code, but when it fails it's able
+    to switch to the external unpacker:
+    <PRE>
+	$ clamscan --unrar rarfail.rar
+	/home/zolw/Clam/test/rarfail.rar: RAR module failure.
+
+	UNRAR 3.00 freeware      Copyright (c) 1993-2002 Eugene Roshal
+
+
+	Extracting from /home/zolw/Clam/test/rarfail.rar
+
+	Extracting  test1                                           OK 
+	All OK
+	/tmp/44694f5b2665d2f4/test1: ClamAV-Test-Signature FOUND
+	/home/zolw/Clam/test/rarfail.rar: Infected Archive FOUND
+</PRE>
+
+<P>
+clamscan supports many popular compressors - it uses external programs
+    for each format. <B>If the scanner runs with superuser privileges
+    unpackers are executed with <I>clamav</I> privileges, which makes the
+    process far more secure.</B> It also makes sure, that <I>clamav</I> user
+    has read access to all scanned compressed files.  <B>You should have
+    enabled recursive scanning with the <I>-r</I> option (<I>-recursive</I>),
+    if you want to scan the whole content of the archive (with subdirectories)</B>,
+    also all archives in archives will be recursively scanned - just everything.    If files in archives are virus free the archive itself is scanned - just
+    for prevention (it may not be an archive). Please look at the options
+    below, each option has an optional argument - the absolute path to unpacker.
+    If it can't be found in <I>$PATH</I> please supply it. <I>Because Clam
+    AntiVirus uses the standard GNU options format, the long options with
+    optional arguments, you <B>must</B> remember about the <IMG
+ WIDTH="20" HEIGHT="17" ALIGN="BOTTOM" BORDER="0"
+ SRC="img2.png"
+ ALT="$=$"> between option
+    and argument.  So the proper way to supply the optional arguments is for
+    example -unzip=/path/to/unzip.</I> <BR>
+<BR>
+<P>
+
+    <B>-unzip: </B> You probably don't need this option, because Zip is supported
+	       by libclamav. But if libclamav will fail to unzip some file,
+	       it may be useful.
+	       clamscan was tested with <I>UnZip 5.41 of 16 April 2000,
+	       by Info-ZIP</I>.
+<BR>    <B>-unrar: </B> Tested with <I>UNRAR 3.00 freeware</I>.
+<BR>    <B>-unace: </B> It uses options supported by <I>UNACE v1.2 public version</I>,
+	       not tested, but should work.
+<BR>    <B>-arj: </B> Tested with <I>arj 3.10b</I>.
+<BR>    <B>-zoo: </B> Tested with <I>zoo 2.1</I>.
+<BR>    <B>-lha: </B> Tested with <I>LHa for Unix V 1.14e</I>.
+<BR>    <B>-jar: </B> CA uses <I>unzip</I> for .jar files. Tested with <I>UnZip 5.41
+	     of 16 April 2000, by Info-ZIP</I>.
+<BR>    <B>-tar: </B> This option supports non-compressed archives. Tested with
+	     <I>GNU tar 1.13.17</I>.
+<BR>    <B>-deb: </B> This option supports debian binary packages. Tested with
+	     <I>GNU ar
+<BR>
+2.12.90.0.14</I>. Implies -tgz , but doesn't conflict
+	     with -tgz=FULLPATH.
+<BR>    <B>-tgz: </B> This option supports .tar.gz and .tgz files. You need <I>GNU
+	     tar</I>, on non-Linux system you probably have it as <I>gtar</I>
+	     and if this is in <I>$PATH</I> just use <I>-tgz=gtar</I> or
+	     supply the full path to this command as an argument.
+<BR>
+<P>
+<HR>
+<!--Navigation Panel-->
+<A NAME="tex2html364"
+  HREF="node20.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html360"
+  HREF="node16.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html354"
+  HREF="node18.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html362"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html365"
+  HREF="node20.html">Output format</A>
+<B> Up:</B> <A NAME="tex2html361"
+  HREF="node16.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html355"
+  HREF="node18.html">Clamuko</A>
+ &nbsp <B>  <A NAME="tex2html363"
+  HREF="node1.html">Contents</A></B> 
+<!--End of Navigation Panel-->
+<ADDRESS>
+Tomasz Kojm
+2003-06-21
+</ADDRESS>
+</BODY>
+</HTML>

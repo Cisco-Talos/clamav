@@ -1,0 +1,1119 @@
+% Clam AntiVirus: User Manual
+% (c) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+% Version 0.2x corrected by Dennis Leeuw <dleeuw@made-it.com>
+\documentclass[a4paper,titlepage,12pt]{article}
+\usepackage{amssymb}
+\usepackage{pslatex}
+\usepackage[dvips]{graphicx}
+\usepackage{wrapfig}
+\usepackage{url}
+%\usepackage{fancyhdr}
+\usepackage{fancybox}
+\usepackage{titlesec}
+\cornersize{.4}
+%\fancyhf{}
+\headheight 14pt
+
+\usepackage{color}
+\definecolor{grey1}{gray}{0.8}
+\definecolor{grey2}{gray}{0.3}
+
+% Based on Antonina Liedtke's article in Linux+ 6/2003
+\def\greyp{%
+    \unitlength=1mm%
+    \begin{picture}(0,0)
+	\put(0,-1.5){\textcolor{grey1}{\rule{12.9cm}{5.3mm}}\textcolor{grey2}%
+	{\rule{9mm}{5.3mm}}\hss}
+    \end{picture}
+}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhead{}
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyhead[RO]{\textbf{\sffamily{{\textcolor{white}{\thepage}}~}}}
+\fancyhead[RE]{\footnotesize{\nouppercase{\rightmark~}}}
+\fancyhead[LO]{\footnotesize{\greyp{\nouppercase{\leftmark}}}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%\fancyhead[L,RO]{\small\bfseries\thepage}
+%\fancyhead[LO]{\small\bfseries{CLAM ANTIVIRUS: USER MANUAL}}
+\date{}
+
+\newcommand{\pl}{\vspace{.3cm}}
+\newcommand{\rc}[2]{\textbf{#1: } #2\\[4pt]}
+\newcommand{\up}[2]{\textbf{--#1: } #2\\[4pt]}
+\newcommand{\email}[1]{\texttt{#1}}
+\newcommand{\cons}[1]{\vspace{2mm} \noindent \ovalbox {\sffamily #1}
+		      \vspace{2mm}}
+
+\begin{document}
+    \setcounter{page}{0}
+
+    \pagestyle{empty}
+    %\includegraphics[width=350pt]{clam.eps}
+    \begin{center}
+	\huge Clam AntiVirus: User Manual \\
+	\vspace{1cm}
+	\LARGE version 0.60 \\
+	\vspace{5cm}
+	\LARGE Tomasz Kojm
+    \end{center}
+
+    \newpage
+    \pagestyle{fancy}
+    \tableofcontents
+    \newpage
+
+
+    \section{Introduction}
+
+
+    Clam AntiVirus is an anti-virus toolkit for UNIX. The main purpose of this
+    software is the integration with mail servers (attachment scanning).
+    The package provides a flexible and scalable multi-threaded daemon, a
+    command line scanner, and a tool for automatic updating via Internet. The
+    programs are based on a shared library distributed with the Clam AntiVirus
+    package, which you can use with your own software. The virus database
+    is based on the virus database from OpenAntiVirus.org, but contains
+    additional signatures (including signatures for popular polymorphic viruses,
+    too) and is \textbf{kept up to date}.
+
+    \subsection{Features}
+
+    \begin{itemize}
+	\item{GNU GPL v2 license}
+	\item{POSIX compliant, portable}
+	\item{Secure}
+	\item{Very fast}
+	\item{Multi-threaded}
+	\item{User friendly}
+	\item{On-access scanning (Linux only)}
+	\item{Detects over 7000 viruses, worms and trojans}
+	\item{Supports compressed files and archives}
+	\item{Built-in support for RAR (2.0), Zip, Gzip, Bzip2}
+    \end{itemize}
+
+    \subsection{Mailing lists}
+    There are four mailing lists available:
+    \begin{itemize}
+    \item \textbf{announce@clamav.elektrapro.com} - info about new versions\\
+    (including debian package releases), moderated\footnote{That means, the
+    subscribers are not allowed to write into the mailing list}.
+    \item \textbf{users@clamav.elektrapro.com} - user questions
+    \item \textbf{devel@clamav.elektrapro.com} - developement
+    \item \textbf{virusdb@clamav.elektrapro.com} - database update information
+    \end{itemize}
+
+    \noindent You can subscribe by sending an empty email to\\
+    listname-subscribe@clamav.elektrapro.com, or via www at\\
+    \indent \url{http://clamav.elektrapro.com/ml}\\
+    After subscribing you must reply to a special message sent at your address.
+
+    \noindent Mailing lists are archived at: \\
+    \indent \url{http://archive.elektrapro.com/clamav.elektrapro.com/users/}\\
+    \indent \url{http://archive.elektrapro.com/clamav.elektrapro.com/devel/}\\
+
+
+    \subsection{Virus submitting}
+    If you have a virus that is not detected by ClamAV with the latest database,
+    please send it (as a normal attachment) to:
+    \begin{center}
+	\email{virus@clamav.elektrapro.com}
+    \end{center}
+    If your system doesn't allow you to send infected files, please
+    archive the virus sample into a zip archive with password: \emph{virus}
+
+
+
+    \section{Installation}
+
+    \subsection{Requirements}
+    You will need the \emph{zlib} and \emph{zlib-devel} packages and the
+    \emph{gcc} compiler (both 2.9x and 3.x are supported). You can install
+    the \emph{bzip2} library (and its development files) to get bzip2
+    support, but this is not required.
+
+    \subsection{Supported platforms}
+    Clam AntiVirus is prepared for the installation on the following
+    operating systems / architectures (tested platforms in brackets):
+    \begin{itemize}
+	\item{GNU/Linux 2.2/2.4 (All flavours, Intel/SPARC/Alpha/zSeries/S/390)}
+	\item{Solaris 2.6/7/8/9 (Intel/SPARC)}
+	\item{FreeBSD 4.5/6/7 5.0 (Intel/Alpha)}
+	\item{OpenBSD 3.0/1/2 (Intel)}
+	\item{AIX 4.1/4.2/4.3/5.1 (RISC 6000)}
+	\item{HPUX 11.0}
+	\item{SCO UNIX}
+	\item{Mac OS X}
+	\item{BeOS}
+	\item{Cobalt MIPS boxes (RAQ1, RAQ2, QUBE2)}
+	\item{Windows/Cygwin}
+    \end{itemize}
+
+    Some features may not be available with your operating system. If you have
+    run Clam AntiVirus on the system not listed above, please let us know.
+
+    \subsection{Actual versions}
+    Clam AntiVirus can be obtained from: \\[4pt]
+    \begin{center}
+	\url{http://clamav.elektrapro.com}\pl
+    \end{center}
+
+    \noindent The site is sponsored by ElektraPro.com
+
+    \subsection{Binary packages}
+    There are high quality \emph{deb} and \emph{rpm} packages available
+    for Linux. The Debian package is maintained by Magnus Ekdahl and you will
+    find it on debian mirrors, \url{http://www.debian.org}.
+    The RPM package is maintained by Arkadiusz Miskiewicz and is distributed
+    with Polish(ed) Linux Distribution (\url{ftp://ftp.pld.org.pl}). There is
+    also the RPM package for Mandrake available, it's maintained by Oden
+    Eriksson and can be found on Mandrake mirrors.
+    The binary packages for AIX are available in AIX PDSLIB, UCLA
+    \url{http://aixpdslib.seas.ucla.edu/packages/clamav.html}. The official
+    FreeBSD port is maintained by Masahiro Teramoto. The unofficial port
+    for OpenBSD (maintained by Flinn Mueller) is available at:\\
+    \url{http://www.activeintra.net/openbsd/article.php?id=5}.
+
+
+
+    \subsection{Installation}
+
+    \noindent
+    Please read the README file in the current version, because it probably
+    contains some important release notes.
+    If you are installing Clam AV for the first time, you have to add a new user
+    and group to your system - \emph{clamav}: \footnote{Cygwin note:
+    If you don't have /etc/passwd, you don't need the \emph{clamav} user/group.}
+
+    \begin{verbatim}
+	# groupadd clamav
+	# useradd -g clamav -s /bin/false -c "Clam AntiVirus" clamav
+    \end{verbatim}
+
+    The above method works on Linux and Solaris, if you don't have
+    \emph{groupadd, useradd} please consult your system manual - the section
+    about creating new users and groups.
+    If you are not a system administrator or won't be using \textbf{clamscan}
+    in superuser mode, you may omit this step with the option
+    \emph{--disable-clamav} passed to the \emph{configure} script:
+    \begin{verbatim}
+	$ ./configure --disable-clamav 
+    \end{verbatim}
+    This disables test for the \emph{clamav} user and group. \textbf{clamscan}
+    still requires \emph{clamav} for superuser mode. Please don't set a password
+    on this account, just assure it's locked with "\textbf{!}" in
+    \emph{/etc/passwd} or \emph{/etc/shadow}. It must be a normal, unprivileged
+    user. Don't add it to any supplementary groups.\pl
+
+    \noindent
+    After you have created the clamav user/group, extract the archive:
+    \begin{verbatim}
+	$ zcat clamav-x.yz.tar.gz | tar xvf -
+	$ cd clamav-x.yz
+    \end{verbatim}
+    Assuming you want the configuration file installed in /etc, configure
+    the package as follows:
+    \begin{verbatim}
+	$ ./configure --sysconfdir=/etc
+    \end{verbatim}
+    Currently \emph{gcc} is required for the compilation. Support for other
+    compilers will be added in a near future.
+    \begin{verbatim}
+	$ make
+	$ su -c "make install"
+    \end{verbatim}
+    In the last step the software is installed in the /usr/local directory
+    and the config file in /etc.
+    \textbf{WARNING: Never set SUID/SGID bit on Clam AntiVirus programs.}
+
+    \subsection{Configuration}
+    If you are going to use the daemon, you need to configure it.
+
+    \begin{verbatim}
+	$ clamd
+	ERROR: Please edit the example config file
+	       /etc/clamav.conf.
+    \end{verbatim}
+
+    Now you know, where the configuration file is located ;). The format and
+    options of this file are fully described in the \emph{clamav.conf(5)}
+    manual. clamd configuration is rather easy, the config file is well
+    commented. Remember, you must remove the "Example" directive.
+
+    Another feature of clamd is on-access scanning based on the Dazuko module,
+    available from \url{http://dazuko.org}. \textbf{This is not required to
+    run clamd, furthermore you shouldn't run Dazuko on production systems}.
+    A special thread in clamd responsible for the communication with Dazuko
+    is called "Clamuko" (it's due to the funny name of Dazuko - I don't know
+    what Clamuko means). Clamuko is supported on Linux 2.2 and 2.4 only.
+    Dazuko instalation:
+
+
+    \begin{verbatim}
+	$ tar zxpvf dazuko-a.b.c.tar.gz
+	$ cd dazuko-a.b.c
+	$ make dazuko
+	or
+	$ make dazuko-smp (for smp kernels)
+	$ su
+	# insmod dazuko.o
+	# cp dazuko.o /lib/modules/`uname -r`/misc
+	# depmod -a
+    \end{verbatim}
+
+    Depending on your Linux distribution you have to add "dazuko" entry to\\
+    \emph{/etc/modules} or the following line:
+    \begin{verbatim}
+	modprobe dazuko
+    \end{verbatim}
+    to some startup file to load dazuko at the boot time. You must also create
+    the \emph{/dev/dazuko} device:
+    \begin{verbatim}
+	$ cat /proc/devices | grep dazuko
+	254 dazuko
+	$ su -c "mknod -m 600 /dev/dazuko c 254 0"
+    \end{verbatim}
+    Now you must configure Clamuko in \emph{clamav.conf}. Please check
+    \ref{clamuko} section.
+
+
+    \subsection{Testing}
+
+    OK. Let's do some tests. Try to scan the source directory recursively:
+    \begin{verbatim}
+	$ clamscan -r -l scan.txt clamav-x.yz
+    \end{verbatim}
+    It should find the viruses in the clamav-x.yz/test directory. You may
+    check it in the created log - scan.txt. \textbf{You will find more about
+    clamscan options in the clamscan(1) manual. \footnote{Please run \emph{man
+    clamscan}}}
+    To test clamd first start it and then use clamdscan (you can also connect
+    directly to clamd and run the SCAN command):
+    \begin{verbatim}
+	$ clamdscan -l scan.txt clamav-x.yz
+    \end{verbatim}
+
+    \subsection{FreshClam: Setting up auto-updating}
+    The \emph{freshclam} utility is the default database updater for Clam
+    AntiVirus. It works in two modes:
+    \begin{itemize}
+	\item interactive - from command line
+	\item as a daemon - works alone, silently
+    \end{itemize}
+    When started by the superuser it drops the privileges, by default it works
+    as \emph{clamav}. \emph{freshclam} downloads the database from the Clam
+    AntiVirus homepage and checks its consistency using MD5 sum.
+    process for Clam AntiVirus.
+    \textbf{Run \emph{freshclam} (as root) without any parameters to check
+    is it working correctly}. If everything is OK, create the log file in
+    /var/log owned by \emph{clamav}:
+    \begin{verbatim}
+	# touch /var/log/clam-update.log
+	# chmod 600 /var/log/clam-update.log
+	# chown clamav /var/log/clam-update.log
+    \end{verbatim}
+    Now you can run \emph{freshclam} as a daemon:
+    \begin{verbatim}
+	# freshclam -d -c 2 -l /var/log/clam-update.log
+    \end{verbatim}
+    It will check for a new database 2 times a day. Please add the above line
+    to your startup scripts. The other way is to use the \emph{cron} daemon.
+    You have to add a similar line to the crontab of \textbf{root} or
+    \textbf{clamav}:
+    {\small
+    \begin{verbatim}
+0 8	* * *	/usr/local/bin/freshclam --quiet -l /var/log/clam-update.log
+    \end{verbatim}}
+    \noindent It will check for a new database daily at 8 am. You may need
+    to setup the proxy support on your system. You should set the environment
+    variable \emph{\$http\_proxy}, eg.
+    \begin{verbatim}
+	export http_proxy="my.proxy.server:8080"
+    \end{verbatim}
+    There is also \emph{--http-proxy} and \emph{--proxy-user} option available.
+
+    \subsection{FreshClam: Mirrors and mirrors.txt}
+    The main server is \url{clamav.elektrapro.com} and there are the following
+    mirrors available:
+    \begin{itemize}
+	\item \url{clamav.ozforces.com} - database mirror updated manually
+	\item \url{clamav.essentkabel.com} - full mirror of the main site
+	      updated automatically
+	\item \url{clamav.linux-sxs.org} - database mirror (rsync from ozforces)
+    \end{itemize}
+    In the database directory you will find \emph{mirror.txt} file, which
+    freshclam reads each time it tries to download the new database. It
+    uses the first server from the file and switches to another one (and
+    remembers that position for some time) when the previous is not available.
+    You can modify that file if you will find some mirror faster, however
+    this is not recommended.
+
+
+    \section{Usage}
+
+    \subsection{Clam daemon}\label{clamd}
+    \emph{clamd} is a fully multi-threaded daemon, based on \emph{libclamav}.
+    It's able to work in one of the two modes, using:
+    \begin{itemize}
+	\item Unix (local) sockets
+	\item TCP sockets
+    \end{itemize}
+    The daemon is configured by the \emph{clamav.conf} file. You will find
+    a description of all the options in the \textbf{clamav.conf(5)} manual.
+    \emph{clamd} recognizes the following commands:
+    \begin{itemize}
+	\item \textbf{PING}\\
+	    Check server's state. It should reply with "PONG".
+	\item \textbf{VERSION}\\
+	    Print the version information.
+	\item \textbf{RELOAD}\\
+	    Reload the databases.
+	\item \textbf{QUIT}\\
+	    Perform a clean exit.
+	\item \textbf{SCAN file/directory}
+	    Scan a file or directory (recursively) with archive support. A
+	    full path is required.
+	\item \textbf{RAWSCAN file/directory}
+	    Scan a file or directory (recursively) with archive support
+	    disabled. A full path is required.
+	\item \textbf{CONTSCAN file/directory}
+	    Scan a file or directory (recursively) with archive
+	    support enabled and  continue  scanning  even  when
+	    virus was found. A full path is required.
+	\item \textbf{STREAM}
+	    Scan stream - on this command clamd will return "PORT number"
+	    and you can connect to that port and send a data to scan.
+
+    \end{itemize}
+    Internal threads (except clamuko) are ignoring all external signals.
+    The main thread handles \emph{SIGTERM} and \emph{SIGINT} signals
+    and performs a proper exit when one of them is caught.
+
+    \subsection{Clamuko}\label{clamuko}
+    Clamuko is a special thread in \emph{clamd}, that performs on-access
+    scanning under Linux. It was implemented as a thread in clamd because
+    of Dazuko implementation. Client (clamuko) - server (clamd) model is
+    currently not supported by Dazuko. There are some benefits from
+    current implementation - clamuko is sharing the database with clamd,
+    and it's updated with the RELOAD command. \textbf{You must obey the
+    following principles when using clamuko:}
+    \begin{itemize}
+	\item Always stop the daemon cleanly, with QUIT command or
+	      SIGTERM signal. In other case, you can lose an access
+	      to the protected files until the system is restarted.
+	\item Never protect the directory your mail-scanner software
+	      uses for attachments unpacking. Access to all infected
+	      files will be blocked, and the scanner (even clamd)
+	      won't be able to detect a virus. Infected mail will be
+	      delivered.
+    \end{itemize}
+    You need to enable clamuko in \emph{clamav.conf}. To protect directory
+    /home, please use the option:
+    \begin{verbatim}
+	ClamukoIncludePath /home
+    \end{verbatim}
+    To protect the whole system:
+    \begin{verbatim}
+	ClamukoIncludePath /
+	ClamukoExcludePath /proc
+	ClamukoExcludePath /tempdir/of/mail/scanner
+    \end{verbatim}
+    You can use clamuko to protect file access on Samba/Netatalk. NFS
+    is not supported (Dazuko doesn't intercept NFS access calls). Another
+    idea - you can build a database containing a signatures of the popular
+    exploits, it will protect you against script-kiddies.
+
+    \subsection{Archives and compressed files}
+    Clam AntiVirus depends on LibClamAV. It has built-in support for the
+    following formats:
+    \begin{itemize}
+	\item Zip
+	\item Gzip
+	\item RAR (2.0 only)
+    \end{itemize}
+    Archive files are detected by checking a magic strings.\footnote{Just like
+    the file(1) command.}
+    You need the zlib library for the Zip/Gzip support. Zip archives are
+    accessed with the zziplib library by Guido Draheim and Tomi Ollila.
+    RAR support is based on the UniquE RAR File Library by Christian Scheurer
+    and Johannes Winkelmann. Both of them are included and slightly modified
+    in the clamav sources. Unrarlib supports RAR 2.0 archives only and
+    according to Christian the new format (introduced in WinRAR 3.0) won't
+    be supported. 
+
+    The daemon scans archives supported by libclamav only. Clamscan tries
+    to scan an archive with built-in code, but when it fails it's able
+    to switch to the external unpacker:
+    \begin{verbatim}
+	$ clamscan --unrar rarfail.rar
+	/home/zolw/Clam/test/rarfail.rar: RAR module failure.
+
+	UNRAR 3.00 freeware      Copyright (c) 1993-2002 Eugene Roshal
+
+
+	Extracting from /home/zolw/Clam/test/rarfail.rar
+
+	Extracting  test1                                           OK 
+	All OK
+	/tmp/44694f5b2665d2f4/test1: ClamAV-Test-Signature FOUND
+	/home/zolw/Clam/test/rarfail.rar: Infected Archive FOUND
+    \end{verbatim}
+
+    clamscan supports many popular compressors - it uses external programs
+    for each format. \textbf{If the scanner runs with superuser privileges
+    unpackers are executed with \emph{clamav} privileges, which makes the
+    process far more secure.} It also makes sure, that \emph{clamav} user
+    has read access to all scanned compressed files.  \textbf{You should have
+    enabled recursive scanning with the \emph{-r} option (\emph{--recursive}),
+    if you want to scan the whole content of the archive (with subdirectories)},
+    also all archives in archives will be recursively scanned - just everything.    If files in archives are virus free the archive itself is scanned - just
+    for prevention (it may not be an archive). Please look at the options
+    below, each option has an optional argument - the absolute path to unpacker.
+    If it can't be found in \emph{\$PATH} please supply it. \emph{Because Clam
+    AntiVirus uses the standard GNU options format, the long options with
+    optional arguments, you \textbf{must} remember about the $=$ between option
+    and argument.  So the proper way to supply the optional arguments is for
+    example --unzip=/path/to/unzip.} \\[5pt]
+
+    \noindent
+    \up{unzip}{You probably don't need this option, because Zip is supported
+	       by libclamav. But if libclamav will fail to unzip some file,
+	       it may be useful.
+	       clamscan was tested with \emph{UnZip 5.41 of 16 April 2000,
+	       by Info-ZIP}.}
+    \up{unrar}{Tested with \emph{UNRAR 3.00 freeware}.}
+    \up{unace}{It uses options supported by \emph{UNACE v1.2 public version},
+	       not tested, but should work.}
+    \up{arj}{Tested with \emph{arj 3.10b}.}
+    \up{zoo}{Tested with \emph{zoo 2.1}.}
+    \up{lha}{Tested with \emph{LHa for Unix V 1.14e}.}
+    \up{jar}{CA uses \emph{unzip} for .jar files. Tested with \emph{UnZip 5.41
+	     of 16 April 2000, by Info-ZIP}.}
+    \up{tar}{This option supports non-compressed archives. Tested with
+	     \emph{GNU tar 1.13.17}.}
+    \up{deb}{This option supports debian binary packages. Tested with
+	     \emph{GNU ar\\ 2.12.90.0.14}. Implies --tgz , but doesn't conflict
+	     with --tgz=FULLPATH.}
+    \up{tgz}{This option supports .tar.gz and .tgz files. You need \emph{GNU
+	     tar}, on non-Linux system you probably have it as \emph{gtar}
+	     and if this is in \emph{\$PATH} just use \emph{--tgz=gtar} or
+	     supply the full path to this command as an argument.}
+
+
+    \subsection{Output format}
+    \emph{clamd} uses clamscan compatible (see below) output format.
+    \begin{verbatim}
+	zolw@Wierszokleta:~$ telnet localhost 3310
+	Trying 127.0.0.1...
+	Connected to localhost.
+	Escape character is '^]'.
+	SCAN /home/zolw/infected
+	/home/zolw/infected/sobre.com: W32/Magistr.B FOUND
+	Connection closed by foreign host.
+    \end{verbatim}
+    In \textbf{SCAN} mode it closes the connection when first virus is found.
+    In the case of archives, the output is exactly the same as with normal
+    files:
+    \begin{verbatim}
+	SCAN /home/zolw/Clam/test/test2.zip
+	/home/zolw/Clam/test/test2.zip: ClamAV-Test-Signature FOUND
+    \end{verbatim}
+    \textbf{CONTSCAN} displays all infected files found.\\
+    Error messages are printed in the following format:
+    \begin{verbatim}
+	SCAN /no/such/file
+	/no/such/file: Can't stat() the file ERROR
+    \end{verbatim}
+    and they can be easily parsed.
+
+    \emph{clamscan} writes all messages (only help is written to \textbf{stdout}    by default) to \textbf{stderr}. In some situations
+    you may want to redirect it to \textbf{stdout} with \emph{--stdout}.
+    \emph{stdout} in contrast to \emph{stderr} is buffered, that's why
+    \emph{clamscan} flushes this buffer after each message, to prevent
+    the creation of trashes on the output. During scanning it writes something
+    like this:
+    \begin{verbatim}
+	/TEST/test: OK
+	/TEST/Makefile: OK
+	/TEST/getopt.c: OK
+	/TEST/virfile: Phantom #1 FOUND
+    \end{verbatim}
+    When a virus is found, its name is printed between \emph{filename:} and
+    \emph{FOUND}.
+    If a virus is found in an archive scanned with an external unpacker
+    it's noticed with \emph{Infected Archive}. "Infected Archives" are not
+    counted as infected files - just files in them are. Please note the
+    difference between an internal unarchiving - because it's realized
+    transparently by the libclamav, clamscan doesn't even know the file is
+    an archive.
+
+    \subsection{Signature Tool}
+    \emph{sigtool} automates signature creation. If you have an infected file,
+    which isn't detected by ClamAV, but it is by another anti-virus scanner
+    working in the console, you can create the signature easily.
+    \emph{Example of usage:}
+    Create a random file and put the \textbf{test1} file content into it. We
+    will use \emph{clamscan} to generate the signature, it's just an example.
+    Scan it with \emph{clamscan --stdout testfile}, the output is
+    \begin{verbatim}
+	testfile: ClamAV-Test-Signature FOUND
+
+	----------- SCAN SUMMARY -----------
+	Known viruses: 7734
+	Scanned directories: 0
+	Scanned files: 1
+	Data scanned: 0.95 MB
+	Infected files: 1
+	I/O buffer size: 131072 bytes
+	Time: 0.245 sec (0 m 0 s)
+    \end{verbatim}
+    The unique string in this output is "ClamAV-Test-Signature". Run
+    \emph{sigtool} with the following parameters:
+    \begin{verbatim}
+	$ sigtool -c "clamscan --stdout" -f testfile -s "ClamAV-Test"
+    \end{verbatim}
+    The program will concatenate arguments for \emph{-c (--command)} and
+    \emph{-f (--file)}, that's why the scanner's options must be given in the
+    proper order. At the end it will generate a file \emph{testfile.sig},
+    which should contain 100 bytes in our example. It contains the proper
+    signature.
+    \begin{verbatim}
+	...
+	...
+	Detected at 12103, moving backward.
+	Detected at 11983, moving backward.
+	Detected at 11923, moving backward.
+	Not detected, increasing pos 11893 -> 11923
+	Detected at 11923, moving backward.
+	Not detected, increasing pos 11908 -> 11923
+	Detected at 11923, moving backward.
+	Not detected, increasing pos 11915 -> 11923
+	Detected at 11923, moving backward.
+	Detected at 11919, moving backward.
+	Detected at 11917, moving backward.
+	Detected at 11916, moving backward.
+	Starting precise loop
+	 *** Found signature end at 11916
+
+	The scanner was executed 46 times.
+	Signature length is 50, so length of hex string should be 100
+	Saving signature in testfile.sig file.
+    \end{verbatim}
+
+    \section{Compatible software}
+    The following software supports ClamAV. It's specified which elements
+    are supported, please note that if the program doesn't
+    support clamd you can use clamdscan instead of clamscan.
+
+    \subsection{clamav-milter}
+    \textbf{Location:} included in clamav package\\
+    \textbf{Supports:} clamd\\[4pt]
+    clamav-milter by Nigel Horne is a very fast email scanner designed for
+    sendmail. It's entirely written in C and uses ClamAV's internal mail
+    scanner (also written by Nigel).\\[4pt]
+    \textbf{Installation:}\\
+    You need libmilter development files. Configure ClamAV with
+    \begin{verbatim}
+    $ ./configure --enable-milter
+    \end{verbatim}
+    and recompile. The program will be installed in
+    /usr/local/sbin/clamav-milter. The following instructions were adopted
+    from Nigel's INSTALL file: add to /etc/mail/sendmail.mc:
+    \begin{verbatim}
+INPUT_MAIL_FILTER(`clmilter',`S=local:/var/run/clmilter.sock,
+F=, T=S:4m;R:4m')dnl
+define(`confINPUT_MAIL_FILTERS', `clmilter')
+    \end{verbatim}
+    Check entries in clamav.conf of the form:
+    \begin{verbatim}
+	LocalSocket /var/run/clamd.sock
+	ScanMail
+	StreamSaveToDisk
+    \end{verbatim}
+    Start clamav-milter:
+    \begin{verbatim}
+	/usr/local/sbin/clamav-milter -blo /var/run/clmilter.sock
+    \end{verbatim}
+    and restart sendmail.
+
+    \subsection{mod\_clamav}
+    \textbf{Location:} \url{http://software.othello.ch/mod\_clamav}\\
+    \textbf{Supports:} libclamav, clamd\\[4pt]
+    mod\_clamav is an Apache virus scanning filter. It was written
+    and is currently maintained by Andreas Müller. The project is very well
+    documented and the installation is quite easy.
+
+    \subsection{TrashScan}
+    \textbf{Location:} clamav-sources/support/trashscan\\
+    \textbf{Supports:} clamscan\\[4pt]
+
+    This is a procmail based scanner from Trashware and it's extremely
+    easy to setup, however this is for single users only and not as
+    efficient as MTA based scanners.
+
+    \subsection{AMaViS - "Next Generation"}
+    \textbf{Location:} \url{http://sourceforge.net/projects/amavis}\\
+    \textbf{Supports:} clamscan\\[4pt]
+    AMaViS-ng is a rewritten, more modular version of amavis-perl/amavisd,
+    developed by Hilko Bengen. Home site:\\[4pt]
+    \textbf{Installation:}\\
+
+    \noindent Please download the newest version (at least 0.1.4).
+    After installation (which is quite easy), please uncomment the following
+    line in amavis.conf:
+    \begin{verbatim}
+	virus-scanner = CLAM
+    \end{verbatim}
+    and eventually change the path to clamscan in the \emph{[CLAM]} section:
+    \begin{verbatim}
+	[CLAM]
+
+	clamscan = /usr/local/bin/clamscan
+    \end{verbatim}
+
+    \subsection{amavisd-new}
+    \textbf{Location:} \url{http://www.ijs.si/software/amavisd}\\
+    \textbf{Supports:} clamd, clamscan\\[4pt]
+    amavisd-new is a rewritten version of amavis maintained by
+    Mark Martinec.\\[4pt]
+    \textbf{Installation:}\\
+    clamscan is enabled automatically if clamscan binary is found
+    at amavisd-new starup time. clamd is activated by uncommenting
+    its entry in the @av\_scanners list, file /etc/amavisd.conf.
+
+    \subsection{Qmail-Scanner}
+    \textbf{Location:} \url{http://qmail-scanner.sf.net}\\
+    \textbf{Supports:} clamscan\\[4pt]
+    You must increase softlimit value or wait for a daemon support.
+
+    \subsection{Sagator}
+    \textbf{Location:} \url{http://www.salstar.sk/sagator}\\
+    \textbf{Supports:} clamscan, clamd, libclamav\\[4pt]
+    This program is an email antivirus/antispam gateway. It is an interface
+    to the postfix (or any other smtpd), which runs antivirus
+    and/or spamchecker. Its modular architecture can use any
+    combination of antivirus/spamchecker according to configuration.
+
+    \subsection{ClamdMail}
+    \textbf{Location:} \url{http://clamdmail.sf.net}\\
+    \textbf{Supports:} clamd\\[4pt]
+    A mail processing client for ClamAV. Small, fast and easy to install.
+
+    \subsection{BlackHole}
+    \textbf{Location:} \url{http://www.groovy.org/blackhole.shtml}\\
+    \textbf{Supports:} clamscan, clamd\\[4pt]
+    BlackHole is an advanced spam / virus filter for Qmail, Postfix, Sendmail,
+    Exim and Courier written by Chris Kennedy. This tool is for advanced
+    administrators (installation is hard).
+
+    \subsection{MailScanner}
+    \textbf{Location:} \url{http://www.mailscanner.info}\\
+    \textbf{Supports:} clamscan\\[4pt]
+    MailScanner scans all e-mail for viruses, spam and attacks against
+    security vulnerabilities. It is not tied to any particular virus
+    scanner, but can be used with any combination of 14 different virus
+    scanners, allowing sites to choose the "best of breed" virus scanner.
+
+    \subsection{MIMEDefang}
+    \textbf{Location:} \url{http://www.roaringpenguin.com/mimedefang}\\
+    \textbf{Supports:} clamscan, clamd\\[4pt]
+    This is an efficient mail scanner for Sendmail/milter.
+
+    \subsection{Exiscan}
+    \textbf{Location:} \url{http://duncanthrax.net/exiscan}\\
+    \textbf{Supports:} clamscan, clamd\\[4pt]
+    exiscan is a patch against exim version 4, providing support for content
+    scanning in email messages received by exim. Four different scanning
+    facilities are supported: antivirus, antispam, regular expressions, and
+    file extensions.
+
+    \section{LibClamAV}
+    libclamav may be used to add a virus protection into your software.
+    The library is thread-safe, automatically recognizes and scans an
+    archives. Scanning is very fast - in most cases it won't be noticeable.
+
+    \subsection{API}
+    Each program using libclamav must include \emph{clamav.h} header file:
+    \begin{verbatim}
+	#include <clamav.h>
+    \end{verbatim}
+    The first step is an engine initialization. There are three functions
+    available:
+    \begin{verbatim}
+	int cl_loaddb(const char *filename, struct cl_node **root,
+	int *virnum);
+
+	int cl_loaddbdir(const char *dirname, struct cl_node **root,
+	int *virnum);
+
+	char *cl_retdbdir(void);
+
+    \end{verbatim}
+    \emph{cl\_loaddb()} loads one database per time, \emph{cl\_loaddbdir()}
+    loads all \emph{.db} and {.db2} files from the directory \emph{dirname}.
+    \emph{cl\_retdbdir()} returns hardcoded database directory path.
+    The database will be saved under \emph{root} and the number of the loaded
+    signatures will be \textbf{added} to \emph{virnum}. Pointer to the tree
+    structure (trie, see \ref{engine}) must initially point to the NULL. If you
+    don't want to save the number of signatures loaded pass the NULL as the
+    third argument. \emph{cl\_loaddb} functions return 0 on success and
+    other value on failure.
+    \begin{verbatim}
+	    struct cl_node *root = NULL;
+	    int ret;
+
+	ret = cl_loaddbdir(cl_retdbdir(), &root, NULL);
+    \end{verbatim}
+    There's elegant way to print libclamav's error codes:
+    \begin{verbatim}
+	char *cl_perror(int clerror);
+    \end{verbatim}
+    \emph{cl\_perror()} returns a (statically allocated) string describing
+    \emph{clerror} code:
+    \begin{verbatim}
+	if(ret) {
+	    printf("cl_loaddbdir() error: %s\n", cl_perror(ret));
+	    exit(1);
+	}
+    \end{verbatim}
+    When database is loaded, you must create the proper trie with:
+    \begin{verbatim}
+	void cl_buildtrie(struct cl_node *root);
+    \end{verbatim}
+    In our example:
+    \begin{verbatim}
+	cl_buildtrie(root);
+    \end{verbatim}
+    OK, now you can scan a buffer, descriptor or file with:
+    \begin{verbatim}
+	int cl_scanbuff(const char *buffer, unsigned int length,
+	char **virname, const struct cl_node *root);
+
+	int cl_scandesc(int desc, char **virname, unsigned long int
+	*scanned, const struct cl_node *root, const struct cl_limits
+	*limits, int options);
+
+	int cl_scanfile(const char *filename, char **virname,
+	unsigned long int *scanned, const struct cl_node *root,
+	const struct cl_limits *limits, int options);
+    \end{verbatim}
+    All the functions save a virus name address under \emph{virname} pointer.
+    \emph{virname} points to the name in the trie structure, thus it can't be
+    released directly. \emph{cl\_scandesc()} and \emph{cl\_scanfile()} can
+    increase \emph{scanned} value in CL\_COUNT\_PRECISION units. They also
+    support archive limits:
+    \begin{verbatim}
+	struct cl_limits {
+	    int maxreclevel;
+	    int maxfiles;
+	    long int maxfilesize;
+	};
+    \end{verbatim}
+    The last argument configures scan engine. Currently it supports
+    \textbf{CL\_ARCHIVE} (enables archive scanning), \textbf{CL\_RAW}
+    (disables archive scanning) and \textbf{CL\_MAIL} (enables mbox
+    and Maildir scanning).
+    The functions return 0 (\textbf{CL\_CLEAN}) when no virus is found,
+    \textbf{CL\_VIRUS} when virus is found and other value on failure.
+    \begin{verbatim}
+	    struct cl_limits limits;
+	    char *virname;
+
+	/* maximal number of files in archive */;
+	limits.maxfiles = 100
+	/* maximal archived file size == 10 MB */
+	limits.maxfilesize = 10 * 1048576;
+	/* maximal recursion level */
+	limits.maxreclevel = 8;
+
+
+	if((ret = cl_scanfile("/home/zolw/test", &virname, NULL, root,
+	&limits, CL_ARCHIVE)) == CL_VIRUS) {
+	    printf("Detected %s virus.\n", virname);
+	} else {
+	    printf("No virus detected.\n");
+	    if(ret != CL_CLEAN)
+	        printf("Error: %s\n", cl_perror(ret));
+	}
+    \end{verbatim}
+    When you don't need to scan more files, the trie should be released
+    with:
+    \begin{verbatim}
+	void cl_freetrie(struct cl_node *root);
+    \end{verbatim}
+    You will find some examples in clamav sources. Each program using
+    libclamav must be linked against it:
+    \begin{verbatim}
+	gcc -Wall ex1.c -o ex1 -lclamav
+    \end{verbatim}
+    Enjoy !
+
+
+    \section{Problem solving}
+
+    \subsection{Return codes}
+    Return codes are very useful, especially in system scripts. You may
+    check the return code from \emph{clamscan}, by running the following
+    command directly after the scanner exits:
+    \begin{verbatim}
+	$ echo $?
+    \end{verbatim}
+    Here is a list of return codes from \emph{clamscan}:\\[4pt]
+
+    \noindent
+    \rc{0}{No virus was found.}
+    \rc{1}{Virus(es) detected.}
+    \rc{40}{Unknown option was passed to \emph{clamscan}. Please check
+	    \emph{clamscan --help} or manual page for available options.}
+    \rc{50}{Problem with initialization of virus database. Probably
+	    it doesn't exist in the default place or wrong file was passed
+	    to \emph{--database}.}
+    \rc{51}{Wrong number of threads was passed to \emph{--threads}. It
+	    must be a natural number $ \ge 0$.} 
+    \rc{52}{Not supported file type. Scanner supports regular files,
+	    directories and symlinks.}
+    \rc{53}{Can't open directory.}
+    % FIXME: ^5
+    \rc{54}{Can't open file.$^5$}
+    \rc{55}{Error reading file. Probably the medium you are reading is broken.
+	    \footnote{Only in one-file mode (in recursive mode those errors are
+	    ignored)}}
+    \rc{56}{Can't stat input file or directory. File / directory you want to
+	    scan doesn't exist.}
+    \rc{57}{Can't get absolute pathname of current working directory. Your
+	    current pathname is longer then 200 characters. When clamscan
+	    is started without a input file / directory it scans the current
+	    directory. For some reasons it needs absolute pathnames, the buffer
+	    is hardcoded to 200 characters and that should be sufficient.}
+    \rc{58}{I/O error. Please check the filesystem.}
+    \rc{59}{Can't get information about current user (running clamscan).}
+    \rc{60}{Can't get information about user \emph{clamav}. User \emph{clamav}
+	    (default unprivileged user) doesn't exist in /etc/passwd.}
+    \rc{61}{Can't fork. Can't create new process, please check your limits.}
+    \rc{63}{Can't create temporary file or directory. Please check permissions.}
+    \rc{64}{Can't write to temporary directory. Please specify another one.}
+    \rc{70}{Can't allocate and clear memory. This is a critical error, please
+	    check your system.}
+    \rc{71}{Can't allocate memory. Look above.}
+
+
+    \section{Technicals}
+
+    \subsection{Security}
+    Clam AntiVirus cares about security. Dangerous operations in clamscan
+    (such as extracting, temporary file creation, unlink() operations) are
+    executed with \emph{clamav} privileges. \textbf{But there are no programs
+    without bugs.} This is a young project and everything is possible. In some
+    places it uses the \emph{snprintf()} function, some older systems (C
+    libraries) however the buffer length in this function isn't checked. This
+    example shows, that you should check your system first. Never set SUID/SGID
+    bits on Clam AntiVirus executables. If the SUID bit is set and
+    \emph{clamscan} is owned by root, every file on the system may be modified
+    with the \emph{--log} option. Normal users may use \emph{clamscan} to scan
+    their files, other files shouldn't interest them. Clam AntiVirus Daemon
+    was written with security in mind - it doesn't allow external unpackers
+    (uses only libclamav unarchivers) and contains some additional protections.
+
+
+    \subsection{Scan engine}\label{engine}
+    New versions of Clam AntiVirus are using a mutation of Aho-Corasick
+    pattern matching algorithm. This algorithm uses a finite state pattern
+    matching automaton \cite{clr}. The algorithm itself is a generalization of
+    the Knuth-Morris-Pratt algorithm. Please look at \emph{matcher.h} for data
+    type definitions. The automaton is represented by the trie. Trie is
+    a rooted tree with some specific properties \cite{acwww}. Each node
+    of the trie represents some state of the automaton. In the implementation,
+    the node is defined as following:
+    \begin{verbatim}
+	struct node {
+	    int islast;
+	    struct patt *list;
+	    int maxpatlen;
+	    struct node *next[NUM_CHILDS], *trans[NUM_CHILDS], *fail;
+	};
+    \end{verbatim}
+    [To be continued...]
+
+    \section{Credits}
+    In alphabetical order:
+    \begin{itemize}
+	\item AIX PDSLIB, University of California at Los Angeles \\
+	      \url{http://aixpdslib.seas.ucla.edu} - binary packages for AIX
+	\item Kamil Andrusz \email{<wizz(.at.)mniam.net>} - OpenBSD support
+	      patch
+	\item Jean-Edouard BABIN \email{<Jeb(.at.)jeb.com.fr>} - NetBSD support;
+	      made his NetBSD box available to me.
+	\item Marc Baudoin \email{<babafou(.at.)babafou.eu.org>} - NetBSD
+	      testing
+	\item Hilko Bengen \email{<bengen(.at.)vdst-ka.inka.de>} - support for
+	      Clam AntiVirus in his AMaViS - "Next Generation"
+	\item Patrick Bihan-Faou \email{<patrick(.at.)mindstep.com>} - support
+	      for --with-user/group in the configure script.
+	\item Eric I. Lopez Carreon \email{<elopezc(.at.)technitrade.com>} -
+	      Spanish\\ "Sendmail + AMaViS + ClamAV Installation" how-to
+	\item Nicholas Chua \email{<nicholas(.at.)ncmbox.net>} -
+	      virus signatures; clamav.org mirror administrator.
+	\item Damien Curtain \email{<damien(.at.)pagefault.org>} - fix for the
+	      --remove option in clamscan (it didn't work with internal
+	      archivers); implementation of the --move option in clamscan,
+	      mirroring support in freshclam.
+	\item Krisztian Czako \email{<slapic(.at.)linux.co.hu>} - virus
+	      signatures.
+	\item Diego D'Ambra \email{<da@softcom.dk>} - \textbf{Database
+	      developer.}
+	\item Alejandro Dubrovsky \email{<s328940(.at.)student.uq.edu.au>} -
+	      patch for including and excluding multiple patterns.
+	\item Magnus Ekdahl \email{<magnus(.at.)debian.org>} - Debian\\
+	      (\url{http://www.debian.org}) package maintainer; fixes and
+	      improvements.
+	\item Jason Englander \email{<jason(.at.)englanders.cc>} - bug report:
+	      clamd recursive scanning of the directories on non standard
+	      file systems; configure script support for id checking.
+	      \textbf{Database developer.}
+	\item Oden Eriksson \email{<oden.eriksson(.at.)kvikkjokk.net>} -
+	      Mandrake\\ package maintainer.
+	\item Edison Figueira Junior \email{<edison(.at.)brc.com.br>} - money
+	      donation.
+	\item David Ford \email{<david+cert(.at.)blue-labs.org>} - gcc 3.x
+	      support fix.
+	\item Piotr Gackiewicz \email{<gacek(.at.)intertele.pl>} - bug report:
+	      clamd\\ THREXIT bug
+	\item Nick Gazaloff \email{<nick(.at.)sbin.org>} - socket descriptors
+	      leak fix in clamd.
+	\item Wieslaw Glod \email{<wkg(.at.)x2.pl>} - bug report: FreeBSD
+	      compile problem in 0.22.
+	\item Matthew A. Grant \email{<grantma(.at.)anathoth.gen.nz>} -
+	      OpenAntiVirus Update script (\emph{oav-update})
+	\item Hrvoje Habjanic \email{<hrvoje.habjanic(.at.)zg.hinet.hr>} -
+	      syslog support patch for clamd; virus provider.
+	\item Michal Hajduczenia \email{<michalis(.at.)mat.uni.torun.pl>} - Clam
+	      title logo.
+	\item Paul Hoadley \email{<paulh(.at.)logixsquad.net} - "Installing
+	      qmail-scanner, Clam AntiVirus and SpamAssassin under FreeBSD"
+	      how-to.
+	\item Thomas W. Holt Jr. \email{<twh(.at.)cohesive.net>} -
+	      information about ClamAV compiling on Solaris 2.6 and Cobalt
+	      MIPS boxes.
+	\item Douglas J Hunley \email{<doug(.at.)hunley.homeip.net>} -\\
+	      clamav.linux-sxs.org mirror, ideas.
+	\item Kurt Huwig \email{<kurt(.at.)iku-netz.de>} - smart suggestions,
+	      ScannerDaemon (OpenAntiVirus) author.
+	\item Dave Jones \email{<dave(.at.)kalkbay.co.za>} - bug report: problem
+	      in option parser.
+	\item Kazuhiko \email{<kazuhiko(.at.)fdiary.net>} - Qmail-Scanner 0.12
+	      support patch.
+	\item Robbert Kouprie \email{<robbert(.at.)exx.nl>} - patch for unrarlib
+	      buffer overflow.
+	\item Henk Kuipers \email{<henk(.at.)opensourcesolutions.nl>} - bug
+	      report:\\ 0.50 compile problem.
+	\item Nigel Kukard \email{<nkukard(.at.)lbsd.net>} - virus signatures.
+	\item Dr Andrzej Kurpiel \email{<akurpiel(.at.)mat.uni.torun.pl>} -
+	      choice of\\ this project from my list.
+	\item Dennis Leeuw \email{<dleeuw(.at.)made-it.com>} - \emph{"Debian
+	      GNU/Linux Mail Server"} how-to, \textbf{corrections of this
+	      document}.
+	\item Free Oscar \email{<freeoscar(.at.)wp.pl>} - hex2str() enhancement
+	\item Martin Lesser \email{<admin-debian(.at.)bettercom.de>} - patch for
+	      the\\ http-proxy problem in 0.51.
+	\item Peter N Lewis \email{<peter(.at.)stairways.com.au>} - Mac OS X
+	      data type problem bugfix.
+	\item Mike Loewen \email{<mloewen(.at.)sturgeon.cac.psu.edu>} - bug
+	      report:\\ clamscan 0.24 compile error on Solaris 8; various
+	      Solaris and AIX tips.
+	\item Stefan Martig \email{<sm(.at.)officeco.ch>} - bug report:
+	      /proc/cpuinfo problem analysis on Linux/Alpha, providing me with
+	      access to the Linux/Alpha system.
+	\item Brian May \email{<bam(.at.)debian.org>} - bug report: clamd
+	      writing to an undefined file.
+	\item Ken McKittrick \email{<klmac(.at.)usadatanet.com>} - intensive
+	      FreeBSD\\ testing, hdd donation.
+	\item Chris van Meerendonk \email{<cvm(.at.)castel.nl>} - virus
+	      samples, clamav.essentkabel.com mirror.
+	\item Arkadiusz Miskiewicz \email{<misiek(.at.)pld.org.pl>} - Polish(ed)
+	      Linux\\ Distribution (\url{http://www.pld.org.pl}) rpm package
+	      maintainer; fixes and ideas.
+	\item Doug Monroe \email{<doug(.at.)planetconnect.com>} - Qmail-Scanner
+	      problem analysis.
+	\item Lukasz Jaroslaw Mozer \email{<lukasz(.at.)netx.waw.pl>} -
+	      \url{clamav.rulez.pl} mirror.
+	\item Flinn Mueller\email{flinn(.at.)activeintra.net} - OpenBSD port
+	      maintainer.
+	\item Hendrik Muhs \email{<Hendrik.Muhs(.at.)student.uni-magdeburg.de>}
+	      -\\ pattern matcher optimization.
+	\item Luca 'NERvOus' Gibelli \email{<nervous(.at.)nervous.it>} -
+	      ElektraPro.com administrator.
+	\item Wojciech Noworyta \email{<wnow(.at.)konarski.edu.pl>} - bug
+	      report: buffer overflow in clamscan's help under Windows.
+	\item Joe Oaks \email{<joe.oaks(.at.)hp.com>} - HPUX support.
+	\item Washington Odhiambo \email{<wash(.at.)wananchi.com>} - extensive
+	      mbox\\ code testing, bug reports.
+	\item Masaki Ogawa \email{<proc(.at.)mac.com>} - Mac OS X support,
+	      Japanese documentation.
+	\item Martijn van Oosterhout \email{<kleptog(.at.)svana.org>} - code
+	      analysis and suggestions.
+	\item OpenAntiVirus.org Team - initial virus database.
+	\item Tomasz Papszun \email{tomek(.at.)lodz.tpsa.pl} - various bug
+	      reports.
+	\item Eric Parsonage \email{eric(.at.)eparsonage.com} - "Installing
+	      qmail-scanner, Clam Antivirus and SpamAssassin under FreeBSD"
+	      how-to.
+	\item Oliver Paukstadt \email{<pstadt(.at.)stud.fh-heilbronn.de>} - bug
+	      report: crash with strange Zip archives.
+	\item Kristof Petr \email{<Kristof.P(.at.)fce.vutbr.cz>} - bug report:
+	      socket descriptors leak in clamd; file decriptors leak in
+	      clamd, clamscan and libclamav.
+	\item Ed Phillips \email{<ed(.at.)UDel.Edu>} - patch for the internal
+	      logger in clamd.
+	\item Andreas Piesk \email{<Andreas.Piesk(.at.)heise.de>} - clamd:\\
+	      ScannerDaemonOutputFormat option.
+	\item Ant La Porte \email{<ant(.at.)dvere.net>} - proxy support
+	      enhancement.
+	\item Sergei Pronin \email{<sp(.at.)finndesign.fi>} - bug report:
+	      access problems in superuser mode.
+	\item Thomas Quinot \email{<thomas(.at.)cuivre.fr.eu.org>} - patch for\\
+	      non-default prefix and incoherent database location
+	      specification in defaults.h of clamscan and freshclam.
+	\item David Sanchez \email{<dsanchez(.at.)veloxia.com>} - bug report:
+	      thread deadlocking\\ in a critical error situation.
+	\item Martin Schitter - bug report: libclamav crash on certain
+	      zip files.
+	\item Enrico Scholz
+	      \email{<enrico.scholz(.at.)informatik.tu-chemnitz.de>} -
+	      daemonize() enhancements.
+	\item Dr Zbigniew Szewczak \email{<zssz(.at.)mat.uni.torun.pl>} - ideas,
+	      suggestions and time spent on discussing some aspects of ClamAV.
+	\item Gernot Tenchio \email{<g.tenchio(.at.)telco-tech.de>} - proxy
+	      authorization support in freshclam.
+	\item Masahiro Teramoto \email{<markun@onohara.to>} - official FreeBSD
+	      port maintainer.
+	\item Trashware \email{trashware(.at.)gmx.net} - TrashScan
+	\item Troy Wollenslegel \email{<troy(.at.)intranet.org>} - bug report:
+	      handling inaccessible directories in archives.
+	\item Andoni Zubimendi \email{<andoni(.at.)lpsat.net>} - fix for
+	      segmentation\\ fault in 0.12 (NULL pointer dereference).
+    \end{itemize}
+
+    \section{Authors}
+    Nigel Horne \email{<njh(.at.)bandsman.co.uk>} is an active ClamAV developer
+    responsible for the mbox code in libclamav and clamav-milter. I take care
+    most of these things are working ;) If you have some questions, feel free
+    to mail us.\\[4pt]
+
+    \hfill Tomasz Kojm \email{<zolw(.at.)konarski.edu.pl>}
+
+    \begin{thebibliography}{99}
+	\bibitem{clr}
+	    Cormen, Leiserson, Rivest: \emph{Introduction to Algorithms},
+	    Chapter 34, MIT Press.
+	\bibitem{acwww}
+	    {\small
+	    \url{http://www-sr.informatik.uni-tuebingen.de/~buehler/AC/AC.html}}:
+	    Aho-Corasick algorithm description
+    \end{thebibliography}
+\end{document}

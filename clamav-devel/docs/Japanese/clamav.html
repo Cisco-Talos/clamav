@@ -1,0 +1,304 @@
+<?xml version~"1.0" encoding="EUC-JP" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.DTD">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=euc-jp" />
+  <title>Clam Antivirusに関するメモ</title>
+</head>
+<body>
+
+<h1>Clam Antivirusに関するメモ</h1>
+
+<p>作成日: 2002年8月16日</p>
+<p>作成者: 小川真樹</p>
+
+<h2>1. Clam Antivirus</h2>
+
+ <h3>1.1 Clam Antivirusについて</h3>
+
+ <p>
+ Clam AntivirusはTomasz Kojmによる、各種UNIX系のシステム(MacOSXも含む)で動作するアンチウィルスソフトです。WindowsでもCygwin上で動作するようです。オープンソースで、GPLライセンスに基づいて利用することができます。また、同じくフリーの<a href="http://www.openantivirus.org/">OpenAntiVirus</a>(http://www.openantivirus.org/)プロジェクトのウィルスデータベースを利用しています。
+ </p>
+ 
+ <h3>1.2 ホームページ</h3>
+
+ <p>
+ Clam Antivirusについての最新かつ正確な情報、ソースコードは<a href="http://clamav.elektrapro.com/">http://clamav.elektrapro.com/</a>にあります。
+ </p>
+
+<h2>2. Clam AntiVirusのインストール</h2>
+
+ <h3>2.1 Clam AntiVirusの入手</h3>
+ 
+ <p>
+ ソースコードは<a href="http://clamav.elektrapro.com/">http://clamav.elektrapro.com/</a>から入手することができます。2002年8月16日時点での最新のバージョンは0.23のようです。
+ </p>
+
+ <h3>2.2 clamavユーザの作成</h3>
+
+ <p>
+ Clam Antivirusをインストールする前に'clamav'というユーザとグループを作成する必要があります。(Cygwinではこの作業は必要ありません。)
+ </p>
+ 
+  <pre><code>
+  LinuxやSolarisの例
+  
+    # groupadd clamav
+    # useradd -g clamav -s /bin/false -c "Clam Antivirus" clamav
+
+
+  MacOSXの例(この例ではuidとgidを402で作成しています)
+  
+    $ sudo niutil -create / /groups/clamav
+    $ sudo niutil -createprop / /groups/clamav gid 402
+    $ sudo niutil -createprop / /groups/clamav passwd '*'
+    $ sudo niutil -create / /users/clamav
+    $ sudo niutil -createprop / /users/clamav uid 402
+    $ sudo niutil -createprop / /users/clamav gid 402
+    $ sudo niutil -createprop / /users/clamav passwd '*'
+    $ sudo niutil -createprop / /users/clamav realname 'Clam Antivirus'
+    $ sudo niutil -createprop / /users/clamav home /dev/null
+    $ sudo niutil -createprop / /users/clamav shell /dev/null
+  
+  ※NetInfo Managerを使ってGUIで作成してもかまいません。
+  </code></pre>
+
+ <h3>2.3 コンパイル・インストール</h3>
+ 
+ <p>
+ 他の多くのソフトと同様の手順でコンパイルおよびインストールできるでしょう。GNU makeが必要になります。
+ </p>
+
+ <pre><code>
+ $ zcat clamav-0.23.tar.gz | tar xvf -
+ $ cd clamav-0.23
+ $ ./configure
+ $ make
+ $ sudo make install
+ </code></pre>
+
+<h2>3. ウィルスのスキャン</h2>
+
+ <h3>3.1 clamscan</h3>
+
+ <p>
+ clamscanコマンドを使って、ウィルスに感染しているファイルがないか検査します。
+ </p>
+ <h4>3.1.1 主なコマンド実行例</h4>
+ <dl>
+   <dt>$ clamscan &lt;file&gt;</dt>
+   <dd>ファイルを検査します。</dd>
+   <dt>$ cat &lt;file&gt; | clamscan -</dt>
+   <dd>標準入力のデータを検査します。</dd>
+   <dt>$ clamscan</dt>
+   <dd>現在のディレクトリにあるファイルを検査します。</dd>
+   <dt>$ clamscan -r [&lt;dir&gt;]</dt>
+   <dd>ディレクトリとサブディレクトリにあるファイルを再帰的に検査します。</dd>
+ </dl>
+
+ <h3>3.2 圧縮ファイルのスキャン</h3>
+
+ <p>
+ 圧縮されたファイル等、なんらかの形式で加工されたファイルを検査するためには、それらを一度元のファイルに戻す必要があります。たとえば、「clamscan /var/spool/mail」を実行しても、メールスプール内の添付ファイルを正しく検査することができません。また、MacOSXにおいて「clamscan -r ~/Library/Mail」を実行しても、同様にMail.appのメールデータを正しく検査することはできません。
+ </p>
+ <p>
+ ただし、一部の圧縮フォーマットについては、clamscanコマンドにそれぞれのオプションをつけることで外部コマンドを利用して解凍しながら検査することが可能です。このときに「-r」オプションを併用すると、再帰的に解凍しながら検査します。また、圧縮されたファイル自体がウィルスに感染しているかどうかも検査されます。
+ </p>
+ <h4>3.2.1 圧縮ファイル用の主なオプション</h4>
+ <dl>
+   <dt>--unzip[=/path/to/unzip]</dt>
+   <dd>.zip形式のファイルを検査します。</dd>
+   <dt>--unrar[=/path/to/unrar]</dt>
+   <dd>.rar形式のファイルを検査します。</dd>
+   <dt>--lha[=/path/to/lha]</dt>
+   <dd>.lzh形式のファイルを検査します。</dd>
+   <dt>--tar[=/path/to/tar]</dt>
+   <dd>.tar形式のファイルを検査します。GNU tarが必要です。</dd>
+   <dt>--tgz[=/path/to/tar]</dt>
+   <dd>.tgzおよび.tar.gz形式のファイルを検査します。GNU tarが必要です。</dd>
+   <dt>--jar[=/path/to/unzip]</dt>
+   <dd>.jar形式のファイルを検査します。</dd>
+   <dt>--deb[=/path/to/ar]</dt>
+   <dd>.deb形式のファイルを検査します。</dd>
+ </dl>
+
+<h2>4. ウィルス定義データベース</h2>
+
+ <h3>4.1 データベース</h3>
+ 
+ <p>
+ Clam Antivirusのウィルス定義データベースは、デフォルトでは/usr/local/share/clamav/viruses.dbにインストールされます。最新のウィルスに対応するためにはこのファイルをこまめに更新する必要があります。
+ </p>
+ <p>
+ また、バージョン0.23以降では、このviruses.dbと同じディレクトリにexample.dbのようなファイル名の末尾に「.db」を含むファイルがある場合は、そのファイルもウィルス定義データベースとして使用するようになっています。つまり標準のウィルス定義データベースに加えて独自作成もしくはサードパーティ製のデータベースを併用することが可能です。
+ </p>
+ 
+ <h3>4.2 freshclam</h3>
+
+ <h3>4.3 oav-update</h3>
+
+<h2>5. AMaViSを利用した電子メールのスキャン</h2>
+
+ <h3>5.1 AMaViS-perl</h3>
+
+ <p>
+ AMaViS-perlとClam Antivirusを連係させて使用すると、サーバサイドでの電子メールのウィルススキャンをさせることができます。
+ </p>
+ <p>
+ 使用するためにはClam Antivirusのソースコードに含まれているパッチ(support/amavis/clamavis.patch)を使ってAMaViS-perlをClam Antivirusに対応させる必要があります。まずは<a href="http://www.amavis.org/">http://www.amavis.org/</a>からamavis-perl-11.tar.gzを入手します。それから以下のような手順でパッチをあてます。
+ </p>
+ 
+ <pre><code>
+ $ tar zxpvf amavis-perl-11.tar.gz
+ $ cp clam-0.23/support/amavis/clamavis.patch amavis-perl-11
+ $ cd amavis-perl-11
+ $ patch -p1 &lt; clamavis.patch
+ $ find . -exec touch 01010000 {} ＼;
+ </code></pre>
+
+ <p>
+ パッチをあてた後は、通常のAMaViS-perlのインストール手順と同じようにインストール・設定・使用することができます。AMaViS-perlについての詳細な情報については<a href="http://www.amavis.org/">http://www.amavis.org/</a>を調べて下さい。
+ </p>
+
+ <h3>5.2 AMaViS-ng</h3>
+ 
+ <p>
+ AMaViS-ngはパッチをあてるまでもなくデフォルトでClam Antivirusに対応しています。また、AMaViS-perlに比べて若干インストールが楽です。が、MIME構造の壊れたメールなどの配送を保留してしまったりするのが少し困りものです。
+ </p>
+
+ <p>
+ AMaViS-ngは<a href="http://sourceforge.net/projects/amavis">http://sourceforge.net/projects/amavis</a>から入手できます。インストール後に、amavis.confの次のような行のコメントを外します。
+ </p>
+
+ <pre><code>
+ virus-scanner = CLAM
+ </code></pre>
+
+ <p>
+ それから、同じくamavis.confの[CLAM]セクションにclamscanのpathを設定します。
+ </p>
+ 
+ <pre><code>
+[CLAM]
+
+clamscan = /usr/local/bin/clamscan
+ </code></pre> 
+
+<h2>6. ウィルスシグネチャ</h2>
+
+ <h3>6.1 ClamAV-Test-Signatureのシグネチャ</h3>
+
+ <p>
+ ClamAV-Test-SignatureはClam Antivirusに含まれているテスト用のウィルス(動作確認用のもので実際には害をもたらさない)です。ソースコードではtest/test1にあります。このファイルがどのようになっているか見てみましょう。
+ </p>
+ <pre><code>
+ $ cat test/test1
+ $CE<!-- -->liacmaTrESTuScikgsn$FREE-TEST-SIGNATURE$EEEEE$
+ </code></pre>
+ <p>
+ 一方、このClamAV-Test-Signature用のシグネチャは次のようになっています。
+ </p>
+ <pre><code>
+ $ grep ClamAV-Test-Signature /usr/local/share/clamav/viruses.db
+ ClamAV-Test-Signature=2443456c6961636d615472455354755363696b67736e24465245452d544553542d5349474e4154555245244545454545240a
+ </code></pre>
+ <p>
+ 「=」の左側がウィルスの名前、右側がウィルスのシグネチャ本体であることがわかると思います。では、このシグネチャはどのようにして作成されたのでしょうか。その前にとりあえずClamAV-Test-Signatureのファイルを16進数で出力してみましょう。これはSolarisでの実行例です。
+ </p>
+ <pre><code>
+ $ od -t x1 test1
+ 0000000 24 43 45 6c 69 61 63 6d 61 54 72 45 53 54 75 53
+ 0000020 63 69 6b 67 73 6e 24 46 52 45 45 2d 54 45 53 54
+ 0000040 2d 53 49 47 4e 41 54 55 52 45 24 45 45 45 45 45
+ 0000060 24 0a
+ 0000062
+ </code></pre>
+ <p>
+ もうお分りいただけたと思います。シグネチャの正体はウィルス(の断片)をhexdumpしたものだったんですね。このClamAV-Test-Signatureの場合はファイルが小さいので全体をhexdumpしていますが、通常はファイルの一部を使います。
+ </p>
+
+ <h3>6.2 シグネチャの作成</h3>
+
+ <p>
+ シグネチャを作成するにはウィルスのデータをhexdumpすればよいことがわかりました。このシグネチャと一致する箇所をもつファイルをウィルスに感染しているとみなすわけです。
+ </p>
+ <p>
+ ところが、ウィルスに感染したファイルをそのままhexdumpしたものをシグネチャとして配布してしまうと、ウィルスそのものを配布しているのと変わりありません。また、シグネチャそのものが肥大化してしまうので、それを読みこむアンチウィルスソフトの負担が大きくなります。また、感染したファイルごとに形を変えるようなタイプのものに対しては効果がありません。
+ </p>
+ <p>
+ したがって、シグネチャの作成のために抽出する箇所は次のような条件を満たす必要があります。
+ </p>
+ <ul>
+   <li>手頃な長さであること</li>
+   <li>そのウィルスに感染したファイルに必ず含まれること</li>
+   <li>そのウィルスに感染していないファイルには含まれないこと</li>
+   <li>それだけでは無害であること</li>
+ </ul>
+ <p>
+ これらの条件をみたすようなシグネチャを作成するためには、まずウィルスに感染したファイルを入手する必要があります。また、同じウィルスに感染したファイルを、別の経路から複数入手するか、あるいは一つのウィルスを閉じられた環境で培養してみて、該当のウィルスの性質などについてより深く調べる必要があるでしょう。また、当然のことですが、たとえばWindowsに感染するウィルスのシグネチャをWindows上で作成するのは危険です。
+ </p>
+ <p>
+ シグネチャを作成したら、ウィルス定義データベースに登録しましょう。Clam Antivirusの標準のデータベースファイルはviruses.dbですが、このファイルに追加すると、データベースを更新するときに上書きされて失われてしまうので、たとえばlocal.dbというような名前のファイルを新規に作成し、そこに追加していくとよいでしょう。
+ </p>
+
+ <h3>6.3 sigtool</h3>
+
+ <p>
+ このように、「どの部分をシグネチャに採用するか」という問題のために、自力で良質なシグネチャを作成するのはやや困難であるといえるでしょう。Clam Antivirusに含まれるsigtoolコマンドは、このシグネチャの作成を支援するものです。
+ </p>
+ <p>
+ sigtoolは、ウィルスに感染したファイルを細切れにして、それを他のウィルススキャナにかけ、そのウィルススキャナが細切れにされたファイルからウィルスを検出するかを調べます。そういったことをくり返して、その他のウィルススキャナが、どの部分をウィルスとして検出するかを正確につきとめます。そしてその部分をhexdumpします。
+ </p>
+ <p>
+ sigtoolでシグネチャを作成するためには以下の条件が必要です。
+ </p>
+ <ul>
+   <li>ウィルスに感染したファイルがある</li>
+   <li>そのウィルスをClam Antivirusでは検出できない</li>
+   <li>ほかのウィルススキャナでは、そのウィルスを検出できる</li>
+   <li>そのウィルススキャナがコマンドラインでのインターフェースを持ち、なおかつ標準出力にウィルス検出時の固有のメッセージを出力する</li>
+ </ul>
+ <p>
+ 仮にこの他のウィルススキャナのコマンド名を「otherscan」とし、ウィルスに感染したファイルを「virus.exe」とします。また、このotherscanコマンドがvirus.exeからウィルスを検出したとき「infected」という文字列が標準出力に出力するメッセージに含まれるものとします。
+ </p>
+ <p>
+ これらの条件下でsigtoolを次のように実行します。
+ </p>
+ <pre><code>
+ $ sigtool -c "otherscan" -f virus.exe -s "infected"
+ </code></pre>
+ <p>
+ このコマンドを実行すると、「virus.exe.sig」というファイルにシグネチャを出力します。これだけではまだOpenAntivirusのシグネチャのフォーマットの右辺だけで不充分ですので、適切なウィルスの識別名を左辺に設定します。
+ </p>
+
+<h2>7. フリーのアンチウィルスについて</h2>
+
+ <p>
+ OpenAntiVirusをはじめとするフリーのアンチウィルスプロジェクトは、いまだに商用のものには、足もとさえ全く及びません。何もしないよりはましかもしれませんが、現在のところ、Clam AntivirusやOpenAntiVirus等を導入したからといって、十分であるとは到底言えない状況です。2002年8月16日の時点で、検出できるウィルスの種類は1800にも届いていません。また、OpenAntiVirusのウィルス定義データベースの現在の最終更新日付は7月1日で、1ヵ月半以上更新されていません。
+ </p>
+
+<h2>8. この文書について</h2>
+
+<h3>8.1 ライセンスなど</h3>
+ <p>
+ この文書はGNU General Public Licenseに基づいています。
+ </p>
+ <p>
+  この文書は小川真樹がClam Antivirusについて調べたもので、忘れないように記録したものをまとめたものです。
+  この文書の内容についての意見や感想、あるいは誤りの指摘については<a href="mailto:proc@mac.com">proc@mac.com</a>までご連絡下さい。
+ </p>
+
+<h3>8.2 免責事項</h3>
+ <p>
+ ここに書かれてあるものは完全に無保証です。ここに書かれてあることをそのまま実行してそのとおりに動作する保証は全くありません。特にシグネチャの作成の部分については、他にまとまった資料らしいものをみつけられなかった(もしそういった資料について知っている方がいたら教えてください)こともあって、間違ったことを書いている可能性が比較的高いです。
+ </p>
+
+<hr />
+
+<p>
+<a href="./">戻る</a>
+</p>
+
+</body>
+</html>

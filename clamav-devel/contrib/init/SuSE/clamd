@@ -1,0 +1,96 @@
+#! /bin/sh
+
+# -- ntw2007:/etc/init.d/clamd, 17.06.2003 shw --
+
+
+### BEGIN INIT INFO
+# Provides:       clamd
+# Required-Start: 
+# Required-Stop:  
+# Default-Start:  2 3 5
+# Default-Stop:   0 1 2 6
+# Description:    Control clamav daemon.
+### END INIT INFO
+
+
+# -- variables --
+_what="Clam AntiVirus"
+
+# -- see whether we are installed --
+_cnf="/etc/clamav.conf"
+
+_pid="$(awk '/^PidFile/ {print $2}' ${_cnf})"
+_port="$(awk '/^TCPSocket/ {print $2}' ${_cnf})"
+
+if [ -s "${_cnf}" -a -r "${_cnf}" ]
+   then
+      _srv="$(\which clamd | sed -e 's+/*+/+' | head -1)"
+      test -x "${_srv}" || exit 5
+
+      _clnt="$(\which clamdscan | sed -e 's+/*+/+' | head -1)"
+      test -x "${_clnt}" || exit 5
+
+      _cnf="-c ${_cnf}"
+   else
+      exit 6
+fi
+
+
+# -- fetch LSB compliant functions (hope they get our environment) --
+. /lib/lsb/init-functions
+
+
+# -- first reset status of this service --
+rc_reset
+
+
+# -- process request --
+case "${1}" in
+   start)
+      echo -n "Starting ${_what} ${_cnf}."
+
+      "${_srv}" "${_cfg}"
+
+      rc_status -v
+   ;;
+   stop)
+      echo -n "Shutting down ${_what}: "
+
+      "${_clnt}" +QUIT
+
+      rc_status -v
+   ;;
+   try-restart)
+      ${0} status 1>/dev/null && ${0} restart
+
+      rc_status
+   ;;
+   restart)
+      ${0} stop; sleep 3
+
+      ${0} start
+
+      rc_status
+   ;;
+   status)
+      echo -n "Checking ${_what}: "
+
+      "${_clnt}" +VERSION
+
+      rc_status -v
+
+      test -s "${_pid}" && echo "ProcessID claims to be: $(cat ${_pid})."
+   ;;
+   *)
+      (echo; echo "Usage: ${0} {start|stop|status|try-restart|restart}") 2>&1
+
+      exit 1
+   ;;
+esac
+
+
+# -- inform caller --
+rc_exit
+
+
+# -- end of clamd --

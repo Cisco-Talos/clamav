@@ -1,0 +1,49 @@
+.TH "clamav-milter" "1" "June 21, 2003" "" "Clam AntiVirus"
+.SH "NAME"
+.LP 
+clamav\-milter \- milter compatible mail scanner
+.SH "SYNOPSIS"
+.LP 
+clamscan [options] socket_address
+.SH "DESCRIPTION"
+.LP 
+clamav\-milter is a filter for sendmail mail server. It uses a mail scanning engine built into clamd.
+.SH "OPTIONS"
+.LP 
+
+.TP 
+\fB\-h, \-\-help\fR
+Output the help information and exit.
+.TP 
+\fB\-V, \-\-version\fR
+Print the version number and exit.
+.TP 
+\fB\-c FILE, \-\-config\-file=FILE\fR
+By default clamav\-milter uses a default configuration file, this option allows you to specify another one.
+.TP 
+\fB\-x n, \-\-debug\-level=n\fR
+Set the debug level to n (where n from [0..9]).
+.TP 
+\fB\-b, \-\-bounce\fR
+Send a failure message to the sender.
+.TP 
+\fB\-l, \-\-local\fR
+Also scan messages sent from LAN.
+.TP 
+\fB\-o, \-\-outgoing\fR
+Scan outgoing messages from this machine.
+.TP 
+\fB\-\-server=ADDRESS, \-s ADDRESS\fR
+IP address of server running clamd (when using TCPsocket).
+.TP 
+\fB\-\-max\-children=n, \-m n\fR
+Maximum number of children.
+.SH "EXAMPLES"
+.LP 
+clamav\-milter \-\-max\-children=2 \-obl local:/var/run/clmilter.sock
+.SH "AUTHOR"
+.LP 
+clamav\-milter was written by Nigel Horne <njh@bandsman.co.uk>, the manual page was created by Tomasz Kojm <zolw@konarski.edu.pl>.
+.SH "SEE ALSO"
+.LP 
+clamd(8), clamscan(1), freshclam(1), sigtool(1), clamav.conf(5)
