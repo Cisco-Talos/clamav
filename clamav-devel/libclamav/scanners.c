@@ -656,7 +656,6 @@ static int cli_scanmscab(int desc, const char **virname, long int *scanned, cons
 	struct mscab_decompressor *cabd = NULL;
 	struct mscabd_cabinet *base, *cab;
 	struct mscabd_file *file;
-	const char *tmpdir;
 	char *tempname;
 	int ret = CL_CLEAN;
 
@@ -674,13 +673,6 @@ static int cli_scanmscab(int desc, const char **virname, long int *scanned, cons
 	return CL_EMSCAB;
     }
 
-    if((tmpdir = getenv("TMPDIR")) == NULL)
-#ifdef P_tmpdir
-	tmpdir = P_tmpdir;
-#else
-	tmpdir = "/tmp";
-#endif
-
     for(cab = base; cab; cab = cab->next) {
 	for(file = cab->files; file; file = file->next) {
 
@@ -695,7 +687,7 @@ static int cli_scanmscab(int desc, const char **virname, long int *scanned, cons
 		continue;
 	    }
 
-	    tempname = cli_gentemp(tmpdir);
+	    tempname = cli_gentemp(NULL);
 	    cli_dbgmsg("MSCAB: Extracting data to %s\n", tempname);
 	    if(cabd->extract(cabd, file, tempname)) {
 		cli_dbgmsg("MSCAB: libmscab error code: %d\n", cabd->last_error(cabd));
@@ -721,21 +713,12 @@ static int cli_scanmscab(int desc, const char **virname, long int *scanned, cons
 static int cli_scanhtml(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	char *tempname, fullname[1024];
-	const char *tmpdir;
 	int ret=CL_CLEAN, fd;
 
 
     cli_dbgmsg("in cli_scanhtml()\n");
 
-    if((tmpdir = getenv("TMPDIR")) == NULL)
-#ifdef P_tmpdir
-        tmpdir = P_tmpdir;
-#else
-        tmpdir = "/tmp";
-#endif
-                                                                                                                                           
-    tempname = cli_gentemp(tmpdir);
-                                                                                                                                           
+    tempname = cli_gentemp(NULL);
     if(mkdir(tempname, 0700)) {
         cli_dbgmsg("ScanHTML -> Can't create temporary directory %s\n", tempname);
         return CL_ETMPDIR;
@@ -996,22 +979,14 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 
 static int cli_scanole2(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
-	const char *tmpdir;
 	char *dir;
 	int ret = CL_CLEAN;
 
 
     cli_dbgmsg("in cli_scanole2()\n");
 
-    if((tmpdir = getenv("TMPDIR")) == NULL)
-#ifdef P_tmpdir
-	tmpdir = P_tmpdir;
-#else
-	tmpdir = "/tmp";
-#endif
-
     /* generate the temporary directory */
-    dir = cli_gentemp(tmpdir);
+    dir = cli_gentemp(NULL);
     if(mkdir(dir, 0700)) {
 	cli_dbgmsg("OLE2: Can't create temporary directory %s\n", dir);
 	return CL_ETMPDIR;
@@ -1039,22 +1014,14 @@ static int cli_scanole2(int desc, const char **virname, long int *scanned, const
 
 static int cli_scantar(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
-	const char *tmpdir;
 	char *dir;
 	int ret = CL_CLEAN;
 
 
     cli_dbgmsg("in cli_scantar()\n");
 
-    if((tmpdir = getenv("TMPDIR")) == NULL)
-#ifdef P_tmpdir
-	tmpdir = P_tmpdir;
-#else
-	tmpdir = "/tmp";
-#endif
-
     /* generate temporary directory */
-    dir = cli_gentemp(tmpdir);
+    dir = cli_gentemp(NULL);
     if(mkdir(dir, 0700)) {
 	cli_errmsg("Tar: Can't create temporary directory %s\n", dir);
 	return CL_ETMPDIR;
@@ -1074,22 +1041,13 @@ static int cli_scantar(int desc, const char **virname, long int *scanned, const 
 
 static int cli_scanmschm(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
-	const char *tmpdir;
 	char *tempname;
 	int ret = CL_CLEAN;
 
 
     cli_dbgmsg("in cli_scanmschm()\n");	
 
-    if((tmpdir = getenv("TMPDIR")) == NULL)
-#ifdef P_tmpdir
-	tmpdir = P_tmpdir;
-#else
-	tmpdir = "/tmp";
-#endif
-
-    tempname = cli_gentemp(tmpdir);
-
+    tempname = cli_gentemp(NULL);
     if(mkdir(tempname, 0700)) {
 	cli_dbgmsg("CHM: Can't create temporary directory %s\n", tempname);
 	return CL_ETMPDIR;
@@ -1107,21 +1065,12 @@ static int cli_scanmschm(int desc, const char **virname, long int *scanned, cons
 
 static int cli_scanscrenc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
-	const char *tmpdir;
 	char *tempname;
 	int ret = CL_CLEAN;
 
     cli_dbgmsg("in cli_scanscrenc()\n");
 
-    if((tmpdir = getenv("TMPDIR")) == NULL)
-#ifdef P_tmpdir
-        tmpdir = P_tmpdir;
-#else
-        tmpdir = "/tmp";
-#endif
-                                                                                                                               
-    tempname = cli_gentemp(tmpdir);
-                                                                                                                               
+    tempname = cli_gentemp(NULL);
     if(mkdir(tempname, 0700)) {
 	cli_dbgmsg("CHM: Can't create temporary directory %s\n", tempname);
 	return CL_ETMPDIR;
@@ -1139,45 +1088,37 @@ static int cli_scanscrenc(int desc, const char **virname, long int *scanned, con
 
 static int cli_scanmail(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
-	const char *tmpdir;
 	char *dir;
 	int ret;
 
 
     cli_dbgmsg("Starting cli_scanmail(), mrec == %d, arec == %d\n", *mrec, *arec);
 
-    if((tmpdir = getenv("TMPDIR")) == NULL)
-#ifdef P_tmpdir
-	tmpdir = P_tmpdir;
-#else
-	tmpdir = "/tmp";
-#endif
+    /* generate the temporary directory */
+    dir = cli_gentemp(NULL);
+    if(mkdir(dir, 0700)) {
+	cli_dbgmsg("Mail: Can't create temporary directory %s\n", dir);
+	free(dir);
+	return CL_ETMPDIR;
+    }
 
-	/* generate the temporary directory */
-	dir = cli_gentemp(tmpdir);
-	if(mkdir(dir, 0700)) {
-	    cli_dbgmsg("Mail: Can't create temporary directory %s\n", dir);
-	    free(dir);
-	    return CL_ETMPDIR;
-	}
-
-	/*
-	 * Extract the attachments into the temporary directory
-	 */
-	if((ret = cli_mbox(dir, desc, options))) {
-	    if(!cli_leavetemps_flag)
-		cli_rmdirs(dir);
-	    free(dir);
-	    return ret;
-	}
-
-	ret = cli_scandir(dir, virname, scanned, root, limits, options, arec, mrec);
-
+    /*
+     * Extract the attachments into the temporary directory
+     */
+    if((ret = cli_mbox(dir, desc, options))) {
 	if(!cli_leavetemps_flag)
 	    cli_rmdirs(dir);
 	free(dir);
-
 	return ret;
+    }
+
+    ret = cli_scandir(dir, virname, scanned, root, limits, options, arec, mrec);
+
+    if(!cli_leavetemps_flag)
+	cli_rmdirs(dir);
+
+    free(dir);
+    return ret;
 }
 
 int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
