@@ -21,7 +21,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-#define MINLENGTH 10 /* only optimize signatures longer than MINLENGT */
+#define MINLENGTH 40 /* only optimize signatures longer than MINLENGT */
 #define FILEBUFF 16384
 #define ANALYZE 6 /* only analyze first ANALYZE characters */
 
