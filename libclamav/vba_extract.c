@@ -100,10 +100,10 @@ int vba_readn(int fd, void *buff, unsigned int count)
 {
         int retval;
         unsigned int todo;
-        void *current;
+        unsigned char *current;
  
         todo = count;
-        current = buff;
+        current = (unsigned char *) buff;
  
         do {
                 retval = read(fd, current, todo);
@@ -127,11 +127,11 @@ int vba_writen(int fd, void *buff, unsigned int count)
 {
         int retval;
         unsigned int todo;
-        void *current;
-                                                                                                                                                                          
+        unsigned char *current;
+
         todo = count;
-        current = buff;
-                                                                                                                                                                          
+        current = (unsigned char *) buff;
+
         do {
                 retval = write(fd, current, todo);
                 if (retval < 0) {
@@ -140,7 +140,7 @@ int vba_writen(int fd, void *buff, unsigned int count)
                 todo -= retval;
                 current += retval;
         } while (todo > 0);
-                                                                                                                                                                          
+
         return count;
 }
 
@@ -148,11 +148,11 @@ char *get_unicode_name(char *name, int size)
 {
         int i, j;
         char *newname;
-                                                                                                                                                                          
-        if (*name == 0 || size == 0) {
+
+	 if (*name == 0 || size == 0) {
                 return NULL;
         }
-                                                                                                                                                                          
+
         newname = (char *) cli_malloc(size*2);
         if (!newname) {
                 return NULL;
@@ -185,7 +185,7 @@ static void vba56_test_middle(int fd)
         if (vba_readn(fd, &test_middle, 20) != 20) {
                 return;
         }
-	
+
 	if (memcmp(test_middle, middle_str, 20) != 0) {
 	        lseek(fd, -20, SEEK_CUR);
 	}
@@ -205,7 +205,7 @@ static void vba56_test_end(int fd)
         if (vba_readn(fd, &test_end, 20) != 20) {
                 return;
         }
-                                                                                                                                    
+
         if (memcmp(test_end, end_str, 20) != 0) {
                 lseek(fd, -20, SEEK_CUR);
         }
@@ -237,7 +237,6 @@ vba_project_t *vba56_dir_read(const char *dir)
 	char *fullname;
 
 	unsigned char fixed_octet[8] = { 0x06, 0x02, 0x01, 0x00, 0x08, 0x02, 0x00, 0x00 };
-
 
 	cli_dbgmsg("in vba56_dir_read()\n");
 

@@ -97,7 +97,7 @@ typedef struct ole2_header_tag
 	/* must take account of the size of variables below here when
 	   reading the header */
 	int32_t sbat_root_start;
-} ole2_header_t __attribute__ ((packed));
+} __attribute__ ((packed)) ole2_header_t;
 
 typedef struct property_tag
 {
@@ -110,7 +110,7 @@ typedef struct property_tag
 	int32_t child;
 
 	unsigned char clsid[16];
-	uint16_t user_flags;
+	uint32_t user_flags;
 
 	uint32_t create_lowdate;
 	uint32_t create_highdate;
@@ -119,7 +119,7 @@ typedef struct property_tag
 	int32_t start_block;
 	int32_t size;
 	unsigned char reserved[4];
-} property_t __attribute__ ((packed));
+} __attribute__ ((packed)) property_t;
 
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack()
@@ -135,10 +135,10 @@ int readn(int fd, void *buff, unsigned int count)
 {
 	int retval;
 	unsigned int todo;
-	void *current;
+	unsigned char *current;
 
 	todo = count;
-	current = buff;
+	current = (unsigned char *) buff;
 
 	do {
 		retval = read(fd, current, todo);
@@ -162,10 +162,10 @@ int writen(int fd, void *buff, unsigned int count)
 {
 	int retval;
 	unsigned int todo;
-	void *current;
+	unsigned char *current;
 
 	todo = count;
-	current = buff;
+	current = (unsigned char *) buff;
 
 	do {
 		retval = write(fd, current, todo);
@@ -455,7 +455,7 @@ void ole2_read_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 				prop_block[index].prev = ole2_endian_convert_32(prop_block[index].prev);
 				prop_block[index].next = ole2_endian_convert_32(prop_block[index].next);
 				prop_block[index].child = ole2_endian_convert_32(prop_block[index].child);
-				prop_block[index].user_flags = ole2_endian_convert_16(prop_block[index].user_flags);
+				prop_block[index].user_flags = ole2_endian_convert_32(prop_block[index].user_flags);
 				prop_block[index].create_lowdate = ole2_endian_convert_32(prop_block[index].create_lowdate);
 				prop_block[index].create_highdate = ole2_endian_convert_32(prop_block[index].create_highdate);
 				prop_block[index].mod_lowdate = ole2_endian_convert_32(prop_block[index].mod_lowdate);
