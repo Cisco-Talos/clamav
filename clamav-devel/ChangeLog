@@ -1,3 +1,8 @@
+Sun Jun  6 22:35:19 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Find uuencoded viruses in multipart/mixed that have no
+  	start of message boundaries
+
 Sun Jun  6 03:38:08 CEST 2004 (tk)
 ----------------------------------
   * clamscan, freshclam, clamd: make sure privileges are properly dropped
