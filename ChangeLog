@@ -1,3 +1,8 @@
+Fri Feb  6 14:36:36 CET 2004 (tk)
+---------------------------------
+  * support for clamav-config.h instead of multiple defines (Thomas Lamy)
+  * libclamav: more flexible file type recognition (Thomas Lamy)
+
 Fri Feb  6 13:20:51 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Added new bounce message

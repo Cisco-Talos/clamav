@@ -32,4 +32,7 @@ typedef struct vba_project_tag {
 	char *dir;
 } vba_project_t;
 
+vba_project_t *vba56_dir_read(const char *dir);
+unsigned char *vba_decompress(int fd, uint32_t offset);
+
 #endif

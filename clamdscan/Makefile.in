@@ -130,6 +130,7 @@ INCLUDES = -I../clamscan -I../clamd -I../libclamav
 LIBS = -L../libclamav -lclamav @FRESHCLAM_LIBS@
 subdir = clamdscan
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
+CONFIG_HEADER = $(top_builddir)/clamav-config.h
 CONFIG_CLEAN_FILES =
 @BUILD_CLAMD_TRUE@bin_PROGRAMS = clamdscan$(EXEEXT)
 @BUILD_CLAMD_FALSE@bin_PROGRAMS =
@@ -145,7 +146,7 @@ clamdscan_OBJECTS = $(am_clamdscan_OBJECTS)
 clamdscan_LDFLAGS =
 
 DEFS = @DEFS@
-DEFAULT_INCLUDES =  -I. -I$(srcdir)
+DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 depcomp = $(SHELL) $(top_srcdir)/depcomp

@@ -1,5 +1,6 @@
 /*
  *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  With enhancements from Thomas Lamy <Thomas.Lamy@in-online.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,6 +17,10 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -28,8 +33,8 @@
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
 pthread_mutex_t cli_scanrar_mutex = PTHREAD_MUTEX_INITIALIZER;
-int cli_scanrar_inuse = 0;
 #endif
+int cli_scanrar_inuse = 0;
 
 #include "clamav.h"
 #include "others.h"
@@ -52,17 +57,56 @@ int cli_scanrar_inuse = 0;
 #define SCAN_OLE2	(options & CL_OLE2)
 #define DISABLE_RAR	(options & CL_DISABLERAR)
 
+
+typedef enum {
+    CL_UNKNOWN_TYPE = 0,
+    CL_MAILFILE,
+    CL_GZFILE,
+    CL_ZIPFILE,
+    CL_BZFILE,
+    CL_RARFILE,
+    CL_OLE2FILE
+} cl_file_t;
+
+struct cl_magic_s {
+    int offset;
+    char *magic;
+    size_t length;
+    char *descr;
+    cl_file_t type;
+};
+
 #define MAGIC_BUFFER_SIZE 14
-#define RAR_MAGIC_STR "Rar!"
-#define ZIP_MAGIC_STR "PK\003\004"
-#define GZIP_MAGIC_STR "\037\213"
-#define MAIL_MAGIC_STR "From "
-#define RAWMAIL_MAGIC_STR "Received: "
-#define MAILDIR_MAGIC_STR "Return-Path: "
-#define DELIVERED_MAGIC_STR "Delivered-To: "
-#define XUIDL_MAGIC_STR "X-UIDL: "
-#define BZIP_MAGIC_STR "BZh"
-#define OLE2_MAGIC_STR "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1"
+static const struct cl_magic_s cl_magic[] = {
+    {0,  "Rar!",            4, "RAR file",        CL_RARFILE},
+    {0,  "PK\003\004",      4, "ZIP file",        CL_ZIPFILE},
+    {0,  "\037\213",        2, "GZip file",       CL_GZFILE},
+    {0,  "BZh",             3, "BZip file",       CL_BZFILE},
+    {0,  "From ",           5, "MBox file",       CL_MAILFILE},
+    {0,  "Received: ",     10, "Raw mail",        CL_MAILFILE},
+    {0,  "Return-Path: ",  13, "Maildir file",    CL_MAILFILE},
+    {0,  "Delivered-To: ", 14, "Mail file",       CL_MAILFILE},
+    {0,  "X-UIDL: ",	    8, "Mail file",       CL_MAILFILE},
+    {0,  "\320\317\021\340\241\261\032\341",
+	                    8, "OLE2 container",  CL_OLE2FILE},
+    {-1, NULL,              0, NULL,              CL_UNKNOWN_TYPE}
+};
+
+cl_file_t cl_filetype(const char *buf, size_t buflen)
+{
+	int i;
+
+    for (i = 0; cl_magic[i].magic; i++) {
+	if (buflen >= cl_magic[i].offset+cl_magic[i].length) {
+	    if (memcmp(buf+cl_magic[i].offset, cl_magic[i].magic, cl_magic[i].length) == 0) {
+		cli_dbgmsg("Recognized %s file\n", cl_magic[i].descr);
+		return cl_magic[i].type;
+	    }
+	}
+    }
+    cli_dbgmsg("cl_filetype(): File type not recognized\n");
+    return CL_UNKNOWN_TYPE;
+}
 
 int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev);
 
@@ -70,7 +114,7 @@ int cli_scandesc(int desc, char **virname, long int *scanned, const struct
 cl_node *root)
 {
  	char *buffer, *buff, *endbl, *pt;
-	int bytes, buffsize, length;
+	int bytes, buffsize, length, ret;
 
     /* prepare the buffer */
     buffsize = root->maxpatlen + SCANBUFF;
@@ -96,9 +140,9 @@ cl_node *root)
 	if(bytes < SCANBUFF)
 	    length -= SCANBUFF - bytes;
 
-	if(cl_scanbuff(pt, length, virname, root) == CL_VIRUS) {
+	if((ret = cl_scanbuff(pt, length, virname, root)) != CL_CLEAN) {
 	    free(buffer);
-	    return CL_VIRUS;
+	    return ret;
 	}
 
 	if(bytes == SCANBUFF)
@@ -204,15 +248,17 @@ int cli_scanrar(int desc, char **virname, long int *scanned, const struct cl_nod
 	    }
 
 	    lseek(fd, 0, SEEK_SET);
-	    if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, reclev)) == CL_VIRUS ) {
-		cli_dbgmsg("RAR -> Found %s virus.\n", *virname);
+	    if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, reclev)) == CL_CLEAN ) {
+		if(ret == CL_VIRUS)
+		    cli_dbgmsg("RAR -> Found %s virus.\n", *virname);
+
 		fclose(tmp);
 		urarlib_freelist(rarlist);
 #ifdef CL_THREAD_SAFE
 		pthread_mutex_unlock(&cli_scanrar_mutex);
 		cli_scanrar_inuse = 0;
 #endif
-		return CL_VIRUS;
+		return ret;
 	    }
 
 	} else {
@@ -699,6 +745,7 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
 	char magic[MAGIC_BUFFER_SIZE+1];
 	int ret = CL_CLEAN;
 	int bread = 0;
+	cl_file_t type;
 
 
     if(!root) {
@@ -728,54 +775,49 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
 	    (*reclev)--;
 	    return ret;
 	}
-#ifdef CL_THREAD_SAFE
-	/* this check protects against recursive deadlock */
-	if(!DISABLE_RAR && SCAN_ARCHIVE && !cli_scanrar_inuse && !strncmp(magic, RAR_MAGIC_STR, strlen(RAR_MAGIC_STR))) {
-	    cli_dbgmsg("Recognized rar file.\n");
-	    ret = cli_scanrar(desc, virname, scanned, root, limits, options, reclev);
-	}
-#else
-	if(!DISABLE_RAR && SCAN_ARCHIVE && !strncmp(magic, RAR_MAGIC_STR, strlen(RAR_MAGIC_STR))) {
-	    cli_dbgmsg("Recognized rar file.\n");
-	    ret = cli_scanrar(desc, virname, scanned, root, limits, options, reclev);
-	}
-#endif
-#ifdef HAVE_ZLIB_H
-	else if(SCAN_ARCHIVE && !strncmp(magic, ZIP_MAGIC_STR, strlen(ZIP_MAGIC_STR))) {
-	    cli_dbgmsg("Recognized zip file.\n");
-	    ret = cli_scanzip(desc, virname, scanned, root, limits, options, reclev);
-	} else if(SCAN_ARCHIVE && !strncmp(magic, GZIP_MAGIC_STR, strlen(GZIP_MAGIC_STR))) {
-	    cli_dbgmsg("Recognized gzip file.\n");
-	    ret = cli_scangzip(desc, virname, scanned, root, limits, options, reclev);
-	}
-#endif
+
+	type = cl_filetype(magic, bread);
+
+	switch(type) {
+	    case CL_RARFILE:
+		if(!DISABLE_RAR && SCAN_ARCHIVE && !cli_scanrar_inuse) {
+		    ret = cli_scanrar(desc, virname, scanned, root, limits, options, reclev);
+		}
+		break;
+
+	    case CL_ZIPFILE:
+		if(SCAN_ARCHIVE) {
+		    ret = cli_scanzip(desc, virname, scanned, root, limits, options, reclev);
+		}
+		break;
+
+	    case CL_GZFILE:
+		if(SCAN_ARCHIVE) {
+		    ret = cli_scangzip(desc, virname, scanned, root, limits, options, reclev);
+		}
+		break;
+
 #ifdef HAVE_BZLIB_H
-	else if(SCAN_ARCHIVE && !strncmp(magic, BZIP_MAGIC_STR, strlen(BZIP_MAGIC_STR))) {
-	    cli_dbgmsg("Recognized bzip file.\n");
-	    ret = cli_scanbzip(desc, virname, scanned, root, limits, options, reclev);
-	}
+	    case CL_BZFILE:
+		if(SCAN_ARCHIVE) {
+		    ret = cli_scanbzip(desc, virname, scanned, root, limits, options, reclev);
+		}
+		break;
 #endif
-	else if(SCAN_OLE2 && !strncmp(magic, OLE2_MAGIC_STR, 8)) {
-	    cli_dbgmsg("Recognized OLE2 file.\n");
-	    ret = cli_scanole2(desc, virname, scanned, root, limits, options, reclev);
+
+	    case CL_MAILFILE:
+		if (SCAN_MAIL) {
+		    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
+		}
+		break;
+
+	    case CL_OLE2FILE:
+		if(SCAN_OLE2) {
+		    ret = cli_scanole2(desc, virname, scanned, root, limits, options, reclev);
+		}
+		break;
 	}
-	else if(SCAN_MAIL && !strncmp(magic, MAIL_MAGIC_STR, strlen(MAIL_MAGIC_STR))) {
-	    cli_dbgmsg("Recognized mail file.\n");
-	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
-	}
-	else if(SCAN_MAIL && !strncmp(magic, RAWMAIL_MAGIC_STR, strlen(RAWMAIL_MAGIC_STR))) {
-	    cli_dbgmsg("Recognized raw mail file.\n");
-	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
-	} else if(SCAN_MAIL && !strncasecmp(magic, MAILDIR_MAGIC_STR, strlen(MAILDIR_MAGIC_STR))) {
-	    cli_dbgmsg("Recognized Maildir mail file.\n");
-	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
-	} else if(SCAN_MAIL && !strncmp(magic, DELIVERED_MAGIC_STR, strlen(DELIVERED_MAGIC_STR))) {
-	    cli_dbgmsg("Recognized (Delivered-To) mail file.\n");
-	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
-	} else if(SCAN_MAIL && !strncmp(magic, XUIDL_MAGIC_STR, strlen(XUIDL_MAGIC_STR))) {
-	    cli_dbgmsg("Recognized (X-UIDL) mail file.\n");
-	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
-	}
+
 	(*reclev)--;
     }
 

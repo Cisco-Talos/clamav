@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.27  2004/02/06 13:46:08  kojm
+ * Support for clamav-config.h
+ *
  * Revision 1.26  2004/02/06 13:10:34  nigelhorne
  * Now integrates with winzip
  *
@@ -75,7 +78,11 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.26 2004/02/06 13:10:34 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.27 2004/02/06 13:46:08 kojm Exp $";
+
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */

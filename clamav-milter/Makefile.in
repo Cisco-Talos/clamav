@@ -132,6 +132,7 @@ INCLUDES = -I../clamd -I../libclamav -I../clamscan
 EXTRA_DIST = clamav-milter.c clamd.sh clamav-milter.sh INSTALL
 subdir = clamav-milter
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
+CONFIG_HEADER = $(top_builddir)/clamav-config.h
 CONFIG_CLEAN_FILES =
 @BUILD_CLAMD_FALSE@@HAVE_MILTER_TRUE@sbin_PROGRAMS =
 @BUILD_CLAMD_FALSE@@HAVE_MILTER_FALSE@sbin_PROGRAMS =
@@ -151,7 +152,7 @@ clamav_milter_OBJECTS = $(am_clamav_milter_OBJECTS)
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	../clamscan/getopt.o
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_FALSE@clamav_milter_DEPENDENCIES =
 clamav_milter_LDFLAGS =
-DEFAULT_INCLUDES =  -I. -I$(srcdir)
+DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 depcomp = $(SHELL) $(top_srcdir)/depcomp

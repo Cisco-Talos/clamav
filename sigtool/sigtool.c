@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,6 +17,11 @@
  */
 
 /* some things may need to be tuned here (look at jmp variables) */
+
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -17,7 +17,11 @@
  *
  * $LOG$
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.3 2004/01/14 10:08:59 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.4 2004/02/06 13:46:08 kojm Exp $";
+
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
 
 #include <stdlib.h>
 #include <string.h>
@@ -32,6 +36,7 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.3 2004/01/14 10:08:59 nigelhorne Ex
 #include "mbox.h"
 #include "blob.h"
 #include "others.h"
+
 
 /*#define	OPTIMIZE_SPACE	/* for machines short of RAM */
 

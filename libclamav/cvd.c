@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2003 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  untgz() is based on public domain minitar utility by Charles G. Waldman
  *
@@ -17,6 +17,10 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
 
 #include <stdio.h>
 #include <string.h>

@@ -21,7 +21,7 @@
 /* Written by Ulrich Drepper <drepper@gnu.ai.mit.edu>, 1995.  */
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include <clamav-config.h>
 #endif
 
 #include <sys/types.h>
@@ -37,16 +37,16 @@
 
 #include "md5.h"
 
+/* Not needed, since endianess is already taken care of by configure
 #ifdef _LIBC
 # include <endian.h>
 # if __BYTE_ORDER == __BIG_ENDIAN
 #  define WORDS_BIGENDIAN 1
 # endif
-/* We need to keep the namespace clean so define the MD5 function
-   protected using leading __ .  */
 #endif
+*/
 
-#ifdef WORDS_BIGENDIAN
+#if WORDS_BIGENDIAN
 # define SWAP(n)							\
     (((n) << 24) | (((n) & 0xff00) << 8) | (((n) >> 8) & 0xff00) | ((n) >> 24))
 #else

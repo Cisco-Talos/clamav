@@ -121,6 +121,7 @@ EXTRA_DIST = clamav.conf freshclam.conf
 CFGINST = @CFGDIR@
 subdir = etc
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
+CONFIG_HEADER = $(top_builddir)/clamav-config.h
 CONFIG_CLEAN_FILES =
 DIST_SOURCES =
 DIST_COMMON = Makefile.am Makefile.in

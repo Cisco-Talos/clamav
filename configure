@@ -1671,8 +1671,6 @@ do
 done
 
 
-
-
 am__api_version="1.6"
 # Find a good install program.  We prefer a C program (faster),
 # so one script is as good as another.  But avoid the broken or
@@ -2025,6 +2023,13 @@ INSTALL_STRIP_PROGRAM="\${SHELL} \$(install_sh) -c -s"
 
 # We need awk for the "check" target.  The system "awk" is bad on
 # some platforms.
+
+
+
+# Add the stamp file to the list of files AC keeps track of,
+# along with our hook.
+ac_config_headers="$ac_config_headers clamav-config.h"
+
 
 
 
@@ -4535,7 +4540,7 @@ test "x$enable_libtool_lock" != xno && enable_libtool_lock=yes
 case $host in
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 4538 "configure"' > conftest.$ac_ext
+  echo '#line 4543 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -5071,7 +5076,7 @@ chmod -w .
 save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -o out/conftest2.$ac_objext"
 compiler_c_o=no
-if { (eval echo configure:5074: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
+if { (eval echo configure:5079: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
   # The compiler can only warn and ignore the option if not recognized
   # So say no if there are warnings
   if test -s out/conftest.err; then
@@ -6864,7 +6869,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 6867 "configure"
+#line 6872 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -6962,7 +6967,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 6965 "configure"
+#line 6970 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -7691,9 +7696,11 @@ LIBTOOL='$(SHELL) $(top_builddir)/libtool'
 
 
 
+
 cat >>confdefs.h <<\_ACEOF
 #define SCANBUFF 131072
 _ACEOF
+
 
 cat >>confdefs.h <<\_ACEOF
 #define FILEBUFF 8192
@@ -8426,7 +8433,8 @@ echo "${ECHO_T}$ac_cv_header_zlib_h" >&6
 
 fi
 if test $ac_cv_header_zlib_h = yes; then
-  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lz"; cat >>confdefs.h <<\_ACEOF
+  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lz";
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_ZLIB_H 1
 _ACEOF
 
@@ -8547,7 +8555,8 @@ echo "${ECHO_T}$ac_cv_header_bzlib_h" >&6
 
 fi
 if test $ac_cv_header_bzlib_h = yes; then
-  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lbz2"; cat >>confdefs.h <<\_ACEOF
+  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lbz2";
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_BZLIB_H 1
 _ACEOF
 
@@ -8610,7 +8619,8 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_lib_bz2_bzReadOpen" >&5
 echo "${ECHO_T}$ac_cv_lib_bz2_bzReadOpen" >&6
 if test $ac_cv_lib_bz2_bzReadOpen = yes; then
-  cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define NOBZ2PREFIX 1
 _ACEOF
 
@@ -8620,7 +8630,8 @@ fi
 
 
 
-for ac_func in setsid memcpy
+
+for ac_func in setsid memcpy snprintf
 do
 as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
 echo "$as_me:$LINENO: checking for $ac_func" >&5
@@ -8943,7 +8954,8 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_lib_gmp___gmpz_init" >&5
 echo "${ECHO_T}$ac_cv_lib_gmp___gmpz_init" >&6
 if test $ac_cv_lib_gmp___gmpz_init = yes; then
-  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; cat >>confdefs.h <<\_ACEOF
+  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp";
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_GMP 1
 _ACEOF
 
@@ -9004,7 +9016,8 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_lib_gmp_mpz_init" >&5
 echo "${ECHO_T}$ac_cv_lib_gmp_mpz_init" >&6
 if test $ac_cv_lib_gmp_mpz_init = yes; then
-  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; cat >>confdefs.h <<\_ACEOF
+  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp";
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_GMP 1
 _ACEOF
 
@@ -9118,7 +9131,8 @@ echo "${ECHO_T}$ac_cv_header_syslog_h" >&6
 
 fi
 if test $ac_cv_header_syslog_h = yes; then
-  cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define CLAMD_USE_SYSLOG 1
 _ACEOF
 
@@ -9172,9 +9186,11 @@ else
   clamav_group="clamav"
 fi;
 
+
 cat >>confdefs.h <<_ACEOF
 #define CLAMAVUSER "$clamav_user"
 _ACEOF
+
 
 cat >>confdefs.h <<_ACEOF
 #define CLAMAVGROUP "$clamav_group"
@@ -9198,7 +9214,8 @@ fi;
 # Check whether --enable-debug or --disable-debug was given.
 if test "${enable_debug+set}" = set; then
   enableval="$enable_debug"
-  cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define CL_DEBUG 1
 _ACEOF
 
@@ -9207,7 +9224,8 @@ fi;
 # Check whether --enable-bigstack or --disable-bigstack was given.
 if test "${enable_bigstack+set}" = set; then
   enableval="$enable_bigstack"
-  cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define C_BIGSTACK 1
 _ACEOF
 
@@ -9226,12 +9244,14 @@ fi;
 # Check whether --with-db1 or --without-db1 was given.
 if test "${with_db1+set}" = set; then
   withval="$with_db1"
-  cat >>confdefs.h <<_ACEOF
+
+cat >>confdefs.h <<_ACEOF
 #define DB1NAME "$withval"
 _ACEOF
 
 else
-  cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define DB1NAME "main.cvd"
 _ACEOF
 
@@ -9241,12 +9261,14 @@ fi;
 # Check whether --with-db2 or --without-db2 was given.
 if test "${with_db2+set}" = set; then
   withval="$with_db2"
-  cat >>confdefs.h <<_ACEOF
+
+cat >>confdefs.h <<_ACEOF
 #define DB2NAME "$withval"
 _ACEOF
 
 else
-  cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define DB2NAME "daily.cvd"
 _ACEOF
 
@@ -9286,6 +9308,7 @@ fi
 
 CFGDIR=$cfg_dir
 
+
 cat >>confdefs.h <<_ACEOF
 #define CONFDIR "$cfg_dir"
 _ACEOF
@@ -9317,7 +9340,8 @@ then
     if test -r /dev/urandom ; then
 	echo "$as_me:$LINENO: result: /dev/(u)random detected." >&5
 echo "${ECHO_T}/dev/(u)random detected." >&6
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define C_URANDOM 1
 _ACEOF
 
@@ -9330,24 +9354,28 @@ fi
 
 case "$target_os" in
 linux*)
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define C_LINUX 1
 _ACEOF
 
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
 	TH_SAFE="-thread-safe"
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define CL_THREAD_SAFE 1
 _ACEOF
 
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _REENTRANT 1
 _ACEOF
 
 	CLAMD_LIBS="-lpthread"
 	if test "$want_clamuko" = "yes"; then
-	    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define CLAMUKO 1
 _ACEOF
 
@@ -9356,7 +9384,8 @@ _ACEOF
     fi
     ;;
 cygwin*)
-        cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define C_CYGWIN 1
 _ACEOF
 
@@ -9368,11 +9397,13 @@ _ACEOF
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
 	TH_SAFE="-thread-safe"
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define CL_THREAD_SAFE 1
 _ACEOF
 
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _REENTRANT 1
 _ACEOF
 
@@ -9384,16 +9415,19 @@ solaris*)
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
 	CLAMD_LIBS="-lpthread -lsocket -lnsl -lresolv"
 	TH_SAFE="-thread-safe"
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define CL_THREAD_SAFE 1
 _ACEOF
 
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _REENTRANT 1
 _ACEOF
 
     fi
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define C_SOLARIS 1
 _ACEOF
 
@@ -9403,16 +9437,19 @@ freebsd*)
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread -lc_r"
 	CLAMD_LIBS="-pthread -lc_r"
 	TH_SAFE="-thread-safe"
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define CL_THREAD_SAFE 1
 _ACEOF
 
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _REENTRANT 1
 _ACEOF
 
     fi
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define C_BSD 1
 _ACEOF
 
@@ -9447,16 +9484,19 @@ openbsd*)
 	    CLAMD_LIBS="-pthread -lc_r"
 	fi
 	TH_SAFE="-thread-safe"
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define CL_THREAD_SAFE 1
 _ACEOF
 
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _REENTRANT 1
 _ACEOF
 
     fi
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define C_BSD 1
 _ACEOF
 
@@ -9465,7 +9505,8 @@ netbsd*)
     echo "$as_me:$LINENO: result: NetBSD detected. Disabling thread support." >&5
 echo "${ECHO_T}NetBSD detected. Disabling thread support." >&6
     have_pthreads="no"
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define C_BSD 1
 _ACEOF
 
@@ -9474,7 +9515,8 @@ bsd*)
     echo "$as_me:$LINENO: result: Unknown BSD detected. Disabling thread support." >&5
 echo "${ECHO_T}Unknown BSD detected. Disabling thread support." >&6
     have_pthreads="no"
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define C_BSD 1
 _ACEOF
 
@@ -9483,17 +9525,20 @@ beos*)
     echo "$as_me:$LINENO: result: BeOS detected. Disabling thread support." >&5
 echo "${ECHO_T}BeOS detected. Disabling thread support." >&6
     have_pthreads="no"
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define C_BEOS 1
 _ACEOF
 
     ;;
 darwin*)
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define C_BSD 1
 _ACEOF
 
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define C_DARWIN 1
 _ACEOF
 
@@ -9502,26 +9547,25 @@ _ACEOF
 sco*)
         FRESHCLAM_LIBS="-lsocket"
     CLAMD_LIBS="-lsocket"
-    cat >>confdefs.h <<\_ACEOF
-#define NO_SNPRINTF 1
-_ACEOF
-
-    ;;
+        ;;
 hpux*)
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
 	CLAMD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define CL_THREAD_SAFE 1
 _ACEOF
 
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _REENTRANT 1
 _ACEOF
 
     fi
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define C_HPUX 1
 _ACEOF
 
@@ -9531,16 +9575,19 @@ aix*)
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
 	CLAMD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define CL_THREAD_SAFE 1
 _ACEOF
 
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _REENTRANT 1
 _ACEOF
 
     fi
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define C_AIX 1
 _ACEOF
 
@@ -9550,24 +9597,23 @@ irix*)
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
 	CLAMD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define CL_THREAD_SAFE 1
 _ACEOF
 
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _REENTRANT 1
 _ACEOF
 
     fi
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define C_IRIX 1
 _ACEOF
 
-    cat >>confdefs.h <<\_ACEOF
-#define NO_SNPRINTF 1
-_ACEOF
-
-    ;;
+        ;;
 
 *)
     ;;
@@ -9601,7 +9647,8 @@ fi
 
 if test "$have_pthreads" = "yes"
 then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define BUILD_CLAMD 1
 _ACEOF
 
@@ -10133,13 +10180,15 @@ presetting ac_cv_c_bigendian=no (or yes) will help" >&2;}
 esac
 
 if test $ac_cv_c_bigendian = yes; then
-  cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WORDS_BIGENDIAN 1
 _ACEOF
 
 else
-  cat >>confdefs.h <<\_ACEOF
-#define WORDS_LITTLEENDIAN 1
+
+cat >>confdefs.h <<\_ACEOF
+#define WORDS_BIGENDIAN 0
 _ACEOF
 
 fi
@@ -10239,7 +10288,8 @@ fi
 
 	echo "$as_me:$LINENO: result: $have_pragma_pack" >&5
 echo "${ECHO_T}$have_pragma_pack" >&6
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_PRAGMA_PACK 1
 _ACEOF
 
@@ -10251,7 +10301,8 @@ echo "$as_me: error: Need to know how to pack structures with this compiler" >&2
    { (exit 1); exit 1; }; }
 fi
 if test "$have_attrib_packed" = yes; then
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_ATTRIB_PACKED 1
 _ACEOF
 
@@ -10332,38 +10383,7 @@ s/^[^=]*=[ 	]*$//;
 }'
 fi
 
-# Transform confdefs.h into DEFS.
-# Protect against shell expansion while executing Makefile rules.
-# Protect against Makefile macro expansion.
-#
-# If the first sed substitution is executed (which looks for macros that
-# take arguments), then we branch to the quote section.  Otherwise,
-# look for a macro that doesn't take arguments.
-cat >confdef2opt.sed <<\_ACEOF
-t clear
-: clear
-s,^[ 	]*#[ 	]*define[ 	][ 	]*\([^ 	(][^ 	(]*([^)]*)\)[ 	]*\(.*\),-D\1=\2,g
-t quote
-s,^[ 	]*#[ 	]*define[ 	][ 	]*\([^ 	][^ 	]*\)[ 	]*\(.*\),-D\1=\2,g
-t quote
-d
-: quote
-s,[ 	`~#$^&*(){}\\|;'"<>?],\\&,g
-s,\[,\\&,g
-s,\],\\&,g
-s,\$,$$,g
-p
-_ACEOF
-# We use echo to avoid assuming a particular line-breaking character.
-# The extra dot is to prevent the shell from consuming trailing
-# line-breaks from the sub-command output.  A line-break within
-# single-quotes doesn't work because, if this script is created in a
-# platform that uses two characters for line-breaks (e.g., DOS), tr
-# would break.
-ac_LF_and_DOT=`echo; echo .`
-DEFS=`sed -n -f confdef2opt.sed confdefs.h | tr "$ac_LF_and_DOT" ' .'`
-rm -f confdef2opt.sed
-
+DEFS=-DHAVE_CONFIG_H
 
 if test -z "${AMDEP_TRUE}" && test -z "${AMDEP_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"AMDEP\" was never defined.
@@ -10694,9 +10714,14 @@ Usage: $0 [OPTIONS] [FILE]...
       --recheck    update $as_me by reconfiguring in the same conditions
   --file=FILE[:TEMPLATE]
                    instantiate the configuration file FILE
+  --header=FILE[:TEMPLATE]
+                   instantiate the configuration header FILE
 
 Configuration files:
 $config_files
+
+Configuration headers:
+$config_headers
 
 Configuration commands:
 $config_commands
@@ -10812,6 +10837,7 @@ do
   "etc/Makefile" ) CONFIG_FILES="$CONFIG_FILES etc/Makefile" ;;
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
   "depfiles" ) CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
+  "clamav-config.h" ) CONFIG_HEADERS="$CONFIG_HEADERS clamav-config.h" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
    { (exit 1); exit 1; }; };;
@@ -10824,6 +10850,7 @@ done
 # bizarre bug on SunOS 4.1.3.
 if $ac_need_defaults; then
   test "${CONFIG_FILES+set}" = set || CONFIG_FILES=$config_files
+  test "${CONFIG_HEADERS+set}" = set || CONFIG_HEADERS=$config_headers
   test "${CONFIG_COMMANDS+set}" = set || CONFIG_COMMANDS=$config_commands
 fi
 
@@ -11159,6 +11186,229 @@ s,@INSTALL@,$ac_INSTALL,;t t
     rm -f $tmp/out
   fi
 
+done
+_ACEOF
+cat >>$CONFIG_STATUS <<\_ACEOF
+
+#
+# CONFIG_HEADER section.
+#
+
+# These sed commands are passed to sed as "A NAME B NAME C VALUE D", where
+# NAME is the cpp macro being defined and VALUE is the value it is being given.
+#
+# ac_d sets the value in "#define NAME VALUE" lines.
+ac_dA='s,^\([ 	]*\)#\([ 	]*define[ 	][ 	]*\)'
+ac_dB='[ 	].*$,\1#\2'
+ac_dC=' '
+ac_dD=',;t'
+# ac_u turns "#undef NAME" without trailing blanks into "#define NAME VALUE".
+ac_uA='s,^\([ 	]*\)#\([ 	]*\)undef\([ 	][ 	]*\)'
+ac_uB='$,\1#\2define\3'
+ac_uC=' '
+ac_uD=',;t'
+
+for ac_file in : $CONFIG_HEADERS; do test "x$ac_file" = x: && continue
+  # Support "outfile[:infile[:infile...]]", defaulting infile="outfile.in".
+  case $ac_file in
+  - | *:- | *:-:* ) # input from stdin
+        cat >$tmp/stdin
+        ac_file_in=`echo "$ac_file" | sed 's,[^:]*:,,'`
+        ac_file=`echo "$ac_file" | sed 's,:.*,,'` ;;
+  *:* ) ac_file_in=`echo "$ac_file" | sed 's,[^:]*:,,'`
+        ac_file=`echo "$ac_file" | sed 's,:.*,,'` ;;
+  * )   ac_file_in=$ac_file.in ;;
+  esac
+
+  test x"$ac_file" != x- && { echo "$as_me:$LINENO: creating $ac_file" >&5
+echo "$as_me: creating $ac_file" >&6;}
+
+  # First look for the input files in the build tree, otherwise in the
+  # src tree.
+  ac_file_inputs=`IFS=:
+    for f in $ac_file_in; do
+      case $f in
+      -) echo $tmp/stdin ;;
+      [\\/$]*)
+         # Absolute (can't be DOS-style, as IFS=:)
+         test -f "$f" || { { echo "$as_me:$LINENO: error: cannot find input file: $f" >&5
+echo "$as_me: error: cannot find input file: $f" >&2;}
+   { (exit 1); exit 1; }; }
+         echo $f;;
+      *) # Relative
+         if test -f "$f"; then
+           # Build tree
+           echo $f
+         elif test -f "$srcdir/$f"; then
+           # Source tree
+           echo $srcdir/$f
+         else
+           # /dev/null tree
+           { { echo "$as_me:$LINENO: error: cannot find input file: $f" >&5
+echo "$as_me: error: cannot find input file: $f" >&2;}
+   { (exit 1); exit 1; }; }
+         fi;;
+      esac
+    done` || { (exit 1); exit 1; }
+  # Remove the trailing spaces.
+  sed 's/[ 	]*$//' $ac_file_inputs >$tmp/in
+
+_ACEOF
+
+# Transform confdefs.h into two sed scripts, `conftest.defines' and
+# `conftest.undefs', that substitutes the proper values into
+# config.h.in to produce config.h.  The first handles `#define'
+# templates, and the second `#undef' templates.
+# And first: Protect against being on the right side of a sed subst in
+# config.status.  Protect against being in an unquoted here document
+# in config.status.
+rm -f conftest.defines conftest.undefs
+# Using a here document instead of a string reduces the quoting nightmare.
+# Putting comments in sed scripts is not portable.
+#
+# `end' is used to avoid that the second main sed command (meant for
+# 0-ary CPP macros) applies to n-ary macro definitions.
+# See the Autoconf documentation for `clear'.
+cat >confdef2sed.sed <<\_ACEOF
+s/[\\&,]/\\&/g
+s,[\\$`],\\&,g
+t clear
+: clear
+s,^[ 	]*#[ 	]*define[ 	][ 	]*\([^ 	(][^ 	(]*\)\(([^)]*)\)[ 	]*\(.*\)$,${ac_dA}\1${ac_dB}\1\2${ac_dC}\3${ac_dD},gp
+t end
+s,^[ 	]*#[ 	]*define[ 	][ 	]*\([^ 	][^ 	]*\)[ 	]*\(.*\)$,${ac_dA}\1${ac_dB}\1${ac_dC}\2${ac_dD},gp
+: end
+_ACEOF
+# If some macros were called several times there might be several times
+# the same #defines, which is useless.  Nevertheless, we may not want to
+# sort them, since we want the *last* AC-DEFINE to be honored.
+uniq confdefs.h | sed -n -f confdef2sed.sed >conftest.defines
+sed 's/ac_d/ac_u/g' conftest.defines >conftest.undefs
+rm -f confdef2sed.sed
+
+# This sed command replaces #undef with comments.  This is necessary, for
+# example, in the case of _POSIX_SOURCE, which is predefined and required
+# on some systems where configure will not decide to define it.
+cat >>conftest.undefs <<\_ACEOF
+s,^[ 	]*#[ 	]*undef[ 	][ 	]*[a-zA-Z_][a-zA-Z_0-9]*,/* & */,
+_ACEOF
+
+# Break up conftest.defines because some shells have a limit on the size
+# of here documents, and old seds have small limits too (100 cmds).
+echo '  # Handle all the #define templates only if necessary.' >>$CONFIG_STATUS
+echo '  if egrep "^[ 	]*#[ 	]*define" $tmp/in >/dev/null; then' >>$CONFIG_STATUS
+echo '  # If there are no defines, we may have an empty if/fi' >>$CONFIG_STATUS
+echo '  :' >>$CONFIG_STATUS
+rm -f conftest.tail
+while grep . conftest.defines >/dev/null
+do
+  # Write a limited-size here document to $tmp/defines.sed.
+  echo '  cat >$tmp/defines.sed <<CEOF' >>$CONFIG_STATUS
+  # Speed up: don't consider the non `#define' lines.
+  echo '/^[ 	]*#[ 	]*define/!b' >>$CONFIG_STATUS
+  # Work around the forget-to-reset-the-flag bug.
+  echo 't clr' >>$CONFIG_STATUS
+  echo ': clr' >>$CONFIG_STATUS
+  sed ${ac_max_here_lines}q conftest.defines >>$CONFIG_STATUS
+  echo 'CEOF
+  sed -f $tmp/defines.sed $tmp/in >$tmp/out
+  rm -f $tmp/in
+  mv $tmp/out $tmp/in
+' >>$CONFIG_STATUS
+  sed 1,${ac_max_here_lines}d conftest.defines >conftest.tail
+  rm -f conftest.defines
+  mv conftest.tail conftest.defines
+done
+rm -f conftest.defines
+echo '  fi # egrep' >>$CONFIG_STATUS
+echo >>$CONFIG_STATUS
+
+# Break up conftest.undefs because some shells have a limit on the size
+# of here documents, and old seds have small limits too (100 cmds).
+echo '  # Handle all the #undef templates' >>$CONFIG_STATUS
+rm -f conftest.tail
+while grep . conftest.undefs >/dev/null
+do
+  # Write a limited-size here document to $tmp/undefs.sed.
+  echo '  cat >$tmp/undefs.sed <<CEOF' >>$CONFIG_STATUS
+  # Speed up: don't consider the non `#undef'
+  echo '/^[ 	]*#[ 	]*undef/!b' >>$CONFIG_STATUS
+  # Work around the forget-to-reset-the-flag bug.
+  echo 't clr' >>$CONFIG_STATUS
+  echo ': clr' >>$CONFIG_STATUS
+  sed ${ac_max_here_lines}q conftest.undefs >>$CONFIG_STATUS
+  echo 'CEOF
+  sed -f $tmp/undefs.sed $tmp/in >$tmp/out
+  rm -f $tmp/in
+  mv $tmp/out $tmp/in
+' >>$CONFIG_STATUS
+  sed 1,${ac_max_here_lines}d conftest.undefs >conftest.tail
+  rm -f conftest.undefs
+  mv conftest.tail conftest.undefs
+done
+rm -f conftest.undefs
+
+cat >>$CONFIG_STATUS <<\_ACEOF
+  # Let's still pretend it is `configure' which instantiates (i.e., don't
+  # use $as_me), people would be surprised to read:
+  #    /* config.h.  Generated by config.status.  */
+  if test x"$ac_file" = x-; then
+    echo "/* Generated by configure.  */" >$tmp/config.h
+  else
+    echo "/* $ac_file.  Generated by configure.  */" >$tmp/config.h
+  fi
+  cat $tmp/in >>$tmp/config.h
+  rm -f $tmp/in
+  if test x"$ac_file" != x-; then
+    if cmp -s $ac_file $tmp/config.h 2>/dev/null; then
+      { echo "$as_me:$LINENO: $ac_file is unchanged" >&5
+echo "$as_me: $ac_file is unchanged" >&6;}
+    else
+      ac_dir=`(dirname "$ac_file") 2>/dev/null ||
+$as_expr X"$ac_file" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
+         X"$ac_file" : 'X\(//\)[^/]' \| \
+         X"$ac_file" : 'X\(//\)$' \| \
+         X"$ac_file" : 'X\(/\)' \| \
+         .     : '\(.\)' 2>/dev/null ||
+echo X"$ac_file" |
+    sed '/^X\(.*[^/]\)\/\/*[^/][^/]*\/*$/{ s//\1/; q; }
+  	  /^X\(\/\/\)[^/].*/{ s//\1/; q; }
+  	  /^X\(\/\/\)$/{ s//\1/; q; }
+  	  /^X\(\/\).*/{ s//\1/; q; }
+  	  s/.*/./; q'`
+      { case "$ac_dir" in
+  [\\/]* | ?:[\\/]* ) as_incr_dir=;;
+  *)                      as_incr_dir=.;;
+esac
+as_dummy="$ac_dir"
+for as_mkdir_dir in `IFS='/\\'; set X $as_dummy; shift; echo "$@"`; do
+  case $as_mkdir_dir in
+    # Skip DOS drivespec
+    ?:) as_incr_dir=$as_mkdir_dir ;;
+    *)
+      as_incr_dir=$as_incr_dir/$as_mkdir_dir
+      test -d "$as_incr_dir" ||
+        mkdir "$as_incr_dir" ||
+	{ { echo "$as_me:$LINENO: error: cannot create \"$ac_dir\"" >&5
+echo "$as_me: error: cannot create \"$ac_dir\"" >&2;}
+   { (exit 1); exit 1; }; }
+    ;;
+  esac
+done; }
+
+      rm -f $ac_file
+      mv $tmp/config.h $ac_file
+    fi
+  else
+    cat $tmp/config.h
+    rm -f $tmp/config.h
+  fi
+  # Run the commands associated with the file.
+  case $ac_file in
+    clamav-config.h ) # update the timestamp
+echo 'timestamp for clamav-config.h' >"./stamp-h1"
+ ;;
+  esac
 done
 _ACEOF
 cat >>$CONFIG_STATUS <<\_ACEOF
