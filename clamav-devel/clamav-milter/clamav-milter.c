@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.137  2004/10/02 17:54:06  nigelhorne
+ * Fix crash if %h is used in a template and --headers is not set
+ *
  * Revision 1.136  2004/09/30 19:18:30  nigelhorne
  * Allow --from with no e-mail address
  *
@@ -419,9 +422,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.136 2004/09/30 19:18:30 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.137 2004/10/02 17:54:06 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80e"
+#define	CM_VERSION	"0.80f"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -3205,9 +3208,12 @@ header_list_add(header_list_t list, const char *headerf, const char *headerv)
 }
 
 static void
-header_list_print(header_list_t list, FILE *fp)
+header_list_print(const header_list_t list, FILE *fp)
 {
 	const struct header_node_t *iter;
+
+	if(list == NULL)
+		return;
 
 	for(iter = list->first; iter; iter = iter->next) {
 		if(strncmp(iter->header, "From ", 5) == 0)
