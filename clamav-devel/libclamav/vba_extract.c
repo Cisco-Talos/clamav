@@ -88,7 +88,7 @@ typedef struct byte_array_tag {
 	unsigned char *data;
 } byte_array_t;
 
-#define NUM_VBA_VERSIONS 10
+#define NUM_VBA_VERSIONS 11
 vba_version_t vba_version[] = {
 	{ { 0x5e, 0x00, 0x00, 0x01 }, "Office 97",              5, FALSE},
 	{ { 0x5f, 0x00, 0x00, 0x01 }, "Office 97 SR1",          5, FALSE },
@@ -100,6 +100,7 @@ vba_version_t vba_version[] = {
         { { 0x79, 0x00, 0x00, 0x01 }, "Office 2003",            6, FALSE },
 	{ { 0x60, 0x00, 0x00, 0x0e }, "MacOffice 98",           5, TRUE },
 	{ { 0x62, 0x00, 0x00, 0x0e }, "MacOffice 2001",         5, TRUE },
+	{ { 0x63, 0x00, 0x00, 0x0e }, "MacOffice X",		6, TRUE },
 };
 
 #define VBA56_DIRENT_RECORD_COUNT (2 + /* magic */              \
@@ -288,7 +289,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 	}
 
 	if (i == NUM_VBA_VERSIONS) {
-		cli_dbgmsg("Unknown VBA version signature x0%x0x%x0x%x0x%x\n",
+		cli_dbgmsg("Unknown VBA version signature %x %x %x %x\n",
 			version[0], version[1], version[2], version[3]);
 		close(fd);
 		return NULL;
