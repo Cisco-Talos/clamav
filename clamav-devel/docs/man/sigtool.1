@@ -1,14 +1,14 @@
 .\" Manual page created by Tomasz Kojm, 20020629
-.TH "sigtool" "1" "November 11, 2003" "Tomasz Kojm" "Clam AntiVirus"
+.TH "sigtool" "1" "July 22, 2004" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
-sigtool \- generate a virus signature
+sigtool \- signature management tool
 .SH "SYNOPSIS"
 .LP 
 sigtool [options]
 .SH "DESCRIPTION"
 .LP 
-sigtool generates a virus signature using an external anti\-virus scanner which is able to detect the virus. It can also create a hexadecimal dump and build and unpack a CVD database.
+sigtool can be used to generate a virus signature using an external anti\-virus scanner (see the official documentation for license issues!). It can also dump hexadecimal data and build and unpack CVD databases.
 .SH "OPTIONS"
 .LP 
 
@@ -30,6 +30,7 @@ Read data from stdin and write hex string to stdout.
 .TP 
 \fB\-c, \-\-command\fR
 Anti\-virus scanner command with options. Remember about quotes if the argument string contains white characters. Command should contain everything except infected file name.
+Make sure your commercial scanner's license does not disallow sigtool usage !
 .TP 
 \fB\-f, \-\-file\fR
 Infected file name.

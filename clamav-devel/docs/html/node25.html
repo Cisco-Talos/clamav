@@ -1,6 +1,6 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2K.1beta (1.48)
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
@@ -13,8 +13,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
-<META NAME="Generator" CONTENT="LaTeX2HTML v2K.1beta">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
@@ -25,49 +24,52 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 </HEAD>
 
 <BODY >
-<!--Navigation Panel-->
-<A NAME="tex2html655"
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html666"
   HREF="node26.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html651"
+<A NAME="tex2html662"
   HREF="node18.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html647"
+<A NAME="tex2html658"
   HREF="node24.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html653"
+<A NAME="tex2html664"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html656"
+<B> Next:</B> <A NAME="tex2html667"
   HREF="node26.html">Problem solving</A>
-<B> Up:</B> <A NAME="tex2html652"
+<B> Up:</B> <A NAME="tex2html663"
   HREF="node18.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html648"
+<B> Previous:</B> <A NAME="tex2html659"
   HREF="node24.html">Output format</A>
- &nbsp <B>  <A NAME="tex2html654"
+ &nbsp; <B>  <A NAME="tex2html665"
   HREF="node1.html">Contents</A></B> 
 <BR>
-<BR>
+<BR></DIV>
 <!--End of Navigation Panel-->
 
 <H2><A NAME="SECTION00047000000000000000">
 Signature Tool</A>
 </H2>
-    <I>sigtool</I> automates signature creation. If you have got an infected
-    file not recognized by ClamAV and there is an another anti-virus scanner
-    working in a console that detects the virus you can try to generate
-    the signature automatically. <A NAME="tex2html79"
-  HREF="footnode.html#foot465"><SUP>6</SUP></A> <I>Sigtool is only
-    partially useful because it only detects the last part of a real
-    signature. It will fail for multipart signatures (and especially for
-    polymorphic viruses).</I>
-    Example usage: create a random file (with any content) and insert the
-    <code>test/test1</code> file content into it. We will use <I>clamscan</I>
+    If you have got an infected file not recognized by ClamAV please first
+    report it on our page. In some cases you may want to create a temporary,
+    private signature - you can try to use sigtool which can use third party
+    software to create a signature but <SPAN  CLASS="textbf">you have to make sure your
+    commercial scanner's license does not disallow sigtool usage !</SPAN>
+    <A NAME="tex2html80"
+  HREF="footnode.html#foot468"><SUP><SPAN CLASS="arabic">6</SPAN></SUP></A>. The tool is only partially useful because it only detects
+    the last part of real signature. It will fail for multipart signatures
+    (which are often used to detect mutating viruses).
+<BR>
+Example usage: create a random file (with any content) and insert the
+    <code>test/test1</code> file content into it. We will use <SPAN  CLASS="textit">clamscan</SPAN>
     to generate the signature. Remember this is only an example - in a real
     life you don't need such tricks - just an infected file. Scan it with
     <code>clamscan --stdout testfile</code> - the output should be:
@@ -84,13 +86,13 @@ Signature Tool</A>
 	Time: 1.245 sec (0 m 0 s)
 </PRE>
     The unique string in this output is "ClamAV-Test-Signature" so run
-    <I>sigtool</I> with the following arguments:
+    <SPAN  CLASS="textit">sigtool</SPAN> with the following arguments:
     <PRE>
 	$ sigtool -c "clamscan --stdout" -f testfile -s "ClamAV-Test"
 </PRE>
     The program will concatenate arguments for <code>-c (--command)</code> and
     <code>-f (--file)</code> that's why the scanner's options must be given in the
-    proper order. At the end it will generate a file called <I>testfile.sig</I>,
+    proper order. At the end it will generate a file called <SPAN  CLASS="textit">testfile.sig</SPAN>,
     which should be 100 bytes in size (in our example). It contains the proper
     signature.
     <PRE>
@@ -144,42 +146,43 @@ Signature Tool</A>
     To make the generated signature complete you only to add the
     <code>VirusName=</code> string at the beginning of the hexadecimal signature in
     testfile.sig.
-<BR>    <I><B>TIP:</B> ClamAV scanners read all .db files in the database
+<BR>    <SPAN  CLASS="textit"><SPAN  CLASS="textbf">TIP:</SPAN> ClamAV scanners read all .db files in the database
     directory. You can create your own database files (e.g. local.db) and they
-    won't be modified by freshclam !</I>
+    won't be modified by freshclam !</SPAN>
 
 <P>
-<HR>
+
+<DIV CLASS="navigation"><HR>
 <!--Navigation Panel-->
-<A NAME="tex2html655"
+<A NAME="tex2html666"
   HREF="node26.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html651"
+<A NAME="tex2html662"
   HREF="node18.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html647"
+<A NAME="tex2html658"
   HREF="node24.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html653"
+<A NAME="tex2html664"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html656"
+<B> Next:</B> <A NAME="tex2html667"
   HREF="node26.html">Problem solving</A>
-<B> Up:</B> <A NAME="tex2html652"
+<B> Up:</B> <A NAME="tex2html663"
   HREF="node18.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html648"
+<B> Previous:</B> <A NAME="tex2html659"
   HREF="node24.html">Output format</A>
- &nbsp <B>  <A NAME="tex2html654"
-  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html665"
+  HREF="node1.html">Contents</A></B> </DIV>
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2004-06-29
+2004-07-22
 </ADDRESS>
 </BODY>
 </HTML>

@@ -1,6 +1,6 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2K.1beta (1.48)
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
@@ -13,8 +13,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
-<META NAME="Generator" CONTENT="LaTeX2HTML v2K.1beta">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
@@ -26,47 +25,48 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 </HEAD>
 
 <BODY >
-<!--Navigation Panel-->
-<A NAME="tex2html609"
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html620"
   HREF="node22.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html605"
+<A NAME="tex2html616"
   HREF="node18.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html599"
+<A NAME="tex2html610"
   HREF="node20.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html607"
+<A NAME="tex2html618"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html610"
+<B> Next:</B> <A NAME="tex2html621"
   HREF="node22.html">Archives and compressed files</A>
-<B> Up:</B> <A NAME="tex2html606"
+<B> Up:</B> <A NAME="tex2html617"
   HREF="node18.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html600"
+<B> Previous:</B> <A NAME="tex2html611"
   HREF="node20.html">Clamdscan</A>
- &nbsp <B>  <A NAME="tex2html608"
+ &nbsp; <B>  <A NAME="tex2html619"
   HREF="node1.html">Contents</A></B> 
 <BR>
-<BR>
+<BR></DIV>
 <!--End of Navigation Panel-->
 
 <H2><A NAME="SECTION00043000000000000000"></A><A NAME="clamuko"></A>
 <BR>
 Clamuko
 </H2>
-    Clamuko is a special thread in <I>clamd</I> that performs on-access
+    Clamuko is a special thread in <SPAN  CLASS="textit">clamd</SPAN> that performs on-access
     scanning under Linux and FreeBSD. It is implemented as a thread in clamd
     and cannot work as a clamd client because of the Dazuko implementation.
     There are however some benefits of the current implementation - clamuko
     is sharing the internal virus database with clamd and it's updated with
-    the RELOAD command. <B>You must follow some important rules when
-    using clamuko:</B>
+    the RELOAD command. <SPAN  CLASS="textbf">You must follow some important rules when
+    using clamuko:</SPAN>
     
 <UL>
 <LI>Always stop the daemon cleanly - using the QUIT command or
@@ -76,12 +76,12 @@ Clamuko
 <LI>Never protect a directory your mail-scanner software
 	      uses for attachment unpacking. Access to all infected
 	      files will be automatically blocked and the scanner (even clamd)
-	      won't be able to detect a virus. <B>All infected mails will
-	      be delivered.</B>
+	      won't be able to detect a virus. <SPAN  CLASS="textbf">All infected mails will
+	      be delivered.</SPAN>
     
 </LI>
 </UL>
-    You need to enable clamuko in <I>clamav.conf</I>. To protect the /home
+    You need to enable clamuko in <SPAN  CLASS="textit">clamav.conf</SPAN>. To protect the /home
     directory enable:
     <PRE>
 	ClamukoIncludePath /home
@@ -93,44 +93,45 @@ Clamuko
 	ClamukoExcludePath /temporary/dir/of/your/mail/scanning/software
 </PRE>
     You can use clamuko to protect files on Samba/Netatalk (but far
-    more better and safe idea is to use the <B>samba-vscan</B> module
-    <A HREF="node44.html#samba-vscan">5.16</A>. NFS is not supported (Dazuko doesn't intercept NFS
+    more better and safe idea is to use the <SPAN  CLASS="textbf">samba-vscan</SPAN> module
+    <A HREF="node45.html#samba-vscan">5.17</A>. NFS is not supported (Dazuko doesn't intercept NFS
     access calls). Yet another idea - you may build a database that contains
     signatures for popular exploits and setup clamd to protect your server
     from script-kiddies.
 
 <P>
-<HR>
+
+<DIV CLASS="navigation"><HR>
 <!--Navigation Panel-->
-<A NAME="tex2html609"
+<A NAME="tex2html620"
   HREF="node22.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html605"
+<A NAME="tex2html616"
   HREF="node18.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html599"
+<A NAME="tex2html610"
   HREF="node20.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html607"
+<A NAME="tex2html618"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html610"
+<B> Next:</B> <A NAME="tex2html621"
   HREF="node22.html">Archives and compressed files</A>
-<B> Up:</B> <A NAME="tex2html606"
+<B> Up:</B> <A NAME="tex2html617"
   HREF="node18.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html600"
+<B> Previous:</B> <A NAME="tex2html611"
   HREF="node20.html">Clamdscan</A>
- &nbsp <B>  <A NAME="tex2html608"
-  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html619"
+  HREF="node1.html">Contents</A></B> </DIV>
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2004-06-29
+2004-07-22
 </ADDRESS>
 </BODY>
 </HTML>
