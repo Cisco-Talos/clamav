@@ -228,6 +228,7 @@ Changes
 0.67a	16/2/04	Added clamfi_free
 0.67b	17/2/04	Removed compilation warning - now compiles on FreeBSD5.2
 		Don't allow --force to overwride TCPwrappers
+0.67c	18/2/04	Added dont-log-clean flag
 
 BUG REPORTS
 
