@@ -1,3 +1,9 @@
+Sat Jun 26 14:17:11 BST 2004 (njh)
+----------------------------------
+  * libclamav/message.c:	Added missing newline from the end of the
+	warning message that appears when scanning a uuencoded email that
+	contains lines that are too long
+
 Fri Jun 25 15:17:37 BST 2004 (trog)
 -----------------------------------
   * libclamav/vba_extract.c: fix error path crash
