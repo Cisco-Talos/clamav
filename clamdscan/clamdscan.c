@@ -36,6 +36,9 @@
 
 void help(void);
 
+struct s_info claminfo;
+short printinfected = 0;
+
 void clamscan(struct optstruct *opt)
 {
 	int ds, dms, ret;
