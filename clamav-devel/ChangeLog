@@ -1,3 +1,7 @@
+Tue Jan 27 14:04:51 GMT 2004 (trog)
+-----------------------------------
+  * libclamav:  OLE2 unpacker - add big-endian support
+
 Mon Jan 26 22:09:19 CET 2004 (tk)
 ---------------------------------
   * libclamav: Makefile: do not remove clamav.h with make distclean (problem
