@@ -204,7 +204,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 {
 	struct cl_cvd *current, *remote;
 	struct cfgstruct *cpt;
-	int hostfd, nodb = 0, dbver = -1, ret, port = 0;
+	int hostfd, nodb = 0, dbver = -1, ret, port = 0, ims = -1;
 	char  *tempname, ipaddr[16], *pt;
 	const char *proxy = NULL, *user = NULL, *pass = NULL;
 	int flevel = cl_retflevel();
@@ -285,7 +285,18 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	if(!ip[0])
 	    strcpy(ip, ipaddr);
 
-	if(!(remote = remote_cvdhead(remotename, hostfd, hostname, proxy, user, pass))) {
+	remote = remote_cvdhead(remotename, hostfd, hostname, proxy, user, pass, &ims);
+
+	if(!nodb && !ims) {
+	    mprintf("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
+	    logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
+	    if(current)
+		cl_cvdfree(current);
+
+	    return 1;
+	}
+
+	if(!remote) {
 	    mprintf("@Can't read %s header from %s (%s)\n", remotename, hostname, ipaddr);
 	    close(hostfd);
 	    if(current)
@@ -477,14 +488,23 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip)
     return -2;
 }
 
-/* njh@bandsman.co.uk: added proxy support */
-/* TODO: use a HEAD instruction to see if the file has been changed */
-struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostname, const char *proxy, const char *user, const char *pass)
+int Rfc2822DateTime(char *buf, time_t mtime)
+{
+	struct tm *time;
+
+    time = gmtime(&mtime);
+    return strftime(buf, 36, "%a, %d %b %Y %X GMT", time);
+}
+
+struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostname, const char *proxy, const char *user, const char *pass, int *ims)
 {
 	char cmd[512], head[513], buffer[FILEBUFF], *ch, *tmp;
 	int i, j, bread, cnt;
 	char *remotename = NULL, *authorization = NULL;
 	struct cl_cvd *cvd;
+	char last_modified[36];
+	struct stat sb;
+
 
     if(proxy) {
         remotename = mmalloc(strlen(hostname) + 8);
@@ -504,8 +524,16 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
         }
     }
 
-    mprintf("Reading CVD header (%s): ", file);
+    if(stat(file, &sb) != -1) {
+	Rfc2822DateTime(last_modified, sb.st_mtime);
+    } else {
+	    time_t mtime = 1104119530;
+	Rfc2822DateTime(last_modified, mtime);
+    }
 
+    mprintf("*If-Modified-Since: %s\n", last_modified);
+
+    mprintf("Reading CVD header (%s): ", file);
 #ifdef	NO_SNPRINTF
     sprintf(cmd, "GET %s/%s HTTP/1.1\r\n"
 	"Host: %s\r\n%s"
@@ -513,7 +541,8 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
 	"Cache-Control: no-cache\r\n"
 	"Connection: close\r\n"
 	"Range: bytes=0-511\r\n"
-	"\r\n", (remotename != NULL)?remotename:"", file, hostname, (authorization != NULL)?authorization:"");
+        "If-Modified-Since: %s\r\n"
+        "\r\n", (remotename != NULL)?remotename:"", file, hostname, (authorization != NULL)?authorization:"", last_modified);
 #else
     snprintf(cmd, sizeof(cmd), "GET %s/%s HTTP/1.1\r\n"
 	"Host: %s\r\n%s"
@@ -521,7 +550,8 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
 	"Cache-Control: no-cache\r\n"
 	"Connection: close\r\n"
 	"Range: bytes=0-511\r\n"
-	"\r\n", (remotename != NULL)?remotename:"", file, hostname, (authorization != NULL)?authorization:"");
+        "If-Modified-Since: %s\r\n"
+        "\r\n", (remotename != NULL)?remotename:"", file, hostname, (authorization != NULL)?authorization:"", last_modified);
 #endif
     write(socketfd, cmd, strlen(cmd));
 
@@ -541,9 +571,19 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
 	return NULL;
     }
 
-    if ((strstr(buffer, "HTTP/1.1 404")) != NULL) { 
-      mprintf("@CVD file not found on remote server\n");
-      return NULL;
+    if((strstr(buffer, "HTTP/1.1 404")) != NULL) { 
+	mprintf("@CVD file not found on remote server\n");
+	return NULL;
+    }
+
+    /* check whether the resource is up-to-date */
+    if((strstr(buffer, "HTTP/1.1 304")) != NULL) { 
+
+	*ims = 0;
+	mprintf("OK (IMS)\n");
+	return NULL;
+    } else {
+	*ims = 1;
     }
 
     ch = buffer;
@@ -576,8 +616,6 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
     return cvd;
 }
 
-/* njh@bandsman.co.uk: added proxy support */
-/* TODO: use a HEAD instruction to see if the file has been changed */
 int get_database(const char *dbfile, int socketfd, const char *file, const char *hostname, const char *proxy, const char *user, const char *pass)
 {
 	char cmd[512], buffer[FILEBUFF], *ch;

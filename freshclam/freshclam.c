@@ -428,9 +428,8 @@ void help(void)
     mprintf("    --version            -V              print version number and exit\n");
     mprintf("    --verbose            -v              be verbose\n");
     mprintf("    --debug                              enable debug messages\n");
-    mprintf("    --quiet                              be quiet, output only error messages\n");
+    mprintf("    --quiet                              only output error messages\n");
     mprintf("    --stdout                             write to stdout instead of stderr\n");
-    mprintf("                                         (this help is always written to stdout)\n");
     mprintf("\n");
     mprintf("    --config-file=FILE                   read configuration from FILE.\n");
     mprintf("    --log=FILE           -l FILE         log into FILE\n");
@@ -441,7 +440,7 @@ void help(void)
     mprintf("    --checks=#n          -c #n           number of checks per day, 1 <= n <= 50\n");
     mprintf("    --datadir=DIRECTORY                  download new databases into DIRECTORY\n");
 #ifdef BUILD_CLAMD
-    mprintf("    --daemon-notify[=/path/clamd.conf]  send RELOAD command to clamd\n");
+    mprintf("    --daemon-notify[=/path/clamd.conf]   send RELOAD command to clamd\n");
 #endif
     mprintf("    --on-update-execute=COMMAND          execute COMMAND after successful update\n");
     mprintf("    --on-error-execute=COMMAND           execute COMMAND if errors occured\n");
