@@ -1,3 +1,8 @@
+Sat Feb  7 23:37:52 CET 2004 (tk)
+---------------------------------
+  * libclamav: scan "Return-path: " mail files (detection was broken due to
+	       case sensitivity of the new file type guessing code)
+
 Sat Feb  7 12:19:37 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	URL updated
