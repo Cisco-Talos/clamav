@@ -1,3 +1,8 @@
+Thu Aug 19 22:06:35 CEST 2004 (tk)
+----------------------------------
+  * libclamav/matcher-bm.c: stop and report error if signature is shorter than
+			    BM_MIN_LENGTH (main.cvd:25 is now required)
+
 Wed Aug 18 22:38:39 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Multithread the followURL code - URLs are now followed					in parallel
