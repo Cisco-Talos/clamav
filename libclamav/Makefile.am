@@ -120,6 +120,8 @@ libclamav_la_SOURCES = \
 	special.c \
 	special.h \
 	binhex.c \
-	binhex.h
+	binhex.h \
+	is_tar.c \
+	is_tar.h
 
 lib_LTLIBRARIES = libclamav.la

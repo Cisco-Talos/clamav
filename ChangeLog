@@ -1,3 +1,7 @@
+Tue Mar 22 22:22:30 CET 2005 (tk)
+---------------------------------
+  * libclamav: add support for old fashioned tar archives
+
 Tue Mar 22 11:27:58 GMT 2005 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Not all Worm.Bagle.AC were being caught

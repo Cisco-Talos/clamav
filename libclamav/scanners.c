@@ -23,9 +23,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <sys/param.h>
 #include <fcntl.h>
 #include <dirent.h>
@@ -1126,7 +1126,7 @@ static int cli_scanole2(int desc, const char **virname, long int *scanned, const
     return ret;
 }
 
-static int cli_scantar(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scantar(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec, unsigned int posix)
 {
 	char *dir;
 	int ret = CL_CLEAN;
@@ -1141,7 +1141,7 @@ static int cli_scantar(int desc, const char **virname, long int *scanned, const 
 	return CL_ETMPDIR;
     }
 
-    if((ret = cli_untar(dir, desc)))
+    if((ret = cli_untar(dir, desc, posix)))
 	cli_dbgmsg("Tar: %s\n", cl_strerror(ret));
     else
 	ret = cli_scandir(dir, virname, scanned, root, limits, options, arec, mrec);
@@ -1289,11 +1289,21 @@ static int cli_scanmail(int desc, const char **virname, long int *scanned, const
 
 int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
-	char magic[MAGIC_BUFFER_SIZE + 1];
 	int ret = CL_CLEAN, nret;
 	int bread = 0;
 	cli_file_t type;
+	struct stat sb;
 
+
+    if(fstat(desc, &sb) == -1) {
+	cli_errmsg("Can's fstat descriptor %d\n", desc);
+	return CL_EIO;
+    }
+
+    if(sb.st_size <= 5) {
+	cli_dbgmsg("Small data (%d bytes)\n", sb.st_size);
+	return CL_CLEAN;
+    }
 
     if(!root) {
 	cli_errmsg("CRITICAL: root == NULL\n");
@@ -1325,18 +1335,8 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 	}
 
     lseek(desc, 0, SEEK_SET);
-    memset(magic, 0, sizeof(magic));
-
-    if((bread = read(desc, magic, MAGIC_BUFFER_SIZE)) == -1) {
-	cli_dbgmsg("Can't read from descriptor %d\n");
-	return CL_EIO;
-    } else if(bread < 2) {
-	/* short read - no need to do magic */
-	return CL_CLEAN;
-    }
-
+    type = cli_filetype2(desc);
     lseek(desc, 0, SEEK_SET);
-    type = cli_filetype(magic, bread);
 
     type == CL_TYPE_MAIL ? mrec++ : arec++;
 
@@ -1388,9 +1388,14 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 		ret = cli_scanole2(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
-	case CL_TYPE_TAR:
+	case CL_TYPE_POSIX_TAR:
 	    if(SCAN_ARCHIVE)
-		ret = cli_scantar(desc, virname, scanned, root, limits, options, arec, mrec);
+		ret = cli_scantar(desc, virname, scanned, root, limits, options, arec, mrec, 1);
+	    break;
+
+	case CL_TYPE_OLD_TAR:
+	    if(SCAN_ARCHIVE)
+		ret = cli_scantar(desc, virname, scanned, root, limits, options, arec, mrec, 0);
 	    break;
 
 	case CL_TYPE_BINHEX:

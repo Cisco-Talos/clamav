@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: untar.h,v $
+ * Revision 1.3  2005/03/22 21:26:27  kojm
+ * add support for old fashioned tar archives
+ *
  * Revision 1.2  2004/09/05 18:58:22  nigelhorne
  * Extract files completed
  *
@@ -24,4 +27,4 @@
  * First draft
  *
  */
-int	cli_untar(const char *dir, int desc);
+int cli_untar(const char *dir, int desc, unsigned int posix);
