@@ -1,3 +1,8 @@
+Fri Mar  5 14:25:52 CET 2004 (tk)
+---------------------------------
+  * configure: check for a safe value of FD_SETSIZE for select() and check for
+	       poll() (patch from Trog)
+
 Thu Mar  4 15:54:25 CET 2004 (tk)
 ---------------------------------
   * clamdscan: do not overwrite s_addr (thanks to Adam Stein
