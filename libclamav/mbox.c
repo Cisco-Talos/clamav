@@ -447,15 +447,17 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 			/*
 			 * Get to the start of the first message
 			 */
-			for(t_line = messageGetBody(mainMessage); t_line; t_line = t_line->t_next) {
-				if(boundaryStart(t_line->t_text, boundary)) {
+			for(t_line = messageGetBody(mainMessage); t_line; t_line = t_line->t_next)
+				if(boundaryStart(t_line->t_text, boundary))
 					break;
-				}
-			}
 
 			if(t_line == NULL) {
 				cli_warnmsg("Multipart MIME message contains no parts\n");
-				free((char *) boundary);	/* this was strdup()'d *TL*/
+				/*
+				 * Free added by Thomas Lamy
+				 * <Thomas.Lamy@in-online.net>
+				 */
+				free((char *)boundary);
 				return 2;	/* Nothing to do */
 			}
 			/*
@@ -515,7 +517,11 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 							cli_dbgmsg("insert content-type: parse line '%s'\n", line);
 							arg = strtok_r(NULL, "\r\n", &strptr);
 							if((arg == NULL) || (strchr(arg, '/') == NULL)) {
-								cli_warnmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", arg);
+								if(arg == NULL) 
+									cli_warnmsg("Empty content-type received, assuming text/plain; charset=us-ascii\n", arg);
+								else
+									cli_warnmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", arg);
+								messageSetMimeType(aMessage, "text");
 								messageSetMimeType(aMessage, "text");
 								messageSetMimeSubtype(aMessage, "plain");
 							} else {
@@ -864,13 +870,16 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 				/*
 				 * TODO: Tidy this up, it's just a duplicate
 				 * of the cl_mbox code....
+				 *
+				 * Thomas Lamy <Thomas.Lamy@in-online.net>:
+				 * ensure t is correctly freed
 				 */
-				text *msgText = messageToText(mainMessage);
-				text *t = msgText;
+				text *t, *msgText = messageToText(mainMessage);
 				bool inHeader = TRUE;
 				bool inMimeHeader = FALSE;
 				message *m;
 
+				t = msgText;
 				assert(t != NULL);
 
 				m = messageCreate();
@@ -929,12 +938,10 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 										inMimeHeader = !isLastLine;
 							}
 						}
-					} else {
+					} else
 						messageAddLine(m, strtok_r(buffer, "\r\n", &strptr));
-					}
 					free(buffer);
 				} while((t = t->t_next) != NULL);
-
 
 				textDestroy(msgText);
 				messageClean(m);
@@ -943,21 +950,19 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 
 				messageDestroy(m);
 
-				cli_dbgmsg("End of rfc822\n");
 				break;
-			} else if(strcasecmp(mimeSubtype, "partial") == 0) {
+			} else if(strcasecmp(mimeSubtype, "partial") == 0)
 				/* TODO */
 				cli_warnmsg("Content-type message/partial not yet supported");
-			} else if(strcasecmp(mimeSubtype, "external-body") == 0) {
+			else if(strcasecmp(mimeSubtype, "external-body") == 0)
 				/*
 				 * I don't believe that we should be going
 				 * around the Internet looking for referenced
 				 * files...
 				 */
 				cli_warnmsg("Attempt to send Content-type message/external-body trapped");
-			} else {
+			else
 				cli_warnmsg("Unsupported message format `%s'\n", mimeSubtype);
-			}
 
 			return 0;
 
