@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.147 2005/03/07 11:23:12 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.148 2005/03/15 18:12:10 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -847,6 +847,10 @@ messageAddStr(message *m, const char *data)
 		m->body_last = m->body_first = (text *)cli_malloc(sizeof(text));
 	else {
 		assert(m->body_last != NULL);
+		if((data == NULL) && (m->body_last->t_line == NULL)) {
+			cli_dbgmsg("not saving two blank lines in sucession");
+			return 1;
+		}
 		m->body_last->t_next = (text *)cli_malloc(sizeof(text));
 		if(m->body_last->t_next == NULL) {
 			messageDedup(m);
