@@ -541,6 +541,9 @@ Changes
 		Fix problem with deleting X-VIRUS-STATUS not setting correct
 			libmilter settings
 0.80n	30/10/04 Fix possible crash when one or more servers can't be contacted
+0.80o	3/11/04	SESSION: Warn if no clamd servers can be contacted when starting
+		When changing a subject, keep the original subject in
+			X-Original-Subject
 
 INTERNATIONALISATION
 
