@@ -1,3 +1,8 @@
+Sat Dec  6 04:04:00 GMT 2003 (njh)
+----------------------------------
+  * libclamav: Handle hand crafted emails that incorrectly set multipart headers
+  	Handcrafted examples sent by Michael Dankov <misha@btrc.ru>
+
 Sat Dec  6 00:43:08 CET 2003 (tk)
 ---------------------------------
   * Applied a patch from David S. Madole <david*madole.net>:
