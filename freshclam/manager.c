@@ -379,14 +379,16 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
 	"User-Agent: "PACKAGE"/"VERSION"\r\n"
 	"Cache-Control: no-cache\r\n"
 	"Connection: close\r\n"
+	"Range: bytes=0-511\r\n"
 	"\r\n", (remotename != NULL)?remotename:"", file, hostname, (authorization != NULL)?authorization:"");
 #else
     snprintf(cmd, sizeof(cmd), "GET %s/%s HTTP/1.1\r\n"
-	     "Host: %s\r\n%s"
-	     "User-Agent: "PACKAGE"/"VERSION"\r\n"
-	     "Cache-Control: no-cache\r\n"
-	     "Connection: close\r\n"
-	     "\r\n", (remotename != NULL)?remotename:"", file, hostname, (authorization != NULL)?authorization:"");
+	"Host: %s\r\n%s"
+	"User-Agent: "PACKAGE"/"VERSION"\r\n"
+	"Cache-Control: no-cache\r\n"
+	"Connection: close\r\n"
+	"Range: bytes=0-511\r\n"
+	"\r\n", (remotename != NULL)?remotename:"", file, hostname, (authorization != NULL)?authorization:"");
 #endif
     write(socketfd, cmd, strlen(cmd));
 
