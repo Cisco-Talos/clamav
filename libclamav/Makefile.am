@@ -110,6 +110,8 @@ libclamav_la_SOURCES = \
 	rebuildpe.c \
 	rebuildpe.h \
 	petite.c \
-	petite.h
+	petite.h \
+	fsg.c \
+	fsg.h
 
 lib_LTLIBRARIES = libclamav.la

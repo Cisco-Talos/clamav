@@ -35,6 +35,7 @@
 #include "pe.h"
 #include "upx.h"
 #include "petite.h"
+#include "fsg.h"
 #include "scanners.h"
 
 #define IMAGE_DOS_SIGNATURE	    0x5a4d	    /* MZ */
@@ -168,7 +169,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	struct pe_image_section_hdr *section_hdr;
 	struct stat sb;
 	char sname[9], buff[256], *tempfile;
-	int i, found, upx_success = 0, broken = 0, min = 0, max = 0;
+	int i, found, upx_success = 0, min = 0, max = 0;
 	int (*upxfn)(char *, int , char *, int) = NULL;
 	char *src, *dest;
 	int ssize, dsize, ndesc;
@@ -385,7 +386,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
     }
 
-    if((ep = cli_rawaddr(EC32(optional_hdr.AddressOfEntryPoint), section_hdr, nsections)) == -1) {
+    if((ep = EC32(optional_hdr.AddressOfEntryPoint)) >= min && (ep = cli_rawaddr(EC32(optional_hdr.AddressOfEntryPoint), section_hdr, nsections)) == -1) {
 	cli_dbgmsg("Possibly broken PE file\n");
 	free(section_hdr);
 	if(DETECT_BROKEN) {
@@ -398,151 +399,277 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
     cli_dbgmsg("EntryPoint offset: 0x%x (%d)\n", ep, ep);
 
-    /* UPX support */
+    /* UPX & FSG support */
 
     /* try to find the first section with physical size == 0 */
     found = 0;
     for(i = 0; i < nsections - 1; i++) {
-	if(!section_hdr[i].SizeOfRawData && section_hdr[i].VirtualSize && section_hdr[i+1].SizeOfRawData && section_hdr[i+1].VirtualSize) {
+	if(!section_hdr[i].SizeOfRawData && section_hdr[i].VirtualSize && section_hdr[i + 1].SizeOfRawData && section_hdr[i + 1].VirtualSize) {
 	    found = 1;
-	    cli_dbgmsg("UPX: empty section found - assuming UPX compression\n");
+	    cli_dbgmsg("UPX/FSG: empty section found - assuming compression\n");
 	    break;
 	}
     }
 
     if(found) {
-	strncpy(sname, section_hdr[i].Name, 8);
-	sname[8] = 0;
-	cli_dbgmsg("UPX: Section %d name: %s\n", i, sname);
-	strncpy(sname, section_hdr[i + 1].Name, 8);
-	sname[8] = 0;
-	cli_dbgmsg("UPX: Section %d name: %s\n", i + 1, sname);
 
-	if(strncmp(section_hdr[i].Name, "UPX0", 4) || strncmp(section_hdr[i + 1].Name, "UPX1", 4))
-	    cli_dbgmsg("UPX: Possibly hacked UPX section headers\n");
-
-	/* we assume (i + 1) is UPX1 */
-	ssize = EC32(section_hdr[i + 1].SizeOfRawData);
-	dsize = EC32(section_hdr[i].VirtualSize) + EC32(section_hdr[i + 1].VirtualSize);
-
-	if(limits && limits->maxfilesize && (ssize > limits->maxfilesize || dsize > limits->maxfilesize)) {
-	    cli_dbgmsg("UPX: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize , limits->maxfilesize);
-	    free(section_hdr);
-	    return CL_CLEAN;
-	}
-
-	if(ssize <= 0x19 || dsize <= ssize) { /* FIXME: What are reasonable values? */
-	    cli_dbgmsg("UPX: Size mismatch (ssize: %d, dsize: %d)\n", ssize, dsize);
-	    free(section_hdr);
-	    return CL_CLEAN;
-	}
-
-	/* FIXME: use file operations in case of big files */
-	if((src = (char *) cli_malloc(ssize)) == NULL) {
-	    free(section_hdr);
-	    return CL_EMEM;
-	}
-
-	if((dest = (char *) cli_calloc(dsize, sizeof(char))) == NULL) {
-	    free(section_hdr);
-	    free(src);
-	    return CL_EMEM;
-	}
-
-	lseek(desc, EC32(section_hdr[i + 1].PointerToRawData), SEEK_SET);
-	if(read(desc, src, ssize) != ssize) {
-	    cli_dbgmsg("Can't read raw data of section %d\n", i);
-	    free(section_hdr);
-	    free(src);
-	    free(dest);
-	    return CL_EIO;
-	}
-
-	/* try to detect UPX code */
-
+	/* Check EP for UPX vs. FSG */
 	if(lseek(desc, ep, SEEK_SET) == -1) {
-	    cli_dbgmsg("lseek() failed\n");
+	    cli_dbgmsg("UPX/FSG: lseek() failed\n");
 	    free(section_hdr);
-	    free(src);
-	    free(dest);
 	    return CL_EIO;
 	}
 
 	if(read(desc, buff, 126) != 126) { /* i.e. 0x69 + 13 + 8 */
-	    cli_dbgmsg("UPX: Can't read 126 bytes at 0x%x (%d)\n", ep, ep);
-	    free(section_hdr);
-	    free(src);
-	    free(dest);
+	    cli_dbgmsg("UPX/FSG: Can't read 126 bytes at 0x%x (%d)\n", ep, ep);
+            free(section_hdr);
 	    return CL_EIO;
-	} else {
-	    if(cli_memstr(UPX_NRV2B, 24, buff + 0x69, 13) || cli_memstr(UPX_NRV2B, 24, buff + 0x69 + 8, 13)) {
-		cli_dbgmsg("UPX: Looks like a NRV2B decompression routine\n");
-		upxfn = upx_inflate2b;
-	    } else if(cli_memstr(UPX_NRV2D, 24, buff + 0x69, 13) || cli_memstr(UPX_NRV2D, 24, buff + 0x69 + 8, 13)) {
-		cli_dbgmsg("UPX: Looks like a NRV2D decompression routine\n");
-		upxfn = upx_inflate2d;
-	    } else if(cli_memstr(UPX_NRV2E, 24, buff + 0x69, 13) || cli_memstr(UPX_NRV2E, 24, buff + 0x69 + 8, 13)) {
-		cli_dbgmsg("UPX: Looks like a NRV2E decompression routine\n");
-		upxfn = upx_inflate2e;
+	}
+
+	if(buff[0]=='\x87' || buff [1]=='\x25') {
+
+	    /* FSG support - thanks to aCaB ! */
+
+	    ssize = EC32(section_hdr[i + 1].SizeOfRawData);
+	    dsize = EC32(section_hdr[i].VirtualSize);
+
+	    while(found) {
+		    uint32_t newesi, newedi, newebx, newedx;
+
+		if(limits && limits->maxfilesize && (ssize > limits->maxfilesize || dsize > limits->maxfilesize)) {
+		    cli_dbgmsg("FSG: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize , limits->maxfilesize);
+		    free(section_hdr);
+		    return CL_CLEAN;
+		}
+
+		if(ssize <= 0x19 || dsize <= ssize) {
+		    cli_dbgmsg("FSG: Size mismatch (ssize: %d, dsize: %d)\n", ssize, dsize);
+		    free(section_hdr);
+		    return CL_CLEAN;
+		}
+
+		if((newedx = cli_readint32(buff + 2) - EC32(optional_hdr.ImageBase)) < EC32(section_hdr[i + 1].VirtualAddress) || newedx >= EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData) - 4) {
+		    cli_dbgmsg("FSG: xchg out of bounds (%x), giving up\n", newedx);
+		    break;
+		}
+
+		if((src = (char *) cli_malloc(ssize)) == NULL) {
+		    free(section_hdr);
+		    return CL_EMEM;
+		}
+
+		lseek(desc, EC32(section_hdr[i + 1].PointerToRawData), SEEK_SET);
+		if(read(desc, src, ssize) != ssize) {
+		    cli_dbgmsg("Can't read raw data of section %d\n", i);
+		    free(section_hdr);
+		    free(src);
+		    return CL_EIO;
+		}
+
+		if((dest = src + newedx - EC32(section_hdr[i + 1].VirtualAddress)) < src || dest >= src + EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData) - 4) {
+		    cli_dbgmsg("FSG: New ESP out of bounds\n");
+		    free(src);
+		    break;
+		}
+
+		if((newedx = cli_readint32(dest) - EC32(optional_hdr.ImageBase)) <= EC32(section_hdr[i + 1].VirtualAddress) || newedx >= EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData) - 4) {
+		    cli_dbgmsg("FSG: New ESP (%x) is wrong\n", newedx);
+		    free(src);
+		    break;
+		}
+ 
+		if((dest = src + newedx - EC32(section_hdr[i + 1].VirtualAddress)) < src || dest >= src + EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData) - 32) {
+		    cli_dbgmsg("FSG: New stack out of bounds\n");
+		    free(src);
+		    break;
+		}
+
+		newedi = cli_readint32(dest) - EC32(optional_hdr.ImageBase);
+		newesi = cli_readint32(dest + 4) - EC32(optional_hdr.ImageBase);
+		newebx = cli_readint32(dest + 16) - EC32(optional_hdr.ImageBase);
+		newedx = cli_readint32(dest + 20);
+
+		if(newedi != EC32(section_hdr[i].VirtualAddress)) {
+		    cli_dbgmsg("FSG: Bad destination buffer (edi is %x should be %x)\n", newedi, EC32(section_hdr[i].VirtualAddress));
+		    free(src);
+		    break;
+		}
+
+		if(newesi < EC32(section_hdr[i + 1].VirtualAddress) || newesi >= EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData)) {
+		    cli_dbgmsg("FSG: Source buffer out of section bounds\n");
+		    free(src);
+		    break;
+		}
+
+		if(newebx < EC32(section_hdr[i + 1].VirtualAddress) || newebx >= EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData) - 16) {
+		    cli_dbgmsg("FSG: Array of functions out of bounds\n");
+		    free(src);
+		    break;
+		}
+
+		/* FIXME: unused atm, needed for pe rebuilding */
+		cli_dbgmsg("FSG: found old EP @%x\n", cli_readint32(newebx + 12 - EC32(section_hdr[i + 1].VirtualAddress) + src) - EC32(optional_hdr.ImageBase));
+
+		if((dest = (char *) cli_calloc(dsize, sizeof(char))) == NULL) {
+		    free(section_hdr);
+		    free(src);
+		    return CL_EMEM;
+		}
+
+		if(unfsg(newesi - EC32(section_hdr[i + 1].VirtualAddress) + src, dest, ssize, dsize) == -1) {
+		    cli_dbgmsg("FSG: Unpacking failed\n");
+		    free(src);
+		    free(dest);
+		    break;
+		}
+
+		found = 0;
+		upx_success = 1;
+		cli_dbgmsg("FSG: Successfully decompressed\n");
 	    }
 	}
 
-	if(upxfn) {
-		int skew = cli_readint32(buff + 2) - EC32(optional_hdr.ImageBase) - EC32(section_hdr[i+1].VirtualAddress);
+	if(found) {
 
-	    if(buff[1] != '\xbe' || skew <= 0 || skew > 0xfff ) { /* FIXME: legit skews?? */
-		skew = 0; 
-		if(!upxfn(src, ssize, dest, dsize))
+	    /* UPX support */
+
+	    strncpy(sname, section_hdr[i].Name, 8);
+	    sname[8] = 0;
+	    cli_dbgmsg("UPX: Section %d name: %s\n", i, sname);
+	    strncpy(sname, section_hdr[i + 1].Name, 8);
+	    sname[8] = 0;
+	    cli_dbgmsg("UPX: Section %d name: %s\n", i + 1, sname);
+
+	    if(strncmp(section_hdr[i].Name, "UPX0", 4) || strncmp(section_hdr[i + 1].Name, "UPX1", 4))
+		cli_dbgmsg("UPX: Possibly hacked UPX section headers\n");
+
+	    /* we assume (i + 1) is UPX1 */
+	    ssize = EC32(section_hdr[i + 1].SizeOfRawData);
+	    dsize = EC32(section_hdr[i].VirtualSize) + EC32(section_hdr[i + 1].VirtualSize);
+
+	    if(limits && limits->maxfilesize && (ssize > limits->maxfilesize || dsize > limits->maxfilesize)) {
+		cli_dbgmsg("UPX: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize , limits->maxfilesize);
+		free(section_hdr);
+		return CL_CLEAN;
+	    }
+
+	    if(ssize <= 0x19 || dsize <= ssize) { /* FIXME: What are reasonable values? */
+		cli_dbgmsg("UPX: Size mismatch (ssize: %d, dsize: %d)\n", ssize, dsize);
+		free(section_hdr);
+		return CL_CLEAN;
+	    }
+
+	    /* FIXME: use file operations in case of big files */
+	    if((src = (char *) cli_malloc(ssize)) == NULL) {
+		free(section_hdr);
+		return CL_EMEM;
+	    }
+
+	    if((dest = (char *) cli_calloc(dsize, sizeof(char))) == NULL) {
+		free(section_hdr);
+		free(src);
+		return CL_EMEM;
+	    }
+
+	    lseek(desc, EC32(section_hdr[i + 1].PointerToRawData), SEEK_SET);
+	    if(read(desc, src, ssize) != ssize) {
+		cli_dbgmsg("Can't read raw data of section %d\n", i);
+		free(section_hdr);
+		free(src);
+		free(dest);
+		return CL_EIO;
+	    }
+
+	    /* try to detect UPX code */
+
+	    if(lseek(desc, ep, SEEK_SET) == -1) {
+		cli_dbgmsg("lseek() failed\n");
+		free(section_hdr);
+		free(src);
+		free(dest);
+		return CL_EIO;
+	    }
+
+	    if(read(desc, buff, 126) != 126) { /* i.e. 0x69 + 13 + 8 */
+		cli_dbgmsg("UPX: Can't read 126 bytes at 0x%x (%d)\n", ep, ep);
+		free(section_hdr);
+		free(src);
+		free(dest);
+		return CL_EIO;
+	    } else {
+		if(cli_memstr(UPX_NRV2B, 24, buff + 0x69, 13) || cli_memstr(UPX_NRV2B, 24, buff + 0x69 + 8, 13)) {
+		    cli_dbgmsg("UPX: Looks like a NRV2B decompression routine\n");
+		    upxfn = upx_inflate2b;
+		} else if(cli_memstr(UPX_NRV2D, 24, buff + 0x69, 13) || cli_memstr(UPX_NRV2D, 24, buff + 0x69 + 8, 13)) {
+		    cli_dbgmsg("UPX: Looks like a NRV2D decompression routine\n");
+		    upxfn = upx_inflate2d;
+		} else if(cli_memstr(UPX_NRV2E, 24, buff + 0x69, 13) || cli_memstr(UPX_NRV2E, 24, buff + 0x69 + 8, 13)) {
+		    cli_dbgmsg("UPX: Looks like a NRV2E decompression routine\n");
+		    upxfn = upx_inflate2e;
+		}
+	    }
+
+	    if(upxfn) {
+		    int skew = cli_readint32(buff + 2) - EC32(optional_hdr.ImageBase) - EC32(section_hdr[i + 1].VirtualAddress);
+
+		if(buff[1] != '\xbe' || skew <= 0 || skew > 0xfff ) { /* FIXME: legit skews?? */
+		    skew = 0; 
+		    if(!upxfn(src, ssize, dest, dsize))
+			upx_success = 1;
+
+		} else {
+		    cli_dbgmsg("UPX: UPX1 seems skewed by %d bytes\n", skew);
+		    if(!upxfn(src + skew, ssize - skew, dest, dsize) || !upxfn(src, ssize, dest, dsize))
+			upx_success = 1;
+		}
+
+		if(upx_success)
+		    cli_dbgmsg("UPX: Successfully decompressed\n");
+		else
+		    cli_dbgmsg("UPX: Prefered decompressor failed\n");
+	    }
+
+	    if(!upx_success && upxfn != upx_inflate2b) {
+		if(upx_inflate2b(src, ssize, dest, dsize) && upx_inflate2b(src + 0x15, ssize - 0x15, dest, dsize) ) {
+		    cli_dbgmsg("UPX: NRV2B decompressor failed\n");
+		} else {
 		    upx_success = 1;
+		    cli_dbgmsg("UPX: Successfully decompressed with NRV2B\n");
+		}
+	    }
 
-	    } else {
-		cli_dbgmsg("UPX: UPX1 seems skewed by %d bytes\n", skew);
-		if(!upxfn(src + skew, ssize - skew, dest, dsize) || !upxfn(src, ssize, dest, dsize))
+	    if(!upx_success && upxfn != upx_inflate2d) {
+		if(upx_inflate2d(src, ssize, dest, dsize) && upx_inflate2d(src + 0x15, ssize - 0x15, dest, dsize) ) {
+		    cli_dbgmsg("UPX: NRV2D decompressor failed\n");
+		} else {
 		    upx_success = 1;
+		    cli_dbgmsg("UPX: Successfully decompressed with NRV2D\n");
+		}
 	    }
 
-	    if(upx_success)
-		cli_dbgmsg("UPX: Successfully decompressed\n");
-	    else
-		cli_dbgmsg("UPX: Prefered decompressor failed\n");
-	}
-
-	if(!upx_success && upxfn != upx_inflate2b) {
-	    if(upx_inflate2b(src, ssize, dest, dsize) && upx_inflate2b(src + 0x15, ssize - 0x15, dest, dsize) ) {
-		cli_dbgmsg("UPX: NRV2B decompressor failed\n");
-	    } else {
-		upx_success = 1;
-		cli_dbgmsg("UPX: Successfully decompressed with NRV2B\n");
+	    if(!upx_success && upxfn != upx_inflate2e) {
+		if(upx_inflate2e(src, ssize, dest, dsize) && upx_inflate2e(src + 0x15, ssize - 0x15, dest, dsize) ) {
+		    cli_dbgmsg("UPX: NRV2E decompressor failed\n");
+		} else {
+		    upx_success = 1;
+		    cli_dbgmsg("UPX: Successfully decompressed with NRV2E\n");
+		}
 	    }
-	}
 
-	if(!upx_success && upxfn != upx_inflate2d) {
-	    if(upx_inflate2d(src, ssize, dest, dsize) && upx_inflate2d(src+0x15, ssize-0x15, dest, dsize) ) {
-		cli_dbgmsg("UPX: NRV2D decompressor failed\n");
-	    } else {
-		upx_success = 1;
-		cli_dbgmsg("UPX: Successfully decompressed with NRV2D\n");
+	    if(!upx_success) {
+		cli_dbgmsg("UPX: All decompressors failed\n");
+		free(src);
+		free(dest);
 	    }
 	}
 
-	if(!upx_success && upxfn != upx_inflate2e) {
-	    if(upx_inflate2e(src, ssize, dest, dsize) && upx_inflate2e(src + 0x15, ssize - 0x15, dest, dsize) ) {
-		cli_dbgmsg("UPX: NRV2E decompressor failed\n");
-	    } else {
-		upx_success = 1;
-		cli_dbgmsg("UPX: Successfully decompressed with NRV2E\n");
-	    }
-	}
-
-	if(!upx_success) {
-	    cli_dbgmsg("UPX: All decompressors failed\n");
-	} else {
-	    int ndesc;
+	if(upx_success) {
+		int ndesc;
 
 	    if(cli_leavetemps_flag) {
 		tempfile = cli_gentemp(NULL);
 		if((ndesc = open(tempfile, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
-		    cli_dbgmsg("UPX: Can't create file %s\n", tempfile);
+		    cli_dbgmsg("UPX/FSG: Can't create file %s\n", tempfile);
 		    free(tempfile);
 		    free(section_hdr);
 		    free(src);
@@ -551,7 +678,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		}
 
 		if(write(ndesc, dest, dsize) != dsize) {
-		    cli_dbgmsg("Can't write %d bytes\n", dsize);
+		    cli_dbgmsg("UPX/FSG: Can't write %d bytes\n", dsize);
 		    free(tempfile);
 		    free(section_hdr);
 		    free(src);
@@ -560,7 +687,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		}
 
 		close(ndesc);
-		cli_dbgmsg("UPX: Decompressed data saved in %s\n", tempfile);
+		cli_dbgmsg("UPX/FSG: Decompressed data saved in %s\n", tempfile);
 		free(tempfile);
 	    }
 
@@ -570,10 +697,10 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		free(dest);
 		return CL_VIRUS;
 	    }
-	}
 
-	free(src);
-	free(dest);
+	    free(src);
+	    free(dest);
+	}
     }
 
     /* Petite */
