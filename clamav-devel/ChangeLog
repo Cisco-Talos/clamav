@@ -1,3 +1,8 @@
+Wed Feb 11 08:19:54 GMT 2004 (njh)
+----------------------------------
+  * libclamav: Use O_BINARY when saving attachments which is required for
+	Cygwin. Thanks to "Andrey Cherezov" <andrey@cherezov.koenig.su>
+
 Wed Feb 11 00:08:26 CET 2004 (tk)
 ---------------------------------
   V 0.66 (released with OLE2 and Dazuko support disabled)

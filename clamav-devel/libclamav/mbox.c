@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.40  2004/02/11 08:15:59  nigelhorne
+ * Use O_BINARY for cygwin
+ *
  * Revision 1.39  2004/02/06 13:46:08  kojm
  * Support for clamav-config.h
  *
@@ -108,7 +111,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.39 2004/02/06 13:46:08 kojm Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.40 2004/02/11 08:15:59 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -324,7 +327,7 @@ cl_mbox(const char *dir, int desc)
 				lastLineWasEmpty = TRUE;
 				cli_dbgmsg("Finished processing message\n");
 			} else
-				lastLineWasEmpty = (buffer[0] == '\0');
+				lastLineWasEmpty = (bool)(buffer[0] == '\0');
 			messageAddLine(m, buffer);
 		} while(fgets(buffer, sizeof(buffer), fd) != NULL);
 	} else
@@ -1647,7 +1650,7 @@ saveFile(const blob *b, const char *dir)
 	fd = mkstemp(filename);
 #else
 	(void)mktemp(filename);
-	fd = open(filename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC, 0600);
+	fd = open(filename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
 #endif
 
 	if(fd < 0) {
