@@ -493,14 +493,19 @@ int cli_memstr(const char *haystack, int hs, const char *needle, int ns)
     n = hs;
 
     while((pt = memchr(hay, needle[0], n)) != NULL) {
-	n = (int) pt - (int) hay;
+	n -= (int) pt - (int) hay;
 	if(n < ns)
 	    break;
 
 	if(!memcmp(pt, needle, ns))
 	    return 1;
 
-	hay = pt;
+	if(hay == pt) {
+	    n--;
+	    hay++;
+	} else {
+	    hay = pt;
+	}
     }
 
     return 0;
