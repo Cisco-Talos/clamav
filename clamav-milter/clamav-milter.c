@@ -130,6 +130,9 @@
  *			Patch from "Richard G. Roberto" <rgr@dedlegend.com>
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.8  2003/09/29 06:20:17  nigelhorne
+ * max_children now overrides MaxThreads
+ *
  * Revision 1.7  2003/09/29 06:07:49  nigelhorne
  * Ensure remoteIP is set before usage
  *
@@ -137,7 +140,7 @@
  * Added -f flag use MaxThreads if --max-children not set
  *
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.7 2003/09/29 06:07:49 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.8 2003/09/29 06:20:17 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.60h"
 
@@ -459,7 +462,7 @@ main(int argc, char **argv)
 	 * If the --max-children flag isn't set, see if MaxThreads
 	 * is set in the config file
 	 */
-	if((cpt = cfgopt(copt, "MaxThreads")) != NULL)
+	if((max_children == 0) && ((cpt = cfgopt(copt, "MaxThreads")) != NULL))
 		max_children = atoi(cpt->strarg);
 
 	/*

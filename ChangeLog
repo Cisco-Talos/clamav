@@ -1,6 +1,7 @@
 Mon Sep 29 07:15:30 BST 2003 (njh)
 ----------------------------------
   * clamav-milter: ensure remoteIP is initialised
+  		max-children now overrides MaxThreads
 
 Sun Sep 28 17:38:44 BST 2003 (njh)
 ----------------------------------
