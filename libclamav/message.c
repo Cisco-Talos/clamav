@@ -17,11 +17,14 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.9  2003/10/01 09:28:23  nigelhorne
+ * Handle content-type header going over to a new line
+ *
  * Revision 1.8  2003/09/28 10:07:08  nigelhorne
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.8 2003/09/28 10:07:08 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.9 2003/10/01 09:28:23 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -484,9 +487,13 @@ messageSetEncoding(message *m, const char *enctype)
 
 	m->encodingType = EEXTENSION;
 
+	while((*enctype == '\t') || (*enctype == ' '))
+		enctype++;
+
 	for(e = encoding_map; e->string; e++)
 		if(strcasecmp(enctype, e->string) == 0) {
 			m->encodingType = e->type;
+			cli_dbgmsg("Encoding type is \"%s\"\n", enctype);
 			return;
 		}
 
