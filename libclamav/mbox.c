@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.80  2004/06/23 16:23:25  nigelhorne
+ * Further empty line optimisation
+ *
  * Revision 1.79  2004/06/22 04:08:01  nigelhorne
  * Optimise empty lines
  *
@@ -225,7 +228,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.79 2004/06/22 04:08:01 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.80 2004/06/23 16:23:25 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -583,7 +586,10 @@ parseEmailHeaders(const message *m, const table_t *rfc821Table)
 			buffer = strdup(t->t_text);
 			if(buffer == NULL)
 				break;
-			cli_chomp(buffer);
+			if(cli_chomp(buffer) == 0) {
+				free(buffer);
+				buffer = NULL;
+			}
 		} else
 			buffer = NULL;
 
@@ -614,7 +620,7 @@ parseEmailHeaders(const message *m, const table_t *rfc821Table)
 			 * A blank line signifies the end of the header and
 			 * the start of the text
 			 */
-			if((buffer == NULL) || (strlen(buffer) == 0)) {
+			if(buffer == NULL) {
 				cli_dbgmsg("End of header information\n");
 				inContinuationHeader = inHeader = FALSE;
 			} else if(parseEmailHeader(ret, buffer, rfc821Table) == CONTENT_TYPE)
@@ -824,11 +830,9 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				 * but some viruses insert them
 				 */
 				while((t_line = t_line->t_next) != NULL)
-					if(t_line->t_text) {
-						cli_chomp(t_line->t_text);
-						if(strlen(t_line->t_text) != 0)
-							break;
-					}
+					if(t_line->t_text &&
+					   (cli_chomp(t_line->t_text) > 0))
+						break;
 
 				if(t_line == NULL) {
 					cli_dbgmsg("Empty part\n");
