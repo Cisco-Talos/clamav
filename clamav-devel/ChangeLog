@@ -1,7 +1,18 @@
+Tue Feb  3 02:31:55 CET 2004 (tk)
+---------------------------------
+  * libclamav: + don't report errors when archive limits are reached
+	       + enabled scanning of "X-UIDL" mail files
+  * clamscan: + don't count broken archives twice (bug reported by Przemyslaw
+	        Holowczyc <doozer*skc.com.pl>)
+	      + don't try to drop privileges in normal user mode when
+	        clamscan is started with --mbox in stdin scanning mode
+		(bug reported by Ed Ravin <eravin*panix.com>)
+  * freshclam: + fixed -c handling (bug reported by scsi <scsi*softland.ru>)
+
 Mon Feb  2 17:12:25 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Scan a rare form of bounce message identified by
-  	Denis De Messemacker <ddm@e-labs.org>
+  	Denis De Messemacker <ddm*e-labs.org>
 
 Mon Feb  2 13:46:51 GMT 2004 (njh)
 ----------------------------------
