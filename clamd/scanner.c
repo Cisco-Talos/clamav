@@ -249,8 +249,8 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 		pthread_mutex_unlock(&gh_mutex);
 		return -1;
 	    }
-	    pthread_mutex_unlock(&gh_mutex);
 	    server.sin_addr = *(struct in_addr *) he->h_addr_list[0];
+	    pthread_mutex_unlock(&gh_mutex);
 	} else
 	    server.sin_addr.s_addr = INADDR_ANY;
 
