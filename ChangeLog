@@ -1,3 +1,7 @@
+Sat Feb  5 09:39:48 GMT 2005 (trog)
+-----------------------------------
+  * libclamav/special.c: support for big-endian system in RIFF code.
+
 Fri Feb  4 10:02:08 GMT 2005 (trog)
 -----------------------------------
   * libclamav/special.c: check RIFF files for MS05-002. Not yet activated.

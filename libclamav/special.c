@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <netinet/in.h>
 
+#include "clamav-config.h"
 #include "clamav.h"
 #include "others.h"
 
@@ -117,15 +118,24 @@ int cli_check_jpeg_exploit(int fd)
 	}
 }
 
-#if WORDS_BIGENDIAN == 0
-#define riff_endian_convert_32(v)    (v)
-#else
-static uint32_t riff_endian_convert_32(uint32_t v)
+static uint32_t riff_endian_convert_32(uint32_t value, int big_endian)
 {
-        return ((v >> 24) | ((v & 0x00FF0000) >> 8) |
-                ((v & 0x0000FF00) << 8) | (v << 24));
-}
+	if (big_endian) {
+#if WORDS_BIGENDIAN == 0
+		return ((value >> 24) | ((value & 0x00FF0000) >> 8) |
+			((value & 0x0000FF00) << 8) | (value << 24));
+#else
+		return value;
 #endif
+	} else {
+#if WORDS_BIGENDIAN == 0
+		return value;
+#else
+		return ((value >> 24) | ((value & 0x00FF0000) >> 8) |
+			((value & 0x0000FF00) << 8) | (value << 24));
+#endif
+        }
+}
 
 static int riff_read_chunk(int fd, int big_endian, int rec_level)
 {
@@ -147,9 +157,7 @@ static int riff_read_chunk(int fd, int big_endian, int rec_level)
 	if (cli_readn(fd, &chunk_size, length) != length) {
 		return 0;
 	}
-	if (big_endian) {
-		chunk_size = riff_endian_convert_32(chunk_size);
-	}
+	chunk_size = riff_endian_convert_32(chunk_size, big_endian);
 
 	if (memcmp(&chunk_id, "RIFF", 4) == 0) {
 		return 0;
@@ -213,9 +221,7 @@ int cli_check_riff_exploit(int fd)
 		return 0;
 	}
 
-	if (big_endian) {
-		chunk_size = riff_endian_convert_32(chunk_size);
-	}
+	chunk_size = riff_endian_convert_32(chunk_size, big_endian);
 
 	do {
 		retval = riff_read_chunk(fd, big_endian, 1);
