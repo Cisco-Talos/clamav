@@ -148,7 +148,7 @@ static const struct cli_smagic_s cli_smagic[] = {
 
 cli_file_t cli_filetype(const char *buf, size_t buflen)
 {
-	int i, ascii = 1;
+	int i, ascii = 1, len;
 
 
     for(i = 0; cli_magic[i].magic; i++) {
@@ -160,8 +160,9 @@ cli_file_t cli_filetype(const char *buf, size_t buflen)
 	}
     }
 
-    for(i = 0; i < buflen; i++)
-	if(!iscntrl(buf[i]) && !isprint(buf[i])) { /* FIXME: do we need to handle intern. chars? */
+    buflen < 25 ? (len = buflen) : (len = 25);
+    for(i = 0; i < len; i++)
+	if(!iscntrl(buf[i]) && !isprint(buf[i])) { /* FIXME: handle international chars */
 	    ascii = 0;
 	    break;
 	}
