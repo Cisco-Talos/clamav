@@ -1,3 +1,9 @@
+Sun Aug 15 02:19:54 CEST 2004 (tk)
+----------------------------------
+  * freshclam: try all IP addresses provided by gethostbyname() in single
+	       attempt, if needed (patch by Marek Gutkowski
+	       <hobbit*core.segfault.pl>)
+
 Sat Aug 14 14:44:39 CEST 2004 (tk)
 ----------------------------------
   * configure: fix detection of inet_ntop on Solaris (patch by David Champion
