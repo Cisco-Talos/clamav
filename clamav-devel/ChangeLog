@@ -1,3 +1,10 @@
+Sat Oct  9 23:11:35 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Correct fix for systems where BINDTODEVICE is not
+				supported
+			SESSIONS: If the PORT command to clamd fails, reset the
+				link
+
 Sat Oct  9 09:03:21 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Only use libcurl if the version is >= 7.11
@@ -13,7 +20,7 @@ Fri Oct  8 17:53:30 CEST 2004 (tk)
 Thu Oct  7 16:37:04 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Requirement for ScanMail removed since that is no
-  				longer supported in clamd.conf
+				longer supported in clamd.conf
 
 Thu Oct  7 12:18:59 BST 2004 (trog)
 -----------------------------------
