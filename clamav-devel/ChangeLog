@@ -1,4 +1,9 @@
+Thu Feb 19 16:03:59 GMT 2004 (trog)
+-----------------------------------
+  * libclamav/vba_extract.c: tidy up error handling
+
 Thu Feb 19 12:16:33 CET 2004 (tl)
+---------------------------------
   * freshclam: + write pid file if run as daemon (new option -p|--pid)
                + handle signals: HUP  = re-open logfiles
 	                         TERM = terminate (with log message)
