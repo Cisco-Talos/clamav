@@ -105,9 +105,13 @@ else
 	AC_MSG_ERROR(Installed zlib version contains a security bug. Please install version 1.2.2 or later.)
     fi
 
-    LDFLAGS="$LDFLAGS -L$ZLIB_HOME/lib"
-    CPPFLAGS="$CPPFLAGS -I$ZLIB_HOME/include"
-    AC_CHECK_LIB(z, inflateEnd, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -L$ZLIB_HOME/lib -lz"; AC_DEFINE(HAVE_ZLIB_H,1,zlib installed)], AC_MSG_ERROR(Please install zlib and zlib-devel packages))
+    if test "$ZLIB_HOME" != "/usr"; then
+	LDFLAGS="$LDFLAGS -L$ZLIB_HOME/lib"
+	CPPFLAGS="$CPPFLAGS -I$ZLIB_HOME/include"
+	AC_CHECK_LIB(z, inflateEnd, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -L$ZLIB_HOME/lib -lz"; AC_DEFINE(HAVE_ZLIB_H,1,zlib installed)], AC_MSG_ERROR(Please install zlib and zlib-devel packages))
+    else
+	AC_CHECK_LIB(z, inflateEnd, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lz"; AC_DEFINE(HAVE_ZLIB_H,1,zlib installed)], AC_MSG_ERROR(Please install zlib and zlib-devel packages))
+    fi
 fi
 
 want_bzip2="yes"

@@ -1,3 +1,7 @@
+Sat Nov 13 17:00:28 CET 2004 (tk)
+---------------------------------
+  * configure: do not add needless -I/usr/include
+
 Sat Nov 13 15:45:38 CET 2004 (tk)
 ---------------------------------
   * libclamav, clamd: readdir_r code: fix compilation error on systems that
