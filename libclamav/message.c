@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.41  2004/03/19 08:08:38  nigelhorne
+ * Handle '8 bit' encoding as well as the RFC '8bit'
+ *
  * Revision 1.40  2004/03/18 21:51:41  nigelhorne
  * If a message only contains a single RFC822 message that has no encoding don't save for scanning
  *
@@ -117,7 +120,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.40 2004/03/18 21:51:41 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.41 2004/03/19 08:08:38 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -181,6 +184,7 @@ static	const	struct	encoding_map {
 	{	"quoted-printable",	QUOTEDPRINTABLE	},	/* rfc1522 */
 	{	"base64",		BASE64		},
 	{	"8bit",			EIGHTBIT	},
+	{	"8 bit",		EIGHTBIT	},	/* incorrect */
 	{	"x-uuencode",		UUENCODE	},
 	{	"binary",		BINARY		},
 	{	NULL,			NOENCODING	}
