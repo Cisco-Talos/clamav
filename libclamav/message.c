@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.18  2004/02/02 15:30:54  nigelhorne
+ * Remove handling of 8bit binhex files for now
+ *
  * Revision 1.17  2004/02/02 14:01:58  nigelhorne
  * Carefully crafted binhex messages could have caused a crash
  *
@@ -48,7 +51,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.17 2004/02/02 14:01:58 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.18 2004/02/02 15:30:54 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -714,6 +717,15 @@ messageToBlob(const message *m)
 				}
 			}
 			free(ptr);
+		} else {
+			/*
+			 * TODO: Need an example of this before I can be
+			 * sure it works
+			 */
+			cli_warnmsg("8 bit binhex code is not yet supported\n");
+			blobDestroy(tmp);
+			blobDestroy(b);
+			return NULL;
 		}
 
 		/*
