@@ -1,81 +1,94 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2K.1beta (1.48)
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Credits</TITLE>
-<META NAME="description" CONTENT="Credits">
+<TITLE>Database reloading</TITLE>
+<META NAME="description" CONTENT="Database reloading">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
-<META NAME="Generator" CONTENT="LaTeX2HTML v2K.1beta">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node82.html">
-<LINK REL="previous" HREF="node74.html">
-<LINK REL="up" HREF="clamdoc.html">
+<LINK REL="next" HREF="node80.html">
+<LINK REL="previous" HREF="node78.html">
+<LINK REL="up" HREF="node77.html">
 <LINK REL="next" HREF="node80.html">
 </HEAD>
 
 <BODY >
-<!--Navigation Panel-->
-<A NAME="tex2html1347"
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html1363"
   HREF="node80.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html1343"
-  HREF="clamdoc.html">
+<A NAME="tex2html1359"
+  HREF="node77.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html1337"
+<A NAME="tex2html1353"
   HREF="node78.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html1345"
+<A NAME="tex2html1361"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1348"
-  HREF="node80.html">Contributors</A>
-<B> Up:</B> <A NAME="tex2html1344"
-  HREF="clamdoc.html">clamdoc</A>
-<B> Previous:</B> <A NAME="tex2html1338"
-  HREF="node78.html">CVD format</A>
- &nbsp <B>  <A NAME="tex2html1346"
+<B> Next:</B> <A NAME="tex2html1364"
+  HREF="node80.html">Scan engine</A>
+<B> Up:</B> <A NAME="tex2html1360"
+  HREF="node77.html">LibClamAV</A>
+<B> Previous:</B> <A NAME="tex2html1354"
+  HREF="node78.html">General API</A>
+ &nbsp; <B>  <A NAME="tex2html1362"
   HREF="node1.html">Contents</A></B> 
 <BR>
-<BR>
+<BR></DIV>
 <!--End of Navigation Panel-->
 
-<H1><A NAME="SECTION00080000000000000000">
-Credits</A>
-</H1>
+<H2><A NAME="SECTION00072000000000000000">
+Database reloading</A>
+</H2>
+    The most important thing is to keep the internal instance of the database
+    up to date. You can watch database changes with the <code>cl_stat</code>
+    functions family:
+    <PRE>
+	int cl_statinidir(const char *dirname, struct cl_stat *dbstat);
+	int cl_statchkdir(const struct cl_stat *dbstat);
+	int cl_statfree(struct cl_stat *dbstat);
+</PRE>
+    Initialization:
+    <PRE>
+	    struct cl_stat dbstat;
+    
+	memset(&amp;dbstat, 0, sizeof(struct cl_stat));
+	cl_statinidir(dbdir, &amp;dbstat);
+</PRE>
+    To check for a change you only need to call <code>cl_statchkdir</code>:
+    <PRE>
+	if(cl_statchkdir(&amp;dbstat) == 1) {
+	    reload_database...;
+	    cl_statfree(&amp;dbstat);
+	    cl_statinidir(cl_retdbdir(), &amp;dbstat);
+	}
+</PRE>
+    Remember to reinitialize the structure after a reload.
 
 <P>
 <BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
-
-<UL>
-<LI><A NAME="tex2html1349"
-  HREF="node80.html">Contributors</A>
-<LI><A NAME="tex2html1350"
-  HREF="node81.html">Donors</A>
-</UL>
-<!--End of Table of Child-Links-->
-<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-06-29
+2004-07-22
 </ADDRESS>
 </BODY>
 </HTML>

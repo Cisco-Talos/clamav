@@ -1,6 +1,6 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2K.1beta (1.48)
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
@@ -13,8 +13,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
-<META NAME="Generator" CONTENT="LaTeX2HTML v2K.1beta">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
@@ -26,40 +25,41 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 </HEAD>
 
 <BODY >
-<!--Navigation Panel-->
-<A NAME="tex2html544"
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html555"
   HREF="node17.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html540"
+<A NAME="tex2html551"
   HREF="node6.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html534"
+<A NAME="tex2html545"
   HREF="node15.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html542"
+<A NAME="tex2html553"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html545"
+<B> Next:</B> <A NAME="tex2html556"
   HREF="node17.html">Database mirrors</A>
-<B> Up:</B> <A NAME="tex2html541"
+<B> Up:</B> <A NAME="tex2html552"
   HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html535"
+<B> Previous:</B> <A NAME="tex2html546"
   HREF="node15.html">Testing</A>
- &nbsp <B>  <A NAME="tex2html543"
+ &nbsp; <B>  <A NAME="tex2html554"
   HREF="node1.html">Contents</A></B> 
 <BR>
-<BR>
+<BR></DIV>
 <!--End of Navigation Panel-->
 
 <H2><A NAME="SECTION000310000000000000000">
 freshclam: Setting up auto-updating</A>
 </H2>
-    <I>freshclam</I> is a default database updater for Clam AntiVirus.
+    <SPAN  CLASS="textit">freshclam</SPAN> is a default database updater for Clam AntiVirus.
     It can work in two modes:
     
 <UL>
@@ -70,36 +70,36 @@ freshclam: Setting up auto-updating</A>
 </LI>
 </UL>
     When started by a superuser (by default) it drops privileges and switches
-    to the <I>clamav</I> user. <I>freshclam</I> uses the
+    to the <SPAN  CLASS="textit">clamav</SPAN> user. <SPAN  CLASS="textit">freshclam</SPAN> uses the
     <TT><A NAME="tex2html21"
   HREF="database.clamav.net">database.clamav.net</A></TT> round-robin DNS which automatically selects
     a database mirror<A HREF="node17.html#mirrors">2.11</A>. freshclam is an advanced tool: supports
     proxy servers (with authentication), digital signature verification and
-    various error scenarios. <B>Quick test: run <I>freshclam</I> (as
-    superuser) with no parameters and check the output.</B> If everything
-    is OK you may create the log file in /var/log (owned by <I>clamav</I> or
+    various error scenarios. <SPAN  CLASS="textbf">Quick test: run <SPAN  CLASS="textit">freshclam</SPAN> (as
+    superuser) with no parameters and check the output.</SPAN> If everything
+    is OK you may create the log file in /var/log (owned by <SPAN  CLASS="textit">clamav</SPAN> or
     another user freshclam will be running as (<code>--user</code>):
     <PRE>
 	# touch /var/log/clam-update.log
 	# chmod 600 /var/log/clam-update.log
 	# chown clamav /var/log/clam-update.log
 </PRE>
-    Now you <I>should</I> edit the configuration file (usually
-    <I>freshclam.conf</I>) and configure the <I>UpdateLogFile</I> directive
+    Now you <SPAN  CLASS="textit">should</SPAN> edit the configuration file (usually
+    <SPAN  CLASS="textit">freshclam.conf</SPAN>) and configure the <SPAN  CLASS="textit">UpdateLogFile</SPAN> directive
     to point the created log file (it's highly recommended). Optionally you
-    may force the log file path with <I>-l</I>. Finally, to run freshclam
+    may force the log file path with <SPAN  CLASS="textit">-l</SPAN>. Finally, to run freshclam
     in the daemon mode execute:
     <PRE>
 	# freshclam -d
 </PRE>
-    The other method is to use the <I>cron</I> daemon.  You have to add the
-    following line to the crontab of the <B>root</B> or <B>clamav</B> users:
-    <FONT SIZE="-1">    </FONT><PRE>
+    The other method is to use the <SPAN  CLASS="textit">cron</SPAN> daemon.  You have to add the
+    following line to the crontab of the <SPAN  CLASS="textbf">root</SPAN> or <SPAN  CLASS="textbf">clamav</SPAN> users:
+    <SMALL CLASS="SMALL">    </SMALL><PRE>
 N * * * *	/usr/local/bin/freshclam --quiet
 </PRE>
-    to check for a new database every hour. <B>N should be a
+    to check for a new database every hour. <SPAN  CLASS="textbf">N should be a
     number between 1 and 59 of your choice. Please don't choose any multiple
-    of 10, because there are already too many servers using those time slots.</B>
+    of 10, because there are already too many servers using those time slots.</SPAN>
     Proxy settings are only configurable via the configuration file (so you
     can setup proper permissions to protect your proxy password):
     <PRE>
@@ -110,37 +110,38 @@ N * * * *	/usr/local/bin/freshclam --quiet
 </PRE>
 
 <P>
-<HR>
+
+<DIV CLASS="navigation"><HR>
 <!--Navigation Panel-->
-<A NAME="tex2html544"
+<A NAME="tex2html555"
   HREF="node17.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html540"
+<A NAME="tex2html551"
   HREF="node6.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html534"
+<A NAME="tex2html545"
   HREF="node15.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html542"
+<A NAME="tex2html553"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html545"
+<B> Next:</B> <A NAME="tex2html556"
   HREF="node17.html">Database mirrors</A>
-<B> Up:</B> <A NAME="tex2html541"
+<B> Up:</B> <A NAME="tex2html552"
   HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html535"
+<B> Previous:</B> <A NAME="tex2html546"
   HREF="node15.html">Testing</A>
- &nbsp <B>  <A NAME="tex2html543"
-  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html554"
+  HREF="node1.html">Contents</A></B> </DIV>
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2004-06-29
+2004-07-22
 </ADDRESS>
 </BODY>
 </HTML>

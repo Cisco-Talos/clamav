@@ -1,6 +1,6 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2K.1beta (1.48)
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
@@ -13,8 +13,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
-<META NAME="Generator" CONTENT="LaTeX2HTML v2K.1beta">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
@@ -26,40 +25,41 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 </HEAD>
 
 <BODY >
-<!--Navigation Panel-->
-<A NAME="tex2html645"
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html656"
   HREF="node25.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html641"
+<A NAME="tex2html652"
   HREF="node18.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html635"
+<A NAME="tex2html646"
   HREF="node23.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html643"
+<A NAME="tex2html654"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html646"
+<B> Next:</B> <A NAME="tex2html657"
   HREF="node25.html">Signature Tool</A>
-<B> Up:</B> <A NAME="tex2html642"
+<B> Up:</B> <A NAME="tex2html653"
   HREF="node18.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html636"
+<B> Previous:</B> <A NAME="tex2html647"
   HREF="node23.html">Mail files</A>
- &nbsp <B>  <A NAME="tex2html644"
+ &nbsp; <B>  <A NAME="tex2html655"
   HREF="node1.html">Contents</A></B> 
 <BR>
-<BR>
+<BR></DIV>
 <!--End of Navigation Panel-->
 
 <H2><A NAME="SECTION00046000000000000000">
 Output format</A>
 </H2>
-    <I>clamd</I> uses a clamscan compatible output format:
+    <SPAN  CLASS="textit">clamd</SPAN> uses a clamscan compatible output format:
     <PRE>
 	zolw@Wierszokleta:~$ telnet localhost 3310
 	Trying 127.0.0.1...
@@ -69,14 +69,14 @@ Output format</A>
 	/home/zolw/infected/sobre.com: W32.Magistr.B FOUND
 	Connection closed by foreign host.
 </PRE>
-    In the <B>SCAN</B> mode it closes the connection when first virus
+    In the <SPAN  CLASS="textbf">SCAN</SPAN> mode it closes the connection when first virus
     is found. In the case of archives the output is exactly the same as
     with normal files because archive support is transparent:
     <PRE>
 	SCAN /home/zolw/Clam/test/test2.zip
 	/home/zolw/Clam/test/test2.zip: ClamAV-Test-Signature FOUND
 </PRE>
-    <B>CONTSCAN</B> displays all infected files found.
+    <SPAN  CLASS="textbf">CONTSCAN</SPAN> displays all infected files found.
 <BR>
 Error messages are printed in the following format:
     <PRE>
@@ -86,9 +86,9 @@ Error messages are printed in the following format:
     and they can be easily parsed.
 
 <P>
-<I>clamscan</I> writes all messages to <B>stderr</B> (only help is
-    written to <B>stdout</B> by default). You may want to redirect it to
-    <B>stdout</B> - this is handled with <code>--stdout</code>.  An example
+<SPAN  CLASS="textit">clamscan</SPAN> writes all messages to <SPAN  CLASS="textbf">stderr</SPAN> (only help is
+    written to <SPAN  CLASS="textbf">stdout</SPAN> by default). You may want to redirect it to
+    <SPAN  CLASS="textbf">stdout</SPAN> - this is handled with <code>--stdout</code>.  An example
     of the clamscan output is:
     <PRE>
 	/tmp/test/removal-tool.exe: Worm.Sober FOUND
@@ -107,37 +107,38 @@ Error messages are printed in the following format:
     whole archives as infected.
 
 <P>
-<HR>
+
+<DIV CLASS="navigation"><HR>
 <!--Navigation Panel-->
-<A NAME="tex2html645"
+<A NAME="tex2html656"
   HREF="node25.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html641"
+<A NAME="tex2html652"
   HREF="node18.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html635"
+<A NAME="tex2html646"
   HREF="node23.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html643"
+<A NAME="tex2html654"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html646"
+<B> Next:</B> <A NAME="tex2html657"
   HREF="node25.html">Signature Tool</A>
-<B> Up:</B> <A NAME="tex2html642"
+<B> Up:</B> <A NAME="tex2html653"
   HREF="node18.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html636"
+<B> Previous:</B> <A NAME="tex2html647"
   HREF="node23.html">Mail files</A>
- &nbsp <B>  <A NAME="tex2html644"
-  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html655"
+  HREF="node1.html">Contents</A></B> </DIV>
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2004-06-29
+2004-07-22
 </ADDRESS>
 </BODY>
 </HTML>

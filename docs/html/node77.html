@@ -1,90 +1,90 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2K.1beta (1.48)
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Scan engine</TITLE>
-<META NAME="description" CONTENT="Scan engine">
+<TITLE>LibClamAV</TITLE>
+<META NAME="description" CONTENT="LibClamAV">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
-<META NAME="Generator" CONTENT="LaTeX2HTML v2K.1beta">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node78.html">
-<LINK REL="previous" HREF="node76.html">
-<LINK REL="up" HREF="node74.html">
+<LINK REL="next" HREF="node82.html">
+<LINK REL="previous" HREF="node28.html">
+<LINK REL="up" HREF="clamdoc.html">
 <LINK REL="next" HREF="node78.html">
 </HEAD>
 
 <BODY >
-<!--Navigation Panel-->
-<A NAME="tex2html1325"
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html1335"
   HREF="node78.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html1321"
-  HREF="node74.html">
+<A NAME="tex2html1331"
+  HREF="clamdoc.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html1315"
+<A NAME="tex2html1325"
   HREF="node76.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html1323"
+<A NAME="tex2html1333"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1326"
-  HREF="node78.html">CVD format</A>
-<B> Up:</B> <A NAME="tex2html1322"
-  HREF="node74.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html1316"
-  HREF="node76.html">Database reloading</A>
- &nbsp <B>  <A NAME="tex2html1324"
+<B> Next:</B> <A NAME="tex2html1336"
+  HREF="node78.html">General API</A>
+<B> Up:</B> <A NAME="tex2html1332"
+  HREF="clamdoc.html">clamdoc</A>
+<B> Previous:</B> <A NAME="tex2html1326"
+  HREF="node76.html">OdeiaVir</A>
+ &nbsp; <B>  <A NAME="tex2html1334"
   HREF="node1.html">Contents</A></B> 
 <BR>
-<BR>
+<BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00073000000000000000"></A><A NAME="engine"></A>
-<BR>
-Scan engine
-</H2>
-    New versions of Clam AntiVirus use a mutation of the Aho-Corasick
-    pattern matching algorithm. The algorithm is based a finite state pattern
-    matching automaton [<A
- HREF="node87.html#clr">1</A>] and it's a generalization of the famous
-    Knuth-Morris-Pratt algorithm. Please take a look at the <code>matcher.h</code>
-    for data type definitions. The automaton is represented by a trie. It
-    is a rooted tree with some specific properties [<A
- HREF="node87.html#acwww">2</A>]. Every node
-    of the trie represents some state of the automaton. In our implementation,
-    the node is defined as follows:
-    <PRE>
-	struct cl_node {
-	    short int islast;
-	    struct cli_patt *list;
-	    int maxpatlen;
-	    struct node *next[NUM_CHILDS], *trans[NUM_CHILDS], *fail;
-	};
-</PRE>
-    [To be continued...]
+<H1><A NAME="SECTION00070000000000000000">
+LibClamAV</A>
+</H1>
+
+<P>
+libclamav may be used to add a virus protection to your software.
+    The library is thread-safe and can transparently recognize and scan
+    archives, mail files and MS Office document files.
 
 <P>
 <BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL CLASS="ChildLinks">
+<LI><A NAME="tex2html1337"
+  HREF="node78.html">General API</A>
+<LI><A NAME="tex2html1338"
+  HREF="node79.html">Database reloading</A>
+<LI><A NAME="tex2html1339"
+  HREF="node80.html">Scan engine</A>
+<LI><A NAME="tex2html1340"
+  HREF="node81.html">CVD format</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-06-29
+2004-07-22
 </ADDRESS>
 </BODY>
 </HTML>

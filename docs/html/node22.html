@@ -1,6 +1,6 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2K.1beta (1.48)
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
@@ -13,8 +13,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
-<META NAME="Generator" CONTENT="LaTeX2HTML v2K.1beta">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
@@ -26,34 +25,35 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 </HEAD>
 
 <BODY >
-<!--Navigation Panel-->
-<A NAME="tex2html621"
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html632"
   HREF="node23.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html617"
+<A NAME="tex2html628"
   HREF="node18.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html611"
+<A NAME="tex2html622"
   HREF="node21.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html619"
+<A NAME="tex2html630"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html622"
+<B> Next:</B> <A NAME="tex2html633"
   HREF="node23.html">Mail files</A>
-<B> Up:</B> <A NAME="tex2html618"
+<B> Up:</B> <A NAME="tex2html629"
   HREF="node18.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html612"
+<B> Previous:</B> <A NAME="tex2html623"
   HREF="node21.html">Clamuko</A>
- &nbsp <B>  <A NAME="tex2html620"
+ &nbsp; <B>  <A NAME="tex2html631"
   HREF="node1.html">Contents</A></B> 
 <BR>
-<BR>
+<BR></DIV>
 <!--End of Navigation Panel-->
 
 <H2><A NAME="SECTION00044000000000000000">
@@ -73,8 +73,8 @@ Archives and compressed files</A>
     
 </LI>
 </UL>
-    Archive types are determined by magic number tests.<A NAME="tex2html78"
-  HREF="footnode.html#foot415"><SUP>5</SUP></A> You need the zlib library
+    Archive types are determined by magic number tests.<A NAME="tex2html79"
+  HREF="footnode.html#foot418"><SUP><SPAN CLASS="arabic">5</SPAN></SUP></A> You need the zlib library
     for the Zip/Gzip support. Zip archives are accessed with the zziplib
     library by Guido Draheim and Tomi Ollila. RAR support is based on the
     UniquE RAR File Library by Christian Scheurer and Johannes Winkelmann.
@@ -99,74 +99,75 @@ Archives and compressed files</A>
 	/tmp/44694f5b2665d2f4/test1: ClamAV-Test-Signature FOUND
 	/home/zolw/Clam/test/test-failure.rar: Infected Archive FOUND
 </PRE>
-    <I><B>TIP:</B> You can force clamscan to list all infected files
+    <SPAN  CLASS="textit"><SPAN  CLASS="textbf">TIP:</SPAN> You can force clamscan to list all infected files
     in archive using -disable-archive (it disables the built-in
-    transparent decompressors) and -unzip -unrar...</I>.
-<BR>    <B>If the scanner runs on a superuser level unpackers are
-    executed with <I>clamav</I> privileges what makes the process far more
-    secure.</B> It also assures the <I>clamav</I> user has read access
-    to all files. <B>You must enable recursive scanning with the -r
+    transparent decompressors) and -unzip -unrar...</SPAN>.
+<BR>    <SPAN  CLASS="textbf">If the scanner runs on a superuser level unpackers are
+    executed with <SPAN  CLASS="textit">clamav</SPAN> privileges what makes the process far more
+    secure.</SPAN> It also assures the <SPAN  CLASS="textit">clamav</SPAN> user has read access
+    to all files. <SPAN  CLASS="textbf">You must enable recursive scanning with the -r
     option (-recursive) in order to scan  a whole content of an
-    archive (including subdirectories)</B>, this option is also (usually) required
+    archive (including subdirectories)</SPAN>, this option is also (usually) required
     to scan nested archive. External unpackers supported:
 <BR>
 <P>
 
-    <B>-unzip: </B> Usually you don't need this option because Zip format is
+    <SPAN  CLASS="textbf">-unzip: </SPAN> Usually you don't need this option because Zip format is
 	       supported by libclamav. However it may be useful if libclamav
 	       fails to unzip some file. clamscan was tested with
-	       <I>UnZip 5.41 of 16 April 2000, by Info-ZIP</I>.
-<BR>    <B>-unrar: </B> Tested with <I>UNRAR 3.00 freeware</I>.
-<BR>    <B>-arj: </B> Tested with <I>arj 3.10b</I>.
-<BR>    <B>-zoo: </B> Tested with <I>zoo 2.1</I>.
-<BR>    <B>-lha: </B> Tested with <I>LHa for Unix V 1.14e</I>.
-<BR>    <B>-jar: </B> clamscan uses <I>unzip</I> for .jar files. Tested with
-	     <I>UnZip 5.41 of 16 April 2000, by Info-ZIP</I>.
-<BR>    <B>-tar: </B> This option enables support for non-compressed archives. Tested
-	     with <I>GNU tar 1.13.17</I>.
-<BR>    <B>-deb: </B> This option enables support for debian binary packages. Tested with
-	     <I>GNU ar
+	       <SPAN  CLASS="textit">UnZip 5.41 of 16 April 2000, by Info-ZIP</SPAN>.
+<BR>    <SPAN  CLASS="textbf">-unrar: </SPAN> Tested with <SPAN  CLASS="textit">UNRAR 3.00 freeware</SPAN>.
+<BR>    <SPAN  CLASS="textbf">-arj: </SPAN> Tested with <SPAN  CLASS="textit">arj 3.10b</SPAN>.
+<BR>    <SPAN  CLASS="textbf">-zoo: </SPAN> Tested with <SPAN  CLASS="textit">zoo 2.1</SPAN>.
+<BR>    <SPAN  CLASS="textbf">-lha: </SPAN> Tested with <SPAN  CLASS="textit">LHa for Unix V 1.14e</SPAN>.
+<BR>    <SPAN  CLASS="textbf">-jar: </SPAN> clamscan uses <SPAN  CLASS="textit">unzip</SPAN> for .jar files. Tested with
+	     <SPAN  CLASS="textit">UnZip 5.41 of 16 April 2000, by Info-ZIP</SPAN>.
+<BR>    <SPAN  CLASS="textbf">-tar: </SPAN> This option enables support for non-compressed archives. Tested
+	     with <SPAN  CLASS="textit">GNU tar 1.13.17</SPAN>.
+<BR>    <SPAN  CLASS="textbf">-deb: </SPAN> This option enables support for debian binary packages. Tested with
+	     <SPAN  CLASS="textit">GNU ar
 <BR>
-2.12.90.0.14</I>. Implies -tgz , but doesn't
+2.12.90.0.14</SPAN>. Implies -tgz , but doesn't
 	     conflict with -tgz=FULLPATH
-<BR>    <B>-tgz: </B> This option supports .tar.gz and .tgz files. You need <I>GNU
-	     tar</I>, on non-Linux system you probably have it installed as
-	     <I>gtar</I> and if it can be found in <I>$PATH</I> please use
-	     -tgz=gtar to tell clamscan to use <I>gtar</I> instead of
-	     <I>tar</I>. Otherwise please supply a full path with -tgz
+<BR>    <SPAN  CLASS="textbf">-tgz: </SPAN> This option supports .tar.gz and .tgz files. You need <SPAN  CLASS="textit">GNU
+	     tar</SPAN>, on non-Linux system you probably have it installed as
+	     <SPAN  CLASS="textit">gtar</SPAN> and if it can be found in <SPAN  CLASS="textit">$PATH</SPAN> please use
+	     -tgz=gtar to tell clamscan to use <SPAN  CLASS="textit">gtar</SPAN> instead of
+	     <SPAN  CLASS="textit">tar</SPAN>. Otherwise please supply a full path with -tgz
 <BR>
 <P>
-<HR>
+
+<DIV CLASS="navigation"><HR>
 <!--Navigation Panel-->
-<A NAME="tex2html621"
+<A NAME="tex2html632"
   HREF="node23.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html617"
+<A NAME="tex2html628"
   HREF="node18.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html611"
+<A NAME="tex2html622"
   HREF="node21.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html619"
+<A NAME="tex2html630"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html622"
+<B> Next:</B> <A NAME="tex2html633"
   HREF="node23.html">Mail files</A>
-<B> Up:</B> <A NAME="tex2html618"
+<B> Up:</B> <A NAME="tex2html629"
   HREF="node18.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html612"
+<B> Previous:</B> <A NAME="tex2html623"
   HREF="node21.html">Clamuko</A>
- &nbsp <B>  <A NAME="tex2html620"
-  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html631"
+  HREF="node1.html">Contents</A></B> </DIV>
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2004-06-29
+2004-07-22
 </ADDRESS>
 </BODY>
 </HTML>
