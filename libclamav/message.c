@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.37  2004/03/10 05:35:03  nigelhorne
+ * Implemented a couple of small speed improvements
+ *
  * Revision 1.36  2004/03/07 15:11:48  nigelhorne
  * Fixed minor typo in bounce message
  *
@@ -105,7 +108,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.36 2004/03/07 15:11:48 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.37 2004/03/10 05:35:03 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -123,11 +126,6 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.36 2004/03/07 15:11:48 nigelhorn
 
 #if	C_DARWIN
 #include <sys/types.h>
-#include <sys/malloc.h>
-#else
-#ifdef HAVE_MALLOC_H /* tk: FreeBSD-CURRENT doesn't support malloc.h */
-#include <malloc.h>
-#endif
 #endif
 #include <stdlib.h>
 #include <string.h>
@@ -366,6 +364,21 @@ messageAddArgument(message *m, const char *arg)
 	if(*arg == '\0')
 		/* Empty argument? Probably a broken mail client... */
 		return;
+
+	/*
+	 * These are the only arguments we're interested in.
+	 * Do 'fgrep messageFindArgument *.c' if you don't believe me!
+	 * It's probably not good doing this since each time a new
+	 * messageFindArgument is added I need to remember to look here,
+	 * but it can save a lot of memory...
+	 */
+	if((strncasecmp(arg, "name", 4) != 0) &&
+	   (strncasecmp(arg, "filename", 8) != 0) &&
+	   (strncasecmp(arg, "boundary", 8) != 0) &&
+	   (strncasecmp(arg, "type", 4) != 0)) {
+	   	cli_dbgmsg("Discarding unwanted argument '%s'\n", arg);
+		return;
+	}
 
 	cli_dbgmsg("Add argument '%s'\n", arg);
 
@@ -646,8 +659,6 @@ messageAddLine(message *m, const char *line)
 		m->body_last->t_next = (text *)cli_malloc(sizeof(text));
 		m->body_last = m->body_last->t_next;
 	}
-
-	assert(m->body_last != NULL);
 
 	m->body_last->t_next = NULL;
 
@@ -1018,7 +1029,7 @@ messageToText(const message *m)
 		 * Fast copy
 		 */
 		for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next) {
-			const char *line;
+			/*const char *line;*/
 
 			if(first == NULL)
 				first = last = cli_malloc(sizeof(text));
@@ -1027,15 +1038,17 @@ messageToText(const message *m)
 				last = last->t_next;
 			}
 
-			assert(last != NULL);
-
-			line = t_line->t_text;
+			/*line = t_line->t_text;
 
 			last->t_text = cli_malloc(strlen(line) + 2);
 
 			assert(last->t_text != NULL);
 
-			sprintf(last->t_text, "%s\n", line);
+			sprintf(last->t_text, "%s\n", line);*/
+			if((last->t_text = strdup(t_line->t_text)) == NULL) {
+				textDestroy(first);
+				return NULL;
+			}
 		}
 	else {
 		if(messageGetEncoding(m) == UUENCODE) {
@@ -1074,7 +1087,6 @@ messageToText(const message *m)
 				last->t_next = cli_malloc(sizeof(text));
 				last = last->t_next;
 			}
-			assert(last != NULL);
 
 			last->t_text = strdup((char *)data);
 			assert(last->t_text != NULL);
@@ -1146,6 +1158,9 @@ bounceBegin(const message *m)
 	if(bounceMessages == NULL) {
 		const char **bounce;
 
+		/*
+		 * TODO: mutex this in a multi-threaded environment
+		 */
 		bounceMessages = tableCreate();
 
 		for(bounce = bounces; *bounce; bounce++)
