@@ -1,3 +1,7 @@
+Sat Jan 10 14:52:00 GMT 2004 (njh)
+  * docs:	Note that clamav-milter debugging option requires
+	reconfiguration
+
 Sat Jan 10 13:02:43 GMT 2004 (njh)
 ----------------------------------
   * libclamav: Added BinHex compression support
