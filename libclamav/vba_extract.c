@@ -88,7 +88,7 @@ typedef struct byte_array_tag {
 	unsigned char *data;
 } byte_array_t;
 
-#define NUM_VBA_VERSIONS 12
+#define NUM_VBA_VERSIONS 13
 vba_version_t vba_version[] = {
 	{ { 0x5e, 0x00, 0x00, 0x01 }, "Office 97",              5, FALSE},
 	{ { 0x5f, 0x00, 0x00, 0x01 }, "Office 97 SR1",          5, FALSE },
@@ -98,6 +98,7 @@ vba_version_t vba_version[] = {
 	{ { 0x6f, 0x00, 0x00, 0x01 }, "Office 2000",            6, FALSE },
 	{ { 0x70, 0x00, 0x00, 0x01 }, "Office XP beta 1/2",     6, FALSE },
 	{ { 0x73, 0x00, 0x00, 0x01 }, "Office XP",              6, FALSE },
+	{ { 0x76, 0x00, 0x00, 0x01 }, "Office 2003",            6, FALSE },
 	{ { 0x79, 0x00, 0x00, 0x01 }, "Office 2003",            6, FALSE },
 	{ { 0x60, 0x00, 0x00, 0x0e }, "MacOffice 98",           5, TRUE },
 	{ { 0x62, 0x00, 0x00, 0x0e }, "MacOffice 2001",         5, TRUE },
@@ -714,42 +715,42 @@ static void wm_print_fib(mso_fib_t *fib)
 static int wm_read_fib(int fd, mso_fib_t *fib)
 {
 	if (cli_readn(fd, &fib->magic, 2) != 2) {
-		printf("read wm_fib failed\n");
+		cli_dbgmsg("read wm_fib failed\n");
 		return FALSE;
 	}
 	if (cli_readn(fd, &fib->version, 2) != 2) {
-		printf("read wm_fib failed\n");
+		cli_dbgmsg("read wm_fib failed\n");
 		return FALSE;
 	}
 	if (cli_readn(fd, &fib->product, 2) != 2) {
-		printf("read wm_fib failed\n");
+		cli_dbgmsg("read wm_fib failed\n");
 		return FALSE;
 	}
 	if (cli_readn(fd, &fib->lid, 2) != 2) {
-		printf("read wm_fib failed\n");
+		cli_dbgmsg("read wm_fib failed\n");
 		return FALSE;
 	}	
 	if (cli_readn(fd, &fib->next, 2) != 2) {
-		printf("read wm_fib failed\n");
+		cli_dbgmsg("read wm_fib failed\n");
 		return FALSE;
 	}
 	if (cli_readn(fd, &fib->status, 2) != 2) {
-		printf("read wm_fib failed\n");
+		cli_dbgmsg("read wm_fib failed\n");
 		return FALSE;
 	}
 	
 	/* don't need the information is this block, so seek forward */
 	if (lseek(fd, 0x118, SEEK_SET) != 0x118) {
-		printf("lseek wm_fib failed\n");
+		cli_dbgmsg("lseek wm_fib failed\n");
 		return FALSE;
 	}
 	
 	if (cli_readn(fd, &fib->macro_offset, 4) != 4) {
-		printf("read wm_fib failed\n");
+		cli_dbgmsg("read wm_fib failed\n");
 		return FALSE;
 	}
 	if (cli_readn(fd, &fib->macro_len, 4) != 4) {
-		printf("read wm_fib failed\n");
+		cli_dbgmsg("read wm_fib failed\n");
 		return FALSE;
 	}
 	fib->magic = vba_endian_convert_16(fib->magic, FALSE);
@@ -767,39 +768,39 @@ static int wm_read_fib(int fd, mso_fib_t *fib)
 static int wm_read_macro_entry(int fd, macro_entry_t *macro_entry)
 {
 	if (cli_readn(fd, &macro_entry->version, 1) != 1) {
-		printf("read macro_entry failed\n");
+		cli_dbgmsg("read macro_entry failed\n");
 		return FALSE;
 	}
 	if (cli_readn(fd, &macro_entry->key, 1) != 1) {
-		printf("read macro_entry failed\n");
+		cli_dbgmsg("read macro_entry failed\n");
 		return FALSE;
 	}
 	if (cli_readn(fd, &macro_entry->intname_i, 2) != 2) {
-		printf("read macro_entry failed\n");
+		cli_dbgmsg("read macro_entry failed\n");
 		return FALSE;
 	}	
 	if (cli_readn(fd, &macro_entry->extname_i, 2) != 2) {
-		printf("read macro_entry failed\n");
+		cli_dbgmsg("read macro_entry failed\n");
 		return FALSE;
 	}
 	if (cli_readn(fd, &macro_entry->xname_i, 2) != 2) {
-		printf("read macro_entry failed\n");
+		cli_dbgmsg("read macro_entry failed\n");
 		return FALSE;
 	}
 	if (cli_readn(fd, &macro_entry->unknown, 4) != 4) {
-		printf("read macro_entry failed\n");
+		cli_dbgmsg("read macro_entry failed\n");
 		return FALSE;
 	}
 	if (cli_readn(fd, &macro_entry->len, 4) != 4) {
-		printf("read macro_entry failed\n");
+		cli_dbgmsg("read macro_entry failed\n");
 		return FALSE;
 	}
 	if (cli_readn(fd, &macro_entry->state, 4) != 4) {
-		printf("read macro_entry failed\n");
+		cli_dbgmsg("read macro_entry failed\n");
 		return FALSE;
 	}
 	if (cli_readn(fd, &macro_entry->offset, 4) != 4) {
-		printf("read macro_entry failed\n");
+		cli_dbgmsg("read macro_entry failed\n");
 		return FALSE;
 	}
 	return TRUE;
@@ -815,7 +816,7 @@ static macro_info_t *wm_read_macro_info(int fd)
 		return NULL;
 	}
 	if (cli_readn(fd, &macro_info->count, 2) != 2) {
-		printf("read macro_info failed\n");
+		cli_dbgmsg("read macro_info failed\n");
 		return NULL;
 	}
 	
@@ -861,12 +862,12 @@ static int wm_read_oxo3(int fd)
 	cli_dbgmsg("oxo3 records1: %d\n", count);
 	
 	if (cli_readn(fd, &count, 1) != 1) {
-		printf("read oxo3 record2 failed\n");
+		cli_dbgmsg("read oxo3 record2 failed\n");
 		return FALSE;
 	}
 	if (count == 0) {
 		if (cli_readn(fd, &count, 1) != 1) {
-			printf("read oxo3 failed\n");
+			cli_dbgmsg("read oxo3 failed\n");
 			return FALSE;
 		}
 		if (count != 2) {
@@ -874,13 +875,13 @@ static int wm_read_oxo3(int fd)
 			return TRUE;
 		}
 		if (cli_readn(fd, &count, 1) != 1) {
-			printf("read oxo3 failed\n");
+			cli_dbgmsg("read oxo3 failed\n");
 			return FALSE;
 		}
 	}
 	if (count > 0) {
 		if (lseek(fd, (count*4)+1, SEEK_CUR) == -1) {
-			printf("lseek oxo3 failed\n");
+			cli_dbgmsg("lseek oxo3 failed\n");
 			return FALSE;
 		}
 	}				
@@ -900,11 +901,11 @@ static menu_info_t *wm_read_menu_info(int fd)
 	}
 	
 	if (cli_readn(fd, &menu_info->count, 2) != 2) {
-		printf("read menu_info failed\n");
+		cli_dbgmsg("read menu_info failed\n");
 		free(menu_info);
 		return NULL;
 	}
-	printf("menu_info count: %d\n", menu_info->count);
+	cli_dbgmsg("menu_info count: %d\n", menu_info->count);
 	
 	menu_info->menu_entry =
 		(menu_entry_t *) cli_malloc(sizeof(menu_entry_t) * menu_info->count);
@@ -979,7 +980,7 @@ static macro_extnames_t *wm_read_macro_extnames(int fd)
 	if (size == -1) { /* Unicode flag */
 		is_unicode=1;
 		if (cli_readn(fd, &size, 2) != 2) {
-			printf("read macro_extnames failed\n");
+			cli_dbgmsg("read macro_extnames failed\n");
 			free(macro_extnames);
 			return NULL;
 		}
@@ -1008,7 +1009,7 @@ static macro_extnames_t *wm_read_macro_extnames(int fd)
 		macro_extname = &macro_extnames->macro_extname[macro_extnames->count-1];
 		if (is_unicode) {
 			if (cli_readn(fd, &macro_extname->length, 2) != 2) {
-				printf("read macro_extnames failed\n");
+				cli_dbgmsg("read macro_extnames failed\n");
 				return NULL;
 			}
 			name_tmp = (char *) cli_malloc(macro_extname->length*2);
@@ -1017,7 +1018,7 @@ static macro_extnames_t *wm_read_macro_extnames(int fd)
 			}
 			if (cli_readn(fd, name_tmp, macro_extname->length*2) != 
 						macro_extname->length*2) {
-				printf("read macro_extnames failed\n");
+				cli_dbgmsg("read macro_extnames failed\n");
 				free(name_tmp);
 				goto abort;
 			}
@@ -1026,7 +1027,7 @@ static macro_extnames_t *wm_read_macro_extnames(int fd)
 			free(name_tmp);
 		} else {
 			if (cli_readn(fd, &length_tmp, 1) != 1) {
-				printf("read macro_extnames failed\n");
+				cli_dbgmsg("read macro_extnames failed\n");
 				goto abort;
 			}
 			macro_extname->length = (uint16_t) length_tmp;
@@ -1037,13 +1038,13 @@ static macro_extnames_t *wm_read_macro_extnames(int fd)
 			}
 			if (cli_readn(fd, macro_extname->extname, macro_extname->length) != 
 						macro_extname->length) {
-				printf("read macro_extnames failed\n");
+				cli_dbgmsg("read macro_extnames failed\n");
 				goto abort;
 			}
 			macro_extname->extname[macro_extname->length] = '\0';
 		}
 		if (cli_readn(fd, &macro_extname->numref, 2) != 2) {
-			printf("read macro_extnames failed\n");
+			cli_dbgmsg("read macro_extnames failed\n");
 			return NULL;
 		}		
 		cli_dbgmsg("ext name: %s\n", macro_extname->extname);
@@ -1088,7 +1089,7 @@ static macro_intnames_t *wm_read_macro_intnames(int fd)
 	}
 	
 	if (cli_readn(fd, &macro_intnames->count, 2) != 2) {
-		printf("read macro_intnames failed\n");
+		cli_dbgmsg("read macro_intnames failed\n");
 		return NULL;
 	}
 	cli_dbgmsg("int names count: %d\n", macro_intnames->count);
@@ -1102,12 +1103,12 @@ static macro_intnames_t *wm_read_macro_intnames(int fd)
 	for (i=0 ; i < macro_intnames->count ; i++) {
 		macro_intname = &macro_intnames->macro_intname[i];
 		if (cli_readn(fd, &macro_intname->id, 2) != 2) {
-			printf("read macro_intnames failed\n");
+			cli_dbgmsg("read macro_intnames failed\n");
 			macro_intnames->count = i;
 			goto abort;
 		}		
 		if (cli_readn(fd, &macro_intname->length, 1) != 1) {
-			printf("read macro_intnames failed\n");
+			cli_dbgmsg("read macro_intnames failed\n");
 			macro_intnames->count = i;
 			goto abort;;
 		}	
@@ -1117,17 +1118,17 @@ static macro_intnames_t *wm_read_macro_intnames(int fd)
 			goto abort;
 		}
 		if (cli_readn(fd, macro_intname->intname, macro_intname->length) != macro_intname->length) {
-			printf("read macro_intnames failed\n");
+			cli_dbgmsg("read macro_intnames failed\n");
 			macro_intnames->count = i+1;
 			goto abort;
 		}
 		macro_intname->intname[macro_intname->length] = '\0';
 		if (cli_readn(fd, &junk, 1) != 1) {
-			printf("read macro_intnames failed\n");
+			cli_dbgmsg("read macro_intnames failed\n");
 			macro_intnames->count = i+1;
 			goto abort;
 		}
-		printf ("int name: %s\n", macro_intname->intname);
+		cli_dbgmsg("int name: %s\n", macro_intname->intname);
 	}
 	return macro_intnames;
 abort:
@@ -1188,14 +1189,14 @@ vba_project_t *wm_dir_read(const char *dir)
 	end_offset = fib.macro_offset + fib.macro_len;
 	
 	if (cli_readn(fd, &start_id, 1) != 1) {
-		printf("read start_id failed\n");
+		cli_dbgmsg("read start_id failed\n");
 		return NULL;
 	}
 	cli_dbgmsg("start_id: %d\n", start_id);
 	
 	while ((lseek(fd, 0, SEEK_CUR) < end_offset) && !done) {
 		if (cli_readn(fd, &info_id, 1) != 1) {
-			printf("read macro_info failed\n");
+			cli_dbgmsg("read macro_info failed\n");
 			return NULL;
 		}
 		switch (info_id) {
