@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: text.c,v $
+ * Revision 1.14  2005/01/19 05:31:55  nigelhorne
+ * Added textIterate
+ *
  * Revision 1.13  2004/12/08 19:03:41  nigelhorne
  * Fix compilation error on Solaris
  *
@@ -48,7 +51,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: text.c,v 1.13 2004/12/08 19:03:41 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: text.c,v 1.14 2005/01/19 05:31:55 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -81,6 +84,10 @@ static	char	const	rcsid[] = "$Id: text.c,v 1.13 2004/12/08 19:03:41 nigelhorne E
 #include "others.h"
 
 static	text	*textCopy(const text *t_head);
+static	void	addToFileblob(const line_t *line, void *arg);
+static	void	getLength(const line_t *line, void *arg);
+static	void	addToBlob(const line_t *line, void *arg);
+static	void	*textIterate(const text *t_text, void (*cb)(const line_t *line, void *arg), void *arg);
 
 void
 textDestroy(text *t_head)
@@ -141,6 +148,7 @@ text *
 textAdd(text *t_head, const text *t)
 {
 	text *ret;
+	int count;
 
 	if(t_head == NULL)
 		return textCopy(t);
@@ -150,8 +158,13 @@ textAdd(text *t_head, const text *t)
 
 	ret = t_head;
 
-	while(t_head->t_next)
+	count = 0;
+	while(t_head->t_next) {
+		count++;
 		t_head = t_head->t_next;
+	}
+
+	cli_dbgmsg("textAdd: count = %d\n", count);
 
 	while(t) {
 		t_head->t_next = (text *)cli_malloc(sizeof(text));
@@ -201,10 +214,17 @@ textAddMessage(text *aText, message *aMessage)
 blob *
 textToBlob(const text *t, blob *b)
 {
-	const text *t1;
-	size_t s = 0;
+	size_t s;
 
-	assert(t != NULL);
+	if(t == NULL)
+		return NULL;
+
+	s = 0;
+
+	textIterate(t, getLength, &s);
+
+	if(s == 0)
+		return b;
 
 	if(b == NULL) {
 		b = blobCreate();
@@ -213,22 +233,9 @@ textToBlob(const text *t, blob *b)
 			return NULL;
 	}
 
-	for(t1 = t; t1; t1 = t1->t_next)
-		if(t1->t_line)
-			s += strlen(lineGetData(t1->t_line)) + 1;
-		else
-			s++;
-
 	blobGrow(b, s);
 
-	do {
-		if(t->t_line) {
-			const char *l = lineGetData(t->t_line);
-
-			blobAddData(b, (unsigned char *)l, strlen(l));
-		}
-		blobAddData(b, (unsigned char *)"\n", 1);
-	} while((t = t->t_next) != NULL);
+	textIterate(t, addToBlob, b);
 
 	blobClose(b);
 
@@ -248,14 +255,52 @@ textToFileblob(const text *t, fileblob *fb)
 			return NULL;
 	}
 
-	do {
-		if(t->t_line) {
-			const char *l = lineGetData(t->t_line);
+	return textIterate(t, addToFileblob, fb);
+}
 
-			fileblobAddData(fb, (unsigned char *)l, strlen(l));
-		}
-		fileblobAddData(fb, (unsigned char *)"\n", 1);
-	} while((t = t->t_next) != NULL);
+static void
+getLength(const line_t *line, void *arg)
+{
+	size_t *length = (size_t *)arg;
 
-	return fb;
+	if(line)
+		*length += strlen(lineGetData(line)) + 1;
+	else
+		(*length)++;
+}
+
+static void
+addToBlob(const line_t *line, void *arg)
+{
+	blob *b = (blob *)arg;
+
+	if(line) {
+		const char *l = lineGetData(line);
+
+		blobAddData(b, (unsigned char *)l, strlen(l));
+	}
+	blobAddData(b, (unsigned char *)"\n", 1);
+}
+
+static void
+addToFileblob(const line_t *line, void *arg)
+{
+	fileblob *fb = (fileblob *)arg;
+
+	if(line) {
+		const char *l = lineGetData(line);
+
+		fileblobAddData(fb, (unsigned char *)l, strlen(l));
+	}
+	fileblobAddData(fb, (unsigned char *)"\n", 1);
+}
+
+static void *
+textIterate(const text *t_text, void (*cb)(const line_t *item, void *arg), void *arg)
+{
+	while(t_text) {
+		(*cb)(t_text->t_line, arg);
+		t_text = t_text->t_next;
+	}
+	return arg;
 }
