@@ -25,6 +25,7 @@
 
 #include "options.h"
 #include "output.h"
+#include "memory.h"
 
 int freshclam(struct optstruct *opt);
 

@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>CVD format</TITLE>
-<META NAME="description" CONTENT="CVD format">
+<TITLE>Database reloading</TITLE>
+<META NAME="description" CONTENT="Database reloading">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,63 +19,76 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node77.html">
 <LINK REL="previous" HREF="node75.html">
-<LINK REL="up" HREF="node72.html">
+<LINK REL="up" HREF="node74.html">
 <LINK REL="next" HREF="node77.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1299"
+<A NAME="tex2html1313"
   HREF="node77.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html1295"
-  HREF="node72.html">
+<A NAME="tex2html1309"
+  HREF="node74.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html1291"
+<A NAME="tex2html1303"
   HREF="node75.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html1297"
+<A NAME="tex2html1311"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1300"
-  HREF="node77.html">Credits</A>
-<B> Up:</B> <A NAME="tex2html1296"
-  HREF="node72.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html1292"
-  HREF="node75.html">Scan engine</A>
- &nbsp <B>  <A NAME="tex2html1298"
+<B> Next:</B> <A NAME="tex2html1314"
+  HREF="node77.html">Scan engine</A>
+<B> Up:</B> <A NAME="tex2html1310"
+  HREF="node74.html">LibClamAV</A>
+<B> Previous:</B> <A NAME="tex2html1304"
+  HREF="node75.html">General API</A>
+ &nbsp <B>  <A NAME="tex2html1312"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00074000000000000000">
-CVD format</A>
+<H2><A NAME="SECTION00072000000000000000">
+Database reloading</A>
 </H2>
-    CVD (ClamAV Virus Database) is a digitally signed tarball file that
-    contains one or more databases. You can find some useful information in the
-    ASCII header of the file. It's a 512 bytes long string with the following
-    colon separated fields:
+    The most important thing is to keep the internal instance of the database
+    up to date. You can watch database changes with the <code>cl_stat</code>
+    functions family:
     <PRE>
-ClamAV-VDB:build time:version:number of signatures:functionality
-level required:MD5 checksum:digital signature:builder name
+	int cl_statinidir(const char *dirname, struct cl_stat *dbstat);
+	int cl_statchkdir(const struct cl_stat *dbstat);
+	int cl_statfree(struct cl_stat *dbstat);
 </PRE>
-    and can be easily parsed by scripts or with <code>sigtool --info</code>.
-    There are two CVD databases in ClamAV: <I>main.cvd</I> and <I>daily.cvd</I>
-    for daily updates. You can use <I>sigtool</I> to unpack a CVD file
-    (<code>--unpack</code>) and to list virus names (<code>--list-sigs</code>).
+    Initialization:
+    <PRE>
+	    struct cl_stat dbstat;
+    
+	memset(&amp;dbstat, 0, sizeof(struct cl_stat));
+	cl_statinidir(dbdir, &amp;dbstat);
+</PRE>
+    To check for a change you only need to call <code>cl_statchkdir</code>:
+    <PRE>
+	if(cl_statchkdir(&amp;dbstat) == 1) {
+	    reload_database...;
+	    cl_statfree(&amp;dbstat);
+	    cl_statinidir(cl_retdbdir(), &amp;dbstat);
+	}
+</PRE>
+    Remember to reinitialize the structure after a reload.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-06-14
+2004-06-29
 </ADDRESS>
 </BODY>
 </HTML>

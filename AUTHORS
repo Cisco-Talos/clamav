@@ -58,7 +58,7 @@ libclamav/unrarlib.c: Christian Scheurer and Johannes Winkelmann, see
 							    www.unrarlib.org
 libclamav/mspack: Stuart Caie
 
-ClamAV patches were submitted by (in alphabetical order):
+Code patches submitted by (in alphabetical order):
 
 Kamil Andrusz <wizz*mniam.net>
 Patrick Bihan-Faou <patrick*mindstep.com>

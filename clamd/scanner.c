@@ -161,14 +161,14 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_node 
 
     /* check permissions  */
     if(access(filename, R_OK)) {
-	mdprintf(odesc, "%s: Can't access the file ERROR\n", filename);
+	mdprintf(odesc, "%s: Access denied. ERROR\n", filename);
 	return -1;
     }
 
     /* stat file */
 
     if(lstat(filename, &sb) == -1) {
-	mdprintf(odesc, "%s: Can't lstat() the file ERROR\n", filename);
+	mdprintf(odesc, "%s: lstat() failed. ERROR\n", filename);
 	return -1;
     }
 
@@ -204,7 +204,7 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_node 
 	    ret = dirscan(filename, &virname, scanned, root, limits, options, copt, odesc, &reclev, contscan);
 	    break;
 	default:
-	    mdprintf(odesc, "%s: Not supported file type ERROR\n", filename);
+	    mdprintf(odesc, "%s: Not supported file type. ERROR\n", filename);
 	    return -1;
     }
 
@@ -266,7 +266,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 
     if(!bound && !portscan) {
 	logg("!ScanStream: Can't find any free port.\n");
-	mdprintf(odesc, "Can't find any free port ERROR\n");
+	mdprintf(odesc, "Can't find any free port. ERROR\n");
 	close(sockfd);
 	return -1;
     } else {
@@ -276,12 +276,12 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 
     switch(retval = poll_fd(sockfd, timeout)) {
 	case 0: /* timeout */
-	    mdprintf(odesc, "Accept timeout ERROR\n");
+	    mdprintf(odesc, "Accept timeout. ERROR\n");
 	    logg("!ScanStream: accept timeout.\n");
 	    close(sockfd);
 	    return -1;
 	case -1:
-	    mdprintf(odesc, "accept poll ERROR\n");
+	    mdprintf(odesc, "Accept poll. ERROR\n");
 	    logg("!ScanStream: accept poll failed.\n");
 	    close(sockfd);
 	    return -1;
@@ -300,7 +300,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	shutdown(sockfd, 2);
 	close(sockfd);
 	close(acceptd);
-	mdprintf(odesc, "Temporary file ERROR\n");
+	mdprintf(odesc, "tempfile() failed. ERROR\n");
 	logg("!ScanStream: Can't create temporary file.\n");
 	return -1;
     }
