@@ -7,11 +7,17 @@ clamav\-milter \- milter compatible mail scanner
 clamav\-milter [options] socket_address
 .SH "DESCRIPTION"
 .LP
-clamav\-milter is a filter for sendmail mail server. It uses a mail scanning engine built into clamd.
+Clamav\-milter is a filter for \fBsendmail(1)\fR mail server.
+It uses a mail scanning engine built into \fBclamd(8)\fR.
 .LP
-clamav\-milter requires \fBclamd(8)\fR to run.
-When starting, clamav\-milter verifies that it can communicate with clamd;
-if it cannot it terminates.
+Clamav\-milter can, when configured to use communicate to clamd on other
+machines, use load balancing and fault tolerant techniques to connect to
+more than one clamd and seemlessly hot swap to even the load between different
+servers and to keep scanning for viruses even when a server goes down.
+When it is configured to use clamd on the the localhost, either through the use
+of LocalSocket in \fBclamd.conf(5)\fR or the \-\-internal flag (see below),
+clamav\-milter verifies that it can communicate with clamd; if it cannot, it
+terminates.
 .LP
 clamav\-milter supports tcpwrappers, the value for \fIdaemon_list\fR
 is "clamav\-milter".
@@ -20,8 +26,7 @@ The socket_address argument is the socket used to communicate with
 \fBsendmail(8)\fR.
 It must agree with the entry in sendmail.cf or sendmail.mc.
 The file associated with the socket must be createable by clamav\-milter,
-if the User option is set in
-\fBclamd.conf(5)\fR,
+if the User option is set in clamd.conf,
 then that user must have the rights to create the file.
 .SH "OPTIONS"
 .LP
@@ -212,4 +217,4 @@ clamav\-milter \-ol local:/var/run/clamav/clmilter.sock
 Nigel Horne <njh@bandsman.co.uk>
 .SH "SEE ALSO"
 .LP
-clamd(8), clamscan(1), freshclam(1), sigtool(1), clamd.conf(5), hosts_access(5)
+sendmail(1), clamd(8), clamscan(1), freshclam(1), sigtool(1), clamd.conf(5), hosts_access(5)
