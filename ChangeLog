@@ -1,3 +1,7 @@
+Thu Aug 26 02:19:47 CEST 2004 (tk)
+----------------------------------
+  * libclamav/pe.c: Handle more cases of broken executables
+
 Wed Aug 25 13:32:22 BST 2004 (njh)
 ----------------------------------
   * libclamav/line.c:	Small code optimisation

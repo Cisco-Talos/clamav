@@ -161,7 +161,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
     if(read(desc, &e_magic, sizeof(e_magic)) != sizeof(e_magic)) {
 	cli_dbgmsg("Can't read DOS signature\n");
-	return CL_EIO;
+	return CL_CLEAN;
     }
 
     if(EC16(e_magic) != IMAGE_DOS_SIGNATURE && EC16(e_magic) != IMAGE_DOS_SIGNATURE_OLD) {
@@ -173,7 +173,13 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
     if(read(desc, &e_lfanew, sizeof(e_lfanew)) != sizeof(e_lfanew)) {
 	cli_dbgmsg("Can't read new header address\n");
-	return CL_EIO;
+	/* truncated header? */
+	if(DETECT_BROKEN) {
+	    if(virname)
+		*virname = "Broken.Executable";
+	    return CL_VIRUS;
+	}
+	return CL_CLEAN;
     }
 
     e_lfanew = EC32(e_lfanew);
