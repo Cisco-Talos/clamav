@@ -292,27 +292,69 @@ struct facstruct {
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
 static const struct facstruct facilitymap[] = {
+#ifdef LOG_AUTH
     { "LOG_AUTH",	LOG_AUTH },
+#endif
+#ifdef LOG_AUTHPRIV
     { "LOG_AUTHPRIV",	LOG_AUTHPRIV },
+#endif
+#ifdef LOG_CRON
     { "LOG_CRON",	LOG_CRON },
+#endif
+#ifdef LOG_DAEMON
     { "LOG_DAEMON",	LOG_DAEMON },
+#endif
+#ifdef LOG_FTP
     { "LOG_FTP",	LOG_FTP },
+#endif
+#ifdef LOG_KERN
     { "LOG_KERN",	LOG_KERN },
+#endif
+#ifdef LOG_LPR
     { "LOG_LPR",	LOG_LPR },
+#endif
+#ifdef LOG_MAIL
     { "LOG_MAIL",	LOG_MAIL },
+#endif
+#ifdef LOG_NEWS
     { "LOG_NEWS",	LOG_NEWS },
+#endif
+#ifdef LOG_AUTH
     { "LOG_AUTH",	LOG_AUTH },
+#endif
+#ifdef LOG_SYSLOG
     { "LOG_SYSLOG",	LOG_SYSLOG },
+#endif
+#ifdef LOG_USER
     { "LOG_USER",	LOG_USER },
+#endif
+#ifdef LOG_UUCP
     { "LOG_UUCP",	LOG_UUCP },
+#endif
+#ifdef LOG_LOCAL0
     { "LOG_LOCAL0",	LOG_LOCAL0 },
+#endif
+#ifdef LOG_LOCAL1
     { "LOG_LOCAL1",	LOG_LOCAL1 },
+#endif
+#ifdef LOG_LOCAL2
     { "LOG_LOCAL2",	LOG_LOCAL2 },
+#endif
+#ifdef LOG_LOCAL3
     { "LOG_LOCAL3",	LOG_LOCAL3 },
+#endif
+#ifdef LOG_LOCAL4
     { "LOG_LOCAL4",	LOG_LOCAL4 },
+#endif
+#ifdef LOG_LOCAL5
     { "LOG_LOCAL5",	LOG_LOCAL5 },
+#endif
+#ifdef LOG_LOCAL6
     { "LOG_LOCAL6",	LOG_LOCAL6 },
+#endif
+#ifdef LOG_LOCAL7
     { "LOG_LOCAL7",	LOG_LOCAL7 },
+#endif
     { NULL,		-1 }
 };
 
