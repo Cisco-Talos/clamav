@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: message.h,v $
+ * Revision 1.18  2004/09/17 09:48:53  nigelhorne
+ * Handle attempts to hide mime type
+ *
  * Revision 1.17  2004/09/15 18:08:23  nigelhorne
  * Handle multiple encoding types
  *
@@ -88,7 +91,7 @@ typedef struct message {
 message	*messageCreate(void);
 void	messageDestroy(message *m);
 void	messageReset(message *m);
-void	messageSetMimeType(message *m, const char *type);
+int	messageSetMimeType(message *m, const char *type);
 mime_type	messageGetMimeType(const message *m);
 void	messageSetMimeSubtype(message *m, const char *subtype);
 const	char	*messageGetMimeSubtype(const message *m);

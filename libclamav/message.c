@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.84  2004/09/17 09:48:53  nigelhorne
+ * Handle attempts to hide mime type
+ *
  * Revision 1.83  2004/09/16 15:56:45  nigelhorne
  * Handle double colons
  *
@@ -246,7 +249,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.83 2004/09/16 15:56:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.84 2004/09/17 09:48:53 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -395,8 +398,11 @@ messageReset(message *m)
 
 /*
  * Handle the Content-Type header
+ * Return success (1) or failure (0). Failure only happens when it's an
+ * unknown type and we've already received a known type, or we've received an
+ * empty type. If we receive an unknown type by itself we default to application
  */
-void
+int
 messageSetMimeType(message *mess, const char *type)
 {
 #ifdef	CL_THREAD_SAFE
@@ -408,14 +414,12 @@ messageSetMimeType(message *mess, const char *type)
 	assert(mess != NULL);
 	assert(type != NULL);
 
-	mess->mimeType = NOMIME;
-
 	cli_dbgmsg("messageSetMimeType: '%s'\n", type);
 
 	/* Ignore leading spaces */
 	while(!isalpha(*type))
 		if(*type++ == '\0')
-			return;
+			return 0;
 
 #ifdef	CL_THREAD_SAFE
 	pthread_mutex_lock(&mime_mutex);
@@ -428,7 +432,7 @@ messageSetMimeType(message *mess, const char *type)
 #ifdef	CL_THREAD_SAFE
 			pthread_mutex_unlock(&mime_mutex);
 #endif
-			return;
+			return 0;
 		}
 
 		for(m = mime_map; m->string; m++)
@@ -438,7 +442,7 @@ messageSetMimeType(message *mess, const char *type)
 #ifdef	CL_THREAD_SAFE
 				pthread_mutex_unlock(&mime_mutex);
 #endif
-				return;
+				return 0;
 			}
 	}
 #ifdef	CL_THREAD_SAFE
@@ -447,9 +451,10 @@ messageSetMimeType(message *mess, const char *type)
 
 	typeval = tableFind(mime_table, type);
 
-	mess->mimeType = (mime_type)((typeval == -1) ? (int)NOMIME : typeval);
-
-	if(mess->mimeType == NOMIME) {
+	if(typeval != -1) {
+		mess->mimeType = typeval;
+		return 1;
+	} else if(mess->mimeType == NOMIME) {
 		if(strncasecmp(type, "x-", 2) == 0)
 			mess->mimeType = MEXTENSION;
 		else {
@@ -461,7 +466,9 @@ messageSetMimeType(message *mess, const char *type)
 			cli_warnmsg("Unknown MIME type: `%s' - set to Application\n", type);
 			mess->mimeType = APPLICATION;
 		}
+		return 1;
 	}
+	return 0;
 }
 
 mime_type
