@@ -1,3 +1,7 @@
+Fri Dec  3 17:36:08 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter:	internal: Honour scanning modes and archive limits
+
 Fri Dec  3 03:32:17 CET 2004 (tk)
 ---------------------------------
   * libclamav: attempt to rebuild PE structure from UPX compressed files
