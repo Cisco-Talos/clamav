@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.231 2005/03/22 11:26:33 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.232 2005/03/22 11:33:26 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -996,15 +996,17 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine)
 				strstrip(copy);
 				if(copy[0] == '\0') {
 					/*
-					 * The header line contains only white space. This
-					 * is not the end of the headers according to
-					 * RFC2822, but some MUAs will handle it
-					 * as though it were, and virus writers exploit
-					 * this bug. We can't just break from the
-					 * loop here since that would allow other
-					 * exploits such as inserting a white space
-					 * line before the content-type line. So we
-					 * just have to make a best guess. Sigh.
+					 * The header line contains only white
+					 * space. This is not the end of the
+					 * headers according to RFC2822, but
+					 * some MUAs will handle it as though
+					 * it were, and virus writers exploit
+					 * this bug. We can't just break from
+					 * the loop here since that would allow
+					 * other exploits such as inserting a
+					 * white space line before the
+					 * content-type line. So we just have
+					 * to make a best guess. Sigh.
 					 */
 					if(fullline) {
 						if(parseEmailHeader(ret, fullline, rfc821) < 0)
@@ -1013,7 +1015,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine)
 						free(fullline);
 						fullline = NULL;
 					}
-					if((boundary = messageFindArgument(ret, "boundary")) != NULL) {
+					if((boundary = (char *)messageFindArgument(ret, "boundary")) != NULL) {
 						lastWasBlank = TRUE;
 						continue;
 					}
