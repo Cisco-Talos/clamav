@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Scan engine</TITLE>
-<META NAME="description" CONTENT="Scan engine">
+<TITLE>cgpav</TITLE>
+<META NAME="description" CONTENT="cgpav">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -21,70 +21,56 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node48.html">
 <LINK REL="previous" HREF="node46.html">
-<LINK REL="up" HREF="node44.html">
+<LINK REL="up" HREF="node27.html">
 <LINK REL="next" HREF="node48.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html781"
+<A NAME="tex2html875"
   HREF="node48.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html777"
-  HREF="node44.html">
+<A NAME="tex2html871"
+  HREF="node27.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html771"
+<A NAME="tex2html865"
   HREF="node46.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html779"
+<A NAME="tex2html873"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html782"
-  HREF="node48.html">CVD format</A>
-<B> Up:</B> <A NAME="tex2html778"
-  HREF="node44.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html772"
-  HREF="node46.html">Database reloading</A>
- &nbsp <B>  <A NAME="tex2html780"
+<B> Next:</B> <A NAME="tex2html876"
+  HREF="node48.html">j-chkmail</A>
+<B> Up:</B> <A NAME="tex2html872"
+  HREF="node27.html">ClamAV-certified software</A>
+<B> Previous:</B> <A NAME="tex2html866"
+  HREF="node46.html">nclamd</A>
+ &nbsp <B>  <A NAME="tex2html874"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00073000000000000000"></A><A NAME="engine"></A>
-<BR>
-Scan engine
+<H2><A NAME="SECTION000620000000000000000">
+cgpav</A>
 </H2>
-    New versions of Clam AntiVirus use a mutation of the Aho-Corasick
-    pattern matching algorithm. The algorithm is based a finite state pattern
-    matching automaton [<A
- HREF="node57.html#clr">1</A>] and it's a generalization of the famous
-    Knuth-Morris-Pratt algorithm. Please take a look at the <I>matcher.h</I>
-    for data type definitions. The automaton is represented by a trie. It
-    is a rooted tree with some specific properties [<A
- HREF="node57.html#acwww">2</A>]. Every node
-    of the trie represents some state of the automaton. In our implementation,
-    the node is defined as follows:
-    <PRE>
-	struct cl_node {
-	    short int islast;
-	    struct cli_patt *list;
-	    int maxpatlen;
-	    struct node *next[NUM_CHILDS], *trans[NUM_CHILDS], *fail;
-	};
-</PRE>
-    [To be continued...]
+    <B>Homepage:</B> <TT><A NAME="tex2html75"
+  HREF="http://program.farit.ru">http://program.farit.ru</A></TT>
+<BR>    <B>Supports:</B> clamd
+<BR>
+This is a fast (written in C) CommuniGate Pro anti-virus plugin with
+    support for clamd.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-02-11
+2004-03-13
 </ADDRESS>
 </BODY>
 </HTML>

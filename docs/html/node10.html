@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Installation</TITLE>
-<META NAME="description" CONTENT="Installation">
+<TITLE>Requirements</TITLE>
+<META NAME="description" CONTENT="Requirements">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -27,117 +27,72 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html315"
+<A NAME="tex2html395"
   HREF="node11.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html311"
+<A NAME="tex2html391"
   HREF="node6.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html305"
+<A NAME="tex2html385"
   HREF="node9.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html313"
+<A NAME="tex2html393"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html316"
-  HREF="node11.html">Configuration</A>
-<B> Up:</B> <A NAME="tex2html312"
+<B> Next:</B> <A NAME="tex2html396"
+  HREF="node11.html">New system user and</A>
+<B> Up:</B> <A NAME="tex2html392"
   HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html306"
-  HREF="node9.html">Binary packages</A>
- &nbsp <B>  <A NAME="tex2html314"
+<B> Previous:</B> <A NAME="tex2html386"
+  HREF="node9.html">Binary packages - snapshots</A>
+ &nbsp <B>  <A NAME="tex2html394"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
 <H2><A NAME="SECTION00034000000000000000">
-Installation</A>
+Requirements</A>
 </H2>
-
-<P>
-Please read the README file in the current version, because it may
-    contain some important release notes.
-    If you are installing ClamAV for the first time, you have to add a new
-    <I>clamav</I> user and group to your system: <A NAME="tex2html10"
-  HREF="footnode.html#foot138"><SUP>3</SUP></A>
-<P>
-<PRE>
-	# groupadd clamav
-	# useradd -g clamav -s /bin/false -c "Clam AntiVirus" clamav
-</PRE>
-
-<P>
-The above method works on Linux and Solaris, in case you don't have
-    <I>groupadd, useradd</I> please consult a system manual.
-    If you are installing ClamAV on user account you may omit this step with
-    the option <I>-disable-clamav</I> passed to the <I>configure</I> script:
-    <PRE>
-	$ ./configure --disable-clamav
-</PRE>
-    This disables test for the <I>clamav</I> user and group. <B>clamscan</B>
-    still requires <I>clamav</I> to work in the superuser mode. The password
-    for the <I>clamav</I> account should be locked in <I>/etc/passwd</I> or
-    <I>/etc/shadow</I>.
-
-<P>
-Once you have created the clamav user and group, please extract the archive:
-    <PRE>
-	$ zcat clamav-x.yz.tar.gz | tar xvf -
-	$ cd clamav-x.yz
-</PRE>
-    Assuming you want to have the configuration file installed in /etc,
-    configure the package as follows:
-    <PRE>
-	$ ./configure --sysconfdir=/etc
-</PRE>
-    Currently <I>gcc</I> is required for the compilation. Support for other
-    compilers will be added in a near future.
-    <PRE>
-	$ make
-	$ su -c "make install"
-</PRE>
-    In the last step software is installed in the /usr/local directory
-    and the config file in /etc.
-    <B>WARNING: Never set SUID or SGID bits on Clam AntiVirus programs.</B>
-
-<P>
-<HR>
-<!--Navigation Panel-->
-<A NAME="tex2html315"
-  HREF="node11.html">
-<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
- SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html311"
-  HREF="node6.html">
-<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
- SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html305"
-  HREF="node9.html">
-<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
- SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html313"
-  HREF="node1.html">
-<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
- SRC="/usr/share/latex2html/icons/contents.png"></A>  
+    The following elements are requires to compile ClamAV:
+    
+<UL>
+<LI>zlib and zlib-devel packages
+</LI>
+<LI>gcc compiler suite (both 2.9x and 3.x are supported)
+    
+</LI>
+</UL>
+    The following packages are optional but <B>highly recommended</B>:
+    
+<UL>
+<LI>bzip2 and bzip2-devel library
+</LI>
+<LI>GNU MP 3
 <BR>
-<B> Next:</B> <A NAME="tex2html316"
-  HREF="node11.html">Configuration</A>
-<B> Up:</B> <A NAME="tex2html312"
-  HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html306"
-  HREF="node9.html">Binary packages</A>
- &nbsp <B>  <A NAME="tex2html314"
-  HREF="node1.html">Contents</A></B> 
-<!--End of Navigation Panel-->
+It's very important to install the GMP package because it allows
+	freshclam to verify the digital signature of the virus database.
+	If freshclam was compiled without GMP support it will display
+	"SECURITY WARNING: NO SUPPORT FOR DIGITAL SIGNATURES" on every
+	update. You can download GNU MP at <TT><A NAME="tex2html15"
+  HREF="http://www.swox.com/gmp">http://www.swox.com/gmp</A></TT>	A note for Solaris users: you should set the <I>ABI</I> system
+	variable to 32 (e.g. <code>setenv ABI 32</code>) before running the
+	GMP's configure script <A NAME="tex2html16"
+  HREF="footnode.html#foot154"><SUP>2</SUP></A>.
+    
+</LI>
+</UL>
+
+<P>
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-02-11
+2004-03-13
 </ADDRESS>
 </BODY>
 </HTML>

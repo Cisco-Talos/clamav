@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Configuration</TITLE>
-<META NAME="description" CONTENT="Configuration">
+<TITLE>New system user and group</TITLE>
+<META NAME="description" CONTENT="New system user and group">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -27,117 +27,61 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html327"
+<A NAME="tex2html407"
   HREF="node12.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html323"
+<A NAME="tex2html403"
   HREF="node6.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html317"
+<A NAME="tex2html397"
   HREF="node10.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html325"
+<A NAME="tex2html405"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html328"
-  HREF="node12.html">Testing</A>
-<B> Up:</B> <A NAME="tex2html324"
+<B> Next:</B> <A NAME="tex2html408"
+  HREF="node12.html">Compilation</A>
+<B> Up:</B> <A NAME="tex2html404"
   HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html318"
-  HREF="node10.html">Installation</A>
- &nbsp <B>  <A NAME="tex2html326"
+<B> Previous:</B> <A NAME="tex2html398"
+  HREF="node10.html">Requirements</A>
+ &nbsp <B>  <A NAME="tex2html406"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
 <H2><A NAME="SECTION00035000000000000000">
-Configuration</A>
+New system user and group</A>
 </H2>
-    If you are going to use the daemon you have to configure it because
-    it won't run with default settings:
-    <PRE>
-	$ clamd
-	ERROR: Please edit the example config file
-	       /etc/clamav.conf.
+    If you are installing ClamAV for the first time, you have to add a new
+    user and group to your system: <A NAME="tex2html17"
+  HREF="footnode.html#foot157"><SUP>3</SUP></A>    <PRE>
+	# groupadd clamav
+	# useradd -g clamav -s /bin/false -c "Clam AntiVirus" clamav
 </PRE>
-    This shows a location of the configuration file. The format and
-    options of this file are fully described in the <I>clamav.conf(5)</I>
-    manual. clamd configuration is very easy because the config file is well
-    commented. Remember - you must remove the "Example" directive.
+    The above method works on Linux and Solaris - in case you don't have
+    <I>groupadd, useradd</I> please consult the system manual.
+    If you are installing ClamAV on a user account you may omit this step with
+    the <code>--disable-clamav</code> option passed to the <code>configure</code> script:
+    <PRE>
+	$ ./configure --disable-clamav
+</PRE>
+    It disables testing for existence of the <I>clamav</I> user and group.
+    <B>clamscan still requires the unprivileged user and group to work
+    in the superuser mode.</B> The password for that account should be locked
+    in <I>/etc/passwd</I> or <I>/etc/shadow</I>.
 
 <P>
-Another feature of clamd is on-access scanning based on the Dazuko module,
-    available from <TT><A NAME="tex2html11"
-  HREF="http://dazuko.org">http://dazuko.org</A></TT>. <B>This is not required to
-    run clamd - furthermore, you shouldn't run Dazuko on production systems</B>.
-    A special thread in clamd responsible for a communication with Dazuko
-    is called "Clamuko" (it's due to the funny name of Dazuko - I don't know
-    what Clamuko means). Clamuko is supported on Linux 2.2 and 2.4 only.
-    To compile dazuko execute:
-    <PRE>
-	$ tar zxpvf dazuko-a.b.c.tar.gz
-	$ cd dazuko-a.b.c
-	$ make dazuko
-	or
-	$ make dazuko-smp (for smp kernels)
-	$ su
-	# insmod dazuko.o
-	# cp dazuko.o /lib/modules/`uname -r`/misc
-	# depmod -a
-</PRE>
-    Depending on your Linux distribution you have to add a "dazuko" entry to
-<BR>    <I>/etc/modules</I> or something like:
-    <PRE>
-	modprobe dazuko
-</PRE>
-    to some startup file in order to load dazuko at a boot time. You must
-    also create the <I>/dev/dazuko</I> device:
-    <PRE>
-	$ cat /proc/devices | grep dazuko
-	254 dazuko
-	$ su -c "mknod -m 600 /dev/dazuko c 254 0"
-</PRE>
-    Now just configure Clamuko in <I>clamav.conf</I>. Please check
-    <A HREF="node17.html#clamuko">3.2</A> section.
-
-<P>
-<HR>
-<!--Navigation Panel-->
-<A NAME="tex2html327"
-  HREF="node12.html">
-<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
- SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html323"
-  HREF="node6.html">
-<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
- SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html317"
-  HREF="node10.html">
-<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
- SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html325"
-  HREF="node1.html">
-<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
- SRC="/usr/share/latex2html/icons/contents.png"></A>  
-<BR>
-<B> Next:</B> <A NAME="tex2html328"
-  HREF="node12.html">Testing</A>
-<B> Up:</B> <A NAME="tex2html324"
-  HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html318"
-  HREF="node10.html">Installation</A>
- &nbsp <B>  <A NAME="tex2html326"
-  HREF="node1.html">Contents</A></B> 
-<!--End of Navigation Panel-->
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-02-11
+2004-03-13
 </ADDRESS>
 </BODY>
 </HTML>

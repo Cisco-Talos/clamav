@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Testing</TITLE>
-<META NAME="description" CONTENT="Testing">
+<TITLE>Compilation</TITLE>
+<META NAME="description" CONTENT="Compilation">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -27,57 +27,64 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html339"
+<A NAME="tex2html419"
   HREF="node13.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html335"
+<A NAME="tex2html415"
   HREF="node6.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html329"
+<A NAME="tex2html409"
   HREF="node11.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html337"
+<A NAME="tex2html417"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html340"
-  HREF="node13.html">freshclam: Setting up auto-updating</A>
-<B> Up:</B> <A NAME="tex2html336"
+<B> Next:</B> <A NAME="tex2html420"
+  HREF="node13.html">Configuration</A>
+<B> Up:</B> <A NAME="tex2html416"
   HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html330"
-  HREF="node11.html">Configuration</A>
- &nbsp <B>  <A NAME="tex2html338"
+<B> Previous:</B> <A NAME="tex2html410"
+  HREF="node11.html">New system user and</A>
+ &nbsp <B>  <A NAME="tex2html418"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
 <H2><A NAME="SECTION00036000000000000000">
-Testing</A>
+Compilation</A>
 </H2>
+    
+    Once you have created the clamav user and group, please extract the archive:
+    <PRE>
+	$ zcat clamav-x.yz.tar.gz | tar xvf -
+	$ cd clamav-x.yz
+</PRE>
+    Assuming you want to install the configuration files in /etc, configure
+    the package as follows:
+    <PRE>
+	$ ./configure --sysconfdir=/etc
+</PRE>
+    Currently <I>gcc</I> is required for the compilation. Support for other
+    compilers will be added in the near future.
+    <PRE>
+	$ make
+	$ su -c "make install"
+</PRE>
+    In the last step software is installed in the /usr/local directory
+    and the config file goes to /etc. <B>WARNING: Never enable the SUID
+    or SGID bits in Clam AntiVirus binaries.</B>
 
 <P>
-OK. Let's do some tests. Try to scan recursively the source directory:
-    <PRE>
-	$ clamscan -r -l scan.txt clamav-x.yz
-</PRE>
-    It should find some (test) viruses in the clamav-x.yz/test directory.
-    The scan result is saved in the scan.txt log file. <A NAME="tex2html12"
-  HREF="footnode.html#foot770"><SUP>4</SUP></A>. To test clamd: start it and
-    use <I>clamdscan</I> (you can also connect directly to clamd and run
-    the SCAN command):
-    <PRE>
-	$ clamdscan -l scan.txt clamav-x.yz
-</PRE>
-    The output and the logfile should be similar to the ones of <I>clamscan</I>.
-    <BR><HR>
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-02-11
+2004-03-13
 </ADDRESS>
 </BODY>
 </HTML>

@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Archives and compressed files</TITLE>
-<META NAME="description" CONTENT="Archives and compressed files">
+<TITLE>Clam daemon</TITLE>
+<META NAME="description" CONTENT="Clam daemon">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -21,156 +21,147 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node19.html">
 <LINK REL="previous" HREF="node17.html">
-<LINK REL="up" HREF="node15.html">
+<LINK REL="up" HREF="node17.html">
 <LINK REL="next" HREF="node19.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html414"
+<A NAME="tex2html496"
   HREF="node19.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html410"
-  HREF="node15.html">
+<A NAME="tex2html492"
+  HREF="node17.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html404"
+<A NAME="tex2html486"
   HREF="node17.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html412"
+<A NAME="tex2html494"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html415"
-  HREF="node19.html">Output format</A>
-<B> Up:</B> <A NAME="tex2html411"
-  HREF="node15.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html405"
-  HREF="node17.html">Clamuko</A>
- &nbsp <B>  <A NAME="tex2html413"
+<B> Next:</B> <A NAME="tex2html497"
+  HREF="node19.html">Clamdscan</A>
+<B> Up:</B> <A NAME="tex2html493"
+  HREF="node17.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html487"
+  HREF="node17.html">Usage</A>
+ &nbsp <B>  <A NAME="tex2html495"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00043000000000000000">
-Archives and compressed files</A>
+<H2><A NAME="SECTION00041000000000000000"></A><A NAME="clamd"></A>
+<BR>
+Clam daemon
 </H2>
-    All ClamAV scanners depend on LibClamAV. It has a built-in support for the
-    following formats:
+    <I>clamd</I> is a multi-threaded daemon and uses <I>libclamav</I>
+    to scan files against viruses.  It may work in one of the two
+    following network modes, listening on a:
     
 <UL>
-<LI>Zip
+<LI>Unix (local) socket
 </LI>
-<LI>Gzip
-</LI>
-<LI>Bzip2
-</LI>
-<LI>RAR (2.0 only)
+<LI>TCP socket
     
 </LI>
 </UL>
-    Archive file types are determined by magic number tests.<A NAME="tex2html36"
-  HREF="footnode.html#foot305"><SUP>5</SUP></A> You need the zlib library
-    for the Zip/Gzip support. Zip archives are accessed with the zziplib
-    library by Guido Draheim and Tomi Ollila. RAR support is based on the
-    UniquE RAR File Library by Christian Scheurer and Johannes Winkelmann.
-    Both of them are included and slightly modified in the clamav sources.
-    Unrarlib supports RAR 2.0 archives only and according to Christian
-    the new format (introduced in WinRAR 3.0) will never be supported
-    (however clamscan can scan WinRAR 3.0 archives, see below). Due to
-    security reasons clamd only scans archives supported by libclamav.
-    Clamscan is more clever and it can also use external unpackers - this
-    is especially useful when the built-in decompresor fails:
-    <PRE>
-	$ clamscan --unrar rarfail.rar
-	/home/zolw/Clam/test/rarfail.rar: RAR module failure.
-
-	UNRAR 3.00 freeware      Copyright (c) 1993-2002 Eugene Roshal
-
-
-	Extracting from /home/zolw/Clam/test/rarfail.rar
-
-	Extracting  test1                                           OK 
-	All OK
-	/tmp/44694f5b2665d2f4/test1: ClamAV-Test-Signature FOUND
-	/home/zolw/Clam/test/rarfail.rar: Infected Archive FOUND
-</PRE>
-    <I><B>TIP:</B> You can force clamscan to list all infected files
-    in archive using -disable-archive (it disables the built-in decompressors)
-    and -unzip -unrar...</I>.
+    The daemon is fully configurable via the <I>clamav.conf</I> file. You will
+    find a description for every directive in the <I>clamav.conf(5)</I>
+    manual. <I>clamd</I> recognizes the following commands:
+    
+<UL>
+<LI><B>PING</B>
 <BR>
-clamscan supports many popular compressors - it uses external programs
-    for each format. <B>If the scanner runs with superuser privileges
-    unpackers are executed with a <I>clamav</I> privileges what makes the
-    process far more secure.</B> It also cares <I>clamav</I> user has read access
-    to all files. <B>You must enable recursive scanning with the <I>-r</I>
-    option (<I>-recursive</I>), if you want to scan a whole content of an
-    archive (including subdirectories)</B>, this option is also (usually) required
-    for scanning nested archive. External unpackers supported:
+Check a daemon state (should reply with "PONG").
+</LI>
+<LI><B>VERSION</B>
 <BR>
+Print version information.
+</LI>
+<LI><B>RELOAD</B>
+<BR>
+Reload databases.
+</LI>
+<LI><B>SHUTDOWN</B>
+<BR>
+Perform a clean exit.
+</LI>
+<LI><B>SCAN file/directory</B>
+	    Scan a file or directory (recursively) with archive support
+	    enabled. A full path is required.
+</LI>
+<LI><B>RAWSCAN file/directory</B>
+	    Scan a file or directory (recursively) with archive support
+	    disabled. A full path is required.
+</LI>
+<LI><B>CONTSCAN file/directory</B>
+	    Scan a file or directory (recursively) with archive support
+	    enabled and don't stop even if virus is found.
+</LI>
+<LI><B>STREAM</B>
+	    Scan stream - clamd will return a new port number you should
+	    connect to and send a data to scan. <I>The protocol is
+	    obsolete and there will be a new version soon (however this one
+	    will still be supported).</I>
+</LI>
+<LI><B>SESSION, END</B>
+	    Start/end a clamd session - you can do multiple commands per TCP
+	    session (WARNING: due to the clamd implementation the
+	    <B>RELOAD</B> command will break the session).
+
 <P>
+</LI>
+</UL>
+    Clamd reacts on the three special signals:
+    
+<UL>
+<LI><B>SIGTERM</B> - perform a clean exit
+</LI>
+<LI><B>SIGHUP</B> - reopen the log file
+</LI>
+<LI><B>SIGUSR2</B> - reload the database
+    
+</LI>
+</UL>
 
-    <B>-unzip: </B> Usually you don't need this option because Zip format is
-	       supported by libclamav. However it may be useful if libclamav
-	       fails to unzip some file. clamscan was tested with
-	       <I>UnZip 5.41 of 16 April 2000, by Info-ZIP</I>.
-<BR>    <B>-unrar: </B> Tested with <I>UNRAR 3.00 freeware</I>.
-<BR>    <B>-unace: </B> It uses an options supported by <I>UNACE v1.2 public version</I>,
-	       not tested, but should work.
-<BR>    <B>-arj: </B> Tested with <I>arj 3.10b</I>.
-<BR>    <B>-zoo: </B> Tested with <I>zoo 2.1</I>.
-<BR>    <B>-lha: </B> Tested with <I>LHa for Unix V 1.14e</I>.
-<BR>    <B>-jar: </B> clamscan uses <I>unzip</I> for .jar files. Tested with
-	     <I>UnZip 5.41 of 16 April 2000, by Info-ZIP</I>.
-<BR>    <B>-tar: </B> This option enables support for non-compressed archives. Tested
-	     with <I>GNU tar 1.13.17</I>.
-<BR>    <B>-deb: </B> This option enables support for debian binary packages. Tested with
-	     <I>GNU ar
-<BR>
-2.12.90.0.14</I>. Implies -tgz , but doesn't conflict
-	     with -tgz=FULLPATH.
-<BR>    <B>-tgz: </B> This option supports .tar.gz and .tgz files. You need <I>GNU
-	     tar</I>, on non-Linux system you probably have it installed as
-	     <I>gtar</I> and if it can be found in <I>$PATH</I> please use
-	     <I>-tgz=gtar</I> to tell clamscan to use <I>gtar</I> instead of
-	     <I>tar</I>. Otherwise please supply a full path with <I>-tgz</I>.
-<BR>
 <P>
 <HR>
 <!--Navigation Panel-->
-<A NAME="tex2html414"
+<A NAME="tex2html496"
   HREF="node19.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html410"
-  HREF="node15.html">
+<A NAME="tex2html492"
+  HREF="node17.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html404"
+<A NAME="tex2html486"
   HREF="node17.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html412"
+<A NAME="tex2html494"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html415"
-  HREF="node19.html">Output format</A>
-<B> Up:</B> <A NAME="tex2html411"
-  HREF="node15.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html405"
-  HREF="node17.html">Clamuko</A>
- &nbsp <B>  <A NAME="tex2html413"
+<B> Next:</B> <A NAME="tex2html497"
+  HREF="node19.html">Clamdscan</A>
+<B> Up:</B> <A NAME="tex2html493"
+  HREF="node17.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html487"
+  HREF="node17.html">Usage</A>
+ &nbsp <B>  <A NAME="tex2html495"
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2004-02-11
+2004-03-13
 </ADDRESS>
 </BODY>
 </HTML>

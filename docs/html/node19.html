@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Output format</TITLE>
-<META NAME="description" CONTENT="Output format">
+<TITLE>Clamdscan</TITLE>
+<META NAME="description" CONTENT="Clamdscan">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -21,96 +21,67 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node20.html">
 <LINK REL="previous" HREF="node18.html">
-<LINK REL="up" HREF="node15.html">
+<LINK REL="up" HREF="node17.html">
 <LINK REL="next" HREF="node20.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html426"
+<A NAME="tex2html508"
   HREF="node20.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html422"
-  HREF="node15.html">
+<A NAME="tex2html504"
+  HREF="node17.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html416"
+<A NAME="tex2html498"
   HREF="node18.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html424"
+<A NAME="tex2html506"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html427"
-  HREF="node20.html">Signature Tool</A>
-<B> Up:</B> <A NAME="tex2html423"
-  HREF="node15.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html417"
-  HREF="node18.html">Archives and compressed files</A>
- &nbsp <B>  <A NAME="tex2html425"
+<B> Next:</B> <A NAME="tex2html509"
+  HREF="node20.html">Clamuko</A>
+<B> Up:</B> <A NAME="tex2html505"
+  HREF="node17.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html499"
+  HREF="node18.html">Clam daemon</A>
+ &nbsp <B>  <A NAME="tex2html507"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00044000000000000000">
-Output format</A>
+<H2><A NAME="SECTION00042000000000000000">
+Clam<B>d</B>scan</A>
 </H2>
-    <I>clamd</I> uses a clamscan compatible output format:
-    <PRE>
-	zolw@Wierszokleta:~$ telnet localhost 3310
-	Trying 127.0.0.1...
-	Connected to localhost.
-	Escape character is '^]'.
-	SCAN /home/zolw/infected
-	/home/zolw/infected/sobre.com: W32/Magistr.B FOUND
-	Connection closed by foreign host.
-</PRE>
-    In <B>SCAN</B> mode it closes the connection when first virus is found.
-    In the case of archives the output is exactly the same as with normal
-    files:
-    <PRE>
-	SCAN /home/zolw/Clam/test/test2.zip
-	/home/zolw/Clam/test/test2.zip: ClamAV-Test-Signature FOUND
-</PRE>
-    <B>CONTSCAN</B> displays all infected files found.
-<BR>
-Error messages are printed in the following format:
-    <PRE>
-	SCAN /no/such/file
-	/no/such/file: Can't stat() the file ERROR
-</PRE>
-    and they can be easily parsed.
-
-<P>
-<I>clamscan</I> writes all messages to <B>stderr</B> (only help is
-    written to <B>stdout</B> by default) to <B>stderr</B>. You may want
-    to redirect it to <B>stdout</B> - this is handled by <I>-stdout</I>.
-    An example clamscan output is:
-    <PRE>
-	/tmp/test/removal-tool.exe: Worm.Sober FOUND
-	/tmp/test/md5.o: OK
-	/tmp/test/blob.c: OK
-	/tmp/test/message.c: OK
-	/tmp/test/error.hta: VBS.Inor.D FOUND
-</PRE>
-    When a virus is found, its name is printed between the <I>filename:</I> and
-    <I>FOUND</I> strings. If a virus is found in an archive that has been
-    extracted with an external unpacker it's noticed with <I>Infected
-    Archive</I>. "Infected Archives" are not counted as infected files - only
-    files within them are. Notice the difference with built-in unarchiver -
-    extraction process is realized transparently by libclamav and clamscan
-    doesn't know which concrete file is infected - just marks a whole archives
-    as infected.
+    clamdscan is a simple clamd client. In many cases you can use it as
+    a clamscan replacement but you must remember that:
+    
+<UL>
+<LI>it only depends on clamd
+</LI>
+<LI>although accepts the same command line options as clamscan
+	      most of them are ignored, for example: it accepts <code>--mbox</code>
+	      but the option has no effect - you must enable the <code>ScanMail</code>
+	      option in clamd to be able to scan mail files
+</LI>
+<LI>scanned files must be accessible for clamd
+</LI>
+<LI>it can't use external unpackers
+    
+</LI>
+</UL>
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-02-11
+2004-03-13
 </ADDRESS>
 </BODY>
 </HTML>

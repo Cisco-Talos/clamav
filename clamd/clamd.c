@@ -262,7 +262,7 @@ void help(void)
 
     printf("\n");
     printf("                           Clam AntiVirus Daemon "VERSION"\n");
-    printf("                 (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>\n\n");
+    printf("   (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net> and Trog <trog@clamav.net>\n\n");
 
     printf("    --help                   -h             Show this help.\n");
     printf("    --version                -V             Show version number.\n");
