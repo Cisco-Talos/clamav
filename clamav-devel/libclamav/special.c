@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004 trog@uncon.org
+ *  Copyright (C) 2004-2005 trog@uncon.org
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,6 +25,8 @@
 #include "clamav.h"
 #include "others.h"
 
+#define FALSE (0)
+#define TRUE (1)
 
 int cli_check_mydoom_log(int desc, const char **virname)
 {
@@ -113,4 +115,116 @@ int cli_check_jpeg_exploit(int fd)
 			return -1;
 		}
 	}
+}
+
+#if WORDS_BIGENDIAN == 0
+#define riff_endian_convert_32(v)    (v)
+#else
+static uint32_t riff_endian_convert_32(uint32_t v)
+{
+        return ((v >> 24) | ((v & 0x00FF0000) >> 8) |
+                ((v & 0x0000FF00) << 8) | (v << 24));
+}
+#endif
+
+static int riff_read_chunk(int fd, int big_endian, int rec_level)
+{
+	uint32_t chunk_id;
+	uint32_t chunk_size;
+	int length;
+	uint32_t list_type;
+	off_t offset, cur_offset;
+
+	if (rec_level > 1000) {
+		cli_dbgmsg("riff_read_chunk: recursion level exceeded\n");
+		return 0;
+	}
+	
+	length = sizeof(uint32_t);
+	if (cli_readn(fd, &chunk_id, length) != length) {
+		return 0;
+	}
+	if (cli_readn(fd, &chunk_size, length) != length) {
+		return 0;
+	}
+	if (big_endian) {
+		chunk_size = riff_endian_convert_32(chunk_size);
+	}
+
+	if (memcmp(&chunk_id, "RIFF", 4) == 0) {
+		return 0;
+	} else if (memcmp(&chunk_id, "RIFX", 4) == 0) {
+		return 0;
+	}
+	
+	if ((memcmp(&chunk_id, "LIST", 4) == 0) ||
+		 (memcmp(&chunk_id, "PROP", 4) == 0) ||
+		 (memcmp(&chunk_id, "FORM", 4) == 0) ||
+		 (memcmp(&chunk_id, "CAT ", 4) == 0)) {
+		if (cli_readn(fd, &list_type, sizeof(list_type)) != sizeof(list_type)) {
+			cli_dbgmsg("riff_read_chunk: read list type failed\n");
+			return 0;
+		}
+		return riff_read_chunk(fd, big_endian, ++rec_level);	
+	}
+	
+	cur_offset = lseek(fd, 0, SEEK_CUR);
+	offset = cur_offset + chunk_size;
+	/* Check for odd alignment */
+	if ((offset & 0x01) == 1) {
+		offset++;
+	}
+	if (offset < cur_offset) {
+		return 0;
+	}
+	if (lseek(fd, offset, SEEK_SET) != offset) {
+		return 2;
+	}
+	return 1;
+}
+
+int cli_check_riff_exploit(int fd)
+{
+	uint32_t chunk_id;
+	uint32_t chunk_size;
+	uint32_t form_type;
+	int length, big_endian, retval;
+	off_t offset;
+	
+	cli_dbgmsg("in cli_check_riff_exploit()\n");
+
+	length = sizeof(uint32_t);
+	if (cli_readn(fd, &chunk_id, length) != length) {
+		return 0;
+	}
+	if (cli_readn(fd, &chunk_size, length) != length) {
+		return 0;
+	}
+	if (cli_readn(fd, &form_type, length) != length) {
+		return 0;
+	}
+	
+	if (memcmp(&chunk_id, "RIFF", 4) == 0) {
+		big_endian = FALSE;
+	} else if (memcmp(&chunk_id, "RIFX", 4) == 0) {
+		big_endian = TRUE;
+	} else {
+		/* Not a RIFF file */
+		return 0;
+	}
+
+	if (big_endian) {
+		chunk_size = riff_endian_convert_32(chunk_size);
+	}
+
+	do {
+		retval = riff_read_chunk(fd, big_endian, 1);
+	} while (retval == 1);
+		
+	offset = lseek(fd, 0, SEEK_CUR);
+
+	if (offset < chunk_size) {
+		retval = 2;
+	};
+	return retval;
 }
