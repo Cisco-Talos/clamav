@@ -124,6 +124,7 @@ libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@
 include_HEADERS = clamav.h
 
 libclamav_la_SOURCES = \
+	clamav.h \
         matcher.c \
         matcher.h \
         md5.c \
