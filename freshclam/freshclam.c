@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *			     Damien Curtain <damien@pagefault.org>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -55,7 +55,7 @@ int freshclam(struct optstruct *opt)
     }
 
     /* parse the config file */
-    if((cfgfile = getargc(opt, 'c'))) {
+    if((cfgfile = getargl(opt, "config-file"))) {
 	copt = parsecfg(cfgfile);
     } else {
 	/* TODO: force strict permissions on freshclam.conf */

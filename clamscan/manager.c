@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -174,9 +174,11 @@ int scanmanager(const struct optstruct *opt)
 
 		/* njh@bandsman.co.uk: BeOS */
 #if !defined(C_CYGWIN) && !defined(C_BEOS)
-		if((user = getpwnam(UNPUSER)) == NULL) {
-		    mprintf("@Can't get information about user %s\n", UNPUSER);
-		    exit(60); /* this is critical problem, so we just exit here */
+		if(!getuid()) {
+		    if((user = getpwnam(UNPUSER)) == NULL) {
+			mprintf("@Can't get information about user %s\n", UNPUSER);
+			exit(60); /* this is critical problem, so we just exit here */
+		    }
 		}
 #endif
 
@@ -385,6 +387,7 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	    return 0;
 	/* in other case try to continue with external archivers */
 	options &= ~CL_ARCHIVE; /* and disable decompression for the below checkfile() */
+	claminfo.files--; /* don't count it */
     }
 
     if((strbcasestr(filename, ".zip") && optl(opt, "unzip"))

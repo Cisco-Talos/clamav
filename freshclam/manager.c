@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *  HTTP/1.1 compliance by Arkadiusz Miskiewicz <misiek@pld.org.pl>
  *  Proxy support by Nigel Horne <njh@bandsman.co.uk>
  *  Proxy authorization support by Gernot Tenchio <g.tenchio@telco-tech.de>

@@ -60,6 +60,7 @@ int cli_scanrar_inuse = 0;
 #define RAWMAIL_MAGIC_STR "Received: "
 #define MAILDIR_MAGIC_STR "Return-Path: "
 #define DELIVERED_MAGIC_STR "Delivered-To: "
+#define XUIDL_MAGIC_STR "X-UIDL: "
 #define BZIP_MAGIC_STR "BZh"
 #define OLE2_MAGIC_STR "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1"
 
@@ -152,13 +153,13 @@ int cli_scanrar(int desc, char **virname, long int *scanned, const struct cl_nod
 		cli_dbgmsg("RAR->%s: Size exceeded (%d, max: %d)\n", rarlist->item.Name, rarlist->item.UnpSize, limits->maxfilesize);
 		rarlist = rarlist->next;
 		files++;
-		ret = CL_EMAXSIZE;
+		/* ret = CL_EMAXSIZE; */
 		continue;
 	    }
 
 	    if(limits->maxfiles && (files > limits->maxfiles)) {
 		cli_dbgmsg("RAR: Files limit reached (max: %d)\n", limits->maxfiles);
-		ret = CL_EMAXFILES;
+		/* ret = CL_EMAXFILES; */
 		break;
 	    }
 	}
@@ -302,13 +303,13 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	    if(limits->maxfilesize && (zdirent.st_size > limits->maxfilesize)) {
 		cli_dbgmsg("Zip -> %s: Size exceeded (%d, max: %d)\n", zdirent.d_name, zdirent.st_size, limits->maxfilesize);
 		files++;
-		ret = CL_EMAXSIZE;
+		/* ret = CL_EMAXSIZE; */
 		continue; /* this is not a bug */
 	    }
 
 	    if(limits->maxfiles && (files > limits->maxfiles)) {
 		cli_dbgmsg("Zip: Files limit reached (max: %d)\n", limits->maxfiles);
-		ret = CL_EMAXFILES;
+		/* ret = CL_EMAXFILES; */
 		break;
 	    }
 	}
@@ -416,7 +417,7 @@ int cli_scangzip(int desc, char **virname, long int *scanned, const struct cl_no
 	if(limits)
 	    if(limits->maxfilesize && (size + FILEBUFF > limits->maxfilesize)) {
 		cli_dbgmsg("Gzip->desc(%d): Size exceeded (stopped at %d, max: %d)\n", desc, size, limits->maxfilesize);
-		ret = CL_EMAXSIZE;
+		/* ret = CL_EMAXSIZE; */
 		break;
 	    }
 
@@ -504,7 +505,7 @@ int cli_scanbzip(int desc, char **virname, long int *scanned, const struct cl_no
 	if(limits)
 	    if(limits->maxfilesize && (size + FILEBUFF > limits->maxfilesize)) {
 		cli_dbgmsg("Bzip2->desc(%d): Size exceeded (stopped at %d, max: %d)\n", desc, size, limits->maxfilesize);
-		ret = CL_EMAXSIZE;
+		/* ret = CL_EMAXSIZE; */
 		break;
 	    }
 
@@ -710,7 +711,8 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
 
 	if(SCAN_ARCHIVE && limits && limits->maxreclevel)
 	    if(*reclev > limits->maxreclevel)
-		return CL_EMAXREC;
+		/* return CL_EMAXREC; */
+		return CL_CLEAN;
 
 	(*reclev)++;
 
@@ -769,6 +771,9 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
 	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
 	} else if(SCAN_MAIL && !strncmp(magic, DELIVERED_MAGIC_STR, strlen(DELIVERED_MAGIC_STR))) {
 	    cli_dbgmsg("Recognized (Delivered-To) mail file.\n");
+	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
+	} else if(SCAN_MAIL && !strncmp(magic, XUIDL_MAGIC_STR, strlen(XUIDL_MAGIC_STR))) {
+	    cli_dbgmsg("Recognized (X-UIDL) mail file.\n");
 	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
 	}
 	(*reclev)--;
