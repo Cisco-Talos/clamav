@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.98  2004/06/22 04:09:12  nigelhorne
+ * Avoid unlocking unlocked mutex in clamfi_abort
+ *
  * Revision 1.97  2004/06/16 08:08:47  nigelhorne
  * Allow access to sendmail variables in the template file
  *
@@ -302,9 +305,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.97 2004/06/16 08:08:47 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.98 2004/06/22 04:09:12 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.73b"
+#define	CM_VERSION	"0.73c"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -2235,8 +2238,10 @@ clamfi_abort(SMFICTX *ctx)
 	 *
 	 * TODO: There *must* be a tidier a safer way of doing this!
 	 */
-	if((max_children > 0) && (n_children >= max_children))
+	if((max_children > 0) && (n_children >= max_children)) {
+		(void)pthread_mutex_trylock(&n_children_mutex);
 		(void)pthread_mutex_unlock(&n_children_mutex);
+	}
 
 	clamfi_cleanup(ctx);
 
@@ -2647,7 +2652,7 @@ connect2clamd(struct privdata *privdata)
 		 * store message in a temporary file
 		 */
 		int ntries = 5;
-		long t;
+		time_t t;
 		int MM, YY, DD;
 		const struct tm *tm;
 
@@ -2656,7 +2661,7 @@ connect2clamd(struct privdata *privdata)
 		 * <Christian.Pelissier@onera.fr>. Store different days
 		 * in different directories to make them easier to manage
 		 */
-		t = time((long *)0);
+		t = time((time_t *)0);
 		tm = localtime(&t);
 		MM = tm->tm_mon + 1;
 		YY = tm->tm_year - 100;
