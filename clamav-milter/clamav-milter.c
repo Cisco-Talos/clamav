@@ -341,9 +341,25 @@
  *			TCP_WRAPPERS code now uses inet_ntop()
  *			Simplify virus string
  *			Sort out tabs in the hard coded e-mail message
+ *	0.70q	22/4/04	No need to parse the received line if --headers is
+ *				given
+ *			If -outgoing is given put generated emails in the
+ *				deferred queue to avoid the milter being called
+ *			twice at the same time (one on the incoming one on the
+ *				outgoing)
+ *			header_list_print, ensure From lines are escaped, may
+ * 				not be needed but it is better to be on the
+ *				safe side
+ *			When loadbalancing, fail to start only if no servers
+ *				can be reached (used to fail if any one server
+ *				could not be reached)
+ *			Not all servers were load balanced
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.81  2004/04/22 16:47:04  nigelhorne
+ * Various changes
+ *
  * Revision 1.80  2004/04/21 15:27:02  nigelhorne
  * Various changes
  *
@@ -569,9 +585,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.80 2004/04/21 15:27:02 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.81 2004/04/22 16:47:04 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70p"
+#define	CM_VERSION	"0.70q"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1215,7 +1231,7 @@ main(int argc, char **argv)
 		serverIPs = (long *)cli_malloc(sizeof(long));
 		serverIPs[0] = inet_addr("127.0.0.1");
 	} else if((cpt = cfgopt(copt, "TCPSocket")) != NULL) {
-		int i;
+		int i, activeServers;
 
 		/*
 		 * TCPSocket is in fact a port number not a full socket
@@ -1243,6 +1259,7 @@ main(int argc, char **argv)
 		cli_dbgmsg("numServers: %d\n", numServers);
 
 		serverIPs = (long *)cli_malloc(numServers * sizeof(long));
+		activeServers = 0;
 
 		for(i = 0; i < numServers; i++) {
 			char *hostname;
@@ -1264,14 +1281,19 @@ main(int argc, char **argv)
 				memcpy((char *)&serverIPs[i], h->h_addr, sizeof(serverIPs[i]));
 			}
 
-			if(!pingServer(i)) {
-				fprintf(stderr, "Can't talk to clamd server %s on port %d\n",
+			if(pingServer(i))
+				activeServers++;
+			else {
+				cli_warnmsg("Warning Can't talk to clamd server %s on port %d\n",
 					hostname, tcpSocket);
-				fprintf(stderr, "Check your entry for TCPSocket in %s\n",
-					cfgfile);
-				return EX_CONFIG;
 			}
 			free(hostname);
+		}
+		if(activeServers == 0) {
+			cli_errmsg("Can't find any clamd servers\n");
+			cli_errmsg("Check your entry for TCPSocket in %s\n",
+				cfgfile);
+			return EX_CONFIG;
 		}
 	} else {
 		fprintf(stderr, "%s: You must select server type (local/TCP) in %s\n",
@@ -1375,7 +1397,7 @@ main(int argc, char **argv)
  * Verify that the server is where we think it is
  * Returns true or false
  *
- * serverNumber counts from 0
+ * serverNumber counts from 0, but is only used for TCPSocket
  */
 static int
 pingServer(int serverNumber)
@@ -1474,12 +1496,14 @@ pingServer(int serverNumber)
 }
 
 /*
- * Find the best server to connect to. No intelligence to this, if one
- * of the servers goes down it'll be silently ignored, which is probably
- * ok. It is best to weight the order of the servers from most wanted to
- * least wanted
+ * Find the best server to connect to. No intelligence to this.
+ * It is best to weight the order of the servers from most wanted to least
+ * wanted
  *
  * Return value is from 0 - index into serverIPs
+ *
+ * If the load balancing fails return the first server in the list, not
+ * an error, to be on the safe side
  */
 static int
 findServer(void)
@@ -1522,9 +1546,12 @@ findServer(void)
 
 		if((connect(sock, (struct sockaddr *)server, sizeof(struct sockaddr)) < 0) ||
 		   (send(sock, "PING\n", 5, 0) < 5)) {
-			cli_errmsg("findServer: Check server %d - it may be down\n", i);
+			const char *hostname = cli_strtok(serverHostNames, i, ":");
+			cli_warnmsg("findServer: Check clamd server %s - it may be down\n", hostname);
 			if(use_syslog)
-				syslog(LOG_WARNING, "findServer: Check server %d - it may be down", i);
+				syslog(LOG_WARNING,
+					"findServer: Check clamd server %s - it may be down",
+					hostname);
 			socks[i] = -1;
 			close(sock);
 			continue;
@@ -1542,7 +1569,7 @@ findServer(void)
 	tv.tv_sec = readTimeout;
 	tv.tv_usec = 0;
 
-	retval = select(maxsock, &rfds, NULL, NULL, &tv);
+	retval = select(maxsock + 1, &rfds, NULL, NULL, &tv);
 	if(retval < 0)
 		perror("select");
 
@@ -1870,10 +1897,9 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 
 	if(hflag)
 		header_list_add(privdata->headers, headerf, headerv);
-
-	if((strcasecmp(headerf, "Received") == 0) &&
+	else if((strcasecmp(headerf, "Received") == 0) &&
 	   (strncasecmp(headerv, "from ", 5) == 0)) {
-	   	if(privdata->received)
+		if(privdata->received)
 			free(privdata->received);
 		privdata->received = strdup(headerv);
 	}
@@ -2140,9 +2166,15 @@ clamfi_eom(SMFICTX *ctx)
 		}
 	} else {
 		char reject[1024];
-		char **to;
+		char **to, *virusname;
 
 		*ptr = '\0';	/* Remove the "FOUND" word */
+
+		/* skip over 'stream/filename: ' at the start */
+		if((virusname = strchr(mess, ':')) != NULL)
+			virusname = &virusname[2];
+		else
+			virusname = mess;
 
 		if(!nflag)
 			smfi_addheader(ctx, "X-Virus-Status", "Infected");
@@ -2185,7 +2217,7 @@ clamfi_eom(SMFICTX *ctx)
 			(void)strcpy(ptr, "\n");
 
 			/* Include the sendmail queue ID in the log */
-			syslog(LOG_NOTICE, "%s: %s %s", sendmailId, mess, err);
+			syslog(LOG_NOTICE, "%s: %s%s", sendmailId, mess, err);
 #ifdef	CL_DEBUG
 			cli_dbgmsg("%s\n", err);
 #endif
@@ -2196,7 +2228,16 @@ clamfi_eom(SMFICTX *ctx)
 			char cmd[128];
 			FILE *sendmail;
 
-			snprintf(cmd, sizeof(cmd), "%s -t", SENDMAIL_BIN);
+			/*
+			 * If the oflag is given this sendmail command
+			 * will cause the mail being generated here to be
+			 * scanned. So if oflag is given we just put the
+			 * item in the queue so there's no scanning of two
+			 * messages at once. It'll still be scanned, but
+			 * not at the same time as the incoming message
+			 */
+			snprintf(cmd, sizeof(cmd) - 1,
+				(oflag) ? "%s -t -odq" : "%s -t", SENDMAIL_BIN);
 
 			sendmail = popen(cmd, "w");
 
@@ -2254,13 +2295,18 @@ clamfi_eom(SMFICTX *ctx)
 
 					for(to = privdata->to; *to; to++)
 						fprintf(sendmail, "\t%s\n", *to);
-					/* skip over 'stream: ' at the start */
-					fprintf(sendmail, "contained %sand has not been delivered.\n", &mess[8]);
+					fprintf(sendmail, "contained %sand has not been delivered.\n", virusname);
 
 					if(privdata->filename != NULL)
 						fprintf(sendmail, "\nThe message in question has been quarantined as %s\n", privdata->filename);
 
-					if(privdata->received)
+					if(hflag) {
+						fprintf(sendmail, "\nThe message was received by %s from %s via %s\n\n",
+							smfi_getsymval(ctx, "j"), from,
+							smfi_getsymval(ctx, "_"));
+						fputs("For your information, the original message headers were:\n\n", sendmail);
+						header_list_print(privdata->headers, sendmail);
+					} else if(privdata->received)
 						/*
 						 * TODO: parse this to find
 						 * real infected machine.
@@ -2274,13 +2320,6 @@ clamfi_eom(SMFICTX *ctx)
 						fprintf(sendmail, "\nThe infected machine is likely to be here:\n%s\t\n",
 							privdata->received);
 
-					if(hflag) {
-						fprintf(sendmail, "\nThe message was received by %s from %s via %s\n\n",
-							smfi_getsymval(ctx, "j"), from,
-							smfi_getsymval(ctx, "_"));
-						fputs("For your information, the original message headers were:\n\n", sendmail);
-						header_list_print(privdata->headers, sendmail);
-					}
 				}
 
 				pclose(sendmail);
@@ -2322,8 +2361,7 @@ clamfi_eom(SMFICTX *ctx)
 		else
 			rc = SMFIS_DISCARD;
 
-		/* skip over 'stream: ' at the start */
-		snprintf(reject, sizeof(reject) - 1, "%sdetected by ClamAV - http://www.clamav.net", &mess[8]);
+		snprintf(reject, sizeof(reject) - 1, "%sdetected by ClamAV - http://www.clamav.net", virusname);
 		smfi_setreply(ctx, "550", "5.7.1", reject);
 	}
 	clamfi_cleanup(ctx);
@@ -2449,7 +2487,7 @@ clamfi_free(struct privdata *privdata)
 		if(debug_level >= 9)
 			cli_dbgmsg("Free privdata\n");
 #endif
-	   	if(privdata->received)
+		if(privdata->received)
 			free(privdata->received);
 		free(privdata);
 	}
@@ -2694,8 +2732,11 @@ header_list_print(header_list_t list, FILE *fp)
 {
 	const struct header_node_t *iter;
 
-	for(iter = list->first; iter; iter = iter->next)
+	for(iter = list->first; iter; iter = iter->next) {
+		if(strncmp(iter->header, "From", 4) == 0)
+			putc('>', fp);
 		fprintf(fp, "%s\n", iter->header);
+	}
 }
 
 /*
@@ -2742,7 +2783,7 @@ connect2clamd(struct privdata *privdata)
 		privdata->filename = (char *)cli_malloc(strlen(quarantine_dir) + 19);
 
 		sprintf(privdata->filename, "%s/%02d%02d%02d", quarantine_dir,
-			YY, MM, DD); 
+			YY, MM, DD);
 
 		(void)mkdir(privdata->filename, 0700);
 

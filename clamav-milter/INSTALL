@@ -120,6 +120,10 @@ in a directory that can be written by everyone. For example ensure that /var/run
 is owned and writable only by root and add entries for 'User' and
 'FixStaleSocket' in clamav.conf.
 
+When using UNIX domain sockets via the LocalSocket option of clamav.conf,
+we recommend that you use the --quarantine-dir option since that may improve
+performance.
+
 CHANGE HISTORY
 
 Changes
@@ -241,7 +245,7 @@ Changes
 		mail logs. Based on an idea by Jim Allen,
 		<Jim.Allen@Heartsine.co.uk>
 0.66l	7/2/04	Updated URL reference
- 		Added new config.h mechanism
+		Added new config.h mechanism
 0.66m	9/2/04	Added Hflag from "Leonid Zeitlin" <lz@europe.com>
 0.66n	13/2/04	Added TCPwrappers support
 		Removed duplication in version string
@@ -340,6 +344,16 @@ Changes
 		TCP_WRAPPERS code now uses inet_ntop()
 		Simplify virus string
 		Sort out tabs in the hard coded e-mail message
+0.70q	22/4/04	No need to parse the received line if --headers is given
+		If -outgoing is given put generated emails in the deferred
+			queue to avoid the milter being called twice at the
+			same time (one on the incoming one on the outgoing)
+		header_list_print, ensure From lines are escaped, may not be
+			needed but it is better to be on the safe side
+		When loadbalancing, fail to start only if no servers can be
+			reached (used to fail if any one server could not be
+			reached)
+		Not all servers were load balanced
 
 BUG REPORTS
 
