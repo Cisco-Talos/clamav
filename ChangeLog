@@ -1,3 +1,8 @@
+Thu Sep 23 09:46:06 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Scan multipart/digest messages (suggested by "Andrey J.
+				Melnikoff (TEMHOTA)" <temnota@kmv.ru>)
+
 Wed Sep 22 17:11:23 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Build if libcurl doesn't support
