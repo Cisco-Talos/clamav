@@ -1,3 +1,8 @@
+Fri May 28 14:01:48 BST 2004 (trog)
+-----------------------------------
+  *  libclamav/vba_extract.[ch]: Add PowerPoint endian conversion and small
+	fixes. Export interface, ready to go.
+
 Thu May 27 22:11:08 CEST 2004 (tk)
 ----------------------------------
   * contrib: update init script for SuSE (Martin Fuxa <yeti*email.cz>)

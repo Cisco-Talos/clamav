@@ -694,7 +694,8 @@ static int ppt_read_atom_header(int fd, atom_header_t *atom_header)
 	if (cli_readn(fd, &atom_header->ver_inst, 2) != 2) {
 		cli_dbgmsg("read ppt_current_user failed\n");
 		return FALSE;
-	}	
+	}
+	atom_header->ver_inst = vba_endian_convert_16(atom_header->ver_inst, FALSE);
 	atom_header->version = atom_header->ver_inst & 0x000f;
 	atom_header->instance = atom_header->ver_inst >> 4;
 	if (cli_readn(fd, &atom_header->type, 2) != 2) {
@@ -705,6 +706,8 @@ static int ppt_read_atom_header(int fd, atom_header_t *atom_header)
 		cli_dbgmsg("read ppt_current_user failed\n");
 		return FALSE;
 	}
+	atom_header->type = vba_endian_convert_16(atom_header->type, FALSE);
+	atom_header->length = vba_endian_convert_32(atom_header->length, FALSE);
 	return TRUE;
 }
 
@@ -732,6 +735,10 @@ static void ppt_print_useredit(ppt_useredit_t *ppt_useredit)
 static int ppt_read_useredit(int fd, ppt_useredit_t *ppt_useredit)
 {
 	if (!ppt_read_atom_header(fd, &ppt_useredit->atom_hdr)) {
+		return FALSE;
+	}
+	if (ppt_useredit->atom_hdr.type != 0x0FF5) {
+		cli_dbgmsg("read ppt_useredit failed, wrong atom type\n");
 		return FALSE;
 	}
 	if (cli_readn(fd, &ppt_useredit->last_slide_id, 4) != 4) {
@@ -762,6 +769,13 @@ static int ppt_read_useredit(int fd, ppt_useredit_t *ppt_useredit)
 		cli_dbgmsg("read ppt_useredit failed\n");
 		return FALSE;
 	}
+	ppt_useredit->last_slide_id = vba_endian_convert_32(ppt_useredit->last_slide_id, FALSE);
+	ppt_useredit->version = vba_endian_convert_32(ppt_useredit->version, FALSE);
+	ppt_useredit->last_edit_offset = vba_endian_convert_32(ppt_useredit->last_edit_offset, FALSE);
+	ppt_useredit->persist_dir_offset = vba_endian_convert_32(ppt_useredit->persist_dir_offset, FALSE);
+	ppt_useredit->document_ref = vba_endian_convert_32(ppt_useredit->document_ref, FALSE);
+	ppt_useredit->max_persist = vba_endian_convert_32(ppt_useredit->max_persist, FALSE);
+	ppt_useredit->last_view_type = vba_endian_convert_16(ppt_useredit->last_view_type, FALSE);
 	return TRUE;
 }
 
@@ -775,6 +789,10 @@ static void ppt_print_current_user(ppt_currentuser_t *ppt_current_user)
 static int ppt_read_current_user(int fd, ppt_currentuser_t *ppt_current_user)
 {
 	if (!ppt_read_atom_header(fd, &ppt_current_user->atom_hdr)) {
+		return FALSE;
+	}
+	if (ppt_current_user->atom_hdr.type != 0x0FF6) {
+		cli_dbgmsg("read ppt_current_user failed, wrong atom type\n");
 		return FALSE;
 	}
 	if (cli_readn(fd, &ppt_current_user->len, 4) != 4) {
@@ -793,6 +811,14 @@ static int ppt_read_current_user(int fd, ppt_currentuser_t *ppt_current_user)
 	
 	/* Don't need to read the rest of the Current User file in order
 		to extract what we need */
+	
+	ppt_current_user->len = vba_endian_convert_32(ppt_current_user->len, FALSE);
+	ppt_current_user->magic = vba_endian_convert_32(ppt_current_user->magic, FALSE);
+	ppt_current_user->current_edit_offset = vba_endian_convert_32(ppt_current_user->current_edit_offset, FALSE);
+	if (ppt_current_user->magic != 0xE391C05F) {
+		cli_dbgmsg("read ppt_current_user failed, wrong magic\n");
+		return FALSE;
+	}
 	return TRUE;
 }
 
@@ -811,9 +837,12 @@ static uint32_t *ppt_read_persist_dir(int fd, ppt_useredit_t *ppt_useredit)
 		return NULL;
 	}
 	ppt_print_atom_header(&atom_header);
-	
+	if (atom_header.type != 0x1772) {
+		cli_dbgmsg("read ppt_current_user failed, wrong atom type\n");
+		return NULL;
+	}
 	size = sizeof(uint32_t) * (ppt_useredit->max_persist+1);
-	persist_dir = malloc(size);
+	persist_dir = cli_malloc(size);
 	if (!persist_dir) {
 		return NULL;
 	}
@@ -826,6 +855,7 @@ static uint32_t *ppt_read_persist_dir(int fd, ppt_useredit_t *ppt_useredit)
 			free(persist_dir);
 			return NULL;
 		}
+		noffsets = vba_endian_convert_32(noffsets, FALSE);
 		off_index = noffsets & 0x000FFFFF;
 		noffsets = noffsets >> 20;
 		cli_dbgmsg("nOffsets: %d\n", noffsets);
@@ -842,6 +872,7 @@ static uint32_t *ppt_read_persist_dir(int fd, ppt_useredit_t *ppt_useredit)
 				free(persist_dir);
 				return NULL;
 			}
+			persist_dir[off_index+i-1] = vba_endian_convert_32(persist_dir[off_index+i-1], FALSE);
 			cli_dbgmsg("persist_dir[%d] = 0x%.8x\n", off_index+i-1, persist_dir[off_index+i-1]);
 			off_count++;
 		}
@@ -860,14 +891,17 @@ static int ppt_unlzw(const char *dir, int fd, uint32_t length)
 	uint32_t bufflen;
 	z_stream stream;
 	
-	fullname = malloc(strlen(dir) + 17);
+	fullname = cli_malloc(strlen(dir) + 17);
+	if (!fullname) {
+		return FALSE;
+	}
 	sprintf(fullname, "%s/ppt%.8x.doc", dir, lseek(fd, 0, SEEK_CUR));
 	
 	ofd = open(fullname, O_WRONLY|O_CREAT|O_TRUNC, 0600);
 	free(fullname);
         if (ofd == -1) {
                 cli_dbgmsg("ppt_unlzw Open outfile failed\n");
-                return -1;
+                return FALSE;
         }
 	
 	stream.zalloc = Z_NULL;
@@ -1028,6 +1062,7 @@ char *ppt_vba_read(const char *dir)
 							free(out_dir);
 							return NULL;
 						}
+						ole_id = vba_endian_convert_32(ole_id, FALSE);
 						cli_dbgmsg("OleID: %d, length: %d\n",
 								ole_id, atom_header.length-4);
 						if (!ppt_unlzw(out_dir, fd, atom_header.length-4)) {
@@ -1052,7 +1087,8 @@ char *ppt_vba_read(const char *dir)
 			return NULL;
 		}
 	} while (ppt_useredit.last_edit_offset != 0);
-
+	
+	close(fd);
 	return out_dir;
 }	
 
