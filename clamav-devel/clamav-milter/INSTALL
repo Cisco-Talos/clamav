@@ -504,6 +504,7 @@ Changes
 0.80b	27/9/04	Added quit() routine to tidy when shutting down
 		honour HAVE_IN_ADDR_T
 		Added --broadcast option
+0.80c	27/9/04	Added iface option to --broadcast
 
 INTERNATIONALISATION
 

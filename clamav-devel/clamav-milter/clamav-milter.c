@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.134  2004/09/27 17:08:31  nigelhorne
+ * Add iface option to --broadcast
+ *
  * Revision 1.133  2004/09/27 12:43:23  nigelhorne
  * Added --broadcast
  *
@@ -410,9 +413,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.133 2004/09/27 12:43:23 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.134 2004/09/27 17:08:31 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80b"
+#define	CM_VERSION	"0.80c"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -444,6 +447,7 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.133 2004/09/27 12:43:23 ni
 #include <assert.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <net/if.h>
 #include <arpa/inet.h>
 #include <sys/un.h>
 #include <stdarg.h>
@@ -641,10 +645,11 @@ static	int	bflag = 0;	/*
 				 * sender. This probably isn't a good idea
 				 * since most reply addresses will be fake
 				 */
-static	int	Bflag = 0;	/*
+static	const	char	*iface;	/*
 				 * Broadcast a message when a virus is found,
 				 * this allows remote network management
 				 */
+static	int	broadcastSock = -1;
 static	int	pflag = 0;	/*
 				 * Send a warning to the postmaster only,
 				 * this means user's won't be told when someone
@@ -774,7 +779,7 @@ help(void)
 
 	puts(_("\t--advisory\t\t-A\tFlag viruses rather than deleting them."));
 	puts(_("\t--bounce\t\t-b\tSend a failure message to the sender."));
-	puts(_("\t--broadcast\t\t-B\tBroadcast to a network manager when a virus is found."));
+	puts(_("\t--broadcast\t\t-B [IFACE]\tBroadcast to a network manager when a virus is found."));
 	puts(_("\t--config-file=FILE\t-c FILE\tRead configuration from FILE."));
 	puts(_("\t--debug\t\t\t-D\tPrint debug messages."));
 	puts(_("\t--dont-log-clean\t-C\tDon't add an entry to syslog that a mail is clean."));
@@ -812,7 +817,7 @@ int
 main(int argc, char **argv)
 {
 	extern char *optarg;
-	int i;
+	int i, Bflag = 0;
 	const char *cfgfile = CL_DEFAULT_CFG;
 	struct cfgstruct *cpt;
 	struct passwd *user;
@@ -860,9 +865,9 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "a:AbBc:CDfF:lm:nNop:PqQ:dhHs:St:T:U:Vx:";
+		const char *args = "a:AbB:c:CDfF:lm:nNop:PqQ:dhHs:St:T:U:Vx:";
 #else
-		const char *args = "a:AbBc:CDfF:lm:nNop:PqQ:dhHs:St:T:U:V";
+		const char *args = "a:AbB:c:CDfF:lm:nNop:PqQ:dhHs:St:T:U:V";
 #endif
 
 		static struct option long_options[] = {
@@ -876,7 +881,7 @@ main(int argc, char **argv)
 				"bounce", 0, NULL, 'b'
 			},
 			{
-				"broadcast", 0, NULL, 'B'
+				"broadcast", 2, NULL, 'B'
 			},
 			{
 				"config-file", 1, NULL, 'c'
@@ -983,6 +988,8 @@ main(int argc, char **argv)
 				break;
 			case 'B':	/* broadcast */
 				Bflag++;
+				if(optarg)
+					iface = optarg;
 				break;
 			case 'c':	/* where is clamd.conf? */
 				cfgfile = optarg;
@@ -1093,10 +1100,39 @@ main(int argc, char **argv)
 		return EX_CONFIG;
 	}
 
+	if(Bflag) {
+		int on;
+
+		broadcastSock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+		/*
+		 * SO_BROADCAST doesn't sent to all NICs on Linux, it only
+		 * broadcasts on eth0, which is why there's an optional argument
+		 * to --broadcast to say which NIC to broadcast on. You can use
+		 * SO_BINDTODEVICE to get around that, but you need to have
+		 * uid == 0 for that
+		 */
+		on = 1;
+		if(setsockopt(broadcastSock, SOL_SOCKET, SO_BROADCAST, (int *)&on, sizeof(on)) < 0) {
+			perror("setsockopt");
+			return EX_UNAVAILABLE;
+		}
+		shutdown(broadcastSock, SHUT_RD);
+	}
+
 	/*
 	 * Drop privileges
 	 */
 	if(getuid() == 0) {
+		if(iface) {
+			struct ifreq ifr;
+
+			memset(&ifr, '\0', sizeof(struct ifreq));
+			strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name) - 1);
+			if(setsockopt(broadcastSock, SOL_SOCKET, SO_BINDTODEVICE, &ifr, sizeof(ifr)) < 0) {
+				perror(iface);
+				return EX_UNAVAILABLE;
+			}
+		}
 		if((cpt = cfgopt(copt, "User")) != NULL) {
 			if((user = getpwnam(cpt->strarg)) == NULL) {
 				fprintf(stderr, _("%s: Can't get information about user %s\n"), argv[0], cpt->strarg);
@@ -1131,7 +1167,11 @@ main(int argc, char **argv)
 					cpt->strarg, user->pw_uid, user->pw_gid);
 		} else
 			fprintf(stderr, _("%s: running as root is not recommended (check \"User\" in clamd.conf)\n"), argv[0]);
+	} else if(iface) {
+		fprintf(stderr, _("%s: Only root can set an interface for --broadcast\n"), argv[0]);
+		return EX_USAGE;
 	}
+
 	if(advisory && quarantine) {
 		fprintf(stderr, _("%s: Advisory mode doesn't work with quarantine mode\n"), argv[0]);
 		return EX_USAGE;
@@ -2707,7 +2747,7 @@ clamfi_eom(SMFICTX *ctx)
 
 		snprintf(reject, sizeof(reject) - 1, _("%s detected by ClamAV - http://www.clamav.net"), virusname);
 		smfi_setreply(ctx, (char *)privdata->rejectCode, "5.7.1", reject);
-		if(Bflag)
+		if(broadcastSock >= 0)
 			broadcast(mess);
 	}
 	clamfi_cleanup(ctx);
@@ -4004,41 +4044,20 @@ quit(void)
 	quitting++;
 
 	if(use_syslog)
-		syslog(LOG_INFO, _("Stopping: %s"), clamav_version);
+		syslog(LOG_INFO, _("Stopping %s"), clamav_version);
 #endif
 }
 
 static void
 broadcast(const char *mess)
 {
-	int on;
 	struct sockaddr_in s;
-	const sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
-
-	if(sock < 0) {
-		perror("socket");
-		return;
-	}
-
-	/*
-	 * SO_BROADCAST doesn't sent to all NICs on Linux, it only broadcasts
-	 * on eth0. You can use SO_BINDTODEVICE to get around that, but you
-	 * need to have uid == 0 for that
-	 */
-	on = 1;
-	if(setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (int *)&on, sizeof(on)) < 0) {
-		perror("setsockopt");
-		close(sock);
-		return;
-	}
 
 	memset(&s, '\0', sizeof(struct sockaddr_in));
 	s.sin_family = AF_INET;
 	s.sin_port = (in_port_t)htons(tcpSocket);
 	s.sin_addr.s_addr = htonl(INADDR_BROADCAST);
 
-	if(sendto(sock, mess, strlen(mess), 0, (struct sockaddr *)&s, sizeof(struct sockaddr_in)) < 0)
+	if(sendto(broadcastSock, mess, strlen(mess), 0, (struct sockaddr *)&s, sizeof(struct sockaddr_in)) < 0)
 		perror("sendto");
-
-	close(sock);
 }

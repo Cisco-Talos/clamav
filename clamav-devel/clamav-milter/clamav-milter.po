@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: bugs@clamav.net\n"
-"POT-Creation-Date: 2004-09-27 14:10+0100\n"
+"POT-Creation-Date: 2004-09-27 18:07+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -26,7 +26,8 @@ msgstr ""
 
 #: clamav-milter.c:779
 msgid ""
-"\t--broadcast\t\t-B\tBroadcast to a network manager when a virus is found."
+"\t--broadcast\t\t-B [IFACE]\tBroadcast to a network manager when a virus is "
+"found."
 msgstr ""
 
 #: clamav-milter.c:780
