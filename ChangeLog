@@ -1,3 +1,7 @@
+Sun Feb  6 10:41:48 GMT 2005 (njh)
+----------------------------------
+  * clamav-milter:	Up-issue to 0.82
+
 Sun Feb  6 09:45:53 GMT 2005 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Speed up the (unimplemented) next generation of mbox

@@ -676,6 +676,9 @@ Changes
 				with, suggestion by "Hank Beatty"
 				<hbeatty@starband.net>
 0.81g	2/2/05:		Call watchdog if neither --external nor SESSION
+0.82	6/2/05:		On Solaris, ensure when quarantining a file that the
+				old location is removed
+			Up issue
 
 INTERNATIONALISATION
 
