@@ -173,6 +173,7 @@ Changes
 		unescaped From at the start of lines properly
 		Thanks to Michael Dankov <misha@btrc.ru>
 0.65i	9/12/03	Use the location of sendmail discovered by configure
+0.65j	10/12/03 Timeout on waiting for data from clamd
 
 BUG REPORTS
 

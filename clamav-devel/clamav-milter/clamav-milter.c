@@ -176,9 +176,13 @@
  *			unescaped From at the start of lines properly
  *			Thanks to Michael Dankov <misha@btrc.ru>
  *	0.65i	9/12/03	Use the location of sendmail discovered by configure
+ *	0.65j	10/12/03 Timeout on waiting for data from clamd
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.29  2003/12/10 12:00:39  nigelhorne
+ * Timeout on waiting for data from clamd
+ *
  * Revision 1.28  2003/12/09 09:22:14  nigelhorne
  * Use the location of sendmail discovered by configure
  *
@@ -248,9 +252,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.28 2003/12/09 09:22:14 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.29 2003/12/10 12:00:39 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.65i"
+#define	CM_VERSION	"0.65j"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -339,6 +343,7 @@ static	sfsistat	clamfi_close(SMFICTX *ctx);
 static	void		clamfi_cleanup(SMFICTX *ctx);
 static	int		clamfi_send(const struct privdata *privdata, size_t len, const char *format, ...);
 static	char		*strrcpy(char *dest, const char *source);
+static	int	clamd_recv(int sock, char *buf, size_t len);
 
 static	char	clamav_version[128];
 static	int	fflag = 0;	/* force a scan, whatever */
@@ -379,6 +384,10 @@ static	int	cl_error = SMFIS_TEMPFAIL; /*
 				 * unscanned in the event of
 				 * an error. Patch from
 				 * Joe Talbott <josepht@cstone.net>
+				 */
+static	int	threadtimeout = CL_DEFAULT_SCANTIMEOUT; /*
+				 * number of seconds to wait for clamd to
+				 * respond
 				 */
 
 #ifdef	CL_DEBUG
@@ -665,6 +674,15 @@ main(int argc, char **argv)
 	if((max_children == 0) && ((cpt = cfgopt(copt, "MaxThreads")) != NULL))
 		max_children = cpt->numarg;
 
+	if((cpt = cfgopt(copt, "ThreadTimeout")) != NULL) {
+		threadtimeout = cpt->numarg;
+
+		if(threadtimeout < 0) {
+			fprintf(stderr, "%s: ThreadTimeout must not be negative in %s\n",
+				argv[0], cfgfile);
+		}
+	}
+
 	/*
 	 * Get the outgoing socket details - the way to talk to clamd
 	 */
@@ -852,7 +870,7 @@ pingServer(void)
 
 	shutdown(sock, SHUT_WR);
 
-	nbytes = recv(sock, buf, sizeof(buf), 0);
+	nbytes = clamd_recv(sock, buf, sizeof(buf));
 
 	close(sock);
 
@@ -860,6 +878,9 @@ pingServer(void)
 		perror("recv");
 		return 0;
 	}
+	if(nbytes == 0)
+		return 0;
+
 	buf[nbytes] = '\0';
 
 	/* Remove the trailing new line from the reply */
@@ -1136,7 +1157,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 		shutdown(privdata->cmdSocket, SHUT_WR);
 
-		nbytes = recv(privdata->cmdSocket, buf, sizeof(buf), 0);
+		nbytes = clamd_recv(privdata->cmdSocket, buf, sizeof(buf));
 		if(nbytes < 0) {
 			perror("recv");
 			close(privdata->dataSocket);
@@ -1147,10 +1168,10 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			return cl_error;
 		}
 		buf[nbytes] = '\0';
-	#ifdef	CL_DEBUG
+#ifdef	CL_DEBUG
 		if(debug_level >= 4)
 			printf("Received: %s", buf);
-	#endif
+#endif
 		if(sscanf(buf, "PORT %hu\n", &port) != 1) {
 			close(privdata->dataSocket);
 			close(privdata->cmdSocket);
@@ -1170,10 +1191,10 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 		reply.sin_addr.s_addr = inet_addr(serverIP);
 
-	#ifdef	CL_DEBUG
+#ifdef	CL_DEBUG
 		if(debug_level >= 4)
 			printf("Connecting to local port %d\n", port);
-	#endif
+#endif
 
 		rc = connect(privdata->dataSocket, (struct sockaddr *)&reply, sizeof(struct sockaddr_in));
 
@@ -1393,7 +1414,7 @@ clamfi_eom(SMFICTX *ctx)
 		shutdown(privdata->cmdSocket, SHUT_WR);
 	}
 
-	if(recv(privdata->cmdSocket, mess, sizeof(mess), 0) > 0) {
+	if(clamd_recv(privdata->cmdSocket, mess, sizeof(mess)) > 0) {
 		if((ptr = strchr(mess, '\n')) != NULL)
 			*ptr = '\0';
 
@@ -1407,7 +1428,7 @@ clamfi_eom(SMFICTX *ctx)
 #ifdef	CL_DEBUG
 		puts("clamfi_eom: read nothing from clamd");
 #endif
-		mess[0] = '\0';
+		return cl_error;
 	}
 
 	close(privdata->cmdSocket);
@@ -1644,7 +1665,7 @@ clamfi_cleanup(SMFICTX *ctx)
 			/*
 			 * Flush the remote end so that clamd doesn't get a SIGPIPE
 			 */
-			while(recv(privdata->cmdSocket, buf, sizeof(buf), 0) > 0)
+			while(clamd_recv(privdata->cmdSocket, buf, sizeof(buf)) > 0)
 				;
 			close(privdata->cmdSocket);
 			privdata->cmdSocket = -1;
@@ -1740,4 +1761,34 @@ strrcpy(char *dest, const char *source)
 	while((*dest++ = *source++) != '\0')
 		;
 	return(--dest);
+}
+
+/*
+ * Read from clamav - timeout if necessary
+ */
+static int
+clamd_recv(int sock, char *buf, size_t len)
+{
+	fd_set rfds;
+	struct timeval tv;
+
+	if(threadtimeout == 0)
+		return recv(sock, buf, len, 0);
+
+	FD_ZERO(&rfds);
+	FD_SET(sock, &rfds);
+
+	tv.tv_sec = threadtimeout;
+	tv.tv_usec = 0;
+
+	switch(select(sock + 1, &rfds, NULL, NULL, &tv)) {
+		case -1:
+			perror("select");
+			return -1;
+		case 0:
+			if(use_syslog)
+				syslog(LOG_ERR, "No data received from clamd in %d seconds\n", threadtimeout);
+			return 0;
+	}
+	return recv(sock, buf, len, 0);
 }
