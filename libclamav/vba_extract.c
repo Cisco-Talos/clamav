@@ -1205,12 +1205,14 @@ vba_project_t *wm_dir_read(const char *dir)
 	}
 	
 	if (!wm_read_fib(fd, &fib)) {
+		close(fd);
 		return NULL;
 	}
 	wm_print_fib(&fib);
 	
 	if (lseek(fd, fib.macro_offset, SEEK_SET) != fib.macro_offset) {
 		cli_dbgmsg("lseek macro_offset failed\n");
+		close(fd);
 		return NULL;
 	}
 	
@@ -1218,6 +1220,7 @@ vba_project_t *wm_dir_read(const char *dir)
 	
 	if (cli_readn(fd, &start_id, 1) != 1) {
 		cli_dbgmsg("read start_id failed\n");
+		close(fd);
 		return NULL;
 	}
 	cli_dbgmsg("start_id: %d\n", start_id);
@@ -1225,6 +1228,7 @@ vba_project_t *wm_dir_read(const char *dir)
 	while ((lseek(fd, 0, SEEK_CUR) < end_offset) && !done) {
 		if (cli_readn(fd, &info_id, 1) != 1) {
 			cli_dbgmsg("read macro_info failed\n");
+			close(fd);
 			return NULL;
 		}
 		switch (info_id) {
@@ -1337,6 +1341,7 @@ abort:
 	if (macro_intnames) {
 		wm_free_intnames(macro_intnames);
 	}
+	close(fd);
 	return vba_project;
 }
 
