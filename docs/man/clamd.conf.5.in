@@ -90,7 +90,7 @@ TCP port number the daemon will listen on.
 Default: disabled
 .TP 
 \fBTCPAddr STRING\fR
-TCP address to bind to. By default clamd binds to INADDR_ANY.
+TCP socket address to bind to. By default clamd binds to INADDR_ANY.
 .br 
 Default: disabled
 .TP 

@@ -1,3 +1,7 @@
+Tue Jan 11 20:24:36 CET 2005 (tk)
+---------------------------------
+  * docs: Fix small typos in man pages (reported by Luca)
+
 Tue Jan 11 02:27:24 CET 2005 (tk)
 ---------------------------------
   * libclamav/scanners.c: Fix possible crash when handling file information in
