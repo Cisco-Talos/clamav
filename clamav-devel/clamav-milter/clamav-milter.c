@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.155  2004/12/01 22:27:38  nigelhorne
+ * Added --internal
+ *
  * Revision 1.154  2004/11/20 23:02:23  nigelhorne
  * Validate error message from clamd
  *
@@ -473,9 +476,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.154 2004/11/20 23:02:23 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.155 2004/12/01 22:27:38 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80t"
+#define	CM_VERSION	"0.80u"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -644,6 +647,7 @@ struct	privdata {
 	u_char	*body;		/* body of the message if Sflag is set */
 	size_t	bodyLen;	/* number of bytes in body */
 	header_list_t headers;	/* Message headers */
+	int	statusCount;	/* number of X-Virus-Status headers */
 	long	numBytes;	/* Number of bytes sent so far */
 	char	*received;	/* keep track of received from */
 	const	char	*rejectCode;	/* 550 or 554? */
@@ -703,6 +707,11 @@ static	char	clamav_version[VERSION_LENGTH + 1];
 static	int	fflag = 0;	/* force a scan, whatever */
 static	int	oflag = 0;	/* scan messages from our machine? */
 static	int	lflag = 0;	/* scan messages from our site? */
+static	int	internal = 0;	/* scan messages ourself or use clamd? */
+static	struct	cl_node	*root = NULL;
+static	struct	cl_limits	limits;
+static	struct	cl_stat	dbstat;
+
 static	int	bflag = 0;	/*
 				 * send a failure (bounce) message to the
 				 * sender. This probably isn't a good idea
@@ -864,6 +873,7 @@ help(void)
 	puts(_("\t--force-scan\t\t-f\tForce scan all messages (overrides (-o and -l)."));
 	puts(_("\t--help\t\t\t-h\tThis message."));
 	puts(_("\t--headers\t\t-H\tInclude original message headers in the report."));
+	puts(_("\t--internal\t\t-I\tUse the internal scanner."));
 	puts(_("\t--local\t\t\t-l\tScan messages sent from machines on our LAN."));
 	puts(_("\t--max-childen\t\t-m\tMaximum number of concurrent scans."));
 	puts(_("\t--outgoing\t\t-o\tScan outgoing messages from this machine."));
@@ -895,7 +905,6 @@ main(int argc, char **argv)
 	int i, Bflag = 0;
 	const char *cfgfile = CL_DEFAULT_CFG;
 	struct cfgstruct *cpt;
-	struct passwd *user;
 	const char *pidfile = NULL;
 	char version[VERSION_LENGTH + 1];
 #ifdef	SESSION
@@ -985,6 +994,9 @@ main(int argc, char **argv)
 			},
 			{
 				"pidfile", 1, NULL, 'i'
+			},
+			{
+				"internal-scanner", 0, NULL, 'I'
 			},
 			{
 				"local", 0, NULL, 'l'
@@ -1095,6 +1107,11 @@ main(int argc, char **argv)
 			case 'i':	/* pidfile */
 				pidfile = optarg;
 				break;
+			case 'I':	/* use clamav-milter's internal scanner */
+				/* FIXME: error if --servers is given */
+				/* TODO: support freshclam's daemon notify */
+				internal++;
+				break;
 			case 'l':	/* scan mail from the lan */
 				lflag++;
 				break;
@@ -1125,6 +1142,10 @@ main(int argc, char **argv)
 				smfilter.xxfi_flags |= SMFIF_CHGHDRS|SMFIF_ADDRCPT|SMFIF_DELRCPT;
 				break;
 			case 's':	/* server running clamd */
+				if(internal) {
+					fputs("--internal is not compatible with --server\n", stderr);
+					return EX_USAGE;
+				}
 				serverHostNames = optarg;
 				break;
 			case 'F':	/* signature file */
@@ -1157,9 +1178,9 @@ main(int argc, char **argv)
 #endif
 			default:
 #ifdef	CL_DEBUG
-				fprintf(stderr, "Usage: %s [-b] [-c FILE] [-F FILE] [--max-children=num] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-s SERVER] [-S] [-x#] [-U PATH] socket-addr\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-b] [-c FILE] [-F FILE] [--max-children=num] [-l] [-I] [-o] [-p address] [-P] [-q] [-Q USER] [-s SERVER] [-S] [-x#] [-U PATH] socket-addr\n", argv[0]);
 #else
-				fprintf(stderr, "Usage: %s [-b] [-c FILE] [-F FILE] [--max-children=num] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-s SERVER] [-S] [-U PATH] socket-addr\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-b] [-c FILE] [-F FILE] [--max-children=num] [-l] [-I] [-o] [-p address] [-P] [-q] [-Q USER] [-s SERVER] [-S] [-U PATH] socket-addr\n", argv[0]);
 #endif
 				return EX_USAGE;
 		}
@@ -1218,7 +1239,10 @@ main(int argc, char **argv)
 			return EX_CONFIG;
 #endif
 		}
+		
 		if((cpt = cfgopt(copt, "User")) != NULL) {
+			const struct passwd *user;
+
 			if((user = getpwnam(cpt->strarg)) == NULL) {
 				fprintf(stderr, _("%s: Can't get information about user %s\n"), argv[0], cpt->strarg);
 				return EX_CONFIG;
@@ -1312,6 +1336,7 @@ main(int argc, char **argv)
 			return EX_CONFIG;
 		}
 	}
+	
 	if((cpt = cfgopt(copt, "StreamMaxLength")) != NULL) {
 		if(cpt->numarg < 0) {
 			fprintf(stderr, _("%s: StreamMaxLength must not be negative in %s\n"),
@@ -1320,10 +1345,99 @@ main(int argc, char **argv)
 		}
 		streamMaxLength = (long)cpt->numarg;
 	}
+
+	if(cfgopt(copt, "LogSyslog")) {
+		int fac = LOG_LOCAL6;
+
+		if(cfgopt(copt, "LogVerbose"))
+			logVerbose = 1;
+		use_syslog = 1;
+
+		if((cpt = cfgopt(copt, "LogFacility")) != NULL)
+			if((fac = logg_facility(cpt->strarg)) == -1) {
+				fprintf(stderr, "%s: LogFacility: %s: No such facility\n",
+					argv[0], cpt->strarg);
+				return EX_CONFIG;
+			}
+		openlog("clamav-milter", LOG_CONS|LOG_PID, fac);
+	} else {
+		if(qflag)
+			fprintf(stderr, _("%s: (-q && !LogSyslog): warning - all interception message methods are off\n"),
+				argv[0]);
+		use_syslog = 0;
+	}
 	/*
-	 * Get the outgoing socket details - the way to talk to clamd
+	 * Get the outgoing socket details - the way to talk to clamd, unless
+	 * we're doing the scanning internally
 	 */
-	if((cpt = cfgopt(copt, "LocalSocket")) != NULL) {
+	if(internal) {
+		int signatures = 0;
+		int ret;
+		extern const char *cl_retdbdir(void);	/* FIXME */
+		const char *dbdir = cl_retdbdir();
+
+		/*
+		 * TODO: Set a better version string if DataDirectory hasn't
+		 * been set
+		 * TODO: Set limits
+		 */
+		if((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory")))
+			if(strcmp(dbdir, cpt->strarg) != 0) {
+				char *daily = cli_malloc(strlen(cpt->strarg) + strlen(dbdir) + 15);
+				struct cl_cvd *d1;
+				time_t t = (time_t)0;
+				int v = 0;
+
+				sprintf(daily, "%s/daily.cvd", cpt->strarg);
+				if((d1 = cl_cvdhead(daily))) {
+					struct cl_cvd *d2;
+
+					t = d1->stime;
+					v = d1->version;
+
+					sprintf(daily, "%s/daily.cvd", dbdir);
+					if((d2 = cl_cvdhead(daily))) {
+						if(d1->version > d2->version)
+							dbdir = cpt->strarg;
+						else
+							dbdir = dbdir;
+						t = d2->stime;
+						v = d2->version;
+						cl_cvdfree(d2);
+					} else
+						dbdir = cpt->strarg;
+					cl_cvdfree(d1);
+				}
+				free(daily);
+
+				if(t)
+					snprintf(version, sizeof(version) - 1,
+						"ClamAV %s/%d/%s", VERSION, v,
+						ctime(&t));
+
+			}
+
+		ret = cl_loaddbdir(dbdir, &root, &signatures);
+		if(ret != 0) {
+			fprintf(stderr, "%s\n", cl_strerror(ret));
+			return EX_CONFIG;
+		}
+		if(!root) {
+			fputs("Can't initialize the virus database.\n", stderr);
+			return EX_CONFIG;
+		}
+
+		ret = cl_build(root);
+		if(ret != 0) {
+			fprintf(stderr, "Database initialization error: %s\n", cl_strerror(ret));
+			return EX_CONFIG;
+		}
+		if(use_syslog)
+			syslog(LOG_INFO, _("ClamAV: Protecting against %d viruses"), signatures);
+
+		cl_statinidir(dbdir, &dbstat);
+
+	} else if((cpt = cfgopt(copt, "LocalSocket")) != NULL) {
 #ifdef	SESSION
 		struct sockaddr_un server;
 #endif
@@ -1509,19 +1623,26 @@ main(int argc, char **argv)
 		return EX_CONFIG;
 	}
 
-#ifdef	SESSION
-	clamav_versions = (char **)cli_malloc(numServers * sizeof(char *));
-	if(clamav_versions == NULL)
-		return EX_TEMPFAIL;
-
-	for(i = 0; i < numServers; i++) {
-		clamav_versions[i] = strdup(version);
-		if(clamav_versions[i] == NULL)
+	if(internal) {
+		clamav_versions = (char **)cli_malloc(sizeof(char *));
+		if(clamav_versions == NULL)
 			return EX_TEMPFAIL;
-	}
-#endif
+		clamav_version = strdup(version);
+#ifdef	SESSION
+	} else {
+		clamav_versions = (char **)cli_malloc(numServers * sizeof(char *));
+		if(clamav_versions == NULL)
+			return EX_TEMPFAIL;
 
-	if((quarantine_dir == NULL) && localSocket) {
+		for(i = 0; i < numServers; i++) {
+			clamav_versions[i] = strdup(version);
+			if(clamav_versions[i] == NULL)
+				return EX_TEMPFAIL;
+		}
+#endif
+	}
+
+	if(((quarantine_dir == NULL) && localSocket) || internal) {
 		/* set the temporary dir */
 		if((cpt = cfgopt(copt, "TemporaryDirectory"))) {
 			tmpdir = cpt->strarg;
@@ -1547,7 +1668,7 @@ main(int argc, char **argv)
 	if(!cfgopt(copt, "Foreground")) {
 #ifdef	CL_DEBUG
 		printf(_("When debugging it is recommended that you use Foreground mode in %s\n"), cfgfile);
-		puts(_("So that you can see all of the messages"));
+		puts(_("\tso that you can see all of the messages"));
 #endif
 
 		switch(fork()) {
@@ -1594,35 +1715,6 @@ main(int argc, char **argv)
 	if((cpt = cfgopt(copt, "PidFile")) != NULL)
 		pidFile = cpt->strarg;
 
-	if(cfgopt(copt, "LogSyslog")) {
-		int fac = LOG_LOCAL6;
-
-		if(cfgopt(copt, "LogVerbose"))
-			logVerbose = 1;
-		use_syslog = 1;
-
-		if((cpt = cfgopt(copt, "LogFacility")) != NULL)
-			if((fac = logg_facility(cpt->strarg)) == -1) {
-				fprintf(stderr, "%s: LogFacility: %s: No such facility\n",
-					argv[0], cpt->strarg);
-				return EX_CONFIG;
-			}
-
-		openlog("clamav-milter", LOG_CONS|LOG_PID, fac);
-		if(logVerbose)
-			syslog(LOG_INFO, _("Starting: %s"), clamav_version);
-		else
-			syslog(LOG_INFO, "%s", clamav_version);
-#ifdef	CL_DEBUG
-		if(debug_level > 0)
-			syslog(LOG_DEBUG, _("Debugging is on"));
-#endif
-	} else {
-		if(qflag)
-			fprintf(stderr, _("%s: (-q && !LogSyslog): warning - all interception message methods are off\n"),
-				argv[0]);
-		use_syslog = 0;
-	}
 	broadcast(_("Starting clamav-milter"));
 
 	if(pidfile) {
@@ -1674,8 +1766,18 @@ main(int argc, char **argv)
 
 	signal(SIGPIPE, SIG_IGN);
 
-	if(logVerbose)
-		syslog(LOG_INFO, _("Started: %s"), clamav_version);
+	if(use_syslog) {
+		if(logVerbose)
+			syslog(LOG_INFO, _("Starting: %s"), clamav_version);
+		else
+			syslog(LOG_INFO, "%s", clamav_version);
+#ifdef	CL_DEBUG
+		if(debug_level > 0)
+			syslog(LOG_DEBUG, _("Debugging is on"));
+#endif
+	}
+
+	cli_dbgmsg("Started: %s\n", clamav_version);
 
 	return smfi_main();
 }
@@ -2354,7 +2456,13 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 
 	if(strcasecmp(headerf, "X-Virus-Status") == 0)
 		if(!nflag) {	/* remove any existing claims */
-			smfi_chgheader(ctx, "X-Virus-Status", 1, NULL);
+			if(smfi_chgheader(ctx, "X-Virus-Status", ++privdata->statusCount, NULL) == MI_FAILURE)
+				/*
+				 * FIXME: It would be useful to know *why* it
+				 * had failed to be deleted
+				 */
+				if(use_syslog)
+					syslog(LOG_ERR, _("Failed to delete X-Virus-Status header %d"), privdata->statusCount);
 			return SMFIS_CONTINUE;
 		}
 
@@ -2525,15 +2633,39 @@ clamfi_eom(SMFICTX *ctx)
 	assert(privdata->dataSocket >= 0);
 #endif
 
-	close(privdata->dataSocket);
-	privdata->dataSocket = -1;
+	if(!internal) {
+		close(privdata->dataSocket);
+		privdata->dataSocket = -1;
+	}
 
-	if(privdata->filename) {
+	if(internal) {
+		const char *virname;
+		unsigned long int scanned = 0L;
+
+		/*
+		 * TODO: read the options from clamd.conf
+		 * TODO: consider using cl_scandesc and not using a temporary
+		 *	file from the mail being read in
+		 */
+		rc = cl_scanfile(privdata->filename, &virname, &scanned, root,
+			&limits, CL_SCAN_STDOPT);
+
+		if(rc == CL_CLEAN)
+			strcpy(mess, "OK");
+		else if(rc == CL_VIRUS)
+			sprintf(mess, "%s: %s FOUND", privdata->filename, virname);
+		else
+			sprintf(mess, "%s: %s ERROR", privdata->filename, cl_strerror(rc));
+
+#ifdef	SESSION
+		session = NULL;
+#endif
+	} else if(privdata->filename) {
 		char cmdbuf[1024];
 		/*
 		 * Create socket to talk to clamd.
 		 */
-#ifdef	SESSION
+#ifndef	SESSION
 		struct sockaddr_un server;
 #endif
 		int nbytes;
@@ -2583,45 +2715,52 @@ clamfi_eom(SMFICTX *ctx)
 		session = &sessions[privdata->serverNumber];
 #endif
 
+	if(!internal) {
 #ifdef	SESSION
-	if(clamd_recv(session->sock, mess, sizeof(mess)) > 0) {
-#else
-	if(clamd_recv(privdata->cmdSocket, mess, sizeof(mess)) > 0) {
-#endif
-		if((ptr = strchr(mess, '\n')) != NULL)
-			*ptr = '\0';
-
-		if(logVerbose)
-			syslog(LOG_DEBUG, _("clamfi_eom: read %s"), mess);
-		cli_dbgmsg(_("clamfi_eom: read %s\n"), mess);
-	} else {
-		/*
-		 * TODO: if more than one host has been specified, try
-		 * another one - setting cl_error to SMFIS_TEMPFAIL helps
-		 * by forcing a retry
-		 */
-		clamfi_cleanup(ctx);
-		syslog(LOG_NOTICE, _("clamfi_eom: read nothing from clamd"));
 #ifdef	CL_DEBUG
-		cli_dbgmsg(_("clamfi_eom: read nothing from clamd\n"));
+		if(debug_level >= 4)
+			cli_dbgmsg(_("Wating to read status from fd %d\n"),
+				session->sock);
 #endif
+		if(clamd_recv(session->sock, mess, sizeof(mess)) > 0) {
+#else
+		if(clamd_recv(privdata->cmdSocket, mess, sizeof(mess)) > 0) {
+#endif
+			if((ptr = strchr(mess, '\n')) != NULL)
+				*ptr = '\0';
+
+			if(logVerbose)
+				syslog(LOG_DEBUG, _("clamfi_eom: read %s"), mess);
+			cli_dbgmsg(_("clamfi_eom: read %s\n"), mess);
+		} else {
+			/*
+			 * TODO: if more than one host has been specified, try
+			 * another one - setting cl_error to SMFIS_TEMPFAIL helps
+			 * by forcing a retry
+			 */
+			clamfi_cleanup(ctx);
+			syslog(LOG_NOTICE, _("clamfi_eom: read nothing from clamd"));
+#ifdef	CL_DEBUG
+			cli_dbgmsg(_("clamfi_eom: read nothing from clamd\n"));
+#endif
+#ifdef	SESSION
+			pthread_mutex_lock(&sstatus_mutex);
+			session->status = CMDSOCKET_DOWN;
+			pthread_mutex_unlock(&sstatus_mutex);
+#endif
+			return cl_error;
+		}
+
 #ifdef	SESSION
 		pthread_mutex_lock(&sstatus_mutex);
-		session->status = CMDSOCKET_DOWN;
+		if(session->status == CMDSOCKET_INUSE)
+			session->status = CMDSOCKET_FREE;
 		pthread_mutex_unlock(&sstatus_mutex);
-#endif
-		return cl_error;
-	}
-
-#ifdef	SESSION
-	pthread_mutex_lock(&sstatus_mutex);
-	if(session->status == CMDSOCKET_INUSE)
-		session->status = CMDSOCKET_FREE;
-	pthread_mutex_unlock(&sstatus_mutex);
 #else
-	close(privdata->cmdSocket);
-	privdata->cmdSocket = -1;
+		close(privdata->cmdSocket);
+		privdata->cmdSocket = -1;
 #endif
+	}
 
 	sendmailId = smfi_getsymval(ctx, "i");
 	if(sendmailId == NULL)
@@ -2633,7 +2772,7 @@ clamfi_eom(SMFICTX *ctx)
 		/*
 		 * Include the hostname where the scan took place
 		 */
-		if(localSocket) {
+		if(localSocket || internal) {
 #ifdef	MAXHOSTNAMELEN
 			char hostname[MAXHOSTNAMELEN + 1];
 #else
@@ -2997,7 +3136,7 @@ static sfsistat
 clamfi_abort(SMFICTX *ctx)
 {
 #ifdef	CL_DEBUG
-	if(use_syslog)
+	if(logVerbose)
 		syslog(LOG_DEBUG, "clamfi_abort");
 #endif
 
@@ -3108,45 +3247,53 @@ clamfi_free(struct privdata *privdata)
 		}
 
 #ifdef	SESSION
-		session = &sessions[privdata->serverNumber];
-		pthread_mutex_lock(&sstatus_mutex);
-		if(session->status == CMDSOCKET_INUSE) {
+		if(!internal) {
+			session = &sessions[privdata->serverNumber];
+			pthread_mutex_lock(&sstatus_mutex);
+			if(session->status == CMDSOCKET_INUSE) {
+				/*
+				 * Probably we've got here because
+				 * MaxStreamLength has been reached
+				 */
 #if	0
-			pthread_mutex_unlock(&sstatus_mutex);
-			if(readTimeout) {
-				char buf[64];
-				const int fd = session->status;
+				pthread_mutex_unlock(&sstatus_mutex);
+				if(readTimeout) {
+					char buf[64];
+					const int fd = session->sock;
 
-				cli_dbgmsg("clamfi_free: flush server %d fd %d\n",
-					privdata->serverNumber, fd);
+					cli_dbgmsg("clamfi_free: flush server %d fd %d\n",
+						privdata->serverNumber, fd);
+
+					/*
+					 * FIXME: whenever this code gets
+					 *	executed, all of the PINGs fail
+					 *	in the next watchdog cycle
+					 */
+					while(clamd_recv(fd, buf, sizeof(buf)) > 0)
+						;
+				}
+				pthread_mutex_lock(&sstatus_mutex);
+#endif
+				/* Force a reset */
+				session->status = CMDSOCKET_DOWN;
+			}
+			pthread_mutex_unlock(&sstatus_mutex);
+#else
+			if(privdata->cmdSocket >= 0) {
+				char buf[64];
 
 				/*
-				 * FIXME: whenever this code gets executed,
-				 *	all of the PINGs fail in the next
-				 *	watchdog cycle
+				 * Flush the remote end so that clamd doesn't
+				 * get a SIGPIPE
 				 */
-				while(clamd_recv(fd, buf, sizeof(buf)) > 0)
-					;
+				if(readTimeout)
+					while(clamd_recv(privdata->cmdSocket, buf, sizeof(buf)) > 0)
+						;
+				close(privdata->cmdSocket);
+				privdata->cmdSocket = -1;
 			}
-			pthread_mutex_lock(&sstatus_mutex);
 #endif
-			session->status = CMDSOCKET_FREE;
 		}
-		pthread_mutex_unlock(&sstatus_mutex);
-#else
-		if(privdata->cmdSocket >= 0) {
-			char buf[64];
-
-			/*
-			 * Flush the remote end so that clamd doesn't get a SIGPIPE
-			 */
-			if(readTimeout)
-				while(clamd_recv(privdata->cmdSocket, buf, sizeof(buf)) > 0)
-					;
-			close(privdata->cmdSocket);
-			privdata->cmdSocket = -1;
-		}
-#endif
 		if(privdata->headers)
 			header_list_free(privdata->headers);
 
@@ -3422,7 +3569,7 @@ header_list_add(header_list_t list, const char *headerf, const char *headerv)
 	}
 	new_node->header = header;
 	new_node->next = NULL;
-	if(!list->first)
+	if(list->first == NULL)
 		list->first = new_node;
 	if(list->last)
 		list->last->next = new_node;
@@ -3693,7 +3840,13 @@ connect2clamd(struct privdata *privdata)
 
 #ifdef	CL_DEBUG
 		if(debug_level >= 4)
-			cli_dbgmsg(_("Connecting to local port %d\n"), p);
+#ifdef	SESSION
+			cli_dbgmsg(_("Connecting to local port %d - data %d cmd %d\n"),
+				p, privdata->dataSocket, session->sock);
+#else
+			cli_dbgmsg(_("Connecting to local port %d - data %d cmd %d\n"),
+				p, privdata->dataSocket, privdata->cmdSocket);
+#endif
 #endif
 
 		if(connect(privdata->dataSocket, (struct sockaddr *)&reply, sizeof(struct sockaddr_in)) < 0) {
@@ -4126,7 +4279,7 @@ watchdog(void *a)
 {
 	static pthread_mutex_t watchdog_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-	assert(sessions != NULL);
+	assert(internal || (sessions != NULL));
 
 	while(!quitting) {
 		int i;
@@ -4155,6 +4308,15 @@ watchdog(void *a)
 		cli_dbgmsg("watchdog wakes\n");
 		pthread_mutex_unlock(&watchdog_mutex);
 
+		if(internal) {
+			/*
+			 * TODO: reload automatically
+			 */
+			if((n_children == 0) && (cl_statchkdir(&dbstat) == 1))
+				if(use_syslog)
+					syslog(LOG_WARNING, _("Freshclam has been run - please restart clamav-milter\n"));
+			continue;
+		}
 		i = 0;
 		session = sessions;
 		pthread_mutex_lock(&sstatus_mutex);
@@ -4326,46 +4488,46 @@ quit(void)
 {
 	extern short cli_leavetemps_flag;
 
-#ifdef	SESSION
-	int i;
-	struct session *session;
-
 	quitting++;
 
 	if(use_syslog)
 		syslog(LOG_INFO, _("Stopping %s"), clamav_version);
 
-	i = 0;
-	session = sessions;
-	pthread_mutex_lock(&sstatus_mutex);
-	for(; i < ((localSocket != NULL) ? 1 : max_children); i++) {
-		/*
-		 * Check all free sessions are still usable
-		 * This could take some time with many free
-		 * sessions to slow remote servers, so only do this
-		 * when the system is quiet (not 100% accurate when
-		 * determining this since n_children isn't locked but
-		 * that doesn't really matter)
-		 */
-		cli_dbgmsg("quit: close server %d\n", i);
-		if(session->status == CMDSOCKET_FREE) {
-			const int sock = session->sock;
-
-			send(sock, "END\n", 4, 0);
-			shutdown(sock, SHUT_WR);
-			session->status = CMDSOCKET_DOWN;
-			pthread_mutex_unlock(&sstatus_mutex);
-			close(sock);
-			pthread_mutex_lock(&sstatus_mutex);
+	if(internal) {
+		if(root) {
+			cl_free(root);
+			root = NULL;
 		}
-	}
-	pthread_mutex_unlock(&sstatus_mutex);
-#else
-	quitting++;
+	} else {
+#ifdef	SESSION
+		int i = 0;
+		struct session *session = sessions;
 
-	if(use_syslog)
-		syslog(LOG_INFO, _("Stopping %s"), clamav_version);
+		pthread_mutex_lock(&sstatus_mutex);
+		for(; i < ((localSocket != NULL) ? 1 : max_children); i++) {
+			/*
+			 * Check all free sessions are still usable
+			 * This could take some time with many free
+			 * sessions to slow remote servers, so only do this
+			 * when the system is quiet (not 100% accurate when
+			 * determining this since n_children isn't locked but
+			 * that doesn't really matter)
+			 */
+			cli_dbgmsg("quit: close server %d\n", i);
+			if(session->status == CMDSOCKET_FREE) {
+				const int sock = session->sock;
+
+				send(sock, "END\n", 4, 0);
+				shutdown(sock, SHUT_WR);
+				session->status = CMDSOCKET_DOWN;
+				pthread_mutex_unlock(&sstatus_mutex);
+				close(sock);
+				pthread_mutex_lock(&sstatus_mutex);
+			}
+		}
+		pthread_mutex_unlock(&sstatus_mutex);
 #endif
+	}
 
 	if(tmpdir && !cli_leavetemps_flag)
 		rmdir(tmpdir);

@@ -89,6 +89,13 @@ generally causes the message to remain in the queue.
 Always scan, whereever the message came from (see also --local and --outgoing).
 You probably don't want this.
 .TP
+\fB-I, \-\-internal\fR
+Usually clamav\-milter uses an external program such as clamd(8) running
+either on the local server or other server(s) to perform
+the scanning.
+The \-\-internal flag tells clamav\-milter to scan the emails itself without
+the use of an external program.
+.TP
 \fB-l, \-\-local\fR
 Also scan messages sent from LAN. You probably want this especially if
 your LAN is populated by machines running Windows or DOS.

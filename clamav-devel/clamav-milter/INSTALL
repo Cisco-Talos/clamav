@@ -566,6 +566,11 @@ Changes
 		Added validation for the reply from clamd
 		Include the sendmail ID in the quarantine file name, for easier
 			cross matching with the sendmail log file
+0.80u	1/12/04 SESSION: Don't hang when streammaxlength is reached - reset the
+			link
+		Not all previous X-Virus-Status headers were removed
+		Added the --internal flag
+			TODO: freshclam notification and version headers
 
 INTERNATIONALISATION
 
