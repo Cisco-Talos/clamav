@@ -42,6 +42,7 @@ int cli_scanrar_inuse = 0;
 #include "unrarlib.h"
 #include "ole2_extract.h"
 #include "vba_extract.h"
+#include "scanners.h"
 
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>
@@ -58,26 +59,16 @@ int cli_scanrar_inuse = 0;
 #define DISABLE_RAR	    (options & CL_DISABLERAR)
 #define DETECT_ENCRYPTED    (options & CL_ENCRYPTED)
 
-typedef enum {
-    CL_UNKNOWN_TYPE = 0,
-    CL_MAILFILE,
-    CL_GZFILE,
-    CL_ZIPFILE,
-    CL_BZFILE,
-    CL_RARFILE,
-    CL_OLE2FILE
-} cl_file_t;
-
-struct cl_magic_s {
+struct cli_magic_s {
     int offset;
     const char *magic;
     size_t length;
     const char *descr;
-    cl_file_t type;
+    cli_file_t type;
 };
 
 #define MAGIC_BUFFER_SIZE 26
-static const struct cl_magic_s cl_magic[] = {
+static const struct cli_magic_s cli_magic[] = {
     {0,  "Rar!",			4, "RAR",	    CL_RARFILE},
     {0,  "PK\003\004",			4, "ZIP",	    CL_ZIPFILE},
     {0,  "\037\213",			2, "GZip",	    CL_GZFILE},
@@ -97,15 +88,15 @@ static const struct cl_magic_s cl_magic[] = {
     {-1, NULL,              0, NULL,              CL_UNKNOWN_TYPE}
 };
 
-static cl_file_t cl_filetype(const char *buf, size_t buflen)
+cli_file_t cli_filetype(const char *buf, size_t buflen)
 {
 	int i;
 
-    for (i = 0; cl_magic[i].magic; i++) {
-	if (buflen >= cl_magic[i].offset+cl_magic[i].length) {
-	    if (memcmp(buf+cl_magic[i].offset, cl_magic[i].magic, cl_magic[i].length) == 0) {
-		cli_dbgmsg("Recognized %s file\n", cl_magic[i].descr);
-		return cl_magic[i].type;
+    for (i = 0; cli_magic[i].magic; i++) {
+	if (buflen >= cli_magic[i].offset+cli_magic[i].length) {
+	    if (memcmp(buf+cli_magic[i].offset, cli_magic[i].magic, cli_magic[i].length) == 0) {
+		cli_dbgmsg("Recognized %s file\n", cli_magic[i].descr);
+		return cli_magic[i].type;
 	    }
 	}
     }
@@ -783,7 +774,7 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
 	char magic[MAGIC_BUFFER_SIZE+1];
 	int ret = CL_CLEAN;
 	int bread = 0;
-	cl_file_t type;
+	cli_file_t type;
 
 
     if(!root) {
@@ -815,7 +806,7 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
 	    return ret;
 	}
 
-	type = cl_filetype(magic, bread);
+	type = cli_filetype(magic, bread);
 
 	switch(type) {
 	    case CL_RARFILE:

@@ -39,16 +39,17 @@
 #include <target.h>
 #include <sys/time.h>
 
+#ifdef CL_THREAD_SAFE
+#  include <pthread.h>
+pthread_mutex_t cl_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
 #include "clamav.h"
 #include "others.h"
 #include "md5.h"
 
 #define CL_FLEVEL 1 /* don't touch it */
 
-#ifdef CL_THREAD_SAFE
-#  include <pthread.h>
-pthread_mutex_t cl_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
 
 int cli_debug_flag = 0;
 

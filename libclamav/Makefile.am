@@ -41,6 +41,7 @@ libclamav_la_SOURCES = \
 	str.h \
 	defaults.h \
 	scanners.c \
+	scanners.h \
 	unrarlib.c \
 	unrarlib.h \
 	zziplib/zzip-conf.h \
