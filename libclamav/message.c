@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.19  2004/02/02 15:52:09  nigelhorne
+ * Remove handling of 8bit binhex files for now
+ *
  * Revision 1.18  2004/02/02 15:30:54  nigelhorne
  * Remove handling of 8bit binhex files for now
  *
@@ -51,7 +54,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.18 2004/02/02 15:30:54 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.19 2004/02/02 15:52:09 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -634,7 +637,6 @@ messageToBlob(const message *m)
 		 * the encoded message. Then decode that blob to the target
 		 * blob, free the temporary blob adn return the target one
 		 */
-
 		while((t_line = t_line->t_next) != NULL) {
 			blobAddData(tmp, (unsigned char *)t_line->t_text, strlen(t_line->t_text));
 			blobAddData(tmp, (unsigned char *)"\n", 1);
