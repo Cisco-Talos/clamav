@@ -1,3 +1,8 @@
+Sun Nov 28 16:30:18 GMT 2004 (njh)
+----------------------------------
+  * libclamav/message.c:	Allow lower case hex in quoted-printable
+			messages
+
 Sat Nov 27 21:55:45 GMT 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Changed some more strtok to cli_strtok
