@@ -1,3 +1,8 @@
+Fri Jan  7 13:50:52 GMT 2005 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Fix to "content-type: application" which could cause
+				the attachment to be scanned twice
+
 Thu Jan  6 23:24:35 GMT 2005 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Better handler of single quotes in headers

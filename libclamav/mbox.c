@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.208  2005/01/07 13:48:46  nigelhorne
+ * Save content-type: application only once
+ *
  * Revision 1.207  2005/01/06 23:21:34  nigelhorne
  * Improved handling of quotes over multiple lines in headers
  *
@@ -609,7 +612,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.207 2005/01/06 23:21:34 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.208 2005/01/07 13:48:46 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2687,7 +2690,11 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				if(fb) {
 					cli_dbgmsg("Saving main message as attachment\n");
 					fileblobDestroy(fb);
-					messageClearMarkers(mainMessage);
+					if(mainMessage != messageIn) {
+						messageDestroy(mainMessage);
+						mainMessage = NULL;
+					} else
+						messageReset(mainMessage);
 				}
 			} /*else
 				cli_warnmsg("Discarded application not sent as attachment\n");*/
