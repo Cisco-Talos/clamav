@@ -39,8 +39,9 @@ freshclam_SOURCES = \
     notify.c \
     notify.h \
     dns.c \
-    dns.h
-
+    dns.h \
+    execute.c \
+    execute.h
 
 DEFS = @DEFS@ -DCL_NOTHREADS
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
