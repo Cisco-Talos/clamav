@@ -228,11 +228,41 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	case 0x184:
 	    cli_dbgmsg("Machine type: DEC Alpha AXP\n");
 	    break;
+	case 0x284:
+	    cli_dbgmsg("Machine type: DEC Alpha AXP 64bit\n");
+	    break;
 	case 0x1f0:
 	    cli_dbgmsg("Machine type: PowerPC\n");
 	    break;
+	case 0x200:
+	    cli_dbgmsg("Machine type: IA64\n");
+	    break;
+	case 0x268:
+	    cli_dbgmsg("Machine type: M68k\n");
+	    break;
+	case 0x266:
+	    cli_dbgmsg("Machine type: MIPS16\n");
+	    break;
+	case 0x366:
+	    cli_dbgmsg("Machine type: MIPS+FPU\n");
+	    break;
+	case 0x466:
+	    cli_dbgmsg("Machine type: MIPS16+FPU\n");
+	    break;
+	case 0x1a2:
+	    cli_dbgmsg("Machine type: Hitachi SH3\n");
+	    break;
+	case 0x1a6:
+	    cli_dbgmsg("Machine type: Hitachi SH4\n");
+	    break;
+	case 0x1c0:
+	    cli_dbgmsg("Machine type: ARM\n");
+	    break;
+	case 0x1c2:
+	    cli_dbgmsg("Machine type: THUMB\n");
+	    break;
 	default:
-	    cli_warnmsg("Unknown machine type in PE header\n");
+	    cli_warnmsg("Unknown machine type in PE header (0x%x)\n", EC16(file_hdr.Machine));
     }
 
     nsections = EC16(file_hdr.NumberOfSections);
@@ -291,6 +321,21 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    break;
 	case 7:
 	    cli_dbgmsg("Subsystem: POSIX console\n");
+	    break;
+	case 8:
+	    cli_dbgmsg("Subsystem: Native Win9x driver\n");
+	    break;
+	case 9:
+	    cli_dbgmsg("Subsystem: WinCE GUI\n");
+	    break;
+	case 10:
+	    cli_dbgmsg("Subsystem: EFI application\n");
+	    break;
+	case 11:
+	    cli_dbgmsg("Subsystem: EFI driver\n");
+	    break;
+	case 12:
+	    cli_dbgmsg("Subsystem: EFI runtime driver\n");
 	    break;
 	default:
 	    cli_warnmsg("Unknown subsystem in PE header\n");
