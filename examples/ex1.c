@@ -57,10 +57,10 @@ int main(int argc, char **argv)
 
     printf("Loaded %d signatures.\n", no);
 
-    /* build the final trie */
-    if((ret = cl_buildtrie(root))) {
+    /* build engine */
+    if((ret = cl_build(root))) {
 	printf("Database initialization error: %s\n", cl_strerror(ret));;
-	cl_freetrie(root); /* free the partial trie */
+	cl_free(root);
 	close(fd);
 	exit(2);
     }
@@ -85,7 +85,7 @@ int main(int argc, char **argv)
     mb = size * (CL_COUNT_PRECISION / 1024) / 1024.0;
     printf("Data scanned: %2.2Lf Mb\n", mb);
 
-    cl_freetrie(root);
+    cl_free(root);
 
     close(fd);
     exit(ret == CL_VIRUS ? 1 : 0);

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 1999-2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 1999 - 2004 Tomasz Kojm <tk@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __OTHERS_H
-#define __OTHERS_H
+#ifndef __OTHERS_H_LC
+#define __OTHERS_H_LC
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,5 +34,8 @@ char *cli_md5stream(FILE *fd);
 int cli_readn(int fd, void *buff, unsigned int count);
 int cli_writen(int fd, void *buff, unsigned int count);
 int32_t cli_readint32(const char *buff);
+char *cli_gentemp(const char *dir);
+unsigned int cli_rndnum(unsigned int max);
+char *cli_md5file(const char *filename);
 
 #endif

@@ -1,3 +1,12 @@
+Mon Jul 19 19:46:03 CEST 2004 (tk)
+----------------------------------
+  * libclamav: use new, faster and memory efficient algorithm (multipattern
+	       variant of Boyer-Moore) for static signature matching (not
+	       yet fully optimised)
+  * libclamav: API: cl_build, cl_free succeed cl_buildtrie, cl_freetrie
+	       (old functions still supported)
+  * all: minor cleanup; fix compilation warnings
+
 Fri Jul 16 17:32:40 CEST 2004 (tk)
 ----------------------------------
   * libclamav: scanners: fix memory leak in new code (thanks to Trog)
