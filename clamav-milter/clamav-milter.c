@@ -394,9 +394,13 @@
  *				that when a child dies we continue when max
  *				children is hit
  *			Report an error if inet_ntop fails in tcp_wrappers
+ *	0.71	16/5/04	Up issue
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.88  2004/05/16 08:25:09  nigelhorne
+ * Up issue
+ *
  * Revision 1.87  2004/05/09 17:39:04  nigelhorne
  * Waiting threads weren't being woken up
  *
@@ -643,9 +647,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.87 2004/05/09 17:39:04 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.88 2004/05/16 08:25:09 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70x"
+#define	CM_VERSION	"0.71"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1227,14 +1231,9 @@ main(int argc, char **argv)
 	if(sigFilename && !updateSigFile())
 		return EX_USAGE;
 
-	if(templatefile) {
-		int fd = open(templatefile, O_RDONLY);
-
-		if(fd < 0) {
-			perror(templatefile);
-			return EX_CONFIG;
-		}
-		close(fd);
+	if(templatefile && (access(templatefile, R_OK) < 0)) {
+		perror(templatefile);
+		return EX_CONFIG;
 	}
 
 	if(!cfgopt(copt, "StreamSaveToDisk")) {
@@ -1776,7 +1775,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		}
 
 #ifdef HAVE_INET_NTOP
-		if(inet_ntop(AF_INET, &((struct sockaddr_in *)(hp->h_addr))->sin_addr, ip, sizeof(ip)) == NULL) {
+		if(inet_ntop(AF_INET, (struct in_addr *)hp->h_addr, ip, sizeof(ip)) == NULL) {
 			perror(hp->h_name);
 			/*if(use_syslog)
 				syslog(LOG_WARNING, "Can't get IP address for (%s)", hp->h_name);
@@ -1786,7 +1785,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 			return cl_error;
 		}
 #else
-		strcpy(ip, (char *)inet_ntoa(*(struct in_addr *)hp->h_addr));
+		strncpy(ip, (char *)inet_ntoa(*(struct in_addr *)hp->h_addr), sizeof(ip) - 1);
 #endif
 
 		/*
@@ -2688,7 +2687,7 @@ clamfi_send(struct privdata *privdata, size_t len, const char *format, ...)
 		va_list argp;
 
 		va_start(argp, format);
-		vsnprintf(output, sizeof(output), format, argp);
+		vsnprintf(output, sizeof(output) - 1, format, argp);
 		va_end(argp);
 
 		len = strlen(output);
@@ -3143,8 +3142,11 @@ checkClamd(void)
 		return;
 	}
 	nbytes = read(fd, buf, sizeof(buf) - 1);
+	if(nbytes < 0)
+		perror(pidFile);
+	else
+		buf[nbytes] = '\0';
 	close(fd);
-	buf[nbytes] = '\0';
 	pid = atoi(buf);
 	if((kill(pid, 0) < 0) && (errno == ESRCH)) {
 		if(use_syslog)
