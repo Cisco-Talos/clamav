@@ -293,7 +293,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 		return NULL;
 	}
 
-	if (vba_readn(fd, &LidA, 4) != 4) {
+	if (vba_readn(fd, &LidB, 4) != 4) {
 		close(fd);
 		return NULL;
 	}
@@ -611,7 +611,7 @@ void byte_array_append(byte_array_t *array, unsigned char *src, unsigned int len
 	}
 }
 
-unsigned char *vba_decompress(int fd, uint32_t offset)
+unsigned char *vba_decompress(int fd, uint32_t offset, int *size)
 {
 	unsigned int i, pos=0, shift, win_pos, clean=TRUE, mask, distance;
 	uint8_t flag;
@@ -630,6 +630,9 @@ unsigned char *vba_decompress(int fd, uint32_t offset)
 				if (vba_readn(fd, &token, 2) != 2) {
 					if (result.data) {
 						free(result.data);
+					}
+					if (size) {
+						*size = 0;
 					}
 					return NULL;
 				}
@@ -670,6 +673,9 @@ unsigned char *vba_decompress(int fd, uint32_t offset)
 						if (result.data) {
 							free(result.data);
 						}
+						if (size) {
+                                         	       *size = 0;
+                                        	}
 						return NULL;
 					}
 					clean = FALSE;
@@ -687,7 +693,9 @@ unsigned char *vba_decompress(int fd, uint32_t offset)
 	if (pos % VBA_COMPRESSION_WINDOW) {
 		byte_array_append(&result, buffer, pos % VBA_COMPRESSION_WINDOW);
 	}
-	byte_array_append(&result, "\0", 1);
+	if (size) {
+		*size = result.length;
+	}
 	return result.data;
 
 }
@@ -713,7 +721,7 @@ int vba_dump(vba_project_t *vba_project)
 			return FALSE;
 		}
 		
-		data = vba_decompress(fd, vba_project->offset[i]);
+		data = vba_decompress(fd, vba_project->offset[i], NULL);
 		cli_dbgmsg("%s\n", data);
 		close(fd);
 
