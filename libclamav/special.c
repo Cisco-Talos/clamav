@@ -16,15 +16,18 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include "clamav-config.h"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <netinet/in.h>
+#include <string.h>
 
-#include "clamav-config.h"
 #include "clamav.h"
 #include "others.h"
+#include "cltypes.h"
 
 #define FALSE (0)
 #define TRUE (1)

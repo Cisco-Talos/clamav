@@ -1,3 +1,7 @@
+Sat Feb  5 16:48:46 CET 2005 (tk)
+---------------------------------
+  * libclamav: activate RIFF code (patch by Trog)
+
 Sat Feb  5 16:17:41 CET 2005 (tk)
 ---------------------------------
   * libclamav/scanners.c: do not report Suspected.Zip on standard breaking zip

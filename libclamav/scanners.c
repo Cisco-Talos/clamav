@@ -1146,6 +1146,18 @@ static int cli_scanscrenc(int desc, const char **virname, long int *scanned, con
     return ret;
 }
 
+static int cli_scanriff(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
+{
+	int ret = CL_CLEAN;
+
+    if(cli_check_riff_exploit(desc) == 2) {
+	ret = CL_VIRUS;
+	*virname = "Exploit.W32.MS05-002";
+    }
+
+    return ret;
+}
+
 static int cli_scanmail(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	char *dir;
@@ -1294,6 +1306,10 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 
 	case CL_TYPE_SCRENC:
 	    ret = cli_scanscrenc(desc, virname, scanned, root, limits, options, arec, mrec);
+	    break;
+
+	case CL_TYPE_RIFF:
+	    ret = cli_scanriff(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
 	case CL_TYPE_DATA:
