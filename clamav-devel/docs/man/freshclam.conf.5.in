@@ -25,7 +25,8 @@ When an option is not used (hashed or doesn't exist in the configuration file) f
 If this option is set freshclam will not run.
 .TP 
 \fBDatabaseOwner STRING\fR
-When started by root, drop privileges to a specified user. .br 
+When started by root, drop privileges to a specified user. 
+.br 
 Default: @CLAMAVUSER@
 .TP 
 \fBAllowSupplementaryGroups\fR
@@ -96,7 +97,7 @@ Execute this command after the database has been successfully updated.
 .br 
 Default: disabled
 .TP 
-\fBOnErrorExecute\fR
+\fBOnErrorExecute STRING\fR
 Execute this command after a database update has failed.
 .br 
 Default: disabled
