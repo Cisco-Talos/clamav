@@ -68,66 +68,41 @@ int fileinfo(const char *filename, short i)
     }
 }
 
-int readaccess(const char *path, const char *username)
+int checkaccess(const char *path, const char *username, int mode)
 {
 	struct passwd *user;
-	unsigned int su = 0, acc = 0;
+	int ret = 0, status;
 
+    if(!getuid()) {
 
-    if(!getuid())
-	su = 1;
-
-    if(su) {
 	if((user = getpwnam(username)) == NULL) {
 	    return -1;
 	}
 
-	/* WARNING: it's not POSIX compliant */
+	switch(fork()) {
+	    case -1:
+		return -2;
 
-	seteuid(user->pw_uid);
-	setegid(user->pw_gid);
-    }
+	    case 0:
+		setuid(user->pw_uid);
+		setgid(user->pw_gid);
+		if(access(path, mode))
+		    exit(0);
+		else
+		    exit(1);
 
-    if(!access(path, R_OK))
-	acc = 1;
-
-    if(su) {
-	seteuid(0);
-	setegid(0);
-    }
-
-    return acc;
-}
-
-int writeaccess(const char *path, const char *username)
-{
-	struct passwd *user;
-	unsigned int su = 0, acc = 0;
-
-
-    if(!getuid())
-	su = 1;
-
-    if(su) {
-	if((user = getpwnam(username)) == NULL) {
-	    return -1;
+	    default:
+		wait(&status);
+		if(WIFEXITED(status) && WEXITSTATUS(status) == 1)
+		    ret = 1;
 	}
 
-	/* WARNING: it's not POSIX compliant */
-
-	seteuid(user->pw_uid);
-	setegid(user->pw_gid);
+    } else {
+	if(!access(path, mode))
+	    ret = 1;
     }
 
-    if(!access(path, W_OK))
-	acc = 1;
-
-    if(su) {
-	seteuid(0);
-	setegid(0);
-    }
-
-    return acc;
+    return ret;
 }
 
 int filecopy(const char *src, const char *dest)

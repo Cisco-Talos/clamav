@@ -20,17 +20,8 @@
 #define __OTHERS_H
 
 int fileinfo(const char *filename, short i);
-int readaccess(const char *path, const char *username);
-int writeaccess(const char *path, const char *username);
+int checkaccess(const char *path, const char *username, int mode);
 int filecopy(const char *src, const char *dest);
 int isnumb(const char *str);
-
-
-/* njh@bandsman.co.uk: for BeOS */
-/* TODO: configure should see if sete[ug]id is set on the target */
-#if defined(C_BEOS) || defined(C_HPUX)
-#define       seteuid(u)      (-1)
-#define       setegid(g)      (-1)
-#endif
 
 #endif

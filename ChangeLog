@@ -1,3 +1,11 @@
+Tue Apr 27 14:53:39 CEST 2004 (tk)
+----------------------------------
+  * clamscan: fix file access problem when using clamscan with external
+	      unpackers in a superuser mode (reported by Robert Allerstorfer
+	      <roal*anet.at> and ZMan Z. <x86zman*go-a-way.dyndns.org>).
+	      Access verification mechanism is POSIX compliant now.
+  * libclamav: ignore more file types
+
 Tue Apr 27 12:42:14 BST 2004 (trog)
 -----------------------------------
  * libclamav/vba_extract.[ch]: Word6 macro extraction code (not yet activated)
