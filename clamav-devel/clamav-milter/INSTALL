@@ -197,6 +197,12 @@ When using UNIX domain sockets via the LocalSocket option of clamd.conf,
 we recommend that you use the --quarantine-dir option since that may improve
 performance.
 
+If you wish to send a warning when a message is blocked, clamav-milter MUST be
+able to call sendmail, for example on a Fedora Linux system:
+
+	# ls -lL /usr/lib/sendmail
+	-rwxr-sr-x  1 root smmsp 732356 Sep  1 11:16 /usr/lib/sendmail
+
 To test that your clamAV system is now intercepting viruses, visit
 http://www.testvirus.org
 
@@ -690,6 +696,8 @@ Changes
 			Debug around mkdir/rmdir of tmpdir
 			SESSION mode: not all sessions were closed when quitting
 0.83	13/2/05:	Up issue
+0.83a	23/2/05:	Issue a warning if sendmail can't be executed
+			Remove pidfile, suggested by Stephen Gran <steve@lobefin.net>
 
 INTERNATIONALISATION
 

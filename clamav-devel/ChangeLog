@@ -1,3 +1,9 @@
+Wed Feb 23 09:42:52 GMT 2005 (njh)
+----------------------------------
+  * clamav-milter:	Remove the pid file on exit
+			Warn if sendmail can't be started when sending
+				interception messages
+
 Sun Feb 20 05:08:54 CET 2005 (tk)
 ---------------------------------
   * libclamav: add support for detection based on analysis of archive metadata
