@@ -1,3 +1,15 @@
+Fri Mar 26 23:23:21 CET 2004 (tk)
+---------------------------------
+  * clamdscan: don't call getcwd() in streaming mode (patch by Dale Woolridge
+	       <dwoolridge*drh.net>)
+  * configure: improved checking for TCPwrappers (patch by Tom G. Christensen
+	       <tgc*statsbiblioteket.dk>)
+
+Fri Mar 26 22:53:45 CET 2004 (tk)
+---------------------------------
+  * clamdscan: don't call getcwd() in streaming mode (patch by Dale Woolridge
+	       <dwoolridge*drh.net>)
+
 Fri Mar 26 21:32:28 CET 2004 (tk)
 ---------------------------------
   * libclamav: scan VPOP3 mail files (thanks to Steve <steveb*webtribe.net>)

@@ -35,6 +35,12 @@
 #include "defaults.h"
 #include "shared.h"
 
+#ifdef PF_INET
+# define SOCKET_INET	PF_INET
+#else
+# define SOCKET_INET	AF_INET
+#endif
+
 int client(const struct optstruct *opt)
 {
 	char buff[4096], cwd[200], *file, *scancmd, *pt;
@@ -85,11 +91,7 @@ int client(const struct optstruct *opt)
 
     } else if((cpt = cfgopt(copt, "TCPSocket"))) {
 
-#ifdef PF_INET
-	if((sockd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
-#else
-	if((sockd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-#endif
+	if((sockd = socket(SOCKET_INET, SOCK_STREAM, 0)) < 0) {
 	    perror("socket()");
 	    mprintf("@Can't create the socket.\n");
 	    return 2;
@@ -122,15 +124,14 @@ int client(const struct optstruct *opt)
     }
 
 
-    /* we need the full path to the file */
-    if(!getcwd(cwd, 200)) {
-	mprintf("@Can't get the absolute pathname of the current working directory.\n");
-	return 2;
-    }
-
-    
     if(opt->filename == NULL || strlen(opt->filename) == 0) {
+	/* we need the full path to the file */
+	if(!getcwd(cwd, 200)) {
+	    mprintf("@Can't get the absolute pathname of the current working directory.\n");
+	    return 2;
+	}
 	file = (char *) strdup(cwd);
+
     } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
 	if(write(sockd, "STREAM", 6) <= 0) {
 	    mprintf("@Can't write to the socket.\n");
@@ -156,11 +157,7 @@ int client(const struct optstruct *opt)
 
 	/* connect to clamd */
 
-#ifdef PF_INET
-	if((wsockd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
-#else
-	if((wsockd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-#endif
+	if((wsockd = socket(SOCKET_INET, SOCK_STREAM, 0)) < 0) {
 	    perror("socket()");
 	    mprintf("@Can't create the socket.\n");
 	    return 2;
@@ -214,6 +211,11 @@ int client(const struct optstruct *opt)
 #ifdef C_CYGWIN
 	    sprintf(file, "%s", opt->filename);
 #else
+	    /* we need the full path to the file */
+	    if(!getcwd(cwd, 200)) {
+		mprintf("@Can't get the absolute pathname of the current working directory.\n");
+		return 2;
+	    }
 	    sprintf(file, "%s/%s", cwd, opt->filename);
 #endif
 	}
@@ -222,6 +224,7 @@ int client(const struct optstruct *opt)
 
     scancmd = mcalloc(strlen(file) + 20, sizeof(char));
     sprintf(scancmd, "CONTSCAN %s", file);
+    free(file);
 
     if(write(sockd, scancmd, strlen(scancmd)) <= 0) {
 	mprintf("@Can't write to the socket.\n");

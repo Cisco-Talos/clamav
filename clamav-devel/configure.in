@@ -213,18 +213,47 @@ AC_ARG_WITH(tcpwrappers,
   esac],
 [ tcpw=auto ])
 
-if test x"$tcpw" != xno; then
-  err=no
-  AC_CHECK_HEADER(tcpd.h,,err=yes)
-  AC_CHECK_LIB(wrap,hosts_ctl,true,err=yes)
-  if test x"$err" = xyes; then
-    if test x"$tcpw" = xyes; then
-      AC_MSG_ERROR([tcpwrappers not available])
-    fi
-  else
-    AC_DEFINE(WITH_TCPWRAP,1,[tcpwrappers support])
-    CLAMAV_MILTER_LIBS="-lwrap"
-  fi
+if test $tcpw != no ; then
+        AC_CHECK_HEADERS(tcpd.h,[
+                AC_MSG_CHECKING([for TCP wrappers library])
+                save_LIBS="$LIBS"
+                LIBS="$LIBS -lwrap"
+                AC_TRY_LINK([
+#include <tcpd.h>
+int allow_severity = 0;
+int deny_severity  = 0;
+
+struct request_info *req;
+                ],[
+hosts_access(req)
+                ],[AC_MSG_RESULT([-lwrap])
+                have_wrappers=yes
+                CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lwrap"],[
+                dnl try with -lnsl
+                LIBS="$LIBS -lnsl"
+                AC_TRY_LINK([
+#include <tcpd.h>
+int allow_severity = 0;
+int deny_severity  = 0;
+
+struct request_info *req;
+                ],[
+hosts_access(req)
+                ],[AC_MSG_RESULT([-lwrap -lnsl])
+                have_wrappers=yes
+                CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lwrap"],[
+                AC_MSG_RESULT(no)
+                have_wrappers=no
+                LIBS=$save_LIBS])],[
+                have_wrappers=no])],[have_wrappers=no])
+
+        if test $have_wrappers = yes ; then
+                AC_DEFINE(WITH_TCPWRAP,1, [tcpwrappers support])
+        elif test $tcpw = yes ; then
+                AC_MSG_ERROR([could not find TCP wrappers])
+        else
+                AC_MSG_WARN([could not find TCP wrappers, support disabled])
+        fi
 fi
 
 # check for in_port_t definition
