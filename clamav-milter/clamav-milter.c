@@ -144,9 +144,14 @@
  *			Gets version info from clamd
  *			Only reset fd's 0/1/2 if !ForeGround
  *	0.60n	22/10/03 Call pthread_cont_broadcast more often
+ *	0.60o	31/10/03 Optionally accept all mails if scanning procedure
+ *			fails (Joe Talbott <josepht@cstone.net>)
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.16  2003/10/31 13:33:40  nigelhorne
+ * Added dont scan on error flag
+ *
  * Revision 1.15  2003/10/22 19:44:01  nigelhorne
  * more calls to pthread_cond_broadcast
  *
@@ -178,9 +183,9 @@
  * Added -f flag use MaxThreads if --max-children not set
  *
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.15 2003/10/22 19:44:01 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.16 2003/10/31 13:33:40 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.60n"
+#define	CM_VERSION	"0.60o"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -284,6 +289,14 @@ static	int	nflag = 0;	/*
 				 * Don't add X-Virus-Scanned to header. Patch
 				 * from Dirk Meyer <dirk.meyer@dinoex.sub.org>
 				 */
+static	int	cl_error = SMFIS_TEMPFAIL; /*
+				 * If an error occurs, return
+				 * this status. Allows messages
+				 * to be passed through
+				 * unscanned in the event of
+				 * an error. Patch from
+				 * Joe Talbott <josepht@cstone.net>
+				 */
 
 #ifdef	CL_DEBUG
 static	int	debug_level = 0;
@@ -316,6 +329,7 @@ help(void)
 
 	puts("\t--bounce\t\t-b\tSend a failure message to the sender.");
 	puts("\t--config-file=FILE\t-c FILE\tRead configuration from FILE.");
+	puts("\t--dont-scan-on-error\t\t-d\tPass e-mails through unscanned if a system error occurs.");
 	puts("\t--force-scan\tForce scan all messages (overrides (-o and -l).");
 	puts("\t--help\t\t\t-h\tThis message.");
 	puts("\t--local\t\t\t-l\tScan messages sent from machines on our LAN.");
@@ -377,6 +391,9 @@ main(int argc, char **argv)
 				"config-file", 1, NULL, 'c'
 			},
 			{
+				"dont-scan-on-error", 0, NULL, 'd'
+			},
+			{
 				"force-scan", 1, NULL, 'f'
 			},
 			{
@@ -432,6 +449,9 @@ main(int argc, char **argv)
 				break;
 			case 'c':	/* where is clamav.conf? */
 				cfgfile = optarg;
+				break;
+			case 'd':	/* don't scan on error */
+				cl_error = SMFIS_ACCEPT;
 				break;
 			case 'f':	/* force the scan */
 				fflag++;
@@ -764,7 +784,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 			if(regcomp(&reg, *possible, 0) != 0) {
 				if(use_syslog)
 					syslog(LOG_ERR, "Couldn't parse local regexp");
-				return SMFIS_TEMPFAIL;
+				return cl_error;
 			}
 
 			rc = (regexec(&reg, remoteIP, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
@@ -897,11 +917,11 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 		if((privdata->cmdSocket = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 			perror("socket");
-			return SMFIS_TEMPFAIL;
+			return cl_error;
 		}
 		if(connect(privdata->cmdSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
 			perror(localSocket);
-			return SMFIS_TEMPFAIL;
+			return cl_error;
 		}
 	} else {
 		struct sockaddr_in server;
@@ -929,8 +949,8 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		close(privdata->cmdSocket);
 		free(privdata);
 		if(use_syslog)
-			syslog(LOG_ERR, "send failed to create socket");
-		return SMFIS_TEMPFAIL;
+			syslog(LOG_ERR, "failed to create socket");
+		return cl_error;
 	}
 
 	shutdown(privdata->dataSocket, SHUT_RD);
@@ -942,7 +962,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		free(privdata);
 		if(use_syslog)
 			syslog(LOG_ERR, "send failed to clamd");
-		return SMFIS_TEMPFAIL;
+		return cl_error;
 	}
 
 	shutdown(privdata->cmdSocket, SHUT_WR);
@@ -955,7 +975,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		free(privdata);
 		if(use_syslog)
 			syslog(LOG_ERR, "recv failed from clamd getting PORT");
-		return SMFIS_TEMPFAIL;
+		return cl_error;
 	}
 	buf[nbytes] = '\0';
 #ifdef	CL_DEBUG
@@ -972,7 +992,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		else
 			fprintf(stderr, "Expected port information from clamd, got '%s'\n",
 				buf);
-		return SMFIS_TEMPFAIL;
+		return cl_error;
 	}
 
 	memset((char *)&reply, 0, sizeof(struct sockaddr_in));
@@ -1005,7 +1025,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 #endif
 		}
 
-		return SMFIS_TEMPFAIL;
+		return cl_error;
 	}
 
 	clamfi_send(privdata, 0, "From %s\n", argv[0]);
@@ -1014,7 +1034,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 	privdata->from = strdup(argv[0]);
 	privdata->to = NULL;
 
-	return (smfi_setpriv(ctx, privdata) == MI_SUCCESS) ? SMFIS_CONTINUE : SMFIS_TEMPFAIL;
+	return (smfi_setpriv(ctx, privdata) == MI_SUCCESS) ? SMFIS_CONTINUE : cl_error;
 }
 
 static sfsistat
@@ -1060,7 +1080,7 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 
 	if(clamfi_send(privdata, 0, "%s: %s\n", headerf, headerv) < 0) {
 		clamfi_cleanup(ctx);
-		return SMFIS_TEMPFAIL;
+		return cl_error;
 	}
 	return SMFIS_CONTINUE;
 }
@@ -1079,7 +1099,7 @@ clamfi_eoh(SMFICTX *ctx)
 
 	if(clamfi_send(privdata, 1, "\n") < 0) {
 		clamfi_cleanup(ctx);
-		return SMFIS_TEMPFAIL;
+		return cl_error;
 	}
 
 	/*
@@ -1139,7 +1159,7 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 
 	if(clamfi_send(privdata, len, (char *)bodyp) < 0) {
 		clamfi_cleanup(ctx);
-		return SMFIS_TEMPFAIL;
+		return cl_error;
 	}
 	return SMFIS_CONTINUE;
 }
@@ -1295,7 +1315,7 @@ clamfi_abort(SMFICTX *ctx)
 
 	clamfi_cleanup(ctx);
 
-	return SMFIS_TEMPFAIL;
+	return cl_error;
 }
 
 static sfsistat
