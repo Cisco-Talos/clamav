@@ -176,6 +176,7 @@ int cl_buildtrie(struct cl_node *root)
 static void cli_freepatt(struct cli_patt *list)
 {
 	struct cli_patt *handler, *prev;
+	int i;
 
 
     handler = list;
@@ -183,6 +184,12 @@ static void cli_freepatt(struct cli_patt *list)
     while(handler) {
 	free(handler->pattern);
 	free(handler->virname);
+	if(handler->alt) {
+	    free(handler->altn);
+	    for(i = 0; i < handler->alt; i++)
+		free(handler->altc[i]);
+	    free(handler->altc);
+	}
 	prev = handler;
 	handler = handler->next;
 	free(prev);
@@ -206,9 +213,10 @@ int inline cli_findpos(const char *buffer, int offset, int length, const struct 
 {
 	int bufferpos = offset + CL_MIN_LENGTH;
 	int postfixend = offset + length;
-	unsigned int i;
+	unsigned int i, j, alt = 0, found = 0;
 
-    if (bufferpos >= length)
+
+    if(bufferpos >= length)
 	bufferpos %= length;
 
     for(i = CL_MIN_LENGTH; i < pattern->length; i++) {
@@ -216,30 +224,41 @@ int inline cli_findpos(const char *buffer, int offset, int length, const struct 
 	if(bufferpos == postfixend)
 	    return 0;
 
-	if(pattern->pattern[i] != CLI_IGN && (char) pattern->pattern[i] != buffer[bufferpos])
+	if(pattern->pattern[i] == CLI_ALT) {
+	    for(j = 0; j < pattern->altn[alt]; j++) {
+		if(pattern->altc[alt][j] == buffer[bufferpos])
+		    found = 1;
+	    }
+
+	    if(!found)
+		return 0;
+	    alt++;
+
+	} else if(pattern->pattern[i] != CLI_IGN && (char) pattern->pattern[i] != buffer[bufferpos])
 	    return 0;
 
 	bufferpos++;
 
-	if (bufferpos == length)
+	if(bufferpos == length)
 	    bufferpos = 0;
     }
 
     return 1;
 }
 
-int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *partcnt, int typerec)
+int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *partcnt, int typerec, unsigned long int offset, unsigned long int *partoff)
 {
 	struct cl_node *current;
 	struct cli_patt *pt;
-	int position, type = CL_CLEAN;
+	int position, type = CL_CLEAN, dist;
         unsigned int i;
 
+int j;
 
     current = (struct cl_node *) root;
 
-    if(!partcnt) {
-	cli_dbgmsg("cli_scanbuff(): partcnt == NULL\n");
+    if(!partcnt || !partoff) {
+	cli_dbgmsg("cli_scanbuff(): partcnt == NULL || partoff == NULL\n");
 	return CL_EMEM;
     }
 
@@ -254,21 +273,37 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 		if(cli_findpos(buffer, position, length, pt)) {
 		    if(pt->sigid) { /* it's a partial signature */
 			if(partcnt[pt->sigid] + 1 == pt->partno) {
-			    if(++partcnt[pt->sigid] == pt->parts) { /* the last one */
-				if(pt->type) {
-				    if(typerec) {
-					cli_dbgmsg("Matched signature for file type: %s\n", pt->virname);
-					if(pt->type > type)
-					    type = pt->type;
-				    }
-				} else {
-				    if(virname)
-					*virname = pt->virname;
 
-				    return CL_VIRUS;
+			    dist = 1;
+			    if(pt->maxdist)
+				if(offset + i - partoff[pt->sigid] > pt->maxdist)
+				    dist = 0;
+
+			    if(dist && pt->mindist)
+				if(offset + i - partoff[pt->sigid] < pt->mindist)
+				    dist = 0;
+
+
+			    if(dist) {
+				partoff[pt->sigid] = offset + i + pt->length;
+
+				if(++partcnt[pt->sigid] == pt->parts) { /* the last one */
+				    if(pt->type) {
+					if(typerec) {
+					    cli_dbgmsg("Matched signature for file type: %s\n", pt->virname);
+					    if(pt->type > type)
+						type = pt->type;
+					}
+				    } else {
+					if(virname)
+					    *virname = pt->virname;
+
+					return CL_VIRUS;
+				    }
 				}
 			    }
 			}
+
 		    } else { /* old type signature */
 			if(pt->type) {
 			    if(typerec) {
@@ -298,6 +333,7 @@ int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, c
 
 {
 	int ret, *partcnt;
+	unsigned long int *partoff;
 
 
     if((partcnt = (int *) cli_calloc(root->partsigs + 1, sizeof(int))) == NULL) {
@@ -305,7 +341,12 @@ int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, c
 	return CL_EMEM;
     }
 
-    ret = cli_scanbuff(buffer, length, virname, root, partcnt, 0);
+    if((partoff = (unsigned long int *) cli_calloc(root->partsigs + 1, sizeof(unsigned long int))) == NULL) {
+	cli_dbgmsg("cli_scanbuff(): unable to cli_calloc(%d, %d)\n", root->partsigs + 1, sizeof(unsigned long int));
+	return CL_EMEM;
+    }
+
+    ret = cli_scanbuff(buffer, length, virname, root, partcnt, 0, 0, partoff);
 
     free(partcnt);
     return ret;

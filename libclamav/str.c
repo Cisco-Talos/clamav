@@ -68,6 +68,8 @@ short int *cl_hex2str(const char *hex)
     for(i = 0; i < len; i += 2) {
 	if(hex[i] == '?') {
 	    val = CLI_IGN;
+	} else if(hex[i] == '@') {
+	    val = CLI_ALT;
 	} else {
 	    if((c = cli_hex2int(hex[i])) >= 0) {
 		val = c;

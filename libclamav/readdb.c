@@ -39,11 +39,11 @@
 #include "defaults.h"
 
 
-static int cli_addsig(struct cl_node *root, const char *virname, const char *hexsig, int sigid, int parts, int partno, int type)
+static int cli_addsig(struct cl_node *root, const char *virname, const char *hexsig, int sigid, int parts, int partno, int type, unsigned int mindist, unsigned int maxdist)
 {
 	struct cli_patt *new;
-	char *pt;
-	int virlen, ret;
+	char *pt, *hex;
+	int virlen, ret, i, error = 0;
 
 
     if((new = (struct cli_patt *) cli_calloc(1, sizeof(struct cli_patt))) == NULL)
@@ -53,13 +53,119 @@ static int cli_addsig(struct cl_node *root, const char *virname, const char *hex
     new->sigid = sigid;
     new->parts = parts;
     new->partno = partno;
+    new->mindist = mindist;
+    new->maxdist = maxdist;
 
-    new->length = strlen(hexsig) / 2;
+    if(strchr(hexsig, '(')) {
+	    char *hexcpy, *hexnew, *start, *h;
+	    short int *c;
+
+	if(!(hexcpy = strdup(hexsig))) {
+	    free(new);
+	    return CL_EMEM;
+	}
+
+	if(!(hexnew = (char *) cli_calloc(strlen(hexsig) + 1, 1))) {
+	    free(hexcpy);
+	    free(new);
+	    return CL_EMEM;
+	}
+
+	start = pt = hexcpy;
+	while((pt = strchr(start, '('))) {
+	    *pt++ = 0;
+
+	    if(!start) {
+		error = 1;
+		break;
+	    }
+
+	    strcat(hexnew, start);
+	    strcat(hexnew, "@@");
+
+	    if(!(start = strchr(pt, ')'))) {
+		error = 1;
+		break;
+	    }
+	    *start++ = 0;
+
+	    new->alt++;
+	    new->altn = (unsigned short int *) realloc(new->altn, new->alt);
+	    new->altn[new->alt - 1] = 0;
+	    new->altc = (char **) realloc(new->altc, new->alt);
+
+	    for(i = 0; i < strlen(pt); i++)
+		if(pt[i] == '|')
+		    new->altn[new->alt - 1]++;
+
+	    if(!new->altn[new->alt - 1]) {
+		error = 1;
+		break;
+	    } else
+		new->altn[new->alt - 1]++;
+
+	    if(!(new->altc[new->alt - 1] = (char *) cli_calloc(new->altn[new->alt - 1], 1))) {
+		error = 1;
+		break;
+	    }
+
+	    for(i = 0; i < new->altn[new->alt - 1]; i++) {
+		if((h = cli_strtok(pt, i, "|")) == NULL) {
+		    error = 1;
+		    break;
+		}
+
+		if((c = cl_hex2str(h)) == NULL) {
+		    free(h);
+		    error = 1;
+		    break;
+		}
+
+		new->altc[new->alt - 1][i] = (char) *c;
+		free(c);
+		free(h);
+	    }
+
+	    if(error)
+		break;
+	}
+
+	if(start)
+	    strcat(hexnew, start);
+
+	hex = hexnew;
+	free(hexcpy);
+
+	if(error) {
+	    free(hexcpy);
+	    free(hexnew);
+	    if(new->alt) {
+		free(new->altn);
+		for(i = 0; i < new->alt; i++)
+		    free(new->altc[i]);
+		free(new->altc);
+	    }
+	    free(new);
+	    return CL_EMALFDB;
+	}
+
+    } else
+	hex = (char *) hexsig;
+
+
+    new->length = strlen(hex) / 2;
 
     if(new->length > root->maxpatlen)
 	root->maxpatlen = new->length;
 
-    if((new->pattern = cl_hex2str(hexsig)) == NULL) {
+    if((new->pattern = cl_hex2str(hex)) == NULL) {
+	if(new->alt) {
+	    free(new->altn);
+	    for(i = 0; i < new->alt; i++)
+		free(new->altc[i]);
+	    free(new->altc);
+	    free(hex);
+	}
 	free(new);
 	return CL_EMALFDB;
     }
@@ -70,11 +176,25 @@ static int cli_addsig(struct cl_node *root, const char *virname, const char *hex
 	virlen = strlen(virname);
 
     if(virlen <= 0) {
+	if(new->alt) {
+	    free(new->altn);
+	    for(i = 0; i < new->alt; i++)
+		free(new->altc[i]);
+	    free(new->altc);
+	    free(hex);
+	}
 	free(new);
 	return CL_EMALFDB;
     }
 
     if((new->virname = cli_calloc(virlen + 1, sizeof(char))) == NULL) {
+	if(new->alt) {
+	    free(new->altn);
+	    for(i = 0; i < new->alt; i++)
+		free(new->altc[i]);
+	    free(new->altc);
+	    free(hex);
+	}
 	free(new);
 	return CL_EMEM;
     }
@@ -83,9 +203,19 @@ static int cli_addsig(struct cl_node *root, const char *virname, const char *hex
 
     if((ret = cli_addpatt(root, new))) {
 	free(new->virname);
+	if(new->alt) {
+	    free(new->altn);
+	    for(i = 0; i < new->alt; i++)
+		free(new->altc[i]);
+	    free(new->altc);
+	    free(hex);
+	}
 	free(new);
 	return ret;
     }
+
+    if(new->alt)
+	free(hex);
 
     return 0;
 }
@@ -93,11 +223,87 @@ static int cli_addsig(struct cl_node *root, const char *virname, const char *hex
 int cli_parse_add(struct cl_node *root, char *virname, const char *hexsig, int type)
 {
 	struct cli_patt *new;
-	char *pt;
+	char *pt, *hexcpy, *start, *n;
 	int ret, virlen, parts = 0, i, len;
+	int mindist = 0, maxdist = 0, error = 0;
 
 
-    if(strchr(hexsig, '*')) {
+    if(strchr(hexsig, '{')) {
+
+	root->partsigs++;
+
+	if(!(hexcpy = strdup(hexsig)))
+	    return CL_EMEM;
+
+
+	len = strlen(hexsig);
+	for(i = 0; i < len; i++)
+	    if(hexsig[i] == '{')
+		parts++;
+
+	if(parts)
+	    parts++;
+
+	start = pt = hexcpy;
+	for(i = 1; i <= parts; i++) {
+
+	    if(i != parts) {
+		pt = strchr(start, '{');
+		*pt++ = 0;
+	    }
+
+	    if((ret = cli_addsig(root, virname, start, root->partsigs, parts, i, type, mindist, maxdist))) {
+		cli_errmsg("cli_parse_add(): Problem adding signature.\n");
+		error = 1;
+		break;
+	    }
+
+	    if(i == parts)
+		break;
+
+	    if(!(start = strchr(pt, '}'))) {
+		error = 1;
+		break;
+	    }
+	    *start++ = 0;
+
+	    if(!pt) {
+		error = 1;
+		break;
+	    }
+
+	    mindist = maxdist = 0;
+	    if(!strchr(pt, '-')) {
+		if((mindist = maxdist = atoi(pt)) < 0) {
+		    error = 1;
+		    break;
+		}
+	    } else {
+		if((n = cli_strtok(pt, 0, "-")) != NULL) {
+		    if((mindist = atoi(n)) < 0) {
+			error = 1;
+			free(n);
+			break;
+		    }
+		    free(n);
+		}
+
+		if((n = cli_strtok(pt, 1, "-")) != NULL) {
+		    if((maxdist = atoi(n)) < 0) {
+			error = 1;
+			free(n);
+			break;
+		    }
+		    free(n);
+		}
+	    }
+	}
+
+	free(hexcpy);
+	if(error)
+	    return CL_EMALFDB;
+
+    } else if(strchr(hexsig, '*')) {
 	root->partsigs++;
 
 	len = strlen(hexsig);
@@ -114,7 +320,7 @@ int cli_parse_add(struct cl_node *root, char *virname, const char *hexsig, int t
 		return CL_EMALFDB;
 	    }
 
-	    if((ret = cli_addsig(root, virname, pt, root->partsigs, parts, i, type))) {
+	    if((ret = cli_addsig(root, virname, pt, root->partsigs, parts, i, type, 0, 0))) {
 		cli_errmsg("cli_parse_add(): Problem adding signature.\n");
 		free(pt);
 		return ret;
@@ -124,7 +330,7 @@ int cli_parse_add(struct cl_node *root, char *virname, const char *hexsig, int t
 	}
 
     } else { /* static */
-	if((ret = cli_addsig(root, virname, hexsig, 0, 0, 0, type))) {
+	if((ret = cli_addsig(root, virname, hexsig, 0, 0, 0, type, 0, 0))) {
 	    cli_errmsg("cli_parse_add(): Problem adding signature.\n");
 	    return ret;
 	}
@@ -174,12 +380,6 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
     }
 
     while(fgets(buffer, FILEBUFF, fd)) {
-
-	/* for forward compatibility */
-	if(strchr(buffer, '{') || strchr(buffer, '}')) {
-	    cli_dbgmsg("Not suported signature type detected at line %d. Skipping.\n", line);
-	    continue;
-	}
 
 	line++;
 	cli_chomp(buffer);

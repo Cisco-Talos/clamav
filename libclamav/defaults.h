@@ -21,4 +21,6 @@
 #endif
 
 #define VIRUSDB DATADIR "/viruses.db"
+
 #define CLI_IGN -200
+#define CLI_ALT -201
