@@ -374,9 +374,14 @@
  *			Don't attempt to return an old signature if no
  *				filename has been given. There has never been
  *				one to return
+ *	0.70u	29/4/04	When changing from realloc to cli_realloc I forgot
+ *			to keep the assignment of signature
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.85  2004/04/29 07:35:27  nigelhorne
+ * Change from realloc to cli_realloc - keep assignment
+ *
  * Revision 1.84  2004/04/28 14:28:29  nigelhorne
  * Various updates
  *
@@ -614,9 +619,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.84 2004/04/28 14:28:29 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.85 2004/04/29 07:35:27 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70t"
+#define	CM_VERSION	"0.70u"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -2768,7 +2773,7 @@ updateSigFile(void)
 
 	signatureStamp = statb.st_mtime;
 
-	cli_realloc(signature, statb.st_size);
+	signature = cli_realloc(signature, statb.st_size);
 	read(fd, signature, statb.st_size);
 	close(fd);
 
