@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.60  2004/06/16 08:07:39  nigelhorne
+ * Added thread safety
+ *
  * Revision 1.59  2004/06/02 10:11:09  nigelhorne
  * Corrupted binHex could crash on non Linux systems
  *
@@ -174,7 +177,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.59 2004/06/02 10:11:09 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.60 2004/06/16 08:07:39 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -199,6 +202,10 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.59 2004/06/02 10:11:09 nigelhorn
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
+
+#ifdef	CL_THREAD_SAFE
+#include <pthread.h>
+#endif
 
 #include "mbox.h"
 #include "table.h"
@@ -310,6 +317,9 @@ messageReset(message *m)
 void
 messageSetMimeType(message *mess, const char *type)
 {
+#ifdef	CL_THREAD_SAFE
+	static pthread_mutex_t mime_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
 	static table_t *mime_table;
 	int typeval;
 
@@ -325,19 +335,33 @@ messageSetMimeType(message *mess, const char *type)
 		if(*type++ == '\0')
 			return;
 
+#ifdef	CL_THREAD_SAFE
+	pthread_mutex_lock(&mime_mutex);
+#endif
 	if(mime_table == NULL) {
 		const struct mime_map *m;
 
 		mime_table = tableCreate();
-		if(mime_table == NULL)
+		if(mime_table == NULL) {
+#ifdef	CL_THREAD_SAFE
+			pthread_mutex_unlock(&mime_mutex);
+#endif
 			return;
+		}
 
 		for(m = mime_map; m->string; m++)
 			if(!tableInsert(mime_table, m->string, m->type)) {
 				tableDestroy(mime_table);
+				mime_table = NULL;
+#ifdef	CL_THREAD_SAFE
+				pthread_mutex_unlock(&mime_mutex);
+#endif
 				return;
 			}
 	}
+#ifdef	CL_THREAD_SAFE
+	pthread_mutex_unlock(&mime_mutex);
+#endif
 
 	typeval = tableFind(mime_table, type);
 
@@ -783,23 +807,13 @@ messageAddLine(message *m, const char *line, int takeCopy)
 	/*
 	 * See if this line marks the start of a non MIME inclusion that
 	 * will need to be scanned
-	 *
-	 * Notes that X- lines are not taken as start of mails because
-	 * cli_filetype() is too keen: any line it finds that starts X-
-	 * is seen to be the start of a new message, which results in too
-	 * many false positives for locating the possible start of a bounce,
-	 * and allows some instances of Worm.SomeFool.Gen-1 to get through in
-	 * bounce messages which end up not being correctly handled because
-	 * the real start of a bounce header is missed because of the earlier
-	 * false positive
 	 */
-	if(line) {
+	if(line && *line) {
 		if((m->encoding == NULL) &&
 		   (strncasecmp(line, encoding, sizeof(encoding) - 1) == 0) &&
 		   (strstr(line, "7bit") == NULL))
 			m->encoding = m->body_last;
 		else if((m->bounce == NULL) &&
-			(strncmp(line, "X-", 2) != 0) &&	/*!!*/
 			(cli_filetype(line, strlen(line)) == CL_MAILFILE))
 				m->bounce = m->body_last;
 		else if((m->binhex == NULL) &&

@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.76  2004/06/16 08:07:39  nigelhorne
+ * Added thread safety
+ *
  * Revision 1.75  2004/06/14 09:07:10  nigelhorne
  * Handle spam using broken e-mail generators for multipart/alternative
  *
@@ -213,7 +216,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.75 2004/06/14 09:07:10 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.76 2004/06/16 08:07:39 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -243,6 +246,10 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.75 2004/06/14 09:07:10 nigelhorne E
 #include <sys/types.h>
 #include <sys/param.h>
 #include <clamav.h>
+
+#ifdef	CL_THREAD_SAFE
+#include <pthread.h>
+#endif
 
 #include "table.h"
 #include "mbox.h"
@@ -333,6 +340,10 @@ static	const	struct tableinit {
 	{	"appledouble",	APPLEDOUBLE	},
 	{	NULL,		0		}
 };
+
+#ifdef	CL_THREAD_SAFE
+static	pthread_mutex_t	tables_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
 static	table_t	*rfc821Table, *subtypeTable;
 
 /* Maximum filenames under various systems */
@@ -398,15 +409,26 @@ cl_mbox(const char *dir, int desc)
 		return 0;
 	}
 
+#ifdef	CL_THREAD_SAFE
+	pthread_mutex_lock(&tables_mutex);
+#endif
 	if(rfc821Table == NULL) {
 		assert(subtypeTable == NULL);
 
 		if(initialiseTables(&rfc821Table, &subtypeTable) < 0) {
+			rfc821Table = NULL;
+			subtypeTable = NULL;
+#ifdef	CL_THREAD_SAFE
+			pthread_mutex_unlock(&tables_mutex);
+#endif
 			messageDestroy(m);
 			fclose(fd);
 			return -1;
 		}
 	}
+#ifdef	CL_THREAD_SAFE
+	pthread_mutex_unlock(&tables_mutex);
+#endif
 
 	/*
 	 * is it a UNIX style mbox with more than one
@@ -1369,7 +1391,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				break;
 			} else if(strcasecmp(mimeSubtype, "partial") == 0)
 				/* TODO */
-				cli_warnmsg("Content-type message/partial not yet supported");
+				cli_warnmsg("Content-type message/partial not yet supported\n");
 			else if(strcasecmp(mimeSubtype, "external-body") == 0)
 				/*
 				 * I don't believe that we should be going
