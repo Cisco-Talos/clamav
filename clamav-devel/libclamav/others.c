@@ -306,9 +306,7 @@ char *cl_gentemp(const char *dir)
 	cli_dbgmsg("cl_gentemp('%s'): out of memory\n", dir);
 	return NULL;
     }
-    cnt += sprintf(name, "%s", mdir);
-    if(!strrchr(name, '/'))
-        strcat(name, '/');
+    cnt += sprintf(name, "%s/", mdir);
 
     do {
 	for(i = 0; i < 32; i++)
