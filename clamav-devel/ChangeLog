@@ -1,3 +1,7 @@
+Sat Aug 21 14:07:47 CEST 2004 (acab)
+------------------------------------
+  * libclamav/pe.c: Added support for FSG 1.3
+
 Sat Aug 21 12:59:43 BST 2004 (njh)
 ----------------------------------
   * libclamav:	Changed the handling of miltipart messages, that is scanning
