@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -48,7 +48,7 @@ void clamuko_exit(int sig)
 
     dazukoUnregister();
     clamuko_running = 0;
-    logg("Clamuko stopped (exit).\n");
+    logg("Clamuko stopped.\n");
 }
 
 void *clamukoth(void *arg)
@@ -66,6 +66,7 @@ void *clamukoth(void *arg)
 
 
     clamuko_running = 1;
+    clamuko_scanning = 0;
 
     /* ignore all signals except SIGUSR1 */
     sigfillset(&sigset);
@@ -163,51 +164,7 @@ void *clamukoth(void *arg)
 
     while(1) {
 
-	/* wait while reloading the database */
-	if(reload) {
-	    logg("*Clamuko: Waiting (database reloading)\n");
-	    clamuko_reload = 1;
-	    maxwait = CL_DEFAULT_MAXWHILEWAIT;
-	    while(reload && maxwait--)
-		sleep(1);
-
-	    if(!maxwait && reload) {
-		logg("!Clamuko: Database reloading failed. Forcing quit...\n");
-		logg("Clamuko stopped.\n");
-		dazukoUnregister();
-		kill(progpid, SIGTERM);
-		clamuko_running = 0;
-		clamuko_scanning = 0;
-		clamuko_reload = 0;
-		return NULL;
-	    }
-
-	    clamuko_reload = 0;
-	}
-
 	if(dazukoGetAccess(&acc) == 0) {
-	    /* wait while reloading the database */
-	    if(reload) {
-		logg("*Clamuko: Waiting (database reloading, after dazukoGetAccess())\n");
-		clamuko_reload = 1;
-		maxwait = CL_DEFAULT_MAXWHILEWAIT;
-		while(reload && maxwait--)
-		    sleep(1);
-
-		if(!maxwait && reload) {
-		    logg("!Clamuko: Database reloading failed. Forcing quit...\n");
-		    kill(progpid, SIGTERM);
-		    acc.deny = 0;
-		    dazukoReturnAccess(&acc);
-		    logg("Clamuko stopped.\n");
-		    dazukoUnregister();
-		    clamuko_running = 0;
-		    clamuko_scanning = 0;
-		    clamuko_reload = 0;
-		    return NULL;
-		}
-	    }
-
 	    clamuko_scanning = 1;
 	    scan = 1;
 

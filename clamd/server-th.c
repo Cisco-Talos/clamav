@@ -119,6 +119,8 @@ void *threadscanner(void *arg)
 void *threadwatcher(void *arg)
 {
 	struct thrwarg *thwarg = (struct thrwarg *) arg;
+	struct thrarg *tharg;
+	pthread_attr_t thattr;
 	struct cfgstruct *cpt;
 	sigset_t sigset;
 	int i, j, ret, maxwait, virnum;
@@ -192,7 +194,7 @@ void *threadwatcher(void *arg)
 #ifdef CLAMUKO
 	    /* stop clamuko */
 	    if(clamuko_running) {
-		logg("Stopping Clamuko... (id %d)\n", clamukoid);
+		logg("Stopping Clamuko...\n");
 		pthread_kill(clamukoid, SIGUSR1);
 		/* we must wait for Dazuko unregistration */
 		maxwait = CL_DEFAULT_MAXWHILEWAIT * 5;
@@ -295,10 +297,19 @@ void *threadwatcher(void *arg)
 		    }
 
 #ifdef CLAMUKO
-		if(clamuko_scanning && !clamuko_reload)
-		    need_wait = 1;
-#endif
+		if(clamuko_running) {
+		    logg("Stopping Clamuko...\n");
+		    pthread_kill(clamukoid, SIGUSR1);
+		    /* we must wait for Dazuko unregistration */
+		    maxwait = CL_DEFAULT_MAXWHILEWAIT * 5;
+		    while(clamuko_running && maxwait--)
+			usleep(200000);
 
+		    if(!maxwait && clamuko_running)
+			logg("!Critical error: Can't stop Clamuko.\n");
+		    /* should we stop here ? */
+		}
+#endif
 		if(need_wait)
 		    usleep(200000);
 
@@ -355,6 +366,24 @@ void *threadwatcher(void *arg)
 
 		logg("Database correctly reloaded (%d viruses)\n", virnum);
 	    }
+
+	    /* start clamuko */
+#ifdef CLAMUKO
+
+	    if(cfgopt(thwarg->copt, "ClamukoScanOnLine")) {
+		logg("Starting Clamuko...\n");
+		tharg = (struct thrarg *) mcalloc(1, sizeof(struct thrarg));
+		tharg->copt = thwarg->copt;
+		tharg->root = *thwarg->root;
+		tharg->limits = thwarg->limits;
+		tharg->options = thwarg->options;
+
+		pthread_attr_init(&thattr);
+		pthread_attr_setdetachstate(&thattr, PTHREAD_CREATE_DETACHED);
+		pthread_create(&clamukoid, &thattr, clamukoth, tharg);
+		pthread_attr_destroy(&thattr);
+	    }
+#endif
 
 	    reload = 0;
 	}
@@ -492,7 +521,6 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     progpid = 0;
     reload = 0;
 #ifdef CLAMUKO
-    clamuko_scanning = 0;
     clamuko_running = 0;
 #endif
 
@@ -508,7 +536,6 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	tharg->root = root;
 	tharg->limits = &limits;
 	tharg->options = options;
-	clamuko_reload = 0;
 
 	pthread_create(&clamukoid, &thattr, clamukoth, tharg);
     }
@@ -520,6 +547,8 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     thwarg.socketd = socketd;
     thwarg.copt = copt;
     thwarg.root = &root;
+    thwarg.limits = &limits;
+    thwarg.options = options;
     pthread_create(&watcherid, &thattr, threadwatcher, &thwarg);
 
     /* set up signal handling */
