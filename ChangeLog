@@ -1,3 +1,8 @@
+Tue Dec  2 06:38:13 GMT 2003 (njh)
+----------------------------------
+  * clamav-milter: use setsid if setpgrp not available
+	Thanks to Eugene Crosser <crosser@rol.ru> and Tomasz
+
 Mon Dec  1 23:51:25 CET 2003 (tk)
 ---------------------------------
   * libclamav: maxratio added to cl_limits
