@@ -22,8 +22,6 @@
 
 #define VIRUSDBDIR DATADIR
 
-#define DEFAULT_CFG CONFDIR"/clamav.conf"
-
 #define MIRROR_CFG "/mirrors.txt"
 
 #define MIRROR "/mirror"
@@ -41,3 +39,5 @@
 #else
 #define UNPGROUP "clamav"
 #endif
+
+#define CL_DEFAULT_CHECKS 6

@@ -117,7 +117,7 @@ am__include = @am__include@
 am__quote = @am__quote@
 install_sh = @install_sh@
 
-EXTRA_DIST = clamav.conf
+EXTRA_DIST = clamav.conf freshclam.conf
 CFGINST = @CFGDIR@
 subdir = etc
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
@@ -176,8 +176,6 @@ check: check-am
 all-am: Makefile
 
 installdirs:
-
-@INSTALL_CONF_FALSE@install: install-am
 install-exec: install-exec-am
 install-data: install-data-am
 uninstall: uninstall-am
@@ -247,9 +245,10 @@ uninstall-am: uninstall-info-am
 	mostlyclean-libtool uninstall uninstall-am uninstall-info-am
 
 
-@INSTALL_CONF_TRUE@install:
-@INSTALL_CONF_TRUE@	$(mkinstalldirs) $(DESTDIR)$(CFGINST)
-@INSTALL_CONF_TRUE@	@$(INSTALL_DATA) clamav.conf $(DESTDIR)$(CFGINST)
+install:
+	$(mkinstalldirs) $(DESTDIR)$(CFGINST)
+@INSTALL_CLAMAV_CONF_TRUE@	@$(INSTALL_DATA) clamav.conf $(DESTDIR)$(CFGINST)
+@INSTALL_FRESHCLAM_CONF_TRUE@	@$(INSTALL_DATA) freshclam.conf $(DESTDIR)$(CFGINST)
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

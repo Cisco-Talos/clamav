@@ -42,11 +42,12 @@
 #include "shared.h"
 #include "notify.h"
 
-int downloadmanager(const struct optstruct *opt, const char *hostname)
+int downloadmanager(const struct cfgstruct *copt, const char *hostname)
 {
 	time_t currtime;
 	int ret, updated = 0, signo = 0;
 	char ipaddr[16];
+	struct cfgstruct *cpt;
 
 
     time(&currtime);
@@ -60,19 +61,19 @@ int downloadmanager(const struct optstruct *opt, const char *hostname)
 
     memset(ipaddr, 0, sizeof(ipaddr));
 
-    if((ret = downloaddb(DB1NAME, "main.cvd", hostname, ipaddr, &signo, opt)) > 50)
+    if((ret = downloaddb(DB1NAME, "main.cvd", hostname, ipaddr, &signo, copt)) > 50)
 	return ret;
     else if(ret == 0)
 	updated = 1;
 
     /* if ipaddr[0] != 0 it will use it to connect to the web host */
-    if((ret = downloaddb(DB2NAME, "daily.cvd", hostname, ipaddr, &signo, opt)) > 50)
+    if((ret = downloaddb(DB2NAME, "daily.cvd", hostname, ipaddr, &signo, copt)) > 50)
 	return ret;
     else if(ret == 0)
 	updated = 1;
 
     if(updated) {
-	if(optl(opt, "http-proxy")) {
+	if(cfgopt(copt, "HTTPProxyServer")) {
 	    mprintf("Database updated (%d signatures) from %s.\n", signo, hostname);
 	    logg("Database updated (%d signatures) from %s.\n", signo, hostname);
 	} else {
@@ -81,17 +82,17 @@ int downloadmanager(const struct optstruct *opt, const char *hostname)
 	}
 
 #ifdef BUILD_CLAMD
-	if(optl(opt, "daemon-notify")) {
-		const char *clamav_conf = getargl(opt, "daemon-notify");
+	if((cpt = cfgopt(copt, "NotifyClamd"))) {
+		const char *clamav_conf = cpt->strarg;
 	    if(!clamav_conf)
-		clamav_conf = DEFAULT_CFG;
+		clamav_conf = CONFDIR"/clamav.conf";
 
 	    notify(clamav_conf);
 	}
 #endif
 
-	if(optl(opt, "on-update-execute"))
-	    system(getargl(opt, "on-update-execute"));
+	if((cpt = cfgopt(copt, "OnUpdateExecute")))
+	    system(cpt->strarg);
 
 	return 0;
 
@@ -99,53 +100,46 @@ int downloadmanager(const struct optstruct *opt, const char *hostname)
 	return 1;
 }
 
-int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct optstruct *opt)
+int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt)
 {
 	struct cl_cvd *current, *remote;
-	int hostfd, nodb = 0, ret;
+	struct cfgstruct *cpt;
+	int hostfd, nodb = 0, ret, port = 0;
 	char  *tempname, ipaddr[16];
-	const char *proxy, *user;
+	const char *proxy = NULL, *user = NULL, *pass = NULL;
 
 
     if((current = cl_cvdhead(localname)) == NULL)
 	nodb = 1;
 
-    if(optl(opt, "proxy-user"))
-	user = getargl(opt, "proxy-user");
-    else
-	user = NULL;
+    if((cpt = cfgopt(copt, "HTTPProxyUsername"))) {
+	user = cpt->strarg;
+
+	if((cpt = cfgopt(copt, "HTTPProxyPassword"))) {
+	    pass = cpt->strarg;
+	} else {
+	    mprintf("HTTPProxyUsername required HTTPProxyPassword\n");
+	    return 57;
+	}
+    }
 
     /*
      * njh@bandsman.co.uk: added proxy support. Tested using squid 2.4
      */
-    if(optl(opt, "http-proxy")) {
-	proxy = getargl(opt, "http-proxy");
+    if((cpt = cfgopt(copt, "HTTPProxyServer"))) {
+	proxy = cpt->strarg;
 	if(strncasecmp(proxy, "http://", 7) == 0)
 	    proxy += 7;
-    } else if((proxy = getenv("http_proxy"))) {
-	char *no_proxy;
-
-	if(strncasecmp(proxy, "http://", 7) == 0)
-		proxy = &proxy[7];
-
-	if((no_proxy = getenv("no_proxy"))) {
-		const char *ptr;
-		for(ptr = strtok(no_proxy, ","); ptr; ptr = strtok(NULL, ","))
-			if(strcasecmp(ptr, hostname) == 0) {
-				proxy = NULL;
-				break;
-			}
-	}
-	if(proxy && strlen(proxy) == 0)
-		proxy = NULL;
-    }
-    if(proxy)
 	mprintf("Connecting via %s\n", proxy);
+    }
+
+    if((cpt = cfgopt(copt, "HTTPProxyPort")))
+	port = cpt->numarg;
 
     if(ip[0])
-	hostfd = wwwconnect(ip, proxy, ipaddr); /* we use ip to connect */
+	hostfd = wwwconnect(ip, proxy, port, ipaddr); /* we use ip to connect */
     else
-	hostfd = wwwconnect(hostname, proxy, ipaddr);
+	hostfd = wwwconnect(hostname, proxy, port, ipaddr);
 
     if(hostfd < 0) {
 	mprintf("@Connection with %s (IP: %s) failed.\n", hostname, ipaddr);
@@ -156,7 +150,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     if(!ip[0])
 	strcpy(ip, ipaddr);
 
-    if(!(remote = remote_cvdhead(remotename, hostfd, hostname, proxy, user))) {
+    if(!(remote = remote_cvdhead(remotename, hostfd, hostname, proxy, user, pass))) {
 	mprintf("@Can't read %s header from %s (%s)\n", remotename, hostname, ipaddr);
 	close(hostfd);
 	return 52;
@@ -184,7 +178,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
      */
     /* begin bug work-around */
     close(hostfd);
-    hostfd = wwwconnect(ipaddr, proxy, NULL); /* we use ipaddr to connect
+    hostfd = wwwconnect(ipaddr, proxy, port, NULL); /* we use ipaddr to connect
 					       * to the same mirror
 					       */
 
@@ -199,7 +193,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
      */
     tempname = cl_gentemp(".");
 
-    if(get_database(remotename, hostfd, tempname, hostname, proxy, user)) {
+    if(get_database(remotename, hostfd, tempname, hostname, proxy, user, pass)) {
         mprintf("@Can't download %s from %s\n", remotename, ipaddr);
         unlink(tempname);
         free(tempname);
@@ -239,7 +233,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 
 /* this function returns socket descriptor */
 /* proxy support finshed by njh@bandsman.co.uk */
-int wwwconnect(const char *server, const char *proxy, char *ip)
+int wwwconnect(const char *server, const char *proxy, int pport, char *ip)
 {
 	int socketfd, port;
 	struct sockaddr_in name;
@@ -262,13 +256,9 @@ int wwwconnect(const char *server, const char *proxy, char *ip)
     name.sin_family = AF_INET;
 
     if(proxy) {
-	proxycpy = strdup(proxy);
-	hostpt = proxycpy;
-	portpt = strchr(proxycpy, ':');
-	if(portpt) {
-		*portpt = 0;
-		port = atoi(++portpt);
-	} else {
+	hostpt = proxy;
+
+	if(!(port = pport)) {
 #ifndef C_CYGWIN
 		const struct servent *webcache = getservbyname("webcache", "TCP");
 
@@ -282,6 +272,7 @@ int wwwconnect(const char *server, const char *proxy, char *ip)
 		port = 8080;
 #endif
 	}
+
     } else {
 	hostpt = server;
 	port = 80;
@@ -289,8 +280,6 @@ int wwwconnect(const char *server, const char *proxy, char *ip)
 
     if((host = gethostbyname(hostpt)) == NULL) {
         mprintf("@Can't get information about %s host.\n", hostpt);
-        if(proxycpy)
-	    free(proxycpy);
 	return -1;
     }
 
@@ -307,21 +296,17 @@ int wwwconnect(const char *server, const char *proxy, char *ip)
     if(connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in)) == -1) {
 	mprintf("@Can't connect to port %d of host %s (%s)\n", port, hostpt, ipaddr);
 	close(socketfd);
-	if(proxycpy)
-	    free(proxycpy);
 	return -2;
     }
 
-    if(proxycpy)
-	free(proxycpy);
     return socketfd;
 }
 
 /* njh@bandsman.co.uk: added proxy support */
 /* TODO: use a HEAD instruction to see if the file has been changed */
-struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostname, const char *proxy, const char *user)
+struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostname, const char *proxy, const char *user, const char *pass)
 {
-	char cmd[512], head[513], buffer[FILEBUFF], *ch, *tmp;
+	char cmd[512], head[513], buffer[FILEBUFF], *ch, *tmp, *userpass;
 	int i, j, bread, cnt;
 	char *remotename = NULL, *authorization = NULL;
 	struct cl_cvd *cvd;
@@ -332,13 +317,16 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
 
         if(user) {
             int len;
-    	    char* buf = mmalloc(strlen(user)*2+4);
-            len=fmt_base64(buf,user,strlen(user));
+	    char* buf = mmalloc(strlen(user)*2+4);
+	    char *userpass = mmalloc(strlen(user) + strlen(pass) + 2);
+	    sprintf(userpass, "%s:%s", user, pass);
+            len=fmt_base64(buf,userpass,strlen(userpass));
+	    free(userpass);
             buf[len]='\0';
             authorization = mmalloc(strlen(buf) + 30);
             sprintf(authorization, "Proxy-Authorization: Basic %s\r\n", buf);
             free(buf);
-	}
+        }
     }
 
     mprintf("Reading CVD header (%s): ", file);
@@ -413,11 +401,9 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
 
 /* njh@bandsman.co.uk: added proxy support */
 /* TODO: use a HEAD instruction to see if the file has been changed */
-int
-get_database(const char *dbfile, int socketfd, const char *file, const char *hostname, const char *proxy, const char *user)
+int get_database(const char *dbfile, int socketfd, const char *file, const char *hostname, const char *proxy, const char *user, const char *pass)
 {
-	char cmd[512], buffer[FILEBUFF];
-	char *ch;
+	char cmd[512], buffer[FILEBUFF], *ch;
 	int bread, fd, i, rot = 0;
 	char *remotename = NULL, *authorization = NULL;
 	const char *rotation = "|/-\\";
@@ -430,7 +416,10 @@ get_database(const char *dbfile, int socketfd, const char *file, const char *hos
         if(user) {
             int len;
 	    char* buf = mmalloc(strlen(user)*2+4);
-            len=fmt_base64(buf,user,strlen(user));
+	    char *userpass = mmalloc(strlen(user) + strlen(pass) + 2);
+	    sprintf(userpass, "%s:%s", user, pass);
+            len=fmt_base64(buf,userpass,strlen(userpass));
+	    free(userpass);
             buf[len]='\0';
             authorization = mmalloc(strlen(buf) + 30);
             sprintf(authorization, "Proxy-Authorization: Basic %s\r\n", buf);

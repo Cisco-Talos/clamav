@@ -9294,11 +9294,21 @@ _ACEOF
 
 
 if test ! -r "$cfg_dir/clamav.conf"; then
-  INSTALL_CONF_TRUE=
-  INSTALL_CONF_FALSE='#'
+  INSTALL_CLAMAV_CONF_TRUE=
+  INSTALL_CLAMAV_CONF_FALSE='#'
 else
-  INSTALL_CONF_TRUE='#'
-  INSTALL_CONF_FALSE=
+  INSTALL_CLAMAV_CONF_TRUE='#'
+  INSTALL_CLAMAV_CONF_FALSE=
+fi
+
+
+
+if test ! -r "$cfg_dir/freshclam.conf"; then
+  INSTALL_FRESHCLAM_CONF_TRUE=
+  INSTALL_FRESHCLAM_CONF_FALSE='#'
+else
+  INSTALL_FRESHCLAM_CONF_TRUE='#'
+  INSTALL_FRESHCLAM_CONF_FALSE=
 fi
 
 
@@ -10228,10 +10238,17 @@ echo "$as_me: error: conditional \"AMDEP\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
-if test -z "${INSTALL_CONF_TRUE}" && test -z "${INSTALL_CONF_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"INSTALL_CONF\" was never defined.
+if test -z "${INSTALL_CLAMAV_CONF_TRUE}" && test -z "${INSTALL_CLAMAV_CONF_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"INSTALL_CLAMAV_CONF\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"INSTALL_CONF\" was never defined.
+echo "$as_me: error: conditional \"INSTALL_CLAMAV_CONF\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${INSTALL_FRESHCLAM_CONF_TRUE}" && test -z "${INSTALL_FRESHCLAM_CONF_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"INSTALL_FRESHCLAM_CONF\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"INSTALL_FRESHCLAM_CONF\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -10794,8 +10811,10 @@ s,@CPP@,$CPP,;t t
 s,@LIBTOOL@,$LIBTOOL,;t t
 s,@DBDIR@,$DBDIR,;t t
 s,@CFGDIR@,$CFGDIR,;t t
-s,@INSTALL_CONF_TRUE@,$INSTALL_CONF_TRUE,;t t
-s,@INSTALL_CONF_FALSE@,$INSTALL_CONF_FALSE,;t t
+s,@INSTALL_CLAMAV_CONF_TRUE@,$INSTALL_CLAMAV_CONF_TRUE,;t t
+s,@INSTALL_CLAMAV_CONF_FALSE@,$INSTALL_CLAMAV_CONF_FALSE,;t t
+s,@INSTALL_FRESHCLAM_CONF_TRUE@,$INSTALL_FRESHCLAM_CONF_TRUE,;t t
+s,@INSTALL_FRESHCLAM_CONF_FALSE@,$INSTALL_FRESHCLAM_CONF_FALSE,;t t
 s,@LIBCLAMAV_LIBS@,$LIBCLAMAV_LIBS,;t t
 s,@CLAMD_LIBS@,$CLAMD_LIBS,;t t
 s,@FRESHCLAM_LIBS@,$FRESHCLAM_LIBS,;t t
