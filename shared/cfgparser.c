@@ -238,14 +238,15 @@ void freecfg(struct cfgstruct *copt)
 
     while (copt) {
 	arg = copt->nextarg;
-	while (arg) {
+	while(arg) {
 	    if(arg->strarg) {
 		free(arg->optname);
 		free(arg->strarg);
 		handler = arg;
-		arg=arg->nextarg;
+		arg = arg->nextarg;
 		free(handler);
-	    }
+	    } else
+		arg = arg->nextarg;
 	}
 	if(copt->optname) {
 	    free(copt->optname);

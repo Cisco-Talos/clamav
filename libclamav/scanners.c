@@ -101,6 +101,7 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "X-Original-To: ",		15, "Mail",		  CL_MAILFILE},
     {0,  "X-Symantec-",			11, "Symantec",		  CL_MAILFILE},
     {0,  "X-EVS",			 5, "EVS mail",		  CL_MAILFILE},
+    {0,  "X-Real-To: ",                 11, "Mail",               CL_MAILFILE},
     {0,  ">From ",			 6, "Mail",		  CL_MAILFILE},
     {0,  "Date: ",			 6, "Mail",		  CL_MAILFILE},
     {0,  "Message-Id: ",		12, "Mail",		  CL_MAILFILE},
