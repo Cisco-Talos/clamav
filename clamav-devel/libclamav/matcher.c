@@ -203,7 +203,7 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
  	char *buffer, *buff, *endbl, *pt;
 	int bytes, buffsize, length, ret, *partcnt, type = CL_CLEAN;
 	unsigned long int *partoff, offset = 0;
-	struct MD5Context ctx;
+	MD5_CTX ctx;
 	unsigned char digest[16];
 	struct cli_md5_node *md5_node;
 
@@ -234,7 +234,7 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
     }
 
     if(root->md5_hlist)
-	MD5Init(&ctx);
+	MD5_Init(&ctx);
 
 
     buff = buffer;
@@ -274,7 +274,7 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
         length = buffsize;
 
 	if(root->md5_hlist)
-	    MD5Update(&ctx, buff, bytes);
+	    MD5_Update(&ctx, buff, bytes);
     }
 
     free(buffer);
@@ -282,7 +282,7 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
     free(partoff);
 
     if(root->md5_hlist) {
-	MD5Final(digest, &ctx);
+	MD5_Final(digest, &ctx);
 
 	if(cli_debug_flag) {
 		char md5str[33];
