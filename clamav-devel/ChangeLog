@@ -1,3 +1,7 @@
+Fri Jun 11 22:11:31 CEST 2004 (tk)
+----------------------------------
+  * libclamav: pe: add dumper; RVA calculation; fix error codes
+
 Wed Jun  9 17:47:29 CEST 2004 (tk)
 ----------------------------------
   * clamd: do not display "Command parser: read() failed." (in SESSION mode)

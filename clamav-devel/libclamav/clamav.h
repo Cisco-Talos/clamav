@@ -64,6 +64,7 @@ extern "C"
 #define CL_ECVDEXTR	-9  /* CVD extraction failure */
 #define CL_EMD5		-10 /* MD5 verification error */
 #define CL_EDSIG	-11 /* digital signature verification error */
+#define CL_EIO		-12 /* general I/O error */
 
 /* options */
 #define CL_RAW		0
