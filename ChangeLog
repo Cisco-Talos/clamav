@@ -1,3 +1,8 @@
+Fri Mar 26 11:21:34 GMT 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Use cli_writen()
+  * clamav-milter:	Added some debug information to clamd_send()
+
 Fri Mar 26 09:47:50 GMT 2004 (trog)
   * libclamav: Remove duplicate code. Fix memory leak.
 

@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.59  2004/03/26 11:08:36  nigelhorne
+ * Use cli_writen
+ *
  * Revision 1.58  2004/03/25 22:40:46  nigelhorne
  * Removed even more calls to realloc and some duplicated code
  *
@@ -165,7 +168,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.58 2004/03/25 22:40:46 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.59 2004/03/26 11:08:36 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1763,11 +1766,10 @@ saveTextPart(message *m, const char *dir)
 static bool
 saveFile(const blob *b, const char *dir)
 {
-	unsigned long nbytes = blobGetDataSize(b);
+	const unsigned long nbytes = blobGetDataSize(b);
 	size_t suffixLen = 0;
 	int fd;
 	const char *cptr, *suffix;
-	unsigned char *data;
 	char filename[NAME_MAX + 1];
 
 	assert(dir != NULL);
@@ -1842,16 +1844,10 @@ saveFile(const blob *b, const char *dir)
 	cli_dbgmsg("Saving attachment as %s (%lu bytes long)\n",
 		filename, nbytes);
 
-	data = blobGetData(b);
-	while(nbytes > 0) {
-		int rc = write(fd, data, (size_t)nbytes);
-		if(rc < 0) {
-			perror(filename);
-			close(fd);
-			return FALSE;
-		}
-		nbytes -= rc;
-		data = &data[rc];
+	if(cli_writen(fd, blobGetData(b), (size_t)nbytes) != nbytes) {
+		perror(filename);
+		close(fd);
+		return FALSE;
 	}
 
 	return (close(fd) >= 0);
