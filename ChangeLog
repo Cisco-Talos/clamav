@@ -1,3 +1,9 @@
+Tue Nov 16 16:15:38 CET 2004 (tk)
+---------------------------------
+  * clamscan/manager.c: fix duplicate reporting of failure to open some
+			archive types (patch by Robert Hogan
+			<robert*roberthogan.net>)
+
 Mon Nov 15 23:55:50 CET 2004 (tk)
 ---------------------------------
   * libclamav/scanners.c: mscab: pass duplicated descriptor to cabd->dsearch()
