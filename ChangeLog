@@ -1,3 +1,7 @@
+Fri Feb  4 10:02:08 GMT 2005 (trog)
+-----------------------------------
+  * libclamav/special.c: check RIFF files for MS05-002. Not yet activated.
+
 Thu Feb  3 21:09:34 GMT 2005 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Speed improvements in the handling of bounce messages
