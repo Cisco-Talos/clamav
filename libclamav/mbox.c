@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.118  2004/09/14 12:09:37  nigelhorne
+ * Include old normalise code
+ *
  * Revision 1.117  2004/09/13 16:44:01  kojm
  * minor cleanup
  *
@@ -339,7 +342,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.117 2004/09/13 16:44:01 kojm Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.118 2004/09/14 12:09:37 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -423,8 +426,6 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 			 */
 
 #ifdef	FOLLOWURLS
-
-#include "htmlnorm.h"
 
 #define	MAX_URLS	5	/*
 				 * Maximum number of URLs scanned in a message
@@ -2109,6 +2110,80 @@ saveTextPart(message *m, const char *dir)
 }
 
 #ifdef	FOLLOWURLS
+
+/*
+ * TODO: Use the newer normalise code
+ * This is the old normalise code which normalises in memory. The new
+ * code uses temporary files and has a different API.
+ * 
+* Normalize an HTML buffer using the following rules:
+	o Remove multiple contiguous spaces
+	o Remove spaces around '<' and '>' in tags
+	o Remove spaces around '=' in tags
+	o Replace single quote with double quote in tags
+	o Convert to lowercase
+	o Convert all white space to a space character
+*/
+static unsigned char *
+mbox_html_normalize(unsigned char *in_buff, off_t in_size)
+{
+	unsigned char *out_buff;
+	off_t out_size=0, i;
+	int had_space=FALSE, tag_depth=0, in_quote=FALSE;
+	
+	out_buff = (unsigned char *)cli_malloc(in_size+1);
+	if (!out_buff) {
+		cli_errmsg("malloc failed");
+		return NULL;
+	}
+	
+	for (i=0 ; i < in_size ; i++) {
+		if (in_buff[i] == '<') {
+			out_buff[out_size++] = '<';
+			tag_depth++;
+			if (tag_depth == 1) {
+				had_space=TRUE; /* consume spaces */
+			}
+		} else if ((in_buff[i] == '=') && (tag_depth == 1)) {
+			/* Remove preceeding spaces */
+			while ((out_size > 0) &&
+				(out_buff[out_size-1] == ' ')) {
+				out_size--;
+			}
+			out_buff[out_size++] = '=';
+			had_space=TRUE;
+		} else if (isspace(in_buff[i])) {
+			if (!had_space) {
+				out_buff[out_size++] = ' ';
+				had_space=TRUE;
+			}
+		} else if (in_buff[i] == '>') {
+			/* Remove preceeding spaces */
+			if (tag_depth == 1) {
+				while ((out_size > 0) &&
+					(out_buff[out_size-1] == ' ')) {
+					out_size--;
+				}
+			}
+			out_buff[out_size++] = '>';
+			tag_depth--;	
+		} else if ((in_buff[i] == '\'') && (tag_depth==1)) {
+			/* Convert single quotes to double quotes */
+			if (in_quote || out_buff[out_size-1] == '=') {
+				out_buff[out_size++] = '\"';
+				in_quote = !in_quote;
+			} else {
+				out_buff[out_size++] = '\'';
+			}
+		} else {
+			out_buff[out_size++] = tolower(in_buff[i]);
+			had_space=FALSE;
+		}
+	}
+	out_buff[out_size] = '\0';
+	return out_buff;
+}
+
 static void
 checkURLs(message *m, const char *dir)
 {
@@ -2139,7 +2214,7 @@ checkURLs(message *m, const char *dir)
 	t = tableCreate();
 
 	n = 0;
-	normalised = ptr = html_normalize(blobGetData(b), len);
+	normalised = ptr = mbox_html_normalize(blobGetData(b), len);
 
 	if(normalised == NULL) {
 		blobDestroy(b);
