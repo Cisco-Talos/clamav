@@ -579,6 +579,10 @@ Changes
 0.80y	5/12/04: --internal: fixed memory leak when a new database is loaded
 		Fixed array overrun on startup that caused problems on some
 			platforms
+0.80z	6/12/04: Quarantine files were not being renamed to contain the virus
+			name if --quiet is given
+		Fix compilation error if is SESSION not defined.
+		Quarantine files could lose the date from the path
 
 INTERNATIONALISATION
 
