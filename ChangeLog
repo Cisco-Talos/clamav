@@ -1,3 +1,9 @@
+Sat Oct  2 18:52:32 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Fix crash if %h is used in a template and --headers is
+				not set reported by "Sergey Y. Afonin"
+				<asy@kraft-s.ru>
+
 Sat Oct  2 16:41:02 BST 2004 (njh)
 ----------------------------------
   * libclamav/table.c:	Fix compilation problem when --enable-debug is not set
