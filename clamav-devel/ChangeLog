@@ -1,3 +1,8 @@
+Thu Aug  5 11:41:00 CEST 2004 (tk)
+----------------------------------
+  * libclamav: pe: pass virtual instead of raw address of entry point to
+	       petite_inflate2x_1to9
+
 Thu Aug  5 08:44:51 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Handle more variants of gethostbyname_r

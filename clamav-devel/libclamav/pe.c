@@ -755,7 +755,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    }
 
 	    switch(petite_inflate2x_1to9(dest, min, max - min, section_hdr,
-		    nsections, EC32(optional_hdr.ImageBase), ep, ndesc,
+		    nsections, EC32(optional_hdr.ImageBase),
+		    EC32(optional_hdr.AddressOfEntryPoint), ndesc,
 		    found, EC32(optional_hdr.DataDirectory[2].VirtualAddress),
 		    EC32(optional_hdr.DataDirectory[2].Size))) {
 		case 1:
