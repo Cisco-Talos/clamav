@@ -1,3 +1,9 @@
+Sat Oct 16 14:55:03 BST 2004 (njh)
+----------------------------------
+  * libclamav/message.c:	Handle some broken email headers:
+		Content-Transfer-Encoding: 8 bit
+		Content-Type: plain/text
+
 Sat Oct 16 10:02:32 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Improved handling for wraparound headers

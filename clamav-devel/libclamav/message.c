@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.101  2004/10/16 13:53:52  nigelhorne
+ * Handle '8 bit' and plain/text
+ *
  * Revision 1.100  2004/10/14 17:45:55  nigelhorne
  * Try to reclaim some memory if it becomes low when decoding
  *
@@ -297,7 +300,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.100 2004/10/14 17:45:55 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.101 2004/10/16 13:53:52 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -367,16 +370,15 @@ static	void	messageDedup(message *m);
 static	const	struct	encoding_map {
 	const	char	*string;
 	encoding_type	type;
-} encoding_map[] = {
+} encoding_map[] = {	/* rfc1521 */
 	{	"7bit",			NOENCODING	},
 	{	"text/plain",		NOENCODING	},
 	{	"quoted-printable",	QUOTEDPRINTABLE	},	/* rfc1522 */
 	{	"base64",		BASE64		},	/* rfc2045 */
 	{	"8bit",			EIGHTBIT	},
-	{	"8 bit",		EIGHTBIT	},	/* incorrect */
+	{	"binary",		BINARY		},
 	{	"x-uuencode",		UUENCODE	},
 	{	"x-yencode",		YENCODE		},
-	{	"binary",		BINARY		},
 	{	NULL,			NOENCODING	}
 };
 
@@ -472,7 +474,7 @@ messageReset(message *m)
 }
 
 /*
- * Handle the Content-Type header
+ * Handle the Content-Type header. The syntax is in RFC1341.
  * Return success (1) or failure (0). Failure only happens when it's an
  * unknown type and we've already received a known type, or we've received an
  * empty type. If we receive an unknown type by itself we default to application
@@ -532,11 +534,17 @@ messageSetMimeType(message *mess, const char *type)
 	} else if(mess->mimeType == NOMIME) {
 		if(strncasecmp(type, "x-", 2) == 0)
 			mess->mimeType = MEXTENSION;
-		else {
+		else if(strcasecmp(type, "plain") != 0) {
 			/*
 			 * Based on a suggestion by James Stevens
 			 *	<James@kyzo.com>
 			 * Force scanning of strange messages
+			 *
+			 * Don't handle broken e-mail probably sending
+			 *	Content-Type: plain/text
+			 * instead of
+			 *	Content-Type: text/plain
+			 * as an attachment
 			 */
 			cli_warnmsg("Unknown MIME type: `%s' - set to Application\n", type);
 			mess->mimeType = APPLICATION;
@@ -922,6 +930,13 @@ messageSetEncoding(message *m, const char *enctype)
 
 	while((*enctype == '\t') || (*enctype == ' '))
 		enctype++;
+
+	/*
+	 * broken:
+	 *	Content-Transfer-Encoding: 8 bit
+	 */
+	if(strcasecmp(enctype, "8 bit") == 0)
+		enctype = "8bit";
 
 	/*
 	 * Iterate through
@@ -1529,7 +1544,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			 * TODO: handle multipart yEnc encoded files
 			 */
 			t_line = yEncBegin(m);
-			filename = lineGetData(t_line->t_line);
+			filename = (char *)lineGetData(t_line->t_line);
 
 			if((filename = strstr(filename, " name=")) != NULL) {
 				filename = strdup(&filename[6]);
@@ -2309,7 +2324,7 @@ hex(char c)
 static unsigned char
 base64(char c)
 {
-	const unsigned char ret = base64Table[c];
+	const unsigned char ret = base64Table[(int)c];
 
 	if(ret == 255) {
 		cli_dbgmsg("Illegal character <%c> in base64 encoding\n", c);
