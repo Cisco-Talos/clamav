@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.163  2004/12/14 10:43:58  nigelhorne
+ * Fix crash on BSD if DNS is incorrectly set up
+ *
  * Revision 1.162  2004/12/13 11:17:15  nigelhorne
  * Handle cross file system quarantine
  *
@@ -497,9 +500,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.162 2004/12/13 11:17:15 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.163 2004/12/14 10:43:58 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80bb"
+#define	CM_VERSION	"0.80cc"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -723,6 +726,7 @@ static	void	broadcast(const char *mess);
 static	int	loadDatabase(void);
 
 #ifdef	SESSION
+static	pthread_mutex_t	version_mutex = PTHREAD_MUTEX_INITIALIZER;
 static	char	**clamav_versions;	/* max_children elements in the array */
 #define	clamav_version	(clamav_versions[0])
 #else
@@ -1829,6 +1833,7 @@ main(int argc, char **argv)
 
 	signal(SIGPIPE, SIG_IGN);
 
+	pthread_mutex_lock(&version_mutex);
 	if(use_syslog) {
 		syslog(LOG_INFO, _("Starting %s"), clamav_version);
 #ifdef	CL_DEBUG
@@ -1838,6 +1843,7 @@ main(int argc, char **argv)
 	}
 
 	cli_dbgmsg("Started: %s\n", clamav_version);
+	pthread_mutex_unlock(&version_mutex);
 
 	return smfi_main();
 }
@@ -2294,6 +2300,16 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		if(clamfi_gethostbyname(hostmail, &hostent, buf, sizeof(buf)) != 0) {
 			if(use_syslog)
 				syslog(LOG_WARNING, _("Access Denied: Host Unknown (%s)"), hostname);
+			if(hostname[0] == '[')
+				/*
+				 * A case could be made that it's not clamAV's
+				 * job to check a system's DNS configuration
+				 * and let this message through. However I am
+				 * just too worried about any knock on effects
+				 * to do that...
+				 */
+				cli_warnmsg(_("Can't find entry for IP address %s in DNS - check your DNS setting\n"),
+					hostname);
 			return cl_error;
 		}
 
@@ -2879,8 +2895,10 @@ clamfi_eom(SMFICTX *ctx)
 			}
 
 #ifdef	SESSION
+			pthread_mutex_lock(&version_mutex);
 			snprintf(buf, sizeof(buf) - 1, "%s on %s",
 				clamav_versions[privdata->serverNumber], hostname);
+			pthread_mutex_unlock(&version_mutex);
 #else
 			snprintf(buf, sizeof(buf) - 1, "%s on %s",
 				clamav_version, hostname);
@@ -2896,8 +2914,10 @@ clamfi_eom(SMFICTX *ctx)
 #endif
 
 #ifdef	SESSION
+				pthread_mutex_lock(&version_mutex);
 				snprintf(buf, sizeof(buf) - 1, "%s on %s",
 					clamav_versions[privdata->serverNumber], hostname);
+				pthread_mutex_unlock(&version_mutex);
 #else
 				snprintf(buf, sizeof(buf) - 1, "%s on %s",
 					clamav_version, hostname);
@@ -4327,26 +4347,26 @@ clamfi_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t
 #if	defined(HAVE_GETHOSTBYNAME_R_6)
 	/* e.g. Linux */
 	struct hostent *hp2;
-	int ret;
+	int ret = -1;
 
 	if((hostname == NULL) || (hp == NULL))
 		return -1;
 	if(gethostbyname_r(hostname, hp, buf, len, &hp2, &ret) < 0)
-		return errno;
+		return ret;
 #elif	defined(HAVE_GETHOSTBYNAME_R_5)
 	/* e.g. BSD, Solaris, Cygwin */
-	int ret;
+	int ret = -1;
 
 	if((hostname == NULL) || (hp == NULL))
 		return -1;
 	if(gethostbyname_r(hostname, hp, buf, len, &ret) == NULL)
-		return errno;
+		return ret;
 #elif	defined(HAVE_GETHOSTBYNAME_R_3)
 	/* e.g. HP/UX, AIX */
 	if((hostname == NULL) || (hp == NULL))
 		return -1;
 	if(gethostbyname_r(hostname, &hp, (struct hostent_data *)buf) < 0)
-		return errno;
+		return h_errno;
 #else
 	/* Single thread the code */
 	struct hostent *hp2;
@@ -4358,7 +4378,7 @@ clamfi_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t
 	pthread_mutex_lock(&hostent_mutex);
 	if((hp2 = gethostbyname(hostname)) == NULL) {
 		pthread_mutex_unlock(&hostent_mutex);
-		return errno;
+		return h_errno;
 	}
 	memcpy(hp, hp2, sizeof(struct hostent));
 	pthread_mutex_unlock(&hostent_mutex);
@@ -4540,6 +4560,7 @@ watchdog(void *a)
 
 							if((ptr = strchr(buf, '\n')) != NULL)
 								*ptr = '\0';
+							pthread_mutex_lock(&version_mutex);
 							if(clamav_versions[i] == NULL)
 								clamav_versions[i] = strdup(buf);
 							else if(strcmp(buf, clamav_versions[i]) != 0) {
@@ -4548,6 +4569,7 @@ watchdog(void *a)
 								free(clamav_versions[i]);
 								clamav_versions[i] = strdup(buf);
 							}
+							pthread_mutex_unlock(&version_mutex);
 						} else {
 							cli_warnmsg("watchdog: expected \"ClamAV\", got \"%s\"\n", buf);
 							session->status = CMDSOCKET_DOWN;
@@ -4683,8 +4705,10 @@ quit(void)
 
 	quitting++;
 
+	pthread_mutex_lock(&version_mutex);
 	if(use_syslog)
 		syslog(LOG_INFO, _("Stopping %s"), clamav_version);
+	pthread_mutex_unlock(&version_mutex);
 
 	if(internal) {
 		if(root) {
@@ -4788,17 +4812,22 @@ loadDatabase(void)
 	free(daily);
 
 #ifdef	SESSION
+	pthread_mutex_lock(&version_mutex);
 	if(clamav_versions == NULL) {
 		clamav_versions = (char **)cli_malloc(sizeof(char *));
-		if(clamav_versions == NULL)
+		if(clamav_versions == NULL) {
+			pthread_mutex_unlock(&version_mutex);
 			return -1;
+		}
 		clamav_version = cli_malloc(VERSION_LENGTH + 1);
 		if(clamav_version == NULL) {
 			free(clamav_versions);
 			clamav_versions = NULL;
+			pthread_mutex_unlock(&version_mutex);
 			return -1;
 		}
 	}
+	pthread_mutex_unlock(&version_mutex);
 #endif
 	snprintf(clamav_version, VERSION_LENGTH,
 		"ClamAV %s/%d/%s", VERSION, v, ctime(&t));
@@ -4826,11 +4855,13 @@ loadDatabase(void)
 		cli_errmsg("Database initialization error: %s\n", cl_strerror(ret));
 		return -1;
 	}
-	if(use_syslog)
+	if(use_syslog) {
 		syslog(LOG_INFO, _("ClamAV: Protecting against %u viruses"), signatures);
 
-	if(use_syslog)
+		pthread_mutex_lock(&version_mutex);
 		syslog(LOG_INFO, _("Loaded %s\n"), clamav_version);
+		pthread_mutex_unlock(&version_mutex);
+	}
 
 	return cl_statinidir(dbdir, &dbstat);
 }
