@@ -150,11 +150,12 @@ static long int cli_caloff(const char *offstr, int fd)
 int cli_validatesig(unsigned short target, unsigned short ftype, const char *offstr, unsigned long int fileoff, int desc, const char *virname)
 {
 
+
     if(target) {
 	if(target >= TARGET_TABLE_SIZE) {
 	    cli_errmsg("Bad target in signature (%s)\n", virname);
 	    return 0;
-	} else if(ftype) {
+	} else {
 	    if(targettab[target] != ftype) {
 		cli_dbgmsg("Type: %d, expected: %d (%s)\n", ftype, targettab[target], virname);
 		return 0;
