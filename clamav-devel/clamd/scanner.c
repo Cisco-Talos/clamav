@@ -86,8 +86,8 @@ int dirscan(const char *dirname, char **virname, unsigned long int *scanned, con
 				closedir(dd);
 				return 1;
 			    }
-			} else
-			    if(S_ISREG(statbuf.st_mode) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 2) && cfgopt(copt, "FollowFileSymlinks")))
+			} else {
+			    if(S_ISREG(statbuf.st_mode) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 2) && cfgopt(copt, "FollowFileSymlinks"))) {
 				if((scanret = cl_scanfile(fname, virname, scanned, root, limits, options)) == CL_VIRUS) {
 				    mdprintf(odesc, "%s: %s FOUND\n", fname, *virname);
 				    logg("%s: %s FOUND\n", fname, *virname);
@@ -102,18 +102,20 @@ int dirscan(const char *dirname, char **virname, unsigned long int *scanned, con
 				    mdprintf(odesc, "%s: %s ERROR\n", fname, cl_strerror(scanret));
 				    logg("%s: %s ERROR\n", fname, cl_strerror(scanret));
 				}
+			    }
+			}
 		    }
 
 		    free(fname);
 		}
 	    }
 	}
+	closedir(dd);
     } else {
 	return -1;
     }
 
     (*reclev)--;
-    closedir(dd);
     return ret;
 
 }

@@ -52,7 +52,10 @@ int main(int argc, char **argv)
     printf("Loaded %d signatures.\n", no);
 
     /* build the trie */
-    cl_buildtrie(root);
+    if((ret = cl_buildtrie(root)) != 0) {
+	printf("Database initialization error: %s\n", cl_strerror(ret));;
+	exit(2);
+    }
 
     if((fd = open(argv[1], O_RDONLY)) == -1) {
 	printf("Can't open file %s\n", argv[1]);

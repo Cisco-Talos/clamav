@@ -149,9 +149,9 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 
 	    if(parts) /* there's always one part more */
 		parts++;
-	    for(i = 1; i <= parts; i++) {
-		if((pt2 = cli_tok(pt, i, '*')) == NULL) {
-		    cli_errmsg("Can't extract part %d of partial signature in line %d\n", i, line);
+	    for(i = 0; i < parts; i++) {
+		if((pt2 = cli_strtok(pt, i, "*")) == NULL) {
+		    cli_errmsg("Can't extract part %d of partial signature in line %d\n", i + 1, line);
 		    return CL_EMALFDB;
 		}
 

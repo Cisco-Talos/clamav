@@ -128,13 +128,13 @@ int logg(const char *str, ...)
 
 	if(*str == '!') {
 	    fprintf(log_fd, "ERROR: ");
-	    vfprintf(log_fd, ++str, args);
+	    vfprintf(log_fd, str+1, args);
 	} else if(*str == '^') {
 	    fprintf(log_fd, "WARNING: ");
-	    vfprintf(log_fd, ++str, args);
+	    vfprintf(log_fd, str+1, args);
 	} else if(*str == '*') {
 	    if(logverbose)
-		vfprintf(log_fd, ++str, args);
+		vfprintf(log_fd, str+1, args);
 	} else vfprintf(log_fd, str, args);
 
 	va_end(args);
@@ -159,12 +159,13 @@ int logg(const char *str, ...)
 	va_start(args, str);
 
 	if(*str == '!') {
-	    vsyslog(LOG_ERR,++str, args);
+	    vsyslog(LOG_ERR, str+1, args);
 	} else if(*str == '^') {
-	    vsyslog(LOG_WARNING,++str, args);
+	    vsyslog(LOG_WARNING, str+1, args);
 	} else if(*str == '*') {
-	    if(logverbose)
-		vsyslog(LOG_DEBUG, ++str, args);
+	    if(logverbose) {
+		vsyslog(LOG_DEBUG, str+1, args);
+	    }
 	} else vsyslog(LOG_INFO, str, args);
 
 	va_end(args);

@@ -75,19 +75,20 @@ int cli_addpatt(struct cl_node *root, struct cli_patt *pattern)
     return 0;
 }
 
-void cli_enqueue(struct nodelist **bfs, struct cl_node *n)
+int cli_enqueue(struct nodelist **bfs, struct cl_node *n)
 {
 	struct nodelist *new;
 
     new = (struct nodelist *) cli_calloc(1, sizeof(struct nodelist));
     if (new == NULL) {
 	cli_dbgmsg("Unable to allocate node list (%d)\n", sizeof(struct nodelist));
-	return; /* FIXME: should return CL_EMEM */
+	return CL_EMEM;
     }
 
     new->next = *bfs;
     new->node = n;
     *bfs = new;
+    return 0;
 }
 
 struct cl_node *cli_dequeue(struct nodelist **bfs)
@@ -116,15 +117,17 @@ struct cl_node *cli_dequeue(struct nodelist **bfs)
     }
 }
 
-void cli_maketrans(struct cl_node *root)
+int cli_maketrans(struct cl_node *root)
 {
 	struct nodelist *bfs = NULL;
 	struct cl_node *child, *node;
-	int i;
+	int i, ret;
 
 
     root->fail = NULL;
-    cli_enqueue(&bfs, root);
+    if((ret = cli_enqueue(&bfs, root)) != 0) {
+	return ret;
+    }
 
     while((node = cli_dequeue(&bfs))) {
 	if(node->islast)
@@ -143,15 +146,18 @@ void cli_maketrans(struct cl_node *root)
 		else
 		    child->fail = root;
 
-		cli_enqueue(&bfs, child);
+		if((ret = cli_enqueue(&bfs, child)) != 0) {
+		    return ret;
+		}
 	    }
 	}
     }
+    return 0;
 }
 
-void cl_buildtrie(struct cl_node *root)
+int cl_buildtrie(struct cl_node *root)
 {
-    cli_maketrans(root);
+    return cli_maketrans(root);
 }
 
 void cli_freepatt(struct cli_patt *list)

@@ -128,37 +128,46 @@ void cli_chomp(char *string)
 	string[l - 1] = 0;
 }
 
-char *cli_tok(const char *line, int field, char delimiter)
+/*
+ * char *cli_strok(const char *line, int fieldno, char *delim)
+ * Return a copy of field <fieldno> from the string <line>, where
+ * fields are delimited by any char from <delim>, or NULL if <line>
+ * doesn't have <fieldno> fields or not enough memory is available.
+ * The caller has to free() the result afterwards.
+ */
+char *cli_strtok(const char *line, int fieldno, char *delim)
 {
-        int length, counter = 0, i, j = 0;
-        char *buffer;
+    int counter = 0, i, j;
+    char *buffer = NULL;
 
 
-    if(!(length = strlen(line)))
-	return NULL;
-
-    buffer = (char *) cli_calloc(length, sizeof(char));
-
-    for(i = 0; i < length; i++) {
-        if(line[i] == delimiter) {
-            counter++;
-            if(counter == field) {
-		break;
-	    } else {
-		memset(buffer, 0, length);
-		j = 0;
+    /* step to arg # <fieldno> */
+    for (i=0; line[i] && counter != fieldno; i++) {
+	if (strchr(delim, line[i])) {
+	    counter++;
+	    while(line[i+1] && strchr(delim, line[i+1])) {
+		i++;
 	    }
-        } else {
-            buffer[j++] = line[i];
-        }
+	}
     }
-
-    cli_chomp(buffer); /* preventive */
-
-    if((length = strlen(buffer)))
-	return (char *) cli_realloc(buffer, strlen(buffer) + 1);
-    else {
-	free(buffer);
+    if (!line[i]) {
+	/* end of buffer before field reached */
 	return NULL;
     }
+
+    for (j=i; line[j]; j++) {
+	if (strchr(delim, line[j])) {
+	    break;
+	}
+    }
+    if (i == j) {
+	return NULL;
+    }
+    buffer = malloc(j-i+1);
+    strncpy(buffer, line+i, j-i);
+    buffer[j-i] = '\0';
+
+    return buffer;
 }
+
+

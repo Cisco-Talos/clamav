@@ -27,6 +27,7 @@
 #include "others.h"
 #include "shared.h"
 #include "defaults.h"
+#include "client.h"
 
 void help(void);
 

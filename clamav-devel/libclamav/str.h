@@ -21,6 +21,6 @@
 
 int cli_strbcasestr(const char *haystack, const char *needle);
 void cli_chomp(char *string);
-char *cli_tok(const char *line, int field, char delimiter);
+char *cli_strtok(const char *line, int field, char *delim);
 
 #endif

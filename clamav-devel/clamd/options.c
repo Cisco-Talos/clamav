@@ -31,6 +31,7 @@
 
 #include "options.h"
 #include "others.h"
+#include "../libclamav/others.h"
 
 void clamd(struct optstruct *opt);
 
@@ -58,6 +59,7 @@ int main(int argc, char **argv)
 #endif
     opt=(struct optstruct*)mmalloc(sizeof(struct optstruct));
     opt->optlist = NULL;
+    opt->filename = NULL;
 
     while(1) {
 
@@ -101,15 +103,13 @@ int main(int argc, char **argv)
 		strncat(opt->filename, " ", 1);
 	}
 
-    } else
-	/* FIXME !!! Without this, we have segfault */
-	opt->filename=(char*)mcalloc(1, sizeof(char));
-
+    }
 
     clamd(opt);
 
     free_opt(opt);
 
+    cli_dbgmsg("exit main()");
     return(0);
 }
 
@@ -299,10 +299,9 @@ void free_opt(struct optstruct *opt)
 {
 	struct optnode *handler, *prev;
 
-    if(!opt || !opt->optlist)
+    if(!opt)
 	return;
 
-    //mprintf("*Freeing option list... ");
     handler = opt->optlist;
 
     while(handler != NULL) {
@@ -314,7 +313,7 @@ void free_opt(struct optstruct *opt)
 	free(prev);
     }
 
-    free(opt->filename);
+    if(opt->filename)
+	free(opt->filename);
     free(opt);
-    //mprintf("*done\n");
 }

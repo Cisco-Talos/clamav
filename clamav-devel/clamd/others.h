@@ -16,8 +16,8 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __OTHERS_H
-#define __OTHERS_H
+#ifndef __CLAMD_OTHERS_H
+#define __CLAMD_OTHERS_H
 
 #include <stdlib.h>
 #include "cfgfile.h"
@@ -32,6 +32,7 @@ short int logverbose, logcompressed, loglock, logtime, sighup;
 int logsize;
 const char *logfile;
 int logg(const char *str, ...);
+void logg_close(void);
 
 #if defined(CLAMD_USE_SYSLOG) && !defined(C_AIX)
 short use_syslog;

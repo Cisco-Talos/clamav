@@ -8619,7 +8619,8 @@ fi
 fi
 
 
-for ac_func in setsid
+
+for ac_func in setsid memcpy
 do
 as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
 echo "$as_me:$LINENO: checking for $ac_func" >&5
@@ -9130,11 +9131,6 @@ fi
 if test "${enable_pthreads+set}" = set; then
   enableval="$enable_pthreads"
   have_pthreads=no
-else
-  cat >>confdefs.h <<\_ACEOF
-#define _REENTRANT 1
-_ACEOF
-
 fi;
 
 # Check whether --enable-cr or --disable-cr was given.
@@ -9335,6 +9331,10 @@ _ACEOF
 #define CL_THREAD_SAFE 1
 _ACEOF
 
+	cat >>confdefs.h <<\_ACEOF
+#define _REENTRANT 1
+_ACEOF
+
 	CLAMD_LIBS="-lpthread"
 	if test "$want_clamuko" = "yes"; then
 	    cat >>confdefs.h <<\_ACEOF
@@ -9362,6 +9362,10 @@ _ACEOF
 #define CL_THREAD_SAFE 1
 _ACEOF
 
+	cat >>confdefs.h <<\_ACEOF
+#define _REENTRANT 1
+_ACEOF
+
     fi
     ;;
 solaris*)
@@ -9372,6 +9376,10 @@ solaris*)
 	TH_SAFE="-thread-safe"
 	cat >>confdefs.h <<\_ACEOF
 #define CL_THREAD_SAFE 1
+_ACEOF
+
+	cat >>confdefs.h <<\_ACEOF
+#define _REENTRANT 1
 _ACEOF
 
     fi
@@ -9387,6 +9395,10 @@ freebsd*)
 	TH_SAFE="-thread-safe"
 	cat >>confdefs.h <<\_ACEOF
 #define CL_THREAD_SAFE 1
+_ACEOF
+
+	cat >>confdefs.h <<\_ACEOF
+#define _REENTRANT 1
 _ACEOF
 
     fi
@@ -9406,6 +9418,10 @@ openbsd*)
 	TH_SAFE="-thread-safe"
 	cat >>confdefs.h <<\_ACEOF
 #define CL_THREAD_SAFE 1
+_ACEOF
+
+	cat >>confdefs.h <<\_ACEOF
+#define _REENTRANT 1
 _ACEOF
 
     fi
@@ -9469,6 +9485,10 @@ hpux*)
 #define CL_THREAD_SAFE 1
 _ACEOF
 
+	cat >>confdefs.h <<\_ACEOF
+#define _REENTRANT 1
+_ACEOF
+
     fi
     cat >>confdefs.h <<\_ACEOF
 #define C_HPUX 1
@@ -9484,6 +9504,10 @@ aix*)
 #define CL_THREAD_SAFE 1
 _ACEOF
 
+	cat >>confdefs.h <<\_ACEOF
+#define _REENTRANT 1
+_ACEOF
+
     fi
     cat >>confdefs.h <<\_ACEOF
 #define C_AIX 1
@@ -9497,6 +9521,10 @@ irix*)
 	TH_SAFE="-thread-safe"
 	cat >>confdefs.h <<\_ACEOF
 #define CL_THREAD_SAFE 1
+_ACEOF
+
+	cat >>confdefs.h <<\_ACEOF
+#define _REENTRANT 1
 _ACEOF
 
     fi

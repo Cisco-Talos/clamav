@@ -74,7 +74,7 @@ then
     AC_CHECK_LIB(bz2, bzReadOpen, AC_DEFINE(NOBZ2PREFIX),)
 fi
 
-AC_CHECK_FUNCS(setsid)
+AC_CHECK_FUNCS(setsid memcpy)
 AC_FUNC_SETPGRP
 
 have_milter="no"
@@ -101,7 +101,7 @@ dnl AC_CHECK_LIB(c, mkstemp, AC_DEFINE(HAVE_MKSTEMP),)
 
 AC_ARG_ENABLE(pthreads,
 [  --disable-pthreads      Disable POSIX threads support],
-have_pthreads=no, AC_DEFINE(_REENTRANT))
+have_pthreads=no, )
 
 AC_ARG_ENABLE(cr,
 [  --disable-cr      Don't link with C reentrant library (BSD) ],
@@ -220,6 +220,7 @@ linux*)
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
 	TH_SAFE="-thread-safe"
 	AC_DEFINE(CL_THREAD_SAFE)
+	AC_DEFINE(_REENTRANT)
 	CLAMD_LIBS="-lpthread"
 	if test "$want_clamuko" = "yes"; then
 	    AC_DEFINE(CLAMUKO)
@@ -239,6 +240,7 @@ cygwin*)
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
 	TH_SAFE="-thread-safe"
 	AC_DEFINE(CL_THREAD_SAFE)
+	AC_DEFINE(_REENTRANT)
     fi
     ;;
 solaris*)
@@ -248,6 +250,7 @@ solaris*)
 	CLAMD_LIBS="-lpthread -lsocket -lnsl -lresolv"
 	TH_SAFE="-thread-safe"
 	AC_DEFINE(CL_THREAD_SAFE)
+	AC_DEFINE(_REENTRANT)
     fi
     AC_DEFINE(C_SOLARIS)
     ;;
@@ -257,6 +260,7 @@ freebsd*)
 	CLAMD_LIBS="-pthread -lc_r"
 	TH_SAFE="-thread-safe"
 	AC_DEFINE(CL_THREAD_SAFE)
+	AC_DEFINE(_REENTRANT)
     fi
     AC_DEFINE(C_BSD)
     ;;
@@ -270,6 +274,7 @@ openbsd*)
 	fi
 	TH_SAFE="-thread-safe"
 	AC_DEFINE(CL_THREAD_SAFE)
+	AC_DEFINE(_REENTRANT)
     fi
     AC_DEFINE(C_BSD)
     ;;
@@ -307,6 +312,7 @@ hpux*)
 	CLAMD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
 	AC_DEFINE(CL_THREAD_SAFE)
+	AC_DEFINE(_REENTRANT)
     fi
     AC_DEFINE(C_HPUX)
     ;;
@@ -316,6 +322,7 @@ aix*)
 	CLAMD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
 	AC_DEFINE(CL_THREAD_SAFE)
+	AC_DEFINE(_REENTRANT)
     fi
     AC_DEFINE(C_AIX)
     ;;
@@ -325,6 +332,7 @@ irix*)
 	CLAMD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
 	AC_DEFINE(CL_THREAD_SAFE)
+	AC_DEFINE(_REENTRANT)
     fi
     AC_DEFINE(C_IRIX)
     AC_DEFINE(NO_SNPRINTF)
