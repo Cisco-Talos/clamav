@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.54  2004/05/06 18:01:25  nigelhorne
+ * Force attachments marked as RFC822 messages to be scanned
+ *
  * Revision 1.53  2004/04/29 08:59:24  nigelhorne
  * Tidied up SetDispositionType
  *
@@ -156,7 +159,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.53 2004/04/29 08:59:24 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.54 2004/05/06 18:01:25 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -694,9 +697,9 @@ messageGetEncoding(const message *m)
 }
 
 /*
- * Add the given line to the current message
+ * Add the given line to the end of the given message
  * If needed a copy of the given line is taken which the caller must free
- * Line should not be terminated by a \n
+ * Line must not be terminated by a \n
  */
 int
 messageAddLine(message *m, const char *line, int takeCopy)
@@ -729,8 +732,6 @@ messageAddLine(message *m, const char *line, int takeCopy)
 		m->body_last->t_text = (char *)line;
 	}
 
-	assert(m->body_first != NULL);
-
 	/*
 	 * See if this line marks the start of a non MIME inclusion that
 	 * will need to be scanned
@@ -753,6 +754,38 @@ messageAddLine(message *m, const char *line, int takeCopy)
 			(isdigit(line[8])) &&
 			(line[9] == ' ')))
 				m->uuencode = m->body_last;
+	}
+	return 1;
+}
+
+/*
+ * Add the given line to the start of the given message
+ * A copy of the given line is taken which the caller must free
+ * Line must not be terminated by a \n
+ */
+int
+messageAddLineAtTop(message *m, const char *line)
+{
+	text *oldfirst;
+
+	assert(m != NULL);
+
+	if(m->body_first == NULL)
+		return messageAddLine(m, line, 1);
+	
+	oldfirst = m->body_first;
+	m->body_first = (text *)cli_malloc(sizeof(text));
+	if(m->body_first == NULL) {
+		m->body_first = oldfirst;
+		return -1;
+	}
+
+	m->body_first->t_next = oldfirst;
+	m->body_first->t_text = strdup((line) ? line : "");
+
+	if(m->body_first->t_text == NULL) {
+		cli_errmsg("messageAddLineAtTop: out of memory\n");
+		return -1;
 	}
 	return 1;
 }
