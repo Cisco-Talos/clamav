@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.78  2004/06/21 10:21:19  nigelhorne
+ * Fix crash when a multipart/mixed message contains many parts that need to be scanned as attachments
+ *
  * Revision 1.77  2004/06/18 10:07:12  nigelhorne
  * Allow any number of alternatives in multipart messages
  *
@@ -219,7 +222,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.77 2004/06/18 10:07:12 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.78 2004/06/21 10:21:19 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1242,9 +1245,16 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					assert(addToText || addAttachment);
 					assert(!(addToText && addAttachment));
 
-					if(addToText) {
+					if(addToText)
 						aText = textAdd(aText, messageGetBody(aMessage));
-					} else if(addAttachment) {
+					else if(numberOfAttachments >= MAX_ATTACHMENTS) {
+						cli_warnmsg("Not all attachments will be scanned\n");
+						/*
+						 * Try our best to save it
+						 * somewhere
+						 */
+						aText = textAdd(aText, messageGetBody(aMessage));
+					} else {
 						blob *aBlob = messageToBlob(aMessage);
 
 						if(aBlob) {
