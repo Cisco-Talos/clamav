@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.183  2004/11/26 17:32:42  nigelhorne
+ * Add debug message for end of multipart headers
+ *
  * Revision 1.182  2004/11/26 12:05:17  nigelhorne
  * Remove warning message
  *
@@ -534,7 +537,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.182 2004/11/26 12:05:17 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.183 2004/11/26 17:32:42 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1458,7 +1461,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 
 					if(inMimeHead) {	/* continuation line */
 						if(line == NULL) {
-							inhead = inMimeHead = 0;
+							/*inhead =*/ inMimeHead = 0;
 							continue;
 						}
 						/*
@@ -1497,6 +1500,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 
 						if(line == NULL) {
 							/* empty line */
+							cli_dbgmsg("Multipart %d: End of header information\n",
+								multiparts);
 							inhead = 0;
 							continue;
 						}
