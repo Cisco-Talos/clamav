@@ -1,3 +1,8 @@
+Tue Nov 16 18:07:39 CET 2004 (tk)
+---------------------------------
+  * libclamav: improve generating of temporary file names (as requested by
+	       Boguslaw Brandys and Nigel)
+
 Tue Nov 16 16:58:12 CET 2004 (tk)
 ---------------------------------
   * freshclam/manager.c: get_database: terminate buffer after recv() call

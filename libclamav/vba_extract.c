@@ -800,20 +800,10 @@ static char *ppt_stream_iter(int fd)
 {
 	atom_header_t atom_header;
 	uint32_t ole_id;
-	char *tmpdir, *out_dir;
+	char *out_dir;
 	
 	/* Create a directory to store the extracted OLE2 objects */
-	tmpdir = getenv("TMPDIR");
-
-	if(tmpdir == NULL)
-#ifdef P_tmpdir
-		tmpdir = P_tmpdir;
-#else
-		tmpdir = "/tmp";
-#endif
-
-	/* generate the temporary directory */
-	out_dir = cli_gentemp(tmpdir);
+	out_dir = cli_gentemp(NULL);
 	if(mkdir(out_dir, 0700)) {
 	    printf("ScanOLE2 -> Can't create temporary directory %s\n", out_dir);
 	    free(out_dir);

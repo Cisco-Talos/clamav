@@ -352,10 +352,15 @@ char *cli_gentemp(const char *dir)
 	struct stat foo;
 
 
-    if(!dir)
-	mdir = "/tmp";
-    else
-	mdir = (char *) dir;
+    if(!dir) {
+	if((mdir = getenv("TMPDIR")) == NULL)
+#ifdef P_tmpdir
+	    mdir = P_tmpdir;
+#else
+	    mdir = "/tmp";
+#endif
+    } else
+	mdir = dir;
 
     name = (char*) cli_calloc(strlen(mdir) + 1 + 16 + 1 + 7, sizeof(char));
     if(name == NULL) {
