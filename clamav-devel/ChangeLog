@@ -1,3 +1,8 @@
+Mon Apr  5 15:39:55 CEST 2004 (tk)
+----------------------------------
+  * clamd: respect TCPAddr in stream scanner (problem reported by
+	   Youza Youzovic <youza*post.cz>)
+
 Mon Apr  5 13:19:02 BST 2004 (njh)
 ----------------------------------
   * libclamav:	Scan attachments with no filename (suggestion by Trog)
