@@ -17,7 +17,7 @@
  */
 
 #ifndef	CL_DEBUG
-#define	NDEBUG	/* map CLAMAV debug onto standard */
+/*#define	NDEBUG	/* map CLAMAV debug onto standard */
 #endif
 
 #ifdef CL_THREAD_SAFE
@@ -36,6 +36,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/param.h>
 #include <clamav.h>
 
 #include "table.h"
@@ -72,7 +73,8 @@ static	size_t	strip(char *buf, int len);
 static	size_t	strstrip(char *s);
 static	bool	continuationMarker(const char *line);
 static	int	parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg);
-static	int	saveFile(const blob *b, const char *dir);
+static	bool	saveFile(const blob *b, const char *dir);
+static	bool	newMessageStart(const char *buf);
 
 /* Maximum number of attachements that we accept */
 #define	MAX_ATTACHMENTS	10
@@ -84,6 +86,8 @@ static	int	saveFile(const blob *b, const char *dir);
 #define	CONTENT_TYPE			1
 #define	CONTENT_TRANSFER_ENCODING	2
 #define	CONTENT_DISPOSITION		3
+
+/*#define	VALIDATE_MBOX	/* validate the file is a UNIX mbox */
 
 /* Mime sub types */
 #define	PLAIN		1
@@ -144,9 +148,8 @@ cl_mbox(const char *dir, int desc)
 
 	cli_dbgmsg("in mbox()\n");
 
-	if(initialiseTables(&rfc821Table, &subtypeTable) < 0) {
+	if(initialiseTables(&rfc821Table, &subtypeTable) < 0)
 		return -1;
-	}
 
 	m = messageCreate();
 	assert(m != NULL);
@@ -155,7 +158,7 @@ cl_mbox(const char *dir, int desc)
 
 	if((fd = fdopen(dup(desc), "rb")) == NULL) {
 		cli_errmsg("Can't open descriptor %d\n", desc);
-	    return -1;
+		return -1;
 	}
 
 	/*
@@ -166,18 +169,18 @@ cl_mbox(const char *dir, int desc)
 		char *strptr;
 #endif
 		/*cli_dbgmsg("read: %s", buffer);*/
+#ifdef	VALIDATE_MBOX
 		if(first)
 			/*
 			 * Check it is a mail box.
 			 * tm@softcom.dk: check for a single mail message
 			 */
-			if((strncmp(buffer, "From ", 5) != 0) &&
-			   (strncmp(buffer, "Return-Path: ", 13) != 0) &&
-			   (strncmp(buffer, "Received: ", 10) != 0)) {
+			if(!newMessageStart(buffer)) {
 				cli_errmsg("Not a valid mail message");
 				retcode = -1;
 				break;
 			}
+#endif
 
 		/*
 		 * Handle this where we're mid point through this stuff
@@ -198,7 +201,7 @@ cl_mbox(const char *dir, int desc)
 			for(ptr = strtok_r(buffer, ";\r\n", &strptr); ptr; ptr = strtok_r(NULL, ":\r\n", &strptr))
 				messageAddArgument(m, ptr);
 
-		} else if((!inHeader) && lastLineWasEmpty && (strncmp(buffer, "From ", 5) == 0)) {
+		} else if((!inHeader) && lastLineWasEmpty && newMessageStart(buffer)) {
 			/*
 			 * New message, save the previous message, if any
 			 */
@@ -234,7 +237,7 @@ cl_mbox(const char *dir, int desc)
 			} else {
 				const bool isLastLine = !continuationMarker(buffer);
 				const char *cmd = strtok_r(buffer, " \t", &strptr);
-				
+
 				if (cmd && *cmd) {
 					const char *arg = strtok_r(NULL, "\r\n", &strptr);
 
@@ -284,7 +287,6 @@ cl_mbox(const char *dir, int desc)
 	tableDestroy(rfc821Table);
 	tableDestroy(subtypeTable);
 
-
 	cli_dbgmsg("cli_mbox returning %d\n", retcode);
 
 	return retcode;
@@ -298,7 +300,7 @@ cl_mbox(const char *dir, int desc)
  * textIn is the plain text message being built up so far
  * blobsIn contains the array of attachments found so far
  *
- * Returns: 
+ * Returns:
  *	0 for fail
  *	1 for success, attachements saved
  *	2 for success, attachements not saved
@@ -308,7 +310,7 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 {
 	char *ptr;
 	message *messages[MAXALTERNATIVE];
-	int inhead, inMimeHead, i, rc;
+	int inhead, inMimeHead, i, rc, htmltextPart, multiparts = 0;
 	text *aText;
 	blob *blobList[MAX_ATTACHMENTS], **blobs;
 	const char *cptr;
@@ -325,9 +327,8 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 	blobs = blobsIn;
 
 	/* Anything left to be parsed? */
-	if(mainMessage) {
+	if(mainMessage && (messageGetBody(mainMessage) != NULL)) {
 		int numberOfAttachments = 0;
-		int plaintextPart, multiparts;
 		mime_type mimeType;
 		const char *mimeSubtype;
 		const text *t_line;
@@ -338,7 +339,6 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 		char *strptr;
 #endif
 
-		assert(messageGetBody(mainMessage) != NULL);
 		mimeType = messageGetMimeType(mainMessage);
 		mimeSubtype = messageGetMimeSubtype(mainMessage);
 
@@ -366,7 +366,7 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 
 			if(boundary == NULL) {
 				cli_warnmsg("Multipart MIME message contains no boundaries\n");
-				return 2;       /* Broken e-mail message */
+				return 2;	/* Broken e-mail message */
 			}
 
 
@@ -494,10 +494,10 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 				aMessage = NULL;
 				assert(multiparts > 0);
 
-				plaintextPart = getTextPart(messages, multiparts);
+				htmltextPart = getTextPart(messages, multiparts);
 
-				if(plaintextPart >= 0)
-					aText = textAddMessage(aText, messages[plaintextPart]);
+				if(htmltextPart >= 0)
+					aText = textAddMessage(aText, messages[htmltextPart]);
 				else
 					/*
 					 * There isn't a text bit. If there's a
@@ -507,11 +507,11 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 					for(i = 0; i < multiparts; i++)
 						if(messageGetMimeType(messages[i]) == MULTIPART) {
 							aMessage = messages[i];
-							plaintextPart = i;
+							htmltextPart = i;
 							break;
 						}
 
-				assert(plaintextPart != -1);
+				assert(htmltextPart != -1);
 
 				rc = insert(aMessage, blobs, nBlobs, aText, dir, rfc821Table, subtypeTable);
 				blobArrayDestroy(blobs, nBlobs);
@@ -536,12 +536,12 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 			case ALTERNATIVE:
 				cli_dbgmsg("Multipart alternative handler\n");
 
-				plaintextPart = getTextPart(messages, multiparts);
+				htmltextPart = getTextPart(messages, multiparts);
 
-				if(plaintextPart == -1)
-					plaintextPart = 0;
+				if(htmltextPart == -1)
+					htmltextPart = 0;
 
-				aMessage = messages[plaintextPart];
+				aMessage = messages[htmltextPart];
 				aText = textAddMessage(aText, aMessage);
 
 				rc = insert(NULL, blobs, nBlobs, aText, dir, rfc821Table, subtypeTable);
@@ -592,6 +592,7 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 					assert(aMessage != NULL);
 
 					dtype = messageGetDispositionType(aMessage);
+					cptr = messageGetMimeSubtype(aMessage);
 
 #ifdef	CL_DEBUG
 					cli_dbgmsg("Mixed message part %d is of type %d\n",
@@ -600,13 +601,9 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 
 					switch(messageGetMimeType(aMessage)) {
 					case APPLICATION:
-						/*
-						 * We don't care about the application
-						 * subtype, since we don't spawn
-						 * anything off
-						 */
 						if((strcasecmp(dtype, "attachment") == 0) ||
-						   (strcasecmp(dtype, "octet-stream")))
+						   (strcasecmp(cptr, "x-msdownload") == 0) ||
+						   (strcasecmp(dtype, "octet-stream") == 0))
 							addAttachment = TRUE;
 						else {
 							cli_dbgmsg("Discarded application not sent as attachment\n");
@@ -660,7 +657,8 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 						 *
 						 */
 						cli_dbgmsg("Found multipart inside multipart\n");
-						rc = insert(NULL, blobs, nBlobs, messageToText(aMessage), dir, rfc821Table, subtypeTable);
+						/*rc = insert(NULL, blobs, nBlobs, messageToText(aMessage), dir, rfc821Table, subtypeTable);*/
+						rc = insert(aMessage, blobs, nBlobs, messageToText(aMessage), dir, rfc821Table, subtypeTable);
 
 						mainMessage = aMessage;
 						continue;
@@ -710,7 +708,9 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 				 * the list we've just built up
 				 */
 				for(i = 0; i < nBlobs; i++) {
+#ifdef	CL_DEBUG
 					assert(blobs[i]->magic == BLOB);
+#endif
 					blobList[numberOfAttachments++] = blobs[i];
 				}
 
@@ -727,11 +727,11 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 				 * message and we need to dig out the plain
 				 * text part of that alternative
 				 */
-				plaintextPart = getTextPart(messages, multiparts);
-				if(plaintextPart == -1)
-					plaintextPart = 0;
+				htmltextPart = getTextPart(messages, multiparts);
+				if(htmltextPart == -1)
+					htmltextPart = 0;
 
-				rc = insert(messages[plaintextPart], blobs, nBlobs, aText, dir, rfc821Table, subtypeTable);
+				rc = insert(messages[htmltextPart], blobs, nBlobs, aText, dir, rfc821Table, subtypeTable);
 				blobArrayDestroy(blobs, nBlobs);
 				break;
 			default:
@@ -775,6 +775,9 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 				bool inHeader = TRUE;
 				bool inMimeHeader = FALSE;
 				message *m;
+
+				assert(t != NULL);
+
 				m = messageCreate();
 				assert(m != NULL);
 
@@ -822,7 +825,7 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 						else {
 							const bool isLastLine = !continuationMarker(buffer);
 							const char *cmd = strtok_r(buffer, " \t", &strptr);
-							
+
 							if (cmd && *cmd) {
 								const char *arg = strtok_r(NULL, "\r\n", &strptr);
 
@@ -870,7 +873,10 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 			return 0;
 
 		case APPLICATION:
-			if(strcasecmp(messageGetMimeSubtype(mainMessage), "octet-stream") == 0) {
+			cptr = messageGetMimeSubtype(mainMessage);
+
+			if((strcasecmp(cptr, "octet-stream") == 0) ||
+			   (strcasecmp(cptr, "x-msdownload") == 0)) {
 				blob *aBlob = messageToBlob(mainMessage);
 
 				if(aBlob) {
@@ -899,26 +905,66 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 		}
 	}
 
-
 #ifdef	CL_DEBUG
 	cli_dbgmsg("%d attachments found\n", nBlobs);
 #endif
 
-	if(nBlobs == 0 && mainMessage) {
-		/*
-		 * No attachments, but it may still contain a uu-encoded file
-		 */
+	if(nBlobs == 0) {
 		blob *b;
 
-		messageSetEncoding(mainMessage,	"x-uuencode");
+		/*
+		 * No attachements - look for a text that we can save to scan
+		 */
 
-		if((b = messageToBlob(mainMessage)) != NULL) {
-			if((cptr = blobGetFilename(b)) != NULL) {
-				cli_dbgmsg("Found uuencoded message %s\n", cptr);
+#ifdef	CL_DEBUG
+		cli_dbgmsg("%d multiparts found\n", multiparts);
+#endif
+		htmltextPart = getTextPart(messages, multiparts);
 
-				(void)saveFile(b, dir);
-			}
+		if(htmltextPart > 0) {
+			b = messageToBlob(messages[htmltextPart]);
+
+			assert(b != NULL);
+
+#ifdef	CL_DEBUG
+			cli_dbgmsg("Found HTML part in %d, encoded with scheme %d\n",
+				htmltextPart, messageGetEncoding(messages[htmltextPart]));
+#endif
+
+			(void)saveFile(b, dir);
+
 			blobDestroy(b);
+		}
+
+		if(mainMessage) {
+			/*
+			 * Look for uu-encoded main file
+			 */
+			const text *t_line;
+
+			for(t_line = messageGetBody(mainMessage); t_line; t_line = t_line->t_next) {
+				const char *line = t_line->t_text;
+
+				if((strncasecmp(line, "begin ", 6) == 0) &&
+				   (isdigit(line[6])) &&
+				   (isdigit(line[7])) &&
+				   (isdigit(line[8])) &&
+				   (line[9] == ' '))
+					break;
+			}
+
+			if(t_line != NULL) {
+				messageSetEncoding(mainMessage,	"x-uuencode");
+
+				if((b = messageToBlob(mainMessage)) != NULL) {
+					if((cptr = blobGetFilename(b)) != NULL) {
+						cli_dbgmsg("Found uuencoded message %s\n", cptr);
+
+						(void)saveFile(b, dir);
+					}
+					blobDestroy(b);
+				}
+			}
 		}
 	} else {
 		short attachmentNumber;
@@ -1028,13 +1074,10 @@ initialiseTables(table_t **rfc821Table, table_t **subtypeTable)
 }
 
 /*
- * If there's a plain text version use that, otherwise
+ * If there's a HTML text version use that, otherwise
  * use the first text part, otherwise just use the
- * first one around
- *
- * Alternatively we could hunt out any HTML
- * version and save that, if the displaying client
- * can cope with HTML.
+ * first one around. HTML text is most likely to include
+ * a scripting worm
  *
  * If we can't find one, return -1
  */
@@ -1046,7 +1089,7 @@ getTextPart(message *const messages[], size_t size)
 	for(i = 0; i < size; i++) {
 		assert(messages[i] != NULL);
 		if((messageGetMimeType(messages[i]) == TEXT) &&
-		   (strcasecmp(messageGetMimeSubtype(messages[i]), "plain") == 0))
+		   (strcasecmp(messageGetMimeSubtype(messages[i]), "html") == 0))
 			return (int)i;
 	}
 	for(i = 0; i < size; i++)
@@ -1210,20 +1253,24 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 	return type;
 }
 
-static int
+static bool
 saveFile(const blob *b, const char *dir)
 {
 	unsigned long nbytes = blobGetDataSize(b);
-	const char *cptr;
-	char *filename = NULL;
-	size_t dirLen = strlen(dir);
 	int fd;
-	const char *suffix;
+	const char *cptr, *suffix;
+#ifdef	NAME_MAX	/* e.g. Linux */
+	char filename[NAME_MAX + 1];
+#else
+#ifdef	MAXNAMELEN	/* e.g. Solaris */
+	char filename[MAXNAMELEN + 1];
+#endif
+#endif
 
 	assert(dir != NULL);
 
 	if(nbytes == 0)
-		return 1;
+		return TRUE;
 
 	cptr = blobGetFilename(b);
 
@@ -1243,9 +1290,11 @@ saveFile(const blob *b, const char *dir)
 	}
 	cli_dbgmsg("Saving attachment in %s/%s\n", dir, cptr);
 
-	/* tk: use dynamic allocation */
-	filename = cli_malloc(dirLen + strlen(cptr) + strlen(suffix) + 8);
-	sprintf(filename, "%s/%sXXXXXX", dir, cptr);
+	/*
+	 * Allow for very long filenames. We have to truncate them to fit
+	 */
+	snprintf(filename, sizeof(filename) - 7, "%s/%s", dir, cptr);
+	strcat(filename, "XXXXXX");
 
 	/*
 	 * TODO: add a HAS_MKSTEMP property
@@ -1259,8 +1308,7 @@ saveFile(const blob *b, const char *dir)
 
 	if(fd < 0) {
 		cli_errmsg("%s: %s\n", filename, strerror(errno));
-		free(filename);
-		return 0;
+		return FALSE;
 	}
 
 	/*
@@ -1279,7 +1327,32 @@ saveFile(const blob *b, const char *dir)
 	cli_dbgmsg("Attachment saved as %s (%ul bytes long)\n",
 		filename, nbytes);
 
-	free(filename);
+	return TRUE;
+}
 
-	return 1;
+static bool
+newMessageStart(const char *buf)
+{
+	if(strncmp(buf, "From ", 5) == 0)
+		return TRUE;
+
+	/*
+	 * Do NOT enable this code, it gets confused by RFC822 messages
+	 * enapsulated in other messages e.g.
+	 *
+	 * ....
+	 * --NAB47372.960554223/xxx
+	 * Content-Type: message/rfc822
+	 *
+	 * Return-Path: MAILER-DAEMON
+	 * ....
+	 */
+#if	0
+	if(strncmp(buf, "Return-Path: ", 13) == 0)
+		return TRUE;
+	if(strncmp(buf, "Received: ", 10) == 0)
+		return TRUE;
+#endif
+
+	return FALSE;
 }

@@ -1,3 +1,13 @@
+Sat Jul 26 17:11:46 CEST 2003
+-----------------------------
+  * libclamav: updated mbox code (Nigel)
+
+Thu Jul 24 13:29:39 CEST 2003
+-----------------------------
+  * libclamav: mbox: fixed detection of the Gibe virus (bug reported
+	       by Rene Bellora); support for log file names (problem
+	       reported by Tomasz Papszun)
+
 Sun Jul 20 23:43:38 CEST 2003
 -----------------------------
   * libclamav: mbox: improved scanning of uuencoded files and other

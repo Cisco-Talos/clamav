@@ -369,7 +369,7 @@ void help(void)
 {
     mprintf("\n");
     mprintf("		   Clam AntiVirus: Signature Tool (sigtool)  "VERSION"\n");
-    mprintf("		   (c) 2002 Tomasz Kojm <zolw@konarski.edu.pl>\n");
+    mprintf("	       (c) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>\n");
     mprintf("\n");
     mprintf("   --help		    -h		show help\n");
     mprintf("   --version		    -V		print version number and exit\n");

@@ -62,6 +62,9 @@ void clamscan(struct optstruct *opt)
     if(optl(opt, "stdout")) mprintf_stdout = 1;
     else mprintf_stdout = 0;
 
+    if(optl(opt, "debug"))
+	cl_debug();
+
     if(optc(opt, 'V')) {
 	mprintf("clamscan / ClamAV version "VERSION"\n");
 	mexit(0);
@@ -168,11 +171,12 @@ void help(void)
 
     mprintf("\n");
     mprintf("		   Clam AntiVirus Scanner "VERSION"\n");
-    mprintf("		   (c) 2002 Tomasz Kojm <zolw@konarski.edu.pl>\n");
+    mprintf("	    (c) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>\n");
     mprintf("	  \n");
     mprintf("    --help		    -h		Show help\n");
     mprintf("    --version		    -V		Print version number and exit\n");
     mprintf("    --verbose		    -v		Be verbose\n");
+    mprintf("    --debug				Enable debug messages\n");
     mprintf("    --quiet				Be quiet, output only error messages\n");
     mprintf("    --stdout				Write to stdout instead of stderr\n");
     mprintf("					(this help is always written to stdout)\n");
