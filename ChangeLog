@@ -1,3 +1,7 @@
+Fri Nov 26 21:53:03 GMT 2004 (njh)
+----------------------------------
+ * libclamav/mbox.c:	Scan uuencodes after the final MIME section
+
 Fri Nov 26 22:01:58 CET 2004 (tk)
 ---------------------------------
   * libclamav/scanners.c: cli_scanzip: apply cosmetic patch from Andrey J.
