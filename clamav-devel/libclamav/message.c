@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.129  2004/12/10 15:20:23  nigelhorne
+ * Handle empty content-type fields
+ *
  * Revision 1.128  2004/12/01 12:12:27  nigelhorne
  * Part of rule 3 of paragraph 5.1 of RFC1521 was not being implemented
  *
@@ -381,7 +384,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.128 2004/12/01 12:12:27 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.129 2004/12/10 15:20:23 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -574,7 +577,10 @@ messageSetMimeType(message *mess, const char *type)
 	int typeval;
 
 	assert(mess != NULL);
-	assert(type != NULL);
+	if(type == NULL) {
+		cli_warnmsg("Empty content-type field\n");
+		return 0;
+	}
 
 	cli_dbgmsg("messageSetMimeType: '%s'\n", type);
 
