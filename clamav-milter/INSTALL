@@ -315,6 +315,7 @@ Changes
 		ThreadTimeout seems to have been changed to ReadTimeout
 0.70g	3/4/04	Error if ReadTimeout is -ve
 		Honour StreamMaxLength
+0.70h	8/4/04	Cleanup StreamMaxLength code
 
 BUG REPORTS
 
