@@ -1,3 +1,9 @@
+Tue Dec 21 18:42:44 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter:	Fix fault tolerance problem which could cause
+	clamav-milter to attempt to talk to a clamd that was down before
+	switching to a working clamd
+
 Tue Dec 21 16:44:13 GMT 2004 (njh)
 ----------------------------------
   * libclamav/blob.c:	Support for OS/2 - patch by TK

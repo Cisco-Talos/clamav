@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.166  2004/12/21 18:40:38  nigelhorne
+ * Fix fault tolerance problem
+ *
  * Revision 1.165  2004/12/19 17:00:28  nigelhorne
  * Ensure --max-children > 0 in LocalSocket mode with SESSIONS
  *
@@ -506,9 +509,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.165 2004/12/19 17:00:28 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.166 2004/12/21 18:40:38 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80ee"
+#define	CM_VERSION	"0.80ff"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1870,7 +1873,7 @@ main(int argc, char **argv)
 static int
 createSession(int s)
 {
-	int ret = 0;
+	int ret = 0, fd;
 	struct sockaddr_in server;
 	const int serverNumber = s % numServers;
 	struct session *session = &sessions[s];
@@ -1883,13 +1886,14 @@ createSession(int s)
 
 	server.sin_addr.s_addr = serverIPs[serverNumber];
 
-	if((session->sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+	session->sock = -1;
+	if((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		perror("socket");
 		ret = -1;
-	} else if(connect(session->sock, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
+	} else if(connect(fd, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
 		perror("connect");
 		ret = 1;
-	} else if(send(session->sock, "SESSION\n", 7, 0) < 7) {
+	} else if(send(fd, "SESSION\n", 7, 0) < 7) {
 		perror("send");
 		ret = 1;
 	}
@@ -1903,10 +1907,10 @@ createSession(int s)
 		char *hostname = cli_strtok(serverHostNames, serverNumber, ":");
 #endif
 
-		if(session->sock >= 0) {
-			close(session->sock);
-			session->sock = -1;
-		}
+		session->status = CMDSOCKET_DOWN;
+
+		if(fd >= 0)
+			close(fd);
 
 		cli_warnmsg(_("Check clamd server %s - it may be down\n"), hostname);
 #ifndef	MAXHOSTNAMELEN
@@ -1914,9 +1918,8 @@ createSession(int s)
 #endif
 
 		broadcast(_("Check clamd server - it may be down\n"));
-
-		session->status = CMDSOCKET_DOWN;
 	}
+	session->sock = fd;
 
 	return ret;
 }
@@ -2057,13 +2060,14 @@ findServer(void)
 
 	pthread_mutex_lock(&sstatus_mutex);
 	for(; i < max_children; i++) {
-		session = &sessions[(j + i) % max_children];
-		cli_dbgmsg("findServer: try server %d\n",
-			(j + i) % max_children);
+		const int sess = (j + i) % max_children;
+
+		session = &sessions[sess];
+		cli_dbgmsg("findServer: try server %d\n", sess);
 		if(session->status == CMDSOCKET_FREE) {
 			session->status = CMDSOCKET_INUSE;
 			pthread_mutex_unlock(&sstatus_mutex);
-			return i;
+			return sess;
 		}
 	}
 	pthread_mutex_unlock(&sstatus_mutex);
@@ -3859,10 +3863,10 @@ connect2clamd(struct privdata *privdata)
 					goto end;
 			}
 		}
-		cli_dbgmsg("connect2clamd(%d): STREAM\n", freeServer);
+		cli_dbgmsg("connect2clamd(%d): STREAM\n", freeServer); 
 
 		session = &sessions[freeServer];
-		if(send(session->sock, "STREAM\n", 7, 0) < 7) {
+		if((session->sock < 0) || send(session->sock, "STREAM\n", 7, 0) < 7) {
 			perror("send");
 			pthread_mutex_lock(&sstatus_mutex);
 			session->status = CMDSOCKET_DOWN;
@@ -3904,6 +3908,8 @@ connect2clamd(struct privdata *privdata)
 				perror("recv");
 				if(use_syslog)
 					syslog(LOG_ERR, _("recv failed from clamd getting PORT"));
+				cli_warnmsg("Failed get PORT from server %d (fd %d) errno %d\n",
+					freeServer, session->sock, errno);
 			} else if(use_syslog)
 				syslog(LOG_ERR, _("EOF from clamd getting PORT"));
 			pthread_mutex_lock(&sstatus_mutex);
