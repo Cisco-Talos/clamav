@@ -2,6 +2,141 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.67
+----
+This release fixes a memory management problem (platform dependent; can lead
+to a DoS attack) with messages that only have attachments (reported by Oliver
+Brandmueller). It also contains patches for a few problems found in 0.66 and
+has better Cygwin support.
+
+0.66
+----
+This version is a response to the "clamav 0.65 remote DOS exploit" information
+published on popular security-related mailing lists. Unfortunately we had
+not been contacted by the author before he published that and had to release
+this (unplanned) package very quickly (it should be mentioned that CVS version
+was not vulnerable to the exploit). Untested code has been disabled also
+the Dazuko support is temporarily not available (if you really need it please
+use a CVS version or wait for a next stable release). Other noteworthy changes:
+
+-) clamd:
+    + fixed database timestamp handling (and a double reload problem reported
+      by Alex Pleiner and Ole Stanstrup)
+    + new directive: ArchiveMaxCompressionRatio
+    + new command: SESSION (starts a clamd session and allows to do multiple
+      commands per TCP session)
+    + new directives: TemporaryDirectory, LogClean (Andrey V. Malyshev)
+
+-) clamav-milter: (Nigel Horne)
+    + added support for AllowSupplementaryGroups and ThreadTimeout
+    + added --quarantine-dir (thanks to Michael Dankov)
+    + added --noreject (thanks to Vijay Sarvepalli)
+    + added --headers (thanks Leonid Zeitlin)
+    + added --sign option
+
+-) libclamav:
+    + detect Worm.SCO.A bounces (Nigel)
+    + prevent buffer overflow in broken uuencoded files (Nigel)
+    + scan multipart alternatives that have no boundaries (Nigel)
+    + better handling of encapsulated messages (Nigel)
+    + locate uuencoded viruses hidden in text portions of multipart/mixed
+      mime messages (Nigel)
+    + initial support for BinHex (Nigel)
+    + fixed a mail recursion loop (problem reported by Alex Kah and Kristof
+      Petr)
+    + fixed bzip2 memory limit (improper call suggested by the buggy libbz2
+      documentation, problem reported by Tomasz Klim)
+    + fixed on error descriptor leak in CVD unpacker (Thomas Lamy)
+    + fixed memory leak in digital signature verification code (Thomas Lamy)
+    + added maximal compression ratio limit (cl_limits->maxratio)
+
+-) clamscan:
+    + support for multiple arguments on command line (Thomas Lamy)
+    + fixed buffer overflow in --move (Denis De Messemacker)
+    + removed support for sendfile() under Linux
+
+-) freshclam:
+    + support for freshclam.conf (that may be optionally merged with
+      clamav.conf, command line options overwrite config settings)
+    + work-around for potential database downgrade (subtle problem
+      in r-r dns handling) - reported by Daniel Mario Vega and patched
+      by Luca Gibelli
+
+-) sigtool:
+    + list virus names with --list-sigs (-l)
+
+-) contrib:
+    + clamdwatch (by Mike Cathey)
+    + windows clamd client with drag&drop support (Nigel Horne)
+
+-) documentation:
+    + complete clamdoc.pdf French translation by Stephane Jeannenot
+    + Polish how-to on ClamAV and Sendmail integration (with clamav-milter)
+      by Przemyslaw Holowczyc
+
+
+News:
+
+ClamAV was the first anti-virus protecting against Worm.SCO.A (aka MyDoom.A) !
+The signature was published by Diego d'Ambra in the daily update 105,
+26-Jan-2004 20:23 GMT and we were at least two hours faster than "big" AV
+vendors:
+http://sourceforge.net/mailarchive/forum.php?thread_id=3764826&forum_id=34654
+http://www.pcwelt.de/news/viren_bugs/37278/4.html
+
+
+clamav-devel is finally able to decode OLE2 (Microsoft Office) files and
+decompress VBA streams ! The code is developed by Trog, official ClamAV
+developer. Also we're testing new clamd implementation that will solve
+several important problems (especially that "Time out" related). Please
+help us and test the latest CVS version.
+
+
+The virus database now contains more than 20.000 signatures ! On January 8,
+Denis De Messemacker (who joined our team 3 months ago) added signatures for
+about 7700 new viruses. Also special thanks go to Tomasz Papszun for his
+hard work on daily submissions and forcing us to keep ClamAV quality on
+the highest possible level.
+
+
+New mirroring mechanisms. Luca Gibelli (ClamAV) and mirror administrators
+(22 sites, http://www.clamav.net/mirrors.html, please see clamdoc.pdf for
+a complete mirror information) are converting mirrors to new "push mirroring"
+method. It uses advanced techniques to ensure all the mirrors are up to date.
+More info: http://www.clamav.net/docs/mirrors
+
+
+"Newsworthy Hack of Kindness" - Affero.net is featuring ClamAV in its latest
+newsletter (Volume #9, January 2004: http://www.affero.net/nl/dec03.html).
+Affero is a great rate-donate system and its mission is to bring a culture
+of patronage to the Internet. Currently we only accept donations via Affero.
+You can also help us and promote our project by adding the ClamAV logo to
+your home page. Look at http://www.clamav.net/donate.html for more information.
+
+
+We would like to thank our donors:
+
+    * Jeremy Garcia (http://www.linuxquestions.org)
+    * Andries Filmer (http://www.netexpo.nl)
+    * David Eriksson (http://www.2good.nu)
+    * Dynamic Network Services, Inc (http://www.dyndns.org)
+    * epublica
+    * Invisik Corporation (http://www.invisik.com)
+    * Keith (http://www.textpad.com)
+    * Explido Software USA Inc. (http://www.explido.us)
+    * cheahch from Singapore
+    * Electric Embers
+    * Stephane Rault
+    * Brad Koehn
+    * David Farrick
+    * ActiveIntra.net Inc. (http://www.activeintra.net)
+    * An anonymous donor from Colorado, US
+
+--
+Tomasz Kojm <tkojm*clamav.net>
+February 10, 2004
+
+
 0.65
 ----
 IMPORTANT NOTE: The project has been moved into SourceForge. The only official
