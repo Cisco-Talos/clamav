@@ -121,7 +121,9 @@ const char *cl_strerror(int clerror)
 	case CL_EGZIP:
 	    return "GZip module failure.";
 	case CL_EMSCOMP:
-	    return "MSExpand module failure.";
+	    return "MS Expand module failure.";
+	case CL_EMSCAB:
+	    return "MS CAB module failure.";
 	case CL_EOLE2:
 	    return "OLE2 module failure.";
 	case CL_ETMPFILE:

@@ -16,7 +16,7 @@
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 
-INCLUDES = -I$(top_srcdir) -I@srcdir@/zziplib
+INCLUDES = -I$(top_srcdir) -I@srcdir@/zziplib -I@srcdir@/mspack
 
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@
 
@@ -83,6 +83,17 @@ libclamav_la_SOURCES = \
 	msexpand.c \
 	msexpand.h \
 	pe.c \
-	pe.h
+	pe.h \
+	mspack/cabd.c \
+	mspack/cab.h \
+	mspack/lzxd.c \
+	mspack/lzx.h \
+	mspack/mspack.h \
+	mspack/mszipd.c \
+	mspack/mszip.h \
+	mspack/qtmd.c \
+	mspack/qtm.h \
+	mspack/system.c \
+	mspack/system.h
 
 lib_LTLIBRARIES = libclamav.la

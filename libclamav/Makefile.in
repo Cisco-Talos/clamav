@@ -117,7 +117,7 @@ am__include = @am__include@
 am__quote = @am__quote@
 install_sh = @install_sh@
 
-INCLUDES = -I$(top_srcdir) -I@srcdir@/zziplib
+INCLUDES = -I$(top_srcdir) -I@srcdir@/zziplib -I@srcdir@/mspack
 
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@
 
@@ -184,7 +184,18 @@ libclamav_la_SOURCES = \
 	msexpand.c \
 	msexpand.h \
 	pe.c \
-	pe.h
+	pe.h \
+	mspack/cabd.c \
+	mspack/cab.h \
+	mspack/lzxd.c \
+	mspack/lzx.h \
+	mspack/mspack.h \
+	mspack/mszipd.c \
+	mspack/mszip.h \
+	mspack/qtmd.c \
+	mspack/qtm.h \
+	mspack/system.c \
+	mspack/system.h
 
 
 lib_LTLIBRARIES = libclamav.la
@@ -200,7 +211,7 @@ am_libclamav_la_OBJECTS = matcher.lo md5.lo others.lo readdb.lo cvd.lo \
 	zzip-file.lo zzip-info.lo zzip-io.lo zzip-stat.lo zzip-zip.lo \
 	strc.lo blob.lo mbox.lo message.lo snprintf.lo strrcpy.lo \
 	table.lo text.lo ole2_extract.lo vba_extract.lo msexpand.lo \
-	pe.lo
+	pe.lo cabd.lo lzxd.lo mszipd.lo qtmd.lo system.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 
 DEFS = @DEFS@
@@ -210,16 +221,19 @@ LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
-@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/blob.Plo ./$(DEPDIR)/cvd.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/dsig.Plo ./$(DEPDIR)/matcher.Plo \
+@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/blob.Plo ./$(DEPDIR)/cabd.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/cvd.Plo ./$(DEPDIR)/dsig.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/lzxd.Plo ./$(DEPDIR)/matcher.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/mbox.Plo ./$(DEPDIR)/md5.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/message.Plo ./$(DEPDIR)/msexpand.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/ole2_extract.Plo ./$(DEPDIR)/others.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/pe.Plo ./$(DEPDIR)/readdb.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/mszipd.Plo ./$(DEPDIR)/ole2_extract.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/others.Plo ./$(DEPDIR)/pe.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/qtmd.Plo ./$(DEPDIR)/readdb.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/scanners.Plo ./$(DEPDIR)/snprintf.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/str.Plo ./$(DEPDIR)/strc.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/strrcpy.Plo ./$(DEPDIR)/table.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/text.Plo ./$(DEPDIR)/unrarlib.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/strrcpy.Plo ./$(DEPDIR)/system.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/table.Plo ./$(DEPDIR)/text.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/unrarlib.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/vba_extract.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/zzip-dir.Plo ./$(DEPDIR)/zzip-err.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/zzip-file.Plo ./$(DEPDIR)/zzip-info.Plo \
@@ -278,6 +292,11 @@ zzip-io.lo: zziplib/zzip-io.c
 zzip-stat.lo: zziplib/zzip-stat.c
 zzip-zip.lo: zziplib/zzip-zip.c
 strc.lo: zziplib/strc.c
+cabd.lo: mspack/cabd.c
+lzxd.lo: mspack/lzxd.c
+mszipd.lo: mspack/mszipd.c
+qtmd.lo: mspack/qtmd.c
+system.lo: mspack/system.c
 libclamav.la: $(libclamav_la_OBJECTS) $(libclamav_la_DEPENDENCIES) 
 	$(LINK) -rpath $(libdir) $(libclamav_la_LDFLAGS) $(libclamav_la_OBJECTS) $(libclamav_la_LIBADD) $(LIBS)
 
@@ -288,22 +307,27 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/blob.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cabd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cvd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dsig.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lzxd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/matcher.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mbox.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/md5.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/message.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msexpand.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mszipd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ole2_extract.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/others.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pe.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qtmd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/readdb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scanners.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/snprintf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/str.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strrcpy.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/system.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/table.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/text.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrarlib.Plo@am__quote@
@@ -480,6 +504,96 @@ strc.lo: zziplib/strc.c
 @AMDEP_TRUE@	depfile='$(DEPDIR)/strc.Plo' tmpdepfile='$(DEPDIR)/strc.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o strc.lo `test -f 'zziplib/strc.c' || echo '$(srcdir)/'`zziplib/strc.c
+
+cabd.o: mspack/cabd.c
+@AMDEP_TRUE@	source='mspack/cabd.c' object='cabd.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/cabd.Po' tmpdepfile='$(DEPDIR)/cabd.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cabd.o `test -f 'mspack/cabd.c' || echo '$(srcdir)/'`mspack/cabd.c
+
+cabd.obj: mspack/cabd.c
+@AMDEP_TRUE@	source='mspack/cabd.c' object='cabd.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/cabd.Po' tmpdepfile='$(DEPDIR)/cabd.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cabd.obj `cygpath -w mspack/cabd.c`
+
+cabd.lo: mspack/cabd.c
+@AMDEP_TRUE@	source='mspack/cabd.c' object='cabd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/cabd.Plo' tmpdepfile='$(DEPDIR)/cabd.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cabd.lo `test -f 'mspack/cabd.c' || echo '$(srcdir)/'`mspack/cabd.c
+
+lzxd.o: mspack/lzxd.c
+@AMDEP_TRUE@	source='mspack/lzxd.c' object='lzxd.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/lzxd.Po' tmpdepfile='$(DEPDIR)/lzxd.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lzxd.o `test -f 'mspack/lzxd.c' || echo '$(srcdir)/'`mspack/lzxd.c
+
+lzxd.obj: mspack/lzxd.c
+@AMDEP_TRUE@	source='mspack/lzxd.c' object='lzxd.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/lzxd.Po' tmpdepfile='$(DEPDIR)/lzxd.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lzxd.obj `cygpath -w mspack/lzxd.c`
+
+lzxd.lo: mspack/lzxd.c
+@AMDEP_TRUE@	source='mspack/lzxd.c' object='lzxd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/lzxd.Plo' tmpdepfile='$(DEPDIR)/lzxd.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lzxd.lo `test -f 'mspack/lzxd.c' || echo '$(srcdir)/'`mspack/lzxd.c
+
+mszipd.o: mspack/mszipd.c
+@AMDEP_TRUE@	source='mspack/mszipd.c' object='mszipd.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/mszipd.Po' tmpdepfile='$(DEPDIR)/mszipd.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mszipd.o `test -f 'mspack/mszipd.c' || echo '$(srcdir)/'`mspack/mszipd.c
+
+mszipd.obj: mspack/mszipd.c
+@AMDEP_TRUE@	source='mspack/mszipd.c' object='mszipd.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/mszipd.Po' tmpdepfile='$(DEPDIR)/mszipd.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mszipd.obj `cygpath -w mspack/mszipd.c`
+
+mszipd.lo: mspack/mszipd.c
+@AMDEP_TRUE@	source='mspack/mszipd.c' object='mszipd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/mszipd.Plo' tmpdepfile='$(DEPDIR)/mszipd.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mszipd.lo `test -f 'mspack/mszipd.c' || echo '$(srcdir)/'`mspack/mszipd.c
+
+qtmd.o: mspack/qtmd.c
+@AMDEP_TRUE@	source='mspack/qtmd.c' object='qtmd.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/qtmd.Po' tmpdepfile='$(DEPDIR)/qtmd.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o qtmd.o `test -f 'mspack/qtmd.c' || echo '$(srcdir)/'`mspack/qtmd.c
+
+qtmd.obj: mspack/qtmd.c
+@AMDEP_TRUE@	source='mspack/qtmd.c' object='qtmd.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/qtmd.Po' tmpdepfile='$(DEPDIR)/qtmd.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o qtmd.obj `cygpath -w mspack/qtmd.c`
+
+qtmd.lo: mspack/qtmd.c
+@AMDEP_TRUE@	source='mspack/qtmd.c' object='qtmd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/qtmd.Plo' tmpdepfile='$(DEPDIR)/qtmd.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o qtmd.lo `test -f 'mspack/qtmd.c' || echo '$(srcdir)/'`mspack/qtmd.c
+
+system.o: mspack/system.c
+@AMDEP_TRUE@	source='mspack/system.c' object='system.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/system.Po' tmpdepfile='$(DEPDIR)/system.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o system.o `test -f 'mspack/system.c' || echo '$(srcdir)/'`mspack/system.c
+
+system.obj: mspack/system.c
+@AMDEP_TRUE@	source='mspack/system.c' object='system.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/system.Po' tmpdepfile='$(DEPDIR)/system.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o system.obj `cygpath -w mspack/system.c`
+
+system.lo: mspack/system.c
+@AMDEP_TRUE@	source='mspack/system.c' object='system.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/system.Plo' tmpdepfile='$(DEPDIR)/system.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o system.lo `test -f 'mspack/system.c' || echo '$(srcdir)/'`mspack/system.c
 CCDEPMODE = @CCDEPMODE@
 
 mostlyclean-libtool:
