@@ -15,5 +15,5 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-EXTRA_DIST = clamdoc.pdf DMS Spanish Japanese html man FreeBSD-HowTo Portugese Turkish clamd_supervised clamav-mirror-howto.pdf signatures.pdf French Polish
+EXTRA_DIST = clamdoc.pdf DMS German Spanish Japanese html man FreeBSD-HowTo Portugese Turkish clamd_supervised clamav-mirror-howto.pdf signatures.pdf French Polish
 man_MANS = man/clamscan.1 man/freshclam.1 man/sigtool.1 man/clamd.8 man/clamav.conf.5 man/clamdscan.1 man/clamav-milter.8
