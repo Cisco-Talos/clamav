@@ -297,11 +297,6 @@ vba_project_t *vba56_dir_read(const char *dir)
 	cli_dbgmsg("VBA Project: %s, VBA Version=%d\n", vba_version[i].name,
 				vba_version[i].vba_version);
 
-	if (i == 9) {
-		cli_dbgmsg("MacOffice2001 not currently supported\n");
-		close(fd);
-		return NULL;
-	}
 	is_mac = vba_version[i].is_mac;
 
 	/*****************************************/
@@ -497,6 +492,16 @@ vba_project_t *vba56_dir_read(const char *dir)
 			return NULL;
 		}
 	} while(ooff != 0xFFFF);
+
+	/* check for alignment error */
+	lseek(fd, -3, SEEK_CUR);
+	if (vba_readn(fd, &ooff, 2) != 2) {
+ 		close(fd);
+		return NULL;
+	}
+	if (ooff != 0xFFFF) {
+		lseek(fd, 1, SEEK_CUR);
+	}
 	
 	if (vba_readn(fd, &ooff, 2) != 2) {
 		close(fd);
