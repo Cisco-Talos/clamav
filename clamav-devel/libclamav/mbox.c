@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.128  2004/09/17 09:09:44  nigelhorne
+ * Better handling of RFC822 comments
+ *
  * Revision 1.127  2004/09/16 18:00:43  nigelhorne
  * Handle RFC2047
  *
@@ -369,7 +372,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.127 2004/09/16 18:00:43 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.128 2004/09/17 09:09:44 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -484,6 +487,7 @@ static	bool	continuationMarker(const char *line);
 static	int	parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg);
 static	void	saveTextPart(message *m, const char *dir);
 static	char	*rfc2047(const char *in);
+static	char	*rfc822comments(const char *in);
 
 static	void	checkURLs(message *m, const char *dir);
 #ifdef	WITH_CURL
@@ -2079,65 +2083,11 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 
 	cli_dbgmsg("parseMimeHeader: cmd='%s', arg='%s'\n", cmd, arg);
 
-	if(strchr(cmd, '(')) {
-		/*
-		 * The command includes comments, see section 3.4.3 of RFC822
-		 * Remove the comment from the command
-		 */
-		char *ccopy = strdup(cmd);
-		char *cptr;
-		int backslash, inquote, commentlevel;
-		char *newcmd, *nptr;
+	ptr = rfc822comments(cmd);
+	commandNumber = tableFind(rfc821Table, ptr);
+	free(ptr);
 
-		if(ccopy == NULL)
-			return -1;
-
-		newcmd = cli_malloc(strlen(cmd) + 1);
-		if(newcmd == NULL) {
-			free(ccopy);
-			return -1;
-		}
-
-		backslash = commentlevel = inquote = 0;
-		nptr = newcmd;
-
-		cli_dbgmsg("parseMimeHeader: cmd contains a comment\n");
-
-		for(cptr = ccopy; *cptr; cptr++)
-			if(backslash) {
-				*nptr++ = *cptr;
-				backslash = 0;
-			} else switch(*cptr) {
-				case '\\':
-					backslash = 1;
-					break;
-				case '\"':
-					inquote = !inquote;
-					break;
-				case '(':
-					commentlevel++;
-					break;
-				case ')':
-					if(commentlevel > 0)
-						commentlevel--;
-					break;
-				default:
-					if(commentlevel == 0)
-						*nptr++ = *cptr;
-			}
-
-		if(backslash)	/* last character was a single backslash */
-			*nptr++ = '\\';
-		*nptr = '\0';
-
-		free(ccopy);
-		commandNumber = tableFind(rfc821Table, newcmd);
-		free(newcmd);
-	} else
-		commandNumber = tableFind(rfc821Table, cmd);
-
-	copy = strdup(arg ? arg : "");
-	strstrip(copy);
+	copy = rfc822comments(arg);
 	ptr = copy;
 	if(copy == NULL)
 		return -1;
@@ -2262,6 +2212,66 @@ saveTextPart(message *m, const char *dir)
 	}
 }
 
+/*
+ * Handle RFC822 comments in headers. Returns a malloc'd buffer that the
+ * caller must free, or NULL on error. See seciont 3.4.3 of RFC822
+ * TODO: handle comments that go on to more than one line
+ */
+static char *
+rfc822comments(const char *in)
+{
+	const char *iptr;
+	char *out, *optr;
+	int backslash, inquote, commentlevel;
+
+	if(in == NULL)
+		in = "";
+
+	if(strchr(in, '(') == NULL)
+		return strdup(in);
+
+	out = cli_malloc(strlen(in) + 1);
+	if(out == NULL)
+		return NULL;
+
+	backslash = commentlevel = inquote = 0;
+	optr = out;
+
+	cli_dbgmsg("rfc822comments: contains a comment\n");
+
+	for(iptr = in; *iptr; iptr++)
+		if(backslash) {
+			*optr++ = *iptr;
+			backslash = 0;
+		} else switch(*iptr) {
+			case '\\':
+				backslash = 1;
+				break;
+			case '\"':
+				inquote = !inquote;
+				break;
+			case '(':
+				commentlevel++;
+				break;
+			case ')':
+				if(commentlevel > 0)
+					commentlevel--;
+				break;
+			default:
+				if(commentlevel == 0)
+					*optr++ = *iptr;
+		}
+
+	if(backslash)	/* last character was a single backslash */
+		*optr++ = '\\';
+	*optr = '\0';
+
+	strstrip(out);
+
+	cli_dbgmsg("rfc822comments '%s'=>'%s'\n", in, out);
+
+	return out;
+}
 
 /*
  * Handle RFC2047 encoding. Returns a malloc'd buffer that the caller must

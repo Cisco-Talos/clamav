@@ -1,3 +1,7 @@
+Fri Sep 17 10:10:13 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Improved handling of RFC822 comments in headers
+
 Thu Sep 16 21:14:08 CEST 2004 (tk)
 ----------------------------------
   * sigtool: add support for new database names
