@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.166  2004/11/07 16:39:00  nigelhorne
+ * Handle para 4 of RFC2231
+ *
  * Revision 1.165  2004/11/06 21:43:23  nigelhorne
  * Fix possible segfault in handling broken RFC2047 headers
  *
@@ -483,7 +486,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.165 2004/11/06 21:43:23 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.166 2004/11/07 16:39:00 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2421,8 +2424,6 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 	if(copy == NULL)
 		return -1;
 
-	ptr = copy;
-
 	switch(commandNumber) {
 		case CONTENT_TYPE:
 			/*
@@ -2751,10 +2752,12 @@ rfc2047(const char *in)
 			pout += len;
 
 	}
-	if(out)
-		*pout = '\0';
+	if(out == NULL)
+		return NULL;
 
-	cli_dbgmsg("rfc2047 returns '%s'\n", (out) ? out : "null");
+	*pout = '\0';
+
+	cli_dbgmsg("rfc2047 returns '%s'\n", out);
 	return out;
 }
 
