@@ -250,7 +250,8 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
     if((zdir = zzip_dir_fdopen(dup(desc), &err)) == NULL) {
 	cli_dbgmsg("Zip -> Not supported file format ?.\n");
 	cli_dbgmsg("zzip_dir_fdopen() return code: %d\n", err);
-	return CL_EZIP;
+	/* no return with CL_EZIP due to password protected zips */
+	return CL_CLEAN;
     }
 
     fstat(desc, &source);

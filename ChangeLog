@@ -1,3 +1,8 @@
+Tue Dec 30 04:33:29 CET 2003 (tk)
+---------------------------------
+  * libclamav: don't report an error with password protected zip (problem
+	       reported by Brian Bruns <bruns*2mbit.com>)
+
 Mon Dec 29 06:19:54 CET 2003 (tk)
 ---------------------------------
   * freshclam: it's now configurable via freshclam.conf (which may be merged
