@@ -1,3 +1,7 @@
+Fri Oct  1 08:57:42 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Better error message for 'message/partial' emails
+
 Fri Oct  1 02:28:08 CEST 2004 (tk)
 ----------------------------------
   * clamd: add new directive IdleTimeout (patch by Andrey J. Melnikoff (TEMHOTA)

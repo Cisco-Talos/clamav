@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.144  2004/10/01 07:55:36  nigelhorne
+ * Better error message on message/partial
+ *
  * Revision 1.143  2004/09/30 21:47:35  nigelhorne
  * Removed unneeded strdups
  *
@@ -417,7 +420,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.143 2004/09/30 21:47:35 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.144 2004/10/01 07:55:36 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1753,17 +1756,19 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				/* RFC 2298 - handle like a normal email */
 				break;
 			else if(strcasecmp(mimeSubtype, "partial") == 0)
-				/* TODO */
-				cli_warnmsg("Content-type message/partial not yet supported\n");
-			else if(strcasecmp(mimeSubtype, "external-body") == 0)
 				/*
-				 * I don't believe that we should be going
-				 * around the Internet looking for referenced
-				 * files...
+				 * How can we be expected to reassemble a message when in
+				 * practice we'll be called once for each email so we won't
+				 * have all the parts for reassembly. It is up to the
+				 * calling program to reassemble full messages and pass
+				 * them on to us for scanning
 				 */
+				cli_warnmsg("Partial message received from MUA/MTA - message cannot be scanned\n");
+			else if(strcasecmp(mimeSubtype, "external-body") == 0)
+				/* TODO */
 				cli_warnmsg("Attempt to send Content-type message/external-body trapped");
 			else
-				cli_warnmsg("Unsupported message format `%s'\n", mimeSubtype);
+				cli_warnmsg("Unsupported message format `%s' - please report to bugs@clamav.net\n", mimeSubtype);
 
 			if(mainMessage && (mainMessage != messageIn))
 				messageDestroy(mainMessage);
@@ -2542,18 +2547,21 @@ checkURLs(message *m, const char *dir)
 	if(b == NULL)
 		return;
 
-	blobClose(b);
 	len = blobGetDataSize(b);
 
-	if(len == 0)
+	if(len == 0) {
+		blobDestroy(b);
 		return;
+	}
 
 	/* TODO: make this size customisable */
 	if(len > 100*1024) {
 		cli_warnmsg("Viruses pointed to by URL not scanned in large message\n");
 		blobDestroy(b);
+		return;
 	}
 
+	blobClose(b);
 	t = tableCreate();
 	if(t == NULL) {
 		blobDestroy(b);
