@@ -533,11 +533,13 @@ int urarlib_list(int desc, ArchiveList_struct *list)
     if ((ReadBlockResult = ReadBlock(FILE_HEAD | READSUBBLOCK)) <= 0) /* read name of the next  */
     {                                       /* file within the RAR archive  */
       cli_dbgmsg("Couldn't read next filename from archive (I/O error): %d\n", ReadBlockResult);
+      NoOfFilesInArchive = 0;
       break;                                /* error, file not found in     */
     }                                       /* archive or I/O error         */
     if (BlockHead.HeadType==SUB_HEAD)
     {
       debug_log("Sorry, sub-headers not supported.");
+      NoOfFilesInArchive = 0;
       break;                                /* error => exit                */
     }
 
