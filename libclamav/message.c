@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.149 2005/03/16 09:10:50 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.150 2005/03/16 14:43:17 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -94,7 +94,7 @@ static	const	struct	encoding_map {
 	{	"base64",		BASE64		},	/* rfc2045 */
 	{	"8bit",			EIGHTBIT	},
 	{	"binary",		BINARY		},
-	{	"x-uuencode",		UUENCODE	},
+	{	"x-uuencode",		UUENCODE	},	/* uuencode(5) */
 	{	"x-yencode",		YENCODE		},
 	{	"x-binhex",		BINHEX		},
 	{	"us-ascii",		NOENCODING	},	/* incorrect */
@@ -847,10 +847,10 @@ messageAddStr(message *m, const char *data)
 		m->body_last = m->body_first = (text *)cli_malloc(sizeof(text));
 	else {
 		assert(m->body_last != NULL);
-		if((data == NULL) && (m->body_last->t_line == NULL)) {
-			cli_dbgmsg("not saving two blank lines in sucession");
+		if((data == NULL) && (m->body_last->t_line == NULL))
+			/* don't save two blank lines in sucession */
 			return 1;
-		}
+
 		m->body_last->t_next = (text *)cli_malloc(sizeof(text));
 		if(m->body_last->t_next == NULL) {
 			messageDedup(m);
@@ -1477,6 +1477,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			}
 
 			if(uptr != data) {
+				assert((size_t)(uptr - data) < datasize);
 				(*addData)(ret, data, (size_t)(uptr - data));
 				size += (size_t)(uptr - data);
 			}
@@ -1627,6 +1628,7 @@ messageToText(message *m)
 					return NULL;
 				}
 				t_line = t_line->t_next;
+				m->uuencode = NULL;
 				break;
 			case YENCODE:
 				t_line = yEncBegin(m);
@@ -1971,12 +1973,18 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 			if((line[0] & 0x3F) == ' ')
 				break;
 
+			/*
+			 * reallen contains the number of bytes that were
+			 *	encoded
+			 */
 			reallen = (size_t)uudecode(*line++);
-			if(reallen == 0)
+			if(reallen <= 0)
+				break;
+			if(reallen > 62)
 				break;
 			len = strlen(line);
 
-			if(len > buflen)
+			if((len > buflen) || (reallen > len))
 				/*
 				 * In practice this should never occur since
 				 * the maximum length of a uuencoded line is
