@@ -1,5 +1,5 @@
 dnl
-dnl   Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+dnl   Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
 dnl   gethostbyname_r and readdir_r checks (c) COPYRIGHT MIT 1995
 dnl
 dnl   This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,7 @@ AM_INIT_AUTOMAKE(clamav, "devel-`date +%Y%m%d`")
 AM_CONFIG_HEADER(clamav-config.h)
 
 LC_CURRENT=1
-LC_REVISION=5
+LC_REVISION=6
 LC_AGE=0
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 AC_SUBST(LIBCLAMAV_VERSION)
@@ -194,9 +194,9 @@ then
     if eval curl-config --version 2>/dev/null >/dev/null; then
 	ver=`curl-config --version | sed -e "s/libcurl //g"`
 	hex_ver=`curl-config --vernum | tr 'a-f' 'A-F'`
-	ok=`echo "ibase=16; if($hex_ver>=$check_hex) $hex_ver else 0" | bc`
+	fail=`echo "ibase=16; if($hex_ver<$check_hex) 1" | bc`
 
-	if test x$ok != x0; then
+	if test x$fail != x1; then
 	    curl_libs=`curl-config --libs`
 	    LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $curl_libs"
 	    my_cv_curl_vers="$ver"

@@ -2192,7 +2192,7 @@ INSTALL_STRIP_PROGRAM="\${SHELL} \$(install_sh) -c -s"
 
 
 LC_CURRENT=1
-LC_REVISION=5
+LC_REVISION=6
 LC_AGE=0
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 
@@ -11266,9 +11266,9 @@ echo $ECHO_N "checking for curl >= $check... $ECHO_C" >&6
     if eval curl-config --version 2>/dev/null >/dev/null; then
 	ver=`curl-config --version | sed -e "s/libcurl //g"`
 	hex_ver=`curl-config --vernum | tr 'a-f' 'A-F'`
-	ok=`echo "ibase=16; if($hex_ver>=$check_hex) $hex_ver else 0" | bc`
+	fail=`echo "ibase=16; if($hex_ver<$check_hex) 1" | bc`
 
-	if test x$ok != x0; then
+	if test x$fail != x1; then
 	    curl_libs=`curl-config --libs`
 	    LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $curl_libs"
 	    my_cv_curl_vers="$ver"
