@@ -213,11 +213,11 @@ cli_file_t cli_filetype2(int desc)
 
     if(ret == CL_TYPE_UNKNOWN_DATA || ret == CL_TYPE_UNKNOWN_TEXT) {
 
-	if(!(bigbuff = (unsigned char *) cli_calloc(16384 + 1, sizeof(unsigned char))))
+	if(!(bigbuff = (unsigned char *) cli_calloc(37638 + 1, sizeof(unsigned char))))
 	    return ret;
 
 	lseek(desc, 0, SEEK_SET);
-	if((bread = read(desc, bigbuff, 16384)) > 0) {
+	if((bread = read(desc, bigbuff, 37638)) > 0) {
 
 	    bigbuff[bread] = 0;
 
@@ -230,6 +230,17 @@ cli_file_t cli_filetype2(int desc)
 		    ret = CL_TYPE_POSIX_TAR;
 		    cli_dbgmsg("Recognized POSIX tar file\n");
 		    break;
+	    }
+	}
+
+	if(ret == CL_TYPE_UNKNOWN_DATA || ret == CL_TYPE_UNKNOWN_TEXT) {
+
+	    if(!memcmp(bigbuff + 32769, "CD001" , 5) || !memcmp(bigbuff + 37633, "CD001" , 5)) {
+		cli_dbgmsg("Recognized ISO 9660 CD-ROM data\n");
+		ret = CL_TYPE_DATA;
+	    } else if(!memcmp(bigbuff + 32776, "CDROM" , 5)) {
+		cli_dbgmsg("Recognized High Sierra CD-ROM data\n");
+		ret = CL_TYPE_DATA;
 	    }
 	}
 
