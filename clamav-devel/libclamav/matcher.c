@@ -130,17 +130,33 @@ static long int cli_caloff(const char *offstr, int fd)
 	}
 	lseek(fd, n, SEEK_SET);
 
-	if(sscanf(offstr, "S%d+%ld", &n, &offset) != 2)
-	    return -1;
+	if(!strncmp(offstr, "SL", 2)) {
 
-	if(n >= peinfo.nsections) {
-	    free(peinfo.section);
-	    return -1;
+	    if(sscanf(offstr, "SL+%ld", &offset) != 1) {
+		free(peinfo.section);
+		return -1;
+	    }
+
+	    offset += peinfo.section[peinfo.nsections - 1].raw;
+
+	} else {
+
+	    if(sscanf(offstr, "S%d+%ld", &n, &offset) != 2) {
+		free(peinfo.section);
+		return -1;
+	    }
+
+	    if(n >= peinfo.nsections) {
+		free(peinfo.section);
+		return -1;
+	    }
+
+	    offset += peinfo.section[n].raw;
 	}
 
-	offset += peinfo.section[n].raw;
 	free(peinfo.section);
 	return offset;
+
     } else if(!strncmp(offstr, "EOF-", 4)) {
 	    struct stat sb;
 
