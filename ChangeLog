@@ -1,3 +1,7 @@
+Sat Aug  7 14:10:57 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Better load balancing when max-children is not set
+
 Sat Aug  7 01:33:14 CEST 2004 (tk)
 ----------------------------------
   * libclamav: matcher-bm: fix node sorting (false negative example provided
@@ -24,7 +28,7 @@ Thu Aug  5 11:41:00 CEST 2004 (tk)
 Thu Aug  5 08:44:51 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Handle more variants of gethostbyname_r
-  			Try harder to get fully qualified hostname
+			Try harder to get fully qualified hostname
 			Template files can now contain more than one variable
 			Template files sendmail variables handling changed to
 				allow access to variables not in braces. All
@@ -96,7 +100,7 @@ Mon Aug  2 12:28:31 CEST 2004 (tk)
 Sun Aug  1 09:21:50 BST 2004 (njh)
 ----------------------------------
   * libclamav/blob.c:	Ensure attachments with pathnames are scanned under
-  				Cygwin
+				Cygwin
 
 Fri Jul 30 21:08:29 CEST 2004 (tk)
 ----------------------------------

@@ -464,6 +464,7 @@ Changes
 0.75g	06/8/04	Handle privdata->from not set when --bounce is set
 			"Denis Ustimenko" <den@uzsci.net>
 		Quarantined file's names now contain the name of the virus
+0.75h	07/8/04	Some tweaking of the load balancing code
 
 BUG REPORTS
 
