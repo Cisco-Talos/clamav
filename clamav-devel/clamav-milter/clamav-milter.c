@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.119  2004/08/13 10:21:38  nigelhorne
+ * Single thread through tcp_wrappers
+ *
  * Revision 1.118  2004/08/12 12:18:45  nigelhorne
  * Fixed from
  *
@@ -365,9 +368,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.118 2004/08/12 12:18:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.119 2004/08/13 10:21:38 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.75j"
+#define	CM_VERSION	"0.75k"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1230,7 +1233,7 @@ main(int argc, char **argv)
 		if(logVerbose)
 			syslog(LOG_INFO, "Starting: %s", clamav_version);
 		else
-			syslog(LOG_INFO, clamav_version);
+			syslog(LOG_INFO, "%s", clamav_version);
 #ifdef	CL_DEBUG
 		if(debug_level > 0)
 			syslog(LOG_DEBUG, "Debugging is on");
@@ -1510,11 +1513,11 @@ findServer(void)
 
 	for(i = 0; i < numServers; i++)
 		if((socks[i] >= 0) && (FD_ISSET(socks[i], &rfds))) {
-			const int server = (i + j) % numServers;
+			const int s = (i + j) % numServers;
 
 			free(socks);
-			cli_dbgmsg("findServer: using server %d\n", server);
-			return server;
+			cli_dbgmsg("findServer: using server %d\n", s);
+			return s;
 		}
 
 	free(socks);
@@ -1584,6 +1587,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		const char *hostmail;
 		struct hostent hostent;
 		char buf[BUFSIZ];
+		static pthread_mutex_t wrap_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 		/*
 		 * Using TCP/IP for the sendmail->clamav-milter connection
@@ -1603,9 +1607,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		if(hostent.h_addr &&
 		   (inet_ntop(AF_INET, (struct in_addr *)hostent.h_addr, ip, sizeof(ip)) == NULL)) {
 			perror(hostent.h_name);
-			/*if(use_syslog)
-				syslog(LOG_WARNING, "Can't get IP address for (%s)", hostent.h_name);
-			strcpy(ip, (char *)inet_ntoa(*(struct in_addr *)hostent.h_addr));*/
+			/*strcpy(ip, (char *)inet_ntoa(*(struct in_addr *)hostent.h_addr));*/
 			if(use_syslog)
 				syslog(LOG_WARNING, "Access Denied: Can't get IP address for (%s)", hostent.h_name);
 			return cl_error;
@@ -1616,12 +1618,18 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 
 		/*
 		 * Ask is this is a allowed name or IP number
+		 *
+		 * hosts_ctl uses strtok so it is not thread safe, see
+		 * hosts_access(3)
 		 */
+		pthread_mutex_lock(&wrap_mutex);
 		if(!hosts_ctl("clamav-milter", hostent.h_name, ip, STRING_UNKNOWN)) {
+			pthread_mutex_unlock(&wrap_mutex);
 			if(use_syslog)
 				syslog(LOG_WARNING, "Access Denied for %s[%s]", hostent.h_name, ip);
 			return SMFIS_TEMPFAIL;
 		}
+		pthread_mutex_unlock(&wrap_mutex);
 	}
 #endif
 
@@ -2063,10 +2071,10 @@ clamfi_eom(SMFICTX *ctx)
 			char hostname[32];
 
 			if(gethostname(hostname, sizeof(hostname)) < 0) {
-				const char *ptr = smfi_getsymval(ctx, "{j}");
+				const char *j = smfi_getsymval(ctx, "{j}");
 
-				if(ptr)
-					strncpy(hostname, ptr,
+				if(j)
+					strncpy(hostname, j,
 						sizeof(hostname) - 1);
 				else
 					strcpy(buf, "Error determining host");
@@ -2075,7 +2083,6 @@ clamfi_eom(SMFICTX *ctx)
 				 * Determine fully qualified name
 				 */
 				struct hostent hostent;
-				char buf[BUFSIZ];
 
 				if(clamfi_gethostbyname(hostname, &hostent, buf, sizeof(buf)) == 0)
 					strncpy(hostname, hostent.h_name, sizeof(hostname));
@@ -2880,7 +2887,7 @@ connect2clamd(struct privdata *privdata)
 	} else {
 		int freeServer, nbytes;
 		struct sockaddr_in reply;
-		unsigned short port;
+		unsigned short p;
 		char buf[64];
 
 		assert(privdata->cmdSocket == -1);
@@ -2965,7 +2972,7 @@ connect2clamd(struct privdata *privdata)
 		if(debug_level >= 4)
 			cli_dbgmsg("Received: %s", buf);
 #endif
-		if(sscanf(buf, "PORT %hu\n", &port) != 1) {
+		if(sscanf(buf, "PORT %hu\n", &p) != 1) {
 			if(use_syslog)
 				syslog(LOG_ERR, "Expected port information from clamd, got '%s'",
 					buf);
@@ -2977,7 +2984,7 @@ connect2clamd(struct privdata *privdata)
 
 		memset((char *)&reply, 0, sizeof(struct sockaddr_in));
 		reply.sin_family = AF_INET;
-		reply.sin_port = (in_port_t)htons(port);
+		reply.sin_port = (in_port_t)htons(p);
 
 		assert(serverIPs != NULL);
 
@@ -2985,7 +2992,7 @@ connect2clamd(struct privdata *privdata)
 
 #ifdef	CL_DEBUG
 		if(debug_level >= 4)
-			cli_dbgmsg("Connecting to local port %d\n", port);
+			cli_dbgmsg("Connecting to local port %d\n", p);
 #endif
 
 		if(connect(privdata->dataSocket, (struct sockaddr *)&reply, sizeof(struct sockaddr_in)) < 0) {
@@ -2997,9 +3004,9 @@ connect2clamd(struct privdata *privdata)
 				strerror_r(errno, buf, sizeof(buf));
 				syslog(LOG_ERR,
 					"Failed to connect to port %d given by clamd: %s",
-					port, buf);
+					p, buf);
 #else
-				syslog(LOG_ERR, "Failed to connect to port %d given by clamd: %s", port, strerror(errno));
+				syslog(LOG_ERR, "Failed to connect to port %d given by clamd: %s", p, strerror(errno));
 #endif
 			}
 			return 0;

@@ -468,6 +468,8 @@ Changes
 0.75i	11/8/04	Added David Champion <dgc@uchicago.edu> isLocalAddr routine
 0.75j	11/8/04	Fix --from=EMAIL option which often didn't work
 			reported by "Sergey Y. Afonin" <asy@kraft-s.ru>
+0.75k	13/8/04	Single thread through tcp_wrappers, reported by
+			David Champion <dgc@uchicago.edu>
 
 BUG REPORTS
 
