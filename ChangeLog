@@ -1,3 +1,8 @@
+Sat Nov 13 17:14:17 CET 2004 (tk)
+---------------------------------
+  * freshclam: better handling of connection errors (thanks to Simon Munton
+	       <simon*munton.demon.co.uk>)
+
 Sat Nov 13 17:00:28 CET 2004 (tk)
 ---------------------------------
   * configure: do not add needless -I/usr/include
