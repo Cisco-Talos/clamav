@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.48  2004/02/27 12:16:26  nigelhorne
+ * Catch lines just containing ':'
+ *
  * Revision 1.47  2004/02/23 10:13:08  nigelhorne
  * Handle spaces before : in headers
  *
@@ -132,7 +135,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.47 2004/02/23 10:13:08 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.48 2004/02/27 12:16:26 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -482,7 +485,7 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821Table)
 
 	cmd = strtok_r(copy, ":", &strptr);
 
-	if(*cmd) {
+	if(cmd && *cmd) {
 		char *arg = strtok_r(NULL, "", &strptr);
 
 		if(arg)
