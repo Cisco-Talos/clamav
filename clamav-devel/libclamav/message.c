@@ -849,8 +849,8 @@ decodeLine(const message *m, const char *line, unsigned char *ptr)
 			break;
 
 		case UUENCODE:
-			assert(*line != '\0');
-
+			if(*line == '\0')
+				break;
 			if(strncasecmp(line, "begin ", 6) == 0)
 				break;
 			if(strcasecmp(line, "end") == 0)

@@ -1,7 +1,13 @@
+Wed Sep 24 10:37:10 BST 2003 (njh)
+----------------------------------
+
+  * libclamav: fixed core dump when the plain text file contained just
+  		the text "begin <number>"
+
 Wed Sep 24 06:54:56 BST 2003 (njh)
+---------------------------------
   * clamav-milter: redirect stdin/stdout/stderr
 
-----------------------------
 Sun Sep 21 22:03:13 CEST 2003 (tk)
 ----------------------------------
   * libclamav: enabled support for News messaged (thanks to
