@@ -157,9 +157,9 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	struct pe_image_optional_hdr optional_hdr;
 	struct pe_image_section_hdr *section_hdr;
 	struct stat sb;
-	char sname[9], buff[4096], *tempfile;
-	unsigned int i, found, upx_success = 0, min = 0, max = 0, err;
-	unsigned int ssize = 0, dsize = 0;
+	char sname[9], buff[8192], *tempfile;
+	unsigned int i, found, upx_success = 0, min = 0, max = 0, err, broken = 0;
+	unsigned int ssize = 0, dsize = 0, dll = 0;
 	int (*upxfn)(char *, int , char *, int *, uint32_t, uint32_t, uint32_t) = NULL;
 	char *src = NULL, *dest = NULL;
 	int ndesc, ret;
@@ -210,6 +210,13 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     if(EC32(file_hdr.Magic) != IMAGE_NT_SIGNATURE) {
 	cli_dbgmsg("Invalid PE signature (probably NE file)\n");
 	return CL_CLEAN;
+    }
+
+    if(EC16(file_hdr.Characteristics) & 0x2000) {
+	cli_dbgmsg("File type: DLL\n");
+	dll = 1;
+    } else if(EC16(file_hdr.Characteristics) & 0x01) {
+	cli_dbgmsg("File type: Executable\n");
     }
 
     switch(EC16(file_hdr.Machine)) {
@@ -413,17 +420,21 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
 	if(EC32(section_hdr[i].Characteristics) & 0x20000000)
 	    cli_dbgmsg("Section's memory is executable\n");
+
+	if(EC32(section_hdr[i].Characteristics) & 0x80000000)
+	    cli_dbgmsg("Section's memory is writeable\n");
+
 	cli_dbgmsg("------------------------------------\n");
 
 	if(EC32(section_hdr[i].PointerToRawData) + EC32(section_hdr[i].SizeOfRawData) > (unsigned long int) sb.st_size) {
 	    cli_dbgmsg("Possibly broken PE file - Section %d out of file (Offset@ %d, Rsize %d, Total filesize %d)\n", i, EC32(section_hdr[i].PointerToRawData), EC32(section_hdr[i].SizeOfRawData), sb.st_size);
-	    free(section_hdr);
 	    if(DETECT_BROKEN) {
 		if(virname)
 		    *virname = "Broken.Executable";
+		free(section_hdr);
 		return CL_VIRUS;
 	    }
-	    return CL_CLEAN;
+	    broken = 1;
 	}
 
 	if(!i) {
@@ -455,7 +466,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     /* Attempt to detect some popular polymorphic viruses */
 
     /* W32.Parite.B */
-    if(ep == EC32(section_hdr[nsections - 1].PointerToRawData)) {
+    if(!dll && ep == EC32(section_hdr[nsections - 1].PointerToRawData)) {
 	lseek(desc, ep, SEEK_SET);
 	if(read(desc, buff, 4096) == 4096) {
 		const char *pt = cli_memstr(buff, 4040, "\x47\x65\x74\x50\x72\x6f\x63\x41\x64\x64\x72\x65\x73\x73\x00", 15);
@@ -471,6 +482,42 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    }
 	}
     }
+
+    /* W32.Magistr.A/B */
+    if(!dll && (EC32(section_hdr[nsections - 1].Characteristics) & 0x80000000)) {
+	    uint32_t rsize, vsize;
+
+	rsize = EC32(section_hdr[nsections - 1].SizeOfRawData);
+	vsize = EC32(section_hdr[nsections - 1].VirtualSize);
+
+	if(rsize >= 0x612c && vsize >= 0x612c && ((vsize & 0xff) == 0xec)) {
+		int bw = rsize < 0x7000 ? rsize : 0x7000;
+
+	    lseek(desc, EC32(section_hdr[nsections - 1].PointerToRawData) + rsize - bw, SEEK_SET);
+	    if(read(desc, buff, 4096) == 4096) {
+		if(cli_memstr(buff, 4091, "\xe8\x2c\x61\x00\x00", 5)) {
+		    *virname = "W32.Magistr.A";
+		    free(section_hdr);
+		    return CL_VIRUS;
+		} 
+	    }
+
+	} else if(rsize >= 0x7000 && vsize >= 0x7000 && ((vsize & 0xff) == 0xed)) {
+		int bw = rsize < 0x8000 ? rsize : 0x8000;
+
+	    lseek(desc, EC32(section_hdr[nsections - 1].PointerToRawData) + rsize - bw, SEEK_SET);
+	    if(read(desc, buff, 4096) == 4096) {
+		if(cli_memstr(buff, 4091, "\xe8\x04\x72\x00\x00", 5)) {
+		    *virname = "W32.Magistr.B";
+		    free(section_hdr);
+		    return CL_VIRUS;
+		} 
+	    }
+	}
+    }
+
+    if(broken)
+	return CL_CLEAN;
 
     /* UPX & FSG support */
 
