@@ -1,4 +1,10 @@
+Mon Mar 15 20:53:10 CET 2004 (tk)
+---------------------------------
+  * clamav-milter: version number increased to 0.70
+  V 0.70-rc
+
 Mon Mar 15 18:40:44 GMT 2004 (trog)
+-----------------------------------
   * libvlamav/ole2_extract.c: fix cli_malloc() error
 
 Mon Mar 15 17:05:01 CET 2004 (tk)
