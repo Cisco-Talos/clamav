@@ -1,3 +1,8 @@
+Mon Feb  9 13:40:37 GMT 2004 (trog)
+-----------------------------------
+
+  * libclamav/ole2_extract.c: Revert erroneous patch from (tk)
+
 Mon Feb  9 11:09:56 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	Added --headers patch from "Leonid Zeitlin"
