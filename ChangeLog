@@ -1,3 +1,10 @@
+Fri Jan  9 15:08:01 GMT 2004 (njh)
+----------------------------------
+  * libclamav: Re-engineered handling of 
+	Handle Content-Type: /; name="eicar.com"
+	which was lost in recent code change. Should now apply to more
+	cases
+
 Fri Jan  9 14:46:29 GMT 2004 (njh)
 ----------------------------------
   * libclamav: Removed duplicated code in multipart handler in mbox.c
