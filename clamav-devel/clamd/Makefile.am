@@ -32,7 +32,6 @@ clamd_SOURCES = \
     localserver.h \
     session.c \
     session.h \
-    server-proc.c \
     server-th.c \
     server.h \
     scanner.c \

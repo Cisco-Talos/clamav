@@ -1,3 +1,7 @@
+Tue Feb 10 14:35:07 CET 2004 (tk)
+---------------------------------
+  * clamd: UseProcesses - permanently removed
+
 Tue Feb 10 10:38:08 GMT 2004 (trog)
 -----------------------------------
   * libclamav/ole2_extract.c: Improve error handling
