@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.136  2004/09/21 12:18:52  nigelhorne
+ * Fallback to CURLOPT_FILE if CURLOPT_WRITEDATA isn't defined
+ *
  * Revision 1.135  2004/09/21 08:14:00  nigelhorne
  * Now compiles in machines with libcurl but without threads
  *
@@ -393,7 +396,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.135 2004/09/21 08:14:00 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.136 2004/09/21 12:18:52 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2698,12 +2701,21 @@ getURL(struct arg *arg)
 		curl_easy_cleanup(curl);
 		return NULL;
 	}
+#ifdef	CURLOPT_WRITEDATA
 	if(curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp) != 0) {
 		fclose(fp);
 		free(fout);
 		curl_easy_cleanup(curl);
 		return NULL;
 	}
+#else
+	if(curl_easy_setopt(curl, CURLOPT_FILE, fp) != 0) {
+		fclose(fp);
+		free(fout);
+		curl_easy_cleanup(curl);
+		return NULL;
+	}
+#endif
 
 	/*
 	 * If an item is in squid's cache get it from there (TCP_HIT/200)
