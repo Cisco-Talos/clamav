@@ -1,3 +1,9 @@
+Fri Feb 20 17:13:10 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter:	If clamd is on the local machine and PidFile is defined
+  		check if clamd is dead when send() fails
+  * libclamav:		Added a new bounce delimeter
+
 Fri Feb 20 16:49:05 CET 2004 (tk)
 ---------------------------------
   * clamscan, freshclam: removed --log-verbose (but it's still accepted by the

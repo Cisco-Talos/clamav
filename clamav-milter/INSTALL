@@ -96,7 +96,11 @@ or if clamd is on a different machine
 
 You should have received a script to put into /etc/init.d with this software.
 
-run 'chown clamav /usr/local/sbin/clamav-milter; chmod 4700 /usr/local/sbin/clamav-milter
+As with all software it is wise to ensure that clamav-milter has the least
+privlidges it needs to run. So don't run it as root and don't store the sockets
+in a directory that can be written by everyone. For example ensure that /var/run
+is owned and writable only by root and add entries for 'User' and
+'FixStaleSocket' in clamav.conf.
 
 CHANGE HISTORY
 
@@ -133,7 +137,7 @@ Changes
 0.60b	17/8/03	Optionally set postmaster address. Usually one uses
 		/etc/aliases, but not everyone want's to...
 0.60c	22/8/03	Another go at Solaris support
-0.60d	26/8/03	Removed superflous buffer and unneeded strerror call
+0.60d	26/8/03	Removed superfluous buffer and unneeded strerror call
 		ETIMEDOUT isn't an error, but should give a warning
 0.60e	09/9/03	Added -P and -q flags by "Nicholas M. Kirsch" <nick@kirsch.org>
 0.60f	17/9/03	Changed fprintf to fputs where possible
@@ -232,6 +236,11 @@ Changes
 0.67d	19/2/04	Reworked TCPwrappers code
 		Thanks to "Hector M. Rulot Segovia" <Hector.Rulot@uv.es>
 		Changed some printf/puts to cli_dbgmsg
+0.67e	20/2/04	Moved the definition of the sendmail pipe
+		The recent changes to the configure script changed
+		the order of includes so some prototypes weren't getting in
+0.67f	20/2/04	Added checkClamd() - if possible attempts to see if clamd has
+		died
 
 BUG REPORTS
 

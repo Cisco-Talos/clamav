@@ -237,11 +237,16 @@
  *			Changed some printf/puts to cli_dbgmsg
  *	0.67e	20/2/04	Moved the definition of the sendmail pipe
  *			The recent changes to the configure script changed
- *			the order of includes sosome prototypes weren't
+ *			the order of includes so some prototypes weren't
  *			getting in
+ *	0.67f	20/2/04	Added checkClamd() - if possible attempts to see
+ *			if clamd has died
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.52  2004/02/20 17:07:24  nigelhorne
+ * Added checkClamd
+ *
  * Revision 1.51  2004/02/20 09:50:42  nigelhorne
  * Removed warnings added by new configuration script
  *
@@ -380,9 +385,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.51 2004/02/20 09:50:42 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.52 2004/02/20 17:07:24 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.67e"
+#define	CM_VERSION	"0.67f"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -519,6 +524,7 @@ static	header_list_t	header_list_new(void);
 static	void	header_list_free(header_list_t list);
 static	void	header_list_add(header_list_t list, const char *headerf, const char *headerv);
 static	void	header_list_print(header_list_t list, FILE *fp);
+static	void	checkClamd(void);
 
 static	char	clamav_version[128];
 static	int	fflag = 0;	/* force a scan, whatever */
@@ -595,6 +601,7 @@ static	pthread_cond_t	n_children_cond = PTHREAD_COND_INITIALIZER;
 static	unsigned	int	n_children = 0;
 static	unsigned	int	max_children = 0;
 short	use_syslog = 0;
+static	const	char	*pidFile;
 static	int	logVerbose = 0;
 static	struct	cfgstruct	*copt;
 static	const	char	*localSocket;
@@ -1065,6 +1072,9 @@ main(int argc, char **argv)
 			argv[0]);
 		return EX_SOFTWARE;
 	}
+
+	if((cpt = cfgopt(copt, "PidFile")) != NULL)
+		pidFile = cpt->strarg;
 
 	if(cfgopt(copt, "LogSyslog")) {
 		openlog("clamav-milter", LOG_CONS|LOG_PID, LOG_MAIL);
@@ -2283,6 +2293,7 @@ clamfi_send(const struct privdata *privdata, size_t len, const char *format, ...
 			if(errno == EINTR)
 				continue;
 			perror("send");
+			checkClamd();
 			if(use_syslog)
 				syslog(LOG_ERR, "write failure to clamd");
 
@@ -2436,4 +2447,41 @@ header_list_print(header_list_t list, FILE *fp)
 
 	for(iter = list->first; iter; iter = iter->next)
 		fprintf(fp, "%s\n", iter->header);
+}
+
+/*
+ * If possible, check if clamd has died, and report if it has
+ */
+static void
+checkClamd(void)
+{
+	pid_t pid;
+	int fd, nbytes;
+	char buf[9];
+
+	if(!localSocket)
+		return;
+
+	if(pidFile == NULL)
+		return;
+
+	fd = open(pidFile, O_RDONLY);
+	if(fd < 0) {
+		perror(pidFile);
+		if(use_syslog)
+			syslog(LOG_ERR, "Can't open %s\n", pidFile);
+
+		return;
+	}
+	nbytes = read(fd, buf, sizeof(buf) - 1);
+	close(fd);
+	buf[nbytes] = '\0';
+	pid = atoi(buf);
+	if(kill(pid, 0) < 0) {
+		if(errno == ESRCH) {
+			if(use_syslog)
+				syslog(LOG_ERR, "Clamd seems to have died\n");
+			perror("clamd");
+		}
+	}
 }
