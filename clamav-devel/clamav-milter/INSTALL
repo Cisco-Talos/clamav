@@ -172,6 +172,7 @@ Changes
 		clamd will think it is an mbox and not handle
 		unescaped From at the start of lines properly
 		Thanks to Michael Dankov <misha@btrc.ru>
+0.65i	9/12/03	Use the location of sendmail discovered by configure
 
 BUG REPORTS
 
