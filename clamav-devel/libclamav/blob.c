@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.25  2004/11/29 13:15:41  nigelhorne
+ * Avoid crash if the output file didn't open
+ *
  * Revision 1.24  2004/10/01 13:50:47  nigelhorne
  * Minor code tidy
  *
@@ -74,7 +77,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.24 2004/10/01 13:50:47 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.25 2004/11/29 13:15:41 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -404,8 +407,7 @@ fileblobDestroy(fileblob *fb)
 {
 	assert(fb != NULL);
 
-	if(fb->b.name) {
-		assert(fb->fp != NULL);
+	if(fb->b.name && fb->fp) {
 		if(ftell(fb->fp) == 0L) {
 			cli_dbgmsg("fileblobDestroy: not saving empty file\n");
 			unlink(fb->b.name);
@@ -417,6 +419,8 @@ fileblobDestroy(fileblob *fb)
 	} else if(fb->b.data) {
 		cli_errmsg("fileblobDestroy: file not saved: report to bugs@clamav.net\n");
 		free(fb->b.data);
+		if(fb->b.name)
+			free(fb->b.name);
 	}
 	free(fb);
 }
