@@ -21,6 +21,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.18  2004/11/20 13:15:46  nigelhorne
+ * Better handling of false file type identification
+ *
  * Revision 1.17  2004/10/27 06:36:38  nigelhorne
  * Handle type '1' files
  *
@@ -73,7 +76,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.17 2004/10/27 06:36:38 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.18 2004/11/20 13:15:46 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -193,8 +196,19 @@ cli_untar(const char *dir, int desc)
 					cli_errmsg("cli_untar: only standard TAR files are currently supported\n", type);
 					return CL_EFORMAT;
 				default:
-					cli_errmsg("cli_untar: unknown type flag %c\n", type);
-					return CL_EIO;
+					/*cli_errmsg("cli_untar: unknown type flag %c\n", type);
+					return CL_EFORMAT;*/
+					/*
+					 * It isn't really a tar file
+					 */
+					cli_dbgmsg("cli_untar: unknown type flag %c\n", type);
+					/*
+					 * We don't know that it's clean at all,
+					 * it would be better to have a
+					 * CL_CONTINUE return value since it
+					 * may be a different format
+					 */
+					return CL_CLEAN;
 			}
 
 			if(directory) {

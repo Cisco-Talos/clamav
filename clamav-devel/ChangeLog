@@ -1,3 +1,7 @@
+Sat Nov 20 13:18:58 GMT 2004 (njh)
+----------------------------------
+  * libclamav/untar.c:	Better handling of false file type identification
+
 Fri Nov 19 11:34:56 GMT 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Scan email footers (portions after the last MIME
