@@ -69,10 +69,6 @@
  *
  * Solaris 8 doesn't have milter support so clamav-milter won't work unless
  * you rebuild sendmail from source.
- * Solaris 9 has milter support in the supplied sendmail, but doesn't include
- * libmilter so you can't develop milter applications on it. Go to sendmail.org,
- * download the lastest sendmail, cd to libmilter and "make install" there.
- * Needs -lresolv
  *
  * FreeBSD4.7 use /usr/local/bin/gcc30. GCC3.0 is an optional extra on
  * FreeBSD. It comes with getopt.h which is handy. To link you need
@@ -82,6 +78,13 @@
  * FreeBSD4.8: compiles out of the box with either gcc2.95 or gcc3
  * OpenBSD3.3: the supplied sendmail does not come with Milter support. You
  * will need to rebuild sendmail from source
+ *
+ * Solaris 9 and FreeBSD5 have milter support in the supplied sendmail, but
+ * doesn't include libmilter so you can't develop milter applications on it.
+ * Go to sendmail.org, download the lastest sendmail, cd to libmilter and
+ * "make install" there.
+ *
+ * Needs -lresolv on Solaris
  *
  * Changes
  *	0.2:	4/3/03	clamfi_abort() now always calls pthread_mutex_unlock
@@ -182,9 +185,14 @@
  *	0.66	13/12/03 Upissue
  *	0.66a	22/12/03 Added --sign
  *	0.66b	27/12/03 --sign moved to privdata
+ *	0.66c	31/12/03 Included the sendmail queue ID in the log, from an
+ *			idea by Andy Fiddaman <af@jeamland.org>
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.34  2003/12/31 14:46:35  nigelhorne
+ * Include the sendmail queue ID in the log
+ *
  * Revision 1.33  2003/12/27 17:28:56  nigelhorne
  * Moved --sign data to private area
  *
@@ -269,9 +277,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.33 2003/12/27 17:28:56 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.34 2003/12/31 14:46:35 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.66b"
+#define	CM_VERSION	"0.66c"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -502,9 +510,9 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "bc:flm:nop:PqQ:dhs:S:U:Vx:";
+		const char *args = "bc:flm:nop:PqQ:dhs:SU:Vx:";
 #else
-		const char *args = "bc:flm:nop:PqQ:dhs:S:U:V";
+		const char *args = "bc:flm:nop:PqQ:dhs:SU:V";
 #endif
 
 		static struct option long_options[] = {
@@ -954,11 +962,12 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		return cl_error;
 	}
 
-	if(use_syslog)
-		syslog(LOG_NOTICE, "clamfi_connect: connection from %s [%s]", hostname, remoteIP);
 #ifdef	CL_DEBUG
-	if(debug_level >= 4)
+	if(debug_level >= 4) {
+		if(use_syslog)
+			syslog(LOG_NOTICE, "clamfi_connect: connection from %s [%s]", hostname, remoteIP);
 		printf("clamfi_connect: connection from %s [%s]\n", hostname, remoteIP);
+	}
 #endif
 
 	if(fflag)
@@ -1251,8 +1260,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		}
 	}
 
-	clamfi_send(privdata, 0, "Received: by clamav-milter\n");
-	clamfi_send(privdata, 0, "From: %s\n", argv[0]);
+	clamfi_send(privdata, 0, "Received: by clamav-milter\nFrom: %s\n", argv[0]);
 
 	privdata->from = strdup(argv[0]);
 	privdata->to = NULL;
@@ -1491,10 +1499,15 @@ clamfi_eom(SMFICTX *ctx)
 		 * me might consider bouncing it...
 		 */
 		if(use_syslog)
-			syslog(LOG_NOTICE, "clean message from %s",
+			/* Include the sendmail queue ID in the log */
+			syslog(LOG_NOTICE, "%s: clean message from %s",
+				smfi_getsymval(ctx, "i"),
 				(privdata->from) ? privdata->from : "an unknown sender");
 
 		if(privdata->body) {
+			/*
+			 * Add a signature that all has been scanned OK
+			 */
 			assert(Sflag != 0);
 
 			privdata->body = realloc(privdata->body, privdata->bodyLen + sizeof(signature));
@@ -1542,12 +1555,10 @@ clamfi_eom(SMFICTX *ctx)
 		(void)strcpy(ptr, "\n");
 
 		if(use_syslog)
-			/*
-			 * The "%s" is there to plug a remote possibility
-			 * of the program crashing if an e-mail address
-			 * contains a percent character
-			 */
-			syslog(LOG_NOTICE, "%s", err);
+			/* Include the sendmail queue ID in the log */
+			syslog(LOG_NOTICE, "%s: %s",
+				smfi_getsymval(ctx, "i"),
+				err);
 #ifdef	CL_DEBUG
 		puts(err);
 #endif
@@ -1788,7 +1799,7 @@ clamfi_send(const struct privdata *privdata, size_t len, const char *format, ...
 #endif
 
 	while(len > 0) {
-		int nbytes = (quarantine_dir) ?
+		const int nbytes = (quarantine_dir) ?
 			write(privdata->dataSocket, ptr, len) :
 			send(privdata->dataSocket, ptr, len, 0);
 

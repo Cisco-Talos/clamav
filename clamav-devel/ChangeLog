@@ -1,3 +1,8 @@
+Wed Dec 31 14:47:13 GMT 2003 (njh)
+----------------------------------
+  * clamav-milter: Included the sendmail queue ID in the log, from an
+		idea by Andy Fiddaman <af@jeamland.org>
+
 Tue Dec 30 04:33:29 CET 2003 (tk)
 ---------------------------------
   * libclamav: don't report an error with password protected zip (problem
