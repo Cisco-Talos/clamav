@@ -50,27 +50,22 @@ static short terminate = 0;
 
 
 static void daemon_sighandler(int sig) {
-	char *action = NULL;
 
     switch(sig) {
 	case SIGALRM:
 	case SIGUSR1:
-	    action = "wake up";
 	    terminate = -1;
 	    break;
 
 	case SIGHUP:
-	    action = "re-opening log file";
 	    terminate = -2;
 	    break;
 
 	default:
-	    action = "terminating";
 	    terminate = 1;
 	    break;
     }
 
-    logg("Received signal %d, %s\n", sig, action);
     return;
 }
 
@@ -327,8 +322,10 @@ int freshclam(struct optstruct *opt)
 	    } while (!terminate && now < wakeup);
 
 	    if (terminate == -1) {
+		logg("Received signal: wake up\n");
 		terminate = 0;
 	    } else if (terminate == -2) {
+		logg("Received signal: re-opening log file\n");
 		terminate = 0;
 		logg_close();
 	    }
