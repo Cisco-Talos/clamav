@@ -165,11 +165,16 @@ number of threads can exceed this number for short periods of time.
 There is no default, if this argument is not \fBclamav\-milter\fR will
 spawn as many children as is necessary up to the MaxThreads limit set
 in \fBclamd.conf\fR.
-Most users will not need this option, if in doubt do not set it.
+When clamav\-milter has been built with SESSION mode this argument is
+mandatory since it tells clamav\-milter the number of sessions to keep open
+to clamd servers.
+When not built with in SESSION mode it is unlikely that you will need this
+unless your system is under great load.
+The default build is for SESSION to be enabled.
 .TP
 \fB\-\-dont\-wait\fR
 Tells clamav\-milter what do to if the max-children number is exceeded.
-Usuaully clamav\-milter waits until a child dies or the timeout value has been
+Usually clamav\-milter waits until a child dies or the timeout value has been
 exceeded, which ever comes first, however with dont-wait enabled, clamav\-milter
 will inform the remote SMTP client to retry later.
 .TP

@@ -1,3 +1,9 @@
+Wed Nov  3 12:47:41 GMT 2004 (njh)
+----------------------------------
+  * libclamav/clamav-milter:	Save the original subject as X-Original-Subject
+  			when running in advisory or qurantine mode
+			SESSION mode: warn when no clamd can be reached
+
 Wed Nov  3 12:50:19 CET 2004 (tk)
 ---------------------------------
   * docs/MacOSX: update (Dale Enterprise L.L.C)
