@@ -575,10 +575,14 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 		if (!name) {
 			return FALSE;
 		}
-		snprintf(name, 10, "%.10d", i + (int) prop);
+		snprintf(name, 11, "%.10d", i + (int) prop);
 	}
 
 	newname = (char *) cli_malloc(strlen(name) + strlen(dir) + 2);
+	if (!newname) {
+		free(name);
+		return FALSE;
+	}
 	sprintf(newname, "%s/%s", dir, name);
 	free(name);
 
