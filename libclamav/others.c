@@ -530,16 +530,21 @@ int32_t cli_readint32(const char *buff)
 #if WORDS_BIGENDIAN == 0
     ret = *(int32_t *) buff;
 #else
-	int32_t shift, i = 0;
-
-    ret = 0;
-    for(shift = 0; shift < 32; shift += 8) {
-      ret |= (buff[i] & 0xff ) << shift;
-      i++;
-    }
+    ret = buff[0] & 0xff;
+    ret |= (buff[1] & 0xff) << 8;
+    ret |= (buff[2] & 0xff) << 16;
+    ret |= (buff[3] & 0xff) << 24;
 #endif
 
     return ret;
+}
+
+void cli_writeint32(char *offset, uint32_t value)
+{
+    offset[0] = value & 0xff;
+    offset[1] = (value & 0xff00) >> 8;
+    offset[2] = (value & 0xff0000) >> 16;
+    offset[3] = (value & 0xff000000) >> 24;
 }
 
 int cli_memstr(const char *haystack, int hs, const char *needle, int ns)
