@@ -122,7 +122,7 @@ int freshclam(struct optstruct *opt)
 
     if(cfgopt(copt, "HTTPProxyPassword")) {
 	if(stat(cfgfile, &statbuf) == -1) {
-	    mprintf("@Can't stat %s (critical error)\n");
+	    mprintf("@Can't stat %s (critical error)\n", cfgfile);
 	    return 56;
 	}
 #ifndef C_CYGWIN

@@ -1,3 +1,8 @@
+Fri Mar  4 02:42:43 CET 2005 (tk)
+---------------------------------
+  * freshclam/freshclam.c: add missing argument for format string. Patch by
+			 Enrico Scholz <enrico.scholz*informatik.tu-chemnitz.de>
+
 Fri Mar  4 02:21:42 CET 2005 (tk)
 ---------------------------------
   * clamd/others.c: include <sys/param.h> to fix compilation error on FreeBSD
