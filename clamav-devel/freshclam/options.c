@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 	int ret, opt_index, i, len;
 	struct optstruct *opt;
 
-	const char *getopt_parameters = "hvdp:Vl:c:u:";
+	const char *getopt_parameters = "hvdp:Vl:c:u:a:";
 
 	static struct option long_options[] = {
 	    /* 
@@ -61,6 +61,7 @@ int main(int argc, char **argv)
 	    {"no-dns", 0, 0, 0},
 	    {"checks", 1, 0, 'c'},
 	    {"http-proxy", 1, 0, 0},
+	    {"client-address", 1, 0, 'a'},
 	    {"proxy-user", 1, 0, 0},
 	    {"daemon-notify", 2, 0, 0},
 	    {"on-update-execute", 1, 0, 0},

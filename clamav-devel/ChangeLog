@@ -1,3 +1,7 @@
+Mon Mar 21 02:24:33 CET 2005 (tk)
+---------------------------------
+  * freshclam: add LocalIPAddress/--local-address (patch by Thomas Lamy)
+
 Mon Mar 21 01:13:41 CET 2005 (tk)
 ---------------------------------
   * libclamav/pe.c: add W32.Magistr.A/B detection
