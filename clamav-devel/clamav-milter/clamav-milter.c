@@ -231,9 +231,13 @@
  *	0.67a	16/2/04	Added clamfi_free
  *	0.67b	17/2/04	Removed compilation warning - now compiles on FreeBSD5.2
  *			Don't allow --force to overwride TCPwrappers
+ *	0.67c	18/2/04	Added dont-log-clean flag
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.49  2004/02/18 13:30:34  nigelhorne
+ * Added dont-long-clean argument
+ *
  * Revision 1.48  2004/02/18 10:06:51  nigelhorne
  * Fix FreeBSD
  *
@@ -363,9 +367,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.48 2004/02/18 10:06:51 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.49 2004/02/18 13:30:34 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.67b"
+#define	CM_VERSION	"0.67c"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -558,6 +562,9 @@ static	int	threadtimeout = CL_DEFAULT_SCANTIMEOUT; /*
 				 * number of seconds to wait for clamd to
 				 * respond
 				 */
+static	int	logClean = 1;	/*
+				 * Add clean items to the log file
+				 */
 static	char	*signature = "-- \nScanned by ClamAv - http://www.clamav.net\n";
 static	time_t	signatureStamp;
 
@@ -597,7 +604,8 @@ help(void)
 
 	puts("\t--bounce\t\t-b\tSend a failure message to the sender.");
 	puts("\t--config-file=FILE\t-c FILE\tRead configuration from FILE.");
-	puts("\t--debug\t\t-D\tPrint debug messages.");
+	puts("\t--debug\t\t\t-D\tPrint debug messages.");
+	puts("\t--dont-log-clean\t-C\tDon't add an entry to syslog that a mail is clean.");
 	puts("\t--dont-scan-on-error\t-d\tPass e-mails through unscanned if a system error occurs.");
 	puts("\t--force-scan\t\t-f\tForce scan all messages (overrides (-o and -l).");
 	puts("\t--help\t\t\t-h\tThis message.");
@@ -611,7 +619,7 @@ help(void)
 	puts("\t--quiet\t\t\t-q\tDon't send e-mail notifications of interceptions.");
 	puts("\t--quarantine=USER\t-Q EMAIL\tQuanrantine e-mail account.");
 	puts("\t--quarantine-dir=DIR\t-U DIR\tDirectory to store infected emails.");
-	puts("\t--server=SERVER\t-s SERVER\tHostname/IP address of server(s) running clamd (when using TCPsocket).");
+	puts("\t--server=SERVER\t\t-s SERVER\tHostname/IP address of server(s) running clamd (when using TCPsocket).");
 	puts("\t--sign\t\t\t-S\tAdd a hard-coded signature to each scanned message.");
 	puts("\t--signature-file\t-F\tLocation of signature file.");
 	puts("\t--version\t\t-V\tPrint the version number of this software.");
@@ -662,9 +670,9 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "bc:DfF:lm:nNop:PqQ:dhHs:SU:Vx:";
+		const char *args = "bc:CDfF:lm:nNop:PqQ:dhHs:SU:Vx:";
 #else
-		const char *args = "bc:DfF:lm:nNop:PqQ:dhHs:SU:V";
+		const char *args = "bc:CDfF:lm:nNop:PqQ:dhHs:SU:V";
 #endif
 
 		static struct option long_options[] = {
@@ -673,6 +681,9 @@ main(int argc, char **argv)
 			},
 			{
 				"config-file", 1, NULL, 'c'
+			},
+			{
+				"dont-log-clean", 0, NULL, 'C'
 			},
 			{
 				"dont-scan-on-error", 0, NULL, 'd'
@@ -754,6 +765,9 @@ main(int argc, char **argv)
 				break;
 			case 'c':	/* where is clamav.conf? */
 				cfgfile = optarg;
+				break;
+			case 'C':	/* dont log clean */
+				logClean = 0;
 				break;
 			case 'd':	/* don't scan on error */
 				cl_error = SMFIS_ACCEPT;
@@ -1878,7 +1892,7 @@ clamfi_eom(SMFICTX *ctx)
 		 * TODO: if privdata->from is NULL it's probably SPAM, and
 		 * me might consider bouncing it...
 		 */
-		if(use_syslog)
+		if(use_syslog && logClean)
 			/* Include the sendmail queue ID in the log */
 			syslog(LOG_NOTICE, "%s: clean message from %s",
 				smfi_getsymval(ctx, "i"),
