@@ -1,3 +1,8 @@
+Tue Mar  2 09:35:39 CET 2004 (tk)
+---------------------------------
+  * clamd: removed x86 dazuko object files (thanks to Fajar A. Nugraha
+	   <fajar*telkom.co.id>)
+
 Mon Mar  1 13:22:30 GMT 2004 (trog)
 -----------------------------------
   * clamd: Cleanup signal handling
@@ -37,7 +42,7 @@ Fri Feb 27 15:34:42 GMT 2004 (njh)
 Fri Feb 27 12:23:48 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Handle lines just containing ':', thanks to Stefan
-	Kaltenbrunner <mm-mailinglist@madness.at> and Trog
+	Kaltenbrunner <mm-mailinglist*madness.at> and Trog
 
 Fri Feb 27 10:47:20 CET 2004 (tk)
 ---------------------------------
