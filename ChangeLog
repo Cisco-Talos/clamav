@@ -1,3 +1,9 @@
+Fri Feb 27 15:34:42 GMT 2004 (njh)
+----------------------------------
+  * docs/man:	Ensure example for milter tallies with clamav-milter/INSTALL
+  * clamav-milter:	Ensure INSTALL agrees with man page
+	Check if clamd is running on start up (UNIX domain sockets only)
+
 Fri Feb 27 12:23:48 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Handle lines just containing ':', thanks to Stefan
