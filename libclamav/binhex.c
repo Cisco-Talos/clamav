@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: binhex.c,v $
+ * Revision 1.6  2004/11/22 15:16:53  nigelhorne
+ * Use cli_realloc instead of many cli_mallocs
+ *
  * Revision 1.5  2004/11/18 20:11:34  nigelhorne
  * Fix segfault
  *
@@ -30,7 +33,7 @@
  * First draft of binhex.c
  *
  */
-static	char	const	rcsid[] = "$Id: binhex.c,v 1.5 2004/11/18 20:11:34 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: binhex.c,v 1.6 2004/11/22 15:16:53 nigelhorne Exp $";
 
 #include "clamav.h"
 
@@ -71,7 +74,7 @@ int
 cli_binhex(const char *dir, int desc)
 {
 	struct stat statb;
-	char *buf, *start;
+	char *buf, *start, *line;
 	size_t size, bytesleft;
 	message *m;
 	fileblob *fb;
@@ -95,10 +98,11 @@ cli_binhex(const char *dir, int desc)
 	cli_dbgmsg("mmap'ed binhex file\n");
 
 	bytesleft = size;
+	line = NULL;
 
 	while(bytesleft) {
 		int length = 0;
-		char *ptr, *line;
+		char *ptr;
 
 		/* printf("%d: ", bytesleft); */
 
@@ -109,7 +113,7 @@ cli_binhex(const char *dir, int desc)
 
 		/* printf("%d: ", length); */
 
-		line = cli_malloc(length + 1);
+		line = cli_realloc(line, length + 1);
 
 		memcpy(line, buf, length);
 		line[length] = '\0';
@@ -119,14 +123,15 @@ cli_binhex(const char *dir, int desc)
 		if(messageAddStr(m, line) < 0)
 			break;
 
-		free(line);
-
 		buf = ++ptr;
 		bytesleft--;
 	}
 	munmap(start, size);
 
-	if(m->binhex == NULL) {
+	if(line)
+		free(line);
+
+	if(binhexBegin(m) == NULL) {
 		messageDestroy(m);
 		cli_errmsg("No binhex line found\n");
 		return CL_EFORMAT;
