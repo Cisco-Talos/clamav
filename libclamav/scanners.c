@@ -1056,11 +1056,6 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
     type == CL_MAILFILE ? (*mrec)++ : (*arec)++;
 
     switch(type) {
-	case CL_DOSEXE:
-	    if(SCAN_PE)
-		ret = cli_scanpe(desc, virname, scanned, root, limits, options, arec, mrec);
-	    break;
-
 	case CL_RARFILE:
 	    if(!DISABLE_RAR && SCAN_ARCHIVE && !cli_scanrar_inuse)
 		ret = cli_scanrar(desc, virname, scanned, root, limits, options, arec, mrec);
@@ -1118,11 +1113,12 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
     type == CL_MAILFILE ? (*mrec)-- : (*arec)--;
 
     if(type != CL_DATAFILE && ret != CL_VIRUS) { /* scan the raw file */
+	    int typerec;
+
+	type == CL_UNKNOWN_TYPE ? (typerec = 1) : (typerec = 0);
 	lseek(desc, 0, SEEK_SET);
 
-	type == CL_UNKNOWN_TYPE ? (type = 1) : (type = 0);
-
-	if((nret = cli_scandesc(desc, virname, scanned, root, type)) == CL_VIRUS) {
+	if((nret = cli_scandesc(desc, virname, scanned, root, typerec)) == CL_VIRUS) {
 	    cli_dbgmsg("%s virus found in descriptor %d.\n", *virname, desc);
 	    return CL_VIRUS;
 
@@ -1145,6 +1141,20 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
 	}
     }
 
+    (*arec)++;
+    lseek(desc, 0, SEEK_SET);
+    switch(type) {
+	/* Due to performance reasons all executables were first scanned
+	 * in raw mode. Now we will try to unpack them
+	 */
+	case CL_DOSEXE:
+	    if(SCAN_PE)
+		ret = cli_scanpe(desc, virname, scanned, root, limits, options, arec, mrec);
+	    break;
+    }
+    (*arec)--;
+
+
     return ret;
 }
 
@@ -1160,8 +1170,6 @@ static int cli_scanfile(const char *filename, const char **virname, unsigned lon
 	int fd, ret;
 
 
-    cli_dbgmsg("Scanning %s\n", filename);
-
     /* internal version of cl_scanfile with arec/mrec preserved */
     if((fd = open(filename, O_RDONLY)) == -1)
 	return CL_EOPEN;
@@ -1176,8 +1184,6 @@ int cl_scanfile(const char *filename, const char **virname, unsigned long int *s
 {
 	int fd, ret;
 
-
-    cli_dbgmsg("Scanning %s\n", filename);
 
     if((fd = open(filename, O_RDONLY)) == -1)
 	return CL_EOPEN;
