@@ -217,7 +217,7 @@ Default: 10M
 \fBArchiveMaxRecursion NUMBER\fR
 Limit archive recursion level. Value of 0 disables the limit.
 .br 
-Default: 5
+Default: 8
 .TP 
 \fBArchiveMaxFiles NUMBER\fR
 Number of files to be scanned within archive. Value of 0 disables the limit.

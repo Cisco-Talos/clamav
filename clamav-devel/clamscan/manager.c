@@ -153,7 +153,7 @@ int scanmanager(const struct optstruct *opt)
     if(optl(opt, "max-recursion"))
         limits->maxreclevel = atoi(getargl(opt, "max-recursion"));
     else
-        limits->maxreclevel = 5;
+        limits->maxreclevel = 8;
 
     if(optl(opt, "max-ratio"))
         limits->maxratio = atoi(getargl(opt, "max-ratio"));
