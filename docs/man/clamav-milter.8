@@ -131,6 +131,12 @@ Location of file to be appended to each scanned message. Overrides \-S.
 Maximum number of children.
 There is no default, if this argument is not \fBclamav\-milter\fR will
 spawn as many children as is necessary.
+.TP
+\fB\-\-template\-file=file \-t file\fR
+File points to a file whose contents is sent whenever a virus is intercepted.
+The first occurance of %v within the file is replaced with the message
+returned from clamd, which includes the name of the virus.
+If no file is given, clamav\-milter defaults to a hardcoded message.
 .SH "EXAMPLES"
 .LP 
 clamav\-milter \-\-max\-children=2 \-ol local:/var/run/clamav/clmilter.sock

@@ -319,9 +319,13 @@
  *			clamav-milter
  *	0.70j	15/4/04	Handle systems without inet_ntop
  *	0.70k	17/4/04	Put the virus message in the 550 rejection
+ *	0.70l	19/4/04	Started coding e-mail template support
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.75  2004/04/19 13:28:00  nigelhorne
+ * Started coding e-mail template support
+ *
  * Revision 1.74  2004/04/17 20:39:04  nigelhorne
  * Add the virus name into the 550 rejection if sent
  *
@@ -529,9 +533,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.74 2004/04/17 20:39:04 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.75 2004/04/19 13:28:00 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70k"
+#define	CM_VERSION	"0.70l"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -611,6 +615,7 @@ typedef	unsigned short	in_port_t;
  * TODO: Decide action (bounce, discard, reject etc.) based on the virus
  *	found. Those with faked addresses, such as SCO.A want discarding,
  *	others could be bounced properly.
+ * TODO: Encrypt mails sent to clamd to stop sniffers
  */
 
 struct header_node_t {
@@ -667,6 +672,7 @@ static	void	header_list_add(header_list_t list, const char *headerf, const char 
 static	void	header_list_print(header_list_t list, FILE *fp);
 static	int	connect2clamd(struct privdata *privdata);
 static	void	checkClamd(void);
+static	int	sendtemplate(const char *filename, FILE *sendmail, const char *clamdMessage);
 
 static	char	clamav_version[128];
 static	int	fflag = 0;	/* force a scan, whatever */
@@ -734,6 +740,7 @@ static	int	logClean = 1;	/*
 				 */
 static	char	*signature = "-- \nScanned by ClamAv - http://www.clamav.net\n";
 static	time_t	signatureStamp;
+static	char	*templatefile;	/* e-mail to be sent when virus detected */
 
 #ifdef	CL_DEBUG
 static	int	debug_level = 0;
@@ -769,7 +776,7 @@ static void
 help(void)
 {
 	printf("\n\tclamav-milter version %s\n", CM_VERSION);
-	puts("\tCopyright (C) 2003 Nigel Horne <njh@despammed.com>\n");
+	puts("\tCopyright (C) 2004 Nigel Horne <njh@despammed.com>\n");
 
 	puts("\t--bounce\t\t-b\tSend a failure message to the sender.");
 	puts("\t--config-file=FILE\t-c FILE\tRead configuration from FILE.");
@@ -791,6 +798,7 @@ help(void)
 	puts("\t--server=SERVER\t\t-s SERVER\tHostname/IP address of server(s) running clamd (when using TCPsocket).");
 	puts("\t--sign\t\t\t-S\tAdd a hard-coded signature to each scanned message.");
 	puts("\t--signature-file\t-F\tLocation of signature file.");
+	puts("\t--template-file\t-s\tLocation of e-mail template file.");
 	puts("\t--version\t\t-V\tPrint the version number of this software.");
 #ifdef	CL_DEBUG
 	puts("\t--debug-level=n\t\t-x n\tSets the debug level to 'n'.");
@@ -838,9 +846,9 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "bc:CDfF:lm:nNop:PqQ:dhHs:SU:Vx:";
+		const char *args = "bc:CDfF:lm:nNop:PqQ:dhHs:St:U:Vx:";
 #else
-		const char *args = "bc:CDfF:lm:nNop:PqQ:dhHs:SU:V";
+		const char *args = "bc:CDfF:lm:nNop:PqQ:dhHs:St:U:V";
 #endif
 
 		static struct option long_options[] = {
@@ -906,6 +914,9 @@ main(int argc, char **argv)
 			},
 			{
 				"signature-file", 1, NULL, 'F'
+			},
+			{
+				"template-file", 1, NULL, 't'
 			},
 			{
 				"version", 0, NULL, 'V'
@@ -992,6 +1003,9 @@ main(int argc, char **argv)
 				smfilter.xxfi_flags |= SMFIF_CHGBODY;
 				Sflag++;
 				break;
+			case 't':	/* e-mail template file */
+				templatefile = optarg;
+				break;
 			case 'U':	/* quarantine path */
 				quarantine_dir = optarg;
 				break;
@@ -1075,6 +1089,16 @@ main(int argc, char **argv)
 
 	if(sigFilename && !updateSigFile())
 		return EX_USAGE;
+
+	if(templatefile) {
+		int fd = open(templatefile, O_RDONLY);
+
+		if(fd < 0) {
+			perror(templatefile);
+			return EX_CONFIG;
+		}
+		close(fd);
+	}
 
 	if(!cfgopt(copt, "StreamSaveToDisk")) {
 		fprintf(stderr, "%s: StreamSavetoDisk not enabled in %s\n",
@@ -2122,34 +2146,37 @@ clamfi_eom(SMFICTX *ctx)
 				fputs("Auto-Submitted: auto-submitted (antivirus notify)\n", sendmail);
 				fputs("Subject: Virus intercepted\n\n", sendmail);
 
-				if(bflag)
-					fputs("A message you sent to\n\t", sendmail);
-				else if(pflag)
-					/*
-					 * The message is only going to the
-					 * postmaster, so include some useful
-					 * information
-					 */
-					fprintf(sendmail, "The message %s sent from %s to\n\t",
-						sendmailId, from);
-				else
-					fprintf(sendmail, "A message sent from %s to\n\t",
-						from);
+				if((templatefile == NULL) ||
+				   (sendtemplate(templatefile, sendmail, mess) < 0)) {
+					if(bflag)
+						fputs("A message you sent to\n\t", sendmail);
+					else if(pflag)
+						/*
+						 * The message is only going to the
+						 * postmaster, so include some useful
+						 * information
+						 */
+						fprintf(sendmail, "The message %s sent from %s to\n\t",
+							sendmailId, from);
+					else
+						fprintf(sendmail, "A message sent from %s to\n\t",
+							from);
 
-				for(to = privdata->to; *to; to++)
-					fprintf(sendmail, "%s\n", *to);
-				fputs("contained a virus and has not been delivered.\n\t", sendmail);
-				fputs(mess, sendmail);
+					for(to = privdata->to; *to; to++)
+						fprintf(sendmail, "%s\n", *to);
+					fputs("contained a virus and has not been delivered.\n\t", sendmail);
+					fputs(mess, sendmail);
 
-				if(privdata->filename != NULL)
-					fprintf(sendmail, "\nThe message in question has been quarantined as %s\n", privdata->filename);
+					if(privdata->filename != NULL)
+						fprintf(sendmail, "\nThe message in question has been quarantined as %s\n", privdata->filename);
 
-				if(hflag) {
-					fprintf(sendmail, "\nThe message was received by %s from %s via %s\n\n",
-						smfi_getsymval(ctx, "j"), from,
-						smfi_getsymval(ctx, "_"));
-					fputs("For your information, the original message headers were:\n\n", sendmail);
-					header_list_print(privdata->headers, sendmail);
+					if(hflag) {
+						fprintf(sendmail, "\nThe message was received by %s from %s via %s\n\n",
+							smfi_getsymval(ctx, "j"), from,
+							smfi_getsymval(ctx, "_"));
+						fputs("For your information, the original message headers were:\n\n", sendmail);
+						header_list_print(privdata->headers, sendmail);
+					}
 				}
 
 				pclose(sendmail);
@@ -2554,7 +2581,7 @@ header_list_print(header_list_t list, FILE *fp)
 	for(iter = list->first; iter; iter = iter->next)
 		fprintf(fp, "%s\n", iter->header);
 }
- 
+
 /*
  * Establish a connection to clamd
  *	Returns success (1) or failure (0)
@@ -2781,4 +2808,60 @@ checkClamd(void)
 				pid);
 		perror("clamd");
 	}
+}
+
+/*
+ * Send a templated message about an intercepted message. Very basic for
+ * now, just to prove it works, will enhance the flexability later, only
+ * supports %v at present. And only one instance of %v at that
+ */
+static int
+sendtemplate(const char *filename, FILE *sendmail, const char *clamdMessage)
+{
+	FILE *fin = fopen(filename, "r");
+	struct stat statb;
+	char *buf, *ptr;
+	int rc;
+
+	if(fin == NULL) {
+		perror(filename);
+		if(use_syslog)
+			syslog(LOG_ERR, "Can't open e-mail template file %s\n",
+				filename);
+		return -1;
+	}
+
+	if(fstat(fileno(fin), &statb) < 0) {
+		/* File disappeared in race condition? */
+		perror(filename);
+		if(use_syslog)
+			syslog(LOG_ERR, "Can't stat e-mail template file %s\n",
+				filename);
+		fclose(fin);
+		return -1;
+	}
+	buf = cli_malloc(statb.st_size + 1);
+	if(buf == NULL) {
+		if(use_syslog)
+			syslog(LOG_ERR, "Out of memory\n");
+		fclose(fin);
+		return -1;
+	}
+	fread(buf, sizeof(char), statb.st_size, fin);
+	fclose(fin);
+	buf[statb.st_size] = '\0';
+
+	if((ptr = strstr(buf, "%v")) != NULL) {
+		*ptr = '\0';
+		ptr = &ptr[2];
+		fputs(buf, sendmail);
+		/* Need to peel out the virus name and just send that */
+		fputs(clamdMessage, sendmail);
+		rc = (fputs(ptr, sendmail) == EOF) ? -1 : 0;
+	} else
+		rc = (fputs(buf, sendmail) == EOF) ? -1 : 0;
+
+	free(buf);
+
+	return 0;
 }
