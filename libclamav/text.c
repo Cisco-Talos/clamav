@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: text.c,v $
+ * Revision 1.15  2005/03/10 08:50:49  nigelhorne
+ * Tidy
+ *
  * Revision 1.14  2005/01/19 05:31:55  nigelhorne
  * Added textIterate
  *
@@ -51,7 +54,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: text.c,v 1.14 2005/01/19 05:31:55 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: text.c,v 1.15 2005/03/10 08:50:49 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -95,7 +98,7 @@ textDestroy(text *t_head)
 	while(t_head) {
 		text *t_next = t_head->t_next;
 		if(t_head->t_line)
-			lineUnlink(t_head->t_line);
+			(void)lineUnlink(t_head->t_line);
 		free(t_head);
 		t_head = t_next;
 	}
@@ -127,7 +130,11 @@ textCopy(const text *t_head)
 			last = last->t_next;
 		}
 
-		assert(last != NULL);
+		if(last == NULL) {
+			if(first)
+				textDestroy(first);
+			return NULL;
+		}
 
 		if(t_head->t_line)
 			last->t_line = lineLink(t_head->t_line);
@@ -221,7 +228,7 @@ textToBlob(const text *t, blob *b)
 
 	s = 0;
 
-	textIterate(t, getLength, &s);
+	(void)textIterate(t, getLength, &s);
 
 	if(s == 0)
 		return b;
@@ -235,7 +242,7 @@ textToBlob(const text *t, blob *b)
 
 	blobGrow(b, s);
 
-	textIterate(t, addToBlob, b);
+	(void)textIterate(t, addToBlob, b);
 
 	blobClose(b);
 

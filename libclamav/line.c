@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: line.c,v $
+ * Revision 1.9  2005/03/10 08:53:33  nigelhorne
+ * Tidy
+ *
  * Revision 1.8  2005/03/01 11:38:11  nigelhorne
  * Fix typo
  *
@@ -42,7 +45,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: line.c,v 1.8 2005/03/01 11:38:11 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: line.c,v 1.9 2005/03/10 08:53:33 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -111,7 +114,7 @@ lineCreate(const char *data)
 	line_t *ret = (line_t *)cli_malloc(size + 2);
 
 	if(ret == NULL)
-		return NULL;
+		return (line_t *)NULL;
 
 	ret[0] = (char)1;
 	/*strcpy(&ret[1], data);*/
@@ -125,7 +128,7 @@ line_t *
 lineLink(line_t *line)
 {
 	assert(line != NULL);
-	if((unsigned char)line[0] == 255) {
+	if((unsigned char)line[0] == (unsigned char)255) {
 		cli_dbgmsg("lineLink: linkcount too large (%s)\n", lineGetData(line));
 		return lineCreate(lineGetData(line));
 	}
@@ -155,6 +158,6 @@ lineGetData(const line_t *line)
 unsigned char
 lineGetRefCount(const line_t *line)
 {
-	return line[0];
+	return (unsigned char)line[0];
 }
 #endif
