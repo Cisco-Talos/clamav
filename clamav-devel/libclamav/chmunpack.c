@@ -577,7 +577,6 @@ static int read_chunk(int fd, off_t offset, uint32_t chunk_len,
 		
 		chunk_hdr->num_entries = (uint16_t)((((uint8_t const *)(chunk_hdr->chunk_data))[chunk_len-2] << 0)
 					| (((uint8_t const *)(chunk_hdr->chunk_data))[chunk_len-1] << 8));
-		/*chunk_hdr->num_entries = chm_endian_convert_32(chunk_hdr->num_entries);*/
 	} else if (memcmp(chunk_hdr->signature, "PMGI", 4) != 0) {
 		goto abort;
 	}
@@ -929,6 +928,10 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 		cli_dbgmsg("re-open output failed\n");
 		goto abort;
 	}
+	
+	/* Delete the file */
+	unlink(filename);
+	
 	while(entry) {
 		if (entry->section != 1) {
 			entry = entry->next;

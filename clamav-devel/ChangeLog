@@ -1,3 +1,8 @@
+Tue Jul 20 17:05:38 BST 2004 (trog)
+-----------------------------------
+  * libclamav/chmunpack.c: remove the uncompressed temp file
+		before scanning
+
 Tue Jul 20 16:18:13 BST 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Code tidy - remove overlapping strcpy
