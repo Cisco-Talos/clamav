@@ -1,3 +1,10 @@
+Sun Jun 13 14:26:33 CEST 2004 (tk)
+----------------------------------
+  * clamscan: --unace is no longer supported (when invoked on a splitted
+	      archive with missing components it was waiting for the user
+	      to specify where the extra files are, with "-y" even). Problem
+	      found by Lloyd Kamara <l.kamara*imperial.ac.uk>)
+
 Sun Jun 13 04:03:01 CEST 2004 (tk)
 ----------------------------------
   * freshclam, clamd: log version and platform information (requested by
