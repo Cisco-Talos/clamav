@@ -1,3 +1,7 @@
+Sat Mar 26 09:53:34 GMT 2005 (njh)
+----------------------------------
+  * libclamav/tnef.c:	Now works on PPC architecture
+
 Fri Mar 25 23:21:18 CET 2005 (tk)
 ---------------------------------
   * clamscan: add --max-dir-recursion
