@@ -1,3 +1,8 @@
+Fri Nov  5 11:04:45 CET 2004 (tk)
+---------------------------------
+  * freshclam: add support for AllowSupplementaryGroups (patch by Ales Casar
+	       <casar*uni-mb.si>)
+
 Fri Nov  5 09:44:43 CET 2004 (tk)
 ---------------------------------
   * add UPGRADE file
@@ -90,7 +95,7 @@ Wed Oct 27 09:30:47 BST 2004 (trog)
 Wed Oct 27 07:36:49 BST 2004 (njh)
 ----------------------------------
  * libclamav/untar.c:	Handle links to another file already archived, patch
-				by "Roger Lucas" <roger@planbit.co.uk>
+				by "Roger Lucas" <roger*planbit.co.uk>
 
 Sun Oct 24 05:36:39 BST 2004 (njh)
 ----------------------------------
@@ -112,7 +117,7 @@ Fri Oct 22 18:20:03 BST 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Handle broken messages which state
 			Content-Transfer-Encoding: us-ascii
-				reported by arny@arny.ro
+				reported by arny*arny.ro
 
 Fri Oct 22 16:57:13 BST 2004 (njh)
 ----------------------------------
