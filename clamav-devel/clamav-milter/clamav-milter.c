@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.167  2004/12/21 22:39:04  nigelhorne
+ * Tidy
+ *
  * Revision 1.166  2004/12/21 18:40:38  nigelhorne
  * Fix fault tolerance problem
  *
@@ -509,7 +512,7 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.166 2004/12/21 18:40:38 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.167 2004/12/21 22:39:04 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.80ff"
 
@@ -892,6 +895,22 @@ static	const	char	*ignoredEmailAddresses[] = {
 	"<postmaster@bandsman.co.uk>",*/
 	NULL
 };
+
+#ifdef	CL_DEBUG
+#if __GLIBC__ == 2 && __GLIBC_MINOR__ >= 1
+#define HAVE_BACKTRACE
+#endif
+#endif
+
+#ifdef HAVE_BACKTRACE
+#include <execinfo.h>
+
+static	void	sigsegv(int sig);
+static	void	print_trace(int use_syslog);
+
+#define	BACKTRACE_SIZE	200
+
+#endif
 
 static void
 help(void)
@@ -1861,6 +1880,10 @@ main(int argc, char **argv)
 	pthread_mutex_unlock(&version_mutex);
 #endif
 
+#ifdef HAVE_BACKTRACE
+	(void)signal(SIGSEGV, sigsegv);
+#endif
+
 	return smfi_main();
 }
 
@@ -1878,6 +1901,7 @@ createSession(int s)
 	const int serverNumber = s % numServers;
 	struct session *session = &sessions[s];
 
+	cli_dbgmsg("createSession session %d, server %d\n", s, serverNumber);
 	assert(s < max_children);
 
 	memset((char *)&server, 0, sizeof(struct sockaddr_in));
@@ -1917,9 +1941,9 @@ createSession(int s)
 		free(hostname);
 #endif
 
-		broadcast(_("Check clamd server - it may be down\n"));
-	}
-	session->sock = fd;
+		broadcast(_("Check clamd server - it may be down"));
+	} else
+		session->sock = fd;
 
 	return ret;
 }
@@ -3005,8 +3029,9 @@ clamfi_eom(SMFICTX *ctx)
 			}
 
 			/*
-			 * Use snprintf rather than printf since we don't know the
-			 * length of privdata->from and may get a buffer overrun
+			 * Use snprintf rather than printf since we don't know
+			 * the length of privdata->from and may get a buffer
+			 * overrun
 			 */
 			snprintf(err, 1023, _("Intercepted virus from %s to"),
 				privdata->from);
@@ -3278,6 +3303,8 @@ clamfi_abort(SMFICTX *ctx)
 
 	clamfi_cleanup(ctx);
 
+	cli_dbgmsg("clamfi_abort returns\n");
+
 	return cl_error;
 }
 
@@ -3300,6 +3327,8 @@ static void
 clamfi_cleanup(SMFICTX *ctx)
 {
 	struct privdata *privdata = (struct privdata *)smfi_getpriv(ctx);
+
+	cli_dbgmsg("clamfi_cleanup\n");
 
 	if(privdata) {
 		clamfi_free(privdata);
@@ -3326,8 +3355,8 @@ clamfi_free(struct privdata *privdata)
 
 		if(privdata->filename != NULL) {
 			/*
-			 * Don't print an error if the file hasn't been created
-			 * yet
+			 * Don't print an error if the file hasn't been
+			 * created yet
 			 */
 			if((unlink(privdata->filename) < 0) && (errno != ENOENT)) {
 				perror(privdata->filename);
@@ -3454,6 +3483,7 @@ clamfi_free(struct privdata *privdata)
 		cli_dbgmsg("<n_children = %d\n", n_children);
 		pthread_mutex_unlock(&n_children_mutex);
 	}
+	cli_dbgmsg("clamfi_free returns\n");
 }
 
 /*
@@ -3863,10 +3893,10 @@ connect2clamd(struct privdata *privdata)
 					goto end;
 			}
 		}
-		cli_dbgmsg("connect2clamd(%d): STREAM\n", freeServer); 
+		cli_dbgmsg("connect2clamd(%d): STREAM\n", freeServer);
 
 		session = &sessions[freeServer];
-		if((session->sock < 0) || send(session->sock, "STREAM\n", 7, 0) < 7) {
+		if((session->sock < 0) || (send(session->sock, "STREAM\n", 7, 0) < 7)) {
 			perror("send");
 			pthread_mutex_lock(&sstatus_mutex);
 			session->status = CMDSOCKET_DOWN;
@@ -3970,6 +4000,8 @@ connect2clamd(struct privdata *privdata)
 		if(connect(privdata->dataSocket, (struct sockaddr *)&reply, sizeof(struct sockaddr_in)) < 0) {
 			perror("connect");
 
+			cli_dbgmsg("Failed to connect to port %d given by clamd",
+				p);
 			/* 0.4 - use better error message */
 			if(use_syslog) {
 #ifdef HAVE_STRERROR_R
@@ -4788,6 +4820,7 @@ broadcast(const char *mess)
 	s.sin_port = (in_port_t)htons(tcpSocket);
 	s.sin_addr.s_addr = htonl(INADDR_BROADCAST);
 
+	cli_dbgmsg("broadcast %s to %d\n", mess, broadcastSock);
 	if(sendto(broadcastSock, mess, strlen(mess), 0, (struct sockaddr *)&s, sizeof(struct sockaddr_in)) < 0)
 		perror("sendto");
 }
@@ -4884,7 +4917,7 @@ loadDatabase(void)
 #ifdef	SESSION
 		pthread_mutex_lock(&version_mutex);
 #endif
-		syslog(LOG_INFO, _("Loaded %s\n"), clamav_version);
+		syslog(LOG_INFO, _("Loaded %s"), clamav_version);
 #ifdef	SESSION
 		pthread_mutex_unlock(&version_mutex);
 #endif
@@ -4892,3 +4925,43 @@ loadDatabase(void)
 
 	return cl_statinidir(dbdir, &dbstat);
 }
+
+#ifdef HAVE_BACKTRACE
+static void
+sigsegv(int sig)
+{
+	signal(SIGSEGV, SIG_DFL);
+	print_trace(1);
+	if(use_syslog)
+		syslog(LOG_ERR, "Segmentation fault :-( Bye..");
+	cli_dbgmsg("Segmentation fault :-( Bye..\n");
+
+	exit(SIGSEGV);
+}
+
+static void
+print_trace(int use_syslog)
+{
+	void *array[BACKTRACE_SIZE];
+	size_t size, i;
+	char **strings;
+	pid_t pid = getpid();
+
+	size = backtrace(array, BACKTRACE_SIZE);
+	strings = backtrace_symbols(array, size);
+
+	cli_dbgmsg("Backtrace of pid %d:\n", pid);
+	if(use_syslog)
+		syslog(LOG_ERR, "Backtrace of pid %d:", pid);
+
+	for(i = 0; i < size; i++) {
+		if(use_syslog)
+			syslog(LOG_ERR, "bt[%u]: %s", i, strings[i]);
+		cli_dbgmsg("%s\n", strings[i]);
+	}
+
+	/* TODO: dump the current email */
+
+	free(strings);
+}
+#endif
