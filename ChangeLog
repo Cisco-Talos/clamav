@@ -1,3 +1,9 @@
+Wed Sep 15 21:44:01 CEST 2004 (tk)
+----------------------------------
+  * freshclam: add support for version verification and additional protection
+	       against invalid DNS replies
+  * libclamav/others.c: add cl_retver()
+
 Wed Sep 15 19:09:56 BST 2004 (njh)
 ----------------------------------
   * libclamav:	Handle e-mails where the attachment misleads the type of

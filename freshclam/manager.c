@@ -158,6 +158,23 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 		logg("WARNING: Unknown database name (%s) passed.\n", remotename);
 	    }
 
+	    if(field && (pt = cli_strtok(dnsreply, 3, ":"))) {
+		    int rt;
+		    time_t ct;
+
+		rt = atoi(pt);
+		free(pt);
+		time(&ct);
+		if((int) ct - rt > 10800) {
+		    mprintf("WARNING: DNS record is older than 3 hours.\n");
+		    logg("WARNING: DNS record is older than 3 hours.\n");
+		    field = 0;
+		}
+
+	    } else {
+		field = 0;
+	    }
+
 	    if(field && (pt = cli_strtok(dnsreply, field, ":"))) {
 		if(!isnumb(pt)) {
 		    mprintf("WARNING: Broken database version in TXT record.\n");
@@ -168,8 +185,21 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 		}
 		free(pt);
 	    } else {
-		mprintf("WARNING: Broken DNS reply.\n");
-		logg("WARNING: Broken DNS reply.\n");
+		mprintf("WARNING: Invalid DNS reply.\n");
+		logg("WARNING: Invalid DNS reply.\n");
+	    }
+
+	    if((pt = cli_strtok(dnsreply, 0, ":"))) {
+		mprintf("*Software version from DNS: %s\n", pt);
+		if(!strstr(pt, "devel")) {
+		    if(strcmp(cl_retver(), pt)) {
+			mprintf("WARNING: Your ClamAV installation is OUTDATED - please update immediately !\n");
+			mprintf("WARNING: Local version: %s, Recommended version: %s\n", cl_retver(), pt);
+			logg("WARNING: Your ClamAV installation is OUTDATED - please update immediately !\n");
+			logg("WARNING: Local version: %s, Recommended version: %s\n", cl_retver(), pt);
+		    }
+		}
+		free(pt);
 	    }
 
 	    free(dnsreply);

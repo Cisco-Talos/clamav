@@ -171,11 +171,14 @@ extern int cl_scandesc(int desc, const char **virname, unsigned long int *scanne
 
 extern int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options);
 
+/* software versions */
+extern int cl_retflevel(void);
+const char *cl_retver(void);
+
 /* database */
 extern int cl_loaddb(const char *filename, struct cl_node **root, unsigned int *signo);
 extern int cl_loaddbdir(const char *dirname, struct cl_node **root, unsigned int *signo);
 extern const char *cl_retdbdir(void);
-extern int cl_retflevel(void);
 
 /* CVD */
 extern struct cl_cvd *cl_cvdhead(const char *file);
