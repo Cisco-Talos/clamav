@@ -125,8 +125,6 @@ install_sh = @install_sh@
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/cfgparser.h \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/memory.c \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/memory.h \
-@BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/strutil.c \
-@BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/strutil.h \
 @BUILD_CLAMD_TRUE@    clamdscan.c \
 @BUILD_CLAMD_TRUE@    client.c \
 @BUILD_CLAMD_TRUE@    client.h \
@@ -147,8 +145,7 @@ PROGRAMS = $(bin_PROGRAMS)
 
 @BUILD_CLAMD_TRUE@am_clamdscan_OBJECTS = output.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	cfgparser.$(OBJEXT) memory.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	strutil.$(OBJEXT) clamdscan.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	client.$(OBJEXT)
+@BUILD_CLAMD_TRUE@	clamdscan.$(OBJEXT) client.$(OBJEXT)
 clamdscan_OBJECTS = $(am_clamdscan_OBJECTS)
 @BUILD_CLAMD_TRUE@clamdscan_DEPENDENCIES = \
 @BUILD_CLAMD_TRUE@	$(top_builddir)/clamscan/options.o \
@@ -164,8 +161,7 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/cfgparser.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/clamdscan.Po ./$(DEPDIR)/client.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/memory.Po ./$(DEPDIR)/output.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/strutil.Po
+@AMDEP_TRUE@	./$(DEPDIR)/memory.Po ./$(DEPDIR)/output.Po
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
@@ -217,7 +213,6 @@ clean-binPROGRAMS:
 output.$(OBJEXT): $(top_srcdir)/shared/output.c
 cfgparser.$(OBJEXT): $(top_srcdir)/shared/cfgparser.c
 memory.$(OBJEXT): $(top_srcdir)/shared/memory.c
-strutil.$(OBJEXT): $(top_srcdir)/shared/strutil.c
 clamdscan$(EXEEXT): $(clamdscan_OBJECTS) $(clamdscan_DEPENDENCIES) 
 	@rm -f clamdscan$(EXEEXT)
 	$(LINK) $(clamdscan_LDFLAGS) $(clamdscan_OBJECTS) $(clamdscan_LDADD) $(LIBS)
@@ -233,7 +228,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/client.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/memory.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/output.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strutil.Po@am__quote@
 
 distclean-depend:
 	-rm -rf ./$(DEPDIR)
@@ -309,24 +303,6 @@ memory.lo: $(top_srcdir)/shared/memory.c
 @AMDEP_TRUE@	depfile='$(DEPDIR)/memory.Plo' tmpdepfile='$(DEPDIR)/memory.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o memory.lo `test -f '$(top_srcdir)/shared/memory.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/memory.c
-
-strutil.o: $(top_srcdir)/shared/strutil.c
-@AMDEP_TRUE@	source='$(top_srcdir)/shared/strutil.c' object='strutil.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/strutil.Po' tmpdepfile='$(DEPDIR)/strutil.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o strutil.o `test -f '$(top_srcdir)/shared/strutil.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/strutil.c
-
-strutil.obj: $(top_srcdir)/shared/strutil.c
-@AMDEP_TRUE@	source='$(top_srcdir)/shared/strutil.c' object='strutil.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/strutil.Po' tmpdepfile='$(DEPDIR)/strutil.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o strutil.obj `cygpath -w $(top_srcdir)/shared/strutil.c`
-
-strutil.lo: $(top_srcdir)/shared/strutil.c
-@AMDEP_TRUE@	source='$(top_srcdir)/shared/strutil.c' object='strutil.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/strutil.Plo' tmpdepfile='$(DEPDIR)/strutil.TPlo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o strutil.lo `test -f '$(top_srcdir)/shared/strutil.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/strutil.c
 CCDEPMODE = @CCDEPMODE@
 
 mostlyclean-libtool:

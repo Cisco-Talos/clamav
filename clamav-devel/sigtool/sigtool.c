@@ -47,7 +47,6 @@
 #include "str.h"
 #include "memory.h"
 #include "output.h"
-#include "strutil.h"
 
 #define LINE 1024
 
@@ -482,7 +481,7 @@ int build(struct optstruct *opt)
 {
 	int ret, no = 0, realno = 0, bytes, itmp;
 	struct stat foo;
-	char buffer[FILEBUFF], *tarfile = NULL, *gzfile = NULL, header[513],
+	char buffer[FILEBUFF], *tarfile = NULL, *gzfile = NULL, header[257],
 	     smbuff[30], *pt;
         struct cl_node *root = NULL;
 	FILE *tar, *cvd, *fd;
@@ -584,7 +583,7 @@ int build(struct optstruct *opt)
 
     /* magic string */
 
-    strlcpy(header, "ClamAV-VDB:", sizeof(header));
+    strcpy(header, "ClamAV-VDB:");
 
     /* time */
 
@@ -592,7 +591,7 @@ int build(struct optstruct *opt)
     brokent = localtime(&timet);
     setlocale(LC_TIME, "C");
     strftime(smbuff, 30, "%d %b %Y %H-%M %z", brokent);
-    strlcat(header, smbuff, sizeof(header));
+    strcat(header, smbuff);
 
     /* version number */
 
@@ -606,21 +605,21 @@ int build(struct optstruct *opt)
 	scanf("%d", &itmp);
 	sprintf(smbuff, "%d:", itmp);
     }
-    strlcat(header, smbuff, sizeof(header));
+    strcat(header, smbuff);
 
     /* number of signatures */
     sprintf(smbuff, "%d:", no);
-    strlcat(header, smbuff, sizeof(header));
+    strcat(header, smbuff);
 
     /* functionality level (TODO: use cl_funclevel()) */
     sprintf(smbuff, "%d:", 1);
-    strlcat(header, smbuff, sizeof(header));
+    strcat(header, smbuff);
 
     /* MD5 */
     pt = cl_md5file(gzfile);
-    strlcat(header, pt, sizeof(header));
+    strcat(header, pt);
     free(pt);
-    strlcat(header, ":", sizeof(header));
+    strcat(header, ":");
 
     /* builder - question */
     fflush(stdin);
@@ -637,17 +636,17 @@ int build(struct optstruct *opt)
 	exit(1);
     }
 
-    strlcat(header, pt, sizeof(header));
+    strcat(header, pt);
     free(pt);
-    strlcat(header, ":", sizeof(header));
+    strcat(header, ":");
 
     /* builder - add */
-    strlcat(header, smbuff, sizeof(header));
+    strcat(header, smbuff);
 
     /* fill up with spaces */
 
     while(strlen(header) < 512)
-	strlcat(header, " ", sizeof(header));
+	strcat(header, " ");
 
     /* build the final database */
 

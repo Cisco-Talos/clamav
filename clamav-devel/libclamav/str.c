@@ -30,7 +30,6 @@
 #include "clamav.h"
 #include "others.h"
 #include "defaults.h"
-#include "strutil.h"
 
 static int cli_hex2int(int c)
 {
@@ -180,7 +179,8 @@ char *cli_strtok(const char *line, int fieldno, const char *delim)
 	return NULL;
     }
     buffer = malloc(j-i+1);
-    strlcpy(buffer, line+i, j-i+1);
+    strncpy(buffer, line+i, j-i);
+    buffer[j-i] = '\0';
 
     return buffer;
 }

@@ -47,7 +47,6 @@ pthread_mutex_t cl_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
 #include "clamav.h"
 #include "others.h"
 #include "md5.h"
-#include "strutil.h"
 
 #define CL_FLEVEL 1 /* don't touch it */
 
@@ -300,7 +299,7 @@ char *cl_gentemp(const char *dir)
 
 	tmp = cl_md5buff(( char* ) salt, 48);
 	sprintf(name, "%s/", mdir);
-	strlcat(name, tmp, strlen(mdir) + 1 + 16 + 1);
+	strncat(name, tmp, 16);
 	free(tmp);
     } while(stat(name, &foo) != -1);
 

@@ -116,7 +116,7 @@ am__include = @am__include@
 am__quote = @am__quote@
 install_sh = @install_sh@
 
-INCLUDES = -I$(top_srcdir) -I@srcdir@/zziplib -I$(top_srcdir)/shared
+INCLUDES = -I$(top_srcdir) -I@srcdir@/zziplib
 
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@
 

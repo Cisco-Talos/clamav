@@ -34,7 +34,6 @@
 #include "others.h"
 #include "dsig.h"
 #include "str.h"
-#include "strutil.h"
 
 #define TAR_BLOCKSIZE 512
 
@@ -75,7 +74,8 @@ int cli_untgz(int fd, const char *destdir)
 	    if (block[0] == '\0')  /* We're done */
 		break;
 
-	    strlcpy(name, block, 101);
+	    strncpy(name, block, 100);
+	    name[100] = '\0';
 	    strcpy(fullname, destdir);
 	    strcat(fullname, "/");
 	    strcat(fullname, name);
@@ -117,7 +117,8 @@ int cli_untgz(int fd, const char *destdir)
 		return -1;
 	    }
 
-	    strlcpy(osize, block + 124, 13);
+	    strncpy(osize, block + 124, 12);
+	    osize[12] = '\0';
 
 	    if((sscanf(osize, "%o", &size)) == 0) {
 		cli_errmsg("Invalid size in header.\n");

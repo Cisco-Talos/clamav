@@ -1,3 +1,7 @@
+Wed Apr  7 00:51:11 CEST 2004 (tk)
+----------------------------------
+  * reverse the last patch
+
 Tue Apr  6 14:19:16 CEST 2004 (tk)
 ----------------------------------
   * global hardening patch: use strlcpy/strlcat instead of strncpy/strncat

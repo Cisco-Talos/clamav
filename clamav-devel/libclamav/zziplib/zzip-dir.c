@@ -20,7 +20,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include "strutil.h"
 
 #ifdef ZZIP_HAVE_SYS_STAT_H
 #include <sys/stat.h>
@@ -84,9 +83,9 @@ real_readdir(ZZIP_DIR* dir)
     if (! dirent) return 0;
 
     dir->dirent.d_name = dirent->d_name;
-    strlcpy(filename, dir->realname, PATH_MAX);
-    strlcat(filename, "/", PATH_MAX);
-    strlcat(filename, dirent->d_name, PATH_MAX);
+    strcpy(filename, dir->realname);
+    strcat(filename, "/");
+    strcat(filename, dirent->d_name);
 
     if (stat(filename, &st) == -1)
         return -1;
