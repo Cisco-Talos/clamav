@@ -567,13 +567,13 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
 	return NULL;
     }
 
-    if((strstr(buffer, "HTTP/1.1 404")) != NULL) { 
+    if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
 	mprintf("@CVD file not found on remote server\n");
 	return NULL;
     }
 
     /* check whether the resource is up-to-date */
-    if((strstr(buffer, "HTTP/1.1 304")) != NULL) { 
+    if((strstr(buffer, "HTTP/1.1 304")) != NULL || (strstr(buffer, "HTTP/1.0 304")) != NULL) { 
 
 	*ims = 0;
 	mprintf("OK (IMS)\n");
