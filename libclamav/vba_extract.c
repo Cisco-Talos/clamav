@@ -184,7 +184,6 @@ static void vba56_test_end(int fd)
         if (strncmp(test_end, end_str, 20) != 0) {
                 lseek(fd, -20, SEEK_CUR);
         }
-	printf("End found\n");
         return;
 }
 
