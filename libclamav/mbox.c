@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.20  2003/12/06 04:03:26  nigelhorne
+ * Handle hand crafted emails that incorrectly set multipart headers
+ *
  * Revision 1.19  2003/11/21 07:26:31  nigelhorne
  * Scan multipart alternatives that have no boundaries, finds some uuencoded happy99
  *
@@ -48,14 +51,16 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.19 2003/11/21 07:26:31 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.20 2003/12/06 04:03:26 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
 #endif
 
 #ifdef CL_THREAD_SAFE
+#ifndef	_REENTRANT
 #define	_REENTRANT	/* for Solaris 2.8 */
+#endif
 #endif
 
 #include <stdio.h>
@@ -453,7 +458,7 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 		mime_type mimeType;
 		const char *mimeSubtype;
 		const text *t_line;
-		bool isAlternative;
+		/*bool isAlternative;*/
 		const char *boundary;
 		message *aMessage;
 #ifdef CL_THREAD_SAFE
@@ -582,7 +587,7 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 							cli_dbgmsg("insert content-type: parse line '%s'\n", line);
 							arg = strtok_r(NULL, "\r\n", &strptr);
 							if((arg == NULL) || (strchr(arg, '/') == NULL)) {
-								if(arg == NULL) 
+								if(arg == NULL)
 									cli_warnmsg("Empty content-type received, assuming text/plain; charset=us-ascii\n", arg);
 								else
 									cli_warnmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", arg);
@@ -713,13 +718,20 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 				 * Content-Type: multipart/related;
 				 *	type="multipart/alternative"
 				 */
-				cptr = messageFindArgument(mainMessage, "type");
+				/*
+				 * Changed to always fall through based on
+				 * an idea from Michael Dankov <misha@btrc.ru>
+				 * that some viruses are completely confused
+				 * about the difference between related
+				 * and mixed
+				 */
+				/*cptr = messageFindArgument(mainMessage, "type");
 				if(cptr == NULL)
 					break;
 				isAlternative = (bool)(strcasecmp(cptr, "multipart/alternative") == 0);
 				free((char *)cptr);
 				if(!isAlternative)
-					break;
+					break;*/
 			case ALTERNATIVE:
 				cli_dbgmsg("Multipart alternative handler\n");
 
@@ -1504,7 +1516,7 @@ saveFile(const blob *b, const char *dir)
 	 * Allow for very long filenames. We have to truncate them to fit
 	 */
 	snprintf(filename, sizeof(filename) - 1 - len, "%s/%.*sXXXXXX", dir,
-		sizeof(filename) - 9 - len - strlen(dir), cptr);
+		(int)(sizeof(filename) - 9 - len - strlen(dir)), cptr);
 
 	/*
 	 * TODO: add a HAVE_MKSTEMP property
