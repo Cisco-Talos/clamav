@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.179  2005/02/07 22:35:14  nigelhorne
+ * Bug fix to detect-forged-email-address
+ *
  * Revision 1.178  2005/02/07 22:11:21  nigelhorne
  * --detect-forged-email-address
  *
@@ -545,7 +548,7 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.178 2005/02/07 22:11:21 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.179 2005/02/07 22:35:14 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.82a"
 
@@ -2645,13 +2648,15 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 	if(detect_forged_local_address) {
 		char me[MAXHOSTNAMELEN + 1];
+		const char *ptr;
 
 		if(gethostname(me, sizeof(me) - 1) < 0) {
 			if(use_syslog)
 				syslog(LOG_WARNING, _("clamfi_connect: gethostname failed"));
 			return SMFIS_CONTINUE;
 		}
-		if(strstr(argv[0], me)) {
+		ptr = strstr(argv[0], me);
+		if(ptr && (*--ptr == '@')) {
 			if(use_syslog)
 				syslog(LOG_NOTICE, _("Rejected email falsely claiming to be from %s"), argv[0]);
 			smfi_setreply(ctx, "550", "5.7.1", _("You have claimed to be me, but you are not"));
