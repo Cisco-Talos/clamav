@@ -64,14 +64,24 @@ void scanner_thread(void *arg)
 {
 	client_conn_t *conn = (client_conn_t *) arg;
 	sigset_t sigset;
-	int ret;
+	int ret, timeout;
+	struct cfgstruct *cpt;
 
 
     /* ignore all signals */
     sigfillset(&sigset);
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
 
-    ret = command(conn->sd, conn->root, conn->limits, conn->options, conn->copt);
+    if((cpt = cfgopt(conn->copt, "ReadTimeout"))) {
+	timeout = cpt->numarg;
+    } else {
+	timeout = CL_DEFAULT_SCANTIMEOUT;
+    }
+
+    if(!timeout)
+    	timeout = -1;
+
+    ret = command(conn->sd, conn->root, conn->limits, conn->options, conn->copt, timeout);
 
     switch(ret) {
 	case COMMAND_SHUTDOWN:
