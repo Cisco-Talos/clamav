@@ -105,6 +105,7 @@ int freshclam(struct optstruct *opt)
 	char *unpuser;
 	struct passwd *user;
 #endif
+	struct stat statbuf;
 
     if(optc(opt, 'h')) {
 	free_opt(opt);
@@ -128,9 +129,20 @@ int freshclam(struct optstruct *opt)
     if(optl(opt, "http-proxy") || optl(opt, "proxy-user"))
 	mprintf("WARNING: Proxy settings are now only configurable in the config file.\n");
 
+    if(cfgopt(copt, "HTTPProxyPassword")) {
+	if(stat(cfgfile, &statbuf) == -1) {
+	    mprintf("@Can't stat %s (critical error)\n");
+	    return 56;
+	}
+
+	if(statbuf.st_mode & (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH)) {
+	    mprintf("@Insecure permissions (for HTTPProxyPassword): %s must have no more than 0700 permissions.\n", cfgfile);
+	    return 56;
+	}
+    }
 
 #ifndef C_CYGWIN
-    /* freshclam shouldn't work with root priviledges */
+    /* freshclam shouldn't work with root privileges */
     if(optc(opt, 'u')) {
 	unpuser = getargc(opt, 'u');
     } else if((cpt = cfgopt(copt, "DatabaseOwner"))) {
