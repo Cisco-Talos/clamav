@@ -380,7 +380,7 @@ int filecopy(const char *src, const char *dest)
 	int s, d;
 	off_t offset;
 #else
-	char buffer[BUFFSIZE];
+	char buffer[FILEBUFF];
 	int s, d, bytes;
 #endif
 
@@ -410,7 +410,7 @@ int filecopy(const char *src, const char *dest)
 		return -1;
 	}
 #else
-    while((bytes = read(s, buffer, BUFFSIZE)) > 0)
+    while((bytes = read(s, buffer, FILEBUFF)) > 0)
 	write(d, buffer, bytes);
 #endif
 
