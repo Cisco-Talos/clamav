@@ -177,6 +177,7 @@ Changes
 0.65k	12/12/03 A couple of calls to clamfi_cleanup were missing
 		before return cl_error
 0.66	13/12/03 Upissue
+0.66a	22/12/03 Added --sign
 
 BUG REPORTS
 
