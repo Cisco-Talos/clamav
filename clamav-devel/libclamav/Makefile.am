@@ -16,8 +16,6 @@
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 
-CFLAGS = -Wall -pedantic
-
 INCLUDES = -I.. -I@srcdir@/zziplib
 
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@

@@ -114,8 +114,6 @@ am__include = @am__include@
 am__quote = @am__quote@
 install_sh = @install_sh@
 
-CFLAGS = -Wall -pedantic
-
 INCLUDES = -I.. -I@srcdir@/zziplib
 
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@
@@ -212,6 +210,7 @@ LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+CFLAGS = @CFLAGS@
 DIST_SOURCES = $(libclamav_la_SOURCES)
 HEADERS = $(include_HEADERS)
 

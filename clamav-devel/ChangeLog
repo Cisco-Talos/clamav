@@ -1,4 +1,7 @@
-Sun Oct 12 13:37:41 BST 2003 (njh)
+Sun Oct 12 19:46:18 CEST 2003 (tk)
+----------------------------------
+  * libclamav: Makefile: do not overwrite CFLAGS
+
 ----------------------------------
   * libclamav: handles Eicar found in Appledouble files, though Appledouble
   		files are not yet handled
