@@ -130,11 +130,14 @@
  *			Patch from "Richard G. Roberto" <rgr@dedlegend.com>
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.7  2003/09/29 06:07:49  nigelhorne
+ * Ensure remoteIP is set before usage
+ *
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  *
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.6 2003/09/28 16:37:23 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.7 2003/09/29 06:07:49 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.60h"
 
@@ -626,6 +629,10 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	char buf[INET_ADDRSTRLEN];	/* IPv4 only */
 	const char *remoteIP = inet_ntop(AF_INET, &((struct sockaddr_in *)(hostaddr))->sin_addr, buf, sizeof(buf));
 
+#ifdef	CL_DEBUG
+	assert(remoteIP != NULL);
+#endif
+
 	if(use_syslog)
 		syslog(LOG_NOTICE, "clamfi_connect: connection from %s [%s]", hostname, remoteIP);
 #ifdef	CL_DEBUG
@@ -639,10 +646,6 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		 * Always scan whereever the message is from
 		 */
 		return SMFIS_CONTINUE;
-
-#ifdef	CL_DEBUG
-	assert(remoteIP != NULL);
-#endif
 
 	if(!oflag)
 		if(strcmp(remoteIP, "127.0.0.1") == 0) {
