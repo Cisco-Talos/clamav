@@ -29,6 +29,10 @@
 
 int freshclam(struct optstruct *opt);
 
+static void register_char_opt(struct optstruct *opt, char ch, struct option* longopts);
+static void register_long_opt(struct optstruct *opt, const char *optname, struct option* longopts);
+
+
 int main(int argc, char **argv)
 {
 	int ret, opt_index, i, len;
@@ -77,12 +81,12 @@ int main(int argc, char **argv)
 
 	switch (ret) {
 	    case 0:
-		register_long_option(opt, long_options[opt_index].name);
+		register_long_opt(opt, long_options[opt_index].name, long_options);
 		break;
 
     	    default:
 		if(strchr(getopt_parameters, ret))
-		    register_char_option(opt, ret);
+		    register_char_opt(opt, ret, long_options);
 		else {
 		    mprintf("!Unknown option passed.\n");
 		    free_opt(opt);
@@ -118,28 +122,63 @@ int main(int argc, char **argv)
     return ret;
 }
 
-void register_char_option(struct optstruct *opt, char ch)
+static struct option* find_char_opt(char optchar, struct option* longopts)
+{
+	int i;
+
+    for (i=0; longopts[i].name; i++) {
+	if ((char) longopts[i].val == optchar) {
+	    return (&longopts[i]);
+	}
+    }
+    return NULL;
+}
+
+static void register_char_opt(struct optstruct *opt, char ch, struct option* longopts)
 {
 	struct optnode *newnode;
+	struct option  *longopt = find_char_opt(ch, longopts);
 
     newnode = (struct optnode *) mmalloc(sizeof(struct optnode));
+    
     newnode->optchar = ch;
     if(optarg != NULL) {
 	newnode->optarg = (char *) mcalloc(strlen(optarg) + 1, sizeof(char));
 	strcpy(newnode->optarg, optarg);
     } else newnode->optarg = NULL;
 
-    newnode->optname = NULL;
+    if (longopt) {
+	newnode->optname = strdup(longopt->name);
+    } else {
+	newnode->optname = NULL;
+    }
     newnode->next = opt->optlist;
     opt->optlist = newnode;
 }
 
-void register_long_option(struct optstruct *opt, const char *optname)
+static struct option* find_long_opt(const char *optname, struct option* longopts)
+{
+	int i;
+
+    for (i=0; longopts[i].name; i++) {
+	if (strcmp(longopts[i].name, optname) == 0) {
+	    return (&longopts[i]);
+	}
+    }
+    return NULL;
+}
+
+static void register_long_opt(struct optstruct *opt, const char *optname, struct option* longopts)
 {
 	struct optnode *newnode;
+	struct option  *longopt = find_long_opt(optname, longopts);
 
     newnode = (struct optnode *) mmalloc(sizeof(struct optnode));
-    newnode->optchar = 0;
+    if (longopt) {
+	newnode->optchar = longopt->val;
+    } else {
+	newnode->optchar = 0;
+    }
     if(optarg != NULL) {
 	newnode->optarg = (char *) mcalloc(strlen(optarg) + 1, sizeof(char));
 	strcpy(newnode->optarg, optarg);
