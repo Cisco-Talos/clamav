@@ -1,3 +1,10 @@
+Mon Dec 20 14:52:03 GMT 2004 (trog)
+-----------------------------------
+  * libclamav/chmunpack.c: relax over stringent offset checks.
+			Explicitly cast some long long constants.
+
+  * libclamav/ole2_extract.c: remove variable size array declaration.
+
 Mon Dec 20 02:57:29 CET 2004 (tk)
 ---------------------------------
   * libclamav/others.c: added cli_filecopy()

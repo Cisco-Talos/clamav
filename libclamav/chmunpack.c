@@ -173,12 +173,12 @@ static uint32_t chm_endian_convert_32(uint32_t v)
 #else
 static uint64_t chm_endian_convert_64(uint64_t v)
 {
-	return ((v >> 56) | ((v & 0x00FF000000000000) >> 40) |
-		((v & 0x0000FF0000000000) >> 24) |
-		((v & 0x000000FF00000000) >> 8) |
-		((v & 0x00000000FF000000) << 8) |
-		((v & 0x0000000000FF0000) << 24) |
-		((v & 0x000000000000FF00) << 40) |
+	return ((v >> 56) | ((v & 0x00FF000000000000LL) >> 40) |
+		((v & 0x0000FF0000000000LL) >> 24) |
+		((v & 0x000000FF00000000LL) >> 8) |
+		((v & 0x00000000FF000000LL) << 8) |
+		((v & 0x0000000000FF0000LL) << 24) |
+		((v & 0x000000000000FF00LL) << 40) |
 		(v << 56));
 }
 #endif
@@ -643,7 +643,7 @@ static lzx_control_t *read_sys_control(int fd, itsf_header_t *itsf_hdr, file_lis
 		return NULL;
 	}
 	offset = itsf_hdr->data_offset + file_e->offset;
-	if ((offset < 0) || (offset < itsf_hdr->sec0_offset)) {
+	if (offset < 0) {
 		return NULL;
 	}
 
@@ -761,7 +761,7 @@ static lzx_reset_table_t *read_sys_reset_table(int fd, itsf_header_t *itsf_hdr, 
 	/* Skip past unknown entry in offset calc */
 	offset = itsf_hdr->data_offset + file_e->offset + 4;
 	
-	if ((offset < 0) || (offset < itsf_hdr->sec0_offset)) {
+	if (offset < 0) {
 		return NULL;
 	}
 

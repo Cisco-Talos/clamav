@@ -568,7 +568,7 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 /* Write file Handler - write the contents of the entry to a file */
 static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char *dir)
 {
-	unsigned char buff[(1 << hdr->log2_big_block_size)];
+	unsigned char *buff;
 	int32_t current_block, ofd, len, offset;
 	char *name, *newname;
 
@@ -626,18 +626,26 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 	current_block = prop->start_block;
 	len = prop->size;
 
+	buff = (unsigned char *) cli_malloc(1 << hdr->log2_big_block_size);
+	if (!buff) {
+		close(ofd);
+		return FALSE;
+	}
+
 	while((current_block >= 0) && (len > 0)) {
 		if (prop->size < hdr->sbat_cutoff) {
 			/* Small block file */
-			if (!ole2_get_sbat_data_block(fd, hdr, &buff, current_block)) {
+			if (!ole2_get_sbat_data_block(fd, hdr, buff, current_block)) {
 				cli_dbgmsg("ole2_get_sbat_data_block failed\n");
 				close(ofd);
+				free(buff);
 				return FALSE;
 			}
 			/* buff now contains the block with 8 small blocks in it */
 			offset = 64 * (current_block % 8);
 			if (cli_writen(ofd, &buff[offset], MIN(len,64)) != MIN(len,64)) {
 				close(ofd);
+				free(buff);
 				return FALSE;
 			}
 
@@ -645,13 +653,15 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 			current_block = ole2_get_next_sbat_block(fd, hdr, current_block);
 		} else {
 			/* Big block file */
-			if (!ole2_read_block(fd, hdr, &buff, current_block)) {
+			if (!ole2_read_block(fd, hdr, buff, current_block)) {
 				close(ofd);
+				free(buff);
 				return FALSE;
 			}
-			if (cli_writen(ofd, &buff, MIN(len,(1 << hdr->log2_big_block_size))) !=
+			if (cli_writen(ofd, buff, MIN(len,(1 << hdr->log2_big_block_size))) !=
 							MIN(len,(1 << hdr->log2_big_block_size))) {
 				close(ofd);
+				free(buff);
 				return FALSE;
 			}
 
@@ -660,6 +670,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 		}
 	}
 	close(ofd);
+	free(buff);
 	return TRUE;
 }
 
