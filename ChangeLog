@@ -1,3 +1,9 @@
+Wed Mar 10 12:58:55 GMT 2004 (trog)
+-----------------------------------
+  * clamd/server-th.c: error handling
+  * libclamav/ole2_extract.c: change struct pack code to support
+	old versions of gcc - for the last time I hope.
+
 Wed Mar 10 11:40:14 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	Use new HAVE_STRERROR_R rather than TARGET_OS_SOLARIS
