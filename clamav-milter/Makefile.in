@@ -120,14 +120,14 @@ install_sh = @install_sh@
 
 @HAVE_MILTER_TRUE@@USE_PTHREAD_TRUE@clamav_milter_SOURCES = clamav-milter.c
 
-@HAVE_MILTER_TRUE@@USE_PTHREAD_TRUE@clamav_milter_LDADD = ../clamd/cfgfile.o ../clamd/others.o
+@HAVE_MILTER_TRUE@@USE_PTHREAD_TRUE@clamav_milter_LDADD = ../clamd/cfgfile.o ../clamd/others.o ../clamscan/getopt.o
 
 @HAVE_MILTER_TRUE@@USE_PTHREAD_TRUE@man_MANS = ../docs/clamav-milter.1
 
 DEFS = @DEFS@
 # CLAMD_LIBS is used, because clamav-milter requires the same libraries as clamd
 LIBS = -L../libclamav -L/usr/lib/libmilter -lmilter @CLAMD_LIBS@
-INCLUDES = -I../clamd -I../libclamav
+INCLUDES = -I../clamd -I../libclamav -I../clamscan
 EXTRA_DIST = clamav-milter.c clamd.sh clamav-milter.sh INSTALL
 subdir = clamav-milter
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
@@ -146,7 +146,8 @@ clamav_milter_OBJECTS = $(am_clamav_milter_OBJECTS)
 @HAVE_MILTER_FALSE@@USE_PTHREAD_FALSE@clamav_milter_DEPENDENCIES =
 @HAVE_MILTER_TRUE@@USE_PTHREAD_TRUE@clamav_milter_DEPENDENCIES = \
 @HAVE_MILTER_TRUE@@USE_PTHREAD_TRUE@	../clamd/cfgfile.o \
-@HAVE_MILTER_TRUE@@USE_PTHREAD_TRUE@	../clamd/others.o
+@HAVE_MILTER_TRUE@@USE_PTHREAD_TRUE@	../clamd/others.o \
+@HAVE_MILTER_TRUE@@USE_PTHREAD_TRUE@	../clamscan/getopt.o
 @HAVE_MILTER_TRUE@@USE_PTHREAD_FALSE@clamav_milter_DEPENDENCIES =
 clamav_milter_LDFLAGS =
 DEFAULT_INCLUDES =  -I. -I$(srcdir)

@@ -1,3 +1,5 @@
+/* THIS CODE REALLY SUCKS */
+
 /*
  *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
  *
@@ -163,7 +165,7 @@ void sigtool(struct optstruct *opt)
 	}
 
     } else {
-	    int jmp, start, end, found = 0, exec = 0, pos, filesize;
+	    int jmp, lastjmp, start, end, found = 0, exec = 0, pos, filesize;
 	    char *c, *s, *f, *tmp, *signame, *bsigname, *f2;
 	    FILE *fd, *wd;
 
@@ -215,7 +217,7 @@ void sigtool(struct optstruct *opt)
 		    unlink(tmp);
 		    free(tmp);
 		    //mprintf("Starting precise loop\n");
-		    while(end < filesize) {
+		    while(end <= filesize) {
 			tmp = cut(f, 0, end);
 			exec++;
 			if(scanfile(c, s, tmp) == 1) {
@@ -232,6 +234,7 @@ void sigtool(struct optstruct *opt)
 			}
 			end++;
 		    }
+
 		    if(found) break;
 		}
 		if(jmp)
@@ -247,10 +250,9 @@ void sigtool(struct optstruct *opt)
 
 	}
 
-	// zamazuj 1 bajt ruszajac do tylu i sprawdzaj czy wykrywa dalej wirusa
-	// - znajdz pierwsyz bajt, po ktorego zamazaniu wirus nie jest wykrywany
-	/* now we go backward as long as signature can be detected */
+	/* now we go backward until the signature can't be detected */
 
+	found = 0;
 	jmp = 50;
 	pos = end - jmp;
 
@@ -268,7 +270,7 @@ void sigtool(struct optstruct *opt)
 
 	    } else {
 		mprintf("Detected at %d, moving forward.\n", pos);
-		if(jmp == 1) {
+		if(jmp == 1 && lastjmp == 1) {
 		    unlink(tmp);
 		    free(tmp);
 		    //mprintf("Starting precise loop\n");
@@ -276,20 +278,22 @@ void sigtool(struct optstruct *opt)
 			tmp = change(f2, pos);
 			exec++;
 			if(scanfile(c, s, tmp) == 1) {
+			    unlink(tmp);
+			    free(tmp);
+			    mprintf("Moving forward %d -> %d\n", pos, pos + 1);
+			    pos++;
+			} else {
 			    mprintf(" *** Found signature's start at %d\n", pos);
 			    unlink(tmp);
 			    free(tmp);
 			    found = 1;
 			    break;
-			} else {
-			    unlink(tmp);
-			    free(tmp);
-			    mprintf("Moving forward %d -> %d\n", pos, pos + 1);
 			}
-			pos++;
 		    }
 		    if(found) break;
 		}
+
+		lastjmp = jmp;
 		if(jmp)
 		    jmp--;
 		jmp = jmp/2 + 1; //??????????????
@@ -312,7 +316,7 @@ void sigtool(struct optstruct *opt)
 	mprintf("The signature length is %d, so the length of the hex string should be %d\n", end - pos, 2 * (end - pos));
 
 	if(end - pos < 8) {
-	    mprintf("\nWARNING: THE SIGNATURE IS TO SMALL (PROBABLY ONLY A PART OF THE REAL SIGNATURE).\n");
+	    mprintf("\nWARNING: THE SIGNATURE IS TO SMALL (PROBABLY ONLY A PART OF A REAL SIGNATURE).\n");
 	    mprintf("         PLEASE DON'T USE IT.\n\n");
 	}
 

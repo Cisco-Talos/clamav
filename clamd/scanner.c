@@ -151,8 +151,8 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_node 
 		logg("%s: %s FOUND\n", filename, virname);
 		virusaction(filename, virname, copt);
 	    } else if(ret != CL_CLEAN) {
-		mdprintf(odesc, "%s: %s ERROR\n", filename, cl_perror(ret));
-		logg("%s: %s ERROR\n", filename, cl_perror(ret));
+		mdprintf(odesc, "%s: %s ERROR\n", filename, cl_strerror(ret));
+		logg("%s: %s ERROR\n", filename, cl_strerror(ret));
 	    } 
 	    break;
 	case S_IFDIR:
@@ -181,7 +181,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 
 
     while(!binded && portscan--) {
-	if((port = rndnum(60000)) < 1024)
+	if((port = cl_rndnum(60000)) < 1024)
 	    port += 2139;
 
 	memset((char *) &server, 0, sizeof(server));
@@ -266,8 +266,8 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	logg("stream: %s FOUND\n", virname);
 	virusaction("InputStream", virname, copt);
     } else if(ret != CL_CLEAN) {
-	mdprintf(odesc, "stream: %s ERROR\n", cl_perror(ret));
-	logg("stream: %s ERROR\n", cl_perror(ret));
+	mdprintf(odesc, "stream: %s ERROR\n", cl_strerror(ret));
+	logg("stream: %s ERROR\n", cl_strerror(ret));
     } else
 	mdprintf(odesc, "stream: OK\n");
 

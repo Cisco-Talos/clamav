@@ -50,12 +50,13 @@ int cli_scanrar_inuse = 0;
 #define SCAN_ARCHIVE	(options & CL_ARCHIVE)
 #define SCAN_MAIL	(options & CL_MAIL)
 
-#define MAGIC_BUFFER_SIZE 10
+#define MAGIC_BUFFER_SIZE 13
 #define RAR_MAGIC_STR "Rar!"
 #define ZIP_MAGIC_STR "PK\003\004"
 #define GZIP_MAGIC_STR "\037\213"
 #define MAIL_MAGIC_STR "From "
 #define RAWMAIL_MAGIC_STR "Received: "
+#define MAILDIR_MAGIC_STR "Return-Path: "
 #define BZIP_MAGIC_STR "BZh"
 
 
@@ -234,13 +235,14 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	ZZIP_FILE *zfp;
 	FILE *tmp;
 	char buff[BUFFSIZE];
-	int fd, bytes, files = 0, ret = CL_CLEAN;
+	int fd, bytes, files = 0, ret = CL_CLEAN, err;
 
 
     cli_dbgmsg("Starting scanzip()\n");
 
-    if((zdir = zzip_dir_fdopen(dup(desc), 0)) == NULL) {
-	cli_dbgmsg("Zip -> Not supported file format.\n");
+    if((zdir = zzip_dir_fdopen(dup(desc), &err)) == NULL) {
+	cli_dbgmsg("Zip -> Not supported file format ?.\n");
+	cli_dbgmsg("zzip_dir_fdopen() return code: %d\n", err);
 	return CL_EZIP;
     }
 
@@ -634,11 +636,14 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
 	lseek(desc, 0, SEEK_SET);
 
 	if(!strncmp(magic, MAIL_MAGIC_STR, strlen(MAIL_MAGIC_STR))) {
-	    cli_dbgmsg("Recognized mail file.\n");
+	    cli_dbgmsg("Recognized Mbox mail file.\n");
 	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
 	}
 	else if(!strncmp(magic, RAWMAIL_MAGIC_STR, strlen(RAWMAIL_MAGIC_STR))) {
 	    cli_dbgmsg("Recognized raw mail file.\n");
+	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
+	} else if(!strncmp(magic, MAILDIR_MAGIC_STR, strlen(MAILDIR_MAGIC_STR))) {
+	    cli_dbgmsg("Recognized Maildir mail file.\n");
 	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
 	}
 

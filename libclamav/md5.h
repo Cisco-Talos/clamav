@@ -87,12 +87,16 @@ struct md5_ctx
 
   md5_uint32 total[2];
   md5_uint32 buflen;
-#ifdef C_DARWIN
+#ifndef __attribute__
   char buffer[128];
 #else
   char buffer[128] __attribute__ ((__aligned__ (__alignof__ (md5_uint32))));
 #endif
 };
+
+#ifndef __attribute__
+#define __alignof__(a)	sizeof(a)
+#endif
 
 /*
  * The following three functions are build up the low level used in

@@ -327,7 +327,7 @@ void *threadwatcher(void *arg)
 	    logg("Reading databases from %s\n", dbdir);
 
 	    if((ret = cl_loaddbdir(dbdir, &*thwarg->root, &virnum))) {
-		logg("!%s\n", cl_perror(ret));
+		logg("!%s\n", cl_strerror(ret));
 		kill(progpid, SIGTERM);
 		/* we stay in reload == 1, so all threads are waiting */
 		continue;

@@ -232,50 +232,6 @@ int fileinfo(const char *filename, short i)
 
 /* these functions return pseudo random number from [0, max) */
 
-#ifndef C_URANDOM
-/* it's very weak */
-
-unsigned int rndnum(unsigned int max)
-{
-    struct timeval tv;
-
-  gettimeofday(&tv, (struct timezone *) 0);
-  srand(tv.tv_usec+clock());
-
-  return rand() % max;
-}
-
-#else
-
-int rndnum(unsigned int max)
-{
-	static FILE *fd = NULL;
-	unsigned int generated;
-	char *byte;
-	int size;
-
-
-    if(fd == NULL) {
-	if((fd = fopen("/dev/urandom", "rb")) == NULL) {
-	    mprintf("!Can't open /dev/urandom.\n");
-	    return -1;
-	}
-    }
-
-    byte = (char *) &generated;
-    size = sizeof(generated);
-    do {
-	int bread;
-	bread = fread(byte, 1, size, fd);
-	size -= bread;
-	byte += bread;
-    } while(size > 0);
-
-    return generated % max;
-}
-
-#endif
-
 /*
 #ifdef C_LINUX
 int detectcpu(void)
@@ -480,7 +436,7 @@ char *gentemp(const char *dir)
 
     do {
 	for(i = 0; i < 32; i++)
-	    salt[i] = rndnum(255);
+	    salt[i] = cl_rndnum(255);
 
 	tmp = cl_md5buff(salt, 32);
 	strncat(name, tmp, 16);

@@ -18,19 +18,28 @@ Fails to build on Linux/x86 with icc7.1 with -ipo (fails on libclamav.a - keeps 
 Tested with Electric Fence 2.2.2
 
 Compiles OK on Linux/ppc (YDL2.3) with gcc2.95.4. Needs -lsmutil to link.
-I haven't tested it further on this platform yet.
 	cc -O3 -pedantic -Wuninitialized -Wall -pipe -fomit-frame-pointer -ffast-math -finline-functions -funroll-loop -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o -lsmutil
+I haven't tested it further on this platform yet.
+YDL3.0 should compile out of the box
 
 Sendmail on MacOS/X (10.1) is provided without a development package so this
 can't be run "out of the box"
 
-Solaris 8 needs -lresolv to link, and doesn't have strerror_r, so you'll
-need to replace strerror_r with strerror.
+Solaris 8 doesn't have milter support so clamav-milter won't work unless you
+rebuild sendmail from source.
+Solaris 9 has milter support in the supplied sendmail, but doesn't include
+libmilter so you can't develop milter applications on it. Go to sendmail.org,
+download the lastest sendmail, cd to libmilter and "make install" there.
+Needs -lresolv
 
 FreeBSD4.7 use /usr/local/bin/gcc30. GCC3.0 is an optional extra on
 FreeBSD. It comes with getopt.h which is handy. To link you need
 -lgnugetopt
 	gcc30 -O3 -DCONFDIR=\"/usr/local/etc\" -I. -I.. -I../clamd -I../libclamav -pedantic -Wuninitialized -Wall -pipe -mcpu=pentium -march=pentium -fomit-frame-pointer -ffast-math -finline-functions -funroll-loops clamav-milter.c -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o -lgnugetopt
+
+FreeBSD4.8: should compile out of the box
+OpenBSD3.3: the supplied sendmail does not come with Milter support. You
+will need to rebuild sendmail from source
 
 INSTALLATION
 
@@ -98,6 +107,12 @@ Changes
 		Thanks to Krzysztof Olędzki <ole@ans.pl>
 0.60	11/7/03	Some TODOs done by Nigel Kukard <nkukard@lbsd.net>
 		Should stop a couple of remote chances of crashes
+0.60a	22/7/03	Tidied up message when sender is unknown
+0.60b	17/8/03	Optionally set postmaster address. Usually one uses
+		/etc/aliases, but not everyone want's to...
+0.60c	22/8/03	Another go at Solaris support
+0.60d	26/8/03	Removed superflous buffer and unneeded strerror call
+		ETIMEDOUT isn't an error, but should give a warning
 
 BUG REPORTS
 

@@ -63,6 +63,7 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 	    {"FollowFileSymlinks", OPT_NOARG},
 	    {"Foreground", OPT_NOARG},
 	    {"Debug", OPT_NOARG},
+	    {"FixStaleSocket", OPT_NOARG},
 	    {"User", OPT_STR},
 	    {"AllowSupplementaryGroups", OPT_NOARG},
 	    {"SelfCheck", OPT_NUM},

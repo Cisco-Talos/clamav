@@ -17,7 +17,7 @@
  */
 
 #ifndef	CL_DEBUG
-#define	NDEBUG	/* map CLAMAV debug onto standard */
+/*#define	NDEBUG	/* map CLAMAV debug onto standard */
 #endif
 
 #ifdef CL_THREAD_SAFE
@@ -131,11 +131,8 @@ messageReset(message *m)
 	if(m->mimeDispositionType)
 		free(m->mimeDispositionType);
 
-	for(i = 0; i < MAXARGS; i++)
-		if(m->mimeArguments[i])
-			free(m->mimeArguments[i]);
-		else
-			break;
+	for(i = 0; i < m->numberOfArguments; i++)
+		free(m->mimeArguments[i]);
 
 	if(m->body_first)
 		textDestroy(m->body_first);
@@ -238,17 +235,18 @@ messageAddArgument(message *m, const char *arg)
 		/* Empty argument? Probably a broken mail client... */
 		return;
 
-#ifdef	CL_DEBUG
 	cli_dbgmsg("Add argument '%s'\n", arg);
-#endif
 
-	for(offset = 0; offset < MAXARGS; offset++)
+	for(offset = 0; offset < m->numberOfArguments; offset++)
 		if(m->mimeArguments[offset] == NULL)
 			break;
 		else if(strcasecmp(arg, m->mimeArguments[offset]) == 0)
 			return;	/* already in there */
 
-	assert(offset < MAXARGS);
+	if(offset == m->numberOfArguments) {
+		m->numberOfArguments++;
+		m->mimeArguments = (char **)realloc(m->mimeArguments, m->numberOfArguments * sizeof(char *));
+	}
 
 	m->mimeArguments[offset] = strdup(arg);
 }
@@ -388,7 +386,7 @@ messageGetArgument(const message *m, int arg)
 {
 	assert(m != NULL);
 	assert(arg >= 0);
-	assert(arg < MAXARGS);
+	assert(arg < m->numberOfArguments);
 
 	return((m->mimeArguments[arg]) ? m->mimeArguments[arg] : "");
 }
@@ -405,7 +403,7 @@ messageFindArgument(const message *m, const char *variable)
 	assert(m != NULL);
 	assert(variable != NULL);
 
-	for(i = 0; i < MAXARGS; i++) {
+	for(i = 0; i < m->numberOfArguments; i++) {
 		const char *ptr;
 		size_t len;
 
@@ -450,7 +448,7 @@ messageSetEncoding(message *m, const char *enctype)
 			return;
 		}
 
-	cli_warnmsg("Unknown encoding type \"%s\"", enctype);
+	cli_warnmsg("Unknown encoding type \"%s\"\n", enctype);
 }
 
 encoding_type
@@ -560,7 +558,7 @@ messageToBlob(const message *m)
 		filename = strtok_r(NULL, "\r\n", &strptr);
 
 		if(filename == NULL) {
-			cli_warnmsg("Attachment sent with no filename\n");
+			cli_dbgmsg("UUencoded attachment sent with no filename\n");
 			blobDestroy(b);
 			free(copy);
 			return NULL;
@@ -580,7 +578,7 @@ messageToBlob(const message *m)
 			filename = messageFindArgument(m, "name");
 
 			if(filename == NULL) {
-				cli_warnmsg("Attachment sent with no filename\n");
+				cli_dbgmsg("Attachment sent with no filename\n");
 				blobDestroy(b);
 				return NULL;
 			}
@@ -621,7 +619,8 @@ messageToBlob(const message *m)
 					break;
 			uptr = decodeLine(m, line, data);
 
-			assert(uptr != NULL);
+			if(uptr == NULL)
+				break;
 
 			assert(uptr <= &data[sizeof(data)]);
 
@@ -672,7 +671,8 @@ messageToText(const message *m)
 
 		uptr = decodeLine(m, line, data);
 
-		assert(uptr != NULL);
+		if(uptr == NULL)
+			break;
 
 		assert(uptr <= &data[sizeof(data)]);
 
@@ -711,6 +711,7 @@ decodeLine(const message *m, const char *line, unsigned char *ptr)
 	switch(messageGetEncoding(m)) {
 		case NOENCODING:
 		case EIGHTBIT:
+		default:	/* unknown encoding type - try our best */
 			ptr = (unsigned char *)strrcpy((char *)ptr, line);
 			/* Put the new line back in */
 			return (unsigned char *)strrcpy((char *)ptr, "\n");
@@ -771,9 +772,6 @@ decodeLine(const message *m, const char *line, unsigned char *ptr)
 			 * TODO: find out what this is, encoded as binary??
 			 */
 			break;
-
-		default:
-			assert(0);
 	}
 
 	*ptr = '\0';
@@ -890,4 +888,3 @@ uudecode(char c)
 {
 	return(c - ' ');
 }
-

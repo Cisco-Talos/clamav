@@ -23,34 +23,29 @@
  * See http://www.nmt.edu/~wcolburn/sendmail-8.12.5/libmilter/docs/sample.html
  *
  * Installations for RedHat Linux and it's derivatives such as YellowDog:
- *
- * Add to /etc/mail/sendmail.mc:
+ * 1) Ensure that you have the sendmail-devel RPM installed
+ * 2) Add to /etc/mail/sendmail.mc:
  *	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav.sock, F=, T=S:4m;R:4m')dnl
  *	define(`confINPUT_MAIL_FILTERS', `clamav')
- *
- * Check entry in /usr/local/etc/clamav.conf of the form:
+ * 3) Check entry in /usr/local/etc/clamav.conf of the form:
  *	LocalSocket /var/run/clamd.sock
  *	StreamSaveToDisk
- *
- * If you already have a filter (such as spamassassin-milter from
+ * 4) If you already have a filter (such as spamassassin-milter from
  * http://savannah.nongnu.org/projects/spamass-milt) add it thus:
  *	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav.sock, F=, T=S:4m;R:4m')dnl
  *	INPUT_MAIL_FILTER(`spamassassin', `S=local:/var/run/spamass.sock, F=, T=C:15m;S:4m;R:4m;E:10m')
  *	define(`confINPUT_MAIL_FILTERS', `spamassassin,clamav')dnl
- *
- * You may find INPUT_MAIL_FILTERS is not needed on your machine, however it
- * is recommended by the Sendmail documentation and I recommend going along
+ * 5) You may find INPUT_MAIL_FILTERS is not needed on your machine, however it
+ * is recommended by the Sendmail documentation and I suggest going along
  * with that.
- *
- * I suggest putting SpamAssassin first since you're more likely to get spam
+ * 6) I suggest putting SpamAssassin first since you're more likely to get spam
  * than a virus/worm sent to you.
- *
- * Add to /etc/sysconfig/clamav-milter
+ * 7) Add to /etc/sysconfig/clamav-milter
  *	CLAMAV_FLAGS="--max-children=2 local:/var/run/clamav.sock"
  * or if clamd is on a different machine
  *	CLAMAV_FLAGS="--max-children=2 --server=192.168.1.9 local:/var/run/clamav.sock"
- *
- * You should have received a script to put into /etc/init.d with this software.
+ * 8) You should have received a script to put into /etc/init.d with this
+ * software.
  *
  * Tested OK on Linux/x86 (RH8.0) with gcc3.2.
  *	cc -O3 -pedantic -Wuninitialized -Wall -pipe -mcpu=pentium -march=pentium -fomit-frame-pointer -ffast-math -finline-functions -funroll-loops clamav-milter.c -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o
@@ -65,18 +60,27 @@
  * Compiles OK on Linux/ppc (YDL2.3) with gcc2.95.4. Needs -lsmutil to link.
  *	cc -O3 -pedantic -Wuninitialized -Wall -pipe -fomit-frame-pointer -ffast-math -finline-functions -funroll-loop -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o -lsmutil
  * I haven't tested it further on this platform yet.
+ * YDL3.0 should compile out of the box
+	cc -O3 -pedantic -Wuninitialized -Wall -pipe -fomit-frame-pointer -ffast-math -finline-functions -funroll-loop -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o -lsmutil
  *
  * Sendmail on MacOS/X (10.1) is provided without a development package so this
  * can't be run "out of the box"
  *
- * Solaris 8 needs -lresolv to link, and doesn't have strerror_r, so you'll
- * need to replace strerror_r with strerror.
- *	-Dstrerror_r=strerror at compile time.
+ * Solaris 8 doesn't have milter support so clamav-milter won't work unless
+ * you rebuild sendmail from source.
+ * Solaris 9 has milter support in the supplied sendmail, but doesn't include
+ * libmilter so you can't develop milter applications on it. Go to sendmail.org,
+ * download the lastest sendmail, cd to libmilter and "make install" there.
+ * Needs -lresolv
  *
  * FreeBSD4.7 use /usr/local/bin/gcc30. GCC3.0 is an optional extra on
  * FreeBSD. It comes with getopt.h which is handy. To link you need
  * -lgnugetopt
  *	gcc30 -O3 -DCONFDIR=\"/usr/local/etc\" -I. -I.. -I../clamd -I../libclamav -pedantic -Wuninitialized -Wall -pipe -mcpu=pentium -march=pentium -fomit-frame-pointer -ffast-math -finline-functions -funroll-loops clamav-milter.c -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o -lgnugetopt
+ *
+ * FreeBSD4.8: should compile out of the box
+ * OpenBSD3.3: the supplied sendmail does not come with Milter support. You
+ * will need to rebuild sendmail from source
  *
  * Changes
  *	0.2:	4/3/03	clamfi_abort() now always calls pthread_mutex_unlock
@@ -107,9 +111,15 @@
  *			Thanks to Krzysztof Olędzki <ole@ans.pl>
  *	0.60	11/7/03	Added suggestions by Nigel Kukard <nkukard@lbsd.net>
  *			Should stop a couple of remote chances of crashes
+ *	0.60a	22/7/03	Tidied up message when sender is unknown
+ *	0.60b	17/8/03	Optionally set postmaster address. Usually one uses
+ *			/etc/aliases, but not everyone want's to...
+ *	0.60c	22/8/03	Another go at Solaris support
+ *	0.60d	26/8/03	Removed superflous buffer and unneeded strerror call
+ *			ETIMEDOUT isn't an error, but should give a warning
  */
 
-#define	CM_VERSION	"0.60"
+#define	CM_VERSION	"0.60d"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -145,7 +155,7 @@
 #include <regex.h>	// njh@bandsman.co.uk
 
 #define _GNU_SOURCE
-#include <getopt.h>
+#include "getopt.h"
 
 /*
  * TODO: optional: xmessage on console when virus stopped (SNMP would be real nice!)
@@ -158,6 +168,7 @@
  * TODO: Support ThreadTimeout, LogTime and Logfile from the conf
  *	 file
  * TODO: Allow more than one clamdscan server to be given
+ * TODO: Optionally quanrantine infected e-mails
  */
 
 /*
@@ -211,6 +222,7 @@ static	struct	cfgstruct	*copt;
 static	const	char	*localSocket;
 static	in_port_t	tcpSocket;
 static	const	char	*serverIP = "127.0.0.1";
+static	const	char	*postmaster = "postmaster";
 
 static void
 help(void)
@@ -225,6 +237,7 @@ help(void)
 	puts("\t--outgoing\t\t-o\tScan outgoing messages from this machine.");
 	puts("\t--server=ADDRESS\t-s ADDRESS\tIP address of server running clamd (when using TCPsocket).");
 	puts("\t--version\t\t-V\tPrint the version number of this software.");
+	puts("\t--postmaster\t\t-p\tPostmaster address [default=postmaster].");
 #ifdef	CL_DEBUG
 	puts("\t--debug-level=n\t\t-x n\tSets the debug level to 'n'.");
 #endif
@@ -279,6 +292,9 @@ main(int argc, char **argv)
 				"outgoing", 0, NULL, 'o'
 			},
 			{
+				"postmaster", 0, NULL, 'p'
+			},
+			{
 				"max-children", 1, NULL, 'm'
 			},
 			{
@@ -317,11 +333,14 @@ main(int argc, char **argv)
 			case 'l':	/* scan mail from the lan */
 				lflag++;
 				break;
+			case 'm':	/* maximum number of children */
+				max_children = atoi(optarg);
+				break;
 			case 'o':	/* scan outgoing mail */
 				oflag++;
 				break;
-			case 'm':	/* maximum number of children */
-				max_children = atoi(optarg);
+			case 'p':	/* postmaster e-mail address */
+				postmaster = optarg;
 				break;
 			case 's':	/* server running clamd */
 				serverIP = optarg;
@@ -633,13 +652,25 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 					"hit max-children limit (%u >= %u): waiting for some to exit",
 					n_children, max_children);
 			rc = pthread_cond_timedwait(&n_children_cond, &n_children_mutex, &timeout);
+#ifdef	CL_DEBUG
 			if(rc != 0) {
-				char message[64], buf[64];
+#else
+			if((rc != 0) && use_syslog) {
+#endif
+				char message[64];
 
+#ifdef TARGET_OS_SOLARIS        /* no strerror_r */
+				snprintf(message, sizeof(message), "pthread_cond_timedwait: %s", strerror(rc));
+#else
 				strerror_r(rc, buf, sizeof(buf));
 				snprintf(message, sizeof(message), "pthread_cond_timedwait: %s", buf);
-				if(use_syslog)
-					syslog(LOG_ERR, message);
+#endif
+				if(use_syslog) {
+					if(rc == ETIMEDOUT)
+						syslog(LOG_NOTICE, message);
+					else
+						syslog(LOG_ERR, message);
+				}
 #ifdef	CL_DEBUG
 				puts(message);
 #endif
@@ -777,11 +808,12 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 		/* 0.4 - use better error message */
 		if(use_syslog) {
-			char buf[64];
-
+#ifdef TARGET_OS_SOLARIS        /* no strerror_r */
+			syslog(LOG_ERR, "Failed to connect to port %d given by clamd: %s", port, strerror(rc));
+#else
 			strerror_r(rc, buf, sizeof(buf));
-
 			syslog(LOG_ERR, "Failed to connect to port %d given by clamd: %s", port, buf);
+#endif
 		}
 
 		return SMFIS_TEMPFAIL;
@@ -926,27 +958,26 @@ clamfi_eom(SMFICTX *ctx)
 		 * me might consider bouncing it...
 		 */
 		if(use_syslog)
-			syslog(LOG_NOTICE, "clean message from %s", privdata->from);
+			syslog(LOG_NOTICE, "clean message from %s",
+				(privdata->from) ? privdata->from : "an unknown sender");
 	} else {
 		int i;
 		char **to, *err;
 		FILE *sendmail;
 
-		/*
-		 * TODO: check that clamd didn't crash (WIFSIGNALED(status))
-		 */
 		if(use_syslog)
 			syslog(LOG_NOTICE, mess);
 
 		/*
 		 * Setup err as a list of recipients
 		 */
-		i = 1024;
-		err = (char *)malloc(i);
+		err = (char *)malloc(1024);
 
-		snprintf(err, i, "Intercepted virus from: %s to:", privdata->from);
+		sprintf(err, "Intercepted virus from %s to", privdata->from);
 
 		ptr = strchr(err, '\0');
+
+		i = 1024;
 
 		for(to = privdata->to; *to; to++) {
 			/*
@@ -959,7 +990,7 @@ clamfi_eom(SMFICTX *ctx)
 			ptr = strrcpy(ptr, " ");
 			ptr = strrcpy(ptr, *to);
 		}
-		(void)strrcpy(ptr, "\n");
+		(void)strcpy(ptr, "\n");
 
 		if(use_syslog)
 			syslog(LOG_NOTICE, err);
@@ -972,9 +1003,9 @@ clamfi_eom(SMFICTX *ctx)
 			fputs("From: MAILER-DAEMON\n", sendmail);
 			if(bflag) {
 				fprintf(sendmail, "To: %s\n", privdata->from);
-				fputs("Cc: postmaster\n", sendmail);
+				fprintf(sendmail, "Cc: %s\n", postmaster);
 			} else
-				fputs("To: postmaster\n", sendmail);
+				fprintf(sendmail, "To: %s\n", postmaster);
 
 			for(to = privdata->to; *to; to++)
 				fprintf(sendmail, "Cc: %s\n", *to);

@@ -19,13 +19,12 @@
 #ifndef	_MESSAGE_H
 #define	_MESSAGE_H
 
-#define	MAXARGS	5	/* maximum number of arguments to a mime content-type */
-
 typedef struct message {
 	mime_type	mimeType;
 	encoding_type	encodingType;
 	char	*mimeSubtype;
-	char	*mimeArguments[MAXARGS];
+	int	numberOfArguments;	/* count of mimeArguments */
+	char	**mimeArguments;
 	char	*mimeDispositionType;	/* probably attachment */
 	text	*body_first, *body_last;
 } message;
