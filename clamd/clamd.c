@@ -208,12 +208,12 @@ void help(void)
 {
 
     printf("\n");
-    printf("		   Clam AntiVirus Daemon, "VERSION"\n");
-    printf("		   (c) 2002 Tomasz Kojm <zolw@konarski.edu.pl>\n");
-    printf("	  \n");
-    printf("    --help		    -h		Show help.\n");
-    printf("    --version		    -V		Show version number.\n");
-    printf("    --config-file=FILE	    -c FILE	Read configuration from FILE.\n\n");
+    printf("                           Clam AntiVirus Daemon "VERSION"\n");
+    printf("                 (c) 2002, 2003 Tomasz Kojm <tkojm@clamav.net>\n\n");
+
+    printf("    --help                   -h             Show this help.\n");
+    printf("    --version                -V             Show version number.\n");
+    printf("    --config-file=FILE       -c FILE        Read configuration from FILE.\n\n");
 
     exit(0);
 }

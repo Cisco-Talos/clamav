@@ -117,15 +117,13 @@ install_sh = @install_sh@
 @BUILD_CLAMD_TRUE@bin_PROGRAMS = clamdscan
 
 @BUILD_CLAMD_TRUE@clamdscan_SOURCES = \
-@BUILD_CLAMD_TRUE@    options.c \
-@BUILD_CLAMD_TRUE@    options.h \
 @BUILD_CLAMD_TRUE@    clamdscan.c \
 @BUILD_CLAMD_TRUE@    client.c \
 @BUILD_CLAMD_TRUE@    client.h \
 @BUILD_CLAMD_TRUE@    defaults.h
 
 
-@BUILD_CLAMD_TRUE@clamdscan_LDADD = ../clamscan/getopt.o ../clamscan/others.o ../clamd/cfgfile.o
+@BUILD_CLAMD_TRUE@clamdscan_LDADD = ../clamscan/getopt.o ../clamscan/options.o ../clamscan/others.o ../clamd/cfgfile.o
 
 INCLUDES = -I../clamscan -I../clamd -I../libclamav
 LIBS = -L../libclamav -lclamav @FRESHCLAM_LIBS@
@@ -136,11 +134,12 @@ CONFIG_CLEAN_FILES =
 @BUILD_CLAMD_FALSE@bin_PROGRAMS =
 PROGRAMS = $(bin_PROGRAMS)
 
-@BUILD_CLAMD_TRUE@am_clamdscan_OBJECTS = options.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	clamdscan.$(OBJEXT) client.$(OBJEXT)
+@BUILD_CLAMD_TRUE@am_clamdscan_OBJECTS = clamdscan.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	client.$(OBJEXT)
 clamdscan_OBJECTS = $(am_clamdscan_OBJECTS)
 @BUILD_CLAMD_TRUE@clamdscan_DEPENDENCIES = ../clamscan/getopt.o \
-@BUILD_CLAMD_TRUE@	../clamscan/others.o ../clamd/cfgfile.o
+@BUILD_CLAMD_TRUE@	../clamscan/options.o ../clamscan/others.o \
+@BUILD_CLAMD_TRUE@	../clamd/cfgfile.o
 @BUILD_CLAMD_FALSE@clamdscan_DEPENDENCIES =
 clamdscan_LDFLAGS =
 
@@ -150,8 +149,7 @@ CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
-@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/clamdscan.Po ./$(DEPDIR)/client.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/options.Po
+@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/clamdscan.Po ./$(DEPDIR)/client.Po
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
@@ -212,7 +210,6 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamdscan.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/client.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/options.Po@am__quote@
 
 distclean-depend:
 	-rm -rf ./$(DEPDIR)

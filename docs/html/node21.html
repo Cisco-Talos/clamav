@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Signature Tool</TITLE>
-<META NAME="description" CONTENT="Signature Tool">
+<TITLE>Problem solving</TITLE>
+<META NAME="description" CONTENT="Problem solving">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,102 +19,61 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="previous" HREF="node20.html">
-<LINK REL="up" HREF="node16.html">
+<LINK REL="next" HREF="node23.html">
+<LINK REL="previous" HREF="node15.html">
+<LINK REL="up" HREF="clamdoc.html">
 <LINK REL="next" HREF="node22.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html386"
+<A NAME="tex2html428"
   HREF="node22.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html382"
-  HREF="node16.html">
+<A NAME="tex2html424"
+  HREF="clamdoc.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html378"
+<A NAME="tex2html418"
   HREF="node20.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html384"
+<A NAME="tex2html426"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html387"
-  HREF="node22.html">Compatible software</A>
-<B> Up:</B> <A NAME="tex2html383"
-  HREF="node16.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html379"
-  HREF="node20.html">Output format</A>
- &nbsp <B>  <A NAME="tex2html385"
+<B> Next:</B> <A NAME="tex2html429"
+  HREF="node22.html">Return codes</A>
+<B> Up:</B> <A NAME="tex2html425"
+  HREF="clamdoc.html">clamdoc</A>
+<B> Previous:</B> <A NAME="tex2html419"
+  HREF="node20.html">Signature Tool</A>
+ &nbsp <B>  <A NAME="tex2html427"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00045000000000000000">
-Signature Tool</A>
-</H2>
-    <I>sigtool</I> automates signature creation. If you have an infected file,
-    which isn't detected by ClamAV, but it is by another anti-virus scanner
-    working in the console, you can create the signature easily.
-    <I>Example of usage:</I>
-    Create a random file and put the <B>test1</B> file content into it. We
-    will use <I>clamscan</I> to generate the signature, it's just an example.
-    Scan it with <I>clamscan -stdout testfile</I>, the output is
-    <PRE>
-	testfile: ClamAV-Test-Signature FOUND
-
-	----------- SCAN SUMMARY -----------
-	Known viruses: 7734
-	Scanned directories: 0
-	Scanned files: 1
-	Data scanned: 0.95 Mb
-	Infected files: 1
-	I/O buffer size: 131072 bytes
-	Time: 0.245 sec (0 m 0 s)
-</PRE>
-    The unique string in this output is "ClamAV-Test-Signature". Run
-    <I>sigtool</I> with the following parameters:
-    <PRE>
-	$ sigtool -c "clamscan --stdout" -f testfile -s "ClamAV-Test"
-</PRE>
-    The program will concatenate arguments for <I>-c (-command)</I> and
-    <I>-f (-file)</I>, that's why the scanner's options must be given in the
-    proper order. At the end it will generate a file <I>testfile.sig</I>,
-    which should contain 100 bytes in our example. It contains the proper
-    signature.
-    <PRE>
-	...
-	...
-	Detected at 12103, moving backward.
-	Detected at 11983, moving backward.
-	Detected at 11923, moving backward.
-	Not detected, increasing pos 11893 -&gt; 11923
-	Detected at 11923, moving backward.
-	Not detected, increasing pos 11908 -&gt; 11923
-	Detected at 11923, moving backward.
-	Not detected, increasing pos 11915 -&gt; 11923
-	Detected at 11923, moving backward.
-	Detected at 11919, moving backward.
-	Detected at 11917, moving backward.
-	Detected at 11916, moving backward.
-	Starting precise loop
-	 *** Found signature end at 11916
-
-	The scanner was executed 46 times.
-	Signature length is 50, so length of hex string should be 100
-	Saving signature in testfile.sig file.
-</PRE>
+<H1><A NAME="SECTION00050000000000000000">
+Problem solving</A>
+</H1>
 
 <P>
 <BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL>
+<LI><A NAME="tex2html430"
+  HREF="node22.html">Return codes</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2003-06-21
+2003-11-11
 </ADDRESS>
 </BODY>
 </HTML>

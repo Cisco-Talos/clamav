@@ -8,7 +8,7 @@ here may not be available in a binary packages.
 ----
 
 -) clamd:
-    + fixed a race condition in database reloading code (random hangs
+    + fixed a race condition in database reloading code (random crashes
       under high load)
     + fixed PidFile permissions (Magnus Ekdahl, bug reported by Tomasz Papszun)
     + fixed LogFile permissions (Magnus Ekdahl)
@@ -41,13 +41,13 @@ here may not be available in a binary packages.
 
 
 New list of compatible software (see clamdoc.pdf for details):
-    + IVS Milter
+    + cgpav
     + smtp-vilter
+    + IVS Milter
     + scanexi
     + Mail::ClamAV
     + OpenAntiVirus samba-vscan
-    
-
+    + nclamd
 
 
 

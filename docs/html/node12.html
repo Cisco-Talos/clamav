@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Configuration</TITLE>
-<META NAME="description" CONTENT="Configuration">
+<TITLE>Testing</TITLE>
+<META NAME="description" CONTENT="Testing">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -27,124 +27,57 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html277"
+<A NAME="tex2html319"
   HREF="node13.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html273"
+<A NAME="tex2html315"
   HREF="node6.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html267"
+<A NAME="tex2html309"
   HREF="node11.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html275"
+<A NAME="tex2html317"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html278"
-  HREF="node13.html">Testing</A>
-<B> Up:</B> <A NAME="tex2html274"
+<B> Next:</B> <A NAME="tex2html320"
+  HREF="node13.html">freshclam: Setting up auto-updating</A>
+<B> Up:</B> <A NAME="tex2html316"
   HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html268"
-  HREF="node11.html">Installation</A>
- &nbsp <B>  <A NAME="tex2html276"
+<B> Previous:</B> <A NAME="tex2html310"
+  HREF="node11.html">Configuration</A>
+ &nbsp <B>  <A NAME="tex2html318"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
 <H2><A NAME="SECTION00036000000000000000">
-Configuration</A>
+Testing</A>
 </H2>
-    If you are going to use the daemon, you need to configure it.
 
 <P>
-<PRE>
-	$ clamd
-	ERROR: Please edit the example config file
-	       /etc/clamav.conf.
-</PRE>
-
-<P>
-Now you know, where the configuration file is located ;). The format and
-    options of this file are fully described in the <I>clamav.conf(5)</I>
-    manual. clamd configuration is rather easy, the config file is well
-    commented. Remember, you must remove the "Example" directive.
-
-<P>
-Another feature of clamd is on-access scanning based on the Dazuko module,
-    available from <TT><A NAME="tex2html11"
-  HREF="http://dazuko.org">http://dazuko.org</A></TT>. <B>This is not required to
-    run clamd, furthermore you shouldn't run Dazuko on production systems</B>.
-    A special thread in clamd responsible for the communication with Dazuko
-    is called "Clamuko" (it's due to the funny name of Dazuko - I don't know
-    what Clamuko means). Clamuko is supported on Linux 2.2 and 2.4 only.
-    Dazuko instalation:
-
-<P>
-<PRE>
-	$ tar zxpvf dazuko-a.b.c.tar.gz
-	$ cd dazuko-a.b.c
-	$ make dazuko
-	or
-	$ make dazuko-smp (for smp kernels)
-	$ su
-	# insmod dazuko.o
-	# cp dazuko.o /lib/modules/`uname -r`/misc
-	# depmod -a
-</PRE>
-
-<P>
-Depending on your Linux distribution you have to add "dazuko" entry to
-<BR>    <I>/etc/modules</I> or the following line:
+OK. Let's do some tests. Try to scan recursively the source directory:
     <PRE>
-	modprobe dazuko
+	$ clamscan -r -l scan.txt clamav-x.yz
 </PRE>
-    to some startup file to load dazuko at the boot time. You must also create
-    the <I>/dev/dazuko</I> device:
+    It should find some (test) viruses in the clamav-x.yz/test directory.
+    The scan result is saved in the scan.txt log file. <A NAME="tex2html12"
+  HREF="footnode.html#foot701"><SUP>4</SUP></A>. To test clamd: start it and
+    use <I>clamdscan</I> (you can also connect directly to clamd and run
+    the SCAN command):
     <PRE>
-	$ cat /proc/devices | grep dazuko
-	254 dazuko
-	$ su -c "mknod -m 600 /dev/dazuko c 254 0"
+	$ clamdscan -l scan.txt clamav-x.yz
 </PRE>
-    Now you must configure Clamuko in <I>clamav.conf</I>. Please check
-    <A HREF="node18.html#clamuko">3.2</A> section.
-
-<P>
-<HR>
-<!--Navigation Panel-->
-<A NAME="tex2html277"
-  HREF="node13.html">
-<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
- SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html273"
-  HREF="node6.html">
-<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
- SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html267"
-  HREF="node11.html">
-<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
- SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html275"
-  HREF="node1.html">
-<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
- SRC="/usr/share/latex2html/icons/contents.png"></A>  
-<BR>
-<B> Next:</B> <A NAME="tex2html278"
-  HREF="node13.html">Testing</A>
-<B> Up:</B> <A NAME="tex2html274"
-  HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html268"
-  HREF="node11.html">Installation</A>
- &nbsp <B>  <A NAME="tex2html276"
-  HREF="node1.html">Contents</A></B> 
-<!--End of Navigation Panel-->
+    The output and the logfile should be similar to the ones of <I>clamscan</I>.
+    <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2003-06-21
+2003-11-11
 </ADDRESS>
 </BODY>
 </HTML>

@@ -38,7 +38,7 @@ void help(void);
 */
 #define mexit(i)    exit(i)
 
-void clamdscan(struct optstruct *opt)
+void clamscan(struct optstruct *opt)
 {
 	int ds, dms, ret;
 	struct timeval t1, t2;
@@ -120,19 +120,20 @@ void help(void)
     mprintf_stdout = 1;
 
     mprintf("\n");
-    mprintf("		   ClamAV Daemon Client "VERSION"\n");
-    mprintf("		   (c) 2002 Tomasz Kojm <zolw@konarski.edu.pl>\n");
-    mprintf("	  \n");
-    mprintf("    --help		    -h		Show help\n");
-    mprintf("    --version		    -V		Print version number and exit\n");
-    mprintf("    --verbose		    -v		Be verbose\n");
-    mprintf("    --quiet				Be quiet, only output error messages\n");
-    mprintf("    --stdout				Write to stdout instead of stderr\n");
-    mprintf("					(this help is always written to stdout)\n");
-    mprintf("    --log=FILE		    -l FILE	Save scan report in FILE\n");
-    mprintf("    --log-verbose			Save additional informations\n");
-    mprintf("    --config-file=FILE			Read configuration from FILE.\n");
-    mprintf("    --disable-summary			Disable summary at end of scanning\n");
+    mprintf("                          ClamAV Daemon Client "VERSION"\n");
+    mprintf("                (c) 2002, 2003 Tomasz Kojm <tkojm@clamav.net>\n\n");
+
+    mprintf("    --help              -h             Show help\n");
+    mprintf("    --version           -V             Print version number and exit\n");
+    mprintf("    --verbose           -v             Be verbose\n");
+    mprintf("    --quiet                            Be quiet, only output error messages\n");
+    mprintf("    --stdout                           Write to stdout instead of stderr\n");
+    mprintf("                                       (this help is always written to stdout)\n");
+    mprintf("    --log=FILE          -l FILE        Save scan report in FILE\n");
+    mprintf("    --log-verbose                      Log additional messages\n");
+    mprintf("    --config-file=FILE                 Read configuration from FILE.\n");
+    mprintf("    --disable-summary                  Disable summary at end of scanning\n");
+    mprintf("\n");
 
     exit(0);
 }

@@ -1,3 +1,15 @@
+Tue Nov 11 22:47:37 CET 2003 (tk)
+---------------------------------
+  * sigtool: CVD builder: now date contains a numeric timezone (suggested
+    by Tomasz Papszun)
+  * freshclam: fixed update message with --http-proxy (problem reported by
+	       Nigel and Kristof Petr). Proxy support must be enhanced in the
+	       next version.
+  * docs/manpages: updated
+  * docs/clamdoc.pdf: rewritten
+  * docs/Turkish: included Turish clamdoc.pdf translation by yavuz kaya and
+		  Ýbrahim erken
+
 Tue Nov 11 13:51:23 IST 2003 (njh)
 ----------------------------------
   * clamav-milter: Fixed handling of % characters in e-mail addresses

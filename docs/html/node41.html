@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Scan engine</TITLE>
-<META NAME="description" CONTENT="Scan engine">
+<TITLE>Sylpheed Claws</TITLE>
+<META NAME="description" CONTENT="Sylpheed Claws">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,71 +19,59 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node42.html">
 <LINK REL="previous" HREF="node40.html">
-<LINK REL="up" HREF="node39.html">
+<LINK REL="up" HREF="node23.html">
 <LINK REL="next" HREF="node42.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html634"
+<A NAME="tex2html687"
   HREF="node42.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html630"
-  HREF="node39.html">
+<A NAME="tex2html683"
+  HREF="node23.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html626"
+<A NAME="tex2html677"
   HREF="node40.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html632"
+<A NAME="tex2html685"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html635"
-  HREF="node42.html">Credits</A>
-<B> Up:</B> <A NAME="tex2html631"
-  HREF="node39.html">Technicals</A>
-<B> Previous:</B> <A NAME="tex2html627"
-  HREF="node40.html">Security</A>
- &nbsp <B>  <A NAME="tex2html633"
+<B> Next:</B> <A NAME="tex2html688"
+  HREF="node42.html">nclamd</A>
+<B> Up:</B> <A NAME="tex2html684"
+  HREF="node23.html">Compatible software</A>
+<B> Previous:</B> <A NAME="tex2html678"
+  HREF="node40.html">OpenAntiVirus samba-vscan</A>
+ &nbsp <B>  <A NAME="tex2html686"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00082000000000000000"></A><A NAME="engine"></A>
-<BR>
-Scan engine
+<H2><A NAME="SECTION000618000000000000000">
+Sylpheed Claws</A>
 </H2>
-    New versions of Clam AntiVirus are using a mutation of Aho-Corasick
-    pattern matching algorithm. This algorithm uses a finite state pattern
-    matching automaton [<A
- HREF="node44.html#clr">1</A>]. The algorithm itself is a generalization of
-    the Knuth-Morris-Pratt algorithm. Please look at <I>matcher.h</I> for data
-    type definitions. The automaton is represented by the trie. Trie is
-    a rooted tree with some specific properties [<A
- HREF="node44.html#acwww">2</A>]. Each node
-    of the trie represents some state of the automaton. In the implementation,
-    the node is defined as following:
-    <PRE>
-	struct node {
-	    int islast;
-	    struct patt *list;
-	    int maxpatlen;
-	    struct node *next[NUM_CHILDS], *trans[NUM_CHILDS], *fail;
-	};
-</PRE>
-    [To be continued...]
+    <B>Homepage:</B> <TT><A NAME="tex2html42"
+  HREF="http://claws.sylpheed.org">http://claws.sylpheed.org</A></TT>
+<BR>    <B>Supports:</B> libclamav
+<BR>
+Sylpheed Claws is a bleeding edge branch of Sylpheed, a light weight mail
+    user agent for UNIX. It can scan attachments in mail received from a POP
+    account and optionally delete the mail or save it to a designated folder.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2003-06-21
+2003-11-11
 </ADDRESS>
 </BODY>
 </HTML>

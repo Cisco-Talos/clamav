@@ -20,14 +20,12 @@ if BUILD_CLAMD
 bin_PROGRAMS = clamdscan
 
 clamdscan_SOURCES = \
-    options.c \
-    options.h \
     clamdscan.c \
     client.c \
     client.h \
     defaults.h
 
-clamdscan_LDADD = ../clamscan/getopt.o ../clamscan/others.o ../clamd/cfgfile.o
+clamdscan_LDADD = ../clamscan/getopt.o ../clamscan/options.o ../clamscan/others.o ../clamd/cfgfile.o
 
 endif
 

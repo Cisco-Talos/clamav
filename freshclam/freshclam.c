@@ -330,30 +330,30 @@ void help(void)
     mprintf_stdout = 1;
 
     mprintf("\n");
-    mprintf("		   Clam AntiVirus: freshclam  "VERSION"\n");
-    mprintf("		   (c) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>\n");
-    mprintf("	  \n");
-    mprintf("    --help		    -h		show help\n");
-    mprintf("    --version		    -V		print version number and exit\n");
-    mprintf("    --verbose		    -v		be verbose\n");
-    mprintf("    --debug		    		enable debug messages\n");
-    mprintf("    --quiet				be quiet, output only error messages\n");
-    mprintf("    --stdout				write to stdout instead of stderr\n");
-    mprintf("					(this help is always written to stdout)\n");
+    mprintf("                          Clam AntiVirus: freshclam  "VERSION"\n");
+    mprintf("                (c) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>\n\n");
+
+    mprintf("    --help               -h              show help\n");
+    mprintf("    --version            -V              print version number and exit\n");
+    mprintf("    --verbose            -v              be verbose\n");
+    mprintf("    --debug                              enable debug messages\n");
+    mprintf("    --quiet                              be quiet, output only error messages\n");
+    mprintf("    --stdout                             write to stdout instead of stderr\n");
+    mprintf("                                         (this help is always written to stdout)\n");
     mprintf("\n");
-    mprintf("    --user=USER		    -u USER	run as USER\n");
-    mprintf("    --daemon		    -d		run in daemon mode\n");
-    mprintf("    --checks=#n             -c #n       #n checks by day, 1 <= n <= 50\n");
-    mprintf("    --datadir=DIRECTORY                 download new database in DIRECTORY\n");
-    mprintf("    --log=FILE		    -l FILE	save download report in FILE\n");
-    mprintf("    --log-verbose			save additional informations\n");
-    mprintf("    --http-proxy=hostname[:port]	use proxy server hostname\n");
-    mprintf("    --proxy-user=username:passwd	use username/password for proxy auth\n");
+    mprintf("    --user=USER          -u USER         run as USER\n");
+    mprintf("    --daemon             -d              run in daemon mode\n");
+    mprintf("    --checks=#n          -c #n           #n checks by day, 1 <= n <= 50\n");
+    mprintf("    --datadir=DIRECTORY                  download new database in DIRECTORY\n");
+    mprintf("    --log=FILE           -l FILE         save download report in FILE\n");
+    mprintf("    --log-verbose                        save additional informations\n");
+    mprintf("    --http-proxy=hostname[:port]         use proxy server hostname\n");
+    mprintf("    --proxy-user=username:passwd         use username/password for proxy auth\n");
 #ifdef BUILD_CLAMD
-    mprintf("    --daemon-notify[=/path/clamav.conf] send RELOAD command to clamd\n");
+    mprintf("    --daemon-notify[=/path/clamav.conf]  send RELOAD command to clamd\n");
 #endif
-    mprintf("    --on-update-execute=[COMMAND]	execute the COMMAND after successful update\n");
-    mprintf("    --on-error-execute=[COMMAND]	execute the COMMAND if errors occured\n");
+    mprintf("    --on-update-execute=COMMAND          execute COMMAND after successful update\n");
+    mprintf("    --on-error-execute=COMMAND           execute COMMAND if errors occured\n");
     mprintf("\n");
     exit(0);
 }

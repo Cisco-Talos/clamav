@@ -1,5 +1,5 @@
-.\" Manual page created by Tomasz Kojm, 29.09.2002
-.TH "Clam Daemon" "8" "June 21, 2003" "Tomasz Kojm" "Clam AntiVirus"
+.\" Manual page created by Tomasz Kojm, 20020929
+.TH "Clam Daemon" "8" "November 11, 2003" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 clamd \- an anti\-virus daemon
@@ -17,10 +17,10 @@ clamd recognizes the following commands:
 Check the server's state. It should reply with "PONG".
 .TP 
 \fBVERSION\fR
-Print the version information.
+Print a version information.
 .TP 
 \fBRELOAD\fR
-Reload the databases.
+Reload the virus databases.
 .TP 
 \fBQUIT\fR
 Perform a clean exit.
@@ -32,7 +32,7 @@ Scan a file or directory (recursively) with archive support enabled (if not disa
 Scan a file or directory (recursively) with archive support disabled. A full path is required.
 .TP 
 \fBCONTSCAN file/directory\fR
-Scan a file or directory (recursively) with archive support enabled and continue scanning even when virus was found. A full path is required.
+Scan a file or directory (recursively) with archive support enabled and continue scanning even when virus is found. A full path is required.
 .TP 
 \fBSTREAM\fR
 Scan stream \- on this command clamd will return "PORT number" and you can connect to that port and send a data to scan.
@@ -47,12 +47,12 @@ Output help information and exit.
 Print the version number and exit.
 .TP 
 \fB\-c FILE, \-\-config\-file=FILE\fR
-Read the configuration from FILE.
+Read configuration from FILE.
 .SH "CREDITS"
 Please check the full documentation for credits.
 .SH "AUTHOR"
 .LP 
-Tomasz Kojm <zolw@konarski.edu.pl>
+Tomasz Kojm <tkojm@clamav.net>
 .SH "SEE ALSO"
 .LP 
-clamdscan(1), clamscan(1), freshclam(1), sigtool(1), clamav.conf(5)
+clamdscan(1), clamscan(1), freshclam(1), sigtool(1), clamav.conf(5), clamav\-milter(8)
