@@ -178,9 +178,19 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 	md5_finish_ctx(&ctx, &md5buff);
 
 	if((md5_node = cli_vermd5(md5buff, root))) {
-	    if(virname)
-		*virname = md5_node->virname;
-	    return CL_VIRUS;
+		struct stat sb;
+
+	    if(fstat(desc, &sb))
+		return CL_EIO;
+
+	    if(sb.st_size != md5_node->size) {
+		cli_warnmsg("Detected false positive MD5 match. Please report.\n");
+	    } else {
+		if(virname)
+		    *virname = md5_node->virname;
+
+		return CL_VIRUS;
+	    }
 	}
     }
 
@@ -208,7 +218,8 @@ void cl_free(struct cl_node *root)
 
     if(root->md5_hlist) {
 	for(i = 0; i < 256; i++) {
-	    while((pt = root->md5_hlist[i])) {
+	    pt = root->md5_hlist[i];
+	    while(pt) {
 		h = pt;
 		pt = pt->next;
 		free(h);

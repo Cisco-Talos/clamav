@@ -484,14 +484,23 @@ static int cli_loadhdb(FILE *fd, struct cl_node **root, int *virnum)
 	}
 	free(pt);
 
-	if(!(new->virname = cli_strtok(buffer, 1, ":"))) {
+	if(!(pt = cli_strtok(buffer, 1, ":"))) {
+	    free(new->md5);
+	    free(new);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+	new->size = atoi(pt);
+	free(pt);
+
+	if(!(new->virname = cli_strtok(buffer, 2, ":"))) {
 	    free(new->md5);
 	    free(new);
 	    ret = CL_EMALFDB;
 	    break;
 	}
 
-	new->viralias = cli_strtok(buffer, 1, ":"); /* aliases are optional */
+	new->viralias = cli_strtok(buffer, 3, ":"); /* aliases are optional */
 
 	if(!(*root)->md5_hlist) {
 	    cli_dbgmsg("Initializing md5 list structure\n");
