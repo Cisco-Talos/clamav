@@ -313,10 +313,13 @@ Changes
 		Add advice that --quarantine-dir may improve
 		performance when LocalSocket is used
 		ThreadTimeout seems to have been changed to ReadTimeout
+0.70g	3/4/04	Error if ReadTimeout is -ve
+		Honour StreamMaxLength
 
 BUG REPORTS
 
-Please send bug reports and/or comments to Nigel Horne <njh@despammed.com>
+Please send bug reports and/or comments to Nigel Horne <njh@despammed.com> or
+bugs@clamav.net.
 
 TODO
 
