@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.15  2004/01/14 10:08:45  nigelhorne
+ * blobGetData now allows contents to be changed - tuttut
+ *
  * Revision 1.14  2004/01/10 13:01:19  nigelhorne
  * Added BinHex compression support
  *
@@ -39,7 +42,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.14 2004/01/10 13:01:19 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.15 2004/01/14 10:08:45 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -631,6 +634,10 @@ messageToBlob(const message *m)
 		data = blobGetData(tmp);
 		len = blobGetDataSize(tmp);
 
+		/*
+		 * FIXME: this is dirty code, modification of the contents
+		 * of a member of the blob object should be done through blob.c
+		 */
 		if(data[0] == ':') {
 			char *ptr;
 			unsigned long newlen = 0L;
@@ -646,10 +653,10 @@ messageToBlob(const message *m)
 
 			for(l = 1; l < len; l++) {
 				unsigned char c = ptr[l];
-				char *tptr;
+				const unsigned char *tptr;
 
 				/* TODO: table look up would be quicker */
-				const char table[] =
+				const unsigned char table[] =
 					"!\"#$%&'()*+,-012345689@ABCDEFGHIJKLMNPQRSTUVXYZ[`abcdefhijklmpqr";
 
 				if((c == '\n') || (c == '\r'))
@@ -757,9 +764,9 @@ messageToBlob(const message *m)
 		/*
 		 * Discard attachments with no filename
 		 */
-		filename = messageFindArgument(m, "filename");
+		filename = (char *)messageFindArgument(m, "filename");
 		if(filename == NULL) {
-			filename = messageFindArgument(m, "name");
+			filename = (char *)messageFindArgument(m, "name");
 
 			if(filename == NULL) {
 				cli_dbgmsg("Attachment sent with no filename\n");
