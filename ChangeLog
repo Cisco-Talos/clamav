@@ -1,3 +1,8 @@
+Fri Feb 18 21:29:16 GMT 2005 (njh)
+----------------------------------
+  * libclamav/message.c: Handle broken RFC2231 messages reported by Maxim
+				Dounin <mdounin at rambler-co.ru>
+
 Fri Feb 18 18:04:30 GMT 2005 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Save separate bounces in separate files
