@@ -67,7 +67,10 @@
 
 #if !defined(HAVE_SNPRINTF) || !defined(HAVE_VSNPRINTF)
 
-static void 
+#include <sys/types.h>
+#include <stdarg.h>
+
+static void
 dopr(char *buffer, size_t maxlen, const char *format, va_list args);
 
 static void 
