@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.173  2004/11/09 19:40:06  nigelhorne
+ * Find uuencoded files in preambles to multipart messages
+ *
  * Revision 1.172  2004/11/09 13:33:38  nigelhorne
  * Tidy
  *
@@ -504,7 +507,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.172 2004/11/09 13:33:38 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.173 2004/11/09 19:40:06 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1130,7 +1133,8 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 	}
 
 	if(fullline) {
-		cli_warnmsg("parseEmailHeaders: Fullline set '%s' - report to bugs@clamav.net\n");
+		if(*fullline)
+			cli_warnmsg("parseEmailHeaders: Fullline set '%s' - report to bugs@clamav.net\n");
 		free(fullline);
 	}
 
@@ -1325,8 +1329,22 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			}
 
 			do
-				if(boundaryStart(lineGetData(t_line->t_line), boundary))
-					break;
+				if(t_line->t_line) {
+					if(boundaryStart(lineGetData(t_line->t_line), boundary))
+						break;
+					/*
+					 * Found a uuencoded file before the first multipart
+					 * TODO: check yEnc and binhex here
+					 */
+					if(uuencodeBegin(mainMessage) == t_line)
+						if(messageGetEncoding(mainMessage) == NOENCODING) {
+							messageSetEncoding(mainMessage, "x-uuencode");
+							fb = messageToFileblob(mainMessage, dir);
+
+							if(fb)
+								fileblobDestroy(fb);
+						}
+				}
 			while((t_line = t_line->t_next) != NULL);
 
 			if(t_line == NULL) {

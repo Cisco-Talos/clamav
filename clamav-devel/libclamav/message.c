@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.112  2004/11/09 19:40:06  nigelhorne
+ * Find uuencoded files in preambles to multipart messages
+ *
  * Revision 1.111  2004/11/08 16:27:09  nigelhorne
  * Fix crash with correctly encoded uuencode files
  *
@@ -330,7 +333,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.111 2004/11/08 16:27:09 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.112 2004/11/09 19:40:06 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1595,6 +1598,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			(*setFilename)(ret, dir, filename);
 			t_line = t_line->t_next;
 			enctype = UUENCODE;
+			m->uuencode = NULL;
 		} else if(((enctype == YENCODE) && yEncBegin(m)) || ((i == 0) && yEncBegin(m))) {
 			/*
 			 * TODO: handle multipart yEnc encoded files
@@ -1618,6 +1622,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			}
 			t_line = t_line->t_next;
 			enctype = YENCODE;
+			m->yenc = NULL;
 		} else {
 			filename = (char *)messageFindArgument(m, "filename");
 			if(filename == NULL) {
@@ -1886,7 +1891,9 @@ messageToText(message *m)
 			if((data[0] == '\n') || (data[0] == '\0'))
 				last->t_line = NULL;
 			else if(line && (strncmp(data, line, strlen(line)) == 0)) {
+#ifdef	CL_DEBUG
 				cli_dbgmsg("messageToText: decoded line is the same(%s)\n", data);
+#endif
 				last->t_line = lineLink(t_line->t_line);
 			} else
 				last->t_line = lineCreate((char *)data);
@@ -2244,9 +2251,11 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
 	unsigned char b1, b2, b3, b4;
 	unsigned char cb1, cb2, cb3;	/* carried over from last line */
 
+#ifdef	CL_DEBUG
 	cli_dbgmsg("decode %s (len %d isFast %d base64chars %d)\n", in,
 		in ? strlen(in) : 0,
 		isFast, m->base64chars);
+#endif
 
 	cb1 = cb2 = cb3 = '\0';
 
