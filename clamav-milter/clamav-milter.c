@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.185  2005/03/01 18:55:14  nigelhorne
+ * Improved database update detection when not --external
+ *
  * Revision 1.184  2005/02/23 09:41:39  nigelhorne
  * Remove the pidfile
  *
@@ -563,9 +566,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.184 2005/02/23 09:41:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.185 2005/03/01 18:55:14 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.83a"
+#define	CM_VERSION	"0.83b"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -894,6 +897,9 @@ static	pthread_mutex_t	n_children_mutex = PTHREAD_MUTEX_INITIALIZER;
 static	pthread_cond_t	n_children_cond = PTHREAD_COND_INITIALIZER;
 static	unsigned	int	n_children = 0;
 static	unsigned	int	max_children = 0;
+static	pthread_mutex_t	accept_mutex = PTHREAD_MUTEX_INITIALIZER;
+static	pthread_cond_t	accept_cond = PTHREAD_COND_INITIALIZER;
+static	int	accept_inputs;
 static	int	child_timeout = 0;	/* number of seconds to wait for
 					 * a child to die. Set to 0 to
 					 * wait forever
@@ -1328,7 +1334,7 @@ main(int argc, char **argv)
 	/* FIXME: error if --servers and --external is not given */
 	/* TODO: support freshclam's daemon notify if --external is not given */
 
-	if (optind == argc) {
+	if(optind == argc) {
 		fprintf(stderr, _("%s: No socket-addr given\n"), argv[0]);
 		return EX_USAGE;
 	}
@@ -1924,6 +1930,7 @@ main(int argc, char **argv)
 				limits.archivememlim = 0;
 		}
 	}
+	accept_inputs = 1;
 
 #ifdef	SESSION
 	/* FIXME: add localSocket support to watchdog */
@@ -2053,6 +2060,8 @@ createSession(int s)
 		char hostname[MAXHOSTNAMELEN + 1];
 
 		cli_strtokbuf(serverHostNames, serverNumber, ":", hostname);
+		if(strcmp(hostname, "127.0.0.1") == 0)
+			gethostname(hostname, sizeof(hostname));
 #else
 		char *hostname = cli_strtok(serverHostNames, serverNumber, ":");
 #endif
@@ -2316,6 +2325,8 @@ findServer(void)
 			char hostname[MAXHOSTNAMELEN + 1];
 
 			cli_strtokbuf(serverHostNames, i, ":", hostname);
+			if(strcmp(hostname, "127.0.0.1") == 0)
+				gethostname(hostname, sizeof(hostname));
 #else
 			char *hostname = cli_strtok(serverHostNames, i, ":");
 #endif
@@ -2395,9 +2406,26 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	char ip[INET_ADDRSTRLEN];	/* IPv4 only */
 #endif
 	const char *remoteIP;
+	int accepting;
 
 	if(quitting)
 		return cl_error;
+
+	pthread_mutex_lock(&accept_mutex);
+	accepting = accept_inputs;
+	pthread_mutex_unlock(&accept_mutex);
+	if(!accepting) {
+		cli_warnmsg("Not accepting inputs at the moment\n");
+		if(dont_wait)
+			return SMFIS_TEMPFAIL;
+		do {
+			pthread_cond_wait(&accept_cond, &accept_mutex);
+			pthread_mutex_lock(&accept_mutex);
+			accepting = accept_inputs;
+			pthread_mutex_unlock(&accept_mutex);
+		} while(!accepting);
+		cli_warnmsg("Accepting inputs again\n");
+	}
 
 	if(ctx == NULL) {
 		if(use_syslog)
@@ -3038,15 +3066,24 @@ clamfi_eom(SMFICTX *ctx)
 				syslog(LOG_DEBUG, _("clamfi_eom: read %s"), mess);
 			cli_dbgmsg(_("clamfi_eom: read %s\n"), mess);
 		} else {
+#ifdef	MAXHOSTNAMELEN
+			char hostname[MAXHOSTNAMELEN + 1];
+
+			cli_strtokbuf(serverHostNames, privdata->serverNumber, ":", hostname);
+			if(strcmp(hostname, "127.0.0.1") == 0)
+				gethostname(hostname, sizeof(hostname));
+#else
+			char *hostname = cli_strtok(serverHostNames, privdata->serverNumber, ":");
+#endif
 			/*
 			 * TODO: if more than one host has been specified, try
 			 * another one - setting cl_error to SMFIS_TEMPFAIL helps
 			 * by forcing a retry
 			 */
 			clamfi_cleanup(ctx);
-			syslog(LOG_NOTICE, _("clamfi_eom: read nothing from clamd"));
+			syslog(LOG_NOTICE, _("clamfi_eom: read nothing from clamd on %s"), hostname);
 #ifdef	CL_DEBUG
-			cli_dbgmsg(_("clamfi_eom: read nothing from clamd\n"));
+			cli_dbgmsg(_("clamfi_eom: read nothing from clamd on %s\n"), hostname);
 #endif
 #ifdef	SESSION
 			pthread_mutex_lock(&sstatus_mutex);
@@ -3116,6 +3153,8 @@ clamfi_eom(SMFICTX *ctx)
 			char hostname[MAXHOSTNAMELEN + 1];
 
 			if(cli_strtokbuf(serverHostNames, privdata->serverNumber, ":", hostname)) {
+				if(strcmp(hostname, "127.0.0.1") == 0)
+					gethostname(hostname, sizeof(hostname));
 #else
 			char *hostname = cli_strtok(serverHostNames, privdata->serverNumber, ":");
 			if(hostname) {
@@ -4750,6 +4789,8 @@ watchdog(void *a)
 		pthread_mutex_unlock(&watchdog_mutex);
 
 		if(!external) {
+			int dbstatus = cl_statchkdir(&dbstat);
+
 			/*
 			 * Re-load the database if the server's not busy.
 			 * TODO: If a reload is needed go into a mode when
@@ -4759,12 +4800,54 @@ watchdog(void *a)
 			 *	servers
 			 */
 			pthread_mutex_lock(&n_children_mutex);
-			if((n_children == 0) && (cl_statchkdir(&dbstat) == 1)) {
+			if((n_children == 0) && (dbstatus == 1)) {
+				pthread_mutex_lock(&accept_mutex);
+				accept_inputs = 0;
+				pthread_mutex_unlock(&accept_mutex);
+				cli_dbgmsg("Database has changed\n");
+				cl_statfree(&dbstat);
+				/* check for race condition */
+				while(n_children > 0)
+					pthread_cond_wait(&n_children_cond, &n_children_mutex);
+				if(use_syslog)
+					syslog(LOG_WARNING, _("Loading new database"));
+				if(loadDatabase() != 0) {
+					pthread_mutex_unlock(&n_children_mutex);
+					smfi_stop();
+					return NULL;
+				}
+				pthread_mutex_lock(&accept_mutex);
+				accept_inputs = 1;
+				pthread_cond_broadcast(&accept_cond);
+				pthread_mutex_unlock(&accept_mutex);
+			} else if(dbstatus == 0)
+				cli_dbgmsg("Database has not changed\n");
+			else if(dbstatus == 1) {
+				cli_warnmsg("Not reloading database until idle\n");
+				pthread_mutex_lock(&accept_mutex);
+				accept_inputs = 0;
+				pthread_mutex_unlock(&accept_mutex);
+
+				while(n_children > 0)
+					pthread_cond_wait(&n_children_cond, &n_children_mutex);
+
 				cl_statfree(&dbstat);
 				if(use_syslog)
 					syslog(LOG_WARNING, _("Loading new database"));
-				if(loadDatabase() != 0)
-					exit(EX_CONFIG);
+				if(loadDatabase() != 0) {
+					pthread_mutex_unlock(&n_children_mutex);
+					smfi_stop();
+					return NULL;
+				}
+				pthread_mutex_lock(&accept_mutex);
+				accept_inputs = 1;
+				pthread_cond_broadcast(&accept_cond);
+				pthread_mutex_unlock(&accept_mutex);
+			} else {
+				smfi_stop();
+				cli_errmsg("Database error - clamav-milter is stopping\n");
+				pthread_mutex_unlock(&n_children_mutex);
+				return NULL;
 			}
 			pthread_mutex_unlock(&n_children_mutex);
 			continue;
@@ -4872,6 +4955,7 @@ watchdog(void *a)
 	while(!quitting) {
 		struct timespec ts;
 		struct timeval tp;
+		int dbstatus;
 
 		gettimeofday(&tp, NULL);
 
@@ -4902,13 +4986,54 @@ watchdog(void *a)
 		 *	otherwise a reload may not occur on overloaded
 		 *	servers
 		 */
+		dbstatus = cl_statchkdir(&dbstat);
 		pthread_mutex_lock(&n_children_mutex);
-		if((n_children == 0) && (cl_statchkdir(&dbstat) == 1)) {
+		if((n_children == 0) && (dbstatus == 1)) {
+			pthread_mutex_lock(&accept_mutex);
+			accept_inputs = 0;
+			pthread_mutex_unlock(&accept_mutex);
+			cli_dbgmsg("Database has changed\n");
+			cl_statfree(&dbstat);
+			/* check for race condition */
+			while(n_children > 0)
+				pthread_cond_wait(&n_children_cond, &n_children_mutex);
+			if(use_syslog)
+				syslog(LOG_WARNING, _("Loading new database"));
+			if(loadDatabase() != 0) {
+				pthread_mutex_unlock(&n_children_mutex);
+				smfi_stop();
+				return NULL;
+			}
+			pthread_mutex_lock(&accept_mutex);
+			accept_inputs = 1;
+			pthread_cond_broadcast(&accept_cond);
+			pthread_mutex_unlock(&accept_mutex);
+		} else if(dbstatus == 0)
+			cli_dbgmsg("Database has not changed\n");
+		else if(dbstatus == 1) {
+			cli_warnmsg("Not reloading database until idle\n");
+			pthread_mutex_lock(&accept_mutex);
+			accept_inputs = 0;
+			pthread_mutex_unlock(&accept_mutex);
+			while(n_children > 0)
+				pthread_cond_wait(&n_children_cond, &n_children_mutex);
 			cl_statfree(&dbstat);
 			if(use_syslog)
 				syslog(LOG_WARNING, _("Loading new database"));
-			if(loadDatabase() != 0)
-				exit(EX_CONFIG);
+			if(loadDatabase() != 0) {
+				pthread_mutex_unlock(&n_children_mutex);
+				smfi_stop();
+				return NULL;
+			}
+			pthread_mutex_lock(&accept_mutex);
+			accept_inputs = 1;
+			pthread_cond_broadcast(&accept_cond);
+			pthread_mutex_unlock(&accept_mutex);
+		} else {
+			smfi_stop();
+			cli_errmsg("Database error - clamav-milter is stopping\n");
+			pthread_mutex_unlock(&n_children_mutex);
+			return NULL;
 		}
 		pthread_mutex_unlock(&n_children_mutex);
 	}
@@ -5005,6 +5130,10 @@ quit(void)
 	extern short cli_leavetemps_flag;
 
 	quitting++;
+
+	pthread_mutex_lock(&accept_mutex);
+	accept_inputs = 0;
+	pthread_mutex_unlock(&accept_mutex);
 
 #ifdef	SESSION
 	pthread_mutex_lock(&version_mutex);
@@ -5195,7 +5324,7 @@ sigsegv(int sig)
 		syslog(LOG_ERR, "Segmentation fault :-( Bye..");
 	cli_dbgmsg("Segmentation fault :-( Bye..\n");
 
-	exit(SIGSEGV);
+	smfi_stop();
 }
 
 static void
