@@ -25,6 +25,11 @@
 #include <zlib.h>
 #include <time.h>
 #include <locale.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <clamav.h>
 
 #include "options.h"
@@ -38,6 +43,8 @@
 #define MAX_LENGTH 200
 
 void help(void);
+char *getdsig(const char *host, const char *user, const char *data);
+void cvdinfo(struct optstruct *opt);
 
 int scanfile(const char *cmd, const char *str, const char *file)
 {
@@ -183,6 +190,10 @@ void sigtool(struct optstruct *opt)
 	}
 
     } else if(optc(opt, 'b')) {
+	if(!optc(opt, 's')) {
+	    mprintf("!--server, -s is required in this mode\n");
+	    exit(10);
+	}
 
 	build(opt);
 
@@ -429,7 +440,7 @@ int build(struct optstruct *opt)
 	char buffer[BUFFSIZE], *tarfile = NULL, *gzfile = NULL, header[257],
 	     smbuff[25], *pt;
         struct cl_node *root = NULL;
-	FILE *tar, *cvd;
+	FILE *tar, *cvd, *fd;
 	gzFile *gz;
 	time_t timet;
 	struct tm *brokent;
@@ -534,6 +545,7 @@ int build(struct optstruct *opt)
     strcat(header, smbuff);
 
     /* number of signatures */
+    //FIXME: THIS IS WRONG
     sprintf(smbuff, "%d:", no);
     strcat(header, smbuff);
 
@@ -544,15 +556,28 @@ int build(struct optstruct *opt)
     /* MD5 */
     pt = cl_md5file(gzfile);
     strcat(header, pt);
+    free(pt);
     strcat(header, ":");
+
+    /* builder - question */
+    fflush(stdin);
+    mprintf("Builder id: ");
+    fscanf(stdin, "%s", &smbuff);
 
     /* digital signature */
+    fd = fopen(gzfile, "rb");
+    __md5_stream(fd, &buffer);
+    fclose(fd);
+    if(!(pt = getdsig(getargc(opt, 's'), smbuff, buffer))) {
+	mprintf("No digital signature - no CVD file...\n");
+	exit(1);
+    }
+
+    strcat(header, pt);
+    free(pt);
     strcat(header, ":");
 
-    /* builder */
-    fflush(stdin);
-    mprintf("Builder name: ");
-    fscanf(stdin, "%s:", &smbuff);
+    /* builder - add */
     strcat(header, smbuff);
 
     /* fill up with spaces */
@@ -645,6 +670,72 @@ void help(void)
     mprintf("   --file		    -f		infected file\n");
     mprintf("	--info FILE	    -i FILE	print database information\n");
     mprintf("   --build NAME	    -b NAME		Build database\n");
+    mprintf("   --server ADDR	    -s ADDR	    ClamAV Signing Service address\n");
 
     exit(0);
+}
+
+char *getdsig(const char *host, const char *user, const char *data)
+{
+	char buff[300], cmd[100], *pass, *pt;
+        struct sockaddr_in server;
+	struct cfgstruct *copt, *cpt;
+	int sockd, bread, len;
+
+
+#ifdef PF_INET
+    if((sockd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
+#else
+    if((sockd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+#endif
+	perror("socket()");
+	mprintf("!Can't create the socket.\n");
+	return NULL;
+    }
+
+    server.sin_family = AF_INET;
+    server.sin_addr.s_addr = inet_addr(host);
+    server.sin_port = htons(33101);
+
+    if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) < 0) {
+        close(sockd);
+	perror("connect()");
+	mprintf("!Can't connect to ClamAV Signing Service at %s.\n", host);
+	return NULL;
+    }
+
+    memset(cmd, 0, sizeof(cmd));
+    pass = getpass("Password:");
+    sprintf(cmd, "ClamSign:%s:%s:", user, pass);
+    len = strlen(cmd);
+    pt = cmd;
+    pt += len;
+    memcpy(pt, data, 16);
+    len += 16;
+
+    if(write(sockd, cmd, len) < 0) {
+	mprintf("!Can't write to the socket.\n");
+	close(sockd);
+	memset(cmd, 0, len);
+	memset(pass, 0, strlen(pass));
+	return NULL;
+    }
+
+    memset(cmd, 0, len);
+    memset(pass, 0, strlen(pass));
+
+    memset(buff, 0, sizeof(buff));
+    if((bread = read(sockd, buff, sizeof(buff))) > 0)
+	if(!strstr(buff, "Signature:")) {
+	    mprintf("!Signature generation error.\n");
+	    mprintf("ClamAV SDaemon: %s.\n", buff);
+	    close(sockd);
+	    return NULL;
+	} else
+	    mprintf("Signature received (length = %d).\n", strlen(buff) - 10);
+
+    close(sockd);
+    pt = buff;
+    pt += 10;
+    return strdup(pt);
 }

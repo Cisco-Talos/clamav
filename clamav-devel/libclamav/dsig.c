@@ -106,7 +106,10 @@ int cli_versig(const char *md5, const char *dsig)
 
     mpz_init_set_str(n, cli_nstr, 10);
     mpz_init_set_str(e, cli_estr, 10);
-    pt = cli_decodesig(dsig, 16, e, n);
+
+    if(!(pt = cli_decodesig(dsig, 16, e, n)))
+	return CL_EDSIG;
+
     pt2 = cl_str2hex(pt, 16);
     free(pt);
 

@@ -179,8 +179,6 @@ int cl_loaddbdir(const char *dirname, struct cl_node **root, int *virnum)
 	char *dbfile;
 	int ret;
 
-    if(virnum != NULL)
-	*virnum = 0;
 
     if((dd = opendir(dirname)) == NULL) {
         cli_errmsg("cl_loaddbdir(): Can't open directory %s\n", dirname);
