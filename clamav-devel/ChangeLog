@@ -1,3 +1,7 @@
+Sun Feb 13 23:17:16 CET 2005 (tk)
+---------------------------------
+  * libclamav/untar.c: do not try to continue if there's no space on device
+
 Sun Feb 13 20:52:57 GMT 2005 (njh)
 ----------------------------------
   * clamav-milter:	Up-issue to 0.83
