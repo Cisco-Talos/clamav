@@ -1,3 +1,7 @@
+Wed Oct 13 09:57:54 BST 2004 (trog)
+-----------------------------------
+  * libclamav/special.c: fix logic check
+
 Mon Oct 11 11:56:29 BST 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Find worms such as Worm.Bagz.B-2 which include

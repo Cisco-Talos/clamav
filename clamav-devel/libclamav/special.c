@@ -75,7 +75,7 @@ int cli_check_jpeg_exploit(int fd)
 		return 0;
 	}
 	
-	if ((buffer[0] != 0xff) && (buffer[1] != 0xd8)) {
+	if ((buffer[0] != 0xff) || (buffer[1] != 0xd8)) {
 		return 0;
 	}
 	for (;;) {
