@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.192  2004/11/28 16:27:28  nigelhorne
+ * Save the text portions as text not mail files
+ *
  * Revision 1.191  2004/11/27 21:55:06  nigelhorne
  * Changed some more strtok to cli_strtok
  *
@@ -561,7 +564,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.191 2004/11/27 21:55:06 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.192 2004/11/28 16:27:28 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1067,9 +1070,8 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 		else
 			buffer = NULL;
 
-		cli_dbgmsg("parseEmailHeaders: check '%s'\n", buffer ? buffer : "");
-
 		if(inHeader) {
+			cli_dbgmsg("parseEmailHeaders: check '%s'\n", buffer ? buffer : "");
 			if((buffer == NULL) && !contMarker) {
 				/*
 				 * A blank line signifies the end of the header
@@ -2081,7 +2083,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				if((fb = fileblobCreate()) != NULL) {
 					cli_dbgmsg("Save non mime part\n");
 					fileblobSetFilename(fb, dir, "textpart");
-					fileblobAddData(fb, "Received: by clamd (textpart)\n", 30);
+					/*fileblobAddData(fb, "Received: by clamd (textpart)\n", 30);*/
 
 					fb = textToFileblob(aText, fb);
 
