@@ -367,7 +367,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
 	if(read(desc, &section_hdr[i], sizeof(struct pe_image_section_hdr)) != sizeof(struct pe_image_section_hdr)) {
 	    cli_dbgmsg("Can't read section header\n");
-	    cli_warnmsg("Possibly broken PE file\n");
+	    cli_dbgmsg("Possibly broken PE file\n");
 	    free(section_hdr);
 	    return CL_CLEAN;
 	}
@@ -416,7 +416,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
     ep = cli_rawaddr(EC32(optional_hdr.AddressOfEntryPoint), section_hdr, nsections);
 
-    if(EC32(section_hdr[i].PointerToRawData) + EC32(section_hdr[i].SizeOfRawData) > sb.st_size || ep == -1) {
+    /* simple sanity check */
+    if(EC32(section_hdr[nsections - 1].PointerToRawData) + EC32(section_hdr[nsections - 1].SizeOfRawData) > sb.st_size || ep == -1) {
 	cli_dbgmsg("Possibly broken PE file\n");
 	free(section_hdr);
 	return CL_CLEAN;
