@@ -1,3 +1,8 @@
+Wed Sep  1 02:21:41 CEST 2004 (tk)
+----------------------------------
+  * etc/freshclam.conf: enable DNSDatabaseInfo by default
+  * freshclam: add --no-dns option
+
 Tue Aug 31 20:39:34 CEST 2004 (tk)
 ----------------------------------
   * sigtool: add support for *.hdb files in -l; include creation time in

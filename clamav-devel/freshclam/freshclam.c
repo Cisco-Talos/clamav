@@ -425,6 +425,7 @@ void help(void)
     mprintf("    --daemon             -d              run in daemon mode\n");
     mprintf("    --pid=FILE           -p FILE         save daemon's pid in FILE\n");
     mprintf("    --user=USER          -u USER         run as USER\n");
+    mprintf("    --no-dns                             force old non-DNS verification method\n");
     mprintf("    --checks=#n          -c #n           number of checks per day, 1 <= n <= 50\n");
     mprintf("    --datadir=DIRECTORY                  download new databases into DIRECTORY\n");
 #ifdef BUILD_CLAMD
