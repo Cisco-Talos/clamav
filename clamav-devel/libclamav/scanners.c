@@ -74,7 +74,7 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "\037\213",			2,  "GZip",		  CL_GZFILE},
     {0,  "BZh",				3,  "BZip",		  CL_BZFILE},
     {0,  "From ",			5,  "MBox",		  CL_MAILFILE},
-    {0,  "Received: ",			10, "Raw mail",		  CL_MAILFILE},
+    {0,  "Received",			8,  "Raw mail",		  CL_MAILFILE},
     {0,  "Return-Path: ",		13, "Maildir",		  CL_MAILFILE},
     {0,  "Return-path: ",		13, "Maildir",		  CL_MAILFILE},
     {0,  "Delivered-To: ",		14, "Mail",		  CL_MAILFILE},
@@ -108,6 +108,7 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "\377\373\220",		 3, "MP3",		  CL_DATAFILE},
     {0,  "\%PDF-",			 5, "PDF document",	  CL_DATAFILE},
     {0,  "\060\046\262\165\216\146\317", 7, "WMA/WMV/ASF",	  CL_DATAFILE},
+    {0,  ".RMF" ,			 4, "Real Media File",	  CL_DATAFILE},
 
     {-1, NULL,				 0, NULL,              CL_UNKNOWN_TYPE}
 };
