@@ -1,3 +1,12 @@
+Wed Feb 16 22:23:40 GMT 2005 (njh)
+----------------------------------
+  * libclamav:		s/BLOB/BLOBCLASS/ for Win32
+			Don't put suffixes back on files to be scanned - it's
+				no longer needed
+			New mbox code is now properly ifdefed NEW_WORLD
+				WARNING: it is still developers only code
+			untar: check file close
+
 Wed Feb 16 00:28:23 CET 2005 (tk)
 ---------------------------------
   * clamd/clamuko.c: properly unregister with Dazuko (patch by John Ogness
