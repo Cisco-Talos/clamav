@@ -15,7 +15,8 @@ machines, use load balancing and fault tolerant techniques to connect to
 more than one clamd and seemlessly hot swap to even the load between different
 servers and to keep scanning for viruses even when a server goes down.
 When it is configured to use clamd on the the localhost, either through the use
-of LocalSocket in \fBclamd.conf(5)\fR or the \-\-internal flag (see below),
+of LocalSocket in \fBclamd.conf(5)\fR or if the \-\-external flag (see below)
+is not given,
 clamav\-milter verifies that it can communicate with clamd; if it cannot, it
 terminates.
 .LP
@@ -94,12 +95,11 @@ generally causes the message to remain in the queue.
 Always scan, whereever the message came from (see also --local and --outgoing).
 You probably don't want this.
 .TP
-\fB-I, \-\-internal\fR
-Usually clamav\-milter uses an external program such as clamd(8) running
-either on the local server or other server(s) to perform
-the scanning.
-The \-\-internal flag tells clamav\-milter to scan the emails itself without
-the use of an external program.
+\fB-I, \-\-external\fR
+Usually clamav\-milter to scan the emails itself without the use of an
+external program.
+Informs clamav\-milter to use an external program such as clamd(8) running
+either on the local server or other server(s) to perform the scanning.
 .TP
 \fB-l, \-\-local\fR
 Also scan messages sent from LAN. You probably want this especially if

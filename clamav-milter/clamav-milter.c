@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.171  2005/01/25 08:10:45  nigelhorne
+ * Change --internal to --external
+ *
  * Revision 1.170  2005/01/22 13:44:09  nigelhorne
  * Fix --quarantine when --internal used
  *
@@ -521,9 +524,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.170 2005/01/22 13:44:09 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.171 2005/01/25 08:10:45 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.81a"
+#define	CM_VERSION	"0.81b"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -622,9 +625,14 @@ typedef	unsigned int	in_addr_t;
 
 #define	VERSION_LENGTH	128
 
-#define	SESSION	/*
+/*#define	SESSION	/*
 		 * Keep one command connection open to clamd, otherwise a new
 		 * command connection is created for each new email
+		 *
+		 * FIXME: When SESSIONS are open, freshclam can hang when
+		 *	notfying clamd of an update. This is most likely to be a
+		 *	problem with the implementation of SESSIONS on clamd.
+		 *	The problem seems worst on BSD.
 		 */
 
 /*
@@ -763,8 +771,8 @@ static	int	fflag = 0;	/* force a scan, whatever */
 static	int	oflag = 0;	/* scan messages from our machine? */
 static	int	lflag = 0;	/* scan messages from our site? */
 
-/* Variables for --internal */
-static	int	internal = 0;	/* scan messages ourself or use clamd? */
+/* Variables for --external */
+static	int	external = 0;	/* scan messages ourself or use clamd? */
 static	struct	cl_node	*root = NULL;
 static	struct	cl_limits	limits;
 static	struct	cl_stat	dbstat;
@@ -945,11 +953,11 @@ help(void)
 	puts(_("\t--dont-log-clean\t-C\tDon't add an entry to syslog that a mail is clean."));
 	puts(_("\t--dont-scan-on-error\t-d\tPass e-mails through unscanned if a system error occurs."));
 	puts(_("\t--dont-wait\t\t\tAsk remote end to resend if max-children exceeded."));
+	puts(_("\t--external\t\t-e\tUse an external scanner (usually clamd)."));
 	puts(_("\t--from=EMAIL\t\t-a EMAIL\tError messages come from here."));
 	puts(_("\t--force-scan\t\t-f\tForce scan all messages (overrides (-o and -l)."));
 	puts(_("\t--help\t\t\t-h\tThis message."));
 	puts(_("\t--headers\t\t-H\tInclude original message headers in the report."));
-	puts(_("\t--internal\t\t-I\tUse the internal scanner."));
 	puts(_("\t--local\t\t\t-l\tScan messages sent from machines on our LAN."));
 	puts(_("\t--max-childen\t\t-m\tMaximum number of concurrent scans."));
 	puts(_("\t--outgoing\t\t-o\tScan outgoing messages from this machine."));
@@ -1026,9 +1034,9 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "a:AbB:c:CDfF:lm:nNop:PqQ:dhHs:St:T:U:Vx:";
+		const char *args = "a:AbB:c:CDefF:lm:nNop:PqQ:dhHs:St:T:U:Vx:";
 #else
-		const char *args = "a:AbB:c:CDfF:lm:nNop:PqQ:dhHs:St:T:U:V";
+		const char *args = "a:AbB:c:CDefF:lm:nNop:PqQ:dhHs:St:T:U:V";
 #endif
 
 		static struct option long_options[] = {
@@ -1060,6 +1068,9 @@ main(int argc, char **argv)
 				"debug", 0, NULL, 'D'
 			},
 			{
+				"external", 0, NULL, 'e'
+			},
+			{
 				"force-scan", 0, NULL, 'f'
 			},
 			{
@@ -1070,9 +1081,6 @@ main(int argc, char **argv)
 			},
 			{
 				"pidfile", 1, NULL, 'i'
-			},
-			{
-				"internal-scanner", 0, NULL, 'I'
 			},
 			{
 				"local", 0, NULL, 'l'
@@ -1171,6 +1179,9 @@ main(int argc, char **argv)
 			case 'D':	/* enable debug messages */
 				cl_debug();
 				break;
+			case 'e':	/* use clamd */
+				external++;
+				break;
 			case 'f':	/* force the scan */
 				fflag++;
 				break;
@@ -1182,11 +1193,6 @@ main(int argc, char **argv)
 				break;
 			case 'i':	/* pidfile */
 				pidfile = optarg;
-				break;
-			case 'I':	/* use clamav-milter's internal scanner */
-				/* FIXME: error if --servers is given */
-				/* TODO: support freshclam's daemon notify */
-				internal++;
 				break;
 			case 'l':	/* scan mail from the lan */
 				lflag++;
@@ -1218,10 +1224,12 @@ main(int argc, char **argv)
 				smfilter.xxfi_flags |= SMFIF_CHGHDRS|SMFIF_ADDRCPT|SMFIF_DELRCPT;
 				break;
 			case 's':	/* server running clamd */
-				if(internal) {
-					fputs("--internal is not compatible with --server\n", stderr);
+#ifdef	notdef	/* don't define - forces --external to be listed first :-( */
+				if(!external) {
+					fputs("--server can only be used with --external\n", stderr);
 					return EX_USAGE;
 				}
+#endif
 				serverHostNames = optarg;
 				break;
 			case 'F':	/* signature file */
@@ -1254,13 +1262,16 @@ main(int argc, char **argv)
 #endif
 			default:
 #ifdef	CL_DEBUG
-				fprintf(stderr, "Usage: %s [-b] [-c FILE] [-F FILE] [--max-children=num] [-l] [-I] [-o] [-p address] [-P] [-q] [-Q USER] [-s SERVER] [-S] [-x#] [-U PATH] socket-addr\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-b] [-c FILE] [-F FILE] [--max-children=num] [-e] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-s SERVER] [-S] [-x#] [-U PATH] socket-addr\n", argv[0]);
 #else
-				fprintf(stderr, "Usage: %s [-b] [-c FILE] [-F FILE] [--max-children=num] [-l] [-I] [-o] [-p address] [-P] [-q] [-Q USER] [-s SERVER] [-S] [-U PATH] socket-addr\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-b] [-c FILE] [-F FILE] [--max-children=num] [-e] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-s SERVER] [-S] [-U PATH] socket-addr\n", argv[0]);
 #endif
 				return EX_USAGE;
 		}
 	}
+
+	/* FIXME: error if --servers and --external is not given */
+	/* TODO: support freshclam's daemon notify if --external is not given */
 
 	if (optind == argc) {
 		fprintf(stderr, _("%s: No socket-addr given\n"), argv[0]);
@@ -1471,9 +1482,9 @@ main(int argc, char **argv)
 	 * Get the outgoing socket details - the way to talk to clamd, unless
 	 * we're doing the scanning internally
 	 */
-	if(internal) {
+	if(!external) {
 		if(!cfgopt(copt, "ScanMail")) {
-			fprintf(stderr, _("%s: ScanMail not defined in %s (needed with --internal)\n"),
+			fprintf(stderr, _("%s: ScanMail not defined in %s (needed without --external)\n"),
 				argv[0], cfgfile);
 			return EX_CONFIG;
 		}
@@ -1675,7 +1686,7 @@ main(int argc, char **argv)
 	}
 
 #ifdef	SESSION
-	if(internal) {
+	if(!external) {
 		if(clamav_versions == NULL) {
 			clamav_versions = (char **)cli_malloc(sizeof(char *));
 			if(clamav_versions == NULL)
@@ -1705,7 +1716,7 @@ main(int argc, char **argv)
 	strcpy(clamav_version, version);
 #endif
 
-	if(((quarantine_dir == NULL) && localSocket) || internal) {
+	if(((quarantine_dir == NULL) && localSocket) || (!external)) {
 		/* set the temporary dir */
 		if((cpt = cfgopt(copt, "TemporaryDirectory"))) {
 			tmpdir = cpt->strarg;
@@ -1729,11 +1740,11 @@ main(int argc, char **argv)
 		tmpdir = NULL;
 
 	if(!cfgopt(copt, "Foreground")) {
-		const char *logFile;
-
 #ifdef	CL_DEBUG
 		printf(_("When debugging it is recommended that you use Foreground mode in %s\n"), cfgfile);
 		puts(_("\tso that you can see all of the messages"));
+#else
+		const char *logFile;
 #endif
 
 		switch(fork()) {
@@ -1786,7 +1797,7 @@ main(int argc, char **argv)
 
 	atexit(quit);
 
-	if(internal) {
+	if(!external) {
 		/* TODO: read the limits from clamd.conf */
 
 		if(cfgopt(copt, "DisableDefaultScanOptions"))
@@ -2817,12 +2828,12 @@ clamfi_eom(SMFICTX *ctx)
 	assert(privdata->dataSocket >= 0);
 #endif
 
-	if(!internal) {
+	if(external) {
 		close(privdata->dataSocket);
 		privdata->dataSocket = -1;
 	}
 
-	if(internal) {
+	if(!external) {
 		const char *virname;
 		unsigned long int scanned = 0L;
 
@@ -2900,7 +2911,7 @@ clamfi_eom(SMFICTX *ctx)
 		session = &sessions[privdata->serverNumber];
 #endif
 
-	if(!internal) {
+	if(external) {
 #ifdef	SESSION
 #ifdef	CL_DEBUG
 		if(debug_level >= 4)
@@ -2957,7 +2968,7 @@ clamfi_eom(SMFICTX *ctx)
 		/*
 		 * Include the hostname where the scan took place
 		 */
-		if(localSocket || internal) {
+		if(localSocket || !external) {
 #ifdef	MAXHOSTNAMELEN
 			char hostname[MAXHOSTNAMELEN + 1];
 #else
@@ -3460,7 +3471,7 @@ clamfi_free(struct privdata *privdata)
 			privdata->to = NULL;
 		}
 
-		if(!internal) {
+		if(external) {
 #ifdef	SESSION
 			session = &sessions[privdata->serverNumber];
 			pthread_mutex_lock(&sstatus_mutex);
@@ -4589,7 +4600,7 @@ watchdog(void *a)
 {
 	static pthread_mutex_t watchdog_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-	assert(internal || (sessions != NULL));
+	assert((!external) || (sessions != NULL));
 
 	while(!quitting) {
 		int i;
@@ -4618,7 +4629,7 @@ watchdog(void *a)
 		cli_dbgmsg("watchdog wakes\n");
 		pthread_mutex_unlock(&watchdog_mutex);
 
-		if(internal) {
+		if(!external) {
 			/*
 			 * Re-load the database if the server's not busy.
 			 * TODO: If a reload is needed go into a mode when
@@ -4824,7 +4835,7 @@ quit(void)
 	pthread_mutex_unlock(&version_mutex);
 #endif
 
-	if(internal) {
+	if(!external) {
 		if(root) {
 			cl_free(root);
 			root = NULL;
@@ -4900,7 +4911,7 @@ loadDatabase(void)
 	const struct cfgstruct *cpt;
 	static const char *dbdir;
 
-	assert(internal);
+	assert(!external);
 
 	if(dbdir == NULL) {
 		if((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory")))

@@ -1,3 +1,13 @@
+Tue Jan 25 08:12:51 GMT 2005 (njh)
+----------------------------------
+  * clamav-milter:	Internal mode is now the default. Removed --internal
+				option, added --external.
+			Don't use clamd's SESSION mode, since that causes
+				problems with clamd/freshclam when freshclam
+				is run. SESSION mode can be enabled from
+				the source code. Most people can use SESSION
+				mode safely, but it has caused problems on BSD
+
 Tue Jan 25 06:13:29 CET 2005 (tk)
 ---------------------------------
   * freshclam/manager.c: properly count signatures in --no-dns mode (problem
