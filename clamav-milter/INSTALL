@@ -509,6 +509,8 @@ Changes
 			stops/starts
 		Error gracefully if the iface option is set to --broadcast on
 			an operating system that doesn't support it
+0.80e	30/9/04	If you say --from with no arguments, the from address is now
+			set to the orginator's address
 
 INTERNATIONALISATION
 

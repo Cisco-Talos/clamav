@@ -1,3 +1,7 @@
+Thu Sep 30 20:19:46 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Allow --from with no e-mail address
+
 Thu Sep 30 10:01:25 BST 2004 (njh)
 ----------------------------------
   * libclamav:		Further small speed and size optimisations with MIME
