@@ -76,21 +76,22 @@ struct cl_magic_s {
     cl_file_t type;
 };
 
-#define MAGIC_BUFFER_SIZE 14
+#define MAGIC_BUFFER_SIZE 26
 static const struct cl_magic_s cl_magic[] = {
-    {0,  "Rar!",            4, "RAR",		    CL_RARFILE},
-    {0,  "PK\003\004",      4, "ZIP",		    CL_ZIPFILE},
-    {0,  "\037\213",        2, "GZip",		    CL_GZFILE},
-    {0,  "BZh",             3, "BZip",		    CL_BZFILE},
-    {0,  "From ",           5, "MBox",		    CL_MAILFILE},
-    {0,  "Received: ",     10, "Raw mail",	    CL_MAILFILE},
-    {0,  "Return-Path: ",  13, "Maildir",	    CL_MAILFILE},
-    {0,  "Return-path: ",  13, "Maildir",	    CL_MAILFILE},
-    {0,  "Delivered-To: ", 14, "Mail",		    CL_MAILFILE},
-    {0,  "X-UIDL: ",	    8, "Mail",		    CL_MAILFILE},
-    {0,  "For: ",           5, "Eserv mail",	    CL_MAILFILE},
-    {0,  "From: ",          6, "Exim mail",	    CL_MAILFILE},
-    {0,  "X-Symantec-",    11, "Symantec",	    CL_MAILFILE},
+    {0,  "Rar!",			4, "RAR",	    CL_RARFILE},
+    {0,  "PK\003\004",			4, "ZIP",	    CL_ZIPFILE},
+    {0,  "\037\213",			2, "GZip",	    CL_GZFILE},
+    {0,  "BZh",				3, "BZip",	    CL_BZFILE},
+    {0,  "From ",			5, "MBox",	    CL_MAILFILE},
+    {0,  "Received: ",			10, "Raw mail",	    CL_MAILFILE},
+    {0,  "Return-Path: ",		13, "Maildir",	    CL_MAILFILE},
+    {0,  "Return-path: ",		13, "Maildir",	    CL_MAILFILE},
+    {0,  "Delivered-To: ",		14, "Mail",	    CL_MAILFILE},
+    {0,  "X-UIDL: ",			8, "Mail",	    CL_MAILFILE},
+    {0,  "For: ",			5, "Eserv mail",    CL_MAILFILE},
+    {0,  "From: ",			6, "Exim mail",	    CL_MAILFILE},
+    {0,  "X-Symantec-",			11, "Symantec",	    CL_MAILFILE},
+    {0,  "Hi. This is the qmail-send",  26, "Qmail bounce", CL_MAILFILE},
     {0,  "\320\317\021\340\241\261\032\341",
 	                    8, "OLE2 container",  CL_OLE2FILE},
     {-1, NULL,              0, NULL,              CL_UNKNOWN_TYPE}

@@ -1,3 +1,7 @@
+Wed Mar  3 11:36:17 CET 2004 (tk)
+---------------------------------
+  * libclamav: mbox wrapper: scan Qmail bounces
+
 Wed Mar  3 09:22:09 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	Check clamd is running before starting (if clamd is
