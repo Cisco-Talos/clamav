@@ -102,10 +102,20 @@ _zzip_inline static void __fixup_rootseek(
  * anything in zziplib or dump the trailer structure then watch out that
  * these are still unused, so that this code may still (ab)use those. */
 #define __fixup_rootseek(_offset_of_trailer, _trailer)          \
-                      *(zzip_off_t*)_trailer = _offset_of_trailer;
+		_trailer->z_magic[0] = _offset_of_trailer & 0xff; \
+		_trailer->z_magic[1] = _offset_of_trailer >> 8 & 0xff ; \
+		_trailer->z_magic[2] = _offset_of_trailer >> 16 & 0xff ; \
+		_trailer->z_magic[3] = _offset_of_trailer >> 24 & 0xff ; \
+		_trailer->z_disk[0] = 0 ; \
+		_trailer->z_disk[1] = 0 ; \
+		_trailer->z_finaldisk[0] = 0 ; \
+		_trailer->z_finaldisk[1] = 0 ;
+#define __trailer_to_address(_trailer) \
+	(_trailer->z_magic[0] + (_trailer->z_magic[1] << 8) + \
+	(_trailer->z_magic[2] << 16) + (_trailer->z_magic[3] << 25))
 #define __correct_rootseek( _u_rootseek, _u_rootsize, _trailer) \
-    if (_u_rootseek > *(zzip_off_t*)_trailer - _u_rootsize)     \
-	_u_rootseek = *(zzip_off_t*)_trailer - _u_rootsize;
+    if (_u_rootseek > __trailer_to_address(_trailer) - _u_rootsize)     \
+	_u_rootseek = __trailer_to_address(_trailer) - _u_rootsize;
 #else
 #define __fixup_rootseek(A,B) 
 #define __correct_rootseek(A,B,C)
