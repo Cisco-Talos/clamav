@@ -402,19 +402,13 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 
 	cli_dbgmsg("Zip -> %s, compressed: %u, normal: %u, ratio: %d (max: %d)\n", zdirent.d_name, zdirent.d_csize, zdirent.st_size, zdirent.st_size / (zdirent.d_csize+1), limits ? limits->maxratio : -1 );
 
-	if(!zdirent.st_size) { /* omit directories and null files */
+	if(!zdirent.st_size) { /* omit directories and empty files */
 	    files++;
 	    continue;
 	}
 
-	if(limits && limits->maxratio > 0 && ((unsigned) zdirent.st_size / (unsigned) zdirent.d_csize) >= limits->maxratio) {
-	    *virname = "Oversized.Zip";
-	    ret = CL_VIRUS;
-	    break;
-        }
-
 	/* work-around for problematic zips (zziplib crashes with them) */
-	if(zdirent.d_csize < 0 || zdirent.st_size < 0) {
+	if(zdirent.d_csize <= 0 || zdirent.st_size < 0) {
 	    files++;
 	    cli_dbgmsg("Zip -> Malformed archive detected.\n");
 	    /* ret = CL_EMALFZIP; */
@@ -423,6 +417,12 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	    ret = CL_VIRUS;
 	    break;
 	}
+
+	if(limits && limits->maxratio > 0 && ((unsigned) zdirent.st_size / (unsigned) zdirent.d_csize) >= limits->maxratio) {
+	    *virname = "Oversized.Zip";
+	    ret = CL_VIRUS;
+	    break;
+        }
 
 	if(DETECT_ENCRYPTED && (zdirent.d_flags & 1 )) {
 	    files++;

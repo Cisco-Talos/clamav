@@ -1,3 +1,13 @@
+Mon Jun 21 21:20:47 EDT 2004 (tk)
+---------------------------------
+  * libclamav: scanners: prevent division by zero in compression ratio
+	       calculation of broken zips (patch by Trog)
+  * clamd: fix logic error that prevented all files from being scanned if
+	   there was no /proc filesystem on Linux system (patch by
+	   Scott Gifford <sgifford*suspectclass.com>)
+  * libclamav: fix compilation error with old glibc (patch by Zeffie
+	       <zeffie*zeffie.com>)
+
 Mon Jun 21 16:23:07 BST 2004 (trog)
 -----------------------------------
   * libclamac/ole2_extract.c: Don't try and process (probably corrupt) files
