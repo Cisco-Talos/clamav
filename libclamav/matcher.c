@@ -177,7 +177,7 @@ int cli_validatesig(unsigned short target, unsigned short ftype, const char *off
 	}
     }
 
-    if(ftype == CL_TYPE_GRAPHICS && virname && !strcmp(virname, "Exploit.JPEG.Comment")) {
+    if(ftype == CL_TYPE_GRAPHICS && virname && !strncmp(virname, "Exploit.JPEG.Comment", 20)) {
 	    int old;
 
 	if((old = lseek(desc, 0, SEEK_CUR)) == -1) {
