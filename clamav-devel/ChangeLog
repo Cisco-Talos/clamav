@@ -1,3 +1,8 @@
+Sat Nov 29 12:52:21 GMT 2003 (njh)
+----------------------------------
+  * clamav-milter: Fix problem of possible confused pointers if large number of
+	recipients given. Fix by Michael Dankov <misha@btrc.ru>.
+
 Sat Nov 29 04:35:03 CET 2003 (tk)
 ---------------------------------
   * clamd: UseProcesses: use processes instead of threads (initial version)

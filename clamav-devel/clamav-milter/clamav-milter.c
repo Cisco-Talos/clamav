@@ -160,9 +160,15 @@
  *			Fix warning about root usage
  *	0.65d	25/11/03 Handle empty hostname or hostaddr
  *			Fix based on a submission by Michael Dankov <misha@btrc.ru>
+ *	0.65e	29/11/03 Fix problem of possible confused pointers if large
+ *			number of recipients given.
+ *			Fix by Michael Dankov <misha@btrc.ru>.
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.24  2003/11/29 11:51:19  nigelhorne
+ * Fix problem of possible confused pointers if large number of recipients given
+ *
  * Revision 1.23  2003/11/25 05:56:43  nigelhorne
  * Handle empty hostname or hostaddr
  *
@@ -217,9 +223,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.23 2003/11/25 05:56:43 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.24 2003/11/29 11:51:19 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.65d"
+#define	CM_VERSION	"0.65e"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1312,6 +1318,7 @@ clamfi_eom(SMFICTX *ctx)
 			if(&ptr[strlen(*to) + 2] >= &err[i]) {
 				i += 1024;
 				err = realloc(err, i);
+				ptr = strchr(err, '\0');
 			}
 			ptr = strrcpy(ptr, " ");
 			ptr = strrcpy(ptr, *to);
