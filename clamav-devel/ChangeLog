@@ -1,3 +1,8 @@
+Sun Mar 21 09:51:45 GMT 2004 (njh)
+----------------------------------
+  * libclamav:	Faster scanning for non MIME messages, only scan the message
+  	once for binhex, uuencode, bounces etc.
+
 Sat Mar 20 19:37:11 GMT 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Removed the duplicated code from bounce checks

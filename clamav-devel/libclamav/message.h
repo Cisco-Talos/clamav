@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: message.h,v $
+ * Revision 1.6  2004/03/21 09:41:27  nigelhorne
+ * Faster scanning for non MIME messages
+ *
  * Revision 1.5  2004/01/28 10:15:24  nigelhorne
  * Added support to scan some bounce messages
  *
@@ -35,6 +38,14 @@ typedef struct message {
 	char	**mimeArguments;
 	char	*mimeDispositionType;	/* probably attachment */
 	text	*body_first, *body_last;
+	/*
+	 * Markers for the start of various non MIME messages that could
+	 * be included within this message
+	 */
+	text	*bounce;	/* start of a bounced message */
+	text	*binhex;	/* start of a binhex message */
+	text	*uuencode;	/* start of a uuencoded message */
+	text	*encoding;	/* is the non MIME message encoded? */
 } message;
 
 message	*messageCreate(void);
@@ -59,5 +70,6 @@ text	*messageToText(const message *m);
 const	text	*uuencodeBegin(const message *m);
 const	text	*binhexBegin(const message *m);
 const	text	*bounceBegin(const message *m);
+int	messageIsAllText(const message *m);
 
 #endif	/*_MESSAGE_H*/
