@@ -1,3 +1,10 @@
+Mon Sep 13 14:17:01 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	return with CL_EFORMAT if mail can't be parsed
+    clamav-milter:	Updated SESSION code. Not enabled by default - don't
+				use in a production environment, but testing
+				feedback would be welcome
+
 Mon Sep 13 11:23:21 BST 2004 (trog)
 -----------------------------------
   * libclamav: re-write HTML code:

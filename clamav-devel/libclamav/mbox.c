@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.116  2004/09/13 13:16:28  nigelhorne
+ * Return CL_EFORMAT on bad format
+ *
  * Revision 1.115  2004/09/06 11:02:08  nigelhorne
  * Normalise HTML before scanning for URLs to download
  *
@@ -333,7 +336,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.115 2004/09/06 11:02:08 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.116 2004/09/13 13:16:28 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -417,6 +420,8 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 			 */
 
 #ifdef	FOLLOWURLS
+
+#include "htmlnorm.h"
 
 #define	MAX_URLS	5	/*
 				 * Maximum number of URLs scanned in a message
@@ -716,10 +721,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		 */
 		if(messageGetBody(body))
 			if(!parseEmailBody(body, NULL, dir, rfc821, subtype, options))
-				/*
-				 * There is no mailformed e-mail return code
-				 */
-				retcode = -1;
+				retcode = CL_EFORMAT;
 
 		/*
 		 * Tidy up and quit
@@ -1707,7 +1709,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				fileblobSetFilename(fb, dir, "bounce");
 				fb = textToFileblob(t_line, fb);
 				fileblobDestroy(fb);
-			}
+			} else
+				cli_dbgmsg("Not found a bounce message\n");
 		} else {
 			bool saveIt;
 
@@ -2140,6 +2143,7 @@ checkURLs(message *m, const char *dir)
 		tableDestroy(t);
 		return;
 	}
+	/* TODO: Do we need to call remove_html_comments? */
 
 	/*
 	 * cli_memstr(ptr, len, "<a href=", 8)
