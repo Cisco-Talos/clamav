@@ -615,6 +615,8 @@ Changes
 			ensure that all threads are sent signals
 		Support the temporary and quarantine directories being on
 			different filesystems
+0.80cc	13/12/04:	Fix crash on FreeBSD if DNS has been incorrectly set up
+		Mutex the version strings
 
 INTERNATIONALISATION
 
