@@ -1,3 +1,7 @@
+Wed May 12 15:25:47 BST 2004 (trog)
+-----------------------------------
+  * libclamav/vba_extract.c: fix error path bug (spotted by Tomasz Klim)
+
 Wed May 12 12:20:50 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	More bounce false positives removed

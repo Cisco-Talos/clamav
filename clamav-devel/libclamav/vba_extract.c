@@ -1005,27 +1005,19 @@ static macro_extnames_t *wm_read_macro_extnames(int fd)
 	offset_end += size;
 	while (lseek(fd, 0, SEEK_CUR) < offset_end) {
 		macro_extnames->count++;
-		if (macro_extnames->count > 0) {
-			macro_extnames->macro_extname = (macro_extname_t *)
-				cli_realloc(macro_extnames->macro_extname,
-					sizeof(macro_extname_t) * macro_extnames->count);
-			if (macro_extnames->macro_extname == NULL) {
-				free(macro_extnames);
-				return NULL;
-			}
-		} else {
-			macro_extnames->macro_extname =
-				(macro_extname_t *) cli_malloc(sizeof(macro_extname_t));
-			if (macro_extnames->macro_extname == NULL) {
-				free(macro_extnames);
-				return NULL;
-			}
+		macro_extnames->macro_extname = (macro_extname_t *)
+			cli_realloc(macro_extnames->macro_extname,
+				sizeof(macro_extname_t) * macro_extnames->count);
+		if (macro_extnames->macro_extname == NULL) {
+			cli_dbgmsg("read macro_extnames failed\n");
+			goto abort;;
 		}
+
 		macro_extname = &macro_extnames->macro_extname[macro_extnames->count-1];
 		if (is_unicode) {
 			if (cli_readn(fd, &macro_extname->length, 1) != 1) {
 				cli_dbgmsg("read macro_extnames failed\n");
-				return NULL;
+				goto abort;
 			}
 			lseek(fd, 1, SEEK_CUR);
 			if (macro_extname->length > 0) {
@@ -1054,12 +1046,12 @@ static macro_extnames_t *wm_read_macro_extnames(int fd)
 			if (macro_extname->length > 0) {
 			    macro_extname->extname = (char *) cli_malloc(macro_extname->length+1);
 			    if (!macro_extname->extname) {
-				macro_extnames->count--;
 				goto abort;
 			    }
 			    if (cli_readn(fd, macro_extname->extname, macro_extname->length) != 
 						macro_extname->length) {
 				cli_dbgmsg("read macro_extnames failed\n");
+				free(macro_extname->extname);
 				goto abort;
 			    }
 			    macro_extname->extname[macro_extname->length] = '\0';
@@ -1079,10 +1071,10 @@ static macro_extnames_t *wm_read_macro_extnames(int fd)
 	
 abort:
 	if (macro_extnames->macro_extname != NULL) {
-		for (i=0 ; i < macro_extnames->count ; i++) {
+		for (i=0 ; i < macro_extnames->count-1 ; i++) {
 			free(macro_extnames->macro_extname[i].extname);
 		}
-		free(macro_extname);
+		free(macro_extnames->macro_extname);
 	}
 	free(macro_extnames);
 	return NULL;
