@@ -1,3 +1,8 @@
+Mon Feb  2 13:46:51 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter: Include the ID of the message when warnings are sent to
+  	postmaster-only
+
 Mon Feb  2 12:43:55 GMT 2004 (trog)
 -----------------------------------
   * libclamav: ole2_extract.c: Add checks for compiler packed struct
