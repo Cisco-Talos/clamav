@@ -1,3 +1,8 @@
+Mon Aug 30 12:36:49 BST 2004 (njh)
+----------------------------------
+  * libclamav/blob.c:	Fix compilation errors on AIX and OSF reported by
+				Fajar A. Nugraha <fajar@telkom.co.id>
+
 Sat Aug 28 20:25:44 CEST 2004 (tk)
 ----------------------------------
   * libclamav/filetypes.c: Improve e-mail detection (thanks to Andy Igoshin
