@@ -219,6 +219,11 @@ static int vba_read_project_strings(int fd, int is_mac)
 				continue;
 			}
 			buff = (unsigned char *) cli_malloc(10);
+			if (!buff) {
+				free(name);
+				close(fd);
+				return FALSE;
+			}
 			if (cli_readn(fd, buff, 10) != 10) {
 				cli_errmsg("failed to read blob\n");
 				free(buff);
@@ -268,7 +273,10 @@ vba_project_t *vba56_dir_read(const char *dir)
 
 	cli_dbgmsg("in vba56_dir_read()\n");
 
-	fullname = (char *) cli_malloc(strlen(dir) + 15);
+	fullname = (char *) cli_malloc(strlen(dir) + 14);
+	if (!fullname) {
+		return NULL;
+	}
 	sprintf(fullname, "%s/_VBA_PROJECT", dir);
         fd = open(fullname, O_RDONLY);
 
@@ -424,10 +432,26 @@ vba_project_t *vba56_dir_read(const char *dir)
 	cli_dbgmsg("\nVBA Record count: %d\n", record_count);
 	
 	vba_project = (vba_project_t *) cli_malloc(sizeof(struct vba_project_tag));
+	if (!vba_project) {
+		close(fd);
+		return NULL;
+	}
 	vba_project->name = (char **) cli_malloc(sizeof(char *) * record_count);
+	if (!vba_project->name) {
+		free(vba_project);
+		close(fd);
+		return NULL;
+	}
 	vba_project->dir = strdup(dir);
 	vba_project->offset = (uint32_t *) cli_malloc (sizeof(uint32_t) *
 					record_count);
+	if (!vba_project->offset) {
+		free(vba_project->dir);
+		free(vba_project->name);
+		free(vba_project);
+		close(fd);
+		return NULL;
+	}
 	vba_project->count = record_count;
 	for (i=0 ; i < record_count ; i++) {
 		if (cli_readn(fd, &length, 2) != 2) {
@@ -524,10 +548,16 @@ static void byte_array_append(byte_array_t *array, unsigned char *src, unsigned 
 {
 	if (array->length == 0) {
 		array->data = (unsigned char *) cli_malloc(len);
+		if (!array->data) {
+			return;
+		}
 		array->length = len;
 		memcpy(array->data, src, len);
 	} else {
 		array->data = realloc(array->data, array->length+len);
+		if (!array->data) {
+			return;
+		}	
 		memcpy(array->data+array->length, src, len);
 		array->length += len;
 	}
@@ -1187,7 +1217,10 @@ vba_project_t *wm_dir_read(const char *dir)
 	vba_project_t *vba_project=NULL;
 	char *fullname;
 	
-	fullname = (char *) cli_malloc(strlen(dir) + 15);
+	fullname = (char *) cli_malloc(strlen(dir) + 14);
+	if (!fullname) {
+		return NULL;
+	}
 	sprintf(fullname, "%s/WordDocument", dir);
 	fd = open(fullname, O_RDONLY);
 	free(fullname);

@@ -1,3 +1,7 @@
+Thu May 20 11:23:23 BST 2004 (trog)
+-----------------------------------
+  * libclamav ole2_extract.c,vba_extract.c: more malloc checks
+
 Wed May 19 11:02:53 BST 2004 (njh)
 ---------------------------------
   * libclamav/message.c:	Assume attachments which don't declare how
