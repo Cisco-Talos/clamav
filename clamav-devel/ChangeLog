@@ -1,3 +1,8 @@
+Fri Aug 13 10:28:40 BST 2004 (njh)
+----------------------------------
+  * libclamav/message.c:	Fix compilation error with Sun's SUNWspro
+					compiler
+
 Thu Aug 12 16:10:31 CEST 2004 (tk)
 ----------------------------------
   * etc/freshclam.conf: add example of PidFile directive (thanks to Youza
