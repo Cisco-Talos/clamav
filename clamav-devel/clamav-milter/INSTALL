@@ -202,6 +202,8 @@ Changes
 		idea by Andy Fiddaman <af@jeamland.org>
 0.66d	10/1/04	Added OpenBSD instructions
 		Added --signature-file option
+0.66e	12/1/04	FixStaleSocket: no longer complain if asked to remove
+		an old socket when there was none to remove
 
 BUG REPORTS
 
