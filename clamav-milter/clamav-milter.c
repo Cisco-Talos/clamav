@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.120  2004/08/25 11:44:56  nigelhorne
+ * Tidy
+ *
  * Revision 1.119  2004/08/13 10:21:38  nigelhorne
  * Single thread through tcp_wrappers
  *
@@ -368,9 +371,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.119 2004/08/13 10:21:38 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.120 2004/08/25 11:44:56 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.75k"
+#define	CM_VERSION	"0.75l"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -445,7 +448,6 @@ typedef	unsigned short	in_port_t;
  *	to get messages on the system console, see syslog.conf(5), also you
  *	can use wall(1) in the VirusEvent entry in clamav.conf
  * TODO: build with libclamav.so rather than libclamav.a
- * TODO: bounce message should optionally be read from a file
  * TODO: Support LogTime and Logfile from the conf file
  * TODO: Warn if TCPAddr doesn't allow connection from us
  * TODO: Decide action (bounce, discard, reject etc.) based on the virus
@@ -651,7 +653,7 @@ static	const	char	*from = "MAILER-DAEMON";
 /*
  * NULL terminated whitelist of target ("to") addresses that we do NOT scan
  * TODO: read in from a file
- * TODO: add white list of target e-mail addresses that we do NOT scan
+ * TODO: add white list of source e-mail addresses that we do NOT scan
  * TODO: items in the list should be regular expressions
  */
 static	const	char	*ignoredEmailAddresses[] = {
@@ -1006,7 +1008,7 @@ main(int argc, char **argv)
 				cli_dbgmsg("Running as user %s (UID %d, GID %d)\n",
 					cpt->strarg, user->pw_uid, user->pw_gid);
 		} else
-			fprintf(stderr, "%s: running as root is not recommended\n", argv[0]);
+			fprintf(stderr, "%s: running as root is not recommended (check \"User\" in clamav.conf)\n", argv[0]);
 	}
 	if(advisory && quarantine) {
 		fprintf(stderr, "%s: Advisory mode doesn't work with quarantine mode\n", argv[0]);
@@ -1393,7 +1395,7 @@ pingServer(int serverNumber)
 	 *
 	 * TODO: When connecting to more than one server, give a warning
 	 *	if they're running different versions, or if the virus DBs
-	 *	are out of date
+	 *	are out of date (say more than a month old)
 	 */
 	snprintf(clamav_version, sizeof(clamav_version),
 		"%s, clamav-milter version %s",
@@ -1696,10 +1698,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 			if(dont_wait) {
 				pthread_mutex_unlock(&n_children_mutex);
-				/*
-				 * TODO: use smfi_setreply to send a useful
-				 * message to the remote SMTP client
-				 */
+				smfi_setreply(ctx, "451", "4.7.1", "AV system temporarily overloaded - please try later");
 				return SMFIS_TEMPFAIL;
 			}
 			/*
@@ -2132,10 +2131,6 @@ clamfi_eom(SMFICTX *ctx)
 		if(!nflag)
 			smfi_addheader(ctx, "X-Virus-Status", "Clean");
 
-		/*
-		 * TODO: if privdata->from is NULL it's probably SPAM, and
-		 * me might consider bouncing it...
-		 */
 		if(use_syslog && logClean)
 			/* Include the sendmail queue ID in the log */
 			syslog(LOG_NOTICE, "%s: clean message from %s",
@@ -2237,7 +2232,8 @@ clamfi_eom(SMFICTX *ctx)
 			 * messages at once. It'll still be scanned, but
 			 * not at the same time as the incoming message
 			 *
-			 * FIXME: there is a race condition here. If the
+			 * FIXME: there is a race condition here when sendmail
+			 * and clamav-milter run on the same machine. If the
 			 * system is very overloaded this sendmail can
 			 * take a long time to start - and may even fail
 			 * is the LA is > REFUSE_LA. In all the time we're
@@ -2254,10 +2250,6 @@ clamfi_eom(SMFICTX *ctx)
 			sendmail = popen(cmd, "w");
 
 			if(sendmail) {
-				/*
-				 * TODO: Make this e-mail message customisable
-				 * perhaps by means of a template
-				 */
 				fprintf(sendmail, "From: %s\n", from);
 				if(bflag) {
 					/*
@@ -2815,6 +2807,8 @@ static int
 connect2clamd(struct privdata *privdata)
 {
 	char **to;
+	char *msg;
+	int length;
 
 	assert(privdata != NULL);
 	assert(privdata->dataSocket == -1);
@@ -3014,17 +3008,39 @@ connect2clamd(struct privdata *privdata)
 	}
 
 	/*
-	 * TODO:
-	 *	Put from and to data into a buffer and call clamfi_send once
-	 * to save bandwidth when using TCP/IP to connect with a remote clamd
+	 * Combine the To and From into one clamfi_send to save bandwidth
+	 * when sending using TCP/IP to connect to a remote clamd, by band
+	 * width here I mean number of packets
 	 */
-	clamfi_send(privdata, 0,
-		"Received: by clamav-milter\nFrom: %s\n",
-		privdata->from);
-
+	length = strlen(privdata->from) + 34;
 	for(to = privdata->to; *to; to++)
-		if(clamfi_send(privdata, 0, "To: %s\n", *to) <= 0)
+		length += strlen(*to) + 4;
+
+	msg = cli_malloc(length + 1);
+
+	if(msg) {
+		sprintf(msg, "Received: by clamav-milter\nFrom: %s\n",
+			privdata->from);
+
+		for(to = privdata->to; *to; to++) {
+			char *eom = strchr(msg, '\0');
+
+			sprintf(eom, "To: %s\n", *to);
+		}
+		if(clamfi_send(privdata, length, msg) != length) {
+			free(msg);
 			return 0;
+		}
+		free(msg);
+	} else {
+		clamfi_send(privdata, 0,
+			"Received: by clamav-milter\nFrom: %s\n",
+			privdata->from);
+
+		for(to = privdata->to; *to; to++)
+			if(clamfi_send(privdata, 0, "To: %s\n", *to) <= 0)
+				return 0;
+	}
 
 	cli_dbgmsg("connect2clamd OK\n");
 
@@ -3162,13 +3178,11 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 
 /*
  * Keep the infected file in quarantine, return success (0) or failure
- *
- * FIXME: handle '/' etc. in virus name, see blobSetFilename
  */
 static int
 qfile(struct privdata *privdata, const char *virusname)
 {
-	char *newname;
+	char *newname, *ptr;
 
 	assert(privdata != NULL);
 
@@ -3181,6 +3195,22 @@ qfile(struct privdata *privdata, const char *virusname)
 		return -1;
 
 	sprintf(newname, "%s.%s", privdata->filename, virusname);
+
+	/*
+	 * Strip out funnies that may be in the name of the virus, such as '/'
+	 * that would cause the quarantine to fail to save since the name
+	 * of the virus is included in the filename
+	 */
+	for(ptr = newname; *ptr; ptr++) {
+#if	defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32)
+		if(strchr("/*?<>|\"+=,;: ", *ptr))
+#elif   defined(C_DARWIN)
+		if((*ptr == '/') || (*ptr >= '\200'))
+#else
+		if(*ptr == '/')
+#endif
+			*ptr = '_';
+	}
 	if(link(privdata->filename, newname) < 0) {
 		perror(newname);
 		if(use_syslog)
