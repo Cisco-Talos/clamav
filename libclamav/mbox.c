@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.89  2004/07/26 09:12:12  nigelhorne
+ * Fix crash when debugging on Solaris
+ *
  * Revision 1.88  2004/07/20 14:35:29  nigelhorne
  * Some MYDOOM.I were getting through
  *
@@ -252,7 +255,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.88 2004/07/20 14:35:29 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.89 2004/07/26 09:12:12 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1752,10 +1755,10 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 static int
 boundaryStart(const char *line, const char *boundary)
 {
-	cli_dbgmsg("boundaryStart: line = '%s' boundary = '%s'\n", line, boundary);
 	if(line == NULL)
 		return 0;	/* empty line */
 
+	cli_dbgmsg("boundaryStart: line = '%s' boundary = '%s'\n", line, boundary);
 	if(*line++ != '-')
 		return 0;
 
