@@ -1,3 +1,8 @@
+Tue Mar  1 02:16:15 CET 2005 (tk)
+---------------------------------
+  * clamscan: respect --exclude/include when entering directories (requested
+	      by Dean Plant <dean.plant*roke.co.uk>)
+
 Tue Mar  1 01:51:53 CET 2005 (tk)
 ---------------------------------
   * clamscan: add "Engine version" to summary (requested by Robert

@@ -40,6 +40,10 @@
 #include <signal.h>
 #include <target.h>
 
+#ifdef HAVE_REGEX_H
+#include <regex.h>
+#endif
+
 #include "output.h"
 #include "others.h"
 
@@ -122,4 +126,27 @@ int isnumb(const char *str)
 	    return 0;
 
     return 1;
+}
+
+int match_regex(const char *filename, const char *pattern)
+{
+#ifdef HAVE_REGEX_H
+	regex_t reg;
+	int match, flags;
+#if !defined(C_CYGWIN) && !defined(C_OS2)
+	flags = 0;
+#else
+	flags = REG_ICASE; /* case insensitive on Windows */
+#endif	
+	if(regcomp(&reg, pattern, flags) != 0) {
+	    mprintf("!%s: Could not parse regular expression %s.\n", filename, pattern);
+	    logg("!%s: Could not parse regular expression %s.\n", filename, pattern);
+		return 2;
+	}
+	match = (regexec(&reg, filename, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
+	regfree(&reg);
+	return match;
+#else /* HAVE_REGEX_H */
+	return strstr(filename, pattern) ? 1 : 0;
+#endif
 }
