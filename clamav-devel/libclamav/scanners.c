@@ -110,6 +110,7 @@ cli_file_t cli_filetype(const char *buf, size_t buflen)
 }
 
 static int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev);
+static int cli_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev);
 
 static int cli_scandesc(int desc, const char **virname, long int *scanned, const struct 
 cl_node *root)
@@ -720,7 +721,7 @@ static int cli_scandir(char *dirname, const char **virname, long int *scanned, c
 			    cli_scandir(fname, virname, scanned, root, limits, options, reclev);
 			else
 			    if(S_ISREG(statbuf.st_mode))
-				if(cl_scanfile(fname, virname, scanned, root, limits, options) == CL_VIRUS) {
+				if(cli_scanfile(fname, virname, scanned, root, limits, options, reclev) == CL_VIRUS) {
 				    free(fname);
 				    closedir(dd);
 				    return CL_VIRUS;
@@ -747,7 +748,7 @@ static int cli_scanmail(int desc, const char **virname, long int *scanned, const
 	int ret;
 
 
-    cli_dbgmsg("Starting cli_scanmail()\n");
+    cli_dbgmsg("Starting cli_scanmail(), reclev %d\n", *reclev);
 
     if(*reclev > 5) /* FIXME: a temporary workaround */
 	return CL_CLEAN;
@@ -881,6 +882,21 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
 	int reclev = 0;
 
     return cli_magic_scandesc(desc, virname, scanned, root, limits, options, &reclev);
+}
+
+int cli_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+{
+	int fd, ret;
+
+    /* internal version of cl_scanfile with reclev preserved */
+
+    if((fd = open(filename, O_RDONLY)) == -1)
+	return CL_EOPEN;
+
+    ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, reclev);
+
+    close(fd);
+    return ret;
 }
 
 int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options)

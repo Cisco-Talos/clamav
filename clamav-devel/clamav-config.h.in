@@ -81,6 +81,9 @@
 /* have gmp installed */
 #undef HAVE_GMP
 
+/* Define to 1 if you have the `inet_ntop' function. */
+#undef HAVE_INET_NTOP
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 

@@ -6,12 +6,13 @@ Project leader.
 
 Nigel Horne <njh*clamav.net>
 home page : http://bandsman.co.uk
-Author of clamav-milter and the whole mbox code.
+Author of clamav-milter and the mbox code.
 
-Luca 'NERvOus' Gibelli <nervous*clamav.net>
+Luca 'NERvOus' Gibelli <luca*clamav.net>
 home page : http://www.nervous.it
+gpg key	  : http://www.clamav.net/gpg/nervoso.gpg
 GPG fingerprint = C782 121E 8C3A 90E3 7A87  D802 6277 8FF4 5EFC 5582
-System administrator (WWW, mailing lists, mirror mechanism, virus
+System administrator (WWW, mailing lists, mirror coordinator, virus
 submission mechanism)
 
 Trog <trog*clamav.net>
@@ -29,7 +30,7 @@ Database developers:
 aCaB <acab*clamav.net>
 
 Christoph Cordes <cc*clamav.net>
-gpg key   :
+gpg key   : http://www.clamav.net/gpg/ccordes.gpg
 GPG fingerprint = 4C6F F6A5 6034 04B1 1006  A7E1 1F1B 78CE C6DA 0F00
 
 Diego D'Ambra <diego*clamav.net>
@@ -61,6 +62,7 @@ Andrey Cherezov <andrey*cherezov.koenig.su>
 Tom G. Christensen <tgc*statsbiblioteket.dk>
 Damien Curtain <damien*pagefault.org>
 Michael Dankov <misha*btrc.ru>
+Maxim Dounin <mdounin*rambler-co.ru>
 Alejandro Dubrovsky <s328940*student.uq.edu.au>
 Magnus Ekdahl <magnus*debian.org>
 Jason Englander <jason*englanders.cc>
