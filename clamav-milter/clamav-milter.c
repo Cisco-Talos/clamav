@@ -38,6 +38,11 @@
  *	mkdir /var/run/clamav
  *	chown clamav /var/run/clamav	(if you use User clamav in clamav.conf)
  *	chmod 700 /var/run/clamav
+ *
+ * The above example shows clamav-milter, clamd and sendmail all on the
+ * same machine, however using TCP they may reside on different machines,
+ * indeed clamav-milter is capable of talking to multiple clamds for redundancy
+ * and load balancing.
  * 5) You may find INPUT_MAIL_FILTERS is not needed on your machine, however it
  * is recommended by the Sendmail documentation and I suggest going along
  * with that.
@@ -47,6 +52,14 @@
  *	CLAMAV_FLAGS="--max-children=2 local:/var/run/clamav/clmilter.sock"
  * or if clamd is on a different machine
  *	CLAMAV_FLAGS="--max-children=2 --server=192.168.1.9 local:/var/run/clamav/clmilter.sock"
+ *
+ * If you want clamav-milter to listen on TCP for communication with sendmail,
+ * for example if they are on different machines use inet:<port>.
+ * On machine A (running sendmail) you would have in sendmail.mc:
+ *	INPUT_MAIL_FILTER(`clamav', `S=inet:3311@machineb, F=, T=S:4m;R:4m')dnl
+ * On machine B (running clamav-milter) you would start up clamav-milter thus:
+ *	clamav-milter inet:3311
+ *
  * 8) You should have received a script to put into /etc/init.d with this
  * software.
  * 9) run 'chown clamav /usr/local/sbin/clamav-milter; chmod 4700 /usr/local/sbin/clamav-milter
@@ -261,10 +274,14 @@
  *			checkClamd() now stashes pid in syslog
  *			Ensure installation instructions tally with man page
  *			and put sockets into subdirectory for security
+ *			clamfi_close debug, change assert to debug message
+ *			Better way to force TCPwrappers only with TCP/IP
  *			
- *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.58  2004/03/03 09:14:55  nigelhorne
+ * Change way check for TCPwrappers on TCP/IP
+ *
  * Revision 1.57  2004/02/27 15:27:11  nigelhorne
  * call checkClamd on start
  *
@@ -421,7 +438,7 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.57 2004/02/27 15:27:11 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.58 2004/03/03 09:14:55 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.67j"
 
@@ -1419,8 +1436,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	/*
 	 * Support /etc/hosts.allow and /etc/hosts.deny
 	 */
-	if((strncasecmp(port, "unix:", 5) != 0) &&
-	   (strncasecmp(port, "local:", 6) != 0)) {
+	if(strncasecmp(port, "inet:", 5) == 0) {
 		const char *hostmail;
 		const struct hostent *hp = NULL;
 
@@ -1655,7 +1671,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 			server.sin_addr.s_addr = serverIPs[freeServer];
 
-			if((privdata->cmdSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) { 
+			if((privdata->cmdSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 				perror("socket");
 				clamfi_free(privdata);
 				return cl_error;
@@ -1753,7 +1769,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 	privdata->from = strdup(argv[0]);
 	privdata->to = NULL;
 
-	if (hflag) 
+	if (hflag)
         	privdata->headers = header_list_new();
 	else
 		privdata->headers = NULL;
@@ -2218,7 +2234,12 @@ clamfi_close(SMFICTX *ctx)
 	struct privdata *privdata = (struct privdata *)smfi_getpriv(ctx);
 
 	cli_dbgmsg("clamfi_close");
-	assert(privdata == NULL);
+	if(privdata != NULL) {
+		if(use_syslog)
+			syslog(LOG_DEBUG, "clamfi_close, privdata != NULL");
+		else
+			puts("clamfi_close, privdata != NULL");
+	}
 #endif
 
 	if(logVerbose)
@@ -2461,7 +2482,7 @@ updateSigFile(void)
 }
 
 static header_list_t
-header_list_new(void) 
+header_list_new(void)
 {
 	header_list_t ret;
 
