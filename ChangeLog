@@ -1,3 +1,7 @@
+Fri Nov 12 15:31:15 GMT 2004 (trog)
+-----------------------------------
+  * libclamav/vba_extract.c: fix possible infinite loop
+
 Fri Nov 12 09:44:23 GMT 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:		Draft of RFC1341 support is now on by default.

@@ -827,6 +827,12 @@ static char *ppt_stream_iter(int fd)
 		}
 		ppt_print_atom_header(&atom_header);
 
+		if (atom_header.length <= 0) {
+			cli_rmdirs(out_dir);
+			free(out_dir);
+			return NULL;
+		}
+
 		if (atom_header.type == 0x1011) {
 			if (cli_readn(fd, &ole_id, 4) != 4) {
 				cli_dbgmsg("read ole_id failed\n");
