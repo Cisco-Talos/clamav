@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.224 2005/03/06 21:13:16 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.225 2005/03/07 11:23:12 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -798,8 +798,41 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 				cli_dbgmsg("Finished processing message\n");
 			} else
 				lastLineWasEmpty = (bool)(buffer[0] == '\0');
-			if(messageAddStr(m, buffer) < 0)
-				break;
+
+			if((strncasecmp(buffer, "begin ", 6) == 0) &&
+			    isdigit(buffer[6]) &&
+			    isdigit(buffer[7]) &&
+			    isdigit(buffer[8]) &&
+			    buffer[9] == ' ') {
+			    	/*
+				 * Fast track visa to uudecode.
+				 * TODO: binhex, yenc
+				 */
+				fileblob *fb = fileblobCreate();
+				char *filename = cli_strtok(buffer, 2, " ");
+
+				fileblobSetFilename(fb, dir, filename);
+				cli_dbgmsg("Fast track uuencode %s\n", filename);
+				free(filename);
+
+				while(fgets(buffer, sizeof(buffer) - 1, fd) != NULL) {
+					unsigned char data[1024];
+					const unsigned char *uptr;
+
+					cli_chomp(buffer);
+					if(strcasecmp(buffer, "end") == 0)
+						break;
+
+					uptr = decodeLine(m, UUENCODE, buffer, data, sizeof(data));
+					if(uptr == NULL)
+						break;
+					fileblobAddData(fb, data, (size_t)(uptr - data));
+				}
+
+				fileblobDestroy(fb);
+			} else
+				if(messageAddStr(m, buffer) < 0)
+					break;
 		} while(fgets(buffer, sizeof(buffer) - 1, fd) != NULL);
 
 		fclose(fd);

@@ -1,3 +1,11 @@
+Mon Mar  7 11:24:43 GMT 2005 (njh)
+----------------------------------
+  * libclamav:		Added fast track visa system which reduces memory
+				requirements for scanning some messages and
+				also offers some improvement in scan times.
+				Currently only implemented for uuencoded
+				emails
+
 Mon Mar  7 01:28:44 CET 2005 (tk)
 ---------------------------------
   * libclamav, clamd: add reference counter to cl_node and improve database
