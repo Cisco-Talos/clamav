@@ -46,6 +46,7 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 	    {"PidFile", OPT_STR},
 	    {"MaxFileSize", OPT_COMPSIZE},
 	    {"ScanMail", OPT_NOARG},
+	    {"ScanOLE2", OPT_NOARG},
 	    {"ScanArchive", OPT_NOARG},
 	    {"ScanRAR", OPT_NOARG},
 	    {"ArchiveMaxFileSize", OPT_COMPSIZE},

@@ -39,6 +39,11 @@
 pthread_t clamukoid;
 #endif
 
+#ifdef TARGET_OS_DARWIN5_5
+#define	pthread_sigmask(A, B, C)    sigprocmask((A), (B), (C))
+#define	pthread_kill(A, B)	{ }
+#endif
+
 
 void *threadscanner(void *arg)
 {
@@ -398,9 +403,10 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 
     ths = (struct thrsession *) mcalloc(threads, sizeof(struct thrsession));
  
+    /*
     for(i = 0; i < threads; i++)
 	pthread_mutex_init(&ths[i].mutex, NULL);
-
+    */
 
     if(cfgopt(copt, "ScanArchive") || cfgopt(copt, "ClamukoScanArchive")) {
 
@@ -473,6 +479,13 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	options |= CL_MAIL;
     } else {
 	logg("Mail files support disabled.\n");
+    }
+
+    if(cfgopt(copt, "ScanOLE2")) { 
+	logg("OLE2 support enabled.\n");
+	options |= CL_OLE2;
+    } else {
+	logg("OLE2 support disabled.\n");
     }
 
     /* initialize important global variables */

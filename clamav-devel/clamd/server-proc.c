@@ -191,6 +191,13 @@ int acceptloop_proc(int socketd, struct cl_node *root, const struct cfgstruct *c
 	logg("Mail support disabled.\n");
     }
 
+    if(cfgopt(copt, "ScanOLE2")) { 
+	logg("OLE2 support enabled.\n");
+	options |= CL_OLE2;
+    } else {
+	logg("OLE2 support disabled.\n");
+    }
+
     /* set up signal handling */
 
     sigfillset(&sigset);
