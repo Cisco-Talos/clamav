@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.105  2004/07/21 17:46:06  nigelhorne
+ * Added note about needing MILTER support in sendmail
+ *
  * Revision 1.104  2004/07/14 10:17:05  nigelhorne
  * Added dont-wait and advisory options
  *
@@ -323,9 +326,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.104 2004/07/14 10:17:05 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.105 2004/07/21 17:46:06 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.74c"
+#define	CM_VERSION	"0.74d"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1449,6 +1452,11 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 #endif
 	char *remoteIP;
 
+	if(ctx == NULL) {
+		if(use_syslog)
+			syslog(LOG_ERR, "clamfi_connect: ctx is null");
+		return cl_error;
+	}
 	if(hostname == NULL) {
 		if(use_syslog)
 			syslog(LOG_ERR, "clamfi_connect: hostname is null");
@@ -1458,7 +1466,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		/*
 		 * According to the sendmail API hostaddr is NULL if
 		 * "the type is not supported in the current version". What
-		 * the documentation doesn't say is the type of what?
+		 * the documentation doesn't say is the type of what.
 		 *
 		 * Possibly the input is not a TCP/IP socket e.g. stdin?
 		 */
@@ -1520,7 +1528,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 			return cl_error;
 		}
 #else
-		strncpy(ip, (char *)inet_ntoa(*(struct in_addr *)hp->h_addr), sizeof(ip) - 1);
+		strncpy(ip, (char *)inet_ntoa(*(struct in_addr *)hp->h_addr), sizeof(ip));
 #endif
 
 		/*

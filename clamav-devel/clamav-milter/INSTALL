@@ -64,6 +64,17 @@ INSTALLATION
 
 Install into /usr/local/sbin/clamav-milter.
 
+Ensure that your sendmail supports milters by running
+	/usr/lib/sendmail -d0 < /dev/null | fgrep MILTER
+or
+	/usr/sbin/sendmail -d0 < /dev/null | fgrep MILTER
+
+You should see something like:
+	MATCHGECOS MILTER MIME7TO8 MIME8TO7 NAMED_BIND NETINET NETINET6
+It doesn't matter exactly what you see, as long as the word MILTER is printed.
+
+If you see no output you MUST upgrade your sendmail.
+
 See http://www.nmt.edu/~wcolburn/sendmail-8.12.5/libmilter/docs/sample.html
 
 Installations for RedHat Linux and it's derivatives such as YellowDog:
@@ -423,6 +434,7 @@ Changes
 0.74b	8/7/04	Validate the arguments to inet_ntop
 0.74c	14/7/04	Added --dont-wait
 		Added --advisory
+0.74d	18/7/04	Added sanity check in clamfi_connect
 
 BUG REPORTS
 
