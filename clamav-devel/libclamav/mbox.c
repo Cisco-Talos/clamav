@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.99  2004/08/11 15:28:39  nigelhorne
+ * No longer needs curl.h
+ *
  * Revision 1.98  2004/08/11 14:46:22  nigelhorne
  * Better handling of false positive emails
  *
@@ -282,7 +285,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.98 2004/08/11 14:46:22 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.99 2004/08/11 15:28:39 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -312,8 +315,6 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.98 2004/08/11 14:46:22 nigelhorne E
 #include <sys/types.h>
 #include <sys/param.h>
 #include <clamav.h>
-
-#include <curl/curl.h>
 
 #ifdef	CL_THREAD_SAFE
 #include <pthread.h>
@@ -360,6 +361,10 @@ static	void	print_trace(int use_syslog);
 #define	SAVE_TO_DISC	/* multipart/message are saved in a temporary file */
 /*#define	CHECKURLS	/* If an email contains URLs, check them */
 /*#define	LIBCURL	/* Needs support from "configure" */
+
+#ifdef	LIBCURL
+#include <curl/curl.h>
+#endif
 
 typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 
