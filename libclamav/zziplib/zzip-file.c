@@ -28,7 +28,9 @@
 #include <ctype.h>
 
 #include <zzipformat.h>
-//#include "__debug.h"
+/*
+#include "__debug.h"
+*/
 
 #if 0
 # if defined ZZIP_HAVE_IO_H
@@ -175,8 +177,10 @@ zzip_file_open(ZZIP_DIR * dir, zzip_char_t* name, int o_mode)
             if (n)  hdr_name = n + 1;
         }
 
-        //HINT4("name='%s', compr=%d, size=%d\n", 
-	  //    hdr->d_name, hdr->d_compr, hdr->d_usize);
+        /*
+        HINT4("name='%s', compr=%d, size=%d\n", 
+	      hdr->d_name, hdr->d_compr, hdr->d_usize);
+	*/
 
         if (!cmp(hdr_name, name))
         {

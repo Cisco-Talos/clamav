@@ -64,7 +64,9 @@ int tcpserver(const struct optstruct *opt, const struct cfgstruct *copt, struct 
 
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
 	estr = strerror(errno);
-	//fprintf(stderr, "ERROR: socket() error: %s\n", estr);
+	/*
+	fprintf(stderr, "ERROR: socket() error: %s\n", estr);
+	*/
 	logg("!socket() error: %s\n", estr);
 	exit(1);
     }
@@ -75,7 +77,9 @@ int tcpserver(const struct optstruct *opt, const struct cfgstruct *copt, struct 
 
     if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1) {
 	estr = strerror(errno);
-	//fprintf(stderr, "ERROR: can't bind(): %s\n", estr);
+	/* 
+	fprintf(stderr, "ERROR: can't bind(): %s\n", estr);
+	*/
 	logg("!bind() error: %s\n", estr);
 	exit(1);
     } else {
@@ -94,7 +98,9 @@ int tcpserver(const struct optstruct *opt, const struct cfgstruct *copt, struct 
 
     if(listen(sockfd, backlog) == -1) {
 	estr = strerror(errno);
-	//fprintf(stderr, "ERROR: listen() error: %s\n", estr);
+	/*
+	fprintf(stderr, "ERROR: listen() error: %s\n", estr);
+	*/
 	logg("!listen() error: %s\n", estr);
 	exit(1);
     }

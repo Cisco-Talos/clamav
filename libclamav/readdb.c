@@ -192,7 +192,9 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 		    fclose(fd);
 		    return ret;
 		}
-//		cli_dbgmsg("Added part %d of partial signature (id %d)\n", i, sigid);
+/*
+		cli_dbgmsg("Added part %d of partial signature (id %d)\n", i, sigid);
+*/
 		free(pt2);
 	    }
 

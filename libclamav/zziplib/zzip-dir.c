@@ -16,7 +16,7 @@
 
 #include <zzip.h>                                   /* exported... */
 #include <zzip-file.h>
-#include <stddef.h> /*offsetof*/
+#include <stddef.h> /* offsetof */
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -27,7 +27,9 @@
 #include <stdio.h>
 #endif
 
-//#include "__dirent.h"
+/*
+#include "__dirent.h"
+*/
 
 #ifndef offsetof
 #pragma warning had to DEFINE offsetof as it was not in stddef.h

@@ -302,7 +302,7 @@ int ole2_read_block(int fd, ole2_header_t *hdr, void *buff, int32_t blockno)
 		return FALSE;
 	}
 	
-	// other methods: (blockno+1) * 512 or (blockno * block_size) + 512;
+	/* other methods: (blockno+1) * 512 or (blockno * block_size) + 512; */
 	offset = (blockno << hdr->log2_big_block_size) + 512;	/* 512 is header size */
 	if (lseek(fd, offset, SEEK_SET) != offset) {
 		return FALSE;
@@ -421,7 +421,7 @@ int32_t ole2_get_sbat_data_block(int fd, ole2_header_t *hdr, void *buff, int32_t
 		return FALSE;
 	}
 
-	block_count = sbat_index / 8;			// 8 small blocks per big block
+	block_count = sbat_index / 8;			/* 8 small blocks per big block */
 	current_block = hdr->sbat_root_start;
 	while (block_count > 0) {
 		current_block = ole2_get_next_block_number(fd, hdr, current_block);
@@ -503,7 +503,7 @@ int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char *
 	char *name, *newname;
 
 	if (prop->type != 2) {
-		// Not a file
+		/* Not a file */
 		return TRUE;
 	}
 
@@ -538,13 +538,13 @@ int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char *
 
 	while((current_block >= 0) && (len > 0)) {
 		if (prop->size < hdr->sbat_cutoff) {
-			// Small block file
+			/* Small block file */
 			if (!ole2_get_sbat_data_block(fd, hdr, &buff, current_block)) {
 				cli_dbgmsg("ole2_get_sbat_data_block failed\n");
 				close(ofd);
 				return FALSE;
 			}
-			// buff now contains the block with 8 small blocks in it
+			/* buff now contains the block with 8 small blocks in it */
 			offset = 64 * (current_block % 8);
 			if (writen(ofd, &buff[offset], MIN(len,64)) != MIN(len,64)) {
 				close(ofd);
@@ -554,7 +554,7 @@ int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char *
 			len -= MIN(len,64);
 			current_block = ole2_get_next_sbat_block(fd, hdr, current_block);
 		} else {
-			// Big block file
+			/* Big block file */
 			if (!ole2_read_block(fd, hdr, &buff, current_block)) {
 				close(ofd);
 				return FALSE;

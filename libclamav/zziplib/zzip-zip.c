@@ -28,8 +28,10 @@
 #include <sys/stat.h>
 #endif
 
-//#include "__mmap.h"
-//#include "__debug.h"
+/*
+#include "__mmap.h"
+#include "__debug.h"
+*/
 
 #define __sizeof(X) ((zzip_ssize_t)(sizeof(X)))
 
@@ -94,8 +96,10 @@ _zzip_inline static void __fixup_rootseek(
 	trailer->z_rootseek[1] = offset >> 8 & 0xff;
 	trailer->z_rootseek[2] = offset >> 16 & 0xff;
 	trailer->z_rootseek[3] = offset >> 24 & 0xff;
-	//HINT2("new rootseek=%li", 
-	 //     (long) ZZIP_GET32(trailer->z_rootseek));
+	/*
+	HINT2("new rootseek=%li", 
+	        (long) ZZIP_GET32(trailer->z_rootseek));
+	*/
     }
 }
 #define __correct_rootseek(A,B,C)
@@ -126,8 +130,11 @@ _zzip_inline static void __debug_dir_hdr (struct zzip_dir_hdr* hdr)
      *  (as long as the following assertion holds...) 
      */
 
-    //if (((unsigned)hdr)&3)
-    //{ NOTE1("this machine's malloc(3) returns sth. not u32-aligned"); }
+    /*
+    if (((unsigned)hdr)&3)
+    { NOTE1("this machine's malloc(3) returns sth. not u32-aligned"); }
+    */
+    
     /* we assume that if this machine's malloc has returned a non-aligned 
      * memory block, then it is actually safe to access misaligned data, and 
      * since it does only affect the first hdr it should not even bring about
@@ -167,7 +174,9 @@ __zzip_find_disk_trailer(int fd, zzip_off_t filesize,
 #else
 */
 #define return(val) { e=val; goto cleanup; }
-//#endif
+/*
+#endif
+*/
     register int e;
     
 #ifndef _LOWSTK
@@ -251,8 +260,10 @@ __zzip_find_disk_trailer(int fd, zzip_off_t filesize,
             if (io->read(fd, buf, (zzip_size_t)maplen) < (zzip_ssize_t)maplen)
                 { return(ZZIP_DIR_READ); }
             mapped = buf; /* success */
-	    //HINT5("offs=$%lx len=%li filesize=%li pagesize=%i", 
-		//(long)offset, (long)maplen, (long)filesize, ZZIP_BUFSIZ);
+	    /*
+	    HINT5("offs=$%lx len=%li filesize=%li pagesize=%i", 
+		(long)offset, (long)maplen, (long)filesize, ZZIP_BUFSIZ);
+	    */
         }
 
 	{/* now, check for the trailer-magic, hopefully near the end of file */
@@ -389,9 +400,9 @@ __zzip_parse_root_directory(int fd,
         u_comment = ZZIP_GET16(d->z_comment); 
         u_namlen  = ZZIP_GET16(d->z_namlen); 
 	u_flags   = ZZIP_GET16(d->z_flags);
-        //HINT5("offset=0x%lx, size %ld, dirent *%p, hdr %p\n",
-	  //    offset+u_rootseek, (long)u_rootsize, d, hdr);
-
+        /*HINT5("offset=0x%lx, size %ld, dirent *%p, hdr %p\n",
+	      offset+u_rootseek, (long)u_rootsize, d, hdr);
+	*/
         /* writes over the read buffer, Since the structure where data is
            copied is smaller than the data in buffer this can be done.
            It is important that the order of setting the fields is considered
@@ -424,12 +435,14 @@ __zzip_parse_root_directory(int fd,
         if (offset > (long)u_rootsize)
 	{ /*FAIL2("%i's end beyond root directory", entries);*/ entries--; break;}
 
-        //HINT5("file %d { compr=%d crc32=$%x offset=%d", 
-	  //    entries,  hdr->d_compr, hdr->d_crc32, hdr->d_off);
-        //HINT5("csize=%d usize=%d namlen=%d extras=%d", 
-	  //    hdr->d_csize, hdr->d_usize, u_namlen, u_extras);
-        //HINT5("comment=%d name='%s' %s <sizeof %d> } ", 
-	   //   u_comment, hdr->d_name, "",(int) sizeof(*d));
+        /*
+        HINT5("file %d { compr=%d crc32=$%x offset=%d", 
+	      entries,  hdr->d_compr, hdr->d_crc32, hdr->d_off);
+        HINT5("csize=%d usize=%d namlen=%d extras=%d", 
+	      hdr->d_csize, hdr->d_usize, u_namlen, u_extras);
+        HINT5("comment=%d name='%s' %s <sizeof %d> } ", 
+	      u_comment, hdr->d_name, "",(int) sizeof(*d));
+	*/
   
         p_reclen = &hdr->d_reclen;
     
@@ -603,18 +616,24 @@ __zzip_dir_parse (ZZIP_DIR* dir)
      *     { rv = EINVAL; goto error; } 
      */
 
-    //HINT2("------------------ fd=%i", (int) dir->fd);
+    /*
+    HINT2("------------------ fd=%i", (int) dir->fd);
+    */
     if ((filesize = dir->io->filesize(dir->fd)) < 0)
         { rv = ZZIP_DIR_STAT; goto error; }
 
-    //HINT2("------------------ filesize=%ld", (long) filesize);
+    /*
+    HINT2("------------------ filesize=%ld", (long) filesize);
+    */
     if ((rv = __zzip_find_disk_trailer(dir->fd, filesize, &trailer, 
                                        dir->io)) != 0)
         { goto error; }
                 
-    //HINT5("directory = { entries= %d/%d, size= %d, seek= %d } ", 
-	//  ZZIP_GET16(trailer.z_entries),  ZZIP_GET16(trailer.z_finalentries),
-	//  ZZIP_GET32(trailer.z_rootsize), ZZIP_GET32(trailer.z_rootseek));
+    /*
+    HINT5("directory = { entries= %d/%d, size= %d, seek= %d } ", 
+	  ZZIP_GET16(trailer.z_entries),  ZZIP_GET16(trailer.z_finalentries),
+	  ZZIP_GET32(trailer.z_rootsize), ZZIP_GET32(trailer.z_rootseek));
+    */
     
     if ( (rv = __zzip_parse_root_directory(dir->fd, &trailer, &dir->hdr0, 
                                            dir->io)) != 0)
