@@ -209,8 +209,8 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 	}
 
 	if(limits) {
-	    if(limits->maxfilesize && (rarlist->item.UnpSize > limits->maxfilesize)) {
-		cli_dbgmsg("RAR->%s: Size exceeded (%d, max: %d)\n", rarlist->item.Name, rarlist->item.UnpSize, limits->maxfilesize);
+	    if(limits->maxfilesize && (rarlist->item.UnpSize > (unsigned int) limits->maxfilesize)) {
+		cli_dbgmsg("RAR->%s: Size exceeded (%u, max: %lu)\n", rarlist->item.Name, (unsigned int) rarlist->item.UnpSize, limits->maxfilesize);
 		rarlist = rarlist->next;
 		files++;
 		/* ret = CL_EMAXSIZE; */
@@ -241,7 +241,7 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 	fd = fileno(tmp);
 
 	if( urarlib_get(&rar_data_ptr, &rar_data_size, rarlist->item.Name, desc, "clam")) {
-	    cli_dbgmsg("RAR -> Extracted: %s, size: %d\n", rarlist->item.Name, rar_data_size);
+	    cli_dbgmsg("RAR -> Extracted: %s, size: %lu\n", rarlist->item.Name, rar_data_size);
 	    if(fwrite(rar_data_ptr, 1, rar_data_size, tmp) != rar_data_size) {
 		cli_dbgmsg("RAR -> Can't write() file.\n");
 		fclose(tmp);
@@ -380,7 +380,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 
 	if(limits) {
 	    if(limits->maxfilesize && (zdirent.st_size > limits->maxfilesize)) {
-		cli_dbgmsg("Zip -> %s: Size exceeded (%d, max: %d)\n", zdirent.d_name, zdirent.st_size, limits->maxfilesize);
+		cli_dbgmsg("Zip -> %s: Size exceeded (%d, max: %ld)\n", zdirent.d_name, zdirent.st_size, limits->maxfilesize);
 		files++;
 		/* ret = CL_EMAXSIZE; */
 		continue; /* this is not a bug */
