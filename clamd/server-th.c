@@ -108,9 +108,7 @@ void sighandler_th(int sig)
 	    break;
 
 	case SIGUSR2:
-	    pthread_mutex_lock(&reload_mutex);
 	    reload = 1;
-	    pthread_mutex_unlock(&reload_mutex);
 	    break;
 
 	default:
