@@ -1,3 +1,11 @@
+Wed Jan 19 05:32:10 GMT 2005 (njh)
+----------------------------------
+  * clamav-milter:	Up issued
+  * libclamav/text.c:	Added textIterate to simplify some functions
+  * libclamav/blob.c:	Better handling of empty data
+  * libclamav/binhex.c:	Cleaner handling of empty files which shouldn't go to
+  		cli_binhex()
+
 Wed Jan 19 00:58:40 CET 2005 (tk)
 ---------------------------------
   * libclamav/str.c: cli_memstr: fix casting on 64bit platforms (thanks to
