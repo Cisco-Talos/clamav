@@ -1,3 +1,8 @@
+Tue Aug 10 15:53:25 CEST 2004 (tk)
+----------------------------------
+  * clamdscan: support --disable-summary for backward compatibility (problem
+	       reported by Tomasz Papszun)
+
 Tue Aug 10 09:15:17 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	checkURLs code now enabled. CL_MAILURL option not
