@@ -1,3 +1,10 @@
+Sun Dec 19 17:01:56 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter: Correctly warn that --max_childen must be given in SESSION
+		mode if LocalSocket is used and MaxThreads isn't given in
+		clamd.conf. max_children is needed to know how many sessions
+		to initiate to clamd(s)
+
 Sun Dec 19 13:51:20 GMT 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Further work on the non-parsing version.
