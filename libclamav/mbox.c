@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.50  2004/03/10 22:05:39  nigelhorne
+ * Fix seg fault when a message in a multimessage mailbox fails to scan
+ *
  * Revision 1.49  2004/03/04 13:01:58  nigelhorne
  * Ensure all bounces are rescanned by cl_mbox
  *
@@ -138,7 +141,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.49 2004/03/04 13:01:58 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.50 2004/03/10 22:05:39 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -346,8 +349,11 @@ cl_mbox(const char *dir, int desc)
 				messageDestroy(m);
 				messageClean(body);
 				if(messageGetBody(body))
-					if(!parseEmailBody(body,  NULL, 0, NULL, dir, rfc821Table, subtypeTable))
-						break;
+					if(!parseEmailBody(body,  NULL, 0, NULL, dir, rfc821Table, subtypeTable)) {
+						messageReset(body);
+						m = body;
+						continue;
+					}
 				/*
 				 * Starting a new message, throw away all the
 				 * information about the old one
@@ -355,7 +361,6 @@ cl_mbox(const char *dir, int desc)
 				m = body;
 				messageReset(body);
 
-				lastLineWasEmpty = TRUE;
 				cli_dbgmsg("Finished processing message\n");
 			} else
 				lastLineWasEmpty = (bool)(buffer[0] == '\0');
@@ -457,16 +462,22 @@ parseEmailHeaders(const message *m, const table_t *rfc821Table)
 			 */
 			if(strstrip(buffer) == 0) {
 				cli_dbgmsg("End of header information\n");
-				inHeader = FALSE;
+				inContinuationHeader = inHeader = FALSE;
 			} else if(parseEmailHeader(ret, buffer, rfc821Table) == CONTENT_TYPE)
 				inContinuationHeader = continuationMarker(buffer);
 
-		} else
+		} else {
+			/*cli_dbgmsg("Add line to body '%s'\n", buffer);*/
 			messageAddLine(ret, buffer);
+		}
 		free(buffer);
 	} while((t = t->t_next) != NULL);
 
+	cli_dbgmsg("parseEmailHeaders: calling textDestroy\n");
+
 	textDestroy(msgText);
+
+	cli_dbgmsg("parseEmailHeaders: return\n");
 
 	return ret;
 }
@@ -1607,7 +1618,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 				 * Some clients are broken and
 				 * put white space after the ;
 				 */
-				strstrip(copy);
+				/*strstrip(copy);*/
 				if(*arg == '/') {
 					cli_warnmsg("Content-type '/' received, assuming application/octet-stream\n");
 					messageSetMimeType(m, "application");
