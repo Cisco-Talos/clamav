@@ -1,3 +1,7 @@
+Mon Sep 27 04:00:14 CEST 2004 (tk)
+----------------------------------
+  * libclamav: ignore ndb signatures in cl_scanbuff()
+
 Sun Sep 26 03:11:48 CEST 2004 (tk)
 ----------------------------------
   * docs/MacOSX: update (Dale Enterprise L.L.C)
