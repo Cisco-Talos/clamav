@@ -21,6 +21,6 @@
 
 #include "clamav.h"
 
-int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec);
+int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec);
 
 #endif

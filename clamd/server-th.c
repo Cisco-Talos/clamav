@@ -293,23 +293,23 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 
     if(cfgopt(copt, "ScanArchive")) {
 	logg("Archive support enabled.\n");
-	options |= CL_ARCHIVE;
+	options |= CL_SCAN_ARCHIVE;
 
 	if(cfgopt(copt, "ScanRAR")) {
 	    logg("Archive: RAR support enabled.\n");
 	} else {
 	    logg("Archive: RAR support disabled.\n");
-	    options |= CL_DISABLERAR;
+	    options |= CL_SCAN_DISABLERAR;
 	}
 
 	if(cfgopt(copt, "ArchiveBlockEncrypted")) {
 	    logg("Archive: Blocking encrypted archives.\n");
-	    options |= CL_ENCRYPTED;
+	    options |= CL_SCAN_ENCRYPTED;
 	}
 
 	if(cfgopt(copt, "ArchiveBlockMax")) {
 	    logg("Archive: Blocking archives that exceed limits.\n");
-	    options |= CL_BLOCKMAX;
+	    options |= CL_SCAN_BLOCKMAX;
 	}
 
     } else {
@@ -318,11 +318,11 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 
     if(cfgopt(copt, "ScanPE")) {
 	logg("Portable Executable support enabled.\n");
-	options |= CL_PE;
+	options |= CL_SCAN_PE;
 
 	if(cfgopt(copt, "DetectBrokenExecutables")) {
 	    logg("Detection of broken executables enabled.\n");
-	    options |= CL_BROKEN;
+	    options |= CL_SCAN_BROKEN;
 	}
 
     } else {
@@ -331,11 +331,11 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 
     if(cfgopt(copt, "ScanMail")) {
 	logg("Mail files support enabled.\n");
-	options |= CL_MAIL;
+	options |= CL_SCAN_MAIL;
 
 	if(cfgopt(copt, "MailFollowURLs")) {
 	    logg("Mail: URL scanning enabled.\n");
-	    options |= CL_MAILURL;
+	    options |= CL_SCAN_MAILURL;
 	}
 
     } else {
@@ -344,14 +344,14 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 
     if(cfgopt(copt, "ScanOLE2")) {
 	logg("OLE2 support enabled.\n");
-	options |= CL_OLE2;
+	options |= CL_SCAN_OLE2;
     } else {
 	logg("OLE2 support disabled.\n");
     }
 
     if(cfgopt(copt, "ScanHTML")) {
 	logg("HTML support enabled.\n");
-	options |= CL_HTML;
+	options |= CL_SCAN_HTML;
     } else {
 	logg("HTML support disabled.\n");
     }

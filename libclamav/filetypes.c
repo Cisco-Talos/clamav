@@ -49,102 +49,102 @@ static const struct cli_magic_s cli_magic[] = {
 
     /* Executables */
 
-    {0,  "MZ",				2,  "DOS/W32 executable/library/driver", CL_DOSEXE},
+    {0,  "MZ",				2,  "DOS/W32 executable/library/driver", CL_TYPE_MSEXE},
 
     /* Archives */
 
-    {0,	    "Rar!",			4,  "RAR",		  CL_RARFILE},
-    {0,	    "PK\003\004",		4,  "ZIP",		  CL_ZIPFILE},
-    {0,	    "PK00PK\003\004",		4,  "ZIP",		  CL_ZIPFILE},
-    {0,	    "\037\213",			2,  "GZip",		  CL_GZFILE},
-    {0,	    "BZh",			3,  "BZip",		  CL_BZFILE},
-    {0,	    "SZDD",			4,  "compress.exe'd",	  CL_MSCFILE},
-    {0,	    "MSCF",			4,  "MS CAB",		  CL_MSCABFILE},
-    {0,	    "ITSF",			4,  "MS CHM",             CL_MSCHMFILE},
-    {257,   "ustar",			5,  "POSIX tar",	  CL_TARFILE},
-    {0,     "#@~^",			4,  "SCRENC",		  CL_SCRENC},
+    {0,	    "Rar!",			4,  "RAR",		CL_TYPE_RAR},
+    {0,	    "PK\003\004",		4,  "ZIP",		CL_TYPE_ZIP},
+    {0,	    "PK00PK\003\004",		4,  "ZIP",		CL_TYPE_ZIP},
+    {0,	    "\037\213",			2,  "GZip",		CL_TYPE_GZ},
+    {0,	    "BZh",			3,  "BZip",		CL_TYPE_BZ},
+    {0,	    "SZDD",			4,  "compress.exe'd",	CL_TYPE_MSSZDD},
+    {0,	    "MSCF",			4,  "MS CAB",		CL_TYPE_MSCAB},
+    {0,	    "ITSF",			4,  "MS CHM",           CL_TYPE_MSCHM},
+    {257,   "ustar",			5,  "POSIX tar",	CL_TYPE_TAR},
+    {0,     "#@~^",			4,  "SCRENC",		CL_TYPE_SCRENC},
 
     /* Mail */
 
-    {0,  "From ",			 5, "MBox",		  CL_MAILFILE},
-    {0,  "Received: ",			10, "Raw mail",		  CL_MAILFILE},
-    {0,  "Return-Path: ",		13, "Maildir",		  CL_MAILFILE},
-    {0,  "Return-path: ",		13, "Maildir",		  CL_MAILFILE},
-    {0,  "Delivered-To: ",		14, "Mail",		  CL_MAILFILE},
-    {0,  "X-UIDL: ",			 8, "Mail",		  CL_MAILFILE},
-    {0,  "X-Apparently-To: ",		17, "Mail",		  CL_MAILFILE},
-    {0,  "X-Envelope-From: ",		17, "Mail",		  CL_MAILFILE},
-    {0,  "X-Original-To: ",		15, "Mail",		  CL_MAILFILE},
-    {0,  "X-Symantec-",			11, "Symantec",		  CL_MAILFILE},
-    {0,  "X-EVS",			 5, "EVS mail",		  CL_MAILFILE},
-    {0,  "X-Real-To: ",                 11, "Mail",               CL_MAILFILE},
-    {0,  ">From ",			 6, "Mail",		  CL_MAILFILE},
-    {0,  "Date: ",			 6, "Mail",		  CL_MAILFILE},
-    {0,  "Message-Id: ",		12, "Mail",		  CL_MAILFILE},
-    {0,  "Message-ID: ",		12, "Mail",		  CL_MAILFILE},
-    {0,  "Envelope-to: ",		13, "Mail",		  CL_MAILFILE},
-    {0,  "Delivery-date: ",		15, "Mail",		  CL_MAILFILE},
-    {0,  "To: ",			 4, "Mail",		  CL_MAILFILE},
-    {0,  "Subject: ",			 9, "Mail",		  CL_MAILFILE},
-    {0,  "For: ",			 5, "Eserv mail",	  CL_MAILFILE},
-    {0,  "From: ",			 6, "Exim mail",	  CL_MAILFILE},
-    {0,  "v:\015\012Received: ",	14, "VPOP3 Mail (DOS)",	  CL_MAILFILE},
-    {0,  "v:\012Received: ",		13, "VPOP3 Mail (UNIX)",  CL_MAILFILE},
-    {0,  "Hi. This is the qmail-send",  26, "Qmail bounce",	  CL_MAILFILE},
+    {0,  "From ",			 5, "MBox",		  CL_TYPE_MAIL},
+    {0,  "Received: ",			10, "Raw mail",		  CL_TYPE_MAIL},
+    {0,  "Return-Path: ",		13, "Maildir",		  CL_TYPE_MAIL},
+    {0,  "Return-path: ",		13, "Maildir",		  CL_TYPE_MAIL},
+    {0,  "Delivered-To: ",		14, "Mail",		  CL_TYPE_MAIL},
+    {0,  "X-UIDL: ",			 8, "Mail",		  CL_TYPE_MAIL},
+    {0,  "X-Apparently-To: ",		17, "Mail",		  CL_TYPE_MAIL},
+    {0,  "X-Envelope-From: ",		17, "Mail",		  CL_TYPE_MAIL},
+    {0,  "X-Original-To: ",		15, "Mail",		  CL_TYPE_MAIL},
+    {0,  "X-Symantec-",			11, "Symantec",		  CL_TYPE_MAIL},
+    {0,  "X-EVS",			 5, "EVS mail",		  CL_TYPE_MAIL},
+    {0,  "X-Real-To: ",                 11, "Mail",               CL_TYPE_MAIL},
+    {0,  ">From ",			 6, "Mail",		  CL_TYPE_MAIL},
+    {0,  "Date: ",			 6, "Mail",		  CL_TYPE_MAIL},
+    {0,  "Message-Id: ",		12, "Mail",		  CL_TYPE_MAIL},
+    {0,  "Message-ID: ",		12, "Mail",		  CL_TYPE_MAIL},
+    {0,  "Envelope-to: ",		13, "Mail",		  CL_TYPE_MAIL},
+    {0,  "Delivery-date: ",		15, "Mail",		  CL_TYPE_MAIL},
+    {0,  "To: ",			 4, "Mail",		  CL_TYPE_MAIL},
+    {0,  "Subject: ",			 9, "Mail",		  CL_TYPE_MAIL},
+    {0,  "For: ",			 5, "Eserv mail",	  CL_TYPE_MAIL},
+    {0,  "From: ",			 6, "Exim mail",	  CL_TYPE_MAIL},
+    {0,  "v:\015\012Received: ",	14, "VPOP3 Mail (DOS)",	  CL_TYPE_MAIL},
+    {0,  "v:\012Received: ",		13, "VPOP3 Mail (UNIX)",  CL_TYPE_MAIL},
+    {0,  "Hi. This is the qmail-send",  26, "Qmail bounce",	  CL_TYPE_MAIL},
 
     /* Others */
 
     {0,  "\320\317\021\340\241\261\032\341",
-	                    8, "OLE2 container",  CL_OLE2FILE},
+	                    8, "OLE2 container",  CL_TYPE_MSOLE2},
 
     /* Ignored types */
 
-    {0,  "\000\000\001\263",             4, "MPEG video stream",  CL_DATAFILE},
-    {0,  "\000\000\001\272",             4, "MPEG sys stream",    CL_DATAFILE},
-    {0,  "RIFF",                         4, "RIFF",		  CL_DATAFILE},
-    {0,  "GIF",				 3, "GIF",		  CL_DATAFILE},
-    {0,  "\x89PNG",			 4, "PNG",                CL_DATAFILE},
-    {0,  "\377\330\377",		 4, "JPEG",               CL_DATAFILE},
-    {0,  "BM",				 2, "BMP",                CL_DATAFILE},
-    {0,  "OggS",                         4, "Ogg Stream",         CL_DATAFILE},
-    {0,  "ID3",				 3, "MP3",		  CL_DATAFILE},
-    {0,  "\377\373\220",		 3, "MP3",		  CL_DATAFILE},
-    {0,  "\%PDF-",			 5, "PDF document",	  CL_DATAFILE},
-    {0,  "\%!PS-Adobe-",		11, "PostScript",	  CL_DATAFILE},
-    {0,  "\060\046\262\165\216\146\317", 7, "WMA/WMV/ASF",	  CL_DATAFILE},
-    {0,  ".RMF" ,			 4, "Real Media File",	  CL_DATAFILE},
+    {0,  "\000\000\001\263",             4, "MPEG video stream",  CL_TYPE_DATA},
+    {0,  "\000\000\001\272",             4, "MPEG sys stream",    CL_TYPE_DATA},
+    {0,  "RIFF",                         4, "RIFF",		  CL_TYPE_DATA},
+    {0,  "GIF",				 3, "GIF",		  CL_TYPE_DATA},
+    {0,  "\x89PNG",			 4, "PNG",                CL_TYPE_DATA},
+    {0,  "\377\330\377",		 4, "JPEG",               CL_TYPE_DATA},
+    {0,  "BM",				 2, "BMP",                CL_TYPE_DATA},
+    {0,  "OggS",                         4, "Ogg Stream",         CL_TYPE_DATA},
+    {0,  "ID3",				 3, "MP3",		  CL_TYPE_DATA},
+    {0,  "\377\373\220",		 3, "MP3",		  CL_TYPE_DATA},
+    {0,  "\%PDF-",			 5, "PDF document",	  CL_TYPE_DATA},
+    {0,  "\%!PS-Adobe-",		11, "PostScript",	  CL_TYPE_DATA},
+    {0,  "\060\046\262\165\216\146\317", 7, "WMA/WMV/ASF",	  CL_TYPE_DATA},
+    {0,  ".RMF" ,			 4, "Real Media File",	  CL_TYPE_DATA},
 
-    {-1, NULL,				 0, NULL,              CL_UNKNOWN_DATA_TYPE}
+    {-1, NULL,				 0, NULL,		  CL_TYPE_UNKNOWN_DATA}
 };
 
 static const struct cli_smagic_s cli_smagic[] = {
 
     /* "\nFrom: " * "\nContent-Type: " */
-    {"0a46726f6d3a20{-2048}0a436f6e74656e742d547970653a20", "Mail file", CL_MAILFILE},
+    {"0a46726f6d3a20{-2048}0a436f6e74656e742d547970653a20", "Mail file", CL_TYPE_MAIL},
 
     /* "\nReceived: " * "\nContent-Type: " */
-    {"0a52656365697665643a20{-2048}0a436f6e74656e742d547970653a20", "Mail file", CL_MAILFILE},
+    {"0a52656365697665643a20{-2048}0a436f6e74656e742d547970653a20", "Mail file", CL_TYPE_MAIL},
 
     /* "\nReceived: " * "\nContent-type: " */
-    {"0a52656365697665643a20{-2048}0a436f6e74656e742d747970653a20", "Mail file", CL_MAILFILE},
+    {"0a52656365697665643a20{-2048}0a436f6e74656e742d747970653a20", "Mail file", CL_TYPE_MAIL},
 
     /* remember the matcher is case sensitive */
-    {"3c62723e",       "HTML data", CL_HTMLFILE},	/* <br> */
-    {"3c42723e",       "HTML data", CL_HTMLFILE},	/* <Br> */
-    {"3c42523e",       "HTML data", CL_HTMLFILE},	/* <BR> */
-    {"3c703e",	       "HTML data", CL_HTMLFILE},	/* <p> */
-    {"3c503e",	       "HTML data", CL_HTMLFILE},	/* <P> */
-    {"68726566",       "HTML data", CL_HTMLFILE},	/* href */
-    {"48726566",       "HTML data", CL_HTMLFILE},	/* Href */
-    {"48524546",       "HTML data", CL_HTMLFILE},	/* HREF */
-    {"3c666f6e74",     "HTML data", CL_HTMLFILE},	/* <font */
-    {"3c466f6e74",     "HTML data", CL_HTMLFILE},	/* <Font */
-    {"3c464f4e54",     "HTML data", CL_HTMLFILE},	/* <FONT */
-    {"3c736372697074", "HTML data", CL_HTMLFILE},	/* <script */
-    {"3c536372697074", "HTML data", CL_HTMLFILE},	/* <Script */
-    {"3c534352495054", "HTML data", CL_HTMLFILE},	/* <SCRIPT */
+    {"3c62723e",       "HTML data", CL_TYPE_HTML},	/* <br> */
+    {"3c42723e",       "HTML data", CL_TYPE_HTML},	/* <Br> */
+    {"3c42523e",       "HTML data", CL_TYPE_HTML},	/* <BR> */
+    {"3c703e",	       "HTML data", CL_TYPE_HTML},	/* <p> */
+    {"3c503e",	       "HTML data", CL_TYPE_HTML},	/* <P> */
+    {"68726566",       "HTML data", CL_TYPE_HTML},	/* href */
+    {"48726566",       "HTML data", CL_TYPE_HTML},	/* Href */
+    {"48524546",       "HTML data", CL_TYPE_HTML},	/* HREF */
+    {"3c666f6e74",     "HTML data", CL_TYPE_HTML},	/* <font */
+    {"3c466f6e74",     "HTML data", CL_TYPE_HTML},	/* <Font */
+    {"3c464f4e54",     "HTML data", CL_TYPE_HTML},	/* <FONT */
+    {"3c736372697074", "HTML data", CL_TYPE_HTML},	/* <script */
+    {"3c536372697074", "HTML data", CL_TYPE_HTML},	/* <Script */
+    {"3c534352495054", "HTML data", CL_TYPE_HTML},	/* <SCRIPT */
 
-    {NULL,  NULL,   CL_UNKNOWN_DATA_TYPE}
+    {NULL,  NULL,   CL_TYPE_UNKNOWN_DATA}
 };
 
 cli_file_t cli_filetype(const char *buf, size_t buflen)
@@ -168,7 +168,7 @@ cli_file_t cli_filetype(const char *buf, size_t buflen)
 	    break;
 	}
 
-    return ascii ? CL_UNKNOWN_TEXT_TYPE : CL_UNKNOWN_DATA_TYPE;
+    return ascii ? CL_TYPE_UNKNOWN_TEXT : CL_TYPE_UNKNOWN_DATA;
 }
 
 int cli_addtypesigs(struct cl_node *root)

@@ -105,7 +105,7 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
 	scan(buff + strlen(CMD1) + 1, NULL, root, limits, options, copt, desc, 0);
 
     } else if(!strncmp(buff, CMD2, strlen(CMD2))) { /* RAWSCAN */
-	opt = options & ~CL_ARCHIVE;
+	opt = options & ~CL_SCAN_ARCHIVE;
 	scan(buff + strlen(CMD2) + 1, NULL, root, NULL, opt, copt, desc, 0);
 
     } else if(!strncmp(buff, CMD3, strlen(CMD3))) { /* QUIT */

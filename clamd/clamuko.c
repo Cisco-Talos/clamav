@@ -155,7 +155,7 @@ void *clamukoth(void *arg)
     }
 
     if(cfgopt(tharg->copt, "ClamukoScanArchive")) {
-	options |= CL_ARCHIVE;
+	options |= CL_SCAN_ARCHIVE;
 	logg("Clamuko: Archive support enabled.\n");
     } else {
 	logg("Clamuko: Archive support disabled.\n");
@@ -163,7 +163,7 @@ void *clamukoth(void *arg)
 
     if(cfgopt(tharg->copt, "ScanOLE2")) { 
 	logg("Clamuko: OLE2 support enabled.\n");
-	options |= CL_OLE2;
+	options |= CL_SCAN_OLE2;
     } else {
 	logg("Clamuko: OLE2 support disabled.\n");
     }

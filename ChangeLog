@@ -1,3 +1,7 @@
+Mon Sep 13 18:41:05 CEST 2004 (tk)
+----------------------------------
+  * libclamav: minor cleanup
+
 Mon Sep 13 14:17:01 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	return with CL_EFORMAT if mail can't be parsed

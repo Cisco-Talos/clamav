@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.77  2004/09/13 16:44:01  kojm
+ * minor cleanup
+ *
  * Revision 1.76  2004/09/03 15:59:00  nigelhorne
  * Handle boundary= "foo"
  *
@@ -225,7 +228,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.76 2004/09/03 15:59:00 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.77 2004/09/13 16:44:01 kojm Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -939,7 +942,7 @@ messageIsEncoding(message *m)
 	   (strstr(line, "7bit") == NULL))
 		m->encoding = m->body_last;
 	else if(/*(m->bounce == NULL) &&*/
-		(cli_filetype(line, strlen(line)) == CL_MAILFILE))
+		(cli_filetype(line, strlen(line)) == CL_TYPE_MAIL))
 			m->bounce = m->body_last;
 	else if((m->binhex == NULL) &&
 		(strncasecmp(line, binhex, sizeof(binhex) - 1) == 0))
@@ -1574,7 +1577,7 @@ bounceBegin(const message *m)
 	const text *t_line;
 
 	for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next)
-		if(cli_filetype(t_line->t_text, strlen(t_line->t_text)) == CL_MAILFILE)
+		if(cli_filetype(t_line->t_text, strlen(t_line->t_text)) == CL_TYPE_MAIL)
 			return t_line;
 
 	return NULL;
