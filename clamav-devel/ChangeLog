@@ -1,3 +1,8 @@
+Wed Oct 27 07:36:49 BST 2004 (njh)
+----------------------------------
+ * libclamav/untar.c:	Handle links to another file already archived, patch
+				by "Roger Lucas" <roger@planbit.co.uk>
+
 Sun Oct 24 05:36:39 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:		Handle multipart/knowbot as multipart/mixed

@@ -21,6 +21,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.17  2004/10/27 06:36:38  nigelhorne
+ * Handle type '1' files
+ *
  * Revision 1.16  2004/10/20 12:21:11  nigelhorne
  * Print warning message about LongLink
  *
@@ -70,7 +73,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.16 2004/10/20 12:21:11 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.17 2004/10/27 06:36:38 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -178,6 +181,7 @@ cli_untar(const char *dir, int desc)
 				case '7':	/* contiguous file */
 					directory = 0;
 					break;
+				case '1':	/* Link to already archived file */
 				case '5':	/* directory */
 				case '2':	/* sym link */
 				case '3':	/* char device */
