@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.169  2005/01/19 05:27:39  nigelhorne
+ * Up issued
+ *
  * Revision 1.168  2005/01/12 08:57:05  nigelhorne
  * Fix DNS error messages
  *
@@ -515,9 +518,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.168 2005/01/12 08:57:05 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.169 2005/01/19 05:27:39 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80gg"
+#define	CM_VERSION	"0.81"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -629,6 +632,8 @@ typedef	unsigned int	in_addr_t;
  * TODO: Files can be scanned with "SCAN" not "STREAM" if clamd is on the same
  *	machine when talking via INET domain socket.
  * TODO: Load balancing, allow local machine to talk via UNIX domain socket.
+ * TODO: Read the input socket name from sendmail.mc/sendmail.cf, or at least
+ *	sanity check that they're the same
  */
 
 struct header_node_t {
@@ -1728,6 +1733,7 @@ main(int argc, char **argv)
 #ifndef	CL_DEBUG
 		close(1);
 		close(2);
+		/* FIXME: use LogFile if that is set */
 		if((open("/dev/console", O_WRONLY) == 1) ||
 		   (open("/dev/null", O_WRONLY) == 1))
 			dup(1);

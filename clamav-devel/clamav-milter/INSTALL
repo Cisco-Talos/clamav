@@ -640,6 +640,7 @@ Changes
 		from a server that is down
 0.80gg	12/1/05:	Fixed DNS resolution error messages which could print
 		the incorrect hostname that is not being resolved
+0.81	19/1/05:	Up issued
 
 INTERNATIONALISATION
 
