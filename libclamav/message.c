@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.115  2004/11/12 22:21:57  nigelhorne
+ * Binxhex detection speeded up
+ *
  * Revision 1.114  2004/11/12 09:03:26  nigelhorne
  * Parse some malformed binhex files
  *
@@ -339,7 +342,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.114 2004/11/12 09:03:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.115 2004/11/12 22:21:57 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1222,7 +1225,13 @@ messageIsEncoding(message *m)
 		(line[9] == ' ')))
 			m->uuencode = m->body_last;
 	else if((m->binhex == NULL) &&
+		strstr(line, "BinHex") &&
 		(simil(line, binhex) > 90))
+			/*
+			 * Look for close matches for BinHex, but
+			 * simil() is expensive so only do it if it's
+			 * likely to be found
+			 */
 			m->binhex = m->body_last;
 	else if((m->yenc == NULL) && (strncmp(line, "=ybegin line=", 13) == 0))
 		m->yenc = m->body_last;
@@ -1588,7 +1597,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			if(t_line == NULL) {
 				/*cli_warnmsg("UUENCODED attachment is missing begin statement\n");*/
 				(*destroy)(ret);
-				m->base64chars = NULL;
+				m->base64chars = 0;
 				return NULL;
 			}
 
@@ -2154,9 +2163,11 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 			 * Klez doesn't always put "=" on the last line
 			 */
 			buf = decode(m, copy, buf, base64, (p2 == NULL) && ((strlen(copy) & 3) == 0));
+#if	0
 			if(p2)
 				/* flush the read ahead bytes */
 				buf = decode(m, NULL, buf, base64, FALSE);
+#endif
 
 			/*buf = decode(m, copy, buf, base64, FALSE);*/
 
