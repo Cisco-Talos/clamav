@@ -225,11 +225,11 @@
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
 
+/* Define to 1 if you have the <sys/uio.h> header file. */
+#undef HAVE_SYS_UIO_H
+
 /* Define to 1 if you have the <tcpd.h> header file. */
 #undef HAVE_TCPD_H
-
-/* Define to 1 if you have the <uio.h> header file. */
-#undef HAVE_UIO_H
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
