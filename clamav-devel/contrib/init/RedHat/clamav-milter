@@ -2,11 +2,12 @@
 #
 # clamav-milter This script starts and stops the clamav-milter daemon
 #
-# chkconfig: 2345 91 30
+# chkconfig: 2345 71 40
 #
 # description: clamav-milter is a daemon which hooks into sendmail and routes
 #              email messages to clamav
 # processname: clamav-milter
+# pidfile: /var/lock/subsys/clamav-milter
 
 # Source function library.
 . /etc/rc.d/init.d/functions
