@@ -1,3 +1,7 @@
+Tue Mar 29 02:02:05 CEST 2005 (tk)
+----------------------------------
+  * libclamav: detect and ignore ISO 9660/High Sierra CD-ROM data
+
 Mon Mar 28 12:05:17 BST 2005 (njh)
 ----------------------------------
  * libclamav:	Added fast track visa technology to files that are not mboxs
