@@ -1,3 +1,9 @@
+Thu Jan 29 12:54:08 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter: added --noreject flag, thanks to
+			"Vijay Sarvepalli" <vssarvep@office.uncg.edu>
+  * contrib:	   Added Windows client
+
 Thu Jan 29 10:29:02 GMT 2004 (trog)
 -----------------------------------
   * libclamav: VBA decode - add big-endian support
