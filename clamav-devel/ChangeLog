@@ -1,13 +1,15 @@
+Sat Aug 30 21:25:25 CEST 2003
+-----------------------------
+  * libclamav: mbox code update - should be more stable (Nigel)
+  * clamav.conf: RemoveStaleSocket -> FixStaleSocket
+
 Fri Aug 29 06:00:01 CEST 2003
 -----------------------------
   * clamav-milter: 0.60d: Removed superflous buffer and unneeded strerror
 		   call (Nigel)
   * libclamav: enabled support for Maildir files (thanks to Tomasz Papszun
 	       for samples and to Nigel for making his code so flexible)
-  * libclamav: mbox: fixed a problem in saveFile() - extremely long file names
-	       were causing snprintf() to truncate the last XXXXXX characters
-	       required for mkstemp(). As a result the file was not scanned -
-	       I found the problem in the old sample from Wash Odhiambo.
+  * libclamav: fixed memory leak (Nigel)
 
 Wed Aug 27 23:25:52 CEST 2003
 -----------------------------
