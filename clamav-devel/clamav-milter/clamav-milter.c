@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.181  2005/02/08 12:05:28  nigelhorne
+ * Tidy some code and debug statements
+ *
  * Revision 1.180  2005/02/08 09:01:26  nigelhorne
  * Turn off SESSION mode
  *
@@ -551,9 +554,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.180 2005/02/08 09:01:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.181 2005/02/08 12:05:28 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.82b"
+#define	CM_VERSION	"0.82c"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -948,7 +951,6 @@ static	const	char	*ignoredEmailAddresses[] = {
 	"postmaster@bandsman.co.uk",
 	"<Mailer-Daemon@bandsman.co.uk>",
 	"<postmaster@bandsman.co.uk>",*/
-	NULL,	/* --quarantine email address goes here */
 	NULL
 };
 
@@ -969,6 +971,7 @@ static	void	print_trace(void);
 #endif
 
 static	int	verifyIncomingSocketName(const char *sockName);
+static	int	isWhitelisted(const char *emailaddress);
 
 static void
 help(void)
@@ -1627,7 +1630,7 @@ main(int argc, char **argv)
 		 * TCPSocket is in fact a port number not a full socket
 		 */
 		if(quarantine_dir) {
-			fprintf(stderr, _("%s: --quarantine-dir not supported for remote scanning - use --quarantine\n"), argv[0]);
+			fprintf(stderr, _("%s: --quarantine-dir not supported for TCPSocket - use --quarantine\n"), argv[0]);
 			return EX_CONFIG;
 		}
 
@@ -1842,17 +1845,6 @@ main(int argc, char **argv)
 	}
 
 	atexit(quit);
-
-	/*
-	 * Don't scan messages to the quarantine email address
-	 */
-	if(quarantine) {
-		const char **s;
-
-		for(s = ignoredEmailAddresses; *s; s++)
-			;
-		*s = quarantine;
-	}
 
 	if(!external) {
 		/* TODO: read the limits from clamd.conf */
@@ -2527,7 +2519,11 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		return SMFIS_ACCEPT;
 	}
 
-	if(detect_forged_local_address) {
+#if	defined(HAVE_INET_NTOP) || defined(WITH_TCPWRAP)
+	if(detect_forged_local_address && !isLocalAddr(inet_addr(ip))) {
+#else
+	if(detect_forged_local_address && !isLocalAddr(inet_addr(remoteIP))) {
+#endif
 		char me[MAXHOSTNAMELEN + 1];
 
 		if(gethostname(me, sizeof(me) - 1) < 0) {
@@ -2649,7 +2645,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 	if(hflag)
 		privdata->headers = header_list_new();
 
-	if(detect_forged_local_address) {
+	if(detect_forged_local_address && !isWhitelisted(argv[0])) {
 		char me[MAXHOSTNAMELEN + 1];
 		const char *ptr;
 
@@ -2662,8 +2658,9 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		if(ptr && (ptr != argv[0]) && (*--ptr == '@')) {
 			if(use_syslog)
 				syslog(LOG_NOTICE, _("Rejected email falsely claiming to be from %s"), argv[0]);
-			smfi_setreply(ctx, "550", "5.7.1", _("You have claimed to be me, but you are not"));
+			smfi_setreply(ctx, "550", "5.7.1", _("You have claimed to be from me, but you are not"));
 			broadcast(_("Forged local address detected"));
+			clamfi_free(privdata);
 			return SMFIS_REJECT;
 		}
 	}
@@ -2806,23 +2803,14 @@ clamfi_eoh(SMFICTX *ctx)
 	 *	FI
 	 * ENDFOR
 	 */
-	for(to = privdata->to; *to; to++) {
-		const char **s;
-
-		for(s = ignoredEmailAddresses; *s; s++)
-			if(strcasecmp(*s, *to) == 0)
-				/*
-				 * This recipient is on the whitelist
-				 */
-				break;
-
-		if(*s == NULL)
+	for(to = privdata->to; *to; to++)
+		if(!isWhitelisted(*to))
 			/*
 			 * This recipient is not on the whitelist,
 			 * no need to check any further
 			 */
 			return SMFIS_CONTINUE;
-	}
+
 	/*
 	 * Didn't find a recipient who is not on the white list, so all
 	 * must be on the white list, so just accept the e-mail
@@ -3261,6 +3249,7 @@ clamfi_eom(SMFICTX *ctx)
 				(oflag || fflag) ? "%s -t -i -odq" : "%s -t -i",
 				SENDMAIL_BIN);
 
+			cli_dbgmsg("Calling %s\n", cmd);
 			sendmail = popen(cmd, "w");
 
 			if(sendmail) {
@@ -3359,6 +3348,7 @@ clamfi_eom(SMFICTX *ctx)
 
 				}
 
+				cli_dbgmsg("Waiting for %s to finish\n", cmd);
 				pclose(sendmail);
 			}
 		}
@@ -3644,14 +3634,12 @@ clamfi_free(struct privdata *privdata)
 		/*
 		 * Deliberately errs on the side of broadcasting too many times
 		 */
-		if(n_children > 0) {
-			--n_children;
-#ifdef	SESSION
-			if(n_children == 0)
+		if(n_children > 0)
+			if(--n_children == 0) {
+				cli_dbgmsg("clamav-milter is idle\n");
 				if(pthread_cond_broadcast(&watchdog_cond) < 0)
 					perror("pthread_cond_broadcast");
-#endif
-		}
+			}
 #ifdef	CL_DEBUG
 		cli_dbgmsg("pthread_cond_broadcast\n");
 #endif
@@ -4452,7 +4440,6 @@ qfile(struct privdata *privdata, const char *sendmailId, const char *virusname)
 	cli_dbgmsg("qfile move '%s' to '%s'\n", privdata->filename, newname);
 
 	if(move(privdata->filename, newname) < 0) {
-		perror(newname);
 		if(use_syslog)
 			syslog(LOG_WARNING, _("Can't rename %1$s to %2$s"),
 				privdata->filename, newname);
@@ -5056,7 +5043,7 @@ broadcast(const char *mess)
 
 	memset(&s, '\0', sizeof(struct sockaddr_in));
 	s.sin_family = AF_INET;
-	s.sin_port = (in_port_t)htons(tcpSocket);
+	s.sin_port = (in_port_t)htons(tcpSocket ? tcpSocket : 3310);
 	s.sin_addr.s_addr = htonl(INADDR_BROADCAST);
 
 	cli_dbgmsg("broadcast %s to %d\n", mess, broadcastSock);
@@ -5263,4 +5250,28 @@ verifyIncomingSocketName(const char *sockName)
 #else	/*!HAVE_MMAP*/
 	return 1;
 #endif
+}
+
+/*
+ * If the given email address is whitelisted don't scan their emails
+ */
+static int
+isWhitelisted(const char *emailaddress)
+{
+	const char **a;
+
+	for(a = ignoredEmailAddresses; *a; a++)
+		if(strcasecmp(*a, emailaddress) == 0)
+			/*
+			 * This recipient is on the whitelist
+			 */
+			return 1;
+
+	/*
+	 * Don't scan messages to the quarantine email address
+	 */
+	if(quarantine && (strcasecmp(quarantine, emailaddress) == 0))
+		return 1;
+
+	return 0;
 }
