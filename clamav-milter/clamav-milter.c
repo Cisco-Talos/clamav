@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.144  2004/10/29 18:09:14  nigelhorne
+ * Fix X-VIRUS-STATUS deletion
+ *
  * Revision 1.143  2004/10/27 12:34:21  nigelhorne
  * Correct version header
  *
@@ -440,9 +443,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.143 2004/10/27 12:34:21 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.144 2004/10/29 18:09:14 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80l"
+#define	CM_VERSION	"0.80m"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -855,7 +858,7 @@ main(int argc, char **argv)
 	struct smfiDesc smfilter = {
 		"ClamAv", /* filter name */
 		SMFI_VERSION,	/* version code -- leave untouched */
-		SMFIF_ADDHDRS,	/* flags - we add headers */
+		SMFIF_ADDHDRS|SMFIF_CHGHDRS,	/* flags - we add and deleted headers */
 		clamfi_connect, /* connection callback */
 		NULL, /* HELO filter callback */
 		clamfi_envfrom, /* envelope sender filter callback */
@@ -1013,7 +1016,6 @@ main(int argc, char **argv)
 				break;
 			case 'A':
 				advisory++;
-				smfilter.xxfi_flags |= SMFIF_CHGHDRS;
 				break;
 			case 'b':	/* bounce worms/viruses */
 				bflag++;
@@ -1055,7 +1057,7 @@ main(int argc, char **argv)
 				break;
 			case 'n':	/* don't add X-Virus-Scanned */
 				nflag++;
-				smfilter.xxfi_flags &= ~SMFIF_ADDHDRS;
+				smfilter.xxfi_flags &= ~(SMFIF_ADDHDRS|SMFIF_CHGHDRS);
 				break;
 			case 'N':	/* Do we reject mail or silently drop it */
 				rejectmail = 0;
@@ -2500,6 +2502,11 @@ clamfi_eom(SMFICTX *ctx)
 #ifdef	CL_DEBUG
 		cli_dbgmsg(_("clamfi_eom: read nothing from clamd\n"));
 #endif
+#ifdef	SESSION
+		pthread_mutex_lock(&sstatus_mutex);
+		cmdSocketsStatus[privdata->serverNumber] = CMDSOCKET_DOWN;
+		pthread_mutex_unlock(&sstatus_mutex);
+#endif
 		return cl_error;
 	}
 
@@ -3503,15 +3510,24 @@ connect2clamd(struct privdata *privdata)
 
 #ifdef	SESSION
 		nbytes = clamd_recv(cmdSockets[privdata->serverNumber], buf, sizeof(buf));
+		if(nbytes < 0) {
+			perror("recv");
+			if(use_syslog)
+				syslog(LOG_ERR, _("recv failed from clamd getting PORT"));
+			pthread_mutex_lock(&sstatus_mutex);
+			cmdSocketsStatus[privdata->serverNumber] = CMDSOCKET_DOWN;
+			pthread_mutex_unlock(&sstatus_mutex);
+			return 0;
+		}
 #else
 		nbytes = clamd_recv(privdata->cmdSocket, buf, sizeof(buf));
-#endif
 		if(nbytes < 0) {
 			perror("recv");
 			if(use_syslog)
 				syslog(LOG_ERR, _("recv failed from clamd getting PORT"));
 			return 0;
 		}
+#endif
 		buf[nbytes] = '\0';
 #ifdef	CL_DEBUG
 		if(debug_level >= 4)
@@ -3557,6 +3573,11 @@ connect2clamd(struct privdata *privdata)
 					p, buf);
 #else
 				syslog(LOG_ERR, _("Failed to connect to port %d given by clamd: %s"), p, strerror(errno));
+#endif
+#ifdef	SESSION
+				pthread_mutex_lock(&sstatus_mutex);
+				cmdSocketsStatus[privdata->serverNumber] = CMDSOCKET_DOWN;
+				pthread_mutex_unlock(&sstatus_mutex);
 #endif
 			}
 			return 0;

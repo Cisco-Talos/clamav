@@ -535,6 +535,10 @@ Changes
 		Update version information in the watchdog. There may therefore
 			be a delay between the server updating and this being
 			reflected in the headers
+0.80m	29/10/04 Mark a session as down if the STREAM command timesout, or
+			we can't connect to the returned PORT
+		Fix problem with deleting X-VIRUS-STATUS not setting correct
+			libmilter settings
 
 INTERNATIONALISATION
 
