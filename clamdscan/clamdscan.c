@@ -127,7 +127,6 @@ void help(void)
     mprintf("    --stdout                           Write to stdout instead of stderr\n");
     mprintf("                                       (this help is always written to stdout)\n");
     mprintf("    --log=FILE          -l FILE        Save scan report in FILE\n");
-    mprintf("    --log-verbose                      Log additional messages\n");
     mprintf("    --config-file=FILE                 Read configuration from FILE.\n");
     mprintf("    --no-summary                       Disable summary at end of scanning\n");
     mprintf("\n");
