@@ -61,9 +61,13 @@ Don't send any warning messages when a virus or worm or is detected.
 This option overrides the \-\-bounce and \-\-postmaster-only options, and is
 the way to turn off notification to the postmaster.
 .TP
-\fB-Q, \-\-Quarantine=EMAILADDRESS\fR
+\fB-Q, \-\-quarantine=EMAILADDRESS\fR
 If this e-mail address is given, messages containing a virus or worm are
 redirected to it.
+.TP
+\fB-U, \-\-quarantine-dir=DIR\fR
+If this option is given, infected files are left in this directory.
+Note - this option only works when using LocalSocket.
 .TP 
 \fB\-\-server=ADDRESS, \-s ADDRESS\fR
 IP address of server running clamd (when using TCPsocket).
