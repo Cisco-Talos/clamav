@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.146 2005/03/06 19:10:20 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.147 2005/03/07 11:23:12 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -68,7 +68,6 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.146 2005/03/06 19:10:20 nigelhor
 typedef enum { FALSE = 0, TRUE = 1 } bool;
 
 static	void	messageIsEncoding(message *m);
-static	unsigned char	*decodeLine(message *m, encoding_type enctype, const char *line, unsigned char *buf, size_t buflen);
 static unsigned char *decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast);
 static	void	sanitiseBase64(char *s);
 static	unsigned	char	hex(char c);
@@ -1858,7 +1857,7 @@ messageClearMarkers(message *m)
  *
  * len is sizeof(ptr)
  */
-static unsigned char *
+unsigned char *
 decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, size_t buflen)
 {
 	size_t len, reallen;
