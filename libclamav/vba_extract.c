@@ -402,6 +402,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 		} else {
 			/* Unknown type - probably ran out of strings - rewind */
 			lseek(fd, -(length+2), SEEK_CUR);
+			free(name);
 			break;
 		}
 		free(name);
