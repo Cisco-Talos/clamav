@@ -1,3 +1,8 @@
+Sat Oct 16 02:41:17 CEST 2004 (tk)
+----------------------------------
+  * clamdscan: add missing support for --no-summary (problem reported by
+	       Matt Leyda <mfleyda*e-one.com>)
+
 Sat Oct 16 01:01:49 CEST 2004 (tk)
 ----------------------------------
   * libclamav/matcher-bm.c: speed up

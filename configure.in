@@ -628,7 +628,7 @@ if test -z "$ac_cv_readdir_args"; then
 fi
 
 AC_ARG_ENABLE(readdir_r,
-[  --enable-gethostbyname_r	  enable support for readdir_r],,
+[  --enable-readdir_r		    enable support for readdir_r],,
 disable_readdir_r="yes")
 
 if test "$disable_readdir_r" = "yes"; then
