@@ -114,35 +114,35 @@ am__include = @am__include@
 am__quote = @am__quote@
 install_sh = @install_sh@
 
-@USE_PTHREAD_TRUE@sbin_PROGRAMS = clamd
+@BUILD_CLAMD_TRUE@sbin_PROGRAMS = clamd
 
-@USE_PTHREAD_TRUE@clamd_SOURCES = \
-@USE_PTHREAD_TRUE@    options.c \
-@USE_PTHREAD_TRUE@    options.h \
-@USE_PTHREAD_TRUE@    cfgfile.c \
-@USE_PTHREAD_TRUE@    cfgfile.h \
-@USE_PTHREAD_TRUE@    clamd.c \
-@USE_PTHREAD_TRUE@    defaults.h \
-@USE_PTHREAD_TRUE@    tcpserver.c \
-@USE_PTHREAD_TRUE@    tcpserver.h \
-@USE_PTHREAD_TRUE@    localserver.c \
-@USE_PTHREAD_TRUE@    localserver.h \
-@USE_PTHREAD_TRUE@    server.c \
-@USE_PTHREAD_TRUE@    server.h \
-@USE_PTHREAD_TRUE@    scanner.c \
-@USE_PTHREAD_TRUE@    scanner.h \
-@USE_PTHREAD_TRUE@    others.c \
-@USE_PTHREAD_TRUE@    others.h \
-@USE_PTHREAD_TRUE@    clamuko.c \
-@USE_PTHREAD_TRUE@    clamuko.h \
-@USE_PTHREAD_TRUE@    dazuko.h \
-@USE_PTHREAD_TRUE@    dazukoio.c \
-@USE_PTHREAD_TRUE@    dazukoio.h \
-@USE_PTHREAD_TRUE@    tests.c \
-@USE_PTHREAD_TRUE@    tests.h
+@BUILD_CLAMD_TRUE@clamd_SOURCES = \
+@BUILD_CLAMD_TRUE@    options.c \
+@BUILD_CLAMD_TRUE@    options.h \
+@BUILD_CLAMD_TRUE@    cfgfile.c \
+@BUILD_CLAMD_TRUE@    cfgfile.h \
+@BUILD_CLAMD_TRUE@    clamd.c \
+@BUILD_CLAMD_TRUE@    defaults.h \
+@BUILD_CLAMD_TRUE@    tcpserver.c \
+@BUILD_CLAMD_TRUE@    tcpserver.h \
+@BUILD_CLAMD_TRUE@    localserver.c \
+@BUILD_CLAMD_TRUE@    localserver.h \
+@BUILD_CLAMD_TRUE@    server.c \
+@BUILD_CLAMD_TRUE@    server.h \
+@BUILD_CLAMD_TRUE@    scanner.c \
+@BUILD_CLAMD_TRUE@    scanner.h \
+@BUILD_CLAMD_TRUE@    others.c \
+@BUILD_CLAMD_TRUE@    others.h \
+@BUILD_CLAMD_TRUE@    clamuko.c \
+@BUILD_CLAMD_TRUE@    clamuko.h \
+@BUILD_CLAMD_TRUE@    dazuko.h \
+@BUILD_CLAMD_TRUE@    dazukoio.c \
+@BUILD_CLAMD_TRUE@    dazukoio.h \
+@BUILD_CLAMD_TRUE@    tests.c \
+@BUILD_CLAMD_TRUE@    tests.h
 
 
-@USE_PTHREAD_TRUE@clamd_LDADD = ../clamscan/getopt.o
+@BUILD_CLAMD_TRUE@clamd_LDADD = ../clamscan/getopt.o
 
 DEFS = @DEFS@
 LIBS = -L../libclamav -lclamav @CLAMD_LIBS@
@@ -150,19 +150,19 @@ INCLUDES = -I../clamscan -I../libclamav
 subdir = clamd
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES =
-@USE_PTHREAD_TRUE@sbin_PROGRAMS = clamd$(EXEEXT)
-@USE_PTHREAD_FALSE@sbin_PROGRAMS =
+@BUILD_CLAMD_TRUE@sbin_PROGRAMS = clamd$(EXEEXT)
+@BUILD_CLAMD_FALSE@sbin_PROGRAMS =
 PROGRAMS = $(sbin_PROGRAMS)
 
-@USE_PTHREAD_TRUE@am_clamd_OBJECTS = options.$(OBJEXT) cfgfile.$(OBJEXT) \
-@USE_PTHREAD_TRUE@	clamd.$(OBJEXT) tcpserver.$(OBJEXT) \
-@USE_PTHREAD_TRUE@	localserver.$(OBJEXT) server.$(OBJEXT) \
-@USE_PTHREAD_TRUE@	scanner.$(OBJEXT) others.$(OBJEXT) \
-@USE_PTHREAD_TRUE@	clamuko.$(OBJEXT) dazukoio.$(OBJEXT) \
-@USE_PTHREAD_TRUE@	tests.$(OBJEXT)
+@BUILD_CLAMD_TRUE@am_clamd_OBJECTS = options.$(OBJEXT) cfgfile.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	clamd.$(OBJEXT) tcpserver.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	localserver.$(OBJEXT) server.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	scanner.$(OBJEXT) others.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	clamuko.$(OBJEXT) dazukoio.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	tests.$(OBJEXT)
 clamd_OBJECTS = $(am_clamd_OBJECTS)
-@USE_PTHREAD_TRUE@clamd_DEPENDENCIES = ../clamscan/getopt.o
-@USE_PTHREAD_FALSE@clamd_DEPENDENCIES =
+@BUILD_CLAMD_TRUE@clamd_DEPENDENCIES = ../clamscan/getopt.o
+@BUILD_CLAMD_FALSE@clamd_DEPENDENCIES =
 clamd_LDFLAGS =
 DEFAULT_INCLUDES =  -I. -I$(srcdir)
 CPPFLAGS = @CPPFLAGS@

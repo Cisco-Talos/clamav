@@ -9229,11 +9229,11 @@ esac
 
 
 if test "$have_pthreads" = "yes"; then
-  USE_PTHREAD_TRUE=
-  USE_PTHREAD_FALSE='#'
+  BUILD_CLAMD_TRUE=
+  BUILD_CLAMD_FALSE='#'
 else
-  USE_PTHREAD_TRUE='#'
-  USE_PTHREAD_FALSE=
+  BUILD_CLAMD_TRUE='#'
+  BUILD_CLAMD_FALSE=
 fi
 
 
@@ -9247,7 +9247,13 @@ else
 fi
 
 
+if test "$have_pthreads" = "yes"
+then
+    cat >>confdefs.h <<\_ACEOF
+#define BUILD_CLAMD 1
+_ACEOF
 
+fi
 
 
 if test "$test_clamav" = "yes"
@@ -9864,10 +9870,10 @@ echo "$as_me: error: conditional \"INSTALL_CONF\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
-if test -z "${USE_PTHREAD_TRUE}" && test -z "${USE_PTHREAD_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"USE_PTHREAD\" was never defined.
+if test -z "${BUILD_CLAMD_TRUE}" && test -z "${BUILD_CLAMD_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"BUILD_CLAMD\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"USE_PTHREAD\" was never defined.
+echo "$as_me: error: conditional \"BUILD_CLAMD\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -10429,8 +10435,8 @@ s,@LIBCLAMAV_LIBS@,$LIBCLAMAV_LIBS,;t t
 s,@CLAMD_LIBS@,$CLAMD_LIBS,;t t
 s,@FRESHCLAM_LIBS@,$FRESHCLAM_LIBS,;t t
 s,@TH_SAFE@,$TH_SAFE,;t t
-s,@USE_PTHREAD_TRUE@,$USE_PTHREAD_TRUE,;t t
-s,@USE_PTHREAD_FALSE@,$USE_PTHREAD_FALSE,;t t
+s,@BUILD_CLAMD_TRUE@,$BUILD_CLAMD_TRUE,;t t
+s,@BUILD_CLAMD_FALSE@,$BUILD_CLAMD_FALSE,;t t
 s,@HAVE_MILTER_TRUE@,$HAVE_MILTER_TRUE,;t t
 s,@HAVE_MILTER_FALSE@,$HAVE_MILTER_FALSE,;t t
 s,@GETENT@,$GETENT,;t t

@@ -116,13 +116,13 @@ install_sh = @install_sh@
 
 
 # FIXME: check automake for 'and' (&&)
-@HAVE_MILTER_TRUE@@USE_PTHREAD_TRUE@sbin_PROGRAMS = clamav-milter
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@sbin_PROGRAMS = clamav-milter
 
-@HAVE_MILTER_TRUE@@USE_PTHREAD_TRUE@clamav_milter_SOURCES = clamav-milter.c
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@clamav_milter_SOURCES = clamav-milter.c
 
-@HAVE_MILTER_TRUE@@USE_PTHREAD_TRUE@clamav_milter_LDADD = ../clamd/cfgfile.o ../clamd/others.o ../clamscan/getopt.o
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@clamav_milter_LDADD = ../clamd/cfgfile.o ../clamd/others.o ../clamscan/getopt.o
 
-@HAVE_MILTER_TRUE@@USE_PTHREAD_TRUE@man_MANS = ../docs/clamav-milter.1
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@man_MANS = ../docs/clamav-milter.1
 
 DEFS = @DEFS@
 # CLAMD_LIBS is used, because clamav-milter requires the same libraries as clamd
@@ -132,23 +132,23 @@ EXTRA_DIST = clamav-milter.c clamd.sh clamav-milter.sh INSTALL
 subdir = clamav-milter
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES =
-@HAVE_MILTER_FALSE@@USE_PTHREAD_TRUE@sbin_PROGRAMS =
-@HAVE_MILTER_FALSE@@USE_PTHREAD_FALSE@sbin_PROGRAMS =
-@HAVE_MILTER_TRUE@@USE_PTHREAD_TRUE@sbin_PROGRAMS = \
-@HAVE_MILTER_TRUE@@USE_PTHREAD_TRUE@	clamav-milter$(EXEEXT)
-@HAVE_MILTER_TRUE@@USE_PTHREAD_FALSE@sbin_PROGRAMS =
+@BUILD_CLAMD_FALSE@@HAVE_MILTER_TRUE@sbin_PROGRAMS =
+@BUILD_CLAMD_FALSE@@HAVE_MILTER_FALSE@sbin_PROGRAMS =
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@sbin_PROGRAMS = \
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	clamav-milter$(EXEEXT)
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_FALSE@sbin_PROGRAMS =
 PROGRAMS = $(sbin_PROGRAMS)
 
-@HAVE_MILTER_TRUE@@USE_PTHREAD_TRUE@am_clamav_milter_OBJECTS = \
-@HAVE_MILTER_TRUE@@USE_PTHREAD_TRUE@	clamav-milter.$(OBJEXT)
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@am_clamav_milter_OBJECTS = \
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	clamav-milter.$(OBJEXT)
 clamav_milter_OBJECTS = $(am_clamav_milter_OBJECTS)
-@HAVE_MILTER_FALSE@@USE_PTHREAD_TRUE@clamav_milter_DEPENDENCIES =
-@HAVE_MILTER_FALSE@@USE_PTHREAD_FALSE@clamav_milter_DEPENDENCIES =
-@HAVE_MILTER_TRUE@@USE_PTHREAD_TRUE@clamav_milter_DEPENDENCIES = \
-@HAVE_MILTER_TRUE@@USE_PTHREAD_TRUE@	../clamd/cfgfile.o \
-@HAVE_MILTER_TRUE@@USE_PTHREAD_TRUE@	../clamd/others.o \
-@HAVE_MILTER_TRUE@@USE_PTHREAD_TRUE@	../clamscan/getopt.o
-@HAVE_MILTER_TRUE@@USE_PTHREAD_FALSE@clamav_milter_DEPENDENCIES =
+@BUILD_CLAMD_FALSE@@HAVE_MILTER_TRUE@clamav_milter_DEPENDENCIES =
+@BUILD_CLAMD_FALSE@@HAVE_MILTER_FALSE@clamav_milter_DEPENDENCIES =
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@clamav_milter_DEPENDENCIES = \
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	../clamd/cfgfile.o \
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	../clamd/others.o \
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	../clamscan/getopt.o
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_FALSE@clamav_milter_DEPENDENCIES =
 clamav_milter_LDFLAGS =
 DEFAULT_INCLUDES =  -I. -I$(srcdir)
 CPPFLAGS = @CPPFLAGS@

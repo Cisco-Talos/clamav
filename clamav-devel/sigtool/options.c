@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2001-2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2001-2003 Tomasz Kojm <zolw@konarski.edu.pl>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,6 +22,10 @@
 #include <clamav.h>
 #define _GNU_SOURCE
 #include "getopt.h"
+
+#if defined(C_LINUX) && defined(CL_DEBUG)
+#include <sys/resource.h>
+#endif
 
 #include "options.h"
 #include "others.h"
@@ -53,6 +57,14 @@ int main(int argc, char **argv)
 	    {0, 0, 0, 0}
     	};
 
+#if defined(C_LINUX) && defined(CL_DEBUG)
+	/* njh@bandsman.co.uk: create a dump if needed */
+	struct rlimit rlim;
+
+    rlim.rlim_cur = rlim.rlim_max = RLIM_INFINITY;
+    if(setrlimit(RLIMIT_CORE, &rlim) < 0)
+	perror("setrlimit");
+#endif
 
     opt=(struct optstruct*)mmalloc(sizeof(struct optstruct));
     opt->optlist = NULL;

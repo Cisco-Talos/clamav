@@ -114,7 +114,7 @@ am__include = @am__include@
 am__quote = @am__quote@
 install_sh = @install_sh@
 
-SUBDIRS = libclamav clamscan freshclam database docs sigtool clamd clamdscan clamav-milter etc
+SUBDIRS = libclamav clamscan clamd clamdscan freshclam sigtool database docs etc clamav-milter
 EXTRA_DIST = FAQ contrib test examples BUGS
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4

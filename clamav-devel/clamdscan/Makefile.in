@@ -114,34 +114,34 @@ am__include = @am__include@
 am__quote = @am__quote@
 install_sh = @install_sh@
 
-@USE_PTHREAD_TRUE@bin_PROGRAMS = clamdscan
+@BUILD_CLAMD_TRUE@bin_PROGRAMS = clamdscan
 
-@USE_PTHREAD_TRUE@clamdscan_SOURCES = \
-@USE_PTHREAD_TRUE@    options.c \
-@USE_PTHREAD_TRUE@    options.h \
-@USE_PTHREAD_TRUE@    clamdscan.c \
-@USE_PTHREAD_TRUE@    client.c \
-@USE_PTHREAD_TRUE@    client.h \
-@USE_PTHREAD_TRUE@    defaults.h
+@BUILD_CLAMD_TRUE@clamdscan_SOURCES = \
+@BUILD_CLAMD_TRUE@    options.c \
+@BUILD_CLAMD_TRUE@    options.h \
+@BUILD_CLAMD_TRUE@    clamdscan.c \
+@BUILD_CLAMD_TRUE@    client.c \
+@BUILD_CLAMD_TRUE@    client.h \
+@BUILD_CLAMD_TRUE@    defaults.h
 
 
-@USE_PTHREAD_TRUE@clamdscan_LDADD = ../clamscan/getopt.o ../clamscan/others.o ../clamd/cfgfile.o
+@BUILD_CLAMD_TRUE@clamdscan_LDADD = ../clamscan/getopt.o ../clamscan/others.o ../clamd/cfgfile.o
 
 INCLUDES = -I../clamscan -I../clamd -I../libclamav
 LIBS = -L../libclamav -lclamav @FRESHCLAM_LIBS@
 subdir = clamdscan
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES =
-@USE_PTHREAD_TRUE@bin_PROGRAMS = clamdscan$(EXEEXT)
-@USE_PTHREAD_FALSE@bin_PROGRAMS =
+@BUILD_CLAMD_TRUE@bin_PROGRAMS = clamdscan$(EXEEXT)
+@BUILD_CLAMD_FALSE@bin_PROGRAMS =
 PROGRAMS = $(bin_PROGRAMS)
 
-@USE_PTHREAD_TRUE@am_clamdscan_OBJECTS = options.$(OBJEXT) \
-@USE_PTHREAD_TRUE@	clamdscan.$(OBJEXT) client.$(OBJEXT)
+@BUILD_CLAMD_TRUE@am_clamdscan_OBJECTS = options.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	clamdscan.$(OBJEXT) client.$(OBJEXT)
 clamdscan_OBJECTS = $(am_clamdscan_OBJECTS)
-@USE_PTHREAD_TRUE@clamdscan_DEPENDENCIES = ../clamscan/getopt.o \
-@USE_PTHREAD_TRUE@	../clamscan/others.o ../clamd/cfgfile.o
-@USE_PTHREAD_FALSE@clamdscan_DEPENDENCIES =
+@BUILD_CLAMD_TRUE@clamdscan_DEPENDENCIES = ../clamscan/getopt.o \
+@BUILD_CLAMD_TRUE@	../clamscan/others.o ../clamd/cfgfile.o
+@BUILD_CLAMD_FALSE@clamdscan_DEPENDENCIES =
 clamdscan_LDFLAGS =
 
 DEFS = @DEFS@

@@ -1,5 +1,3 @@
-/* THIS CODE SUCKS */
-
 /*
  *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
  *
@@ -35,6 +33,10 @@
 #include "strings.h"
 
 #define LINE 1024
+
+#define MIN_LENGTH 15
+#define MAX_LENGTH 200
+
 void help(void);
 
 int scanfile(const char *cmd, const char *str, const char *file)
@@ -66,7 +68,7 @@ int scanfile(const char *cmd, const char *str, const char *file)
 
 char *cut(const char *file, long int start, long int end)
 {
-	char *fname, buffer[FBUFFSIZE];
+	char *fname = NULL, buffer[FBUFFSIZE];
 	int bytes, size, sum;
 	FILE *rd, *wd;
 
@@ -76,7 +78,11 @@ char *cut(const char *file, long int start, long int end)
 	exit(13);
     }
 
-    fname = cl_gentemp(".");
+    if((fname = cl_gentemp(".")) == NULL) {
+	mprintf("!Can't generate temporary file name.\n");
+	exit(1);
+    }
+
     if((wd = fopen(fname, "wb")) == NULL) {
 	mprintf("!Can't create temporary file %s\n", fname);
 	exit(14);
@@ -90,7 +96,6 @@ char *cut(const char *file, long int start, long int end)
     while((bytes = fread(buffer, 1, FBUFFSIZE, rd)) > 0) {
 	if(sum + bytes >= size) {
 	    fwrite(buffer, 1, size - sum, wd);
-	    //fwrite(buffer, 1, size - bytes, wd);
 	    break;
 	} else
 	    fwrite(buffer, 1, bytes, wd);
@@ -100,12 +105,13 @@ char *cut(const char *file, long int start, long int end)
 
     fclose(rd);
     fclose(wd);
+
     return fname;
 }
 
 char *change(const char *file, long int x)
 {
-	char *fname, buffer[FBUFFSIZE];
+	char *fname = NULL, buffer[FBUFFSIZE];
 	int bytes, size, sum, ch;
 	FILE *rd, *wd;
 
@@ -115,7 +121,11 @@ char *change(const char *file, long int x)
 	exit(13);
     }
 
-    fname = cl_gentemp(".");
+    if((fname = cl_gentemp(".")) == NULL) {
+	mprintf("!Can't generate temporary file name.\n");
+	exit(1);
+    }
+
     if((wd = fopen(fname, "wb+")) == NULL) {
 	mprintf("!Can't create temporary file %s\n", fname);
 	exit(14);
@@ -126,11 +136,14 @@ char *change(const char *file, long int x)
 
     fclose(rd);
 
-    fflush(wd);
-    fseek(wd, x, SEEK_SET);
-    ch = fgetc(wd);
-    fseek(wd, -1, SEEK_CUR);
-    fputc(++ch, wd);
+    if(x) { /* don't alter first character in the file */
+	fflush(wd);
+	fseek(wd, x, SEEK_SET);
+	ch = fgetc(wd);
+	fseek(wd, -1, SEEK_CUR);
+	fputc(++ch, wd);
+    }
+
     fclose(wd);
     return fname;
 }
@@ -161,7 +174,6 @@ void sigtool(struct optstruct *opt)
     	help();
     }
 
-
     if(optl(opt, "hex-dump")) {
 
 	while((bytes = read(0, buffer, FBUFFSIZE)) > 0) {
@@ -179,7 +191,8 @@ void sigtool(struct optstruct *opt)
 	cvdinfo(opt);
 
     } else {
-	    int jmp, lastjmp, start, end, found = 0, exec = 0, pos, filesize;
+	    int jmp, lastjmp, start, end, found = 0, exec = 0, pos, filesize,
+		maxsize = 0, ret;
 	    char *c, *s, *f, *tmp, *signame, *bsigname, *f2;
 	    FILE *fd, *wd;
 
@@ -210,35 +223,33 @@ void sigtool(struct optstruct *opt)
 	filesize = end = fileinfo(f, 1);
 	jmp = end / 5 + 1;
 
-	/* find signature's END */
+	/* find signature end */
 	while(1) {
 	    tmp = cut(f, 0, end);
 	    exec++;
-	    if(scanfile(c, s, tmp) == 1) {
-		if(!end) {
-		    mprintf("end == 0, stopping loop\n");
-		    unlink(tmp);
-		    free(tmp);
-		    break;
-		}
-		mprintf("Detected, decreasing end %d -> %d\n", end, end - jmp);
-		end -= jmp;
-		unlink(tmp);
-		free(tmp);
+	    ret = scanfile(c, s, tmp);
+	    unlink(tmp);
+	    free(tmp);
+
+	    if(ret == 1) {
+
+		if(end >= jmp) {
+		    mprintf("Detected, decreasing end %d -> %d\n", end, end - jmp);
+		    end -= jmp;
+		} else
+		    end = 0;
+
 	    } else {
 		mprintf("Not detected at %d, moving forward.\n", end);
 		if(jmp == 1) {
-		    unlink(tmp);
-		    free(tmp);
-		    //mprintf("Starting precise loop\n");
+
 		    while(end <= filesize) {
 			tmp = cut(f, 0, end);
 			exec++;
 			if(scanfile(c, s, tmp) == 1) {
-			    mprintf(" *** Found signature's end at %d\n", end);
+			    mprintf(" *** Signature end found at %d\n", end);
 			    found = 1;
-		//	    unlink(tmp);
-			    f2 = strdup(tmp);
+			    f2 = strdup(tmp); /* remember this file */
 			    free(tmp);
 			    break;
 			} else {
@@ -251,6 +262,7 @@ void sigtool(struct optstruct *opt)
 
 		    if(found) break;
 		}
+
 		if(jmp)
 		    jmp--;
 		jmp = jmp/2 + 1;
@@ -264,56 +276,83 @@ void sigtool(struct optstruct *opt)
 
 	}
 
-	/* now we go backward until the signature can't be detected */
-
+	/* find signature beginning */
 	found = 0;
 	jmp = 50;
 	pos = end - jmp;
 
 	while(1) {
-	    if(pos < 0) //!!!!!!????
-		pos = 0;
 
 	    tmp = change(f2, pos);
-	    exec++;
 	    if(scanfile(c, s, tmp) != 1) {
-		mprintf("Not detected, moving backward %d -> %d\n", pos, pos - jmp);
-		pos -= jmp;
+		exec++;
 		unlink(tmp);
 		free(tmp);
+
+		if(pos >= jmp) {
+		    mprintf("Not detected, moving backward %d -> %d\n", pos, pos - jmp);
+		    pos -= jmp;
+		    maxsize += jmp;
+		} else {
+		    mprintf("Not detected, using the beginning of the file.\n");
+		    pos = 0;
+		    break;
+		}
+
+		if(maxsize > MAX_LENGTH) {
+		    mprintf("!Generated signature is too big.\n");
+		    unlink(f2);
+		    free(f2);
+		    exit(1);
+		}
 
 	    } else {
 		mprintf("Detected at %d, moving forward.\n", pos);
 		if(jmp == 1 && lastjmp == 1) {
 		    unlink(tmp);
 		    free(tmp);
-		    //mprintf("Starting precise loop\n");
 		    while(pos < end) {
 			tmp = change(f2, pos);
 			exec++;
-			if(scanfile(c, s, tmp) == 1) {
-			    unlink(tmp);
-			    free(tmp);
+			ret = scanfile(c, s, tmp);
+			unlink(tmp);
+			free(tmp);
+			if(ret == 1) {
 			    mprintf("Moving forward %d -> %d\n", pos, pos + 1);
 			    pos++;
+
+			    if(end - pos < MIN_LENGTH) {
+				mprintf("!Generated signature is too small.\n");
+				unlink(f2);
+				free(f2);
+				exit(1);
+			    }
+
 			} else {
 			    mprintf(" *** Found signature's start at %d\n", pos);
-			    unlink(tmp);
-			    free(tmp);
 			    found = 1;
 			    break;
 			}
 		    }
-		    if(found) break;
+
+		    if(pos >= end) {
+		        mprintf("!Can't generate a proper signature.\n");
+			unlink(f2);
+			free(f2);
+		        exit(1);
+		    }
+
+		    if(found)
+			break;
 		}
 
 		lastjmp = jmp;
-		if(jmp)
+		if(jmp > 0)
 		    jmp--;
-		jmp = jmp/2 + 1; //??????????????
+		jmp = jmp/2 + 1;
 		pos += jmp;
 
-		if(pos > end)
+		if(pos >= end - 2 * jmp)
 		    pos = end - 2 * jmp;
 
 		unlink(tmp);
@@ -329,8 +368,8 @@ void sigtool(struct optstruct *opt)
 	mprintf("\nThe scanner was executed %d times.\n", exec);
 	mprintf("The signature length is %d, so the length of the hex string should be %d\n", end - pos, 2 * (end - pos));
 
-	if(end - pos < 8) {
-	    mprintf("\nWARNING: THE SIGNATURE IS TO SMALL (PROBABLY ONLY A PART OF A REAL SIGNATURE).\n");
+	if(end - pos < MIN_LENGTH) {
+	    mprintf("\nWARNING: THE SIGNATURE IS TOO SMALL (PROBABLY ONLY A PART OF A REAL SIGNATURE).\n");
 	    mprintf("         PLEASE DON'T USE IT.\n\n");
 	}
 
@@ -380,7 +419,7 @@ void sigtool(struct optstruct *opt)
 	free(bsigname);
     }
 
-    //free_opt(opt);
+    /* free_opt(opt); */
 }
 
 int build(struct optstruct *opt)
@@ -396,7 +435,7 @@ int build(struct optstruct *opt)
 	struct tm *brokent;
 
     /* build a tar.gz archive
-     * we need: COPYING, viruses.db / viruses.db2
+     * we need: COPYING and {viruses.db, viruses.db2}+
      * in current working directory
      */
 
@@ -485,8 +524,7 @@ int build(struct optstruct *opt)
 
     /* version number */
 
-    // tutaj ma przeczytac naglowek z obecnej bazy o tej samej nazwie
-    // i uzyc o jeden wiekszy
+    /* ... increment version number by one */
 
     mprintf("!Can't read database version number from current local database\n");
     fflush(stdin);
@@ -499,8 +537,7 @@ int build(struct optstruct *opt)
     sprintf(smbuff, "%d:", no);
     strcat(header, smbuff);
 
-    /* functionality level */
-    // pobierac z cl_funclevel()
+    /* functionality level (TODO: use cl_funclevel()) */
     sprintf(smbuff, "%d:", 1);
     strcat(header, smbuff);
 
@@ -515,10 +552,8 @@ int build(struct optstruct *opt)
     /* builder */
     fflush(stdin);
     mprintf("Builder name: ");
-    //fgets(smbuff, 24, stdin);
     fscanf(stdin, "%s:", &smbuff);
     strcat(header, smbuff);
-    //strcat(header, ":");
 
     /* fill up with spaces */
     if(strlen(header) > 512) {
@@ -555,7 +590,7 @@ int build(struct optstruct *opt)
 
     mprintf("Database %s created.\n", pt);
 
-    // teraz zaladuj baze
+    /* try to load final cvd */
 }
 
 void cvdinfo(struct optstruct *opt)
@@ -588,7 +623,7 @@ void cvdinfo(struct optstruct *opt)
     else
 	mprintf("Verification OK.\n");
 
-    // wyczysc cvd
+    /* free */
 }
 
 void help(void)

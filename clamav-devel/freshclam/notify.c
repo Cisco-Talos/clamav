@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,6 +15,8 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+
+#ifdef BUILD_CLAMD
 
 #include <stdio.h>
 #include <unistd.h>
@@ -109,3 +111,5 @@ int notify(const char *cfgfile)
     logg("Clamd successfully notified about the update.\n");
     return 0;
 }
+
+#endif

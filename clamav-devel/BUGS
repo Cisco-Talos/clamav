@@ -6,5 +6,3 @@ Known bugs:
 -----------
 
 -) unrarlib doesn't work on 64-bit systems
--) clamd stability problems on BSD
--) clamav-milter stability problems
