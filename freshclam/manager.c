@@ -155,11 +155,11 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 
     if(updated) {
 	if(cfgopt(copt, "HTTPProxyServer")) {
-	    mprintf("Database updated (%d signatures) from %s.\n", signo, hostname);
-	    logg("Database updated (%d signatures) from %s.\n", signo, hostname);
+	    mprintf("Database updated (%d signatures) from %s\n", signo, hostname);
+	    logg("Database updated (%d signatures) from %s\n", signo, hostname);
 	} else {
-	    mprintf("Database updated (%d signatures) from %s (%s).\n", signo, hostname, ipaddr);
-	    logg("Database updated (%d signatures) from %s (%s).\n", signo, hostname, ipaddr);
+	    mprintf("Database updated (%d signatures) from %s (IP: %s)\n", signo, hostname, ipaddr);
+	    logg("Database updated (%d signatures) from %s (IP: %s)\n", signo, hostname, ipaddr);
 	}
 
 #ifdef BUILD_CLAMD
@@ -279,7 +279,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 		cl_cvdfree(current);
 	    return 52;
 	} else {
-	    mprintf("*Connected to %s (%s).\n", hostname, ipaddr);
+	    mprintf("*Connected to %s (IP: %s).\n", hostname, ipaddr);
 	}
 
 	if(!ip[0])
@@ -296,7 +296,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	}
 
 	if(!remote) {
-	    mprintf("@Can't read %s header from %s (%s)\n", remotename, hostname, ipaddr);
+	    mprintf("@Can't read %s header from %s (IP: %s)\n", remotename, hostname, ipaddr);
 	    close(hostfd);
 	    if(current)
 		cl_cvdfree(current);
@@ -339,7 +339,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 
     if(hostfd < 0) {
 	if(ipaddr[0])
-	    mprintf("Connection with %s failed.\n", ipaddr);
+	    mprintf("Connection with %s (IP: %s) failed.\n", hostname, ipaddr);
 	else
 	    mprintf("Connection with %s failed.\n", hostname);
 	return 52;
@@ -351,7 +351,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     tempname = cli_gentemp(".");
 
     if((ret = get_database(remotename, hostfd, tempname, hostname, proxy, user, pass))) {
-        mprintf("@Can't download %s from %s\n", remotename, ipaddr);
+        mprintf("@Can't download %s from %s (IP: %s)\n", remotename, hostname, ipaddr);
         unlink(tempname);
         free(tempname);
         close(hostfd);
@@ -474,7 +474,7 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip)
 #endif
 
 	if(connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in)) == -1) {
-	    mprintf("Can't connect to port %d of host %s (%s)\n", port, hostpt, ipaddr);
+	    mprintf("Can't connect to port %d of host %s (IP: %s)\n", port, hostpt, ipaddr);
 	    close(socketfd);
 	    continue;
 	}
