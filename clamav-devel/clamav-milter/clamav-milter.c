@@ -332,9 +332,16 @@
  *				make them easier to manage
  *	0.70n	20/4/04	Allow for "i" macro not defined in sendmail.cf
  *			clamfi_connect: print better message if hostaddr is null
+ *	0.70o	20/4/04	Added X-Virus-Status
+ *			Always add X-Virus-Scanned
+ *			If hostaddr is NULL assume it's a local connection. This
+ *			is probably a safe assumption but it should be verified
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.79  2004/04/20 14:15:01  nigelhorne
+ * Sorted out X- headers and handle hostaddr == NULL
+ *
  * Revision 1.78  2004/04/20 08:13:15  nigelhorne
  * Print better message if hostaddr is null
  *
@@ -554,9 +561,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.78 2004/04/20 08:13:15 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.79 2004/04/20 14:15:01 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70n"
+#define	CM_VERSION	"0.70o"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -814,7 +821,7 @@ help(void)
 	puts("\t--local\t\t\t-l\tScan messages sent from machines on our LAN.");
 	puts("\t--outgoing\t\t-o\tScan outgoing messages from this machine.");
 	puts("\t--noreject\t\t-N\tDon't reject viruses, silently throw them away.");
-	puts("\t--noxheader\t\t-n\tSuppress X-Virus-Scanned header.");
+	puts("\t--noxheader\t\t-n\tSuppress X-Virus-Scanned/X-Virus-Status headers.");
 	puts("\t--postmaster\t\t-p EMAIL\tPostmaster address [default=postmaster].");
 	puts("\t--postmaster-only\t-P\tSend warnings only to the postmaster.");
 	puts("\t--quiet\t\t\t-q\tDon't send e-mail notifications of interceptions.");
@@ -1577,24 +1584,27 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 			syslog(LOG_ERR, "clamfi_connect: hostname is null");
 		return cl_error;
 	}
-	if(hostaddr == NULL) {
-		if(use_syslog)
-			syslog(LOG_ERR,
-				"clamfi_connect: hostaddr for '%s' is null",
-				hostname);
-		return cl_error;
-	}
-
+	if(hostaddr == NULL)
+		/*
+		 * According to the sendmail API hostaddr is NULL if
+		 * "the type is not supported in the current version". What
+		 * the documentation doesn't say is the type of what?
+		 *
+		 * Possibly the input is not a TCP/IP socket?
+		 */
+		remoteIP = "127.0.0.1";
+	else {
 #ifdef HAVE_INET_NTOP
-	remoteIP = (char *)inet_ntop(AF_INET, &((struct sockaddr_in *)(hostaddr))->sin_addr, ip, sizeof(ip));
+		remoteIP = (char *)inet_ntop(AF_INET, &((struct sockaddr_in *)(hostaddr))->sin_addr, ip, sizeof(ip));
 #else
-	remoteIP = inet_ntoa(((struct sockaddr_in *)(hostaddr))->sin_addr);
+		remoteIP = inet_ntoa(((struct sockaddr_in *)(hostaddr))->sin_addr);
 #endif
 
-	if(remoteIP == NULL) {
-		if(use_syslog)
-			syslog(LOG_ERR, "clamfi_connect: remoteIP is null");
-		return cl_error;
+		if(remoteIP == NULL) {
+			if(use_syslog)
+				syslog(LOG_ERR, "clamfi_connect: remoteIP is null");
+			return cl_error;
+		}
 	}
 
 #ifdef	CL_DEBUG
@@ -2062,7 +2072,13 @@ clamfi_eom(SMFICTX *ctx)
 	if(sendmailId == NULL)
 		sendmailId = "Unknown";
 
+	if(!nflag)
+		smfi_addheader(ctx, "X-Virus-Scanned", clamav_version);
+
 	if(strstr(mess, "ERROR") != NULL) {
+		if(!nflag)
+			smfi_addheader(ctx, "X-Virus-Status", "Not Scanned");
+
 		if(strstr(mess, "Size exceeded") != NULL) {
 			/*
 			 * Clamd has stopped on StreamMaxLength before us
@@ -2083,7 +2099,7 @@ clamfi_eom(SMFICTX *ctx)
 
 	if(strstr(mess, "FOUND") == NULL) {
 		if(!nflag)
-			smfi_addheader(ctx, "X-Virus-Scanned", clamav_version);
+			smfi_addheader(ctx, "X-Virus-Status", "Clean");
 
 		/*
 		 * TODO: if privdata->from is NULL it's probably SPAM, and
@@ -2114,6 +2130,9 @@ clamfi_eom(SMFICTX *ctx)
 		int i;
 		char **to, *err;
 		char reject[1024];
+
+		if(!nflag)
+			smfi_addheader(ctx, "X-Virus-Status", "Infected");
 
 		/*
 		 * Setup err as a list of recipients
