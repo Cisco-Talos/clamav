@@ -1,3 +1,8 @@
+Thu Sep 16 11:07:37 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox:c	If a false or invented encoding type is stated attempt
+				to decode with all known decoders
+
 Thu Sep 16 09:58:01 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Handle comments in the headers
@@ -51,7 +56,7 @@ Tue Sep 14 22:32:50 CEST 2004 (tk)
 
 Tue Sep 14 13:10:38 BST 2004 (njh)
 ----------------------------------
-  * libclamav/mbox.c:	FOLLOWURL: include the text of the old HTML 
+  * libclamav/mbox.c:	FOLLOWURL: include the text of the old HTML
 				normalisation code that works in RAM until the
 				code for the new HTML API that uses temporary
 				files is added to mbox.c. This allows clamAV to
