@@ -228,7 +228,9 @@ static int vba_read_project_strings(int fd, int is_mac)
 		} else {
 			/* Unknown type - probably ran out of strings - rewind */
 			lseek(fd, -(length+2), SEEK_CUR);
-			free(name);
+			if (name) {
+				free(name);
+			}
 			break;
 		}
 		free(name);
