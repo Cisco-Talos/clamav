@@ -1,3 +1,9 @@
+Mon Mar  7 01:28:44 CET 2005 (tk)
+---------------------------------
+  * libclamav, clamd: add reference counter to cl_node and improve database
+		      reload method in clamd (patch by Mark Pizzolato
+		      <clamav-devel*subscriptions.pizzolato.net>)
+
 Mon Mar  7 00:37:34 CET 2005 (tk)
 ---------------------------------
   * libclamav: add MD5 based false positive eliminator

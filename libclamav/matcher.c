@@ -43,6 +43,11 @@ static int targettab[TARGET_TABLE_SIZE] = { 0, CL_TYPE_MSEXE, CL_TYPE_MSOLE2, CL
 
 extern short cli_debug_flag;
 
+#ifdef CL_THREAD_SAFE
+#  include <pthread.h>
+pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
 int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, unsigned short ftype)
 {
 	int ret, *partcnt;
@@ -361,6 +366,26 @@ int cl_build(struct cl_node *root)
     return cli_ac_buildtrie(root);
 }
 
+struct cl_node *cl_dup(struct cl_node *root)
+{
+    if(!root) {
+	cli_errmsg("cl_dup: root == NULL\n");
+	return NULL;
+    }
+
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_lock(&cli_ref_mutex);
+#endif
+
+    root->refcount++;
+    
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_unlock(&cli_ref_mutex);
+#endif
+
+    return root;
+}
+
 void cl_free(struct cl_node *root)
 {
 	int i;
@@ -371,6 +396,22 @@ void cl_free(struct cl_node *root)
 	cli_errmsg("cl_free: root == NULL\n");
 	return;
     }
+
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_lock(&cli_ref_mutex);
+#endif
+
+    root->refcount--;
+    if (root->refcount) {
+#ifdef CL_THREAD_SAFE
+	pthread_mutex_unlock(&cli_ref_mutex);
+#endif
+	return;
+    }
+    
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_unlock(&cli_ref_mutex);
+#endif
 
     cli_ac_free(root);
     cli_bm_free(root);

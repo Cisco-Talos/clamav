@@ -433,6 +433,7 @@ static int cli_loaddb(FILE *fd, struct cl_node **root, unsigned int *signo)
 	*root = (struct cl_node *) cli_calloc(1, sizeof(struct cl_node));
 	if(!*root)
 	    return CL_EMEM;
+	(*root)->refcount = 1;
     }
 
     if(!(*root)->ac_root) {
@@ -506,6 +507,7 @@ static int cli_loadndb(FILE *fd, struct cl_node **root, unsigned int *signo)
 	*root = (struct cl_node *) cli_calloc(1, sizeof(struct cl_node));
 	if(!*root)
 	    return CL_EMEM;
+	(*root)->refcount = 1;
     }
 
     if(!(*root)->ac_root) {
@@ -624,6 +626,7 @@ static int cli_loadhdb(FILE *fd, struct cl_node **root, unsigned int *signo, uns
 	*root = (struct cl_node *) cli_calloc(1, sizeof(struct cl_node));
 	if(!*root)
 	    return CL_EMEM;
+	(*root)->refcount = 1;
     }
 
     while(fgets(buffer, FILEBUFF, fd)) {
