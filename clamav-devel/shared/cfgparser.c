@@ -65,6 +65,7 @@ struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 	    {"ScanPE", OPT_NOARG},
 	    {"DetectBrokenExecutables", OPT_NOARG},
 	    {"ScanMail", OPT_NOARG},
+	    {"MailFollowURLs", OPT_NOARG},
 	    {"ScanHTML", OPT_NOARG},
 	    {"ScanOLE2", OPT_NOARG},
 	    {"ScanArchive", OPT_NOARG},

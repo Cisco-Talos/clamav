@@ -48,7 +48,6 @@
 #include "manager.h"
 #include "treewalk.h"
 #include "shared.h"
-#include "mbox.h"
 #include "str.h"
 #include "strrcpy.h"
 #include "memory.h"
@@ -60,7 +59,6 @@
 dev_t procdev;
 #endif
 
-extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME */
 
 int scanmanager(const struct optstruct *opt)
 {
@@ -212,68 +210,7 @@ int scanmanager(const struct optstruct *opt)
 	    ret = scandirs(cwd, trie, user, opt, limits);
 
     } else if(!strcmp(opt->filename, "-")) { /* read data from stdin */
-	/*
-	 * njh@bandsman.co.uk: treat the input as a mailbox, the program
-	 * can then be used as a filter called when mail is received
-	 */
-	if(optc(opt, 'm')) {
-		const char *tmpdir;
-		char *dir;
-
-		/* njh@bandsman.co.uk: BeOS */
-#if !defined(C_CYGWIN) && !defined(C_BEOS)
-		if(!geteuid()) {
-		    if((user = getpwnam(UNPUSER)) == NULL) {
-			mprintf("@Can't get information about user %s\n", UNPUSER);
-			exit(60); /* this is critical problem, so we just exit here */
-		    }
-		}
-#endif
-
-		tmpdir = getenv("TMPDIR");
-
-		if(tmpdir == NULL)
-#ifdef P_tmpdir
-			tmpdir = P_tmpdir;
-#else
-			tmpdir = "/tmp";
-#endif
-
-		if(checkaccess(tmpdir, UNPUSER, W_OK) != 1) {
-			mprintf("@Can't write to the temporary directory.\n");
-			exit(64);
-		}
-		/* generate the temporary directory */
-
-		dir = cli_gentemp(tmpdir);
-		if(mkdir(dir, 0700)) {
-			mprintf("@Can't create the temporary directory %s\n", dir);
-			exit(63); /* critical */
-		}
-
-		if(user)
-			chown(dir, user->pw_uid, user->pw_gid);
-
-		/*
-		 * Extract the attachments into the temporary directory
-		 */
-		ret = cli_mbox(dir, 0, 0);
-
-		if(ret == 0) {
-			/* fix permissions of extracted files */
-			fixperms(dir);
-
-			if(ret == 0) /* execute successful */
-				ret = treewalk(dir, trie, user, opt, limits);
-
-			/* remove the directory - as clamav */
-			clamav_rmdirs(dir);
-
-			/* free dir - it's not necessary now */
-			free(dir);
-		}
-	} else
-	    ret = checkstdin(trie, limits);
+	ret = checkstdin(trie, limits);
 
     } else {
 	int x;
@@ -442,8 +379,14 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
     else
 	options |= CL_HTML;
 
-    if(optc(opt, 'm'))
+    if(optl(opt, "no-mail")) {
+	options &= ~CL_MAIL;
+    } else {
 	options |= CL_MAIL;
+
+	if(optl(opt, "mail-follow-urls"))
+	    options |= CL_MAILURL;
+    }
 
     /* 
      * check the extension  - this is a special case, normally we don't need to

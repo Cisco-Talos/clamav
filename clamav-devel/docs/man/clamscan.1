@@ -1,5 +1,5 @@
 .\" Manual page created by Tomasz Kojm, 14/15 IV 2002
-.TH "clamscan" "1" "August 4, 2004" "Tomasz Kojm" "Clam AntiVirus"
+.TH "clamscan" "1" "August 18, 2004" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 clamscan \- scan files and directories against viruses
@@ -57,10 +57,6 @@ Don't scan file names containing PATT. It may be used multiple times.
 .TP 
 \fB\-\-include=PATT\fR
 Only scan file names containing PATT. It may be used multiple times.
-.TP 
-\fB\-\-mbox\fR
-Enable scanning of various mail file types (also treat stdin as a mailbox \- for backward compatibility).
-.TP 
 \fB\-i, \-\-infected\fR
 Only print infected files.
 .TP 
@@ -69,6 +65,9 @@ Remove infected files. \fBBe careful.\fR
 .TP 
 \fB\-\-move=DIRECTORY\fR
 Move infected files into DIRECTORY. Directory must be writeable for the 'clamav' user or unprivileged user running clamscan.
+.TP 
+\fB\-\-no\-mail\fR
+Disable scanning of mail files.
 .TP 
 \fB\-\-no\-pe\fR
 PE stands for Portable Executable \- it's an executable file format used in all 32\-bit versions of Windows operating systems. By default ClamAV performs deeper analysis of executable files and tries to decompress popular executable packers such as UPX. This option \fBdisables\fR PE support and is not recommended !
@@ -87,6 +86,9 @@ Mark broken executables as viruses (Broken.Executable).
 .TP 
 \fB\-\-block\-encrypted\fR
 Mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).
+.TP 
+\fB\-\-mail\-follow\-urls\fR
+If an email contains URLs ClamAV can download and scan them. \fBWARNING: This option may open your system to a DoS attack. Never use it on loaded servers.\fR
 .TP 
 \fB\-\-max\-files=#n\fR
 Extract first #n files from each archive. This option protects your system against DoS attacks (default: 500)

@@ -327,6 +327,12 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     if(cfgopt(copt, "ScanMail")) {
 	logg("Mail files support enabled.\n");
 	options |= CL_MAIL;
+
+	if(cfgopt(copt, "MailFollowURLs")) {
+	    logg("Mail: URL scanning enabled.\n");
+	    options |= CL_MAILURL;
+	}
+
     } else {
 	logg("Mail files support disabled.\n");
     }
