@@ -1,3 +1,8 @@
+Fri Feb 27 12:23:48 GMT 2004 (njh)
+----------------------------------
+  * libclamav:	Handle lines just containing ':', thanks to Stefan
+	Kaltenbrunner <mm-mailinglist@madness.at> and Trog
+
 Fri Feb 27 10:47:20 CET 2004 (tk)
 ---------------------------------
   * clamd: --debug: disable limit for a core size under Linux
