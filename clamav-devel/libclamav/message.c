@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.23  2004/02/03 23:04:09  nigelhorne
+ * Disabled binhex code
+ *
  * Revision 1.22  2004/02/03 22:54:59  nigelhorne
  * Catch another example of Worm.Dumaru.Y
  *
@@ -63,7 +66,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.22 2004/02/03 22:54:59 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.23 2004/02/03 23:04:09 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -1014,6 +1017,8 @@ uuencodeBegin(const message *m)
 const text *
 binhexBegin(const message *m)
 {
+	return NULL;
+	/*
 	const text *t_line;
 
 	for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next)
@@ -1021,6 +1026,7 @@ binhexBegin(const message *m)
 			return t_line;
 
 	return NULL;
+	*/
 }
 
 /*
