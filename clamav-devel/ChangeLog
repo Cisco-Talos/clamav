@@ -1,3 +1,10 @@
+Mon Feb  2 12:43:55 GMT 2004 (trog)
+-----------------------------------
+  * libclamav: ole2_extract.c: Add checks for compiler packed struct
+	support. Fix sbat table in xbats bug. Fixup some data types.
+	Add function to read ole2 header with compilers we don't know
+	how to pack structures.
+
 Mon Feb  2 09:55:12 GMT 2004 (njh)
 ----------------------------------
   * libclamav: Some instances of Worm.Dumaru.Y got through the net
