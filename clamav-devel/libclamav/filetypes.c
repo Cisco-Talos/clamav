@@ -53,13 +53,15 @@ static const struct cli_magic_s cli_magic[] = {
 
     /* Archives */
 
-    {0,  "Rar!",			4,  "RAR",		  CL_RARFILE},
-    {0,  "PK\003\004",			4,  "ZIP",		  CL_ZIPFILE},
-    {0,  "\037\213",			2,  "GZip",		  CL_GZFILE},
-    {0,  "BZh",				3,  "BZip",		  CL_BZFILE},
-    {0,  "SZDD",			4,  "compress.exe'd",	  CL_MSCFILE},
-    {0,  "MSCF",			4,  "MS CAB",		  CL_MSCABFILE},
-    {0,  "ITSF",			4,  "MS CHM",             CL_MSCHMFILE},
+    {0,	    "Rar!",			4,  "RAR",		  CL_RARFILE},
+    {0,	    "PK\003\004",		4,  "ZIP",		  CL_ZIPFILE},
+    {0,	    "PK00PK\003\004",		4,  "ZIP",		  CL_ZIPFILE},
+    {0,	    "\037\213",			2,  "GZip",		  CL_GZFILE},
+    {0,	    "BZh",			3,  "BZip",		  CL_BZFILE},
+    {0,	    "SZDD",			4,  "compress.exe'd",	  CL_MSCFILE},
+    {0,	    "MSCF",			4,  "MS CAB",		  CL_MSCABFILE},
+    {0,	    "ITSF",			4,  "MS CHM",             CL_MSCHMFILE},
+    {257,   "ustar",			5,  "POSIX tar",	  CL_TARFILE},
 
     /* Mail */
 

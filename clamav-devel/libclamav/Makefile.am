@@ -114,6 +114,8 @@ libclamav_la_SOURCES = \
 	fsg.c \
 	fsg.h \
 	line.c \
-	line.h
+	line.h \
+	untar.c \
+	untar.h
 
 lib_LTLIBRARIES = libclamav.la
