@@ -107,6 +107,7 @@ LN_S = @LN_S@
 OBJDUMP = @OBJDUMP@
 PACKAGE = @PACKAGE@
 RANLIB = @RANLIB@
+SENDMAIL = @SENDMAIL@
 STRIP = @STRIP@
 TH_SAFE = @TH_SAFE@
 VERSION = @VERSION@
@@ -124,7 +125,7 @@ install_sh = @install_sh@
 
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@man_MANS = ../docs/man/clamav-milter.8
 
-DEFS = @DEFS@
+DEFS = @DEFS@ -DSENDMAIL_BIN=\"@SENDMAIL@\"
 # CLAMD_LIBS is used, because clamav-milter requires the same libraries as clamd
 LIBS = -L../libclamav -lclamav -L/usr/lib/libmilter -lmilter @CLAMD_LIBS@
 INCLUDES = -I../clamd -I../libclamav -I../clamscan
