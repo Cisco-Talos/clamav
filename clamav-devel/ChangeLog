@@ -1,3 +1,9 @@
+Fri May 21 10:16:27 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	--from wasn't always recognised
+  			write failures to quarantine area were not correctly
+	reported
+
 Thu May 20 11:23:23 BST 2004 (trog)
 -----------------------------------
   * libclamav ole2_extract.c,vba_extract.c: more malloc checks
