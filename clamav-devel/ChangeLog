@@ -1,3 +1,9 @@
+Thu Sep 30 22:48:53 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Remove unneeded strdup() calls
+			Fix some "filename too long" errors when MailFollowURLs
+				is set
+
 Thu Sep 30 20:19:46 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Allow --from with no e-mail address
