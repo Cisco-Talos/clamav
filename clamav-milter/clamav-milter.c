@@ -228,9 +228,13 @@
  *			Removed duplication in version string
  *			Handle machines that don't have in_port_t
  *	0.67	16/2/04	Upissued to 0.67
+ *	0.67a	16/2/04	Added clamfi_free
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.47  2004/02/16 11:55:24  nigelhorne
+ * Added clamfi_free which helps with the tidying up
+ *
  * Revision 1.46  2004/02/16 09:39:22  nigelhorne
  * Upissued to 0.67
  *
@@ -354,9 +358,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.46 2004/02/16 09:39:22 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.47 2004/02/16 11:55:24 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.67"
+#define	CM_VERSION	"0.67a"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -479,6 +483,7 @@ static	sfsistat	clamfi_eom(SMFICTX *ctx);
 static	sfsistat	clamfi_abort(SMFICTX *ctx);
 static	sfsistat	clamfi_close(SMFICTX *ctx);
 static	void		clamfi_cleanup(SMFICTX *ctx);
+static	void		clamfi_free(struct privdata *privdata);
 static	int		clamfi_send(const struct privdata *privdata, size_t len, const char *format, ...);
 static	char		*strrcpy(char *dest, const char *source);
 static	int		clamd_recv(int sock, char *buf, size_t len);
@@ -1448,7 +1453,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		}
 	}
 
-	privdata = (struct privdata *)calloc(1, sizeof(struct privdata));
+	privdata = (struct privdata *)cli_calloc(1, sizeof(struct privdata));
 	privdata->dataSocket = -1;	/* 0.4 */
 	privdata->cmdSocket = -1;	/* 0.4 */
 
@@ -1459,18 +1464,17 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		 */
 		int ntries = 5;
 
-		privdata->filename = malloc(strlen(quarantine_dir) + 12);
+		privdata->filename = (char *)cli_malloc(strlen(quarantine_dir) + 12);
 
 		do {
 			sprintf(privdata->filename, "%s/msg.XXXXXX", quarantine_dir);
-#if	defined(C_LINUX) || defined(C_BSD)
+#if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS)
 			privdata->dataSocket = mkstemp(privdata->filename);
 #else
 			if(mktemp(privdata->filename) == NULL) {
 				if(use_syslog)
 					syslog(LOG_ERR, "mktemp %s failed", privdata->filename);
-				free(privdata->filename);
-				privdata->filename = NULL;
+				clamfi_free(privdata);
 				return cl_error;
 			}
 			privdata->dataSocket = open(privdata->filename, O_CREAT|O_EXCL|O_WRONLY|O_TRUNC, 0600);
@@ -1480,8 +1484,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		if(privdata->dataSocket < 0) {
 			if(use_syslog)
 				syslog(LOG_ERR, "tempfile %s creation failed", privdata->filename);
-			free(privdata->filename);
-			privdata->filename = NULL;
+			clamfi_free(privdata);
 			return cl_error;
 		}
 	} else {
@@ -1498,10 +1501,12 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 			if((privdata->cmdSocket = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 				perror("socket");
+				clamfi_free(privdata);
 				return cl_error;
 			}
 			if(connect(privdata->cmdSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
 				perror(localSocket);
+				clamfi_free(privdata);
 				return cl_error;
 			}
 			freeServer = 0;
@@ -1515,17 +1520,21 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			assert(serverIPs != NULL);
 
 			freeServer = findServer();
-			if(freeServer < 0)
+			if(freeServer < 0) {
+				clamfi_free(privdata);
 				return cl_error;
+			}
 
 			server.sin_addr.s_addr = serverIPs[freeServer];
 
-			if((privdata->cmdSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+			if((privdata->cmdSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) { 
 				perror("socket");
+				clamfi_free(privdata);
 				return cl_error;
 			}
 			if(connect(privdata->cmdSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
 				perror("connect");
+				clamfi_free(privdata);
 				return cl_error;
 			}
 		}
@@ -1535,8 +1544,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		 */
 		if((privdata->dataSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 			perror("socket");
-			close(privdata->cmdSocket);
-			free(privdata);
+			clamfi_free(privdata);
 			if(use_syslog)
 				syslog(LOG_ERR, "failed to create socket");
 			return cl_error;
@@ -1546,9 +1554,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 		if(send(privdata->cmdSocket, "STREAM\n", 7, 0) < 7) {
 			perror("send");
-			close(privdata->dataSocket);
-			close(privdata->cmdSocket);
-			free(privdata);
+			clamfi_free(privdata);
 			if(use_syslog)
 				syslog(LOG_ERR, "send failed to clamd");
 			return cl_error;
@@ -1559,9 +1565,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		nbytes = clamd_recv(privdata->cmdSocket, buf, sizeof(buf));
 		if(nbytes < 0) {
 			perror("recv");
-			close(privdata->dataSocket);
-			close(privdata->cmdSocket);
-			free(privdata);
+			clamfi_free(privdata);
 			if(use_syslog)
 				syslog(LOG_ERR, "recv failed from clamd getting PORT");
 			return cl_error;
@@ -1572,9 +1576,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			printf("Received: %s", buf);
 #endif
 		if(sscanf(buf, "PORT %hu\n", &port) != 1) {
-			close(privdata->dataSocket);
-			close(privdata->cmdSocket);
-			free(privdata);
+			clamfi_free(privdata);
 			if(use_syslog)
 				syslog(LOG_ERR, "Expected port information from clamd, got '%s'",
 					buf);
@@ -1602,9 +1604,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		if(rc < 0) {
 			perror("connect");
 
-			close(privdata->dataSocket);
-			close(privdata->cmdSocket);
-			free(privdata);
+			clamfi_free(privdata);
 
 			/* 0.4 - use better error message */
 			if(use_syslog) {
@@ -1627,9 +1627,15 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 	if (hflag) 
         	privdata->headers = header_list_new();
-	else privdata->headers = NULL;
+	else
+		privdata->headers = NULL;
 
-	return (smfi_setpriv(ctx, privdata) == MI_SUCCESS) ? SMFIS_CONTINUE : cl_error;
+	if(smfi_setpriv(ctx, privdata) == MI_SUCCESS)
+		return SMFIS_CONTINUE;
+
+	clamfi_free(privdata);
+
+	return cl_error;
 }
 
 static sfsistat
@@ -2092,6 +2098,15 @@ clamfi_cleanup(SMFICTX *ctx)
 	struct privdata *privdata = (struct privdata *)smfi_getpriv(ctx);
 
 	if(privdata) {
+		clamfi_free(privdata);
+		smfi_setpriv(ctx, NULL);
+	}
+}
+
+static void
+clamfi_free(struct privdata *privdata)
+{
+	if(privdata) {
 		if(privdata->body)
 			free(privdata->body);
 
@@ -2153,7 +2168,6 @@ clamfi_cleanup(SMFICTX *ctx)
 			puts("Free privdata");
 #endif
 		free(privdata);
-		smfi_setpriv(ctx, NULL);
 	}
 
 	if(max_children > 0) {
