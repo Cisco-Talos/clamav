@@ -1,0 +1,81 @@
+.TH "clamav-milter" "8" "June 21, 2003" "" "Clam AntiVirus"
+.SH "NAME"
+.LP 
+clamav\-milter \- milter compatible mail scanner
+.SH "SYNOPSIS"
+.LP 
+clamav\-milter [options] socket_address
+.SH "DESCRIPTION"
+.LP 
+clamav\-milter is a filter for sendmail mail server. It uses a mail scanning engine built into clamd.
+.SH "OPTIONS"
+.LP 
+
+.TP 
+\fB\-h, \-\-help\fR
+Output the help information and exit.
+.TP 
+\fB\-V, \-\-version\fR
+Print the version number and exit.
+.TP 
+\fB\-c FILE, \-\-config\-file=FILE\fR
+By default clamav\-milter uses a default configuration file, this option allows you to specify another one.
+.TP 
+\fB\-x n, \-\-debug\-level=n\fR
+Set the debug level to n (where n from [0..9]).
+.TP 
+\fB\-b, \-\-bounce\fR
+Send a failure message to the sender, and to the postmaster.
+[ \fBWarning\fR: most viruses and worms
+fake their source address, so this option is not recommended ]
+.TP
+\fB-d, \-\-dont-scan-on-error\fR
+If a system error occurs pass messages through unscanned,
+usually when a system error occurs the milter raises a temporary failure which
+generally causes the message to remain in the queue.
+.TP
+\fB-f, \-\-force-scan\fR
+Always scan, whereever the address came from.
+.TP 
+\fB-l, \-\-local\fR
+Also scan messages sent from LAN.
+.TP
+\fB-n, \-\-noxheader\fR
+Usually clamav\-milter adds a heading to messages that are scanned.
+The header is of the form "X-Virus-Scanned: version", this option instructs
+clamav\-milter to refrain from adding this heading.
+.TP 
+\fB-o, \-\-outgoing\fR
+Scan outgoing messages from this machine.
+.TP
+\fB-p, \-\-postmaster=EMAILADDRESS\fR
+Sets the e-mail address to send notifications to when the \-\-bounce or
+\-\-postmaster-only option is given [ Default: postmaster ]
+.TP
+\fB-P, \-\-postmaster-only\fR
+When the \-\-bounce option is given, only send a notification to the postmaster,
+not the sender.
+.TP
+\fB-q, \-\-quiet\fR
+Don't send any warning messages when a virus or worm or is detected.
+This option overrides the \-\-bounce and \-\-postmaster-only options, and is
+the way to turn off notification to the postmaster.
+.TP
+\fB-Q, \-\-Quarantine=EMAILADDRESS\fR
+If this e-mail address is given, messages containing a virus or worm are
+redirected to it.
+.TP 
+\fB\-\-server=ADDRESS, \-s ADDRESS\fR
+IP address of server running clamd (when using TCPsocket).
+.TP 
+\fB\-\-max\-children=n, \-m n\fR
+Maximum number of children.
+.SH "EXAMPLES"
+.LP 
+clamav\-milter \-\-max\-children=2 \-obl local:/var/run/clmilter.sock
+.SH "AUTHOR"
+.LP 
+clamav\-milter was written by Nigel Horne <njh@bandsman.co.uk>, the manual page was created by Tomasz Kojm <zolw@konarski.edu.pl>.
+.SH "SEE ALSO"
+.LP 
+clamd(8), clamscan(1), freshclam(1), sigtool(1), clamav.conf(5)
