@@ -611,8 +611,8 @@ int build(struct optstruct *opt)
     sprintf(smbuff, "%d:", no);
     strcat(header, smbuff);
 
-    /* functionality level (TODO: use cl_funclevel()) */
-    sprintf(smbuff, "%d:", 1);
+    /* functionality level */
+    sprintf(smbuff, "%d:", cl_retflevel());
     strcat(header, smbuff);
 
     /* MD5 */
