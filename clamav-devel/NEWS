@@ -2,6 +2,28 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.80rc3
+-------
+
+This release candidate eliminates possible false positive alerts in UPX/FSG
+compressed files and clarifies behaviour of default actions in clamd and
+freshclam.
+
+We encourage users to take advantage of our new mirror structure. In order to
+download the database from the closest mirror you should configure freshclam
+to use db.XY.clamav.net where XY is your country code (see
+http://www.iana.org/cctld/cctld-whois.htm for the full list). Please add
+the following lines to freshclam.conf:
+
+    DNSDatabaseInfo current.cvd.clamav.net
+    DatabaseMirror db.XY.clamav.net
+    DatabaseMirror database.clamav.net
+
+DNSDatabaseInfo enables database and software version verification through
+DNS TXT records, and the second database mirror acts as a fallback in case
+a connection to the first mirror fails for some reason.
+
+
 0.80rc2
 -------
 

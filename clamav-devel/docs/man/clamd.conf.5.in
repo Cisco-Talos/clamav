@@ -198,6 +198,11 @@ Enable archive scanning.
 .br 
 Default: enabled
 .TP 
+\fBScanRAR\fR
+Enable scanning of RAR archives. Due to license issues libclamav does not support RAR 3.0 archives (only the old 2.0 format is supported). Because some users report stability problems with unrarlib it's disabled by default and must be enabled in the config file.
+.br 
+Default: disabled
+.TP 
 \fBArchiveMaxFileSize SIZE\fR
 Files in archives larger than this limit won't be scanned. Value of 0 disables the limit.
 .br 
