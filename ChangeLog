@@ -1,3 +1,8 @@
+Mon Oct 20 01:57:16 CEST 2003
+----------------------------------
+  * sigtool: receive digital signature from remote ClamAV Signing Service
+  * libclamav: small cvd fixes
+
 Fri Oct 17 05:08:22 CEST 2003 (tk)
 ----------------------------------
   * new Spanish documentation on ClamAV + Sendmail integration by
