@@ -1,3 +1,7 @@
+Fri Jul 16 17:32:40 CEST 2004 (tk)
+----------------------------------
+  * libclamav: scanners: fix memory leak in new code (thanks to Trog)
+
 Fri Jul 16 02:30:03 CEST 2004 (tk)
 ----------------------------------
   * libclamav: fix bug in memory management (thanks to Nigel)
