@@ -1,3 +1,7 @@
+Fri Jul 30 19:02:42 CEST 2004 (tk)
+----------------------------------
+  * libclamav: fix (small) memory leaks
+
 Fri Jul 30 18:13:26 CEST 2004 (tk)
 ----------------------------------
   * libclamav: matcher-bm: really ignore short signatures
