@@ -453,6 +453,7 @@ int cl_loaddbdir(const char *dirname, struct cl_node **root, int *virnum)
 	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") &&
 	    (cli_strbcasestr(dent->d_name, ".db")  ||
 	     cli_strbcasestr(dent->d_name, ".db2") ||
+	     cli_strbcasestr(dent->d_name, ".db3") ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbfile = (char *) cli_calloc(strlen(dent->d_name) + strlen(dirname) + 2, sizeof(char));
@@ -506,7 +507,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	if(dent->d_ino)
 #endif
 	{
-	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && (cli_strbcasestr(dent->d_name, ".db") || cli_strbcasestr(dent->d_name, ".db2") || cli_strbcasestr(dent->d_name, ".cvd"))) {
+	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && (cli_strbcasestr(dent->d_name, ".db") || cli_strbcasestr(dent->d_name, ".db2") || cli_strbcasestr(dent->d_name, ".db3") || cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbstat->no++;
 		dbstat->stattab = (struct stat *) realloc(dbstat->stattab, dbstat->no * sizeof(struct stat));
@@ -548,7 +549,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	if(dent->d_ino)
 #endif
 	{
-	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && (cli_strbcasestr(dent->d_name, ".db") || cli_strbcasestr(dent->d_name, ".db2") || cli_strbcasestr(dent->d_name, ".cvd"))) {
+	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && (cli_strbcasestr(dent->d_name, ".db") || cli_strbcasestr(dent->d_name, ".db2") || cli_strbcasestr(dent->d_name, ".db3") || cli_strbcasestr(dent->d_name, ".cvd"))) {
 
                 fname = cli_calloc(strlen(dbstat->dir) + strlen(dent->d_name) + 2, sizeof(char));
 		sprintf(fname, "%s/%s", dbstat->dir, dent->d_name);
