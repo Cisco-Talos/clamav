@@ -1,3 +1,11 @@
+5/2/04
+Version 0.11
+Now integrates with WinZip. To configure WinZip8.1 to use ClamAV as it's
+antivirus:
+	Open options->configuration->program locations
+	In optional virus scanner, enter the full path of clamav.exe
+	In the parameters field enter the IP address of the clamd server
+----------------------------------
 2/2/04
 Added a command line interface. This allows the client to be used either
 in conjunction with download managers which often ask users to specify
@@ -6,8 +14,7 @@ allows a full system scan to be done either manually or via the Windows
 scheduler, for example
 	clamav.exe 192.168.1.1 eicar.com
 	clamav.exe 192.168.1.1 c:\
-
-----------------------------
+----------------------------------
 This is a small Windows client for ClamAV that I hope will turn into
 something bigger with time.
 

@@ -1,3 +1,7 @@
+Thu Feb  5 13:49:24 GMT 2004 (njh)
+----------------------------------
+  * contrib:	clamav.exe now integrates with WinZip8.1
+
 Thu Feb  5 11:25:56 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Bounce delimeters were found by a list of strcasecmps,
