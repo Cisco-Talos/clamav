@@ -359,7 +359,7 @@ int cli_check_riff_exploit(int fd)
 		
 	offset = lseek(fd, 0, SEEK_CUR);
 
-	if (offset < chunk_size) {
+	if (offset < (int64_t)chunk_size) {
 		retval = 2;
 	}
 	return retval;

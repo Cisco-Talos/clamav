@@ -633,7 +633,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 	}
 
 	while((current_block >= 0) && (len > 0)) {
-		if (prop->size < hdr->sbat_cutoff) {
+		if (prop->size < (int64_t)hdr->sbat_cutoff) {
 			/* Small block file */
 			if (!ole2_get_sbat_data_block(fd, hdr, buff, current_block)) {
 				cli_dbgmsg("ole2_get_sbat_data_block failed\n");

@@ -543,7 +543,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 
 	if(selfchk) {
 	    time(&current_time);
-	    if((current_time - start_time) > selfchk) {
+	    if((current_time - start_time) > (time_t)selfchk) {
 		if(reload_db(root, copt, TRUE)) {
 		    pthread_mutex_lock(&reload_mutex);
 		    reload = 1;

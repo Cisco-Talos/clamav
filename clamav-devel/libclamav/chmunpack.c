@@ -184,7 +184,7 @@ static uint64_t chm_endian_convert_64(uint64_t v)
 #endif
 
 /* Read in a block of data from either the mmap area or the given fd */
-int chm_read_data(int fd, unsigned char *dest, off_t offset, uint32_t len,
+int chm_read_data(int fd, unsigned char *dest, off_t offset, off_t len,
 			unsigned char *m_area, off_t m_length)
 {
 	if (m_area != NULL) {
@@ -203,7 +203,7 @@ int chm_read_data(int fd, unsigned char *dest, off_t offset, uint32_t len,
 	return TRUE;
 }
 
-int chm_copy_file_data(int ifd, int ofd, uint64_t len)
+uint64_t chm_copy_file_data(int ifd, int ofd, uint64_t len)
 {
 	unsigned char data[8192];
 	uint64_t count, rem;
@@ -217,7 +217,7 @@ int chm_copy_file_data(int ifd, int ofd, uint64_t len)
 		if (count != todo) {
 			return len-rem;
 		}
-		if (cli_writen(ofd, data, count) != count) {
+		if (cli_writen(ofd, data, count) != (int64_t)count) {
 			return len-rem-count;
 		}
 		rem -= count;
@@ -437,12 +437,12 @@ static uint64_t read_enc_int(unsigned char **start, unsigned char *end)
 	current = *start;
 	
 	if (current > end) {
-		return -1;
+		return 0;
 	}
 	
 	do {
 		if (current > end) {
-			return -1;
+			return 0;
 		}
 		retval = (retval << 7) | (*current & 0x7f);
 	} while (*current++ & 0x80);
@@ -476,7 +476,7 @@ static int read_chunk_entries(unsigned char *chunk, uint32_t chunk_len,
 		}
 		file_e->next = NULL;
 		
-		if ((name_len = read_enc_int(&current, end)) < 0) return FALSE;
+		name_len = read_enc_int(&current, end);
 		file_e->name = (unsigned char *) cli_malloc(name_len+1);
 		if (!file_e->name) {
 			free(file_e);
@@ -485,21 +485,9 @@ static int read_chunk_entries(unsigned char *chunk, uint32_t chunk_len,
 		strncpy(file_e->name, current, name_len);
 		file_e->name[name_len] = '\0';
 		current += name_len;
-		if ((file_e->section = read_enc_int(&current, end)) < 0) {
-			free(file_e->name);
-			free(file_e);
-			return FALSE;
-		}
-		if ((file_e->offset = read_enc_int(&current, end)) < 0) {
-			free(file_e->name);
-			free(file_e);
-			return FALSE;
-		}
-		if ((file_e->length = read_enc_int(&current, end)) < 0) {
-			free(file_e->name);
-			free(file_e);
-			return FALSE;
-		}
+		file_e->section = read_enc_int(&current, end);
+		file_e->offset = read_enc_int(&current, end);
+		file_e->length = read_enc_int(&current, end);
 		if ((name_len >= 2) && (file_e->name[0] == ':') &&
 				(file_e->name[1] == ':')) {
 			file_e->next = sys_file_l->next;
@@ -969,7 +957,7 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 			entry = entry->next;
 			continue;
 		}
-		if (lseek(mf_out.desc, entry->offset, SEEK_SET) != entry->offset) {
+		if (lseek(mf_out.desc, entry->offset, SEEK_SET) != (off_t)entry->offset) {
 			cli_dbgmsg("seek in output failed\n");
 			entry = entry->next;
 			continue;
@@ -981,8 +969,8 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 			entry = entry->next;
 			continue;
 		}
-		if ((length=chm_copy_file_data(mf_out.desc, ofd, entry->length)) != entry->length) {
-			cli_dbgmsg("copied %d of %d\n", length, entry->length);
+		if (chm_copy_file_data(mf_out.desc, ofd, entry->length) != entry->length) {
+			cli_dbgmsg("failed to copy %lu bytes\n", entry->length);
 		}
 		
 		close(ofd);		
