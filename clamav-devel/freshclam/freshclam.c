@@ -17,7 +17,6 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/* TODO: Handle SIGALRM more gently */
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -47,7 +46,6 @@
 #include "defaults.h"
 #include "freshclam.h"
 
-#define TIMEOUT 1200
 
 static short terminate = 0;
 
@@ -56,7 +54,6 @@ static void daemon_sighandler(int sig) {
 	char *action = NULL;
 
     switch(sig) {
-	case SIGALRM:
 	case SIGUSR1:
 	    action = "wake up";
 	    terminate = -1;
@@ -315,21 +312,11 @@ int freshclam(struct optstruct *opt)
     return(ret);
 }
 
-void d_timeout(int sig)
-{
-    mprintf("@Maximal time (%d seconds) reached.\n", TIMEOUT);
-    exit(1);
-}
-
 int download(const struct cfgstruct *copt, const struct optstruct *opt)
 {
 	int ret = 0, try = 0, maxattempts = 0;
-	struct sigaction sigalrm;
 	struct cfgstruct *cpt;
 
-    memset(&sigalrm, 0, sizeof(struct sigaction));
-    sigalrm.sa_handler = d_timeout;
-    sigaction(SIGALRM, &sigalrm, NULL);
 
     if((cpt = cfgopt(copt, "MaxAttempts")))
 	maxattempts = cpt->numarg;
@@ -338,11 +325,10 @@ int download(const struct cfgstruct *copt, const struct optstruct *opt)
 
     if((cpt = cfgopt(copt, "DatabaseMirror")) == NULL) {
 	mprintf("@You must specify at least one database mirror.\n");
-	return 57;
+	return 56;
     } else {
 
 	while(cpt) {
-	    alarm(TIMEOUT);
 	    ret = downloadmanager(copt, opt, cpt->strarg);
 	    alarm(0);
 

@@ -131,7 +131,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	    pass = cpt->strarg;
 	} else {
 	    mprintf("HTTPProxyUsername requires HTTPProxyPassword\n");
-	    return 57;
+	    return 56;
 	}
     }
 
@@ -165,7 +165,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     if(!(remote = remote_cvdhead(remotename, hostfd, hostname, proxy, user, pass))) {
 	mprintf("@Can't read %s header from %s (%s)\n", remotename, hostname, ipaddr);
 	close(hostfd);
-	return 52;
+	return 58;
     }
 
     *signo += remote->sigs; /* we need to do it just here */
@@ -216,12 +216,12 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
      */
     tempname = cl_gentemp(".");
 
-    if(get_database(remotename, hostfd, tempname, hostname, proxy, user, pass)) {
+    if((ret = get_database(remotename, hostfd, tempname, hostname, proxy, user, pass))) {
         mprintf("@Can't download %s from %s\n", remotename, ipaddr);
         unlink(tempname);
         free(tempname);
         close(hostfd);
-        return 52;
+        return ret;
     }
 
     close(hostfd);
@@ -245,7 +245,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     	cl_cvdfree(current);
 	unlink(tempname);
 	free(tempname);
-	return 54;
+	return 59;
     }
 
     if(!nodb && unlink(localname)) {
@@ -478,7 +478,7 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
 #endif
 	mprintf("@Can't open new file %s to write\n", file);
 	perror("open");
-	return -1;
+	return 57;
     }
 
 #ifdef NO_SNPRINTF
@@ -503,12 +503,12 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
 
     if ((bread = recv(socketfd, buffer, FILEBUFF, 0)) == -1) {
       mprintf("@Error while reading database from %s\n", hostname);
-      return -1;
+      return 52;
     }
 
     if ((strstr(buffer, "HTTP/1.1 404")) != NULL) { 
       mprintf("@%s not found on remote server\n", dbfile);
-      return -1;
+      return 58;
     }
 
     ch = buffer;
@@ -521,14 +521,13 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
       }
       ch++;
       i++;
-    }  
+    }
 
     write(fd, ch, bread - i);
     while((bread = read(socketfd, buffer, FILEBUFF))) {
 	write(fd, buffer, bread);
 	mprintf("Downloading %s [%c]\r", dbfile, rotation[rot]);
 	fflush(stdout);
-	/* rot = ++rot % 4; -> operation on `rot' may be undefined (why ?) */
 	rot++;
 	rot %= 4;
     }
