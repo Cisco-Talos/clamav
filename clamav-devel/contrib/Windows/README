@@ -1,4 +1,10 @@
 10/2/04
+----------------------------------
+The file mfc30d.dll has been removed. Most Windows distributions will already
+have it - if not please get it from http://www.clamav.net/w32/mfc30d.zip,
+you will need it to run the clamAV windows client
+----------------------------------
+10/2/04
 Version 0.13
 Recovers better from errors during scanning such as timeouts sending to clamd
 ----------------------------------

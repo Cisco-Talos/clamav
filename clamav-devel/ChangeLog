@@ -1,3 +1,8 @@
+Tue Feb 10 14:38:35 GMT 2004 (njh)
+----------------------------------
+  * contrib:	Removed mfc30d.dll. It can now be downloaded (if needed)
+  	from http://www.clamav.net/w32/mfc30d.zip
+
 Tue Feb 10 14:35:07 CET 2004 (tk)
 ---------------------------------
   * clamd: UseProcesses - permanently removed
