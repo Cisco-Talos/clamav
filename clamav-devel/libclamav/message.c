@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.13  2004/01/09 18:01:03  nigelhorne
+ * Started BinHex work
+ *
  * Revision 1.12  2003/12/05 09:34:00  nigelhorne
  * Use cli_tok instead of strtok - replaced now by cli_strtok
  *
@@ -33,7 +36,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.12 2003/12/05 09:34:00 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.13 2004/01/09 18:01:03 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -604,6 +607,119 @@ messageToBlob(const message *m)
 
 		blobSetFilename(b, filename);
 		t_line = t_line->t_next;
+	} else if((t_line = binhexBegin(m)) != NULL) {
+		blob *tmp = blobCreate();
+		unsigned char *data;
+		unsigned char byte;
+		unsigned long len;
+		char *filename;
+
+		/*
+		 * Decode BinHex4. First create a temporary blob which contains
+		 * the encoded message. Then decode that blob to the target
+		 * blob, free the temporary blob adn return the target one
+		 */
+
+		while((t_line = t_line->t_next) != NULL) {
+			blobAddData(tmp, (unsigned char *)t_line->t_text, strlen(t_line->t_text));
+			blobAddData(tmp, (unsigned char *)"\n", 1);
+		}
+
+		data = blobGetData(tmp);
+		len = blobGetDataSize(tmp);
+
+		if(data[0] == ':') {
+			char *ptr;
+			unsigned long i;
+			unsigned long newlen = 0L;
+			int bytenumber = 0;
+
+			/*
+			 * Convert 7 bit data into 8 bit
+			 */
+			cli_dbgmsg("decode HQX7 message");
+
+			ptr = cli_malloc(len);
+			memcpy(ptr, data, len);
+
+			for(i = 1; i < len; i++) {
+				unsigned char c = ptr[i];
+				char *tptr;
+
+				/* TODO: table look up would be quicker */
+				const char table[] =
+					"!\"#$%&'()*+,-012345689@ABCDEFGHIJKLMNPQRSTUVXYZ[`abcdefhijklmpqr";
+
+				if((c == '\n') || (c == '\r'))
+					continue;
+				if(c == ':')
+					break;
+				/*
+				 * TODO: at least post a sentinal!
+				 */
+				for(tptr = table; (*tptr != c) && (*tptr != '\0'); tptr++)
+					;
+				if(*tptr == '\0') {
+					cli_warnmsg("Invalid HQX7 character '%c'\n", c);
+					break;
+				}
+				c = (unsigned char)(tptr - table);
+				assert(c <= 63);
+
+				/*
+				 * These masks probably aren't needed, but
+				 * they're here to verify the code is correct
+				 */
+				switch(bytenumber) {
+					case 0:
+						data[newlen] = (c << 2) & 0xFC;
+						bytenumber = 1;
+						break;
+					case 1:
+						data[newlen++] |= (c >> 4) & 0x3;
+						data[newlen] = (c << 4) & 0xF0;
+						bytenumber = 2;
+						break;
+					case 2:
+						data[newlen++] |= (c >> 2) & 0xF;
+						data[newlen] = (c << 6) & 0xC0;
+						bytenumber = 3;
+						break;
+					case 3:
+						data[newlen++] |= c & 0x3F;
+						bytenumber = 0;
+						break;
+				}
+			}
+			free(ptr);
+		}
+
+		/*
+		 * TODO: set filename argument in message as well
+		 */
+		byte = data[0];
+		filename = cli_malloc(byte + 1);
+		memcpy(filename, &data[1], byte + 1);
+		filename[byte] = '\0';
+		blobSetFilename(b, filename);
+		free((char *)filename);
+
+		/*
+		 * skip over length, filename, version, type, creator and flags
+		 */
+		byte = 1 + byte + 1 + 4 + 4 + 2;
+		len = (data[byte] << 24) + (data[byte + 1] << 16) + (data[byte + 2] << 8) + data[byte + 3];
+
+		/*
+		 * Skip over data fork length, resource fork length and CRC
+		 */
+		byte += 10;
+
+		blobAddData(b, &data[byte], len);
+
+		blobDestroy(tmp);
+
+		return b;
 	} else {
 		/*
 		 * Discard attachments with no filename
@@ -719,8 +835,13 @@ messageToText(const message *m)
 				return NULL;
 			}
 			t_line = t_line->t_next;
-		} else
+		} else {
+			t_line = binhexBegin(m);
+			if(t_line) {
+				cli_warnmsg("Binhex messages not supported yet (2).\n");
+			} 
 			t_line = messageGetBody(m);
+		}
 
 		for(; t_line; t_line = t_line->t_next) {
 			unsigned char data[1024];
@@ -761,14 +882,15 @@ messageToText(const message *m)
 	return first;
 }
 
+/*
+ * Scan to find the UUENCODED message (if any)
+ */
 const text *
 uuencodeBegin(const message *m)
 {
 	const text *t_line;
 
 	/*
-	 * Scan to find the UUENCODED message (if any)
-	 *
 	 * Fix based on an idea by Magnus Jonsson
 	 * <Magnus.Jonsson@umdac.umu.se>, to allow for blank
 	 * lines before the begin. Should not happen, but some
@@ -784,6 +906,21 @@ uuencodeBegin(const message *m)
 		   (line[9] == ' '))
 			return t_line;
 	}
+	return NULL;
+}
+
+/*
+ * Scan to find the BINHEX message (if any)
+ */
+const text *
+binhexBegin(const message *m)
+{
+	const text *t_line;
+
+	for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next)
+		if(strcasecmp(t_line->t_text, "(This file must be converted with BinHex 4.0)") == 0)
+			return t_line;
+
 	return NULL;
 }
 
