@@ -55,6 +55,7 @@ int cli_scanrar_inuse = 0;
 #define ZIP_MAGIC_STR "PK\003\004"
 #define GZIP_MAGIC_STR "\037\213"
 #define MAIL_MAGIC_STR "From "
+#define NEWS_MAGIC_STR "Path:"
 #define RAWMAIL_MAGIC_STR "Received: "
 #define MAILDIR_MAGIC_STR "Return-Path: "
 #define DELIVERED_MAGIC_STR "Delivered-To: "
@@ -643,7 +644,9 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
 	    ret = cli_scanbzip(desc, virname, scanned, root, limits, options, reclev);
 	}
 #endif
-	else if(SCAN_MAIL && !strncmp(magic, MAIL_MAGIC_STR, strlen(MAIL_MAGIC_STR))) {
+	else if(SCAN_MAIL &&
+		(!strncmp(magic, MAIL_MAGIC_STR, strlen(MAIL_MAGIC_STR)) ||
+		 !strncmp(magic, NEWS_MAGIC_STR, strlen(NEWS_MAGIC_STR)))) {
 	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
 	}
 	else if(SCAN_MAIL && !strncmp(magic, RAWMAIL_MAGIC_STR, strlen(RAWMAIL_MAGIC_STR))) {
