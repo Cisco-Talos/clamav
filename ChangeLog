@@ -1,3 +1,8 @@
+Thu Aug 12 11:36:36 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	checkURLs code (not compiled by default) can now
+				download using LIBCURL
+
 Wed Aug 11 16:29:05 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	No longer needs curl.h to compile (thanks to TK)
