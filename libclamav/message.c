@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.35  2004/03/07 12:32:01  nigelhorne
+ * Added new bounce message
+ *
  * Revision 1.34  2004/02/20 17:04:43  nigelhorne
  * Added new bounce delimeter
  *
@@ -99,7 +102,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.34 2004/02/20 17:04:43 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.35 2004/03/07 12:32:01 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -169,7 +172,7 @@ static	const	struct	encoding_map {
 	{	"8bit",			EIGHTBIT	},
 	{	"x-uuencode",		UUENCODE	},
 	{	"binary",		BINARY		},
-	{	NULL,			0		}
+	{	NULL,			NOENCODING	}
 };
 
 static	struct	mime_map {
@@ -183,7 +186,7 @@ static	struct	mime_map {
 	{	"image",		IMAGE		},
 	{	"message",		MESSAGE		},
 	{	"video",		VIDEO		},
-	{	NULL,			0		}
+	{	NULL,			TEXT		}
 };
 
 static const char *bounces[] = {
@@ -198,6 +201,7 @@ static const char *bounces[] = {
 	"--- Below this line is the original bounce.",
 	"A copy of the original message below this line:",
 	"==== Begin Message",
+	"------------------------------ Original message ------------------------------",
 	NULL
 };
 
@@ -1228,7 +1232,7 @@ decodeLine(const message *m, const char *line, unsigned char *buf, size_t buflen
 			 * Klez doesn't always put "=" on the last line
 			 */
 			/*buf = decode(line, buf, base64, p2 == NULL);*/
-			buf = decode(copy, buf, base64, 0);
+			buf = decode(copy, buf, base64, FALSE);
 
 			free(copy);
 			break;
@@ -1268,6 +1272,9 @@ decodeLine(const message *m, const char *line, unsigned char *buf, size_t buflen
 	return buf;
 }
 
+/*
+ * Returns one byte after the end of the decoded data in "out"
+ */
 static unsigned char *
 decode(const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast)
 {
