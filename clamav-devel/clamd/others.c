@@ -283,7 +283,4 @@ int readsock(int sockfd, char *buf, size_t size)
 	return -1;
     return n;
 }
-
-#else
-#define	readsock	read
 #endif

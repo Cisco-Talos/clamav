@@ -1,3 +1,8 @@
+Tue Dec  7 23:40:30 CET 2004 (tk)
+---------------------------------
+  * configure: added --disable-zlib-vcheck (allows building on potentially
+	       buggy zlib versions (1.2.0 & 1.2.1))
+
 Tue Dec  7 19:25:06 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	Ensure that the daily quarantine directory is created
