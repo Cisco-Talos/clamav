@@ -2,8 +2,8 @@
 #
 # crond   Start/Stop the clam antivirus daemon.
 #
-# chkconfig: 2345 90 60
-# description: clamd is a standard UNIX program that scans for Viruses.
+# chkconfig: 2345 70 41
+# description: clamd is a standard Linux/UNIX program that scans for Viruses.
 # processname: clamd
 # config: /usr/local/etc/clamd.conf
 # pidfile: /var/lock/subsys/clamd
@@ -20,66 +20,67 @@ progdir="/usr/local/sbin"
 
 # Source configuration
 if [ -f /etc/sysconfig/$prog ] ; then
-    . /etc/sysconfig/$prog
+	. /etc/sysconfig/$prog
 fi
 
 start() {
-        echo -n $"Starting $prog: "
-        daemon $progdir/$prog
-        RETVAL=$?
-        echo
-        [ $RETVAL -eq 0 ] && touch /var/lock/subsys/clamd
-        return $RETVAL
+	echo -n $"Starting $prog: "
+	daemon $progdir/$prog
+	RETVAL=$?
+	echo
+	[ $RETVAL -eq 0 ] && touch /var/lock/subsys/clamd
+	return $RETVAL
 }
 
 stop() {
-        echo -n $"Stopping $prog: "
-        killproc $prog
-        RETVAL=$?
-        echo
-        [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/clamd
-        return $RETVAL
+	echo -n $"Stopping $prog: "
+	# Would be better to send QUIT first, then killproc if that fails
+	killproc $prog
+	RETVAL=$?
+	echo
+	[ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/clamd
+	return $RETVAL
 }
 
 rhstatus() {
-        status clamd
+	status clamd
 }
 
 restart() {
-        stop
-        start
+	stop
+	start
 }
 
 reload() {
-        echo -n $"Reloading clam daemon configuration: "
-        killproc clamd -HUP
-        retval=$?
-        echo
-        return $RETVAL
+	echo -n $"Reloading clam daemon configuration: "
+	killproc clamd -HUP
+	retval=$?
+	echo
+	return $RETVAL
 }
 
 case "$1" in
   start)
-        start
-        ;;
+	start
+	;;
   stop)
-        stop
-        ;;
+	stop
+	;;
   restart)
-        restart
-        ;;
+	restart
+	;;
   reload)
-        reload
-        ;;
+	reload
+	;;
   status)
-        rhstatus
-        ;;
+	rhstatus
+	;;
   condrestart)
-        [ -f /var/lock/subsys/clamd ] && restart || :
-        ;;
+	[ -f /var/lock/subsys/clamd ] && restart || :
+	;;
   *)
-        echo $"Usage: $0 {start|stop|status|reload|restart|condrestart}"
-        exit 1
+	echo $"Usage: $0 {start|stop|status|reload|restart|condrestart}"
+	exit 1
 esac
 
 exit $?
