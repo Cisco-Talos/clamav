@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.177  2005/02/06 10:39:39  nigelhorne
+ * 0.82
+ *
  * Revision 1.176  2005/02/02 08:30:24  nigelhorne
  * Call watchdog when neither SESSION not external is given
  *
@@ -539,9 +542,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.176 2005/02/02 08:30:24 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.177 2005/02/06 10:39:39 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.81g"
+#define	CM_VERSION	"0.82"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1727,7 +1730,7 @@ main(int argc, char **argv)
 		/* set the temporary dir */
 		if((cpt = cfgopt(copt, "TemporaryDirectory"))) {
 			tmpdir = cpt->strarg;
-			cl_settempdir(tmpdir, (cfgopt(copt, "LeaveTemporaryFiles") != NULL));
+			cl_settempdir(tmpdir, (short)(cfgopt(copt, "LeaveTemporaryFiles") != NULL));
 		} else if((tmpdir = getenv("TMPDIR")) == (char *)NULL)
 			if((tmpdir = getenv("TMP")) == (char *)NULL)
 				if((tmpdir = getenv("TEMP")) == (char *)NULL)
@@ -2829,10 +2832,15 @@ clamfi_eom(SMFICTX *ctx)
 
 	cli_dbgmsg("clamfi_eom\n");
 
-	if(!nflag) {	/* remove any existing claims that it's virus free */
+	if(!nflag) {
+		/*
+		 * remove any existing claims that it's virus free so that
+		 * downstream checkers aren't fooled by a carefully crafted
+		 * virus.
+		 */
 		int i;
 
-		for(i = 1; i <= privdata->statusCount; i++)
+		for(i = privdata->statusCount; i > 0; --i)
 			if(smfi_chgheader(ctx, "X-Virus-Status", i, NULL) == MI_FAILURE)
 				if(use_syslog)
 					syslog(LOG_WARNING, _("Failed to delete X-Virus-Status header %d"), i);
@@ -4400,15 +4408,17 @@ move(const char *oldfile, const char *newfile)
 	off_t offset;
 
 	ret = rename(oldfile, newfile);
+	if(ret >= 0)
+		return 0;
 #else
 	FILE *fin, *fout;
 	int c;
 
 	ret = link(oldfile, newfile);
+	if(ret >= 0)
+		return unlink(oldfile);
 #endif
 
-	if(ret >= 0)
-		return 0;
 	if((ret < 0) && (errno != EXDEV)) {
 		perror(newfile);
 		return -1;
