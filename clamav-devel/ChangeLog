@@ -1,3 +1,8 @@
+Tue Dec 14 11:15:22 GMT 2004 (trog)
+-----------------------------------
+  * sigtool/options.c sigtool/sigtool.c: New options: --vba and --vba-hex
+  * sigtool/vba.c sigtool/vba.h: New files. Code to extract VBA/Word6 macros
+
 Tue Dec 14 10:30:15 GMT 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	better recovery if memory softlimit is hit

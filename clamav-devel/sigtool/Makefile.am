@@ -30,6 +30,8 @@ sigtool_SOURCES = \
     $(top_srcdir)/shared/misc.h \
     options.c \
     options.h \
+    vba.c \
+    vba.h \
     sigtool.c
 
 sigtool_LDADD = $(top_builddir)/clamscan/others.o 

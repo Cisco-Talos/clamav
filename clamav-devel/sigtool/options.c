@@ -58,6 +58,8 @@ int main(int argc, char **argv)
 	    {"unpack-current", 1, 0, 0},
 	    {"info", 1, 0, 'i'},
 	    {"list-sigs", 2, 0, 'l'},
+	    {"vba", 1, 0 ,0},
+	    {"vba-hex", 1, 0, 0},
 	    {0, 0, 0, 0}
     	};
 
