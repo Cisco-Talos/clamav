@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.31  2005/02/01 14:45:24  nigelhorne
+ * sanities tab characters
+ *
  * Revision 1.30  2005/01/19 05:30:50  nigelhorne
  * Better handling of empty data
  *
@@ -92,7 +95,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.30 2005/01/19 05:30:50 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.31 2005/02/01 14:45:24 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -574,8 +577,9 @@ sanitiseName(char *name)
 #ifdef	C_DARWIN
 		*name &= '\177';
 #endif
+		/* Also check for tab - "Heinz Martin" <Martin@hemag.ch> */
 #if	defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32) || defined(C_OS2)
-		if(strchr("/*?<>|\\\"+=,;: ", *name))
+		if(strchr("/*?<>|\\\"+=,;:\t ", *name))
 #else
 		if(*name == '/')
 #endif
