@@ -1,3 +1,8 @@
+Sun Sep 21 22:00:34 CEST 2003 (tk)
+----------------------------------
+  * libclamav: unrar: fixed potential infinite loop (thanks to
+	       Lars Magne Ingebrigtsen)
+
 Sun Sep 21 21:19:36 CEST 2003 (tk)
 ----------------------------------
   * libclamav: increased MAGIC_BUFFER_SIZE to 14 bytes

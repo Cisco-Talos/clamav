@@ -181,7 +181,7 @@ int cli_scanrar(int desc, char **virname, long int *scanned, const struct cl_nod
 		    free(rar_data_ptr);
 		    rar_data_ptr = NULL;
 		}
-		continue;
+		break;
 	    }
 
 	    if(rar_data_ptr) {
