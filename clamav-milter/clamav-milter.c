@@ -395,9 +395,18 @@
  *				children is hit
  *			Report an error if inet_ntop fails in tcp_wrappers
  *	0.71	16/5/04	Up issue
+ *	0.71a	21/5/04	--from wasn't always a recognised option
+ *			Write failure to quarantine file now logs the name
+ *				of the file
+ *			Commented out TKs advice about using quarantine
+ *				when using localSocket, sys admins were
+ *				confused by it
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.89  2004/05/21 09:14:57  nigelhorne
+ * Handle --from, print error message if write to quarantine fails
+ *
  * Revision 1.88  2004/05/16 08:25:09  nigelhorne
  * Up issue
  *
@@ -647,7 +656,7 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.88 2004/05/16 08:25:09 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.89 2004/05/21 09:14:57 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.71"
 
@@ -886,7 +895,7 @@ static	const	char	*postmaster = "postmaster";
 static	const	char	*from = "MAILER-DAEMON";
 
 /*
- * NULL terminated whitelist of source e-mail addresses that we do NOT scan
+ * NULL terminated whitelist of target ("to") addresses that we do NOT scan
  * TODO: read in from a file
  * TODO: add white list of target e-mail addresses that we do NOT scan
  * TODO: items in the list should be regular expressions
@@ -974,9 +983,9 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "bc:CDfF:lm:nNop:PqQ:dhHs:St:U:Vx:";
+		const char *args = "abc:CDfF:lm:nNop:PqQ:dhHs:St:U:Vx:";
 #else
-		const char *args = "bc:CDfF:lm:nNop:PqQ:dhHs:St:U:V";
+		const char *args = "abc:CDfF:lm:nNop:PqQ:dhHs:St:U:V";
 #endif
 
 		static struct option long_options[] = {
@@ -1297,8 +1306,8 @@ main(int argc, char **argv)
 				cfgfile);
 			return EX_CONFIG;
 		}
-		if(quarantine_dir == NULL)
-			fprintf(stderr, "When using Localsocket in %s\nyou may improve performance if you use the --quarantine_dir option\n", cfgfile);
+		/*if(quarantine_dir == NULL)
+			fprintf(stderr, "When using Localsocket in %s\nyou may improve performance if you use the --quarantine-dir option\n", cfgfile);*/
 
 		umask(077);
 
@@ -2715,21 +2724,38 @@ clamfi_send(struct privdata *privdata, size_t len, const char *format, ...)
 		assert(privdata->dataSocket >= 0);
 
 		if(nbytes == -1) {
-			if(errno == EINTR)
-				continue;
-			perror("send");
-			if(use_syslog) {
+			if(quarantine_dir) {
+				perror(privdata->filename);
+				if(use_syslog) {
 #ifdef HAVE_STRERROR_R
-				char buf[32];
-				strerror_r(errno, buf, sizeof(buf));
-				syslog(LOG_ERR,
-					"write failure (%u bytes) to clamd: %s",
-					len, buf);
+					char buf[32];
+					strerror_r(errno, buf, sizeof(buf));
+					syslog(LOG_ERR,
+						"write failure (%u bytes) to %s: %s",
+						len, privdata->filename, buf);
 #else
-				syslog(LOG_ERR, "write failure (%u bytes) to clamd: %s", len, strerror(errno));
+					syslog(LOG_ERR, "write failure (%u bytes) to %s: %s",
+						len, privdata->filename,
+						strerror(errno));
 #endif
+				}
+			} else {
+				if(errno == EINTR)
+					continue;
+				perror("send");
+				if(use_syslog) {
+#ifdef HAVE_STRERROR_R
+					char buf[32];
+					strerror_r(errno, buf, sizeof(buf));
+					syslog(LOG_ERR,
+						"write failure (%u bytes) to clamd: %s",
+						len, buf);
+#else
+					syslog(LOG_ERR, "write failure (%u bytes) to clamd: %s", len, strerror(errno));
+#endif
+				}
+				checkClamd();
 			}
-			checkClamd();
 
 			return -1;
 		}
