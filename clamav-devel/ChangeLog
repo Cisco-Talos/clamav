@@ -1,3 +1,7 @@
+Wed May 26 16:57:21 CEST 2004 (tk)
+----------------------------------
+  * libclamav: disable (accidentally enabled yesterday) PE code
+
 Tue May 25 22:30:33 CEST 2004 (tk)
 ----------------------------------
   * libclamav: + report oversized archives (just like clamav-0.6x did)
