@@ -281,9 +281,14 @@
  *			Use cli_[cm]alloc
  *			Included extra information if --headers is given (based
  *			on an idea from "Leonid Zeitlin" <lz@europe.com>
+ *	0.67l	10/3/04	Use new HAVE_STRERROR_R rather than TARGET_OS_SOLARIS
+ *			to determine if strerror_r exists
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.60  2004/03/10 11:31:03  nigelhorne
+ * Use HAVE_STRERROR_R
+ *
  * Revision 1.59  2004/03/07 15:11:15  nigelhorne
  * Added more information to headers flag
  *
@@ -446,9 +451,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.59 2004/03/07 15:11:15 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.60 2004/03/10 11:31:03 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.67k"
+#define	CM_VERSION	"0.67l"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1757,11 +1762,13 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 			/* 0.4 - use better error message */
 			if(use_syslog) {
-#ifdef TARGET_OS_SOLARIS	/* no strerror_r */
-				syslog(LOG_ERR, "Failed to connect to port %d given by clamd: %s", port, strerror(rc));
+#ifdef HAVE_STRERROR_R
+                                syslog(LOG_ERR,
+					"Failed to connect to port %d given by clamd: %s",
+					port,
+					strerror_r(rc, buf, sizeof(buf)));
 #else
-				strerror_r(rc, buf, sizeof(buf));
-				syslog(LOG_ERR, "Failed to connect to port %d given by clamd: %s", port, buf);
+                               syslog(LOG_ERR, "Failed to connect to port %d given by clamd: %s", port, strerror(rc));
 #endif
 			}
 

@@ -282,6 +282,8 @@ Changes
 		Use cli_[cm]alloc
 		Included extra information if --headers is given (based on an
 		idea from "Leonid Zeitlin" <lz@europe.com>
+0.67l	10/3/04	Use new HAVE_STRERROR_R rather than TARGET_OS_SOLARIS to
+		determine if strerror_r exists
 
 BUG REPORTS
 
