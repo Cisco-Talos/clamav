@@ -1,8 +1,14 @@
+Mon Feb  9 02:04:36 CET 2004 (tk)
+---------------------------------
+  * freshclam: work-around for potential database downgrade (subtle problem
+	       in r-r dns handling) - reported by Daniel Mario Vega
+	       <dv5a*dc.uba.ar>, patched by Luca Gibelli <nervous*clamav.net>.
+
 Sat Feb  7 23:18:51 GMT 2004 (njh)
 ----------------------------------
   * libclamav: Handle empty content-type subtypes, e.g. headers such as
 		Content-Type: text/
-		Noted by Stefan Kaltenbrunner <mm-mailinglist@madness.at>
+		Noted by Stefan Kaltenbrunner <mm-mailinglist*madness.at>
   		
 Sat Feb  7 23:37:52 CET 2004 (tk)
 ---------------------------------

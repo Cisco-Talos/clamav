@@ -116,7 +116,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 {
 	struct cl_cvd *current, *remote;
 	struct cfgstruct *cpt;
-	int hostfd, nodb = 0, ret, port = 0;
+	int hostfd, nodb = 0, dbver = 0, ret, port = 0;
 	char  *tempname, ipaddr[16];
 	const char *proxy = NULL, *user = NULL, *pass = NULL;
 	int flevel = cl_retflevel();
@@ -188,6 +188,8 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	return 1;
     }
 
+    dbver = remote->version;
+    
     if(current)
 	cl_cvdfree(current);
 
@@ -231,18 +233,30 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
         return 54;
     }
 
+    if((current = cl_cvdhead(tempname)) == NULL) {
+	mprintf("@Can't read CVD header of new %s database.\n", localname); /* we lie :) */
+	unlink(tempname);
+	free(tempname);
+	return 54;
+    }
+
+    if(current->version < dbver) {
+	mprintf("@Mirrors are not fully synchronized. Please try again later.\n");
+    	cl_cvdfree(current);
+	unlink(tempname);
+	free(tempname);
+	return 54;
+    }
+
     if(!nodb && unlink(localname)) {
 	mprintf("@Can't unlink %s. Please fix it and try again.\n", localname);
+    	cl_cvdfree(current);
 	unlink(tempname);
 	free(tempname);
 	return 53;
     } else
 	rename(tempname, localname);
 
-    if((current = cl_cvdhead(localname)) == NULL) {
-	mprintf("@Can't read CVD header of new %s database.\n", localname);
-	return 54;
-    }
 
     mprintf("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
     logg("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
