@@ -1,3 +1,10 @@
+Sat Feb 21 16:05:42 CET 2004 (tk)
+---------------------------------
+  * freshclam: fixed problem with -u handling (missing `else' in logical block)
+	       Thanks to Michel GAUDET <Michel.Gaudet*ehess.fr>. The same bug
+	       (copy & paste) existed in -c mode.
+  * configure: added CLAMAV_MILTER_LIBS
+
 Sat Feb 21 13:38:23 CET 2004 (tk)
 ---------------------------------
   * libclamav: fixed various segmentation faults introduced by a small bug
@@ -52,7 +59,7 @@ Thu Feb 19 12:16:33 CET 2004 (tl)
 Thu Feb 19 10:05:39 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter: Reworked TCPwrappers code thanks to
-		"Hector M. Rulot Segovia" <Hector.Rulot@uv.es>
+		"Hector M. Rulot Segovia" <Hector.Rulot*uv.es>
 		Changed some printf/puts to cli_dbgmsg
 
 Wed Feb 18 13:35:59 GMT 2004 (njh)

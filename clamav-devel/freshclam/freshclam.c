@@ -127,7 +127,7 @@ int freshclam(struct optstruct *opt)
     /* freshclam shouldn't work with root priviledges */
     if(optc(opt, 'u')) {
 	unpuser = getargc(opt, 'u');
-    } if((cpt = cfgopt(copt, "DatabaseOwner"))) {
+    } else if((cpt = cfgopt(copt, "DatabaseOwner"))) {
 	unpuser = cpt->strarg;
     } else {
 	unpuser = UNPUSER;
@@ -209,7 +209,7 @@ int freshclam(struct optstruct *opt)
 
 	if(optc(opt, 'c')) {
 	    checks = atoi(getargc(opt, 'c'));
-	} if((cpt = cfgopt(copt, "Checks"))) {
+	} else if((cpt = cfgopt(copt, "Checks"))) {
 	    checks = cpt->numarg;
 	} else {
 	    checks = CL_DEFAULT_CHECKS;
