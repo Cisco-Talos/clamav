@@ -2,6 +2,125 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.80rc
+------
+
+The development version of ClamAV is ready for general testing! New mechanisms
+have already proved very nasty to Internet worms successfully protecting
+against the new versions R, S, T, U, V and W of the infamous Mydoom worm
+and detecting them as Worm.Mydoom.Gen before they were analysed and specific
+signatures added by the ClamAV database maintainers. That means servers running
+the new version of ClamAV have detected and blocked 100% of Mydoom attacks!
+
+New features in this release include:
+
+-) libclamav
+    + Portable Executable analyser (CL_SCAN_PE) featuring:
+	o UPX decompression (all versions)
+	o Petite decompression (2.x)
+	o FSG decompression (1.3, 1.31, 1.33)
+	o detection of broken executables (CL_SCAN_BLOCKBROKEN)
+    + new, memory efficient, pattern matching algorithm (multipattern variant
+      of Boyer-Moore) - it's now primary matcher and Aho-Corasick is only used
+      for regular expression extended signatures
+    + new signature format with advanced target type and offset specification
+    + support for MD5 based signatures
+    + extended regular expression scanner
+    + added support for MS cabinet files
+    + added support for CHM files
+    + added support for POSIX tar archives
+    + scanning inside PowerPoint documents
+    + HTML normaliser with support for decoding of MS Script Encoder code
+    + great improvements in e-mail scanner (now handles even more worm tricks)
+    + new method of mail files detection
+    + all e-mail attachments are now scanned (previously only the first ten
+      attachments were scanned)
+    + added support for scanning URLs in e-mails (CL_SCAN_MAILURL)
+    + detection of Worm.Mydoom.M.log
+    + updated API (still backward compatible but please consult clamdoc.pdf
+      (Section 6) and adapt your software)
+
+-) clamd
+    + new directive ScanHTML (enables HTML normalisator and ScrEnc decoder)
+    + new directive ScanPE (win32 executable analyser and decompressor)
+    + new directive DetectBrokenExecutables (try to detect broken executables
+      and mark them as Broken.Executable)
+    + new directive MailFollowURLs (try to download and scan files from URLs
+      in mails. BE CAREFUL! DO NOT ENABLE IT ON LOADED MAIL SERVERS)
+    + new directive ArchiveBlockMax (archives that exceed limits will be
+      marked as viruses)
+    + clamav.conf was renamed clamd.conf
+
+-) clamscan
+    + mail files are scanned by default, use --no-mail to disable it
+    + new option --no-html (disables HTML normalisator)
+    + new option --no-pe (disables PE analyser)
+    + new option --detect-broken
+    + new option --block-max
+    + new option --mail-follow-urls (download and scan files from URLs in mails)
+
+-) clamdscan
+    + now prints warnings if some activated command line options are only
+      supported by clamscan
+    + added support for archive scanning in stdin mode
+
+-) clamav-milter
+    + improved template file format
+    + quarantined file names now contain virus names
+    + initial support for SESSION mode of clamd
+
+-) freshclam:
+    + new directive DNSDatabaseInfo that enables ultra lightweight version
+      verification method through DNS (using TXT records). Based on idea by
+      Christopher X. Candreva and enabled by default.
+      (see http://www.gossamer-threads.com/lists/clamav/users/11102)
+    + new option --no-dns (quick option to disable DNS method without editing
+      freshclam.conf)
+
+-) sigtool
+    + removed ability of automatic signature generation (use MD5 sums to
+      create your own signatures, see signatures.pdf for details)
+    + new option --md5
+    + new option --html-normalise (saves HTML normalisation and decryption
+      results in three html files in current directory)
+
+-) configure:
+    + new option --disable-gethostbyname_r (try enabling it if clamav-milter
+      compilation fails)
+    + new option --disable-dns (try enabling it if freshclam compilation fails)
+    + extended regular expression scanner
+
+-) documentation
+    + included new Mac OS X installation instructions
+    + official documentation rewritten and outdated docs removed
+
+-) new 3rd party software with support for ClamAV:
+    + OdeiaVir - an e-mail filter for qmail and Exim
+    + ClamSMTP - a lightweight (written in C) and simple filter for Postfix
+    + Protea AntiVirus Tools - a virus filter for Lotus Domino
+    + PTSMail Utilities - an e-mail filter for Sendmail
+    + mxGuard for IMail - a mail filter for Ipswitch IMail (W32)
+    + Zabit - a content and attachment filter for qmail
+    + BeClam - ClamAV port for BeOS
+    + clamXav - a virus scanner with GUI for Mac OS X
+
+Special thanks to aCaB for his work on UPX, FSG and Petite decompressors.
+
+Thanks to good reaction times on new threats ClamAV was awarded as best
+security tool for 2004 by Linux Journal: "...With this year's outbreak of
+e-mail worms for non-Linux platforms, ClamAV has been getting quite a workout,
+and Linux admins on mailing lists report that database update times are keeping
+up with or beating the proprietary alternatives." Thanks!
+
+SourceWear.com is selling some very nice t-shirts and polo shirts powered by
+ClamAV. Wear them and virus writers will stay away from you :-) A quarter out
+of every dollar profited from the sale of these shirts will go to the ClamAV
+project. Visit http://www.sourcewear.com and click on ClamAV logo! 
+
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
 0.75
 ----
 

@@ -1,3 +1,7 @@
+Mon Sep 20 15:31:21 CEST 2004 (tk)
+----------------------------------
+  V 0.80rc
+
 Mon Sep 20 13:46:15 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Fix parsing problem
@@ -10,7 +14,7 @@ Mon Sep 20 12:12:09 CEST 2004 (tk)
 
 Mon Sep 20 10:44:35 BST 2004 (trog)
 -----------------------------------
-* libclamav/htmlnorm.c: Simplify handling of NL chars, treat as a space.
+  * libclamav/htmlnorm.c: Simplify handling of NL chars, treat as a space.
 
 Mon Sep 20 10:09:55 BST 2004 (njh)
 ----------------------------------
