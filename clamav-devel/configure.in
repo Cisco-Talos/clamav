@@ -227,10 +227,6 @@ CFGDIR=$cfg_dir
 AC_SUBST(CFGDIR)
 AC_DEFINE_UNQUOTED(CONFDIR,"$cfg_dir",[where to look for the config file])
 
-dnl Do not overwrite current config files
-AM_CONDITIONAL(INSTALL_CLAMD_CONF, test ! -r "$cfg_dir/clamd.conf")
-AM_CONDITIONAL(INSTALL_FRESHCLAM_CONF, test ! -r "$cfg_dir/freshclam.conf")
-
 dnl check for in_port_t definition
 AC_TRY_RUN([
 #include <sys/types.h>
@@ -300,6 +296,7 @@ freebsd*)
 	fi
     fi
     AC_DEFINE(C_BSD,1,[os is freebsd])
+    bad_gethostbyname_r="yes"
     ;;
 openbsd3.3*)
     if test "$have_pthreads" = "yes"; then
@@ -313,6 +310,7 @@ openbsd3.3*)
 	AC_DEFINE(_REENTRANT,1,[thread safe])
     fi
     AC_DEFINE(C_BSD,1,[os is bsd flavor])
+    bad_gethostbyname_r="yes"
     ;;
 openbsd*)
     if test "$have_pthreads" = "yes"; then
@@ -329,6 +327,7 @@ openbsd*)
 	AC_DEFINE(_REENTRANT,1,[thread safe])
     fi
     AC_DEFINE(C_BSD,1,[os is bsd flavor])
+    bad_gethostbyname_r="yes"
     ;;
 netbsd*)
      if test "$have_pthreads" = "yes"; then
@@ -340,11 +339,13 @@ netbsd*)
 	ADDITIONAL_LIBS="$LIBS -lpthread"
      fi
     AC_DEFINE(C_BSD,1,[os is bsd flavor])
+    bad_gethostbyname_r="yes"
     ;;
 bsd*)
     AC_MSG_RESULT(Unknown BSD detected. Disabling thread support.)
     have_pthreads="no"
     AC_DEFINE(C_BSD,1,[os is bsd flavor])
+    bad_gethostbyname_r="yes"
     ;;
 beos*)
     AC_MSG_RESULT(BeOS detected. Disabling thread support.)
@@ -356,6 +357,7 @@ darwin*)
     AC_DEFINE(C_DARWIN,1,[os is darwin])
     AC_DEFINE(BIND_8_COMPAT,1,[enable bind8 compatibility])
     use_netinfo="yes"
+    bad_gethostbyname_r="yes"
     ;;
 sco*)
     dnl njh@bandsman.sco.uk: SCO Unix port
@@ -565,7 +567,7 @@ AC_ARG_ENABLE(gethostbyname_r,
 [  --disable-gethostbyname_r	  disable support for gethostbyname_r],
 ac_cv_gethostbyname_args="",)
 
-if test -z "$ac_cv_gethostbyname_args"; then
+if test -z "$ac_cv_gethostbyname_args" || test "$bad_gethostbyname_r" = "yes"; then
     AC_MSG_RESULT(no)
 else
     if test "$ac_cv_gethostbyname_args" = 3; then

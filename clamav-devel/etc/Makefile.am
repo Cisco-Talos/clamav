@@ -1,7 +1,5 @@
 #
-#  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
-#  Fixes by Arkadiusz Miskiewicz <misiek@pld.org.pl>
-#	    Masaki Ogawa <proc@mac.com>
+#  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -22,9 +20,7 @@ CFGINST = @CFGDIR@
  
 install:
 	$(mkinstalldirs) $(DESTDIR)$(CFGINST)
-if INSTALL_CLAMD_CONF
-	@$(INSTALL_DATA) $(srcdir)/clamd.conf $(DESTDIR)$(CFGINST)
-endif
-if INSTALL_FRESHCLAM_CONF
-	@$(INSTALL_DATA) $(srcdir)/freshclam.conf $(DESTDIR)$(CFGINST)
-endif
+	@test -f $(DESTDIR)$(CFGINST)/clamd.conf || \
+	$(INSTALL_DATA) $(srcdir)/clamd.conf $(DESTDIR)$(CFGINST)
+	@test -f $(DESTDIR)$(CFGINST)/freshclam.conf || \
+	$(INSTALL_DATA) $(srcdir)/freshclam.conf $(DESTDIR)$(CFGINST)
