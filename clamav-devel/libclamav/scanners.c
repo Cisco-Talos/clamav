@@ -840,6 +840,9 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 	    if(!data) {
 		cli_dbgmsg("VBADir: WARNING: VBA project '%s' decompressed to NULL\n", vba_project->name[i]);
 	    } else {
+		if(scanned)
+		    *scanned += data_len / CL_COUNT_PRECISION;
+
 		if(cli_scanbuff(data, data_len, virname, root, CL_TYPE_MSOLE2) == CL_VIRUS) {
 		    free(data);
 		    ret = CL_VIRUS;
@@ -882,6 +885,8 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 		if(!data) {
 			cli_dbgmsg("VBADir: WARNING: WM project '%s' macro %d decrypted to NULL\n", vba_project->name[i], i);
 		} else {
+			if(scanned)
+			    *scanned += vba_project->length[i] / CL_COUNT_PRECISION;
 			if(cli_scanbuff(data, vba_project->length[i], virname, root, CL_TYPE_MSOLE2) == CL_VIRUS) {
 				free(data);
 				ret = CL_VIRUS;
