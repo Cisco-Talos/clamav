@@ -29,6 +29,7 @@
 #include "clamav.h"
 #include "others.h"
 #include "dsig.h"
+#include "str.h"
 
 #define TAR_BLOCKSIZE 512
 
@@ -140,69 +141,34 @@ int cli_untgz(int fd, const char *destdir)
     return 0;
 }
 
-char *cli_cut(const char *line, int field)
+struct cl_cvd *cl_cvdparse(const char *head)
 {
-        int length, counter = 0, i, j = 0;
-        char *buffer;
-
-    length = strlen(line);
-    buffer = (char *) cli_calloc(length, sizeof(char));
-
-    for(i = 0; i < length; i++) {
-        if(line[i] == ':') {
-            counter++;
-            if(counter == field) {
-		break;
-	    } else {
-		memset(buffer, 0, length);
-		j = 0;
-	    }
-        } else {
-            buffer[j++] = line[i];
-        }
-    }
-
-    return (char *) cli_realloc(buffer, strlen(buffer) + 1);
-}
-
-struct cl_cvd *cli_cvdhead(FILE *fd)
-{
-	char *pt, head[513];
+	char *pt;
 	struct cl_cvd *cvd;
-	int i;
-
-
-    if(fread(head, 1, 512, fd) != 512) {
-	cli_errmsg("Can't read CVD head from stream\n");
-	return NULL;
-    }
-
-    head[512] = 0;
-    for(i = 511; i > 0 && (head[i] == ' ' || head[i] == 10); head[i] = 0, i--);
 
     if(strncmp(head, "ClamAV-VDB:", 11)) {
-	cli_errmsg("Not a CVD file.\n");
+	cli_dbgmsg("Not a CVD head.\n");
 	return NULL;
     }
 
     cvd = (struct cl_cvd *) cli_calloc(1, sizeof(struct cl_cvd));
-    cvd->time = cli_cut(head, 2);
+    cvd->time = cli_tok(head, 2, ':');
 
-    pt = cli_cut(head, 3);
+    pt = cli_tok(head, 3, ':');
     cvd->version = atoi(pt);
     free(pt);
 
-    pt = cli_cut(head, 4);
+    pt = cli_tok(head, 4, ':');
     cvd->sigs = atoi(pt);
     free(pt);
 
-    pt = cli_cut(head, 5);
+    pt = cli_tok(head, 5, ':');
     cvd->fl = (short int) atoi(pt);
     free(pt);
 
-    cvd->md5 = cli_cut(head, 6);
-    cvd->dsig = cli_cut(head, 7);
-    cvd->builder = cli_cut(head, 8);
+    cvd->md5 = cli_tok(head, 6, ':');
+    cvd->dsig = cli_tok(head, 7, ':');
+    cvd->builder = cli_tok(head, 8, ':');
 
     return cvd;
 }
@@ -210,13 +176,25 @@ struct cl_cvd *cli_cvdhead(FILE *fd)
 struct cl_cvd *cl_cvdhead(const char *file)
 {
 	FILE *fd;
+	char head[513];
+	int i;
 
     if((fd = fopen(file, "rb")) == NULL) {
-	cli_errmsg("Can't open CVD file %s\n", file);
+	cli_dbgmsg("Can't open CVD file %s\n", file);
 	return NULL;
     }
 
-    return cli_cvdhead(fd);
+    if(fread(head, 1, 512, fd) != 512) {
+	cli_dbgmsg("Can't read CVD head from stream\n");
+	return NULL;
+    }
+
+    fclose(fd);
+
+    head[512] = 0;
+    for(i = 511; i > 0 && (head[i] == ' ' || head[i] == 10); head[i] = 0, i--);
+
+    return cl_cvdparse(head);
 }
 
 void cl_cvdfree(struct cl_cvd *cvd)
@@ -230,43 +208,57 @@ void cl_cvdfree(struct cl_cvd *cvd)
 
 int cli_cvdverify(FILE *fd)
 {
-	struct cl_cvd *head;
-	char *md5;
+	struct cl_cvd *cvd;
+	char *md5, head[513];
+	int i;
 
-    if((head = cli_cvdhead(fd)) == NULL)
+    fseek(fd, 0, SEEK_SET);
+    if(fread(head, 1, 512, fd) != 512) {
+	cli_dbgmsg("Can't read CVD head from stream\n");
+	return CL_ECVD;
+    }
+
+    head[512] = 0;
+    for(i = 511; i > 0 && (head[i] == ' ' || head[i] == 10); head[i] = 0, i--);
+
+    if((cvd = cl_cvdparse(head)) == NULL)
 	return CL_ECVD;
 
-    //fseek(fd, 512, SEEK_SET);
 
     md5 = cli_md5stream(fd);
-
     cli_dbgmsg("MD5(.tar.gz) = %s\n", md5);
 
-    if(strncmp(md5, head->md5, 32)) {
+    if(strncmp(md5, cvd->md5, 32)) {
 	cli_dbgmsg("MD5 verification error.\n");
 	return CL_EMD5;
     }
 
 #ifdef HAVE_GMP
-    if(cli_versig(md5, head->dsig)) {
+    if(cli_versig(md5, cvd->dsig)) {
 	cli_dbgmsg("Digital signature verification error.\n");
 	return CL_EDSIG;
     }
 #endif
 
+    free(md5);
+    free(cvd);
     return 0;
 }
 
-struct cl_cvd *cl_cvdverify(const char *file)
+int cl_cvdverify(const char *file)
 {
 	FILE *fd;
+	int ret;
 
     if((fd = fopen(file, "rb")) == NULL) {
 	cli_errmsg("Can't open CVD file %s\n", file);
-	return NULL;
+	return CL_EOPEN;
     }
 
-    return cli_cvdverify(fd);
+    ret = cli_cvdverify(fd);
+    fclose(fd);
+
+    return ret;
 }
 
 int cli_cvdload(FILE *fd, struct cl_node **root, int *virnum)

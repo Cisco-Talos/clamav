@@ -1017,8 +1017,8 @@ Optional Packages:
   --with-user=uid	  name of the clamav user (default=clamav).
   --with-group=gid	  name of the clamav group (default=clamav).
   --with-dbdir=path	  Path to virus database directory.
-  --with-db1=name	  Name of the main database (viruses.db).
-  --with-db2=name	  Name of the new format database (viruses.db2).
+  --with-db1=name	  Name of the main database (main.cvd).
+  --with-db2=name	  Name of the daily database (daily.cvd).
 
 Some influential environment variables:
   CC          C compiler command
@@ -9025,7 +9025,7 @@ _ACEOF
 
 else
   cat >>confdefs.h <<\_ACEOF
-#define DB1NAME "viruses.db"
+#define DB1NAME "main.cvd"
 _ACEOF
 
 fi;
@@ -9040,7 +9040,7 @@ _ACEOF
 
 else
   cat >>confdefs.h <<\_ACEOF
-#define DB2NAME "viruses.db2"
+#define DB2NAME "daily.cvd"
 _ACEOF
 
 fi;

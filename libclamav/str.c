@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -124,7 +124,7 @@ void cli_chomp(char *string)
 
 char *cli_tok(const char *line, int field, char delimiter)
 {
-        int length, counter = 0, i, j = 0, k;
+        int length, counter = 0, i, j = 0;
         char *buffer;
 
 
@@ -132,28 +132,20 @@ char *cli_tok(const char *line, int field, char delimiter)
     buffer = (char *) cli_calloc(length, sizeof(char));
 
     for(i = 0; i < length; i++) {
-        if(line[i] == delimiter || line[i] == '\n') {
+        if(line[i] == delimiter) {
             counter++;
-            if(counter == field)
+            if(counter == field) {
 		break;
-
-            for(k = 0; k < length; k++)
-		buffer[k] = 0;
-
-            j = 0;
-        } else {
-	    if(line[i] != delimiter) {
-		buffer[j]=line[i];
-		j++;
+	    } else {
+		memset(buffer, 0, length);
+		j = 0;
 	    }
-	}
+        } else {
+            buffer[j++] = line[i];
+        }
     }
 
     cli_chomp(buffer); /* preventive */
 
-    if(strlen(buffer) == 0) {
-	free(buffer);
-	return NULL;
-    } else
-	return realloc(buffer, strlen(buffer) + 1);
+    return (char *) cli_realloc(buffer, strlen(buffer) + 1);
 }

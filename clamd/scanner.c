@@ -58,7 +58,7 @@ int dirscan(const char *dirname, char **virname, unsigned long int *scanned, con
 	struct stat statbuf;
 	struct cfgstruct *cpt;
 	char *fname;
-	int ret = 0;
+	int ret = 0, scanret = 0;
 
     if((cpt = cfgopt(copt, "MaxDirectoryRecursion"))) {
 	if(cpt->numarg) {
@@ -88,7 +88,7 @@ int dirscan(const char *dirname, char **virname, unsigned long int *scanned, con
 			    }
 			} else
 			    if(S_ISREG(statbuf.st_mode) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 2) && cfgopt(copt, "FollowFileSymlinks")))
-				if(cl_scanfile(fname, virname, scanned, root, limits, options) == CL_VIRUS) {
+				if((scanret = cl_scanfile(fname, virname, scanned, root, limits, options)) == CL_VIRUS) {
 				    mdprintf(odesc, "%s: %s FOUND\n", fname, *virname);
 				    logg("%s: %s FOUND\n", fname, *virname);
 				    virusaction(fname, *virname, copt);
@@ -98,6 +98,9 @@ int dirscan(const char *dirname, char **virname, unsigned long int *scanned, con
 					return 1;
 				    } else
 					ret = 2;
+				} else if(scanret != CL_CLEAN) {
+				    mdprintf(odesc, "%s: %s\n", fname, cl_strerror(scanret));
+				    logg("*%s: %s\n", fname, cl_strerror(scanret));
 				}
 		    }
 

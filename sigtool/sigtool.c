@@ -433,6 +433,22 @@ void sigtool(struct optstruct *opt)
     /* free_opt(opt); */
 }
 
+int countlines(const char *filename)
+{
+	FILE *fd;
+	char buff[65536];
+	int lines = 0;
+
+    if((fd = fopen(filename, "r")) == NULL)
+	return 0;
+
+    while(fgets(buff, sizeof(buff), fd))
+	lines++;
+
+    fclose(fd);
+    return lines;
+}
+
 int build(struct optstruct *opt)
 {
 	int ret, no = 0, bytes, itmp;
@@ -444,6 +460,7 @@ int build(struct optstruct *opt)
 	gzFile *gz;
 	time_t timet;
 	struct tm *brokent;
+	struct cl_cvd *old;
 
     /* build a tar.gz archive
      * we need: COPYING and {viruses.db, viruses.db2}+
@@ -462,7 +479,7 @@ int build(struct optstruct *opt)
 
     cl_debug(); /* enable debug messages */
 
-    if((ret = cl_loaddbdir(cl_retdbdir(), &root, &no))) {
+    if((ret = cl_loaddbdir(".", &root, &no))) {
 	mprintf("!Can't load database: %s\n", cl_strerror(ret));
         exit(1);
     }
@@ -530,7 +547,7 @@ int build(struct optstruct *opt)
     time(&timet);
     brokent = localtime(&timet);
     setlocale(LC_TIME, "C");
-    strftime(smbuff, 24, "%b-%d %H-%M %Z:", brokent);
+    strftime(smbuff, 24, "%b-%d %H-%M %Z %Y:", brokent);
     strcat(header, smbuff);
 
     /* version number */
@@ -545,7 +562,6 @@ int build(struct optstruct *opt)
     strcat(header, smbuff);
 
     /* number of signatures */
-    //FIXME: THIS IS WRONG
     sprintf(smbuff, "%d:", no);
     strcat(header, smbuff);
 

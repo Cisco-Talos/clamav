@@ -40,6 +40,7 @@ int main(int argc, char **argv)
 	    {"help", 0, 0, 'h'},
 	    {"quiet", 0, 0, 0},
 	    {"verbose", 0, 0, 'v'},
+	    {"debug", 0, 0, 0},
 	    {"version", 0, 0, 'V'},
 	    {"datadir", 1, 0, 0},
 	    {"log", 1, 0, 'l'},

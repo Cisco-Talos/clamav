@@ -1,4 +1,3 @@
-clamav.elektrapro.com
-clamav.ozforces.com
-clamav.essentkabel.com
-clamav.org
+database.clamav.net
+database.clamav.net
+database.clamav.net

@@ -1,4 +1,11 @@
-Fri Oct 24 02:19:54 CEST 2003
+Sun Oct 26 06:26:14 CET 2003 (tk)
+----------------------------------
+  * clamd: report file errors with CONTSCAN (suggested by Daniel Fraga)
+  * libclamav: cvd and general cleanups
+  * freshclam: rewritten to use cvd, cleanups; --debug added
+  * mirrors.txt: only use database.clamav.net
+
+Fri Oct 24 02:19:54 CEST 2003 (tk)
 ----------------------------------
   * clamd: initialize the virus-number variable (Igor Brezac)
   * sigtool: fixed compilation issue on Solaris (bug reported by
@@ -58,14 +65,14 @@ Wed Oct  8 14:49:40 CEST 2003 (tk)
 
 Wed Oct  8 12:39:26 CEST 2003 (tk)
 ----------------------------------
-  * clamd: (!!!) fixed race condition in database reloading code
+  * clamd: (!!!) fixed a race condition in database reloading code
   * libclamav: finished support for cvd files
 
 Sun Oct  5 18:30:40 BST 2003 (njh)
 ----------------------------------
   * clamav-milter: Used to always remove old UNIX domain sockets, now
   		only does that if FixStaleSocket is set
-		
+
 Sun Oct  5 14:58:05 BST 2003 (njh)
 ----------------------------------
   * clamav-milter: s/atoi(cpt->strarg)/cpt->numarg for MaxThreads
@@ -272,7 +279,7 @@ Wed Aug 13 16:07:39 CEST 2003
 
 Wed Aug  6 03:01:51 CEST 2003
 -----------------------------
-  * clamd: new directives: VirusAction, Debug
+  * clamd: new directives: VirusEvent, Debug
   * libclamav: zziplib downgraded to the old version due to Zip handling
 	       problems
 
@@ -313,11 +320,12 @@ Wed Jul 17 23:33:17 CEST 2003
 	       newline character (Nigel)
 
 Mon Jul 14 03:43:35 CEST 2003
-----------------------------
+-----------------------------
   * clamav-milter: Some TODOs done by Nigel Kukard <nkukard@lbsd.net>
                    Should stop a couple of remote chances of crashes (Nigel)
 
 Thu Jul 10 17:16:32 CEST 2003
+-----------------------------
   * clamd: fixed PidFile permissions (applied patch from Magnus Ekdahl, the
 	   bug was reported by Tomasz Papszun)
 
