@@ -1,3 +1,11 @@
+Mon Jan 31 11:05:20 GMT 2005 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Empty lines should the end of the headers,
+				but some base64 decoders, e.g. uudeview, are
+				broken and will handle this type of entry,
+				decoding the base64 content that's after the
+				text that's after the header
+
 Sun Jan 30 15:18:02 GMT 2005 (njh)
 ----------------------------------
   * clamav-milter:	SESSION is on now by default, to test clamd
