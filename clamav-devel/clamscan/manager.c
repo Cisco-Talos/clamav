@@ -202,7 +202,7 @@ int scanmanager(const struct optstruct *opt)
 			tmpdir = "/tmp";
 #endif
 
-		if(writeaccess(tmpdir, UNPUSER) != 1) {
+		if(checkaccess(tmpdir, UNPUSER, W_OK) != 1) {
 			mprintf("@Can't write to the temporary directory.\n");
 			exit(64);
 		}
@@ -417,13 +417,13 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	 && (optl(opt, "tgz") || optl(opt, "deb"))) ) {
 
 	/* check permissions */
-	switch(readaccess(filename, UNPUSER)) {
+	switch(checkaccess(filename, UNPUSER, R_OK)) {
 	    case -1:
 		mprintf("@Can't get information about user "UNPUSER".\n");
-		exit(60); /* this is critical problem, so we just exit here */
+		exit(60); /* this is a critical problem so we just exit here */
 	    case -2:
-		mprintf("@Can't get information about current user.\n");
-		exit(59); /* this is critical problem, so we just exit here */
+		mprintf("@Can't fork.\n");
+		exit(61);
 	    case 0: /* read access denied */
 		if(getuid()) {
 		    if(!printinfected)
@@ -446,14 +446,10 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
     }
 
     if(getuid())
-	switch(readaccess(filename, NULL)) {
-	    case -2:
-		mprintf("@Can't get information about current user.\n");
-		exit(59); /* this is critical problem, so we just exit here */
-	    case 0: /* read access denied */
-		if(!printinfected)
-		    mprintf("%s: Access denied.\n", filename);
-		return 0;
+	if(checkaccess(filename, NULL, R_OK) != 1) {
+	    if(!printinfected)
+		mprintf("%s: Access denied.\n", filename);
+	    return 0;
 	}
 
     if((ret = checkfile(filename, root, limits, options)) == CL_VIRUS) {
@@ -499,7 +495,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	tmpdir = "/tmp";
 #endif
 
-    if(writeaccess(tmpdir, UNPUSER) != 1) {
+    if(checkaccess(tmpdir, UNPUSER, W_OK) != 1) {
 	mprintf("@Can't write to the temporary directory.\n");
 	exit(64);
     }
@@ -701,7 +697,7 @@ int scandenied(const char *filename, struct cl_node *root, const struct passwd *
 #endif
 
 
-    if(writeaccess(tmpdir, UNPUSER) != 1) {
+    if(checkaccess(tmpdir, UNPUSER, W_OK) != 1) {
 	mprintf("@Can't write to the temporary directory %s.\n", tmpdir);
 	exit(64);
     }

@@ -97,15 +97,19 @@ static const struct cli_magic_s cli_magic[] = {
 
     {0,  "\000\000\001\263",             4, "MPEG video stream",  CL_DATAFILE},
     {0,  "\000\000\001\272",             4, "MPEG sys stream",    CL_DATAFILE},
-    {0,  "RIFF",                         4, "RIFF file",          CL_DATAFILE},
+    {0,  "RIFF",                         4, "RIFF",		  CL_DATAFILE},
     {0,  "GIF87a",                       6, "GIF (87a)",          CL_DATAFILE},
     {0,  "GIF89a",                       6, "GIF (89a)",          CL_DATAFILE},
     {0,  "\x89PNG\r\n\x1a\n",            8, "PNG",                CL_DATAFILE},
     {0,  "\377\330\377\340",             4, "JPEG",               CL_DATAFILE},
     {0,  "\377\330\377\356",             4, "JPG",                CL_DATAFILE},
     {0,  "OggS",                         4, "Ogg Stream",         CL_DATAFILE},
+    {0,  "ID3",				 3, "MP3",		  CL_DATAFILE},
+    {0,  "\377\373\220",		 3, "MP3",		  CL_DATAFILE},
+    {0,  "\%PDF-",			 5, "PDF document",	  CL_DATAFILE},
+    {0,  "\060\046\262\165\216\146\317", 7, "WMA/WMV/ASF",	  CL_DATAFILE},
 
-    {-1, NULL,              0, NULL,              CL_UNKNOWN_TYPE}
+    {-1, NULL,				 0, NULL,              CL_UNKNOWN_TYPE}
 };
 
 cli_file_t cli_filetype(const char *buf, size_t buflen)
@@ -689,7 +693,7 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 	DIR *dd;
 	struct dirent *dent;
 	struct stat statbuf;
-	char *fname, *dir, *fullname;
+	char *fname, *fullname;
 	unsigned char *data;
 
     cli_dbgmsg("VBA scan dir: %s\n", dirname);
@@ -767,10 +771,8 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 static int cli_scanole2(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
 {
 	const char *tmpdir;
-	char *dir, *fullname;
-	unsigned char *data;
-	int ret = CL_CLEAN, fd, i, data_len;
-	vba_project_t *vba_project;
+	char *dir;
+	int ret = CL_CLEAN;
 
     cli_dbgmsg("in cli_scanole2()\n");
 
@@ -799,7 +801,7 @@ static int cli_scanole2(int desc, const char **virname, long int *scanned, const
 
     if((ret = cli_vba_scandir(dir, virname, scanned, root, limits, options, reclev)) != CL_VIRUS) {
 	if(cli_scandir(dir, virname, scanned, root, limits, options, reclev) == CL_VIRUS) {
-		ret = CL_VIRUS;
+	    ret = CL_VIRUS;
 	}
     }
 
