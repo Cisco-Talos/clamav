@@ -282,6 +282,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	    return 52;
 	} else {
 	    mprintf("*Connected to %s (IP: %s).\n", hostname, ipaddr);
+	    mprintf("*Trying to retrieve http://%s/%s\n", hostname, remotename);
 	}
 
 	if(!ip[0])
@@ -354,6 +355,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
      */
     tempname = cli_gentemp(".");
 
+    mprintf("*Retrieving http://%s/%s\n", hostname, remotename);
     if((ret = get_database(remotename, hostfd, tempname, hostname, proxy, user, pass))) {
         mprintf("@Can't download %s from %s (IP: %s)\n", remotename, hostname, ipaddr);
         unlink(tempname);

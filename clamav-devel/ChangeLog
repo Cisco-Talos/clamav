@@ -1,3 +1,7 @@
+Fri Mar  4 03:18:20 CET 2005 (tk)
+---------------------------------
+  * freshclam/manager.c: additional verbose-mode messages (Stephen Gran)
+
 Fri Mar  4 02:47:17 CET 2005 (tk)
 ---------------------------------
   * docs: fix some typos (reported by Koryn Grant <koryn*endace.com> and
