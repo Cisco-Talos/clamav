@@ -68,6 +68,7 @@ extern "C"
 #define CL_MAIL		2
 #define CL_DISABLERAR	4
 #define CL_OLE2		8
+#define CL_ENCRYPTED    16
 
 struct cli_patt {
     short int *pattern;

@@ -213,6 +213,7 @@ void help(void)
     mprintf("\n");
     mprintf("    --no-ole2                            Disable OLE2 support\n");
     mprintf("    --no-archive                         Disable libclamav archive support\n");
+    mprintf("    --detect-encrypted                   Detect encrypted archives.\n");
     mprintf("    --max-space=#n                       Extract first #n kilobytes only\n");
     mprintf("    --max-files=#n                       Extract first #n files only\n");
     mprintf("    --max-recursion=#n                   Maximal recursion level\n");

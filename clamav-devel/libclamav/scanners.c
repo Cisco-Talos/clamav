@@ -52,11 +52,11 @@ int cli_scanrar_inuse = 0;
 #include <bzlib.h>
 #endif
 
-#define SCAN_ARCHIVE	(options & CL_ARCHIVE)
-#define SCAN_MAIL	(options & CL_MAIL)
-#define SCAN_OLE2	(options & CL_OLE2)
-#define DISABLE_RAR	(options & CL_DISABLERAR)
-
+#define SCAN_ARCHIVE	    (options & CL_ARCHIVE)
+#define SCAN_MAIL	    (options & CL_MAIL)
+#define SCAN_OLE2	    (options & CL_OLE2)
+#define DISABLE_RAR	    (options & CL_DISABLERAR)
+#define DETECT_ENCRYPTED    (options & CL_ENCRYPTED)
 
 typedef enum {
     CL_UNKNOWN_TYPE = 0,
@@ -326,7 +326,7 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	    break;
 	}
 
-	cli_dbgmsg("Zip -> %s, compressed: %d, normal: %d.\n", zdirent.d_name, zdirent.d_csize, zdirent.st_size);
+	cli_dbgmsg("Zip -> %s, compressed: %d, normal: %d, encrypted flag: %d\n", zdirent.d_name, zdirent.d_csize, zdirent.st_size, zdirent.d_flags);
 
 	if(limits && limits->maxratio > 0 && source.st_size && (zdirent.st_size / source.st_size) >= limits->maxratio) {
 	    *virname = "Oversized.Zip";
@@ -346,6 +346,14 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	    /* ret = CL_EMALFZIP; */
 	    /* report it as a virus */
 	    *virname = "Suspected.Zip";
+	    ret = CL_VIRUS;
+	    break;
+	}
+
+	if(DETECT_ENCRYPTED && (zdirent.d_flags & (1 | 2^6))) {
+	    files++;
+	    cli_dbgmsg("Zip -> Encrypted files found in archive.\n");
+	    *virname = "Encrypted.Zip";
 	    ret = CL_VIRUS;
 	    break;
 	}
@@ -762,6 +770,7 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
 	cli_errmsg("root == NULL\n");
 	return -1;
     }
+
 
     if(SCAN_ARCHIVE || SCAN_MAIL) {
         /* Need to examine file type */

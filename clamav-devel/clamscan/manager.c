@@ -355,6 +355,9 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
     else
 	options |= CL_ARCHIVE;
 
+    if(optl(opt, "detect-encrypted"))
+	options |= CL_ENCRYPTED;
+
     if(optl(opt, "no-ole2"))
 	options &= ~CL_OLE2;
     else
