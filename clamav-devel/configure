@@ -9883,6 +9883,7 @@ cat >>confdefs.h <<\_ACEOF
 #define _REENTRANT 1
 _ACEOF
 
+	LIBS="$LIBS -lpthread"
      fi
 
 cat >>confdefs.h <<\_ACEOF

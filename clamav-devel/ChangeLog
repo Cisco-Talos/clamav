@@ -1,3 +1,7 @@
+Fri Apr 16 14:43:25 CEST 2004 (tk)
+----------------------------------
+  * libclamav: scan ">From " messages
+
 Fri Apr 16 12:40:03 BST 2004 (trog)
 -----------------------------------
   * libclamav/vba_extract.c: fix possible crash
