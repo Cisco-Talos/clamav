@@ -1,3 +1,9 @@
+Fri Jan 28 08:51:08 GMT 2005 (njh)
+----------------------------------
+  * clamav-milter:	Some error messages still talked about --internal
+			Scanmail not set warning is now only given if
+				DisableDefaultScanOptions is set
+
 Thu Jan 27 20:22:50 GMT 2005 (njh)
 ----------------------------------
   * libclamav/message.c:	Some Worm.Mydoom.Gen-unp were not caught

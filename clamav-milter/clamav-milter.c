@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.173  2005/01/28 08:49:04  nigelhorne
+ * Fixed --internal warnings that should refer to --external
+ *
  * Revision 1.172  2005/01/27 10:54:27  nigelhorne
  * Don't scan emails to the quarantine e-mail address
  *
@@ -527,9 +530,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.172 2005/01/27 10:54:27 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.173 2005/01/28 08:49:04 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.81c"
+#define	CM_VERSION	"0.81d"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1488,18 +1491,15 @@ main(int argc, char **argv)
 	 */
 	if(!external) {
 		if(max_children == 0) {
-			fprintf(stderr, _("%s: --max-children must be given in internal mode\n"), argv[0]);
+			fprintf(stderr, _("%s: --max-children must be given if --external is not given\n"), argv[0]);
 			return EX_CONFIG;
 		}
 		if(child_timeout) {
-			fprintf(stderr, _("%s: --timeout must not be given in internal mode\n"), argv[0]);
+			fprintf(stderr, _("%s: --timeout must not be given if --external is not given\n"), argv[0]);
 			return EX_CONFIG;
 		}
 		if(loadDatabase() != 0)
 			return EX_CONFIG;
-		if(!cfgopt(copt, "ScanMail"))
-			printf(_("%s: ScanMail not defined in %s (needed without --external), enabling\n"),
-				argv[0], cfgfile);
 		numServers = 1;
 	} else if((cpt = cfgopt(copt, "LocalSocket")) != NULL) {
 #ifdef	SESSION
@@ -1813,8 +1813,12 @@ main(int argc, char **argv)
 	if(!external) {
 		/* TODO: read the limits from clamd.conf */
 
-		if(cfgopt(copt, "DisableDefaultScanOptions"))
+		if(cfgopt(copt, "DisableDefaultScanOptions")) {
 			options &= ~CL_SCAN_STDOPT;
+			if(!cfgopt(copt, "ScanMail"))
+				printf(_("%s: ScanMail not defined in %s (needed without --external), enabling\n"),
+					argv[0], cfgfile);
+		}
 		options |= CL_SCAN_MAIL;	/* no choice */
 		if(!cfgopt(copt, "ScanRAR"))
 			options |= CL_SCAN_DISABLERAR;
