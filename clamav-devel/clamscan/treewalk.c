@@ -51,7 +51,40 @@ int treewalk(const char *dirname, struct cl_node *root, const struct passwd *use
 	struct dirent *dent;
 	struct stat statbuf;
 	char *fname;
-	int scanret = 0;
+	int scanret = 0, included;
+	struct optnode *optnode;
+	char *argument;
+
+
+    if(optl(opt, "exclude")) {
+	argument = getfirstargl(opt, "exclude", &optnode);
+	while(argument) {
+	    if(match_regex(dirname, argument) == 1) {
+		if(!printinfected)
+		    mprintf("%s: Excluded\n", dirname);
+		return 0;
+	    }
+	    argument = getnextargl(&optnode, "exclude");
+	}
+    }
+
+   if(optl(opt, "include")) {
+	included = 0;
+	argument = getfirstargl(opt, "include", &optnode);
+	while(argument && !included) {
+	    if(match_regex(dirname, argument) == 1) {
+		included = 1;
+		break;
+	    }
+	    argument = getnextargl(&optnode, "include");
+	}
+
+	if(!included) {
+	    if(!printinfected)
+		mprintf("%s: Excluded\n", dirname);
+	    return 0;
+	}
+    }
 
     claminfo.dirs++;
 

@@ -39,10 +39,6 @@
 #include <clamav.h>
 #include <errno.h>
 
-#ifdef HAVE_REGEX_H
-#include <regex.h>
-#endif
-
 #include "defaults.h"
 #include "others.h"
 #include "options.h"
@@ -76,7 +72,7 @@ int scanmanager(const struct optstruct *opt)
 #if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_BEOS)
     if(!geteuid()) {
 	if((user = getpwnam(UNPUSER)) == NULL) {
-	    mprintf("@Can't get information about user "UNPUSER".\n");
+	    mprintf("@Can't get information about user "UNPUSER"\n");
 	    exit(60); /* this is critical problem, so we just exit here */
 	}
     }
@@ -122,7 +118,7 @@ int scanmanager(const struct optstruct *opt)
     }
 
     if(!trie) {
-	mprintf("@Can't initialize the virus database.\n");
+	mprintf("@Can't initialize the virus database\n");
 	return 50;
     }
 
@@ -214,7 +210,7 @@ int scanmanager(const struct optstruct *opt)
 
 	/* we need full path for some reasons (eg. archive handling) */
 	if(!getcwd(cwd, sizeof(cwd))) {
-	    mprintf("@Can't get absolute pathname of current working directory.\n");
+	    mprintf("@Can't get absolute pathname of current working directory\n");
 	    ret = 57;
 	} else
 	    ret = scandirs(cwd, trie, user, opt, limits, options);
@@ -243,7 +239,7 @@ int scanmanager(const struct optstruct *opt)
 		if(compression && (thefilename[0] != '/' && thefilename[0] != '\\' && thefilename[1] != ':')) {
 		    /* we need to complete the path */
 		    if(!getcwd(cwd, sizeof(cwd))) {
-			mprintf("@Can't get absolute pathname of current working directory.\n");
+			mprintf("@Can't get absolute pathname of current working directory\n");
 			free(limits);
 			return 57;
 		    } else {
@@ -295,29 +291,6 @@ int scanmanager(const struct optstruct *opt)
     return ret;
 }
 
-int match_regex(const char *filename, const char *pattern)
-{
-#ifdef HAVE_REGEX_H
-	regex_t reg;
-	int match, flags;
-#if !defined(C_CYGWIN) && !defined(C_OS2)
-	flags = 0;
-#else
-	flags = REG_ICASE; /* case insensitive on Windows */
-#endif	
-	if(regcomp(&reg, pattern, flags) != 0) {
-	    mprintf("!%s: Could not parse regular expression %s.\n", filename, pattern);
-	    logg("!%s: Could not parse regular expression %s.\n", filename, pattern);
-		return 2;
-	}
-	match = (regexec(&reg, filename, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
-	regfree(&reg);
-	return match;
-#else /* HAVE_REGEX_H */
-	return strstr(filename, pattern) ? 1 : 0;
-#endif
-}
-
 int scanfile(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options)
 {
 	int ret, included;
@@ -331,50 +304,51 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	if(stat(filename, &sb) != -1)
 	    if(sb.st_dev == procdev) {
 		if(!printinfected)
-		    mprintf("%s: Excluded (/proc).\n", filename);
+		    mprintf("%s: Excluded (/proc)\n", filename);
 		return 0;
 	    }
 #endif    
-    
+
     if(optl(opt, "exclude")) {
 	argument = getfirstargl(opt, "exclude", &optnode);
-	while (argument) {
+	while(argument) {
 	    if(match_regex(filename, argument) == 1) {
 		if(!printinfected)
-		    mprintf("%s: Excluded.\n", filename);
+		    mprintf("%s: Excluded\n", filename);
 		return 0;
 	    }
 	    argument = getnextargl(&optnode, "exclude");
 	}
     }
-     
+
    if(optl(opt, "include")) {
 	included = 0;
-	argument = getfirstargl(opt, "include",&optnode);
-	while (argument && !included) {
-	    if(match_regex(filename, argument) == 1)
+	argument = getfirstargl(opt, "include", &optnode);
+	while(argument && !included) {
+	    if(match_regex(filename, argument) == 1) {
 		included = 1;
+		break;
+	    }
 	    argument = getnextargl(&optnode, "include");
 	}
 
-	if (!included) {
+	if(!included) {
 	    if(!printinfected)
-		mprintf("%s: Excluded.\n", filename);
+		mprintf("%s: Excluded\n", filename);
 	    return 0;
 	}
-	
     }
 
     if(fileinfo(filename, 1) == 0) {
 	if(!printinfected)
-	    mprintf("%s: Empty file.\n", filename);
+	    mprintf("%s: Empty file\n", filename);
 	return 0;
     }
 
     if(geteuid())
 	if(checkaccess(filename, NULL, R_OK) != 1) {
 	    if(!printinfected)
-		mprintf("%s: Access denied.\n", filename);
+		mprintf("%s: Access denied\n", filename);
 	    return 0;
 	}
 
@@ -392,12 +366,12 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	if((ret = checkfile(filename, root, limits, options)) == CL_VIRUS) {
 	    if(optl(opt, "remove")) {
 		if(unlink(filename)) {
-		    mprintf("%s: Can't remove.\n", filename);
-		    logg("%s: Can't remove.\n", filename);
+		    mprintf("%s: Can't remove\n", filename);
+		    logg("%s: Can't remove\n", filename);
 		    claminfo.notremoved++;
 		} else {
-		    mprintf("%s: Removed.\n", filename);
-		    logg("%s: Removed.\n", filename);
+		    mprintf("%s: Removed\n", filename);
+		    logg("%s: Removed\n", filename);
 		}
 	    } else if (optl(opt, "move"))
 		move_infected(filename, opt);
@@ -428,21 +402,21 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	/* check permissions */
 	switch(checkaccess(filename, UNPUSER, R_OK)) {
 	    case -1:
-		mprintf("@Can't get information about user "UNPUSER".\n");
+		mprintf("@Can't get information about user "UNPUSER"\n");
 		exit(60); /* this is a critical problem so we just exit here */
 	    case -2:
-		mprintf("@Can't fork.\n");
+		mprintf("@Can't fork\n");
 		exit(61);
 	    case 0: /* read access denied */
 		if(geteuid()) {
 		    if(!printinfected)
-			mprintf("%s: Access denied to archive.\n", filename);
+			mprintf("%s: Access denied to archive\n", filename);
 		} else {
 
 		    if(limits && limits->maxfilesize)
 			if(fileinfo(filename, 1) / 1024 > limits->maxfilesize) {
 			    if(!printinfected)
-				mprintf("%s: Archive too big.\n", filename);
+				mprintf("%s: Archive too big\n", filename);
 			    return 0;
 			}
 
@@ -458,12 +432,12 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
     if((ret = checkfile(filename, root, limits, options)) == CL_VIRUS) {
 	if(optl(opt, "remove")) {
 	    if(unlink(filename)) {
-		mprintf("%s: Can't remove.\n", filename);
-		logg("%s: Can't remove.\n", filename);
+		mprintf("%s: Can't remove\n", filename);
+		logg("%s: Can't remove\n", filename);
 		claminfo.notremoved++;
 	    } else {
-		mprintf("%s: Removed.\n", filename);
-		logg("%s: Removed.\n", filename);
+		mprintf("%s: Removed\n", filename);
+		logg("%s: Removed\n", filename);
 	    }
 	} else if (optl(opt, "move"))
             move_infected(filename, opt);
@@ -481,7 +455,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
     stat(filename, &statbuf);
 
     if(!S_ISREG(statbuf.st_mode)) {
-	mprintf("^Suspected archive %s is not a regular file.\n", filename);
+	mprintf("^Suspected archive %s is not a regular file\n", filename);
 	return 0; /* hmm ? */
     }
 
@@ -497,7 +471,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 #endif
 
     if(checkaccess(tmpdir, UNPUSER, W_OK) != 1) {
-	mprintf("@Can't write to the temporary directory.\n");
+	mprintf("@Can't write to the temporary directory\n");
 	exit(64);
     }
 
@@ -606,10 +580,10 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 
     switch(ret) {
 	case -1:
-	    mprintf("@Can't fork().\n");
+	    mprintf("@Can't fork()\n");
 	    exit(61); /* this is critical problem, so we just exit here */
 	case -2:
-	    mprintf("@Can't execute some unpacker. Check paths and permissions on the temporary directory.\n");
+	    mprintf("@Can't execute some unpacker. Check paths and permissions on the temporary directory\n");
 	    /* This is no longer a critical error (since 0.24). We scan
 	     * raw archive.
 	     */
@@ -619,12 +593,12 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	    if((ret = checkfile(filename, root, limits, 0)) == CL_VIRUS) {
 		if(optl(opt, "remove")) {
 		    if(unlink(filename)) {
-			mprintf("%s: Can't remove.\n", filename);
-			logg("%s: Can't remove.\n", filename);
+			mprintf("%s: Can't remove\n", filename);
+			logg("%s: Can't remove\n", filename);
 			claminfo.notremoved++;
 		    } else {
-			mprintf("%s: Removed.\n", filename);
-			logg("%s: Removed.\n", filename);
+			mprintf("%s: Removed\n", filename);
+			logg("%s: Removed\n", filename);
 		    }
 		} else if (optl(opt, "move"))
 		    move_infected(filename, opt);
@@ -642,12 +616,12 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	    if((ret = checkfile(filename, root, limits, 0)) == CL_VIRUS) {
 		if(optl(opt, "remove")) {
 		    if(unlink(filename)) {
-			mprintf("%s: Can't remove.\n", filename);
-			logg("%s: Can't remove.\n", filename);
+			mprintf("%s: Can't remove\n", filename);
+			logg("%s: Can't remove\n", filename);
 			claminfo.notremoved++;
 		    } else {
-			mprintf("%s: Removed.\n", filename);
-			logg("%s: Removed.\n", filename);
+			mprintf("%s: Removed\n", filename);
+			logg("%s: Removed\n", filename);
 		    }
 		} else if (optl(opt, "move"))
 		    move_infected(filename, opt);
@@ -662,12 +636,12 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 
 	    if(optl(opt, "remove")) {
 		if(unlink(filename)) {
-		    mprintf("%s: Can't remove.\n", filename);
-		    logg("%s: Can't remove.\n", filename);
+		    mprintf("%s: Can't remove\n", filename);
+		    logg("%s: Can't remove\n", filename);
 		    claminfo.notremoved++;
 		} else {
-		    mprintf("%s: Removed.\n", filename);
-		    logg("%s: Removed.\n", filename);
+		    mprintf("%s: Removed\n", filename);
+		    logg("%s: Removed\n", filename);
 		}
 	    } else if (optl(opt, "move"))
 		move_infected(filename, opt);
@@ -687,7 +661,7 @@ int scandenied(const char *filename, struct cl_node *root, const struct passwd *
 
     stat(filename, &statbuf);
     if(!S_ISREG(statbuf.st_mode)) {
-	mprintf("^Suspected archive %s is not a regular file.\n", filename);
+	mprintf("^Suspected archive %s is not a regular file\n", filename);
 	return 0;
     }
 
@@ -704,7 +678,7 @@ int scandenied(const char *filename, struct cl_node *root, const struct passwd *
 
 
     if(checkaccess(tmpdir, UNPUSER, W_OK) != 1) {
-	mprintf("@Can't write to the temporary directory %s.\n", tmpdir);
+	mprintf("@Can't write to the temporary directory %s\n", tmpdir);
 	exit(64);
     }
 
@@ -725,7 +699,7 @@ int scandenied(const char *filename, struct cl_node *root, const struct passwd *
     sprintf(tmpfile, "%s/%s", gendir, pt);
 
     if(filecopy(filename, tmpfile) == -1) {
-	mprintf("!I/O error.\n");
+	mprintf("!I/O error\n");
 	perror("copyfile()");
 	exit(58);
     }
@@ -745,12 +719,12 @@ int scandenied(const char *filename, struct cl_node *root, const struct passwd *
 
 	if(optl(opt, "remove")) {
 	    if(unlink(filename)) {
-		mprintf("%s: Can't remove.\n", filename);
-		logg("%s: Can't remove.\n", filename);
+		mprintf("%s: Can't remove\n", filename);
+		logg("%s: Can't remove\n", filename);
 		claminfo.notremoved++;
 	    } else {
-	        mprintf("%s: Removed.\n", filename);
-	        logg("%s: Removed.\n", filename);
+	        mprintf("%s: Removed\n", filename);
+	        logg("%s: Removed\n", filename);
 	    }
 	} else if (optl(opt, "move"))
 	    move_infected(filename, opt);
@@ -821,7 +795,7 @@ int checkstdin(const struct cl_node *root, const struct cl_limits *limits, int o
 #endif
 
     if(checkaccess(tmpdir, UNPUSER, W_OK) != 1) {
-	mprintf("@Can't write to temporary directory.\n");
+	mprintf("@Can't write to temporary directory\n");
 	return 64;
     }
 
@@ -901,18 +875,18 @@ int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struc
 
 #ifdef HAVE_SETGROUPS
 		if(setgroups(1, &user->pw_gid)) {
-		    fprintf(stderr, "ERROR: setgroups() failed.\n");
+		    fprintf(stderr, "ERROR: setgroups() failed\n");
 		    exit(1);
 		}
 #endif
 
 		if(setgid(user->pw_gid)) {
-		    fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int) user->pw_gid);
+		    fprintf(stderr, "ERROR: setgid(%d) failed\n", (int) user->pw_gid);
 		    exit(1);
 		}
 
 		if(setuid(user->pw_uid)) {
-		    fprintf(stderr, "ERROR: setuid(%d) failed.\n", (int) user->pw_uid);
+		    fprintf(stderr, "ERROR: setuid(%d) failed\n", (int) user->pw_uid);
 		    exit(1);
 		}
 	    }
@@ -957,7 +931,7 @@ int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struc
 		switch(WTERMSIG(status)) {
 
 		    case 9:
-			mprintf("\nUnpacker process %d stopped due to exceeded limits.\n", pid);
+			mprintf("\nUnpacker process %d stopped due to exceeded limits\n", pid);
 			return 0;
 		    case 6: /* abort */
 			mprintf("@Can't run %s\n", prog);
