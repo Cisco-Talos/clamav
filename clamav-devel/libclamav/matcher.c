@@ -118,6 +118,8 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
     if(root->md5_hlist)
 	MD5Init(&ctx);
 
+    memset(&voffset, 0, sizeof(struct cli_voffset));
+
     buff = buffer;
     buff += root->maxpatlen; /* pointer to read data block */
     endbl = buff + SCANBUFF - root->maxpatlen; /* pointer to the last block
@@ -142,15 +144,15 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 
 	    if(voffset.target) {
 		if(voffset.target >= TARGET_TABLE_SIZE) {
-		    cli_errmsg("Bad target (%d) in signature for %s\n", voffset.target, virname);
+		    cli_errmsg("Bad target (%d) in signature for %s\n", voffset.target, *virname);
 		} else if(ftype && ftype != CL_TYPE_UNKNOWN_TEXT) {
 		    if(targettab[voffset.target] != ftype) {
-			cli_dbgmsg("Expected target type (%d) for %s != %d\n", voffset.target, virname, ftype);
+			cli_dbgmsg("Expected target type (%d) for %s != %d\n", voffset.target, *virname, ftype);
 			return CL_CLEAN;
 		    }
 		} else if(type) {
 		    if(targettab[voffset.target] != type) {
-			cli_dbgmsg("Expected target type (%d) for %s != %d\n", voffset.target, virname, type);
+			cli_dbgmsg("Expected target type (%d) for %s != %d\n", voffset.target, *virname, type);
 			return CL_CLEAN;
 		    }
 		}

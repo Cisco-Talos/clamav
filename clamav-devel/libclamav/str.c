@@ -224,6 +224,8 @@ char *cli_strtok(const char *line, int fieldno, const char *delim)
 	return NULL;
     }
     buffer = malloc(j-i+1);
+    if(!buffer)
+	return NULL;
     strncpy(buffer, line+i, j-i);
     buffer[j-i] = '\0';
 

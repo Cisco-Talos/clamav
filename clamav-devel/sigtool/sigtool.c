@@ -236,7 +236,7 @@ int build(struct optstruct *opt)
 	exit(1);
     }
 
-    if(stat("viruses.db", &foo) == -1 && stat("viruses.db2", &foo) == -1 && stat("malware.hdb", &foo) == -1) {
+    if(stat("viruses.db", &foo) == -1 && stat("viruses.db2", &foo) == -1 && stat("malware.hdb", &foo) == -1 && stat("malware.hdb2", &foo)) {
 	mprintf("Virus database not found in current working directory.\n");
 	exit(1);
     }
@@ -256,7 +256,7 @@ int build(struct optstruct *opt)
 	mprintf("WARNING: There are no signatures in the database(s).\n");
     } else {
 	mprintf("Signatures: %d\n", no);
-	realno = countlines("viruses.db") + countlines("viruses.db2") + countlines("malware.hdb");
+	realno = countlines("viruses.db") + countlines("viruses.db2") + countlines("malware.hdb") + countlines("malware.hdb2");
 
 	if(realno != no) {
 	    mprintf("!Signatures in database: %d. Loaded: %d.\n", realno, no);
@@ -274,7 +274,7 @@ int build(struct optstruct *opt)
 	    exit(1);
 	case 0:
 	    {
-		char *args[] = { "tar", "-cvf", NULL, "COPYING", "viruses.db", "viruses.db2", "Notes", "viruses.db3", "malware.hdb", NULL };
+		char *args[] = { "tar", "-cvf", NULL, "COPYING", "viruses.db", "viruses.db2", "Notes", "viruses.db3", "malware.hdb", "malware.hdb2", NULL };
 		args[2] = tarfile;
 		execv("/bin/tar", args);
 		mprintf("!Can't execute tar\n");
@@ -664,7 +664,7 @@ int listdb(const char *filename)
 	    mprintf("%s\n", start);
 	}
 
-    } else if(cli_strbcasestr(filename, ".hdb")) {
+    } else if(cli_strbcasestr(filename, ".hdb") || cli_strbcasestr(filename, ".hdb2")) {
 
 	while(fgets(buffer, FILEBUFF, fd)) {
 	    line++;
@@ -713,6 +713,7 @@ int listdir(const char *dirname)
 	    (cli_strbcasestr(dent->d_name, ".db")  ||
 	     cli_strbcasestr(dent->d_name, ".db2") ||
 	     cli_strbcasestr(dent->d_name, ".hdb") ||
+	     cli_strbcasestr(dent->d_name, ".hdb2") ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbfile = (char *) mcalloc(strlen(dent->d_name) + strlen(dirname) + 2, sizeof(char));
