@@ -69,7 +69,7 @@ extern "C"
 #define CL_SCAN_MAIL		2
 #define CL_SCAN_DISABLERAR	4
 #define CL_SCAN_OLE2		8
-#define CL_SCAN_ENCRYPTED	16
+#define CL_SCAN_BLOCKENCRYPTED	16
 #define CL_SCAN_HTML		32
 #define CL_SCAN_PE		64
 #define CL_SCAN_BROKEN		128

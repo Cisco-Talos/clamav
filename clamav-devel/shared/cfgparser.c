@@ -83,7 +83,6 @@ struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 	    {"TCPSocket", OPT_NUM},
 	    {"LocalSocket", OPT_STR},
 	    {"MaxConnectionQueueLength", OPT_NUM},
-	    {"StreamSaveToDisk", OPT_NOARG},
 	    {"StreamMaxLength", OPT_COMPSIZE},
 	    {"MaxThreads", OPT_NUM},
 	    {"ReadTimeout", OPT_NUM},

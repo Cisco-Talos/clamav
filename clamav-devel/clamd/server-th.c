@@ -314,7 +314,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 
 	if(cfgopt(copt, "ArchiveBlockEncrypted")) {
 	    logg("Archive: Blocking encrypted archives.\n");
-	    options |= CL_SCAN_ENCRYPTED;
+	    options |= CL_SCAN_BLOCKENCRYPTED;
 	}
 
 	if(cfgopt(copt, "ArchiveBlockMax")) {

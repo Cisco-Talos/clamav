@@ -1,3 +1,9 @@
+Sat Sep 18 21:23:00 CEST 2004 (tk)
+----------------------------------
+  * clamd: remove obsolete StreamSaveToDisk directive
+  * sigtool: add --html-normalise
+  * cleanup
+
 Sat Sep 18 16:02:32 BST 2004 (njh)
 ----------------------------------
   * libclamav:	Some minor code tidies
