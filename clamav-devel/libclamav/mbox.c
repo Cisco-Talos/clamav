@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.84  2004/06/30 14:30:40  nigelhorne
+ * Fix compilation error on Solaris
+ *
  * Revision 1.83  2004/06/28 11:44:45  nigelhorne
  * Remove empty parts
  *
@@ -237,7 +240,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.83 2004/06/28 11:44:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.84 2004/06/30 14:30:40 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -285,12 +288,12 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.83 2004/06/28 11:44:45 nigelhorne E
 #if __GLIBC__ == 2 && __GLIBC_MINOR__ >= 1
 #define HAVE_BACKTRACE
 #endif
+#endif
 
 #ifdef HAVE_BACKTRACE
 #include <execinfo.h>
 #include <signal.h>
 #include <syslog.h>
-#endif
 
 static	void	sigsegv(int sig);
 static	void	print_trace(int use_syslog);
@@ -445,7 +448,7 @@ cl_mbox(const char *dir, int desc)
 	m = messageCreate();
 	if(m == NULL) {
 		fclose(fd);
-		return 0;
+		return -1;
 	}
 
 #ifdef	CL_THREAD_SAFE
@@ -469,7 +472,7 @@ cl_mbox(const char *dir, int desc)
 	pthread_mutex_unlock(&tables_mutex);
 #endif
 
-#ifdef	CL_DEBUG
+#ifdef HAVE_BACKTRACE
 	segv = signal(SIGSEGV, sigsegv);
 #endif
 
@@ -556,7 +559,7 @@ cl_mbox(const char *dir, int desc)
 
 	cli_dbgmsg("cli_mbox returning %d\n", retcode);
 
-#ifdef	CL_DEBUG
+#ifdef HAVE_BACKTRACE
 	signal(SIGSEGV, segv);
 #endif
 
@@ -775,6 +778,15 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 			break;
 		case TEXT:
 			if(tableFind(subtypeTable, mimeSubtype) == PLAIN)
+				/*
+				 * Consider what to do if this fails
+				 * (i.e. aText == NULL):
+				 * We mustn't just return since that could
+				 * cause a virus to be missed that we
+				 * could be capable of scanning. Ignoring
+				 * the error is probably the safest, we may be
+				 * able to scan anyway and we lose nothing
+				 */
 				aText = textCopy(messageGetBody(mainMessage));
 			break;
 		case MULTIPART:
@@ -846,6 +858,10 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				messages = cli_realloc(messages, ((multiparts + 1) * sizeof(message *)));
 
 				aMessage = messages[multiparts] = messageCreate();
+				if(aMessage == NULL) {
+					multiparts--;
+					continue;
+				}
 
 				cli_dbgmsg("Now read in part %d\n", multiparts);
 

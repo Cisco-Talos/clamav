@@ -1,3 +1,7 @@
+Wed Jun 30 15:31:54 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Fix compilation error on old Solaris
+
 Wed Jun 30 13:24:56 BST 2004 (trog)
 -----------------------------------
   * libclamav/vba_extract.c: dumb down the PowerPoint parser to Microsofts level.
