@@ -1,3 +1,7 @@
+Fri Oct 15 01:53:42 CEST 2004 (tk)
+----------------------------------
+  * libclamav/scanners.c: do not return CL_EFORMAT to callers
+
 Thu Oct 14 22:19:20 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Harden the test for RFC2047 encoded headers

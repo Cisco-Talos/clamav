@@ -1138,7 +1138,7 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 
     if(!root) {
 	cli_errmsg("CRITICAL: root == NULL\n");
-	return -1;
+	return CL_EMALFDB;
     }
 
     if(!options) { /* raw mode (stdin, etc.) */
@@ -1298,8 +1298,12 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
     }
     (*arec)--;
 
-
-    return ret;
+    if(ret == CL_EFORMAT) {
+	cli_warnmsg("Descriptor[%d]: %s\n", desc, cl_strerror(CL_EFORMAT));
+	return CL_CLEAN;
+    } else {
+	return ret;
+    }
 }
 
 int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options)
