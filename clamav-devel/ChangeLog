@@ -1,3 +1,7 @@
+Sat Nov 27 14:40:55 GMT 2004 (njh)
+----------------------------------
+ * libclamav/mbox.c:	Honour section 7.2.6 of RFC1521
+
 Sat Nov 27 13:18:42 GMT 2004 (njh)
 ----------------------------------
  * libclamav:	Assume x-uue is the same as x-uuencode
