@@ -515,6 +515,8 @@ Changes
 0.80g	4/10/04	Enhanced the SMTP reply
 0.80h	4/10/04	Fix mails containing viruses being kept twice in quarantine;
 			once as 'msg.xxxxxx' and once as 'msg.xxxxxx.virusname'
+0.80i	5/10/04	ScanMail is no longer needed
+		Improved tracing of the infected machine
 
 INTERNATIONALISATION
 
