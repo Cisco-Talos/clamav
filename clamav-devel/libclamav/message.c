@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.88  2004/09/21 14:55:26  nigelhorne
+ * Handle blank lines in text/plain messages
+ *
  * Revision 1.87  2004/09/20 12:44:03  nigelhorne
  * Fix parsing error on mime arguments
  *
@@ -258,14 +261,14 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.87 2004/09/20 12:44:03 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.88 2004/09/21 14:55:26 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
 
 #ifndef	CL_DEBUG
-/*#define	NDEBUG	/* map CLAMAV debug onto standard */
+#define	NDEBUG	/* map CLAMAV debug onto standard */
 #endif
 
 #ifdef CL_THREAD_SAFE
@@ -1591,7 +1594,10 @@ messageToText(message *m)
 					textDestroy(first);
 				return NULL;
 			}
-			last->t_line = lineLink(t_line->t_line);
+			if(t_line->t_line)
+				last->t_line = lineLink(t_line->t_line);
+			else
+				last->t_line = NULL;	/* empty line */
 		}
 		if(last)
 			last->t_next = NULL;
@@ -1624,7 +1630,10 @@ messageToText(message *m)
 						textDestroy(first);
 					return NULL;
 				}
-				last->t_line = lineLink(t_line->t_line);
+				if(t_line->t_line)
+					last->t_line = lineLink(t_line->t_line);
+				else
+					last->t_line = NULL;	/* empty line */
 			}
 			continue;
 		}
