@@ -1,3 +1,8 @@
+Fri Mar  4 02:47:17 CET 2005 (tk)
+---------------------------------
+  * docs: fix some typos (reported by Koryn Grant <koryn*endace.com> and
+	  Paul Welsh <paul*welshfamily.com>)
+
 Fri Mar  4 02:42:43 CET 2005 (tk)
 ---------------------------------
   * freshclam/freshclam.c: add missing argument for format string. Patch by
@@ -6,7 +11,7 @@ Fri Mar  4 02:42:43 CET 2005 (tk)
 Fri Mar  4 02:21:42 CET 2005 (tk)
 ---------------------------------
   * clamd/others.c: include <sys/param.h> to fix compilation error on FreeBSD
-		    4.2 (Sergey Smitienko <hunter@comsys.com.ua>
+		    4.2 (Sergey Smitienko <hunter*comsys.com.ua>)
 
 Fri Mar  4 02:08:45 CET 2005 (tk)
 ---------------------------------
