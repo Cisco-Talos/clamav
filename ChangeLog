@@ -1,3 +1,8 @@
+Mon Sep 20 12:12:09 CEST 2004 (tk)
+----------------------------------
+  * libclamav/scanners.c: remove temporary files in the event of cli_mbox
+			  failure (thanks to Nigel)
+
 Mon Sep 20 10:44:35 BST 2004 (trog)
 -----------------------------------
 * libclamav/htmlnorm.c: Simplify handling of NL chars, treat as a space.
