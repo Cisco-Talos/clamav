@@ -1,3 +1,7 @@
+Thu May  6 22:14:39 CEST 2004 (tk)
+----------------------------------
+  * libclamav: scanners: enable decoding of Word6 macro code (Trog)
+
 Thu May  6 16:22:32 BST 2004 (trog)
 -----------------------------------
   * libclamav/vba_extract.c: Fix fd leak in Word6 macro code.

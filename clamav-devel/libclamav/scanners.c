@@ -796,8 +796,43 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 	free(vba_project->dir);
 	free(vba_project->offset);
 	free(vba_project);
+    } else if ((vba_project = (vba_project_t *) wm_dir_read(dirname))) {
+    	for (i = 0; i < vba_project->count; i++) {
+		fullname = (char *) cli_malloc(strlen(vba_project->dir) + strlen(vba_project->name[i]) + 2);
+		sprintf(fullname, "%s/%s", vba_project->dir, vba_project->name[i]);
+		fd = open(fullname, O_RDONLY);
+		if(fd == -1) {
+			cli_errmsg("Scan->OLE2 -> Can't open file %s\n", fullname);
+			free(fullname);
+			ret = CL_EOPEN;
+			break;
+		}
+		free(fullname);
+		cli_dbgmsg("decompress WM project '%s' macro:%d key:%d\n", vba_project->name[i], i, vba_project->key[i]);
+		data = (unsigned char *) wm_decrypt_macro(fd, vba_project->offset[i], vba_project->length[i], vba_project->key[i]);
+		close(fd);
+		
+		if(!data) {
+			cli_dbgmsg("WARNING: WM project '%s' macro %d decrypted to NULL\n", vba_project->name[i], i);
+		} else {
+			if(cl_scanbuff(data, vba_project->length[i], virname, root) == CL_VIRUS) {
+				free(data);
+				ret = CL_VIRUS;
+				break;
+			}
+			free(data);
+		}
+	}
+	for(i = 0; i < vba_project->count; i++)
+	    free(vba_project->name[i]);
+	free(vba_project->key);
+	free(vba_project->length);
+	free(vba_project->offset);
+	free(vba_project->name);
+	free(vba_project->dir);
+	free(vba_project);
     }
-
+			
     if(ret != CL_CLEAN)
     	return ret;
 
