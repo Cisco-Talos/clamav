@@ -501,6 +501,9 @@ Changes
 		Honour LogFacility
 		When sanitising the quarantine's filename, don't sanitise
 		the directory name as well
+0.80b	27/9/04	Added quit() routine to tidy when shutting down
+		honour HAVE_IN_ADDR_T
+		Added --broadcast option
 
 INTERNATIONALISATION
 
