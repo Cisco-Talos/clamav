@@ -116,7 +116,7 @@ static const struct cli_magic_s cli_magic[] = {
 static const struct cli_smagic_s cli_smagic[] = {
 
     /* "From: " * "Content-Type: " */
-/*    {"0a46726f6d3a20{-2048}0a436f6e74656e742d547970653a20",    "Mail file", CL_MAILFILE}, */
+    {"0a46726f6d3a20{-2048}0a436f6e74656e742d547970653a20",    "Mail file", CL_MAILFILE},
 
     /* remember the matcher is case sensitive */
     {"3c62723e",       "HTML data", CL_HTMLFILE},	/* <br> */

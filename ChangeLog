@@ -1,3 +1,7 @@
+Wed Aug  4 19:06:52 CEST 2004 (tk)
+----------------------------------
+  * libclamav: re-activate new mail detection mechanism
+
 Wed Aug  4 17:34:46 CEST 2004 (tk)
 ----------------------------------
   * libclamav: petite: big-endian fixes
