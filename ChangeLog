@@ -1,3 +1,9 @@
+Wed Jan 28 10:16:49 GMT 2004 (njh)
+----------------------------------
+  * libclamav:	Added support to scan some bounce messages
+  		Thanks to Jay <sysop-clamav@coronastreet.net> for
+		letting me bounce ideas off him
+
 Tue Jan 27 22:36:31 CET 2004 (tk)
 ---------------------------------
   * clamd: clamuko: support VirusEvent (requested by Matt Butt

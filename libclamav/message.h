@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: message.h,v $
+ * Revision 1.5  2004/01/28 10:15:24  nigelhorne
+ * Added support to scan some bounce messages
+ *
  * Revision 1.4  2004/01/14 18:02:55  nigelhorne
  * added definition of binhexBegin
  *
@@ -55,5 +58,6 @@ blob	*messageToBlob(const message *m);
 text	*messageToText(const message *m);
 const	text	*uuencodeBegin(const message *m);
 const	text	*binhexBegin(const message *m);
+const	text	*bounceBegin(const message *m);
 
 #endif	/*_MESSAGE_H*/
