@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -43,11 +44,57 @@
 
 #define TIMEOUT 1200
 
+static short terminate = 0;
+
+
+static void daemon_sighandler(int sig) {
+	char *action = NULL;
+
+    switch(sig) {
+	case SIGALRM:
+	case SIGUSR1:
+	    action = "wake up";
+	    break;
+
+	case SIGHUP:
+	    action = "re-opening log file";
+	    break;
+
+	default:
+	    action = "terminating";
+	    terminate = 1;
+	    break;
+    }
+    logg("Received signal %d, %s\n", sig, action);
+    if (sig == SIGHUP) {
+	logg(NULL);	/* forces log file re-opening */
+    }
+    return;
+}
+
+
+static void writepid(char *pidfile) {
+	FILE *fd;
+	int old_umask;
+    old_umask = umask(0006);
+    if((fd = fopen(pidfile, "w")) == NULL) {
+	logg("!Can't save PID to file %s: %s\n", pidfile, strerror(errno));
+    } else {
+	fprintf(fd, "%d", getpid());
+	fclose(fd);
+    }
+    umask(old_umask);
+}
+
+
 int freshclam(struct optstruct *opt)
 {
 	int ret;
 	char *newdir, *cfgfile;
+	char *pidfile = NULL;
 	struct cfgstruct *copt, *cpt;
+	struct sigaction sigact;
+	struct sigaction oldact;
 #ifndef C_CYGWIN
 	char *unpuser;
 	struct passwd *user;
@@ -162,6 +209,8 @@ int freshclam(struct optstruct *opt)
     if(optc(opt, 'd')) {
 	    int bigsleep, checks;
 
+	memset(&sigact, 0, sizeof(struct sigaction));
+	sigact.sa_handler = daemon_sighandler;
 
 	if(optc(opt, 'c')) {
 	    checks = atoi(getargc(opt, 'c'));
@@ -178,8 +227,20 @@ int freshclam(struct optstruct *opt)
 
 	bigsleep = 24 * 3600 / checks;
 	daemonize();
+	if (optl(opt, "pid")) {
+	    pidfile = getargl(opt, "pid");
+	} else if (cpt = cfgopt(copt, "PidFile")) {
+	    pidfile = cpt->strarg;
+	}
+	if (pidfile) {
+	    writepid(pidfile);
+	}
+	logg("freshclam daemon started (pid=%d)\n", getpid());
 
-	while(1) {
+	sigaction(SIGTERM, &sigact, NULL);
+	sigaction(SIGHUP, &sigact, NULL);
+	sigaction(SIGINT, &sigact, NULL);
+	while(!terminate) {
 	    ret = download(copt, opt);
 
 
@@ -193,7 +254,12 @@ int freshclam(struct optstruct *opt)
 	    }
 
 	    logg("\n--------------------------------------\n");
-	    sleep(bigsleep);
+	    sigaction(SIGALRM, &sigact, &oldact);
+	    sigaction(SIGUSR1, &sigact, &oldact);
+	    alarm(bigsleep);
+	    pause();
+	    sigaction(SIGALRM, &oldact, NULL);
+	    sigaction(SIGUSR1, &oldact, NULL);
 	}
 
     } else
@@ -206,6 +272,9 @@ int freshclam(struct optstruct *opt)
     } else if((cpt = cfgopt(copt, "OnErrorExecute"))) {
 	if(ret > 1)
 	    system(cpt->strarg);
+    }
+    if (pidfile) {
+        unlink(pidfile);
     }
 
     return(ret);
@@ -298,10 +367,11 @@ void help(void)
     mprintf("    --stdout                             write to stdout instead of stderr\n");
     mprintf("                                         (this help is always written to stdout)\n");
     mprintf("\n");
-    mprintf("    --config-file=FILE                   Read configuration from FILE.\n");
+    mprintf("    --config-file=FILE                   read configuration from FILE.\n");
     mprintf("    --log=FILE           -l FILE         log into FILE\n");
     mprintf("    --log-verbose                        log additional information\n");
     mprintf("    --daemon             -d              run in daemon mode\n");
+    mprintf("    --pid                -p FILE         save daemon's pid in FILE\n");
     mprintf("    --user=USER          -u USER         run as USER\n");
     mprintf("    --checks=#n          -c #n           number of checks per day, 1 <= n <= 50\n");
     mprintf("    --datadir=DIRECTORY                  download new databases into DIRECTORY\n");

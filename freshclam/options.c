@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 	int ret, opt_index, i, len;
 	struct optstruct *opt;
 
-	const char *getopt_parameters = "hvdVl:c:u:";
+	const char *getopt_parameters = "hvdp:Vl:c:u:";
 
 	static struct option long_options[] = {
 	    {"help", 0, 0, 'h'},
@@ -47,6 +47,7 @@ int main(int argc, char **argv)
 	    {"log-verbose", 0, 0, 0},
 	    {"stdout", 0, 0, 0},
 	    {"daemon", 0, 0, 'd'},
+	    {"pid", 1, 0, 'p'},
 	    {"user", 1, 0, 'u'}, /* not used */
 	    {"config-file", 1, 0, 0},
 	    {"checks", 1, 0, 'c'},
