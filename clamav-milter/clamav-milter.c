@@ -276,9 +276,17 @@
  *			and put sockets into subdirectory for security
  *			clamfi_close debug, change assert to debug message
  *			Better way to force TCPwrappers only with TCP/IP
- *			
+ *	0.67k	7/3/04	Ensure cli_dbgmsg's end with \n
+ *			Fixed some warning messages with icc
+ *			Use cli_[cm]alloc
+ *			Included extra information if --headers is given (based
+ *			on an idea from "Leonid Zeitlin" <lz@europe.com>
+ *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.59  2004/03/07 15:11:15  nigelhorne
+ * Added more information to headers flag
+ *
  * Revision 1.58  2004/03/03 09:14:55  nigelhorne
  * Change way check for TCPwrappers on TCP/IP
  *
@@ -438,9 +446,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.58 2004/03/03 09:14:55 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.59 2004/03/07 15:11:15 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.67j"
+#define	CM_VERSION	"0.67k"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -461,9 +469,6 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.58 2004/03/03 09:14:55 nig
 
 #include <stdio.h>
 #include <sysexits.h>
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <syslog.h>
@@ -773,7 +778,7 @@ main(int argc, char **argv)
 				"force-scan", 0, NULL, 'f'
 			},
 			{
-			  	"headers", 0, NULL, 'H'
+				"headers", 0, NULL, 'H'
 			},
 			{
 				"help", 0, NULL, 'h'
@@ -1051,7 +1056,7 @@ main(int argc, char **argv)
 			return EX_CONFIG;
 		}
 
-		tcpSocket = cpt->numarg;
+		tcpSocket = (in_port_t)cpt->numarg;
 
 		/*
 		 * cli_strtok's fieldno counts from 0
@@ -1230,8 +1235,8 @@ pingServer(int serverNumber)
 
 		memset((char *)&server, 0, sizeof(struct sockaddr_in));
 		server.sin_family = AF_INET;
-		server.sin_port = htons(tcpSocket);
-		
+		server.sin_port = (in_port_t)htons(tcpSocket);
+
 		assert(serverIPs != NULL);
 		assert(serverIPs[0] != -1L);
 
@@ -1328,7 +1333,7 @@ findServer(void)
 		int sock;
 
 		server->sin_family = AF_INET;
-		server->sin_port = htons(tcpSocket);
+		server->sin_port = (in_port_t)htons(tcpSocket);
 		server->sin_addr.s_addr = serverIPs[i];
 
 		sock = socks[i] = socket(AF_INET, SOCK_STREAM, 0);
@@ -1363,7 +1368,7 @@ findServer(void)
 
 	tv.tv_sec = threadtimeout;
 	tv.tv_usec = 0;
-	
+
 	retval = select(maxsock, &rfds, NULL, NULL, &tv);
 	if(retval < 0)
 		perror("select");
@@ -1388,7 +1393,7 @@ findServer(void)
 	for(i = 0; i < numServers; i++)
 		if(FD_ISSET(socks[i], &rfds)) {
 			free(socks);
-			cli_dbgmsg("findServer: using server %d", i);
+			cli_dbgmsg("findServer: using server %d\n", i);
 			return i;
 		}
 
@@ -1440,7 +1445,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		const char *hostmail;
 		const struct hostent *hp = NULL;
 
-	   	/*
+		/*
 		 * Using TCP/IP for the sendmail->clamav-milter connection
 		 */
 		if((hostmail = smfi_getsymval(ctx, "{if_name}")) == NULL) {
@@ -1480,7 +1485,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 #ifdef	CL_DEBUG
 			if(use_syslog)
 				syslog(LOG_DEBUG, "clamfi_connect: not scanning outgoing messages");
-			cli_dbgmsg("clamfi_connect: not scanning outgoing messages");
+			cli_dbgmsg("clamfi_connect: not scanning outgoing messages\n");
 #endif
 			return SMFIS_ACCEPT;
 		}
@@ -1518,7 +1523,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 #ifdef	CL_DEBUG
 				if(use_syslog)
 					syslog(LOG_DEBUG, "clamfi_connect: not scanning local messages");
-				cli_dbgmsg("clamfi_connect: not scanning outgoing messages");
+				cli_dbgmsg("clamfi_connect: not scanning outgoing messages\n");
 #endif
 				return SMFIS_ACCEPT;
 			}
@@ -1593,7 +1598,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			if(use_syslog)
 				syslog(LOG_NOTICE, "Timeout waiting for a child to die");
 #endif
-			cli_dbgmsg("Timeout waiting for a child to die");
+			cli_dbgmsg("Timeout waiting for a child to die\n");
 		}
 	}
 
@@ -1659,7 +1664,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 			memset((char *)&server, 0, sizeof(struct sockaddr_in));
 			server.sin_family = AF_INET;
-			server.sin_port = htons(tcpSocket);
+			server.sin_port = (in_port_t)htons(tcpSocket);
 
 			assert(serverIPs != NULL);
 
@@ -1732,7 +1737,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 		memset((char *)&reply, 0, sizeof(struct sockaddr_in));
 		reply.sin_family = AF_INET;
-		reply.sin_port = htons(port);
+		reply.sin_port = (in_port_t)htons(port);
 
 		assert(serverIPs != NULL);
 
@@ -1770,7 +1775,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 	privdata->to = NULL;
 
 	if (hflag)
-        	privdata->headers = header_list_new();
+		privdata->headers = header_list_new();
 	else
 		privdata->headers = NULL;
 
@@ -1797,7 +1802,7 @@ clamfi_envrcpt(SMFICTX *ctx, char **argv)
 	clamfi_send(privdata, 0, "To: %s\n", argv[0]);
 
 	if(privdata->to == NULL) {
-		privdata->to = malloc(sizeof(char *) * 2);
+		privdata->to = cli_malloc(sizeof(char *) * 2);
 
 		assert(privdata->numTo == 0);
 	} else
@@ -1820,7 +1825,7 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 	if(debug_level >= 9)
 		printf("clamfi_header: %s: %s\n", headerf, headerv);
 	else
-		cli_dbgmsg("clamfi_header");
+		cli_dbgmsg("clamfi_header\n");
 #endif
 
 	if(clamfi_send(privdata, 0, "%s: %s\n", headerf, headerv) < 0) {
@@ -1829,7 +1834,7 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 	}
 
 	if(hflag)
-		header_list_add(privdata->headers, headerf, headerv);	
+		header_list_add(privdata->headers, headerf, headerv);
 
 	return SMFIS_CONTINUE;
 }
@@ -1843,7 +1848,7 @@ clamfi_eoh(SMFICTX *ctx)
 	if(logVerbose)
 		syslog(LOG_DEBUG, "clamfi_eoh");
 #ifdef	CL_DEBUG
-	cli_dbgmsg("clamfi_eoh");
+	cli_dbgmsg("clamfi_eoh\n");
 #endif
 
 	if(clamfi_send(privdata, 1, "\n") < 0) {
@@ -1888,7 +1893,7 @@ clamfi_eoh(SMFICTX *ctx)
 	if(use_syslog)
 		syslog(LOG_NOTICE, "clamfi_connect: ignoring whitelisted message");
 #ifdef	CL_DEBUG
-	cli_dbgmsg("clamfi_connect: not scanning outgoing messages");
+	cli_dbgmsg("clamfi_connect: not scanning outgoing messages\n");
 #endif
 	clamfi_cleanup(ctx);
 
@@ -1918,7 +1923,7 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 			privdata->bodyLen += len;
 		} else {
 			assert(privdata->bodyLen == 0);
-			privdata->body = malloc(len);
+			privdata->body = cli_malloc(len);
 			memcpy(privdata->body, bodyp, len);
 			privdata->bodyLen = len;
 		}
@@ -1937,7 +1942,7 @@ clamfi_eom(SMFICTX *ctx)
 	if(logVerbose)
 		syslog(LOG_DEBUG, "clamfi_eom");
 #ifdef	CL_DEBUG
-	cli_dbgmsg("clamfi_eom");
+	cli_dbgmsg("clamfi_eom\n");
 	assert(privdata != NULL);
 	assert((privdata->cmdSocket >= 0) || (privdata->filename != NULL));
 	assert(!((privdata->cmdSocket >= 0) && (privdata->filename != NULL)));
@@ -2000,7 +2005,7 @@ clamfi_eom(SMFICTX *ctx)
 		clamfi_cleanup(ctx);
 		syslog(LOG_NOTICE, "clamfi_eom: read nothing from clamd");
 #ifdef	CL_DEBUG
-		cli_dbgmsg("clamfi_eom: read nothing from clamd");
+		cli_dbgmsg("clamfi_eom: read nothing from clamd\n");
 #endif
 		return cl_error;
 	}
@@ -2054,7 +2059,7 @@ clamfi_eom(SMFICTX *ctx)
 		/*
 		 * Setup err as a list of recipients
 		 */
-		err = (char *)malloc(1024);
+		err = (char *)cli_malloc(1024);
 
 		/*
 		 * Use snprintf rather than printf since we don't know the
@@ -2087,7 +2092,7 @@ clamfi_eom(SMFICTX *ctx)
 				smfi_getsymval(ctx, "i"),
 				err);
 #ifdef	CL_DEBUG
-		cli_dbgmsg(err);
+		cli_dbgmsg("%s\n", err);
 #endif
 		free(err);
 
@@ -2152,9 +2157,10 @@ clamfi_eom(SMFICTX *ctx)
 				if(privdata->filename != NULL)
 					fprintf(sendmail, "\nThe message in question has been quarantined as %s\n", privdata->filename);
 
-				if (hflag) {
-					fprintf(sendmail, "\nThe message was received by %s from %s\n\n",
-						smfi_getsymval(ctx, "j"), from);
+				if(hflag) {
+					fprintf(sendmail, "\nThe message was received by %s from %s via %s\n\n",
+						smfi_getsymval(ctx, "j"), from,
+						smfi_getsymval(ctx, "_"));
 					fputs("For your information, the original message headers were:\n\n", sendmail);
 					header_list_print(privdata->headers, sendmail);
 				}
@@ -2211,7 +2217,7 @@ clamfi_abort(SMFICTX *ctx)
 #ifdef	CL_DEBUG
 	if(use_syslog)
 		syslog(LOG_DEBUG, "clamfi_abort");
-	cli_dbgmsg("clamfi_abort");
+	cli_dbgmsg("clamfi_abort\n");
 #endif
 
 	/*
@@ -2233,7 +2239,7 @@ clamfi_close(SMFICTX *ctx)
 #ifdef	CL_DEBUG
 	struct privdata *privdata = (struct privdata *)smfi_getpriv(ctx);
 
-	cli_dbgmsg("clamfi_close");
+	cli_dbgmsg("clamfi_close\n");
 	if(privdata != NULL) {
 		if(use_syslog)
 			syslog(LOG_DEBUG, "clamfi_close, privdata != NULL");
@@ -2281,7 +2287,7 @@ clamfi_free(struct privdata *privdata)
 		if(privdata->from) {
 #ifdef	CL_DEBUG
 			if(debug_level >= 9)
-				cli_dbgmsg("Free privdata->from");
+				cli_dbgmsg("Free privdata->from\n");
 #endif
 			free(privdata->from);
 			privdata->from = NULL;
@@ -2293,13 +2299,13 @@ clamfi_free(struct privdata *privdata)
 			for(to = privdata->to; *to; to++) {
 #ifdef	CL_DEBUG
 				if(debug_level >= 9)
-					cli_dbgmsg("Free *privdata->to");
+					cli_dbgmsg("Free *privdata->to\n");
 #endif
 				free(*to);
 			}
 #ifdef	CL_DEBUG
 			if(debug_level >= 9)
-				cli_dbgmsg("Free privdata->to");
+				cli_dbgmsg("Free privdata->to\n");
 #endif
 			free(privdata->to);
 			privdata->to = NULL;
@@ -2321,7 +2327,7 @@ clamfi_free(struct privdata *privdata)
 
 #ifdef	CL_DEBUG
 		if(debug_level >= 9)
-			cli_dbgmsg("Free privdata");
+			cli_dbgmsg("Free privdata\n");
 #endif
 		free(privdata);
 	}
@@ -2334,7 +2340,7 @@ clamfi_free(struct privdata *privdata)
 		if(n_children > 0)
 			--n_children;
 #ifdef	CL_DEBUG
-		cli_dbgmsg("pthread_cond_broadcast");
+		cli_dbgmsg("pthread_cond_broadcast\n");
 #endif
 		pthread_cond_broadcast(&n_children_cond);
 #ifdef	CL_DEBUG
@@ -2518,7 +2524,7 @@ header_list_add(header_list_t list, const char *headerf, const char *headerv)
 
 	header = (char *)cli_malloc(len);
 	snprintf(header, len, "%s: %s", headerf, headerv);
-	new_node = (struct header_node_t *) malloc(sizeof(struct header_node_t));
+	new_node = (struct header_node_t *)cli_malloc(sizeof(struct header_node_t));
 	new_node->header = header;
 	new_node->next = NULL;
 	if(!list->first)

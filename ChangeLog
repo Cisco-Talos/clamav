@@ -1,3 +1,8 @@
+Sun Mar  7 15:19:51 GMT 2004 (njh)
+----------------------------------
+  * libclamav/message.c:	Fixed minor typo in bounce message
+    clamav-milter:		Added extra information to --headers
+
 Sun Mar  7 12:40:05 GMT 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Added new bounce delimeter (thanks to Dirk

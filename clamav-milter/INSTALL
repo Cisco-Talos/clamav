@@ -277,6 +277,11 @@ Changes
 		and put sockets into subdirectory for security
 		clamfi_close debug, change assert to debug message
 		Better way to force TCPwrappers only with TCP/IP
+0.67k	7/3/04	Ensure cli_dbgmsg's end with \n
+		Fixed some warning messages with icc
+		Use cli_[cm]alloc
+		Included extra information if --headers is given (based on an
+		idea from "Leonid Zeitlin" <lz@europe.com>
 
 BUG REPORTS
 
