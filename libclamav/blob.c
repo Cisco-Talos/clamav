@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.19  2004/08/27 16:39:38  nigelhorne
+ * Fix MACOS/X filenames
+ *
  * Revision 1.18  2004/08/27 09:41:44  nigelhorne
  * Better filename handling in MACOS/X
  *
@@ -56,7 +59,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.18 2004/08/27 09:41:44 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.19 2004/08/27 16:39:38 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -167,7 +170,7 @@ blobSetFilename(blob *b, const char *dir, const char *filename)
 
 		for(ptr = b->name; *ptr; ptr++) {
 #ifdef	C_DARWIN
-			*ptr &= '\200';
+			*ptr &= '\177';
 #endif
 #if	defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32)
 			if(strchr("/*?<>|\"+=,;: ", *ptr))
