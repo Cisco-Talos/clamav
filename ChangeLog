@@ -1,3 +1,13 @@
+Wed Apr 21 00:27:18 CEST 2004 (tk)
+----------------------------------
+  * libclamav: scanners:
+	+ scan full OLE2 directory (Trog);
+	+ ignore popular file types (Dirk Mueller <mueller*kde.org>)
+	+ improve compression ratio calculation (Dirk Mueller)
+	+ detect more mail file types
+  * clamscan: add --max-ratio option (Dirk Mueller)
+  * docs: update Japanese documentation (Masaki Ogawa <proc*mac.com>)
+
 Tue Apr 20 15:18:58 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Handle hostaddr == NULL
@@ -14,9 +24,9 @@ Mon Apr 19 23:11:48 BST 2004 (njh)
 ----------------------------------
   * clamav-milter: Added --from
   	Return SMFIS_TEMPFAIL on some out of memory errors (some still to do),
-		based on an idea by Joe Maimon <jmaimon@ttec.com>
+		based on an idea by Joe Maimon <jmaimon*ttec.com>
 	Quarantine messages now sorted by date, based on an idea by Christian
-		Pelissier <Christian.Pelissier@onera.fr>.
+		Pelissier <Christian.Pelissier*onera.fr>.
 	Started code to parse header to find the real infected machine,
 		email notification now contain the first received header, which
 		may (or may not) be helpful

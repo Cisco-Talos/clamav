@@ -79,18 +79,32 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "Return-path: ",		13, "Maildir",		  CL_MAILFILE},
     {0,  "Delivered-To: ",		14, "Mail",		  CL_MAILFILE},
     {0,  "X-UIDL: ",			8,  "Mail",		  CL_MAILFILE},
+    {0,  ">From ",			6,  "Mail",		  CL_MAILFILE},
+    {0,  "Date: ",			6,  "Mail",		  CL_MAILFILE},
+    {0,  "Message-Id: ",		12, "Mail",		  CL_MAILFILE},
+    {0,  "Message-ID: ",		12, "Mail",		  CL_MAILFILE},
+    {0,  "X-Apparently-To: ",		17, "Mail",		  CL_MAILFILE},
     {0,  "For: ",			5,  "Eserv mail",	  CL_MAILFILE},
     {0,  "From: ",			6,  "Exim mail",	  CL_MAILFILE},
     {0,  "X-Symantec-",			11, "Symantec",		  CL_MAILFILE},
-    {0,  "X-Apparently-To: ",		17, "Mail",		  CL_MAILFILE},
-    {0,  "For: ",			5,  "Eserv mail",	  CL_MAILFILE},
     {0,  "X-EVS",			5,  "EVS mail",		  CL_MAILFILE},
-    {0,  ">From ",			6,  "Symantec",		  CL_MAILFILE},
     {0,  "v:\015\012Received: ",	14, "VPOP3 Mail (DOS)",	  CL_MAILFILE},
     {0,  "v:\012Received: ",		13, "VPOP3 Mail (UNIX)",  CL_MAILFILE},
     {0,  "Hi. This is the qmail-send",  26, "Qmail bounce",	  CL_MAILFILE},
     {0,  "\320\317\021\340\241\261\032\341",
 	                    8, "OLE2 container",  CL_OLE2FILE},
+    /* Ignored types */
+
+    {0,  "\000\000\001\263",             4, "MPEG video stream",  CL_DATAFILE},
+    {0,  "\000\000\001\272",             4, "MPEG sys stream",    CL_DATAFILE},
+    {0,  "RIFF",                         4, "RIFF file",          CL_DATAFILE},
+    {0,  "GIF87a",                       6, "GIF (87a)",          CL_DATAFILE},
+    {0,  "GIF89a",                       6, "GIF (89a)",          CL_DATAFILE},
+    {0,  "\x89PNG\r\n\x1a\n",            8, "PNG",                CL_DATAFILE},
+    {0,  "\377\330\377\340",             4, "JPEG",               CL_DATAFILE},
+    {0,  "\377\330\377\356",             4, "JPG",                CL_DATAFILE},
+    {0,  "OggS",                         4, "Ogg Stream",         CL_DATAFILE},
+
     {-1, NULL,              0, NULL,              CL_UNKNOWN_TYPE}
 };
 
@@ -352,18 +366,17 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	    break;
 	}
 
-	cli_dbgmsg("Zip -> %s, compressed: %d, normal: %d, encrypted flag: %d\n", zdirent.d_name, zdirent.d_csize, zdirent.st_size, zdirent.d_flags);
-
-	if(limits && limits->maxratio > 0 && source.st_size && (zdirent.st_size / source.st_size) >= limits->maxratio) {
-	    *virname = "Oversized.Zip";
-	    ret = CL_VIRUS;
-	    break;
-	}
+	cli_dbgmsg("Zip -> %s, compressed: %u, normal: %u, ratio: %d (max: %d)\n", zdirent.d_name, zdirent.d_csize, zdirent.st_size, zdirent.st_size / (zdirent.d_csize+1), limits ? limits->maxratio : -1 );
 
 	if(!zdirent.st_size) { /* omit directories and null files */
 	    files++;
 	    continue;
 	}
+
+	if(limits && limits->maxratio > 0 && ((unsigned) zdirent.st_size / (unsigned) zdirent.d_csize) >= limits->maxratio) {
+            files++;
+            continue;
+        }
 
 	/* work-around for problematic zips (zziplib crashes with them) */
 	if(zdirent.d_csize < 0 || zdirent.st_size < 0) {
@@ -412,9 +425,8 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	    break;
 	}
 
-
 	while((bytes = zzip_file_read(zfp, buff, FILEBUFF)) > 0) {
-	    if(fwrite(buff, bytes, 1, tmp)*bytes != bytes) {
+	    if(fwrite(buff, 1, bytes, tmp) != (size_t) bytes) {
 		cli_dbgmsg("Zip -> Can't fwrite() file: %s\n", strerror(errno));
 		zzip_file_close(zfp);
 		zzip_dir_close(zdir);
@@ -624,83 +636,7 @@ static int cli_scanbzip(int desc, const char **virname, long int *scanned, const
 }
 #endif
 
-static int cli_scanole2(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
-{
-	const char *tmpdir;
-	char *dir, *fullname;
-	unsigned char *data;
-	int ret = CL_CLEAN, fd, i, data_len;
-	vba_project_t *vba_project;
-
-    cli_dbgmsg("in cli_scanole2()\n");
-
-    tmpdir = getenv("TMPDIR");
-
-    if(tmpdir == NULL)
-#ifdef P_tmpdir
-	tmpdir = P_tmpdir;
-#else
-	tmpdir = "/tmp";
-#endif
-
-	/* generate the temporary directory */
-	dir = cl_gentemp(tmpdir);
-	if(mkdir(dir, 0700)) {
-	    cli_errmsg("ScanOLE2 -> Can't create temporary directory %s\n", dir);
-	    return CL_ETMPDIR;
-	}
-
-	if((ret = cli_ole2_extract(desc, dir))) {
-	    cli_errmsg("ScanOLE2 -> %s\n", cl_strerror(ret));
-	    cli_rmdirs(dir);
-	    free(dir);
-	    return ret;
-	}
-
-	if((vba_project = (vba_project_t *) vba56_dir_read(dir))) {
-
-	    for(i = 0; i < vba_project->count; i++) {
-		fullname = (char *) malloc(strlen(vba_project->dir) + strlen(vba_project->name[i]) + 2);
-		sprintf(fullname, "%s/%s", vba_project->dir, vba_project->name[i]);
-		fd = open(fullname, O_RDONLY);
-		if(fd == -1) {
-			cli_errmsg("Scan->OLE2 -> Can't open file %s\n", fullname);
-			free(fullname);
-			ret = CL_EOPEN;
-			break;
-		}
-		free(fullname);
-                cli_dbgmsg("decompress VBA project '%s'\n", vba_project->name[i]);
-		data = (unsigned char *) vba_decompress(fd, vba_project->offset[i], &data_len);
-		close(fd);
-
-		if(!data) {
-		    cli_dbgmsg("WARNING: VBA project '%s' decompressed to NULL\n", vba_project->name[i]);
-		} else {
-		    if(cl_scanbuff(data, data_len, virname, root) == CL_VIRUS) {
-			free(data);
-			ret = CL_VIRUS;
-			break;
-		    }
-
-		    free(data);
-		}
-	    }
-
-	    for(i = 0; i < vba_project->count; i++)
-		free(vba_project->name[i]);
-	    free(vba_project->name);
-	    free(vba_project->dir);
-	    free(vba_project->offset);
-	    free(vba_project);
-	}
-
-
-	cli_rmdirs(dir);
-	free(dir);
-	return ret;
-}
-static int cli_scandir(char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
 {
 	DIR *dd;
 	struct dirent *dent;
@@ -718,9 +654,13 @@ static int cli_scandir(char *dirname, const char **virname, long int *scanned, c
 
 		    /* stat the file */
 		    if(lstat(fname, &statbuf) != -1) {
-			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode))
-			    cli_scandir(fname, virname, scanned, root, limits, options, reclev);
-			else
+			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
+			    if (cli_scandir(fname, virname, scanned, root, limits, options, reclev) == CL_VIRUS) {
+				free(fname);
+				closedir(dd);
+				return CL_VIRUS;
+			    }
+			} else
 			    if(S_ISREG(statbuf.st_mode))
 				if(cli_scanfile(fname, virname, scanned, root, limits, options, reclev) == CL_VIRUS) {
 				    free(fname);
@@ -740,6 +680,132 @@ static int cli_scandir(char *dirname, const char **virname, long int *scanned, c
 
     closedir(dd);
     return 0;
+}
+
+static int cli_vba_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+{
+	int ret = CL_CLEAN, i, fd, data_len;
+	vba_project_t *vba_project;
+	DIR *dd;
+	struct dirent *dent;
+	struct stat statbuf;
+	char *fname, *dir, *fullname;
+	unsigned char *data;
+
+    cli_dbgmsg("VBA scan dir: %s\n", dirname);
+    if((vba_project = (vba_project_t *) vba56_dir_read(dirname))) {
+
+	for(i = 0; i < vba_project->count; i++) {
+	    fullname = (char *) cli_malloc(strlen(vba_project->dir) + strlen(vba_project->name[i]) + 2);
+	    sprintf(fullname, "%s/%s", vba_project->dir, vba_project->name[i]);
+	    fd = open(fullname, O_RDONLY);
+	    if(fd == -1) {
+		cli_errmsg("Scan->OLE2 -> Can't open file %s\n", fullname);
+		free(fullname);
+		ret = CL_EOPEN;
+		break;
+	    }
+	    free(fullname);
+            cli_dbgmsg("decompress VBA project '%s'\n", vba_project->name[i]);
+	    data = (unsigned char *) vba_decompress(fd, vba_project->offset[i], &data_len);
+	    close(fd);
+
+	    if(!data) {
+		cli_dbgmsg("WARNING: VBA project '%s' decompressed to NULL\n", vba_project->name[i]);
+	    } else {
+		if(cl_scanbuff(data, data_len, virname, root) == CL_VIRUS) {
+		    free(data);
+		    ret = CL_VIRUS;
+		    break;
+		}
+
+		free(data);
+	    }
+	}
+
+	for(i = 0; i < vba_project->count; i++)
+	    free(vba_project->name[i]);
+	free(vba_project->name);
+	free(vba_project->dir);
+	free(vba_project->offset);
+	free(vba_project);
+    }
+
+    if(ret != CL_CLEAN)
+    	return ret;
+
+    if((dd = opendir(dirname)) != NULL) {
+	while((dent = readdir(dd))) {
+	    if(dent->d_ino) {
+		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
+		    /* build the full name */
+		    fname = cli_calloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
+		    sprintf(fname, "%s/%s", dirname, dent->d_name);
+
+		    /* stat the file */
+		    if(lstat(fname, &statbuf) != -1) {
+			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode))
+			    if (cli_vba_scandir(fname, virname, scanned, root, limits, options, reclev) == CL_VIRUS) {
+			    	ret = CL_VIRUS;
+				free(fname);
+				break;
+			    }
+		    }
+		    free(fname);
+		}
+	    }
+	}
+    } else {
+	cli_errmsg("ScanDir -> Can't open directory %s.\n", dirname);
+	return CL_EOPEN;
+    }
+
+    closedir(dd);
+    return ret;
+}
+
+static int cli_scanole2(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+{
+	const char *tmpdir;
+	char *dir, *fullname;
+	unsigned char *data;
+	int ret = CL_CLEAN, fd, i, data_len;
+	vba_project_t *vba_project;
+
+    cli_dbgmsg("in cli_scanole2()\n");
+
+    tmpdir = getenv("TMPDIR");
+
+    if(tmpdir == NULL)
+#ifdef P_tmpdir
+	tmpdir = P_tmpdir;
+#else
+	tmpdir = "/tmp";
+#endif
+
+    /* generate the temporary directory */
+    dir = cl_gentemp(tmpdir);
+    if(mkdir(dir, 0700)) {
+	cli_errmsg("ScanOLE2 -> Can't create temporary directory %s\n", dir);
+	return CL_ETMPDIR;
+    }
+
+    if((ret = cli_ole2_extract(desc, dir))) {
+	cli_errmsg("ScanOLE2 -> %s\n", cl_strerror(ret));
+	cli_rmdirs(dir);
+	free(dir);
+	return ret;
+    }
+
+    if((ret = cli_vba_scandir(dir, virname, scanned, root, limits, options, reclev)) != CL_VIRUS) {
+	if(cli_scandir(dir, virname, scanned, root, limits, options, reclev) == CL_VIRUS) {
+		ret = CL_VIRUS;
+	}
+    }
+
+    cli_rmdirs(dir);
+    free(dir);
+    return ret;
 }
 
 static int cli_scanmail(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
@@ -797,77 +863,74 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
 	return -1;
     }
 
-
-    if(SCAN_ARCHIVE || SCAN_MAIL) {
-        /* Need to examine file type */
-
-	if(SCAN_ARCHIVE && limits && limits->maxreclevel)
-	    if(*reclev > limits->maxreclevel)
-		/* return CL_EMAXREC; */
-		return CL_CLEAN;
-
-	(*reclev)++;
+    if(SCAN_ARCHIVE && limits && limits->maxreclevel)
+	if(*reclev > limits->maxreclevel)
+	    /* return CL_EMAXREC; */
+	    return CL_CLEAN;
 
 
-	lseek(desc, 0, SEEK_SET);
-	bread = read(desc, magic, MAGIC_BUFFER_SIZE);
-	magic[MAGIC_BUFFER_SIZE] = '\0';	/* terminate magic string properly */
-	lseek(desc, 0, SEEK_SET);
+    (*reclev)++;
+    lseek(desc, 0, SEEK_SET);
+    bread = read(desc, magic, MAGIC_BUFFER_SIZE);
+    magic[MAGIC_BUFFER_SIZE] = '\0';
+    lseek(desc, 0, SEEK_SET);
 
-
-	if (bread != MAGIC_BUFFER_SIZE) {
-	    /* short read: No need to do magic */
-	    (*reclev)--;
-	    return ret;
-	}
-
-	type = cli_filetype(magic, bread);
-
-	switch(type) {
-	    case CL_RARFILE:
-		if(!DISABLE_RAR && SCAN_ARCHIVE && !cli_scanrar_inuse) {
-		    ret = cli_scanrar(desc, virname, scanned, root, limits, options, reclev);
-		}
-		break;
-
-	    case CL_ZIPFILE:
-		if(SCAN_ARCHIVE) {
-		    ret = cli_scanzip(desc, virname, scanned, root, limits, options, reclev);
-		}
-		break;
-
-	    case CL_GZFILE:
-		if(SCAN_ARCHIVE) {
-		    ret = cli_scangzip(desc, virname, scanned, root, limits, options, reclev);
-		}
-		break;
-
-	    case CL_BZFILE:
-#ifdef HAVE_BZLIB_H
-		if(SCAN_ARCHIVE) {
-		    ret = cli_scanbzip(desc, virname, scanned, root, limits, options, reclev);
-		}
-#endif
-		break;
-
-	    case CL_MAILFILE:
-		if (SCAN_MAIL) {
-		    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
-		}
-		break;
-
-	    case CL_OLE2FILE:
-		if(SCAN_OLE2) {
-		    ret = cli_scanole2(desc, virname, scanned, root, limits, options, reclev);
-		}
-            case CL_UNKNOWN_TYPE:
-		break;
-	}
-
+    if (bread != MAGIC_BUFFER_SIZE) {
+	/* short read: No need to do magic */
 	(*reclev)--;
+	return ret;
     }
 
-    if(ret != CL_VIRUS) { /* scan the raw file */
+    type = cli_filetype(magic, bread);
+
+    switch(type) {
+	case CL_RARFILE:
+	    if(!DISABLE_RAR && SCAN_ARCHIVE && !cli_scanrar_inuse)
+		ret = cli_scanrar(desc, virname, scanned, root, limits, options, reclev);
+	    break;
+
+	case CL_ZIPFILE:
+	    if(SCAN_ARCHIVE)
+		ret = cli_scanzip(desc, virname, scanned, root, limits, options, reclev);
+	    break;
+
+	case CL_GZFILE:
+	    if(SCAN_ARCHIVE)
+		ret = cli_scangzip(desc, virname, scanned, root, limits, options, reclev);
+	    break;
+
+	case CL_BZFILE:
+#ifdef HAVE_BZLIB_H
+	    if(SCAN_ARCHIVE)
+		ret = cli_scanbzip(desc, virname, scanned, root, limits, options, reclev);
+#endif
+	    break;
+
+	case CL_MAILFILE:
+	    if(SCAN_MAIL)
+		ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
+	    break;
+
+	case CL_OLE2FILE:
+	    if(SCAN_OLE2)
+		ret = cli_scanole2(desc, virname, scanned, root, limits, options, reclev);
+	    break;
+
+	case CL_DATAFILE:
+	    /* it could be a false positive and a standard DOS .COM file */
+	    {
+		struct stat s;
+		if(fstat(desc, &s) == 0 && S_ISREG(s.st_mode) && s.st_size < 65536)
+		type = CL_UNKNOWN_TYPE;
+	    }
+
+        case CL_UNKNOWN_TYPE:
+	    break;
+    }
+
+    (*reclev)--;
+
+    if(type != CL_DATAFILE && ret != CL_VIRUS) { /* scan the raw file */
 	lseek(desc, 0, SEEK_SET); /* If archive scan didn't rewind desc */
 	if(cli_scandesc(desc, virname, scanned, root) == CL_VIRUS) {
 	    cli_dbgmsg("%s virus found in descriptor %d.\n", *virname, desc);

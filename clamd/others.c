@@ -60,18 +60,16 @@ void virusaction(const char *virname, const struct cfgstruct *copt)
 
     cmd = strdup(cpt->strarg);
 
-    buffer = (char *) mcalloc(strlen(cmd) + strlen(virname) + 10, sizeof(char));
-
     if((pt = strstr(cmd, "%v"))) {
+	buffer = (char *) mcalloc(strlen(cmd) + strlen(virname) + 10, sizeof(char));
 	*pt = 0; pt += 2;
 	strcpy(buffer, cmd);
 	strcat(buffer, virname);
 	strcat(buffer, pt);
 	free(cmd);
 	cmd = strdup(buffer);
+	free(buffer);
     }
-
-    free(buffer);
 
     /* WARNING: this is uninterruptable ! */
     system(cmd);

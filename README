@@ -60,7 +60,7 @@ of mirrors by looking at their ip source address when they try to resolve
 database.clamav.net. Our DNS servers can answer with a CNAME to:
 europe.clamav.net, america.clamav.net, asia.clamav.net or other.clamav.net.
 Our advanced push-mirroring mechanism (maintained by Luca Gibelli) allows
-database maintainers to update all the mirrors in less then one minute !
+database maintainers to update all the mirrors in less than one minute !
 
 
 There will be no major feature enhancements in the 0.7x series. Our work
