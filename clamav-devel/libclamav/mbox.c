@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.85  2004/06/30 19:48:58  nigelhorne
+ * Some TR.Happy99.SKA were getting through
+ *
  * Revision 1.84  2004/06/30 14:30:40  nigelhorne
  * Fix compilation error on Solaris
  *
@@ -240,7 +243,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.84 2004/06/30 14:30:40 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.85 2004/06/30 19:48:58 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -876,8 +879,17 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 
 				if(t_line == NULL) {
 					cli_dbgmsg("Empty part\n");
-					messageDestroy(aMessage);
-					--multiparts;
+					/*
+					 * Remove this part unless there's
+					 * a uuencoded portion somewhere in
+					 * the complete message that we may
+					 * throw away by mistake if the MIME
+					 * encoding information is incorrect
+					 */
+					if(uuencodeBegin(mainMessage) == NULL) {
+						messageDestroy(aMessage);
+						--multiparts;
+					}
 					continue;
 				}
 

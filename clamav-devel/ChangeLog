@@ -1,3 +1,7 @@
+Wed Jun 30 20:49:46 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Some TR.Happy99.SKA were getting through
+
 Wed Jun 30 15:31:54 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Fix compilation error on old Solaris
