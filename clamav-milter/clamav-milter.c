@@ -134,9 +134,14 @@
  *	0.60j	1/10/03	strerror_r doesn't work on Linux, attempting workaround
  *			Added support for hard-coded list of email addresses
  *			who's e-mail is not scanned
+ *	0.60k	5/10/03	Only remove old UNIX domain socket if FixStaleSocket
+ *			is set
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.12  2003/10/05 17:30:04  nigelhorne
+ * Only fix old socket when FixStaleSocket is set
+ *
  * Revision 1.11  2003/10/05 13:57:47  nigelhorne
  * Fixed handling of MaxThreads
  *
@@ -156,9 +161,9 @@
  * Added -f flag use MaxThreads if --max-children not set
  *
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.11 2003/10/05 13:57:47 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.12 2003/10/05 17:30:04 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.60j"
+#define	CM_VERSION	"0.60k"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -577,15 +582,21 @@ main(int argc, char **argv)
 		use_syslog = 0;
 	}
 
-	/*
-	 * Get the incoming socket details - the way sendmail talks to us
-	 *
-	 * TODO: There's a security problem here that'll need fixing
-	 */
-	if(strncasecmp(port, "unix:", 5) == 0)
-		unlink(port + 5);
-	else if(strncasecmp(port, "local:", 6) == 0)
-		unlink(port + 6);
+	if(cfgopt(copt, "FixStaleSocket")) {
+		/*
+		 * Get the incoming socket details - the way sendmail talks to
+		 * us
+		 *
+		 * TODO: There's a security problem here that'll need fixing
+		 */
+		if(strncasecmp(port, "unix:", 5) == 0) {
+			if(unlink(&port[5]) < 0)
+				perror(&port[5]);
+		} else if(strncasecmp(port, "local:", 6) == 0) {
+			if(unlink(&port[6]) < 0)
+				perror(&port[6]);
+		}
+	}
 
 	if(smfi_register(smfilter) == MI_FAILURE) {
 		fputs("smfi_register failure\n", stderr);

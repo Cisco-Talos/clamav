@@ -1,3 +1,8 @@
+Sun Oct  5 18:30:40 BST 2003 (njh)
+----------------------------------
+  * clamav-milter: Used to always remove old UNIX domain sockets, now
+  		only does that if FixStaleSocket is set
+		
 Sun Oct  5 14:58:05 BST 2003 (njh)
 ----------------------------------
   * clamav-milter: s/atoi(cpt->strarg)/cpt->numarg for MaxThreads
