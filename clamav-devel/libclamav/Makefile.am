@@ -116,6 +116,8 @@ libclamav_la_SOURCES = \
 	line.c \
 	line.h \
 	untar.c \
-	untar.h
+	untar.h \
+	special.c \
+	special.h
 
 lib_LTLIBRARIES = libclamav.la
