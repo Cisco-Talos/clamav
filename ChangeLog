@@ -1,3 +1,8 @@
+Fri Jul 30 19:10:44 CEST 2004 (tk)
+----------------------------------
+  * libclamav: cli_bm_free: free b-m nodes (patch by Igor Brezac
+	       <igor*ipass.net>)
+
 Fri Jul 30 19:02:42 CEST 2004 (tk)
 ----------------------------------
   * libclamav: fix (small) memory leaks
