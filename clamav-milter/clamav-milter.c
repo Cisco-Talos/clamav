@@ -301,9 +301,23 @@
  *			Prefer cli_dbgmsg/cli_warnmsg over printf
  *	0.70d	29/3/04	Print the sendmail ID with the virus note in syslog
  *			config file location has changed
+ *	0.70e	1/4/04	Fix a remote possibility of a file descriptor leak
+ *			in PingServer() if clamd has died
+ *			Fix by Andrey J. Melnikoff (TEMHOTA) <temnota@kmv.ru>
+ *			Corrected some debug messages reported by
+ *			Sergey Y. Afonin <asy@kraft-s.ru>
+ *	0.70f	1/4/04	Added auto-submitted header to messages generated here
+ *			Suggested by "Andrey J. Melnikoff (TEMHOTA)"
+ *			<temnota@kmv.ru>
+ *			Add advice that --quarantine-dir may improve
+ *			performance when LocalSocket is used
+ *			ThreadTimeout seems to have been changed to ReadTimeout
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.67  2004/04/01 15:34:00  nigelhorne
+ * ThreadTimeout has been renamed ReadTimeout
+ *
  * Revision 1.66  2004/03/31 20:48:03  nigelhorne
  * Config file has changed
  *
@@ -487,9 +501,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.66 2004/03/31 20:48:03 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.67 2004/04/01 15:34:00 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70d"
+#define	CM_VERSION	"0.70f"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -564,8 +578,7 @@ typedef	unsigned short	in_port_t;
  *	can use wall(1) in the VirusEvent entry in clamav.conf
  * TODO: build with libclamav.so rather than libclamav.a
  * TODO: bounce message should optionally be read from a file
- * TODO: Support ThreadTimeout, LogTime and Logfile from the conf
- *	 file
+ * TODO: Support LogTime and Logfile from the conf file
  * TODO: Warn if TCPAddr doesn't allow connection from us
  * TODO: Decide action (bounce, discard, reject etc.) based on the virus
  *	found. Those with faked addresses, such as SCO.A want discarding,
@@ -684,8 +697,7 @@ static	int	cl_error = SMFIS_TEMPFAIL; /*
 				 */
 static	int	threadtimeout = CL_DEFAULT_SCANTIMEOUT; /*
 				 * number of seconds to wait for clamd to
-				 * respond
-				 * TODO: consider changing to ReadTimeout
+				 * respond, see ReadTimeout in clamav.conf
 				 */
 static	int	logClean = 1;	/*
 				 * Add clean items to the log file
@@ -1054,11 +1066,11 @@ main(int argc, char **argv)
 	if((max_children == 0) && ((cpt = cfgopt(copt, "MaxThreads")) != NULL))
 		max_children = cpt->numarg;
 
-	if((cpt = cfgopt(copt, "ThreadTimeout")) != NULL) {
+	if((cpt = cfgopt(copt, "ReadTimeout")) != NULL) {
 		threadtimeout = cpt->numarg;
 
 		if(threadtimeout < 0) {
-			fprintf(stderr, "%s: ThreadTimeout must not be negative in %s\n",
+			fprintf(stderr, "%s: ReadTimeout must not be negative in %s\n",
 				argv[0], cfgfile);
 		}
 	}
@@ -1083,11 +1095,13 @@ main(int argc, char **argv)
 				cfgfile);
 			return EX_CONFIG;
 		}
+		if(quarantine_dir == NULL)
+			fprintf(stderr, "When using Localsocket in %s\nyou may improve performance if you use the --quarantine_dir option\n", cfgfile);
+
 		umask(077);
 
 		serverIPs = (long *)cli_malloc(sizeof(long));
 		serverIPs[0] = inet_addr("127.0.0.1");
-
 	} else if((cpt = cfgopt(copt, "TCPSocket")) != NULL) {
 		int i;
 
@@ -1292,6 +1306,7 @@ pingServer(int serverNumber)
 		}
 		if(connect(sock, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
 			perror("connect");
+			close(sock);
 			return 0;
 		}
 	}
@@ -1778,9 +1793,9 @@ clamfi_eoh(SMFICTX *ctx)
 	 * must be on the white list, so just accept the e-mail
 	 */
 	if(use_syslog)
-		syslog(LOG_NOTICE, "clamfi_connect: ignoring whitelisted message");
+		syslog(LOG_NOTICE, "clamfi_eoh: ignoring whitelisted message");
 #ifdef	CL_DEBUG
-	cli_dbgmsg("clamfi_connect: not scanning outgoing messages\n");
+	cli_dbgmsg("clamfi_eoh: not scanning outgoing messages\n");
 #endif
 	clamfi_cleanup(ctx);
 
@@ -2019,6 +2034,11 @@ clamfi_eom(SMFICTX *ctx)
 				if(!pflag)
 					for(to = privdata->to; *to; to++)
 						fprintf(sendmail, "Cc: %s\n", *to);
+				/*
+				 * Auto-submittied is still a draft, keep an
+				 * eye on its format
+				 */
+				fputs("Auto-Submitted: auto-submitted (antivirus notify)\n", sendmail);
 				fputs("Subject: Virus intercepted\n\n", sendmail);
 
 				if(bflag)
