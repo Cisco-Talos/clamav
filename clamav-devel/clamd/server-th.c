@@ -447,7 +447,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 		sighup = 0;
 	}
 
-	if (new_sd >= 0) {
+	if (!progexit && new_sd >= 0) {
 		client_conn = (client_conn_t *) mmalloc(sizeof(struct client_conn_tag));
 		client_conn->sd = new_sd;
 		client_conn->options = options;
@@ -464,6 +464,9 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 
 	pthread_mutex_lock(&exit_mutex);
 	if(progexit) {
+	    if (new_sd >= 0) {
+		close(new_sd);
+	    }
 	    pthread_mutex_unlock(&exit_mutex);
 	    break;
 	}
