@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.43  2004/03/20 13:23:44  nigelhorne
+ * More bounces handled
+ *
  * Revision 1.42  2004/03/19 17:38:11  nigelhorne
  * Handle binary encoding as though it had no encoding
  *
@@ -123,7 +126,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.42 2004/03/19 17:38:11 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.43 2004/03/20 13:23:44 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -208,22 +211,27 @@ static	struct	mime_map {
 };
 
 /*
- * TODO: remove this table and scan all *efficiently* for bounce messages
+ * TODO: remove this table and scan all *efficiently* for bounce messages,
+ * probably using cl_magic[] from scanners.c
  */
 static const char *bounces[] = {
-	"--- Below this line is a copy of the message.",
-	"------ This is a copy of the message, including all the headers. ------",
 	"=================================================================================",
-	"------- The original message sent:",
-	"   ----- Original message follows -----",
-	"------- Original mail message ----",
 	"------ A continuacion adjuntamos copia del mensaje, incluyendo las cabeceras. ------",
-	"------- Returned Message --------",
-	"--- Below this line is the original bounce.",
 	"A copy of the original message below this line:",
 	"==== Begin Message",
+	"--- Below this line is a copy of the message.",
+	"--- Below this line is the original bounce.",
+	"|----------- Message text follows: (body too large, truncated) ----------|",
+	"[ Offending message ]",
+	"------- Original mail message ----",
 	"------------------------------ Original message ------------------------------",
+	"   ----- Original message follows -----",
 	"Original message follows:",
+	"--- Returned Message ---",
+	"------- Returned Message --------",
+	"------- The original message sent:",
+	"------ This is a copy of the message, including all the headers. ------",
+	" --------Unsent Message below:",
 	NULL
 };
 
@@ -1057,8 +1065,6 @@ messageToText(const message *m)
 		 * Fast copy
 		 */
 		for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next) {
-			/*const char *line;*/
-
 			if(first == NULL)
 				first = last = cli_malloc(sizeof(text));
 			else {
@@ -1066,14 +1072,8 @@ messageToText(const message *m)
 				last = last->t_next;
 			}
 
-			/*line = t_line->t_text;
-
-			last->t_text = cli_malloc(strlen(line) + 2);
-
-			assert(last->t_text != NULL);
-
-			sprintf(last->t_text, "%s\n", line);*/
-			if((last->t_text = strdup(t_line->t_text)) == NULL) {
+			if((last == NULL) ||
+			   ((last->t_text = strdup(t_line->t_text)) == NULL)) {
 				textDestroy(first);
 				return NULL;
 			}
