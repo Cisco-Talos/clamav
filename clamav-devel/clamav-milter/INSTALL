@@ -402,6 +402,7 @@ Changes
 			clamav-milter, useful for checking load balancing etc.
 0.72	3/6/04	Up-issued
 0.72a	8/6/04	--from didn't take an option (fix to 0.71a)
+0.73	14/6/04	Up-issued
 
 BUG REPORTS
 
