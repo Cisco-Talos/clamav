@@ -31,6 +31,7 @@
 #include <clamav.h>
 
 #include "cltypes.h"
+#include "others.h"
 
 #define FALSE (0)
 #define TRUE (1)
@@ -39,13 +40,11 @@
 
 #ifdef WORDS_LITTLEENDIAN
 #define ole2_endian_convert_16(v)	(v)
-#warning Little Endian
 #else
 static uint16_t ole2_endian_convert_16(uint16_t v)
 {
 	return ((v >> 8) + (v << 8));
 }
-#warning Big Endian
 #endif
 
 #ifdef WORDS_LITTLEENDIAN
@@ -56,6 +55,14 @@ static uint32_t ole2_endian_convert_32(uint32_t v)
         return ((v >> 24) | ((v & 0x00FF0000) >> 8) |
                 ((v & 0x0000FF00) << 8) | (v << 24));
 }
+#endif
+
+#ifndef HAVE_ATTRIB_PACKED
+#define __attribute__(x)
+#endif
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
 #endif
 
 typedef struct ole2_header_tag
@@ -85,7 +92,7 @@ typedef struct ole2_header_tag
 	/* not part of the ole2 header, but stuff we need in order to decode */
 	/* must take account of the size of variables below here when
 	   reading the header */
-	int sbat_root_start;
+	int32_t sbat_root_start;
 } ole2_header_t __attribute__ ((packed));
 
 typedef struct property_tag
@@ -110,7 +117,11 @@ typedef struct property_tag
 	unsigned char reserved[4];
 } property_t __attribute__ ((packed));
 
-char magic_id[] = { 0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1};
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack()
+#endif
+
+unsigned char magic_id[] = { 0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1};
 
 
 /* Function: readn
@@ -286,9 +297,9 @@ void print_ole2_header(ole2_header_t *hdr)
 	return;
 }
 
-int ole2_read_block(int fd, ole2_header_t *hdr, void *buff, int blockno)
+int ole2_read_block(int fd, ole2_header_t *hdr, void *buff, int32_t blockno)
 {
-	int offset;
+	off_t offset;
 
 	// other methods: (blockno+1) * 512 or (blockno * block_size) + 512;
 	offset = (blockno << hdr->log2_big_block_size) + 512;	/* 512 is header size */
@@ -301,9 +312,9 @@ int ole2_read_block(int fd, ole2_header_t *hdr, void *buff, int blockno)
 	return TRUE;
 }
 
-int ole2_get_next_bat_block(int fd, ole2_header_t *hdr, int current_block)
+int32_t ole2_get_next_bat_block(int fd, ole2_header_t *hdr, int32_t current_block)
 {
-	int bat_array_index;
+	int32_t bat_array_index;
 	uint32_t bat[128];
 
 	bat_array_index = current_block / 128;
@@ -315,24 +326,9 @@ int ole2_get_next_bat_block(int fd, ole2_header_t *hdr, int current_block)
 	return ole2_endian_convert_32(bat[current_block-(bat_array_index * 128)]);
 }
 
-int ole2_get_next_sbat_block(int fd, ole2_header_t *hdr, int current_block)
+int32_t ole2_get_next_xbat_block(int fd, ole2_header_t *hdr, int32_t current_block)
 {
-	int iter, current_bat_block;
-	uint32_t sbat[128];
-
-	current_bat_block = hdr->sbat_start;
-	iter = current_block / 128;
-	while (iter > 0) {
-		current_bat_block = ole2_get_next_bat_block(fd, hdr, current_bat_block);
-		iter--;
-	}
-	ole2_read_block(fd, hdr, &sbat, current_bat_block);
-	return ole2_endian_convert_32(sbat[current_block % 128]);
-}
-
-int ole2_get_next_xbat_block(int fd, ole2_header_t *hdr, int current_block)
-{
-	int xbat_index, xbat_block_index, bat_index, bat_blockno;
+	int32_t xbat_index, xbat_block_index, bat_index, bat_blockno;
 	uint32_t xbat[128], bat[128];
 
 	xbat_index = current_block / 128;
@@ -358,7 +354,7 @@ int ole2_get_next_xbat_block(int fd, ole2_header_t *hdr, int current_block)
 	return ole2_endian_convert_32(bat[bat_index]);
 }
 
-int ole2_get_next_block_number(int fd, ole2_header_t *hdr, int current_block)
+int32_t ole2_get_next_block_number(int fd, ole2_header_t *hdr, int32_t current_block)
 {
 	if ((current_block / 128) > 108) {
 		return ole2_get_next_xbat_block(fd, hdr, current_block);
@@ -367,11 +363,25 @@ int ole2_get_next_block_number(int fd, ole2_header_t *hdr, int current_block)
 	}
 }
 
-/* Retrieve the block containing the data for the given sbat index */
-int ole2_get_sbat_data_block(int fd, ole2_header_t *hdr, void *buff, int sbat_index)
+int32_t ole2_get_next_sbat_block(int fd, ole2_header_t *hdr, int32_t current_block)
 {
-	int block_count;
-	int current_block;
+	int32_t iter, current_bat_block;
+	uint32_t sbat[128];
+
+	current_bat_block = hdr->sbat_start;
+	iter = current_block / 128;
+	while (iter > 0) {
+		current_bat_block = ole2_get_next_block_number(fd, hdr, current_bat_block);
+		iter--;
+	}
+	ole2_read_block(fd, hdr, &sbat, current_bat_block);
+	return ole2_endian_convert_32(sbat[current_block % 128]);
+}
+
+/* Retrieve the block containing the data for the given sbat index */
+int32_t ole2_get_sbat_data_block(int fd, ole2_header_t *hdr, void *buff, int32_t sbat_index)
+{
+	int32_t block_count, current_block;
 
 	if (hdr->sbat_root_start < 0) {
 		cli_errmsg("No root start block\n");
@@ -381,7 +391,7 @@ int ole2_get_sbat_data_block(int fd, ole2_header_t *hdr, void *buff, int sbat_in
 	block_count = sbat_index / 8;			// 8 small blocks per big block
 	current_block = hdr->sbat_root_start;
 	while (block_count > 0) {
-		current_block = ole2_get_next_bat_block(fd, hdr, current_block);
+		current_block = ole2_get_next_block_number(fd, hdr, current_block);
 		block_count--;
 	}
 	/* current_block now contains the block number of the sbat array
@@ -397,7 +407,7 @@ void ole2_read_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 				void (*handler)(int fd, ole2_header_t *hdr, property_t *prop, const char *dir))
 {
 	property_t prop_block[4];
-	int index, current_block;
+	int32_t index, current_block;
 	
 	current_block = hdr->prop_start;
 
@@ -441,7 +451,7 @@ void handler_null(int fd, ole2_header_t *hdr, property_t *prop, const char *dir)
 void handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char *dir)
 {
 	unsigned char buff[(1 << hdr->log2_big_block_size)];
-	int current_block, ofd, len, offset;
+	int32_t current_block, ofd, len, offset;
 	char *name, *newname;
 
 	if (prop->type != 2) {
@@ -510,14 +520,86 @@ void handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char 
 	return;
 }
 
+int ole2_read_header(int fd, ole2_header_t *hdr)
+{
+	int i;
+	
+	fprintf(stderr, "Slow header read\n");
+	if (readn(fd, &hdr->magic, 8) != 8) {
+		return FALSE;
+	}
+	if (readn(fd, &hdr->clsid, 16) != 16) {
+		return FALSE;
+	}
+	if (readn(fd, &hdr->minor_version, 2) != 2) {
+		return FALSE;
+	}
+	if (readn(fd, &hdr->dll_version, 2) != 2) {
+		return FALSE;
+	}
+	if (readn(fd, &hdr->byte_order, 2) != 2) {
+		return FALSE;
+	}
+	if (readn(fd, &hdr->log2_big_block_size, 2) != 2) {
+		return FALSE;
+	}
+	if (readn(fd, &hdr->log2_small_block_size, 4) != 4) {
+		return FALSE;
+	}
+	if (readn(fd, &hdr->reserved, 8) != 8) {
+		return FALSE;
+	}
+	if (readn(fd, &hdr->bat_count, 4) != 4) {
+		return FALSE;
+	}
+	if (readn(fd, &hdr->prop_start, 4) != 4) {
+		return FALSE;
+	}
+	if (readn(fd, &hdr->signature, 4) != 4) {
+		return FALSE;
+	}
+	if (readn(fd, &hdr->sbat_cutoff, 4) != 4) {
+		return FALSE;
+	}
+	if (readn(fd, &hdr->sbat_start, 4) != 4) {
+		return FALSE;
+	}
+	if (readn(fd, &hdr->sbat_block_count, 4) != 4) {
+		return FALSE;
+	}
+	if (readn(fd, &hdr->xbat_start, 4) != 4) {
+		return FALSE;
+	}
+	if (readn(fd, &hdr->xbat_count, 4) != 4) {
+		return FALSE;
+	}
+	for (i=0 ; i < 109 ; i++) {
+		if (readn(fd, &hdr->bat_array[i], 4) != 4) {
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
 int cli_ole2_extract(int fd, const char *dirname)
 {
 	ole2_header_t hdr;
-
+	int hdr_size;
+	
 	cli_dbgmsg("in cli_ole2_extract()\n");
-
+	
 	/* size of header - size of other values in struct */
-	readn(fd, &hdr, sizeof(struct ole2_header_tag) - sizeof(int));
+	hdr_size = sizeof(struct ole2_header_tag) - sizeof(int32_t);
+
+#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK)
+	if (readn(fd, &hdr, hdr_size) != hdr_size) {
+		return 0;
+	}
+#else
+	if (!ole2_read_header(fd, &hdr)) {
+		return 0;
+	}
+#endif
 
 	hdr.minor_version = ole2_endian_convert_16(hdr.minor_version);
 	hdr.dll_version = ole2_endian_convert_16(hdr.dll_version);
