@@ -17,7 +17,7 @@
  *
  * $LOG$
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.4 2004/02/06 13:46:08 kojm Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.5 2004/02/10 19:22:25 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -36,9 +36,6 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.4 2004/02/06 13:46:08 kojm Exp $";
 #include "mbox.h"
 #include "blob.h"
 #include "others.h"
-
-
-/*#define	OPTIMIZE_SPACE	/* for machines short of RAM */
 
 #ifndef	CL_DEBUG
 #define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -141,19 +138,10 @@ blobAddData(blob *b, const unsigned char *data, size_t len)
 
 	if(b->data == NULL) {
 		assert(b->len == 0);
-#ifdef	OPTIMIZE_SPACE
 		b->size = len * 4;
-#else
-		b->size = 128 * 1024;
-#endif
-
 		b->data = cli_malloc(b->size);
 	} else if(b->size < b->len + len) {
-#ifdef	OPTIMIZE_SPACE
 		b->size += len * 4;
-#else
-		b->size += 128 * 1024;
-#endif
 		b->data = cli_realloc(b->data, b->size);
 	}
 
