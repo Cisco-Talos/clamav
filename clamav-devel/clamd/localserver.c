@@ -96,6 +96,10 @@ int localserver(const struct optstruct *opt, const struct cfgstruct *copt, struc
 	exit(1);
     }
 
-    acceptloop(sockfd, root, copt);
+    if(cfgopt(copt, "UseProcesses"))
+	acceptloop_proc(sockfd, root, copt);
+    else
+	acceptloop_th(sockfd, root, copt);
+
     return 0;
 }

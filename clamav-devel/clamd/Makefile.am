@@ -30,7 +30,8 @@ clamd_SOURCES = \
     tcpserver.h \
     localserver.c \
     localserver.h \
-    server.c \
+    server-proc.c \
+    server-th.c \
     server.h \
     scanner.c \
     scanner.h \

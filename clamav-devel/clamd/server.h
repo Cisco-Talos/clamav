@@ -50,8 +50,10 @@ short int progexit; /* exit steering variable */
 int progpid; /* clamd pid */
 short int reload, clamuko_reload, main_accept, main_reload;
 
-int acceptloop(int socketd, struct cl_node *root, const struct cfgstruct *copt);
+int acceptloop_proc(int socketd, struct cl_node *root, const struct cfgstruct *copt);
+int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *copt);
 void sighandler(int sig);
+void sighandler_th(int sig);
 void daemonize(void);
 void sigsegv(int sig);
 

@@ -338,8 +338,10 @@ void *threadwatcher(void *arg)
 	    } else {
 		cl_buildtrie(*thwarg->root);
 		/* check integrity */
-		if(!testsignature(*thwarg->root))
+		if(!testsignature(*thwarg->root)) {
 		    logg("!Unable to detect test signature.\n");
+		    kill(progpid, SIGTERM);
+		}
 
 		logg("Database correctly reloaded (%d viruses)\n", virnum);
 	    }
@@ -356,7 +358,7 @@ void *threadwatcher(void *arg)
 int threads;
 pthread_t watcherid;
 
-int acceptloop(int socketd, struct cl_node *root, const struct cfgstruct *copt)
+int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *copt)
 {
 	int acceptd, i, options = 0, maxwait;
 	struct cfgstruct *cpt;
@@ -509,7 +511,7 @@ int acceptloop(int socketd, struct cl_node *root, const struct cfgstruct *copt)
     sigprocmask(SIG_SETMASK, &sigset, NULL);
 
     /* SIGINT, SIGTERM, SIGSEGV */
-    sigact.sa_handler = sighandler;
+    sigact.sa_handler = sighandler_th;
     sigemptyset(&sigact.sa_mask);
     sigaddset(&sigact.sa_mask, SIGINT);
     sigaddset(&sigact.sa_mask, SIGTERM);
@@ -604,7 +606,7 @@ int acceptloop(int socketd, struct cl_node *root, const struct cfgstruct *copt)
     }
 }
 
-void sighandler(int sig)
+void sighandler_th(int sig)
 {
 	time_t currtime;
 	int maxwait = CL_DEFAULT_MAXWHILEWAIT * 5, i;
