@@ -32,6 +32,7 @@
 
 #include "clamav.h"
 #include "others.h"
+#include "matcher.h"
 #include "matcher-ac.h"
 #include "unrarlib.h"
 #include "defaults.h"
@@ -195,6 +196,8 @@ static void cli_freepatt(struct cli_ac_patt *list)
     while(handler) {
 	free(handler->pattern);
 	free(handler->virname);
+	if(handler->offset)
+	    free(handler->offset);
 	if(handler->alt) {
 	    free(handler->altn);
 	    for(i = 0; i < handler->alt; i++)
@@ -261,7 +264,7 @@ static int inline cli_findpos(const char *buffer, int offset, int length, const 
     return 1;
 }
 
-int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *partcnt, int typerec, unsigned long int offset, unsigned long int *partoff)
+int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *partcnt, short otfrec, unsigned long int offset, unsigned long int *partoff, struct cli_voffset *voffset)
 {
 	struct cli_ac_node *current;
 	struct cli_ac_patt *pt;
@@ -305,7 +308,7 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
 
 				if(++partcnt[pt->sigid] == pt->parts) { /* the last one */
 				    if(pt->type) {
-					if(typerec) {
+					if(otfrec) {
 					    if(pt->type > type) {
 						cli_dbgmsg("Matched signature for file type: %s\n", pt->virname);
 						type = pt->type;
@@ -323,7 +326,7 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
 
 		    } else { /* old type signature */
 			if(pt->type) {
-			    if(typerec) {
+			    if(otfrec) {
 				if(pt->type > type) {
 				    cli_dbgmsg("Matched signature for file type: %s\n", pt->virname);
 
@@ -346,5 +349,5 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
 	}
     }
 
-    return typerec ? type : CL_CLEAN;
+    return otfrec ? type : CL_CLEAN;
 }

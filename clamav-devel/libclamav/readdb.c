@@ -41,7 +41,7 @@
 
 /* TODO: clean up the code */
 
-static int cli_addsig(struct cl_node *root, const char *virname, const char *hexsig, int sigid, int parts, int partno, int type, unsigned int mindist, unsigned int maxdist)
+static int cli_ac_addsig(struct cl_node *root, const char *virname, const char *hexsig, int sigid, int parts, int partno, unsigned short type, unsigned int mindist, unsigned int maxdist, char *offset, unsigned short target)
 {
 	struct cli_ac_patt *new;
 	char *pt, *hex;
@@ -57,6 +57,8 @@ static int cli_addsig(struct cl_node *root, const char *virname, const char *hex
     new->partno = partno;
     new->mindist = mindist;
     new->maxdist = maxdist;
+    new->target = target;
+    new->offset = offset;
 
     if(strchr(hexsig, '(')) {
 	    char *hexcpy, *hexnew, *start, *h, *c;
@@ -223,7 +225,7 @@ static int cli_addsig(struct cl_node *root, const char *virname, const char *hex
     return 0;
 }
 
-int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig, int type)
+int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig, unsigned short type, char *offset, unsigned short target)
 {
 	struct cli_bm_patt *bm_new;
 	char *pt, *hexcpy, *start, *n;
@@ -254,7 +256,7 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig,
 		*pt++ = 0;
 	    }
 
-	    if((ret = cli_addsig(root, virname, start, root->ac_partsigs, parts, i, type, mindist, maxdist))) {
+	    if((ret = cli_ac_addsig(root, virname, start, root->ac_partsigs, parts, i, type, mindist, maxdist, offset, target))) {
 		cli_errmsg("cli_parse_add(): Problem adding signature.\n");
 		error = 1;
 		break;
@@ -281,7 +283,7 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig,
 		    break;
 		}
 	    } else {
-		if((n = cli_strtok(pt, 0, "-")) != NULL) {
+		if((n = cli_strtok(pt, 0, "-"))) {
 		    if((mindist = atoi(n)) < 0) {
 			error = 1;
 			free(n);
@@ -290,7 +292,7 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig,
 		    free(n);
 		}
 
-		if((n = cli_strtok(pt, 1, "-")) != NULL) {
+		if((n = cli_strtok(pt, 1, "-"))) {
 		    if((maxdist = atoi(n)) < 0) {
 			error = 1;
 			free(n);
@@ -322,7 +324,7 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig,
 		return CL_EMALFDB;
 	    }
 
-	    if((ret = cli_addsig(root, virname, pt, root->ac_partsigs, parts, i, type, 0, 0))) {
+	    if((ret = cli_ac_addsig(root, virname, pt, root->ac_partsigs, parts, i, type, 0, 0, offset, target))) {
 		cli_errmsg("cli_parse_add(): Problem adding signature.\n");
 		free(pt);
 		return ret;
@@ -332,7 +334,7 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig,
 	}
 
     } else if(strpbrk(hexsig, "?(") || type) {
-	if((ret = cli_addsig(root, virname, hexsig, 0, 0, 0, type, 0, 0))) {
+	if((ret = cli_ac_addsig(root, virname, hexsig, 0, 0, 0, type, 0, 0, offset, target))) {
 	    cli_errmsg("cli_parse_add(): Problem adding signature\n");
 	    return ret;
 	}
@@ -367,6 +369,9 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig,
 	}
 
 	strncpy(bm_new->virname, virname, virlen);
+
+	bm_new->offset = offset;
+	bm_new->target = target;
 
 	if(bm_new->length > root->maxpatlen)
 	    root->maxpatlen = bm_new->length;
@@ -430,7 +435,7 @@ static int cli_loaddb(FILE *fd, struct cl_node **root, unsigned int *signo)
 
 	if(*pt == '=') continue;
 
-	if((ret = cli_parse_add(*root, start, pt, 0))) {
+	if((ret = cli_parse_add(*root, start, pt, 0, NULL, 0))) {
 	    cli_errmsg("Problem parsing signature at line %d\n", line);
 	    ret = CL_EMALFDB;
 	    break;
@@ -444,6 +449,100 @@ static int cli_loaddb(FILE *fd, struct cl_node **root, unsigned int *signo)
     }
 
     if(ret) {
+	cli_errmsg("Problem parsing database at line %d\n", line);
+	cl_free(*root);
+	return ret;
+    }
+
+    if(signo)
+	*signo += line;
+
+    return 0;
+}
+
+static int cli_loadndb(FILE *fd, struct cl_node **root, unsigned int *signo)
+{
+	char buffer[FILEBUFF], *sig, *virname, *offset, *pt;
+	int line = 0, ret = 0;
+	unsigned short target;
+
+
+    if(!*root) {
+	cli_dbgmsg("Initializing main node\n");
+	*root = (struct cl_node *) cli_calloc(1, sizeof(struct cl_node));
+	if(!*root)
+	    return CL_EMEM;
+    }
+
+    if(!(*root)->ac_root) {
+	cli_dbgmsg("Initializing trie\n");
+	(*root)->ac_root =  (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));
+	if(!(*root)->ac_root) {
+	    free(*root);
+	    cli_errmsg("Can't initialise AC pattern matcher\n");
+	    return CL_EMEM;
+	}
+    }
+
+    if(!(*root)->bm_shift) {
+	cli_dbgmsg("Initializing BM tables\n");
+	if((ret = cli_bm_init(*root))) {
+	    cli_errmsg("Can't initialise BM pattern matcher\n");
+	    return ret;
+	}
+    }
+
+    while(fgets(buffer, FILEBUFF, fd)) {
+	line++;
+	cli_chomp(buffer);
+
+	if(!(virname = cli_strtok(buffer, 0, ":"))) {
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if(!(pt = cli_strtok(buffer, 1, ":")) || !isdigit(*pt)) {
+	    free(virname);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+	target = (unsigned short) atoi(pt);
+	free(pt);
+
+	if(!(offset = cli_strtok(buffer, 2, ":"))) {
+	    free(virname);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if(!(sig = cli_strtok(buffer, 3, ":"))) {
+	    free(virname);
+	    free(offset);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if((ret = cli_parse_add(*root, virname, sig, 0, offset, target))) {
+	    cli_errmsg("Problem parsing signature at line %d\n", line);
+	    free(virname);
+	    free(offset);
+	    free(sig);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	free(virname);
+	free(sig);
+    }
+
+    if(!line) {
+	cli_errmsg("Empty database file\n");
+	cl_free(*root);
+	return CL_EMALFDB;
+    }
+
+    if(ret) {
+	cli_errmsg("Problem parsing database at line %d\n", line);
 	cl_free(*root);
 	return ret;
     }
@@ -531,6 +630,7 @@ static int cli_loadhdb(FILE *fd, struct cl_node **root, unsigned int *signo)
     }
 
     if(ret) {
+	cli_errmsg("Problem parsing database at line %d\n", line);
 	cl_free(*root);
 	return ret;
     }
@@ -562,6 +662,9 @@ int cl_loaddb(const char *filename, struct cl_node **root, unsigned int *signo)
 
     } else if(cli_strbcasestr(filename, ".hdb")) {
 	ret = cli_loadhdb(fd, root, signo);
+
+    } else if(cli_strbcasestr(filename, ".ndb")) {
+	ret = cli_loadndb(fd, root, signo);
 
     } else {
 	cli_dbgmsg("cl_loaddb: unknown extension - assuming old database format\n");
@@ -600,6 +703,7 @@ int cl_loaddbdir(const char *dirname, struct cl_node **root, unsigned int *signo
 	     cli_strbcasestr(dent->d_name, ".db2") ||
 	     cli_strbcasestr(dent->d_name, ".db3") ||
 	     cli_strbcasestr(dent->d_name, ".hdb") ||
+	     cli_strbcasestr(dent->d_name, ".ndb") ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbfile = (char *) cli_calloc(strlen(dent->d_name) + strlen(dirname) + 2, sizeof(char));
@@ -663,6 +767,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".db2")  || 
 	    cli_strbcasestr(dent->d_name, ".db3")  || 
 	    cli_strbcasestr(dent->d_name, ".hdb")  || 
+	    cli_strbcasestr(dent->d_name, ".ndb")  || 
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbstat->no++;
@@ -710,6 +815,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".db2")  || 
 	    cli_strbcasestr(dent->d_name, ".db3")  || 
 	    cli_strbcasestr(dent->d_name, ".hdb")  || 
+	    cli_strbcasestr(dent->d_name, ".ndb")  || 
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
                 fname = cli_calloc(strlen(dbstat->dir) + strlen(dent->d_name) + 2, sizeof(char));

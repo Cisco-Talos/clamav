@@ -1,3 +1,7 @@
+Tue Sep 14 03:30:12 CEST 2004 (tk)
+----------------------------------
+  * libclamav: initial support for new signature format
+
 Mon Sep 13 21:57:12 CEST 2004 (tk)
 ----------------------------------
   * libclamav/matcher-bm.c: minor optimization

@@ -28,8 +28,12 @@
 #include "matcher-bm.h"
 #include "md5.h"
 #include "filetypes.h"
+#include "matcher.h"
 
 #define MD5_BLOCKSIZE 4096
+
+#define TARGET_TABLE_SIZE 5
+static int targettab[TARGET_TABLE_SIZE] = { 0, CL_TYPE_MSEXE, CL_TYPE_MSOLE2, CL_TYPE_HTML, CL_TYPE_MAIL };
 
 
 int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root)
@@ -49,8 +53,8 @@ int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, c
 	return CL_EMEM;
     }
 
-    if((ret = cli_bm_scanbuff(buffer, length, virname, root)) != CL_VIRUS)
-	ret = cli_ac_scanbuff(buffer, length, virname, root, partcnt, 0, 0, partoff);
+    if((ret = cli_bm_scanbuff(buffer, length, virname, root, 0, NULL)) != CL_VIRUS)
+	ret = cli_ac_scanbuff(buffer, length, virname, root, partcnt, 0, 0, partoff, NULL);
 
     free(partcnt);
     free(partoff);
@@ -75,7 +79,7 @@ static struct cli_md5_node *cli_vermd5(const unsigned char *md5, const struct cl
     return NULL;
 }
 
-int cli_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, int typerec)
+int cli_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, short otfrec, unsigned short ftype)
 {
  	char *buffer, *buff, *endbl, *pt;
 	int bytes, buffsize, length, ret, *partcnt, type = CL_CLEAN;
@@ -83,6 +87,7 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 	struct MD5Context ctx;
 	unsigned char digest[16];
 	struct cli_md5_node *md5_node;
+	struct cli_voffset voffset;
 
 
     if(!root) {
@@ -129,14 +134,31 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 	if(bytes < SCANBUFF)
 	    length -= SCANBUFF - bytes;
 
-	if(cli_bm_scanbuff(pt, length, virname, root) == CL_VIRUS ||
-	   (ret = cli_ac_scanbuff(pt, length, virname, root, partcnt, typerec, offset, partoff)) == CL_VIRUS) {
+	if(cli_bm_scanbuff(pt, length, virname, root, offset, &voffset) == CL_VIRUS ||
+	   (ret = cli_ac_scanbuff(pt, length, virname, root, partcnt, otfrec, offset, partoff, &voffset)) == CL_VIRUS) {
 	    free(buffer);
 	    free(partcnt);
 	    free(partoff);
+
+	    if(voffset.target) {
+		if(voffset.target >= TARGET_TABLE_SIZE) {
+		    cli_errmsg("Bad target (%d) in signature for %s\n", voffset.target, virname);
+		} else if(ftype && ftype != CL_TYPE_UNKNOWN_TEXT) {
+		    if(targettab[voffset.target] != ftype) {
+			cli_dbgmsg("Expected target type (%d) for %s != %d\n", voffset.target, virname, ftype);
+			return CL_CLEAN;
+		    }
+		} else if(type) {
+		    if(targettab[voffset.target] != type) {
+			cli_dbgmsg("Expected target type (%d) for %s != %d\n", voffset.target, virname, type);
+			return CL_CLEAN;
+		    }
+		}
+	    }
+
 	    return CL_VIRUS;
 
-	} else if(typerec && ret >= CL_TYPENO) {
+	} else if(otfrec && ret >= CL_TYPENO) {
 	    if(ret >= type)
 		type = ret;
 	}
@@ -177,7 +199,7 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 	}
     }
 
-    return typerec ? type : CL_CLEAN;
+    return otfrec ? type : CL_CLEAN;
 }
 
 int cl_build(struct cl_node *root)

@@ -176,7 +176,7 @@ int cli_addtypesigs(struct cl_node *root)
 	int i, ret;
 
     for(i = 0; cli_smagic[i].sig; i++) {
-	if((ret = cli_parse_add(root, cli_smagic[i].descr, cli_smagic[i].sig, cli_smagic[i].type))) {
+	if((ret = cli_parse_add(root, cli_smagic[i].descr, cli_smagic[i].sig, cli_smagic[i].type, NULL, 0))) {
 	    cli_errmsg("cli_addtypesigs(): Problem adding signature for %s\n", cli_smagic[i].descr);
 	    return ret;
 	}
