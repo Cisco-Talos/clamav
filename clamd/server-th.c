@@ -103,7 +103,7 @@ void sighandler_th(int sig)
 
 	    case SIGHUP:
 		sighup = 1;
-		//logg("SIGHUP caught: log file re-opened.\n");
+		/*logg("SIGHUP caught: log file re-opened.\n"); */
 		break;
     }
 }
