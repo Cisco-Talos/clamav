@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.125  2004/09/13 17:39:31  nigelhorne
+ * User pthread_cond_broadcast rather than pthread_cond_signal
+ *
  * Revision 1.124  2004/09/13 13:14:34  nigelhorne
  * Updated SESSION Code
  *
@@ -383,9 +386,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.124 2004/09/13 13:14:34 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.125 2004/09/13 17:39:31 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.75p"
+#define	CM_VERSION	"0.75q"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1624,7 +1627,7 @@ findServer(void)
 		}
 	pthread_mutex_unlock(&sstatus_mutex);
 
-	pthread_cond_signal(&watchdog_cond);
+	pthread_cond_broadcast(&watchdog_cond);
 
 	pthread_mutex_lock(&sstatus_mutex);
 	for(; i < max_children; i++)
@@ -2824,7 +2827,7 @@ clamfi_free(struct privdata *privdata)
 			--n_children;
 #ifdef	SESSION
 			if(n_children == 0)
-				pthread_cond_signal(&watchdog_cond);
+				pthread_cond_broadcast(&watchdog_cond);
 #endif
 		}
 #ifdef	CL_DEBUG

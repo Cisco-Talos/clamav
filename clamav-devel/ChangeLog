@@ -1,3 +1,8 @@
+Mon Sep 13 18:41:34 BST 2004 (njh)
+----------------------------------
+  clamav-milter:	Use pthread_cond_broadcast() instead of
+				pthread_cond_signal
+
 Mon Sep 13 18:41:05 CEST 2004 (tk)
 ----------------------------------
   * libclamav: minor cleanup
