@@ -1,3 +1,9 @@
+Wed Sep 15 23:09:39 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	FOLLOWURLS: check if normalisation is successful
+		Scan for viruses where the mail has spaces before the colon
+		after the 'Content-Transfer-Encoding'
+
 Wed Sep 15 21:44:01 CEST 2004 (tk)
 ----------------------------------
   * freshclam: add support for version verification and additional protection
