@@ -105,7 +105,7 @@ cl_file_t cl_filetype(const char *buf, size_t buflen)
 	    }
 	}
     }
-    cli_dbgmsg("cl_filetype(): File type not recognized\n");
+
     return CL_UNKNOWN_TYPE;
 }
 
