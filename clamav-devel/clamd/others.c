@@ -31,6 +31,7 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <sys/socket.h>
+#include <sys/ioctl.h>
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -138,19 +139,30 @@ int poll_fd(int fd, int timeout_sec)
 
 int is_fd_connected(int fd)
 {
-#undef HAVE_POLL /* temporarily disabled */
 #ifdef HAVE_POLL
 	struct pollfd poll_data[1];
+	int count;
 
     poll_data[0].fd = fd;
     poll_data[0].events = POLLIN;
     poll_data[0].revents = 0;
 
-    if (poll(poll_data, 1, 0) == -1) {
+    if ((count=poll(poll_data, 1, 0)) == -1) {
+    	if (errno == EINTR) {
+		return 1;
+	}
 	return 0;
+    }
+    if (count == 0) {
+    	return 1;
     }
     if (poll_data[0].revents & POLLHUP) {
 	return 0;
+    }
+    if ((poll_data[0].revents & POLLIN) && (ioctl(fd, FIONREAD, &count) == 0)) {
+    	if (count == 0) {
+		return 0;
+	}
     }
     return 1;
 
