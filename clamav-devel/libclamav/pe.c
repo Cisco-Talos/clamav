@@ -155,8 +155,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	char sname[9], buff[256], *tempfile;
 	int i, found, upx_success = 0, min = 0, max = 0, ret;
 	int (*upxfn)(char *, int , char *, int) = NULL;
-	char *src, *dest;
-	int ssize, dsize, ndesc;
+	char *src = NULL, *dest = NULL;
+	int ssize = -1, dsize = -1, ndesc;
 
 
     if(read(desc, &e_magic, sizeof(e_magic)) != sizeof(e_magic)) {
@@ -455,7 +455,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    return CL_EIO;
 		}
 
-		if((dest = src + newedx - EC32(section_hdr[i + 1].VirtualAddress)) < src || dest >= src + EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData) - 4) {
+		if((newedx - EC32(section_hdr[i + 1].VirtualAddress)) < 0 || ((dest = src + newedx - EC32(section_hdr[i + 1].VirtualAddress)) < src && dest >= src + EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData) - 4)) {
 		    cli_dbgmsg("FSG: New ESP out of bounds\n");
 		    free(src);
 		    break;
@@ -545,7 +545,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		}
 
 		if((gp = cli_readint32(buff + 1) - EC32(optional_hdr.ImageBase)) >= EC32(section_hdr[i + 1].PointerToRawData) || gp < 0) {
-		    cli_dbgmsg("FSG: Support data out of padding area (newedi: %d, vaddr: %d)\n", newedi, EC32(section_hdr[i].VirtualAddress));
+		    cli_dbgmsg("FSG: Support data out of padding area (vaddr: %d)\n", EC32(section_hdr[i].VirtualAddress));
 		    break;
 		}
 
