@@ -1,6 +1,9 @@
-Test files contain ClamAV-Test-Signature.
-You need unrar 3.0 to detect the test signature in test-failure.rar. Only
-clamscan is able to scan this file (clamd only depends on libclamav which has
-no support for the new RAR format). Please use clamscan --unrar, and it will
-automatically switch to the unrar utility after an internal (libclamav's)
-RAR module error.
+clam.exe is an extremely small (544 bytes!) MZ+PE executable that prints
+a nice message :-) You can use it to test if your mail scanner using ClamAV
+properly scans the attachments.
+
+Due to license issues libclamav does not support RAR 3.0 archives (only 2.0
+are supported). Currently only clamscan is able to scan the clam-error.rar
+file (clamd only depends on libclamav's decompressors). Please use the --unrar
+option and it will automatically switch to the external unrar utility after
+libclamav's error.

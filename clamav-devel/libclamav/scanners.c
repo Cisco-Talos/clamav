@@ -174,7 +174,7 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 	    }
 	}
 
-        if(!(rarlist->item.FileAttr & RAR_FENTRY_ATTR_DIRECTORY)) {
+        if(rarlist->item.FileAttr & RAR_FENTRY_ATTR_DIRECTORY) {
             rarlist = rarlist->next;
             files++;
             continue;
