@@ -86,6 +86,7 @@ TABLE
 	border-collapse: collapse;
 	border-color: #000000;
 	border: 0;
+	background-color: #ffffff;
 }
 												   
 TD  
@@ -461,9 +462,10 @@ IMG
   </td>
   
   <td colspan="1" valign="top" align="left" width="84%" height="200" class="rlrb">
-   <br>Mon Sep 15 22:34:21 CEST 2003 <b>Pierwsza wersja HOWTO</b>
-   <br>Mon Feb  9 16:58:50 CET 2004 <b>Wersja aktualna</b>
-   <br>Aktualn± wersjê tego How-to znajdziecie zawsze pod <a href="http://clamav.skc.com.pl/howtos/sendmail_clamav.html">tym</a> adresem.
+   <br><b>Nowo¶ci</b>
+   <br>W wersjach &lt;= 0.65 ClamAV wykryty zosta³ b³±d, którego wykorzystanie dokonuje DoS demona <i>clamd</i>
+   <br>W po¶piechu zosta³a wiêc wydana wersja 0.66, która posiada³a kilka niedoci±gniêæ. Obecnie zalecan± wersj± stabiln± jest 0.67
+   <br>
    
    <br><br><b>Spis tre¶ci</b>
    <br><b>1.</b>&nbsp;<a href="sendmail_clamav.html#a1">Wprowadzenie</a>
@@ -549,6 +551,9 @@ LocalSocket /var/run/clamav/clamd.sock		# Okre¶lenie pliku dla lokalnego socketu
 Do pliku <i>sendmail_source/devtools/Site/site.config.m4</i> dodajemy linijkê:
 APPENDDEF(`conf_sendmail_ENVDEF', `-DMILTER')
 
+Mo¿e siê zdarzyæ, ¿e nie bêdziecie mieli pliku <i>site.config.m4</i> i katalogu <i>Site</i>
+W takim przypadku nale¿y je stworzyæ rêcznie
+
 a do naszego pliku .mc (u mnie nazywa siê on sendmail.mc) <i>sendmail_source/cf/cf/sendmail.mc</i> nastêpuj±ce dwie linijki:
 INPUT_MAIL_FILTER(`clmilter',`S=local:/var/run/clamav/clmilter.sock,F=, T=S:4m;R:4m')dnl
 define(`confINPUT_MAIL_FILTERS', `clmilter')
@@ -564,7 +569,6 @@ TRUST_AUTH_MECH(`LOGIN PLAIN')dnl
 
 Teraz dokonujemy standardowej kompilacji Sendmaila:
 <pre>
-root@linux: killall -9 sendmail
 root@linux: cd sendmail_source/sendmail
 root@linux: sh Build -c
 root@linux: cd sendmail_source/cf/cf
@@ -649,7 +653,7 @@ lub z którego¶ z <a href="http://www.clamav.net/mirrors.html">mirrorów</a>.
 <br><br><i>Polecam stosowanie baz sygnatur w formacie CVD. Poprzednie bazy by³y w formacie tekstowym, ale w przysz³o¶ci nie bêd± ju¿ obs³ugiwane przez ClamAV.</i>
 
 <br><br>Pliki baz danych to <b>main.cvd</b> i <b>daily.cvd</b>. Do main.cvd trafiaj± ju¿ sprawdzone sygnaturki, w których sporadycznie pojawiaj± siê jakie¶ b³êdy lub niedoci±gniêcia. W pliku daily.cvd znajduj± siê ostatnio dodane sygnaturki najnowszych wirusów.<br>
-W dniu tworzenia tego dokumentu, ClamAV rozpoznawa³ prawie <b>20700</b> ró¿nych wirusów, robaków i koni trojañskich.
+W dniu tworzenia tego dokumentu, ClamAV rozpoznawa³ prawie <b>20800</b> ró¿nych wirusów, robaków i koni trojañskich.
 
 <br><br>
 Liczba rozpoznawanych wirusów ro¶nie bardzo szybko i tylko patrzeæ jak do¶cignie komercyjn± konkurencjê :-)
@@ -673,6 +677,9 @@ root@linux: mkdir /var/log/clamav; chown -R clamav:clamav /var/log/clamav
 W nowszych wersjach <i>clamav-milter</i> dostêpna jest opcja <i>--quarantine-dir</i> podczas wywo³ania której musimy podaæ jako parametr, katalog z plikami poddanymi kwarantannie. W tym celu musimy go najpierw utworzyæ.
 <pre>
 root@linux: mkdir /var/clamav/quarantine; chown -R clamav:clamav /var/clamav/quarantine
+
+Zabijmy jeszcze dzia³aj±cy stary proces sendmail
+root@linux: killall -9 sendmail
 </pre>
 
 Teraz wystarczy uruchomiæ skrypt <i>/etc/rc.d/rc.sendmail start</i> i wszystko powinno ruszyæ. Jako pierwszy uruchomi siê
@@ -717,8 +724,10 @@ Autor: <b>Przemys³aw Ho³owczyc</b><br>
 e-mail: <b>doozer (at) skc (dot) com (dot) pl</b>
 
 <br><br>
+Mon Sep 15 22:34:21 CEST 2003 <b>Pierwsza wersja HOWTO</b><br>
+Mon Feb  9 16:58:50 CET 2004 <b>Wersja aktualna</b><br>
 <font style="font-size: 12px; color: #aaaaaa">
- # sendmail_clamav.html v1.1; Last modified: Tue, 10 Feb, 2004 18:16:01 by doozer #
+ # sendmail_clamav.html v1.2; Last modified: Mon, 23 Feb, 2004 20:04:34 by doozer #
 </font>
 
 
