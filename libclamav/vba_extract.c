@@ -42,6 +42,25 @@ typedef struct vba_version_tag {
 } vba_version_t;
 
 
+#ifdef WORDS_LITTLEENDIAN
+#define vba_endian_convert_16(v)       (v)
+#else
+static uint16_t vba_endian_convert_16(uint16_t v)
+{
+        return ((v >> 8) + (v << 8));
+}
+#endif
+ 
+#ifdef WORDS_LITTLEENDIAN
+#define vba_endian_convert_32(v)    (v)
+#else
+static uint32_t vba_endian_convert_32(uint32_t v)
+{
+        return ((v >> 24) | ((v & 0x00FF0000) >> 8) |
+                ((v & 0x0000FF00) << 8) | (v << 24));
+}
+#endif
+
 typedef struct byte_array_tag {
 	unsigned int length;
 	unsigned char *data;
@@ -161,7 +180,7 @@ static void vba56_test_middle(int fd)
                 return;
         }
 	
-	if (strncmp(test_middle, middle_str, 20) != 0) {
+	if (memcmp(test_middle, middle_str, 20) != 0) {
 	        lseek(fd, -20, SEEK_CUR);
 	}
 	return;
@@ -181,7 +200,7 @@ static void vba56_test_end(int fd)
                 return;
         }
                                                                                                                                     
-        if (strncmp(test_end, end_str, 20) != 0) {
+        if (memcmp(test_end, end_str, 20) != 0) {
                 lseek(fd, -20, SEEK_CUR);
         }
         return;
@@ -230,7 +249,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 	if (vba_readn(fd, &magic, 2) != 2) {
 		return NULL;
 	}
-	if (strncmp(magic, vba56_signature, 2) != 0) {
+	if (memcmp(magic, vba56_signature, 2) != 0) {
 		return NULL;
 	}
 
@@ -238,7 +257,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 		return NULL;
 	}
 	for (i=0 ; i < NUM_VBA_VERSIONS ; i++) {
-		if (strncmp(version, vba_version[i].signature, 4) == 0) {
+		if (memcmp(version, vba_version[i].signature, 4) == 0) {
 			break;
 		}
 	}
@@ -292,6 +311,14 @@ vba_project_t *vba56_dir_read(const char *dir)
 		return NULL;
 	}
 
+        LidA = vba_endian_convert_32(LidA);
+        LidB = vba_endian_convert_32(LidB);
+        CharSet = vba_endian_convert_16(CharSet);
+        LenA = vba_endian_convert_16(LenA);
+        LenB = vba_endian_convert_16(LenB);
+        LenC = vba_endian_convert_16(LenC);
+        LenD = vba_endian_convert_16(LenD);
+
 	cli_dbgmsg(" LidA: %d\n LidB: %d\n CharSet: %d\n", LidA, LidB, CharSet);
 	cli_dbgmsg(" LenA: %d\n UnknownB: %d\n UnknownC: %d\n", LenA, UnknownB, UnknownC);
 	cli_dbgmsg(" LenB: %d\n LenC: %d\n LenD: %d\n", LenB, LenC, LenD);
@@ -321,6 +348,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 		if (vba_readn(fd, &length, 2) != 2) {
 			return NULL;
 		}
+		length = vba_endian_convert_16(length);
 		if (length < 6) {
 			lseek(fd, -2, SEEK_CUR);
 			break;
@@ -382,6 +410,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 	if (vba_readn(fd, &record_count, 2) != 2) {
 		return NULL;
 	}
+	record_count = vba_endian_convert_16(record_count);
 	cli_dbgmsg("\nVBA Record count: %d\n", record_count);
 	/*if (record_count <= 0) {
 		return TRUE;
@@ -399,7 +428,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 		free(buff);
 		return NULL;
 	}
-	if (!strncmp(buff, fixed_octet, 8)) {
+	if (!memcmp(buff, fixed_octet, 8)) {
 		free(buff);
 		return NULL;
 	}
@@ -419,12 +448,14 @@ vba_project_t *vba56_dir_read(const char *dir)
 
 	/* no idea what this stuff is */
 	if (ooff != 0xFFFF) {
+		ooff = vba_endian_convert_16(ooff);
 		lseek(fd, ooff, SEEK_CUR);
 	}
 	if (vba_readn(fd, &ooff, 2) != 2) {
 		return NULL;
 	}
 	if (ooff != 0xFFFF) {
+		ooff = vba_endian_convert_16(ooff);
 		lseek(fd, ooff, SEEK_CUR);
 	}
 	lseek(fd, 100, SEEK_CUR);
@@ -432,6 +463,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 	if (vba_readn(fd, &record_count, 2) != 2) {
 		return NULL;
 	}
+	record_count = vba_endian_convert_16(record_count);
 	cli_dbgmsg("\nVBA Record count: %d\n", record_count);
 	
 	vba_project = (vba_project_t *) cli_malloc(sizeof(struct vba_project_tag));
@@ -444,6 +476,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 		if (vba_readn(fd, &length, 2) != 2) {
 			return NULL;
 		}
+		length = vba_endian_convert_16(length);
 		buff = (unsigned char *) cli_malloc(length);
 		if (!buff) {
 			cli_dbgmsg("cli_malloc failed\n");
@@ -461,17 +494,20 @@ vba_project_t *vba56_dir_read(const char *dir)
 		if (vba_readn(fd, &length, 2) != 2) {
 			return NULL;
 		}
+		length = vba_endian_convert_16(length);
 		lseek(fd, length, SEEK_CUR);
 
 		/* unknown stuff */
 		if (vba_readn(fd, &ooff, 2) != 2) {
 			return NULL;
 		}
+		ooff = vba_endian_convert_16(ooff);
 		if (ooff == 0xFFFF) {
 			lseek(fd, 2, SEEK_CUR);
 			if (vba_readn(fd, &ooff, 2) != 2) {
 				return NULL;
 			}
+			ooff = vba_endian_convert_16(ooff);
 			lseek(fd, ooff, SEEK_CUR);
 		} else {
 			lseek(fd, 2 + ooff, SEEK_CUR);
@@ -488,6 +524,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 		if (vba_readn(fd, &offset, 4) != 4) {
 			return NULL;
 		}
+		offset = vba_endian_convert_32(offset);
 		vba_project->offset[i] = offset;
 		cli_dbgmsg("offset:%d\n", offset);
 		lseek(fd, 2, SEEK_CUR);
@@ -539,6 +576,7 @@ unsigned char *vba_decompress(int fd, uint32_t offset)
 				if (vba_readn(fd, &token, 2) != 2) {
 					return FALSE;
 				}
+				token = vba_endian_convert_16(token);
 				win_pos = pos % VBA_COMPRESSION_WINDOW;
 				if (win_pos <= 0x80) {
 					if (win_pos <= 0x20) {

@@ -1,3 +1,7 @@
+Thu Jan 29 10:29:02 GMT 2004 (trog)
+-----------------------------------
+  * libclamav: VBA decode - add big-endian support
+
 Wed Jan 28 15:57:44 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter: Fixed compilation error with --enable-debug
