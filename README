@@ -2,6 +2,13 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.67
+----
+This release fixes a memory management problem (platform dependent; can lead
+to a DoS attack) with messages that only have attachments (reported by Oliver
+Brandmueller). It also contains patches for a few problems found in 0.66 and
+has better Cygwin support.
+
 0.66
 ----
 This version is a response to the "clamav 0.65 remote DOS exploit" information
