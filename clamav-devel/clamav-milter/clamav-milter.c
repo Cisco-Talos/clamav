@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.106  2004/07/21 21:23:29  nigelhorne
+ * Mutex gethostbyname result
+ *
  * Revision 1.105  2004/07/21 17:46:06  nigelhorne
  * Added note about needing MILTER support in sendmail
  *
@@ -326,9 +329,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.105 2004/07/21 17:46:06 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.106 2004/07/21 21:23:29 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.74d"
+#define	CM_VERSION	"0.74e"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1499,7 +1502,15 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	 */
 	if(strncasecmp(port, "inet:", 5) == 0) {
 		const char *hostmail;
-		const struct hostent *hp = NULL;
+#ifdef	GETHOSTBYNAME_R
+		struct hostent *hp, hostent;
+		char buf[BUFSIZ];
+		int ret;
+#else
+		const struct hostent *hp2, *hp;
+		struct hostent hostent;
+		static pthread_mutex_t hostent_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 		/*
 		 * Using TCP/IP for the sendmail->clamav-milter connection
@@ -1510,14 +1521,27 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 			hostmail = "unknown";
 		}
 
-		if((hp = gethostbyname(hostmail)) == NULL) {
+#ifdef	GETHOSTBYNAME_R
+		if(gethostbyname_r(hostmail, &hostent, buf, sizeof(buf), &hp, &ret) != 0) {
 			if(use_syslog)
 				syslog(LOG_WARNING, "Access Denied: Host Unknown (%s)", hostname);
 			return cl_error;
 		}
+#else
+		pthread_mutex_lock(&hostent_mutex);
+		if((hp2 = gethostbyname(hostmail)) == NULL) {
+			pthread_mutex_unlock(&hostent_mutex);
+			if(use_syslog)
+				syslog(LOG_WARNING, "Access Denied: Host Unknown (%s)", hostname);
+			return cl_error;
+		}
+		memcpy(&hostent, hp2, sizeof(struct hostent));
+		pthread_mutex_unlock(&hostent_mutex);
+		hp = &hostent;
+#endif
 
 #ifdef HAVE_INET_NTOP
-		if(hp && hp->h_addr &&
+		if(hp->h_addr &&
 		   (inet_ntop(AF_INET, (struct in_addr *)hp->h_addr, ip, sizeof(ip)) == NULL)) {
 			perror(hp->h_name);
 			/*if(use_syslog)
