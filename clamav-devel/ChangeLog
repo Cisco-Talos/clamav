@@ -1,3 +1,12 @@
+Sun Feb 13 23:55:45 CET 2005 (tk)
+---------------------------------
+  * clamd: change default value of StreamMaxPort to 2048
+
+Sun Feb 13 23:53:18 CET 2005 (tk)
+---------------------------------
+  * configure: --enable-maintainer-mode (patch by Stephen Gran
+	       <steve*lobefin.net>)
+
 Sun Feb 13 23:17:16 CET 2005 (tk)
 ---------------------------------
   * libclamav/untar.c: do not try to continue if there's no space on device

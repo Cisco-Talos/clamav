@@ -322,7 +322,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	else
 	    max_port = cpt->numarg;
     } else
-	max_port = 65535;
+	max_port = 2048;
 
     /* bind to a free port */
     while(!bound && portscan--) {
