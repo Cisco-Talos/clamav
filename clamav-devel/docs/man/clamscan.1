@@ -1,5 +1,5 @@
 .\" Manual page created by Tomasz Kojm, 14/15 IV 2002
-.TH "clamscan" "1" "March 1, 2005" "Tomasz Kojm" "Clam AntiVirus"
+.TH "clamscan" "1" "March 25, 2005" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 clamscan \- scan files and directories against viruses
@@ -105,6 +105,9 @@ Set archive recursion level limit. This option protects your system against DoS 
 .TP 
 \fB\-\-max\-ratio=#n\fR
 Set maximum archive compression ratio limit. This option protects your system against DoS attacks (default: 250).
+.TP 
+\fB\-\-max\-dir\-recurion=#n\fR
+Maximum depth directories are scanned at (default: 15).
 .TP 
 \fB\-\-unzip[=FULLPATH]\fR
 In most cases you don't need this option \- the built\-in unarchiver will do extract Zip archives. This option however may be used as a backup for internal unpacker \- see the full documentation for more information. When enabled without an argument, unzip program will be searched in $PATH. If unzip cannot be found in $PATH, you must force it with =pathname. Remember about '=' between the option and an argument.
