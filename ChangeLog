@@ -1,3 +1,8 @@
+Wed Sep 22 17:11:23 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Build if libcurl doesn't support
+				CURLOPT_DNS_USE_GLOBAL_CACHE
+
 Wed Sep 22 16:58:05 BST 2004 (trog)
 -----------------------------------
   * libclamav/htmlnorm.c: fix possible crash with broken html
