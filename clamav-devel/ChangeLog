@@ -1,3 +1,10 @@
+Thu Mar 10 08:48:54 GMT 2005 (njh)
+----------------------------------
+  * clamav-milter:	--detect-forged-local-address no longer gives false
+				positives on emails which have the Sender
+				header set (e.g. mailing lists)
+			Use {mail_addr} if no From field is received
+
 Mon Mar  7 11:24:43 GMT 2005 (njh)
 ----------------------------------
   * libclamav:		Added fast track visa system which reduces memory

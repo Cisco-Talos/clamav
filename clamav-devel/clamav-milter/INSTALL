@@ -710,6 +710,11 @@ Changes
 0.84a	5/3/05:		Note that when the connection to sendmail is via TCP/IP
 				rather than a UNIX domain socket, that --local
 				must be given
+0.84b	9/3/05:		Got rid of that GOTO
+			--detect-forged-local-address no longer gives false
+				positives on emails which have the Sender
+				header set (e.g. mailing lists)
+			Use {mail_addr} if no From field is received
 
 INTERNATIONALISATION
 
