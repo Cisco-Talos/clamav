@@ -1,3 +1,7 @@
+Mon Mar  1 13:08:04 GMT 2004 (trog)
+-----------------------------------
+  * clamd: Cleanup local socket and clamd.run on exit
+
 Mon Mar  1 01:25:03 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	Removed duplicate /etc/rc.d/init.d/clamd that had

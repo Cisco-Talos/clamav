@@ -338,7 +338,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	pthread_create(&clamuko_pid, &clamuko_attr, clamukoth, tharg);
     }
 #else
-	logg("!Clamuko is not available.\n");
+	logg("Clamuko is not available.\n");
 #endif
 
     /* set up signal handling */
@@ -464,6 +464,24 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	pthread_join(clamuko_pid, NULL);
     }
 #endif
+    logg("*Shutting down the main socket.\n");
+    shutdown(socketd, 2);
+    logg("*Closing the main socket.\n");
+    close(socketd);
+    if((cpt = cfgopt(copt, "LocalSocket"))) {
+	if(unlink(cpt->strarg) == -1)
+	    logg("!Can't unlink the socket file %s\n", cpt->strarg);
+	else
+	     logg("Socket file removed.\n");
+	}
+
+    if((cpt = cfgopt(copt, "PidFile"))) {
+	if(unlink(cpt->strarg) == -1)
+	    logg("!Can't unlink the pid file %s\n", cpt->strarg);
+	else
+	    logg("Pid file removed.\n");
+    }
+
     logg("Exiting (clean)\n");
     return 0;
 }
