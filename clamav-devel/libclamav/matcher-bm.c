@@ -21,10 +21,12 @@
 #include "others.h"
 #include "cltypes.h"
 
-#define BM_MIN_LENGTH 10
-#define BM_BLOCK_SIZE 3
+#define BM_MIN_LENGTH	10
+#define BM_TEST_OFFSET	5
+#define BM_BLOCK_SIZE	3
 
 #define MIN(a,b) (a < b) ? a : b
+#define HASH(a,b,c) 211 * (unsigned char) a + 37 * (unsigned char) b + (unsigned char) c
 
 
 int cli_bm_addpatt(struct cl_node *root, struct cli_bm_patt *pattern)
@@ -41,12 +43,12 @@ int cli_bm_addpatt(struct cl_node *root, struct cli_bm_patt *pattern)
     }
 
     for(i = BM_MIN_LENGTH - BM_BLOCK_SIZE; i >= 0; i--) {
-	idx = 211 * ((unsigned char) pt[i]) + 37 * ((unsigned char) pt[i + 1]) + (unsigned char) pt[i + 2];
+	idx = HASH(pt[i], pt[i + 1], pt[i + 2]);
 	root->bm_shift[idx] = MIN(root->bm_shift[idx], BM_MIN_LENGTH - BM_BLOCK_SIZE - i);
     }
 
     i = BM_MIN_LENGTH - BM_BLOCK_SIZE;
-    idx = 211 * ((unsigned char) pt[i]) + 37 * ((unsigned char) pt[i + 1]) + (unsigned char) pt[i + 2];
+    idx = HASH(pt[i], pt[i + 1], pt[i + 2]);
 
     prev = next = root->bm_suffix[idx];
 
@@ -131,7 +133,7 @@ int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virnam
 	return CL_CLEAN;
 
     for(i = BM_MIN_LENGTH - BM_BLOCK_SIZE; i < length - BM_BLOCK_SIZE + 1; ) {
-	idx = 211 * ((unsigned char) buffer[i]) + 37 * ((unsigned char) buffer[i + 1]) + (unsigned char) buffer[i + 2];
+	idx = HASH(buffer[i], buffer[i + 1], buffer[i + 2]);
 
 	shift = root->bm_shift[idx];
 
@@ -146,6 +148,12 @@ int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virnam
 	    while(p && p->pattern[0] == prefix) {
 		off = i - BM_MIN_LENGTH + BM_BLOCK_SIZE;
 		bp = buffer + off;
+
+		if(bp[BM_TEST_OFFSET] != p->pattern[BM_TEST_OFFSET]) {
+		    p = p->next;
+		    continue;
+		}
+
 		found = 1;
 		for(j = 0; j < p->length && off < length; j++, off++) {
 		    if(bp[j] != p->pattern[j]) {
