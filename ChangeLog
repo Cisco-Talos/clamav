@@ -1,3 +1,11 @@
+Tue Feb  1 14:47:21 GMT 2005 (njh)
+----------------------------------
+  * libclamav/blob.c:	Sanitise tab characters in filenames ("Heinz Martin"
+				<Martin@hemag.ch>)
+			Decode encapsulated messages that have for some reason
+				been base64 encoded (even though they're already
+				7 bit)
+
 Tue Feb  1 08:54:46 GMT 2005 (njh)
 ----------------------------------
   * clamav-milter:	Delete X-Virus-Status in clamfi_eom not in
