@@ -143,6 +143,8 @@ Changes
 		fails (Joe Talbott <josepht@cstone.net>)
 0.60p	5/11/03	Only call mutex_unlock when max_children is set
 		Tidy up the call to pthread_cond_timedwait
+0.60q	11/11/03 Fixed handling of % characters in e-mail addresses
+		pointed out by dotslash@snosoft.com
 
 BUG REPORTS
 

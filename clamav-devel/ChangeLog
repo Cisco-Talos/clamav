@@ -1,3 +1,8 @@
+Tue Nov 11 13:51:23 IST 2003 (njh)
+----------------------------------
+  * clamav-milter: Fixed handling of % characters in e-mail addresses
+		pointed out by dotslash@snosoft.com
+		
 Sun Nov  9 20:25:11 CET 2003 (tk)
 ---------------------------------
   * libclamav: some functions were still using SCANBUFF instead of FILEBUFF,

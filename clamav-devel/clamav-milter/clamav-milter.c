@@ -148,9 +148,14 @@
  *			fails (Joe Talbott <josepht@cstone.net>)
  *	0.60p	5/11/03	Only call mutex_unlock when max_children is set
  *			Tidy up the call to pthread_cond_timedwait
+ *	0.60q	11/11/03 Fixed handling of % characters in e-mail addresses
+ *			pointed out by dotslash@snosoft.com
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.18  2003/11/11 08:19:20  nigelhorne
+ * Handle % characters in e-mail addresses
+ *
  * Revision 1.17  2003/11/05 15:41:11  nigelhorne
  * Tidyup pthread_cond_timewait call
  *
@@ -186,9 +191,8 @@
  *
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
- *
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.17 2003/11/05 15:41:11 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.18 2003/11/11 08:19:20 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.60p"
 
@@ -1228,7 +1232,12 @@ clamfi_eom(SMFICTX *ctx)
 		(void)strcpy(ptr, "\n");
 
 		if(use_syslog)
-			syslog(LOG_NOTICE, err);
+			/*
+			 * The "%s" is there to plug a remote possibility
+			 * of the program crashing if an e-mail address
+			 * contains a percent character
+			 */
+			syslog(LOG_NOTICE, "%s", err);
 #ifdef	CL_DEBUG
 		puts(err);
 #endif
