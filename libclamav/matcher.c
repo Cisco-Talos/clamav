@@ -282,7 +282,12 @@ int j;
 			    if(dist && pt->mindist)
 				if(offset + i - partoff[pt->sigid] < pt->mindist)
 				    dist = 0;
-
+/*
+			    printf("dist == %d\n", dist);
+			    printf("curr offset == %d\n", offset + i);
+			    printf("min dist == %d\n", pt->mindist);
+			    printf("max dist == %d\n", pt->maxdist);
+*/
 
 			    if(dist) {
 				partoff[pt->sigid] = offset + i + pt->length;
