@@ -1,3 +1,7 @@
+Thu Sep 16 19:02:38 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Handle RFC2047 encoded headers
+
 Thu Sep 16 16:57:11 BST 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Handle double colons e.g.:
