@@ -50,6 +50,7 @@
 #define CMD6 "CONTSCAN"
 #define CMD7 "VERSION"
 #define CMD8 "STREAM"
+#define CMD9 "STREAM2"
 
 #ifdef CLAMUKO
 pthread_t clamukoid;
@@ -117,7 +118,9 @@ void *threadscanner(void *arg)
     } else if(!strncmp(buff, CMD8, strlen(CMD8))) { /* STREAM */
 	scanstream(ths[tharg->sid].desc, NULL, tharg->root, tharg->limits, tharg->options, tharg->copt);
     }
-
+    /* else if(!strncmp(buff, CMD9, strlen(CMD9))) {
+	scanstream2(ths[tharg->sid].desc, NULL, tharg->root, tharg->limits, tharg->options, tharg->copt);
+    }*/
 
     THREXIT;
 }
@@ -363,7 +366,7 @@ int acceptloop(int socketd, struct cl_node *root, const struct cfgstruct *copt)
 	struct thrwarg thwarg;
 	struct cl_limits limits;
 	pthread_attr_t thattr;
-	struct sigaction sigact, sigsegvact;
+	struct sigaction sigact;
 	sigset_t sigset;
 	mode_t old_umask;
 
@@ -496,22 +499,19 @@ int acceptloop(int socketd, struct cl_node *root, const struct cfgstruct *copt)
     sigdelset(&sigset, SIGINT);
     sigdelset(&sigset, SIGTERM);
     sigdelset(&sigset, SIGSEGV);
+    sigdelset(&sigset, SIGHUP);
     sigprocmask(SIG_SETMASK, &sigset, NULL);
 
-    /* Initialize sication struct for valgrind's sake */
-    memset(&sigact, 0, sizeof(struct sigaction));
-
     /* SIGINT, SIGTERM, SIGSEGV */
-    sigact.sa_handler = sigexit;
-    sigsegvact.sa_handler = sigsegv;
+    sigact.sa_handler = sighandler;
     sigemptyset(&sigact.sa_mask);
-    sigemptyset(&sigsegvact.sa_mask);
     sigaddset(&sigact.sa_mask, SIGINT);
     sigaddset(&sigact.sa_mask, SIGTERM);
-    sigaddset(&sigsegvact.sa_mask, SIGSEGV);
+    sigaddset(&sigact.sa_mask, SIGHUP);
     sigaction(SIGINT, &sigact, NULL);
     sigaction(SIGTERM, &sigact, NULL);
-    sigaction(SIGSEGV, &sigsegvact, NULL);
+    sigaction(SIGSEGV, &sigact, NULL);
+    sigaction(SIGHUP, &sigact, NULL);
 
     /* we need to save program's PID, because under Linux each thread
      * has another PID, it works with other OSes as well
@@ -577,41 +577,48 @@ int acceptloop(int socketd, struct cl_node *root, const struct cfgstruct *copt)
 	//pthread_mutex_lock(&ths[i].mutex);
 	ths[i].desc = acceptd;
 	ths[i].reload = 0;
+	ths[i].active = 1;
 	pthread_create(&ths[i].id, &thattr, threadscanner, tharg);
 	ths[i].start = time(NULL);
-	ths[i].active = 1;
     }
 }
 
-void sigexit(int sig)
+void sighandler(int sig)
 {
 	time_t currtime;
-	int maxwait = CL_DEFAULT_MAXWHILEWAIT * 5;
+	int maxwait = CL_DEFAULT_MAXWHILEWAIT * 5, i;
 
-    progexit = 1;
-    logg("*Signal %d caught -> exiting.\n", sig);
+    switch(sig) {
+	case SIGINT:
+	case SIGTERM:
+	    progexit = 1;
+	    logg("*Signal %d caught -> exiting.\n", sig);
 
-    while(progexit != 2 && maxwait--)
-	usleep(200000);
+	    while(progexit != 2 && maxwait--)
+		usleep(200000);
 
-    if(!maxwait && progexit != 2)
-	logg("!Critical error: Cannot reach exit level 2.\n");
+	    if(!maxwait && progexit != 2)
+		logg("!Critical error: Cannot reach exit level 2.\n");
 
-    time(&currtime);
-    logg("--- Stopped at %s", ctime(&currtime));
-    exit(0);
-}
+	    time(&currtime);
+	    logg("--- Stopped at %s", ctime(&currtime));
+	    exit(0);
+	    break; /* not reached */
 
-void sigsegv(int sig)
-{
-	int i;
+	case SIGSEGV:
+	    logg("Segmentation fault :-( Bye..\n");
 
-    logg("Segmentation fault :-( Bye..\n");
+	    for(i = 0; i < threads; i++)
+		if(ths[i].active)
+		    pthread_kill(ths[i].id, 9);
 
-    for(i = 0; i < threads; i++)
-	if(ths[i].active)
-	    pthread_kill(ths[i].id, 9);
+	    pthread_kill(watcherid, 9);
+	    exit(11); /* probably not reached at all */
+	    break; /* not reached */
 
-    pthread_kill(watcherid, 9);
-    exit(11); /* probably not reached at all */
+	case SIGHUP:
+	    sighup = 1;
+	    logg("SIGHUP catched: log file re-opened.\n");
+	    break;
+    }
 }
