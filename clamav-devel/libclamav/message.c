@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.104  2004/10/19 13:53:55  nigelhorne
+ * Don't add trailing NUL bytes
+ *
  * Revision 1.103  2004/10/17 09:29:21  nigelhorne
  * Advise to report broken emails
  *
@@ -306,7 +309,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.103 2004/10/17 09:29:21 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.104 2004/10/19 13:53:55 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -405,7 +408,7 @@ static	struct	mime_map {
 #define	USE_TABLE	/* table driven base64 decoder */
 
 #ifdef	USE_TABLE
-static unsigned char base64Table[256] = {
+static const unsigned char base64Table[256] = {
 	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
 	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
 	255,255,255,255,255,255,255,255,255,255,255,62,255,255,255,63,
@@ -1522,6 +1525,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 
 	for(i = 0; i < m->numberOfEncTypes; i++) {
 		encoding_type enctype = m->encodingTypes[i];
+		size_t size;
 
 		/*
 		 * Find the filename to decode
@@ -1612,6 +1616,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			continue;
 		}
 
+		size = 0;
 		do {
 			unsigned char data[1024];
 			unsigned char *uptr;
@@ -1639,8 +1644,10 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 
 			assert(uptr <= &data[sizeof(data)]);
 
-			if(uptr != data)
+			if(uptr != data) {
 				(*addData)(ret, data, (size_t)(uptr - data));
+				size += (size_t)(uptr - data);
+			}
 
 			/*
 			 * According to RFC1521, '=' is used to pad out
@@ -1654,6 +1661,8 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 					break;*/
 
 		} while((t_line = t_line->t_next) != NULL);
+
+		cli_dbgmsg("Exported %u bytes\n", size);
 	}
 
 	/* Verify we have nothing left to flush out */
@@ -2077,11 +2086,11 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 			if(copy == NULL)
 				break;
 
-			sanitiseBase64(copy);
-
 			p2 = strchr(copy, '=');
 			if(p2)
 				*p2 = '\0';
+
+			sanitiseBase64(copy);
 
 			/*
 			 * Klez doesn't always put "=" on the last line
@@ -2148,6 +2157,7 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 static void
 sanitiseBase64(char *s)
 {
+#ifdef	USE_TABLE
 	for(; *s; s++)
 		if(base64Table[*s] == 255) {
 			char *p1;
@@ -2155,6 +2165,26 @@ sanitiseBase64(char *s)
 			for(p1 = s; p1[0] != '\0'; p1++)
 				p1[0] = p1[1];
 		}
+#else
+	for(; *s; s++) {
+		char *p1;
+		char c = *s;
+
+		if(isupper(c))
+			continue;
+		if(isdigit(c))
+			continue;
+		if(c == '+')
+			continue;
+		if(c == '/')
+			continue;
+		if(islower(c))
+			continue;
+
+		for(p1 = s; p1[0] != '\0'; p1++)
+			p1[0] = p1[1];
+	}
+#endif
 }
 
 /*
@@ -2212,23 +2242,32 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
 		}
 	else {
 		if(in == NULL) {	/* flush */
-			int nbytes = m->base64chars;
+			int nbytes;
 
-			if(nbytes == 0)
+			if(m->base64chars == 0)
 				return out;
+
+			cli_dbgmsg("base64chars = %d (%c %c %c)\n", m->base64chars,
+				cb1 ? cb1 : '@',
+				cb2 ? cb2 : '@',
+				cb3 ? cb3 : '@');
 
 			m->base64chars--;
 			b1 = cb1;
+			nbytes = 1;
 
 			if(m->base64chars) {
 				m->base64chars--;
 				b2 = cb2;
 
 				if(m->base64chars) {
+					nbytes++;
 					m->base64chars--;
 					b3 = cb3;
-					assert(m->base64chars == 0);
-				}
+					if(b3)
+						nbytes++;
+				} else if(b2)
+					nbytes++;
 			}
 
 			switch(nbytes) {
