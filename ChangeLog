@@ -1,3 +1,7 @@
+Fri Sep 26 17:08:31 BST 2003 (njh)
+----------------------------------
+  * clamav-milter: added --noxheader patch
+
 Wed Sep 24 18:35:29 CEST 2003 (tk)
 ----------------------------------
   * libclamav: disabled support for news messages

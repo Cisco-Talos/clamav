@@ -122,9 +122,12 @@
  *	0.60f	24/9/03	Changed fprintf to fputs where possible
  *			Redirect stdin from /dev/null, stdout&stderr to
  *			/dev/console
+ *	0.60g	26/9/03	Handle sendmail calling abort after calling cleanup
+ *			(Should never happen - but it does)
+ *			Added -noxheader patch from dirk.meyer@dinoex.sub.org
  */
 
-#define	CM_VERSION	"0.60f"
+#define	CM_VERSION	"0.60g"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -224,6 +227,10 @@ static	int	qflag = 0;	/*
 				 * found is the syslog, so it's best to
 				 * enable LogSyslog in clamav.conf
 				 */
+static	int	nflag = 0;	/*
+				 * Don't add X-Virus-Scanned to header. Patch
+				 * from Dirk Meyer <dirk.meyer@dinoex.sub.org>
+				 */
 
 #ifdef	CL_DEBUG
 static	int	debug_level = 0;
@@ -252,6 +259,7 @@ help(void)
 	puts("\t--help\t\t\t-h\tThis message.");
 	puts("\t--local\t\t\t-l\tScan messages sent from machines on our LAN.");
 	puts("\t--outgoing\t\t-o\tScan outgoing messages from this machine.");
+	puts("\t--noxheader\t\t-o\tSuppress X-Virus-Scanned header.");
 	puts("\t--postmaster\t\t-p\tPostmaster address [default=postmaster].");
 	puts("\t--postmaster-only\t\t-P\tSend warnings only to the postmaster.");
 	puts("\t--quiet\t\t\t-q\tDon't send e-mail notifications of interceptions.");
@@ -290,9 +298,9 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "bc:lopPqdhs:Vx:";
+		const char *args = "bc:lnopPqdhs:Vx:";
 #else
-		const char *args = "bc:lopPqdhs:V";
+		const char *args = "bc:lnopPqdhs:V";
 #endif
 		static struct option long_options[] = {
 			{
@@ -306,6 +314,9 @@ main(int argc, char **argv)
 			},
 			{
 				"local", 0, NULL, 'l'
+			},
+			{
+				"noxheader", 0, NULL, 'n'
 			},
 			{
 				"outgoing", 0, NULL, 'o'
@@ -360,6 +371,9 @@ main(int argc, char **argv)
 				break;
 			case 'm':	/* maximum number of children */
 				max_children = atoi(optarg);
+				break;
+			case 'n':	/* don't add X-Virus-Scanned */
+				nflag++;
 				break;
 			case 'o':	/* scan outgoing mail */
 				oflag++;
@@ -997,7 +1011,8 @@ clamfi_eom(SMFICTX *ctx)
 	}
 
 	if(strstr(mess, "FOUND") == NULL) {
-		smfi_addheader(ctx, "X-Virus-Scanned", clamav_version);
+		if(!nflag)
+			smfi_addheader(ctx, "X-Virus-Scanned", clamav_version);
 
 		/*
 		 * TODO: if privdata->from is NULL it's probably SPAM, and
@@ -1124,58 +1139,58 @@ clamfi_cleanup(SMFICTX *ctx)
 {
 	struct privdata *privdata = (struct privdata *)smfi_getpriv(ctx);
 
-	assert(privdata != NULL);
+	if(privdata) {
+		if(privdata->dataSocket >= 0) {
+			close(privdata->dataSocket);
+			privdata->dataSocket = -1;
+		}
 
-	if(privdata->dataSocket >= 0) {
-		close(privdata->dataSocket);
-		privdata->dataSocket = -1;
-	}
-
-	if(privdata->from) {
-#ifdef	CL_DEBUG
-		if(debug_level >= 9)
-			puts("Free privdata->from");
-#endif
-		free(privdata->from);
-		privdata->from = NULL;
-	}
-
-	if(privdata->to) {
-		char **to;
-
-		for(to = privdata->to; *to; to++) {
+		if(privdata->from) {
 #ifdef	CL_DEBUG
 			if(debug_level >= 9)
-				puts("Free *privdata->to");
+				puts("Free privdata->from");
 #endif
-			free(*to);
+			free(privdata->from);
+			privdata->from = NULL;
 		}
+
+		if(privdata->to) {
+			char **to;
+
+			for(to = privdata->to; *to; to++) {
+#ifdef	CL_DEBUG
+				if(debug_level >= 9)
+					puts("Free *privdata->to");
+#endif
+				free(*to);
+			}
+#ifdef	CL_DEBUG
+			if(debug_level >= 9)
+				puts("Free privdata->to");
+#endif
+			free(privdata->to);
+			privdata->to = NULL;
+		}
+
+		if(privdata->cmdSocket >= 0) {
+			char buf[64];
+
+			/*
+			 * Flush the remote end so that clamd doesn't get a SIGPIPE
+			 */
+			while(recv(privdata->cmdSocket, buf, sizeof(buf), 0) > 0)
+				;
+			close(privdata->cmdSocket);
+			privdata->cmdSocket = -1;
+		}
+
 #ifdef	CL_DEBUG
 		if(debug_level >= 9)
-			puts("Free privdata->to");
+			puts("Free privdata");
 #endif
-		free(privdata->to);
-		privdata->to = NULL;
+		free(privdata);
+		smfi_setpriv(ctx, NULL);
 	}
-
-	if(privdata->cmdSocket >= 0) {
-		char buf[64];
-
-		/*
-		 * Flush the remote end so that clamd doesn't get a SIGPIPE
-		 */
-		while(recv(privdata->cmdSocket, buf, sizeof(buf), 0) > 0)
-			;
-		close(privdata->cmdSocket);
-		privdata->cmdSocket = -1;
-	}
-
-#ifdef	CL_DEBUG
-	if(debug_level >= 9)
-		puts("Free privdata");
-#endif
-	free(privdata);
-	smfi_setpriv(ctx, NULL);
 
 	if(max_children > 0) {
 		pthread_mutex_lock(&n_children_mutex);

@@ -117,6 +117,9 @@ Changes
 0.60f	17/9/03	Changed fprintf to fputs where possible
 		Redirect stdin from /dev/null, stdout&stderr to
 		/dev/console
+0.60g	26/9/03	Handle sendmail calling abort after calling cleanup
+		(Should never happen - but it does)
+		Added -noxheader patch from dirk.meyer@dinoex.sub.org
 
 BUG REPORTS
 
