@@ -1,3 +1,8 @@
+Tue Nov 16 16:58:12 CET 2004 (tk)
+---------------------------------
+  * freshclam/manager.c: get_database: terminate buffer after recv() call
+			 (thanks to Nigel)
+
 Tue Nov 16 16:15:38 CET 2004 (tk)
 ---------------------------------
   * clamscan/manager.c: fix duplicate reporting of failure to open some

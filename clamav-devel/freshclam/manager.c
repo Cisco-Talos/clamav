@@ -619,13 +619,14 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
       }
 
       if (i>2 && *ch == '\n' && *(ch - 1) == '\r' && *(ch - 2) == '\n' && *(ch - 3) == '\r') {
-	ch++;
 	i++;
 	break;
       }
       ch++;
       i++;
     }
+
+    buffer[i] = 0;
 
     /* check whether the resource actually existed or not */
 
