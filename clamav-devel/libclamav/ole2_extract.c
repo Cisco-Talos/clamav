@@ -707,6 +707,9 @@ int cli_ole2_extract(int fd, const char *dirname)
 
 #ifdef HAVE_MMAP
 	if (fstat(fd, &statbuf) == 0) {
+		if (statbuf.st_size < hdr_size) {
+			return 0;
+		}
 		hdr.m_length = statbuf.st_size;
 		hdr.m_area = (unsigned char *) mmap(NULL, hdr.m_length, PROT_READ, MAP_PRIVATE, fd, 0);
 		if (hdr.m_area == MAP_FAILED) {

@@ -245,7 +245,7 @@ static int vba_read_project_strings(int fd, int is_mac)
 		}
 		free(name);
 		offset = lseek(fd, 0, SEEK_CUR);
-		cli_dbgmsg("offset: %d\n", offset);
+		cli_dbgmsg("offset: %u\n", offset);
 		vba56_test_middle(fd);
 	}
 	return TRUE;
@@ -259,7 +259,7 @@ vba_project_t *vba56_dir_read(const char *dir)
         unsigned char vba56_signature[] = { 0xcc, 0x61 };
 	uint16_t record_count, length;
 	uint16_t ooff;
-	uint8_t byte_count;
+	uint16_t byte_count;
 	uint32_t offset;
 	uint32_t LidA;  /* Language identifiers */
 	uint32_t LidB;
@@ -433,6 +433,12 @@ vba_project_t *vba56_dir_read(const char *dir)
 	}
 	record_count = vba_endian_convert_16(record_count, is_mac);
 	cli_dbgmsg("\nVBA Record count: %d\n", record_count);
+	if (record_count > 1000) {
+		/* Almost certainly an error */
+		cli_dbgmsg("\nVBA Record count too big");
+		close(fd);
+		return NULL;
+	}
 	
 	vba_project = (vba_project_t *) cli_malloc(sizeof(struct vba_project_tag));
 	if (!vba_project) {
@@ -502,21 +508,22 @@ vba_project_t *vba56_dir_read(const char *dir)
 		}
 
 		lseek(fd, 8, SEEK_CUR);
-		if (cli_readn(fd, &byte_count, 1) != 1) {
+		if (cli_readn(fd, &byte_count, 2) != 2) {
 			free(vba_project->name[i]);
 			goto out_error;
 		}
+		byte_count = vba_endian_convert_16(byte_count, is_mac);
 		for (j=0 ; j<byte_count; j++) {
 			lseek(fd, 8, SEEK_CUR);
 		}
-		lseek(fd, 6, SEEK_CUR);
+		lseek(fd, 5, SEEK_CUR);
 		if (cli_readn(fd, &offset, 4) != 4) {
 			free(vba_project->name[i]);
 			goto out_error;
 		}
 		offset = vba_endian_convert_32(offset, is_mac);
 		vba_project->offset[i] = offset;
-		cli_dbgmsg("offset:%d\n", offset);
+		cli_dbgmsg("offset:%u\n", offset);
 		lseek(fd, 2, SEEK_CUR);
 	}
 	
