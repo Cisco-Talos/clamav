@@ -121,7 +121,7 @@ struct cli_md5_node {
 };
 
 struct cli_zip_node {
-    int compr, csize, size, encrypted, crc32;
+    int compr, csize, size, encrypted, crc32, fileno, maxdepth;
     char *filename, *virname;
     struct cli_zip_node *next;
 };

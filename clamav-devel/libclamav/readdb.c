@@ -818,6 +818,34 @@ static int cli_loadzmd(FILE *fd, struct cl_node **root, unsigned int *signo)
 	    free(pt);
 	}
 
+	if(!(pt = cli_strtok(buffer, 7, ":"))) {
+	    free(new->filename);
+	    free(new->virname);
+	    free(new);
+	    ret = CL_EMALFDB;
+	    break;
+	} else {
+	    if(!strcmp(pt, "*"))
+		new->fileno = 0;
+	    else
+		new->fileno = atoi(pt);
+	    free(pt);
+	}
+
+	if(!(pt = cli_strtok(buffer, 8, ":"))) {
+	    free(new->filename);
+	    free(new->virname);
+	    free(new);
+	    ret = CL_EMALFDB;
+	    break;
+	} else {
+	    if(!strcmp(pt, "*"))
+		new->maxdepth = 0;
+	    else
+		new->maxdepth = atoi(pt);
+	    free(pt);
+	}
+
 	new->next = (*root)->zip_mlist;
 	(*root)->zip_mlist = new;
     }
@@ -923,6 +951,7 @@ int cl_loaddbdir(const char *dirname, struct cl_node **root, unsigned int *signo
 	     cli_strbcasestr(dent->d_name, ".db3")  ||
 	     cli_strbcasestr(dent->d_name, ".hdb")  ||
 	     cli_strbcasestr(dent->d_name, ".ndb")  ||
+	     cli_strbcasestr(dent->d_name, ".zmd")  ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbfile = (char *) cli_calloc(strlen(dent->d_name) + strlen(dirname) + 2, sizeof(char));
@@ -1000,6 +1029,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".db3")  || 
 	    cli_strbcasestr(dent->d_name, ".hdb")  || 
 	    cli_strbcasestr(dent->d_name, ".ndb")  || 
+	    cli_strbcasestr(dent->d_name, ".zmd")  || 
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbstat->no++;
@@ -1068,6 +1098,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".db3")  || 
 	    cli_strbcasestr(dent->d_name, ".hdb")  || 
 	    cli_strbcasestr(dent->d_name, ".ndb")  || 
+	    cli_strbcasestr(dent->d_name, ".zmd")  || 
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
                 fname = cli_calloc(strlen(dbstat->dir) + strlen(dent->d_name) + 2, sizeof(char));
