@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.156  2004/10/16 19:09:39  nigelhorne
+ * Handle BeMail (BeOS) files
+ *
  * Revision 1.155  2004/10/16 17:23:04  nigelhorne
  * Handle colons in quotes in headers
  *
@@ -453,7 +456,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.155 2004/10/16 17:23:04 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.156 2004/10/16 19:09:39 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -655,6 +658,15 @@ static	void	*getURL(struct arg *arg);
 				 * boundary="nextPart1383049.XCRrrar2yq";
 				 * protocol="application/pgp-encrypted"
 				 */
+#define	X_BFILE		RELATED	/*
+				 * BeOS, expert two parts: the file and it's
+				 * attributes. The attributes part comes as
+				 *	Content-Type: application/x-be_attribute
+				 *		name="foo"
+				 * I can't find where it is defined, any
+				 * pointers would be appreciated. For now
+				 * we treat it as multipart/related
+				 */
 
 static	const	struct tableinit {
 	const	char	*key;
@@ -682,6 +694,7 @@ static	const	struct tableinit {
 	{	"appledouble",	APPLEDOUBLE	},
 	{	"fax-message",	FAX		},
 	{	"encrypted",	ENCRYPTED	},
+	{	"x-bfile",	X_BFILE		},	/* BeOS */
 	{	NULL,		0		}
 };
 
