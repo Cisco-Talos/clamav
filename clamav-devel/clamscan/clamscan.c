@@ -30,6 +30,10 @@
 #include "defaults.h"
 #include "treewalk.h"
 
+#ifdef C_LINUX
+#include <sys/resource.h>
+#endif
+
 void help(void);
 
 /* this local macro takes care about freeing memory at exit */
@@ -62,8 +66,17 @@ void clamscan(struct optstruct *opt)
     if(optl(opt, "stdout")) mprintf_stdout = 1;
     else mprintf_stdout = 0;
 
-    if(optl(opt, "debug"))
-	cl_debug();
+    if(optl(opt, "debug")) {
+#if defined(C_LINUX)
+	    /* njh@bandsman.co.uk: create a dump if needed */
+	    struct rlimit rlim;
+
+	rlim.rlim_cur = rlim.rlim_max = RLIM_INFINITY;
+	if(setrlimit(RLIMIT_CORE, &rlim) < 0)
+	    perror("setrlimit");
+#endif
+	cl_debug(); /* enable debug messages */
+    }
 
     if(optc(opt, 'V')) {
 	mprintf("clamscan / ClamAV version "VERSION"\n");

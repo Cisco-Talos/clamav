@@ -1,3 +1,10 @@
+Sun Nov  9 20:25:11 CET 2003 (tk)
+---------------------------------
+  * libclamav: some functions were still using SCANBUFF instead of FILEBUFF,
+	       this is now finally fixed (bug reported by J.D. Bronson
+	       jeff_bronson*wixb.com). Also added more zip hardening checks
+	       to handle broken Mimail-like archives.
+
 Sun Nov  9 03:21:48 CET 2003 (tk)
 ---------------------------------
   * libclamav: archive wrapper and database parsing functions were using a

@@ -61,6 +61,7 @@ int cli_scanrar_inuse = 0;
 #define DELIVERED_MAGIC_STR "Delivered-To: "
 #define BZIP_MAGIC_STR "BZh"
 
+#define ZIPOSDET 20 /* FIXME: Make it user definable */
 
 int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev);
 
@@ -120,7 +121,7 @@ void cli_unlock_mutex(void *mtx)
 
 int cli_scanrar(int desc, char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
 {
-	FILE *tmp;
+	FILE *tmp = NULL;
 	int files = 0, fd, ret = CL_CLEAN;
 	ArchiveList_struct *rarlist = NULL;
 	char *rar_data_ptr;
@@ -240,10 +241,10 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	ZZIP_DIR *zdir;
 	ZZIP_DIRENT zdirent;
 	ZZIP_FILE *zfp;
-	FILE *tmp;
+	FILE *tmp = NULL;
 	char *buff;
 	int fd, bytes, files = 0, ret = CL_CLEAN, err;
-
+	struct stat source;
 
     cli_dbgmsg("Starting scanzip()\n");
 
@@ -253,8 +254,24 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	return CL_EZIP;
     }
 
+    fstat(desc, &source);
+
     while(zzip_dir_read(zdir, &zdirent)) {
+
+	if(!zdirent.d_name || !strlen(zdirent.d_name)) { /* Mimail fix */
+	    cli_dbgmsg("strlen(zdirent.d_name) == %d\n", strlen(zdirent.d_name));
+	    *virname = "Seriously Broken Zip";
+	    ret = CL_VIRUS;
+	    break;
+	}
+
 	cli_dbgmsg("Zip -> %s, compressed: %d, normal: %d.\n", zdirent.d_name, zdirent.d_csize, zdirent.st_size);
+
+	if(source.st_size && (zdirent.st_size / source.st_size) >= ZIPOSDET) {
+	    *virname = "Oversized Zip";
+	    ret = CL_VIRUS;
+	    break;
+	}
 
 	if(!zdirent.st_size) { /* omit directories and null files */
 	    files++;
@@ -265,7 +282,10 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	if(zdirent.d_csize < 0 || zdirent.st_size < 0) {
 	    files++;
 	    cli_dbgmsg("Zip -> Malformed archive detected.\n");
-	    ret = CL_EMALFZIP;
+	    /* ret = CL_EMALFZIP; */
+	    /* report it as a virus */
+	    *virname = "Seriously Broken Zip";
+	    ret = CL_VIRUS;
 	    break;
 	}
 
@@ -274,7 +294,7 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 		cli_dbgmsg("Zip -> %s: Size exceeded (%d, max: %d)\n", zdirent.d_name, zdirent.st_size, limits->maxfilesize);
 		files++;
 		ret = CL_EMAXSIZE;
-		continue;
+		continue; /* this is not a bug */
 	    }
 
 	    if(limits->maxfiles && (files > limits->maxfiles)) {
@@ -287,28 +307,29 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	/* generate temporary file and get its descriptor */
 	if((tmp = tmpfile()) == NULL) {
 	    cli_dbgmsg("Zip -> Can't generate tmpfile().\n");
-	    zzip_dir_close(zdir);
-	    return CL_ETMPFILE;
+	    ret = CL_ETMPFILE;
+	    break;
 	}
 
 	if((zfp = zzip_file_open(zdir, zdirent.d_name, 0)) == NULL) {
 	    cli_dbgmsg("Zip -> %s: Can't open file.\n", zdirent.d_name);
 	    ret = CL_EZIP;
-	    continue;
+	    break;
 	}
 
-	if(!(buff = (char *) cli_malloc(FILEBUFF)))
-	    return CL_EMEM;
+	if(!(buff = (char *) cli_malloc(FILEBUFF))) {
+	    ret = CL_EMEM;
+	    break;
+	}
 
 	while((bytes = zzip_file_read(zfp, buff, FILEBUFF)) > 0) {
 	    if(fwrite(buff, bytes, 1, tmp)*bytes != bytes) {
 		cli_dbgmsg("Zip -> Can't fwrite() file: %s\n", strerror(errno));
 		zzip_file_close(zfp);
-		zzip_dir_close(zdir);
 		files++;
-		fclose(tmp);
 		free(buff);
-		return CL_EZIP;
+		ret = CL_EZIP;
+		break;
 	    }
 	}
 
@@ -317,9 +338,8 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 
 	if(fflush(tmp) != 0) {
 	    cli_errmsg("fflush() failed: %s\n", strerror(errno));
-	    zzip_dir_close(zdir);
-	    fclose(tmp);
-	    return CL_EFSYNC;
+	    ret = CL_EFSYNC;
+	    break;
 	}
 
 	fd = fileno(tmp);
@@ -327,18 +347,14 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	lseek(fd, 0, SEEK_SET);
 	if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, reclev)) == CL_VIRUS ) {
 	    cli_dbgmsg("Zip -> Found %s virus.\n", *virname);
-	    fclose(tmp);
-	    tmp = NULL;
 	    ret = CL_VIRUS;
 	    break;
 	} else if(ret == CL_EMALFZIP) {
 	    /* 
-	     * The trick with detection of ZoD works with higher (>= 5)
+	     * The trick with detection of ZoD only works with higher (>= 5)
 	     * recursion limit level.
 	     */
 	    cli_dbgmsg("Zip -> Malformed Zip, scanning stopped.\n");
-	    fclose(tmp);
-	    tmp = NULL;
 	    *virname = "Malformed Zip";
 	    ret = CL_VIRUS;
 	    break;
@@ -364,9 +380,11 @@ int cli_scangzip(int desc, char **virname, long int *scanned, const struct cl_no
 	int fd, bytes, ret = CL_CLEAN;
 	long int size = 0;
 	char *buff;
-	FILE *tmp;
+	FILE *tmp = NULL;
 	gzFile gd;
 
+
+    cli_dbgmsg("in cli_scangzip()\n");
 
     if((gd = gzdopen(dup(desc), "rb")) == NULL) {
 	cli_dbgmsg("Can't gzdopen() descriptor %d.\n", desc);
@@ -380,14 +398,16 @@ int cli_scangzip(int desc, char **virname, long int *scanned, const struct cl_no
     }
     fd = fileno(tmp);
 
-    if(!(buff = (char *) cli_malloc(FILEBUFF)))
+    if(!(buff = (char *) cli_malloc(FILEBUFF))) {
+	gzclose(gd);
 	return CL_EMEM;
+    }
 
-    while((bytes = gzread(gd, buff, SCANBUFF)) > 0) {
+    while((bytes = gzread(gd, buff, FILEBUFF)) > 0) {
 	size += bytes;
 
 	if(limits)
-	    if(limits->maxfilesize && (size + SCANBUFF > limits->maxfilesize)) {
+	    if(limits->maxfilesize && (size + FILEBUFF > limits->maxfilesize)) {
 		cli_dbgmsg("Gzip->desc(%d): Size exceeded (stopped at %d, max: %d)\n", desc, size, limits->maxfilesize);
 		ret = CL_EMAXSIZE;
 		break;
@@ -436,7 +456,7 @@ int cli_scanbzip(int desc, char **virname, long int *scanned, const struct cl_no
 	short memlim = 0;
 	long int size = 0;
 	char *buff;
-	FILE *fs, *tmp;
+	FILE *fs, *tmp = NULL;
 	BZFILE *bfd;
 
 
@@ -464,11 +484,11 @@ int cli_scanbzip(int desc, char **virname, long int *scanned, const struct cl_no
     if(!(buff = (char *) cli_malloc(FILEBUFF)))
 	return CL_EMEM;
 
-    while((bytes = BZ2_bzRead(&bzerror, bfd, buff, SCANBUFF)) > 0) {
+    while((bytes = BZ2_bzRead(&bzerror, bfd, buff, FILEBUFF)) > 0) {
 	size += bytes;
 
 	if(limits)
-	    if(limits->maxfilesize && (size + SCANBUFF > limits->maxfilesize)) {
+	    if(limits->maxfilesize && (size + FILEBUFF > limits->maxfilesize)) {
 		cli_dbgmsg("Bzip2->desc(%d): Size exceeded (stopped at %d, max: %d)\n", desc, size, limits->maxfilesize);
 		ret = CL_EMAXSIZE;
 		break;
