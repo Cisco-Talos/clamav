@@ -1,3 +1,8 @@
+Mon Jan 26 22:09:19 CET 2004 (tk)
+---------------------------------
+  * libclamav: Makefile: do not remove clamav.h with make distclean (problem
+	       reported by Thomas Lamy)
+
 Mon Jan 26 20:56:30 CET 2004 (tk)
 ---------------------------------
   * libclamav: cli_scanole2 fixes from Trog
