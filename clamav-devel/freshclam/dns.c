@@ -20,9 +20,10 @@
 #include "clamav-config.h"
 #endif
 
+#include <stdio.h>
+
 #ifdef HAVE_RESOLV_H
 
-#include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <netinet/in.h>
