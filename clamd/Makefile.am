@@ -32,6 +32,8 @@ clamd_SOURCES = \
     localserver.h \
     session.c \
     session.h \
+    thrmgr.c \
+    thrmgr.h \
     server-th.c \
     server.h \
     scanner.c \

@@ -130,6 +130,8 @@ install_sh = @install_sh@
 @BUILD_CLAMD_TRUE@    localserver.h \
 @BUILD_CLAMD_TRUE@    session.c \
 @BUILD_CLAMD_TRUE@    session.h \
+@BUILD_CLAMD_TRUE@    thrmgr.c \
+@BUILD_CLAMD_TRUE@    thrmgr.h \
 @BUILD_CLAMD_TRUE@    server-th.c \
 @BUILD_CLAMD_TRUE@    server.h \
 @BUILD_CLAMD_TRUE@    scanner.c \
@@ -161,9 +163,10 @@ PROGRAMS = $(sbin_PROGRAMS)
 @BUILD_CLAMD_TRUE@am_clamd_OBJECTS = options.$(OBJEXT) cfgfile.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	clamd.$(OBJEXT) tcpserver.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	localserver.$(OBJEXT) session.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	server-th.$(OBJEXT) scanner.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	others.$(OBJEXT) clamuko.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	dazukoio.$(OBJEXT) tests.$(OBJEXT)
+@BUILD_CLAMD_TRUE@	thrmgr.$(OBJEXT) server-th.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	scanner.$(OBJEXT) others.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	clamuko.$(OBJEXT) dazukoio.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	tests.$(OBJEXT)
 clamd_OBJECTS = $(am_clamd_OBJECTS)
 @BUILD_CLAMD_TRUE@clamd_DEPENDENCIES = ../clamscan/getopt.o
 @BUILD_CLAMD_FALSE@clamd_DEPENDENCIES =
@@ -178,7 +181,8 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/localserver.Po ./$(DEPDIR)/options.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/others.Po ./$(DEPDIR)/scanner.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/server-th.Po ./$(DEPDIR)/session.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/tcpserver.Po ./$(DEPDIR)/tests.Po
+@AMDEP_TRUE@	./$(DEPDIR)/tcpserver.Po ./$(DEPDIR)/tests.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/thrmgr.Po
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
@@ -249,6 +253,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/session.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tcpserver.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tests.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/thrmgr.Po@am__quote@
 
 distclean-depend:
 	-rm -rf ./$(DEPDIR)

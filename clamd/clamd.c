@@ -71,6 +71,11 @@ void clamd(struct optstruct *opt)
     	help();
     }
 
+    if(optl(opt, "debug"))
+	debug_mode = 1;
+    else
+	debug_mode = 0;
+
     /* parse the config file */
     if(optc(opt, 'c'))
 	cfgfile = getargc(opt, 'c');
@@ -246,6 +251,7 @@ void help(void)
 
     printf("    --help                   -h             Show this help.\n");
     printf("    --version                -V             Show version number.\n");
+    printf("    --debug                                 Enable debug mode.\n");
     printf("    --config-file=FILE       -c FILE        Read configuration from FILE.\n\n");
 
     exit(0);
@@ -267,7 +273,8 @@ void daemonize(void)
 	dup2(i, 2);
     }
 
-    chdir("/");
+    if(!debug_mode)
+	chdir("/");
 
     if(fork())
 	exit(0);
