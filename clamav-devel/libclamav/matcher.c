@@ -104,8 +104,10 @@ static long int cli_caloff(const char *offstr, int fd)
 	    return -1;
 	}
 	lseek(fd, 0, SEEK_SET);
-	if(cli_peheader(fd, &peinfo))
+	if(cli_peheader(fd, &peinfo)) {
+	    lseek(fd, n, SEEK_SET);
 	    return -1;
+	}
 	free(peinfo.section);
 	lseek(fd, n, SEEK_SET);
 	return peinfo.ep + atoi(offstr + 3);
@@ -115,8 +117,10 @@ static long int cli_caloff(const char *offstr, int fd)
 	    return -1;
 	}
 	lseek(fd, 0, SEEK_SET);
-	if(cli_peheader(fd, &peinfo))
+	if(cli_peheader(fd, &peinfo)) {
+	    lseek(fd, n, SEEK_SET);
 	    return -1;
+	}
 	lseek(fd, n, SEEK_SET);
 
 	if(sscanf(offstr, "S%d+%ld", &n, &offset) != 2)
@@ -235,7 +239,6 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 	    free(buffer);
 	    free(partcnt);
 	    free(partoff);
-
 	    return CL_VIRUS;
 
 	} else if(otfrec && ret >= CL_TYPENO) {
