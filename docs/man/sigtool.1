@@ -1,14 +1,15 @@
 .\" Manual page created by Tomasz Kojm, 20020629
-.TH "sigtool" "1" "July 22, 2004" "Tomasz Kojm" "Clam AntiVirus"
+.TH "sigtool" "1" "August 18, 2004" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
-sigtool \- signature management tool
+sigtool \- signature and database management tool
 .SH "SYNOPSIS"
 .LP 
 sigtool [options]
 .SH "DESCRIPTION"
 .LP 
-sigtool can be used to generate a virus signature using an external anti\-virus scanner (see the official documentation for license issues!). It can also dump hexadecimal data and build and unpack CVD databases.
+sigtool can be used to generate MD5 checksums, convert data 
+into hexadecimal format, and build/unpack CVD databases. Also it can verify digital signatures of databases and list virus signature names.
 .SH "OPTIONS"
 .LP 
 
@@ -28,15 +29,8 @@ Write all messages to standard output (stdout), instead of standard error output
 \fB\-\-hex\-dump\fR
 Read data from stdin and write hex string to stdout.
 .TP 
-\fB\-c, \-\-command\fR
-Anti\-virus scanner command with options. Remember about quotes if the argument string contains white characters. Command should contain everything except infected file name.
-Make sure your commercial scanner's license does not disallow sigtool usage !
-.TP 
-\fB\-f, \-\-file\fR
-Infected file name.
-.TP 
-\fB\-s, \-\-string\fR
-Unique string from anti\-virus scanner's output when it detects the virus. In most cases it should be a virus name.
+\fB\-\-md5\fR
+Generate MD5 checksum from stdin.
 .TP 
 \fB\-i, \-\-info\fR
 Print a CVD information and verify MD5 and a digital signature.
@@ -55,11 +49,9 @@ Unpack a local CVD file to a current directory.
 .SH "EXAMPLES"
 .LP 
 .TP 
-(0) Generate hex string from testfile and save it to testfile.hex:
+Generate hex string from testfile and save it to testfile.hex:
 
 \fBcat testfile | sigtool \-\-hex\-dump > testfile.hex\fR
-.TP 
-(1) Please check clamdoc.pdf and signatures.pdf for more example of usage.
 .SH "CREDITS"
 Please check the full documentation for credits.
 .SH "AUTHOR"

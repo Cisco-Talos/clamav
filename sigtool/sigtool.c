@@ -16,7 +16,6 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/* some things may need to be tuned here (look at jmp variables) */
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -67,115 +66,6 @@ int listdir(const char *dirname);
 void listsigs(struct optstruct *opt);
 int cli_rmdirs(const char *dirname); /* libclamav's internal */
 
-int scanfile(const char *cmd, const char *str, const char *file)
-{
-	FILE *pd;
-	char *command, buffer[LINE];
-
-
-    /* build the command */
-    command = (char *) mcalloc(strlen(cmd) + strlen(file) + 10, sizeof(char));
-    sprintf(command, "%s %s", cmd, file);
-
-    if((pd = popen(command, "r")) == NULL) {
-	mprintf("!popen() failed\n");
-	return 3;
-    }
-
-    while(fgets(buffer, LINE, pd)) {
-	if(strstr(buffer, str)) {
-	    free(command);
-            fclose(pd);
-	    return 1; /* found */
-	}
-    }
-
-    free(command);
-    fclose(pd);
-    return 0; /* substring not found */
-}
-
-char *cut(const char *file, long int start, long int end)
-{
-	char *fname = NULL, buffer[FILEBUFF];
-	int bytes, size, sum;
-	FILE *rd, *wd;
-
-
-    if((rd = fopen(file, "rb")) == NULL) {
-	mprintf("!File %s doesn't exist.\n", file);
-	exit(13);
-    }
-
-    if((fname = cli_gentemp(".")) == NULL) {
-	mprintf("!Can't generate temporary file name.\n");
-	exit(1);
-    }
-
-    if((wd = fopen(fname, "wb")) == NULL) {
-	mprintf("!Can't create temporary file %s\n", fname);
-	exit(14);
-    }
-
-    fseek(rd, start, SEEK_SET);
-
-    size = end - start;
-    sum = 0;
-
-    while((bytes = fread(buffer, 1, FILEBUFF, rd)) > 0) {
-	if(sum + bytes >= size) {
-	    fwrite(buffer, 1, size - sum, wd);
-	    break;
-	} else
-	    fwrite(buffer, 1, bytes, wd);
-
-	sum += bytes;
-    }
-
-    fclose(rd);
-    fclose(wd);
-
-    return fname;
-}
-
-char *change(const char *file, long int x)
-{
-	char *fname = NULL, buffer[FILEBUFF];
-	int bytes, ch;
-	FILE *rd, *wd;
-
-
-    if((rd = fopen(file, "rb")) == NULL) {
-	mprintf("!File %s doesn't exist.\n", file);
-	exit(13);
-    }
-
-    if((fname = cli_gentemp(".")) == NULL) {
-	mprintf("!Can't generate temporary file name.\n");
-	exit(1);
-    }
-
-    if((wd = fopen(fname, "wb+")) == NULL) {
-	mprintf("!Can't create temporary file %s\n", fname);
-	exit(14);
-    }
-
-    while((bytes = fread(buffer, 1, FILEBUFF, rd)) > 0)
-	fwrite(buffer, 1, bytes, wd);
-
-    fclose(rd);
-
-    if(x) { /* don't alter first character in the file */
-	fflush(wd);
-	fseek(wd, x, SEEK_SET);
-	ch = fgetc(wd);
-	fseek(wd, -1, SEEK_CUR);
-	fputc(++ch, wd);
-    }
-
-    fclose(wd);
-    return fname;
-}
 
 void sigtool(struct optstruct *opt)
 {
@@ -211,6 +101,12 @@ void sigtool(struct optstruct *opt)
 	    free(pt);
 	}
 
+    } else if(optl(opt, "md5")) {
+
+	char *md5 = cli_md5stream(stdin);
+	mprintf("%s\n", md5);
+	free(md5);
+
     } else if(optc(opt, 'b')) {
 	if(!optl(opt, "server")) {
 	    mprintf("!--server is required in this mode\n");
@@ -236,233 +132,11 @@ void sigtool(struct optstruct *opt)
 	listsigs(opt);
 
     } else {
-	    int jmp, lastjmp = 0, end, found = 0, exec = 0, pos, filesize,
-		maxsize = 0, ret;
-	    char *c, *s, *f, *tmp, *signame, *bsigname, *f2 = NULL;
-	    FILE *fd, *wd;
 
-	if(!optc(opt, 'c')) {
-	    mprintf("!--command, -c is required in this mode\n");
-	    exit(10);
-	} else if(!optc(opt, 's')) {
-	    mprintf("!--string, -s is required in this mode\n");
-	    exit(10);
-	} else if(!optc(opt, 'f')) {
-	    mprintf("!--file, -f is required in this mode\n");
-	    exit(10);
-	}
-
-	/* these are pointers to corresponding strings in option list */
-	c = getargc(opt, 'c');
-	s = getargc(opt, 's');
-	f = getargc(opt, 'f');
-
-	if(scanfile(c, s, f) != 1) {
-	    mprintf("!String %s not found in scanner's output.\n", s);
-	    mprintf("Please check it and try again.\n");
-	    mprintf("Does the scanner write to stdout ? It has to.\n");
-	    exit(11);
-	}
-
-	/* initial values */
-	filesize = end = fileinfo(f, 1);
-	jmp = end / 5 + 1;
-
-	/* find signature end */
-	while(1) {
-	    tmp = cut(f, 0, end);
-	    exec++;
-	    ret = scanfile(c, s, tmp);
-	    unlink(tmp);
-	    free(tmp);
-
-	    if(ret == 1) {
-
-		if(end >= jmp) {
-		    mprintf("Detected, decreasing end %d -> %d\n", end, end - jmp);
-		    end -= jmp;
-		} else
-		    end = 0;
-
-	    } else {
-		mprintf("Not detected at %d, moving forward.\n", end);
-		if(jmp == 1) {
-
-		    while(end <= filesize) {
-			tmp = cut(f, 0, end);
-			exec++;
-			if(scanfile(c, s, tmp) == 1) {
-			    mprintf(" *** Signature end found at %d\n", end);
-			    found = 1;
-			    f2 = strdup(tmp); /* remember this file */
-			    free(tmp);
-			    break;
-			} else {
-			    unlink(tmp);
-			    free(tmp);
-			    mprintf("Increasing end %d -> %d\n", end, end + 1);
-			}
-			end++;
-		    }
-
-		    if(found) break;
-		}
-
-		if(jmp)
-		    jmp--;
-		jmp = jmp/2 + 1;
-		end += jmp;
-		if(end > filesize)
-		    end = filesize;
-
-	    }
-
-	}
-
-	/* find signature start */
-	found = 0;
-	jmp = 50;
-	pos = end - jmp;
-
-	while(1) {
-
-	    tmp = change(f2, pos);
-	    if(scanfile(c, s, tmp) != 1) {
-		exec++;
-		unlink(tmp);
-		free(tmp);
-
-		if(pos >= jmp) {
-		    mprintf("Not detected, moving backward %d -> %d\n", pos, pos - jmp);
-		    pos -= jmp;
-		    maxsize += jmp;
-		} else {
-		    mprintf("Not detected, using the beginning of the file.\n");
-		    pos = 0;
-		    break;
-		}
-
-		if(maxsize > MAX_LENGTH) {
-		    mprintf("!Generated signature is too big.\n");
-		    unlink(f2);
-		    free(f2);
-		    exit(1);
-		}
-
-	    } else {
-		mprintf("Detected at %d, moving forward.\n", pos);
-		if(jmp == 1 && lastjmp == 1) {
-		    unlink(tmp);
-		    free(tmp);
-		    while(pos < end) {
-			tmp = change(f2, pos);
-			exec++;
-			ret = scanfile(c, s, tmp);
-			unlink(tmp);
-			free(tmp);
-			if(ret == 1) {
-			    mprintf("Moving forward %d -> %d\n", pos, pos + 1);
-			    pos++;
-
-			    if(end - pos < MIN_LENGTH) {
-				mprintf("!Generated signature is too small.\n");
-				unlink(f2);
-				free(f2);
-				exit(1);
-			    }
-
-			} else {
-			    mprintf(" *** Signature start found at %d\n", pos);
-			    found = 1;
-			    break;
-			}
-		    }
-
-		    if(pos >= end) {
-		        mprintf("!Can't generate a proper signature.\n");
-			unlink(f2);
-			free(f2);
-		        exit(1);
-		    }
-
-		    if(found)
-			break;
-		}
-
-		lastjmp = jmp;
-		if(jmp > 0)
-		    jmp--;
-		jmp = jmp/2 + 1;
-		pos += jmp;
-
-		if(pos >= end - 2 * jmp)
-		    pos = end - 2 * jmp;
-
-		unlink(tmp);
-		free(tmp);
-	    }
-
-	}
-
-	unlink(f2);
-	free(f2);
-	tmp = cut(f, pos, end);
-
-	mprintf("\nThe scanner was executed %d times.\n", exec);
-	mprintf("The signature length is %d (%d hex)\n", end - pos, 2 * (end - pos));
-
-	if(end - pos < MIN_LENGTH) {
-	    mprintf("\nWARNING: THE SIGNATURE IS TOO SMALL (PROBABLY ONLY A PART OF A REAL SIGNATURE).\n");
-	    mprintf("         PLEASE DON'T USE IT.\n\n");
-	}
-
-	if((fd = fopen(tmp, "rb")) == NULL) {
-	    mprintf("!Can't believe. Where is my signature, dude ?\n");
-	    exit(99);
-	}
-
-	signame = (char *) mcalloc(strlen(f) + 10, sizeof(char));
-	sprintf(signame, "%s.sig", f);
-	if(fileinfo(signame, 1) != -1) {
-	    mprintf("File %s exists.\n", signame);
-	    free(signame);
-	    signame = cli_gentemp(".");
-	}
-
-	bsigname = (char *) mcalloc(strlen(f) + 10, sizeof(char));
-	sprintf(bsigname, "%s.bsig", f);
-	if(fileinfo(bsigname, 1) != -1) {
-	    mprintf("File %s exists.\n", bsigname);
-	    free(bsigname);
-	    bsigname = cli_gentemp(".");
-	}
-
-	if((wd = fopen(signame, "wb")) == NULL) {
-	    mprintf("Can't write to %s\n", signame);
-	    unlink(tmp);
-	    free(tmp);
-	    exit(15);
-	}
-
-	mprintf("Saving signature in %s file.\n", signame);
-
-	while((bytes = fread(buffer, 1, FILEBUFF, fd)) > 0) {
-	    pt = cli_str2hex(buffer, bytes);
-	    fwrite(pt, 1, 2 * bytes, wd);
-	    free(pt);
-	}
-
-	mprintf("Saving binary signature in %s file.\n", bsigname);
-	rename(tmp, bsigname);
-
-	fclose(fd);
-	fclose(wd);
-	free(tmp);
-	free(signame);
-	free(bsigname);
+	help();
     }
 
-    /* free_opt(opt); */
+    free_opt(opt);
 }
 
 int countlines(const char *filename)
@@ -1040,12 +714,9 @@ void help(void)
     mprintf("    --quiet                                be quiet, output only error messages\n");
     mprintf("    --debug                                enable debug messages\n");
     mprintf("    --stdout                               write to stdout instead of stderr\n");
-    mprintf("                                           (this help is always written to stdout)\n");
     mprintf("    --hex-dump                             convert data from stdin to a hex\n");
     mprintf("                                           string and print it on stdout\n");
-    mprintf("    --command              -c              scanner command string, with options\n");
-    mprintf("    --string               -s              'virus found' string in scan. output\n");
-    mprintf("    --file                 -f              infected file\n");
+    mprintf("    --md5                                  generate MD5 checksum from stdin\n");
     mprintf("    --info=FILE            -i FILE         print database information\n");
     mprintf("    --build=NAME           -b NAME         build a CVD file\n");
     mprintf("    --server=ADDR                          ClamAV Signing Service address\n");

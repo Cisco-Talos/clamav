@@ -1,3 +1,16 @@
+Wed Aug 18 17:17:20 CEST 2004 (tk)
+----------------------------------
+  * clamscan: Scan mail files by default. Add new option --no-mail.
+  * clamd: Add new option MailFollowURLs. See documentation and source code
+	   for details. WARNING: This option may open your system to a DoS
+	   attack. Never use it on loaded servers.
+  * clamscan: Add new option --mail-follow-urls
+  * sigtool: Add new option --md5
+  * sigtool: Remove ability of automatic signature generation - inexperienced
+	     users should now use MD5 hashes (*.hdb databases) to create
+	     their own signatures
+  * docs: Update manual pages
+
 Wed Aug 18 15:24:00 BST 2004 (trog)
 -----------------------------------
   * libclamav/chmunpack.c: make sure we don't get filename collisions

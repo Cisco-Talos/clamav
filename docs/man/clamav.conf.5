@@ -1,5 +1,5 @@
 .\" Manual page created by Tomasz Kojm, 20021001.
-.TH "clamav.conf" "5" "August 4, 2004" "Tomasz Kojm" "Clam AntiVirus"
+.TH "clamav.conf" "5" "August 18, 2004" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 \fBclamav.conf\fR \- a configuration file for Clam AntiVirus Daemon
@@ -125,8 +125,7 @@ Do internal checks every NUMBER seconds.
 Default: 3600
 .TP 
 \fBVirusEvent COMMAND\fR
-Execute the COMMAND when virus is found. In the command string %v and %f will be replaced by a virus name and an infected file name respectively.
-\fBSECURITY WARNING: Make sure the virus event command cannot be exploited eg. by using some special file name when %f is in use. Always use a full path to the command. Never delete/move files with this directive !
+Execute the COMMAND when virus is found. In the command string %v will be replaced by a virus name.
 \fR
 .br 
 Default: disabled.
@@ -180,7 +179,12 @@ Enables HTML detection and normalisation.
 Default: enabled.
 .TP 
 \fBScanMail\fR
-Enable scanning of Mbox, Maildir and raw mail files.
+Enable scanning of mail files.
+.br 
+Default: enabled.
+.TP 
+\fBMailFollowURLs\fR
+If an email contains URLs ClamAV can download and scan them. \fBWARNING: This option may open your system to a DoS attack. Never use it on loaded servers.\fR
 .br 
 Default: disabled.
 .TP 

@@ -192,22 +192,24 @@ void help(void)
     mprintf("                          Clam AntiVirus Scanner "VERSION"\n");
     mprintf("                (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>\n\n");
 
-    mprintf("    --help                -h             Show help\n");
-    mprintf("    --version             -V             Print version number and exit\n");
+    mprintf("    --help                -h             Print this help screen\n");
+    mprintf("    --version             -V             Print version number\n");
     mprintf("    --verbose             -v             Be verbose\n");
-    mprintf("    --debug                              Enable debug messages\n");
-    mprintf("    --quiet                              Be quiet - only output error messages\n");
+    mprintf("    --debug                              Enable libclamav's debug messages\n");
+    mprintf("    --quiet                              Only output error messages\n");
     mprintf("    --stdout                             Write to stdout instead of stderr\n");
-    mprintf("                                         (this help is always written to stdout)\n");
+    mprintf("    --no-summary                         Disable summary at end of scanning\n");
+    mprintf("    --infected            -i             Only print infected files\n");
+    mprintf("    --bell                               Sound bell on virus detection\n");
+
     mprintf("\n");
     mprintf("    --tempdir=DIRECTORY                  Create temporary files in DIRECTORY\n");
     mprintf("    --leave-temps                        Do not remove temporary files\n");
     mprintf("    --database=FILE/DIR   -d FILE/DIR    Load virus database from FILE or load\n");
     mprintf("                                         all .cvd and .db[2] files from DIR\n");
     mprintf("    --log=FILE            -l FILE        Save scan report to FILE\n");
-    mprintf("    --recursive           -r             Scan directories recursively\n");
-    mprintf("    --infected            -i             Print infected files only\n");
-    mprintf("    --remove                             Remove infected files. Be careful.\n");
+    mprintf("    --recursive           -r             Scan subdirectories recursively\n");
+    mprintf("    --remove                             Remove infected files. Be careful!\n");
     mprintf("    --move=DIRECTORY                     Move infected files into DIRECTORY\n");
 #ifdef HAVE_REGEX_H
     mprintf("    --exclude=REGEX                      Don't scan file names matching REGEX\n");
@@ -216,16 +218,18 @@ void help(void)
     mprintf("    --exclude=PATT                       Don't scan file names containing PATT\n");
     mprintf("    --include=PATT                       Only scan file names containing PATT\n");
 #endif
-    mprintf("    --bell                               Sound bell on virus detection\n");
-    mprintf("    --no-summary                         Disable summary at end of scanning\n");
-    mprintf("    --mbox                -m             Treat stdin as a mailbox\n");
+
     mprintf("\n");
+    mprintf("    --no-mail                            Disable mail file support\n");
     mprintf("    --no-pe                              Disable PE analysis\n");
     mprintf("    --no-ole2                            Disable OLE2 support\n");
     mprintf("    --no-html                            Disable HTML support\n");
     mprintf("    --no-archive                         Disable libclamav archive support\n");
     mprintf("    --detect-broken                      Try to detect broken executable files\n");
     mprintf("    --block-encrypted                    Block encrypted archives\n");
+    mprintf("    --mail-follow-urls                   Download and scan URLs\n");
+
+    mprintf("\n");
     mprintf("    --max-space=#n                       Extract first #n kilobytes only\n");
     mprintf("    --max-files=#n                       Extract first #n files only\n");
     mprintf("    --max-recursion=#n                   Maximal recursion level\n");
@@ -237,9 +241,7 @@ void help(void)
     mprintf("    --lha[=FULLPATH]                     Enable support for .lha files\n");
     mprintf("    --jar[=FULLPATH]                     Enable support for .jar files\n");
     mprintf("    --tar[=FULLPATH]                     Enable support for .tar files\n");
-    mprintf("    --deb[=FULLPATH to ar]               Enable support for .deb files,\n");
-    mprintf("                                         implies --tgz , but doesn't conflict\n");
-    mprintf("                                         with --tgz=FULLPATH.\n");
+    mprintf("    --deb[=FULLPATH to ar]               Enable support for .deb files\n");
     mprintf("    --tgz[=FULLPATH]                     enable support for .tar.gz, .tgz files\n\n");
 
     exit(0);
