@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.28  2004/12/21 16:42:10  nigelhorne
+ * Patch for OS/2
+ *
  * Revision 1.27  2004/12/16 15:29:51  nigelhorne
  * Tidy
  *
@@ -83,7 +86,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.27 2004/12/16 15:29:51 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.28 2004/12/21 16:42:10 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -524,6 +527,9 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 		snprintf(stub, sizeof(stub), "%s%s", fullname, suffix);
 #ifdef	C_LINUX
 		rename(stub, fullname);
+#elif	defined(defined(C_CYGWIN) || defined(C_INTERIX) || defined(C_OS2)
+		if(cli_filecopy(stub, filename) == 0)
+			unlink(stub);
 #else
 		link(stub, fullname);
 		unlink(stub);
@@ -560,7 +566,7 @@ sanitiseName(char *name)
 #ifdef	C_DARWIN
 		*name &= '\177';
 #endif
-#if	defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32)
+#if	defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32) || defined(C_OS2)
 		if(strchr("/*?<>|\\\"+=,;: ", *name))
 #else
 		if(*name == '/')

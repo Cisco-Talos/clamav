@@ -1,3 +1,7 @@
+Tue Dec 21 16:44:13 GMT 2004 (njh)
+----------------------------------
+  * libclamav/blob.c:	Support for OS/2 - patch by TK
+
 Tue Dec 21 04:11:48 CET 2004 (tk)
 ---------------------------------
   * freshclam: DNSDatabaseInfo: optimised and hardcoded
