@@ -444,6 +444,7 @@ Changes
 		Fix crash when the 1st remote service goes down
 		Only use gethostbyname_r on LINUX for now
 		Load balancing - improved a bit - but still some way to go
+0.75b	26/7/04	Template file: %v now prints the virus name without the trailer
 
 BUG REPORTS
 

@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.110  2004/07/26 13:23:27  nigelhorne
+ * Remove stream: from template %v
+ *
  * Revision 1.109  2004/07/25 11:51:42  nigelhorne
  * Fix crash if 1st host dies
  *
@@ -338,9 +341,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.109 2004/07/25 11:51:42 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.110 2004/07/26 13:23:27 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.75a"
+#define	CM_VERSION	"0.75b"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -486,7 +489,7 @@ static	void	header_list_add(header_list_t list, const char *headerf, const char 
 static	void	header_list_print(header_list_t list, FILE *fp);
 static	int	connect2clamd(struct privdata *privdata);
 static	void	checkClamd(void);
-static	int	sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *clamdMessage);
+static	int	sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *virusname);
 static	void	setsubject(SMFICTX *ctx, const char *virusname);
 
 static	char	clamav_version[128];
@@ -2262,7 +2265,7 @@ clamfi_eom(SMFICTX *ctx)
 				fputs("Subject: Virus intercepted\n\n", sendmail);
 
 				if((templatefile == NULL) ||
-				   (sendtemplate(ctx, templatefile, sendmail, mess) < 0)) {
+				   (sendtemplate(ctx, templatefile, sendmail, virusname) < 0)) {
 					if(bflag)
 						fputs("A message you sent to\n", sendmail);
 					else if(pflag)
@@ -3028,15 +3031,16 @@ checkClamd(void)
  * Send a templated message about an intercepted message. Very basic for
  * now, just to prove it works, will enhance the flexability later, only
  * supports %v and {sendmail_variables} at present. And only one instance of
- * %v at that.
+ * %v or {sendmail_variable} at that.
  *
  * TODO: more template features
  * TODO: allow filename to start with a '|' taken to mean the output of
  *	a program
  * TODO: allow { to be escaped with a \ character
+ * TODO: allow more than one substitution in a file
  */
 static int
-sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *clamdMessage)
+sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *virusname)
 {
 	FILE *fin = fopen(filename, "r");
 	struct stat statb;
@@ -3070,14 +3074,14 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *cla
 	fread(buf, sizeof(char), statb.st_size, fin);
 	fclose(fin);
 	buf[statb.st_size] = '\0';
+	rc = 0;
 
 	/* FIXME: \%v should be %%v */
 	if(((ptr = strstr(buf, "%v")) != NULL) && (strstr(buf, "\\%v") == NULL)) {
 		*ptr = '\0';
 		ptr = &ptr[2];
 		fputs(buf, sendmail);
-		/* Need to peel out the virus name and just send that */
-		fputs(clamdMessage, sendmail);
+		fputs(virusname, sendmail);
 		rc = (fputs(ptr, sendmail) == EOF) ? -1 : 0;
 	} else if((ptr = strchr(buf, '{')) && (ptr2 = strchr(ptr, '}'))) {
 		char *var;
@@ -3104,7 +3108,7 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *cla
 
 	free(buf);
 
-	return 0;
+	return rc;
 }
 
 /*
