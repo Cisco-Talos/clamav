@@ -1,3 +1,7 @@
+Tue Nov  2 05:12:45 CET 2004 (tk)
+---------------------------------
+  * docs/MacOSX: update (Dale Enterprise L.L.C)
+
 Tue Nov  2 04:58:43 CET 2004 (tk)
 ---------------------------------
   * libclamav, clamd: readdir_r code: provide additional space (for at least
