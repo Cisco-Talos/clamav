@@ -1,3 +1,7 @@
+Wed Nov 26 14:31:49 CET 2003 (tk)
+---------------------------------
+  * examples/ex1.c: fixed a compilation warning (thanks to Rainer Link)
+
 Tue Nov 25 11:28:28 IST 2003 (njh)
 ----------------------------------
   * clamav-milter: Handle empty hostname or hostaddr
