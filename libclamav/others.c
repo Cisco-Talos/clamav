@@ -281,7 +281,7 @@ char *cl_gentemp(const char *dir)
     else
 	mdir = (char *) dir;
 
-    name = (char*) cli_calloc(strlen(mdir) + 1 + 16 + 1, sizeof(char));
+    name = (char*) cli_calloc(strlen(mdir) + 1 + 16 + 1 + 7, sizeof(char));
     if(name == NULL) {
 	cli_dbgmsg("cl_gentemp('%s'): out of memory\n", dir);
 	return NULL;
@@ -298,7 +298,7 @@ char *cl_gentemp(const char *dir)
 	    salt[i] = cl_rndnum(255);
 
 	tmp = cl_md5buff(( char* ) salt, 48);
-	sprintf(name, "%s/", mdir);
+	sprintf(name, "%s/clamav-", mdir);
 	strncat(name, tmp, 16);
 	free(tmp);
     } while(stat(name, &foo) != -1);

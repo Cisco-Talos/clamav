@@ -884,7 +884,7 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     return cli_magic_scandesc(desc, virname, scanned, root, limits, options, &reclev);
 }
 
-int cli_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+static int cli_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
 {
 	int fd, ret;
 

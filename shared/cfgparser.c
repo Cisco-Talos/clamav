@@ -91,7 +91,8 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 	    {"AllowSupplementaryGroups", OPT_NOARG},
 	    {"SelfCheck", OPT_NUM},
 	    {"VirusEvent", OPT_FULLSTR},
-	    {"ClamukoScanOnLine", OPT_NOARG},
+	    {"ClamukoScanOnLine", OPT_NOARG}, /* old name */
+	    {"ClamukoScanOnAccess", OPT_NOARG},
 	    {"ClamukoScanOnOpen", OPT_NOARG},
 	    {"ClamukoScanOnClose", OPT_NOARG},
 	    {"ClamukoScanOnExec", OPT_NOARG},

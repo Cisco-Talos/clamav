@@ -1,3 +1,10 @@
+Thu Apr 15 16:26:38 CEST 2004 (tk)
+----------------------------------
+  * libclamav: add a "clamav-" prefix to temporary file names (Dirk Mueller
+	       <dmuell*gmx.net>)
+  * clamd: clamuko: fix signal handling (problem reported by Claudio Alonso
+	   <cfalonso*yahoo.com>)
+
 Thu Apr 15 10:54:02 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Handle systems without inet_ntop()
