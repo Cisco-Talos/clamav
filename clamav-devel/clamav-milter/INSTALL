@@ -109,6 +109,33 @@ Installations for RedHat Linux and it's derivatives such as YellowDog:
 	Where /var/run/spamass.sock is the location of the spamass-milt
 	socket file (on some systems it is in /var/run/sendmail/spamass.sock).
 
+Installations for FreeBSD5 (may be true for other BSDs)
+	Add to /etc/mail/freebsd.mc:
+	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clmilter.sock, F=, T=S:4m;R:4m')dnl
+	define(`confINPUT_MAIL_FILTERS', `clamav')
+
+	Check entry in /usr/local/etc/clamd.conf of the form:
+	LocalSocket /var/run/clamav/clamd.sock
+
+	If you already have a filter (such as spamassassin-milter from
+	http://savannah.nongnu.org/projects/spamass-milt) add it thus:
+	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clmilter.sock, F=, T=S:4m;R:4m')dnl
+	INPUT_MAIL_FILTER(`spamassassin', `S=local:/var/run/spamass.sock, F=, T=C:15m;S:4m;R:4m;E:10m')
+	define(`confINPUT_MAIL_FILTERS', `spamassassin,clamav')dnl
+
+	mkdir /var/run/clamav
+	chown clamav /var/run/clamav	(if you use User clamav in clamd.conf)
+	chmod 700 /var/run/clamav
+
+	Where /var/run/spamass.sock is the location of the spamass-milt
+	socket file (on some systems it is in /var/run/sendmail/spamass.sock).
+
+You should have received a script to install into /etc/rc.d as /etc/rc.d/clamav
+with this software. Add to /etc/rc.conf:
+	clamd_enable="YES"
+	clamav_milter_enable="YES"
+	clamav_milter_flags="--max-children=2 --dont-wait --timeout=0 -P local:/var/run/clamav/clamav.sock --pidfile=/var/run/clamav/clamav-milter.pid --quarantine-dir=/var/run/clamav/quarantine"
+
 You may find INPUT_MAIL_FILTERS is not needed on your machine, however it
 is recommended by the Sendmail documentation and I recommend going along
 with that.
