@@ -150,9 +150,13 @@
  *			Tidy up the call to pthread_cond_timedwait
  *	0.60q	11/11/03 Fixed handling of % characters in e-mail addresses
  *			pointed out by dotslash@snosoft.com
+ *	0.65	15/11/03 Upissue of clamav
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.19  2003/11/17 04:48:30  nigelhorne
+ * Up issue to version 0.65
+ *
  * Revision 1.18  2003/11/11 08:19:20  nigelhorne
  * Handle % characters in e-mail addresses
  *
@@ -192,9 +196,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.18 2003/11/11 08:19:20 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.19 2003/11/17 04:48:30 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.60p"
+#define	CM_VERSION	"0.65"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -343,7 +347,7 @@ help(void)
 	puts("\t--help\t\t\t-h\tThis message.");
 	puts("\t--local\t\t\t-l\tScan messages sent from machines on our LAN.");
 	puts("\t--outgoing\t\t-o\tScan outgoing messages from this machine.");
-	puts("\t--noxheader\t\t-o\tSuppress X-Virus-Scanned header.");
+	puts("\t--noxheader\t\t-n\tSuppress X-Virus-Scanned header.");
 	puts("\t--postmaster\t\t-p\tPostmaster address [default=postmaster].");
 	puts("\t--postmaster-only\t\t-P\tSend warnings only to the postmaster.");
 	puts("\t--quiet\t\t\t-q\tDon't send e-mail notifications of interceptions.");

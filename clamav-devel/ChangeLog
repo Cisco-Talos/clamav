@@ -1,3 +1,7 @@
+Mon Nov 17 10:20:05 IST 2003 (njh)
+----------------------------------
+  * clamav-milter: changed version from 0.60 to 0.65
+
 Sun Nov 16 02:34:12 CET 2003 (tk)
 ---------------------------------
   * libclamav, clamd: fixed limit initialization when ScanArchive is disabled
