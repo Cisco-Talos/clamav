@@ -715,6 +715,7 @@ Changes
 				positives on emails which have the Sender
 				header set (e.g. mailing lists)
 			Use {mail_addr} if no From field is received
+0.84c	18/3/05:	Better handling of {mail_addr} / <>
 
 INTERNATIONALISATION
 
