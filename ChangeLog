@@ -1,3 +1,8 @@
+Fri Mar 25 19:48:42 GMT 2005 (njh)
+----------------------------------
+  * libclamav:	Added TNEF (winmail.dat) decoding. Now finds eicar in test 14
+			from http://www.webmail.us/testvirus
+
 Fri Mar 25 18:58:29 CET 2005 (tk)
 ---------------------------------
   * freshclam: improve new database installation under w32 (thanks to Boguslaw
