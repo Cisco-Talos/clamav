@@ -20,6 +20,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.8  2004/09/12 23:43:45  kojm
+ * return with CL_EFORMAT instead of CL_EDSIG
+ *
  * Revision 1.7  2004/09/12 19:51:59  nigelhorne
  * Now builds with --enable-debug
  *
@@ -42,7 +45,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.7 2004/09/12 19:51:59 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.8 2004/09/12 23:43:45 kojm Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -132,7 +135,7 @@ cli_untar(const char *dir, int desc)
 			magic[6] = '\0';
 			if(strcmp(magic, "ustar ") != 0) {
 				cli_errmsg("Incorrect magic number in tar header\n");
-				return CL_EDSIG;
+				return CL_EFORMAT;
 			}
 
 			type = block[156];
@@ -203,7 +206,7 @@ cli_untar(const char *dir, int desc)
 			if(size < 0) {
 				cli_errmsg("Invalid size in tar header\n");
 				fclose(outfile);
-				return CL_EDSIG;
+				return CL_EFORMAT;
 			}
 		} else { /* write or continue writing file contents */
 			const int nbytes = size>512? 512:size;
@@ -220,5 +223,5 @@ cli_untar(const char *dir, int desc)
 	}
 	if(outfile)
 		fclose(outfile);
-	return CL_CLEAN;
+	return 0;
 }
