@@ -208,9 +208,16 @@
  *	0.66e	12/1/04	FixStaleSocket: no longer complain if asked to remove
  *			an old socket when there was none to remove
  *	0.66f	24/1/04	-s: Allow clamd server name as well as IPaddress
+ *	0.66g	25/1/04 Corrected usage message
+ *			Started to honour --debug
+ *			Dump core on LINUX if CL_DEBUG set
+ *			Support multiple servers separated by colons
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.38  2004/01/25 14:23:51  nigelhorne
+ * Support multiple clamd servers
+ *
  * Revision 1.37  2004/01/24 18:09:39  nigelhorne
  * Allow clamd server name as well as IPaddress in -s option
  *
@@ -307,15 +314,17 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.37 2004/01/24 18:09:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.38 2004/01/25 14:23:51 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.66f"
+#define	CM_VERSION	"0.66g"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
 #include "defaults.h"
 #include "cfgfile.h"
 #include "../target.h"
+#include "str.h"
+#include "others.h"
 
 #ifndef	CL_DEBUG
 #define	NDEBUG
@@ -350,6 +359,10 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.37 2004/01/24 18:09:39 nig
 #include <grp.h>
 #include <netdb.h>
 
+#if defined(CL_DEBUG) && defined(C_LINUX)
+#include <sys/resource.h>
+#endif
+
 #define _GNU_SOURCE
 #include "getopt.h"
 
@@ -366,7 +379,6 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.37 2004/01/24 18:09:39 nig
  * TODO: bounce message should optionally be read from a file
  * TODO: Support ThreadTimeout, LogTime and Logfile from the conf
  *	 file
- * TODO: Allow more than one clamdscan server to be given
  */
 
 /*
@@ -386,7 +398,8 @@ struct	privdata {
 	size_t	bodyLen;	/* number of bytes in body */
 };
 
-static	int		pingServer(void);
+static	int		pingServer(int serverNumber);
+static	int		findServer(void);
 static	sfsistat	clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr);
 static	sfsistat	clamfi_envfrom(SMFICTX *ctx, char **argv);
 static	sfsistat	clamfi_envrcpt(SMFICTX *ctx, char **argv);
@@ -465,13 +478,14 @@ static	pthread_mutex_t	n_children_mutex = PTHREAD_MUTEX_INITIALIZER;
 static	pthread_cond_t	n_children_cond = PTHREAD_COND_INITIALIZER;
 static	unsigned	int	n_children = 0;
 static	unsigned	int	max_children = 0;
-static	int	use_syslog = 0;
+short	use_syslog = 0;
 static	int	logVerbose = 0;
 static	struct	cfgstruct	*copt;
 static	const	char	*localSocket;
 static	in_port_t	tcpSocket;
-static	const	char	*serverHostName = "127.0.0.1";
-static	long	serverIP = -1L;	/* IPv4 only */
+static	const	char	*serverHostNames = "127.0.0.1";
+static	long	*serverIPs;	/* IPv4 only */
+static	int	numServers;	/* numer of elements in serverIPs */
 static	const	char	*postmaster = "postmaster";
 
 /*
@@ -492,6 +506,7 @@ help(void)
 
 	puts("\t--bounce\t\t-b\tSend a failure message to the sender.");
 	puts("\t--config-file=FILE\t-c FILE\tRead configuration from FILE.");
+	puts("\t--debug\t\t-D\tPrint debug messages.");
 	puts("\t--dont-scan-on-error\t-d\tPass e-mails through unscanned if a system error occurs.");
 	puts("\t--force-scan\t\t-f\tForce scan all messages (overrides (-o and -l).");
 	puts("\t--help\t\t\t-h\tThis message.");
@@ -503,7 +518,7 @@ help(void)
 	puts("\t--quiet\t\t\t-q\tDon't send e-mail notifications of interceptions.");
 	puts("\t--quarantine=USER\t-Q EMAIL\tQuanrantine e-mail account.");
 	puts("\t--quarantine-dir=DIR\t-U DIR\tDirectory to store infected emails.");
-	puts("\t--server=ADDRESS\t-s ADDR\tHostname/IP address of server running clamd (when using TCPsocket).");
+	puts("\t--server=SERVER\t-s SERVER\tHostname/IP address of server(s) running clamd (when using TCPsocket).");
 	puts("\t--sign\t\t\t-S\tAdd a hard-coded signature to each scanned message.");
 	puts("\t--signature-file\t-F\tLocation of signature file.");
 	puts("\t--version\t\t-V\tPrint the version number of this software.");
@@ -536,6 +551,13 @@ main(int argc, char **argv)
 		clamfi_close, /* connection cleanup callback */
 	};
 
+#if defined(CL_DEBUG) && defined(C_LINUX)
+	struct rlimit rlim;
+
+	rlim.rlim_cur = rlim.rlim_max = RLIM_INFINITY;
+	if(setrlimit(RLIMIT_CORE, &rlim) < 0)
+		perror("setrlimit");
+#endif
 	/*
 	 * Temporarily enter guessed value into clamav_version, will
 	 * be overwritten later by the value returned by clamd
@@ -547,9 +569,9 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "bc:fF:lm:nop:PqQ:dhs:SU:Vx:";
+		const char *args = "bc:DfF:lm:nop:PqQ:dhs:SU:Vx:";
 #else
-		const char *args = "bc:fF:lm:nop:PqQ:dhs:SU:V";
+		const char *args = "bc:DfF:lm:nop:PqQ:dhs:SU:V";
 #endif
 
 		static struct option long_options[] = {
@@ -561,6 +583,9 @@ main(int argc, char **argv)
 			},
 			{
 				"dont-scan-on-error", 0, NULL, 'd'
+			},
+			{
+				"debug", 0, NULL, 'D'
 			},
 			{
 				"force-scan", 0, NULL, 'f'
@@ -634,6 +659,9 @@ main(int argc, char **argv)
 			case 'd':	/* don't scan on error */
 				cl_error = SMFIS_ACCEPT;
 				break;
+			case 'D':	/* enable debug messages */
+				cl_debug();
+				break;
 			case 'f':	/* force the scan */
 				fflag++;
 				break;
@@ -667,7 +695,7 @@ main(int argc, char **argv)
 				smfilter.xxfi_flags |= SMFIF_CHGHDRS|SMFIF_ADDRCPT|SMFIF_DELRCPT;
 				break;
 			case 's':	/* server running clamd */
-				serverHostName = optarg;
+				serverHostNames = optarg;
 				break;
 			case 'F':	/* signature file */
 				sigFilename = optarg;
@@ -690,9 +718,9 @@ main(int argc, char **argv)
 #endif
 			default:
 #ifdef	CL_DEBUG
-				fprintf(stderr, "Usage: %s [-b] [-c FILE] [-F FILE] [--max-children=num] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-S] [-x#] [-U PATH] socket-addr\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-b] [-c FILE] [-F FILE] [--max-children=num] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-s SERVER] [-S] [-x#] [-U PATH] socket-addr\n", argv[0]);
 #else
-				fprintf(stderr, "Usage: %s [-b] [-c FILE] [-F FILE] [--max-children=num] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-S] [-U PATH] socket-addr\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-b] [-c FILE] [-F FILE] [--max-children=num] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-s SERVER] [-S] [-U PATH] socket-addr\n", argv[0]);
 #endif
 				return EX_USAGE;
 		}
@@ -783,7 +811,7 @@ main(int argc, char **argv)
 		 * TODO: check --server hasn't been set
 		 */
 		localSocket = cpt->strarg;
-		if(!pingServer()) {
+		if(!pingServer(-1)) {
 			fprintf(stderr, "Can't talk to clamd server via %s\n",
 				localSocket);
 			fprintf(stderr, "Check your entry for LocalSocket in %s\n",
@@ -791,7 +819,13 @@ main(int argc, char **argv)
 			return EX_CONFIG;
 		}
 		umask(022);
+
+		serverIPs = (long *)cli_malloc(sizeof(long));
+		serverIPs[0] = inet_addr("127.0.0.1");
+
 	} else if((cpt = cfgopt(copt, "TCPSocket")) != NULL) {
+		int i;
+
 		/*
 		 * TCPSocket is in fact a port number not a full socket
 		 */
@@ -800,30 +834,53 @@ main(int argc, char **argv)
 			return EX_CONFIG;
 		}
 
-		/*
-		 * Translate server's name to IP address
-		 */
-		serverIP = inet_addr(serverHostName);
-		if(serverIP == -1L) {
-			const struct hostent *h = gethostbyname(serverHostName);
-
-			if(h == NULL) {
-				fprintf(stderr, "%s: Unknown host %s\n",
-					argv[0], serverHostName);
-				return EX_USAGE;
-			}
-
-			memcpy((char *)&serverIP, h->h_addr, sizeof(serverIP));
-		}
-
 		tcpSocket = cpt->numarg;
 
-		if(!pingServer()) {
-			fprintf(stderr, "Can't talk to clamd server at %s on port %d\n",
-				serverHostName, tcpSocket);
-			fprintf(stderr, "Check your entry for TCPSocket in %s\n",
-				cfgfile);
-			return EX_CONFIG;
+		/*
+		 * cli_strtok's fieldno counts from 0
+		 */
+		for(;;) {
+			char *hostname;
+
+			hostname = cli_strtok(serverHostNames, numServers, ":");
+			if(hostname == NULL)
+				break;
+			numServers++;
+			free(hostname);
+		}
+
+		cli_dbgmsg("numServers: %d\n", numServers);
+
+		serverIPs = (long *)cli_malloc(numServers * sizeof(long));
+
+		for(i = 0; i < numServers; i++) {
+			char *hostname;
+
+			/*
+			 * Translate server's name to IP address
+			 */
+			hostname = cli_strtok(serverHostNames, i, ":");
+			serverIPs[i] = inet_addr(hostname);
+			if(serverIPs[i] == -1L) {
+				const struct hostent *h = gethostbyname(hostname);
+
+				if(h == NULL) {
+					fprintf(stderr, "%s: Unknown host %s\n",
+						argv[0], hostname);
+					return EX_USAGE;
+				}
+
+				memcpy((char *)&serverIPs[i], h->h_addr, sizeof(serverIPs[i]));
+			}
+
+			if(!pingServer(i)) {
+				fprintf(stderr, "Can't talk to clamd server %s on port %d\n",
+					hostname, tcpSocket);
+				fprintf(stderr, "Check your entry for TCPSocket in %s\n",
+					cfgfile);
+				return EX_CONFIG;
+			}
+			free(hostname);
 		}
 	} else {
 		fprintf(stderr, "%s: You must select server type (local/TCP) in %s\n",
@@ -922,9 +979,11 @@ main(int argc, char **argv)
 /*
  * Verify that the server is where we think it is
  * Returns true or false
+ *
+ * serverNumber counts from 0
  */
 static int
-pingServer(void)
+pingServer(int serverNumber)
 {
 	char *ptr;
 	int sock, nbytes;
@@ -952,9 +1011,10 @@ pingServer(void)
 		server.sin_family = AF_INET;
 		server.sin_port = htons(tcpSocket);
 		
-		assert(serverIP != -1L);
+		assert(serverIP != NULL);
+		assert(serverIPs[0] != -1L);
 
-		server.sin_addr.s_addr = serverIP;
+		server.sin_addr.s_addr = serverIPs[serverNumber];
 
 		if((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 			perror("socket");
@@ -1003,12 +1063,119 @@ pingServer(void)
 
 	/*
 	 * No real validation is done here
+	 *
+	 * TODO: When connecting to more than one server, give a warning
+	 *	if they're running different versions, or if the virus DBs
+	 *	are out of date
 	 */
 	snprintf(clamav_version, sizeof(clamav_version),
 		"ClamAV version '%s', clamav-milter version '%s'",
 		buf, CM_VERSION);
 
 	return 1;
+}
+
+/*
+ * Find the best server to connect to. No intelligence to this, if one
+ * of the servers goes down it'll be silently ignored, which is probably
+ * ok. It is best to weight the order of the servers from most wanted to
+ * least wanted
+ *
+ * Return value is from 0 - index into serverIPs
+ */
+static int
+findServer(void)
+{
+	struct sockaddr_in *servers, *server;
+	int *socks, maxsock = 0, i;
+	fd_set rfds;
+	struct timeval tv;
+	int retval;
+
+	assert(tcpSocket != 0);
+	assert(numServers > 0);
+
+	if(numServers == 1)
+		return 0;
+
+	servers = (struct sockaddr_in *)cli_calloc(numServers, sizeof(struct sockaddr_in));
+	socks = (int *)cli_malloc(numServers * sizeof(int));
+
+	FD_ZERO(&rfds);
+
+	for(i = 0, server = servers; i < numServers; i++, server++) {
+		int sock;
+
+		server->sin_family = AF_INET;
+		server->sin_port = htons(tcpSocket);
+		server->sin_addr.s_addr = serverIPs[i];
+
+		sock = socks[i] = socket(AF_INET, SOCK_STREAM, 0);
+		if(sock < 0) {
+			perror("socket");
+			do
+				if(socks[i] >= 0)
+					close(socks[i]);
+			while(--i >= 0);
+			free(socks);
+			free(servers);
+			return 0;	/* Use the first server on failure */
+		}
+
+		if((connect(sock, (struct sockaddr *)server, sizeof(struct sockaddr)) < 0) ||
+		   (send(sock, "PING\n", 5, 0) < 5)) {
+			cli_errmsg("findServer: Check server %d - it may be down\n", i);
+			if(use_syslog)
+				syslog(LOG_WARNING, "findServer: Check server %d - it may be down", i);
+			socks[i] = -1;
+			continue;
+		}
+
+		shutdown(sock, SHUT_WR);
+
+		FD_SET(sock, &rfds);
+		if(sock > maxsock)
+			maxsock = sock;
+	}
+
+	free(servers);
+
+	tv.tv_sec = threadtimeout;
+	tv.tv_usec = 0;
+	
+	retval = select(maxsock, &rfds, NULL, NULL, &tv);
+	if(retval < 0)
+		perror("select");
+
+	for(i = 0; i < numServers; i++)
+		if(socks[i] >= 0)
+			close(socks[i]);
+
+	if(retval == 0) {
+		free(socks);
+		cli_dbgmsg("findServer: No response from any server\n");
+		if(use_syslog)
+			syslog(LOG_WARNING, "findServer: No response from any server");
+		return 0;
+	} else if(retval < 0) {
+		free(socks);
+		if(use_syslog)
+			syslog(LOG_ERR, "findServer: select failed\n");
+		return 0;
+	}
+
+	for(i = 0; i < numServers; i++)
+		if(FD_ISSET(socks[i], &rfds)) {
+			free(socks);
+			cli_dbgmsg("findServer: using server %d", i);
+			return i;
+		}
+
+	free(socks);
+	cli_dbgmsg("findServer: No response from any server\n");
+	if(use_syslog)
+		syslog(LOG_WARNING, "findServer: No response from any server");
+	return 0;
 }
 
 static sfsistat
@@ -1109,7 +1276,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 	struct privdata *privdata;
 	struct sockaddr_in reply;
 	unsigned short port;
-	int nbytes, rc;
+	int nbytes, rc, freeServer;
 	char buf[64];
 
 	if(logVerbose)
@@ -1228,6 +1395,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 				perror(localSocket);
 				return cl_error;
 			}
+			freeServer = 0;
 		} else {
 			struct sockaddr_in server;
 
@@ -1235,9 +1403,13 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			server.sin_family = AF_INET;
 			server.sin_port = htons(tcpSocket);
 
-			assert(serverIP != -1L);
+			assert(serverIP != NULL);
 
-			server.sin_addr.s_addr = serverIP;
+			freeServer = findServer();
+			if(freeServer < 0)
+				return cl_error;
+
+			server.sin_addr.s_addr = serverIPs[freeServer];
 
 			if((privdata->cmdSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 				perror("socket");
@@ -1307,9 +1479,9 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		reply.sin_family = AF_INET;
 		reply.sin_port = ntohs(port);
 
-		assert(serverIP != -1L);
+		assert(serverIP != NULL);
 
-		reply.sin_addr.s_addr = serverIP;
+		reply.sin_addr.s_addr = serverIPs[freeServer];
 
 #ifdef	CL_DEBUG
 		if(debug_level >= 4)
