@@ -214,7 +214,7 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
     /* prepare the buffer */
     buffsize = root->maxpatlen + SCANBUFF;
     if(!(buffer = (char *) cli_calloc(buffsize, sizeof(char)))) {
-	cli_dbgmsg("cli_scandesc(): unable to cli_malloc(%d)\n", buffsize);
+	cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%d)\n", buffsize);
 	return CL_EMEM;
     }
 

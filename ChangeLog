@@ -1,3 +1,11 @@
+Fri Oct  1 02:28:08 CEST 2004 (tk)
+----------------------------------
+  * clamd: add new directive IdleTimeout (patch by Andrey J. Melnikoff (TEMHOTA)
+	   <temnota*kmv.ru>)
+  * clamscan/others.c: preserve Mac OS X resource forks in filecopy() 
+		       (thanks to Remi Mommsen <remigius.mommsen*cern.ch>)
+  * cosmetic fixes (thanks to Damian Menscher <menscherr*uiuc.edu>)
+
 Thu Sep 30 22:48:53 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Remove unneeded strdup() calls

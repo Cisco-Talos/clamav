@@ -115,6 +115,21 @@ int checkaccess(const char *path, const char *username, int mode)
 
 int filecopy(const char *src, const char *dest)
 {
+
+#ifdef C_DARWIN
+    /* On Mac OS X use ditto and copy resource fork, too. */
+    char *ditto = (char *) mcalloc(strlen(src) + strlen(dest) + 30, sizeof(char));
+    sprintf(ditto, "/usr/bin/ditto --rsrc %s %s", src, dest);
+
+    if(system(ditto)) {
+	free(ditto);
+	return -1;
+    }
+
+    free(ditto);
+    return 0;
+
+#else
 	char buffer[FILEBUFF];
 	int s, d, bytes;
 
@@ -133,6 +148,9 @@ int filecopy(const char *src, const char *dest)
 
     /* njh@bandsman.co.uk: check result of close for NFS file */
     return close(d);
+
+#endif //__APPLE_CC__
+
 }
 
 int isnumb(const char *str)
