@@ -16,7 +16,7 @@ implemented by Trog. Besides, there are many improvements and bugfixes
     + on-access scanning now also available on FreeBSD (with Dazuko 2.0)
     + new directive ArchiveBlockEncrypted
     + new directive ReadTimeout (replaces ThreadTimeout)
-    + handle SIGHUP (re-open logfile), SIGUSR2 (reload database)
+    + handle SIGHUP (re-open logfile) and SIGUSR2 (reload database)
     + respect TCPAddr in stream scanner
 
 -) clamav-milter:
@@ -40,6 +40,9 @@ implemented by Trog. Besides, there are many improvements and bugfixes
       SIGALRM and SIGUSR1 (wake up and check mirror)
     + fix bug with -u and -c handling
 
+-) contrib
+    + windows clamd client now available with source code
+
 -) documentation:
     + new Polish documentation on ClamAV and Samba integration
     + official documentation updated
@@ -47,6 +50,17 @@ implemented by Trog. Besides, there are many improvements and bugfixes
 
 Special thanks to Dirk Mueller <mueller*kde.org> for his code review,
 many bugfixes and cleanups.
+
+
+Thanks to the help of many companies (clamdoc.pdf: Section 2.10,
+http://www.clamav.net/mirrors.html) we have 49 very fast and reliable
+virus database mirrors in 22 regions and the number is still growing.
+As of March 2004 we attempt to redirect our users to the closest pool
+of mirrors by looking at their ip source address when they try to resolve
+database.clamav.net. Our DNS servers can answer with a CNAME to:
+europe.clamav.net, america.clamav.net, asia.clamav.net or other.clamav.net.
+Our advanced push-mirroring mechanism (maintained by Luca Gibelli) allows
+database maintainers to update all the mirrors in less then one minute !
 
 
 There will be no major feature enhancements in the 0.7x series. Our work
@@ -80,7 +94,7 @@ on our website: http://www.clamav.net/3rdparty.html):
 
 --
 The ClamAV team (http://www.clamav.net/team.html)
-April 16, 2004
+April 17, 2004
 
 
 0.68-1

@@ -1,3 +1,7 @@
+Sat Apr 17 00:19:08 CEST 2004 (tk)
+----------------------------------
+  V 0.70
+
 Fri Apr 16 23:20:19 CEST 2004 (tk)
 ----------------------------------
   * freshclam: fix SIGHUP handling (patch by Dr Matthew J Seaman
