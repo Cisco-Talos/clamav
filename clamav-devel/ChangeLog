@@ -1,3 +1,8 @@
+Sun Feb  1 17:50:30 CET 2004 (tk)
+---------------------------------
+  * clamd: use putenv() instead of setenv() while setting TemporaryDirectory
+	   (due to a compilation error on Solaris reported by Nigel)
+
 Sun Feb  1 02:12:50 CET 2004 (tk)
 ---------------------------------
   * libclamav: + use strcasecmp() instead of strcmp() when comparing

@@ -51,6 +51,7 @@ void clamd(struct optstruct *opt)
 	struct cl_node *root = NULL;
 	const char *dbdir, *cfgfile;
 	int ret, virnum = 0, tcpsock;
+	char *var;
 
     /* initialize some important variables */
 
@@ -175,10 +176,13 @@ void clamd(struct optstruct *opt)
 
     /* set the temporary dir */
     if((cpt = cfgopt(copt, "TemporaryDirectory"))) {
-	if(!setenv("TMPDIR", cpt->strarg, 1))
+	var = (char *) mcalloc(8 + strlen(cpt->strarg), sizeof(char));
+	sprintf(var, "TMPDIR=%s", cpt->strarg);
+	if(!putenv(var))
 	    logg("Setting %s as global temporary directory\n", cpt->strarg);
 	else
 	    logg("!Can't set TMPDIR variable - insufficient space in the environment.\n");
+	free(var);
     }
 
     /* load the database(s) */
