@@ -30,7 +30,6 @@
 #include "defaults.h"
 #include "str.h"
 #include "memory.h"
-#include "strutil.h"
 
 static int isnumb(const char *str)
 {
@@ -177,7 +176,7 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 				ctype = tolower(arg[strlen(arg) - 1]);
 				if(ctype == 'm' || ctype == 'k') {
 				    char *cpy = (char *) mcalloc(strlen(arg), sizeof(char));
-				    strlcpy(cpy, arg, strlen(arg));
+				    strncpy(cpy, arg, strlen(arg) - 1);
 				    if(!isnumb(cpy)) {
 					fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires numerical (raw/K/M) argument.\n", line, name);
 					return NULL;

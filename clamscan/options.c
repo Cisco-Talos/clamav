@@ -35,7 +35,6 @@
 #include "shared.h"
 #include "memory.h"
 #include "output.h"
-#include "strutil.h"
 
 extern int clamscan(struct optstruct *opt);
 
@@ -139,9 +138,9 @@ int main(int argc, char **argv)
 	opt->filename=(char*)mcalloc(len + 256, sizeof(char));
 
         for(i=optind; i<argc; i++) {
-	    strlcat(opt->filename, argv[i], len+256);
+	    strncat(opt->filename, argv[i], strlen(argv[i]));
 	    if(i != argc-1)
-		strlcat(opt->filename, "\t", len+256);
+		strncat(opt->filename, "\t", 1);
 	}
 
     }

@@ -47,7 +47,6 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include "dazukoio_compat12.h"
-#include "strutil.h"
 
 int dazukoRegister_TS_compat12_wrapper(struct dazuko_id **dazuko_id, const char *groupName)
 {
@@ -117,7 +116,7 @@ int dazukoRegister_TS_compat12(struct dazuko_id *dazuko, const char *groupName)
 	memset(opt, 0, sizeof(struct option_compat12));
 
 	opt->command = REGISTER;
-	strlcpy(opt->buffer, groupName, sizeof(opt->buffer));
+	strncpy(opt->buffer, groupName, sizeof(opt->buffer) - 1);
 	opt->buffer_length = strlen(opt->buffer) + 1;
 
 	if (ioctl(dazuko->device, _IOW(dazuko->dev_major, IOCTL_SET_OPTION, void *), opt) != 0)
@@ -187,7 +186,7 @@ int dazuko_set_path_compat12(struct dazuko_id *dazuko, const char *path, int com
 	memset(opt, 0, sizeof(struct option_compat12));
 
 	opt->command = command;
-	strlcpy(opt->buffer, path, sizeof(opt->buffer));
+	strncpy(opt->buffer, path, sizeof(opt->buffer) - 1);
 	opt->buffer_length = strlen(opt->buffer) + 1;
 
 	if (ioctl(dazuko->device, _IOW(dazuko->dev_major, IOCTL_SET_OPTION, void *), opt) != 0)
@@ -324,7 +323,7 @@ int dazukoReturnAccess_TS_compat12_wrapper(struct dazuko_id *dazuko, struct dazu
 		acc_compat12.pid = (*acc)->pid;
 		if ((*acc)->filename != NULL)
 		{
-			strlcpy(acc_compat12.filename, (*acc)->filename, sizeof(acc_compat12.filename));
+			strncpy(acc_compat12.filename, (*acc)->filename, sizeof(acc_compat12.filename) - 1);
 			acc_compat12.filename[sizeof(acc_compat12.filename) - 1] = 0;
 		}
 

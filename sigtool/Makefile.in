@@ -125,8 +125,6 @@ sigtool_SOURCES = \
     $(top_srcdir)/shared/getopt.h \
     $(top_srcdir)/shared/memory.c \
     $(top_srcdir)/shared/memory.h \
-    $(top_srcdir)/shared/strutil.c \
-    $(top_srcdir)/shared/strutil.h \
     options.c \
     options.h \
     sigtool.c
@@ -145,7 +143,7 @@ bin_PROGRAMS = sigtool$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
 
 am_sigtool_OBJECTS = output.$(OBJEXT) getopt.$(OBJEXT) memory.$(OBJEXT) \
-	strutil.$(OBJEXT) options.$(OBJEXT) sigtool.$(OBJEXT)
+	options.$(OBJEXT) sigtool.$(OBJEXT)
 sigtool_OBJECTS = $(am_sigtool_OBJECTS)
 sigtool_DEPENDENCIES = $(top_builddir)/clamscan/others.o
 sigtool_LDFLAGS =
@@ -156,7 +154,7 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/getopt.Po ./$(DEPDIR)/memory.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/options.Po ./$(DEPDIR)/output.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/sigtool.Po ./$(DEPDIR)/strutil.Po
+@AMDEP_TRUE@	./$(DEPDIR)/sigtool.Po
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
@@ -208,7 +206,6 @@ clean-binPROGRAMS:
 output.$(OBJEXT): $(top_srcdir)/shared/output.c
 getopt.$(OBJEXT): $(top_srcdir)/shared/getopt.c
 memory.$(OBJEXT): $(top_srcdir)/shared/memory.c
-strutil.$(OBJEXT): $(top_srcdir)/shared/strutil.c
 sigtool$(EXEEXT): $(sigtool_OBJECTS) $(sigtool_DEPENDENCIES) 
 	@rm -f sigtool$(EXEEXT)
 	$(LINK) $(sigtool_LDFLAGS) $(sigtool_OBJECTS) $(sigtool_LDADD) $(LIBS)
@@ -224,7 +221,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/options.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/output.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sigtool.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strutil.Po@am__quote@
 
 distclean-depend:
 	-rm -rf ./$(DEPDIR)
@@ -300,24 +296,6 @@ memory.lo: $(top_srcdir)/shared/memory.c
 @AMDEP_TRUE@	depfile='$(DEPDIR)/memory.Plo' tmpdepfile='$(DEPDIR)/memory.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o memory.lo `test -f '$(top_srcdir)/shared/memory.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/memory.c
-
-strutil.o: $(top_srcdir)/shared/strutil.c
-@AMDEP_TRUE@	source='$(top_srcdir)/shared/strutil.c' object='strutil.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/strutil.Po' tmpdepfile='$(DEPDIR)/strutil.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o strutil.o `test -f '$(top_srcdir)/shared/strutil.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/strutil.c
-
-strutil.obj: $(top_srcdir)/shared/strutil.c
-@AMDEP_TRUE@	source='$(top_srcdir)/shared/strutil.c' object='strutil.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/strutil.Po' tmpdepfile='$(DEPDIR)/strutil.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o strutil.obj `cygpath -w $(top_srcdir)/shared/strutil.c`
-
-strutil.lo: $(top_srcdir)/shared/strutil.c
-@AMDEP_TRUE@	source='$(top_srcdir)/shared/strutil.c' object='strutil.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/strutil.Plo' tmpdepfile='$(DEPDIR)/strutil.TPlo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o strutil.lo `test -f '$(top_srcdir)/shared/strutil.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/strutil.c
 CCDEPMODE = @CCDEPMODE@
 
 mostlyclean-libtool:
