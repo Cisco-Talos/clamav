@@ -452,6 +452,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	char *tmpdir, *gendir, *userprg;
 	struct stat statbuf;
 
+
     stat(filename, &statbuf);
 
     if(!S_ISREG(statbuf.st_mode)) {
@@ -569,8 +570,13 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
     /* fix permissions of extracted files */
     fixperms(gendir);
 
-    if(!ret) /* execute successful */
-	ret = treewalk(gendir, root, user, opt, limits, options);
+    if(!ret) { /* execute successful */
+	    short oldrec = recursion;
+
+	recursion = 1;
+	ret = treewalk(gendir, root, user, opt, limits, options, 1);
+	recursion = oldrec;
+    }
 
     /* remove the directory  - as clamav */
     if(!optl(opt, "leave-temps"))
@@ -608,12 +614,8 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	case -3:
 	    return 0;
 	case 0:
-	    /* no viruses found in archive, we scan just in case the same
-	     * archive
+	    /* no viruses found in archive, we scan just in case a raw file
 	     */
-	    if(!printinfected)
-		mprintf("(raw) ");
-
 	    if((ret = checkfile(filename, root, limits, 0)) == CL_VIRUS) {
 		if(optl(opt, "remove")) {
 		    if(unlink(filename)) {
@@ -629,8 +631,8 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	    }
 	    return ret;
 	case 1:
-	    logg("%s: Infected Archive FOUND\n", filename);
-	    mprintf("%s: Infected Archive FOUND\n", filename);
+	    logg("%s: Infected.Archive FOUND\n", filename);
+	    mprintf("%s: Infected.Archive FOUND\n", filename);
 
 	    if(bell)
 		fprintf(stderr, "\007");
@@ -714,7 +716,7 @@ int scandenied(const char *filename, struct cl_node *root, const struct passwd *
     }
 #endif
 
-    if((ret = treewalk(gendir, root, user, opt, limits, options)) == 1) {
+    if((ret = treewalk(gendir, root, user, opt, limits, options, 1)) == 1) {
 	logg("(Real infected archive: %s)\n", filename);
 	mprintf("(Real infected archive: %s)\n", filename);
 
@@ -742,7 +744,7 @@ int scandenied(const char *filename, struct cl_node *root, const struct passwd *
 
 int scandirs(const char *dirname, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options)
 {
-	return treewalk(dirname, root, user, opt, limits, options);
+	return treewalk(dirname, root, user, opt, limits, options, 1);
 }
 
 int checkfile(const char *filename, const struct cl_node *root, const struct cl_limits *limits, int options)

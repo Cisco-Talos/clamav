@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -40,18 +40,14 @@
 #include "memory.h"
 #include "output.h"
 
-/*
- * recursive functions, similar to ftw(), these functions are duplicated below
- * with some small changes.
- */
-
-int treewalk(const char *dirname, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options)
+int treewalk(const char *dirname, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options, unsigned int depth)
 {
 	DIR *dd;
 	struct dirent *dent;
 	struct stat statbuf;
 	char *fname;
 	int scanret = 0, included;
+	unsigned int maxdepth;
 	struct optnode *optnode;
 	char *argument;
 
@@ -86,6 +82,14 @@ int treewalk(const char *dirname, struct cl_node *root, const struct passwd *use
 	}
     }
 
+    if(optl(opt, "max-dir-recursion"))
+        maxdepth = atoi(getargl(opt, "max-dir-recursion"));
+    else
+        maxdepth = 15;
+
+    if(depth > maxdepth)
+	return 0;
+
     claminfo.dirs++;
 
     if((dd = opendir(dirname)) != NULL) {
@@ -102,7 +106,7 @@ int treewalk(const char *dirname, struct cl_node *root, const struct passwd *use
 		    /* stat the file */
 		    if(lstat(fname, &statbuf) != -1) {
 			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode) && recursion) {
-			    if(treewalk(fname, root, user, opt, limits, options) == 1)
+			    if(treewalk(fname, root, user, opt, limits, options, ++depth) == 1)
 				scanret++;
 			} else {
 			    if(S_ISREG(statbuf.st_mode))

@@ -90,6 +90,7 @@ int main(int argc, char **argv)
 	    {"max-space", 1, 0, 0},
             {"max-ratio", 1, 0, 0},
 	    {"max-recursion", 1, 0, 0},
+	    {"max-dir-recursion", 1, 0, 0},
 	    {"disable-archive", 0, 0, 0},
 	    {"no-archive", 0, 0, 0},
 	    {"detect-broken", 0, 0, 0},
