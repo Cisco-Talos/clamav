@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.200  2004/12/07 23:08:10  nigelhorne
+ * Fix empty content-type in multipart header
+ *
  * Revision 1.199  2004/12/07 09:01:24  nigelhorne
  * Tidy
  *
@@ -585,7 +588,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.199 2004/12/07 09:01:24 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.200 2004/12/07 23:08:10 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2725,7 +2728,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 						 * and
 						 * Content-Type: multipart/mixed foo/bar
 						 */
-						for(;;) {
+						if(s && *s) for(;;) {
 #ifdef	CL_THREAD_SAFE
 							int set = messageSetMimeType(m, strtok_r(s, "/", &strptr));
 #else
@@ -2769,7 +2772,8 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 							if(*s == '\0')
 								break;
 						}
-						free(mimeType);
+						if(mimeType)
+							free(mimeType);
 					}
 				}
 
