@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.14  2004/08/01 08:20:58  nigelhorne
+ * Scan pathnames in Cygwin
+ *
  * Revision 1.13  2004/06/16 08:07:39  nigelhorne
  * Added thread safety
  *
@@ -41,7 +44,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.13 2004/06/16 08:07:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.14 2004/08/01 08:20:58 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -126,7 +129,7 @@ blobSetFilename(blob *b, const char *filename)
 
 		for(ptr = b->name; *ptr; ptr++) {
 #if	defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32)
-			if(strchr("*?<>|\"+=,;: ", *ptr))
+			if(strchr("/*?<>|\"+=,;: ", *ptr))
 #elif   defined(C_DARWIN)
 			if((*ptr == '/') || (*ptr >= '\200'))
 #else
@@ -173,8 +176,13 @@ blobAddData(blob *b, const unsigned char *data, size_t len)
 		b->size = len * 4;
 		b->data = cli_malloc(b->size);
 	} else if(b->size < b->len + len) {
+		unsigned char *p = cli_realloc(b->data, b->size + (len * 4));
+
+		if(p == NULL)
+			return;
+
 		b->size += len * 4;
-		b->data = cli_realloc(b->data, b->size);
+		b->data = p;
 	}
 
 	if(b->data) {
