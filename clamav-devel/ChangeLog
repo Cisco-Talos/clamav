@@ -1,3 +1,18 @@
+Sun Sep 14 21:11:00 CEST 2003
+-----------------------------
+  * clamd: a fatal race condition fixed (only cvs versions were vulnerable)
+
+Fri Sep 12 06:39:30 CEST 2003
+-----------------------------
+  * clamd: re-open log file on SIGHUP
+
+Thu Sep 11 05:55:42 CEST 2003
+-----------------------------
+  * libclamav/Makefile.am: fix for VPATH building (patch by Eugene Crosser)
+  * libclamav: mbox: + fix for empty field based on patch by Thomas Lamy (Nigel)
+		     + fix potential segfault on Solaris 9 (Nigel)
+  * clamav-milter: 0.60e: added -P and -q flags by Nicholas M. Kirsch (Nigel)
+
 Sun Sep  7 21:44:18 CEST 2003
 -----------------------------
   * libclamav: memory leak fixes by Thomas Lamy
