@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: message.h,v $
+ * Revision 1.7  2004/03/21 17:19:49  nigelhorne
+ * Handle bounce messages with no headers
+ *
  * Revision 1.6  2004/03/21 09:41:27  nigelhorne
  * Faster scanning for non MIME messages
  *
@@ -70,6 +73,6 @@ text	*messageToText(const message *m);
 const	text	*uuencodeBegin(const message *m);
 const	text	*binhexBegin(const message *m);
 const	text	*bounceBegin(const message *m);
-int	messageIsAllText(const message *m);
+const	text	*encodingLine(const message *m);
 
 #endif	/*_MESSAGE_H*/

@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.57  2004/03/21 17:19:49  nigelhorne
+ * Handle bounce messages with no headers
+ *
  * Revision 1.56  2004/03/21 09:41:26  nigelhorne
  * Faster scanning for non MIME messages
  *
@@ -159,7 +162,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.56 2004/03/21 09:41:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.57 2004/03/21 17:19:49 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -989,7 +992,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						break;
 					case MESSAGE:
 						cli_dbgmsg("Found message inside multipart\n");
-						if(messageIsAllText(aMessage))
+						if(encodingLine(aMessage) == NULL)
 							continue;
 
 						body = parseEmailHeaders(aMessage, rfc821Table);
@@ -1361,7 +1364,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					}
 					blobDestroy(b);
 				}
-			} else if((!messageIsAllText(mainMessage)) &&
+			} else if((encodingLine(mainMessage) != NULL) &&
 				  ((t_line = bounceBegin(mainMessage)) != NULL)) {
 				/*
 				 * Attempt to save the original (unbounced)
@@ -1393,9 +1396,33 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					 * content encoding statement don't
 					 * bother saving to scan, it's safe
 					 */
-					saveIt = !messageIsAllText(mainMessage);
-				else
+					saveIt = (encodingLine(mainMessage) != NULL);
+				else if((t_line = encodingLine(mainMessage)) != NULL) {
+					/*
+					 * Some bounces include the message
+					 * body without the headers
+					 */
+					if((b = blobCreate()) != NULL) {
+						cli_dbgmsg("Found a bounce message with no header\n");
+						blobAddData(b, "Received: by clamd\n", 19);
+						do {
+							blobAddData(b, (unsigned char *)t_line->t_text, strlen(t_line->t_text));
+							blobAddData(b, (unsigned char *)"\n", 1);
+						} while((t_line = t_line->t_next) != NULL);
+
+						saveFile(b, dir);
+
+						blobDestroy(b);
+					}
+					saveIt = FALSE;
+				} else {
+					/*
+					 * Save the entire text portion,
+					 * since it it may be an HTML
+					 * file with a JavaScript virus
+					 */
 					saveIt = TRUE;
+				}
 
 				if(saveIt) {
 					cli_dbgmsg("Saving text part to scan\n");
