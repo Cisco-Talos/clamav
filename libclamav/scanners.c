@@ -345,7 +345,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 
 	/* Scan metadata */
 	mdata = root->zip_mlist;
-	do {
+	if(mdata) do {
 	    if(mdata->encrypted != encrypted)
 		continue;
 

@@ -1,3 +1,8 @@
+Thu Feb 24 18:37:45 CET 2005 (tk)
+---------------------------------
+  * libclamav/scanners.c: fix NULL pointer dereference in metadata scanner
+			  (thanks to Nigel)	
+
 Wed Feb 23 09:42:52 GMT 2005 (njh)
 ----------------------------------
   * clamav-milter:	Remove the pid file on exit
