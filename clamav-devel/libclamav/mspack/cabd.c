@@ -249,7 +249,7 @@ static struct mscabd_cabinet *cabd_dopen(struct mscab_decompressor *base,
   if ((fh = sys->dopen(sys, desc, MSPACK_SYS_OPEN_READ))) {
     if ((cab = sys->alloc(sys, sizeof(struct mscabd_cabinet_p)))) {
       cab->base.filename = "descriptor";
-      cab->base.desc = desc;
+      cab->base.desc = dup(desc);
       error = cabd_read_headers(sys, fh, cab, (off_t) 0, 0);
       if (error) {
 	cabd_close(base, (struct mscabd_cabinet *) cab);
@@ -677,7 +677,7 @@ static struct mscabd_cabinet *cabd_dsearch(struct mscab_decompressor *base,
   struct mspack_file *fh;
   unsigned int firstlen = 0;
   off_t filelen;
-  char *filename = "descriptor-";
+  char *filename = "descriptor";
 
   if (!base) return NULL;
   sys = this->system;
@@ -709,8 +709,8 @@ static struct mscabd_cabinet *cabd_dsearch(struct mscab_decompressor *base,
 		     (unsigned int) (firstlen - filelen));
       }
     }
-    
-    /* sys->close(fh); */
+
+    sys->close(fh);
   }
   else {
     this->error = MSPACK_ERR_OPEN;
@@ -811,7 +811,7 @@ static int cabd_find(struct mscab_decompressor_p *this, unsigned char *buf,
 	    return MSPACK_ERR_NOMEMORY;
 	  }
 	  cab->base.filename = filename;
-	  cab->base.desc = desc;
+	  cab->base.desc = dup(desc);
 	  if (cabd_read_headers(sys, fh, cab, caboff, 1)) {
 	    /* destroy the failed cabinet */
 	    cabd_close((struct mscab_decompressor *) this,

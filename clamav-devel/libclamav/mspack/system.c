@@ -96,7 +96,7 @@ struct mspack_system *mspack_default_system = NULL;
 
 struct mspack_file_p {
   FILE *fh;
-  char *name;
+  const char *name;
   int desc;
 };
 
