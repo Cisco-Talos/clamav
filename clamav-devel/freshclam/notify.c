@@ -25,6 +25,7 @@
 #include <sys/un.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 
 #include "others.h"
 #include "cfgfile.h"
@@ -34,6 +35,7 @@ int notify(const char *cfgfile)
 	char buff[20];
 	struct sockaddr_un server;
         struct sockaddr_in server2;
+	struct hostent *he;
 	struct cfgstruct *copt, *cpt;
 	int sockd, bread;
 
@@ -77,8 +79,18 @@ int notify(const char *cfgfile)
 	}
 
 	server2.sin_family = AF_INET;
-	server2.sin_addr.s_addr = inet_addr("127.0.0.1");
 	server2.sin_port = htons(cpt->numarg);
+
+	if ((cpt = cfgopt(copt, "TCPAddr"))) {
+	    if ((he = gethostbyname(cpt->strarg)) == 0) {
+		perror("gethostbyname()");
+		mprintf("@Can't lookup hostname.\n");
+		return 1;
+	    }
+	    server2.sin_addr = *(struct in_addr *) he->h_addr_list[0];
+	} else
+	    server2.sin_addr.s_addr = inet_addr("127.0.0.1");
+
 
 	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
 	    close(sockd);
