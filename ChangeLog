@@ -1,3 +1,8 @@
+Sat Mar 27 21:55:33 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter:	Delay connection to clamd to handle clamd's timeout
+	when the remote end (the end talking to sendmail) is slow
+
 Sat Mar 27 19:55:52 CET 2004 (tk)
 ---------------------------------
   * freshclam: remove timeout code; clean up return codes

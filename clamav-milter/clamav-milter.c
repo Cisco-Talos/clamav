@@ -292,9 +292,19 @@
  *	0.70b	26/3/04	Display errno information on write failure to clamd
  *			Ensure errno is passed to strerror
  *			Print fd in clamfi_send debug
+ *	0.70c	27/3/04	Timestamp clamfi_send messages
+ *			Call cli_warnmsg if ERROR received
+ *			Minor code tidy
+ *			Delay connection to clamd to handle clamd's appetite
+ *			for timing out when the remote end (the end talking to
+ *			sendmail) is slow
+ *			Prefer cli_dbgmsg/cli_warnmsg over printf
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.65  2004/03/27 21:44:21  nigelhorne
+ * Attempt to handle clamd quick timeout for slow remote sites
+ *
  * Revision 1.64  2004/03/26 11:10:27  nigelhorne
  * Added debug information
  *
@@ -472,9 +482,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.64 2004/03/26 11:10:27 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.65 2004/03/27 21:44:21 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70b"
+#define	CM_VERSION	"0.70c"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -608,6 +618,7 @@ static	header_list_t	header_list_new(void);
 static	void	header_list_free(header_list_t list);
 static	void	header_list_add(header_list_t list, const char *headerf, const char *headerv);
 static	void	header_list_print(header_list_t list, FILE *fp);
+static	int	connect2clamd(struct privdata *privdata);
 static	void	checkClamd(void);
 
 static	char	clamav_version[128];
@@ -1254,6 +1265,7 @@ pingServer(int serverNumber)
 		checkClamd();
 		if(connect(sock, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
 			perror(localSocket);
+			close(sock);
 			return 0;
 		}
 	} else {
@@ -1380,6 +1392,7 @@ findServer(void)
 			if(use_syslog)
 				syslog(LOG_WARNING, "findServer: Check server %d - it may be down", i);
 			socks[i] = -1;
+			close(sock);
 			continue;
 		}
 
@@ -1430,9 +1443,12 @@ findServer(void)
 	return 0;
 }
 
+/*
+ * Sendmail wants to establish a connection to us
+ */
 static sfsistat
 clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
-
+{
 	char ip[INET_ADDRSTRLEN];	/* IPv4 only */
 	char *remoteIP;
 
@@ -1563,20 +1579,14 @@ static sfsistat
 clamfi_envfrom(SMFICTX *ctx, char **argv)
 {
 	struct privdata *privdata;
-	struct sockaddr_in reply;
-	unsigned short port;
-	int nbytes, rc, freeServer;
-	char buf[64];
 
 	if(logVerbose)
 		syslog(LOG_DEBUG, "clamfi_envfrom: %s", argv[0]);
 
-#ifdef	CL_DEBUG
-	printf("clamfi_envfrom: %s\n", argv[0]);
-#endif
+	cli_dbgmsg("clamfi_envfrom: %s\n", argv[0]);
 
 	if(max_children > 0) {
-		rc = 0;
+		int rc = 0;
 
 		pthread_mutex_lock(&n_children_mutex);
 
@@ -1614,9 +1624,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		}
 		n_children++;
 
-#ifdef	CL_DEBUG
-		printf(">n_children = %d\n", n_children);
-#endif
+		cli_dbgmsg(">n_children = %d\n", n_children);
 		pthread_mutex_unlock(&n_children_mutex);
 
 		if(rc == ETIMEDOUT) {
@@ -1631,172 +1639,6 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 	privdata = (struct privdata *)cli_calloc(1, sizeof(struct privdata));
 	privdata->dataSocket = -1;	/* 0.4 */
 	privdata->cmdSocket = -1;	/* 0.4 */
-
-	if(quarantine_dir) {
-		/*
-		 * quarantine_dir is specified
-		 * store message in a temporary file
-		 */
-		int ntries = 5;
-
-		privdata->filename = (char *)cli_malloc(strlen(quarantine_dir) + 12);
-
-		do {
-			sprintf(privdata->filename, "%s/msg.XXXXXX", quarantine_dir);
-#if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS)
-			privdata->dataSocket = mkstemp(privdata->filename);
-#else
-			if(mktemp(privdata->filename) == NULL) {
-				if(use_syslog)
-					syslog(LOG_ERR, "mktemp %s failed", privdata->filename);
-				clamfi_free(privdata);
-				return cl_error;
-			}
-			privdata->dataSocket = open(privdata->filename, O_CREAT|O_EXCL|O_WRONLY|O_TRUNC, 0600);
-#endif
-		} while((--ntries > 0) && (privdata->dataSocket < 0));
-
-		if(privdata->dataSocket < 0) {
-			if(use_syslog)
-				syslog(LOG_ERR, "tempfile %s creation failed", privdata->filename);
-			clamfi_free(privdata);
-			return cl_error;
-		}
-	} else {
-		/*
-		 * Create socket to talk to clamd. It will tell us the port to use
-		 * to send the data. That will require another socket.
-		 */
-		if(localSocket) {
-			struct sockaddr_un server;
-
-			memset((char *)&server, 0, sizeof(struct sockaddr_un));
-			server.sun_family = AF_UNIX;
-			strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
-
-			if((privdata->cmdSocket = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-				perror("socket");
-				clamfi_free(privdata);
-				return cl_error;
-			}
-			if(connect(privdata->cmdSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
-				perror(localSocket);
-				clamfi_free(privdata);
-				return cl_error;
-			}
-			freeServer = 0;
-		} else {
-			struct sockaddr_in server;
-
-			memset((char *)&server, 0, sizeof(struct sockaddr_in));
-			server.sin_family = AF_INET;
-			server.sin_port = (in_port_t)htons(tcpSocket);
-
-			assert(serverIPs != NULL);
-
-			freeServer = findServer();
-			if(freeServer < 0) {
-				clamfi_free(privdata);
-				return cl_error;
-			}
-
-			server.sin_addr.s_addr = serverIPs[freeServer];
-
-			if((privdata->cmdSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-				perror("socket");
-				clamfi_free(privdata);
-				return cl_error;
-			}
-			if(connect(privdata->cmdSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
-				perror("connect");
-				clamfi_free(privdata);
-				return cl_error;
-			}
-		}
-
-		/*
-		 * Create socket that we'll use to send the data to clamd
-		 */
-		if((privdata->dataSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-			perror("socket");
-			clamfi_free(privdata);
-			if(use_syslog)
-				syslog(LOG_ERR, "failed to create socket");
-			return cl_error;
-		}
-
-		shutdown(privdata->dataSocket, SHUT_RD);
-
-		if(send(privdata->cmdSocket, "STREAM\n", 7, 0) < 7) {
-			perror("send");
-			clamfi_free(privdata);
-			if(use_syslog)
-				syslog(LOG_ERR, "send failed to clamd");
-			return cl_error;
-		}
-
-		shutdown(privdata->cmdSocket, SHUT_WR);
-
-		nbytes = clamd_recv(privdata->cmdSocket, buf, sizeof(buf));
-		if(nbytes < 0) {
-			perror("recv");
-			clamfi_free(privdata);
-			if(use_syslog)
-				syslog(LOG_ERR, "recv failed from clamd getting PORT");
-			return cl_error;
-		}
-		buf[nbytes] = '\0';
-#ifdef	CL_DEBUG
-		if(debug_level >= 4)
-			printf("Received: %s", buf);
-#endif
-		if(sscanf(buf, "PORT %hu\n", &port) != 1) {
-			clamfi_free(privdata);
-			if(use_syslog)
-				syslog(LOG_ERR, "Expected port information from clamd, got '%s'",
-					buf);
-			else
-				fprintf(stderr, "Expected port information from clamd, got '%s'\n",
-					buf);
-			return cl_error;
-		}
-
-		memset((char *)&reply, 0, sizeof(struct sockaddr_in));
-		reply.sin_family = AF_INET;
-		reply.sin_port = (in_port_t)htons(port);
-
-		assert(serverIPs != NULL);
-
-		reply.sin_addr.s_addr = serverIPs[freeServer];
-
-#ifdef	CL_DEBUG
-		if(debug_level >= 4)
-			printf("Connecting to local port %d\n", port);
-#endif
-
-		rc = connect(privdata->dataSocket, (struct sockaddr *)&reply, sizeof(struct sockaddr_in));
-
-		if(rc < 0) {
-			perror("connect");
-
-			/* 0.4 - use better error message */
-			if(use_syslog) {
-#ifdef HAVE_STRERROR_R
-				strerror_r(errno, buf, sizeof(buf));
-				syslog(LOG_ERR,
-					"Failed to connect to port %d given by clamd: %s",
-					port, buf);
-#else
-				syslog(LOG_ERR, "Failed to connect to port %d given by clamd: %s", port, strerror(errno));
-#endif
-			}
-			clamfi_free(privdata);
-
-			return cl_error;
-		}
-	}
-
-	clamfi_send(privdata, 0, "Received: by clamav-milter\nFrom: %s\n", argv[0]);
 
 	privdata->from = strdup(argv[0]);
 	privdata->to = NULL;
@@ -1819,11 +1661,7 @@ clamfi_envrcpt(SMFICTX *ctx, char **argv)
 	if(logVerbose)
 		syslog(LOG_DEBUG, "clamfi_envrcpt: %s", argv[0]);
 
-#ifdef	CL_DEBUG
-	printf("clamfi_envrcpt: %s\n", argv[0]);
-#endif
-
-	clamfi_send(privdata, 0, "To: %s\n", argv[0]);
+	cli_dbgmsg("clamfi_envrcpt: %s\n", argv[0]);
 
 	if(privdata->to == NULL) {
 		privdata->to = cli_malloc(sizeof(char *) * 2);
@@ -1847,10 +1685,19 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 		syslog(LOG_DEBUG, "clamfi_header: %s: %s", headerf, headerv);
 #ifdef	CL_DEBUG
 	if(debug_level >= 9)
-		printf("clamfi_header: %s: %s\n", headerf, headerv);
+		cli_dbgmsg("clamfi_header: %s: %s\n", headerf, headerv);
 	else
 		cli_dbgmsg("clamfi_header\n");
 #endif
+
+	if(privdata->dataSocket == -1)
+		/*
+		 * First header - make connection with clamd
+		 */
+		if(!connect2clamd(privdata)) {
+			clamfi_cleanup(ctx);
+			return cl_error;
+		}
 
 	if(clamfi_send(privdata, 0, "%s: %s\n", headerf, headerv) < 0) {
 		clamfi_cleanup(ctx);
@@ -1872,8 +1719,18 @@ clamfi_eoh(SMFICTX *ctx)
 	if(logVerbose)
 		syslog(LOG_DEBUG, "clamfi_eoh");
 #ifdef	CL_DEBUG
-	cli_dbgmsg("clamfi_eoh\n");
+	if(debug_level >= 4)
+		cli_dbgmsg("clamfi_eoh\n");
 #endif
+
+	if(privdata->dataSocket == -1)
+		/*
+		 * No headers - make connection with clamd
+		 */
+		if(!connect2clamd(privdata)) {
+			clamfi_cleanup(ctx);
+			return cl_error;
+		}
 
 	if(clamfi_send(privdata, 1, "\n") < 0) {
 		clamfi_cleanup(ctx);
@@ -1932,7 +1789,7 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 	if(logVerbose)
 		syslog(LOG_DEBUG, "clamfi_envbody: %u bytes", len);
 #ifdef	CL_DEBUG
-	printf("clamfi_envbody: %u bytes\n", len);
+	cli_dbgmsg("clamfi_envbody: %u bytes\n", len);
 #endif
 
 	if(clamfi_send(privdata, len, (char *)bodyp) < 0) {
@@ -2022,9 +1879,7 @@ clamfi_eom(SMFICTX *ctx)
 
 		if(logVerbose)
 			syslog(LOG_DEBUG, "clamfi_eom: read %s", mess);
-#ifdef	CL_DEBUG
-		printf("clamfi_eom: read %s\n", mess);
-#endif
+		cli_dbgmsg("clamfi_eom: read %s\n", mess);
 	} else {
 		clamfi_cleanup(ctx);
 		syslog(LOG_NOTICE, "clamfi_eom: read nothing from clamd");
@@ -2038,8 +1893,12 @@ clamfi_eom(SMFICTX *ctx)
 	privdata->cmdSocket = -1;
 
 	if(strstr(mess, "ERROR") != NULL) {
+
+		ptr = smfi_getsymval(ctx, "i");
+
+		cli_warnmsg("%s: %s\n", ptr, mess);
 		if(use_syslog)
-			syslog(LOG_ERR, "%s: %s\n", smfi_getsymval(ctx, "i"), mess);
+			syslog(LOG_ERR, "%s: %s\n", ptr, mess);
 		clamfi_cleanup(ctx);
 		return cl_error;
 	}
@@ -2217,7 +2076,7 @@ clamfi_eom(SMFICTX *ctx)
 				if(use_syslog)
 					syslog(LOG_DEBUG, "Can't set quarantine user %s", quarantine);
 				else
-					fprintf(stderr, "Can't set quarantine user %s\n", quarantine);
+					cli_warnmsg("Can't set quarantine user %s\n", quarantine);
 			} else
 				/*
 				 * FIXME: doesn't work if there's no subject
@@ -2268,7 +2127,7 @@ clamfi_close(SMFICTX *ctx)
 		if(use_syslog)
 			syslog(LOG_DEBUG, "clamfi_close, privdata != NULL");
 		else
-			puts("clamfi_close, privdata != NULL");
+			cli_warnmsg("clamfi_close, privdata != NULL");
 	}
 #endif
 
@@ -2374,6 +2233,9 @@ clamfi_free(struct privdata *privdata)
 	}
 }
 
+/*
+ * Returns < 0 for failure
+ */
 static int
 clamfi_send(const struct privdata *privdata, size_t len, const char *format, ...)
 {
@@ -2399,9 +2261,17 @@ clamfi_send(const struct privdata *privdata, size_t len, const char *format, ...
 		ptr = output;
 	}
 #ifdef	CL_DEBUG
-	if(debug_level >= 9)
-		printf("clamfi_send: len=%u bufsiz=%u, fd=%d\n",
-			len, sizeof(output), privdata->dataSocket);
+	if(debug_level >= 9) {
+		time_t t;
+		const struct tm *tm;
+
+		time(&t);
+		tm = localtime(&t);
+
+		cli_dbgmsg("%d:%d:%d clamfi_send: len=%u bufsiz=%u, fd=%d\n",
+			tm->tm_hour, tm->tm_min, tm->tm_sec, len,
+			sizeof(output), privdata->dataSocket);
+	}
 #endif
 
 	while(len > 0) {
@@ -2578,6 +2448,199 @@ header_list_print(header_list_t list, FILE *fp)
 
 	for(iter = list->first; iter; iter = iter->next)
 		fprintf(fp, "%s\n", iter->header);
+}
+ 
+/*
+ * Establish a connection to clamd
+ *	Returns success (1) or failure (0)
+ */
+static int
+connect2clamd(struct privdata *privdata)
+{
+	char **to;
+
+	assert(privdata->dataSocket == -1);
+	assert(privdata->from != NULL);
+	assert(privdata->to != NULL);
+
+#ifdef	CL_DEBUG
+	if((debug_level > 0) && use_syslog)
+		syslog(LOG_DEBUG, "connect2clamd");
+	if(debug_level >= 4)
+		cli_dbgmsg("connect2clamd\n");
+#endif
+
+	if(quarantine_dir) {
+		/*
+		 * quarantine_dir is specified
+		 * store message in a temporary file
+		 */
+		int ntries = 5;
+
+		privdata->filename = (char *)cli_malloc(strlen(quarantine_dir) + 12);
+
+		do {
+			sprintf(privdata->filename, "%s/msg.XXXXXX", quarantine_dir);
+#if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS)
+			privdata->dataSocket = mkstemp(privdata->filename);
+#else
+			if(mktemp(privdata->filename) == NULL) {
+				if(use_syslog)
+					syslog(LOG_ERR, "mktemp %s failed", privdata->filename);
+				return 0;
+			}
+			privdata->dataSocket = open(privdata->filename, O_CREAT|O_EXCL|O_WRONLY|O_TRUNC, 0600);
+#endif
+		} while((--ntries > 0) && (privdata->dataSocket < 0));
+
+		if(privdata->dataSocket < 0) {
+			if(use_syslog)
+				syslog(LOG_ERR, "tempfile %s creation failed", privdata->filename);
+			return 0;
+		}
+	} else {
+		int freeServer, nbytes;
+		struct sockaddr_in reply;
+		unsigned short port;
+		char buf[64];
+
+		assert(privdata->cmdSocket == -1);
+
+		/*
+		 * Create socket to talk to clamd. It will tell us the port to
+		 * use to send the data. That will require another socket.
+		 */
+		if(localSocket) {
+			struct sockaddr_un server;
+
+			memset((char *)&server, 0, sizeof(struct sockaddr_un));
+			server.sun_family = AF_UNIX;
+			strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
+
+			if((privdata->cmdSocket = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+				perror("socket");
+				return 0;
+			}
+			if(connect(privdata->cmdSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
+				perror(localSocket);
+				return 0;
+			}
+			freeServer = 0;
+		} else {
+			struct sockaddr_in server;
+
+			memset((char *)&server, 0, sizeof(struct sockaddr_in));
+			server.sin_family = AF_INET;
+			server.sin_port = (in_port_t)htons(tcpSocket);
+
+			assert(serverIPs != NULL);
+
+			freeServer = findServer();
+			if(freeServer < 0)
+				return 0;
+
+			server.sin_addr.s_addr = serverIPs[freeServer];
+
+			if((privdata->cmdSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+				perror("socket");
+				return 0;
+			}
+			if(connect(privdata->cmdSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
+				perror("connect");
+				return 0;
+			}
+		}
+
+		/*
+		 * Create socket that we'll use to send the data to clamd
+		 */
+		if((privdata->dataSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+			perror("socket");
+			if(use_syslog)
+				syslog(LOG_ERR, "failed to create socket");
+			return 0;
+		}
+
+		shutdown(privdata->dataSocket, SHUT_RD);
+
+		if(send(privdata->cmdSocket, "STREAM\n", 7, 0) < 7) {
+			perror("send");
+			if(use_syslog)
+				syslog(LOG_ERR, "send failed to clamd");
+			return 0;
+		}
+
+		shutdown(privdata->cmdSocket, SHUT_WR);
+
+		nbytes = clamd_recv(privdata->cmdSocket, buf, sizeof(buf));
+		if(nbytes < 0) {
+			perror("recv");
+			if(use_syslog)
+				syslog(LOG_ERR, "recv failed from clamd getting PORT");
+			return 0;
+		}
+		buf[nbytes] = '\0';
+#ifdef	CL_DEBUG
+		if(debug_level >= 4)
+			cli_dbgmsg("Received: %s", buf);
+#endif
+		if(sscanf(buf, "PORT %hu\n", &port) != 1) {
+			if(use_syslog)
+				syslog(LOG_ERR, "Expected port information from clamd, got '%s'",
+					buf);
+			else
+				cli_warnmsg("Expected port information from clamd, got '%s'\n",
+					buf);
+			return 0;
+		}
+
+		memset((char *)&reply, 0, sizeof(struct sockaddr_in));
+		reply.sin_family = AF_INET;
+		reply.sin_port = (in_port_t)htons(port);
+
+		assert(serverIPs != NULL);
+
+		reply.sin_addr.s_addr = serverIPs[freeServer];
+
+#ifdef	CL_DEBUG
+		if(debug_level >= 4)
+			cli_dbgmsg("Connecting to local port %d\n", port);
+#endif
+
+		if(connect(privdata->dataSocket, (struct sockaddr *)&reply, sizeof(struct sockaddr_in)) < 0) {
+			perror("connect");
+
+			/* 0.4 - use better error message */
+			if(use_syslog) {
+#ifdef HAVE_STRERROR_R
+				strerror_r(errno, buf, sizeof(buf));
+				syslog(LOG_ERR,
+					"Failed to connect to port %d given by clamd: %s",
+					port, buf);
+#else
+				syslog(LOG_ERR, "Failed to connect to port %d given by clamd: %s", port, strerror(errno));
+#endif
+			}
+			return 0;
+		}
+	}
+
+	/*
+	 * TODO:
+	 *	Put from and to data into a buffer and call clamfi_send once
+	 * to save bandwidth when using TCP/IP to connect with a remote clamd
+	 */
+	clamfi_send(privdata, 0,
+		"Received: by clamav-milter\nFrom: %s\n",
+		privdata->from);
+
+	for(to = privdata->to; *to; to++)
+		if(clamfi_send(privdata, 0, "To: %s\n", *to) < 0)
+			return 0;
+
+	cli_dbgmsg("connect2clamd OK\n");
+
+	return 1;
 }
 
 /*

@@ -293,6 +293,13 @@ Changes
 0.70b	26/3/04	Display errno information on write failure to clamd
 		Ensure errno is passed to strerror
 		Print fd in clamfi_send debug
+0.70c	27/3/04	Timestamp clamfi_send messages
+		Call cli_warnmsg if ERROR received
+		Minor code tidy
+		Delay connection to clamd to handle clamd's appetite for timing
+		out when the remote end (the end talking to
+		sendmail) is slow
+		Prefer cli_dbgmsg/cli_warnmsg over printf
 
 BUG REPORTS
 
