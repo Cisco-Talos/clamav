@@ -602,12 +602,12 @@ static int read_chunk(int fd, off_t offset, uint32_t chunk_len,
 		
 		chunk_hdr->num_entries = (uint16_t)((((uint8_t const *)(chunk_hdr->chunk_data))[chunk_len-2] << 0)
 					| (((uint8_t const *)(chunk_hdr->chunk_data))[chunk_len-1] << 8));
+		read_chunk_entries(chunk_hdr->chunk_data, chunk_len,
+                        chunk_hdr->num_entries, file_l, sys_file_l);
 	} else if (memcmp(chunk_hdr->signature, "PMGI", 4) != 0) {
 		goto abort;
 	}
-	read_chunk_entries(chunk_hdr->chunk_data, chunk_len,
-			chunk_hdr->num_entries, file_l, sys_file_l);
-			
+
 	print_chunk(chunk_hdr);
 	retval=TRUE;
 abort:
