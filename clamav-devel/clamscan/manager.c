@@ -309,7 +309,8 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
     if(procdev)
 	if(stat(filename, &sb) != -1)
 	    if(sb.st_dev == procdev) {
-		mprintf("%s: Excluded (/proc).\n", filename);
+		if(!printinfected)
+		    mprintf("%s: Excluded (/proc).\n", filename);
 		return 0;
 	    }
 #endif
