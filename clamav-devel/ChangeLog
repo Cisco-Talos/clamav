@@ -1,3 +1,8 @@
+Sat Oct 16 17:10:06 BST 2004 (njh)
+----------------------------------
+  * libclamav/untar.c:	Handle empty files in the middle of archives, reported
+				by René Bellora <rbellora@tecnoaccion.com.ar>
+
 Sat Oct 16 14:55:03 BST 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Handle some broken email headers:
