@@ -24,7 +24,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.10 2005/03/26 09:51:24 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.11 2005/03/26 10:35:53 nigelhorne Exp $";
 
 #include <stdio.h>
 
@@ -55,16 +55,23 @@ static	int	tnef_attachment(FILE *fp, const char *dir, fileblob **fbref);
 #if WORDS_BIGENDIAN == 0
 #define host16(v)	(v)
 #define host32(v)	(v)
+
 #else
-#ifdef	C_LINUX
+
+#if	defined(C_LINUX)
 #include <byteswap.h>
 #define	host16(v)	__bswap_16(v)
 #define	host32(v)	__bswap_32(v)
+#elif	defined(C_SOLARIS)
+#include <sys/byteorder.h>
+#define	host16(v)	BSWAP_16(v)
+#define	host32(v)	BSWAP_32(v)
 #else
 #define	host16(v)	((v >> 8) | (v << 8))
 #define	host32(v)	((v >> 24) | ((v & 0x00FF0000) >> 8) | \
 				((v & 0x0000FF00) << 8) | (v << 24))
 #endif
+
 #endif
 
 /* FIXME: only works on little endian machines */
