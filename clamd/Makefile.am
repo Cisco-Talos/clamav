@@ -30,6 +30,8 @@ clamd_SOURCES = \
     tcpserver.h \
     localserver.c \
     localserver.h \
+    session.c \
+    session.h \
     server-proc.c \
     server-th.c \
     server.h \

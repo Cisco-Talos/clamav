@@ -207,10 +207,10 @@ void clamd(struct optstruct *opt)
     else
 	ret = localserver(opt, copt, root);
 
-    cli_dbgmsg("*server ended; result=%d\n", ret);
+    printf("server ended; result=%d\n", ret);
     logg_close();
     freecfg(copt);
-    cli_dbgmsg("*free() copt\n");
+    printf("free() copt\n");
 
 }
 
@@ -219,7 +219,7 @@ void help(void)
 
     printf("\n");
     printf("                           Clam AntiVirus Daemon "VERSION"\n");
-    printf("                 (c) 2002, 2003 Tomasz Kojm <tkojm@clamav.net>\n\n");
+    printf("                 (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>\n\n");
 
     printf("    --help                   -h             Show this help.\n");
     printf("    --version                -V             Show version number.\n");

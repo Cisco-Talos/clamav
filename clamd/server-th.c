@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -33,85 +33,41 @@
 #include "server.h"
 #include "clamuko.h"
 #include "tests.h"
-
-#define THREXIT					    \
-    close(ths[tharg->sid].desc);		    \
-    ths[tharg->sid].active = 0;			    \
-    /* this mutex is rather useless */		    \
-    /* pthread_mutex_unlock(&ths[tharg->sid].mutex);   */ \
-    free(tharg);				    \
-    return NULL
-
-#define CMD1 "SCAN"
-#define CMD2 "RAWSCAN"
-#define CMD3 "QUIT"
-#define CMD4 "RELOAD"
-#define CMD5 "PING"
-#define CMD6 "CONTSCAN"
-#define CMD7 "VERSION"
-#define CMD8 "STREAM"
-#define CMD9 "STREAM2"
+#include "session.h"
 
 #ifdef CLAMUKO
 pthread_t clamukoid;
 #endif
 
+
 void *threadscanner(void *arg)
 {
 	struct thrarg *tharg = (struct thrarg *) arg;
-	char buff[32769];
 	sigset_t sigset;
-	int bread, options;
-
+	int ret;
 
     /* ignore all signals */
     sigfillset(&sigset);
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
 
-    if((bread = read(ths[tharg->sid].desc, buff, 1024)) == -1) {
-	logg("!Session(%d): read() failed.\n", tharg->sid);
-	THREXIT;
+    ret = command(ths[tharg->sid].desc, tharg->root, tharg->limits, tharg->options, tharg->copt);
+
+    switch(ret) {
+	case COMMAND_QUIT:
+	    progexit = 1;
+	    break;
+
+	case COMMAND_RELOAD:
+	    reload = 1;
+	    break;
     }
 
-    buff[bread] = 0;
-    chomp(buff);
-
-    if(!strncmp(buff, CMD1, strlen(CMD1))) { /* SCAN */
-	scan(buff + strlen(CMD1) + 1, NULL, tharg->root, tharg->limits, tharg->options, tharg->copt, ths[tharg->sid].desc, 0);
-
-    } else if(!strncmp(buff, CMD2, strlen(CMD2))) { /* RAWSCAN */
-	options = tharg->options & ~CL_ARCHIVE;
-	scan(buff + strlen(CMD2) + 1, NULL, tharg->root, NULL, options, tharg->copt, ths[tharg->sid].desc, 0);
-
-    } else if(!strncmp(buff, CMD3, strlen(CMD3))) { /* QUIT */
-	if(!progexit) {
-	    /* was: kill(progpid, SIGTERM);
-	     * Now we break out of the loop to clean up resources
-	     * thomas@in-online.net 20031201 */
-	    progexit=1;
-	}
-
-    } else if(!strncmp(buff, CMD4, strlen(CMD4))) { /* RELOAD */
-	mdprintf(ths[tharg->sid].desc, "RELOADING\n");
-	reload = 1;
-
-    } else if(!strncmp(buff, CMD5, strlen(CMD5))) { /* PING */
-	mdprintf(ths[tharg->sid].desc, "PONG\n");
-
-    } else if(!strncmp(buff, CMD6, strlen(CMD6))) { /* CONTSCAN */
-	scan(buff + strlen(CMD6) + 1, NULL, tharg->root, tharg->limits, tharg->options, tharg->copt, ths[tharg->sid].desc, 1);
-
-    } else if(!strncmp(buff, CMD7, strlen(CMD7))) { /* VERSION */
-	mdprintf(ths[tharg->sid].desc, "clamd / ClamAV version "VERSION"\n");
-
-    } else if(!strncmp(buff, CMD8, strlen(CMD8))) { /* STREAM */
-	scanstream(ths[tharg->sid].desc, NULL, tharg->root, tharg->limits, tharg->options, tharg->copt);
-    }
-    /* else if(!strncmp(buff, CMD9, strlen(CMD9))) {
-	scanstream2(ths[tharg->sid].desc, NULL, tharg->root, tharg->limits, tharg->options, tharg->copt);
-    }*/
-
-    THREXIT;
+    close(ths[tharg->sid].desc);
+    ths[tharg->sid].active = 0;
+    /* this mutex is rather useless */
+    /* pthread_mutex_unlock(&ths[tharg->sid].mutex); */
+    free(tharg);
+    return NULL;
 }
 
 /* this function takes care for threads, exit and various checks */
@@ -186,7 +142,7 @@ void *threadwatcher(void *arg)
 		close(ths[i].desc);
 		logg("Session %d stopped due to timeout.\n", i);
 		ths[i].active = 0;
-//		pthread_mutex_unlock(&ths[i].mutex);
+		/* pthread_mutex_unlock(&ths[i].mutex); */
 	    }
 
 	/* cancel all threads in case of quit */
@@ -212,7 +168,7 @@ void *threadwatcher(void *arg)
 		    mdprintf(ths[j].desc, "Session(%d): Stopped (exiting)\n", j);
 		    close(ths[j].desc);
 		    logg("Session %d stopped (exiting).\n", j);
-//		    pthread_mutex_unlock(&ths[j].mutex);
+		    /* pthread_mutex_unlock(&ths[j].mutex); */
 		}
 #ifndef C_BSD
 	    logg("*Freeing trie structure.\n");
