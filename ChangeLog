@@ -1,3 +1,9 @@
+Fri Jan  9 18:01:28 GMT 2004 (njh)
+----------------------------------
+  * libclamav: Started handling BinHex code. For now only works with
+  	"inline" messages where the BinHex is in the main body of the plain
+	text portion.
+
 Fri Jan  9 15:08:01 GMT 2004 (njh)
 ----------------------------------
   * libclamav: Re-engineered handling of 
