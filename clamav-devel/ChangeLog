@@ -1,3 +1,7 @@
+Tue Mar  1 18:57:18 GMT 2005 (njh)
+----------------------------------
+  * clamav-milter:	Improved database update detection when not --external
+
 Tue Mar  1 02:29:54 CET 2005 (tk)
 ---------------------------------
   * clamscan: use --include-dir/exclude-dir for directories instead of

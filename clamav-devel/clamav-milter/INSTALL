@@ -698,6 +698,10 @@ Changes
 0.83	13/2/05:	Up issue
 0.83a	23/2/05:	Issue a warning if sendmail can't be executed
 			Remove pidfile, suggested by Stephen Gran <steve@lobefin.net>
+0.83b	1/3/05:		When not using --external, if a database update is
+				found, stop accepting inputs to quiten the
+				system for the database reload, rather than
+				wait for it to happen by itself
 
 INTERNATIONALISATION
 
