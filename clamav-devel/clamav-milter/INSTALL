@@ -466,6 +466,8 @@ Changes
 		Quarantined file's names now contain the name of the virus
 0.75h	07/8/04	Some tweaking of the load balancing code
 0.75i	11/8/04	Added David Champion <dgc@uchicago.edu> isLocalAddr routine
+0.75j	11/8/04	Fix --from=EMAIL option which often didn't work
+			reported by "Sergey Y. Afonin" <asy@kraft-s.ru>
 
 BUG REPORTS
 

@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.118  2004/08/12 12:18:45  nigelhorne
+ * Fixed from
+ *
  * Revision 1.117  2004/08/11 10:34:07  nigelhorne
  * Better isLocal handler
  *
@@ -362,9 +365,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.117 2004/08/11 10:34:07 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.118 2004/08/12 12:18:45 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.75i"
+#define	CM_VERSION	"0.75j"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -629,7 +632,7 @@ static	int	advisory = 0;	/*
 				 * are flagged rather than deleted. Incompatible
 				 * with quarantine options
 				 */
-short	use_syslog = 0;
+static	short	use_syslog = 0;
 static	const	char	*pidFile;
 static	int	logVerbose = 0;
 static	struct	cfgstruct	*copt;
@@ -690,6 +693,8 @@ help(void)
 #ifdef	CL_DEBUG
 	puts("\t--debug-level=n\t\t-x n\tSets the debug level to 'n'.");
 #endif
+	puts("\nFor more information type \"man clamav-milter\".");
+	puts("Report bugs to bugs@clamav.net.");
 }
 
 int
@@ -2242,20 +2247,6 @@ clamfi_eom(SMFICTX *ctx)
 			sendmail = popen(cmd, "w");
 
 			if(sendmail) {
-				const char *from;
-
-				/*
-				 * Try to determine who sent the message.
-				 * In the days of faked from addresses this is
-				 * not easy!
-				 */
-				if(privdata->from)
-					from = (strcmp(privdata->from, "<>") == 0) ?
-						smfi_getsymval(ctx, "_") :
-						privdata->from;
-				else
-					from = smfi_getsymval(ctx, "_");
-
 				/*
 				 * TODO: Make this e-mail message customisable
 				 * perhaps by means of a template
@@ -2292,19 +2283,36 @@ clamfi_eom(SMFICTX *ctx)
 
 				if((templatefile == NULL) ||
 				   (sendtemplate(ctx, templatefile, sendmail, virusname) < 0)) {
+				   	/*
+					 * Use our own hardcoded template
+					 */
+					const char *sender;
+
+					/*
+					 * Try to determine who sent the
+					 * message. In the days of faked from
+					 * addresses this is not easy!
+					 */
+					if(privdata->from)
+						sender = (strcmp(privdata->from, "<>") == 0) ?
+							smfi_getsymval(ctx, "_") :
+							privdata->from;
+					else
+						sender = smfi_getsymval(ctx, "_");
+
 					if(bflag)
 						fputs("A message you sent to\n", sendmail);
 					else if(pflag)
 						/*
-						 * The message is only going to the
-						 * postmaster, so include some useful
-						 * information
+						 * The message is only going to
+						 * the postmaster, so include
+						 * some useful information
 						 */
 						fprintf(sendmail, "The message %s sent from %s to\n",
-							sendmailId, from);
+							sendmailId, sender);
 					else
 						fprintf(sendmail, "A message sent from %s to\n",
-							from);
+							sender);
 
 					for(to = privdata->to; *to; to++)
 						fprintf(sendmail, "\t%s\n", *to);
@@ -2316,7 +2324,7 @@ clamfi_eom(SMFICTX *ctx)
 
 					if(hflag) {
 						fprintf(sendmail, "\nThe message was received by %s from %s via %s\n\n",
-							smfi_getsymval(ctx, "j"), from,
+							smfi_getsymval(ctx, "j"), sender,
 							smfi_getsymval(ctx, "_"));
 						fputs("For your information, the original message headers were:\n\n", sendmail);
 						header_list_print(privdata->headers, sendmail);
