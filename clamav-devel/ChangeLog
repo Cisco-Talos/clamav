@@ -1,3 +1,7 @@
+Thu Nov  6 22:40:58 CET 2003 (tk)
+----------------------------------
+  * libclamav: zziplib: reverted to 0.12.83
+
 Thu Nov  6 10:36:57 IST 2003 (njh)
 ----------------------------------
   * libclamav: Not all applications (those not sent as legal attachments)
