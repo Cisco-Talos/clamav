@@ -473,11 +473,13 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
 	if(limits && limits->maxfilesize && (ssize > limits->maxfilesize || dsize > limits->maxfilesize)) {
 	    cli_dbgmsg("UPX: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize , limits->maxfilesize);
+	    free(section_hdr);
 	    return CL_CLEAN;
 	}
 
 	if(ssize <= 0x19 || dsize <= ssize) { /* FIXME: What are reasonable values? */
 	    cli_dbgmsg("UPX: Size mismatch (ssize: %d, dsize: %d)\n", ssize, dsize);
+	    free(section_hdr);
 	    return CL_CLEAN;
 	}
 
@@ -508,11 +510,16 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	if(lseek(desc, ep, SEEK_SET) == -1) {
 	    cli_dbgmsg("lseek() failed\n");
 	    free(section_hdr);
+	    free(src);
+	    free(dest);
 	    return CL_EIO;
 	}
 
 	if(read(desc, buff, 126) != 126) { /* i.e. 0x69 + 13 + 8 */
 	    cli_dbgmsg("UPX: Can't read 126 bytes at 0x%x (%d)\n", ep, ep);
+	    free(section_hdr);
+	    free(src);
+	    free(dest);
 	    return CL_EIO;
 	} else {
 	    if(cli_memstr(UPX_NRV2B, 24, buff + 0x69, 13) || cli_memstr(UPX_NRV2B, 24, buff + 0x69 + 8, 13)) {
