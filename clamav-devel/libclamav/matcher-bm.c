@@ -92,11 +92,28 @@ int cli_bm_init(struct cl_node *root)
 
 void cli_bm_free(struct cl_node *root)
 {
+	struct cli_bm_patt *b1, *b2;
+	int i;
+
+
     if(root->bm_shift)
 	free(root->bm_shift);
 
-    if(root->bm_suffix)
+    if(root->bm_suffix) {
+	for(i = 0; i < 65536; i++) {
+	    b1 = root->bm_suffix[i];
+	    while(b1) {
+		b2 = b1;
+		b1 = b1->next;
+		if(b2->virname)
+		    free(b2->virname);
+		if(b2->pattern)
+		    free(b2->pattern);
+		free(b2);
+	    }
+	}
 	free(root->bm_suffix);
+    }
 }
 
 int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root)
