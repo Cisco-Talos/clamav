@@ -30,7 +30,7 @@ typedef enum {
 
 /* classes supported by this system */
 typedef enum {
-	INVALID, BLOB
+	INVALIDCLASS, BLOBCLASS
 } object_type;
 
 #ifdef C_BSD

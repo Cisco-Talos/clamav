@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.32  2005/02/16 22:21:59  nigelhorne
+ * s/BLOB/BLOBCLASS/
+ *
  * Revision 1.31  2005/02/01 14:45:24  nigelhorne
  * sanities tab characters
  *
@@ -95,7 +98,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.31 2005/02/01 14:45:24 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.32 2005/02/16 22:21:59 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -142,13 +145,17 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.31 2005/02/01 14:45:24 nigelhorne E
 
 #include <assert.h>
 
+#ifdef	C_MINGW
+#include <windows.h>
+#endif
+
 blob *
 blobCreate(void)
 {
 #ifdef	CL_DEBUG
 	blob *b = (blob *)cli_calloc(1, sizeof(blob));
 	if(b)
-		b->magic = BLOB;
+		b->magic = BLOBCLASS;
 	cli_dbgmsg("blobCreate\n");
 	return b;
 #else
@@ -166,14 +173,14 @@ blobDestroy(blob *b)
 #endif
 
 	assert(b != NULL);
-	assert(b->magic == BLOB);
+	assert(b->magic == BLOBCLASS);
 
 	if(b->name)
 		free(b->name);
 	if(b->data)
 		free(b->data);
 #ifdef	CL_DEBUG
-	b->magic = INVALID;
+	b->magic = INVALIDCLASS;
 #endif
 	free(b);
 }
@@ -197,7 +204,7 @@ void
 blobSetFilename(blob *b, const char *dir, const char *filename)
 {
 	assert(b != NULL);
-	assert(b->magic == BLOB);
+	assert(b->magic == BLOBCLASS);
 	assert(filename != NULL);
 
 	cli_dbgmsg("blobSetFilename: %s\n", filename);
@@ -215,7 +222,7 @@ const char *
 blobGetFilename(const blob *b)
 {
 	assert(b != NULL);
-	assert(b->magic == BLOB);
+	assert(b->magic == BLOBCLASS);
 
 	return b->name;
 }
@@ -229,7 +236,7 @@ blobAddData(blob *b, const unsigned char *data, size_t len)
 #endif
 
 	assert(b != NULL);
-	assert(b->magic == BLOB);
+	assert(b->magic == BLOBCLASS);
 	assert(data != NULL);
 
 	if(len == 0)
@@ -307,7 +314,7 @@ unsigned char *
 blobGetData(const blob *b)
 {
 	assert(b != NULL);
-	assert(b->magic == BLOB);
+	assert(b->magic == BLOBCLASS);
 
 	if(b->len == 0)
 		return NULL;
@@ -318,7 +325,7 @@ unsigned long
 blobGetDataSize(const blob *b)
 {
 	assert(b != NULL);
-	assert(b->magic == BLOB);
+	assert(b->magic == BLOBCLASS);
 
 	return(b->len);
 }
@@ -327,7 +334,7 @@ void
 blobClose(blob *b)
 {
 	assert(b != NULL);
-	assert(b->magic == BLOB);
+	assert(b->magic == BLOBCLASS);
 
 	if(b->isClosed) {
 		cli_dbgmsg("Attempt to close a previously closed blob\n");
@@ -390,7 +397,7 @@ void
 blobGrow(blob *b, size_t len)
 {
 	assert(b != NULL);
-	assert(b->magic == BLOB);
+	assert(b->magic == BLOBCLASS);
 
 	if(len == 0)
 		return;
@@ -426,7 +433,7 @@ fileblobCreate(void)
 #ifdef	CL_DEBUG
 	fileblob *fb = (fileblob *)cli_calloc(1, sizeof(fileblob));
 	if(fb)
-		fb->b.magic = BLOB;
+		fb->b.magic = BLOBCLASS;
 	cli_dbgmsg("blobCreate\n");
 	return fb;
 #else
@@ -528,6 +535,7 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 		fb->b.len = fb->b.size = 0;
 	}
 
+#if	0
 	/*
 	 * Add the suffix back to the end of the filename. Tut-tut, filenames
 	 * should be independant of their usage on UNIX type systems.
@@ -536,16 +544,10 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 		char stub[NAME_MAX + 1];
 
 		snprintf(stub, sizeof(stub), "%s%s", fullname, suffix);
-#ifdef	C_LINUX
-		rename(stub, fullname);
-#elif	defined(C_INTERIX) || defined(C_OS2)
-		if(cli_filecopy(stub, filename) == 0)
-			unlink(stub);
-#else
-		link(stub, fullname);
-		unlink(stub);
-#endif
+		if(rename(fullname, stub) < 0)
+			cli_errmsg("Can't rename %s to %s: %s\n", fullname, stub, strerror(errno));
 	}
+#endif
 }
 
 void
