@@ -125,7 +125,7 @@ static char *get_unicode_name(char *name, int size, int is_mac)
                 return NULL;
         }
 
-        newname = (char *) cli_malloc(size*2);
+        newname = (char *) cli_malloc(size*4);
         if (!newname) {
                 return NULL;
         }
