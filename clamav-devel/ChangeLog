@@ -1,3 +1,7 @@
+Sat Oct  4 20:04:39 CEST 2003 (tk)
+----------------------------------
+  * clamav.conf: s/RemoveStaleSocket/FixStaleSocket (thanks to Kristof Petr)
+
 Fri Oct  3 12:55:46 BST 2003 (njh)
 ----------------------------------
   * clamav-milter: added list of recipients who's email is not scanned
