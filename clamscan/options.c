@@ -39,7 +39,8 @@
 extern int clamscan(struct optstruct *opt);
 
 static char *clamdscan_long[] = { "help", "version", "verbose", "quiet",
-				  "stdout", "log", "config-file", "no-summary",
+				  "stdout", "log", "move", "remove",
+				  "config-file", "no-summary",
 				  "disable-summary", NULL };
 
 static char clamdscan_short[] = { 'h', 'V', 'v', 'l', 0 };
