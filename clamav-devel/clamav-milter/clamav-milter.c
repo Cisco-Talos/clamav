@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.109  2004/07/25 11:51:42  nigelhorne
+ * Fix crash if 1st host dies
+ *
  * Revision 1.108  2004/07/22 15:45:03  nigelhorne
  * Up-issue
  *
@@ -335,9 +338,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.108 2004/07/22 15:45:03 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.109 2004/07/25 11:51:42 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.75"
+#define	CM_VERSION	"0.75a"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -367,6 +370,7 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.108 2004/07/22 15:45:03 ni
 #include <string.h>
 #include <sys/wait.h>
 #include <assert.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -375,7 +379,6 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.108 2004/07/22 15:45:03 ni
 #include <libmilter/mfapi.h>
 #include <pthread.h>
 #include <sys/time.h>
-#include <netinet/in.h>
 #include <signal.h>
 #include <regex.h>
 #include <fcntl.h>
@@ -1104,7 +1107,7 @@ main(int argc, char **argv)
 			if(pingServer(i))
 				activeServers++;
 			else {
-				cli_warnmsg("Warning Can't talk to clamd server %s on port %d\n",
+				cli_warnmsg("Can't talk to clamd server %s on port %d\n",
 					hostname, tcpSocket);
 			}
 			free(hostname);
@@ -1355,7 +1358,7 @@ static int
 findServer(void)
 {
 	struct sockaddr_in *servers, *server;
-	int *socks, maxsock = 0, i;
+	int *socks, maxsock = 0, i, j;
 	fd_set rfds;
 	struct timeval tv;
 	int retval;
@@ -1371,12 +1374,17 @@ findServer(void)
 
 	FD_ZERO(&rfds);
 
+	j = n_children - 1;	/* Don't worry about no lock */
+
 	for(i = 0, server = servers; i < numServers; i++, server++) {
 		int sock;
 
 		server->sin_family = AF_INET;
 		server->sin_port = (in_port_t)htons(tcpSocket);
-		server->sin_addr.s_addr = serverIPs[i];
+		server->sin_addr.s_addr = serverIPs[(i + j) % numServers];
+
+		cli_dbgmsg("findServer: try server %d\n",
+			(i + j) % numServers);
 
 		sock = socks[i] = socket(AF_INET, SOCK_STREAM, 0);
 		if(sock < 0) {
@@ -1392,14 +1400,15 @@ findServer(void)
 
 		if((connect(sock, (struct sockaddr *)server, sizeof(struct sockaddr)) < 0) ||
 		   (send(sock, "PING\n", 5, 0) < 5)) {
-			const char *hostname = cli_strtok(serverHostNames, i, ":");
+			char *hostname = cli_strtok(serverHostNames, i, ":");
 			cli_warnmsg("Check clamd server %s - it may be down\n", hostname);
 			if(use_syslog)
 				syslog(LOG_WARNING,
 					"Check clamd server %s - it may be down",
 					hostname);
-			socks[i] = -1;
 			close(sock);
+			free(hostname);
+			socks[i] = -1;
 			continue;
 		}
 
@@ -1437,10 +1446,12 @@ findServer(void)
 	}
 
 	for(i = 0; i < numServers; i++)
-		if(FD_ISSET(socks[i], &rfds)) {
+		if((socks[i] >= 0) && (FD_ISSET(socks[i], &rfds))) {
+			const int server = (i + j) % numServers;
+
 			free(socks);
-			cli_dbgmsg("findServer: using server %d\n", i);
-			return i;
+			cli_dbgmsg("findServer: using server %d\n", server);
+			return server;
 		}
 
 	free(socks);
@@ -1508,7 +1519,11 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	 */
 	if(strncasecmp(port, "inet:", 5) == 0) {
 		const char *hostmail;
-#ifdef	HAVE_GETHOSTBYNAME_R
+		/*
+		 * TODO: gethostbyname_r is non-standard so different operating
+		 * systems do it in different ways. Need more examples
+		 */
+#if	defined(HAVE_GETHOSTBYNAME_R) && defined(C_LINUX)
 		struct hostent *hp, hostent;
 		char buf[BUFSIZ];
 		int ret;
@@ -2009,6 +2024,11 @@ clamfi_eom(SMFICTX *ctx)
 			syslog(LOG_DEBUG, "clamfi_eom: read %s", mess);
 		cli_dbgmsg("clamfi_eom: read %s\n", mess);
 	} else {
+		/*
+		 * TODO: if more than one host has been specified, try
+		 * another one - setting cl_error to SMFIS_TEMPFAIL helps
+		 * by forcing a retry
+		 */
 		clamfi_cleanup(ctx);
 		syslog(LOG_NOTICE, "clamfi_eom: read nothing from clamd");
 #ifdef	CL_DEBUG
@@ -2183,6 +2203,16 @@ clamfi_eom(SMFICTX *ctx)
 			 * item in the queue so there's no scanning of two
 			 * messages at once. It'll still be scanned, but
 			 * not at the same time as the incoming message
+			 *
+			 * FIXME: there is a race condition here. If the
+			 * system is very overloaded this sendmail can
+			 * take a long time to start - and may even fail
+			 * is the LA is > REFUSE_LA. In all the time we're
+			 * taking to start this sendmail, the sendmail that's
+			 * started us may timeout waiting for a response and
+			 * let the virus through (albeit tagged with
+			 * X-Virus-Status: Infected) because we haven't
+			 * sent SMFIS_DISCARD or SMFIS_REJECT
 			 */
 			snprintf(cmd, sizeof(cmd) - 1,
 				(oflag || fflag) ? "%s -t -odq" : "%s -t",
@@ -2470,9 +2500,7 @@ clamfi_free(struct privdata *privdata)
 		cli_dbgmsg("pthread_cond_broadcast\n");
 #endif
 		pthread_cond_broadcast(&n_children_cond);
-#ifdef	CL_DEBUG
 		cli_dbgmsg("<n_children = %d\n", n_children);
-#endif
 		pthread_mutex_unlock(&n_children_mutex);
 	}
 }

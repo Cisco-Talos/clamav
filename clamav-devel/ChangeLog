@@ -1,3 +1,11 @@
+Sun Jul 25 12:52:07 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Fixed warning message when building on FreeBSD4.9
+			Closed (small) memory leak
+			Fix crash when the 1st remote service goes down
+			Only use gethostbyname_r on LINUX for now
+			Improved load balancing a bit
+
 Fri Jul 23 00:40:18 CEST 2004 (tk)
 ----------------------------------
   * configure: yet another Solaris 9 fix
