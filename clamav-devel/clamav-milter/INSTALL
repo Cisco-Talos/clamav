@@ -91,7 +91,7 @@ See http://www.nmt.edu/~wcolburn/sendmail-8.12.5/libmilter/docs/sample.html
 
 Installations for RedHat Linux and it's derivatives such as YellowDog:
 	Ensure that you have the sendmail-devel RPM installed
-	Add to /etc/mail/sendmail.mc:
+	Add to /etc/mail/sendmail.mc before the MAILER statement:
 	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clmilter.sock, F=, T=S:4m;R:4m')dnl
 	define(`confINPUT_MAIL_FILTERS', `clamav')
 
@@ -183,7 +183,9 @@ the remote end to resend later (temporary failure), setting F=R will reject
 the email and setting F= will pass the email through, in this case you should
 warn your users that emails are not being scanned.
 
-Don't forget to rebuild sendmail.cf after modifying sendmail.mc.
+Don't forget to rebuild sendmail.cf after modifying sendmail.mc. You will
+need to restart sendmail after rebuilding sendmail.cf and starting clamd and
+clamav-milter.
 
 As with all software it is wise to ensure that clamav-milter has the least
 privileges it needs to run. So don't run it as root and don't store the sockets
@@ -679,6 +681,8 @@ Changes
 0.82	6/2/05:		On Solaris, ensure when quarantining a file that the
 				old location is removed
 			Up issue
+0.82a	7/2/05:		Added --detect-forged-email-address
+			NUL terminate the string read from clamd
 
 INTERNATIONALISATION
 

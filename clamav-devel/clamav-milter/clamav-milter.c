@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.178  2005/02/07 22:11:21  nigelhorne
+ * --detect-forged-email-address
+ *
  * Revision 1.177  2005/02/06 10:39:39  nigelhorne
  * 0.82
  *
@@ -542,9 +545,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.177 2005/02/06 10:39:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.178 2005/02/07 22:11:21 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.82"
+#define	CM_VERSION	"0.82a"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -886,6 +889,11 @@ static	int	advisory = 0;	/*
 				 * are flagged rather than deleted. Incompatible
 				 * with quarantine options
 				 */
+static	int	detect_forged_local_address;	/*
+				 * for incoming only mail servers, drop emails
+				 * claiming to be from us that must be false
+				 * Requires that -o, -l or -f are NOT given
+				 */
 static	short	use_syslog = 0;
 static	const	char	*pidFile;
 static	int	logVerbose = 0;
@@ -967,6 +975,7 @@ help(void)
 	puts(_("\t--broadcast\t\t-B [IFACE]\tBroadcast to a network manager when a virus is found."));
 	puts(_("\t--config-file=FILE\t-c FILE\tRead configuration from FILE."));
 	puts(_("\t--debug\t\t\t-D\tPrint debug messages."));
+	puts(_("\t--detect-forged-local-address\t-L\tReject mails that claim to be from us."));
 	puts(_("\t--dont-log-clean\t-C\tDon't add an entry to syslog that a mail is clean."));
 	puts(_("\t--dont-scan-on-error\t-d\tPass e-mails through unscanned if a system error occurs."));
 	puts(_("\t--dont-wait\t\t\tAsk remote end to resend if max-children exceeded."));
@@ -1049,9 +1058,9 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "a:AbB:c:CDefF:lm:nNop:PqQ:dhHs:St:T:U:Vx:";
+		const char *args = "a:AbB:c:CdDefF:lLm:nNop:PqQ:hHs:St:T:U:Vx:";
 #else
-		const char *args = "a:AbB:c:CDefF:lm:nNop:PqQ:dhHs:St:T:U:V";
+		const char *args = "a:AbB:c:CdDefF:lLm:nNop:PqQ:hHs:St:T:U:V";
 #endif
 
 		static struct option long_options[] = {
@@ -1069,6 +1078,9 @@ main(int argc, char **argv)
 			},
 			{
 				"config-file", 1, NULL, 'c'
+			},
+			{
+				"detect-forged-local-address", 0, NULL, 'L'
 			},
 			{
 				"dont-log-clean", 0, NULL, 'C'
@@ -1212,6 +1224,9 @@ main(int argc, char **argv)
 			case 'l':	/* scan mail from the lan */
 				lflag++;
 				break;
+			case 'L':	/* detect forged local addresses */
+				detect_forged_local_address++;
+				break;
 			case 'm':	/* maximum number of children */
 				max_children = atoi(optarg);
 				break;
@@ -1306,6 +1321,21 @@ main(int argc, char **argv)
 		fprintf(stderr, _("%s: Can't parse the config file %s\n"),
 			argv[0], cfgfile);
 		return EX_CONFIG;
+	}
+
+	if(detect_forged_local_address) {
+		if(oflag) {
+			fprintf(stderr, _("%s: --detect-forged-local-addresses is not compatible with --outgoing\n"), argv[0]);
+			return EX_CONFIG;
+		}
+		if(lflag) {
+			fprintf(stderr, _("%s: --detect-forged-local-addresses is not compatible with --local\n"), argv[0]);
+			return EX_CONFIG;
+		}
+		if(fflag) {
+			fprintf(stderr, _("%s: --detect-forged-local-addresses is not compatible with --force\n"), argv[0]);
+			return EX_CONFIG;
+		}
 	}
 
 	if(Bflag) {
@@ -2491,6 +2521,22 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		return SMFIS_ACCEPT;
 	}
 
+	if(detect_forged_local_address) {
+		char me[MAXHOSTNAMELEN + 1];
+
+		if(gethostname(me, sizeof(me) - 1) < 0) {
+			if(use_syslog)
+				syslog(LOG_WARNING, _("clamfi_connect: gethostname failed"));
+			return SMFIS_CONTINUE;
+		}
+		if(strcasecmp(hostname, me) == 0) {
+			if(use_syslog)
+				syslog(LOG_NOTICE, _("Rejected email falsely claiming to be from here"));
+			smfi_setreply(ctx, "550", "5.7.1", _("You have claimed to be me, but you are not"));
+			broadcast(_("Forged local address detected"));
+			return SMFIS_REJECT;
+		}
+	}
 	return SMFIS_CONTINUE;
 }
 
@@ -2597,6 +2643,22 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 	if(hflag)
 		privdata->headers = header_list_new();
 
+	if(detect_forged_local_address) {
+		char me[MAXHOSTNAMELEN + 1];
+
+		if(gethostname(me, sizeof(me) - 1) < 0) {
+			if(use_syslog)
+				syslog(LOG_WARNING, _("clamfi_connect: gethostname failed"));
+			return SMFIS_CONTINUE;
+		}
+		if(strstr(argv[0], me)) {
+			if(use_syslog)
+				syslog(LOG_NOTICE, _("Rejected email falsely claiming to be from %s"), argv[0]);
+			smfi_setreply(ctx, "550", "5.7.1", _("You have claimed to be me, but you are not"));
+			broadcast(_("Forged local address detected"));
+			return SMFIS_REJECT;
+		}
+	}
 	if(smfi_setpriv(ctx, privdata) == MI_SUCCESS)
 		return SMFIS_CONTINUE;
 
@@ -2939,16 +3001,19 @@ clamfi_eom(SMFICTX *ctx)
 #endif
 
 	if(external) {
+		int nbytes;
 #ifdef	SESSION
 #ifdef	CL_DEBUG
 		if(debug_level >= 4)
 			cli_dbgmsg(_("Wating to read status from fd %d\n"),
 				session->sock);
 #endif
-		if(clamd_recv(session->sock, mess, sizeof(mess)) > 0) {
+		nbytes = clamd_recv(session->sock, mess, sizeof(mess) - 1);
 #else
-		if(clamd_recv(privdata->cmdSocket, mess, sizeof(mess)) > 0) {
+		nbytes = clamd_recv(privdata->cmdSocket, mess, sizeof(mess) - 1);
 #endif
+		if(nbytes > 0) {
+			mess[nbytes] = '\0';
 			if((ptr = strchr(mess, '\n')) != NULL)
 				*ptr = '\0';
 
@@ -3346,7 +3411,7 @@ clamfi_eom(SMFICTX *ctx)
 		snprintf(reject, sizeof(reject) - 1, _("virus %s detected by ClamAV - http://www.clamav.net"), virusname);
 		smfi_setreply(ctx, (char *)privdata->rejectCode, "5.7.1", reject);
 		broadcast(mess);
-	} else if((ptr = strstr(mess, "OK")) == NULL) {
+	} else if(strstr(mess, "OK") == NULL) {
 		if(!nflag)
 			smfi_addheader(ctx, "X-Virus-Status", _("Unknown"));
 		if(use_syslog)
@@ -4468,6 +4533,8 @@ move(const char *oldfile, const char *newfile)
 	fclose(fin);
 	fclose(fout);
 #endif
+
+	cli_dbgmsg("removing %s\n", oldfile);
 
 	return unlink(oldfile);
 }
