@@ -14,13 +14,17 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * The algorithm is based on kdepim/ktnef/lib/ktnefparser.cpp from
+ * KDE, rewritten in C by NJH. That algorithm is released under the GPL and is
+ *	Copyright (C) 2002 Michael Goffioul <kdeprint@swing.be>
  */
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.8 2005/03/25 23:00:48 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.9 2005/03/26 07:49:26 nigelhorne Exp $";
 
 #include <stdio.h>
 
@@ -28,18 +32,14 @@ static	char	const	rcsid[] = "$Id: tnef.c,v 1.8 2005/03/25 23:00:48 nigelhorne Ex
 #include "clamav.h"
 #include "others.h"
 #include "tnef.h"
+#if	CL_DEBUG
+#include "mbox.h"
+#endif
 #include "blob.h"
 
-static	int	tnef_message(int desc);
-static	int	tnef_attachment(int desc, const char *dir, fileblob **fbref);
+static	int	tnef_message(FILE *fp);
+static	int	tnef_attachment(FILE *fp, const char *dir, fileblob **fbref);
 
-/*
- * The algorithm will be based on kdepim/ktnef/lib/ktnefparser.cpp from
- * KDE, rewritten in C by NJH. The algorithm is released under the GPL and is
- *	Copyright (C) 2002 Michael Goffioul <kdeprint@swing.be>
- *
- * TODO: Use mmap on systems that support it
- */
 #define	TNEF_SIGNATURE	0x223E9f78
 #define	LVL_MESSAGE	0x01
 #define	LVL_ATTACHMENT	0x02
@@ -66,7 +66,6 @@ static	int	tnef_attachment(int desc, const char *dir, fileblob **fbref);
 #endif
 #endif
 
-/* FIXME: use stdio */
 /* FIXME: only works on little endian machines */
 int
 cli_tnef(const char *dir, int desc)
@@ -75,34 +74,46 @@ cli_tnef(const char *dir, int desc)
 	uint16_t i16;
 	uint8_t i8;
 	fileblob *fb;
-	int ret, alldone;
+	int i, ret, alldone;
+	FILE *fp;
 
 	lseek(desc, 0L, SEEK_SET);
 
-	if(cli_readn(desc, &i32, sizeof(uint32_t)) != sizeof(uint32_t))
-		return CL_EIO;
+	i = dup(desc);
+	if((fp = fdopen(i, "rb")) == NULL) {
+		cli_errmsg("Can't open descriptor %d\n", desc);
+		close(i);
+		return CL_EOPEN;
+	}
 
-	if(host32(i32) != host32(TNEF_SIGNATURE))
+	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1) {
+		fclose(fp);
+		return CL_EIO;
+	}
+	if(i32 != TNEF_SIGNATURE) {
+		fclose(fp);
 		return CL_EFORMAT;
+	}
 
-	if(cli_readn(desc, &i16, sizeof(uint16_t)) != sizeof(uint16_t))
+	if(fread(&i16, sizeof(uint16_t), 1, fp) != 1) {
+		fclose(fp);
 		return CL_EIO;
+	}
 
 	fb = NULL;
 	ret = CL_CLEAN;
 	alldone = 0;
 
 	do {
-		switch(cli_readn(desc, &i8, sizeof(uint8_t))) {
-			case -1:
-				perror("read");
-				ret = CL_EIO;
-				alldone = 1;
-				break;
+		switch(fread(&i8, sizeof(uint8_t), 1, fp)) {
 			case 0:
+				if(ferror(fp)) {
+					perror("read");
+					ret = CL_EIO;
+				}
 				alldone = 1;
 				break;
-			case sizeof(uint8_t):
+			case 1:
 				break;
 			default:
 				ret = CL_EIO;
@@ -114,7 +125,7 @@ cli_tnef(const char *dir, int desc)
 		switch(i8) {
 			case LVL_MESSAGE:
 				/*cli_dbgmsg("TNEF - found message\n");*/
-				if(tnef_message(desc) != 0) {
+				if(tnef_message(fp) != 0) {
 					cli_errmsg("Error reading TNEF message\n");
 					ret = CL_EFORMAT;
 					alldone = 1;
@@ -122,7 +133,7 @@ cli_tnef(const char *dir, int desc)
 				break;
 			case LVL_ATTACHMENT:
 				/*cli_dbgmsg("TNEF - found attachment\n");*/
-				if(tnef_attachment(desc, dir, &fb) != 0) {
+				if(tnef_attachment(fp, dir, &fb) != 0) {
 					cli_errmsg("Error reading TNEF message\n");
 					ret = CL_EFORMAT;
 					alldone = 1;
@@ -142,11 +153,12 @@ cli_tnef(const char *dir, int desc)
 		fileblobDestroy(fb);
 		fb = NULL;
 	}
+	fclose(fp);
 	return CL_CLEAN;
 }
 
 static int
-tnef_message(int desc)
+tnef_message(FILE *fp)
 {
 	uint32_t i32, length;
 	uint16_t i16, tag, type;
@@ -155,20 +167,20 @@ tnef_message(int desc)
 	char *string;
 #endif
 
-	if(cli_readn(desc, &i32, sizeof(uint32_t)) != sizeof(uint32_t))
+	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1)
 		return -1;
 
 	tag = i32 & 0xFFFF;
 	type = (i32 & 0xFFFF0000) >> 16;
 
-	if(cli_readn(desc, &i32, sizeof(uint32_t)) != sizeof(uint32_t))
+	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1)
 		return -1;
 
 	length = i32;
 
-	/*cli_dbgmsg("message tag 0x%x, type 0x%x, length %u\n", tag, type, length);*/
+	cli_dbgmsg("message tag 0x%x, type 0x%x, length %u\n", tag, type, length);
 
-	offset = lseek(desc, 0L, SEEK_CUR);
+	offset = ftell(fp);
 
 	/*
 	 * a lot of this stuff should be only discovered in debug mode...
@@ -180,13 +192,14 @@ tnef_message(int desc)
 #if	CL_DEBUG
 		case attTNEFVERSION:
 			/*assert(length == sizeof(uint32_t))*/
-			if(cli_readn(desc, &i32, sizeof(uint32_t)) != sizeof(uint32_t))
+			if(fread(&i32, sizeof(uint32_t), 1, fp) != 1)
 				return -1;
 			cli_dbgmsg("TNEF version %d\n", i32);
 			break;
 		case attOEMCODEPAGE:
+			/* 8 bytes, but just print the first 4 */
 			/*assert(length == sizeof(uint32_t))*/
-			if(cli_readn(desc, &i32, sizeof(uint32_t)) != sizeof(uint32_t))
+			if(fread(&i32, sizeof(uint32_t), 1, fp) != 1)
 				return -1;
 			cli_dbgmsg("TNEF codepage %d\n", i32);
 			break;
@@ -195,7 +208,7 @@ tnef_message(int desc)
 			break;
 		case attMSGCLASS:
 			string = cli_malloc(length + 1);
-			if((unsigned int)cli_readn(desc, string, length) != length)
+			if(fread(string, 1, length, fp) != length)
 				return -1;
 			string[length] = '\0';
 			cli_dbgmsg("TNEF class %s\n", string);
@@ -207,39 +220,39 @@ tnef_message(int desc)
 #endif
 	}
 
-	/*cli_dbgmsg("%lu %lu\n", offset + length, lseek(desc, 0L, SEEK_CUR));*/
+	cli_dbgmsg("%lu %lu\n", (long)(offset + length), ftell(fp));
 
-	lseek(desc, offset + length, SEEK_SET);	/* shouldn't be needed */
+	fseek(fp, offset + length, SEEK_SET);
 
 	/* Checksum - TODO, verify */
-	if(cli_readn(desc, &i16, sizeof(uint16_t)) != sizeof(uint16_t))
+	if(fread(&i16, sizeof(uint16_t), 1, fp) != 1)
 		return -1;
 
 	return 0;
 }
 
 static int
-tnef_attachment(int desc, const char *dir, fileblob **fbref)
+tnef_attachment(FILE *fp, const char *dir, fileblob **fbref)
 {
 	uint32_t i32, length, todo;
 	uint16_t i16, tag, type;
 	off_t offset;
 	char *string;
 
-	if(cli_readn(desc, &i32, sizeof(uint32_t)) != sizeof(uint32_t))
+	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1)
 		return -1;
 
 	tag = i32 & 0xFFFF;
 	type = (i32 & 0xFFFF0000) >> 16;
 
-	if(cli_readn(desc, &i32, sizeof(uint32_t)) != sizeof(uint32_t))
+	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1)
 		return -1;
 
 	length = i32;
 
-	/*cli_dbgmsg("message tag 0x%x, type 0x%x, length %u\n", tag, type, length);*/
+	cli_dbgmsg("attachment tag 0x%x, type 0x%x, length %u\n", tag, type, length);
 
-	offset = lseek(desc, 0L, SEEK_CUR);
+	offset = ftell(fp);
 
 	switch(tag) {
 		case attATTACHTITLE:
@@ -251,7 +264,7 @@ tnef_attachment(int desc, const char *dir, fileblob **fbref)
 				return -1;
 			string = cli_malloc(length + 1);
 
-			if((unsigned int)cli_readn(desc, string, length) != length)
+			if(fread(string, 1, length, fp) != length)
 				return -1;
 			string[length] = '\0';
 			cli_dbgmsg("TNEF filename %s\n", string);
@@ -265,12 +278,10 @@ tnef_attachment(int desc, const char *dir, fileblob **fbref)
 				if(*fbref == NULL)
 					return -1;
 			}
-			/* FIXME: use stdio */
-			todo = length;
-			while(todo) {
-				unsigned char *c;
+			for(todo = length; todo; todo--) {
+				int c;
 
-				if(cli_readn(desc, &c, 1) != 1)
+				if((c = fgetc(fp)) == EOF)
 					break;
 				fileblobAddData(*fbref, (const unsigned char *)&c, 1);
 			}
@@ -282,10 +293,10 @@ tnef_attachment(int desc, const char *dir, fileblob **fbref)
 
 	/*cli_dbgmsg("%lu %lu\n", offset + length, lseek(desc, 0L, SEEK_CUR));*/
 
-	lseek(desc, offset + length, SEEK_SET);	/* shouldn't be needed */
+	fseek(fp, (long)(offset + length), SEEK_SET);	/* shouldn't be needed */
 
 	/* Checksum - TODO, verify */
-	if(cli_readn(desc, &i16, sizeof(uint16_t)) != sizeof(uint16_t))
+	if(fread(&i16, sizeof(uint16_t), 1, fp) != 1)
 		return -1;
 
 	return 0;
