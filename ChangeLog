@@ -3,6 +3,7 @@ Wed Mar 10 11:40:14 GMT 2004 (njh)
   * clamav-milter:	Use new HAVE_STRERROR_R rather than TARGET_OS_SOLARIS
  			to determine if strerror_r exists
 			Thanks to Phil Oleson <oz@nixil.net>.
+  * docs/man:		Corrected documentation of --postmaster-only flag.
 
 Wed Mar 10 05:43:34 GMT 2004 (njh)
 ----------------------------------
