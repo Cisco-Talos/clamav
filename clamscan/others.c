@@ -84,8 +84,16 @@ int checkaccess(const char *path, const char *username, int mode)
 		return -2;
 
 	    case 0:
-		setuid(user->pw_uid);
-		setgid(user->pw_gid);
+		if(setgid(user->pw_gid)) {
+		    fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int) user->pw_gid);
+		    exit(0);
+		}
+
+		if(setuid(user->pw_uid)) {
+		    fprintf(stderr, "ERROR: setuid(%d) failed.\n", (int) user->pw_uid);
+		    exit(0);
+		}
+
 		if(access(path, mode))
 		    exit(0);
 		else

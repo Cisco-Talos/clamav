@@ -16,4 +16,10 @@
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 SUBDIRS = libclamav clamscan clamd clamdscan freshclam sigtool database docs etc clamav-milter
-EXTRA_DIST = FAQ contrib test examples BUGS shared
+EXTRA_DIST = FAQ contrib test examples BUGS shared libclamav.pc.in
+
+bin_SCRIPTS=clamav-config
+
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libclamav.pc
+

@@ -11335,7 +11335,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-ac_config_files="$ac_config_files libclamav/Makefile clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile etc/Makefile Makefile"
+ac_config_files="$ac_config_files libclamav/Makefile clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile etc/Makefile Makefile clamav-config libclamav.pc"
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -11863,6 +11863,8 @@ do
   "sigtool/Makefile" ) CONFIG_FILES="$CONFIG_FILES sigtool/Makefile" ;;
   "etc/Makefile" ) CONFIG_FILES="$CONFIG_FILES etc/Makefile" ;;
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+  "clamav-config" ) CONFIG_FILES="$CONFIG_FILES clamav-config" ;;
+  "libclamav.pc" ) CONFIG_FILES="$CONFIG_FILES libclamav.pc" ;;
   "depfiles" ) CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
   "clamav-config.h" ) CONFIG_HEADERS="$CONFIG_HEADERS clamav-config.h" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5

@@ -133,9 +133,8 @@ install_sh = @install_sh@
 
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@man_MANS = $(top_srcdir)/docs/man/clamav-milter.8
 
-DEFS = @DEFS@ -DSENDMAIL_BIN=\"@SENDMAIL@\"
-# CLAMD_LIBS is used, because clamav-milter requires the same libraries as clamd
-LIBS = -L$(top_builddir)/libclamav -lclamav -L/usr/lib/libmilter -lmilter @CLAMAV_MILTER_LIBS@
+AM_CFLAGS = -DSENDMAIL_BIN=\"$(SENDMAIL)\"
+LIBS = $(top_builddir)/libclamav/libclamav.la -L/usr/lib/libmilter -lmilter @CLAMAV_MILTER_LIBS@
 INCLUDES = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_srcdir)/shared
 EXTRA_DIST = clamav-milter.c INSTALL
 subdir = clamav-milter
@@ -158,6 +157,8 @@ clamav_milter_OBJECTS = $(am_clamav_milter_OBJECTS)
 clamav_milter_LDADD = $(LDADD)
 clamav_milter_DEPENDENCIES =
 clamav_milter_LDFLAGS =
+
+DEFS = @DEFS@
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@

@@ -204,12 +204,31 @@ void clamd(struct optstruct *opt)
 	}
 
 	if(cfgopt(copt, "AllowSupplementaryGroups")) {
-	    initgroups(cpt->strarg, user->pw_gid);
-	} else
-	    setgroups(1, &user->pw_gid);
+	    if(initgroups(cpt->strarg, user->pw_gid)) {
+		fprintf(stderr, "ERROR: initgroups() failed.\n");
+		logg("!initgroups() failed.\n");
+		exit(1);
+	    }
+	} else {
+	    if(setgroups(1, &user->pw_gid)) {
+		fprintf(stderr, "ERROR: setgroups() failed.\n");
+		logg("!setgroups() failed.\n");
+		exit(1);
+	    }
+	}
 
-	setgid(user->pw_gid);
-	setuid(user->pw_uid);
+	if(setgid(user->pw_gid)) {
+	    fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int) user->pw_gid);
+	    logg("!setgid(%d) failed.\n", (int) user->pw_gid);
+	    exit(1);
+	}
+
+	if(setuid(user->pw_uid)) {
+	    fprintf(stderr, "ERROR: setuid(%d) failed.\n", (int) user->pw_uid);
+	    logg("!setuid(%d) failed.\n", (int) user->pw_uid);
+	    exit(1);
+	}
+
 	logg("Running as user %s (UID %d, GID %d)\n", cpt->strarg, user->pw_uid, user->pw_gid);
     }
 

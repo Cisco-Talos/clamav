@@ -572,4 +572,6 @@ freshclam/Makefile
 sigtool/Makefile
 etc/Makefile
 Makefile
+clamav-config
+libclamav.pc
 ])

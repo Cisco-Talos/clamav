@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -160,9 +160,20 @@ int clamav_rmdirs(const char *dir)
 		if((user = getpwnam(UNPUSER)) == NULL)
 		    return -3;
 
-		setgroups(1, &user->pw_gid);
-		setgid(user->pw_gid);
-		setuid(user->pw_uid);
+		if(setgroups(1, &user->pw_gid)) {
+		    fprintf(stderr, "ERROR: setgroups() failed.\n");
+		    return -3;
+		}
+
+		if(setgid(user->pw_gid)) {
+		    fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int) user->pw_gid);
+		    return -3;
+		}
+
+		if(setuid(user->pw_uid)) {
+		    fprintf(stderr, "ERROR: setuid(%d) failed.\n", (int) user->pw_uid);
+		    return -3;
+		}
 	    }
 #endif
 	    rmdirs(dir);
