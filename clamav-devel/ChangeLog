@@ -1,3 +1,8 @@
+Sun Oct 17 16:50:37 CEST 2004 (acab)
+------------------------------------
+  * libclamav/pe.c: fixed a bug preventing one-section fsg1.33 files to be
+                    unpacked (problem reported by Christoph Cordes)
+
 Sun Oct 17 16:10:45 CEST 2004 (tk)
 ----------------------------------
   * libclamav/others: set flevel to 3

@@ -607,7 +607,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    }
 		}
 
-		if(!sectcnt || t >= gp - 4 || cli_readint32(support + t)) {
+		if(t >= gp - 4 || cli_readint32(support + t)) {
 		    free(support);
 		    break;
 		}
