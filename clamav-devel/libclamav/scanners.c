@@ -321,10 +321,12 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 
 	cli_dbgmsg("Zip: %s, compressed: %u, normal: %u, ratio: %d (max: %d)\n", zdirent.d_name, zdirent.d_csize, zdirent.st_size, zdirent.st_size / (zdirent.d_csize+1), limits ? limits->maxratio : -1 );
 
-	if(!zdirent.st_size) { /* omit directories and empty files */
+	/*
+	if(!zdirent.st_size) {
 	    files++;
 	    continue;
 	}
+	*/
 
 	/* work-around for problematic zips (zziplib crashes with them) */
 	if(zdirent.d_csize <= 0 || zdirent.st_size < 0) {
@@ -666,7 +668,7 @@ static int cli_scanmscab(int desc, const char **virname, long int *scanned, cons
 	return CL_EMSCAB;
     }
 
-    if((base = cabd->dsearch(cabd, desc)) == NULL) {
+    if((base = cabd->dsearch(cabd, dup(desc))) == NULL) {
 	cli_dbgmsg("MSCAB: I/O error or no valid cabinets found\n");
 	mspack_destroy_cab_decompressor(cabd);
 	return CL_EMSCAB;
@@ -1307,7 +1309,8 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 	    int typerec;
 
 	type == CL_TYPE_UNKNOWN_TEXT ? (typerec = 1) : (typerec = 0);
-	lseek(desc, 0, SEEK_SET);
+	if(lseek(desc, 0, SEEK_SET) < 0)
+	    cli_errmsg("lseek() failed, trying to continue anyway...\n");
 
 	if((nret = cli_scandesc(desc, virname, scanned, root, typerec, type)) == CL_VIRUS) {
 	    cli_dbgmsg("%s found in descriptor %d.\n", *virname, desc);
