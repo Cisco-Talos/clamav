@@ -14,7 +14,14 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * Change History:
+ * $Log: message.c,v $
+ * Revision 1.8  2003/09/28 10:07:08  nigelhorne
+ * uuencodebegin() no longer static
+ *
  */
+static	char	const	rcsid[] = "$Id: message.c,v 1.8 2003/09/28 10:07:08 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -61,7 +68,6 @@
 
 typedef enum { FALSE = 0, TRUE = 1 } bool;
 
-static	const	text	*uuencodeBegin(const message *m);
 static	unsigned char	*decodeLine(const message *m, const char *line, unsigned char *ptr);
 static unsigned char *decode(const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast);
 static	unsigned	char	hex(char c);
@@ -745,7 +751,7 @@ messageToText(const message *m)
 	return first;
 }
 
-static const text *
+const text *
 uuencodeBegin(const message *m)
 {
 	const text *t_line;
@@ -849,7 +855,7 @@ decodeLine(const message *m, const char *line, unsigned char *ptr)
 			break;
 
 		case UUENCODE:
-			if(*line == '\0')
+			if(*line == '\0')	/* empty line */
 				break;
 			if(strncasecmp(line, "begin ", 6) == 0)
 				break;

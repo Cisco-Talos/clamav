@@ -48,5 +48,6 @@ const	text	*messageGetBody(const message *m);
 void	messageClean(message *m);
 blob	*messageToBlob(const message *m);
 text	*messageToText(const message *m);
+const	text	*uuencodeBegin(const message *m);
 
 #endif	/*_MESSAGE_H*/
