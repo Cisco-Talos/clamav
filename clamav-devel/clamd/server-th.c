@@ -482,6 +482,8 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 		logg("SIGHUP caught: re-opening log file.\n");
 		logg_close();
 		sighup = 0;
+		if(!logg_file && (cpt = cfgopt(copt, "LogFile")))
+		    logg_file = cpt->strarg;
 	}
 
 	if (!progexit && new_sd >= 0) {

@@ -90,6 +90,7 @@ struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 	    {"MaxDirectoryRecursion", OPT_NUM},
 	    {"FollowDirectorySymlinks", OPT_NOARG},
 	    {"FollowFileSymlinks", OPT_NOARG},
+	    {"ExitOnOOM", OPT_NOARG},
 	    {"Foreground", OPT_NOARG},
 	    {"Debug", OPT_NOARG},
 	    {"LeaveTemporaryFiles", OPT_NOARG},
