@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.76  2004/09/03 15:59:00  nigelhorne
+ * Handle boundary= "foo"
+ *
  * Revision 1.75  2004/08/23 13:15:16  nigelhorne
  * messageClearMarkers
  *
@@ -222,7 +225,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.75 2004/08/23 13:15:16 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.76 2004/09/03 15:59:00 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -282,6 +285,7 @@ static	unsigned	char	base64(char c);
 static	unsigned	char	uudecode(char c);
 static	const	char	*messageGetArgument(const message *m, int arg);
 static	void	*messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), void (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(const text *, void *));
+static	int	usefulArg(const char *arg);
 
 /*
  * These maps are ordered in decreasing likelyhood of their appearance
@@ -523,20 +527,8 @@ messageAddArgument(message *m, const char *arg)
 		/* Empty argument? Probably a broken mail client... */
 		return;
 
-	/*
-	 * These are the only arguments we're interested in.
-	 * Do 'fgrep messageFindArgument *.c' if you don't believe me!
-	 * It's probably not good doing this since each time a new
-	 * messageFindArgument is added I need to remember to look here,
-	 * but it can save a lot of memory...
-	 */
-	if((strncasecmp(arg, "name", 4) != 0) &&
-	   (strncasecmp(arg, "filename", 8) != 0) &&
-	   (strncasecmp(arg, "boundary", 8) != 0) &&
-	   (strncasecmp(arg, "type", 4) != 0)) {
-		cli_dbgmsg("Discarding unwanted argument '%s'\n", arg);
+	if(!usefulArg(arg))
 		return;
-	}
 
 	cli_dbgmsg("Add argument '%s'\n", arg);
 
@@ -598,6 +590,7 @@ messageAddArguments(message *m, const char *s)
 		}
 
 		key = string;
+
 		data = strchr(string, '=');
 
 		/*
@@ -618,8 +611,7 @@ messageAddArguments(message *m, const char *s)
 			/*
 			 * Completely broken, give up
 			 */
-			cli_warnmsg("Can't parse non RFC1521 header \"%s\"\n",
-				s);
+			cli_dbgmsg("Can't parse header \"%s\"\n", s);
 			return;
 		}
 
@@ -629,6 +621,12 @@ messageAddArguments(message *m, const char *s)
 
 		/*
 		 * Handle white space to the right of the equals sign
+		 * This breaks RFC1521 which has:
+		 *	parameter := attribute "=" value
+		 *	attribute := token   ; case-insensitive
+		 *	token  :=  1*<any (ASCII) CHAR except SPACE, CTLs,
+		 *		or tspecials>
+		 * But too many MUAs ignore this
 		 */
 		while(isspace(*string) && (*string != '\0'))
 			string++;
@@ -651,13 +649,20 @@ messageAddArguments(message *m, const char *s)
 			cptr++;
 
 			string = strchr(cptr, '"');
+
 			if((string == NULL) || (strlen(key) == 0)) {
-				cli_warnmsg("Can't parse header \"%s\"\n", s);
+				if(usefulArg(key))
+					cli_warnmsg("Can't parse header (1) \"%s\"\n", s);
 				free((char *)key);
 				return;
 			}
 
 			string++;
+
+			if(!usefulArg(key)) {
+				free((char *)key);
+				continue;
+			}
 
 			data = strdup(cptr);
 
@@ -674,7 +679,7 @@ messageAddArguments(message *m, const char *s)
 				 * TODO: the file should still be saved and
 				 * virus checked
 				 */
-				cli_warnmsg("Can't parse header \"%s\"\n", s);
+				cli_warnmsg("Can't parse header (2) \"%s\"\n", s);
 				if(data)
 					free(data);
 				free((char *)key);
@@ -683,14 +688,6 @@ messageAddArguments(message *m, const char *s)
 
 			*ptr = '\0';
 
-#if	0
-			field = cli_malloc(strlen(key) + strlen(data) + 2);
-			if(field)
-				sprintf(field, "%s=%s", key, data);
-
-			free((char *)key);
-			free(data);
-#else
 			field = cli_realloc((char *)key, strlen(key) + strlen(data) + 2);
 			if(field) {
 				strcat(field, "=");
@@ -698,7 +695,6 @@ messageAddArguments(message *m, const char *s)
 			} else
 				free((char *)key);
 			free(data);
-#endif
 		} else {
 			size_t len;
 
@@ -1392,7 +1388,6 @@ messageToFileblob(message *m, const char *dir)
 /*
  * Decode and transfer the contents of the message into a blob
  * The caller must free the returned blob
- * TODO: a lot of code here is duplicated with messageToFileblob
  */
 blob *
 messageToBlob(message *m)
@@ -1876,7 +1871,6 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
 			}
 
 		} else while(*in) {
-		/* Slower decoding for last line */
 			int nbytes;
 
 			if(m->base64chars) {
@@ -1977,4 +1971,24 @@ static unsigned char
 uudecode(char c)
 {
 	return(c - ' ');
+}
+
+/*
+ * These are the only arguments we're interested in.
+ * Do 'fgrep messageFindArgument *.c' if you don't believe me!
+ * It's probably not good doing this since each time a new
+ * messageFindArgument is added I need to remember to look here,
+ * but it can save a lot of memory...
+ */
+static int
+usefulArg(const char *arg)
+{
+	if((strncasecmp(arg, "name", 4) != 0) &&
+	   (strncasecmp(arg, "filename", 8) != 0) &&
+	   (strncasecmp(arg, "boundary", 8) != 0) &&
+	   (strncasecmp(arg, "type", 4) != 0)) {
+		cli_dbgmsg("Discarding unwanted argument '%s'\n", arg);
+		return 0;
+	}
+	return 1;
 }
