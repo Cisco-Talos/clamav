@@ -443,7 +443,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	if(maxsize && (size + btread >= maxsize)) {
 	    btread = (maxsize - size); /* only read up to max */
 
-	    if(!btread) {
+	    if(btread <= 0) {
 		logg("^ScanStream: Size limit reached ( max: %d)\n", maxsize);
 	    	break; /* Scan what we have */
 	    }
