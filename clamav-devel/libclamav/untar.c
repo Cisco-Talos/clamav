@@ -21,6 +21,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.16  2004/10/20 12:21:11  nigelhorne
+ * Print warning message about LongLink
+ *
  * Revision 1.15  2004/10/16 16:08:46  nigelhorne
  * Handle empty files in the middle of archives
  *
@@ -67,7 +70,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.15 2004/10/16 16:08:46 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.16 2004/10/20 12:21:11 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -182,6 +185,9 @@ cli_untar(const char *dir, int desc)
 				case '6':	/* fifo special */
 					directory = 1;
 					break;
+				case 'L':	/* GNU extension - ././@LongLink */
+					cli_errmsg("cli_untar: only standard TAR files are currently supported\n", type);
+					return CL_EFORMAT;
 				default:
 					cli_errmsg("cli_untar: unknown type flag %c\n", type);
 					return CL_EIO;

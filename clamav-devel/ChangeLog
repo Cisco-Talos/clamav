@@ -1,7 +1,11 @@
+Wed Oct 20 13:23:33 BST 2004 (njh)
+----------------------------------
+  * libclamav/untar.c:	Print warning message about unsopported (yet) formats
+
 Wed Oct 20 11:37:40 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	PARTIAL MODE ONLY: fixed possible stack corruption
-  				under Solaris, patch from Andy Fiddaman
+				under Solaris, patch from Andy Fiddaman
 				<clam@fiddaman.net>
 
 Tue Oct 19 14:56:27 BST 2004 (njh)
