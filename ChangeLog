@@ -9,6 +9,12 @@ Mon Apr 19 23:11:48 BST 2004 (njh)
 		email notification now contain the first received header, which
 		may (or may not) be helpful
 
+Mon Apr 19 14:33:35 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Started work on handling user defined templates
+  	for the e-mail sent. For now very little is handled, though %v
+	is replaced with the message from clamd
+
 Mon Apr 19 13:39:23 BST 2004 (trog)
 -----------------------------------
   * libclamav/ole2_extract: maintain internal OLE2 directory structure
