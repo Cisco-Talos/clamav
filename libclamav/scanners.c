@@ -69,11 +69,17 @@ struct cli_magic_s {
 
 #define MAGIC_BUFFER_SIZE 26
 static const struct cli_magic_s cli_magic[] = {
+
+    /* Archives */
+
     {0,  "Rar!",			4,  "RAR",		  CL_RARFILE},
     {0,  "PK\003\004",			4,  "ZIP",		  CL_ZIPFILE},
     {0,  "\037\213",			2,  "GZip",		  CL_GZFILE},
     {0,  "BZh",				3,  "BZip",		  CL_BZFILE},
     {0,  "From ",			5,  "MBox",		  CL_MAILFILE},
+
+    /* Mail */
+
     {0,  "Received",			8,  "Raw mail",		  CL_MAILFILE},
     {0,  "Return-Path: ",		13, "Maildir",		  CL_MAILFILE},
     {0,  "Return-path: ",		13, "Maildir",		  CL_MAILFILE},
@@ -84,6 +90,11 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "Message-Id: ",		12, "Mail",		  CL_MAILFILE},
     {0,  "Message-ID: ",		12, "Mail",		  CL_MAILFILE},
     {0,  "X-Apparently-To: ",		17, "Mail",		  CL_MAILFILE},
+    {0,  "X-Envelope-From: ",		17, "Mail",		  CL_MAILFILE},
+    {0,  "Envelope-to: ",		13, "Mail",		  CL_MAILFILE},
+    {0,  "Delivery-date: ",		15, "Mail",		  CL_MAILFILE},
+    {0,  "To: ",			4,  "Mail",		  CL_MAILFILE},
+    {0,  "Subject: ",			9,  "Mail",		  CL_MAILFILE},
     {0,  "For: ",			5,  "Eserv mail",	  CL_MAILFILE},
     {0,  "From: ",			6,  "Exim mail",	  CL_MAILFILE},
     {0,  "X-Symantec-",			11, "Symantec",		  CL_MAILFILE},
@@ -91,6 +102,9 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "v:\015\012Received: ",	14, "VPOP3 Mail (DOS)",	  CL_MAILFILE},
     {0,  "v:\012Received: ",		13, "VPOP3 Mail (UNIX)",  CL_MAILFILE},
     {0,  "Hi. This is the qmail-send",  26, "Qmail bounce",	  CL_MAILFILE},
+
+    /* Others */
+
     {0,  "\320\317\021\340\241\261\032\341",
 	                    8, "OLE2 container",  CL_OLE2FILE},
     /* Ignored types */
