@@ -29,6 +29,10 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include "vba_extract.h"
 
 #define FALSE (0)
@@ -42,7 +46,7 @@ typedef struct vba_version_tag {
 } vba_version_t;
 
 
-#ifdef WORDS_LITTLEENDIAN
+#if WORDS_BIGENDIAN == 0
 #define vba_endian_convert_16(v)       (v)
 #else
 static uint16_t vba_endian_convert_16(uint16_t v)
@@ -51,7 +55,7 @@ static uint16_t vba_endian_convert_16(uint16_t v)
 }
 #endif
  
-#ifdef WORDS_LITTLEENDIAN
+#if WORDS_BIGENDIAN == 0
 #define vba_endian_convert_32(v)    (v)
 #else
 static uint32_t vba_endian_convert_32(uint32_t v)
