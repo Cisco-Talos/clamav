@@ -75,10 +75,10 @@ tableInsert(table_t *table, const char *key, int value)
 	assert(value != -1);	/* that would confuse us */
 
 	if(table->tableHead == NULL)
-		table->tableLast = table->tableHead = (tableEntry *)cli_calloc(1, sizeof(tableEntry));
+		table->tableLast = table->tableHead = (tableEntry *)cli_malloc(sizeof(tableEntry));
 	else
 		table->tableLast = table->tableLast->next =
-			(tableEntry *)cli_calloc(1, sizeof(tableEntry));
+			(tableEntry *)cli_malloc(sizeof(tableEntry));
 
 	if(table->tableLast == NULL)
 		return -1;
@@ -121,7 +121,7 @@ tableFind(const table_t *table, const char *key)
 #ifdef	CL_DEBUG
 			cli_dbgmsg("tableFind: Cost of '%s' = %d\n", key, cost);
 #endif
-			return(tableItem->value);
+			return tableItem->value;
 		}
 	}
 

@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.123  2004/11/27 21:54:27  nigelhorne
+ * Tidy
+ *
  * Revision 1.122  2004/11/27 13:16:54  nigelhorne
  * uuencode failures no longer fatal
  *
@@ -363,7 +366,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.122 2004/11/27 13:16:54 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.123 2004/11/27 21:54:27 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1024,12 +1027,11 @@ messageSetEncoding(message *m, const char *enctype)
 				int j;
 				encoding_type *et;
 
-				for(j = 0; j < m->numberOfEncTypes; j++) {
+				for(j = 0; j < m->numberOfEncTypes; j++)
 					if(m->encodingTypes[j] == e->type) {
 						cli_dbgmsg("Ignoring duplicate encoding mechanism\n");
 						break;
 					}
-				}
 
 				et = (encoding_type *)cli_realloc(m->encodingTypes, (m->numberOfEncTypes + 1) * sizeof(encoding_type));
 				if(et == NULL)
