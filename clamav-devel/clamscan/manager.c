@@ -229,8 +229,7 @@ int scanmanager(const struct optstruct *opt)
 		}
 #endif
 
-		if((tmpdir = getargl(opt, "tempdir")) == NULL)
-			tmpdir = getenv("TMPDIR");
+		tmpdir = getenv("TMPDIR");
 
 		if(tmpdir == NULL)
 #ifdef P_tmpdir
@@ -543,9 +542,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 
     /* check write access */
 
-    if((tmpdir = getargl(opt, "tempdir")) == NULL)
-	/* njh@bandsman.co.uk: use TMPDIR as an alternative */
-	tmpdir = getenv("TMPDIR");
+    tmpdir = getenv("TMPDIR");
 
     if(tmpdir == NULL)
 #ifdef P_tmpdir
@@ -745,8 +742,7 @@ int scandenied(const char *filename, struct cl_node *root, const struct passwd *
 
     /* check write access */
 
-    if((tmpdir = getargl(opt, "tempdir")) == NULL)
-        tmpdir = getenv("TMPDIR");
+    tmpdir = getenv("TMPDIR");
 
     if(tmpdir == NULL)
 #ifdef P_tmpdir

@@ -1,3 +1,10 @@
+Thu May 13 02:22:50 CEST 2004 (tk)
+----------------------------------
+  * libclamav: move putenv(TMPDIR) code from clamd to cl_settempdir()
+  * clamd: new directive LeaveTemporaryFiles (Debug no longer leaves temporary
+	   files not removed)
+  * clamscan: respect --tempdir in libclamav; add --leave-temps
+
 Wed May 12 15:25:47 BST 2004 (trog)
 -----------------------------------
   * libclamav/vba_extract.c: fix error path bug (spotted by Tomasz Klim)

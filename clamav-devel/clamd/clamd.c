@@ -214,15 +214,11 @@ void clamd(struct optstruct *opt)
     }
 
     /* set the temporary dir */
-    if((cpt = cfgopt(copt, "TemporaryDirectory"))) {
-	var = (char *) mcalloc(8 + strlen(cpt->strarg), sizeof(char));
-	sprintf(var, "TMPDIR=%s", cpt->strarg);
-	if(!putenv(var))
-	    logg("Setting %s as global temporary directory\n", cpt->strarg);
-	else
-	    logg("!Can't set TMPDIR variable - insufficient space in the environment.\n");
-	/* DON'T CALL free(var) - see putenv(3) */
-    }
+    if((cpt = cfgopt(copt, "TemporaryDirectory")))
+	cl_settempdir(cpt->strarg, 0);
+
+    if(cfgopt(copt, "LeaveTemporaryFiles"))
+	cl_settempdir(NULL, 1);
 
     /* load the database(s) */
     if((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory")))
