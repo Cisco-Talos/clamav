@@ -146,6 +146,12 @@ int dsfd(int sockfd, int fd, const struct optstruct *opt)
 	struct iovec iov[1];
 	struct msghdr msg;
 #ifdef HAVE_CONTROL_IN_MSGHDR
+#ifndef CMSG_SPACE
+#define CMSG_SPACE(len)	    (_CMSG_ALIGN(sizeof(struct cmsghdr)) + _CMSG_ALIGN(len))
+#endif
+#ifndef CMSG_LEN
+#define CMSG_LEN(len)	    (_CMSG_ALIGN(sizeof(struct cmsghdr)) + (len))
+#endif
 	struct cmsghdr *cmsg;
 	char tmp[CMSG_SPACE(sizeof(fd))];
 #endif
