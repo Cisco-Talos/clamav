@@ -1,3 +1,14 @@
+Mon Apr  5 23:49:23 CEST 2004 (tk)
+----------------------------------
+  * contrib: new init script for SuSE (by Martin Fuxa <yeti*email.cz>)
+  * configure: fix linking problem under NetBSD (reported by Nigel);
+	       enable support for threads (pth is required and
+	       LDFLAGS="-L/usr/pkg/lib" and CPPFLAGS="-I/usr/pkg/include"
+	       must be exported). Thanks to Jorgen Norgaard <jnp*anneli.dk>.
+  * clamscan: fix --bell behaviour ("one beep" problem reported by Tomasz
+	      Papszun)
+  * libclamav: small cosmetics
+
 Mon Apr  5 15:39:12 BST 2004 (njh)
 ----------------------------------
   * contrib:	Windows client (finally!) open sourced

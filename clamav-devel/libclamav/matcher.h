@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,6 +31,6 @@ struct nodelist *cli_bfsadd(struct nodelist *bfs, struct cl_node *n);
 void cli_failtrans(struct cl_node *root);
 void cli_fasttrie(struct cl_node *n, struct cl_node *root);
 int cli_findpos(const char *buffer, int offset, int length, const struct cli_patt *pattern);
-int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *pcnt);
+int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *partcnt);
 
 #endif

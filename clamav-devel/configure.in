@@ -245,6 +245,7 @@ struct request_info *req;
 hosts_access(req)
                 ],[AC_MSG_RESULT([-lwrap])
                 have_wrappers=yes
+		LIBS="$save_LIBS"
                 CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lwrap"],[
                 dnl try with -lnsl
                 LIBS="$LIBS -lnsl"
@@ -350,8 +351,8 @@ openbsd3.3*)
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread"
 	fi
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE)
-	AC_DEFINE(_REENTRANT)
+	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
+	AC_DEFINE(_REENTRANT,1,[thread safe])
     fi
     AC_DEFINE(C_BSD,1,[os is bsd flavor])
     ;;
@@ -372,8 +373,13 @@ openbsd*)
     AC_DEFINE(C_BSD,1,[os is bsd flavor])
     ;;
 netbsd*)
-    AC_MSG_RESULT(NetBSD detected. Disabling thread support.)
-    have_pthreads="no"
+     if test "$have_pthreads" = "yes"; then
+ 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
+ 	CLAMD_LIBS="-lpthread"
+ 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
+	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
+	AC_DEFINE(_REENTRANT,1,[thread safe])
+     fi
     AC_DEFINE(C_BSD,1,[os is bsd flavor])
     ;;
 bsd*)
