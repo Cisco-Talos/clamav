@@ -1,3 +1,8 @@
+Fri Mar 19 17:48:31 GMT 2004 (njh)
+----------------------------------
+  * libclamav/message.c:	Handle "binary encoding" (whatever that is :-)
+  	the same as no encoding
+
 Fri Mar 19 15:50:47 GMT 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Handle empty content-disposition headers

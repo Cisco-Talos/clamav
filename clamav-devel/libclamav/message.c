@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.42  2004/03/19 17:38:11  nigelhorne
+ * Handle binary encoding as though it had no encoding
+ *
  * Revision 1.41  2004/03/19 08:08:38  nigelhorne
  * Handle '8 bit' encoding as well as the RFC '8bit'
  *
@@ -120,7 +123,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.41 2004/03/19 08:08:38 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.42 2004/03/19 17:38:11 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -976,7 +979,7 @@ messageToBlob(const message *m)
 			filename = (char *)messageFindArgument(m, "name");
 
 			if(filename == NULL) {
-				cli_dbgmsg("Attachment sent with no filename\n");
+				cli_warnmsg("Attachment sent with no filename\n");
 				blobDestroy(b);
 				return NULL;
 			}
@@ -1220,6 +1223,11 @@ decodeLine(const message *m, const char *line, unsigned char *buf, size_t buflen
 	assert(buf != NULL);
 
 	switch(messageGetEncoding(m)) {
+		case BINARY:
+			/*
+			 * TODO: find out what this is, encoded as binary??
+			 */
+			/* fall through */
 		case NOENCODING:
 		case EIGHTBIT:
 		default:	/* unknown encoding type - try our best */
@@ -1302,12 +1310,6 @@ decodeLine(const message *m, const char *line, unsigned char *buf, size_t buflen
 				cli_warnmsg("uudecode: buffer overflow stopped, attempting to ignore but decoding may fail");
 			else
 				buf = decode(line, buf, uudecode, (len & 3) == 0);
-			break;
-
-		case BINARY:
-			/*
-			 * TODO: find out what this is, encoded as binary??
-			 */
 			break;
 	}
 
