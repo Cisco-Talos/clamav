@@ -620,6 +620,8 @@ Changes
 0.80dd	19/12/04:	Tidy up non SESSION code
 0.80ee	19/12/04:	Error didn't appear in SESSIONS mode if LocalSocket set
 		and neither max-children nor MaxThreads is set.
+0.80ff	21/12/04:	Fault tolerance - sometimes attempted to get a STREAM
+		from a server that is down
 
 INTERNATIONALISATION
 
