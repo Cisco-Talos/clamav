@@ -137,6 +137,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.11  2003/10/05 13:57:47  nigelhorne
+ * Fixed handling of MaxThreads
+ *
  * Revision 1.10  2003/10/03 11:54:53  nigelhorne
  * Added white list of recipients
  *
@@ -153,7 +156,7 @@
  * Added -f flag use MaxThreads if --max-children not set
  *
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.10 2003/10/03 11:54:53 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.11 2003/10/05 13:57:47 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.60j"
 
@@ -483,7 +486,7 @@ main(int argc, char **argv)
 	 * is set in the config file
 	 */
 	if((max_children == 0) && ((cpt = cfgopt(copt, "MaxThreads")) != NULL))
-		max_children = atoi(cpt->strarg);
+		max_children = cpt->numarg;
 
 	/*
 	 * Get the outgoing socket details - the way to talk to clamd
