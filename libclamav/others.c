@@ -66,6 +66,10 @@ pthread_mutex_t cli_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
 # endif
 #endif
 
+#ifndef	O_BINARY
+#define	O_BINARY	0
+#endif
+
 #define CL_FLEVEL 3 /* don't touch it */
 
 #define MAX_ALLOCATION 134217728
@@ -573,4 +577,30 @@ int cli_memstr(const char *haystack, int hs, const char *needle, int ns)
     }
 
     return 0;
+}
+
+int cli_filecopy(const char *src, const char *dest)
+{
+	char *buffer;
+	int s, d, bytes;
+
+
+    if((s = open(src, O_RDONLY)) == -1)
+	return -1;
+
+    if((d = open(dest, O_CREAT|O_WRONLY|O_TRUNC|O_BINARY)) == -1) {
+	close(s);
+	return -1;
+    }
+
+    if(!(buffer = cli_malloc(FILEBUFF)))
+	return -1;
+
+    while((bytes = cli_readn(s, buffer, FILEBUFF)) > 0)
+	cli_writen(d, buffer, bytes);
+
+    free(buffer);
+    close(s);
+
+    return close(d);
 }
