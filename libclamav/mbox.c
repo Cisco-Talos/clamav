@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.209  2005/01/09 11:37:02  nigelhorne
+ * Handle broken RFC2047 headers
+ *
  * Revision 1.208  2005/01/07 13:48:46  nigelhorne
  * Save content-type: application only once
  *
@@ -612,7 +615,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.208 2005/01/07 13:48:46 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.209 2005/01/09 11:37:02 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1784,7 +1787,8 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 
 	copy = rfc2047(line);
 	if(copy == NULL)
-		return -1;
+		/* an RFC checker would return -1 here */
+		copy = strdup(line);
 
 	tokenseparater[0] = *separater;
 	tokenseparater[1] = '\0';
@@ -3485,7 +3489,7 @@ rfc2047(const char *in)
 		encoding = tolower(encoding);
 
 		if((encoding != 'q') && (encoding != 'b')) {
-			cli_warnmsg("Unsupported RFC2047 encoding type '%c' - if you believe this file contains a virus, report it to bugs@clamav.net\n", encoding);
+			cli_warnmsg("Unsupported RFC2047 encoding type '%c' - if you believe this file contains a virus that was missed, report it to bugs@clamav.net\n", encoding);
 			free(out);
 			out = NULL;
 			break;

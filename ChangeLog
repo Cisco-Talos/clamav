@@ -1,3 +1,7 @@
+Sun Jan  9 11:38:39 GMT 2005 (njh)
+----------------------------------
+  * liclamav/mbox.c:	Add support for messages that break RFC2047
+
 Sat Jan  8 03:50:51 CET 2005 (tk)
 ---------------------------------
   * aclocal.m4/configure: Add support for x86_64 (patch by Gwenole Beauchesne
