@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.13  2004/06/16 08:07:39  nigelhorne
+ * Added thread safety
+ *
  * Revision 1.12  2004/05/21 11:31:48  nigelhorne
  * Fix logic error in blobClose
  *
@@ -38,7 +41,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.12 2004/05/21 11:31:48 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.13 2004/06/16 08:07:39 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -201,11 +204,18 @@ blobGetDataSize(const blob *b)
 void
 blobClose(blob *b)
 {
-	if(b->size > b->len) {
+	/*
+	 * Nothing more is going to be added to this blob. If it'll save more
+	 * than a trivial amount (say 64 bytes) of memory, shrink the allocation
+	 */
+	if((b->size - b->len) >= 64) {
 		unsigned char *ptr = cli_realloc(b->data, b->len);
 
 		if(ptr == NULL)
 			return;
+
+		cli_dbgmsg("blobClose: recovered %u bytes from %u\n",
+			b->size - b->len, b->size);
 		b->size = b->len;
 		b->data = ptr;
 	}
