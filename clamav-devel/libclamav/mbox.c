@@ -1328,7 +1328,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 			 * of content-type: Text/Plain, or
 			 * just simply "Content-Type:"
 			 */
-			if(copy == NULL)
+			if(arg == NULL)
 				  cli_warnmsg("Empty content-type received, no subtype specified, assuming text/plain; charset=us-ascii\n");
 			else if(strchr(copy, '/') == NULL)
 				  cli_warnmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", copy);
@@ -1410,7 +1410,7 @@ saveFile(const blob *b, const char *dir)
 	/*
 	 * Allow for very long filenames. We have to truncate them to fit
 	 */
-	snprintf(filename, sizeof(filename) - 7, "%s/%s", dir, cptr);
+	snprintf(filename, sizeof(filename) - 7 - strlen(suffix), "%s/%s", dir, cptr);
 	strcat(filename, "XXXXXX");
 
 	/*
@@ -1436,8 +1436,12 @@ saveFile(const blob *b, const char *dir)
 		char *stub = strdup(filename);
 
 		strcat(filename, suffix);
+#ifdef	C_LINUX
+		rename(stub, filename);
+#else
 		link(stub, filename);
 		unlink(stub);
+#endif
 		free(stub);
 	}
 
