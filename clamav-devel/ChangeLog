@@ -1,3 +1,8 @@
+Sat Mar 19 01:35:04 CET 2005 (tk)
+---------------------------------
+  * clamscan: fix detection logic in treewalk() to properly work with external
+	      unpackers (problem reported by Stephen Gran <steve*lobefin.net>)
+
 Sat Mar 19 00:58:19 CET 2005 (tk)
 ---------------------------------
   * libclamav: call cli_check_jpeg_exploit() independently of pattern matcher

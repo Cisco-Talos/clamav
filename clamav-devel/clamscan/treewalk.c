@@ -101,11 +101,13 @@ int treewalk(const char *dirname, struct cl_node *root, const struct passwd *use
 
 		    /* stat the file */
 		    if(lstat(fname, &statbuf) != -1) {
-			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode) && recursion)
-			    treewalk(fname, root, user, opt, limits, options);
-			else
+			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode) && recursion) {
+			    if(treewalk(fname, root, user, opt, limits, options) == 1)
+				scanret++;
+			} else {
 			    if(S_ISREG(statbuf.st_mode))
 				scanret += scanfile(fname, root, user, opt, limits, options);
+			}
 		    }
 		    free(fname);
 		}

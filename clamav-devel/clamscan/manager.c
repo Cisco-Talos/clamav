@@ -573,7 +573,8 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	ret = treewalk(gendir, root, user, opt, limits, options);
 
     /* remove the directory  - as clamav */
-    clamav_rmdirs(gendir);
+    if(!optl(opt, "leave-temps"))
+	clamav_rmdirs(gendir);
 
     /* free gendir - it's not necessary now */
     free(gendir);
