@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: line.c,v $
+ * Revision 1.7  2004/12/08 20:07:23  nigelhorne
+ * Fix compilation error on Solaris
+ *
  * Revision 1.6  2004/10/14 17:45:55  nigelhorne
  * Try to reclaim some memory if it becomes low when decoding
  *
@@ -36,10 +39,14 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: line.c,v 1.6 2004/10/14 17:45:55 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: line.c,v 1.7 2004/12/08 20:07:23 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
+#endif
+
+#ifndef	CL_DEBUG
+#define	NDEBUG	/* map CLAMAV debug onto standard */
 #endif
 
 #include <stdio.h>
@@ -48,10 +55,6 @@ static	char	const	rcsid[] = "$Id: line.c,v 1.6 2004/10/14 17:45:55 nigelhorne Ex
 
 #include "line.h"
 #include "others.h"
-
-#ifndef	CL_DEBUG
-#define	NDEBUG	/* map CLAMAV debug onto standard */
-#endif
 
 #ifdef	OLD
 line_t *
