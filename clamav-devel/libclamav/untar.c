@@ -20,6 +20,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.7  2004/09/12 19:51:59  nigelhorne
+ * Now builds with --enable-debug
+ *
  * Revision 1.6  2004/09/08 16:02:34  nigelhorne
  * fclose on error
  *
@@ -39,7 +42,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.6 2004/09/08 16:02:34 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.7 2004/09/12 19:51:59 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -52,6 +55,7 @@ static	char	const	rcsid[] = "$Id: untar.c,v 1.6 2004/09/08 16:02:34 nigelhorne E
 #include "clamav.h"
 #include "others.h"
 #include "untar.h"
+#include "mbox.h"
 #include "blob.h"
 
 #define BLOCKSIZE 512
@@ -70,6 +74,7 @@ static	char	const	rcsid[] = "$Id: untar.c,v 1.6 2004/09/08 16:02:34 nigelhorne E
 #endif
 
 #endif
+
 static int
 octal(const char *str)
 {
@@ -122,6 +127,7 @@ cli_untar(const char *dir, int desc)
 			if(block[0] == '\0')  /* We're done */
 				break;
 
+			/* Notice assumption that BLOCKSIZE > 262 */
 			strncpy(magic, block+257, 6);
 			magic[6] = '\0';
 			if(strcmp(magic, "ustar ") != 0) {
