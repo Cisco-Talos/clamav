@@ -53,7 +53,6 @@ int clamscan(struct optstruct *opt)
 	struct timezone tz;
 	time_t starttime;
 
-
     /* initialize some important variables */
 
     if(optc(opt, 'v')) {
@@ -197,7 +196,7 @@ void help(void)
     mprintf("\n");
     mprintf("    --tempdir=DIRECTORY                  create temporary files in DIRECTORY\n");
     mprintf("    --database=FILE/DIR   -d FILE/DIR    Load virus database from FILE or load\n");
-    mprintf("                                         all .db and .db2 files from DIR\n");
+    mprintf("                                         all .cvd and .db[2] files from DIR\n");
     mprintf("    --log=FILE            -l FILE        Save scan report to FILE\n");
     mprintf("    --recursive           -r             Scan directories recursively\n");
     mprintf("    --infected            -i             Print infected files only\n");
