@@ -1,13 +1,16 @@
+Sun Oct 12 21:14:21 BST 2003 (njh)
+---------------------------------
+  * libclamav: mbox.c now uses NO_STRTOK_R consistently with message.c
+  		Patch by Bernd Kuhls <spiralvoice@hotmail.com>
+
 Sun Oct 12 19:46:18 CEST 2003 (tk)
 ----------------------------------
   * libclamav: Makefile: do not overwrite CFLAGS
 
-----------------------------------
-  * libclamav: handles Eicar found in Appledouble files, though Appledouble
-  		files are not yet handled
-
 Sun Oct 12 09:37:44 BST 2003 (njh)
 ---------------------------------
+  * libclamav: handles Eicar found in Appledouble files, though Appledouble
+  		files are not yet handled
   * clamav-milter: use VERSION info to talk to clamd not PING/PONG
   		Only close fd 0/1/2 if !Foreground
 		Sanity checking now performed on LocalSocket as well as TCPSocket

@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.15  2003/10/12 20:13:49  nigelhorne
+ * Use NO_STRTOK_R consistent with message.c
+ *
  * Revision 1.14  2003/10/12 12:37:11  nigelhorne
  * Appledouble encoded EICAR now found
  *
@@ -33,7 +36,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.14 2003/10/12 12:37:11 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.15 2003/10/12 20:13:49 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -66,8 +69,7 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.14 2003/10/12 12:37:11 nigelhorne E
 #include "others.h"
 #include "defaults.h"
 
-/* FIXME: implement HAVE_STRTOK_R */
-#ifndef CL_THREAD_SAFE
+#if	defined(NO_STRTOK_R) || !defined(CL_THREAD_SAFE)
 #undef strtok_r
 #undef __strtok_r
 #define strtok_r(a,b,c)	strtok(a,b)
