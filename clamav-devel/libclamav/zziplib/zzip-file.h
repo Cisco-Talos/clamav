@@ -65,10 +65,10 @@ struct zzip_file
   struct zzip_dir* dir; 
   int fd;
   int method;
-  zzip_size_t restlen;
-  zzip_size_t crestlen;
-  zzip_size_t usize;
-  zzip_size_t csize;
+  int restlen;
+  int crestlen;
+  int usize;
+  int csize;
   /* added dataoffset member - data offset from start of zipfile*/
   zzip_off_t dataoffset;
   char* buf32k;

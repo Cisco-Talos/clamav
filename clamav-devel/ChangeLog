@@ -1,6 +1,14 @@
+Wed Aug  6 03:01:51 CEST 2003
+-----------------------------
+  * clamd: new directives: VirusAction, Debug
+  * libclamav: zziplib downgraded to the old version due to Zip handling
+	       problems
+
 Sun Aug  3 03:35:49 CEST 2003
 -----------------------------
   * libclamav: zziplib updated to 0.10.83-pre1
+  * clamscan: --debug enables libclamav's debug messages without a need
+	      to recompile with --enable-debug
 
 Sat Jul 26 17:11:46 CEST 2003
 -----------------------------

@@ -29,6 +29,7 @@
 #define OPT_COMPSIZE 3 /* convert kilobytes (k) and megabytes (m) to bytes */
 #define OPT_NOARG 4 /* no argument */
 #define OPT_OPTARG 5 /* argument is optional, it's registered as string */
+#define OPT_FULLSTR 6 /* string argument, but get a full line */
 
 struct cfgoption {
     const char *name;

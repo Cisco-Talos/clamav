@@ -20,6 +20,7 @@
 #define __OTHERS_H
 
 #include <stdlib.h>
+#include "cfgfile.h"
 
 int mdprintf(int desc, const char *str, ...);
 int isnumb(const char *str);
@@ -36,5 +37,7 @@ int rndnum(unsigned int max);
 #if defined(CLAMD_USE_SYSLOG) && !defined(C_AIX)
 short use_syslog;
 #endif
+
+void virusaction(const char *filename, const char *virname, const struct cfgstruct *copt);
 
 #endif
