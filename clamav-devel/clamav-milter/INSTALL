@@ -221,6 +221,9 @@ Changes
 0.66l	7/2/04	Updated URL reference
  		Added new config.h mechanism
 0.66m	9/2/04	Added Hflag from "Leonid Zeitlin" <lz@europe.com>
+0.66n	13/2/04	Added TCPwrappers support
+		Removed duplication in version string
+		Handle machines that don't have in_port_t
 
 BUG REPORTS
 

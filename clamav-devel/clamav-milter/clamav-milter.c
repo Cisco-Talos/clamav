@@ -224,9 +224,15 @@
  *	0.66l	7/2/04	Updated URL reference
  *			Added new config.h mechanism
  *	0.66m	9/2/04	Added Hflag from "Leonid Zeitlin" <lz@europe.com>
+ *	0.66n	13/2/04	Added TCPwrappers support
+ *			Removed duplication in version string
+ *			Handle machines that don't have in_port_t
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.45  2004/02/14 17:20:38  nigelhorne
+ * Add TCPwrappers support
+ *
  * Revision 1.44  2004/02/09 11:05:33  nigelhorne
  * Added Hflag
  *
@@ -344,9 +350,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.44 2004/02/09 11:05:33 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.45 2004/02/14 17:20:38 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.66m"
+#define	CM_VERSION	"0.66n"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -393,6 +399,10 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.44 2004/02/09 11:05:33 nig
 #include <grp.h>
 #include <netdb.h>
 
+#ifdef	WITH_TCPWRAP
+#include <tcpd.h>
+#endif
+
 #if defined(CL_DEBUG) && defined(C_LINUX)
 #include <sys/resource.h>
 #endif
@@ -402,6 +412,10 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.44 2004/02/09 11:05:33 nig
 
 #ifndef	SENDMAIL_BIN
 #define	SENDMAIL_BIN	"/usr/lib/sendmail"
+#endif
+
+#ifndef HAVE_IN_PORT_T
+typedef	unsigned short	in_port_t;
 #endif
 
 /*
@@ -1146,7 +1160,7 @@ pingServer(int serverNumber)
 	 *	are out of date
 	 */
 	snprintf(clamav_version, sizeof(clamav_version),
-		"ClamAV version '%s', clamav-milter version '%s'",
+		"%s, clamav-milter version %s",
 		buf, CM_VERSION);
 
 	return 1;
@@ -1344,6 +1358,20 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 			}
 		}
 	}
+
+#ifdef	WITH_TCPWRAP
+	/*
+	 * Support /etc/hosts.allow and /etc/hosts.deny
+	 */
+	if(!hosts_ctl("clamav-milter", hostname, remoteIP, STRING_UNKNOWN)) {
+		if(use_syslog)
+			syslog(LOG_WARNING,
+				"Access to clamav-milter denied for %s[%s]",
+				hostname,
+				remoteIP);
+		return SMFIS_TEMPFAIL;
+	}
+#endif
 	return SMFIS_CONTINUE;
 }
 
@@ -1911,6 +1939,20 @@ clamfi_eom(SMFICTX *ctx)
 			sendmail = popen(cmd, "w");
 
 			if(sendmail) {
+				const char *from;
+
+				/*
+				 * Try to determine who sent the message.
+				 * In the days of faked from addresses this is
+				 * not easy!
+				 */
+				if(privdata->from)
+					from = (strcmp(privdata->from, "<>") == 0) ?
+						smfi_getsymval(ctx, "_") :
+						privdata->from;
+				else
+					from = smfi_getsymval(ctx, "_");
+
 				/*
 				 * TODO: Make this e-mail message customisable
 				 * perhaps by means of a template
@@ -1936,16 +1978,10 @@ clamfi_eom(SMFICTX *ctx)
 					 * information
 					 */
 					fprintf(sendmail, "The message %s sent from %s to\n\t",
-						smfi_getsymval(ctx, "i"),
-						/*privdata->from,*/
-						smfi_getsymval(ctx, "_")
-						);
+						smfi_getsymval(ctx, "i"), from);
 				else
-
 					fprintf(sendmail, "A message sent from %s to\n\t",
-						/*privdata->from,*/
-						smfi_getsymval(ctx, "_")
-						);
+						from);
 
 				for(to = privdata->to; *to; to++)
 					fprintf(sendmail, "%s\n", *to);
@@ -1957,8 +1993,7 @@ clamfi_eom(SMFICTX *ctx)
 
 				if (hflag) {
 					fprintf(sendmail, "\nThe message was received by %s from %s\n\n",
-						smfi_getsymval(ctx, "j"),
-						smfi_getsymval(ctx, "_"));
+						smfi_getsymval(ctx, "j"), from);
 					fputs("For your information, the original message headers were:\n\n", sendmail);
 					header_list_print(privdata->headers, sendmail);
 				}
