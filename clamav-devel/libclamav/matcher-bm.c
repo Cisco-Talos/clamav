@@ -28,6 +28,7 @@
 
 #define MIN(a,b) (a < b) ? a : b
 #define HASH(a,b,c) 211 * (unsigned char) a + 37 * (unsigned char) b + (unsigned char) c
+#define DHASH(a,b,c) 211 * a + 37 * b + c
 
 
 int cli_bm_addpatt(struct cl_node *root, struct cli_bm_patt *pattern)
@@ -74,19 +75,21 @@ int cli_bm_addpatt(struct cl_node *root, struct cli_bm_patt *pattern)
 int cli_bm_init(struct cl_node *root)
 {
 	int i;
+	unsigned int size = DHASH(256, 256, 256);
 
 
     cli_dbgmsg("in cli_bm_init()\n");
+    cli_dbgmsg("BM: Number of indexes = %d\n", size);
 
-    if(!(root->bm_shift = (int *) cli_malloc(65536 * sizeof(int))))
+    if(!(root->bm_shift = (int *) cli_malloc(size * sizeof(int))))
 	return CL_EMEM;
 
-    if(!(root->bm_suffix = (struct cli_bm_patt **) cli_calloc(65536, sizeof(struct cli_bm_patt *)))) {
+    if(!(root->bm_suffix = (struct cli_bm_patt **) cli_calloc(size, sizeof(struct cli_bm_patt *)))) {
 	free(root->bm_shift);
 	return CL_EMEM;
     }
 
-    for(i = 0; i < 65536; i++)
+    for(i = 0; i < size; i++)
 	root->bm_shift[i] = BM_MIN_LENGTH - BM_BLOCK_SIZE + 1;
 
     return 0;
@@ -96,13 +99,14 @@ void cli_bm_free(struct cl_node *root)
 {
 	struct cli_bm_patt *b1, *b2;
 	int i;
+	unsigned int size = DHASH(256, 256, 256);
 
 
     if(root->bm_shift)
 	free(root->bm_shift);
 
     if(root->bm_suffix) {
-	for(i = 0; i < 65536; i++) {
+	for(i = 0; i < size; i++) {
 	    b1 = root->bm_suffix[i];
 	    while(b1) {
 		b2 = b1;
