@@ -1,3 +1,8 @@
+Mon Aug 30 22:44:30 CEST 2004 (tk)
+----------------------------------
+  * configure: Add --disable-gethostbyname_r. Try enabling it if clamav-milter
+	       compilation fails.
+
 Mon Aug 30 14:00:43 CEST 2004 (tk)
 ----------------------------------
   * freshclam/dns.c: Fix compilation error on Cygwin once more (thanks to Nigel)

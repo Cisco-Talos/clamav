@@ -1015,32 +1015,32 @@ Optional Features:
   --enable-static=PKGS  build static libraries default=yes
   --enable-fast-install=PKGS  optimize for fast installation default=yes
   --disable-libtool-lock  avoid locking (might break parallel builds)
-  --disable-bzip2	  Disable bzip2 support.
-  --disable-dns	  Disable support for database verification with DNS
-  --disable-clamuko	  Disable clamuko support (Linux and FreeBSD only)
-  --enable-milter	  Build clamav-milter
-  --disable-dsig	  Disable digital signature support.
-  --disable-pthreads      Disable POSIX threads support
-  --disable-cr      Don't link with C reentrant library (BSD)
-  --disable-urandom       Disable test for /dev/urandom
-  --enable-id-check	  Use id utility instead of /etc/passwd parsing
-  --enable-yp-check	  Use ypmatch utility instead of /etc/passwd parsing
-  --disable-clamav	  Disable test for clamav user/group
-  --enable-debug	  Enable debug messages.
-  --enable-bigstack	  Increase thread stack size.
+  --disable-bzip2	  disable bzip2 support
+  --disable-dns	          disable support for database verification through DNS
+  --disable-clamuko	  disable clamuko support (Linux and FreeBSD only)
+  --enable-milter	  build clamav-milter
+  --disable-dsig	  disable support for digital signatures
+  --disable-pthreads      disable POSIX threads support
+  --disable-cr		  don't link with C reentrant library (BSD)
+  --enable-id-check	  use id utility instead of /etc/passwd parsing
+  --enable-yp-check	  use ypmatch utility instead of /etc/passwd parsing
+  --disable-clamav	  disable test for clamav user/group
+  --enable-debug	  enable debug code
+  --enable-bigstack	  increase thread stack size
+  --disable-gethostbyname_r	  disable support for gethostbyname_r
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-gnu-ld           assume the C compiler uses GNU ld default=no
   --with-pic              try to use only PIC/non-PIC objects default=use both
-  --with-libcurl	    Support URLs downloading with libcurl (default=auto)
-  --with-user=uid	  name of the clamav user (default=clamav).
-  --with-group=gid	  name of the clamav group (default=clamav).
-  --with-dbdir=path	  Path to virus database directory.
-  --with-db1=name	  Name of the main database (main.cvd).
-  --with-db2=name	  Name of the daily database (daily.cvd).
-  --with-tcpwrappers      Support hosts.allow / hosts.deny (default=auto)
+  --with-libcurl	  support URLs downloading with libcurl (default=auto)
+  --with-user=uid	  name of the clamav user (default=clamav)
+  --with-group=gid	  name of the clamav group (default=clamav)
+  --with-dbdir=path	  path to virus database directory
+  --with-db1=name	  name of the main database (default=main.cvd)
+  --with-db2=name	  name of the daily database (default=daily.cvd)
+  --with-tcpwrappers      support hosts.allow / hosts.deny (default=auto)
 
 Some influential environment variables:
   CC          C compiler command
@@ -11047,13 +11047,6 @@ if test "${enable_cr+set}" = set; then
   disable_cr=yes
 fi;
 
-test_urandom=yes
-# Check whether --enable-urandom or --disable-urandom was given.
-if test "${enable_urandom+set}" = set; then
-  enableval="$enable_urandom"
-  test_urandom=no
-fi;
-
 # Check whether --enable-id-check or --disable-id-check was given.
 if test "${enable_id_check+set}" = set; then
   enableval="$enable_id_check"
@@ -12587,6 +12580,13 @@ sed 's/^/| /' conftest.$ac_ext >&5
 fi
 rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
+
+# Check whether --enable-gethostbyname_r or --disable-gethostbyname_r was given.
+if test "${enable_gethostbyname_r+set}" = set; then
+  enableval="$enable_gethostbyname_r"
+  ac_cv_gethostbyname_args=""
+fi;
+
 if test -z "$ac_cv_gethostbyname_args"; then
     echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
