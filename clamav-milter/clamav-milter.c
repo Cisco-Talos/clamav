@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.113  2004/07/30 14:34:56  nigelhorne
+ * Handle changed clamd message
+ *
  * Revision 1.112  2004/07/29 15:24:47  nigelhorne
  * Don't say waiting for some to exit if dont_wait is set
  *
@@ -347,9 +350,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.112 2004/07/29 15:24:47 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.113 2004/07/30 14:34:56 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.75d"
+#define	CM_VERSION	"0.75e"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -2090,7 +2093,7 @@ clamfi_eom(SMFICTX *ctx)
 	}
 
 	if(strstr(mess, "ERROR") != NULL) {
-		if(strstr(mess, "Size exceeded") != NULL) {
+		if(strstr(mess, "Size limit reached") != NULL) {
 			/*
 			 * Clamd has stopped on StreamMaxLength before us
 			 */
