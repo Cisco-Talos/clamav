@@ -1,3 +1,9 @@
+Sun Sep 28 11:07:49 BST 2003 (njh)
+----------------------------------
+  * libclamav: mbox.c now compiles on SCO5
+  *		removed some duplicate code between mbox.c and message.c
+  *		started to add RCS ident info
+
 Fri Sep 26 17:08:31 BST 2003 (njh)
 ----------------------------------
   * clamav-milter: added --noxheader patch
