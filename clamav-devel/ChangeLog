@@ -1,3 +1,7 @@
+Sun Nov 14 15:23:02 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter:	Use SCAN in more places in preference to STREAM
+
 Sat Nov 13 17:14:17 CET 2004 (tk)
 ---------------------------------
   * freshclam: better handling of connection errors (thanks to Simon Munton
