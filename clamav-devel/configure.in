@@ -19,7 +19,8 @@ AC_INIT(clamscan/clamscan.c)
 AC_CREATE_TARGET_H(target.h)
 AC_CANONICAL_SYSTEM
 
-AM_INIT_AUTOMAKE(clamav, "devel-`date +%Y%m%d`")
+AM_INIT_AUTOMAKE(clamav, 20030829)
+dnl AM_INIT_AUTOMAKE(clamav, `date +%Y%m%d`)
 LC_CURRENT=1
 LC_REVISION=3
 LC_AGE=0
@@ -79,19 +80,6 @@ AC_CHECK_HEADER(libmilter/mfapi.h,have_milter="yes",)
 AC_ARG_ENABLE(milter,
 [  --enable-milter	  Build clamav-milter (if milter library found)],
 ,have_milter="no")
-
-want_dsig="yes"
-AC_ARG_ENABLE(dsig,
-[  --disable-dsig	  Disable digital signature support.],
-want_dsig="no",)
-
-if test "$want_dsig" = "yes"
-then
-    AC_CHECK_LIB(gmp, __gmpz_init, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; AC_DEFINE(HAVE_GMP)], [echo "WARNING: GNU MP 3 or newer NOT FOUND - digital signature support will be disabled !"; want_dsig="no"])
-fi
-
-
-
 
 AC_CHECK_HEADER(syslog.h,AC_DEFINE(CLAMD_USE_SYSLOG),)
 
@@ -238,7 +226,7 @@ solaris*)
     FRESHCLAM_LIBS="-lsocket -lnsl -lresolv"
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
-	CLAMD_LIBS="-lpthread -lsocket -lnsl"
+	CLAMD_LIBS="-lpthread -lsocket -lnsl -lresolv"
 	TH_SAFE="-thread-safe"
 	AC_DEFINE(CL_THREAD_SAFE)
     fi

@@ -1,3 +1,7 @@
+Thu Oct  9 15:18:44 CEST 2003 (tk)
+----------------------------------
+  * configure.in: added -lresolv to CLAMD_LIBS on Solaris
+
 Wed Oct  8 14:49:40 CEST 2003 (tk)
 ----------------------------------
   * libclamav: CVS: commited missing files
