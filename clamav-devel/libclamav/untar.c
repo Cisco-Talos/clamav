@@ -20,6 +20,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.4  2004/09/06 08:45:44  nigelhorne
+ * Code Tidy
+ *
  * Revision 1.3  2004/09/06 08:34:47  nigelhorne
  * Randomise extracted file names from tar file
  *
@@ -30,7 +33,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.3 2004/09/06 08:34:47 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.4 2004/09/06 08:45:44 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -80,7 +83,7 @@ cli_untar(const char *dir, int desc)
 
 		if(!in_block) {
 			char type;
-			char *suffix;
+			const char *suffix;
 			size_t suffixLen = 0;
 			int fd, directory;
 			char magic[7], name[101], osize[13];
@@ -116,7 +119,7 @@ cli_untar(const char *dir, int desc)
 					break;
 				default:
 					cli_errmsg("cli_untar: unknown type flag %c\n", type);
-					break;
+					return CL_EIO;
 			}
 
 			if(directory)
