@@ -64,7 +64,7 @@ void scanner_thread(void *arg)
 {
 	client_conn_t *conn = (client_conn_t *) arg;
 	sigset_t sigset;
-	int ret, timeout;
+	int ret, timeout, session=FALSE;
 	struct cfgstruct *cpt;
 
 
@@ -81,22 +81,51 @@ void scanner_thread(void *arg)
     if(!timeout)
     	timeout = -1;
 
-    ret = command(conn->sd, conn->root, conn->limits, conn->options, conn->copt, timeout);
-
-    switch(ret) {
-	case COMMAND_SHUTDOWN:
-	    pthread_mutex_lock(&exit_mutex);
-	    progexit = 1;
-	    kill(conn->mainpid, SIGTERM);
-	    pthread_mutex_unlock(&exit_mutex);
-	    break;
-
-	case COMMAND_RELOAD:
-	    pthread_mutex_lock(&reload_mutex);
-	    reload = 1;
-	    pthread_mutex_unlock(&reload_mutex);
-	    break;
+    do {
+    	ret = command(conn->sd, conn->root, conn->limits, conn->options, conn->copt, timeout);
+	if (ret == -1) {
+		break;
 	}
+
+	switch(ret) {
+	    case COMMAND_SHUTDOWN:
+		pthread_mutex_lock(&exit_mutex);
+		progexit = 1;
+		kill(conn->mainpid, SIGTERM);
+		pthread_mutex_unlock(&exit_mutex);
+		break;
+
+	    case COMMAND_RELOAD:
+		pthread_mutex_lock(&reload_mutex);
+		reload = 1;
+		pthread_mutex_unlock(&reload_mutex);
+		break;
+
+	    case COMMAND_SESSION:
+		session = TRUE;
+		timeout = 5;
+		break;
+
+	    case COMMAND_END:
+		session = FALSE;
+		break;
+
+	    case COMMAND_TIMEOUT:
+		if (session) {
+		    pthread_mutex_lock(&exit_mutex);
+		    if(progexit) {
+			session = FALSE;
+		    }
+		    pthread_mutex_unlock(&exit_mutex);
+                    pthread_mutex_lock(&reload_mutex);
+                    if(reload) {
+			session = FALSE;
+		    }
+                    pthread_mutex_unlock(&reload_mutex);
+		}
+		break;
+        }
+    } while (session);
 
     close(conn->sd);
     free(conn);
@@ -525,7 +554,6 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 
 	pthread_mutex_lock(&reload_mutex);
 	if(reload) {
-	    reload = 0;
 	    pthread_mutex_unlock(&reload_mutex);
 	    /* Destroy the thread manager.
 	     * This waits for all current tasks to end
@@ -537,6 +565,9 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 		pthread_mutex_unlock(&reload_mutex);
 		exit(-1);
 	    }
+	    pthread_mutex_lock(&reload_mutex);
+	    reload = 0;
+	    pthread_mutex_unlock(&reload_mutex);
 #ifdef CLAMUKO
 	    if(cfgopt(copt, "ClamukoScanOnLine") || cfgopt(copt, "ClamukoScanOnAccess")) {
 		logg("Stopping and restarting Clamuko.\n");
