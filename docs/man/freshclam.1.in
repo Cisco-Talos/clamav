@@ -1,0 +1,114 @@
+.\" Manual page created by Tomasz Kojm, 20020415
+.TH "freshclam" "1" "September 1, 2004" "Tomasz Kojm" "Clam AntiVirus"
+.SH "NAME"
+.LP 
+freshclam \- update virus databases
+.SH "SYNOPSIS"
+.LP 
+freshclam [options]
+.SH "DESCRIPTION"
+.LP 
+freshclam updates the virus database. It's a part of the Clam AntiVirus package. It requires an Internet connection.
+.SH "OPTIONS"
+.LP 
+Freshclam reads its configuration from freshclam.conf. The settings can be overwritten with command line options.
+.TP 
+\fB\-h, \-\-help\fR
+Output help information and exit.
+.TP 
+\fB\-V, \-\-version\fR
+Print version number and exit.
+.TP 
+\fB\-v, \-\-verbose\fR
+Be verbose. This option causes freshclam to print many additional informations.
+.TP 
+\fB\-\-quiet\fR
+Be quiet \- output only error messages.
+.TP 
+\fB\-\-stdout\fR
+Write all messages to the standard output (stdout), instead of the standard error output (stderr).
+.TP 
+\fB\-l FILE, \-\-log=FILE\fR
+Save download report in FILE.
+.TP 
+\fB\-\-datadir=DIRECTORY\fR
+Install new database in DIRECTORY. The directory must be writeable for the 'clamav' user or unprivileged user running freshclam.
+.TP 
+\fB\-u USER, \-\-user USER\fR
+Run as USER. By default (when started by root) freshclam drops privileges and works as the 'clamav' user.
+.TP 
+\fB\-d, \-\-daemon\fR
+Run in a daemon mode. This option requires \-\-checks.
+.TP 
+\fB\-p FILE, \-\-pid=FILE\fR
+Save daemon's pid in FILE.
+.TP 
+\fB\-\-no\-dns\fR
+This option forces old non\-DNS verification method (without a TTL delay).
+.TP 
+\fB\-c #n, \-\-checks=#n\fR
+Check #n times per day for a new database. #n must be between 1 and 50.
+.TP 
+\fB\-\-daemon\-notify=/path/to/clamd.conf\fR
+Notify the daemon about the new database. By default it reads a hardcoded config file but you can use an another one. Both local and TCP sockets are supported.
+.TP 
+\fB\-\-on\-error\-execute=COMMAND\fR
+Execute COMMAND if error occured. Remeber, that virus database freshness is the most important thing in anti\-virus system. With this option freshclam can alert you (eg. send SMS) when something is going wrong.
+.TP 
+\fB\-\-on\-update\-execute=COMMAND\fR
+Execute COMMAND after succesful update.
+.SH "EXAMPLES"
+.LP 
+.TP 
+(0) Download database to default directory:
+
+\fBfreshclam\fR
+.TP 
+(1) Download database to current directory:
+
+\fBfreshclam \-\-datadir=.\fR
+.TP 
+(2) Run as a daemon and check 2 times per day for new database:
+
+\fBfreshclam \-d \-c 2\fR
+.SH "RETURN CODES"
+0 : Database succesfully updated.
+.TP 
+1 : Database is up\-to\-date.
+.TP 
+40: Unknown option passed.
+.TP 
+50: Can't change directory.
+.TP 
+51: Can't check MD5 sum.
+.TP 
+52: Connection (network) problem.
+.TP 
+53: Can't unlink a file.
+.TP 
+54: MD5 or digital signature verification error.
+.TP 
+55: Error reading file.
+.TP 
+56: Config file error.
+.TP 
+57: Can't create a new file.
+.TP 
+58: Can't read database from remote server.
+.TP 
+59: Mirrors are not fully synchronized (try again later).
+.TP 
+60: Can't get information about clamav user from /etc/passwd.
+.TP 
+61: Can't drop privileges.
+.SH "FILES"
+.LP 
+@CFGDIR@/freshclam.conf
+.SH "CREDITS"
+Please check the full documentation for credits.
+.SH "AUTHOR"
+.LP 
+Tomasz Kojm <tkojm@clamav.net>
+.SH "SEE ALSO"
+.LP 
+clamd(8), clamdscan(1), clamscan(1), sigtool(1), clamd.conf(5)
