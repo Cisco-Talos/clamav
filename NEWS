@@ -1,6 +1,90 @@
 Note: This README/NEWS file refers to the source tarball. Some things described
-here may not be available in the binary packages.
+here may not be available in binary packages.
 --
+
+0.65
+----
+IMPORTANT NOTE: The project has been moved into SourceForge. The only official
+		ClamAV's homepage is www.clamav.net (however clamav.elektrapro.
+		com still works). We would like to thank ElektraPro.com for
+		their support for the open-source community  - THANKS !
+
+
+ClamAV 0.65 introduces a new database container file format (called CVD) with
+support for digital signatures and compression. Please remove the old
+databases from your database directory before the installation. And the most
+important thing: clamd stability has been greatly improved (especially under
+FreeBSD) ! Also we have a new mirror infrastructure - you will find all the
+details in clamdoc.pdf. If you want to become an official ClamAV mirror
+(with entry in database.clamav.net) please read the clamav-mirror-howto.pdf
+document and contact our administrator - Luca Gibelli <nervous*clamav.net>.
+
+Noteworthy changes in this version:
+
+-) clamd:
+    + fixed a race condition in database reloading code (random crashes
+      under high load)
+    + fixed a race condition with the improperly initialized session start time
+      (thanks to Michael Dankov)
+    + fixed PidFile permissions (Magnus Ekdahl, bug reported by Tomasz Papszun)
+    + fixed LogFile permissions (Magnus Ekdahl)
+    + new directive ScanRAR (bacause RAR support is now disabled by default)
+    + new directive VirusEvent
+    + new directive FixStaleSocket (Thomas Lamy and Mark Mielke)
+    + new directive TCPAddr (Bernard Quatermass, fixed by Damien Curtain)
+    + new directive Debug
+
+-) clamav-milter: (Nigel Horne <njh*clamav.net>)
+    + new --force-scan flag
+    + new -P and -q flags by Nicholas M. Kirsch
+    WARNING: clamav-milter and our mail scanner are still in high development
+	     and may be unstable. You should always use the CVS version.
+
+-) libclamav:
+    + support for a new database container format (CVD) - compressed and
+      digitally signed
+    + better protection against malformed zip archives (such as Mimail)
+    + mail decoder fixes (thanks to Rene Bellora, Bernd Kuhls, Thomas Lamy,
+      Tomasz Papszun) (Nigel Horne)
+    + memory leak fixes (Thomas Lamy)
+    + new scan option CL_DISABLERAR (disables built-in RAR unpacker)
+
+-) freshclam:
+    + fixed --on-error-execute behaviour (David Woakes)
+    + new option --user (-u) USER - run as USER instead of the default user.
+      Patch by Damien Curtain.
+    + rewritten to use database.clamav.net and CVD
+
+-) documentation:
+    + new Spanish documentation on ClamAV and Sendmail integration by
+      Erick Ivaan Lopez Carreon
+    + included clamdoc.pdf Turkish translation by yavuz kaya and Ýbrahim erken
+    + included clamav-mirror-howto.pdf by Luca Gibelli
+    + included clamd+daemontools HOWTO by Jesse D. Guardiani
+    + included signatures.pdf
+    + man pages: updated
+    + clamdoc.pdf: rewritten
+
+New members of our list of ClamAV certified software (see clamdoc.pdf for
+details):
+    + cgpav
+    + smtp-vilter
+    + IVS Milter
+    + scanexi
+    + Mail::ClamAV
+    + OpenAntiVirus samba-vscan
+    + Sylpheed Claws
+    + nclamd
+
+Thanks to Mia Kalenius and Sergei Pronin we have a new official logo !
+
+Thank you for using ClamAV !
+
+--
+Tomasz Kojm <tkojm*clamav.net>
+November 12, 2003
+
+
 
 0.60
 ----
@@ -388,7 +472,7 @@ October 5, 2002
    Sanchez <dsanchez@veloxia.com>)
 -) fixed sigtool bug (negative seeking)
 -) fixed potential clamscan segfault in the case of memory allocation error
--) unpacker execution error is no longer treated as critical - few programs
+-) unpacker execution error is no longer treated as critical - a few programs
    (eg. Qmail-Scanner, TrashScan) have clamscan command hardcoded with all
    archive options turned on. Now, if unpacker can't be executed, raw file is
    scanned and scan process is continued.
