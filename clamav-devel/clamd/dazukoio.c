@@ -6,7 +6,7 @@
 /* Dazuko Interface. Interace with Dazuko for file access control.
    Written by John Ogness <jogness@antivir.de>
 
-   Copyright (c) 2002, 2003 H+BEDV Datentechnik GmbH
+   Copyright (c) 2002, 2003, 2004 H+BEDV Datentechnik GmbH
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -45,7 +45,6 @@
 #include <unistd.h>
 #include "dazukoio_xp.h"
 #include "dazukoio.h"
-#include "others.h"
 
 #if !defined(NO_COMPAT12)
 #include "dazukoio_compat12.h"
@@ -244,7 +243,7 @@ int dazukoRegister_TS(dazuko_id_t **dazuko_id, const char *groupName, const char
 	request->type[0] = REGISTER;
 
 	size = 1 + 2 + 1 + strlen(regMode); /* \nRM=mode */
-	size = 1 + 2 + 1 + strlen(groupName); /* \nGN=groupName */
+	size += 1 + 2 + 1 + strlen(groupName); /* \nGN=groupName */
 	size += 1; /* \0 */
 
 	request->buffer = (char *)malloc(size);
@@ -277,7 +276,7 @@ int dazukoRegister_TS(dazuko_id_t **dazuko_id, const char *groupName, const char
 	buffer[sizeof(buffer)-1] = 0;
 	size = strlen(buffer) + 1;
 
-	if (writen(temp_id->device, buffer, size) != size)
+	if (write(temp_id->device, buffer, size) != size)
 	{
 		close(temp_id->device);
 		free(temp_id);
@@ -327,10 +326,11 @@ int dazukoRegister_TS(dazuko_id_t **dazuko_id, const char *groupName, const char
 
 	if (temp_id->id < 0)
 	{
+		close(temp_id->device);
+		free(temp_id);
 		free(request->buffer);
 		free(request->reply_buffer);
 		free(request);
-		free(temp_id);
 
 		return -1;
 	}
@@ -395,7 +395,7 @@ int dazukoSetAccessMask_TS(dazuko_id_t *dazuko_id, unsigned long accessMask)
 	buffer[sizeof(buffer)-1] = 0;
 	size = strlen(buffer) + 1;
 
-	if (writen(dazuko_id->device, buffer, size) != size)
+	if (write(dazuko_id->device, buffer, size) != size)
 	{
 		free(request->buffer);
 		free(request);
@@ -450,7 +450,7 @@ static int dazuko_set_path(dazuko_id_t *dazuko_id, const char *path, int type)
 	buffer[sizeof(buffer)-1] = 0;
 	size = strlen(buffer) + 1;
 
-	if (writen(dazuko_id->device, buffer, size) != size)
+	if (write(dazuko_id->device, buffer, size) != size)
 	{
 		free(request->buffer);
 		free(request);
@@ -541,7 +541,7 @@ int dazukoRemoveAllPaths_TS(dazuko_id_t *dazuko_id)
 	buffer[sizeof(buffer)-1] = 0;
 	size = strlen(buffer) + 1;
 
-	if (writen(dazuko_id->device, buffer, size) != size)
+	if (write(dazuko_id->device, buffer, size) != size)
 	{
 		free(request->buffer);
 		free(request);
@@ -658,7 +658,7 @@ int dazukoGetAccess_TS(dazuko_id_t *dazuko_id, struct dazuko_access **acc)
 	buffer[sizeof(buffer)-1] = 0;
 	size = strlen(buffer) + 1;
 
-	if (writen(dazuko_id->device, buffer, size) != size)
+	if (write(dazuko_id->device, buffer, size) != size)
 	{
 		free(temp_acc->filename);
 		free(temp_acc);
@@ -797,7 +797,7 @@ int dazukoReturnAccess_TS(dazuko_id_t *dazuko_id, struct dazuko_access **acc)
 		buffer[sizeof(buffer)-1] = 0;
 		size = strlen(buffer) + 1;
 
-		if (writen(dazuko_id->device, buffer, size) != size)
+		if (write(dazuko_id->device, buffer, size) != size)
 		{
 			/* there could be big problems if this happens */
 
@@ -875,7 +875,7 @@ int dazukoUnregister_TS(dazuko_id_t **dazuko_id)
 		buffer[sizeof(buffer)-1] = 0;
 		size = strlen(buffer) + 1;
 
-		if (writen((*dazuko_id)->device, buffer, size) != size)
+		if (write((*dazuko_id)->device, buffer, size) != size)
 		{
 			/* there could be big problems if this happens */
 

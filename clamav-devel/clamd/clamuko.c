@@ -54,7 +54,6 @@ void clamuko_exit(int sig)
     if(dazukoUnregister())
 	logg("!Can't unregister with Dazuko\n");
 
-    /* clamuko_running = 0; */
     logg("Clamuko stopped.\n");
 
     pthread_exit(NULL);
@@ -69,11 +68,10 @@ void *clamukoth(void *arg)
 	unsigned long mask = 0;
 	const struct cfgstruct *pt;
 	short int scan;
-	int sizelimit = 0, options = 0;
+	int sizelimit = 0;
 	struct stat sb;
 
 
-    /* clamuko_running = 1; */
     clamuko_scanning = 0;
 
     /* ignore all signals except SIGUSR1 */
@@ -86,14 +84,9 @@ void *clamukoth(void *arg)
     sigaction(SIGUSR1, &act, NULL);
     sigaction(SIGSEGV, &act, NULL);
 
-#ifdef C_LINUX
-    logg("*Clamuko: Started in process %d\n", getpid());
-#endif
-
     /* register */
     if(dazukoRegister("ClamAV", "r+")) {
 	logg("!Clamuko: Can't register with Dazuko\n");
-	/* clamuko_running = 0; */
 	return NULL;
     } else
 	logg("Clamuko: Correctly registered with Dazuko.\n");
@@ -114,13 +107,11 @@ void *clamukoth(void *arg)
 
     if(!mask) {
 	logg("!Access mask is not configured properly.\n");
-	/* clamuko_running = 0; */
 	return NULL;
     }
 
     if(dazukoSetAccessMask(mask)) {
 	logg("!Clamuko: Can't set access mask in Dazuko.\n");
-	/* clamuko_running = 0; */
 	return NULL;
     }
 
@@ -128,7 +119,6 @@ void *clamukoth(void *arg)
 	while(pt) {
 	    if((dazukoAddIncludePath(pt->strarg))) {
 		logg("!Clamuko: Dazuko -> Can't include path %s\n", pt->strarg);
-		/* clamuko_running = 0; */
 		return NULL;
 	    } else
 		logg("Clamuko: Included path %s\n", pt->strarg);
@@ -137,7 +127,6 @@ void *clamukoth(void *arg)
 	}
     } else {
 	logg("!Clamuko: please include at least one path.\n");
-	/* clamuko_running = 0; */
 	return NULL;
     }
 
@@ -145,27 +134,12 @@ void *clamukoth(void *arg)
 	while(pt) {
 	    if((dazukoAddExcludePath(pt->strarg))) {
 		logg("!Clamuko: Dazuko -> Can't exclude path %s\n", pt->strarg);
-		/* clamuko_running = 0; */
 		return NULL;
 	    } else
 		logg("Clamuko: Excluded path %s\n", pt->strarg);
 
 	    pt = (struct cfgstruct *) pt->nextarg;
 	}
-    }
-
-    if(cfgopt(tharg->copt, "ClamukoScanArchive")) {
-	options |= CL_SCAN_ARCHIVE;
-	logg("Clamuko: Archive support enabled.\n");
-    } else {
-	logg("Clamuko: Archive support disabled.\n");
-    }
-
-    if(cfgopt(tharg->copt, "ScanOLE2")) { 
-	logg("Clamuko: OLE2 support enabled.\n");
-	options |= CL_SCAN_OLE2;
-    } else {
-	logg("Clamuko: OLE2 support disabled.\n");
     }
 
     if((pt = cfgopt(tharg->copt, "ClamukoMaxFileSize"))) {
@@ -192,7 +166,7 @@ void *clamukoth(void *arg)
 		}
 	    }
 
-	    if(scan && cl_scanfile(acc->filename, &virname, NULL, tharg->root, tharg->limits, options) == CL_VIRUS) {
+	    if(scan && cl_scanfile(acc->filename, &virname, NULL, tharg->root, tharg->limits, tharg->options) == CL_VIRUS) {
 		logg("Clamuko: %s: %s FOUND\n", acc->filename, virname);
 		virusaction(virname, tharg->copt);
 		acc->deny = 1;
@@ -203,7 +177,6 @@ void *clamukoth(void *arg)
 		logg("!Can't return access to Dazuko.\n");
 		logg("Clamuko stopped.\n");
 		dazukoUnregister();
-		/* clamuko_running = 0; */
 		clamuko_scanning = 0;
 		return NULL;
 	    }
@@ -213,7 +186,6 @@ void *clamukoth(void *arg)
     }
 
     /* can't be ;) */
-    /* clamuko_running = 0; */
     return NULL;
 }
 

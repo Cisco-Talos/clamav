@@ -3,11 +3,10 @@
 #endif
 
 #ifdef CLAMUKO
-
-/* Dazuko Interface. Interace with Dazuko 1.2.x for file access control.
+/* Dazuko Interface. Interace with Dazuko 1.x for file access control.
    Written by John Ogness <jogness@antivir.de>
 
-   Copyright (c) 2003 H+BEDV Datentechnik GmbH
+   Copyright (c) 2003, 2004 H+BEDV Datentechnik GmbH
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -59,5 +58,4 @@ int dazukoUnregister_TS_compat12_wrapper(struct dazuko_id **dazuko_id);
 int dazukoUnregister_TS_compat12(struct dazuko_id *dazuko);
 
 #endif
-
 #endif

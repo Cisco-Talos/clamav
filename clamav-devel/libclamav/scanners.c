@@ -860,7 +860,8 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
     	if(cli_scandir(fullname, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS) {
 	    ret = CL_VIRUS;
 	}
-	cli_rmdirs(fullname);
+	if(!cli_leavetemps_flag)
+	    cli_rmdirs(fullname);
     	free(fullname);
     } else if ((vba_project = (vba_project_t *) wm_dir_read(dirname))) {
     	for (i = 0; i < vba_project->count; i++) {
@@ -966,7 +967,8 @@ static int cli_scanole2(int desc, const char **virname, long int *scanned, const
 
     if((ret = cli_ole2_extract(desc, dir, limits))) {
 	cli_dbgmsg("OLE2: %s\n", cl_strerror(ret));
-	cli_rmdirs(dir);
+	if(!cli_leavetemps_flag)
+	    cli_rmdirs(dir);
 	free(dir);
 	return ret;
     }
@@ -977,7 +979,8 @@ static int cli_scanole2(int desc, const char **virname, long int *scanned, const
 	}
     }
 
-    cli_rmdirs(dir);
+    if(!cli_leavetemps_flag)
+	cli_rmdirs(dir);
     free(dir);
     return ret;
 }
@@ -1110,14 +1113,16 @@ static int cli_scanmail(int desc, const char **virname, long int *scanned, const
 	 * Extract the attachments into the temporary directory
 	 */
 	if((ret = cli_mbox(dir, desc, options))) {
-	    cli_rmdirs(dir);
+	    if(!cli_leavetemps_flag)
+		cli_rmdirs(dir);
 	    free(dir);
 	    return ret;
 	}
 
 	ret = cli_scandir(dir, virname, scanned, root, limits, options, arec, mrec);
 
-	cli_rmdirs(dir);
+	if(!cli_leavetemps_flag)
+	    cli_rmdirs(dir);
 	free(dir);
 
 	return ret;

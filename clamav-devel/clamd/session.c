@@ -38,7 +38,6 @@
 #include "scanner.h"
 #include "server.h"
 #include "clamuko.h"
-#include "tests.h"
 #include "session.h"
 #include "str.h" /* libclamav */
 #include "clamav.h"
