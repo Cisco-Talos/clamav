@@ -37,10 +37,14 @@
 #include "cltypes.h"
 #include "others.h"
 
+#ifndef FALSE
 #define FALSE (0)
 #define TRUE (1)
+#endif
 
+#ifndef MIN
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
+#endif
 
 #if WORDS_BIGENDIAN == 0
 #define ole2_endian_convert_16(v)	(v)
@@ -71,55 +75,55 @@ static uint32_t ole2_endian_convert_32(uint32_t v)
 
 typedef struct ole2_header_tag
 {
-	unsigned char magic[8];			/* should be: 0xd0cf11e0a1b11ae1 */
-	unsigned char clsid[16];
-	uint16_t minor_version;
-	uint16_t dll_version;
-	int16_t byte_order;			/* -2=intel */
+	unsigned char magic[8] __attribute__ ((packed));		/* should be: 0xd0cf11e0a1b11ae1 */
+	unsigned char clsid[16] __attribute__ ((packed));
+	uint16_t minor_version __attribute__ ((packed));
+	uint16_t dll_version __attribute__ ((packed));
+	int16_t byte_order __attribute__ ((packed));			/* -2=intel */
 
-	uint16_t log2_big_block_size;		/* usually 9 (2^9 = 512) */
-	uint32_t log2_small_block_size;		/* usually 6 (2^6 = 128) */
+	uint16_t log2_big_block_size __attribute__ ((packed));		/* usually 9 (2^9 = 512) */
+	uint32_t log2_small_block_size __attribute__ ((packed));	/* usually 6 (2^6 = 128) */
 
-	int32_t reserved[2];
-	int32_t bat_count;
-	int32_t prop_start;
+	int32_t reserved[2] __attribute__ ((packed));
+	int32_t bat_count __attribute__ ((packed));
+	int32_t prop_start __attribute__ ((packed));
 
-	uint32_t signature;
-	uint32_t sbat_cutoff;			/* cutoff for files held in small blocks (4096) */
+	uint32_t signature __attribute__ ((packed));
+	uint32_t sbat_cutoff __attribute__ ((packed));			/* cutoff for files held in small blocks (4096) */
 
-	int32_t sbat_start;
-	int32_t sbat_block_count;
-	int32_t xbat_start;
-	int32_t xbat_count;
-	int32_t bat_array[109];
+	int32_t sbat_start __attribute__ ((packed));
+	int32_t sbat_block_count __attribute__ ((packed));
+	int32_t xbat_start __attribute__ ((packed));
+	int32_t xbat_count __attribute__ ((packed));
+	int32_t bat_array[109] __attribute__ ((packed));
 
 	/* not part of the ole2 header, but stuff we need in order to decode */
 	/* must take account of the size of variables below here when
 	   reading the header */
-	int32_t sbat_root_start;
-} __attribute__ ((packed)) ole2_header_t;
+	int32_t sbat_root_start __attribute__ ((packed));
+} ole2_header_t;
 
 typedef struct property_tag
 {
-	unsigned char name[64];			/* in unicode */
-	int16_t name_size;
-	unsigned char type;			/* 1=dir 2=file 5=root */
-	unsigned char color;			/* black or red */
-	int32_t prev;
-	int32_t next;
-	int32_t child;
+	unsigned char name[64] __attribute__ ((packed));		/* in unicode */
+	int16_t name_size __attribute__ ((packed));
+	unsigned char type __attribute__ ((packed));			/* 1=dir 2=file 5=root */
+	unsigned char color __attribute__ ((packed));			/* black or red */
+	int32_t prev __attribute__ ((packed));
+	int32_t next __attribute__ ((packed));
+	int32_t child __attribute__ ((packed));
 
-	unsigned char clsid[16];
-	uint32_t user_flags;
+	unsigned char clsid[16] __attribute__ ((packed));
+	uint32_t user_flags __attribute__ ((packed));
 
-	uint32_t create_lowdate;
-	uint32_t create_highdate;
-	uint32_t mod_lowdate;
-	uint32_t mod_highdate;
-	int32_t start_block;
-	int32_t size;
-	unsigned char reserved[4];
-} __attribute__ ((packed)) property_t;
+	uint32_t create_lowdate __attribute__ ((packed));
+	uint32_t create_highdate __attribute__ ((packed));
+	uint32_t mod_lowdate __attribute__ ((packed));
+	uint32_t mod_highdate __attribute__ ((packed));
+	int32_t start_block __attribute__ ((packed));
+	int32_t size __attribute__ ((packed));
+	unsigned char reserved[4] __attribute__ ((packed));
+} property_t;
 
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack()
@@ -127,11 +131,10 @@ typedef struct property_tag
 
 unsigned char magic_id[] = { 0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1};
 
-
 /* Function: readn
 	Try hard to read the requested number of bytes
 */
-int readn(int fd, void *buff, unsigned int count)
+static int readn(int fd, void *buff, unsigned int count)
 {
 	int retval;
 	unsigned int todo;
@@ -158,7 +161,7 @@ int readn(int fd, void *buff, unsigned int count)
 /* Function: writen
 	Try hard to write the specified number of bytes
 */
-int writen(int fd, void *buff, unsigned int count)
+static int writen(int fd, void *buff, unsigned int count)
 {
 	int retval;
 	unsigned int todo;
@@ -179,7 +182,7 @@ int writen(int fd, void *buff, unsigned int count)
 	return count;
 }
 
-char *get_property_name(char *name, int size)
+static char *get_property_name(char *name, int size)
 {
 	int i, j;
 	char *newname;
@@ -212,8 +215,8 @@ char *get_property_name(char *name, int size)
 	}
 	return newname;
 }
-                                                                                                                                              
-void print_property_name(char *pname, int size)
+
+static void print_property_name(char *pname, int size)
 {
         char *name;
                                                                                                                                               
@@ -226,7 +229,7 @@ void print_property_name(char *pname, int size)
         return;
 }
 
-void print_ole2_property(property_t *property)
+static void print_ole2_property(property_t *property)
 {
 	if (property->name_size > 64) {
                 cli_dbgmsg("[err name len: %d]\n", property->name_size);
@@ -259,7 +262,7 @@ void print_ole2_property(property_t *property)
 	cli_dbgmsg(" %d %x\n", property->size, property->user_flags);
 }
 
-void print_ole2_header(ole2_header_t *hdr)
+static void print_ole2_header(ole2_header_t *hdr)
 {
 	int i;
 	
@@ -294,7 +297,7 @@ void print_ole2_header(ole2_header_t *hdr)
 	return;
 }
 
-int ole2_read_block(int fd, ole2_header_t *hdr, void *buff, int32_t blockno)
+static int ole2_read_block(int fd, ole2_header_t *hdr, void *buff, int32_t blockno)
 {
 	off_t offset;
 
@@ -313,7 +316,7 @@ int ole2_read_block(int fd, ole2_header_t *hdr, void *buff, int32_t blockno)
 	return TRUE;
 }
 
-int32_t ole2_get_next_bat_block(int fd, ole2_header_t *hdr, int32_t current_block)
+static int32_t ole2_get_next_bat_block(int fd, ole2_header_t *hdr, int32_t current_block)
 {
 	int32_t bat_array_index;
 	uint32_t bat[128];
@@ -334,7 +337,7 @@ int32_t ole2_get_next_bat_block(int fd, ole2_header_t *hdr, int32_t current_bloc
 	return ole2_endian_convert_32(bat[current_block-(bat_array_index * 128)]);
 }
 
-int32_t ole2_get_next_xbat_block(int fd, ole2_header_t *hdr, int32_t current_block)
+static int32_t ole2_get_next_xbat_block(int fd, ole2_header_t *hdr, int32_t current_block)
 {
 	int32_t xbat_index, xbat_block_index, bat_index, bat_blockno;
 	uint32_t xbat[128], bat[128];
@@ -373,7 +376,7 @@ int32_t ole2_get_next_xbat_block(int fd, ole2_header_t *hdr, int32_t current_blo
 	return ole2_endian_convert_32(bat[bat_index]);
 }
 
-int32_t ole2_get_next_block_number(int fd, ole2_header_t *hdr, int32_t current_block)
+static int32_t ole2_get_next_block_number(int fd, ole2_header_t *hdr, int32_t current_block)
 {
 	if (current_block < 0) {
 		return -1;
@@ -386,7 +389,7 @@ int32_t ole2_get_next_block_number(int fd, ole2_header_t *hdr, int32_t current_b
 	}
 }
 
-int32_t ole2_get_next_sbat_block(int fd, ole2_header_t *hdr, int32_t current_block)
+static int32_t ole2_get_next_sbat_block(int fd, ole2_header_t *hdr, int32_t current_block)
 {
 	int32_t iter, current_bat_block;
 	uint32_t sbat[128];
@@ -408,7 +411,7 @@ int32_t ole2_get_next_sbat_block(int fd, ole2_header_t *hdr, int32_t current_blo
 }
 
 /* Retrieve the block containing the data for the given sbat index */
-int32_t ole2_get_sbat_data_block(int fd, ole2_header_t *hdr, void *buff, int32_t sbat_index)
+static int32_t ole2_get_sbat_data_block(int fd, ole2_header_t *hdr, void *buff, int32_t sbat_index)
 {
 	int32_t block_count, current_block;
 
@@ -431,12 +434,11 @@ int32_t ole2_get_sbat_data_block(int fd, ole2_header_t *hdr, void *buff, int32_t
 	   containing the entry for the required small block */
 
 	return(ole2_read_block(fd, hdr, buff, current_block));
-
 }
 
 /* Read the property tree.
    It is read as just an array rather than a tree */
-void ole2_read_property_tree(int fd, ole2_header_t *hdr, const char *dir,
+static void ole2_read_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 				int (*handler)(int fd, ole2_header_t *hdr, property_t *prop, const char *dir))
 {
 	property_t prop_block[4];
@@ -486,17 +488,8 @@ void ole2_read_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 	return;
 }
 
-/* Callback handlers
-   These are called for each entry in the container (property tree) */
-
-/* Null Handler - doesn't do anything */
-int handler_null(int fd, ole2_header_t *hdr, property_t *prop, const char *dir)
-{
-	return TRUE;
-}
-
 /* Write file Handler - write the contents of the entry to a file */
-int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char *dir)
+static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char *dir)
 {
 	unsigned char buff[(1 << hdr->log2_big_block_size)];
 	int32_t current_block, ofd, len, offset;
@@ -573,7 +566,7 @@ int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char *
 	return TRUE;
 }
 
-int ole2_read_header(int fd, ole2_header_t *hdr)
+static int ole2_read_header(int fd, ole2_header_t *hdr)
 {
 	int i;
 	

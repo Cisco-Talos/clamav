@@ -423,7 +423,11 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 		client_conn->root = root;
 		client_conn->limits = &limits;
 		client_conn->mainpid = mainpid;
-		thrmgr_dispatch(thr_pool, client_conn);
+		if (!thrmgr_dispatch(thr_pool, client_conn)) {
+		    close(client_conn->sd);
+		    free(client_conn);
+		    logg("!thread dispatch failed");
+		}
 	}
 
 	pthread_mutex_lock(&exit_mutex);
