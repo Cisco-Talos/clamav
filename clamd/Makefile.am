@@ -20,10 +20,16 @@ if BUILD_CLAMD
 sbin_PROGRAMS = clamd
 
 clamd_SOURCES = \
+    $(top_srcdir)/shared/output.c \
+    $(top_srcdir)/shared/output.h \
+    $(top_srcdir)/shared/cfgparser.c \
+    $(top_srcdir)/shared/cfgparser.h \
+    $(top_srcdir)/shared/getopt.c \
+    $(top_srcdir)/shared/getopt.h \
+    $(top_srcdir)/shared/memory.c \
+    $(top_srcdir)/shared/memory.h \
     options.c \
     options.h \
-    cfgfile.c \
-    cfgfile.h \
     clamd.c \
     defaults.h \
     tcpserver.c \
@@ -49,12 +55,11 @@ clamd_SOURCES = \
     dazuko_xp.h \
     dazukoio_xp.h \
     tests.c \
-    tests.h
-
-clamd_LDADD = $(top_builddir)/clamscan/getopt.o
+    tests.h \
+    shared.h
 
 endif
 
 DEFS = @DEFS@
 LIBS = -L$(top_builddir)/libclamav -lclamav @CLAMD_LIBS@
-INCLUDES = -I$(top_srcdir)/clamscan -I$(top_srcdir)/libclamav
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav

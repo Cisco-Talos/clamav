@@ -32,7 +32,7 @@
 #include <signal.h>
 #include <errno.h>
 
-#include "cfgfile.h"
+#include "cfgparser.h"
 #include "others.h"
 #include "defaults.h"
 #include "scanner.h"
@@ -40,6 +40,8 @@
 #include "clamuko.h"
 #include "tests.h"
 #include "session.h"
+#include "str.h" /* libclamav */
+#include "output.h"
 
 #define CMD1 "SCAN"
 #define CMD2 "RAWSCAN"
@@ -79,7 +81,7 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
     }
 
     buff[bread] = 0;
-    chomp(buff);
+    cli_chomp(buff);
 
     if(!strncmp(buff, CMD1, strlen(CMD1))) { /* SCAN */
 	scan(buff + strlen(CMD1) + 1, NULL, root, limits, options, copt, desc, 0);

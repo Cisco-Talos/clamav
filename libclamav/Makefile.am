@@ -67,6 +67,8 @@ libclamav_la_SOURCES = \
 	mbox.h \
 	message.c \
 	message.h \
+	snprintf.c \
+	snprintf.h \
 	strrcpy.c \
 	strrcpy.h \
 	table.c \

@@ -1,4 +1,4 @@
-# aclocal.m4 generated automatically by aclocal 1.6.1 -*- Autoconf -*-
+# aclocal.m4t generated automatically by aclocal 1.6.1 -*- Autoconf -*-
 
 # Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002
 # Free Software Foundation, Inc.
@@ -81,7 +81,7 @@ dnl there is now a CREATE_PREFIX_TARGET_H in this file as a shorthand for
 dnl PREFIX_CONFIG_H from a target.h file, however w/o the target.h ever created
 dnl (the prefix is a bit different, since we add an extra -target- and -host-)
 dnl 
-dnl @version: $Id: aclocal.m4,v 1.29 2004/03/19 23:12:33 kojm Exp $
+dnl @version: $Id: aclocal.m4,v 1.30 2004/03/29 00:00:57 kojm Exp $
 dnl @author Guido Draheim <guidod@gmx.de>                 STATUS: used often
 
 AC_DEFUN([AC_CREATE_TARGET_H],
@@ -4041,7 +4041,7 @@ dnl      AC_COMPILE_CHECK_SIZEOF(ptrdiff_t, $headers)
 dnl      AC_COMPILE_CHECK_SIZEOF(off_t, $headers)
 dnl
 dnl @author Kaveh Ghazi <ghazi@caip.rutgers.edu>
-dnl @version $Id: aclocal.m4,v 1.29 2004/03/19 23:12:33 kojm Exp $
+dnl @version $Id: aclocal.m4,v 1.30 2004/03/29 00:00:57 kojm Exp $
 dnl
 AC_DEFUN([AC_COMPILE_CHECK_SIZEOF],
 [changequote(<<, >>)dnl

@@ -36,6 +36,7 @@
 #include "options.h"
 #include "others.h"
 #include "../libclamav/others.h"
+#include "memory.h"
 
 void clamd(struct optstruct *opt);
 

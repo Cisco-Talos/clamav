@@ -39,12 +39,11 @@
 #include <sys/stat.h>
 #include <clamav.h>
 
-#include "others.h"
 #include "options.h"
 #include "defaults.h"
 #include "manager.h"
-#include "shared.h"
 #include "notify.h"
+#include "memory.h"
 
 int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname)
 {

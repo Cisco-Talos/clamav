@@ -41,11 +41,12 @@
 
 #include "options.h"
 #include "others.h"
-#include "shared.h"
 #include "strings.h"
 #include "md5.h"
 #include "cvd.h"
 #include "str.h"
+#include "memory.h"
+#include "output.h"
 
 #define LINE 1024
 

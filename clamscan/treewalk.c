@@ -37,6 +37,8 @@
 #include "options.h"
 #include "treewalk.h"
 #include "defaults.h"
+#include "memory.h"
+#include "output.h"
 
 /*
  * recursive functions, similar to ftw(), these functions are duplicated below

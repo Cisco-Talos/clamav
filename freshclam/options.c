@@ -24,8 +24,7 @@
 #include "getopt.h"
 
 #include "options.h"
-#include "others.h"
-#include "shared.h"
+#include "output.h"
 
 int freshclam(struct optstruct *opt);
 

@@ -26,10 +26,21 @@
 #include <ctype.h>
 
 #include "options.h"
-#include "cfgfile.h"
-#include "others.h"
+#include "cfgparser.h"
 #include "defaults.h"
 #include "str.h"
+#include "memory.h"
+
+static int isnumb(const char *str)
+{
+	int i;
+
+    for(i = 0; i < strlen(str); i++)
+	if(!isdigit(str[i]))
+	    return 0;
+
+    return 1;
+}
 
 struct cfgstruct *parsecfg(const char *cfgfile)
 {
@@ -164,7 +175,7 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 				}
 				ctype = tolower(arg[strlen(arg) - 1]);
 				if(ctype == 'm' || ctype == 'k') {
-				    char *cpy = mcalloc(strlen(arg), sizeof(char));
+				    char *cpy = (char *) mcalloc(strlen(arg), sizeof(char));
 				    strncpy(cpy, arg, strlen(arg) - 1);
 				    if(!isnumb(cpy)) {
 					fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires numerical (raw/K/M) argument.\n", line, name);
@@ -291,4 +302,3 @@ struct cfgstruct *cfgopt(const struct cfgstruct *copt, const char *optname)
 
     return NULL;
 }
-

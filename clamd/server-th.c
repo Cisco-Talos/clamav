@@ -37,6 +37,9 @@
 #include "defaults.h"
 #include "clamuko.h"
 #include "others.h"
+#include "memory.h"
+#include "shared.h"
+#include "output.h"
 
 #define BUFFSIZE 1024
 #define FALSE (0)
@@ -205,7 +208,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 #ifdef CLAMUKO
 	pthread_t clamuko_pid;
 	pthread_attr_t clamuko_attr;
-	struct thrarg *tharg;
+	struct thrarg *tharg = NULL; /* shut up gcc */
 #endif
 	memset(&sigact, 0, sizeof(struct sigaction));
 

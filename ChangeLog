@@ -1,3 +1,14 @@
+Mon Mar 29 02:05:39 CEST 2004 (tk)
+----------------------------------
+  * big cleanup: remove duplicated code and move it to /shared (fixes
+		 a dependency problem when compiling with --disable-pthreads
+		 and LogSyslog support in freshclam); eliminate warnings
+  * libclamav: include backup snprintf implementation (patch by Phil Oleson
+	       <oz*nixil.net>, snprintf by Patrick Powell)
+  * clamd: fix clamd hangup when log size is exceeded (bug reported by
+	   Ryan Thompson <clamav*sasknow.com>)
+  * examples/ex1.c: update
+
 Sat Mar 27 21:55:33 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	Delay connection to clamd to handle clamd's timeout

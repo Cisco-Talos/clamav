@@ -25,12 +25,12 @@
 #endif
 
 #include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include <ctype.h>
 #include <unistd.h>
 #include <errno.h>
+#include <pwd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -38,184 +38,9 @@
 #include <time.h>
 #include <fcntl.h>
 #include <signal.h>
-#include <pwd.h>
-#include <errno.h>
 #include <target.h>
-#include <clamav.h>
 
-#include "shared.h"
-#include "others.h"
-#include "defaults.h"
-#include "treewalk.h"
-
-
-void mprintf(const char *str, ...)
-{
-	va_list args;
-	FILE *fd;
-	char logbuf[512];
-
-
-    if(mprintf_disabled) {
-	if(*str == '@') {
-	    va_start(args, str);
-#ifdef NO_SNPRINTF
-	    vsprintf(logbuf, ++str, args);
-#else
-	    vsnprintf(logbuf, sizeof(logbuf), ++str, args);
-#endif
-	    va_end(args);
-	    logg("ERROR: %s", logbuf);
-	}
-	return;
-    }
-
-    if(mprintf_stdout)
-	fd = stdout;
-    else
-	fd = stderr;
-
-/* legend:
- * ! - error
- * @ - error with logging
- * ...
- */
-
-/*
- *             ERROR    WARNING    STANDARD
- * normal       yes       yes        yes
- * 
- * verbose      yes       yes        yes
- * 
- * quiet        yes       no         no
- */
-
-
-    va_start(args, str);
-
-    if(*str == '!') {
-	fprintf(fd, "ERROR: ");
-	vfprintf(fd, ++str, args);
-    } else if(*str == '@') {
-	fprintf(fd, "ERROR: ");
-	vfprintf(fd, ++str, args);
-#ifdef NO_SNPRINTF
-	vsprintf(logbuf, str, args);
-#else
-	vsnprintf(logbuf, sizeof(logbuf), str, args);
-#endif
-	logg("ERROR: %s", logbuf);
-    } else if(!mprintf_quiet) {
-	if(*str == '^') {
-	    fprintf(fd, "WARNING: ");
-	    vfprintf(fd, ++str, args);
-	} else if(*str == '*') {
-	    if(mprintf_verbose)
-		vfprintf(fd, ++str, args);
-	} else vfprintf(fd, str, args);
-    }
-
-    va_end(args);
-
-    if(fd == stdout)
-	fflush(stdout);
-
-}
-
-int logg(const char *str, ...)
-{
-	va_list args;
-	static FILE *fd = NULL;
-	mode_t old_umask;
-
-
-    if(logfile) {
-
-	if (str == NULL && fd != NULL) {
-	    /* re-open logfile */
-	    fclose(fd);
-	    fd = NULL;
-	}
-	if(!fd) {
-            old_umask = umask(0037);
-	    if((fd = fopen(logfile, "a")) == NULL) {
-                umask(old_umask);
-		mprintf("!LOGGER: Can't open %s for writing: %s.\n", logfile, strerror(errno));
-		return 1;
-	    }
-	    umask(old_umask);
-	}
-	if (str == NULL) {
-	    return 0;
-	}
-
-	va_start(args, str);
-
-	if(*str == '!') {
-	    fprintf(fd, "ERROR: ");
-	    vfprintf(fd, ++str, args);
-	} else if(*str == '^') {
-	    fprintf(fd, "WARNING: ");
-	    vfprintf(fd, ++str, args);
-	} else if(*str == '*') {
-	    vfprintf(fd, ++str, args);
-	} else vfprintf(fd, str, args);
-
-	va_end(args);
-
-	fflush(fd);
-    }
-
-    return 0;
-}
-
-void *mmalloc(size_t size)
-{
-	void *alloc;
-
-    alloc = malloc(size);
-
-    if(!alloc) {
-	printf("CRITICAL: Can't allocate memory (%ld bytes).\n", (long int) size);
-	exit(71);
-	return NULL;
-    } else return alloc;
-}
-
-void *mcalloc(size_t nmemb, size_t size)
-{
-	void *alloc;
-
-    alloc = calloc(nmemb, size);
-
-    if(!alloc) {
-	printf("CRITICAL: Can't allocate memory (%ld bytes).\n", (long int) nmemb * size);
-	exit(70);
-	return NULL;
-    } else return alloc;
-}
-
-int isnumb(const char *str)
-{
-	int i;
-
-    for(i = 0; i < strlen(str); i++)
-	if(!isdigit(str[i]))
-	    return 0;
-
-    return 1;
-}
-
-void chomp(char *string)
-{
-	char *pt;
-
-    if((pt = strchr(string, 13)))
-	*pt = 0;
-
-    if((pt = strchr(string, 10)))
-	*pt = 0;
-}
+#include "output.h"
 
 int fileinfo(const char *filename, short i)
 {
@@ -241,87 +66,6 @@ int fileinfo(const char *filename, short i)
 	    exit(1);
     }
 }
-
-/* these functions return pseudo random number from [0, max) */
-
-/*
-#ifdef C_LINUX
-int detectcpu(void)
-{
-  unsigned int i=0,nrThreads=1;
-  int retScan;
-  char line[1000];
-  char* ret;
-  FILE* fs;
-
-  if(strcmp(TARGET_OS_TYPE,"linux-gnu") != 0)
-    return 1;
-  if((fs = fopen("/proc/cpuinfo","r")) == NULL)
-    return 1;
-  do
-    {
-      ret = fgets(line,1000,fs);
-      if(strcmp(TARGET_ARCH_TYPE,"i386") == 0 || 
-	 strcmp(TARGET_ARCH_TYPE,"parisc") == 0)
-	{
-	  retScan = sscanf(line,"processor\t: %d",&i);
-	  if(retScan != EOF && retScan != 0 && i>=nrThreads )
-	    nrThreads=i+1;
-	}
-      else if (strcmp(TARGET_ARCH_TYPE,"ppc") == 0 || 
-	       strcmp(TARGET_ARCH_TYPE,"ppc64") == 0)
-	{
-	  retScan = sscanf(line,"processor\t: %d",&i);
-	  if(retScan != EOF && retScan != 0 && i>=nrThreads )
-	    nrThreads=i+1;	  
-	}
-      else if (strcmp(TARGET_ARCH_TYPE,"ia64") == 0)
-	{
-	  retScan = sscanf(line,"processor  : %d",&i);
-	  if(retScan != EOF && retScan != 0 && i>=nrThreads )
-	    nrThreads=i+1;	  
-	}
-      else if (strcmp(TARGET_ARCH_TYPE,"alpha") == 0)
-	{
-	  retScan = sscanf(line,"cpus detected\t: %d",&i);
-	  if (retScan != 0 && retScan != EOF)
-	    return i;
-	}
-      else if (strcmp(TARGET_ARCH_TYPE,"s390") == 0)
-	{
-	  retScan = sscanf(line,"# processors    : %d",&i);
-	  if (retScan != 0 && retScan != EOF)
-	    return i;
-	}
-      else if (strcmp(TARGET_ARCH_TYPE,"sparc") == 0 || 
-	       strcmp(TARGET_ARCH_TYPE,"sparc64") == 0)
-	{
-	  retScan = sscanf(line,"ncpus active\t: %d",&i);
-	  if (retScan != 0 && retScan != EOF)
-	    return i;
-	}
-      else if (strcmp(TARGET_ARCH_TYPE,"arm") == 0 || 
-	       strcmp(TARGET_ARCH_TYPE,"m68k") == 0 || 
-	       strcmp(TARGET_ARCH_TYPE,"mips") == 0 ||
-	       strcmp(TARGET_ARCH_TYPE,"mips64") == 0 )
-	{
-	  return 1; 
-
-	}
-    }
-  while(ret != NULL);
-
-  fclose(fs);
-  return nrThreads;
-
-}
-#else
-int detectcpu(void)
-{
-    return 1;
-}
-#endif
-*/
 
 int readaccess(const char *path, const char *username)
 {
@@ -407,18 +151,13 @@ int filecopy(const char *src, const char *dest)
     return close(d);
 }
 
-int strbcasestr(const char *haystack, const char *needle)
+int isnumb(const char *str)
 {
-	char *pt = (char *) haystack;
-	int i, j;
+	int i;
 
-    i = strlen(haystack);
-    j = strlen(needle);
+    for(i = 0; i < strlen(str); i++)
+	if(!isdigit(str[i]))
+	    return 0;
 
-    if(i < j)
-	return 0;
-
-    pt += i - j;
-
-    return !strcasecmp(pt, needle);
+    return 1;
 }

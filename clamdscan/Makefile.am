@@ -20,14 +20,20 @@ if BUILD_CLAMD
 bin_PROGRAMS = clamdscan
 
 clamdscan_SOURCES = \
+    $(top_srcdir)/shared/output.c \
+    $(top_srcdir)/shared/output.h \
+    $(top_srcdir)/shared/cfgparser.c \
+    $(top_srcdir)/shared/cfgparser.h \
+    $(top_srcdir)/shared/memory.c \
+    $(top_srcdir)/shared/memory.h \
     clamdscan.c \
     client.c \
     client.h \
     defaults.h
 
-clamdscan_LDADD = $(top_builddir)/clamscan/getopt.o $(top_builddir)/clamscan/options.o $(top_builddir)/clamscan/others.o $(top_builddir)/clamd/cfgfile.o
+clamdscan_LDADD = $(top_builddir)/clamscan/options.o $(top_builddir)/clamscan/getopt.o
 
 endif
 
-INCLUDES = -I$(top_srcdir)/clamscan -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav
+INCLUDES = -I$(top_srcdir)/clamscan -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 LIBS = -L$(top_builddir)/libclamav -lclamav @FRESHCLAM_LIBS@

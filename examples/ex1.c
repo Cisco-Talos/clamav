@@ -1,7 +1,7 @@
 /*
  *  Compilation: gcc -Wall ex1.c -o ex1 -lclamav
  *
- *  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -31,29 +32,13 @@ int main(int argc, char **argv)
 	int fd, ret, no = 0;
 	unsigned long int size = 0;
 	long double mb;
-	char *virname;
+	const char *virname;
 	struct cl_node *root = NULL;
 	struct cl_limits limits;
 
+
     if(argc != 2) {
 	printf("Usage: %s file\n", argv[0]);
-	exit(2);
-    }
-
-    /* load all available databases from the default (hardcoded) data
-     * directory
-     */
-
-    if((ret = cl_loaddbdir(cl_retdbdir(), &root, &no))) {
-	printf("cl_loaddbdir: %s\n", cl_perror(ret));
-	exit(2);
-    }
-
-    printf("Loaded %d signatures.\n", no);
-
-    /* build the trie */
-    if((ret = cl_buildtrie(root)) != 0) {
-	printf("Database initialization error: %s\n", cl_strerror(ret));;
 	exit(2);
     }
 
@@ -62,15 +47,35 @@ int main(int argc, char **argv)
 	exit(2);
     }
 
+    /* load all available databases from default directory */
+
+    if((ret = cl_loaddbdir(cl_retdbdir(), &root, &no))) {
+	printf("cl_loaddbdir: %s\n", cl_perror(ret));
+	close(fd);
+	exit(2);
+    }
+
+    printf("Loaded %d signatures.\n", no);
+
+    /* build the final trie */
+    if((ret = cl_buildtrie(root))) {
+	printf("Database initialization error: %s\n", cl_strerror(ret));;
+	cl_freetrie(root); /* free the partial trie */
+	close(fd);
+	exit(2);
+    }
+
     /* set up archive limits */
     memset(&limits, 0, sizeof(struct cl_limits));
     limits.maxfiles = 1000; /* max files */
     limits.maxfilesize = 10 * 1048576; /* maximal archived file size == 10 Mb */
-    limits.maxreclevel = 8; /* maximal recursion level */
+    limits.maxreclevel = 5; /* maximal recursion level */
+    limits.maxratio = 200; /* maximal compression ratio */
+    limits.archivememlim = 0; /* disable memory limit for bzip2 scanner */
 
     /* scan descriptor (with archive and mail scanning enabled) */
-    if((ret = cl_scandesc(fd, &virname, &size, root, &limits, CL_ARCHIVE | CL_MAIL)) == CL_VIRUS)
-	printf("Detected %s virus.\n", virname);
+    if((ret = cl_scandesc(fd, &virname, &size, root, &limits, CL_ARCHIVE | CL_MAIL | CL_OLE2)) == CL_VIRUS)
+	printf("Virus detected: %s\n", virname);
     else {
 	printf("No virus detected.\n");
 	if(ret != CL_CLEAN)

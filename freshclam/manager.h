@@ -19,7 +19,7 @@
 #ifndef __MANAGER_H
 #define __MANAGER_H
 
-#include "cfgfile.h"
+#include "cfgparser.h"
 #include "clamav.h"
 
 int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname);

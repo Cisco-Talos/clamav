@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,11 +16,32 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __CLIENT_H
-#define __CLIENT_H
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-#include "options.h"
+void *mmalloc(size_t size)
+{
+	void *alloc;
 
-int client(const struct optstruct *opt);
+    alloc = malloc(size);
 
-#endif
+    if(!alloc) {
+	fprintf(stderr, "CRITICAL: Can't allocate memory (%ld bytes).\n", (long int) size);
+	_exit(71);
+	return NULL; /* shut up gcc */
+    } else return alloc;
+}
+
+void *mcalloc(size_t nmemb, size_t size)
+{
+	void *alloc;
+
+    alloc = calloc(nmemb, size);
+
+    if(!alloc) {
+	fprintf(stderr, "CRITICAL: Can't allocate memory (%ld bytes).\n", (long int) nmemb * size);
+	_exit(70);
+	return NULL;
+    } else return alloc;
+}

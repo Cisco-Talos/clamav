@@ -23,6 +23,8 @@
 #include "thrmgr.h"
 
 #include "others.h"
+#include "memory.h"
+#include "output.h"
 
 #define FALSE (0)
 #define TRUE (1)

@@ -32,10 +32,11 @@
 
 
 #include "options.h"
-#include "cfgfile.h"
+#include "cfgparser.h"
 #include "defaults.h"
 #include "others.h"
 #include "server.h"
+#include "output.h"
 
 int tcpserver(const struct optstruct *opt, const struct cfgstruct *copt, struct cl_node *root)
 {
