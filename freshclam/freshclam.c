@@ -51,6 +51,7 @@ static void daemon_sighandler(int sig) {
 	char *action = NULL;
 
     switch(sig) {
+	case SIGALRM:
 	case SIGUSR1:
 	    action = "wake up";
 	    terminate = -1;

@@ -1,3 +1,11 @@
+Sun Apr  4 02:57:10 CEST 2004 (tk)
+----------------------------------
+  * freshclam: do not terminate on SIGALRM (bug introduced on Sat Mar 27),
+	       reported by Fajar A. Nugraha <fajar*telkom.co.id>.
+  * clamd: dazukoio: use writen()
+  * clamscan: test for W_OK instead of R_OK in writeaccess(). Bug reported
+	      by Takumi Yamane <yamtak*b-session.com>.
+
 Sat Apr  3 06:00:19 BST 2004 (njh)
 ----------------------------------
   * clamav-milter: Error if ReadTimeout is -ve

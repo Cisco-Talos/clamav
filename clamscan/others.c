@@ -118,7 +118,7 @@ int writeaccess(const char *path, const char *username)
 	setegid(user->pw_gid);
     }
 
-    if(!access(path, R_OK))
+    if(!access(path, W_OK))
 	acc = 1;
 
     if(su) {
