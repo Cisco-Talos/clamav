@@ -117,6 +117,7 @@ struct cli_md5_node {
     char *virname, *viralias;
     unsigned char *md5;
     unsigned int size;
+    unsigned short fp;
     struct cli_md5_node *next;
 };
 

@@ -148,6 +148,40 @@ static long int cli_caloff(const char *offstr, int fd)
     return -1;
 }
 
+int cli_checkfp(int fd, const struct cl_node *root)
+{
+	struct cli_md5_node *md5_node;
+	char *digest;
+
+
+    if(root->md5_hlist) {
+
+	if(!(digest = cli_md5digest(fd))) {
+	    cli_errmsg("cli_checkfp(): Can't generate MD5 checksum\n");
+	    return 0;
+	}
+
+	if((md5_node = cli_vermd5(digest, root)) && md5_node->fp) {
+		struct stat sb;
+
+	    if(fstat(fd, &sb))
+		return CL_EIO;
+
+	    if(sb.st_size != md5_node->size) {
+		cli_warnmsg("Detected false positive MD5 match. Please report.\n");
+	    } else {
+		cli_dbgmsg("Eliminated false positive match (fp sig: %s)\n", md5_node->virname);
+		free(digest);
+		return 1;
+	    }
+	}
+
+	free(digest);
+    }
+
+    return 0;
+}
+
 int cli_validatesig(unsigned short target, unsigned short ftype, const char *offstr, unsigned long int fileoff, int desc, const char *virname)
 {
 
@@ -258,7 +292,12 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 	    free(buffer);
 	    free(partcnt);
 	    free(partoff);
-	    return CL_VIRUS;
+
+	    lseek(desc, 0, SEEK_SET);
+	    if(cli_checkfp(desc, root))
+		return CL_CLEAN;
+	    else
+		return CL_VIRUS;
 
 	} else if(otfrec && ret >= CL_TYPENO) {
 	    if(ret >= type)
@@ -297,7 +336,7 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 	    cli_dbgmsg("Calculated MD5 checksum: %s\n", md5str);
 	}
 
-	if((md5_node = cli_vermd5(digest, root))) {
+	if((md5_node = cli_vermd5(digest, root)) && !md5_node->fp) {
 		struct stat sb;
 
 	    if(fstat(desc, &sb))

@@ -612,7 +612,7 @@ static int cli_loadndb(FILE *fd, struct cl_node **root, unsigned int *signo)
     return 0;
 }
 
-static int cli_loadhdb(FILE *fd, struct cl_node **root, unsigned int *signo)
+static int cli_loadhdb(FILE *fd, struct cl_node **root, unsigned int *signo, unsigned short fp)
 {
 	char buffer[FILEBUFF], *pt;
 	int line = 0, ret = 0;
@@ -635,6 +635,8 @@ static int cli_loadhdb(FILE *fd, struct cl_node **root, unsigned int *signo)
 	    ret = CL_EMEM;
 	    break;
 	}
+
+	new->fp = fp;
 
 	if(!(pt = cli_strtok(buffer, 0, ":"))) {
 	    free(new);
@@ -893,7 +895,10 @@ int cl_loaddb(const char *filename, struct cl_node **root, unsigned int *signo)
 	ret = cli_cvdload(fd, root, signo, warn);
 
     } else if(cli_strbcasestr(filename, ".hdb")) {
-	ret = cli_loadhdb(fd, root, signo);
+	ret = cli_loadhdb(fd, root, signo, 0);
+
+    } else if(cli_strbcasestr(filename, ".fp")) {
+	ret = cli_loadhdb(fd, root, signo, 1);
 
     } else if(cli_strbcasestr(filename, ".ndb")) {
 	ret = cli_loadndb(fd, root, signo);
@@ -950,6 +955,7 @@ int cl_loaddbdir(const char *dirname, struct cl_node **root, unsigned int *signo
 	     cli_strbcasestr(dent->d_name, ".db2")  ||
 	     cli_strbcasestr(dent->d_name, ".db3")  ||
 	     cli_strbcasestr(dent->d_name, ".hdb")  ||
+	     cli_strbcasestr(dent->d_name, ".fp")  ||
 	     cli_strbcasestr(dent->d_name, ".ndb")  ||
 	     cli_strbcasestr(dent->d_name, ".zmd")  ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
@@ -1028,6 +1034,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".db2")  || 
 	    cli_strbcasestr(dent->d_name, ".db3")  || 
 	    cli_strbcasestr(dent->d_name, ".hdb")  || 
+	    cli_strbcasestr(dent->d_name, ".fp")  || 
 	    cli_strbcasestr(dent->d_name, ".ndb")  || 
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
@@ -1097,6 +1104,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".db2")  || 
 	    cli_strbcasestr(dent->d_name, ".db3")  || 
 	    cli_strbcasestr(dent->d_name, ".hdb")  || 
+	    cli_strbcasestr(dent->d_name, ".fp")  || 
 	    cli_strbcasestr(dent->d_name, ".ndb")  || 
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
