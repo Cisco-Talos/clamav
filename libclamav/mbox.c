@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.68  2004/04/29 08:59:24  nigelhorne
+ * Tidied up SetDispositionType
+ *
  * Revision 1.67  2004/04/23 10:47:41  nigelhorne
  * If an inline text portion has a filename treat is as an attachment
  *
@@ -192,7 +195,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.67 2004/04/23 10:47:41 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.68 2004/04/29 08:59:24 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -256,7 +259,6 @@ static	int	endOfMessage(const char *line, const char *boundary);
 static	int	initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
 static	int	getTextPart(message *const messages[], size_t size);
 static	size_t	strip(char *buf, int len);
-static	size_t	strstrip(char *s);
 static	bool	continuationMarker(const char *line);
 static	int	parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg);
 static	void	saveTextPart(message *m, const char *dir);
@@ -1665,7 +1667,7 @@ strip(char *buf, int len)
  * strstrip:
  *	Strip a given string
  */
-static size_t
+size_t
 strstrip(char *s)
 {
 	if(s == (char *)NULL)
