@@ -2,6 +2,12 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.80rc2
+-------
+
+This update fixes a serious bug in e-mail scanner.
+
+
 0.80rc
 ------
 
