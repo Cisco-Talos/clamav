@@ -60,5 +60,6 @@ void	fileblobDestroy(fileblob *fb);
 void	fileblobSetFilename(fileblob *fb, const char *dir, const char *filename);
 const	char	*fileblobGetFilename(const fileblob *fb);
 void	fileblobAddData(fileblob *fb, const unsigned char *data, size_t len);
+void	sanitiseName(char *name);
 
 #endif /*_BLOB_H*/
