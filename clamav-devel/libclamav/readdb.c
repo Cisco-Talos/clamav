@@ -705,11 +705,11 @@ static int cli_loadhdb(FILE *fd, struct cl_node **root, unsigned int *signo, uns
     return 0;
 }
 
-static int cli_loadzmd(FILE *fd, struct cl_node **root, unsigned int *signo)
+static int cli_loadmd(FILE *fd, struct cl_node **root, unsigned int *signo, int type)
 {
 	char buffer[FILEBUFF], *pt;
 	int line = 0, comments = 0, ret = 0;
-	struct cli_zip_node *new;
+	struct cli_meta_node *new;
 
 
     if(!*root) {
@@ -728,7 +728,7 @@ static int cli_loadzmd(FILE *fd, struct cl_node **root, unsigned int *signo)
 
 	cli_chomp(buffer);
 
-	new = (struct cli_zip_node *) cli_calloc(1, sizeof(struct cli_zip_node));
+	new = (struct cli_meta_node *) cli_calloc(1, sizeof(struct cli_meta_node));
 	if(!new) {
 	    ret = CL_EMEM;
 	    break;
@@ -817,9 +817,9 @@ static int cli_loadzmd(FILE *fd, struct cl_node **root, unsigned int *signo)
 	    break;
 	} else {
 	    if(!strcmp(pt, "*"))
-		new->compr = -1;
+		new->method = -1;
 	    else
-		new->compr = atoi(pt);
+		new->method = atoi(pt);
 	    free(pt);
 	}
 
@@ -851,8 +851,13 @@ static int cli_loadzmd(FILE *fd, struct cl_node **root, unsigned int *signo)
 	    free(pt);
 	}
 
-	new->next = (*root)->zip_mlist;
-	(*root)->zip_mlist = new;
+	if(type == 1) {
+	    new->next = (*root)->zip_mlist;
+	    (*root)->zip_mlist = new;
+	} else {
+	    new->next = (*root)->rar_mlist;
+	    (*root)->rar_mlist = new;
+	}
     }
 
     if(!line) {
@@ -907,7 +912,10 @@ int cl_loaddb(const char *filename, struct cl_node **root, unsigned int *signo)
 	ret = cli_loadndb(fd, root, signo);
 
     } else if(cli_strbcasestr(filename, ".zmd")) {
-	ret = cli_loadzmd(fd, root, signo);
+	ret = cli_loadmd(fd, root, signo, 1);
+
+    } else if(cli_strbcasestr(filename, ".rmd")) {
+	ret = cli_loadmd(fd, root, signo, 2);
 
     } else {
 	cli_dbgmsg("cl_loaddb: unknown extension - assuming old database format\n");
@@ -958,9 +966,10 @@ int cl_loaddbdir(const char *dirname, struct cl_node **root, unsigned int *signo
 	     cli_strbcasestr(dent->d_name, ".db2")  ||
 	     cli_strbcasestr(dent->d_name, ".db3")  ||
 	     cli_strbcasestr(dent->d_name, ".hdb")  ||
-	     cli_strbcasestr(dent->d_name, ".fp")  ||
+	     cli_strbcasestr(dent->d_name, ".fp")   ||
 	     cli_strbcasestr(dent->d_name, ".ndb")  ||
 	     cli_strbcasestr(dent->d_name, ".zmd")  ||
+	     cli_strbcasestr(dent->d_name, ".rmd")  ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbfile = (char *) cli_calloc(strlen(dent->d_name) + strlen(dirname) + 2, sizeof(char));
@@ -1040,6 +1049,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".fp")  || 
 	    cli_strbcasestr(dent->d_name, ".ndb")  || 
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 
+	    cli_strbcasestr(dent->d_name, ".rmd")  || 
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbstat->no++;
@@ -1110,6 +1120,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".fp")  || 
 	    cli_strbcasestr(dent->d_name, ".ndb")  || 
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 
+	    cli_strbcasestr(dent->d_name, ".rmd")  || 
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
                 fname = cli_calloc(strlen(dbstat->dir) + strlen(dent->d_name) + 2, sizeof(char));

@@ -120,15 +120,15 @@ static void cli_unlock_mutex(void *mtx)
 static int cli_scanrar(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	FILE *tmp = NULL;
-	int files = 0, fd, ret = CL_CLEAN, afiles;
+	int files = 0, fd, ret = CL_CLEAN, afiles, encrypted;
 	ArchiveList_struct *rarlist = NULL;
 	ArchiveList_struct *rarlist_head = NULL;
 	char *rar_data_ptr;
 	unsigned long rar_data_size;
+	struct cli_meta_node *mdata;
 
 
     cli_dbgmsg("in scanrar()\n");
-
 
 #ifdef CL_THREAD_SAFE
     pthread_cleanup_push(cli_unlock_mutex, &cli_scanrar_mutex);
@@ -136,7 +136,7 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
     cli_scanrar_inuse = 1;
 #endif
 
-    if(! (afiles = urarlib_list(desc, (ArchiveList_struct *) &rarlist))) {
+    if(!(afiles = urarlib_list(desc, (ArchiveList_struct *) &rarlist))) {
 #ifdef CL_THREAD_SAFE
 	pthread_mutex_unlock(&cli_scanrar_mutex);
 	cli_scanrar_inuse = 0;
@@ -149,8 +149,52 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
     rarlist_head = rarlist;
 
     while(rarlist) {
+
+	files++;
+	encrypted = rarlist->item.Flags & 0x04;
+
+	cli_dbgmsg("RAR: %s, crc32: 0x%x, encrypted: %d, compressed: %u, normal: %u, method: %d, ratio: %d (max: %d)\n", rarlist->item.Name, rarlist->item.FileCRC, encrypted, rarlist->item.PackSize, rarlist->item.UnpSize, rarlist->item.Method, rarlist->item.PackSize ? (rarlist->item.UnpSize / rarlist->item.PackSize) : 0, limits ? limits->maxratio : -1);
+
+	/* Scan metadata */
+	mdata = root->rar_mlist;
+	if(mdata) do {
+	    if(mdata->encrypted != encrypted)
+		continue;
+
+	    if(mdata->crc32 && mdata->crc32 != rarlist->item.FileCRC)
+		continue;
+
+	    if(mdata->csize > 0 && mdata->csize != rarlist->item.PackSize)
+		continue;
+
+	    if(mdata->size >= 0 && mdata->size != rarlist->item.UnpSize)
+		continue;
+
+	    if(mdata->method >= 0 && mdata->method != rarlist->item.Method)
+		continue;
+
+	    if(mdata->fileno && mdata->fileno != files)
+		continue;
+
+	    if(mdata->maxdepth && *arec > mdata->maxdepth)
+		continue;
+
+	    /* TODO add support for regex */
+	    /*if(mdata->filename && !strstr(zdirent.d_name, mdata->filename))*/
+	    if(mdata->filename && strcmp(rarlist->item.Name, mdata->filename))
+		continue;
+
+	    break; /* matched */
+
+	} while((mdata = mdata->next));
+
+	if(mdata) {
+	    *virname = mdata->virname;
+	    ret = CL_VIRUS;
+	    break;
+	}
+
 	if(DETECT_ENCRYPTED && (rarlist->item.Flags & 0x04)) {
-	    files++;
 	    cli_dbgmsg("RAR: Encrypted files found in archive.\n");
 	    lseek(desc, 0, SEEK_SET);
 	    ret = cli_scandesc(desc, virname, scanned, root, 0, 0);
@@ -166,7 +210,6 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 	if((rarlist->item.Flags & 0x03) != 0) {
 	    cli_dbgmsg("RAR: Skipping %s (splitted)\n", rarlist->item.Name);
 	    rarlist = rarlist->next;
-	    files++;
 	    continue;
 	}
 
@@ -184,7 +227,6 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 	    if(limits->maxfilesize && (rarlist->item.UnpSize > (unsigned int) limits->maxfilesize)) {
 		cli_dbgmsg("RAR: %s: Size exceeded (%u, max: %lu)\n", rarlist->item.Name, (unsigned int) rarlist->item.UnpSize, limits->maxfilesize);
 		rarlist = rarlist->next;
-		files++;
 		if(BLOCKMAX) {
 		    *virname = "RAR.ExceededFileSize";
 		    ret = CL_VIRUS;
@@ -206,7 +248,6 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 
         if(rarlist->item.FileAttr & RAR_FENTRY_ATTR_DIRECTORY) {
             rarlist = rarlist->next;
-            files++;
             continue;
         }
 
@@ -273,7 +314,6 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 	fclose(tmp);
 	tmp = NULL;
 	rarlist = rarlist->next;
-	files++;
     }
 
     urarlib_freelist(rarlist_head);
@@ -298,7 +338,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	char *buff;
 	int fd, bytes, files = 0, ret = CL_CLEAN, encrypted;
 	struct stat source;
-	struct cli_zip_node *mdata;
+	struct cli_meta_node *mdata;
 	zzip_error_t err;
 
 
@@ -331,7 +371,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 
 	encrypted = zdirent.d_flags;
 
-	cli_dbgmsg("Zip: %s, crc32: 0x%x, encrypted: %d, compressed: %u, normal: %u, ratio: %d (max: %d)\n", zdirent.d_name, zdirent.d_crc32, encrypted, zdirent.d_csize, zdirent.st_size, zdirent.d_csize ? (zdirent.st_size / zdirent.d_csize) : 0, limits ? limits->maxratio : -1);
+	cli_dbgmsg("Zip: %s, crc32: 0x%x, encrypted: %d, compressed: %u, normal: %u, method: %d, ratio: %d (max: %d)\n", zdirent.d_name, zdirent.d_crc32, encrypted, zdirent.d_csize, zdirent.st_size, zdirent.d_compr, zdirent.d_csize ? (zdirent.st_size / zdirent.d_csize) : 0, limits ? limits->maxratio : -1);
 
 	if(!zdirent.st_size) {
 	    if(zdirent.d_crc32) {
@@ -358,7 +398,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	    if(mdata->size >= 0 && mdata->size != zdirent.st_size)
 		continue;
 
-	    if(mdata->compr >= 0 && mdata->compr != zdirent.d_compr)
+	    if(mdata->method >= 0 && mdata->method != zdirent.d_compr)
 		continue;
 
 	    if(mdata->fileno && mdata->fileno != files)
