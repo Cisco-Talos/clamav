@@ -2,7 +2,7 @@
 ----
 
 Due to a high number of bad files produced by broken software, the MS05-002
-exploit tester now only checks specific RIFF files. This version also fixes
+exploit detector now only checks specific RIFF files. This version also fixes
 a stability problem of clamav-milter/clamd and improves e-mail scanning.
 
 --
