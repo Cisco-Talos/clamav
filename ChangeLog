@@ -1,3 +1,7 @@
+Sat Sep  4 23:07:05 CEST 2004 (tk)
+----------------------------------
+  * clamscan: add support for special files in stdin mode
+
 Sat Sep  4 17:46:39 CEST 2004 (tk)
 ----------------------------------
   * clamd: make output of VERSION compatible with clamd --version

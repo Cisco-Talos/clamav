@@ -63,7 +63,7 @@ dev_t procdev;
 int scanmanager(const struct optstruct *opt)
 {
 	mode_t fmode;
-	int ret = 0, compression = 0, fmodeint;
+	int ret = 0, compression = 0, fmodeint, options = 0;
 	struct cl_node *trie = NULL;
 	struct cl_limits *limits = NULL;
 	struct passwd *user = NULL;
@@ -160,6 +160,43 @@ int scanmanager(const struct optstruct *opt)
     else
         limits->maxratio = 200;
 
+    /* set options */
+
+    if(optl(opt, "disable-archive") || optl(opt, "no-archive"))
+	options &= ~CL_ARCHIVE;
+    else
+	options |= CL_ARCHIVE;
+
+    if(optl(opt, "detect-broken"))
+	options |= CL_BROKEN;
+
+    if(optl(opt, "block-encrypted"))
+	options |= CL_ENCRYPTED;
+
+    if(optl(opt, "no-pe"))
+	options &= ~CL_PE;
+    else
+	options |= CL_PE;
+
+    if(optl(opt, "no-ole2"))
+	options &= ~CL_OLE2;
+    else
+	options |= CL_OLE2;
+
+    if(optl(opt, "no-html"))
+	options &= ~CL_HTML;
+    else
+	options |= CL_HTML;
+
+    if(optl(opt, "no-mail")) {
+	options &= ~CL_MAIL;
+    } else {
+	options |= CL_MAIL;
+
+	if(optl(opt, "mail-follow-urls"))
+	    options |= CL_MAILURL;
+    }
+
 #ifdef C_LINUX
     if(stat("/proc", &sb) == -1)
 	procdev = 0;
@@ -175,10 +212,10 @@ int scanmanager(const struct optstruct *opt)
 	    mprintf("@Can't get absolute pathname of current working directory.\n");
 	    ret = 57;
 	} else
-	    ret = scandirs(cwd, trie, user, opt, limits);
+	    ret = scandirs(cwd, trie, user, opt, limits, options);
 
     } else if(!strcmp(opt->filename, "-")) { /* read data from stdin */
-	ret = checkstdin(trie, limits);
+	ret = checkstdin(trie, limits, options);
 
     } else {
 	int x;
@@ -211,11 +248,11 @@ int scanmanager(const struct optstruct *opt)
 
 		switch(fmode & S_IFMT) {
 		    case S_IFREG:
-			ret = scanfile(fullpath, trie, user, opt, limits);
+			ret = scanfile(fullpath, trie, user, opt, limits, options);
 			break;
 
 		    case S_IFDIR:
-			ret = scandirs(fullpath, trie, user, opt, limits);
+			ret = scandirs(fullpath, trie, user, opt, limits, options);
 			break;
 
 		    default:
@@ -269,9 +306,9 @@ int match_regex(const char *filename, const char *pattern)
 #endif
 }
 
-int scanfile(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits)
+int scanfile(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options)
 {
-	int ret, options = 0, included;
+	int ret, included;
 	struct optnode *optnode;
 	char *argument;
 #ifdef C_LINUX
@@ -320,41 +357,6 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	if(!printinfected)
 	    mprintf("%s: Empty file.\n", filename);
 	return 0;
-    }
-
-    if(optl(opt, "disable-archive") || optl(opt, "no-archive"))
-	options &= ~CL_ARCHIVE;
-    else
-	options |= CL_ARCHIVE;
-
-    if(optl(opt, "detect-broken"))
-	options |= CL_BROKEN;
-
-    if(optl(opt, "block-encrypted"))
-	options |= CL_ENCRYPTED;
-
-    if(optl(opt, "no-pe"))
-	options &= ~CL_PE;
-    else
-	options |= CL_PE;
-
-    if(optl(opt, "no-ole2"))
-	options &= ~CL_OLE2;
-    else
-	options |= CL_OLE2;
-
-    if(optl(opt, "no-html"))
-	options &= ~CL_HTML;
-    else
-	options |= CL_HTML;
-
-    if(optl(opt, "no-mail")) {
-	options &= ~CL_MAIL;
-    } else {
-	options |= CL_MAIL;
-
-	if(optl(opt, "mail-follow-urls"))
-	    options |= CL_MAILURL;
     }
 
     /* 
@@ -420,11 +422,11 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 			    return 0;
 			}
 
-		    return(scandenied(filename, root, user, opt, limits));
+		    return(scandenied(filename, root, user, opt, limits, options));
 		}
 		return 0;
 	    case 1:
-		return(scancompressed(filename, root, user, opt, limits));
+		return(scancompressed(filename, root, user, opt, limits, options));
 	}
     }
 
@@ -452,7 +454,7 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 }
 
 /* it has guaranteed read access to the archive */
-int scancompressed(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits)
+int scancompressed(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options)
 {
 	int ret = 0;
 	char *tmpdir, *gendir, *userprg;
@@ -575,7 +577,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
     fixperms(gendir);
 
     if(!ret) /* execute successful */
-	ret = treewalk(gendir, root, user, opt, limits);
+	ret = treewalk(gendir, root, user, opt, limits, options);
 
     /* remove the directory  - as clamav */
     clamav_rmdirs(gendir);
@@ -658,7 +660,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
     }
 }
 
-int scandenied(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits)
+int scandenied(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options)
 {
 	char *tmpdir, *gendir, *tmpfile, *pt;
 	struct stat statbuf;
@@ -716,7 +718,7 @@ int scandenied(const char *filename, struct cl_node *root, const struct passwd *
 	chown(tmpfile, user->pw_uid, user->pw_gid);
     }
 
-    if((ret = treewalk(gendir, root, user, opt, limits)) == 1) {
+    if((ret = treewalk(gendir, root, user, opt, limits, options)) == 1) {
 	logg("(Real infected archive: %s)\n", filename);
 	mprintf("(Real infected archive: %s)\n", filename);
 
@@ -742,9 +744,9 @@ int scandenied(const char *filename, struct cl_node *root, const struct passwd *
     return ret;
 }
 
-int scandirs(const char *dirname, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits)
+int scandirs(const char *dirname, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options)
 {
-	return treewalk(dirname, root, user, opt, limits);
+	return treewalk(dirname, root, user, opt, limits, options);
 }
 
 int checkfile(const char *filename, const struct cl_node *root, const struct cl_limits *limits, int options)
@@ -781,15 +783,44 @@ int checkfile(const char *filename, const struct cl_node *root, const struct cl_
     return ret;
 }
 
-int checkstdin(const struct cl_node *root, const struct cl_limits *limits)
+int checkstdin(const struct cl_node *root, const struct cl_limits *limits, int options)
 {
 	int ret;
-	const char *virname;
+	const char *virname, *tmpdir;
+	char *file, buff[FILEBUFF];
+	FILE *fs;
 
+
+    /* check write access */
+    tmpdir = getenv("TMPDIR");
+
+    if(tmpdir == NULL)
+#ifdef P_tmpdir
+	tmpdir = P_tmpdir;
+#else
+	tmpdir = "/tmp";
+#endif
+
+    if(checkaccess(tmpdir, UNPUSER, W_OK) != 1) {
+	mprintf("@Can't write to temporary directory.\n");
+	return 64;
+    }
+
+    file = cli_gentemp(tmpdir);
+
+    if(!(fs = fopen(file, "wb"))) {
+	mprintf("@Can't open %s for writing\n", file);
+	return 63;
+    }
+
+    while((ret = fread(buff, 1, FILEBUFF, stdin)))
+	fwrite(buff, 1, ret, fs);
+
+    fclose(fs);
 
     claminfo.files++;
 
-    if((ret = cl_scandesc(0, &virname, &claminfo.blocks, root, limits, CL_RAW)) == CL_VIRUS) {
+    if((ret = cl_scanfile(file, &virname, &claminfo.blocks, root, limits, options)) == CL_VIRUS) {
 	mprintf("stdin: %s FOUND\n", virname);
 	claminfo.ifiles++;
 
@@ -803,6 +834,8 @@ int checkstdin(const struct cl_node *root, const struct cl_limits *limits)
 	if(!printinfected)
 	    mprintf("stdin: %s\n", cl_strerror(ret));
 
+    unlink(file);
+    free(file);
     return ret;
 }
 

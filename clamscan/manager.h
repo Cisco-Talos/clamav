@@ -25,17 +25,17 @@
 
 int scanmanager(const struct optstruct *opt);
 
-int scanfile(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits);
+int scanfile(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options);
 
-int scancompressed(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits);
+int scancompressed(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options);
 
-int scandenied(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits);
+int scandenied(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options);
 
-int scandirs(const char *dirname, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits);
+int scandirs(const char *dirname, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options);
 
 int checkfile(const char *filename, const struct cl_node *root, const struct cl_limits *limits, int compr);
 
-int checkstdin(const struct cl_node *root, const struct cl_limits *limits);
+int checkstdin(const struct cl_node *root, const struct cl_limits *limits, int options);
 
 #ifdef CLAMSCAN_THREADS
  int thr_exitno, thr_pid;

@@ -45,7 +45,7 @@
  * with some small changes.
  */
 
-int treewalk(const char *dirname, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits)
+int treewalk(const char *dirname, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options)
 {
 	DIR *dd;
 	struct dirent *dent;
@@ -69,10 +69,10 @@ int treewalk(const char *dirname, struct cl_node *root, const struct passwd *use
 		    /* stat the file */
 		    if(lstat(fname, &statbuf) != -1) {
 			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode) && recursion)
-			    treewalk(fname, root, user, opt, limits);
+			    treewalk(fname, root, user, opt, limits, options);
 			else
 			    if(S_ISREG(statbuf.st_mode))
-				scanret += scanfile(fname, root, user, opt, limits);
+				scanret += scanfile(fname, root, user, opt, limits, options);
 		    }
 		    free(fname);
 		}
