@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.131  2004/12/14 16:45:43  nigelhorne
+ * Backtrack quoted-printable broken fix
+ *
  * Revision 1.130  2004/12/14 10:27:57  nigelhorne
  * Better reclaiming when running short of memory
  *
@@ -387,7 +390,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.130 2004/12/14 10:27:57 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.131 2004/12/14 16:45:43 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -458,10 +461,10 @@ static	int	simil(const char *str1, const char *str2);
 static	const	struct	encoding_map {
 	const	char	*string;
 	encoding_type	type;
-} encoding_map[] = {	/* rfc1521 */
+} encoding_map[] = {	/* rfc2045 */
 	{	"7bit",			NOENCODING	},
 	{	"text/plain",		NOENCODING	},
-	{	"quoted-printable",	QUOTEDPRINTABLE	},	/* rfc1521 */
+	{	"quoted-printable",	QUOTEDPRINTABLE	},	/* rfc2045 */
 	{	"base64",		BASE64		},	/* rfc2045 */
 	{	"8bit",			EIGHTBIT	},
 	{	"binary",		BINARY		},
@@ -810,7 +813,7 @@ messageAddArguments(message *m, const char *s)
 		data = strchr(string, '=');
 
 		/*
-		 * Some spam breaks RFC1521 by using ':' instead of '='
+		 * Some spam breaks RFC2045 by using ':' instead of '='
 		 * e.g.:
 		 *	Content-Type: text/html; charset:ISO-8859-1
 		 * should be:
@@ -837,7 +840,7 @@ messageAddArguments(message *m, const char *s)
 
 		/*
 		 * Handle white space to the right of the equals sign
-		 * This breaks RFC1521 which has:
+		 * This breaks RFC2045 which has:
 		 *	parameter := attribute "=" value
 		 *	attribute := token   ; case-insensitive
 		 *	token  :=  1*<any (ASCII) CHAR except SPACE, CTLs,
@@ -1785,7 +1788,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			}
 
 			/*
-			 * According to RFC1521, '=' is used to pad out
+			 * According to RFC2045, '=' is used to pad out
 			 * the last byte and should be used as evidence
 			 * of the end of the data. Some mail clients
 			 * annoyingly then put plain text after the '='
@@ -2178,11 +2181,23 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 				break;
 			}
 
+#if	0
 			/*
-			 * Section 5.1 of RFC1521 states that any number of white
+			 * Section 5.1 of RFC2045 states that any number of white
 			 * space characters may appear on the end of the line
 			 * before the final '=' which indicates a soft break.
+			 *
+			 * Section 6.7.(3) of RFC2045 is no clearer.
+			 *
 			 * This means that we have to do a look ahead here.
+			 *
+			 * This is a real pain because not everyone is
+			 * aware of the implication of the above sentence,
+			 * namely that you must encode any white space before
+			 * the final '=' to ensure it is correctly transfered
+			 * otherwise it is dropped.
+			 * This code adheres to the RFC, but I don't think most
+			 * other software does so I may have to change it
 			 */
 			p2 = strchr(line, '\0');
 			if(p2 == line) {	/* empty line */
@@ -2216,7 +2231,7 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 					if((*++line == '\0') || (*line == '\n')) {
 						/*
 						 * broken e-mail, not
-						 * adhering to RFC1521
+						 * adhering to RFC2045
 						 */
 						*buf++ = byte;
 						break;
@@ -2229,6 +2244,37 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 					*buf++ = *line;
 				line++;
 			}
+#else
+			softbreak = FALSE;
+			while(*line) {
+				if(*line == '=') {
+					unsigned char byte;
+
+					if((*++line == '\0') || (*line == '\n')) {
+						softbreak = TRUE;
+						/* soft line break */
+						break;
+					}
+
+					byte = hex(*line);
+
+					if((*++line == '\0') || (*line == '\n')) {
+						/*
+						 * broken e-mail, not
+						 * adhering to RFC2045
+						 */
+						*buf++ = byte;
+						break;
+					}
+
+					byte <<= 4;
+					byte += hex(*line);
+					*buf++ = byte;
+				} else
+					*buf++ = *line;
+				line++;
+			}
+#endif
 			if(!softbreak)
 				/* Put the new line back in */
 				*buf++ = '\n';
@@ -2238,7 +2284,7 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 			if(line == NULL)
 				break;
 			/*
-			 * RFC1521 sets the maximum length to 76 bytes
+			 * RFC2045 sets the maximum length to 76 bytes
 			 * but many e-mail clients ignore that
 			 */
 			copy = strdup(line);
@@ -2531,7 +2577,7 @@ hex(char c)
 	cli_dbgmsg("Illegal hex character '%c'\n", c);
 
 	/*
-	 * Some mails (notably some spam) break RFC1521 by failing to encode
+	 * Some mails (notably some spam) break RFC2045 by failing to encode
 	 * the '=' character
 	 */
 	return '=';
