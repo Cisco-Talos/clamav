@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.152  2004/11/12 16:48:57  nigelhorne
+ * Use SCAN when in localSocket mode
+ *
  * Revision 1.151  2004/11/08 20:40:34  nigelhorne
  * Typo
  *
@@ -464,9 +467,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.151 2004/11/08 20:40:34 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.152 2004/11/12 16:48:57 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80q"
+#define	CM_VERSION	"0.80r"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -576,6 +579,9 @@ typedef	unsigned int	in_addr_t;
  *	others could be bounced properly.
  * TODO: Encrypt mails sent to clamd to stop sniffers
  * TODO: Test with IPv6
+ * TODO: Files can be scanned with "SCAN" not "STREAM" if clamd is on the same
+ *	machine when talking via INEt domain socket.
+ * TODO: Load balancing, allow local machine to talk via UNIX domain socket.
  */
 
 struct header_node_t {
@@ -759,6 +765,7 @@ static	int	logClean = 1;	/*
 static	char	*signature = N_("-- \nScanned by ClamAv - http://www.clamav.net\n");
 static	time_t	signatureStamp;
 static	char	*templatefile;	/* e-mail to be sent when virus detected */
+static	char	*tmpdir;
 
 #ifdef	CL_DEBUG
 static	int	debug_level = 0;
@@ -805,6 +812,16 @@ static	pthread_mutex_t sstatus_mutex = PTHREAD_MUTEX_INITIALIZER;
 static	pthread_cond_t	watchdog_cond = PTHREAD_COND_INITIALIZER;
 
 #endif	/*SESSION*/
+
+#ifndef	SHUT_RD
+#define	SHUT_RD		0
+#endif
+#ifndef	SHUT_WR
+#define	SHUT_WR		1
+#endif
+#ifndef	INET_ADDRSTRLEN
+#define	INET_ADDRSTRLEN	16
+#endif
 
 static	const	char	*postmaster = "postmaster";
 static	const	char	*from = "MAILER-DAEMON";
@@ -1498,6 +1515,29 @@ main(int argc, char **argv)
 			return EX_TEMPFAIL;
 	}
 #endif
+
+	if((quarantine_dir == NULL) && localSocket) {
+		/* set the temporary dir */
+		if((cpt = cfgopt(copt, "TemporaryDirectory")))
+			tmpdir = cpt->strarg;
+		else if((tmpdir = getenv("TMPDIR")) == (char *)NULL)
+			if((tmpdir = getenv("TMP")) == (char *)NULL)
+				if((tmpdir = getenv("TEMP")) == (char *)NULL)
+#ifdef	P_tmpdir
+					tmpdir = P_tmpdir;
+#else
+					tmpdir = "/tmp";
+#endif
+
+		tmpdir = cli_gentemp(tmpdir);
+
+		if(mkdir(tmpdir, 0700)) {
+			perror(tmpdir);
+			return EX_CANTCREAT;
+		}
+		cl_settempdir(tmpdir, (cfgopt(copt, "LeaveTemporaryFiles") != NULL));
+	} else
+		tmpdir = NULL;
 
 	if(!cfgopt(copt, "Foreground")) {
 #ifdef	CL_DEBUG
@@ -2474,7 +2514,7 @@ clamfi_eom(SMFICTX *ctx)
 	close(privdata->dataSocket);
 	privdata->dataSocket = -1;
 
-	if(quarantine_dir != NULL) {
+	if(quarantine_dir || tmpdir) {
 		char cmdbuf[1024];
 		/*
 		 * Create socket to talk to clamd.
@@ -2489,6 +2529,7 @@ clamfi_eom(SMFICTX *ctx)
 		strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
 
 		snprintf(cmdbuf, sizeof(cmdbuf) - 1, "SCAN %s", privdata->filename);
+		cli_dbgmsg("clamfi_eom: SCAN %s\n", privdata->filename);
 
 		nbytes = (int)strlen(cmdbuf);
 
@@ -2848,7 +2889,7 @@ clamfi_eom(SMFICTX *ctx)
 						fprintf(sendmail, "\t%s\n", *to);
 					fprintf(sendmail, _("contained %s and has not been delivered.\n"), virusname);
 
-					if(privdata->filename != NULL)
+					if(quarantine_dir != NULL)
 						if(qfile(privdata, virusname) == 0)
 							fprintf(sendmail, _("\nThe message in question has been quarantined as %s\n"), privdata->filename);
 
@@ -2879,7 +2920,7 @@ clamfi_eom(SMFICTX *ctx)
 		}
 
 		if(privdata->filename) {
-			assert(quarantine_dir != NULL);
+			assert(quarantine_dir || tmpdir);
 
 			if(use_syslog)
 				syslog(LOG_NOTICE, _("Quarantined infected mail as %s"), privdata->filename);
@@ -3159,14 +3200,14 @@ clamfi_send(struct privdata *privdata, size_t len, const char *format, ...)
 #endif
 
 	while(len > 0) {
-		const int nbytes = (quarantine_dir) ?
+		const int nbytes = (quarantine_dir || tmpdir) ?
 			write(privdata->dataSocket, ptr, len) :
 			send(privdata->dataSocket, ptr, len, 0);
 
 		assert(privdata->dataSocket >= 0);
 
 		if(nbytes == -1) {
-			if(quarantine_dir) {
+			if(quarantine_dir || tmpdir) {
 				perror(privdata->filename);
 				if(use_syslog) {
 #ifdef HAVE_STRERROR_R
@@ -3401,7 +3442,7 @@ connect2clamd(struct privdata *privdata)
 		cli_dbgmsg("connect2clamd\n");
 #endif
 
-	if(quarantine_dir) {
+	if(quarantine_dir || tmpdir) {
 		/*
 		 * quarantine_dir is specified
 		 * store message in a temporary file
@@ -3410,6 +3451,7 @@ connect2clamd(struct privdata *privdata)
 		time_t t;
 		int MM, YY, DD;
 		const struct tm *tm;
+		const char *dir = (tmpdir) ? tmpdir : quarantine_dir;
 
 		/*
 		 * Based on an idea by Christian Pelissier
@@ -3422,9 +3464,9 @@ connect2clamd(struct privdata *privdata)
 		YY = tm->tm_year - 100;
 		DD = tm->tm_mday;
 
-		privdata->filename = (char *)cli_malloc(strlen(quarantine_dir) + 19);
+		privdata->filename = (char *)cli_malloc(strlen(dir) + 19);
 
-		sprintf(privdata->filename, "%s/%02d%02d%02d", quarantine_dir,
+		sprintf(privdata->filename, "%s/%02d%02d%02d", dir,
 			YY, MM, DD);
 
 		if((mkdir(privdata->filename, 0700) < 0) && (errno != EEXIST)) {
@@ -3437,7 +3479,7 @@ connect2clamd(struct privdata *privdata)
 		do {
 			sprintf(privdata->filename,
 				"%s/%02d%02d%02d/msg.XXXXXX",
-				quarantine_dir, YY, MM, DD);
+				dir, YY, MM, DD);
 #if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS)
 			privdata->dataSocket = mkstemp(privdata->filename);
 #else
@@ -3523,6 +3565,8 @@ connect2clamd(struct privdata *privdata)
 		}
 
 #ifdef	SESSION
+		cli_dbgmsg("connect2clamd(%d): STREAM\n", freeServer);
+
 		if(send(cmdSockets[freeServer], "STREAM\n", 7, 0) < 7) {
 			perror("send");
 			pthread_mutex_lock(&sstatus_mutex);
@@ -4230,6 +4274,8 @@ logg_facility(const char *name)
 static void
 quit(void)
 {
+	extern short cli_leavetemps_flag;
+
 #ifdef	SESSION
 	int i;
 
@@ -4267,6 +4313,10 @@ quit(void)
 	if(use_syslog)
 		syslog(LOG_INFO, _("Stopping %s"), clamav_version);
 #endif
+
+	if(tmpdir && !cli_leavetemps_flag)
+		rmdir(tmpdir);
+
 	broadcast(_("Stopping clamav-milter"));
 }
 
