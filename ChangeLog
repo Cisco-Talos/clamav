@@ -1,3 +1,7 @@
+Thu Sep 16 21:14:08 CEST 2004 (tk)
+----------------------------------
+  * sigtool: add support for new database names
+
 Thu Sep 16 19:02:38 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Handle RFC2047 encoded headers
