@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.190  2004/11/27 14:49:13  nigelhorne
+ * Use a static array for the partial directory
+ *
  * Revision 1.189  2004/11/27 14:39:01  nigelhorne
  * Honour section 7.2.6 of RFC1521
  *
@@ -555,7 +558,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.189 2004/11/27 14:39:01 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.190 2004/11/27 14:49:13 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2980,7 +2983,7 @@ rfc1341(message *m, const char *dir)
 	fileblob *fb;
 	char *arg, *id, *number, *total, *oldfilename;
 	const char *tmpdir;
-	char *pdir;
+	char pdir[NAME_MAX + 1];
 
 #ifdef  CYGWIN
 	if((tmpdir = getenv("TEMP")) == (char *)NULL)
@@ -2998,22 +3001,16 @@ rfc1341(message *m, const char *dir)
 #endif
 #endif
 
-	pdir = cli_malloc(strlen(tmpdir) + 16);
-	if(pdir == NULL)
-		return -1;
-
-	sprintf(pdir, "%s/clamav-partial", tmpdir);
+	snprintf(pdir, sizeof(pdir) - 1, "%s/clamav-partial", tmpdir);
 
 	if((mkdir(pdir, 0700) < 0) && (errno != EEXIST)) {
 		cli_errmsg("Can't create the directory '%s'\n", pdir);
-		free(pdir);
 		return -1;
 	} else {
 		struct stat statb;
 
 		if(stat(pdir, &statb) < 0) {
 			cli_errmsg("Can't stat the directory '%s'\n", pdir);
-			free(pdir);
 			return -1;
 		}
 		if(statb.st_mode & 077)
@@ -3022,14 +3019,11 @@ rfc1341(message *m, const char *dir)
 	}
 
 	id = (char *)messageFindArgument(m, "id");
-	if(id == NULL) {
-		free(pdir);
+	if(id == NULL)
 		return -1;
-	}
 	number = (char *)messageFindArgument(m, "number");
 	if(number == NULL) {
 		free(id);
-		free(pdir);
 		return -1;
 	}
 
@@ -3050,7 +3044,6 @@ rfc1341(message *m, const char *dir)
 	if((fb = messageToFileblob(m, pdir)) == NULL) {
 		free(id);
 		free(number);
-		free(pdir);
 		return -1;
 	}
 
@@ -3082,7 +3075,6 @@ rfc1341(message *m, const char *dir)
 				free(total);
 				free(number);
 				closedir(dd);
-				free(pdir);
 				return -1;
 			}
 
@@ -3127,7 +3119,6 @@ rfc1341(message *m, const char *dir)
 						free(total);
 						free(number);
 						closedir(dd);
-						free(pdir);
 						return -1;
 					}
 					nblanks = 0;
@@ -3161,7 +3152,6 @@ rfc1341(message *m, const char *dir)
 	}
 	free(id);
 	free(total);
-	free(pdir);
 
 	return 0;
 }
