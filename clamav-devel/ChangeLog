@@ -1,3 +1,7 @@
+Wed Aug  4 19:59:54 BST 2004 (njh)
+----------------------------------
+  * libclamav:	Improved the decoding of multipart messages and MIME headers
+
 Wed Aug  4 20:01:26 CEST 2004 (tk)
 ----------------------------------
   * libclamav: fix compilation error with Sun's compiler (reported by
