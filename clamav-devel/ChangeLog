@@ -1,3 +1,7 @@
+Mon Feb 23 00:43:44 CET 2004 (tk)
+---------------------------------
+  * libclamav: cl_rndnum: do not use buffered fread() (thanks to Nigel)
+
 Sun Feb 22 22:59:39 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter: Change the log level TCPwrapper denying
