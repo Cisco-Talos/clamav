@@ -22,388 +22,13 @@
  *
  * See http://www.nmt.edu/~wcolburn/sendmail-8.12.5/libmilter/docs/sample.html
  *
- * Installations for RedHat Linux and it's derivatives such as YellowDog:
- * 1) Ensure that you have the sendmail-devel RPM installed
- * 2) Add to /etc/mail/sendmail.mc:
- *	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clmilter.sock, F=, T=S:4m;R:4m')dnl
- *	define(`confINPUT_MAIL_FILTERS', `clamav')
- * 3) Check entry in /usr/local/etc/clamav.conf of the form:
- *	LocalSocket /var/run/clamav/clamd.sock
- *	StreamSaveToDisk
- * 4) If you already have a filter (such as spamassassin-milter from
- * http://savannah.nongnu.org/projects/spamass-milt) add it thus:
- *	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clmilter.sock, F=, T=S:4m;R:4m')dnl
- *	INPUT_MAIL_FILTER(`spamassassin', `S=local:/var/run/spamass.sock, F=, T=C:15m;S:4m;R:4m;E:10m')
- *	define(`confINPUT_MAIL_FILTERS', `spamassassin,clamav')dnl
- *	mkdir /var/run/clamav
- *	chown clamav /var/run/clamav	(if you use User clamav in clamav.conf)
- *	chmod 700 /var/run/clamav
- *
- * If you see an unsafe socket error from sendmail, it means that the
- * permissions of the /var/run/clamav directory are too open. Check you have
- * correctly run chown and chmod, it may also mean that clamav-milter hasn't
- * started, run ps and check your logs.
- *
- * The above example shows clamav-milter, clamd and sendmail all on the
- * same machine, however using TCP they may reside on different machines,
- * indeed clamav-milter is capable of talking to multiple clamds for redundancy
- * and load balancing.
- *
- * 5) You may find INPUT_MAIL_FILTERS is not needed on your machine, however it
- * is recommended by the Sendmail documentation and I suggest going along
- * with that.
- * 6) I suggest putting SpamAssassin first since you're more likely to get spam
- * than a virus/worm sent to you.
- * 7) Add to /etc/sysconfig/clamav-milter
- *	CLAMAV_FLAGS="--max-children=2 local:/var/run/clamav/clmilter.sock"
- * or if clamd is on a different machine
- *	CLAMAV_FLAGS="--max-children=2 --server=192.168.1.9 local:/var/run/clamav/clmilter.sock"
- *
- * If you want clamav-milter to listen on TCP for communication with sendmail,
- * for example if they are on different machines use inet:<port>.
- * On machine A (running sendmail) you would have in sendmail.mc:
- *	INPUT_MAIL_FILTER(`clamav', `S=inet:3311@machineb, F=, T=S:4m;R:4m')dnl
- * On machine B (running clamav-milter) you would start up clamav-milter thus:
- *	clamav-milter inet:3311
- *
- * 8) You should have received a script to put into /etc/init.d with this
- * software.
- * 9) run 'chown clamav /usr/local/sbin/clamav-milter; chmod 4700 /usr/local/sbin/clamav-milter
- *
- * Tested OK on Linux/x86 (RH8.0) with gcc3.2.
- *	cc -O3 -pedantic -Wuninitialized -Wall -pipe -mcpu=pentium -march=pentium -fomit-frame-pointer -ffast-math -finline-functions -funroll-loops clamav-milter.c -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o
- * Compiles OK on Linux/x86 with tcc 0.9.16, but fails to link errors with 'atexit'
- *	tcc -g -b -lmilter -lpthread clamav-milter.c...
- * Fails to compile on Linux/x86 with icc6.0 (complains about stdio.h...)
- *	icc -O3 -tpp7 -xiMKW -ipo -parallel -i_dynamic -w2 clamav-milter.c...
- * Fails to build on Linux/x86 with icc7.1 with -ipo (fails on libclamav.a - keeps saying run ranlib). Otherwise it builds and runs OK.
- *	icc -O2 -tpp7 -xiMKW -parallel -i_dynamic -w2 -march=pentium4 -mcpu=pentium4 clamav-milter.c...
- * Tested with Electric Fence 2.2.2
- *
- * Compiles OK on Linux/ppc (YDL2.3) with gcc2.95.4. Needs -lsmutil to link.
- *	cc -O3 -pedantic -Wuninitialized -Wall -pipe -fomit-frame-pointer -ffast-math -finline-functions -funroll-loop -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o -lsmutil
- * I haven't tested it further on this platform yet.
- * YDL3.0 should compile out of the box
-	cc -O3 -pedantic -Wuninitialized -Wall -pipe -fomit-frame-pointer -ffast-math -finline-functions -funroll-loop -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o -lsmutil
- *
- * Sendmail on MacOS/X (10.1) is provided without a development package so this
- * can't be run "out of the box"
- *
- * Solaris 8 doesn't have milter support so clamav-milter won't work unless
- * you rebuild sendmail from source.
- *
- * FreeBSD4.7 use /usr/local/bin/gcc30. GCC3.0 is an optional extra on
- * FreeBSD. It comes with getopt.h which is handy. To link you need
- * -lgnugetopt
- *	gcc30 -O3 -DCONFDIR=\"/usr/local/etc\" -I. -I.. -I../clamd -I../libclamav -pedantic -Wuninitialized -Wall -pipe -mcpu=pentium -march=pentium -fomit-frame-pointer -ffast-math -finline-functions -funroll-loops clamav-milter.c -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o -lgnugetopt
- *
- * FreeBSD4.8: compiles out of the box with either gcc2.95 or gcc3
- *
- * OpenBSD3.4: the supplied sendmail does not come with Milter support.
- * Do this *before* running configure (thanks for Per-Olov Sjöhol
- * <peo_s@incedo.org>for these instructions).
- *
- *	echo WANT_LIBMILTER=1 > /etc/mk.conf
- *	cd /usr/src/gnu/usr.sbin/sendmail
- *	make depend
- *	make
- *	make install
- *	kill -HUP `sed q /var/run/sendmail.pid`
- *
- * Then do this to make the milter headers available to clamav...
- * (the libmilter.a file is already in the right place after the sendmail
- * recompiles above)
- *
- *	cd /usr/include
- *	ln -s ../src/gnu/usr.sbin/sendmail/include/libmilter libmilter
- *
- * Solaris 9 and FreeBSD5 have milter support in the supplied sendmail, but
- * doesn't include libmilter so you can't develop milter applications on it.
- * Go to sendmail.org, download the lastest sendmail, cd to libmilter and
- * "make install" there.
- *
- * Needs -lresolv on Solaris
- *
- * Changes
- *	0.2:	4/3/03	clamfi_abort() now always calls pthread_mutex_unlock
- *		5/3/03	Only send a bounce if -b is set
- *			Version now uses -v not -V
- *			--config-file couldn't be set by -c
- *	0.3	7/3/03	Enhanced the Solaris compile time comment
- *			No need to save the return result of LogSyslog
- *			Use LogVerbose
- *	0.4	9/3/03	Initialise dataSocket/cmdSocket correctly
- *		10/3/03	Say why we don't connect() to clamd
- *			Enhanced '-l' usage message
- *	0.5	18/3/03	Ported to FreeBSD 4.7
- *			Source no longer in support, so remove one .. from
- *			the build instructions
- *			Corrected the use of strerror_r
- *	0.51	20/3/03	Mention StreamSaveToDisk in the installation
- *			Added -s option which allows clamd to run on a
- *			different machine from the milter
- *	0.52	20/3/03	-b flag now only stops the bounce, sends warning
- *			to recipient and postmaster
- *	0.53	24/3/03	%d->%u in syslog call
- *		27/3/03	tcpSocket is now of type in_port_t
- *		27/3/03	Use PING/PONG
- *	0.54	23/5/03	Allow a range of IP addresses as outgoing ones
- *			that need not be checked
- *	0.55	24/5/03	Use inet_ntop() instead of inet_ntoa()
- *			Thanks to Krzysztof Olędzki <ole@ans.pl>
- *	0.60	11/7/03	Added suggestions by Nigel Kukard <nkukard@lbsd.net>
- *			Should stop a couple of remote chances of crashes
- *	0.60a	22/7/03	Tidied up message when sender is unknown
- *	0.60b	17/8/03	Optionally set postmaster address. Usually one uses
- *			/etc/aliases, but not everyone want's to...
- *	0.60c	22/8/03	Another go at Solaris support
- *	0.60d	26/8/03	Removed superfluous buffer and unneeded strerror call
- *			ETIMEDOUT isn't an error, but should give a warning
- *	0.60e	09/9/03	Added -P and -q flags by "Nicholas M. Kirsch"
- *			<nick@kirsch.org>
- *	0.60f	24/9/03	Changed fprintf to fputs where possible
- *			Redirect stdin from /dev/null, stdout&stderr to
- *			/dev/console
- *	0.60g	26/9/03	Handle sendmail calling abort after calling cleanup
- *			(Should never happen - but it does)
- *			Added -noxheader patch from dirk.meyer@dinoex.sub.org
- *	0.60h	28/9/03	Support MaxThreads option in config file,
- *			overriden by --max-children.
- *			Patch from "Richard G. Roberto" <rgr@dedlegend.com>
- *	0.60i	30/9/03	clamfi_envfrom() now correctly returns SMFIS_TEMPFAIL,
- *			in a few circumstances it used to return EX_TEMPFAIL
- *			Patch from Matt Sullivan <matt@sullivan.gen.nz>
- *	0.60j	1/10/03	strerror_r doesn't work on Linux, attempting workaround
- *			Added support for hard-coded list of email addresses
- *			who's e-mail is not scanned
- *	0.60k	5/10/03	Only remove old UNIX domain socket if FixStaleSocket
- *			is set
- *	0.60l	11/10/03 port is now unsigned
- *			Removed remote possibility of crash if the target
- *			e-mail address is very long
- *			No longer calls clamdscan to get the version
- *	0.60m	12/10/03 Now does sanity check if using localSocket
- *			Gets version info from clamd
- *			Only reset fd's 0/1/2 if !ForeGround
- *	0.60n	22/10/03 Call pthread_cont_broadcast more often
- *	0.60o	31/10/03 Optionally accept all mails if scanning procedure
- *			fails (Joe Talbott <josepht@cstone.net>)
- *	0.60p	5/11/03	Only call mutex_unlock when max_children is set
- *			Tidy up the call to pthread_cond_timedwait
- *	0.60q	11/11/03 Fixed handling of % characters in e-mail addresses
- *			pointed out by dotslash@snosoft.com
- *	0.65	15/11/03 Upissue of clamav
- *	0.65a	19/11/03 Close cmdSocket earlier
- *			Added setpgrp()
- *	0.65b	22/11/03 Ensure milter is not run as root if requested
- *			Added quarantine support
- *	0.65c	24/11/03 Support AllowSupplementaryGroups
- *			Fix warning about root usage
- *	0.65d	25/11/03 Handle empty hostname or hostaddr
- *			Fix based on a submission by Michael Dankov <misha@btrc.ru>
- *	0.65e	29/11/03 Fix problem of possible confused pointers if large
- *			number of recipients given.
- *			Fix by Michael Dankov <misha@btrc.ru>.
- *	0.65f	29/11/03 Added --quarantine-dir
- *			Thanks to Michael Dankov <misha@btrc.ru>.
- *	0.65g	2/12/03	Use setsid if setpgrp is not present.
- *			Thanks to Eugene Crosser <crosser@rol.ru>
- *	0.65h	4/12/03	Added call to umask to ensure that the local socket
- *			is not publically writeable. If it is sendmail
- *			will (correctly!) refuse to start this program
- *			Thanks for Nicklaus Wicker <n.wicker@cnk-networks.de>
- *			Don't sent From as the first line since that means
- *			clamd will think it is an mbox and not handle
- *			unescaped From at the start of lines properly
- *			Thanks to Michael Dankov <misha@btrc.ru>
- *	0.65i	9/12/03	Use the location of sendmail discovered by configure
- *	0.65j	10/12/03 Timeout on waiting for data from clamd
- *	0.65k	12/12/03 A couple of calls to clamfi_cleanup were missing
- *			before return cl_error
- *	0.66	13/12/03 Upissue
- *	0.66a	22/12/03 Added --sign
- *	0.66b	27/12/03 --sign moved to privdata
- *	0.66c	31/12/03 Included the sendmail queue ID in the log, from an
- *			idea by Andy Fiddaman <af@jeamland.org>
- *	0.66d	10/1/04	Added OpenBSD instructions
- *			Added --signature-file option
- *	0.66e	12/1/04	FixStaleSocket: no longer complain if asked to remove
- *			an old socket when there was none to remove
- *	0.66f	24/1/04	-s: Allow clamd server name as well as IPaddress
- *	0.66g	25/1/04 Corrected usage message
- *			Started to honour --debug
- *			Dump core on LINUX if CL_DEBUG set
- *			Support multiple servers separated by colons
- *	0.66h	26/1/04	Corrected endian problem (ntohs instead of htons)
- *	0.66i	28/1/04	Fixed compilation error with --enable-debug
- *	0.66j	29/1/03	Added --noreject flag, based on a patch by
- *			"Vijay Sarvepalli" <vssarvep@office.uncg.edu>
- *	0.66k	2/2/04	When --postmaster-only is given, include the system
- *			ID of the message in the warning e-mail, since that
- *			will help the administrator when sifting through the
- *			mail logs. Based on an idea by Jim Allen,
- *			<Jim.Allen@Heartsine.co.uk>
- *	0.66l	7/2/04	Updated URL reference
- *			Added new config.h mechanism
- *	0.66m	9/2/04	Added Hflag from "Leonid Zeitlin" <lz@europe.com>
- *	0.66n	13/2/04	Added TCPwrappers support
- *			Removed duplication in version string
- *			Handle machines that don't have in_port_t
- *	0.67	16/2/04	Upissued to 0.67
- *	0.67a	16/2/04	Added clamfi_free
- *	0.67b	17/2/04	Removed compilation warning - now compiles on FreeBSD5.2
- *			Don't allow --force to overwride TCPwrappers
- *	0.67c	18/2/04	Added dont-log-clean flag
- *	0.67d	19/2/04	Reworked TCPwrappers code
- *			Thanks to "Hector M. Rulot Segovia" <Hector.Rulot@uv.es>
- *			Changed some printf/puts to cli_dbgmsg
- *	0.67e	20/2/04	Moved the definition of the sendmail pipe
- *			The recent changes to the configure script changed
- *			the order of includes so some prototypes weren't
- *			getting in
- *	0.67f	20/2/04	Added checkClamd() - if possible attempts to see
- *			if clamd has died
- *	0.67g	21/2/04	Don't run if the quarantine-dir is publically accessable
- *	0.67h	22/2/04	Change the log level TCPwrapper denying
- *			Handle ERROR message from clamd
- *			Moved smfi_setconn to avoid race condictions when
- *			an e-mail is received just as the milter is starting
- *			but isn't ready to handle it causing the milter to
- *			go to an error state
- *			Hardend umask
- *	0.67i	27/2/04	Dropping priv message now same as clamd
- *			Only use TCPwrappers when using TCP/IP to establish
- *			communications with the milter
- *	0.67j	27/2/04	Call checkClamd() before attempting to connect, it's
- *			a way of warning the user if they've started the
- *			milter before clamd
- *			checkClamd() now stashes pid in syslog
- *			Ensure installation instructions tally with man page
- *			and put sockets into subdirectory for security
- *			clamfi_close debug, change assert to debug message
- *			Better way to force TCPwrappers only with TCP/IP
- *	0.67k	7/3/04	Ensure cli_dbgmsg's end with \n
- *			Fixed some warning messages with icc
- *			Use cli_[cm]alloc
- *			Included extra information if --headers is given (based
- *			on an idea from "Leonid Zeitlin" <lz@europe.com>
- *	0.67l	10/3/04	Use new HAVE_STRERROR_R rather than TARGET_OS_SOLARIS
- *			to determine if strerror_r exists
- *	0.70	17/3/04	Up-issued to 0.70
- *	0.70a	20/3/04	strerror_r is a bit confused on Fedora Linux. The
- *			man page says it returns an int, but the prototype
- *			in string.h says it returns a char *
- *			Say how many bytes can't be written to clamd - it may
- *			give a clue what's wrong
- *	0.70b	26/3/04	Display errno information on write failure to clamd
- *			Ensure errno is passed to strerror
- *			Print fd in clamfi_send debug
- *	0.70c	27/3/04	Timestamp clamfi_send messages
- *			Call cli_warnmsg if ERROR received
- *			Minor code tidy
- *			Delay connection to clamd to handle clamd's appetite
- *			for timing out when the remote end (the end talking to
- *			sendmail) is slow
- *			Prefer cli_dbgmsg/cli_warnmsg over printf
- *	0.70d	29/3/04	Print the sendmail ID with the virus note in syslog
- *			config file location has changed
- *	0.70e	1/4/04	Fix a remote possibility of a file descriptor leak
- *			in PingServer() if clamd has died
- *			Fix by Andrey J. Melnikoff (TEMHOTA) <temnota@kmv.ru>
- *			Corrected some debug messages reported by
- *			Sergey Y. Afonin <asy@kraft-s.ru>
- *	0.70f	1/4/04	Added auto-submitted header to messages generated here
- *			Suggested by "Andrey J. Melnikoff (TEMHOTA)"
- *			<temnota@kmv.ru>
- *			Add advice that --quarantine-dir may improve
- *			performance when LocalSocket is used
- *			ThreadTimeout seems to have been changed to ReadTimeout
- *	0.70g	3/4/04	Error if ReadTimeout is -ve
- *			Honour StreamMaxLength
- *	0.70h	8/4/04	Cleanup StreamMaxLength code
- *	0.70i	9/4/04	Handle clamd giving up on StreamMaxLength before
- *			clamav-milter
- *	0.70j	15/4/04	Handle systems without inet_ntop
- *	0.70k	17/4/04	Put the virus message in the 550 rejection
- *	0.70l	19/4/04	Started coding e-mail template support
- *	0.70m	19/4/04	Started code to parse header to find the real infected
- *			machine
- *			Added the --from flag
- *			Return SMFIS_TEMPFAIL when out of memory idea by
- *				Joe Maimon <jmaimon@ttec.com>
- *				Some still to be done
- *			Based on an idea by Christian Pelissier
- *				<Christian.Pelissier@onera.fr>. Store different
- *				day's quarantines in different directories to
- *				make them easier to manage
- *	0.70n	20/4/04	Allow for "i" macro not defined in sendmail.cf
- *			clamfi_connect: print better message if hostaddr is null
- *	0.70o	20/4/04	Added X-Virus-Status
- *			Always add X-Virus-Scanned
- *			If hostaddr is NULL assume it's a local connection. This
- *			is probably a safe assumption but it should be verified
- *	0.70p	20/4/04	If /dev/console fails to open, open /dev/null instead on
- *			fds 1 and 2
- *			TCP_WRAPPERS code now uses inet_ntop()
- *			Simplify virus string
- *			Sort out tabs in the hard coded e-mail message
- *	0.70q	22/4/04	No need to parse the received line if --headers is
- *				given
- *			If --outgoing is given put generated emails in the
- *				deferred queue to avoid the milter being called
- *			twice at the same time (one on the incoming one on the
- *				outgoing)
- *			header_list_print, ensure From lines are escaped, may
- *				not be needed but it is better to be on the
- *				safe side
- *			When loadbalancing, fail to start only if no servers
- *				can be reached (used to fail if any one server
- *				could not be reached)
- *			Not all servers were load balanced
- *	0.70r	23/4/04	Ensure only From lines are escaped
- *			Also defer generated emails if --force-scan is given
- *			Better subject for quarantine e-mails
- *	0.70s	25/4/04	Added --pidfile support
- *	0.70t	28/4/04	Better quarantine message error report when failing
- *				to create the temporary file
- *			Send 554 after DATA received, not 550
- *			Don't send rejection notices to rejection notices, we
- *				just end up playing ping-pong (patch by "Andrey
- *				J.Melnikoff (TEMHOTA)" <temnota@kmv.ru>
- *			If CL_DEBUG is defined, don't redirect stdout/stderr
- *			Don't attempt to return an old signature if no
- *				filename has been given. There has never been
- *				one to return
- *	0.70u	29/4/04	When changing from realloc to cli_realloc I forgot
- *			to keep the assignment of signature
- *	0.70v	6/5/04	clamfi_close now always checks privdata is NULL, not
- *				only when debugging
- *			Allow transfers of exactly streamMaxLength
- *			Warn if a clean file can't be removed from the
- *				quarantine
- *			When streamMaxLength is exceeded add a header where
- *				possible, unless --noxheader is given
- *	0.70x	9/5/04	Only report that we've dropped privilege if the setuid
- *				succeeded, fix by Jens Elkner
- *				<elkner@linofee.org>
- *			If logVerbose is set state both starting and started
- *				messages (based on an idea by "Sergey Y.
- *				Afonin" <asy@kraft-s.ru>
- *			Also added X-Infected-Received-From: header by Sergey
- *			Fix from Damian Menscher <menscher@uiuc.edu> ensures
- *				that when a child dies we continue when max
- *				children is hit
- *			Report an error if inet_ntop fails in tcp_wrappers
- *	0.71	16/5/04	Up issue
- *	0.71a	21/5/04	--from wasn't always a recognised option
- *			Write failure to quarantine file now logs the name
- *				of the file
- *			Commented out TKs advice about using quarantine
- *				when using localSocket, sys admins were
- *				confused by it
+ * For installation instructions see the file INSTALL that came with this file
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.90  2004/05/24 17:05:18  nigelhorne
+ * Include the hostname of the scanner in the headers
+ *
  * Revision 1.89  2004/05/21 09:14:57  nigelhorne
  * Handle --from, print error message if write to quarantine fails
  *
@@ -656,9 +281,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.89 2004/05/21 09:14:57 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.90 2004/05/24 17:05:18 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.71"
+#define	CM_VERSION	"0.71b"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1330,9 +955,7 @@ main(int argc, char **argv)
 		 * cli_strtok's fieldno counts from 0
 		 */
 		for(;;) {
-			char *hostname;
-
-			hostname = cli_strtok(serverHostNames, numServers, ":");
+			char *hostname = cli_strtok(serverHostNames, numServers, ":");
 			if(hostname == NULL)
 				break;
 			numServers++;
@@ -1345,12 +968,11 @@ main(int argc, char **argv)
 		activeServers = 0;
 
 		for(i = 0; i < numServers; i++) {
-			char *hostname;
+			char *hostname = cli_strtok(serverHostNames, i, ":");
 
 			/*
 			 * Translate server's name to IP address
 			 */
-			hostname = cli_strtok(serverHostNames, i, ":");
 			serverIPs[i] = inet_addr(hostname);
 			if(serverIPs[i] == -1L) {
 				const struct hostent *h = gethostbyname(hostname);
@@ -2249,8 +1871,18 @@ clamfi_eom(SMFICTX *ctx)
 	if(sendmailId == NULL)
 		sendmailId = "Unknown";
 
-	if(!nflag)
-		smfi_addheader(ctx, "X-Virus-Scanned", clamav_version);
+	if(!nflag) {
+		char buf[1024];
+
+		/*
+		 * Include the hostname where the scan took place:
+		 * TODO: this should be where clamd is running, not where
+		 * clamav-milter is running
+		 */
+		snprintf(buf, sizeof(buf) - 1, "%s\n\ton %s", clamav_version,
+			smfi_getsymval(ctx, "{j}"));
+		smfi_addheader(ctx, "X-Virus-Scanned", buf);
+	}
 
 	if(strstr(mess, "ERROR") != NULL) {
 		if(strstr(mess, "Size exceeded") != NULL) {
@@ -2894,7 +2526,7 @@ header_list_add(header_list_t list, const char *headerf, const char *headerv)
 	size_t len;
 	struct header_node_t *new_node;
 
-	len = strlen(headerf) + strlen(headerv) + 3;
+	len = (size_t)(strlen(headerf) + strlen(headerv) + 3);
 
 	header = (char *)cli_malloc(len);
 	if(header == NULL)
