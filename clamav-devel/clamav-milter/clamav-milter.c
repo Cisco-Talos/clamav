@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.180  2005/02/08 09:01:26  nigelhorne
+ * Turn off SESSION mode
+ *
  * Revision 1.179  2005/02/07 22:35:14  nigelhorne
  * Bug fix to detect-forged-email-address
  *
@@ -548,9 +551,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.179 2005/02/07 22:35:14 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.180 2005/02/08 09:01:26 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.82a"
+#define	CM_VERSION	"0.82b"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -649,7 +652,7 @@ typedef	unsigned int	in_addr_t;
 
 #define	VERSION_LENGTH	128
 
-#define	SESSION	/*
+/*#define	SESSION	/*
 		 * Keep one command connection open to clamd, otherwise a new
 		 * command connection is created for each new email
 		 *
@@ -2656,7 +2659,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			return SMFIS_CONTINUE;
 		}
 		ptr = strstr(argv[0], me);
-		if(ptr && (*--ptr == '@')) {
+		if(ptr && (ptr != argv[0]) && (*--ptr == '@')) {
 			if(use_syslog)
 				syslog(LOG_NOTICE, _("Rejected email falsely claiming to be from %s"), argv[0]);
 			smfi_setreply(ctx, "550", "5.7.1", _("You have claimed to be me, but you are not"));
