@@ -176,6 +176,7 @@ Changes
 0.65j	10/12/03 Timeout on waiting for data from clamd
 0.65k	12/12/03 A couple of calls to clamfi_cleanup were missing
 		before return cl_error
+0.66	13/12/03 Upissue
 
 BUG REPORTS
 
