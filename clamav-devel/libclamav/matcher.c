@@ -258,7 +258,8 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 				if(pt->type) {
 				    if(typerec) {
 					cli_dbgmsg("Matched signature for file type: %s\n", pt->virname);
-					type = pt->type;
+					if(pt->type > type)
+					    type = pt->type;
 				    }
 				} else {
 				    if(virname)

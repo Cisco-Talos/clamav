@@ -75,7 +75,7 @@ extern short cli_leavetemps_flag;
 #define DISABLE_RAR	    (options & CL_DISABLERAR)
 #define DETECT_ENCRYPTED    (options & CL_ENCRYPTED)
 
-#define MAX_MAIL_RECURSION  10
+#define MAX_MAIL_RECURSION  15
 
 
 static int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec);
@@ -967,7 +967,7 @@ static int cli_scanmail(int desc, const char **virname, long int *scanned, const
 	int ret;
 
 
-    cli_dbgmsg("Starting cli_scanmail(), mrec == %d, arec == %d\n", mrec, arec);
+    cli_dbgmsg("Starting cli_scanmail(), mrec == %d, arec == %d\n", *mrec, *arec);
 
     if((tmpdir = getenv("TMPDIR")) == NULL)
 #ifdef P_tmpdir
