@@ -270,7 +270,7 @@ char *cli_strtokbuf(const char *input, int fieldno, const char *delim, char *out
     return output;
 }
 
-char *cli_memstr(const char *haystack, int hs, const char *needle, int ns)
+const char *cli_memstr(const char *haystack, int hs, const char *needle, int ns)
 {
 	const char *pt, *hay;
 	int n;
@@ -289,7 +289,7 @@ char *cli_memstr(const char *haystack, int hs, const char *needle, int ns)
     n = hs;
 
     while((pt = memchr(hay, needle[0], n)) != NULL) {
-	n -= (int) pt - (int) hay;
+	n -= (int) (pt - hay);
 	if(n < ns)
 	    break;
 
