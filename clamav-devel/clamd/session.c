@@ -26,11 +26,15 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <pthread.h>
 #include <time.h>
 #include <signal.h>
-#include <poll.h>
 #include <errno.h>
+
+#if HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
 
 #include "cfgfile.h"
 #include "others.h"
@@ -57,25 +61,31 @@
 int command(int desc, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt)
 {
 	char buff[1025];
-	int bread, opt, ret, count;
-	struct pollfd poll_data[1];
+	int bread, opt, ret, retval;
+	fd_set rfds;
+	struct timeval tv;
 
-    poll_data[0].fd = desc;
-    poll_data[0].events = POLLIN;
-    poll_data[0].revents = 0;
-                                                                                                                                                                                
     while (1) {
-        count = poll(poll_data, 1, CL_DEFAULT_SCANTIMEOUT*1000); /* wait for timeout */
-        if (count != 1) {
-                if ((count == -1) && (errno == EINTR)) {
-                        continue;
-                }
-                mdprintf(desc, "ERROR\n");
-                logg("!ScanStream: command timeout.\n");
-                return -1;
-        } else {
-                break;
-        }
+	FD_ZERO(&rfds);
+	FD_SET(desc, &rfds);
+	tv.tv_sec = CL_DEFAULT_SCANTIMEOUT;
+	tv.tv_usec = 0;
+
+	retval = select(desc+1, &rfds, NULL, NULL, &tv);
+	switch (retval) {
+	case 0: /* timeout */
+	    mdprintf(desc, "ERROR\n");
+	    logg("!Command: command timeout.\n");
+	    return -1;
+	case -1:
+	    if (errno == EINTR) {
+		continue;
+	    }
+	    mdprintf(desc, "ERROR\n");
+	    logg("!Command: select failed.\n");
+	    return -1;
+	}
+	break;
     }
 
     if((bread = read(desc, buff, 1024)) == -1) {
