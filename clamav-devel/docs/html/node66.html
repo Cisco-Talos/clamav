@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>CVD format</TITLE>
-<META NAME="description" CONTENT="CVD format">
+<TITLE>KlamAV</TITLE>
+<META NAME="description" CONTENT="KlamAV">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -20,62 +20,59 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
 <LINK REL="previous" HREF="node65.html">
-<LINK REL="up" HREF="node62.html">
+<LINK REL="up" HREF="node27.html">
 <LINK REL="next" HREF="node67.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1103"
+<A NAME="tex2html1141"
   HREF="node67.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html1099"
-  HREF="node62.html">
+<A NAME="tex2html1137"
+  HREF="node27.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html1095"
+<A NAME="tex2html1133"
   HREF="node65.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html1101"
+<A NAME="tex2html1139"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1104"
-  HREF="node67.html">Credits</A>
-<B> Up:</B> <A NAME="tex2html1100"
-  HREF="node62.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html1096"
-  HREF="node65.html">Scan engine</A>
- &nbsp <B>  <A NAME="tex2html1102"
+<B> Next:</B> <A NAME="tex2html1142"
+  HREF="node67.html">LibClamAV</A>
+<B> Up:</B> <A NAME="tex2html1138"
+  HREF="node27.html">Third party software</A>
+<B> Previous:</B> <A NAME="tex2html1134"
+  HREF="node65.html">ClamWin</A>
+ &nbsp <B>  <A NAME="tex2html1140"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00074000000000000000">
-CVD format</A>
+<H2><A NAME="SECTION000639000000000000000">
+KlamAV</A>
 </H2>
-    CVD (ClamAV Virus Database) is a digitally signed tarball file that
-    contains one or more databases. You can find some useful information in the
-    ASCII header of the file. It's a 512 bytes long string with the following
-    colon separated fields:
-    <PRE>
-ClamAV-VDB:build time:version:number of signatures:functionality
-level required:MD5 checksum:digital signature:builder name
-</PRE>
-    and can be easily parsed by scripts or with <code>sigtool --info</code>.
-    There are two CVD databases in ClamAV: <I>main.cvd</I> and <I>daily.cvd</I>
-    for daily updates. You can use <I>sigtool</I> to unpack a CVD file
-    (<code>--unpack</code>) and to list virus names (<code>--list-sigs</code>).
+    <B>Homepage:</B> <TT><A NAME="tex2html107"
+  HREF="http://sourceforge.net/projects/klamav/">http://sourceforge.net/projects/klamav/</A></TT>
+<BR>    <B>Supports:</B> ClamAV
+<BR>
+A collection of GUI tools for using ClamAV on KDE. Klamscan, a KDE
+    frontend for clamscan, is available via CVS. For the forseeable future,
+    KlamAV will requre ClamAV to be already installed on your machine.
+    Hopefully, KlamAV will soon include freshklam, a sigtool utility,
+    and hopefully an interface for clamuko ('auto-protect' style scanning).
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-03-13
+2004-04-16
 </ADDRESS>
 </BODY>
 </HTML>

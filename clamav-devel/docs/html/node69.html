@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Donors</TITLE>
-<META NAME="description" CONTENT="Donors">
+<TITLE>Database reloading</TITLE>
+<META NAME="description" CONTENT="Database reloading">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,6 +19,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node70.html">
 <LINK REL="previous" HREF="node68.html">
 <LINK REL="up" HREF="node67.html">
 <LINK REL="next" HREF="node70.html">
@@ -26,122 +27,68 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1139"
+<A NAME="tex2html1181"
   HREF="node70.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html1135"
+<A NAME="tex2html1177"
   HREF="node67.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html1131"
+<A NAME="tex2html1171"
   HREF="node68.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html1137"
+<A NAME="tex2html1179"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1140"
-  HREF="node70.html">Authors</A>
-<B> Up:</B> <A NAME="tex2html1136"
-  HREF="node67.html">Credits</A>
-<B> Previous:</B> <A NAME="tex2html1132"
-  HREF="node68.html">Contributors</A>
- &nbsp <B>  <A NAME="tex2html1138"
+<B> Next:</B> <A NAME="tex2html1182"
+  HREF="node70.html">Scan engine</A>
+<B> Up:</B> <A NAME="tex2html1178"
+  HREF="node67.html">LibClamAV</A>
+<B> Previous:</B> <A NAME="tex2html1172"
+  HREF="node68.html">General API</A>
+ &nbsp <B>  <A NAME="tex2html1180"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00082000000000000000">
-Donors</A>
+<H2><A NAME="SECTION00072000000000000000">
+Database reloading</A>
 </H2>
-    We received financial support from:
+    The most important thing is to keep the internal instance of the database
+    up to date. You can watch database changes with the <code>cl_stat</code>
+    functions family:
+    <PRE>
+	int cl_statinidir(const char *dirname, struct cl_stat *dbstat);
+	int cl_statchkdir(const struct cl_stat *dbstat);
+	int cl_statfree(struct cl_stat *dbstat);
+</PRE>
+    Initialization:
+    <PRE>
+	    struct cl_stat dbstat;
     
-<UL>
-<LI>ActiveIntra.net Inc. (<TT><A NAME="tex2html93"
-  HREF="http://www.activeintra.net">http://www.activeintra.net</A></TT>)
-</LI>
-<LI>Anonymous donor from Colorado, US
-</LI>
-<LI>AWD Online (<TT><A NAME="tex2html94"
-  HREF="http://www.awdonline.com">http://www.awdonline.com</A></TT>)
-</LI>
-<LI>Norman E. Brake, Jr.
-</LI>
-<LI>Cheahch from Singapore
-</LI>
-<LI>Dynamic Network Services, Inc (<TT><A NAME="tex2html95"
-  HREF="http://www.dyndns.org">http://www.dyndns.org</A></TT>)
-</LI>
-<LI>Electric Embers
-</LI>
-<LI>Epublica
-</LI>
-<LI>David Eriksson (<TT><A NAME="tex2html96"
-  HREF="http://www.2good.nu">http://www.2good.nu</A></TT>)
-</LI>
-<LI>Explido Software USA Inc. (<TT><A NAME="tex2html97"
-  HREF="http://www.explido.us">http://www.explido.us</A></TT>)
-</LI>
-<LI>David Farrick
-</LI>
-<LI>Andries Filmer (<TT><A NAME="tex2html98"
-  HREF="http://www.netexpo.nl">http://www.netexpo.nl</A></TT>)
-</LI>
-<LI>Jack Fung
-</LI>
-<LI>Jeremy Garcia (<TT><A NAME="tex2html99"
-  HREF="http://www.linuxquestions.org">http://www.linuxquestions.org</A></TT>)
-</LI>
-<LI>Bill Gradwohl (<TT><A NAME="tex2html100"
-  HREF="http://www.ycc.com">http://www.ycc.com</A></TT>)
-</LI>
-<LI>Juergen Hahn
-</LI>
-<LI>Invisik Corporation (<TT><A NAME="tex2html101"
-  HREF="http://www.invisik.com">http://www.invisik.com</A></TT>)
-</LI>
-<LI>Keith (<TT><A NAME="tex2html102"
-  HREF="http://www.textpad.com">http://www.textpad.com</A></TT>)
-</LI>
-<LI>Brad Koehn
-</LI>
-<LI>Logic Partners Inc. (<TT><A NAME="tex2html103"
-  HREF="http://www.logicpartners.com">http://www.logicpartners.com</A></TT>)
-</LI>
-<LI>Michael Nolan
-</LI>
-<LI>Oneworkspace.com (<TT><A NAME="tex2html104"
-  HREF="http://www.oneworkspace.com">http://www.oneworkspace.com</A></TT>)
-</LI>
-<LI>Origin Solutions (<TT><A NAME="tex2html105"
-  HREF="http://www.originsolutions.com.au">http://www.originsolutions.com.au</A></TT>)
-</LI>
-<LI>Seattle Server (<TT><A NAME="tex2html106"
-  HREF="http://www.seattleserver.com">http://www.seattleserver.com</A></TT>)
-</LI>
-<LI>Solutions In A Box (<TT><A NAME="tex2html107"
-  HREF="http://www.siab.com.au">http://www.siab.com.au</A></TT>)
-</LI>
-<LI>Stephane Rault
-</LI>
-<LI>Jeremy Vanderburg (<TT><A NAME="tex2html108"
-  HREF="http://www.jeremytech.com">http://www.jeremytech.com</A></TT>)
-</LI>
-<LI>Nicklaus Wicker
-
-<P>
-</LI>
-</UL>
+	memset(&amp;dbstat, 0, sizeof(struct cl_stat));
+	cl_statinidir(dbdir, &amp;dbstat);
+</PRE>
+    To check for a change you only need to call <code>cl_statchkdir</code>:
+    <PRE>
+	if(cl_statchkdir(&amp;dbstat) == 1) {
+	    reload_database...;
+	    cl_statfree(&amp;dbstat);
+	    cl_statinidir(cl_retdbdir(), &amp;dbstat);
+	}
+</PRE>
+    Remember to reinitialize the structure after a reload.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-03-13
+2004-04-16
 </ADDRESS>
 </BODY>
 </HTML>

@@ -16,6 +16,8 @@ System administrator (WWW, mailing lists, mirror coordinator, virus
 submission mechanism)
 
 Trog <trog*clamav.net>
+gpg key   : http://www.clamav.net/gpg/trog.gpg
+GPG fingerprint = 35A1 C90A F692 B727 9BBB  2C94 F4F0 D46F 6AF8 3CA3
 OLE2 and VBA decoders, new thread manager in clamd.
 
 Thomas Lamy <tlamy*clamav.net>
@@ -44,6 +46,8 @@ GPG fingerprint = E697 81BD A912 3F5A 737E  C254 B3B1 F81A 0278 7880
 Tomasz Papszun <tomek*clamav.net>
 gpg key	  : http://www.clamav.net/gpg/tomek.gpg
 GPG fingerprint = F115 0CA4 775D 9898 6F32  0F98 C0C2 2079 C1CA 59EE
+
+Trog <trog*clamav.net> (macro viruses)
 
 
 ClamAV logo: Mia Kalenius and Sergei Pronin <sp*finndesign.fi>

@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Database reloading</TITLE>
-<META NAME="description" CONTENT="Database reloading">
+<TITLE>Local Area Security</TITLE>
+<META NAME="description" CONTENT="Local Area Security">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -21,74 +21,57 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node65.html">
 <LINK REL="previous" HREF="node63.html">
-<LINK REL="up" HREF="node62.html">
+<LINK REL="up" HREF="node27.html">
 <LINK REL="next" HREF="node65.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1081"
+<A NAME="tex2html1119"
   HREF="node65.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html1077"
-  HREF="node62.html">
+<A NAME="tex2html1115"
+  HREF="node27.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html1071"
+<A NAME="tex2html1109"
   HREF="node63.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html1079"
+<A NAME="tex2html1117"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1082"
-  HREF="node65.html">Scan engine</A>
-<B> Up:</B> <A NAME="tex2html1078"
-  HREF="node62.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html1072"
-  HREF="node63.html">General API</A>
- &nbsp <B>  <A NAME="tex2html1080"
+<B> Next:</B> <A NAME="tex2html1120"
+  HREF="node65.html">ClamWin</A>
+<B> Up:</B> <A NAME="tex2html1116"
+  HREF="node27.html">Third party software</A>
+<B> Previous:</B> <A NAME="tex2html1110"
+  HREF="node63.html">INSERT</A>
+ &nbsp <B>  <A NAME="tex2html1118"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00072000000000000000">
-Database reloading</A>
+<H2><A NAME="SECTION000637000000000000000">
+Local Area Security</A>
 </H2>
-    The most important thing is to keep the internal instance of the database
-    up to date. You can watch database changes with the <code>cl_stat</code>
-    functions family:
-    <PRE>
-	int cl_statinidir(const char *dirname, struct cl_stat *dbstat);
-	int cl_statchkdir(const struct cl_stat *dbstat);
-	int cl_statfree(struct cl_stat *dbstat);
-</PRE>
-    Initialization:
-    <PRE>
-	    struct cl_stat dbstat;
-    
-	memset(&amp;dbstat, 0, sizeof(struct cl_stat));
-	cl_statinidir(dbdir, &amp;dbstat);
-</PRE>
-    To check for a change you only need to call <code>cl_statchkdir</code>:
-    <PRE>
-	if(cl_statchkdir(&amp;dbstat) == 1) {
-	    reload_database...;
-	    cl_statfree(&amp;dbstat);
-	    cl_statinidir(cl_retdbdir(), &amp;dbstat);
-	}
-</PRE>
-    Remember to reinitialize the structure after a reload.
+    <B>Homepage:</B> <TT><A NAME="tex2html105"
+  HREF="http://www.localareasecurity.com/">http://www.localareasecurity.com/</A></TT>
+<BR>    <B>Supports:</B> ClamAV
+<BR>
+Local Area Security Linux is a Live CD distribution with a strong
+    emphasis on security tools and small footprint. It can be used to run
+    ClamAV from a CDROM. 
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-03-13
+2004-04-16
 </ADDRESS>
 </BODY>
 </HTML>
