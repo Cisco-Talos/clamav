@@ -1,6 +1,10 @@
+Fri Sep  3 22:25:52 CEST 2004 (tk)
+----------------------------------
+  * freshclam: fix signature counting (thanks to Tomasz Papszun)
+
 Fri Sep  3 19:55:57 CEST 2004 (tk)
 ----------------------------------
-  * libclamav: fallback to old method of EICAR file detection
+  * libclamav: revert to old method of EICAR file detection
 
 Fri Sep  3 17:00:28 BST 2004 (njh)
 ----------------------------------
