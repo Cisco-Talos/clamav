@@ -373,7 +373,11 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	    break;
 	}
 
-	encrypted = zdirent.d_flags;
+        /* Bit 0: file is encrypted
+	 * Bit 6: Strong encryption was used
+	 * Bit 13: Encrypted central directory
+	 */
+	encrypted = (zdirent.d_flags & 0x2041 != 0);
 
 	cli_dbgmsg("Zip: %s, crc32: 0x%x, encrypted: %d, compressed: %u, normal: %u, method: %d, ratio: %d (max: %d)\n", zdirent.d_name, zdirent.d_crc32, encrypted, zdirent.d_csize, zdirent.st_size, zdirent.d_compr, zdirent.d_csize ? (zdirent.st_size / zdirent.d_csize) : 0, limits ? limits->maxratio : 0);
 
