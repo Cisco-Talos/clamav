@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.24  2004/10/01 13:50:47  nigelhorne
+ * Minor code tidy
+ *
  * Revision 1.23  2004/09/21 09:26:35  nigelhorne
  * Closing a closed blob is no longer fatal
  *
@@ -71,7 +74,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.23 2004/09/21 09:26:35 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.24 2004/10/01 13:50:47 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -83,7 +86,7 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.23 2004/09/21 09:26:35 nigelhorne E
 #include <errno.h>
 #include <fcntl.h>
 
-#include <sys/param.h>        /* for NAME_MAX */
+#include <sys/param.h>	/* for NAME_MAX */
 
 #if	C_DARWIN
 #include <sys/types.h>

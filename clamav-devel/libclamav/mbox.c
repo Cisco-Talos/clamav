@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.145  2004/10/01 13:49:22  nigelhorne
+ * Minor code tidy
+ *
  * Revision 1.144  2004/10/01 07:55:36  nigelhorne
  * Better error message on message/partial
  *
@@ -420,7 +423,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.144 2004/10/01 07:55:36 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.145 2004/10/01 13:49:22 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1029,6 +1032,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 	/* Anything left to be parsed? */
 	if(mainMessage && (messageGetBody(mainMessage) != NULL)) {
 		mime_type mimeType;
+		int subtype;
 		const char *mimeSubtype;
 		const text *t_line;
 		/*bool isAlternative;*/
@@ -1040,13 +1044,15 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 		mimeType = messageGetMimeType(mainMessage);
 		mimeSubtype = messageGetMimeSubtype(mainMessage);
 
-		if((mimeType == TEXT) && (tableFind(subtypeTable, mimeSubtype) == PLAIN)) {
+		subtype = tableFind(subtypeTable, mimeSubtype);
+		if((mimeType == TEXT) && (subtype == PLAIN)) {
 			/*
 			 * This is effectively no encoding, notice that we
 			 * don't check that charset is us-ascii
 			 */
 			cli_dbgmsg("assume no encoding\n");
 			mimeType = NOMIME;
+			messageSetMimeSubtype(mainMessage, NULL);
 		}
 
 		cli_dbgmsg("mimeType = %d\n", mimeType);
@@ -1056,7 +1062,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			aText = textAddMessage(aText, mainMessage);
 			break;
 		case TEXT:
-			if(tableFind(subtypeTable, mimeSubtype) == PLAIN)
+			if(subtype == PLAIN)
 				/*
 				 * Consider what to do if this fails
 				 * (i.e. aText == NULL):
@@ -1067,9 +1073,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				 * able to scan anyway and we lose nothing
 				 */
 				aText = textCopy(messageGetBody(mainMessage));
-			else if(options&CL_SCAN_MAILURL)
-				if(tableFind(subtypeTable, mimeSubtype) == HTML)
-					checkURLs(mainMessage, dir);
+			else if((options&CL_SCAN_MAILURL) && (subtype == HTML))
+				checkURLs(mainMessage, dir);
 			break;
 		case MULTIPART:
 			boundary = messageFindArgument(mainMessage, "boundary");
