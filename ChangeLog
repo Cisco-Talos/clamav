@@ -1,3 +1,8 @@
+Fri Nov 26 22:01:58 CET 2004 (tk)
+---------------------------------
+  * libclamav/scanners.c: cli_scanzip: apply cosmetic patch from Andrey J.
+			  Melnikoff (TEMHOTA) <temnota*kmv.ru>
+
 Fri Nov 26 21:07:19 CET 2004 (tk)
 ---------------------------------
   * libclamav/pe.c: do not trigger a warning on IMAGE_SUBSYSTEM_UNKNOWN

@@ -385,16 +385,16 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	    }
 	}
 
+	if((zfp = zzip_file_open(zdir, zdirent.d_name, 0)) == NULL) {
+	    cli_dbgmsg("Zip: Can't open file %s\n", zdirent.d_name);
+	    ret = CL_EZIP;
+	    break;
+	}
+
 	/* generate temporary file and get its descriptor */
 	if((tmp = tmpfile()) == NULL) {
 	    cli_dbgmsg("Zip: Can't generate tmpfile().\n");
 	    ret = CL_ETMPFILE;
-	    break;
-	}
-
-	if((zfp = zzip_file_open(zdir, zdirent.d_name, 0)) == NULL) {
-	    cli_dbgmsg("Zip: Can't open file %s\n", zdirent.d_name);
-	    ret = CL_EZIP;
 	    break;
 	}
 
@@ -405,7 +405,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 		zzip_dir_close(zdir);
 		fclose(tmp);
 		free(buff);
-		return CL_EZIP;
+		return CL_EIO;
 	    }
 	}
 
