@@ -85,6 +85,7 @@ static int cli_scandesc(int desc, const char **virname, long int *scanned, const
 {
  	char *buffer, *buff, *endbl, *pt;
 	int bytes, buffsize, length, ret, *partcnt, type = CL_CLEAN;
+	unsigned long int *partoff, offset = 0;
 
 
     /* prepare the buffer */
@@ -97,6 +98,11 @@ static int cli_scandesc(int desc, const char **virname, long int *scanned, const
     if((partcnt = (int *) cli_calloc(root->partsigs + 1, sizeof(int))) == NULL) {
 	cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%d, %d)\n", root->partsigs + 1, sizeof(int));
 	free(buffer);
+	return CL_EMEM;
+    }
+
+    if((partoff = (unsigned long int *) cli_calloc(root->partsigs + 1, sizeof(unsigned long int))) == NULL) {
+	cli_dbgmsg("cli_scanbuff(): unable to cli_calloc(%d, %d)\n", root->partsigs + 1, sizeof(unsigned long int));
 	return CL_EMEM;
     }
 
@@ -116,7 +122,7 @@ static int cli_scandesc(int desc, const char **virname, long int *scanned, const
 	if(bytes < SCANBUFF)
 	    length -= SCANBUFF - bytes;
 
-	if((ret = cli_scanbuff(pt, length, virname, root, partcnt, typerec)) == CL_VIRUS) {
+	if((ret = cli_scanbuff(pt, length, virname, root, partcnt, typerec, offset, partoff)) == CL_VIRUS) {
 	    free(buffer);
 	    free(partcnt);
 	    return ret;
@@ -126,12 +132,13 @@ static int cli_scandesc(int desc, const char **virname, long int *scanned, const
 		type = ret;
 	}
 
-	if(bytes == SCANBUFF)
+	if(bytes == SCANBUFF) {
 	    memmove(buffer, endbl, root->maxpatlen);
+	    offset += bytes - root->maxpatlen;
+	}
 
         pt = buffer;
-        length=buffsize;
-
+        length = buffsize;
     }
 
     free(buffer);

@@ -78,9 +78,10 @@ extern "C"
 
 struct cli_patt {
     short int *pattern;
-    unsigned int length;
+    unsigned int length, mindist, maxdist;
     char *virname;
-    unsigned short int sigid, parts, partno, type;
+    unsigned short int sigid, parts, partno, type, alt, *altn;
+    char **altc;
     struct cli_patt *next;
 };
 
