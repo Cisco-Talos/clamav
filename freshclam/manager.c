@@ -174,7 +174,7 @@ int downloadmanager(const struct optstruct *opt, const char *hostname)
 	/* temporary file is created in clamav's directory thus we don't need
 	 * to create it immediately, because race conditions are impossible
 	 */
-	tempname = gentemp(".");
+	tempname = cl_gentemp(".");
 
 	/* download the database */
 	/* FIXME: We need to reconnect, because we won't be able to donwload
@@ -232,7 +232,7 @@ int downloadmanager(const struct optstruct *opt, const char *hostname)
     }
 
     if(updatedb2) {
-	tempname = gentemp(".");
+	tempname = cl_gentemp(".");
 
 	/* download viruses.db2 */
 

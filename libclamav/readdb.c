@@ -1,6 +1,5 @@
-
 /*
- *  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -89,6 +88,17 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
     }
 
     cli_dbgmsg("Loading %s\n", filename);
+
+    /* check for CVD file */
+    fgets(buffer, 12, fd);
+    fseek(fd, 0L, SEEK_SET);
+
+    if(!strncmp(buffer, "ClamAV-VDB:", 11)) {
+	cli_dbgmsg("%s: CVD file detected\n", filename);
+	ret = cli_cvdload(fd, root, virnum);
+	fclose(fd);
+	return ret;
+    }
 
     while(fgets(buffer, BUFFSIZE, fd)) {
 
@@ -181,11 +191,15 @@ int cl_loaddbdir(const char *dirname, struct cl_node **root, int *virnum)
 
     while((dent = readdir(dd))) {
 	if(dent->d_ino) {
-	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && (cli_strbcasestr(dent->d_name, ".db") || cli_strbcasestr(dent->d_name, ".db2"))) {
+	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") &&
+	    (cli_strbcasestr(dent->d_name, ".db")  ||
+	     cli_strbcasestr(dent->d_name, ".db2") ||
+	     cli_strbcasestr(dent->d_name, ".cvd"))) {
+
 		dbfile = (char *) cli_calloc(strlen(dent->d_name) + strlen(dirname) + 2, sizeof(char));
 
 		if(!dbfile) {
-		    cli_dbgmsg("cl_loaddbdir() -> dbfile == NULL\n");
+		    cli_dbgmsg("cl_loaddbdir(): dbfile == NULL\n");
 		    closedir(dd);
 		    return CL_EMEM;
 		}

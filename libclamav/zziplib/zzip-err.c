@@ -81,6 +81,7 @@ zzip_strerror(int errcode)
 zzip_char_t* 
 zzip_strerror_of(ZZIP_DIR* dir)
 {
+    if (! dir) return strerror (errno);
     return zzip_strerror(dir->errcode);
 }
 

@@ -182,7 +182,7 @@ int scanmanager(const struct optstruct *opt)
 		}
 		/* generate the temporary directory */
 
-		dir = gentemp(tmpdir);
+		dir = cl_gentemp(tmpdir);
 		if(mkdir(dir, 0700)) {
 			mprintf("@Can't create the temporary directory %s\n", dir);
 			exit(63); /* critical */
@@ -473,7 +473,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 
     /* generate the temporary directory */
 
-    gendir = gentemp(tmpdir);
+    gendir = cl_gentemp(tmpdir);
     if(mkdir(gendir, 0700)) {
 	mprintf("@Can't create the temporary directory %s\n", gendir);
 	exit(63); /* critical */
@@ -670,7 +670,7 @@ int scandenied(const char *filename, struct cl_node *root, const struct passwd *
     }
 
     /* generate the temporary directory */
-    gendir = gentemp(tmpdir);
+    gendir = cl_gentemp(tmpdir);
     if(mkdir(gendir, 0700)) {
 	mprintf("@Can't create the temporary directory %s\n", gendir);
 	exit(63); /* critical */

@@ -35,7 +35,6 @@ int strbcasestr(const char *haystack, const char *needle);
 int readaccess(const char *path, const char *username);
 int writeaccess(const char *path, const char *username);
 int filecopy(const char *src, const char *dest);
-char *gentemp(const char *dir);
 
 /* njh@bandsman.co.uk: for BeOS */
 /* TODO: configure should see if sete[ug]id is set on the target */

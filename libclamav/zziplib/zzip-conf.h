@@ -2,7 +2,7 @@
  * Author: 
  *      Guido Draheim <guidod@gmx.de>
  *
- *      Copyright (c) 2001 Guido Draheim
+ *      Copyright (c) 2001,2002,2003 Guido Draheim
  *          All rights reserved,
  *          use under the restrictions of the
  *          Lesser GNU General Public License
@@ -53,15 +53,34 @@
 #define _zzip_inline inline
 #endif
 #endif
+#ifndef _zzip_size_t
+#ifdef   ZZIP_size_t
+#define _zzip_size_t ZZIP_size_t
+#else
+#define _zzip_size_t size_t
+#endif
+#endif
+#ifndef _zzip_ssize_t
+#ifdef   ZZIP_ssize_t
+#define _zzip_ssize_t ZZIP_ssize_t
+#else
+#define _zzip_ssize_t ssize_t
+#endif
+#endif
 
 /* whether this library shall use a 64bit off_t largefile variant in 64on32: */
 /* (some exported names must be renamed to avoid bad calls after linking) */
-#if defined ZZIP_LARGEFILE_SENSITIVE && _FILE_OFFSET_BITS+0 == 64
-#define  ZZIP_LARGEFILE_RENAME
-#elif defined  _LARGE_FILES /* on AIX */
-#define  ZZIP_LARGEFILE_RENAME
+#if defined ZZIP_LARGEFILE_SENSITIVE 
+# if _FILE_OFFSET_BITS+0 == 64
+# define  ZZIP_LARGEFILE_RENAME
+# elif defined  _LARGE_FILES    /* used on older AIX to get at 64bit off_t */
+# define  ZZIP_LARGEFILE_RENAME
+# elif defined  _ZZIP_LARGEFILE /* or simply use this one for zzip64 runs */
+# define  ZZIP_LARGEFILE_RENAME
+# endif
 #endif
-/* if some were forgotten but required to have 64bit off_t largefile.. */
+
+/* if the environment did not setup these for 64bit off_t largefile... */
 #ifdef   ZZIP_LARGEFILE_RENAME
 # ifndef      _FILE_OFFSET_BITS
 #  ifdef ZZIP__FILE_OFFSET_BITS /* == 64 */
@@ -70,7 +89,12 @@
 # endif
 # ifndef      _LARGE_FILES
 #  ifdef ZZIP__LARGE_FILES /* == 1 */
-#  define     _LARGE_FILES 1
+#  define     _LARGE_FILES ZZIP__LARGE_FILES
+#  endif
+# endif
+# ifndef      _LARGEFILE_SOURCE
+#  ifdef ZZIP__LARGEFILE_SOURCE /* == 1 */
+#  define     _LARGEFILE_SOURCE ZZIP__LARGEFILE_SOURCE
 #  endif
 # endif
 #endif
@@ -139,6 +163,11 @@
 
 #if !defined __GNUC__ && !defined __attribute__
 #define __attribute__(X) 
+#endif
+
+#if defined ZZIP_EXPORTS || defined ZZIPLIB_EXPORTS
+# undef ZZIP_DLL
+#define ZZIP_DLL 1
 #endif
 
 /* based on zconf.h : */

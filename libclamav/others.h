@@ -26,7 +26,7 @@ void cli_errmsg(const char *str, ...);
 void cli_dbgmsg(const char *str, ...);
 void *cli_malloc(size_t nmemb);
 void *cli_calloc(size_t nmemb, size_t size);
-char *cli_gentemp(const char *dir);
+void *cli_realloc(void *ptr, size_t size);
 int cli_rmdirs(const char *dirname);
 
 #endif

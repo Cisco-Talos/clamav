@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -56,11 +56,13 @@ extern "C"
 #define CL_EMALFDB	-5 /* malformed database */
 #define CL_EPATSHORT	-6 /* pattern too short */
 #define CL_ETMPDIR	-7 /* mkdir() failed */
+#define CL_ECVDEXTR	-8 /* CVD extraction failure */
 
 /* options */
 #define CL_RAW		  00
 #define CL_ARCHIVE	  01
 #define CL_MAIL		0100
+#define CL_DISABLERAR  01000
 
 struct patt {
     short int *pattern;
@@ -94,6 +96,16 @@ struct cl_stat {
     struct stat *stattab;
 };
 
+struct cl_cvd {
+    char *time;	    /* 2 */
+    int version;    /* 3 */
+    int sigs;	    /* 4 */
+    short int fl;   /* 5 */
+    char *md5;	    /* 6 */
+    char *dsig;	    /* 7 */
+    char *builder;  /* 8 */
+};
+
 /* file scanning */
 extern int cl_scanbuff(const char *buffer, unsigned int length, char **virname, const struct cl_node *root);
 
@@ -105,6 +117,9 @@ extern int cl_scanfile(const char *filename, char **virname, unsigned long int *
 extern int cl_loaddb(const char *filename, struct cl_node **root, int *virnum);
 extern int cl_loaddbdir(const char *dirname, struct cl_node **root, int *virnum);
 extern char *cl_retdbdir(void);
+
+extern struct cl_cvd *cl_cvdhead(const char *file);
+extern void cl_cvdfree(struct cl_cvd *cvd);
 
 /* data dir stat functions */
 extern int cl_statinidir(const char *dirname, struct cl_stat *dbstat);
@@ -126,7 +141,7 @@ extern char *cl_md5buff(const char *buffer, unsigned int length);
 
 extern int cl_mbox(const char *dir, int desc);
 
-/* compute MD5 message digest from filename (compatible with md5sum(1)) */
+/* compute MD5 message digest from file (compatible with md5sum(1)) */
 extern char *cl_md5file(const char *filename);
 
 /* decode hexadecimal string */
@@ -137,6 +152,9 @@ extern char *cl_str2hex(const char *string, unsigned int len);
 
 /* generate a pseudo-random number */
 extern unsigned int cl_rndnum(unsigned int max);
+
+/* generate unique file name in temporary directory */
+char *cl_gentemp(const char *dir);
 
 #ifdef __cplusplus
 };

@@ -119,8 +119,10 @@ char *cl_strerror(int clerror)
 	    return "Malformed database.";
 	case CL_EPATSHORT:
 	    return "Too short pattern detected.";
+	case CL_ECVDEXTR:
+	     return "CVD extraction failure.";
 	case CL_ENULLARG:
-	    return "Null argument passed when initialized is required.";
+	    return "Null argument passed while initialized is required.";
 	default:
 	    return "Unknown error code.";
     }
@@ -200,6 +202,19 @@ void *cli_calloc(size_t nmemb, size_t size)
     } else return alloc;
 }
 
+void *cli_realloc(void *ptr, size_t size)
+{
+	void *alloc;
+
+    alloc = realloc(ptr, size);
+
+    if(!alloc) {
+	cli_errmsg("cli_realloc(): Can't re-allocate memory to %d byte.\n", size);
+	perror("realloc_problem");
+	return NULL;
+    } else return alloc;
+}
+
 #ifndef C_URANDOM
 /* it's very weak */
 #include <sys/time.h>
@@ -253,7 +268,8 @@ unsigned int cl_rndnum(unsigned int max)
 }
 #endif
 
-char *cli_gentemp(const char *dir)
+/* it uses MD5 to avoid potential races in tmp */
+char *cl_gentemp(const char *dir)
 {
 	char *name, *mdir, *tmp;
 	unsigned char salt[32];
