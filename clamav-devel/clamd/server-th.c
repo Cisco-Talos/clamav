@@ -17,6 +17,10 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <pthread.h>
 #include <errno.h>
 #include <signal.h>
@@ -319,19 +323,22 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     pthread_attr_init(&thattr);
     pthread_attr_setdetachstate(&thattr, PTHREAD_CREATE_DETACHED);
 
+    if(cfgopt(copt, "ClamukoScanOnLine"))
 #ifdef CLAMUKO
-    pthread_attr_init(&clamuko_attr);
-    pthread_attr_setdetachstate(&clamuko_attr, PTHREAD_CREATE_JOINABLE);
+    {
+	pthread_attr_init(&clamuko_attr);
+	pthread_attr_setdetachstate(&clamuko_attr, PTHREAD_CREATE_JOINABLE);
 
-    tharg = (struct thrarg *) mmalloc(sizeof(struct thrarg));
-    tharg->copt = copt;
-    tharg->root = root;
-    tharg->limits = &limits;
-    tharg->options = options;
+	tharg = (struct thrarg *) mmalloc(sizeof(struct thrarg));
+	tharg->copt = copt;
+	tharg->root = root;
+	tharg->limits = &limits;
+	tharg->options = options;
 
-    pthread_create(&clamuko_pid, &clamuko_attr, clamukoth, tharg);
+	pthread_create(&clamuko_pid, &clamuko_attr, clamukoth, tharg);
+    }
 #else
-    logg("!Clamuko is not available.\n");
+	logg("!Clamuko is not available.\n");
 #endif
 
     /* set up signal handling */
@@ -437,11 +444,13 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 		exit(-1);
 	    }
 #ifdef CLAMUKO
-	    logg("Stopping and restarting Clamuko.\n");
-	    pthread_kill(clamuko_pid, SIGUSR1);
-	    pthread_join(clamuko_pid, NULL);
-	    tharg->root = root;
-	    pthread_create(&clamuko_pid, &clamuko_attr, clamukoth, tharg);
+	    if(cfgopt(copt, "ClamukoScanOnLine")) {
+		logg("Stopping and restarting Clamuko.\n");
+		pthread_kill(clamuko_pid, SIGUSR1);
+		pthread_join(clamuko_pid, NULL);
+		tharg->root = root;
+		pthread_create(&clamuko_pid, &clamuko_attr, clamukoth, tharg);
+	    }
 #endif
 	} else {
 	    pthread_mutex_unlock(&reload_mutex);
@@ -449,9 +458,11 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     }
 
 #ifdef CLAMUKO
-    logg("Stopping Clamuko.\n");
-    pthread_kill(clamuko_pid, SIGUSR1);
-    pthread_join(clamuko_pid, NULL);
+    if(cfgopt(copt, "ClamukoScanOnLine")) {
+	logg("Stopping Clamuko.\n");
+	pthread_kill(clamuko_pid, SIGUSR1);
+	pthread_join(clamuko_pid, NULL);
+    }
 #endif
     logg("Exiting (clean)\n");
     return 0;

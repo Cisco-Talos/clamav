@@ -74,6 +74,11 @@ then
     AC_CHECK_LIB(bz2, bzReadOpen, AC_DEFINE(NOBZ2PREFIX,1,bzip funtions do not have bz2 prefix),)
 fi
 
+want_clamuko="yes"
+AC_ARG_ENABLE(clamuko,
+[  --disable-clamuko	  Disable clamuko support (Linux and FreeBSD only)],
+want_clamuko="no",)
+
 AC_CHECK_FUNCS(setsid memcpy snprintf)
 AC_FUNC_SETPGRP
 
@@ -300,8 +305,11 @@ freebsd*)
 	TH_SAFE="-thread-safe"
 	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
 	AC_DEFINE(_REENTRANT,1,[thread safe])
+	if test "$want_clamuko" = "yes"; then
+	    AC_DEFINE(CLAMUKO,1,[enable clamuko])
+	fi
     fi
-    AC_DEFINE(C_BSD,1,[os is solaris])
+    AC_DEFINE(C_BSD,1,[os is freebsd])
     ;;
 openbsd3.3*)
     if test "$have_pthreads" = "yes"; then

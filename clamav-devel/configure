@@ -998,6 +998,7 @@ Optional Features:
   --enable-fast-install=PKGS  optimize for fast installation default=yes
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --disable-bzip2	  Disable bzip2 support.
+  --disable-clamuko	  Disable clamuko support (Linux and FreeBSD only)
   --enable-milter	  Build clamav-milter (if milter library found)
   --disable-dsig	  Disable digital signature support.
   --disable-pthreads      Disable POSIX threads support
@@ -4542,7 +4543,7 @@ test "x$enable_libtool_lock" != xno && enable_libtool_lock=yes
 case $host in
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 4545 "configure"' > conftest.$ac_ext
+  echo '#line 4546 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -5078,7 +5079,7 @@ chmod -w .
 save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -o out/conftest2.$ac_objext"
 compiler_c_o=no
-if { (eval echo configure:5081: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
+if { (eval echo configure:5082: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
   # The compiler can only warn and ignore the option if not recognized
   # So say no if there are warnings
   if test -s out/conftest.err; then
@@ -6871,7 +6872,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 6874 "configure"
+#line 6875 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -6969,7 +6970,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 6972 "configure"
+#line 6973 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -8630,6 +8631,13 @@ fi
 
 fi
 
+want_clamuko="yes"
+# Check whether --enable-clamuko or --disable-clamuko was given.
+if test "${enable_clamuko+set}" = set; then
+  enableval="$enable_clamuko"
+  want_clamuko="no"
+fi;
+
 
 
 
@@ -9705,6 +9713,13 @@ cat >>confdefs.h <<\_ACEOF
 #define _REENTRANT 1
 _ACEOF
 
+	if test "$want_clamuko" = "yes"; then
+
+cat >>confdefs.h <<\_ACEOF
+#define CLAMUKO 1
+_ACEOF
+
+	fi
     fi
 
 cat >>confdefs.h <<\_ACEOF

@@ -42,9 +42,12 @@ clamd_SOURCES = \
     others.h \
     clamuko.c \
     clamuko.h \
-    dazuko.h \
+    dazukoio_compat12.c \
+    dazukoio_compat12.h \
     dazukoio.c \
     dazukoio.h \
+    dazuko_xp.h \
+    dazukoio_xp.h \
     tests.c \
     tests.h
 

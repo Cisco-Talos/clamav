@@ -141,9 +141,12 @@ install_sh = @install_sh@
 @BUILD_CLAMD_TRUE@    others.h \
 @BUILD_CLAMD_TRUE@    clamuko.c \
 @BUILD_CLAMD_TRUE@    clamuko.h \
-@BUILD_CLAMD_TRUE@    dazuko.h \
+@BUILD_CLAMD_TRUE@    dazukoio_compat12.c \
+@BUILD_CLAMD_TRUE@    dazukoio_compat12.h \
 @BUILD_CLAMD_TRUE@    dazukoio.c \
 @BUILD_CLAMD_TRUE@    dazukoio.h \
+@BUILD_CLAMD_TRUE@    dazuko_xp.h \
+@BUILD_CLAMD_TRUE@    dazukoio_xp.h \
 @BUILD_CLAMD_TRUE@    tests.c \
 @BUILD_CLAMD_TRUE@    tests.h
 
@@ -166,8 +169,8 @@ PROGRAMS = $(sbin_PROGRAMS)
 @BUILD_CLAMD_TRUE@	localserver.$(OBJEXT) session.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	thrmgr.$(OBJEXT) server-th.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	scanner.$(OBJEXT) others.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	clamuko.$(OBJEXT) dazukoio.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	tests.$(OBJEXT)
+@BUILD_CLAMD_TRUE@	clamuko.$(OBJEXT) dazukoio_compat12.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	dazukoio.$(OBJEXT) tests.$(OBJEXT)
 clamd_OBJECTS = $(am_clamd_OBJECTS)
 @BUILD_CLAMD_TRUE@clamd_DEPENDENCIES = ../clamscan/getopt.o
 @BUILD_CLAMD_FALSE@clamd_DEPENDENCIES =
@@ -179,6 +182,7 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/cfgfile.Po ./$(DEPDIR)/clamd.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/clamuko.Po ./$(DEPDIR)/dazukoio.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/dazukoio_compat12.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/localserver.Po ./$(DEPDIR)/options.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/others.Po ./$(DEPDIR)/scanner.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/server-th.Po ./$(DEPDIR)/session.Po \
@@ -246,6 +250,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamuko.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dazukoio.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dazukoio_compat12.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/localserver.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/options.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/others.Po@am__quote@
