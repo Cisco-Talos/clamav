@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.36  2005/03/04 14:17:34  nigelhorne
+ * QNX support
+ *
  * Revision 1.35  2005/03/03 09:28:19  nigelhorne
  * Tidy
  *
@@ -107,7 +110,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.35 2005/03/03 09:28:19 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.36 2005/03/04 14:17:34 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -514,9 +517,18 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 
 	assert(filename != NULL);
 
+#ifdef	C_QNX6
+	/*
+	 * QNX6 support from mikep@kaluga.org to fix bug where mkstemp
+	 * can return ETOOLONG even when the file name isn't too long
+	 */
+	snprintf(fullname, sizeof(fullname), "%s/clamavtmpXXXXXXXXXXXXX", dir);
+#else
 	snprintf(fullname, sizeof(fullname) - 1 - suffixLen, "%s/%.*sXXXXXX", dir,
 		(int)(sizeof(fullname) - 9 - suffixLen - strlen(dir)), filename);
-#if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN)
+#endif
+
+#if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN) || defined(C_QNX6)
 	cli_dbgmsg("fileblobSetFilename: mkstemp(%s)\n", fullname);
 	fd = mkstemp(fullname);
 #else
