@@ -1,3 +1,8 @@
+Tue Dec  7 23:10:36 GMT 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Handle empty content-type in multipart headers, e.g.
+		Content-Type: ; name="/tmp/foo/bar.txt"
+
 Tue Dec  7 23:40:30 CET 2004 (tk)
 ---------------------------------
   * configure: added --disable-zlib-vcheck (allows building on potentially
