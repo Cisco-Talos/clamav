@@ -168,7 +168,7 @@ int scanmanager(const struct optstruct *opt)
 	options |= CL_SCAN_ARCHIVE;
 
     if(optl(opt, "detect-broken"))
-	options |= CL_SCAN_BROKEN;
+	options |= CL_SCAN_BLOCKBROKEN;
 
     if(optl(opt, "block-encrypted"))
 	options |= CL_SCAN_BLOCKENCRYPTED;

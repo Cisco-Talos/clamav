@@ -72,7 +72,7 @@ extern "C"
 #define CL_SCAN_BLOCKENCRYPTED	16
 #define CL_SCAN_HTML		32
 #define CL_SCAN_PE		64
-#define CL_SCAN_BROKEN		128
+#define CL_SCAN_BLOCKBROKEN	128
 #define CL_SCAN_MAILURL		256
 #define CL_SCAN_BLOCKMAX	512
 
