@@ -1,7 +1,8 @@
 Sat Feb  7 23:37:52 CET 2004 (tk)
 ---------------------------------
   * libclamav: scan "Return-path: " mail files (detection was broken due to
-	       case sensitivity of the new file type guessing code)
+	       case sensitivity of the new file type guessing code). Reported
+	       by Nigel.
 
 Sat Feb  7 12:19:37 GMT 2004 (njh)
 ----------------------------------
@@ -54,7 +55,7 @@ Tue Feb  3 14:38:04 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Speeded up binhex decoding using table look up
   		Fixed possible infinite loop when decoding compressed binhex
-		Both fixes thanks to Thomas Lamy <Thomas.Lamy@in-online.net>
+		Both fixes thanks to Thomas Lamy <Thomas.Lamy*in-online.net>
 
 Tue Feb  3 02:31:55 CET 2004 (tk)
 ---------------------------------
