@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.151  2004/11/08 20:40:34  nigelhorne
+ * Typo
+ *
  * Revision 1.150  2004/11/08 20:35:12  nigelhorne
  * Don't start watchdog monitor in localSocket mode
  *
@@ -461,7 +464,7 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.150 2004/11/08 20:35:12 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.151 2004/11/08 20:40:34 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.80q"
 
@@ -1539,7 +1542,7 @@ main(int argc, char **argv)
 
 #ifdef	SESSION
 	/* FIXME: add localSocket support to watchdog */
-	if(!localSocket)
+	if(localSocket == NULL)
 		pthread_create(&tid, NULL, watchdog, NULL);
 #endif
 
@@ -4236,7 +4239,7 @@ quit(void)
 		syslog(LOG_INFO, _("Stopping %s"), clamav_version);
 
 	pthread_mutex_lock(&sstatus_mutex);
-	for(i = 0; i < (localSocket != NULL) ? 1 : max_children; i++) {
+	for(i = 0; i < ((localSocket != NULL) ? 1 : max_children); i++) {
 		const int sock = cmdSockets[i];
 
 		/*
