@@ -213,9 +213,13 @@
  *			Dump core on LINUX if CL_DEBUG set
  *			Support multiple servers separated by colons
  *	0.66h	26/1/04	Corrected endian problem (ntohs instead of htons)
+ *	0.66i	28/1/04	Fixed compilation error with --enable-debug
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.40  2004/01/28 15:55:59  nigelhorne
+ * Fixed compilation error with --enable-debug
+ *
  * Revision 1.39  2004/01/26 14:12:42  nigelhorne
  * Corrected endian problem (ntohs instead of htons)
  *
@@ -318,9 +322,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.39 2004/01/26 14:12:42 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.40 2004/01/28 15:55:59 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.66h"
+#define	CM_VERSION	"0.66i"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1015,7 +1019,7 @@ pingServer(int serverNumber)
 		server.sin_family = AF_INET;
 		server.sin_port = htons(tcpSocket);
 		
-		assert(serverIP != NULL);
+		assert(serverIPs != NULL);
 		assert(serverIPs[0] != -1L);
 
 		server.sin_addr.s_addr = serverIPs[serverNumber];
@@ -1407,7 +1411,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			server.sin_family = AF_INET;
 			server.sin_port = htons(tcpSocket);
 
-			assert(serverIP != NULL);
+			assert(serverIPs != NULL);
 
 			freeServer = findServer();
 			if(freeServer < 0)
@@ -1483,7 +1487,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		reply.sin_family = AF_INET;
 		reply.sin_port = htons(port);
 
-		assert(serverIP != NULL);
+		assert(serverIPs != NULL);
 
 		reply.sin_addr.s_addr = serverIPs[freeServer];
 

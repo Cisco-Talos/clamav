@@ -210,6 +210,7 @@ Changes
 		Dump core on LINUX if CL_DEBUG set
 		Support multiple servers separated by colons
 0.66h	26/1/04	Corrected endian problem (ntohs instead of htons)
+0.66i	28/1/04	Fixed compilation error with --enable-debug
 
 BUG REPORTS
 
