@@ -1,7 +1,13 @@
+Fri Oct 22 18:20:03 BST 2004 (njh)
+----------------------------------
+  * libclamav/message.c:	Handle broken messages which state
+			Content-Transfer-Encoding: us-ascii
+				reported by arny@arny.ro
+
 Fri Oct 22 16:57:13 BST 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	If an unknown encoding type is found take
-  			a best guess for the decoder. If none can be guessed
+			a best guess for the decoder. If none can be guessed
 			invoke all decoders
 
 Thu Oct 21 11:14:35 BST 2004 (njh)

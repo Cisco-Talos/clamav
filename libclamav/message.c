@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.106  2004/10/22 17:18:13  nigelhorne
+ * Handle encoding type us-ascii - should be none
+ *
  * Revision 1.105  2004/10/22 15:53:45  nigelhorne
  * Fuzzy logic match for unknown encoding types
  *
@@ -312,7 +315,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.105 2004/10/22 15:53:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.106 2004/10/22 17:18:13 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -392,6 +395,7 @@ static	const	struct	encoding_map {
 	{	"binary",		BINARY		},
 	{	"x-uuencode",		UUENCODE	},
 	{	"x-yencode",		YENCODE		},
+	{	"us-ascii",		NOENCODING	},	/* incorrect */
 	{	NULL,			NOENCODING	}
 };
 
