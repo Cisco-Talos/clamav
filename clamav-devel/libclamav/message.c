@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.57  2004/05/27 16:52:47  nigelhorne
+ * Short binhex data could confuse things
+ *
  * Revision 1.56  2004/05/19 10:02:25  nigelhorne
  * Default encoding for attachments set to base64
  *
@@ -165,7 +168,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.56 2004/05/19 10:02:25 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.57 2004/05/27 16:52:47 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1118,6 +1121,13 @@ messageToBlob(message *m)
 		 */
 		byte += 10;
 
+		l = blobGetDataSize(tmp);
+
+		if(l < len) {
+			cli_warnmsg("Corrupt BinHex file, claims it is %lu bytes long in a message of %lu bytes\n",
+				len, l);
+			len = l;
+		}
 		blobAddData(b, &data[byte], len);
 
 		blobDestroy(tmp);
