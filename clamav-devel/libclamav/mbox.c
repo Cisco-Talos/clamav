@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.167  2004/11/07 16:59:42  nigelhorne
+ * Tidy
+ *
  * Revision 1.166  2004/11/07 16:39:00  nigelhorne
  * Handle para 4 of RFC2231
  *
@@ -486,7 +489,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.166 2004/11/07 16:39:00 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.167 2004/11/07 16:59:42 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2423,6 +2426,8 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 		copy = strdup(arg);
 	if(copy == NULL)
 		return -1;
+
+	ptr = copy;
 
 	switch(commandNumber) {
 		case CONTENT_TYPE:
