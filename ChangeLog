@@ -1,3 +1,8 @@
+Tue Mar 22 00:23:43 CET 2005 (tk)
+---------------------------------
+  * libclamav/matcher.c: add support for SL+n (last section + offset); requested
+			 by Christoph Cordes <ccordes*clamav.net>
+
 Mon Mar 21 02:24:33 CET 2005 (tk)
 ---------------------------------
   * freshclam: add LocalIPAddress/--local-address (patch by Thomas Lamy)
