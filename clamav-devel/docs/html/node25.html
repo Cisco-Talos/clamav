@@ -1,188 +1,86 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+<!--Converted with LaTeX2HTML 2K.1beta (1.48)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Signature Tool</TITLE>
-<META NAME="description" CONTENT="Signature Tool">
+<TITLE>Clamdscan</TITLE>
+<META NAME="description" CONTENT="Clamdscan">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2K.1beta">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node26.html">
 <LINK REL="previous" HREF="node24.html">
-<LINK REL="up" HREF="node18.html">
+<LINK REL="up" HREF="node23.html">
 <LINK REL="next" HREF="node26.html">
 </HEAD>
 
 <BODY >
-
-<DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html666"
+<!--Navigation Panel-->
+<A NAME="tex2html735"
   HREF="node26.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html662"
-  HREF="node18.html">
+<A NAME="tex2html731"
+  HREF="node23.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html658"
+<A NAME="tex2html725"
   HREF="node24.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html664"
+<A NAME="tex2html733"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html667"
-  HREF="node26.html">Problem solving</A>
-<B> Up:</B> <A NAME="tex2html663"
-  HREF="node18.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html659"
-  HREF="node24.html">Output format</A>
- &nbsp; <B>  <A NAME="tex2html665"
+<B> Next:</B> <A NAME="tex2html736"
+  HREF="node26.html">Clamuko</A>
+<B> Up:</B> <A NAME="tex2html732"
+  HREF="node23.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html726"
+  HREF="node24.html">Clam daemon</A>
+ &nbsp <B>  <A NAME="tex2html734"
   HREF="node1.html">Contents</A></B> 
 <BR>
-<BR></DIV>
+<BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00047000000000000000">
-Signature Tool</A>
+<H2><A NAME="SECTION00062000000000000000">
+Clam<B>d</B>scan</A>
 </H2>
-    If you have got an infected file not recognized by ClamAV please first
-    report it on our page. In some cases you may want to create a temporary,
-    private signature - you can try to use sigtool which can use third party
-    software to create a signature but <SPAN  CLASS="textbf">you have to make sure your
-    commercial scanner's license does not disallow sigtool usage !</SPAN>
-    <A NAME="tex2html80"
-  HREF="footnode.html#foot468"><SUP><SPAN CLASS="arabic">6</SPAN></SUP></A>. The tool is only partially useful because it only detects
-    the last part of real signature. It will fail for multipart signatures
-    (which are often used to detect mutating viruses).
-<BR>
-Example usage: create a random file (with any content) and insert the
-    <code>test/test1</code> file content into it. We will use <SPAN  CLASS="textit">clamscan</SPAN>
-    to generate the signature. Remember this is only an example - in a real
-    life you don't need such tricks - just an infected file. Scan it with
-    <code>clamscan --stdout testfile</code> - the output should be:
-    <PRE>
-	testfile: ClamAV-Test-Signature FOUND
-
-	----------- SCAN SUMMARY -----------
-	Known viruses: 21074
-	Scanned directories: 0
-	Scanned files: 1
-	Data scanned: 0.95 MB
-	Infected files: 1
-	I/O buffer size: 131072 bytes
-	Time: 1.245 sec (0 m 0 s)
-</PRE>
-    The unique string in this output is "ClamAV-Test-Signature" so run
-    <SPAN  CLASS="textit">sigtool</SPAN> with the following arguments:
-    <PRE>
-	$ sigtool -c "clamscan --stdout" -f testfile -s "ClamAV-Test"
-</PRE>
-    The program will concatenate arguments for <code>-c (--command)</code> and
-    <code>-f (--file)</code> that's why the scanner's options must be given in the
-    proper order. At the end it will generate a file called <SPAN  CLASS="textit">testfile.sig</SPAN>,
-    which should be 100 bytes in size (in our example). It contains the proper
-    signature.
-    <PRE>
-	Detected, decreasing end 20051 -&gt; 16040
-	Detected, decreasing end 16040 -&gt; 12029
-	Detected, decreasing end 12029 -&gt; 8018
-	Not detected at 8018, moving forward.
-	Detected, decreasing end 10024 -&gt; 8018
-	Not detected at 8018, moving forward.
-	Detected, decreasing end 9021 -&gt; 8018
-	Not detected at 8018, moving forward.
-	Not detected at 8520, moving forward.
-	Detected, decreasing end 8771 -&gt; 8520
-	Not detected at 8520, moving forward.
-	Not detected at 8646, moving forward.
-	Not detected at 8709, moving forward.
-	Detected, decreasing end 8741 -&gt; 8709
-	Not detected at 8709, moving forward.
-	Not detected at 8725, moving forward.
-	Detected, decreasing end 8733 -&gt; 8725
-	Not detected at 8725, moving forward.
-	Not detected at 8729, moving forward.
-	Detected, decreasing end 8731 -&gt; 8729
-	Not detected at 8729, moving forward.
-	Detected, decreasing end 8730 -&gt; 8729
-	Not detected at 8729, moving forward.
-	Increasing end 8729 -&gt; 8730
-	 *** Signature end found at 8730
-	Detected at 8680, moving forward.
-	Detected at 8680, moving forward.
-	Not detected, moving backward 8693 -&gt; 8680
-	Detected at 8680, moving forward.
-	Not detected, moving backward 8687 -&gt; 8680
-	Detected at 8680, moving forward.
-	Not detected, moving backward 8684 -&gt; 8680
-	Detected at 8680, moving forward.
-	Not detected, moving backward 8682 -&gt; 8680
-	Detected at 8680, moving forward.
-	Not detected, moving backward 8681 -&gt; 8680
-	Detected at 8680, moving forward.
-	Not detected, moving backward 8681 -&gt; 8680
-	Detected at 8680, moving forward.
-	Moving forward 8680 -&gt; 8681
-	 *** Signature start found at 8681
-
-	The scanner was executed 33 times.
-	The signature length is 49 (98 hex)
-	Saving signature in testfile.sig file.
-	Saving binary signature in testfile.bsig file.
-</PRE>
-    To make the generated signature complete you only to add the
-    <code>VirusName=</code> string at the beginning of the hexadecimal signature in
-    testfile.sig.
-<BR>    <SPAN  CLASS="textit"><SPAN  CLASS="textbf">TIP:</SPAN> ClamAV scanners read all .db files in the database
-    directory. You can create your own database files (e.g. local.db) and they
-    won't be modified by freshclam !</SPAN>
+    <code>clamdscan</code> is a simple <code>clamd</code> client. In many cases you can
+    use it as a <code>clamscan</code> replacement but you must remember that:
+    
+<UL>
+<LI>it only depends on <code>clamd</code>
+</LI>
+<LI>although accepts the same command line options as <code>clamscan</code>
+	      most of them are ignored because must be enabled directly in
+	      <code>clamd</code>
+</LI>
+<LI>scanned files must be accessible for <code>clamd</code>
+</LI>
+<LI>it can't use external unpackers
+    
+</LI>
+</UL>
 
 <P>
-
-<DIV CLASS="navigation"><HR>
-<!--Navigation Panel-->
-<A NAME="tex2html666"
-  HREF="node26.html">
-<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
- SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html662"
-  HREF="node18.html">
-<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
- SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html658"
-  HREF="node24.html">
-<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
- SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html664"
-  HREF="node1.html">
-<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
- SRC="/usr/share/latex2html/icons/contents.png"></A>  
-<BR>
-<B> Next:</B> <A NAME="tex2html667"
-  HREF="node26.html">Problem solving</A>
-<B> Up:</B> <A NAME="tex2html663"
-  HREF="node18.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html659"
-  HREF="node24.html">Output format</A>
- &nbsp; <B>  <A NAME="tex2html665"
-  HREF="node1.html">Contents</A></B> </DIV>
-<!--End of Navigation Panel-->
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-07-22
+2004-09-20
 </ADDRESS>
 </BODY>
 </HTML>

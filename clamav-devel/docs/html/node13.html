@@ -1,90 +1,79 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+<!--Converted with LaTeX2HTML 2K.1beta (1.48)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Compilation</TITLE>
-<META NAME="description" CONTENT="Compilation">
+<TITLE>Adding new system user and group</TITLE>
+<META NAME="description" CONTENT="Adding new system user and group">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2K.1beta">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
 <LINK REL="next" HREF="node14.html">
 <LINK REL="previous" HREF="node12.html">
-<LINK REL="up" HREF="node6.html">
+<LINK REL="up" HREF="node10.html">
 <LINK REL="next" HREF="node14.html">
 </HEAD>
 
 <BODY >
-
-<DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html519"
+<!--Navigation Panel-->
+<A NAME="tex2html584"
   HREF="node14.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html515"
-  HREF="node6.html">
+<A NAME="tex2html580"
+  HREF="node10.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html509"
+<A NAME="tex2html574"
   HREF="node12.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html517"
+<A NAME="tex2html582"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html520"
-  HREF="node14.html">Configuration</A>
-<B> Up:</B> <A NAME="tex2html516"
-  HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html510"
-  HREF="node12.html">New system user and</A>
- &nbsp; <B>  <A NAME="tex2html518"
+<B> Next:</B> <A NAME="tex2html585"
+  HREF="node14.html">Compilation of base package</A>
+<B> Up:</B> <A NAME="tex2html581"
+  HREF="node10.html">Installation</A>
+<B> Previous:</B> <A NAME="tex2html575"
+  HREF="node12.html">Installing on shell account</A>
+ &nbsp <B>  <A NAME="tex2html583"
   HREF="node1.html">Contents</A></B> 
 <BR>
-<BR></DIV>
+<BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00037000000000000000">
-Compilation</A>
+<H2><A NAME="SECTION00043000000000000000">
+Adding new system user and group</A>
 </H2>
-    
-    Once you have created the clamav user and group, please extract the archive:
-    <PRE>
-	$ zcat clamav-x.yz.tar.gz | tar xvf -
-	$ cd clamav-x.yz
+    If you are installing ClamAV for the first time, you have to add a new
+    user and group to your system: <A NAME="tex2html27"
+  HREF="footnode.html#foot188"><SUP>3</SUP></A>    <PRE>
+	# groupadd clamav
+	# useradd -g clamav -s /bin/false -c "Clam AntiVirus" clamav
 </PRE>
-    Assuming you want to install the configuration files in /etc, configure
-    the package as follows:
-    <PRE>
-	$ ./configure --sysconfdir=/etc
-</PRE>
-    Currently <SPAN  CLASS="textit">gcc</SPAN> is required for the compilation. Support for other
-    compilers will be added in the near future.
-    <PRE>
-	$ make
-	$ su -c "make install"
-</PRE>
-    In the last step software is installed in the /usr/local directory
-    and the config file goes to /etc. <SPAN  CLASS="textbf">WARNING: Never enable the SUID
-    or SGID bits in Clam AntiVirus binaries.</SPAN>
+    Consult a system manual if your OS doesn't have <I>groupadd</I> and
+    <I>useradd</I> utilities. The account should be locked in
+    <I>/etc/passwd</I> or <I>/etc/shadow</I>.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-07-22
+2004-09-20
 </ADDRESS>
 </BODY>
 </HTML>

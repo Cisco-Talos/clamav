@@ -1,145 +1,88 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+<!--Converted with LaTeX2HTML 2K.1beta (1.48)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Configuration</TITLE>
-<META NAME="description" CONTENT="Configuration">
+<TITLE>Compilation of base package</TITLE>
+<META NAME="description" CONTENT="Compilation of base package">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2K.1beta">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
 <LINK REL="next" HREF="node15.html">
 <LINK REL="previous" HREF="node13.html">
-<LINK REL="up" HREF="node6.html">
+<LINK REL="up" HREF="node10.html">
 <LINK REL="next" HREF="node15.html">
 </HEAD>
 
 <BODY >
-
-<DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html531"
+<!--Navigation Panel-->
+<A NAME="tex2html596"
   HREF="node15.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html527"
-  HREF="node6.html">
+<A NAME="tex2html592"
+  HREF="node10.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html521"
+<A NAME="tex2html586"
   HREF="node13.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html529"
+<A NAME="tex2html594"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html532"
-  HREF="node15.html">Testing</A>
-<B> Up:</B> <A NAME="tex2html528"
-  HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html522"
-  HREF="node13.html">Compilation</A>
- &nbsp; <B>  <A NAME="tex2html530"
+<B> Next:</B> <A NAME="tex2html597"
+  HREF="node15.html">Compilation with clamav-milter enabled</A>
+<B> Up:</B> <A NAME="tex2html593"
+  HREF="node10.html">Installation</A>
+<B> Previous:</B> <A NAME="tex2html587"
+  HREF="node13.html">Adding new system user</A>
+ &nbsp <B>  <A NAME="tex2html595"
   HREF="node1.html">Contents</A></B> 
 <BR>
-<BR></DIV>
-<!--End of Navigation Panel-->
-
-<H2><A NAME="SECTION00038000000000000000">
-Configuration</A>
-</H2>
-    If you are going to use the daemon you have to configure it because
-    it won't run with default settings:
-    <PRE>
-	$ clamd
-	ERROR: Please edit the example config file
-	       /etc/clamav.conf.
-</PRE>
-    This shows a location of the configuration file. The format and
-    options of this file are fully described in the <SPAN  CLASS="textit">clamav.conf(5)</SPAN>
-    manual. clamd configuration is very easy because the config file is well
-    commented. Remember - you must remove the "Example" directive.
-
-<P>
-Another feature of clamd is on-access scanning based on the Dazuko module,
-    available from <TT><A NAME="tex2html19"
-  HREF="http://dazuko.org">http://dazuko.org</A></TT>. <SPAN  CLASS="textbf">This is not required to
-    run clamd - furthermore, you shouldn't run Dazuko on production systems</SPAN>.
-    A special thread in clamd responsible for a communication with Dazuko
-    is called "Clamuko" (it's due to the funny name of Dazuko - we don't know
-    what Clamuko means). Clamuko is supported on Linux and FreeBSD only.
-    To compile dazuko execute:
-    <PRE>
-	$ tar zxpvf dazuko-a.b.c.tar.gz
-	$ cd dazuko-a.b.c
-	$ make dazuko
-	or
-	$ make dazuko-smp (for smp kernels)
-	$ su
-	# insmod dazuko.o
-	# cp dazuko.o /lib/modules/`uname -r`/misc
-	# depmod -a
-</PRE>
-    Depending on your Linux distribution you have to add a "dazuko" entry to
-<BR>    <SPAN  CLASS="textit">/etc/modules</SPAN> or something like:
-    <PRE>
-	modprobe dazuko
-</PRE>
-    to some startup file in order to load dazuko at a boot time. Compilation
-    on FreeBSD is very similar. You must also create the <SPAN  CLASS="textit">/dev/dazuko</SPAN>
-    device:
-    <PRE>
-	$ cat /proc/devices | grep dazuko
-	254 dazuko
-	$ su -c "mknod -m 600 /dev/dazuko c 254 0"
-</PRE>
-    Now just configure Clamuko in <SPAN  CLASS="textit">clamav.conf</SPAN> and see the <A HREF="node21.html#clamuko">3.3</A>
-    section.
-
-<P>
-
-<DIV CLASS="navigation"><HR>
-<!--Navigation Panel-->
-<A NAME="tex2html531"
-  HREF="node15.html">
-<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
- SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html527"
-  HREF="node6.html">
-<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
- SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html521"
-  HREF="node13.html">
-<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
- SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html529"
-  HREF="node1.html">
-<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
- SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html532"
-  HREF="node15.html">Testing</A>
-<B> Up:</B> <A NAME="tex2html528"
-  HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html522"
-  HREF="node13.html">Compilation</A>
- &nbsp; <B>  <A NAME="tex2html530"
-  HREF="node1.html">Contents</A></B> </DIV>
 <!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00044000000000000000">
+Compilation of base package</A>
+</H2>
+    Once you have created the clamav user and group, please extract the archive:
+    <PRE>
+	$ zcat clamav-x.yz.tar.gz | tar xvf -
+	$ cd clamav-x.yz
+</PRE>
+    Assuming you want to install the configuration files in /etc, configure
+    the package as follows:
+    <PRE>
+	$ ./configure --sysconfdir=/etc
+</PRE>
+    Currently <I>gcc</I> is required for to compile ClamAV.
+    <PRE>
+	$ make
+	$ su -c "make install"
+</PRE>
+    In the last step software is installed in the /usr/local directory
+    and the config file goes to /etc. <B>WARNING: Never enable the SUID
+    or SGID bits in Clam AntiVirus binaries.</B>
+
+<P>
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-07-22
+2004-09-20
 </ADDRESS>
 </BODY>
 </HTML>

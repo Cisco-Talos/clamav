@@ -1,168 +1,89 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+<!--Converted with LaTeX2HTML 2K.1beta (1.48)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Clam daemon</TITLE>
-<META NAME="description" CONTENT="Clam daemon">
+<TITLE>clamav-milter</TITLE>
+<META NAME="description" CONTENT="clamav-milter">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2K.1beta">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
 <LINK REL="next" HREF="node20.html">
-<LINK REL="previous" HREF="node18.html">
-<LINK REL="up" HREF="node18.html">
+<LINK REL="previous" HREF="node17.html">
+<LINK REL="up" HREF="node16.html">
 <LINK REL="next" HREF="node20.html">
 </HEAD>
 
 <BODY >
-
-<DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html596"
+<!--Navigation Panel-->
+<A NAME="tex2html659"
   HREF="node20.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html592"
-  HREF="node18.html">
+<A NAME="tex2html655"
+  HREF="node16.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html586"
+<A NAME="tex2html649"
   HREF="node18.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html594"
+<A NAME="tex2html657"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html597"
-  HREF="node20.html">Clamdscan</A>
-<B> Up:</B> <A NAME="tex2html593"
-  HREF="node18.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html587"
-  HREF="node18.html">Usage</A>
- &nbsp; <B>  <A NAME="tex2html595"
+<B> Next:</B> <A NAME="tex2html660"
+  HREF="node20.html">Testing</A>
+<B> Up:</B> <A NAME="tex2html656"
+  HREF="node16.html">Configuration</A>
+<B> Previous:</B> <A NAME="tex2html650"
+  HREF="node18.html">On-access scanning</A>
+ &nbsp <B>  <A NAME="tex2html658"
   HREF="node1.html">Contents</A></B> 
 <BR>
-<BR></DIV>
+<BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00041000000000000000"></A><A NAME="clamd"></A>
-<BR>
-Clam daemon
+<H2><A NAME="SECTION00052000000000000000">
+clamav-milter</A>
 </H2>
-    <SPAN  CLASS="textit">clamd</SPAN> is a multi-threaded daemon and uses <SPAN  CLASS="textit">libclamav</SPAN>
-    to scan files against viruses.  It may work in one of the two
-    following network modes, listening on a:
-    
-<UL>
-<LI>Unix (local) socket
-</LI>
-<LI>TCP socket
-    
-</LI>
-</UL>
-    The daemon is fully configurable via the <SPAN  CLASS="textit">clamav.conf</SPAN> file. You will
-    find a description for every directive in the <SPAN  CLASS="textit">clamav.conf(5)</SPAN>
-    manual. <SPAN  CLASS="textit">clamd</SPAN> recognizes the following commands:
-    
-<UL>
-<LI><SPAN  CLASS="textbf">PING</SPAN>
-<BR>
-Check a daemon state (should reply with "PONG").
-</LI>
-<LI><SPAN  CLASS="textbf">VERSION</SPAN>
-<BR>
-Print version information.
-</LI>
-<LI><SPAN  CLASS="textbf">RELOAD</SPAN>
-<BR>
-Reload databases.
-</LI>
-<LI><SPAN  CLASS="textbf">SHUTDOWN</SPAN>
-<BR>
-Perform a clean exit.
-</LI>
-<LI><SPAN  CLASS="textbf">SCAN file/directory</SPAN>
-	    Scan a file or directory (recursively) with archive support
-	    enabled. A full path is required.
-</LI>
-<LI><SPAN  CLASS="textbf">RAWSCAN file/directory</SPAN>
-	    Scan a file or directory (recursively) with archive support
-	    disabled. A full path is required.
-</LI>
-<LI><SPAN  CLASS="textbf">CONTSCAN file/directory</SPAN>
-	    Scan a file or directory (recursively) with archive support
-	    enabled and don't stop even if virus is found.
-</LI>
-<LI><SPAN  CLASS="textbf">STREAM</SPAN>
-	    Scan stream - clamd will return a new port number you should
-	    connect to and send a data to scan. <SPAN  CLASS="textit">The protocol is
-	    obsolete and there will be a new version soon (however this one
-	    will still be supported).</SPAN>
-</LI>
-<LI><SPAN  CLASS="textbf">SESSION, END</SPAN>
-	    Start/end a clamd session - you can do multiple commands per TCP
-	    session (WARNING: due to the clamd implementation the
-	    <SPAN  CLASS="textbf">RELOAD</SPAN> command will break the session).
+    Nigel Horne's <code>clamav-milter</code> is a very fast email scanner designed for
+    Sendmail. It's written entirely in C and only depends on <code>clamd</code>.
+    You can find detailed installation instructions in the <code>INSTALL</code> file
+    that comes with the clamav-milter sources. Basically, to connect it
+    with Sendmail add the following lines to <code>/etc/mail/sendmail.mc</code>:
+    <PRE>
+INPUT_MAIL_FILTER(`clmilter',`S=local:/var/run/clmilter.sock,
+F=, T=S:4m;R:4m')dnl
+define(`confINPUT_MAIL_FILTERS', `clmilter')
+</PRE>
+    Check entry in <code>clamd.conf</code> of the form:
+    <PRE>
+	LocalSocket /var/run/clamd.sock
+</PRE>
+    Start clamav-milter
+    <PRE>
+	/usr/local/sbin/clamav-milter -lo /var/run/clmilter.sock
+</PRE>
+    and restart sendmail.
 
 <P>
-</LI>
-</UL>
-    Clamd reacts on the three special signals:
-    
-<UL>
-<LI><SPAN  CLASS="textbf">SIGTERM</SPAN> - perform a clean exit
-</LI>
-<LI><SPAN  CLASS="textbf">SIGHUP</SPAN> - reopen the log file
-</LI>
-<LI><SPAN  CLASS="textbf">SIGUSR2</SPAN> - reload the database
-    
-</LI>
-</UL>
-
-<P>
-
-<DIV CLASS="navigation"><HR>
-<!--Navigation Panel-->
-<A NAME="tex2html596"
-  HREF="node20.html">
-<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
- SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html592"
-  HREF="node18.html">
-<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
- SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html586"
-  HREF="node18.html">
-<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
- SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html594"
-  HREF="node1.html">
-<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
- SRC="/usr/share/latex2html/icons/contents.png"></A>  
-<BR>
-<B> Next:</B> <A NAME="tex2html597"
-  HREF="node20.html">Clamdscan</A>
-<B> Up:</B> <A NAME="tex2html593"
-  HREF="node18.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html587"
-  HREF="node18.html">Usage</A>
- &nbsp; <B>  <A NAME="tex2html595"
-  HREF="node1.html">Contents</A></B> </DIV>
-<!--End of Navigation Panel-->
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-07-22
+2004-09-20
 </ADDRESS>
 </BODY>
 </HTML>

@@ -1,77 +1,90 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+<!--Converted with LaTeX2HTML 2K.1beta (1.48)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>OpenAntiVirus samba-vscan</TITLE>
-<META NAME="description" CONTENT="OpenAntiVirus samba-vscan">
+<TITLE>CVD format</TITLE>
+<META NAME="description" CONTENT="CVD format">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2K.1beta">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node46.html">
-<LINK REL="previous" HREF="node44.html">
-<LINK REL="up" HREF="node28.html">
+<LINK REL="previous" HREF="node40.html">
+<LINK REL="up" HREF="node30.html">
 <LINK REL="next" HREF="node46.html">
 </HEAD>
 
 <BODY >
-
-<DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html953"
+<!--Navigation Panel-->
+<A NAME="tex2html990"
   HREF="node46.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html949"
-  HREF="node28.html">
+<A NAME="tex2html986"
+  HREF="node30.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html943"
+<A NAME="tex2html982"
   HREF="node44.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html951"
+<A NAME="tex2html988"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html954"
-  HREF="node46.html">Sylpheed Claws</A>
-<B> Up:</B> <A NAME="tex2html950"
-  HREF="node28.html">Third party software</A>
-<B> Previous:</B> <A NAME="tex2html944"
-  HREF="node44.html">File::Scan::ClamAV</A>
- &nbsp; <B>  <A NAME="tex2html952"
+<B> Next:</B> <A NAME="tex2html991"
+  HREF="node46.html">Frequently Asked Questions</A>
+<B> Up:</B> <A NAME="tex2html987"
+  HREF="node30.html">LibClamAV</A>
+<B> Previous:</B> <A NAME="tex2html983"
+  HREF="node44.html">Example</A>
+ &nbsp <B>  <A NAME="tex2html989"
   HREF="node1.html">Contents</A></B> 
 <BR>
-<BR></DIV>
+<BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION000617000000000000000"></A><A NAME="samba-vscan"></A>
-<BR>
-OpenAntiVirus samba-vscan
+<H2><A NAME="SECTION00075000000000000000">
+CVD format</A>
 </H2>
-    <SPAN  CLASS="textbf">Homepage:</SPAN> <TT><A NAME="tex2html97"
-  HREF="http://www.openantivirus.org/projects.php#samba-vscan">http://www.openantivirus.org/projects.php#samba-vscan</A></TT>
-<BR>    <SPAN  CLASS="textbf">Supports:</SPAN> clamd
-<BR>
-samba-vscan provides on-access scanning of Samba shares. It supports
-    Samba 2.2.x/3.0 with working virtual file system (VFS) support. 
+    CVD (ClamAV Virus Database) is a digitally signed tarball file that
+    contains one or more databases. The header is a 512 bytes long string
+    with colon separated fields:
+    <PRE>
+ClamAV-VDB:build time:version:number of signatures:functionality
+level required:MD5 checksum:digital signature:builder name:build time (sec)
+</PRE>
+    <code>sigtool --info</code> displays detailed information on CVD files:
+    <PRE>
+    zolw@localhost:/usr/local/share/clamav$ sigtool -i daily.cvd 
+    Build time: 11 Sep 2004 21-07 +0200
+    Version: 487
+    # of signatures: 1189
+    Functionality level: 2
+    Builder: ccordes
+    MD5: a3f4f98694229e461f17d2aa254e9a43
+    Digital signature: uwJS6d+y/9g5SXGE0Hh1rXyjZW/PGK/zqVtWWVL3/tfHEn
+    A17z6VB2IBR2I/OitKRYzmVo3ibU7bPCJNgi6fPcW1PQwvCunwAswvR0ehrvY/4ks
+    UjUOXo1VwQlW7l86HZmiMUSyAjnF/gciOSsOQa9Hli8D5uET1RDzVpoWu/id
+    Verification OK.
+</PRE>
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-07-22
+2004-09-20
 </ADDRESS>
 </BODY>
 </HTML>

@@ -1,79 +1,103 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+<!--Converted with LaTeX2HTML 2K.1beta (1.48)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Problem solving</TITLE>
-<META NAME="description" CONTENT="Problem solving">
+<TITLE>Clamuko</TITLE>
+<META NAME="description" CONTENT="Clamuko">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2K.1beta">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node28.html">
-<LINK REL="previous" HREF="node18.html">
-<LINK REL="up" HREF="clamdoc.html">
+<LINK REL="next" HREF="node27.html">
+<LINK REL="previous" HREF="node25.html">
+<LINK REL="up" HREF="node23.html">
 <LINK REL="next" HREF="node27.html">
 </HEAD>
 
 <BODY >
-
-<DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html678"
+<!--Navigation Panel-->
+<A NAME="tex2html747"
   HREF="node27.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html674"
-  HREF="clamdoc.html">
+<A NAME="tex2html743"
+  HREF="node23.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html668"
+<A NAME="tex2html737"
   HREF="node25.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html676"
+<A NAME="tex2html745"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html679"
-  HREF="node27.html">Return codes</A>
-<B> Up:</B> <A NAME="tex2html675"
-  HREF="clamdoc.html">clamdoc</A>
-<B> Previous:</B> <A NAME="tex2html669"
-  HREF="node25.html">Signature Tool</A>
- &nbsp; <B>  <A NAME="tex2html677"
+<B> Next:</B> <A NAME="tex2html748"
+  HREF="node27.html">Output format</A>
+<B> Up:</B> <A NAME="tex2html744"
+  HREF="node23.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html738"
+  HREF="node25.html">Clamdscan</A>
+ &nbsp <B>  <A NAME="tex2html746"
   HREF="node1.html">Contents</A></B> 
 <BR>
-<BR></DIV>
+<BR>
 <!--End of Navigation Panel-->
 
-<H1><A NAME="SECTION00050000000000000000">
-Problem solving</A>
-</H1>
+<H2><A NAME="SECTION00063000000000000000"></A><A NAME="clamuko"></A>
+<BR>
+Clamuko
+</H2>
+    Clamuko is a special thread in <code>clamd</code> that performs on-access
+    scanning under Linux and FreeBSD and shares internal virus database
+    with the daemon. <B>You must follow some important rules when
+    using it:</B>
+    
+<UL>
+<LI>Always stop the daemon cleanly - using the SHUTDOWN command or
+	      the
+<BR>
+SIGTERM signal. In other case you can lose an access
+	      to protected files until the system is restarted.
+</LI>
+<LI>Never protect a directory your mail-scanner software
+	      uses for attachment unpacking. Access to all infected
+	      files will be automatically blocked and the scanner (even
+	      <code>clamd</code>) won't be able to detect any virus. In the result
+	      <B>all infected mails will be delivered.</B>
+    
+</LI>
+</UL>
+    For example, to protect a whole system add the following lines to
+    <code>clamd.conf</code>:
+    <PRE>
+	ClamukoScanOnAccess
+	ClamukoIncludePath /
+	ClamukoExcludePath /proc
+	ClamukoExcludePath /temporary/dir/of/your/mail/scanning/software
+</PRE>
+    You can also use clamuko to protect files on Samba/Netatalk but far
+    more better and safe idea is to use the <B>samba-vscan</B> module
+    <A HREF="node62.html#samba-vscan">8.15</A>. NFS is not supported because Dazuko doesn't intercept
+    NFS access calls.
 
 <P>
 <BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
-
-<UL CLASS="ChildLinks">
-<LI><A NAME="tex2html680"
-  HREF="node27.html">Return codes</A>
-</UL>
-<!--End of Table of Child-Links-->
-<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-07-22
+2004-09-20
 </ADDRESS>
 </BODY>
 </HTML>
