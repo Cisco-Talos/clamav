@@ -1,3 +1,10 @@
+Wed Mar 10 05:43:34 GMT 2004 (njh)
+----------------------------------
+  * libclamav/message.c:	Implemented a couple of small speed ups:
+  	1) Only save arguments that we're going to retrieve
+	2) No need to store \n in messageToText fast copy mode, which allows
+		an sprintf to be removed (Dirk Mueller <dmuell@gmx.net>)
+
 Wed Mar 10 01:35:40 CET 2004 (tk)
 ---------------------------------
   * libclamav: unrarlib: cleanup (Dirk Mueller <dmuell*gmx.net>)
