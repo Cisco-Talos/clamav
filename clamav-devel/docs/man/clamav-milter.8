@@ -15,6 +15,14 @@ if it cannot it terminates.
 .LP
 clamav\-milter supports tcpwrappers, the value for \fIdaemon_list\fR
 is "clamav\-milter".
+.LP
+The socket_address argument is the socket used to communicate with
+\fBsendmail(8)\fR.
+It must agree with the entry in sendmail.cf or sendmail.mc.
+The file associated with the socket must be createable by clamav\-milter,
+if the User option is set in
+\fBclamav.conf(5)\fR,
+then that user must have the rights to create the file.
 .SH "OPTIONS"
 .LP 
 
