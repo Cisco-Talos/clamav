@@ -1,3 +1,8 @@
+Wed Oct  8 12:39:26 CEST 2003 (tk)
+----------------------------------
+  * clamd: (!!!) fixed race condition in database reloading code
+  * libclamav: finished support for cvd files
+
 Sun Oct  5 18:30:40 BST 2003 (njh)
 ----------------------------------
   * clamav-milter: Used to always remove old UNIX domain sockets, now

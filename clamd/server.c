@@ -68,21 +68,6 @@ void *threadscanner(void *arg)
     sigfillset(&sigset);
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
 
-    if(reload) {
-	logg("*Session(%d): database reloading (waiting).\n", tharg->sid);
-	ths[tharg->sid].reload = 1;
-	while(reload && maxwait--) /* wait during reloading */
-	    sleep(1);
-
-	if(!maxwait && reload) {
-	    logg("!Database reloading failed, time exceeded. Forcing quit.\n");
-	    kill(progpid, SIGTERM);
-	}
-
-	ths[tharg->sid].reload = 0;
-	logg("*Session(%d): database reloaded.\n", tharg->sid);
-    }
-
     if((bread = read(ths[tharg->sid].desc, buff, 1024)) == -1) {
 	logg("!Session(%d): read() failed.\n", tharg->sid);
 	THREXIT;
@@ -140,8 +125,9 @@ void *threadwatcher(void *arg)
 	struct cl_stat dbstat;
 
 
-    /* ignore all signals */
+    /* ignore all signals (except for SIGSEGV) */
     sigfillset(&sigset);
+    sigdelset(&sigset, SIGSEGV);
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
 
 #ifdef C_LINUX
@@ -282,8 +268,15 @@ void *threadwatcher(void *arg)
 
 	timer++;
 
-	/* reload the database(s) */
+	/* reload the database */
 	if(reload) {
+
+	    /* make sure the main thread doesn't start new threads */
+	    do {
+		usleep(200000);
+	    } while(!main_accept && !main_reload);
+
+	    /* wait until all working threads are finished */
 	    do {
 		need_wait = 0;
 		for(j = 0; j < threads; j++)
@@ -291,8 +284,7 @@ void *threadwatcher(void *arg)
 			if(time(NULL) - ths[j].start > timeout) {
 			    do_loop = 1;
 			    break;
-			} else if(!ths[j].reload)
-			    need_wait = 1;
+			} else need_wait = 1;
 		    }
 
 #ifdef CLAMUKO
@@ -317,6 +309,7 @@ void *threadwatcher(void *arg)
 		/* some threads must be stopped in the next iteration,
 		 * reload is still == 1
 		 */
+		logg("Database reload: some threads must be stopped in the next iteration.\n");
 		do_loop = 0;
 		continue;
 	    }
@@ -342,6 +335,8 @@ void *threadwatcher(void *arg)
 	    } else {
 		cl_buildtrie(*thwarg->root);
 		/* check integrity */
+		if(!testsignature(*thwarg->root))
+		    logg("!Unable to detect test signature.\n");
 
 		logg("Database correctly reloaded (%d viruses)\n", virnum);
 	    }
@@ -517,7 +512,9 @@ int acceptloop(int socketd, struct cl_node *root, const struct cfgstruct *copt)
     sigaddset(&sigact.sa_mask, SIGHUP);
     sigaction(SIGINT, &sigact, NULL);
     sigaction(SIGTERM, &sigact, NULL);
+#ifndef CL_DEBUG
     sigaction(SIGSEGV, &sigact, NULL);
+#endif
     sigaction(SIGHUP, &sigact, NULL);
 
     /* we need to save program's PID, because under Linux each thread
@@ -551,14 +548,16 @@ int acceptloop(int socketd, struct cl_node *root, const struct cfgstruct *copt)
 	}
 
 
+	main_accept = 1;
 	if((acceptd = accept(socketd, NULL, NULL)) == -1) {
 	    logg("!accept() failed.\n");
 	    /* exit ? */
 	    continue;
 	}
-
+	main_accept = 0;
 
 	if(reload) { /* do not start new threads */
+	    main_reload = 1;
 	    logg("*Main thread: database reloading (waiting).\n");
 	    maxwait = CL_DEFAULT_MAXWHILEWAIT;
 	    while(reload && maxwait--)
@@ -572,6 +571,7 @@ int acceptloop(int socketd, struct cl_node *root, const struct cfgstruct *copt)
 	    }
 
 	    logg("*Main thread: database reloaded.\n");
+	    main_reload = 0;
 	}
 
 	tharg = (struct thrarg *) mcalloc(1, sizeof(struct thrarg));
@@ -581,9 +581,7 @@ int acceptloop(int socketd, struct cl_node *root, const struct cfgstruct *copt)
 	tharg->limits = &limits;
 	tharg->options = options;
 
-	//pthread_mutex_lock(&ths[i].mutex);
 	ths[i].desc = acceptd;
-	ths[i].reload = 0;
 	ths[i].active = 1;
 	pthread_create(&ths[i].id, &thattr, threadscanner, tharg);
 	ths[i].start = time(NULL);
@@ -612,6 +610,7 @@ void sighandler(int sig)
 	    exit(0);
 	    break; /* not reached */
 
+#ifndef CL_DEBUG
 	case SIGSEGV:
 	    logg("Segmentation fault :-( Bye..\n");
 
@@ -622,7 +621,7 @@ void sighandler(int sig)
 	    pthread_kill(watcherid, 9);
 	    exit(11); /* probably not reached at all */
 	    break; /* not reached */
-
+#endif
 	case SIGHUP:
 	    sighup = 1;
 	    logg("SIGHUP catched: log file re-opened.\n");

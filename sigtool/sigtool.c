@@ -1,4 +1,4 @@
-/* THIS CODE REALLY SUCKS */
+/* THIS CODE SUCKS */
 
 /*
  *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
@@ -147,6 +147,9 @@ void sigtool(struct optstruct *opt)
 
     if(optl(opt, "stdout")) mprintf_stdout = 1;
     else mprintf_stdout = 0;
+
+    if(optl(opt, "debug"))
+	cl_debug();
 
     if(optc(opt, 'V')) {
 	mprintf("sigtool / ClamAV version "VERSION"\n");
@@ -402,7 +405,7 @@ int build(struct optstruct *opt)
 	exit(1);
     }
 
-    if(stat("viruses.db", &foo) == -1 || stat("viruses.db2", &foo) == -1) {
+    if(stat("viruses.db", &foo) == -1 && stat("viruses.db2", &foo) == -1) {
 	mprintf("Virus database not found in current working directory.\n");
 	exit(1);
     }
@@ -518,12 +521,12 @@ int build(struct optstruct *opt)
     //strcat(header, ":");
 
     /* fill up with spaces */
-    if(strlen(header) > 256) {
+    if(strlen(header) > 512) {
 	mprintf("!Generated signature is too long.\n");
 	exit(1);
     }
 
-    while(strlen(header) < 256)
+    while(strlen(header) < 512)
 	strcat(header, " ");
 
     /* build the final database */
@@ -534,7 +537,7 @@ int build(struct optstruct *opt)
 	exit(1);
     }
 
-    fwrite(header, 1, 256, cvd);
+    fwrite(header, 1, 512, cvd);
 
     if((tar = fopen(gzfile, "rb")) == NULL) {
 	mprintf("!Can't open file %s for reading.\n", gzfile);
@@ -559,9 +562,11 @@ void cvdinfo(struct optstruct *opt)
 {
 	struct cl_cvd *cvd;
 	char *pt;
+	int ret;
 
-    if((cvd = cl_cvdhead(getargc(opt, 'i'))) == NULL) {
-	mprintf("!Can't read CVD header from %s\n", getargc(opt, 'i'));
+    pt = getargc(opt, 'i');
+    if((cvd = cl_cvdhead(pt)) == NULL) {
+	mprintf("!Can't read CVD header from %s\n", pt);
 	exit(1);
     }
 
@@ -572,8 +577,16 @@ void cvdinfo(struct optstruct *opt)
     mprintf("Builder: %s\n", cvd->builder);
     mprintf("MD5: %s\n", cvd->md5);
 
-   // pt = cl_md5file( DODAC WERYFIKACJE
     mprintf("Digital signature: %s\n", cvd->dsig);
+
+#ifndef HAVE_GMP
+    mprintf("Digital signature support not compiled in.\n");
+#endif
+
+    if((ret = cl_cvdverify(pt)))
+	mprintf("!Verification: %s\n", cl_strerror(ret));
+    else
+	mprintf("Verification OK.\n");
 
     // wyczysc cvd
 }
@@ -587,6 +600,7 @@ void help(void)
     mprintf("   --help		    -h		show help\n");
     mprintf("   --version		    -V		print version number and exit\n");
     mprintf("   --quiet				be quiet, output only error messages\n");
+    mprintf("   --debug				enable debug messages\n");
     mprintf("   --stdout				write to stdout instead of stderr\n");
     mprintf("					(this help is always written to stdout)\n");
     mprintf("   --hex-dump				convert data from stdin to hex\n");
@@ -594,8 +608,8 @@ void help(void)
     mprintf("   --command		    -c		scanner command string, with options\n");
     mprintf("   --string		    -s		'virus found' string in scan. output\n");
     mprintf("   --file		    -f		infected file\n");
-    mprintf("\n	DATABASE DEVELOPING:\n\n");
+    mprintf("	--info FILE	    -i FILE	print database information\n");
     mprintf("   --build NAME	    -b NAME		Build database\n");
-    
+
     exit(0);
 }

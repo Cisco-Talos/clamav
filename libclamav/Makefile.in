@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 #
-#  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+#  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -114,7 +114,7 @@ am__include = @am__include@
 am__quote = @am__quote@
 install_sh = @install_sh@
 
-CFLAGS = -Wall
+CFLAGS = -Wall -pedantic
 
 INCLUDES = -I.. -I@srcdir@/zziplib
 
@@ -133,6 +133,9 @@ libclamav_la_SOURCES = \
         others.h \
         readdb.c \
 	cvd.c \
+	cvd.h \
+	dsig.c \
+	dsig.h \
         str.c \
 	str.h \
 	defaults.h \
@@ -178,7 +181,7 @@ LTLIBRARIES = $(lib_LTLIBRARIES)
 
 libclamav_la_DEPENDENCIES =
 am_libclamav_la_OBJECTS = matcher.lo md5.lo others.lo readdb.lo cvd.lo \
-	str.lo scanners.lo unrarlib.lo zzip-dir.lo zzip-err.lo \
+	dsig.lo str.lo scanners.lo unrarlib.lo zzip-dir.lo zzip-err.lo \
 	zzip-file.lo zzip-info.lo zzip-io.lo zzip-stat.lo zzip-zip.lo \
 	strc.lo blob.lo mbox.lo message.lo strrcpy.lo table.lo text.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
@@ -191,16 +194,17 @@ LIBS = @LIBS@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/blob.Plo ./$(DEPDIR)/cvd.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/matcher.Plo ./$(DEPDIR)/mbox.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/md5.Plo ./$(DEPDIR)/message.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/others.Plo ./$(DEPDIR)/readdb.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/scanners.Plo ./$(DEPDIR)/str.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/strc.Plo ./$(DEPDIR)/strrcpy.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/table.Plo ./$(DEPDIR)/text.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/unrarlib.Plo ./$(DEPDIR)/zzip-dir.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/zzip-err.Plo ./$(DEPDIR)/zzip-file.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/zzip-info.Plo ./$(DEPDIR)/zzip-io.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/zzip-stat.Plo ./$(DEPDIR)/zzip-zip.Plo
+@AMDEP_TRUE@	./$(DEPDIR)/dsig.Plo ./$(DEPDIR)/matcher.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/mbox.Plo ./$(DEPDIR)/md5.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/message.Plo ./$(DEPDIR)/others.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/readdb.Plo ./$(DEPDIR)/scanners.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/str.Plo ./$(DEPDIR)/strc.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/strrcpy.Plo ./$(DEPDIR)/table.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/text.Plo ./$(DEPDIR)/unrarlib.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/zzip-dir.Plo ./$(DEPDIR)/zzip-err.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/zzip-file.Plo ./$(DEPDIR)/zzip-info.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/zzip-io.Plo ./$(DEPDIR)/zzip-stat.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/zzip-zip.Plo
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
@@ -264,6 +268,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/blob.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cvd.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dsig.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/matcher.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mbox.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/md5.Plo@am__quote@

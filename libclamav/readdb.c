@@ -91,7 +91,7 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 
     /* check for CVD file */
     fgets(buffer, 12, fd);
-    fseek(fd, 0L, SEEK_SET);
+    rewind(fd);
 
     if(!strncmp(buffer, "ClamAV-VDB:", 11)) {
 	cli_dbgmsg("%s: CVD file detected\n", filename);
@@ -205,6 +205,7 @@ int cl_loaddbdir(const char *dirname, struct cl_node **root, int *virnum)
 		}
 		sprintf(dbfile, "%s/%s", dirname, dent->d_name);
 		if((ret = cl_loaddb(dbfile, root, virnum))) {
+		    cli_dbgmsg("cl_loaddbdir(): error loading database %s\n", dbfile);
 		    free(dbfile);
 		    closedir(dd);
 		    return ret;
