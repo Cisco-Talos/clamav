@@ -16,13 +16,15 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
-# Install into /etc/rc.d/clamav
+# Install into /etc/rc.d as /etc/rc.d/clamav
+#	chmod 755 /etc/rc.d/clamav
 #
-# Add lines such as this to /etc/rc.conf
+# Add lines such as this to /etc/rc.conf:
+#	clamd_enable="YES"
+#	clamav_milter_enable="YES"
+#	clamav_milter_flags="--max-children=2 --dont-wait --timeout=0 -P local:/var/run/clamav/clamav.sock --pidfile=/var/run/clamav/clamav-milter.pid --quarantine-dir=/var/run/clamav/quarantine"
 #
-# clamd_enable="YES"
-# clamav_milter_enable="YES"
-# clamav_milter_flags="--max-children=2 --dont-wait --timeout=0 -P local:/var/run/clamav/clamav.sock --pidfile=/var/run/clamav/clamav-milter.pid --quarantine-dir=/var/run/clamav/quarantine"
+# Tested with FreeBSD 5.2 and 5.3
 
 # PROVIDE: clamav
 # REQUIRE: NETWORKING
