@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.63  2004/06/26 13:16:25  nigelhorne
+ * Added newline to end of warning message
+ *
  * Revision 1.62  2004/06/24 21:37:26  nigelhorne
  * Handle uuencoded files created with buggy software
  *
@@ -183,7 +186,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.62 2004/06/24 21:37:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.63 2004/06/26 13:16:25 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1584,7 +1587,7 @@ decodeLine(const message *m, const char *line, unsigned char *buf, size_t buflen
 				 * the maximum length of a uuencoded line is
 				 * 62 characters
 				 */
-				cli_warnmsg("uudecode: buffer overflow stopped, attempting to ignore but decoding may fail");
+				cli_warnmsg("uudecode: buffer overflow stopped, attempting to ignore but decoding may fail\n");
 			else
 				buf = decode(line, buf, uudecode, (len & 3) == 0);
 			break;
