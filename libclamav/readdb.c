@@ -340,8 +340,10 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig,
 	if(!bm_new)
 	    return CL_EMEM;
 
-	if(!(bm_new->pattern = cli_hex2str(hexsig)))
+	if(!(bm_new->pattern = cli_hex2str(hexsig))) {
+	    free(bm_new);
 	    return CL_EMALFDB;
+	}
 
 	bm_new->length = strlen(hexsig) / 2;
 
@@ -351,11 +353,13 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig,
 	    virlen = strlen(virname);
 
 	if(virlen <= 0) {
+	    free(bm_new->pattern);
 	    free(bm_new);
 	    return CL_EMALFDB;
 	}
 
 	if((bm_new->virname = cli_calloc(virlen + 1, sizeof(char))) == NULL) {
+	    free(bm_new->pattern);
 	    free(bm_new);
 	    return CL_EMEM;
 	}
@@ -367,6 +371,9 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig,
 
 	if((ret = cli_bm_addpatt(root, bm_new))) {
 	    cli_errmsg("cli_parse_add(): Problem adding signature\n");
+	    free(bm_new->pattern);
+	    free(bm_new->virname);
+	    free(bm_new);
 	    return ret;
 	}
     }

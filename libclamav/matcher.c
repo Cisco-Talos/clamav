@@ -222,6 +222,10 @@ void cl_free(struct cl_node *root)
 	    while(pt) {
 		h = pt;
 		pt = pt->next;
+		free(h->md5);
+		free(h->virname);
+		if(h->viralias)
+		    free(h->viralias);
 		free(h);
 	    }
 	}

@@ -76,7 +76,7 @@ extern "C"
 
 
 struct cli_bm_patt {
-    const char *pattern;
+    char *pattern;
     char *virname;
     int length; 
     struct cli_bm_patt *next;
