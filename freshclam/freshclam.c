@@ -364,7 +364,7 @@ int download(const struct cfgstruct *copt, const struct optstruct *opt)
 	    ret = downloadmanager(copt, opt, cpt->strarg);
 	    alarm(0);
 
-	    if(ret == 54) {
+	    if(ret == 54 || ret == 59) {
 		if(try < maxattempts - 1) {
 		    mprintf("Trying again...\n");
 		    logg("Trying again...\n");

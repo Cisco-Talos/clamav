@@ -1,3 +1,7 @@
+Sat Sep  4 15:12:32 CEST 2004 (tk)
+----------------------------------
+  * freshclam: retry if mirrors are not fully synchronised
+
 Fri Sep  3 22:25:52 CEST 2004 (tk)
 ----------------------------------
   * freshclam: fix signature counting (thanks to Tomasz Papszun)
