@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.145 2005/02/25 15:33:07 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.146 2005/03/06 19:10:20 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1583,60 +1583,64 @@ messageToText(message *m)
 
 		cli_dbgmsg("messageToText: export transfer method %d = %d\n",
 			i, enctype);
-		if(enctype == NOENCODING) {
-			/*
-			 * Fast copy
-			 */
-			for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next) {
-				if(first == NULL)
-					first = last = cli_malloc(sizeof(text));
-				else {
-					last->t_next = cli_malloc(sizeof(text));
-					last = last->t_next;
-				}
 
-				if(last == NULL) {
+		switch(enctype) {
+			case NOENCODING:
+			case BINARY:
+			case EIGHTBIT:
+				/*
+				 * Fast copy
+				 */
+				for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next) {
+					if(first == NULL)
+						first = last = cli_malloc(sizeof(text));
+					else {
+						last->t_next = cli_malloc(sizeof(text));
+						last = last->t_next;
+					}
+
+					if(last == NULL) {
+						if(first) {
+							last->t_next = NULL;
+							textDestroy(first);
+						}
+						return NULL;
+					}
+					if(t_line->t_line)
+						last->t_line = lineLink(t_line->t_line);
+					else
+						last->t_line = NULL;	/* empty line */
+				}
+				continue;
+			case UUENCODE:
+				t_line = uuencodeBegin(m);
+
+				if(t_line == NULL) {
+					/*cli_warnmsg("UUENCODED attachment is missing begin statement\n");*/
 					if(first) {
 						last->t_next = NULL;
 						textDestroy(first);
 					}
 					return NULL;
 				}
-				if(t_line->t_line)
-					last->t_line = lineLink(t_line->t_line);
-				else
-					last->t_line = NULL;	/* empty line */
-			}
-			continue;
-		}
-		if(enctype == UUENCODE) {
-			t_line = uuencodeBegin(m);
+				t_line = t_line->t_next;
+				break;
+			case YENCODE:
+				t_line = yEncBegin(m);
 
-			if(t_line == NULL) {
-				/*cli_warnmsg("UUENCODED attachment is missing begin statement\n");*/
-				if(first) {
-					last->t_next = NULL;
-					textDestroy(first);
+				if(t_line == NULL) {
+					/*cli_warnmsg("YENCODED attachment is missing begin statement\n");*/
+					if(first) {
+						last->t_next = NULL;
+						textDestroy(first);
+					}
+					return NULL;
 				}
-				return NULL;
-			}
-			t_line = t_line->t_next;
-		} else if(enctype == YENCODE) {
-			t_line = yEncBegin(m);
-
-			if(t_line == NULL) {
-				/*cli_warnmsg("YENCODED attachment is missing begin statement\n");*/
-				if(first) {
-					last->t_next = NULL;
-					textDestroy(first);
-				}
-				return NULL;
-			}
-			t_line = t_line->t_next;
-		} else {
-			if((i == 0) && binhexBegin(m))
-				cli_warnmsg("Binhex messages not supported yet.\n");
-			t_line = messageGetBody(m);
+				t_line = t_line->t_next;
+			default:
+				if((i == 0) && binhexBegin(m))
+					cli_warnmsg("Binhex messages not supported yet.\n");
+				t_line = messageGetBody(m);
 		}
 
 		for(; t_line; t_line = t_line->t_next) {
