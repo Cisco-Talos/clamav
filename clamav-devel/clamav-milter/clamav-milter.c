@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.142  2004/10/24 03:49:47  nigelhorne
+ * Enable SESSION code by default
+ *
  * Revision 1.141  2004/10/09 22:10:08  nigelhorne
  * BINDTODEVICE fix was broken
  *
@@ -434,9 +437,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.141 2004/10/09 22:10:08 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.142 2004/10/24 03:49:47 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80j"
+#define	CM_VERSION	"0.80k"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -482,6 +485,7 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.141 2004/10/09 22:10:08 ni
 #include <pwd.h>
 #include <grp.h>
 #include <netdb.h>
+#include <sys/param.h>
 
 #ifdef	C_LINUX
 #include <libintl.h>
@@ -525,16 +529,7 @@ typedef	unsigned short	in_port_t;
 typedef	unsigned int	in_addr_t;
 #endif
 
-/*
- * Do not define SESSION in a production environment - it has been known to put
- * clamd into a loop when clamav-milter is restarted and sending STREAM often
- * returns EPIPE
- *
- * It is however OK for testing: code is now in place to reopen as session
- * that has gone bad, and it would be useful to find out the set of
- * circumstances that causes clamd to loop
- */
-/*#define	SESSION	/*
+#define	SESSION	/*
 		 * Keep one command connection open to clamd, otherwise a new
 		 * command connection is created for each new email
 		 */
@@ -1273,10 +1268,23 @@ main(int argc, char **argv)
 #ifdef	SESSION
 		struct sockaddr_un server;
 #endif
+		char *sockname = NULL;
 
 		if(cfgopt(copt, "TCPSocket") != NULL) {
 			fprintf(stderr, _("%s: You can select one server type only (local/TCP) in %s\n"),
 				argv[0], cfgfile);
+			return EX_CONFIG;
+		}
+		if(strncasecmp(port, "unix:", 5) == 0)
+			sockname = &port[5];
+		else if(strncasecmp(port, "local:", 6) == 0)
+			sockname = &port[6];
+
+		if(sockname && (strcmp(sockname, cpt->strarg) == 0)) {
+		   	fprintf(stderr, _("The connection from sendmail to %s (%s) must not\n"),
+				argv[0], sockname);
+		   	fprintf(stderr, _("be the same as the connection to clamd (%s) in %s\n"),
+				cpt->strarg, cfgfile);
 			return EX_CONFIG;
 		}
 		/*
@@ -1325,6 +1333,10 @@ main(int argc, char **argv)
 			return EX_UNAVAILABLE;
 		}
 #endif
+		/*
+		 * FIXME: Allow connection to remote servers by TCP/IP whilst
+		 * connecting to the localserver via a UNIX domain socket
+		 */
 		numServers = 1;
 	} else if((cpt = cfgopt(copt, "TCPSocket")) != NULL) {
 		int activeServers;
@@ -1346,6 +1358,13 @@ main(int argc, char **argv)
 			char *hostname = cli_strtok(serverHostNames, numServers, ":");
 			if(hostname == NULL)
 				break;
+#ifdef	MAXHOSTNAMELEN
+			if(strlen(hostname) > MAXHOSTNAMELEN) {
+				fprintf(stderr, _("%s: hostname %s is longer than %d characters\n"),
+					argv[0], hostname, MAXHOSTNAMELEN);
+				return EX_CONFIG;
+			}
+#endif
 			numServers++;
 			free(hostname);
 		}
@@ -1366,7 +1385,14 @@ main(int argc, char **argv)
 #endif
 
 		for(i = 0; i < numServers; i++) {
+#ifdef	MAXHOSTNAMELEN
+			char hostname[MAXHOSTNAMELEN + 1];
+
+			if(cli_strtokbuf(serverHostNames, i, ":", hostname) == NULL)
+				break;
+#else
 			char *hostname = cli_strtok(serverHostNames, i, ":");
+#endif
 
 			/*
 			 * Translate server's name to IP address
@@ -1392,7 +1418,10 @@ main(int argc, char **argv)
 					hostname, tcpSocket);
 			}
 #endif
+
+#ifndef	MAXHOSTNAMELEN
 			free(hostname);
+#endif
 		}
 #ifdef	SESSION
 		activeServers = numServers;
@@ -1580,9 +1609,18 @@ createSession(int session)
 	}
 
 	if(ret != 0) {
+#ifdef	MAXHOSTNAMELEN
+		char hostname[MAXHOSTNAMELEN + 1];
+
+		cli_strtokbuf(serverHostNames, serverNumber, ":", hostname);
+#else
 		char *hostname = cli_strtok(serverHostNames, serverNumber, ":");
+#endif
+
 		cli_warnmsg(_("Check clamd server %s - it may be down\n"), hostname);
+#ifndef	MAXHOSTNAMELEN
 		free(hostname);
+#endif
 
 		broadcast(_("Check clamd server - it may be down\n"));
 
@@ -1812,14 +1850,22 @@ findServer(void)
 
 		if((connect(sock, (struct sockaddr *)server, sizeof(struct sockaddr)) < 0) ||
 		   (send(sock, "PING\n", 5, 0) < 5)) {
+#ifdef	MAXHOSTNAMELEN
+			char hostname[MAXHOSTNAMELEN + 1];
+
+			cli_strtokbuf(serverHostNames, i, ":", hostname);
+#else
 			char *hostname = cli_strtok(serverHostNames, i, ":");
+#endif
 			cli_warnmsg(_("Check clamd server %s - it may be down\n"), hostname);
 			if(use_syslog)
 				syslog(LOG_WARNING,
 					_("Check clamd server %s - it may be down"),
 					hostname);
 			close(sock);
+#ifndef	MAXHOSTNAMELEN
 			free(hostname);
+#endif
 			broadcast(_("Check clamd server - it may be down\n"));
 			socks[i] = -1;
 			continue;
@@ -2471,13 +2517,21 @@ clamfi_eom(SMFICTX *ctx)
 			snprintf(buf, sizeof(buf) - 1, "%s\n\ton %s",
 				clamav_version, hostname);
 		} else {
-			char *hostname = cli_strtok(serverHostNames, privdata->serverNumber, ":");
+#ifdef	MAXHOSTNAMELEN
+			char hostname[MAXHOSTNAMELEN + 1];
 
+			if(cli_strtokbuf(serverHostNames, privdata->serverNumber, ":", hostname)) {
+#else
+			char *hostname = cli_strtok(serverHostNames, privdata->serverNumber, ":");
 			if(hostname) {
+#endif
+
 				snprintf(buf, sizeof(buf) - 1, "%s\n\ton %s",
 					clamav_version,
 					hostname);
+#ifndef	MAXHOSTNAMELEN
 				free(hostname);
+#endif
 			} else
 				/* sanity check failed - should issue warning */
 				strcpy(buf, _("Error determining host"));

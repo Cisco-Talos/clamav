@@ -1,3 +1,14 @@
+Sun Oct 24 04:52:01 BST 2004 (njh)
+----------------------------------
+  * libclamav/message.c:	Change encoding guess message from warn to debug
+  * clamav-milter:		Validate the length of the server hostnames
+				Generate a more useful message than libmilter's
+					bind failure message when the two
+					sockets are the same named pipe
+				SESSION code now on by default
+				Use cli_strtokbuf() instead of cli_strtok()
+					whereever possible
+
 Fri Oct 22 18:20:03 BST 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Handle broken messages which state
