@@ -149,8 +149,8 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 
 	    if(parts) /* there's always one part more */
 		parts++;
-	    for(i = 0; i < parts; i++) {
-		if((pt2 = cli_strtok(pt, i, "*")) == NULL) {
+	    for(i = 1; i <= parts; i++) {
+		if((pt2 = cli_strtok(pt, i - 1, "*")) == NULL) {
 		    cli_errmsg("Can't extract part %d of partial signature in line %d\n", i + 1, line);
 		    return CL_EMALFDB;
 		}
@@ -161,7 +161,7 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 		    free(buffer);
 		    return ret;
 		}
-		//cli_dbgmsg("Added part %d of partial signature (id %d)\n", i, sigid);
+//		cli_dbgmsg("Added part %d of partial signature (id %d)\n", i, sigid);
 		free(pt2);
 	    }
 
