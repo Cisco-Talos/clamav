@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.136  2004/09/30 19:18:30  nigelhorne
+ * Allow --from with no e-mail address
+ *
  * Revision 1.135  2004/09/28 14:44:35  nigelhorne
  * Handle operating systems that don't support SO_BINDTODEVICE
  *
@@ -416,9 +419,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.135 2004/09/28 14:44:35 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.136 2004/09/30 19:18:30 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80d"
+#define	CM_VERSION	"0.80e"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -875,7 +878,7 @@ main(int argc, char **argv)
 
 		static struct option long_options[] = {
 			{
-				"from", 1, NULL, 'a'
+				"from", 2, NULL, 'a'
 			},
 			{
 				"advisory", 0, NULL, 'A'
@@ -980,6 +983,11 @@ main(int argc, char **argv)
 
 		switch(ret) {
 			case 'a':	/* e-mail errors from here */
+				/*
+				 * optarg is optional - if you give --from
+				 * then the --from is set to the orginal,
+				 * probably forged, email address
+				 */
 				from = optarg;
 				break;
 			case 'A':
@@ -2616,7 +2624,10 @@ clamfi_eom(SMFICTX *ctx)
 			sendmail = popen(cmd, "w");
 
 			if(sendmail) {
-				fprintf(sendmail, "From: %s\n", from);
+				if(from && from[0])
+					fprintf(sendmail, "From: %s\n", from);
+				else
+					fprintf(sendmail, "From: %s\n", privdata->from);
 				if(bflag) {
 					/*
 					 * Handle privdata->from not set,

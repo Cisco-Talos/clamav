@@ -27,8 +27,11 @@ then that user must have the rights to create the file.
 .LP
 
 .TP
-\fB-a FROM, \-\-from=EMAIL\fR
+\fB-a FROM, \-\-from<=EMAIL>\fR
 Source email address of notices. The default is MAILER-DAEMON.
+If \fI=EMAIL\fR is not given, thus \-\-from, then the from address is set
+to the originating email address, however since it is likely that address is
+forged it must not be relied upon.
 \fB\-h, \-\-help\fR
 Output the help information and exit.
 .TP
