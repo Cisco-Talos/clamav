@@ -1,3 +1,7 @@
+Tue Jun  8 22:46:29 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Ensure --from always takes an argument
+
 Sun Jun  6 22:35:19 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Find uuencoded viruses in multipart/mixed that have no
