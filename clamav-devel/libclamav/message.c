@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.59  2004/06/02 10:11:09  nigelhorne
+ * Corrupted binHex could crash on non Linux systems
+ *
  * Revision 1.58  2004/06/01 09:07:19  nigelhorne
  * Corrupted binHex could crash on non Linux systems
  *
@@ -171,7 +174,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.58 2004/06/01 09:07:19 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.59 2004/06/02 10:11:09 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1106,6 +1109,11 @@ messageToBlob(message *m)
 		 * TODO: set filename argument in message as well
 		 */
 		byte = data[0];
+		if(byte >= len) {
+			blobDestroy(b);
+			blobDestroy(tmp);
+			return NULL;
+		}
 		filename = cli_malloc(byte + 1);
 		if(filename == NULL) {
 			blobDestroy(b);
