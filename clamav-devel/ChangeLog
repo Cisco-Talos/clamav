@@ -1,3 +1,8 @@
+Fri Feb 11 22:21:44 GMT 2005 (njh)
+----------------------------------
+  * clamav-milter:	Added --whistlist-file and --sendmail-cf options
+			When in SESSION mode, not all sessions would send END
+
 Tue Feb  8 14:45:05 GMT 2005 (trog)
 -----------------------------------
   * libclamav/special.c: Only check specific RIFF files. Lots of broken software out there
@@ -10,7 +15,7 @@ Tue Feb  8 09:03:19 GMT 2005 (njh)
 Mon Feb  7 22:13:47 GMT 2005 (njh)
 ----------------------------------
   * clamav-milter:	--detect-forged-email-address
-  			--external: NUL terminate the string read from clamd
+			--external: NUL terminate the string read from clamd
 
 Sun Feb  6 22:22:10 CET 2005 (tk)
 ---------------------------------
