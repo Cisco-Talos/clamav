@@ -1,3 +1,8 @@
+Wed Sep 15 19:09:56 BST 2004 (njh)
+----------------------------------
+  * libclamav:	Handle e-mails where the attachment misleads the type of
+			encoding used
+
 Wed Sep 15 18:46:44 CEST 2004 (tk)
 ----------------------------------
   * libclamav/matcher.c: fix problem with uninitialised voffset structure
