@@ -1,3 +1,7 @@
+Mon Sep  6 12:04:08 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Normalise the HTML before looking for URLs to scan
+
 Sun Sep  5 18:16:13 CEST 2004 (tk)
 ----------------------------------
   * libclamav/pe.c: fix pointer arithmetic in FSG block (bug reported by Nigel)

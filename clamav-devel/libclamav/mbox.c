@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.115  2004/09/06 11:02:08  nigelhorne
+ * Normalise HTML before scanning for URLs to download
+ *
  * Revision 1.114  2004/09/03 15:59:00  nigelhorne
  * Handle boundary= "foo"
  *
@@ -330,7 +333,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.114 2004/09/03 15:59:00 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.115 2004/09/06 11:02:08 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -542,16 +545,14 @@ static	pthread_mutex_t	tables_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*
  * TODO: when signal handling is added, need to remove temp files when a
- * signal is received
+ *	signal is received
  * TODO: add option to scan in memory not via temp files, perhaps with a
  * named pipe or memory mapped file, though this won't work on big e-mails
  * containing many levels of encapsulated messages - it'd just take too much
  * RAM
- * TODO: if debug is enabled, catch a segfault and dump the current e-mail
- * in it's entirety, then call abort()
  * TODO: parse .msg format files
  * TODO: fully handle AppleDouble format, see
- * http://www.lazerware.com/formats/Specs/AppleSingle_AppleDouble.pdf
+ *	http://www.lazerware.com/formats/Specs/AppleSingle_AppleDouble.pdf
  * TODO: ensure parseEmailHeaders is always called before parseEmailBody
  * TODO: create parseEmail which calls parseEmailHeaders then parseEmailBody
  * TODO: Look into TNEF. Is there anything that needs to be done here?
@@ -574,17 +575,17 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 	if((fd = fdopen(i, "rb")) == NULL) {
 		cli_errmsg("Can't open descriptor %d\n", desc);
 		close(i);
-		return -1;
+		return CL_EOPEN;
 	}
 	if(fgets(buffer, sizeof(buffer), fd) == NULL) {
 		/* empty message */
 		fclose(fd);
-		return 0;
+		return CL_CLEAN;
 	}
 	m = messageCreate();
 	if(m == NULL) {
 		fclose(fd);
-		return -1;
+		return CL_EMEM;
 	}
 
 #ifdef	CL_THREAD_SAFE
@@ -601,7 +602,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 #endif
 			messageDestroy(m);
 			fclose(fd);
-			return -1;
+			return CL_EMEM;
 		}
 	}
 #ifdef	CL_THREAD_SAFE
@@ -700,7 +701,12 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 	fclose(fd);
 
-	retcode = 0;
+	/*
+	 * This is not necessarily true, but since the only options are
+	 * CL_CLEAN and CL_VIRUS this is the better choice. It would be
+	 * nice to have CL_CONTINUESCANNING or something like that
+	 */
+	retcode = CL_CLEAN;
 
 	body = parseEmailHeaders(m, rfc821);
 	messageDestroy(m);
@@ -710,6 +716,9 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		 */
 		if(messageGetBody(body))
 			if(!parseEmailBody(body, NULL, dir, rfc821, subtype, options))
+				/*
+				 * There is no mailformed e-mail return code
+				 */
 				retcode = -1;
 
 		/*
@@ -2098,7 +2107,7 @@ static void
 checkURLs(message *m, const char *dir)
 {
 	blob *b = messageToBlob(m);
-	char *ptr;
+	char *ptr, *normalised;
 	size_t len;
 	table_t *t;
 	int n;
@@ -2124,7 +2133,13 @@ checkURLs(message *m, const char *dir)
 	t = tableCreate();
 
 	n = 0;
-	ptr = (char *)blobGetData(b);
+	normalised = ptr = html_normalize(blobGetData(b), len);
+
+	if(normalised == NULL) {
+		blobDestroy(b);
+		tableDestroy(t);
+		return;
+	}
 
 	/*
 	 * cli_memstr(ptr, len, "<a href=", 8)
@@ -2132,7 +2147,6 @@ checkURLs(message *m, const char *dir)
 	 * and it returns the place that the 'needle' was found
 	 */
 	while(len >= 8) {
-		/* FIXME: allow any number of white space */
 		if(strncasecmp(ptr, "<a href=", 8) == 0) {
 #ifdef	WITH_CURL
 #ifndef	CL_THREAD_SAFE
@@ -2227,6 +2241,7 @@ checkURLs(message *m, const char *dir)
 	}
 	blobDestroy(b);
 	tableDestroy(t);
+	free(normalised);
 
 #if	defined(WITH_CURL) && defined(CL_THREAD_SAFE)
 	cli_dbgmsg("checkURLs: waiting for %d thread(s) to finish\n", n);
@@ -2389,6 +2404,8 @@ print_trace(int use_syslog)
 			syslog(LOG_ERR, "bt[%d]: %s", i, strings[i]);
 		else
 			cli_dbgmsg("%s\n", strings[i]);
+
+	/* TODO: dump the current email */
 
 	free(strings);
 }
