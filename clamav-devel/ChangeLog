@@ -1,3 +1,8 @@
+Wed Oct  6 21:36:59 CEST 2004 (tk)
+----------------------------------
+  * configure: improve --disable-dns behaviour (patch by Tom G. Christensen
+	       <tgc*statsbiblioteket.dk>)
+
 Wed Oct  6 20:48:17 CEST 2004 (tk)
 ----------------------------------
   * freshclam/manager.c: fix download problems with some proxy servers
