@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: binhex.c,v $
+ * Revision 1.11  2004/12/17 12:03:38  nigelhorne
+ * Tidy up for machines without MMAP
+ *
  * Revision 1.10  2004/12/16 15:29:51  nigelhorne
  * Tidy
  *
@@ -45,7 +48,7 @@
  * First draft of binhex.c
  *
  */
-static	char	const	rcsid[] = "$Id: binhex.c,v 1.10 2004/12/16 15:29:51 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: binhex.c,v 1.11 2004/12/17 12:03:38 nigelhorne Exp $";
 
 #include "clamav.h"
 
@@ -85,6 +88,10 @@ static	char	const	rcsid[] = "$Id: binhex.c,v 1.10 2004/12/16 15:29:51 nigelhorne
 int
 cli_binhex(const char *dir, int desc)
 {
+#ifndef HAVE_MMAP
+	cli_warnmsg("File not decoded - binhex decoding needs mmap() (for now)\n");
+	return CL_CLEAN;
+#else
 	struct stat statb;
 	char *buf, *start, *line;
 	size_t size;
@@ -92,10 +99,6 @@ cli_binhex(const char *dir, int desc)
 	message *m;
 	fileblob *fb;
 
-#ifndef HAVE_MMAP
-	cli_warnmsg("File not decoded - binhex decoding needs mmap() (for now)\n");
-	return CL_CLEAN;
-#else
 	if(fstat(desc, &statb) < 0)
 		return CL_EOPEN;
 
