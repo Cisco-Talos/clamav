@@ -34,6 +34,7 @@ struct zzip_dir_hdr
     uint16_t    d_reclen;       /* next dir_hdr structure offset */
     uint16_t    d_namlen;       /* explicit namelen of d_name */
     uint8_t     d_compr;        /* the compression type, 0 = store, 8 = inflate */
+    uint16_t	d_flags;	/* general purpose flags */
     char        d_name[1];      /* the actual name of the entry, may contain DIRSEPs */
 };
 #define _ZZIP_DIRENT_HAVE_D_NAMLEN

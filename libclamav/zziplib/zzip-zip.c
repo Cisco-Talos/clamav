@@ -365,6 +365,7 @@ __zzip_parse_root_directory(int fd,
     {
         register struct zzip_root_dirent * d;
         uint16_t u_extras, u_comment, u_namlen;
+	uint16_t u_flags;
 
         if (fd_map) 
 	{ d = (void*)(fd_map+fd_gap+offset); } /* fd_map+fd_gap==u_rootseek */
@@ -387,6 +388,7 @@ __zzip_parse_root_directory(int fd,
         u_extras  = ZZIP_GET16(d->z_extras); 
         u_comment = ZZIP_GET16(d->z_comment); 
         u_namlen  = ZZIP_GET16(d->z_namlen); 
+	u_flags   = ZZIP_GET16(d->z_flags);
         //HINT5("offset=0x%lx, size %ld, dirent *%p, hdr %p\n",
 	  //    offset+u_rootseek, (long)u_rootsize, d, hdr);
 
@@ -402,6 +404,8 @@ __zzip_parse_root_directory(int fd,
         hdr->d_usize = ZZIP_GET32(d->z_usize); 
         hdr->d_off   = ZZIP_GET32(d->z_off);
         hdr->d_compr = (uint8_t)ZZIP_GET16(d->z_compr);
+	hdr->d_flags = u_flags;
+
         /* bull: hdr->d_compr is uint8_t
 	 * if (hdr->d_compr > 255) hdr->d_compr = 255; */
 
@@ -702,6 +706,7 @@ zzip_dir_read(ZZIP_DIR * dir, ZZIP_DIRENT * d )
     d->d_csize = dir->hdr->d_csize;
     d->st_size = dir->hdr->d_usize;
     d->d_name  = dir->hdr->d_name;
+    d->d_flags = dir->hdr->d_flags;
 
     if (! dir->hdr->d_reclen) 
     { dir->hdr = 0; }

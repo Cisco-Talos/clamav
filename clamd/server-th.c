@@ -275,6 +275,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	} else {
 	    limits.archivememlim = 0;
 	}
+
     }
 
     if(cfgopt(copt, "ScanArchive")) {
@@ -287,6 +288,12 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	    logg("RAR support disabled.\n");
 	    options |= CL_DISABLERAR;
 	}
+
+	if(cfgopt(copt, "ArchiveDetectEncrypted")) {
+	    logg("Blocking encrypted archives.\n");
+	    options |= CL_ENCRYPTED;
+	}
+
     } else {
 	logg("Archive support disabled.\n");
     }

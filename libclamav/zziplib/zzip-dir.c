@@ -89,6 +89,7 @@ real_readdir(ZZIP_DIR* dir)
         return -1;
 
     dir->dirent.d_csize = dir->dirent.st_size = st.st_size;
+    dir->dirent.d_flags = 0;
 
     if (st.st_mode)
     {
@@ -139,6 +140,8 @@ zzip_readdir(ZZIP_DIR * dir)
 
         dir->dirent.d_csize = dir->hdr->d_csize;
         dir->dirent.st_size = dir->hdr->d_usize;
+
+	dir->dirent.d_flags = dir->hdr->d_flags;
 
         if (! dir->hdr->d_reclen) dir->hdr = 0;
         else  dir->hdr = (struct zzip_dir_hdr *)

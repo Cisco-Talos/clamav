@@ -1,3 +1,10 @@
+Thu Mar  4 03:29:07 CET 2004 (tk)
+---------------------------------
+  * libclamav: CL_ENCRYPTED: mark encrypted Zip archives as a virus type
+	       "Encrypted.Zip" (Michael L Torrie <torriem*chem.byu.edu>)
+  * clamscan: --detect-encrypted
+  * clamd: ArchiveDetectEncrypted
+
 Wed Mar  3 11:36:17 CET 2004 (tk)
 ---------------------------------
   * libclamav: mbox wrapper: scan Qmail bounces

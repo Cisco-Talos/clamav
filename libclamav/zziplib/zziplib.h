@@ -91,6 +91,7 @@ struct zzip_dirent
     int	 	d_compr;	/* compression method */
     int         d_csize;        /* compressed size */
     int	 	st_size;	/* file size / decompressed size */
+    unsigned short d_flags;	/* general purpose flags */
     char * 	d_name;		/* file name / strdupped name */
 };
 
