@@ -1,7 +1,12 @@
+Sat Mar  5 11:07:34 GMT 2005 (njh)
+----------------------------------
+  * clamav-milter:	Note about --local needed if incoming socket is INET
+				domain
+
 Fri Mar  4 14:20:22 GMT 2005 (njh)
 ----------------------------------
   * libclamav/blob.c:	Fix for QNX version 6 sometimes returning ETOOLONG,
-  				patch from mikep at kaluga.org
+				patch from mikep at kaluga.org
 
 Fri Mar  4 03:18:20 CET 2005 (tk)
 ---------------------------------
@@ -67,7 +72,7 @@ Sun Feb 27 02:26:42 CET 2005 (tk)
 Thu Feb 24 18:37:45 CET 2005 (tk)
 ---------------------------------
   * libclamav/scanners.c: fix NULL pointer dereference in metadata scanner
-			  (thanks to Nigel)	
+			  (thanks to Nigel)
 
 Wed Feb 23 09:42:52 GMT 2005 (njh)
 ----------------------------------
