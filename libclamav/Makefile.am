@@ -112,6 +112,8 @@ libclamav_la_SOURCES = \
 	petite.c \
 	petite.h \
 	fsg.c \
-	fsg.h
+	fsg.h \
+	line.c \
+	line.h
 
 lib_LTLIBRARIES = libclamav.la

@@ -16,10 +16,16 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: line.h,v $
+ * Revision 1.2  2004/08/20 19:06:45  kojm
+ * add line.[ch]
+ *
  * Revision 1.1  2004/08/20 11:58:20  nigelhorne
  * First draft
  *
  */
+
+#ifndef __LINE_H
+#define __LINE_H
 
 typedef struct line {
 	char	*l_data;	/* the line's contents */
@@ -30,3 +36,5 @@ line_t	*lineCreate(const char *data);
 line_t	*lineLink(line_t *line);
 line_t	*lineUnlink(line_t *line);
 const	char	*lineGetData(const line_t *line);
+
+#endif

@@ -1,3 +1,7 @@
+Fri Aug 20 21:05:04 CEST 2004 (tk)
+----------------------------------
+  * libclamav/Makefile.am: add line.[ch]
+
 Fri Aug 20 12:58:41 BST 2004 (njh)
 ----------------------------------
   * libclamav:		Added line.[ch]
