@@ -1,3 +1,9 @@
+Tue Sep 21 21:49:06 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	FOLLOWURL: Set a default username and password for
+				password protected sites to avoid the password
+				prompt bug with older versions of libcurl
+
 Tue Sep 21 19:01:32 CEST 2004 (tk)
 ----------------------------------
   * libclamav/filetypes.c: fix PK00PK zip rule (thanks to <steveb*webtribe.net>)
