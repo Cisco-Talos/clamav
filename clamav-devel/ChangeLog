@@ -1,3 +1,7 @@
+Sat Mar 20 15:53:10 CET 2004 (tk)
+---------------------------------
+  * libclamav: make cli_filetype non static
+
 Sat Mar 20 13:33:49 GMT 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	More bounces added
