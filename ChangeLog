@@ -1,6 +1,11 @@
+Mon Sep 15 14:09:50 BST 2003
+----------------------------
+  * libclamav/mbox.c: Fixed potential buffer overrun files with long names
+  			DOS style filename suffixes
+
 Mon Sep 15 13:23:27 BST 2003
 ---------------------------
-  * clamav-milter: Added defailts about 0.60e to INSTALL file
+  * clamav-milter: Added defaults about 0.60e to INSTALL file
 
 Sun Sep 14 21:11:00 CEST 2003
 -----------------------------
