@@ -1,3 +1,7 @@
+Wed Jul 14 11:17:58 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Added --dont-wait and --advisory options
+
 Tue Jul 13 18:37:23 CEST 2004 (tk)
 ----------------------------------
   * libclamav: upx: fix potential infinite loop (aCaB)
