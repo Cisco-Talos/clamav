@@ -97,11 +97,13 @@ int logg(const char *str, ...)
 {
 	va_list args;
 	struct flock fl;
-	char *pt, *timestr;
+	char *pt, *timestr, vbuff[1025];
 	time_t currtime;
 	struct stat sb;
 	mode_t old_umask;
 
+
+    va_start(args, str);
 
     if(logg_file) {
 #ifdef CL_THREAD_SAFE
@@ -158,20 +160,18 @@ int logg(const char *str, ...)
 	    }
 	}
 
-	va_start(args, str);
 
 	if(*str == '!') {
 	    fprintf(logg_fd, "ERROR: ");
-	    vfprintf(logg_fd, str+1, args);
+	    vfprintf(logg_fd, str + 1, args);
 	} else if(*str == '^') {
 	    fprintf(logg_fd, "WARNING: ");
-	    vfprintf(logg_fd, str+1, args);
+	    vfprintf(logg_fd, str + 1, args);
 	} else if(*str == '*') {
 	    if(logg_verbose)
-		vfprintf(logg_fd, str+1, args);
+		vfprintf(logg_fd, str + 1, args);
 	} else vfprintf(logg_fd, str, args);
 
-	va_end(args);
 
 	fflush(logg_fd);
 
@@ -183,32 +183,30 @@ int logg(const char *str, ...)
 #if defined(USE_SYSLOG) && !defined(C_AIX)
     if(logg_syslog) {
 
-      /* SYSLOG logging - no need for locking, mutexes, times & stuff ... :-) */
+	/* due to a problem with superfluous control characters (which
+	 * vsnprintf() handles correctly) in (v)syslog we have to remove
+	 * them in a final string
+	 */
+	vsnprintf(vbuff, 1024, str, args);
+	vbuff[1024] = 0;
 
-#ifndef vsyslog
-#define vsyslog(a,b,c)	{ \
-	char my_tmp[4096]; \
-	vsnprintf(my_tmp,4095,b,c); \
-	my_tmp[4095]=0; \
-	syslog(a,my_tmp); }
-#endif
+	while((pt = strchr(vbuff, '%')))
+	    *pt = '_';
 
-	va_start(args, str);
-
-	if(*str == '!') {
-	    vsyslog(LOG_ERR, str+1, args);
-	} else if(*str == '^') {
-	    vsyslog(LOG_WARNING, str+1, args);
-	} else if(*str == '*') {
+	if(vbuff[0] == '!') {
+	    syslog(LOG_ERR, vbuff + 1);
+	} else if(vbuff[0] == '^') {
+	    syslog(LOG_WARNING, vbuff + 1);
+	} else if(vbuff[0] == '*') {
 	    if(logg_verbose) {
-		vsyslog(LOG_DEBUG, str+1, args);
+		syslog(LOG_DEBUG, vbuff + 1);
 	    }
-	} else vsyslog(LOG_INFO, str, args);
+	} else syslog(LOG_INFO, vbuff);
 
-	va_end(args);
     }
 #endif
 
+    va_end(args);
     return 0;
 }
 
