@@ -86,6 +86,9 @@ Installations for RedHat Linux and it's derivatives such as YellowDog:
 	chown clamav /var/run/clamav	(if you use User clamav in clamav.conf)
 	chmod 700 /var/run/clamav
 
+	Where /var/run/spamass.sock is the location of the spamass-milt
+	socket file (on some systems it is in /var/run/sendmail/spamass.sock).
+
 You may find INPUT_MAIL_FILTERS is not needed on your machine, however it
 is recommended by the Sendmail documentation and I recommend going along
 with that.
@@ -417,6 +420,7 @@ Changes
 			already exists
 0.74	29/6/04	Up-issued
 0.74a	29/6/04	Allow the child timeout to be configurable
+0.74b	8/7/04	Validate the arguments to inet_ntop
 
 BUG REPORTS
 
