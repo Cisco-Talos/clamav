@@ -234,7 +234,7 @@ Mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).
 Default: disabled
 .TP 
 \fBArchiveBlockMax\fR
-Mark archives as viruses if ArchiveMaxFiles, ArchiveMaxFileSize, or ArchiveMaxRecursion limit is reached.
+Mark archives as viruses (e.g RAR.ExceededFileSize, Zip.ExceededFilesLimit) if ArchiveMaxFiles, ArchiveMaxFileSize, or ArchiveMaxRecursion limit is reached.
 .br 
 Default: disabled
 .TP 
