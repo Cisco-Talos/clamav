@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.18  2003/11/17 08:13:21  nigelhorne
+ * Handle spaces at the end of lines of MIME headers
+ *
  * Revision 1.17  2003/11/06 05:06:42  nigelhorne
  * Some applications weren't being scanned
  *
@@ -42,7 +45,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.17 2003/11/06 05:06:42 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.18 2003/11/17 08:13:21 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -1396,6 +1399,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 	char *ptr = copy;
 
 	cli_dbgmsg("parseMimeHeader: cmd='%s', arg='%s'\n", cmd, arg);
+	strstrip(copy);
 
 	switch(type) {
 		case CONTENT_TYPE:
@@ -1451,6 +1455,7 @@ static bool
 saveFile(const blob *b, const char *dir)
 {
 	unsigned long nbytes = blobGetDataSize(b);
+	size_t len = 0;
 	int fd;
 	const char *cptr, *suffix;
 	char filename[NAME_MAX + 1];
@@ -1475,17 +1480,19 @@ saveFile(const blob *b, const char *dir)
 		suffix = strrchr(cptr, '.');
 		if(suffix == NULL)
 			suffix = "";
+		else
+			len = strlen(suffix);
 	}
 	cli_dbgmsg("Saving attachment in %s/%s\n", dir, cptr);
 
 	/*
 	 * Allow for very long filenames. We have to truncate them to fit
 	 */
-	snprintf(filename, sizeof(filename) - 7 - strlen(suffix), "%s/%s", dir, cptr);
-	strcat(filename, "XXXXXX");
+	snprintf(filename, sizeof(filename) - 1 - len, "%s/%.*sXXXXXX", dir,
+		sizeof(filename) - 9 - len - strlen(dir), cptr);
 
 	/*
-	 * TODO: add a HAS_MKSTEMP property
+	 * TODO: add a HAVE_MKSTEMP property
 	 */
 #if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP)
 	fd = mkstemp(filename);
@@ -1495,7 +1502,7 @@ saveFile(const blob *b, const char *dir)
 #endif
 
 	if(fd < 0) {
-		cli_errmsg("%s: %s\n", filename, strerror(errno));
+		cli_errmsg("Can't create temporary file %s: %s\n", filename, strerror(errno));
 		return FALSE;
 	}
 
@@ -1503,11 +1510,10 @@ saveFile(const blob *b, const char *dir)
 	 * Add the suffix back to the end of the filename. Tut-tut, filenames
 	 * should be independant of their usage on UNIX type systems.
 	 */
-	if(strlen(suffix) > 1) {
+	if(len > 1) {
 		char stub[NAME_MAX + 1];
 
-		strcpy(stub, filename);
-		strcat(filename, suffix);
+		snprintf(stub, sizeof(stub), "%s%s", filename, suffix);
 #ifdef	C_LINUX
 		rename(stub, filename);
 #else

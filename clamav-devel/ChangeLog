@@ -1,6 +1,7 @@
 Mon Nov 17 13:28:16 IST 2003 (njh)
 ----------------------------------
-  * libclamav: Prevent buffer overflow in broken uuencoded files
+  * libclamav:	Prevent buffer overflow in broken uuencoded files
+		Handle spaces at the end of lines of MIME headers
 
 Mon Nov 17 10:20:05 IST 2003 (njh)
 ----------------------------------
