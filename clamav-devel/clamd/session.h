@@ -19,7 +19,7 @@
 #ifndef __SESSION_H
 #define __SESSION_H
 
-#define COMMAND_QUIT 1
+#define COMMAND_SHUTDOWN 1
 #define COMMAND_RELOAD 2
 #define COMMAND_END 3
 

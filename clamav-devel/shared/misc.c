@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "clamav.h"
 #include "cfgparser.h"
@@ -80,10 +81,9 @@ void print_version(void)
     sprintf(path, "%s/daily.cvd", dbdir);
 
     if((daily = cl_cvdhead(path))) {
-	timecpy = strdup(daily->time);
-	timecpy[14] = ':';
-	mprintf("ClamAV "VERSION"/%d/%s\n", daily->version, timecpy);
-	free(timecpy);
+	    time_t t = (time_t) daily->stime;
+	mprintf("ClamAV "VERSION"/%d/%s", daily->version, ctime(&t));
+	cl_cvdfree(daily);
     } else {
 	mprintf("ClamAV "VERSION"\n");
     }

@@ -41,7 +41,9 @@
 #include "tests.h"
 #include "session.h"
 #include "str.h" /* libclamav */
+#include "clamav.h"
 #include "output.h"
+#include "memory.h"
 
 #define CMD1 "SCAN"
 #define CMD2 "RAWSCAN"
@@ -55,6 +57,7 @@
 #define CMD10 "END"
 #define CMD11 "SHUTDOWN"
 
+pthread_mutex_t ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int command(int desc, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt)
 {
@@ -106,7 +109,7 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
 	scan(buff + strlen(CMD2) + 1, NULL, root, NULL, opt, copt, desc, 0);
 
     } else if(!strncmp(buff, CMD3, strlen(CMD3))) { /* QUIT */
-	return COMMAND_QUIT;
+	return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD4, strlen(CMD4))) { /* RELOAD */
 	mdprintf(desc, "RELOADING\n");
@@ -119,7 +122,34 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
 	scan(buff + strlen(CMD6) + 1, NULL, root, limits, options, copt, desc, 1);
 
     } else if(!strncmp(buff, CMD7, strlen(CMD7))) { /* VERSION */
-	mdprintf(desc, "clamd / ClamAV version "VERSION"\n");
+	    const char *dbdir;
+	    char *path;
+	    struct cl_cvd *daily;
+
+	if((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory")))
+	    dbdir = cpt->strarg;
+	else
+	    dbdir = cl_retdbdir();
+
+	if(!(path = mmalloc(strlen(dbdir) + 11))) {
+	    mdprintf(desc, "Memory allocation error - SHUTDOWN forced\n");
+	    return COMMAND_SHUTDOWN;
+	}
+
+	sprintf(path, "%s/daily.cvd", dbdir);
+
+	if((daily = cl_cvdhead(path))) {
+		time_t t = (time_t) daily->stime;
+
+	    pthread_mutex_lock(&ctime_mutex);
+	    mdprintf(desc, "ClamAV "VERSION"/%d/%s", daily->version, ctime(&t));
+	    pthread_mutex_unlock(&ctime_mutex);
+	    cl_cvdfree(daily);
+	} else {
+	    mdprintf(desc, "ClamAV "VERSION"\n");
+	}
+
+	free(path);
 
     } else if(!strncmp(buff, CMD8, strlen(CMD8))) { /* STREAM */
 	scanstream(desc, NULL, root, limits, options, copt);
@@ -130,7 +160,7 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
 	} while(!ret);
 
 	switch(ret) {
-	    case COMMAND_QUIT:
+	    case COMMAND_SHUTDOWN:
 		mdprintf(desc, "SESSION TERMINATED (SHUTDOWN)\n");
 		break;
 
@@ -153,7 +183,7 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
 	return COMMAND_END;
 
     } else if(!strncmp(buff, CMD11, strlen(CMD11))) { /* SHUTDOWN */
-	return COMMAND_QUIT;
+	return COMMAND_SHUTDOWN;
 
     } else {
 	mdprintf(desc, "UNKNOWN COMMAND\n");

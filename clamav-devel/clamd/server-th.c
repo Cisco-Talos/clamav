@@ -74,7 +74,7 @@ void scanner_thread(void *arg)
     ret = command(conn->sd, conn->root, conn->limits, conn->options, conn->copt);
 
     switch(ret) {
-	case COMMAND_QUIT:
+	case COMMAND_SHUTDOWN:
 	    pthread_mutex_lock(&exit_mutex);
 	    progexit = 1;
 	    kill(conn->mainpid, SIGTERM);
