@@ -160,7 +160,7 @@ Default: disabled
 Enable debug messages from libclamav.
 .TP 
 \fBStreamMaxLength SIZE\fR
-Clamd uses FTP\-like protocol to receive data from remote clients. If you are using clamav\-milter to balance load between remote clamd daemons on firewall servers you may need to tune the Stream* options. This option allows you to specify the maximal limit for data transfered to remote daemon when scanning a single file.
+Clamd uses FTP\-like protocol to receive data from remote clients. If you are using clamav\-milter to balance load between remote clamd daemons on firewall servers you may need to tune the Stream* options. This option allows you to specify the maximal limit for data transfered to remote daemon when scanning a single file. It should match your MTA's limit for a maximal attachment size.
 .br 
 Default: 10M
 .TP 
