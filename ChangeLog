@@ -1,3 +1,7 @@
+Mon Apr  5 13:19:02 BST 2004 (njh)
+----------------------------------
+  * libclamav:	Scan attachments with no filename (suggestion by Trog)
+
 Mon Apr  5 10:47:43 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Added SAVE_TO_DISC #define which, when activated,

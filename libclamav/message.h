@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: message.h,v $
+ * Revision 1.10  2004/04/05 12:04:56  nigelhorne
+ * Scan attachments with no filename
+ *
  * Revision 1.9  2004/04/01 15:32:34  nigelhorne
  * Graceful exit if messageAddLine fails in strdup
  *
@@ -74,7 +77,7 @@ encoding_type	messageGetEncoding(const message *m);
 int	messageAddLine(message *m, const char *line, int takeCopy);
 const	text	*messageGetBody(const message *m);
 void	messageClean(message *m);
-blob	*messageToBlob(const message *m);
+blob	*messageToBlob(message *m);
 text	*messageToText(const message *m);
 const	text	*uuencodeBegin(const message *m);
 const	text	*binhexBegin(const message *m);

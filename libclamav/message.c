@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.52  2004/04/05 12:04:56  nigelhorne
+ * Scan attachments with no filename
+ *
  * Revision 1.51  2004/04/01 15:32:34  nigelhorne
  * Graceful exit if messageAddLine fails in strdup
  *
@@ -150,7 +153,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.51 2004/04/01 15:32:34 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.52 2004/04/05 12:04:56 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -771,7 +774,7 @@ messageClean(message *m)
  * The caller must free the returned blob
  */
 blob *
-messageToBlob(const message *m)
+messageToBlob(message *m)
 {
 	blob *b;
 	const text *t_line = NULL;
@@ -996,6 +999,10 @@ messageToBlob(const message *m)
 		memcpy(filename, &data[1], byte);
 		filename[byte] = '\0';
 		blobSetFilename(b, filename);
+		ptr = cli_malloc(strlen(filename) + 6);
+		sprintf(ptr, "name=%s", filename);
+		messageAddArgument(m, ptr);
+		free(ptr);
 
 		/*
 		 * skip over length, filename, version, type, creator and flags
@@ -1034,9 +1041,9 @@ messageToBlob(const message *m)
 			filename = (char *)messageFindArgument(m, "name");
 
 			if(filename == NULL) {
-				cli_warnmsg("Attachment sent with no filename\n");
-				blobDestroy(b);
-				return NULL;
+				cli_dbgmsg("Attachment sent with no filename\n");
+				messageAddArgument(m, "name=attachment");
+				filename = strdup("attachment");
 			}
 		}
 
