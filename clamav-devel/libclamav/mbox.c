@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.195  2004/11/29 13:21:20  nigelhorne
+ * Remove the old continuation marker method
+ *
  * Revision 1.194  2004/11/28 22:06:38  nigelhorne
  * Tidy space only headers code
  *
@@ -570,7 +573,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.194 2004/11/28 22:06:38 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.195 2004/11/29 13:21:20 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2597,44 +2600,11 @@ strstrip(char *s)
 }
 
 /*
- * When parsing a MIME header see if this spans more than one line. A
- * semi-colon at the end of the line indicates that the MIME information
- * is continued on the next line.
- *
- * Some clients are broken and put white space after the ;
+ * No longer used - TODO: remove it
  */
 static bool
 continuationMarker(const char *line)
 {
-	const char *ptr;
-
-	if(line == NULL)
-		return FALSE;
-
-#ifdef	CL_DEBUG
-	cli_dbgmsg("continuationMarker(%s)\n", line);
-#endif
-
-	if(strlen(line) == 0)
-		return FALSE;
-
-	ptr = strchr(line, '\0');
-
-	assert(ptr != NULL);
-
-	while(ptr > line)
-		switch(*--ptr) {
-			case '\n':
-			case '\r':
-			case ' ':
-			case '\t':
-				continue;
-			case ';':
-				return TRUE;
-			default:
-				return FALSE;
-		}
-
 	return FALSE;
 }
 
