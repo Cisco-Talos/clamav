@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.66  2004/04/14 08:32:21  nigelhorne
+ * When debugging print the email number in mailboxes
+ *
  * Revision 1.65  2004/04/07 18:18:07  nigelhorne
  * Some occurances of W97M.Lexar were let through
  *
@@ -186,7 +189,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.65 2004/04/07 18:18:07 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.66 2004/04/14 08:32:21 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -385,12 +388,14 @@ cl_mbox(const char *dir, int desc)
 		 * may contain more than one e-mail message to decode
 		 */
 		bool lastLineWasEmpty = FALSE;
+		int messagenumber = 1;
 
 		do {
 			/*cli_dbgmsg("read: %s", buffer);*/
 
 			cli_chomp(buffer);
 			if(lastLineWasEmpty && (strncmp(buffer, "From ", 5) == 0)) {
+				cli_dbgmsg("Deal with email number %d\n", messagenumber++);
 				/*
 				 * End of a message in the mail box
 				 */
@@ -415,6 +420,8 @@ cl_mbox(const char *dir, int desc)
 			if(messageAddLine(m, buffer, 1) < 0)
 				break;
 		} while(fgets(buffer, sizeof(buffer), fd) != NULL);
+
+		cli_dbgmsg("Deal with email number %d\n", messagenumber);
 	} else
 		/*
 		 * It's a single message, parse the headers then the body
