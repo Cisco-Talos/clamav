@@ -77,7 +77,7 @@ Usually clamav\-milter adds a heading to messages that are scanned.
 The header is of the form "X-Virus-Scanned: version", this option instructs
 clamav\-milter to refrain from adding this heading.
 .TP
-\fB-N, \-\-noreject\R
+\fB-N, \-\-noreject\fR
 When clamav\-milter processes an e-mail which contains a virus it rejects
 the e-mail by using the SMTP code 550. This option causes clamav\-milter to
 silently discard such messages. It is recommended that systems administrators
@@ -128,7 +128,7 @@ There is no default, if this argument is not \fBclamav\-milter\fR will
 spawn as many children as is necessary.
 .SH "EXAMPLES"
 .LP 
-clamav\-milter \-\-max\-children=2 \-ol local:/var/run/clmilter.sock
+clamav\-milter \-\-max\-children=2 \-ol local:/var/run/clamav/clmilter.sock
 .SH "AUTHOR"
 .LP 
 clamav\-milter was written by Nigel Horne <njh@bandsman.co.uk>, the manual page was created by Tomasz Kojm <zolw@konarski.edu.pl>.
