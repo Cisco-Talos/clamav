@@ -2,6 +2,52 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.66
+----
+
+
+
+Noteworthy changes in this version:
+
+-) clamd:
+    + fixed a database timestamp handling (and a double reload problem reported
+      by Alex Pleiner and Ole Stanstrup)
+    + UseProcesses (use processes instead of threads, warning: untested code)
+      Also please check James Stevens' nclamd (based on a similar architecture
+      to Apache) if you prefer processes over threads.
+    + new directive ArchiveMaxCompressionRatio
+    + fixed a segmentation fault after database update in on-access scanner
+      (problem reported by Anders Herbjørnsen)
+
+-) clamav-milter: (Nigel Horne)
+    + added support for AllowSupplementaryGroups and ThreadTimeout
+    + added --quarantine-dir (thanks to Michael Dankov)
+    + added --sign option
+
+-) libclamav:
+    + prevent buffer overflow in broken uuencoded files (Nigel)
+    + scan multipart alternatives that have no boundaries (Nigel)
+    + better handling of encapsulated messages (Nigel)
+    + locate uuencoded viruses hidden in text portions of multipart/mixed
+      mime messages (Nigel)
+    + initial support for BinHex (Nigel)
+    + fixed a mail recursion loop (problem reported by Alex Kah and Kristof
+      Petr)
+    + fixed bzip2 memory limit (improper call suggested by the buggy libbz2
+      documentation, problem reported by Tomasz Klim)
+    + fixed on error descriptor leak in CVD unpacker (Thomas Lamy)
+    + fixed memory leak in digital signature verification code (Thomas Lamy)
+    + added maximal compression ratio limit (cl_limits->maxratio)
+
+-) clamscan:
+    + support for multiple arguments on command line (Thomas Lamy)
+    + fixed a buffer overflow in --move (Denis De Messemacker)
+    + removed support for sendfile() under Linux
+    + added --bell
+
+-) freshclam:
+    + support for freshclam.conf
+
 0.65
 ----
 IMPORTANT NOTE: The project has been moved into SourceForge. The only official

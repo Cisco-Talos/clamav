@@ -61,7 +61,6 @@ void *clamukoth(void *arg)
 	const struct cfgstruct *pt;
 	short int scan;
 	int sizelimit = 0, options = 0;
-	int maxwait = CL_DEFAULT_MAXWHILEWAIT;
 	struct stat sb;
 
 

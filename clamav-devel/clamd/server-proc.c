@@ -43,8 +43,6 @@
 #define CMD6 "CONTSCAN"
 #define CMD7 "VERSION"
 #define CMD8 "STREAM"
-#define CMD9 "STREAM2"
-
 
 int procscan(const char *name, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt, int odesc, short contscan)
 {
