@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.12  2003/09/29 17:10:19  nigelhorne
+ * Moved stub from heap to stack since its maximum size is known
+ *
  * Revision 1.11  2003/09/29 12:58:32  nigelhorne
  * Handle Content-Type: /; name="eicar.com"
  *
@@ -24,7 +27,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.11 2003/09/29 12:58:32 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.12 2003/09/29 17:10:19 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -1446,8 +1449,9 @@ saveFile(const blob *b, const char *dir)
 	 * should be independant of their usage on UNIX type systems.
 	 */
 	if(strlen(suffix) > 1) {
-		char *stub = strdup(filename);
+		char stub[NAME_MAX + 1];
 
+		strcpy(stub, filename);
 		strcat(filename, suffix);
 #ifdef	C_LINUX
 		rename(stub, filename);
@@ -1455,7 +1459,6 @@ saveFile(const blob *b, const char *dir)
 		link(stub, filename);
 		unlink(stub);
 #endif
-		free(stub);
 	}
 
 	write(fd, blobGetData(b), (size_t)nbytes);
