@@ -380,7 +380,8 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     for(;;) {				
 	new_sd = accept(socketd, NULL, NULL);
 	if((new_sd == -1) && (errno != EINTR)) {
-	    logg("!accept() failed: %s", strerror_r(errno, buff, BUFFSIZE));
+	    logg("!accept() failed\n");
+	    /* logg("!accept() failed: %s", strerror_r(errno, buff, BUFFSIZE)); */
 	    /* very bad - need to exit or restart */
 	    continue;
 	}

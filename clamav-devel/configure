@@ -9565,6 +9565,7 @@ else
 #line $LINENO "configure"
 #include "confdefs.h"
 #include <netinet/in.h>
+#include <sys/types.h>
 int main(int argc, char **argv) { in_port_t pt; pt = 0; return pt; }
 _ACEOF
 rm -f conftest$ac_exeext

@@ -216,7 +216,11 @@ int client(const struct optstruct *opt)
 	    return 2;
 	} else {
 	    file = mcalloc(200 + strlen(opt->filename) + 10, sizeof(char));
+#ifdef C_CYGWIN
+	    sprintf(file, "%s", opt->filename);
+#else
 	    sprintf(file, "%s/%s", cwd, opt->filename);
+#endif
 	}
     }
 

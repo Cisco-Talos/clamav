@@ -1,3 +1,14 @@
+Wed Feb 18 04:09:56 CET 2004 (tk)
+---------------------------------
+  * clamd: temporarily disabled strerror_r (due to a compilation problem on
+	   Solaris reported by Nigel)
+
+Tue Feb 17 23:43:22 CET 2004 (tk)
+---------------------------------
+  * configure: fixed in_port_t detection on OpenBSD (problem reported by Nigel)
+  * clamdscan: fixed problem with /cygdrive/ on Cygwin (thanks to Andrey
+	       Cherezov <andrey*cherezov.koenig.su>)
+
 Tue Feb 17 20:49:23 GMT 2004 (njh)
 ----------------------------------
   * libclamav: Added a new bounce delimeter
