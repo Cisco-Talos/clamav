@@ -254,7 +254,8 @@ int build(struct optstruct *opt)
 	    exit(1);
 	case 0:
 	    {
-		char *args[] = { "tar", "-cvf", tarfile, "COPYING", "viruses.db", "viruses.db2", "Notes", "viruses.db3", NULL };
+		char *args[] = { "tar", "-cvf", NULL, "COPYING", "viruses.db", "viruses.db2", "Notes", "viruses.db3", NULL };
+		args[2] = tarfile;
 		execv("/bin/tar", args);
 		mprintf("!Can't execute tar\n");
 		perror("tar");

@@ -65,12 +65,13 @@ libclamav/unrarlib.c: Christian Scheurer and Johannes Winkelmann, see
 							    www.unrarlib.org
 libclamav/mspack: Stuart Caie
 
-Code patches submitted by (in alphabetical order):
+Patch submitters (in alphabetical order):
 
 Kamil Andrusz <wizz*mniam.net>
 Patrick Bihan-Faou <patrick*mindstep.com>
 Martin Blapp <mb*imp.ch>
 Igor Brezac <igor*ipass.net>
+Mike Brudenell <pmb1*york.ac.uk>
 Len Budney <lbudney*pobox.com>
 David Champion <dgc*uchicago.edu>
 Andrey Cherezov <andrey*cherezov.koenig.su>
