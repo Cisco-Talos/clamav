@@ -1,3 +1,7 @@
+Tue Feb 10 10:38:08 GMT 2004 (trog)
+-----------------------------------
+  * libclamav/ole2_extract.c: Improve error handling
+
 Tue Feb 10 10:21:02 GMT 2004 (njh)
 ----------------------------------
   * contrib:	The Windows client now recovers better from errors during

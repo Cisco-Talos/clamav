@@ -179,35 +179,12 @@ int writen(int fd, void *buff, unsigned int count)
 	return count;
 }
 
-void print_property_name(char *name, int size)
-{
-	int i, count=0;
-
-	if (*name == 0 || size == 0) {
-		cli_dbgmsg("[no name]                           ");
-		return;
-	}
-	/* size-2 to ignore trailing NULL */
-	for (i=0 ; i<size-2; i+=2) {
-		if (isprint(name[i])) {
-			cli_dbgmsg("%c", name[i]);
-			count++;
-		} else {
-			cli_dbgmsg("_%d_", name[i]);
-			count += 3;
-		}
-	}
-	for (i=0 ; i < (34-count) ; i++) {
-		cli_dbgmsg(" ");
-	}
-}
-
 char *get_property_name(char *name, int size)
 {
 	int i, j;
 	char *newname;
 
-	if (*name == 0 || size == 0) {
+	if (*name == 0 || size == 0 || size > 64) {
 		return NULL;
 	}
 
@@ -235,10 +212,27 @@ char *get_property_name(char *name, int size)
 	}
 	return newname;
 }
+                                                                                                                                              
+void print_property_name(char *pname, int size)
+{
+        char *name;
+                                                                                                                                              
+        name = get_property_name(pname, size);
+        if (!name) {
+                return;
+        }
+        cli_dbgmsg("%34s", name);
+        free(name);
+        return;
+}
 
 void print_ole2_property(property_t *property)
 {
-	//print_property_name(property->name, property->name_size);
+	if (property->name_size > 64) {
+                cli_dbgmsg("[err name len: %d]\n", property->name_size);
+                return;
+        }
+	print_property_name(property->name, property->name_size);
 	switch (property->type) {
 	case 2:
 		cli_dbgmsg(" [file]");
@@ -443,10 +437,10 @@ int32_t ole2_get_sbat_data_block(int fd, ole2_header_t *hdr, void *buff, int32_t
 /* Read the property tree.
    It is read as just an array rather than a tree */
 void ole2_read_property_tree(int fd, ole2_header_t *hdr, const char *dir,
-				void (*handler)(int fd, ole2_header_t *hdr, property_t *prop, const char *dir))
+				int (*handler)(int fd, ole2_header_t *hdr, property_t *prop, const char *dir))
 {
 	property_t prop_block[4];
-	int32_t index, current_block;
+	int32_t index, current_block, count=0;
 	
 	current_block = hdr->prop_start;
 
@@ -468,14 +462,26 @@ void ole2_read_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 				prop_block[index].mod_highdate = ole2_endian_convert_32(prop_block[index].mod_highdate);
 				prop_block[index].start_block = ole2_endian_convert_32(prop_block[index].start_block);
 				prop_block[index].size = ole2_endian_convert_32(prop_block[index].size);
+				if (prop_block[index].type > 5) {
+					cli_dbgmsg("ERROR: invalid property type: %d\n", prop_block[index].type);
+					return;
+				}
 				if (prop_block[index].type == 5) {
 					hdr->sbat_root_start = prop_block[index].start_block;
 				}
 				print_ole2_property(&prop_block[index]);
-				handler(fd, hdr, &prop_block[index], dir);
+				if (!handler(fd, hdr, &prop_block[index], dir)) {
+					cli_dbgmsg("ERROR: handler failed\n");
+					return;
+				}
 			}
 		}
 		current_block = ole2_get_next_block_number(fd, hdr, current_block);
+		/* Loop detection */
+		if (++count > 100000) {
+			cli_dbgmsg("ERROR: loop detected\n");
+			return;
+		}
 	}
 	return;
 }
@@ -484,13 +490,13 @@ void ole2_read_property_tree(int fd, ole2_header_t *hdr, const char *dir,
    These are called for each entry in the container (property tree) */
 
 /* Null Handler - doesn't do anything */
-void handler_null(int fd, ole2_header_t *hdr, property_t *prop, const char *dir)
+int handler_null(int fd, ole2_header_t *hdr, property_t *prop, const char *dir)
 {
-	return;
+	return TRUE;
 }
 
 /* Write file Handler - write the contents of the entry to a file */
-void handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char *dir)
+int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char *dir)
 {
 	unsigned char buff[(1 << hdr->log2_big_block_size)];
 	int32_t current_block, ofd, len, offset;
@@ -498,7 +504,12 @@ void handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char 
 
 	if (prop->type != 2) {
 		// Not a file
-		return;
+		return TRUE;
+	}
+
+	if (prop->name_size > 64) {
+		cli_dbgmsg("\nERROR: property name too long: %d\n", prop->name_size);
+		return FALSE;
 	}
 
 	if (! (name = get_property_name(prop->name, prop->name_size))) {
@@ -506,9 +517,9 @@ void handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char 
 		int i;
                                                                                                                             
 		i = lseek(fd, 0, SEEK_CUR);
-		name = malloc(11);
+		name = (char *) cli_malloc(11);
 		if (!name) {
-			return;
+			return FALSE;
 		}
 		snprintf(name, 10, "%.10d", i + (int) prop);
 	}
@@ -519,7 +530,7 @@ void handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char 
 
 	ofd = open(newname, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
 	if (ofd < 0) {
-		return;
+		return FALSE;
 	}
 	free(newname);
 	current_block = prop->start_block;
@@ -531,13 +542,13 @@ void handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char 
 			if (!ole2_get_sbat_data_block(fd, hdr, &buff, current_block)) {
 				cli_dbgmsg("ole2_get_sbat_data_block failed\n");
 				close(ofd);
-				return;
+				return FALSE;
 			}
 			// buff now contains the block with 8 small blocks in it
 			offset = 64 * (current_block % 8);
 			if (writen(ofd, &buff[offset], MIN(len,64)) != MIN(len,64)) {
 				close(ofd);
-				return;
+				return FALSE;
 			}
 
 			len -= MIN(len,64);
@@ -546,12 +557,12 @@ void handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char 
 			// Big block file
 			if (!ole2_read_block(fd, hdr, &buff, current_block)) {
 				close(ofd);
-				return;
+				return FALSE;
 			}
 			if (writen(ofd, &buff, MIN(len,(1 << hdr->log2_big_block_size))) !=
 							MIN(len,(1 << hdr->log2_big_block_size))) {
 				close(ofd);
-				return;
+				return FALSE;
 			}
 
 			current_block = ole2_get_next_block_number(fd, hdr, current_block);
@@ -559,7 +570,7 @@ void handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char 
 		}
 	}
 	close(ofd);
-	return;
+	return TRUE;
 }
 
 int ole2_read_header(int fd, ole2_header_t *hdr)
