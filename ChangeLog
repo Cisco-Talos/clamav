@@ -1,3 +1,9 @@
+Wed Jun 30 13:24:56 BST 2004 (trog)
+-----------------------------------
+  * libclamav/vba_extract.c: dumb down the PowerPoint parser to Microsofts level.
+
+  * libclamav/ole2_extract.c: check against recursion limits
+
 Tue Jun 29 23:24:44 CEST 2004 (tk)
 ----------------------------------
   * doc: update
