@@ -1,10 +1,15 @@
+Sat Aug  7 01:33:14 CEST 2004 (tk)
+----------------------------------
+  * libclamav: matcher-bm: fix node sorting (false negative example provided
+	       by René Bellora <rbellora*tecnoaccion.com.ar>)
+
 Fri Aug  6 11:09:22 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Quarantined file's names now contain the name of the
 				virus
 			Handle crash when --bounce is set, and MAIL FROM isn't
 				sent in an e-mail containing a virus.
-				Fix by "Denis Ustimenko" <den@uzsci.net>
+				Fix by "Denis Ustimenko" <den*uzsci.net>
 
 Thu Aug  5 19:53:40 CEST 2004 (tk)
 ----------------------------------
@@ -26,8 +31,8 @@ Thu Aug  5 08:44:51 BST 2004 (njh)
 				sendmail variables are now delimeted by
 				dollars, e.g.  ${j}$
 			Better local IP table by Damian Menscher
-				<menscher@uiuc.edu> and Andy Fiddaman
-				<clam@fiddaman.net>
+				<menscher*uiuc.edu> and Andy Fiddaman
+				<clam*fiddaman.net>
 
 Thu Aug  5 03:10:32 CEST 2004 (tk)
 ----------------------------------

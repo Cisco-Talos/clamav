@@ -52,7 +52,7 @@ int cli_bm_addpatt(struct cl_node *root, struct cli_bm_patt *pattern)
     prev = next = root->bm_suffix[idx];
 
     while(next) {
-	if(next->pattern[0] >= pt[0])
+	if(pt[0] > next->pattern[0])
 	    break;
 	prev = next;
 	next = next->next;
@@ -118,7 +118,7 @@ void cli_bm_free(struct cl_node *root)
 
 int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root)
 {
-	int i, j, shift, off, found;
+	int i, j, shift, off, found = 0;
 	uint16_t idx;
 	struct cli_bm_patt *p;
 	const char *bp;
@@ -151,12 +151,14 @@ int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virnam
 			break;
 		    }
 		}
+
 		if(found && p->length == j) {
 		    if(virname)
 			*virname = p->virname;
 
 		    return CL_VIRUS;
 		}
+
 		p = p->next;
 	    }
 
