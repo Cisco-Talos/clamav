@@ -978,7 +978,10 @@ int listdir(const char *dirname)
     }
 
     while((dent = readdir(dd))) {
-	if(dent->d_ino) {
+#ifndef C_INTERIX
+	if(dent->d_ino)
+#endif
+	{
 	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") &&
 	    (cli_strbcasestr(dent->d_name, ".db")  ||
 	     cli_strbcasestr(dent->d_name, ".db2") ||

@@ -57,7 +57,10 @@ int treewalk(const char *dirname, struct cl_node *root, const struct passwd *use
 
     if((dd = opendir(dirname)) != NULL) {
 	while((dent = readdir(dd))) {
-	    if(dent->d_ino) {
+#ifndef C_INTERIX
+	    if(dent->d_ino)
+#endif
+	    {
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
 		    fname = mcalloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
@@ -103,7 +106,10 @@ int rmdirs(const char *dirname)
 	    if(!rmdir(dirname)) break;
 
 	    while((dent = readdir(dd))) {
-		if(dent->d_ino) {
+#ifndef C_INTERIX
+		if(dent->d_ino)
+#endif
+		{
 		    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 			fname = mcalloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
 			sprintf(fname, "%s/%s", dirname, dent->d_name);
@@ -201,7 +207,10 @@ int fixperms(const char *dirname)
 
     if((dd = opendir(dirname)) != NULL) {
 	while((dent = readdir(dd))) {
-	    if(dent->d_ino) {
+#ifndef C_INTERIX
+	    if(dent->d_ino)
+#endif
+	    {
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build full name */
 		    fname = mcalloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
@@ -244,7 +253,10 @@ int du(const char *dirname, struct s_du *n)
 
     if((dd = opendir(dirname)) != NULL) {
 	while((dent = readdir(dd))) {
-	    if(dent->d_ino) {
+#ifndef C_INTERIX
+	    if(dent->d_ino)
+#endif
+	    {
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    n->files++;
 

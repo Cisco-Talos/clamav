@@ -1,3 +1,7 @@
+Sun Jun 27 09:12:29 CEST 2004 (tk)
+----------------------------------
+  * support Windows SFU (thanks to Brian A. Reiter <breiter*wolfereiter.com>)
+
 Sat Jun 26 14:17:11 BST 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Added missing newline from the end of the
@@ -52,7 +56,7 @@ Tue Jun 22 05:09:54 BST 2004 (njh)
 	emails
 			Optimise handling of blank lines in emails
 			Trialing Andrey J. Melnikoff (TEMHOTA)
-	<temnota@kmv.ru>'s patch to print stack trace on SIGSEGV. Tidied,
+	<temnota*kmv.ru>'s patch to print stack trace on SIGSEGV. Tidied,
 	optimised and applied the patch. Comments welcome.
 
 Tue Jun 22 00:35:38 EDT 2004 (tk)

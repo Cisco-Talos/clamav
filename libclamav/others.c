@@ -351,7 +351,10 @@ int cli_rmdirs(const char *dirname)
 	    if(!rmdir(dirname)) break;
 
 	    while((dent = readdir(dd))) {
-		if(dent->d_ino) {
+#ifndef C_INTERIX
+		if(dent->d_ino)
+#endif
+		{
 		    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 			fname = cli_calloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
 			sprintf(fname, "%s/%s", dirname, dent->d_name);

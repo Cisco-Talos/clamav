@@ -356,7 +356,20 @@ irix*)
     fi
     AC_DEFINE(C_IRIX,1,[os is irix])
     ;;
-
+interix*)
+    AC_DEFINE(C_INTERIX,1,[os is interix])
+    if test "$test_clamav" = "yes"; then
+	if test ! -r /etc/passwd; then
+	   test_clamav="no"
+	fi
+    fi
+    if test "$have_pthreads" = "yes"; then
+	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
+	TH_SAFE="-thread-safe"
+	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
+	AC_DEFINE(_REENTRANT,1,[thread safe])
+    fi
+    ;;
 *)
     ;;
 esac
