@@ -754,13 +754,16 @@ int cli_ole2_extract(int fd, const char *dirname)
 	}
 
 	if (hdr.log2_big_block_size != 9) {
-		cli_dbgmsg("WARNING: untested big block size - please report\n\n");
+		cli_errmsg("WARNING: not scanned; untested big block size - please report\n");
+		goto abort;
 	}
 	if (hdr.log2_small_block_size != 6) {
-		cli_dbgmsg("WARNING: untested small block size - please report\n\n");
+		cli_errmsg("WARNING: not scanned; untested small block size - please report\n");
+		goto abort;
 	}
 	if (hdr.sbat_cutoff != 4096) {
-		cli_dbgmsg("WARNING: untested sbat cutoff - please report\n\n");
+		cli_errmsg("WARNING: not scanned; untested sbat cutoff - please report\n");
+		goto abort;
 	}
 	
 	print_ole2_header(&hdr);
@@ -773,6 +776,7 @@ int cli_ole2_extract(int fd, const char *dirname)
 	
 	ole2_walk_property_tree(fd, &hdr, dirname, 0, handler_writefile, 0, 0);
 
+abort:
 #ifdef HAVE_MMAP
 	if (hdr.m_area != NULL) {
 		munmap(hdr.m_area, hdr.m_length);

@@ -1,3 +1,8 @@
+Mon Jun 21 16:23:07 BST 2004 (trog)
+-----------------------------------
+  * libclamac/ole2_extract.c: Don't try and process (probably corrupt) files
+	with untested parameters, issue a warning instead.
+
 Mon Jun 21 11:21:48 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:		Fix crash when a multipart/mixed message
