@@ -461,7 +461,7 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 				int rec_level, int *file_count, const struct cl_limits *limits)
 {
 	property_t prop_block[4];
-	int32_t index, current_block, count=0, i;
+	int32_t index, current_block, i;
 	unsigned char *dirname;
 	current_block = hdr->prop_start;
 	
@@ -584,14 +584,14 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 
 	if (! (name = get_property_name(prop->name, prop->name_size))) {
 		/* File without a name - create a name for it */
-		int i;
+		off_t i;
                                                                                                                             
 		i = lseek(fd, 0, SEEK_CUR);
 		name = (char *) cli_malloc(11);
 		if (!name) {
 			return FALSE;
 		}
-		snprintf(name, 11, "%.10d", i + (int) prop);
+		snprintf(name, 11, "%.10ld", i + (long int) prop);
 	}
 
 	newname = (char *) cli_malloc(strlen(name) + strlen(dir) + 2);

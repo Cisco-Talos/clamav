@@ -1,3 +1,10 @@
+Tue Jul  6 14:26:19 BST 2004 (trog)
+-----------------------------------
+  * libclamav/vba_extract.c: remove unused PowerPoint functions.
+                                                                                                                                                 
+  * libclamav/ole2_extract.c: cleanup some warnings. Apply patch for
+	clean 64bit compile (originally from Martin Brulisauer)
+
 Tue Jul  6 15:15:18 CEST 2004 (tk)
 ----------------------------------
   * configure: improve libmilter test (patch by Tom G. Christensen
