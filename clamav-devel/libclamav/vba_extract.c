@@ -47,40 +47,40 @@ typedef struct vba_version_tag {
 } vba_version_t;
 
 
-uint16_t vba_endian_convert_16(uint16_t value, int is_mac)
+static uint16_t vba_endian_convert_16(uint16_t value, int is_mac)
 {
-        if (is_mac) {
+	if (is_mac) {
 #if WORDS_BIGENDIAN == 0
-                return ((value >> 8) + (value << 8));;
+		return ((value >> 8) + (value << 8));
 #else
-                return value;
+		return value;
 #endif
-        } else {
+	} else {
 #if WORDS_BIGENDIAN == 0
-                return value;
+		return value;
 #else
-                return ((value >> 8) + (value << 8));
+		return ((value >> 8) + (value << 8));
 #endif
-        }
+	}
 }
  
-uint32_t vba_endian_convert_32(uint32_t value, int is_mac)
+static uint32_t vba_endian_convert_32(uint32_t value, int is_mac)
 {
-        if (is_mac) {
+	if (is_mac) {
 #if WORDS_BIGENDIAN == 0
-                return ((value >> 24) | ((value & 0x00FF0000) >> 8) |
-                ((value & 0x0000FF00) << 8) | (value << 24));
+		return ((value >> 24) | ((value & 0x00FF0000) >> 8) |
+		((value & 0x0000FF00) << 8) | (value << 24));
 #else
-                return value;
+		return value;
 #endif
-        } else {
+	} else {
 #if WORDS_BIGENDIAN == 0
-                return value;
+		return value;
 #else
-                return ((value >> 24) | ((value & 0x00FF0000) >> 8) |
-                        ((value & 0x0000FF00) << 8) | (value << 24));
+		return ((value >> 24) | ((value & 0x00FF0000) >> 8) |
+			((value & 0x0000FF00) << 8) | (value << 24));
 #endif
-        }
+	}
 }
 
 typedef struct byte_array_tag {
@@ -97,7 +97,7 @@ vba_version_t vba_version[] = {
 	{ { 0x6d, 0x00, 0x00, 0x01 }, "Office 2000",            6, FALSE },
 	{ { 0x70, 0x00, 0x00, 0x01 }, "Office XP beta 1/2",     6, FALSE },
 	{ { 0x73, 0x00, 0x00, 0x01 }, "Office XP",              6, FALSE },
-        { { 0x79, 0x00, 0x00, 0x01 }, "Office 2003",            6, FALSE },
+	{ { 0x79, 0x00, 0x00, 0x01 }, "Office 2003",            6, FALSE },
 	{ { 0x60, 0x00, 0x00, 0x0e }, "MacOffice 98",           5, TRUE },
 	{ { 0x62, 0x00, 0x00, 0x0e }, "MacOffice 2001",         5, TRUE },
 	{ { 0x63, 0x00, 0x00, 0x0e }, "MacOffice X",		6, TRUE },
@@ -114,7 +114,7 @@ vba_version_t vba_version[] = {
 /* Function: vba_readn
         Try hard to read the requested number of bytes
 */
-int vba_readn(int fd, void *buff, unsigned int count)
+static int vba_readn(int fd, void *buff, unsigned int count)
 {
         int retval;
         unsigned int todo;
@@ -138,31 +138,7 @@ int vba_readn(int fd, void *buff, unsigned int count)
         return count;
 }
 
-/* Function: vba_writen
-        Try hard to write the specified number of bytes
-*/
-int vba_writen(int fd, void *buff, unsigned int count)
-{
-        int retval;
-        unsigned int todo;
-        unsigned char *current;
-
-        todo = count;
-        current = (unsigned char *) buff;
-
-        do {
-                retval = write(fd, current, todo);
-                if (retval < 0) {
-                        return -1;
-                }
-                todo -= retval;
-                current += retval;
-        } while (todo > 0);
-
-        return count;
-}
-
-char *get_unicode_name(char *name, int size, int is_mac)
+static char *get_unicode_name(char *name, int size, int is_mac)
 {
         int i, j;
         char *newname;
@@ -212,27 +188,7 @@ static void vba56_test_middle(int fd)
 	return;
 }
 
-static void vba56_test_end(int fd)
-{
-	char test_end[20];
-	static const uint8_t end_str[20] =
-	{
-		0x00, 0x00, 0x2e, 0xc9, 0x27, 0x8e, 0x64, 0x12,
-		0x1c, 0x10, 0x8a, 0x2f, 0x04, 0x02, 0x24, 0x00,
-		0x9c, 0x02, 0x00, 0x00
-	};
-
-        if (vba_readn(fd, &test_end, 20) != 20) {
-                return;
-        }
-
-        if (memcmp(test_end, end_str, 20) != 0) {
-                lseek(fd, -20, SEEK_CUR);
-	}
-        return;
-}
-
-int vba_read_project_strings(int fd, int is_mac)
+static int vba_read_project_strings(int fd, int is_mac)
 {
 	uint16_t length;
 	unsigned char *buff, *name;
@@ -263,11 +219,11 @@ int vba_read_project_strings(int fd, int is_mac)
 		cli_dbgmsg("name: %s\n", name);
 		free(buff);
 
-                /* Ignore twelve bytes from entries of type 'G'.
+		/* Ignore twelve bytes from entries of type 'G'.
 		   Type 'C' entries come in pairs, the second also
 		   having a 12 byte trailer */
 		/* TODO: Need to check if types H(same as G) and D(same as C) exist */
-                if (!strncmp ("*\\G", name, 3) || !strncmp ("*\\H", name, 3)
+		if (!strncmp ("*\\G", name, 3) || !strncmp ("*\\H", name, 3)
 			 	|| !strncmp("*\\C", name, 3) || !strncmp("*\\D", name, 3)) {
 			if (vba_readn(fd, &length, 2) != 2) {
 				return FALSE;
@@ -278,13 +234,13 @@ int vba_read_project_strings(int fd, int is_mac)
 				continue;
 			}
 			buff = (unsigned char *) cli_malloc(10);
-                        if (vba_readn(fd, buff, 10) != 10) {
+			if (vba_readn(fd, buff, 10) != 10) {
 				cli_errmsg("failed to read blob\n");
-                                free(buff);
+				free(buff);
 				free(name);
 				close(fd);
 				return FALSE;
-                        }
+			}
 			free(buff);
 		} else {
 			/* Unknown type - probably ran out of strings - rewind */
@@ -304,7 +260,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 {
 	unsigned char magic[2];
 	unsigned char version[4];
-	unsigned char *buff, *name;
+	unsigned char *buff;
         unsigned char vba56_signature[] = { 0xcc, 0x61 };
 	uint16_t record_count, length;
 	uint16_t ooff;
@@ -322,8 +278,6 @@ vba_project_t *vba56_dir_read(const char *dir)
 	int i, j, fd, is_mac;
 	vba_project_t *vba_project;
 	char *fullname;
-
-	unsigned char fixed_octet[8] = { 0x06, 0x02, 0x01, 0x00, 0x08, 0x02, 0x00, 0x00 };
 
 	cli_dbgmsg("in vba56_dir_read()\n");
 
@@ -579,7 +533,7 @@ out_error:
 
 #define VBA_COMPRESSION_WINDOW 4096
 
-void byte_array_append(byte_array_t *array, unsigned char *src, unsigned int len)
+static void byte_array_append(byte_array_t *array, unsigned char *src, unsigned int len)
 {
 	if (array->length == 0) {
 		array->data = (unsigned char *) cli_malloc(len);
@@ -680,61 +634,3 @@ unsigned char *vba_decompress(int fd, uint32_t offset, int *size)
 	return result.data;
 
 }
-
-/*
-int vba_dump(vba_project_t *vba_project)
-{
-	int i, fd;
-	unsigned char *data;
-	char *fullname;
-
-	for (i=0 ; i<vba_project->count ; i++) {
-	
-		cli_dbgmsg("\n\n*****************************\n");
-		cli_dbgmsg("Deocding file: %s\n", vba_project->name[i]);
-		cli_dbgmsg("*****************************\n");
-		fullname = (char *) cli_malloc(strlen(vba_project->dir) + strlen(vba_project->name[i]) + 2);
-		sprintf(fullname, "%s/%s", vba_project->dir, vba_project->name[i]);
-		fd = open(fullname, O_RDONLY);
-		free(fullname);
-		if (fd == -1) {
-			cli_dbgmsg("Open failed\n");
-			return FALSE;
-		}
-		
-		data = vba_decompress(fd, vba_project->offset[i], NULL);
-		cli_dbgmsg("%s\n", data);
-		close(fd);
-
-	}
-	return TRUE;
-}
-
-int main(int argc, char *argv[])
-{
-        int retval;
-	char *dirname=NULL;
-	vba_project_t *vba_project;
-	
-        while ((retval = getopt(argc, argv, "d:w")) != -1) {
-                switch (retval) {
-                        case 'd':
-                                dirname = optarg;
-                                break;
-                        case ':':
-                                cli_dbgmsg("missing option parameter\n");
-                                exit(-1);
-                        case '?':
-                                cli_dbgmsg("unknown option\n");
-                                break;
-                }
-        }
- 
-	vba_project = vba56_dir_read(dirname);
-
-	if (vba_project != NULL) {
-		vba_dump(vba_project);
-	}
-	return TRUE;
-}
-*/
