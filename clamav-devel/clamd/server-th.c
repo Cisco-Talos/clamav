@@ -557,7 +557,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	     */
 	    thrmgr_destroy(thr_pool);
 	    root = reload_db(root, copt, FALSE);
-	    if((thr_pool=thrmgr_new(max_threads, 30, scanner_thread)) == NULL) {
+	    if((thr_pool=thrmgr_new(max_threads, idletimeout, scanner_thread)) == NULL) {
 		logg("!thrmgr_new failed\n");
 		pthread_mutex_unlock(&reload_mutex);
 		exit(-1);
