@@ -1,7 +1,7 @@
 /*
  *  Extract VBA source code for component MS Office Documents
  *
- *  Copyright (C) 2004 trog@uncon.org
+ *  Copyright (C) 2004-2005 trog@uncon.org
  *
  *  This code is based on the OpenOffice and libgsf sources.
  *                  
@@ -810,6 +810,7 @@ static char *ppt_stream_iter(int fd)
 	atom_header_t atom_header;
 	uint32_t ole_id;
 	char *out_dir;
+	off_t offset;
 	
 	/* Create a directory to store the extracted OLE2 objects */
 	out_dir = cli_gentemp(NULL);
@@ -826,7 +827,7 @@ static char *ppt_stream_iter(int fd)
 		}
 		ppt_print_atom_header(&atom_header);
 
-		if (atom_header.length <= 0) {
+		if (atom_header.length == 0) {
 			cli_rmdirs(out_dir);
 			free(out_dir);
 			return NULL;
@@ -850,7 +851,13 @@ static char *ppt_stream_iter(int fd)
 			}
 
 		} else {
-			if (lseek(fd, atom_header.length, SEEK_CUR) == -1 ) {
+			offset = lseek(fd, 0, SEEK_CUR);
+			/* Check we don't wrap */
+			if ((offset + atom_header.length) < offset) {
+				break;
+			}
+			offset += atom_header.length;
+			if (lseek(fd, offset, SEEK_SET) != offset ) {
 				break;
 			}
 		}

@@ -1,3 +1,7 @@
+Fri Mar 11 19:15:47 GMT 2005 (trog)
+-----------------------------------
+  * libclamav/vba_extract.c: fix possible seek loop
+
 Thu Mar 10 13:32:38 GMT 2005 (trog)
 -----------------------------------
   * libclamav/special.c: Check Photoshop thumbnail images embedded in JPEG files.
