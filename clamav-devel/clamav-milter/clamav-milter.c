@@ -383,9 +383,23 @@
  *				quarantine
  *			When streamMaxLength is exceeded add a header where
  *				possible, unless --noxheader is given
+ *	0.70x	9/5/04	Only report that we've dropped privilege if the setuid
+ *				succeeded, fix by Jens Elkner
+ *				<elkner@linofee.org>
+ *			If logVerbose is set state both starting and started
+ *				messages (based on an idea by "Sergey Y.
+ *				Afonin" <asy@kraft-s.ru>
+ *			Also added X-Infected-Received-From: header by Sergey
+ *			Fix from Damian Menscher <menscher@uiuc.edu> ensures
+ *				that when a child dies we continue when max
+ *				children is hit
+ *			Report an error if inet_ntop fails in tcp_wrappers
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.87  2004/05/09 17:39:04  nigelhorne
+ * Waiting threads weren't being woken up
+ *
  * Revision 1.86  2004/05/06 11:25:20  nigelhorne
  * Some work on maxStreamLength
  *
@@ -629,9 +643,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.86 2004/05/06 11:25:20 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.87 2004/05/09 17:39:04 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70v"
+#define	CM_VERSION	"0.70x"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -746,6 +760,7 @@ struct	privdata {
 	long	numBytes;	/* Number of bytes sent so far */
 	char	*received;	/* keep track of received from */
 	const	char	*rejectCode;	/* 550 or 554? */
+	char	*messageID;	/* sendmailID */
 	int	discard;	/*
 				 * looks like the remote end is playing ping
 				 * pong with us
@@ -1179,10 +1194,11 @@ main(int argc, char **argv)
 				setgroups(1, &user->pw_gid);
 
 			setgid(user->pw_gid);
-			setuid(user->pw_uid);
-
-			cli_dbgmsg("Running as user %s (UID %d, GID %d)\n",
-				cpt->strarg, user->pw_uid, user->pw_gid);
+			if(setuid(user->pw_uid) < 0)
+				perror(cpt->strarg);
+			else
+				cli_dbgmsg("Running as user %s (UID %d, GID %d)\n",
+					cpt->strarg, user->pw_uid, user->pw_gid);
 		} else
 			fprintf(stderr, "%s: running as root is not recommended\n", argv[0]);
 	}
@@ -1403,19 +1419,22 @@ main(int argc, char **argv)
 		pidFile = cpt->strarg;
 
 	if(cfgopt(copt, "LogSyslog")) {
+		if(cfgopt(copt, "LogVerbose"))
+			logVerbose = 1;
+		use_syslog = 1;
+
 		openlog("clamav-milter", LOG_CONS|LOG_PID, LOG_MAIL);
-		syslog(LOG_INFO, clamav_version);
+		if(logVerbose)
+			syslog(LOG_INFO, "Starting: %s", clamav_version);
+		else
+			syslog(LOG_INFO, clamav_version);
 #ifdef	CL_DEBUG
 		if(debug_level > 0)
 			syslog(LOG_DEBUG, "Debugging is on");
 #endif
-		use_syslog = 1;
-
-		if(cfgopt(copt, "LogVerbose"))
-			logVerbose = 1;
 	} else {
 		if(qflag)
-			fprintf(stderr, "%s: (-q && !LogSysLog): warning - all interception message methods are off\n",
+			fprintf(stderr, "%s: (-q && !LogSyslog): warning - all interception message methods are off\n",
 				argv[0]);
 		use_syslog = 0;
 	}
@@ -1468,6 +1487,9 @@ main(int argc, char **argv)
 	}
 
 	signal(SIGPIPE, SIG_IGN);
+
+	if(logVerbose)
+		syslog(LOG_INFO, "Started: %s", clamav_version);
 
 	return smfi_main();
 }
@@ -1705,7 +1727,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		 * "the type is not supported in the current version". What
 		 * the documentation doesn't say is the type of what?
 		 *
-		 * Possibly the input is not a TCP/IP socket?
+		 * Possibly the input is not a TCP/IP socket e.g. stdin?
 		 */
 		remoteIP = "127.0.0.1";
 	else {
@@ -1754,7 +1776,15 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		}
 
 #ifdef HAVE_INET_NTOP
-		(void)inet_ntop(AF_INET, &((struct sockaddr_in *)(hp->h_addr))->sin_addr, ip, sizeof(ip));
+		if(inet_ntop(AF_INET, &((struct sockaddr_in *)(hp->h_addr))->sin_addr, ip, sizeof(ip)) == NULL) {
+			perror(hp->h_name);
+			/*if(use_syslog)
+				syslog(LOG_WARNING, "Can't get IP address for (%s)", hp->h_name);
+			strcpy(ip, (char *)inet_ntoa(*(struct in_addr *)hp->h_addr));*/
+			if(use_syslog)
+				syslog(LOG_WARNING, "Access Denied: Can't get IP address for (%s)", hp->h_name);
+			return cl_error;
+		}
 #else
 		strcpy(ip, (char *)inet_ntoa(*(struct in_addr *)hp->h_addr));
 #endif
@@ -1855,6 +1885,11 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			struct timespec timeout;
 			struct timezone tz;
 
+			if(use_syslog)
+				syslog(LOG_NOTICE,
+					"hit max-children limit (%u >= %u): waiting for some to exit",
+					n_children, max_children);
+
 			/*
 			 * Use pthread_cond_timedwait rather than
 			 * pthread_cond_wait since the sendmail which calls
@@ -1863,19 +1898,19 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			 * Wait for a maximum of 1 minute.
 			 *
 			 * TODO: this timeout should be configurable
+			 *
 			 * It stops sendmail getting fidgety.
+			 *
+			 * Patch from Damian Menscher <menscher@uiuc.edu> to
+			 * ensure it wakes up when a child goes away
 			 */
 			gettimeofday(&now, &tz);
 			timeout.tv_sec = now.tv_sec + 60;
 			timeout.tv_nsec = 0;
 
-			if(use_syslog)
-				syslog(LOG_NOTICE,
-					"hit max-children limit (%u >= %u): waiting for some to exit",
-					n_children, max_children);
 			do
 				rc = pthread_cond_timedwait(&n_children_cond, &n_children_mutex, &timeout);
-			while(rc != ETIMEDOUT);
+			while((n_children >= max_children) && (rc != ETIMEDOUT));
 		}
 		n_children++;
 
@@ -2374,10 +2409,15 @@ clamfi_eom(SMFICTX *ctx)
 					for(to = privdata->to; *to; to++)
 						fprintf(sendmail, "Cc: %s\n", *to);
 				/*
-				 * Auto-submittied is still a draft, keep an
+				 * Auto-submitted is still a draft, keep an
 				 * eye on its format
 				 */
 				fputs("Auto-Submitted: auto-submitted (antivirus notify)\n", sendmail);
+				/* "Sergey Y. Afonin" <asy@kraft-s.ru> */
+				if((ptr = smfi_getsymval(ctx, "{_}")) != NULL)
+					fprintf(sendmail,
+						"X-Infected-Received-From: %s\n",
+						ptr);
 				fputs("Subject: Virus intercepted\n\n", sendmail);
 
 				if((templatefile == NULL) ||
@@ -2498,9 +2538,9 @@ clamfi_abort(SMFICTX *ctx)
 	/*
 	 * Unlock incase we're called during a cond_timedwait in envfrom
 	 *
-	 * TODO: There *must* be a tidier way of doing this!
+	 * TODO: There *must* be a tidier a safer way of doing this!
 	 */
-	if(max_children > 0)
+	if((max_children > 0) && (n_children >= max_children))
 		(void)pthread_mutex_unlock(&n_children_mutex);
 
 	clamfi_cleanup(ctx);
