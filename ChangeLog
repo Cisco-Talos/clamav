@@ -1,6 +1,10 @@
+Thu Jan 27 20:22:50 GMT 2005 (njh)
+----------------------------------
+  * libclamav/message.c:	Some Worm.Mydoom.Gen-unp were not caught
+
 Thu Jan 27 14:11:13 GMT 2005 (njh)
 ----------------------------------
-* libclamav/mbox.c:	Scan sendmail queue df* files
+  * libclamav/mbox.c:	Scan sendmail queue df* files
 
 Thu Jan 27 10:55:35 GMT 2005 (njh)
 ----------------------------------
