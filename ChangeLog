@@ -1,6 +1,11 @@
+Thu Sep 16 12:20:59 BST 2004 (njh)
+----------------------------------
+  * libvclamav/mbox.c:	Improved handling of line breaks in the middle of
+				headers for multipart sections
+
 Thu Sep 16 11:07:37 BST 2004 (njh)
 ----------------------------------
-  * libclamav/mbox:c	If a false or invented encoding type is stated attempt
+  * libclamav/mbox.c:	If a false or invented encoding type is stated attempt
 				to decode with all known decoders
 
 Thu Sep 16 09:58:01 BST 2004 (njh)
