@@ -39,6 +39,7 @@ typedef enum {
     CL_TYPE_MSCHM,
     CL_TYPE_SCRENC,
     CL_TYPE_GRAPHICS,
+    CL_TYPE_BINHEX,
 
     /* bigger numbers have higher priority (in o-t-f detection) */
     CL_TYPE_HTML, /* on the fly */

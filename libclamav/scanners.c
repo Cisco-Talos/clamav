@@ -1041,6 +1041,34 @@ static int cli_scantar(int desc, const char **virname, long int *scanned, const 
     return ret;
 }
 
+static int cli_scanbinhex(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
+{
+	char *dir;
+	int ret = CL_CLEAN;
+
+
+    cli_dbgmsg("in cli_scanbinhex()\n");
+
+    /* generate temporary directory */
+    dir = cli_gentemp(NULL);
+
+    if(mkdir(dir, 0700)) {
+	cli_errmsg("Binhex: Can't create temporary directory %s\n", dir);
+	return CL_ETMPDIR;
+    }
+
+    if((ret = cli_binhex(dir, desc)))
+	cli_dbgmsg("Binhex: %s\n", cl_strerror(ret));
+    else
+	ret = cli_scandir(dir, virname, scanned, root, limits, options, arec, mrec);
+
+    if(!cli_leavetemps_flag)
+	cli_rmdirs(dir);
+
+    free(dir);
+    return ret;
+}
+
 static int cli_scanmschm(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	char *tempname;
@@ -1224,6 +1252,11 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 	case CL_TYPE_TAR:
 	    if(SCAN_ARCHIVE)
 		ret = cli_scantar(desc, virname, scanned, root, limits, options, arec, mrec);
+	    break;
+
+	case CL_TYPE_BINHEX:
+	    if(SCAN_ARCHIVE)
+		ret = cli_scanbinhex(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
 	case CL_TYPE_SCRENC:
