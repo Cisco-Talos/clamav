@@ -15,12 +15,14 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.1 2005/03/23 08:32:33 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.2 2005/03/23 08:41:31 nigelhorne Exp $";
 
 #include "tnef.h"
 
 int
 cli_tnef(const char *dir, int desc)
 {
+	cli_warnmsg("TNEF not scanned yet\n");
+
 	return CL_CLEAN;
 }
