@@ -24,7 +24,7 @@
 
 int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname);
 
-int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, int usedns);
+int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, const char *dnsreply);
 
 int wwwconnect(const char *server, const char *proxy, int pport, char *ip);
 

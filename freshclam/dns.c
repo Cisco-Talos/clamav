@@ -49,6 +49,8 @@ char *txtquery(const char *domain, unsigned int *ttl)
 	return NULL;
     }
 
+    mprintf("*Querying %s\n", domain);
+
     memset(answer, 0, PACKETSZ);
     if((len = res_query(domain, C_IN, T_TXT, answer, PACKETSZ)) < 0) {
 	mprintf("@Can't query %s\n", domain);
