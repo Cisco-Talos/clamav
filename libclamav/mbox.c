@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.83  2004/06/28 11:44:45  nigelhorne
+ * Remove empty parts
+ *
  * Revision 1.82  2004/06/25 13:56:38  nigelhorne
  * Optimise messages without other messages encapsulated within them
  *
@@ -234,7 +237,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.82 2004/06/25 13:56:38 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.83 2004/06/28 11:44:45 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -677,6 +680,9 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821Table)
 
 	copy = strdup(line);
 
+	if(copy == NULL)
+		return -1;
+
 	cmd = strtok_r(copy, ":", &strptr);
 
 	if(cmd && *cmd) {
@@ -854,6 +860,8 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 
 				if(t_line == NULL) {
 					cli_dbgmsg("Empty part\n");
+					messageDestroy(aMessage);
+					--multiparts;
 					continue;
 				}
 
@@ -2105,19 +2113,18 @@ saveFile(const blob *b, const char *dir)
 	return (close(fd) >= 0);
 }
 
-#ifdef	CL_DEBUG
+#ifdef HAVE_BACKTRACE
 static void
 sigsegv(int sig)
 {
 	signal(SIGSEGV, SIG_DFL);
-	print_trace(0);
+	print_trace(1);
 	exit(SIGSEGV);
 }
 
 static void
 print_trace(int use_syslog)
 {
-#ifdef HAVE_BACKTRACE
 	void *array[10];
 	size_t size;
 	char **strings;
@@ -2126,8 +2133,6 @@ print_trace(int use_syslog)
 
 	size = backtrace(array, 10);
 	strings = backtrace_symbols(array, size);
-
-	syslog(LOG_ERR, "Backtrace of pid %d:", pid);
 
 	if(use_syslog == 0)
 		cli_dbgmsg("Backtrace of pid %d:\n", pid);
@@ -2141,6 +2146,5 @@ print_trace(int use_syslog)
 			cli_dbgmsg("%s\n", strings[i]);
 
 	free(strings);
-#endif
 }
 #endif
