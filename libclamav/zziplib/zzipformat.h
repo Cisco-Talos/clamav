@@ -72,10 +72,10 @@ struct zzip_file_trailer
 {
 #   define ZZIP_FILE_TRAILER_MAGIC 0x08074B50
 #   define ZZIP_FILE_TRAILER_CHECKMAGIC(__p) ZZIP_CHECKMAGIC(__p,'P','K','\7','\8')
-    uint32_tz z_magic; /* data descriptor signature (0x08074b50) */
-    uint32_tz z_crc32; /* crc-32 */
-    uint32_tz z_csize; /* compressed size */
-    uint32_tz z_usize; /* uncompressed size */
+    uint32_t z_magic; /* data descriptor signature (0x08074b50) */
+    uint32_t z_crc32; /* crc-32 */
+    uint32_t z_csize; /* compressed size */
+    uint32_t z_usize; /* uncompressed size */
 } __attribute__((packed));
 
 /* C. central directory structure:

@@ -1,3 +1,8 @@
+Tue Jun 22 00:35:38 EDT 2004 (tk)
+---------------------------------
+  * libclamav: reverse the last patch and fix glibc issue in more
+	       suitable way
+
 Mon Jun 21 21:20:47 EDT 2004 (tk)
 ---------------------------------
   * libclamav: scanners: prevent division by zero in compression ratio
