@@ -1,3 +1,7 @@
+Tue Jan 13 10:12:36 GMT 2004 (njh)
+----------------------------------
+  * libclamav: Remove duplicate code when handling multipart messages
+
 Mon Jan 12 15:31:32 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter: FixStaleSocket: no longer complain if asked to remove
@@ -28,12 +32,12 @@ Fri Jan  9 18:27:19 GMT 2004 (njh)
 Fri Jan  9 18:01:28 GMT 2004 (njh)
 ----------------------------------
   * libclamav: Started handling BinHex code. For now only works with
-  	"inline" messages where the BinHex is in the main body of the plain
+	"inline" messages where the BinHex is in the main body of the plain
 	text portion.
 
 Fri Jan  9 15:08:01 GMT 2004 (njh)
 ----------------------------------
-  * libclamav: Re-engineered handling of 
+  * libclamav: Re-engineered handling of
 	Handle Content-Type: /; name="eicar.com"
 	which was lost in recent code change. Should now apply to more
 	cases
@@ -45,7 +49,7 @@ Fri Jan  9 14:46:29 GMT 2004 (njh)
 Fri Jan  9 10:21:27 GMT 2004 (njh)
 ----------------------------------
   * libclamav: Locate uuencoded viruses hidden in text poritions of
-  	multipart/mixed mime messages
+	multipart/mixed mime messages
 
 Fri Jan  9 02:07:53 CET 2004 (tk)
 ---------------------------------
@@ -60,7 +64,7 @@ Wed Jan  7 21:50:28 CET 2004 (tk)
 Tue Jan  6 14:42:00 GMT 2004 (njh)
 ----------------------------------
   * libclamav: Handle headers which do not not have a space after the ':'
-  	Example mail submitted by "Diego d'Ambra" <da@softcom.dk>
+	Example mail submitted by "Diego d'Ambra" <da@softcom.dk>
 
 Tue Jan  6 14:43:42 CET 2004 (tk)
 ---------------------------------
@@ -167,12 +171,12 @@ Fri Dec 12 13:43:50 GMT 2003 (njh)
 Thu Dec 11 14:36:32 GMT 2003 (njh)
 ----------------------------------
   * libclamav: better handling of encapsulated messages, i.e. emails
-  	within other emails such as forwarded messages
+	within other emails such as forwarded messages
 
 Wed Dec 10 12:01:27 GMT 2003 (njh)
 ----------------------------------
   * clamav-milter: Timeout on waiting for data from clamd, by honouring
-  	ThreadTimeout in clamav.conf
+	ThreadTimeout in clamav.conf
 
 Tue Dec  9 09:22:46 GMT 2003 (njh)
 ----------------------------------
@@ -189,7 +193,7 @@ Sun Dec  7 22:46:15 CET 2003 (tk)
 Sat Dec  6 04:04:00 GMT 2003 (njh)
 ----------------------------------
   * libclamav: Handle hand crafted emails that incorrectly set multipart headers
-  	Handcrafted examples sent by Michael Dankov <misha@btrc.ru>
+	Handcrafted examples sent by Michael Dankov <misha@btrc.ru>
 
 Sat Dec  6 00:43:08 CET 2003 (tk)
 ---------------------------------
@@ -322,7 +326,7 @@ Sat Nov 22 17:23:10 IST 2003 (njh)
 Fri Nov 21 12:58:02 IST 2003 (njh)
 ---------------------------------
   * libclamav:	Scan multipart alternatives that have no boundaries, finds some
-  		uuencoded happy99
+		uuencoded happy99
 
 Wed Nov 19 16:34:04 GMT 2003 (njh)
 ---------------------------------
@@ -386,7 +390,7 @@ Tue Nov 11 13:51:23 IST 2003 (njh)
 ----------------------------------
   * clamav-milter: Fixed handling of % characters in e-mail addresses
 		pointed out by dotslash@snosoft.com
-		
+
 Sun Nov  9 20:25:11 CET 2003 (tk)
 ---------------------------------
   * libclamav: some functions were still using SCANBUFF instead of FILEBUFF,
@@ -436,7 +440,7 @@ Wed Nov  5 11:35:22 CET 2003 (tk)
 Wed Nov  5 12:34:34 IST 2003 (njh)
 ----------------------------------
   * libclamav: Handle spam that sends broken content-disposition
-  	(Fix by NJH, Bug notified by Laurent Wacrenier <lwa@teaser.fr>)
+	(Fix by NJH, Bug notified by Laurent Wacrenier <lwa@teaser.fr>)
 
 Wed Nov  5 01:52:03 CET 2003 (tk)
 ---------------------------------
@@ -450,7 +454,7 @@ Tue Nov  4 13:37:21 CET 2003 (tk)
 Tue Nov  4 08:27:00 GMT 2003 (njh)
 ----------------------------------
   * libclamav: Handle multipart messages that have no text portion
-  	(Fix by NJH, Bug notified by Laurent Wacrenier <lwa@teaser.fr>)
+	(Fix by NJH, Bug notified by Laurent Wacrenier <lwa@teaser.fr>)
 
 Tue Nov  4 00:37:03 CET 2003 (tk)
 ---------------------------------
@@ -523,7 +527,7 @@ Fri Oct 17 05:08:22 CEST 2003 (tk)
 Sun Oct 12 21:14:21 BST 2003 (njh)
 ---------------------------------
   * libclamav: mbox.c now uses NO_STRTOK_R consistently with message.c
-  		Patch by Bernd Kuhls <spiralvoice@hotmail.com>
+		Patch by Bernd Kuhls <spiralvoice@hotmail.com>
 
 Sun Oct 12 19:46:18 CEST 2003 (tk)
 ----------------------------------
@@ -532,15 +536,15 @@ Sun Oct 12 19:46:18 CEST 2003 (tk)
 Sun Oct 12 09:37:44 BST 2003 (njh)
 ---------------------------------
   * libclamav: handles Eicar found in Appledouble files, though Appledouble
-  		files are not yet handled
+		files are not yet handled
   * clamav-milter: use VERSION info to talk to clamd not PING/PONG
-  		Only close fd 0/1/2 if !Foreground
+		Only close fd 0/1/2 if !Foreground
 		Sanity checking now performed on LocalSocket as well as TCPSocket
 
 Sat Oct 11 16:42:42 BST 2003 (njh)
 ---------------------------------
   * clamav-milter: fixed possible crash with long e-mail addresses
-  		Removed call to clamdscan to get version
+		Removed call to clamdscan to get version
 
 Thu Oct  9 15:18:44 CEST 2003 (tk)
 ----------------------------------
@@ -558,7 +562,7 @@ Wed Oct  8 12:39:26 CEST 2003 (tk)
 Sun Oct  5 18:30:40 BST 2003 (njh)
 ----------------------------------
   * clamav-milter: Used to always remove old UNIX domain sockets, now
-  		only does that if FixStaleSocket is set
+		only does that if FixStaleSocket is set
 
 Sun Oct  5 14:58:05 BST 2003 (njh)
 ----------------------------------
@@ -579,7 +583,7 @@ Thu Oct  2 19:43:57 CEST 2003 (tk)
 Wed Oct  1 10:52:35 BST 2003 (njh)
 ----------------------------------
   * libclamav: mbox/message now handles content type definition on a new
-  		line
+		line
 
 Tue Sep 30 12:54:32 BST 2003 (njh)
 ----------------------------------
@@ -613,12 +617,12 @@ Mon Sep 29 13:42:51 CEST 2003 (tk)
 Mon Sep 29 07:15:30 BST 2003 (njh)
 ----------------------------------
   * clamav-milter: ensure remoteIP is initialised
-  		max-children now overrides MaxThreads
+		max-children now overrides MaxThreads
 
 Sun Sep 28 17:38:44 BST 2003 (njh)
 ----------------------------------
   * clamav-milter: added --force-scan flag
-  		Use MaxThreads if --max-children not set
+		Use MaxThreads if --max-children not set
 		(thanks to "Richard G. Roberto" <rgr@dedlegend.com>)
 
 Sun Sep 28 11:07:49 BST 2003 (njh)
@@ -639,7 +643,7 @@ Wed Sep 24 10:37:10 BST 2003 (njh)
 ----------------------------------
 
   * libclamav: fixed core dump when the plain text file contained just
-  		the text "begin <number>"
+		the text "begin <number>"
 
 Wed Sep 24 06:54:56 BST 2003 (njh)
 ---------------------------------
@@ -677,7 +681,7 @@ Tue Sep 16 18:06:47 CEST 2003 (tk)
 Mon Sep 15 14:09:50 BST 2003
 ----------------------------
   * libclamav/mbox.c: Fixed potential buffer overrun files with long names
-  			DOS style filename suffixes
+			DOS style filename suffixes
 
 Mon Sep 15 13:23:27 BST 2003
 ---------------------------
