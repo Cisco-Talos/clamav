@@ -17,9 +17,13 @@
  *
  * Much of this code is based on minitar.c which is in the public domain.
  * Author: Charles G. Waldman (cgw@pgt.com),  Aug 4 1998
+ * There are many tar files that this code cannot decode.
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.14  2004/10/13 10:18:54  nigelhorne
+ * Added a few extra file types
+ *
  * Revision 1.13  2004/10/04 13:46:50  nigelhorne
  * Handle GNU tar files
  *
@@ -60,7 +64,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.13 2004/10/04 13:46:50 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.14 2004/10/13 10:18:54 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -159,12 +163,20 @@ cli_untar(const char *dir, int desc)
 
 			type = block[156];
 
+			/*
+			 * Extra types from djgardner@users.sourceforge.net
+			 */
 			switch(type) {
-				case '0':
-				case '\0':
+				case '0':	/* plain file */
+				case '\0':	/* plain file */
+				case '7':	/* contiguous file */
 					directory = 0;
 					break;
-				case '5':
+				case '5':	/* directory */
+				case '2':	/* sym link */
+				case '3':	/* char device */
+				case '4':	/* block device */
+				case '6':	/* fifo special */
 					directory = 1;
 					break;
 				default:
@@ -172,8 +184,10 @@ cli_untar(const char *dir, int desc)
 					return CL_EIO;
 			}
 
-			if(directory)
+			if(directory) {
+				in_block = 0;
 				continue;
+			}
 
 			strncpy(name, block, 100);
 			name[100] = '\0';

@@ -1,3 +1,9 @@
+Wed Oct 13 11:19:03 BST 2004 (njh)
+----------------------------------
+  * libclamav/untar.c:	Added handling of some extra file types within the
+				archive. Thanks to
+				djgardner@users.sourceforge.net
+
 Wed Oct 13 09:57:54 BST 2004 (trog)
 -----------------------------------
   * libclamav/special.c: fix logic check
