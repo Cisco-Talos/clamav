@@ -37,6 +37,8 @@ typedef struct vba_project_tag {
 vba_project_t *vba56_dir_read(const char *dir);
 unsigned char *vba_decompress(int fd, uint32_t offset, int *size);
 
+char *ppt_vba_read(const char *dir);
+
 vba_project_t *wm_dir_read(const char *dir);
 unsigned char *wm_decrypt_macro(int fd, uint32_t offset, uint32_t len,
 					unsigned char key);
