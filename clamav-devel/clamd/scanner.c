@@ -215,6 +215,9 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	return -1;
     }
 
+
+    logg("*Accepted connection on port %d\n", port);
+
     if(cfgopt(copt, "StreamSaveToDisk")) {
 	if((tmp = tmpfile()) == NULL) {
 	    shutdown(sockfd, 2);

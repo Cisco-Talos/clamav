@@ -447,6 +447,13 @@ int acceptloop(int socketd, struct cl_node *root, const struct cfgstruct *copt)
     if(cfgopt(copt, "ScanArchive")) { 
 	logg("Archive support enabled.\n");
 	options |= CL_ARCHIVE;
+
+	if(cfgopt(copt, "ScanRAR")) {
+	    logg("RAR support enabled.\n");
+	} else {
+	    logg("RAR support disabled.\n");
+	    options |= CL_DISABLERAR;
+	}
     } else {
 	logg("Archive support disabled.\n");
     }

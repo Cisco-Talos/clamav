@@ -36,11 +36,19 @@ int tcpserver(const struct optstruct *opt, const struct cfgstruct *copt, struct 
 	int sockfd, backlog;
 	struct cfgstruct *cpt;
 	char *estr;
+	const char *taddr;
 
     memset((char *) &server, 0, sizeof(server));
     server.sin_family = AF_INET;
     server.sin_port = htons(cfgopt(copt, "TCPSocket")->numarg);
-    server.sin_addr.s_addr = INADDR_ANY;
+    taddr = cfgopt(copt, "TCPAddr")->strarg;
+    if ( taddr != NULL && *taddr )
+    {
+	server.sin_addr.s_addr = inet_addr( taddr );
+    }else
+    {
+	server.sin_addr.s_addr = INADDR_ANY;
+    }
 
 
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
@@ -55,8 +63,12 @@ int tcpserver(const struct optstruct *opt, const struct cfgstruct *copt, struct 
 	//fprintf(stderr, "ERROR: can't bind(): %s\n", estr);
 	logg("!bind() error: %s\n", estr);
 	exit(1);
-    } else
-	logg("Binded to port %d\n", cfgopt(copt, "TCPSocket")->numarg);
+    } else {
+	if ( taddr != NULL && *taddr )
+	    logg("Bound to address %s on port %d\n", taddr, cfgopt(copt, "TCPSocket")->numarg);
+	else
+	    logg("Bound to port %d\n", cfgopt(copt, "TCPSocket")->numarg);
+    }
 
     if((cpt = cfgopt(copt, "MaxConnectionQueueLength")))
 	backlog = cpt->numarg;

@@ -49,6 +49,7 @@ int cli_scanrar_inuse = 0;
 
 #define SCAN_ARCHIVE	(options & CL_ARCHIVE)
 #define SCAN_MAIL	(options & CL_MAIL)
+#define DISABLE_RAR	(options & CL_DISABLERAR)
 
 #define MAGIC_BUFFER_SIZE 14
 #define RAR_MAGIC_STR "Rar!"
@@ -555,7 +556,7 @@ int cli_scanmail(int desc, char **virname, long int *scanned, const struct cl_no
 #endif
 
 	/* generate the temporary directory */
-	dir = cli_gentemp(tmpdir);
+	dir = cl_gentemp(tmpdir);
 	if(mkdir(dir, 0700)) {
 	    cli_errmsg("ScanMail -> Can't create temporary directory %s\n", dir);
 /*
@@ -619,22 +620,23 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
 
 	if (bread != MAGIC_BUFFER_SIZE) {
 	    /* short read: No need to do magic */
+	    (*reclev)--;
 	    return ret;
 	}
 #ifdef CL_THREAD_SAFE
 	/* this check protects against recursive deadlock */
-	if(SCAN_ARCHIVE && !cli_scanrar_inuse && !strncmp(magic, RAR_MAGIC_STR, strlen(RAR_MAGIC_STR))) {
+	if(!DISABLE_RAR && SCAN_ARCHIVE && !cli_scanrar_inuse && !strncmp(magic, RAR_MAGIC_STR, strlen(RAR_MAGIC_STR))) {
 	    ret = cli_scanrar(desc, virname, scanned, root, limits, options, reclev);
 	}
 #else
-	if(SCAN_ARCHIVE && !strncmp(magic, RAR_MAGIC_STR, strlen(RAR_MAGIC_STR))) {
+	if(!DISABLE_RAR && SCAN_ARCHIVE && !strncmp(magic, RAR_MAGIC_STR, strlen(RAR_MAGIC_STR))) {
 	    ret = cli_scanrar(desc, virname, scanned, root, limits, options, reclev);
 	}
 #endif
 #ifdef HAVE_ZLIB_H
 	else if(SCAN_ARCHIVE && !strncmp(magic, ZIP_MAGIC_STR, strlen(ZIP_MAGIC_STR))) {
 	    ret = cli_scanzip(desc, virname, scanned, root, limits, options, reclev);
-	} else if(!strncmp(magic, GZIP_MAGIC_STR, strlen(GZIP_MAGIC_STR))) {
+	} else if(SCAN_ARCHIVE && !strncmp(magic, GZIP_MAGIC_STR, strlen(GZIP_MAGIC_STR))) {
 	    ret = cli_scangzip(desc, virname, scanned, root, limits, options, reclev);
 	}
 #endif
@@ -648,10 +650,10 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
 	}
 	else if(SCAN_MAIL && !strncmp(magic, RAWMAIL_MAGIC_STR, strlen(RAWMAIL_MAGIC_STR))) {
 	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
-	} else if(!strncmp(magic, MAILDIR_MAGIC_STR, strlen(MAILDIR_MAGIC_STR))) {
+	} else if(SCAN_MAIL && !strncmp(magic, MAILDIR_MAGIC_STR, strlen(MAILDIR_MAGIC_STR))) {
 	    cli_dbgmsg("Recognized Maildir mail file.\n");
 	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
-	} else if(!strncmp(magic, DELIVERED_MAGIC_STR, strlen(DELIVERED_MAGIC_STR))) {
+	} else if(SCAN_MAIL && !strncmp(magic, DELIVERED_MAGIC_STR, strlen(DELIVERED_MAGIC_STR))) {
 	    cli_dbgmsg("Recognized (Delivered-To) mail file.\n");
 	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
 	}

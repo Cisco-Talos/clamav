@@ -24,6 +24,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <zlib.h>
+#include <time.h>
+#include <locale.h>
 #include <clamav.h>
 
 #include "options.h"
@@ -73,7 +76,7 @@ char *cut(const char *file, long int start, long int end)
 	exit(13);
     }
 
-    fname = gentemp(".");
+    fname = cl_gentemp(".");
     if((wd = fopen(fname, "wb")) == NULL) {
 	mprintf("!Can't create temporary file %s\n", fname);
 	exit(14);
@@ -102,7 +105,7 @@ char *cut(const char *file, long int start, long int end)
 
 char *change(const char *file, long int x)
 {
-	char *fname, buffer[BUFFSIZE];
+	char *fname, buffer[FBUFFSIZE];
 	int bytes, size, sum, ch;
 	FILE *rd, *wd;
 
@@ -112,13 +115,13 @@ char *change(const char *file, long int x)
 	exit(13);
     }
 
-    fname = gentemp(".");
+    fname = cl_gentemp(".");
     if((wd = fopen(fname, "wb+")) == NULL) {
 	mprintf("!Can't create temporary file %s\n", fname);
 	exit(14);
     }
 
-    while((bytes = fread(buffer, 1, BUFFSIZE, rd)) > 0)
+    while((bytes = fread(buffer, 1, FBUFFSIZE, rd)) > 0)
 	fwrite(buffer, 1, bytes, wd);
 
     fclose(rd);
@@ -134,7 +137,7 @@ char *change(const char *file, long int x)
 
 void sigtool(struct optstruct *opt)
 {
-	    char buffer[BUFFSIZE];
+	    char buffer[FBUFFSIZE];
 	    int bytes;
 	    char *pt;
 
@@ -158,11 +161,19 @@ void sigtool(struct optstruct *opt)
 
     if(optl(opt, "hex-dump")) {
 
-	while((bytes = read(0, buffer, BUFFSIZE)) > 0) {
+	while((bytes = read(0, buffer, FBUFFSIZE)) > 0) {
 	    pt = cl_str2hex(buffer, bytes);
 	    write(1, pt, 2 * bytes);
 	    free(pt);
 	}
+
+    } else if(optc(opt, 'b')) {
+
+	build(opt);
+
+    } else if(optc(opt, 'i')) {
+
+	cvdinfo(opt);
 
     } else {
 	    int jmp, lastjmp, start, end, found = 0, exec = 0, pos, filesize;
@@ -330,7 +341,7 @@ void sigtool(struct optstruct *opt)
 	if(fileinfo(signame, 1) != -1) {
 	    mprintf("File %s exists.\n", signame);
 	    free(signame);
-	    signame = gentemp(".");
+	    signame = cl_gentemp(".");
 	}
 
 	bsigname = (char *) mcalloc(strlen(f) + 10, sizeof(char));
@@ -338,7 +349,7 @@ void sigtool(struct optstruct *opt)
 	if(fileinfo(bsigname, 1) != -1) {
 	    mprintf("File %s exists.\n", bsigname);
 	    free(bsigname);
-	    bsigname = gentemp(".");
+	    bsigname = cl_gentemp(".");
 	}
 
 	if((wd = fopen(signame, "wb")) == NULL) {
@@ -350,7 +361,7 @@ void sigtool(struct optstruct *opt)
 
 	mprintf("Saving signature in %s file.\n", signame);
 
-	while((bytes = fread(buffer, 1, BUFFSIZE, fd)) > 0) {
+	while((bytes = fread(buffer, 1, FBUFFSIZE, fd)) > 0) {
 	    pt = cl_str2hex(buffer, bytes);
 	    fwrite(pt, 1, 2 * bytes, wd);
 	    free(pt);
@@ -369,6 +380,204 @@ void sigtool(struct optstruct *opt)
     //free_opt(opt);
 }
 
+int build(struct optstruct *opt)
+{
+	int ret, no = 0, bytes, itmp;
+	struct stat foo;
+	char buffer[BUFFSIZE], *tarfile = NULL, *gzfile = NULL, header[257],
+	     smbuff[25], *pt;
+        struct cl_node *root = NULL;
+	FILE *tar, *cvd;
+	gzFile *gz;
+	time_t timet;
+	struct tm *brokent;
+
+    /* build a tar.gz archive
+     * we need: COPYING, viruses.db / viruses.db2
+     * in current working directory
+     */
+
+    if(stat("COPYING", &foo) == -1) {
+	mprintf("COPYING file not found in current working directory.\n");
+	exit(1);
+    }
+
+    if(stat("viruses.db", &foo) == -1 || stat("viruses.db2", &foo) == -1) {
+	mprintf("Virus database not found in current working directory.\n");
+	exit(1);
+    }
+
+    cl_debug(); /* enable debug messages */
+
+    if((ret = cl_loaddbdir(cl_retdbdir(), &root, &no))) {
+	mprintf("!Can't load database: %s\n", cl_strerror(ret));
+        exit(1);
+    }
+
+    cl_freetrie(root);
+
+    mprintf("Database properly parsed.\n");
+
+    if(!no)
+	mprintf("WARNING: There are no signatures in the database(s).\n");
+    else
+	mprintf("Signatures: %d\n", no);
+
+    tarfile = cl_gentemp(".");
+
+    switch(fork()) {
+	case -1:
+	    mprintf("!Can't fork.\n");
+	    exit(1);
+	case 0:
+	    {
+		char *args[] = { "tar", "-cvf", tarfile, "COPYING", "viruses.db", "viruses.db2", NULL };
+		execv("/bin/tar", args);
+		mprintf("!Can't execute tar\n");
+		perror("tar");
+		exit(1);
+	    }
+	default:
+	    wait(NULL);
+    }
+
+    if(stat(tarfile, &foo) == -1) {
+	mprintf("!Can't generate tar file.\n");
+	exit(1);
+    }
+
+    if((tar = fopen(tarfile, "rb")) == NULL) {
+	mprintf("!Can't open file %s\n", tarfile);
+	exit(1);
+    }
+
+    gzfile = cl_gentemp(".");
+    if((gz = gzopen(gzfile, "wb")) == NULL) {
+	mprintf("!Can't open file %s to write.\n", gzfile);
+	exit(1);
+    }
+
+    while((bytes = fread(buffer, 1, BUFFSIZE, tar)) > 0)
+	gzwrite(gz, buffer, bytes);
+
+    fclose(tar);
+    unlink(tarfile);
+    free(tarfile);
+
+    gzclose(gz);
+
+    /* generate header */
+
+    /* magic string */
+
+    strcpy(header, "ClamAV-VDB:");
+
+    /* time */
+
+    time(&timet);
+    brokent = localtime(&timet);
+    setlocale(LC_TIME, "C");
+    strftime(smbuff, 24, "%b-%d %H-%M %Z:", brokent);
+    strcat(header, smbuff);
+
+    /* version number */
+
+    // tutaj ma przeczytac naglowek z obecnej bazy o tej samej nazwie
+    // i uzyc o jeden wiekszy
+
+    mprintf("!Can't read database version number from current local database\n");
+    fflush(stdin);
+    mprintf("Please enter a version number for the new database: ");
+    scanf("%d", &itmp);
+    sprintf(smbuff, "%d:", itmp);
+    strcat(header, smbuff);
+
+    /* number of signatures */
+    sprintf(smbuff, "%d:", no);
+    strcat(header, smbuff);
+
+    /* functionality level */
+    // pobierac z cl_funclevel()
+    sprintf(smbuff, "%d:", 1);
+    strcat(header, smbuff);
+
+    /* MD5 */
+    pt = cl_md5file(gzfile);
+    strcat(header, pt);
+    strcat(header, ":");
+
+    /* digital signature */
+    strcat(header, ":");
+
+    /* builder */
+    fflush(stdin);
+    mprintf("Builder name: ");
+    //fgets(smbuff, 24, stdin);
+    fscanf(stdin, "%s:", &smbuff);
+    strcat(header, smbuff);
+    //strcat(header, ":");
+
+    /* fill up with spaces */
+    if(strlen(header) > 256) {
+	mprintf("!Generated signature is too long.\n");
+	exit(1);
+    }
+
+    while(strlen(header) < 256)
+	strcat(header, " ");
+
+    /* build the final database */
+
+    pt = getargc(opt, 'b');
+    if((cvd = fopen(pt, "wb")) == NULL) {
+	mprintf("!Can't write the final database %s\n", pt);
+	exit(1);
+    }
+
+    fwrite(header, 1, 256, cvd);
+
+    if((tar = fopen(gzfile, "rb")) == NULL) {
+	mprintf("!Can't open file %s for reading.\n", gzfile);
+	exit(1);
+    }
+
+    while((bytes = fread(buffer, 1, BUFFSIZE, tar)) > 0)
+	fwrite(buffer, 1, bytes, cvd);
+
+    fclose(tar);
+    fclose(cvd);
+
+    unlink(gzfile);
+    free(gzfile);
+
+    mprintf("Database %s created.\n", pt);
+
+    // teraz zaladuj baze
+}
+
+void cvdinfo(struct optstruct *opt)
+{
+	struct cl_cvd *cvd;
+	char *pt;
+
+    if((cvd = cl_cvdhead(getargc(opt, 'i'))) == NULL) {
+	mprintf("!Can't read CVD header from %s\n", getargc(opt, 'i'));
+	exit(1);
+    }
+
+    mprintf("Creation time: %s\n", cvd->time);
+    mprintf("Version: %d\n", cvd->version);
+    mprintf("# of signatures: %d\n", cvd->sigs);
+    mprintf("Functionality level: %d\n", cvd->fl);
+    mprintf("Builder: %s\n", cvd->builder);
+    mprintf("MD5: %s\n", cvd->md5);
+
+   // pt = cl_md5file( DODAC WERYFIKACJE
+    mprintf("Digital signature: %s\n", cvd->dsig);
+
+    // wyczysc cvd
+}
+
 void help(void)
 {
     mprintf("\n");
@@ -384,7 +593,9 @@ void help(void)
     mprintf("					string and send it to stdout\n");
     mprintf("   --command		    -c		scanner command string, with options\n");
     mprintf("   --string		    -s		'virus found' string in scan. output\n");
-    mprintf("   --file		    -f		infected file\n\n");
-
+    mprintf("   --file		    -f		infected file\n");
+    mprintf("\n	DATABASE DEVELOPING:\n\n");
+    mprintf("   --build NAME	    -b NAME		Build database\n");
+    
     exit(0);
 }

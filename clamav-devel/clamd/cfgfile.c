@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -46,11 +46,13 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 	    {"MaxFileSize", OPT_COMPSIZE},
 	    {"ScanMail", OPT_NOARG},
 	    {"ScanArchive", OPT_NOARG},
+	    {"ScanRAR", OPT_NOARG},
 	    {"ArchiveMaxFileSize", OPT_COMPSIZE},
 	    {"ArchiveMaxRecursion", OPT_NUM},
 	    {"ArchiveMaxFiles", OPT_NUM},
 	    {"ArchiveLimitMemoryUsage", OPT_NOARG},
 	    {"DataDirectory", OPT_STR},
+	    {"TCPAddr", OPT_STR},
 	    {"TCPSocket", OPT_NUM},
 	    {"LocalSocket", OPT_STR},
 	    {"MaxConnectionQueueLength", OPT_NUM},

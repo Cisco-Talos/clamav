@@ -1,4 +1,3 @@
-#define USE_DIRENT 0
 /*
  * Author: 
  *	Guido Draheim <guidod@gmx.de>
@@ -23,6 +22,8 @@
 #else
 #include <stdio.h>
 #endif
+
+//#include "__dirent.h"
 
 #ifndef offsetof
 #pragma warning had to DEFINE offsetof as it was not in stddef.h
@@ -50,11 +51,13 @@ zzip_rewinddir(ZZIP_DIR * dir)
 {
     if (! dir) return;
 
+    /*
     if (USE_DIRENT && dir->realdir) 
     {
         _zzip_rewinddir(dir->realdir);
         return;
     }
+    */
 
     if (dir->hdr0)
         dir->hdr = dir->hdr0;
@@ -118,11 +121,12 @@ zzip_readdir(ZZIP_DIR * dir)
 {
     if (! dir) { errno=EBADF; return 0; }
 
+    /*
     if (USE_DIRENT && dir->realdir)
     {
         if (! real_readdir(dir))
             return 0;
-    }else
+    }else */
     {
         if (! dir->hdr) return 0;
 
@@ -147,10 +151,10 @@ zzip_telldir(ZZIP_DIR* dir)
 {
     if (! dir) { errno=EBADF; return -1; }
 
-    if (USE_DIRENT && dir->realdir)
+    /* if (USE_DIRENT && dir->realdir)
     {
         return _zzip_telldir(dir->realdir);
-    }else
+    }else*/
     {
     	return ((zzip_off_t) ((char*) dir->hdr - (char*) dir->hdr0));
     }
@@ -164,10 +168,10 @@ zzip_seekdir(ZZIP_DIR* dir, zzip_off_t offset)
 {
     if (! dir) return; 
     
-    if (USE_DIRENT && dir->realdir)
+    /*if (USE_DIRENT && dir->realdir)
     {
         _zzip_seekdir(dir->realdir, offset);
-    }else
+    }else*/
     {
 	dir->hdr = (struct zzip_dir_hdr*) 
 	    (dir->hdr0 ? (char*) dir->hdr0 + (size_t) offset : 0);
@@ -229,6 +233,23 @@ zzip_opendir_ext_io(zzip_char_t* filename, int o_modes,
 #  ifdef ZZIP_HAVE_SYS_STAT_H
     if (stat(filename, &st) >= 0 && S_ISDIR(st.st_mode)
     ){
+      	/* if (USE_DIRENT)
+	{
+	    _zzip_DIR* realdir = _zzip_opendir(filename);
+	    if (realdir)
+	    {
+		if (! (dir = (ZZIP_DIR *)calloc(1, sizeof (*dir))))
+		{ 
+		    _zzip_closedir(realdir); 
+		    return 0; 
+		}else
+		{ 
+		    dir->realdir = realdir; 
+		    dir->realname = strdup(filename);
+		    return dir; 
+		}
+	    }
+        } */
         return 0;
     }
 #  endif /* HAVE_SYS_STAT_H */
@@ -253,13 +274,13 @@ zzip_closedir(ZZIP_DIR* dir)
 {
     if (! dir) { errno = EBADF; return -1; }
 
-    if (USE_DIRENT && dir->realdir)
+    /*if (USE_DIRENT && dir->realdir)
     {
         _zzip_closedir(dir->realdir);
         free(dir->realname);
         free(dir);
         return 0;
-    }else
+    }else*/
     {
         zzip_dir_close(dir);
         return 0;

@@ -420,32 +420,6 @@ int filecopy(const char *src, const char *dest)
     return close(d);
 }
 
-char *gentemp(const char *dir)
-{
-	char *name, *mdir, *tmp;
-	unsigned char salt[32];
-	int cnt=0, i;
-
-    if(!dir)
-	mdir = "/tmp";
-    else
-	mdir = (char *) dir;
-
-    name = (char*) calloc(strlen(mdir) + 1 + 16 + 1, sizeof(char));
-    cnt += sprintf(name, "%s/", mdir);
-
-    do {
-	for(i = 0; i < 32; i++)
-	    salt[i] = cl_rndnum(255);
-
-	tmp = cl_md5buff(salt, 32);
-	strncat(name, tmp, 16);
-	free(tmp);
-    } while(fileinfo(name, 1) != -1);
-
-    return(name);
-}
-
 int strbcasestr(const char *haystack, const char *needle)
 {
 	char *pt = (char *) haystack;

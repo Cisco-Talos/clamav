@@ -1,3 +1,19 @@
+Mon Sep 29 13:42:51 CEST 2003 (tk)
+----------------------------------
+  * libclamav: initial support for cvd file format (a database container file
+	       with support for digital signatures)
+  * libclamav: fixed zip recursion problem introduced in -20030907 (bug
+	       reported by Tomasz Papszun)
+  * libclamav: support for gzip and Maildir files was enabled if ScanMail _or_
+	       ScanArchive was defined. Fixed.
+  * libclamav: zziplib updated to 0.12.83 (probably not the newest one but
+	       seems to be very stable)
+  * sigtool: --build (builds a cvd file, not finished yet)
+  * clamd: new directive TCPAddr by Bernard Quatermass
+  * libclamav: new scan option CL_DISABLERAR (disables built-in rar unpacker)
+  * clamd: rar scanning is now disabled by default and may be enabled with
+	   ScanRAR in clamav.conf.
+
 Mon Sep 29 07:15:30 BST 2003 (njh)
 ----------------------------------
   * clamav-milter: ensure remoteIP is initialised
