@@ -96,7 +96,7 @@ sub pinger {
 			Timeout => 5,
 			Type => SOCK_STREAM);
 
-		my $mess = "";
+		my $mess;
 
 		my $background = $_->cget('-background');
 
@@ -108,7 +108,7 @@ sub pinger {
 			close $sock;
 		}
 
-		if($mess ne "PONG\n") {
+		if($mess && ($mess ne "PONG\n")) {
 			# print "$machine is down\n";
 			if($background ne 'red') {
 				$_->configure(-background => 'red');
