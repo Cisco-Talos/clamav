@@ -290,6 +290,9 @@ Changes
 		in string.h says it returns a char *
 		Say how many bytes can't be written to clamd - it may give a
 		clue what's wrong
+0.70b	26/3/04	Display errno information on write failure to clamd
+		Ensure errno is passed to strerror
+		Print fd in clamfi_send debug
 
 BUG REPORTS
 
