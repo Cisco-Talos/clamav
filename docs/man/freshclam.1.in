@@ -55,6 +55,9 @@ Check #n times per day for a new database. #n must be between 1 and 50.
 \fB\-\-daemon\-notify=/path/to/clamd.conf\fR
 Notify the daemon about the new database. By default it reads a hardcoded config file but you can use an another one. Both local and TCP sockets are supported.
 .TP 
+\fB\-a IP, \-\-local-address=IP\fR
+Use (local) IP for HTTP downloads. Useful for multi-homed systems. If binding fails for whatever reason, a warning is issued and freshclam behaves like without this flag.
+.TP 
 \fB\-\-on\-error\-execute=COMMAND\fR
 Execute COMMAND if error occured. Remeber, that virus database freshness is the most important thing in anti\-virus system. With this option freshclam can alert you (eg. send SMS) when something is going wrong.
 .TP 

@@ -123,6 +123,7 @@ struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 	    {"NotifyClamd", OPT_OPTARG}, /* freshclam */
 	    {"OnUpdateExecute", OPT_FULLSTR}, /* freshclam */
 	    {"OnErrorExecute", OPT_FULLSTR}, /* freshclam */
+	    {"LocalIPAddress", OPT_STR}, /* freshclam */
 	    {0, 0}
 	};
 

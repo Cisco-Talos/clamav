@@ -38,6 +38,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <clamav.h>
+#include <errno.h>
 
 #include "options.h"
 #include "defaults.h"
@@ -56,6 +57,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	int ret, updated = 0, signo = 0, ttl = -1;
 	char ipaddr[16], *dnsreply = NULL, *pt;
 	struct cfgstruct *cpt;
+	char *localip = NULL;
 #ifdef HAVE_RESOLV_H
 	const char *dnsdbinfo;
 #endif
@@ -131,9 +133,15 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
     }
 #endif /* HAVE_RESOLV_H */
 
+    if(optl(opt, "localip")) {
+        localip = getargl(opt, "localip");
+    } else if((cpt = cfgopt(copt, "LocalIPAddress"))) {
+	localip = cpt->strarg;
+    }
+
     memset(ipaddr, 0, sizeof(ipaddr));
 
-    if((ret = downloaddb(DB1NAME, "main.cvd", hostname, ipaddr, &signo, copt, dnsreply)) > 50) {
+    if((ret = downloaddb(DB1NAME, "main.cvd", hostname, ipaddr, &signo, copt, dnsreply, localip)) > 50) {
 	if(dnsreply)
 	    free(dnsreply);
 
@@ -143,7 +151,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	updated = 1;
 
     /* if ipaddr[0] != 0 it will use it to connect to the web host */
-    if((ret = downloaddb(DB2NAME, "daily.cvd", hostname, ipaddr, &signo, copt, dnsreply)) > 50) {
+    if((ret = downloaddb(DB2NAME, "daily.cvd", hostname, ipaddr, &signo, copt, dnsreply, localip)) > 50) {
 	if(dnsreply)
 	    free(dnsreply);
 
@@ -202,7 +210,7 @@ static int isnumb(const char *str)
     return 1;
 }
 
-int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, const char *dnsreply)
+int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, const char *dnsreply, char *localip)
 {
 	struct cl_cvd *current, *remote;
 	struct cfgstruct *cpt;
@@ -271,9 +279,9 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 
     if(!nodb && dbver == -1) {
 	if(ip[0]) /* use ip to connect */
-	    hostfd = wwwconnect(ip, proxy, port, ipaddr);
+	    hostfd = wwwconnect(ip, proxy, port, ipaddr, localip);
 	else
-	    hostfd = wwwconnect(hostname, proxy, port, ipaddr);
+	    hostfd = wwwconnect(hostname, proxy, port, ipaddr, localip);
 
 	if(hostfd < 0) {
             mprintf("@No servers could be reached. Giving up\n");
@@ -335,9 +343,9 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 
     if(ipaddr[0]) {
 	/* use ipaddr in order to connect to the same mirror */
-	hostfd = wwwconnect(ipaddr, proxy, port, NULL);
+	hostfd = wwwconnect(ipaddr, proxy, port, NULL, localip);
     } else {
-	hostfd = wwwconnect(hostname, proxy, port, ipaddr);
+	hostfd = wwwconnect(hostname, proxy, port, ipaddr, localip);
 	if(!ip[0])
 	    strcpy(ip, ipaddr);
     }
@@ -418,7 +426,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 
 /* this function returns socket descriptor */
 /* proxy support finshed by njh@bandsman.co.uk */
-int wwwconnect(const char *server, const char *proxy, int pport, char *ip)
+int wwwconnect(const char *server, const char *proxy, int pport, char *ip, char *localip)
 {
 	int socketfd = -1, port, i;
 	struct sockaddr_in name;
@@ -426,13 +434,54 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip)
 	char ipaddr[16];
 	unsigned char *ia;
 	const char *hostpt;
-
+	struct hostent *he = NULL;
 
     if(ip)
 	strcpy(ip, "???");
 
     name.sin_family = AF_INET;
 
+    if (localip) {
+	if ((he = gethostbyname(localip)) == NULL) {
+	    char *herr;
+	    switch(h_errno) {
+	        case HOST_NOT_FOUND:
+		    herr = "Host not found";
+		    break;
+
+		case NO_DATA:
+		    herr = "No IP address";
+		    break;
+
+		case NO_RECOVERY:
+		    herr = "Unrecoverable DNS error";
+		    break;
+
+		case TRY_AGAIN:
+		    herr = "Temporary DNS error";
+		    break;
+
+		default:
+		    herr = "Unknown error";
+		    break;
+	    }
+	    mprintf("!Could not resolve local ip address '%s': %s\n", localip, herr);
+	    mprintf("^Using standard local ip address and port for fetching.\n");
+	} else {
+	    struct sockaddr_in client;
+	    memset ((char *) &client, 0, sizeof(struct sockaddr_in));
+	    client.sin_family = AF_INET;
+	    client.sin_addr = *(struct in_addr *) he->h_addr_list[0];
+	    if (bind(socketfd, (struct sockaddr *) &client, sizeof(struct sockaddr_in)) != 0) {
+		mprintf("!Could not bind to local ip address '%s': %s\n", localip, strerror(errno));
+		mprintf("^Using default client ip.\n");
+	    } else {
+		ia = (unsigned char *) he->h_addr_list[0];
+		sprintf(ipaddr, "%u.%u.%u.%u", ia[0], ia[1], ia[2], ia[3]);
+		mprintf("*Using ip '%s' for fetching.\n", ipaddr);
+	    }
+	}
+    }
     if(proxy) {
 	hostpt = proxy;
 
@@ -457,7 +506,29 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip)
     }
 
     if((host = gethostbyname(hostpt)) == NULL) {
-        mprintf("@Can't get information about %s host.\n", hostpt);
+	char *herr;
+	switch(h_errno) {
+	    case HOST_NOT_FOUND:
+		herr = "Host not found";
+		break;
+
+	    case NO_DATA:
+		herr = "No IP address";
+		break;
+
+	    case NO_RECOVERY:
+		herr = "Unrecoverable DNS error";
+		break;
+
+	    case TRY_AGAIN:
+		herr = "Temporary DNS error";
+		break;
+
+	    default:
+		herr = "Unknown error";
+		break;
+	}
+        mprintf("@Can't get information about %s: %s\n", hostpt, herr);
 	return -1;
     }
 
