@@ -1,3 +1,9 @@
+Wed Jan 12 08:58:29 GMT 2005 (njh)
+----------------------------------
+  * clamav-milter:	Fixed DNS resolution error messages which could print
+		the incorrect hostname that is not being resolved. Patch from
+		Yar Tikhiy <yar@comp.chem.msu.su>
+
 Tue Jan 11 20:24:36 CET 2005 (tk)
 ---------------------------------
   * docs: Fix small typos in man pages (reported by Luca)

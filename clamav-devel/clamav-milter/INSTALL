@@ -638,6 +638,8 @@ Changes
 		and neither max-children nor MaxThreads is set.
 0.80ff	21/12/04:	Fault tolerance - sometimes attempted to get a STREAM
 		from a server that is down
+0.80gg	12/1/05:	Fixed DNS resolution error messages which could print
+		the incorrect hostname that is not being resolved
 
 INTERNATIONALISATION
 

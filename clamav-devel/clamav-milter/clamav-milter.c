@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.168  2005/01/12 08:57:05  nigelhorne
+ * Fix DNS error messages
+ *
  * Revision 1.167  2004/12/21 22:39:04  nigelhorne
  * Tidy
  *
@@ -512,9 +515,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.167 2004/12/21 22:39:04 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.168 2005/01/12 08:57:05 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80ff"
+#define	CM_VERSION	"0.80gg"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -906,7 +909,7 @@ static	const	char	*ignoredEmailAddresses[] = {
 #include <execinfo.h>
 
 static	void	sigsegv(int sig);
-static	void	print_trace(int use_syslog);
+static	void	print_trace(void);
 
 #define	BACKTRACE_SIZE	200
 
@@ -2338,10 +2341,14 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 				syslog(LOG_ERR, _("Can't get sendmail hostname"));
 			return cl_error;
 		}
+		/*
+		 * Use hostmail for error statements, not hostname, suggestion
+		 * by Yar Tikhiy <yar@comp.chem.msu.su>
+		 */
 		if(clamfi_gethostbyname(hostmail, &hostent, buf, sizeof(buf)) != 0) {
 			if(use_syslog)
-				syslog(LOG_WARNING, _("Access Denied: Host Unknown (%s)"), hostname);
-			if(hostname[0] == '[')
+				syslog(LOG_WARNING, _("Access Denied: Host Unknown (%s)"), hostmail);
+			if(hostmail[0] == '[')
 				/*
 				 * A case could be made that it's not clamAV's
 				 * job to check a system's DNS configuration
@@ -2350,7 +2357,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 				 * to do that...
 				 */
 				cli_warnmsg(_("Can't find entry for IP address %s in DNS - check your DNS setting\n"),
-					hostname);
+					hostmail);
 			return cl_error;
 		}
 
@@ -4931,7 +4938,7 @@ static void
 sigsegv(int sig)
 {
 	signal(SIGSEGV, SIG_DFL);
-	print_trace(1);
+	print_trace();
 	if(use_syslog)
 		syslog(LOG_ERR, "Segmentation fault :-( Bye..");
 	cli_dbgmsg("Segmentation fault :-( Bye..\n");
@@ -4940,7 +4947,7 @@ sigsegv(int sig)
 }
 
 static void
-print_trace(int use_syslog)
+print_trace(void)
 {
 	void *array[BACKTRACE_SIZE];
 	size_t size, i;
