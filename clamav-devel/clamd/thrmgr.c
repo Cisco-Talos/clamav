@@ -85,7 +85,7 @@ void thrmgr_destroy(threadpool_t *threadpool)
 		return;
 	}
   	if (pthread_mutex_lock(&threadpool->pool_mutex) != 0) {
-   		logg("!Mutex lock failed");
+   		logg("!Mutex lock failed\n");
     		exit(-1);
 	}
 	threadpool->state = POOL_EXIT;
@@ -104,7 +104,7 @@ void thrmgr_destroy(threadpool_t *threadpool)
 		}
 	}
   	if (pthread_mutex_unlock(&threadpool->pool_mutex) != 0) {
-    		logg("!Mutex unlock failed");
+    		logg("!Mutex unlock failed\n");
     		exit(-1);
   	}
 	
@@ -167,7 +167,7 @@ void *thrmgr_worker(void *arg)
 	for (;;) {
 		if (pthread_mutex_lock(&(threadpool->pool_mutex)) != 0) {
 			/* Fatal error */
-			logg("!Fatal: mutex lock failed");
+			logg("!Fatal: mutex lock failed\n");
 			exit(-2);
 		}
 		timeout.tv_sec = time(NULL) + threadpool->idle_timeout;
@@ -190,7 +190,7 @@ void *thrmgr_worker(void *arg)
 		
 		if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
 			/* Fatal error */
-			logg("!Fatal: mutex unlock failed");
+			logg("!Fatal: mutex unlock failed\n");
 			exit(-2);
 		}
 		if (job_data) {
@@ -201,7 +201,7 @@ void *thrmgr_worker(void *arg)
 	}
 	if (pthread_mutex_lock(&(threadpool->pool_mutex)) != 0) {
 		/* Fatal error */
-		logg("!Fatal: mutex lock failed");
+		logg("!Fatal: mutex lock failed\n");
 		exit(-2);
 	}
 	threadpool->thr_alive--;
@@ -211,7 +211,7 @@ void *thrmgr_worker(void *arg)
 	}
 	if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
 		/* Fatal error */
-		logg("!Fatal: mutex unlock failed");
+		logg("!Fatal: mutex unlock failed\n");
 		exit(-2);
 	}
 	return NULL;
@@ -227,7 +227,7 @@ int thrmgr_dispatch(threadpool_t *threadpool, void *user_data)
 	
 	/* Lock the threadpool */
 	if (pthread_mutex_lock(&(threadpool->pool_mutex)) != 0) {
-		logg("!Mutex lock failed");
+		logg("!Mutex lock failed\n");
 		return FALSE;
 	}
 	
@@ -241,7 +241,7 @@ int thrmgr_dispatch(threadpool_t *threadpool, void *user_data)
 		/* Start a new thread */
 		if (pthread_create(&thr_id, &(threadpool->pool_attr),
 				thrmgr_worker, threadpool) != 0) {
-			logg("!pthread_create failed");
+			logg("!pthread_create failed\n");
 		} else {
 			threadpool->thr_alive++;
 		}
@@ -249,7 +249,7 @@ int thrmgr_dispatch(threadpool_t *threadpool, void *user_data)
 	pthread_cond_signal(&(threadpool->pool_cond));
 	
 	if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
-		logg("!Mutex unlock failed");
+		logg("!Mutex unlock failed\n");
 		return FALSE;
 	}
 	return TRUE;

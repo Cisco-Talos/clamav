@@ -1,3 +1,8 @@
+Fri Mar 19 21:42:51 CET 2004 (tk)
+---------------------------------
+  * clamd: thrmgr.c, server-th.c: added missing new line characters in logg()
+	   (reported by Sergey <a_s_y*sama.ru>)
+
 Fri Mar 19 17:48:31 GMT 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Handle "binary encoding" (whatever that is :-)

@@ -52,6 +52,7 @@ have been reviewed by our team):
     + qscanq - Virus Scanning for Qmail
     + clamavr - Ruby binding for ClamAV
     + DansGuardian Anti-Virus Plugin
+    + Viralator - a Perl script that virus scans http downloads
     + ClamAssassin - a filter for procmail
     + Gadoyanvirus - a filter for Qmail
     + OpenProtect - a complete e-mail protection solution
