@@ -1,3 +1,8 @@
+Thu Sep 16 14:00:05 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Handle broken email headers that use equals signs or
+				space to separate key from data insead of colon
+
 Thu Sep 16 12:20:59 BST 2004 (njh)
 ----------------------------------
   * libvclamav/mbox.c:	Improved handling of line breaks in the middle of
