@@ -1,3 +1,11 @@
+Wed Jun  2 22:12:08 CEST 2004 (tk)
+----------------------------------
+  * freshclam: + allow spaces in HTTPProxyUsername (requested by SL
+	         <milter*free.fr>)
+	       + ignore freshclam.conf permissions under Cygwin (Alch
+	         <alch*users.sourceforge.net>)
+  * libclamav: detect more mail file types
+
 Wed Jun  2 14:15:54 BST 2004 (trog)
 -----------------------------------
   * libclamav/vba_extract.c: Fix possible crash

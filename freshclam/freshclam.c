@@ -128,11 +128,12 @@ int freshclam(struct optstruct *opt)
 	    mprintf("@Can't stat %s (critical error)\n");
 	    return 56;
 	}
-
+#ifndef C_CYGWIN
 	if(statbuf.st_mode & (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH)) {
 	    mprintf("@Insecure permissions (for HTTPProxyPassword): %s must have no more than 0700 permissions.\n", cfgfile);
 	    return 56;
 	}
+#endif
     }
 
 #ifndef C_CYGWIN
