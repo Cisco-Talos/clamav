@@ -133,6 +133,9 @@ static const struct cli_smagic_s cli_smagic[] = {
     /* "\nReceived: " * "\nContent-type: " */
     {"0a52656365697665643a20{-2048}0a436f6e74656e742d747970653a20", "Mail file", CL_TYPE_MAIL},
 
+    /* "MIME-Version: " * "\nContent-Type: " */
+    {"4d494d452d56657273696f6e3a20{-2048}0a436f6e74656e742d547970653a20", "Mail file", CL_TYPE_MAIL},
+
     /* remember the matcher is case sensitive */
     {"3c62723e",       "HTML data", CL_TYPE_HTML},	/* <br> */
     {"3c42723e",       "HTML data", CL_TYPE_HTML},	/* <Br> */
