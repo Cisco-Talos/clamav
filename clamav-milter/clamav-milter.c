@@ -24,9 +24,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.187 2005/03/05 11:06:03 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.188 2005/03/10 08:46:30 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.84a"
+#define	CM_VERSION	"0.84b"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -134,6 +134,9 @@ typedef	unsigned int	in_addr_t;
 		 *	notfying clamd of an update. This is most likely to be a
 		 *	problem with the implementation of SESSIONS on clamd.
 		 *	The problem seems worst on BSD.
+		 *
+		 * Note that clamd is buggy and can hang or even crash if you
+		 *	send SESSION command so be aware
 		 */
 
 /*
@@ -194,9 +197,11 @@ static const struct cidr_net {
  */
 struct	privdata {
 	char	*from;	/* Who sent the message */
+	char	*subject;	/* Original subject */
+	char	*sender;	/* Secretary - often used in mailing lists */
+	char	*helo;		/* The HELO string */
 	char	**to;	/* Who is the message going to */
 	int	numTo;	/* Number of people the message is going to */
-	char	*subject;	/* Original subject */
 #ifndef	SESSION
 	int	cmdSocket;	/*
 				 * Socket to send/get commands e.g. PORT for
@@ -227,6 +232,9 @@ static	int		pingServer(int serverNumber);
 #endif
 static	int		findServer(void);
 static	sfsistat	clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr);
+#ifdef	CL_DEBUG
+static	sfsistat	clamfi_helo(SMFICTX *ctx, char *helostring);
+#endif
 static	sfsistat	clamfi_envfrom(SMFICTX *ctx, char **argv);
 static	sfsistat	clamfi_envrcpt(SMFICTX *ctx, char **argv);
 static	sfsistat	clamfi_header(SMFICTX *ctx, char *headerf, char *headerv);
@@ -245,6 +253,7 @@ static	void	header_list_free(header_list_t list);
 static	void	header_list_add(header_list_t list, const char *headerf, const char *headerv);
 static	void	header_list_print(header_list_t list, FILE *fp);
 static	int	connect2clamd(struct privdata *privdata);
+static	int	sendToFrom(struct privdata *privdata);
 static	void	checkClamd(void);
 static	int	sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *virusname);
 static	int	qfile(struct privdata *privdata, const char *sendmailId, const char *virusname);
@@ -500,7 +509,11 @@ main(int argc, char **argv)
 		SMFI_VERSION,	/* version code -- leave untouched */
 		SMFIF_ADDHDRS|SMFIF_CHGHDRS,	/* flags - we add and deleted headers */
 		clamfi_connect, /* connection callback */
-		NULL, /* HELO filter callback */
+#ifdef	CL_DEBUG
+		clamfi_helo,	/* HELO filter callback */
+#else
+		NULL,
+#endif
 		clamfi_envfrom, /* envelope sender filter callback */
 		clamfi_envrcpt, /* envelope recipient filter callback */
 		clamfi_header, /* header filter callback */
@@ -2066,11 +2079,28 @@ static sfsistat
 clamfi_envfrom(SMFICTX *ctx, char **argv)
 {
 	struct privdata *privdata;
+	const char *mailaddr = argv[0];
 
 	if(logVerbose)
 		syslog(LOG_DEBUG, "clamfi_envfrom: %s", argv[0]);
 
 	cli_dbgmsg("clamfi_envfrom: %s\n", argv[0]);
+
+	if(strcmp(argv[0], "<>") == 0) {
+		mailaddr = smfi_getsymval(ctx, "{mail_addr}");
+		if(mailaddr)
+			cli_dbgmsg("Message from %s has no from value\n", mailaddr);
+		else {
+#if	0
+			if(use_syslog)
+				syslog(LOG_NOTICE, _("Rejected email with empty from field"));
+			smfi_setreply(ctx, "554", "5.7.1", _("You have not said who the email is from"));
+			broadcast(_("Reject email with empty from field"));
+			clamfi_cleanup(ctx);
+			return SMFIS_REJECT;
+#endif
+		}
+	}
 
 	if(max_children > 0) {
 		int rc = 0;
@@ -2160,30 +2190,11 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 	 */
 	privdata->rejectCode = "550";
 
-	privdata->from = strdup(argv[0]);
+	privdata->from = strdup(mailaddr);
 
 	if(hflag)
 		privdata->headers = header_list_new();
 
-	if(detect_forged_local_address && !isWhitelisted(argv[0])) {
-		char me[MAXHOSTNAMELEN + 1];
-		const char *ptr;
-
-		if(gethostname(me, sizeof(me) - 1) < 0) {
-			if(use_syslog)
-				syslog(LOG_WARNING, _("clamfi_connect: gethostname failed"));
-			return SMFIS_CONTINUE;
-		}
-		ptr = strstr(argv[0], me);
-		if(ptr && (ptr != argv[0]) && (*--ptr == '@')) {
-			if(use_syslog)
-				syslog(LOG_NOTICE, _("Rejected email falsely claiming to be from %s"), argv[0]);
-			smfi_setreply(ctx, "550", "5.7.1", _("You have claimed to be from me, but you are not"));
-			broadcast(_("Forged local address detected"));
-			clamfi_free(privdata);
-			return SMFIS_REJECT;
-		}
-	}
 	if(smfi_setpriv(ctx, privdata) == MI_SUCCESS)
 		return SMFIS_CONTINUE;
 
@@ -2191,6 +2202,16 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 	return cl_error;
 }
+
+#ifdef	CL_DEBUG
+static sfsistat
+clamfi_helo(SMFICTX *ctx, char *helostring)
+{
+	cli_dbgmsg("HELO '%s'\n", helostring);
+
+	return SMFIS_CONTINUE;
+}
+#endif
 
 static sfsistat
 clamfi_envrcpt(SMFICTX *ctx, char **argv)
@@ -2271,6 +2292,13 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 			privdata->subject = strdup(headerv);
 	} else if(strcasecmp(headerf, "X-Virus-Status") == 0)
 		privdata->statusCount++;
+	else if(strcasecmp(headerf, "Sender") == 0) {
+		if(privdata->sender)
+			free(privdata->sender);
+		if(headerv)
+			privdata->sender = strdup(headerv);
+	}
+		
 	return SMFIS_CONTINUE;
 }
 
@@ -2304,6 +2332,27 @@ clamfi_eoh(SMFICTX *ctx)
 			clamfi_cleanup(ctx);
 			return cl_error;
 		}
+
+	if(detect_forged_local_address && privdata->from &&
+	   (!privdata->sender) && !isWhitelisted(privdata->from)) {
+		char me[MAXHOSTNAMELEN + 1];
+		const char *ptr;
+
+		if(gethostname(me, sizeof(me) - 1) < 0) {
+			if(use_syslog)
+				syslog(LOG_WARNING, _("clamfi_eoh: gethostname failed"));
+			return SMFIS_CONTINUE;
+		}
+		ptr = strstr(privdata->from, me);
+		if(ptr && (ptr != privdata->from) && (*--ptr == '@')) {
+			if(use_syslog)
+				syslog(LOG_NOTICE, _("Rejected email falsely claiming to be from %s"), privdata->from);
+			smfi_setreply(ctx, "554", "5.7.1", _("You have claimed to be from me, but you are not"));
+			broadcast(_("Forged local address detected"));
+			clamfi_cleanup(ctx);
+			return SMFIS_REJECT;
+		}
+	}
 
 	if(clamfi_send(privdata, 1, "\n") != 1) {
 		clamfi_cleanup(ctx);
@@ -3081,6 +3130,10 @@ clamfi_free(struct privdata *privdata)
 			free(privdata->subject);
 			privdata->subject = NULL;
 		}
+		if(privdata->sender) {
+			free(privdata->sender);
+			privdata->sender = NULL;
+		}
 
 		if(privdata->to) {
 			char **to;
@@ -3452,10 +3505,6 @@ header_list_print(const header_list_t list, FILE *fp)
 static int
 connect2clamd(struct privdata *privdata)
 {
-	char **to;
-	char *msg;
-	int length;
-
 	assert(privdata != NULL);
 	assert(privdata->dataSocket == -1);
 	assert(privdata->from != NULL);
@@ -3589,8 +3638,7 @@ connect2clamd(struct privdata *privdata)
 					free(privdata->filename);
 					privdata->filename = NULL;
 				} else
-					/* FIXME:!!!!!!!!!!!!!!!!!*/
-					goto end;
+					return sendToFrom(privdata);
 			}
 		}
 		cli_dbgmsg("connect2clamd(%d): STREAM\n", freeServer);
@@ -3722,14 +3770,26 @@ connect2clamd(struct privdata *privdata)
 		}
 	}
 
-#ifdef	SESSION
-end:
-#endif
-	/*
-	 * Combine the To and From into one clamfi_send to save bandwidth
-	 * when sending using TCP/IP to connect to a remote clamd, by band
-	 * width here I mean number of packets
-	 */
+	if(!sendToFrom(privdata))
+		return 0;
+
+	cli_dbgmsg("connect2clamd: serverNumber = %d\n", privdata->serverNumber);
+
+	return 1;
+}
+
+/*
+ * Combine the To and From into one clamfi_send to save bandwidth
+ * when sending using TCP/IP to connect to a remote clamd, by band
+ * width here I mean number of packets
+ */
+static int
+sendToFrom(struct privdata *privdata)
+{
+	char **to;
+	char *msg;
+	int length;
+
 	length = strlen(privdata->from) + 34;
 	for(to = privdata->to; *to; to++)
 		length += strlen(*to) + 5;
@@ -3759,8 +3819,6 @@ end:
 			if(clamfi_send(privdata, 0, "To: %s\n", *to) <= 0)
 				return 0;
 	}
-
-	cli_dbgmsg("connect2clamd: serverNumber = %d\n", privdata->serverNumber);
 
 	return 1;
 }
@@ -4656,11 +4714,14 @@ quit(void)
 		if(rmdir(tmpdir) < 0)
 			perror(tmpdir);
 
+	broadcast(_("Stopping clamav-milter"));
+
 	if(pidfile)
 		if(unlink(pidfile) < 0)
 			perror(pidfile);
 
-	broadcast(_("Stopping clamav-milter"));
+	if(use_syslog)
+		closelog();
 }
 
 static void
