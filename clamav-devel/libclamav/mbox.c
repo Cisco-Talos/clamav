@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.140  2004/09/22 16:09:51  nigelhorne
+ * Build if CURLOPT_DNS_USE_GLOBAL_CACHE isn't supported
+ *
  * Revision 1.139  2004/09/22 15:49:13  nigelhorne
  * Handle RFC2298 messages
  *
@@ -405,7 +408,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.139 2004/09/22 15:49:13 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.140 2004/09/22 16:09:51 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2744,7 +2747,9 @@ getURL(struct arg *arg)
 #endif
 
 #ifdef  CL_THREAD_SAFE
+#ifdef	CURLOPT_DNS_USE_GLOBAL_CACHE
 	curl_easy_setopt(curl, CURLOPT_DNS_USE_GLOBAL_CACHE, 0);
+#endif
 #endif
 
 	/*
