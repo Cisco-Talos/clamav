@@ -1,3 +1,7 @@
+Tue Sep 28 19:41:39 BST 2004 (njh)
+----------------------------------
+  * libclamav:		Some small speed and size optimisations in MIME decoding
+
 Tue Sep 28 15:46:18 BST 2004 (njh)
 ---------------------------------
   * contrib/clamavmon:	No longer multithreaded

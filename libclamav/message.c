@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.91  2004/09/28 18:39:48  nigelhorne
+ * Don't copy if the decoded == the encoded
+ *
  * Revision 1.90  2004/09/22 16:24:22  nigelhorne
  * Fix error return
  *
@@ -267,7 +270,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.90 2004/09/22 16:24:22 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.91 2004/09/28 18:39:48 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1703,7 +1706,20 @@ messageToText(message *m)
 			if(last == NULL)
 				break;
 
-			last->t_line = ((data[0] != '\n') && data[0]) ? lineCreate((char *)data) : NULL;
+			/*
+			 * If the decoded line is the same as the encoded
+			 * there's no need to take a copy, just link it.
+			 * Note that the comparison is done without the
+			 * trailing newline that the decoding routine may have
+			 * added - that's why there's a strncmp rather than a
+			 * strcmp - that'd be bad for MIME decoders, but is OK
+			 * for AV software
+			 */
+			if(line && (strncmp(data, line, strlen(line)) == 0)) {
+				cli_dbgmsg("messageToText: decoded line is the same(%s)\n", data);
+				last->t_line = lineLink(t_line->t_line);
+			} else
+				last->t_line = ((data[0] != '\n') && data[0]) ? lineCreate((char *)data) : NULL;
 
 			if(line && enctype == BASE64)
 				if(strchr(line, '='))
