@@ -1,3 +1,7 @@
+Sun Dec 12 20:34:03 GMT 2004 (njh)
+----------------------------------
+  * contrib/init/FreeBSD5:	Added startup and shutdown scripts for FreeBSD5
+
 Sun Dec 12 19:40:10 UTC 2004 (acab)
 -----------------------------------
   * libclamav: upx:  improved PE rebuild - debug info on failure
