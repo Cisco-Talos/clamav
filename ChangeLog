@@ -1,3 +1,12 @@
+Tue Feb  1 08:54:46 GMT 2005 (njh)
+----------------------------------
+  * clamav-milter:	Delete X-Virus-Status in clamfi_eom not in
+				clamfi_header. Patch by Jef Poskanzer
+				<jef@acme.com>
+			X-Virus-Status now says that virus that it's infected
+				with. Suggestion by "Hank Beatty"
+				<hbeatty@starband.net>
+
 Tue Feb  1 03:46:22 CET 2005 (tk)
 ---------------------------------
   * libclamav/readdb.c: s/cl_strerr/cl_strerror
@@ -82,7 +91,7 @@ Wed Jan 26 17:40:56 CET 2005 (tk)
 
 Wed Jan 26 15:25:56 CET 2005 (tk)
 ---------------------------------
-  * freshclam/manager.c: wwwconnect(): use new socket after failure (patch by 
+  * freshclam/manager.c: wwwconnect(): use new socket after failure (patch by
 			 Geoff Gibbs <ggibbs*hgmp.mrc.ac.uk>)
 
 Wed Jan 26 15:10:02 CET 2005 (tk)

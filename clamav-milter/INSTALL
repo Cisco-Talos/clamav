@@ -669,6 +669,12 @@ Changes
 				Sun's C compiler, patch by
 				"Dugal James P." <jpd@louisiana.edu>
 			SESSION is back on by default, to test clamd fix
+0.81f	31/1/05:	Delete X-Virus-Status in clamfi_eom not in
+				clamfi_header, patch by Jef Poskanzer
+				<jef@acme.com>
+			X-Virus-Status now says that virus that it's infected
+				with, suggestion by "Hank Beatty"
+				<hbeatty@starband.net>
 
 INTERNATIONALISATION
 

@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.175  2005/02/01 08:54:45  nigelhorne
+ * X-Virus-Status work
+ *
  * Revision 1.174  2005/01/30 15:16:30  nigelhorne
  * Enable SESSION by default
  *
@@ -533,9 +536,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.174 2005/01/30 15:16:30 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.175 2005/02/01 08:54:45 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.81e"
+#define	CM_VERSION	"0.81f"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -716,7 +719,6 @@ struct	privdata {
 	u_char	*body;		/* body of the message if Sflag is set */
 	size_t	bodyLen;	/* number of bytes in body */
 	header_list_t headers;	/* Message headers */
-	int	statusCount;	/* number of X-Virus-Status headers */
 	long	numBytes;	/* Number of bytes sent so far */
 	char	*received;	/* keep track of received from */
 	const	char	*rejectCode;	/* 550 or 554? */
@@ -725,6 +727,7 @@ struct	privdata {
 				 * looks like the remote end is playing ping
 				 * pong with us
 				 */
+	int	statusCount;	/* number of X-Virus-Status headers */
 	int	serverNumber;	/* Index into serverIPs */
 };
 
@@ -2669,28 +2672,16 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 		privdata->received = strdup(headerv);
 	}
 
-	if(strcasecmp(headerf, "X-Virus-Status") == 0)
-		if(!nflag) {	/* remove any existing claims */
-			if(smfi_chgheader(ctx, "X-Virus-Status", ++privdata->statusCount, NULL) == MI_FAILURE)
-				/*
-				 * FIXME: It would be useful to know *why* it
-				 * had failed to be deleted
-				 */
-				if(use_syslog)
-					syslog(LOG_ERR, _("Failed to delete X-Virus-Status header %d"), privdata->statusCount);
-			return SMFIS_CONTINUE;
-		}
-
 	if((strcasecmp(headerf, "Message-ID") == 0) &&
 	   (strncasecmp(headerv, "<MDAEMON", 8) == 0))
 		privdata->discard = 1;
-
-	if(strcasecmp(headerf, "Subject") == 0) {
+	else if(strcasecmp(headerf, "Subject") == 0) {
 		if(privdata->subject)
 			free(privdata->subject);
 		if(headerv)
 			privdata->subject = strdup(headerv);
-	}
+	} else if(strcasecmp(headerf, "X-Virus-Status") == 0)
+		privdata->statusCount++;
 	return SMFIS_CONTINUE;
 }
 
@@ -2838,6 +2829,15 @@ clamfi_eom(SMFICTX *ctx)
 		syslog(LOG_DEBUG, "clamfi_eom");
 
 	cli_dbgmsg("clamfi_eom\n");
+
+	if(!nflag) {	/* remove any existing claims that it's virus free */
+		int i;
+
+		for(i = 1; i <= privdata->statusCount; i++)
+			if(smfi_chgheader(ctx, "X-Virus-Status", i, NULL) == MI_FAILURE)
+				if(use_syslog)
+					syslog(LOG_WARNING, _("Failed to delete X-Virus-Status header %d"), i);
+	}
 
 #ifdef	CL_DEBUG
 	assert(privdata != NULL);
@@ -3091,8 +3091,12 @@ clamfi_eom(SMFICTX *ctx)
 		else
 			virusname = mess;
 
-		if(!nflag)
-			smfi_addheader(ctx, "X-Virus-Status", _("Infected"));
+		if(!nflag) {
+			char buf[129];
+
+			snprintf(buf, sizeof(buf) - 1, "%s %s", _("Infected with"), virusname);
+			smfi_addheader(ctx, "X-Virus-Status", buf);
+		}
 
 		if(use_syslog) {
 			/*
