@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.138  2005/01/24 13:54:22  nigelhorne
+ * Some Exploit.IE.CrashSOS were getting through
+ *
  * Revision 1.137  2005/01/05 21:54:05  nigelhorne
  * Fuzzy logic lookup of content-type
  *
@@ -408,7 +411,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.137 2005/01/05 21:54:05 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.138 2005/01/24 13:54:22 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -686,7 +689,7 @@ messageSetMimeType(message *mess, const char *type)
 						type, closest, highestSimil);
 					mess->mimeType = t;
 				} else {
-					cli_warnmsg("Unknown MIME type: `%s', set to Application - report to bugs@clamav.net\n", type);
+					cli_dbgmsg("Unknown MIME type: `%s', set to Application - if you believe this file contains a virus, report it to bugs@clamav.net\n", type);
 					mess->mimeType = APPLICATION;
 				}
 			}
@@ -937,7 +940,7 @@ messageAddArguments(message *m, const char *s)
 				 * TODO: the file should still be saved and
 				 * virus checked
 				 */
-				cli_dbgmsg("Can't parse header\"%s\" - report to bugs@clamav.net\n", s);
+				cli_dbgmsg("Can't parse header\"%s\" - if you believe this file contains a virus, report it to bugs@clamav.net\n", s);
 				if(data)
 					free(data);
 				free((char *)key);
@@ -1147,7 +1150,7 @@ messageSetEncoding(message *m, const char *enctype)
 					type, closest, highestSimil);
 				messageSetEncoding(m, closest);
 			} else {
-				cli_warnmsg("Unknown encoding type \"%s\" - report to bugs@clamav.net\n", type);
+				cli_dbgmsg("Unknown encoding type \"%s\" - if you believe this file contains a virus, report it to bugs@clamav.net\n", type);
 				/*
 				 * Err on the side of safety, enable all
 				 * decoding modules
@@ -1535,7 +1538,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			 */
 			free(uptr);
 		} else {
-			cli_warnmsg("HQX8 messages not yet supported - send to bugs@clamav.net\n", len);
+			cli_warnmsg("HQX8 messages not yet supported - if you believe this file contains a virus, report it to bugs@clamav.net\n", len);
 			newlen = len;
 		}
 
@@ -1890,6 +1893,8 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 	if(m->base64chars) {
 		unsigned char data[4];
 		unsigned char *ptr;
+
+		cli_dbgmsg("%u trailing bytes to export\n", m->base64chars);
 
 		ptr = decode(m, NULL, data, base64, FALSE);
 		if(ptr)
@@ -2498,13 +2503,13 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
 			b2 = cb2;
 
 			if(m->base64chars) {
-				nbytes++;
+				nbytes = 2;
 				m->base64chars--;
 				b3 = cb3;
 				if(b3)
-					nbytes++;
+					nbytes = 3;
 			} else if(b2)
-				nbytes++;
+				nbytes = 2;
 		}
 
 		switch(nbytes) {
@@ -2518,7 +2523,8 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
 				break;
 			case 2:
 				*out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
-				*out++ = b2 << 4;
+				if((b2 << 4) & 0xFF)
+					*out++ = b2 << 4;
 				break;
 			case 1:
 				*out++ = b1 << 2;

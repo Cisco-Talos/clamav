@@ -1,3 +1,8 @@
+Mon Jan 24 13:56:19 GMT 2005 (njh)
+----------------------------------
+  * libclamav/message.c:	Some Exploit.IE.CrashSOS were not being caught,
+			found by Carsten.Borchardt@drs-systemberatung.de
+
 Sat Jan 22 13:45:42 GMT 2005 (njh)
 ----------------------------------
   * clamav-milter:	If forwarding to a quarantine user fails log as LOG_ERR
