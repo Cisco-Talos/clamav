@@ -1,3 +1,8 @@
+Sat Feb  7 12:19:37 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter:	URL updated
+	Fixed compilation error created by new clamav-config.h mechanism
+
 Sat Feb  7 13:00:20 CET 2004 (tk)
 ---------------------------------
   * libclamav: fixed compilation error (reported by Nigel)

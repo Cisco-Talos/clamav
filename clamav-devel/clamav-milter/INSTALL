@@ -218,6 +218,8 @@ Changes
 		will help the administrator when sifting through the
 		mail logs. Based on an idea by Jim Allen,
 		<Jim.Allen@Heartsine.co.uk>
+0.66l	7/2/04	Updated URL reference
+ 		Added new config.h mechanism
 
 BUG REPORTS
 
