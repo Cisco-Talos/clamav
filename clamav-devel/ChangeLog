@@ -1,3 +1,7 @@
+Thu Aug 26 15:33:50 CEST 2004 (tk)
+----------------------------------
+  * libclamav/filetypes.c: Improve e-mail detection
+
 Thu Aug 26 11:23:22 BST 2004 (njh)
 ----------------------------------
   * clamav-milter/clamav-milter.c: Generate correct message if there is no

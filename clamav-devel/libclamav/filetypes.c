@@ -64,7 +64,7 @@ static const struct cli_magic_s cli_magic[] = {
     /* Mail */
 
     {0,  "From ",			 5, "MBox",		  CL_MAILFILE},
-    {0,  "Received",			 8, "Raw mail",		  CL_MAILFILE},
+    {0,  "Received: ",			10, "Raw mail",		  CL_MAILFILE},
     {0,  "Return-Path: ",		13, "Maildir",		  CL_MAILFILE},
     {0,  "Return-path: ",		13, "Maildir",		  CL_MAILFILE},
     {0,  "Delivered-To: ",		14, "Mail",		  CL_MAILFILE},
@@ -155,7 +155,7 @@ cli_file_t cli_filetype(const char *buf, size_t buflen)
     }
 
     for(i = 0; i < buflen; i++)
-	if(!isprint(buf[i])) { /* FIXME: do we need to handle intern. chars? */
+	if(!iscntrl(buf[i]) && !isprint(buf[i])) { /* FIXME: do we need to handle intern. chars? */
 	    ascii = 0;
 	    break;
 	}
