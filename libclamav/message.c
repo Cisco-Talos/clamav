@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.17  2004/02/02 14:01:58  nigelhorne
+ * Carefully crafted binhex messages could have caused a crash
+ *
  * Revision 1.16  2004/01/28 10:15:24  nigelhorne
  * Added support to scan some bounce messages
  *
@@ -45,7 +48,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.16 2004/01/28 10:15:24 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.17 2004/02/02 14:01:58 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -635,6 +638,13 @@ messageToBlob(const message *m)
 		}
 
 		data = blobGetData(tmp);
+
+		if(data == NULL) {
+			cli_warnmsg("Couldn't locate the binhex message that was claimed to be there\n");
+			blobDestroy(tmp);
+			blobDestroy(b);
+			return NULL;
+		}
 		len = blobGetDataSize(tmp);
 
 		/*
@@ -879,10 +889,8 @@ messageToText(const message *m)
 			}
 			t_line = t_line->t_next;
 		} else {
-			t_line = binhexBegin(m);
-			if(t_line) {
+			if(binhexBegin(m))
 				cli_warnmsg("Binhex messages not supported yet (2).\n");
-			} 
 			t_line = messageGetBody(m);
 		}
 
