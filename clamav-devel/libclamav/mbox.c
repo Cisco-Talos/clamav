@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.158  2004/10/17 09:29:21  nigelhorne
+ * Advise to report broken emails
+ *
  * Revision 1.157  2004/10/16 20:53:28  nigelhorne
  * Tidy up
  *
@@ -459,7 +462,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.157 2004/10/16 20:53:28 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.158 2004/10/17 09:29:21 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1859,7 +1862,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				 * multipart/mixed. I don't do this yet so
 				 * that I can see what comes along...
 				 */
-				cli_warnmsg("Unsupported multipart format `%s'\n", mimeSubtype);
+				cli_warnmsg("Unsupported multipart format `%s' - report to bugs@clamav.net\n", mimeSubtype);
 				rc = 0;
 			}
 
