@@ -214,9 +214,14 @@
  *			Support multiple servers separated by colons
  *	0.66h	26/1/04	Corrected endian problem (ntohs instead of htons)
  *	0.66i	28/1/04	Fixed compilation error with --enable-debug
+ *	0.66j	29/1/03	Added --noreject flag, based on a patch by
+ *			"Vijay Sarvepalli" <vssarvep@office.uncg.edu>
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.41  2004/01/29 12:52:35  nigelhorne
+ * Added --noreject flag
+ *
  * Revision 1.40  2004/01/28 15:55:59  nigelhorne
  * Fixed compilation error with --enable-debug
  *
@@ -322,9 +327,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.40 2004/01/28 15:55:59 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.41 2004/01/29 12:52:35 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.66i"
+#define	CM_VERSION	"0.66j"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -463,6 +468,10 @@ static	int	nflag = 0;	/*
 				 * Don't add X-Virus-Scanned to header. Patch
 				 * from Dirk Meyer <dirk.meyer@dinoex.sub.org>
 				 */
+static	int	rejectmail = 1;	/*
+				 * Send a 550 rejection when a virus is
+				 * found
+				 */
 static	int	cl_error = SMFIS_TEMPFAIL; /*
 				 * If an error occurs, return
 				 * this status. Allows messages
@@ -520,6 +529,7 @@ help(void)
 	puts("\t--help\t\t\t-h\tThis message.");
 	puts("\t--local\t\t\t-l\tScan messages sent from machines on our LAN.");
 	puts("\t--outgoing\t\t-o\tScan outgoing messages from this machine.");
+	puts("\t--noreject\t\t-N\tDon't reject viruses, silently throw them away.");
 	puts("\t--noxheader\t\t-n\tSuppress X-Virus-Scanned header.");
 	puts("\t--postmaster\t\t-p EMAIL\tPostmaster address [default=postmaster].");
 	puts("\t--postmaster-only\t-P\tSend warnings only to the postmaster.");
@@ -577,9 +587,9 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "bc:DfF:lm:nop:PqQ:dhs:SU:Vx:";
+		const char *args = "bc:DfF:lm:nNop:PqQ:dhs:SU:Vx:";
 #else
-		const char *args = "bc:DfF:lm:nop:PqQ:dhs:SU:V";
+		const char *args = "bc:DfF:lm:nNop:PqQ:dhs:SU:V";
 #endif
 
 		static struct option long_options[] = {
@@ -603,6 +613,9 @@ main(int argc, char **argv)
 			},
 			{
 				"local", 0, NULL, 'l'
+			},
+			{
+				"noreject", 0, NULL, 'N'
 			},
 			{
 				"noxheader", 0, NULL, 'n'
@@ -685,6 +698,9 @@ main(int argc, char **argv)
 			case 'n':	/* don't add X-Virus-Scanned */
 				nflag++;
 				smfilter.xxfi_flags &= ~SMFIF_ADDHDRS;
+				break;
+			case 'N':	/* Do we reject mail or silently drop it */
+				rejectmail = 0;
 				break;
 			case 'o':	/* scan outgoing mail */
 				oflag++;
@@ -1897,8 +1913,10 @@ clamfi_eom(SMFICTX *ctx)
 				 * FIXME: doesn't work if there's no subject
 				 */
 				smfi_chgheader(ctx, "Subject", 1, mess);
-		} else
+		} else if(rejectmail)
 			rc = SMFIS_REJECT;	/* Delete the e-mail */
+		else
+			rc = SMFIS_DISCARD;
 
 		smfi_setreply(ctx, "550", "5.7.1", "Virus detected by ClamAV - http://clamav.elektrapro.com");
 	}

@@ -211,6 +211,8 @@ Changes
 		Support multiple servers separated by colons
 0.66h	26/1/04	Corrected endian problem (ntohs instead of htons)
 0.66i	28/1/04	Fixed compilation error with --enable-debug
+0.66j	29/1/03	Added --noreject flag, based on a patch by
+		"Vijay Sarvepalli" <vssarvep@office.uncg.edu>
 
 BUG REPORTS
 
