@@ -195,6 +195,7 @@ int scanmanager(const struct optstruct *opt)
 		    /* we need to complete the path */
 		    if(!getcwd(cwd, sizeof(cwd))) {
 			mprintf("@Can't get absolute pathname of current working directory.\n");
+			free(limits);
 			return 57;
 		    } else {
 			fullpath = mcalloc(512, sizeof(char));

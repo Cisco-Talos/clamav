@@ -382,10 +382,14 @@ __zzip_parse_root_directory(int fd,
 	{ d = (void*)(fd_map+fd_gap+offset); } /* fd_map+fd_gap==u_rootseek */
         else
         {
-            if (io->seeks(fd, u_rootseek+offset, SEEK_SET) < 0)
+            if (io->seeks(fd, u_rootseek+offset, SEEK_SET) < 0) {
+		free(hdr0);
                 return ZZIP_DIR_SEEK;
-            if (io->read(fd, &dirent, sizeof(dirent)) < __sizeof(dirent))
+	    }
+            if (io->read(fd, &dirent, sizeof(dirent)) < __sizeof(dirent)) {
+		free(hdr0);
                 return ZZIP_DIR_READ;
+	    }
             d = &dirent;
         }
 

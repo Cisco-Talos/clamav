@@ -1,3 +1,8 @@
+Thu Aug 26 02:53:41 CEST 2004 (tk)
+----------------------------------
+  * clamscan, clamd, zziplib: Fix possible small memory leaks (thanks to
+			      Christophe GRENIER <grenier*cgsecurity.org>)
+
 Thu Aug 26 02:23:36 CEST 2004 (tk)
 ----------------------------------
   * freshclam/dns.c: Fix compilation error on Cygwin (thanks to Nigel)
