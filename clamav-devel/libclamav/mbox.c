@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.47  2004/02/23 10:13:08  nigelhorne
+ * Handle spaces before : in headers
+ *
  * Revision 1.46  2004/02/18 13:29:19  nigelhorne
  * Stop buffer overflows for files with very long suffixes
  *
@@ -129,7 +132,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.46 2004/02/18 13:29:19 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.47 2004/02/23 10:13:08 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -229,9 +232,9 @@ static	const	struct tableinit {
 	int	value;
 } rfc821headers[] = {
 	/* TODO: make these regular expressions */
-	{	"Content-Type:",		CONTENT_TYPE		},
-	{	"Content-Transfer-Encoding:",	CONTENT_TRANSFER_ENCODING	},
-	{	"Content-Disposition:",		CONTENT_DISPOSITION	},
+	{	"Content-Type",		CONTENT_TYPE		},
+	{	"Content-Transfer-Encoding",	CONTENT_TRANSFER_ENCODING	},
+	{	"Content-Disposition",		CONTENT_DISPOSITION	},
 	{	NULL,				0			}
 }, mimeSubtypes[] = {
 		/* subtypes of Text */
@@ -464,7 +467,6 @@ parseEmailHeaders(const message *m, const table_t *rfc821Table)
 
 /*
  * Handle a header line of an email message
- * TODO: handle spaces before the ':'
  */
 static int
 parseEmailHeader(message *m, const char *line, const table_t *rfc821Table)
@@ -478,7 +480,7 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821Table)
 
 	cli_dbgmsg("parseEmailHeader '%s'\n", line);
 
-	cmd = strtok_r(copy, " \t", &strptr);
+	cmd = strtok_r(copy, ":", &strptr);
 
 	if(*cmd) {
 		char *arg = strtok_r(NULL, "", &strptr);
@@ -489,27 +491,9 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821Table)
 			 * Content-Type: multipart/mixed;
 			 * set arg to be
 			 * "multipart/mixed" and cmd to
-			 * be "Content-Type:"
+			 * be "Content-Type"
 			 */
 			ret = parseMimeHeader(m, cmd, rfc821Table, arg);
-		else {
-			/*
-			 * Handle the case where the
-			 * header does not have a space
-			 * after the ':', e.g.
-			 * Content-Type:multipart/mixed;
-			 */
-			arg = strchr(cmd, ':');
-			if(arg && (*++arg != '\0')) {
-				char *p;
-
-				cmd = strdup(cmd);
-				p = strchr(cmd, ':');
-				*++p = '\0';
-				ret = parseMimeHeader(m, cmd, rfc821Table, arg);
-				free(cmd);
-			}
-		}
 	}
 	free(copy);
 
@@ -1735,7 +1719,7 @@ saveFile(const blob *b, const char *dir)
 
 	if(fd < 0) {
 		cli_errmsg("Can't create temporary file %s: %s\n", filename, strerror(errno));
-		printf("%d %d %d\n", suffixLen, sizeof(filename), strlen(filename));
+		cli_dbgmsg("%lu %d %d\n", suffixLen, sizeof(filename), strlen(filename));
 		return FALSE;
 	}
 
