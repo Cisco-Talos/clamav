@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.97  2004/08/10 14:02:22  nigelhorne
+ * *** empty log message ***
+ *
  * Revision 1.96  2004/08/10 08:14:00  nigelhorne
  * Enable CHECKURL
  *
@@ -276,7 +279,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.96 2004/08/10 08:14:00 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.97 2004/08/10 14:02:22 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -352,7 +355,7 @@ static	void	print_trace(int use_syslog);
 #endif
 
 #define	SAVE_TO_DISC	/* multipart/message are saved in a temporary file */
-#define	CHECKURLS	/* If an email contains URLs, check them */
+/*#define	CHECKURLS	/* If an email contains URLs, check them */
 /*#define	LIBCURL	/* Needs support from "configure" */
 
 typedef enum    { FALSE = 0, TRUE = 1 } bool;
