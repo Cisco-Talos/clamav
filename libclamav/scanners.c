@@ -340,6 +340,16 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	    continue;
 	}
 
+	/* 
+	 * Workaround for archives created with ICEOWS.
+	 * ZZIP_DIRENT does not contain information on file type
+	 * so we try to determine a directory via a filename
+	 */
+	if(zdirent.d_name[strlen(zdirent.d_name) - 1] == '/') {
+	    cli_dbgmsg("Zip: Directory entry with st_size != 0\n");
+	    continue;
+	}
+
 	/* work-around for problematic zips (zziplib crashes with them) */
 	if(zdirent.d_csize <= 0 || zdirent.st_size < 0) {
 	    files++;
