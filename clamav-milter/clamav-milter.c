@@ -119,9 +119,12 @@
  *			ETIMEDOUT isn't an error, but should give a warning
  *	0.60e	09/9/03	Added -P and -q flags by "Nicholas M. Kirsch"
  *			<nick@kirsch.org>
+ *	0.60f	24/9/03	Changed fprintf to fputs where possible
+ *			Redirect stdin from /dev/null, stdout&stderr to
+ *			/dev/console
  */
 
-#define	CM_VERSION	"0.60e"
+#define	CM_VERSION	"0.60f"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -154,7 +157,8 @@
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <signal.h>
-#include <regex.h>	// njh@bandsman.co.uk
+#include <regex.h>
+#include <fcntl.h>
 
 #define _GNU_SOURCE
 #include "getopt.h"
@@ -517,11 +521,18 @@ main(int argc, char **argv)
 		unlink(port + 6);
 
 	if(smfi_register(smfilter) == MI_FAILURE) {
-		fprintf(stderr, "smfi_register failure\n");
+		fputs("smfi_register failure\n", stderr);
 		return EX_UNAVAILABLE;
 	}
 
 	signal(SIGPIPE, SIG_IGN);
+
+	close(0);
+	close(1);
+	close(2);
+	open("/dev/null", O_RDONLY);
+	open("/dev/console", O_WRONLY);
+	open("/dev/console", O_WRONLY);
 
 	return smfi_main();
 }
@@ -583,7 +594,10 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 
 	if(use_syslog)
 		syslog(LOG_NOTICE, "clamfi_connect: connection from %s [%s]", hostname, remoteIP);
-	printf("clamfi_connect: connection from %s [%s]\n", hostname, remoteIP);
+#ifdef	CL_DEBUG
+	if(debug_level >= 4)
+		printf("clamfi_connect: connection from %s [%s]\n", hostname, remoteIP);
+#endif
 
 	if(!oflag)
 		if(strcmp(remoteIP, "127.0.0.1") == 0) {
@@ -690,7 +704,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 #endif
 				char message[64];
 
-#ifdef TARGET_OS_SOLARIS        /* no strerror_r */
+#ifdef TARGET_OS_SOLARIS	/* no strerror_r */
 				snprintf(message, sizeof(message), "pthread_cond_timedwait: %s", strerror(rc));
 #else
 				strerror_r(rc, buf, sizeof(buf));
@@ -809,10 +823,11 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		close(privdata->dataSocket);
 		close(privdata->cmdSocket);
 		free(privdata);
-		fprintf(stderr, "Expected port information from clamd, got '%s'\n",
-			buf);
 		if(use_syslog)
 			syslog(LOG_ERR, "Expected port information from clamd, got '%s'",
+				buf);
+		else
+			fprintf(stderr, "Expected port information from clamd, got '%s'\n",
 				buf);
 		return SMFIS_TEMPFAIL;
 	}
@@ -839,7 +854,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 		/* 0.4 - use better error message */
 		if(use_syslog) {
-#ifdef TARGET_OS_SOLARIS        /* no strerror_r */
+#ifdef TARGET_OS_SOLARIS	/* no strerror_r */
 			syslog(LOG_ERR, "Failed to connect to port %d given by clamd: %s", port, strerror(rc));
 #else
 			strerror_r(rc, buf, sizeof(buf));
