@@ -1,3 +1,8 @@
+Fri Mar  4 14:20:22 GMT 2005 (njh)
+----------------------------------
+  * libclamav/blob.c:	Fix for QNX version 6 sometimes returning ETOOLONG,
+  				patch from mikep at kaluga.org
+
 Fri Mar  4 03:18:20 CET 2005 (tk)
 ---------------------------------
   * freshclam/manager.c: additional verbose-mode messages (Stephen Gran)
