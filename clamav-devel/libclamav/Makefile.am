@@ -16,6 +16,8 @@
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 
+CFLAGS = -Wall
+
 INCLUDES = -I.. -I@srcdir@/zziplib
 
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@
@@ -32,6 +34,7 @@ libclamav_la_SOURCES = \
         others.c \
         others.h \
         readdb.c \
+	cvd.c \
         str.c \
 	str.h \
 	defaults.h \
