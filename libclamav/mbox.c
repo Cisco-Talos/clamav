@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.86  2004/07/06 09:32:45  nigelhorne
+ * Better handling of Gibe.3 boundary exploit
+ *
  * Revision 1.85  2004/06/30 19:48:58  nigelhorne
  * Some TR.Happy99.SKA were getting through
  *
@@ -243,7 +246,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.85 2004/06/30 19:48:58 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.86 2004/07/06 09:32:45 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -656,7 +659,8 @@ parseEmailHeaders(message *m, const table_t *rfc821Table, bool destroy)
 				free(buffer);
 		} else {
 			/*cli_dbgmsg("Add line to body '%s'\n", buffer);*/
-			messageAddLine(ret, buffer, 0);
+			if(messageAddLine(ret, buffer, 0) < 0)
+				break;
 		}
 	}
 
@@ -1742,22 +1746,32 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 static int
 boundaryStart(const char *line, const char *boundary)
 {
-	/*
-	 * Gibe.B3 is broken it has:
-	 *	boundary="---- =_NextPart_000_01C31177.9DC7C000"
-	 * but it's boundaries look like
-	 *	------ =_NextPart_000_01C31177.9DC7C000
-	 * notice the extra '-'
-	 */
 	/*cli_dbgmsg("boundaryStart: line = '%s' boundary = '%s'\n", line, boundary);*/
 	if(line == NULL)
 		return 0;	/* empty line */
+
+	if(*line++ != '-')
+		return 0;
+
+	/*
+	 * Gibe.B3 is broken, it has:
+	 *	boundary="---- =_NextPart_000_01C31177.9DC7C000"
+	 * but it's boundaries look like
+	 *	------ =_NextPart_000_01C31177.9DC7C000
+	 * notice the one too few '-'.
+	 * Presumably this is a deliberate exploitation of a bug in some mail
+	 * clients.
+	 *
+	 * The trouble is that this creates a lot of false positives for
+	 * boundary conditions, if we're too lax about matches. We do our level
+	 * best to avoid these false positives. For example if we have
+	 * boundary="1" we want to ensure that we don't break out of every line
+	 * that has -1 in it instead of starting --1. This needs some more work.
+	 */
 	if(strstr(line, boundary) != NULL) {
 		cli_dbgmsg("found %s in %s\n", boundary, line);
 		return 1;
 	}
-	if(*line++ != '-')
-		return 0;
 	if(*line++ != '-')
 		return 0;
 	return strcasecmp(line, boundary) == 0;
