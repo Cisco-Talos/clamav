@@ -1,3 +1,7 @@
+Thu Feb  3 21:09:34 GMT 2005 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Speed improvements in the handling of bounce messages
+
 Wed Feb  2 08:32:46 GMT 2005 (njh)
 ----------------------------------
   * clamav-milter:	Call watchdog when neither SESSION nor --external is

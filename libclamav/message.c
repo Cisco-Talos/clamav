@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.141  2005/02/03 21:07:34  nigelhorne
+ * Faster handling of bounce messages
+ *
  * Revision 1.140  2005/02/02 08:35:09  nigelhorne
  * Improved debug message
  *
@@ -417,7 +420,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.140 2005/02/02 08:35:09 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.141 2005/02/03 21:07:34 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -693,7 +696,7 @@ messageSetMimeType(message *mess, const char *type)
 				if(highestSimil >= 50) {
 					cli_dbgmsg("Unknown MIME type \"%s\" - guessing as %s (%u%% certainty)\n",
 						type, closest, highestSimil);
-					mess->mimeType = t;
+					mess->mimeType = (mime_type)t;
 				} else {
 					cli_dbgmsg("Unknown MIME type: `%s', set to Application - if you believe this file contains a virus, report it to bugs@clamav.net\n", type);
 					mess->mimeType = APPLICATION;

@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.215  2005/02/03 21:07:33  nigelhorne
+ * Faster handling of bounce messages
+ *
  * Revision 1.214  2005/02/01 14:46:06  nigelhorne
  * Decode encapsulated bounce messages that have been base64 encoded (needlessly :-) )
  *
@@ -630,7 +633,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.214 2005/02/01 14:46:06 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.215 2005/02/03 21:07:33 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2506,14 +2509,25 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						/* Content-Type: message/rfc822 */
 						cli_dbgmsg("Found message inside multipart (encoding type %d)\n",
 							messageGetEncoding(aMessage));
-#if	0
-						if(messageGetEncoding(aMessage) == NOMIME) {
-							cli_dbgmsg("No encoding line found in the multipart/message\n");
-							assert(aMessage == messages[i]);
-							messageDestroy(messages[i]);
-							messages[i] = NULL;
-							continue;
+						switch(messageGetEncoding(aMessage)) {
+							case NOENCODING:
+							case EIGHTBIT:
+							case BINARY:
+								if(encodingLine(aMessage) == NULL) {
+									/*
+									 * This means that the message has no attachments
+									 * The test for messageGetEncoding is needed since
+									 * encodingLine won't have been set if the message
+									 * itself has been encoded
+									 */
+									cli_dbgmsg("No encoding line found in the multipart/message\n");
+									assert(aMessage == messages[i]);
+									messageDestroy(messages[i]);
+									messages[i] = NULL;
+									continue;
+								}
 						}
+#if	0
 						messageAddStrAtTop(aMessage,
 							"Received: by clamd (message/rfc822)");
 #endif
