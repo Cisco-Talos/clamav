@@ -151,6 +151,10 @@ int scanmanager(const struct optstruct *opt)
     else
         limits->maxreclevel = 5;
 
+    if(optl(opt, "max-ratio"))
+        limits->maxratio = atoi(getargl(opt, "max-ratio"));
+    else
+        limits->maxratio = 200;
 
 #ifdef C_LINUX
     if(stat("/proc", &sb) == -1)

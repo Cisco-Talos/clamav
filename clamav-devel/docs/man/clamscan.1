@@ -87,6 +87,9 @@ Extract first #n kilobytes from each archive. You may give the number in megabyt
 \fB\-\-max\-recursion=#n\fR
 Set archive recursion level limit. This option protects your system against DoS attacks (default: 5).
 .TP 
+\fB\-\-max\-ratio=#n\fR
+Set maximum archive compression ratio limit. This option protects your system against DoS attacks (default: 200).
+.TP 
 \fB\-\-unzip[=FULLPATH]\fR
 In most cases you don't need this option \- the built\-in unarchiver will do extract Zip archives. This option however may be used as a backup for internal unpacker \- see the full documentation for more information. When enabled without an argument, unzip program will be searched in $PATH. If unzip cannot be found in $PATH, you must force it with =pathname. Remember about '=' between the option and an argument.
 .TP 

@@ -513,9 +513,9 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 			snprintf(dirname, strlen(dir)+8, "%s/%.6d", dir, prop_index);
 			mkdir(dirname, 0700);
 			cli_dbgmsg("OLE2 dir entry: %s\n",dirname);
-			ole2_walk_property_tree(fd, hdr, dirname,
+			ole2_walk_property_tree(fd, hdr, dir,
 				prop_block[index].prev, handler, rec_level+1, file_count);
-			ole2_walk_property_tree(fd, hdr, dirname,
+			ole2_walk_property_tree(fd, hdr, dir,
 				prop_block[index].next, handler, rec_level+1, file_count);
 			ole2_walk_property_tree(fd, hdr, dirname,
 				prop_block[index].child, handler, rec_level+1, file_count);
@@ -719,11 +719,11 @@ int cli_ole2_extract(int fd, const char *dirname)
 
 	/* NOTE: Select only ONE of the following two methods */
 	
-	ole2_read_property_tree(fd, &hdr, dirname, handler_writefile);
+	/* ole2_read_property_tree(fd, &hdr, dirname, handler_writefile); */
 	
 	/* OR */
 	
-	/* ole2_walk_property_tree(fd, &hdr, dirname, 0, handler_writefile, 0, 0); */
+	ole2_walk_property_tree(fd, &hdr, dirname, 0, handler_writefile, 0, 0);
 	
 	return 0;
 }

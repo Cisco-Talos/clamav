@@ -22,6 +22,7 @@
 
 typedef enum {
     CL_UNKNOWN_TYPE = 0,
+    CL_DATAFILE,
     CL_MAILFILE,
     CL_GZFILE,
     CL_ZIPFILE,
