@@ -35,7 +35,9 @@ freshclam_SOURCES = \
     manager.h \
     defaults.h \
     notify.c \
-    notify.h
+    notify.h \
+    dns.c \
+    dns.h
 
 
 DEFS = @DEFS@ -DCL_NOTHREADS
