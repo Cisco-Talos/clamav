@@ -1,3 +1,8 @@
+Fri Nov 21 12:58:02 IST 2003 (njh)
+---------------------------------
+  * libclamav:	Scan multipart alternatives that have no boundaries, finds some
+  		uuencoded happy99
+
 Wed Nov 19 16:34:04 GMT 2003 (njh)
 ---------------------------------
   * clamav-milter: Close cmdSocket earlier
