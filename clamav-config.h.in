@@ -75,11 +75,17 @@
 /* file i/o buffer size */
 #undef FILEBUFF
 
+/* access rights in msghdr */
+#undef HAVE_ACCRIGHTS_IN_MSGHDR
+
 /* "attrib packed" */
 #undef HAVE_ATTRIB_PACKED
 
 /* have bzip2 */
 #undef HAVE_BZLIB_H
+
+/* ancillary data style fd pass */
+#undef HAVE_CONTROL_IN_MSGHDR
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
@@ -153,11 +159,17 @@
 /* readdir_r takes 3 arguments */
 #undef HAVE_READDIR_R_3
 
+/* Define to 1 if you have the `recvmsg' function. */
+#undef HAVE_RECVMSG
+
 /* Define to 1 if you have the <regex.h> header file. */
 #undef HAVE_REGEX_H
 
 /* have resolv.h */
 #undef HAVE_RESOLV_H
+
+/* Define to 1 if you have the `sendmsg' function. */
+#undef HAVE_SENDMSG
 
 /* Define to 1 if you have the `setgroups' function. */
 #undef HAVE_SETGROUPS
@@ -216,6 +228,9 @@
 /* Define to 1 if you have the <tcpd.h> header file. */
 #undef HAVE_TCPD_H
 
+/* Define to 1 if you have the <uio.h> header file. */
+#undef HAVE_UIO_H
+
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
@@ -224,6 +239,9 @@
 
 /* zlib installed */
 #undef HAVE_ZLIB_H
+
+/* Early Linux doesn't set cmsg fields */
+#undef INCOMPLETE_CMSG
 
 /* bzip funtions do not have bz2 prefix */
 #undef NOBZ2PREFIX

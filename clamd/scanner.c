@@ -261,6 +261,37 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_node 
     return ret;
 }
 
+int scanfd(const int fd, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt, int odesc, short contscan)
+{
+	int ret;
+	const char *virname;
+	struct stat statbuf;
+
+
+    if(fstat(fd, &statbuf) == -1)
+	return -1;
+
+    if(!S_ISREG(statbuf.st_mode))
+	return -1;
+
+    ret = cl_scandesc(fd, &virname, scanned, root, limits, options);
+
+    if(ret == CL_VIRUS) {
+	mdprintf(odesc, "fd[%d]: %s FOUND\n", fd, virname);
+	logg("fd[%d]: %s FOUND\n", fd, virname);
+	virusaction(virname, copt);
+    } else if(ret != CL_CLEAN) {
+	mdprintf(odesc, "fd[%d]: %s ERROR\n", fd, cl_strerror(ret));
+	logg("fd[%d]: %s ERROR\n", fd, cl_strerror(ret));
+    } else {
+	mdprintf(odesc, "fd[%d]: OK\n", fd);
+        if(logok)
+	    logg("fd[%d]: OK\n", fd); 
+    }
+
+    return ret;
+}
+
 int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt)
 {
 	int ret, portscan = CL_DEFAULT_MAXPORTSCAN, sockfd, port, acceptd;
@@ -442,7 +473,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	logg("stream: %s ERROR\n", cl_strerror(ret));
     } else {
 	mdprintf(odesc, "stream: OK\n");
-        if (logok)
+        if(logok)
 	    logg("stream: OK\n"); 
     }
 

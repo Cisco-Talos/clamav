@@ -32,11 +32,15 @@
 #include <sys/time.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
+
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
 #if HAVE_SYS_FILIO_H
 #include <sys/filio.h>
+#endif
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
 #endif
 
 /* submitted by breiter@wolfereiter.com: do not use poll(2) on Interix */
@@ -58,6 +62,7 @@
 
 #include "memory.h"
 #include "cfgparser.h"
+#include "session.h"
 
 void virusaction(const char *virname, const struct cfgstruct *copt)
 {
@@ -220,3 +225,65 @@ int writen(int fd, void *buff, unsigned int count)
  
     return count;
 }
+
+/* Submitted by Richard Lyons <frob-clamav*webcentral.com.au> */
+
+#if defined(HAVE_RECVMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN)
+
+int readsock(int sockfd, char *buf, size_t size)
+{
+	int fd;
+	ssize_t n;
+	struct msghdr msg;
+	struct iovec iov[1];
+#ifdef HAVE_CONTROL_IN_MSGHDR
+	struct cmsghdr *cmsg;
+	char tmp[CMSG_SPACE(sizeof(fd))];
+#endif
+
+    iov[0].iov_base = buf;
+    iov[0].iov_len = size;
+    memset(&msg, 0, sizeof(msg));
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+#ifdef HAVE_ACCRIGHTS_IN_MSGHDR
+    msg.msg_accrights = (caddr_t)&fd;
+    msg.msg_accrightslen = sizeof(fd);
+#endif
+#ifdef HAVE_CONTROL_IN_MSGHDR
+    msg.msg_control = tmp;
+    msg.msg_controllen = sizeof(tmp);
+#endif
+    fd = -1;
+    if ((n = recvmsg(sockfd, &msg, 0)) <= 0)
+	return n;
+    errno = EBADF;
+    if (n != 1 || buf[0] != 0)
+	return !strncmp(buf, CMD12, strlen(CMD12)) ? -1 : n;
+#ifdef HAVE_ACCRIGHTS_IN_MSGHDR
+    if (msg.msg_accrightslen != sizeof(fd))
+	return -1;
+#endif
+#ifdef HAVE_CONTROL_IN_MSGHDR
+    cmsg = CMSG_FIRSTHDR(&msg);
+    if (cmsg == NULL)
+	return -1;
+#ifndef INCOMPLETE_CMSG
+    if (cmsg->cmsg_type != SCM_RIGHTS)
+	return -1;
+    if (cmsg->cmsg_len != CMSG_LEN(sizeof(fd)))
+	return -1;
+#endif
+    fd = *(int *)CMSG_DATA(cmsg);
+#endif
+    if (fd < 0)
+	return -1;
+    n = snprintf(buf, size, "FD %d", fd);
+    if (n >= size)
+	return -1;
+    return n;
+}
+
+#else
+#define	readsock	read
+#endif

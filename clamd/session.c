@@ -44,18 +44,6 @@
 #include "output.h"
 #include "memory.h"
 
-#define CMD1 "SCAN"
-#define CMD2 "RAWSCAN"
-#define CMD3 "QUIT" /* deprecated */
-#define CMD4 "RELOAD"
-#define CMD5 "PING"
-#define CMD6 "CONTSCAN"
-#define CMD7 "VERSION"
-#define CMD8 "STREAM"
-#define CMD9 "SESSION"
-#define CMD10 "END"
-#define CMD11 "SHUTDOWN"
-
 pthread_mutex_t ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int command(int desc, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt, int timeout)
@@ -77,7 +65,7 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
 	return -1;
     }
 
-    while((bread = read(desc, buff, 1024)) == -1 && errno == EINTR);
+    while((bread = readsock(desc, buff, 1024)) == -1 && errno == EINTR);
 
     if(!bread)
 	return 0;
@@ -187,6 +175,12 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
 
     } else if(!strncmp(buff, CMD11, strlen(CMD11))) { /* SHUTDOWN */
 	return COMMAND_SHUTDOWN;
+
+    } else if(!strncmp(buff, CMD12, strlen(CMD12))) { /* FD */
+	    int fd = atoi(buff + strlen(CMD12) + 1);
+
+	scanfd(fd, NULL, root, limits, options, copt, desc, 0);
+	close(fd); /* FIXME: should we close it here? */
 
     } else {
 	mdprintf(desc, "UNKNOWN COMMAND\n");
