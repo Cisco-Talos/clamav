@@ -1,3 +1,8 @@
+Fri Jul 30 15:35:19 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	 Handle change in the clamd message when
+		StreamMaxLength is exceeded
+
 Fri Jul 30 12:52:34 BST 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Code tidy
