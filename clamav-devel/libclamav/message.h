@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: message.h,v $
+ * Revision 1.12  2004/07/20 14:35:29  nigelhorne
+ * Some MYDOOM.I were getting through
+ *
  * Revision 1.11  2004/05/06 18:01:25  nigelhorne
  * Force attachments marked as RFC822 messages to be scanned
  *
@@ -53,6 +56,9 @@ typedef struct message {
 	char	**mimeArguments;
 	char	*mimeDispositionType;	/* probably attachment */
 	text	*body_first, *body_last;
+
+	char	base64_1, base64_2, base64_3;
+	int	base64chars;
 	/*
 	 * Markers for the start of various non MIME messages that could
 	 * be included within this message
@@ -82,7 +88,7 @@ int	messageAddLineAtTop(message *m, const char *line);
 const	text	*messageGetBody(const message *m);
 void	messageClean(message *m);
 blob	*messageToBlob(message *m);
-text	*messageToText(const message *m);
+text	*messageToText(message *m);
 const	text	*uuencodeBegin(const message *m);
 const	text	*binhexBegin(const message *m);
 const	text	*bounceBegin(const message *m);

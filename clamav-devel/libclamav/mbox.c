@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.88  2004/07/20 14:35:29  nigelhorne
+ * Some MYDOOM.I were getting through
+ *
  * Revision 1.87  2004/07/19 17:54:40  kojm
  * Use new patter matching algorithm. Cleanup.
  *
@@ -249,7 +252,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.87 2004/07/19 17:54:40 kojm Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.88 2004/07/20 14:35:29 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1749,7 +1752,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 static int
 boundaryStart(const char *line, const char *boundary)
 {
-	/*cli_dbgmsg("boundaryStart: line = '%s' boundary = '%s'\n", line, boundary);*/
+	cli_dbgmsg("boundaryStart: line = '%s' boundary = '%s'\n", line, boundary);
 	if(line == NULL)
 		return 0;	/* empty line */
 
@@ -1772,7 +1775,7 @@ boundaryStart(const char *line, const char *boundary)
 	 * that has -1 in it instead of starting --1. This needs some more work.
 	 */
 	if(strstr(line, boundary) != NULL) {
-		cli_dbgmsg("found %s in %s\n", boundary, line);
+		cli_dbgmsg("boundaryStart: found %s in %s\n", boundary, line);
 		return 1;
 	}
 	if(*line++ != '-')
@@ -1790,6 +1793,7 @@ endOfMessage(const char *line, const char *boundary)
 {
 	size_t len;
 
+	cli_dbgmsg("endOfMessage: line = '%s' boundary = '%s'\n", line, boundary);
 	if(line == NULL)
 		return 0;
 	if(*line++ != '-')
