@@ -1,3 +1,8 @@
+Sat Nov 27 19:53:33 CET 2004 (tk)
+---------------------------------
+  * libclamav/scanners.c: cli_scanrar: skip splitted files (patch by Andrey J.
+			  Melnikoff (TEMHOTA) <temnota*kmv.ru>)
+
 Sat Nov 27 14:40:55 GMT 2004 (njh)
 ----------------------------------
  * libclamav/mbox.c:	Honour section 7.2.6 of RFC1521

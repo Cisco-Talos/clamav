@@ -148,7 +148,7 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
     rarlist_head = rarlist;
 
     while(rarlist) {
-	if(DETECT_ENCRYPTED && (rarlist->item.Flags & 4)) {
+	if(DETECT_ENCRYPTED && (rarlist->item.Flags & 0x04)) {
 	    files++;
 	    cli_dbgmsg("RAR: Encrypted files found in archive.\n");
 	    lseek(desc, 0, SEEK_SET);
@@ -160,6 +160,13 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 		ret = CL_VIRUS;
 	    }
 	    break;
+	}
+
+	if((rarlist->item.Flags & 0x03) != 0) {
+	    cli_dbgmsg("RAR: Skipping %s (splitted)\n", rarlist->item.Name);
+	    rarlist = rarlist->next;
+	    files++;
+	    continue;
 	}
 
 	if(limits) {
