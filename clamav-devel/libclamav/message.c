@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.56  2004/05/19 10:02:25  nigelhorne
+ * Default encoding for attachments set to base64
+ *
  * Revision 1.55  2004/05/10 11:24:18  nigelhorne
  * Handle bounce message false positives
  *
@@ -162,7 +165,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.55 2004/05/10 11:24:18 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.56 2004/05/19 10:02:25 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -251,8 +254,10 @@ messageCreate(void)
 {
 	message *m = (message *)cli_calloc(1, sizeof(message));
 
-	m->mimeType = NOMIME;
-	m->encodingType = NOENCODING;
+	if(m) {
+		m->mimeType = NOMIME;
+		m->encodingType = NOENCODING;
+	}
 
 	return m;
 }
@@ -443,8 +448,15 @@ messageAddArgument(message *m, const char *arg)
 			return;	/* already in there */
 
 	if(offset == m->numberOfArguments) {
+		char **ptr;
+
 		m->numberOfArguments++;
-		m->mimeArguments = (char **)cli_realloc(m->mimeArguments, m->numberOfArguments * sizeof(char *));
+		ptr = (char **)cli_realloc(m->mimeArguments, m->numberOfArguments * sizeof(char *));
+		if(ptr == NULL) {
+			m->numberOfArguments--;
+			return;
+		}
+		m->mimeArguments = ptr;
 	}
 
 	m->mimeArguments[offset] = strdup(arg);
@@ -550,7 +562,7 @@ messageAddArguments(message *m, const char *s)
 
 			data = strdup(cptr);
 
-			ptr = strchr(data, '"');
+			ptr = (data) ? strchr(data, '"') : NULL;
 			if(ptr == NULL) {
 				/*
 				 * Weird e-mail header such as:
@@ -564,7 +576,8 @@ messageAddArguments(message *m, const char *s)
 				 * virus checked
 				 */
 				cli_warnmsg("Can't parse header \"%s\"\n", s);
-				free(data);
+				if(data)
+					free(data);
 				free((char *)key);
 				return;
 			}
@@ -572,7 +585,8 @@ messageAddArguments(message *m, const char *s)
 			*ptr = '\0';
 
 			field = cli_malloc(strlen(key) + strlen(data) + 2);
-			sprintf(field, "%s=%s", key, data);
+			if(field)
+				sprintf(field, "%s=%s", key, data);
 
 			free((char *)key);
 			free(data);
@@ -594,11 +608,15 @@ messageAddArguments(message *m, const char *s)
 			len = (size_t)string - (size_t)key + 1;
 			field = cli_malloc(len);
 
-			memcpy(field, key, len - 1);
-			field[len - 1] = '\0';
+			if(field) {
+				memcpy(field, key, len - 1);
+				field[len - 1] = '\0';
+			}
 		}
-		messageAddArgument(m, field);
-		free(field);
+		if(field) {
+			messageAddArgument(m, field);
+			free(field);
+		}
 	}
 }
 
@@ -649,6 +667,9 @@ messageFindArgument(const message *m, const char *variable)
 				char *ret = strdup(++ptr);
 				char *p;
 
+				if(ret == NULL)
+					return NULL;
+
 				ret[strlen(ret) - 1] = '\0';
 				/*
 				 * Thomas Lamy <Thomas.Lamy@in-online.net>:
@@ -662,12 +683,12 @@ messageFindArgument(const message *m, const char *variable)
 				 */
 				if((p = strchr(ret, '"')) != NULL)
 					*p = '\0';
-				return(ret);
+				return ret;
 			}
-			return(strdup(ptr));
+			return strdup(ptr);
 		}
 	}
-	return(NULL);
+	return NULL;
 }
 
 void
@@ -785,7 +806,7 @@ messageAddLineAtTop(message *m, const char *line)
 
 	if(m->body_first == NULL)
 		return messageAddLine(m, line, 1);
-	
+
 	oldfirst = m->body_first;
 	m->body_first = (text *)cli_malloc(sizeof(text));
 	if(m->body_first == NULL) {
@@ -873,7 +894,8 @@ messageToBlob(message *m)
 		unsigned char byte;
 		unsigned long len, l, newlen = 0L;
 		char *filename;
-		unsigned char *ptr, *data;
+		unsigned char *uptr, *data;
+		char *ptr;
 		int bytenumber;
 		blob *tmp = blobCreate();
 
@@ -933,16 +955,21 @@ messageToBlob(message *m)
 		 */
 		cli_dbgmsg("decode HQX7 message (%lu bytes)\n", len);
 
-		ptr = cli_malloc(len);
-		memcpy(ptr, data, len);
+		uptr = cli_malloc(len);
+		if(uptr == NULL) {
+			blobDestroy(tmp);
+			blobDestroy(b);
+			return NULL;
+		}
+		memcpy(uptr, data, len);
 		bytenumber = 0;
 
 		/*
-		 * ptr now contains the encoded (7bit) data - len bytes long
+		 * uptr now contains the encoded (7bit) data - len bytes long
 		 * data will contain the unencoded (8bit) data
 		 */
 		for(l = 1; l < len; l++) {
-			unsigned char c = ptr[l];
+			unsigned char c = uptr[l];
 
 			if(c == ':')
 				break;
@@ -991,7 +1018,7 @@ messageToBlob(message *m)
 		 *
 		 * The data array may contain repetitive characters
 		 */
-		free(ptr);
+		free(uptr);
 
 		/*
 		 * Uncompress repetitive characters
@@ -1053,13 +1080,20 @@ messageToBlob(message *m)
 		 */
 		byte = data[0];
 		filename = cli_malloc(byte + 1);
+		if(filename == NULL) {
+			blobDestroy(b);
+			blobDestroy(tmp);
+			return NULL;
+		}
 		memcpy(filename, &data[1], byte);
 		filename[byte] = '\0';
 		blobSetFilename(b, filename);
 		ptr = cli_malloc(strlen(filename) + 6);
-		sprintf(ptr, "name=%s", filename);
-		messageAddArgument(m, ptr);
-		free(ptr);
+		if(ptr) {
+			sprintf(ptr, "name=%s", filename);
+			messageAddArgument(m, ptr);
+			free(ptr);
+		}
 
 		/*
 		 * skip over length, filename, version, type, creator and flags
@@ -1101,7 +1135,12 @@ messageToBlob(message *m)
 				cli_dbgmsg("Attachment sent with no filename\n");
 				messageAddArgument(m, "name=attachment");
 				filename = strdup("attachment");
-			}
+			} else if(messageGetEncoding(m) == NOENCODING)
+				/*
+				 * Some virus attachments don't say how they've
+				 * been encoded. We assume base64
+				 */
+				messageSetEncoding(m, "base64");
 		}
 
 		blobSetFilename(b, filename);
@@ -1184,6 +1223,8 @@ messageToText(const message *m)
 
 			if((last == NULL) ||
 			   ((last->t_text = strdup(t_line->t_text)) == NULL)) {
+				if(last)
+					free(last);
 				textDestroy(first);
 				return NULL;
 			}
@@ -1226,8 +1267,11 @@ messageToText(const message *m)
 				last = last->t_next;
 			}
 
-			last->t_text = strdup((char *)data);
-			assert(last->t_text != NULL);
+			if(last)
+				last->t_text = strdup((char *)data);
+
+			if((last == NULL) || (last->t_text == NULL))
+				break;
 
 			if(messageGetEncoding(m) == BASE64)
 				if(strchr(line, '='))
@@ -1427,6 +1471,9 @@ decodeLine(const message *m, const char *line, unsigned char *buf, size_t buflen
 			 * but many e-mail clients ignore that
 			 */
 			copy = strdup(line);
+			if(copy == NULL)
+				break;
+
 			p2 = strchr(copy, '=');
 			if(p2)
 				*p2 = '\0';
