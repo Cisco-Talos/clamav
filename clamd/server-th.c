@@ -446,6 +446,16 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	    logg("^USING HARDCODED LIMIT: Archive: Files limit set to %d.\n", limits.maxfiles);
 	}
 
+	if((cpt = cfgopt(copt, "ArchiveMaxCompressionRatio"))) {
+	    if((limits.maxratio = cpt->numarg))
+		logg("Archive: Compression ratio limit set to %d.\n", limits.maxratio);
+	    else
+		logg("^Archive: Compression ratio limit disabled.\n");
+	} else {
+	    limits.maxratio = 200;
+	    logg("^USING HARDCODED LIMIT: Archive: Compression ratio limit set to %d.\n", limits.maxratio);
+	}
+
 	if(cfgopt(copt, "ArchiveLimitMemoryUsage")) {
 	    limits.archivememlim = 1;
 	    logg("Archive: Limited memory usage.\n");

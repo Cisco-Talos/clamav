@@ -89,6 +89,7 @@ struct cl_node {
 struct cl_limits {
     int maxreclevel;
     int maxfiles;
+    int maxratio;
     short archivememlim;
     long int maxfilesize;
 };

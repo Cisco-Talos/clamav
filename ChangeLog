@@ -1,3 +1,10 @@
+Mon Dec  1 23:51:25 CET 2003 (tk)
+---------------------------------
+  * libclamav: maxratio added to cl_limits
+  * clamd: new directive ArchiveMaxCompressionRatio
+  * configure: detect the type of setpgrp() (thanks to Eugene Crosser
+               <crosser*rol.ru>)
+
 Mon Dec  1 20:26:45 CET 2003 (tk)
 ---------------------------------
   * A bunch of patches from Thomas Lamy <Thomas.Lamy*in-online.net>:
