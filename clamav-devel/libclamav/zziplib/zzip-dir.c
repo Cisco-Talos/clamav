@@ -1,3 +1,4 @@
+#include <stdio.h>
 /*
  * Author: 
  *	Guido Draheim <guidod@gmx.de>
@@ -144,6 +145,8 @@ zzip_readdir(ZZIP_DIR * dir)
         dir->dirent.st_size = dir->hdr->d_usize;
 
 	dir->dirent.d_flags = dir->hdr->d_flags;
+
+        dir->dirent.d_crc32 = (int) dir->hdr->d_crc32;
 
         if (! dir->hdr->d_reclen) dir->hdr = 0;
         else  dir->hdr = (struct zzip_dir_hdr *)

@@ -730,6 +730,7 @@ zzip_dir_read(ZZIP_DIR * dir, ZZIP_DIRENT * d )
     d->st_size = dir->hdr->d_usize;
     d->d_name  = dir->hdr->d_name;
     d->d_flags = dir->hdr->d_flags;
+    d->d_crc32 = (int) dir->hdr->d_crc32;
 
     if (! dir->hdr->d_reclen) 
     { dir->hdr = 0; }
