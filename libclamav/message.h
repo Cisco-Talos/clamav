@@ -72,5 +72,6 @@ const	text	*bounceBegin(const message *m);
 const	text	*encodingLine(const message *m);
 void	messageClearMarkers(message *m);
 unsigned char	*decodeLine(message *m, encoding_type enctype, const char *line, unsigned char *buf, size_t buflen);
+int	isuuencodebegin(const char *line);
 
 #endif	/*_MESSAGE_H*/
