@@ -28,3 +28,4 @@ text	*textClean(text *t_head);
 text	*textCopy(const text *t_head);
 text	*textAdd(text *t_head, const text *t);
 text	*textAddMessage(text *aText, const message *aMessage);
+blob	*textToBlob(const text *t, blob *b);

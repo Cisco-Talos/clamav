@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.10  2004/03/25 22:40:46  nigelhorne
+ * Removed even more calls to realloc and some duplicated code
+ *
  * Revision 1.9  2004/03/24 09:08:25  nigelhorne
  * Reduce number of calls to cli_realloc for FreeBSD performance
  *
@@ -29,7 +32,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.9 2004/03/24 09:08:25 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.10 2004/03/25 22:40:46 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -153,11 +156,12 @@ blobAddData(blob *b, const unsigned char *data, size_t len)
 	}
 	if(b->data == NULL) {
 		assert(b->len == 0);
+		assert(b->size == 0);
+
 		b->size = len * 4;
 		b->data = cli_malloc(b->size);
 	} else if(b->size < b->len + len) {
-		/*b->size += len * 4;*/
-		b->size += 1024 * 1024;
+		b->size += len * 4;
 		b->data = cli_realloc(b->data, b->size);
 	}
 
@@ -217,4 +221,33 @@ blobcmp(const blob *b1, const blob *b2)
 		return 1;
 
 	return memcmp(blobGetData(b1), blobGetData(b2), s1);
+}
+
+void
+blobGrow(blob *b, size_t len)
+{
+	assert(b != NULL);
+	assert(b->magic == BLOB);
+
+	if(len == 0)
+		return;
+
+	if(b->isClosed) {
+		/*
+		 * Should be cli_dbgmsg, but I want to see them for now,
+		 * and cli_dbgmsg doesn't support debug levels
+		 */
+		cli_warnmsg("Growing closed blob\n");
+		b->isClosed = 0;
+	}
+	if(b->data == NULL) {
+		assert(b->len == 0);
+		assert(b->size == 0);
+
+		b->size = len;
+		b->data = cli_malloc(len);
+	} else {
+		b->size += len;
+		b->data = cli_realloc(b->data, b->size);
+	}
 }
