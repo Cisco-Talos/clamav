@@ -74,6 +74,8 @@ IP address of server running clamd (when using TCPsocket).
 .TP 
 \fB\-\-max\-children=n, \-m n\fR
 Maximum number of children.
+There is no default, if this argument is not \fBclamav\-milter\fR will
+spawn as many children as is necessary.
 .SH "EXAMPLES"
 .LP 
 clamav\-milter \-\-max\-children=2 \-obl local:/var/run/clmilter.sock
