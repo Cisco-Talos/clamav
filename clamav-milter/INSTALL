@@ -130,6 +130,12 @@ Installations for FreeBSD5 (may be true for other BSDs)
 	Where /var/run/spamass.sock is the location of the spamass-milt
 	socket file (on some systems it is in /var/run/sendmail/spamass.sock).
 
+FreeBSD5.3 sendmail comes without libmilter support. You can upgrade by
+	cd /usr/ports/mail/sendmail
+	make install
+This may overwrite your existing sendmail configuration, so ensure that you
+back up first.
+
 You should have received a script to install into /etc/rc.d as /etc/rc.d/clamav
 with this software. Add to /etc/rc.conf:
 	clamd_enable="YES"
