@@ -410,9 +410,16 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	unlink(tempname);
 	free(tempname);
 	return 53;
-    } else
-	rename(tempname, localname);
-
+    } else {
+    	if(rename(tempname, localname) == -1) {
+    	    mprintf("@Can't rename %s to %s: %s\n", tempname, localname, strerror(errno));
+    	    if(errno == EEXIST) {
+    	        unlink(localname);
+    	        if(rename(tempname, localname) == -1)
+                   mprintf("@All attempts to rename the temporary file failed: %s\n", strerror(errno));
+            }
+        }
+    }
 
     mprintf("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
     logg("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);

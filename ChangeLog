@@ -1,3 +1,8 @@
+Fri Mar 25 18:58:29 CET 2005 (tk)
+---------------------------------
+  * freshclam: improve new database installation under w32 (thanks to Boguslaw
+	       Brandys <bbrandys*clamav.net>)
+
 Fri Mar 25 18:47:34 CET 2005 (tk)
 ---------------------------------
   * freshclam: fork before system() call in daemon mode (patch by Per Jessen
