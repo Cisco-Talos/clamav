@@ -46,6 +46,7 @@ int downloadmanager(const struct optstruct *opt, const char *hostname)
 {
 	time_t currtime;
 	int ret, updated = 0, signo = 0;
+	char ipaddr[16];
 
 
     time(&currtime);
@@ -57,19 +58,19 @@ int downloadmanager(const struct optstruct *opt, const char *hostname)
     logg("SECURITY WARNING: NO SUPPORT FOR DIGITAL SIGNATURES\n");
 #endif
 
-    if((ret = downloaddb(DB1NAME, "main.cvd", hostname, &signo, opt)) > 50)
+    if((ret = downloaddb(DB1NAME, "main.cvd", hostname, ipaddr, &signo, opt)) > 50)
 	return ret;
     else if(ret == 0)
 	updated = 1;
 
-    if((ret = downloaddb(DB2NAME, "daily.cvd", hostname, &signo, opt)) > 50)
+    if((ret = downloaddb(DB2NAME, "daily.cvd", ipaddr, NULL, &signo, opt)) > 50)
 	return ret;
     else if(ret == 0)
 	updated = 1;
 
     if(updated) {
-	mprintf("Database updated (%d signatures) from %s.\n", signo, hostname);
-	logg("Database updated (%d signatures) from %s.\n", signo, hostname);
+	mprintf("Database updated (%d signatures) from %s (%s).\n", signo, hostname, ipaddr);
+	logg("Database updated (%d signatures) from %s (%s).\n", signo, hostname, ipaddr);
 
 #ifdef BUILD_CLAMD
 	if(optl(opt, "daemon-notify")) {
@@ -90,11 +91,11 @@ int downloadmanager(const struct optstruct *opt, const char *hostname)
 	return 1;
 }
 
-int downloaddb(const char *localname, const char *remotename, const char *hostname, int *signo, const struct optstruct *opt)
+int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct optstruct *opt)
 {
 	struct cl_cvd *current, *remote;
 	int hostfd, nodb = 0, ret;
-	char  *tempname;
+	char  *tempname, ipaddr[16];
 	const char *proxy, *user;
 
 
@@ -133,22 +134,24 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     if(proxy)
 	mprintf("Connecting via %s\n", proxy);
 
-    hostfd = wwwconnect(hostname, proxy);
+    hostfd = wwwconnect(hostname, proxy, ipaddr);
 
     if(hostfd < 0) {
-	mprintf("@Connection with %s failed.\n", hostname);
+	mprintf("@Connection with %s (%s) failed.\n", hostname, ipaddr);
 	return 52;
     } else
-	mprintf("*Connected to %s.\n", hostname);
+	mprintf("*Connected to %s (%s).\n", hostname, ipaddr);
 
+    if(ip)
+	strcpy(ip, ipaddr);
 
     if(!(remote = remote_cvdhead(remotename, hostfd, hostname, proxy, user))) {
-	mprintf("@Can't read %s header from %s\n", remotename, hostname);
+	mprintf("@Can't read %s header from %s (%s)\n", remotename, hostname, ipaddr);
 	close(hostfd);
 	return 52;
     }
 
-    *signo += current->sigs; /* we need to do it just here */
+    *signo += remote->sigs; /* we need to do it just here */
 
     if(current && (current->version >= remote->version)) {
 	mprintf("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
@@ -164,16 +167,18 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 
     cl_cvdfree(remote);
 
-    /* FIXME: We need to reconnect, because we won't be able to donwload
+    /* FIXME: We need to reconnect, because we may not be able to download
      * the database. The problem doesn't exist with my local apache.
      * Some code change is needed in get_md5_checksum().
      */
     /* begin bug work-around */
     close(hostfd);
-    hostfd = wwwconnect(hostname, proxy);
+    hostfd = wwwconnect(ipaddr, proxy, NULL); /* we use ipaddr to connect
+					       * to the same mirror
+					       */
 
     if(hostfd < 0) {
-	mprintf("@Connection with %s failed.\n", hostname);
+	mprintf("@Connection with %s failed.\n", ipaddr);
 	return 52;
     };
     /* end */
@@ -184,7 +189,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     tempname = cl_gentemp(".");
 
     if(get_database(remotename, hostfd, tempname, hostname, proxy, user)) {
-        mprintf("@Can't download %s from %s\n", remotename, hostname);
+        mprintf("@Can't download %s from %s\n", remotename, ipaddr);
         unlink(tempname);
         free(tempname);
         close(hostfd);
@@ -223,15 +228,18 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 
 /* this function returns socket descriptor */
 /* proxy support finshed by njh@bandsman.co.uk */
-int
-wwwconnect(const char *server, const char *proxy)
+int wwwconnect(const char *server, const char *proxy, char *ip)
 {
 	int socketfd, port;
 	struct sockaddr_in name;
 	struct hostent *host;
-	char *portpt, *proxycpy = NULL;
+	char *portpt, *proxycpy = NULL, ipaddr[16];
+	unsigned char *ia;
 	const char *hostpt;
 
+
+    if(ip)
+	strcpy(ip, "???");
 
     /* njh@bandsman.co.uk: for BEOS */
 #ifdef PF_INET
@@ -275,11 +283,18 @@ wwwconnect(const char *server, const char *proxy)
 	return -1;
     }
 
+    /* this dirty hack comes from pink - Nosuid TCP/IP ping 1.6 */
+    ia = (unsigned char *) host->h_addr;
+    sprintf(ipaddr, "%u.%u.%u.%u", ia[0], ia[1], ia[2], ia[3]);
+
+    if(ip)
+	strcpy(ip, ipaddr);
+
     name.sin_addr = *((struct in_addr *) host->h_addr);
     name.sin_port = htons(port);
 
     if(connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in)) == -1) {
-	mprintf("@Can't connect to port %d of host %s\n", port, hostpt);
+	mprintf("@Can't connect to port %d of host %s (IP: %s)\n", port, hostpt, ipaddr);
 	close(socketfd);
 	if(proxycpy)
 	    free(proxycpy);

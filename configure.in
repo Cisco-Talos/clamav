@@ -176,8 +176,14 @@ AC_SUBST(DBDIR)
 
 # config file
 cfg_dir=`echo $sysconfdir | grep prefix`
+
 if test -n "$cfg_dir"; then
-    cfg_dir="$ac_default_prefix/etc"
+    if test "$prefix" = "NONE"
+    then
+	cfg_dir="$ac_default_prefix/etc"
+    else
+	cfg_dir="$prefix/etc"
+    fi
 else
     cfg_dir="$sysconfdir"
 fi
