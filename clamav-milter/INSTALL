@@ -284,6 +284,7 @@ Changes
 		idea from "Leonid Zeitlin" <lz@europe.com>
 0.67l	10/3/04	Use new HAVE_STRERROR_R rather than TARGET_OS_SOLARIS to
 		determine if strerror_r exists
+0.70	17/3/04	Up-issued to 0.70
 
 BUG REPORTS
 
