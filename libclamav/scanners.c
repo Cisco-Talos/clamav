@@ -661,9 +661,6 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
 
 #ifdef HAVE_MMAP
     membuff = mmap(NULL, statbuf.st_size, PROT_READ, MAP_PRIVATE, desc, 0);
-#else /* FIXME */
-    return CL_CLEAN;
-#endif
 
     /* TODO: do file operations if mmap fails */
     if(membuff == MAP_FAILED) {
@@ -690,6 +687,9 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
 
     free(newbuff);
     return ret;
+#else /* FIXME */
+    return CL_CLEAN;
+#endif
 }
 
 static int cli_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)

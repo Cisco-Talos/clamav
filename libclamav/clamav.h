@@ -99,6 +99,7 @@ struct cli_ac_node {
 
 struct cli_md5_node {
     char *virname, *viralias, *md5;
+    unsigned int size;
     struct cli_md5_node *next;
 };
 

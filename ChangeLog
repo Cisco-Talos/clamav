@@ -1,3 +1,8 @@
+Wed Jul 28 01:10:46 CEST 2004 (tk)
+----------------------------------
+  * libclamav: md5: fix possible infinite loop in cl_free(); check file
+	       size to eliminate potential false positive alerts
+
 Mon Jul 26 14:24:24 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	%v in the template file handling is now replaced
