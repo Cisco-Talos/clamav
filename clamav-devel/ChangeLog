@@ -1,3 +1,7 @@
+Wed Oct 13 22:20:17 CEST 2004 (tk)
+----------------------------------
+  * libclamav/str.c: include cli_strtokbuf() from Nigel
+
 Wed Oct 13 20:21:26 CEST 2004 (tk)
 ----------------------------------
   * libclamav/mspack/cabd.c: fix possible description leak
@@ -6,7 +10,7 @@ Wed Oct 13 11:19:03 BST 2004 (njh)
 ----------------------------------
   * libclamav/untar.c:	Added handling of some extra file types within the
 				archive. Thanks to
-				djgardner@users.sourceforge.net
+				djgardner*users.sourceforge.net
 
 Wed Oct 13 09:57:54 BST 2004 (trog)
 -----------------------------------

@@ -25,5 +25,6 @@ char *cli_strtok(const char *line, int field, const char *delim);
 short int *cli_hex2si(const char *hex);
 char *cli_hex2str(const char *hex);
 char *cli_str2hex(const char *string, unsigned int len);
+char *cli_strtokbuf(const char *input, int fieldno, const char *delim, char *output);
 
 #endif
