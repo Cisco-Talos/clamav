@@ -1,3 +1,7 @@
+Mon Apr  5 10:16:29 BST 2004 (trog)
+-----------------------------------
+  * libclamav/vba_extract.c: minor code update
+
 Sun Apr  4 02:57:10 CEST 2004 (tk)
 ----------------------------------
   * freshclam: do not terminate on SIGALRM (bug introduced on Sat Mar 27),

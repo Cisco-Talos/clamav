@@ -143,8 +143,15 @@ static char *get_unicode_name(char *name, int size, int is_mac)
 static void vba56_test_middle(int fd)
 {
 	char test_middle[20];
-	static const uint8_t middle_str[20] = {
+
+	/* MacOffice middle */
+	static const uint8_t middle1_str[20] = {
 		0x00, 0x01, 0x0d, 0x45, 0x2e, 0xe1, 0xe0, 0x8f, 0x10, 0x1a,
+		0x85, 0x2e, 0x02, 0x60, 0x8c, 0x4d, 0x0b, 0xb4, 0x00, 0x00
+	};
+	/* MS Office middle */
+	static const uint8_t middle2_str[20] = {
+		0x00, 0x00, 0xe1, 0x2e, 0x45, 0x0d, 0x8f, 0xe0, 0x1a, 0x10, 
 		0x85, 0x2e, 0x02, 0x60, 0x8c, 0x4d, 0x0b, 0xb4, 0x00, 0x00
 	};
 
@@ -152,7 +159,8 @@ static void vba56_test_middle(int fd)
                 return;
         }
 
-	if (memcmp(test_middle, middle_str, 20) != 0) {
+	if ((memcmp(test_middle, middle1_str, 20) != 0) &&
+		(memcmp(test_middle, middle2_str, 20) != 0)) {
 		cli_dbgmsg("middle not found\n");
 	        lseek(fd, -20, SEEK_CUR);
 	} else {
@@ -203,7 +211,7 @@ static int vba_read_project_strings(int fd, int is_mac)
 				return FALSE;
 			}
 			length = vba_endian_convert_16(length, is_mac);
-			if (length != 0) {
+			if ((length != 0) && (length != 65535)) {
 				lseek(fd, -2, SEEK_CUR);
 				free(name);
 				continue;
