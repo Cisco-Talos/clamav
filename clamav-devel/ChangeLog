@@ -1,3 +1,8 @@
+Sat Aug 28 20:25:44 CEST 2004 (tk)
+----------------------------------
+  * libclamav/filetypes.c: Improve e-mail detection (thanks to Andy Igoshin
+			   <ai*vsu.ru>)
+
 Sat Aug 28 10:16:19 BST 2004 (trog)
 -----------------------------------
   * libclamav/ole2_extract.c: Another go at fixing MACOS/X filenames
@@ -142,7 +147,7 @@ Sat Aug 21 12:59:43 BST 2004 (njh)
 ----------------------------------
   * libclamav:	Changed the handling of miltipart messages, that is scanning
 			emails with attachments. Reports on impact on memory
-			usage and speed welcome to clamav-devel@clamav.net
+			usage and speed welcome to clamav-devel@lists.sf.net.
 
 Fri Aug 20 21:05:04 CEST 2004 (tk)
 ----------------------------------
