@@ -1,3 +1,7 @@
+Fri Jul 30 18:13:26 CEST 2004 (tk)
+----------------------------------
+  * libclamav: matcher-bm: really ignore short signatures
+
 Fri Jul 30 15:35:19 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	 Handle change in the clamd message when
