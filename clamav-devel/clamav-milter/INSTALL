@@ -496,6 +496,7 @@ Changes
 		variables did't work after clamav variables.
 0.75s	20/9/04	StreamSaveToDisk is longer used
 		Update references to clamav.conf, should now be clamd.conf
+0.80	20/9/04	Up-issued
 
 INTERNATIONALISATION
 

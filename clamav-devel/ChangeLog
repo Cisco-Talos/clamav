@@ -1,3 +1,8 @@
+Mon Sep 20 13:46:15 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Fix parsing problem
+  * clamav-milter:	Up issue
+
 Mon Sep 20 12:12:09 CEST 2004 (tk)
 ----------------------------------
   * libclamav/scanners.c: remove temporary files in the event of cli_mbox
