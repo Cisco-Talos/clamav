@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.234 2005/04/02 21:18:48 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.235 2005/04/04 13:52:46 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3823,7 +3823,8 @@ uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin)
 		if((len > 62) || (len == 0))
 			break;
 
-		fileblobAddData(fb, data, len);
+		if(fileblobAddData(fb, data, len) < 0)
+			break;
 	}
 
 	fileblobDestroy(fb);
