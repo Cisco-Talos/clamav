@@ -1,3 +1,7 @@
+Sat Mar 19 00:58:19 CET 2005 (tk)
+---------------------------------
+  * libclamav: call cli_check_jpeg_exploit() independently of pattern matcher
+
 Fri Mar 18 22:03:10 CET 2005 (tk)
 ---------------------------------
   * libclamav: fix compiler warnings
