@@ -24,3 +24,4 @@
 #DEFAULT (echo ""; id; echo %s; date; cat) >> $CVSROOT/CVSROOT/commitlog
 # or
 #DEFAULT (echo ""; id; echo %{sVv}; date; cat) >> $CVSROOT/CVSROOT/commitlog
+^virusdb$ /cvsroot/sitedocs/CVSROOT/cvstools/syncmail %{sVv} clamav-virusdb@lists.sourceforge.net
