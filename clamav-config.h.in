@@ -1,5 +1,8 @@
 /* clamav-config.h.in.  Generated from configure.in by autoheader.  */
 
+/* enable bind8 compatibility */
+#undef BIND_8_COMPAT
+
 /* Define if your snprintf is busted */
 #undef BROKEN_SNPRINTF
 
@@ -107,6 +110,9 @@
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
+
+/* in_addr_t is defined */
+#undef HAVE_IN_ADDR_T
 
 /* in_port_t is defined */
 #undef HAVE_IN_PORT_T

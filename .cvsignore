@@ -1,0 +1,9 @@
+Makefile
+autom4te.cache
+clamav-config.h
+config.log
+config.status
+libclamav.pc
+libtool
+stamp-h1
+target.h

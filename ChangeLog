@@ -1,3 +1,16 @@
+Sun Sep 26 03:11:48 CEST 2004 (tk)
+----------------------------------
+  * docs/MacOSX: update (Dale Enterprise L.L.C)
+  * freshclam: fix compilation problem on Max OS X (thanks to Mr Mailing List
+	       <maillist*smarttv.dk>)
+  * configure: do not test double for resolv.h (thanks to Masaki Ogawa
+	       <proc*mac.com>)
+  * docs/man: fix config paths (thanks to Tuomo Soini <tis*foobar.fi>)
+  * libclamav: fix compilation problem on Interix (Brian A. Reiter
+	       <breiter*wolfereiter.com>)
+  * configure: add check for __dn_expand (required for some new Linux
+	       distributions, thanks to Reinhard Max <max*tclers.tk>)
+
 Sat Sep 25 16:48:18 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Didn't compile with some older Linuxes
@@ -12,7 +25,7 @@ Fri Sep 24 09:14:44 BST 2004 (trog)
 Thu Sep 23 09:46:06 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Scan multipart/digest messages (suggested by "Andrey J.
-				Melnikoff (TEMHOTA)" <temnota@kmv.ru>)
+				Melnikoff (TEMHOTA)" <temnota*kmv.ru>)
 
 Wed Sep 22 17:11:23 BST 2004 (njh)
 ----------------------------------
