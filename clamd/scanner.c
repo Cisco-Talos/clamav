@@ -37,9 +37,8 @@
 #include <pthread.h>
 
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-#ifdef C_SOLARIS
 #include <limits.h>
-#endif
+#include <stddef.h>
 #endif
 
 #include "cfgparser.h"
@@ -80,11 +79,10 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 	DIR *dd;
 	struct dirent *dent;
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-#ifdef C_SOLARIS
-	char result[sizeof(struct dirent) + PATH_MAX + 1];
-#else
-	struct dirent result;
-#endif
+	union {
+	    struct dirent d;
+	    char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
+	} result;
 #endif
 	struct stat statbuf;
 	struct cfgstruct *cpt;
@@ -107,9 +105,9 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 
     if((dd = opendir(dirname)) != NULL) {
 #ifdef HAVE_READDIR_R_3
-	while(!readdir_r(dd, (struct dirent *) &result, &dent) && dent) {
+	while(!readdir_r(dd, &result.d, &dent) && dent) {
 #elif defined(HAVE_READDIR_R_2)
-	while((dent = (struct dirent *) readdir_r(dd, (struct dirent *) &result))) {
+	while((dent = (struct dirent *) readdir_r(dd, &result.d))) {
 #else
 	while((dent = readdir(dd))) {
 #endif
