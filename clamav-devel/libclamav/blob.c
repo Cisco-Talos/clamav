@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.37 2005/03/16 14:44:40 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.38 2005/03/18 08:34:35 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -183,7 +183,7 @@ blobAddData(blob *b, const unsigned char *data, size_t len)
 			pagesize = 4096;
 	}
 	growth = pagesize;
-	if(len >= pagesize)
+	if(len >= (size_t)pagesize)
 		growth = ((len / pagesize) + 1) * pagesize;
 
 	/*printf("len %u, growth = %u\n", len, growth);*/
