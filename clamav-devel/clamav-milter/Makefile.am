@@ -23,7 +23,7 @@ sbin_PROGRAMS = clamav-milter
 
 clamav_milter_SOURCES = clamav-milter.c
 
-clamav_milter_LDADD = $(tpop_builddir)/clamd/cfgfile.o $(tpop_builddir)/clamd/others.o $(tpop_builddir)/clamscan/getopt.o
+clamav_milter_LDADD = $(top_builddir)/clamd/cfgfile.o $(top_builddir)/clamd/others.o $(top_builddir)/clamscan/getopt.o
 
 man_MANS = $(top_srcdir)/docs/man/clamav-milter.8
 
