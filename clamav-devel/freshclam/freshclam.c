@@ -154,7 +154,7 @@ void freshclam(struct optstruct *opt)
 	if(ret > 1)
 	    system(getargl(opt, "on-error-execute"));
 
-    mexit(ret);
+    exit(ret);
 
 }
 
@@ -171,6 +171,7 @@ int download(struct optstruct *opt)
 	int mirror_used = 0;
 	struct sigaction sigalrm;
 
+    memset(&sigalrm, 0, sizeof(struct sigaction));
     sigalrm.sa_handler = d_timeout;
     sigaction(SIGALRM, &sigalrm, NULL);
 

@@ -107,8 +107,11 @@ int cli_versig(const char *md5, const char *dsig)
     mpz_init_set_str(n, cli_nstr, 10);
     mpz_init_set_str(e, cli_estr, 10);
 
-    if(!(pt = cli_decodesig(dsig, 16, e, n)))
+    if(!(pt = cli_decodesig(dsig, 16, e, n))) {
+	mpz_clear(n);
+	mpz_clear(e);
 	return CL_EDSIG;
+    }
 
     pt2 = cl_str2hex(pt, 16);
     free(pt);
@@ -118,10 +121,14 @@ int cli_versig(const char *md5, const char *dsig)
     if(strncmp(md5, pt2, 32)) {
 	cli_dbgmsg("Signature doesn't match.\n");
 	free(pt2);
+	mpz_clear(n);
+	mpz_clear(e);
 	return CL_EDSIG;
     }
 
     free(pt2);
+    mpz_clear(n);
+    mpz_clear(e);
 
     cli_dbgmsg("Digital signature is correct.\n");
     return 0;

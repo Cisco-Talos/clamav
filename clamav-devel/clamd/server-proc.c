@@ -155,7 +155,7 @@ int acceptloop_proc(int socketd, struct cl_node *root, const struct cfgstruct *c
 
 	if(cfgopt(copt, "ArchiveLimitMemoryUsage")) {
 	    limits.archivememlim = 1;
-	    logg("Archive: Limited memory usage.\n", limits.maxfiles);
+	    logg("Archive: Limited memory usage.\n");
 	} else
 	    limits.archivememlim = 0;
 

@@ -48,11 +48,17 @@ int cli_addpatt(struct cl_node *root, struct cli_patt *pattern)
 
 	if(!next) {
 	    next = (struct cl_node *) cli_calloc(1, sizeof(struct cl_node));
-	    if(!next)
+	    if(!next) {
+		cli_dbgmsg("Unable to allocate pattern node (%d)\n", sizeof(struct cl_node));
 		return CL_EMEM;
+	    }
 
 	    root->nodes++;
 	    root->nodetable = (struct cl_node **) realloc(root->nodetable, (root->nodes) * sizeof(struct cl_node *));
+	    if (root->nodetable == NULL) {
+		cli_dbgmsg("Unable to realloc nodetable (%d)\n", (root->nodes) * sizeof(struct cl_node *));
+		return CL_EMEM;
+	    }
 	    root->nodetable[root->nodes - 1] = next;
 
 	    pos->trans[((unsigned char) pattern->pattern[i]) & 0xff] = next;
@@ -74,6 +80,10 @@ void cli_enqueue(struct nodelist **bfs, struct cl_node *n)
 	struct nodelist *new;
 
     new = (struct nodelist *) cli_calloc(1, sizeof(struct nodelist));
+    if (new == NULL) {
+	cli_dbgmsg("Unable to allocate node list (%d)\n", sizeof(struct nodelist));
+	return CL_EMEM;
+    }
 
     new->next = *bfs;
     new->node = n;
@@ -181,7 +191,11 @@ int cl_scanbuff(const char *buffer, unsigned int length, char **virname, const s
 
     current = (struct cl_node *) root;
 
-    partcnt = (int *) cli_calloc(root->partsigs + 1, sizeof(int));
+    if ((partcnt = (int *) cli_calloc(root->partsigs + 1, sizeof(int))) == NULL) {
+	cli_dbgmsg("cl_scanbuff(): unable to calloc(%d, %d)\n", root->partsigs + 1, sizeof(int));
+	return CL_EMEM;
+    }
+
 
     for(i = 0; i < length; i++)  {
 	current = current->trans[(unsigned char) buffer[i] & 0xff];

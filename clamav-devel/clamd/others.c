@@ -36,6 +36,8 @@
 pthread_mutex_t logg_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t rand_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+FILE *log_fd = NULL;
+
 int mdprintf(int desc, const char *str, ...)
 {
 	va_list args;
@@ -50,23 +52,37 @@ int mdprintf(int desc, const char *str, ...)
 }
 
 
+void logg_close(void) {
+    pthread_mutex_lock(&logg_mutex);
+    if (log_fd) {
+	fclose(log_fd);
+    }
+    pthread_mutex_unlock(&logg_mutex);
+#if defined(CLAMD_USE_SYSLOG) && !defined(C_AIX)
+    if(use_syslog) {
+    	closelog();
+    }
+#endif
+}
+
+
 int logg(const char *str, ...)
 {
 	va_list args;
-	static FILE *fd = NULL;
 	struct flock fl;
 	char *pt, *timestr;
 	time_t currtime;
 	struct stat sb;
 	mode_t old_umask;
 
+
     if(logfile) {
 
 	pthread_mutex_lock(&logg_mutex);
 
-	if(!fd) {
+	if(!log_fd) {
 	    old_umask = umask(0036);
-	    if((fd = fopen(logfile, "a")) == NULL) {
+	    if((log_fd = fopen(logfile, "a")) == NULL) {
 		umask(old_umask);
 		pthread_mutex_unlock(&logg_mutex);
 		return -1;
@@ -75,7 +91,7 @@ int logg(const char *str, ...)
 	    if(loglock) {
 		memset(&fl, 0, sizeof(fl));
 		fl.l_type = F_WRLCK;
-		if(fcntl(fileno(fd), F_SETLK, &fl) == -1) {
+		if(fcntl(fileno(log_fd), F_SETLK, &fl) == -1) {
 		    pthread_mutex_unlock(&logg_mutex);
 		    return -1;
 		}
@@ -90,7 +106,7 @@ int logg(const char *str, ...)
 	    pt = ctime(&currtime);
 	    timestr = mcalloc(strlen(pt), sizeof(char));
 	    strncpy(timestr, pt, strlen(pt) - 1);
-	    fprintf(fd, "%s -> ", timestr);
+	    fprintf(log_fd, "%s -> ", timestr);
 	    free(timestr);
 	}
 
@@ -99,9 +115,9 @@ int logg(const char *str, ...)
 	    if(stat(logfile, &sb) != -1) {
 		if(sb.st_size > logsize) {
 		    logfile = NULL;
-		    fprintf(fd, "Log size = %d, maximal = %d\n", (int) sb.st_size, logsize);
-		    fprintf(fd, "LOGGING DISABLED (Maximal log file size exceeded).\n");
-		    fclose(fd);
+		    fprintf(log_fd, "Log size = %d, maximal = %d\n", (int) sb.st_size, logsize);
+		    fprintf(log_fd, "LOGGING DISABLED (Maximal log file size exceeded).\n");
+		    fclose(log_fd);
 		    pthread_mutex_unlock(&logg_mutex);
 		    return 0;
 		}
@@ -111,19 +127,19 @@ int logg(const char *str, ...)
 	va_start(args, str);
 
 	if(*str == '!') {
-	    fprintf(fd, "ERROR: ");
-	    vfprintf(fd, ++str, args);
+	    fprintf(log_fd, "ERROR: ");
+	    vfprintf(log_fd, ++str, args);
 	} else if(*str == '^') {
-	    fprintf(fd, "WARNING: ");
-	    vfprintf(fd, ++str, args);
+	    fprintf(log_fd, "WARNING: ");
+	    vfprintf(log_fd, ++str, args);
 	} else if(*str == '*') {
 	    if(logverbose)
-		vfprintf(fd, ++str, args);
-	} else vfprintf(fd, str, args);
+		vfprintf(log_fd, ++str, args);
+	} else vfprintf(log_fd, str, args);
 
 	va_end(args);
 
-	fflush(fd);
+	fflush(log_fd);
 	pthread_mutex_unlock(&logg_mutex);
     }
 

@@ -191,6 +191,35 @@ struct cfgstruct *parsecfg(const char *cfgfile)
     return copt;
 }
 
+void freecfg(struct cfgstruct *copt)
+{
+    	struct cfgstruct *handler;
+    	struct cfgstruct *arg;
+
+    while (copt) {
+	arg = copt->nextarg;
+	while (arg) {
+	    if(arg->strarg) {
+		free(arg->optname);
+		free(arg->strarg);
+		handler = arg;
+		arg=arg->nextarg;
+		free(handler);
+	    }
+	}
+	if(copt->optname) {
+	    free(copt->optname);
+	}
+	if(copt->strarg) {
+	    free(copt->strarg);
+	}
+	handler = copt;
+	copt = copt->next;
+	free(handler);
+    }
+    return;
+}
+
 char *tok(const char *line, int field)
 {
         int length, counter = 0, i, j = 0, k;
@@ -229,7 +258,7 @@ char *tok(const char *line, int field)
 	return realloc(buffer, strlen(buffer) + 1);
 }
 
-struct cfgstruct *regcfg(struct cfgstruct *copt, const char *optname, const char *strarg, int numarg)
+struct cfgstruct *regcfg(struct cfgstruct *copt, char *optname, char *strarg, int numarg)
 {
 	struct cfgstruct *newnode, *pt;
 

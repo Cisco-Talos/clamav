@@ -93,6 +93,7 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
     if(!(buffer = (char *) cli_malloc(FILEBUFF)))
 	return CL_EMEM;
 
+    memset(buffer, 0, FILEBUFF);
     /* check for CVD file */
     fgets(buffer, 12, fd);
     rewind(fd);
@@ -328,8 +329,10 @@ int cl_statfree(struct cl_stat *dbstat)
 	free(dbstat->stattab);
 	dbstat->stattab = NULL;
 	dbstat->no = 0;
-	if(dbstat->dir)
+	if(dbstat->dir) {
 	    free(dbstat->dir);
+	    dbstat->dir = NULL;
+	}
     } else {
         cli_errmsg("cl_statfree(): Null argument passed.\n");
 	return CL_ENULLARG;

@@ -203,6 +203,11 @@ void clamd(struct optstruct *opt)
     else
 	ret = localserver(opt, copt, root);
 
+    cli_dbgmsg("*server ended; result=%d\n", ret);
+    logg_close();
+    freecfg(copt);
+    cli_dbgmsg("*free() copt\n");
+
 }
 
 void help(void)
