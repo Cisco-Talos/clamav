@@ -390,6 +390,7 @@ Changes
 		Fix from Damian Menscher <menscher@uiuc.edu> ensures that when
 			a child dies we continue when max children is hit
 		Report an error if inet_ntop fails in tcp_wrappers
+0.71	16/5/04	Up issue
 
 BUG REPORTS
 
