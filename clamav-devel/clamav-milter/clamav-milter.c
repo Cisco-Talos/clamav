@@ -243,7 +243,7 @@
  *	0.66n	13/2/04	Added TCPwrappers support
  *			Removed duplication in version string
  *			Handle machines that don't have in_port_t
- *	0.
+ *	0.67	16/2/04	Upissued to 0.67
  *	0.67a	16/2/04	Added clamfi_free
  *	0.67b	17/2/04	Removed compilation warning - now compiles on FreeBSD5.2
  *			Don't allow --force to overwride TCPwrappers
@@ -317,9 +317,13 @@
  *	0.70h	8/4/04	Cleanup StreamMaxLength code
  *	0.70i	9/4/04	Handle clamd giving up on StreamMaxLength before
  *			clamav-milter
+ *	0.70j	15/4/04	Handle systems without inet_ntop
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.73  2004/04/15 09:53:25  nigelhorne
+ * Handle systems without inet_ntop
+ *
  * Revision 1.72  2004/04/09 08:36:53  nigelhorne
  * Handle clamd giving up on StreamMaxLength before clamav-milter
  *
@@ -521,9 +525,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.72 2004/04/09 08:36:53 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.73 2004/04/15 09:53:25 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70i"
+#define	CM_VERSION	"0.70j"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1504,7 +1508,9 @@ findServer(void)
 static sfsistat
 clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 {
+#if	defined(HAVE_INET_NTOP) || defined(WITH_TCPWRAP)
 	char ip[INET_ADDRSTRLEN];	/* IPv4 only */
+#endif
 	char *remoteIP;
 
 	if(hostname == NULL) {
@@ -1518,7 +1524,11 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		return cl_error;
 	}
 
+#ifdef HAVE_INET_NTOP
 	remoteIP = (char *)inet_ntop(AF_INET, &((struct sockaddr_in *)(hostaddr))->sin_addr, ip, sizeof(ip));
+#else
+	remoteIP = inet_ntoa(((struct sockaddr_in *)(hostaddr))->sin_addr);
+#endif
 
 	if(remoteIP == NULL) {
 		if(use_syslog)
@@ -1557,6 +1567,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 			return SMFIS_TEMPFAIL;
 		}
 
+		/* inet_ntop? */
 		strcpy(ip, (char *)inet_ntoa(*(struct in_addr *)hp->h_addr));
 
 		/*
