@@ -1,81 +1,76 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+<!--Converted with LaTeX2HTML 2K.1beta (1.48)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>CVD format</TITLE>
-<META NAME="description" CONTENT="CVD format">
+<TITLE>Scan Log Analyzer</TITLE>
+<META NAME="description" CONTENT="Scan Log Analyzer">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2K.1beta">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node82.html">
 <LINK REL="previous" HREF="node80.html">
-<LINK REL="up" HREF="node77.html">
+<LINK REL="up" HREF="node47.html">
 <LINK REL="next" HREF="node82.html">
 </HEAD>
 
 <BODY >
-
-<DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html1385"
+<!--Navigation Panel-->
+<A NAME="tex2html1477"
   HREF="node82.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html1381"
-  HREF="node77.html">
+<A NAME="tex2html1473"
+  HREF="node47.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html1377"
+<A NAME="tex2html1467"
   HREF="node80.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html1383"
+<A NAME="tex2html1475"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1386"
-  HREF="node82.html">Credits</A>
-<B> Up:</B> <A NAME="tex2html1382"
-  HREF="node77.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html1378"
-  HREF="node80.html">Scan engine</A>
- &nbsp; <B>  <A NAME="tex2html1384"
+<B> Next:</B> <A NAME="tex2html1478"
+  HREF="node82.html">mailgraph</A>
+<B> Up:</B> <A NAME="tex2html1474"
+  HREF="node47.html">Third party software</A>
+<B> Previous:</B> <A NAME="tex2html1468"
+  HREF="node80.html">wbmclamav</A>
+ &nbsp <B>  <A NAME="tex2html1476"
   HREF="node1.html">Contents</A></B> 
 <BR>
-<BR></DIV>
+<BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00074000000000000000">
-CVD format</A>
+<H2><A NAME="SECTION000934000000000000000">
+Scan Log Analyzer</A>
 </H2>
-    CVD (ClamAV Virus Database) is a digitally signed tarball file that
-    contains one or more databases. You can find some useful information in the
-    ASCII header of the file. It's a 512 bytes long string with the following
-    colon separated fields:
-    <PRE>
-ClamAV-VDB:build time:version:number of signatures:functionality
-level required:MD5 checksum:digital signature:builder name
-</PRE>
-    and can be easily parsed by scripts or with <code>sigtool --info</code>.
-    There are two CVD databases in ClamAV: <SPAN  CLASS="textit">main.cvd</SPAN> and <SPAN  CLASS="textit">daily.cvd</SPAN>
-    for daily updates. You can use <SPAN  CLASS="textit">sigtool</SPAN> to unpack a CVD file
-    (<code>--unpack</code>) and to list virus names (<code>--list-sigs</code>).
+    <B>Homepage:</B> <TT><A NAME="tex2html82"
+  HREF="http://pandaemail.sourceforge.net/av-tools/">http://pandaemail.sourceforge.net/av-tools/</A></TT>
+<BR>    <B>Supports:</B> ClamAV
+<BR>
+Scan analyzer allows you to plot and view graphical representation of
+    log data from virus logs of RAV, ClamAV and Vexira. 
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-07-22
+2004-09-20
 </ADDRESS>
 </BODY>
 </HTML>

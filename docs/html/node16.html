@@ -1,147 +1,92 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+<!--Converted with LaTeX2HTML 2K.1beta (1.48)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>freshclam: Setting up auto-updating</TITLE>
-<META NAME="description" CONTENT="freshclam: Setting up auto-updating">
+<TITLE>Configuration</TITLE>
+<META NAME="description" CONTENT="Configuration">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2K.1beta">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node17.html">
-<LINK REL="previous" HREF="node15.html">
-<LINK REL="up" HREF="node6.html">
+<LINK REL="next" HREF="node23.html">
+<LINK REL="previous" HREF="node10.html">
+<LINK REL="up" HREF="clamdoc.html">
 <LINK REL="next" HREF="node17.html">
 </HEAD>
 
 <BODY >
-
-<DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html555"
+<!--Navigation Panel-->
+<A NAME="tex2html618"
   HREF="node17.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html551"
-  HREF="node6.html">
+<A NAME="tex2html614"
+  HREF="clamdoc.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html545"
+<A NAME="tex2html608"
   HREF="node15.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html553"
+<A NAME="tex2html616"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html556"
-  HREF="node17.html">Database mirrors</A>
-<B> Up:</B> <A NAME="tex2html552"
-  HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html546"
-  HREF="node15.html">Testing</A>
- &nbsp; <B>  <A NAME="tex2html554"
+<B> Next:</B> <A NAME="tex2html619"
+  HREF="node17.html">clamd</A>
+<B> Up:</B> <A NAME="tex2html615"
+  HREF="clamdoc.html">clamdoc</A>
+<B> Previous:</B> <A NAME="tex2html609"
+  HREF="node15.html">Compilation with clamav-milter enabled</A>
+ &nbsp <B>  <A NAME="tex2html617"
   HREF="node1.html">Contents</A></B> 
 <BR>
-<BR></DIV>
+<BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION000310000000000000000">
-freshclam: Setting up auto-updating</A>
-</H2>
-    <SPAN  CLASS="textit">freshclam</SPAN> is a default database updater for Clam AntiVirus.
-    It can work in two modes:
-    
-<UL>
-<LI>interactive - from command line, verbosly
-</LI>
-<LI>daemon - alone, silently
-    
-</LI>
-</UL>
-    When started by a superuser (by default) it drops privileges and switches
-    to the <SPAN  CLASS="textit">clamav</SPAN> user. <SPAN  CLASS="textit">freshclam</SPAN> uses the
-    <TT><A NAME="tex2html21"
-  HREF="database.clamav.net">database.clamav.net</A></TT> round-robin DNS which automatically selects
-    a database mirror<A HREF="node17.html#mirrors">2.11</A>. freshclam is an advanced tool: supports
-    proxy servers (with authentication), digital signature verification and
-    various error scenarios. <SPAN  CLASS="textbf">Quick test: run <SPAN  CLASS="textit">freshclam</SPAN> (as
-    superuser) with no parameters and check the output.</SPAN> If everything
-    is OK you may create the log file in /var/log (owned by <SPAN  CLASS="textit">clamav</SPAN> or
-    another user freshclam will be running as (<code>--user</code>):
-    <PRE>
-	# touch /var/log/clam-update.log
-	# chmod 600 /var/log/clam-update.log
-	# chown clamav /var/log/clam-update.log
-</PRE>
-    Now you <SPAN  CLASS="textit">should</SPAN> edit the configuration file (usually
-    <SPAN  CLASS="textit">freshclam.conf</SPAN>) and configure the <SPAN  CLASS="textit">UpdateLogFile</SPAN> directive
-    to point the created log file (it's highly recommended). Optionally you
-    may force the log file path with <SPAN  CLASS="textit">-l</SPAN>. Finally, to run freshclam
-    in the daemon mode execute:
-    <PRE>
-	# freshclam -d
-</PRE>
-    The other method is to use the <SPAN  CLASS="textit">cron</SPAN> daemon.  You have to add the
-    following line to the crontab of the <SPAN  CLASS="textbf">root</SPAN> or <SPAN  CLASS="textbf">clamav</SPAN> users:
-    <SMALL CLASS="SMALL">    </SMALL><PRE>
-N * * * *	/usr/local/bin/freshclam --quiet
-</PRE>
-    to check for a new database every hour. <SPAN  CLASS="textbf">N should be a
-    number between 1 and 59 of your choice. Please don't choose any multiple
-    of 10, because there are already too many servers using those time slots.</SPAN>
-    Proxy settings are only configurable via the configuration file (so you
-    can setup proper permissions to protect your proxy password):
-    <PRE>
-	HTTPProxyServer myproxyserver.com
-	HTTPProxyPort 1234
-	HTTPProxyUsername myusername
-	HTTPProxyPassword mypass
-</PRE>
+<H1><A NAME="SECTION00050000000000000000">
+Configuration</A>
+</H1>
 
 <P>
+<BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
 
-<DIV CLASS="navigation"><HR>
-<!--Navigation Panel-->
-<A NAME="tex2html555"
-  HREF="node17.html">
-<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
- SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html551"
-  HREF="node6.html">
-<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
- SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html545"
-  HREF="node15.html">
-<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
- SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html553"
-  HREF="node1.html">
-<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
- SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<UL>
+<LI><A NAME="tex2html620"
+  HREF="node17.html">clamd</A>
+<UL>
+<LI><A NAME="tex2html621"
+  HREF="node18.html">On-access scanning</A>
+</UL>
 <BR>
-<B> Next:</B> <A NAME="tex2html556"
-  HREF="node17.html">Database mirrors</A>
-<B> Up:</B> <A NAME="tex2html552"
-  HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html546"
-  HREF="node15.html">Testing</A>
- &nbsp; <B>  <A NAME="tex2html554"
-  HREF="node1.html">Contents</A></B> </DIV>
-<!--End of Navigation Panel-->
+<LI><A NAME="tex2html622"
+  HREF="node19.html">clamav-milter</A>
+<LI><A NAME="tex2html623"
+  HREF="node20.html">Testing</A>
+<LI><A NAME="tex2html624"
+  HREF="node21.html">Setting up auto-updating</A>
+<LI><A NAME="tex2html625"
+  HREF="node22.html">Closest mirrors</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-07-22
+2004-09-20
 </ADDRESS>
 </BODY>
 </HTML>

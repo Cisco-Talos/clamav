@@ -1,87 +1,85 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+<!--Converted with LaTeX2HTML 2K.1beta (1.48)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>New system user and group</TITLE>
-<META NAME="description" CONTENT="New system user and group">
+<TITLE>Installing on shell account</TITLE>
+<META NAME="description" CONTENT="Installing on shell account">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2K.1beta">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
 <LINK REL="next" HREF="node13.html">
 <LINK REL="previous" HREF="node11.html">
-<LINK REL="up" HREF="node6.html">
+<LINK REL="up" HREF="node10.html">
 <LINK REL="next" HREF="node13.html">
 </HEAD>
 
 <BODY >
-
-<DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html507"
+<!--Navigation Panel-->
+<A NAME="tex2html572"
   HREF="node13.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html503"
-  HREF="node6.html">
+<A NAME="tex2html568"
+  HREF="node10.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html497"
+<A NAME="tex2html562"
   HREF="node11.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html505"
+<A NAME="tex2html570"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html508"
-  HREF="node13.html">Compilation</A>
-<B> Up:</B> <A NAME="tex2html504"
-  HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html498"
-  HREF="node11.html">Installing on a shell</A>
- &nbsp; <B>  <A NAME="tex2html506"
+<B> Next:</B> <A NAME="tex2html573"
+  HREF="node13.html">Adding new system user</A>
+<B> Up:</B> <A NAME="tex2html569"
+  HREF="node10.html">Installation</A>
+<B> Previous:</B> <A NAME="tex2html563"
+  HREF="node11.html">Requirements</A>
+ &nbsp <B>  <A NAME="tex2html571"
   HREF="node1.html">Contents</A></B> 
 <BR>
-<BR></DIV>
+<BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00036000000000000000">
-New system user and group</A>
+<H2><A NAME="SECTION00042000000000000000">
+Installing on shell account</A>
 </H2>
-    If you are installing ClamAV for the first time, you have to add a new
-    user and group to your system: <A NAME="tex2html18"
-  HREF="footnode.html#foot168"><SUP><SPAN CLASS="arabic">3</SPAN></SUP></A>    <PRE>
-	# groupadd clamav
-	# useradd -g clamav -s /bin/false -c "Clam AntiVirus" clamav
-</PRE>
-    The above method works on Linux and Solaris - in case you don't have
-    <SPAN  CLASS="textit">groupadd, useradd</SPAN> please consult the system manual.
-    If you are installing ClamAV on a user account you may omit this step with
-    the <code>--disable-clamav</code> option passed to the <code>configure</code> script:
+    To install ClamAV on a shell account (e.g. on some shared host) you
+    don't need to create any additional users or groups. Assuming your
+    home directory is <code>/home/gary</code> you should build it as follows:
     <PRE>
-	$ ./configure --disable-clamav
+	$ ./configure --prefix=/home/gary/clamav --disable-clamav
+	$ make; make install
 </PRE>
-    It disables testing for existence of the <SPAN  CLASS="textit">clamav</SPAN> user and group.
-    <SPAN  CLASS="textbf">clamscan still requires the unprivileged user and group to work
-    in the superuser mode.</SPAN> The password for that account should be locked
-    in <SPAN  CLASS="textit">/etc/passwd</SPAN> or <SPAN  CLASS="textit">/etc/shadow</SPAN>.
+    To test your installation execute:
+    <PRE>
+	$ ~/clamav/bin/freshclam
+	$ ~/clamav/bin/clamscan ~
+</PRE>
+    The <code>--disable-clamav</code> switch disables testing for the existence of
+    the <I>clamav</I> user and group but <code>clamscan</code> would still require an
+    unprivileged account to work in a superuser mode.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-07-22
+2004-09-20
 </ADDRESS>
 </BODY>
 </HTML>
