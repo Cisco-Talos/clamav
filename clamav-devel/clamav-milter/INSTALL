@@ -154,6 +154,8 @@ Changes
 		Added quarantine support
 0.65c	24/11/03 Support AllowSupplementaryGroups
 		Fix warning about root usage
+0.65d	25/11/03 Handle empty hostname or hostaddr
+		Fix based on a submission by Michael Dankov <misha@btrc.ru>
 
 BUG REPORTS
 

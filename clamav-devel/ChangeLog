@@ -1,3 +1,8 @@
+Tue Nov 25 11:28:28 IST 2003 (njh)
+----------------------------------
+  * clamav-milter: Handle empty hostname or hostaddr
+	Thanks to Michael Dankov <misha@btrc.ru> for the idea
+
 Mon Nov 24 17:18:03 CET 2003 (tk)
 ---------------------------------
   * libclamav: cvd.c: small cleanups
