@@ -1,12 +1,20 @@
+Mon May 10 00:05:23 CEST 2004 (tk)
+----------------------------------
+  * clamscan: + allow regular expressions in --[in|ex]clude (patch by
+	        Alex Cherney <alex*cher.id.au>)
+	      + do not overwrite old files in quarantine directory (Alex
+	        Cherney)
+  * configure/Makefiles: improve NetBSD support
+
 Sun May  9 18:40:55 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Ensure a thread wakes up when another thread dies
-		Fix from Damian Menscher <menscher@uiuc.edu> ensures
+		Fix from Damian Menscher <menscher*uiuc.edu> ensures
 			Only report that we've dropped privilege if the setuid
-		succeeded, fix by Jens Elkner <elkner@linofee.org>
+		succeeded, fix by Jens Elkner <elkner*linofee.org>
 			If logVerbose is set state both starting and started
 		messages (based on an idea by "Sergey Y.  Afonin"
-			<asy@kraft-s.ru>
+			<asy*kraft-s.ru>
 			Also added X-Infected-Received-From: header by Sergey
 			Report an error if inet_ntop fails in tcp_wrappers
  * docs/man:		Clarified suggested use of max-children only on

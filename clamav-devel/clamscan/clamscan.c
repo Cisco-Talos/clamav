@@ -203,8 +203,13 @@ void help(void)
     mprintf("    --infected            -i             Print infected files only\n");
     mprintf("    --remove                             Remove infected files. Be careful.\n");
     mprintf("    --move=DIRECTORY                     Move infected files into DIRECTORY\n");
+#ifdef HAVE_REGEX_H
+    mprintf("    --exclude=REGEX                      Don't scan file names matching REGEX\n");
+    mprintf("    --include=REGEX                      Only scan file names matching REGEX\n");
+#else
     mprintf("    --exclude=PATT                       Don't scan file names containing PATT\n");
     mprintf("    --include=PATT                       Only scan file names containing PATT\n");
+#endif
     mprintf("    --bell                               Sound bell on virus detection\n");
     mprintf("    --no-summary                         Disable summary at end of scanning\n");
     mprintf("    --mbox                -m             Treat stdin as a mailbox\n");

@@ -111,6 +111,9 @@
 /* "pragma pack" */
 #undef HAVE_PRAGMA_PACK
 
+/* Define to 1 if you have the <regex.h> header file. */
+#undef HAVE_REGEX_H
+
 /* Define to 1 if you have the `setsid' function. */
 #undef HAVE_SETSID
 

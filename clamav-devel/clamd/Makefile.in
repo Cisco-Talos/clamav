@@ -85,6 +85,7 @@ target_triplet = @target@
 EXEEXT = @EXEEXT@
 OBJEXT = @OBJEXT@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+ADDITIONAL_LIBS = @ADDITIONAL_LIBS@
 AMTAR = @AMTAR@
 AS = @AS@
 AWK = @AWK@
@@ -159,7 +160,7 @@ install_sh = @install_sh@
 
 
 DEFS = @DEFS@
-LIBS = -L$(top_builddir)/libclamav -lclamav @CLAMD_LIBS@
+LIBS = -L$(top_builddir)/libclamav -lclamav @CLAMD_LIBS@ @ADDITIONAL_LIBS@
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 subdir = clamd
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs

@@ -38,5 +38,5 @@ clamscan_SOURCES = \
     defaults.h
 
 DEFS = @DEFS@
-LIBS = -L$(top_builddir)/libclamav -lclamav
+LIBS = -L$(top_builddir)/libclamav -lclamav @ADDITIONAL_LIBS@
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav

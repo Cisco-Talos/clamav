@@ -38,6 +38,10 @@
 #include <clamav.h>
 #include <errno.h>
 
+#ifdef HAVE_REGEX_H
+#include <regex.h>
+#endif
+
 #include "defaults.h"
 #include "others.h"
 #include "options.h"
@@ -303,6 +307,29 @@ int scanmanager(const struct optstruct *opt)
     return ret;
 }
 
+int match_regex(const char *filename, const char *pattern)
+{
+#ifdef HAVE_REGEX_H
+	regex_t reg;
+	int match, flags;
+#ifndef C_CYGWIN
+	flags = 0;
+#else
+	flags = REG_ICASE; /* case insensitive on Windows */
+#endif	
+	if(regcomp(&reg, pattern, flags) != 0) {
+	    mprintf("!%s: Could not parse regular expression %s.\n", filename, pattern);
+	    logg("!%s: Could not parse regular expression %s.\n", filename, pattern);
+		return 2;
+	}
+	match = (regexec(&reg, filename, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
+	regfree(&reg);
+	return match;
+#else /* HAVE_REGEX_H */
+	return strstr(filename, pattern) ? 1 : 0;
+#endif
+}
+
 int scanfile(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits)
 {
 	int ret, options = 0, included;
@@ -319,12 +346,12 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 		    mprintf("%s: Excluded (/proc).\n", filename);
 		return 0;
 	    }
-#endif
-
+#endif    
+    
     if(optl(opt, "exclude")) {
 	argument = getfirstargl(opt, "exclude", &optnode);
 	while (argument) {
-	    if(strstr(filename, argument)) {
+	    if(match_regex(filename, argument) == 1) {
 		if(!printinfected)
 		    mprintf("%s: Excluded.\n", filename);
 		return 0;
@@ -332,12 +359,12 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	    argument = getnextargl(&optnode, "exclude");
 	}
     }
-
-    if(optl(opt, "include")) {
+     
+   if(optl(opt, "include")) {
 	included = 0;
 	argument = getfirstargl(opt, "include",&optnode);
 	while (argument && !included) {
-	    if(strstr(filename, argument))
+	    if(match_regex(filename, argument) == 1)
 		included = 1;
 	    argument = getnextargl(&optnode, "include");
 	}
@@ -349,7 +376,6 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	}
 	
     }
-
 
     if(fileinfo(filename, 1) == 0) {
 	if(!printinfected)
@@ -920,11 +946,12 @@ int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struc
 
 void move_infected(const char *filename, const struct optstruct *opt)
 {
-    char *movedir, *movefilename, *tmp;
+    char *movedir, *movefilename, *tmp, numext[4 + 1];
     struct stat fstat, mfstat;
+    int n, len, movefilename_size;
 
-    if(!(movedir = getargl(opt, "move")))
-    {
+
+    if(!(movedir = getargl(opt, "move"))) {
         /* Should never reach here */
         mprintf("@error moving file '%s'.\n", filename);
         mprintf("clamscan: getargc() returned NULL.\n");
@@ -933,35 +960,33 @@ void move_infected(const char *filename, const struct optstruct *opt)
         return;
     }
 
-    if(access(movedir, W_OK|X_OK) == -1)
-    {
+    if(access(movedir, W_OK|X_OK) == -1) {
         mprintf("@error moving file '%s'.\n", filename);
         mprintf("clamscan: cannot write to '%s': %s.\n", movedir, strerror(errno));
         logg("clamscan: cannot write to '%s': %s.\n", movedir, strerror(errno));
         claminfo.notmoved++;
         return;
     }
-    
-    if(!(tmp = strrchr(filename, '/')))
-    {
+
+    if(!(tmp = strrchr(filename, '/'))) {
         mprintf("@error moving file '%s'.\n", filename);
         mprintf("clamscan: '%s' does not appear to be a valid filename.\n", filename);
         logg("clamscan: '%s' does not appear to be a valid filename.\n", filename);
         claminfo.notmoved++;
         return;
     }
-    
-    if(!(movefilename = malloc(sizeof(char) * (strlen(movedir) + strlen(tmp) + 1))))
-    {
+
+    movefilename_size = sizeof(char) * (strlen(movedir) + strlen(tmp) + sizeof(numext) + 1);
+
+    if(!(movefilename = malloc(movefilename_size))) {
         mprintf("@error moving file '%s'.\n", filename);
         mprintf("clamscan: malloc() returned NULL.\n");
         logg("clamscan: malloc() returned NULL.\n");
         claminfo.notmoved++;
         return;
     }
-    
-    if(!(strrcpy(movefilename, movedir)))
-    {
+
+    if(!(strrcpy(movefilename, movedir))) {
         mprintf("@error moving file '%s'.\n", filename);
         mprintf("clamscan: strrcpy() returned NULL.\n");
         logg("clamscan: strrcpy() returned NULL.\n");
@@ -969,9 +994,8 @@ void move_infected(const char *filename, const struct optstruct *opt)
         free(movefilename);
         return;
     }
-    
-    if(!(strcat(movefilename, tmp)))
-    {
+
+    if(!(strcat(movefilename, tmp))) {
         mprintf("@error moving file '%s'.\n", filename);
         mprintf("clamscan: strcat() returned NULL.\n");
         logg("clamscan: strcat() returned NULL.\n");
@@ -979,22 +1003,36 @@ void move_infected(const char *filename, const struct optstruct *opt)
         free(movefilename);
         return;
     }
-    
+
     stat(filename, &fstat);
 
-    if(!stat(movefilename, &mfstat))
-    {
+    if(!stat(movefilename, &mfstat)) {
         if(fstat.st_ino == mfstat.st_ino) { /* It's the same file*/
             mprintf("clamscan: file excluded '%s'.\n", filename);
             logg("clamscan: file excluded '%s'.\n", filename);
             claminfo.notmoved++;
             free(movefilename);
             return;
-        }
+        } else {
+            /* file exists - try to append an ordinal number to the
+	     * quranatined file in an attempt not to overwrite existing
+	     * files in quarantine  
+	     */
+            len = strlen(movefilename);
+            n = 0;        		        		
+            do {
+                /* reset the movefilename to it's initial value by
+		 * truncating to the original filename length
+		 */
+                movefilename[len] = 0;
+                /* append .XXX */
+                sprintf(numext, ".%03d", n++);
+                strcat(movefilename, numext);            	
+            } while(!stat(movefilename, &mfstat) && (n < 1000));
+       }
     }
-    
-    if(filecopy(filename, movefilename) == -1)
-    {
+
+    if(filecopy(filename, movefilename) == -1) {
         mprintf("@error moving file '%s'.\n", filename);
         mprintf("clamscan: cannot move '%s' to '%s': %s.\n", filename, movefilename, strerror(errno));
         logg("clamscan: cannot move '%s' to '%s': %s.\n", filename, movefilename, strerror(errno));
@@ -1005,16 +1043,13 @@ void move_infected(const char *filename, const struct optstruct *opt)
 
     chmod(movefilename, fstat.st_mode);
     chown(movefilename, fstat.st_uid, fstat.st_gid);
-    
-    if(unlink(filename))
-    {
+
+    if(unlink(filename)) {
         mprintf("@error moving file '%s'.\n", filename);
         mprintf("clamscan: cannot unlink '%s': %s.\n", filename, strerror(errno));
         logg("clamscan: cannot unlink '%s': %s.\n", filename, strerror(errno));
         claminfo.notremoved++;            
-    }
-    else
-    {
+    } else {
         mprintf("%s: moved to '%s'.\n", filename, movefilename);
         logg("%s: moved to '%s'.\n", filename, movefilename);
     }
