@@ -1,3 +1,10 @@
+Wed Dec  1 12:14:46 GMT 2004 (njh)
+----------------------------------
+  * libeclamav/message.c:	Part of rule 3 of paragraph 5.1 of RFC1521 was
+		not being implemented, which meant that quoted-printable
+		attachments with spaces before the '=' character at the end
+		of soft breakon lines where not being correctly decoded
+
 Tue Nov 30 16:47:54 CET 2004 (tk)
 ---------------------------------
   * improved support for BSDI BSD/OS (access to test environment provided by
