@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: binhex.c,v $
+ * Revision 1.8  2004/11/28 21:05:50  nigelhorne
+ * Handle headers with only spaces
+ *
  * Revision 1.7  2004/11/23 09:05:26  nigelhorne
  * Fix crash in base64 encoded binhex files
  *
@@ -36,7 +39,7 @@
  * First draft of binhex.c
  *
  */
-static	char	const	rcsid[] = "$Id: binhex.c,v 1.7 2004/11/23 09:05:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: binhex.c,v 1.8 2004/11/28 21:05:50 nigelhorne Exp $";
 
 #include "clamav.h"
 
@@ -124,7 +127,7 @@ cli_binhex(const char *dir, int desc)
 
 		/*puts(line);*/
 
-		if(messageAddStr(m, line) < 0)
+		if(messageAddStr(m, line, 1) < 0)
 			break;
 
 		buf = ++ptr;

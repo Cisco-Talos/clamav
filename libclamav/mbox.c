@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.193  2004/11/28 21:05:50  nigelhorne
+ * Handle headers with only spaces
+ *
  * Revision 1.192  2004/11/28 16:27:28  nigelhorne
  * Save the text portions as text not mail files
  *
@@ -564,7 +567,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.192 2004/11/28 16:27:28 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.193 2004/11/28 21:05:50 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -952,12 +955,14 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				cli_dbgmsg("Finished processing message\n");
 			} else
 				lastLineWasEmpty = (bool)(buffer[0] == '\0');
-			if(messageAddStr(m, buffer) < 0)
+			if(messageAddStr(m, buffer, 1) < 0)
 				break;
 		} while(fgets(buffer, sizeof(buffer) - 1, fd) != NULL);
 
 		cli_dbgmsg("Deal with email number %d\n", messagenumber);
 	} else {
+		int inHeader = 1;
+
 		/*
 		 * It's a single message, parse the headers then the body
 		 * Ignore blank lines at the start of the message
@@ -977,13 +982,15 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		     (fgets(buffer, sizeof(buffer) - 1, fd) != NULL))
 			;
 
-		buffer[LINE_LENGTH] = '\0';
+		buffer[sizeof(buffer) - 1] = '\0';
 
 		/*
 		 * FIXME: files full of new lines and nothing else are
 		 * handled ungracefully...
 		 */
 		do {
+			const char *ptr;
+
 			/*
 			 * TODO: this needlessly creates a message object,
 			 * it'd be better if parseEmailHeaders could also
@@ -992,8 +999,22 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			 * of code I want to avoid
 			 */
 			(void)cli_chomp(buffer);
-			if(messageAddStr(m, buffer) < 0)
+			
+			/*
+			 * Ignore leading CR, e.g. if newlines are LFCR instead
+			 * or CRLF
+			 */
+			for(ptr = buffer; *ptr == '\r'; ptr++)
+				;
+			/*
+			 * Don't blank lines which are only spaces from
+			 * headers, otherwise they'll be treated as the end of
+			 * header marker
+			 */
+			if(messageAddStr(m, ptr, !inHeader) < 0)
 				break;
+			if(*ptr == '\n')
+				inHeader = 0;
 		} while(fgets(buffer, sizeof(buffer) - 1, fd) != NULL);
 	}
 
@@ -1500,7 +1521,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				do {
 					const char *line = lineGetData(t_line->t_line);
 
-					/*printf("inMimeHead %d inhead %d boundary '%s' line '%s' next '%s'\n",
+					/*cli_dbgmsg("inMimeHead %d inhead %d boundary '%s' line '%s' next '%s'\n",
 						inMimeHead, inhead, boundary, line,
 						t_line->t_next && t_line->t_next->t_line ? lineGetData(t_line->t_next->t_line) : "(null)");*/
 
@@ -1884,7 +1905,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							/*
 							 * No plain text version
 							 */
-							messageAddStr(aMessage, "No plain text alternative");
+							messageAddStr(aMessage, "No plain text alternative", 0);
 						assert(messageGetBody(aMessage) != NULL);
 						break;
 					case TEXT:
@@ -2945,7 +2966,7 @@ rfc2047(const char *in)
 		m = messageCreate();
 		if(m == NULL)
 			break;
-		messageAddStr(m, enctext);
+		messageAddStr(m, enctext, 0);
 		free(enctext);
 		switch(encoding) {
 			case 'q':

@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.125  2004/11/28 21:05:49  nigelhorne
+ * Handle headers with only spaces
+ *
  * Revision 1.124  2004/11/28 16:24:12  nigelhorne
  * Allow lowercase hex characters in quoted-printable
  *
@@ -369,7 +372,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.124 2004/11/28 16:24:12 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.125 2004/11/28 21:05:49 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1125,13 +1128,29 @@ messageAddLine(message *m, line_t *line)
  * Line must not be terminated by a \n
  */
 int
-messageAddStr(message *m, const char *data)
+messageAddStr(message *m, const char *data, int stripSpaces)
 {
 	line_t *repeat = NULL;
 
 	assert(m != NULL);
 
+#if	0	/* Not sure why this doesn't work, it would save some RAM */
 	if(data) {
+		int iswhite = 1;
+		const char *p;
+
+		for(p = data; *p != '\0'; p++)
+			if(!isspace(*p)) {
+				iswhite = 0;
+				break;
+			}
+		if(iswhite) {
+			/*cli_dbgmsg("messageAddStr: empty line: '%s'\n", data);*/
+			data = (stripSpaces) ? NULL : " ";
+		}
+	}
+#else
+	if(stripSpaces && data) {
 		int iswhite = 1;
 		const char *p;
 
@@ -1145,6 +1164,7 @@ messageAddStr(message *m, const char *data)
 			data = NULL;
 		}
 	}
+#endif
 
 	if(m->body_first == NULL)
 		m->body_last = m->body_first = (text *)cli_malloc(sizeof(text));
