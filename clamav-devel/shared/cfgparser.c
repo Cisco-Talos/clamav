@@ -61,7 +61,7 @@ struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 	    {"LogFacility", OPT_STR},
 	    {"PidFile", OPT_STR},
 	    {"TemporaryDirectory", OPT_STR},
-	    {"MaxFileSize", OPT_COMPSIZE},
+	    {"DisableDefaultScanOptions", OPT_NOARG},
 	    {"ScanPE", OPT_NOARG},
 	    {"DetectBrokenExecutables", OPT_NOARG},
 	    {"ScanMail", OPT_NOARG},

@@ -352,6 +352,9 @@ int download(const struct cfgstruct *copt, const struct optstruct *opt)
 
     if((cpt = cfgopt(copt, "MaxAttempts")))
 	maxattempts = cpt->numarg;
+    else
+	maxattempts = CL_DEFAULT_MAXATTEMPTS;
+
 
     mprintf("*Max retries == %d\n", maxattempts);
 

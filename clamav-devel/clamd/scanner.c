@@ -76,16 +76,20 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 	struct stat statbuf;
 	struct cfgstruct *cpt;
 	char *fname;
-	int ret = 0, scanret = 0;
+	int ret = 0, scanret = 0, maxdirrec = 0;
 
-    if((cpt = cfgopt(copt, "MaxDirectoryRecursion"))) {
-	if(cpt->numarg) {
-	    if(*reclev > cpt->numarg) {
-		logg("*Directory recursion limit exceeded at %s\n", dirname);
-		return 0;
-	    }
-	    (*reclev)++;
+
+    if((cpt = cfgopt(copt, "MaxDirectoryRecursion")))
+	maxdirrec = cpt->numarg;
+    else
+	maxdirrec = CL_DEFAULT_MAXDIRREC;
+
+    if(maxdirrec) {
+	if(*reclev > maxdirrec) {
+	    logg("*Directory recursion limit exceeded at %s\n", dirname);
+	    return 0;
 	}
+	(*reclev)++;
     }
 
     if((dd = opendir(dirname)) != NULL) {
@@ -316,6 +320,9 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 
     if((cpt = cfgopt(copt, "StreamMaxLength")))
 	maxsize = cpt->numarg;
+    else
+	maxsize = CL_DEFAULT_STREAMMAXLEN;
+
 
     btread = sizeof(buff);
 

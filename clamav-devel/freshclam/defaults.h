@@ -22,10 +22,6 @@
 
 #define VIRUSDBDIR DATADIR
 
-#define MIRROR_CFG "/mirrors.txt"
-
-#define MIRROR "/mirror"
-
 /* default names */
 
 #ifdef CLAMAVUSER
@@ -40,4 +36,5 @@
 #define UNPGROUP "clamav"
 #endif
 
-#define CL_DEFAULT_CHECKS 6
+#define CL_DEFAULT_CHECKS 12
+#define CL_DEFAULT_MAXATTEMPTS 3
