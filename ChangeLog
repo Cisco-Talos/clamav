@@ -1,3 +1,7 @@
+Mon Jan 12 08:58:59 GMT 2004 (njh)
+----------------------------------
+  * docs:	Note that clamav-milter requires clamd
+
 Sat Jan 10 16:23:54 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter: Added OpenBSD instructions from <peo_s@incedo.org>

@@ -1,4 +1,4 @@
-.TH "clamav-milter" "8" "December 7, 2003" "" "Clam AntiVirus"
+.TH "clamav-milter" "8" "January 12, 2004" "" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 clamav\-milter \- milter compatible mail scanner
@@ -8,6 +8,10 @@ clamav\-milter [options] socket_address
 .SH "DESCRIPTION"
 .LP 
 clamav\-milter is a filter for sendmail mail server. It uses a mail scanning engine built into clamd.
+.TP
+clamav\-milter requires \fBclamd(8)\fR to run.
+When starting, clamav\-milter verifies that it can communicate with clamd;
+if it cannot it terminates.
 .SH "OPTIONS"
 .LP 
 
