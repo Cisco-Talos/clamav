@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 
 struct thrarg {
     int sid;
-    int options; /* archive support 0/1 */
+    int options;
     const struct cfgstruct *copt;
     const struct cl_node *root;
     const struct cl_limits *limits;
@@ -44,11 +44,13 @@ struct thrwarg {
     int socketd;
     struct cl_node **root;
     const struct cfgstruct *copt;
+    const struct cl_limits *limits;
+    int options;
 };
 
 short int progexit; /* exit steering variable */
 int progpid; /* clamd pid */
-short int reload, clamuko_reload, main_accept, main_reload;
+short int reload, main_accept, main_reload;
 
 int acceptloop_proc(int socketd, struct cl_node *root, const struct cfgstruct *copt);
 int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *copt);

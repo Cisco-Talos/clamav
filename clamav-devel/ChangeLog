@@ -1,3 +1,12 @@
+Fri Dec 12 18:47:10 CET 2003 (tk)
+---------------------------------
+  * clamd: clamuko - fixed a segmentation fault after database update. Problem
+	   reported by Anders Herbjørnsen <andersh*gar.no>. Also now clamuko
+	   is always stopped before (and restarted after) db update to
+	   protect against a potential split with Dazuko.
+  * libclamav: scanners: added missing braces in a logical block (thanks to
+	       Tomasz Klim <tomek*euroneto.pl>)
+
 Fri Dec 12 13:43:50 GMT 2003 (njh)
 ----------------------------------
   * clamav-milter: A couple of calls to clamfi_cleanup were missing before

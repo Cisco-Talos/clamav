@@ -713,12 +713,13 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
 	(*reclev)--;
     }
 
-    if(ret != CL_VIRUS) /* scan the raw file */
+    if(ret != CL_VIRUS) { /* scan the raw file */
 	lseek(desc, 0, SEEK_SET); /* If archive scan didn't rewind desc */
 	if(cli_scandesc(desc, virname, scanned, root) == CL_VIRUS) {
 	    cli_dbgmsg("%s virus found in descriptor %d.\n", *virname, desc);
 	    return CL_VIRUS;
 	}
+    }
 
     return ret;
 }
