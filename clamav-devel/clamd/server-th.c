@@ -187,7 +187,9 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	sigset_t sigset;
 	client_conn_t *client_conn;
 	struct cfgstruct *cpt;
-	/* char *buff[BUFFSIZE+1]; */
+#ifdef HAVE_STRERROR_R
+	char buff[BUFFSIZE + 1];
+#endif
 	unsigned int selfchk;
 	time_t start_time, current_time;
 	pid_t mainpid;
@@ -398,9 +400,12 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     for(;;) {				
 	new_sd = accept(socketd, NULL, NULL);
 	if((new_sd == -1) && (errno != EINTR)) {
-	    logg("!accept() failed\n");
-	    /* logg("!accept() failed: %s", strerror_r(errno, buff, BUFFSIZE)); */
 	    /* very bad - need to exit or restart */
+#ifdef HAVE_STRERROR_R
+	    logg("!accept() failed: %s", strerror_r(errno, buff, BUFFSIZE));
+#else
+	    logg("!accept() failed\n");
+#endif
 	    continue;
 	}
 

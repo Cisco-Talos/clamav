@@ -298,76 +298,73 @@ struct Decode
 };
 
 
-struct MarkHeader MarkHead;
-struct NewMainArchiveHeader NewMhd;
-struct NewFileHeader NewLhd;
-struct BlockHeader BlockHead;
+static struct MarkHeader MarkHead;
+static struct NewMainArchiveHeader NewMhd;
+static struct NewFileHeader NewLhd;
+static struct BlockHeader BlockHead;
 
-UBYTE *TempMemory;                          /* temporary unpack-buffer      */
-char *CommMemory;
+static UBYTE *TempMemory;                          /* temporary unpack-buffer      */
+static char *CommMemory;
 
 
-UBYTE *UnpMemory;
-char ArgName[NM];                           /* current file in rar archive  */
-char ArcFileName[NM];                       /* file to decompress           */
+static UBYTE *UnpMemory;
+static char ArgName[NM];                           /* current file in rar archive  */
+static char ArcFileName[NM];                       /* file to decompress           */
 
 #ifdef _USE_MEMORY_TO_MEMORY_DECOMPRESSION  /* mem-to-mem decompression     */
-  MemoryFile *MemRARFile;                   /* pointer to RAR file in memory*/
+static  MemoryFile *MemRARFile;                   /* pointer to RAR file in memory*/
 #else
-  FILE *ArcPtr;                             /* input RAR file handler       */
+static  FILE *ArcPtr;                             /* input RAR file handler       */
 #endif
-char Password[255];                         /* password to decrypt files    */
+static char Password[255];                         /* password to decrypt files    */
 
-unsigned char *temp_output_buffer;          /* extract files to this pointer*/
-unsigned long *temp_output_buffer_offset;   /* size of temp. extract buffer */
+static unsigned char *temp_output_buffer;          /* extract files to this pointer*/
+static unsigned long *temp_output_buffer_offset;   /* size of temp. extract buffer */
 
-int MainHeadSize;
+static int MainHeadSize;
 
-long CurBlockPos,NextBlockPos;
+static long CurBlockPos,NextBlockPos;
 
-unsigned long CurUnpRead, CurUnpWrite;
-long UnpPackedSize;
-long DestUnpSize;
+static unsigned long CurUnpRead, CurUnpWrite;
+static long UnpPackedSize;
+static long DestUnpSize;
 
-UDWORD HeaderCRC;
-int Encryption;
+static UDWORD HeaderCRC;
+static int Encryption;
 
-unsigned int UnpWrSize;
-unsigned char *UnpWrAddr;
-unsigned int UnpPtr,WrPtr;
+static unsigned int UnpPtr,WrPtr;
 
-unsigned char PN1,PN2,PN3;
-unsigned short OldKey[4];
+static unsigned char PN1,PN2,PN3;
+static unsigned short OldKey[4];
 
 
 
 /* function header definitions                                              */
-int ReadHeader(int BlockType);
-BOOL ExtrFile(int desc);
-BOOL ListFile(void);
-int tread(void *stream,void *buf,unsigned len);
-int tseek(void *stream,long offset,int fromwhere);
-BOOL UnstoreFile(void);
-int IsArchive(void);
-int ReadBlock(int BlockType);
-unsigned int UnpRead(unsigned char *Addr,unsigned int Count);
-void UnpInitData(void);
-void Unpack(unsigned char *UnpAddr, BOOL FileFound);
-UBYTE DecodeAudio(int Delta);
+static int ReadHeader(int BlockType);
+static BOOL ExtrFile(int desc);
+static int tread(void *stream,void *buf,unsigned len);
+static int tseek(void *stream,long offset,int fromwhere);
+static BOOL UnstoreFile(void);
+static int IsArchive(void);
+static int ReadBlock(int BlockType);
+static unsigned int UnpRead(unsigned char *Addr,unsigned int Count);
+static void UnpInitData(void);
+static void Unpack(unsigned char *UnpAddr, BOOL FileFound);
+static UBYTE DecodeAudio(int Delta);
 static void DecodeNumber(struct Decode *Dec);
-void UpdKeys(UBYTE *Buf);
-void SetCryptKeys(char *Password);
-void SetOldKeys(char *Password);
-void DecryptBlock(unsigned char *Buf);
-void InitCRC(void);
-UDWORD CalcCRC32(UDWORD StartCRC,UBYTE *Addr,UDWORD Size);
-void UnpReadBuf(int FirstBuf);
-void ReadTables(void);
+static void UpdKeys(UBYTE *Buf);
+static void SetCryptKeys(char* NewPassword);
+static void SetOldKeys(char *NewPassword);
+static void DecryptBlock(unsigned char *Buf);
+static void InitCRC(void);
+static UDWORD CalcCRC32(UDWORD StartCRC,UBYTE *Addr,UDWORD Size);
+static void UnpReadBuf(int FirstBuf);
+static void ReadTables(void);
 static void ReadLastTables(void);
 static void MakeDecodeTables(unsigned char *LenTab,
                              struct Decode *Dec,
                              int Size);
-int stricomp(char *Str1,char *Str2);
+static int stricomp(char *Str1,char *Str2);
 /* ------------------------------------------------------------------------ */
 
 
@@ -1151,7 +1148,7 @@ int tseek(void *stream,long offset,int fromwhere)
 #endif
 
 
-char* strupper(char *Str)
+static char* strupper(char *Str)
 {
   char *ChPtr;
   for (ChPtr=Str;*ChPtr;ChPtr++)
@@ -1282,7 +1279,7 @@ struct AudioVariables
 #define MC 257
 
 
-struct AudioVariables AudV[4];
+static struct AudioVariables AudV[4];
 
 #define GetBits()                                                 \
         BitField = ( ( ( (UDWORD)InBuf[InAddr]   << 16 ) |        \
@@ -1299,19 +1296,19 @@ static unsigned char *UnpBuf;
 static unsigned int BitField;
 static unsigned int Number;
 
-unsigned char InBuf[8192];                  /* input read buffer            */
+static unsigned char InBuf[8192];                  /* input read buffer            */
 
-unsigned char UnpOldTable[MC*4];
+static unsigned char UnpOldTable[MC*4];
 
-unsigned int InAddr,InBit,ReadTop;
+static unsigned int InAddr,InBit,ReadTop;
 
-unsigned int LastDist,LastLength;
+static unsigned int LastDist,LastLength;
 static unsigned int Length,Distance;
 
-unsigned int OldDist[4],OldDistPtr;
+static unsigned int OldDist[4],OldDistPtr;
 
 
-struct LitDecode
+static struct LitDecode
 {
   unsigned int MaxNum;
   unsigned int DecodeLen[16];
@@ -1319,7 +1316,7 @@ struct LitDecode
   unsigned int DecodeNum[NC];
 } LD;
 
-struct DistDecode
+static struct DistDecode
 {
   unsigned int MaxNum;
   unsigned int DecodeLen[16];
@@ -1327,7 +1324,7 @@ struct DistDecode
   unsigned int DecodeNum[DC];
 } DD;
 
-struct RepDecode
+static struct RepDecode
 {
   unsigned int MaxNum;
   unsigned int DecodeLen[16];
@@ -1335,7 +1332,7 @@ struct RepDecode
   unsigned int DecodeNum[RC];
 } RD;
 
-struct MultDecode
+static struct MultDecode
 {
   unsigned int MaxNum;
   unsigned int DecodeLen[16];
@@ -1343,7 +1340,7 @@ struct MultDecode
   unsigned int DecodeNum[MC];
 } MD[4];
 
-struct BitDecode
+static struct BitDecode
 {
   unsigned int MaxNum;
   unsigned int DecodeLen[16];
@@ -1353,7 +1350,7 @@ struct BitDecode
 
 static struct MultDecode *MDPtr[4]={&MD[0],&MD[1],&MD[2],&MD[3]};
 
-int UnpAudioBlock,UnpChannels,CurChannel,ChannelDelta;
+static int UnpAudioBlock,UnpChannels,CurChannel,ChannelDelta;
 
 
 void Unpack(unsigned char *UnpAddr, BOOL FileFound)
@@ -2345,10 +2342,10 @@ UBYTE DecodeAudio(int Delta)
            ((UDWORD)SubstTable[(int)(t>>24)&255]<<24) )
 
 
-UDWORD CRCTab[256];
+static UDWORD CRCTab[256];
 
-UBYTE SubstTable[256];
-UBYTE InitSubstTable[256]={
+static UBYTE SubstTable[256];
+static const UBYTE InitSubstTable[256]={
   215, 19,149, 35, 73,197,192,205,249, 28, 16,119, 48,221,  2, 42,
   232,  1,177,233, 14, 88,219, 25,223,195,244, 90, 87,239,153,137,
   255,199,147, 70, 92, 66,246, 13,216, 40, 62, 29,217,230, 86,  6,
@@ -2367,10 +2364,10 @@ UBYTE InitSubstTable[256]={
   116,184,160, 96,109, 37, 30,106,140,104,150,  5,204,117,112, 84
 };
 
-UDWORD Key[4];
+static UDWORD Key[4];
 
 
-void EncryptBlock(UBYTE *Buf)
+static void EncryptBlock(UBYTE *Buf)
 {
   int I;
 
@@ -2511,7 +2508,7 @@ void UpdKeys(UBYTE *Buf)
   }
 }
 
-void SetCryptKeys(char *Password)
+static void SetCryptKeys(char *NewPassword)
 {
   unsigned int I,J,K,PswLength;
   unsigned char N1,N2;
@@ -2521,15 +2518,15 @@ void SetCryptKeys(char *Password)
   UBYTE Ch;
 #endif
 
-  SetOldKeys(Password);
+  SetOldKeys(NewPassword);
 
   Key[0]=0xD3A3B879L;
   Key[1]=0x3F6D12F7L;
   Key[2]=0x7515A235L;
   Key[3]=0xA4E7F123L;
   memset(Psw,0,sizeof(Psw));
-  strcpy((char *)Psw,Password);
-  PswLength=strlen(Password);
+  strcpy((char *)Psw,NewPassword);
+  PswLength=strlen(NewPassword);
   memcpy(SubstTable,InitSubstTable,sizeof(SubstTable));
 
   for (J=0;J<256;J++)
@@ -2603,16 +2600,16 @@ void SetCryptKeys(char *Password)
 }
 
 
-void SetOldKeys(char *Password)
+void SetOldKeys(char *NewPassword)
 {
   UDWORD PswCRC;
   UBYTE Ch;
-  PswCRC=CalcCRC32(0xFFFFFFFFL,(UBYTE*)Password,strlen(Password));
+  PswCRC=CalcCRC32(0xFFFFFFFFL,(UBYTE*)NewPassword,strlen(NewPassword));
   OldKey[0]=(UWORD)PswCRC;
   OldKey[1]=(UWORD)(PswCRC>>16);
   OldKey[2]=OldKey[3]=0;
   PN1=PN2=PN3=0;
-  while ((Ch=*Password)!=0)
+  while ((Ch=*NewPassword)!=0)
   {
     PN1+=Ch;
     PN2^=Ch;
@@ -2620,7 +2617,7 @@ void SetOldKeys(char *Password)
     PN3=(UBYTE)rol(PN3,1);
     OldKey[2]^=((UWORD)(Ch^CRCTab[Ch]));
     OldKey[3]+=((UWORD)(Ch+(CRCTab[Ch]>>16)));
-    Password++;
+    NewPassword++;
   }
 }
 
@@ -2642,7 +2639,7 @@ void InitCRC(void)
 }
 
 
-UDWORD CalcCRC32(UDWORD StartCRC,UBYTE *Addr,UDWORD Size)
+static UDWORD CalcCRC32(UDWORD StartCRC,UBYTE *Addr,UDWORD Size)
 {
   unsigned int I;
   for (I=0; I<Size; I++)

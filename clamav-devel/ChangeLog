@@ -1,3 +1,7 @@
+Wed Mar 10 01:35:40 CET 2004 (tk)
+---------------------------------
+  * libclamav: unrarlib: cleanup (Dirk Mueller <dmuell*gmx.net>)
+
 Tue Mar  9 23:49:06 CET 2004 (tk)
 ---------------------------------
   * libclamav, sigtool: small code cleanups (Dirk Mueller <mueller*kde.org>)
