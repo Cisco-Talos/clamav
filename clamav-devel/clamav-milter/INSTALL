@@ -246,6 +246,12 @@ Changes
 0.67f	20/2/04	Added checkClamd() - if possible attempts to see if clamd has
 		died
 0.67g	21/2/04	Don't run if the quarantine-dir is publically accessable
+0.67h	22/2/04	Change the log level TCPwrapper denying
+		Handle ERROR message from clamd
+		Moved smfi_setconn to avoid race condictions when an e-mail is
+		received just as the milter is starting but isn't ready to
+		handle it causing the milter to go to an error state
+		Hardend umask
 
 BUG REPORTS
 

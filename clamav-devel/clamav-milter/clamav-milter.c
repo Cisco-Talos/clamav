@@ -245,9 +245,19 @@
  *	0.67f	20/2/04	Added checkClamd() - if possible attempts to see
  *			if clamd has died
  *	0.67g	21/2/04	Don't run if the quarantine-dir is publically accessable
+ *	0.67h	22/2/04	Change the log level TCPwrapper denying
+ *			Handle ERROR message from clamd
+ *			Moved smfi_setconn to avoid race condictions when
+ *			an e-mail is received just as the milter is starting
+ *			but isn't ready to handle it causing the milter to
+ *			go to an error state
+ *			Hardend umask
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.55  2004/02/22 22:53:50  nigelhorne
+ * Handle ERROR message from clamd
+ *
  * Revision 1.54  2004/02/22 17:27:40  nigelhorne
  * Updated installation instructions now that privileges are dropped
  *
@@ -395,9 +405,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.54 2004/02/22 17:27:40 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.55 2004/02/22 22:53:50 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.67g"
+#define	CM_VERSION	"0.67h"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -449,7 +459,7 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.54 2004/02/22 17:27:40 nig
 #include <tcpd.h>
 
 int	allow_severity = LOG_DEBUG;
-int	deny_severity = LOG_ERR;
+int	deny_severity = LOG_NOTICE;
 
 #endif
 
@@ -991,7 +1001,7 @@ main(int argc, char **argv)
 				cfgfile);
 			return EX_CONFIG;
 		}
-		umask(022);
+		umask(077);
 
 		serverIPs = (long *)cli_malloc(sizeof(long));
 		serverIPs[0] = inet_addr("127.0.0.1");
@@ -1096,12 +1106,6 @@ main(int argc, char **argv)
 #endif
 	}
 
-	if(smfi_setconn(port) == MI_FAILURE) {
-		fprintf(stderr, "%s: smfi_setconn failed\n",
-			argv[0]);
-		return EX_SOFTWARE;
-	}
-
 	if((cpt = cfgopt(copt, "PidFile")) != NULL)
 		pidFile = cpt->strarg;
 
@@ -1140,6 +1144,12 @@ main(int argc, char **argv)
 				if(errno != ENOENT)
 					perror(&port[6]);
 		}
+	}
+
+	if(smfi_setconn(port) == MI_FAILURE) {
+		fprintf(stderr, "%s: smfi_setconn failed\n",
+			argv[0]);
+		return EX_SOFTWARE;
 	}
 
 	if(smfi_register(smfilter) == MI_FAILURE) {
@@ -1959,6 +1969,13 @@ clamfi_eom(SMFICTX *ctx)
 
 	close(privdata->cmdSocket);
 	privdata->cmdSocket = -1;
+
+	if(strstr(mess, "ERROR") != NULL) {
+		if(use_syslog)
+			syslog(LOG_ERR, "%s: %s\n", smfi_getsymval(ctx, "i"), mess);
+		clamfi_cleanup(ctx);
+		return cl_error;
+	}
 
 	if(strstr(mess, "FOUND") == NULL) {
 		if(!nflag)
