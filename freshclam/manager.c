@@ -115,7 +115,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	int hostfd, nodb = 0, ret, port = 0;
 	char  *tempname, ipaddr[16];
 	const char *proxy = NULL, *user = NULL, *pass = NULL;
-
+	int flevel = cl_retflevel();
 
     if((current = cl_cvdhead(localname)) == NULL)
 	nodb = 1;
@@ -169,6 +169,15 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     if(current && (current->version >= remote->version)) {
 	mprintf("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
 	logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
+
+	if(flevel < current->fl) {
+	    /* display warning even for already installed database */
+	    mprintf("WARNING: Your ClamAV installation is OUTDATED - please update immediately !\n");
+	    mprintf("WARNING: Current functionality level = %d, required = %d\n", flevel, current->fl);
+	    logg("WARNING: Your ClamAV installation is OUTDATED - please update immediately !\n");
+	    logg("WARNING: Current functionality level = %d, required = %d\n", flevel, current->fl);
+	}
+
 	close(hostfd);
 	cl_cvdfree(current);
 	cl_cvdfree(remote);
@@ -233,6 +242,13 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 
     mprintf("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
     logg("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
+
+    if(flevel < current->fl) {
+	mprintf("WARNING: Your ClamAV installation is OUTDATED - please update immediately !\n");
+	mprintf("WARNING: Current functionality level = %d, required = %d\n", flevel, current->fl);
+	logg("WARNING: Your ClamAV installation is OUTDATED - please update immediately !\n");
+	logg("WARNING: Current functionality level = %d, required = %d\n", flevel, current->fl);
+    }
 
     cl_cvdfree(current);
     free(tempname);

@@ -38,6 +38,8 @@
 #include "others.h"
 #include "md5.h"
 
+#define CL_FLEVEL 1 /* don't touch it */
+
 int cli_debug_flag = 0;
 
 void cli_warnmsg(const char *str, ...)
@@ -77,6 +79,11 @@ void cli_dbgmsg(const char *str, ...)
 void cl_debug(void)
 {
     cli_debug_flag = 1;
+}
+
+int cl_retflevel(void)
+{
+    return CL_FLEVEL;
 }
 
 char *cl_strerror(int clerror)

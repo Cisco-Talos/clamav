@@ -1,5 +1,5 @@
 .\" Manual page created by Tomasz Kojm, 14/15 IV 2002
-.TH "clamscan" "1" "November 11, 2003" "Tomasz Kojm" "Clam AntiVirus"
+.TH "clamscan" "1" "January 13, 2004" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 clamscan \- scan files and directories against viruses
@@ -23,10 +23,10 @@ Print the version number and exit.
 Be verbose.
 .TP 
 \fB\-\-debug\fR
-This option causes clamscan to print many additional informations.
+Enable debug messages (mainly from libclamav).
 .TP 
 \fB\-\-quiet\fR
-Be quiet \- output only error messages.
+Be quiet \- output error messages only.
 .TP 
 \fB\-\-stdout\fR
 Write all messages to the standard output (stdout), instead of the standard error output (stderr). The buffer is automatically flushed (stdout unlike stderr is buffered), to avoid race conditions on output.
@@ -46,8 +46,11 @@ Create temporary files in DIRECTORY. Directory must be writeable for the 'clamav
 \fB\-r, \-\-recursive\fR
 Scan directories recursively. All the files in the given directory will be scanned. \fBThis option affects scanning subdirectories in archives, if you are using unpackers just turn it on.\fR
 .TP 
-\fB\-\-disable\-summary\fR
-Disable summary printing at the end of the scanning.
+\fB\-\-bell\fR
+Sound bell on virus detection.
+.TP 
+\fB\-\-no\-summary\fR
+Disable summary printing at the end of scanning.
 .TP 
 \fB\-\-exclude=PATT\fR
 Don't scan file names containing PATT. It may be used multiple times.
@@ -69,7 +72,7 @@ Move infected files into DIRECTORY. Directory must be writeable for the 'clamav'
 .TP 
 EXTRACTION OPTIONS:
 .TP 
-\fB\-\-disable\-archive\fR
+\fB\-\-no\-archive\fR
 Disable archive support built in libclamav.
 .TP 
 \fB\-\-max\-files=#n\fR

@@ -10,8 +10,8 @@ Author of clamav-milter and the whole mbox code.
 System administrator (www, mailing lists, mirror issues, virus
 submission mechanisms): Luca 'NERvOus' Gibelli <nervous*clamav.net>
 
-Submission management interface (for database developers only): Thomas Madsen
-<tm*softcom.dk>
+Submission management interface (for database developers only): Diego D'Ambra
+<diego*clamav.net>, Thomas Madsen <tm*softcom.dk>
 
 
 Database developers:
@@ -27,7 +27,8 @@ ClamAV logo: Mia Kalenius and Sergei Pronin <sp*finndesign.fi>
 TrashScan was written by Trashware <trashware*gmx.net>.
 
 libclamav/zziplib: Guido Draheim <guidod*gmx.de>
-libclamav/unrarlib.c: Christian Scheurer and Johannes Winkelmann (jw*tks6.net)
+libclamav/unrarlib.c: Christian Scheurer and Johannes Winkelmann, see
+							    www.unrarlib.org
 
 ClamAV patches were submitted by (in alphabetical order):
 

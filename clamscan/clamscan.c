@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2004 Tomasz Kojm <zolw@konarski.edu.pl>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -186,7 +186,7 @@ void help(void)
 
     mprintf("\n");
     mprintf("                          Clam AntiVirus Scanner "VERSION"\n");
-    mprintf("                (c) 2002, 2003 Tomasz Kojm <tkojm@clamav.net>\n\n");
+    mprintf("                (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>\n\n");
 
     mprintf("    --help                -h             Show help\n");
     mprintf("    --version             -V             Print version number and exit\n");
