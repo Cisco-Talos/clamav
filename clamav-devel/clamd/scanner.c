@@ -295,7 +295,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 		return -1;
 	    }
 
-	    if(write(tmpd, buff, bread) < 0) {
+	    if(writen(tmpd, buff, bread) != bread) {
 		shutdown(sockfd, 2);
 		close(sockfd);
 		close(acceptd);
