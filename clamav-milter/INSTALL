@@ -135,6 +135,9 @@ Changes
 		Removed remote possibility of crash if the target
 		e-mail address is very long
 		No longer calls clamdscan to get the version
+0.60m	12/10/03 Now does sanity check if using localSocket
+		Gets version info from clamd
+		Only reset fd's 0/1/2 if !ForeGround
 
 BUG REPORTS
 

@@ -1,4 +1,11 @@
+Sun Oct 12 09:37:44 BST 2003 (njh)
+---------------------------------
+  * clamav-milter: use VERSION info to talk to clamd not PING/PONG
+  		Only close fd 0/1/2 if !Foreground
+		Sanity checking now performed on LocalSocket as well as TCPSocket
+
 Sat Oct 11 16:42:42 BST 2003 (njh)
+---------------------------------
   * clamav-milter: fixed possible crash with long e-mail addresses
   		Removed call to clamdscan to get version
 
