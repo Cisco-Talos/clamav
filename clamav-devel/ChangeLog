@@ -1,3 +1,7 @@
+Sat Dec  4 17:04:40 GMT 2004 (njh)
+----------------------------------
+  * libclamav/blob.c:	Fixed filename handling in MACOS/X
+
 Sat Dec  4 15:52:08 GMT 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Handle text/rfc822-headers incorrectly sent as
