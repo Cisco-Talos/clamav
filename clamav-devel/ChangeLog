@@ -1,3 +1,7 @@
+Mon Nov 17 13:28:16 IST 2003 (njh)
+----------------------------------
+  * libclamav: Prevent buffer overflow in broken uuencoded files
+
 Mon Nov 17 10:20:05 IST 2003 (njh)
 ----------------------------------
   * clamav-milter: changed version from 0.60 to 0.65
