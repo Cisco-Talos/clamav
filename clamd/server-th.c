@@ -54,6 +54,7 @@ typedef struct client_conn_tag {
     const struct cfgstruct *copt;
     const struct cl_node *root;
     const struct cl_limits *limits;
+    pid_t mainpid;
 } client_conn_t;
 
 void scanner_thread(void *arg)
@@ -73,6 +74,7 @@ void scanner_thread(void *arg)
 	case COMMAND_QUIT:
 	    pthread_mutex_lock(&exit_mutex);
 	    progexit = 1;
+	    kill(conn->mainpid, SIGTERM);
 	    pthread_mutex_unlock(&exit_mutex);
 	    break;
 
@@ -188,7 +190,8 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	/* char *buff[BUFFSIZE+1]; */
 	unsigned int selfchk;
 	time_t start_time, current_time;
-	
+	pid_t mainpid;
+
 #if defined(C_BIGSTACK) || defined(C_BSD)
         size_t stacksize;
 #endif
@@ -201,13 +204,14 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	memset(&sigact, 0, sizeof(struct sigaction));
 
     /* save the PID */
+    mainpid = getpid();
     if((cpt = cfgopt(copt, "PidFile"))) {
 	    FILE *fd;
 	old_umask = umask(0006);
 	if((fd = fopen(cpt->strarg, "w")) == NULL) {
 	    logg("!Can't save PID in file %s\n", cpt->strarg);
 	} else {
-	    fprintf(fd, "%d", getpid());
+	    fprintf(fd, "%d", (int) mainpid);
 	    fclose(fd);
 	}
 	umask(old_umask);
@@ -413,6 +417,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 		client_conn->copt = copt;
 		client_conn->root = root;
 		client_conn->limits = &limits;
+		client_conn->mainpid = mainpid;
 		thrmgr_dispatch(thr_pool, client_conn);
 	}
 
