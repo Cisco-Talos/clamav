@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.133  2004/12/19 13:50:08  nigelhorne
+ * Tidy
+ *
  * Revision 1.132  2004/12/16 15:29:51  nigelhorne
  * Tidy
  *
@@ -393,7 +396,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.132 2004/12/16 15:29:51 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.133 2004/12/19 13:50:08 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -440,6 +443,8 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.132 2004/12/16 15:29:51 nigelhor
 #ifdef FALSE
 #undef FALSE
 #endif
+
+#define	RFC2045LENGTH	76	/* maximum number of characters on a line */
 
 typedef enum { FALSE = 0, TRUE = 1 } bool;
 
@@ -837,9 +842,7 @@ messageAddArguments(message *m, const char *s)
 			return;
 		}
 
-		string = data;
-
-		string++;
+		string = &data[1];
 
 		/*
 		 * Handle white space to the right of the equals sign
@@ -875,9 +878,7 @@ messageAddArguments(message *m, const char *s)
 				ptr = strchr(key, ':');
 			*ptr = '\0';
 
-			cptr++;
-
-			string = strchr(cptr, '"');
+			string = strchr(++cptr, '"');
 
 			if(string == NULL) {
 				cli_dbgmsg("Unbalanced quote character in \"%s\"\n", s);
@@ -1002,7 +1003,6 @@ messageFindArgument(const message *m, const char *variable)
 				if(ret == NULL)
 					return NULL;
 
-				ret[strlen(ret) - 1] = '\0';
 				/*
 				 * Thomas Lamy <Thomas.Lamy@in-online.net>:
 				 * fix un-quoting of boundary strings from
@@ -1013,8 +1013,10 @@ messageFindArgument(const message *m, const char *variable)
 				 * quoted argument
 				 * end string at next quote
 				 */
-				if((p = strchr(ret, '"')) != NULL)
+				if((p = strchr(ret, '"')) != NULL) {
+					ret[strlen(ret) - 1] = '\0';
 					*p = '\0';
+				}
 				return ret;
 			}
 			return strdup(ptr);
@@ -1052,16 +1054,37 @@ messageSetEncoding(message *m, const char *enctype)
 		int highestSimil = 0;
 		const char *closest = NULL;
 
-		for(e = encoding_map; e->string; e++)
-			if(strcasecmp(type, e->string) == 0) {
+		for(e = encoding_map; e->string; e++) {
+			int sim;
+			const char lowertype = tolower(type[0]);
+			
+			if((lowertype != tolower(e->string[0])) && (lowertype != 'x'))
+				/*
+				 * simil is expensive, I'm yet to encounter only
+				 * one example of a missent encoding when the
+				 * first character was wrong, so lets assume no
+				 * match to save the call.
+				 *
+				 * That example was quoted-printable sent as
+				 * X-quoted-printable.
+				 */
+				continue;
+
+			sim = simil(type, e->string);
+
+			if(sim == 100) {
 				int j;
 				encoding_type *et;
 
 				for(j = 0; j < m->numberOfEncTypes; j++)
-					if(m->encodingTypes[j] == e->type) {
-						cli_dbgmsg("Ignoring duplicate encoding mechanism\n");
+					if(m->encodingTypes[j] == e->type)
 						break;
-					}
+
+				if(j < m->numberOfEncTypes) {
+					cli_dbgmsg("Ignoring duplicate encoding mechanism '%s'\n",
+						type);
+					break;
+				}
 
 				et = (encoding_type *)cli_realloc(m->encodingTypes, (m->numberOfEncTypes + 1) * sizeof(encoding_type));
 				if(et == NULL)
@@ -1072,15 +1095,11 @@ messageSetEncoding(message *m, const char *enctype)
 
 				cli_dbgmsg("Encoding type %d is \"%s\"\n", m->numberOfEncTypes, type);
 				break;
-
-			} else {
-				const int sim = simil(type, e->string);
-
-				if(sim > highestSimil) {
-					closest = e->string;
-					highestSimil = sim;
-				}
+			} else if(sim > highestSimil) {
+				closest = e->string;
+				highestSimil = sim;
 			}
+		}
 
 		if(e->string == NULL) {
 			/*
@@ -2196,6 +2215,7 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 	bool softbreak;
 	char *p2;
 	char *copy;
+	char base64buf[RFC2045LENGTH + 1];
 
 	/*printf("decodeLine(et = %d buflen = %u)\n", (int)et, buflen);*/
 
@@ -2222,70 +2242,6 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 				break;
 			}
 
-#if	0
-			/*
-			 * Section 5.1 of RFC2045 states that any number of white
-			 * space characters may appear on the end of the line
-			 * before the final '=' which indicates a soft break.
-			 *
-			 * Section 6.7.(3) of RFC2045 is no clearer.
-			 *
-			 * This means that we have to do a look ahead here.
-			 *
-			 * This is a real pain because not everyone is
-			 * aware of the implication of the above sentence,
-			 * namely that you must encode any white space before
-			 * the final '=' to ensure it is correctly transfered
-			 * otherwise it is dropped.
-			 * This code adheres to the RFC, but I don't think most
-			 * other software does so I may have to change it
-			 */
-			p2 = strchr(line, '\0');
-			if(p2 == line) {	/* empty line */
-				*buf++ = '\n';
-				break;
-			}
-			if(*--p2 == '=') {
-				softbreak = TRUE;
-				do
-					--p2;
-				while(isspace(*p2) && (p2 > line));
-			} else
-				softbreak = FALSE;
-
-			/*
-			 * p2 now points to the last significant character on the line
-			 */
-			while(line <= p2) {
-				if(*line == '=') {
-					unsigned char byte;
-
-					if((*++line == '\0') || (*line == '\n')) {
-						/* soft line break detected */
-						if(!softbreak)
-							cli_warnmsg("Unexpected soft line break\n");
-						break;
-					}
-
-					byte = hex(*line);
-
-					if((*++line == '\0') || (*line == '\n')) {
-						/*
-						 * broken e-mail, not
-						 * adhering to RFC2045
-						 */
-						*buf++ = byte;
-						break;
-					}
-
-					byte <<= 4;
-					byte += hex(*line);
-					*buf++ = byte;
-				} else
-					*buf++ = *line;
-				line++;
-			}
-#else
 			softbreak = FALSE;
 			while((line < (char *)&buf[buflen]) && *line) {
 				if(*line == '=') {
@@ -2315,7 +2271,6 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 					*buf++ = *line;
 				line++;
 			}
-#endif
 			if(!softbreak)
 				/* Put the new line back in */
 				*buf++ = '\n';
@@ -2328,9 +2283,14 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 			 * RFC2045 sets the maximum length to 76 bytes
 			 * but many e-mail clients ignore that
 			 */
-			copy = strdup(line);
-			if(copy == NULL)
-				break;
+			if(strlen(line) < sizeof(base64buf)) {
+				strcpy(base64buf, line);
+				copy = base64buf;
+			} else {
+				copy = strdup(line);
+				if(copy == NULL)
+					break;
+			}
 
 			p2 = strchr(copy, '=');
 			if(p2)
@@ -2343,7 +2303,8 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 			 */
 			buf = decode(m, copy, buf, base64, (p2 == NULL) && ((strlen(copy) & 3) == 0));
 
-			free(copy);
+			if(copy != base64buf)
+				free(copy);
 			break;
 
 		case UUENCODE:
