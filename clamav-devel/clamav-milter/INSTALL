@@ -316,6 +316,7 @@ Changes
 0.70g	3/4/04	Error if ReadTimeout is -ve
 		Honour StreamMaxLength
 0.70h	8/4/04	Cleanup StreamMaxLength code
+0.70i	9/4/04	Handle clamd giving up on StreamMaxLength before clamav-milter
 
 BUG REPORTS
 

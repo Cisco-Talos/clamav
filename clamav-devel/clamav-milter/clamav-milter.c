@@ -315,9 +315,14 @@
  *	0.70g	3/4/04	Error if ReadTimeout is -ve
  *			Honour StreamMaxLength
  *	0.70h	8/4/04	Cleanup StreamMaxLength code
+ *	0.70i	9/4/04	Handle clamd giving up on StreamMaxLength before
+ *			clamav-milter
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.72  2004/04/09 08:36:53  nigelhorne
+ * Handle clamd giving up on StreamMaxLength before clamav-milter
+ *
  * Revision 1.71  2004/04/08 13:14:07  nigelhorne
  * Code tidy up
  *
@@ -516,9 +521,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.71 2004/04/08 13:14:07 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.72 2004/04/09 08:36:53 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70h"
+#define	CM_VERSION	"0.70i"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1968,6 +1973,16 @@ clamfi_eom(SMFICTX *ctx)
 	sendmailId = smfi_getsymval(ctx, "i");
 
 	if(strstr(mess, "ERROR") != NULL) {
+		if(strstr(mess, "Size exceeded") != NULL) {
+			/*
+			 * Clamd has stopped on StreamMaxLength before us
+			 */
+			if(use_syslog)
+				syslog(LOG_NOTICE, "%s: Message more than StreamMaxLength (%ld) bytes - not scanned\n",
+					sendmailId, streamMaxLength);
+			clamfi_cleanup(ctx);	/* not needed, but just to be safe */
+			return SMFIS_ACCEPT;
+		}
 
 		cli_warnmsg("%s: %s\n", sendmailId, mess);
 		if(use_syslog)
@@ -2016,10 +2031,9 @@ clamfi_eom(SMFICTX *ctx)
 
 		/*
 		 * Use snprintf rather than printf since we don't know the
-		 * length of privdata->from and may get a buffre overrun
-		 * causing a crash
+		 * length of privdata->from and may get a buffer overrun
 		 */
-		snprintf(err, 1024, "Intercepted virus from %s to",
+		snprintf(err, 1023, "Intercepted virus from %s to",
 			privdata->from);
 
 		ptr = strchr(err, '\0');
@@ -2503,7 +2517,7 @@ header_list_add(header_list_t list, const char *headerf, const char *headerv)
 	len = strlen(headerf) + strlen(headerv) + 3;
 
 	header = (char *)cli_malloc(len);
-	snprintf(header, len, "%s: %s", headerf, headerv);
+	sprintf(header, "%s: %s", headerf, headerv);
 	new_node = (struct header_node_t *)cli_malloc(sizeof(struct header_node_t));
 	new_node->header = header;
 	new_node->next = NULL;
