@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.157  2004/12/03 17:34:58  nigelhorne
+ * internal: Honour scanning modes and archive limits
+ *
  * Revision 1.156  2004/12/02 11:09:05  nigelhorne
  * --internal now reloads the database
  *
@@ -479,9 +482,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.156 2004/12/02 11:09:05 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.157 2004/12/03 17:34:58 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80v"
+#define	CM_VERSION	"0.80w"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -717,6 +720,7 @@ static	int	internal = 0;	/* scan messages ourself or use clamd? */
 static	struct	cl_node	*root = NULL;
 static	struct	cl_limits	limits;
 static	struct	cl_stat	dbstat;
+static	int	options = CL_SCAN_STDOPT;
 
 static	int	bflag = 0;	/*
 				 * send a failure (bounce) message to the
@@ -910,7 +914,7 @@ main(int argc, char **argv)
 	extern char *optarg;
 	int i, Bflag = 0;
 	const char *cfgfile = CL_DEFAULT_CFG;
-	struct cfgstruct *cpt;
+	const struct cfgstruct *cpt;
 	const char *pidfile = NULL;
 	char version[VERSION_LENGTH + 1];
 #ifdef	SESSION
@@ -1245,7 +1249,7 @@ main(int argc, char **argv)
 			return EX_CONFIG;
 #endif
 		}
-		
+
 		if((cpt = cfgopt(copt, "User")) != NULL) {
 			const struct passwd *user;
 
@@ -1342,7 +1346,7 @@ main(int argc, char **argv)
 			return EX_CONFIG;
 		}
 	}
-	
+
 	if((cpt = cfgopt(copt, "StreamMaxLength")) != NULL) {
 		if(cpt->numarg < 0) {
 			fprintf(stderr, _("%s: StreamMaxLength must not be negative in %s\n"),
@@ -1377,6 +1381,11 @@ main(int argc, char **argv)
 	 * we're doing the scanning internally
 	 */
 	if(internal) {
+		if(!cfgopt(copt, "ScanMail")) {
+			fprintf(stderr, _("%s: ScanMail not defined in %s\n"),
+				argv[0], cfgfile);
+			return EX_CONFIG;
+		}
 		if(max_children == 0) {
 			fprintf(stderr, _("%s: --max-children must be given in internal mode\n"), argv[0]);
 			return EX_CONFIG;
@@ -1657,6 +1666,60 @@ main(int argc, char **argv)
 	}
 
 	atexit(quit);
+
+	if(internal) {
+		/* TODO: read the limits from clamd.conf */
+
+		if(cfgopt(copt, "DisableDefaultScanOptions"))
+			options &= ~CL_SCAN_STDOPT;
+		options |= CL_SCAN_MAIL;	/* no choice */
+		if(!cfgopt(copt, "ScanRAR"))
+			options |= CL_SCAN_DISABLERAR;
+		if(cfgopt(copt, "ArchiveBlockEncrypted"))
+			options |= CL_SCAN_BLOCKENCRYPTED;
+		if(cfgopt(copt, "ArchiveBlockMax"))
+			options |= CL_SCAN_BLOCKMAX;
+		if(cfgopt(copt, "ScanPE"))
+			options |= CL_SCAN_PE;
+		if(cfgopt(copt, "DetectBrokenExecutables"))
+			options |= CL_SCAN_BLOCKBROKEN;
+		if(cfgopt(copt, "MailFollowURLs"))
+			options |= CL_SCAN_MAILURL;
+		if(cfgopt(copt, "ScanOLE2"))
+			options |= CL_SCAN_OLE2;
+		if(cfgopt(copt, "ScanHTML"))
+			options |= CL_SCAN_HTML;
+
+		memset(&limits, '\0', sizeof(struct cl_limits));
+
+		if(cfgopt(copt, "ScanArchive")) {
+			options |= CL_SCAN_ARCHIVE;
+			if((cpt = cfgopt(copt, "ArchiveMaxFileSize")) != NULL)
+				limits.maxfilesize = cpt->numarg;
+			else
+				limits.maxfilesize = 10485760;
+
+			if((cpt = cfgopt(copt, "ArchiveMaxRecursion")) != NULL)
+				limits.maxreclevel = cpt->numarg;
+			else
+				limits.maxreclevel = 8;
+
+			if((cpt = cfgopt(copt, "ArchiveMaxFiles")) != NULL)
+				limits.maxfiles = cpt->numarg;
+			else
+				limits.maxfiles = 1000;
+
+			if((cpt = cfgopt(copt, "ArchiveMaxCompressionRatio")) != NULL)
+				limits.maxratio = cpt->numarg;
+			else
+				limits.maxratio = 250;
+
+			if(cfgopt(copt, "ArchiveLimitMemoryUsage") != NULL)
+				limits.archivememlim = 1;
+			else
+				limits.archivememlim = 0;
+		}
+	}
 
 #ifdef	SESSION
 	/* FIXME: add localSocket support to watchdog */
@@ -2593,12 +2656,11 @@ clamfi_eom(SMFICTX *ctx)
 		unsigned long int scanned = 0L;
 
 		/*
-		 * TODO: read the options from clamd.conf
 		 * TODO: consider using cl_scandesc and not using a temporary
 		 *	file from the mail being read in
 		 */
 		rc = cl_scanfile(privdata->filename, &virname, &scanned, root,
-			&limits, CL_SCAN_STDOPT);
+			&limits, options);
 
 		if(rc == CL_CLEAN)
 			strcpy(mess, "OK");
@@ -2631,7 +2693,7 @@ clamfi_eom(SMFICTX *ctx)
 			perror("send");
 			clamfi_cleanup(ctx);
 			if(use_syslog)
-				syslog(LOG_ERR, _("send failed to clamd"));
+				syslog(LOG_ERR, _("failed to send SCAN %s command to clamd"), privdata->filename);
 			return cl_error;
 		}
 #else
@@ -2653,7 +2715,7 @@ clamfi_eom(SMFICTX *ctx)
 			perror("send");
 			clamfi_cleanup(ctx);
 			if(use_syslog)
-				syslog(LOG_ERR, _("send failed to clamd"));
+				syslog(LOG_ERR, _("failed to send SCAN command to clamd"));
 			return cl_error;
 		}
 
@@ -3715,14 +3777,14 @@ connect2clamd(struct privdata *privdata)
 			cli_warnmsg("Failed sending stream to server %d (fd %d) errno %d\n",
 				freeServer, session->sock, errno);
 			if(use_syslog)
-				syslog(LOG_ERR, _("send failed to clamd"));
+				syslog(LOG_ERR, _("failed to send STREAM command clamd"));
 			return 0;
 		}
 #else
 		if(send(privdata->cmdSocket, "STREAM\n", 7, 0) < 7) {
 			perror("send");
 			if(use_syslog)
-				syslog(LOG_ERR, _("send failed to clamd"));
+				syslog(LOG_ERR, _("failed to send STREAM command clamd"));
 			return 0;
 		}
 		shutdown(privdata->cmdSocket, SHUT_WR);
@@ -4531,10 +4593,6 @@ loadDatabase(void)
 	firsttime = (dbdir == NULL);
 
 	if(firsttime) {
-		/*
-		 * TODO: Set limits
-		 */
-
 		if((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory")))
 			dbdir = cpt->strarg;
 		else

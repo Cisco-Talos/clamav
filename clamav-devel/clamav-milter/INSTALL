@@ -574,6 +574,7 @@ Changes
 0.80v	2/12/04: --internal now notices when freshclam has been run
 		The default value for --timeout has been changed from 60
 			seconds to 0 (wait forever)
+0.80w	3/12/04: --internal now honours scanning modes and archive limits
 
 INTERNATIONALISATION
 
