@@ -131,7 +131,6 @@ char *cli_hex2str(const char *hex)
 
 int cli_hex2num(const char *hex)
 {
-	int numChars = 0;
 	int hexval, ret = 0, len, i;
 
 

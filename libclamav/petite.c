@@ -401,7 +401,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
 	      backsize--;
 	    } while (backsize);
 	    backbytes^=0xffffffff;
-	    addsize += 1 + ( backbytes < check2 ) + ( backbytes < check1 );
+	    addsize += 1 + ( backbytes < (int) check2 ) + ( backbytes < (int) check1 );
 	    oldback = backbytes;
 	  } else {
 	    backsize = backbytes+1;
@@ -478,7 +478,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
 	  if (test1 == test2) {
 	    irva = cli_readint32(ddst-grown+0x121-reloc);
 	    enc_ep = cli_readint32(ddst-grown+0x0f-reloc)^test1;
-	    mangled = (cli_readint32(ddst-grown+0x1c0-reloc) != 0x90909090); /* FIXME: Magic's too short??? */
+	    mangled = ((uint32_t) cli_readint32(ddst-grown+0x1c0-reloc) != 0x90909090); /* FIXME: Magic's too short??? */
 	    cli_dbgmsg("Petite: Encrypted EP: %x | Array of imports: %x\n",enc_ep, irva);
 	  }
 	  usects[j-1].rsz -= grown+reloc;
