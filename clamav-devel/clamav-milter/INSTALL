@@ -512,6 +512,7 @@ Changes
 0.80e	30/9/04	If you say --from with no arguments, the from address is now
 			set to the orginator's address
 0.80f	2/10/04	Fix crash if %h is used in a template and --headers is not set
+0.80g	4/10/04	Enhanced the SMTP reply
 
 INTERNATIONALISATION
 
