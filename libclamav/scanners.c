@@ -739,12 +739,21 @@ static int cli_scandir(const char *dirname, const char **virname, long int *scan
 {
 	DIR *dd;
 	struct dirent *dent;
+#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
+	struct dirent result;
+#endif
 	struct stat statbuf;
 	char *fname;
 
 
     if((dd = opendir(dirname)) != NULL) {
+#ifdef HAVE_READDIR_R_3
+	while(!readdir_r(dd, &result, &dent) && dent) {
+#elif defined(HAVE_READDIR_R_2)
+	while((dent = (struct dirent *) readdir_r(dd, &result))) {
+#else
 	while((dent = readdir(dd))) {
+#endif
 #ifndef C_INTERIX
 	    if(dent->d_ino)
 #endif
@@ -790,6 +799,9 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 	vba_project_t *vba_project;
 	DIR *dd;
 	struct dirent *dent;
+#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
+	struct dirent result;
+#endif
 	struct stat statbuf;
 	char *fname, *fullname;
 	unsigned char *data;
@@ -879,7 +891,13 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
     	return ret;
 
     if((dd = opendir(dirname)) != NULL) {
+#ifdef HAVE_READDIR_R_3
+	while(!readdir_r(dd, &result, &dent) && dent) {
+#elif defined(HAVE_READDIR_R_2)
+	while((dent = (struct dirent *) readdir_r(dd, &result))) {
+#else
 	while((dent = readdir(dd))) {
+#endif
 #ifndef C_INTERIX
 	    if(dent->d_ino)
 #endif

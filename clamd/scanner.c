@@ -73,6 +73,9 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 {
 	DIR *dd;
 	struct dirent *dent;
+#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
+	struct dirent result;
+#endif
 	struct stat statbuf;
 	struct cfgstruct *cpt;
 	char *fname;
@@ -93,7 +96,13 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
     }
 
     if((dd = opendir(dirname)) != NULL) {
+#ifdef HAVE_READDIR_R_3
+	while(!readdir_r(dd, &result, &dent) && dent) {
+#elif defined(HAVE_READDIR_R_2)
+	while((dent = (struct dirent *) readdir_r(dd, &result))) {
+#else
 	while((dent = readdir(dd))) {
+#endif
 	    if (!is_fd_connected(odesc)) {
 		logg("Client disconnected\n");
 		closedir(dd);
