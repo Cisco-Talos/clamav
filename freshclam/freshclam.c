@@ -115,7 +115,7 @@ int freshclam(struct optstruct *opt)
     } else {
 	/* TODO: force strict permissions on freshclam.conf */
 	if((copt = parsecfg((cfgfile = CONFDIR"/freshclam.conf"), 1)) == NULL)
-	    copt = parsecfg((cfgfile = CONFDIR"/clamav.conf"), 1);
+	    copt = parsecfg((cfgfile = CONFDIR"/clamd.conf"), 1);
     }
 
     if(!copt) {
@@ -429,7 +429,7 @@ void help(void)
     mprintf("    --checks=#n          -c #n           number of checks per day, 1 <= n <= 50\n");
     mprintf("    --datadir=DIRECTORY                  download new databases into DIRECTORY\n");
 #ifdef BUILD_CLAMD
-    mprintf("    --daemon-notify[=/path/clamav.conf]  send RELOAD command to clamd\n");
+    mprintf("    --daemon-notify[=/path/clamd.conf]  send RELOAD command to clamd\n");
 #endif
     mprintf("    --on-update-execute=COMMAND          execute COMMAND after successful update\n");
     mprintf("    --on-error-execute=COMMAND           execute COMMAND if errors occured\n");

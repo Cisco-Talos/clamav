@@ -95,13 +95,13 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	if(optl(opt, "daemon-notify")) {
 		const char *clamav_conf = getargl(opt, "daemon-notify");
 	    if(!clamav_conf)
-		clamav_conf = CONFDIR"/clamav.conf";
+		clamav_conf = CONFDIR"/clamd.conf";
 
 	    notify(clamav_conf);
 	} else if((cpt = cfgopt(copt, "NotifyClamd"))) {
 		const char *clamav_conf = cpt->strarg;
 	    if(!clamav_conf)
-		clamav_conf = CONFDIR"/clamav.conf";
+		clamav_conf = CONFDIR"/clamd.conf";
 
 	    notify(clamav_conf);
 	}
@@ -189,7 +189,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 		logg("WARNING: Invalid DNS reply.\n");
 	    }
 
-	    if((pt = cli_strtok(dnsreply, 0, ":"))) {
+	    if(field == 1 && (pt = cli_strtok(dnsreply, 0, ":"))) {
 		mprintf("*Software version from DNS: %s\n", pt);
 		if(!strstr(cl_retver(), "devel")) {
 		    if(strcmp(cl_retver(), pt)) {

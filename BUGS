@@ -1,6 +1,6 @@
 If you want to help, compile clamav with:
 ./configure --enable-debug
-and enable Foreground option in clamav.conf.
+and enable Foreground option in clamd.conf.
 
 Known bugs:
 -----------

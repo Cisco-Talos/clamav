@@ -69,9 +69,9 @@ Proxy usage is authenticated through given username and password.
 Default: no proxy authentication
 .TP 
 \fBNotifyClamd \[STRING\]\fR
-Notify a running clamd(8) to reload it\'s database after a download has occured. Optionally a clamav.conf(5) file location may be given to tell freshclam(1) how to communicate with clamd(8).
+Notify a running clamd(8) to reload it\'s database after a download has occured. Optionally a clamd.conf(5) file location may be given to tell freshclam(1) how to communicate with clamd(8).
 .br .
-The default is to not notify clamd. See clamav.conf(5)\'s option SelfCheck for how clamd(8) handles database updates in this case.
+The default is to not notify clamd. See clamd.conf(5)\'s option SelfCheck for how clamd(8) handles database updates in this case.
 .TP 
 \fBOnUpdateExecute STRING\fR
 Execute this command after the database has been successfully updated.
@@ -79,7 +79,7 @@ Execute this command after the database has been successfully updated.
 \fBOnErrorExecute\fR
 Execute this command after a database update has failed.
 .SH "NOTE"
-While not reasonable, any configuration option from clamav.conf(5) may be given.
+While not reasonable, any configuration option from clamd.conf(5) may be given.
 .SH "FILES"
 .LP 
 /usr/local/etc/freshclam.conf
@@ -90,5 +90,5 @@ While not reasonable, any configuration option from clamav.conf(5) may be given.
 Thomas Lamy <thomas.lamy@netwake.de>
 .SH "SEE ALSO"
 .LP 
-freshclam(1), clamav.conf(5), clamd(8), clamscan(1)
+freshclam(1), clamd.conf(5), clamd(8), clamscan(1)
 

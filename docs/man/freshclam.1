@@ -49,7 +49,7 @@ This option forces old non\-DNS verification method (without a TTL delay).
 \fB\-c #n, \-\-checks=#n\fR
 Check #n times per day for a new database. #n must be between 1 and 50.
 .TP 
-\fB\-\-daemon\-notify=/path/to/clamav.conf\fR
+\fB\-\-daemon\-notify=/path/to/clamd.conf\fR
 Notify the daemon about the new database. By default it reads a hardcoded config file but you can use an another one. Both local and TCP sockets are supported.
 .TP 
 \fB\-\-on\-error\-execute=COMMAND\fR
@@ -108,4 +108,4 @@ Please check the full documentation for credits.
 Tomasz Kojm <tkojm@clamav.net>
 .SH "SEE ALSO"
 .LP 
-clamd(8), clamdscan(1), clamscan(1), sigtool(1), clamav.conf(5)
+clamd(8), clamdscan(1), clamscan(1), sigtool(1), clamd.conf(5)
