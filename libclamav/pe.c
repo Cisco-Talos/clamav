@@ -262,11 +262,17 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	cli_dbgmsg("Not a PE file\n");
 	return CL_CLEAN;
     }
-    lseek(desc, e_lfanew, SEEK_SET);
+
+    if(lseek(desc, e_lfanew, SEEK_SET) < 0) {
+	/* probably not a PE file */
+	cli_dbgmsg("Can't lseek to e_lfanew\n");
+	return CL_CLEAN;
+    }
 
     if(read(desc, &file_hdr, sizeof(struct pe_image_file_hdr)) != sizeof(struct pe_image_file_hdr)) {
+	/* bad information in e_lfanew - probably not a PE file */
 	cli_dbgmsg("Can't read file header\n");
-	return CL_EIO;
+	return CL_CLEAN;
     }
 
     if(EC32(file_hdr.Magic) != IMAGE_NT_SIGNATURE) {
