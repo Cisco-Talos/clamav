@@ -400,6 +400,7 @@ Changes
 			always being added
 		Now says host running clamd rather than host running
 			clamav-milter, useful for checking load balancing etc.
+0.72	3/6/04	Up-issued
 
 BUG REPORTS
 
