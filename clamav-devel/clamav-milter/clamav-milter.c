@@ -24,9 +24,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.188 2005/03/10 08:46:30 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.189 2005/03/18 08:41:42 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.84b"
+#define	CM_VERSION	"0.84c"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -823,6 +823,9 @@ main(int argc, char **argv)
 			 * running sendmail, not of the machine sending the
 			 * mail, so the remote end will be a local address so
 			 * we must scan by enabling --local
+			 *
+			 * TODO: this is probably not needed if the remote
+			 * machine is localhost, need to check though
 			 */
 			fprintf(stderr, _("%s: when using inet: connection to sendmail you must enable --local\n"), argv[0]);
 			return EX_USAGE;
@@ -2088,8 +2091,11 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 	if(strcmp(argv[0], "<>") == 0) {
 		mailaddr = smfi_getsymval(ctx, "{mail_addr}");
-		if(mailaddr)
-			cli_dbgmsg("Message from %s has no from value\n", mailaddr);
+		if(mailaddr == NULL)
+			mailaddr = smfi_getsymval(ctx, "_");
+
+		if(mailaddr && *mailaddr)
+			cli_dbgmsg("Message from \"%s\" has no from field\n", mailaddr);
 		else {
 #if	0
 			if(use_syslog)
@@ -2099,6 +2105,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			clamfi_cleanup(ctx);
 			return SMFIS_REJECT;
 #endif
+			mailaddr = "<>";
 		}
 	}
 
@@ -2298,7 +2305,7 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 		if(headerv)
 			privdata->sender = strdup(headerv);
 	}
-		
+
 	return SMFIS_CONTINUE;
 }
 
@@ -2422,7 +2429,7 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 			return SMFIS_ACCEPT;	/* clamfi_close will be called */
 		}
 	}
-	if(nbytes < len) {
+	if((size_t)nbytes < len) {
 		clamfi_cleanup(ctx);	/* not needed, but just to be safe */
 		return cl_error;
 	}
@@ -2500,10 +2507,10 @@ clamfi_eom(SMFICTX *ctx)
 				strcpy(mess, "OK");
 				break;
 			case CL_VIRUS:
-				sprintf(mess, "%s: %s FOUND", privdata->filename, virname);
+				snprintf(mess, sizeof(mess), "%s: %s FOUND", privdata->filename, virname);
 				break;
 			default:
-				sprintf(mess, "%s: %s ERROR", privdata->filename, cl_strerror(rc));
+				snprintf(mess, sizeof(mess), "%s: %s ERROR", privdata->filename, cl_strerror(rc));
 				break;
 		}
 
@@ -2570,7 +2577,7 @@ clamfi_eom(SMFICTX *ctx)
 #ifdef	SESSION
 #ifdef	CL_DEBUG
 		if(debug_level >= 4)
-			cli_dbgmsg(_("Wating to read status from fd %d\n"),
+			cli_dbgmsg(_("Waiting to read status from fd %d\n"),
 				session->sock);
 #endif
 		nbytes = clamd_recv(session->sock, mess, sizeof(mess) - 1);
@@ -2837,21 +2844,13 @@ clamfi_eom(SMFICTX *ctx)
 					fprintf(sendmail, "From: %s\n", from);
 				else
 					fprintf(sendmail, "From: %s\n", privdata->from);
-				if(bflag) {
-					/*
-					 * Handle privdata->from not set,
-					 * "Denis Ustimenko" <den@uzsci.net>
-					 */
-					fprintf(sendmail, "To: %s\n",
-						(privdata->from) ?
-							privdata->from :
-							smfi_getsymval(ctx, "{mail_addr}"));
-
+				if(bflag && privdata->from) {
+					fprintf(sendmail, "To: %s\n", privdata->from);
 					fprintf(sendmail, "Cc: %s\n", postmaster);
 				} else
 					fprintf(sendmail, "To: %s\n", postmaster);
 
-				if(!pflag)
+				if((!pflag) && privdata->to)
 					for(to = privdata->to; *to; to++)
 						fprintf(sendmail, "Cc: %s\n", *to);
 				/*
@@ -2871,20 +2870,6 @@ clamfi_eom(SMFICTX *ctx)
 					/*
 					 * Use our own hardcoded template
 					 */
-					const char *sender;
-
-					/*
-					 * Try to determine who sent the
-					 * message. In the days of faked from
-					 * addresses this is not easy!
-					 */
-					if(privdata->from)
-						sender = (strcmp(privdata->from, "<>") == 0) ?
-							smfi_getsymval(ctx, "_") :
-							privdata->from;
-					else
-						sender = smfi_getsymval(ctx, "_");
-
 					if(bflag)
 						fputs(_("A message you sent to\n"), sendmail);
 					else if(pflag)
@@ -2894,10 +2879,10 @@ clamfi_eom(SMFICTX *ctx)
 						 * some useful information
 						 */
 						fprintf(sendmail, _("The message %1$s sent from %2$s to\n"),
-							sendmailId, sender);
+							sendmailId, privdata->from);
 					else
 						fprintf(sendmail, _("A message sent from %s to\n"),
-							sender);
+							privdata->from);
 
 					for(to = privdata->to; *to; to++)
 						fprintf(sendmail, "\t%s\n", *to);
@@ -2908,7 +2893,7 @@ clamfi_eom(SMFICTX *ctx)
 
 					if(hflag) {
 						fprintf(sendmail, _("\nThe message was received by %1$s from %2$s via %3$s\n\n"),
-							smfi_getsymval(ctx, "j"), sender,
+							smfi_getsymval(ctx, "j"), privdata->from,
 							smfi_getsymval(ctx, "_"));
 						fputs(_("For your information, the original message headers were:\n\n"), sendmail);
 						header_list_print(privdata->headers, sendmail);
@@ -4473,6 +4458,7 @@ watchdog(void *a)
  *
  * TODO: reload the whiteList file if it's been changed
  */
+/*ARGSUSED*/
 static void *
 watchdog(void *a)
 {
