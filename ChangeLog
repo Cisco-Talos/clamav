@@ -1,3 +1,8 @@
+Thu Nov  6 10:36:57 IST 2003 (njh)
+----------------------------------
+  * libclamav: Not all applications (those not sent as legal attachments)
+		were being scanned
+
 Thu Nov  6 03:00:44 CET 2003 (tk)
 ---------------------------------
   * database/Makefile: fixed an installation problem with unprivileged user

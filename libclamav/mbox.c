@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.17  2003/11/06 05:06:42  nigelhorne
+ * Some applications weren't being scanned
+ *
  * Revision 1.16  2003/11/04 08:24:00  nigelhorne
  * Handle multipart messages that have no text portion
  *
@@ -39,7 +42,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.16 2003/11/04 08:24:00 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.17 2003/11/06 05:06:42 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -1053,8 +1056,9 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 		case APPLICATION:
 			cptr = messageGetMimeSubtype(mainMessage);
 
-			if((strcasecmp(cptr, "octet-stream") == 0) ||
-			   (strcasecmp(cptr, "x-msdownload") == 0)) {
+			/*if((strcasecmp(cptr, "octet-stream") == 0) ||
+			   (strcasecmp(cptr, "x-msdownload") == 0)) {*/
+			{
 				blob *aBlob = messageToBlob(mainMessage);
 
 				if(aBlob) {
@@ -1075,8 +1079,8 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 						assert(nBlobs < MAX_ATTACHMENTS);
 					}
 				}
-			} else
-				cli_warnmsg("Discarded application not sent as attachment\n");
+			} /*else
+				cli_warnmsg("Discarded application not sent as attachment\n");*/
 			break;
 
 		case AUDIO:
