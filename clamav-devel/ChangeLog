@@ -1,3 +1,8 @@
+Sat Apr 17 21:40:19 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Include the virus name in the 550 rejection if
+  	appropriate
+
 Sat Apr 17 15:19:41 BST 2004 (njh)
 ----------------------------------
   * libclamav/blob.c:	Filenames with high byte characters were not
