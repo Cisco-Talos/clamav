@@ -1,5 +1,5 @@
 /* It contains some changes needed for libclamav and isn't compatible with
- * original version, --tk
+ * the original version, --tk
  */
 /* ***************************************************************************
  **
@@ -566,6 +566,7 @@ int urarlib_list(int desc, ArchiveList_struct *list)
     tmp_List->item.UnpVer = NewLhd.UnpVer;
     tmp_List->item.Method = NewLhd.Method;
     tmp_List->item.FileAttr = NewLhd.FileAttr;
+    tmp_List->item.Flags = NewLhd.Flags;
 
     NoOfFilesInArchive++;                   /* count files                  */
 

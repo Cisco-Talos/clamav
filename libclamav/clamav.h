@@ -114,7 +114,7 @@ struct cl_cvd {
 };
 
 /* file scanning */
-extern int cl_scanbuff(const char *buffer, unsigned int length, char **virname, const struct cl_node *root);
+extern int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root);
 
 extern int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options);
 
