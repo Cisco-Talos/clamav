@@ -37,9 +37,6 @@
 
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
 
-int big_block_size, small_block_size;
-int sbat_start=-1;
-
 typedef struct ole2_header_tag
 {
 	unsigned char magic[8];			/* should be: 0xd0cf11e0a1b11ae1 */
@@ -63,6 +60,11 @@ typedef struct ole2_header_tag
 	int32_t xbat_start;
 	int32_t xbat_count;
 	int32_t bat_array[109];
+
+	/* not part of the ole2 header, but stuff we need in order to decode */
+	/* must take account of the size of variables below here when
+	   reading the header */
+	int sbat_root_start;
 } ole2_header_t __attribute__ ((packed));
 
 typedef struct property_tag
@@ -146,7 +148,7 @@ void print_property_name(char *name, int size)
 	int i, count=0;
 
 	if (*name == 0 || size == 0) {
-		cli_dbgmsg("[unused]                         ");
+		cli_dbgmsg("[no name]                           ");
 		return;
 	}
 	/* size-2 to ignore trailing NULL */
@@ -173,7 +175,7 @@ char *get_property_name(char *name, int size)
 		return NULL;
 	}
 
-	newname = (char *) cli_malloc(size);
+	newname = (char *) cli_malloc(size*2);
 	if (!newname) {
 		return NULL;
 	}
@@ -191,6 +193,11 @@ char *get_property_name(char *name, int size)
 		}
 	}
 	newname[j] = '\0';
+	if (strlen(newname) == 0) {
+		printf ("zero sized newname\n");
+		free(newname);
+		return NULL;
+	}
 	return newname;
 }
 
@@ -267,7 +274,7 @@ int ole2_read_block(int fd, ole2_header_t *hdr, void *buff, int blockno)
 	if (lseek(fd, offset, SEEK_SET) != offset) {
 		return FALSE;
 	}
-	if (readn(fd, buff, big_block_size) != big_block_size) {
+	if (readn(fd, buff, (1 << hdr->log2_big_block_size)) != (1 << hdr->log2_big_block_size)) {
 		return FALSE;
 	}
 	return TRUE;
@@ -345,13 +352,13 @@ int ole2_get_sbat_data_block(int fd, ole2_header_t *hdr, void *buff, int sbat_in
 	int block_count;
 	int current_block;
 
-	if (sbat_start < 0) {
+	if (hdr->sbat_root_start < 0) {
 		cli_errmsg("No root start block\n");
 		return FALSE;
 	}
 
 	block_count = sbat_index / 8;			// 8 small blocks per big block
-	current_block = sbat_start;
+	current_block = hdr->sbat_root_start;
 	while (block_count > 0) {
 		current_block = ole2_get_next_bat_block(fd, hdr, current_block);
 		block_count--;
@@ -376,9 +383,9 @@ void ole2_read_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 	while(current_block >= 0) {
 		ole2_read_block(fd, hdr, prop_block, current_block);
 		for (index=0 ; index < 4 ; index++) {
-			if (prop_block[index].name[0] != 0) {
+			if (prop_block[index].type > 0) {
 				if (prop_block[index].type == 5) {
-					sbat_start = prop_block[index].start_block;
+					hdr->sbat_root_start = prop_block[index].start_block;
 				}
 				print_ole2_property(&prop_block[index]);
 				handler(fd, hdr, &prop_block[index], dir);
@@ -401,7 +408,7 @@ void handler_null(int fd, ole2_header_t *hdr, property_t *prop, const char *dir)
 /* Write file Handler - write the contents of the entry to a file */
 void handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char *dir)
 {
-	unsigned char buff[big_block_size];
+	unsigned char buff[(1 << hdr->log2_big_block_size)];
 	int current_block, ofd, len, offset;
 	char *name, *newname;
 
@@ -411,7 +418,15 @@ void handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char 
 	}
 
 	if (! (name = get_property_name(prop->name, prop->name_size))) {
-		return;
+		/* File without a name - create a name for it */
+		int i;
+                                                                                                                            
+		i = lseek(fd, 0, SEEK_CUR);
+		name = malloc(11);
+		if (!name) {
+			return;
+		}
+		snprintf(name, 10, "%.10d", i + (int) prop);
 	}
 
 	newname = (char *) cli_malloc(strlen(name) + strlen(dir) + 2);
@@ -449,13 +464,14 @@ void handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char 
 				close(ofd);
 				return;
 			}
-			if (writen(ofd, &buff, MIN(len,big_block_size)) != MIN(len,big_block_size)) {
+			if (writen(ofd, &buff, MIN(len,(1 << hdr->log2_big_block_size))) !=
+							MIN(len,(1 << hdr->log2_big_block_size))) {
 				close(ofd);
 				return;
 			}
 
 			current_block = ole2_get_next_block_number(fd, hdr, current_block);
-			len -= MIN(len,big_block_size);
+			len -= MIN(len,(1 << hdr->log2_big_block_size));
 		}
 	}
 	close(ofd);
@@ -468,7 +484,10 @@ int cli_ole2_extract(int fd, const char *dirname)
 
 	cli_dbgmsg("in cli_ole2_extract()\n");
 
-	readn(fd, &hdr, sizeof(struct ole2_header_tag));
+	/* size of header - size of other values in struct */
+	readn(fd, &hdr, sizeof(struct ole2_header_tag) - sizeof(int));
+
+	hdr.sbat_root_start = -1;
 
 	if (strncmp(hdr.magic, magic_id, 8) != 0) {
 		cli_dbgmsg("OLE2 magic failed!\n");
@@ -484,9 +503,6 @@ int cli_ole2_extract(int fd, const char *dirname)
 	if (hdr.sbat_cutoff != 4096) {
 		cli_dbgmsg("WARNING: untested sbat cutoff - please report\n\n");
 	}
-
-	big_block_size = 1 << hdr.log2_big_block_size;
-	small_block_size = 1 << hdr.log2_small_block_size;
 
 	print_ole2_header(&hdr);
 

@@ -128,7 +128,7 @@ char *get_unicode_name(char *name, int size)
                 return NULL;
         }
                                                                                                                                                                           
-        newname = (char *) cli_malloc(size);
+        newname = (char *) cli_malloc(size*2);
         if (!newname) {
                 return NULL;
         }
@@ -147,7 +147,48 @@ char *get_unicode_name(char *name, int size)
         newname[j] = '\0';
         return newname;
 }
-                                                                                                                                                                       
+
+static void vba56_test_middle(int fd)
+{
+	char test_middle[20];
+	static const uint8_t middle_str[20] = {
+		0x00, 0x00, 0xe1, 0x2e, 0x45, 0x0d, 0x8f, 0xe0,
+		0x1a, 0x10, 0x85, 0x2e, 0x02, 0x60, 0x8c, 0x4d,
+		0x0b, 0xb4, 0x00, 0x00
+	};
+
+        if (vba_readn(fd, &test_middle, 20) != 20) {
+                return;
+        }
+	
+	if (strncmp(test_middle, middle_str, 20) != 0) {
+	        lseek(fd, -20, SEEK_CUR);
+	}
+	return;
+}
+
+static void vba56_test_end(int fd)
+{
+	char test_end[20];
+	static const uint8_t end_str[20] =
+	{
+		0x00, 0x00, 0x2e, 0xc9, 0x27, 0x8e, 0x64, 0x12,
+		0x1c, 0x10, 0x8a, 0x2f, 0x04, 0x02, 0x24, 0x00,
+		0x9c, 0x02, 0x00, 0x00
+	};
+
+        if (vba_readn(fd, &test_end, 20) != 20) {
+                return;
+        }
+                                                                                                                                    
+        if (strncmp(test_end, end_str, 20) != 0) {
+                lseek(fd, -20, SEEK_CUR);
+        }
+	printf("End found\n");
+        return;
+}
+
+
 vba_project_t *vba56_dir_read(const char *dir)
 {
 	unsigned char magic[2];
@@ -176,7 +217,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 
 	cli_dbgmsg("in vba56_dir_read()\n");
 
-	fullname = (char *) cli_malloc(strlen(dir) + 14);
+	fullname = (char *) cli_malloc(strlen(dir) + 15);
 	sprintf(fullname, "%s/_VBA_PROJECT", dir);
         fd = open(fullname, O_RDONLY);
 
@@ -276,13 +317,17 @@ vba_project_t *vba56_dir_read(const char *dir)
 		return NULL;
 	}*/
 
-	for (i=0; record_count >0 ; record_count--) {
+	for (;;) {
 
 		if (vba_readn(fd, &length, 2) != 2) {
 			return NULL;
 		}
+		if (length < 6) {
+			lseek(fd, -2, SEEK_CUR);
+			break;
+		}
 		cli_dbgmsg ("record: %d.%d, length: %d, ", record_count, i, length);
-		buff = cli_malloc(length);
+		buff = (unsigned char *) cli_malloc(length);
 		if (!buff) {
 			cli_errmsg("cli_malloc failed\n");
 			return NULL;
@@ -300,7 +345,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 		   having a 12 byte trailer */
 		/* TODO: Need to check if types H(same as G) and D(same as C) exist */
                 if (!strncmp ("*\\G", name, 3)) {
-			buff = cli_malloc(12);
+			buff = (unsigned char *) cli_malloc(12);
                         if (vba_readn(fd, buff, 12) != 12) {
 				cli_errmsg("failed to read blob\n");
                                 free(buff);
@@ -310,7 +355,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 			free(buff);
                 } else if (!strncmp("*\\C", name, 3)) {
 			if (i == 1) {
-				buff = cli_malloc(12);
+				buff = (unsigned char *) cli_malloc(12);
                         	if (vba_readn(fd, buff, 12) != 12) {
 					cli_errmsg("failed to read blob\n");
                                 	free(buff);
@@ -324,12 +369,16 @@ vba_project_t *vba56_dir_read(const char *dir)
 				record_count++;
 			}
 		} else {
-			cli_errmsg("unknown record type!!\n\n");
+			/* Unknown type - probably ran out of strings - rewind */
+			lseek(fd, -(length+2), SEEK_CUR);
+			break;
 		}
 		free(name);
+		vba56_test_middle(fd);
 	}
 
-	/* TODO: may need to seek forward 20 bytes here. Bleh! */
+	/* may need to seek forward 20 bytes here. Bleh! */
+	vba56_test_end(fd);
 
 	if (vba_readn(fd, &record_count, 2) != 2) {
 		return NULL;
@@ -343,7 +392,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 	lseek(fd, 4, SEEK_CUR);
 
 	/* Read fixed octet */
-	buff = cli_malloc(8);
+	buff = (unsigned char *) cli_malloc(8);
 	if (!buff) {
 		return NULL;
 	}
@@ -396,7 +445,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 		if (vba_readn(fd, &length, 2) != 2) {
 			return NULL;
 		}
-		buff = cli_malloc(length);
+		buff = (unsigned char *) cli_malloc(length);
 		if (!buff) {
 			cli_dbgmsg("cli_malloc failed\n");
 			return NULL;
@@ -462,7 +511,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 void byte_array_append(byte_array_t *array, unsigned char *src, unsigned int len)
 {
 	if (array->length == 0) {
-		array->data = cli_malloc(len);
+		array->data = (unsigned char *) cli_malloc(len);
 		array->length = len;
 		strncpy(array->data, src, len);
 	} else {
