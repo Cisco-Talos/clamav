@@ -285,6 +285,11 @@ Changes
 0.67l	10/3/04	Use new HAVE_STRERROR_R rather than TARGET_OS_SOLARIS to
 		determine if strerror_r exists
 0.70	17/3/04	Up-issued to 0.70
+0.70a	20/3/04	strerror_r is a bit confused on Fedora Linux. The
+		man page says it returns an int, but the prototype
+		in string.h says it returns a char *
+		Say how many bytes can't be written to clamd - it may give a
+		clue what's wrong
 
 BUG REPORTS
 

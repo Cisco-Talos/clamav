@@ -284,9 +284,17 @@
  *	0.67l	10/3/04	Use new HAVE_STRERROR_R rather than TARGET_OS_SOLARIS
  *			to determine if strerror_r exists
  *	0.70	17/3/04	Up-issued to 0.70
+ *	0.70a	20/3/04	strerror_r is a bit confused on Fedora Linux. The
+ *			man page says it returns an int, but the prototype
+ *			in string.h says it returns a char *
+ *			Say how many bytes can't be written to clamd - it may
+ *			give a clue what's wrong
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.63  2004/03/20 12:30:00  nigelhorne
+ * strerror_r is confused on Linux
+ *
  * Revision 1.62  2004/03/17 19:46:49  nigelhorne
  * Upissue to 0.70@
  *
@@ -458,9 +466,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.62 2004/03/17 19:46:49 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.63 2004/03/20 12:30:00 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70"
+#define	CM_VERSION	"0.70a"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1770,10 +1778,10 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			/* 0.4 - use better error message */
 			if(use_syslog) {
 #ifdef HAVE_STRERROR_R
+				strerror_r(rc, buf, sizeof(buf));
                                 syslog(LOG_ERR,
 					"Failed to connect to port %d given by clamd: %s",
-					port,
-					strerror_r(rc, buf, sizeof(buf)));
+					port, buf);
 #else
                                syslog(LOG_ERR, "Failed to connect to port %d given by clamd: %s", port, strerror(rc));
 #endif
@@ -2404,7 +2412,7 @@ clamfi_send(const struct privdata *privdata, size_t len, const char *format, ...
 			perror("send");
 			checkClamd();
 			if(use_syslog)
-				syslog(LOG_ERR, "write failure to clamd");
+				syslog(LOG_ERR, "write failure (%u bytes) to clamd", len);
 
 			return -1;
 		}
