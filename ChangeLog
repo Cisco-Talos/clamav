@@ -1,3 +1,11 @@
+Thu Aug 26 11:23:22 BST 2004 (njh)
+----------------------------------
+  * clamav-milter/clamav-milter.c: Generate correct message if there is no
+			response from any clamd server
+		Handle %h (headers) in the template file
+		Fix bug in optimisation when more than one To line is
+			received
+
 Thu Aug 26 10:34:48 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Scan CommuniGate files
