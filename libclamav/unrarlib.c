@@ -108,6 +108,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <string.h>
+#include <errno.h>
 
 #define ENABLE_ACCESS
 
@@ -166,7 +167,7 @@ void debug_log_proc(char *text, char *sourcefile, int sourceline);
 void debug_init_proc(char *file_name);
 
 #else
-#define debug_log(a);   /* no debug this time */
+#define debug_log(a);	cli_dbgmsg("%s:%d %s\n", __FILE__, __LINE__, a);
 #define debug_init(a);  /* no debug this time */
 #endif
 
@@ -412,9 +413,11 @@ int urarlib_get(void *output,
 
 #ifndef _USE_MEMORY_TO_MEMORY_DECOMPRESSION
   if (ArcPtr!=NULL){
-      //fclose(ArcPtr);
-      lseek(desc, 0, SEEK_SET);
-      ArcPtr = NULL;
+      /* FIXME: possible FILE* leak */
+      cli_dbgmsg("%s:%d NOT Close ArcPtr from fd %d\n", __FILE__, __LINE__, desc);
+      // fclose(ArcPtr);
+      // lseek(desc, 0, SEEK_SET);
+      // ArcPtr = NULL;
   }
 #endif
 
@@ -462,6 +465,7 @@ int urarlib_list(int desc, ArchiveList_struct *list)
 {
   ArchiveList_struct *tmp_List = NULL;
   int NoOfFilesInArchive       = 0;         /* number of files in archive   */
+  int newdesc;
 
 #ifdef _DEBUG_LOG
   if(debug_log_first_start)
@@ -483,26 +487,34 @@ int urarlib_list(int desc, ArchiveList_struct *list)
   }
 #else
   /* open and identify archive                                              */
-  if ((ArcPtr=fdopen(desc,READBINARY))!=NULL)
+  newdesc = dup(desc);
+  cli_dbgmsg("ExtrFile(): dup(%d) = %d\n", desc, newdesc);
+  if ((ArcPtr=fdopen(newdesc,READBINARY))!=NULL)
   {
     if (!IsArchive())
     {
+      cli_dbgmsg("urarlib_list(): Not a valid archive.");
       debug_log("Not a RAR file");
-      //fclose(ArcPtr);
+      fclose(ArcPtr);
       lseek(desc, 0, SEEK_SET);
       ArcPtr = NULL;
       return NoOfFilesInArchive;            /* error => exit!               */
     }
   }
   else {
+    cli_dbgmsg("urarlib_list(): Error opening file: %s", strerror(errno));
     debug_log("Error opening file.");
+    cli_dbgmsg("%s:%d Close fd %d\n", __FILE__, __LINE__, newdesc);
+    close(newdesc);
     return NoOfFilesInArchive;
   }
 #endif
 
   if ((UnpMemory=malloc(UNP_MEMORY))==NULL)
   {
+    cli_dbgmsg("urarlib_list(): out of memory.");
     debug_log("Can't allocate memory for decompression!");
+    fclose(ArcPtr);
     return NoOfFilesInArchive;
   }
 
@@ -515,9 +527,10 @@ int urarlib_list(int desc, ArchiveList_struct *list)
   /* do while file is not extracted and there's no error                    */
   while (TRUE)
   {
-    if (ReadBlock(FILE_HEAD | READSUBBLOCK) <= 0) /* read name of the next  */
+    int ReadBlockResult;
+    if ((ReadBlockResult = ReadBlock(FILE_HEAD | READSUBBLOCK)) <= 0) /* read name of the next  */
     {                                       /* file within the RAR archive  */
-      debug_log("Couldn't read next filename from archive (I/O error).");
+      cli_dbgmsg("Couldn't read next filename from archive (I/O error): %d\n", ReadBlockResult);
       break;                                /* error, file not found in     */
     }                                       /* archive or I/O error         */
     if (BlockHead.HeadType==SUB_HEAD)
@@ -566,9 +579,9 @@ int urarlib_list(int desc, ArchiveList_struct *list)
   memset(Password,0,sizeof(Password));      /* clear password               */
 #ifndef _USE_MEMORY_TO_MEMORY_DECOMPRESSION
   if (ArcPtr!=NULL){
-      //fclose(ArcPtr);
-      lseek(desc, 0, SEEK_SET);
+      fclose(ArcPtr);
       ArcPtr = NULL;
+      lseek(desc, 0, SEEK_SET);
   }
 #endif
 
@@ -657,9 +670,10 @@ int ReadBlock(int BlockType)
   int Size=0,ReadSubBlock=0;
   static int LastBlock;
   memcpy(&SaveFileHead,&NewLhd,sizeof(SaveFileHead));
-  if (BlockType & READSUBBLOCK)
+  if (BlockType & READSUBBLOCK) {
     ReadSubBlock=1;
-  BlockType &= 0xff;
+    BlockType &= 0xff;
+  }
   {
     while (1)
     {
@@ -737,6 +751,7 @@ int ReadHeader(int BlockType)
 {
   int Size = 0;
   unsigned char Header[64];
+  memset(Header, 0, sizeof(Header));
   switch(BlockType)
   {
     case MAIN_HEAD:
@@ -772,7 +787,7 @@ int ReadHeader(int BlockType)
         NewLhd.Method=GetHeaderByte(25);
         NewLhd.NameSize=(unsigned short)GetHeaderWord(26);
         NewLhd.FileAttr=GetHeaderDword(28);
-        HeaderCRC=CalcCRC32(0xFFFFFFFFL,&Header[2],SIZEOF_NEWLHD-2);
+        HeaderCRC=CalcCRC32(0xFFFFFFFFL,Header+2,SIZEOF_NEWLHD-2);
       break;
 
 #ifdef _DEBUG_LOG
@@ -842,17 +857,21 @@ int IsArchive(void)
 #endif
 
 #ifdef _USE_MEMORY_TO_MEMORY_DECOMPRESSION
-  if (tread(MemRARFile, MarkHead.Mark, SIZEOF_MARKHEAD) != SIZEOF_MARKHEAD)
+  if (tread(MemRARFile, MarkHead.Mark, SIZEOF_MARKHEAD) != SIZEOF_MARKHEAD) {
+    debug_log("IsArchive(): short read: FALSE");
     return(FALSE);
+  }
 #else
-  if (tread(ArcPtr,MarkHead.Mark,SIZEOF_MARKHEAD)!=SIZEOF_MARKHEAD)
+  if (tread(ArcPtr,MarkHead.Mark,SIZEOF_MARKHEAD)!=SIZEOF_MARKHEAD) {
+    debug_log("IsArchive(): short read: FALSE");
     return(FALSE);
+  }
 #endif
   /* Old archive => error                                                   */
   if (MarkHead.Mark[0]==0x52 && MarkHead.Mark[1]==0x45 &&
       MarkHead.Mark[2]==0x7e && MarkHead.Mark[3]==0x5e)
   {
-    debug_log("Attention: format as OLD detected! Can't handel archive!");
+    debug_log("Attention: format as OLD detected! Can't handle archive!");
   }
   else
       /* original RAR v2.0                                                  */
@@ -867,8 +886,10 @@ int IsArchive(void)
            MarkHead.Mark[6]=='!'))
 
     {
-      if (ReadHeader(MAIN_HEAD)!=SIZEOF_NEWMHD)
+      if (ReadHeader(MAIN_HEAD)!=SIZEOF_NEWMHD) {
+        debug_log("IsArchive(): ReadHeader() failed");
         return(FALSE);
+      }
     } else
     {
 
@@ -896,6 +917,7 @@ BOOL ExtrFile(int desc)
 {
   BOOL ReturnCode=TRUE;
   FileFound=FALSE;                          /* no file found by default     */
+  int newdesc;
 
 #ifdef  _USE_MEMORY_TO_MEMORY_DECOMPRESSION
   MemRARFile->offset = 0;                   /* start reading from offset 0  */
@@ -907,12 +929,14 @@ BOOL ExtrFile(int desc)
 
 #else
   /* open and identify archive                                              */
-  if ((ArcPtr=fdopen(desc,READBINARY))!=NULL)
+  newdesc = dup(desc);
+  cli_dbgmsg("ExtrFile(): dup(%d) = %d\n");
+  if ((ArcPtr=fdopen(newdesc,READBINARY))!=NULL)
   {
     if (!IsArchive())
     {
       debug_log("Not a RAR file");
-      //fclose(ArcPtr);
+      fclose(ArcPtr);
       ArcPtr = NULL;
       return FALSE;                         /* error => exit!               */
     }
@@ -946,10 +970,13 @@ BOOL ExtrFile(int desc)
  *
  * 21.11.2000  UnQ  There's a problem with some linux distros when a file
  *                  can not be found in an archive.
- *
- *    debug_log("Couldn't read next filename from archive (I/O error).");
- *
-*/
+ * 07.09.2004  ThL  Seems more like a logical bug in this lib, since it
+ *		    appears to occur once for every archive.
+ */
+
+      /*
+      debug_log("Couldn't read next filename from archive (I/O error).");
+      */
       ReturnCode=FALSE;
       break;                                /* error, file not found in     */
     }                                       /* archive or I/O error         */
@@ -989,7 +1016,7 @@ BOOL ExtrFile(int desc)
     {
       if (NewLhd.UnpVer<13 || NewLhd.UnpVer>UNP_VER)
       {
-        debug_log("unknown compression method");
+        cli_dbgmsg("unknown compression method: %d  (min=13 max=%d)\n", NewLhd.UnpVer, UNP_VER);
         ReturnCode=FALSE;
         break;                              /* error, can't extract file!   */
       }
@@ -1042,7 +1069,7 @@ BOOL ExtrFile(int desc)
   UnpMemory=NULL;
 #ifndef _USE_MEMORY_TO_MEMORY_DECOMPRESSION
   if (ArcPtr!=NULL){
-      //fclose(ArcPtr);
+      fclose(ArcPtr);
       lseek(desc, 0, SEEK_SET);
       ArcPtr = NULL;
   }
@@ -2503,9 +2530,9 @@ void SetCryptKeys(char *Password)
     {
       N2=(unsigned char)CRCTab[(Psw[I+1]+J)&0xFF];
       for (K=1, N1=(unsigned char)CRCTab[(Psw[I]-J)&0xFF];
-           (N1!=N2) && (N1 < 256);      /* I had to add "&& (N1 < 256)",    */
-           N1++, K++)                   /* because the system crashed with  */
-          {                             /* encrypted RARs                   */
+           (N1!=N2);
+           N1++, K++)
+          {
 #ifdef _USE_ASM
 
 #ifdef _WIN_32
@@ -2590,16 +2617,21 @@ void SetOldKeys(char *Password)
   }
 }
 
+static short crcInitialized = 0;
 void InitCRC(void)
 {
   int I, J;
   UDWORD C;
+  if (crcInitialized) return;
+
+  cli_dbgmsg("%s:%d:%s Initialize CRC table\n", __FILE__, __LINE__, "InitCRC");
   for (I=0;I<256;I++)
   {
     for (C=I,J=0;J<8;J++)
       C=(C & 1) ? (C>>1)^0xEDB88320L : (C>>1);
     CRCTab[I]=C;
   }
+  crcInitialized = 1;
 }
 
 

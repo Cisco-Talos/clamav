@@ -440,10 +440,12 @@ messageFindArgument(const message *m, const char *variable)
 				return NULL;
 			}
 			if((*++ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {
-				/* Remove any quote characters */
+				/* At least two quotes in string, assume quoted argument */
 				char *ret = strdup(++ptr);
-
-				ret[strlen(ret) - 1] = '\0';
+				/* end string at next quote */
+				if ((ptr = strchr(ret, '"')) != NULL) {
+					*ptr = '\0';
+				}
 				return(ret);
 			}
 			return(strdup(ptr));
@@ -800,7 +802,7 @@ decodeLine(const message *m, const char *line, unsigned char *ptr)
 					byte <<= 4;
 					byte += hex(*line);
 					*ptr++ = byte;
-				} else if((*ptr != '\n') && (*ptr != '\r')) /* hard line break */
+				} else if((*line != '\n') && (*line != '\r')) /* hard line break */
 					*ptr++ = *line;
 				line++;
 			}
