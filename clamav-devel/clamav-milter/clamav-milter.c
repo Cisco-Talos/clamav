@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.170  2005/01/22 13:44:09  nigelhorne
+ * Fix --quarantine when --internal used
+ *
  * Revision 1.169  2005/01/19 05:27:39  nigelhorne
  * Up issued
  *
@@ -518,9 +521,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.169 2005/01/19 05:27:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.170 2005/01/22 13:44:09 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.81"
+#define	CM_VERSION	"0.81a"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -565,6 +568,14 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.169 2005/01/19 05:27:39 ni
 #include <grp.h>
 #include <netdb.h>
 #include <sys/param.h>
+
+#if HAVE_MMAP
+#if HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#else /* HAVE_SYS_MMAN_H */
+#undef HAVE_MMAP
+#endif
+#endif
 
 #ifdef	C_LINUX
 #include <sys/sendfile.h>
@@ -632,8 +643,6 @@ typedef	unsigned int	in_addr_t;
  * TODO: Files can be scanned with "SCAN" not "STREAM" if clamd is on the same
  *	machine when talking via INET domain socket.
  * TODO: Load balancing, allow local machine to talk via UNIX domain socket.
- * TODO: Read the input socket name from sendmail.mc/sendmail.cf, or at least
- *	sanity check that they're the same
  */
 
 struct header_node_t {
@@ -919,6 +928,8 @@ static	void	print_trace(void);
 #define	BACKTRACE_SIZE	200
 
 #endif
+
+static	int	verifyIncomingSocketName(const char *sockName);
 
 static void
 help(void)
@@ -1256,6 +1267,11 @@ main(int argc, char **argv)
 		return EX_USAGE;
 	}
 	port = argv[optind];
+
+	if(verifyIncomingSocketName(port) < 0) {
+		fprintf(stderr, _("%s: socket-addr (%s) doesn't agree with sendmail.cf\n"), argv[0], port);
+		return EX_CONFIG;
+	}
 
 	/*
 	 * Sanity checks on the clamav configuration file
@@ -1713,6 +1729,8 @@ main(int argc, char **argv)
 		tmpdir = NULL;
 
 	if(!cfgopt(copt, "Foreground")) {
+		const char *logFile;
+
 #ifdef	CL_DEBUG
 		printf(_("When debugging it is recommended that you use Foreground mode in %s\n"), cfgfile);
 		puts(_("\tso that you can see all of the messages"));
@@ -1733,8 +1751,22 @@ main(int argc, char **argv)
 #ifndef	CL_DEBUG
 		close(1);
 		close(2);
-		/* FIXME: use LogFile if that is set */
-		if((open("/dev/console", O_WRONLY) == 1) ||
+
+		if((cpt = cfgopt(copt, "LogFile"))) {
+			logFile = cpt->strarg;
+
+#if	defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32)
+			if((strlen(logFile) < 2) || ((logFile[0] != '/') && (logFile[0] != '\\') && (logFile[1] != ':'))) {
+#else
+			if((strlen(logFile) < 2) || (logFile[0] != '/')) {
+#endif
+				fprintf(stderr, "%s: LogFile requires full path\n", argv[0]);
+				return EX_CONFIG;
+			}
+		} else
+			logFile = "/dev/console";
+
+		if((open(logFile, O_WRONLY) == 1) ||
 		   (open("/dev/null", O_WRONLY) == 1))
 			dup(1);
 #endif
@@ -2798,15 +2830,17 @@ clamfi_eom(SMFICTX *ctx)
 		 * TODO: consider using cl_scandesc and not using a temporary
 		 *	file from the mail being read in
 		 */
-		rc = cl_scanfile(privdata->filename, &virname, &scanned, root,
-			&limits, options);
-
-		if(rc == CL_CLEAN)
-			strcpy(mess, "OK");
-		else if(rc == CL_VIRUS)
-			sprintf(mess, "%s: %s FOUND", privdata->filename, virname);
-		else
-			sprintf(mess, "%s: %s ERROR", privdata->filename, cl_strerror(rc));
+		switch(cl_scanfile(privdata->filename, &virname, &scanned, root, &limits, options)) {
+			case CL_CLEAN:
+				strcpy(mess, "OK");
+				break;
+			case CL_VIRUS:
+				sprintf(mess, "%s: %s FOUND", privdata->filename, virname);
+				break;
+			default:
+				sprintf(mess, "%s: %s ERROR", privdata->filename, cl_strerror(rc));
+				break;
+		}
 
 #ifdef	SESSION
 		session = NULL;
@@ -3237,11 +3271,19 @@ clamfi_eom(SMFICTX *ctx)
 			 */
 			if(smfi_addrcpt(ctx, quarantine) == MI_FAILURE) {
 				if(use_syslog)
-					syslog(LOG_DEBUG, _("Can't set quarantine user %s"), quarantine);
+					syslog(LOG_ERR, _("Can't set quarantine user %s"), quarantine);
 				else
 					cli_warnmsg(_("Can't set quarantine user %s\n"), quarantine);
-			} else
+				if(privdata->discard)
+					rc = SMFIS_DISCARD;
+				else
+					rc = SMFIS_REJECT;
+			} else {
+				if(use_syslog)
+					syslog(LOG_DEBUG, "Redirected virus to %s", quarantine);
+				cli_dbgmsg("Redirected virus to %s\n", quarantine);
 				setsubject(ctx, virusname);
+			}
 		} else if(advisory)
 			setsubject(ctx, virusname);
 		else if(rejectmail) {
@@ -3252,6 +3294,10 @@ clamfi_eom(SMFICTX *ctx)
 		} else
 			rc = SMFIS_DISCARD;
 
+		/*
+		 * Don't drop the message if it's been forwarded to a
+		 * quarantine email
+		 */
 		snprintf(reject, sizeof(reject) - 1, _("virus %s detected by ClamAV - http://www.clamav.net"), virusname);
 		smfi_setreply(ctx, (char *)privdata->rejectCode, "5.7.1", reject);
 		broadcast(mess);
@@ -4978,3 +5024,57 @@ print_trace(void)
 	free(strings);
 }
 #endif
+
+/*
+ * Check that the correct port name has been given, i.e. that the
+ * input socket to clamav-milter from sendmail, is the same that
+ * sendmail has been configured to use as it's output socket
+ * Return:	<0 invalid
+ *		=0 valid
+ *		>0 unknown
+ */
+static int
+verifyIncomingSocketName(const char *sockName)
+{
+#if HAVE_MMAP
+	int fd, ret;
+	char *ptr;
+	size_t size;
+	struct stat statb;
+
+	fd = open("/etc/mail/sendmail.cf", O_RDONLY);
+
+	if(fd < 0)
+		fd = open("/etc/sendmail.cf", O_RDONLY);
+	if(fd < 0)
+		return 1;
+
+	if(fstat(fd, &statb) < 0) {
+		close(fd);
+		return 1;
+	}
+
+	size = statb.st_size;
+
+	if(size == 0) {
+		close(fd);
+		return -1;
+	}
+
+	ptr = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
+	if(ptr == MAP_FAILED) {
+		perror("mmap");
+		close(fd);
+		return -1;
+	}
+
+	ret = (cli_memstr(ptr, size, sockName, strlen(sockName)) != NULL) ? 1 : -1;
+
+	munmap(ptr, size);
+	close(fd);
+
+	return ret;
+#else	/*!HAVE_MMAP*/
+	return 1;
+#endif
+}
