@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.39  2004/03/18 14:05:25  nigelhorne
+ * Added bounce and handle text/plain encoding messages
+ *
  * Revision 1.38  2004/03/17 19:47:32  nigelhorne
  * Handle spaces in disposition type
  *
@@ -111,7 +114,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.38 2004/03/17 19:47:32 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.39 2004/03/18 14:05:25 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -171,6 +174,7 @@ static	const	struct	encoding_map {
 	encoding_type	type;
 } encoding_map[] = {
 	{	"7bit",			NOENCODING	},
+{	"text/plain",		NOENCODING	},
 	{	"quoted-printable",	QUOTEDPRINTABLE	},	/* rfc1522 */
 	{	"base64",		BASE64		},
 	{	"8bit",			EIGHTBIT	},
@@ -193,6 +197,9 @@ static	struct	mime_map {
 	{	NULL,			TEXT		}
 };
 
+/*
+ * TODO: remove this table and scan all *efficiently* for bounce messages
+ */
 static const char *bounces[] = {
 	"--- Below this line is a copy of the message.",
 	"------ This is a copy of the message, including all the headers. ------",
@@ -206,6 +213,7 @@ static const char *bounces[] = {
 	"A copy of the original message below this line:",
 	"==== Begin Message",
 	"------------------------------ Original message ------------------------------",
+	"Original message follows:",
 	NULL
 };
 

@@ -1,3 +1,8 @@
+Thu Mar 18 14:16:19 GMT 2004 (njh)
+----------------------------------
+  * libclamav/message.c:	Added bounce and handle text/plain encoded
+		messages
+
 Thu Mar 18 15:04:41 CET 2004 (tk)
 ---------------------------------
   * clamdscan: in the LocalSocket mode the server2 address struct was not
