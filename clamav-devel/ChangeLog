@@ -1,3 +1,9 @@
+Sat Feb  7 23:18:51 GMT 2004 (njh)
+----------------------------------
+  * libclamav: Handle empty content-type subtypes, e.g. headers such as
+		Content-Type: text/
+		Noted by Stefan Kaltenbrunner <mm-mailinglist@madness.at>
+  		
 Sat Feb  7 23:37:52 CET 2004 (tk)
 ---------------------------------
   * libclamav: scan "Return-path: " mail files (detection was broken due to
