@@ -464,13 +464,13 @@ IMG
   <td colspan="1" valign="top" align="left" width="84%" height="200" class="rlrb">
   
    <br><br><b>Spis tre¶ci</b>
-   <br><b>1.</b>&nbsp;<a href="sendmail_clamav.html#a1">Wprowadzenie</a>
-   <br><b>2.</b>&nbsp;<a href="sendmail_clamav.html#a2">Jak to dzia³a?</a>
-   <br><b>3.</b>&nbsp;<a href="sendmail_clamav.html#a3">Zapotrzebowanie na oprogramowanie</a>
-   <br><b>4.</b>&nbsp;<a href="sendmail_clamav.html#a4">Konfiguracja serwera Samba</a>
-   <br><b>5.</b>&nbsp;<a href="sendmail_clamav.html#a5">Kompilacja ClamAV</a>
-   <br><b>6.</b>&nbsp;<a href="sendmail_clamav.html#a6">Uruchamianie</a>
-   <br><b>7.</b>&nbsp;<a href="sendmail_clamav.html#a7">Obserwacje i analiza logów</a>
+   <br><b>1.</b>&nbsp;<a href="samba_clamav.html#a1">Wprowadzenie</a>
+   <br><b>2.</b>&nbsp;<a href="samba_clamav.html#a2">Jak to dzia³a?</a>
+   <br><b>3.</b>&nbsp;<a href="samba_clamav.html#a3">Zapotrzebowanie na oprogramowanie</a>
+   <br><b>4.</b>&nbsp;<a href="samba_clamav.html#a4">Konfiguracja serwera Samba</a>
+   <br><b>5.</b>&nbsp;<a href="samba_clamav.html#a5">Kompilacja ClamAV</a>
+   <br><b>6.</b>&nbsp;<a href="samba_clamav.html#a6">Uruchamianie</a>
+   <br><b>7.</b>&nbsp;<a href="samba_clamav.html#a7">Obserwacje i analiza logów</a>
  
 <br><br><br>
 Najnowsza wersja tego dokumentu jest zawsze dostêpna pod <a href="http://clamav.skc.com.pl/howtos/samba_clamav.html">tym adresem</a>.<br><br>
@@ -496,7 +496,7 @@ podstawowych kroków. Znajomo¶æ serwera Samba przyda siê jednak bardzo i osoby do
 Wywo³ania te pozwalaj± programowi <i>samba-vscan</i> na podczepienie siê pod nie i wykonanie pewnego kodu a dok³adniej sprawdzenia pliku pod k±tem wystêpowania w nim wirusów. Wiêcej na temat VFS dowiecie siê 
 <a href="http://www.geocities.com/orville_torpid/papers/vfs_tutorial.html">tutaj</a> lub w dokumentacji Samby.
 
-<br><br>Co to oznacza w praktyce? Otórz ka¿de ¿±danie otwarcia katalogu/pliku stworzenie nowego lub jakakolwiek operacja na katalogach lub plikach, mo¿e byæ filtrowana a nastêpnie mo¿e zostaæ podjêta decyzja co zrobiæ z danym obiektem.
+<br><br>Co to oznacza w praktyce? Otó¿ ka¿de ¿±danie otwarcia katalogu/pliku stworzenie nowego lub jakakolwiek operacja na katalogach lub plikach, mo¿e byæ filtrowana a nastêpnie mo¿e zostaæ podjêta decyzja co zrobiæ z danym obiektem.
 
 <br><br><i>samba-vscan</i> ³±czy siê z demonem ClamAV - <b>clamd</b> poprzez <i>local socket</i>. W tym celu w pliku konfiguracyjnym <i>clamav.conf</i> musimy okre¶liæ ¶cie¿kê do socketu, np:
 
@@ -781,7 +781,7 @@ e-mail: <b>doozer (at) skc (dot) com (dot) pl</b>
 <br><br>
 Wed Mar 10 00:16:38 CET 2004 <b>Pierwsza wersja howto</b><br>
 <font style="font-size: 12px; color: #aaaaaa">
- # samba_clamav.html v1.0; Last modified: Wed, 10 Mar, 2004 18:22:35 by doozer #
+ # samba_clamav.html v1.0; Last modified: Sun, 11 Apr, 2004 22:14:13 by doozer #
 </font>
 
 
