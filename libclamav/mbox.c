@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.111  2004/08/22 20:20:14  nigelhorne
+ * Tidy
+ *
  * Revision 1.110  2004/08/22 15:08:59  nigelhorne
  * messageExport
  *
@@ -318,7 +321,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.110 2004/08/22 15:08:59 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.111 2004/08/22 20:20:14 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -421,7 +424,7 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 
 static	message	*parseEmailHeaders(const message *m, const table_t *rfc821Table);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
-static	int	parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, unsigned int options);
+static	int	parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, unsigned int options);
 static	int	boundaryStart(const char *line, const char *boundary);
 static	int	endOfMessage(const char *line, const char *boundary);
 static	int	initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
@@ -430,7 +433,9 @@ static	size_t	strip(char *buf, int len);
 static	bool	continuationMarker(const char *line);
 static	int	parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg);
 static	void	saveTextPart(message *m, const char *dir);
+#if	0
 static	bool	saveFile(const blob *b, const char *dir);
+#endif
 
 static	void	checkURLs(message *m, const char *dir);
 #ifdef	WITH_CURL
@@ -445,10 +450,6 @@ static	void	*getURL(void *a);
 static	void	*getURL(struct arg *arg);
 #endif
 #endif
-
-
-/* Maximum number of attachments that we accept */
-#define	MAX_ATTACHMENTS	10
 
 /* Maximum line length according to RFC821 */
 #define	LINE_LENGTH	1000
@@ -632,7 +633,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				}
 				messageDestroy(m);
 				if(messageGetBody(body))
-					if(!parseEmailBody(body,  NULL, 0, NULL, dir, rfc821, subtype, options)) {
+					if(!parseEmailBody(body, NULL, dir, rfc821, subtype, options)) {
 						messageReset(body);
 						m = body;
 						continue;
@@ -690,7 +691,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		 * Write out the last entry in the mailbox
 		 */
 		if(messageGetBody(body))
-			if(!parseEmailBody(body, NULL, 0, NULL, dir, rfc821, subtype, options))
+			if(!parseEmailBody(body, NULL, dir, rfc821, subtype, options))
 				retcode = -1;
 
 		/*
@@ -846,7 +847,6 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
  * any headers. First time of calling it'll be
  * the whole message. Later it'll be parts of a multipart message
  * textIn is the plain text message being built up so far
- * blobsIn contains the array of attachments found so far
  *
  * Returns:
  *	0 for fail
@@ -854,31 +854,23 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
  *	2 for success, attachments not saved
  */
 static int	/* success or fail */
-parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, unsigned int options)
+parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, unsigned int options)
 {
 	message **messages;	/* parts of a multipart message */
 	int inhead, inMimeHead, i, rc = 1, htmltextPart, multiparts = 0;
 	text *aText;
-	blob *blobList[MAX_ATTACHMENTS], **blobs;
 	const char *cptr;
 	message *mainMessage;
+	fileblob *fb;
 
-	cli_dbgmsg("in parseEmailBody(nBlobs = %d)\n", nBlobs);
-
-	/* Pre-assertions */
-	if(nBlobs >= MAX_ATTACHMENTS) {
-		cli_warnmsg("Not all attachments will be scanned\n");
-		/*return 2;*/
-	}
+	cli_dbgmsg("in parseEmailBody\n");
 
 	aText = textIn;
-	blobs = blobsIn;
 	messages = NULL;
 	mainMessage = messageIn;
 
 	/* Anything left to be parsed? */
 	if(mainMessage && (messageGetBody(mainMessage) != NULL)) {
-		int numberOfAttachments = 0, numberOfNewAttachments;
 		mime_type mimeType;
 		const char *mimeSubtype;
 		const text *t_line;
@@ -1198,10 +1190,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					cli_dbgmsg("No HTML code found to be scanned");
 					rc = 0;
 				} else
-					rc = parseEmailBody(aMessage, blobs, nBlobs, aText, dir, rfc821Table, subtypeTable, options);
-				blobArrayDestroy(blobs, nBlobs);
-				blobs = NULL;
-				nBlobs = 0;
+					rc = parseEmailBody(aMessage, aText, dir, rfc821Table, subtypeTable, options);
 
 				/*
 				 * Fixed based on an idea from Stephen White <stephen@earth.li>
@@ -1238,19 +1227,15 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				aMessage = messages[htmltextPart];
 				aText = textAddMessage(aText, aMessage);
 
-				rc = parseEmailBody(NULL, blobs, nBlobs, aText, dir, rfc821Table, subtypeTable, options);
+				rc = parseEmailBody(NULL, aText, dir, rfc821Table, subtypeTable, options);
 
-				if(rc == 1) {
+				if(rc == 1)
 					/*
 					 * Alternative message has saved its
 					 * attachments, ensure we don't do
 					 * the same thing
 					 */
-					blobArrayDestroy(blobs, nBlobs);
-					blobs = NULL;
-					nBlobs = 0;
 					rc = 2;
-				}
 				/*
 				 * Fall through - some clients are broken and
 				 * say alternative instead of mixed. The Klez
@@ -1285,7 +1270,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					bool addAttachment = FALSE;
 					bool addToText = FALSE;
 					const char *dtype;
-#if	0
+#ifndef	SAVE_TO_DISC
 					message *body;
 #endif
 
@@ -1320,8 +1305,6 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						if(mainMessage) {
 							const text *u_line = uuencodeBegin(mainMessage);
 							if(u_line) {
-								fileblob *fb;
-
 								cli_dbgmsg("Found uuencoded message in multipart/mixed mainMessage\n");
 								messageSetEncoding(mainMessage, "x-uuencode");
 								fb = messageToFileblob(mainMessage, dir);
@@ -1432,7 +1415,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						messageDestroy(messages[i]);
 						messages[i] = NULL;
 						if(body) {
-							rc = parseEmailBody(body, blobs, nBlobs, NULL, dir, rfc821Table, subtypeTable, options);
+							rc = parseEmailBody(body, NULL, dir, rfc821Table, subtypeTable, options);
 							messageDestroy(body);
 						}
 #endif
@@ -1449,13 +1432,13 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 							 * The headers were parsed when reading in the
 							 * whole multipart section
 							 */
-							rc = parseEmailBody(aMessage, blobs, nBlobs, aText, dir, rfc821Table, subtypeTable, options);
+							rc = parseEmailBody(aMessage, aText, dir, rfc821Table, subtypeTable, options);
 							cli_dbgmsg("Finished recursion\n");
 							assert(aMessage == messages[i]);
 							messageDestroy(messages[i]);
 							messages[i] = NULL;
 						} else {
-							rc = parseEmailBody(NULL, blobs, nBlobs, NULL, dir, rfc821Table, subtypeTable, options);
+							rc = parseEmailBody(NULL, NULL, dir, rfc821Table, subtypeTable, options);
 							if(mainMessage && (mainMessage != messageIn))
 								messageDestroy(mainMessage);
 							mainMessage = NULL;
@@ -1487,15 +1470,8 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 
 					if(addToText)
 						aText = textAdd(aText, messageGetBody(aMessage));
-					else if(numberOfAttachments >= MAX_ATTACHMENTS) {
-						cli_warnmsg("Not all attachments will be scanned\n");
-						/*
-						 * Try our best to save it
-						 * somewhere
-						 */
-						aText = textAdd(aText, messageGetBody(aMessage));
-					} else {
-						fileblob *fb = messageToFileblob(aMessage, dir);
+					else {
+						fb = messageToFileblob(aMessage, dir);
 
 						if(fb)
 							fileblobDestroy(fb);
@@ -1505,71 +1481,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					messages[i] = NULL;
 				}
 
-				if(numberOfAttachments == 0) {
-					/* No usable attachment was found */
-					rc = parseEmailBody(NULL, NULL, 0, aText, dir, rfc821Table, subtypeTable, options);
-					break;
-				}
-
-				/*
-				 * Store any existing attachments at the end of
-				 * the list we've just built up
-				 */
-				numberOfNewAttachments = 0;
-				for(i = 0; i < nBlobs; i++) {
-					int j;
-#ifdef	CL_DEBUG
-					assert(blobs[i]->magic == BLOB);
-#endif
-					/*
-					 * TODO: Now that fileblob is used
-					 * this checking doesn't happen,
-					 * need another means to save scanning
-					 * two attachments that are the same
-					 */
-					for(j = 0; j < numberOfAttachments; j++)
-						if(blobcmp(blobs[i], blobList[j]) == 0)
-							break;
-					if(j >= numberOfAttachments) {
-						assert(numberOfAttachments < MAX_ATTACHMENTS);
-						cli_dbgmsg("Attaching %s to list of blobs\n",
-							blobGetFilename(blobs[i]));
-						blobClose(blobs[i]);
-						blobList[numberOfAttachments++] = blobs[i];
-						numberOfNewAttachments++;
-					} else {
-						cli_warnmsg("Don't scan the same file twice as '%s' and '%s'\n",
-							blobGetFilename(blobs[i]),
-							blobGetFilename(blobList[j]));
-						blobDestroy(blobs[i]);
-						blobs[i] = NULL;
-					}
-				}
-
-				/*
-				 * If we've found nothing new save what we have
-				 * and quit - that's this part all done.
-				 */
-				if(numberOfNewAttachments == 0) {
-					rc = parseEmailBody(NULL, blobList, numberOfAttachments, NULL, dir, rfc821Table, subtypeTable, options);
-					break;
-				}
-				/*
-				 * If there's only one part of the MULTIPART
-				 * we already have the body to decode so
-				 * there's no more work to do.
-				 *
-				 * This is mostly for the situation where
-				 * broken messages claim to be multipart
-				 * but aren't was causing us to go into
-				 * infinite recursion
-				 */
-				if(multiparts > 1)
-					rc = parseEmailBody(mainMessage, blobList, numberOfAttachments, aText, dir, rfc821Table, subtypeTable, options);
-				else if(numberOfAttachments == 1) {
-					(void)saveFile(blobList[0], dir);
-					blobDestroy(blobList[0]);
-				}
+				/* rc = parseEmailBody(NULL, NULL, dir, rfc821Table, subtypeTable, options); */
 				break;
 			case DIGEST:
 				/*
@@ -1592,10 +1504,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				if(htmltextPart == -1)
 					htmltextPart = 0;
 
-				rc = parseEmailBody(messages[htmltextPart], blobs, nBlobs, aText, dir, rfc821Table, subtypeTable, options);
-				blobArrayDestroy(blobs, nBlobs);
-				blobs = NULL;
-				nBlobs = 0;
+				rc = parseEmailBody(messages[htmltextPart], aText, dir, rfc821Table, subtypeTable, options);
 				break;
 			default:
 				/*
@@ -1611,9 +1520,6 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 			for(i = 0; i < multiparts; i++)
 				if(messages[i])
 					messageDestroy(messages[i]);
-
-			if(blobs && (blobsIn == NULL))
-				puts("arraydestroy");
 
 			if(mainMessage && (mainMessage != messageIn))
 				messageDestroy(mainMessage);
@@ -1650,7 +1556,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						mainMessage = NULL;
 					}
 					if(messageGetBody(m))
-						rc = parseEmailBody(m, NULL, 0, NULL, dir, rfc821Table, subtypeTable, options);
+						rc = parseEmailBody(m, NULL, dir, rfc821Table, subtypeTable, options);
 
 					messageDestroy(m);
 				}
@@ -1680,7 +1586,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 			/*if((strcasecmp(cptr, "octet-stream") == 0) ||
 			   (strcasecmp(cptr, "x-msdownload") == 0)) {*/
 			{
-				fileblob *fb = messageToFileblob(mainMessage, dir);
+				fb = messageToFileblob(mainMessage, dir);
 
 				if(fb) {
 					cli_dbgmsg("Saving main message as attachment\n");
@@ -1706,152 +1612,127 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 		aText = NULL;
 	}
 
-	cli_dbgmsg("%d attachments found\n", nBlobs);
+	/*
+	 * No attachments - scan the text portions, often files
+	 * are hidden in HTML code
+	 */
+	cli_dbgmsg("%d multiparts found\n", multiparts);
+	for(i = 0; i < multiparts; i++) {
+		fb = messageToFileblob(messages[i], dir);
 
-	if(nBlobs == 0) {
-		fileblob *fb;
+		if(fb) {
+			cli_dbgmsg("Saving multipart %d, encoded with scheme %d\n",
+				i, messageGetEncoding(messages[i]));
 
-		/*
-		 * No attachments - scan the text portions, often files
-		 * are hidden in HTML code
-		 */
-		cli_dbgmsg("%d multiparts found\n", multiparts);
-		for(i = 0; i < multiparts; i++) {
-			fb = messageToFileblob(messages[i], dir);
-
-			if(fb) {
-				cli_dbgmsg("Saving multipart %d, encoded with scheme %d\n",
-					i, messageGetEncoding(messages[i]));
-
-				fileblobDestroy(fb);
-			}
-		}
-
-		if(mainMessage) {
-			/*
-			 * Look for uu-encoded main file
-			 */
-			const text *t_line;
-
-			if((t_line = uuencodeBegin(mainMessage)) != NULL) {
-				cli_dbgmsg("Found uuencoded file\n");
-
-				/*
-				 * Main part contains uuencoded section
-				 */
-				messageSetEncoding(mainMessage, "x-uuencode");
-
-				if((fb = messageToFileblob(mainMessage, dir)) != NULL) {
-					if((cptr = fileblobGetFilename(fb)) != NULL)
-						cli_dbgmsg("Found uuencoded message %s\n", cptr);
-					fileblobDestroy(fb);
-				}
-			} else if((encodingLine(mainMessage) != NULL) &&
-				  ((t_line = bounceBegin(mainMessage)) != NULL))  {
-				const text *t;
-				static const char encoding[] = "Content-Transfer-Encoding";
-				/*
-				 * Attempt to save the original (unbounced)
-				 * message - clamscan will find that in the
-				 * directory and call us again (with any luck)
-				 * having found an e-mail message to handle
-				 *
-				 * This finds a lot of false positives, the
-				 * search that an encoding line is in the
-				 * bounce (i.e. it's after the bounce header)
-				 * helps a bit, but at the expense of scanning
-				 * the entire message. messageAddLine
-				 * optimisation could help here, but needs
-				 * careful thought, do it with line numbers
-				 * would be best, since the current method in
-				 * messageAddLine of checking encoding first
-				 * must remain otherwise non bounce messages
-				 * won't be scanned
-				 */
-				for(t = t_line; t; t = t->t_next) {
-					const char *txt = lineGetData(t->t_line);
-
-					if(txt &&
-					   (strncasecmp(txt, encoding, sizeof(encoding) - 1) == 0) &&
-					   (strstr(txt, "7bit") == NULL) &&
-					   (strstr(txt, "8bit") == NULL))
-						break;
-				}
-				if(t && ((fb = fileblobCreate()) != NULL)) {
-					cli_dbgmsg("Found a bounce message\n");
-					fileblobSetFilename(fb, dir, "bounce");
-					fb = textToFileblob(t_line, fb);
-					fileblobDestroy(fb);
-				}
-			} else {
-				bool saveIt;
-
-				cli_dbgmsg("Not found uuencoded file\n");
-
-				if(messageGetMimeType(mainMessage) == MESSAGE)
-					/*
-					 * Quick peek, if the encapsulated
-					 * message has no
-					 * content encoding statement don't
-					 * bother saving to scan, it's safe
-					 */
-					saveIt = (encodingLine(mainMessage) != NULL);
-				else if((t_line = encodingLine(mainMessage)) != NULL) {
-					/*
-					 * Some bounces include the message
-					 * body without the headers.
-					 * Unfortunately this generates a
-					 * lot of false positives that a bounce
-					 * has been found when it hasn't.
-					 *
-					 * TODO: use fileblobCreate here
-					 */
-					if((fb = fileblobCreate()) != NULL) {
-						cli_dbgmsg("Found a bounce message with no header\n");
-						fileblobSetFilename(fb, dir, "bounce");
-						fileblobAddData(fb, "Received: by clamd\n", 19);
-
-						fb = textToFileblob(t_line, fb);
-
-						fileblobDestroy(fb);
-					}
-					saveIt = FALSE;
-				} else
-					/*
-					 * Save the entire text portion,
-					 * since it it may be an HTML file with
-					 * a JavaScript virus
-					 */
-					saveIt = TRUE;
-
-				if(saveIt) {
-					cli_dbgmsg("Saving text part to scan\n");
-					/*
-					 * TODO: May be better to save aText
-					 */
-					saveTextPart(mainMessage, dir);
-				}
-			}
-		} else
-			rc = (multiparts) ? 1 : 2;	/* anything saved? */
-	} else {
-		short attachmentNumber;
-
-		for(attachmentNumber = 0; attachmentNumber < nBlobs; attachmentNumber++) {
-			blob *b = blobs[attachmentNumber];
-
-			if(b) {
-				if(!saveFile(b, dir))
-					break;
-				blobDestroy(b);
-				blobs[attachmentNumber] = NULL;
-			}
+			fileblobDestroy(fb);
 		}
 	}
 
-	/* Already done */
-	if(blobs && (blobsIn == NULL))
-		blobArrayDestroy(blobs, nBlobs);
+	if(mainMessage) {
+		/*
+		 * Look for uu-encoded main file
+		 */
+		const text *t_line;
+
+		if((t_line = uuencodeBegin(mainMessage)) != NULL) {
+			cli_dbgmsg("Found uuencoded file\n");
+
+			/*
+			 * Main part contains uuencoded section
+			 */
+			messageSetEncoding(mainMessage, "x-uuencode");
+
+			if((fb = messageToFileblob(mainMessage, dir)) != NULL) {
+				if((cptr = fileblobGetFilename(fb)) != NULL)
+					cli_dbgmsg("Found uuencoded message %s\n", cptr);
+				fileblobDestroy(fb);
+			}
+		} else if((encodingLine(mainMessage) != NULL) &&
+			  ((t_line = bounceBegin(mainMessage)) != NULL))  {
+			const text *t;
+			static const char encoding[] = "Content-Transfer-Encoding";
+			/*
+			 * Attempt to save the original (unbounced)
+			 * message - clamscan will find that in the
+			 * directory and call us again (with any luck)
+			 * having found an e-mail message to handle
+			 *
+			 * This finds a lot of false positives, the
+			 * search that an encoding line is in the
+			 * bounce (i.e. it's after the bounce header)
+			 * helps a bit, but at the expense of scanning
+			 * the entire message. messageAddLine
+			 * optimisation could help here, but needs
+			 * careful thought, do it with line numbers
+			 * would be best, since the current method in
+			 * messageAddLine of checking encoding first
+			 * must remain otherwise non bounce messages
+			 * won't be scanned
+			 */
+			for(t = t_line; t; t = t->t_next) {
+				const char *txt = lineGetData(t->t_line);
+
+				if(txt &&
+				   (strncasecmp(txt, encoding, sizeof(encoding) - 1) == 0) &&
+				   (strstr(txt, "7bit") == NULL) &&
+				   (strstr(txt, "8bit") == NULL))
+					break;
+			}
+			if(t && ((fb = fileblobCreate()) != NULL)) {
+				cli_dbgmsg("Found a bounce message\n");
+				fileblobSetFilename(fb, dir, "bounce");
+				fb = textToFileblob(t_line, fb);
+				fileblobDestroy(fb);
+			}
+		} else {
+			bool saveIt;
+
+			cli_dbgmsg("Not found uuencoded file\n");
+
+			if(messageGetMimeType(mainMessage) == MESSAGE)
+				/*
+				 * Quick peek, if the encapsulated
+				 * message has no
+				 * content encoding statement don't
+				 * bother saving to scan, it's safe
+				 */
+				saveIt = (encodingLine(mainMessage) != NULL);
+			else if((t_line = encodingLine(mainMessage)) != NULL) {
+				/*
+				 * Some bounces include the message
+				 * body without the headers.
+				 * Unfortunately this generates a
+				 * lot of false positives that a bounce
+				 * has been found when it hasn't.
+				 */
+				if((fb = fileblobCreate()) != NULL) {
+					cli_dbgmsg("Found a bounce message with no header\n");
+					fileblobSetFilename(fb, dir, "bounce");
+					fileblobAddData(fb, "Received: by clamd\n", 19);
+
+					fb = textToFileblob(t_line, fb);
+
+					fileblobDestroy(fb);
+				}
+				saveIt = FALSE;
+			} else
+				/*
+				 * Save the entire text portion,
+				 * since it it may be an HTML file with
+				 * a JavaScript virus
+				 */
+				saveIt = TRUE;
+
+			if(saveIt) {
+				cli_dbgmsg("Saving text part to scan\n");
+				/*
+				 * TODO: May be better to save aText
+				 */
+				saveTextPart(mainMessage, dir);
+			}
+		}
+	} else
+		rc = (multiparts) ? 1 : 2;	/* anything saved? */
 
 	if(mainMessage && (mainMessage != messageIn))
 		messageDestroy(mainMessage);
@@ -2184,6 +2065,7 @@ saveTextPart(message *m, const char *dir)
 	}
 }
 
+#if	0
 /*
  * Save some data as a unique file in the given directory.
  *
@@ -2283,6 +2165,7 @@ saveFile(const blob *b, const char *dir)
 
 	return (close(fd) >= 0);
 }
+#endif
 
 #ifdef	FOLLOWURLS
 static void
