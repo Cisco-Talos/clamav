@@ -512,7 +512,7 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 							cli_dbgmsg("insert content-type: parse line '%s'\n", line);
 							arg = strtok_r(NULL, "\r\n", &strptr);
 							if((arg == NULL) || (strchr(arg, '/') == NULL)) {
-								cli_warnmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", ptr);
+								cli_warnmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", arg);
 								messageSetMimeType(aMessage, "text");
 								messageSetMimeSubtype(aMessage, "plain");
 							} else {
@@ -1362,10 +1362,10 @@ saveFile(const blob *b, const char *dir)
 	int fd;
 	const char *cptr, *suffix;
 #ifdef	NAME_MAX	/* e.g. Linux */
-	char filename[NAME_MAX + 6 + 1];
+	char filename[NAME_MAX + 1];
 #else
 #ifdef	MAXNAMELEN	/* e.g. Solaris */
-	char filename[MAXNAMELEN + 6 + 1];
+	char filename[MAXNAMELEN + 1];
 #endif
 #endif
 
