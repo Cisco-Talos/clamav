@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.150  2004/10/09 08:01:37  nigelhorne
+ * Needs libcurl >= 7.11
+ *
  * Revision 1.149  2004/10/06 17:21:30  nigelhorne
  * Fix RFC2298 handling broken by RFC1341 code
  *
@@ -435,7 +438,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.149 2004/10/06 17:21:30 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.150 2004/10/09 08:01:37 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -539,18 +542,31 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
  * LDFLAGS=`curl-config --libs` ./configure ...
  */
 #include <curl/curl.h>
+
+/*
+ * Needs curl >= 7.11 (I've heard that 7.9 can cause crashes and 7.10 is
+ * untested)
+ */
+#if	(LIBCURL_VERSION_MAJOR < 7)
+#undef	WITH_CURL	/* also undef FOLLOWURLS? */
 #endif
+
+#if	(LIBCURL_VERSION_MAJOR == 7) && (LIBCURL_VERSION_MINOR < 11)
+#undef	WITH_CURL	/* also undef FOLLOWURLS? */
+#endif
+
+#endif	/*WITH_CURL*/
 
 #else	/*!FOLLOWURLS*/
 #undef	WITH_CURL
-#endif
+#endif	/*FOLLOWURLS*/
 
 /*
  * Define this to handle RFC1341 messages.
  *	This is experimental code so it is up to YOU to (1) ensure it's secure
  * (2) peridically trim the directory of old files
  */
-#define	PARTIAL_DIR	"/tmp/partial"	/* FIXME: should be config based on TMPDIR */
+/*#define	PARTIAL_DIR	"/tmp/partial"	/* FIXME: should be config based on TMPDIR */
 
 static	message	*parseEmailHeaders(const message *m, const table_t *rfc821Table);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);

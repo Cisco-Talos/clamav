@@ -1,3 +1,7 @@
+Sat Oct  9 09:03:21 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Only use libcurl if the version is >= 7.11
+
 Sat Oct  9 03:07:35 CEST 2004 (tk)
 ----------------------------------
   * libclamav/readdb.c: make signature parser more elastic
