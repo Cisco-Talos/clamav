@@ -406,6 +406,7 @@ int cli_cvdload(FILE *fd, struct cl_node **root, unsigned int *signo, short warn
 	    fseek(tmpd, 0L, SEEK_SET);
 
 	    if(cli_untgz(fileno(tmpd), dir)) {
+		perror("cli_untgz");
 		cli_errmsg("cli_cvdload(): Can't unpack CVD file.\n");
 		cli_rmdirs(dir);
 		free(dir);
