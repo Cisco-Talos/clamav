@@ -33,7 +33,7 @@ struct optstruct {
 
 int optc(const struct optstruct *opt, char ch);
 int optl(const struct optstruct *opt, const char *optname);
-void register_char_option(struct optstruct *opt, char ch);
+void register_char_option(struct optstruct *opt, char ch, const char *longname);
 void register_long_option(struct optstruct *opt, const char *optname);
 char *getargc(const struct optstruct *opt, char ch);
 char *getfirstargc(const struct optstruct *opt, char ch, struct optnode **optnode);

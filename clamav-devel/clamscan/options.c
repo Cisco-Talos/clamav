@@ -38,6 +38,14 @@
 
 extern int clamscan(struct optstruct *opt);
 
+static char *clamdscan_long[] = { "help", "version", "verbose", "quiet",
+				  "stdout", "log", "config-file", "no-summary",
+				  NULL };
+
+static char clamdscan_short[] = { 'h', 'V', 'v', 'l', 0 };
+
+int clamdscan_mode = 0;
+
 int main(int argc, char **argv)
 {
 	int ret, opt_index, i, len;
@@ -50,11 +58,12 @@ int main(int argc, char **argv)
 	     * WARNING: For compatibility reasons options marked as "not used"
 	     *		must still be accepted !
 	     */
-	    {"help", 0, 0, 'h'},
-	    {"quiet", 0, 0, 0},
-	    {"verbose", 0, 0, 'v'},
+	    {"help", 0, 0, 'h'},	    /* clamscan + clamdscan */
+	    {"quiet", 0, 0, 0},		    /* clamscan + clamdscan */
+	    {"stdout", 0, 0, 0},	    /* clamscan + clamdscan */
+	    {"verbose", 0, 0, 'v'},	    /* clamscan + clamdscan */
 	    {"debug", 0, 0, 0},
-	    {"version", 0, 0, 'V'},
+	    {"version", 0, 0, 'V'},	    /* clamscan + clamdscan */
 	    {"tempdir", 1, 0, 0},
 	    {"leave-temps", 0, 0, 0},
 	    {"config-file", 1, 0, 0}, /* clamdscan */
@@ -85,7 +94,6 @@ int main(int argc, char **argv)
 	    {"no-ole2", 0, 0, 0},
 	    {"no-html", 0, 0, 0},
 	    {"mbox", 0, 0, 'm'},
-	    {"stdout", 0, 0, 0},
 	    {"unzip", 2, 0, 0},
 	    {"unrar", 2, 0, 0},
 	    {"unace", 2, 0, 0}, /* not used */
@@ -105,6 +113,9 @@ int main(int argc, char **argv)
     opt=(struct optstruct*) mcalloc(1, sizeof(struct optstruct));
     opt->optlist = NULL;
 
+    if(strstr(argv[0], "clamdscan"))
+	clamdscan_mode = 1;
+
     while(1) {
 
 	opt_index=0;
@@ -119,9 +130,13 @@ int main(int argc, char **argv)
 		break;
 
     	    default:
-		if(strchr(getopt_parameters, ret))
-		    register_char_option(opt, ret);
-		else {
+		if(strchr(getopt_parameters, ret)) {
+		    if(opt_index)
+			register_char_option(opt, ret, long_options[opt_index].name);
+		    else
+			register_char_option(opt, ret, NULL);
+
+		} else {
 		    mprintf("!Unknown option passed.\n");
 		    free_opt(opt);
 		    exit(40);
@@ -155,9 +170,26 @@ int main(int argc, char **argv)
     return  ret;
 }
 
-void register_char_option(struct optstruct *opt, char ch)
+void register_char_option(struct optstruct *opt, char ch, const char *longname)
 {
 	struct optnode *newnode;
+	int i, found = 0;
+
+
+    if(clamdscan_mode) {
+	for(i = 0; clamdscan_short[i]; i++)
+	    if(clamdscan_short[i] == ch)
+		found = 1;
+
+	if(!found) {
+	    if(longname)
+		mprintf("WARNING: Ignoring option -%c (--%s): please edit clamav.conf instead.\n", ch, longname);
+	    else
+		mprintf("WARNING: Ignoring option -%c: please edit clamav.conf instead.\n", ch);
+
+	    return;
+	}
+    }
 
     newnode = (struct optnode *) mmalloc(sizeof(struct optnode));
     newnode->optchar = ch;
@@ -174,6 +206,19 @@ void register_char_option(struct optstruct *opt, char ch)
 void register_long_option(struct optstruct *opt, const char *optname)
 {
 	struct optnode *newnode;
+	int i, found;
+
+
+    if(clamdscan_mode) {
+	for(i = 0; clamdscan_long[i]; i++)
+	    if(!strcmp(clamdscan_long[i], optname))
+		found = 1;
+
+	if(!found) {
+	    mprintf("WARNING: Ignoring option --%s: please edit clamav.conf instead.\n", optname);
+	    return;
+	}
+    }
 
     newnode = (struct optnode *) mmalloc(sizeof(struct optnode));
     newnode->optchar = 0;
