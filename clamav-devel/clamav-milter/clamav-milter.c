@@ -243,7 +243,7 @@
  *	0.66n	13/2/04	Added TCPwrappers support
  *			Removed duplication in version string
  *			Handle machines that don't have in_port_t
- *	0.67	16/2/04	Upissued to 0.67
+ *	0.
  *	0.67a	16/2/04	Added clamfi_free
  *	0.67b	17/2/04	Removed compilation warning - now compiles on FreeBSD5.2
  *			Don't allow --force to overwride TCPwrappers
@@ -283,9 +283,13 @@
  *			on an idea from "Leonid Zeitlin" <lz@europe.com>
  *	0.67l	10/3/04	Use new HAVE_STRERROR_R rather than TARGET_OS_SOLARIS
  *			to determine if strerror_r exists
+ *	0.70	17/3/04	Up-issued to 0.70
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.62  2004/03/17 19:46:49  nigelhorne
+ * Upissue to 0.70@
+ *
  * Revision 1.61  2004/03/15 19:54:12  kojm
  * 0.70-rc
  *
@@ -454,7 +458,7 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.61 2004/03/15 19:54:12 kojm Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.62 2004/03/17 19:46:49 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.70"
 
