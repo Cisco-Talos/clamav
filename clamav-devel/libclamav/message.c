@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.55  2004/05/10 11:24:18  nigelhorne
+ * Handle bounce message false positives
+ *
  * Revision 1.54  2004/05/06 18:01:25  nigelhorne
  * Force attachments marked as RFC822 messages to be scanned
  *
@@ -159,7 +162,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.54 2004/05/06 18:01:25 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.55 2004/05/10 11:24:18 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -735,6 +738,15 @@ messageAddLine(message *m, const char *line, int takeCopy)
 	/*
 	 * See if this line marks the start of a non MIME inclusion that
 	 * will need to be scanned
+	 *
+	 * Notes that X- lines are not taken as start of mails because
+	 * cli_filetype() is too keen: any line it finds that starts X-
+	 * is seen to be the start of a new message, which results in too
+	 * many false positives for locating the possible start of a bounce,
+	 * and allows some instances of Worm.SomeFool.Gen-1 to get through in
+	 * bounce messages which end up not being correctly handled because
+	 * the real start of a bounce header is missed because of the earlier
+	 * false positive
 	 */
 	if(line) {
 		if((m->encoding == NULL) &&
@@ -742,6 +754,7 @@ messageAddLine(message *m, const char *line, int takeCopy)
 		   (strstr(line, "7bit") == NULL))
 			m->encoding = m->body_last;
 		else if((m->bounce == NULL) &&
+			(strncmp(line, "X-", 2) != 0) &&	/*!!*/
 			(cli_filetype(line, strlen(line)) == CL_MAILFILE))
 				m->bounce = m->body_last;
 		else if((m->binhex == NULL) &&
