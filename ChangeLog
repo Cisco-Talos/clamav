@@ -1,3 +1,7 @@
+Wed Mar 16 21:55:44 CET 2005 (tk)
+---------------------------------
+  * libclamav/pe.c: fix section handling in petite block
+
 Tue Mar 15 18:10:18 GMT 2005 (njh)
 ---------------------------------
   * libclamav/mbox.c:	Some Worm.Yaha.K were not being found
