@@ -1,3 +1,8 @@
+Thu Oct 28 09:14:22 BST 2004 (njh)
+----------------------------------
+  * libclamav/strrcpy.c:	Ensure that assert is only used if
+					--enable-debug is given to configure
+
 Wed Oct 27 13:36:14 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Remove X-VIRUS-STATUS on incoming messages

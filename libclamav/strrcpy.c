@@ -16,7 +16,16 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <stdio.h>
+
+#ifndef	CL_DEBUG
+#define	NDEBUG	/* map CLAMAV debug onto standard */
+#endif
+
 #include <assert.h>
 
 #include "strrcpy.h"
