@@ -468,7 +468,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO AMTAR install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot LIBCLAMAV_VERSION CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE LN_S ECHO RANLIB ac_ct_RANLIB CPP EGREP LIBTOOL DBDIR CFGDIR INSTALL_CLAMAV_CONF_TRUE INSTALL_CLAMAV_CONF_FALSE INSTALL_FRESHCLAM_CONF_TRUE INSTALL_FRESHCLAM_CONF_FALSE LIBCLAMAV_LIBS CLAMD_LIBS CLAMAV_MILTER_LIBS FRESHCLAM_LIBS TH_SAFE ADDITIONAL_LIBS BUILD_CLAMD_TRUE BUILD_CLAMD_FALSE HAVE_MILTER_TRUE HAVE_MILTER_FALSE SENDMAIL GETENT CLAMAVUSER CLAMAVGROUP LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO AMTAR install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot LIBCLAMAV_VERSION CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE LN_S ECHO RANLIB ac_ct_RANLIB CPP EGREP LIBTOOL DBDIR CFGDIR INSTALL_CLAMD_CONF_TRUE INSTALL_CLAMD_CONF_FALSE INSTALL_FRESHCLAM_CONF_TRUE INSTALL_FRESHCLAM_CONF_FALSE LIBCLAMAV_LIBS CLAMD_LIBS CLAMAV_MILTER_LIBS FRESHCLAM_LIBS TH_SAFE ADDITIONAL_LIBS BUILD_CLAMD_TRUE BUILD_CLAMD_FALSE HAVE_MILTER_TRUE HAVE_MILTER_FALSE SENDMAIL GETENT CLAMAVUSER CLAMAVGROUP LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -11203,12 +11203,12 @@ _ACEOF
 
 
 
-if test ! -r "$cfg_dir/clamav.conf"; then
-  INSTALL_CLAMAV_CONF_TRUE=
-  INSTALL_CLAMAV_CONF_FALSE='#'
+if test ! -r "$cfg_dir/clamd.conf"; then
+  INSTALL_CLAMD_CONF_TRUE=
+  INSTALL_CLAMD_CONF_FALSE='#'
 else
-  INSTALL_CLAMAV_CONF_TRUE='#'
-  INSTALL_CLAMAV_CONF_FALSE=
+  INSTALL_CLAMD_CONF_TRUE='#'
+  INSTALL_CLAMD_CONF_FALSE=
 fi
 
 
@@ -13499,10 +13499,10 @@ echo "$as_me: error: conditional \"am__fastdepCC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
-if test -z "${INSTALL_CLAMAV_CONF_TRUE}" && test -z "${INSTALL_CLAMAV_CONF_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"INSTALL_CLAMAV_CONF\" was never defined.
+if test -z "${INSTALL_CLAMD_CONF_TRUE}" && test -z "${INSTALL_CLAMD_CONF_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"INSTALL_CLAMD_CONF\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"INSTALL_CLAMAV_CONF\" was never defined.
+echo "$as_me: error: conditional \"INSTALL_CLAMD_CONF\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -14129,8 +14129,8 @@ s,@EGREP@,$EGREP,;t t
 s,@LIBTOOL@,$LIBTOOL,;t t
 s,@DBDIR@,$DBDIR,;t t
 s,@CFGDIR@,$CFGDIR,;t t
-s,@INSTALL_CLAMAV_CONF_TRUE@,$INSTALL_CLAMAV_CONF_TRUE,;t t
-s,@INSTALL_CLAMAV_CONF_FALSE@,$INSTALL_CLAMAV_CONF_FALSE,;t t
+s,@INSTALL_CLAMD_CONF_TRUE@,$INSTALL_CLAMD_CONF_TRUE,;t t
+s,@INSTALL_CLAMD_CONF_FALSE@,$INSTALL_CLAMD_CONF_FALSE,;t t
 s,@INSTALL_FRESHCLAM_CONF_TRUE@,$INSTALL_FRESHCLAM_CONF_TRUE,;t t
 s,@INSTALL_FRESHCLAM_CONF_FALSE@,$INSTALL_FRESHCLAM_CONF_FALSE,;t t
 s,@LIBCLAMAV_LIBS@,$LIBCLAMAV_LIBS,;t t

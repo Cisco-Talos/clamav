@@ -22,7 +22,7 @@ CFGINST = @CFGDIR@
  
 install:
 	$(mkinstalldirs) $(DESTDIR)$(CFGINST)
-if INSTALL_CLAMAV_CONF
+if INSTALL_CLAMD_CONF
 	@$(INSTALL_DATA) $(srcdir)/clamd.conf $(DESTDIR)$(CFGINST)
 endif
 if INSTALL_FRESHCLAM_CONF
