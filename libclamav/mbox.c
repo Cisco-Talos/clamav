@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.143  2004/09/30 21:47:35  nigelhorne
+ * Removed unneeded strdups
+ *
  * Revision 1.142  2004/09/28 18:40:12  nigelhorne
  * Use stack rather than heap where possible
  *
@@ -414,7 +417,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.142 2004/09/28 18:40:12 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.143 2004/09/30 21:47:35 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -540,8 +543,8 @@ static	char	*rfc822comments(const char *in);
 static	void	checkURLs(message *m, const char *dir);
 #ifdef	WITH_CURL
 struct arg {
-	char *url;
-	char *dir;
+	const char *url;
+	const char *dir;
 	char *filename;
 };
 #ifdef	CL_THREAD_SAFE
@@ -2589,7 +2592,7 @@ checkURLs(message *m, const char *dir)
 			struct stat statb;
 			char cmd[512];
 #endif	/*WITH_CURL*/
-			char name[NAME_MAX];
+			char name[NAME_MAX + 1];
 
 			if(tableFind(t, url) == 1) {
 				cli_dbgmsg("URL %s already downloaded\n", url);
@@ -2608,8 +2611,8 @@ checkURLs(message *m, const char *dir)
 
 #ifdef	WITH_CURL
 #ifdef	CL_THREAD_SAFE
-			args[n].url = strdup(url);
-			args[n].dir = strdup(dir);
+			args[n].dir = dir;
+			args[n].url = url;
 			args[n].filename = strdup(name);
 			pthread_create(&tid[n], NULL, getURL, &args[n]);
 #else
@@ -2645,7 +2648,6 @@ checkURLs(message *m, const char *dir)
 			++n;
 		}
 	}
-	html_tag_arg_free(&hrefs);
 	blobDestroy(b);
 	tableDestroy(t);
 
@@ -2654,11 +2656,10 @@ checkURLs(message *m, const char *dir)
 	cli_dbgmsg("checkURLs: waiting for %d thread(s) to finish\n", n);
 	while(--n >= 0) {
 		pthread_join(tid[n], NULL);
-		free(args[n].url);
-		free(args[n].dir);
 		free(args[n].filename);
 	}
 #endif
+	html_tag_arg_free(&hrefs);
 }
 
 #ifdef	WITH_CURL
@@ -2715,7 +2716,7 @@ getURL(struct arg *arg)
 		return NULL;
 	}
 
-	sprintf(fout, "%s/%s", dir, filename);
+	snprintf(fout, NAME_MAX, "%s/%s", dir, filename);
 
 	fp = fopen(fout, "w");
 
