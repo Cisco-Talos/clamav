@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.39  2004/02/06 13:46:08  kojm
+ * Support for clamav-config.h
+ *
  * Revision 1.38  2004/02/04 13:29:48  nigelhorne
  * Handle partial writes - and print when write fails
  *
@@ -105,7 +108,11 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.38 2004/02/04 13:29:48 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.39 2004/02/06 13:46:08 kojm Exp $";
+
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */

@@ -16,6 +16,10 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -35,10 +39,13 @@
 #include "options.h"
 #include "cfgfile.h"
 #include "others.h"
+/* Fixes gcc warning */
+#include "../libclamav/others.h"
 #include "tcpserver.h"
 #include "localserver.h"
 #include "others.h"
 #include "defaults.h"
+
 
 void help(void);
 void daemonize(void);

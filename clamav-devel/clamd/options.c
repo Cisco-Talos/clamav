@@ -19,6 +19,10 @@
  *			from Alejandro Dubrovsky <s328940@student.uq.edu.au>
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

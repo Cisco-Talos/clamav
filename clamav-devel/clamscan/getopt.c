@@ -28,7 +28,7 @@
 #endif
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include <clamav-config.h>
 #endif
 
 #if !defined __STDC__ || !__STDC__

@@ -20,6 +20,10 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -505,8 +509,8 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
 	mprintf("Downloading %s [%c]\r", dbfile, rotation[rot]);
 	fflush(stdout);
 	/* rot = ++rot % 4; -> operation on `rot' may be undefined (why ?) */
-	rot %= 4;
 	rot++;
+	rot %= 4;
     }
 
     mprintf("Downloading %s [*]\n", dbfile);

@@ -17,10 +17,10 @@ dnl   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 AC_INIT(clamscan/clamscan.c)
 AC_CREATE_TARGET_H(target.h)
-AC_CANONICAL_SYSTEM
-
 AM_INIT_AUTOMAKE(clamav, "devel-`date +%Y%m%d`")
 dnl AM_INIT_AUTOMAKE(clamav, `date +%Y%m%d`)
+AM_CONFIG_HEADER(clamav-config.h)
+
 LC_CURRENT=1
 LC_REVISION=3
 LC_AGE=0
@@ -48,8 +48,8 @@ dnl AC_SUBST(LT_AGE)
 
 dnl BUFFSIZE must be at least 16 kb !!!
 
-AC_DEFINE(SCANBUFF, 131072)
-AC_DEFINE(FILEBUFF, 8192)
+AC_DEFINE(SCANBUFF, 131072, [scan buffer size])
+AC_DEFINE(FILEBUFF, 8192,   [file i/o buffer size])
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS(stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h)
@@ -61,7 +61,7 @@ AC_COMPILE_CHECK_SIZEOF(long)
 have_pthreads=no
 AC_CHECK_HEADER(pthread.h,[have_pthreads=yes],)
 
-AC_CHECK_HEADER(zlib.h,[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lz"; AC_DEFINE(HAVE_ZLIB_H)],[echo "Please install zlib and zlib-devel packages."; exit 1])
+AC_CHECK_HEADER(zlib.h,[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lz"; AC_DEFINE(HAVE_ZLIB_H,1,zlib installed)],[echo "Please install zlib and zlib-devel packages."; exit 1])
 
 want_bzip2="yes"
 AC_ARG_ENABLE(bzip2,
@@ -70,11 +70,11 @@ want_bzip2="no",)
 
 if test "$want_bzip2" = "yes"
 then
-    AC_CHECK_HEADER(bzlib.h,[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lbz2"; AC_DEFINE(HAVE_BZLIB_H)],)
-    AC_CHECK_LIB(bz2, bzReadOpen, AC_DEFINE(NOBZ2PREFIX),)
+    AC_CHECK_HEADER(bzlib.h,[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lbz2"; AC_DEFINE(HAVE_BZLIB_H,1,have bzip2)],)
+    AC_CHECK_LIB(bz2, bzReadOpen, AC_DEFINE(NOBZ2PREFIX,1,bzip funtions do not have bz2 prefix),)
 fi
 
-AC_CHECK_FUNCS(setsid memcpy)
+AC_CHECK_FUNCS(setsid memcpy snprintf)
 AC_FUNC_SETPGRP
 
 have_milter="no"
@@ -91,10 +91,10 @@ want_dsig="no",)
 
 if test "$want_dsig" = "yes"
 then
-    AC_CHECK_LIB(gmp, __gmpz_init, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; AC_DEFINE(HAVE_GMP)], [AC_CHECK_LIB(gmp, mpz_init, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; AC_DEFINE(HAVE_GMP)], [echo "WARNING: GNU MP 2 or newer NOT FOUND - digital signature support will be disabled !"; want_dsig="no"])])
+    AC_CHECK_LIB(gmp, __gmpz_init, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; AC_DEFINE(HAVE_GMP,1,have gmp installed)], [AC_CHECK_LIB(gmp, mpz_init, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; AC_DEFINE(HAVE_GMP,1,have gmp installed)], [echo "WARNING: GNU MP 2 or newer NOT FOUND - digital signature support will be disabled !"; want_dsig="no"])])
 fi
 
-AC_CHECK_HEADER(syslog.h,AC_DEFINE(CLAMD_USE_SYSLOG),)
+AC_CHECK_HEADER(syslog.h,AC_DEFINE(CLAMD_USE_SYSLOG,1,[use syslog]),)
 
 dnl AC_CHECK_LIB(c, strtok_r,, AC_DEFINE(NO_STRTOK_R))
 dnl AC_CHECK_LIB(c, mkstemp, AC_DEFINE(HAVE_MKSTEMP),)
@@ -126,8 +126,8 @@ AC_ARG_WITH(group,
 [  --with-group=gid	  name of the clamav group (default=clamav).],
 clamav_group="$withval", clamav_group="clamav")
 
-AC_DEFINE_UNQUOTED(CLAMAVUSER,"$clamav_user",)
-AC_DEFINE_UNQUOTED(CLAMAVGROUP,"$clamav_group",)
+AC_DEFINE_UNQUOTED(CLAMAVUSER,"$clamav_user",[name of the clamav user])
+AC_DEFINE_UNQUOTED(CLAMAVGROUP,"$clamav_group",[name of the clamav group])
 
 test_clamav=yes
 AC_ARG_ENABLE(clamav,
@@ -141,11 +141,11 @@ want_clamuko=no,)
 
 AC_ARG_ENABLE(debug,
 [  --enable-debug	  Enable debug messages.],
-AC_DEFINE(CL_DEBUG),)
+AC_DEFINE(CL_DEBUG,1,[enable debugging]),)
 
 AC_ARG_ENABLE(bigstack,
 [  --enable-bigstack	  Increase thread stack size.],
-AC_DEFINE(C_BIGSTACK),)
+AC_DEFINE(C_BIGSTACK,1,[Increase thread stack size.]),)
 
 dnl database directory
 AC_ARG_WITH(dbdir, 
@@ -155,12 +155,12 @@ db_dir="$withval", db_dir="_default_")
 dnl main.cvd
 AC_ARG_WITH(db1, 
 [  --with-db1=name	  Name of the main database (main.cvd).],
-AC_DEFINE_UNQUOTED(DB1NAME,"$withval",), AC_DEFINE(DB1NAME, "main.cvd"))
+AC_DEFINE_UNQUOTED(DB1NAME,"$withval",[Name of the main database]), AC_DEFINE(DB1NAME, "main.cvd",[Name of the main database]))
 
 dnl daily.cvd
 AC_ARG_WITH(db2, 
 [  --with-db2=name	  Name of the daily database (daily.cvd).],
-AC_DEFINE_UNQUOTED(DB2NAME,"$withval",), AC_DEFINE(DB2NAME, "daily.cvd"))
+AC_DEFINE_UNQUOTED(DB2NAME,"$withval",[Name of the daily database]), AC_DEFINE(DB2NAME, "daily.cvd",[Name of the daily database]))
 
 dnl I had problems with $pkgdatadir, that's why I'm using these funny checks
 if test "$db_dir" = "_default_"
@@ -193,7 +193,7 @@ fi
 
 CFGDIR=$cfg_dir
 AC_SUBST(CFGDIR)
-AC_DEFINE_UNQUOTED(CONFDIR,"$cfg_dir",)
+AC_DEFINE_UNQUOTED(CONFDIR,"$cfg_dir",[where to look for the config file])
 
 dnl Do not overwrite the current config file
 AM_CONDITIONAL(INSTALL_CLAMAV_CONF, test ! -r "$cfg_dir/clamav.conf")
@@ -203,7 +203,7 @@ if test "$test_urandom" = "yes"
 then
     if test -r /dev/urandom ; then
 	AC_MSG_RESULT(/dev/(u)random detected.)
-	AC_DEFINE(C_URANDOM)
+	AC_DEFINE(C_URANDOM,1,[use /dev/urandom])
     else
 	AC_MSG_RESULT(/dev/(u)random not detected - using weak software rand())
     fi
@@ -216,22 +216,22 @@ dnl TH_SAFE=""
 
 case "$target_os" in
 linux*)
-    AC_DEFINE(C_LINUX)
+    AC_DEFINE(C_LINUX,1,[target is linux])
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE)
-	AC_DEFINE(_REENTRANT)
+	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
+	AC_DEFINE(_REENTRANT,1,[thread safe])
 	CLAMD_LIBS="-lpthread"
 	if test "$want_clamuko" = "yes"; then
-	    AC_DEFINE(CLAMUKO)
+	    AC_DEFINE(CLAMUKO,1,[enable clamuko])
 	fi
 	CLAMSCAN_LIBS="-lpthread"
     fi
     ;;
 cygwin*)
     dnl It probably won't work.
-    AC_DEFINE(C_CYGWIN)
+    AC_DEFINE(C_CYGWIN,1,[os is cygwin])
     if test "$test_clamav" = "yes"; then
 	if test ! -r /etc/passwd; then
 	   test_clamav="no"
@@ -240,8 +240,8 @@ cygwin*)
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE)
-	AC_DEFINE(_REENTRANT)
+	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
+	AC_DEFINE(_REENTRANT,1,[thread safe])
     fi
     ;;
 solaris*)
@@ -250,20 +250,20 @@ solaris*)
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
 	CLAMD_LIBS="-lpthread -lsocket -lnsl -lresolv"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE)
-	AC_DEFINE(_REENTRANT)
+	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
+	AC_DEFINE(_REENTRANT,1,[thread safe])
     fi
-    AC_DEFINE(C_SOLARIS)
+    AC_DEFINE(C_SOLARIS,1,[os is solaris])
     ;;
 freebsd*)
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread -lc_r"
 	CLAMD_LIBS="-pthread -lc_r"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE)
-	AC_DEFINE(_REENTRANT)
+	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
+	AC_DEFINE(_REENTRANT,1,[thread safe])
     fi
-    AC_DEFINE(C_BSD)
+    AC_DEFINE(C_BSD,1,[os is solaris])
     ;;
 openbsd3.3*)
     if test "$have_pthreads" = "yes"; then
@@ -286,29 +286,29 @@ openbsd*)
 	    CLAMD_LIBS="-pthread -lc_r"
 	fi
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE)
-	AC_DEFINE(_REENTRANT)
+	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
+	AC_DEFINE(_REENTRANT,1,[thread safe])
     fi
-    AC_DEFINE(C_BSD)
+    AC_DEFINE(C_BSD,1,[os is bsd flavor])
     ;;
 netbsd*)
     AC_MSG_RESULT(NetBSD detected. Disabling thread support.)
     have_pthreads="no"
-    AC_DEFINE(C_BSD)
+    AC_DEFINE(C_BSD,1,[os is bsd flavor])
     ;;
 bsd*)
     AC_MSG_RESULT(Unknown BSD detected. Disabling thread support.)
     have_pthreads="no"
-    AC_DEFINE(C_BSD)
+    AC_DEFINE(C_BSD,1,[os is bsd flavor])
     ;;
 beos*)
     AC_MSG_RESULT(BeOS detected. Disabling thread support.)
     have_pthreads="no"
-    AC_DEFINE(C_BEOS)
+    AC_DEFINE(C_BEOS,1,[os is beos])
     ;;
 darwin*)
-    AC_DEFINE(C_BSD)
-    AC_DEFINE(C_DARWIN)
+    AC_DEFINE(C_BSD,1,[os is bsd flavor])
+    AC_DEFINE(C_DARWIN,1,[os is darwin])
     use_netinfo="yes"
     dnl have_pthreads="no"
     dnl AC_MSG_RESULT(Darwin detected. Disabling thread support.)
@@ -317,38 +317,38 @@ sco*)
     dnl njh@bandsman.sco.uk: SCO Unix port
     FRESHCLAM_LIBS="-lsocket"
     CLAMD_LIBS="-lsocket"
-    AC_DEFINE(NO_SNPRINTF)
+    dnl AC_DEFINE(NO_SNPRINTF)
     ;;
 hpux*)
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
 	CLAMD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE)
-	AC_DEFINE(_REENTRANT)
+	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
+	AC_DEFINE(_REENTRANT,1,[thread safe])
     fi
-    AC_DEFINE(C_HPUX)
+    AC_DEFINE(C_HPUX,1,[os is hpux])
     ;;
 aix*)
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
 	CLAMD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE)
-	AC_DEFINE(_REENTRANT)
+	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
+	AC_DEFINE(_REENTRANT,1,[thread safe])
     fi
-    AC_DEFINE(C_AIX)
+    AC_DEFINE(C_AIX,1,[os is aix])
     ;;
 irix*)
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
 	CLAMD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE)
-	AC_DEFINE(_REENTRANT)
+	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
+	AC_DEFINE(_REENTRANT,1,[thread safe])
     fi
-    AC_DEFINE(C_IRIX)
-    AC_DEFINE(NO_SNPRINTF)
+    AC_DEFINE(C_IRIX,1,[os is irix])
+    dnl AC_DEFINE(NO_SNPRINTF,1,no snprintf available)
     ;;
 
 *)
@@ -365,7 +365,7 @@ AM_CONDITIONAL(HAVE_MILTER, test "$have_milter" = "yes")
 
 if test "$have_pthreads" = "yes"
 then
-    AC_DEFINE(BUILD_CLAMD)
+    AC_DEFINE(BUILD_CLAMD, 1, "build clamd")
 fi
 
 if test "$have_milter" = "yes"
@@ -420,9 +420,9 @@ fi
 AC_C_CONST
 AC_C_BIGENDIAN
 if test $ac_cv_c_bigendian = yes; then
-  AC_DEFINE(WORDS_BIGENDIAN)
+  AC_DEFINE(WORDS_BIGENDIAN,1,endianess)
 else
-  AC_DEFINE(WORDS_LITTLEENDIAN)
+  AC_DEFINE(WORDS_BIGENDIAN,0,endianess)
 fi
 
 dnl check for __attribute__((packed))
@@ -446,14 +446,14 @@ if test "$have_attrib_packed" = no; then
 			[have_pragma_pack=no])
 		])
 	AC_MSG_RESULT($have_pragma_pack)
-	AC_DEFINE(HAVE_PRAGMA_PACK)
+	AC_DEFINE(HAVE_PRAGMA_PACK, 1, "pragma pack")
 fi
 
 if test "$have_attrib_packed" = no -a "$have_pragma_pack" = no ; then
 	AC_MSG_ERROR(Need to know how to pack structures with this compiler)
 fi
 if test "$have_attrib_packed" = yes; then
-	AC_DEFINE(HAVE_ATTRIB_PACKED)
+	AC_DEFINE(HAVE_ATTRIB_PACKED, 1, "attrib packed")
 fi
 
 AC_OUTPUT([

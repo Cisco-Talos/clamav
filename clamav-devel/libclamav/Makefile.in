@@ -181,6 +181,7 @@ libclamav_la_SOURCES = \
 lib_LTLIBRARIES = libclamav.la
 subdir = libclamav
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
+CONFIG_HEADER = $(top_builddir)/clamav-config.h
 CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(lib_LTLIBRARIES)
 
@@ -193,7 +194,7 @@ am_libclamav_la_OBJECTS = matcher.lo md5.lo others.lo readdb.lo cvd.lo \
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 
 DEFS = @DEFS@
-DEFAULT_INCLUDES =  -I. -I$(srcdir)
+DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@

@@ -16,6 +16,10 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <stdlib.h>
 #if	C_DARWIN
 #include <sys/types.h>

@@ -120,6 +120,7 @@ EXTRA_DIST = FAQ contrib test examples BUGS
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
+CONFIG_HEADER = clamav-config.h
 CONFIG_CLEAN_FILES =
 DIST_SOURCES =
 
@@ -128,11 +129,12 @@ RECURSIVE_TARGETS = info-recursive dvi-recursive install-info-recursive \
 	install-exec-recursive installdirs-recursive install-recursive \
 	uninstall-recursive check-recursive installcheck-recursive
 DIST_COMMON = README AUTHORS COPYING ChangeLog INSTALL Makefile.am \
-	Makefile.in NEWS TODO acinclude.m4 aclocal.m4 config.guess \
-	config.sub configure configure.in depcomp install-sh ltmain.sh \
-	missing mkinstalldirs
+	Makefile.in NEWS TODO acinclude.m4 aclocal.m4 \
+	clamav-config.h.in config.guess config.sub configure \
+	configure.in depcomp install-sh ltmain.sh missing mkinstalldirs
 DIST_SUBDIRS = $(SUBDIRS)
-all: all-recursive
+all: clamav-config.h
+	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
 .SUFFIXES:
 $(srcdir)/Makefile.in:  Makefile.am  $(top_srcdir)/configure.in $(ACLOCAL_M4)
@@ -148,6 +150,23 @@ $(srcdir)/configure:  $(srcdir)/configure.in $(ACLOCAL_M4) $(CONFIGURE_DEPENDENC
 
 $(ACLOCAL_M4):  configure.in acinclude.m4
 	cd $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
+
+clamav-config.h: stamp-h1
+	@if test ! -f $@; then \
+	  rm -f stamp-h1; \
+	  $(MAKE) stamp-h1; \
+	else :; fi
+
+stamp-h1: $(srcdir)/clamav-config.h.in $(top_builddir)/config.status
+	@rm -f stamp-h1
+	cd $(top_builddir) && $(SHELL) ./config.status clamav-config.h
+
+$(srcdir)/clamav-config.h.in:  $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+	cd $(top_srcdir) && $(AUTOHEADER)
+	touch $(srcdir)/clamav-config.h.in
+
+distclean-hdr:
+	-rm -f clamav-config.h
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -228,7 +247,7 @@ ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	       END { for (i in files) print i; }'`; \
 	mkid -fID $$unique
 
-TAGS: tags-recursive $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
+TAGS: tags-recursive $(HEADERS) $(SOURCES) clamav-config.h.in $(TAGS_DEPENDENCIES) \
 		$(TAGS_FILES) $(LISP)
 	tags=; \
 	here=`pwd`; \
@@ -237,7 +256,7 @@ TAGS: tags-recursive $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
 	    test -f $$subdir/TAGS && tags="$$tags -i $$here/$$subdir/TAGS"; \
 	  fi; \
 	done; \
-	list='$(SOURCES) $(HEADERS)  $(LISP) $(TAGS_FILES)'; \
+	list='$(SOURCES) $(HEADERS) clamav-config.h.in $(LISP) $(TAGS_FILES)'; \
 	unique=`for i in $$list; do \
 	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
 	  done | \
@@ -357,7 +376,7 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-recursive
-all-am: Makefile
+all-am: Makefile clamav-config.h
 installdirs: installdirs-recursive
 installdirs-am:
 
@@ -391,7 +410,7 @@ clean-am: clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-recursive
 	-rm -f config.status config.cache config.log
-distclean-am: clean-am distclean-generic distclean-libtool \
+distclean-am: clean-am distclean-generic distclean-hdr distclean-libtool \
 	distclean-tags
 
 dvi: dvi-recursive
@@ -426,7 +445,7 @@ uninstall-info: uninstall-info-recursive
 
 .PHONY: $(RECURSIVE_TARGETS) GTAGS all all-am check check-am clean \
 	clean-generic clean-libtool clean-recursive dist dist-all \
-	dist-gzip distcheck distclean distclean-generic \
+	dist-gzip distcheck distclean distclean-generic distclean-hdr \
 	distclean-libtool distclean-recursive distclean-tags \
 	distcleancheck distdir dvi dvi-am dvi-recursive info info-am \
 	info-recursive install install-am install-data install-data-am \

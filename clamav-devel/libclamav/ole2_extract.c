@@ -20,6 +20,10 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -38,13 +42,13 @@
 
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
 
-#ifdef WORDS_LITTLEENDIAN
-#define ole2_endian_convert_16(v)	(v)
-#else
+#if WORDS_BIGENDIAN
 static uint16_t ole2_endian_convert_16(uint16_t v)
 {
 	return ((v >> 8) + (v << 8));
 }
+#else
+#define ole2_endian_convert_16(v)      (v)
 #endif
 
 #ifdef WORDS_LITTLEENDIAN

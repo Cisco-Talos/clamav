@@ -17,6 +17,10 @@
  *      of 
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <zzip.h>                                   /* exported...*/
 #include <string.h>
 

@@ -10,6 +10,10 @@
  *          that can be found in COPYING.ZZIP
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <zzip.h>                                   /* exported... */
 #include <zzip-file.h>
 #include <zzipformat.h>

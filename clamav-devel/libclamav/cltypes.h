@@ -21,6 +21,10 @@
 #ifndef __CLTYPES_H
 #define __CLTYPES_H
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
 #elif defined HAVE_SYS_INT_TYPES_H /*solaris*/
@@ -39,9 +43,9 @@
     typedef unsigned short uint16_t;    typedef signed short int16_t;
 # endif
 
-# if defined SIZEOF_INT == 4
+# if SIZEOF_INT == 4
     typedef unsigned int uint32_t;      typedef signed int int32_t;
-# elif defined SIZEOF_LONG == 4
+# elif SIZEOF_LONG == 4
     typedef unsigned long uint32_t;     typedef signed long int32_t;
 # else
 #   error unable to typedef int32_t from either int or long

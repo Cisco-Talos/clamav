@@ -119,6 +119,7 @@ EXTRA_DIST = clamdoc.pdf DMS Spanish Japanese html man FreeBSD-HowTo Portugese T
 man_MANS = man/clamscan.1 man/freshclam.1 man/sigtool.1 man/clamd.8 man/clamav.conf.5 man/clamdscan.1 man/clamav-milter.8
 subdir = docs
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
+CONFIG_HEADER = $(top_builddir)/clamav-config.h
 CONFIG_CLEAN_FILES =
 DIST_SOURCES =
 

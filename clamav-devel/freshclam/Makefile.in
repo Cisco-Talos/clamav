@@ -137,6 +137,7 @@ INCLUDES = -I../clamscan -I../clamd -I../libclamav
 LIBS = -L../libclamav -lclamav @FRESHCLAM_LIBS@
 subdir = freshclam
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
+CONFIG_HEADER = $(top_builddir)/clamav-config.h
 CONFIG_CLEAN_FILES =
 bin_PROGRAMS = freshclam$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
@@ -149,7 +150,7 @@ freshclam_OBJECTS = $(am_freshclam_OBJECTS)
 @BUILD_CLAMD_FALSE@freshclam_DEPENDENCIES = ../clamscan/getopt.o \
 @BUILD_CLAMD_FALSE@	../clamscan/others.o
 freshclam_LDFLAGS =
-DEFAULT_INCLUDES =  -I. -I$(srcdir)
+DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
