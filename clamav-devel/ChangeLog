@@ -1,3 +1,13 @@
+Tue May 25 22:30:33 CEST 2004 (tk)
+----------------------------------
+  * libclamav: + report oversized archives (just like clamav-0.6x did)
+	       + do not trigger off file type recognizer in raw mode
+	         (fixes stdin scanning in clamscan - Debian Bug #250806)
+  * clamd: harden read() in command parser
+  * Makefiles: fix *.cvd and *.conf installation in VPATHed directory
+	       (patch by Eugene Crosser <crosser*rol.ru>)
+  * doc: include manual page for freshclam.conf (from Debian)
+
 Tue May 25 17:24:48 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	X-Virus-Status: Not Scanned - StreamMaxLength exceeded

@@ -24,8 +24,8 @@ CLAMAVGROUP = @CLAMAVGROUP@
  
 install:
 	$(mkinstalldirs) $(DESTDIR)$(DBINST)
-	@test -f $(DESTDIR)$(DBINST)/main.cvd || $(INSTALL_DATA) main.cvd $(DESTDIR)$(DBINST)
-	@test -f $(DESTDIR)$(DBINST)/daily.cvd || $(INSTALL_DATA) daily.cvd $(DESTDIR)$(DBINST)
+	@test -f $(DESTDIR)$(DBINST)/main.cvd || $(INSTALL_DATA) $(srcdir)/main.cvd $(DESTDIR)$(DBINST)
+	@test -f $(DESTDIR)$(DBINST)/daily.cvd || $(INSTALL_DATA) $(srcdir)/daily.cvd $(DESTDIR)$(DBINST)
 	@test -f $(DESTDIR)$(DBINST)/mirrors.txt && rm -f $(DESTDIR)$(DBINST)/mirrors.txt || true
 	@test -f $(DESTDIR)$(DBINST)/viruses.db && rm -f $(DESTDIR)$(DBINST)/viruses.db || true
 	@test -f $(DESTDIR)$(DBINST)/viruses.db2 && rm -f $(DESTDIR)$(DBINST)/viruses.db2 || true

@@ -20,6 +20,10 @@
 #include "clamav-config.h"
 #endif
 
+#ifdef CL_NOTHREADS
+#undef CL_THREAD_SAFE
+#endif
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
