@@ -1,3 +1,8 @@
+Wed Oct  1 10:52:35 BST 2003 (njh)
+----------------------------------
+  * libclamav: mbox/message now handles content type definition on a new
+  		line
+
 Tue Sep 30 12:54:32 BST 2003 (njh)
 ----------------------------------
   * clamav-milter: clamfi_envfrom was returning EX_TEMPFAIL in some places
