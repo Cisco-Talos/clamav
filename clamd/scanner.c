@@ -34,6 +34,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <clamav.h>
+#include <pthread.h>
 
 #include "cfgparser.h"
 #include "others.h"
@@ -48,6 +49,8 @@
 #ifdef C_LINUX
 dev_t procdev; /* /proc device */
 #endif
+
+pthread_mutex_t gh_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int checksymlink(const char *path)
 {
@@ -239,11 +242,14 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	server.sin_port = htons(port);
 
 	if((cpt = cfgopt(copt, "TCPAddr"))) {
-	    if ((he = gethostbyname(cpt->strarg)) == 0) {
+	    pthread_mutex_lock(&gh_mutex);
+	    if((he = gethostbyname(cpt->strarg)) == 0) {
 		logg("!gethostbyname(%s) error: %s\n", cpt->strarg);
 		mdprintf(odesc, "gethostbyname(%s) ERROR\n", cpt->strarg);
+		pthread_mutex_unlock(&gh_mutex);
 		return -1;
 	    }
+	    pthread_mutex_unlock(&gh_mutex);
 	    server.sin_addr = *(struct in_addr *) he->h_addr_list[0];
 	} else
 	    server.sin_addr.s_addr = INADDR_ANY;
