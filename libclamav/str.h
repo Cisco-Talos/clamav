@@ -26,6 +26,6 @@ short int *cli_hex2si(const char *hex);
 char *cli_hex2str(const char *hex);
 char *cli_str2hex(const char *string, unsigned int len);
 char *cli_strtokbuf(const char *input, int fieldno, const char *delim, char *output);
-int cli_memstr(const char *haystack, int hs, const char *needle, int ns);
+char *cli_memstr(const char *haystack, int hs, const char *needle, int ns);
 
 #endif
