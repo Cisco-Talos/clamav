@@ -48,6 +48,11 @@ Send a failure message to the sender, and to the postmaster.
 fake their source address, so this option is not recommended ].
 See also \-\-noreject.
 .TP
+\fB-C, \-\-dont-log-clean\fR
+Messages without viruses are usually logged if SysLog is set in
+\fBclamav.conf\fR since it gives a feel-good factor.
+This option turns that off.
+.TP
 \fB-d, \-\-dont-scan-on-error\fR
 If a system error occurs pass messages through unscanned,
 usually when a system error occurs the milter raises a temporary failure which
@@ -95,7 +100,9 @@ redirected to it.
 .TP
 \fB-U, \-\-quarantine-dir=DIR\fR
 If this option is given, infected files are left in this directory.
-Note - this option only works when using LocalSocket.
+The directory must not be publically readable or writeable, if it is,
+clamav\-milter will issue an error and fail to start.
+\fBNote\fR - this option only works when using LocalSocket.
 .TP 
 \fB\-\-server=HOSTNAME/ADDRESS, \-s HOSTNAME/ADDRESS\fR
 IP address or hostname of server(s) running clamd (when using TCPsocket).

@@ -241,9 +241,13 @@
  *			getting in
  *	0.67f	20/2/04	Added checkClamd() - if possible attempts to see
  *			if clamd has died
+ *	0.67g	21/2/04	Don't run if the quarantine-dir is publically accessable
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.53  2004/02/21 11:03:23  nigelhorne
+ * Error if quarantine-dir is publically accessable
+ *
  * Revision 1.52  2004/02/20 17:07:24  nigelhorne
  * Added checkClamd
  *
@@ -338,7 +342,7 @@
  * Support AllowSupplementaryGroups
  *
  * Revision 1.21  2003/11/22 11:47:45  nigelhorne
- * Drop root priviliges and support quanrantine
+ * Drop root priviliges and support quarantine
  *
  * Revision 1.20  2003/11/19 16:32:22  nigelhorne
  * Close cmdSocket earlier
@@ -385,9 +389,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.52 2004/02/20 17:07:24 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.53 2004/02/21 11:03:23 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.67f"
+#define	CM_VERSION	"0.67g"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -905,9 +909,26 @@ main(int argc, char **argv)
 		} else
 			fprintf(stderr, "%s: running as root is not recommended\n", argv[0]);
 	}
-	if(quarantine_dir && (access(quarantine_dir, W_OK) < 0)) {
-		perror(quarantine_dir);
-		return EX_CONFIG;
+	if(quarantine_dir) {
+		struct stat statb;
+
+		if(access(quarantine_dir, W_OK) < 0) {
+			perror(quarantine_dir);
+			return EX_CONFIG;
+		}
+		if(stat(quarantine_dir, &statb) < 0) {
+			perror(quarantine_dir);
+			return EX_CONFIG;
+		}
+		/*
+		 * Quit if the quarantine directory is publically readable
+		 * or writeable
+		 */
+		if(statb.st_mode & 077) {
+			fprintf(stderr, "%s: unsafe quarantine directory %s\n",
+				argv[0], quarantine_dir);
+			return EX_CONFIG;
+		}
 	}
 
 	if(sigFilename && !updateSigFile())
