@@ -1,3 +1,7 @@
+Mon Aug 30 14:00:43 CEST 2004 (tk)
+----------------------------------
+  * freshclam/dns.c: Fix compilation error on Cygwin once more (thanks to Nigel)
+
 Mon Aug 30 12:36:49 BST 2004 (njh)
 ----------------------------------
   * libclamav/blob.c:	Fix compilation errors on AIX and OSF reported by
