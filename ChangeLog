@@ -1,3 +1,8 @@
+Sun Feb 13 09:32:51 GMT 2005 (njh)
+----------------------------------
+  * libclamav/message.c:	Some files wouldn't uudecode correctly (reported
+			by Jerome Limozin <jerome at limozin.net>)
+
 Fri Feb 11 22:21:44 GMT 2005 (njh)
 ----------------------------------
   * clamav-milter:	Added --whistlist-file and --sendmail-cf options
