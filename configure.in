@@ -86,12 +86,9 @@ want_clamuko="no",)
 
 AC_FUNC_SETPGRP
 
-have_milter="no"
-AC_CHECK_HEADER(libmilter/mfapi.h,have_milter="yes",)
-
 AC_ARG_ENABLE(milter,
-[  --enable-milter	  Build clamav-milter (if milter library found)],
-,have_milter="no")
+[  --enable-milter	  Build clamav-milter],
+have_milter=$enableval,have_milter="no")
 
 want_dsig="yes"
 AC_ARG_ENABLE(dsig,
@@ -380,6 +377,32 @@ AC_SUBST(CLAMAV_MILTER_LIBS)
 AC_SUBST(FRESHCLAM_LIBS)
 AC_SUBST(TH_SAFE)
 AC_SUBST(ADDITIONAL_LIBS)
+
+# --enable-milter
+if test "$have_milter" = "yes"; then
+    # libmilter checking code adapted from spamass-milter by
+    # Tom G. Christensen <tgc@statsbiblioteket.dk>
+
+    # Check for libmilter and it's header files in the usual locations
+    save_LDFLAGS="$LDFLAGS"
+    if test -d /usr/lib/libmilter ; then
+	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -L/usr/lib/libmilter"
+    fi
+    LDFLAGS="$LDFLAGS $CLAMAV_MILTER_LIBS"
+    AC_CHECK_LIB(milter, mi_stop,[CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lmilter"],[
+	# Older sendmails require libsm or libsmutil for support functions
+	AC_SEARCH_LIBS(strlcpy, [sm smutil], [test "$ac_cv_search_strlcpy" = "none required" || CLAMAV_MILTER_XLIB="$ac_cv_search_strlcpy"])
+	LDFLAGS="$save_LDFLAGS $CLAMAV_MILTER_LIBS $CLAMAV_MILTER_XLIB"
+	$as_unset ac_cv_lib_milter_mi_stop
+	AC_CHECK_LIB(milter, mi_stop,[CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lmilter $CLAMAV_MILTER_XLIB"],[
+	    AC_MSG_ERROR([Cannot find libmilter])
+	])
+    ])
+    LDFLAGS="$save_LDFLAGS"
+    AC_CHECK_HEADERS(libmilter/mfapi.h,have_milter="yes",[
+	AC_MSG_ERROR([Please install mfapi.h from the sendmail distribution])
+    ])
+fi
 
 AM_CONDITIONAL(BUILD_CLAMD, test "$have_pthreads" = "yes")
 AM_CONDITIONAL(HAVE_MILTER, test "$have_milter" = "yes")

@@ -36,6 +36,6 @@ endif
 endif
 
 AM_CFLAGS = -DSENDMAIL_BIN=\"$(SENDMAIL)\"
-LIBS = $(top_builddir)/libclamav/libclamav.la -L/usr/lib/libmilter -lmilter @CLAMAV_MILTER_LIBS@
+LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMAV_MILTER_LIBS@
 INCLUDES = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_srcdir)/shared
 EXTRA_DIST = clamav-milter.c INSTALL
