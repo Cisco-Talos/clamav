@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.206  2005/01/06 11:53:29  nigelhorne
+ * Handle bounces in non mime encoded messages
+ *
  * Revision 1.205  2005/01/01 15:55:26  nigelhorne
  * Changes handling of unbalanced quotes in multipart headers
  *
@@ -603,7 +606,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.205 2005/01/01 15:55:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.206 2005/01/06 11:53:29 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -653,6 +656,7 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.205 2005/01/01 15:55:26 nigelhorne 
 #include "others.h"
 #include "defaults.h"
 #include "str.h"
+#include "filetypes.h"
 
 #ifdef	CL_DEBUG
 #if __GLIBC__ == 2 && __GLIBC_MINOR__ >= 1
@@ -1871,6 +1875,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 
 		switch(mimeType) {
 		case NOMIME:
+			cli_dbgmsg("Not a mime encoded message\n");
 			aText = textAddMessage(aText, mainMessage);
 			break;
 		case TEXT:
@@ -2570,7 +2575,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						cli_warnmsg("PGP encoded attachment not scanned\n");
 						rc = 2;
 					} else
-						cli_warnmsg("Unknown encryption protocol '%s' - report to bugs@clamav.net\n");
+						cli_warnmsg("Unknown encryption protocol '%s' - if you believe this file contains a virus, report it to bugs@clamav.net\n");
 					free(protocol);
 				} else
 					cli_dbgmsg("Encryption method missing protocol name\n");
@@ -2652,7 +2657,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				/* TODO */
 				cli_warnmsg("Attempt to send Content-type message/external-body trapped");
 			else
-				cli_warnmsg("Unsupported message format `%s' - please report to bugs@clamav.net\n", mimeSubtype);
+				cli_warnmsg("Unsupported message format `%s' - if you believe this file contains a virus, report it to bugs@clamav.net\n", mimeSubtype);
 
 
 			if(mainMessage && (mainMessage != messageIn))
@@ -2690,16 +2695,62 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 	}
 
 	if(aText && (textIn == NULL)) {
-		cli_dbgmsg("Non mime part not scanned - if you believe this file contains a virus report to bugs@clamav.net\n");
-		/*if((fb = fileblobCreate()) != NULL) {
-			cli_dbgmsg("Save non mime part\n");
-			fileblobSetFilename(fb, dir, "textpart");
-			fileblobAddData(fb, "Received: by clamd (textpart)\n", 30);
+		/* Look for a bounce in the text (non mime encoded) portion */
+		const text *t;
 
-			fb = textToFileblob(aText, fb);
+		for(t = aText; t; t = t->t_next) {
+			const line_t *l = t->t_line;
+			const text *lookahead;
+			const char *s;
 
-			fileblobDestroy(fb);
-		}*/
+			if(l == NULL)
+				continue;
+
+			s = lineGetData(l);
+
+			if(cli_filetype(s, strlen(s)) != CL_TYPE_MAIL)
+				continue;
+
+			/*
+			 * We've found what looks like the start of a bounce
+			 * message. Only bother saving if it really is a bounce
+			 * message, this helps to speed up scanning of ping-pong
+			 * messages that have lots of bounces within bounces in
+			 * them
+			 */
+			for(lookahead = t->t_next; lookahead; lookahead = lookahead->t_next) {
+				l = lookahead->t_line;
+
+				if(l == NULL)
+					break;
+				s = lineGetData(l);
+				if(strncasecmp(s, "Content-Type:", 13) == 0)
+					/*
+					 * Don't bother with plain/text or
+					 * plain/html
+					 */
+					if(strstr(s, "text/") == NULL)
+						break;
+			}
+
+			if(lookahead && (lookahead->t_line == NULL)) {
+				cli_dbgmsg("Non mime part bounce message is not mime encoded, so it will not be scanned\n");
+				t = lookahead;
+				/* look for next bounce message */
+				continue;
+			}
+
+			if((fb = fileblobCreate()) != NULL) {
+				cli_dbgmsg("Save non mime part bounce message\n");
+				fileblobSetFilename(fb, dir, "bounce");
+				fileblobAddData(fb, (unsigned char *)"Received: by clamd (bounce)\n", 26);
+
+				fb = textToFileblob(t, fb);
+
+				fileblobDestroy(fb);
+			}
+			break;
+		}
 		textDestroy(aText);
 		aText = NULL;
 	}
@@ -3417,7 +3468,7 @@ rfc2047(const char *in)
 		encoding = tolower(encoding);
 
 		if((encoding != 'q') && (encoding != 'b')) {
-			cli_warnmsg("Unsupported RFC2047 encoding type '%c' - report to bugs@clamav.net\n", encoding);
+			cli_warnmsg("Unsupported RFC2047 encoding type '%c' - if you believe this file contains a virus, report it to bugs@clamav.net\n", encoding);
 			free(out);
 			out = NULL;
 			break;
