@@ -1,7 +1,12 @@
+Fri Jun 25 14:57:06 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Optimise the scanning of emails that don't have
+	other emails within them.
+
 Thu Jun 24 22:38:16 BST 2004 (njh)
 ----------------------------------
   * libclamav:	Plug small memory leak when scanning emails with a large
-  	number of attachments
+	number of attachments
 		Handle uuencoded files created with buggy software
 
 Thu Jun 24 09:09:27 BST 2004 (trog)
@@ -12,7 +17,7 @@ Thu Jun 24 09:09:27 BST 2004 (trog)
 Wed Jun 23 17:23:59 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Further optimisation in the handling of empty lines
-  	in emails
+	in emails
 
 Wed Jun 23 15:16:20 BST 2004 (trog)
 -----------------------------------
@@ -26,7 +31,7 @@ Tue Jun 22 18:47:32 CEST 2004 (tk)
 Tue Jun 22 11:58:06 BST 2004 (njh/trog)
 ---------------------------------------
   * libclamav/str.c:	Rewrote cli_chomp() as discussed in the clamav-devel
-  	mailing list
+	mailing list
 
 Tue Jun 22 05:09:54 BST 2004 (njh)
 ----------------------------------
@@ -34,8 +39,8 @@ Tue Jun 22 05:09:54 BST 2004 (njh)
 	clamfi_abort
 			Removed compilation warning in FreeBSD5.2
   * libclamav:		Call cli_chomp() twice to ensure \r is also removed in
-  	emails
-  			Optimise handling of blank lines in emails
+	emails
+			Optimise handling of blank lines in emails
 			Trialing Andrey J. Melnikoff (TEMHOTA)
 	<temnota@kmv.ru>'s patch to print stack trace on SIGSEGV. Tidied,
 	optimised and applied the patch. Comments welcome.
@@ -68,7 +73,7 @@ Mon Jun 21 11:21:48 BST 2004 (njh)
 Fri Jun 18 11:08:26 BST 2004 (njh)
 ----------------------------------
   * libclamav:			Allow any number of alternatives in
-  	multipart messages
+	multipart messages
 
 Wed Jun 16 09:09:45 BST 2004 (njh)
 ----------------------------------
@@ -79,7 +84,7 @@ Wed Jun 16 09:09:45 BST 2004 (njh)
   * docs/man/clamav-milter.8:	Added access to sendmail variables in template
 	files
   * libclamav:			Added small performance improvements
-  				Added thread safety measures
+				Added thread safety measures
 
 Tue Jun 15 22:41:03 CEST 2004 (tk)
 ----------------------------------
@@ -99,7 +104,7 @@ Mon Jun 14 15:35:04 BST 2004 (njh)
 Mon Jun 14 10:07:24 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Some spam generates very broken headers, added fix
-  	to try to scan (with warnings about the assumptions made)
+	to try to scan (with warnings about the assumptions made)
 
 Sun Jun 13 14:26:33 CEST 2004 (tk)
 ----------------------------------
@@ -166,7 +171,7 @@ Tue Jun  8 22:46:29 BST 2004 (njh)
 Sun Jun  6 22:35:19 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Find uuencoded viruses in multipart/mixed that have no
-  	start of message boundaries
+	start of message boundaries
 
 Sun Jun  6 03:38:08 CEST 2004 (tk)
 ----------------------------------
@@ -211,7 +216,7 @@ Wed Jun  2 02:30:34 CEST 2004 (tk)
 Tue Jun  1 10:09:02 BST 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Corrupted BinHex could still cause crash on
-  	some non Linux systems (thanks to Trog for spotting this one)
+	some non Linux systems (thanks to Trog for spotting this one)
 
 Sun May 30 03:35:38 CEST 2004 (tk)
 ----------------------------------
