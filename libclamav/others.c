@@ -48,7 +48,7 @@ pthread_mutex_t cl_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
 #include "others.h"
 #include "md5.h"
 
-#define CL_FLEVEL 1 /* don't touch it */
+#define CL_FLEVEL 2 /* don't touch it */
 
 
 int cli_debug_flag = 0;

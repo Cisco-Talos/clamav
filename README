@@ -23,13 +23,13 @@ implemented by Trog. Besides, there are many improvements and bugfixes
     + TCPWrappers support
 
 -) libclamav:
-    + support MS Office documents (OLE2) and VBA macros decompression
+    + support MS Office documents (OLE2) and VBA macro decoding
     + support encrypted archive detection
     + new flags: CL_OLE2, CL_ENCRYPTED (see clamdoc.pdf, Section 6.1)
     + improve virus detection in big files
     + improve support for multipart, bounce and embedded RFC822 messages
     + improve RAR support
-    + backup snprintf implementation
+    + include backup snprintf implementation
 
 -) clamscan:
     + new option: --block-encrypted
@@ -49,9 +49,14 @@ Special thanks to Dirk Mueller <mueller*kde.org> for his code review,
 many bugfixes and cleanups.
 
 
+There will be no major feature enhancements in the 0.7x series. Our work
+will be concentrated on a new scanning engine and preliminary heuristics -
+please help us and test CVS snapshots from time to time.
+
+
 We are happy to announce new programs with support for ClamAV (all of them
 have been reviewed by our team - more info in the documentation and
-on our website http://www.clamav.net/3rdparty.html):
+on our website: http://www.clamav.net/3rdparty.html):
 
     + ClamWin - a GUI for Windows (!)
     + KlamAV - a collection of GUI tools for using ClamAV on KDE
@@ -73,9 +78,9 @@ on our website http://www.clamav.net/3rdparty.html):
     + INSERT - a security toolkit on a credit card size CD
     + Local Area Security - a Live CD Linux distribution
 
-
 --
 The ClamAV team (http://www.clamav.net/team.html)
+April 16, 2004
 
 
 0.68-1

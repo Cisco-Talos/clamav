@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>POP3 Virus Scanner Daemon</TITLE>
-<META NAME="description" CONTENT="POP3 Virus Scanner Daemon">
+<TITLE>Gadoyanvirus</TITLE>
+<META NAME="description" CONTENT="Gadoyanvirus">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -27,54 +27,53 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html971"
+<A NAME="tex2html1011"
   HREF="node56.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html967"
+<A NAME="tex2html1007"
   HREF="node27.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html961"
+<A NAME="tex2html1001"
   HREF="node54.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html969"
+<A NAME="tex2html1009"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html972"
-  HREF="node56.html">mailman-clamav</A>
-<B> Up:</B> <A NAME="tex2html968"
-  HREF="node27.html">ClamAV-certified software</A>
-<B> Previous:</B> <A NAME="tex2html962"
-  HREF="node54.html">OpenProtect</A>
- &nbsp <B>  <A NAME="tex2html970"
+<B> Next:</B> <A NAME="tex2html1012"
+  HREF="node56.html">OpenProtect</A>
+<B> Up:</B> <A NAME="tex2html1008"
+  HREF="node27.html">Third party software</A>
+<B> Previous:</B> <A NAME="tex2html1002"
+  HREF="node54.html">clamscan-procfilter</A>
+ &nbsp <B>  <A NAME="tex2html1010"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
 <H2><A NAME="SECTION000628000000000000000">
-POP3 Virus Scanner Daemon</A>
+Gadoyanvirus</A>
 </H2>
-    <B>Homepage:</B> <TT><A NAME="tex2html83"
-  HREF="http://p3scan.sourceforge.net/">http://p3scan.sourceforge.net/</A></TT>
-<BR>    <B>Supports:</B> clamscan
+    <B>Homepage:</B> <TT><A NAME="tex2html96"
+  HREF="http://oss.mdamt.net/gadoyanvirus/">http://oss.mdamt.net/gadoyanvirus/</A></TT>
+<BR>    <B>Supports:</B> libclamav
 <BR>
-This is a full-transparent proxy-server for POP3-Clients. It runs on
-    a Linux box with iptables (for port re-direction). It can be used to
-    provide POP3 email scanning from the internet, to any internal network
-    and is ideal for helping to protect your Other OS LAN from harm,
-    especially when used in conjunction with a firewall and other Internet
-    Proxy servers.
+gadoyanvirus is a (yet another) virus stopper for qmail. It replaces the
+    original qmail-queue program. It scans incoming messages using the ClamAV
+    anti-virus library. Suspected message will be quarantined and (optionally)
+    a notification message will be sent to the recipients. By default,
+    gadoyanvirus needs QMAILQUEUE patched qmail installation. 
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-03-13
+2004-04-16
 </ADDRESS>
 </BODY>
 </HTML>

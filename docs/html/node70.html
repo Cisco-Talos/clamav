@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Authors</TITLE>
-<META NAME="description" CONTENT="Authors">
+<TITLE>Scan engine</TITLE>
+<META NAME="description" CONTENT="Scan engine">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,65 +19,72 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node75.html">
-<LINK REL="previous" HREF="node67.html">
-<LINK REL="up" HREF="clamdoc.html">
+<LINK REL="next" HREF="node71.html">
+<LINK REL="previous" HREF="node69.html">
+<LINK REL="up" HREF="node67.html">
 <LINK REL="next" HREF="node71.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1151"
+<A NAME="tex2html1193"
   HREF="node71.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html1147"
-  HREF="clamdoc.html">
+<A NAME="tex2html1189"
+  HREF="node67.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html1141"
+<A NAME="tex2html1183"
   HREF="node69.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html1149"
+<A NAME="tex2html1191"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1152"
-  HREF="node71.html">Virus Database Maintainers</A>
-<B> Up:</B> <A NAME="tex2html1148"
-  HREF="clamdoc.html">clamdoc</A>
-<B> Previous:</B> <A NAME="tex2html1142"
-  HREF="node69.html">Donors</A>
- &nbsp <B>  <A NAME="tex2html1150"
+<B> Next:</B> <A NAME="tex2html1194"
+  HREF="node71.html">CVD format</A>
+<B> Up:</B> <A NAME="tex2html1190"
+  HREF="node67.html">LibClamAV</A>
+<B> Previous:</B> <A NAME="tex2html1184"
+  HREF="node69.html">Database reloading</A>
+ &nbsp <B>  <A NAME="tex2html1192"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H1><A NAME="SECTION00090000000000000000">
-Authors</A>
-</H1>
-    <BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+<H2><A NAME="SECTION00073000000000000000"></A><A NAME="engine"></A>
+<BR>
+Scan engine
+</H2>
+    New versions of Clam AntiVirus use a mutation of the Aho-Corasick
+    pattern matching algorithm. The algorithm is based a finite state pattern
+    matching automaton [<A
+ HREF="node80.html#clr">1</A>] and it's a generalization of the famous
+    Knuth-Morris-Pratt algorithm. Please take a look at the <code>matcher.h</code>
+    for data type definitions. The automaton is represented by a trie. It
+    is a rooted tree with some specific properties [<A
+ HREF="node80.html#acwww">2</A>]. Every node
+    of the trie represents some state of the automaton. In our implementation,
+    the node is defined as follows:
+    <PRE>
+	struct cl_node {
+	    short int islast;
+	    struct cli_patt *list;
+	    int maxpatlen;
+	    struct node *next[NUM_CHILDS], *trans[NUM_CHILDS], *fail;
+	};
+</PRE>
+    [To be continued...]
 
-<UL>
-<LI><A NAME="tex2html1153"
-  HREF="node71.html">Virus Database Maintainers</A>
-<LI><A NAME="tex2html1154"
-  HREF="node72.html">Network management</A>
-<LI><A NAME="tex2html1155"
-  HREF="node73.html">Graphics</A>
-<LI><A NAME="tex2html1156"
-  HREF="node74.html">Core developers</A>
-</UL>
-<!--End of Table of Child-Links-->
+<P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-03-13
+2004-04-16
 </ADDRESS>
 </BODY>
 </HTML>

@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Virus Database Maintainers</TITLE>
-<META NAME="description" CONTENT="Virus Database Maintainers">
+<TITLE>CVD format</TITLE>
+<META NAME="description" CONTENT="CVD format">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,74 +19,63 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node72.html">
 <LINK REL="previous" HREF="node70.html">
-<LINK REL="up" HREF="node70.html">
+<LINK REL="up" HREF="node67.html">
 <LINK REL="next" HREF="node72.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1167"
+<A NAME="tex2html1203"
   HREF="node72.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html1163"
-  HREF="node70.html">
+<A NAME="tex2html1199"
+  HREF="node67.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html1157"
+<A NAME="tex2html1195"
   HREF="node70.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html1165"
+<A NAME="tex2html1201"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1168"
-  HREF="node72.html">Network management</A>
-<B> Up:</B> <A NAME="tex2html1164"
-  HREF="node70.html">Authors</A>
-<B> Previous:</B> <A NAME="tex2html1158"
-  HREF="node70.html">Authors</A>
- &nbsp <B>  <A NAME="tex2html1166"
+<B> Next:</B> <A NAME="tex2html1204"
+  HREF="node72.html">Credits</A>
+<B> Up:</B> <A NAME="tex2html1200"
+  HREF="node67.html">LibClamAV</A>
+<B> Previous:</B> <A NAME="tex2html1196"
+  HREF="node70.html">Scan engine</A>
+ &nbsp <B>  <A NAME="tex2html1202"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00091000000000000000">
-Virus Database Maintainers</A>
+<H2><A NAME="SECTION00074000000000000000">
+CVD format</A>
 </H2>
-    Virus database is a heart of every anti-virus software. The following
-    people care ClamAV's heart to be in a fine condition:
-    
-<UL>
-<LI>aCaB &lt;acab*clamav.net&gt;
-</LI>
-<LI>Christoph Cordes &lt;ccordes*clamav.net&gt;
-</LI>
-<LI>Diego D'Ambra &lt;diego*clamav.net&gt;
-</LI>
-<LI>Jason Englander &lt;jason*clamav.net&gt;
-</LI>
-<LI>Tomasz Kojm &lt;tkojm*clamav.net&gt;
-</LI>
-<LI>Denis De Messemacker &lt;ddm*clamav.net&gt;
-</LI>
-<LI>Tomasz Papszun &lt;tomek*clamav.net&gt;
-</LI>
-</UL>
-    Our database includes the virus database (about 5000 signatures) from
-<BR>    <TT><A NAME="tex2html109"
-  HREF="OpenAntiVirus.org">OpenAntiVirus.org</A></TT>.
+    CVD (ClamAV Virus Database) is a digitally signed tarball file that
+    contains one or more databases. You can find some useful information in the
+    ASCII header of the file. It's a 512 bytes long string with the following
+    colon separated fields:
+    <PRE>
+ClamAV-VDB:build time:version:number of signatures:functionality
+level required:MD5 checksum:digital signature:builder name
+</PRE>
+    and can be easily parsed by scripts or with <code>sigtool --info</code>.
+    There are two CVD databases in ClamAV: <I>main.cvd</I> and <I>daily.cvd</I>
+    for daily updates. You can use <I>sigtool</I> to unpack a CVD file
+    (<code>--unpack</code>) and to list virus names (<code>--list-sigs</code>).
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-03-13
+2004-04-16
 </ADDRESS>
 </BODY>
 </HTML>
