@@ -412,7 +412,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 /* proxy support finshed by njh@bandsman.co.uk */
 int wwwconnect(const char *server, const char *proxy, int pport, char *ip)
 {
-	int socketfd, port, i;
+	int socketfd = -1, port, i;
 	struct sockaddr_in name;
 	struct hostent *host;
 	char ipaddr[16];
@@ -482,7 +482,6 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip)
 	return socketfd;
     }
 
-    close(socketfd);
     return -2;
 }
 

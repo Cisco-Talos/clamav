@@ -110,7 +110,7 @@ else
 
     if test -n "$vuln"; then
 	if test "$zlib_check" = "yes"; then
-	    AC_MSG_ERROR(The installed zlib version may contain a security bug. Please upgrade to 1.2.2 or later: http://www.zlib.net)
+	    AC_MSG_ERROR(The installed zlib version may contain a security bug. Please upgrade to 1.2.2 or later: http://www.zlib.net. You can omit this check with --disable-zlib-vcheck but DO NOT REPORT any stablility issues then!)
 	else
 	    AC_MSG_WARN([****** This ClamAV installation may be linked against])
 	    AC_MSG_WARN([****** a broken zlib version. Please DO NOT report any])

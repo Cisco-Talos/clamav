@@ -10308,8 +10308,8 @@ else
 
     if test -n "$vuln"; then
 	if test "$zlib_check" = "yes"; then
-	    { { echo "$as_me:$LINENO: error: The installed zlib version may contain a security bug. Please upgrade to 1.2.2 or later: http://www.zlib.net" >&5
-echo "$as_me: error: The installed zlib version may contain a security bug. Please upgrade to 1.2.2 or later: http://www.zlib.net" >&2;}
+	    { { echo "$as_me:$LINENO: error: The installed zlib version may contain a security bug. Please upgrade to 1.2.2 or later: http://www.zlib.net. You can omit this check with --disable-zlib-vcheck but DO NOT REPORT any stablility issues then!" >&5
+echo "$as_me: error: The installed zlib version may contain a security bug. Please upgrade to 1.2.2 or later: http://www.zlib.net. You can omit this check with --disable-zlib-vcheck but DO NOT REPORT any stablility issues then!" >&2;}
    { (exit 1); exit 1; }; }
 	else
 	    { echo "$as_me:$LINENO: WARNING: ****** This ClamAV installation may be linked against" >&5

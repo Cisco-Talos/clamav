@@ -1,3 +1,7 @@
+Wed Jan 26 18:37:45 CET 2005 (tk)
+---------------------------------
+  * minor cleanup
+
 Wed Jan 26 17:26:03 GMT 2005 (trog)
 -----------------------------------
   * clamd/server-th.c clamd/session.c clamd/session.h: fixup SESSION mode.

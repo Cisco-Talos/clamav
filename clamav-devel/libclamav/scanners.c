@@ -68,6 +68,7 @@ extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME *
 #include "htmlnorm.h"
 #include "untar.h"
 #include "special.h"
+#include "binhex.h"
 
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>

@@ -116,8 +116,7 @@ int dsresult(int sockd, const struct optstruct *opt)
 int dsfile(int sockd, const char *filename, const struct optstruct *opt)
 {
 	int ret;
-	char buff[4096], *scancmd, *pt;
-	FILE *fd;
+	char *scancmd;
 
 
     scancmd = mcalloc(strlen(filename) + 20, sizeof(char));
@@ -503,7 +502,7 @@ void move_infected(const char *filename, const struct optstruct *opt)
     }
 
     if(stat(filename, &fstat) == -1) {
-        mprintf("@Can't stat file %s\n", movefilename);
+        mprintf("@Can't stat file %s\n", filename);
 	mprintf("Try to run clamdscan with clamd privileges\n");
         notmoved++;
 	return;
