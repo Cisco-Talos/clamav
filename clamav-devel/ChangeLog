@@ -1,7 +1,12 @@
+Thu Mar  4 15:54:25 CET 2004 (tk)
+---------------------------------
+  * clamdscan: do not overwrite s_addr (thanks to Adam Stein
+	       <adam*scan.mc.xerox.com>)
+
 Thu Mar  4 13:07:04 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Some bounce messages weren't being rescanned, fix thanks
-	to "Andrey J. Melnikoff (TEMHOTA)" <temnota@kmv.ru>
+	to "Andrey J. Melnikoff (TEMHOTA)" <temnota*kmv.ru>
 
 Thu Mar  4 03:29:07 CET 2004 (tk)
 ---------------------------------
