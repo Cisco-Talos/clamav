@@ -584,6 +584,7 @@ int cli_scanole2(int desc, char **virname, long int *scanned, const struct cl_no
 		}
 		free(fullname);
 		data = (unsigned char *) vba_decompress(fd, vba_project->offset[i]);
+		close(fd);
 
 		if(cl_scanbuff(data, strlen(data), virname, root) == CL_VIRUS) {
 		    free(data);
@@ -599,10 +600,7 @@ int cli_scanole2(int desc, char **virname, long int *scanned, const struct cl_no
 	    free(vba_project->name);
 	    free(vba_project->dir);
 	    free(vba_project->offset);
-
-	} else {
-	    cli_errmsg("ScanOLE2 -> Can't decode VBA streams.\n");
-	    ret = CL_EOLE2;
+	    free(vba_project);
 	}
 
 
