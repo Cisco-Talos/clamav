@@ -1,3 +1,11 @@
+Thu Feb 19 12:16:33 CET 2004 (tl)
+  * freshclam: + write pid file if run as daemon (new option -p|--pid)
+               + handle signals: HUP  = re-open logfiles
+	                         TERM = terminate (with log message)
+				 ALRM = wake up and check mirror (also on
+				        SIGUSR1)
+
+
 Thu Feb 19 10:05:39 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter: Reworked TCPwrappers code thanks to
