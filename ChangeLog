@@ -1,3 +1,9 @@
+Fri Dec 12 21:07:49 CET 2003 (tk)
+---------------------------------
+  * libclamav: new cl_chomp() from Nigel
+  * clamscan: fixed a buffer overflow in --move (patch by Denis De Messemacker
+	      <ddm*clamav.net>)
+
 Fri Dec 12 18:47:10 CET 2003 (tk)
 ---------------------------------
   * clamd: clamuko - fixed a segmentation fault after database update. Problem
