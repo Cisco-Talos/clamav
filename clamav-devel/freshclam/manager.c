@@ -191,7 +191,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 
 	    if((pt = cli_strtok(dnsreply, 0, ":"))) {
 		mprintf("*Software version from DNS: %s\n", pt);
-		if(!strstr(pt, "devel")) {
+		if(!strstr(cl_retver(), "devel")) {
 		    if(strcmp(cl_retver(), pt)) {
 			mprintf("WARNING: Your ClamAV installation is OUTDATED - please update immediately !\n");
 			mprintf("WARNING: Local version: %s, Recommended version: %s\n", cl_retver(), pt);
