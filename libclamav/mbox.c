@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.98  2004/08/11 14:46:22  nigelhorne
+ * Better handling of false positive emails
+ *
  * Revision 1.97  2004/08/10 14:02:22  nigelhorne
  * *** empty log message ***
  *
@@ -279,7 +282,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.97 2004/08/10 14:02:22 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.98 2004/08/11 14:46:22 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -358,7 +361,7 @@ static	void	print_trace(int use_syslog);
 /*#define	CHECKURLS	/* If an email contains URLs, check them */
 /*#define	LIBCURL	/* Needs support from "configure" */
 
-typedef enum    { FALSE = 0, TRUE = 1 } bool;
+typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 
 static	message	*parseEmailHeaders(message *m, const table_t *rfc821Table, bool destroy);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
@@ -373,11 +376,9 @@ static	int	parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Tab
 static	void	saveTextPart(message *m, const char *dir);
 static	bool	saveFile(const blob *b, const char *dir);
 
-#ifdef	CHECKURLS
 static	void	checkURLs(message *m, const char *dir);
 #ifdef	LIBCURL
 static	void	getURL(const char *url, const char *dir, const char *filename);
-#endif
 #endif
 
 
@@ -549,6 +550,10 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				 * End of a message in the mail box
 				 */
 				body = parseEmailHeaders(m, rfc821Table, TRUE);
+				if(body == NULL) {
+					messageReset(m);
+					continue;
+				}
 				messageDestroy(m);
 				if(messageGetBody(body))
 					if(!parseEmailBody(body,  NULL, 0, NULL, dir, rfc821Table, subtypeTable, options)) {
@@ -571,9 +576,17 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		} while(fgets(buffer, sizeof(buffer), fd) != NULL);
 
 		cli_dbgmsg("Deal with email number %d\n", messagenumber);
-	} else
+	} else {
 		/*
 		 * It's a single message, parse the headers then the body
+		 * Ignore blank lines at the start of the message
+		 */
+		while(strchr("\r\n", buffer[0]) &&
+		     (fgets(buffer, sizeof(buffer), fd) != NULL))
+		     	;
+		/*
+		 * FIXME: files full of new lines and nothing else are
+		 * handled ungracefully...
 		 */
 		do
 			/*
@@ -589,6 +602,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			if(messageAddLine(m, buffer, 1) < 0)
 				break;
 		while(fgets(buffer, sizeof(buffer), fd) != NULL);
+	}
 
 	fclose(fd);
 
@@ -596,17 +610,19 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 	body = parseEmailHeaders(m, rfc821Table, TRUE);
 	messageDestroy(m);
-	/*
-	 * Write out the last entry in the mailbox
-	 */
-	if(messageGetBody(body))
-		if(!parseEmailBody(body, NULL, 0, NULL, dir, rfc821Table, subtypeTable, options))
-			retcode = -1;
+	if(body) {
+		/*
+		 * Write out the last entry in the mailbox
+		 */
+		if(messageGetBody(body))
+			if(!parseEmailBody(body, NULL, 0, NULL, dir, rfc821Table, subtypeTable, options))
+				retcode = -1;
 
-	/*
-	 * Tidy up and quit
-	 */
-	messageDestroy(body);
+		/*
+		 * Tidy up and quit
+		 */
+		messageDestroy(body);
+	}
 
 	cli_dbgmsg("cli_mbox returning %d\n", retcode);
 
@@ -637,6 +653,7 @@ parseEmailHeaders(message *m, const table_t *rfc821Table, bool destroy)
 	bool inHeader = TRUE;
 	text *t;
 	message *ret;
+	bool anyHeadersFound = FALSE;
 
 	cli_dbgmsg("parseEmailHeaders\n");
 
@@ -692,7 +709,9 @@ parseEmailHeaders(message *m, const table_t *rfc821Table, bool destroy)
 				cli_dbgmsg("End of header information\n");
 				inHeader = FALSE;
 			} else {
-				(void)parseEmailHeader(ret, buffer, rfc821Table);
+				if((parseEmailHeader(ret, buffer, rfc821Table) >= 0) ||
+				   (strncasecmp(buffer, "From ", 5) == 0))
+					anyHeadersFound = TRUE;
 				free(buffer);
 			}
 		} else {
@@ -700,6 +719,15 @@ parseEmailHeaders(message *m, const table_t *rfc821Table, bool destroy)
 			if(messageAddLine(ret, buffer, 0) < 0)
 				break;
 		}
+	}
+
+	if(!anyHeadersFound) {
+		/*
+		 * False positive in believing we have an e-mail when we don't
+		 */
+		messageDestroy(ret);
+		cli_dbgmsg("parseEmailHeaders: no headers found, assuming it isn't an email\n");
+		return NULL;
 	}
 
 	messageClean(ret);
@@ -2033,6 +2061,9 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 	char *copy = strdup(arg);
 	char *ptr = copy;
 
+	if(copy == NULL)
+		return -1;
+
 	cli_dbgmsg("parseMimeHeader: cmd='%s', arg='%s'\n", cmd, arg);
 	strstrip(copy);
 
@@ -2098,7 +2129,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 	}
 	free(ptr);
 
-	return type;
+	return 0;
 }
 
 /*
@@ -2228,6 +2259,7 @@ checkURLs(message *m, const char *dir)
 	blob *b = messageToBlob(m);
 	char *ptr;
 	size_t len;
+	table_t *t = tableCreate();
 
 	if(b == NULL)
 		return;
@@ -2259,7 +2291,7 @@ checkURLs(message *m, const char *dir)
 			if(len == 0)
 				break;
 			ptr = p2;
-			while((len > 0) && (isalnum(*ptr) || strchr("?/:.", *ptr))) {
+			while((len > 0) && (isalnum(*ptr) || strchr("./?:%", *ptr))) {
 				ptr++;
 				len--;
 			}
@@ -2268,6 +2300,13 @@ checkURLs(message *m, const char *dir)
 			*ptr = '\0';
 			if(strncasecmp(p2, "mailto:", 7) == 0)
 				continue;
+			if(*p2 == '\0')
+				continue;
+			if(tableFind(t, p2) == 1) {
+				cli_dbgmsg("URL %s already downloaded\n", p2);
+				continue;
+			}
+			(void)tableInsert(t, p2, 1);
 			cli_dbgmsg("Downloading URL %s to be scanned\n", p2);
 			strncpy(name, p2, sizeof(name));
 			for(p3 = name; *p3; p3++)
@@ -2280,7 +2319,7 @@ checkURLs(message *m, const char *dir)
 			/*
 			 * TODO: maximum size and timeouts
 			 */
-			snprintf(cmd, sizeof(cmd), "GET %s > %s/%s", p2, dir, name);
+			snprintf(cmd, sizeof(cmd), "GET -t10 %s > %s/%s 2>/dev/null", p2, dir, name);
 			cli_dbgmsg("%s\n", cmd);
 #ifdef	CL_THREAD_SAFE
 			pthread_mutex_lock(&system_mutex);
@@ -2304,6 +2343,7 @@ checkURLs(message *m, const char *dir)
 		len--;
 	}
 	blobDestroy(b);
+	tableDestroy(t);
 }
 
 #ifdef	LIBCURL
@@ -2357,7 +2397,7 @@ checkURLs(message *m, const char *dir)
 #endif
 
 #ifdef HAVE_BACKTRACE
-	static void
+static void
 sigsegv(int sig)
 {
 	signal(SIGSEGV, SIG_DFL);
@@ -2365,7 +2405,7 @@ sigsegv(int sig)
 	exit(SIGSEGV);
 }
 
-	static void
+static void
 print_trace(int use_syslog)
 {
 	void *array[10];
