@@ -364,9 +364,22 @@
  *			Also defer generated emails if --force-scan is given
  *			Better subject for quarantine e-mails
  *	0.70s	25/4/04	Added --pidfile support
+ *	0.70t	28/4/04	Better quarantine message error report when failing
+ *				to create the temporary file
+ *			Send 554 after DATA received, not 550
+ *			Don't send rejection notices to rejection notices, we
+ *				just end up playing ping-pong (patch by "Andrey
+ *				J.Melnikoff (TEMHOTA)" <temnota@kmv.ru>
+ *			If CL_DEBUG is defined, don't redirect stdout/stderr
+ *			Don't attempt to return an old signature if no
+ *				filename has been given. There has never been
+ *				one to return
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.84  2004/04/28 14:28:29  nigelhorne
+ * Various updates
+ *
  * Revision 1.83  2004/04/25 12:56:35  nigelhorne
  * Added --pidfile
  *
@@ -601,9 +614,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.83 2004/04/25 12:56:35 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.84 2004/04/28 14:28:29 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70s"
+#define	CM_VERSION	"0.70t"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -717,6 +730,11 @@ struct	privdata {
 	header_list_t headers;	/* Message headers */
 	long	numBytes;	/* Number of bytes sent so far */
 	char	*received;	/* keep track of received from */
+	const	char	*rejectCode;	/* 550 or 554? */
+	int	discard;	/*
+				 * looks like the remote end is playing ping
+				 * pong with us
+				 */
 };
 
 static	int		pingServer(int serverNumber);
@@ -1326,7 +1344,6 @@ main(int argc, char **argv)
 	}
 
 	if(!cfgopt(copt, "Foreground")) {
-
 #ifdef	CL_DEBUG
 		printf("When debugging it is recommended that you use Foreground mode in %s\n", cfgfile);
 		puts("So that you can see all of the messages");
@@ -1342,12 +1359,16 @@ main(int argc, char **argv)
 				return EX_OK;
 		}
 		close(0);
+		open("/dev/null", O_RDONLY);
+
+#ifndef	CL_DEBUG
 		close(1);
 		close(2);
-		open("/dev/null", O_RDONLY);
 		if((open("/dev/console", O_WRONLY) == 1) ||
 		   (open("/dev/null", O_WRONLY) == 1))
 			dup(1);
+#endif
+
 #ifdef HAVE_SETPGRP
 #ifdef SETPGRP_VOID
 		setpgrp();
@@ -1860,6 +1881,13 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 	privdata->dataSocket = -1;	/* 0.4 */
 	privdata->cmdSocket = -1;	/* 0.4 */
 
+	/*
+	 * Rejection is via 550 until DATA is received. We know that
+	 * DATA has been sent when either we get a header or the end of
+	 * header statement
+	 */
+	privdata->rejectCode = "550";
+
 	privdata->from = strdup(argv[0]);
 
 	if(streamMaxLength > 0L)
@@ -1919,6 +1947,11 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 		cli_dbgmsg("clamfi_header\n");
 #endif
 
+	/*
+	 * The DATA instruction from SMTP (RFC2821) must have been sent
+	 */
+	privdata->rejectCode = "554";
+
 	if(privdata->dataSocket == -1)
 		/*
 		 * First header - make connection with clamd
@@ -1939,15 +1972,23 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 	if(hflag)
 		header_list_add(privdata->headers, headerf, headerv);
 	else if((strcasecmp(headerf, "Received") == 0) &&
-	   (strncasecmp(headerv, "from ", 5) == 0)) {
+		(strncasecmp(headerv, "from ", 5) == 0)) {
 		if(privdata->received)
 			free(privdata->received);
 		privdata->received = strdup(headerv);
 	}
 
+	if((strcasecmp(headerf, "Message-ID") == 0) &&
+	   (strncasecmp(headerv, "<MDAEMON", 8) == 0))
+		privdata->discard = 1;
+
 	return SMFIS_CONTINUE;
 }
 
+/*
+ * At this point DATA will have been received, so we really ought to
+ * send 554 back not 550
+ */
 static sfsistat
 clamfi_eoh(SMFICTX *ctx)
 {
@@ -1960,6 +2001,11 @@ clamfi_eoh(SMFICTX *ctx)
 	if(debug_level >= 4)
 		cli_dbgmsg("clamfi_eoh\n");
 #endif
+
+	/*
+	 * The DATA instruction from SMTP (RFC2821) must have been sent
+	 */
+	privdata->rejectCode = "554";
 
 	if(privdata->dataSocket == -1)
 		/*
@@ -2053,7 +2099,7 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 	if(Sflag) {
 		if(privdata->body) {
 			assert(privdata->bodyLen > 0);
-			privdata->body = realloc(privdata->body, privdata->bodyLen + len);
+			privdata->body = cli_realloc(privdata->body, privdata->bodyLen + len);
 			memcpy(&privdata->body[privdata->bodyLen], bodyp, len);
 			privdata->bodyLen += len;
 		} else {
@@ -2199,10 +2245,11 @@ clamfi_eom(SMFICTX *ctx)
 			if(len) {
 				assert(Sflag != 0);
 
-				privdata->body = realloc(privdata->body, privdata->bodyLen + len);
-				memcpy(&privdata->body[privdata->bodyLen], signature, len);
-
-				smfi_replacebody(ctx, privdata->body, privdata->bodyLen + len);
+				privdata->body = cli_realloc(privdata->body, privdata->bodyLen + len);
+				if(privdata->body) {
+					memcpy(&privdata->body[privdata->bodyLen], signature, len);
+					smfi_replacebody(ctx, privdata->body, privdata->bodyLen + len);
+				}
 			}
 		}
 	} else {
@@ -2249,7 +2296,11 @@ clamfi_eom(SMFICTX *ctx)
 				 */
 				if(&ptr[strlen(*to) + 2] >= &err[i]) {
 					i += 1024;
-					err = realloc(err, i);
+					err = cli_realloc(err, i);
+					if(err == NULL) {
+						clamfi_cleanup(ctx);
+						return cl_error;
+					}
 					ptr = strchr(err, '\0');
 				}
 				ptr = strrcpy(ptr, " ");
@@ -2407,13 +2458,16 @@ clamfi_eom(SMFICTX *ctx)
 					"[Virus] %s", virusname);
 				smfi_chgheader(ctx, "Subject", 1, subject);
 			}
-		} else if(rejectmail)
-			rc = SMFIS_REJECT;	/* Delete the e-mail */
-		else
+		} else if(rejectmail) {
+			if(privdata->discard)
+				rc = SMFIS_DISCARD;
+			else
+				rc = SMFIS_REJECT;	/* Delete the e-mail */
+		} else
 			rc = SMFIS_DISCARD;
 
 		snprintf(reject, sizeof(reject) - 1, "%sdetected by ClamAV - http://www.clamav.net", virusname);
-		smfi_setreply(ctx, "550", "5.7.1", reject);
+		smfi_setreply(ctx, (char *)privdata->rejectCode, "5.7.1", reject);
 	}
 	clamfi_cleanup(ctx);
 
@@ -2692,7 +2746,7 @@ updateSigFile(void)
 
 	if(sigFilename == NULL)
 		/* nothing to read */
-		return signature ? strlen(signature) : 0;
+		return 0;
 
 	if(stat(sigFilename, &statb) < 0) {
 		perror(sigFilename);
@@ -2714,7 +2768,7 @@ updateSigFile(void)
 
 	signatureStamp = statb.st_mtime;
 
-	signature = realloc(signature, statb.st_size);
+	cli_realloc(signature, statb.st_size);
 	read(fd, signature, statb.st_size);
 	close(fd);
 
@@ -2799,6 +2853,7 @@ connect2clamd(struct privdata *privdata)
 {
 	char **to;
 
+	assert(privdata != NULL);
 	assert(privdata->dataSocket == -1);
 	assert(privdata->from != NULL);
 	assert(privdata->to != NULL);
@@ -2855,8 +2910,9 @@ connect2clamd(struct privdata *privdata)
 		} while((--ntries > 0) && (privdata->dataSocket < 0));
 
 		if(privdata->dataSocket < 0) {
+			perror(privdata->filename);
 			if(use_syslog)
-				syslog(LOG_ERR, "tempfile %s creation failed", privdata->filename);
+				syslog(LOG_ERR, "Temporary quarantine file %s creation failed", privdata->filename);
 			return 0;
 		}
 	} else {

@@ -363,6 +363,15 @@ Changes
 		Also defer generated emails if --force-scan is given
 		Better subject for quarantine e-mails
 0.70s	25/4/04	Added --pidfile support
+0.70t	28/4/04	Better quarantine message error report when failing to create
+			the temporary file
+		Send 554 after DATA received, not 550
+		Don't send rejection notices to rejection notices, we just end
+			up playing ping-pong (patch by "Andrey J.Melnikoff
+			(TEMHOTA)" <temnota@kmv.ru>
+		If CL_DEBUG is defined, don't redirect stdout/stderr
+		Don't attempt to return an old signature if no filename has
+			been given. There has never been one to return
 
 BUG REPORTS
 
