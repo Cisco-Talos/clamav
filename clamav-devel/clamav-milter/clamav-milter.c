@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.172  2005/01/27 10:54:27  nigelhorne
+ * Don't scan emails to the quarantine e-mail address
+ *
  * Revision 1.171  2005/01/25 08:10:45  nigelhorne
  * Change --internal to --external
  *
@@ -524,9 +527,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.171 2005/01/25 08:10:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.172 2005/01/27 10:54:27 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.81b"
+#define	CM_VERSION	"0.81c"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -918,6 +921,7 @@ static	const	char	*ignoredEmailAddresses[] = {
 	"postmaster@bandsman.co.uk",
 	"<Mailer-Daemon@bandsman.co.uk>",
 	"<postmaster@bandsman.co.uk>",*/
+	NULL,	/* --quarantine email address goes here */
 	NULL
 };
 
@@ -1483,11 +1487,6 @@ main(int argc, char **argv)
 	 * we're doing the scanning internally
 	 */
 	if(!external) {
-		if(!cfgopt(copt, "ScanMail")) {
-			fprintf(stderr, _("%s: ScanMail not defined in %s (needed without --external)\n"),
-				argv[0], cfgfile);
-			return EX_CONFIG;
-		}
 		if(max_children == 0) {
 			fprintf(stderr, _("%s: --max-children must be given in internal mode\n"), argv[0]);
 			return EX_CONFIG;
@@ -1498,6 +1497,9 @@ main(int argc, char **argv)
 		}
 		if(loadDatabase() != 0)
 			return EX_CONFIG;
+		if(!cfgopt(copt, "ScanMail"))
+			printf(_("%s: ScanMail not defined in %s (needed without --external), enabling\n"),
+				argv[0], cfgfile);
 		numServers = 1;
 	} else if((cpt = cfgopt(copt, "LocalSocket")) != NULL) {
 #ifdef	SESSION
@@ -1796,6 +1798,17 @@ main(int argc, char **argv)
 	}
 
 	atexit(quit);
+
+	/*
+	 * Don't scan messages to the quarantine email address
+	 */
+	if(quarantine) {
+		const char **s;
+
+		for(s = ignoredEmailAddresses; *s; s++)
+			;
+		*s = quarantine;
+	}
 
 	if(!external) {
 		/* TODO: read the limits from clamd.conf */
@@ -3149,9 +3162,12 @@ clamfi_eom(SMFICTX *ctx)
 			 * let the virus through (albeit tagged with
 			 * X-Virus-Status: Infected) because we haven't
 			 * sent SMFIS_DISCARD or SMFIS_REJECT
+			 *
+			 * -i flag, suggested by Michal Jaegermann
+			 *	<michal@harddata.com>
 			 */
 			snprintf(cmd, sizeof(cmd) - 1,
-				(oflag || fflag) ? "%s -t -odq" : "%s -t",
+				(oflag || fflag) ? "%s -t -i -odq" : "%s -t -i",
 				SENDMAIL_BIN);
 
 			sendmail = popen(cmd, "w");
@@ -4556,7 +4572,7 @@ clamdIsDown(void)
 		char cmd[128];
 		FILE *sendmail;
 
-		snprintf(cmd, sizeof(cmd) - 1, "%s -t", SENDMAIL_BIN);
+		snprintf(cmd, sizeof(cmd) - 1, "%s -t -i", SENDMAIL_BIN);
 
 		sendmail = popen(cmd, "w");
 
