@@ -18,6 +18,8 @@
    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.  */
 
+#ifndef	C_DARWIN
+
 #include <ctype.h>
 #include <string.h>
 
@@ -46,3 +48,4 @@ int strcasecmp (s1, s2)
 
   return c1 - c2;
 }
+#endif
