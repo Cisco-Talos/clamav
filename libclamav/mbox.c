@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.77  2004/06/18 10:07:12  nigelhorne
+ * Allow any number of alternatives in multipart messages
+ *
  * Revision 1.76  2004/06/16 08:07:39  nigelhorne
  * Added thread safety
  *
@@ -216,7 +219,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.76 2004/06/16 08:07:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.77 2004/06/18 10:07:12 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -651,7 +654,7 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821Table)
 static int	/* success or fail */
 parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, const char *dir, table_t *rfc821Table, table_t *subtypeTable)
 {
-	message *messages[MAXALTERNATIVE];
+	message **messages;	/* parts of a multipart message */
 	int inhead, inMimeHead, i, rc = 1, htmltextPart, multiparts = 0;
 	text *aText;
 	blob *blobList[MAX_ATTACHMENTS], **blobs;
@@ -668,6 +671,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 
 	aText = textIn;
 	blobs = blobsIn;
+	messages = NULL;
 	mainMessage = messageIn;
 
 	/* Anything left to be parsed? */
@@ -767,8 +771,10 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 			 * This looks like parseEmailHeaders() - maybe there's
 			 * some duplication of code to be cleaned up
 			 */
-			for(multiparts = 0; t_line && (multiparts < MAXALTERNATIVE); multiparts++) {
+			for(multiparts = 0; t_line; multiparts++) {
 				int lines = 0;
+
+				messages = cli_realloc(messages, ((multiparts + 1) * sizeof(message *)));
 
 				aMessage = messages[multiparts] = messageCreate();
 
@@ -903,8 +909,11 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				mainMessage = NULL;
 			}
 
-			if(multiparts == 0)
+			if(multiparts == 0) {
+				if(messages)
+					free(messages);
 				return 2;	/* Nothing to do */
+			}
 
 			cli_dbgmsg("The message has %d parts\n", multiparts);
 			cli_dbgmsg("Find out the multipart type(%s)\n", mimeSubtype);
@@ -1358,6 +1367,9 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 			if(aText && (textIn == NULL))
 				textDestroy(aText);
 
+			if(messages)
+				free(messages);
+
 			return rc;
 
 		case MESSAGE:
@@ -1404,6 +1416,8 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 
 			if(mainMessage && (mainMessage != messageIn))
 				messageDestroy(mainMessage);
+			if(messages)
+				free(messages);
 			return 0;
 
 		case APPLICATION:
@@ -1597,6 +1611,9 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 
 	if(mainMessage && (mainMessage != messageIn))
 		messageDestroy(mainMessage);
+
+	if(messages)
+		free(messages);
 
 	cli_dbgmsg("parseEmailBody() returning %d\n", rc);
 
