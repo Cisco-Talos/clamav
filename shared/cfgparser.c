@@ -76,6 +76,7 @@ struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 	    {"ArchiveMaxCompressionRatio", OPT_NUM},
 	    {"ArchiveLimitMemoryUsage", OPT_NOARG},
 	    {"ArchiveBlockEncrypted", OPT_NOARG},
+	    {"ArchiveBlockMax", OPT_NOARG},
 	    {"DataDirectory", OPT_STR}, /* obsolete */
 	    {"DatabaseDirectory", OPT_STR}, /* clamd + freshclam */
 	    {"TCPAddr", OPT_STR},

@@ -173,6 +173,9 @@ int scanmanager(const struct optstruct *opt)
     if(optl(opt, "block-encrypted"))
 	options |= CL_ENCRYPTED;
 
+    if(optl(opt, "block-max"))
+	options |= CL_BLOCKMAX;
+
     if(optl(opt, "no-pe"))
 	options &= ~CL_PE;
     else

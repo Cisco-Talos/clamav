@@ -296,15 +296,20 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	options |= CL_ARCHIVE;
 
 	if(cfgopt(copt, "ScanRAR")) {
-	    logg("RAR support enabled.\n");
+	    logg("Archive: RAR support enabled.\n");
 	} else {
-	    logg("RAR support disabled.\n");
+	    logg("Archive: RAR support disabled.\n");
 	    options |= CL_DISABLERAR;
 	}
 
 	if(cfgopt(copt, "ArchiveBlockEncrypted")) {
-	    logg("Blocking encrypted archives.\n");
+	    logg("Archive: Blocking encrypted archives.\n");
 	    options |= CL_ENCRYPTED;
+	}
+
+	if(cfgopt(copt, "ArchiveBlockMax")) {
+	    logg("Archive: Blocking archives that exceed limits.\n");
+	    options |= CL_BLOCKMAX;
 	}
 
     } else {

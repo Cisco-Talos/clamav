@@ -83,9 +83,9 @@ extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME *
 #define SCAN_PE		    (options & CL_PE)
 #define DISABLE_RAR	    (options & CL_DISABLERAR)
 #define DETECT_ENCRYPTED    (options & CL_ENCRYPTED)
+#define BLOCKMAX	    (options & CL_BLOCKMAX)
 
 #define MAX_MAIL_RECURSION  15
-
 
 static int cli_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec);
 
@@ -141,17 +141,35 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 	}
 
 	if(limits) {
+
+	    if(limits->maxratio && rarlist->item.UnpSize && rarlist->item.PackSize) {
+		if((unsigned int) rarlist->item.UnpSize / (unsigned int) rarlist->item.PackSize >= limits->maxratio) {
+		    cli_dbgmsg("RAR: Max ratio reached (normal: %d, compressed: %d, max: %ld)\n", (int) rarlist->item.UnpSize, (int) rarlist->item.PackSize, limits->maxratio);
+		    *virname = "Oversized.RAR";
+		    ret = CL_VIRUS;
+		    break;
+		}
+	    }
+
 	    if(limits->maxfilesize && (rarlist->item.UnpSize > (unsigned int) limits->maxfilesize)) {
 		cli_dbgmsg("RAR: %s: Size exceeded (%u, max: %lu)\n", rarlist->item.Name, (unsigned int) rarlist->item.UnpSize, limits->maxfilesize);
 		rarlist = rarlist->next;
 		files++;
-		/* ret = CL_EMAXSIZE; */
+		if(BLOCKMAX) {
+		    *virname = "RAR.ExceededFileSize";
+		    ret = CL_VIRUS;
+		    break;
+		}
 		continue;
 	    }
 
 	    if(limits->maxfiles && (files > limits->maxfiles)) {
 		cli_dbgmsg("RAR: Files limit reached (max: %d)\n", limits->maxfiles);
-		/* ret = CL_EMAXFILES; */
+		if(BLOCKMAX) {
+		    *virname = "RAR.ExceededFilesLimit";
+		    ret = CL_VIRUS;
+		    break;
+		}
 		break;
 	    }
 	}
@@ -318,12 +336,21 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 		cli_dbgmsg("Zip: %s: Size exceeded (%d, max: %ld)\n", zdirent.d_name, zdirent.st_size, limits->maxfilesize);
 		files++;
 		/* ret = CL_EMAXSIZE; */
-		continue; /* this is not a bug */
+		if(BLOCKMAX) {
+		    *virname = "Zip.ExceededFileSize";
+		    ret = CL_VIRUS;
+		    break;
+		}
+		continue; /* continue scanning */
 	    }
 
 	    if(limits->maxfiles && (files > limits->maxfiles)) {
 		cli_dbgmsg("Zip: Files limit reached (max: %d)\n", limits->maxfiles);
-		/* ret = CL_EMAXFILES; */
+		if(BLOCKMAX) {
+		    *virname = "Zip.ExceededFilesLimit";
+		    ret = CL_VIRUS;
+		    break;
+		}
 		break;
 	    }
 	}

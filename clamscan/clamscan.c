@@ -228,6 +228,7 @@ void help(void)
     mprintf("    --no-archive                         Disable libclamav archive support\n");
     mprintf("    --detect-broken                      Try to detect broken executable files\n");
     mprintf("    --block-encrypted                    Block encrypted archives\n");
+    mprintf("    --block-max                          Block archives that exceed limits\n");
     mprintf("    --mail-follow-urls                   Download and scan URLs\n");
 
     mprintf("\n");
