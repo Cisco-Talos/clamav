@@ -649,6 +649,17 @@ Changes
 			--quarantine didn't redirect to the given email address
 				if --internal was used (reported by N Fung
 				<nsfung@yahoo.com>)
+0.81b	25/1/05:	Disabled SESSION by default (causes problems with clamd
+				on BSD systems when running freshclam)
+			Changed --internal to --external. Internal mode is now
+				the default
+0.81c	27/1/05:	Don't scan emails intended for the --quarantine address,
+				that stops scanning of emails generated with
+				viruses if --outgoing has been set
+			Downgraded scanmail not defined if --external isn't
+				given from error to warning
+			Added -i flag when calling sendmail, suggested by
+				Michal Jaegermann <michal@harddata.com>
 
 INTERNATIONALISATION
 
