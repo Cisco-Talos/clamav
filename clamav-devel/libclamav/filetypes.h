@@ -37,6 +37,7 @@ typedef enum {
     CL_OLE2FILE,
     CL_MSCABFILE,
     CL_MSCHMFILE,
+    CL_SCRENC,
 
     /* bigger numbers have higher priority (in o-t-f detection) */
     CL_HTMLFILE, /* on the fly */

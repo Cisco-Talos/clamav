@@ -680,55 +680,58 @@ static int cli_scanmscab(int desc, const char **virname, long int *scanned, cons
 
 static int cli_scanhtml(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
 {
-	unsigned char *membuff, *newbuff, *newbuff2;
-	struct stat statbuf;
-	int ret;
+	char *tempname, fullname[1024];
+	const char *tmpdir;
+	int ret=CL_CLEAN, fd;
 
 
-#ifdef HAVE_MMAP
     cli_dbgmsg("in cli_scanhtml()\n");
 
-    if(fstat(desc, &statbuf) != 0) {
-	cli_dbgmsg("HTML: Can't stat descriptor %d\n", desc);
-        return CL_EIO;
-    }
-
-    if(limits && limits->maxfilesize && (statbuf.st_size > limits->maxfilesize)) {
-	cli_dbgmsg("HTML: Size exceeded (%d, max: %ld)\n", statbuf.st_size, limits->maxfilesize);
-	return CL_CLEAN;
-    }
-
-    membuff = mmap(NULL, statbuf.st_size, PROT_READ, MAP_PRIVATE, desc, 0);
-
-    /* TODO: do file operations if mmap fails */
-    if(membuff == MAP_FAILED) {
-	cli_dbgmsg("HTML: mmap failed\n");
-        return CL_EMEM;
-    }
-
-    newbuff = html_normalize(membuff, statbuf.st_size);
-
-    if(newbuff) {
-	newbuff2 = remove_html_comments(newbuff);
-	free(newbuff);
-	newbuff = remove_html_char_ref(newbuff2);
-	free(newbuff2);
-	/* Normalise a second time as the above can leave inconsistent white
-	 * space
-	 */
-	newbuff2 = html_normalize(newbuff, strlen(newbuff));
-	free(newbuff);
-	newbuff = newbuff2;
-    }
-
-    ret = cl_scanbuff(newbuff, strlen(newbuff), virname, root);
-
-    free(newbuff);
-    munmap(membuff, statbuf.st_size);
-    return ret;
-#else /* FIXME */
-    return CL_CLEAN;
+    if((tmpdir = getenv("TMPDIR")) == NULL)
+#ifdef P_tmpdir
+        tmpdir = P_tmpdir;
+#else
+        tmpdir = "/tmp";
 #endif
+                                                                                                                                           
+    tempname = cli_gentemp(tmpdir);
+                                                                                                                                           
+    if(mkdir(tempname, 0700)) {
+        cli_dbgmsg("ScanHTML -> Can't create temporary directory %s\n", tempname);
+        return CL_ETMPDIR;
+    }
+
+    html_normalise_fd(desc, tempname, NULL);
+    snprintf(fullname, 1024, "%s/comment.html", tempname);
+    fd = open(fullname, O_RDONLY);
+    if (fd >= 0) {
+        ret = cli_scandesc(fd, virname, scanned, root, 0);
+	close(fd);
+    }
+
+    if (ret == CL_CLEAN) {
+	snprintf(fullname, 1024, "%s/nocomment.html", tempname);
+	fd = open(fullname, O_RDONLY);
+	if (fd >= 0) {
+	    ret = cli_scandesc(fd, virname, scanned, root, 0);
+	    close(fd);
+	}
+    }
+
+    if (ret == CL_CLEAN) {
+	snprintf(fullname, 1024, "%s/script.html", tempname);
+	fd = open(fullname, O_RDONLY);
+	if (fd >= 0) {
+	    ret = cli_scandesc(fd, virname, scanned, root, 0);
+	    close(fd);
+	}
+    }
+
+    if(!cli_leavetemps_flag)
+        cli_rmdirs(tempname);
+
+    free(tempname);
+    return ret;
 }
 
 static int  cli_scan_mydoom_log(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
@@ -1053,6 +1056,37 @@ static int cli_scanmschm(int desc, const char **virname, long int *scanned, cons
     return ret;
 }
 
+static int cli_scanscrenc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+{
+	const char *tmpdir;
+	char *tempname;
+	int ret = CL_CLEAN;
+
+    cli_dbgmsg("in cli_scanscrenc()\n");
+
+    if((tmpdir = getenv("TMPDIR")) == NULL)
+#ifdef P_tmpdir
+        tmpdir = P_tmpdir;
+#else
+        tmpdir = "/tmp";
+#endif
+                                                                                                                               
+    tempname = cli_gentemp(tmpdir);
+                                                                                                                               
+    if(mkdir(tempname, 0700)) {
+	cli_dbgmsg("CHM: Can't create temporary directory %s\n", tempname);
+	return CL_ETMPDIR;
+    }
+
+    if (html_screnc_decode(desc, tempname))
+	ret = cli_scandir(tempname, virname, scanned, root, limits, options, arec, mrec);
+
+    if(!cli_leavetemps_flag)
+	cli_rmdirs(tempname);
+
+    free(tempname);
+    return ret;
+}
 static int cli_scanmail(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
 {
 	const char *tmpdir;
@@ -1191,6 +1225,10 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 	case CL_TARFILE:
 	    if(SCAN_ARCHIVE)
 		ret = cli_scantar(desc, virname, scanned, root, limits, options, arec, mrec);
+	    break;
+
+	case CL_SCRENC:
+	    ret = cli_scanscrenc(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
 	case CL_DATAFILE:
