@@ -1,3 +1,8 @@
+Tue Mar  1 01:51:53 CET 2005 (tk)
+---------------------------------
+  * clamscan: add "Engine version" to summary (requested by Robert
+	      Allerstorfer <roal*anet.at>)
+
 Tue Mar  1 01:13:20 CET 2005 (tk)
 ---------------------------------
   * libclamav: use new MD5 implementation (thanks to Solar Designer

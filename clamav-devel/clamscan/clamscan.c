@@ -157,6 +157,8 @@ int clamscan(struct optstruct *opt)
 	    logg("\n-- summary --\n");
 	mprintf("Known viruses: %d\n", claminfo.signs);
 	    logg("Known viruses: %d\n", claminfo.signs);
+	mprintf("Engine version: %s\n", cl_retver());
+	    logg("Engine version: %s\n", cl_retver());
 	mprintf("Scanned directories: %d\n", claminfo.dirs);
 	    logg("Scanned directories: %d\n", claminfo.dirs);
 	mprintf("Scanned files: %d\n", claminfo.files);
@@ -174,9 +176,11 @@ int clamscan(struct optstruct *opt)
 	mb = claminfo.blocks * (CL_COUNT_PRECISION / 1024) / 1024.0;
 	mprintf("Data scanned: %2.2lf MB\n", mb);
 	    logg("Data scanned: %2.2lf MB\n", mb);
-
+/*
 	mprintf("I/O buffer size: %d bytes\n", SCANBUFF);
 	    logg("I/O buffer size: %d bytes\n", SCANBUFF);
+*/
+
 	mprintf("Time: %d.%3.3d sec (%d m %d s)\n", ds, dms/1000, ds/60, ds%60);
 	    logg("Time: %d.%3.3d sec (%d m %d s)\n", ds, dms/1000, ds/60, ds%60);
     }
