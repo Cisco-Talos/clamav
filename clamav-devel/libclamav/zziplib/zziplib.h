@@ -3,12 +3,17 @@
  *	Guido Draheim <guidod@gmx.de>
  *	Tomi Ollila <Tomi.Ollila@iki.fi>
  *
- *	Copyright (c) 1999,2000,2001,2002 Guido Draheim
+ *	Copyright (c) 1999,2000,2001,2002,2003 Guido Draheim
  * 	    All rights reserved, 
  *          usage allowed under the restrictions of the
  *	    Lesser GNU General Public License 
  *          note the additional license information 
  *          that can be found in COPYING.ZZIP
+ *
+ * if you see "unknown symbol" errors, check first that `-I ..` is part of
+ * your compiler options - a special hint to VC/IDE users who tend to make up
+ * their own workspace files. All includes look like #include <zzip|*.h>, so
+ * you need to add an include path to the dir containing (!!) the ./zzip/ dir
  */
 
 #ifndef _ZZIP_ZZIP_H /* zziplib.h */
@@ -17,6 +22,8 @@
 #include <zzip-conf.h>
 
 #include <fcntl.h>
+#include <stddef.h> /* size_t and friends */
+/* msvc6 has neither ssize_t (we assume "int") nor off_t (assume "long") */
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,6 +79,8 @@ typedef enum
 typedef  char _zzip_const * _zzip_const zzip_strings_t;
 typedef  char _zzip_const       zzip_char_t;
 typedef       _zzip_off_t       zzip_off_t;
+typedef       _zzip_size_t      zzip_size_t;
+typedef       _zzip_ssize_t     zzip_ssize_t;
 typedef struct zzip_dir		ZZIP_DIR;
 typedef struct zzip_file	ZZIP_FILE;
 typedef struct zzip_dirent 	ZZIP_DIRENT;
@@ -173,14 +182,14 @@ ZZIP_FILE * 	zzip_file_open(ZZIP_DIR * dir, zzip_char_t* name, int modes);
 _zzip_export
 int  		zzip_file_close(ZZIP_FILE * fp);
 _zzip_export
-int		zzip_file_read(ZZIP_FILE * fp, char* buf, int len);
+zzip_ssize_t	zzip_file_read(ZZIP_FILE * fp, char* buf, zzip_size_t len);
 
 _zzip_export
 ZZIP_FILE * 	zzip_open(zzip_char_t* name, int flags);
 _zzip_export
 int	 	zzip_close(ZZIP_FILE * fp);
 _zzip_export
-int	 	zzip_read(ZZIP_FILE * fp, char * buf, int len);
+zzip_ssize_t	zzip_read(ZZIP_FILE * fp, char * buf, zzip_size_t len);
 
 
 _zzip_export
@@ -188,7 +197,8 @@ ZZIP_FILE*      zzip_freopen(zzip_char_t* name, zzip_char_t* mode, ZZIP_FILE*);
 _zzip_export
 ZZIP_FILE*      zzip_fopen(zzip_char_t* name, zzip_char_t* mode);
 _zzip_export
-int             zzip_fread(void *ptr, int size, int nmemb, ZZIP_FILE *file);
+zzip_size_t     zzip_fread(void *ptr, zzip_size_t size, zzip_size_t nmemb, 
+			   ZZIP_FILE * file);
 _zzip_export
 int  		zzip_fclose(ZZIP_FILE * fp);
 
@@ -198,10 +208,9 @@ int  		zzip_fclose(ZZIP_FILE * fp);
 _zzip_export
 int             zzip_rewind(ZZIP_FILE *fp);
 _zzip_export
-int             zzip_seek(ZZIP_FILE * fp, int offset, int
-			       whence);
+zzip_off_t      zzip_seek(ZZIP_FILE * fp, zzip_off_t offset, int whence);
 _zzip_export
-int             zzip_tell(ZZIP_FILE * fp);
+zzip_off_t      zzip_tell(ZZIP_FILE * fp);
 
 
 /*

@@ -75,6 +75,9 @@ ZZIP_DIR*
 zzip_dir_fdopen_ext_io(int fd, zzip_error_t * errorcode_p,
                        zzip_strings_t* ext, const zzip_plugin_io_t io);
 
+ZZIP_DIR* /*depracated*/
+zzip_dir_alloc_ext_io (zzip_strings_t* ext, const zzip_plugin_io_t io);
+
 /* get 16/32 bits from little-endian zip-file to host byteorder */
 uint32_t __zzip_get32(unsigned char * s);
 uint16_t __zzip_get16(unsigned char * s);

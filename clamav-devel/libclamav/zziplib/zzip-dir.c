@@ -1,4 +1,3 @@
-#define USE_DIRENT 0
 /*
  * Author: 
  *	Guido Draheim <guidod@gmx.de>
@@ -38,6 +37,8 @@
 # define S_ISREG(_X_) ((_X_) & S_IFREG)
 # endif
 #endif
+
+#define USE_DIRENT 0
 
 /** 
  * This function is the equivalent of a => rewinddir(2) for a realdir or

@@ -24,8 +24,11 @@
 #include <sys/stat.h>
 #endif
 
-//#include "__mmap.h"
-//#include "__debug.h"
+
+#define __sizeof(X) ((zzip_ssize_t)(sizeof(X)))
+
+/* per default, we use a little hack to correct bad z_rootseek parts */
+#define ZZIP_CORRECT_ROOTSEEK 1
 
 /* ------------------------- fetch helpers --------------------------------- */
 
@@ -46,6 +49,86 @@ uint16_t __zzip_get16(unsigned char * s)
 {
     return ((uint16_t)s[1] << 8) | (uint16_t)s[0];
 }
+
+/* ---------------------------  internals  -------------------------------- */
+/* internal functions of zziplib, avoid at all cost, changes w/o warning.
+ * we do export them for debugging purpose and special external tools
+ * which know what they do and which can adapt from version to version
+ */
+
+int __zzip_find_disk_trailer( int fd, zzip_off_t filesize, 
+			      struct zzip_disk_trailer * trailer,
+			      zzip_plugin_io_t io);
+int __zzip_parse_root_directory( int fd, 
+				 struct zzip_disk_trailer * trailer, 
+				 struct zzip_dir_hdr ** hdr_return,
+				 zzip_plugin_io_t io);
+
+_zzip_inline char* __zzip_aligned4(char* p);
+
+/* ------------------------  harden routines ------------------------------ */
+
+#ifdef ZZIP_HARDEN
+/*
+ * check for inconsistent values in trailer and prefer lower seek value
+ * - we fix values assuming the root directory was written at the end
+ * and it is just before the zip trailer. Therefore, ...
+ */
+_zzip_inline static void __fixup_rootseek(
+    zzip_off_t offset_of_trailer,
+    struct zzip_disk_trailer* trailer)
+{
+    if (                    (zzip_off_t) ZZIP_GET32(trailer->z_rootseek) >
+	offset_of_trailer - (zzip_off_t) ZZIP_GET32(trailer->z_rootsize) &&
+	offset_of_trailer > (zzip_off_t) ZZIP_GET32(trailer->z_rootsize))
+    {
+	register zzip_off_t offset;
+	offset = offset_of_trailer -  ZZIP_GET32(trailer->z_rootsize); 
+	trailer->z_rootseek[0] = offset & 0xff;
+	trailer->z_rootseek[1] = offset >> 8 & 0xff;
+	trailer->z_rootseek[2] = offset >> 16 & 0xff;
+	trailer->z_rootseek[3] = offset >> 24 & 0xff;
+    }
+}
+#define __correct_rootseek(A,B,C)
+
+#elif defined ZZIP_CORRECT_ROOTSEEK
+/* store the seekvalue of the trailer into the "z_magic" field and with 
+ * a 64bit off_t we overwrite z_disk/z_finaldisk as well. If you change
+ * anything in zziplib or dump the trailer structure then watch out that
+ * these are still unused, so that this code may still (ab)use those. */
+#define __fixup_rootseek(_offset_of_trailer, _trailer)          \
+                      *(zzip_off_t*)_trailer = _offset_of_trailer;
+#define __correct_rootseek( _u_rootseek, _u_rootsize, _trailer) \
+    if (_u_rootseek > *(zzip_off_t*)_trailer - _u_rootsize)     \
+	_u_rootseek = *(zzip_off_t*)_trailer - _u_rootsize;
+#else
+#define __fixup_rootseek(A,B) 
+#define __correct_rootseek(A,B,C)
+#endif
+
+
+#ifdef DEBUG
+_zzip_inline static void __debug_dir_hdr (struct zzip_dir_hdr* hdr)
+{
+    if (sizeof(struct zzip_dir_hdr) > sizeof(struct zzip_root_dirent))
+    { WARN1("internal sizeof-mismatch may break wreakage"); }
+    /*  the internal directory structure is never bigger than the
+     *  external zip central directory space had been beforehand
+     *  (as long as the following assertion holds...) 
+     */
+
+    if (((unsigned)hdr)&3)
+    { NOTE1("this machine's malloc(3) returns sth. not u32-aligned"); }
+    /* we assume that if this machine's malloc has returned a non-aligned 
+     * memory block, then it is actually safe to access misaligned data, and 
+     * since it does only affect the first hdr it should not even bring about
+     * too much of that cpu's speed penalty
+     */
+}
+#else
+#define __debug_dir_hdr(X)
+#endif
 
 /* -------------------------- low-level interface -------------------------- */
 
@@ -70,11 +153,7 @@ __zzip_find_disk_trailer(int fd, zzip_off_t filesize,
 			 struct zzip_disk_trailer * trailer,
 			 zzip_plugin_io_t io)
 {
-#ifdef DEBUG
 #define return(val) { e=val; goto cleanup; }
-#else
-#define return(val) { e=val; goto cleanup; }
-#endif
     register int e;
     
 #ifndef _LOWSTK
@@ -84,13 +163,13 @@ __zzip_find_disk_trailer(int fd, zzip_off_t filesize,
     char* buf = malloc(2*ZZIP_BUFSIZ);
 #endif
     zzip_off_t offset = 0;
-    size_t maplen = 0;
+    zzip_off_t maplen = 0; /* mmap(),read(),getpagesize() use size_t !! */
     char* fd_map = 0;
 
     if (!trailer)
         { return(EINVAL); }
   
-    if (filesize < sizeof(struct zzip_disk_trailer))
+    if (filesize < __sizeof(struct zzip_disk_trailer))
         { return(ZZIP_DIR_TOO_SHORT); }
           
     if (!buf)
@@ -99,8 +178,7 @@ __zzip_find_disk_trailer(int fd, zzip_off_t filesize,
     offset = filesize; /* a.k.a. old offset */
     while(1) /* outer loop */
     {
-        register unsigned char* p;
-        register unsigned char* s;
+        register unsigned char* mapped;
 
          if (offset <= 0) { return(ZZIP_DIR_EDH_MISSING); }
 
@@ -128,35 +206,40 @@ __zzip_find_disk_trailer(int fd, zzip_off_t filesize,
 	    
             if (io->seeks(fd, offset, SEEK_SET) < 0)
                 { return(ZZIP_DIR_SEEK); }
-            if (io->read(fd, buf, maplen) < (long)maplen)
+            if (io->read(fd, buf, (zzip_size_t)maplen) < (zzip_ssize_t)maplen)
                 { return(ZZIP_DIR_READ); }
-            p = buf; /* success */
+            mapped = buf; /* success */
 
 
-	/* now, check for the trailer-magic, hopefully near the end of file */
-        for (s = p + maplen-1; (s >= p); s--)
-        {
-            if (*s == 'P'
-             && p+maplen-1-s > sizeof(*trailer)-2
-             && ZZIP_DISK_TRAILER_CHECKMAGIC(s))
-            {
-                /* if the file-comment is not present, it happens
-                   that the z_comment field often isn't either */
-                if (p+maplen-1-s > sizeof(*trailer))
-                  { memcpy (trailer, s, sizeof(*trailer)); }
-                else
-                {
-                    memcpy (trailer, s, sizeof(*trailer)-2);
-                    trailer->z_comment[0] = 0; trailer->z_comment[1] = 0;
-                }
-                    
-                { return(0); }
-            }
+	{/* now, check for the trailer-magic, hopefully near the end of file */
+	    register unsigned char* end = mapped + maplen;
+	    register unsigned char* tail;
+	    for (tail = end-1; (tail >= mapped); tail--)
+	    {
+		if ((*tail == 'P') && /* quick pre-check for trailer magic */
+		    end-tail >= __sizeof(*trailer)-2 &&
+		    ZZIP_DISK_TRAILER_CHECKMAGIC(tail))
+		{
+		    /* if the file-comment is not present, it happens
+		       that the z_comment field often isn't either */
+		    if (end-tail >= __sizeof(*trailer))
+		    {
+			memcpy (trailer, tail, sizeof(*trailer)); 
+		    }else{
+			memcpy (trailer, tail, sizeof(*trailer)-2);
+			trailer->z_comment[0] = 0; 
+			trailer->z_comment[1] = 0;
+		    }
+
+		    __fixup_rootseek (offset + tail-mapped, trailer);
+		    { return(0); }
+		}
+	    }
         }
         
     } /*outer loop*/
                
- cleanup:
+cleanup:
 #   ifdef _LOWSTK
     free(buf);
 #   endif
@@ -174,8 +257,8 @@ __zzip_find_disk_trailer(int fd, zzip_off_t filesize,
 _zzip_inline char* __zzip_aligned4(char* p)
 {
 #define aligned4   __zzip_aligned4
-    p += ((long)p)&1;
-    p += ((long)p)&2;
+    p += ((long)p)&1;            /* warnings about truncation of a "pointer" */
+    p += ((long)p)&2;            /* to a "long int" may be safely ignored :) */
     return p;
 }
 
@@ -196,34 +279,19 @@ __zzip_parse_root_directory(int fd,
     struct zzip_dir_hdr * hdr0;
     uint16_t * p_reclen = 0;
     short entries; 
-    long offset;
-    char* fd_map = 0;
+    long offset;          /* offset from start of root directory */
+    char* fd_map = 0; 
     int32_t  fd_gap = 0;
     uint16_t u_entries  = ZZIP_GET16(trailer->z_entries);   
     uint32_t u_rootsize = ZZIP_GET32(trailer->z_rootsize);  
     uint32_t u_rootseek = ZZIP_GET32(trailer->z_rootseek);
+    __correct_rootseek (u_rootseek, u_rootsize, trailer);
 
     hdr0 = (struct zzip_dir_hdr*) malloc(u_rootsize);
     if (!hdr0) 
         return ZZIP_DIRSIZE;
-    hdr = hdr0;
+    hdr = hdr0;                  __debug_dir_hdr (hdr);
 
-#  ifdef DEBUG
-    if (sizeof(struct zzip_dir_hdr) > sizeof(struct zzip_root_dirent))
-    { WARN1("internal sizeof-mismatch may break wreakage"); }
-    /*  the internal directory structure is never bigger than the
-     *  external zip central directory space had been beforehand
-     *  (as long as the following assertion holds...) 
-     */
-
-    if (((unsigned)hdr0)&3)
-    { NOTE1("this machine's malloc(3) returns sth. not u32-aligned"); }
-    /* we assume that if this machine's malloc has returned a non-aligned 
-     * memory block, then it is actually safe to access misaligned data, and 
-     * since it does only affect the first hdr it should not even bring about
-     * too much of that cpu's speed penalty
-     */
-#  endif
 
     for (entries=u_entries, offset=0; entries > 0; entries--)
     {
@@ -236,10 +304,12 @@ __zzip_parse_root_directory(int fd,
         {
             if (io->seeks(fd, u_rootseek+offset, SEEK_SET) < 0)
                 return ZZIP_DIR_SEEK;
-            if (io->read(fd, &dirent, sizeof(dirent)) < sizeof(dirent))
+            if (io->read(fd, &dirent, sizeof(dirent)) < __sizeof(dirent))
                 return ZZIP_DIR_READ;
             d = &dirent;
         }
+
+	if (offset+sizeof(*d) > u_rootsize)
 
 #       if 0 && defined DEBUG
         zzip_debug_xbuf ((unsigned char*) d, sizeof(*d) + 8);
@@ -248,8 +318,7 @@ __zzip_parse_root_directory(int fd,
         u_extras  = ZZIP_GET16(d->z_extras); 
         u_comment = ZZIP_GET16(d->z_comment); 
         u_namlen  = ZZIP_GET16(d->z_namlen); 
-    
-    
+
         /* writes over the read buffer, Since the structure where data is
            copied is smaller than the data in buffer this can be done.
            It is important that the order of setting the fields is considered
@@ -264,10 +333,11 @@ __zzip_parse_root_directory(int fd,
         hdr->d_compr = (uint8_t)ZZIP_GET16(d->z_compr);
         if (hdr->d_compr > 255) hdr->d_compr = 255;
 
-        if (fd_map) 
-          { memcpy(hdr->d_name, fd_map+fd_gap+offset+sizeof(*d), u_namlen); }
-        else 
-          { io->read(fd, hdr->d_name, u_namlen); }
+	if (offset+sizeof(*d) + u_namlen > u_rootsize)
+
+	if (fd_map) 
+	{  memcpy(hdr->d_name, fd_map+fd_gap+offset+sizeof(*d), u_namlen); }
+	else { io->read(fd, hdr->d_name, u_namlen); }
         hdr->d_name[u_namlen] = '\0'; 
         hdr->d_namlen = u_namlen;
     
@@ -275,26 +345,25 @@ __zzip_parse_root_directory(int fd,
         offset += sizeof(*d) + u_namlen + u_extras + u_comment;
     
         if (offset > (long)u_rootsize)
-            break;
 
+  
         p_reclen = &hdr->d_reclen;
     
         {   register char* p = (char*) hdr; 
             register char* q = aligned4 (p + sizeof(*hdr) + u_namlen + 1);
-            *p_reclen = q - p;
+            *p_reclen = (uint16_t)(q - p);
             hdr = (struct zzip_dir_hdr*) q;
         }
     }/*for*/
     
-    if (!p_reclen)
-        return 0; /* 0 (sane) entries in zip directory... */
+    if (p_reclen)
+    {
+	*p_reclen = 0; /* mark end of list */
     
-    *p_reclen = 0; /* mark end of list */
-    
-    if (hdr_return) 
-        *hdr_return = hdr0;
-    
-    return 0;
+	if (hdr_return) 
+	    *hdr_return = hdr0;
+    } /* else zero (sane) entries */
+    return (entries ?  ZZIP_CORRUPTED : 0);
 }
 
 /* ------------------------- high-level interface ------------------------- */
@@ -451,7 +520,6 @@ __zzip_dir_parse (ZZIP_DIR* dir)
                                        dir->io)) != 0)
         { goto error; }
                 
-    
     if ( (rv = __zzip_parse_root_directory(dir->fd, &trailer, &dir->hdr0, 
                                            dir->io)) != 0)
         { goto error; }
@@ -470,7 +538,7 @@ __zzip_try_open(zzip_char_t* filename, int filemode,
 {
     auto char file[PATH_MAX];
     int fd;
-    int len = strlen (filename);
+    zzip_size_t len = strlen (filename);
     
     if (len+4 >= PATH_MAX) return -1;
     memcpy(file, filename, len+1);

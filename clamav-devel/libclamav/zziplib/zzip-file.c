@@ -88,16 +88,13 @@ zzip_file_saveoffset(ZZIP_FILE * fp)
     return 0;
 }
 
-
-
-# ifndef ZZIP_CHECK_BACKSLASH_DIRSEPARATOR
-# define ZZIP_CHECK_BACKSLASH_DIRSEPARATOR 0
+# ifndef ZZIP_CHECK_BACKSLASH_DIRSEPARATOR           /* NOTE: also default */
+# define ZZIP_CHECK_BACKSLASH_DIRSEPARATOR 0         /* to "NO" on win32 ! */
 # endif
 
 # if !defined strcasecmp && !defined ZZIP_HAVE_STRCASECMP
 # define ZZIP_CHECK_BACKSLASH_DIRSEPARATOR 1
 # endif
-
 
 #if ! ZZIP_CHECK_BACKSLASH_DIRSEPARATOR+0
 #define dirsep_strrchr(N,C) strrchr(N,C)
@@ -222,11 +219,11 @@ zzip_file_open(ZZIP_DIR * dir, zzip_char_t* name, int o_mode)
 
             {   /* skip local header - should test tons of other info, 
 		 * but trust that those are correct */
-                int dataoff;
+                zzip_ssize_t dataoff;
                 struct zzip_file_header * p = (void*) fp->buf32k;
 
 		dataoff = dir->io->read(dir->fd, (void*)p, sizeof(*p));
-		if (dataoff < (int) sizeof(*p))
+		if (dataoff < (zzip_ssize_t)sizeof(*p))
 		{ err = ZZIP_DIR_READ;  goto error; }
                 if (! ZZIP_FILE_HEADER_CHECKMAGIC(p)) /* PK\3\4 */
 		{ err = ZZIP_CORRUPTED; goto error; }
@@ -323,12 +320,12 @@ zzip_close(ZZIP_FILE* fp)
  *       required just that but the latest zlib would work just fine with
  *       a smaller buffer.
  */
-int 
-zzip_file_read(ZZIP_FILE * fp, char * buf, int len)
+zzip_ssize_t 
+zzip_file_read(ZZIP_FILE * fp, char * buf, zzip_size_t len)
 {
     ZZIP_DIR * dir; 
-    int l;
-    int rv;
+    zzip_size_t l;
+    zzip_ssize_t rv;
     
     if (! fp || ! fp->dir) return 0;
 
@@ -358,14 +355,15 @@ zzip_file_read(ZZIP_FILE * fp, char * buf, int len)
 
          do {
              int err;
-             int startlen;
+             zzip_size_t startlen;
 
              if (fp->crestlen > 0 && fp->d_stream.avail_in == 0)
              {
-                 int cl = fp->crestlen > ZZIP_32K ? ZZIP_32K : fp->crestlen;
-             /*  int cl = fp->crestlen > 128? 128: fp->crestlen; */
+                 zzip_size_t cl = ( fp->crestlen < ZZIP_32K ?
+				    fp->crestlen : ZZIP_32K );
+             /*  zzip_size_t cl = fp->crestlen > 128 ? 128 : fp->crestlen; */
 
-                 int i = fp->io->read(dir->fd, fp->buf32k, cl);
+                 zzip_ssize_t i = fp->io->read(dir->fd, fp->buf32k, cl);
                  if (i <= 0)
                  {
                      dir->errcode = ZZIP_DIR_READ; /* or ZZIP_DIR_READ_EOF ? */
@@ -412,14 +410,14 @@ zzip_file_read(ZZIP_FILE * fp, char * buf, int len)
  * perform a normal => read(2)-call, otherwise => zzip_file_read is called
  * to decompress the data stream and any error is mapped to => errno(3).
  */
-int 
-zzip_read(ZZIP_FILE * fp, char * buf, int len)
+zzip_ssize_t
+zzip_read(ZZIP_FILE * fp, char * buf, zzip_size_t len)
 {
     if (! fp) return 0;
     if (! fp->dir) 
       { return fp->io->read(fp->fd, buf, len); } /* stat fd */
     else
-    {   register int v;
+    {   register zzip_ssize_t v;
         v = zzip_file_read(fp, buf, len);
         if (v == -1) { errno = zzip_errno(fp->dir->errcode); }
         return v;
@@ -428,8 +426,8 @@ zzip_read(ZZIP_FILE * fp, char * buf, int len)
 
 /** => zzip_read
  */
-int 
-zzip_fread(void *ptr, int size, int nmemb, ZZIP_FILE *file)
+zzip_size_t
+zzip_fread(void *ptr, zzip_size_t size, zzip_size_t nmemb, ZZIP_FILE *file)
 {
     if (! size) size=1;
     return zzip_read (file, ptr, size*nmemb)/size;
@@ -714,7 +712,7 @@ zzip_open_shared_io (ZZIP_FILE* stream,
       /* see if we can share the same zip directory */
       if (stream && stream->dir && stream->dir->realname)
       {
-	  int len = strlen (stream->dir->realname);
+	  zzip_size_t len = strlen (stream->dir->realname);
 	  if (! memcmp (filename, stream->dir->realname, len) &&
 	      filename[len] == '/' && filename[len+1])
 	  {
@@ -864,10 +862,10 @@ zzip_rewind(ZZIP_FILE *fp)
  * how gzio implements it, so I'm not sure there is a better way
  * without using the internals of the algorithm.
  */
-int
-zzip_seek(ZZIP_FILE * fp, int offset, int whence)
+zzip_off_t
+zzip_seek(ZZIP_FILE * fp, zzip_off_t offset, int whence)
 {
-    int cur_pos, rel_ofs, read_size, ofs;
+    zzip_off_t cur_pos, rel_ofs, read_size, ofs;
     ZZIP_DIR *dir;
   
     if (! fp)
@@ -875,7 +873,7 @@ zzip_seek(ZZIP_FILE * fp, int offset, int whence)
 
     if (! fp->dir) 
     { /* stat fd */
-        return fp->io->seeks(fp->fd,offset,whence);
+        return fp->io->seeks(fp->fd, offset, whence);
     }
 
     cur_pos = zzip_tell(fp);
@@ -914,7 +912,7 @@ zzip_seek(ZZIP_FILE * fp, int offset, int whence)
     if (read_size < 0) /* bad offset, before beginning of file */
         return -1;
 
-    if (read_size + cur_pos > fp->usize) /* bad offset, past EOF */
+    if (read_size + cur_pos > (zzip_off_t)fp->usize) /* bad offset, past EOF */
         return -1;
 
     if (read_size == 0) /* nothing to read */
@@ -953,10 +951,10 @@ zzip_seek(ZZIP_FILE * fp, int offset, int whence)
         
         while (read_size > 0)  
         {
-            int size = ZZIP_32K;
-            if (read_size < ZZIP_32K) size = (int)read_size;
+            zzip_off_t size = ZZIP_32K;
+            if (read_size < size/*32K*/) size = read_size;
 
-            size = zzip_file_read(fp, buf, size);
+            size = zzip_file_read(fp, buf, (zzip_size_t)size);
             if (size <= 0) { free(buf); return -1; }
       
             read_size -= size;
@@ -979,7 +977,7 @@ zzip_seek(ZZIP_FILE * fp, int offset, int whence)
  * calculated from the amount of data left and the total uncompressed
  * size;
  */
-int
+zzip_off_t
 zzip_tell(ZZIP_FILE * fp)
 {
     if (! fp)
