@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.121  2004/08/26 10:22:00  nigelhorne
+ * Fix overflow To:
+ *
  * Revision 1.120  2004/08/25 11:44:56  nigelhorne
  * Tidy
  *
@@ -371,9 +374,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.120 2004/08/25 11:44:56 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.121 2004/08/26 10:22:00 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.75l"
+#define	CM_VERSION	"0.75m"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1492,7 +1495,11 @@ findServer(void)
 	tv.tv_sec = readTimeout;
 	tv.tv_usec = 0;
 
-	retval = select(maxsock + 1, &rfds, NULL, NULL, &tv);
+	if(maxsock == 0)
+		retval = 0;
+	else
+		retval = select(maxsock + 1, &rfds, NULL, NULL, &tv);
+
 	if(retval < 0)
 		perror("select");
 
@@ -1501,10 +1508,56 @@ findServer(void)
 			close(socks[i]);
 
 	if(retval == 0) {
+		static time_t lasttime;
+		time_t thistime, diff;
+		static pthread_mutex_t time_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+		/*
+		 * This is serious, we need to inform someone.
+		 * In the absence of SNMP the best way is by e-mail. We
+		 * don't want to flood so there's a need to restrict to
+		 * no more than say one message every 15 minutes
+		 */
 		free(socks);
 		cli_dbgmsg("findServer: No response from any server\n");
 		if(use_syslog)
 			syslog(LOG_WARNING, "findServer: No response from any server");
+
+		time(&thistime);
+		pthread_mutex_lock(&time_mutex);
+		diff = thistime - lasttime;
+		pthread_mutex_unlock(&time_mutex);
+
+		if(diff >= (time_t)(15 * 60)) {
+			char cmd[128];
+			FILE *sendmail;
+
+			snprintf(cmd, sizeof(cmd) - 1, "%s -t", SENDMAIL_BIN);
+
+			sendmail = popen(cmd, "w");
+
+			if(sendmail) {
+				fprintf(sendmail, "To: %s\n", postmaster);
+				fprintf(sendmail, "From: %s\n", postmaster);
+				fputs("Subject: ClamAV Down\n", sendmail);
+				fputs("Priority: High\n\n", sendmail);
+
+				fputs("This is an automatic message\n\n", sendmail);
+
+				if(numServers == 1)
+					fputs("The clamd program cannot be contacted.\n", sendmail);
+				else
+					fputs("No clamd server can be contacted.\n", sendmail);
+
+				fputs("Emails may not be being scanned, please check your servers.\n", sendmail);
+
+				if(pclose(sendmail) == 0) {
+					pthread_mutex_lock(&time_mutex);
+					time(&lasttime);
+					pthread_mutex_unlock(&time_mutex);
+				}
+			}
+		}
 		return 0;
 	} else if(retval < 0) {
 		free(socks);
@@ -1698,7 +1751,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 			if(dont_wait) {
 				pthread_mutex_unlock(&n_children_mutex);
-				smfi_setreply(ctx, "451", "4.7.1", "AV system temporarily overloaded - please try later");
+				smfi_setreply(ctx, "451", "4.3.2", "AV system temporarily overloaded - please try later");
 				return SMFIS_TEMPFAIL;
 			}
 			/*
@@ -2282,7 +2335,7 @@ clamfi_eom(SMFICTX *ctx)
 
 				if((templatefile == NULL) ||
 				   (sendtemplate(ctx, templatefile, sendmail, virusname) < 0)) {
-				   	/*
+					/*
 					 * Use our own hardcoded template
 					 */
 					const char *sender;
@@ -3014,7 +3067,7 @@ connect2clamd(struct privdata *privdata)
 	 */
 	length = strlen(privdata->from) + 34;
 	for(to = privdata->to; *to; to++)
-		length += strlen(*to) + 4;
+		length += strlen(*to) + 5;
 
 	msg = cli_malloc(length + 1);
 
@@ -3100,6 +3153,7 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 	FILE *fin = fopen(filename, "r");
 	struct stat statb;
 	char *buf, *ptr /* , *ptr2 */;
+	struct privdata *privdata = (struct privdata *)smfi_getpriv(ctx);
 
 	if(fin == NULL) {
 		perror(filename);
@@ -3130,48 +3184,65 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 	buf[statb.st_size] = '\0';
 
 	for(ptr = buf; *ptr; ptr++)
-		if(*ptr == '\\') {
-			if(*++ptr == '\0')
-				break;
-			putc(*ptr, sendmail);
-		} else if(*ptr == '%') {
-			/* clamAV variable */
-			if(*++ptr == 'v')
-				fputs(virusname, sendmail);
-			else if(*ptr == '%')
-				putc('%', sendmail);
-			else if(*ptr == '\0')
-				break;
-			else if(use_syslog)
-				syslog(LOG_ERR,
-					"%s: Unknown clamAV variable \"%c\"\n",
-					filename, *ptr);
-		} else if(*ptr == '$') {
-			const char *val;
-			char *end = strchr(++ptr, '$');
+		switch(*ptr) {
+			case '%': /* clamAV variable */
+				switch(*++ptr) {
+					case 'v':	/* virus name */
+						fputs(virusname, sendmail);
+						break;
+					case '%':
+						putc('%', sendmail);
+						break;
+					case 'h':	/* headers */
+						if(privdata)
+							header_list_print(privdata->headers, sendmail);
+						break;
+					case '\0':
+						putc('%', sendmail);
+						--ptr;
+						continue;
+					default:
+						syslog(LOG_ERR,
+							"%s: Unknown clamAV variable \"%c\"\n",
+							filename, *ptr);
+						break;
+				}
+			case '$': /* sendmail string */ {
+				const char *val;
+				char *end = strchr(++ptr, '$');
 
-			if(end == NULL) {
-				syslog(LOG_ERR,
-					"%s: Unterminated sendmail variable \"%s\"\n",
-						filename, ptr);
-				continue;
-			}
-			*end = '\0';
-
-			val = smfi_getsymval(ctx, ptr);
-			if(val == NULL) {
-				fputs(ptr, sendmail);
-				if(use_syslog)
+				if(end == NULL) {
 					syslog(LOG_ERR,
-						"%s: Unknown sendmail variable \"%s\"\n",
-						filename, ptr);
-			} else
-				fputs(val, sendmail);
-			ptr = end;
-		} else
-			putc(*ptr, sendmail);
+						"%s: Unterminated sendmail variable \"%s\"\n",
+							filename, ptr);
+					continue;
+				}
+				*end = '\0';
+
+				val = smfi_getsymval(ctx, ptr);
+				if(val == NULL) {
+					fputs(ptr, sendmail);
+					if(use_syslog)
+						syslog(LOG_ERR,
+							"%s: Unknown sendmail variable \"%s\"\n",
+							filename, ptr);
+				} else
+					fputs(val, sendmail);
+				ptr = end;
+			}
+			case '\\':
+				if(*++ptr == '\0') {
+					--ptr;
+					continue;
+				}
+				putc(*ptr, sendmail);
+				break;
+			default:
+				putc(*ptr, sendmail);
+		}
 
 	free(buf);
+
 
 	return 0;
 }
