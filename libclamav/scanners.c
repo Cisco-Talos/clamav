@@ -71,6 +71,10 @@ struct cli_magic_s {
 #define MAGIC_BUFFER_SIZE 26
 static const struct cli_magic_s cli_magic[] = {
 
+    /* Executables */
+
+    /* {0,  "MZ",				2,  "DOS/W32 executable", CL_DOSEXE}, */
+
     /* Archives */
 
     {0,  "Rar!",			4,  "RAR",		  CL_RARFILE},
@@ -984,6 +988,11 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
     type = cli_filetype(magic, bread);
 
     switch(type) {
+	case CL_DOSEXE:
+	    /* temporarily the return code is ignored */
+	    cli_scanpe(desc, virname, scanned, root, limits, options, reclev);
+	    break;
+
 	case CL_RARFILE:
 	    if(!DISABLE_RAR && SCAN_ARCHIVE && !cli_scanrar_inuse)
 		ret = cli_scanrar(desc, virname, scanned, root, limits, options, reclev);
