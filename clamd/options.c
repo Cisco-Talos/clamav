@@ -97,6 +97,8 @@ int main(int argc, char **argv)
 
     clamd(opt);
 
+    free_opt(opt);
+
     return(0);
 }
 
