@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.110  2004/11/08 10:26:22  nigelhorne
+ * Fix crash if x-yencode is mistakenly guessed
+ *
  * Revision 1.109  2004/11/07 16:39:00  nigelhorne
  * Handle para 4 of RFC2231
  *
@@ -324,7 +327,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.109 2004/11/07 16:39:00 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.110 2004/11/08 10:26:22 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -699,7 +702,7 @@ messageAddArgument(message *m, const char *arg)
 		m->mimeArguments = ptr;
 	}
 
-	m->mimeArguments[offset] = rfc2231(arg);
+	arg = m->mimeArguments[offset] = rfc2231(arg);
 
 	/*
 	 * This is terribly broken from an RFC point of view but is useful
@@ -1257,6 +1260,8 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 	if(ret == NULL)
 		return NULL;
 
+	cli_dbgmsg("messageExport: numberOfEncTypes == %d\n", m->numberOfEncTypes);
+
 	if((t_line = binhexBegin(m)) != NULL) {
 		unsigned char byte;
 		unsigned long len, l, newlen = 0L;
@@ -1587,7 +1592,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			(*setFilename)(ret, dir, filename);
 			t_line = t_line->t_next;
 			enctype = UUENCODE;
-		} else if((enctype == YENCODE) || ((i == 0) && yEncBegin(m))) {
+		} else if(((enctype == YENCODE) && yEncBegin(m)) || ((i == 0) && yEncBegin(m))) {
 			/*
 			 * TODO: handle multipart yEnc encoded files
 			 */
@@ -2544,9 +2549,8 @@ messageDedup(message *m)
 static char *
 rfc2231(const char *in)
 {
-	char *out;
-	char *ptr;
-	char *ret;
+	const char *ptr;
+	char *ret, *out;
 	enum { LANGUAGE, CHARSET, CONTENTS } field = LANGUAGE;
 
 	ptr = strstr(in, "*=");
@@ -2604,11 +2608,11 @@ rfc2231(const char *in)
 	}
 
 	if(field != CONTENTS) {
-		cli_warnmsg("Invalid RFC2231 header: '%s'\n", in);
 		free(ret);
+		cli_warnmsg("Invalid RFC2231 header: '%s'\n", in);
 		return strdup("");
 	}
-				
+
 	*out = '\0';
 
 	cli_dbgmsg("rfc2231 returns '%s'\n", ret);

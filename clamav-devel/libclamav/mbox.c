@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.168  2004/11/08 10:26:22  nigelhorne
+ * Fix crash if x-yencode is mistakenly guessed
+ *
  * Revision 1.167  2004/11/07 16:59:42  nigelhorne
  * Tidy
  *
@@ -489,7 +492,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.167 2004/11/07 16:59:42 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.168 2004/11/08 10:26:22 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -784,7 +787,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 	int retcode, i;
 	message *m, *body;
 	FILE *fd;
-	char buffer[LINE_LENGTH];
+	char buffer[LINE_LENGTH + 1];
 #ifdef HAVE_BACKTRACE
 	void (*segv)(int);
 #endif
@@ -798,7 +801,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		close(i);
 		return CL_EOPEN;
 	}
-	if(fgets(buffer, sizeof(buffer), fd) == NULL) {
+	if(fgets(buffer, sizeof(buffer) - 1, fd) == NULL) {
 		/* empty message */
 		fclose(fd);
 		return CL_CLEAN;
@@ -879,7 +882,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				lastLineWasEmpty = (bool)(buffer[0] == '\0');
 			if(messageAddStr(m, buffer) < 0)
 				break;
-		} while(fgets(buffer, sizeof(buffer), fd) != NULL);
+		} while(fgets(buffer, sizeof(buffer) - 1, fd) != NULL);
 
 		cli_dbgmsg("Deal with email number %d\n", messagenumber);
 	} else {
@@ -892,15 +895,17 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			 * CommuniGate Pro format: ignore headers until
 			 * blank line
 			 */
-			while((fgets(buffer, sizeof(buffer), fd) != NULL) &&
+			while((fgets(buffer, sizeof(buffer) - 1, fd) != NULL) &&
 				(strchr("\r\n", buffer[0]) == NULL))
 					;
 		/*
 		 * Ignore any blank lines at the top of the message
 		 */
 		while(strchr("\r\n", buffer[0]) &&
-		     (fgets(buffer, sizeof(buffer), fd) != NULL))
+		     (fgets(buffer, sizeof(buffer) - 1, fd) != NULL))
 			;
+
+		buffer[LINE_LENGTH] = '\0';
 
 		/*
 		 * FIXME: files full of new lines and nothing else are
@@ -917,7 +922,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			(void)cli_chomp(buffer);
 			if(messageAddStr(m, buffer) < 0)
 				break;
-		} while(fgets(buffer, sizeof(buffer), fd) != NULL);
+		} while(fgets(buffer, sizeof(buffer) - 1, fd) != NULL);
 	}
 
 	fclose(fd);
