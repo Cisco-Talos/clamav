@@ -144,6 +144,8 @@ extern int cl_statfree(struct cl_stat *dbstat);
 /* enable debug information */
 extern void cl_debug(void);
 
+extern void cl_settempdir(const char *dir, short leavetemps);
+
 /* build a trie */
 extern int cl_buildtrie(struct cl_node *root);
 

@@ -56,6 +56,7 @@ int main(int argc, char **argv)
 	    {"debug", 0, 0, 0},
 	    {"version", 0, 0, 'V'},
 	    {"tempdir", 1, 0, 0},
+	    {"leave-temps", 0, 0, 0},
 	    {"config-file", 1, 0, 0}, /* clamdscan */
 	    {"database", 1, 0, 'd'},
 	    {"whole-file", 0, 0, 'w'}, /* not used */

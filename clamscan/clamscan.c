@@ -99,6 +99,12 @@ int clamscan(struct optstruct *opt)
     if(optl(opt, "bell"))
 	bell = 1;
 
+    if(optl(opt, "tempdir"))
+	cl_settempdir(getargl(opt, "tempdir"), 0);
+
+    if(optl(opt, "leave-temps"))
+	cl_settempdir(NULL, 1);
+
     /* initialize logger */
 
     if(optc(opt, 'l')) {

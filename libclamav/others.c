@@ -51,7 +51,7 @@ pthread_mutex_t cl_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define CL_FLEVEL 2 /* don't touch it */
 
 
-int cli_debug_flag = 0;
+short cli_debug_flag = 0, cli_leavetemps_flag = 0;
 
 static unsigned char oldmd5buff[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
 
@@ -269,6 +269,24 @@ unsigned int cl_rndnum(unsigned int max)
   return rand() % max;
 }
 
+void cl_settempdir(const char *dir, short leavetemps)
+{
+	char *var;
+
+    if(dir) {
+	var = (char *) cli_malloc(8 + strlen(dir));
+	sprintf(var, "TMPDIR=%s", dir);
+	if(!putenv(var))
+	    cli_dbgmsg("Setting %s as global temporary directory\n", dir);
+	else
+	    cli_warnmsg("Can't set TMPDIR variable - insufficient space in the environment.\n");
+
+	/* WARNING: var must not be released - see putenv(3) */
+    }
+
+    cli_leavetemps_flag = leavetemps;
+}
+
 char *cl_gentemp(const char *dir)
 {
 	char *name, *tmp;
@@ -320,7 +338,7 @@ int cli_rmdirs(const char *dirname)
 	char *fname;
 
 
-    if(cli_debug_flag)
+    if(cli_leavetemps_flag)
 	return 0;
 
     chmod(dirname, 0700);
