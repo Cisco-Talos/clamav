@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.33  2004/01/23 10:38:22  nigelhorne
+ * Fixed memory leak in handling some multipart messages
+ *
  * Revision 1.32  2004/01/23 08:51:19  nigelhorne
  * Add detection of uuencoded viruses in single part multipart/mixed files
  *
@@ -87,7 +90,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.32 2004/01/23 08:51:19 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.33 2004/01/23 10:38:22 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -141,7 +144,7 @@ typedef enum    { FALSE = 0, TRUE = 1 } bool;
 
 static	message	*parseEmailHeaders(const message *m, const table_t *rfc821Table);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
-static	int	parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const char *dir, table_t *rfc821Table, table_t *subtypeTable);
+static	int	parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, const char *dir, table_t *rfc821Table, table_t *subtypeTable);
 static	int	boundaryStart(const char *line, const char *boundary);
 static	int	endOfMessage(const char *line, const char *boundary);
 static	int	initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
@@ -481,13 +484,14 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821Table)
  *	2 for success, attachments not saved
  */
 static int	/* success or fail */
-parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const char *dir, table_t *rfc821Table, table_t *subtypeTable)
+parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, const char *dir, table_t *rfc821Table, table_t *subtypeTable)
 {
 	message *messages[MAXALTERNATIVE];
 	int inhead, inMimeHead, i, rc, htmltextPart, multiparts = 0;
 	text *aText;
 	blob *blobList[MAX_ATTACHMENTS], **blobs;
 	const char *cptr;
+	message *mainMessage;
 
 	cli_dbgmsg("in parseEmailBody(nBlobs = %d)\n", nBlobs);
 
@@ -499,6 +503,7 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 
 	aText = textIn;
 	blobs = blobsIn;
+	mainMessage = messageIn;
 
 	/* Anything left to be parsed? */
 	if(mainMessage && (messageGetBody(mainMessage) != NULL)) {
@@ -650,8 +655,11 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 
 			free((char *)boundary);
 
-			if(multiparts == 0)
+			if(multiparts == 0) {
+				if(mainMessage && (mainMessage != messageIn))
+					messageDestroy(mainMessage);
 				return 2;	/* Nothing to do */
+			}
 
 			cli_dbgmsg("The message has %d parts\n", multiparts);
 			cli_dbgmsg("Find out the multipart type(%s)\n", mimeSubtype);
@@ -762,8 +770,11 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 				 * common enough to implement, it is a simple
 				 * matter to add it
 				 */
-				if(aText)
+				if(aText) {
+					if(mainMessage && (mainMessage != messageIn))
+						messageDestroy(mainMessage);
 					mainMessage = NULL;
+				}
 
 				cli_dbgmsg("Mixed message with %d parts\n", multiparts);
 				for(i = 0; i < multiparts; i++) {
@@ -801,6 +812,8 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 
 						break;
 					case NOMIME:
+						if(mainMessage && (mainMessage != messageIn))
+							messageDestroy(mainMessage);
 						mainMessage = NULL;
 						addToText = TRUE;
 						if(messageGetBody(aMessage) == NULL)
@@ -818,6 +831,8 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 						else if((*dtype == '\0') || (strcasecmp(dtype, "inline") == 0)) {
 							const text *t_line = uuencodeBegin(aMessage);
 
+							if(mainMessage && (mainMessage != messageIn))
+								messageDestroy(mainMessage);
 							mainMessage = NULL;
 							if(t_line) {
 								cli_dbgmsg("Found uuencoded message in multipart/mixed text portion\n");
@@ -863,13 +878,19 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 							body = parseEmailHeaders(aMessage, rfc821Table);
 							if(body) {
 								t = messageToText(body);
+
 								rc = parseEmailBody(body, blobs, nBlobs, t, dir, rfc821Table, subtypeTable);
+								cli_dbgmsg("Finished recursion\n");
 								textDestroy(t);
+								if(mainMessage && (mainMessage != messageIn))
+									messageDestroy(mainMessage);
 
 								mainMessage = body;
 							}
 						} else {
 							rc = parseEmailBody(NULL, blobs, nBlobs, NULL, dir, rfc821Table, subtypeTable);
+							if(mainMessage && (mainMessage != messageIn))
+								messageDestroy(mainMessage);
 							mainMessage = NULL;
 						}
 						continue;
@@ -985,6 +1006,9 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 			if(blobs && (blobsIn == NULL))
 				puts("arraydestroy");
 
+			if(mainMessage && (mainMessage != messageIn))
+				messageDestroy(mainMessage);
+
 			if(aText && (textIn == NULL))
 				textDestroy(aText);
 
@@ -1039,6 +1063,7 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 				m = body;
 
 				messageClean(m);
+
 				if(messageGetBody(m))
 					rc = parseEmailBody(m, NULL, 0, NULL, dir, rfc821Table, subtypeTable);
 
@@ -1058,6 +1083,8 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 			else
 				cli_warnmsg("Unsupported message format `%s'\n", mimeSubtype);
 
+			if(mainMessage && (mainMessage != messageIn))
+				messageDestroy(mainMessage);
 			return 0;
 
 		case APPLICATION:
@@ -1186,6 +1213,9 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 	/* Already done */
 	if(blobs && (blobsIn == NULL))
 		blobArrayDestroy(blobs, nBlobs);
+
+	if(mainMessage && (mainMessage != messageIn))
+		messageDestroy(mainMessage);
 
 	cli_dbgmsg("parseEmailBody() returning %d\n", rc);
 
