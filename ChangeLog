@@ -1,3 +1,7 @@
+Mon Feb 23 19:28:33 GMT 2004 (njh)
+----------------------------------
+  * contrib:	The Windows client now handles an ERROR message from clamd
+
 Mon Feb 23 18:22:14 CET 2004 (tk)
 ---------------------------------
   * configure: check if <sys/select.h> needs to be included for fd_set (patch
