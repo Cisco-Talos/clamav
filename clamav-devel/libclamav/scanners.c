@@ -1305,6 +1305,7 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 	} else if(nret >= CL_TYPENO) {
 	    lseek(desc, 0, SEEK_SET);
 
+	    nret == CL_TYPE_MAIL ? (*mrec)++ : (*arec)++;
 	    switch(nret) {
 		case CL_TYPE_HTML:
 		    if(SCAN_HTML)
@@ -1318,6 +1319,7 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 			    return CL_VIRUS;
 		    break;
 	    }
+	    nret == CL_TYPE_MAIL ? (*mrec)-- : (*arec)--;
 	}
     }
 
@@ -1338,7 +1340,7 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
     (*arec)--;
 
     if(ret == CL_EFORMAT) {
-	cli_warnmsg("Descriptor[%d]: %s\n", desc, cl_strerror(CL_EFORMAT));
+	cli_dbgmsg("Descriptor[%d]: %s\n", desc, cl_strerror(CL_EFORMAT));
 	return CL_CLEAN;
     } else {
 	return ret;
