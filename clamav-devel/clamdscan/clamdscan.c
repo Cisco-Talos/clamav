@@ -34,16 +34,7 @@
 #include "client.h"
 #include "output.h"
 
-
 void help(void);
-
-/* this local macro takes care about freeing memory at exit */
-/*
-#define mexit(i)    if(opt) free_opt(opt);			    \
-		    mprintf("*Memory freed. Exit code: %d\n", i);   \
-		    exit(i);
-*/
-#define mexit(i)    exit(i)
 
 void clamscan(struct optstruct *opt)
 {
@@ -55,25 +46,20 @@ void clamscan(struct optstruct *opt)
 
     /* initialize some important variables */
 
-    mprintf_disabled = 0;
-
     if(optc(opt, 'v')) {
 	mprintf_verbose = 1;
 	logg_verbose = 1;
-    } else {
-	mprintf_verbose = 0;
-	logg_verbose = 0;
     }
 
-    if(optl(opt, "quiet")) mprintf_quiet = 1;
-    else mprintf_quiet = 0;
+    if(optl(opt, "quiet"))
+	mprintf_quiet = 1;
 
-    if(optl(opt, "stdout")) mprintf_stdout = 1;
-    else mprintf_stdout = 0;
+    if(optl(opt, "stdout"))
+	mprintf_stdout = 1;
 
     if(optc(opt, 'V')) {
 	mprintf("clamdscan / ClamAV version "VERSION"\n");
-	mexit(0);
+	exit(0);
     }
 
     if(optc(opt, 'h')) {
@@ -81,21 +67,16 @@ void clamscan(struct optstruct *opt)
     	help();
     }
 
-    if(optc(opt, 'i')) printinfected = 1;
-    else printinfected = 0;
+    if(optc(opt, 'i'))
+	printinfected = 1;
 
     /* initialize logger */
-
-    /* FIXME: enable in the future */
-    logg_size = 0;
-    logg_lock = 0;
-    logg_time = 0;
 
     if(optc(opt, 'l')) {
 	logg_file = getargc(opt, 'l');
 	if(logg("--------------------------------------\n")) {
 	    mprintf("!Problem with internal logger.\n");
-	    mexit(2);
+	    exit(2);
 	}
     } else 
 	logg_file = NULL;
@@ -125,7 +106,7 @@ void clamscan(struct optstruct *opt)
 	    logg("Time: %d.%3.3d sec (%d m %d s)\n", ds, dms/1000, ds/60, ds%60);
     }
 
-    mexit(ret);
+    exit(ret);
 }
 
 void help(void)

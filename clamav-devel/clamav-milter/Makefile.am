@@ -21,9 +21,12 @@ if HAVE_MILTER
 
 sbin_PROGRAMS = clamav-milter
 
-clamav_milter_SOURCES = clamav-milter.c
-
-clamav_milter_LDADD = $(top_builddir)/clamd/cfgfile.o $(top_builddir)/clamd/others.o $(top_builddir)/clamscan/getopt.o
+clamav_milter_SOURCES = 
+    $(top_srcdir)/shared/cfgparser.c \
+    $(top_srcdir)/shared/cfgparser.h \
+    $(top_srcdir)/shared/getopt.c \
+    $(top_srcdir)/shared/getopt.h \
+    clamav-milter.c
 
 man_MANS = $(top_srcdir)/docs/man/clamav-milter.8
 
@@ -33,5 +36,5 @@ endif
 DEFS = @DEFS@ -DSENDMAIL_BIN=\"@SENDMAIL@\"
 # CLAMD_LIBS is used, because clamav-milter requires the same libraries as clamd
 LIBS = -L$(top_builddir)/libclamav -lclamav -L/usr/lib/libmilter -lmilter @CLAMAV_MILTER_LIBS@
-INCLUDES = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_srcdir)/shared -I$(top_srcdir)/clamscan
+INCLUDES = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_srcdir)/shared
 EXTRA_DIST = clamav-milter.c INSTALL

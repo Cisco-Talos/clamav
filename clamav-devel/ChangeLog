@@ -1,3 +1,8 @@
+Tue Mar 30 23:18:49 CEST 2004 (tk)
+----------------------------------
+  * clamav-milter: adapt Makefile to new directory structure
+  * small code cleanup
+
 Tue Mar 30 08:40:10 BST 2004 (trog)
 -----------------------------------
   * clamav.conf, shared/cfgparser.c: recognise ReadTimeout option

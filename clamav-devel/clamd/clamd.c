@@ -57,6 +57,8 @@
 void help(void);
 void daemonize(void);
 
+short debug_mode = 0, logok = 0;
+
 void clamd(struct optstruct *opt)
 {
 	struct cfgstruct *copt, *cpt;
@@ -89,8 +91,6 @@ void clamd(struct optstruct *opt)
 #endif
 	debug_mode = 1;
 
-    } else {
-	debug_mode = 0;
     }
 
     /* parse the config file */
@@ -110,18 +110,12 @@ void clamd(struct optstruct *opt)
 
     if(cfgopt(copt, "LogFileUnlock"))
 	logg_lock = 0;
-    else
-	logg_lock = 1;
 
     if(cfgopt(copt, "LogTime"))
 	logg_time = 1;
-    else
-	logg_time = 0;
 
     if(cfgopt(copt, "LogClean"))
 	logok = 1;
-    else
-	logok = 0;
 
     if((cpt = cfgopt(copt, "LogFileMaxSize")))
 	logg_size = cpt->numarg;
