@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.107  2004/08/20 04:55:07  nigelhorne
+ * FOLLOWURL
+ *
  * Revision 1.106  2004/08/20 04:53:18  nigelhorne
  * Tidy up
  *
@@ -306,7 +309,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.106 2004/08/20 04:53:18 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.107 2004/08/20 04:55:07 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -383,7 +386,7 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 
 #define	SAVE_TO_DISC	/* multipart/message are saved in a temporary file */
 
-#define	FOLLOWURLS	/*
+/*#define	FOLLOWURLS	/*
 			 * If an email contains URLs, check them - helps to
 			 * find Dialer.gen-45
 			 */
