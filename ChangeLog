@@ -1,3 +1,10 @@
+Wed Dec  3 22:03:19 CET 2003 (tk)
+---------------------------------
+  * libclamav: cli_scandir(): fixed a recursive loop (a wrong file argument
+	       was passed to the recursive call but fortunately this function
+	       is only used with with one level directories). Bug found by
+	       Tomasz Klim <tomek*euroneto.pl>.
+
 Tue Dec  2 23:41:04 CET 2003 (tk)
 ---------------------------------
   * New fixes from Thomas Lamy <Thomas.Lamy*in-online.net>:
