@@ -1,3 +1,8 @@
+Thu Mar 25 12:20:05 CET 2004 (tk)
+---------------------------------
+  * freshclam: use HTTP Range to limit data transfer for cvd headers
+	       (patch by Tony Finch <dot*dotat.at>)
+
 Wed Mar 24 09:19:12 GMT 2004 (njh)
 ----------------------------------
   * libclamav/blob.c:	Reduce the number of calls to cli_realloc, since realloc
