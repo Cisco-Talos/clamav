@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.162  2004/10/24 04:35:15  nigelhorne
+ * Handle multipart/knowbot as multipart/mixed
+ *
  * Revision 1.161  2004/10/21 10:18:40  nigelhorne
  * PARTIAL: readdir_r even more options :-(
  *
@@ -471,7 +474,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.161 2004/10/21 10:18:40 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.162 2004/10/24 04:35:15 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -683,6 +686,7 @@ static	void	*getURL(struct arg *arg);
 				 * pointers would be appreciated. For now
 				 * we treat it as multipart/related
 				 */
+#define	KNOWBOT		14	/* Unknown and undocumented format? */
 
 static	const	struct tableinit {
 	const	char	*key;
@@ -711,6 +715,10 @@ static	const	struct tableinit {
 	{	"fax-message",	FAX		},
 	{	"encrypted",	ENCRYPTED	},
 	{	"x-bfile",	X_BFILE		},	/* BeOS */
+	{	"knowbot",		KNOWBOT		},	/* ??? */
+	{	"knowbot-metadata",	KNOWBOT		},	/* ??? */
+	{	"knowbot-code",		KNOWBOT		},	/* ??? */
+	{	"knowbot-state",	KNOWBOT		},	/* ??? */
 	{	NULL,		0		}
 };
 
@@ -1228,6 +1236,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				break;
 			}
 
+			/* Perhaps it should assume mixed? */
 			if(mimeSubtype[0] == '\0') {
 				cli_warnmsg("Multipart has no subtype assuming alternative\n");
 				mimeSubtype = "alternative";
@@ -1472,12 +1481,16 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			free((char *)boundary);
 
 			/*
-			 * For multipart/encrypted
+			 * Preprocess. Anything special to be done before
+			 * we handle the multiparts?
 			 */
-			if(tableFind(subtypeTable, mimeSubtype) == ENCRYPTED)
-				protocol = (char *)messageFindArgument(mainMessage, "protocol");
-			else
-				protocol = NULL;
+			switch(tableFind(subtypeTable, mimeSubtype)) {
+				case KNOWBOT:
+					/* TODO */
+					cli_dbgmsg("multipart/knowbot parsed as multipart/mixed for now\n");
+					mimeSubtype = "mixed";
+					break;
+			}
 
 			/*
 			 * We've finished message we're parsing
@@ -1488,8 +1501,6 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			}
 
 			if(multiparts == 0) {
-				if(protocol)
-					free(protocol);
 				if(messages)
 					free(messages);
 				return 2;	/* Nothing to do */
@@ -1861,6 +1872,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				break;
 			case ENCRYPTED:
 				rc = 0;
+				protocol = (char *)messageFindArgument(mainMessage, "protocol");
 				if(protocol) {
 					if(strcasecmp(protocol, "application/pgp-encrypted") == 0) {
 						/* RFC2015 */
@@ -2815,6 +2827,7 @@ rfc1341(message *m, const char *dir)
 
 				snprintf(filename, sizeof(filename), "%s%d", id, n);
 #ifdef HAVE_READDIR_R_3
+
 #if	defined(C_SOLARIS) || defined(C_BEOS)
 				while((readdir_r(dd, (struct dirent *)result, &dent) == 0) && dent) {
 #else
