@@ -1,3 +1,7 @@
+Wed Aug 18 22:38:39 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Multithread the followURL code - URLs are now followed					in parallel
+
 Wed Aug 18 20:37:42 CEST 2004 (tk)
 ----------------------------------
   * libclamav/contrib: Include database optimisation tool (optimize/optimize.c).
