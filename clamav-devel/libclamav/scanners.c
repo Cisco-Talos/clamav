@@ -58,6 +58,7 @@ extern int cli_mbox(const char *dir, int desc); /* FIXME */
 #include "ole2_extract.h"
 #include "vba_extract.h"
 #include "msexpand.h"
+#include "chmunpack.h"
 #include "pe.h"
 #include "filetypes.h"
 #include "htmlnorm.h"
@@ -906,6 +907,39 @@ static int cli_scanole2(int desc, const char **virname, long int *scanned, const
     return ret;
 }
 
+static int cli_scanmschm(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+{
+	const char *tmpdir;
+	char *tempname;
+	int ret = CL_CLEAN;
+
+
+    cli_dbgmsg("in cli_scanmschm()\n");	
+
+    if((tmpdir = getenv("TMPDIR")) == NULL)
+#ifdef P_tmpdir
+	tmpdir = P_tmpdir;
+#else
+	tmpdir = "/tmp";
+#endif
+
+    tempname = cli_gentemp(tmpdir);
+
+    if(mkdir(tempname, 0700)) {
+	cli_dbgmsg("ScanCHM -> Can't create temporary directory %s\n", tempname);
+	return CL_ETMPDIR;
+    }
+
+    if(chm_unpack(desc, tempname))
+	ret = cli_scandir(tempname, virname, scanned, root, limits, options, arec, mrec);
+
+    if(!cli_leavetemps_flag)
+	cli_rmdirs(tempname);
+
+    free(tempname);
+    return ret;
+}
+
 static int cli_scanmail(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
 {
 	const char *tmpdir;
@@ -983,7 +1017,6 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
     lseek(desc, 0, SEEK_SET);
 
     if(bread != MAGIC_BUFFER_SIZE) {
-	cli_dbgmsg("File recognition failed: bread != MAGIC_BUFFER_SIZE (%d != %d)\n", bread, MAGIC_BUFFER_SIZE);
 	/* short read: No need to do magic */
 	if((ret = cli_scandesc(desc, virname, scanned, root, 0) == CL_VIRUS))
 	    cli_dbgmsg("%s virus found in descriptor %d.\n", *virname, desc);
@@ -1030,6 +1063,11 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
 	case CL_MAILFILE:
 	    if(SCAN_MAIL)
 		ret = cli_scanmail(desc, virname, scanned, root, limits, options, arec, mrec);
+	    break;
+
+	case CL_MSCHMFILE:
+	    if(SCAN_ARCHIVE)
+		ret = cli_scanmschm(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
 	case CL_OLE2FILE:

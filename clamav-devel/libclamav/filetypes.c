@@ -58,6 +58,7 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "BZh",				3,  "BZip",		  CL_BZFILE},
     {0,  "SZDD",			4,  "compress.exe'd",	  CL_MSCFILE},
     {0,  "MSCF",			4,  "MS CAB",		  CL_MSCABFILE},
+    {0,  "ITSF",			4,  "MS CHM",             CL_MSCHMFILE},
 
     /* Mail */
 

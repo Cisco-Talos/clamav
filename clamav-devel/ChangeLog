@@ -1,3 +1,7 @@
+Tue Jul 20 03:26:38 CEST 2004 (tk)
+----------------------------------
+  * libclamav: integrate CHM decoder from Trog
+
 Mon Jul 19 21:24:18 CEST 2004 (tk)
 ----------------------------------
   * libclamav: pe: fix memory leak (Martin Blapp <mb*imp.ch>)
