@@ -78,15 +78,17 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	zzip-info.lo zzip-io.lo zzip-stat.lo zzip-zip.lo strc.lo \
 	blob.lo mbox.lo message.lo snprintf.lo strrcpy.lo table.lo \
 	text.lo ole2_extract.lo vba_extract.lo msexpand.lo pe.lo \
-	cabd.lo lzxd.lo mszipd.lo qtmd.lo system.lo upx.lo htmlnorm.lo
+	cabd.lo lzxd.lo mszipd.lo qtmd.lo system.lo upx.lo htmlnorm.lo \
+	chmunpack.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/blob.Plo ./$(DEPDIR)/cabd.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/cvd.Plo ./$(DEPDIR)/dsig.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/filetypes.Plo ./$(DEPDIR)/htmlnorm.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/lzxd.Plo ./$(DEPDIR)/matcher-ac.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/chmunpack.Plo ./$(DEPDIR)/cvd.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/dsig.Plo ./$(DEPDIR)/filetypes.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/htmlnorm.Plo ./$(DEPDIR)/lzxd.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/matcher-ac.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/matcher-bm.Plo ./$(DEPDIR)/matcher.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/mbox.Plo ./$(DEPDIR)/md5.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/message.Plo ./$(DEPDIR)/msexpand.Plo \
@@ -308,7 +310,9 @@ libclamav_la_SOURCES = \
 	upx.c \
 	upx.h \
 	htmlnorm.c \
-	htmlnorm.h
+	htmlnorm.h \
+	chmunpack.c \
+	chmunpack.h
 
 lib_LTLIBRARIES = libclamav.la
 all: all-am
@@ -382,6 +386,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/blob.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cabd.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chmunpack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cvd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dsig.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filetypes.Plo@am__quote@

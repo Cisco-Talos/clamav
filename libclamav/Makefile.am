@@ -102,6 +102,8 @@ libclamav_la_SOURCES = \
 	upx.c \
 	upx.h \
 	htmlnorm.c \
-	htmlnorm.h
+	htmlnorm.h \
+	chmunpack.c \
+	chmunpack.h
 
 lib_LTLIBRARIES = libclamav.la
