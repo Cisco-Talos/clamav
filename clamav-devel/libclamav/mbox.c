@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.51  2004/03/17 19:48:12  nigelhorne
+ * Improved embedded RFC822 message handling
+ *
  * Revision 1.50  2004/03/10 22:05:39  nigelhorne
  * Fix seg fault when a message in a multimessage mailbox fails to scan
  *
@@ -141,7 +144,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.50 2004/03/10 22:05:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.51 2004/03/17 19:48:12 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -465,7 +468,6 @@ parseEmailHeaders(const message *m, const table_t *rfc821Table)
 				inContinuationHeader = inHeader = FALSE;
 			} else if(parseEmailHeader(ret, buffer, rfc821Table) == CONTENT_TYPE)
 				inContinuationHeader = continuationMarker(buffer);
-
 		} else {
 			/*cli_dbgmsg("Add line to body '%s'\n", buffer);*/
 			messageAddLine(ret, buffer);
@@ -963,13 +965,24 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 								addAttachment = TRUE;
 							}
 						} else {
-							cli_dbgmsg("Text type %s is not supported", dtype);
+							cli_warnmsg("Text type %s is not supported\n", dtype);
 							continue;
 						}
 						break;
 					case MESSAGE:
 						cli_dbgmsg("Found message inside multipart\n");
 						body = parseEmailHeaders(aMessage, rfc821Table);
+						/*
+						 * We've fininished with the
+						 * original copy of the message,
+						 * so throw that away and
+						 * deal with the encapsulated
+						 * message as a message.
+						 * This can save a lot of memory
+						 */
+						assert(aMessage == messages[i]);
+						messageDestroy(messages[i]);
+						messages[i] = NULL;
 						if(body) {
 							rc = parseEmailBody(body, blobs, nBlobs, NULL, dir, rfc821Table, subtypeTable);
 							messageDestroy(body);
@@ -1027,9 +1040,12 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					assert(addToText || addAttachment);
 					assert(!(addToText && addAttachment));
 
-					if(addToText)
+					if(addToText) {
 						aText = textAdd(aText, messageGetBody(aMessage));
-					else if(addAttachment) {
+						assert(aMessage == messages[i]);
+						messageDestroy(messages[i]);
+						messages[i] = NULL;
+					} else if(addAttachment) {
 						blob *aBlob = messageToBlob(aMessage);
 
 						if(aBlob) {
@@ -1088,8 +1104,8 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				 * there's no more work to do.
 				 *
 				 * This is mostly for the situation where
-				 * broken code which claim to be multipart
-				 * which aren't was causing us to go into
+				 * broken messages claim to be multipart
+				 * but aren't was causing us to go into
 				 * infinite recursion
 				 */
 				if(multiparts > 1)
@@ -1137,7 +1153,8 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 			}
 
 			for(i = 0; i < multiparts; i++)
-				messageDestroy(messages[i]);
+				if(messages[i])
+					messageDestroy(messages[i]);
 
 			if(blobs && (blobsIn == NULL))
 				puts("arraydestroy");
@@ -1165,6 +1182,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 			}
 			if((strcasecmp(mimeSubtype, "rfc822") == 0) ||
 			   (strcasecmp(mimeSubtype, "delivery-status") == 0)) {
+#if	0
 				/*
 				 * Found a message encapsulated within
 				 * another message
@@ -1181,14 +1199,13 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				m = messageCreate();
 				assert(m != NULL);
 
-				cli_dbgmsg("Decode rfc822");
-
 				do {
-					char *buffer = strdup(t->t_text);
+					/*char *buffer = strdup(t->t_text);
 
 					cli_chomp(buffer);
 					messageAddLine(m, buffer);
-					free(buffer);
+					free(buffer);*/
+					messageAddLine(m, t->t_text);
 				} while((t = t->t_next) != NULL);
 
 				textDestroy(msgText);
@@ -1204,6 +1221,19 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					rc = parseEmailBody(m, NULL, 0, NULL, dir, rfc821Table, subtypeTable);
 
 				messageDestroy(m);
+#else
+				message *m = parseEmailHeaders(mainMessage, rfc821Table);
+				if(m) {
+					cli_dbgmsg("Decode rfc822");
+
+					messageClean(m);
+
+					if(messageGetBody(m))
+						rc = parseEmailBody(m, NULL, 0, NULL, dir, rfc821Table, subtypeTable);
+
+					messageDestroy(m);
+				}
+#endif
 
 				break;
 			} else if(strcasecmp(mimeSubtype, "partial") == 0)
