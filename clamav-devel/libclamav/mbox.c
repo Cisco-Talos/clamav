@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.13  2003/10/01 09:27:42  nigelhorne
+ * Handle content-type header going over to a new line
+ *
  * Revision 1.12  2003/09/29 17:10:19  nigelhorne
  * Moved stub from heap to stack since its maximum size is known
  *
@@ -27,7 +30,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.12 2003/09/29 17:10:19 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.13 2003/10/01 09:27:42 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -537,6 +540,9 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 						 * put white space after the ;
 						 */
 						inMimeHead = continuationMarker(line);
+						if(!inMimeHead)
+							if(t_line->t_next && ((t_line->t_next->t_text[0] == '\t') || (t_line->t_next->t_text[0] == ' ')))
+								inMimeHead = TRUE;
 						copy = strdup(line);
 						ptr = strtok_r(copy, " \t", &strptr);
 
@@ -566,7 +572,36 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 							}
 							break;
 						case CONTENT_TRANSFER_ENCODING:
-							messageSetEncoding(aMessage, strtok_r(NULL, "", &strptr));
+							ptr = strtok_r(NULL, "", &strptr);
+							if(ptr) {
+								messageSetEncoding(aMessage, ptr);
+								break;
+							}
+							/*
+							 * Encoding type not found
+							 */
+							if(!inMimeHead) {
+								cli_warnmsg("Empty encoding type, assuming none");
+								messageSetEncoding(aMessage, "7bit");
+								break;
+							}
+							/*
+							 * Handle the case
+							 * when it flows over
+							 * to the next line.
+							 *
+							 * Content-type:
+							 *	quoted-printable
+							 */
+							if(t_line->t_next) {
+								t_line = t_line->t_next;
+								messageSetEncoding(aMessage, t_line->t_text);
+
+								break;
+							}
+							cli_warnmsg("Empty encoding type, assuming none");
+							messageSetEncoding(aMessage, "7bit");
+
 							break;
 						case CONTENT_DISPOSITION:
 							messageSetDispositionType(aMessage, strtok_r(NULL, ";", &strptr));
