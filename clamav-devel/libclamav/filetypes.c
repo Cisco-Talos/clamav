@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *  With enhancements from Thomas Lamy <Thomas.Lamy@in-online.net>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -80,6 +80,7 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "X-Symantec-",			11, "Symantec",		  CL_TYPE_MAIL},
     {0,  "X-EVS",			 5, "EVS mail",		  CL_TYPE_MAIL},
     {0,  "X-Real-To: ",                 11, "Mail",               CL_TYPE_MAIL},
+    {0,  "X-Sieve: ",			 9, "Mail",		  CL_TYPE_MAIL},
     {0,  ">From ",			 6, "Mail",		  CL_TYPE_MAIL},
     {0,  "Date: ",			 6, "Mail",		  CL_TYPE_MAIL},
     {0,  "Message-Id: ",		12, "Mail",		  CL_TYPE_MAIL},
