@@ -173,7 +173,7 @@ static void cli_unlock_mutex(void *mtx)
 static int cli_scanrar(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
 {
 	FILE *tmp = NULL;
-	int files = 0, fd, ret = CL_CLEAN;
+	int files = 0, fd, ret = CL_CLEAN, afiles;
 	ArchiveList_struct *rarlist = NULL;
 	ArchiveList_struct *rarlist_head = NULL;
 	char *rar_data_ptr;
@@ -188,13 +188,15 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
     cli_scanrar_inuse = 1;
 #endif
 
-    if(!urarlib_list(desc, (ArchiveList_struct *) &rarlist)) {
+    if(! (afiles = urarlib_list(desc, (ArchiveList_struct *) &rarlist))) {
 #ifdef CL_THREAD_SAFE
 	pthread_mutex_unlock(&cli_scanrar_mutex);
 	cli_scanrar_inuse = 0;
 #endif
 	return CL_ERAR;
     }
+
+    cli_dbgmsg("Rar -> Number of archived files: %d\n", afiles);
 
     rarlist_head = rarlist;
 
