@@ -38,3 +38,5 @@ typedef enum {
 #ifdef C_BSD
 #define UNIX
 #endif
+
+size_t	strstrip(char *s);	/* remove trailing white space */

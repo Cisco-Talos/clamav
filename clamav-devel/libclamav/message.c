@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.53  2004/04/29 08:59:24  nigelhorne
+ * Tidied up SetDispositionType
+ *
  * Revision 1.52  2004/04/05 12:04:56  nigelhorne
  * Scan attachments with no filename
  *
@@ -153,7 +156,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.52 2004/04/05 12:04:56 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.53 2004/04/29 08:59:24 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -358,17 +361,25 @@ messageSetDispositionType(message *m, const char *disptype)
 {
 	assert(m != NULL);
 
+	if(m->mimeDispositionType)
+		free(m->mimeDispositionType);
+	if(disptype == NULL) {
+		m->mimeDispositionType = NULL;
+		return;
+	}
+
 	/*
 	 * It's broken for there to be an entry such as "Content-Disposition:"
 	 * However some spam and viruses are rather broken, it's a sign
 	 * that something is wrong if we get that - maybe we should force a
 	 * scan of this part
 	 */
-	if(disptype) {
-		while(isspace((int)*disptype))
-			disptype++;
-		if(*disptype)
-			m->mimeDispositionType = strdup(disptype);
+	while(*disptype && isspace((int)*disptype))
+		disptype++;
+	if(*disptype) {
+		m->mimeDispositionType = strdup(disptype);
+		if(m->mimeDispositionType)
+			strstrip(m->mimeDispositionType);
 	}
 }
 
