@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.165  2004/11/06 21:43:23  nigelhorne
+ * Fix possible segfault in handling broken RFC2047 headers
+ *
  * Revision 1.164  2004/11/04 10:13:41  nigelhorne
  * Rehashed readdir_r patch
  *
@@ -480,7 +483,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.164 2004/11/04 10:13:41 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.165 2004/11/06 21:43:23 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2748,9 +2751,10 @@ rfc2047(const char *in)
 			pout += len;
 
 	}
-	*pout = '\0';
+	if(out)
+		*pout = '\0';
 
-	cli_dbgmsg("rfc2047 returns '%s'\n", out);
+	cli_dbgmsg("rfc2047 returns '%s'\n", (out) ? out : "null");
 	return out;
 }
 
