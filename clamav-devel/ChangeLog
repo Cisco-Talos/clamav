@@ -1,3 +1,8 @@
+Wed Oct  6 18:25:46 CEST 2004 (tk)
+----------------------------------
+  * libclamav/pe.c: do not report I/O error for small files with empty
+		    section
+
 Tue Oct  5 16:45:28 BST 2004 (njh)
 ----------------------------------
   * libclamav:		First draft of RFC1341 code. It is not enabled by

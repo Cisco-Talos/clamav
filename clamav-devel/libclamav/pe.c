@@ -411,8 +411,9 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
         if(read(desc, buff, 168) != 168) {
 	    cli_dbgmsg("UPX/FSG: Can't read 168 bytes at 0x%x (%d)\n", ep, ep);
+	    cli_dbgmsg("UPX/FSG: Broken or not UPX/FSG compressed file\n");
             free(section_hdr);
-	    return CL_EIO;
+	    return CL_CLEAN;
 	}
 
 	if(buff[0] == '\x87' && buff[1] == '\x25') {
@@ -965,10 +966,11 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
 	    if(read(desc, buff, 126) != 126) { /* i.e. 0x69 + 13 + 8 */
 		cli_dbgmsg("UPX: Can't read 126 bytes at 0x%x (%d)\n", ep, ep);
+		cli_dbgmsg("UPX/FSG: Broken or not UPX/FSG compressed file\n");
 		free(section_hdr);
 		free(src);
 		free(dest);
-		return CL_EIO;
+		return CL_CLEAN;
 	    } else {
 		if(cli_memstr(UPX_NRV2B, 24, buff + 0x69, 13) || cli_memstr(UPX_NRV2B, 24, buff + 0x69 + 8, 13)) {
 		    cli_dbgmsg("UPX: Looks like a NRV2B decompression routine\n");
