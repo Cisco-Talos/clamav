@@ -1,3 +1,7 @@
+Tue Sep 28 10:57:13 BST 2004 (njh)
+----------------------------------
+  * contrib/clamavmon:	Added monitor of clamd status
+
 Mon Sep 27 23:59:04 CEST 2004
 ----------------------------------
   * docs: update
