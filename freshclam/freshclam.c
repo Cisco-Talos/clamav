@@ -35,9 +35,14 @@
 #include <pwd.h>
 #include <grp.h>
 
+#if defined(CLAMD_USE_SYSLOG) && !defined(C_AIX)
+#include <syslog.h>
+#endif
+
 #include "options.h"
 #include "shared.h"
 #include "others.h"
+#include "clamd/others.h"
 #include "manager.h"
 #include "defaults.h"
 #include "freshclam.h"
@@ -167,8 +172,12 @@ int freshclam(struct optstruct *opt)
 	mexit(0);
     }
 
-
     /* initialize logger */
+
+    if(cfgopt(copt, "LogVerbose"))
+	logverbose = 1;
+    else
+	logverbose = 0;
 
     if(optc(opt, 'l')) {
 	logfile = getargc(opt, 'l');
@@ -184,6 +193,15 @@ int freshclam(struct optstruct *opt)
 	}
     } else
 	logfile = NULL;
+
+#if defined(CLAMD_USE_SYSLOG) && !defined(C_AIX)
+    if((cpt = cfgopt(copt, "LogSyslog"))) {
+	openlog("freshclam", LOG_PID, LOG_LOCAL6);
+	use_syslog = 1;
+	syslog(LOG_INFO, "Freshclam started.\n");
+    } else
+	use_syslog = 0;
+#endif
 
     /* change the current working directory */
     if(optl(opt, "datadir")) {
@@ -375,7 +393,7 @@ void help(void)
     mprintf("    --config-file=FILE                   read configuration from FILE.\n");
     mprintf("    --log=FILE           -l FILE         log into FILE\n");
     mprintf("    --daemon             -d              run in daemon mode\n");
-    mprintf("    --pid                -p FILE         save daemon's pid in FILE\n");
+    mprintf("    --pid=FILE           -p FILE         save daemon's pid in FILE\n");
     mprintf("    --user=USER          -u USER         run as USER\n");
     mprintf("    --checks=#n          -c #n           number of checks per day, 1 <= n <= 50\n");
     mprintf("    --datadir=DIRECTORY                  download new databases into DIRECTORY\n");

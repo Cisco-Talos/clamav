@@ -2,6 +2,73 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+
+0.70
+----
+
+The two major changes in this version are new thread manager in clamd
+and support for decoding MS Office VBA macros. Both of them have been
+implemented by Trog. Besides, there are many improvements and bugfixes
+(all listed in ChangeLog), a short summary:
+
+-) clamd
+    + new thread manager (with better SMP support)
+    + on-access scanning now also available on FreeBSD (with Dazuko 2.0)
+    + new directive: ArchiveDetectEncrypted
+    + handle SIGHUP (re-open logfile), SIGUSR2 (reload database)
+
+-) clamav-milter:
+    + TCPWrappers support
+
+-) libclamav:
+    + support for MS Office documents (OLE2) and VBA macros decompression
+    + support for encrypted archive detection
+    + new flags: CL_OLE2, CL_ENCRYPTED (see clamdoc.pdf, Section 6.1)
+    + improved support for mail files (especially bounces)
+    + improved RAR support
+
+-) clamscan:
+    + new option: --detect-encrypted
+
+-) freshclam
+    + new option: --pid, -p (write pid file if run as daemon)
+    + handle SIGHUP (re-open logfile), SIGTERM (terminate with log message),
+      SIGALRM and SIGUSR1 (wake up and check mirror)
+    + fixed bug with -u and -c handling
+
+-) documentation:
+    + new Polish documentation on ClamAV and Samba integration
+    + official documentation updated
+
+
+Special thanks to Dirk Mueller <mueller*kde.org> for the code review and
+many bugfixes and cleanups.
+
+
+We are happy to announce new programs that support ClamAV (all of them
+have been reviewed by our team):
+    + j-chkmail - a powerful filter for sendmail
+    + qscanq - Virus Scanning for Qmail
+    + clamavr - Ruby binding for ClamAV
+    + DansGuardian Anti-Virus Plugin
+    + ClamAssassin - a filter for procmail
+    + Gadoyanvirus - a filter for Qmail
+    + OpenProtect - a complete e-mail protection solution
+    + POP3 Virus Scanner Daemon
+    + mailman-clamav - a virus filter for Mailman
+    + wbmclamav - a webmin module to manage ClamAV
+    + Scan Log Analyzer
+    + mailgraph - a RRDtool frontend for Postfix Statistics
+    + INSERT - a security toolkit on a credit card size CD
+    + Local Area Security - a Live CD Linux distribution
+
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+March 14, 2004
+
+
+
 0.67
 ----
 This release fixes a memory management problem (platform dependent; can lead

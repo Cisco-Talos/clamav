@@ -1,5 +1,5 @@
 .\" Manual page created by Tomasz Kojm, 20020415
-.TH "freshclam" "1" "February 20, 2004" "Tomasz Kojm" "Clam AntiVirus"
+.TH "freshclam" "1" "March 14, 2004" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 freshclam \- update virus databases
@@ -11,7 +11,7 @@ freshclam [options]
 freshclam updates the virus database. It's a part of the Clam AntiVirus package. It requires an Internet connection.
 .SH "OPTIONS"
 .LP 
-Freshclam reads its configuration from freshclam.conf. The settings will be overwritten with command line options.
+Freshclam reads its configuration from freshclam.conf. The settings can be overwritten with command line options.
 .TP 
 \fB\-h, \-\-help\fR
 Output help information and exit.
@@ -39,6 +39,9 @@ Run as USER. By default (when started by root) freshclam drops privileges and wo
 .TP 
 \fB\-d, \-\-daemon\fR
 Run in a daemon mode. This option requires \-\-checks.
+.TP 
+\fB\-p FILE, \-\-pid=FILE\fR
+Save daemon's pid in FILE.
 .TP 
 \fB\-c #n, \-\-checks=#n\fR
 Check #n times day for new database. #n must be between 1 and 50.

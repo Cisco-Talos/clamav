@@ -763,7 +763,7 @@ int scandirs(const char *dirname, struct cl_node *root, const struct passwd *use
 int checkfile(const char *filename, const struct cl_node *root, const struct cl_limits *limits, int options)
 {
 	int fd, ret;
-	char *virname;
+	const char *virname;
 
     if((fd = open(filename, O_RDONLY)) == -1) {
 	mprintf("@Can't open file %s\n", filename);
@@ -794,7 +794,7 @@ int checkfile(const char *filename, const struct cl_node *root, const struct cl_
 int checkstdin(const struct cl_node *root, const struct cl_limits *limits)
 {
 	int ret;
-	char *virname;
+	const char *virname;
 
 
     claminfo.files++;
