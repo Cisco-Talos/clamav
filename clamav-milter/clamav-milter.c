@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.143  2004/10/27 12:34:21  nigelhorne
+ * Correct version header
+ *
  * Revision 1.142  2004/10/24 03:49:47  nigelhorne
  * Enable SESSION code by default
  *
@@ -437,9 +440,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.142 2004/10/24 03:49:47 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.143 2004/10/27 12:34:21 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80k"
+#define	CM_VERSION	"0.80l"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -528,6 +531,8 @@ typedef	unsigned short	in_port_t;
 #ifndef	HAVE_IN_ADDR_T
 typedef	unsigned int	in_addr_t;
 #endif
+
+#define	VERSION_LENGTH	128
 
 #define	SESSION	/*
 		 * Keep one command connection open to clamd, otherwise a new
@@ -652,7 +657,12 @@ static	int	logg_facility(const char *name);
 static	void	quit(void);
 static	void	broadcast(const char *mess);
 
-static	char	clamav_version[128];
+#ifdef	SESSION
+static	char	**clamav_versions;
+#define	clamav_version	(clamav_versions[0])
+#else
+static	char	clamav_version[VERSION_LENGTH + 1];
+#endif
 static	int	fflag = 0;	/* force a scan, whatever */
 static	int	oflag = 0;	/* scan messages from our machine? */
 static	int	lflag = 0;	/* scan messages from our site? */
@@ -838,6 +848,7 @@ main(int argc, char **argv)
 	struct cfgstruct *cpt;
 	struct passwd *user;
 	const char *pidfile = NULL;
+	char version[VERSION_LENGTH + 1];
 #ifdef	SESSION
 	pthread_t tid;
 #endif
@@ -865,10 +876,10 @@ main(int argc, char **argv)
 		perror("setrlimit");
 #endif
 	/*
-	 * Temporarily enter guessed value into clamav_version, will
+	 * Temporarily enter guessed value into version, will
 	 * be overwritten later by the value returned by clamd
 	 */
-	snprintf(clamav_version, sizeof(clamav_version),
+	snprintf(version, sizeof(version) - 1,
 		"ClamAV version %s, clamav-milter version %s",
 		VERSION, CM_VERSION);
 
@@ -1086,7 +1097,7 @@ main(int argc, char **argv)
 				quarantine_dir = optarg;
 				break;
 			case 'V':
-				puts(clamav_version);
+				puts(version);
 				return EX_OK;
 			case 'w':
 				dont_wait++;
@@ -1281,9 +1292,9 @@ main(int argc, char **argv)
 			sockname = &port[6];
 
 		if(sockname && (strcmp(sockname, cpt->strarg) == 0)) {
-		   	fprintf(stderr, _("The connection from sendmail to %s (%s) must not\n"),
+			fprintf(stderr, _("The connection from sendmail to %s (%s) must not\n"),
 				argv[0], sockname);
-		   	fprintf(stderr, _("be the same as the connection to clamd (%s) in %s\n"),
+			fprintf(stderr, _("be the same as the connection to clamd (%s) in %s\n"),
 				cpt->strarg, cfgfile);
 			return EX_CONFIG;
 		}
@@ -1425,6 +1436,16 @@ main(int argc, char **argv)
 		}
 #ifdef	SESSION
 		activeServers = numServers;
+		clamav_versions = (char **)cli_malloc(numServers * sizeof(char *));
+		if(clamav_versions == NULL)
+			return EX_TEMPFAIL;
+
+		for(i = 0; i < numServers; i++) {
+			clamav_versions[i] = strdup(version);
+			if(clamav_versions[i] == NULL)
+				return EX_TEMPFAIL;
+		}
+
 		cmdSockets = (int *)cli_malloc(max_children * sizeof(int));
 		cmdSocketsStatus = (int *)cli_calloc(max_children, sizeof(int));
 		for(i = 0; i < max_children; i++)
@@ -1453,7 +1474,7 @@ main(int argc, char **argv)
 		switch(fork()) {
 			case -1:
 				perror("fork");
-				return EX_TEMPFAIL;
+				return EX_OSERR;
 			case 0:	/* child */
 				break;
 			default:	/* parent */
@@ -1617,6 +1638,9 @@ createSession(int session)
 		char *hostname = cli_strtok(serverHostNames, serverNumber, ":");
 #endif
 
+		if(cmdSockets[session] >= 0)
+			close(cmdSockets[session]);
+
 		cli_warnmsg(_("Check clamd server %s - it may be down\n"), hostname);
 #ifndef	MAXHOSTNAMELEN
 		free(hostname);
@@ -1626,7 +1650,7 @@ createSession(int session)
 
 		cmdSocketsStatus[session] = CMDSOCKET_DOWN;
 	}
-	cli_dbgmsg("cmdSockets[%d] = %d\n", session, cmdSockets[session]);
+
 	return ret;
 }
 
@@ -1728,7 +1752,7 @@ pingServer(int serverNumber)
 	 *	if they're running different versions, or if the virus DBs
 	 *	are out of date (say more than a month old)
 	 */
-	snprintf(clamav_version, sizeof(clamav_version),
+	snprintf(clamav_version, sizeof(clamav_version) - 1,
 		"%s\n\tclamav-milter version %s",
 		buf, CM_VERSION);
 
@@ -2230,6 +2254,12 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 		return cl_error;
 	}
 
+	if(strcasecmp(headerf, "X-Virus-Status") == 0)
+		if(!nflag) {	/* remove any existing claims */
+			smfi_chgheader(ctx, "X-Virus-Status", 1, NULL);
+			return SMFIS_CONTINUE;
+		}
+
 	if(hflag)
 		header_list_add(privdata->headers, headerf, headerv);
 	else if((strcasecmp(headerf, "Received") == 0) &&
@@ -2494,7 +2524,11 @@ clamfi_eom(SMFICTX *ctx)
 		 * Include the hostname where the scan took place
 		 */
 		if(localSocket) {
-			char hostname[32];
+#ifdef	MAXHOSTNAMELEN
+			char hostname[MAXHOSTNAMELEN + 1];
+#else
+			char hostname[65];
+#endif
 
 			if(gethostname(hostname, sizeof(hostname)) < 0) {
 				const char *j = smfi_getsymval(ctx, "{j}");
@@ -2514,8 +2548,13 @@ clamfi_eom(SMFICTX *ctx)
 					strncpy(hostname, hostent.h_name, sizeof(hostname));
 			}
 
-			snprintf(buf, sizeof(buf) - 1, "%s\n\ton %s",
+#ifdef	SESSION
+			snprintf(buf, sizeof(buf) - 1, "%s on %s",
+				clamav_versions[privdata->serverNumber], hostname);
+#else
+			snprintf(buf, sizeof(buf) - 1, "%s on %s",
 				clamav_version, hostname);
+#endif
 		} else {
 #ifdef	MAXHOSTNAMELEN
 			char hostname[MAXHOSTNAMELEN + 1];
@@ -2526,9 +2565,13 @@ clamfi_eom(SMFICTX *ctx)
 			if(hostname) {
 #endif
 
-				snprintf(buf, sizeof(buf) - 1, "%s\n\ton %s",
-					clamav_version,
-					hostname);
+#ifdef	SESSION
+				snprintf(buf, sizeof(buf) - 1, "%s on %s",
+					clamav_versions[privdata->serverNumber], hostname);
+#else
+				snprintf(buf, sizeof(buf) - 1, "%s on %s",
+					clamav_version, hostname);
+#endif
 #ifndef	MAXHOSTNAMELEN
 				free(hostname);
 #endif
@@ -3911,6 +3954,9 @@ clamdIsDown(void)
  * Thread to monitor the links to clamd sessions. Any marked as being in
  * an error state because of previous I/O errors are restarted, and a heartbeat
  * is sent the others
+ *
+ * It is woken up when the milter goes idle, when there are no free servers
+ * available and once every readTimeout-1 seconds
  */
 static void *
 watchdog(void *a)
@@ -3925,14 +3971,7 @@ watchdog(void *a)
 		struct timeval tp;
 
 		gettimeofday(&tp, NULL);
-		/*
-		 * How often (in seconds) to try to fix broken clamd sessions.
-		 * We may try more often than this e.g. when we're idle or all
-		 * connections are down, so you can put this figure quite high.
-		 * But can't be too high because with older clamd SESSION
-		 * didn't remain open if no data goes down for ReadTimeout
-		 * seconds
-		 */
+
 		ts.tv_sec = tp.tv_sec + readTimeout - 1;
 		ts.tv_nsec = tp.tv_usec * 1000;
 		cli_dbgmsg("watchdog sleeps\n");
@@ -3966,15 +4005,29 @@ watchdog(void *a)
 			 */
 			cli_dbgmsg("watchdog: check server %d\n", i);
 			if((n_children == 0) && (cmdSocketsStatus[i] == CMDSOCKET_FREE)) {
-				if(send(sock, "PING\n", 5, 0) == 5) {
-					char buf[6];
+				if(send(sock, "VERSION\n", 8, 0) == 8) {
+					char buf[81];
+					const int nbytes = clamd_recv(sock, buf, sizeof(buf) - 1);
 
-					buf[5] = '\0';
-					if(clamd_recv(sock, buf, 5) != 5)
+					if(nbytes <= 0)
 						cmdSocketsStatus[i] = CMDSOCKET_DOWN;
-					else if(strcmp(buf, "PONG\n") != 0) {
-						cli_dbgmsg("watchdog: expected \"PONG\", got \"%s\"\n", buf);
-						cmdSocketsStatus[i] = CMDSOCKET_DOWN;
+					else {
+						buf[nbytes] = '\0';
+						if(strncmp(buf, "ClamAV ", 7) == 0) {
+							/* Remove the trailing new line from the reply */
+							char *ptr;
+							if((ptr = strchr(buf, '\n')) != NULL)
+								*ptr = '\0';
+							if(strcmp(buf, clamav_versions[i]) != 0) {
+								if(use_syslog)
+									syslog(LOG_INFO, "New version received for server %d: '%s'\n", i, buf);
+								free(clamav_versions[i]);
+								clamav_versions[i] = strdup(buf);
+							}
+						} else {
+							cli_warnmsg("watchdog: expected \"ClamAV\", got \"%s\"\n", buf);
+							cmdSocketsStatus[i] = CMDSOCKET_DOWN;
+						}
 					}
 				} else {
 					perror("send");
