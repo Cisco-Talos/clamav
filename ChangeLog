@@ -1,3 +1,7 @@
+Mon Aug  9 23:31:53 CEST 2004 (tk)
+----------------------------------
+  * libclamav: add new option CL_MAILURL
+
 Mon Aug  9 09:27:02 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	checkURLs code (not enabled by default) is now thread

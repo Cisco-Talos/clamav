@@ -60,7 +60,7 @@
 dev_t procdev;
 #endif
 
-extern int cli_mbox(const char *dir, int desc); /* FIXME */
+extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME */
 
 int scanmanager(const struct optstruct *opt)
 {
@@ -257,7 +257,7 @@ int scanmanager(const struct optstruct *opt)
 		/*
 		 * Extract the attachments into the temporary directory
 		 */
-		ret = cli_mbox(dir, 0);
+		ret = cli_mbox(dir, 0, 0);
 
 		if(ret == 0) {
 			/* fix permissions of extracted files */

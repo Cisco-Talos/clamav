@@ -74,6 +74,7 @@ extern "C"
 #define CL_HTML		32
 #define CL_PE		64
 #define CL_BROKEN	128
+#define CL_MAILURL	256
 
 
 struct cli_bm_patt {

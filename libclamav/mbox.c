@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.95  2004/08/09 21:37:21  kojm
+ * libclamav: add new option CL_MAILURL
+ *
  * Revision 1.94  2004/08/09 08:26:36  nigelhorne
  * Thread safe checkURL
  *
@@ -270,7 +273,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.94 2004/08/09 08:26:36 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.95 2004/08/09 21:37:21 kojm Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -347,7 +350,7 @@ typedef enum    { FALSE = 0, TRUE = 1 } bool;
 
 static	message	*parseEmailHeaders(message *m, const table_t *rfc821Table, bool destroy);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
-static	int	parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, const char *dir, table_t *rfc821Table, table_t *subtypeTable);
+static	int	parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, const char *dir, table_t *rfc821Table, table_t *subtypeTable, unsigned int options);
 static	int	boundaryStart(const char *line, const char *boundary);
 static	int	endOfMessage(const char *line, const char *boundary);
 static	int	initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
@@ -436,7 +439,7 @@ static	table_t	*rfc821Table, *subtypeTable;
 #endif
 
 #define	SAVE_TO_DISC	/* multipart/message are saved in a temporary file */
-/*#define	CHECKURLS	/* If an email contains URLs, check them */
+#define SCAN_MAILURL	(options & CL_MAILURL)
 
 /*
  * TODO: when signal handling is added, need to remove temp files when a
@@ -454,7 +457,7 @@ static	table_t	*rfc821Table, *subtypeTable;
  * TODO: create parseEmail which calls parseEmailHeaders then parseEmailBody
  */
 int
-cli_mbox(const char *dir, int desc)
+cli_mbox(const char *dir, int desc, unsigned int options)
 {
 	int retcode, i;
 	message *m, *body;
@@ -532,7 +535,7 @@ cli_mbox(const char *dir, int desc)
 				body = parseEmailHeaders(m, rfc821Table, TRUE);
 				messageDestroy(m);
 				if(messageGetBody(body))
-					if(!parseEmailBody(body,  NULL, 0, NULL, dir, rfc821Table, subtypeTable)) {
+					if(!parseEmailBody(body,  NULL, 0, NULL, dir, rfc821Table, subtypeTable, options)) {
 						messageReset(body);
 						m = body;
 						continue;
@@ -581,7 +584,7 @@ cli_mbox(const char *dir, int desc)
 	 * Write out the last entry in the mailbox
 	 */
 	if(messageGetBody(body))
-		if(!parseEmailBody(body, NULL, 0, NULL, dir, rfc821Table, subtypeTable))
+		if(!parseEmailBody(body, NULL, 0, NULL, dir, rfc821Table, subtypeTable, options))
 			retcode = -1;
 
 	/*
@@ -749,7 +752,7 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821Table)
  *	2 for success, attachments not saved
  */
 static int	/* success or fail */
-parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, const char *dir, table_t *rfc821Table, table_t *subtypeTable)
+parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, const char *dir, table_t *rfc821Table, table_t *subtypeTable, unsigned int options)
 {
 	message **messages;	/* parts of a multipart message */
 	int inhead, inMimeHead, i, rc = 1, htmltextPart, multiparts = 0;
@@ -1081,7 +1084,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					cli_dbgmsg("No HTML code found to be scanned");
 					rc = 0;
 				} else
-					rc = parseEmailBody(aMessage, blobs, nBlobs, aText, dir, rfc821Table, subtypeTable);
+					rc = parseEmailBody(aMessage, blobs, nBlobs, aText, dir, rfc821Table, subtypeTable, options);
 				blobArrayDestroy(blobs, nBlobs);
 				blobs = NULL;
 				nBlobs = 0;
@@ -1121,7 +1124,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				aMessage = messages[htmltextPart];
 				aText = textAddMessage(aText, aMessage);
 
-				rc = parseEmailBody(NULL, blobs, nBlobs, aText, dir, rfc821Table, subtypeTable);
+				rc = parseEmailBody(NULL, blobs, nBlobs, aText, dir, rfc821Table, subtypeTable, options);
 
 				if(rc == 1) {
 					/*
@@ -1266,7 +1269,8 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 									addAttachment = TRUE;
 								}
 							} else {
-								checkURLs(aMessage, dir);
+								if(SCAN_MAILURL)
+									checkURLs(aMessage, dir);
 								messageAddArgument(aMessage, "filename=textportion");
 								addAttachment = TRUE;
 							}
@@ -1315,7 +1319,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						messageDestroy(messages[i]);
 						messages[i] = NULL;
 						if(body) {
-							rc = parseEmailBody(body, blobs, nBlobs, NULL, dir, rfc821Table, subtypeTable);
+							rc = parseEmailBody(body, blobs, nBlobs, NULL, dir, rfc821Table, subtypeTable, options);
 							messageDestroy(body);
 						}
 #endif
@@ -1353,14 +1357,14 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 							 * The headers were parsed when reading in the
 							 * whole multipart section
 							 */
-							rc = parseEmailBody(aMessage, blobs, nBlobs, aText, dir, rfc821Table, subtypeTable);
+							rc = parseEmailBody(aMessage, blobs, nBlobs, aText, dir, rfc821Table, subtypeTable, options);
 							cli_dbgmsg("Finished recursion\n");
 							assert(aMessage == messages[i]);
 							messageDestroy(messages[i]);
 							messages[i] = NULL;
 #endif
 						} else {
-							rc = parseEmailBody(NULL, blobs, nBlobs, NULL, dir, rfc821Table, subtypeTable);
+							rc = parseEmailBody(NULL, blobs, nBlobs, NULL, dir, rfc821Table, subtypeTable, options);
 							if(mainMessage && (mainMessage != messageIn))
 								messageDestroy(mainMessage);
 							mainMessage = NULL;
@@ -1415,7 +1419,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 
 				if(numberOfAttachments == 0) {
 					/* No usable attachment was found */
-					rc = parseEmailBody(NULL, NULL, 0, aText, dir, rfc821Table, subtypeTable);
+					rc = parseEmailBody(NULL, NULL, 0, aText, dir, rfc821Table, subtypeTable, options);
 					break;
 				}
 
@@ -1453,7 +1457,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				 * and quit - that's this part all done.
 				 */
 				if(numberOfNewAttachments == 0) {
-					rc = parseEmailBody(NULL, blobList, numberOfAttachments, NULL, dir, rfc821Table, subtypeTable);
+					rc = parseEmailBody(NULL, blobList, numberOfAttachments, NULL, dir, rfc821Table, subtypeTable, options);
 					break;
 				}
 				/*
@@ -1467,7 +1471,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				 * infinite recursion
 				 */
 				if(multiparts > 1)
-					rc = parseEmailBody(mainMessage, blobList, numberOfAttachments, aText, dir, rfc821Table, subtypeTable);
+					rc = parseEmailBody(mainMessage, blobList, numberOfAttachments, aText, dir, rfc821Table, subtypeTable, options);
 				else if(numberOfAttachments == 1) {
 					(void)saveFile(blobList[0], dir);
 					blobDestroy(blobList[0]);
@@ -1494,7 +1498,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				if(htmltextPart == -1)
 					htmltextPart = 0;
 
-				rc = parseEmailBody(messages[htmltextPart], blobs, nBlobs, aText, dir, rfc821Table, subtypeTable);
+				rc = parseEmailBody(messages[htmltextPart], blobs, nBlobs, aText, dir, rfc821Table, subtypeTable, options);
 				blobArrayDestroy(blobs, nBlobs);
 				blobs = NULL;
 				nBlobs = 0;
@@ -1552,7 +1556,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						mainMessage = NULL;
 					}
 					if(messageGetBody(m))
-						rc = parseEmailBody(m, NULL, 0, NULL, dir, rfc821Table, subtypeTable);
+						rc = parseEmailBody(m, NULL, 0, NULL, dir, rfc821Table, subtypeTable, options);
 
 					messageDestroy(m);
 				}
@@ -2201,7 +2205,6 @@ saveFile(const blob *b, const char *dir)
 	return (close(fd) >= 0);
 }
 
-#ifdef	CHECKURLS
 static void
 checkURLs(message *m, const char *dir)
 {
@@ -2278,13 +2281,6 @@ checkURLs(message *m, const char *dir)
 	}
 	blobDestroy(b);
 }
-#else
-static void
-checkURLs(message *m, const char *dir)
-{
-}
-#endif
-
 
 #ifdef HAVE_BACKTRACE
 	static void
