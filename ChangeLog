@@ -1,3 +1,9 @@
+Fri Oct 24 02:19:54 CEST 2003
+----------------------------------
+  * clamd: initialize the virus-number variable (Igor Brezac)
+  * sigtool: fixed compilation issue on Solaris (bug reported by
+	     Christopher X. Candreva)
+
 Wed Oct 22 20:44:29 BST 2003 (njh)
 ---------------------------------
   * clamav-milter: more calls to pthread_cond_broadcast
