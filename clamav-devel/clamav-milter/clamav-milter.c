@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.183  2005/02/13 20:50:15  nigelhorne
+ * 0.83
+ *
  * Revision 1.182  2005/02/11 22:15:24  nigelhorne
  * Added whitelist-file
  *
@@ -557,9 +560,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.182 2005/02/11 22:15:24 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.183 2005/02/13 20:50:15 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.82d"
+#define	CM_VERSION	"0.83"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"

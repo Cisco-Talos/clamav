@@ -689,6 +689,7 @@ Changes
 			Added --sendmail-cf=file
 			Debug around mkdir/rmdir of tmpdir
 			SESSION mode: not all sessions were closed when quitting
+0.83	13/2/05:	Up issue
 
 INTERNATIONALISATION
 
