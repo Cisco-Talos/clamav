@@ -1,3 +1,8 @@
+Wed Nov  5 12:34:34 IST 2003 (njh)
+----------------------------------
+  * libclamav: Handle spam that sends broken content-disposition
+  	(Fix by NJH, Bug notified by Laurent Wacrenier <lwa@teaser.fr>)
+
 Wed Nov  5 01:52:03 CET 2003 (tk)
 ---------------------------------
   * libclamav: zziplib: few files converted to UNIX format (thanks to

@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.10  2003/11/05 07:03:51  nigelhorne
+ * Handle broken content-disposition
+ *
  * Revision 1.9  2003/10/01 09:28:23  nigelhorne
  * Handle content-type header going over to a new line
  *
@@ -24,7 +27,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.9 2003/10/01 09:28:23 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.10 2003/11/05 07:03:51 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -219,9 +222,15 @@ void
 messageSetDispositionType(message *m, const char *disptype)
 {
 	assert(m != NULL);
-	assert(disptype != NULL);
 
-	m->mimeDispositionType = strdup(disptype);
+	/*
+	 * It's broken for there to be an entry such as "Content-Disposition:"
+	 * However some spam and viruses are rather broken, it's a sign
+	 * that something is wrong if we get that - maybe we should force a
+	 * scan of this part
+	 */
+	if(disptype)
+		m->mimeDispositionType = strdup(disptype);
 }
 
 const char *
