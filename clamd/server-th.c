@@ -310,7 +310,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 
     }
 
-    if(cfgopt(copt, "ScanArchive")) {
+    if(stdopt || cfgopt(copt, "ScanArchive")) {
 	logg("Archive support enabled.\n");
 	options |= CL_SCAN_ARCHIVE;
 
