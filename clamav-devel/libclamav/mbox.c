@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.110  2004/08/22 15:08:59  nigelhorne
+ * messageExport
+ *
  * Revision 1.109  2004/08/22 10:34:24  nigelhorne
  * Use fileblob
  *
@@ -315,7 +318,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.109 2004/08/22 10:34:24 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.110 2004/08/22 15:08:59 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1349,6 +1352,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 							if(mainMessage && (mainMessage != messageIn))
 								messageDestroy(mainMessage);
 							mainMessage = NULL;
+							cli_dbgmsg("Mime subtype \"%s\"\n", cptr);
 							if(u_line) {
 								cli_dbgmsg("Found uuencoded message in multipart/mixed text portion\n");
 								messageSetEncoding(aMessage, "x-uuencode");

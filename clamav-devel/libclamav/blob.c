@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.16  2004/08/22 15:08:58  nigelhorne
+ * messageExport
+ *
  * Revision 1.15  2004/08/22 10:34:24  nigelhorne
  * Use fileblob
  *
@@ -47,7 +50,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.15 2004/08/22 10:34:24 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.16 2004/08/22 15:08:58 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -122,8 +125,9 @@ blobArrayDestroy(blob *blobList[], int n)
 	}
 }
 
+/*ARGSUSED*/
 void
-blobSetFilename(blob *b, const char *filename)
+blobSetFilename(blob *b, const char *dir, const char *filename)
 {
 	assert(b != NULL);
 	assert(b->magic == BLOB);
@@ -356,7 +360,7 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 			suffixLen = 0;
 		}
 	}
-	blobSetFilename(&fb->b, filename);
+	blobSetFilename(&fb->b, dir, filename);
 
 	/*
 	 * Reload the filename, it may be different from the one we've
