@@ -41,6 +41,7 @@
 #define TARGET_TABLE_SIZE 6
 static int targettab[TARGET_TABLE_SIZE] = { 0, CL_TYPE_MSEXE, CL_TYPE_MSOLE2, CL_TYPE_HTML, CL_TYPE_MAIL, CL_TYPE_GRAPHICS };
 
+extern short cli_debug_flag;
 
 int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, unsigned short ftype)
 {
@@ -282,6 +283,19 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 
     if(root->md5_hlist) {
 	MD5Final(digest, &ctx);
+
+	if(cli_debug_flag) {
+		char md5str[33];
+		int i;
+
+	    pt = md5str;
+	    for(i = 0; i < 16; i++) {
+		sprintf(pt, "%02x", digest[i]);
+		pt += 2;
+	    }
+	    md5str[32] = 0;
+	    cli_dbgmsg("Calculated MD5 checksum: %s\n", md5str);
+	}
 
 	if((md5_node = cli_vermd5(digest, root))) {
 		struct stat sb;

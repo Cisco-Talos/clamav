@@ -1,3 +1,7 @@
+Mon Nov 15 23:55:50 CET 2004 (tk)
+---------------------------------
+  * libclamav/scanners.c: mscab: pass duplicated descriptor to cabd->dsearch()
+
 Sun Nov 14 15:23:02 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	Use SCAN in more places in preference to STREAM
