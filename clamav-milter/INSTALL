@@ -48,6 +48,7 @@ Install into /usr/local/sbin/clamav-milter, mode 744
 See http://www.nmt.edu/~wcolburn/sendmail-8.12.5/libmilter/docs/sample.html
 
 Installations for RedHat Linux and it's derivatives such as YellowDog:
+	Ensure that you have the sendmail-devel RPM installed
 	Add to /etc/mail/sendmail.mc:
 	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav.sock, F=, T=S:4m;R:4m')dnl
 	define(`confINPUT_MAIL_FILTERS', `clamav')
@@ -156,6 +157,9 @@ Changes
 		Fix warning about root usage
 0.65d	25/11/03 Handle empty hostname or hostaddr
 		Fix based on a submission by Michael Dankov <misha@btrc.ru>
+0.65e	29/11/03 Fix problem of possible confused pointers if large
+		number of recipients given.
+		Fix by Michael Dankov <misha@btrc.ru>.
 
 BUG REPORTS
 
