@@ -1,3 +1,8 @@
+Thu Sep 16 16:57:11 BST 2004 (njh)
+----------------------------------
+  * libclamav/message.c:	Handle double colons e.g.:
+					Content-Type:: multipart/mixed
+
 Thu Sep 16 15:25:26 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Handle mime types in quotation marks such as:
