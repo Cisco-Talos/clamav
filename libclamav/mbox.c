@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.43  2004/02/14 19:04:05  nigelhorne
+ * Handle spaces in boundaries
+ *
  * Revision 1.42  2004/02/14 17:23:45  nigelhorne
  * Had deleted O_BINARY by mistake
  *
@@ -117,7 +120,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.42 2004/02/14 17:23:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.43 2004/02/14 19:04:05 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -464,6 +467,8 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821Table)
 	char *strptr;
 #endif
 
+	cli_dbgmsg("parseEmailHeader '%s'\n", line);
+
 	cmd = strtok_r(copy, " \t", &strptr);
 
 	if(*cmd) {
@@ -595,12 +600,22 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 			/*
 			 * Get to the start of the first message
 			 */
-			for(t_line = messageGetBody(mainMessage); t_line; t_line = t_line->t_next)
-				if(boundaryStart(t_line->t_text, boundary))
-					break;
+			t_line = messageGetBody(mainMessage);
 
 			if(t_line == NULL) {
-				cli_warnmsg("Multipart MIME message contains no parts\n");
+				cli_warnmsg("Multipart MIME message has no body\n");
+				free((char *)boundary);
+				mimeType = NOMIME;
+				break;
+			}
+
+			do
+				if(boundaryStart(t_line->t_text, boundary))
+					break;
+			while((t_line = t_line->t_next) != NULL);
+
+			if(t_line == NULL) {
+				cli_warnmsg("Multipart MIME message contains no boundary lines\n");
 				/*
 				 * Free added by Thomas Lamy
 				 * <Thomas.Lamy@in-online.net>
@@ -1332,6 +1347,7 @@ boundaryStart(const char *line, const char *boundary)
 	 *	------ =_NextPart_000_01C31177.9DC7C000
 	 * notice the extra '-'
 	 */
+	/*cli_dbgmsg("boundaryStart: line = '%s' boundary = '%s'\n", line, boundary);*/
 	if(strstr(line, boundary) != NULL) {
 		cli_dbgmsg("found %s in %s\n", boundary, line);
 		return 1;
@@ -1569,10 +1585,14 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 				}
 
 				/*
-				 * Add in all the arguments.
+				 * Add in all rest of the the arguments.
+				 * e.g. if the header is this:
+				 * Content-Type:', arg='multipart/mixed; boundary=foo
+				 * we find the boundary argument set it
 				 */
-				while((copy = strtok_r(NULL, "\r\n \t", &strptr)))
-					messageAddArgument(m, copy);
+				copy = strtok_r(NULL, "", &strptr);
+				if(copy)
+					messageAddArguments(m, copy);
 			}
 			break;
 		case CONTENT_TRANSFER_ENCODING:
