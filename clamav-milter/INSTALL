@@ -374,6 +374,12 @@ Changes
 			been given. There has never been one to return
 0.70u	29/4/04	When changing from realloc to cli_realloc I forgot to keep the
 		assignment of signature
+0.70v	6/5/04	clamfi_close now always checks privdata is NULL, not only when
+			debugging
+		Allow transfers of exactly streamMaxLength
+		Warn if a clean file can't be removed from the quarantine
+		When streamMaxLength is exceeded add a header where possible,
+			unless --noxheader is given
 
 BUG REPORTS
 
