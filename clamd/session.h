@@ -26,6 +26,6 @@
 #include <clamav.h>
 #include "cfgparser.h"
 
-int command(int desc, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt);
+int command(int desc, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt, int timeout);
 
 #endif

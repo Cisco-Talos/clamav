@@ -59,21 +59,13 @@
 
 pthread_mutex_t ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-int command(int desc, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt)
+int command(int desc, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt, int timeout)
 {
 	char buff[1025];
-	int bread, opt, ret, retval, timeout;
+	int bread, opt, ret, retval;
 	struct cfgstruct *cpt;
 
-    if((cpt = cfgopt(copt, "ReadTimeout"))) {
-	timeout = cpt->numarg;
-    } else {
-	timeout = CL_DEFAULT_SCANTIMEOUT;
-    }
-    if (timeout == 0) {
-    	timeout = -1;
-    }
-       
+
     retval = poll_fd(desc, timeout);
     switch (retval) {
     case 0: /* timeout */
@@ -156,7 +148,11 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
 
     } else if(!strncmp(buff, CMD9, strlen(CMD9))) { /* SESSION */
 	do {
-	    ret = command(desc, root, limits, options, copt);
+	    if(!is_fd_connected(desc)) {
+		logg("Client disconnected without END\n");
+		return 0;
+	    }
+	    ret = command(desc, root, limits, options, copt, -1);
 	} while(!ret);
 
 	switch(ret) {
