@@ -1,3 +1,8 @@
+Wed Oct 20 22:37:24 CEST 2004 (tk)
+----------------------------------
+  * shared/misc.c: print version information to stdin instead of stderr
+		   (reported by spaze <spaze*exploited.cz>)
+		   
 Wed Oct 20 22:31:10 CEST 2004 (tk)
 ----------------------------------
   * docs/MacOSX: update (Dale Enterprise L.L.C)

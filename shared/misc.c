@@ -84,10 +84,10 @@ void print_version(void)
 
     if((daily = cl_cvdhead(path))) {
 	    time_t t = (time_t) daily->stime;
-	mprintf("ClamAV "VERSION"/%d/%s", daily->version, ctime(&t));
+	printf("ClamAV "VERSION"/%d/%s", daily->version, ctime(&t));
 	cl_cvdfree(daily);
     } else {
-	mprintf("ClamAV "VERSION"\n");
+	printf("ClamAV "VERSION"\n");
     }
 
     free(path);
