@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.233 2005/03/28 11:03:14 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.234 2005/04/02 21:18:48 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3790,7 +3790,8 @@ usefulHeader(int commandNumber, const char *cmd)
 }
 
 /*
- * Save the uuencoded part of the file as it is read in
+ * Save the uuencoded part of the file as it is read in since there's no need
+ * to include it in the parse tree. Saves memory and parse time.
  */
 static void
 uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin)
@@ -3800,7 +3801,7 @@ uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin)
 	char *filename = cli_strtok(firstline, 2, " ");
 
 	fileblobSetFilename(fb, dir, filename);
-	cli_dbgmsg("Fast track uuencode %s\n", filename);
+	cli_dbgmsg("Fast track uudecode %s\n", filename);
 	free(filename);
 
 	while(fgets(buffer, sizeof(buffer) - 1, fin) != NULL) {
