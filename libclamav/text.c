@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: text.c,v $
+ * Revision 1.6  2004/05/05 09:37:52  nigelhorne
+ * Removed textClean - not needed in clamAV
+ *
  * Revision 1.5  2004/03/25 22:40:46  nigelhorne
  * Removed even more calls to realloc and some duplicated code
  *
@@ -24,7 +27,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: text.c,v 1.5 2004/03/25 22:40:46 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: text.c,v 1.6 2004/05/05 09:37:52 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -65,22 +68,30 @@ textDestroy(text *t_head)
 text *
 textClean(text *t_head)
 {
+#if	0	/* not needed in ClamAV */
 	text *t_lastnonempty = NULL, *t_ret;
 
 	while(t_head) {
 		char *line = t_head->t_text;
 		const size_t len = strlen(line);
+		int uuencoded = 0;
 
-		if(len > 0) {
+		if((len > 0) && !uuencoded) {
 			int last = len;
 
-			/*
-			 * Don't remove trailing spaces since that
-			 * may break uuencoded files
-			 */
-			/*while((--last >= 0) && isspace(line[last]))
-				;*/
-
+			if((strncasecmp(line, "begin ", 6) == 0) &&
+			   (isdigit(line[6])) &&
+			   (isdigit(line[7])) &&
+			   (isdigit(line[8])) &&
+			   (line[9] == ' '))
+				uuencoded = 1;
+			else
+				/*
+				 * Don't remove trailing spaces since that may
+				 * break uuencoded files
+				 */
+				while((--last >= 0) && isspace(line[last]))
+					;
 			if(++last > 0) {
 				t_lastnonempty = t_head;
 				if(last < len) {
@@ -115,6 +126,9 @@ textClean(text *t_head)
 	t_ret->t_next = NULL;
 
 	return t_ret;
+#else
+	return t_head;
+#endif
 }
 
 /* Clone the current object */
@@ -234,5 +248,5 @@ textToBlob(const text *t, blob *b)
 
 	blobClose(b);
 
-	return(b);
+	return b;
 }

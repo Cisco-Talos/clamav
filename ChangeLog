@@ -1,3 +1,8 @@
+Wed May  5 10:39:58 BST 2004 (njh)
+----------------------------------
+  * libclamav/text.c:	Removed the functionality of textClean, it isn't needed
+  	in clamAV
+
 Sun May  2 02:48:04 CEST 2004 (tk)
 ----------------------------------
   * libclamav: support files compressed with compress.exe (test/test1.msc)
