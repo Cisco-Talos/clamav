@@ -1,3 +1,8 @@
+Sat Feb 28 23:06:43 CET 2004 (tk)
+---------------------------------
+  * config parser: fixed segfault with empty argument for numerical option
+		   (thanks to Luca 'NERvOus' Gibelli <nervous*nervous.it>)
+
 Sat Feb 28 13:06:16 CET 2004 (tk)
 ---------------------------------
   * libclamav: readdb: fixed segmentation fault when virus name is empty
