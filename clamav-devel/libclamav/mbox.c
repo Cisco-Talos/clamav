@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.109  2004/08/22 10:34:24  nigelhorne
+ * Use fileblob
+ *
  * Revision 1.108  2004/08/21 11:57:57  nigelhorne
  * Use line.[ch]
  *
@@ -312,7 +315,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.108 2004/08/21 11:57:57 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.109 2004/08/22 10:34:24 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1314,17 +1317,14 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						if(mainMessage) {
 							const text *u_line = uuencodeBegin(mainMessage);
 							if(u_line) {
-								blob *aBlob;
+								fileblob *fb;
 
 								cli_dbgmsg("Found uuencoded message in multipart/mixed mainMessage\n");
 								messageSetEncoding(mainMessage, "x-uuencode");
-								aBlob = messageToBlob(mainMessage);
+								fb = messageToFileblob(mainMessage, dir);
 
-								if(aBlob) {
-									assert(blobGetFilename(aBlob) != NULL);
-									blobClose(aBlob);
-									blobList[numberOfAttachments++] = aBlob;
-								}
+								if(fb)
+									fileblobDestroy(fb);
 							}
 							if(mainMessage != messageIn)
 								messageDestroy(mainMessage);
@@ -1491,13 +1491,10 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						 */
 						aText = textAdd(aText, messageGetBody(aMessage));
 					} else {
-						blob *aBlob = messageToBlob(aMessage);
+						fileblob *fb = messageToFileblob(aMessage, dir);
 
-						if(aBlob) {
-							assert(blobGetFilename(aBlob) != NULL);
-							blobClose(aBlob);
-							blobList[numberOfAttachments++] = aBlob;
-						}
+						if(fb)
+							fileblobDestroy(fb);
 					}
 					assert(aMessage == messages[i]);
 					messageDestroy(messages[i]);
@@ -1520,6 +1517,12 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 #ifdef	CL_DEBUG
 					assert(blobs[i]->magic == BLOB);
 #endif
+					/*
+					 * TODO: Now that fileblob is used
+					 * this checking doesn't happen,
+					 * need another means to save scanning
+					 * two attachments that are the same
+					 */
 					for(j = 0; j < numberOfAttachments; j++)
 						if(blobcmp(blobs[i], blobList[j]) == 0)
 							break;
@@ -1673,26 +1676,11 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 			/*if((strcasecmp(cptr, "octet-stream") == 0) ||
 			   (strcasecmp(cptr, "x-msdownload") == 0)) {*/
 			{
-				blob *aBlob = messageToBlob(mainMessage);
+				fileblob *fb = messageToFileblob(mainMessage, dir);
 
-				if(aBlob) {
-					cli_dbgmsg("Saving main message as attachment %d\n", nBlobs);
-					assert(blobGetFilename(aBlob) != NULL);
-					/*
-					 * It's likely that we won't have built
-					 * a set of attachments
-					 */
-					if(blobs == NULL)
-						blobs = blobList;
-					for(i = 0; i < nBlobs; i++)
-						if(blobs[i] == NULL)
-							break;
-					blobClose(aBlob);
-					blobs[i] = aBlob;
-					if(i == nBlobs) {
-						nBlobs++;
-						assert(nBlobs < MAX_ATTACHMENTS);
-					}
+				if(fb) {
+					cli_dbgmsg("Saving main message as attachment\n");
+					fileblobDestroy(fb);
 				}
 			} /*else
 				cli_warnmsg("Discarded application not sent as attachment\n");*/
@@ -1717,7 +1705,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 	cli_dbgmsg("%d attachments found\n", nBlobs);
 
 	if(nBlobs == 0) {
-		blob *b;
+		fileblob *fb;
 
 		/*
 		 * No attachments - scan the text portions, often files
@@ -1725,16 +1713,14 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 		 */
 		cli_dbgmsg("%d multiparts found\n", multiparts);
 		for(i = 0; i < multiparts; i++) {
-			b = messageToBlob(messages[i]);
+			fb = messageToFileblob(messages[i], dir);
 
-			assert(b != NULL);
+			if(fb) {
+				cli_dbgmsg("Saving multipart %d, encoded with scheme %d\n",
+					i, messageGetEncoding(messages[i]));
 
-			cli_dbgmsg("Saving multipart %d, encoded with scheme %d\n",
-				i, messageGetEncoding(messages[i]));
-
-			(void)saveFile(b, dir);
-
-			blobDestroy(b);
+				fileblobDestroy(fb);
+			}
 		}
 
 		if(mainMessage) {
@@ -1751,13 +1737,10 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				 */
 				messageSetEncoding(mainMessage, "x-uuencode");
 
-				if((b = messageToBlob(mainMessage)) != NULL) {
-					if((cptr = blobGetFilename(b)) != NULL) {
+				if((fb = messageToFileblob(mainMessage, dir)) != NULL) {
+					if((cptr = fileblobGetFilename(fb)) != NULL)
 						cli_dbgmsg("Found uuencoded message %s\n", cptr);
-
-						(void)saveFile(b, dir);
-					}
-					blobDestroy(b);
+					fileblobDestroy(fb);
 				}
 			} else if((encodingLine(mainMessage) != NULL) &&
 				  ((t_line = bounceBegin(mainMessage)) != NULL))  {
@@ -1790,12 +1773,11 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					   (strstr(txt, "8bit") == NULL))
 						break;
 				}
-				if(t && ((b = textToBlob(t_line, NULL)) != NULL)) {
+				if(t && ((fb = fileblobCreate()) != NULL)) {
 					cli_dbgmsg("Found a bounce message\n");
-
-					saveFile(b, dir);
-
-					blobDestroy(b);
+					fileblobSetFilename(fb, dir, "bounce");
+					fb = textToFileblob(t_line, fb);
+					fileblobDestroy(fb);
 				}
 			} else {
 				bool saveIt;
@@ -1817,16 +1799,17 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					 * Unfortunately this generates a
 					 * lot of false positives that a bounce
 					 * has been found when it hasn't.
+					 *
+					 * TODO: use fileblobCreate here
 					 */
-					if((b = blobCreate()) != NULL) {
+					if((fb = fileblobCreate()) != NULL) {
 						cli_dbgmsg("Found a bounce message with no header\n");
-						blobAddData(b, "Received: by clamd\n", 19);
+						fileblobSetFilename(fb, dir, "bounce");
+						fileblobAddData(fb, "Received: by clamd\n", 19);
 
-						b = textToBlob(t_line, b);
+						fb = textToFileblob(t_line, fb);
 
-						saveFile(b, dir);
-
-						blobDestroy(b);
+						fileblobDestroy(fb);
 					}
 					saveIt = FALSE;
 				} else
@@ -2183,19 +2166,17 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 static void
 saveTextPart(message *m, const char *dir)
 {
-	blob *b;
+	fileblob *fb;
 
 	messageAddArgument(m, "filename=textportion");
-	if((b = messageToBlob(m)) != NULL) {
+	if((fb = messageToFileblob(m, dir)) != NULL) {
 		/*
 		 * Save main part to scan that
 		 */
 		cli_dbgmsg("Saving main message, encoded with scheme %d\n",
 				messageGetEncoding(m));
 
-		(void)saveFile(b, dir);
-
-		blobDestroy(b);
+		fileblobDestroy(fb);
 	}
 }
 
@@ -2206,6 +2187,8 @@ saveTextPart(message *m, const char *dir)
  *	OLE2 files if that is disabled or pattern match --exclude, but
  *	we need access to the command line options/clamav.conf here to
  *	be able to do that
+ *
+ * FIXME: duplicated code with fileblobSetFilename()
  */
 static bool
 saveFile(const blob *b, const char *dir)

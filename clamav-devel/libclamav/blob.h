@@ -18,6 +18,12 @@
  * $LOG$
  */
 
+#ifndef __BLOB_H
+#define __BLOB_H
+
+/*
+ * Resizable chunk of memory
+ */
 typedef struct blob {
 	char	*name;	/* filename */
 	unsigned	char	*data;	/* the stuff itself */
@@ -40,3 +46,19 @@ unsigned	long	blobGetDataSize(const blob *b);
 void	blobClose(blob *b);
 int	blobcmp(const blob *b1, const blob *b2);
 void	blobGrow(blob *b, size_t len);
+
+/*
+ * Like a blob, but associated with a file
+ */
+typedef	struct fileblob {
+	FILE	*fp;
+	blob	b;
+} fileblob;
+
+fileblob	*fileblobCreate(void);
+void	fileblobDestroy(fileblob *fb);
+void	fileblobSetFilename(fileblob *fb, const char *dir, const char *filename);
+const	char	*fileblobGetFilename(const fileblob *fb);
+void	fileblobAddData(fileblob *fb, const unsigned char *data, size_t len);
+
+#endif /*_BLOB_H*/

@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: message.h,v $
+ * Revision 1.14  2004/08/22 10:34:24  nigelhorne
+ * Use fileblob
+ *
  * Revision 1.13  2004/08/21 11:57:57  nigelhorne
  * Use line.[ch]
  *
@@ -91,7 +94,7 @@ int	messageAddStr(message *m, const char *data);
 int	messageAddStrAtTop(message *m, const char *data);
 const	text	*messageGetBody(const message *m);
 void	messageClean(message *m);
-blob	*messageToBlob(message *m);
+fileblob	*messageToFileblob(message *m, const char *dir);
 text	*messageToText(message *m);
 const	text	*uuencodeBegin(const message *m);
 const	text	*binhexBegin(const message *m);

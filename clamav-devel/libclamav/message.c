@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.73  2004/08/22 10:34:24  nigelhorne
+ * Use fileblob
+ *
  * Revision 1.72  2004/08/21 11:57:57  nigelhorne
  * Use line.[ch]
  *
@@ -213,7 +216,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.72 2004/08/21 11:57:57 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.73 2004/08/22 10:34:24 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -973,18 +976,18 @@ messageClean(message *m)
  * Decode and transfer the contents of the message into a blob
  * The caller must free the returned blob
  */
-blob *
-messageToBlob(message *m)
+fileblob *
+messageToFileblob(message *m, const char *dir)
 {
-	blob *b;
+	fileblob *fb;
 	const text *t_line = NULL;
 	char *filename;
 
 	assert(m != NULL);
 
-	b = blobCreate();
+	fb = fileblobCreate();
 
-	if(b == NULL)
+	if(fb == NULL)
 		return NULL;
 
 	/*
@@ -995,7 +998,7 @@ messageToBlob(message *m)
 
 		if(t_line == NULL) {
 			/*cli_warnmsg("UUENCODED attachment is missing begin statement\n");*/
-			blobDestroy(b);
+			fileblobDestroy(fb);
 			return NULL;
 		}
 
@@ -1003,14 +1006,14 @@ messageToBlob(message *m)
 
 		if(filename == NULL) {
 			cli_dbgmsg("UUencoded attachment sent with no filename\n");
-			blobDestroy(b);
+			fileblobDestroy(fb);
 			return NULL;
 		}
 		cli_chomp(filename);
 
 		cli_dbgmsg("Set uuencode filename to \"%s\"\n", filename);
 
-		blobSetFilename(b, filename);
+		fileblobSetFilename(fb, dir, filename);
 		t_line = t_line->t_next;
 	} else if((t_line = binhexBegin(m)) != NULL) {
 		unsigned char byte;
@@ -1039,7 +1042,7 @@ messageToBlob(message *m)
 		tmp = blobCreate();
 
 		if(tmp == NULL) {
-			blobDestroy(b);
+			fileblobDestroy(fb);
 			return NULL;
 		}
 
@@ -1061,7 +1064,7 @@ messageToBlob(message *m)
 		if(data == NULL) {
 			cli_warnmsg("Couldn't locate the binhex message that was claimed to be there\n");
 			blobDestroy(tmp);
-			blobDestroy(b);
+			fileblobDestroy(fb);
 			return NULL;
 		}
 		if(data[0] != ':') {
@@ -1072,7 +1075,7 @@ messageToBlob(message *m)
 			 */
 			cli_warnmsg("8 bit binhex code is not yet supported\n");
 			blobDestroy(tmp);
-			blobDestroy(b);
+			fileblobDestroy(fb);
 			return NULL;
 		}
 
@@ -1089,7 +1092,7 @@ messageToBlob(message *m)
 		uptr = cli_malloc(len);
 		if(uptr == NULL) {
 			blobDestroy(tmp);
-			blobDestroy(b);
+			fileblobDestroy(fb);
 			return NULL;
 		}
 		memcpy(uptr, data, len);
@@ -1158,7 +1161,7 @@ messageToBlob(message *m)
 			blob *u = blobCreate();	/* uncompressed data */
 
 			if(u == NULL) {
-				blobDestroy(b);
+				fileblobDestroy(fb);
 				blobDestroy(tmp);
 				return NULL;
 			}
@@ -1205,7 +1208,7 @@ messageToBlob(message *m)
 		}
 		if(len == 0) {
 			cli_warnmsg("Discarding empty binHex attachment\n");
-			blobDestroy(b);
+			fileblobDestroy(fb);
 			blobDestroy(tmp);
 			return NULL;
 		}
@@ -1222,19 +1225,19 @@ messageToBlob(message *m)
 		 */
 		byte = data[0];
 		if(byte >= len) {
-			blobDestroy(b);
+			fileblobDestroy(fb);
 			blobDestroy(tmp);
 			return NULL;
 		}
 		filename = cli_malloc(byte + 1);
 		if(filename == NULL) {
-			blobDestroy(b);
+			fileblobDestroy(fb);
 			blobDestroy(tmp);
 			return NULL;
 		}
 		memcpy(filename, &data[1], byte);
 		filename[byte] = '\0';
-		blobSetFilename(b, filename);
+		fileblobSetFilename(fb, dir, filename);
 		/*ptr = cli_malloc(strlen(filename) + 6);*/
 		ptr = cli_malloc(byte + 6);
 		if(ptr) {
@@ -1273,11 +1276,11 @@ messageToBlob(message *m)
 				len, l);
 			len = l;
 		}
-		blobAddData(b, &data[byte], len);
+		fileblobAddData(fb, &data[byte], len);
 
 		blobDestroy(tmp);
 
-		return b;
+		return fb;
 	} else {
 		filename = (char *)messageFindArgument(m, "filename");
 		if(filename == NULL) {
@@ -1295,7 +1298,7 @@ messageToBlob(message *m)
 				messageSetEncoding(m, "base64");
 		}
 
-		blobSetFilename(b, filename);
+		fileblobSetFilename(fb, dir, filename);
 
 		t_line = messageGetBody(m);
 	}
@@ -1306,7 +1309,7 @@ messageToBlob(message *m)
 	 */
 	if(t_line == NULL) {
 		cli_warnmsg("Empty attachment not saved\n");
-		blobDestroy(b);
+		fileblobDestroy(fb);
 		return NULL;
 	}
 
@@ -1314,7 +1317,7 @@ messageToBlob(message *m)
 		/*
 		 * Fast copy
 		 */
-		return textToBlob(t_line, b);
+		return textToFileblob(t_line, fb);
 
 	do {
 		unsigned char data[1024];
@@ -1338,7 +1341,9 @@ messageToBlob(message *m)
 
 		assert(uptr <= &data[sizeof(data)]);
 
-		blobAddData(b, data, (size_t)(uptr - data));
+		if(uptr != data)
+			fileblobAddData(fb, data, (size_t)(uptr - data));
+
 		/*
 		 * According to RFC1521, '=' is used to pad out
 		 * the last byte and should be used as evidence
@@ -1359,11 +1364,11 @@ messageToBlob(message *m)
 
 		ptr = decode(m, NULL, data, base64, FALSE);
 		if(ptr)
-			blobAddData(b, data, (size_t)(ptr - data));
+			fileblobAddData(fb, data, (size_t)(ptr - data));
 		m->base64chars = 0;
 	}
 
-	return b;
+	return fb;
 }
 
 /*

@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.15  2004/08/22 10:34:24  nigelhorne
+ * Use fileblob
+ *
  * Revision 1.14  2004/08/01 08:20:58  nigelhorne
  * Scan pathnames in Cygwin
  *
@@ -44,17 +47,23 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.14 2004/08/01 08:20:58 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.15 2004/08/22 10:34:24 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+
+#include <sys/param.h>	/* for NAME_MAX */
+
 #if	C_DARWIN
 #include <sys/types.h>
 #endif
+
 #include "mbox.h"
 #include "blob.h"
 #include "others.h"
@@ -148,7 +157,7 @@ blobGetFilename(const blob *b)
 	assert(b != NULL);
 	assert(b->magic == BLOB);
 
-	return(b->name);
+	return b->name;
 }
 
 void
@@ -285,4 +294,142 @@ blobGrow(blob *b, size_t len)
 			b->data = ptr;
 		}
 	}
+}
+
+fileblob *
+fileblobCreate(void)
+{
+#ifdef	CL_DEBUG
+	fileblob *fb = (fileblob *)cli_calloc(1, sizeof(fileblob));
+	if(fb)
+		fb->b.magic = BLOB;
+	cli_dbgmsg("blobCreate\n");
+	return fb;
+#else
+	return (fileblob *)cli_calloc(1, sizeof(fileblob));
+#endif
+}
+
+void
+fileblobDestroy(fileblob *fb)
+{
+	assert(fb != NULL);
+
+	if(fb->b.name) {
+		assert(fb->fp != NULL);
+		fclose(fb->fp);
+		free(fb->b.name);
+
+		assert(fb->b.data == NULL);
+	} else if(fb->b.data) {
+		cli_errmsg("fileblobDestroy: file not saved: report to bugs@clamav.net\n");
+		free(fb->b.data);
+	}
+	free(fb);
+}
+
+void
+fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
+{
+	int fd;
+	const char *suffix;
+	size_t suffixLen = 0;
+	char fullname[NAME_MAX + 1];
+
+	if(fb->b.name)
+		return;
+
+	/*
+	 * Some programs are broken and use an idea of a ".suffix"
+	 * to determine the file type rather than looking up the
+	 * magic number. CPM has a lot to answer for...
+	 * FIXME: the suffix now appears twice in the filename...
+	 */
+	suffix = strrchr(filename, '.');
+	if(suffix == NULL)
+		suffix = "";
+	else {
+		suffixLen = strlen(suffix);
+		if(suffixLen > 4) {
+			/* Found a full stop which isn't a suffix */
+			suffix = "";
+			suffixLen = 0;
+		}
+	}
+	blobSetFilename(&fb->b, filename);
+
+	/*
+	 * Reload the filename, it may be different from the one we've
+	 * asked for, e.g. '/'s taken out
+	 */
+	filename = blobGetFilename(&fb->b);
+
+	snprintf(fullname, sizeof(fullname) - 1 - suffixLen, "%s/%.*sXXXXXX", dir,
+		(int)(sizeof(fullname) - 9 - suffixLen - strlen(dir)), filename);
+#if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN)
+	fd = mkstemp(fullname);
+#else
+	(void)mktemp(fullname);
+	fd = open(fullname, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
+#endif
+
+	if(fd < 0) {
+		cli_errmsg("Can't create temporary file %s: %s\n", fullname, strerror(errno));
+		cli_dbgmsg("%lu %d %d\n", suffixLen, sizeof(fullname), strlen(fullname));
+		return;
+	}
+
+	cli_dbgmsg("Saving attachment as %s\n", fullname);
+
+	fb->fp = fdopen(fd, "wb");
+
+	if(fb->fp == NULL) {
+		cli_errmsg("Can't create file %s: %s\n", fullname, strerror(errno));
+		cli_dbgmsg("%lu %d %d\n", suffixLen, sizeof(fullname), strlen(fullname));
+		close(fd);
+
+		return;
+	}
+	if(fb->b.data) {
+		if(fwrite(fb->b.data, fb->b.len, 1, fb->fp) != 1)
+			cli_errmsg("fileblobSetFilename: Can't write to temporary file %s: %s\n", fb->b.name, strerror(errno));
+		free(fb->b.data);
+		fb->b.data = NULL;
+		fb->b.len = fb->b.size = 0;
+	}
+
+	/*
+	 * Add the suffix back to the end of the filename. Tut-tut, filenames
+	 * should be independant of their usage on UNIX type systems.
+	 */
+	if(suffixLen > 1) {
+		char stub[NAME_MAX + 1];
+
+		snprintf(stub, sizeof(stub), "%s%s", fullname, suffix);
+#ifdef	C_LINUX
+		rename(stub, fullname);
+#else
+		link(stub, fullname);
+		unlink(stub);
+#endif
+	}
+}
+
+void
+fileblobAddData(fileblob *fb, const unsigned char *data, size_t len)
+{
+	if(len == 0)
+		return;
+
+	if(fb->fp) {
+		if(fwrite(data, len, 1, fb->fp) != 1)
+			cli_errmsg("fileblobAddData: Can't write %u bytes to temporary file %s: %s\n", len, fb->b.name, strerror(errno));
+	} else
+		blobAddData(&(fb->b), data, len);
+}
+
+const char *
+fileblobGetFilename(const fileblob *fb)
+{
+	return blobGetFilename(&(fb->b));
 }

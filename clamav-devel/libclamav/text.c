@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: text.c,v $
+ * Revision 1.10  2004/08/22 10:34:24  nigelhorne
+ * Use fileblob
+ *
  * Revision 1.9  2004/08/21 11:57:57  nigelhorne
  * Use line.[ch]
  *
@@ -36,7 +39,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: text.c,v 1.9 2004/08/21 11:57:57 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: text.c,v 1.10 2004/08/22 10:34:24 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -56,6 +59,7 @@ static	char	const	rcsid[] = "$Id: text.c,v 1.9 2004/08/21 11:57:57 nigelhorne Ex
 #include <string.h>
 #include <ctype.h>
 #include <assert.h>
+#include <stdio.h>
 
 #include "line.h"
 #include "mbox.h"
@@ -271,4 +275,29 @@ textToBlob(const text *t, blob *b)
 	blobClose(b);
 
 	return b;
+}
+
+fileblob *
+textToFileblob(const text *t, fileblob *fb)
+{
+	assert(fb != NULL);
+	assert(t != NULL);
+
+	if(fb == NULL) {
+		fb = fileblobCreate();
+
+		if(fb == NULL)
+			return NULL;
+	}
+
+	do {
+		if(t->t_line) {
+			const char *l = lineGetData(t->t_line);
+
+			fileblobAddData(fb, (unsigned char *)l, strlen(l));
+		}
+		fileblobAddData(fb, (unsigned char *)"\n", 1);
+	} while((t = t->t_next) != NULL);
+
+	return fb;
 }
