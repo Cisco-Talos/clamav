@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Database reloading</TITLE>
-<META NAME="description" CONTENT="Database reloading">
+<TITLE>General API</TITLE>
+<META NAME="description" CONTENT="General API">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -21,74 +21,231 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node74.html">
 <LINK REL="previous" HREF="node72.html">
-<LINK REL="up" HREF="node71.html">
+<LINK REL="up" HREF="node72.html">
 <LINK REL="next" HREF="node74.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1254"
+<A NAME="tex2html1265"
   HREF="node74.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html1250"
-  HREF="node71.html">
+<A NAME="tex2html1261"
+  HREF="node72.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html1244"
+<A NAME="tex2html1255"
   HREF="node72.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html1252"
+<A NAME="tex2html1263"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1255"
-  HREF="node74.html">Scan engine</A>
-<B> Up:</B> <A NAME="tex2html1251"
-  HREF="node71.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html1245"
-  HREF="node72.html">General API</A>
- &nbsp <B>  <A NAME="tex2html1253"
+<B> Next:</B> <A NAME="tex2html1266"
+  HREF="node74.html">Database reloading</A>
+<B> Up:</B> <A NAME="tex2html1262"
+  HREF="node72.html">LibClamAV</A>
+<B> Previous:</B> <A NAME="tex2html1256"
+  HREF="node72.html">LibClamAV</A>
+ &nbsp <B>  <A NAME="tex2html1264"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00072000000000000000">
-Database reloading</A>
+<H2><A NAME="SECTION00071000000000000000">
+General API</A>
 </H2>
-    The most important thing is to keep the internal instance of the database
-    up to date. You can watch database changes with the <code>cl_stat</code>
-    functions family:
+    Every program based on libclamav must include the <code>clamav.h</code> header
+    file:
     <PRE>
-	int cl_statinidir(const char *dirname, struct cl_stat *dbstat);
-	int cl_statchkdir(const struct cl_stat *dbstat);
-	int cl_statfree(struct cl_stat *dbstat);
+	#include &lt;clamav.h&gt;
 </PRE>
-    Initialization:
+    A first step is to initialize the scanning engine. There are three
+    functions available:
     <PRE>
-	    struct cl_stat dbstat;
-    
-	memset(&amp;dbstat, 0, sizeof(struct cl_stat));
-	cl_statinidir(dbdir, &amp;dbstat);
+	int cl_loaddb(const char *filename, struct cl_node **root,
+	int *virnum);
+
+	int cl_loaddbdir(const char *dirname, struct cl_node **root,
+	int *virnum);
+
+	const char *cl_retdbdir(void);
 </PRE>
-    To check for a change you only need to call <code>cl_statchkdir</code>:
+    <code>cl_loaddb()</code> loads a particular database, <code>cl_loaddbdir()</code>
+    loads all <I>.cvd</I> (and older <I>.db</I>, .db2) databases from a
+    directory <code>dirname</code>. <code>cl_retdbdir()</code> returns a hardcoded
+    database directory path. Initial internal database (Aho-Corasick tree,
+    trie; see <A HREF="node75.html#engine">6.3</A>) will be saved under <code>root</code> and a number of
+    signatures loaded will be <B>added</B> <A NAME="tex2html121"
+  HREF="footnode.html#foot716"><SUP>8</SUP></A> to <code>virnum</code>. Pointer to the trie
+    must initially point to NULL. If you don't care about number of signatures
+    pass NULL as a third argument. <code>cl_loaddb</code> functions return 0 on
+    success and an other value on failure.
     <PRE>
-	if(cl_statchkdir(&amp;dbstat) == 1) {
-	    reload_database...;
-	    cl_statfree(&amp;dbstat);
-	    cl_statinidir(cl_retdbdir(), &amp;dbstat);
+	    struct cl_node *root = NULL;
+	    int ret;
+
+	ret = cl_loaddbdir(cl_retdbdir(), &amp;root, NULL);
+</PRE>
+    There's an elegant way to print libclamav's error codes:
+    <PRE>
+	const char *cl_strerror(int clerror);
+</PRE>
+    <code>cl_strerror()</code> returns a (statically allocated) string describing
+    a <code>clerror</code> code:
+    <PRE>
+	if(ret) {
+	    printf("cl_loaddbdir() error: %s\n", cl_strerror(ret));
+	    exit(1);
 	}
 </PRE>
-    Remember to reinitialize the structure after a reload.
+    When database is loaded you must build the final trie with:
+    <PRE>
+	int cl_buildtrie(struct cl_node *root);
+</PRE>
+    In our example:
+    <PRE>
+	if((ret = cl_buildtrie(root)))
+	    printf("cl_buildtrie() error: %s\n", cl_strerror(ret));
+    </PRE>
+    Now you can scan a buffer, a descriptor or a file with:
+    <PRE>
+	int cl_scanbuff(const char *buffer, unsigned int length,
+	const char **virname, const struct cl_node *root);
+
+	int cl_scandesc(int desc, const char **virname, unsigned
+	long int *scanned, const struct cl_node *root, const
+	struct cl_limits *limits, int options);
+
+	int cl_scanfile(const char *filename, const char **virname,
+	unsigned long int *scanned, const struct cl_node *root,
+	const struct cl_limits *limits, int options);
+</PRE>
+    All the functions save a virus name address under <code>virname</code> pointer.
+    It points to a name in the trie structure thus it can't be released
+    directly. <code>cl_scandesc()</code> and <code>cl_scanfile()</code> can
+    increase the <code>scanned</code> value in <code>CL_COUNT_PRECISION</code> units,
+    they also support archive limits:
+    <PRE>
+	struct cl_limits {
+	    int maxreclevel; /* maximal recursion level */
+	    int maxfiles; /* maximal number of files to be
+			   * scanned within an archive
+			   */
+	    int maxratio; /* maximal compression ratio */
+	    short archivememlim; /* limit memory usage for bzip2 (0/1) */
+	    long int maxfilesize; /* files in an archive larger than
+				   * this value will not be scanned
+				   */
+	};
+</PRE>
+    The last argument in the <code>cl_scan</code> family  configures the scan
+    engine. It supports the following flags:
+    
+<UL>
+<LI><B>CL_RAW</B>
+<BR>
+It does nothing. Please use it (alone) if you don't want
+	      to scan any special files.
+</LI>
+<LI><B>CL_ARCHIVE</B>
+<BR>
+This flag enables the transparent archive scanning.
+</LI>
+<LI><B>CL_DISABLERAR</B>
+<BR>
+Disables the built-in RAR unpacker which is known to cause
+	      memory leaks.
+</LI>
+<LI><B>CL_ENCRYPTED</B>
+<BR>
+Marks encrypted archives as viruses (Encrypted.Zip,
+	      Encrypted.RAR).
+</LI>
+<LI><B>CL_MAIL</B>
+<BR>
+Required to scan various types of mail files.
+</LI>
+<LI><B>CL_OLE2</B>
+<BR>
+Enables support for Microsoft Office document files.
+    
+</LI>
+</UL>
+    All functions return 0 (<code>CL_CLEAN</code>) if the file is clean,
+    <code>CL_VIRUS</code> when virus is detected and an other value on failure.
+    <PRE>
+	    struct cl_limits limits;
+	    const char *virname;
+
+	memset(&amp;limits, 0, sizeof(struct cl_limits));
+	/* maximal number of files in archive */;
+	limits.maxfiles = 1000
+	/* maximal archived file size == 10 MB */
+	limits.maxfilesize = 10 * 1048576;
+	/* maximal recursion level */
+	limits.maxreclevel = 5;
+	/* maximal compression ratio */
+	limits.maxratio = 200;
+	/* disable memory limit for bzip2 scanner */
+	limits.archivememlim = 0;
+
+	if((ret = cl_scanfile("/home/zolw/test", &amp;virname, NULL, root,
+	&amp;limits, CL_ARCHIVE | CL_MAIL | CL_OLE2)) == CL_VIRUS) {
+	    printf("Detected %s virus.\n", virname);
+	} else {
+	    printf("No virus detected.\n");
+	    if(ret != CL_CLEAN)
+	        printf("Error: %s\n", cl_strerror(ret));
+	}
+</PRE>
+    Release the trie if you no longer need it:
+    <PRE>
+	void cl_freetrie(struct cl_node *root);
+</PRE>
+    You will find an example scanner in clamav sources (/example). All
+    programs based on libclamav must be linked against it:
+    <PRE>
+	gcc -Wall ex1.c -o ex1 -lclamav
+</PRE>
+    Enjoy !
 
 <P>
-<BR><HR>
+<HR>
+<!--Navigation Panel-->
+<A NAME="tex2html1265"
+  HREF="node74.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html1261"
+  HREF="node72.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html1255"
+  HREF="node72.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html1263"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html1266"
+  HREF="node74.html">Database reloading</A>
+<B> Up:</B> <A NAME="tex2html1262"
+  HREF="node72.html">LibClamAV</A>
+<B> Previous:</B> <A NAME="tex2html1256"
+  HREF="node72.html">LibClamAV</A>
+ &nbsp <B>  <A NAME="tex2html1264"
+  HREF="node1.html">Contents</A></B> 
+<!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2004-06-03
+2004-06-14
 </ADDRESS>
 </BODY>
 </HTML>

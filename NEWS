@@ -2,6 +2,20 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.73
+----
+
+This version fixes memory management problems in the OLE2 decoder and
+improves mail scanning. Because of the rapid ClamAV development the team
+encourages users to help in testing new features:
+
+	    http://www.clamav.net/snapshot
+
+Thank you for using ClamAV !
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
 0.72
 ----
 

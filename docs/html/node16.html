@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Database mirrors</TITLE>
-<META NAME="description" CONTENT="Database mirrors">
+<TITLE>freshclam: Setting up auto-updating</TITLE>
+<META NAME="description" CONTENT="freshclam: Setting up auto-updating">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,6 +19,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node17.html">
 <LINK REL="previous" HREF="node15.html">
 <LINK REL="up" HREF="node6.html">
 <LINK REL="next" HREF="node17.html">
@@ -26,752 +27,120 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html521"
+<A NAME="tex2html534"
   HREF="node17.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html517"
+<A NAME="tex2html530"
   HREF="node6.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html513"
+<A NAME="tex2html524"
   HREF="node15.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html519"
+<A NAME="tex2html532"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html522"
-  HREF="node17.html">Usage</A>
-<B> Up:</B> <A NAME="tex2html518"
+<B> Next:</B> <A NAME="tex2html535"
+  HREF="node17.html">Database mirrors</A>
+<B> Up:</B> <A NAME="tex2html531"
   HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html514"
-  HREF="node15.html">freshclam: Setting up auto-updating</A>
- &nbsp <B>  <A NAME="tex2html520"
+<B> Previous:</B> <A NAME="tex2html525"
+  HREF="node15.html">Testing</A>
+ &nbsp <B>  <A NAME="tex2html533"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION000310000000000000000"></A><A NAME="mirrors"></A>
-<BR>
-Database mirrors
+<H2><A NAME="SECTION000310000000000000000">
+freshclam: Setting up auto-updating</A>
 </H2>
-    freshclam downloads the database from <TT><A NAME="tex2html21"
-  HREF="http://database.clamav.net">http://database.clamav.net</A></TT>.
-    As of March 2004 we attempt to redirect our users to the closest pool
-    of mirrors by looking at their ip source address when they try to resolve
-    database.clamav.net. Our DNS servers can answer with a CNAME to:
-    db.europe.clamav.net, db.america.clamav.net, db.asia.clamav.net or
-    db.other.clamav.net. Our advanced push-mirroring mechanism allows
-    database maintainers to update all the mirrors in less than one minute !
-    Thanks to the help of many companies and organisations we have a few
-    dozen of very fast and reliable mirrors:
-    <DIV ALIGN="CENTER">
-<FONT SIZE="-1">    </FONT><TABLE CELLPADDING=3 BORDER="1">
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">
-	Mirror </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> IP </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Location </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Administrator</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html22"
-  HREF="clamav.man.olsztyn.pl">clamav.man.olsztyn.pl</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 213.184.16.3 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Olsztyn, </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Robert d`Aystetten</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		   </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Poland   </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;dart*man.olsztyn.pl&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html23"
-  HREF="avmirror1.prod.rxgsys.com">avmirror1.prod.rxgsys.com</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 64.74.124.90 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> USA </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Graham Wooden</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-					</FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	       </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;graham*rxgsys.com&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html24"
-  HREF="avmirror2.prod.rxgsys.com">avmirror2.prod.rxgsys.com</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 207.201.202.73 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> USA </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Graham Wooden</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-					</FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;graham*rxgsys.com&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html25"
-  HREF="clamav.e-admin.de">clamav.e-admin.de</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 212.162.12.159 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Dusseldorf, </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Andreas Gietl</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				</FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Germany     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;a.gietl*e-admin.de&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html26"
-  HREF="clamav.essentkabel.com">clamav.essentkabel.com</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 195.85.130.84 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Netherlands </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Chris van Meerendonk</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		   </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;mirror*essentkabel.com&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html27"
-  HREF="clamav.inet6.fr">clamav.inet6.fr</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 62.210.153.201 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> France </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Lionel Bouton</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-			      </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 62.210.153.202 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">        </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;clamavdb*inet6.fr&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html28"
-  HREF="clamav.netopia.pt">clamav.netopia.pt</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 193.126.14.29 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Portugal </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Miguel Bettencourt Dias</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				</FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		</FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	   </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;mbd*netopia.pt&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html29"
-  HREF="clamav.sonic.net">clamav.sonic.net</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 209.204.175.217 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> USA </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Kelsey Cummings</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-			       </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;kgc*sonic.net&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html30"
-  HREF="clamav.gossamer-threads.com">clamav.gossamer-threads.com</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 64.69.64.158 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Canada </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Alex Krohn</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				          </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	  </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;mirrors*gossamer-threads.com&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html31"
-  HREF="clamav.catt.com">clamav.catt.com</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 64.18.100.4 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> USA </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Mike Cathey</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-			      </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	  </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;mirrors*catt.com&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html32"
-  HREF="clamav.antispam.or.id">clamav.antispam.or.id</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 202.134.0.71 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Indonesia </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Fajar Nugraha</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">             </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">           </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;fajar*telkom.co.id&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html33"
-  HREF="clamav-du.viaverio.com">clamav-du.viaverio.com</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 199.239.233.95 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> USA </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Scott Wiersdorf</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		      </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;scott*perlcode.org&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html34"
-  HREF="clamav-sj.viaverio.com">clamav-sj.viaverio.com</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 128.121.60.235 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> USA </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Scott Wiersdorf</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		      </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;scott*perlcode.org&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html35"
-  HREF="clamavdb.heanet.ie">clamavdb.heanet.ie</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 193.1.219.100 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Ireland </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Colm MacCarthaigh</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	   </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;mirrors*heanet.ie&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html36"
-  HREF="clamav.crysys.hu">clamav.crysys.hu</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 152.66.249.132 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Hungary </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Bencsath Boldizsar</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-			       </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		</FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	  </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;boldi*mail2004.crysys.hit.bme.hu&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html37"
-  HREF="clamav.rockriver.net">clamav.rockriver.net</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 209.94.36.5 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Illinois, USA </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Thomas D. Harker</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				   </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;tom*rockriver.net&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html38"
-  HREF="clamav.xmundo.net">clamav.xmundo.net</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 200.68.106.40 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Argentina </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Cristian Daniel Merz</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				</FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		</FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;mirrors*xmundo.net&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html39"
-  HREF="clamav.infotex.com">clamav.infotex.com</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 66.139.73.146 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Texas, USA </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Matthew Jonkman</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	      </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;matt*infotex.com&gt;</FONT></TD>
-</TR>
-</TABLE>
+    <I>freshclam</I> is a default database updater for Clam AntiVirus.
+    It can work in two modes:
     
-</DIV>
-    <DIV ALIGN="CENTER">
-<FONT SIZE="-1">    </FONT><TABLE CELLPADDING=3 BORDER="1">
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">
-	Mirror </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> IP </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Location </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Administrator</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html40"
-  HREF="clamav.santafesolutions.com">clamav.santafesolutions.com</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 196.40.71.226 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Costa Rica </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Gregory Cascante Avilés</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	      </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;gregory*emailcr.com&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html41"
-  HREF="clamav.mirror.transip.nl">clamav.mirror.transip.nl</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 80.69.67.3 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> The Netherlands </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Walter Hop</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	      </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;walter*transip.nl&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html42"
-  HREF="clamavdb.osj.net">clamavdb.osj.net</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 218.44.253.75 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Japan </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Masaki Ikeda</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-			       </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	       </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">       </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;masaki*orange.co.jp&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html43"
-  HREF="clamav.ialfa.net">clamav.ialfa.net</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 210.22.201.152 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> People's Republic </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Alfa Shen</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-			       </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		</FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> of China	    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;alfa*ialfa.net&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html44"
-  HREF="clamavdb.ikk.sztaki.hu">clamavdb.ikk.sztaki.hu</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 193.225.86.3 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Hungary </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Gabor Kiss</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	      </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;kissg*debella.ikk.sztaki.hu&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html45"
-  HREF="clamav.mirrors.nks.net">clamav.mirrors.nks.net</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 24.73.112.74 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Florida, USA </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> James Neal</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		   </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;clam-admin*nks.net&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html46"
-  HREF="clamav.kratern.se">clamav.kratern.se</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 212.31.160.239 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Sweden </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Emil Ljungdahl</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				</FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	         </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	  </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;emil*kratern.se&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html47"
-  HREF="clamav.dif.dk">clamav.dif.dk</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 193.138.115.108 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Denmark </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Jesper Juhl</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-			    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		      </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		</FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;juhl*dif.dk&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html48"
-  HREF="clamav.dbplc.com">clamav.dbplc.com</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 217.154.108.81 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> United Kingdom </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Simon Pither</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-			       </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		</FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;simon*digitalbrain.com&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html49"
-  HREF="clamav.unet.brandeis.edu">clamav.unet.brandeis.edu</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 129.64.99.170 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> USA </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Rich Graves</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				       </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	       </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;rcgraves*brandeis.edu&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html50"
-  HREF="clamav.im1.net">clamav.im1.net</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 65.77.42.207 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Florida, US </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Dmitri Pavlenkov</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-			     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		  </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;dmitri*im1.com&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html51"
-  HREF="clamav.elektrotech-ker.hu">clamav.elektrotech-ker.hu</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 80.95.80.7 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Hungary </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Bodrogi Zsolt</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-					</FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	       </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;odin*szilank.hu&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html52"
-  HREF="clamav.stockingshq.com">clamav.stockingshq.com</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 212.113.16.74 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> United Kingdom </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;dave*stockingshq.com&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html53"
-  HREF="clamav.acnova.com">clamav.acnova.com</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 203.81.40.167 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Singapore </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Lennard Seah</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				</FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		</FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;myself*lennardseah.com&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html54"
-  HREF="clamdb.prolocation.net">clamdb.prolocation.net</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 213.73.255.243 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> The Netherlands </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Raymond Dijkxhoorn</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		      </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">			</FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;raymond*prolocation.net&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html55"
-  HREF="clamav.xyxx.com">clamav.xyxx.com</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 65.75.154.69 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> San Francisco/Palo Alto </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Myron Davis</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-			      </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> California, USA	       </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;myrond*xyxx.com&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html56"
-  HREF="clamav.walkertek.com">clamav.walkertek.com</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 38.136.139.7 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> USA </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Stephen Walker</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				   </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		  </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	</FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;swalker*walkertek.com&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html57"
-  HREF="clamav.mirror.cygnal.ca">clamav.mirror.cygnal.ca</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 24.244.193.21 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Burlington,	</FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Rafal Rzeczkowski</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				      </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 24.244.193.22 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Ontario, Canada </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;mirrors*cygnal.ca&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html58"
-  HREF="clamav.mirrors.ilisys.com.au">clamav.mirrors.ilisys.com.au</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 203.202.10.60 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Australia </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> David Wilcox</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-					   </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		   </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	       </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;mirrors*ilisys.com.au&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html59"
-  HREF="clamav.securityminded.net">clamav.securityminded.net</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 209.8.40.140 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Ashburn, USA </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Thomas Petersen</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-					</FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	       </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	      </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;tomp*securityminded.net&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html60"
-  HREF="clamav.island.net.au">clamav.island.net.au</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 203.28.142.36 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Sydney    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Hugh Blandford</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				   </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		   </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Australia </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;hugh*island.net.au&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html61"
-  HREF="clamav.iol.cz">clamav.iol.cz</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 194.228.2.38 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Czech Republic </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Pavel Urban</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-			    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		   </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;pavel.urban*imaginet.cz&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html62"
-  HREF="clamav.securitywonks.net">clamav.securitywonks.net</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 66.197.159.213 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> USA </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> D. Raghu Veer</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				       </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		</FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;clamav*zyserver.net&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html63"
-  HREF="clamav.pcn.de">clamav.pcn.de</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 213.203.254.4 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Hamburg, </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Karsten Gessner</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-			    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Germany  </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;karsten*pcn.de&gt;</FONT></TD>
-</TR>
-</TABLE>
+<UL>
+<LI>interactive - from command line, verbosly
+</LI>
+<LI>daemon - alone, silently
     
-</DIV>
-    <DIV ALIGN="CENTER">
-<FONT SIZE="-1">    </FONT><TABLE CELLPADDING=3 BORDER="1">
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">
-	Mirror </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> IP </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Location </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Administrator</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html64"
-  HREF="clamav.enderunix.org">clamav.enderunix.org</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 193.140.143.23 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Turkey </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Omer Faruk Sen</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				   </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;ofsen*enderunix.org&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html65"
-  HREF="clamav.ovh.net">clamav.ovh.net</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 213.186.33.38 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> France </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Germain Masse</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-			     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 213.186.33.37 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">        </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;germain.masse*ovh.net&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html66"
-  HREF="clamav.spod.org">clamav.spod.org</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 195.92.99.99 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> United Kingdom </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Ian Kirk</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-			      </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		      </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;blob*blob.co.uk&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html67"
-  HREF="clamav.intercom.net.ua">clamav.intercom.net.ua</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 195.13.43.28 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Ukraine </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Artie Missirov</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	      </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;kadjy*intercom.net.ua&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html68"
-  HREF="clamav.mirror.vutbr.cz">clamav.mirror.vutbr.cz</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 147.229.3.16 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Czech Republic </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Tomas Kreuzwieser</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;mirror-adm*cis.vutbr.cz&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html69"
-  HREF="database.clamav.ps.pl">database.clamav.ps.pl</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 212.14.28.36 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Poland </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Adam Popik</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		   </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;adam*popik.pl&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html70"
-  HREF="clamav.fx-services.com">clamav.fx-services.com</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 69.93.108.98 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> USA </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Robin Vley</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	  </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;robin*fx-services.com&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html71"
-  HREF="clamav.univ-nantes.fr">clamav.univ-nantes.fr</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 193.52.101.131 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> France </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Yann Dupont</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		     </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	      </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">	&lt;yann.dupont*univ-nantes.fr&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html72"
-  HREF="clamav.blackroute.net">clamav.blackroute.net</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 64.246.44.108 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Texas, USA </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Maarten Van Horenbeeck</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;maarten*daemon.be&gt;</FONT></TD>
-</TR>
-</TABLE>
-    
-</DIV>
-There is a <I>DatabaseMirror</I> directive in the config file, which
-    specifies the main database server freshclam will attempt to connect to
-    (up to <I>MaxAttempts</I> times) in order to check or update the database.
-    If there are more <I>DatabaseMirror</I> lines specified it will switch
-    automatically to the next one if a connection with the previous mirror
-    failed for some reason.
+</LI>
+</UL>
+    When started by a superuser (by default) it drops privileges and switches
+    to the <I>clamav</I> user. <I>freshclam</I> uses the
+    <TT><A NAME="tex2html21"
+  HREF="database.clamav.net">database.clamav.net</A></TT> round-robin DNS which automatically selects
+    a database mirror<A HREF="node17.html#mirrors">2.11</A>. freshclam is an advanced tool: supports
+    proxy servers (with authentication), digital signature verification and
+    various error scenarios. <B>Quick test: run <I>freshclam</I> (as
+    superuser) with no parameters and check the output.</B> If everything
+    is OK you may create the log file in /var/log (owned by <I>clamav</I> or
+    another user freshclam will be running as (<code>--user</code>):
+    <PRE>
+	# touch /var/log/clam-update.log
+	# chmod 600 /var/log/clam-update.log
+	# chown clamav /var/log/clam-update.log
+</PRE>
+    Now you <I>should</I> edit the configuration file (usually
+    <I>freshclam.conf</I>) and configure the <I>UpdateLogFile</I> directive
+    to point the created log file (it's highly recommended). Optionally you
+    may force the log file path with <I>-l</I>. Finally, to run freshclam
+    in the daemon mode execute:
+    <PRE>
+	# freshclam -d
+</PRE>
+    The other method is to use the <I>cron</I> daemon.  You have to add the
+    following line to the crontab of the <B>root</B> or <B>clamav</B> users:
+    <FONT SIZE="-1">    </FONT><PRE>
+N * * * *	/usr/local/bin/freshclam --quiet
+</PRE>
+    to check for a new database every hour. <B>N should be a
+    number between 1 and 59 of your choice. Please don't choose any multiple
+    of 10, because there are already too many servers using those time slots.</B>
+    Proxy settings are only configurable via the configuration file (so you
+    can setup proper permissions to protect your proxy password):
+    <PRE>
+	HTTPProxyServer myproxyserver.com
+	HTTPProxyPort 1234
+	HTTPProxyUsername myusername
+	HTTPProxyPassword mypass
+</PRE>
 
 <P>
 <HR>
 <!--Navigation Panel-->
-<A NAME="tex2html521"
+<A NAME="tex2html534"
   HREF="node17.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html517"
+<A NAME="tex2html530"
   HREF="node6.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html513"
+<A NAME="tex2html524"
   HREF="node15.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html519"
+<A NAME="tex2html532"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html522"
-  HREF="node17.html">Usage</A>
-<B> Up:</B> <A NAME="tex2html518"
+<B> Next:</B> <A NAME="tex2html535"
+  HREF="node17.html">Database mirrors</A>
+<B> Up:</B> <A NAME="tex2html531"
   HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html514"
-  HREF="node15.html">freshclam: Setting up auto-updating</A>
- &nbsp <B>  <A NAME="tex2html520"
+<B> Previous:</B> <A NAME="tex2html525"
+  HREF="node15.html">Testing</A>
+ &nbsp <B>  <A NAME="tex2html533"
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2004-06-03
+2004-06-14
 </ADDRESS>
 </BODY>
 </HTML>
