@@ -177,6 +177,14 @@ You should have received a script to put into /etc/init.d with this software.
 
 You should always start clamd before clamav-milter.
 
+You may also think about the F= entry in sendmail.mc, since it tells sendmail
+what to do with emails if clamav-milter is not running. Setting F=T will tell
+the remote end to resend later (temporary failure), setting F=R will reject
+the email and setting F= will pass the email through, in this case you should
+warn your users that emails are not being scanned.
+
+Don't forget to rebuild sendmail.cf after modifying sendmail.mc.
+
 As with all software it is wise to ensure that clamav-milter has the least
 privileges it needs to run. So don't run it as root and don't store the sockets
 in a directory that can be written by everyone. For example ensure that /var/run
