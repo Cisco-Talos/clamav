@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.14  2004/01/10 13:01:19  nigelhorne
+ * Added BinHex compression support
+ *
  * Revision 1.13  2004/01/09 18:01:03  nigelhorne
  * Started BinHex work
  *
@@ -36,7 +39,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.13 2004/01/09 18:01:03 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.14 2004/01/10 13:01:19 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -611,7 +614,7 @@ messageToBlob(const message *m)
 		blob *tmp = blobCreate();
 		unsigned char *data;
 		unsigned char byte;
-		unsigned long len;
+		unsigned long len, l;
 		char *filename;
 
 		/*
@@ -630,7 +633,6 @@ messageToBlob(const message *m)
 
 		if(data[0] == ':') {
 			char *ptr;
-			unsigned long i;
 			unsigned long newlen = 0L;
 			int bytenumber = 0;
 
@@ -642,8 +644,8 @@ messageToBlob(const message *m)
 			ptr = cli_malloc(len);
 			memcpy(ptr, data, len);
 
-			for(i = 1; i < len; i++) {
-				unsigned char c = ptr[i];
+			for(l = 1; l < len; l++) {
+				unsigned char c = ptr[l];
 				char *tptr;
 
 				/* TODO: table look up would be quicker */
@@ -714,8 +716,39 @@ messageToBlob(const message *m)
 		 * Skip over data fork length, resource fork length and CRC
 		 */
 		byte += 10;
+		data = &data[byte];
 
-		blobAddData(b, &data[byte], len);
+		/*
+		 * Check for compression of repetitive characters
+		 */
+		if(memchr(data, 0x90, len))
+			/*
+			 * Includes compression
+			 */
+			for(l = 0; l < len; l++) {
+				unsigned char c = data[l];
+
+				blobAddData(b, &c, 1);
+
+				if(l < len - 1)
+					if(data[l + 1] == 0x90) {
+						int count;
+
+						l += 2;
+						count = data[l];
+
+						if(count == 0) {
+							c = 0x90;
+							blobAddData(b, &c, 1);
+						} else while(--l > 0)
+							blobAddData(b, &c, 1);
+					}
+			}
+		else
+			/*
+			 * No compression - quickly copy all across
+			 */
+			blobAddData(b, data, len);
 
 		blobDestroy(tmp);
 
