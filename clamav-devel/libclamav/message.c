@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.98  2004/10/11 10:56:17  nigelhorne
+ * Reimplement squeeze ads sanisiseBase64
+ *
  * Revision 1.97  2004/10/06 17:21:46  nigelhorne
  * Code tidy
  *
@@ -288,7 +291,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.97 2004/10/06 17:21:46 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.98 2004/10/11 10:56:17 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -342,7 +345,7 @@ static	void	messageIsEncoding(message *m);
 static	const	text	*binhexBegin(const message *m);
 static	unsigned char	*decodeLine(message *m, encoding_type enctype, const char *line, unsigned char *buf, size_t buflen);
 static unsigned char *decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast);
-static	void	squeeze(char *s);
+static	void	sanitiseBase64(char *s);
 static	unsigned	char	hex(char c);
 static	unsigned	char	base64(char c);
 static	unsigned	char	uudecode(char c);
@@ -2031,7 +2034,7 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 			if(copy == NULL)
 				break;
 
-			squeeze(copy);
+			sanitiseBase64(copy);
 
 			p2 = strchr(copy, '=');
 			if(p2)
@@ -2094,21 +2097,21 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 }
 
 /*
- * Remove the spaces from the middle of a string. Spaces shouldn't appear
- * mid string in base64 files, but some broken mail clients ignore such
- * errors rather than discarding the mail, and virus writers exploit this bug
+ * Remove the non base64 characters such as spaces from a string. Spaces
+ * shouldn't appear mid string in base64 files, but some broken mail clients
+ * ignore such errors rather than discarding the mail, and virus writers
+ * exploit this bug
  */
 static void
-squeeze(char *s)
+sanitiseBase64(char *s)
 {
-	while((s = strchr(s, ' ')) != NULL) {
-		/*strcpy(s, &s[1]);*/	/* overlapping strcpy */
+	for(; *s; s++)
+		if(base64Table[*s] == 255) {
+			char *p1;
 
-		char *p1;
-
-		for(p1 = s; p1[0] != '\0'; p1++)
-			p1[0] = p1[1];
-	}
+			for(p1 = s; p1[0] != '\0'; p1++)
+				p1[0] = p1[1];
+		}
 }
 
 /*
