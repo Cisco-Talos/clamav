@@ -1,3 +1,10 @@
+Sat Feb  5 16:17:41 CET 2005 (tk)
+---------------------------------
+  * libclamav/scanners.c: do not report Suspected.Zip on standard breaking zip
+			  archives created by ICEOWS (problem reported by
+			  Hamacker <sirhamacker*vidy.com.br> and Dirk Mueller
+			  <mueller*kde.org>)
+
 Sat Feb  5 09:39:48 GMT 2005 (trog)
 -----------------------------------
   * libclamav/special.c: support for big-endian system in RIFF code.
@@ -18,7 +25,7 @@ Wed Feb  2 08:32:46 GMT 2005 (njh)
 Tue Feb  1 14:47:21 GMT 2005 (njh)
 ----------------------------------
   * libclamav/blob.c:	Sanitise tab characters in filenames ("Heinz Martin"
-				<Martin@hemag.ch>)
+				<Martin*hemag.ch>)
 			Decode encapsulated messages that have for some reason
 				been base64 encoded (even though they're already
 				7 bit)
@@ -27,10 +34,10 @@ Tue Feb  1 08:54:46 GMT 2005 (njh)
 ----------------------------------
   * clamav-milter:	Delete X-Virus-Status in clamfi_eom not in
 				clamfi_header. Patch by Jef Poskanzer
-				<jef@acme.com>
+				<jef*acme.com>
 			X-Virus-Status now says that virus that it's infected
 				with. Suggestion by "Hank Beatty"
-				<hbeatty@starband.net>
+				<hbeatty*starband.net>
 
 Tue Feb  1 03:46:22 CET 2005 (tk)
 ---------------------------------
@@ -53,7 +60,7 @@ Sun Jan 30 15:18:02 GMT 2005 (njh)
   * clamav-milter:	SESSION is on now by default, to test clamd
 			PACKADDR is now uses unsinged to remove warning on
 				Sun's C compiler, patch by
-				"Dugal James P." <jpd@louisiana.edu>
+				"Dugal James P." <jpd*louisiana.edu>
 			Don't check compatibility with sendmail.cf if sendmail
 				is running on a different machine
 
@@ -83,12 +90,12 @@ Thu Jan 27 10:55:35 GMT 2005 (njh)
 			Downgraded scanmail not defined if --external isn't
 				given from error to warning
 			Added -i flag when calling sendmail, suggested by
-				Michal Jaegermann <michal@harddata.com>
+				Michal Jaegermann <michal*harddata.com>
 
 Thu Jan 27 01:35:35 CET 2005 (tk)
 ---------------------------------
   * freshclam/manager.c: add support for HTTP/1.0 ansers in IMS (--no-dns) mode
-			 (patch by Sven Strickroth <sstrickroth@gym-oha.de>)
+			 (patch by Sven Strickroth <sstrickroth*gym-oha.de>)
 
 Wed Jan 26 19:27:57 CET 2005 (tk)
 ---------------------------------
