@@ -1,3 +1,7 @@
+Wed Sep  1 03:32:28 CEST 2004 (tk)
+----------------------------------
+  * libclamav/cvd.c: display warning if loaded database is older than 7 days
+
 Wed Sep  1 02:21:41 CEST 2004 (tk)
 ----------------------------------
   * etc/freshclam.conf: enable DNSDatabaseInfo by default
@@ -7,7 +11,7 @@ Tue Aug 31 20:39:34 CEST 2004 (tk)
 ----------------------------------
   * sigtool: add support for *.hdb files in -l; include creation time in
 	     seconds in cvd header
-  * libclamav: do not load Eicar signature (detected with MD5 checksum in
+  * libclamav: do not load EICAR signature (detected with MD5 checksum in
 	       daily.cvd > 472)
 
 Tue Aug 31 13:43:11 CEST 2004 (acab)

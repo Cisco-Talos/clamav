@@ -29,6 +29,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <zlib.h>
+#include <time.h>
 
 #include "clamav.h"
 #include "others.h"
@@ -222,6 +223,13 @@ struct cl_cvd *cl_cvdparse(const char *head)
 	return NULL;
     }
 
+    if((pt = cli_strtok(head, 8, ":"))) {
+	cvd->stime = atoi(pt);
+	free(pt);
+    } else
+	cli_dbgmsg("CVD -> No creation time in seconds (old file format)\n");
+
+
     return cvd;
 }
 
@@ -236,7 +244,7 @@ struct cl_cvd *cl_cvdhead(const char *file)
 	return NULL;
     }
 
-    if((i=fread(head, 1, 512, fd)) != 512) {
+    if((i = fread(head, 1, 512, fd)) != 512) {
 	cli_dbgmsg("Short read (%d) while reading CVD head from %s\n", i, file);
 	fclose(fd);
 	return NULL;
@@ -259,7 +267,7 @@ void cl_cvdfree(struct cl_cvd *cvd)
     free(cvd);
 }
 
-int cli_cvdverify(FILE *fd)
+int cli_cvdverify(FILE *fd, struct cl_cvd *cvdpt)
 {
 	struct cl_cvd *cvd;
 	char *md5, head[513];
@@ -277,6 +285,8 @@ int cli_cvdverify(FILE *fd)
     if((cvd = cl_cvdparse(head)) == NULL)
 	return CL_ECVD;
 
+    if(cvd)
+	memcpy(cvdpt, cvd, sizeof(struct cl_cvd));
 
     md5 = cli_md5stream(fd);
     cli_dbgmsg("MD5(.tar.gz) = %s\n", md5);
@@ -312,7 +322,7 @@ int cl_cvdverify(const char *file)
 	return CL_EOPEN;
     }
 
-    ret = cli_cvdverify(fd);
+    ret = cli_cvdverify(fd, NULL);
     fclose(fd);
 
     return ret;
@@ -321,16 +331,29 @@ int cl_cvdverify(const char *file)
 int cli_cvdload(FILE *fd, struct cl_node **root, int *virnum)
 {
         char *dir, *tmp, *buffer;
+	struct cl_cvd cvd;
 	int bytes, ret;
 	const char *tmpdir;
 	FILE *tmpd;
+	time_t stime;
+
 
     cli_dbgmsg("in cli_cvdload()\n");
 
     /* verify */
 
-    if((ret = cli_cvdverify(fd)))
+    if((ret = cli_cvdverify(fd, &cvd)))
 	return ret;
+
+    if(cvd.stime) {
+	time(&stime);
+	if((int) stime - cvd.stime > 604800) {
+	    cli_warnmsg("**************************************************\n");
+	    cli_warnmsg("***  The virus database is older than 7 days.  ***\n");
+	    cli_warnmsg("***        Please update it IMMEDIATELY!       ***\n");
+	    cli_warnmsg("**************************************************\n");
+	}
+    }
 
     fseek(fd, 512, SEEK_SET);
 
