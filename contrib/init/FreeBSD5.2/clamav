@@ -14,7 +14,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
-# Install into /etc/rd.d/clamav
+# Install into /etc/rc.d/clamav
 #
 # Add lines such as this to /etc/rc.conf
 #
