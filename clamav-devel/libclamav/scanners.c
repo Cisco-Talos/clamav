@@ -472,7 +472,7 @@ int cli_scanbzip(int desc, char **virname, long int *scanned, const struct cl_no
 	if(limits->archivememlim)
 	    memlim = 1;
 
-    if((bfd = BZ2_bzReadOpen(&bzerror, fs, memlim, 0, NULL, 0)) == NULL) {
+    if((bfd = BZ2_bzReadOpen(&bzerror, fs, 0, memlim, NULL, 0)) == NULL) {
 	cli_dbgmsg("Can't initialize bzip2 library (descriptor %d).\n", desc);
 	fclose(fs);
 	return CL_EBZIP;

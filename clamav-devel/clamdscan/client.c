@@ -128,7 +128,9 @@ int client(const struct optstruct *opt)
     }
 
     
-    if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
+    if(opt->filename == NULL || strlen(opt->filename) == 0) {
+	file = (char *) strdup(cwd);
+    } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
 	if(write(sockd, "STREAM", 6) <= 0) {
 	    mprintf("@Can't write to the socket.\n");
 	    close(sockd);
@@ -196,8 +198,6 @@ int client(const struct optstruct *opt)
 
 	return claminfo.ifiles ? 1 : 0;
 
-    } else if(strlen(opt->filename) == 0) {
-	file = (char *) strdup(cwd);
     } else if(opt->filename[0] == '/') {
 	file = (char *) strdup(opt->filename);
     } else {

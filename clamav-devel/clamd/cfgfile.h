@@ -19,8 +19,6 @@
 #ifndef __CFGFILE_H
 #define __CFGFILE_H
 
-#include "options.h"
-
 #define LINE_LENGTH 1024
 
 
