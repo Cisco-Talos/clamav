@@ -28,6 +28,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <netinet/in.h>
+
 
 #if HAVE_MMAP
 #if HAVE_SYS_MMAN_H
@@ -693,6 +695,43 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
 #endif
 }
 
+static int  cli_scan_mydoom_log(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+{
+	int32_t record[8], check;
+	int i, retval=CL_VIRUS, j;
+
+    cli_dbgmsg("in mydoom_log\n");
+
+    /* Check upto the first five records in the file */
+    for (j=0 ; j<5 ; j++) {
+	if (cli_readn(desc, &record, 32) != 32) {
+	    break;
+	}
+
+	/* Decode the key */
+	record[0] = ~ntohl(record[0]);
+	cli_dbgmsg("key: %lu\n", record[0]);
+	check = 0;
+	for (i=1 ; i<8; i++) {
+	    record[i] = ntohl(record[i]) ^ record[0];
+	    check += record[i];
+	}
+	cli_dbgmsg("check: %lu\n", ~check);
+	if ((~check) != record[0]) {
+	    return CL_CLEAN;
+	}
+    }
+
+    if (j < 2) {
+	retval = CL_CLEAN;
+    } else if (retval==CL_VIRUS) {
+	if(virname)
+	    *virname = "Mydoom.M.log";
+    }
+
+    return retval;
+}
+
 static int cli_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
 {
 	DIR *dd;
@@ -1085,6 +1124,7 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 	    }
 
 	default:
+	    ret = cli_scan_mydoom_log(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
     }
 

@@ -426,7 +426,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    return CL_EIO;
 	}
 
-	if(buff[0]=='\x87' || buff [1]=='\x25') {
+	if(buff[0]=='\x87' && buff [1]=='\x25') {
 
 	    /* FSG support - thanks to aCaB ! */
 
