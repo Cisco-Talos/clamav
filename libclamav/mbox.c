@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.105  2004/08/18 21:35:08  nigelhorne
+ * Multithread the FollowURL calls
+ *
  * Revision 1.104  2004/08/18 15:53:43  nigelhorne
  * Honour CL_MAILURL
  *
@@ -300,7 +303,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.104 2004/08/18 15:53:43 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.105 2004/08/18 21:35:08 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -415,7 +418,16 @@ static	bool	saveFile(const blob *b, const char *dir);
 
 static	void	checkURLs(message *m, const char *dir);
 #ifdef	WITH_CURL
-static	void	getURL(const char *url, const char *dir, const char *filename);
+struct arg {
+	char *url;
+	char *dir;
+	char *filename;
+};
+#ifdef	CL_THREAD_SAFE
+static	void	*getURL(void *a);
+#else
+static	void	*getURL(struct arg *arg);
+#endif
 #endif
 
 
@@ -2307,6 +2319,10 @@ checkURLs(message *m, const char *dir)
 	size_t len;
 	table_t *t;
 	int n;
+#if	defined(WITH_CURL) && defined(CL_THREAD_SAFE)
+	pthread_t tid[MAX_URLS];
+	struct arg args[MAX_URLS];
+#endif
 
 	if(b == NULL)
 		return;
@@ -2335,13 +2351,18 @@ checkURLs(message *m, const char *dir)
 	while(len >= 8) {
 		/* FIXME: allow any number of white space */
 		if(strncasecmp(ptr, "<a href=", 8) == 0) {
-#ifndef	WITH_CURL
+#ifdef	WITH_CURL
+#ifndef	CL_THREAD_SAFE
+			struct arg arg;
+#endif
+
+#else	/*!WITH_CURL*/
 #ifdef	CL_THREAD_SAFE
 			static pthread_mutex_t system_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 			struct stat statb;
 			char cmd[512];
-#endif
+#endif	/*WITH_CURL*/
 			char *p2 = &ptr[8];
 			char *p3;
 			char name[512];
@@ -2365,6 +2386,10 @@ checkURLs(message *m, const char *dir)
 				continue;
 			if(*p2 == '\0')
 				continue;
+			if(n == MAX_URLS) {
+				cli_warnmsg("Not all URLs will be scanned\n");
+				break;
+			}
 			if(tableFind(t, p2) == 1) {
 				cli_dbgmsg("URL %s already downloaded\n", p2);
 				continue;
@@ -2377,7 +2402,18 @@ checkURLs(message *m, const char *dir)
 					*p3 = '_';
 
 #ifdef	WITH_CURL
-			getURL(p2, dir, name);
+#ifdef	CL_THREAD_SAFE
+			args[n].url = strdup(p2);
+			args[n].dir = strdup(dir);
+			args[n].filename = strdup(name);
+			pthread_create(&tid[n], NULL, getURL, &args[n]);
+#else
+			arg.url = p2;
+			arg.dir = dir;
+			arg.filename = name;
+			getURL(&arg);
+#endif
+
 #else
 			/*
 			 * TODO: maximum size and timeouts
@@ -2401,48 +2437,78 @@ checkURLs(message *m, const char *dir)
 					(void)unlink(cmd);
 				}
 #endif
-			if(++n > MAX_URLS) {
-				cli_warnmsg("Not all URLs will be scanned\n");
-				break;
-			}
+			++n;
 		}
 		ptr++;
 		len--;
 	}
 	blobDestroy(b);
 	tableDestroy(t);
+
+#if	defined(WITH_CURL) && defined(CL_THREAD_SAFE)
+	cli_dbgmsg("checkURLs: waiting for %d thread(s) to finish\n", n);
+	while(--n >= 0) {
+		pthread_join(tid[n], NULL);
+		free(args[n].url);
+		free(args[n].dir);
+		free(args[n].filename);
+	}
+#endif
 }
 
 #ifdef	WITH_CURL
+static void *
+#ifdef	CL_THREAD_SAFE
+getURL(void *a)
+#else
 static void
-getURL(const char *url, const char *dir, const char *filename)
+getURL(struct arg *arg)
+#endif
 {
 	char *fout;
 	CURL *curl;
 	FILE *fp;
 	struct curl_slist *headers;
 	static int initialised = 0;
+#ifdef	CL_THREAD_SAFE
+	static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
+	struct arg *arg = (struct arg *)a;
+#endif
+	const char *url = arg->url;
+	const char *dir = arg->dir;
+	const char *filename = arg->filename;
 
+#ifdef	CL_THREAD_SAFE
+	pthread_mutex_lock(&init_mutex);
+#endif
 	if(!initialised) {
-		if(curl_global_init(CURL_GLOBAL_NOTHING) != 0)
-			return;
+		if(curl_global_init(CURL_GLOBAL_NOTHING) != 0) {
+#ifdef	CL_THREAD_SAFE
+			pthread_mutex_unlock(&init_mutex);
+#endif
+			return NULL;
+		}
 		initialised = 1;
 	}
+#ifdef	CL_THREAD_SAFE
+	pthread_mutex_unlock(&init_mutex);
+#endif
+
 	/* easy isn't the word I'd use... */
 	curl = curl_easy_init();
 	if(curl == NULL)
-		return;
+		return NULL;
 
 	(void)curl_easy_setopt(curl, CURLOPT_USERAGENT, "www.clamav.net");
 
 	if(curl_easy_setopt(curl, CURLOPT_URL, url) != 0)
-		return;
+		return NULL;
 
 	fout = cli_malloc(strlen(dir) + strlen(filename) + 2);
 
 	if(fout == NULL) {
 		curl_easy_cleanup(curl);
-		return;
+		return NULL;
 	}
 
 	sprintf(fout, "%s/%s", dir, filename);
@@ -2453,21 +2519,21 @@ getURL(const char *url, const char *dir, const char *filename)
 		perror(fout);
 		free(fout);
 		curl_easy_cleanup(curl);
-		return;
+		return NULL;
 	}
+	if(curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp) != 0) {
+		fclose(fp);
+		free(fout);
+		curl_easy_cleanup(curl);
+		return NULL;
+	}
+
 	/*
 	 * If an item is in squid's cache get it from there (TCP_HIT/200)
 	 * by default curl doesn't (TCP_CLIENT_REFRESH_MISS/200)
 	 */
 	headers = curl_slist_append(NULL, "Pragma:");
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-
-	if(curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp) != 0) {
-		fclose(fp);
-		free(fout);
-		curl_easy_cleanup(curl);
-		return;
-	}
 
 	/* These should be customisable */
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30);
@@ -2476,14 +2542,29 @@ getURL(const char *url, const char *dir, const char *filename)
 	curl_easy_setopt(curl, CURLOPT_MAXFILESIZE, 50*1024);
 #endif
 
+#ifdef  CL_THREAD_SAFE
+	curl_easy_setopt(curl, CURLOPT_DNS_USE_GLOBAL_CACHE, 0);
+#endif
+	/*
+	 * FIXME: valgrind reports "pthread_mutex_unlock: mutex is not locked"
+	 * from gethostbyaddr_r within this. It may be a bug in libcurl
+	 * rather than this code, but I need to check, see Curl_resolv()
+	 * If pushed really hard it will sometimes say
+	 * Conditional jump or move depends on uninitialised value(s) and
+	 * quit. But the program seems to work OK without valgrind...
+	 * Perhaps Curl_resolv() isn't thread safe?
+	 */
 	if(curl_easy_perform(curl) != CURLE_OK) {
 		cli_warnmsg("URL %s failed to download\n", url);
 		unlink(fout);
 	}
 
 	fclose(fp);
+	curl_slist_free_all(headers);
 	curl_easy_cleanup(curl);
 	free(fout);
+
+	return NULL;
 }
 #endif
 
