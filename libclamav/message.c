@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.103  2004/10/17 09:29:21  nigelhorne
+ * Advise to report broken emails
+ *
  * Revision 1.102  2004/10/16 20:53:28  nigelhorne
  * Tidy up
  *
@@ -303,7 +306,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.102 2004/10/16 20:53:28 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.103 2004/10/17 09:29:21 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -979,7 +982,7 @@ messageSetEncoding(message *m, const char *enctype)
 			}
 
 		if(e->string == NULL) {
-			cli_warnmsg("Unknown encoding type \"%s\"\n", type);
+			cli_warnmsg("Unknown encoding type \"%s\" - report to bugs@clamav.net\n", type);
 			free(type);
 			/*
 			 * Err on the side of safety, enable all decoding
