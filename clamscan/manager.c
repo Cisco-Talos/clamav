@@ -30,6 +30,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <utime.h>
 #include <grp.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -962,59 +963,46 @@ int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struc
 
 void move_infected(const char *filename, const struct optstruct *opt)
 {
-    char *movedir, *movefilename, *tmp, numext[4 + 1];
-    struct stat fstat, mfstat;
-    int n, len, movefilename_size;
+	char *movedir, *movefilename, *tmp, numext[4 + 1];
+	struct stat fstat, mfstat;
+	int n, len, movefilename_size;
+	struct utimbuf ubuf;
 
 
     if(!(movedir = getargl(opt, "move"))) {
         /* Should never reach here */
-        mprintf("@error moving file '%s'.\n", filename);
-        mprintf("clamscan: getargc() returned NULL.\n");
-        logg("clamscan: getargc() returned NULL.\n");
+        mprintf("@getargc() returned NULL\n", filename);
         claminfo.notmoved++;
         return;
     }
 
     if(access(movedir, W_OK|X_OK) == -1) {
-        mprintf("@error moving file '%s'.\n", filename);
-        mprintf("clamscan: cannot write to '%s': %s.\n", movedir, strerror(errno));
-        logg("clamscan: cannot write to '%s': %s.\n", movedir, strerror(errno));
+        mprintf("@error moving file '%s': cannot write to '%s': %s\n", filename, movedir, strerror(errno));
         claminfo.notmoved++;
         return;
     }
 
-    if(!(tmp = strrchr(filename, '/'))) {
-        mprintf("@error moving file '%s'.\n", filename);
-        mprintf("clamscan: '%s' does not appear to be a valid filename.\n", filename);
-        logg("clamscan: '%s' does not appear to be a valid filename.\n", filename);
-        claminfo.notmoved++;
-        return;
-    }
+    if(!(tmp = strrchr(filename, '/')))
+	tmp = (char *) filename;
 
-    movefilename_size = sizeof(char) * (strlen(movedir) + strlen(tmp) + sizeof(numext) + 1);
+    movefilename_size = sizeof(char) * (strlen(movedir) + strlen(tmp) + sizeof(numext) + 2);
 
-    if(!(movefilename = malloc(movefilename_size))) {
-        mprintf("@error moving file '%s'.\n", filename);
-        mprintf("clamscan: malloc() returned NULL.\n");
-        logg("clamscan: malloc() returned NULL.\n");
-        claminfo.notmoved++;
-        return;
+    if(!(movefilename = mmalloc(movefilename_size))) {
+        mprintf("@Memory allocation error\n");
+	exit(71);
     }
 
     if(!(strrcpy(movefilename, movedir))) {
-        mprintf("@error moving file '%s'.\n", filename);
-        mprintf("clamscan: strrcpy() returned NULL.\n");
-        logg("clamscan: strrcpy() returned NULL.\n");
+        mprintf("@strrcpy() returned NULL\n");
         claminfo.notmoved++;
         free(movefilename);
         return;
     }
 
+    strcat(movefilename, "/");
+
     if(!(strcat(movefilename, tmp))) {
-        mprintf("@error moving file '%s'.\n", filename);
-        mprintf("clamscan: strcat() returned NULL.\n");
-        logg("clamscan: strcat() returned NULL.\n");
+        mprintf("@strcat() returned NULL\n");
         claminfo.notmoved++;
         free(movefilename);
         return;
@@ -1024,8 +1012,8 @@ void move_infected(const char *filename, const struct optstruct *opt)
 
     if(!stat(movefilename, &mfstat)) {
         if(fstat.st_ino == mfstat.st_ino) { /* It's the same file*/
-            mprintf("clamscan: file excluded '%s'.\n", filename);
-            logg("clamscan: file excluded '%s'.\n", filename);
+            mprintf("File excluded '%s'\n", filename);
+            logg("File excluded '%s'\n", filename);
             claminfo.notmoved++;
             free(movefilename);
             return;
@@ -1048,27 +1036,31 @@ void move_infected(const char *filename, const struct optstruct *opt)
        }
     }
 
-    if(filecopy(filename, movefilename) == -1) {
-        mprintf("@error moving file '%s'.\n", filename);
-        mprintf("clamscan: cannot move '%s' to '%s': %s.\n", filename, movefilename, strerror(errno));
-        logg("clamscan: cannot move '%s' to '%s': %s.\n", filename, movefilename, strerror(errno));
-        claminfo.notmoved++;
-        free(movefilename);
-        return;
+    if(rename(filename, movefilename) == -1) {
+	if(filecopy(filename, movefilename) == -1) {
+	    mprintf("@cannot move '%s' to '%s': %s\n", filename, movefilename, strerror(errno));
+	    claminfo.notmoved++;
+	    free(movefilename);
+	    return;
+	}
+
+	chmod(movefilename, fstat.st_mode);
+	chown(movefilename, fstat.st_uid, fstat.st_gid);
+
+	ubuf.actime = fstat.st_atime;
+	ubuf.modtime = fstat.st_mtime;
+	utime(movefilename, &ubuf);
+
+	if(unlink(filename)) {
+	    mprintf("@cannot unlink '%s': %s\n", filename, strerror(errno));
+	    claminfo.notremoved++;            
+	    free(movefilename);
+	    return;
+	}
     }
 
-    chmod(movefilename, fstat.st_mode);
-    chown(movefilename, fstat.st_uid, fstat.st_gid);
-
-    if(unlink(filename)) {
-        mprintf("@error moving file '%s'.\n", filename);
-        mprintf("clamscan: cannot unlink '%s': %s.\n", filename, strerror(errno));
-        logg("clamscan: cannot unlink '%s': %s.\n", filename, strerror(errno));
-        claminfo.notremoved++;            
-    } else {
-        mprintf("%s: moved to '%s'.\n", filename, movefilename);
-        logg("%s: moved to '%s'.\n", filename, movefilename);
-    }
+    mprintf("%s: moved to '%s'\n", filename, movefilename);
+    logg("%s: moved to '%s'\n", filename, movefilename);
 
     free(movefilename);
 }
