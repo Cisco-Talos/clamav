@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: text.c,v $
+ * Revision 1.12  2004/12/04 16:03:55  nigelhorne
+ * Text/plain now handled as no encoding
+ *
  * Revision 1.11  2004/11/27 21:54:26  nigelhorne
  * Tidy
  *
@@ -42,14 +45,14 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: text.c,v 1.11 2004/11/27 21:54:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: text.c,v 1.12 2004/12/04 16:03:55 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
 
 #include <stdlib.h>
-#if	C_DARWIN
+#ifdef	C_DARWIN
 #include <sys/types.h>
 #include <sys/malloc.h>
 #else
@@ -69,6 +72,8 @@ static	char	const	rcsid[] = "$Id: text.c,v 1.11 2004/11/27 21:54:26 nigelhorne E
 #include "blob.h"
 #include "text.h"
 #include "others.h"
+
+static	text	*textCopy(const text *t_head);
 
 void
 textDestroy(text *t_head)
@@ -95,7 +100,7 @@ textClean(text *t_head)
 }
 
 /* Clone the current object */
-text *
+static text *
 textCopy(const text *t_head)
 {
 	text *first = NULL, *last = NULL;
