@@ -29,6 +29,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
+#include <ctype.h>
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -50,24 +51,23 @@
 #define TRUE (1)
 
 typedef enum {
-    HTML_BAD_STATE=0,
-    HTML_NORM=1,
-    HTML_COMMENT=2,
-    HTML_CHAR_REF=3,
-    HTML_JS_DECODE=4,
-    HTML_SKIP_WS=5,
-    HTML_TRIM_WS=6,
-    HTML_TAG=7,
-    HTML_TAG_ARG=8,
-    HTML_TAG_ARG_VAL=9,
-    HTML_TAG_ARG_EQUAL=10,
-    HTML_PROCESS_TAG=11,
-    HTML_CHAR_REF_DECODE=12,
-    HTML_SKIP_LENGTH=13,
-    HTML_JSDECODE=14,
-    HTML_JSDECODE_LENGTH=15,
-    HTML_JSDECODE_DECRYPT=16,
-    HTML_SPECIAL_CHAR=17,
+    HTML_BAD_STATE,
+    HTML_NORM,
+    HTML_COMMENT,
+    HTML_CHAR_REF,
+    HTML_SKIP_WS,
+    HTML_TRIM_WS,
+    HTML_TAG,
+    HTML_TAG_ARG,
+    HTML_TAG_ARG_VAL,
+    HTML_TAG_ARG_EQUAL,
+    HTML_PROCESS_TAG,
+    HTML_CHAR_REF_DECODE,
+    HTML_SKIP_LENGTH,
+    HTML_JSDECODE,
+    HTML_JSDECODE_LENGTH,
+    HTML_JSDECODE_DECRYPT,
+    HTML_SPECIAL_CHAR,
 } html_state;
 
 typedef enum {
@@ -145,12 +145,10 @@ int decrypt_tables[3][128] = {
        0x3B, 0x57, 0x22, 0x6D, 0x4D, 0x25, 0x28, 0x46, 0x4A, 0x32, 0x41, 0x3D, 0x5F, 0x4F, 0x42, 0x65}
 };
 
-/* TODO: mmap support */
 static unsigned char *cli_readline(FILE *stream, m_area_t *m_area, unsigned int max_len)
 {
 	unsigned char *line, *ptr, *start, *end;
 	unsigned int line_len, count;
-	int fddup;
 
 	line = (unsigned char *) malloc(max_len);
 	if (!line) {
@@ -248,7 +246,7 @@ static void html_output_c(file_buff_t *fbuff1, file_buff_t *fbuff2, unsigned cha
 	}
 }
 
-static html_output_str(file_buff_t *fbuff, unsigned char *str, int len)
+static void html_output_str(file_buff_t *fbuff, unsigned char *str, int len)
 {
 	if (fbuff) {
 		if ((fbuff->length + len) >= HTML_FILE_BUFF_LEN) {
@@ -288,9 +286,9 @@ static void html_tag_arg_add(tag_arguments_t *tags,
 {
 	int len;
 	tags->count++;
-	tags->tag = (unsigned char **) realloc(tags->tag,
+	tags->tag = (unsigned char **) cli_realloc(tags->tag,
 				tags->count * sizeof(char *));
-	tags->value = (unsigned char **) realloc(tags->value,
+	tags->value = (unsigned char **) cli_realloc(tags->value,
 				tags->count * sizeof(char *));
 	if (!tags->tag || !tags->value) {
 		tags->count--;
@@ -314,7 +312,7 @@ static void html_tag_arg_add(tag_arguments_t *tags,
 
 static void html_output_tag(file_buff_t *fbuff, char *tag, tag_arguments_t *tags)
 {
-	int i;
+	int i, j, len;
 
 	html_output_c(fbuff, NULL, '<');
 	html_output_str(fbuff, tag, strlen(tag));
@@ -323,7 +321,10 @@ static void html_output_tag(file_buff_t *fbuff, char *tag, tag_arguments_t *tags
 		html_output_str(fbuff, tags->tag[i], strlen(tags->tag[i]));
 		if (tags->value[i]) {
 			html_output_str(fbuff, "=\"", 2);
-			html_output_str(fbuff, tags->value[i], strlen(tags->value[i]));
+			len = strlen(tags->value[i]);
+			for (j=0 ; j<len ; j++) {
+				html_output_c(fbuff, NULL, tolower(tags->value[i][j]));
+			}
 			html_output_c(fbuff, NULL, '"');
 		}
 	}
@@ -690,7 +691,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				} else {
 					html_output_c(file_buff_o1, file_buff_o2, tolower(*ptr));
 					if (tag_val_length < HTML_STR_LENGTH) {
-						tag_val[tag_val_length++] = tolower(*ptr);
+						tag_val[tag_val_length++] = *ptr;
 					}
 					ptr++;
 				}
@@ -903,7 +904,7 @@ int html_normalise_mem(unsigned char *in_buff, off_t in_size, const char *dirnam
 	m_area.length = in_size;
 	m_area.offset = 0;
 	
-	cli_html_normalise(-1, &m_area, dirname, hrefs);
+	return cli_html_normalise(-1, &m_area, dirname, hrefs);
 }
 
 int html_normalise_fd(int fd, const char *dirname, tag_arguments_t *hrefs)
