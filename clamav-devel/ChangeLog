@@ -1,3 +1,7 @@
+Sat Aug 28 10:16:19 BST 2004 (trog)
+-----------------------------------
+  * libclamav/ole2_extract.c: Another go at fixing MACOS/X filenames
+
 Fri Aug 27 17:40:14 BST 2004 (njh)
 ----------------------------------
   * libclamav/blob.c:	Another go at fixing MACOS/X filenames
