@@ -197,6 +197,10 @@ void sigtool(struct optstruct *opt)
 
 	build(opt);
 
+    } else if(optc(opt, 'u')) {
+
+	unpack(opt);
+
     } else if(optc(opt, 'i')) {
 
 	cvdinfo(opt);
@@ -281,13 +285,11 @@ void sigtool(struct optstruct *opt)
 		if(end > filesize)
 		    end = filesize;
 
-		unlink(tmp);
-		free(tmp);
 	    }
 
 	}
 
-	/* find signature beginning */
+	/* find signature start */
 	found = 0;
 	jmp = 50;
 	pos = end - jmp;
@@ -377,7 +379,7 @@ void sigtool(struct optstruct *opt)
 	tmp = cut(f, pos, end);
 
 	mprintf("\nThe scanner was executed %d times.\n", exec);
-	mprintf("The signature length is %d, so the length of the hex string should be %d\n", end - pos, 2 * (end - pos));
+	mprintf("The signature length is %d (%d hex)\n", end - pos, 2 * (end - pos));
 
 	if(end - pos < MIN_LENGTH) {
 	    mprintf("\nWARNING: THE SIGNATURE IS TOO SMALL (PROBABLY ONLY A PART OF A REAL SIGNATURE).\n");
@@ -451,7 +453,7 @@ int countlines(const char *filename)
 
 int build(struct optstruct *opt)
 {
-	int ret, no = 0, bytes, itmp;
+	int ret, no = 0, realno = 0, bytes, itmp;
 	struct stat foo;
 	char buffer[BUFFSIZE], *tarfile = NULL, *gzfile = NULL, header[257],
 	     smbuff[25], *pt;
@@ -460,7 +462,7 @@ int build(struct optstruct *opt)
 	gzFile *gz;
 	time_t timet;
 	struct tm *brokent;
-	struct cl_cvd *old;
+	struct cl_cvd *oldcvd = NULL;
 
     /* build a tar.gz archive
      * we need: COPYING and {viruses.db, viruses.db2}+
@@ -481,17 +483,26 @@ int build(struct optstruct *opt)
 
     if((ret = cl_loaddbdir(".", &root, &no))) {
 	mprintf("!Can't load database: %s\n", cl_strerror(ret));
-        exit(1);
+	exit(1);
     }
 
     cl_freetrie(root);
 
     mprintf("Database properly parsed.\n");
 
-    if(!no)
+    if(!no) {
 	mprintf("WARNING: There are no signatures in the database(s).\n");
-    else
+    } else {
 	mprintf("Signatures: %d\n", no);
+	realno = countlines("viruses.db") + countlines("viruses.db2");
+
+	if(realno != no) {
+	    mprintf("!Signatures in database: %d. Loaded: %d.\n", realno, no);
+	    mprintf("Please check the current directory and remove unnecessary databases\n");
+	    mprintf("or install the latest ClamAV version.\n");
+	    exit(1);
+	}
+    }
 
     tarfile = cl_gentemp(".");
 
@@ -501,7 +512,7 @@ int build(struct optstruct *opt)
 	    exit(1);
 	case 0:
 	    {
-		char *args[] = { "tar", "-cvf", tarfile, "COPYING", "viruses.db", "viruses.db2", NULL };
+		char *args[] = { "tar", "-cvf", tarfile, "COPYING", "viruses.db", "viruses.db2", "Notes", NULL };
 		execv("/bin/tar", args);
 		mprintf("!Can't execute tar\n");
 		perror("tar");
@@ -536,6 +547,12 @@ int build(struct optstruct *opt)
 
     gzclose(gz);
 
+
+    /* try to read cvd header of old database */
+    sprintf(buffer, "%s/%s", cl_retdbdir(), getargc(opt, 'b'));
+    if((oldcvd = cl_cvdhead(buffer)) == NULL)
+	mprintf("WARNING: CAN'T READ CVD HEADER OF CURRENT DATABASE %s\n", buffer);
+
     /* generate header */
 
     /* magic string */
@@ -554,11 +571,14 @@ int build(struct optstruct *opt)
 
     /* ... increment version number by one */
 
-    mprintf("!Can't read database version number from current local database\n");
-    fflush(stdin);
-    mprintf("Please enter a version number for the new database: ");
-    scanf("%d", &itmp);
-    sprintf(smbuff, "%d:", itmp);
+    if(oldcvd) {
+	sprintf(smbuff, "%d:", oldcvd->version + 1);
+    } else {
+	fflush(stdin);
+	mprintf("Version number: ");
+	scanf("%d", &itmp);
+	sprintf(smbuff, "%d:", itmp);
+    }
     strcat(header, smbuff);
 
     /* number of signatures */
@@ -586,6 +606,7 @@ int build(struct optstruct *opt)
     fclose(fd);
     if(!(pt = getdsig(getargc(opt, 's'), smbuff, buffer))) {
 	mprintf("No digital signature - no CVD file...\n");
+	unlink(gzfile);
 	exit(1);
     }
 
@@ -598,7 +619,8 @@ int build(struct optstruct *opt)
 
     /* fill up with spaces */
     if(strlen(header) > 512) {
-	mprintf("!Generated signature is too long.\n");
+	mprintf("!Generated header is too long.\n");
+	unlink(gzfile);
 	exit(1);
     }
 
@@ -610,6 +632,7 @@ int build(struct optstruct *opt)
     pt = getargc(opt, 'b');
     if((cvd = fopen(pt, "wb")) == NULL) {
 	mprintf("!Can't write the final database %s\n", pt);
+	unlink(gzfile);
 	exit(1);
     }
 
@@ -670,7 +693,7 @@ void cvdinfo(struct optstruct *opt)
 void help(void)
 {
     mprintf("\n");
-    mprintf("		   Clam AntiVirus: Signature Tool (sigtool)  "VERSION"\n");
+    mprintf("		Clam AntiVirus: Signature Tool (sigtool)  "VERSION"\n");
     mprintf("	       (c) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>\n");
     mprintf("\n");
     mprintf("   --help		    -h		show help\n");
@@ -684,9 +707,11 @@ void help(void)
     mprintf("   --command		    -c		scanner command string, with options\n");
     mprintf("   --string		    -s		'virus found' string in scan. output\n");
     mprintf("   --file		    -f		infected file\n");
-    mprintf("	--info FILE	    -i FILE	print database information\n");
-    mprintf("   --build NAME	    -b NAME		Build database\n");
-    mprintf("   --server ADDR	    -s ADDR	    ClamAV Signing Service address\n");
+    mprintf("   --info FILE		    -i FILE	print database information\n");
+    mprintf("   --build NAME		    -b NAME	Build a CVD file\n");
+    mprintf("   --server ADDR	    -s ADDR	ClamAV Signing Service address\n");
+    mprintf("   --unpack FILE	    -u FILE	Unpack a CVD file\n");
+    mprintf("\n");
 
     exit(0);
 }
@@ -754,4 +779,27 @@ char *getdsig(const char *host, const char *user, const char *data)
     pt = buff;
     pt += 10;
     return strdup(pt);
+}
+
+int unpack(struct optstruct *opt)
+{
+	FILE *fd;
+	struct cl_cvd *cvd;
+
+
+    if((fd = fopen(getargc(opt, 'u'), "rb")) == NULL) {
+	mprintf("!Can't open CVD file %s\n");
+	exit(1);
+    }
+
+    fseek(fd, 512L, SEEK_SET);
+
+    if(cli_untgz(fileno(fd), ".")) {
+	mprintf("!Can't unpack file.\n");
+	fclose(fd);
+	exit(1);
+    }
+
+    fclose(fd);
+    exit(0);
 }
