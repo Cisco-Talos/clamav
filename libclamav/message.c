@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.28  2004/02/07 23:13:55  nigelhorne
+ * Handle content-type: text/
+ *
  * Revision 1.27  2004/02/06 13:46:08  kojm
  * Support for clamav-config.h
  *
@@ -78,7 +81,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.27 2004/02/06 13:46:08 kojm Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.28 2004/02/07 23:13:55 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -257,7 +260,15 @@ void
 messageSetMimeSubtype(message *m, const char *subtype)
 {
 	assert(m != NULL);
-	assert(subtype != NULL);
+
+	if(subtype == NULL) {
+		/*
+		 * Handle broken content-type lines, e.g.
+		 *	Content-Type: text/
+		 */
+		cli_dbgmsg("Empty content subtype\n");
+		subtype = "";
+	}
 
 	if(m->mimeSubtype)
 		free(m->mimeSubtype);
