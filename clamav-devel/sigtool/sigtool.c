@@ -804,8 +804,8 @@ void listsigs(struct optstruct *opt)
 void help(void)
 {
     mprintf("\n");
-    mprintf("                Clam AntiVirus: Signature Tool (sigtool)  "VERSION"\n");
-    mprintf("                (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>\n\n");
+    mprintf("             Clam AntiVirus: Signature Tool (sigtool)  "VERSION"\n");
+    mprintf("    (C) 2002 - 2005 ClamAV Team - http://www.clamav.net/team.html\n\n");
 
     mprintf("    --help                 -h              show help\n");
     mprintf("    --version              -V              print version number and exit\n");

@@ -423,8 +423,8 @@ void help(void)
     mprintf_stdout = 1;
 
     mprintf("\n");
-    mprintf("                          Clam AntiVirus: freshclam  "VERSION"\n");
-    mprintf("                (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>\n\n");
+    mprintf("                   Clam AntiVirus: freshclam  "VERSION"\n");
+    mprintf("    (C) 2002 - 2005 ClamAV Team - http://www.clamav.net/team.html\n\n");
 
     mprintf("    --help               -h              show help\n");
     mprintf("    --version            -V              print version number and exit\n");

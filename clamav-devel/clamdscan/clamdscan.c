@@ -128,8 +128,8 @@ void help(void)
     mprintf_stdout = 1;
 
     mprintf("\n");
-    mprintf("                          ClamAV Daemon Client "VERSION"\n");
-    mprintf("                (c) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>\n\n");
+    mprintf("                       ClamAV Daemon Client "VERSION"\n");
+    mprintf("     (C) 2002 - 2005 ClamAV Team - http://www.clamav.net/team.html\n\n");
 
     mprintf("    --help              -h             Show help\n");
     mprintf("    --version           -V             Print version number and exit\n");
