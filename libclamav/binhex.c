@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: binhex.c,v $
+ * Revision 1.7  2004/11/23 09:05:26  nigelhorne
+ * Fix crash in base64 encoded binhex files
+ *
  * Revision 1.6  2004/11/22 15:16:53  nigelhorne
  * Use cli_realloc instead of many cli_mallocs
  *
@@ -33,7 +36,7 @@
  * First draft of binhex.c
  *
  */
-static	char	const	rcsid[] = "$Id: binhex.c,v 1.6 2004/11/22 15:16:53 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: binhex.c,v 1.7 2004/11/23 09:05:26 nigelhorne Exp $";
 
 #include "clamav.h"
 
@@ -75,7 +78,8 @@ cli_binhex(const char *dir, int desc)
 {
 	struct stat statb;
 	char *buf, *start, *line;
-	size_t size, bytesleft;
+	size_t size;
+	int bytesleft;
 	message *m;
 	fileblob *fb;
 
@@ -97,28 +101,28 @@ cli_binhex(const char *dir, int desc)
 
 	cli_dbgmsg("mmap'ed binhex file\n");
 
-	bytesleft = size;
+	bytesleft = (int)size;
 	line = NULL;
 
-	while(bytesleft) {
+	while(bytesleft > 0) {
 		int length = 0;
 		char *ptr;
 
-		/* printf("%d: ", bytesleft); */
+		/*printf("%d: ", bytesleft);*/
 
-		for(ptr = buf; bytesleft && (*ptr != '\r') && (*ptr != '\n'); ptr++) {
+		for(ptr = buf; bytesleft && *ptr && (*ptr != '\r') && (*ptr != '\n'); ptr++) {
 			length++;
 			--bytesleft;
 		}
 
-		/* printf("%d: ", length); */
+		/*printf("%d: ", length);*/
 
 		line = cli_realloc(line, length + 1);
 
 		memcpy(line, buf, length);
 		line[length] = '\0';
 
-		/* puts(line); */
+		/*puts(line);*/
 
 		if(messageAddStr(m, line) < 0)
 			break;
