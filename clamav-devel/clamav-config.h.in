@@ -75,6 +75,9 @@
 /* "attrib packed" */
 #undef HAVE_ATTRIB_PACKED
 
+/* have bzip2 */
+#undef HAVE_BZLIB_H
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
@@ -206,6 +209,9 @@
 
 /* zlib installed */
 #undef HAVE_ZLIB_H
+
+/* bzip funtions do not have bz2 prefix */
+#undef NOBZ2PREFIX
 
 /* "no fd_set" */
 #undef NO_FD_SET

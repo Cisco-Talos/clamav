@@ -23,6 +23,7 @@
 #ifdef HAVE_RESOLV_H
 
 #include <string.h>
+#include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
 #include <resolv.h>

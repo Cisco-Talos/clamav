@@ -1,3 +1,7 @@
+Sun Aug 22 19:03:12 CEST 2004 (tk)
+----------------------------------
+  * freshclam: Fix compilation errors
+
 Sun Aug 22 16:09:30 BST 2004 (njh)
 ----------------------------------
   * libclamav:	Early save to disc is now compatible with FOLLOWURLS

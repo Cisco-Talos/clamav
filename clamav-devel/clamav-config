@@ -46,7 +46,7 @@ while test $# -gt 0; do
 	;;
 
     --version)
-	echo devel-20040821
+	echo devel-20040822
 	exit 0
 	;;
 
@@ -59,7 +59,7 @@ while test $# -gt 0; do
        	;;
 
     --libs)
-       	echo -L${exec_prefix}/lib  -lz -lgmp -L/usr/lib -lcurl -lssl -lcrypto -ldl -lssl -lcrypto -ldl -lz -lpthread
+       	echo -L${exec_prefix}/lib  -lz -lbz2 -lgmp -L/usr/lib -lcurl -lssl -lcrypto -ldl -lssl -lcrypto -ldl -lz -lpthread
        	;;
 
     *)
