@@ -482,7 +482,7 @@ static int cli_loadhdb(FILE *fd, struct cl_node **root, int *virnum)
 	    break;
 	}
 
-	if(!(new->md5 = cli_hex2str(pt))) {
+	if(!(new->md5 = (unsigned char *) cli_hex2str(pt))) {
 	    cli_errmsg("Malformed MD5 string at line %d\n", line);
 	    free(pt);
 	    free(new);
