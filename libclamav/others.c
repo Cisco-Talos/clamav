@@ -379,6 +379,9 @@ int cli_readn(int fd, void *buff, unsigned int count)
                         return (count - todo);
                 }
                 if (retval < 0) {
+			if (errno == EINTR) {
+				continue;
+			}
                         return -1;
                 }
                 todo -= retval;
@@ -403,6 +406,9 @@ int cli_writen(int fd, void *buff, unsigned int count)
         do {
                 retval = write(fd, current, todo);
                 if (retval < 0) {
+			if (errno == EINTR) {
+				continue;
+			}
                         return -1;
                 }
                 todo -= retval;

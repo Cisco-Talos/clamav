@@ -1,3 +1,7 @@
+Fri Mar 26 11:32:08 GMT 2004 (trog)
+-----------------------------------
+  * libclamav: check for EINTR in cli_readn/cli_writen
+
 Fri Mar 26 11:21:34 GMT 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Use cli_writen()
