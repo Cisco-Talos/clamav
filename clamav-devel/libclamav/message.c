@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.68  2004/07/30 11:50:39  nigelhorne
+ * Code tidy
+ *
  * Revision 1.67  2004/07/26 08:31:04  nigelhorne
  * Fix embedded multi parts
  *
@@ -198,7 +201,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.67 2004/07/26 08:31:04 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.68 2004/07/30 11:50:39 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1399,6 +1402,7 @@ messageToText(message *m)
 			unsigned char data[4];
 			unsigned char *ptr;
 
+			memset(data, '\0', sizeof(data));
 			ptr = decode(m, NULL, data, base64, FALSE);
 			if(ptr) {
 				if(first == NULL)

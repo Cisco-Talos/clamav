@@ -1,3 +1,7 @@
+Fri Jul 30 12:52:34 BST 2004 (njh)
+----------------------------------
+  * libclamav/message.c:	Code tidy
+
 Thu Jul 29 16:27:01 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Don't say "waiting for some to exit" if dont_wait is set
