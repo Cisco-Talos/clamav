@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.139  2004/09/22 15:49:13  nigelhorne
+ * Handle RFC2298 messages
+ *
  * Revision 1.138  2004/09/22 15:21:50  nigelhorne
  * Fix typo
  *
@@ -402,7 +405,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.138 2004/09/22 15:21:50 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.139 2004/09/22 15:49:13 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1729,7 +1732,10 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					messageDestroy(m);
 				}
 				break;
-			} else if(strcasecmp(mimeSubtype, "partial") == 0)
+			} else if(strcasecmp(mimeSubtype, "disposition-notification") == 0)
+				/* RFC 2298 - handle like a normal email */
+				break;
+			else if(strcasecmp(mimeSubtype, "partial") == 0)
 				/* TODO */
 				cli_warnmsg("Content-type message/partial not yet supported\n");
 			else if(strcasecmp(mimeSubtype, "external-body") == 0)
