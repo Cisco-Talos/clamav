@@ -1,3 +1,8 @@
+Wed Jan 19 17:46:19 GMT 2005 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Changed fullline warning. The debug message is no
+  		longer needed to gather data, since the code seems to be working
+
 Wed Jan 19 05:32:10 GMT 2005 (njh)
 ----------------------------------
   * clamav-milter:	Up issued
