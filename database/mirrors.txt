@@ -1,3 +1,0 @@
-database.clamav.net
-database.clamav.net
-database.clamav.net

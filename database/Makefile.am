@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+#  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
 #  Fixes by Arkadiusz Miskiewicz <misiek@pld.org.pl>
 #	    Masaki Ogawa <proc@mac.com>
 #
@@ -17,7 +17,7 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-EXTRA_DIST = main.cvd daily.cvd mirrors.txt
+EXTRA_DIST = main.cvd daily.cvd
 DBINST = @DBDIR@
 CLAMAVUSER = @CLAMAVUSER@
 CLAMAVGROUP = @CLAMAVGROUP@
@@ -26,7 +26,6 @@ install:
 	$(mkinstalldirs) $(DESTDIR)$(DBINST)
 	test -f $(DESTDIR)$(DBINST)/main.cvd || @$(INSTALL_DATA) main.cvd $(DESTDIR)$(DBINST)
 	test -f $(DESTDIR)$(DBINST)/daily.cvd || @$(INSTALL_DATA) daily.cvd $(DESTDIR)$(DBINST)
-	test -f $(DESTDIR)$(DBINST)/mirrors.txt || @$(INSTALL_DATA) mirrors.txt $(DESTDIR)$(DBINST)
 	test -f $(DESTDIR)$(DBINST)/viruses.db && rm -f $(DESTDIR)$(DBINST)/viruses.db || true
 	test -f $(DESTDIR)$(DBINST)/viruses.db2 && rm -f $(DESTDIR)$(DBINST)/viruses.db2 || true
 	@if test `id -u` -eq 0 && test -n "${CLAMAVUSER}" && test -n "${CLAMAVGROUP}"; then \
@@ -39,7 +38,4 @@ install:
 	    chmod 664 $(DESTDIR)$(DBINST)/daily.cvd; \
 	    chown ${CLAMAVUSER} $(DESTDIR)$(DBINST)/daily.cvd; \
 	    chgrp ${CLAMAVGROUP} $(DESTDIR)$(DBINST)/daily.cvd; \
-	    chmod 664 $(DESTDIR)$(DBINST)/mirrors.txt; \
-	    chown ${CLAMAVUSER} $(DESTDIR)$(DBINST)/mirrors.txt; \
-	    chgrp ${CLAMAVGROUP} $(DESTDIR)$(DBINST)/mirrors.txt; \
 	fi
