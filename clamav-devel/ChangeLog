@@ -1,3 +1,8 @@
+Tue Jul  6 15:15:18 CEST 2004 (tk)
+----------------------------------
+  * configure: improve libmilter test (patch by Tom G. Christensen
+	       <tgc*statsbiblioteket.dk>)
+
 Tue Jul  6 10:37:15 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Better handling of Gibe.3 boundary exploit improves
