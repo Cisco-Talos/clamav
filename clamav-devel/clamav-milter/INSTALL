@@ -505,6 +505,10 @@ Changes
 		honour HAVE_IN_ADDR_T
 		Added --broadcast option
 0.80c	27/9/04	Added iface option to --broadcast
+0.80d	28/9/04	Notify clamavmon when a clamd is down, and when clamav-milter
+			stops/starts
+		Error gracefully if the iface option is set to --broadcast on
+			an operating system that doesn't support it
 
 INTERNATIONALISATION
 
