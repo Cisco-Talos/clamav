@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.201  2004/12/16 15:29:08  nigelhorne
+ * Tidy and add mmap test code
+ *
  * Revision 1.200  2004/12/07 23:08:10  nigelhorne
  * Fix empty content-type in multipart header
  *
@@ -588,7 +591,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.200 2004/12/07 23:08:10 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.201 2004/12/16 15:29:08 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -727,6 +730,7 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
  */
 #define	PARTIAL_DIR
 
+static	int	cli_parse_mbox(const char *dir, int desc, unsigned int options);
 static	message	*parseEmailHeaders(const message *m, const table_t *rfc821Table);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
 static	int	parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, unsigned int options);
@@ -742,6 +746,9 @@ static	char	*rfc2047(const char *in);
 static	char	*rfc822comments(const char *in);
 #ifdef	PARTIAL_DIR
 static	int	rfc1341(message *m, const char *dir);
+#endif
+#ifdef	notdef
+static	const	char	*cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns);
 #endif
 
 static	void	checkURLs(message *m, const char *dir);
@@ -863,6 +870,211 @@ static	pthread_mutex_t	tables_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define	O_BINARY	0
 #endif
 
+#ifdef	notdef
+
+#if HAVE_MMAP
+#if HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#else /* HAVE_SYS_MMAN_H */
+#undef HAVE_MMAP
+#endif
+#endif
+
+/*
+ * This could be the future. Instead of parsing and decoding it just decodes.
+ * Currently this code is about 50% *slower* than the full blown parser, but
+ * that may improve with time.
+ * USE IT AT YOUR PERIL, a large number of viruses are not detected with this
+ * method, possibly because the decoded files must be exact and not have
+ * extra data at the start or end, which this code will produce.
+ */
+int
+cli_mbox(const char *dir, int desc, unsigned int options)
+{
+	char *start, *ptr, *line, *buf, *p;
+	const char *last;
+	int decoder;
+	long bytesleft;
+	size_t size, headersize, bodysize;
+	struct stat statb;
+	message *m;
+	fileblob *fb;
+
+	if(fstat(desc, &statb) < 0)
+		return CL_EOPEN;
+
+	size = statb.st_size;
+
+	if(size == 0)
+		return CL_CLEAN;
+
+	m = messageCreate();
+	if(m == NULL)
+		return CL_EMEM;
+
+	start = ptr = mmap(NULL, size, PROT_READ, MAP_PRIVATE, desc, 0);
+	if(ptr == MAP_FAILED) {
+		messageDestroy(m);
+		return CL_EMEM;
+	}
+
+	cli_dbgmsg("mmap'ed mbox\n");
+
+	last = &start[size - 1];
+
+	/*
+	 * Look for the end of the headers
+	 */
+	while(ptr < last) {
+		if(*ptr == ';')
+			ptr++;
+		else if(*ptr == '\n') {
+			ptr++;
+			if((*ptr == '\n') || (*ptr == '\r')) {
+				ptr++;
+				break;
+			}
+		}
+		ptr++;
+	}
+	if(ptr >= last) {
+		cli_dbgmsg("cli_mbox: can't determine the end of the headers\n");
+		messageDestroy(m);
+		munmap(start, size);
+		return cli_parse_mbox(dir, desc, options);
+	}
+
+	headersize = (size_t)(ptr - start);
+	bodysize = size - headersize;
+
+	cli_dbgmsg("cli_mbox: size=%u, headersize=%u, bodysize=%u\n", size, headersize, bodysize);
+
+	bytesleft = bodysize;
+	buf = ptr;
+	decoder = 0;
+
+	/* Would be nice to have a case insensitive cli_memstr() */
+	if(cli_pmemstr(start, headersize, "base64", 6)) {
+		cli_dbgmsg("Header base64\n");
+		decoder |= 1;
+	}
+	if(cli_pmemstr(start, headersize, "quoted-printable", 16)) {
+		cli_dbgmsg("Header quoted-printable\n");
+		decoder |= 2;
+	}
+	if(!(decoder&1))
+		if((p = (char *)cli_pmemstr(ptr, bodysize, "base64", 6)) != NULL) {
+			cli_dbgmsg("Body base64\n");
+			decoder |= 1;
+			buf = &p[6];
+			bytesleft = (unsigned long)(last - buf) + 1;
+			messageSetEncoding(m, "base64");
+		}
+	if(!(decoder&2))
+		if((p = (char *)cli_pmemstr(ptr, bodysize, "quoted-printable", 16)) != NULL) {
+			cli_dbgmsg("Body quoted-printable\n");
+			decoder |= 2;
+			if((p < buf) || (buf == ptr)) {
+				buf = &p[16];
+				bytesleft = (unsigned long)(last - buf) + 1;
+			}
+			messageSetEncoding(m, "quoted-printable");
+		}
+
+	if(decoder == 0) {
+		messageDestroy(m);
+		munmap(start, size);
+		cli_dbgmsg("cli_mbox: unknown encoder\n");
+		return cli_parse_mbox(dir, desc, options);
+	}
+
+	line = NULL;
+
+	while(*buf != '\n') {
+		buf++;
+		bytesleft--;
+	}
+	/*
+	 * Look for the end of the headers
+	 */
+	while(buf < last) {
+		if(*buf == ';') {
+			buf++;
+			bytesleft--;
+		} else if(*buf == '\n') {
+			buf++;
+			bytesleft--;
+			if((*buf == '\n') || (*buf == '\r')) {
+				buf++;
+				bytesleft--;
+				break;
+			}
+		}
+		buf++;
+		bytesleft--;
+	}
+
+	while(!isalnum(*buf)) {
+		buf++;
+		bytesleft--;
+	}
+
+	if(bytesleft > 1024*1024)
+		bytesleft = 1024*1024;	/* should be MaxStreamSize, I guess */
+
+	cli_dbgmsg("cli_mbox: decoding %ld bytes\n", bytesleft);
+
+	while(bytesleft > 0) {
+		int length = 0;
+
+		/*printf("%ld: ", bytesleft); fflush(stdout);*/
+
+		for(ptr = buf; bytesleft && (*ptr != '\n') && (*ptr != '\r'); ptr++) {
+			length++;
+			--bytesleft;
+		}
+
+		/*printf("%d: ", length); fflush(stdout);*/
+
+		line = cli_realloc(line, length + 1);
+
+		memcpy(line, buf, length);
+		line[length] = '\0';
+
+		/*puts(line);*/
+
+		if(messageAddStr(m, line) < 0)
+			break;
+
+		if((bytesleft > 0) && (*ptr == '\r')) {
+			ptr++;
+			bytesleft--;
+		}
+		buf = ++ptr;
+		bytesleft--;
+	}
+	if(line)
+		free(line);
+
+	munmap(start, size);
+
+	fb = messageToFileblob(m, dir);
+	messageDestroy(m);
+
+	if(fb) {
+		fileblobDestroy(fb);
+		return CL_CLEAN;	/* a lie - but it gets things going */
+	}
+	return cli_parse_mbox(dir, desc, options);
+}
+#else
+int
+cli_mbox(const char *dir, int desc, unsigned int options)
+{
+	return cli_parse_mbox(dir, desc, options);
+}
+#endif
+
 /*
  * TODO: when signal handling is added, need to remove temp files when a
  *	signal is received
@@ -877,8 +1089,8 @@ static	pthread_mutex_t	tables_mutex = PTHREAD_MUTEX_INITIALIZER;
  * TODO: create parseEmail which calls parseEmailHeaders then parseEmailBody
  * TODO: Look into TNEF. Is there anything that needs to be done here?
  */
-int
-cli_mbox(const char *dir, int desc, unsigned int options)
+static int
+cli_parse_mbox(const char *dir, int desc, unsigned int options)
 {
 	int retcode, i;
 	message *m, *body;
@@ -968,7 +1180,11 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 					}
 				/*
 				 * Starting a new message, throw away all the
-				 * information about the old one
+				 * information about the old one. It would
+				 * be best to be able to scan this message
+				 * now, but cli_scanfile needs arguments
+				 * that haven't been passed here so it can't be
+				 * called
 				 */
 				m = body;
 				messageReset(body);
@@ -980,7 +1196,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				break;
 		} while(fgets(buffer, sizeof(buffer) - 1, fd) != NULL);
 
-		cli_dbgmsg("Deal with email number %d\n", messagenumber);
+		cli_dbgmsg("Extract attachments from email %d\n", messagenumber);
 	} else {
 		/*
 		 * It's a single message, parse the headers then the body
@@ -2348,7 +2564,9 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				if((fb = fileblobCreate()) != NULL) {
 					cli_dbgmsg("Found a bounce message with no header\n");
 					fileblobSetFilename(fb, dir, "bounce");
-					fileblobAddData(fb, "Received: by clamd (bounce)\n", 28);
+					fileblobAddData(fb,
+						(const unsigned char *)"Received: by clamd (bounce)\n",
+						28);
 
 					fb = textToFileblob(t_line, fb);
 
@@ -3504,5 +3722,46 @@ print_trace(int use_syslog)
 	/* TODO: dump the current email */
 
 	free(strings);
+}
+#endif
+
+#ifdef	notdef
+/*
+ * like cli_memstr - but returns the location of the match
+ */
+static const char *
+cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns)
+{
+	const char *pt, *hay;
+	size_t n;
+
+	if(hs < ns)
+		return 0;
+
+	if(haystack == needle)
+		return haystack;
+
+	if(memcmp(haystack, needle, ns) == 0)
+		return haystack;
+
+	pt = hay = haystack;
+	n = hs;
+
+	while((pt = memchr(hay, needle[0], n)) != NULL) {
+		n -= (int) pt - (int) hay;
+		if(n < ns)
+			break;
+
+		if(memcmp(pt, needle, ns) == 0)
+			return pt;
+
+		if(hay == pt) {
+			n--;
+			hay++;
+		} else
+			hay = pt;
+	}
+
+	return NULL;
 }
 #endif
