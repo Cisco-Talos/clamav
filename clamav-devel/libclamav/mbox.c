@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.155  2004/10/16 17:23:04  nigelhorne
+ * Handle colons in quotes in headers
+ *
  * Revision 1.154  2004/10/16 09:01:05  nigelhorne
  * Improved handling of wraparound headers
  *
@@ -450,7 +453,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.154 2004/10/16 09:01:05 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.155 2004/10/16 17:23:04 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -948,8 +951,9 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 				 *
 				 * Add all the arguments on the line
 				 */
-				const char *ptr;
+				char *ptr;
 				char copy[LINE_LENGTH + 1];
+				bool inquotes = FALSE;
 #ifdef CL_THREAD_SAFE
 				char *strptr;
 #endif
@@ -965,14 +969,34 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 				assert(strlen(buffer) < sizeof(copy));
 				strcpy(copy, buffer);
 
+				/*
+				 * Ensure that the colon in headers such as
+				 * this doesn't get mistaken for a token
+				 * separator
+				 *	boundary="=.J:gysAG)N(3_zv"
+				 */
+				for(ptr = copy; *ptr; ptr++)
+					if(*ptr == '\"')
+						inquotes = !inquotes;
+					else if(inquotes)
+						*ptr |= '\200';
+
 #ifdef	CL_THREAD_SAFE
 				for(ptr = strtok_r(copy, ";", &strptr); ptr; ptr = strtok_r(NULL, ":", &strptr))
-					if(strchr(ptr, '='))
+					if(strchr(ptr, '=')) {
+						char *p2;
+						for(p2 = ptr; *p2; p2++)
+							*p2 &= '\177';
 						messageAddArguments(ret, ptr);
+					}
 #else
 				for(ptr = strtok(copy, ";"); ptr; ptr = strtok(NULL, ":"))
-					if(strchr(ptr, '='))
+					if(strchr(ptr, '=')) {
+						char *p2;
+						for(p2 = ptr; *p2; p2++)
+							*p2 &= '\177';
 						messageAddArguments(ret, ptr);
+					}
 #endif
 			} else {
 				Xheader = (bool)(buffer[0] == 'X');

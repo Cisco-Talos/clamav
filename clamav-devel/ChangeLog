@@ -1,3 +1,9 @@
+Sat Oct 16 18:24:33 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Handle headers such as boundary="=.J:gysAG)N(3_zv"
+				where the colon must not be treated as a
+				token separator, reported by Christoph
+
 Sat Oct 16 17:10:06 BST 2004 (njh)
 ----------------------------------
   * libclamav/untar.c:	Handle empty files in the middle of archives, reported
