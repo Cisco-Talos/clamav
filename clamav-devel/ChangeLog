@@ -1,8 +1,15 @@
+Thu Feb  5 11:25:56 GMT 2004 (njh)
+----------------------------------
+  * libclamav:	Bounce delimeters were found by a list of strcasecmps,
+  			now handled in a table which means it's easier to
+			add new examples as they are found
+
 Wed Feb  4 16:33:08 GMT 2004 (trog)
 -----------------------------------
   * libclamav: ole2_extract.c: Improve error handling
 
 Wed Feb  4 13:34:28 GMT 2004 (njh)
+---------------------------------
   * libclamav:	Binhex now removes repetitive characters before handling the
 			header (used to be the other way around)
 		Handle partial writes in mbox - and print when write fails
