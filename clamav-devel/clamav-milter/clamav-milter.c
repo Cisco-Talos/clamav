@@ -79,7 +79,7 @@
  * -lgnugetopt
  *	gcc30 -O3 -DCONFDIR=\"/usr/local/etc\" -I. -I.. -I../clamd -I../libclamav -pedantic -Wuninitialized -Wall -pipe -mcpu=pentium -march=pentium -fomit-frame-pointer -ffast-math -finline-functions -funroll-loops clamav-milter.c -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o -lgnugetopt
  *
- * FreeBSD4.8: should compile out of the box
+ * FreeBSD4.8: compiles out of the box with either gcc2.95 or gcc3
  * OpenBSD3.3: the supplied sendmail does not come with Milter support. You
  * will need to rebuild sendmail from source
  *
@@ -165,9 +165,14 @@
  *			Fix by Michael Dankov <misha@btrc.ru>.
  *	0.65f	29/11/03 Added --quarantine-dir
  *			Thanks to Michael Dankov <misha@btrc.ru>.
+ *	0.65g	2/12/03	Use setsid if setpgrp is not present.
+ *			Thanks to Eugene Crosser <crosser@rol.ru>
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.26  2003/12/02 06:37:26  nigelhorne
+ * Use setsid if setpgrp not present
+ *
  * Revision 1.25  2003/11/30 06:12:06  nigelhorne
  * Added --quarantine-dir option
  *
@@ -228,9 +233,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.25 2003/11/30 06:12:06 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.26 2003/12/02 06:37:26 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.65f"
+#define	CM_VERSION	"0.65g"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -699,7 +704,17 @@ main(int argc, char **argv)
 		open("/dev/null", O_RDONLY);
 		if(open("/dev/console", O_WRONLY) == 1)
 			dup(1);
+#ifdef HAVE_SETPGRP
+#ifdef SETPGRP_VOID
 		setpgrp();
+#else
+		setpgrp(0,0);
+#endif
+#else
+#ifdef HAVE_SETSID
+		 setsid();
+#endif
+#endif
 	}
 
 	if(smfi_setconn(port) == MI_FAILURE) {
