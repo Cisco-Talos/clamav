@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.11  2003/11/17 07:57:12  nigelhorne
+ * Prevent buffer overflow in broken uuencoded files
+ *
  * Revision 1.10  2003/11/05 07:03:51  nigelhorne
  * Handle broken content-disposition
  *
@@ -27,7 +30,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.10 2003/11/05 07:03:51 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.11 2003/11/17 07:57:12 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -74,7 +77,7 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.10 2003/11/05 07:03:51 nigelhorn
 
 typedef enum { FALSE = 0, TRUE = 1 } bool;
 
-static	unsigned char	*decodeLine(const message *m, const char *line, unsigned char *ptr);
+static	unsigned char	*decodeLine(const message *m, const char *line, unsigned char *buf, size_t buflen);
 static unsigned char *decode(const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast);
 static	unsigned	char	hex(char c);
 static	unsigned	char	base64(char c);
@@ -658,7 +661,7 @@ messageToBlob(const message *m)
 				if(strcasecmp(line, "end") == 0)
 					break;
 
-			uptr = decodeLine(m, line, data);
+			uptr = decodeLine(m, line, data, sizeof(data));
 
 			if(uptr == NULL)
 				break;
@@ -737,7 +740,7 @@ messageToText(const message *m)
 				if(strcasecmp(line, "end") == 0)
 					break;
 
-			uptr = decodeLine(m, line, data);
+			uptr = decodeLine(m, line, data, sizeof(data));
 
 			if(uptr == NULL)
 				break;
@@ -796,9 +799,11 @@ uuencodeBegin(const message *m)
 /*
  * Decode a line and add it to a buffer, return the end of the buffer
  * to help appending callers. There is no new line at the end of "line"
+ *
+ * len is sizeof(ptr)
  */
 static unsigned char *
-decodeLine(const message *m, const char *line, unsigned char *ptr)
+decodeLine(const message *m, const char *line, unsigned char *buf, size_t buflen)
 {
 	int len;
 	bool softbreak;
@@ -807,15 +812,15 @@ decodeLine(const message *m, const char *line, unsigned char *ptr)
 
 	assert(m != NULL);
 	assert(line != NULL);
-	assert(ptr != NULL);
+	assert(buf != NULL);
 
 	switch(messageGetEncoding(m)) {
 		case NOENCODING:
 		case EIGHTBIT:
 		default:	/* unknown encoding type - try our best */
-			ptr = (unsigned char *)strrcpy((char *)ptr, line);
+			buf = (unsigned char *)strrcpy((char *)buf, line);
 			/* Put the new line back in */
-			return (unsigned char *)strrcpy((char *)ptr, "\n");
+			return (unsigned char *)strrcpy((char *)buf, "\n");
 
 		case QUOTEDPRINTABLE:
 			softbreak = FALSE;
@@ -836,20 +841,20 @@ decodeLine(const message *m, const char *line, unsigned char *ptr)
 						 * broken e-mail, not
 						 * adhering to RFC1522
 						 */
-						*ptr++ = byte;
+						*buf++ = byte;
 						break;
 					}
 
 					byte <<= 4;
 					byte += hex(*line);
-					*ptr++ = byte;
+					*buf++ = byte;
 				} else
-					*ptr++ = *line;
+					*buf++ = *line;
 				line++;
 			}
 			if(!softbreak)
 				/* Put the new line back in */
-				*ptr++ = '\n';
+				*buf++ = '\n';
 			break;
 
 		case BASE64:
@@ -864,8 +869,8 @@ decodeLine(const message *m, const char *line, unsigned char *ptr)
 			/*
 			 * Klez doesn't always put "=" on the last line
 			 */
-			/*ptr = decode(line, ptr, base64, p2 == NULL);*/
-			ptr = decode(copy, ptr, base64, 0);
+			/*buf = decode(line, buf, base64, p2 == NULL);*/
+			buf = decode(copy, buf, base64, 0);
 
 			free(copy);
 			break;
@@ -878,15 +883,20 @@ decodeLine(const message *m, const char *line, unsigned char *ptr)
 			if(strcasecmp(line, "end") == 0)
 				break;
 
-			assert(strlen(line) <= 62);
 			if((line[0] & 0x3F) == ' ')
 				break;
 
 			len = *line++ - ' ';
 
-			assert((len >= 0) && (len <= 63));
-
-			ptr = decode(line, ptr, uudecode, (len & 3) == 0);
+			if(len > buflen)
+				/*
+				 * In practice this should never occur since
+				 * the maximum length of a uuencoded line is
+				 * 62 characters
+				 */
+				cli_warnmsg("uudecode: buffer overflow stopped, attempting to ignore but decoding may fail");
+			else
+				buf = decode(line, buf, uudecode, (len & 3) == 0);
 			break;
 
 		case BINARY:
@@ -896,8 +906,8 @@ decodeLine(const message *m, const char *line, unsigned char *ptr)
 			break;
 	}
 
-	*ptr = '\0';
-	return ptr;
+	*buf = '\0';
+	return buf;
 }
 
 static unsigned char *
