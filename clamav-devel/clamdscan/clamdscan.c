@@ -95,7 +95,7 @@ void clamscan(struct optstruct *opt)
     ret = client(opt, &infected);
 
 /* Implement STATUS in clamd */
-    if(!optl(opt, "disable-summary")) {
+    if(!optl(opt, "disable-summary") && !optl(opt, "no-summary")) {
 	gettimeofday(&t2, &tz);
 	ds = t2.tv_sec - t1.tv_sec;
 	dms = t2.tv_usec - t1.tv_usec;

@@ -1029,7 +1029,7 @@ Optional Features:
   --enable-debug	  enable debug code
   --enable-bigstack	  increase thread stack size
   --disable-gethostbyname_r	  disable support for gethostbyname_r
-  --enable-gethostbyname_r	  enable support for readdir_r
+  --enable-readdir_r		    enable support for readdir_r
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
