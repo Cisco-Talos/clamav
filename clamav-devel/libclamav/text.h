@@ -14,10 +14,15 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * $Log: text.h,v $
+ * Revision 1.3  2004/06/22 04:08:02  nigelhorne
+ * Optimise empty lines
+ *
  */
 
 typedef struct text {
-	char	*t_text;
+	char	*t_text;	/* NULL if the line is empty */
 	struct	text	*t_next;
 } text;
 

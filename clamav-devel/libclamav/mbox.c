@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.79  2004/06/22 04:08:01  nigelhorne
+ * Optimise empty lines
+ *
  * Revision 1.78  2004/06/21 10:21:19  nigelhorne
  * Fix crash when a multipart/mixed message contains many parts that need to be scanned as attachments
  *
@@ -222,7 +225,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.78 2004/06/21 10:21:19 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.79 2004/06/22 04:08:01 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -265,6 +268,21 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.78 2004/06/21 10:21:19 nigelhorne E
 #include "others.h"
 #include "defaults.h"
 #include "str.h"
+
+#ifdef	CL_DEBUG
+#if __GLIBC__ == 2 && __GLIBC_MINOR__ >= 1
+#define HAVE_BACKTRACE
+#endif
+
+#ifdef HAVE_BACKTRACE
+#include <execinfo.h>
+#include <signal.h>
+#include <syslog.h>
+#endif
+
+static	void	sigsegv(int sig);
+static	void	print_trace(int use_syslog);
+#endif
 
 #if	defined(NO_STRTOK_R) || !defined(CL_THREAD_SAFE)
 #undef strtok_r
@@ -395,6 +413,9 @@ cl_mbox(const char *dir, int desc)
 	message *m, *body;
 	FILE *fd;
 	char buffer[LINE_LENGTH];
+#ifdef	CL_DEBUG
+	void (*segv)(int);
+#endif
 
 	cli_dbgmsg("in mbox()\n");
 
@@ -434,6 +455,10 @@ cl_mbox(const char *dir, int desc)
 	}
 #ifdef	CL_THREAD_SAFE
 	pthread_mutex_unlock(&tables_mutex);
+#endif
+
+#ifdef	CL_DEBUG
+	segv = signal(SIGSEGV, sigsegv);
 #endif
 
 	/*
@@ -519,6 +544,10 @@ cl_mbox(const char *dir, int desc)
 
 	cli_dbgmsg("cli_mbox returning %d\n", retcode);
 
+#ifdef	CL_DEBUG
+	signal(SIGSEGV, segv);
+#endif
+
 	return retcode;
 }
 
@@ -537,27 +566,33 @@ parseEmailHeaders(const message *m, const table_t *rfc821Table)
 	const text *t;
 	message *ret;
 
+	cli_dbgmsg("parseEmailHeaders\n");
+
 	if(m == NULL)
 		return NULL;
 
 	ret = messageCreate();
 
 	for(t = messageGetBody(m); t; t = t->t_next) {
-		char *buffer = strdup(t->t_text);
+		char *buffer;
 #ifdef CL_THREAD_SAFE
 		char *strptr;
 #endif
 
-		if(buffer == NULL)
-			break;
-
-		cli_chomp(buffer);
+		if(t->t_text) {
+			buffer = strdup(t->t_text);
+			if(buffer == NULL)
+				break;
+			cli_chomp(buffer);
+		} else
+			buffer = NULL;
 
 		/*
 		 * Section B.2 of RFC822 says TAB or SPACE means
 		 * a continuation of the previous entry.
 		 */
-		if(inHeader && ((buffer[0] == '\t') || (buffer[0] == ' ')))
+		if(inHeader && buffer &&
+		  ((buffer[0] == '\t') || (buffer[0] == ' ')))
 			inContinuationHeader = TRUE;
 
 		if(inContinuationHeader) {
@@ -569,22 +604,23 @@ parseEmailHeaders(const message *m, const table_t *rfc821Table)
 			/*
 			 * Add all the arguments on the line
 			 */
-			for(ptr = strtok_r(buffer, ";", &strptr); ptr; ptr = strtok_r(NULL, ":", &strptr))
-				messageAddArgument(ret, ptr);
-			free(buffer);
+			if(buffer) {
+				for(ptr = strtok_r(buffer, ";", &strptr); ptr; ptr = strtok_r(NULL, ":", &strptr))
+					messageAddArgument(ret, ptr);
+				free(buffer);
+			}
 		} else if(inHeader) {
-			cli_dbgmsg("Deal with header %s\n", buffer);
-
 			/*
 			 * A blank line signifies the end of the header and
 			 * the start of the text
 			 */
-			if(strlen(buffer) == 0) {
+			if((buffer == NULL) || (strlen(buffer) == 0)) {
 				cli_dbgmsg("End of header information\n");
 				inContinuationHeader = inHeader = FALSE;
 			} else if(parseEmailHeader(ret, buffer, rfc821Table) == CONTENT_TYPE)
 				inContinuationHeader = continuationMarker(buffer);
-			free(buffer);
+			if(buffer)
+				free(buffer);
 		} else {
 			/*cli_dbgmsg("Add line to body '%s'\n", buffer);*/
 			messageAddLine(ret, buffer, 0);
@@ -787,11 +823,12 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				 * Ignore blank lines. There shouldn't be ANY
 				 * but some viruses insert them
 				 */
-				while((t_line = t_line->t_next) != NULL) {
-					cli_chomp(t_line->t_text);
-					if(strlen(t_line->t_text) != 0)
-						break;
-				}
+				while((t_line = t_line->t_next) != NULL)
+					if(t_line->t_text) {
+						cli_chomp(t_line->t_text);
+						if(strlen(t_line->t_text) != 0)
+							break;
+					}
 
 				if(t_line == NULL) {
 					cli_dbgmsg("Empty part\n");
@@ -805,6 +842,10 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						inMimeHead, inhead, boundary, line, t_line->t_next ? t_line->t_next->t_text : "(null)");*/
 
 					if(inMimeHead) {
+						if(line == NULL) {
+							inhead = inMimeHead = 0;
+							continue;
+						}
 						/*
 						 * Handle continuation lines
 						 * because the previous line
@@ -836,7 +877,8 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						inMimeHead = continuationMarker(line);
 						messageAddArgument(aMessage, line);
 					} else if(inhead) {
-						if(strlen(line) == 0) {
+						if(line == NULL) {
+							/* empty line */
 							inhead = 0;
 							continue;
 						}
@@ -872,7 +914,9 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						 */
 						inMimeHead = continuationMarker(line);
 						if(!inMimeHead)
-							if(t_line->t_next && ((t_line->t_next->t_text[0] == '\t') || (t_line->t_next->t_text[0] == ' ')))
+							if(t_line->t_next &&
+							   t_line->t_next->t_text &&
+							  ((t_line->t_next->t_text[0] == '\t') || (t_line->t_next->t_text[0] == ' ')))
 								inMimeHead = TRUE;
 
 						parseEmailHeader(aMessage, line, rfc821Table);
@@ -1540,7 +1584,8 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				 * won't be scanned
 				 */
 				for(t = t_line; t; t = t->t_next)
-					if((strncasecmp(t->t_text, encoding, sizeof(encoding) - 1) == 0) &&
+					if(t->t_text &&
+					   (strncasecmp(t->t_text, encoding, sizeof(encoding) - 1) == 0) &&
 					   (strstr(t->t_text, "7bit") == NULL))
 						break;
 				if(t && ((b = textToBlob(t_line, NULL)) != NULL)) {
@@ -1646,6 +1691,8 @@ boundaryStart(const char *line, const char *boundary)
 	 * notice the extra '-'
 	 */
 	/*cli_dbgmsg("boundaryStart: line = '%s' boundary = '%s'\n", line, boundary);*/
+	if(line == NULL)
+		return 0;	/* empty line */
 	if(strstr(line, boundary) != NULL) {
 		cli_dbgmsg("found %s in %s\n", boundary, line);
 		return 1;
@@ -1667,6 +1714,8 @@ endOfMessage(const char *line, const char *boundary)
 {
 	size_t len;
 
+	if(line == NULL)
+		return 0;
 	if(*line++ != '-')
 		return 0;
 	if(*line++ != '-')
@@ -1789,6 +1838,7 @@ strstrip(char *s)
 {
 	if(s == (char *)NULL)
 		return(0);
+
 	return(strip(s, strlen(s) + 1));
 }
 
@@ -1804,7 +1854,8 @@ continuationMarker(const char *line)
 {
 	const char *ptr;
 
-	assert(line != NULL);
+	if(line == NULL)
+		return FALSE;
 
 #ifdef	CL_DEBUG
 	cli_dbgmsg("continuationMarker(%s)\n", line);
@@ -2030,3 +2081,43 @@ saveFile(const blob *b, const char *dir)
 
 	return (close(fd) >= 0);
 }
+
+#ifdef	CL_DEBUG
+static void
+sigsegv(int sig)
+{
+	signal(SIGSEGV, SIG_DFL);
+	print_trace(0);
+	exit(SIGSEGV);
+}
+
+static void
+print_trace(int use_syslog)
+{
+#ifdef HAVE_BACKTRACE
+	void *array[10];
+	size_t size;
+	char **strings;
+	size_t i;
+	pid_t pid = getpid();
+
+	size = backtrace(array, 10);
+	strings = backtrace_symbols(array, size);
+
+	syslog(LOG_ERR, "Backtrace of pid %d:", pid);
+
+	if(use_syslog == 0)
+		cli_dbgmsg("Backtrace of pid %d:\n", pid);
+	else 
+		syslog(LOG_ERR, "Backtrace of pid %d:", pid);
+
+	for(i = 0; i < size; i++)
+		if(use_syslog)
+			syslog(LOG_ERR, "bt[%d]: %s", i, strings[i]);
+		else
+			cli_dbgmsg("%s\n", strings[i]);
+
+	free(strings);
+#endif
+}
+#endif
