@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.176  2004/11/12 09:41:45  nigelhorne
+ * Parial mode now on by default
+ *
  * Revision 1.175  2004/11/11 22:15:46  nigelhorne
  * Rewrite handling of folded headers
  *
@@ -513,7 +516,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.175 2004/11/11 22:15:46 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.176 2004/11/12 09:41:45 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -647,10 +650,10 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
  * (2) periodically trim the directory of old files
  *
  * If you use the load balancing feature of clamav-milter to run clamd on
- * more than one machine you must make sure that /tmp/partial is on a shared
+ * more than one machine you must make sure that .../partial is on a shared
  * network filesystem
  */
-/*#define	PARTIAL_DIR	"/tmp/partial"	/* FIXME: should be config based on TMPDIR */
+#define	PARTIAL_DIR
 
 static	message	*parseEmailHeaders(const message *m, const table_t *rfc821Table);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
@@ -2883,28 +2886,56 @@ rfc1341(message *m, const char *dir)
 {
 	fileblob *fb;
 	char *arg, *id, *number, *total, *oldfilename;
+	const char *tmpdir;
+	char *pdir;
 
-	if((mkdir(PARTIAL_DIR, 0700) < 0) && (errno != EEXIST)) {
-		cli_errmsg("Can't create the directory '%s'\n", PARTIAL_DIR);
+#ifdef  CYGWIN
+        if((tmpdir = getenv("TEMP")) == (char *)NULL)
+                if((tmpdir = getenv("TMP")) == (char *)NULL)
+                        if((tmpdir = getenv("TMPDIR")) == (char *)NULL)
+                                tmpdir = "C:\\";
+#else
+        if((tmpdir = getenv("TMPDIR")) == (char *)NULL)
+                if((tmpdir = getenv("TMP")) == (char *)NULL)
+                        if((tmpdir = getenv("TEMP")) == (char *)NULL)
+#ifdef	P_tmpdir
+                                tmpdir = P_tmpdir;
+#else
+                                tmpdir = "/tmp";
+#endif
+#endif
+
+    	pdir = cli_malloc(strlen(tmpdir) + 16);
+	if(pdir == NULL)
+		return -1;
+                                                                                	sprintf(pdir, "%s/clamav-partial", tmpdir);
+
+	if((mkdir(pdir, 0700) < 0) && (errno != EEXIST)) {
+		cli_errmsg("Can't create the directory '%s'\n", pdir);
+		free(pdir);
 		return -1;
 	} else {
 		struct stat statb;
 
-		if(stat(PARTIAL_DIR, &statb) < 0) {
-			cli_errmsg("Can't stat the directory '%s'\n", PARTIAL_DIR);
+		if(stat(pdir, &statb) < 0) {
+			cli_errmsg("Can't stat the directory '%s'\n", pdir);
+			free(pdir);
 			return -1;
 		}
 		if(statb.st_mode & 077)
 			cli_warnmsg("Insecure partial directory %s (mode 0%o)\n",
-				PARTIAL_DIR, statb.st_mode & 0777);
+				pdir, statb.st_mode & 0777);
 	}
 
 	id = (char *)messageFindArgument(m, "id");
-	if(id == NULL)
+	if(id == NULL) {
+		free(pdir);
 		return -1;
+	}
 	number = (char *)messageFindArgument(m, "number");
 	if(number == NULL) {
 		free(id);
+		free(pdir);
 		return -1;
 	}
 
@@ -2922,9 +2953,10 @@ rfc1341(message *m, const char *dir)
 		free(oldfilename);
 	}
 
-	if((fb = messageToFileblob(m, PARTIAL_DIR)) == NULL) {
+	if((fb = messageToFileblob(m, pdir)) == NULL) {
 		free(id);
 		free(number);
+		free(pdir);
 		return -1;
 	}
 
@@ -2941,7 +2973,7 @@ rfc1341(message *m, const char *dir)
 		 * If it's the last one - reassemble it
 		 * FIXME: this assumes that we receive the parts in order
 		 */
-		if((n == t) && ((dd = opendir(PARTIAL_DIR)) != NULL)) {
+		if((n == t) && ((dd = opendir(pdir)) != NULL)) {
 			FILE *fout;
 			char outname[NAME_MAX + 1];
 
@@ -2956,6 +2988,7 @@ rfc1341(message *m, const char *dir)
 				free(total);
 				free(number);
 				closedir(dd);
+				free(pdir);
 				return -1;
 			}
 
@@ -2982,6 +3015,7 @@ rfc1341(message *m, const char *dir)
 					FILE *fin;
 					char buffer[BUFSIZ];
 					int nblanks;
+					extern short cli_leavetemps_flag;
 
 					if(dent->d_ino == 0)
 						continue;
@@ -2989,7 +3023,7 @@ rfc1341(message *m, const char *dir)
 					if(strncmp(filename, dent->d_name, strlen(filename)) != 0)
 						continue;
 
-					sprintf(fullname, "%s/%s", PARTIAL_DIR, dent->d_name);
+					sprintf(fullname, "%s/%s", pdir, dent->d_name);
 					fin = fopen(fullname, "rb");
 					if(fin == NULL) {
 						cli_errmsg("Can't open '%s' for reading", fullname);
@@ -2999,7 +3033,7 @@ rfc1341(message *m, const char *dir)
 						free(total);
 						free(number);
 						closedir(dd);
-
+						free(pdir);
 						return -1;
 					}
 					nblanks = 0;
@@ -3018,8 +3052,10 @@ rfc1341(message *m, const char *dir)
 							fputs(buffer, fout);
 						}
 					fclose(fin);
-					/* FIXME: don't unlink if leave temps */
-					unlink(fullname);
+
+					/* don't unlink if leave temps */
+					if(!cli_leavetemps_flag)
+						unlink(fullname);
 					break;
 				}
 				rewinddir(dd);
@@ -3031,6 +3067,7 @@ rfc1341(message *m, const char *dir)
 	}
 	free(id);
 	free(total);
+	free(pdir);
 
 	return 0;
 }
