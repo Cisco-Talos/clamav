@@ -224,6 +224,7 @@ Changes
 0.66n	13/2/04	Added TCPwrappers support
 		Removed duplication in version string
 		Handle machines that don't have in_port_t
+0.67	16/2/04	Upissued to 0.67
 
 BUG REPORTS
 
