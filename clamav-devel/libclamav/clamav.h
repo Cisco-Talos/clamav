@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -90,11 +90,15 @@ struct cl_node {
 };
 
 struct cl_limits {
-    int maxreclevel;
-    int maxfiles;
-    int maxratio;
-    short archivememlim;
-    long int maxfilesize;
+    int maxreclevel; /* maximal recursion level */
+    int maxfiles; /* maximal number of files to be
+		   * scanned within an archive
+		   */
+    int maxratio; /* maximal compression ratio */
+    short archivememlim; /* limit memory usage for bzip2 (0/1) */
+    long int maxfilesize; /* files in an archive larger than
+			   * this value will not be scanned
+			   */
 };
 
 struct cl_stat {

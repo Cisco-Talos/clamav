@@ -40,15 +40,7 @@
 
 void help(void);
 
-/* this local macro takes care about freeing memory at exit */
-/*
-#define mexit(i)    if(opt) free_opt(opt);			    \
-		    mprintf("*Memory freed. Exit code: %d\n", i);   \
-		    exit(i);
-*/
-#define mexit(i)    exit(i)
-
-void clamscan(struct optstruct *opt)
+int clamscan(struct optstruct *opt)
 {
 	int ds, dms, ret;
 	double mb;
@@ -84,7 +76,7 @@ void clamscan(struct optstruct *opt)
 
     if(optc(opt, 'V')) {
 	mprintf("clamscan / ClamAV version "VERSION"\n");
-	mexit(0);
+	return 0;
     }
 
     if(optc(opt, 'h')) {
@@ -108,7 +100,7 @@ void clamscan(struct optstruct *opt)
 	logfile = getargc(opt, 'l');
 	if(logg("--------------------------------------\n")) {
 	    mprintf("!Problem with internal logger.\n");
-	    mexit(1);
+	    return 1;
 	}
     } else 
 	logfile = NULL;
@@ -177,7 +169,7 @@ void clamscan(struct optstruct *opt)
 	    logg("Time: %d.%3.3d sec (%d m %d s)\n", ds, dms/1000, ds/60, ds%60);
     }
 
-    mexit(ret);
+    return ret;
 }
 
 void help(void)
