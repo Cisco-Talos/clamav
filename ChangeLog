@@ -1,3 +1,10 @@
+Wed Mar 17 19:48:56 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter: upissued history to 0.70
+  * libclamav/message.c: Handle spaces before the disposition type
+  * libclamav/mbox.c:	Added some speed ups and reduced memory usage when
+  		scanning embedded RFC822 messages
+
 Wed Mar 17 15:06:44 GMT 2004 (trog)
 -----------------------------------
   * libclamav/vba_extract.c: Add VBA signature for MacOffice X
