@@ -132,6 +132,9 @@
 /* Define to 1 if you have the <sys/param.h> header file. */
 #undef HAVE_SYS_PARAM_H
 
+/* "have <sys/select.h>" */
+#undef HAVE_SYS_SELECT_H
+
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #undef HAVE_SYS_STAT_H
 
@@ -146,6 +149,9 @@
 
 /* bzip funtions do not have bz2 prefix */
 #undef NOBZ2PREFIX
+
+/* "no fd_set" */
+#undef NO_FD_SET
 
 /* Name of package */
 #undef PACKAGE
