@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: text.h,v $
+ * Revision 1.6  2004/08/22 10:34:24  nigelhorne
+ * Use fileblob
+ *
  * Revision 1.5  2004/08/21 11:57:57  nigelhorne
  * Use line.[ch]
  *
@@ -40,3 +43,4 @@ text	*textCopy(const text *t_head);
 text	*textAdd(text *t_head, const text *t);
 text	*textAddMessage(text *aText, message *aMessage);
 blob	*textToBlob(const text *t, blob *b);
+fileblob	*textToFileblob(const text *t, fileblob *fb);
