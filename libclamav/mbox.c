@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.112  2004/08/23 13:15:16  nigelhorne
+ * messageClearMarkers
+ *
  * Revision 1.111  2004/08/22 20:20:14  nigelhorne
  * Tidy
  *
@@ -321,7 +324,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.111 2004/08/22 20:20:14 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.112 2004/08/23 13:15:16 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1591,6 +1594,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				if(fb) {
 					cli_dbgmsg("Saving main message as attachment\n");
 					fileblobDestroy(fb);
+					messageClearMarkers(mainMessage);
 				}
 			} /*else
 				cli_warnmsg("Discarded application not sent as attachment\n");*/

@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: message.h,v $
+ * Revision 1.16  2004/08/23 13:15:16  nigelhorne
+ * messageClearMarkers
+ *
  * Revision 1.15  2004/08/22 15:08:59  nigelhorne
  * messageExport
  *
@@ -97,13 +100,12 @@ int	messageAddStr(message *m, const char *data);
 int	messageAddStrAtTop(message *m, const char *data);
 const	text	*messageGetBody(const message *m);
 void	messageClean(message *m);
-void	*messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), void (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(const text *, void *));
 fileblob	*messageToFileblob(message *m, const char *dir);
 blob	*messageToBlob(message *m);
 text	*messageToText(message *m);
 const	text	*uuencodeBegin(const message *m);
-const	text	*binhexBegin(const message *m);
 const	text	*bounceBegin(const message *m);
 const	text	*encodingLine(const message *m);
+void	messageClearMarkers(message *m);
 
 #endif	/*_MESSAGE_H*/

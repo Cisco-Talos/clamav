@@ -1,3 +1,9 @@
+Mon Aug 23 14:15:42 BST 2004 (njh)
+----------------------------------
+  * libclamav:		Some emails included within the body of other emails
+				(such as bounces and cut 'n' pastes) were
+				being scanned twice
+
 Mon Aug 23 11:25:01 BST 2004 (njh)
 ----------------------------------
   * libclamav/blob.c:	Fix compilation error on Cygwin
