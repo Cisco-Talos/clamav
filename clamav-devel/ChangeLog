@@ -1,3 +1,8 @@
+Fri Jan 23 08:52:49 GMT 2004 (njh)
+----------------------------------
+  * libclamav: Add detection of uuencoded viruses in single part
+	multipart/mixed files
+
 Thu Jan 22 22:14:13 GMT 2004 (njh)
 ----------------------------------
   * libclamav: Prevent infinite recursion on broken uuencoded files

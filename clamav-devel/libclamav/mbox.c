@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.32  2004/01/23 08:51:19  nigelhorne
+ * Add detection of uuencoded viruses in single part multipart/mixed files
+ *
  * Revision 1.31  2004/01/22 22:13:06  nigelhorne
  * Prevent infinite recursion on broken uuencoded files
  *
@@ -84,7 +87,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.31 2004/01/22 22:13:06 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.32 2004/01/23 08:51:19 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -934,6 +937,10 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 				 */
 				if(multiparts > 1)
 					rc = parseEmailBody(mainMessage, blobList, numberOfAttachments, aText, dir, rfc821Table, subtypeTable);
+				else if(numberOfAttachments == 1) {
+					(void)saveFile(blobList[0], dir);
+					blobDestroy(blobList[0]);
+				}
 				break;
 			case DIGEST:
 				/*
