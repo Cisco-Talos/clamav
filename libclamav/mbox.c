@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.14  2003/10/12 12:37:11  nigelhorne
+ * Appledouble encoded EICAR now found
+ *
  * Revision 1.13  2003/10/01 09:27:42  nigelhorne
  * Handle content-type header going over to a new line
  *
@@ -30,7 +33,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.13 2003/10/01 09:27:42 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.14 2003/10/12 12:37:11 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -114,6 +117,7 @@ static	bool	saveFile(const blob *b, const char *dir);
 #define	PARALLEL	9
 #define	RELATED		10	/* RFC2387 */
 #define	REPORT		11	/* RFC1892 */
+#define	APPLEDOUBLE	12	/* Handling of this in only noddy for now */
 
 static	const	struct tableinit {
 	const	char	*key;
@@ -137,6 +141,7 @@ static	const	struct tableinit {
 	{	"parallel",	PARALLEL	},
 	{	"related",	RELATED		},
 	{	"report",	REPORT		},
+	{	"appledouble",	APPLEDOUBLE	},
 	{	NULL,		0		}
 };
 
@@ -163,6 +168,8 @@ static	const	struct tableinit {
  * TODO: if debug is enabled, catch a segfault and dump the current e-mail
  * in it's entirety, then call abort()
  * TODO: parse .msg format files
+ * TODO: fully handle AppleDouble format, see
+ * http://www.lazerware.com/formats/Specs/AppleSingle_AppleDouble.pdf
  */
 int
 cl_mbox(const char *dir, int desc)
@@ -723,6 +730,7 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 				 * verify that they exist
 				 */
 			case MIXED:
+			case APPLEDOUBLE:	/* not really supported */
 				/*
 				 * Look for attachments
 				 *
