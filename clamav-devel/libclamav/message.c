@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.97  2004/10/06 17:21:46  nigelhorne
+ * Code tidy
+ *
  * Revision 1.96  2004/10/05 15:46:18  nigelhorne
  * First draft of code to handle RFC1341
  *
@@ -285,7 +288,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.96 2004/10/05 15:46:18 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.97 2004/10/06 17:21:46 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1972,11 +1975,8 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 		case NOENCODING:
 		case EIGHTBIT:
 		default:	/* unknown encoding type - try our best */
-			if(line == NULL) {	/* empty line */
-				*buf++ = '\n';
-				break;
-			}
-			buf = (unsigned char *)strrcpy((char *)buf, line);
+			if(line)	/* empty line? */
+				buf = (unsigned char *)strrcpy((char *)buf, line);
 			/* Put the new line back in */
 			return (unsigned char *)strrcpy((char *)buf, "\n");
 
