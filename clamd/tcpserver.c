@@ -21,8 +21,10 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <clamav.h>
 #include <errno.h>
+
 
 #include "options.h"
 #include "cfgfile.h"
@@ -44,7 +46,7 @@ int tcpserver(const struct optstruct *opt, const struct cfgstruct *copt, struct 
     server.sin_port = htons(cfgopt(copt, "TCPSocket")->numarg);
 
 
-    if (taddr = cfgopt(copt, "TCPAddr"))
+    if((taddr = cfgopt(copt, "TCPAddr")))
     {
 	server.sin_addr.s_addr = inet_addr( taddr->strarg );
     }else

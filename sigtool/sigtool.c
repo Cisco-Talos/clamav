@@ -31,11 +31,15 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <clamav.h>
+#include <sys/wait.h>
 
 #include "options.h"
 #include "others.h"
 #include "shared.h"
 #include "strings.h"
+#include "md5.h"
+#include "cvd.h"
+#include "str.h"
 
 #define LINE 1024
 
@@ -45,6 +49,8 @@
 void help(void);
 char *getdsig(const char *host, const char *user, const char *data);
 void cvdinfo(struct optstruct *opt);
+int build(struct optstruct *opt);
+int unpack(struct optstruct *opt);
 
 int scanfile(const char *cmd, const char *str, const char *file)
 {
@@ -119,7 +125,7 @@ char *cut(const char *file, long int start, long int end)
 char *change(const char *file, long int x)
 {
 	char *fname = NULL, buffer[FILEBUFF];
-	int bytes, size, sum, ch;
+	int bytes, ch;
 	FILE *rd, *wd;
 
 
@@ -210,7 +216,7 @@ void sigtool(struct optstruct *opt)
 	cvdinfo(opt);
 
     } else {
-	    int jmp, lastjmp, start, end, found = 0, exec = 0, pos, filesize,
+	    int jmp, lastjmp, end, found = 0, exec = 0, pos, filesize,
 		maxsize = 0, ret;
 	    char *c, *s, *f, *tmp, *signame, *bsigname, *f2;
 	    FILE *fd, *wd;
@@ -659,6 +665,7 @@ int build(struct optstruct *opt)
     mprintf("Database %s created.\n", pt);
 
     /* try to load final cvd */
+    return 0;
 }
 
 void cvdinfo(struct optstruct *opt)
@@ -725,7 +732,6 @@ char *getdsig(const char *host, const char *user, const char *data)
 {
 	char buff[300], cmd[100], *pass, *pt;
         struct sockaddr_in server;
-	struct cfgstruct *copt, *cpt;
 	int sockd, bread, len;
 
 
@@ -771,14 +777,16 @@ char *getdsig(const char *host, const char *user, const char *data)
     memset(pass, 0, strlen(pass));
 
     memset(buff, 0, sizeof(buff));
-    if((bread = read(sockd, buff, sizeof(buff))) > 0)
+    if((bread = read(sockd, buff, sizeof(buff))) > 0) {
 	if(!strstr(buff, "Signature:")) {
 	    mprintf("!Signature generation error.\n");
 	    mprintf("ClamAV SDaemon: %s.\n", buff);
 	    close(sockd);
 	    return NULL;
-	} else
+	} else {
 	    mprintf("Signature received (length = %d).\n", strlen(buff) - 10);
+	}
+    }
 
     close(sockd);
     pt = buff;
@@ -789,7 +797,6 @@ char *getdsig(const char *host, const char *user, const char *data)
 int unpack(struct optstruct *opt)
 {
 	FILE *fd;
-	struct cl_cvd *cvd;
 	char *name;
 
     if(optl(opt, "unpack-current")) {

@@ -162,13 +162,13 @@ struct cl_cvd *cl_cvdparse(const char *head)
 
     cvd = (struct cl_cvd *) cli_calloc(1, sizeof(struct cl_cvd));
 
-    if(!(cvd->time = cli_tok(head, 2, ':'))) {
+    if(!(cvd->time = cli_strtok(head, 1, ":"))) {
 	cli_errmsg("CVD -> Can't extract time from header.\n");
 	free(cvd);
 	return NULL;
     }
 
-    if(!(pt = cli_tok(head, 3, ':'))) {
+    if(!(pt = cli_strtok(head, 2, ":"))) {
 	cli_errmsg("CVD -> Can't extract version from header.\n");
 	free(cvd->time);
 	free(cvd);
@@ -177,7 +177,7 @@ struct cl_cvd *cl_cvdparse(const char *head)
     cvd->version = atoi(pt);
     free(pt);
 
-    if(!(pt = cli_tok(head, 4, ':'))) {
+    if(!(pt = cli_strtok(head, 3, ":"))) {
 	cli_errmsg("CVD -> Can't extract signature number from header.\n");
 	free(cvd->time);
 	free(cvd);
@@ -186,7 +186,7 @@ struct cl_cvd *cl_cvdparse(const char *head)
     cvd->sigs = atoi(pt);
     free(pt);
 
-    if(!(pt = cli_tok(head, 5, ':'))) {
+    if(!(pt = cli_strtok(head, 4, ":"))) {
 	cli_errmsg("CVD -> Can't extract functionality level from header.\n");
 	free(cvd->time);
 	free(cvd);
@@ -195,14 +195,14 @@ struct cl_cvd *cl_cvdparse(const char *head)
     cvd->fl = (short int) atoi(pt);
     free(pt);
 
-    if(!(cvd->md5 = cli_tok(head, 6, ':'))) {
+    if(!(cvd->md5 = cli_strtok(head, 5, ":"))) {
 	cli_errmsg("CVD -> Can't extract MD5 checksum from header.\n");
 	free(cvd->time);
 	free(cvd);
 	return NULL;
     }
 
-    if(!(cvd->dsig = cli_tok(head, 7, ':'))) {
+    if(!(cvd->dsig = cli_strtok(head, 6, ":"))) {
 	cli_errmsg("CVD -> Can't extract digital signature from header.\n");
 	free(cvd->time);
 	free(cvd->md5);
@@ -210,7 +210,7 @@ struct cl_cvd *cl_cvdparse(const char *head)
 	return NULL;
     }
 
-    if(!(cvd->builder = cli_tok(head, 8, ':'))) {
+    if(!(cvd->builder = cli_strtok(head, 7, ":"))) {
 	cli_errmsg("CVD -> Can't extract builder name from header.\n");
 	free(cvd->time);
 	free(cvd->md5);

@@ -89,12 +89,13 @@ zzip_file_saveoffset(ZZIP_FILE * fp)
     return 0;
 }
 
-# ifndef ZZIP_CHECK_BACKSLASH_DIRSEPARATOR           /* NOTE: also default */
-# define ZZIP_CHECK_BACKSLASH_DIRSEPARATOR 0         /* to "NO" on win32 ! */
-# endif
 
 # if !defined strcasecmp && !defined ZZIP_HAVE_STRCASECMP
 # define ZZIP_CHECK_BACKSLASH_DIRSEPARATOR 1
+# else
+# ifndef ZZIP_CHECK_BACKSLASH_DIRSEPARATOR           /* NOTE: also default */
+# define ZZIP_CHECK_BACKSLASH_DIRSEPARATOR 0         /* to "NO" on win32 ! */
+# endif
 # endif
 
 #if ! ZZIP_CHECK_BACKSLASH_DIRSEPARATOR+0

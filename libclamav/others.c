@@ -38,11 +38,6 @@
 #include "others.h"
 #include "md5.h"
 
-#ifdef CL_THREAD_SAFE
-# include <pthread.h>
-pthread_mutex_t cli_rand_mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
-
 int cli_debug_flag = 0;
 
 void cli_warnmsg(const char *str, ...)
@@ -255,23 +250,15 @@ unsigned int cl_rndnum(unsigned int max)
 
 unsigned int cl_rndnum(unsigned int max)
 {
-	static FILE *fd = NULL;
+	FILE *fd;
 	unsigned int generated;
 	char *byte;
 	int size;
 
-#ifdef CL_THREAD_SAFE
-    pthread_mutex_lock(&cli_rand_mutex);
-#endif
 
-    if(fd == NULL) {
-	if((fd = fopen("/dev/urandom", "rb")) == NULL) {
-	    cli_errmsg("!Can't open /dev/urandom.\n");
-#ifdef CL_THREAD_SAFE
-	    pthread_mutex_unlock(&cli_rand_mutex);
-#endif
-	    return -1;
-	}
+    if((fd = fopen("/dev/urandom", "rb")) == NULL) {
+	cli_errmsg("!Can't open /dev/urandom.\n");
+	return -1;
     }
 
     byte = (char *) &generated;
@@ -283,9 +270,7 @@ unsigned int cl_rndnum(unsigned int max)
 	byte += bread;
     } while(size > 0);
 
-#ifdef CL_THREAD_SAFE
-    pthread_mutex_unlock(&cli_rand_mutex);
-#endif
+    fclose(fd);
     return generated % max;
 }
 #endif
@@ -304,6 +289,10 @@ char *cl_gentemp(const char *dir)
 	mdir = (char *) dir;
 
     name = (char*) cli_calloc(strlen(mdir) + 1 + 16 + 1, sizeof(char));
+    if(name == NULL) {
+	cli_dbgmsg("cl_gentemp('%s'): out of memory\n", dir);
+	return NULL;
+    }
     cnt += sprintf(name, "%s/", mdir);
 
     do {

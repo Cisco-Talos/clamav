@@ -127,15 +127,13 @@ int main(int argc, char **argv)
         for(i=optind; i<argc; i++) {
 	    strncat(opt->filename, argv[i], strlen(argv[i]));
 	    if(i != argc-1)
-		strncat(opt->filename, " ", 1);
+		strncat(opt->filename, "\t", 1);
 	}
 
-    } else
-	/* FIXME !!! Without this, we have segfault */
-	opt->filename=(char*)mcalloc(1, sizeof(char));
-
-
+    }
     clamscan(opt);
+
+    free_opt(opt);
 
     return(0);
 }
@@ -323,10 +321,9 @@ void free_opt(struct optstruct *opt)
 {
 	struct optnode *handler, *prev;
 
-    if(!opt || !opt->optlist)
+    if(!opt)
 	return;
 
-    mprintf("*Freeing option list... ");
     handler = opt->optlist;
 
     while(handler != NULL) {
@@ -338,7 +335,7 @@ void free_opt(struct optstruct *opt)
 	free(prev);
     }
 
-    free(opt->filename);
+    if (opt->filename)
+    	free(opt->filename);
     free(opt);
-    mprintf("*done\n");
 }

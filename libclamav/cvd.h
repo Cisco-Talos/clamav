@@ -23,5 +23,6 @@
 #include "clamav.h"
 
 int cli_cvdload(FILE *fd, struct cl_node **root, int *virnum);
+int cli_untgz(int fd, const char *destdir);
 
 #endif

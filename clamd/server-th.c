@@ -61,7 +61,7 @@ void *threadscanner(void *arg)
 	struct thrarg *tharg = (struct thrarg *) arg;
 	char buff[32769];
 	sigset_t sigset;
-	int bread, options, maxwait = CL_DEFAULT_MAXWHILEWAIT;
+	int bread, options;
 
 
     /* ignore all signals */
@@ -343,7 +343,10 @@ void *threadwatcher(void *arg)
 		logg("!Database initialization problem.\n");
 		kill(progpid, SIGTERM);
 	    } else {
-		cl_buildtrie(*thwarg->root);
+		if((ret = cl_buildtrie(*thwarg->root)) != 0) {
+		    logg("!Database initialization error: can't build the trie: %s\n", cl_strerror(ret));
+		    kill(progpid, SIGTERM);
+		}
 		/* check integrity */
 		if(!testsignature(*thwarg->root)) {
 		    logg("!Unable to detect test signature.\n");
@@ -562,8 +565,10 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 
 	/* find a free session */
 	for(i = 0; ; i++) {
-	    if(i == threads)
+	    if(i == threads) {
 		i = 0;
+		usleep(50000);
+	    }
 
 	    if(!ths[i].active) {
 		/* logg("*Found free slot: %d\n", i); */
@@ -623,12 +628,16 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	}
     }
     free(ths);
+    return 0;
 }
 
 void sighandler_th(int sig)
 {
 	time_t currtime;
-	int maxwait = CL_DEFAULT_MAXWHILEWAIT * 5, i;
+	int maxwait = CL_DEFAULT_MAXWHILEWAIT * 5;
+#ifndef CL_DEBUG
+	int i;
+#endif
 
     switch(sig) {
 	case SIGINT:

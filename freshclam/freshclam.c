@@ -39,7 +39,7 @@
 
 #define TIMEOUT 1200
 
-void freshclam(struct optstruct *opt)
+int freshclam(struct optstruct *opt)
 {
 	int ret;
 	char *newdir;
@@ -154,8 +154,7 @@ void freshclam(struct optstruct *opt)
 	if(ret > 1)
 	    system(getargl(opt, "on-error-execute"));
 
-    exit(ret);
-
+    return(ret);
 }
 
 void d_timeout(int sig)

@@ -50,7 +50,6 @@ struct cfgstruct *parsecfg(const char *cfgfile);
 struct cfgstruct *regcfg(struct cfgstruct *copt, char *optname, char *strarg, int numarg);
 
 struct cfgstruct *cfgopt(const struct cfgstruct *copt, const char *optname);
-char *tok(const char *line, int field);
 
 void freecfg(struct cfgstruct *copt);
 

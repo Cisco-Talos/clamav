@@ -41,6 +41,8 @@
 #include "treewalk.h"
 #include "shared.h"
 #include "mbox.h"
+#include "str.h"
+#include "strrcpy.h"
 
 #ifdef C_LINUX
 dev_t procdev;
@@ -111,7 +113,10 @@ int scanmanager(const struct optstruct *opt)
     }
 
     /* build the proper trie */
-    cl_buildtrie(trie);
+    if((ret=cl_buildtrie(trie)) != 0) {
+	mprintf("@Database initialization error: %s\n", cl_strerror(ret));;
+	return 50;
+    }
 
     /* set (default) limits */
 
@@ -149,7 +154,16 @@ int scanmanager(const struct optstruct *opt)
 #endif
 
     /* check filetype */
-    if(!strcmp(opt->filename, "-")) { /* read data from stdin */
+    if(opt->filename == NULL || strlen(opt->filename) == 0) {
+
+	/* we need full path for some reasons (eg. archive handling) */
+	if(!getcwd(cwd, 200)) {
+	    mprintf("@Can't get absolute pathname of current working directory.\n");
+	    ret = 57;
+	} else
+	    ret = scandirs(cwd, trie, user, opt, limits);
+
+    } else if(!strcmp(opt->filename, "-")) { /* read data from stdin */
 	/*
 	 * njh@bandsman.co.uk: treat the input as a mailbox, the program
 	 * can then be used as a filter called when mail is received
@@ -212,59 +226,56 @@ int scanmanager(const struct optstruct *opt)
 	} else
 	    ret = checkstdin(trie, limits);
 
-    } else if(strlen(opt->filename) == 0) {
-
-	/* we need full path for some reasons (eg. archive handling) */
-	if(!getcwd(cwd, 200)) {
-	    mprintf("@Can't get absolute pathname of current working directory.\n");
-	    ret = 57;
-	} else
-	    ret = scandirs(cwd, trie, user, opt, limits);
-
-    } else if((fmodeint = fileinfo(opt->filename, 2)) == -1) {
-               mprintf("@Can't access file %s\n", opt->filename);
-               perror(opt->filename);
-               ret = 56;
     } else {
-	fmode = (mode_t) fmodeint;
+	int x;
+	char *thefilename;
+	for (x=0; (thefilename = cli_strtok(opt->filename, x, "\t")) != NULL; x++) {
+	    if((fmodeint = fileinfo(thefilename, 2)) == -1) {
+		mprintf("@Can't access file %s\n", thefilename);
+		perror(thefilename);
+		ret = 56;
+	    } else {
+		fmode = (mode_t) fmodeint;
 
-        if(compression && (opt->filename[0] != '/')) {
-	    /* we need to complete the path */
-            if(!getcwd(cwd, 200)) {
-		mprintf("@Can't get absolute pathname of current working directory.\n");
-                return 57;
-            } else {
-		fullpath = mcalloc(512, sizeof(char));
+		if(compression && (thefilename[0] != '/')) {
+		    /* we need to complete the path */
+		    if(!getcwd(cwd, 200)) {
+			mprintf("@Can't get absolute pathname of current working directory.\n");
+			return 57;
+		    } else {
+			fullpath = mcalloc(512, sizeof(char));
 #ifdef NO_SNPRINTF
-                sprintf(fullpath, "%s/%s", cwd, opt->filename);
+			sprintf(fullpath, "%s/%s", cwd, thefilename);
 #else
-                snprintf(fullpath, 512, "%s/%s", cwd, opt->filename);
+			snprintf(fullpath, 512, "%s/%s", cwd, thefilename);
 #endif
-                mprintf("*Full path: %s\n", fullpath);
-            }
-        } else
-	    fullpath = (char *) opt->filename;
+			mprintf("*Full path: %s\n", fullpath);
+		    }
+		} else
+		    fullpath = (char *) thefilename;
 
-        switch(fmode & S_IFMT) {
-	    case S_IFREG:
-		ret = scanfile(fullpath, trie, user, opt, limits);
-                break;
+		switch(fmode & S_IFMT) {
+		    case S_IFREG:
+			ret = scanfile(fullpath, trie, user, opt, limits);
+			break;
 
-            case S_IFDIR:
-		ret = scandirs(fullpath, trie, user, opt, limits);
-                break;
+		    case S_IFDIR:
+			ret = scandirs(fullpath, trie, user, opt, limits);
+			break;
 
-            default:
-                mprintf("@Not supported file type (%s)\n", opt->filename);
-                ret = 52;
-	}
+		    default:
+			mprintf("@Not supported file type (%s)\n", thefilename);
+			ret = 52;
+		}
 
-	if(compression && fullpath) {
-	    free(fullpath);
-	    fullpath = NULL;
+		if(compression && thefilename[0] != '/') {
+		    free(fullpath);
+		    fullpath = NULL;
+		}
+	    }
+	    free(thefilename);
 	}
     }
-
 
     /* free the trie */
     cl_freetrie(trie);

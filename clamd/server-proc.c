@@ -80,7 +80,7 @@ int acceptd = -1;
 
 int acceptloop_proc(int socketd, struct cl_node *root, const struct cfgstruct *copt)
 {
-	int i, j, bread, options = 0, maxwait, childs, *session, status,
+	int i, j, bread, options = 0, childs, *session, status,
 	    virnum, need_wait, ret;
 	struct cfgstruct *cpt;
 	struct cl_limits limits;
@@ -223,8 +223,10 @@ int acceptloop_proc(int socketd, struct cl_node *root, const struct cfgstruct *c
 		if(session[j] && waitpid(session[j], &status, WNOHANG))
 		    session[j] = 0;
 
-	    if(i == childs)
+	    if(i == childs) {
 		i = 0;
+		usleep(50000);
+	    }
 
 	    if(!session[i])
 		break;
@@ -289,7 +291,10 @@ int acceptloop_proc(int socketd, struct cl_node *root, const struct cfgstruct *c
 		    logg("!Database initialization problem.\n");
 		    exit(1);
 		} else {
-		    cl_buildtrie(root);
+		    if((ret = cl_buildtrie(root)) != 0) {
+			logg("!Database initialization error: can't build the trie: %s\n", cl_strerror(i));
+			exit(1);
+		    }
 		    /* check integrity */
 		    if(!testsignature(root)) {
 			logg("!Unable to detect test signature.\n");

@@ -223,7 +223,7 @@ __zzip_find_disk_trailer(int fd, zzip_off_t filesize,
 	    mapped = fd_map; offset = mapoff;
 	    HINT3("mapped *%p len=%li", fd_map, (long) maplen);
         } else */ {
-        non_mmap:
+        /* non_mmap: */
 	    fd_map = 0; /* have no mmap */
 	    {
 		zzip_off_t pagesize = ZZIP_BUFSIZ;
@@ -398,7 +398,8 @@ __zzip_parse_root_directory(int fd,
         hdr->d_usize = ZZIP_GET32(d->z_usize); 
         hdr->d_off   = ZZIP_GET32(d->z_off);
         hdr->d_compr = (uint8_t)ZZIP_GET16(d->z_compr);
-        if (hdr->d_compr > 255) hdr->d_compr = 255;
+        /* bull: hdr->d_compr is uint8_t
+	 * if (hdr->d_compr > 255) hdr->d_compr = 255; */
 
 	if (offset+sizeof(*d) + u_namlen > u_rootsize)
 	{ /*FAIL2("%i's name stretches beyond root directory", entries);*/ break;}

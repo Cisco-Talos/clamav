@@ -136,7 +136,7 @@ extern int cl_statfree(struct cl_stat *dbstat);
 extern void cl_debug(void);
 
 /* build a trie */
-extern void cl_buildtrie(struct cl_node *root);
+extern int cl_buildtrie(struct cl_node *root);
 
 extern void cl_freetrie(struct cl_node *root);
 

@@ -190,7 +190,11 @@ void clamd(struct optstruct *opt)
     }
 
     logg("Protecting against %d viruses.\n", virnum);
-    cl_buildtrie(root);
+    if((ret = cl_buildtrie(root)) != 0) {
+	fprintf(stderr, "ERROR: Database initialization error: %s\n", cl_strerror(ret));;
+	logg("!Database initialization error: %s\n", cl_strerror(ret));;
+	exit(1);
+    }
 
 
     /* fork into background */

@@ -38,7 +38,6 @@ int client(const struct optstruct *opt)
 	int sockd, wsockd, loopw = 60, bread, port;
 	const char *clamav_conf = getargl(opt, "config-file");
 	FILE *fd;
-int bw;
 
     if(!clamav_conf)
 	clamav_conf = DEFAULT_CFG;

@@ -25,6 +25,7 @@
 #include "cfgfile.h"
 #include "others.h"
 #include "defaults.h"
+#include "str.h"
 
 
 struct cfgstruct *parsecfg(const char *cfgfile)
@@ -103,8 +104,8 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 	}
 
 
-	if((name = tok(buff, 1))) {
-	    arg = tok(buff, 2);
+	if((name = cli_strtok(buff, 0, " \r\n"))) {
+	    arg = cli_strtok(buff, 1, " \r\n");
 	    found = 0;
 	    for(i = 0; ; i++) {
 		pt = &cfg_options[i];
@@ -137,6 +138,7 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 				    return NULL;
 				}
 				copt = regcfg(copt, name, NULL, atoi(arg));
+				free(arg);
 				break;
 			    case OPT_COMPSIZE:
 				if(!arg) {
@@ -164,16 +166,22 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 				    calc = atoi(arg);
 				}
 				copt = regcfg(copt, name, NULL, calc);
+				free(arg);
 				break;
 			    case OPT_NOARG:
 				if(arg) {
-				    fprintf(stderr, "ERROR: Parse error at line %d: Option %s doesn't support arguments.\n", line, name);
+				    fprintf(stderr, "ERROR: Parse error at line %d: Option %s doesn't support arguments (got '%s').\n", line, name, arg);
 				    return NULL;
 				}
 				copt = regcfg(copt, name, NULL, 0);
 				break;
 			    case OPT_OPTARG:
 				copt = regcfg(copt, name, arg, 0);
+				break;
+			    default:
+				fprintf(stderr, "ERROR: Parse error at line %d: Option %s is of unknown type %d\n", line, name, pt->argtype);
+				free(name);
+				free(arg);
 				break;
 			}
 		    }
@@ -221,44 +229,6 @@ void freecfg(struct cfgstruct *copt)
     return;
 }
 
-char *tok(const char *line, int field)
-{
-        int length, counter = 0, i, j = 0, k;
-        char *buffer;
-
-
-    length = strlen(line);
-    buffer = (char *) mcalloc(length, sizeof(char));
-
-    for(i = 0; i < length; i++) {
-        if(line[i] == ' ' || line[i] == '\n') {
-            counter++;
-            if(counter == field)
-		break;
-
-            for(k = 0; k < length; k++)
-		buffer[k] = 0;
-
-            j = 0;
-	    while((line[i+1] == ' ' || line[i+1] == '\n') && i < length)
-		i++;
-        } else {
-	    if(line[i] != ' ') {
-		buffer[j]=line[i];
-		j++;
-	    }
-	}
-    }
-
-    chomp(buffer); /* preventive */
-
-    if(strlen(buffer) == 0) {
-	free(buffer);
-	return NULL;
-    } else
-	return realloc(buffer, strlen(buffer) + 1);
-}
-
 struct cfgstruct *regcfg(struct cfgstruct *copt, char *optname, char *strarg, int numarg)
 {
 	struct cfgstruct *newnode, *pt;
@@ -304,3 +274,4 @@ struct cfgstruct *cfgopt(const struct cfgstruct *copt, const char *optname)
 
     return NULL;
 }
+

@@ -1,3 +1,27 @@
+Tue Dec  2 23:41:04 CET 2003 (tk)
+---------------------------------
+  * New fixes from Thomas Lamy <Thomas.Lamy*in-online.net>:
+    + configure.in: check for memcpy()
+    + libclamav:
+      + cli_strtok(): more generic replacement for tok() and cli_tok()
+      + cli_enqueue(): return CL_EMEM on malloc problems
+      + cli_maketrans(): return cli_enqueue()s result
+      + cl_buildtrie(): same
+    + clamd:
+      + fixed memleaks in config file parsing
+      + replaced tok() with new and more general cli_strtok() in libclamav
+      + check return value of cl_buildtrie()
+    + clamscan:
+      + more than one filename may be given on cmdline
+      + check return value of cl_buildtrie()
+      + opt->filename cleanup
+    + examples/ex1.c: check return value of cl_buildtrie()
+    + other cosmetic fixes (removed unused variables, added missing includes)
+
+  * configure.in: define _REENTRANT on pthread compliant systems only (thanks
+		  to Nigel)
+  * clamd: usleep if there are no free sessions (thanks to Ed Phillips)
+
 Tue Dec  2 06:38:13 GMT 2003 (njh)
 ----------------------------------
   * clamav-milter: use setsid if setpgrp not available
