@@ -469,7 +469,8 @@ __zzip_parse_root_directory(int fd,
     
 	if (hdr_return) 
 	    *hdr_return = hdr0;
-    } /* else zero (sane) entries */
+    } else free(hdr0); /* else zero (sane) entries */
+
     return (entries ?  ZZIP_CORRUPTED : 0);
 }
 
