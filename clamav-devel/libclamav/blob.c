@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.33  2005/02/18 18:10:39  nigelhorne
+ * Comment about QNX
+ *
  * Revision 1.32  2005/02/16 22:21:59  nigelhorne
  * s/BLOB/BLOBCLASS/
  *
@@ -98,7 +101,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.32 2005/02/16 22:21:59 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.33 2005/02/18 18:10:39 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -535,7 +538,7 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 		fb->b.len = fb->b.size = 0;
 	}
 
-#if	0
+#if	0	/* I don't think this is needed */
 	/*
 	 * Add the suffix back to the end of the filename. Tut-tut, filenames
 	 * should be independant of their usage on UNIX type systems.
@@ -571,6 +574,8 @@ fileblobGetFilename(const fileblob *fb)
 
 /*
  * Different operating systems allow different characters in their filenames
+ * FIXME: What does QNX want? There is no #ifdef C_QNX, but if there were
+ *	it may be best to treat it like MSDOS
  */
 void
 sanitiseName(char *name)
