@@ -1,3 +1,7 @@
+Thu Oct 14 22:19:20 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Harden the test for RFC2047 encoded headers
+
 Thu Oct 14 18:46:10 BST 2004 (njh)
 ----------------------------------
   * libclamav:		Handle RFC2047 on long lines produced by continuation
