@@ -14,647 +14,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- * Change History:
- * $Log: mbox.c,v $
- * Revision 1.222  2005/02/18 18:00:55  nigelhorne
- * Save separate bounces in separate files
- *
- * Revision 1.221  2005/02/17 19:36:08  nigelhorne
- * Fix minor typo with bounce handlers
- *
- * Revision 1.220  2005/02/17 19:06:32  nigelhorne
- * Prescan bounces
- *
- * Revision 1.219  2005/02/16 22:20:49  nigelhorne
- * New code now called NEW_WORLD
- *
- * Revision 1.218  2005/02/06 18:21:18  nigelhorne
- * Some W95.Matrix.SCR were not being found
- *
- * Revision 1.217  2005/02/06 09:45:53  nigelhorne
- * Speed up the (not implemented) next generation of mbox code
- *
- * Revision 1.216  2005/02/06 09:21:55  nigelhorne
- * Better check for boundaries with comments
- *
- * Revision 1.215  2005/02/03 21:07:33  nigelhorne
- * Faster handling of bounce messages
- *
- * Revision 1.214  2005/02/01 14:46:06  nigelhorne
- * Decode encapsulated bounce messages that have been base64 encoded (needlessly :-) )
- *
- * Revision 1.213  2005/01/31 11:02:43  nigelhorne
- * Handle blank lines in multipart headers
- *
- * Revision 1.212  2005/01/27 14:10:53  nigelhorne
- * Scan sendmail queue df files
- *
- * Revision 1.211  2005/01/19 17:41:25  nigelhorne
- * Downgraded warning message
- *
- * Revision 1.210  2005/01/09 21:23:21  nigelhorne
- * Catch HTML.Phishing.Bank-41
- *
- * Revision 1.209  2005/01/09 11:37:02  nigelhorne
- * Handle broken RFC2047 headers
- *
- * Revision 1.208  2005/01/07 13:48:46  nigelhorne
- * Save content-type: application only once
- *
- * Revision 1.207  2005/01/06 23:21:34  nigelhorne
- * Improved handling of quotes over multiple lines in headers
- *
- * Revision 1.206  2005/01/06 11:53:29  nigelhorne
- * Handle bounces in non mime encoded messages
- *
- * Revision 1.205  2005/01/01 15:55:26  nigelhorne
- * Changes handling of unbalanced quotes in multipart headers
- *
- * Revision 1.204  2004/12/19 23:19:54  nigelhorne
- * Tidy
- *
- * Revision 1.203  2004/12/19 13:50:08  nigelhorne
- * Tidy
- *
- * Revision 1.202  2004/12/18 16:32:10  nigelhorne
- * Added parseEmailFile
- *
- * Revision 1.201  2004/12/16 15:29:08  nigelhorne
- * Tidy and add mmap test code
- *
- * Revision 1.200  2004/12/07 23:08:10  nigelhorne
- * Fix empty content-type in multipart header
- *
- * Revision 1.199  2004/12/07 09:01:24  nigelhorne
- * Tidy
- *
- * Revision 1.198  2004/12/04 16:03:55  nigelhorne
- * Text/plain now handled as no encoding
- *
- * Revision 1.197  2004/12/04 15:50:39  nigelhorne
- * Handle text/rfc822-headers incorrectly sent as message/rfc822-headers
- *
- * Revision 1.196  2004/12/01 13:12:35  nigelhorne
- * Decode text/plain parts marked as being encoded
- *
- * Revision 1.195  2004/11/29 13:21:20  nigelhorne
- * Remove the old continuation marker method
- *
- * Revision 1.194  2004/11/28 22:06:38  nigelhorne
- * Tidy space only headers code
- *
- * Revision 1.193  2004/11/28 21:05:50  nigelhorne
- * Handle headers with only spaces
- *
- * Revision 1.192  2004/11/28 16:27:28  nigelhorne
- * Save the text portions as text not mail files
- *
- * Revision 1.191  2004/11/27 21:55:06  nigelhorne
- * Changed some more strtok to cli_strtok
- *
- * Revision 1.190  2004/11/27 14:49:13  nigelhorne
- * Use a static array for the partial directory
- *
- * Revision 1.189  2004/11/27 14:39:01  nigelhorne
- * Honour section 7.2.6 of RFC1521
- *
- * Revision 1.188  2004/11/27 14:17:35  nigelhorne
- * Handle attachments before the first mime section
- *
- * Revision 1.187  2004/11/27 13:16:56  nigelhorne
- * uuencode failures no longer fatal
- *
- * Revision 1.186  2004/11/27 11:59:28  nigelhorne
- * Handle comments in the command part of headers
- *
- * Revision 1.185  2004/11/26 23:00:29  nigelhorne
- * Handle spaces after the final MIME boundary and binHex attachments after that boundary
- *
- * Revision 1.184  2004/11/26 21:51:48  nigelhorne
- * Scan uuencodes after the final MIME section
- *
- * Revision 1.183  2004/11/26 17:32:42  nigelhorne
- * Add debug message for end of multipart headers
- *
- * Revision 1.182  2004/11/26 12:05:17  nigelhorne
- * Remove warning message
- *
- * Revision 1.181  2004/11/22 15:18:51  nigelhorne
- * Performance work
- *
- * Revision 1.180  2004/11/19 11:32:16  nigelhorne
- * Scan email footers (portions after the last MIME boundary
- *
- * Revision 1.179  2004/11/18 18:09:07  nigelhorne
- * First draft of binhex.c
- *
- * Revision 1.178  2004/11/15 13:58:50  nigelhorne
- * Fix obscure chance of memory leak
- *
- * Revision 1.177  2004/11/12 22:22:21  nigelhorne
- * Performance speeded up
- *
- * Revision 1.176  2004/11/12 09:41:45  nigelhorne
- * Parial mode now on by default
- *
- * Revision 1.175  2004/11/11 22:15:46  nigelhorne
- * Rewrite handling of folded headers
- *
- * Revision 1.174  2004/11/10 10:08:45  nigelhorne
- * Fix escaped parenthesis in rfc822 comments
- *
- * Revision 1.173  2004/11/09 19:40:06  nigelhorne
- * Find uuencoded files in preambles to multipart messages
- *
- * Revision 1.172  2004/11/09 13:33:38  nigelhorne
- * Tidy
- *
- * Revision 1.171  2004/11/09 12:24:32  nigelhorne
- * Better handling of mail-follow-urls when CURL is not installed
- *
- * Revision 1.170  2004/11/09 10:08:02  nigelhorne
- * Added basic handling of folded headers in the main message
- *
- * Revision 1.169  2004/11/08 16:27:09  nigelhorne
- * Fix crash with correctly encoded uuencode files
- *
- * Revision 1.168  2004/11/08 10:26:22  nigelhorne
- * Fix crash if x-yencode is mistakenly guessed
- *
- * Revision 1.167  2004/11/07 16:59:42  nigelhorne
- * Tidy
- *
- * Revision 1.166  2004/11/07 16:39:00  nigelhorne
- * Handle para 4 of RFC2231
- *
- * Revision 1.165  2004/11/06 21:43:23  nigelhorne
- * Fix possible segfault in handling broken RFC2047 headers
- *
- * Revision 1.164  2004/11/04 10:13:41  nigelhorne
- * Rehashed readdir_r patch
- *
- * Revision 1.163  2004/10/31 09:28:56  nigelhorne
- * Handle unbalanced quotes in multipart headers
- *
- * Revision 1.162  2004/10/24 04:35:15  nigelhorne
- * Handle multipart/knowbot as multipart/mixed
- *
- * Revision 1.161  2004/10/21 10:18:40  nigelhorne
- * PARTIAL: readdir_r even more options :-(
- *
- * Revision 1.160  2004/10/21 09:41:07  nigelhorne
- * PARTIAL: add readdir_r fix to BeOS
- *
- * Revision 1.159  2004/10/20 10:35:41  nigelhorne
- * Partial mode: fix possible stack corruption with Solaris
- *
- * Revision 1.158  2004/10/17 09:29:21  nigelhorne
- * Advise to report broken emails
- *
- * Revision 1.157  2004/10/16 20:53:28  nigelhorne
- * Tidy up
- *
- * Revision 1.156  2004/10/16 19:09:39  nigelhorne
- * Handle BeMail (BeOS) files
- *
- * Revision 1.155  2004/10/16 17:23:04  nigelhorne
- * Handle colons in quotes in headers
- *
- * Revision 1.154  2004/10/16 09:01:05  nigelhorne
- * Improved handling of wraparound headers
- *
- * Revision 1.153  2004/10/14 21:18:49  nigelhorne
- * Harden the test for RFC2047 encoded headers
- *
- * Revision 1.152  2004/10/14 17:45:13  nigelhorne
- * RFC2047 on long lines produced by continuation headers
- *
- * Revision 1.151  2004/10/10 11:10:20  nigelhorne
- * Remove perror - replace with cli_errmsg
- *
- * Revision 1.150  2004/10/09 08:01:37  nigelhorne
- * Needs libcurl >= 7.11
- *
- * Revision 1.149  2004/10/06 17:21:30  nigelhorne
- * Fix RFC2298 handling broken by RFC1341 code
- *
- * Revision 1.148  2004/10/05 15:41:53  nigelhorne
- * First draft of code to handle RFC1341
- *
- * Revision 1.147  2004/10/04 12:18:09  nigelhorne
- * Better warning message about PGP attachments not being scanned
- *
- * Revision 1.146  2004/10/04 10:52:39  nigelhorne
- * Better error message on RFC2047 decode error
- *
- * Revision 1.145  2004/10/01 13:49:22  nigelhorne
- * Minor code tidy
- *
- * Revision 1.144  2004/10/01 07:55:36  nigelhorne
- * Better error message on message/partial
- *
- * Revision 1.143  2004/09/30 21:47:35  nigelhorne
- * Removed unneeded strdups
- *
- * Revision 1.142  2004/09/28 18:40:12  nigelhorne
- * Use stack rather than heap where possible
- *
- * Revision 1.141  2004/09/23 08:43:25  nigelhorne
- * Scan multipart/digest messages
- *
- * Revision 1.140  2004/09/22 16:09:51  nigelhorne
- * Build if CURLOPT_DNS_USE_GLOBAL_CACHE isn't supported
- *
- * Revision 1.139  2004/09/22 15:49:13  nigelhorne
- * Handle RFC2298 messages
- *
- * Revision 1.138  2004/09/22 15:21:50  nigelhorne
- * Fix typo
- *
- * Revision 1.137  2004/09/21 20:47:38  nigelhorne
- * FOLLOWURL: Set a default username and password for password protected pages
- *
- * Revision 1.136  2004/09/21 12:18:52  nigelhorne
- * Fallback to CURLOPT_FILE if CURLOPT_WRITEDATA isn't defined
- *
- * Revision 1.135  2004/09/21 08:14:00  nigelhorne
- * Now compiles in machines with libcurl but without threads
- *
- * Revision 1.134  2004/09/20 17:08:43  nigelhorne
- * Some performance enhancements
- *
- * Revision 1.133  2004/09/20 12:44:03  nigelhorne
- * Fix parsing error on mime arguments
- *
- * Revision 1.132  2004/09/20 08:31:56  nigelhorne
- * FOLLOWURLS now compiled if libcurl is found
- *
- * Revision 1.131  2004/09/18 14:59:25  nigelhorne
- * Code tidy
- *
- * Revision 1.130  2004/09/17 10:56:29  nigelhorne
- * Handle multiple content-type headers and use the most likely
- *
- * Revision 1.129  2004/09/17 09:48:53  nigelhorne
- * Handle attempts to hide mime type
- *
- * Revision 1.128  2004/09/17 09:09:44  nigelhorne
- * Better handling of RFC822 comments
- *
- * Revision 1.127  2004/09/16 18:00:43  nigelhorne
- * Handle RFC2047
- *
- * Revision 1.126  2004/09/16 14:23:57  nigelhorne
- * Handle quotes around mime type
- *
- * Revision 1.125  2004/09/16 12:59:36  nigelhorne
- * Handle = and space as header separaters
- *
- * Revision 1.124  2004/09/16 11:20:33  nigelhorne
- * Better handling of folded headers in multipart messages
- *
- * Revision 1.123  2004/09/16 08:56:19  nigelhorne
- * Handle RFC822 Comments
- *
- * Revision 1.122  2004/09/15 22:09:26  nigelhorne
- * Handle spaces before colons
- *
- * Revision 1.121  2004/09/15 18:08:23  nigelhorne
- * Handle multiple encoding types
- *
- * Revision 1.120  2004/09/15 08:47:07  nigelhorne
- * Cleaner way to initialise hrefs
- *
- * Revision 1.119  2004/09/14 20:47:28  nigelhorne
- * Use new normalise code
- *
- * Revision 1.118  2004/09/14 12:09:37  nigelhorne
- * Include old normalise code
- *
- * Revision 1.117  2004/09/13 16:44:01  kojm
- * minor cleanup
- *
- * Revision 1.116  2004/09/13 13:16:28  nigelhorne
- * Return CL_EFORMAT on bad format
- *
- * Revision 1.115  2004/09/06 11:02:08  nigelhorne
- * Normalise HTML before scanning for URLs to download
- *
- * Revision 1.114  2004/09/03 15:59:00  nigelhorne
- * Handle boundary= "foo"
- *
- * Revision 1.113  2004/08/26 09:33:20  nigelhorne
- * Scan Communigate Pro files
- *
- * Revision 1.112  2004/08/23 13:15:16  nigelhorne
- * messageClearMarkers
- *
- * Revision 1.111  2004/08/22 20:20:14  nigelhorne
- * Tidy
- *
- * Revision 1.110  2004/08/22 15:08:59  nigelhorne
- * messageExport
- *
- * Revision 1.109  2004/08/22 10:34:24  nigelhorne
- * Use fileblob
- *
- * Revision 1.108  2004/08/21 11:57:57  nigelhorne
- * Use line.[ch]
- *
- * Revision 1.107  2004/08/20 04:55:07  nigelhorne
- * FOLLOWURL
- *
- * Revision 1.106  2004/08/20 04:53:18  nigelhorne
- * Tidy up
- *
- * Revision 1.105  2004/08/18 21:35:08  nigelhorne
- * Multithread the FollowURL calls
- *
- * Revision 1.104  2004/08/18 15:53:43  nigelhorne
- * Honour CL_MAILURL
- *
- * Revision 1.103  2004/08/18 10:49:45  nigelhorne
- * CHECKURLs was mistakenly turned on
- *
- * Revision 1.102  2004/08/18 07:45:20  nigelhorne
- * Use configure WITH_CURL value
- *
- * Revision 1.101  2004/08/17 08:28:32  nigelhorne
- * Support multitype/fax-message
- *
- * Revision 1.100  2004/08/12 10:36:09  nigelhorne
- * LIBCURL completed
- *
- * Revision 1.99  2004/08/11 15:28:39  nigelhorne
- * No longer needs curl.h
- *
- * Revision 1.98  2004/08/11 14:46:22  nigelhorne
- * Better handling of false positive emails
- *
- * Revision 1.97  2004/08/10 14:02:22  nigelhorne
- * *** empty log message ***
- *
- * Revision 1.96  2004/08/10 08:14:00  nigelhorne
- * Enable CHECKURL
- *
- * Revision 1.95  2004/08/09 21:37:21  kojm
- * libclamav: add new option CL_MAILURL
- *
- * Revision 1.94  2004/08/09 08:26:36  nigelhorne
- * Thread safe checkURL
- *
- * Revision 1.93  2004/08/08 21:30:47  nigelhorne
- * First draft of CheckURL
- *
- * Revision 1.92  2004/08/08 19:13:14  nigelhorne
- * Better handling of bounces
- *
- * Revision 1.91  2004/08/04 18:59:19  nigelhorne
- * Tidy up multipart handling
- *
- * Revision 1.90  2004/07/26 17:02:56  nigelhorne
- * Fix crash when debugging on SPARC
- *
- * Revision 1.89  2004/07/26 09:12:12  nigelhorne
- * Fix crash when debugging on Solaris
- *
- * Revision 1.88  2004/07/20 14:35:29  nigelhorne
- * Some MYDOOM.I were getting through
- *
- * Revision 1.87  2004/07/19 17:54:40  kojm
- * Use new patter matching algorithm. Cleanup.
- *
- * Revision 1.86  2004/07/06 09:32:45  nigelhorne
- * Better handling of Gibe.3 boundary exploit
- *
- * Revision 1.85  2004/06/30 19:48:58  nigelhorne
- * Some TR.Happy99.SKA were getting through
- *
- * Revision 1.84  2004/06/30 14:30:40  nigelhorne
- * Fix compilation error on Solaris
- *
- * Revision 1.83  2004/06/28 11:44:45  nigelhorne
- * Remove empty parts
- *
- * Revision 1.82  2004/06/25 13:56:38  nigelhorne
- * Optimise messages without other messages encapsulated within them
- *
- * Revision 1.81  2004/06/24 21:36:38  nigelhorne
- * Plug memory leak with large number of attachments
- *
- * Revision 1.80  2004/06/23 16:23:25  nigelhorne
- * Further empty line optimisation
- *
- * Revision 1.79  2004/06/22 04:08:01  nigelhorne
- * Optimise empty lines
- *
- * Revision 1.78  2004/06/21 10:21:19  nigelhorne
- * Fix crash when a multipart/mixed message contains many parts that need to be scanned as attachments
- *
- * Revision 1.77  2004/06/18 10:07:12  nigelhorne
- * Allow any number of alternatives in multipart messages
- *
- * Revision 1.76  2004/06/16 08:07:39  nigelhorne
- * Added thread safety
- *
- * Revision 1.75  2004/06/14 09:07:10  nigelhorne
- * Handle spam using broken e-mail generators for multipart/alternative
- *
- * Revision 1.74  2004/06/09 18:18:59  nigelhorne
- * Find uuencoded viruses in multipart/mixed that have no start of message boundaries
- *
- * Revision 1.73  2004/05/14 08:15:55  nigelhorne
- * Use mkstemp on cygwin
- *
- * Revision 1.72  2004/05/12 11:20:37  nigelhorne
- * More bounce message false positives handled
- *
- * Revision 1.71  2004/05/10 11:35:11  nigelhorne
- * No need to update mbox.c for cli_filetype problem
- *
- * Revision 1.69  2004/05/06 11:26:49  nigelhorne
- * Force attachments marked as RFC822 messages to be scanned
- *
- * Revision 1.68  2004/04/29 08:59:24  nigelhorne
- * Tidied up SetDispositionType
- *
- * Revision 1.67  2004/04/23 10:47:41  nigelhorne
- * If an inline text portion has a filename treat is as an attachment
- *
- * Revision 1.66  2004/04/14 08:32:21  nigelhorne
- * When debugging print the email number in mailboxes
- *
- * Revision 1.65  2004/04/07 18:18:07  nigelhorne
- * Some occurances of W97M.Lexar were let through
- *
- * Revision 1.64  2004/04/05 09:32:20  nigelhorne
- * Added SCAN_TO_DISC define
- *
- * Revision 1.63  2004/04/01 15:32:34  nigelhorne
- * Graceful exit if messageAddLine fails in strdup
- *
- * Revision 1.62  2004/03/31 17:00:20  nigelhorne
- * Code tidy up free memory earlier
- *
- * Revision 1.61  2004/03/30 22:45:13  nigelhorne
- * Better handling of multipart/multipart messages
- *
- * Revision 1.60  2004/03/29 09:22:03  nigelhorne
- * Tidy up code and reduce shuffling of data
- *
- * Revision 1.59  2004/03/26 11:08:36  nigelhorne
- * Use cli_writen
- *
- * Revision 1.58  2004/03/25 22:40:46  nigelhorne
- * Removed even more calls to realloc and some duplicated code
- *
- * Revision 1.57  2004/03/21 17:19:49  nigelhorne
- * Handle bounce messages with no headers
- *
- * Revision 1.56  2004/03/21 09:41:26  nigelhorne
- * Faster scanning for non MIME messages
- *
- * Revision 1.55  2004/03/20 17:39:23  nigelhorne
- * First attempt to handle all bounces
- *
- * Revision 1.54  2004/03/19 15:40:45  nigelhorne
- * Handle empty content-disposition types
- *
- * Revision 1.53  2004/03/19 08:08:02  nigelhorne
- * If a message part of a multipart contains an RFC822 message that has no encoding don't scan it
- *
- * Revision 1.52  2004/03/18 21:51:41  nigelhorne
- * If a message only contains a single RFC822 message that has no encoding don't save for scanning
- *
- * Revision 1.51  2004/03/17 19:48:12  nigelhorne
- * Improved embedded RFC822 message handling
- *
- * Revision 1.50  2004/03/10 22:05:39  nigelhorne
- * Fix seg fault when a message in a multimessage mailbox fails to scan
- *
- * Revision 1.49  2004/03/04 13:01:58  nigelhorne
- * Ensure all bounces are rescanned by cl_mbox
- *
- * Revision 1.48  2004/02/27 12:16:26  nigelhorne
- * Catch lines just containing ':'
- *
- * Revision 1.47  2004/02/23 10:13:08  nigelhorne
- * Handle spaces before : in headers
- *
- * Revision 1.46  2004/02/18 13:29:19  nigelhorne
- * Stop buffer overflows for files with very long suffixes
- *
- * Revision 1.45  2004/02/18 10:07:40  nigelhorne
- * Find some Yaha
- *
- * Revision 1.44  2004/02/15 08:45:54  nigelhorne
- * Avoid scanning the same file twice
- *
- * Revision 1.43  2004/02/14 19:04:05  nigelhorne
- * Handle spaces in boundaries
- *
- * Revision 1.42  2004/02/14 17:23:45  nigelhorne
- * Had deleted O_BINARY by mistake
- *
- * Revision 1.41  2004/02/12 18:43:58  nigelhorne
- * Use mkstemp on Solaris
- *
- * Revision 1.40  2004/02/11 08:15:59  nigelhorne
- * Use O_BINARY for cygwin
- *
- * Revision 1.39  2004/02/06 13:46:08  kojm
- * Support for clamav-config.h
- *
- * Revision 1.38  2004/02/04 13:29:48  nigelhorne
- * Handle partial writes - and print when write fails
- *
- * Revision 1.37  2004/02/03 22:54:59  nigelhorne
- * Catch another example of Worm.Dumaru.Y
- *
- * Revision 1.36  2004/02/02 09:52:57  nigelhorne
- * Some instances of Worm.Dumaru.Y got through the net
- *
- * Revision 1.35  2004/01/28 10:15:24  nigelhorne
- * Added support to scan some bounce messages
- *
- * Revision 1.34  2004/01/24 17:43:37  nigelhorne
- * Removed (incorrect) warning about uninitialised variable
- *
- * Revision 1.33  2004/01/23 10:38:22  nigelhorne
- * Fixed memory leak in handling some multipart messages
- *
- * Revision 1.32  2004/01/23 08:51:19  nigelhorne
- * Add detection of uuencoded viruses in single part multipart/mixed files
- *
- * Revision 1.31  2004/01/22 22:13:06  nigelhorne
- * Prevent infinite recursion on broken uuencoded files
- *
- * Revision 1.30  2004/01/13 10:12:05  nigelhorne
- * Remove duplicate code when handling multipart messages
- *
- * Revision 1.29  2004/01/09 18:27:11  nigelhorne
- * ParseMimeHeader could corrupt arg
- *
- * Revision 1.28  2004/01/09 15:07:42  nigelhorne
- * Re-engineered update 1.11 lost in recent changes
- *
- * Revision 1.27  2004/01/09 14:45:59  nigelhorne
- * Removed duplicated code in multipart handler
- *
- * Revision 1.26  2004/01/09 10:20:54  nigelhorne
- * Locate uuencoded viruses hidden in text poritions of multipart/mixed mime messages
- *
- * Revision 1.25  2004/01/06 14:41:18  nigelhorne
- * Handle headers which do not not have a space after the ':'
- *
- * Revision 1.24  2003/12/20 13:55:36  nigelhorne
- * Ensure multipart just save the bodies of attachments
- *
- * Revision 1.23  2003/12/14 18:07:01  nigelhorne
- * Some viruses in embedded messages were not being found
- *
- * Revision 1.22  2003/12/13 16:42:23  nigelhorne
- * call new cli_chomp
- *
- * Revision 1.21  2003/12/11 14:35:48  nigelhorne
- * Better handling of encapsulated messages
- *
- * Revision 1.20  2003/12/06 04:03:26  nigelhorne
- * Handle hand crafted emails that incorrectly set multipart headers
- *
- * Revision 1.19  2003/11/21 07:26:31  nigelhorne
- * Scan multipart alternatives that have no boundaries, finds some uuencoded happy99
- *
- * Revision 1.18  2003/11/17 08:13:21  nigelhorne
- * Handle spaces at the end of lines of MIME headers
- *
- * Revision 1.17  2003/11/06 05:06:42  nigelhorne
- * Some applications weren't being scanned
- *
- * Revision 1.16  2003/11/04 08:24:00  nigelhorne
- * Handle multipart messages that have no text portion
- *
- * Revision 1.15  2003/10/12 20:13:49  nigelhorne
- * Use NO_STRTOK_R consistent with message.c
- *
- * Revision 1.14  2003/10/12 12:37:11  nigelhorne
- * Appledouble encoded EICAR now found
- *
- * Revision 1.13  2003/10/01 09:27:42  nigelhorne
- * Handle content-type header going over to a new line
- *
- * Revision 1.12  2003/09/29 17:10:19  nigelhorne
- * Moved stub from heap to stack since its maximum size is known
- *
- * Revision 1.11  2003/09/29 12:58:32  nigelhorne
- * Handle Content-Type: /; name="eicar.com"
- *
- * Revision 1.10  2003/09/28 10:06:34  nigelhorne
- * Compilable under SCO; removed duplicate code with message.c
- *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.222 2005/02/18 18:00:55 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.223 2005/03/02 20:08:24 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -985,6 +346,10 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 	int wasAlloced;
 	struct scanlist *scanlist, *scanelem;
 
+	if(dir == NULL) {
+		cli_warnmsg("cli_mbox called with NULL dir\n");
+		return CL_ENULLARG;
+	}
 	if(fstat(desc, &statb) < 0)
 		return CL_EOPEN;
 
@@ -1294,6 +659,10 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 int
 cli_mbox(const char *dir, int desc, unsigned int options)
 {
+	if(dir == NULL) {
+		cli_warnmsg("cli_mbox called with NULL dir\n");
+		return CL_ENULLARG;
+	}
 	return cli_parse_mbox(dir, desc, options);
 }
 #endif
@@ -2937,8 +2306,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				}
 			}
 			if(lookahead == NULL) {
-				/* warning not dbg during the trial period */
-				cli_warnmsg("cli_mbox: I believe it's plain text which must be clean\n");
+				cli_dbgmsg("cli_mbox: I believe it's plain text which must be clean\n");
 				/* nothing here, move along please */
 				break;
 			}
@@ -3208,8 +2576,13 @@ boundaryStart(const char *line, const char *boundary)
 	 * best to avoid these false positives. For example if we have
 	 * boundary="1" we want to ensure that we don't break out of every line
 	 * that has -1 in it instead of starting --1. This needs some more work.
+	 *
+	 * Look with and without RFC822 comments stripped, I've seen some
+	 * samples where () are taken as comments in boundaries and some where
+	 * they're not. Irrespective of whatever RFC2822 says we need to find
+	 * viruses in both types of mails
 	 */
-	if(strstr(ptr, boundary) != NULL)
+	if((strstr(ptr, boundary) != NULL) || (strstr(line, boundary) != NULL))
 		rc = 1;
 	else if(*ptr++ != '-')
 		rc = 0;
@@ -3651,13 +3024,19 @@ rfc822comments(const char *in, char *out)
 				backslash = 1;
 				break;
 			case '\"':
+				*optr++ = '\"';
 				inquote = !inquote;
 				break;
 			case '(':
-				commentlevel++;
+				if(inquote)
+					*optr++ = '(';
+				else
+					commentlevel++;
 				break;
 			case ')':
-				if(commentlevel > 0)
+				if(inquote)
+					*optr++ = ')';
+				else if(commentlevel > 0)
 					commentlevel--;
 				break;
 			default:
