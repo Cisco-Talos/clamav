@@ -1,3 +1,8 @@
+Mon Sep 13 02:22:31 CEST 2004 (tk)
+----------------------------------
+  * clamscan: fix miscounting when trying to scan inaccessible archives
+	      (thanks to Robert Hogan <robert*roberthogan.net>)
+
 Mon Sep 13 01:41:48 CEST 2004 (tk)
 ----------------------------------
   * libclamav/untar.c: return with CL_EFORMAT instead of CL_EDSIG

@@ -359,6 +359,15 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	return 0;
     }
 
+    if(geteuid())
+	if(checkaccess(filename, NULL, R_OK) != 1) {
+	    if(!printinfected)
+		mprintf("%s: Access denied.\n", filename);
+	    return 0;
+	}
+
+    claminfo.files++;
+
     /* 
      * check the extension  - this is a special case, normally we don't need to
      * do this (libclamav detects archive by its magic string), but here we
@@ -387,7 +396,6 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	    return 0;
 	/* in other case try to continue with external archivers */
 	options &= ~CL_ARCHIVE; /* and disable decompression for the below checkfile() */
-	claminfo.files--; /* don't count it */
     }
 
     if((cli_strbcasestr(filename, ".zip") && optl(opt, "unzip"))
@@ -430,12 +438,6 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	}
     }
 
-    if(geteuid())
-	if(checkaccess(filename, NULL, R_OK) != 1) {
-	    if(!printinfected)
-		mprintf("%s: Access denied.\n", filename);
-	    return 0;
-	}
 
     if((ret = checkfile(filename, root, limits, options)) == CL_VIRUS) {
 	if(optl(opt, "remove")) {
@@ -761,8 +763,6 @@ int checkfile(const char *filename, const struct cl_node *root, const struct cl_
 	mprintf("@Can't open file %s\n", filename);
 	return 54;
     }
-
-    claminfo.files++;
 
     if((ret = cl_scandesc(fd, &virname, &claminfo.blocks, root, limits, options)) == CL_VIRUS) {
 	mprintf("%s: %s FOUND\n", filename, virname);
