@@ -1,3 +1,7 @@
+Mon Sep 15 13:23:27 BST 2003
+---------------------------
+  * clamav-milter: Added defailts about 0.60e to INSTALL file
+
 Sun Sep 14 21:11:00 CEST 2003
 -----------------------------
   * clamd: a fatal race condition fixed (only cvs versions were vulnerable)
