@@ -43,6 +43,7 @@
 #include "defaults.h"
 #include "freshclam.h"
 #include "output.h"
+#include "target.h"
 
 static short terminate = 0;
 
@@ -108,11 +109,11 @@ int freshclam(struct optstruct *opt)
 
     /* parse the config file */
     if((cfgfile = getargl(opt, "config-file"))) {
-	copt = parsecfg(cfgfile);
+	copt = parsecfg(cfgfile, 1);
     } else {
 	/* TODO: force strict permissions on freshclam.conf */
-	if((copt = parsecfg((cfgfile = CONFDIR"/freshclam.conf"))) == NULL)
-	    copt = parsecfg((cfgfile = CONFDIR"/clamav.conf"));
+	if((copt = parsecfg((cfgfile = CONFDIR"/freshclam.conf"), 1)) == NULL)
+	    copt = parsecfg((cfgfile = CONFDIR"/clamav.conf"), 1);
     }
 
     if(!copt) {
@@ -274,11 +275,13 @@ int freshclam(struct optstruct *opt)
 	if (pidfile) {
 	    writepid(pidfile);
 	}
-	logg("freshclam daemon started (pid=%d)\n", getpid());
+
+	logg("freshclam daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
 
 	sigaction(SIGTERM, &sigact, NULL);
 	sigaction(SIGHUP, &sigact, NULL);
 	sigaction(SIGINT, &sigact, NULL);
+
 	while(!terminate) {
 	    ret = download(copt, opt);
 

@@ -59,8 +59,8 @@ int client(const struct optstruct *opt)
     if(!clamav_conf)
 	clamav_conf = DEFAULT_CFG;
 
-    if((copt = parsecfg(clamav_conf)) == NULL) {
-	mprintf("@Can't parse configuration file.\n");
+    if((copt = parsecfg(clamav_conf, 1)) == NULL) {
+	mprintf("@Can't parse the configuration file.\n");
 	return 2;
     }
 

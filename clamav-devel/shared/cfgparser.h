@@ -43,7 +43,7 @@ struct cfgstruct {
 };
 
 
-struct cfgstruct *parsecfg(const char *cfgfile);
+struct cfgstruct *parsecfg(const char *cfgfile, int messages);
 
 struct cfgstruct *regcfg(struct cfgstruct *copt, char *optname, char *strarg, int numarg);
 

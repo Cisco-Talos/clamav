@@ -42,7 +42,7 @@ static int isnumb(const char *str)
     return 1;
 }
 
-struct cfgstruct *parsecfg(const char *cfgfile)
+struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 {
 	char buff[LINE_LENGTH], *name, *arg;
 	FILE *fs;
@@ -131,7 +131,8 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 	    continue;
 
 	if(!strncmp("Example", buff, 7)) {
-	    fprintf(stderr, "ERROR: Please edit the example config file %s.\n", cfgfile);
+	    if(messages)
+		fprintf(stderr, "ERROR: Please edit the example config file %s.\n", cfgfile);
 	    return NULL;
 	}
 
@@ -147,14 +148,16 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 			switch(pt->argtype) {
 			    case OPT_STR:
 				if(!arg) {
-				    fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires string as argument.\n", line, name);
+				    if(messages)
+					fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires string as argument.\n", line, name);
 				    return NULL;
 				}
 				copt = regcfg(copt, name, arg, 0);
 				break;
 			    case OPT_FULLSTR:
 				if(!arg) {
-				    fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires string as argument.\n", line, name);
+				    if(messages)
+					fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires string as argument.\n", line, name);
 				    return NULL;
 				}
 				/* FIXME: this one is an ugly hack of the above case */
@@ -165,7 +168,8 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 				break;
 			    case OPT_NUM:
 				if(!arg || !isnumb(arg)) {
-				    fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires numerical argument.\n", line, name);
+				    if(messages)
+					fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires numerical argument.\n", line, name);
 				    return NULL;
 				}
 				copt = regcfg(copt, name, NULL, atoi(arg));
@@ -173,7 +177,8 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 				break;
 			    case OPT_COMPSIZE:
 				if(!arg) {
-				    fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires argument.\n", line, name);
+				    if(messages)
+					fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires argument.\n", line, name);
 				    return NULL;
 				}
 				ctype = tolower(arg[strlen(arg) - 1]);
@@ -181,7 +186,8 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 				    char *cpy = (char *) mcalloc(strlen(arg), sizeof(char));
 				    strncpy(cpy, arg, strlen(arg) - 1);
 				    if(!isnumb(cpy)) {
-					fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires numerical (raw/K/M) argument.\n", line, name);
+					if(messages)
+					    fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires numerical (raw/K/M) argument.\n", line, name);
 					return NULL;
 				    }
 				    if(ctype == 'm')
@@ -191,7 +197,8 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 				    free(cpy);
 				} else {
 				    if(!isnumb(arg)) {
-					fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires numerical (raw/K/M) argument.\n", line, name);
+					if(messages)
+					    fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires numerical (raw/K/M) argument.\n", line, name);
 					return NULL;
 				    }
 				    calc = atoi(arg);
@@ -201,7 +208,8 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 				break;
 			    case OPT_NOARG:
 				if(arg) {
-				    fprintf(stderr, "ERROR: Parse error at line %d: Option %s doesn't support arguments (got '%s').\n", line, name, arg);
+				    if(messages)
+					fprintf(stderr, "ERROR: Parse error at line %d: Option %s doesn't support arguments (got '%s').\n", line, name, arg);
 				    return NULL;
 				}
 				copt = regcfg(copt, name, NULL, 0);
@@ -210,7 +218,8 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 				copt = regcfg(copt, name, arg, 0);
 				break;
 			    default:
-				fprintf(stderr, "ERROR: Parse error at line %d: Option %s is of unknown type %d\n", line, name, pt->argtype);
+				if(messages)
+				    fprintf(stderr, "ERROR: Parse error at line %d: Option %s is of unknown type %d\n", line, name, pt->argtype);
 				free(name);
 				free(arg);
 				break;
@@ -221,7 +230,8 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 	    } 
 
 	    if(!found) {
-		fprintf(stderr, "ERROR: Parse error at line %d: Unknown option %s.\n", line, name);
+		if(messages)
+		    fprintf(stderr, "ERROR: Parse error at line %d: Unknown option %s.\n", line, name);
 		return NULL;
 	    }
 	}

@@ -53,6 +53,7 @@
 #include "memory.h"
 #include "output.h"
 #include "shared.h"
+#include "target.h"
 
 void help(void);
 void daemonize(void);
@@ -102,7 +103,7 @@ void clamd(struct optstruct *opt)
     else
 	cfgfile = CL_DEFAULT_CFG;
 
-    if((copt = parsecfg(cfgfile)) == NULL) {
+    if((copt = parsecfg(cfgfile, 1)) == NULL) {
 	fprintf(stderr, "ERROR: Can't open/parse the config file %s\n", cfgfile);
 	exit(1);
     }
@@ -164,6 +165,8 @@ void clamd(struct optstruct *opt)
 	syslog(LOG_INFO, "Daemon started.\n");
     }
 #endif
+
+    logg("clamd daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
 
     if(logg_size)
 	logg("Log file size limited to %d bytes.\n", logg_size);

@@ -46,7 +46,7 @@ int notify(const char *cfgfile)
 	char *socktype;
 
 
-    if((copt = parsecfg(cfgfile)) == NULL) {
+    if((copt = parsecfg(cfgfile, 1)) == NULL) {
 	mprintf("@Clamd was NOT notified: Can't find or parse configuration file %s\n", cfgfile);
 	return 1;
     }
