@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Credits</TITLE>
-<META NAME="description" CONTENT="Credits">
+<TITLE>CVD format</TITLE>
+<META NAME="description" CONTENT="CVD format">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,63 +19,63 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node75.html">
-<LINK REL="previous" HREF="node67.html">
-<LINK REL="up" HREF="clamdoc.html">
+<LINK REL="previous" HREF="node71.html">
+<LINK REL="up" HREF="node68.html">
 <LINK REL="next" HREF="node73.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1215"
+<A NAME="tex2html1228"
   HREF="node73.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html1211"
-  HREF="clamdoc.html">
+<A NAME="tex2html1224"
+  HREF="node68.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html1205"
+<A NAME="tex2html1220"
   HREF="node71.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html1213"
+<A NAME="tex2html1226"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1216"
-  HREF="node73.html">Contributors</A>
-<B> Up:</B> <A NAME="tex2html1212"
-  HREF="clamdoc.html">clamdoc</A>
-<B> Previous:</B> <A NAME="tex2html1206"
-  HREF="node71.html">CVD format</A>
- &nbsp <B>  <A NAME="tex2html1214"
+<B> Next:</B> <A NAME="tex2html1229"
+  HREF="node73.html">Credits</A>
+<B> Up:</B> <A NAME="tex2html1225"
+  HREF="node68.html">LibClamAV</A>
+<B> Previous:</B> <A NAME="tex2html1221"
+  HREF="node71.html">Scan engine</A>
+ &nbsp <B>  <A NAME="tex2html1227"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H1><A NAME="SECTION00080000000000000000">
-Credits</A>
-</H1>
+<H2><A NAME="SECTION00074000000000000000">
+CVD format</A>
+</H2>
+    CVD (ClamAV Virus Database) is a digitally signed tarball file that
+    contains one or more databases. You can find some useful information in the
+    ASCII header of the file. It's a 512 bytes long string with the following
+    colon separated fields:
+    <PRE>
+ClamAV-VDB:build time:version:number of signatures:functionality
+level required:MD5 checksum:digital signature:builder name
+</PRE>
+    and can be easily parsed by scripts or with <code>sigtool --info</code>.
+    There are two CVD databases in ClamAV: <I>main.cvd</I> and <I>daily.cvd</I>
+    for daily updates. You can use <I>sigtool</I> to unpack a CVD file
+    (<code>--unpack</code>) and to list virus names (<code>--list-sigs</code>).
 
 <P>
 <BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
-
-<UL>
-<LI><A NAME="tex2html1217"
-  HREF="node73.html">Contributors</A>
-<LI><A NAME="tex2html1218"
-  HREF="node74.html">Donors</A>
-</UL>
-<!--End of Table of Child-Links-->
-<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-04-16
+2004-05-18
 </ADDRESS>
 </BODY>
 </HTML>

@@ -26,30 +26,30 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html500"
+<A NAME="tex2html512"
   HREF="node17.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html496"
+<A NAME="tex2html508"
   HREF="node6.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html492"
+<A NAME="tex2html504"
   HREF="node15.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html498"
+<A NAME="tex2html510"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html501"
+<B> Next:</B> <A NAME="tex2html513"
   HREF="node17.html">Usage</A>
-<B> Up:</B> <A NAME="tex2html497"
+<B> Up:</B> <A NAME="tex2html509"
   HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html493"
+<B> Previous:</B> <A NAME="tex2html505"
   HREF="node15.html">freshclam: Setting up auto-updating</A>
- &nbsp <B>  <A NAME="tex2html499"
+ &nbsp <B>  <A NAME="tex2html511"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
@@ -61,8 +61,14 @@ Database mirrors
 </H2>
     freshclam downloads the database from <TT><A NAME="tex2html21"
   HREF="http://database.clamav.net">http://database.clamav.net</A></TT>.
-    This is a round robin record that tries to equally balance the traffic
-    between all the database mirrors:
+    As of March 2004 we attempt to redirect our users to the closest pool
+    of mirrors by looking at their ip source address when they try to resolve
+    database.clamav.net. Our DNS servers can answer with a CNAME to:
+    db.europe.clamav.net, db.america.clamav.net, db.asia.clamav.net or
+    db.other.clamav.net. Our advanced push-mirroring mechanism allows
+    database maintainers to update all the mirrors in less than one minute !
+    Thanks to the help of many companies and organisations we have a few
+    dozen of very fast and reliable mirrors:
     <DIV ALIGN="CENTER">
 <FONT SIZE="-1">    </FONT><TABLE CELLPADDING=3 BORDER="1">
 <TR><TD ALIGN="CENTER"><FONT SIZE="-1">
@@ -168,18 +174,6 @@ Database mirrors
 <TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;kgc*sonic.net&gt;</FONT></TD>
 </TR>
 <TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html30"
-  HREF="clamav.nettron.co.za">clamav.nettron.co.za</A></TT> </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> 160.124.112.17 </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> South Africa </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Ryan Zwankhuizen</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
-				   </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		    </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1">		   </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;info*nettron.co.za&gt;</FONT></TD>
-</TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html31"
   HREF="clamav.gossamer-threads.com">clamav.gossamer-threads.com</A></TT> </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> 64.69.64.158 </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> Canada </FONT></TD>
@@ -191,8 +185,7 @@ Database mirrors
 <TD ALIGN="CENTER"><FONT SIZE="-1">	  </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;mirrors*gossamer-threads.com&gt;</FONT></TD>
 </TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html32"
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html31"
   HREF="clamav.catt.com">clamav.catt.com</A></TT> </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> 64.18.100.4 </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> USA </FONT></TD>
@@ -205,7 +198,7 @@ Database mirrors
 <TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;mirrors*catt.com&gt;</FONT></TD>
 </TR>
 <TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html33"
+	<TT><A NAME="tex2html32"
   HREF="clamav.datahost.com.ar">clamav.datahost.com.ar</A></TT> </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> 200.32.4.47 </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> Argentina </FONT></TD>
@@ -217,8 +210,7 @@ Database mirrors
 <TD ALIGN="CENTER"><FONT SIZE="-1">           </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;federico.omoto*datahost.com.ar&gt;</FONT></TD>
 </TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html34"
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html33"
   HREF="clamav.antispam.or.id">clamav.antispam.or.id</A></TT> </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> 202.134.0.71 </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> Indonesia </FONT></TD>
@@ -231,7 +223,7 @@ Database mirrors
 <TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;fajar*telkom.co.id&gt;</FONT></TD>
 </TR>
 <TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html35"
+	<TT><A NAME="tex2html34"
   HREF="clamav-du.viaverio.com">clamav-du.viaverio.com</A></TT> </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> 199.239.233.95 </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> USA </FONT></TD>
@@ -244,7 +236,7 @@ Database mirrors
 <TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;scott*perlcode.org&gt;</FONT></TD>
 </TR>
 <TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
-	<TT><A NAME="tex2html36"
+	<TT><A NAME="tex2html35"
   HREF="clamav-sj.viaverio.com">clamav-sj.viaverio.com</A></TT> </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> 128.121.60.235 </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> USA </FONT></TD>
@@ -256,7 +248,8 @@ Database mirrors
 <TD ALIGN="CENTER"><FONT SIZE="-1">	    </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;scott*perlcode.org&gt;</FONT></TD>
 </TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html37"
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
+	<TT><A NAME="tex2html36"
   HREF="clamavdb.heanet.ie">clamavdb.heanet.ie</A></TT> </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> 193.1.219.100 </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> Ireland </FONT></TD>
@@ -268,7 +261,7 @@ Database mirrors
 <TD ALIGN="CENTER"><FONT SIZE="-1">	   </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;mirrors*heanet.ie&gt;</FONT></TD>
 </TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html38"
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html37"
   HREF="clamav.crysys.hu">clamav.crysys.hu</A></TT> </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> 152.66.249.132 </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> Hungary </FONT></TD>
@@ -280,7 +273,7 @@ Database mirrors
 <TD ALIGN="CENTER"><FONT SIZE="-1">	  </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;boldi*mail2004.crysys.hit.bme.hu&gt;</FONT></TD>
 </TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html39"
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html38"
   HREF="clamav.rockriver.net">clamav.rockriver.net</A></TT> </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> 209.94.36.5 </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> Illinois, USA </FONT></TD>
@@ -292,7 +285,8 @@ Database mirrors
 <TD ALIGN="CENTER"><FONT SIZE="-1">		 </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;tom*rockriver.net&gt;</FONT></TD>
 </TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html40"
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
+	<TT><A NAME="tex2html39"
   HREF="clamav.xmundo.net">clamav.xmundo.net</A></TT> </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> 200.68.106.40 </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> Argentina </FONT></TD>
@@ -304,7 +298,7 @@ Database mirrors
 <TD ALIGN="CENTER"><FONT SIZE="-1">	    </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;mirrors*xmundo.net&gt;</FONT></TD>
 </TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html41"
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html40"
   HREF="clamav.infotex.com">clamav.infotex.com</A></TT> </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> 66.139.73.146 </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> Texas, USA </FONT></TD>
@@ -316,7 +310,19 @@ Database mirrors
 <TD ALIGN="CENTER"><FONT SIZE="-1">	      </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;matt*infotex.com&gt;</FONT></TD>
 </TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html42"
+</TABLE>
+    
+</DIV>
+    <DIV ALIGN="CENTER">
+<FONT SIZE="-1">    </FONT><TABLE CELLPADDING=3 BORDER="1">
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1">
+	Mirror </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> IP </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Location </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Administrator</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
+	<TT><A NAME="tex2html41"
   HREF="clamav.santafesolutions.com">clamav.santafesolutions.com</A></TT> </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> 196.40.71.226 </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> Costa Rica </FONT></TD>
@@ -328,7 +334,7 @@ Database mirrors
 <TD ALIGN="CENTER"><FONT SIZE="-1">	      </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;gregory*emailcr.com&gt;</FONT></TD>
 </TR>
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html43"
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html42"
   HREF="clamav.mirror.transip.nl">clamav.mirror.transip.nl</A></TT> </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> 80.69.67.3 </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> The Netherlands </FONT></TD>
@@ -340,18 +346,18 @@ Database mirrors
 <TD ALIGN="CENTER"><FONT SIZE="-1">	      </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;walter*transip.nl&gt;</FONT></TD>
 </TR>
-</TABLE>
-    
-</DIV>
-
-<P>
-<DIV ALIGN="CENTER">
-<FONT SIZE="-1">    </FONT><TABLE CELLPADDING=3 BORDER="1">
-<TR><TD ALIGN="CENTER"><FONT SIZE="-1">
-	Mirror </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> IP </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Location </FONT></TD>
-<TD ALIGN="CENTER"><FONT SIZE="-1"> Administrator</FONT></TD>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
+	<TT><A NAME="tex2html43"
+  HREF="clamavdb.osj.net">clamavdb.osj.net</A></TT> </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> 218.44.253.75 </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Japan </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Masaki Ikeda</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
+			       </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">	       </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">       </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;masaki*orange.co.jp&gt;</FONT></TD>
 </TR>
 <TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html44"
   HREF="clamav.ialfa.net">clamav.ialfa.net</A></TT> </FONT></TD>
@@ -609,6 +615,17 @@ Database mirrors
 <TD ALIGN="CENTER"><FONT SIZE="-1"> Germany  </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;karsten*pcn.de&gt;</FONT></TD>
 </TR>
+</TABLE>
+    
+</DIV>
+    <DIV ALIGN="CENTER">
+<FONT SIZE="-1">    </FONT><TABLE CELLPADDING=3 BORDER="1">
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1">
+	Mirror </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> IP </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Location </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Administrator</FONT></TD>
+</TR>
 <TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
 	<TT><A NAME="tex2html65"
   HREF="clamav.enderunix.org">clamav.enderunix.org</A></TT> </FONT></TD>
@@ -648,6 +665,84 @@ Database mirrors
 <TD ALIGN="CENTER"><FONT SIZE="-1">		      </FONT></TD>
 <TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;blob*blob.co.uk&gt;</FONT></TD>
 </TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
+	<TT><A NAME="tex2html68"
+  HREF="clamav.intercom.net.ua">clamav.intercom.net.ua</A></TT> </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> 195.13.43.28 </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Ukraine </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Artie Missirov</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
+				     </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">		    </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">	      </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;kadjy*intercom.net.ua&gt;</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
+	<TT><A NAME="tex2html69"
+  HREF="clamav.mirror.vutbr.cz">clamav.mirror.vutbr.cz</A></TT> </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> 147.229.3.16 </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Czech Republic </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Tomas Kreuzwieser</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
+				     </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">		    </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">		     </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;mirror-adm*cis.vutbr.cz&gt;</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
+	<TT><A NAME="tex2html70"
+  HREF="database.clamav.ps.pl">database.clamav.ps.pl</A></TT> </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> 212.14.28.36 </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Poland </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Adam Popik</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
+				    </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">		   </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">	    </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;adam*popik.pl&gt;</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
+	<TT><A NAME="tex2html71"
+  HREF="clamav.fx-services.com">clamav.fx-services.com</A></TT> </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> 69.93.108.98 </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> USA </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Robin Vley</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
+				     </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">		    </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">	  </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;robin*fx-services.com&gt;</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
+	<TT><A NAME="tex2html72"
+  HREF="clamav.univ-nantes.fr">clamav.univ-nantes.fr</A></TT> </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> 193.52.101.131 </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> France </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Yann Dupont</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
+				    </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">		     </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">	      </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">	&lt;yann.dupont*univ-nantes.fr&gt;</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
+	<TT><A NAME="tex2html73"
+  HREF="clamav.blackroute.net">clamav.blackroute.net</A></TT> </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> 64.246.44.108 </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Texas, USA </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Maarten Van Horenbeeck</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
+				    </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">		    </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">		 </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> &lt;maarten*daemon.be&gt;</FONT></TD>
+</TR>
 </TABLE>
     
 </DIV>
@@ -661,35 +756,35 @@ There is a <I>DatabaseMirror</I> directive in the config file, which
 <P>
 <HR>
 <!--Navigation Panel-->
-<A NAME="tex2html500"
+<A NAME="tex2html512"
   HREF="node17.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html496"
+<A NAME="tex2html508"
   HREF="node6.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html492"
+<A NAME="tex2html504"
   HREF="node15.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html498"
+<A NAME="tex2html510"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html501"
+<B> Next:</B> <A NAME="tex2html513"
   HREF="node17.html">Usage</A>
-<B> Up:</B> <A NAME="tex2html497"
+<B> Up:</B> <A NAME="tex2html509"
   HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html493"
+<B> Previous:</B> <A NAME="tex2html505"
   HREF="node15.html">freshclam: Setting up auto-updating</A>
- &nbsp <B>  <A NAME="tex2html499"
+ &nbsp <B>  <A NAME="tex2html511"
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2004-04-16
+2004-05-18
 </ADDRESS>
 </BODY>
 </HTML>

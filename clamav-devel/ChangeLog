@@ -1,3 +1,9 @@
+Tue May 18 22:36:43 CEST 2004 (tk)
+----------------------------------
+  * docs: include German clamdoc.pdf translation (Rupert Roesler-Schmidt and
+	  Karina Schwarz, uplink coherent solutions, http://www.uplink.at)
+  * docs: update
+
 Sun May 16 09:25:37 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Up issue
