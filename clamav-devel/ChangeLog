@@ -1,3 +1,7 @@
+Fri Nov 12 09:05:15 GMT 2004 (njh)
+----------------------------------
+  * libclamav/message.c:	Parse some malformed binhex files
+
 Thu Nov 11 22:17:31 GMT 2004 (njh)
 ----------------------------------
   * libclamav:		Rewrote the parsing of headers to improve folded lines

@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.114  2004/11/12 09:03:26  nigelhorne
+ * Parse some malformed binhex files
+ *
  * Revision 1.113  2004/11/11 22:15:46  nigelhorne
  * Rewrite handling of folded headers
  *
@@ -336,7 +339,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.113 2004/11/11 22:15:46 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.114 2004/11/12 09:03:26 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1219,7 +1222,7 @@ messageIsEncoding(message *m)
 		(line[9] == ' ')))
 			m->uuencode = m->body_last;
 	else if((m->binhex == NULL) &&
-		(strncasecmp(line, binhex, sizeof(binhex) - 1) == 0))
+		(simil(line, binhex) > 90))
 			m->binhex = m->body_last;
 	else if((m->yenc == NULL) && (strncmp(line, "=ybegin line=", 13) == 0))
 		m->yenc = m->body_last;
@@ -2662,7 +2665,7 @@ static	int	push(LINK1 *top, const char *string);
 static	int	pop(LINK1 *top, char *buffer);
 static	unsigned	int	compare(char *ls1, char **rs1, char *ls2, char **rs2);
 
-#define	MAX_PATTERN_SIZ	40	/* maximum string lengths */
+#define	MAX_PATTERN_SIZ	50	/* maximum string lengths */
 
 static int
 simil(const char *str1, const char *str2)
