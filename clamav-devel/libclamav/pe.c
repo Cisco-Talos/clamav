@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2004 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  With additions from aCaB <acab@clamav.net>
  *
@@ -40,6 +40,7 @@
 #include "fsg.h"
 #include "scanners.h"
 #include "rebuildpe.h"
+#include "str.h"
 
 #define IMAGE_DOS_SIGNATURE	    0x5a4d	    /* MZ */
 #define IMAGE_DOS_SIGNATURE_OLD	    0x4d5a          /* ZM */
@@ -152,7 +153,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	struct pe_image_optional_hdr optional_hdr;
 	struct pe_image_section_hdr *section_hdr;
 	struct stat sb;
-	char sname[9], buff[256], *tempfile;
+	char sname[9], buff[4096], *tempfile;
 	int i, found, upx_success = 0, min = 0, max = 0, ret;
 	int (*upxfn)(char *, int , char *, int *, uint32_t, uint32_t, uint32_t) = NULL;
 	char *src = NULL, *dest = NULL;
@@ -435,6 +436,25 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     }
 
     cli_dbgmsg("EntryPoint offset: 0x%x (%d)\n", ep, ep);
+
+    /* Attempt to detect some popular polymorphic viruses */
+
+    /* W32.Parite.B */
+    if(ep == EC32(section_hdr[nsections - 1].PointerToRawData)) {
+	lseek(desc, ep, SEEK_SET);
+	if(read(desc, buff, 4096) == 4096) {
+		char *pt = cli_memstr(buff, 4040, "\x47\x65\x74\x50\x72\x6f\x63\x41\x64\x64\x72\x65\x73\x73\x00", 15);
+	    if(pt) {
+		    uint32_t dw1, dw2;
+
+		pt += 15;
+		if(((dw1 = cli_readint32(pt)) ^ (dw2 = cli_readint32(pt + 4))) == 0x505a4f && ((dw1 = cli_readint32(pt + 8)) ^ (dw2 = cli_readint32(pt + 12))) == 0xffffb && ((dw1 = cli_readint32(pt + 16)) ^ (dw2 = cli_readint32(pt + 20))) == 0xb8) {
+		    *virname = "W32.Parite.B";
+		    return CL_VIRUS;
+		}
+	    }
+	}
+    }
 
     /* UPX & FSG support */
 
@@ -803,7 +823,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    return CL_CLEAN;
 		}
 
-		if( gp >= EC32(section_hdr[i + 1].PointerToRawData) || gp < 0) {
+		if(gp >= EC32(section_hdr[i + 1].PointerToRawData) || gp < 0) {
 		    cli_dbgmsg("FSG: Support data out of padding area (newedi: %d, vaddr: %d)\n", newedi, EC32(section_hdr[i].VirtualAddress));
 		    break;
 		}
@@ -845,7 +865,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		  }
 		}
 
-		if( t >= gp-10 || cli_readint32(support + t + 6) != 2 ) {
+		if(t >= gp-10 || cli_readint32(support + t + 6) != 2) {
 		    free(support);
 		    break;
 		}
@@ -1037,7 +1057,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    if(upxfn) {
 		    int skew = cli_readint32(buff + 2) - EC32(optional_hdr.ImageBase) - EC32(section_hdr[i + 1].VirtualAddress);
 
-		if(buff[1] != '\xbe' || skew <= 0 || skew > 0xfff ) { /* FIXME: legit skews?? */
+		if(buff[1] != '\xbe' || skew <= 0 || skew > 0xfff) { /* FIXME: legit skews?? */
 		    skew = 0; 
 		    if(upxfn(src, ssize, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr.AddressOfEntryPoint)) >= 0)
 			upx_success = 1;

@@ -1,3 +1,8 @@
+Sun Jan 16 06:28:59 CET 2005 (tk)
+---------------------------------
+  * libclamav/pe.c: attempt to detect W32.Parite.B using cryptanalysis (thanks
+		    to aCaB for info on detection)
+
 Sat Jan 15 18:33:41 CET 2005 (tk)
 ---------------------------------
   * libclamav/str.c: cli_memstr: return substring address
