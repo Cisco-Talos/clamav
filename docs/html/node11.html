@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 99.2beta8 (1.46)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Requirements</TITLE>
+<META NAME="description" CONTENT="Requirements">
+<META NAME="keywords" CONTENT="clamdoc">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v99.2beta8">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="clamdoc.css">
+
+<LINK REL="next" HREF="node12.html">
+<LINK REL="previous" HREF="node10.html">
+<LINK REL="up" HREF="node10.html">
+<LINK REL="next" HREF="node12.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html616"
+  HREF="node12.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html612"
+  HREF="node10.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html606"
+  HREF="node10.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html614"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html617"
+  HREF="node12.html">Installing on a shell</A>
+<B> Up:</B> <A NAME="tex2html613"
+  HREF="node10.html">Installation</A>
+<B> Previous:</B> <A NAME="tex2html607"
+  HREF="node10.html">Installation</A>
+ &nbsp <B>  <A NAME="tex2html615"
+  HREF="node1.html">Contents</A></B> 
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00041000000000000000">
+Requirements</A>
+</H2>
+    The following elements are required to compile ClamAV:
+    
+<UL>
+<LI>zlib and zlib-devel packages
+</LI>
+<LI>gcc compiler suite (both 2.9x and 3.x are supported)
+    
+</LI>
+</UL>
+    The following packages are optional but <B>highly recommended</B>:
+    
+<UL>
+<LI>bzip2 and bzip2-devel library
+</LI>
+<LI>GNU MP 3
+<BR>
+It's very important to install the GMP package because it allows
+	<code>freshclam</code> to verify the digital signatures of the virus
+	databases. If freshclam was compiled without GMP support it will
+	display "SECURITY WARNING: NO SUPPORT FOR DIGITAL SIGNATURES" on every
+	update. You can download GNU MP at <TT><A NAME="tex2html28"
+  HREF="http://www.swox.com/gmp/">http://www.swox.com/gmp/</A></TT>
+<BR>
+A note for Solaris/SPARC users: you must set the <I>ABI</I> system
+	variable to 32 (e.g. <code>setenv ABI 32</code>) before running the
+	configuration script of GMP.
+    
+</LI>
+</UL>
+
+<P>
+<BR><HR>
+<ADDRESS>
+Tomasz Kojm
+2005-02-06
+</ADDRESS>
+</BODY>
+</HTML>

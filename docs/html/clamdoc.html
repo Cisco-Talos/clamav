@@ -1,0 +1,418 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 99.2beta8 (1.46)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>clamdoc</TITLE>
+<META NAME="description" CONTENT="clamdoc">
+<META NAME="keywords" CONTENT="clamdoc">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v99.2beta8">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="clamdoc.css">
+
+<LINK REL="next" HREF="node1.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html283"
+  HREF="node1.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up_g.png"> 
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev_g.png"> 
+<A NAME="tex2html281"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html284"
+  HREF="node1.html">Contents</A>
+ &nbsp <B>  <A NAME="tex2html282"
+  HREF="node1.html">Contents</A></B> 
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<P>
+
+    <!-- MATH
+ $\includegraphics[width=353pt]{clam.eps}$
+ -->
+<IMG
+ WIDTH="561" HEIGHT="552" ALIGN="BOTTOM" BORDER="0"
+ SRC="img2.png"
+ ALT="\includegraphics[width=353pt]{clam.eps}">
+    <BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+    <DIV ALIGN="RIGHT">
+<BR>	<FONT SIZE="+3">Clam AntiVirus 0.82
+<BR>	<FONT SIZE="+3"><I>User Manual</I>
+<BR>    
+</FONT></FONT></DIV>
+
+<P>
+
+    <BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"></A>
+
+<UL>
+<LI><A NAME="tex2html285"
+  HREF="node1.html">Contents</A>
+<LI><A NAME="tex2html286"
+  HREF="node2.html">Introduction</A>
+<UL>
+<LI><A NAME="tex2html287"
+  HREF="node3.html">Features</A>
+<LI><A NAME="tex2html288"
+  HREF="node4.html">Mailing lists</A>
+<LI><A NAME="tex2html289"
+  HREF="node5.html">Virus submitting</A>
+</UL>
+<LI><A NAME="tex2html290"
+  HREF="node6.html">Base package</A>
+<UL>
+<LI><A NAME="tex2html291"
+  HREF="node7.html">Supported platforms</A>
+<LI><A NAME="tex2html292"
+  HREF="node8.html">Binary packages</A>
+<LI><A NAME="tex2html293"
+  HREF="node9.html">Daily built snapshots</A>
+</UL>
+<LI><A NAME="tex2html294"
+  HREF="node10.html">Installation</A>
+<UL>
+<LI><A NAME="tex2html295"
+  HREF="node11.html">Requirements</A>
+<LI><A NAME="tex2html296"
+  HREF="node12.html">Installing on a shell account</A>
+<LI><A NAME="tex2html297"
+  HREF="node13.html">Adding new system user and group</A>
+<LI><A NAME="tex2html298"
+  HREF="node14.html">Compilation of base package</A>
+<LI><A NAME="tex2html299"
+  HREF="node15.html">Compilation with clamav-milter enabled</A>
+</UL>
+<LI><A NAME="tex2html300"
+  HREF="node16.html">Configuration</A>
+<UL>
+<LI><A NAME="tex2html301"
+  HREF="node17.html">clamd</A>
+<UL>
+<LI><A NAME="tex2html302"
+  HREF="node18.html">On-access scanning</A>
+</UL>
+<LI><A NAME="tex2html303"
+  HREF="node19.html">clamav-milter</A>
+<LI><A NAME="tex2html304"
+  HREF="node20.html">Testing</A>
+<LI><A NAME="tex2html305"
+  HREF="node21.html">Setting up auto-updating</A>
+<LI><A NAME="tex2html306"
+  HREF="node22.html">Closest mirrors</A>
+</UL>
+<LI><A NAME="tex2html307"
+  HREF="node23.html">Usage</A>
+<UL>
+<LI><A NAME="tex2html308"
+  HREF="node24.html">Clam daemon</A>
+<LI><A NAME="tex2html309"
+  HREF="node25.html">Clam<B>d</B>scan</A>
+<LI><A NAME="tex2html310"
+  HREF="node26.html">Clamuko</A>
+<LI><A NAME="tex2html311"
+  HREF="node27.html">Output format</A>
+<UL>
+<LI><A NAME="tex2html312"
+  HREF="node28.html">clamscan</A>
+<LI><A NAME="tex2html313"
+  HREF="node29.html">clamd</A>
+</UL>
+</UL>
+<LI><A NAME="tex2html314"
+  HREF="node30.html">LibClamAV</A>
+<UL>
+<LI><A NAME="tex2html315"
+  HREF="node31.html">Licence</A>
+<LI><A NAME="tex2html316"
+  HREF="node32.html">Features</A>
+<UL>
+<LI><A NAME="tex2html317"
+  HREF="node33.html">Archives and compressed files</A>
+<LI><A NAME="tex2html318"
+  HREF="node34.html">Mail files</A>
+</UL>
+<LI><A NAME="tex2html319"
+  HREF="node35.html">API</A>
+<UL>
+<LI><A NAME="tex2html320"
+  HREF="node36.html">Header file</A>
+<LI><A NAME="tex2html321"
+  HREF="node37.html">Database loading</A>
+<LI><A NAME="tex2html322"
+  HREF="node38.html">Error handling</A>
+<LI><A NAME="tex2html323"
+  HREF="node39.html">Database structure</A>
+</UL>
+<LI><A NAME="tex2html324"
+  HREF="node40.html">Database reloading</A>
+<UL>
+<LI><A NAME="tex2html325"
+  HREF="node41.html">Data scan functions</A>
+<LI><A NAME="tex2html326"
+  HREF="node42.html">Memory</A>
+<LI><A NAME="tex2html327"
+  HREF="node43.html">clamav-config</A>
+<LI><A NAME="tex2html328"
+  HREF="node44.html">Example</A>
+</UL>
+<LI><A NAME="tex2html329"
+  HREF="node45.html">CVD format</A>
+</UL>
+<LI><A NAME="tex2html330"
+  HREF="node46.html">Frequently Asked Questions</A>
+<LI><A NAME="tex2html331"
+  HREF="node47.html">Third party software</A>
+<UL>
+<LI><A NAME="tex2html332"
+  HREF="node48.html"><I>MTA + ClamAV</I></A>
+<UL>
+<LI><A NAME="tex2html333"
+  HREF="node49.html">amavisd-new</A>
+<LI><A NAME="tex2html334"
+  HREF="node50.html">AMaViS - "Next Generation"</A>
+<LI><A NAME="tex2html335"
+  HREF="node51.html">ClamdMail</A>
+<LI><A NAME="tex2html336"
+  HREF="node52.html">cgpav</A>
+<LI><A NAME="tex2html337"
+  HREF="node53.html">ClamCour</A>
+<LI><A NAME="tex2html338"
+  HREF="node54.html">clamfilter</A>
+<LI><A NAME="tex2html339"
+  HREF="node55.html">ClamSMTP</A>
+<LI><A NAME="tex2html340"
+  HREF="node56.html">clapf</A>
+<LI><A NAME="tex2html341"
+  HREF="node57.html">DSpamPD</A>
+<LI><A NAME="tex2html342"
+  HREF="node58.html">exiscan</A>
+<LI><A NAME="tex2html343"
+  HREF="node59.html">Gadoyanvirus</A>
+<LI><A NAME="tex2html344"
+  HREF="node60.html">IVS Milter</A>
+<LI><A NAME="tex2html345"
+  HREF="node61.html">j-chkmail</A>
+<LI><A NAME="tex2html346"
+  HREF="node62.html">Mail Avenger</A>
+<LI><A NAME="tex2html347"
+  HREF="node63.html">Mailnees</A>
+<LI><A NAME="tex2html348"
+  HREF="node64.html">MailScanner</A>
+<LI><A NAME="tex2html349"
+  HREF="node65.html">Maverix</A>
+<LI><A NAME="tex2html350"
+  HREF="node66.html">MIMEDefang</A>
+<LI><A NAME="tex2html351"
+  HREF="node67.html">mxGuard for IMail</A>
+<LI><A NAME="tex2html352"
+  HREF="node68.html">OdeiaVir</A>
+<LI><A NAME="tex2html353"
+  HREF="node69.html">OpenProtect</A>
+<LI><A NAME="tex2html354"
+  HREF="node70.html">Protea AntiVirus Tools</A>
+<LI><A NAME="tex2html355"
+  HREF="node71.html">PTSMail Utilities</A>
+<LI><A NAME="tex2html356"
+  HREF="node72.html">pymavis</A>
+<LI><A NAME="tex2html357"
+  HREF="node73.html">Qmail-Scanner</A>
+<LI><A NAME="tex2html358"
+  HREF="node74.html">qscanq</A>
+<LI><A NAME="tex2html359"
+  HREF="node75.html">qSheff</A>
+<LI><A NAME="tex2html360"
+  HREF="node76.html">RevolSys SMTP kit for Postfix</A>
+<LI><A NAME="tex2html361"
+  HREF="node77.html">Sagator</A>
+<LI><A NAME="tex2html362"
+  HREF="node78.html">Scrubber</A>
+<LI><A NAME="tex2html363"
+  HREF="node79.html">Secure Mail Intelligence!</A>
+<LI><A NAME="tex2html364"
+  HREF="node80.html">simscan</A>
+<LI><A NAME="tex2html365"
+  HREF="node81.html">smtpfilter</A>
+<LI><A NAME="tex2html366"
+  HREF="node82.html">smtp-vilter</A>
+<LI><A NAME="tex2html367"
+  HREF="node83.html">Zabit</A>
+</UL>
+<LI><A NAME="tex2html368"
+  HREF="node84.html"><I>MTA + POP3 Proxy + ClamAV</I></A>
+<UL>
+<LI><A NAME="tex2html369"
+  HREF="node85.html">ClamMail</A>
+<LI><A NAME="tex2html370"
+  HREF="node86.html">POP3 Virus Scanner Daemon</A>
+</UL>
+<LI><A NAME="tex2html371"
+  HREF="node87.html"><I>Web/FTP Proxy + ClamAV</I></A>
+<UL>
+<LI><A NAME="tex2html372"
+  HREF="node88.html">DansGuardian Anti-Virus Patch</A>
+<LI><A NAME="tex2html373"
+  HREF="node89.html">Frox</A>
+<LI><A NAME="tex2html374"
+  HREF="node90.html">mod_clamav</A>
+<LI><A NAME="tex2html375"
+  HREF="node91.html">SafeSquid</A>
+<LI><A NAME="tex2html376"
+  HREF="node92.html">SquidClamAV Redirector</A>
+<LI><A NAME="tex2html377"
+  HREF="node93.html">Viralator</A>
+</UL>
+<LI><A NAME="tex2html378"
+  HREF="node94.html"><I>Filesystem + ClamAV</I></A>
+<UL>
+<LI><A NAME="tex2html379"
+  HREF="node95.html">Dazuko</A>
+<LI><A NAME="tex2html380"
+  HREF="node96.html">Famuko</A>
+<LI><A NAME="tex2html381"
+  HREF="node97.html">OpenAntiVirus samba-vscan</A>
+</UL>
+<LI><A NAME="tex2html382"
+  HREF="node98.html"><I>Mail User Agent + ClamAV</I></A>
+<UL>
+<LI><A NAME="tex2html383"
+  HREF="node99.html">clamailfilter</A>
+<LI><A NAME="tex2html384"
+  HREF="node100.html">ClamAssassin</A>
+<LI><A NAME="tex2html385"
+  HREF="node101.html">clamscan-procfilter</A>
+<LI><A NAME="tex2html386"
+  HREF="node102.html">KMail</A>
+<LI><A NAME="tex2html387"
+  HREF="node103.html">MyClamMailFilter</A>
+<LI><A NAME="tex2html388"
+  HREF="node104.html">OpenWebMail</A>
+<LI><A NAME="tex2html389"
+  HREF="node105.html">QClam</A>
+<LI><A NAME="tex2html390"
+  HREF="node106.html">QMVC - Qmail Mail and Virus Control</A>
+<LI><A NAME="tex2html391"
+  HREF="node107.html">Sylpheed Claws</A>
+<LI><A NAME="tex2html392"
+  HREF="node108.html">SoftlabsAV</A>
+</UL>
+<LI><A NAME="tex2html393"
+  HREF="node109.html"><I>Graphical User Interface + ClamAV</I></A>
+<UL>
+<LI><A NAME="tex2html394"
+  HREF="node110.html">AVScan</A>
+<LI><A NAME="tex2html395"
+  HREF="node111.html">BeClam</A>
+<LI><A NAME="tex2html396"
+  HREF="node112.html">Clamaktion</A>
+<LI><A NAME="tex2html397"
+  HREF="node113.html">ClamShell</A>
+<LI><A NAME="tex2html398"
+  HREF="node114.html">ClamTk</A>
+<LI><A NAME="tex2html399"
+  HREF="node115.html">clamXav</A>
+<LI><A NAME="tex2html400"
+  HREF="node116.html">ClamWin</A>
+<LI><A NAME="tex2html401"
+  HREF="node117.html">FETCAV</A>
+<LI><A NAME="tex2html402"
+  HREF="node118.html">KlamAV</A>
+<LI><A NAME="tex2html403"
+  HREF="node119.html">wbmclamav</A>
+</UL>
+<LI><A NAME="tex2html404"
+  HREF="node120.html"><I>Library + ClamAV</I></A>
+<UL>
+<LI><A NAME="tex2html405"
+  HREF="node121.html">ClamAVPlugin</A>
+<LI><A NAME="tex2html406"
+  HREF="node122.html">clamavr</A>
+<LI><A NAME="tex2html407"
+  HREF="node123.html">D bindings for ClamAV</A>
+<LI><A NAME="tex2html408"
+  HREF="node124.html">File::Scan::ClamAV</A>
+<LI><A NAME="tex2html409"
+  HREF="node125.html">Mail::ClamAV</A>
+<LI><A NAME="tex2html410"
+  HREF="node126.html">php-clamav</A>
+<LI><A NAME="tex2html411"
+  HREF="node127.html">pyclamav</A>
+<LI><A NAME="tex2html412"
+  HREF="node128.html">WRAVLib</A>
+</UL>
+<LI><A NAME="tex2html413"
+  HREF="node129.html"><I>Miscellaneous + ClamAV</I></A>
+<UL>
+<LI><A NAME="tex2html414"
+  HREF="node130.html">INSERT</A>
+<LI><A NAME="tex2html415"
+  HREF="node131.html">Local Area Security</A>
+<LI><A NAME="tex2html416"
+  HREF="node132.html">mailgraph</A>
+<LI><A NAME="tex2html417"
+  HREF="node133.html">mailman-clamav</A>
+<LI><A NAME="tex2html418"
+  HREF="node134.html">Moodle</A>
+<LI><A NAME="tex2html419"
+  HREF="node135.html">nclamd</A>
+<LI><A NAME="tex2html420"
+  HREF="node136.html">qmailmrtg7</A>
+<LI><A NAME="tex2html421"
+  HREF="node137.html">redWall Firewall</A>
+<LI><A NAME="tex2html422"
+  HREF="node138.html">Scan Log Analyzer</A>
+<LI><A NAME="tex2html423"
+  HREF="node139.html">snort-inline</A>
+</UL>
+</UL>
+<LI><A NAME="tex2html424"
+  HREF="node140.html">Credits</A>
+<UL>
+<LI><A NAME="tex2html425"
+  HREF="node141.html">Database mirrors</A>
+<LI><A NAME="tex2html426"
+  HREF="node142.html">Contributors</A>
+<LI><A NAME="tex2html427"
+  HREF="node143.html">Donors</A>
+<LI><A NAME="tex2html428"
+  HREF="node144.html">Graphics</A>
+<LI><A NAME="tex2html429"
+  HREF="node145.html">OpenAntiVirus</A>
+</UL>
+<LI><A NAME="tex2html430"
+  HREF="node146.html">Authors</A>
+<LI><A NAME="tex2html431"
+  HREF="node147.html">About this document ...</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
+<ADDRESS>
+Tomasz Kojm
+2005-02-06
+</ADDRESS>
+</BODY>
+</HTML>

@@ -15,5 +15,5 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-EXTRA_DIST = clamdoc.pdf man clamav-mirror-howto.pdf signatures.pdf MacOSX clamdoc.tex clam.eps
+EXTRA_DIST = clamdoc.pdf man clamav-mirror-howto.pdf signatures.pdf MacOSX clamdoc.tex clam.eps html
 man_MANS = man/clamscan.1 man/freshclam.1 man/sigtool.1 man/clamd.8 man/clamd.conf.5 man/clamdscan.1 man/clamav-milter.8 man/freshclam.conf.5

@@ -1,0 +1,81 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 99.2beta8 (1.46)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Testing</TITLE>
+<META NAME="description" CONTENT="Testing">
+<META NAME="keywords" CONTENT="clamdoc">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v99.2beta8">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="clamdoc.css">
+
+<LINK REL="next" HREF="node21.html">
+<LINK REL="previous" HREF="node19.html">
+<LINK REL="up" HREF="node16.html">
+<LINK REL="next" HREF="node21.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html727"
+  HREF="node21.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html723"
+  HREF="node16.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html717"
+  HREF="node19.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html725"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html728"
+  HREF="node21.html">Setting up auto-updating</A>
+<B> Up:</B> <A NAME="tex2html724"
+  HREF="node16.html">Configuration</A>
+<B> Previous:</B> <A NAME="tex2html718"
+  HREF="node19.html">clamav-milter</A>
+ &nbsp <B>  <A NAME="tex2html726"
+  HREF="node1.html">Contents</A></B> 
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00053000000000000000">
+Testing</A>
+</H2>
+    Try to scan recursively the source directory:
+    <PRE>
+	$ clamscan -r -l scan.txt clamav-x.yz
+</PRE>
+    It should find some test files in the clamav-x.yz/test directory.
+    The scan result will be saved in the <code>scan.txt</code> log file
+    <A NAME="tex2html31"
+  HREF="footnode.html#foot237"><SUP>4</SUP></A>.
+    To test <code>clamd</code>, start it and use <code>clamdscan</code> (or connect directly
+    to its socket and run the SCAN command instead):
+    <PRE>
+	$ clamdscan -l scan.txt clamav-x.yz
+</PRE>
+    Please note that the scanned files must be accessible by the user running
+    <code>clamd</code> or you get an error.
+
+<P>
+<BR><HR>
+<ADDRESS>
+Tomasz Kojm
+2005-02-06
+</ADDRESS>
+</BODY>
+</HTML>
