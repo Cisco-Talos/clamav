@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  By Per Jessen <per@computer.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,14 +16,10 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __FRESHCLAM_H
-#define __FRESHCLAM_H
 
-#include "cfgparser.h"
-#include "options.h"
+#ifndef __EXECUTE_H
+#define __EXECUTE_H
 
-void help(void);
-void daemonize(void);
-int download(const struct cfgstruct *copt, const struct optstruct *opt);
+void execute( const char *type, const char *text );
 
 #endif

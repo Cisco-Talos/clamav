@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  By Per Jessen <per@computer.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,14 +16,42 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __FRESHCLAM_H
-#define __FRESHCLAM_H
-
-#include "cfgparser.h"
-#include "options.h"
-
-void help(void);
-void daemonize(void);
-int download(const struct cfgstruct *copt, const struct optstruct *opt);
-
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
 #endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <errno.h>
+
+#include "defaults.h"
+#include "freshclam.h"
+#include "output.h"
+
+int active_children;
+
+void execute( const char *type, const char *text )
+{
+	pid_t pid;
+
+	if ( active_children<CL_MAX_CHILDREN )
+	switch( pid=fork() ) {
+	case 0:
+		if ( -1==system(text) )
+		{
+		mprintf("@%s: couldn't execute \"%s\".\n", type, text);
+		}
+		exit(0);
+	case -1:
+		mprintf("@%s::fork() failed, %s.\n", type, strerror(errno));
+		break;
+	default:
+		active_children++;
+	}
+	else
+	{
+		mprintf("@%s: already %d processes active.\n", type, active_children);
+	}
+}

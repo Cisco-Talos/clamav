@@ -1,3 +1,8 @@
+Fri Mar 25 18:47:34 CET 2005 (tk)
+---------------------------------
+  * freshclam: fork before system() call in daemon mode (patch by Per Jessen
+	       <per*computer.org>)
+
 Tue Mar 22 22:54:46 CET 2005 (tk)
 ---------------------------------
   * libclamav/scanners.c: fix encrypted zip detecion (patch by Dirk Mueller

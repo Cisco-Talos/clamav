@@ -29,6 +29,7 @@
 #include <signal.h>
 #include <time.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <pwd.h>
@@ -45,13 +46,19 @@
 #include "output.h"
 #include "target.h"
 #include "misc.h"
+#include "execute.h"
 
 static short terminate = 0;
-
+extern int active_children;
 
 static void daemon_sighandler(int sig) {
 
     switch(sig) {
+	case SIGCHLD:
+	    waitpid(-1, NULL, WNOHANG);
+	    active_children--;
+	    break;
+
 	case SIGALRM:
 	case SIGUSR1:
 	    terminate = -1;
@@ -291,23 +298,28 @@ int freshclam(struct optstruct *opt)
 	    writepid(pidfile);
 	}
 
+	active_children = 0;
+
 	logg("freshclam daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
 
 	sigaction(SIGTERM, &sigact, NULL);
 	sigaction(SIGHUP, &sigact, NULL);
 	sigaction(SIGINT, &sigact, NULL);
+        sigaction(SIGCHLD, &sigact, NULL);
 
 	while(!terminate) {
 	    ret = download(copt, opt);
 
+            if(ret > 1) {
+		    const char *arg = NULL;
 
-	    if(optl(opt, "on-error-execute")) {
-		if(ret > 1)
-		    system(getargl(opt, "on-error-execute"));
+	        if(optl(opt, "on-error-execute"))
+		    arg = getargl(opt, "on-error-execute");
+		else if((cpt = cfgopt(copt, "OnErrorExecute")))
+		    arg = cpt->strarg;
 
-	    } else if((cpt = cfgopt(copt, "OnErrorExecute"))) {
-		if(ret > 1)
-		    system(cpt->strarg);
+		if(arg)
+		    execute("OnErrorExecute", arg);
 	    }
 
 	    logg("--------------------------------------\n");

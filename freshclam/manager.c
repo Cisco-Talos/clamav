@@ -58,6 +58,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	char ipaddr[16], *dnsreply = NULL, *pt;
 	struct cfgstruct *cpt;
 	char *localip = NULL;
+	const char *arg = NULL;
 #ifdef HAVE_RESOLV_H
 	const char *dnsdbinfo;
 #endif
@@ -189,9 +190,16 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 #endif
 
 	if(optl(opt, "on-update-execute"))
-	    system(getargl(opt, "on-update-execute"));
+	    arg = getargl(opt, "on-update-execute");
 	else if((cpt = cfgopt(copt, "OnUpdateExecute")))
-	    system(cpt->strarg);
+	    arg = cpt->strarg;
+
+	if(arg) {
+	    if(optc(opt, 'd'))
+		execute( "OnUpdateExecute", pt );
+            else
+		system(pt);
+	}
 
 	return 0;
 
