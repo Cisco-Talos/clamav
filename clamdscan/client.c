@@ -165,7 +165,6 @@ int client(const struct optstruct *opt)
 	}
 
 	server2.sin_family = AF_INET;
-	server2.sin_addr.s_addr = inet_addr("127.0.0.1");
 	server2.sin_port = htons(port);
 
 	if(connect(wsockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
