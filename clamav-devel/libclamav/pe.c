@@ -405,7 +405,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	}
 
         if(read(desc, buff, 168) != 168) {
-	    cli_dbgmsg("UPX/FSG: Can't read 126 bytes at 0x%x (%d)\n", ep, ep);
+	    cli_dbgmsg("UPX/FSG: Can't read 168 bytes at 0x%x (%d)\n", ep, ep);
             free(section_hdr);
 	    return CL_EIO;
 	}
@@ -521,7 +521,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    dsize = EC32(section_hdr[i].VirtualSize);
 
 	    while(found) {
-		    int gp, t, sectcnt = 0;
+	            int gp, t, sectcnt = 0;
 		    char *support;
 		    uint32_t newesi, newedi, newebx, oldep;
 		    struct SECTION *sections;
@@ -544,6 +544,9 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    break;
 		}
 
+		lseek(desc, gp, SEEK_SET);
+		gp = EC32(section_hdr[i + 1].PointerToRawData) - gp;
+
 		if(limits && limits->maxfilesize && gp > limits->maxfilesize) {
 		    cli_dbgmsg("FSG: Buffer size exceeded (size: %d, max: %lu)\n", gp, limits->maxfilesize);
 		    free(section_hdr);
@@ -554,9 +557,6 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    free(section_hdr);
 		    return CL_EMEM;
 		}
-
-		lseek(desc, gp, SEEK_SET);
-		gp = EC32(section_hdr[i + 1].PointerToRawData) - gp;
 
 		if(read(desc, support, gp) != gp) {
 		    cli_dbgmsg("Can't read %d bytes from padding area\n", gp); 
@@ -703,6 +703,198 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		break; /* were done with 1.33 */
 	    }
 	}
+
+	/* FIXME: easy 2 hack */
+ 	if(found && buff[0] == '\xbb' && cli_readint32(buff + 1) - EC32(optional_hdr.ImageBase) < min && buff[5] == '\xbf' && buff[10] == '\xbe') {
+
+	    /* FSG support - v. 1.31 */
+
+	    ssize = EC32(section_hdr[i + 1].SizeOfRawData);
+	    dsize = EC32(section_hdr[i].VirtualSize);
+
+	    while(found) {
+		    int gp = cli_readint32(buff+1) - EC32(optional_hdr.ImageBase), t, sectcnt = 0;
+		    char *support;
+		    uint32_t newesi = cli_readint32(buff+11) - EC32(optional_hdr.ImageBase);
+		    uint32_t newedi = cli_readint32(buff+6) - EC32(optional_hdr.ImageBase);
+		    uint32_t oldep = EC32(optional_hdr.AddressOfEntryPoint);
+		    struct SECTION *sections;
+
+	        if (oldep <= EC32(section_hdr[i + 1].VirtualAddress) || oldep > EC32(section_hdr[i + 1].VirtualAddress)+EC32(section_hdr[i + 1].SizeOfRawData) - 0xe0) {
+		  cli_dbgmsg("FSG: EP not in section %d\n", i+1);
+		  break;
+		}
+		oldep -= EC32(section_hdr[i + 1].VirtualAddress);
+
+		if(newesi < EC32(section_hdr[i + 1].VirtualAddress || newesi >= EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData))) {
+		    cli_dbgmsg("FSG: Source buffer out of section bounds\n");
+		    break;
+		}
+
+		if(newedi != EC32(section_hdr[i].VirtualAddress)) {
+		    cli_dbgmsg("FSG: Bad destination (is %x should be %x)\n", newedi, EC32(section_hdr[i].VirtualAddress));
+		    break;
+		}
+
+		if(limits && limits->maxfilesize && (ssize > limits->maxfilesize || dsize > limits->maxfilesize)) {
+		    cli_dbgmsg("FSG: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize, limits->maxfilesize);
+		    free(section_hdr);
+		    return CL_CLEAN;
+		}
+
+		if(ssize <= 0x19 || dsize <= ssize) {
+		    cli_dbgmsg("FSG: Size mismatch (ssize: %d, dsize: %d)\n", ssize, dsize);
+		    free(section_hdr);
+		    return CL_CLEAN;
+		}
+
+		if( gp >= EC32(section_hdr[i + 1].PointerToRawData) || gp < 0) {
+		    cli_dbgmsg("FSG: Support data out of padding area (newedi: %d, vaddr: %d)\n", newedi, EC32(section_hdr[i].VirtualAddress));
+		    break;
+		}
+
+		lseek(desc, gp, SEEK_SET);
+		gp = EC32(section_hdr[i + 1].PointerToRawData) - gp;
+
+		if(limits && limits->maxfilesize && gp > limits->maxfilesize) {
+		    cli_dbgmsg("FSG: Buffer size exceeded (size: %d, max: %lu)\n", gp, limits->maxfilesize);
+		    free(section_hdr);
+		    return CL_CLEAN;
+		}
+
+		if((support = (char *) cli_malloc(gp)) == NULL) {
+		    free(section_hdr);
+		    return CL_EMEM;
+		}
+
+		if(read(desc, support, gp) != gp) {
+		    cli_dbgmsg("Can't read %d bytes from padding area\n", gp); 
+		    free(section_hdr);
+		    free(support);
+		    return CL_EIO;
+		}
+
+		/* Counting original sections */
+		for(t = 0; t < gp - 2; t += 2) {
+		  uint32_t rva = support[t]+256*support[t+1];
+		  
+		  if (rva == 2 || rva == 1)
+		    break;
+
+		  rva = ((rva-2)<<12) - EC32(optional_hdr.ImageBase);
+		  sectcnt++;
+
+		  if(rva < EC32(section_hdr[i].VirtualAddress) || rva >= EC32(section_hdr[i].VirtualAddress)+EC32(section_hdr[i].VirtualSize)) {
+		    cli_dbgmsg("FSG: Original section %d is out of bounds\n", sectcnt);
+		    break;
+		  }
+		}
+
+		if( t >= gp-10 || cli_readint32(support + t + 6) != 2 ) {
+		    free(support);
+		    break;
+		}
+
+		if((sections = (struct SECTION *) cli_malloc((sectcnt + 1) * sizeof(struct SECTION))) == NULL) {
+		    free(section_hdr);
+		    free(support);
+		    return CL_EMEM;
+		}
+
+		sections[0].rva = newedi;
+		for(t = 0; t <= sectcnt - 1; t++) {
+		  sections[t+1].rva = (((support[t*2]+256*support[t*2+1])-2)<<12)-EC32(optional_hdr.ImageBase);
+		}
+
+		free(support);
+
+		if((src = (char *) cli_malloc(ssize)) == NULL) {
+		    free(section_hdr);
+		    free(sections);
+		    return CL_EMEM;
+		}
+
+		lseek(desc, EC32(section_hdr[i + 1].PointerToRawData), SEEK_SET);
+		if(read(desc, src, ssize) != ssize) {
+		    cli_dbgmsg("Can't read raw data of section %d\n", i);
+		    free(section_hdr);
+		    free(sections);
+		    free(src);
+		    return CL_EIO;
+		}
+
+		if((dest = (char *) cli_calloc(dsize, sizeof(char))) == NULL) {
+		    free(section_hdr);
+		    free(src);
+		    free(sections);
+		    return CL_EMEM;
+		}
+
+		/* Better not increasing buff size any further, let's go the hard way */
+		oldep = EC32(optional_hdr.AddressOfEntryPoint) + 0xda + 6 + cli_readint32(src+0xdc+oldep);
+		cli_dbgmsg("FSG: found old EP @%x\n", oldep);
+
+		tempfile = cli_gentemp(NULL);
+		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+		    cli_dbgmsg("FSG: Can't create file %s\n", tempfile);
+		    free(tempfile);
+		    free(section_hdr);
+		    free(src);
+		    free(dest);
+		    free(sections);
+		    return CL_EIO;
+		}
+
+		switch(unfsg_133(src + newesi - EC32(section_hdr[i + 1].VirtualAddress), dest, ssize + EC32(section_hdr[i + 1].VirtualAddress) - newesi, dsize, sections, sectcnt, EC32(optional_hdr.ImageBase), oldep, ndesc)) {
+		    case 1: /* Everything OK */
+			cli_dbgmsg("FSG: Unpacked and rebuilt executable saved in %s\n", tempfile);
+			free(src);
+			free(dest);
+			free(sections);
+			fsync(ndesc);
+			lseek(ndesc, 0, SEEK_SET);
+
+			if(cli_magic_scandesc(ndesc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS) {
+			    free(section_hdr);
+			    close(ndesc);
+			    if(!cli_leavetemps_flag)
+				unlink(tempfile);
+			    free(tempfile);
+			    return CL_VIRUS;
+			}
+
+			close(ndesc);
+			if(!cli_leavetemps_flag)
+			    unlink(tempfile);
+			free(tempfile);
+			free(section_hdr);
+			return CL_CLEAN;
+
+		    case 0: /* We've got an unpacked buffer, no exe though */
+			cli_dbgmsg("FSG: FSG: Successfully decompressed\n");
+			close(ndesc);
+			unlink(tempfile);
+			free(tempfile);
+			free(sections);
+			found = 0;
+			upx_success = 1;
+			break; /* Go and scan the buffer! */
+
+		    default: /* Everything gone wrong */
+			cli_dbgmsg("FSG: Unpacking failed\n");
+			close(ndesc);
+			unlink(tempfile); // It's empty anyway
+			free(tempfile);
+			free(src);
+			free(dest);
+			free(sections);
+			break;
+		}
+
+		break; /* were done with 1.31 */
+	    }
+	}
+
 
 	if(found) {
 
