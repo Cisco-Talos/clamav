@@ -1,3 +1,7 @@
+Fri Mar 18 02:24:05 CET 2005 (tk)
+---------------------------------
+  * libclamav: scan meta-data in RAR files
+
 Wed Mar 16 21:55:44 CET 2005 (tk)
 ---------------------------------
   * libclamav/pe.c: fix section handling in petite block

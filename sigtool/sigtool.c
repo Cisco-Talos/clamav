@@ -251,7 +251,7 @@ int build(struct optstruct *opt)
 	exit(1);
     }
 
-    if(stat("main.db", &foo) == -1 && stat("daily.db", &foo) == -1 && stat("main.hdb", &foo) == -1 && stat("daily.hdb", &foo) == -1 && stat("main.ndb", &foo) == -1 && stat("daily.ndb", &foo) == -1 && stat("main.zmd", &foo) == -1 && stat("daily.zmd", &foo) == -1) {
+    if(stat("main.db", &foo) == -1 && stat("daily.db", &foo) == -1 && stat("main.hdb", &foo) == -1 && stat("daily.hdb", &foo) == -1 && stat("main.ndb", &foo) == -1 && stat("daily.ndb", &foo) == -1 && stat("main.zmd", &foo) == -1 && stat("main.rmd", &foo) == -1 && stat("daily.zmd", &foo) == -1 && stat("daily.rmd", &foo) == -1) {
 	mprintf("Virus database not found in current working directory.\n");
 	exit(1);
     }
@@ -271,7 +271,7 @@ int build(struct optstruct *opt)
 	mprintf("WARNING: There are no signatures in the database(s).\n");
     } else {
 	mprintf("Signatures: %d\n", no);
-	realno = countlines("main.db") + countlines("daily.db") + countlines("main.hdb") + countlines("daily.hdb") + countlines("main.ndb") + countlines("daily.ndb") + countlines("main.zmd") + countlines("daily.zmd");
+	realno = countlines("main.db") + countlines("daily.db") + countlines("main.hdb") + countlines("daily.hdb") + countlines("main.ndb") + countlines("daily.ndb") + countlines("main.zmd") + countlines("daily.zmd") + countlines("main.rmd") + countlines("daily.rmd");
 	if(realno != no) {
 	    mprintf("!Signatures in database: %d. Loaded: %d.\n", realno, no);
 	    mprintf("Please check the current directory and remove unnecessary databases\n");
@@ -288,7 +288,7 @@ int build(struct optstruct *opt)
 	    exit(1);
 	case 0:
 	    {
-		char *args[] = { "tar", "-cvf", NULL, "COPYING", "main.db", "daily.db", "Notes", "viruses.db3", "main.hdb", "daily.hdb", "main.ndb", "daily.ndb", "main.zmd", "daily.zmd", "main.fp", "daily.fp", NULL };
+		char *args[] = { "tar", "-cvf", NULL, "COPYING", "main.db", "daily.db", "Notes", "viruses.db3", "main.hdb", "daily.hdb", "main.ndb", "daily.ndb", "main.zmd", "daily.zmd", "main.rmd", "daily.rmd", "main.fp", "daily.fp", NULL };
 		args[2] = tarfile;
 		execv("/bin/tar", args);
 		mprintf("!Can't execute tar\n");
@@ -705,7 +705,7 @@ int listdb(const char *filename)
 	    free(start);
 	}
 
-    } else if(cli_strbcasestr(filename, ".ndb") || cli_strbcasestr(filename, ".zmd")) {
+    } else if(cli_strbcasestr(filename, ".ndb") || cli_strbcasestr(filename, ".zmd") || cli_strbcasestr(filename, ".rmd")) {
 
 	while(fgets(buffer, FILEBUFF, fd)) {
 	    line++;
@@ -755,6 +755,7 @@ int listdir(const char *dirname)
 	     cli_strbcasestr(dent->d_name, ".hdb") ||
 	     cli_strbcasestr(dent->d_name, ".ndb") ||
 	     cli_strbcasestr(dent->d_name, ".zmd") ||
+	     cli_strbcasestr(dent->d_name, ".rmd") ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbfile = (char *) mcalloc(strlen(dent->d_name) + strlen(dirname) + 2, sizeof(char));

@@ -121,10 +121,10 @@ struct cli_md5_node {
     struct cli_md5_node *next;
 };
 
-struct cli_zip_node {
-    int compr, csize, size, encrypted, crc32, fileno, maxdepth;
+struct cli_meta_node {
+    int method, csize, size, encrypted, crc32, fileno, maxdepth;
     char *filename, *virname;
-    struct cli_zip_node *next;
+    struct cli_meta_node *next;
 };
 
 struct cl_node {
@@ -143,7 +143,11 @@ struct cl_node {
     struct cli_md5_node **md5_hlist;
 
     /* Zip metadata */
-    struct cli_zip_node *zip_mlist;
+    struct cli_meta_node *zip_mlist;
+
+    /* RAR metadata */
+    struct cli_meta_node *rar_mlist;
+
 };
 
 struct cl_limits {

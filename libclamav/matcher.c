@@ -390,7 +390,7 @@ void cl_free(struct cl_node *root)
 {
 	int i;
 	struct cli_md5_node *md5pt, *md5h;
-	struct cli_zip_node *zippt, *ziph;
+	struct cli_meta_node *metapt, *metah;
 
     if(!root) {
 	cli_errmsg("cl_free: root == NULL\n");
@@ -432,14 +432,24 @@ void cl_free(struct cl_node *root)
 	free(root->md5_hlist);
     }
 
-    zippt = root->zip_mlist;
-    while(zippt) {
-	ziph = zippt;
-	zippt = zippt->next;
-	free(ziph->virname);
-	if(ziph->filename)
-	    free(ziph->filename);
-	free(ziph);
+    metapt = root->zip_mlist;
+    while(metapt) {
+	metah = metapt;
+	metapt = metapt->next;
+	free(metah->virname);
+	if(metah->filename)
+	    free(metah->filename);
+	free(metah);
+    }
+
+    metapt = root->rar_mlist;
+    while(metapt) {
+	metah = metapt;
+	metapt = metapt->next;
+	free(metah->virname);
+	if(metah->filename)
+	    free(metah->filename);
+	free(metah);
     }
 
     free(root);
