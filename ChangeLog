@@ -1,3 +1,9 @@
+Sun Aug 22 02:07:13 CEST 2004 (tk)
+----------------------------------
+  * freshclam: Support version verification through DNS (DNSDatabaseInfo).
+	       Based on idea by Christopher X. Candreva <chris*westnet.com>,
+	       see http://www.gossamer-threads.com/lists/clamav/users/11102
+
 Sat Aug 21 14:07:47 CEST 2004 (acab)
 ------------------------------------
   * libclamav/pe.c: Added support for FSG 1.3

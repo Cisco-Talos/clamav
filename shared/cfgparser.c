@@ -109,6 +109,7 @@ struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 	    {"DatabaseOwner", OPT_STR}, /* freshclam */
 	    {"Checks", OPT_NUM}, /* freshclam */
 	    {"UpdateLogFile", OPT_STR}, /* freshclam */
+	    {"DNSDatabaseInfo", OPT_STR}, /* freshclam */
 	    {"DatabaseMirror", OPT_STR}, /* freshclam */
 	    {"MaxAttempts", OPT_NUM}, /* freshclam */
 	    {"HTTPProxyServer", OPT_STR}, /* freshclam */

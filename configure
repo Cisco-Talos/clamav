@@ -1016,6 +1016,7 @@ Optional Features:
   --enable-fast-install=PKGS  optimize for fast installation default=yes
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --disable-bzip2	  Disable bzip2 support.
+  --disable-dns	  Disable support for database verification with DNS
   --disable-clamuko	  Disable clamuko support (Linux and FreeBSD only)
   --enable-milter	  Build clamav-milter
   --disable-dsig	  Disable digital signature support.
@@ -5015,7 +5016,7 @@ test "x$enable_libtool_lock" != xno && enable_libtool_lock=yes
 case $host in
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5018 "configure"' > conftest.$ac_ext
+  echo '#line 5019 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -5588,7 +5589,7 @@ chmod -w .
 save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -o out/conftest2.$ac_objext"
 compiler_c_o=no
-if { (eval echo configure:5591: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
+if { (eval echo configure:5592: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
   # The compiler can only warn and ignore the option if not recognized
   # So say no if there are warnings
   if test -s out/conftest.err; then
@@ -7515,7 +7516,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 7518 "configure"
+#line 7519 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -7613,7 +7614,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 7616 "configure"
+#line 7617 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10313,91 +10314,27 @@ if test "${enable_bzip2+set}" = set; then
   want_bzip2="no"
 fi;
 
-if test "$want_bzip2" = "yes"
+want_dns="yes"
+# Check whether --enable-dns or --disable-dns was given.
+if test "${enable_dns+set}" = set; then
+  enableval="$enable_dns"
+  want_dns="no"
+fi;
+
+if test "$want_dns" = "yes"
 then
-    echo "$as_me:$LINENO: checking for bzReadOpen in -lbz2" >&5
-echo $ECHO_N "checking for bzReadOpen in -lbz2... $ECHO_C" >&6
-if test "${ac_cv_lib_bz2_bzReadOpen+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbz2  $LIBS"
-cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-
-/* Override any gcc2 internal prototype to avoid an error.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-/* We use char because int might match the return type of a gcc2
-   builtin and then its argument prototype would still apply.  */
-char bzReadOpen ();
-int
-main ()
-{
-bzReadOpen ();
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext conftest$ac_exeext
-if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
-  (eval $ac_link) 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_c_werror_flag"			 || test ! -s conftest.err'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; } &&
-	 { ac_try='test -s conftest$ac_exeext'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-  ac_cv_lib_bz2_bzReadOpen=yes
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-ac_cv_lib_bz2_bzReadOpen=no
-fi
-rm -f conftest.err conftest.$ac_objext \
-      conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-echo "$as_me:$LINENO: result: $ac_cv_lib_bz2_bzReadOpen" >&5
-echo "${ECHO_T}$ac_cv_lib_bz2_bzReadOpen" >&6
-if test $ac_cv_lib_bz2_bzReadOpen = yes; then
-
-cat >>confdefs.h <<\_ACEOF
-#define NOBZ2PREFIX 1
-_ACEOF
-
-fi
-
-    if test "${ac_cv_header_bzlib_h+set}" = set; then
-  echo "$as_me:$LINENO: checking for bzlib.h" >&5
-echo $ECHO_N "checking for bzlib.h... $ECHO_C" >&6
-if test "${ac_cv_header_bzlib_h+set}" = set; then
+    if test "${ac_cv_header_resolv_h+set}" = set; then
+  echo "$as_me:$LINENO: checking for resolv.h" >&5
+echo $ECHO_N "checking for resolv.h... $ECHO_C" >&6
+if test "${ac_cv_header_resolv_h+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 fi
-echo "$as_me:$LINENO: result: $ac_cv_header_bzlib_h" >&5
-echo "${ECHO_T}$ac_cv_header_bzlib_h" >&6
+echo "$as_me:$LINENO: result: $ac_cv_header_resolv_h" >&5
+echo "${ECHO_T}$ac_cv_header_resolv_h" >&6
 else
   # Is the header compilable?
-echo "$as_me:$LINENO: checking bzlib.h usability" >&5
-echo $ECHO_N "checking bzlib.h usability... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking resolv.h usability" >&5
+echo $ECHO_N "checking resolv.h usability... $ECHO_C" >&6
 cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
@@ -10405,7 +10342,7 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
-#include <bzlib.h>
+#include <resolv.h>
 _ACEOF
 rm -f conftest.$ac_objext
 if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
@@ -10440,15 +10377,15 @@ echo "$as_me:$LINENO: result: $ac_header_compiler" >&5
 echo "${ECHO_T}$ac_header_compiler" >&6
 
 # Is the header present?
-echo "$as_me:$LINENO: checking bzlib.h presence" >&5
-echo $ECHO_N "checking bzlib.h presence... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking resolv.h presence" >&5
+echo $ECHO_N "checking resolv.h presence... $ECHO_C" >&6
 cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
-#include <bzlib.h>
+#include <resolv.h>
 _ACEOF
 if { (eval echo "$as_me:$LINENO: \"$ac_cpp conftest.$ac_ext\"") >&5
   (eval $ac_cpp conftest.$ac_ext) 2>conftest.er1
@@ -10482,25 +10419,25 @@ echo "${ECHO_T}$ac_header_preproc" >&6
 # So?  What about this header?
 case $ac_header_compiler:$ac_header_preproc:$ac_c_preproc_warn_flag in
   yes:no: )
-    { echo "$as_me:$LINENO: WARNING: bzlib.h: accepted by the compiler, rejected by the preprocessor!" >&5
-echo "$as_me: WARNING: bzlib.h: accepted by the compiler, rejected by the preprocessor!" >&2;}
-    { echo "$as_me:$LINENO: WARNING: bzlib.h: proceeding with the compiler's result" >&5
-echo "$as_me: WARNING: bzlib.h: proceeding with the compiler's result" >&2;}
+    { echo "$as_me:$LINENO: WARNING: resolv.h: accepted by the compiler, rejected by the preprocessor!" >&5
+echo "$as_me: WARNING: resolv.h: accepted by the compiler, rejected by the preprocessor!" >&2;}
+    { echo "$as_me:$LINENO: WARNING: resolv.h: proceeding with the compiler's result" >&5
+echo "$as_me: WARNING: resolv.h: proceeding with the compiler's result" >&2;}
     ac_header_preproc=yes
     ;;
   no:yes:* )
-    { echo "$as_me:$LINENO: WARNING: bzlib.h: present but cannot be compiled" >&5
-echo "$as_me: WARNING: bzlib.h: present but cannot be compiled" >&2;}
-    { echo "$as_me:$LINENO: WARNING: bzlib.h:     check for missing prerequisite headers?" >&5
-echo "$as_me: WARNING: bzlib.h:     check for missing prerequisite headers?" >&2;}
-    { echo "$as_me:$LINENO: WARNING: bzlib.h: see the Autoconf documentation" >&5
-echo "$as_me: WARNING: bzlib.h: see the Autoconf documentation" >&2;}
-    { echo "$as_me:$LINENO: WARNING: bzlib.h:     section \"Present But Cannot Be Compiled\"" >&5
-echo "$as_me: WARNING: bzlib.h:     section \"Present But Cannot Be Compiled\"" >&2;}
-    { echo "$as_me:$LINENO: WARNING: bzlib.h: proceeding with the preprocessor's result" >&5
-echo "$as_me: WARNING: bzlib.h: proceeding with the preprocessor's result" >&2;}
-    { echo "$as_me:$LINENO: WARNING: bzlib.h: in the future, the compiler will take precedence" >&5
-echo "$as_me: WARNING: bzlib.h: in the future, the compiler will take precedence" >&2;}
+    { echo "$as_me:$LINENO: WARNING: resolv.h: present but cannot be compiled" >&5
+echo "$as_me: WARNING: resolv.h: present but cannot be compiled" >&2;}
+    { echo "$as_me:$LINENO: WARNING: resolv.h:     check for missing prerequisite headers?" >&5
+echo "$as_me: WARNING: resolv.h:     check for missing prerequisite headers?" >&2;}
+    { echo "$as_me:$LINENO: WARNING: resolv.h: see the Autoconf documentation" >&5
+echo "$as_me: WARNING: resolv.h: see the Autoconf documentation" >&2;}
+    { echo "$as_me:$LINENO: WARNING: resolv.h:     section \"Present But Cannot Be Compiled\"" >&5
+echo "$as_me: WARNING: resolv.h:     section \"Present But Cannot Be Compiled\"" >&2;}
+    { echo "$as_me:$LINENO: WARNING: resolv.h: proceeding with the preprocessor's result" >&5
+echo "$as_me: WARNING: resolv.h: proceeding with the preprocessor's result" >&2;}
+    { echo "$as_me:$LINENO: WARNING: resolv.h: in the future, the compiler will take precedence" >&5
+echo "$as_me: WARNING: resolv.h: in the future, the compiler will take precedence" >&2;}
     (
       cat <<\_ASBOX
 ## ------------------------------------------ ##
@@ -10511,26 +10448,26 @@ _ASBOX
       sed "s/^/$as_me: WARNING:     /" >&2
     ;;
 esac
-echo "$as_me:$LINENO: checking for bzlib.h" >&5
-echo $ECHO_N "checking for bzlib.h... $ECHO_C" >&6
-if test "${ac_cv_header_bzlib_h+set}" = set; then
+echo "$as_me:$LINENO: checking for resolv.h" >&5
+echo $ECHO_N "checking for resolv.h... $ECHO_C" >&6
+if test "${ac_cv_header_resolv_h+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  ac_cv_header_bzlib_h=$ac_header_preproc
+  ac_cv_header_resolv_h=$ac_header_preproc
 fi
-echo "$as_me:$LINENO: result: $ac_cv_header_bzlib_h" >&5
-echo "${ECHO_T}$ac_cv_header_bzlib_h" >&6
+echo "$as_me:$LINENO: result: $ac_cv_header_resolv_h" >&5
+echo "${ECHO_T}$ac_cv_header_resolv_h" >&6
 
 fi
-if test $ac_cv_header_bzlib_h = yes; then
-  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lbz2";
+if test $ac_cv_header_resolv_h = yes; then
+  FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lresolv";
 cat >>confdefs.h <<\_ACEOF
-#define HAVE_BZLIB_H 1
+#define HAVE_RESOLV_H 1
 _ACEOF
 
 else
-  { echo "$as_me:$LINENO: WARNING: ****** bzip2 support disabled" >&5
-echo "$as_me: WARNING: ****** bzip2 support disabled" >&2;}
+  { echo "$as_me:$LINENO: WARNING: ****** DNS support disabled" >&5
+echo "$as_me: WARNING: ****** DNS support disabled" >&2;}
 fi
 
 

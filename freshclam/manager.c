@@ -46,6 +46,9 @@
 #include "memory.h"
 #include "output.h"
 #include "../libclamav/others.h"
+#include "../libclamav/str.h" /* cli_strtok */
+#include "dns.h"
+
 
 int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname)
 {
@@ -113,65 +116,121 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	return 1;
 }
 
+static int isnumb(const char *str)
+{
+	int i;
+
+    for(i = 0; i < strlen(str); i++)
+	if(!isdigit(str[i]))
+	    return 0;
+
+    return 1;
+}
+
 int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt)
 {
 	struct cl_cvd *current, *remote;
 	struct cfgstruct *cpt;
-	int hostfd, nodb = 0, dbver = 0, ret, port = 0;
-	char  *tempname, ipaddr[16];
+	int hostfd, nodb = 0, dbver = -1, ret, port = 0, ttl;
+	char  *tempname, ipaddr[16], *dnsreply, *pt;
 	const char *proxy = NULL, *user = NULL, *pass = NULL;
 	int flevel = cl_retflevel();
+
 
     if((current = cl_cvdhead(localname)) == NULL)
 	nodb = 1;
 
-    if((cpt = cfgopt(copt, "HTTPProxyUsername"))) {
-	user = cpt->strarg;
+    if(!nodb && (cpt = cfgopt(copt, "DNSDatabaseInfo"))) {
+	if((dnsreply = txtquery(cpt->strarg, &ttl))) {
+		int field = 0;
 
-	if((cpt = cfgopt(copt, "HTTPProxyPassword"))) {
-	    pass = cpt->strarg;
-	} else {
-	    mprintf("HTTPProxyUsername requires HTTPProxyPassword\n");
-	    return 56;
+	    mprintf("*TTL: %d\n", ttl);
+
+	    if(!strcmp(remotename, "main.cvd")) {
+		field = 1;
+	    } else if(!strcmp(remotename, "daily.cvd")) {
+		field = 2;
+	    } else {
+		mprintf("WARNING: Unknown database name (%s) passed.\n", remotename);
+		logg("WARNING: Unknown database name (%s) passed.\n", remotename);
+	    }
+
+	    if(field && (pt = cli_strtok(dnsreply, field, ":"))) {
+		if(!isnumb(pt)) {
+		    mprintf("WARNING: Broken database version in TXT record.\n");
+		    logg("WARNING: Broken database version in TXT record.\n");
+		} else {
+		    dbver = atoi(pt);
+		    mprintf("*%s version from DNS: %d\n", remotename, dbver);
+		}
+		free(pt);
+	    } else {
+		mprintf("WARNING: Broken DNS reply.\n");
+		logg("WARNING: Broken DNS reply.\n");
+	    }
+
+	    free(dnsreply);
 	}
     }
 
-    /*
-     * njh@bandsman.co.uk: added proxy support. Tested using squid 2.4
-     */
+    /* Initialize proxy settings */
     if((cpt = cfgopt(copt, "HTTPProxyServer"))) {
 	proxy = cpt->strarg;
 	if(strncasecmp(proxy, "http://", 7) == 0)
 	    proxy += 7;
+
+	if((cpt = cfgopt(copt, "HTTPProxyUsername"))) {
+	    user = cpt->strarg;
+	    if((cpt = cfgopt(copt, "HTTPProxyPassword"))) {
+		pass = cpt->strarg;
+	    } else {
+		mprintf("HTTPProxyUsername requires HTTPProxyPassword\n");
+		if(current)
+		    cl_cvdfree(current);
+		return 56;
+	    }
+	}
+
+	if((cpt = cfgopt(copt, "HTTPProxyPort")))
+	    port = cpt->numarg;
+
 	mprintf("Connecting via %s\n", proxy);
     }
 
-    if((cpt = cfgopt(copt, "HTTPProxyPort")))
-	port = cpt->numarg;
+    memset(ipaddr, 0, sizeof(ipaddr));
 
-    if(ip[0])
-	hostfd = wwwconnect(ip, proxy, port, ipaddr); /* we use ip to connect */
-    else
-	hostfd = wwwconnect(hostname, proxy, port, ipaddr);
+    if(!nodb && dbver == -1) {
+	if(ip[0]) /* use ip to connect */
+	    hostfd = wwwconnect(ip, proxy, port, ipaddr);
+	else
+	    hostfd = wwwconnect(hostname, proxy, port, ipaddr);
 
-    if(hostfd < 0) {
-	mprintf("@Connection with %s failed.\n", hostname);
-	return 52;
-    } else
-	mprintf("*Connected to %s (%s).\n", hostname, ipaddr);
+	if(hostfd < 0) {
+	    mprintf("@Connection with %s failed.\n", hostname);
+	    if(current)
+		cl_cvdfree(current);
+	    return 52;
+	} else {
+	    mprintf("*Connected to %s (%s).\n", hostname, ipaddr);
+	}
 
-    if(!ip[0])
-	strcpy(ip, ipaddr);
+	if(!ip[0])
+	    strcpy(ip, ipaddr);
 
-    if(!(remote = remote_cvdhead(remotename, hostfd, hostname, proxy, user, pass))) {
-	mprintf("@Can't read %s header from %s (%s)\n", remotename, hostname, ipaddr);
+	if(!(remote = remote_cvdhead(remotename, hostfd, hostname, proxy, user, pass))) {
+	    mprintf("@Can't read %s header from %s (%s)\n", remotename, hostname, ipaddr);
+	    close(hostfd);
+	    if(current)
+		cl_cvdfree(current);
+	    return 58;
+	}
+
+	dbver = remote->version;
+	cl_cvdfree(remote);
 	close(hostfd);
-	return 58;
     }
 
-    *signo += remote->sigs; /* we need to do it just here */
-
-    if(current && (current->version >= remote->version)) {
+    if(!nodb && (current->version >= dbver)) {
 	mprintf("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
 	logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
 
@@ -183,37 +242,29 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	    logg("WARNING: Current functionality level = %d, required = %d\n", flevel, current->fl);
 	}
 
-	close(hostfd);
 	cl_cvdfree(current);
-	cl_cvdfree(remote);
 	return 1;
     }
 
-    dbver = remote->version;
-    
     if(current)
 	cl_cvdfree(current);
 
-    cl_cvdfree(remote);
-
-    /* FIXME: We need to reconnect, because we may not be able to download
-     * the database. The problem doesn't exist with my local apache.
-     * Some code change is needed in get_md5_checksum().
-     */
-    /* begin bug work-around */
-    close(hostfd);
-    hostfd = wwwconnect(ipaddr, proxy, port, NULL); /* we use ipaddr to connect
-					       * to the same mirror
-					       */
+    if(ipaddr[0])
+	/* use ipaddr in order to connect to the same mirror */
+	hostfd = wwwconnect(ipaddr, proxy, port, NULL);
+    else
+	hostfd = wwwconnect(hostname, proxy, port, NULL);
 
     if(hostfd < 0) {
-	mprintf("@Connection with %s failed.\n", ipaddr);
+	if(ipaddr[0])
+	    mprintf("@Connection with %s failed.\n", ipaddr);
+	else
+	    mprintf("@Connection with %s failed.\n", hostname);
 	return 52;
     };
-    /* end */
 
-    /* temporary file is created in clamav's directory thus we don't need
-     * to create it immediately because race condition is not possible here
+    /* the temporary file is created in a directory owned by clamav so a race
+     * condition is not possible
      */
     tempname = cli_gentemp(".");
 
@@ -235,7 +286,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     }
 
     if((current = cl_cvdhead(tempname)) == NULL) {
-	mprintf("@Can't read CVD header of new %s database.\n", localname); /* we lie :) */
+	mprintf("@Can't read CVD header of new %s database.\n", localname);
 	unlink(tempname);
 	free(tempname);
 	return 54;
@@ -269,6 +320,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	logg("WARNING: Current functionality level = %d, required = %d\n", flevel, current->fl);
     }
 
+    *signo += current->sigs;
     cl_cvdfree(current);
     free(tempname);
     return 0;

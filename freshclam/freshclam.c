@@ -261,9 +261,16 @@ int freshclam(struct optstruct *opt)
 	    checks = CL_DEFAULT_CHECKS;
 	}
 
-	if(checks <= 0 || checks > 50) {
-	    mprintf("@Number of checks must be between 1 and 50.\n");
+	if(checks <= 0) {
+	    mprintf("@Number of checks must be a positive integer.\n");
 	    exit(41);
+	}
+
+	if(!cfgopt(copt, "DNSDatabaseInfo")) {
+	    if(checks > 50) {
+		mprintf("@Number of checks must be between 1 and 50.\n");
+		exit(41);
+	    }
 	}
 
 	bigsleep = 24 * 3600 / checks;
