@@ -122,7 +122,7 @@ int logg(const char *str, ...)
 #ifdef CL_THREAD_SAFE
 		pthread_mutex_unlock(&logg_mutex);
 #endif
-		printf("ERROR: Can't open %s in append mode.\n", logg_file);
+		printf("ERROR: Can't open %s in append mode (check permissions!).\n", logg_file);
 		return -1;
 	    } else umask(old_umask);
 
