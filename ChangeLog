@@ -1,3 +1,8 @@
+Mon Jun 14 10:07:24 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Some spam generates very broken headers, added fix
+  	to try to scan (with warnings about the assumptions made)
+
 Sun Jun 13 14:26:33 CEST 2004 (tk)
 ----------------------------------
   * clamscan: --unace is no longer supported (when invoked on a splitted

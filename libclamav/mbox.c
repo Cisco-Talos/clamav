@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.75  2004/06/14 09:07:10  nigelhorne
+ * Handle spam using broken e-mail generators for multipart/alternative
+ *
  * Revision 1.74  2004/06/09 18:18:59  nigelhorne
  * Find uuencoded viruses in multipart/mixed that have no start of message boundaries
  *
@@ -210,7 +213,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.74 2004/06/09 18:18:59 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.75 2004/06/14 09:07:10 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -680,9 +683,6 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				aText = textCopy(messageGetBody(mainMessage));
 			break;
 		case MULTIPART:
-
-			assert(mimeSubtype[0] != '\0');
-
 			boundary = messageFindArgument(mainMessage, "boundary");
 
 			if(boundary == NULL) {
@@ -694,6 +694,12 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				 * check if the file contains a uuencoded file
 				 */
 				break;
+			}
+
+			if(mimeSubtype[0] == '\0') {
+				cli_warnmsg("Multipart has no subtype assuming alternative\n");
+				mimeSubtype = "alternative";
+				messageSetMimeSubtype(mainMessage, "alternative");
 			}
 
 			/*
