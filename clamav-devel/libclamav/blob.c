@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.12  2004/05/21 11:31:48  nigelhorne
+ * Fix logic error in blobClose
+ *
  * Revision 1.11  2004/04/17 14:18:58  nigelhorne
  * Some filenames not scanned in MACOS/X
  *
@@ -35,7 +38,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.11 2004/04/17 14:18:58 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.12 2004/05/21 11:31:48 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -107,8 +110,6 @@ blobArrayDestroy(blob *blobList[], int n)
 void
 blobSetFilename(blob *b, const char *filename)
 {
-	char *ptr;
-
 	assert(b != NULL);
 	assert(b->magic == BLOB);
 	assert(filename != NULL);
@@ -117,7 +118,9 @@ blobSetFilename(blob *b, const char *filename)
 		free(b->name);
 	b->name = strdup(filename);
 
-	if(b->name)
+	if(b->name) {
+		char *ptr;
+
 		for(ptr = b->name; *ptr; ptr++) {
 #if	defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32)
 			if(strchr("*?<>|\"+=,;: ", *ptr))
@@ -128,6 +131,7 @@ blobSetFilename(blob *b, const char *filename)
 #endif
 				*ptr = '_';
 		}
+	}
 
 	cli_dbgmsg("blobSetFilename: %s\n", filename);
 }
@@ -197,12 +201,15 @@ blobGetDataSize(const blob *b)
 void
 blobClose(blob *b)
 {
-	b->isClosed = 1;
+	if(b->size > b->len) {
+		unsigned char *ptr = cli_realloc(b->data, b->len);
 
-	if(b->size != b->len) {
+		if(ptr == NULL)
+			return;
 		b->size = b->len;
-		b->data = cli_realloc(b->data, b->size);
+		b->data = ptr;
 	}
+	b->isClosed = 1;
 }
 
 /*
@@ -249,10 +256,15 @@ blobGrow(blob *b, size_t len)
 		assert(b->len == 0);
 		assert(b->size == 0);
 
-		b->size = len;
 		b->data = cli_malloc(len);
+		if(b->data)
+			b->size = len;
 	} else {
-		b->size += len;
-		b->data = cli_realloc(b->data, b->size);
+		unsigned char *ptr = cli_realloc(b->data, b->size + len);
+
+		if(ptr) {
+			b->size += len;
+			b->data = ptr;
+		}
 	}
 }
