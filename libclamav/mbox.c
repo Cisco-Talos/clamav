@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.122  2004/09/15 22:09:26  nigelhorne
+ * Handle spaces before colons
+ *
  * Revision 1.121  2004/09/15 18:08:23  nigelhorne
  * Handle multiple encoding types
  *
@@ -351,7 +354,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.121 2004/09/15 18:08:23 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.122 2004/09/15 22:09:26 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -868,7 +871,7 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 
 	cmd = strtok_r(copy, ":", &strptr);
 
-	if(cmd && *cmd) {
+	if(cmd && (strstrip(cmd) > 0)) {
 		char *arg = strtok_r(NULL, "", &strptr);
 
 		if(arg)
@@ -2147,19 +2150,22 @@ checkURLs(message *m, const char *dir)
 	}
 
 	t = tableCreate();
+	if(t == NULL) {
+		blobDestroy(b);
+		return;
+	}
 
 	hrefs.count = 0;
 	hrefs.tag = hrefs.value = NULL;
 
 	cli_dbgmsg("checkURLs: calling html_normalise_mem\n");
-	html_normalise_mem(blobGetData(b), len, NULL, &hrefs);
-	cli_dbgmsg("checkURLs: html_normalise_mem returned\n");
-
-	/*if(href == NULL) {
+	if(!html_normalise_mem(blobGetData(b), len, NULL, &hrefs)) {
 		blobDestroy(b);
 		tableDestroy(t);
 		return;
-	}*/
+	}
+	cli_dbgmsg("checkURLs: html_normalise_mem returned\n");
+
 	/* TODO: Do we need to call remove_html_comments? */
 
 	n = 0;
