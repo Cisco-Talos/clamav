@@ -553,7 +553,7 @@ int cli_scandir(char *dirname, char **virname, long int *scanned, const struct c
 		    /* stat the file */
 		    if(lstat(fname, &statbuf) != -1) {
 			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode))
-			    cli_scandir(dirname, virname, scanned, root, limits, options, reclev);
+			    cli_scandir(fname, virname, scanned, root, limits, options, reclev);
 			else
 			    if(S_ISREG(statbuf.st_mode))
 				if(cl_scanfile(fname, virname, scanned, root, limits, options) == CL_VIRUS) {
