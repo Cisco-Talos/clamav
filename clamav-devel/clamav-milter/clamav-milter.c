@@ -232,9 +232,15 @@
  *	0.67b	17/2/04	Removed compilation warning - now compiles on FreeBSD5.2
  *			Don't allow --force to overwride TCPwrappers
  *	0.67c	18/2/04	Added dont-log-clean flag
+ *	0.67d	19/2/04	Reworked TCPwrappers code
+ *			Thanks to "Hector M. Rulot Segovia" <Hector.Rulot@uv.es>
+ *			Changed some printf/puts to cli_dbgmsg
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.50  2004/02/19 10:00:26  nigelhorne
+ * Rework TCPWrappers support
+ *
  * Revision 1.49  2004/02/18 13:30:34  nigelhorne
  * Added dont-long-clean argument
  *
@@ -367,9 +373,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.49 2004/02/18 13:30:34 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.50 2004/02/19 10:00:26 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.67c"
+#define	CM_VERSION	"0.67d"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -418,6 +424,10 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.49 2004/02/18 13:30:34 nig
 
 #ifdef	WITH_TCPWRAP
 #include <tcpd.h>
+
+int	allow_severity = LOG_DEBUG;
+int	deny_severity = LOG_ERR;
+
 #endif
 
 #if defined(CL_DEBUG) && defined(C_LINUX)
@@ -1086,7 +1096,7 @@ main(int argc, char **argv)
 	}
 
 	if(smfi_register(smfilter) == MI_FAILURE) {
-		fputs("smfi_register failure\n", stderr);
+		cli_errmsg("smfi_register failure\n");
 		return EX_UNAVAILABLE;
 	}
 
@@ -1300,8 +1310,13 @@ findServer(void)
 static sfsistat
 clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 {
-	char buf[INET_ADDRSTRLEN];	/* IPv4 only */
+	char ip[INET_ADDRSTRLEN];	/* IPv4 only */
 	char *remoteIP;
+
+#ifdef	WITH_TCPWRAP
+	const char *hostmail;
+	const struct hostent *hp = NULL;
+#endif
 
 	if(hostname == NULL) {
 		if(use_syslog)
@@ -1314,7 +1329,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		return cl_error;
 	}
 
-	remoteIP = (char *)inet_ntop(AF_INET, &((struct sockaddr_in *)(hostaddr))->sin_addr, buf, sizeof(buf));
+	remoteIP = (char *)inet_ntop(AF_INET, &((struct sockaddr_in *)(hostaddr))->sin_addr, ip, sizeof(ip));
 
 	if(remoteIP == NULL) {
 		if(use_syslog)
@@ -1326,7 +1341,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	if(debug_level >= 4) {
 		if(use_syslog)
 			syslog(LOG_NOTICE, "clamfi_connect: connection from %s [%s]", hostname, remoteIP);
-		printf("clamfi_connect: connection from %s [%s]\n", hostname, remoteIP);
+		cli_dbgmsg("clamfi_connect: connection from %s [%s]\n", hostname, remoteIP);
 	}
 #endif
 
@@ -1334,12 +1349,26 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	/*
 	 * Support /etc/hosts.allow and /etc/hosts.deny
 	 */
-	if(!hosts_ctl("clamav-milter", hostname, remoteIP, STRING_UNKNOWN)) {
+	if((hostmail = smfi_getsymval(ctx, "{if_name}")) == NULL) {
 		if(use_syslog)
-			syslog(LOG_WARNING,
-				"Access to clamav-milter denied for %s[%s]",
-				hostname,
-				remoteIP);
+			syslog(LOG_WARNING, "Can't get sendmail hostname");
+		hostmail = "unknown";
+	}
+
+	if((hp = gethostbyname(hostmail)) == NULL) {
+		if(use_syslog)
+			syslog(LOG_WARNING, "Access Denied: Host Unknown (%s)", hostname);
+		return SMFIS_TEMPFAIL;
+	}
+
+	strcpy(ip, (char *)inet_ntoa(*(struct in_addr *)hp->h_addr));
+
+	/*
+	 * Ask is this is a allowed name or IP number
+	 */
+	if(!hosts_ctl("clamav-milter", hp->h_name, ip, STRING_UNKNOWN)) {
+		if(use_syslog)
+			syslog(LOG_WARNING, "Access Denied for %s[%s]", hp->h_name, ip);
 		return SMFIS_TEMPFAIL;
 	}
 #endif
@@ -1356,7 +1385,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 #ifdef	CL_DEBUG
 			if(use_syslog)
 				syslog(LOG_DEBUG, "clamfi_connect: not scanning outgoing messages");
-			puts("clamfi_connect: not scanning outgoing messages");
+			cli_dbgmsg("clamfi_connect: not scanning outgoing messages");
 #endif
 			return SMFIS_ACCEPT;
 		}
@@ -1394,7 +1423,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 #ifdef	CL_DEBUG
 				if(use_syslog)
 					syslog(LOG_DEBUG, "clamfi_connect: not scanning local messages");
-				puts("clamfi_connect: not scanning outgoing messages");
+				cli_dbgmsg("clamfi_connect: not scanning outgoing messages");
 #endif
 				return SMFIS_ACCEPT;
 			}
@@ -1468,8 +1497,8 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 #ifdef	CL_DEBUG
 			if(use_syslog)
 				syslog(LOG_NOTICE, "Timeout waiting for a child to die");
-			puts("Timeout waiting for a child to die");
 #endif
+			cli_dbgmsg("Timeout waiting for a child to die");
 		}
 	}
 
@@ -1696,7 +1725,7 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 	if(debug_level >= 9)
 		printf("clamfi_header: %s: %s\n", headerf, headerv);
 	else
-		puts("clamfi_header");
+		cli_dbgmsg("clamfi_header");
 #endif
 
 	if(clamfi_send(privdata, 0, "%s: %s\n", headerf, headerv) < 0) {
@@ -1719,7 +1748,7 @@ clamfi_eoh(SMFICTX *ctx)
 	if(logVerbose)
 		syslog(LOG_DEBUG, "clamfi_eoh");
 #ifdef	CL_DEBUG
-	puts("clamfi_eoh");
+	cli_dbgmsg("clamfi_eoh");
 #endif
 
 	if(clamfi_send(privdata, 1, "\n") < 0) {
@@ -1764,7 +1793,7 @@ clamfi_eoh(SMFICTX *ctx)
 	if(use_syslog)
 		syslog(LOG_NOTICE, "clamfi_connect: ignoring whitelisted message");
 #ifdef	CL_DEBUG
-	puts("clamfi_connect: not scanning outgoing messages");
+	cli_dbgmsg("clamfi_connect: not scanning outgoing messages");
 #endif
 	clamfi_cleanup(ctx);
 
@@ -1813,7 +1842,7 @@ clamfi_eom(SMFICTX *ctx)
 	if(logVerbose)
 		syslog(LOG_DEBUG, "clamfi_eom");
 #ifdef	CL_DEBUG
-	puts("clamfi_eom");
+	cli_dbgmsg("clamfi_eom");
 	assert(privdata != NULL);
 	assert((privdata->cmdSocket >= 0) || (privdata->filename != NULL));
 	assert(!((privdata->cmdSocket >= 0) && (privdata->filename != NULL)));
@@ -1876,7 +1905,7 @@ clamfi_eom(SMFICTX *ctx)
 		clamfi_cleanup(ctx);
 		syslog(LOG_NOTICE, "clamfi_eom: read nothing from clamd");
 #ifdef	CL_DEBUG
-		puts("clamfi_eom: read nothing from clamd");
+		cli_dbgmsg("clamfi_eom: read nothing from clamd");
 #endif
 		return cl_error;
 	}
@@ -1957,7 +1986,7 @@ clamfi_eom(SMFICTX *ctx)
 				smfi_getsymval(ctx, "i"),
 				err);
 #ifdef	CL_DEBUG
-		puts(err);
+		cli_dbgmsg(err);
 #endif
 		free(err);
 
@@ -2080,7 +2109,7 @@ clamfi_abort(SMFICTX *ctx)
 #ifdef	CL_DEBUG
 	if(use_syslog)
 		syslog(LOG_DEBUG, "clamfi_abort");
-	puts("clamfi_abort");
+	cli_dbgmsg("clamfi_abort");
 #endif
 
 	/*
@@ -2102,7 +2131,7 @@ clamfi_close(SMFICTX *ctx)
 #ifdef	CL_DEBUG
 	struct privdata *privdata = (struct privdata *)smfi_getpriv(ctx);
 
-	puts("clamfi_close");
+	cli_dbgmsg("clamfi_close");
 	assert(privdata == NULL);
 #endif
 
@@ -2145,7 +2174,7 @@ clamfi_free(struct privdata *privdata)
 		if(privdata->from) {
 #ifdef	CL_DEBUG
 			if(debug_level >= 9)
-				puts("Free privdata->from");
+				cli_dbgmsg("Free privdata->from");
 #endif
 			free(privdata->from);
 			privdata->from = NULL;
@@ -2157,13 +2186,13 @@ clamfi_free(struct privdata *privdata)
 			for(to = privdata->to; *to; to++) {
 #ifdef	CL_DEBUG
 				if(debug_level >= 9)
-					puts("Free *privdata->to");
+					cli_dbgmsg("Free *privdata->to");
 #endif
 				free(*to);
 			}
 #ifdef	CL_DEBUG
 			if(debug_level >= 9)
-				puts("Free privdata->to");
+				cli_dbgmsg("Free privdata->to");
 #endif
 			free(privdata->to);
 			privdata->to = NULL;
@@ -2185,7 +2214,7 @@ clamfi_free(struct privdata *privdata)
 
 #ifdef	CL_DEBUG
 		if(debug_level >= 9)
-			puts("Free privdata");
+			cli_dbgmsg("Free privdata");
 #endif
 		free(privdata);
 	}
@@ -2198,11 +2227,11 @@ clamfi_free(struct privdata *privdata)
 		if(n_children > 0)
 			--n_children;
 #ifdef	CL_DEBUG
-		puts("pthread_cond_broadcast");
+		cli_dbgmsg("pthread_cond_broadcast");
 #endif
 		pthread_cond_broadcast(&n_children_cond);
 #ifdef	CL_DEBUG
-		printf("<n_children = %d\n", n_children);
+		cli_dbgmsg("<n_children = %d\n", n_children);
 #endif
 		pthread_mutex_unlock(&n_children_mutex);
 	}

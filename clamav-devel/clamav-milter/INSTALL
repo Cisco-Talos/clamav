@@ -229,6 +229,9 @@ Changes
 0.67b	17/2/04	Removed compilation warning - now compiles on FreeBSD5.2
 		Don't allow --force to overwride TCPwrappers
 0.67c	18/2/04	Added dont-log-clean flag
+0.67d	19/2/04	Reworked TCPwrappers code
+		Thanks to "Hector M. Rulot Segovia" <Hector.Rulot@uv.es>
+		Changed some printf/puts to cli_dbgmsg
 
 BUG REPORTS
 
