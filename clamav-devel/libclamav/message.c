@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.30  2004/02/13 14:23:56  nigelhorne
+ * Add a new bounce delimeter
+ *
  * Revision 1.29  2004/02/10 17:01:30  nigelhorne
  * Recognise a new type of bounce message
  *
@@ -84,7 +87,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.29 2004/02/10 17:01:30 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.30 2004/02/13 14:23:56 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -169,6 +172,18 @@ static	struct	mime_map {
 	{	"message",		MESSAGE		},
 	{	"video",		VIDEO		},
 	{	NULL,			0		}
+};
+
+static const char *bounces[] = {
+	"--- Below this line is a copy of the message.",
+	"------ This is a copy of the message, including all the headers. ------",
+	"=================================================================================",
+	"------- The original message sent:",
+	"   ----- Original message follows -----",
+	"------- Original mail message ----",
+	"------ A continuacion adjuntamos copia del mensaje, incluyendo las cabeceras. ------",
+	",------- Returned Message --------",
+	NULL
 };
 
 message *
@@ -1105,14 +1120,6 @@ bounceBegin(const message *m)
 {
 	const text *t_line;
 	static table_t *bounceMessages;
-	const char *bounces[] = {
-		"--- Below this line is a copy of the message.",
-		"------ This is a copy of the message, including all the headers. ------",
-		"=================================================================================",
-		"------- The original message sent:",
-		"   ----- Original message follows -----",
-		NULL
-	};
 
 	if(bounceMessages == NULL) {
 		const char **bounce;
