@@ -1,3 +1,8 @@
+Sat Dec  4 23:34:54 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter:	Fix possible mishandling of multiple children when
+				searching for a free server
+
 Sat Dec  4 17:04:40 GMT 2004 (njh)
 ----------------------------------
   * libclamav/blob.c:	Fixed filename handling in MACOS/X

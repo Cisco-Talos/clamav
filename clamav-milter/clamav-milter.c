@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.158  2004/12/04 23:33:47  nigelhorne
+ * Remove possible array overflow when looking for a free server
+ *
  * Revision 1.157  2004/12/03 17:34:58  nigelhorne
  * internal: Honour scanning modes and archive limits
  *
@@ -482,9 +485,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.157 2004/12/03 17:34:58 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.158 2004/12/04 23:33:47 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80w"
+#define	CM_VERSION	"0.80x"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -824,13 +827,13 @@ static	char	*port = NULL;	/* sendmail->milter comms */
 
 static	const	char	*serverHostNames = "127.0.0.1";
 static	long	*serverIPs;	/* IPv4 only */
-static	int	numServers;	/* number of elements in sessions array */
+static	int	numServers;	/* number of elements in serverIPs array */
 
 #ifdef	SESSION
 static	struct	session {
 	int	sock;	/* fd */
 	enum	{ CMDSOCKET_FREE, CMDSOCKET_INUSE, CMDSOCKET_DOWN }	status;
-} *sessions;
+} *sessions;	/* max_children elements in the array */
 static	pthread_mutex_t sstatus_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static	pthread_cond_t	watchdog_cond = PTHREAD_COND_INITIALIZER;
@@ -1396,6 +1399,7 @@ main(int argc, char **argv)
 		}
 		if(loadDatabase() != 0)
 			return EX_CONFIG;
+		numServers = 1;
 	} else if((cpt = cfgopt(copt, "LocalSocket")) != NULL) {
 #ifdef	SESSION
 		struct sockaddr_un server;
@@ -1782,8 +1786,7 @@ main(int argc, char **argv)
 	signal(SIGPIPE, SIG_IGN);
 
 	if(use_syslog) {
-		if(logVerbose)
-			syslog(LOG_INFO, _("Starting: %s"), clamav_version);
+		syslog(LOG_INFO, _("Starting %s"), clamav_version);
 #ifdef	CL_DEBUG
 		if(debug_level > 0)
 			syslog(LOG_DEBUG, _("Debugging is on"));
@@ -1808,6 +1811,8 @@ createSession(int s)
 	struct sockaddr_in server;
 	const int serverNumber = s % numServers;
 	struct session *session = &sessions[s];
+
+	assert(s < max_children);
 
 	memset((char *)&server, 0, sizeof(struct sockaddr_in));
 	server.sin_family = AF_INET;
@@ -1973,7 +1978,7 @@ pingServer(int serverNumber)
 static int
 findServer(void)
 {
-	int i;
+	int i, j;
 	struct session *session;
 
 	/*
@@ -1983,17 +1988,21 @@ findServer(void)
 	pthread_mutex_lock(&n_children_mutex);
 	assert(n_children > 0);
 	assert(n_children <= max_children);
-	i = n_children - 1;
+	i = 0;
+	j = n_children - 1;
 	pthread_mutex_unlock(&n_children_mutex);
 
-	session = sessions;
 	pthread_mutex_lock(&sstatus_mutex);
-	for(; i < max_children; i++, session++)
+	for(; i < max_children; i++) {
+		session = &sessions[(j + i) % max_children];
+		cli_dbgmsg("findServer: try server %d\n",
+			(j + i) % max_children);
 		if(session->status == CMDSOCKET_FREE) {
 			session->status = CMDSOCKET_INUSE;
 			pthread_mutex_unlock(&sstatus_mutex);
 			return i;
 		}
+	}
 	pthread_mutex_unlock(&sstatus_mutex);
 
 	if(pthread_cond_broadcast(&watchdog_cond) < 0)
@@ -2002,12 +2011,14 @@ findServer(void)
 	i = 0;
 	session = sessions;
 	pthread_mutex_lock(&sstatus_mutex);
-	for(; i < max_children; i++, session++)
+	for(; i < max_children; i++, session++) {
+		cli_dbgmsg("findServer: try server %d\n", i);
 		if(session->status == CMDSOCKET_FREE) {
 			session->status = CMDSOCKET_INUSE;
 			pthread_mutex_unlock(&sstatus_mutex);
 			return i;
 		}
+	}
 	pthread_mutex_unlock(&sstatus_mutex);
 
 	cli_warnmsg(_("No free clamd sessions\n"));
@@ -2199,9 +2210,15 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 
 #ifdef	CL_DEBUG
 	if(debug_level >= 4) {
-		if(use_syslog)
-			syslog(LOG_NOTICE, _("clamfi_connect: connection from %s [%s]"), hostname, remoteIP);
-		cli_dbgmsg(_("clamfi_connect: connection from %s [%s]\n"), hostname, remoteIP);
+		if(hostname[0] == '[') {
+			if(use_syslog)
+				syslog(LOG_NOTICE, _("clamfi_connect: connection from %s"), remoteIP);
+			cli_dbgmsg(_("clamfi_connect: connection from %s\n"), remoteIP);
+		} else {
+			if(use_syslog)
+				syslog(LOG_NOTICE, _("clamfi_connect: connection from %s [%s]"), hostname, remoteIP);
+			cli_dbgmsg(_("clamfi_connect: connection from %s [%s]\n"), hostname, remoteIP);
+		}
 	}
 #endif
 
@@ -2304,14 +2321,12 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		pthread_mutex_lock(&n_children_mutex);
 
 		/*
-		 * Not a while since sendmail doesn't like it if we
+		 * Wait a while since sendmail doesn't like it if we
 		 * take too long replying. Effectively this means that
 		 * max_children is more of a hint than a rule
 		 */
 		if(n_children >= max_children) {
-			struct timeval now;
 			struct timespec timeout;
-			struct timezone tz;
 
 			cli_dbgmsg((dont_wait) ?
 					_("hit max-children limit (%u >= %u)\n") :
@@ -2343,6 +2358,9 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			 * ensure it wakes up when a child goes away
 			 */
 			if(child_timeout) {
+				struct timeval now;
+				struct timezone tz;
+
 				gettimeofday(&now, &tz);
 				timeout.tv_sec = now.tv_sec + child_timeout;
 				timeout.tv_nsec = 0;
@@ -3720,6 +3738,7 @@ connect2clamd(struct privdata *privdata)
 			freeServer = findServer();
 			if(freeServer < 0)
 				return 0;
+			assert(freeServer < max_children);
 #else
 			struct sockaddr_in server;
 
@@ -3732,6 +3751,7 @@ connect2clamd(struct privdata *privdata)
 			freeServer = findServer();
 			if(freeServer < 0)
 				return 0;
+			assert(freeServer < max_children);
 
 			server.sin_addr.s_addr = serverIPs[freeServer];
 
@@ -3777,7 +3797,9 @@ connect2clamd(struct privdata *privdata)
 			cli_warnmsg("Failed sending stream to server %d (fd %d) errno %d\n",
 				freeServer, session->sock, errno);
 			if(use_syslog)
-				syslog(LOG_ERR, _("failed to send STREAM command clamd"));
+				syslog(LOG_ERR, _("failed to send STREAM command clamd server %d"),
+					freeServer);
+
 			return 0;
 		}
 #else
