@@ -300,9 +300,10 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 				if(++partcnt[pt->sigid] == pt->parts) { /* the last one */
 				    if(pt->type) {
 					if(typerec) {
-					    cli_dbgmsg("Matched signature for file type: %s\n", pt->virname);
-					    if(pt->type > type)
+					    if(pt->type > type) {
+						cli_dbgmsg("Matched signature for file type: %s\n", pt->virname);
 						type = pt->type;
+					    }
 					}
 				    } else {
 					if(virname)
@@ -317,8 +318,11 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 		    } else { /* old type signature */
 			if(pt->type) {
 			    if(typerec) {
-				cli_dbgmsg("Matched signature for file type: %s\n", pt->virname);
-				type = pt->type;
+				if(pt->type > type) {
+				    cli_dbgmsg("Matched signature for file type: %s\n", pt->virname);
+
+				    type = pt->type;
+				}
 			    }
 			} else {
 			    if(virname)
