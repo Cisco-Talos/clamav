@@ -1,8 +1,14 @@
+Wed Oct 20 11:37:40 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	PARTIAL MODE ONLY: fixed possible stack corruption
+  				under Solaris, patch from Andy Fiddaman
+				<clam@fiddaman.net>
+
 Tue Oct 19 14:56:27 BST 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Some base64 encoders encode extra NUL bytes
 			at the end - ensure that they aren't added when
-			decoding
+			decoding, reported by James Lick <jlick@drivel.com>
 
 Tue Oct 19 02:53:46 CEST 2004 (tk)
 ----------------------------------

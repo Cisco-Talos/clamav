@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.159  2004/10/20 10:35:41  nigelhorne
+ * Partial mode: fix possible stack corruption with Solaris
+ *
  * Revision 1.158  2004/10/17 09:29:21  nigelhorne
  * Advise to report broken emails
  *
@@ -462,7 +465,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.158 2004/10/17 09:29:21 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.159 2004/10/20 10:35:41 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -974,9 +977,11 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 				char *ptr;
 				char copy[LINE_LENGTH + 1];
 				bool inquotes = FALSE;
+				bool arequotes = FALSE;
 #ifdef CL_THREAD_SAFE
 				char *strptr;
 #endif
+
 				contMarker = continuationMarker(buffer);
 				switch(commandNumber) {
 					case CONTENT_TRANSFER_ENCODING:
@@ -999,23 +1004,29 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 				for(ptr = copy; *ptr; ptr++)
 					if(*ptr == '\"')
 						inquotes = !inquotes;
-					else if(inquotes)
+					else if(inquotes) {
 						*ptr |= '\200';
+						arequotes = TRUE;
+					}
 
 #ifdef	CL_THREAD_SAFE
 				for(ptr = strtok_r(copy, ";", &strptr); ptr; ptr = strtok_r(NULL, ":", &strptr))
 					if(strchr(ptr, '=')) {
-						char *p2;
-						for(p2 = ptr; *p2; p2++)
-							*p2 &= '\177';
+						if(arequotes) {
+							char *p2;
+							for(p2 = ptr; *p2; p2++)
+								*p2 &= '\177';
+						}
 						messageAddArguments(ret, ptr);
 					}
 #else
 				for(ptr = strtok(copy, ";"); ptr; ptr = strtok(NULL, ":"))
 					if(strchr(ptr, '=')) {
-						char *p2;
-						for(p2 = ptr; *p2; p2++)
-							*p2 &= '\177';
+						if(arequotes) {
+							char *p2;
+							for(p2 = ptr; *p2; p2++)
+								*p2 &= '\177';
+						}
 						messageAddArguments(ret, ptr);
 					}
 #endif
@@ -2707,15 +2718,21 @@ static int
 rfc1341(message *m, const char *dir)
 {
 	fileblob *fb;
-	char *arg;
-	char *id;
-	char *number;
-	char *total;
-	char *oldfilename;
+	char *arg, *id, *number, *total, *oldfilename;
 
 	if((mkdir(PARTIAL_DIR, 0700) < 0) && (errno != EEXIST)) {
-		cli_errmsg("Can't create the directory '%s'", PARTIAL_DIR);
+		cli_errmsg("Can't create the directory '%s'\n", PARTIAL_DIR);
 		return -1;
+	} else {
+		struct stat statb;
+
+		if(stat(PARTIAL_DIR, &statb) < 0) {
+			cli_errmsg("Can't stat the directory '%s'\n", PARTIAL_DIR);
+			return -1;
+		}
+		if(statb.st_mode & 077)
+			cli_warnmsg("Insecure partial directory %s (mode 0%o)\n",
+				PARTIAL_DIR, statb.st_mode & 0777);
 	}
 
 	id = (char *)messageFindArgument(m, "id");
@@ -2755,10 +2772,6 @@ rfc1341(message *m, const char *dir)
 		int n = atoi(number);
 		int t = atoi(total);
 		DIR *dd = NULL;
-		struct dirent *dent;
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-		struct dirent result;
-#endif
 
 		/*
 		 * If it's the last one - reassemble it
@@ -2784,12 +2797,20 @@ rfc1341(message *m, const char *dir)
 
 			for(n = 1; n <= t; n++) {
 				char filename[NAME_MAX + 1];
+				const struct dirent *dent;
+#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
+#ifdef	C_SOLARIS
+				char result[sizeof(struct dirent) + MAX_PATH + 1];
+#else
+				struct dirent result;
+#endif
+#endif
 
 				snprintf(filename, sizeof(filename), "%s%d", id, n);
 #ifdef HAVE_READDIR_R_3
-				while((readdir_r(dd, &result, &dent) == 0) && dent) {
+				while((readdir_r(dd, (struct dirent *)&result, &dent) == 0) && dent) {
 #elif defined(HAVE_READDIR_R_2)
-				while((dent = (struct dirent *)readdir_r(dd, &result))) {
+				while((dent = (struct dirent *)readdir_r(dd, (struct dirent *)&result))) {
 #else
 				while((dent = readdir(dd))) {
 #endif
