@@ -40,4 +40,3 @@
 #endif
 
 #endif /*_ZZIP_STDINT_H*/
-

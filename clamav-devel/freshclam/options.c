@@ -59,7 +59,7 @@ int main(int argc, char **argv)
     	};
 
 
-    opt=(struct optstruct*)mcalloc(sizeof(struct optstruct));
+    opt=(struct optstruct*)mcalloc(1, sizeof(struct optstruct));
     opt->optlist = NULL;
 
     while(1) {
