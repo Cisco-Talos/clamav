@@ -617,6 +617,7 @@ Changes
 			different filesystems
 0.80cc	13/12/04:	Fix crash on FreeBSD if DNS has been incorrectly set up
 		Mutex the version strings
+0.80dd	19/12/04:	Tidy up non SESSION code
 
 INTERNATIONALISATION
 

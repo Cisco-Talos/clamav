@@ -1,3 +1,8 @@
+Sun Dec 19 13:51:20 GMT 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Further work on the non-parsing version.
+  * clamav-milter:	Fix compilation error in non SESSION mode
+
 Sun Dec 19 12:46:23 CET 2004 (tk)
 ---------------------------------
   * contrib/clamdwatch: updated to 0.7

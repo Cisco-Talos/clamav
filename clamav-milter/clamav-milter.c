@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.164  2004/12/19 13:49:28  nigelhorne
+ * Fix non SESSION compilation error
+ *
  * Revision 1.163  2004/12/14 10:43:58  nigelhorne
  * Fix crash on BSD if DNS is incorrectly set up
  *
@@ -500,11 +503,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.163 2004/12/14 10:43:58 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.164 2004/12/19 13:49:28 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80cc"
-
-/*#define	CONFDIR	"/usr/local/etc"*/
+#define	CM_VERSION	"0.80dd"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1624,19 +1625,14 @@ main(int argc, char **argv)
 		return EX_CONFIG;
 	}
 
-	if(internal) {
 #ifdef	SESSION
+	if(internal) {
 		if(clamav_versions == NULL) {
 			clamav_versions = (char **)cli_malloc(sizeof(char *));
 			if(clamav_versions == NULL)
 				return EX_TEMPFAIL;
 			clamav_version = strdup(version);
 		}
-#else
-		strcpy(clamav_version, version);
-#endif
-
-#ifdef	SESSION
 	} else {
 		clamav_versions = (char **)cli_malloc(max_children * sizeof(char *));
 		if(clamav_versions == NULL)
@@ -1647,8 +1643,10 @@ main(int argc, char **argv)
 			if(clamav_versions[i] == NULL)
 				return EX_TEMPFAIL;
 		}
-#endif
 	}
+#else
+	strcpy(clamav_version, version);
+#endif
 
 	if(((quarantine_dir == NULL) && localSocket) || internal) {
 		/* set the temporary dir */
@@ -1833,7 +1831,9 @@ main(int argc, char **argv)
 
 	signal(SIGPIPE, SIG_IGN);
 
+#ifdef	SESSION
 	pthread_mutex_lock(&version_mutex);
+#endif
 	if(use_syslog) {
 		syslog(LOG_INFO, _("Starting %s"), clamav_version);
 #ifdef	CL_DEBUG
@@ -1843,7 +1843,9 @@ main(int argc, char **argv)
 	}
 
 	cli_dbgmsg("Started: %s\n", clamav_version);
+#ifdef	SESSION
 	pthread_mutex_unlock(&version_mutex);
+#endif
 
 	return smfi_main();
 }
@@ -2883,7 +2885,7 @@ clamfi_eom(SMFICTX *ctx)
 					strncpy(hostname, j,
 						sizeof(hostname) - 1);
 				else
-					strcpy(buf, _("Error determining host"));
+					strcpy(hostname, _("Error determining host"));
 			} else if(strchr(hostname, '.') == NULL) {
 				/*
 				 * Determine fully qualified name
@@ -3362,7 +3364,7 @@ clamfi_free(struct privdata *privdata)
 			if(session->status == CMDSOCKET_INUSE) {
 				/*
 				 * Probably we've got here because
-				 * MaxStreamLength has been reached
+				 * StreamMaxLength has been reached
 				 */
 #if	0
 				pthread_mutex_unlock(&sstatus_mutex);
@@ -4705,10 +4707,14 @@ quit(void)
 
 	quitting++;
 
+#ifdef	SESSION
 	pthread_mutex_lock(&version_mutex);
+#endif
 	if(use_syslog)
 		syslog(LOG_INFO, _("Stopping %s"), clamav_version);
+#ifdef	SESSION
 	pthread_mutex_unlock(&version_mutex);
+#endif
 
 	if(internal) {
 		if(root) {
@@ -4858,9 +4864,13 @@ loadDatabase(void)
 	if(use_syslog) {
 		syslog(LOG_INFO, _("ClamAV: Protecting against %u viruses"), signatures);
 
+#ifdef	SESSION
 		pthread_mutex_lock(&version_mutex);
+#endif
 		syslog(LOG_INFO, _("Loaded %s\n"), clamav_version);
+#ifdef	SESSION
 		pthread_mutex_unlock(&version_mutex);
+#endif
 	}
 
 	return cl_statinidir(dbdir, &dbstat);
