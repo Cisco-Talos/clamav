@@ -274,7 +274,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	    hostfd = wwwconnect(hostname, proxy, port, ipaddr);
 
 	if(hostfd < 0) {
-	    mprintf("@Connection with %s failed.\n", hostname);
+            mprintf("@No servers could be reached. Giving up\n");
 	    if(current)
 		cl_cvdfree(current);
 	    return 52;
@@ -340,9 +340,9 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 
     if(hostfd < 0) {
 	if(ipaddr[0])
-	    mprintf("@Connection with %s failed.\n", ipaddr);
+	    mprintf("Connection with %s failed.\n", ipaddr);
 	else
-	    mprintf("@Connection with %s failed.\n", hostname);
+	    mprintf("Connection with %s failed.\n", hostname);
 	return 52;
     };
 
@@ -476,7 +476,7 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip)
 	name.sin_port = htons(port);
 
 	if(connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in)) == -1) {
-	    mprintf("@Can't connect to port %d of host %s (%s)\n", port, hostpt, ipaddr);
+	    mprintf("Can't connect to port %d of host %s (%s)\n", port, hostpt, ipaddr);
 	    continue;
 	}
 
@@ -484,7 +484,6 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip)
     }
 
     close(socketfd);
-    mprintf("@No servers could be reached. Giving up\n");
     return -2;
 }
 
