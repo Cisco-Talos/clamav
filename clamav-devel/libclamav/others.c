@@ -37,6 +37,7 @@
 #include <pwd.h>
 #include <errno.h>
 #include <target.h>
+#include <sys/time.h>
 
 #include "clamav.h"
 #include "others.h"
@@ -44,7 +45,14 @@
 
 #define CL_FLEVEL 1 /* don't touch it */
 
+#ifdef CL_THREAD_SAFE
+#  include <pthread.h>
+pthread_mutex_t cl_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
 int cli_debug_flag = 0;
+
+static unsigned char oldmd5buff[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
 
 void cli_warnmsg(const char *str, ...)
 {
@@ -188,7 +196,7 @@ char *cli_md5stream(FILE *fd)
 
 char *cl_md5buff(const char *buffer, unsigned int len)
 {
-	unsigned char md5buf[16];
+	unsigned char md5buff[16];
 	char *md5str;
 	struct md5_ctx ctx;
 	int i, cnt=0;
@@ -196,12 +204,13 @@ char *cl_md5buff(const char *buffer, unsigned int len)
 
     md5_init_ctx(&ctx);
     md5_process_bytes(buffer, len, &ctx);
-    md5_finish_ctx(&ctx, &md5buf);
+    md5_finish_ctx(&ctx, &md5buff);
+    memcpy(oldmd5buff, md5buff, 16);
 
     md5str = (char*) cli_calloc(32 + 1, sizeof(char));
 
     for(i=0; i<16; i++)
-	cnt += sprintf(md5str + cnt, "%02x", md5buf[i]);
+	cnt += sprintf(md5str + cnt, "%02x", md5buff[i]);
 
     return(md5str);
 }
@@ -245,10 +254,6 @@ void *cli_realloc(void *ptr, size_t size)
     } else return alloc;
 }
 
-#ifndef C_URANDOM
-/* it's very weak */
-#include <sys/time.h>
-
 unsigned int cl_rndnum(unsigned int max)
 {
     struct timeval tv;
@@ -259,43 +264,15 @@ unsigned int cl_rndnum(unsigned int max)
   return rand() % max;
 }
 
-#else
-
-unsigned int cl_rndnum(unsigned int max)
-{
-	int fd;
-	unsigned int generated;
-	char *byte;
-	int size;
-
-
-    if((fd = open("/dev/urandom", O_RDONLY)) < 0) {
-	cli_errmsg("!Can't open /dev/urandom.\n");
-	return -1;
-    }
-
-    byte = (char *) &generated;
-    size = sizeof(generated);
-    do {
-	int bread;
-	bread = read(fd, byte, 1);
-	size -= bread;
-	byte += bread;
-    } while(size > 0);
-
-    close(fd);
-    return generated % max;
-}
-#endif
-
-/* it uses MD5 to avoid potential races in tmp */
 char *cl_gentemp(const char *dir)
 {
 	char *name, *tmp;
         const char *mdir;
-	unsigned char salt[32];
-	int cnt=0, i;
+	unsigned char salt[16 + 32];
+	int i;
 	struct stat foo;
+
+    cli_dbgmsg("in cl_gentemp()\n");
 
     if(!dir)
 	mdir = "/tmp";
@@ -307,16 +284,26 @@ char *cl_gentemp(const char *dir)
 	cli_dbgmsg("cl_gentemp('%s'): out of memory\n", dir);
 	return NULL;
     }
-    cnt += sprintf(name, "%s/", mdir);
+
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_lock(&cl_gentemp_mutex);
+#endif
+
+    memcpy(salt, oldmd5buff, 16);
 
     do {
-	for(i = 0; i < 32; i++)
+	for(i = 16; i < 48; i++)
 	    salt[i] = cl_rndnum(255);
 
-	tmp = cl_md5buff(( char* ) salt, 32);
+	tmp = cl_md5buff(( char* ) salt, 48);
+	sprintf(name, "%s/", mdir);
 	strncat(name, tmp, 16);
 	free(tmp);
     } while(stat(name, &foo) != -1);
+
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_unlock(&cl_gentemp_mutex);
+#endif
 
     return(name);
 }
@@ -372,5 +359,3 @@ int cli_rmdirs(const char *dirname)
     closedir(dd);
     return 0;
 }
-
-

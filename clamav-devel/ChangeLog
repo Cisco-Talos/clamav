@@ -1,3 +1,7 @@
+Sat Mar 20 00:16:26 CET 2004 (tk)
+---------------------------------
+  * libclamav: cl_gentemp(): do not use /dev/urandom
+
 Fri Mar 19 21:42:51 CET 2004 (tk)
 ---------------------------------
   * clamd: thrmgr.c, server-th.c: added missing new line characters in logg()

@@ -9348,22 +9348,6 @@ else
 fi
 
 
-if test "$test_urandom" = "yes"
-then
-    if test -r /dev/urandom ; then
-	echo "$as_me:$LINENO: result: /dev/(u)random detected." >&5
-echo "${ECHO_T}/dev/(u)random detected." >&6
-
-cat >>confdefs.h <<\_ACEOF
-#define C_URANDOM 1
-_ACEOF
-
-    else
-	echo "$as_me:$LINENO: result: /dev/(u)random not detected - using weak software rand()" >&5
-echo "${ECHO_T}/dev/(u)random not detected - using weak software rand()" >&6
-    fi
-fi
-
 # tcpwrappers support
 # rules from http://ma.ph-freiburg.de/tng/tng-technical/2002-01/msg00094.html
 
