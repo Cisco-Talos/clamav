@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.142  2005/02/06 09:22:11  nigelhorne
+ * Improved debug statements
+ *
  * Revision 1.141  2005/02/03 21:07:34  nigelhorne
  * Faster handling of bounce messages
  *
@@ -420,7 +423,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.141 2005/02/03 21:07:34 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.142 2005/02/06 09:22:11 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -698,7 +701,7 @@ messageSetMimeType(message *mess, const char *type)
 						type, closest, highestSimil);
 					mess->mimeType = (mime_type)t;
 				} else {
-					cli_dbgmsg("Unknown MIME type: `%s', set to Application - if you believe this file contains a virus, report it to bugs@clamav.net\n", type);
+					cli_dbgmsg("Unknown MIME type: `%s', set to Application - if you believe this file contains a missed virus, report it to bugs@clamav.net\n", type);
 					mess->mimeType = APPLICATION;
 				}
 			}
@@ -949,7 +952,7 @@ messageAddArguments(message *m, const char *s)
 				 * TODO: the file should still be saved and
 				 * virus checked
 				 */
-				cli_dbgmsg("Can't parse header\"%s\" - if you believe this file contains a virus, report it to bugs@clamav.net\n", s);
+				cli_dbgmsg("Can't parse header \"%s\" - if you believe this file contains a missed virus, report it to bugs@clamav.net\n", s);
 				if(data)
 					free(data);
 				free((char *)key);
@@ -1694,7 +1697,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			filename = (char *)messageFindArgument(m, "name");
 
 			if(filename == NULL) {
-				cli_dbgmsg("Attachment sent with no filename\n");
+				cli_dbgmsg("Unencoded attachment sent with no filename\n");
 				messageAddArgument(m, "name=attachment");
 			} else
 				/*
@@ -1814,7 +1817,8 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			free((char *)filename);
 
 		/*
-		 * t_line should now point to the first (encoded) line of the message
+		 * t_line should now point to the first (encoded) line of the
+		 * message
 		 */
 		if(t_line == NULL) {
 			cli_warnmsg("Empty attachment not saved\n");
