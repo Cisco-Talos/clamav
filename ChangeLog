@@ -1,3 +1,7 @@
+Tue Aug 24 02:30:28 CEST 2004 (tk)
+----------------------------------
+  * libclamav: only enable signature file type recognition for text files
+
 Mon Aug 23 22:32:02 CEST 2004 (tk)
 ----------------------------------
   * include database info in version string (requested by Jason Haar

@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "clamav.h"
 #include "filetypes.h"
@@ -110,7 +111,7 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "\060\046\262\165\216\146\317", 7, "WMA/WMV/ASF",	  CL_DATAFILE},
     {0,  ".RMF" ,			 4, "Real Media File",	  CL_DATAFILE},
 
-    {-1, NULL,				 0, NULL,              CL_UNKNOWN_TYPE}
+    {-1, NULL,				 0, NULL,              CL_UNKNOWN_DATA_TYPE}
 };
 
 static const struct cli_smagic_s cli_smagic[] = {
@@ -136,12 +137,13 @@ static const struct cli_smagic_s cli_smagic[] = {
     {"3c536372697074", "HTML data", CL_HTMLFILE},	/* <Script */
     {"3c534352495054", "HTML data", CL_HTMLFILE},	/* <SCRIPT */
 
-    {NULL,  NULL,   CL_UNKNOWN_TYPE}
+    {NULL,  NULL,   CL_UNKNOWN_DATA_TYPE}
 };
 
 cli_file_t cli_filetype(const char *buf, size_t buflen)
 {
-	int i;
+	int i, ascii = 1;
+
 
     for(i = 0; cli_magic[i].magic; i++) {
 	if(buflen >= cli_magic[i].offset+cli_magic[i].length) {
@@ -152,7 +154,13 @@ cli_file_t cli_filetype(const char *buf, size_t buflen)
 	}
     }
 
-    return CL_UNKNOWN_TYPE;
+    for(i = 0; i < buflen; i++)
+	if(isprint(buf[i])) { /* FIXME: do we need to handle intern. chars? */
+	    ascii = 0;
+	    break;
+	}
+
+    return ascii ? CL_UNKNOWN_TEXT_TYPE : CL_UNKNOWN_DATA_TYPE;
 }
 
 int cli_addtypesigs(struct cl_node *root)
