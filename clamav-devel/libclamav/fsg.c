@@ -23,6 +23,7 @@
 ** 02/08/2k4 - Done coding
 ** 03/08/2k4 - Cleaning and securing
 ** 04/08/2k4 - Done porting
+** 07/08/2k4 - Started adding support for 1.33
 */
 
 /*
@@ -47,6 +48,20 @@
 #include "rebuildpe.h"
 #include "others.h"
 
+#if WORDS_BIGENDIAN == 0
+#define EC16(v)	(v)
+#define EC32(v) (v)
+#else
+static inline uint16_t EC16(uint16_t v)
+{
+    return ((v >> 8) + (v << 8));
+}
+
+static inline uint32_t EC32(uint32_t v)
+{
+    return ((v >> 24) | ((v & 0x00FF0000) >> 8) | ((v & 0x0000FF00) << 8) | (v << 24));
+}
+#endif
 
 static int doubledl(char **scur, uint8_t *mydlptr, char *buffer, int buffersize)
 {
@@ -65,7 +80,7 @@ static int doubledl(char **scur, uint8_t *mydlptr, char *buffer, int buffersize)
   return (olddl>>7)&1;
 }
 
-int unfsg(char *source, char *dest, int ssize, int dsize) {
+static int unfsg(char *source, char *dest, int ssize, int dsize, char **endsrc, char **enddst) {
   uint8_t mydl=0x80;
   uint32_t backbytes, backsize, oldback;
   char *csrc = source, *cdst = dest;
@@ -186,5 +201,75 @@ int unfsg(char *source, char *dest, int ssize, int dsize) {
       lostbit=1;
     }
   }
+
+  *endsrc = csrc;
+  *enddst = cdst;
   return 0;
+}
+
+int unfsg_200(char *source, char *dest, int ssize, int dsize) {
+  char *fake;
+
+  return unfsg(source, dest, ssize, dsize, &fake, &fake);
+}
+
+int unfsg_133(char *source, char *dest, int ssize, int dsize, struct SECTION *sections, int sectcount, uint32_t base, uint32_t ep, int file) {
+  char *tsrc=source, *tdst=dest;
+  int i, upd=1, offs=0, lastsz=dsize;
+
+  for (i = 0 ; i <= sectcount ; i++) {
+    char *startd=tdst;
+    if ( unfsg(tsrc, tdst, tsrc - source + ssize, tdst - dest + dsize, &tsrc, &tdst) == -1 )
+      return -1;
+
+    /* RVA has been filled already in pe.c */
+    sections[i].raw=offs;
+    sections[i].rsz=tdst-startd;
+    /*    cli_dbgmsg("Unpacked section %d @%x size %x Vsize =%x \n", i, offs, tdst-startd, dsize - (startd - dest)); */
+    offs+=tdst-startd;
+  }
+
+  /* Sort out the sections */
+  while ( upd ) {
+    upd = 0;
+    for (i = 0; i < sectcount  ; i++) {
+      uint32_t trva,trsz,traw;
+      
+      if ( sections[i].rva < sections[i+1].rva )
+	continue;
+      trva = sections[i].rva;
+      traw = sections[i].raw;
+      trsz = sections[i].rsz;
+      sections[i].rva = sections[i+1].rva;
+      sections[i].rsz = sections[i+1].rsz;
+      sections[i].raw = sections[i+1].raw;
+      sections[i+1].rva = trva;
+      sections[i+1].raw = traw;
+      sections[i+1].rsz = trsz;
+      upd = 1;
+    }
+  }
+
+  /* Cure Vsizes and debugspam */
+  for (i = 0; i <= sectcount ; i++) {
+    if ( i != sectcount ) {
+      sections[i].vsz = sections[i+1].rva - sections[i].rva;
+      lastsz-= sections[i+1].rva - sections[i].rva;
+    }
+    else 
+      sections[i].vsz = lastsz;
+
+    cli_dbgmsg("FSG: .SECT%d RVA:%x VSize:%x ROffset: %x, RSize:% x\n", i, sections[i].rva, sections[i].vsz, sections[i].raw, sections[i].rsz);
+  }
+
+  if ( (tsrc = rebuildpe(dest, sections, sectcount+1, base, ep, 0, 0)) ) {
+    write(file, tsrc, 0x148+0x80+0x28*(sectcount+1)+offs);
+    free(tsrc);
+  } else {
+    free(tsrc);
+    cli_dbgmsg("FSG: Rebuilding failed\n");
+    return 0;
+  }
+
+  return 1;
 }

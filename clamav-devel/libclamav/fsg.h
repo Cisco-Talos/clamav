@@ -20,9 +20,12 @@
 #define __FSG_H
 
 #include "cltypes.h"
-#include "pe.h"
+#include "rebuildpe.h"
 
-int unfsg(char *, char *, int, int);
+int unfsg_200(char *, char *, int, int);
+int unfsg_133(char *, char *, int , int, struct SECTION *, int, uint32_t, uint32_t, int);
 
 #endif
+
+
 
