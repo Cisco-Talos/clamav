@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.116  2004/08/07 13:10:33  nigelhorne
+ * Better load balancing
+ *
  * Revision 1.115  2004/08/06 10:08:31  nigelhorne
  * Quarantined files now include the virus in the name
  *
@@ -356,9 +359,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.115 2004/08/06 10:08:31 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.116 2004/08/07 13:10:33 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.75g"
+#define	CM_VERSION	"0.75h"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1397,7 +1400,12 @@ findServer(void)
 	if(max_children > 0)
 		j = n_children - 1;	/* Don't worry about no lock */
 	else
-		j = cli_rndnum(numServers) - 1;
+		/*
+		 * cli_rndnum returns 0..(max-1) - the max argument is not
+		 * the maximum number you want it to return, it is in fact
+		 * one *more* than the maximum number you want it to return
+		 */
+		j = cli_rndnum(numServers);
 
 	for(i = 0, server = servers; i < numServers; i++, server++) {
 		int sock;
