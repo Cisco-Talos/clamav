@@ -42,7 +42,7 @@
 #include "shared.h"
 #include "notify.h"
 
-int downloadmanager(const struct cfgstruct *copt, const char *hostname)
+int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname)
 {
 	time_t currtime;
 	int ret, updated = 0, signo = 0;
@@ -82,7 +82,13 @@ int downloadmanager(const struct cfgstruct *copt, const char *hostname)
 	}
 
 #ifdef BUILD_CLAMD
-	if((cpt = cfgopt(copt, "NotifyClamd"))) {
+	if(optl(opt, "daemon-notify")) {
+		const char *clamav_conf = getargl(opt, "daemon-notify");
+	    if(!clamav_conf)
+		clamav_conf = CONFDIR"/clamav.conf";
+
+	    notify(clamav_conf);
+	} else if((cpt = cfgopt(copt, "NotifyClamd"))) {
 		const char *clamav_conf = cpt->strarg;
 	    if(!clamav_conf)
 		clamav_conf = CONFDIR"/clamav.conf";
@@ -91,7 +97,9 @@ int downloadmanager(const struct cfgstruct *copt, const char *hostname)
 	}
 #endif
 
-	if((cpt = cfgopt(copt, "OnUpdateExecute")))
+	if(optl(opt, "on-update-execute"))
+	    system(getargl(opt, "on-update-execute"));
+	else if((cpt = cfgopt(copt, "OnUpdateExecute")))
 	    system(cpt->strarg);
 
 	return 0;

@@ -52,7 +52,9 @@ int main(int argc, char **argv)
 	    {"whole-file", 0, 0, 'w'}, /* not used */
 	    {"force", 0, 0, 0},
 	    {"recursive", 0, 0, 'r'},
-	    {"disable-summary", 0, 0, 0},
+	    {"bell", 0, 0, 0},
+	    {"disable-summary", 0, 0, 0}, /* obsolete */
+	    {"no-summary", 0, 0, 0},
 	    {"infected", 0, 0, 'i'},
 	    {"log", 1, 0, 'l'},
 	    {"log-verbose", 0, 0, 0},
@@ -66,6 +68,7 @@ int main(int argc, char **argv)
 	    {"max-space", 1, 0, 0},
 	    {"max-recursion", 1, 0, 0},
 	    {"disable-archive", 0, 0, 0},
+	    {"no-archive", 0, 0, 0},
 
 	    {"mbox", 0, 0, 'm'},
 	    {"stdout", 0, 0, 0},

@@ -22,7 +22,7 @@
 #include "cfgfile.h"
 #include "clamav.h"
 
-int downloadmanager(const struct cfgstruct *copt, const char *hostname);
+int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname);
 
 int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt);
 

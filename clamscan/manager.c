@@ -344,7 +344,7 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	return 0;
     }
 
-    if(optl(opt, "disable-archive"))
+    if(optl(opt, "disable-archive") || optl(opt, "no-archive"))
 	options &= ~CL_ARCHIVE;
     else
 	options |= CL_ARCHIVE;
@@ -631,6 +631,10 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	case 1:
 	    logg("%s: Infected Archive FOUND\n", filename);
 	    mprintf("%s: Infected Archive FOUND\n", filename);
+
+	    if(bell)
+		printf("\007");
+
 	    if(optl(opt, "remove")) {
 		if(unlink(filename)) {
 		    mprintf("%s: Can't remove.\n", filename);
@@ -756,6 +760,10 @@ int checkfile(const char *filename, const struct cl_node *root, const struct cl_
 	mprintf("%s: %s FOUND\n", filename, virname);
 	logg("%s: %s FOUND\n", filename, virname);
 	claminfo.ifiles++;
+
+	if(bell)
+	    printf("\007");
+
     } else if(ret == CL_CLEAN) {
 	if(!printinfected)
 	    mprintf("%s: OK\n", filename);
@@ -778,6 +786,10 @@ int checkstdin(const struct cl_node *root, const struct cl_limits *limits)
     if((ret = cl_scandesc(0, &virname, &claminfo.blocks, root, limits, CL_RAW)) == CL_VIRUS) {
 	mprintf("stdin: %s FOUND\n", virname);
 	claminfo.ifiles++;
+
+	if(bell)
+	    printf("\007");
+
     } else if(ret == CL_CLEAN) {
 	if(!printinfected)
 	    mprintf("stdin: OK\n");
