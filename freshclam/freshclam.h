@@ -25,6 +25,4 @@ void help(void);
 void daemonize(void);
 int download(const struct cfgstruct *copt, const struct optstruct *opt);
 
-#define mexit(i)    exit(i)
-
 #endif

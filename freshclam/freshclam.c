@@ -162,45 +162,36 @@ int freshclam(struct optstruct *opt)
     if(optl(opt, "debug") || cfgopt(copt, "Debug"))
 	cl_debug();
 
-    mprintf_disabled = 0;
+    if(optc(opt, 'v'))
+	mprintf_verbose = 1;
 
-    if(optc(opt, 'v')) mprintf_verbose = 1;
-    else mprintf_verbose = 0;
+    if(optl(opt, "quiet"))
+	mprintf_quiet = 1;
 
-    if(optl(opt, "quiet")) mprintf_quiet = 1;
-    else mprintf_quiet = 0;
-
-    if(optl(opt, "stdout")) mprintf_stdout = 1;
-    else mprintf_stdout = 0;
+    if(optl(opt, "stdout"))
+	mprintf_stdout = 1;
 
     if(optc(opt, 'V')) {
 	mprintf("freshclam / ClamAV version "VERSION"\n");
-	mexit(0);
+	exit(0);
     }
 
     /* initialize logger */
 
-    /* FIXME: enable in config file */
-    logg_size = 0;
-    logg_lock = 0;
-    logg_time = 0;
-
     if(cfgopt(copt, "LogVerbose"))
 	logg_verbose = 1;
-    else
-	logg_verbose = 0;
 
     if(optc(opt, 'l')) {
 	logg_file = getargc(opt, 'l');
 	if(logg("--------------------------------------\n")) {
 	    mprintf("!Problem with internal logger.\n");
-	    mexit(1);
+	    exit(1);
 	}
     } else if((cpt = cfgopt(copt, "UpdateLogFile"))) {
 	logg_file = cpt->strarg; 
 	if(logg("--------------------------------------\n")) {
 	    mprintf("!Problem with internal logger.\n");
-	    mexit(1);
+	    exit(1);
 	}
     } else
 	logg_file = NULL;
@@ -210,8 +201,7 @@ int freshclam(struct optstruct *opt)
 	openlog("freshclam", LOG_PID, LOG_LOCAL6);
 	logg_syslog = 1;
 	syslog(LOG_INFO, "Freshclam started.\n");
-    } else
-	logg_syslog = 0;
+    }
 #endif
 
     /* change the current working directory */
@@ -248,7 +238,7 @@ int freshclam(struct optstruct *opt)
 
 	if(checks <= 0 || checks > 50) {
 	    mprintf("@Number of checks must be between 1 and 50.\n");
-	    mexit(41);
+	    exit(41);
 	}
 
 	bigsleep = 24 * 3600 / checks;

@@ -42,6 +42,9 @@
 
 void help(void);
 
+struct s_info claminfo;
+short recursion = 0, printinfected = 0, bell = 0;
+
 int clamscan(struct optstruct *opt)
 {
 	int ds, dms, ret;
@@ -53,21 +56,16 @@ int clamscan(struct optstruct *opt)
 
     /* initialize some important variables */
 
-    mprintf_disabled = 0;
-
     if(optc(opt, 'v')) {
 	mprintf_verbose = 1;
 	logg_verbose = 1;
-    } else {
-	mprintf_verbose = 0;
-	logg_verbose = 0;
     }
 
-    if(optl(opt, "quiet")) mprintf_quiet = 1;
-    else mprintf_quiet = 0;
+    if(optl(opt, "quiet"))
+	mprintf_quiet = 1;
 
-    if(optl(opt, "stdout")) mprintf_stdout = 1;
-    else mprintf_stdout = 0;
+    if(optl(opt, "stdout"))
+	mprintf_stdout = 1;
 
     if(optl(opt, "debug")) {
 #if defined(C_LINUX)
@@ -93,20 +91,16 @@ int clamscan(struct optstruct *opt)
 
     /* check other options */
 
-    if(optc(opt, 'r')) recursion = 1;
-    else recursion = 0;
+    if(optc(opt, 'r'))
+	recursion = 1;
 
-    if(optc(opt, 'i')) printinfected = 1;
-    else printinfected = 0;
+    if(optc(opt, 'i'))
+	printinfected = 1;
 
-    if(optl(opt, "bell")) bell = 1;
+    if(optl(opt, "bell"))
+	bell = 1;
 
     /* initialize logger */
-
-    /* FIXME: enable in the future */
-    logg_size = 0;
-    logg_lock = 0;
-    logg_time = 0;
 
     if(optc(opt, 'l')) {
 	logg_file = getargc(opt, 'l');

@@ -19,6 +19,6 @@
 #ifndef __SHARED_H
 #define __SHARED_H
 
-short debug_mode, logok;
+extern short debug_mode, logok;
 
 #endif

@@ -19,8 +19,6 @@
 #ifndef __SHARED_H
 #define __SHARED_H
 
-/* some global variables */
-
 struct s_info {
     int signs; /* number of signatures loaded */
     int dirs; /* number of scanned directories */
@@ -30,8 +28,9 @@ struct s_info {
     int notmoved; /* number of not moved files (if --move) */
     int errors; /*  ... of errors */
     long int blocks; /* number of read 16kb blocks */
-} claminfo;
+};
 
-short recursion, printinfected, bell;
+extern struct s_info claminfo;
+extern short recursion, printinfected, bell;
 
 #endif
