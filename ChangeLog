@@ -1,3 +1,7 @@
+Fri Sep  3 19:55:57 CEST 2004 (tk)
+----------------------------------
+  * libclamav: fallback to old method of EICAR file detection
+
 Fri Sep  3 17:00:28 BST 2004 (njh)
 ----------------------------------
   * libclamav:	Handle spaces in headers such as 'boundary= "foo"'. I believe
