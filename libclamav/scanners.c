@@ -656,6 +656,18 @@ static int cli_scanmscab(int desc, const char **virname, long int *scanned, cons
 
     for(cab = base; cab; cab = cab->next) {
 	for(file = cab->files; file; file = file->next) {
+
+	    if(limits && limits->maxfilesize && (file->length > (unsigned int) limits->maxfilesize)) {
+		cli_dbgmsg("MSCAB: %s: Size exceeded (%u, max: %lu)\n", file->filename, file->length, limits->maxfilesize);
+		if(BLOCKMAX) {
+		    *virname = "MSCAB.ExceededFileSize";
+		    cabd->close(cabd, base);
+		    mspack_destroy_cab_decompressor(cabd);
+		    return CL_VIRUS;
+		}
+		continue;
+	    }
+
 	    tempname = cli_gentemp(tmpdir);
 	    cli_dbgmsg("MSCAB: Extracting data to %s\n", tempname);
 	    if(cabd->extract(cabd, file, tempname)) {

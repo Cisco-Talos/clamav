@@ -1,3 +1,7 @@
+Mon Oct  4 03:09:46 CEST 2004 (tk)
+----------------------------------
+  * libclamav/scanners.c: respect file size limit in cli_scanmscab()
+
 Sun Oct  3 17:04:27 CEST 2004 (tk)
 ----------------------------------
   * libclamav, clamd: use readdir_r when available
