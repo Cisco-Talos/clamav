@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.71  2004/08/13 09:28:16  nigelhorne
+ * Remove incorrect comment style
+ *
  * Revision 1.70  2004/08/08 19:13:15  nigelhorne
  * Better handling of bounces
  *
@@ -207,7 +210,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.70 2004/08/08 19:13:15 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.71 2004/08/13 09:28:16 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -842,7 +845,7 @@ messageAddLine(message *m, const char *line, int takeCopy)
 				cli_errmsg("messageAddLine: out of memory\n");
 				return -1;
 			}
-			// cli_chomp(m->body_last->t_text);
+			/* cli_chomp(m->body_last->t_text); */
 		} else
 			m->body_last->t_text = (char *)line;
 
@@ -974,7 +977,6 @@ messageToBlob(message *m)
 	} else if((t_line = binhexBegin(m)) != NULL) {
 		unsigned char byte;
 		unsigned long len, l, newlen = 0L;
-		char *filename;
 		unsigned char *uptr, *data;
 		char *ptr;
 		int bytenumber;
