@@ -1,7 +1,13 @@
+Sat Dec 18 16:32:51 GMT 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Removed the need for a extra (short lived) parse tree
+		on some mail formats. This will help memory and performance
+		in some scenarios
+
 Thu Dec 16 15:31:45 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Added some test software that decodes emails without parsing
-  			them first. It is not enabled by default, use at your
+			them first. It is not enabled by default, use at your
 			own risk and look at the comments first.
 		Cleared a few problems in the decoding algorithms found when
 			testing the above code
@@ -50,7 +56,7 @@ Sun Dec 12 20:34:03 GMT 2004 (njh)
 Sun Dec 12 19:40:10 UTC 2004 (acab)
 -----------------------------------
   * libclamav: upx:  improved PE rebuild - debug info on failure
- 
+
 Fri Dec 10 15:21:48 GMT 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Warn if the content-type contains a blank entry

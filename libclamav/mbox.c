@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.202  2004/12/18 16:32:10  nigelhorne
+ * Added parseEmailFile
+ *
  * Revision 1.201  2004/12/16 15:29:08  nigelhorne
  * Tidy and add mmap test code
  *
@@ -591,7 +594,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.201 2004/12/16 15:29:08 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.202 2004/12/18 16:32:10 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -731,6 +734,7 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 #define	PARTIAL_DIR
 
 static	int	cli_parse_mbox(const char *dir, int desc, unsigned int options);
+static	message	*parseEmailFile(FILE *fin, const table_t *rfc821Table, const char *firstLine);
 static	message	*parseEmailHeaders(const message *m, const table_t *rfc821Table);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
 static	int	parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, unsigned int options);
@@ -747,6 +751,7 @@ static	char	*rfc822comments(const char *in);
 #ifdef	PARTIAL_DIR
 static	int	rfc1341(message *m, const char *dir);
 #endif
+static	bool	usefulHeader(int commandNumber, const char *cmd);
 #ifdef	notdef
 static	const	char	*cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns);
 #endif
@@ -1093,7 +1098,7 @@ static int
 cli_parse_mbox(const char *dir, int desc, unsigned int options)
 {
 	int retcode, i;
-	message *m, *body;
+	message *body;
 	FILE *fd;
 	char buffer[LINE_LENGTH + 1];
 #ifdef HAVE_BACKTRACE
@@ -1114,12 +1119,6 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 		fclose(fd);
 		return CL_CLEAN;
 	}
-	m = messageCreate();
-	if(m == NULL) {
-		fclose(fd);
-		return CL_EMEM;
-	}
-
 #ifdef	CL_THREAD_SAFE
 	pthread_mutex_lock(&tables_mutex);
 #endif
@@ -1132,7 +1131,6 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 #ifdef	CL_THREAD_SAFE
 			pthread_mutex_unlock(&tables_mutex);
 #endif
-			messageDestroy(m);
 			fclose(fd);
 			return CL_EMEM;
 		}
@@ -1154,8 +1152,20 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 		 * Have been asked to check a UNIX style mbox file, which
 		 * may contain more than one e-mail message to decode
 		 */
-		bool lastLineWasEmpty = FALSE;
-		int messagenumber = 1;
+		bool lastLineWasEmpty;
+		int messagenumber;
+		message *m = messageCreate();
+
+		if(m == NULL) {
+			fclose(fd);
+#ifdef HAVE_BACKTRACE
+			signal(SIGSEGV, segv);
+#endif
+			return CL_EMEM;
+		}
+
+		lastLineWasEmpty = FALSE;
+		messagenumber = 1;
 
 		do {
 			/*cli_dbgmsg("read: %s", buffer);*/
@@ -1196,11 +1206,14 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 				break;
 		} while(fgets(buffer, sizeof(buffer) - 1, fd) != NULL);
 
+		fclose(fd);
+
 		cli_dbgmsg("Extract attachments from email %d\n", messagenumber);
+		body = parseEmailHeaders(m, rfc821);
+		messageDestroy(m);
 	} else {
 		/*
 		 * It's a single message, parse the headers then the body
-		 * Ignore blank lines at the start of the message
 		 */
 		if(strncmp(buffer, "P I ", 4) == 0)
 			/*
@@ -1219,39 +1232,9 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 
 		buffer[sizeof(buffer) - 1] = '\0';
 
-		/*
-		 * FIXME: files full of new lines and nothing else are
-		 * handled ungracefully...
-		 */
-		do {
-			const char *ptr;
-
-			/*
-			 * TODO: this needlessly creates a message object,
-			 * it'd be better if parseEmailHeaders could also
-			 * read in from a file. I do not want to lump the
-			 * parseEmailHeaders code here, that'd be a duplication
-			 * of code I want to avoid
-			 */
-			(void)cli_chomp(buffer);
-
-			/*
-			 * Ignore leading CR, e.g. if newlines are LFCR instead
-			 * or CRLF
-			 */
-			for(ptr = buffer; *ptr == '\r'; ptr++)
-				;
-			/*
-			 * Don't blank lines which are only spaces from
-			 * headers, otherwise they'll be treated as the end of
-			 * header marker
-			 */
-			if(messageAddStr(m, ptr) < 0)
-				break;
-		} while(fgets(buffer, sizeof(buffer) - 1, fd) != NULL);
+		body = parseEmailFile(fd, rfc821, buffer);
+		fclose(fd);
 	}
-
-	fclose(fd);
 
 	/*
 	 * This is not necessarily true, but since the only options are
@@ -1260,8 +1243,6 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 	 */
 	retcode = CL_CLEAN;
 
-	body = parseEmailHeaders(m, rfc821);
-	messageDestroy(m);
 	if(body) {
 		/*
 		 * Write out the last entry in the mailbox
@@ -1286,9 +1267,186 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 }
 
 /*
- * The given message contains a raw e-mail.
+ * Read in an email message from fin, parse it, and return the message
  *
- * This function parses the headers of m and sets the message's arguments
+ * FIXME: files full of new lines and nothing else are
+ * handled ungracefully...
+ */
+static message *
+parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine)
+{
+	bool inHeader = TRUE;
+	bool contMarker = FALSE;
+	message *ret;
+	bool anyHeadersFound = FALSE;
+	int commandNumber = -1;
+	char *fullline = NULL;
+	size_t fulllinelength = 0;
+	char buffer[LINE_LENGTH+1];
+
+	cli_dbgmsg("parseEmailFile\n");
+
+	ret = messageCreate();
+	if(ret == NULL)
+		return NULL;
+
+	strcpy(buffer, firstLine);
+	do {
+		const char *start;
+
+		(void)cli_chomp(buffer);
+		/*
+		 * Ignore leading CR, e.g. if newlines are LFCR instead
+		 * or CRLF
+		 */
+		for(start = buffer; *start == '\r'; start++)
+			;
+
+		if(start[0] == '\0')
+			start = NULL;
+
+		/*
+		 * Don't blank lines which are only spaces from headers,
+		 * otherwise they'll be treated as the end of header marker
+		 */
+		if(inHeader) {
+			cli_dbgmsg("parseEmailFile: check '%s'\n", start ? start : "");
+			if(start == NULL) {	/* empty line */
+				if(!contMarker) {
+					/*
+					 * A blank line signifies the end of
+					 * the header and the start of the text
+					 */
+					cli_dbgmsg("End of header information\n");
+					inHeader = FALSE;
+				} else
+					contMarker = FALSE;
+			} else {
+				char *ptr;
+				const char *qptr;
+				int quotes, lookahead;
+
+				if(fullline == NULL) {
+					char cmd[LINE_LENGTH + 1];
+
+					/*
+					 * Continuation of line we're ignoring?
+					 */
+					if((start[0] == '\t') || (start[0] == ' ') || contMarker) {
+						contMarker = continuationMarker(start);
+						continue;
+					}
+
+					/*
+					 * Is this a header we're interested in?
+					 */
+					if((strchr(start, ':') == NULL) ||
+					   (cli_strtokbuf(start, 0, ":", cmd) == NULL)) {
+						if(strncmp(start, "From ", 5) == 0)
+							anyHeadersFound = TRUE;
+						continue;
+					}
+
+					ptr = rfc822comments(cmd);
+					commandNumber = tableFind(rfc821, ptr ? ptr : cmd);
+					if(ptr)
+						free(ptr);
+
+					switch(commandNumber) {
+						case CONTENT_TRANSFER_ENCODING:
+						case CONTENT_DISPOSITION:
+						case CONTENT_TYPE:
+							anyHeadersFound = TRUE;
+							break;
+						default:
+							if(!anyHeadersFound)
+								anyHeadersFound = usefulHeader(commandNumber, cmd);
+							continue;
+					}
+					fullline = strdup(start);
+					fulllinelength = strlen(start) + 1;
+				} else if(start != NULL) {
+					fulllinelength += strlen(start);
+					fullline = cli_realloc(fullline, fulllinelength);
+					strcat(fullline, start);
+				}
+
+				contMarker = continuationMarker(start);
+
+				if(contMarker)
+					continue;
+
+				assert(fullline != NULL);
+
+				lookahead = getc(fin);
+				if(lookahead != EOF) {
+					ungetc(lookahead, fin);
+
+					/*
+					 * Section B.2 of RFC822 says TAB or
+					 * SPACE means a continuation of the
+					 * previous entry.
+					 *
+					 * Add all the arguments on the line
+					 */
+					if((lookahead == '\t') || (lookahead == ' '))
+						continue;
+				}
+
+				quotes = 0;
+				for(qptr = start; *qptr; qptr++)
+					if(*qptr == '\"')
+						quotes++;
+
+				if(quotes & 1)
+					continue;
+
+				ptr = rfc822comments(fullline);
+				if(ptr) {
+					free(fullline);
+					fullline = ptr;
+				}
+
+				if(parseEmailHeader(ret, fullline, rfc821) < 0)
+					continue;
+
+				free(fullline);
+				fullline = NULL;
+			}
+		} else
+			/*cli_dbgmsg("Add line to body '%s'\n", start);*/
+			if(messageAddStr(ret, start) < 0)
+				break;
+	} while(fgets(buffer, sizeof(buffer) - 1, fin) != NULL);
+
+	if(fullline) {
+		if(*fullline) switch(commandNumber) {
+			case CONTENT_TRANSFER_ENCODING:
+			case CONTENT_DISPOSITION:
+			case CONTENT_TYPE:
+				cli_warnmsg("parseEmailHeaders: Fullline set '%s' - report to bugs@clamav.net\n", fullline);
+		}
+		free(fullline);
+	}
+
+	if(!anyHeadersFound) {
+		/*
+		 * False positive in believing we have an e-mail when we don't
+		 */
+		messageDestroy(ret);
+		cli_dbgmsg("parseEmailFile: no headers found, assuming it isn't an email\n");
+		return NULL;
+	}
+
+	messageClean(ret);
+
+	cli_dbgmsg("parseEmailFile: return\n");
+
+	return ret;
+}
+
+/*
+ * The given message contains a raw e-mail.
  *
  * Returns the message's body with the correct arguments set
  *
@@ -1296,6 +1454,8 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
  * of the message in memory, the upside is that it makes for easier parsing
  * of encapsulated messages, and in the long run uses less memory in those
  * scenarios
+ *
+ * TODO: remove the duplication with parseEmailFile
  */
 static message *
 parseEmailHeaders(const message *m, const table_t *rfc821)
@@ -1326,22 +1486,20 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 
 		if(inHeader) {
 			cli_dbgmsg("parseEmailHeaders: check '%s'\n", buffer ? buffer : "");
-			if((buffer == NULL) && !contMarker) {
-				/*
-				 * A blank line signifies the end of the header
-				 * and the start of the text
-				 */
-				cli_dbgmsg("End of header information\n");
-				inHeader = FALSE;
+			if(buffer == NULL) {
+				if(!contMarker) {
+					/*
+					 * A blank line signifies the end of
+					 * the header and the start of the text
+					 */
+					cli_dbgmsg("End of header information\n");
+					inHeader = FALSE;
+				} else
+					contMarker = FALSE;
 			} else {
 				char *ptr;
 				const char *qptr;
 				int quotes;
-
-				if(buffer == NULL) {
-					contMarker = FALSE;
-					continue;
-				}
 
 				if(fullline == NULL) {
 					char cmd[LINE_LENGTH + 1];
@@ -1376,12 +1534,8 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 							anyHeadersFound = TRUE;
 							break;
 						default:
-							if(strcasecmp(cmd, "From") == 0)
-								anyHeadersFound = TRUE;
-							else if(strcasecmp(cmd, "Received") == 0)
-								anyHeadersFound = TRUE;
-							else if(strcasecmp(cmd, "De") == 0)
-								anyHeadersFound = TRUE;
+							if(!anyHeadersFound)
+								anyHeadersFound = usefulHeader(commandNumber, cmd);
 							continue;
 					}
 					fullline = strdup(buffer);
@@ -1397,9 +1551,9 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 				if(contMarker)
 					continue;
 
-				if(t->t_next && (t->t_next->t_line != NULL)) {
-					const char *next = lineGetData(t->t_next->t_line);
+				assert(fullline != NULL);
 
+				if(t->t_next && (t->t_next->t_line != NULL))
 					/*
 					 * Section B.2 of RFC822 says TAB or
 					 * SPACE means a continuation of the
@@ -1407,9 +1561,11 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 					 *
 					 * Add all the arguments on the line
 					 */
-					if((next[0] == '\t') || (next[0] == ' '))
-						continue;
-				}
+					switch(lineGetData(t->t_next->t_line)[0]) {
+						case ' ':
+						case '\t':
+							continue;
+					}
 
 				quotes = 0;
 				for(qptr = buffer; *qptr; qptr++)
@@ -1425,13 +1581,11 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 					fullline = ptr;
 				}
 
-				if(fullline) {
-					if(parseEmailHeader(ret, fullline, rfc821) < 0)
-						continue;
+				if(parseEmailHeader(ret, fullline, rfc821) < 0)
+					continue;
 
-					free(fullline);
-					fullline = NULL;
-				}
+				free(fullline);
+				fullline = NULL;
 			}
 		} else
 			/*cli_dbgmsg("Add line to body '%s'\n", buffer);*/
@@ -3724,6 +3878,26 @@ print_trace(int use_syslog)
 	free(strings);
 }
 #endif
+
+static bool
+usefulHeader(int commandNumber, const char *cmd)
+{
+	switch(commandNumber) {
+		case CONTENT_TRANSFER_ENCODING:
+		case CONTENT_DISPOSITION:
+		case CONTENT_TYPE:
+			return TRUE;
+		default:
+			if(strcasecmp(cmd, "From") == 0)
+				return TRUE;
+			else if(strcasecmp(cmd, "Received") == 0)
+				return TRUE;
+			else if(strcasecmp(cmd, "De") == 0)
+				return TRUE;
+	}
+
+	return FALSE;
+}
 
 #ifdef	notdef
 /*
