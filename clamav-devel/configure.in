@@ -149,15 +149,15 @@ AC_ARG_WITH(dbdir,
 [  --with-dbdir=path	  Path to virus database directory.],
 db_dir="$withval", db_dir="_default_")
 
-dnl viruses.db
+dnl main.cvd
 AC_ARG_WITH(db1, 
-[  --with-db1=name	  Name of the main database (viruses.db).],
-AC_DEFINE_UNQUOTED(DB1NAME,"$withval",), AC_DEFINE(DB1NAME, "viruses.db"))
+[  --with-db1=name	  Name of the main database (main.cvd).],
+AC_DEFINE_UNQUOTED(DB1NAME,"$withval",), AC_DEFINE(DB1NAME, "main.cvd"))
 
-dnl viruses.db2
+dnl daily.cvd
 AC_ARG_WITH(db2, 
-[  --with-db2=name	  Name of the new format database (viruses.db2).],
-AC_DEFINE_UNQUOTED(DB2NAME,"$withval",), AC_DEFINE(DB2NAME, "viruses.db2"))
+[  --with-db2=name	  Name of the daily database (daily.cvd).],
+AC_DEFINE_UNQUOTED(DB2NAME,"$withval",), AC_DEFINE(DB2NAME, "daily.cvd"))
 
 dnl I had problems with $pkgdatadir, that's why I'm using these funny checks
 if test "$db_dir" = "_default_"

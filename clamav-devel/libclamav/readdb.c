@@ -27,6 +27,7 @@
 #include <fcntl.h>
 
 #include "clamav.h"
+#include "cvd.h"
 #include "strings.h"
 #include "matcher.h"
 #include "others.h"
@@ -35,13 +36,13 @@
 
 int cli_parse_add(struct cl_node *root, const char *virname, const char *hexstr, int sigid, int parts, int partno)
 {
-	struct patt *new;
+	struct cli_patt *new;
 	const char *pt;
 	int ret, virlen;
 
     /* decode a hexstring and prepare a new entry */
 
-    if((new = (struct patt *) cli_calloc(1, sizeof(struct patt))) == NULL)
+    if((new = (struct cli_patt *) cli_calloc(1, sizeof(struct cli_patt))) == NULL)
 	return CL_EMEM;
 
     new->sigid = sigid;

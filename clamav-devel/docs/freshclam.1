@@ -1,8 +1,8 @@
 .\" Manual page created by Tomasz Kojm, 14/15 IV 2002
-.TH "FreshClam" "1" "June 6, 2003" "Tomasz Kojm" "Clam AntiVirus"
+.TH "freshclam" "1" "October 25, 2003" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
-freshclam \- update virus databases
+freshclam \- update ClamAV virus databases
 .SH "SYNOPSIS"
 .LP 
 freshclam [options]
@@ -21,6 +21,9 @@ Print the version number and exit.
 .TP 
 \fB\-v, \-\-verbose\fR
 Be verbose. This option causes freshclam to print many additional informations.
+.TP 
+\fB\-\-debug\fR
+Enable debug messages.
 .TP 
 \fB\-\-quiet\fR
 Be quiet \- output only error messages.
@@ -71,7 +74,7 @@ Execute COMMAND after succesful update.
 
 \fBfreshclam \-\-datadir .\fR
 .TP 
-(2) Run as daemon and check 2 times on day for new database:
+(2) Run as a daemon and check 2 times per day for a new database:
 
 \fBfreshclam \-d \-c 2\fR
 .SH "RETURN CODES"
@@ -89,7 +92,7 @@ Execute COMMAND after succesful update.
 .TP 
 53: Can't unlink file.
 .TP 
-54: MD5 checksum of downloaded database isn't ok.
+54: Verification (md5, digital signature) error.
 .TP 
 55: Error reading file.
 .TP 

@@ -67,17 +67,17 @@ extern "C"
 #define CL_MAIL		0100
 #define CL_DISABLERAR  01000
 
-struct patt {
+struct cli_patt {
     short int *pattern;
     unsigned int length;
     char *virname;
     unsigned short int sigid, parts, partno;
-    struct patt *next;
+    struct cli_patt *next;
 };
 
 struct cl_node {
     char islast;
-    struct patt *list;
+    struct cli_patt *list;
     struct cl_node *trans[CL_NUM_CHILDS], *fail;
 
     /* FIXME: these variables are only used in a root node */
@@ -122,6 +122,8 @@ extern int cl_loaddbdir(const char *dirname, struct cl_node **root, int *virnum)
 extern char *cl_retdbdir(void);
 
 extern struct cl_cvd *cl_cvdhead(const char *file);
+extern struct cl_cvd *cl_cvdparse(const char *head);
+extern int cl_cvdverify(const char *file);
 extern void cl_cvdfree(struct cl_cvd *cvd);
 
 /* data dir stat functions */

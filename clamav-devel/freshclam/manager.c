@@ -44,47 +44,67 @@
 
 int downloadmanager(const struct optstruct *opt, const char *hostname)
 {
-	char *oldmd5 = NULL, *old2md5 = NULL, *newmd5 = NULL, 
-	     *new2md5 = NULL, *downmd5, *tempname;
-	int hostfd, vir;
-	short int updatedb = 0, updatedb2 = 0, nodb = 0, nodb2 = 0;
 	time_t currtime;
-	const char *proxy;	/* proxy support njh@bandsman.co.uk */
-	const char *user;
+	int ret, updated = 0, signo = 0;
+
 
     time(&currtime);
-    logg("Checking for a new database - started at %s", ctime(&currtime));
-    mprintf("Checking for a new database - started at %s", ctime(&currtime));
+    mprintf("ClamAV update process started at %s", ctime(&currtime));
+    logg("ClamAV update process started at %s", ctime(&currtime));
 
+#ifndef HAVE_GMP
+    mprintf("SECURITY WARNING: NO SUPPORT FOR DIGITAL SIGNATURES\n");
+    logg("SECURITY WARNING: NO SUPPORT FOR DIGITAL SIGNATURES\n");
+#endif
 
-    /* first thing we want is a local file md5 checksum */
-    if(fileinfo(DB1NAME, 1) == -1) {
-	/* there is no database, so we just download a new one */
-	nodb = 1; 
-	mprintf(DB1NAME" not found in the data directory.\n");
-    } else {
-	if((oldmd5 = cl_md5file(DB1NAME)) == NULL) {
-	    mprintf("@Can't create md5 checksum of the "DB1NAME" database.\n");
-	    return 51;
+    if((ret = downloaddb(DB1NAME, "main.cvd", hostname, &signo, opt)) > 50)
+	return ret;
+    else if(ret == 0)
+	updated = 1;
+
+    if((ret = downloaddb(DB2NAME, "daily.cvd", hostname, &signo, opt)) > 50)
+	return ret;
+    else if(ret == 0)
+	updated = 1;
+
+    if(updated) {
+	mprintf("Database updated (%d signatures) from %s.\n", signo, hostname);
+	logg("Database updated (%d signatures) from %s.\n", signo, hostname);
+
+#ifdef BUILD_CLAMD
+	if(optl(opt, "daemon-notify")) {
+		const char *clamav_conf = getargl(opt, "daemon-notify");
+	    if(!clamav_conf)
+		clamav_conf = DEFAULT_CFG;
+
+	    notify(clamav_conf);
 	}
-    }
+#endif
 
-    if(fileinfo(DB2NAME, 1) == -1) {
-	nodb2 = 1; 
-	mprintf(DB2NAME" not found in the data directory.\n");
-    } else {
-	if((old2md5 = cl_md5file(DB2NAME)) == NULL) {
-	    mprintf("@Can't create md5 checksum of the "DB2NAME" database.\n");
-	    return 51;
-	}
-    }
+	if(optl(opt, "on-update-execute"))
+	    system(getargl(opt, "on-update-execute"));
+
+	return 0;
+
+    } else
+	return 1;
+}
+
+int downloaddb(const char *localname, const char *remotename, const char *hostname, int *signo, const struct optstruct *opt)
+{
+	struct cl_cvd *current, *remote;
+	int hostfd, nodb = 0, ret;
+	char  *tempname;
+	const char *proxy, *user;
 
 
-    if(optl(opt, "proxy-user")) {
+    if((current = cl_cvdhead(localname)) == NULL)
+	nodb = 1;
+
+    if(optl(opt, "proxy-user"))
 	user = getargl(opt, "proxy-user");
-    } else {
+    else
 	user = NULL;
-    }
 
     /*
      * njh@bandsman.co.uk: added proxy support. Tested using squid 2.4
@@ -111,7 +131,7 @@ int downloadmanager(const struct optstruct *opt, const char *hostname)
 		proxy = NULL;
     }
     if(proxy)
-	mprintf("*Connecting via %s\n", proxy);
+	mprintf("Connecting via %s\n", proxy);
 
     hostfd = wwwconnect(hostname, proxy);
 
@@ -119,22 +139,30 @@ int downloadmanager(const struct optstruct *opt, const char *hostname)
 	mprintf("@Connection with %s failed.\n", hostname);
 	return 52;
     } else
-	mprintf("Connected to %s.\n", hostname);
+	mprintf("*Connected to %s.\n", hostname);
 
 
-    if((newmd5 = get_md5_checksum("viruses.md5", hostfd, hostname, proxy, user)) == NULL) {
-	mprintf("@Can't get viruses.md5 sum from %s\n", hostname);
+    if(!(remote = remote_cvdhead(remotename, hostfd, hostname, proxy, user))) {
+	mprintf("@Can't read %s header from %s\n", remotename, hostname);
 	close(hostfd);
 	return 52;
     }
 
-    /* ok, we have md5 sum from Internet */
+    *signo += current->sigs; /* we need to do it just here */
 
-    if(oldmd5 && !strncmp(oldmd5, newmd5, 32)) {
-	mprintf(DB1NAME" is up to date.\n");
-	logg(DB1NAME" is up to date.\n");
-    } else
-	updatedb = 1;
+    if(current && (current->version >= remote->version)) {
+	mprintf("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
+	logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
+	close(hostfd);
+	cl_cvdfree(current);
+	cl_cvdfree(remote);
+	return 1;
+    }
+
+    if(current)
+	cl_cvdfree(current);
+
+    cl_cvdfree(remote);
 
     /* FIXME: We need to reconnect, because we won't be able to donwload
      * the database. The problem doesn't exist with my local apache.
@@ -150,160 +178,46 @@ int downloadmanager(const struct optstruct *opt, const char *hostname)
     };
     /* end */
 
-    if((new2md5 = get_md5_checksum("viruses2.md5", hostfd, hostname, proxy, user)) == NULL) {
-	mprintf("@Can't get viruses2.md5 sum from %s\n", hostname);
-	close(hostfd);
-	return 52;
+    /* temporary file is created in clamav's directory thus we don't need
+     * to create it immediately because race condition is not possible here
+     */
+    tempname = cl_gentemp(".");
+
+    if(get_database(remotename, hostfd, tempname, hostname, proxy, user)) {
+        mprintf("@Can't download %s from %s\n", remotename, hostname);
+        unlink(tempname);
+        free(tempname);
+        close(hostfd);
+        return 52;
     }
 
-    /* ok, we have md5 sum from Internet */
+    close(hostfd);
 
-    if(old2md5 && !strncmp(old2md5, new2md5, 32)) {
-	mprintf(DB2NAME" is up to date.\n");
-	logg(DB2NAME" is up to date.\n");
+    if((ret = cl_cvdverify(tempname))) {
+        mprintf("@Verification: %s\n", cl_strerror(ret));
+        unlink(tempname);
+        free(tempname);
+        return 54;
+    }
+
+    if(!nodb && unlink(localname)) {
+	mprintf("@Can't unlink %s. Please fix it and try again.\n", localname);
+	unlink(tempname);
+	free(tempname);
+	return 53;
     } else
-	updatedb2 = 1;
+	rename(tempname, localname);
 
-    if(!updatedb && !updatedb2) {
-	close(hostfd);
-	return 1;
+    if((current = cl_cvdhead(localname)) == NULL) {
+	mprintf("@Can't read CVD header of new %s database.\n", localname);
+	return 54;
     }
 
-    if(updatedb) {
+    mprintf("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
+    logg("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
 
-	/* temporary file is created in clamav's directory thus we don't need
-	 * to create it immediately, because race conditions are impossible
-	 */
-	tempname = cl_gentemp(".");
-
-	/* download the database */
-	/* FIXME: We need to reconnect, because we won't be able to donwload
-	 * the database. The problem doesn't exist with my local apache.
-	 * Some code change is needed in get_md5_checksum().
-	 */
-
-	/* begin bug work-around */
-	close(hostfd);
-	hostfd = wwwconnect(hostname, proxy);
-
-	if(hostfd < 0) {
-	    mprintf("@Connection with %s failed.\n", hostname);
-	    free(tempname);
-	    return 52;
-	};
-	/* end */
-
-	if(get_database(DB1NAME, hostfd, tempname, hostname, proxy, user)) {
-	    mprintf("@Can't download "DB1NAME" from %s\n", hostname);
-	    unlink(tempname);
-	    free(tempname);
-	    close(hostfd);
-	    return 52;
-	}
-
-	close(hostfd);
-
-	/* ok, we have new database */
-	if((downmd5 = cl_md5file(tempname)) == NULL) {
-	    unlink(tempname);
-	    free(tempname);
-	    mprintf("@Can't create md5 checksum of the virus database.\n");
-	    return 51;
-	}
-
-	if(!strcmp(newmd5, downmd5)) {
-	    if(!nodb && unlink(DB1NAME)) {
-		mprintf("@Can't unlink "DB1NAME" file. Fix the problem and try again.\n");
-		unlink(tempname);
-		free(tempname);
-		return 53;
-	    } else
-		rename(tempname, DB1NAME);
-	} else {
-	    mprintf("@The checksum of "DB1NAME" database isn't ok. Please check it yourself or try again.\n");
-	    unlink(tempname);
-	    free(tempname);
-	    return 54;
-	}
-
-	unlink(tempname);
-	free(tempname);
-	free(downmd5);
-    }
-
-    if(updatedb2) {
-	tempname = cl_gentemp(".");
-
-	/* download viruses.db2 */
-
-	/* begin bug work-around */
-	close(hostfd);
-	hostfd = wwwconnect(hostname, proxy);
-
-	if(hostfd < 0) {
-	    mprintf("@Connection with %s failed.\n", hostname);
-	    free(tempname);
-	    return 52;
-	};
-	/* end */
-
-	if(get_database(DB2NAME, hostfd, tempname, hostname, proxy, user)) {
-	    mprintf("@Can't download "DB2NAME" from %s\n", hostname);
-	    unlink(tempname);
-	    free(tempname);
-	    close(hostfd);
-	    return 52;
-	}
-
-	close(hostfd);
-
-	/* ok, we have new database */
-	if((downmd5 = cl_md5file(tempname)) == NULL) {
-	    unlink(tempname);
-	    free(tempname);
-	    mprintf("@Can't create md5 checksum of the virus database.\n");
-	    return 51;
-	}
-
-	if(!strcmp(new2md5, downmd5)) {
-	    if(!nodb2 && unlink(DB2NAME)) {
-		mprintf("@Can't unlink "DB2NAME" file. Fix the problem and try again.\n");
-		unlink(tempname);
-		free(tempname);
-		return 53;
-	    } else
-		rename(tempname, DB2NAME);
-	} else {
-	    mprintf("@The checksum of "DB2NAME" database isn't ok. Please check it yourself or try again.\n");
-	    unlink(tempname);
-	    free(tempname);
-	    return 54;
-	}
-
-	unlink(tempname);
-	free(tempname);
-	free(downmd5);
-    }
-
-    vir = countlines(DB1NAME);
-    vir += countlines(DB2NAME);
-
-    mprintf("Database updated (containing in total %d signatures).\n", vir);
-    logg("Database updated (containing in total %d signatures).\n", vir);
-
-#ifdef BUILD_CLAMD
-    if(optl(opt, "daemon-notify")) {
-	    const char *clamav_conf = getargl(opt, "daemon-notify");
-	if(!clamav_conf)
-	    clamav_conf = DEFAULT_CFG;
-
-	notify(clamav_conf);
-    }
-#endif
-
-    if(optl(opt, "on-update-execute"))
-	system(getargl(opt, "on-update-execute"));
-
+    cl_cvdfree(current);
+    free(tempname);
     return 0;
 }
 
@@ -379,13 +293,12 @@ wwwconnect(const char *server, const char *proxy)
 
 /* njh@bandsman.co.uk: added proxy support */
 /* TODO: use a HEAD instruction to see if the file has been changed */
-char *
-get_md5_checksum(const char *file, int socketfd, const char *hostname, const char *proxy, const char *user)
+struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostname, const char *proxy, const char *user)
 {
-	char cmd[512], buffer[FBUFFSIZE];
-	char *md5sum, *ch, *tmp;
+	char cmd[512], head[513], buffer[FBUFFSIZE], *ch, *tmp;
 	int i, j, bread, cnt;
 	char *remotename = NULL, *authorization = NULL;
+	struct cl_cvd *cvd;
 
     if(proxy) {
         remotename = mmalloc(strlen(hostname) + 8);
@@ -402,17 +315,17 @@ get_md5_checksum(const char *file, int socketfd, const char *hostname, const cha
 	}
     }
 
-    mprintf("Reading md5 sum (%s): ", file);
+    mprintf("Reading CVD header (%s): ", file);
 
 #ifdef	NO_SNPRINTF
-    sprintf(cmd, "GET %s/database/%s HTTP/1.1\r\n"
+    sprintf(cmd, "GET %s/%s HTTP/1.1\r\n"
 	"Host: %s\r\n%s"
 	"User-Agent: "PACKAGE"/"VERSION"\r\n"
 	"Cache-Control: no-cache\r\n"
 	"Connection: close\r\n"
 	"\r\n", (remotename != NULL)?remotename:"", file, hostname, (authorization != NULL)?authorization:"");
 #else
-    snprintf(cmd, sizeof(cmd), "GET %s/database/%s HTTP/1.1\r\n"
+    snprintf(cmd, sizeof(cmd), "GET %s/%s HTTP/1.1\r\n"
 	     "Host: %s\r\n%s"
 	     "User-Agent: "PACKAGE"/"VERSION"\r\n"
 	     "Cache-Control: no-cache\r\n"
@@ -433,12 +346,12 @@ get_md5_checksum(const char *file, int socketfd, const char *hostname, const cha
     }
 
     if(bread == -1) {
-	mprintf("@Error while reading md5 sum of database from %s\n", hostname);
+	mprintf("@Error while reading CVD header of database from %s\n", hostname);
 	return NULL;
     }
 
     if ((strstr(buffer, "HTTP/1.1 404")) != NULL) { 
-      mprintf("@md5 sum not found on remote server\n");
+      mprintf("@CVD file not found on remote server\n");
       return NULL;
     }
 
@@ -454,19 +367,22 @@ get_md5_checksum(const char *file, int socketfd, const char *hostname, const cha
       i++;
     }  
 
-    md5sum = (char *) mcalloc(33, sizeof(char));
-    
-    for (j=0; j<32; j++) {
-      if (!ch || (ch && !*ch) || (ch && !isalnum(ch[j]))) {
-	mprintf("@Malformed md5 checksum detected.\n");
-	free(md5sum);
+    memset(head, 0, sizeof(head));
+
+    for (j=0; j<512; j++) {
+      if (!ch || (ch && !*ch) || (ch && !isprint(ch[j]))) {
+	mprintf("@Malformed CVD header detected.\n");
 	return NULL;
       }
-      md5sum[j] = ch[j];
+      head[j] = ch[j];
     }
 
-    mprintf("OK\n");
-    return md5sum;
+    if((cvd = cl_cvdparse(head)) == NULL)
+	mprintf("@Broken CVD header.\n");
+    else
+	mprintf("OK\n");
+
+    return cvd;
 }
 
 /* njh@bandsman.co.uk: added proxy support */
@@ -476,8 +392,9 @@ get_database(const char *dbfile, int socketfd, const char *file, const char *hos
 {
 	char cmd[512], buffer[FBUFFSIZE];
 	char *ch;
-	int bread, fd, i;
+	int bread, fd, i, rot = 0;
 	char *remotename = NULL, *authorization = NULL;
+	const char *rotation = "|/-\\";
 
 
     if(proxy) {
@@ -502,14 +419,14 @@ get_database(const char *dbfile, int socketfd, const char *file, const char *hos
     }
 
 #ifdef NO_SNPRINTF
-    sprintf(cmd, "GET %s/database/%s HTTP/1.1\r\n"
+    sprintf(cmd, "GET %s/%s HTTP/1.1\r\n"
 	     "Host: %s\r\n%s"
 	     "User-Agent: "PACKAGE"/"VERSION"\r\n"
 	     "Cache-Control: no-cache\r\n"
 	     "Connection: close\r\n"
 	     "\r\n", (remotename != NULL)?remotename:"", dbfile, hostname, (authorization != NULL)?authorization:"");
 #else
-    snprintf(cmd, sizeof(cmd), "GET %s/database/%s HTTP/1.1\r\n"
+    snprintf(cmd, sizeof(cmd), "GET %s/%s HTTP/1.1\r\n"
 	     "Host: %s\r\n%s"
 	     "User-Agent: "PACKAGE"/"VERSION"\r\n"
 	     "Cache-Control: no-cache\r\n"
@@ -531,8 +448,6 @@ get_database(const char *dbfile, int socketfd, const char *file, const char *hos
       return -1;
     }
 
-    mprintf("Downloading %s ", dbfile);
-
     ch = buffer;
     i = 0;
     while (1) {
@@ -548,28 +463,14 @@ get_database(const char *dbfile, int socketfd, const char *file, const char *hos
     write(fd, ch, bread - i);
     while((bread = read(socketfd, buffer, FBUFFSIZE))) {
 	write(fd, buffer, bread);
-	mprintf(".");
+	mprintf("Downloading %s [%c]\r", dbfile, rotation[rot]);
+	fflush(stdout);
+	rot = ++rot % 4;
     }
 
-    mprintf(" done\n");
+    mprintf("Downloading %s [*]\n", dbfile);
     close(fd);
     return 0;
-}
-
-int countlines(const char *filename)
-{
-	FILE *fd;
-	char buff[65536];
-	int lines = 0;
-
-    if((fd = fopen(filename, "r")) == NULL)
-	return 0;
-
-    while(fgets(buff, sizeof(buff), fd))
-	lines++;
-
-    fclose(fd);
-    return lines;
 }
 
 const char base64[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";

@@ -126,7 +126,7 @@ sigtool_SOURCES = \
 sigtool_LDADD = ../clamscan/getopt.o ../clamscan/others.o
 
 DEFS = @DEFS@
-LIBS = -L../libclamav -lclamav
+LIBS = -L../libclamav -lclamav @FRESHCLAM_LIBS@
 subdir = sigtool
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES =
@@ -152,7 +152,7 @@ LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 CFLAGS = @CFLAGS@
 DIST_SOURCES = $(sigtool_SOURCES)
-DIST_COMMON = Makefile.am Makefile.in
+DIST_COMMON = COPYING Makefile.am Makefile.in
 SOURCES = $(sigtool_SOURCES)
 
 all: all-am

@@ -32,7 +32,7 @@
 #include "unrarlib.h"
 #include "defaults.h"
 
-int cli_addpatt(struct cl_node *root, struct patt *pattern)
+int cli_addpatt(struct cl_node *root, struct cli_patt *pattern)
 {
 	struct cl_node *pos, *next;
 	int i;
@@ -144,9 +144,9 @@ void cl_buildtrie(struct cl_node *root)
     cli_maketrans(root);
 }
 
-void cli_freepatt(struct patt *list)
+void cli_freepatt(struct cli_patt *list)
 {
-	struct patt *handler, *prev;
+	struct cli_patt *handler, *prev;
 
 
     handler = list;
@@ -176,7 +176,7 @@ void cl_freetrie(struct cl_node *root)
 int cl_scanbuff(const char *buffer, unsigned int length, char **virname, const struct cl_node *root)
 {
 	struct cl_node *current;
-	struct patt *pt;
+	struct cli_patt *pt;
 	int i, position, *partcnt;
 
     current = (struct cl_node *) root;
@@ -220,7 +220,7 @@ int cl_scanbuff(const char *buffer, unsigned int length, char **virname, const s
     return CL_CLEAN;
 }
 
-int cli_findpos(const char *buffer, int offset, int length, const struct patt *pattern)
+int cli_findpos(const char *buffer, int offset, int length, const struct cli_patt *pattern)
 {
 	int bufferpos = offset + CL_MIN_LENGTH;
 	int postfixend = offset + length;

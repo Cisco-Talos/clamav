@@ -63,6 +63,9 @@ void freshclam(struct optstruct *opt)
 
     /* initialize some important variables */
 
+    if(optl(opt, "debug"))
+	cl_debug();
+
     mprintf_disabled = 0;
 
     if(optc(opt, 'v')) mprintf_verbose = 1;
@@ -108,7 +111,7 @@ void freshclam(struct optstruct *opt)
 	mprintf("Can't change dir to %s\n", newdir);
 	exit(50);
     } else
-	mprintf("Current working dir is %s\n", newdir);
+	mprintf("*Current working dir is %s\n", newdir);
 
 
     if(optc(opt, 'd')) {
@@ -151,81 +154,13 @@ void freshclam(struct optstruct *opt)
 
 }
 
-/*void free_mirror(mirrors* m)
-{
-    mirrors *n;
-    
-    while(m)
-    {
-        n = m->next;
-        if(m->mirror != NULL)
-            free(m->mirror);
-        free(m);
-        m = n;
-    }
-
-}*/
-
 int download(struct optstruct *opt)
 {
 	int ret = 0;
 	mirrors *m = NULL, *h = NULL;
-	char *last = NULL;
 	char *datadir, *mirror_last;
 	int mirror_used = 0;
 
-    /*
-     * If the previous database update was not from the first host
-     * listed in mirrors.txt it will have been saved to DBDIR/mirror.
-     * In this case use this host one more time (if it is up) for
-     * database updates then revert to the order in DBDIR/mirrors.txt
-     */    
-    last = parse_mirror(opt);
-
-    if(last != NULL)
-    {
-        if((ret = downloadmanager(opt, last)) == 0)
-        {
-            mprintf("Database updated from last used mirror %s.\n", last);
-
-	    if(optl(opt, "datadir"))
-	    {
-		datadir = getargl(opt, "datadir");
-	    }
-	    else
-	    {	
-		datadir = DATADIR;
-	    }
-
-	    if((mirror_last = malloc(sizeof(char) * (strlen(datadir) + strlen(MIRROR) + 1))) == NULL)
-	    {
-		fprintf(stderr, "ERROR: Can't allocate sufficient memory\n");
-		mexit(1);
-	    }
-
-	    strcpy(mirror_last, datadir);
-	    strcat(mirror_last, MIRROR);
-
-	    if(unlink(mirror_last) == -1)
-	    {
-		fprintf(stderr, "ERROR: Can't unlink file %s !\n", mirror_last);
-	    }
-
-            free(last);
-	    free(mirror_last);
-            return ret;
-        }
-
-        /* Only continue if there is an error connecting to the host */
-        if((ret != 52) && (ret != 54))
-        {
-            free(last);
-            return ret;
-        }
-
-    	free(last);
-    }
-        
     /*
      * There's an error in __nss_hostname_digits_dots () from /lib/libc.so.6
      * which gets triggered here for some reason.....
@@ -243,153 +178,27 @@ int download(struct optstruct *opt)
             {
                 logg("Database updated from mirror %s.\n", m->mirror);
                 mprintf("Database updated from mirror %s.\n", m->mirror);
-                write_mirror(opt, m->mirror);
-            }
-            else
-            {
-                logg("Database updated from %s.\n", m->mirror);
-                mprintf("Database updated from %s.\n", m->mirror);
             }
 
             FREE_MIRROR(h);
             return ret;
         }
 
-        /* If we contacted a mirror then record the fact even if we
-         * don't update any databases this run
-         */
-        if(ret == 1)
-        {
-            if(mirror_used > 0)
-                write_mirror(opt, m->mirror);
-        
-            FREE_MIRROR(h);
-            return ret;
-        }
-           
         /* Only continue if there is an error connecting to the host */
         if((ret != 52) && (ret != 54))
         {
             FREE_MIRROR(h);
             return ret;
         }
+
+	mprintf("Waiting 10 seconds...\n");
+	sleep(10);
         mirror_used++;
         m = m->next;
     }
 
     FREE_MIRROR(h);
     return ret;
-}
-
-void write_mirror(struct optstruct *opt, char * mirror)
-{
-    char *datadir, *mirror_last;
-    FILE *fd;
-    
-    if(optl(opt, "datadir"))
-    {
-        datadir = getargl(opt, "datadir");
-    }
-    else
-    {
-        datadir = DATADIR;
-    }
-
-    if((mirror_last = malloc(sizeof(char) * (strlen(datadir) + strlen(MIRROR) + 1))) == NULL)
-    {
-        fprintf(stderr, "ERROR: Can't allocate sufficient memory\n");
-        mexit(1);
-    }
-
-    strcpy(mirror_last, datadir);
-
-    strcat(mirror_last, MIRROR);
-
-    if((fd = fopen(mirror_last, "w")) == NULL)
-    {
-        /* No mirror was used last time - this is normal */
-        fprintf(stderr, "ERROR: Can't create file %s !\n", mirror_last);
-        free(mirror_last);
-        return;
-    }
-    
-    if(!fputs(mirror, fd))
-    {
-        fprintf(stderr, "ERROR: Can't write to file %s !\n", mirror_last);
-    }
-
-    fclose(fd);
-    free(mirror_last);
-    
-    return;
-}
-
-/*
- * If the previous database update was not from the first host
- * listed in mirrors.txt it will have been saved to DBDIR/mirror.
- * In this case use this host one more time (if it is up) for
- * database updates then revert to the order in DBDIR/mirrors.txt
- */
-char * parse_mirror(struct optstruct *opt)
-{
-    char *datadir = NULL, *mirror_last  = NULL, *last = NULL;
-    FILE *fd;
-    char buf[BUFSIZ];
-    
-    if(optl(opt, "datadir"))
-    {
-        datadir = getargl(opt, "datadir");
-    }
-    else
-    {
-        datadir = DATADIR;
-    }
-
-    if((mirror_last = malloc(sizeof(char) * (strlen(datadir) + strlen(MIRROR) + 1))) == NULL)
-    {
-        fprintf(stderr, "ERROR: Can't allocate sufficient memory\n");
-        mexit(1);
-    }
-
-    strcpy(mirror_last, datadir);
-
-    strcat(mirror_last, MIRROR);
-
-    if((fd = fopen(mirror_last, "r")) == NULL)
-    {
-        /* No mirror was used last time - this is normal */
-        free(mirror_last);
-        return NULL;
-    }
-
-    while(fgets(buf, BUFSIZ, fd))
-    {
-        if(buf[0] == '#')
-            continue;
-
-        if(strlen(buf) > 0)
-        {
-            if((last = malloc(sizeof(char) * (strlen(buf) +1))) == NULL)
-            {
-                fprintf(stderr, "ERROR: Can't allocate sufficient memory\n");
-                free(mirror_last);
-                return NULL;
-            }
-
-            chomp(buf);
-            strcpy(last, buf);
-            break;
-        }    
-    }
-
-    if(fclose(fd) != 0)
-    {
-        fprintf(stderr, "ERROR: Can't close fd !\n");
-    }
-
-    free(mirror_last);
-
-    return last;
 }
 
 mirrors* parse_mirrorcfg(struct optstruct *opt)
@@ -504,12 +313,13 @@ void help(void)
     mprintf_stdout = 1;
 
     mprintf("\n");
-    mprintf("		   Clam AntiVirus: FreshClam  "VERSION"\n");
-    mprintf("		   (c) 2002 Tomasz Kojm <zolw@konarski.edu.pl>\n");
+    mprintf("		   Clam AntiVirus: freshclam  "VERSION"\n");
+    mprintf("		   (c) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>\n");
     mprintf("	  \n");
     mprintf("    --help		    -h		show help\n");
     mprintf("    --version		    -V		print version number and exit\n");
     mprintf("    --verbose		    -v		be verbose\n");
+    mprintf("    --debug		    		enable debug messages\n");
     mprintf("    --quiet				be quiet, output only error messages\n");
     mprintf("    --stdout				write to stdout instead of stderr\n");
     mprintf("					(this help is always written to stdout)\n");

@@ -2,6 +2,53 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in the binary packages.
 --
 
+
+
+0.65
+----
+
+-) clamd:
+    + fixed a race condition in the database reloading code (random hangs
+      under high load)
+    + fixed PidFile permissions (Magnus Ekdahl, bug reported by Tomasz Papszun)
+    + fixed LogFile permissions (Magnus Ekdahl)
+    + new directive ScanRAR (bacause RAR support is now disabled by default)
+    + new directive VirusEvent
+    + new directive FixStaleSocket (Thomas Lamy and Mark Mielke)
+    + new directive TCPAddr (Bernard Quatermass, fixed by Damien Curtain)
+    + new directive Debug
+
+-) clamav-milter:
+    + 
+    + new --force-scan flag
+    + new -P and -q flags by Nicholas M. Kirsch
+
+-) libclamav:
+    + multiple mbox fixes (thanks to Rene Bellora, Bernd Kuhls, Thomas Lamy, 
+      Tomasz Papszun,
+
+    + memory leak fixes (Thomas Lamy)
+    + support for a new database container format (CVD) with support for
+      digital signatures, 
+    + new scan option CL_DISABLERAR (disables built-in RAR unpacker)
+
+-) freshclam:
+    + fixed --on-error-execute behaviour (David Woakes)
+    + new option --user (-u) USER - run as USER instead of the default user.
+      Patch by Damien Curtain.
+
+-) documentation:
+    + new Spanish documentation on ClamAV + Sendmail integration by
+      Erick Ivaan Lopez Carreon
+
+
+
+
+
+
+
+
+
 0.60
 ----
 
