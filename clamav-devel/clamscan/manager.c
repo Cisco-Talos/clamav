@@ -526,7 +526,11 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 
     /* unpack file  - as unprivileged user */
     if(cli_strbcasestr(filename, ".zip")) {
-	char *args[] = { "unzip", "-P", "clam", "-o", (char *) filename, NULL };
+	char *args[] = { "unzip", "-P", "clam", "-o", NULL, NULL };
+	/* Sun's SUNWspro C compiler doesn't allow direct initialisation
+	 * with a variable
+	 */
+	args[4] = (char *) filename;
 
 	if((userprg = getargl(opt, "unzip")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
@@ -534,56 +538,64 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	    ret = clamav_unpack("unzip", args, gendir, user, opt);
 
     } else if(cli_strbcasestr(filename, ".rar")) { 
-	char *args[] = { "unrar", "x", "-p-", "-y", (char *) filename, NULL };
+	char *args[] = { "unrar", "x", "-p-", "-y", NULL, NULL };
+	args[4] = (char *) filename;
 	if((userprg = getargl(opt, "unrar")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("unrar", args, gendir, user, opt);
 
     } else if(cli_strbcasestr(filename, ".arj")) { 
-        char *args[] = { "arj", "x","-y", (char *) filename, NULL };
+        char *args[] = { "arj", "x","-y", NULL, NULL };
+	args[3] = (char *) filename;
         if((userprg = getargl(opt, "arj")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("arj", args, gendir, user, opt);
 
     } else if(cli_strbcasestr(filename, ".zoo")) { 
-	char *args[] = { "unzoo", "-x","-j","./", (char *) filename, NULL };
+	char *args[] = { "unzoo", "-x","-j","./", NULL, NULL };
+	args[4] = (char *) filename;
 	if((userprg = getargl(opt, "unzoo")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("unzoo", args, gendir, user, opt);
 
     } else if(cli_strbcasestr(filename, ".jar")) { 
-	char *args[] = { "unzip", "-P", "clam", "-o", (char *) filename, NULL };
+	char *args[] = { "unzip", "-P", "clam", "-o", NULL, NULL };
+	args[4] = (char *) filename;
 	if((userprg = getargl(opt, "jar")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("unzip", args, gendir, user, opt);
 
     } else if(cli_strbcasestr(filename, ".lzh")) { 
-	char *args[] = { "lha", "xf", (char *) filename, NULL };
+	char *args[] = { "lha", "xf", NULL, NULL };
+	args[2] = (char *) filename;
 	if((userprg = getargl(opt, "lha")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("lha", args, gendir, user, opt);
 
     } else if(cli_strbcasestr(filename, ".tar")) { 
-	char *args[] = { "tar", "-xpvf", (char *) filename, NULL };
+	char *args[] = { "tar", "-xpvf", NULL, NULL };
+	args[2] = (char *) filename;
 	if((userprg = getargl(opt, "tar")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("tar", args, gendir, user, opt);
 
     } else if(cli_strbcasestr(filename, ".deb")) { 
-	char *args[] = { "ar", "x", (char *) filename, NULL };
+	char *args[] = { "ar", "x", NULL, NULL };
+	args[2] = (char *) filename;
 	if((userprg = getargl(opt, "deb")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("ar", args, gendir, user, opt);
 
     } else if((cli_strbcasestr(filename, ".tar.gz") || cli_strbcasestr(filename, ".tgz"))) {
-	char *args[] = { "tar", "-zxpvf", (char *) filename, NULL };
+	char *args[] = { "tar", "-zxpvf", NULL, NULL };
+	args[2] = (char *) filename;
 	if((userprg = getargl(opt, "tgz")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
