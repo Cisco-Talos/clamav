@@ -285,7 +285,7 @@ int cli_cvdverify(FILE *fd, struct cl_cvd *cvdpt)
     if((cvd = cl_cvdparse(head)) == NULL)
 	return CL_ECVD;
 
-    if(cvd)
+    if(cvdpt)
 	memcpy(cvdpt, cvd, sizeof(struct cl_cvd));
 
     md5 = cli_md5stream(fd);
