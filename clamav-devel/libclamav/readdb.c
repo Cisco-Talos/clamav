@@ -700,6 +700,146 @@ static int cli_loadhdb(FILE *fd, struct cl_node **root, unsigned int *signo)
     return 0;
 }
 
+static int cli_loadzmd(FILE *fd, struct cl_node **root, unsigned int *signo)
+{
+	char buffer[FILEBUFF], *pt;
+	int line = 0, comments = 0, ret = 0;
+	struct cli_zip_node *new;
+
+
+    if(!*root) {
+	cli_dbgmsg("Initializing main node\n");
+	*root = (struct cl_node *) cli_calloc(1, sizeof(struct cl_node));
+	if(!*root)
+	    return CL_EMEM;
+    }
+
+    while(fgets(buffer, FILEBUFF, fd)) {
+	line++;
+	if(buffer[0] == '#') {
+	    comments++;
+	    continue;
+	}
+
+	cli_chomp(buffer);
+
+	new = (struct cli_zip_node *) cli_calloc(1, sizeof(struct cli_zip_node));
+	if(!new) {
+	    ret = CL_EMEM;
+	    break;
+	}
+
+	if(!(new->virname = cli_strtok(buffer, 0, ":"))) {
+	    free(new);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if(!(pt = cli_strtok(buffer, 1, ":"))) {
+	    free(new->virname);
+	    free(new);
+	    ret = CL_EMALFDB;
+	    break;
+	} else {
+	    new->encrypted = atoi(pt);
+	    free(pt);
+	}
+
+	if(!(new->filename = cli_strtok(buffer, 2, ":"))) {
+	    free(new->virname);
+	    free(new);
+	    ret = CL_EMALFDB;
+	    break;
+	} else {
+	    if(!strcmp(new->filename, "*")) {
+		free(new->filename);
+		new->filename = NULL;
+	    }
+	}
+
+	if(!(pt = cli_strtok(buffer, 3, ":"))) {
+	    free(new->filename);
+	    free(new->virname);
+	    free(new);
+	    ret = CL_EMALFDB;
+	    break;
+	} else {
+	    if(!strcmp(pt, "*"))
+		new->size = -1;
+	    else
+		new->size = atoi(pt);
+	    free(pt);
+	}
+
+	if(!(pt = cli_strtok(buffer, 4, ":"))) {
+	    free(new->filename);
+	    free(new->virname);
+	    free(new);
+	    ret = CL_EMALFDB;
+	    break;
+	} else {
+	    if(!strcmp(pt, "*"))
+		new->csize = -1;
+	    else
+		new->csize = atoi(pt);
+	    free(pt);
+	}
+
+	if(!(pt = cli_strtok(buffer, 5, ":"))) {
+	    free(new->filename);
+	    free(new->virname);
+	    free(new);
+	    ret = CL_EMALFDB;
+	    break;
+	} else {
+	    if(!strcmp(pt, "*")) {
+		new->crc32 = 0;
+	    } else {
+		new->crc32 = cli_hex2num(pt);
+		if(new->crc32 == -1) {
+		    ret = CL_EMALFDB;
+		    break;
+		}
+	    }
+	    free(pt);
+	}
+
+	if(!(pt = cli_strtok(buffer, 6, ":"))) {
+	    free(new->filename);
+	    free(new->virname);
+	    free(new);
+	    ret = CL_EMALFDB;
+	    break;
+	} else {
+	    if(!strcmp(pt, "*"))
+		new->compr = -1;
+	    else
+		new->compr = atoi(pt);
+	    free(pt);
+	}
+
+	new->next = (*root)->zip_mlist;
+	(*root)->zip_mlist = new;
+    }
+
+    if(!line) {
+	cli_errmsg("Empty database file\n");
+	cl_free(*root);
+	return CL_EMALFDB;
+    }
+
+    if(ret) {
+	cli_errmsg("Problem parsing database at line %d\n", line);
+	cl_free(*root);
+	return ret;
+    }
+
+    if(signo)
+	*signo += (line - comments);
+
+    return 0;
+}
+
 int cl_loaddb(const char *filename, struct cl_node **root, unsigned int *signo)
 {
 	FILE *fd;
@@ -729,6 +869,9 @@ int cl_loaddb(const char *filename, struct cl_node **root, unsigned int *signo)
 
     } else if(cli_strbcasestr(filename, ".ndb")) {
 	ret = cli_loadndb(fd, root, signo);
+
+    } else if(cli_strbcasestr(filename, ".zmd")) {
+	ret = cli_loadzmd(fd, root, signo);
 
     } else {
 	cli_dbgmsg("cl_loaddb: unknown extension - assuming old database format\n");

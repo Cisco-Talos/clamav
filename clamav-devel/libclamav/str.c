@@ -129,6 +129,28 @@ char *cli_hex2str(const char *hex)
     return str;
 }
 
+int cli_hex2num(const char *hex)
+{
+	int numChars = 0;
+	int hexval, ret = 0, len, i;
+
+
+    len = strlen(hex);
+
+    if(len % 2 != 0) {
+	cli_errmsg("cli_hex2num(): Malformed hexstring: %s (length: %d)\n", hex, len);
+	return -1;
+    }
+
+    for(i = 0; i < len; i++) {
+	if((hexval = cli_hex2int(hex[i])) < 0)
+	    break;
+	ret = (ret << 4) | hexval;
+    }
+
+    return ret;
+}
+
 char *cli_str2hex(const char *string, unsigned int len)
 {
 	char *hexstr;

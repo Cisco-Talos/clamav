@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -325,8 +325,8 @@ int cl_build(struct cl_node *root)
 void cl_free(struct cl_node *root)
 {
 	int i;
-	struct cli_md5_node *pt, *h;
-
+	struct cli_md5_node *md5pt, *md5h;
+	struct cli_zip_node *zippt, *ziph;
 
     if(!root) {
 	cli_errmsg("cl_free: root == NULL\n");
@@ -338,18 +338,28 @@ void cl_free(struct cl_node *root)
 
     if(root->md5_hlist) {
 	for(i = 0; i < 256; i++) {
-	    pt = root->md5_hlist[i];
-	    while(pt) {
-		h = pt;
-		pt = pt->next;
-		free(h->md5);
-		free(h->virname);
-		if(h->viralias)
-		    free(h->viralias);
-		free(h);
+	    md5pt = root->md5_hlist[i];
+	    while(md5pt) {
+		md5h = md5pt;
+		md5pt = md5pt->next;
+		free(md5h->md5);
+		free(md5h->virname);
+		if(md5h->viralias)
+		    free(md5h->viralias);
+		free(md5h);
 	    }
 	}
 	free(root->md5_hlist);
+    }
+
+    zippt = root->zip_mlist;
+    while(zippt) {
+	ziph = zippt;
+	zippt = zippt->next;
+	free(ziph->virname);
+	if(ziph->filename)
+	    free(ziph->filename);
+	free(ziph);
     }
 
     free(root);
