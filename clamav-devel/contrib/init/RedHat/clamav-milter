@@ -1,0 +1,75 @@
+#!/bin/sh
+#
+# clamav-milter This script starts and stops the clamav-milter daemon
+#
+# chkconfig: 2345 91 30
+#
+# description: clamav-milter is a daemon which hooks into sendmail and routes
+#              email messages to clamav
+# processname: clamav-milter
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+# Source networking configuration.
+. /etc/sysconfig/network
+
+# Local clamav-milter config
+CLAMAV_FLAGS=
+test -f /etc/sysconfig/clamav-milter && . /etc/sysconfig/clamav-milter
+
+# Check that networking is up.
+[ ${NETWORKING} = "no" ] && exit 0
+
+[ -x /usr/local/sbin/clamav-milter ] || exit 0
+PATH=$PATH:/usr/bin:/usr/local/sbin:/usr/local/bin
+
+RETVAL=0
+
+start() {
+        echo -n "Starting clamav-milter: "
+        daemon clamav-milter ${CLAMAV_FLAGS}
+        RETVAL=$?
+        echo
+	test $RETVAL -eq 0 && touch /var/lock/subsys/clamav-milter
+	return $RETVAL
+}
+
+stop() {
+        echo -n "Shutting down clamav-milter: "
+        killproc clamav-milter
+        RETVAL=$?
+        echo
+	test $RETVAL -eq 0 && rm -f /var/lock/subsys/clamav-milter
+}
+
+restart() {
+	stop
+	start
+}
+
+# See how we were called.
+case "$1" in
+  start)
+        # Start daemon.
+	start
+        ;;
+  stop)
+        # Stop daemon.
+	stop
+        ;;
+  restart|reload)
+	restart
+        ;;
+  condrestart)
+	test -f /var/lock/subsys/clamav-milter && $0 restart || :
+        ;;
+  status)
+        status clamav-milter
+        ;;
+  *)
+        echo "Usage: $0 {start|stop|reload|restart|condrestart|status}"
+        exit 1
+esac
+
+exit $?
