@@ -50,7 +50,7 @@ int cli_scanrar_inuse = 0;
 #define SCAN_ARCHIVE	(options & CL_ARCHIVE)
 #define SCAN_MAIL	(options & CL_MAIL)
 
-#define MAGIC_BUFFER_SIZE 13
+#define MAGIC_BUFFER_SIZE 14
 #define RAR_MAGIC_STR "Rar!"
 #define ZIP_MAGIC_STR "PK\003\004"
 #define GZIP_MAGIC_STR "\037\213"
