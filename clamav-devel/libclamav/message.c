@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.89  2004/09/22 16:19:13  nigelhorne
+ * Fix error return
+ *
  * Revision 1.88  2004/09/21 14:55:26  nigelhorne
  * Handle blank lines in text/plain messages
  *
@@ -261,7 +264,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.88 2004/09/21 14:55:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.89 2004/09/22 16:19:13 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -893,6 +896,7 @@ messageSetEncoding(message *m, const char *enctype)
 				m->encodingTypes[m->numberOfEncTypes++] = e->type;
 
 				cli_dbgmsg("Encoding type %d is \"%s\"\n", m->numberOfEncTypes, type);
+				free(type);
 				break;
 			}
 
@@ -904,6 +908,7 @@ messageSetEncoding(message *m, const char *enctype)
 			 */
 			messageSetEncoding(m, "base64");
 			messageSetEncoding(m, "quoted-printable");
+			free(type);
 			break;
 		}
 
