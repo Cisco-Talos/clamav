@@ -1,3 +1,7 @@
+Wed Mar 31 18:12:20 BST 2004 (njh)
+----------------------------------
+  * libclamav: Code tidy up - free memory earlier
+
 Wed Mar 31 09:25:25 CEST 2004 (tk)
 ----------------------------------
   * libclamav: matcher: don't limit '*' to a single 128KB buffer

@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.62  2004/03/31 17:00:20  nigelhorne
+ * Code tidy up free memory earlier
+ *
  * Revision 1.61  2004/03/30 22:45:13  nigelhorne
  * Better handling of multipart/multipart messages
  *
@@ -174,7 +177,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.61 2004/03/30 22:45:13 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.62 2004/03/31 17:00:20 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -800,11 +803,16 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 
 			free((char *)boundary);
 
-			if(multiparts == 0) {
-				if(mainMessage && (mainMessage != messageIn))
-					messageDestroy(mainMessage);
-				return 2;	/* Nothing to do */
+			/*
+			 * We've finished message we're parsing
+			 */
+			if(mainMessage && (mainMessage != messageIn)) {
+				messageDestroy(mainMessage);
+				mainMessage = NULL;
 			}
+
+			if(multiparts == 0)
+				return 2;	/* Nothing to do */
 
 			cli_dbgmsg("The message has %d parts\n", multiparts);
 			cli_dbgmsg("Find out the multipart type(%s)\n", mimeSubtype);
@@ -926,7 +934,6 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					bool addAttachment = FALSE;
 					bool addToText = FALSE;
 					const char *dtype;
-					text *t;
 					message *body;
 
 					aMessage = messages[i];
@@ -1046,9 +1053,10 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 								if(mainMessage && (mainMessage != messageIn))
 									messageDestroy(mainMessage);
 
-								t = messageToText(body);
-								rc = parseEmailBody(body, blobs, nBlobs, t, dir, rfc821Table, subtypeTable);
-								textDestroy(t);
+								/*t = messageToText(body);
+								rc = parseEmailBody(body, blobs, nBlobs, t, dir, rfc821Table, subtypeTable);*/
+								rc = parseEmailBody(body, blobs, nBlobs, aText, dir, rfc821Table, subtypeTable);
+								/*textDestroy(t);*/
 
 								cli_dbgmsg("Finished recursion\n");
 
@@ -1085,12 +1093,9 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					assert(addToText || addAttachment);
 					assert(!(addToText && addAttachment));
 
-					if(addToText) {
+					if(addToText)
 						aText = textAdd(aText, messageGetBody(aMessage));
-						assert(aMessage == messages[i]);
-						messageDestroy(messages[i]);
-						messages[i] = NULL;
-					} else if(addAttachment) {
+					else if(addAttachment) {
 						blob *aBlob = messageToBlob(aMessage);
 
 						if(aBlob) {
@@ -1099,6 +1104,9 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 							blobList[numberOfAttachments++] = aBlob;
 						}
 					}
+					assert(aMessage == messages[i]);
+					messageDestroy(messages[i]);
+					messages[i] = NULL;
 				}
 
 				if(numberOfAttachments == 0) {
