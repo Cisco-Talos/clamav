@@ -29,7 +29,7 @@ struct s_du {
     long int space; /* in kilobytes */
 };
 
-int treewalk(const char *dirname, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits);
+int treewalk(const char *dirname, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options);
 
 int rmdirs(const char *dirname);
 int clamav_rmdirs(const char *dir);
