@@ -1,3 +1,7 @@
+Tue Mar 22 11:27:58 GMT 2005 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Not all Worm.Bagle.AC were being caught
+
 Tue Mar 22 00:23:43 CET 2005 (tk)
 ---------------------------------
   * libclamav/matcher.c: add support for SL+n (last section + offset); requested

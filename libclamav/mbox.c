@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.230 2005/03/20 09:09:25 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.231 2005/03/22 11:26:33 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -942,10 +942,11 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine)
 {
 	bool inHeader = TRUE;
 	bool contMarker = FALSE;
+	bool lastWasBlank = FALSE;
 	message *ret;
 	bool anyHeadersFound = FALSE;
 	int commandNumber = -1;
-	char *fullline = NULL;
+	char *fullline = NULL, *boundary = NULL;
 	size_t fulllinelength = 0;
 	char buffer[LINE_LENGTH+1];
 
@@ -974,9 +975,51 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine)
 		 * Don't blank lines which are only spaces from headers,
 		 * otherwise they'll be treated as the end of header marker
 		 */
+		if(lastWasBlank) {
+			lastWasBlank = FALSE;
+			if(boundaryStart(buffer, boundary)) {
+				cli_dbgmsg("Found a header line with space that should be blank\n");
+				inHeader = FALSE;
+			}
+		}
+		if(boundary) {
+			free(boundary);
+			boundary = NULL;
+		}
 		if(inHeader) {
-			cli_dbgmsg("parseEmailFile: check '%s' contMarker %d\n",
-				buffer ? buffer : "", (int)contMarker);
+			cli_dbgmsg("parseEmailFile: check '%s' contMarker %d fullline 0x%p\n",
+				buffer ? buffer : "", (int)contMarker, fullline);
+			if(start && isspace(start[0])) {
+				char copy[sizeof(buffer)];
+
+				strcpy(copy, buffer);
+				strstrip(copy);
+				if(copy[0] == '\0') {
+					/*
+					 * The header line contains only white space. This
+					 * is not the end of the headers according to
+					 * RFC2822, but some MUAs will handle it
+					 * as though it were, and virus writers exploit
+					 * this bug. We can't just break from the
+					 * loop here since that would allow other
+					 * exploits such as inserting a white space
+					 * line before the content-type line. So we
+					 * just have to make a best guess. Sigh.
+					 */
+					if(fullline) {
+						if(parseEmailHeader(ret, fullline, rfc821) < 0)
+							continue;
+
+						free(fullline);
+						fullline = NULL;
+					}
+					if((boundary = messageFindArgument(ret, "boundary")) != NULL) {
+						lastWasBlank = TRUE;
+						continue;
+					}
+				}
+			}
+			lastWasBlank = FALSE;
 			if((start == NULL) && (fullline == NULL)) {	/* empty line */
 				if(!contMarker) {
 					/*
