@@ -39,27 +39,27 @@
 
 int cli_addpatt(struct cl_node *root, struct cli_patt *pattern)
 {
-	struct cl_node *pos, *next;
+	struct cli_ac_node *pos, *next;
 	int i;
 
     if(pattern->length < CL_MIN_LENGTH) {
 	return CL_EPATSHORT;
     }
 
-    pos = root;
+    pos = root->ac_root;
 
     for(i = 0; i < CL_MIN_LENGTH; i++) {
 	next = pos->trans[((unsigned char) pattern->pattern[i]) & 0xff]; 
 
 	if(!next) {
-	    next = (struct cl_node *) cli_calloc(1, sizeof(struct cl_node));
+	    next = (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));
 	    if(!next) {
 		cli_dbgmsg("Unable to allocate pattern node (%d)\n", sizeof(struct cl_node));
 		return CL_EMEM;
 	    }
 
 	    root->nodes++;
-	    root->nodetable = (struct cl_node **) realloc(root->nodetable, (root->nodes) * sizeof(struct cl_node *));
+	    root->nodetable = (struct cli_ac_node **) realloc(root->nodetable, (root->nodes) * sizeof(struct cli_ac_node *));
 	    if (root->nodetable == NULL) {
 		cli_dbgmsg("Unable to realloc nodetable (%d)\n", (root->nodes) * sizeof(struct cl_node *));
 		return CL_EMEM;
@@ -80,7 +80,7 @@ int cli_addpatt(struct cl_node *root, struct cli_patt *pattern)
     return 0;
 }
 
-static int cli_enqueue(struct nodelist **bfs, struct cl_node *n)
+static int cli_enqueue(struct nodelist **bfs, struct cli_ac_node *n)
 {
 	struct nodelist *new;
 
@@ -96,10 +96,10 @@ static int cli_enqueue(struct nodelist **bfs, struct cl_node *n)
     return 0;
 }
 
-static struct cl_node *cli_dequeue(struct nodelist **bfs)
+static struct cli_ac_node *cli_dequeue(struct nodelist **bfs)
 {
 	struct nodelist *handler, *prev = NULL;
-	struct cl_node *pt;
+	struct cli_ac_node *pt;
 
     handler = *bfs;
 
@@ -125,12 +125,12 @@ static struct cl_node *cli_dequeue(struct nodelist **bfs)
 static int cli_maketrans(struct cl_node *root)
 {
 	struct nodelist *bfs = NULL;
-	struct cl_node *child, *node;
+	struct cli_ac_node *ac_root = root->ac_root, *child, *node;
 	int i, ret;
 
 
-    root->fail = NULL;
-    if((ret = cli_enqueue(&bfs, root)) != 0) {
+    ac_root->fail = NULL;
+    if((ret = cli_enqueue(&bfs, ac_root)) != 0) {
 	return ret;
     }
 
@@ -144,12 +144,12 @@ static int cli_maketrans(struct cl_node *root)
 		if(node->fail)
 		    node->trans[i] = (node->fail)->trans[i];
 		else
-		    node->trans[i] = root;
+		    node->trans[i] = ac_root;
 	    } else {
 		if(node->fail)
 		    child->fail = (node->fail)->trans[i];
 		else
-		    child->fail = root;
+		    child->fail = ac_root;
 
 		if((ret = cli_enqueue(&bfs, child)) != 0) {
 		    return ret;
@@ -166,6 +166,11 @@ int cl_buildtrie(struct cl_node *root)
 
     if(!root)
 	return CL_EMALFDB;
+
+    if(!root->ac_root) {
+	cli_dbgmsg("Pattern matcher not initialised\n");
+	return 0;
+    }
 
     if((ret = cli_addtypesigs(root)))
 	return ret;
@@ -200,12 +205,14 @@ void cl_freetrie(struct cl_node *root)
 {
 	unsigned int i;
 
+
     for(i = 0; i < root->nodes; i++) {
 	cli_freepatt(root->nodetable[i]->list);
 	free(root->nodetable[i]);
     }
 
     free(root->nodetable);
+    free(root->ac_root);
     free(root);
 }
 
@@ -248,19 +255,23 @@ int inline cli_findpos(const char *buffer, int offset, int length, const struct 
 
 int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *partcnt, int typerec, unsigned long int offset, unsigned long int *partoff)
 {
-	struct cl_node *current;
+	struct cli_ac_node *current;
 	struct cli_patt *pt;
 	int position, type = CL_CLEAN, dist;
         unsigned int i;
 
-int j;
 
-    current = (struct cl_node *) root;
+    if(!root->ac_root) {
+	cli_dbgmsg("cli_scanbuff: Pattern matcher not initialised\n");
+	return CL_CLEAN;
+    }
 
     if(!partcnt || !partoff) {
 	cli_dbgmsg("cli_scanbuff(): partcnt == NULL || partoff == NULL\n");
 	return CL_EMEM;
     }
+
+    current = root->ac_root;
 
     for(i = 0; i < length; i++)  {
 	current = current->trans[(unsigned char) buffer[i] & 0xff];
@@ -282,12 +293,6 @@ int j;
 			    if(dist && pt->mindist)
 				if(offset + i - partoff[pt->sigid] < pt->mindist)
 				    dist = 0;
-/*
-			    printf("dist == %d\n", dist);
-			    printf("curr offset == %d\n", offset + i);
-			    printf("min dist == %d\n", pt->mindist);
-			    printf("max dist == %d\n", pt->maxdist);
-*/
 
 			    if(dist) {
 				partoff[pt->sigid] = offset + i + pt->length;

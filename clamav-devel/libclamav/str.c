@@ -46,16 +46,16 @@ static int cli_hex2int(int c)
     return -1;
 }
 
-short int *cl_hex2str(const char *hex)
+short int *cli_hex2si(const char *hex)
 {
 	short int *str, *ptr, val, c;
 	int i, len;
 
+
     len = strlen(hex);
 
-    /* additional check - hex strings are parity length here */
     if(len % 2 != 0) {
-	cli_errmsg("cl_hex2str(): Malformed hexstring: %s (length: %d)\n", hex, len);
+	cli_errmsg("cl_hex2si(): Malformed hexstring: %s (length: %d)\n", hex, len);
 	return NULL;
     }
 
@@ -84,6 +84,45 @@ short int *cl_hex2str(const char *hex)
 		return NULL;
 	    }
 	}
+	*ptr++ = val;
+    }
+
+    return str;
+}
+
+char *cli_hex2str(const char *hex)
+{
+	char *str, *ptr, val, c;
+	int i, len;
+
+
+    len = strlen(hex);
+
+    if(len % 2 != 0) {
+	cli_errmsg("cl_hex2str(): Malformed hexstring: %s (length: %d)\n", hex, len);
+	return NULL;
+    }
+
+    str = cli_calloc((len / 2) + 1, sizeof(char));
+    if(!str)
+	return NULL;
+
+    ptr = str;
+
+    for(i = 0; i < len; i += 2) {
+	if((c = cli_hex2int(hex[i])) >= 0) {
+	    val = c;
+	    if((c = cli_hex2int(hex[i+1])) >= 0) {
+		val = (val << 4) + c;
+	    } else {
+		free(str);
+		return NULL;
+	    }
+	} else {
+	    free(str);
+	    return NULL;
+	}
+
 	*ptr++ = val;
     }
 
@@ -190,5 +229,3 @@ char *cli_strtok(const char *line, int fieldno, const char *delim)
 
     return buffer;
 }
-
-

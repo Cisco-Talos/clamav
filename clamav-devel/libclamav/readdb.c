@@ -57,8 +57,7 @@ static int cli_addsig(struct cl_node *root, const char *virname, const char *hex
     new->maxdist = maxdist;
 
     if(strchr(hexsig, '(')) {
-	    char *hexcpy, *hexnew, *start, *h;
-	    short int *c;
+	    char *hexcpy, *hexnew, *start, *h, *c;
 
 	if(!(hexcpy = strdup(hexsig))) {
 	    free(new);
@@ -115,13 +114,13 @@ static int cli_addsig(struct cl_node *root, const char *virname, const char *hex
 		    break;
 		}
 
-		if((c = cl_hex2str(h)) == NULL) {
+		if((c = cli_hex2str(h)) == NULL) {
 		    free(h);
 		    error = 1;
 		    break;
 		}
 
-		new->altc[new->alt - 1][i] = (char) *c;
+		new->altc[new->alt - 1][i] = *c;
 		free(c);
 		free(h);
 	    }
@@ -158,7 +157,7 @@ static int cli_addsig(struct cl_node *root, const char *virname, const char *hex
     if(new->length > root->maxpatlen)
 	root->maxpatlen = new->length;
 
-    if((new->pattern = cl_hex2str(hex)) == NULL) {
+    if((new->pattern = cli_hex2si(hex)) == NULL) {
 	if(new->alt) {
 	    free(new->altn);
 	    for(i = 0; i < new->alt; i++)
@@ -339,11 +338,138 @@ int cli_parse_add(struct cl_node *root, char *virname, const char *hexsig, int t
     return 0;
 }
 
+static int cli_loaddb(FILE *fd, struct cl_node **root, int *virnum)
+{
+	char buffer[FILEBUFF], *pt, *start;
+	int line = 0, ret = 0;
+
+
+    if(!*root) {
+	cli_dbgmsg("Initializing main node\n");
+	*root = (struct cl_node *) cli_calloc(1, sizeof(struct cl_node));
+	if(!*root)
+	    return CL_EMEM;
+    }
+
+    if(!(*root)->ac_root) {
+	cli_dbgmsg("Initializing trie\n");
+	(*root)->ac_root =  (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));
+	if(!(*root)->ac_root) {
+	    free(*root);
+	    return CL_EMEM;
+	}
+    }
+
+    while(fgets(buffer, FILEBUFF, fd)) {
+	line++;
+	cli_chomp(buffer);
+
+	pt = strchr(buffer, '=');
+	if(!pt) {
+	    cli_errmsg("Malformed pattern line %d\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	start = buffer;
+	*pt++ = 0;
+
+	if(*pt == '=') continue;
+
+	if((ret = cli_parse_add(*root, start, pt, 0))) {
+	    cli_errmsg("Problem parsing signature at line %d\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+    }
+
+    if(!line) {
+	cli_errmsg("Empty database file\n");
+	/* FIXME: release memory */
+	return CL_EMALFDB;
+    }
+
+    if(ret) {
+	/* FIXME: release memory */
+	return ret;
+    }
+
+    if(virnum != NULL)
+	*virnum += line;
+
+    return 0;
+}
+
+static int cli_loadhdb(FILE *fd, struct cl_node **root, int *virnum)
+{
+	char buffer[FILEBUFF], *pt, *start;
+	int line = 0, ret = 0;
+	struct cli_md5_node *new;
+
+
+    if(!*root) {
+	cli_dbgmsg("Initializing main node\n");
+	*root = (struct cl_node *) cli_calloc(1, sizeof(struct cl_node));
+	if(!*root)
+	    return CL_EMEM;
+    }
+
+    while(fgets(buffer, FILEBUFF, fd)) {
+	line++;
+	cli_chomp(buffer);
+
+	new = (struct cli_md5_node *) cli_calloc(1, sizeof(struct cli_md5_node));
+	if(!new) {
+	    ret = CL_EMEM;
+	    break;
+	}
+
+	if(!(pt = cli_strtok(buffer, 0, ":"))) {
+	    free(new);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if(!(new->md5 = cli_hex2str(pt))) {
+	    cli_errmsg("Malformed MD5 string at line %d\n", line);
+	    free(pt);
+	    free(new);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+	free(pt);
+
+	if(!(new->virname = cli_strtok(buffer, 1, ":"))) {
+	    free(new->md5);
+	    free(new);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	new->viralias = cli_strtok(buffer, 1, ":"); /* aliases are optional */
+
+	new->next = (*root)->hlist[new->md5[0] & 0xff];
+	(*root)->hlist[new->md5[0] & 0xff] = new;
+    }
+
+    if(!line) {
+	cli_errmsg("Empty database file\n");
+	/* FIXME: release memory */
+	return CL_EMALFDB;
+    }
+
+    if(ret) {
+	/* FIXME: release memory */
+	return ret;
+    }
+
+    return 0;
+}
+
 int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 {
 	FILE *fd;
-	char *buffer, *pt, *start;
-	int line = 0, ret;
+	int ret;
 
 
     if((fd = fopen(filename, "rb")) == NULL) {
@@ -353,81 +479,25 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 
     cli_dbgmsg("Loading %s\n", filename);
 
-    if(!(buffer = (char *) cli_malloc(FILEBUFF))) {
-	fclose(fd);
-	return CL_EMEM;
-    }
+    if(cli_strbcasestr(filename, ".db")  || cli_strbcasestr(filename, ".db2") || cli_strbcasestr(filename, ".db3")) {
+	ret = cli_loaddb(fd, root, virnum);
 
-    memset(buffer, 0, FILEBUFF);
-
-    /* test for CVD file */
-
-    if (fgets(buffer, 12, fd) == NULL) {
-	cli_dbgmsg("%s: failure reading header\n", filename);
-	free(buffer);
-	fclose(fd);
-	return CL_EMALFDB;
-    }
-
-    rewind(fd);
-
-    if(!strncmp(buffer, "ClamAV-VDB:", 11)) {
-	cli_dbgmsg("%s: CVD file detected\n", filename);
+    } else if(cli_strbcasestr(filename, ".cvd")) {
 	ret = cli_cvdload(fd, root, virnum);
-	free(buffer);
-	fclose(fd);
-	return ret;
+
+    } else if(cli_strbcasestr(filename, ".hdb")) {
+	ret = cli_loadhdb(fd, root, virnum);
+
+    } else {
+	cli_dbgmsg("cl_loaddb: unknown extension - assuming old database format\n");
+	ret = cli_loaddb(fd, root, virnum);
     }
 
-    while(fgets(buffer, FILEBUFF, fd)) {
+    if(ret)
+	cli_errmsg("Malformed database file %s\n", filename);
 
-	line++;
-	cli_chomp(buffer);
-
-	pt = strchr(buffer, '=');
-	if(!pt) {
-	    cli_errmsg("readdb(): Malformed pattern line %d (file %s).\n", line, filename);
-	    free(buffer);
-	    fclose(fd);
-	    return CL_EMALFDB;
-	}
-
-	start = buffer;
-	*pt++ = 0;
-
-	if(*pt == '=') continue;
-
-	if(!*root) {
-	    cli_dbgmsg("Initializing trie.\n");
-	    *root = (struct cl_node *) cli_calloc(1, sizeof(struct cl_node));
-	    if(!*root) {
-		free(buffer);
-		fclose(fd);
-		return CL_EMEM;
-	    }
-	    (*root)->maxpatlen = 0;
-	}
-
-	if((ret = cli_parse_add(*root, start, pt, 0))) {
-	    cli_errmsg("readdb(): Problem parsing signature at line %d (file %s).\n", line, filename);
-	    free(buffer);
-	    fclose(fd);
-	    return ret;
-	}
-    }
-
-    if(virnum != NULL)
-	*virnum += line;
-
-    free(buffer);
     fclose(fd);
-
-    return 0;
-}
-
-const char *cl_retdbdir(void)
-{
-    return DATADIR;
+    return ret;
 }
 
 int cl_loaddbdir(const char *dirname, struct cl_node **root, int *virnum)
@@ -454,6 +524,7 @@ int cl_loaddbdir(const char *dirname, struct cl_node **root, int *virnum)
 	    (cli_strbcasestr(dent->d_name, ".db")  ||
 	     cli_strbcasestr(dent->d_name, ".db2") ||
 	     cli_strbcasestr(dent->d_name, ".db3") ||
+	     cli_strbcasestr(dent->d_name, ".hdb") ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbfile = (char *) cli_calloc(strlen(dent->d_name) + strlen(dirname) + 2, sizeof(char));
@@ -477,6 +548,11 @@ int cl_loaddbdir(const char *dirname, struct cl_node **root, int *virnum)
 
     closedir(dd);
     return 0;
+}
+
+const char *cl_retdbdir(void)
+{
+    return DATADIR;
 }
 
 int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
@@ -507,7 +583,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	if(dent->d_ino)
 #endif
 	{
-	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && (cli_strbcasestr(dent->d_name, ".db") || cli_strbcasestr(dent->d_name, ".db2") || cli_strbcasestr(dent->d_name, ".db3") || cli_strbcasestr(dent->d_name, ".cvd"))) {
+	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && (cli_strbcasestr(dent->d_name, ".db") || cli_strbcasestr(dent->d_name, ".db2") || cli_strbcasestr(dent->d_name, ".db3") || cli_strbcasestr(dent->d_name, ".hdb") || cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbstat->no++;
 		dbstat->stattab = (struct stat *) realloc(dbstat->stattab, dbstat->no * sizeof(struct stat));
@@ -549,7 +625,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	if(dent->d_ino)
 #endif
 	{
-	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && (cli_strbcasestr(dent->d_name, ".db") || cli_strbcasestr(dent->d_name, ".db2") || cli_strbcasestr(dent->d_name, ".db3") || cli_strbcasestr(dent->d_name, ".cvd"))) {
+	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && (cli_strbcasestr(dent->d_name, ".db") || cli_strbcasestr(dent->d_name, ".db2") || cli_strbcasestr(dent->d_name, ".db3") || cli_strbcasestr(dent->d_name, ".hdb") || cli_strbcasestr(dent->d_name, ".cvd"))) {
 
                 fname = cli_calloc(strlen(dbstat->dir) + strlen(dent->d_name) + 2, sizeof(char));
 		sprintf(fname, "%s/%s", dbstat->dir, dent->d_name);

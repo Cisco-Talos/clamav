@@ -22,7 +22,7 @@
 #include "clamav.h"
 
 struct nodelist {
-    struct cl_node *node;
+    struct cli_ac_node *node;
     struct nodelist *next;
 };
 
