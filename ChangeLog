@@ -1,3 +1,7 @@
+Mon Jul 26 10:13:04 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:		Fix crash when debugging on SPARC
+
 Mon Jul 26 09:31:39 BST 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Fix occasional crash when scanning
