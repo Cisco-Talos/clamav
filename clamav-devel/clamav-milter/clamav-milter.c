@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.149  2004/11/04 14:20:37  nigelhorne
+ * Fix typo in error message
+ *
  * Revision 1.148  2004/11/04 08:22:06  nigelhorne
  * Fix segfault on startup in LocalSocket mode
  *
@@ -455,7 +458,7 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.148 2004/11/04 08:22:06 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.149 2004/11/04 14:20:37 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.80p"
 
@@ -1405,7 +1408,7 @@ main(int argc, char **argv)
 		 * We need to know how many connections to establish to clamd
 		 */
 		if(max_children == 0) {
-			fprintf(stderr, _("%s: --max_children must be given in sessions mode\n"), argv[0]);
+			fprintf(stderr, _("%s: --max-children must be given in sessions mode\n"), argv[0]);
 			return EX_CONFIG;
 		}
 #endif
