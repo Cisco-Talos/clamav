@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.130  2004/09/20 09:09:23  nigelhorne
+ * Update clamav.conf references
+ *
  * Revision 1.129  2004/09/17 15:40:02  nigelhorne
  * Handle sendmail variables after clamav variables
  *
@@ -398,9 +401,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.129 2004/09/17 15:40:02 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.130 2004/09/20 09:09:23 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.75r"
+#define	CM_VERSION	"0.75s"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -489,8 +492,7 @@ typedef	unsigned short	in_port_t;
  *
  * It is however OK for testing: code is now in place to reopen as session
  * that has gone bad, and it would be useful to find out the set of
- * circumstances that causes clamd to loop, unless it's the SESSION close
- * without END bug
+ * circumstances that causes clamd to loop
  */
 /*#define	SESSION	/*
 		 * Keep one command connection open to clamd, otherwise a new
@@ -501,7 +503,7 @@ typedef	unsigned short	in_port_t;
  * TODO: optional: xmessage on console when virus stopped (SNMP would be real nice!)
  *	Having said that, with LogSysLog you can (on Linux) configure the system
  *	to get messages on the system console, see syslog.conf(5), also you
- *	can use wall(1) in the VirusEvent entry in clamav.conf
+ *	can use wall(1) in the VirusEvent entry in clamd.conf
  * TODO: build with libclamav.so rather than libclamav.a
  * TODO: Support LogTime and Logfile from the conf file
  * TODO: Warn if TCPAddr doesn't allow connection from us
@@ -530,7 +532,7 @@ typedef struct header_list_struct *header_list_t;
  * Andy Fiddaman <clam@fiddaman.net> added 69.254.0.0/16
  *	(Microsoft default DHCP)
  *
- * TODO: read this table in from a file (clamav.conf?)
+ * TODO: read this table in from a file (clamd.conf?)
  */
 #define PACKADDR(a, b, c, d) (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
 #define MAKEMASK(bits)       (0xffffffff << (bits))
@@ -630,7 +632,7 @@ static	int	qflag = 0;	/*
 				 * Send no warnings when a virus is found,
 				 * this means that the only log of viruses
 				 * found is the syslog, so it's best to
-				 * enable LogSyslog in clamav.conf
+				 * enable LogSyslog in clamd.conf
 				 */
 static	int	Sflag = 0;	/*
 				 * Add a signature to each message that
@@ -670,9 +672,9 @@ static	int	cl_error = SMFIS_TEMPFAIL; /*
 				 */
 static	int	readTimeout = CL_DEFAULT_SCANTIMEOUT; /*
 				 * number of seconds to wait for clamd to
-				 * respond, see ReadTimeout in clamav.conf
+				 * respond, see ReadTimeout in clamd.conf
 				 */
-static	long	streamMaxLength = -1;	/* StreamMaxLength from clamav.conf */
+static	long	streamMaxLength = -1;	/* StreamMaxLength from clamd.conf */
 static	int	logClean = 1;	/*
 				 * Add clean items to the log file
 				 */
@@ -952,7 +954,7 @@ main(int argc, char **argv)
 			case 'b':	/* bounce worms/viruses */
 				bflag++;
 				break;
-			case 'c':	/* where is clamav.conf? */
+			case 'c':	/* where is clamd.conf? */
 				cfgfile = optarg;
 				break;
 			case 'C':	/* dont log clean */
@@ -1098,7 +1100,7 @@ main(int argc, char **argv)
 				cli_dbgmsg(_("Running as user %s (UID %d, GID %d)\n"),
 					cpt->strarg, user->pw_uid, user->pw_gid);
 		} else
-			fprintf(stderr, _("%s: running as root is not recommended (check \"User\" in clamav.conf)\n"), argv[0]);
+			fprintf(stderr, _("%s: running as root is not recommended (check \"User\" in clamd.conf)\n"), argv[0]);
 	}
 	if(advisory && quarantine) {
 		fprintf(stderr, _("%s: Advisory mode doesn't work with quarantine mode\n"), argv[0]);
@@ -1135,12 +1137,6 @@ main(int argc, char **argv)
 
 	if(templatefile && (access(templatefile, R_OK) < 0)) {
 		perror(templatefile);
-		return EX_CONFIG;
-	}
-
-	if(!cfgopt(copt, "StreamSaveToDisk")) {
-		fprintf(stderr, _("%s: StreamSavetoDisk not enabled in %s\n"),
-			argv[0], cfgfile);
 		return EX_CONFIG;
 	}
 
@@ -1418,7 +1414,7 @@ main(int argc, char **argv)
 		 * us
 		 *
 		 * TODO: There's a security problem here that'll need fixing if
-		 * the User entry of clamav.conf is not used
+		 * the User entry of clamd.conf is not used
 		 */
 		if(strncasecmp(port, "unix:", 5) == 0) {
 			if(unlink(&port[5]) < 0)
@@ -3399,7 +3395,7 @@ checkClamd(void)
 		return;	/* communicating via TCP */
 
 	if(pidFile == NULL)
-		return;	/* PidFile directive missing from clamav.conf */
+		return;	/* PidFile directive missing from clamd.conf */
 
 	fd = open(pidFile, O_RDONLY);
 	if(fd < 0) {

@@ -83,9 +83,8 @@ Installations for RedHat Linux and it's derivatives such as YellowDog:
 	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clmilter.sock, F=, T=S:4m;R:4m')dnl
 	define(`confINPUT_MAIL_FILTERS', `clamav')
 
-	Check entry in /usr/local/etc/clamav.conf of the form:
+	Check entry in /usr/local/etc/clamd.conf of the form:
 	LocalSocket /var/run/clamav/clamd.sock
-	StreamSaveToDisk
 
 	If you already have a filter (such as spamassassin-milter from
 	http://savannah.nongnu.org/projects/spamass-milt) add it thus:
@@ -94,7 +93,7 @@ Installations for RedHat Linux and it's derivatives such as YellowDog:
 	define(`confINPUT_MAIL_FILTERS', `spamassassin,clamav')dnl
 
 	mkdir /var/run/clamav
-	chown clamav /var/run/clamav	(if you use User clamav in clamav.conf)
+	chown clamav /var/run/clamav	(if you use User clamav in clamd.conf)
 	chmod 700 /var/run/clamav
 
 	Where /var/run/spamass.sock is the location of the spamass-milt
@@ -137,9 +136,9 @@ As with all software it is wise to ensure that clamav-milter has the least
 privileges it needs to run. So don't run it as root and don't store the sockets
 in a directory that can be written by everyone. For example ensure that /var/run
 is owned and writable only by root and add entries for 'User' and
-'FixStaleSocket' in clamav.conf.
+'FixStaleSocket' in clamd.conf.
 
-When using UNIX domain sockets via the LocalSocket option of clamav.conf,
+When using UNIX domain sockets via the LocalSocket option of clamd.conf,
 we recommend that you use the --quarantine-dir option since that may improve
 performance.
 
@@ -495,6 +494,8 @@ Changes
 0.75r	17/9/04	--help didn't include information about --max-children
 		Fix problem in the template file handling where sendmail
 		variables did't work after clamav variables.
+0.75s	20/9/04	StreamSaveToDisk is longer used
+		Update references to clamav.conf, should now be clamd.conf
 
 INTERNATIONALISATION
 
