@@ -2,6 +2,16 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.80rc4
+-------
+
+Improvements in this release include better JPEG exploit verification,
+faster base64 decoding, support for GNU tar files, updated on-access scanner,
+and others.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
 0.80rc3
 -------
 
