@@ -1,3 +1,7 @@
+Mon Jun 14 15:35:04 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Added support for Windows SFU, patch by TK
+
 Mon Jun 14 10:07:24 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Some spam generates very broken headers, added fix

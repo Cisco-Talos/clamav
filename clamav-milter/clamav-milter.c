@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.96  2004/06/14 14:34:15  nigelhorne
+ * Added support for Windows SFU 3.5
+ *
  * Revision 1.95  2004/06/14 09:05:49  nigelhorne
  * Up-issued
  *
@@ -296,9 +299,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.95 2004/06/14 09:05:49 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.96 2004/06/14 14:34:15 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.73"
+#define	CM_VERSION	"0.73a"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -842,10 +845,25 @@ main(int argc, char **argv)
 				return EX_CONFIG;
 			}
 
-			if(cfgopt(copt, "AllowSupplementaryGroups"))
-				initgroups(cpt->strarg, user->pw_gid);
-			else
-				setgroups(1, &user->pw_gid);
+			if(cfgopt(copt, "AllowSupplementaryGroups")) {
+#ifdef HAVE_INITGROUPS
+				if(initgroups(cpt->strarg, user->pw_gid) < 0) {
+					perror(cpt->strarg);
+					return EX_CONFIG;
+				}
+#else
+				fprintf(stderr, "%s: AllowSupplementaryGroups: initgroups not supported.\n",
+					argv[0]);
+				return EX_CONFIG;
+#endif
+			} else {
+#ifdef	HAVE_SETGROUPS
+				if(setgroups(1, &user->pw_gid) < 0) {
+					perror(cpt->strarg);
+					return EX_CONFIG;
+				}
+#endif
+			}
 
 			setgid(user->pw_gid);
 			if(setuid(user->pw_uid) < 0)
