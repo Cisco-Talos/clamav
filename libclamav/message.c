@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.34  2004/02/20 17:04:43  nigelhorne
+ * Added new bounce delimeter
+ *
  * Revision 1.33  2004/02/18 10:07:40  nigelhorne
  * Find some Yaha
  *
@@ -96,7 +99,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.33 2004/02/18 10:07:40 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.34 2004/02/20 17:04:43 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -194,6 +197,7 @@ static const char *bounces[] = {
 	",------- Returned Message --------",
 	"--- Below this line is the original bounce.",
 	"A copy of the original message below this line:",
+	"==== Begin Message",
 	NULL
 };
 
