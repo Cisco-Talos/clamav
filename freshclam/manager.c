@@ -469,7 +469,11 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
         }
     }
 
+#ifdef C_CYGWIN
+    if((fd = open(file, O_WRONLY|O_CREAT|O_EXCL|O_BINARY, 0644)) == -1) {
+#else
     if((fd = open(file, O_WRONLY|O_CREAT|O_EXCL, 0644)) == -1) {
+#endif
 	mprintf("@Can't open new file %s to write\n", file);
 	perror("open");
 	return -1;
