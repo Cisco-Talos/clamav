@@ -64,7 +64,7 @@ dev_t procdev;
 int scanmanager(const struct optstruct *opt)
 {
 	mode_t fmode;
-	int ret = 0, compression = 0, fmodeint, options = 0, i;
+	int ret = 0, compression = 0, fmodeint, options = 0, i, x;
 	struct cl_node *trie = NULL;
 	struct cl_limits *limits = NULL;
 	struct passwd *user = NULL;
@@ -221,7 +221,7 @@ int scanmanager(const struct optstruct *opt)
 
     } else {
 	char *thefilename;
-	for (i = 0; (thefilename = cli_strtok(opt->filename, i, "\t")) != NULL; i++) {
+	for (x = 0; (thefilename = cli_strtok(opt->filename, x, "\t")) != NULL; x++) {
 	    if((fmodeint = fileinfo(thefilename, 2)) == -1) {
 		mprintf("@Can't access file %s\n", thefilename);
 		perror(thefilename);
