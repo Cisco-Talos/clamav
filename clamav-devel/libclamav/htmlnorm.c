@@ -490,14 +490,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 		}
 		while (*ptr) {
 			if (*ptr == '\n') {
-				if (state == HTML_COMMENT) {
-					html_output_c(file_buff_o1, NULL, ' ');
-				} else if ((state != HTML_SKIP_WS) && 
-						(state != HTML_TRIM_WS) &&
-						(state != HTML_PROCESS_TAG)) {
-					html_output_c(file_buff_o1, file_buff_o2, ' ');
-				}
-				ptr++;
+				/* Convert it to a space and re-process */
+				*ptr = ' ';
 				continue;
 			}
 			if (*ptr == '\r') {

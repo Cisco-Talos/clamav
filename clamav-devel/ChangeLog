@@ -1,3 +1,7 @@
+Mon Sep 20 10:44:35 BST 2004 (trog)
+-----------------------------------
+* libclamav/htmlnorm.c: Simplify handling of NL chars, treat as a space.
+
 Mon Sep 20 10:09:55 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Change to clamd.conf
