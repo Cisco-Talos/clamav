@@ -1,6 +1,6 @@
 Sat Jan 15 18:33:41 CET 2005 (tk)
 ---------------------------------
-  * libclamav/str.c: cli_memstr: return needle address
+  * libclamav/str.c: cli_memstr: return substring address
 
 Fri Jan 14 16:12:21 GMT 2005 (trog)
 -----------------------------------
