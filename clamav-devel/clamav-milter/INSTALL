@@ -269,11 +269,14 @@ Changes
 0.67i	27/2/04	Dropping priv message now same as clamd
 		Only use TCPwrappers when using TCP/IP to establish
 		communications with the milter
-0.67j	27/2/04	Call checkClamd() before attempting to connect, it's a way of
-		warning the user if they've started the milter before clamd
+0.67j	27/2/04	Call checkClamd() before attempting to connect, it's
+		a way of warning the user if they've started the
+		milter before clamd
 		checkClamd() now stashes pid in syslog
-		Ensure installation instructions tally with man page and put
-		sockets into subdirectory for security
+		Ensure installation instructions tally with man page
+		and put sockets into subdirectory for security
+		clamfi_close debug, change assert to debug message
+		Better way to force TCPwrappers only with TCP/IP
 
 BUG REPORTS
 
