@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.143  2005/02/13 09:31:36  nigelhorne
+ * Some lines wouldn't uudecode correctly
+ *
  * Revision 1.142  2005/02/06 09:22:11  nigelhorne
  * Improved debug statements
  *
@@ -423,7 +426,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.142 2005/02/06 09:22:11 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.143 2005/02/13 09:31:36 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2262,7 +2265,7 @@ messageClearMarkers(message *m)
 static unsigned char *
 decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, size_t buflen)
 {
-	size_t len;
+	size_t len, reallen;
 	bool softbreak;
 	char *p2, *copy;
 	char base64buf[RFC2045LENGTH + 1];
@@ -2369,9 +2372,10 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 			if((line[0] & 0x3F) == ' ')
 				break;
 
-			/* Don't trust the encoded length */
-			/*len = *line++ - ' ';*/
-			len = strlen(++line);
+			reallen = (size_t)uudecode(*line++);
+			if(reallen == 0)
+				break;
+			len = strlen(line);
 
 			if(len > buflen)
 				/*
@@ -2380,8 +2384,10 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 				 * 62 characters
 				 */
 				cli_warnmsg("uudecode: buffer overflow stopped, attempting to ignore but decoding may fail\n");
-			else
-				buf = decode(m, line, buf, uudecode, (len & 3) == 0);
+			else {
+				(void)decode(m, line, buf, uudecode, (len & 3) == 0);
+				buf = &buf[reallen];
+			}
 			break;
 		case YENCODE:
 			if((line == NULL) || (*line == '\0'))	/* empty line */
