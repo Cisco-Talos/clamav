@@ -16,7 +16,7 @@
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 
-INCLUDES = -I$(top_srcdir) -I@srcdir@/zziplib
+INCLUDES = -I$(top_srcdir) -I@srcdir@/zziplib -I$(top_srcdir)/shared
 
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@
 

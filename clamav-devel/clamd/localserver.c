@@ -35,6 +35,7 @@
 #include "others.h"
 #include "server.h"
 #include "output.h"
+#include "strutil.h"
 
 int localserver(const struct optstruct *opt, const struct cfgstruct *copt, struct cl_node *root)
 {
@@ -46,7 +47,7 @@ int localserver(const struct optstruct *opt, const struct cfgstruct *copt, struc
 
     memset((char *) &server, 0, sizeof(server));
     server.sun_family = AF_UNIX;
-    strncpy(server.sun_path, cfgopt(copt, "LocalSocket")->strarg, sizeof(server.sun_path));
+    strlcpy(server.sun_path, cfgopt(copt, "LocalSocket")->strarg, sizeof(server.sun_path));
 
     if((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
 	estr = strerror(errno);

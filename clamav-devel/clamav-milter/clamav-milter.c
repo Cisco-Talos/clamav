@@ -317,6 +317,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.69  2004/04/06 12:14:52  kojm
+ * use strlcpy/strlcat
+ *
  * Revision 1.68  2004/04/03 04:47:22  nigelhorne
  * Honour StreamMaxLength
  *
@@ -506,7 +509,7 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.68 2004/04/03 04:47:22 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.69 2004/04/06 12:14:52 kojm Exp $";
 
 #define	CM_VERSION	"0.70g"
 
@@ -522,6 +525,7 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.68 2004/04/03 04:47:22 nig
 #include "str.h"
 #include "../libclamav/others.h"
 #include "clamav.h"
+#include "strutil.h"
 
 #ifndef	CL_DEBUG
 #define	NDEBUG
@@ -1295,7 +1299,7 @@ pingServer(int serverNumber)
 
 		memset((char *)&server, 0, sizeof(struct sockaddr_un));
 		server.sun_family = AF_UNIX;
-		strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
+		strlcpy(server.sun_path, localSocket, sizeof(server.sun_path));
 
 		if((sock = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 			perror("socket");
@@ -1908,7 +1912,7 @@ clamfi_eom(SMFICTX *ctx)
 
 		memset((char *)&server, 0, sizeof(struct sockaddr_un));
 		server.sun_family = AF_UNIX;
-		strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
+		strlcpy(server.sun_path, localSocket, sizeof(server.sun_path));
 
 		if((privdata->cmdSocket = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 			perror("socket");
@@ -2579,7 +2583,7 @@ connect2clamd(struct privdata *privdata)
 
 			memset((char *)&server, 0, sizeof(struct sockaddr_un));
 			server.sun_family = AF_UNIX;
-			strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
+			strlcpy(server.sun_path, localSocket, sizeof(server.sun_path));
 
 			if((privdata->cmdSocket = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 				perror("socket");

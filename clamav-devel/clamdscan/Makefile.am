@@ -26,6 +26,8 @@ clamdscan_SOURCES = \
     $(top_srcdir)/shared/cfgparser.h \
     $(top_srcdir)/shared/memory.c \
     $(top_srcdir)/shared/memory.h \
+    $(top_srcdir)/shared/strutil.c \
+    $(top_srcdir)/shared/strutil.h \
     clamdscan.c \
     client.c \
     client.h \

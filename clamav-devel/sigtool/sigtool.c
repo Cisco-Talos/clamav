@@ -47,6 +47,7 @@
 #include "str.h"
 #include "memory.h"
 #include "output.h"
+#include "strutil.h"
 
 #define LINE 1024
 
@@ -481,7 +482,7 @@ int build(struct optstruct *opt)
 {
 	int ret, no = 0, realno = 0, bytes, itmp;
 	struct stat foo;
-	char buffer[FILEBUFF], *tarfile = NULL, *gzfile = NULL, header[257],
+	char buffer[FILEBUFF], *tarfile = NULL, *gzfile = NULL, header[513],
 	     smbuff[30], *pt;
         struct cl_node *root = NULL;
 	FILE *tar, *cvd, *fd;
@@ -583,7 +584,7 @@ int build(struct optstruct *opt)
 
     /* magic string */
 
-    strcpy(header, "ClamAV-VDB:");
+    strlcpy(header, "ClamAV-VDB:", sizeof(header));
 
     /* time */
 
@@ -591,7 +592,7 @@ int build(struct optstruct *opt)
     brokent = localtime(&timet);
     setlocale(LC_TIME, "C");
     strftime(smbuff, 30, "%d %b %Y %H-%M %z", brokent);
-    strcat(header, smbuff);
+    strlcat(header, smbuff, sizeof(header));
 
     /* version number */
 
@@ -605,21 +606,21 @@ int build(struct optstruct *opt)
 	scanf("%d", &itmp);
 	sprintf(smbuff, "%d:", itmp);
     }
-    strcat(header, smbuff);
+    strlcat(header, smbuff, sizeof(header));
 
     /* number of signatures */
     sprintf(smbuff, "%d:", no);
-    strcat(header, smbuff);
+    strlcat(header, smbuff, sizeof(header));
 
     /* functionality level (TODO: use cl_funclevel()) */
     sprintf(smbuff, "%d:", 1);
-    strcat(header, smbuff);
+    strlcat(header, smbuff, sizeof(header));
 
     /* MD5 */
     pt = cl_md5file(gzfile);
-    strcat(header, pt);
+    strlcat(header, pt, sizeof(header));
     free(pt);
-    strcat(header, ":");
+    strlcat(header, ":", sizeof(header));
 
     /* builder - question */
     fflush(stdin);
@@ -636,22 +637,17 @@ int build(struct optstruct *opt)
 	exit(1);
     }
 
-    strcat(header, pt);
+    strlcat(header, pt, sizeof(header));
     free(pt);
-    strcat(header, ":");
+    strlcat(header, ":", sizeof(header));
 
     /* builder - add */
-    strcat(header, smbuff);
+    strlcat(header, smbuff, sizeof(header));
 
     /* fill up with spaces */
-    if(strlen(header) > 512) {
-	mprintf("!Generated header is too long.\n");
-	unlink(gzfile);
-	exit(1);
-    }
 
     while(strlen(header) < 512)
-	strcat(header, " ");
+	strlcat(header, " ", sizeof(header));
 
     /* build the final database */
 

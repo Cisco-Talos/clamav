@@ -127,6 +127,8 @@ install_sh = @install_sh@
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/getopt.h \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/memory.c \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/memory.h \
+@BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/strutil.c \
+@BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/strutil.h \
 @BUILD_CLAMD_TRUE@    options.c \
 @BUILD_CLAMD_TRUE@    options.h \
 @BUILD_CLAMD_TRUE@    clamd.c \
@@ -171,12 +173,13 @@ PROGRAMS = $(sbin_PROGRAMS)
 
 @BUILD_CLAMD_TRUE@am_clamd_OBJECTS = output.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	cfgparser.$(OBJEXT) getopt.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	memory.$(OBJEXT) options.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	clamd.$(OBJEXT) tcpserver.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	localserver.$(OBJEXT) session.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	thrmgr.$(OBJEXT) server-th.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	scanner.$(OBJEXT) others.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	clamuko.$(OBJEXT) dazukoio_compat12.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	memory.$(OBJEXT) strutil.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	options.$(OBJEXT) clamd.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	tcpserver.$(OBJEXT) localserver.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	session.$(OBJEXT) thrmgr.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	server-th.$(OBJEXT) scanner.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	others.$(OBJEXT) clamuko.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	dazukoio_compat12.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	dazukoio.$(OBJEXT) tests.$(OBJEXT)
 clamd_OBJECTS = $(am_clamd_OBJECTS)
 clamd_LDADD = $(LDADD)
@@ -194,8 +197,9 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/memory.Po ./$(DEPDIR)/options.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/others.Po ./$(DEPDIR)/output.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/scanner.Po ./$(DEPDIR)/server-th.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/session.Po ./$(DEPDIR)/tcpserver.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/tests.Po ./$(DEPDIR)/thrmgr.Po
+@AMDEP_TRUE@	./$(DEPDIR)/session.Po ./$(DEPDIR)/strutil.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/tcpserver.Po ./$(DEPDIR)/tests.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/thrmgr.Po
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
@@ -248,6 +252,7 @@ output.$(OBJEXT): $(top_srcdir)/shared/output.c
 cfgparser.$(OBJEXT): $(top_srcdir)/shared/cfgparser.c
 getopt.$(OBJEXT): $(top_srcdir)/shared/getopt.c
 memory.$(OBJEXT): $(top_srcdir)/shared/memory.c
+strutil.$(OBJEXT): $(top_srcdir)/shared/strutil.c
 clamd$(EXEEXT): $(clamd_OBJECTS) $(clamd_DEPENDENCIES) 
 	@rm -f clamd$(EXEEXT)
 	$(LINK) $(clamd_LDFLAGS) $(clamd_OBJECTS) $(clamd_LDADD) $(LIBS)
@@ -272,6 +277,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scanner.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/server-th.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/session.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strutil.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tcpserver.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tests.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/thrmgr.Po@am__quote@
@@ -368,6 +374,24 @@ memory.lo: $(top_srcdir)/shared/memory.c
 @AMDEP_TRUE@	depfile='$(DEPDIR)/memory.Plo' tmpdepfile='$(DEPDIR)/memory.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o memory.lo `test -f '$(top_srcdir)/shared/memory.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/memory.c
+
+strutil.o: $(top_srcdir)/shared/strutil.c
+@AMDEP_TRUE@	source='$(top_srcdir)/shared/strutil.c' object='strutil.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/strutil.Po' tmpdepfile='$(DEPDIR)/strutil.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o strutil.o `test -f '$(top_srcdir)/shared/strutil.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/strutil.c
+
+strutil.obj: $(top_srcdir)/shared/strutil.c
+@AMDEP_TRUE@	source='$(top_srcdir)/shared/strutil.c' object='strutil.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/strutil.Po' tmpdepfile='$(DEPDIR)/strutil.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o strutil.obj `cygpath -w $(top_srcdir)/shared/strutil.c`
+
+strutil.lo: $(top_srcdir)/shared/strutil.c
+@AMDEP_TRUE@	source='$(top_srcdir)/shared/strutil.c' object='strutil.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/strutil.Plo' tmpdepfile='$(DEPDIR)/strutil.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o strutil.lo `test -f '$(top_srcdir)/shared/strutil.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/strutil.c
 CCDEPMODE = @CCDEPMODE@
 
 mostlyclean-libtool:

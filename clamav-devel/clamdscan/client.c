@@ -38,6 +38,7 @@
 #include "cfgparser.h"
 #include "memory.h"
 #include "output.h"
+#include "strutil.h"
 
 #ifdef PF_INET
 # define SOCKET_INET	PF_INET
@@ -78,7 +79,7 @@ int client(const struct optstruct *opt)
     } else if((cpt = cfgopt(copt, "LocalSocket"))) {
 
 	server.sun_family = AF_UNIX;
-	strncpy(server.sun_path, cpt->strarg, sizeof(server.sun_path));
+	strlcpy(server.sun_path, cpt->strarg, sizeof(server.sun_path));
 
 	if((sockd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 	    perror("socket()");
