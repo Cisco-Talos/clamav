@@ -28,7 +28,7 @@ void *mmalloc(size_t size);
 void *mcalloc(size_t nmemb, size_t size);
 void chomp(char *string);
 
-short int logverbose, logcompressed, loglock, logtime;
+short int logverbose, logcompressed, loglock, logtime, sighup;
 int logsize;
 const char *logfile;
 int logg(const char *str, ...);
