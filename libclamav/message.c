@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.20  2004/02/02 17:10:04  nigelhorne
+ * Scan a rare form of bounce message
+ *
  * Revision 1.19  2004/02/02 15:52:09  nigelhorne
  * Remove handling of 8bit binhex files for now
  *
@@ -54,7 +57,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.19 2004/02/02 15:52:09 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.20 2004/02/02 17:10:04 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -1000,6 +1003,7 @@ bounceBegin(const message *m)
 
 	for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next)
 		if((strcasecmp(t_line->t_text, "--- Below this line is a copy of the message.") == 0) ||
+		   (strcmp(t_line->t_text, "=================================================================================") == 0) ||
 		   (strcasecmp(t_line->t_text, "------ This is a copy of the message, including all the headers. ------") == 0))
 			return t_line;
 

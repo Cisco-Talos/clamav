@@ -1,3 +1,8 @@
+Mon Feb  2 17:12:25 GMT 2004 (njh)
+----------------------------------
+  * libclamav:	Scan a rare form of bounce message identified by
+  	Denis De Messemacker <ddm@e-labs.org>
+
 Mon Feb  2 13:46:51 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	   Carefully crafted binhex messages could have caused a crash
