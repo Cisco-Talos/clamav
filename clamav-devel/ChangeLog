@@ -1,3 +1,8 @@
+Fri Jun 18 11:08:26 BST 2004 (njh)
+----------------------------------
+  * libclamav:			Allow any number of alternatives in
+  	multipart messages
+
 Wed Jun 16 09:09:45 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:		Added access to sendmail variables in template

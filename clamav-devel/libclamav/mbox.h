@@ -25,8 +25,6 @@ typedef enum {
 	NOENCODING, QUOTEDPRINTABLE, BASE64, EIGHTBIT, BINARY, UUENCODE, EEXTENSION
 } encoding_type;
 
-#define	MAXALTERNATIVE	5	/* The maximum number of alternatives allowed in a message */
-
 /* tk: shut up manager.c warning */
 #include <clamav.h>
 
