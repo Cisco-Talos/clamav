@@ -19,6 +19,10 @@
  *  Wed Mar  5 03:45:31 CET 2003: included --move code from Damien Curtain
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
