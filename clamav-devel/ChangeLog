@@ -1,3 +1,7 @@
+Mon Sep 20 18:08:53 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Some performance enhancements
+
 Mon Sep 20 15:31:21 CEST 2004 (tk)
 ----------------------------------
   V 0.80rc

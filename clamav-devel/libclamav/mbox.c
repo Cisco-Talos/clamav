@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.134  2004/09/20 17:08:43  nigelhorne
+ * Some performance enhancements
+ *
  * Revision 1.133  2004/09/20 12:44:03  nigelhorne
  * Fix parsing error on mime arguments
  *
@@ -387,7 +390,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.133 2004/09/20 12:44:03 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.134 2004/09/20 17:08:43 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1321,11 +1324,16 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							break;
 						}
 
-				if(htmltextPart == -1) {
+				if(htmltextPart == -1)
 					cli_dbgmsg("No HTML code found to be scanned");
-					rc = 0;
-				} else
+				else {
 					rc = parseEmailBody(aMessage, aText, dir, rfc821Table, subtypeTable, options);
+					if(rc == 1) {
+						assert(aMessage == messages[htmltextPart]);
+						messageDestroy(aMessage);
+						messages[htmltextPart] = NULL;
+					}
+				}
 
 				/*
 				 * Fixed based on an idea from Stephen White <stephen@earth.li>
@@ -1354,6 +1362,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			case ALTERNATIVE:
 				cli_dbgmsg("Multipart alternative handler\n");
 
+#if	0
 				htmltextPart = getTextPart(messages, multiparts);
 
 				if(htmltextPart == -1)
@@ -1371,6 +1380,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					 * the same thing
 					 */
 					rc = 2;
+#endif
+
 				/*
 				 * Fall through - some clients are broken and
 				 * say alternative instead of mixed. The Klez
@@ -1411,7 +1422,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 
 					aMessage = messages[i];
 
-					assert(aMessage != NULL);
+					if(aMessage == NULL)
+						continue;
 
 					dtype = messageGetDispositionType(aMessage);
 					cptr = messageGetMimeSubtype(aMessage);
@@ -1683,7 +1695,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					if(mainMessage && (mainMessage != messageIn)) {
 						messageDestroy(mainMessage);
 						mainMessage = NULL;
-					}
+					} else
+						messageReset(mainMessage);
 					if(messageGetBody(m))
 						rc = parseEmailBody(m, NULL, dir, rfc821Table, subtypeTable, options);
 
@@ -1845,13 +1858,15 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					fileblobDestroy(fb);
 				}
 				saveIt = FALSE;
-			} else
+			} else if(multiparts == 0)
 				/*
 				 * Save the entire text portion,
 				 * since it it may be an HTML file with
 				 * a JavaScript virus
 				 */
 				saveIt = TRUE;
+			else
+				saveIt = FALSE;
 
 			if(saveIt) {
 				cli_dbgmsg("Saving text part to scan\n");
@@ -1859,6 +1874,12 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				 * TODO: May be better to save aText
 				 */
 				saveTextPart(mainMessage, dir);
+				if(mainMessage != messageIn) {
+					messageDestroy(mainMessage);
+					mainMessage = NULL;
+				} else
+					messageReset(mainMessage);
+				rc = 1;
 			}
 		}
 	} else
