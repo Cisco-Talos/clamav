@@ -1,3 +1,7 @@
+Tue Feb  3 22:58:10 GMT 2004 (njh)
+---------------------------------
+  * libclamav:	Catch another example of Worm.Dumaru.Y
+
 Tue Feb  3 14:38:04 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Speeded up binhex decoding using table look up
