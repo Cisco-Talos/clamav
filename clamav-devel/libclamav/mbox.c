@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.213  2005/01/31 11:02:43  nigelhorne
+ * Handle blank lines in multipart headers
+ *
  * Revision 1.212  2005/01/27 14:10:53  nigelhorne
  * Scan sendmail queue df files
  *
@@ -624,7 +627,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.212 2005/01/27 14:10:53 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.213 2005/01/31 11:02:43 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1307,8 +1310,6 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 		messagenumber = 1;
 
 		do {
-			/*cli_dbgmsg("read: %s", buffer);*/
-
 			cli_chomp(buffer);
 			if(lastLineWasEmpty && (strncmp(buffer, "From ", 5) == 0)) {
 				cli_dbgmsg("Deal with email number %d\n", messagenumber++);
@@ -2100,7 +2101,31 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						const text *next;
 
 						if(line == NULL) {
-							/* empty line */
+							/*
+							 * empty line, should the end of the headers,
+							 * but some base64 decoders, e.g. uudeview, are broken
+							 * and will handle this type of entry, decoding the
+							 * base64 content...
+							 * Content-Type: application/octet-stream; name=text.zip
+							 * Content-Transfer-Encoding: base64
+							 * Content-Disposition: attachment; filename="text.zip"
+							 * 
+							 * Content-Disposition: attachment;
+							 *	filename=text.zip
+							 * Content-Type: application/octet-stream;
+							 *	name=text.zip
+							 * Content-Transfer-Encoding: base64
+							 * 
+							 * UEsDBAoAAAAAAACgPjJ2RHw676gAAO+oAABEAAAAbWFpbF90ZXh0LWluZm8udHh0ICAgICAgICAg
+							 */
+							next = t_line->t_next;
+							if(next && next->t_line) {
+								const char *data = lineGetData(next->t_line);
+								if(strncmp(data, "Content", 7) == 0) {
+									cli_dbgmsg("Ignoring fake end of headers\n");
+									continue;
+								}
+							}
 							cli_dbgmsg("Multipart %d: End of header information\n",
 								multiparts);
 							inhead = 0;
