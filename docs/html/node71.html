@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Scan engine</TITLE>
-<META NAME="description" CONTENT="Scan engine">
+<TITLE>LibClamAV</TITLE>
+<META NAME="description" CONTENT="LibClamAV">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,72 +19,70 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node72.html">
-<LINK REL="previous" HREF="node70.html">
-<LINK REL="up" HREF="node68.html">
+<LINK REL="next" HREF="node76.html">
+<LINK REL="previous" HREF="node27.html">
+<LINK REL="up" HREF="clamdoc.html">
 <LINK REL="next" HREF="node72.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1218"
+<A NAME="tex2html1226"
   HREF="node72.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html1214"
-  HREF="node68.html">
+<A NAME="tex2html1222"
+  HREF="clamdoc.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html1208"
+<A NAME="tex2html1216"
   HREF="node70.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html1216"
+<A NAME="tex2html1224"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1219"
-  HREF="node72.html">CVD format</A>
-<B> Up:</B> <A NAME="tex2html1215"
-  HREF="node68.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html1209"
-  HREF="node70.html">Database reloading</A>
- &nbsp <B>  <A NAME="tex2html1217"
+<B> Next:</B> <A NAME="tex2html1227"
+  HREF="node72.html">General API</A>
+<B> Up:</B> <A NAME="tex2html1223"
+  HREF="clamdoc.html">clamdoc</A>
+<B> Previous:</B> <A NAME="tex2html1217"
+  HREF="node70.html">QMVC - Qmail Mail</A>
+ &nbsp <B>  <A NAME="tex2html1225"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00073000000000000000"></A><A NAME="engine"></A>
-<BR>
-Scan engine
-</H2>
-    New versions of Clam AntiVirus use a mutation of the Aho-Corasick
-    pattern matching algorithm. The algorithm is based a finite state pattern
-    matching automaton [<A
- HREF="node81.html#clr">1</A>] and it's a generalization of the famous
-    Knuth-Morris-Pratt algorithm. Please take a look at the <code>matcher.h</code>
-    for data type definitions. The automaton is represented by a trie. It
-    is a rooted tree with some specific properties [<A
- HREF="node81.html#acwww">2</A>]. Every node
-    of the trie represents some state of the automaton. In our implementation,
-    the node is defined as follows:
-    <PRE>
-	struct cl_node {
-	    short int islast;
-	    struct cli_patt *list;
-	    int maxpatlen;
-	    struct node *next[NUM_CHILDS], *trans[NUM_CHILDS], *fail;
-	};
-</PRE>
-    [To be continued...]
+<H1><A NAME="SECTION00070000000000000000">
+LibClamAV</A>
+</H1>
+    libclamav may be used to add a virus protection to your software.
+    The library is thread-safe and can transparently recognize and scan
+    archives, mail files and MS Office document files.
 
 <P>
 <BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL>
+<LI><A NAME="tex2html1228"
+  HREF="node72.html">General API</A>
+<LI><A NAME="tex2html1229"
+  HREF="node73.html">Database reloading</A>
+<LI><A NAME="tex2html1230"
+  HREF="node74.html">Scan engine</A>
+<LI><A NAME="tex2html1231"
+  HREF="node75.html">CVD format</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-05-18
+2004-06-03
 </ADDRESS>
 </BODY>
 </HTML>

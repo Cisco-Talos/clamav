@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Database reloading</TITLE>
-<META NAME="description" CONTENT="Database reloading">
+<TITLE>QMVC - Qmail Mail and Virus Control</TITLE>
+<META NAME="description" CONTENT="QMVC - Qmail Mail and Virus Control">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,76 +19,58 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node71.html">
 <LINK REL="previous" HREF="node69.html">
-<LINK REL="up" HREF="node68.html">
+<LINK REL="up" HREF="node27.html">
 <LINK REL="next" HREF="node71.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1206"
+<A NAME="tex2html1214"
   HREF="node71.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html1202"
-  HREF="node68.html">
+<A NAME="tex2html1210"
+  HREF="node27.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html1196"
+<A NAME="tex2html1206"
   HREF="node69.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html1204"
+<A NAME="tex2html1212"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1207"
-  HREF="node71.html">Scan engine</A>
-<B> Up:</B> <A NAME="tex2html1203"
-  HREF="node68.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html1197"
-  HREF="node69.html">General API</A>
- &nbsp <B>  <A NAME="tex2html1205"
+<B> Next:</B> <A NAME="tex2html1215"
+  HREF="node71.html">LibClamAV</A>
+<B> Up:</B> <A NAME="tex2html1211"
+  HREF="node27.html">Third party software</A>
+<B> Previous:</B> <A NAME="tex2html1207"
+  HREF="node69.html">Clamaktion</A>
+ &nbsp <B>  <A NAME="tex2html1213"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00072000000000000000">
-Database reloading</A>
+<H2><A NAME="SECTION000643000000000000000">
+QMVC - Qmail Mail and Virus Control</A>
 </H2>
-    The most important thing is to keep the internal instance of the database
-    up to date. You can watch database changes with the <code>cl_stat</code>
-    functions family:
-    <PRE>
-	int cl_statinidir(const char *dirname, struct cl_stat *dbstat);
-	int cl_statchkdir(const struct cl_stat *dbstat);
-	int cl_statfree(struct cl_stat *dbstat);
-</PRE>
-    Initialization:
-    <PRE>
-	    struct cl_stat dbstat;
-    
-	memset(&amp;dbstat, 0, sizeof(struct cl_stat));
-	cl_statinidir(dbdir, &amp;dbstat);
-</PRE>
-    To check for a change you only need to call <code>cl_statchkdir</code>:
-    <PRE>
-	if(cl_statchkdir(&amp;dbstat) == 1) {
-	    reload_database...;
-	    cl_statfree(&amp;dbstat);
-	    cl_statinidir(cl_retdbdir(), &amp;dbstat);
-	}
-</PRE>
-    Remember to reinitialize the structure after a reload.
+    <B>Homepage:</B> <TT><A NAME="tex2html116"
+  HREF="http://www.fehcom.de/qmail/qmvc.html">http://www.fehcom.de/qmail/qmvc.html</A></TT>
+<BR>    <B>Supports:</B> clamdscan, clamscan
+<BR>
+QMVC is an unidirectional mail filter for Qmail. It works in conjunction
+    with the "dot-qmail" mechanism for qmail-local and is entirely designed
+    for Qmail (no additional patches required).
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-05-18
+2004-06-03
 </ADDRESS>
 </BODY>
 </HTML>
