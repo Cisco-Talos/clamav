@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.221  2005/02/17 19:36:08  nigelhorne
+ * Fix minor typo with bounce handlers
+ *
  * Revision 1.220  2005/02/17 19:06:32  nigelhorne
  * Prescan bounces
  *
@@ -648,7 +651,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.220 2005/02/17 19:06:32 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.221 2005/02/17 19:36:08 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2937,7 +2940,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			if((fb = fileblobCreate()) != NULL) {
 				cli_dbgmsg("Save non mime part bounce message\n");
 				fileblobSetFilename(fb, dir, "bounce");
-				fileblobAddData(fb, (unsigned char *)"Received: by clamd (bounce)\n", 26);
+				fileblobAddData(fb, (unsigned char *)"Received: by clamd (bounce)\n", 28);
 
 				fb = textToFileblob(t, fb);
 
