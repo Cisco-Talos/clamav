@@ -92,6 +92,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
   uint32_t thisrva=0, bottom = 0, enc_ep=0, irva=0, workdone=0, grown=0x355, skew=0x35;
   int j = 0, oob, mangled = 0, check4resources=0;
   struct SECTION *usects = NULL;
+  void *tmpsct = NULL;
 
   /*
     -] The real thing [-
@@ -117,8 +118,11 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
     uint32_t size, srva;
     int backbytes, oldback, backsize, addsize;
     
-    if ( packed < buf || packed >= buf+bufsz-4)
+    if ( packed < buf || packed >= buf+bufsz-4) {
+      if (usects)
+	free(usects);
       return -1;
+    }
     srva = cli_readint32(packed);
 
     if (! srva) {
@@ -229,6 +233,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
       } else
 	cli_dbgmsg("Petite: Rebuilding failed\n");
 
+      free(usects);
       return workdone;
     }
 
@@ -243,15 +248,21 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
 	- 1 time for the all_the_rest section
       */
 
-      if ( packed < buf || packed >= buf+bufsz-12)
+      if ( packed < buf || packed >= buf+bufsz-12) {
+	if (usects)
+	  free(usects);
 	return -1;
+      }
       /* Save the end of current packed section for later use */
       bottom = cli_readint32(packed+8) + 4;
       ssrc = adjbuf + cli_readint32(packed+4) - (size-1)*4;
       ddst = adjbuf + cli_readint32(packed+8) - (size-1)*4;
 
-      if ( ssrc < buf || ssrc + size*4 >= buf + bufsz || ddst < buf || ddst + size*4 >= buf + bufsz )
+      if ( ssrc < buf || ssrc + size*4 >= buf + bufsz || ddst < buf || ddst + size*4 >= buf + bufsz ) {
+	if (usects)
+	  free(usects);
 	return -1;
+      }
 
       /* Copy packed data to the end of the current packed section */
       memmove(ddst, ssrc, size*4);
@@ -263,17 +274,24 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
       
       /* Unpak each original section in turn */
 
-      if ( packed < buf || packed >= buf+bufsz-16)
+      if ( packed < buf || packed >= buf+bufsz-16) {
+	if (usects)
+	  free(usects);
 	return -1;
+      }
 
       size = cli_readint32(packed+4); /* How many bytes to unpack */
       packed += 0x10;
       thisrva=cli_readint32(packed-8); /* RVA of the original section */
 
       /* Alloc 1 more struct */
-      if ( ! (usects = (struct SECTION *) realloc(usects, sizeof(struct SECTION) * (j+1))) )
+      if ( ! (tmpsct = realloc(usects, sizeof(struct SECTION) * (j+1))) ) {
+	if (usects)
+	  free(usects);
 	return -1;
+      }
 
+      usects = (struct SECTION *) tmpsct;
       /* Save section spex for later rebuilding */
       usects[j].rva = thisrva;
       usects[j].rsz = size;
@@ -331,8 +349,10 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
        * func to get called instead... ehehe very smart ;)
        */
 
-      if ( ddst < buf || ddst >= buf+bufsz-1 || ssrc < buf || ssrc >= buf+bufsz-1 )
+      if ( ddst < buf || ddst >= buf+bufsz-1 || ssrc < buf || ssrc >= buf+bufsz-1 ) {
+	free(usects);
 	return -1;
+      }
 
       size--;
       *ddst++=*ssrc++; /* eheh u C gurus gotta luv these monsters :P */
@@ -342,22 +362,30 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
       /* No surprises here... NRV any1??? ;) */
       while (size > 0) {
 	oob = doubledl(&ssrc, &mydl, buf, bufsz);
-	if ( oob == -1 )
+	if ( oob == -1 ) {
+	  free(usects);
 	  return -1;
+	}
 	if (!oob) {
-	  if ( ddst < buf || ddst >= buf+bufsz-1 || ssrc < buf || ssrc >= buf+bufsz-1 )
+	  if ( ddst < buf || ddst >= buf+bufsz-1 || ssrc < buf || ssrc >= buf+bufsz-1 ) {
+	    free(usects);
 	    return -1;
+	  }
 	  *ddst++ = (char)((*ssrc++)^(size & 0xff));
 	  size--;
 	} else {
 	  addsize = 0;
 	  backbytes++;
 	  while (1) {
-	    if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 )
+	    if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 ) {
+	      free(usects);
 	      return -1;
+	    }
 	    backbytes = backbytes*2 + oob;
-	    if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 )
+	    if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 ) {
+	      free(usects);
 	      return -1;
+	    }
 	    if (!oob)
 	      break;
 	  }
@@ -365,8 +393,10 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
 	  if ( backbytes >= 0 ) {
 	    backsize = goback;
 	    do {
-	      if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 )
-	      return -1;
+	      if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 ) {
+		free(usects);
+		return -1;
+	      }
 	      backbytes = backbytes*2 + oob;
 	      backsize--;
 	    } while (backsize);
@@ -378,20 +408,28 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
 	    backbytes = oldback;
 	  }
 
-	  if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 )
+	  if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 ) {
+	    free(usects);
 	    return -1;
+	  }
 	  backsize = backsize*2 + oob;
-	    if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 )
-	      return -1;
+	  if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 ) {
+	    free(usects);
+	    return -1;
+	  }
 	  backsize = backsize*2 + oob;
 	  if (!backsize) {
 	    backsize++;
 	    while (1) {
-	      if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 )
-	      return -1;
-	      backsize = backsize*2 + oob;
-	      if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 )
+	      if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 ) {
+		free(usects);
 		return -1;
+	      }
+	      backsize = backsize*2 + oob;
+	      if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 ) {
+		free(usects);
+		return -1;
+	      }
 	      if (!oob)
 		break;
 	    }
@@ -399,8 +437,10 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
 	  }
 	  backsize+=addsize;
 	  size-=backsize;
-	  if ( ddst<buf || ddst+backsize>=buf+bufsz || ddst+backbytes<buf || ddst+backbytes+backsize>=buf+bufsz )
+	  if ( ddst<buf || ddst+backsize>=buf+bufsz || ddst+backbytes<buf || ddst+backbytes+backsize>=buf+bufsz ) {
+	    free(usects);
 	    return -1;
+	  }
 	  while(backsize--) {
 	    *ddst=*(ddst+backbytes);
 	    ddst++;

@@ -1,3 +1,6 @@
+Wed Aug 25 10:13:43 CEST 2004 (acab)
+  * libclamav/petite.c: memory leaks fixed
+
 Tue Aug 24 13:47:07 CEST 2004 (tk)
 ----------------------------------
   * libclamav: fix logic error in cli_filetype() (thanks to Tomasz Papszun)
