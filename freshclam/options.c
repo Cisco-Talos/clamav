@@ -27,7 +27,7 @@
 #include "others.h"
 #include "shared.h"
 
-void freshclam(struct optstruct *opt);
+int freshclam(struct optstruct *opt);
 
 int main(int argc, char **argv)
 {
@@ -106,11 +106,11 @@ int main(int argc, char **argv)
 
     }
 
-    freshclam(opt);
+    ret = freshclam(opt);
 
     free_opt(opt);
 
-    return(0);
+    return ret;
 }
 
 void register_char_option(struct optstruct *opt, char ch)

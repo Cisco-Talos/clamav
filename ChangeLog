@@ -1,3 +1,15 @@
+Sat Jan  3 11:30:38 CET 2004 (tk)
+---------------------------------
+  * libclamav: fixed handling of multipart signatures (broken since Dec 2).
+	       The bug was introduced by _me_ and not by the Thomas Lamy's
+	       patch. Problem found and reported by René Bellora
+	       <rbellora*tecnoaccion.com.ar>, Jean-Christophe Heger
+	       <jcheger*acytec.com> and Tomasz Papszun <tomek*clamav.net>.
+	       Many thanks !
+
+  * freshclam: finish with a proper return code (always returned with 0).
+	       Fixed by Martin Kraft <martin.kraft*fal.de>.
+
 Wed Dec 31 14:47:13 GMT 2003 (njh)
 ----------------------------------
   * clamav-milter: Included the sendmail queue ID in the log, from an
