@@ -1,3 +1,11 @@
+Fri Aug  6 11:09:22 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Quarantined file's names now contain the name of the
+				virus
+			Handle crash when --bounce is set, and MAIL FROM isn't
+				sent in an e-mail containing a virus.
+				Fix by "Denis Ustimenko" <den@uzsci.net>
+
 Thu Aug  5 19:53:40 CEST 2004 (tk)
 ----------------------------------
   * libclamav: integrate Mydoom.M log detector from Trog (temporary feature)

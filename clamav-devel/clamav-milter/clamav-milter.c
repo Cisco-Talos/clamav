@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.115  2004/08/06 10:08:31  nigelhorne
+ * Quarantined files now include the virus in the name
+ *
  * Revision 1.114  2004/08/05 07:44:28  nigelhorne
  * Better Template Handling
  *
@@ -353,9 +356,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.114 2004/08/05 07:44:28 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.115 2004/08/06 10:08:31 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.75f"
+#define	CM_VERSION	"0.75g"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -502,6 +505,7 @@ static	void	header_list_print(header_list_t list, FILE *fp);
 static	int	connect2clamd(struct privdata *privdata);
 static	void	checkClamd(void);
 static	int	sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *virusname);
+static	int	qfile(struct privdata *privdata, const char *virusname);
 static	void	setsubject(SMFICTX *ctx, const char *virusname);
 static	int	clamfi_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
 
@@ -1612,10 +1616,10 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		static const char *localAddresses[] = {
 			"^127\\.0\\.0\\.1$",
 			"^192\\.168\\.[0-9]+\\.[0-9]+$",
-			"^10\\.[0-9]*\\.[0-9]*\\.[0-9]*$",
-			"^172\\.1[6-9]\\.[0-9]*\\.[0-9]*$",
-			"^172\\.2[0-9]\\.[0-9]*\\.[0-9]*$",
-			"^172\\.3[0-1]\\.[0-9]*\\.[0-9]*$",
+			"^10\\.[0-9]+\\.[0-9]+\\.[0-9]+$",
+			"^172\\.1[6-9]\\.[0-9]+\\.[0-9]+$",
+			"^172\\.2[0-9]\\.[0-9]+\\.[0-9]+$",
+			"^172\\.3[0-1]\\.[0-9]+\\.[0-9]+$",
 			"^169\\.254\\.[0-9]+\\.[0-9]+$",
 			NULL
 		};
@@ -2262,7 +2266,15 @@ clamfi_eom(SMFICTX *ctx)
 				 */
 				fprintf(sendmail, "From: %s\n", from);
 				if(bflag) {
-					fprintf(sendmail, "To: %s\n", privdata->from);
+					/*
+					 * Handle privdata->from not set,
+					 * "Denis Ustimenko" <den@uzsci.net>
+					 */
+					fprintf(sendmail, "To: %s\n",
+						(privdata->from) ?
+							privdata->from :
+							smfi_getsymval(ctx, "{mail_addr}"));
+
 					fprintf(sendmail, "Cc: %s\n", postmaster);
 				} else
 					fprintf(sendmail, "To: %s\n", postmaster);
@@ -2303,7 +2315,8 @@ clamfi_eom(SMFICTX *ctx)
 					fprintf(sendmail, "contained %s and has not been delivered.\n", virusname);
 
 					if(privdata->filename != NULL)
-						fprintf(sendmail, "\nThe message in question has been quarantined as %s\n", privdata->filename);
+						if(qfile(privdata, virusname) == 0)
+							fprintf(sendmail, "\nThe message in question has been quarantined as %s\n", privdata->filename);
 
 					if(hflag) {
 						fprintf(sendmail, "\nThe message was received by %s from %s via %s\n\n",
@@ -3120,12 +3133,11 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 
 			val = smfi_getsymval(ctx, ptr);
 			if(val == NULL) {
-				if(use_syslog) {
-					fputs(ptr, sendmail);
+				fputs(ptr, sendmail);
+				if(use_syslog)
 					syslog(LOG_ERR,
 						"%s: Unknown sendmail variable \"%s\"\n",
 						filename, ptr);
-				}
 			} else
 				fputs(val, sendmail);
 			ptr = end;
@@ -3133,6 +3145,41 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 			putc(*ptr, sendmail);
 
 	free(buf);
+
+	return 0;
+}
+
+/*
+ * Keep the infected file in quarantine, return success (0) or failure
+ *
+ * FIXME: handle '/' etc. in virus name, see blobSetFilename
+ */
+static int
+qfile(struct privdata *privdata, const char *virusname)
+{
+	char *newname;
+
+	assert(privdata != NULL);
+
+	if((privdata->filename == NULL) || (virusname == NULL))
+		return -1;
+
+	newname = cli_malloc(strlen(privdata->filename) + strlen(virusname) + 2);
+
+	if(newname == NULL)
+		return -1;
+
+	sprintf(newname, "%s.%s", privdata->filename, virusname);
+	if(link(privdata->filename, newname) < 0) {
+		perror(newname);
+		if(use_syslog)
+			syslog(LOG_WARNING, "Can't rename %s to %s",
+				privdata->filename, newname);
+		free(newname);
+		return -1;
+	}
+	free(privdata->filename);
+	privdata->filename = newname;
 
 	return 0;
 }
@@ -3146,7 +3193,7 @@ setsubject(SMFICTX *ctx, const char *virusname)
 	char subject[128];
 
 	/*
-	 * FIXME: doesn't work if there's no subject
+	 * FIXME: doesn't work if there's no subject in the email
 	 */
 	snprintf(subject, sizeof(subject) - 1, "[Virus] %s", virusname);
 	smfi_chgheader(ctx, "Subject", 1, subject);

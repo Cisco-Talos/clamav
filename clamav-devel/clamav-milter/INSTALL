@@ -461,6 +461,9 @@ Changes
 			variables are now delimeted by dollars, e.g.  ${j}$
 		Better local IP table by Damian Menscher <menscher@uiuc.edu> and
 			Andy Fiddaman <clam@fiddaman.net>
+0.75g	06/8/04	Handle privdata->from not set when --bounce is set
+			"Denis Ustimenko" <den@uzsci.net>
+		Quarantined file's names now contain the name of the virus
 
 BUG REPORTS
 
