@@ -536,7 +536,7 @@ static int read_chunk(int fd, off_t offset, uint32_t chunk_len,
 	chunk_header_t *chunk_hdr;
 	int retval = FALSE;
 	
-	if (chunk_len < 8) {
+	if (chunk_len < 8 || chunk_len > 33554432) {
 		return FALSE;
 	}
 	
