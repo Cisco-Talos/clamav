@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.182  2004/11/26 12:05:17  nigelhorne
+ * Remove warning message
+ *
  * Revision 1.181  2004/11/22 15:18:51  nigelhorne
  * Performance work
  *
@@ -531,7 +534,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.181 2004/11/22 15:18:51 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.182 2004/11/26 12:05:17 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2344,7 +2347,7 @@ boundaryStart(const char *line, const char *boundary)
 
 	p = ptr = rfc822comments(line);
 	if(ptr == NULL)
-		ptr = line;
+		ptr = (char *)line;
 
 	if(*ptr++ != '-') {
 		if(p)
@@ -3402,8 +3405,8 @@ getURL(struct arg *arg)
 	 * Perhaps Curl_resolv() isn't thread safe?
 	 */
 	/*
-	 * On some C libraries (notably with FC3) you get a memory leak
-	 * here in getaddrinfo(), see
+	 * On some C libraries (notably with FC3, glibc-2.3.3-74) you get a
+	 * memory leak * here in getaddrinfo(), see
 	 *	https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=139559
 	 */
 
