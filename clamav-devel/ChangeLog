@@ -1,3 +1,7 @@
+Thu Feb 26 16:22:59 CET 2004 (tk)
+---------------------------------
+  * libclamav: detect "From: " (Exim) mail files
+
 Thu Feb 26 13:33:00 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Handle spaces at the end of uuencoded lines
