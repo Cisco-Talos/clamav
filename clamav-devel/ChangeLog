@@ -1,7 +1,12 @@
+Tue Nov 23 23:23:45 CET 2004 (tk)
+---------------------------------
+  * clamscan: --move: preserve original access and modification times
+	      (requested by Tomasz Papszun); optimise
+
 Tue Nov 23 09:06:45 GMT 2004 (njh)
 ----------------------------------
   * libclamav/binhex.c:	Fix crash in base64 encoded binhex files reported by
-				Stefan Kaltenbrunner <stefan@kaltenbrunner.cc>
+				Stefan Kaltenbrunner <stefan*kaltenbrunner.cc>
 
 Mon Nov 22 15:20:07 GMT 2004 (njh)
 ----------------------------------
