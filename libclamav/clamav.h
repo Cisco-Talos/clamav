@@ -120,6 +120,12 @@ struct cli_md5_node {
     struct cli_md5_node *next;
 };
 
+struct cli_zip_node {
+    int compr, csize, size, encrypted, crc32;
+    char *filename, *virname;
+    struct cli_zip_node *next;
+};
+
 struct cl_node {
     unsigned int maxpatlen; /* maximal length of pattern in db */
 
@@ -133,6 +139,9 @@ struct cl_node {
 
     /* MD5 */
     struct cli_md5_node **md5_hlist;
+
+    /* Zip metadata */
+    struct cli_zip_node *zip_mlist;
 };
 
 struct cl_limits {

@@ -296,8 +296,9 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	ZZIP_FILE *zfp;
 	FILE *tmp = NULL;
 	char *buff;
-	int fd, bytes, files = 0, ret = CL_CLEAN;
+	int fd, bytes, files = 0, ret = CL_CLEAN, encrypted;
 	struct stat source;
+	struct cli_zip_node *mdata;
 	zzip_error_t err;
 
 
@@ -327,7 +328,9 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	    break;
 	}
 
-	cli_dbgmsg("Zip: %s, compressed: %u, normal: %u, ratio: %d (max: %d)\n", zdirent.d_name, zdirent.d_csize, zdirent.st_size, zdirent.d_csize ? (zdirent.st_size / zdirent.d_csize) : 0, limits ? limits->maxratio : -1 );
+	encrypted = zdirent.d_flags;
+
+	cli_dbgmsg("Zip: %s, crc32: 0x%x, encrypted: %d, compressed: %u, normal: %u, ratio: %d (max: %d)\n", zdirent.d_name, zdirent.d_crc32, encrypted, zdirent.d_csize, zdirent.st_size, zdirent.d_csize ? (zdirent.st_size / zdirent.d_csize) : 0, limits ? limits->maxratio : -1);
 
 	if(!zdirent.st_size) {
 	    files++;
@@ -338,6 +341,39 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 		break;
 	    }
 	    continue;
+	}
+
+	/* Scan metadata */
+	mdata = root->zip_mlist;
+	do {
+	    if(mdata->encrypted != encrypted)
+		continue;
+
+	    if(mdata->crc32 && mdata->crc32 != zdirent.d_crc32)
+		continue;
+
+	    if(mdata->csize > 0 && mdata->csize != zdirent.d_csize)
+		continue;
+
+	    if(mdata->size >= 0 && mdata->size != zdirent.st_size)
+		continue;
+
+	    if(mdata->compr >= 0 && mdata->compr != zdirent.d_compr)
+		continue;
+
+	    /* FIXME: add support for regex */
+	    /*if(mdata->filename && !strstr(zdirent.d_name, mdata->filename))*/
+	    if(mdata->filename && strcmp(zdirent.d_name, mdata->filename))
+		continue;
+
+	    break; /* matched */
+
+	} while((mdata = mdata->next));
+
+	if(mdata) {
+	    *virname = mdata->virname;
+	    ret = CL_VIRUS;
+	    break;
 	}
 
 	/* 
@@ -365,7 +401,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	    break;
         }
 
-	if(DETECT_ENCRYPTED && (zdirent.d_flags & 1 )) {
+	if(DETECT_ENCRYPTED && encrypted) {
 	    files++;
 	    cli_dbgmsg("Zip: Encrypted files found in archive.\n");
 	    lseek(desc, 0, SEEK_SET);

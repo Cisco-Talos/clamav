@@ -1,3 +1,11 @@
+Sun Feb 20 05:08:54 CET 2005 (tk)
+---------------------------------
+  * libclamav: add support for detection based on analysis of archive metadata
+	       (currently only zip is supported)
+  * libclamav/clamav.h, libclamav/matcher.c: handle cli_zip_node list
+  * libclamav/readdb.c: load *.zmd (zip metadata signatures)
+  * libclamav/str.c: new function cli_hex2num()
+
 Fri Feb 18 21:29:16 GMT 2005 (njh)
 ----------------------------------
   * libclamav/message.c: Handle broken RFC2231 messages reported by Maxim
