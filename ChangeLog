@@ -1,3 +1,7 @@
+Thu Oct  2 19:43:57 CEST 2003 (tk)
+----------------------------------
+  * clamd: set umask also in Foreground mode (thanks to Kelsey Cummings)
+
 Wed Oct  1 10:52:35 BST 2003 (njh)
 ----------------------------------
   * libclamav: mbox/message now handles content type definition on a new
