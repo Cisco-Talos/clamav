@@ -145,6 +145,9 @@ Changes
 		Tidy up the call to pthread_cond_timedwait
 0.60q	11/11/03 Fixed handling of % characters in e-mail addresses
 		pointed out by dotslash@snosoft.com
+0.65	15/11/03 Upissue of clamav
+0.65a	19/11/03 Close cmdSocket earlier
+		Added setpgrp()
 
 BUG REPORTS
 
