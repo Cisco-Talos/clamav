@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.174  2004/11/10 10:08:45  nigelhorne
+ * Fix escaped parenthesis in rfc822 comments
+ *
  * Revision 1.173  2004/11/09 19:40:06  nigelhorne
  * Find uuencoded files in preambles to multipart messages
  *
@@ -507,7 +510,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.173 2004/11/09 19:40:06 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.174 2004/11/10 10:08:45 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2696,7 +2699,8 @@ rfc822comments(const char *in)
 
 	for(iptr = in; *iptr; iptr++)
 		if(backslash) {
-			*optr++ = *iptr;
+			if(commentlevel == 0)
+				*optr++ = *iptr;
 			backslash = 0;
 		} else switch(*iptr) {
 			case '\\':
