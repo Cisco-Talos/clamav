@@ -20,7 +20,7 @@
 #define __STRINGS_H
 
 int cli_strbcasestr(const char *haystack, const char *needle);
-void cli_chomp(char *string);
+int	cli_chomp(char *string);
 char *cli_strtok(const char *line, int field, const char *delim);
 
 #endif
