@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.130  2004/09/17 10:56:29  nigelhorne
+ * Handle multiple content-type headers and use the most likely
+ *
  * Revision 1.129  2004/09/17 09:48:53  nigelhorne
  * Handle attempts to hide mime type
  *
@@ -375,7 +378,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.129 2004/09/17 09:48:53 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.130 2004/09/17 10:56:29 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2123,6 +2126,9 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 				 */
 				cli_dbgmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", copy);
 			else {
+				char *mimeArgs;	/* RHS of the ; */
+
+				mimeArgs = cli_strtok(copy, 1, ";");
 				/*
 				 * Some clients are broken and
 				 * put white space after the ;
@@ -2131,11 +2137,12 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 					cli_warnmsg("Content-type '/' received, assuming application/octet-stream\n");
 					messageSetMimeType(m, "application");
 					messageSetMimeSubtype(m, "octet-stream");
-					strtok_r(copy, ";", &strptr);
 				} else {
 					char *s;
+					char *mimeType;	/* LHS of the ; */
 					size_t len;
 
+					s = mimeType = cli_strtok(copy, 0, ";");
 					/*
 					 * The content type could be in quotes:
 					 *	Content-Type: "multipart/mixed"
@@ -2143,31 +2150,53 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 					 *	the quotes, it doesn't handle
 					 *	them properly
 					 */
-					while(isspace(*copy))
-						copy++;
-					if(copy[0] == '\"')
-						copy++;
-					if(copy[0] != '/') {
-						int set = messageSetMimeType(m, strtok_r(copy, "/", &strptr));
+					while(isspace(*s))
+						s++;
+					if(s[0] == '\"')
+						s++;
 
+					if(s[0] != '/')
 						/*
-						 * Stephen White <stephen@earth.li>
-						 * Some clients put space after
-						 * the mime type but before
-						 * the ;
+						 * Handle
+						 * Content-Type: foo/bar multipart/mixed
+						 * and
+						 * Content-Type: multipart/mixed foo/bar
 						 */
-						s = strtok_r(NULL, ";", &strptr);
-						if(s && set) {
-							len = strstrip(s) - 1;
-							if(s[len] == '\"') {
-								s[len] = '\0';
-								len = strstrip(s);
+						for(;;) {
+							int set = messageSetMimeType(m, strtok_r(s, "/", &strptr));
+
+
+							/*
+							 * Stephen White <stephen@earth.li>
+							 * Some clients put space after
+							 * the mime type but before
+							 * the ;
+							 */
+							s = strtok_r(NULL, ";", &strptr);
+							if(s == NULL)
+								break;
+							if(set) {
+								len = strstrip(s) - 1;
+								if(s[len] == '\"') {
+									s[len] = '\0';
+									len = strstrip(s);
+								}
+								if(len) {
+									char *t = cli_strtok(s, 0, " ");
+
+									messageSetMimeSubtype(m, t);
+									free(t);
+								}
 							}
-							if(len)
-								messageSetMimeSubtype(m, s);
+
+							while(*s && !isspace(*s))
+								s++;
+							if(*s++ == '\0')
+								break;
+							if(*s == '\0')
+								break;
 						}
-					} else
-						(void)strtok_r(copy, ";", &strptr);
+					free(mimeType);
 				}
 
 				/*
@@ -2176,9 +2205,10 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 				 * Content-Type:', arg='multipart/mixed; boundary=foo
 				 * we find the boundary argument set it
 				 */
-				copy = strtok_r(NULL, "", &strptr);
-				if(copy)
-					messageAddArguments(m, copy);
+				if(mimeArgs) {
+					messageAddArguments(m, mimeArgs);
+					free(mimeArgs);
+				}
 			}
 			break;
 		case CONTENT_TRANSFER_ENCODING:

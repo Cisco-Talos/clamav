@@ -1,3 +1,7 @@
+Fri Sep 17 11:56:58 BST 2004 (njh)
+----------------------------------
+  * libclamav:	Handle even more attempts to falsify the mime type
+
 Fri Sep 17 11:06:42 BST 2004 (trog)
 -----------------------------------
   * libclamav/htmlnorm.c: fix breakage resulting from yesterdays change
