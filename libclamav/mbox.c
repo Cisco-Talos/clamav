@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.30  2004/01/13 10:12:05  nigelhorne
+ * Remove duplicate code when handling multipart messages
+ *
  * Revision 1.29  2004/01/09 18:27:11  nigelhorne
  * ParseMimeHeader could corrupt arg
  *
@@ -78,7 +81,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.29 2004/01/09 18:27:11 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.30 2004/01/13 10:12:05 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -131,6 +134,7 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.29 2004/01/09 18:27:11 nigelhorne E
 typedef enum    { FALSE = 0, TRUE = 1 } bool;
 
 static	message	*parseEmailHeaders(const message *m, const table_t *rfc821Table);
+static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
 static	int	parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const char *dir, table_t *rfc821Table, table_t *subtypeTable);
 static	int	boundaryStart(const char *line, const char *boundary);
 static	int	endOfMessage(const char *line, const char *boundary);
@@ -388,50 +392,67 @@ parseEmailHeaders(const message *m, const table_t *rfc821Table)
 			if(strstrip(buffer) == 0) {
 				cli_dbgmsg("End of header information\n");
 				inHeader = FALSE;
-			} else {
-				const bool isLastLine = !continuationMarker(buffer);
-				char *cmd = strtok_r(buffer, " \t", &strptr);
+			} else if(parseEmailHeader(ret, buffer, rfc821Table) == CONTENT_TYPE)
+				inContinuationHeader = continuationMarker(buffer);
 
-				if(*cmd) {
-					char *arg = strtok_r(NULL, "", &strptr);
-
-					if(arg) {
-						/*
-						 * Found a header such as
-						 * Content-Type: multipart/mixed;
-						 * set arg to be
-						 * "multipart/mixed" and cmd to
-						 * be "Content-Type:"
-						 */
-						if(parseMimeHeader(ret, cmd, rfc821Table, arg) == CONTENT_TYPE)
-							inContinuationHeader = !isLastLine;
-					} else {
-						/*
-						 * Handle the case where the
-						 * header does not have a space
-						 * after the ':', e.g.
-						 * Content-Type:multipart/mixed;
-						 */
-						arg = strchr(cmd, ':');
-						if(arg && (*++arg != '\0')) {
-							char *p;
-
-							cmd = strdup(cmd);
-							p = strchr(cmd, ':');
-							*++p = '\0';
-							if(parseMimeHeader(ret, cmd, rfc821Table, arg) == CONTENT_TYPE)
-								inContinuationHeader = !isLastLine;
-							free(cmd);
-						}
-					}
-				}
-			}
 		} else
 			messageAddLine(ret, buffer);
 		free(buffer);
 	} while((t = t->t_next) != NULL);
 
 	textDestroy(msgText);
+
+	return ret;
+}
+
+/*
+ * Handle a header line of an email message
+ * TODO: handle spaces before the ':'
+ */
+static int
+parseEmailHeader(message *m, const char *line, const table_t *rfc821Table)
+{
+	char *copy = strdup(line);
+	char *cmd;
+	int ret = -1;
+#ifdef CL_THREAD_SAFE
+	char *strptr;
+#endif
+
+	cmd = strtok_r(copy, " \t", &strptr);
+
+	if(*cmd) {
+		char *arg = strtok_r(NULL, "", &strptr);
+
+		if(arg)
+			/*
+			 * Found a header such as
+			 * Content-Type: multipart/mixed;
+			 * set arg to be
+			 * "multipart/mixed" and cmd to
+			 * be "Content-Type:"
+			 */
+			ret = parseMimeHeader(m, cmd, rfc821Table, arg);
+		else {
+			/*
+			 * Handle the case where the
+			 * header does not have a space
+			 * after the ':', e.g.
+			 * Content-Type:multipart/mixed;
+			 */
+			arg = strchr(cmd, ':');
+			if(arg && (*++arg != '\0')) {
+				char *p;
+
+				cmd = strdup(cmd);
+				p = strchr(cmd, ':');
+				*++p = '\0';
+				ret = parseMimeHeader(m, cmd, rfc821Table, arg);
+				free(cmd);
+			}
+		}
+	}
+	free(copy);
 
 	return ret;
 }
@@ -482,9 +503,6 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 		/*bool isAlternative;*/
 		const char *boundary;
 		message *aMessage;
-#ifdef CL_THREAD_SAFE
-		char *strptr;
-#endif
 
 		cli_dbgmsg("Parsing mail file\n");
 
@@ -590,8 +608,6 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 						inMimeHead = continuationMarker(line);
 						messageAddArgument(aMessage, line);
 					} else if(inhead) {
-						char *copy, *cmd;
-
 						if(strlen(line) == 0) {
 							inhead = 0;
 							continue;
@@ -605,47 +621,7 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 							if(t_line->t_next && ((t_line->t_next->t_text[0] == '\t') || (t_line->t_next->t_text[0] == ' ')))
 								inMimeHead = TRUE;
 
-						copy = strdup(line);
-
-						cmd = strtok_r(copy, " \t", &strptr);
-
-						/*
-						 * TODO: duplication of code in
-						 * parseEmailHeaders
-						 */
-						if(*cmd) {
-							char *arg = strtok_r(NULL, "", &strptr);
-
-							if(arg)
-								/*
-								 * Found a header such as
-								 * Content-Type: multipart/mixed;
-								 * set arg to be
-								 * "multipart/mixed" and cmd to
-								 * be "Content-Type:"
-								 */
-								parseMimeHeader(aMessage, cmd, rfc821Table, arg);
-							else {
-								/*
-								 * Handle the case where the
-								 * header does not have a space
-								 * after the ':', e.g.
-								 * Content-Type:multipart/mixed;
-								 */
-								arg = strchr(cmd, ':');
-								if(arg && (*++arg != '\0')) {
-									char *p;
-
-									cmd = strdup(cmd);
-									p = strchr(cmd, ':');
-									*++p = '\0';
-									parseMimeHeader(aMessage, cmd, rfc821Table, arg);
-									free(cmd);
-								}
-							}
-						}
-
-						free(copy);
+						parseEmailHeader(aMessage, line, rfc821Table);
 					} else if(boundaryStart(line, boundary)) {
 						inhead = 1;
 						break;
