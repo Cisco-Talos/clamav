@@ -381,7 +381,7 @@ int cli_rmdirs(const char *dirname)
 	struct dirent *dent;
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #ifdef C_SOLARIS
-	char result[sizeof(struct dirent) + MAX_PATH + 1];
+	char result[sizeof(struct dirent) + PATH_MAX + 1];
 #else
 	struct dirent result;
 #endif
