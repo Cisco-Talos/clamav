@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.160  2004/10/21 09:41:07  nigelhorne
+ * PARTIAL: add readdir_r fix to BeOS
+ *
  * Revision 1.159  2004/10/20 10:35:41  nigelhorne
  * Partial mode: fix possible stack corruption with Solaris
  *
@@ -465,7 +468,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.159 2004/10/20 10:35:41 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.160 2004/10/21 09:41:07 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -496,6 +499,7 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.159 2004/10/20 10:35:41 nigelhorne 
 #include <sys/param.h>
 #include <clamav.h>
 #include <dirent.h>
+#include <limits.h>
 
 #ifdef	CL_THREAD_SAFE
 #include <pthread.h>
@@ -2799,8 +2803,8 @@ rfc1341(message *m, const char *dir)
 				char filename[NAME_MAX + 1];
 				const struct dirent *dent;
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-#ifdef	C_SOLARIS
-				char result[sizeof(struct dirent) + MAX_PATH + 1];
+#if	defined(C_SOLARIS) || defined(C_BEOS)
+				char result[sizeof(struct dirent) + PATH_MAX + 1];
 #else
 				struct dirent result;
 #endif
