@@ -380,6 +380,16 @@ Changes
 		Warn if a clean file can't be removed from the quarantine
 		When streamMaxLength is exceeded add a header where possible,
 			unless --noxheader is given
+0.70x	7/5/04	Only report that we've dropped privilege if the setuid
+			succeeded, fix by Jens Elkner
+			<elkner@linofee.org>
+		If logVerbose is set state both starting and started messages
+			(based on an idea by "Sergey Y.  Afonin"
+			<asy@kraft-s.ru>
+		Also added X-Infected-Received-From: header by Sergey
+		Fix from Damian Menscher <menscher@uiuc.edu> ensures that when
+			a child dies we continue when max children is hit
+		Report an error if inet_ntop fails in tcp_wrappers
 
 BUG REPORTS
 
