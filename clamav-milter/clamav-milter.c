@@ -323,6 +323,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.76  2004/04/19 13:28:41  nigelhorne
+ * Started coding e-mail template support
+ *
  * Revision 1.75  2004/04/19 13:28:00  nigelhorne
  * Started coding e-mail template support
  *
@@ -533,7 +536,7 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.75 2004/04/19 13:28:00 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.76 2004/04/19 13:28:41 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.70l"
 
@@ -798,7 +801,7 @@ help(void)
 	puts("\t--server=SERVER\t\t-s SERVER\tHostname/IP address of server(s) running clamd (when using TCPsocket).");
 	puts("\t--sign\t\t\t-S\tAdd a hard-coded signature to each scanned message.");
 	puts("\t--signature-file\t-F\tLocation of signature file.");
-	puts("\t--template-file\t-s\tLocation of e-mail template file.");
+	puts("\t--template-file\t-t\tLocation of e-mail template file.");
 	puts("\t--version\t\t-V\tPrint the version number of this software.");
 #ifdef	CL_DEBUG
 	puts("\t--debug-level=n\t\t-x n\tSets the debug level to 'n'.");
