@@ -1,3 +1,9 @@
+Tue Jan 25 05:09:42 CET 2005 (tk)
+---------------------------------
+  * clamscan/manager.c: fix bad path completion when using options for external
+			compressors (reported by Robert Allerstorfer
+			<roal*anet.at>)
+
 Mon Jan 24 20:12:06 CET 2005 (tk)
 ---------------------------------
   * freshclam: improve error messages (patch by Luca Gibelli <luca*clamav.net>)
