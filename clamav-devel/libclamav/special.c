@@ -32,6 +32,27 @@
 #define FALSE (0)
 #define TRUE (1)
 
+/* NOTE: Photoshop stores data in BIG ENDIAN format, this is the opposite
+	to virtually everything else */
+#if WORDS_BIGENDIAN == 0
+static uint16_t special_endian_convert_16(uint16_t v)
+{
+        return ((v >> 8) + (v << 8));
+}
+#else
+#define special_endian_convert_16(v)       (v)
+#endif
+
+#if WORDS_BIGENDIAN == 0
+static uint32_t special_endian_convert_32(uint32_t v)
+{
+        return ((v >> 24) | ((v & 0x00FF0000) >> 8) |
+                ((v & 0x0000FF00) << 8) | (v << 24));
+}
+#else
+#define special_endian_convert_32(v)    (v)
+#endif
+
 int cli_check_mydoom_log(int desc, const char **virname)
 {
 	int32_t record[8], check;
@@ -69,6 +90,96 @@ int cli_check_mydoom_log(int desc, const char **virname)
     return retval;
 }
 
+static int jpeg_check_photoshop_8bim(int fd)
+{
+	unsigned char bim[5];
+	uint16_t id, nlength;
+	uint32_t size;
+	off_t offset;
+	int retval;
+
+	if (cli_readn(fd, bim, 4) != 4) {
+		cli_dbgmsg("read bim failed\n");
+		return -1;
+	}
+
+	if (memcmp(bim, "8BIM", 4) != 0) {
+		bim[4] = '\0';
+		cli_dbgmsg("missed 8bim: %s\n", bim);
+		return -1;
+	}
+
+	if (cli_readn(fd, &id, 2) != 2) {
+		return -1;
+	}
+	id = special_endian_convert_16(id);
+	cli_dbgmsg("ID: 0x%.4x\n", id);
+	if (cli_readn(fd, &nlength, 2) != 2) {
+		return -1;
+	}
+	nlength = special_endian_convert_16(nlength);
+	/* Seek past the name string */
+	if (nlength > 0) {
+		lseek(fd, nlength, SEEK_CUR);
+	}
+
+	if (cli_readn(fd, &size, 4) != 4) {
+		return -1;
+	}
+	size = special_endian_convert_32(size);
+	if (size == 0) {
+		return -1;
+	}
+	if ((size & 0x01) == 1) {
+		size++;
+	}
+	/* Is it a thumbnail image */
+	if ((id != 0x0409) && (id != 0x040c)) {
+		/* No - Seek past record */
+		lseek(fd, size, SEEK_CUR);
+		return 0;
+	}
+
+	cli_dbgmsg("found thumbnail\n");
+	/* Check for thumbmail image */
+	offset = lseek(fd, 0, SEEK_CUR);
+
+	/* Jump past header */
+	lseek(fd, 28, SEEK_CUR);
+
+	retval = cli_check_jpeg_exploit(fd);
+	if (retval == 1) {
+		cli_dbgmsg("Exploit found in thumbnail\n", retval);
+	}
+	lseek(fd, offset+size, SEEK_SET);
+
+	return retval;
+}
+
+static int jpeg_check_photoshop(int fd)
+{
+	int retval;
+	unsigned char buffer[14];
+
+	if (cli_readn(fd, buffer, 14) != 14) {
+		return 0;
+	}
+
+	if (memcmp(buffer, "Photoshop 3.0", 14) != 0) {
+		return 0;
+	}
+
+	cli_dbgmsg("Found Photoshop segment\n");
+	do {
+		retval = jpeg_check_photoshop_8bim(fd);
+	} while (retval == 0);
+
+	if (retval == -1) {
+		retval = 0;
+	}
+	return retval;
+}
+
 int cli_check_jpeg_exploit(int fd)
 {
 	unsigned char buffer[4];
@@ -85,6 +196,7 @@ int cli_check_jpeg_exploit(int fd)
 	if ((buffer[0] != 0xff) || (buffer[1] != 0xd8)) {
 		return 0;
 	}
+
 	for (;;) {
 		if ((retval=cli_readn(fd, buffer, 4)) != 4) {
 			return 0;
@@ -94,7 +206,7 @@ int cli_check_jpeg_exploit(int fd)
 			lseek(fd, -3, SEEK_CUR);
 			continue;
 		}
-		
+
 		if ((buffer[0] == 0xff) && (buffer[1] == 0xfe)) {
 			if (buffer[2] == 0x00) {
 				if ((buffer[3] == 0x00) || (buffer[3] == 0x01)) {
@@ -109,12 +221,21 @@ int cli_check_jpeg_exploit(int fd)
 			/* End of Image marker */
 			return 0;
 		}
+
 		offset = ((unsigned int) buffer[2] << 8) + buffer[3];
 		if (offset < 2) {
 			return 1;
 		}
 		offset -= 2;
 		offset += lseek(fd, 0, SEEK_CUR);
+
+		if (buffer[1] == 0xed) {
+			/* Possible Photoshop file */
+			if ((retval=jpeg_check_photoshop(fd)) != 0) {
+				return retval;
+			}
+		}
+
 		if (lseek(fd, offset, SEEK_SET) != offset) {
 			return -1;
 		}

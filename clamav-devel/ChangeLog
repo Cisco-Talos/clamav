@@ -1,3 +1,9 @@
+Thu Mar 10 13:32:38 GMT 2005 (trog)
+-----------------------------------
+  * libclamav/special.c: Check Photoshop thumbnail images embedded in JPEG files.
+
+  * sigtool/vba.c: Add more Word6 tokens.
+
 Thu Mar 10 08:48:54 GMT 2005 (njh)
 ----------------------------------
   * clamav-milter:	--detect-forged-local-address no longer gives false
