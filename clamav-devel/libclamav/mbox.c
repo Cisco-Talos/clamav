@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.191  2004/11/27 21:55:06  nigelhorne
+ * Changed some more strtok to cli_strtok
+ *
  * Revision 1.190  2004/11/27 14:49:13  nigelhorne
  * Use a static array for the partial directory
  *
@@ -558,7 +561,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.190 2004/11/27 14:49:13 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.191 2004/11/27 21:55:06 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1683,7 +1686,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					 * RFC1521, unrecognised multiparts
 					 * should be treated as multipart/mixed.
 					 */
-					cli_warnmsg("Unsupported multipart format `%s', parsed as mixed\n", mimeSubtype);
+					cli_dbgmsg("Unsupported multipart format `%s', parsed as mixed\n", mimeSubtype);
 					mimeSubtype = "mixed";
 					break;
 			}
@@ -2612,28 +2615,25 @@ continuationMarker(const char *line)
 static int
 parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg)
 {
-#ifdef CL_THREAD_SAFE
-	char *strptr;
-#endif
-	char *copy, *ptr;
+	char *copy, *p;
+	const char *ptr;
 	int commandNumber;
 
 	cli_dbgmsg("parseMimeHeader: cmd='%s', arg='%s'\n", cmd, arg);
 
-	ptr = rfc822comments(cmd);
-	if(ptr) {
-		commandNumber = tableFind(rfc821Table, ptr);
-		free(ptr);
+	copy = rfc822comments(cmd);
+	if(copy) {
+		commandNumber = tableFind(rfc821Table, copy);
+		free(copy);
 	} else
 		commandNumber = tableFind(rfc821Table, cmd);
 
 	copy = rfc822comments(arg);
-	if(copy == NULL)
-		copy = strdup(arg);
-	if(copy == NULL)
-		return -1;
 
-	ptr = copy;
+	if(copy)
+		ptr = copy;
+	else
+		ptr = arg;
 
 	switch(commandNumber) {
 		case CONTENT_TYPE:
@@ -2654,14 +2654,14 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 				 * email client writers don't get it right
 				 */
 				 cli_warnmsg("Empty content-type received, no subtype specified, assuming text/plain; charset=us-ascii\n");
-			else if(strchr(copy, '/') == NULL)
+			else if(strchr(ptr, '/') == NULL)
 				/*
 				 * Empty field, such as
 				 *	Content-Type:
 				 * which I believe is illegal according to
 				 * RFC1521
 				 */
-				cli_dbgmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", copy);
+				cli_dbgmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", ptr);
 			else {
 				int i;
 				char *mimeArgs;	/* RHS of the ; */
@@ -2682,16 +2682,19 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 					 *	the quotes, it doesn't handle
 					 *	them properly
 					 */
-					while(isspace(*copy))
-						copy++;
-					if(copy[0] == '\"')
-						copy++;
+					while(isspace(*ptr))
+						ptr++;
+					if(ptr[0] == '\"')
+						ptr++;
 
-					if(copy[0] != '/') {
+					if(ptr[0] != '/') {
 						char *s;
 						char *mimeType;	/* LHS of the ; */
+#ifdef CL_THREAD_SAFE
+						char *strptr;
+#endif
 
-						s = mimeType = cli_strtok(copy, 0, ";");
+						s = mimeType = cli_strtok(ptr, 0, ";");
 						/*
 						 * Handle
 						 * Content-Type: foo/bar multipart/mixed
@@ -2753,7 +2756,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 				 * we find the boundary argument set it
 				 */
 				i = 1;
-				while((mimeArgs = cli_strtok(copy, i++, ";")) != NULL) {
+				while((mimeArgs = cli_strtok(ptr, i++, ";")) != NULL) {
 					cli_dbgmsg("mimeArgs = '%s'\n", mimeArgs);
 
 					messageAddArguments(m, mimeArgs);
@@ -2762,24 +2765,22 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 			}
 			break;
 		case CONTENT_TRANSFER_ENCODING:
-			messageSetEncoding(m, copy);
+			messageSetEncoding(m, ptr);
 			break;
 		case CONTENT_DISPOSITION:
-#ifdef	CL_THREAD_SAFE
-			arg = strtok_r(copy, ";", &strptr);
-			if(arg && *arg) {
-				messageSetDispositionType(m, arg);
-				messageAddArgument(m, strtok_r(NULL, "\r\n", &strptr));
+			p = cli_strtok(ptr, 0, ";");
+			if(p) {
+				if(*p) {
+					messageSetDispositionType(m, p);
+					free(p);
+					p = cli_strtok(ptr, 1, ";");
+					messageAddArgument(m, p);
+				}
+				free(p);
 			}
-#else
-			arg = strtok(copy, ";");
-			if(arg && *arg) {
-				messageSetDispositionType(m, arg);
-				messageAddArgument(m, strtok(NULL, "\r\n"));
-			}
-#endif
 	}
-	free(ptr);
+	if(copy)
+		free(copy);
 
 	return 0;
 }
@@ -3319,7 +3320,6 @@ getURL(void *a)
 getURL(struct arg *arg)
 #endif
 {
-	char *fout;
 	CURL *curl;
 	FILE *fp;
 	struct curl_slist *headers;
@@ -3331,6 +3331,7 @@ getURL(struct arg *arg)
 	const char *url = arg->url;
 	const char *dir = arg->dir;
 	const char *filename = arg->filename;
+	char fout[NAME_MAX + 1];
 
 #ifdef	CL_THREAD_SAFE
 	pthread_mutex_lock(&init_mutex);
@@ -3358,34 +3359,24 @@ getURL(struct arg *arg)
 	if(curl_easy_setopt(curl, CURLOPT_URL, url) != 0)
 		return NULL;
 
-	fout = cli_malloc(strlen(dir) + strlen(filename) + 2);
-
-	if(fout == NULL) {
-		curl_easy_cleanup(curl);
-		return NULL;
-	}
-
 	snprintf(fout, NAME_MAX, "%s/%s", dir, filename);
 
 	fp = fopen(fout, "w");
 
 	if(fp == NULL) {
 		cli_errmsg("Can't open '%s' for writing", fout);
-		free(fout);
 		curl_easy_cleanup(curl);
 		return NULL;
 	}
 #ifdef	CURLOPT_WRITEDATA
 	if(curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp) != 0) {
 		fclose(fp);
-		free(fout);
 		curl_easy_cleanup(curl);
 		return NULL;
 	}
 #else
 	if(curl_easy_setopt(curl, CURLOPT_FILE, fp) != 0) {
 		fclose(fp);
-		free(fout);
 		curl_easy_cleanup(curl);
 		return NULL;
 	}
@@ -3432,15 +3423,12 @@ getURL(struct arg *arg)
 	 *	https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=139559
 	 */
 
-	if(curl_easy_perform(curl) != CURLE_OK) {
+	if(curl_easy_perform(curl) != CURLE_OK)
 		cli_warnmsg("URL %s failed to download\n", url);
-		unlink(fout);
-	}
 
 	fclose(fp);
 	curl_slist_free_all(headers);
 	curl_easy_cleanup(curl);
-	free(fout);
 
 	return NULL;
 }

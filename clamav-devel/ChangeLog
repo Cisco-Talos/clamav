@@ -1,3 +1,7 @@
+Sat Nov 27 21:55:45 GMT 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Changed some more strtok to cli_strtok
+
 Sat Nov 27 19:53:33 CET 2004 (tk)
 ---------------------------------
   * libclamav/scanners.c: cli_scanrar: skip splitted files (patch by Andrey J.
