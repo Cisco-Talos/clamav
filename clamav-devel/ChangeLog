@@ -1,3 +1,7 @@
+Tue Mar 23 15:39:09 GMT 2004 (trog)
+-----------------------------------
+  * clamd: stop scanning if the client disconnects
+
 Tue Mar 23 11:09:30 GMT 2004 (njh)
 ----------------------------------
   * libclamav/blob.c:	More restrictive about which characters can be used

@@ -78,6 +78,11 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 
     if((dd = opendir(dirname)) != NULL) {
 	while((dent = readdir(dd))) {
+	    if (!is_fd_connected(odesc)) {
+		logg("Client disconnected\n");
+		closedir(dd);
+		return 1;
+	    }
 	    if(dent->d_ino) {
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
