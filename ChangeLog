@@ -1,3 +1,7 @@
+Wed Jan 26 17:40:56 CET 2005 (tk)
+---------------------------------
+  * docs: update
+
 Wed Jan 26 15:25:56 CET 2005 (tk)
 ---------------------------------
   * freshclam/manager.c: wwwconnect(): use new socket after failure (patch by 

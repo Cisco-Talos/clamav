@@ -50,7 +50,7 @@ Enable logging to a specified file. Highly recommended.
 Default: disabled.
 .TP 
 \fBLogSyslog\fR
-Enable logging to Syslog.  May be used in combination with UpdateLogFile
+Enable logging to Syslog. May be used in combination with UpdateLogFile.
 .br 
 Default: disabled.
 .TP 
@@ -58,6 +58,11 @@ Default: disabled.
 Specify the type of syslog messages \- please refer to 'man syslog' for facility names.
 .br 
 Default: LOG_LOCAL6
+.TP 
+\fBPidFile\fR
+This option allows you to save the process identifier of the daemon.
+.br 
+Default: disabled
 .TP 
 \fBLogVerbose\fR
 Enable verbose logging.
@@ -70,9 +75,9 @@ This directive enables database and software version verification through DNS TX
 Default: enabled, pointing to current.cvd.clamav.net
 .TP 
 \fBDatabaseMirror STRING\fR
-Server name where database updates are downloaded from. database.clamav.net is a round\-robin record which points ClamAV users to most reliable mirrors. If this option is given multiple times, freshclam(1) tries them in the order given if one download fails.
+Server name where database updates are downloaded from. In order to download the database from the closest mirror you should configure freshclam to use db.xy.clamav.net where xy represents your country code. If this option is given multiple times, freshclam(1) tries them in the order given. It's strongly recommended that you use db.xy.clamav.net as the first mirror and database.clamav.net as the second.
 .br 
-Default: There is no default, which results in an error when running freshclam(1).
+Default: database.clamav.net
 .TP 
 \fBMaxAttempts NUM\fR
 Freshclam(1) tries every mirror this number of times before switching to the next mirror.

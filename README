@@ -3,10 +3,17 @@ here may not be available in binary packages.
 --
 
 
-0.81rc1
--------
+0.81
+----
 
-Changes in this Release Candidate include:
+Scan engine improvements were made. The internal mail scanner now supports
+multipart/partial messages, and support for decoding non-standard mail files
+was greatly enhanced. clamav-milter by default uses libclamav and scans emails
+itself without the use of clamd. libclamav can now extract RFC2397 encoded
+data within HTML documents, block zip archives with modified information in
+local header, and scan HQX files. PE file structure rebuilding from compressed
+executables was improved.
+
 
 -) libclamav:
     + major improvements in the mail scanning engine:
@@ -40,10 +47,8 @@ Changes in this Release Candidate include:
     + added support for --move and --remove
 
 -) clamav-milter:
-    + SESSION mode (single, regular connection with clamd) is now enabled by
-      default
-    + new option --internal (scan the emails itself with libclamav without
-      the use of clamd)
+    + by default uses libclamav to scan e-mails
+    + new option --external (enables the use of clamd)
     + various optimisations
 
 -) freshclam:
@@ -57,7 +62,9 @@ Changes in this Release Candidate include:
       display the corresponding hex values; Word6 binary code will be
       disassembled)
 
--) new applications in our 3rd party software list:
+-) The list of third party programs with support for ClamAV is growing
+   rapidly. Here are the latest additions (see clamdoc.pdf for details):
+
     + AVScan - a libclamav based GUI a-v scanner for Unix
     + clamailfilter - a Python script that provides a-v scanning via procmailrc
     + ClamAVPlugin - A ClamAV plugin for SpamAssassin 3.x

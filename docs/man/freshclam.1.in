@@ -1,5 +1,5 @@
 .\" Manual page created by Tomasz Kojm, 20020415
-.TH "freshclam" "1" "September 1, 2004" "Tomasz Kojm" "Clam AntiVirus"
+.TH "freshclam" "1" "January 26, 2005" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 freshclam \- update virus databases

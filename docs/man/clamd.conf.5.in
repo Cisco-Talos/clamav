@@ -1,5 +1,5 @@
 .\" Manual page created by Tomasz Kojm, 20021001.
-.TH "clamd.conf" "5" "November 25, 2004" "Tomasz Kojm" "Clam AntiVirus"
+.TH "clamd.conf" "5" "January 26, 2005" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 \fBclamd.conf\fR \- Configuration file for Clam AntiVirus Daemon
@@ -69,6 +69,11 @@ Save the process identifier of a listening daemon (main thread) to a specified f
 .br 
 Default: disabled
 .TP 
+\fBTemporaryDirectory STRING\fR
+Optional path to the global temporary directory.
+.br 
+Default: system specific (usually /tmp or /var/tmp).
+.TP 
 \fBDatabaseDirectory STRING\fR
 Path to a directory containing database files.
 .br 
@@ -108,6 +113,11 @@ Default: 10
 Waiting for data from a client socket will timeout after this time (seconds).
 .br 
 Default: 120
+.TP 
+\fBIdleTimeout NUMBER\fR
+Waiting for a new job will timeout after this time (seconds).
+.br 
+Default: 30
 .TP 
 \fBMaxDirectoryRecursion NUMBER\fR
 Maximal depth directories are scanned at.
@@ -158,6 +168,11 @@ Default: disabled
 .TP 
 \fBDebug\fR
 Enable debug messages from libclamav.
+.TP 
+\fBLeaveTemporaryFiles\fR
+Do not remove temporary files (for debug purposes).
+.br 
+Default: disabled
 .TP 
 \fBStreamMaxLength SIZE\fR
 Clamd uses FTP\-like protocol to receive data from remote clients. If you are using clamav\-milter to balance load between remote clamd daemons on firewall servers you may need to tune the Stream* options. This option allows you to specify the maximal limit for data transfered to remote daemon when scanning a single file. It should match your MTA's limit for a maximal attachment size.
@@ -254,8 +269,8 @@ Mark archives as viruses (e.g RAR.ExceededFileSize, Zip.ExceededFilesLimit) if A
 .br 
 Default: disabled
 .TP 
-\fBClamukoScanOnLine\fR
-Enable Clamuko \- on\-access scanner for Linux. Dazuko must be already running.
+\fBClamukoScanOnAccess\fR
+Enable Clamuko. Dazuko (/dev/dazuko) must be configured and running.
 .br 
 Default: disabled
 .TP 
