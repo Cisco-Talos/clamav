@@ -368,7 +368,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 
 	if(!zdirent.d_name || !strlen(zdirent.d_name)) { /* Mimail fix */
 	    cli_dbgmsg("Zip: strlen(zdirent.d_name) == %d\n", strlen(zdirent.d_name));
-	    *virname = "Suspected.Zip";
+	    *virname = "Suspect.Zip";
 	    ret = CL_VIRUS;
 	    break;
 	}
@@ -384,7 +384,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	if(!zdirent.st_size) {
 	    if(zdirent.d_crc32) {
 		cli_dbgmsg("Zip: Broken file or modified information in local header part of archive\n");
-		*virname = "Suspected.Zip";
+		*virname = "Exploit.Zip.ModifiedHeaders";
 		ret = CL_VIRUS;
 		break;
 	    }
@@ -443,7 +443,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	/* work-around for problematic zips (zziplib crashes with them) */
 	if(zdirent.d_csize <= 0 || zdirent.st_size < 0) {
 	    cli_dbgmsg("Zip: Malformed archive detected.\n");
-	    *virname = "Suspected.Zip";
+	    *virname = "Suspect.Zip";
 	    ret = CL_VIRUS;
 	    break;
 	}
@@ -531,12 +531,8 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	    ret = CL_VIRUS;
 	    break;
 	} else if(ret == CL_EMALFZIP) {
-	    /* 
-	     * The trick with detection of ZoD only works with higher (>= 5)
-	     * recursion limit level.
-	     */
 	    cli_dbgmsg("Zip: Malformed Zip file, scanning stopped.\n");
-	    *virname = "Suspected.Zip";
+	    *virname = "Suspect.Zip";
 	    ret = CL_VIRUS;
 	    break;
 	}
