@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.92  2004/06/03 13:14:08  nigelhorne
+ * Up-issued
+ *
  * Revision 1.91  2004/05/25 16:24:21  nigelhorne
  * X-Virus-Scanned wasn't being added in maxstreamlength was exceeded
  *
@@ -284,9 +287,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.91 2004/05/25 16:24:21 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.92 2004/06/03 13:14:08 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.71c"
+#define	CM_VERSION	"0.72"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
