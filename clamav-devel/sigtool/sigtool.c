@@ -227,7 +227,7 @@ int build(struct optstruct *opt)
 	struct cl_cvd *oldcvd = NULL;
 
     /* build a tar.gz archive
-     * we need: COPYING and {viruses.db, viruses.db2}+
+     * we need: COPYING and {main.db, main.hdb, daily.db, daily.hdb}+
      * in current working directory
      */
 
@@ -236,7 +236,7 @@ int build(struct optstruct *opt)
 	exit(1);
     }
 
-    if(stat("viruses.db", &foo) == -1 && stat("viruses.db2", &foo) == -1 && stat("malware.hdb", &foo) == -1 && stat("malware.hdb2", &foo)) {
+    if(stat("main.db", &foo) == -1 && stat("daily.db", &foo) == -1 && stat("main.hdb", &foo) == -1 && stat("daily.hdb", &foo)) {
 	mprintf("Virus database not found in current working directory.\n");
 	exit(1);
     }
@@ -256,8 +256,7 @@ int build(struct optstruct *opt)
 	mprintf("WARNING: There are no signatures in the database(s).\n");
     } else {
 	mprintf("Signatures: %d\n", no);
-	realno = countlines("viruses.db") + countlines("viruses.db2") + countlines("malware.hdb") + countlines("malware.hdb2");
-
+	realno = countlines("main.db") + countlines("daily.db") + countlines("main.hdb") + countlines("daily.hdb");
 	if(realno != no) {
 	    mprintf("!Signatures in database: %d. Loaded: %d.\n", realno, no);
 	    mprintf("Please check the current directory and remove unnecessary databases\n");
@@ -274,7 +273,7 @@ int build(struct optstruct *opt)
 	    exit(1);
 	case 0:
 	    {
-		char *args[] = { "tar", "-cvf", NULL, "COPYING", "viruses.db", "viruses.db2", "Notes", "viruses.db3", "malware.hdb", "malware.hdb2", NULL };
+		char *args[] = { "tar", "-cvf", NULL, "COPYING", "main.db", "daily.db", "Notes", "viruses.db3", "main.hdb", "daily.hdb", NULL };
 		args[2] = tarfile;
 		execv("/bin/tar", args);
 		mprintf("!Can't execute tar\n");
