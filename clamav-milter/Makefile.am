@@ -21,7 +21,7 @@ if HAVE_MILTER
 
 sbin_PROGRAMS = clamav-milter
 
-clamav_milter_SOURCES = 
+clamav_milter_SOURCES = \
     $(top_srcdir)/shared/cfgparser.c \
     $(top_srcdir)/shared/cfgparser.h \
     $(top_srcdir)/shared/getopt.c \
