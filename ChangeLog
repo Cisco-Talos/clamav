@@ -1,3 +1,7 @@
+Sun Feb 13 20:52:57 GMT 2005 (njh)
+----------------------------------
+  * clamav-milter:	Up-issue to 0.83
+
 Sun Feb 13 10:55:35 CET 2005 (tk)
 ---------------------------------
   * freshclam: add support for Foreground (requested by Jeremy Kitchen
