@@ -143,7 +143,10 @@ int main(int argc, char **argv)
 		} else {
 		    mprintf("!Unknown option passed.\n");
 		    free_opt(opt);
-		    exit(40);
+		    if(clamdscan_mode)
+			exit(2);
+		    else
+			exit(40);
 		}
         }
     }

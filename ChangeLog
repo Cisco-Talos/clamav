@@ -1,3 +1,8 @@
+Fri Oct 29 02:19:48 CEST 2004 (tk)
+----------------------------------
+  * clamdscan: update manual page and fix return code for "unknown option"
+	       error
+
 Thu Oct 28 09:14:22 BST 2004 (njh)
 ----------------------------------
   * libclamav/strrcpy.c:	Ensure that assert is only used if
