@@ -37,7 +37,8 @@ suite.
 \fB\-b, \-\-bounce\fR
 Send a failure message to the sender, and to the postmaster.
 [ \fBWarning\fR: most viruses and worms
-fake their source address, so this option is not recommended ]
+fake their source address, so this option is not recommended ].
+See also \-\-noreject.
 .TP
 \fB-d, \-\-dont-scan-on-error\fR
 If a system error occurs pass messages through unscanned,
@@ -54,17 +55,26 @@ Also scan messages sent from LAN.
 Usually clamav\-milter adds a heading to messages that are scanned.
 The header is of the form "X-Virus-Scanned: version", this option instructs
 clamav\-milter to refrain from adding this heading.
+.TP
+\fB-N, \-\-noreject\R
+When clamav\-milter processes an e-mail which contains a virus it rejects
+the e-mail by using the SMTP code 550. This option causes clamav\-milter to
+silently discard such messages. It is recommended that systems administrators
+use this option when NOT using the \-\-bounce option.
 .TP 
 \fB-o, \-\-outgoing\fR
 Scan outgoing messages from this machine.
 .TP
 \fB-p, \-\-postmaster=EMAILADDRESS\fR
-Sets the e-mail address to send notifications to when the \-\-bounce or
-\-\-postmaster-only option is given [ Default: postmaster ]
+Sets the e-mail address to send notifications to when the \-\-quiet option
+is not given.
 .TP
 \fB-P, \-\-postmaster-only\fR
 When the \-\-bounce option is given, only send a notification to the postmaster,
 not the sender.
+Setting this flag will include the ID of the message which can ease searching
+through system logs if the administrator believes it is a locally sourced
+virus.
 .TP
 \fB-q, \-\-quiet\fR
 Don't send any warning messages when a virus or worm or is detected.

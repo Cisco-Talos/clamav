@@ -216,9 +216,17 @@
  *	0.66i	28/1/04	Fixed compilation error with --enable-debug
  *	0.66j	29/1/03	Added --noreject flag, based on a patch by
  *			"Vijay Sarvepalli" <vssarvep@office.uncg.edu>
+ *	0.66k	2/2/04	When --postmaster-only is given, include the system
+ *			ID of the message in the warning e-mail, since that
+ *			will help the administrator when sifting through the
+ *			mail logs. Based on an idea by Jim Allen,
+ *			<Jim.Allen@Heartsine.co.uk>
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.42  2004/02/02 13:44:31  nigelhorne
+ * Include the ID of the message when warnings are sent to the postmaster-only
+ *
  * Revision 1.41  2004/01/29 12:52:35  nigelhorne
  * Added --noreject flag
  *
@@ -327,9 +335,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.41 2004/01/29 12:52:35 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.42 2004/02/02 13:44:31 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.66j"
+#define	CM_VERSION	"0.66k"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1868,7 +1876,17 @@ clamfi_eom(SMFICTX *ctx)
 
 				if(bflag)
 					fputs("A message you sent to\n\t", sendmail);
+				else if(pflag)
+					/*
+					 * The message is only going to the
+					 * postmaster, so include some useful
+					 * information
+					 */
+					fprintf(sendmail, "The message %s sent from %s to\n\t",
+						smfi_getsymval(ctx, "i"),
+						privdata->from);
 				else
+
 					fprintf(sendmail, "A message sent from %s to\n\t", privdata->from);
 
 				for(to = privdata->to; *to; to++)
