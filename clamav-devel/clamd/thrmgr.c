@@ -47,6 +47,7 @@
 #include <errno.h>
 
 #include "thrmgr.h"
+#include "others.h"
 
 /*
  * Thread start routine to serve the work queue.

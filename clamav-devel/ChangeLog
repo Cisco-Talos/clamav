@@ -1,3 +1,11 @@
+Fri Feb 20 16:49:05 CET 2004 (tk)
+---------------------------------
+  * clamscan, freshclam: removed --log-verbose (but it's still accepted by the
+    option parser)
+  * libclamav: cli_rmdirs() fixed directory permission problem (reported by
+	       Brian J. France <list*firehawksystems.com> and Nigel)
+  * doc: clamscan, clamdscan and freshclam manual pages updated
+
 Fri Feb 20 14:55:32 GMT 2004 (trog)
 -----------------------------------
   * libclamav/vba_extract.c: vba_decompress returns explicit data length

@@ -169,11 +169,6 @@ int freshclam(struct optstruct *opt)
 
     /* initialize logger */
 
-    if(optl(opt, "log-verbose") || cfgopt(copt, "LogVerbose"))
-	logverbose = 1;
-    else
-	logverbose = 0;
-
     if(optc(opt, 'l')) {
 	logfile = getargc(opt, 'l');
 	if(logg("--------------------------------------\n")) {
@@ -369,7 +364,6 @@ void help(void)
     mprintf("\n");
     mprintf("    --config-file=FILE                   read configuration from FILE.\n");
     mprintf("    --log=FILE           -l FILE         log into FILE\n");
-    mprintf("    --log-verbose                        log additional information\n");
     mprintf("    --daemon             -d              run in daemon mode\n");
     mprintf("    --pid                -p FILE         save daemon's pid in FILE\n");
     mprintf("    --user=USER          -u USER         run as USER\n");

@@ -21,7 +21,10 @@
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #include "server.h"
 #include "thrmgr.h"
@@ -83,8 +86,6 @@ void scanner_thread(void *arg)
 void sighandler_th(int sig)
 {
 	time_t currtime;
-	int maxwait = CL_DEFAULT_MAXWHILEWAIT * 5;
-	int i;
 
     switch(sig) {
 	case SIGINT:
@@ -183,7 +184,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	sigset_t sigset;
 	client_conn_t *client_conn;
 	struct cfgstruct *cpt;
-	char *buff[BUFFSIZE+1];
+	/* char *buff[BUFFSIZE+1]; */
 	unsigned int selfchk;
 	time_t start_time, current_time;
 	

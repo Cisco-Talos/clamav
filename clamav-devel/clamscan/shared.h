@@ -32,7 +32,7 @@ struct s_info {
     long int blocks; /* number of read 16kb blocks */
 } claminfo;
 
-short int mprintf_disabled, mprintf_verbose, mprintf_quiet, mprintf_stdout, logverbose, recursion, printinfected, bell;
+short int mprintf_disabled, mprintf_verbose, mprintf_quiet, mprintf_stdout, recursion, printinfected, bell;
 const char *logfile;
 
 #endif

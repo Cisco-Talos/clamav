@@ -327,6 +327,8 @@ int cli_rmdirs(const char *dirname)
 	struct stat maind, statbuf;
 	char *fname;
 
+
+    chmod(dirname, 0700);
     if((dd = opendir(dirname)) != NULL) {
 	while(stat(dirname, &maind) != -1) {
 	    if(!rmdir(dirname)) break;

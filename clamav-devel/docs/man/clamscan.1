@@ -1,5 +1,5 @@
 .\" Manual page created by Tomasz Kojm, 14/15 IV 2002
-.TH "clamscan" "1" "January 13, 2004" "Tomasz Kojm" "Clam AntiVirus"
+.TH "clamscan" "1" "February 20, 2004" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 clamscan \- scan files and directories against viruses
@@ -8,43 +8,40 @@ clamscan \- scan files and directories against viruses
 clamscan [options] [file/directory/\-]
 .SH "DESCRIPTION"
 .LP 
-clamscan is a console anti\-virus scanner. It's a part of the Clam AntiVirus package.
+clamscan is a command line anti\-virus scanner. It's a part of the Clam AntiVirus package.
 .SH "OPTIONS"
 .LP 
 
 .TP 
 \fB\-h, \-\-help\fR
-Output help information and exit.
+Print help information and exit.
 .TP 
 \fB\-V, \-\-version\fR
-Print the version number and exit.
+Print version number and exit.
 .TP 
 \fB\-v, \-\-verbose\fR
 Be verbose.
 .TP 
 \fB\-\-debug\fR
-Enable debug messages (mainly from libclamav).
+Enable debug messages (from libclamav).
 .TP 
 \fB\-\-quiet\fR
-Be quiet \- output error messages only.
+Be quiet (only print error messages).
 .TP 
 \fB\-\-stdout\fR
-Write all messages to the standard output (stdout), instead of the standard error output (stderr). The buffer is automatically flushed (stdout unlike stderr is buffered), to avoid race conditions on output.
+Write all messages to the standard output (stdout) instead of the standard error output (stderr).
 .TP 
 \fB\-d FILE/DIR, \-\-database=FILE/DIR\fR
-Load the virus database from FILE or load all .db and .db2 files from DIR.
+Load virus database from FILE or load all virus database files from DIR.
 .TP 
 \fB\-l FILE, \-\-log=FILE\fR
-Save the scan report to FILE. By default the log isn't saved.
-.TP 
-\fB\-\-log\-verbose\fR
-Save an additional information (mostly needless) to the report file.
+Save scan report to FILE.
 .TP 
 \fB\-\-tempdir=DIRECTORY\fR
 Create temporary files in DIRECTORY. Directory must be writeable for the 'clamav' user or unprivileged user running clamscan.
 .TP 
 \fB\-r, \-\-recursive\fR
-Scan directories recursively. All the files in the given directory will be scanned. \fBThis option affects scanning subdirectories in archives, if you are using unpackers just turn it on.\fR
+Scan directories recursively. All the subdirectories in the given directory will be scanned.
 .TP 
 \fB\-\-bell\fR
 Sound bell on virus detection.
@@ -59,7 +56,7 @@ Don't scan file names containing PATT. It may be used multiple times.
 Only scan file names containing PATT. It may be used multiple times.
 .TP 
 \fB\-\-mbox\fR
-Enable scanning of Mbox, Maildir and raw mail files. (also treat stdin as a mailbox, for backward compatibility).
+Enable scanning of various mail file types (also treat stdin as a mailbox \- for backward compatibility).
 .TP 
 \fB\-i, \-\-infected\fR
 Only print infected files.
@@ -76,34 +73,34 @@ EXTRACTION OPTIONS:
 Disable archive support built in libclamav.
 .TP 
 \fB\-\-max\-files=#n\fR
-Extract first #n files from each archive. This option protects your system against DoS attacks.
+Extract first #n files from each archive. This option protects your system against DoS attacks (default: 500)
 .TP 
 \fB\-\-max\-space=#n\fR
-Extract first #n kilobytes from each archive. You may give the number in megabytes in format xM or xm, where x is a number.
+Extract first #n kilobytes from each archive. You may give the number in megabytes in format xM or xm, where x is a number. This option protects your system against DoS attacks (default: 10 MB)
 .TP 
 \fB\-\-max\-recursion=#n\fR
-Set archive recursion level limit.
+Set archive recursion level limit. This option protects your system against DoS attacks (default: 5).
 .TP 
 \fB\-\-unzip[=FULLPATH]\fR
-In most cases you don't need this option \- the built\-in unarchiver will do the work. This option however may be used as a backup for internal unpacker \- see clamdoc.pdf. When enabled without the argument, unzip program will be searched in $PATH. If unzip cannot be found in $PATH, you must supply it with =pathname. Remember about '=' between the option and the argument.
+In most cases you don't need this option \- the built\-in unarchiver will do extract Zip archives. This option however may be used as a backup for internal unpacker \- see the full documentation for more information. When enabled without an argument, unzip program will be searched in $PATH. If unzip cannot be found in $PATH, you must force it with =pathname. Remember about '=' between the option and an argument.
 .TP 
 \fB\-\-unrar[=FULLPATH]\fR
-Supports .rar files.
+Scan .rar files.
 .TP 
 \fB\-\-unace[=FULLPATH]\fR
-Supports .ace files.
+Scan .ace files.
 .TP 
 \fB\-\-unarj[=FULLPATH]\fR
-Supports .arj files.
+Scan .arj files.
 .TP 
 \fB\-\-unzoo[=FULLPATH]\fR
-Supports .zoo files.
+Scan .zoo files.
 .TP 
 \fB\-\-lha[=FULLPATH]\fR
-Supports .lzh files.
+Scan .lzh files.
 .TP 
 \fB\-\-jar[=FULLPATH]\fR
-clamscan uses unzip for .jar files, so optionally give a full path to unzip.
+clamscan uses unzip for .jar files, so optionally eventually you will need to pass a full path to unzip.
 .TP 
 \fB\-\-deb[=FULLPATH]\fR
 This option supports debian binary packages. Implies \-\-tgz, but doesn't conflict with \-\-tgz=FULLPATH. It requires ar utility.
@@ -112,15 +109,15 @@ This option supports debian binary packages. Implies \-\-tgz, but doesn't confli
 This option supports non\-compressed archives.
 .TP 
 \fB\-\-tgz[=FULLPATH]\fR
-This option supports tar.gz and .tgz files. You need GNU tar, on non\-Linux system you probably have it installed as gtar. If it's in $PATH, please use \-\-tgz=gtar in other case please use a full pathname.
+This option supports tar.gz and .tgz files. You need GNU tar, on non\-Linux system you probably have it installed as gtar. If it's in $PATH, please use \-\-tgz=gtar in other case please pass a full path.
 .SH "EXAMPLES"
 .LP 
 .TP 
-(0) Scan a selected file:
+(0) Scan selected file:
 
 \fBclamscan file\fR
 .TP 
-(1) Scan a current working directory:
+(1) Scan current working directory:
 
 \fBclamscan\fR
 .TP 
@@ -128,20 +125,20 @@ This option supports tar.gz and .tgz files. You need GNU tar, on non\-Linux syst
 
 \fBclamscan \-r /home\fR
 .TP 
-(3) Load the database from selected file and limit a disk usage to 50 Mb:
+(3) Load database from selected file and limit disk usage to 50 Mb:
 
 \fBclamscan \-d /tmp/newclamdb \-\-max\-space=50m \-r /tmp\fR
 .TP 
-(4) Scan a data stream:
+(4) Scan data stream:
 
 \fBcat testfile | clamscan \-\fR
 .TP 
-(5) Scan a mail spool directory:
+(5) Scan mail spool directory:
 
 \fBclamscan \-r \-\-mbox /var/spool/mail\fR
 .SH "RETURN CODES"
 .LP 
-Note: some return codes may only appear in a one file mode (clamscan is started with file argument). These ones are marked with \fB(ofm)\fR.
+Note: some return codes may only appear in a one file mode (clamscan is started with file argument). Those are marked with \fB(ofm)\fR.
 
 0 : No virus found.
 .TP 
@@ -150,8 +147,6 @@ Note: some return codes may only appear in a one file mode (clamscan is started 
 40: Unknown option passed.
 .TP 
 50: Database initialization error.
-.TP 
-51: Wrong number of threads given.
 .TP 
 52: Not supported file type.
 .TP 
@@ -163,9 +158,9 @@ Note: some return codes may only appear in a one file mode (clamscan is started 
 .TP 
 56: Can't stat input file / directory.
 .TP 
-57: Can't get absolute pathname of current working directory.
+57: Can't get absolute path name of current working directory.
 .TP 
-58: I/O error, check your filesystem.
+58: I/O error, please check your filesystem.
 .TP 
 59: Can't get information about current user from /etc/passwd.
 .TP 
@@ -175,7 +170,7 @@ Note: some return codes may only appear in a one file mode (clamscan is started 
 .TP 
 63: Can't create temporary files/directories (check permissions).
 .TP 
-64: Can't write to temporary directory, please specify another one.
+64: Can't write to temporary directory (please specify another one).
 .TP 
 70: Can't allocate and clear memory (calloc).
 .TP 
@@ -187,4 +182,4 @@ Please check the full documentation for credits.
 Tomasz Kojm <tkojm@clamav.net>
 .SH "SEE ALSO"
 .LP 
-clamd(8), clamdscan(1), freshclam(1), sigtool(1), clamav.conf(5), clamav\-milter(8)
+clamdscan(1), freshclam(1)

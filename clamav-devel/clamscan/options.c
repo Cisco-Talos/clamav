@@ -45,6 +45,10 @@ int main(int argc, char **argv)
 	const char *getopt_parameters = "hvd:wriVl:m";
 
 	static struct option long_options[] = {
+	    /* 
+	     * WARNING: For compatibility reasons options marked as "not used"
+	     *		must still be accepted !
+	     */
 	    {"help", 0, 0, 'h'},
 	    {"quiet", 0, 0, 0},
 	    {"verbose", 0, 0, 'v'},
@@ -61,7 +65,7 @@ int main(int argc, char **argv)
 	    {"no-summary", 0, 0, 0},
 	    {"infected", 0, 0, 'i'},
 	    {"log", 1, 0, 'l'},
-	    {"log-verbose", 0, 0, 0},
+	    {"log-verbose", 0, 0, 0}, /* not used */
 	    {"threads", 1, 0, 0}, /* not used */
 	    {"one-virus", 0, 0, 0}, /* not used */
 	    {"move", 1, 0, 0},
