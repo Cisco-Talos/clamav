@@ -225,6 +225,7 @@ void *cli_malloc(size_t size)
     if(!alloc) {
 	cli_errmsg("cli_malloc(): Can't allocate memory (%d bytes).\n", size);
 	perror("malloc_problem");
+	/* _exit(1); */
 	return NULL;
     } else return alloc;
 }
@@ -238,6 +239,7 @@ void *cli_calloc(size_t nmemb, size_t size)
     if(!alloc) {
 	cli_errmsg("cli_calloc(): Can't allocate memory (%d bytes).\n", nmemb * size);
 	perror("calloc_problem");
+	/* _exit(1); */
 	return NULL;
     } else return alloc;
 }

@@ -1,3 +1,7 @@
+Wed Mar 31 09:25:25 CEST 2004 (tk)
+----------------------------------
+  * libclamav: matcher: don't limit '*' to a single 128KB buffer
+
 Tue Mar 30 23:57:33 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Better handling of multipart within multipart messages

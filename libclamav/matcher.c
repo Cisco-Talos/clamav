@@ -193,20 +193,24 @@ void cl_freetrie(struct cl_node *root)
     free(root);
 }
 
-int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root)
+int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *pcnt)
 {
 	struct cl_node *current;
 	struct cli_patt *pt;
-	int position, *partcnt;
+	int position, *partcnt, extpartcnt = 0;
         unsigned int i;
 
     current = (struct cl_node *) root;
 
-    if ((partcnt = (int *) cli_calloc(root->partsigs + 1, sizeof(int))) == NULL) {
-	cli_dbgmsg("cl_scanbuff(): unable to calloc(%d, %d)\n", root->partsigs + 1, sizeof(int));
-	return CL_EMEM;
+    if(pcnt) {
+	partcnt = pcnt;
+	extpartcnt = 1;
+    } else {
+	if((partcnt = (int *) cli_calloc(root->partsigs + 1, sizeof(int))) == NULL) {
+	    cli_dbgmsg("cl_scanbuff(): unable to calloc(%d, %d)\n", root->partsigs + 1, sizeof(int));
+	    return CL_EMEM;
+	}
     }
-
 
     for(i = 0; i < length; i++)  {
 	current = current->trans[(unsigned char) buffer[i] & 0xff];
@@ -222,14 +226,16 @@ int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, c
 			    if(++partcnt[pt->sigid] == pt->parts) { /* last */
 				if(virname)
 				    *virname = pt->virname;
-				free(partcnt);
+				if(!extpartcnt)
+				    free(partcnt);
 				return CL_VIRUS;
 			    }
 			}
 		    } else { /* old type signature */
 			if(virname)
 			    *virname = pt->virname;
-			free(partcnt);
+			if(!extpartcnt)
+			    free(partcnt);
 			return CL_VIRUS;
 		    }
 		}
@@ -241,8 +247,15 @@ int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, c
 	}
     }
 
-    free(partcnt);
+    if(!extpartcnt)
+	free(partcnt);
     return CL_CLEAN;
+}
+
+int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root)
+
+{
+    return cli_scanbuff(buffer, length, virname, root, NULL);
 }
 
 int cli_findpos(const char *buffer, int offset, int length, const struct cli_patt *pattern)
