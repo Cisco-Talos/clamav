@@ -46,7 +46,7 @@
 #define IMAGE_NT_SIGNATURE	    0x00004550
 #define IMAGE_OPTIONAL_SIGNATURE    0x010b
 
-#define DETECT_BROKEN		    (options & CL_BROKEN)
+#define DETECT_BROKEN		    (options & CL_SCAN_BROKEN)
 
 #define UPX_NRV2B "\x11\xdb\x11\xc9\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9\x11\xc9\x75\x20\x41\x01\xdb"
 #define UPX_NRV2D "\x83\xf0\xff\x74\x78\xd1\xf8\x89\xc5\xeb\x0b\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9"
@@ -141,7 +141,7 @@ static int cli_ddump(int desc, int offset, int size, const char *file)
     return 0;
 }
 
-int cli_scanpe(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+int cli_scanpe(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	uint16_t e_magic; /* DOS signature ("MZ") */
 	uint16_t nsections;

@@ -24,24 +24,24 @@
 #define CL_TYPENO 500
 
 typedef enum {
-    CL_UNKNOWN_TEXT_TYPE = CL_TYPENO,
-    CL_UNKNOWN_DATA_TYPE,
-    CL_DOSEXE,
-    CL_DATAFILE,
-    CL_TARFILE,
-    CL_GZFILE,
-    CL_ZIPFILE,
-    CL_BZFILE,
-    CL_RARFILE,
-    CL_MSCFILE,
-    CL_OLE2FILE,
-    CL_MSCABFILE,
-    CL_MSCHMFILE,
-    CL_SCRENC,
+    CL_TYPE_UNKNOWN_TEXT = CL_TYPENO,
+    CL_TYPE_UNKNOWN_DATA,
+    CL_TYPE_MSEXE,
+    CL_TYPE_DATA,
+    CL_TYPE_TAR,
+    CL_TYPE_GZ,
+    CL_TYPE_ZIP,
+    CL_TYPE_BZ,
+    CL_TYPE_RAR,
+    CL_TYPE_MSSZDD,
+    CL_TYPE_MSOLE2,
+    CL_TYPE_MSCAB,
+    CL_TYPE_MSCHM,
+    CL_TYPE_SCRENC,
 
     /* bigger numbers have higher priority (in o-t-f detection) */
-    CL_HTMLFILE, /* on the fly */
-    CL_MAILFILE  /* magic + on the fly */
+    CL_TYPE_HTML, /* on the fly */
+    CL_TYPE_MAIL  /* magic + on the fly */
 
 } cli_file_t;
 

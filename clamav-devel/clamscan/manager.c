@@ -163,41 +163,41 @@ int scanmanager(const struct optstruct *opt)
     /* set options */
 
     if(optl(opt, "disable-archive") || optl(opt, "no-archive"))
-	options &= ~CL_ARCHIVE;
+	options &= ~CL_SCAN_ARCHIVE;
     else
-	options |= CL_ARCHIVE;
+	options |= CL_SCAN_ARCHIVE;
 
     if(optl(opt, "detect-broken"))
-	options |= CL_BROKEN;
+	options |= CL_SCAN_BROKEN;
 
     if(optl(opt, "block-encrypted"))
-	options |= CL_ENCRYPTED;
+	options |= CL_SCAN_ENCRYPTED;
 
     if(optl(opt, "block-max"))
-	options |= CL_BLOCKMAX;
+	options |= CL_SCAN_BLOCKMAX;
 
     if(optl(opt, "no-pe"))
-	options &= ~CL_PE;
+	options &= ~CL_SCAN_PE;
     else
-	options |= CL_PE;
+	options |= CL_SCAN_PE;
 
     if(optl(opt, "no-ole2"))
-	options &= ~CL_OLE2;
+	options &= ~CL_SCAN_OLE2;
     else
-	options |= CL_OLE2;
+	options |= CL_SCAN_OLE2;
 
     if(optl(opt, "no-html"))
-	options &= ~CL_HTML;
+	options &= ~CL_SCAN_HTML;
     else
-	options |= CL_HTML;
+	options |= CL_SCAN_HTML;
 
     if(optl(opt, "no-mail")) {
-	options &= ~CL_MAIL;
+	options &= ~CL_SCAN_MAIL;
     } else {
-	options |= CL_MAIL;
+	options |= CL_SCAN_MAIL;
 
 	if(optl(opt, "mail-follow-urls"))
-	    options |= CL_MAILURL;
+	    options |= CL_SCAN_MAILURL;
     }
 
 #ifdef C_LINUX
@@ -378,7 +378,7 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
      * external (if provided) when internal cannot extract data.
      */
 
-    if((cli_strbcasestr(filename, ".zip") || cli_strbcasestr(filename, ".rar")) && (options & CL_ARCHIVE)) {
+    if((cli_strbcasestr(filename, ".zip") || cli_strbcasestr(filename, ".rar")) && (options & CL_SCAN_ARCHIVE)) {
 	/* try to use internal archivers */
 	if((ret = checkfile(filename, root, limits, options)) == CL_VIRUS) {
 	    if(optl(opt, "remove")) {
@@ -398,7 +398,7 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	} else if(ret == CL_CLEAN)
 	    return 0;
 	/* in other case try to continue with external archivers */
-	options &= ~CL_ARCHIVE; /* and disable decompression for the below checkfile() */
+	options &= ~CL_SCAN_ARCHIVE; /* and disable decompression for the below checkfile() */
     }
 
     if((cli_strbcasestr(filename, ".zip") && optl(opt, "unzip"))

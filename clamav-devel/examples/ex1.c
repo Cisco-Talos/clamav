@@ -74,7 +74,7 @@ int main(int argc, char **argv)
     limits.archivememlim = 0; /* disable memory limit for bzip2 scanner */
 
     /* scan descriptor */
-    if((ret = cl_scandesc(fd, &virname, &size, root, &limits, CL_STDOPT)) == CL_VIRUS)
+    if((ret = cl_scandesc(fd, &virname, &size, root, &limits, CL_SCAN_STDOPT)) == CL_VIRUS)
 	printf("Virus detected: %s\n", virname);
     else {
 	printf("No virus detected.\n");

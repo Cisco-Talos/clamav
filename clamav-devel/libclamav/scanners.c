@@ -76,18 +76,18 @@ extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME *
 #include <bzlib.h>
 #endif
 
-#define SCAN_ARCHIVE	    (options & CL_ARCHIVE)
-#define SCAN_MAIL	    (options & CL_MAIL)
-#define SCAN_OLE2	    (options & CL_OLE2)
-#define SCAN_HTML	    (options & CL_HTML)
-#define SCAN_PE		    (options & CL_PE)
-#define DISABLE_RAR	    (options & CL_DISABLERAR)
-#define DETECT_ENCRYPTED    (options & CL_ENCRYPTED)
-#define BLOCKMAX	    (options & CL_BLOCKMAX)
+#define SCAN_ARCHIVE	    (options & CL_SCAN_ARCHIVE)
+#define SCAN_MAIL	    (options & CL_SCAN_MAIL)
+#define SCAN_OLE2	    (options & CL_SCAN_OLE2)
+#define SCAN_HTML	    (options & CL_SCAN_HTML)
+#define SCAN_PE		    (options & CL_SCAN_PE)
+#define DISABLE_RAR	    (options & CL_SCAN_DISABLERAR)
+#define DETECT_ENCRYPTED    (options & CL_SCAN_ENCRYPTED)
+#define BLOCKMAX	    (options & CL_SCAN_BLOCKMAX)
 
 #define MAX_MAIL_RECURSION  15
 
-static int cli_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec);
+static int cli_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec);
 
 
 #ifdef CL_THREAD_SAFE
@@ -98,7 +98,7 @@ static void cli_unlock_mutex(void *mtx)
 }
 #endif
 
-static int cli_scanrar(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+static int cli_scanrar(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	FILE *tmp = NULL;
 	int files = 0, fd, ret = CL_CLEAN, afiles;
@@ -259,7 +259,7 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 }
 
 #ifdef HAVE_ZLIB_H
-static int cli_scanzip(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+static int cli_scanzip(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	ZZIP_DIR *zdir;
 	ZZIP_DIRENT zdirent;
@@ -423,7 +423,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
     return ret;
 }
 
-static int cli_scangzip(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+static int cli_scangzip(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	int fd, bytes, ret = CL_CLEAN;
 	long int size = 0;
@@ -499,7 +499,7 @@ static int cli_scangzip(int desc, const char **virname, long int *scanned, const
 #define BZ2_bzRead bzRead
 #endif
 
-static int cli_scanbzip(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+static int cli_scanbzip(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	int fd, bytes, ret = CL_CLEAN, bzerror = 0;
 	short memlim = 0;
@@ -580,7 +580,7 @@ static int cli_scanbzip(int desc, const char **virname, long int *scanned, const
 }
 #endif
 
-static int cli_scanmscomp(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+static int cli_scanszdd(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	int fd, ret = CL_CLEAN;
 	FILE *tmp = NULL, *in;
@@ -623,7 +623,7 @@ static int cli_scanmscomp(int desc, const char **virname, long int *scanned, con
     return ret;
 }
 
-static int cli_scanmscab(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+static int cli_scanmscab(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	struct mscab_decompressor *cabd = NULL;
 	struct mscabd_cabinet *base, *cab;
@@ -678,7 +678,7 @@ static int cli_scanmscab(int desc, const char **virname, long int *scanned, cons
     return ret;
 }
 
-static int cli_scanhtml(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+static int cli_scanhtml(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	char *tempname, fullname[1024];
 	const char *tmpdir;
@@ -734,7 +734,7 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
     return ret;
 }
 
-static int  cli_scan_mydoom_log(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+static int  cli_scan_mydoom_log(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	int32_t record[8], check;
 	int i, retval=CL_VIRUS, j;
@@ -771,7 +771,7 @@ static int  cli_scan_mydoom_log(int desc, const char **virname, long int *scanne
     return retval;
 }
 
-static int cli_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+static int cli_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	DIR *dd;
 	struct dirent *dent;
@@ -820,7 +820,7 @@ static int cli_scandir(const char *dirname, const char **virname, long int *scan
     return 0;
 }
 
-static int cli_vba_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+static int cli_vba_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	int ret = CL_CLEAN, i, fd, data_len;
 	vba_project_t *vba_project;
@@ -947,7 +947,7 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
     return ret;
 }
 
-static int cli_scanole2(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+static int cli_scanole2(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	const char *tmpdir;
 	char *dir;
@@ -988,7 +988,7 @@ static int cli_scanole2(int desc, const char **virname, long int *scanned, const
     return ret;
 }
 
-static int cli_scantar(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+static int cli_scantar(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	const char *tmpdir;
 	char *dir;
@@ -1023,7 +1023,7 @@ static int cli_scantar(int desc, const char **virname, long int *scanned, const 
     return ret;
 }
 
-static int cli_scanmschm(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+static int cli_scanmschm(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	const char *tmpdir;
 	char *tempname;
@@ -1056,7 +1056,7 @@ static int cli_scanmschm(int desc, const char **virname, long int *scanned, cons
     return ret;
 }
 
-static int cli_scanscrenc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+static int cli_scanscrenc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	const char *tmpdir;
 	char *tempname;
@@ -1087,7 +1087,7 @@ static int cli_scanscrenc(int desc, const char **virname, long int *scanned, con
     free(tempname);
     return ret;
 }
-static int cli_scanmail(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+static int cli_scanmail(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	const char *tmpdir;
 	char *dir;
@@ -1124,7 +1124,7 @@ static int cli_scanmail(int desc, const char **virname, long int *scanned, const
 	return ret;
 }
 
-int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	char magic[MAGIC_BUFFER_SIZE + 1];
 	int ret = CL_CLEAN, nret;
@@ -1172,74 +1172,74 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
     lseek(desc, 0, SEEK_SET);
     type = cli_filetype(magic, bread);
 
-    type == CL_MAILFILE ? (*mrec)++ : (*arec)++;
+    type == CL_TYPE_MAIL ? (*mrec)++ : (*arec)++;
 
     switch(type) {
-	case CL_RARFILE:
+	case CL_TYPE_RAR:
 	    if(!DISABLE_RAR && SCAN_ARCHIVE && !cli_scanrar_inuse)
 		ret = cli_scanrar(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
-	case CL_ZIPFILE:
+	case CL_TYPE_ZIP:
 	    if(SCAN_ARCHIVE)
 		ret = cli_scanzip(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
-	case CL_GZFILE:
+	case CL_TYPE_GZ:
 	    if(SCAN_ARCHIVE)
 		ret = cli_scangzip(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
-	case CL_BZFILE:
+	case CL_TYPE_BZ:
 #ifdef HAVE_BZLIB_H
 	    if(SCAN_ARCHIVE)
 		ret = cli_scanbzip(desc, virname, scanned, root, limits, options, arec, mrec);
 #endif
 	    break;
 
-	case CL_MSCFILE:
+	case CL_TYPE_MSSZDD:
 	    if(SCAN_ARCHIVE)
-		ret = cli_scanmscomp(desc, virname, scanned, root, limits, options, arec, mrec);
+		ret = cli_scanszdd(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
-	case CL_MSCABFILE:
+	case CL_TYPE_MSCAB:
 	    if(SCAN_ARCHIVE)
 		ret = cli_scanmscab(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
-	case CL_MAILFILE:
+	case CL_TYPE_MAIL:
 	    if(SCAN_MAIL)
 		ret = cli_scanmail(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
-	case CL_MSCHMFILE:
+	case CL_TYPE_MSCHM:
 	    if(SCAN_ARCHIVE)
 		ret = cli_scanmschm(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
-	case CL_OLE2FILE:
+	case CL_TYPE_MSOLE2:
 	    if(SCAN_OLE2)
 		ret = cli_scanole2(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
-	case CL_TARFILE:
+	case CL_TYPE_TAR:
 	    if(SCAN_ARCHIVE)
 		ret = cli_scantar(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
-	case CL_SCRENC:
+	case CL_TYPE_SCRENC:
 	    ret = cli_scanscrenc(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
-	case CL_DATAFILE:
+	case CL_TYPE_DATA:
 	    /* it could be a false positive and a standard DOS .COM file */
 	    {
 		struct stat s;
 		if(fstat(desc, &s) == 0 && S_ISREG(s.st_mode) && s.st_size < 65536)
-		type = CL_UNKNOWN_DATA_TYPE;
+		type = CL_TYPE_UNKNOWN_DATA;
 	    }
 
-	case CL_UNKNOWN_DATA_TYPE:
+	case CL_TYPE_UNKNOWN_DATA:
 	    ret = cli_scan_mydoom_log(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
@@ -1247,12 +1247,12 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 	    break;
     }
 
-    type == CL_MAILFILE ? (*mrec)-- : (*arec)--;
+    type == CL_TYPE_MAIL ? (*mrec)-- : (*arec)--;
 
-    if(type != CL_DATAFILE && ret != CL_VIRUS) { /* scan the raw file */
+    if(type != CL_TYPE_DATA && ret != CL_VIRUS) { /* scan the raw file */
 	    int typerec;
 
-	type == CL_UNKNOWN_TEXT_TYPE ? (typerec = 1) : (typerec = 0);
+	type == CL_TYPE_UNKNOWN_TEXT ? (typerec = 1) : (typerec = 0);
 	lseek(desc, 0, SEEK_SET);
 
 	if((nret = cli_scandesc(desc, virname, scanned, root, typerec)) == CL_VIRUS) {
@@ -1263,13 +1263,13 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 	    lseek(desc, 0, SEEK_SET);
 
 	    switch(nret) {
-		case CL_HTMLFILE:
+		case CL_TYPE_HTML:
 		    if(SCAN_HTML)
 			if(cli_scanhtml(desc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS)
 			    return CL_VIRUS;
 		    break;
 
-		case CL_MAILFILE:
+		case CL_TYPE_MAIL:
 		    if(SCAN_MAIL)
 			if(cli_scanmail(desc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS)
 			    return CL_VIRUS;
@@ -1284,7 +1284,7 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 	/* Due to performance reasons all executables were first scanned
 	 * in raw mode. Now we will try to unpack them
 	 */
-	case CL_DOSEXE:
+	case CL_TYPE_MSEXE:
 	    if(SCAN_PE)
 		ret = cli_scanpe(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
@@ -1298,14 +1298,14 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
     return ret;
 }
 
-int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options)
+int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options)
 {
 	int arec = 0, mrec = 0;
 
     return cli_magic_scandesc(desc, virname, scanned, root, limits, options, &arec, &mrec);
 }
 
-static int cli_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
+static int cli_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	int fd, ret;
 
@@ -1320,7 +1320,7 @@ static int cli_scanfile(const char *filename, const char **virname, unsigned lon
     return ret;
 }
 
-int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options)
+int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options)
 {
 	int fd, ret;
 

@@ -27,11 +27,9 @@
 extern "C"
 {
 #endif
- 
 
 
 #define CL_COUNT_PRECISION 4096
-
 
 /* return codes */
 #define CL_CLEAN	0   /* virus not found */
@@ -65,22 +63,30 @@ extern "C"
 #define CL_EIO		-12 /* general I/O error */
 #define CL_EFORMAT	-13 /* bad format or broken file */
 
-/* options */
-#define CL_RAW		0
-#define CL_ARCHIVE	1
-#define CL_MAIL		2
-#define CL_DISABLERAR	4
-#define CL_OLE2		8
-#define CL_ENCRYPTED    16
-#define CL_HTML		32
-#define CL_PE		64
-#define CL_BROKEN	128
-#define CL_MAILURL	256
-#define CL_BLOCKMAX	512
-
+/* scan options */
+#define CL_SCAN_RAW		0
+#define CL_SCAN_ARCHIVE		1
+#define CL_SCAN_MAIL		2
+#define CL_SCAN_DISABLERAR	4
+#define CL_SCAN_OLE2		8
+#define CL_SCAN_ENCRYPTED	16
+#define CL_SCAN_HTML		32
+#define CL_SCAN_PE		64
+#define CL_SCAN_BROKEN		128
+#define CL_SCAN_MAILURL		256
+#define CL_SCAN_BLOCKMAX	512
 
 /* recommended options */
-#define CL_STDOPT	(CL_ARCHIVE | CL_MAIL | CL_OLE2 | CL_HTML | CL_PE) 
+#define CL_SCAN_STDOPT		(CL_SCAN_ARCHIVE | CL_SCAN_MAIL | CL_SCAN_OLE2 | CL_SCAN_HTML | CL_SCAN_PE) 
+
+/* aliases for backward compatibility */
+#define CL_RAW		CL_SCAN_RAW
+#define CL_ARCHIVE	CL_SCAN_ARCHIVE
+#define CL_MAIL		CL_SCAN_MAIL
+#define CL_DISABLERAR	CL_SCAN_DISABLERAR
+#define CL_OLE2		CL_SCAN_OLE2
+#define CL_ENCRYPTED    CL_SCAN_ENCRYPTED
+
 
 struct cli_bm_patt {
     char *pattern;
@@ -158,13 +164,13 @@ struct cl_cvd {
 /* file scanning */
 extern int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root);
 
-extern int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options);
+extern int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options);
 
-extern int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options);
+extern int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options);
 
 /* database */
-extern int cl_loaddb(const char *filename, struct cl_node **root, int *virnum);
-extern int cl_loaddbdir(const char *dirname, struct cl_node **root, int *virnum);
+extern int cl_loaddb(const char *filename, struct cl_node **root, unsigned int *signo);
+extern int cl_loaddbdir(const char *dirname, struct cl_node **root, unsigned int *signo);
 extern const char *cl_retdbdir(void);
 extern int cl_retflevel(void);
 

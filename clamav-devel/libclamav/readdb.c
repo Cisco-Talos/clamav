@@ -383,7 +383,7 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig,
     return 0;
 }
 
-static int cli_loaddb(FILE *fd, struct cl_node **root, int *virnum)
+static int cli_loaddb(FILE *fd, struct cl_node **root, unsigned int *signo)
 {
 	char buffer[FILEBUFF], *pt, *start;
 	int line = 0, ret = 0;
@@ -448,13 +448,13 @@ static int cli_loaddb(FILE *fd, struct cl_node **root, int *virnum)
 	return ret;
     }
 
-    if(virnum)
-	*virnum += line;
+    if(signo)
+	*signo += line;
 
     return 0;
 }
 
-static int cli_loadhdb(FILE *fd, struct cl_node **root, int *virnum)
+static int cli_loadhdb(FILE *fd, struct cl_node **root, unsigned int *signo)
 {
 	char buffer[FILEBUFF], *pt;
 	int line = 0, ret = 0;
@@ -535,13 +535,13 @@ static int cli_loadhdb(FILE *fd, struct cl_node **root, int *virnum)
 	return ret;
     }
 
-    if(virnum)
-	*virnum += line;
+    if(signo)
+	*signo += line;
 
     return 0;
 }
 
-int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
+int cl_loaddb(const char *filename, struct cl_node **root, unsigned int *signo)
 {
 	FILE *fd;
 	int ret;
@@ -555,17 +555,17 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
     cli_dbgmsg("Loading %s\n", filename);
 
     if(cli_strbcasestr(filename, ".db")  || cli_strbcasestr(filename, ".db2") || cli_strbcasestr(filename, ".db3")) {
-	ret = cli_loaddb(fd, root, virnum);
+	ret = cli_loaddb(fd, root, signo);
 
     } else if(cli_strbcasestr(filename, ".cvd")) {
-	ret = cli_cvdload(fd, root, virnum);
+	ret = cli_cvdload(fd, root, signo);
 
     } else if(cli_strbcasestr(filename, ".hdb")) {
-	ret = cli_loadhdb(fd, root, virnum);
+	ret = cli_loadhdb(fd, root, signo);
 
     } else {
 	cli_dbgmsg("cl_loaddb: unknown extension - assuming old database format\n");
-	ret = cli_loaddb(fd, root, virnum);
+	ret = cli_loaddb(fd, root, signo);
     }
 
     if(ret)
@@ -575,7 +575,7 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
     return ret;
 }
 
-int cl_loaddbdir(const char *dirname, struct cl_node **root, int *virnum)
+int cl_loaddbdir(const char *dirname, struct cl_node **root, unsigned int *signo)
 {
 	DIR *dd;
 	struct dirent *dent;
@@ -610,7 +610,7 @@ int cl_loaddbdir(const char *dirname, struct cl_node **root, int *virnum)
 		    return CL_EMEM;
 		}
 		sprintf(dbfile, "%s/%s", dirname, dent->d_name);
-		if((ret = cl_loaddb(dbfile, root, virnum))) {
+		if((ret = cl_loaddb(dbfile, root, signo))) {
 		    cli_dbgmsg("cl_loaddbdir(): error loading database %s\n", dbfile);
 		    free(dbfile);
 		    closedir(dd);

@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.117  2004/09/13 16:44:01  kojm
+ * minor cleanup
+ *
  * Revision 1.116  2004/09/13 13:16:28  nigelhorne
  * Return CL_EFORMAT on bad format
  *
@@ -336,7 +339,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.116 2004/09/13 13:16:28 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.117 2004/09/13 16:44:01 kojm Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1395,7 +1398,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 									addAttachment = TRUE;
 								}
 							} else {
-								if(options&CL_MAILURL)
+								if(options&CL_SCAN_MAILURL)
 									if(tableFind(subtypeTable, cptr) == HTML)
 										checkURLs(aMessage, dir);
 								messageAddArgument(aMessage, "filename=textportion");
