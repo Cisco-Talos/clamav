@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.8  2004/03/23 10:58:52  nigelhorne
+ * More restrictive about which characters can be used in filename on DOS based systems
+ *
  * Revision 1.7  2004/02/15 08:45:53  nigelhorne
  * Avoid scanning the same file twice
  *
@@ -23,7 +26,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.7 2004/02/15 08:45:53 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.8 2004/03/23 10:58:52 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -33,11 +36,6 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.7 2004/02/15 08:45:53 nigelhorne Ex
 #include <string.h>
 #if	C_DARWIN
 #include <sys/types.h>
-#include <sys/malloc.h>
-#else
-#ifdef HAVE_MALLOC_H /* tk: FreeBSD-CURRENT doesn't support malloc.h */
-#include <malloc.h>
-#endif
 #endif
 #include "mbox.h"
 #include "blob.h"
@@ -54,7 +52,8 @@ blobCreate(void)
 {
 #ifdef	CL_DEBUG
 	blob *b = (blob *)cli_calloc(1, sizeof(blob));
-	b->magic = BLOB;
+	if(b)
+		b->magic = BLOB;
 	cli_dbgmsg("blobCreate\n");
 	return b;
 #else
@@ -109,16 +108,15 @@ blobSetFilename(blob *b, const char *filename)
 		free(b->name);
 	b->name = strdup(filename);
 
-	assert(b->name != NULL);
-
-	for(ptr = b->name; *ptr; ptr++) {
-#ifdef	MSDOS
-		if((*ptr == '/') || (*ptr == '\\'))
+	if(b->name)
+		for(ptr = b->name; *ptr; ptr++) {
+#if	defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32)
+			if(strchr("*?<>|\"+=,;: ", *ptr))
 #else
-		if(*ptr == '/')
+			if(*ptr == '/')
 #endif
-			*ptr = '_';
-	}
+				*ptr = '_';
+		}
 
 	cli_dbgmsg("blobSetFilename: %s\n", filename);
 }
@@ -159,10 +157,10 @@ blobAddData(blob *b, const unsigned char *data, size_t len)
 		b->data = cli_realloc(b->data, b->size);
 	}
 
-	assert(b->data != NULL);
-
-	memcpy(&b->data[b->len], data, len);
-	b->len += len;
+	if(b->data) {
+		memcpy(&b->data[b->len], data, len);
+		b->len += len;
+	}
 }
 
 unsigned char *
