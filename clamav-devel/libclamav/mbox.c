@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.113  2004/08/26 09:33:20  nigelhorne
+ * Scan Communigate Pro files
+ *
  * Revision 1.112  2004/08/23 13:15:16  nigelhorne
  * messageClearMarkers
  *
@@ -324,7 +327,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.112 2004/08/23 13:15:16 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.113 2004/08/26 09:33:20 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -551,6 +554,7 @@ static	pthread_mutex_t	tables_mutex = PTHREAD_MUTEX_INITIALIZER;
  * http://www.lazerware.com/formats/Specs/AppleSingle_AppleDouble.pdf
  * TODO: ensure parseEmailHeaders is always called before parseEmailBody
  * TODO: create parseEmail which calls parseEmailHeaders then parseEmailBody
+ * TODO: Look into TNEF. Is there anything that needs to be done here?
  */
 int
 cli_mbox(const char *dir, int desc, unsigned int options)
@@ -660,6 +664,17 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		/*
 		 * It's a single message, parse the headers then the body
 		 * Ignore blank lines at the start of the message
+		 */
+		if(strncmp(buffer, "P I ", 4) == 0)
+			/*
+			 * CommuniGate Pro format: ignore headers until
+			 * blank line
+			 */
+			while((fgets(buffer, sizeof(buffer), fd) != NULL) &&
+				(strchr("\r\n", buffer[0]) == NULL))
+					;
+		/*
+		 * Ignore any blank lines at the top of the message
 		 */
 		while(strchr("\r\n", buffer[0]) &&
 		     (fgets(buffer, sizeof(buffer), fd) != NULL))
@@ -1450,12 +1465,6 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					case AUDIO:
 					case IMAGE:
 					case VIDEO:
-						/*
-						 * TODO: it may be nice to
-						 * have an option to throw
-						 * away all images and sound
-						 * files for ultra-secure sites
-						 */
 						addAttachment = TRUE;
 						break;
 					default:
@@ -1652,7 +1661,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				fileblobDestroy(fb);
 			}
 		} else if((encodingLine(mainMessage) != NULL) &&
-			  ((t_line = bounceBegin(mainMessage)) != NULL))  {
+			  ((t_line = bounceBegin(mainMessage)) != NULL)) {
 			const text *t;
 			static const char encoding[] = "Content-Transfer-Encoding";
 			/*
@@ -1994,9 +2003,24 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 			 * just simply "Content-Type:"
 			 */
 			if(arg == NULL)
-				  cli_warnmsg("Empty content-type received, no subtype specified, assuming text/plain; charset=us-ascii\n");
+				/*
+				 * According to section 4 of RFC1521:
+				 * "Note also that a subtype specification is
+				 * MANDATORY. There are no default subtypes"
+				 *
+				 * We have to break this an make an assumption
+				 * for the subtype because virus writers and
+				 * email client writers don't get it right
+				 */
+				 cli_warnmsg("Empty content-type received, no subtype specified, assuming text/plain; charset=us-ascii\n");
 			else if(strchr(copy, '/') == NULL)
-				  cli_warnmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", copy);
+				/*
+				 * Empty field, such as
+				 *	Content-Type:
+				 * which I believe is illegal according to
+				 * RFC1521
+				 */
+				cli_warnmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", copy);
 			else {
 				/*
 				 * Some clients are broken and

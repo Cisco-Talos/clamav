@@ -1,3 +1,7 @@
+Thu Aug 26 10:34:48 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Scan CommuniGate files
+
 Thu Aug 26 02:53:41 CEST 2004 (tk)
 ----------------------------------
   * clamscan, clamd, zziplib: Fix possible small memory leaks (thanks to
