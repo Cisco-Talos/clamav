@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.87  2004/09/20 12:44:03  nigelhorne
+ * Fix parsing error on mime arguments
+ *
  * Revision 1.86  2004/09/18 14:59:26  nigelhorne
  * Code tidy
  *
@@ -255,7 +258,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.86 2004/09/18 14:59:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.87 2004/09/20 12:44:03 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -573,8 +576,6 @@ messageAddArgument(message *m, const char *arg)
 
 	if(!usefulArg(arg))
 		return;
-
-	cli_dbgmsg("Add argument '%s'\n", arg);
 
 	for(offset = 0; offset < m->numberOfArguments; offset++)
 		if(m->mimeArguments[offset] == NULL)

@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.133  2004/09/20 12:44:03  nigelhorne
+ * Fix parsing error on mime arguments
+ *
  * Revision 1.132  2004/09/20 08:31:56  nigelhorne
  * FOLLOWURLS now compiled if libcurl is found
  *
@@ -384,7 +387,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.132 2004/09/20 08:31:56 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.133 2004/09/20 12:44:03 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -858,6 +861,7 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 				free(copy);
 			} else {
 				Xheader = (bool)(buffer[0] == 'X');
+				messageAddArgument(ret, buffer);
 				if((parseEmailHeader(ret, buffer, rfc821) >= 0) ||
 				   (strncasecmp(buffer, "From ", 5) == 0))
 					anyHeadersFound = TRUE;
@@ -2152,9 +2156,9 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 				 */
 				cli_dbgmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", copy);
 			else {
+				int i;
 				char *mimeArgs;	/* RHS of the ; */
 
-				mimeArgs = cli_strtok(copy, 1, ";");
 				/*
 				 * Some clients are broken and
 				 * put white space after the ;
@@ -2234,7 +2238,10 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 				 * Content-Type:', arg='multipart/mixed; boundary=foo
 				 * we find the boundary argument set it
 				 */
-				if(mimeArgs) {
+				i = 1;
+				while((mimeArgs = cli_strtok(copy, i++, ";")) != NULL) {
+					cli_dbgmsg("mimeArgs = '%s'\n", mimeArgs);
+
 					messageAddArguments(m, mimeArgs);
 					free(mimeArgs);
 				}
