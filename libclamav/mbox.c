@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.232 2005/03/22 11:33:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.233 2005/03/28 11:03:14 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -169,7 +169,7 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 /*#define	NEW_WORLD*/
 
 static	int	cli_parse_mbox(const char *dir, int desc, unsigned int options);
-static	message	*parseEmailFile(FILE *fin, const table_t *rfc821Table, const char *firstLine);
+static	message	*parseEmailFile(FILE *fin, const table_t *rfc821Table, const char *firstLine, const char *dir);
 static	message	*parseEmailHeaders(const message *m, const table_t *rfc821Table);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
 static	int	parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, unsigned int options);
@@ -187,6 +187,7 @@ static	char	*rfc822comments(const char *in, char *out);
 static	int	rfc1341(message *m, const char *dir);
 #endif
 static	bool	usefulHeader(int commandNumber, const char *cmd);
+static	void	uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin);
 #ifdef	NEW_WORLD
 static	const	char	*cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns);
 #endif
@@ -836,34 +837,13 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 			} else
 				lastLineWasEmpty = (bool)(buffer[0] == '\0');
 
-			if(isuuencodebegin(buffer)) {
+			if(isuuencodebegin(buffer))
 				/*
 				 * Fast track visa to uudecode.
 				 * TODO: binhex, yenc
 				 */
-				fileblob *fb = fileblobCreate();
-				char *filename = cli_strtok(buffer, 2, " ");
-
-				fileblobSetFilename(fb, dir, filename);
-				cli_dbgmsg("Fast track uuencode %s\n", filename);
-				free(filename);
-
-				while(fgets(buffer, sizeof(buffer) - 1, fd) != NULL) {
-					unsigned char data[1024];
-					const unsigned char *uptr;
-
-					cli_chomp(buffer);
-					if(strcasecmp(buffer, "end") == 0)
-						break;
-
-					uptr = decodeLine(m, UUENCODE, buffer, data, sizeof(data));
-					if(uptr == NULL)
-						break;
-					fileblobAddData(fb, data, (size_t)(uptr - data));
-				}
-
-				fileblobDestroy(fb);
-			} else
+				uufasttrack(m, buffer, dir, fd);
+			else
 				if(messageAddStr(m, buffer) < 0)
 					break;
 		} while(fgets(buffer, sizeof(buffer) - 1, fd) != NULL);
@@ -894,7 +874,7 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 
 		buffer[sizeof(buffer) - 1] = '\0';
 
-		body = parseEmailFile(fd, rfc821, buffer);
+		body = parseEmailFile(fd, rfc821, buffer, dir);
 		fclose(fd);
 	}
 
@@ -938,7 +918,7 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
  * handled ungracefully...
  */
 static message *
-parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine)
+parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const char *dir)
 {
 	bool inHeader = TRUE;
 	bool contMarker = FALSE;
@@ -1131,8 +1111,13 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine)
 				free(fullline);
 				fullline = NULL;
 			}
-		} else
-			/*cli_dbgmsg("Add line to body '%s'\n", start);*/
+		} else if(start && isuuencodebegin(start))
+			/*
+			 * Fast track visa to uudecode.
+			 * TODO: binhex, yenc
+			 */
+			uufasttrack(ret, start, dir, fin);
+		else
 			if(messageAddStr(ret, start) < 0)
 				break;
 	} while(fgets(buffer, sizeof(buffer) - 1, fin) != NULL);
@@ -1450,7 +1435,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			 */
 			cli_dbgmsg("assume no encoding\n");
 			mimeType = NOMIME;
-			messageSetMimeSubtype(mainMessage, NULL);
+			messageSetMimeSubtype(mainMessage, "");
 		} else if((mimeType == MESSAGE) &&
 			  (strcasecmp(mimeSubtype, "rfc822-headers") == 0)) {
 			/*
@@ -1461,6 +1446,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			 */
 			cli_dbgmsg("Changing message/rfc822-headers to text/rfc822-headers\n");
 			mimeType = NOMIME;
+			messageSetMimeSubtype(mainMessage, "");
 		}
 
 		cli_dbgmsg("mimeType = %d\n", mimeType);
@@ -2593,7 +2579,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				 * has been found when it hasn't.
 				 */
 				if((fb = fileblobCreate()) != NULL) {
-					cli_dbgmsg("Found a bounce message with no header\n");
+					cli_dbgmsg("Found a bounce message with no header at '%s'\n",
+						lineGetData(t_line->t_line));
 					fileblobSetFilename(fb, dir, "bounce");
 					fileblobAddData(fb,
 						(const unsigned char *)"Received: by clamd (bounce)\n",
@@ -3800,6 +3787,45 @@ usefulHeader(int commandNumber, const char *cmd)
 	}
 
 	return FALSE;
+}
+
+/*
+ * Save the uuencoded part of the file as it is read in
+ */
+static void
+uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin)
+{
+	fileblob *fb = fileblobCreate();
+	char buffer[LINE_LENGTH + 1];
+	char *filename = cli_strtok(firstline, 2, " ");
+
+	fileblobSetFilename(fb, dir, filename);
+	cli_dbgmsg("Fast track uuencode %s\n", filename);
+	free(filename);
+
+	while(fgets(buffer, sizeof(buffer) - 1, fin) != NULL) {
+		unsigned char data[1024];
+		const unsigned char *uptr;
+		size_t len;
+
+		cli_chomp(buffer);
+		if(strcasecmp(buffer, "end") == 0)
+			break;
+		if(buffer[0] == '\0')
+			break;
+
+		uptr = decodeLine(m, UUENCODE, buffer, data, sizeof(data));
+		if(uptr == NULL)
+			break;
+
+		len = (size_t)(uptr - data);
+		if((len > 62) || (len == 0))
+			break;
+
+		fileblobAddData(fb, data, len);
+	}
+
+	fileblobDestroy(fb);
 }
 
 #ifdef	NEW_WORLD
