@@ -1,3 +1,8 @@
+Thu Aug 12 13:19:37 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	--from=EMAIL option didn't always work, reported by
+				"Sergey Y. Afonin" <asy@kraft-s.ru>
+
 Thu Aug 12 11:36:36 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	checkURLs code (not compiled by default) can now
