@@ -57,7 +57,7 @@ AC_TYPE_OFF_T
 AC_COMPILE_CHECK_SIZEOF(short)
 AC_COMPILE_CHECK_SIZEOF(int)
 AC_COMPILE_CHECK_SIZEOF(long)
-AC_CHECK_FUNCS(poll)
+AC_CHECK_FUNCS(poll setsid memcpy snprintf strerror_r)
 
 have_pthreads=no
 AC_CHECK_HEADER(pthread.h,[have_pthreads=yes],)
@@ -80,7 +80,6 @@ AC_ARG_ENABLE(clamuko,
 [  --disable-clamuko	  Disable clamuko support (Linux and FreeBSD only)],
 want_clamuko="no",)
 
-AC_CHECK_FUNCS(setsid memcpy snprintf)
 AC_FUNC_SETPGRP
 
 have_milter="no"
