@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.128  2004/09/15 08:46:33  nigelhorne
+ * Added --max-children to --help
+ *
  * Revision 1.127  2004/09/14 07:57:29  nigelhorne
  * Session code no longer needs all servers to be up on startup
  *
@@ -392,9 +395,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.127 2004/09/14 07:57:29 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.128 2004/09/15 08:46:33 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.75q"
+#define	CM_VERSION	"0.75r"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -753,6 +756,7 @@ help(void)
 	puts(_("\t--help\t\t\t-h\tThis message."));
 	puts(_("\t--headers\t\t-H\tInclude original message headers in the report."));
 	puts(_("\t--local\t\t\t-l\tScan messages sent from machines on our LAN."));
+	puts(_("\t--max-childen\t\t-m\tMaximum number of concurrent scans."));
 	puts(_("\t--outgoing\t\t-o\tScan outgoing messages from this machine."));
 	puts(_("\t--noreject\t\t-N\tDon't reject viruses, silently throw them away."));
 	puts(_("\t--noxheader\t\t-n\tSuppress X-Virus-Scanned/X-Virus-Status headers."));
