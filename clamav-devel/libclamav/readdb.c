@@ -239,7 +239,10 @@ int cl_loaddbdir(const char *dirname, struct cl_node **root, int *virnum)
     cli_dbgmsg("Loading databases from %s\n", dirname);
 
     while((dent = readdir(dd))) {
-	if(dent->d_ino) {
+#ifndef C_INTERIX
+	if(dent->d_ino)
+#endif
+	{
 	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") &&
 	    (cli_strbcasestr(dent->d_name, ".db")  ||
 	     cli_strbcasestr(dent->d_name, ".db2") ||
@@ -292,7 +295,10 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
     cli_dbgmsg("Stat()ing files in %s\n", dirname);
 
     while((dent = readdir(dd))) {
-	if(dent->d_ino) {
+#ifndef C_INTERIX
+	if(dent->d_ino)
+#endif
+	{
 	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && (cli_strbcasestr(dent->d_name, ".db") || cli_strbcasestr(dent->d_name, ".db2") || cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbstat->no++;
@@ -331,7 +337,10 @@ int cl_statchkdir(const struct cl_stat *dbstat)
     cli_dbgmsg("Stat()ing files in %s\n", dbstat->dir);
 
     while((dent = readdir(dd))) {
-	if(dent->d_ino) {
+#ifndef C_INTERIX
+	if(dent->d_ino)
+#endif
+	{
 	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && (cli_strbcasestr(dent->d_name, ".db") || cli_strbcasestr(dent->d_name, ".db2") || cli_strbcasestr(dent->d_name, ".cvd"))) {
 
                 fname = cli_calloc(strlen(dbstat->dir) + strlen(dent->d_name) + 2, sizeof(char));

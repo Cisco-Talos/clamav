@@ -780,7 +780,10 @@ static int cli_scandir(const char *dirname, const char **virname, long int *scan
 
     if((dd = opendir(dirname)) != NULL) {
 	while((dent = readdir(dd))) {
-	    if(dent->d_ino) {
+#ifndef C_INTERIX
+	    if(dent->d_ino)
+#endif
+	    {
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
 		    fname = cli_calloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
@@ -911,7 +914,10 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 
     if((dd = opendir(dirname)) != NULL) {
 	while((dent = readdir(dd))) {
-	    if(dent->d_ino) {
+#ifndef C_INTERIX
+	    if(dent->d_ino)
+#endif
+	    {
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
 		    fname = cli_calloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));

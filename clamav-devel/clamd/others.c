@@ -35,6 +35,12 @@
 #include <sys/types.h>
 #endif
 
+/* submitted by breiter@wolfereiter.com: do not use poll(2) on Interix */
+#ifdef C_INTERIX
+#undef HAVE_POLL
+#undef HAVE_POLL_H
+#endif
+
 #if HAVE_POLL
 #if HAVE_POLL_H
 #include <poll.h>

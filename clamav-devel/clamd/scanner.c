@@ -90,7 +90,10 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 		closedir(dd);
 		return 1;
 	    }
-	    if(dent->d_ino) {
+#ifndef C_INTERIX
+	    if(dent->d_ino)
+#endif
+	    {
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
 		    fname = (char *) mcalloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));

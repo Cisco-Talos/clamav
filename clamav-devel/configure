@@ -11309,7 +11309,32 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
     ;;
+interix*)
 
+cat >>confdefs.h <<\_ACEOF
+#define C_INTERIX 1
+_ACEOF
+
+    if test "$test_clamav" = "yes"; then
+	if test ! -r /etc/passwd; then
+	   test_clamav="no"
+	fi
+    fi
+    if test "$have_pthreads" = "yes"; then
+	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
+	TH_SAFE="-thread-safe"
+
+cat >>confdefs.h <<\_ACEOF
+#define CL_THREAD_SAFE 1
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define _REENTRANT 1
+_ACEOF
+
+    fi
+    ;;
 *)
     ;;
 esac

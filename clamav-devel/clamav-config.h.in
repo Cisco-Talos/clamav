@@ -45,6 +45,9 @@
 /* os is hpux */
 #undef C_HPUX
 
+/* os is interix */
+#undef C_INTERIX
+
 /* os is irix */
 #undef C_IRIX
 
