@@ -1,3 +1,8 @@
+Tue Jan 25 06:13:29 CET 2005 (tk)
+---------------------------------
+  * freshclam/manager.c: properly count signatures in --no-dns mode (problem
+			 reported by Tomasz Papszun)
+
 Tue Jan 25 05:09:42 CET 2005 (tk)
 ---------------------------------
   * clamscan/manager.c: fix bad path completion when using options for external
