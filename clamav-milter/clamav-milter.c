@@ -221,9 +221,14 @@
  *			will help the administrator when sifting through the
  *			mail logs. Based on an idea by Jim Allen,
  *			<Jim.Allen@Heartsine.co.uk>
+ *	0.66l	7/2/04	Updated URL reference
+ *			Added new config.h mechanism
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.43  2004/02/07 12:16:20  nigelhorne
+ * Added config.h
+ *
  * Revision 1.42  2004/02/02 13:44:31  nigelhorne
  * Include the ID of the message when warnings are sent to the postmaster-only
  *
@@ -335,11 +340,15 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.42 2004/02/02 13:44:31 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.43 2004/02/07 12:16:20 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.66k"
+#define	CM_VERSION	"0.66l"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
+
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
 
 #include "defaults.h"
 #include "cfgfile.h"
@@ -400,6 +409,10 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.42 2004/02/02 13:44:31 nig
  * TODO: bounce message should optionally be read from a file
  * TODO: Support ThreadTimeout, LogTime and Logfile from the conf
  *	 file
+ * TODO: Warn if TCPAddr doesn't allow connection from us
+ * TODO: Decide action (bounce, discard, reject etc.) based on the virus
+ *	found. Those with faked addresses, such as SCO.A want discarding,
+ *	others could be bounced properly.
  */
 
 /*
@@ -1936,7 +1949,7 @@ clamfi_eom(SMFICTX *ctx)
 		else
 			rc = SMFIS_DISCARD;
 
-		smfi_setreply(ctx, "550", "5.7.1", "Virus detected by ClamAV - http://clamav.elektrapro.com");
+		smfi_setreply(ctx, "550", "5.7.1", "Virus detected by ClamAV - http://www.clamav.net");
 	}
 	clamfi_cleanup(ctx);
 
