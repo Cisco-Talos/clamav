@@ -1,7 +1,16 @@
+Wed Aug 25 12:45:53 BST 2004 (njh)
+----------------------------------
+  * clamav-milter Give hint about what do to if the running as root warning
+			appears
+		Optimise the sending of headers to clamd
+		Give better SMTP status message when asking for retransmit
+			when --dont-wait is set
+		Quarantine files now handle operating system filename
+
 Wed Aug 25 11:32:48 BST 2004 (njh)
 ----------------------------------
   * docs/man/clamav-milter.8:	Made recommendations about the best options
-  			to choose
+			to choose
 
 Wed Aug 25 11:06:42 BST 2004 (trog)
 -----------------------------------
