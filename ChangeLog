@@ -1,3 +1,7 @@
+Fri Aug 27 10:42:54 BST 2004 (njh)
+----------------------------------
+  * libclamav/blob.c:	Better filename handling in MACOS/X.
+
 Fri Aug 27 02:14:07 CEST 2004 (tk)
 ----------------------------------
   * libclamav/pe.c: include new function cli_peheader() (only dumps specific
