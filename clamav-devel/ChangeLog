@@ -1,3 +1,7 @@
+Wed Jun  2 14:15:54 BST 2004 (trog)
+-----------------------------------
+  * libclamav/vba_extract.c: Fix possible crash
+
 Wed Jun  2 10:53:51 BST 2004 (trog)
 -----------------------------------
   * libclamav/vba_extract.c: Fix bug parsing VBA Project file
