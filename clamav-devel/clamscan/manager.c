@@ -110,11 +110,14 @@ int scanmanager(const struct optstruct *opt)
 	}
 
     } else {
+	    char *dbdir = freshdbdir();
 
-	if((ret = cl_loaddbdir(freshdbdir(), &trie, &claminfo.signs))) {
+	if((ret = cl_loaddbdir(dbdir, &trie, &claminfo.signs))) {
 	    mprintf("@%s\n", cl_strerror(ret));
+	    free(dbdir);
 	    return 50;
 	}
+	free(dbdir);
 
     }
 

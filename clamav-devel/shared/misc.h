@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2004 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 
 #include "cfgparser.h"
 
-const char *freshdbdir(void);
+char *freshdbdir(void);
 void print_version(void);
 int filecopy(const char *src, const char *dest);
 

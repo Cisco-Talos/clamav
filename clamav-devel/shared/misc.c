@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2004 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -35,11 +35,12 @@
 #include "output.h"
 
 
-const char *freshdbdir(void)
+char *freshdbdir(void)
 {
 	struct cl_cvd *d1, *d2;
-	struct cfgstruct *copt, *cpt;
+	struct cfgstruct *copt = NULL, *cpt;
 	const char *dbdir;
+	char *retdir;
 
     /* try to find fresh directory */
     dbdir = cl_retdbdir();
@@ -65,24 +66,31 @@ const char *freshdbdir(void)
 		}
 	    }
 	}
-	freecfg(copt);
     }
 
-    return dbdir;
+    retdir = strdup(dbdir);
+
+    if(copt)
+	freecfg(copt);
+
+    return retdir;
 }
 
 void print_version(void)
 {
-	const char *dbdir;
+	char *dbdir;
 	char *path;
 	struct cl_cvd *daily;
 
 
     dbdir = freshdbdir();
-    if(!(path = mmalloc(strlen(dbdir) + 11)))
+    if(!(path = mmalloc(strlen(dbdir) + 11))) {
+	free(dbdir);
 	return;
+    }
 
     sprintf(path, "%s/daily.cvd", dbdir);
+    free(dbdir);
 
     if((daily = cl_cvdhead(path))) {
 	    time_t t = (time_t) daily->stime;

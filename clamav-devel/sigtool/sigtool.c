@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -232,7 +232,7 @@ int build(struct optstruct *opt)
 	int ret, no = 0, realno = 0, bytes, itmp;
 	struct stat foo;
 	char buffer[FILEBUFF], *tarfile = NULL, *gzfile = NULL, header[512],
-	     smbuff[30], *pt;
+	     smbuff[30], *pt, *dbdir;
         struct cl_node *root = NULL;
 	FILE *tar, *cvd, *fd;
 	gzFile *gz;
@@ -321,7 +321,9 @@ int build(struct optstruct *opt)
 
 
     /* try to read cvd header of old database */
-    sprintf(buffer, "%s/%s", freshdbdir(), getargc(opt, 'b'));
+    dbdir = freshdbdir();
+    sprintf(buffer, "%s/%s", dbdir, getargc(opt, 'b'));
+    free(dbdir);
     if((oldcvd = cl_cvdhead(buffer)) == NULL)
 	mprintf("WARNING: CAN'T READ CVD HEADER OF CURRENT DATABASE %s\n", buffer);
 
@@ -531,11 +533,13 @@ char *getdsig(const char *host, const char *user, const char *data)
 int unpack(struct optstruct *opt)
 {
 	int fd;
-	char *name;
+	char *name, *dbdir;
 
     if(optl(opt, "unpack-current")) {
-	name = mcalloc(strlen(freshdbdir()) + strlen(getargl(opt, "unpack-current")) + 2, sizeof(char));
-	sprintf(name, "%s/%s", freshdbdir(), getargl(opt, "unpack-current"));
+	dbdir = freshdbdir();
+	name = mcalloc(strlen(dbdir) + strlen(getargl(opt, "unpack-current")) + 2, sizeof(char));
+	sprintf(name, "%s/%s", dbdir, getargl(opt, "unpack-current"));
+	free(dbdir);
     } else
 	name = strdup(getargc(opt, 'u'));
 
@@ -775,13 +779,17 @@ void listsigs(struct optstruct *opt)
 {
 	int ret;
 	const char *name;
+	char *dbdir;
 
     mprintf_stdout = 1;
 
-    if((name = getargc(opt, 'l')))
+    if((name = getargc(opt, 'l'))) {
 	ret = listdb(name);
-    else
-	ret = listdir(freshdbdir());
+    } else {
+	dbdir = freshdbdir();
+	ret = listdir(dbdir);
+	free(dbdir);
+    }
 
     ret ? exit(1) : exit(0);
 }
