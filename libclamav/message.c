@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.67  2004/07/26 08:31:04  nigelhorne
+ * Fix embedded multi parts
+ *
  * Revision 1.66  2004/07/20 15:17:44  nigelhorne
  * Remove overlapping strcpy
  *
@@ -195,7 +198,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.66 2004/07/20 15:17:44 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.67 2004/07/26 08:31:04 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1391,6 +1394,24 @@ messageToText(message *m)
 			if(line && messageGetEncoding(m) == BASE64)
 				if(strchr(line, '='))
 					break;
+		}
+		if(m->base64chars) {
+			unsigned char data[4];
+			unsigned char *ptr;
+
+			ptr = decode(m, NULL, data, base64, FALSE);
+			if(ptr) {
+				if(first == NULL)
+					first = last = cli_malloc(sizeof(text));
+				else {
+					last->t_next = cli_malloc(sizeof(text));
+					last = last->t_next;
+				}
+
+				if(last != NULL)
+					last->t_text = data[0] ? strdup((char *)data) : NULL;
+			}
+			m->base64chars = 0;
 		}
 	}
 
