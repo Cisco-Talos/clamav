@@ -114,6 +114,9 @@ Changes
 0.60d	26/8/03	Removed superflous buffer and unneeded strerror call
 		ETIMEDOUT isn't an error, but should give a warning
 0.60e	09/9/03	Added -P and -q flags by "Nicholas M. Kirsch" <nick@kirsch.org>
+0.60f	17/9/03	Changed fprintf to fputs where possible
+		Redirect stdin from /dev/null, stdout&stderr to
+		/dev/console
 
 BUG REPORTS
 
