@@ -73,6 +73,8 @@ void clamd(struct optstruct *opt)
 	exit(1);
     }
 
+    umask(0);
+
     /* initialize logger */
 
     if(cfgopt(copt, "LogFileUnlock"))
@@ -223,7 +225,6 @@ void daemonize(void)
     for(i = 0; i <= 2; i++)
 	close(i);
 
-    umask(0);
     chdir("/");
 
     if(fork())
