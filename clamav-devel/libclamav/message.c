@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.62  2004/06/24 21:37:26  nigelhorne
+ * Handle uuencoded files created with buggy software
+ *
  * Revision 1.61  2004/06/22 04:08:02  nigelhorne
  * Optimise empty lines
  *
@@ -180,7 +183,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.61 2004/06/22 04:08:02 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.62 2004/06/24 21:37:26 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1230,9 +1233,15 @@ messageToBlob(message *m)
 		unsigned char *uptr;
 		const char *line = t_line->t_text;
 
-		if(messageGetEncoding(m) == UUENCODE)
+		if(messageGetEncoding(m) == UUENCODE) {
+			/*
+			 * There should be no blank lines in uuencoded files...
+			 */
+			if(line == NULL)
+				continue;
 			if(strcasecmp(line, "end") == 0)
 				break;
+		}
 
 		uptr = decodeLine(m, line, data, sizeof(data));
 
