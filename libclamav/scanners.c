@@ -1087,6 +1087,7 @@ static int cli_scanscrenc(int desc, const char **virname, long int *scanned, con
     free(tempname);
     return ret;
 }
+
 static int cli_scanmail(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	const char *tmpdir;
@@ -1113,8 +1114,8 @@ static int cli_scanmail(int desc, const char **virname, long int *scanned, const
 	/*
 	 * Extract the attachments into the temporary directory
 	 */
-	ret = cli_mbox(dir, desc, options);
-	/* FIXME: check mbox return code */
+	if((ret = cli_mbox(dir, desc, options)))
+	    return ret;
 
 	ret = cli_scandir(dir, virname, scanned, root, limits, options, arec, mrec);
 
