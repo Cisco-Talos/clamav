@@ -1,3 +1,7 @@
+Fri Feb  6 20:50:43 CET 2004 (tk)
+---------------------------------
+  * libclamav: ole2 wrapper: fixed segfault with some documents (Thomas Lamy)
+
 Fri Feb  6 14:36:36 CET 2004 (tk)
 ---------------------------------
   * support for clamav-config.h instead of multiple defines (Thomas Lamy)
