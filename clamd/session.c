@@ -149,7 +149,7 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
     } else if(!strncmp(buff, CMD9, strlen(CMD9))) { /* SESSION */
 	do {
 	    if(!is_fd_connected(desc)) {
-		logg("Client disconnected without END\n");
+		logg("SESSION: Client disconnected without END\n");
 		return 0;
 	    }
 	    ret = command(desc, root, limits, options, copt, -1);

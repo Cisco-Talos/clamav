@@ -26,7 +26,7 @@ Reload the virus databases.
 Perform a clean exit.
 .TP 
 \fBSCAN file/directory\fR
-Scan a file or directory (recursively) with archive support enabled (if not disabled in clamd.conf). A full path is required.
+Scan a file or a directory (recursively) with archive support enabled (if not disabled in clamd.conf). A full path is required.
 .TP 
 \fBRAWSCAN file/directory\fR
 Scan a file or directory (recursively) with archive support disabled. A full path is required.

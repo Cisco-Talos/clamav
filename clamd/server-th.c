@@ -195,7 +195,8 @@ static struct cl_node *reload_db(struct cl_node *root, const struct cfgstruct *c
 
 int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *copt)
 {
-	int new_sd, max_threads, options=0;
+	int new_sd, max_threads, stdopt;
+	unsigned int options = 0;
 	threadpool_t *thr_pool;
 	struct sigaction sigact;
 	mode_t old_umask;
@@ -243,7 +244,15 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	max_threads = CL_DEFAULT_MAXTHREADS;
     }
 
-    if(cfgopt(copt, "ScanArchive") || cfgopt(copt, "ClamukoScanArchive")) {
+    if(cfgopt(copt, "DisableDefaultScanOptions")) {
+	logg("RECOMMENDED OPTIONS DISABLED.\n");
+	stdopt = 0;
+    } else {
+	options |= CL_SCAN_STDOPT;
+	stdopt = 1;
+    }
+
+    if(stdopt || cfgopt(copt, "ScanArchive") || cfgopt(copt, "ClamukoScanArchive")) {
 
 	/* set up limits */
 	memset(&limits, 0, sizeof(struct cl_limits));
@@ -256,7 +265,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	    }
 	} else {
 	    limits.maxfilesize = 10485760;
-	    logg("^USING HARDCODED LIMIT: Archive: Archived file size limit set to %d bytes.\n", limits.maxfilesize);
+	    logg("Archive: Archived file size limit set to %d bytes.\n", limits.maxfilesize);
 	}
 
 	if((cpt = cfgopt(copt, "ArchiveMaxRecursion"))) {
@@ -267,7 +276,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	    }
 	} else {
 	    limits.maxreclevel = 5;
-	    logg("^USING HARDCODED LIMIT: Archive: Recursion level set to %d.\n", limits.maxreclevel);
+	    logg("Archive: Recursion level limit set to %d.\n", limits.maxreclevel);
 	}
 
 	if((cpt = cfgopt(copt, "ArchiveMaxFiles"))) {
@@ -278,7 +287,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	    }
 	} else {
 	    limits.maxfiles = 1000;
-	    logg("^USING HARDCODED LIMIT: Archive: Files limit set to %d.\n", limits.maxfiles);
+	    logg("Archive: Files limit set to %d.\n", limits.maxfiles);
 	}
 
 	if((cpt = cfgopt(copt, "ArchiveMaxCompressionRatio"))) {
@@ -288,8 +297,8 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 		logg("^Archive: Compression ratio limit disabled.\n");
 	    }
 	} else {
-	    limits.maxratio = 200;
-	    logg("^USING HARDCODED LIMIT: Archive: Compression ratio limit set to %d.\n", limits.maxratio);
+	    limits.maxratio = 250;
+	    logg("Archive: Compression ratio limit set to %d.\n", limits.maxratio);
 	}
 
 	if(cfgopt(copt, "ArchiveLimitMemoryUsage")) {
@@ -326,7 +335,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	logg("Archive support disabled.\n");
     }
 
-    if(cfgopt(copt, "ScanPE")) {
+    if(stdopt || cfgopt(copt, "ScanPE")) {
 	logg("Portable Executable support enabled.\n");
 	options |= CL_SCAN_PE;
 
@@ -339,7 +348,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	logg("Portable Executable support disabled.\n");
     }
 
-    if(cfgopt(copt, "ScanMail")) {
+    if(stdopt || cfgopt(copt, "ScanMail")) {
 	logg("Mail files support enabled.\n");
 	options |= CL_SCAN_MAIL;
 
@@ -352,14 +361,14 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	logg("Mail files support disabled.\n");
     }
 
-    if(cfgopt(copt, "ScanOLE2")) {
+    if(stdopt || cfgopt(copt, "ScanOLE2")) {
 	logg("OLE2 support enabled.\n");
 	options |= CL_SCAN_OLE2;
     } else {
 	logg("OLE2 support disabled.\n");
     }
 
-    if(cfgopt(copt, "ScanHTML")) {
+    if(stdopt || cfgopt(copt, "ScanHTML")) {
 	logg("HTML support enabled.\n");
 	options |= CL_SCAN_HTML;
     } else {
