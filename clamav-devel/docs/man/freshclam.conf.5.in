@@ -1,0 +1,92 @@
+.\" Manual page created by Magnus Ekdahl and Thomas Lamy
+.TH "freshclam.conf" "5" "September 2, 2004" "Thomas Lamy" "Clam AntiVirus"
+.SH "NAME"
+.LP 
+\fBfreshclam.conf\fR \- Configuration file for Clam AntiVirus Database Updater
+.SH "DESCRIPTION"
+.LP 
+The file freshclam.conf configures the Clam AntiVirus Database Updater, freshclam(1).
+.SH "FILE FORMAT"
+The file consists of comments and options with arguments. Each line that starts with a hash (\fB#\fR) symbol is a comment. Options are are case sensitive and of the form \fBOption Argument\fR. The (possibly optional) arguments are are of the following types:
+.TP 
+\fBSTRING\fR
+String without blank characters.
+.TP 
+\fBSIZE\fR
+Size in bytes. You can use a 'M' or 'm' modifiers for megabytes and a 'K' or 'k' for kilobytes.
+.TP 
+\fBNUMBER\fR
+Unsigned integer.
+.SH "DIRECTIVES"
+.LP 
+When an option is not used (hashed or doesn't exist in the configuration file) freshclam takes a default action.
+.TP 
+\fBExample\fR
+If this option is set clamd will not run.
+.TP 
+\fBDatabaseOwner STRING\fR
+When started by root, drop privileges to a specified user. Default is \"clamav\".
+.TP 
+\fBDatabaseDirectory STRING\fR
+Path to a directory containing database files.
+.br 
+Default: hardcoded directory
+.TP 
+\fBChecks NUM\fR
+Number of database checks per day. 12 is the recommended number.
+.TP 
+\fBUpdateLogFile STRING\fR
+Enable logging to a specified file. Highly recommended.
+.br 
+Default: disabled.
+.TP 
+\fBLogSyslog\fR
+Enable logging to Syslog.  May be used in combination with UpdateLogFile
+.br 
+Default: disabled.
+.TP 
+\fBLogVerbose\fR
+Enable verbose logging.
+.TP 
+\fBDatabaseMirror STRING\fR
+Server name where database updates are downloaded from. The default is database.clamav.net, which points to all official mirrors.
+.br .
+If this option is given multiple times, freshclam(1) tries them in the order given if one download fails.
+.br 
+There is no default, which results in an error when running freshclam(1).
+.TP 
+\fBMaxAttempts NUM\fR
+Freshclam(1) tries every mirror this number of times before switching to the next mirror.
+.br .
+Default is to try once per mirror.
+.TP 
+\fBHTTPProxyServer STR\fR, \fBHTTPProxyPort NUM\fR
+Use given proxy server and TCP port for database downloads.
+.TP 
+\fBHTTPProxyUsername STR\fR,\fBHTTPProxyPassword STR\fR
+Proxy usage is authenticated through given username and password.
+.br .
+Default: no proxy authentication
+.TP 
+\fBNotifyClamd \[STRING\]\fR
+Notify a running clamd(8) to reload it\'s database after a download has occured. Optionally a clamd.conf(5) file location may be given to tell freshclam(1) how to communicate with clamd(8).
+.br .
+The default is to not notify clamd. See clamd.conf(5)\'s option SelfCheck for how clamd(8) handles database updates in this case.
+.TP 
+\fBOnUpdateExecute STRING\fR
+Execute this command after the database has been successfully updated.
+.TP 
+\fBOnErrorExecute\fR
+Execute this command after a database update has failed.
+.SH "NOTE"
+While not reasonable, any configuration option from clamd.conf(5) may be given.
+.SH "FILES"
+.LP 
+@CFGDIR@/freshclam.conf
+.SH "AUTHOR"
+.LP 
+Thomas Lamy <thomas.lamy@netwake.de>
+.SH "SEE ALSO"
+.LP 
+freshclam(1), clamd.conf(5), clamd(8), clamscan(1)
+
