@@ -1,3 +1,7 @@
+Sat Aug 14 14:23:41 CEST 2004 (tk)
+----------------------------------
+  * libclamav: pe: fix Petite v2.1 support (aCaB)
+
 Sat Aug 14 12:50:07 CEST 2004 (tk)
 ----------------------------------
   * libclamav: add support for FSG 1.33 (aCaB)
