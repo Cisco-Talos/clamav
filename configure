@@ -10334,8 +10334,8 @@ else
 
     if test -n "$vuln"; then
 	if test "$zlib_check" = "yes"; then
-	    { { echo "$as_me:$LINENO: error: The installed zlib version may contain a security bug. Please upgrade to 1.2.2 or later: http://www.zlib.net. You can omit this check with --disable-zlib-vcheck but DO NOT REPORT any stablility issues then!" >&5
-echo "$as_me: error: The installed zlib version may contain a security bug. Please upgrade to 1.2.2 or later: http://www.zlib.net. You can omit this check with --disable-zlib-vcheck but DO NOT REPORT any stablility issues then!" >&2;}
+	    { { echo "$as_me:$LINENO: error: The installed zlib version may contain a security bug. Please upgrade to 1.2.2 or later: http://www.zlib.net. You can omit this check with --disable-zlib-vcheck but DO NOT REPORT any stability issues then!" >&5
+echo "$as_me: error: The installed zlib version may contain a security bug. Please upgrade to 1.2.2 or later: http://www.zlib.net. You can omit this check with --disable-zlib-vcheck but DO NOT REPORT any stability issues then!" >&2;}
    { (exit 1); exit 1; }; }
 	else
 	    { echo "$as_me:$LINENO: WARNING: ****** This ClamAV installation may be linked against" >&5
@@ -11889,6 +11889,25 @@ _ACEOF
 
 cat >>confdefs.h <<\_ACEOF
 #define C_AIX 1
+_ACEOF
+
+    ;;
+nto-qnx*)
+     if test "$have_pthreads" = "yes"; then
+
+cat >>confdefs.h <<\_ACEOF
+#define CL_THREAD_SAFE 1
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define _REENTRANT 1
+_ACEOF
+
+     fi
+
+cat >>confdefs.h <<\_ACEOF
+#define C_QNX6 1
 _ACEOF
 
     ;;

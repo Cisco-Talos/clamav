@@ -60,6 +60,9 @@
 /* os is OS/2 */
 #undef C_OS2
 
+/* os is QNX 6.x.x */
+#undef C_QNX6
+
 /* os is solaris */
 #undef C_SOLARIS
 

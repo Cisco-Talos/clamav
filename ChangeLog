@@ -1,3 +1,7 @@
+Mon Mar  7 00:32:38 CET 2005 (tk)
+---------------------------------
+  * configure: add support for QNX 6 (patch by mikep*kaluga.org)
+
 Sat Mar  5 11:07:34 GMT 2005 (njh)
 ----------------------------------
   * clamav-milter:	Note about --local needed if incoming socket is INET
