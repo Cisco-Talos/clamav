@@ -1,3 +1,8 @@
+Tue Nov  9 10:10:07 GMT 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Basic handling for unbalanced quotes in the main
+				message
+
 Tue Nov  9 08:53:24 CET 2004 (tk)
 ---------------------------------
   * clamscan, clamd: increase value of maximal recursion limit (current: 8,
