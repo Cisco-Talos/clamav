@@ -663,6 +663,12 @@ Changes
 0.81d	28/1/05:	Some error messages still talked about --internal
 			Scanmail not set warning is now only given if
 				DisableDefaultScanOptions is set
+0.81e	30/1/05:	Don't check compatibility with sendmail.cf if sendmail
+				is running on a different machine
+			PACKADDR is now uses unsinged to remove warning on
+				Sun's C compiler, patch by
+				"Dugal James P." <jpd@louisiana.edu>
+			SESSION is back on by default, to test clamd fix
 
 INTERNATIONALISATION
 

@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.174  2005/01/30 15:16:30  nigelhorne
+ * Enable SESSION by default
+ *
  * Revision 1.173  2005/01/28 08:49:04  nigelhorne
  * Fixed --internal warnings that should refer to --external
  *
@@ -530,9 +533,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.173 2005/01/28 08:49:04 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.174 2005/01/30 15:16:30 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.81d"
+#define	CM_VERSION	"0.81e"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -631,7 +634,7 @@ typedef	unsigned int	in_addr_t;
 
 #define	VERSION_LENGTH	128
 
-/*#define	SESSION	/*
+#define	SESSION	/*
 		 * Keep one command connection open to clamd, otherwise a new
 		 * command connection is created for each new email
 		 *
@@ -679,7 +682,7 @@ typedef struct header_list_struct *header_list_t;
  *
  * TODO: read this table in from a file (clamd.conf?)
  */
-#define PACKADDR(a, b, c, d) (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
+#define PACKADDR(a, b, c, d) (((uint32_t)(a) << 24) | ((b) << 16) | ((c) << 8) | (d))
 #define MAKEMASK(bits)	((uint32_t)(0xffffffff << (bits)))
 
 static const struct cidr_net {
@@ -852,7 +855,7 @@ static	int	logClean = 1;	/*
 static	char	*signature = N_("-- \nScanned by ClamAv - http://www.clamav.net\n");
 static	time_t	signatureStamp;
 static	char	*templatefile;	/* e-mail to be sent when virus detected */
-static	char	*tmpdir;
+static	const char	*tmpdir;
 
 #ifdef	CL_DEBUG
 static	int	debug_level = 0;
@@ -5072,6 +5075,12 @@ verifyIncomingSocketName(const char *sockName)
 	char *ptr;
 	size_t size;
 	struct stat statb;
+
+	if(strncmp(sockName, "inet:", 5) == 0)
+		/*
+		 * clamav-milter is running on a different machine from sendmail
+		 */
+		return 1;
 
 	fd = open("/etc/mail/sendmail.cf", O_RDONLY);
 
