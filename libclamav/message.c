@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.93  2004/10/01 13:49:22  nigelhorne
+ * Minor code tidy
+ *
  * Revision 1.92  2004/09/30 08:58:56  nigelhorne
  * Remove empty lines
  *
@@ -273,7 +276,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.92 2004/09/30 08:58:56 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.93 2004/10/01 13:49:22 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -975,7 +978,7 @@ messageAddStr(message *m, const char *data)
 
 	if(data) {
 		int isblank = 1;
-		char *p;
+		const char *p;
 
 		for(p = data; *p != '\0'; p++)
 			if(!isspace(*p)) {
@@ -1414,7 +1417,6 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			if(filename == NULL) {
 				cli_dbgmsg("Attachment sent with no filename\n");
 				messageAddArgument(m, "name=attachment");
-				filename = strdup("attachment");
 			} else
 				/*
 				 * Some virus attachments don't say how they've
@@ -1423,9 +1425,10 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 				messageSetEncoding(m, "base64");
 		}
 
-		(*setFilename)(ret, dir, filename);
+		(*setFilename)(ret, dir, (filename) ? filename : "attachment");
 
-		free((char *)filename);
+		if(filename)
+			free((char *)filename);
 
 		if(m->numberOfEncTypes == 0) {
 			if(uuencodeBegin(m))
@@ -1478,11 +1481,13 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 					strstrip(filename);
 					cli_dbgmsg("Set yEnc filename to \"%s\"\n", filename);
 				}
-			} else
-				filename = strdup("attachment");
+			}
 
-			if(filename)
-				(*setFilename)(ret, dir, filename);
+			(*setFilename)(ret, dir, (filename) ? filename : "attchment");
+			if(filename) {
+				free((char *)filename);
+				filename = NULL;
+			}
 			t_line = t_line->t_next;
 			enctype = YENCODE;
 		} else {
@@ -1493,7 +1498,6 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 				if(filename == NULL) {
 					cli_dbgmsg("Attachment sent with no filename\n");
 					messageAddArgument(m, "name=attachment");
-					filename = strdup("attachment");
 				} else if(enctype == NOENCODING)
 					/*
 					 * Some virus attachments don't say how they've
@@ -1502,7 +1506,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 					messageSetEncoding(m, "base64");
 			}
 
-			(*setFilename)(ret, dir, filename);
+			(*setFilename)(ret, dir, (filename) ? filename : "attchment");
 
 			t_line = messageGetBody(m);
 		}
@@ -1542,7 +1546,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			} else if(enctype == YENCODE) {
 				if(line == NULL)
 					continue;
-				if(strncmp(line, "=end ", 5) == 0)
+				if(strncmp(line, "=yend ", 6) == 0)
 					break;
 			}
 
@@ -1746,11 +1750,13 @@ messageToText(message *m)
 			 * strcmp - that'd be bad for MIME decoders, but is OK
 			 * for AV software
 			 */
-			if(line && (strncmp(data, line, strlen(line)) == 0)) {
+			if((data[0] == '\n') || (data[0] == '\0'))
+				last->t_line = NULL;
+			else if(line && (strncmp(data, line, strlen(line)) == 0)) {
 				cli_dbgmsg("messageToText: decoded line is the same(%s)\n", data);
 				last->t_line = lineLink(t_line->t_line);
 			} else
-				last->t_line = ((data[0] != '\n') && data[0]) ? lineCreate((char *)data) : NULL;
+				last->t_line = lineCreate((char *)data);
 
 			if(line && enctype == BASE64)
 				if(strchr(line, '='))
@@ -1760,7 +1766,7 @@ messageToText(message *m)
 			unsigned char data[4];
 
 			memset(data, '\0', sizeof(data));
-			if(decode(m, NULL, data, base64, FALSE)) {
+			if(decode(m, NULL, data, base64, FALSE) && data[0]) {
 				if(first == NULL)
 					first = last = cli_malloc(sizeof(text));
 				else {
@@ -1769,7 +1775,7 @@ messageToText(message *m)
 				}
 
 				if(last != NULL)
-					last->t_line = data[0] ? lineCreate((char *)data) : NULL;
+					last->t_line = lineCreate((char *)data);
 			}
 			m->base64chars = 0;
 		}

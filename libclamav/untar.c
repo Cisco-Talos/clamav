@@ -20,6 +20,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.11  2004/10/01 13:50:47  nigelhorne
+ * Minor code tidy
+ *
  * Revision 1.10  2004/09/20 13:37:44  kojm
  * 0.80rc
  *
@@ -51,7 +54,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.10 2004/09/20 13:37:44 kojm Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.11 2004/10/01 13:50:47 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -59,7 +62,7 @@ static	char	const	rcsid[] = "$Id: untar.c,v 1.10 2004/09/20 13:37:44 kojm Exp $"
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <sys/param.h>        /* for NAME_MAX */
+#include <sys/param.h>	/* for NAME_MAX */
 
 #include "clamav.h"
 #include "others.h"
@@ -137,7 +140,7 @@ cli_untar(const char *dir, int desc)
 				outfile = (FILE*)0;
 			}
 
-			if(block[0] == '\0')  /* We're done */
+			if(block[0] == '\0')	/* We're done */
 				break;
 
 			/* Notice assumption that BLOCKSIZE > 262 */

@@ -16,6 +16,14 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifndef	CL_DEBUG
+#define	NDEBUG	/* map CLAMAV debug onto standard */
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -89,6 +97,9 @@ int
 tableFind(const table_t *table, const char *key)
 {
 	const tableEntry *tableItem;
+#ifdef	CL_DEBUG
+	int cost;
+#endif
 
 	assert(table != NULL);
 
@@ -98,9 +109,19 @@ tableFind(const table_t *table, const char *key)
 	if(table->tableHead == NULL)
 		return -1;	/* not populated yet */
 
-	for(tableItem = table->tableHead; tableItem; tableItem = tableItem->next)
-		if(strcasecmp(tableItem->key, key) == 0)
+	cost = 0;
+
+	for(tableItem = table->tableHead; tableItem; tableItem = tableItem->next) {
+#ifdef	CL_DEBUG
+		cost++;
+#endif
+		if(strcasecmp(tableItem->key, key) == 0) {
+#ifdef	CL_DEBUG
+			cli_dbgmsg("tableFind: Cost of '%s' = %d\n", key, cost);
+#endif
 			return(tableItem->value);
+		}
+	}
 
 	return -1;	/* not found */
 }
