@@ -1,3 +1,9 @@
+Wed Oct 20 22:16:58 CEST 2004 (tk)
+----------------------------------
+  * libclamav, clamd: fix possible stack corruption under Solaris (only when
+		      compiled with --enable-readdir_r). Thanks to Andy
+		      Fiddaman <clam*fiddaman.net>.
+
 Wed Oct 20 21:00:37 CEST 2004 (tk)
 ----------------------------------
   * clamdscan: fix error messages (problem reported by Jason Haar
@@ -11,13 +17,13 @@ Wed Oct 20 11:37:40 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	PARTIAL MODE ONLY: fixed possible stack corruption
 				under Solaris, patch from Andy Fiddaman
-				<clam@fiddaman.net>
+				<clam*fiddaman.net>
 
 Tue Oct 19 14:56:27 BST 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Some base64 encoders encode extra NUL bytes
 			at the end - ensure that they aren't added when
-			decoding, reported by James Lick <jlick@drivel.com>
+			decoding, reported by James Lick <jlick*drivel.com>
 
 Tue Oct 19 02:53:46 CEST 2004 (tk)
 ----------------------------------

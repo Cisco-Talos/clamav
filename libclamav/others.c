@@ -44,6 +44,12 @@
 pthread_mutex_t cli_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
+#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
+#ifdef C_SOLARIS
+#include <limits.h>
+#endif
+#endif
+
 #include "clamav.h"
 #include "others.h"
 #include "md5.h"
@@ -374,7 +380,11 @@ int cli_rmdirs(const char *dirname)
 	DIR *dd;
 	struct dirent *dent;
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
+#ifdef C_SOLARIS
+	char result[sizeof(struct dirent) + MAX_PATH + 1];
+#else
 	struct dirent result;
+#endif
 #endif
 	struct stat maind, statbuf;
 	char *fname;
@@ -386,9 +396,9 @@ int cli_rmdirs(const char *dirname)
 	    if(!rmdir(dirname)) break;
 
 #ifdef HAVE_READDIR_R_3
-	    while(!readdir_r(dd, &result, &dent) && dent) {
+	    while(!readdir_r(dd, (struct dirent *) &result, &dent) && dent) {
 #elif defined(HAVE_READDIR_R_2)
-	    while((dent = (struct dirent *) readdir_r(dd, &result))) {
+	    while((dent = (struct dirent *) readdir_r(dd, (struct dirent *) &result))) {
 #else
 	    while((dent = readdir(dd))) {
 #endif

@@ -77,6 +77,13 @@ extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME *
 #include <bzlib.h>
 #endif
 
+#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
+#ifdef C_SOLARIS
+#include <limits.h>
+#endif
+#endif
+
+
 #define SCAN_ARCHIVE	    (options & CL_SCAN_ARCHIVE)
 #define SCAN_MAIL	    (options & CL_SCAN_MAIL)
 #define SCAN_OLE2	    (options & CL_SCAN_OLE2)
@@ -752,7 +759,11 @@ static int cli_scandir(const char *dirname, const char **virname, long int *scan
 	DIR *dd;
 	struct dirent *dent;
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
+#ifdef C_SOLARIS
+	char result[sizeof(struct dirent) + MAX_PATH + 1];
+#else
 	struct dirent result;
+#endif
 #endif
 	struct stat statbuf;
 	char *fname;
@@ -760,9 +771,9 @@ static int cli_scandir(const char *dirname, const char **virname, long int *scan
 
     if((dd = opendir(dirname)) != NULL) {
 #ifdef HAVE_READDIR_R_3
-	while(!readdir_r(dd, &result, &dent) && dent) {
+	while(!readdir_r(dd, (struct dirent *) &result, &dent) && dent) {
 #elif defined(HAVE_READDIR_R_2)
-	while((dent = (struct dirent *) readdir_r(dd, &result))) {
+	while((dent = (struct dirent *) readdir_r(dd, (struct dirent *) &result))) {
 #else
 	while((dent = readdir(dd))) {
 #endif
@@ -812,7 +823,11 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 	DIR *dd;
 	struct dirent *dent;
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
+#ifdef C_SOLARIS
+	char result[sizeof(struct dirent) + MAX_PATH + 1];
+#else
 	struct dirent result;
+#endif
 #endif
 	struct stat statbuf;
 	char *fname, *fullname;
@@ -910,9 +925,9 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 
     if((dd = opendir(dirname)) != NULL) {
 #ifdef HAVE_READDIR_R_3
-	while(!readdir_r(dd, &result, &dent) && dent) {
+	while(!readdir_r(dd, (struct dirent *) &result, &dent) && dent) {
 #elif defined(HAVE_READDIR_R_2)
-	while((dent = (struct dirent *) readdir_r(dd, &result))) {
+	while((dent = (struct dirent *) readdir_r(dd, (struct dirent *) &result))) {
 #else
 	while((dent = readdir(dd))) {
 #endif

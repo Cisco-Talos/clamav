@@ -39,6 +39,12 @@
 #include "str.h"
 #include "defaults.h"
 
+#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
+#ifdef C_SOLARIS
+#include <limits.h>
+#endif
+#endif
+
 /* TODO: clean up the code */
 
 static int cli_ac_addsig(struct cl_node *root, const char *virname, const char *hexsig, int sigid, int parts, int partno, unsigned short type, unsigned int mindist, unsigned int maxdist, char *offset, unsigned short target)
@@ -730,7 +736,11 @@ int cl_loaddbdir(const char *dirname, struct cl_node **root, unsigned int *signo
 	DIR *dd;
 	struct dirent *dent;
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
+#ifdef C_SOLARIS
+	char result[sizeof(struct dirent) + MAX_PATH + 1];
+#else
 	struct dirent result;
+#endif
 #endif
 	char *dbfile;
 	int ret;
@@ -744,9 +754,9 @@ int cl_loaddbdir(const char *dirname, struct cl_node **root, unsigned int *signo
     cli_dbgmsg("Loading databases from %s\n", dirname);
 
 #ifdef HAVE_READDIR_R_3
-    while(!readdir_r(dd, &result, &dent) && dent) {
+    while(!readdir_r(dd, (struct dirent *) &result, &dent) && dent) {
 #elif defined(HAVE_READDIR_R_2)
-    while((dent = (struct dirent *) readdir_r(dd, &result))) {
+    while((dent = (struct dirent *) readdir_r(dd, (struct dirent *) &result))) {
 #else
     while((dent = readdir(dd))) {
 #endif
@@ -793,9 +803,13 @@ const char *cl_retdbdir(void)
 int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 {
 	DIR *dd;
-	struct dirent *dent;
+	const struct dirent *dent;
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
+#ifdef C_SOLARIS
+	char result[sizeof(struct dirent) + MAX_PATH + 1];
+#else
 	struct dirent result;
+#endif
 #endif
         char *fname;
 
@@ -817,9 +831,9 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
     cli_dbgmsg("Stat()ing files in %s\n", dirname);
 
 #ifdef HAVE_READDIR_R_3
-    while(!readdir_r(dd, &result, &dent) && dent) {
+    while(!readdir_r(dd, (struct dirent *) &result, &dent) && dent) {
 #elif defined(HAVE_READDIR_R_2)
-    while((dent = (struct dirent *) readdir_r(dd, &result))) {
+    while((dent = (struct dirent *) readdir_r(dd, (struct dirent *) &result))) {
 #else
     while((dent = readdir(dd))) {
 #endif
@@ -854,7 +868,11 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	DIR *dd;
 	struct dirent *dent;
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
+#ifdef C_SOLARIS
+	char result[sizeof(struct dirent) + MAX_PATH + 1];
+#else
 	struct dirent result;
+#endif
 #endif
 	struct stat sb;
 	int i, found;
@@ -874,9 +892,9 @@ int cl_statchkdir(const struct cl_stat *dbstat)
     cli_dbgmsg("Stat()ing files in %s\n", dbstat->dir);
 
 #ifdef HAVE_READDIR_R_3
-    while(!readdir_r(dd, &result, &dent) && dent) {
+    while(!readdir_r(dd, (struct dirent *) &result, &dent) && dent) {
 #elif defined(HAVE_READDIR_R_2)
-    while((dent = (struct dirent *) readdir_r(dd, &result))) {
+    while((dent = (struct dirent *) readdir_r(dd, (struct dirent *) &result))) {
 #else
     while((dent = readdir(dd))) {
 #endif
