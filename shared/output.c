@@ -186,6 +186,8 @@ int logg(const char *str, ...)
 	/* due to a problem with superfluous control characters (which
 	 * vsnprintf() handles correctly) in (v)syslog we have to remove
 	 * them in a final string
+	 *
+	 * FIXME: substitute %% instead of _
 	 */
 	vsnprintf(vbuff, 1024, str, args);
 	vbuff[1024] = 0;
@@ -282,3 +284,46 @@ void mprintf(const char *str, ...)
 	fflush(stdout);
 
 }
+
+struct facstruct {
+    const char *name;
+    int code;
+};
+
+#if defined(USE_SYSLOG) && !defined(C_AIX)
+static const struct facstruct facilitymap[] = {
+    { "LOG_AUTH",	LOG_AUTH },
+    { "LOG_AUTHPRIV",	LOG_AUTHPRIV },
+    { "LOG_CRON",	LOG_CRON },
+    { "LOG_DAEMON",	LOG_DAEMON },
+    { "LOG_FTP",	LOG_FTP },
+    { "LOG_KERN",	LOG_KERN },
+    { "LOG_LPR",	LOG_LPR },
+    { "LOG_MAIL",	LOG_MAIL },
+    { "LOG_NEWS",	LOG_NEWS },
+    { "LOG_AUTH",	LOG_AUTH },
+    { "LOG_SYSLOG",	LOG_SYSLOG },
+    { "LOG_USER",	LOG_USER },
+    { "LOG_UUCP",	LOG_UUCP },
+    { "LOG_LOCAL0",	LOG_LOCAL0 },
+    { "LOG_LOCAL1",	LOG_LOCAL1 },
+    { "LOG_LOCAL2",	LOG_LOCAL2 },
+    { "LOG_LOCAL3",	LOG_LOCAL3 },
+    { "LOG_LOCAL4",	LOG_LOCAL4 },
+    { "LOG_LOCAL5",	LOG_LOCAL5 },
+    { "LOG_LOCAL6",	LOG_LOCAL6 },
+    { "LOG_LOCAL7",	LOG_LOCAL7 },
+    { NULL,		-1 }
+};
+
+int logg_facility(const char *name)
+{
+	int i;
+
+    for(i = 0; facilitymap[i].name; i++)
+	if(!strcmp(facilitymap[i].name, name))
+	    return facilitymap[i].code;
+
+    return -1;
+}
+#endif

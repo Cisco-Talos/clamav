@@ -58,6 +58,7 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 	    {"LogClean", OPT_NOARG},
 	    {"LogVerbose", OPT_NOARG}, /* clamd + freshclam */
 	    {"LogSyslog", OPT_NOARG},
+	    {"LogFacility", OPT_STR},
 	    {"PidFile", OPT_STR},
 	    {"TemporaryDirectory", OPT_STR},
 	    {"MaxFileSize", OPT_COMPSIZE},

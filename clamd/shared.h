@@ -21,4 +21,9 @@
 
 extern short debug_mode, logok;
 
+#ifdef C_LINUX
+#include <sys/types.h>
+extern dev_t procdev;
+#endif
+
 #endif
