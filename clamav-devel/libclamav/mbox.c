@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.217  2005/02/06 09:45:53  nigelhorne
+ * Speed up the (not implemented) next generation of mbox code
+ *
  * Revision 1.216  2005/02/06 09:21:55  nigelhorne
  * Better check for boundaries with comments
  *
@@ -636,7 +639,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.216 2005/02/06 09:21:55 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.217 2005/02/06 09:45:53 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -953,6 +956,8 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 	message *m;
 	fileblob *fb;
 	int ret = 0;
+	char *buf;
+	int wasAlloced;
 
 	if(fstat(desc, &statb) < 0)
 		return CL_EOPEN;
@@ -1005,9 +1010,16 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 	/*
 	 * Would be nice to have a case insensitive cli_memstr()
-	 *
-	 * This is v. slow especially on large files
 	 */
+	buf = cli_malloc(bodysize);
+	if(buf) {
+		wasAlloced = 1;
+		memcpy(buf, ptr, bodysize);
+		munmap(start, size);
+		ptr = start = buf;
+	} else
+		wasAlloced = 0;
+
 	if((p = (char *)cli_pmemstr(ptr, bodysize, "base64", 6)) != NULL) {
 		cli_dbgmsg("Header base64\n");
 		decoder |= 1;
@@ -1036,8 +1048,12 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		}
 
 	if(decoder == 0) {
-		munmap(start, size);
+		if(wasAlloced)
+			free(start);
+		else
+			munmap(start, size);
 		cli_dbgmsg("cli_mbox: unknown encoder\n");
+		printf("cli_mbox: unknown encoder\n");
 		return cli_parse_mbox(dir, desc, options);
 	}
 
@@ -1202,8 +1218,14 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		}
 	}
 
-	munmap(start, size);
+	if(wasAlloced)
+		free(start);
+	else
+		munmap(start, size);
 
+	/*
+	 * FIXME: Need to run cl_scandir() here and return that value
+	 */
 	if(ret == 0)
 		return CL_CLEAN;	/* a lie - but it gets things going */
 
