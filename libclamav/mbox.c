@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.125  2004/09/16 12:59:36  nigelhorne
+ * Handle = and space as header separaters
+ *
  * Revision 1.124  2004/09/16 11:20:33  nigelhorne
  * Better handling of folded headers in multipart messages
  *
@@ -360,7 +363,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.124 2004/09/16 11:20:33 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.125 2004/09/16 12:59:36 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -859,23 +862,37 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 static int
 parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 {
-	char *cmd;
+	char *cmd, *ptr;
 	int ret = -1;
 #ifdef CL_THREAD_SAFE
 	char *strptr;
 #endif
-	char copy[LINE_LENGTH+1];
+	const char *separater;
+	char copy[LINE_LENGTH+1], tokenseparater[2];
 
 	cli_dbgmsg("parseEmailHeader '%s'\n", line);
 
-	if(strchr(line, ':') == NULL)
+	/*
+	 * In RFC822 the separater between the key a value is a colon,
+	 * e.g.	Content-Transfer-Encoding: base64
+	 * However some MUA's are lapse about this and virus writers exploit
+	 * this hole, so we need to check all known possiblities
+	 */
+	for(separater = ":= "; *separater; separater++)
+		if(strchr(line, *separater) != NULL)
+			break;
+
+	if(*separater == '\0')
 		return -1;
 
 	assert(strlen(line) <= LINE_LENGTH);	/* RFC 821 */
 
 	strcpy(copy, line);
 
-	cmd = strtok_r(copy, ":", &strptr);
+	tokenseparater[0] = *separater;
+	tokenseparater[1] = '\0';
+
+	cmd = strtok_r(copy, tokenseparater, &strptr);
 
 	if(cmd && (strstrip(cmd) > 0)) {
 		char *arg = strtok_r(NULL, "", &strptr);

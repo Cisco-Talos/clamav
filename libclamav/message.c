@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.81  2004/09/16 12:59:36  nigelhorne
+ * Handle = and space as header separaters
+ *
  * Revision 1.80  2004/09/16 11:35:08  nigelhorne
  * Minor code tidy
  *
@@ -237,7 +240,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.80 2004/09/16 11:35:08 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.81 2004/09/16 12:59:36 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -378,8 +381,6 @@ messageReset(message *m)
 	if(m->encodingTypes) {
 		assert(m->numberOfEncTypes > 0);
 		free(m->encodingTypes);
-		m->encodingTypes = NULL;
-		m->numberOfEncTypes = 0;
 	}
 
 	memset(m, '\0', sizeof(message));
