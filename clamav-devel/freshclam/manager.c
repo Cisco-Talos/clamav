@@ -106,10 +106,12 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 		mprintf("*Software version from DNS: %s\n", pt);
 		if(!strstr(cl_retver(), "devel") && !strstr(cl_retver(), "rc")) {
 		    if(strcmp(cl_retver(), pt)) {
-			mprintf("WARNING: Your ClamAV installation is OUTDATED - please update immediately!\n");
+			mprintf("WARNING: Your ClamAV installation is OUTDATED!\n");
 			mprintf("WARNING: Local version: %s Recommended version: %s\n", cl_retver(), pt);
-			logg("WARNING: Your ClamAV installation is OUTDATED - please update immediately!\n");
+			mprintf("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
+			logg("WARNING: Your ClamAV installation is OUTDATED!\n");
 			logg("WARNING: Local version: %s Recommended version: %s\n", cl_retver(), pt);
+			logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
 		    }
 		}
 		free(pt);
@@ -314,10 +316,12 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 
 	if(flevel < current->fl) {
 	    /* display warning even for already installed database */
-	    mprintf("WARNING: Your ClamAV installation is OUTDATED - please update immediately!\n");
-	    mprintf("WARNING: Current functionality level = %d, required = %d\n", flevel, current->fl);
-	    logg("WARNING: Your ClamAV installation is OUTDATED - please update immediately!\n");
-	    logg("WARNING: Current functionality level = %d, required = %d\n", flevel, current->fl);
+	    mprintf("WARNING: Your ClamAV installation is OUTDATED!\n");
+	    mprintf("WARNING: Current functionality level = %d, recommended = %d\n", flevel, current->fl);
+	    mprintf("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
+	    logg("WARNING: Your ClamAV installation is OUTDATED!\n");
+	    logg("WARNING: Current functionality level = %d, recommended = %d\n", flevel, current->fl);
+	    logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
 	}
 
 	*signo += current->sigs;
@@ -396,10 +400,12 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     logg("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
 
     if(flevel < current->fl) {
-	mprintf("WARNING: Your ClamAV installation is OUTDATED - please update immediately!\n");
-	mprintf("WARNING: Current functionality level = %d, required = %d\n", flevel, current->fl);
-	logg("WARNING: Your ClamAV installation is OUTDATED - please update immediately!\n");
-	logg("WARNING: Current functionality level = %d, required = %d\n", flevel, current->fl);
+	mprintf("WARNING: Your ClamAV installation is OUTDATED!\n");
+	mprintf("WARNING: Current functionality level = %d, recommended = %d\n", flevel, current->fl);
+	mprintf("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
+	logg("WARNING: Your ClamAV installation is OUTDATED!\n");
+	logg("WARNING: Current functionality level = %d, recommended = %d\n", flevel, current->fl);
+	logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
     }
 
     *signo += current->sigs;
