@@ -1,3 +1,9 @@
+Mon Feb  9 14:03:50 GMT 2004 (trog)
+-----------------------------------
+
+  * libclamav/vba_extract.c: Fix endian macros in this
+	aswell.
+
 Mon Feb  9 13:52:30 GMT 2004 (trog)
 -----------------------------------
 
