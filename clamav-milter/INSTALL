@@ -491,6 +491,7 @@ Changes
 		Added first draft of SESSION code. Do NOT use in a production
 			environment.
 0.75p	13/9/04	Updated SESSION code.
+0.75q	13/9/04	Use pthread_cond_broadcast() instead of pthread_cond_signal()
 
 INTERNATIONALISATION
 
