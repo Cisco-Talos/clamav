@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+#  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 
-CFLAGS = -Wall
+CFLAGS = -Wall -pedantic
 
 INCLUDES = -I.. -I@srcdir@/zziplib
 
@@ -35,6 +35,9 @@ libclamav_la_SOURCES = \
         others.h \
         readdb.c \
 	cvd.c \
+	cvd.h \
+	dsig.c \
+	dsig.h \
         str.c \
 	str.h \
 	defaults.h \

@@ -34,7 +34,6 @@ struct thrarg {
 struct thrsession {
     pthread_mutex_t mutex;
     short int active;
-    short int reload;
     pthread_t id;
     time_t start;
     int desc;
@@ -49,7 +48,7 @@ struct thrwarg {
 
 short int progexit; /* exit steering variable */
 int progpid; /* clamd pid */
-short int reload, clamuko_reload;
+short int reload, clamuko_reload, main_accept, main_reload;
 
 int acceptloop(int socketd, struct cl_node *root, const struct cfgstruct *copt);
 void sighandler(int sig);

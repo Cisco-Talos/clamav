@@ -18,7 +18,6 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -28,6 +27,8 @@
 #include <zlib.h>
 
 #include "clamav.h"
+#include "others.h"
+#include "dsig.h"
 
 #define TAR_BLOCKSIZE 512
 
@@ -133,12 +134,15 @@ int cli_untgz(int fd, const char *destdir)
 	}
     }
 
+    if(outfile)
+	fclose(outfile);
+
     return 0;
 }
 
 char *cli_cut(const char *line, int field)
 {
-        int length, counter = 0, i, j = 0, k;
+        int length, counter = 0, i, j = 0;
         char *buffer;
 
     length = strlen(line);
@@ -161,10 +165,25 @@ char *cli_cut(const char *line, int field)
     return (char *) cli_realloc(buffer, strlen(buffer) + 1);
 }
 
-struct cl_cvd *cli_cvdhead(const char *head)
+struct cl_cvd *cli_cvdhead(FILE *fd)
 {
-	char *pt;
+	char *pt, head[513];
 	struct cl_cvd *cvd;
+	int i;
+
+
+    if(fread(head, 1, 512, fd) != 512) {
+	cli_errmsg("Can't read CVD head from stream\n");
+	return NULL;
+    }
+
+    head[512] = 0;
+    for(i = 511; i > 0 && (head[i] == ' ' || head[i] == 10); head[i] = 0, i--);
+
+    if(strncmp(head, "ClamAV-VDB:", 11)) {
+	cli_errmsg("Not a CVD file.\n");
+	return NULL;
+    }
 
     cvd = (struct cl_cvd *) cli_calloc(1, sizeof(struct cl_cvd));
     cvd->time = cli_cut(head, 2);
@@ -190,30 +209,14 @@ struct cl_cvd *cli_cvdhead(const char *head)
 
 struct cl_cvd *cl_cvdhead(const char *file)
 {
-	char head[257];
 	FILE *fd;
-	int i;
-
 
     if((fd = fopen(file, "rb")) == NULL) {
 	cli_errmsg("Can't open CVD file %s\n", file);
 	return NULL;
     }
 
-    if(fread(head, 1, 256, fd) != 256) {
-	cli_errmsg("Can't read CVD head from %s\n", file);
-	return NULL;
-    }
-    head[256] = 0;
-
-    for(i = 255; i > 0 && !isalnum(head[i]); head[i] = 0, i--);
-
-    if(strncmp(head, "ClamAV-VDB:", 11)) {
-	cli_errmsg("%s is not a CVD file.\n");
-	return NULL;
-    }
-
-    return cli_cvdhead(head);
+    return cli_cvdhead(fd);
 }
 
 void cl_cvdfree(struct cl_cvd *cvd)
@@ -225,28 +228,62 @@ void cl_cvdfree(struct cl_cvd *cvd)
     free(cvd);
 }
 
+int cli_cvdverify(FILE *fd)
+{
+	struct cl_cvd *head;
+	char *md5;
+
+    if((head = cli_cvdhead(fd)) == NULL)
+	return CL_ECVD;
+
+    //fseek(fd, 512, SEEK_SET);
+
+    md5 = cli_md5stream(fd);
+
+    cli_dbgmsg("MD5(.tar.gz) = %s\n", md5);
+
+    if(strncmp(md5, head->md5, 32)) {
+	cli_dbgmsg("MD5 verification error.\n");
+	return CL_EMD5;
+    }
+
+#ifdef HAVE_GMP
+    if(cli_versig(md5, head->dsig)) {
+	cli_dbgmsg("Digital signature verification error.\n");
+	return CL_EDSIG;
+    }
+#endif
+
+    return 0;
+}
+
+struct cl_cvd *cl_cvdverify(const char *file)
+{
+	FILE *fd;
+
+    if((fd = fopen(file, "rb")) == NULL) {
+	cli_errmsg("Can't open CVD file %s\n", file);
+	return NULL;
+    }
+
+    return cli_cvdverify(fd);
+}
+
 int cli_cvdload(FILE *fd, struct cl_node **root, int *virnum)
 {
-        char head[257], *dir, *tmp, buffer[BUFFSIZE];
-	int bytes;
-	struct cl_cvd *cvd;
+        char *dir, *tmp, buffer[BUFFSIZE];
+	int bytes, ret;
 	const char *tmpdir;
 	FILE *tmpd;
 
     cli_dbgmsg("in cli_cvdload()\n");
 
-    if(fread(head, 1, 256, fd) != 256) {
-	cli_errmsg("Can't read CVD head.\n");
-	return -1;
-    }
-    head[256] = 0;
+    /* verify */
 
-    cvd = cli_cvdhead(head);
+    if((ret = cli_cvdverify(fd)))
+	return ret;
 
-    /* verify md5/dsig */
-
-
-    /* unpack */
+    fseek(fd, 512, SEEK_SET);
 
     tmpdir = getenv("TMPDIR");
 
@@ -270,8 +307,8 @@ int cli_cvdload(FILE *fd, struct cl_node **root, int *virnum)
     }
     */
 
-    /* FIXME: it seems there is some problem with current position after
-     * gzdopen() in cli_untgz(). Temporarily we need this wrapper:
+    /* FIXME: it seems there is some problem with current position indicator
+     * after gzdopen() call in cli_untgz(). Temporarily we need this wrapper:
      */
 
 	    /* start */

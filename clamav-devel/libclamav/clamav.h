@@ -49,14 +49,17 @@ extern "C"
 #define CL_EACCES	200 /* access denied */
 #define CL_ENULLARG	300 /* null argument error */
 
-#define CL_ETMPFILE	-1 /* tmpfile() failed */
-#define CL_EFSYNC	-2 /* fsync() failed */
-#define CL_EMEM		-3 /* memory allocation error */
-#define CL_EOPEN	-4 /* file open error */
-#define CL_EMALFDB	-5 /* malformed database */
-#define CL_EPATSHORT	-6 /* pattern too short */
-#define CL_ETMPDIR	-7 /* mkdir() failed */
-#define CL_ECVDEXTR	-8 /* CVD extraction failure */
+#define CL_ETMPFILE	-1  /* tmpfile() failed */
+#define CL_EFSYNC	-2  /* fsync() failed */
+#define CL_EMEM		-3  /* memory allocation error */
+#define CL_EOPEN	-4  /* file open error */
+#define CL_EMALFDB	-5  /* malformed database */
+#define CL_EPATSHORT	-6  /* pattern too short */
+#define CL_ETMPDIR	-7  /* mkdir() failed */
+#define CL_ECVD		-8  /* not a CVD file (or broken) */
+#define CL_ECVDEXTR	-9  /* CVD extraction failure */
+#define CL_EMD5		-10 /* MD5 verification error */
+#define CL_EDSIG	-11 /* digital signature verification error */
 
 /* options */
 #define CL_RAW		  00
