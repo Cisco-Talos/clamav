@@ -38,6 +38,7 @@ int progexit = 0;
 pthread_mutex_t exit_mutex;
 int reload = 0;
 pthread_mutex_t reload_mutex;
+int sighup = 0;
 
 typedef struct client_conn_tag {
     int sd;
@@ -101,8 +102,8 @@ void sighandler_th(int sig)
 		break; /* not reached */
 
 	    case SIGHUP:
-		/* sighup = 1;
-		logg("SIGHUP catched: log file re-opened.\n"); */
+		sighup = 1;
+		//logg("SIGHUP caught: log file re-opened.\n");
 		break;
     }
 }
@@ -384,13 +385,21 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	    continue;
 	}
 
-	client_conn = (client_conn_t *) mmalloc(sizeof(struct client_conn_tag));
-	client_conn->sd = new_sd;
-	client_conn->options = options;
-	client_conn->copt = copt;
-	client_conn->root = root;
-	client_conn->limits = &limits;
-	thrmgr_add(&thrmgr, client_conn);
+	if (sighup) {
+		logg("SIGHUP caught: re-opening log file.\n");
+		logg_close();
+		sighup = 0;
+	}
+
+	if (new_sd >= 0) {
+		client_conn = (client_conn_t *) mmalloc(sizeof(struct client_conn_tag));
+		client_conn->sd = new_sd;
+		client_conn->options = options;
+		client_conn->copt = copt;
+		client_conn->root = root;
+		client_conn->limits = &limits;
+		thrmgr_add(&thrmgr, client_conn);
+	}
 
 	pthread_mutex_lock(&exit_mutex);
 	if(progexit) {

@@ -60,6 +60,7 @@ void logg_close(void) {
     pthread_mutex_lock(&logg_mutex);
     if (log_fd) {
 	fclose(log_fd);
+	log_fd = NULL;
     }
     pthread_mutex_unlock(&logg_mutex);
 #if defined(CLAMD_USE_SYSLOG) && !defined(C_AIX)
@@ -122,6 +123,7 @@ int logg(const char *str, ...)
 		    fprintf(log_fd, "Log size = %d, maximal = %d\n", (int) sb.st_size, logsize);
 		    fprintf(log_fd, "LOGGING DISABLED (Maximal log file size exceeded).\n");
 		    fclose(log_fd);
+		    log_fd = NULL;
 		    pthread_mutex_unlock(&logg_mutex);
 		    return 0;
 		}
