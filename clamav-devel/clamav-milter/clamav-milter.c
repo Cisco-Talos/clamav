@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.140  2004/10/07 15:36:43  nigelhorne
+ * Remove scanmail requirement
+ *
  * Revision 1.139  2004/10/04 12:37:11  nigelhorne
  * Fix quarantine files being saved twice
  *
@@ -428,9 +431,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.139 2004/10/04 12:37:11 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.140 2004/10/07 15:36:43 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80h"
+#define	CM_VERSION	"0.80i"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1231,16 +1234,6 @@ main(int argc, char **argv)
 
 	if(templatefile && (access(templatefile, R_OK) < 0)) {
 		perror(templatefile);
-		return EX_CONFIG;
-	}
-
-	if(!cfgopt(copt, "ScanMail")) {
-		/*
-		 * In fact ScanMail isn't needed if this machine doesn't run
-		 * clamd.
-		 */
-		fprintf(stderr, _("%s: ScanMail not enabled in %s\n"),
-			argv[0], cfgfile);
 		return EX_CONFIG;
 	}
 
@@ -2190,7 +2183,8 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 	if(hflag)
 		header_list_add(privdata->headers, headerf, headerv);
 	else if((strcasecmp(headerf, "Received") == 0) &&
-		(strncasecmp(headerv, "from ", 5) == 0)) {
+		(strncasecmp(headerv, "from ", 5) == 0) &&
+		(strstr(headerv, "localhost") != 0)) {
 		if(privdata->received)
 			free(privdata->received);
 		privdata->received = strdup(headerv);
