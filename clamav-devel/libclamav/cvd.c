@@ -124,6 +124,7 @@ int cli_untgz(int fd, const char *destdir)
 		cli_errmsg("Invalid size in header.\n");
 		free(fullname);
 	        gzclose(infile);
+		fclose(outfile);
 		return -1;
 	    }
 
@@ -369,8 +370,12 @@ int cli_cvdload(FILE *fd, struct cl_node **root, int *virnum)
 		return CL_ETMPFILE;
 	    }
 
-	    if(!(buffer = (char *) cli_malloc(FILEBUFF)))
+	    if(!(buffer = (char *) cli_malloc(FILEBUFF))) {
+		free(dir);
+		free(tmp);
+		fclose(tmpd);
 		return CL_EMEM;
+	    }
 
 	    while((bytes = fread(buffer, 1, FILEBUFF, fd)) > 0)
 		fwrite(buffer, 1, bytes, tmpd);
@@ -384,6 +389,7 @@ int cli_cvdload(FILE *fd, struct cl_node **root, int *virnum)
 		cli_errmsg("cli_cvdload(): Can't unpack CVD file.\n");
 		cli_rmdirs(dir);
 		free(dir);
+		fclose(tmpd);
 		unlink(tmp);
 		free(tmp);
 		return CL_ECVDEXTR;

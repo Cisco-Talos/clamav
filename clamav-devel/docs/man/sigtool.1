@@ -1,5 +1,5 @@
 .\" Manual page created by Tomasz Kojm, 20020629
-.TH "sigtool" "1" "August 18, 2004" "Tomasz Kojm" "Clam AntiVirus"
+.TH "sigtool" "1" "August 31, 2004" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 sigtool \- signature and database management tool
@@ -29,8 +29,8 @@ Write all messages to standard output (stdout), instead of standard error output
 \fB\-\-hex\-dump\fR
 Read data from stdin and write hex string to stdout.
 .TP 
-\fB\-\-md5\fR
-Generate MD5 checksum from stdin.
+\fB\-\-md5 [FILES]\fR
+Generate MD5 checksum from stdin or MD5 sigs for FILES.
 .TP 
 \fB\-i, \-\-info\fR
 Print a CVD information and verify MD5 and a digital signature.

@@ -1,3 +1,10 @@
+Tue Aug 31 00:09:42 CEST 2004 (tk)
+----------------------------------
+  * sigtool: --md5 now can generate MD5 sigs from file list (requested by
+	     Christoph Cordes)
+  * Fix minor file descriptor leaks (reported by Christophe GRENIER
+    <grenier*cgsecurity.org>)
+
 Tue Aug 31 10:46:48 CEST 2004 (acab)
 ------------------------------------
   * libclamav/petite.c: Fixed inflooping (thx Christoph)
@@ -14,7 +21,7 @@ Mon Aug 30 14:00:43 CEST 2004 (tk)
 Mon Aug 30 12:36:49 BST 2004 (njh)
 ----------------------------------
   * libclamav/blob.c:	Fix compilation errors on AIX and OSF reported by
-				Fajar A. Nugraha <fajar@telkom.co.id>
+				Fajar A. Nugraha <fajar*telkom.co.id>
 
 Sat Aug 28 20:25:44 CEST 2004 (tk)
 ----------------------------------
@@ -165,7 +172,7 @@ Sat Aug 21 12:59:43 BST 2004 (njh)
 ----------------------------------
   * libclamav:	Changed the handling of miltipart messages, that is scanning
 			emails with attachments. Reports on impact on memory
-			usage and speed welcome to clamav-devel@lists.sf.net.
+			usage and speed welcome to clamav-devel*lists.sf.net.
 
 Fri Aug 20 21:05:04 CEST 2004 (tk)
 ----------------------------------
