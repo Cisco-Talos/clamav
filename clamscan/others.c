@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -129,11 +130,19 @@ int logg(const char *str, ...)
 
     if(logfile) {
 
+	if (str == NULL && fd != NULL) {
+	    /* re-open logfile */
+	    fclose(fd);
+	    fd = NULL;
+	}
 	if(!fd) {
 	    if((fd = fopen(logfile, "a")) == NULL) {
-		mprintf("!LOGGER: Can't open file %s to write.\n", logfile);
+		mprintf("!LOGGER: Can't open %s for writing: %s.\n", logfile, strerror(errno));
 		return 1;
 	    }
+	}
+	if (str == NULL) {
+	    return 0;
 	}
 
 	va_start(args, str);
