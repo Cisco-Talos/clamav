@@ -1,5 +1,5 @@
 .\" Manual page created by Tomasz Kojm, 20020629
-.TH "sigtool" "1" "September 18, 2004" "Tomasz Kojm" "Clam AntiVirus"
+.TH "sigtool" "1" "December 19, 2004" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 sigtool \- signature and database management tool
@@ -34,6 +34,13 @@ Generate MD5 checksum from stdin or MD5 sigs for FILES.
 .TP 
 \fB\-\-html\-normalise=FILE\fR
 Create normalised HTML files comment.html, nocomment.html, and script.html in current working directory.
+.TP 
+\fB\-\-vba=FILE\fR
+Extract VBA/Word6 macros from given MS Office document.
+.TP 
+\fB\-\-vba\-hex=FILE\fR
+Extract Word6 macros from given MS Office document, and
+display the corresponding hex values.
 .TP 
 \fB\-i, \-\-info\fR
 Print a CVD information and verify MD5 and a digital signature.
