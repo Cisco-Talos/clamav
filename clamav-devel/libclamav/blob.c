@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.22  2004/09/18 14:59:26  nigelhorne
+ * Code tidy
+ *
  * Revision 1.21  2004/09/06 08:34:47  nigelhorne
  * Randomise extracted file names from tar file
  *
@@ -65,7 +68,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.21 2004/09/06 08:34:47 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.22 2004/09/18 14:59:26 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -151,6 +154,8 @@ blobDestroy(blob *b)
 void
 blobArrayDestroy(blob *blobList[], int n)
 {
+	assert(blobList != NULL);
+
 	while(--n >= 0) {
 		cli_dbgmsg("blobArrayDestroy: %d\n", n);
 		if(blobList[n]) {
@@ -191,6 +196,10 @@ blobGetFilename(const blob *b)
 void
 blobAddData(blob *b, const unsigned char *data, size_t len)
 {
+#ifdef	HAVE_GETPAGESIZE
+	const int pagesize = getpagesize();
+#endif
+
 	assert(b != NULL);
 	assert(b->magic == BLOB);
 	assert(data != NULL);
@@ -206,6 +215,32 @@ blobAddData(blob *b, const unsigned char *data, size_t len)
 		cli_warnmsg("Reopening closed blob\n");
 		b->isClosed = 0;
 	}
+	/*
+	 * The payoff here is between reducing the number of calls to
+	 * malloc/realloc and not overallocating memory. A lot of machines
+	 * are more tight with memory than one may imagine which is why
+	 * we don't just allocate a *huge* amount and be done with it. Closing
+	 * the blob helps because that reclaims memory. If you know the maximum
+	 * size of a blob before you start adding data, use blobGrow() that's
+	 * the most optimum
+	 */
+#ifdef	HAVE_GETPAGESIZE
+	if(b->data == NULL) {
+		assert(b->len == 0);
+		assert(b->size == 0);
+
+		b->size = pagesize;
+		b->data = cli_malloc(pagesize);
+	} else if(b->size < b->len + len) {
+		unsigned char *p = cli_realloc(b->data, b->size + pagesize);
+
+		if(p == NULL)
+			return;
+
+		b->size += pagesize;
+		b->data = p;
+	}
+#else
 	if(b->data == NULL) {
 		assert(b->len == 0);
 		assert(b->size == 0);
@@ -221,6 +256,7 @@ blobAddData(blob *b, const unsigned char *data, size_t len)
 		b->size += len * 4;
 		b->data = p;
 	}
+#endif
 
 	if(b->data) {
 		memcpy(&b->data[b->len], data, len);
@@ -249,20 +285,32 @@ blobGetDataSize(const blob *b)
 void
 blobClose(blob *b)
 {
+	assert(b != NULL);
+	assert(b->magic == BLOB);
+	assert(!(b->isClosed));
+
 	/*
 	 * Nothing more is going to be added to this blob. If it'll save more
 	 * than a trivial amount (say 64 bytes) of memory, shrink the allocation
 	 */
 	if((b->size - b->len) >= 64) {
-		unsigned char *ptr = cli_realloc(b->data, b->len);
+		if(b->len == 0) {	/* Not likely */
+			free(b->data);
+			b->data = NULL;
+			cli_dbgmsg("blobClose: recovered all %u bytes\n",
+				b->size);
+			b->size = 0;
+		} else {
+			unsigned char *ptr = cli_realloc(b->data, b->len);
 
-		if(ptr == NULL)
-			return;
+			if(ptr == NULL)
+				return;
 
-		cli_dbgmsg("blobClose: recovered %u bytes from %u\n",
-			b->size - b->len, b->size);
-		b->size = b->len;
-		b->data = ptr;
+			cli_dbgmsg("blobClose: recovered %u bytes from %u\n",
+				b->size - b->len, b->size);
+			b->size = b->len;
+			b->data = ptr;
+		}
 	}
 	b->isClosed = 1;
 }
@@ -286,6 +334,9 @@ blobcmp(const blob *b1, const blob *b2)
 
 	if(s1 != s2)
 		return 1;
+
+	if((s1 == 0) && (s2 == 0))
+		return 0;
 
 	return memcmp(blobGetData(b1), blobGetData(b2), s1);
 }
@@ -345,6 +396,10 @@ fileblobDestroy(fileblob *fb)
 
 	if(fb->b.name) {
 		assert(fb->fp != NULL);
+		if(ftell(fb->fp) == 0L) {
+			cli_dbgmsg("fileblobDestroy: not saving empty file\n");
+			unlink(fb->b.name);
+		}
 		fclose(fb->fp);
 		free(fb->b.name);
 
@@ -471,9 +526,8 @@ sanitiseName(char *name)
 	while(*name) {
 #ifdef	C_DARWIN
 		*name &= '\177';
-#endif
-#if	defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32)
-		if(strchr("/*?<>|\"+=,;: ", *name))
+#elif	defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32)
+		if(strchr("/*?<>|\\\"+=,;: ", *name))
 #else
 		if(*name == '/')
 #endif
