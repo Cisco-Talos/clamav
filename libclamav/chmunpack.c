@@ -846,7 +846,7 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 	lzx_content_t *lzx_content=NULL;
 	lzx_reset_table_t *lzx_reset_table=NULL;
 	lzx_control_t *lzx_control=NULL;
-	int window_bits, length, ofd, retval=FALSE;
+	int window_bits, count, length, ofd, retval=FALSE;
 	uint64_t com_offset;
 	struct mspack_file_p mf_in, mf_out;
 	struct lzxd_stream * stream;
@@ -962,6 +962,7 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 	/* Delete the file */
 	unlink(filename);
 	
+	count=0;
 	while(entry) {
 		if (entry->section != 1) {
 			entry = entry->next;
@@ -973,7 +974,7 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 			continue;
 		}
 		
-		snprintf(filename, 1024, "%s/%llu.chm", dirname, entry->offset);
+		snprintf(filename, 1024, "%s/%d-%llu.chm", dirname, count, entry->offset);
 		ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
 		if (ofd < 0) {
 			entry = entry->next;
@@ -985,6 +986,7 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 		
 		close(ofd);		
 		entry = entry->next;
+		count++;
 	}
 	close(mf_out.desc);
 	retval = TRUE;
