@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.45  2004/02/18 10:07:40  nigelhorne
+ * Find some Yaha
+ *
  * Revision 1.44  2004/02/15 08:45:54  nigelhorne
  * Avoid scanning the same file twice
  *
@@ -123,7 +126,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.44 2004/02/15 08:45:54 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.45 2004/02/18 10:07:40 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -644,6 +647,8 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 			 * some duplication of code to be cleaned up
 			 */
 			for(multiparts = 0; t_line && (multiparts < MAXALTERNATIVE); multiparts++) {
+				int lines = 0;
+
 				aMessage = messages[multiparts] = messageCreate();
 
 				cli_dbgmsg("Now read in part %d\n", multiparts);
@@ -741,11 +746,16 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						 */
 						/* t_line = NULL;*/
 						break;
-					} else
+					} else {
 						messageAddLine(aMessage, line);
+						lines++;
+					}
 				} while((t_line = t_line->t_next) != NULL);
 
 				messageClean(aMessage);
+
+				cli_dbgmsg("Part %d has %d lines\n",
+					multiparts, lines);
 			}
 
 			free((char *)boundary);

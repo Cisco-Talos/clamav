@@ -1,3 +1,11 @@
+Wed Feb 18 10:12:54 GMT 2004 (njh)
+----------------------------------
+  * libclamav:	Found some occurances of Yaha
+	Added debug of number of lines in (encoded) attachment
+  * clamav-milter:	clamav-milter now builds on freeBSD 5.2 (wrong logic
+  		in including malloc.h)
+	clamav-milter no longer allows --force to override TCPwrappers
+
 Wed Feb 18 04:09:56 CET 2004 (tk)
 ---------------------------------
   * clamd: temporarily disabled strerror_r (due to a compilation problem on
