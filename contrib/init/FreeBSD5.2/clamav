@@ -22,6 +22,10 @@
 # clamav_milter_enable="YES"
 # clamav_milter_flags="--max-children=2 --dont-wait --timeout=0 -P local:/var/run/clamav/clamav.sock --pidfile=/var/run/clamav/clamav-milter.pid --quarantine-dir=/var/run/clamav/quarantine"
 
+# PROVIDE: clamav
+# REQUIRE: NETWORKING
+# KEYWORD: FreeBSD
+
 . /etc/rc.subr
 
 name="clamd"
