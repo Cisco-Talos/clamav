@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.148  2004/11/04 08:22:06  nigelhorne
+ * Fix segfault on startup in LocalSocket mode
+ *
  * Revision 1.147  2004/11/03 12:46:13  nigelhorne
  * Add X-Original-Subject
  *
@@ -452,9 +455,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.147 2004/11/03 12:46:13 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.148 2004/11/04 08:22:06 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80o"
+#define	CM_VERSION	"0.80p"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1448,15 +1451,6 @@ main(int argc, char **argv)
 		}
 #ifdef	SESSION
 		activeServers = numServers;
-		clamav_versions = (char **)cli_malloc(numServers * sizeof(char *));
-		if(clamav_versions == NULL)
-			return EX_TEMPFAIL;
-
-		for(i = 0; i < numServers; i++) {
-			clamav_versions[i] = strdup(version);
-			if(clamav_versions[i] == NULL)
-				return EX_TEMPFAIL;
-		}
 
 		cmdSockets = (int *)cli_malloc(max_children * sizeof(int));
 		cmdSocketsStatus = (int *)cli_calloc(max_children, sizeof(int));
@@ -1481,6 +1475,18 @@ main(int argc, char **argv)
 			argv[0], cfgfile);
 		return EX_CONFIG;
 	}
+
+#ifdef	SESSION
+	clamav_versions = (char **)cli_malloc(numServers * sizeof(char *));
+	if(clamav_versions == NULL)
+		return EX_TEMPFAIL;
+
+	for(i = 0; i < numServers; i++) {
+		clamav_versions[i] = strdup(version);
+		if(clamav_versions[i] == NULL)
+			return EX_TEMPFAIL;
+	}
+#endif
 
 	if(!cfgopt(copt, "Foreground")) {
 #ifdef	CL_DEBUG
