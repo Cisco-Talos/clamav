@@ -781,11 +781,27 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						in_script = TRUE;
 					}
 					html_output_tag(file_buff_script, tag, &tag_args);
-				} else if (hrefs && strcmp(tag, "a") == 0) {
-					arg_value = html_tag_arg_value(&tag_args, "href");
-					if (arg_value && strlen(arg_value) > 0) {
-						html_tag_arg_add(hrefs, "href", arg_value);
-					}
+				} else if (hrefs) {
+					if (strcmp(tag, "a") == 0) {
+						arg_value = html_tag_arg_value(&tag_args, "href");
+						if (arg_value && strlen(arg_value) > 0) {
+							html_tag_arg_add(hrefs, "href", arg_value);
+						}
+					} else if (strcmp(tag, "img") == 0) {
+						arg_value = html_tag_arg_value(&tag_args, "src");
+						if (arg_value && strlen(arg_value) > 0) {
+							html_tag_arg_add(hrefs, "src", arg_value);
+						}
+						arg_value = html_tag_arg_value(&tag_args, "dynsrc");
+						if (arg_value && strlen(arg_value) > 0) {
+							html_tag_arg_add(hrefs, "dynsrc", arg_value);
+						}
+					} else if (strcmp(tag, "iframe") == 0) {
+						arg_value = html_tag_arg_value(&tag_args, "src");
+						if (arg_value && strlen(arg_value) > 0) {
+							html_tag_arg_add(hrefs, "iframe", arg_value);
+						}
+					}						
 				}
 				html_tag_arg_free(&tag_args);
 				break;

@@ -1,3 +1,7 @@
+Wed Oct 27 09:30:47 BST 2004 (trog)
+-----------------------------------
+  * libclamav/htmlnorm.c: extract more HTML references from use with FOLLOWURL
+
 Wed Oct 27 07:36:49 BST 2004 (njh)
 ----------------------------------
  * libclamav/untar.c:	Handle links to another file already archived, patch
