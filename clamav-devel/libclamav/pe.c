@@ -154,7 +154,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	struct pe_image_section_hdr *section_hdr;
 	struct stat sb;
 	char sname[9], buff[4096], *tempfile;
-	int i, found, upx_success = 0, min = 0, max = 0, ret;
+	int i, found, upx_success = 0, min = 0, max = 0, ret, dll = 0;
 	int (*upxfn)(char *, int , char *, int *, uint32_t, uint32_t, uint32_t) = NULL;
 	char *src = NULL, *dest = NULL;
 	int ssize = -1, dsize = -1, ndesc;
@@ -205,6 +205,13 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     if(EC32(file_hdr.Magic) != IMAGE_NT_SIGNATURE) {
 	cli_dbgmsg("Invalid PE signature (probably NE file)\n");
 	return CL_CLEAN;
+    }
+
+    if(EC16(file_hdr.Characteristics) & 0x01) {
+	cli_dbgmsg("File type: Executable\n");
+    } else if(EC16(file_hdr.Characteristics) & 0x100) {
+	cli_dbgmsg("File type: DLL\n");
+	dll = 1;
     }
 
     switch(EC16(file_hdr.Machine)) {
@@ -440,8 +447,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     /* Attempt to detect some popular polymorphic viruses */
 
     /* W32.Parite.B */
-    if(ep == EC32(section_hdr[nsections - 1].PointerToRawData)) {
-	lseek(desc, ep, SEEK_SET);
+    if(ep == EC32(section_hdr[nsections - 1].PointerToRawData) || dll) {
+	lseek(desc, EC32(section_hdr[nsections - 1].PointerToRawData), SEEK_SET);
 	if(read(desc, buff, 4096) == 4096) {
 		char *pt = cli_memstr(buff, 4040, "\x47\x65\x74\x50\x72\x6f\x63\x41\x64\x64\x72\x65\x73\x73\x00", 15);
 	    if(pt) {
@@ -450,6 +457,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		pt += 15;
 		if(((dw1 = cli_readint32(pt)) ^ (dw2 = cli_readint32(pt + 4))) == 0x505a4f && ((dw1 = cli_readint32(pt + 8)) ^ (dw2 = cli_readint32(pt + 12))) == 0xffffb && ((dw1 = cli_readint32(pt + 16)) ^ (dw2 = cli_readint32(pt + 20))) == 0xb8) {
 		    *virname = "W32.Parite.B";
+		    free(section_hdr);
 		    return CL_VIRUS;
 		}
 	    }
