@@ -225,6 +225,7 @@ Changes
 		Removed duplication in version string
 		Handle machines that don't have in_port_t
 0.67	16/2/04	Upissued to 0.67
+0.67a	16/2/04	Added clamfi_free
 
 BUG REPORTS
 
