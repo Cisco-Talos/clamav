@@ -195,10 +195,10 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 		mprintf("*Software version from DNS: %s\n", pt);
 		if(!strstr(cl_retver(), "devel")) {
 		    if(strcmp(cl_retver(), pt)) {
-			mprintf("WARNING: Your ClamAV installation is OUTDATED - please update immediately !\n");
-			mprintf("WARNING: Local version: %s, Recommended version: %s\n", cl_retver(), pt);
-			logg("WARNING: Your ClamAV installation is OUTDATED - please update immediately !\n");
-			logg("WARNING: Local version: %s, Recommended version: %s\n", cl_retver(), pt);
+			mprintf("WARNING: Your ClamAV installation is OUTDATED - please update immediately!\n");
+			mprintf("WARNING: Local version: %s Recommended version: %sin", cl_retver(), pt);
+			logg("WARNING: Your ClamAV installation is OUTDATED - please update immediately!\n");
+			logg("WARNING: Local version: %s Recommended version: %sin", cl_retver(), pt);
 		    }
 		}
 		free(pt);
@@ -271,9 +271,9 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 
 	if(flevel < current->fl) {
 	    /* display warning even for already installed database */
-	    mprintf("WARNING: Your ClamAV installation is OUTDATED - please update immediately !\n");
+	    mprintf("WARNING: Your ClamAV installation is OUTDATED - please update immediately!\n");
 	    mprintf("WARNING: Current functionality level = %d, required = %d\n", flevel, current->fl);
-	    logg("WARNING: Your ClamAV installation is OUTDATED - please update immediately !\n");
+	    logg("WARNING: Your ClamAV installation is OUTDATED - please update immediately!\n");
 	    logg("WARNING: Current functionality level = %d, required = %d\n", flevel, current->fl);
 	}
 
@@ -302,8 +302,8 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	return 52;
     };
 
-    /* the temporary file is created in a directory owned by clamav so a race
-     * condition is not possible
+    /* the temporary file is created in a directory owned by clamav so race
+     * conditions are not possible
      */
     tempname = cli_gentemp(".");
 
@@ -353,9 +353,9 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     logg("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
 
     if(flevel < current->fl) {
-	mprintf("WARNING: Your ClamAV installation is OUTDATED - please update immediately !\n");
+	mprintf("WARNING: Your ClamAV installation is OUTDATED - please update immediately!\n");
 	mprintf("WARNING: Current functionality level = %d, required = %d\n", flevel, current->fl);
-	logg("WARNING: Your ClamAV installation is OUTDATED - please update immediately !\n");
+	logg("WARNING: Your ClamAV installation is OUTDATED - please update immediately!\n");
 	logg("WARNING: Current functionality level = %d, required = %d\n", flevel, current->fl);
     }
 
@@ -576,8 +576,11 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
 #else
     if((fd = open(file, O_WRONLY|O_CREAT|O_EXCL, 0644)) == -1) {
 #endif
-	mprintf("@Can't open new file %s to write\n", file);
-	perror("open");
+	    char currdir[512];
+
+	getcwd(currdir, sizeof(currdir));
+	mprintf("@Can't create new file %s in %s\n", file, currdir);
+	mprintf("@The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
 	return 57;
     }
 

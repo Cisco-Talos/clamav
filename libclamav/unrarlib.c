@@ -344,7 +344,7 @@ static int ReadHeader(int BlockType);
 static BOOL ExtrFile(int desc);
 static int tread(void *stream,void *buf,unsigned len);
 static int tseek(void *stream,long offset,int fromwhere);
-static BOOL UnstoreFile(void);
+/* static BOOL UnstoreFile(void); */
 static int IsArchive(void);
 static int ReadBlock(int BlockType);
 static unsigned int UnpRead(unsigned char *Addr,unsigned int Count);
@@ -1250,6 +1250,7 @@ int stricomp(char *Str1,char *Str2)
  * ** unpack stored RAR files **
  * *****************************/
 
+/*
 BOOL UnstoreFile(void)
 {
   if ((long)(*temp_output_buffer_offset=UnpRead(temp_output_buffer,
@@ -1260,8 +1261,7 @@ BOOL UnstoreFile(void)
   }
   return TRUE;
 }
-
-
+*/
 
 
 /* ****************************************

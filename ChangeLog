@@ -1,6 +1,10 @@
+Sun Oct 17 02:42:10 CEST 2004 (tk)
+----------------------------------
+  * libclamav, freshclam: cosmetic fixes
+
 Sun Oct 17 01:28:48 CEST 2004 (tk)
 ----------------------------------
-  * libclamav: count unpacked data scanned with cl_scanbuff()
+  * libclamav: count unpacked data scanned by cl_scanbuff()
 
 Sat Oct 16 20:11:15 BST 2004 (njh)
 ----------------------------------
