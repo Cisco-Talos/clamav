@@ -45,17 +45,15 @@ const char *freshdbdir(void)
     dbdir = cl_retdbdir();
     if((copt = parsecfg(CONFDIR"/clamd.conf", 0))) {
 	if((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory"))) {
-	    if(strcmp(cl_retdbdir(), cpt->strarg)) {
-		    char *daily = (char *) mmalloc(strlen(cpt->strarg) + strlen(cl_retdbdir()) + 15);
+	    if(strcmp(dbdir, cpt->strarg)) {
+		    char *daily = (char *) mmalloc(strlen(cpt->strarg) + strlen(dbdir) + 15);
 		sprintf(daily, "%s/daily.cvd", cpt->strarg);
 		if((d1 = cl_cvdhead(daily))) {
-		    sprintf(daily, "%s/daily.cvd", cl_retdbdir());
+		    sprintf(daily, "%s/daily.cvd", dbdir);
 		    if((d2 = cl_cvdhead(daily))) {
 			free(daily);
 			if(d1->version > d2->version)
 			    dbdir = cpt->strarg;
-			else
-			    dbdir = cl_retdbdir();
 			cl_cvdfree(d2);
 		    } else {
 			free(daily);
@@ -64,7 +62,6 @@ const char *freshdbdir(void)
 		    cl_cvdfree(d1);
 		} else {
 		    free(daily);
-		    dbdir = cl_retdbdir();
 		}
 	    }
 	}

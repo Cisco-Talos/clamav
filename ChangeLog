@@ -1,3 +1,7 @@
+Wed Dec  1 21:05:07 CET 2004 (tk)
+---------------------------------
+  * libclamav/scanners.c: improved recursion limits (thanks to Maxim Dounin)
+
 Wed Dec  1 13:14:33 GMT 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Decode text/plain parts marked as being encoded,
