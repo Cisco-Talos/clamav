@@ -237,6 +237,12 @@ int readsock(int sockfd, char *buf, size_t size)
 	struct msghdr msg;
 	struct iovec iov[1];
 #ifdef HAVE_CONTROL_IN_MSGHDR
+#ifndef CMSG_SPACE
+#define CMSG_SPACE(len)	    (_CMSG_ALIGN(sizeof(struct cmsghdr)) + _CMSG_ALIGN(len))
+#endif
+#ifndef CMSG_LEN
+#define CMSG_LEN(len)	    (_CMSG_ALIGN(sizeof(struct cmsghdr)) + (len))
+#endif
 	struct cmsghdr *cmsg;
 	char tmp[CMSG_SPACE(sizeof(fd))];
 #endif
