@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.34  2004/01/24 17:43:37  nigelhorne
+ * Removed (incorrect) warning about uninitialised variable
+ *
  * Revision 1.33  2004/01/23 10:38:22  nigelhorne
  * Fixed memory leak in handling some multipart messages
  *
@@ -90,7 +93,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.33 2004/01/23 10:38:22 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.34 2004/01/24 17:43:37 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -487,7 +490,7 @@ static int	/* success or fail */
 parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, const char *dir, table_t *rfc821Table, table_t *subtypeTable)
 {
 	message *messages[MAXALTERNATIVE];
-	int inhead, inMimeHead, i, rc, htmltextPart, multiparts = 0;
+	int inhead, inMimeHead, i, rc = 1, htmltextPart, multiparts = 0;
 	text *aText;
 	blob *blobList[MAX_ATTACHMENTS], **blobs;
 	const char *cptr;
@@ -1129,7 +1132,6 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 	}
 
 	cli_dbgmsg("%d attachments found\n", nBlobs);
-	rc = 1;
 
 	if(nBlobs == 0) {
 		blob *b;

@@ -1,3 +1,7 @@
+Sat Jan 24 17:45:40 GMT 2004 (njh)
+----------------------------------
+  * libclamav: Removed (incorrect) warning about uninitialised variable
+
 Fri Jan 23 12:12:30 CET 2004 (tk)
 ---------------------------------
   * libclamav: added support for OLE2 / VBA streams scanning (!!), based on
