@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.227 2005/03/16 12:14:37 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.228 2005/03/16 21:27:59 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -104,15 +104,17 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
  * Code does exist to run FOLLORURLS on systems without libcurl, however that
  * is not recommended so it is not compiled by default
  *
- * On Solaris, the clamAV build system uses the SUN supplied ld instead of
- * the GNU ld causing this error. Therefore you cannot use WITH_CURL on
- * Solaris, you must configure with "--without-libcurl"
+ * On Solaris, when using the GNU C compiler, the clamAV build system uses the
+ * Sun supplied ld instead of the GNU ld causing an error. Therefore you cannot
+ * use WITH_CURL on Solaris with gcc, you must configure with
+ * "--without-libcurl". I don't know if it works with Sun's own compiler
+ *
  * Fails to link on Solaris 10 with this error:
  *      Undefined                       first referenced
  *  symbol                             in file
  *  __floatdidf                         /opt/sfw/lib/libcurl.s
  */
-#ifdef	C_SOLARIS
+#if	C_SOLARIS && __GNUC__
 #undef	WITH_CURL
 #endif
 
