@@ -122,12 +122,6 @@ int client(const struct optstruct *opt)
 
     /* we need the full path to the file */
     if(!getcwd(cwd, 200)) {
-	mprintf("@Can't get absolute pathname of current working directory.\n");
-	return 2;
-    }
-
-
-    if(!getcwd(cwd, 200)) {
 	mprintf("@Can't get the absolute pathname of the current working directory.\n");
 	return 2;
     }

@@ -1,3 +1,9 @@
+Fri Feb 20 23:21:42 CET 2004 (tk)
+---------------------------------
+  * configure: --enable-yp-check (use ypmatch utility instead of /etc/passwd
+	       parsing) by James F.  Hranicky <jfh*cise.ufl.edu>.
+  * clamdscan, libclamav: small code cleanups from Phil Oleson <oz*nixil.net>
+
 Fri Feb 20 17:13:10 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	If clamd is on the local machine and PidFile is defined
