@@ -229,9 +229,14 @@
  *			Handle machines that don't have in_port_t
  *	0.67	16/2/04	Upissued to 0.67
  *	0.67a	16/2/04	Added clamfi_free
+ *	0.67b	17/2/04	Removed compilation warning - now compiles on FreeBSD5.2
+ *			Don't allow --force to overwride TCPwrappers
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.48  2004/02/18 10:06:51  nigelhorne
+ * Fix FreeBSD
+ *
  * Revision 1.47  2004/02/16 11:55:24  nigelhorne
  * Added clamfi_free which helps with the tidying up
  *
@@ -358,9 +363,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.47 2004/02/16 11:55:24 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.48 2004/02/18 10:06:51 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.67a"
+#define	CM_VERSION	"0.67b"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -380,7 +385,7 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.47 2004/02/16 11:55:24 nig
 
 #include <stdio.h>
 #include <sysexits.h>
-#ifndef HAVE_MALLOC_H
+#ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
 #include <sys/types.h>
@@ -1282,7 +1287,7 @@ static sfsistat
 clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 {
 	char buf[INET_ADDRSTRLEN];	/* IPv4 only */
-	const char *remoteIP;
+	char *remoteIP;
 
 	if(hostname == NULL) {
 		if(use_syslog)
@@ -1295,7 +1300,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		return cl_error;
 	}
 
-	remoteIP = inet_ntop(AF_INET, &((struct sockaddr_in *)(hostaddr))->sin_addr, buf, sizeof(buf));
+	remoteIP = (char *)inet_ntop(AF_INET, &((struct sockaddr_in *)(hostaddr))->sin_addr, buf, sizeof(buf));
 
 	if(remoteIP == NULL) {
 		if(use_syslog)
@@ -1308,6 +1313,20 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		if(use_syslog)
 			syslog(LOG_NOTICE, "clamfi_connect: connection from %s [%s]", hostname, remoteIP);
 		printf("clamfi_connect: connection from %s [%s]\n", hostname, remoteIP);
+	}
+#endif
+
+#ifdef	WITH_TCPWRAP
+	/*
+	 * Support /etc/hosts.allow and /etc/hosts.deny
+	 */
+	if(!hosts_ctl("clamav-milter", hostname, remoteIP, STRING_UNKNOWN)) {
+		if(use_syslog)
+			syslog(LOG_WARNING,
+				"Access to clamav-milter denied for %s[%s]",
+				hostname,
+				remoteIP);
+		return SMFIS_TEMPFAIL;
 	}
 #endif
 
@@ -1368,19 +1387,6 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		}
 	}
 
-#ifdef	WITH_TCPWRAP
-	/*
-	 * Support /etc/hosts.allow and /etc/hosts.deny
-	 */
-	if(!hosts_ctl("clamav-milter", hostname, remoteIP, STRING_UNKNOWN)) {
-		if(use_syslog)
-			syslog(LOG_WARNING,
-				"Access to clamav-milter denied for %s[%s]",
-				hostname,
-				remoteIP);
-		return SMFIS_TEMPFAIL;
-	}
-#endif
 	return SMFIS_CONTINUE;
 }
 
