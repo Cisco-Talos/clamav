@@ -62,6 +62,8 @@ pthread_mutex_t cli_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
 # else
 #   ifdef	FILENAME_MAX	/* e.g. SCO */
 #     define	NAME_MAX	FILENAME_MAX
+#   else
+#     define	NAME_MAX	256
 #   endif
 # endif
 #endif

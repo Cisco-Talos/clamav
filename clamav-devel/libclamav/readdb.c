@@ -52,6 +52,8 @@
 # else
 #   ifdef	FILENAME_MAX	/* e.g. SCO */
 #     define	NAME_MAX	FILENAME_MAX
+#   else
+#     define	NAME_MAX	256
 #   endif
 # endif
 #endif
