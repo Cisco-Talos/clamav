@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.45  2004/03/20 19:26:48  nigelhorne
+ * Second attempt to handle all bounces
+ *
  * Revision 1.44  2004/03/20 17:39:23  nigelhorne
  * First attempt to handle all bounces
  *
@@ -129,7 +132,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.44 2004/03/20 17:39:23 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.45 2004/03/20 19:26:48 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -211,37 +214,6 @@ static	struct	mime_map {
 	{	"message",		MESSAGE		},
 	{	"video",		VIDEO		},
 	{	NULL,			TEXT		}
-};
-
-/*
- * TODO: This is a duplicate of the table from scanners.c. We should have
- * just one table
- */
-struct cli_magic_s {
-    int offset;
-    const char *magic;
-    size_t length;
-    const char *descr;
-    cli_file_t type;
-};
-
-static const struct cli_magic_s cli_magic[] = {
-    {0,  "Rar!",			4, "RAR",	    CL_RARFILE},
-    {0,  "PK\003\004",			4, "ZIP",	    CL_ZIPFILE},
-    {0,  "BZh",				3, "BZip",	    CL_BZFILE},
-    {0,  "From ",			5, "MBox",	    CL_MAILFILE},
-    {0,  "Received: ",			10, "Raw mail",	    CL_MAILFILE},
-    {0,  "Return-Path: ",		13, "Maildir",	    CL_MAILFILE},
-    {0,  "Return-path: ",		13, "Maildir",	    CL_MAILFILE},
-    {0,  "Delivered-To: ",		14, "Mail",	    CL_MAILFILE},
-    {0,  "X-UIDL: ",			8, "Mail",	    CL_MAILFILE},
-    {0,  "For: ",			5, "Eserv mail",    CL_MAILFILE},
-    {0,  "From: ",			6, "Exim mail",	    CL_MAILFILE},
-    {0,  "X-Symantec-",			11, "Symantec",	    CL_MAILFILE},
-    {0,  "Hi. This is the qmail-send",  26, "Qmail bounce", CL_MAILFILE},
-    {0,  "\320\317\021\340\241\261\032\341",
-	                    8, "OLE2 container",  CL_OLE2FILE},
-    {-1, NULL,              0, NULL,              CL_UNKNOWN_TYPE}
 };
 
 message *
@@ -1191,16 +1163,9 @@ bounceBegin(const message *m)
 {
 	const text *t_line;
 
-	for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next) {
-		const struct cli_magic_s *c;
-
-		for(c = cli_magic; c->magic; c++)
-			if((c->type == CL_MAILFILE) &&
-			   (strncmp(c->magic, t_line->t_text, strlen(c->magic)) == 0)) {
-				cli_dbgmsg("Found bounce message of type %s\n", c->descr);
-				return t_line;
-			}
-	}
+	for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next)
+		if(cli_filetype(t_line->t_text, strlen(t_line->t_text)) == CL_MAILFILE)
+			return t_line;
 
 	return NULL;
 }
