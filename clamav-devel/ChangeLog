@@ -1,3 +1,8 @@
+Sun Nov 28 21:08:44 GMT 2004 (njh)
+----------------------------------
+  * libclamav:	Email headers of only white space are no longer treated as
+			the end of the headers
+
 Sun Nov 28 16:30:18 GMT 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Allow lower case hex in quoted-printable
