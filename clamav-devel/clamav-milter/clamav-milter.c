@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.111  2004/07/29 06:38:05  nigelhorne
+ * GETHOSTBYNAME_R_6
+ *
  * Revision 1.110  2004/07/26 13:23:27  nigelhorne
  * Remove stream: from template %v
  *
@@ -341,9 +344,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.110 2004/07/26 13:23:27 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.111 2004/07/29 06:38:05 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.75b"
+#define	CM_VERSION	"0.75c"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1377,7 +1380,10 @@ findServer(void)
 
 	FD_ZERO(&rfds);
 
-	j = n_children - 1;	/* Don't worry about no lock */
+	if(max_children > 0)
+		j = n_children - 1;	/* Don't worry about no lock */
+	else
+		j = cli_rndnum(numServers) - 1;
 
 	for(i = 0, server = servers; i < numServers; i++, server++) {
 		int sock;
@@ -1526,7 +1532,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		 * TODO: gethostbyname_r is non-standard so different operating
 		 * systems do it in different ways. Need more examples
 		 */
-#if	defined(HAVE_GETHOSTBYNAME_R) && defined(C_LINUX)
+#ifdef	HAVE_GETHOSTBYNAME_R_6
 		struct hostent *hp, hostent;
 		char buf[BUFSIZ];
 		int ret;
@@ -1545,7 +1551,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 			hostmail = "unknown";
 		}
 
-#ifdef	HAVE_GETHOSTBYNAME_R
+#ifdef	HAVE_GETHOSTBYNAME_R_6
 		if(gethostbyname_r(hostmail, &hostent, buf, sizeof(buf), &hp, &ret) != 0) {
 			if(use_syslog)
 				syslog(LOG_WARNING, "Access Denied: Host Unknown (%s)", hostname);

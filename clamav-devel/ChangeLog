@@ -1,3 +1,8 @@
+Thu Jul 29 07:38:42 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Use GETHOSTBYNAME_R_6
+			Better load balancing if max_children = 0
+
 Thu Jul 29 03:31:22 CEST 2004 (tk)
 ----------------------------------
   * freshclam/clamd: fix crash on PPC when LogFile was enabled together with
