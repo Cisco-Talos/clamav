@@ -1,3 +1,7 @@
+Mon Aug 23 11:25:01 BST 2004 (njh)
+----------------------------------
+  * libclamav/blob.c:	Fix compilation error on Cygwin
+
 Sun Aug 22 21:20:43 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	All email attachments are now scanned, previously only
@@ -18,7 +22,7 @@ Sun Aug 22 14:18:53 CEST 2004 (tk)
 Sun Aug 22 11:35:30 BST 2004 (njh)
 ----------------------------------
   * libclamav:	Save email attachments to disc earlier (as the attachment is
-  			decoded rather than after decoding has finished), this
+			decoded rather than after decoding has finished), this
 			saves memory at a small speed penalty
 			Currently this is incompatible with FOLLOWURLS
 
@@ -35,7 +39,7 @@ Sat Aug 21 14:07:47 CEST 2004 (acab)
 Sat Aug 21 12:59:43 BST 2004 (njh)
 ----------------------------------
   * libclamav:	Changed the handling of miltipart messages, that is scanning
-  			emails with attachments. Reports on impact on memory
+			emails with attachments. Reports on impact on memory
 			usage and speed welcome to clamav-devel@clamav.net
 
 Fri Aug 20 21:05:04 CEST 2004 (tk)
@@ -101,7 +105,7 @@ Wed Aug 18 13:01:06 CEST 2004 (tk)
 Wed Aug 18 08:45:38 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	If CHECKURLS is compiled in, use libcurl automatically
-  				if it is detected
+				if it is detected
 
 Tue Aug 17 21:02:06 CEST 2004 (tk)
 ----------------------------------

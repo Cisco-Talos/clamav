@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.17  2004/08/23 10:23:58  nigelhorne
+ * Fix compilation problem on Cygwin
+ *
  * Revision 1.16  2004/08/22 15:08:58  nigelhorne
  * messageExport
  *
@@ -50,7 +53,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.16 2004/08/22 15:08:58 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.17 2004/08/23 10:23:58 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -61,7 +64,7 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.16 2004/08/22 15:08:58 nigelhorne E
 #include <string.h>
 #include <errno.h>
 
-#include <sys/param.h>	/* for NAME_MAX */
+#include <sys/param.h>        /* for NAME_MAX */
 
 #if	C_DARWIN
 #include <sys/types.h>
@@ -73,6 +76,25 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.16 2004/08/22 15:08:58 nigelhorne E
 
 #ifndef	CL_DEBUG
 #define	NDEBUG	/* map CLAMAV debug onto standard */
+#endif
+
+/* Maximum filenames under various systems */
+#ifndef	NAME_MAX	/* e.g. Linux */
+
+#ifdef	MAXNAMELEN	/* e.g. Solaris */
+#define	NAME_MAX	MAXNAMELEN
+#else
+
+#ifdef	FILENAME_MAX	/* e.g. SCO */
+#define	NAME_MAX	FILENAME_MAX
+#endif
+
+#endif
+
+#endif
+
+#ifndef	O_BINARY
+#define	O_BINARY	0
 #endif
 
 #include <assert.h>
