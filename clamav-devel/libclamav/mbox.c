@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.180  2004/11/19 11:32:16  nigelhorne
+ * Scan email footers (portions after the last MIME boundary
+ *
  * Revision 1.179  2004/11/18 18:09:07  nigelhorne
  * First draft of binhex.c
  *
@@ -525,7 +528,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.179 2004/11/18 18:09:07 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.180 2004/11/19 11:32:16 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -654,7 +657,7 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 #endif	/*FOLLOWURLS*/
 
 /*
- * Define this to handle RFC1341 messages.
+ * Define this to handle messages covered by section 7.3.2 of RFC1341.
  *	This is experimental code so it is up to YOU to (1) ensure it's secure
  * (2) periodically trim the directory of old files
  *
@@ -1836,6 +1839,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 
 						break;
 					case NOMIME:
+						cli_dbgmsg("No mime headers found in multipart part %d\n", i);
 						if(mainMessage) {
 							const text *u_line = uuencodeBegin(mainMessage);
 							if(u_line) {
@@ -1996,9 +2000,10 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					assert(addToText || addAttachment);
 					assert(!(addToText && addAttachment));
 
-					if(addToText)
+					if(addToText) {
+						cli_dbgmsg("Adding to non mime-part\n");
 						aText = textAdd(aText, messageGetBody(aMessage));
-					else {
+					} else {
 						fb = messageToFileblob(aMessage, dir);
 
 						if(fb)
@@ -2060,8 +2065,18 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			if(mainMessage && (mainMessage != messageIn))
 				messageDestroy(mainMessage);
 
-			if(aText && (textIn == NULL))
+			if(aText && (textIn == NULL)) {
+				if((fb = fileblobCreate()) != NULL) {
+					cli_dbgmsg("Save non mime part\n");
+					fileblobSetFilename(fb, dir, "textpart");
+					fileblobAddData(fb, "Received: by clamd\n", 19);
+
+					fb = textToFileblob(aText, fb);
+
+					fileblobDestroy(fb);
+				}
 				textDestroy(aText);
+			}
 
 			if(messages)
 				free(messages);
@@ -2154,6 +2169,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 	}
 
 	if(aText && (textIn == NULL)) {
+		cli_dbgmsg("Non mime part not saved - report to bugs@clamav.net\n");
 		textDestroy(aText);
 		aText = NULL;
 	}
@@ -2316,7 +2332,7 @@ boundaryStart(const char *line, const char *boundary)
 	if(line == NULL)
 		return 0;	/* empty line */
 
-	cli_dbgmsg("boundaryStart: line = '%s' boundary = '%s'\n", line, boundary);
+	/*cli_dbgmsg("boundaryStart: line = '%s' boundary = '%s'\n", line, boundary);*/
 
 	p = ptr = rfc822comments(line);
 	if(ptr == NULL)
@@ -2371,7 +2387,7 @@ endOfMessage(const char *line, const char *boundary)
 
 	if(line == NULL)
 		return 0;
-	cli_dbgmsg("endOfMessage: line = '%s' boundary = '%s'\n", line, boundary);
+	/*cli_dbgmsg("endOfMessage: line = '%s' boundary = '%s'\n", line, boundary);*/
 	if(*line++ != '-')
 		return 0;
 	if(*line++ != '-')
