@@ -54,6 +54,8 @@ int client(const struct optstruct *opt)
 	return 2;
     }
 
+    /* Set default address to connect to; needed for scanning a stream and no TCP address specified */
+    server2.sin_addr.s_addr = inet_addr("127.0.0.1");    
     if(cfgopt(copt, "ScannerDaemonOutputFormat")) {
 	mprintf("clamdscan won't work with the ScannerDaemonOutputFormat option\n");
 	mprintf("enabled. Please disable it in %s\n", clamav_conf);
@@ -105,7 +107,7 @@ int client(const struct optstruct *opt)
 	    }
 	    server2.sin_addr = *(struct in_addr *) he->h_addr_list[0];
 
-	} else server2.sin_addr.s_addr = inet_addr("127.0.0.1");
+	}
 
 	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
 	    close(sockd);
