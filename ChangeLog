@@ -1,3 +1,8 @@
+Mon Sep  1 21:33:25 CEST 2003
+-----------------------------
+  * libclamav: fixed zziplib compilation error under OS/X (Nigel)
+  * libclamav: mbox cosmetic fix
+
 Sat Aug 30 21:25:25 CEST 2003
 -----------------------------
   * libclamav: mbox code update - should be more stable (Nigel)
