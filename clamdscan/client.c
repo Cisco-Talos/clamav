@@ -138,7 +138,17 @@ int dsstream(int sockd)
 	return -1;
     }
 
-    server.sin_addr.s_addr = peer.sin_addr.s_addr;
+    switch (peer.sin_family) {
+	case AF_UNIX:
+	    server.sin_addr.s_addr = inet_addr("127.0.0.1");
+	    break;
+	case AF_INET:
+	    server.sin_addr.s_addr = peer.sin_addr.s_addr;
+	    break;
+	default:
+	    mprintf("@Unexpected socket type: %d.\n", peer.sin_family);
+	    return -1;
+    }
 
     if(connect(wsockd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) < 0) {
 	close(wsockd);
