@@ -125,6 +125,9 @@ int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virnam
 	char prefix;
 
 
+    if(length < BM_MIN_LENGTH)
+	return CL_CLEAN;
+
     for(i = BM_MIN_LENGTH - BM_BLOCK_SIZE; i < length - BM_BLOCK_SIZE + 1; ) {
 	idx = 211 * ((unsigned char) buffer[i]) + 37 * ((unsigned char) buffer[i + 1]) + (unsigned char) buffer[i + 2];
 

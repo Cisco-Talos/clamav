@@ -1,3 +1,8 @@
+Tue Aug  3 20:20:11 CEST 2004 (tk)
+----------------------------------
+  * libclamav: matcher-bm: fix segfault with short files (problem reported by
+	       Charlie Watts <cewatts*brainstorminternet.net>)
+
 Tue Aug  3 18:50:57 CEST 2004 (tk)
 ----------------------------------
   * clamdscan: print warnings when ignoring options (requested by Tomasz
