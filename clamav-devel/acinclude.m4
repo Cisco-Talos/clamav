@@ -68,7 +68,7 @@ dnl there is now a CREATE_PREFIX_TARGET_H in this file as a shorthand for
 dnl PREFIX_CONFIG_H from a target.h file, however w/o the target.h ever created
 dnl (the prefix is a bit different, since we add an extra -target- and -host-)
 dnl 
-dnl @version: $Id: acinclude.m4,v 1.5 2003/08/29 14:27:14 kojm Exp $
+dnl @version: $Id: acinclude.m4,v 1.6 2005/01/08 02:58:06 kojm Exp $
 dnl @author Guido Draheim <guidod@gmx.de>                 STATUS: used often
 
 AC_DEFUN([AC_CREATE_TARGET_H],
@@ -587,6 +587,20 @@ case $host in
   rm -rf conftest*
   ;;
 
+*-*-linux*)
+  # Test if the compiler is 64bit
+  echo 'int i;' > conftest.$ac_ext
+  lt_cv_cc_64bit_output=no
+  if AC_TRY_EVAL(ac_compile); then
+    case `/usr/bin/file conftest.$ac_objext` in
+    *"ELF 64"*)
+      lt_cv_cc_64bit_output=yes
+      ;;
+    esac
+  fi
+  rm -rf conftest*
+  ;;
+  
 *-*-sco3.2v5*)
   # On SCO OpenServer 5, we need -belf to get full-featured binaries.
   SAVE_CFLAGS="$CFLAGS"
@@ -2649,6 +2663,13 @@ linux-gnu*)
   # before this can be enabled.
   hardcode_into_libs=yes
 
+  case $host_cpu:$lt_cv_cc_64bit_output in
+  powerpc64:yes | s390x:yes | sparc64:yes | x86_64:yes)
+    sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 /usr/X11R6/lib64"
+    sys_lib_search_path_spec="/lib64 /usr/lib64 /usr/local/lib64 /usr/X11R6/lib64"
+    ;;
+  esac
+
   # We used to test for /lib/ld.so.1 and disable shared libraries on
   # powerpc, because MkLinux only supported shared libraries with the
   # GNU dynamic linker.  Since this was broken with cross compilers,
@@ -2937,7 +2958,7 @@ if test -f "$ltmain"; then
   # careful not to overquote the AC_SUBSTed values.  We take copies of the
   # variables and quote the copies for generation of the libtool script.
   for var in echo old_CC old_CFLAGS \
-    AR AR_FLAGS CC LD LN_S NM SHELL \
+    AR AR_FLAGS CC LD LN_S NM SHELL GREP \
     reload_flag reload_cmds wl \
     pic_flag link_static_flag no_builtin_flag export_dynamic_flag_spec \
     thread_safe_flag_spec whole_archive_flag_spec libname_spec \
@@ -3040,6 +3061,9 @@ CC=$lt_CC
 
 # Is the compiler the GNU C compiler?
 with_gcc=$GCC
+
+# An ERE matcher.
+EGREP=$lt_EGREP
 
 # The linker used to build libraries.
 LD=$lt_LD
@@ -3588,7 +3612,8 @@ pic_mode=ifelse($#,1,$1,default)])
 
 # AC_PATH_TOOL_PREFIX - find a file program which can recognise shared library
 AC_DEFUN([AC_PATH_TOOL_PREFIX],
-[AC_MSG_CHECKING([for $1])
+[AC_REQUIRE([AC_PROG_EGREP])dnl
+AC_MSG_CHECKING([for $1])
 AC_CACHE_VAL(lt_cv_path_MAGIC_CMD,
 [case $MAGIC_CMD in
   /*)
@@ -3861,7 +3886,7 @@ irix5* | irix6*)
 # This must be Linux ELF.
 linux-gnu*)
   case $host_cpu in
-  alpha* | hppa* | i*86 | powerpc* | sparc* | ia64* )
+  alpha* | hppa* | i*86 | powerpc* | sparc* | ia64* | x86_64* )
     lt_cv_deplibs_check_method=pass_all ;;
   *)
     # glibc up to 2.1.1 does not perform some relocations on ARM
@@ -4110,7 +4135,7 @@ dnl      AC_COMPILE_CHECK_SIZEOF(ptrdiff_t, $headers)
 dnl      AC_COMPILE_CHECK_SIZEOF(off_t, $headers)
 dnl
 dnl @author Kaveh Ghazi <ghazi@caip.rutgers.edu>
-dnl @version $Id: acinclude.m4,v 1.5 2003/08/29 14:27:14 kojm Exp $
+dnl @version $Id: acinclude.m4,v 1.6 2005/01/08 02:58:06 kojm Exp $
 dnl
 AC_DEFUN([AC_COMPILE_CHECK_SIZEOF],
 [changequote(<<, >>)dnl
