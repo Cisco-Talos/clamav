@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.20  2004/08/30 11:35:45  nigelhorne
+ * Now compiles on AIX and OSF
+ *
  * Revision 1.19  2004/08/27 16:39:38  nigelhorne
  * Fix MACOS/X filenames
  *
@@ -59,7 +62,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.19 2004/08/27 16:39:38 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.20 2004/08/30 11:35:45 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -69,6 +72,7 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.19 2004/08/27 16:39:38 nigelhorne E
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <fcntl.h>
 
 #include <sys/param.h>        /* for NAME_MAX */
 
