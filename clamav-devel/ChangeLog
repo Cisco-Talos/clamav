@@ -1,3 +1,7 @@
+Thu Sep 16 09:58:01 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Handle comments in the headers
+
 Wed Sep 15 23:09:39 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	FOLLOWURLS: check if normalisation is successful
