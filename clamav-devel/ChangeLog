@@ -1,3 +1,10 @@
+Fri Mar 19 08:18:24 GMT 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	If an RFC822 message is found as part of a multipart
+  	message and that message has no encoding, don't save for scanning
+  * libclamav/message.c:	Handle content encoding of '8 bit' as well
+  	as the more correct '8bit'
+
 Thu Mar 18 22:01:39 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	If a message only contains a single RFC822 message that has no
