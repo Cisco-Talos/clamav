@@ -141,9 +141,13 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 	    files++;
 	    cli_dbgmsg("RAR: Encrypted files found in archive.\n");
 	    lseek(desc, 0, SEEK_SET);
-	    if(cli_scandesc(desc, virname, scanned, root, 0, 0) != CL_VIRUS)
+	    ret = cli_scandesc(desc, virname, scanned, root, 0, 0);
+	    if(ret < 0) {
+		break;
+	    } else if(ret != CL_VIRUS) {
 		*virname = "Encrypted.RAR";
-	    ret = CL_VIRUS;
+		ret = CL_VIRUS;
+	    }
 	    break;
 	}
 
@@ -332,9 +336,13 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	    files++;
 	    cli_dbgmsg("Zip: Encrypted files found in archive.\n");
 	    lseek(desc, 0, SEEK_SET);
-	    if(cli_scandesc(desc, virname, scanned, root, 0, 0) != CL_VIRUS)
+	    ret = cli_scandesc(desc, virname, scanned, root, 0, 0);
+	    if(ret < 0) {
+		break;
+	    } else if(ret != CL_VIRUS) {
 		*virname = "Encrypted.Zip";
-	    ret = CL_VIRUS;
+		ret = CL_VIRUS;
+	    }
 	    break;
 	}
 
@@ -728,6 +736,13 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
 	close(fd);
     }
 
+    if(ret < 0 || ret == CL_VIRUS) {
+	if(!cli_leavetemps_flag)
+	    cli_rmdirs(tempname);
+	free(tempname);
+	return ret;
+    }
+
     if (ret == CL_CLEAN) {
 	snprintf(fullname, 1024, "%s/nocomment.html", tempname);
 	fd = open(fullname, O_RDONLY);
@@ -735,6 +750,13 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
 	    ret = cli_scandesc(fd, virname, scanned, root, 0, CL_TYPE_HTML);
 	    close(fd);
 	}
+    }
+
+    if(ret < 0 || ret == CL_VIRUS) {
+	if(!cli_leavetemps_flag)
+	    cli_rmdirs(tempname);
+	free(tempname);
+	return ret;
     }
 
     if (ret == CL_CLEAN) {
@@ -1279,6 +1301,9 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 	if((nret = cli_scandesc(desc, virname, scanned, root, typerec, type)) == CL_VIRUS) {
 	    cli_dbgmsg("%s found in descriptor %d.\n", *virname, desc);
 	    return CL_VIRUS;
+
+	} else if(nret < 0) {
+	    return nret;
 
 	} else if(nret >= CL_TYPENO) {
 	    lseek(desc, 0, SEEK_SET);
