@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: line.h,v $
+ * Revision 1.4  2004/10/14 17:45:55  nigelhorne
+ * Try to reclaim some memory if it becomes low when decoding
+ *
  * Revision 1.3  2004/08/21 11:57:57  nigelhorne
  * Use line.[ch]
  *
@@ -45,5 +48,6 @@ line_t	*lineCreate(const char *data);
 line_t	*lineLink(line_t *line);
 line_t	*lineUnlink(line_t *line);
 const	char	*lineGetData(const line_t *line);
+unsigned	char	lineGetRefCount(const line_t *line);
 
 #endif
