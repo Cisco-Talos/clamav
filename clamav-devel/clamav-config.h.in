@@ -84,6 +84,9 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* in_port_t is defined */
+#undef HAVE_IN_PORT_T
+
 /* Define to 1 if you have the <malloc.h> header file. */
 #undef HAVE_MALLOC_H
 
@@ -182,6 +185,9 @@
 
 /* Version number of package */
 #undef VERSION
+
+/* tcpwrappers support */
+#undef WITH_TCPWRAP
 
 /* endianess */
 #undef WORDS_BIGENDIAN

@@ -1,3 +1,8 @@
+Sat Feb 14 10:28:47 CET 2004 (tk)
+---------------------------------
+  * configure: check for tcpwrappers and definition of in_port_t (requested
+	       by Nigel)
+
 Fri Feb 13 22:35:55 CET 2004 (tk)
 ---------------------------------
   * Makefile: don't use non standard id flags (thanks to Andy Fiddaman
