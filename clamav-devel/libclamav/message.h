@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: message.h,v $
+ * Revision 1.19  2004/09/17 13:47:19  nigelhorne
+ * Handle yEnc attachments
+ *
  * Revision 1.18  2004/09/17 09:48:53  nigelhorne
  * Handle attempts to hide mime type
  *
@@ -85,6 +88,7 @@ typedef struct message {
 	text	*bounce;	/* start of a bounced message */
 	text	*binhex;	/* start of a binhex message */
 	text	*uuencode;	/* start of a uuencoded message */
+	text	*yenc;		/* start of a yEnc message */
 	text	*encoding;	/* is the non MIME message encoded? */
 } message;
 
@@ -111,6 +115,7 @@ fileblob	*messageToFileblob(message *m, const char *dir);
 blob	*messageToBlob(message *m);
 text	*messageToText(message *m);
 const	text	*uuencodeBegin(const message *m);
+const	text	*yEncBegin(const message *m);
 const	text	*bounceBegin(const message *m);
 const	text	*encodingLine(const message *m);
 void	messageClearMarkers(message *m);

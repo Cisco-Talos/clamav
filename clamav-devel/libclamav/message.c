@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.85  2004/09/17 13:47:19  nigelhorne
+ * Handle yEnc attachments
+ *
  * Revision 1.84  2004/09/17 09:48:53  nigelhorne
  * Handle attempts to hide mime type
  *
@@ -249,7 +252,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.84 2004/09/17 09:48:53 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.85 2004/09/17 13:47:19 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -326,6 +329,7 @@ static	const	struct	encoding_map {
 	{	"8bit",			EIGHTBIT	},
 	{	"8 bit",		EIGHTBIT	},	/* incorrect */
 	{	"x-uuencode",		UUENCODE	},
+	{	"x-yencode",		YENCODE		},
 	{	"binary",		BINARY		},
 	{	NULL,			NOENCODING	}
 };
@@ -1027,6 +1031,8 @@ messageIsEncoding(message *m)
 		(isdigit(line[8])) &&
 		(line[9] == ' ')))
 			m->uuencode = m->body_last;
+	else if((m->yenc == NULL) && (strncmp(line, "=ybegin line=", 13) == 0))
+		m->yenc = m->body_last;
 }
 
 /*
@@ -1402,6 +1408,27 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			(*setFilename)(ret, dir, filename);
 			t_line = t_line->t_next;
 			enctype = UUENCODE;
+		} else if((enctype == YENCODE) || ((i == 0) && yEncBegin(m))) {
+			/*
+			 * TODO: handle multipart yEnc encoded files
+			 */
+			t_line = yEncBegin(m);
+			filename = lineGetData(t_line->t_line);
+
+			if((filename = strstr(filename, " name=")) != NULL) {
+				filename = strdup(&filename[6]);
+				if(filename) {
+					cli_chomp(filename);
+					strstrip(filename);
+					cli_dbgmsg("Set yEnc filename to \"%s\"\n", filename);
+				}
+			} else
+				filename = strdup("attachment");
+
+			if(filename)
+				(*setFilename)(ret, dir, filename);
+			t_line = t_line->t_next;
+			enctype = YENCODE;
 		} else {
 			filename = (char *)messageFindArgument(m, "filename");
 			if(filename == NULL) {
@@ -1423,7 +1450,8 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 
 			t_line = messageGetBody(m);
 		}
-		free((char *)filename);
+		if(filename)
+			free((char *)filename);
 
 		/*
 		 * t_line should now point to the first (encoded) line of the message
@@ -1454,6 +1482,11 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 				if(line == NULL)
 					continue;
 				if(strcasecmp(line, "end") == 0)
+					break;
+			} else if(enctype == YENCODE) {
+				if(line == NULL)
+					continue;
+				if(strncmp(line, "=end ", 5) == 0)
 					break;
 			}
 
@@ -1593,6 +1626,16 @@ messageToText(message *m)
 				return NULL;
 			}
 			t_line = t_line->t_next;
+		} else if(enctype == YENCODE) {
+			t_line = yEncBegin(m);
+
+			if(t_line == NULL) {
+				/*cli_warnmsg("YENCODED attachment is missing begin statement\n");*/
+				if(first)
+					textDestroy(first);
+				return NULL;
+			}
+			t_line = t_line->t_next;
 		} else {
 			if((i == 0) && binhexBegin(m))
 				cli_warnmsg("Binhex messages not supported yet.\n");
@@ -1697,6 +1740,12 @@ uuencodeBegin(const message *m)
 	return m->uuencode;
 }
 #endif
+
+const text *
+yEncBegin(const message *m)
+{
+	return m->yenc;
+}
 
 /*
  * Scan to find the BINHEX message (if any)
@@ -1909,6 +1958,20 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 				cli_warnmsg("uudecode: buffer overflow stopped, attempting to ignore but decoding may fail\n");
 			else
 				buf = decode(m, line, buf, uudecode, (len & 3) == 0);
+			break;
+		case YENCODE:
+			if((line == NULL) || (*line == '\0'))	/* empty line */
+				break;
+			if(strncmp(line, "=yend ", 6) == 0)
+				break;
+
+			while(*line)
+				if(*line == '=') {
+					if(*++line == '\0')
+						break;
+					*buf++ = ((*line++ - 64) & 255);
+				} else
+					*buf++ = ((*line++ - 42) & 255);
 			break;
 	}
 
