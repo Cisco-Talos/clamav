@@ -109,6 +109,58 @@ struct pe_image_section_hdr {
     uint32_t Characteristics;
 };
 
+int ddump(int desc, int offset, int size, const char *file)
+{
+	int pos, ndesc, bread, sum = 0;
+	char buff[FILEBUFF];
+
+
+    cli_dbgmsg("in ddump()\n");
+
+    if((pos = lseek(desc, 0, SEEK_CUR)) == -1) {
+	cli_dbgmsg("Invalid descriptor\n");
+	return -1;
+    }
+
+    if(lseek(desc, offset, SEEK_SET) == -1) {
+	cli_dbgmsg("lseek() failed\n");
+	lseek(desc, pos, SEEK_SET);
+	return -1;
+    }
+
+    if((ndesc = open(file, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+	cli_dbgmsg("Can't create file %s\n", file);
+	lseek(desc, pos, SEEK_SET);
+	return -1;
+    }
+
+    while((bread = read(desc, buff, FILEBUFF)) > 0) {
+	if(sum + bread >= size) {
+	    if(write(ndesc, buff, size - sum) == -1) {
+		cli_dbgmsg("Can't write to file\n");
+		lseek(desc, pos, SEEK_SET);
+		close(ndesc);
+		unlink(file);
+		return -1;
+	    }
+	    break;
+	} else {
+	    if(write(ndesc, buff, bread) == -1) {
+		cli_dbgmsg("Can't write to file\n");
+		lseek(desc, pos, SEEK_SET);
+		close(ndesc);
+		unlink(file);
+		return -1;
+	    }
+	}
+	sum += bread;
+    }
+
+    close(ndesc);
+    lseek(desc, pos, SEEK_SET);
+    return 0;
+}
+
 int cli_scanpe(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
 {
 	uint16_t e_magic; /* DOS signature ("MZ") */
@@ -122,7 +174,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
 
     if(read(desc, &e_magic, sizeof(e_magic)) != sizeof(e_magic)) {
-	cli_dbgmsg("Can't read DOS signature.\n");
+	cli_dbgmsg("Can't read DOS signature\n");
 	return -1;
     }
 
@@ -134,7 +186,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     lseek(desc, 58, SEEK_CUR); /* skip to the end of the DOS header */
 
     if(read(desc, &e_lfanew, sizeof(e_lfanew)) != sizeof(e_lfanew)) {
-	cli_dbgmsg("Can't read new header address.\n");
+	cli_dbgmsg("Can't read new header address\n");
 	return -1;
     }
 
@@ -152,38 +204,38 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     }
 
     if(file_hdr.Magic != IMAGE_NT_SIGNATURE) {
-	cli_dbgmsg("Invalid PE signature\n");
+	cli_dbgmsg("Invalid PE signature (probably NE file)\n");
 	return -2;
     }
 
-    cli_dbgmsg("Machine type: ");
+    /* cli_dbgmsg("Machine type: "); */
     switch(file_hdr.Machine) {
 	case 0x14c:
-	    cli_dbgmsg("80386\n");
+	    cli_dbgmsg("Machine type: 80386\n");
 	    break;
 	case 0x014d:
-	    cli_dbgmsg("80486\n");
+	    cli_dbgmsg("Machine type: 80486\n");
 	    break;
 	case 0x014e:
-	    cli_dbgmsg("80586\n");
+	    cli_dbgmsg("Machine type: 80586\n");
 	    break;
 	case 0x162:
-	    cli_dbgmsg("R3000\n");
+	    cli_dbgmsg("Machine type: R3000\n");
 	    break;
 	case 0x166:
-	    cli_dbgmsg("R4000\n");
+	    cli_dbgmsg("Machine type: R4000\n");
 	    break;
 	case 0x168:
-	    cli_dbgmsg("R10000\n");
+	    cli_dbgmsg("Machine type: R10000\n");
 	    break;
 	case 0x184:
-	    cli_dbgmsg("DEC Alpha AXP\n");
+	    cli_dbgmsg("Machine type: DEC Alpha AXP\n");
 	    break;
 	case 0x1f0:
-	    cli_dbgmsg("PowerPC\n");
+	    cli_dbgmsg("Machine type: PowerPC\n");
 	    break;
 	default:
-	    cli_dbgmsg("Unknown\n");
+	    cli_warnmsg("Unknown machine type in PE header\n");
     }
 
     cli_dbgmsg("NumberOfSections: %d\n", file_hdr.NumberOfSections);
@@ -214,25 +266,24 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     cli_dbgmsg("SizeOfImage: %d\n", optional_hdr.SizeOfImage);
     cli_dbgmsg("SizeOfHeaders: %d\n", optional_hdr.SizeOfHeaders);
 
-    cli_dbgmsg("Subsystem: ");
     switch(optional_hdr.Subsystem) {
 	case 1:
-	    cli_dbgmsg("Native (a driver ?)\n");
+	    cli_dbgmsg("Subsystem: Native (a driver ?)\n");
 	    break;
 	case 2:
-	    cli_dbgmsg("Win32 GUI\n");
+	    cli_dbgmsg("Subsystem: Win32 GUI\n");
 	    break;
 	case 3:
-	    cli_dbgmsg("Win32 console\n");
+	    cli_dbgmsg("Subsystem: Win32 console\n");
 	    break;
 	case 5:
-	    cli_dbgmsg("OS/2 console\n");
+	    cli_dbgmsg("Subsystem: OS/2 console\n");
 	    break;
 	case 7:
-	    cli_dbgmsg("POSIX console\n");
+	    cli_dbgmsg("Subsystem: POSIX console\n");
 	    break;
 	default:
-	    cli_dbgmsg("Unknown\n");
+	    cli_warnmsg("Unknown subsystem in PE header\n");
     }
 
     cli_dbgmsg("NumberOfRvaAndSizes: %d\n", optional_hdr.NumberOfRvaAndSizes);
@@ -253,15 +304,35 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	cli_dbgmsg("Section size: %d\n", section_hdr.SizeOfRawData);
 	cli_dbgmsg("PointerToRawData: 0x%x (%d)\n", section_hdr.PointerToRawData, section_hdr.PointerToRawData);
 
-	if(section_hdr.Characteristics & 0x20)
-	    cli_dbgmsg("Section contains executable code.\n");
+	if(section_hdr.Characteristics & 0x20) {
+	    cli_dbgmsg("Section contains executable code\n");
+
+	    if(section_hdr.VirtualSize < section_hdr.SizeOfRawData) {
+		cli_dbgmsg("Section contains free space\n");
+		/*
+		cli_dbgmsg("Dumping %d bytes\n", section_hdr.SizeOfRawData - section_hdr.VirtualSize);
+		ddump(desc, section_hdr.PointerToRawData + section_hdr.VirtualSize, section_hdr.SizeOfRawData - section_hdr.VirtualSize, cl_gentemp(NULL));
+		*/
+
+	    }
+	}
 
 	if(section_hdr.Characteristics & 0x20000000)
-	    cli_dbgmsg("Section's memory is executable.\n");
+	    cli_dbgmsg("Section's memory is executable\n");
+
+/*
+	if(!strcmp(sname, "_winzip_")) {
+	    int ptrd = section_hdr.PointerToRawData & ~(optional_hdr.FileAlignment - 1);
+
+	    cli_dbgmsg("WinZip section\n");
+	    ddump(desc, ptrd, section_hdr.SizeOfRawData, cl_gentemp(NULL));
+	}
+*/
+
     }
 
     if(fstat(desc, &sb) == -1) {
-	cli_dbgmsg("stat failed\n");
+	cli_dbgmsg("fstat failed\n");
 	return -1;
     }
 

@@ -1,9 +1,13 @@
+Thu May 27 22:11:08 CEST 2004 (tk)
+----------------------------------
+  * contrib: update init script for SuSE (Martin Fuxa <yeti*email.cz>)
+
 Thu May 27 18:01:28 BST 2004 (njh)
 ----------------------------------
   * docs/man/clamav-milter.8:	Clarify usage of when to use template files
   * libclamav/message.c:	Fixed bug where a truncated BinHex file could
 	crash the scanner (bug found by Stefan Kaltenbrunner
-		<mm-mailinglist@madness.at>)
+		<mm-mailinglist*madness.at>)
 
 Thu May 27 16:38:14 BST 2004 (trog)
 -----------------------------------
@@ -20,7 +24,8 @@ Tue May 25 22:30:33 CEST 2004 (tk)
   * libclamav: + report oversized archives (just like clamav-0.6x did)
 	       + do not trigger off file type recognizer in raw mode
 	         (fixes stdin scanning in clamscan - Debian Bug #250806)
-  * clamd: harden read() in command parser
+  * clamd: harden read() in command parser (thanks to Theo Schlossnagle
+	   <jesus*omniti.com>)
   * Makefiles: + fix *.cvd and *.conf installation in VPATHed directory
 	         (patch by Eugene Crosser <crosser*rol.ru>)
 	       + disable pthread code in shared files if needed
