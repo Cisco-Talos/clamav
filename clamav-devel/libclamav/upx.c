@@ -36,6 +36,9 @@
 ** bloatness. My gratitude to whoever wrote it.
 */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,17 +47,33 @@
 #include <unistd.h>
 #include <string.h>
 
+#include "cltypes.h"
+
 /* [doubleebx] */
 
-static int doubleebx(char *src, int *myebx, int *scur, int ssize)
+static int doubleebx(char *src, int32_t *myebx, int *scur, int ssize)
 {
-  int oldebx = *myebx;
+  int32_t oldebx = *myebx;
+#if WORDS_BIGENDIAN == 1
+  char *pt;
+  int32_t shift, i = 0;
+#endif
 
   *myebx*=2;
   if ( !(oldebx & 0x7fffffff)) {
     if (*scur<0 || ssize-*scur<4)
       return 0;
+#if WORDS_BIGENDIAN == 0
     oldebx = *(int*)(src+*scur);
+#else
+    oldebx = 0;
+    pt = src + *scur;
+    for(shift = 0; shift < 32; shift += 8) {
+      oldebx |= (pt[i] & 0xff ) << shift;
+      i++;
+    }
+#endif
+
     *myebx = oldebx*2+1;
     *scur+=4;
   }
@@ -65,9 +84,8 @@ static int doubleebx(char *src, int *myebx, int *scur, int ssize)
 
 int upx_inflate2b(char *src, int ssize, char *dst, int dsize)
 {
-  int backbytes, backsize, unp_offset = -1, i;
-  int myebx = 0;
-  int scur=0, dcur=0;
+  int32_t backbytes, unp_offset = -1, myebx = 0;
+  int scur=0, dcur=0, i, backsize;
 
   while (1) {
     while (doubleebx(src, &myebx, &scur, ssize)) {
@@ -114,6 +132,7 @@ int upx_inflate2b(char *src, int ssize, char *dst, int dsize)
       backsize++;
 
     backsize++;
+
     for (i = 0; i < backsize; i++) {
       if (dcur+i<0 || dcur+i>=dsize || dcur+unp_offset+i<0 || dcur+unp_offset+i>=dsize)
 	return -1;
@@ -126,9 +145,8 @@ int upx_inflate2b(char *src, int ssize, char *dst, int dsize)
 
 int upx_inflate2d(char *src, int ssize, char *dst, int dsize)
 {
-  int backbytes, backsize, unp_offset = -1, i;
-  int myebx = 0;
-  int scur=0, dcur=0;
+  int32_t backbytes, unp_offset = -1, myebx = 0;
+  int scur=0, dcur=0, i, backsize;
 
   while (1) {
     while (doubleebx(src, &myebx, &scur, ssize)) {
@@ -192,9 +210,8 @@ int upx_inflate2d(char *src, int ssize, char *dst, int dsize)
 
 int upx_inflate2e(char *src, int ssize, char *dst, int dsize)
 {
-  int backbytes, backsize, unp_offset = -1, i;
-  int myebx = 0;
-  int scur=0, dcur=0;
+  int32_t backbytes, unp_offset = -1, myebx = 0;
+  int scur=0, dcur=0, i, backsize;
 
   while (1) {
     while (doubleebx(src, &myebx, &scur, ssize)) {

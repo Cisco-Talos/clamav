@@ -74,6 +74,7 @@ extern "C"
 #define CL_OLE2		8
 #define CL_ENCRYPTED    16
 #define CL_HTML		32
+#define CL_PE		64
 
 struct cli_patt {
     short int *pattern;

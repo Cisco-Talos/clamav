@@ -54,6 +54,7 @@ extern short cli_leavetemps_flag;
 #include "ole2_extract.h"
 #include "vba_extract.h"
 #include "msexpand.h"
+#include "pe.h"
 #include "filetypes.h"
 #include "htmlnorm.h"
 
@@ -70,6 +71,7 @@ extern short cli_leavetemps_flag;
 #define SCAN_MAIL	    (options & CL_MAIL)
 #define SCAN_OLE2	    (options & CL_OLE2)
 #define SCAN_HTML	    (options & CL_HTML)
+#define SCAN_PE		    (options & CL_PE)
 #define DISABLE_RAR	    (options & CL_DISABLERAR)
 #define DETECT_ENCRYPTED    (options & CL_ENCRYPTED)
 
@@ -1048,8 +1050,8 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
 
     switch(type) {
 	case CL_DOSEXE:
-	    /* temporarily the return code is ignored */
-	    cli_scanpe(desc, virname, scanned, root, limits, options, arec, mrec);
+	    if(SCAN_PE)
+		ret = cli_scanpe(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
 	case CL_RARFILE:
@@ -1150,6 +1152,9 @@ static int cli_scanfile(const char *filename, const char **virname, unsigned lon
 {
 	int fd, ret;
 
+
+    cli_dbgmsg("Scanning %s\n", filename);
+
     /* internal version of cl_scanfile with arec/mrec preserved */
     if((fd = open(filename, O_RDONLY)) == -1)
 	return CL_EOPEN;
@@ -1164,6 +1169,8 @@ int cl_scanfile(const char *filename, const char **virname, unsigned long int *s
 {
 	int fd, ret;
 
+
+    cli_dbgmsg("Scanning %s\n", filename);
 
     if((fd = open(filename, O_RDONLY)) == -1)
 	return CL_EOPEN;

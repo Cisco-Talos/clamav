@@ -46,7 +46,7 @@ static const struct cli_magic_s cli_magic[] = {
 
     /* Executables */
 
-/*  {0,  "MZ",				2,  "DOS/W32 executable", CL_DOSEXE},*/
+    {0,  "MZ",				2,  "DOS/W32 executable/library/driver", CL_DOSEXE},
 
     /* Archives */
 

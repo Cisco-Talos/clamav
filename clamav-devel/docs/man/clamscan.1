@@ -40,6 +40,9 @@ Save scan report to FILE.
 \fB\-\-tempdir=DIRECTORY\fR
 Create temporary files in DIRECTORY. Directory must be writeable for the 'clamav' user or unprivileged user running clamscan.
 .TP 
+\fB\-\-leave\-temps\fR
+Do not remove temporary files.
+.TP 
 \fB\-r, \-\-recursive\fR
 Scan directories recursively. All the subdirectories in the given directory will be scanned.
 .TP 
@@ -67,7 +70,8 @@ Remove infected files. \fBBe careful.\fR
 \fB\-\-move=DIRECTORY\fR
 Move infected files into DIRECTORY. Directory must be writeable for the 'clamav' user or unprivileged user running clamscan.
 .TP 
-EXTRACTION OPTIONS:
+\fB\-\-no\-pe\fR
+PE stands for Portable Executable \- it's an executable file format used in all 32\-bit versions of Windows operating systems. By default ClamAV performs deeper analysis of executable files and tries to decompress popular executable packers such as UPX. This option \fBdisables\fR PE support and is not recommended !
 .TP 
 \fB\-\-no\-ole2\fR
 Disable support for Microsoft Office document files.
