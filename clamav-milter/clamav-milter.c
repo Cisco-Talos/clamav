@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.147  2004/11/03 12:46:13  nigelhorne
+ * Add X-Original-Subject
+ *
  * Revision 1.146  2004/10/30 07:01:55  nigelhorne
  * Tidy
  *
@@ -449,9 +452,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.146 2004/10/30 07:01:55 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.147 2004/11/03 12:46:13 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80n"
+#define	CM_VERSION	"0.80o"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -605,6 +608,7 @@ struct	privdata {
 	char	*from;	/* Who sent the message */
 	char	**to;	/* Who is the message going to */
 	int	numTo;	/* Number of people the message is going to */
+	char	*subject;	/* Original subject */
 #ifndef	SESSION
 	int	cmdSocket;	/*
 				 * Socket to send/get commands e.g. PORT for
@@ -1398,7 +1402,7 @@ main(int argc, char **argv)
 		 * We need to know how many connections to establish to clamd
 		 */
 		if(max_children == 0) {
-			fprintf(stderr, _("%s: Sessions does not multiplex\n"), argv[0]);
+			fprintf(stderr, _("%s: --max_children must be given in sessions mode\n"), argv[0]);
 			return EX_CONFIG;
 		}
 #endif
@@ -1459,6 +1463,11 @@ main(int argc, char **argv)
 		for(i = 0; i < max_children; i++)
 			if(createSession(i) < 0)
 				return EX_UNAVAILABLE;
+		if(activeServers == 0) {
+			cli_warnmsg(_("Can't find any active clamd servers\n"));
+			cli_warnmsg(_("Check your entry for TCPSocket in %s\n"),
+				cfgfile);
+		}
 #else
 		if(activeServers == 0) {
 			cli_errmsg(_("Can't find any clamd servers\n"));
@@ -1808,8 +1817,9 @@ findServer(void)
 	if(pthread_cond_broadcast(&watchdog_cond) < 0)
 		perror("pthread_cond_broadcast");
 
+	i = 0;
 	pthread_mutex_lock(&sstatus_mutex);
-	for(i = 0; i < max_children; i++)
+	for(; i < max_children; i++)
 		if(cmdSocketsStatus[i] == CMDSOCKET_FREE) {
 			cmdSocketsStatus[i] = CMDSOCKET_INUSE;
 			pthread_mutex_unlock(&sstatus_mutex);
@@ -2264,12 +2274,6 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 		return cl_error;
 	}
 
-	if(strcasecmp(headerf, "X-Virus-Status") == 0)
-		if(!nflag) {	/* remove any existing claims */
-			smfi_chgheader(ctx, "X-Virus-Status", 1, NULL);
-			return SMFIS_CONTINUE;
-		}
-
 	if(hflag)
 		header_list_add(privdata->headers, headerf, headerv);
 	else if((strcasecmp(headerf, "Received") == 0) &&
@@ -2280,10 +2284,22 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 		privdata->received = strdup(headerv);
 	}
 
+	if(strcasecmp(headerf, "X-Virus-Status") == 0)
+		if(!nflag) {	/* remove any existing claims */
+			smfi_chgheader(ctx, "X-Virus-Status", 1, NULL);
+			return SMFIS_CONTINUE;
+		}
+
 	if((strcasecmp(headerf, "Message-ID") == 0) &&
 	   (strncasecmp(headerv, "<MDAEMON", 8) == 0))
 		privdata->discard = 1;
 
+	if(strcasecmp(headerf, "Subject") == 0) {
+		if(privdata->subject)
+			free(privdata->subject);
+		if(headerv)
+			privdata->subject = strdup(headerv);
+	}
 	return SMFIS_CONTINUE;
 }
 
@@ -2981,6 +2997,11 @@ clamfi_free(struct privdata *privdata)
 #endif
 			free(privdata->from);
 			privdata->from = NULL;
+		}
+
+		if(privdata->subject) {
+			free(privdata->subject);
+			privdata->subject = NULL;
 		}
 
 		if(privdata->to) {
@@ -3841,13 +3862,17 @@ qfile(struct privdata *privdata, const char *virusname)
 static void
 setsubject(SMFICTX *ctx, const char *virusname)
 {
+	struct privdata *privdata = (struct privdata *)smfi_getpriv(ctx);
 	char subject[128];
 
-	/*
-	 * FIXME: doesn't work if there's no subject in the email
-	 */
+	if(privdata->subject)
+		smfi_addheader(ctx, "X-Original-Subject", privdata->subject);
+
 	snprintf(subject, sizeof(subject) - 1, _("[Virus] %s"), virusname);
-	smfi_chgheader(ctx, "Subject", 1, subject);
+	if(privdata->subject)
+		smfi_chgheader(ctx, "Subject", 1, subject);
+	else
+		smfi_addheader(ctx, "Subject", subject);
 }
 
 /*
