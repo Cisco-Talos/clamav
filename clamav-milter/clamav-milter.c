@@ -227,9 +227,13 @@
  *	0.66n	13/2/04	Added TCPwrappers support
  *			Removed duplication in version string
  *			Handle machines that don't have in_port_t
+ *	0.67	16/2/04	Upissued to 0.67
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.46  2004/02/16 09:39:22  nigelhorne
+ * Upissued to 0.67
+ *
  * Revision 1.45  2004/02/14 17:20:38  nigelhorne
  * Add TCPwrappers support
  *
@@ -350,9 +354,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.45 2004/02/14 17:20:38 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.46 2004/02/16 09:39:22 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.66n"
+#define	CM_VERSION	"0.67"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
