@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.159  2004/12/05 14:58:18  nigelhorne
+ * Fix array overrun on startup
+ *
  * Revision 1.158  2004/12/04 23:33:47  nigelhorne
  * Remove possible array overflow when looking for a free server
  *
@@ -485,9 +488,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.158 2004/12/04 23:33:47 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.159 2004/12/05 14:58:18 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80x"
+#define	CM_VERSION	"0.80y"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -709,7 +712,7 @@ static	void	broadcast(const char *mess);
 static	int	loadDatabase(void);
 
 #ifdef	SESSION
-static	char	**clamav_versions;
+static	char	**clamav_versions;	/* max_children elements in the array */
 #define	clamav_version	(clamav_versions[0])
 #else
 static	char	clamav_version[VERSION_LENGTH + 1];
@@ -1595,11 +1598,11 @@ main(int argc, char **argv)
 		}
 #ifdef	SESSION
 	} else {
-		clamav_versions = (char **)cli_malloc(numServers * sizeof(char *));
+		clamav_versions = (char **)cli_malloc(max_children * sizeof(char *));
 		if(clamav_versions == NULL)
 			return EX_TEMPFAIL;
 
-		for(i = 0; i < numServers; i++) {
+		for(i = 0; i < max_children; i++) {
 			clamav_versions[i] = strdup(version);
 			if(clamav_versions[i] == NULL)
 				return EX_TEMPFAIL;
@@ -4352,6 +4355,7 @@ watchdog(void *a)
 			 */
 			pthread_mutex_lock(&n_children_mutex);
 			if((n_children == 0) && (cl_statchkdir(&dbstat) == 1)) {
+				cl_statfree(&dbstat);
 				if(use_syslog)
 					syslog(LOG_WARNING, _("Loading new database"));
 				if(loadDatabase() != 0)
@@ -4375,7 +4379,9 @@ watchdog(void *a)
 			 * that doesn't really matter)
 			 */
 			cli_dbgmsg("watchdog: check server %d\n", i);
-			if((n_children == 0) && (session->status == CMDSOCKET_FREE)) {
+			if((n_children == 0) &&
+			   (session->status == CMDSOCKET_FREE) &&
+			   (clamav_versions != NULL)) {
 				if(send(sock, "VERSION\n", 8, 0) == 8) {
 					char buf[81];
 					const int nbytes = clamd_recv(sock, buf, sizeof(buf) - 1);
@@ -4603,7 +4609,7 @@ static int
 loadDatabase(void)
 {
 	extern const char *cl_retdbdir(void);	/* FIXME: should be included */
-	int ret, firsttime, signatures, v;
+	int ret, signatures, v;
 	time_t t;
 	char *daily, *ptr;
 	struct cl_cvd *d;
@@ -4612,9 +4618,7 @@ loadDatabase(void)
 
 	assert(internal);
 
-	firsttime = (dbdir == NULL);
-
-	if(firsttime) {
+	if(dbdir == NULL) {
 		if((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory")))
 			dbdir = cpt->strarg;
 		else
