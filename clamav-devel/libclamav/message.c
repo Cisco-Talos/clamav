@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.148 2005/03/15 18:12:10 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.149 2005/03/16 09:10:50 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1498,19 +1498,19 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		} while((t_line = t_line->t_next) != NULL);
 
 		cli_dbgmsg("Exported %u bytes using enctype %d\n", size, enctype);
-	}
 
-	/* Verify we have nothing left to flush out */
-	if(m->base64chars) {
-		unsigned char data[4];
-		unsigned char *ptr;
+		/* Verify we have nothing left to flush out */
+		if(m->base64chars) {
+			unsigned char data[4];
+			unsigned char *ptr;
 
-		cli_dbgmsg("%u trailing bytes to export\n", m->base64chars);
+			cli_dbgmsg("%u trailing bytes to export\n", m->base64chars);
 
-		ptr = decode(m, NULL, data, base64, FALSE);
-		if(ptr)
-			(*addData)(ret, data, (size_t)(ptr - data));
-		m->base64chars = 0;
+			ptr = decode(m, NULL, data, base64, FALSE);
+			if(ptr)
+				(*addData)(ret, data, (size_t)(ptr - data));
+			m->base64chars = 0;
+		}
 	}
 
 	return ret;
