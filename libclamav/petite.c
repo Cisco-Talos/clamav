@@ -138,7 +138,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
 	for (t = 0; t < j-1 ; t++) {
 	  uint32_t trva, trsz, tvsz;
 
-	  if ( usects[t].rva < usects[t+1].rva )
+	  if ( usects[t].rva <= usects[t+1].rva )
 	    continue;
 	  trva = usects[t].rva;
 	  trsz = usects[t].rsz;

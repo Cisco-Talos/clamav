@@ -1,3 +1,7 @@
+Tue Aug 31 10:46:48 CEST 2004 (acab)
+------------------------------------
+  * libclamav/petite.c: Fixed inflooping (thx Christoph)
+
 Mon Aug 30 22:44:30 CEST 2004 (tk)
 ----------------------------------
   * configure: Add --disable-gethostbyname_r. Try enabling it if clamav-milter
