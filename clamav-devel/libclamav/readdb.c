@@ -513,6 +513,9 @@ static int cli_loadndb(FILE *fd, struct cl_node **root, unsigned int *signo)
 	    free(virname);
 	    ret = CL_EMALFDB;
 	    break;
+	} else if(!strcmp(offset, "*")) {
+	    free(offset);
+	    offset = NULL;
 	}
 
 	if(!(sig = cli_strtok(buffer, 3, ":"))) {

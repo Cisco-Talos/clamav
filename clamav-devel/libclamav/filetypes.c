@@ -97,15 +97,20 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "\320\317\021\340\241\261\032\341",
 	                    8, "OLE2 container",  CL_TYPE_MSOLE2},
 
+    /* Graphics (may contain exploits against MS systems) */
+
+    {0,  "GIF",				 3, "GIF",	    CL_TYPE_GRAPHICS},
+    {0,  "BM",				 2, "BMP",          CL_TYPE_GRAPHICS},
+    {0,  "\377\330\377",		 4, "JPEG",         CL_TYPE_GRAPHICS},
+    {6,  "JFIF",			 4, "JPEG",         CL_TYPE_GRAPHICS},
+    {6,  "Exif",			 4, "JPEG",         CL_TYPE_GRAPHICS},
+    {0,  "\x89PNG",			 4, "PNG",          CL_TYPE_GRAPHICS},
+
     /* Ignored types */
 
     {0,  "\000\000\001\263",             4, "MPEG video stream",  CL_TYPE_DATA},
     {0,  "\000\000\001\272",             4, "MPEG sys stream",    CL_TYPE_DATA},
     {0,  "RIFF",                         4, "RIFF",		  CL_TYPE_DATA},
-    {0,  "GIF",				 3, "GIF",		  CL_TYPE_DATA},
-    {0,  "\x89PNG",			 4, "PNG",                CL_TYPE_DATA},
-    {0,  "\377\330\377",		 4, "JPEG",               CL_TYPE_DATA},
-    {0,  "BM",				 2, "BMP",                CL_TYPE_DATA},
     {0,  "OggS",                         4, "Ogg Stream",         CL_TYPE_DATA},
     {0,  "ID3",				 3, "MP3",		  CL_TYPE_DATA},
     {0,  "\377\373\220",		 3, "MP3",		  CL_TYPE_DATA},

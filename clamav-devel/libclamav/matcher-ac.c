@@ -196,7 +196,7 @@ static void cli_freepatt(struct cli_ac_patt *list)
     while(handler) {
 	free(handler->pattern);
 	free(handler->virname);
-	if(handler->offset)
+	if(handler->offset && (!handler->sigid || handler->partno == 1))
 	    free(handler->offset);
 	if(handler->alt) {
 	    free(handler->altn);
@@ -264,11 +264,11 @@ static int inline cli_findpos(const char *buffer, int offset, int length, const 
     return 1;
 }
 
-int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *partcnt, short otfrec, unsigned long int offset, unsigned long int *partoff, struct cli_voffset *voffset)
+int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *partcnt, short otfrec, unsigned long int offset, unsigned long int *partoff, unsigned short ftype, int fd)
 {
 	struct cli_ac_node *current;
 	struct cli_ac_patt *pt;
-	int position, type = CL_CLEAN, dist;
+	int position, type = CL_CLEAN, dist, t;
         unsigned int i;
 
 
@@ -291,9 +291,19 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
 	    pt = current->list;
 	    while(pt) {
 		if(cli_findpos(buffer, position, length, pt)) {
+		    if((pt->offset || pt->target) && (!pt->sigid || pt->partno == 1)) {
+			if(ftype == CL_TYPE_UNKNOWN_TEXT)
+			    t = type;
+			else
+			    t = ftype;
+			if(!cli_validatesig(pt->target, t, pt->offset, offset + position, fd, pt->virname)) {
+			    pt = pt->next;
+			    continue;
+			}
+		    }
+
 		    if(pt->sigid) { /* it's a partial signature */
 			if(partcnt[pt->sigid] + 1 == pt->partno) {
-
 			    dist = 1;
 			    if(pt->maxdist)
 				if(offset + i - partoff[pt->sigid] > pt->maxdist)

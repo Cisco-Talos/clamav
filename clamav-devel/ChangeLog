@@ -1,8 +1,13 @@
+Sat Sep 18 01:13:21 CEST 2004 (tk)
+----------------------------------
+  * libclamav: add support for new signature format (*.ndb; not yet documented)
+  * sigtool: support ndb files
+
 Fri Sep 17 16:42:06 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Fix problem in the template file handling where sendmail
 				variables did't work after clamav variables.
-				Thanks to "Sergey Y. Afonin" <asy@kraft-s.ru>
+				Thanks to "Sergey Y. Afonin" <asy*kraft-s.ru>
 				for pointing this out
 
 Fri Sep 17 14:47:53 BST 2004 (njh)
