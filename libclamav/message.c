@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.137  2005/01/05 21:54:05  nigelhorne
+ * Fuzzy logic lookup of content-type
+ *
  * Revision 1.136  2005/01/05 21:07:15  nigelhorne
  * Fix crash when looking for uuencoded attachment fails
  *
@@ -405,7 +408,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.136 2005/01/05 21:07:15 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.137 2005/01/05 21:54:05 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -597,8 +600,9 @@ messageSetMimeType(message *mess, const char *type)
 #ifdef	CL_THREAD_SAFE
 	static pthread_mutex_t mime_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
-	static table_t *mime_table;
+	const struct mime_map *m;
 	int typeval;
+	static table_t *mime_table;
 
 	assert(mess != NULL);
 	if(type == NULL) {
@@ -617,8 +621,6 @@ messageSetMimeType(message *mess, const char *type)
 	pthread_mutex_lock(&mime_mutex);
 #endif
 	if(mime_table == NULL) {
-		const struct mime_map *m;
-
 		mime_table = tableCreate();
 		if(mime_table == NULL) {
 #ifdef	CL_THREAD_SAFE
@@ -646,7 +648,8 @@ messageSetMimeType(message *mess, const char *type)
 	if(typeval != -1) {
 		mess->mimeType = (mime_type)typeval;
 		return 1;
-	} else if(mess->mimeType == NOMIME) {
+	}
+	if(mess->mimeType == NOMIME) {
 		if(strncasecmp(type, "x-", 2) == 0)
 			mess->mimeType = MEXTENSION;
 		else {
@@ -666,8 +669,26 @@ messageSetMimeType(message *mess, const char *type)
 				 *	Content-Type: text/plain
 				 * as an attachment
 				 */
-				cli_warnmsg("Unknown MIME type: `%s', set to Application - report to bugs@clamav.net\n", type);
-				mess->mimeType = APPLICATION;
+				int highestSimil = 0, t = -1;
+				const char *closest = NULL;
+
+				for(m = mime_map; m->string; m++) {
+					const int s = simil(m->string, type);
+
+					if(s > highestSimil) {
+						highestSimil = s;
+						closest = m->string;
+						t = m->type;
+					}
+				}
+				if(highestSimil >= 50) {
+					cli_dbgmsg("Unknown MIME type \"%s\" - guessing as %s (%u%% certainty)\n",
+						type, closest, highestSimil);
+					mess->mimeType = t;
+				} else {
+					cli_warnmsg("Unknown MIME type: `%s', set to Application - report to bugs@clamav.net\n", type);
+					mess->mimeType = APPLICATION;
+				}
 			}
 		}
 		return 1;
@@ -1121,7 +1142,7 @@ messageSetEncoding(message *m, const char *enctype)
 			 * 50% is arbitary. For example 7bi will match as
 			 * 66% certain to be 7bit
 			 */
-			if(closest && (highestSimil >= 50)) {
+			if(highestSimil >= 50) {
 				cli_dbgmsg("Unknown encoding type \"%s\" - guessing as %s (%u%% certainty)\n",
 					type, closest, highestSimil);
 				messageSetEncoding(m, closest);
