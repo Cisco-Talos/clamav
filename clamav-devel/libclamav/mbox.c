@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.100  2004/08/12 10:36:09  nigelhorne
+ * LIBCURL completed
+ *
  * Revision 1.99  2004/08/11 15:28:39  nigelhorne
  * No longer needs curl.h
  *
@@ -285,7 +288,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.99 2004/08/11 15:28:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.100 2004/08/12 10:36:09 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -358,15 +361,17 @@ static	void	print_trace(int use_syslog);
 #undef FALSE
 #endif
 
+typedef enum	{ FALSE = 0, TRUE = 1 } bool;
+
 #define	SAVE_TO_DISC	/* multipart/message are saved in a temporary file */
 /*#define	CHECKURLS	/* If an email contains URLs, check them */
-/*#define	LIBCURL	/* Needs support from "configure" */
+/*#define	LIBCURL		/* To build with LIBCURL:
+			 * LDFLAGS=`curl-config --libs` ./configure ...
+			 */
 
 #ifdef	LIBCURL
 #include <curl/curl.h>
 #endif
-
-typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 
 static	message	*parseEmailHeaders(message *m, const table_t *rfc821Table, bool destroy);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
@@ -588,7 +593,8 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		 */
 		while(strchr("\r\n", buffer[0]) &&
 		     (fgets(buffer, sizeof(buffer), fd) != NULL))
-		     	;
+			;
+
 		/*
 		 * FIXME: files full of new lines and nothing else are
 		 * handled ungracefully...
@@ -1989,7 +1995,7 @@ strip(char *buf, int len)
 	do
 		if(*ptr)
 			*ptr = '\0';
-	while((--len >= 0) && !isgraph(*--ptr) && (*ptr != '\n') && (*ptr != '\r'));
+	while((--len >= 0) && (!isgraph(*--ptr)) && (*ptr != '\n') && (*ptr != '\r'));
 #else	/* more characters can be displayed on DOS */
 	do
 #ifndef	REAL_MODE_DOS
@@ -2264,13 +2270,21 @@ checkURLs(message *m, const char *dir)
 	blob *b = messageToBlob(m);
 	char *ptr;
 	size_t len;
-	table_t *t = tableCreate();
+	table_t *t;
 
 	if(b == NULL)
 		return;
 
-	ptr = blobGetData(b);
+	ptr = (char *)blobGetData(b);
 	len = blobGetDataSize(b);
+
+	/* TODO: make this size customisable */
+	if(len > 100*1024) {
+		cli_warnmsg("Viruses pointed to by URL not scanned in large message\n");
+		blobDestroy(b);
+	}
+
+	t = tableCreate();
 
 	/*
 	 * cli_memstr(ptr, len, "<a href=", 8)
@@ -2280,13 +2294,16 @@ checkURLs(message *m, const char *dir)
 	while(len >= 8) {
 		/* FIXME: allow any number of white space */
 		if(strncasecmp(ptr, "<a href=", 8) == 0) {
+#ifndef	LIBCURL
 #ifdef	CL_THREAD_SAFE
 			static pthread_mutex_t system_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
+			struct stat statb;
+			char cmd[512];
+#endif
 			char *p2 = &ptr[8];
 			char *p3;
-			char cmd[512], name[512];
-			struct stat statb;
+			char name[512];
 
 			len -= 8;
 			while((len > 0) && ((*p2 == '\"') || isspace(*p2))) {
@@ -2356,21 +2373,25 @@ static void
 getURL(const char *url, const char *dir, const char *filename)
 {
 	char *fout;
-	static CURL *curl;
+	CURL *curl;
 	FILE *fp;
+	struct curl_slist *headers;
+	static int initialised = 0;
 
-	if(curl == NULL) {
+	if(!initialised) {
 		if(curl_global_init(CURL_GLOBAL_NOTHING) != 0)
 			return;
-		/* easy isn't the word I'd use... */
-		curl = curl_easy_init();
-		if(curl == NULL) {
-			curl_global_cleanup();
-			return;
-		}
-		(void)curl_easy_setopt(curl, CURLOPT_USERAGENT, "www.clamav.net");
-
+		initialised = 1;
 	}
+	/* easy isn't the word I'd use... */
+	curl = curl_easy_init();
+	if(curl == NULL)
+		return;
+	(void)curl_easy_setopt(curl, CURLOPT_USERAGENT, "www.clamav.net");
+
+	if(curl_easy_setopt(curl, CURLOPT_URL, url) != 0)
+		return;
+
 	fout = cli_malloc(strlen(dir) + strlen(filename) + 2);
 
 	if(fout == NULL)
@@ -2385,12 +2406,31 @@ getURL(const char *url, const char *dir, const char *filename)
 		free(fout);
 		return;
 	}
-	free(fout);
+	/*
+	 * If an item is in squid's cache get it from there (TCP_HIT/200) but
+	 * by default curl doesn't (TCP_CLIENT_REFRESH_MISS/200)
+	 */
+	headers = curl_slist_append(NULL, "Pragma:");
+	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
-	if(curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp) != 0)
+	if(curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp) != 0) {
+		fclose(fp);
+		free(fout);
 		return;
+	}
 
-	(void)curl_easy_perform(curl);
+	/* These should be customisable */
+	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30);
+	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10);
+
+	if(curl_easy_perform(curl) != CURLE_OK) {
+		cli_warnmsg("URL %s failed to download\n", url);
+		unlink(fout);
+	}
+
+	fclose(fp);
+	curl_easy_cleanup(curl);
+	free(fout);
 }
 #endif
 
