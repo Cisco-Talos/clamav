@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -66,7 +66,11 @@ int dsresult(int sockd, const struct optstruct *opt)
 	FILE *fd;
 
 
+#ifndef C_OS2
     if((fd = fdopen(dup(sockd), "r")) == NULL) {
+#else /* FIXME: accoriding to YD OS/2 does not support dup() for sockets */
+    if((fd = fdopen(sockd, "r")) == NULL) {
+#endif
 	mprintf("@Can't open descriptor for reading.\n");
 	return -1;
     }
@@ -102,7 +106,9 @@ int dsresult(int sockd, const struct optstruct *opt)
 	}
     }
 
+#ifndef C_OS2 /* Small memory leak under OS/2 (see above) */
     fclose(fd);
+#endif
 
     return infected ? infected : (waserror ? -1 : 0);
 }

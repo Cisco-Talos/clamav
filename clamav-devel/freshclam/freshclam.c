@@ -1,6 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
- *			     Damien Curtain <damien@pagefault.org>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -98,7 +97,7 @@ int freshclam(struct optstruct *opt)
 	struct cfgstruct *copt, *cpt;
 	struct sigaction sigact;
 	struct sigaction oldact;
-#ifndef C_CYGWIN
+#if !defined(C_CYGWIN)  && !defined(C_OS2)
 	char *unpuser;
 	struct passwd *user;
 #endif
@@ -139,7 +138,7 @@ int freshclam(struct optstruct *opt)
 #endif
     }
 
-#ifndef C_CYGWIN
+#if !defined(C_CYGWIN)  && !defined(C_OS2)
     /* freshclam shouldn't work with root privileges */
     if(optc(opt, 'u')) {
 	unpuser = getargc(opt, 'u');
