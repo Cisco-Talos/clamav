@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.42  2004/02/14 17:23:45  nigelhorne
+ * Had deleted O_BINARY by mistake
+ *
  * Revision 1.41  2004/02/12 18:43:58  nigelhorne
  * Use mkstemp on Solaris
  *
@@ -114,7 +117,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.41 2004/02/12 18:43:58 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.42 2004/02/14 17:23:45 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -249,6 +252,10 @@ static	const	struct tableinit {
 
 #endif
 
+#endif
+
+#ifndef	O_BINARY
+#define	O_BINARY	0
 #endif
 
 /*
@@ -1653,7 +1660,7 @@ saveFile(const blob *b, const char *dir)
 	fd = mkstemp(filename);
 #else
 	(void)mktemp(filename);
-	fd = open(filename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC, 0600);
+	fd = open(filename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
 #endif
 
 	if(fd < 0) {
