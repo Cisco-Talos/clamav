@@ -539,6 +539,7 @@ Changes
 			we can't connect to the returned PORT
 		Fix problem with deleting X-VIRUS-STATUS not setting correct
 			libmilter settings
+0.80n	30/10/04 Fix possible crash when one or more servers can't be contacted
 
 INTERNATIONALISATION
 
