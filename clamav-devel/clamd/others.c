@@ -30,6 +30,20 @@
 #include <fcntl.h>
 #include <time.h>
 #include <sys/stat.h>
+#include <errno.h>
+
+#undef HAVE_POLL
+
+#if HAVE_POLL
+#if HAVE_POLL_H
+#include <poll.h>
+#else /* HAVE_POLL_H */
+#undef HAVE_POLL
+#if HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif /* HAVE_SYS_SELECT_H */
+#endif /* HAVE_POLL_H */
+#endif /* HAVE_POLL */
 
 #if defined(CLAMD_USE_SYSLOG) && !defined(C_AIX)
 #include <syslog.h>
@@ -266,4 +280,53 @@ void virusaction(const char *filename, const char *virname, const struct cfgstru
     system(cmd);
 
     free(cmd);
+}
+
+int poll_fd(int fd, int timeout_sec)
+{
+	int retval;
+#ifdef HAVE_POLL
+	struct pollfd poll_data[1];
+
+    poll_data[0].fd = fd;
+    poll_data[0].events = POLLIN;
+    poll_data[0].revents = 0;
+
+    while (1) {
+    	retval = poll(poll_data, 1, timeout_sec*1000);
+	if (retval == -1) {
+   	    if (errno == EINTR) {
+		continue;
+	    }
+	    return -1;
+	}
+	return retval;
+    }
+
+#else
+	fd_set rfds;
+	struct timeval tv;
+
+    if (fd >= DEFAULT_FD_SETSIZE) {
+	return -1;
+    }
+
+    while (1) {
+	FD_ZERO(&rfds);
+	FD_SET(fd, &rfds);
+	tv.tv_sec = timeout_sec;
+	tv.tv_usec = 0;
+
+	retval = select(fd+1, &rfds, NULL, NULL, &tv);
+	if (retval == -1) {
+	    if (errno == EINTR) {
+		continue;
+	    }
+	    return -1;
+	}
+	return retval;
+    }
+#endif
+
+    return -1;
 }

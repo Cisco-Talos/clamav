@@ -35,10 +35,6 @@
 #include <errno.h>
 #include <clamav.h>
 
-#if HAVE_SYS_SELECT_H
-#include <sys/select.h>
-#endif
-
 #include "cfgfile.h"
 #include "others.h"
 #include "scanner.h"
@@ -197,8 +193,6 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	struct sockaddr_in server;
 	struct cfgstruct *cpt;
 	FILE *tmp = NULL;
-	fd_set rfds;
-	struct timeval tv;
 
     while(!bound && portscan--) {
 	if((port = cl_rndnum(60000)) < 1024)
@@ -228,27 +222,16 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	mdprintf(odesc, "PORT %d\n", port);
     }
 
-    while (1) {
-	FD_ZERO(&rfds);
-	FD_SET(sockfd, &rfds);
-	tv.tv_sec = CL_DEFAULT_SCANTIMEOUT;
-	tv.tv_usec = 0;	
-
-	retval = select(sockfd+1, &rfds, NULL, NULL, &tv);
-	switch (retval) {
-	case 0: /* timeout */
-	    mdprintf(sockfd, "ERROR\n");
-	    logg("!ScanStream: accept timeout.\n");
-	    return -1;
-	case -1:
-	    if (errno == EINTR) {
-		continue;
-	    }
-	    mdprintf(sockfd, "ERROR\n");
-	    logg("!ScanStream: select failed.\n");
-	    return -1;
-	}
-	break;
+    retval = poll_fd(sockfd, CL_DEFAULT_SCANTIMEOUT);
+    switch (retval) {
+    case 0: /* timeout */
+	mdprintf(sockfd, "ERROR\n");
+	logg("!ScanStream: accept timeout.\n");
+	return -1;
+    case -1:
+	mdprintf(sockfd, "ERROR\n");
+	logg("!ScanStream: accept poll failed.\n");
+	return -1;
     }
 
     if((acceptd = accept(sockfd, NULL, NULL)) == -1) {
@@ -261,11 +244,6 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 
     logg("*Accepted connection on port %d, fd %d\n", port, acceptd);
 
-    FD_ZERO(&rfds);
-    FD_SET(acceptd, &rfds);
-    tv.tv_sec = CL_DEFAULT_SCANTIMEOUT;
-    tv.tv_usec = 0;
-    
     /* StreamSaveToDisk is enforced, to ensure timeoute */
     /*if(cfgopt(copt, "StreamSaveToDisk")) {	*/
 	if((tmp = tmpfile()) == NULL) {
@@ -281,12 +259,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	if((cpt = cfgopt(copt, "StreamMaxLength")))
 	    maxsize = cpt->numarg;
 
-	while((retval = select(acceptd+1, &rfds, NULL, NULL, &tv)) == 1) {
-	    FD_ZERO(&rfds);
-	    FD_SET(acceptd, &rfds);
-	    tv.tv_sec = CL_DEFAULT_SCANTIMEOUT;
-	    tv.tv_usec = 0;
-	    
+	while((retval = poll_fd(acceptd, CL_DEFAULT_SCANTIMEOUT)) == 1) {
 	    bread = read(acceptd, buff, sizeof(buff));
 	    if (bread <= 0) {
 		break;

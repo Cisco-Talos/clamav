@@ -1,3 +1,7 @@
+Mon Mar  8 10:01:01 GMT 2004 (trog)
+-----------------------------------
+  * clamd: wrap select()/poll()
+
 Mon Mar  8 01:24:37 CET 2004 (tk)
 ---------------------------------
   * applied comments cleanup (C89) patch (global) from Jesper Juhl
