@@ -48,6 +48,7 @@
 int progexit = 0;
 pthread_mutex_t exit_mutex;
 int reload = 0;
+time_t reloaded_time = 0;
 pthread_mutex_t reload_mutex;
 int sighup = 0;
 
@@ -55,7 +56,8 @@ typedef struct client_conn_tag {
     int sd;
     int options;
     const struct cfgstruct *copt;
-    const struct cl_node *root;
+    struct cl_node *root;
+    time_t root_timestamp;
     const struct cl_limits *limits;
     pid_t mainpid;
 } client_conn_t;
@@ -117,7 +119,7 @@ void scanner_thread(void *arg)
 	    }
 	    pthread_mutex_unlock(&exit_mutex);
 	    pthread_mutex_lock(&reload_mutex);
-	    if(reload) {
+	    if (conn->root_timestamp != reloaded_time) {
 		session = FALSE;
 	    }
 	    pthread_mutex_unlock(&reload_mutex);
@@ -125,6 +127,7 @@ void scanner_thread(void *arg)
     } while (session);
 
     close(conn->sd);
+    cl_free(conn->root);
     free(conn);
     return;
 }
@@ -517,7 +520,8 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 		client_conn->sd = new_sd;
 		client_conn->options = options;
 		client_conn->copt = copt;
-		client_conn->root = root;
+		client_conn->root = cl_dup(root);
+		client_conn->root_timestamp = reloaded_time;
 		client_conn->limits = &limits;
 		client_conn->mainpid = mainpid;
 		if (!thrmgr_dispatch(thr_pool, client_conn)) {
@@ -552,18 +556,10 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	pthread_mutex_lock(&reload_mutex);
 	if(reload) {
 	    pthread_mutex_unlock(&reload_mutex);
-	    /* Destroy the thread manager.
-	     * This waits for all current tasks to end
-	     */
-	    thrmgr_destroy(thr_pool);
 	    root = reload_db(root, copt, FALSE);
-	    if((thr_pool=thrmgr_new(max_threads, idletimeout, scanner_thread)) == NULL) {
-		logg("!thrmgr_new failed\n");
-		pthread_mutex_unlock(&reload_mutex);
-		exit(-1);
-	    }
 	    pthread_mutex_lock(&reload_mutex);
 	    reload = 0;
+	    time(&reloaded_time);
 	    pthread_mutex_unlock(&reload_mutex);
 #ifdef CLAMUKO
 	    if(cfgopt(copt, "ClamukoScanOnLine") || cfgopt(copt, "ClamukoScanOnAccess")) {
@@ -579,6 +575,10 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	}
     }
 
+    /* Destroy the thread manager.
+     * This waits for all current tasks to end
+     */
+    thrmgr_destroy(thr_pool);
 #ifdef CLAMUKO
     if(cfgopt(copt, "ClamukoScanOnLine") || cfgopt(copt, "ClamukoScanOnAccess")) {
 	logg("Stopping Clamuko.\n");
@@ -586,6 +586,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	pthread_join(clamuko_pid, NULL);
     }
 #endif
+    cl_free(root);
     logg("*Shutting down the main socket.\n");
     shutdown(socketd, 2);
     logg("*Closing the main socket.\n");

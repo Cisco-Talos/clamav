@@ -128,6 +128,7 @@ struct cli_zip_node {
 };
 
 struct cl_node {
+    unsigned int refcount;
     unsigned int maxpatlen; /* maximal length of pattern in db */
 
     /* Extended Boyer-Moore */
@@ -190,6 +191,7 @@ extern const char *cl_retver(void);
 extern int cl_loaddb(const char *filename, struct cl_node **root, unsigned int *signo);
 extern int cl_loaddbdir(const char *dirname, struct cl_node **root, unsigned int *signo);
 extern const char *cl_retdbdir(void);
+extern struct cl_node *cl_dup(struct cl_node *root);
 
 /* CVD */
 extern struct cl_cvd *cl_cvdhead(const char *file);
