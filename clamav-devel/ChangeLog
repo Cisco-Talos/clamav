@@ -1,3 +1,15 @@
+Fri Dec  5 19:16:08 GMT 2003 (njh)
+----------------------------------
+  * clamav-milter: Added call to umask to ensure that the local socket
+	is not publically writeable. If it is sendmail
+	will (correctly!) refuse to start this program
+	Thanks for Nicklaus Wicker <n.wicker@cnk-networks.de>
+
+	Don't sent From as the first line since that means
+	clamd will think it is an mbox and not handle
+	unescaped From at the start of lines properly
+	Thanks to Michael Dankov <misha@btrc.ru>
+
 Fri Dec  5 09:34:44 GMT 2003 (njh)
 ----------------------------------
   * libclamav: Use cli_tok instead of strtok - replaced now by cli_strtok

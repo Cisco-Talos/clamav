@@ -164,6 +164,14 @@ Changes
 		Thanks to Michael Dankov <misha@btrc.ru>.
 0.65g	2/12/03	Use setsid if setpgrp is not present.
 		Thanks to Eugene Crosser <crosser@rol.ru>
+0.65h	4/12/03	Added call to umask to ensure that the local socket
+		is not publically writeable. If it is sendmail
+		will (correctly!) refuse to start this program
+		Thanks for Nicklaus Wicker <n.wicker@cnk-networks.de>
+		Don't sent From as the first line since that means
+		clamd will think it is an mbox and not handle
+		unescaped From at the start of lines properly
+		Thanks to Michael Dankov <misha@btrc.ru>
 
 BUG REPORTS
 
