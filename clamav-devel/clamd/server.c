@@ -119,7 +119,7 @@ void *threadwatcher(void *arg)
 	sigset_t sigset;
 	int i, j, ret, maxwait;
 	unsigned long int timer = 0;
-	unsigned int timeout, threads, virnum, selfchk;
+	unsigned int timeout, threads, selfchk;
 	short int need_wait = 0, do_loop = 0, db_problem = 0;
 	const char *dbdir;
 	struct cl_stat dbstat;
@@ -322,6 +322,7 @@ void *threadwatcher(void *arg)
 
 	    logg("Reading databases from %s\n", dbdir);
 
+	    virnum = 0;
 	    if((ret = cl_loaddbdir(dbdir, &*thwarg->root, &virnum))) {
 		logg("!%s\n", cl_strerror(ret));
 		kill(progpid, SIGTERM);
