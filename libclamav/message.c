@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.29  2004/02/10 17:01:30  nigelhorne
+ * Recognise a new type of bounce message
+ *
  * Revision 1.28  2004/02/07 23:13:55  nigelhorne
  * Handle content-type: text/
  *
@@ -81,7 +84,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.28 2004/02/07 23:13:55 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.29 2004/02/10 17:01:30 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1107,6 +1110,7 @@ bounceBegin(const message *m)
 		"------ This is a copy of the message, including all the headers. ------",
 		"=================================================================================",
 		"------- The original message sent:",
+		"   ----- Original message follows -----",
 		NULL
 	};
 
