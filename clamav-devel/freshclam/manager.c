@@ -423,13 +423,6 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip)
     if(ip)
 	strcpy(ip, "???");
 
-    /* njh@bandsman.co.uk: for BEOS */
-#ifdef PF_INET
-    socketfd = socket(PF_INET, SOCK_STREAM, 0);
-#else
-    socketfd = socket(AF_INET, SOCK_STREAM, 0);
-#endif
-
     name.sin_family = AF_INET;
 
     if(proxy) {
@@ -474,8 +467,15 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip)
 	name.sin_addr = *((struct in_addr *) host->h_addr_list[i]);
 	name.sin_port = htons(port);
 
+#ifdef PF_INET
+	socketfd = socket(PF_INET, SOCK_STREAM, 0);
+#else
+	socketfd = socket(AF_INET, SOCK_STREAM, 0);
+#endif
+
 	if(connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in)) == -1) {
 	    mprintf("Can't connect to port %d of host %s (%s)\n", port, hostpt, ipaddr);
+	    close(socketfd);
 	    continue;
 	}
 

@@ -1,3 +1,8 @@
+Wed Jan 26 15:25:56 CET 2005 (tk)
+---------------------------------
+  * freshclam/manager.c: wwwconnect(): use new socket after failure (patch by 
+			 Geoff Gibbs <ggibbs*hgmp.mrc.ac.uk>)
+
 Wed Jan 26 15:10:02 CET 2005 (tk)
 ---------------------------------
   * shared/misc.c: freshdbdir(): fix possible dbdir string corruption
