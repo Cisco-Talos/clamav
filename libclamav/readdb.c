@@ -736,7 +736,7 @@ int cl_loaddb(const char *filename, struct cl_node **root, unsigned int *signo)
     }
 
     if(ret)
-	cli_errmsg("Can't load %s: %s\n", filename, cl_strerr(ret));
+	cli_errmsg("Can't load %s: %s\n", filename, cl_strerror(ret));
 
     fclose(fd);
     return ret;

@@ -1,3 +1,7 @@
+Tue Feb  1 03:46:22 CET 2005 (tk)
+---------------------------------
+  * libclamav/readdb.c: s/cl_strerr/cl_strerror
+
 Mon Jan 31 19:15:48 CET 2005 (tk)
 ---------------------------------
   * libclamav/readdb.c: update error message
