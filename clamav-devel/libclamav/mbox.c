@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.101  2004/08/17 08:28:32  nigelhorne
+ * Support multitype/fax-message
+ *
  * Revision 1.100  2004/08/12 10:36:09  nigelhorne
  * LIBCURL completed
  *
@@ -288,7 +291,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.100 2004/08/12 10:36:09 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.101 2004/08/17 08:28:32 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -364,13 +367,20 @@ static	void	print_trace(int use_syslog);
 typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 
 #define	SAVE_TO_DISC	/* multipart/message are saved in a temporary file */
-/*#define	CHECKURLS	/* If an email contains URLs, check them */
-/*#define	LIBCURL		/* To build with LIBCURL:
+#define	CHECKURLS	/* If an email contains URLs, check them */
+
+#ifdef	CHECKURLS
+#define	LIBCURL		/* To build with LIBCURL:
 			 * LDFLAGS=`curl-config --libs` ./configure ...
 			 */
 
+#define	MAX_URLS	10	/*
+				 * Maximum number of URLs scanned in a message
+				 * part
+				 */
 #ifdef	LIBCURL
 #include <curl/curl.h>
+#endif
 #endif
 
 static	message	*parseEmailHeaders(message *m, const table_t *rfc821Table, bool destroy);
@@ -416,6 +426,16 @@ static	void	getURL(const char *url, const char *dir, const char *filename);
 #define	RELATED		10	/* RFC2387 */
 #define	REPORT		11	/* RFC1892 */
 #define	APPLEDOUBLE	12	/* Handling of this in only noddy for now */
+#define	FAX		MIXED	/*
+				 * RFC3458
+				 * Drafts stated to treat is as mixed if it is
+				 * not known.  This disappeared in the final
+				 * version (except when talking about
+				 * voice-message), but it is good enough for us
+				 * since we do no validation of coversheet
+				 * presence etc. (which also has disappeared
+				 * in the final version)
+				 */
 
 static	const	struct tableinit {
 	const	char	*key;
@@ -441,13 +461,13 @@ static	const	struct tableinit {
 	{	"related",	RELATED		},
 	{	"report",	REPORT		},
 	{	"appledouble",	APPLEDOUBLE	},
+	{	"fax-message",	FAX		},
 	{	NULL,		0		}
 };
 
 #ifdef	CL_THREAD_SAFE
 static	pthread_mutex_t	tables_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
-static	table_t	*rfc821Table, *subtypeTable;
 
 /* Maximum filenames under various systems */
 #ifndef	NAME_MAX	/* e.g. Linux */
@@ -493,6 +513,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 #ifdef	CL_DEBUG
 	void (*segv)(int);
 #endif
+	static table_t *rfc821, *subtype;
 
 	cli_dbgmsg("in mbox()\n");
 
@@ -516,12 +537,12 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 #ifdef	CL_THREAD_SAFE
 	pthread_mutex_lock(&tables_mutex);
 #endif
-	if(rfc821Table == NULL) {
-		assert(subtypeTable == NULL);
+	if(rfc821 == NULL) {
+		assert(subtype == NULL);
 
-		if(initialiseTables(&rfc821Table, &subtypeTable) < 0) {
-			rfc821Table = NULL;
-			subtypeTable = NULL;
+		if(initialiseTables(&rfc821, &subtype) < 0) {
+			rfc821 = NULL;
+			subtype = NULL;
 #ifdef	CL_THREAD_SAFE
 			pthread_mutex_unlock(&tables_mutex);
 #endif
@@ -559,14 +580,14 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				/*
 				 * End of a message in the mail box
 				 */
-				body = parseEmailHeaders(m, rfc821Table, TRUE);
+				body = parseEmailHeaders(m, rfc821, TRUE);
 				if(body == NULL) {
 					messageReset(m);
 					continue;
 				}
 				messageDestroy(m);
 				if(messageGetBody(body))
-					if(!parseEmailBody(body,  NULL, 0, NULL, dir, rfc821Table, subtypeTable, options)) {
+					if(!parseEmailBody(body,  NULL, 0, NULL, dir, rfc821, subtype, options)) {
 						messageReset(body);
 						m = body;
 						continue;
@@ -619,14 +640,14 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 	retcode = 0;
 
-	body = parseEmailHeaders(m, rfc821Table, TRUE);
+	body = parseEmailHeaders(m, rfc821, TRUE);
 	messageDestroy(m);
 	if(body) {
 		/*
 		 * Write out the last entry in the mailbox
 		 */
 		if(messageGetBody(body))
-			if(!parseEmailBody(body, NULL, 0, NULL, dir, rfc821Table, subtypeTable, options))
+			if(!parseEmailBody(body, NULL, 0, NULL, dir, rfc821, subtype, options))
 				retcode = -1;
 
 		/*
@@ -659,7 +680,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
  * not be used again before it is destroyed, so we can trash it
  */
 static message *
-parseEmailHeaders(message *m, const table_t *rfc821Table, bool destroy)
+parseEmailHeaders(message *m, const table_t *rfc821, bool destroy)
 {
 	bool inHeader = TRUE;
 	text *t;
@@ -720,7 +741,7 @@ parseEmailHeaders(message *m, const table_t *rfc821Table, bool destroy)
 				cli_dbgmsg("End of header information\n");
 				inHeader = FALSE;
 			} else {
-				if((parseEmailHeader(ret, buffer, rfc821Table) >= 0) ||
+				if((parseEmailHeader(ret, buffer, rfc821) >= 0) ||
 				   (strncasecmp(buffer, "From ", 5) == 0))
 					anyHeadersFound = TRUE;
 				free(buffer);
@@ -752,7 +773,7 @@ parseEmailHeaders(message *m, const table_t *rfc821Table, bool destroy)
  * Handle a header line of an email message
  */
 static int
-parseEmailHeader(message *m, const char *line, const table_t *rfc821Table)
+parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 {
 	char *copy, *cmd;
 	int ret = -1;
@@ -783,7 +804,7 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821Table)
 			 * "multipart/mixed" and cmd to
 			 * be "Content-Type"
 			 */
-			ret = parseMimeHeader(m, cmd, rfc821Table, arg);
+			ret = parseMimeHeader(m, cmd, rfc821, arg);
 	}
 	free(copy);
 
@@ -1106,7 +1127,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 			}
 
 			cli_dbgmsg("The message has %d parts\n", multiparts);
-			cli_dbgmsg("Find out the multipart type(%s)\n", mimeSubtype);
+			cli_dbgmsg("Find out the multipart type (%s)\n", mimeSubtype);
 
 			switch(tableFind(subtypeTable, mimeSubtype)) {
 			case RELATED:
@@ -1259,8 +1280,8 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						break;
 					case NOMIME:
 						if(mainMessage) {
-							const text *t_line = uuencodeBegin(mainMessage);
-							if(t_line) {
+							const text *u_line = uuencodeBegin(mainMessage);
+							if(u_line) {
 								blob *aBlob;
 
 								cli_dbgmsg("Found uuencoded message in multipart/mixed mainMessage\n");
@@ -1291,12 +1312,12 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						if(strcasecmp(dtype, "attachment") == 0)
 							addAttachment = TRUE;
 						else if((*dtype == '\0') || (strcasecmp(dtype, "inline") == 0)) {
-							const text *t_line = uuencodeBegin(aMessage);
+							const text *u_line = uuencodeBegin(aMessage);
 
 							if(mainMessage && (mainMessage != messageIn))
 								messageDestroy(mainMessage);
 							mainMessage = NULL;
-							if(t_line) {
+							if(u_line) {
 								cli_dbgmsg("Found uuencoded message in multipart/mixed text portion\n");
 								messageSetEncoding(aMessage, "x-uuencode");
 								addAttachment = TRUE;
@@ -2271,6 +2292,7 @@ checkURLs(message *m, const char *dir)
 	char *ptr;
 	size_t len;
 	table_t *t;
+	int n;
 
 	if(b == NULL)
 		return;
@@ -2285,6 +2307,7 @@ checkURLs(message *m, const char *dir)
 	}
 
 	t = tableCreate();
+	n = 0;
 
 	/*
 	 * cli_memstr(ptr, len, "<a href=", 8)
@@ -2360,6 +2383,10 @@ checkURLs(message *m, const char *dir)
 					(void)unlink(cmd);
 				}
 #endif
+			if(++n > MAX_URLS) {
+				cli_warnmsg("Not all URLs will be scanned\n");
+				break;
+			}
 		}
 		ptr++;
 		len--;
@@ -2422,6 +2449,9 @@ getURL(const char *url, const char *dir, const char *filename)
 	/* These should be customisable */
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30);
 	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10);
+#ifdef	CURLOPT_MAXFILESIZE
+	curl_easy_setopt(curl, CURLOPT_MAXFILESIZE, 50*1024);
+#endif
 
 	if(curl_easy_perform(curl) != CURLE_OK) {
 		cli_warnmsg("URL %s failed to download\n", url);

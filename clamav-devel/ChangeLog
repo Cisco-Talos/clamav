@@ -1,3 +1,7 @@
+Tue Aug 17 09:30:15 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Scan fax-messages sent as e-mail (RFC3458)
+
 Mon Aug 16 22:13:31 CEST 2004 (acab)
 ------------------------------------
   * libclamav/pe.c: add support for FSG 1.31 and cli_malloc bugfix in
