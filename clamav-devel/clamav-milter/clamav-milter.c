@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.133  2004/09/27 12:43:23  nigelhorne
+ * Added --broadcast
+ *
  * Revision 1.132  2004/09/25 15:47:19  nigelhorne
  * Honour LogFacility
  *
@@ -407,9 +410,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.132 2004/09/25 15:47:19 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.133 2004/09/27 12:43:23 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80a"
+#define	CM_VERSION	"0.80b"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -491,6 +494,10 @@ int	deny_severity = LOG_NOTICE;
 
 #ifndef HAVE_IN_PORT_T
 typedef	unsigned short	in_port_t;
+#endif
+
+#ifndef	HAVE_IN_ADDR_T
+typedef	unsigned int	in_addr_t;
 #endif
 
 /*
@@ -622,6 +629,8 @@ static	void	clamdIsDown(void);
 static	void	*watchdog(void *a);
 #endif
 static	int	logg_facility(const char *name);
+static	void	quit(void);
+static	void	broadcast(const char *mess);
 
 static	char	clamav_version[128];
 static	int	fflag = 0;	/* force a scan, whatever */
@@ -631,6 +640,10 @@ static	int	bflag = 0;	/*
 				 * send a failure (bounce) message to the
 				 * sender. This probably isn't a good idea
 				 * since most reply addresses will be fake
+				 */
+static	int	Bflag = 0;	/*
+				 * Broadcast a message when a virus is found,
+				 * this allows remote network management
 				 */
 static	int	pflag = 0;	/*
 				 * Send a warning to the postmaster only,
@@ -739,6 +752,7 @@ static	pthread_cond_t	watchdog_cond = PTHREAD_COND_INITIALIZER;
 
 static	const	char	*postmaster = "postmaster";
 static	const	char	*from = "MAILER-DAEMON";
+static	int	quitting;
 
 /*
  * NULL terminated whitelist of target ("to") addresses that we do NOT scan
@@ -760,6 +774,7 @@ help(void)
 
 	puts(_("\t--advisory\t\t-A\tFlag viruses rather than deleting them."));
 	puts(_("\t--bounce\t\t-b\tSend a failure message to the sender."));
+	puts(_("\t--broadcast\t\t-B\tBroadcast to a network manager when a virus is found."));
 	puts(_("\t--config-file=FILE\t-c FILE\tRead configuration from FILE."));
 	puts(_("\t--debug\t\t\t-D\tPrint debug messages."));
 	puts(_("\t--dont-log-clean\t-C\tDon't add an entry to syslog that a mail is clean."));
@@ -845,9 +860,9 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "a:Abc:CDfF:lm:nNop:PqQ:dhHs:St:T:U:Vx:";
+		const char *args = "a:AbBc:CDfF:lm:nNop:PqQ:dhHs:St:T:U:Vx:";
 #else
-		const char *args = "a:Abc:CDfF:lm:nNop:PqQ:dhHs:St:T:U:V";
+		const char *args = "a:AbBc:CDfF:lm:nNop:PqQ:dhHs:St:T:U:V";
 #endif
 
 		static struct option long_options[] = {
@@ -859,6 +874,9 @@ main(int argc, char **argv)
 			},
 			{
 				"bounce", 0, NULL, 'b'
+			},
+			{
+				"broadcast", 0, NULL, 'B'
 			},
 			{
 				"config-file", 1, NULL, 'c'
@@ -962,6 +980,9 @@ main(int argc, char **argv)
 				break;
 			case 'b':	/* bounce worms/viruses */
 				bflag++;
+				break;
+			case 'B':	/* broadcast */
+				Bflag++;
 				break;
 			case 'c':	/* where is clamd.conf? */
 				cfgfile = optarg;
@@ -1372,6 +1393,8 @@ main(int argc, char **argv)
 #endif
 	}
 
+	atexit(quit);
+
 #ifdef	SESSION
 	pthread_create(&tid, NULL, watchdog, NULL);
 #endif
@@ -1570,6 +1593,7 @@ pingServer(int serverNumber)
 	 * Also version command is verbose: says "clamd / ClamAV version"
 	 * instead of "clamAV version"
 	 */
+	cli_dbgmsg("pingServer%d: sending VERSION\n", serverNumber);
 	if(send(sock, "VERSION\n", 8, 0) < 8) {
 		perror("send");
 		close(sock);
@@ -1798,6 +1822,9 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	char ip[INET_ADDRSTRLEN];	/* IPv4 only */
 #endif
 	const char *remoteIP;
+
+	if(quitting)
+		return cl_error;
 
 	if(ctx == NULL) {
 		if(use_syslog)
@@ -2680,6 +2707,8 @@ clamfi_eom(SMFICTX *ctx)
 
 		snprintf(reject, sizeof(reject) - 1, _("%s detected by ClamAV - http://www.clamav.net"), virusname);
 		smfi_setreply(ctx, (char *)privdata->rejectCode, "5.7.1", reject);
+		if(Bflag)
+			broadcast(mess);
 	}
 	clamfi_cleanup(ctx);
 
@@ -3759,7 +3788,7 @@ watchdog(void *a)
 
 	assert(cmdSockets != NULL);
 
-	for(;;) {
+	while(!quitting) {
 		int i;
 		struct timespec ts;
 		struct timeval tp;
@@ -3935,4 +3964,81 @@ logg_facility(const char *name)
 			return facilitymap[i].code;
 
 	return -1;
+}
+
+static void
+quit(void)
+{
+#ifdef	SESSION
+	int i;
+
+	quitting++;
+
+	if(use_syslog)
+		syslog(LOG_INFO, _("Stopping: %s"), clamav_version);
+
+	pthread_mutex_lock(&sstatus_mutex);
+	for(i = 0; i < max_children; i++) {
+		const int sock = cmdSockets[i];
+
+		/*
+		 * Check all free sessions are still usable
+		 * This could take some time with many free
+		 * sessions to slow remote servers, so only do this
+		 * when the system is quiet (not 100% accurate when
+		 * determining this since n_children isn't locked but
+		 * that doesn't really matter)
+		 */
+		cli_dbgmsg("quit: close server %d\n", i);
+		if(cmdSocketsStatus[i] == CMDSOCKET_FREE) {
+			send(sock, "END\n", 4, 0);
+			shutdown(sock, SHUT_WR);
+			cmdSocketsStatus[i] = CMDSOCKET_DOWN;
+			pthread_mutex_unlock(&sstatus_mutex);
+			close(sock);
+			pthread_mutex_lock(&sstatus_mutex);
+		}
+	}
+	pthread_mutex_unlock(&sstatus_mutex);
+#else
+	quitting++;
+
+	if(use_syslog)
+		syslog(LOG_INFO, _("Stopping: %s"), clamav_version);
+#endif
+}
+
+static void
+broadcast(const char *mess)
+{
+	int on;
+	struct sockaddr_in s;
+	const sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+	if(sock < 0) {
+		perror("socket");
+		return;
+	}
+
+	/*
+	 * SO_BROADCAST doesn't sent to all NICs on Linux, it only broadcasts
+	 * on eth0. You can use SO_BINDTODEVICE to get around that, but you
+	 * need to have uid == 0 for that
+	 */
+	on = 1;
+	if(setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (int *)&on, sizeof(on)) < 0) {
+		perror("setsockopt");
+		close(sock);
+		return;
+	}
+
+	memset(&s, '\0', sizeof(struct sockaddr_in));
+	s.sin_family = AF_INET;
+	s.sin_port = (in_port_t)htons(tcpSocket);
+	s.sin_addr.s_addr = htonl(INADDR_BROADCAST);
+
+	if(sendto(sock, mess, strlen(mess), 0, (struct sockaddr *)&s, sizeof(struct sockaddr_in)) < 0)
+		perror("sendto");
+
+	close(sock);
 }
