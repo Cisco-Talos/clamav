@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.93  2004/06/08 21:44:59  nigelhorne
+ * Ensure --from takes an argument
+ *
  * Revision 1.92  2004/06/03 13:14:08  nigelhorne
  * Up-issued
  *
@@ -287,9 +290,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.92 2004/06/03 13:14:08 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.93 2004/06/08 21:44:59 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.72"
+#define	CM_VERSION	"0.72a"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -615,14 +618,14 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "abc:CDfF:lm:nNop:PqQ:dhHs:St:U:Vx:";
+		const char *args = "a:bc:CDfF:lm:nNop:PqQ:dhHs:St:U:Vx:";
 #else
-		const char *args = "abc:CDfF:lm:nNop:PqQ:dhHs:St:U:V";
+		const char *args = "a:bc:CDfF:lm:nNop:PqQ:dhHs:St:U:V";
 #endif
 
 		static struct option long_options[] = {
 			{
-				"from", 0, NULL, 'a'
+				"from", 1, NULL, 'a'
 			},
 			{
 				"bounce", 0, NULL, 'b'
@@ -2191,9 +2194,9 @@ clamfi_abort(SMFICTX *ctx)
 #ifdef	CL_DEBUG
 	if(use_syslog)
 		syslog(LOG_DEBUG, "clamfi_abort");
-	cli_dbgmsg("clamfi_abort\n");
 #endif
 
+	cli_dbgmsg("clamfi_abort\n");
 	/*
 	 * Unlock incase we're called during a cond_timedwait in envfrom
 	 *
