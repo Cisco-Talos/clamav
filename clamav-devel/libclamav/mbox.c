@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.205  2005/01/01 15:55:26  nigelhorne
+ * Changes handling of unbalanced quotes in multipart headers
+ *
  * Revision 1.204  2004/12/19 23:19:54  nigelhorne
  * Tidy
  *
@@ -600,7 +603,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.204 2004/12/19 23:19:54 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.205 2005/01/01 15:55:26 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2129,8 +2132,10 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						while(next && next->t_line) {
 							const char *data = lineGetData(next->t_line);
 
-							if((!isspace(data[0])) &&
+							/*if((!isspace(data[0])) &&
 							   ((quotes & 1) == 0))
+								break;*/
+							if(!isspace(data[0]))
 								break;
 
 							ptr = cli_realloc(fullline,
@@ -2142,9 +2147,9 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							fullline = ptr;
 							strcat(fullline, data);
 
-							for(qptr = data; *qptr; qptr++)
+							/*for(qptr = data; *qptr; qptr++)
 								if(*qptr == '\"')
-									quotes++;
+									quotes++;*/
 
 							t_line = next;
 							next = next->t_next;
@@ -2583,8 +2588,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					cli_dbgmsg("Save non mime and/or text/plain part\n");
 					fileblobSetFilename(fb, dir, "textpart");
 					/*fileblobAddData(fb, "Received: by clamd (textpart)\n", 30);*/
-
-					fb = textToFileblob(aText, fb);
+					(void)textToFileblob(aText, fb);
 
 					fileblobDestroy(fb);
 				}
@@ -3968,7 +3972,7 @@ print_trace(int use_syslog)
 
 	for(i = 0; i < size; i++)
 		if(use_syslog)
-			syslog(LOG_ERR, "bt[%d]: %s", (int)i, strings[i]);
+			syslog(LOG_ERR, "bt[%u]: %s", i, strings[i]);
 		else
 			cli_dbgmsg("%s\n", strings[i]);
 
