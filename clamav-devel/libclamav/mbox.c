@@ -447,12 +447,15 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 			/*
 			 * Get to the start of the first message
 			 */
-			for(t_line = messageGetBody(mainMessage); t_line; t_line = t_line->t_next)
-				if(boundaryStart(t_line->t_text, boundary))
+			for(t_line = messageGetBody(mainMessage); t_line; t_line = t_line->t_next) {
+				if(boundaryStart(t_line->t_text, boundary)) {
 					break;
+				}
+			}
 
 			if(t_line == NULL) {
 				cli_warnmsg("Multipart MIME message contains no parts\n");
+				free((char *) boundary);	/* this was strdup()'d *TL*/
 				return 2;	/* Nothing to do */
 			}
 			/*
@@ -627,6 +630,8 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 					 * attachments, ensure we don't do
 					 * the same thing
 					 */
+					blobArrayDestroy(blobs, nBlobs);
+					blobs = NULL;
 					nBlobs = 0;
 					rc = 2;
 				}
@@ -860,7 +865,8 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 				 * TODO: Tidy this up, it's just a duplicate
 				 * of the cl_mbox code....
 				 */
-				text *t = messageToText(mainMessage);
+				text *msgText = messageToText(mainMessage);
+				text *t = msgText;
 				bool inHeader = TRUE;
 				bool inMimeHeader = FALSE;
 				message *m;
@@ -923,31 +929,35 @@ insert(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const cha
 										inMimeHeader = !isLastLine;
 							}
 						}
-					} else
+					} else {
 						messageAddLine(m, strtok_r(buffer, "\r\n", &strptr));
+					}
 					free(buffer);
 				} while((t = t->t_next) != NULL);
 
-				textDestroy(t);
+
+				textDestroy(msgText);
 				messageClean(m);
 				if(messageGetBody(m))
 					rc = insert(m, NULL, 0, NULL, dir, rfc821Table, subtypeTable);
 
 				messageDestroy(m);
 
+				cli_dbgmsg("End of rfc822\n");
 				break;
-			} else if(strcasecmp(mimeSubtype, "partial") == 0)
+			} else if(strcasecmp(mimeSubtype, "partial") == 0) {
 				/* TODO */
 				cli_warnmsg("Content-type message/partial not yet supported");
-			else if(strcasecmp(mimeSubtype, "external-body") == 0)
+			} else if(strcasecmp(mimeSubtype, "external-body") == 0) {
 				/*
 				 * I don't believe that we should be going
 				 * around the Internet looking for referenced
 				 * files...
 				 */
 				cli_warnmsg("Attempt to send Content-type message/external-body trapped");
-			else
+			} else {
 				cli_warnmsg("Unsupported message format `%s'\n", mimeSubtype);
+			}
 
 			return 0;
 

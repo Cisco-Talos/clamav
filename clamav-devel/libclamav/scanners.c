@@ -171,22 +171,25 @@ int cli_scanrar(int desc, char **virname, long int *scanned, const struct cl_nod
 
 	if(urarlib_get(&rar_data_ptr, &rar_data_size, rarlist->item.Name, desc, "clam")) {
 	    cli_dbgmsg("RAR -> Extracted: %s, size: %d\n", rarlist->item.Name, rar_data_size);
-	    if(write(fd, rar_data_ptr, rar_data_size) != rar_data_size) {
+	    if(fwrite(rar_data_ptr, rar_data_size, 1, tmp) != 1) {
 		cli_dbgmsg("RAR -> Can't write() file.\n");
-		close(fd);
+		fclose(tmp);
 		tmp = NULL;
 		ret = CL_ERAR;
-		if(rar_data_ptr)
+		if(rar_data_ptr) {
 		    free(rar_data_ptr);
+		    rar_data_ptr = NULL;
+		}
 		continue;
 	    }
 
-	    if(rar_data_ptr)
+	    if(rar_data_ptr) {
 		free(rar_data_ptr);
-
-	    if(fsync(fd) == -1) {
-		cli_dbgmsg("fsync() failed for descriptor %d\n", fd);
-		close(fd);
+		rar_data_ptr = NULL;
+	    }
+	    if(fflush(tmp) != 0) {
+		cli_dbgmsg("fflush() failed: %s\n", strerror(errno));
+		fclose(tmp);
 		urarlib_freelist(rarlist);
 #ifdef CL_THREAD_SAFE
 		pthread_mutex_unlock(&cli_scanrar_mutex);
@@ -198,7 +201,7 @@ int cli_scanrar(int desc, char **virname, long int *scanned, const struct cl_nod
 	    lseek(fd, 0, SEEK_SET);
 	    if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, reclev)) == CL_VIRUS ) {
 		cli_dbgmsg("RAR -> Found %s virus.\n", *virname);
-		close(fd);
+		fclose(tmp);
 		urarlib_freelist(rarlist);
 #ifdef CL_THREAD_SAFE
 		pthread_mutex_unlock(&cli_scanrar_mutex);
@@ -208,11 +211,13 @@ int cli_scanrar(int desc, char **virname, long int *scanned, const struct cl_nod
 	    }
 
 	} else {
-	    ret = CL_ERAR; /* WinRAR 3.0 ? */
 	    cli_dbgmsg("RAR -> Can't decompress file %s\n", rarlist->item.Name);
+	    fclose(tmp);
+	    ret = CL_ERAR; /* WinRAR 3.0 ? */
+	    break;
 	}
 
-	close(fd);
+	fclose(tmp);
 	tmp = NULL;
 	rarlist = rarlist->next;
 	files++;
@@ -283,7 +288,6 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	    zzip_dir_close(zdir);
 	    return CL_ETMPFILE;
 	}
-	fd = fileno(tmp);
 
 	if((zfp = zzip_file_open(zdir, zdirent.d_name, 0)) == NULL) {
 	    cli_dbgmsg("Zip -> %s: Can't open file.\n", zdirent.d_name);
@@ -292,29 +296,32 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	}
 
 	while((bytes = zzip_file_read(zfp, buff, BUFFSIZE)) > 0) {
-	    if(write(fd, buff, bytes) != bytes) {
-		cli_dbgmsg("Zip -> Can't write() file.\n");
-		close(fd);
+	    if(fwrite(buff, bytes, 1, tmp)*bytes != bytes) {
+		cli_dbgmsg("Zip -> Can't fwrite() file: %s\n", strerror(errno));
 		zzip_file_close(zfp);
 		zzip_dir_close(zdir);
 		files++;
+		fclose(tmp);
 		return CL_EZIP;
 	    }
 	}
 
 	zzip_file_close(zfp);
 
-	if(fsync(fd) == -1) {
-	    cli_errmsg("fsync() failed for descriptor %d\n", fd);
-	    close(fd);
+	if(fflush(tmp) != 0) {
+	    cli_errmsg("fflush() failed: %s\n", strerror(errno));
 	    zzip_dir_close(zdir);
+	    fclose(tmp);
 	    return CL_EFSYNC;
 	}
+
+	fd = fileno(tmp);
 
 	lseek(fd, 0, SEEK_SET);
 	if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, reclev)) == CL_VIRUS ) {
 	    cli_dbgmsg("Zip -> Found %s virus.\n", *virname);
-	    close(fd);
+	    fclose(tmp);
+	    tmp = NULL;
 	    ret = CL_VIRUS;
 	    break;
 	} else if(ret == CL_EMALFZIP) {
@@ -323,18 +330,24 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	     * recursion limit level.
 	     */
 	    cli_dbgmsg("Zip -> Malformed Zip, scanning stopped.\n");
-	    close(fd);
+	    fclose(tmp);
 	    *virname = "Malformed Zip";
 	    ret = CL_VIRUS;
 	    break;
 	}
 
-	close(fd);
-	tmp = NULL;
+	if (tmp) {
+	    fclose(tmp);
+	    tmp = NULL;
+	}
 	files++;
     }
 
     zzip_dir_close(zdir);
+    if (tmp) {
+	fclose(tmp);
+	tmp = NULL;
+    }
     return ret;
 }
 
@@ -371,7 +384,7 @@ int cli_scangzip(int desc, char **virname, long int *scanned, const struct cl_no
 
 	if(write(fd, buff, bytes) != bytes) {
 	    cli_dbgmsg("Gzip -> Can't write() file.\n");
-	    close(fd);
+	    fclose(tmp);
 	    gzclose(gd);
 	    return CL_EGZIP;
 	}
@@ -380,17 +393,17 @@ int cli_scangzip(int desc, char **virname, long int *scanned, const struct cl_no
     gzclose(gd);
     if(fsync(fd) == -1) {
 	cli_dbgmsg("fsync() failed for descriptor %d\n", fd);
-	close(fd);
+	fclose(tmp);
 	return CL_EFSYNC;
     }
 
     lseek(fd, 0, SEEK_SET);
     if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, reclev)) == CL_VIRUS ) {
 	cli_dbgmsg("Gzip -> Found %s virus.\n", *virname);
-	close(fd);
+	fclose(tmp);
 	return CL_VIRUS;
     }
-    close(fd);
+    fclose(tmp);
 
     return ret;
 }
@@ -448,7 +461,7 @@ int cli_scanbzip(int desc, char **virname, long int *scanned, const struct cl_no
 	if(write(fd, buff, bytes) != bytes) {
 	    cli_dbgmsg("Bzip2 -> Can't write() file.\n");
 	    BZ2_bzReadClose(&bzerror, bfd);
-	    close(fd);
+	    fclose(tmp);
 	    return CL_EGZIP;
 	}
     }
@@ -456,17 +469,17 @@ int cli_scanbzip(int desc, char **virname, long int *scanned, const struct cl_no
     BZ2_bzReadClose(&bzerror, bfd);
     if(fsync(fd) == -1) {
 	cli_dbgmsg("fsync() failed for descriptor %d\n", fd);
-	close(fd);
+	fclose(tmp);
 	return CL_EFSYNC;
     }
 
     lseek(fd, 0, SEEK_SET);
     if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, reclev)) == CL_VIRUS ) {
 	cli_dbgmsg("Bzip2 -> Found %s virus.\n", *virname);
-	close(fd);
+	fclose(tmp);
 	return CL_VIRUS;
     }
-    close(fd);
+    fclose(tmp);
 
     return ret;
 }
@@ -576,8 +589,9 @@ int cli_scanmail(int desc, char **virname, long int *scanned, const struct cl_no
 
 int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
 {
-	char magic[MAGIC_BUFFER_SIZE];
+	char magic[MAGIC_BUFFER_SIZE+1];
 	int ret = CL_CLEAN;
+	int bread = 0;
 
 
     if(!root) {
@@ -585,7 +599,8 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
 	return -1;
     }
 
-    if(SCAN_ARCHIVE) {
+    if(SCAN_ARCHIVE || SCAN_MAIL) {
+        /* Need to examine file type */
 
 	if(limits && limits->maxreclevel)
 	    if(*reclev > limits->maxreclevel)
@@ -594,63 +609,48 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
 	(*reclev)++;
 
 
-	read(desc, magic, MAGIC_BUFFER_SIZE);
+	lseek(desc, 0, SEEK_SET);
+	bread = read(desc, magic, MAGIC_BUFFER_SIZE);
+	magic[MAGIC_BUFFER_SIZE] = '\0';	/* terminate magic string properly */
 	lseek(desc, 0, SEEK_SET);
 
 
 #ifdef CL_THREAD_SAFE
 	/* this check protects against recursive deadlock */
-	if(!cli_scanrar_inuse && !strncmp(magic, RAR_MAGIC_STR, strlen(RAR_MAGIC_STR))) {
+	if(SCAN_ARCHIVE && !cli_scanrar_inuse && !strncmp(magic, RAR_MAGIC_STR, strlen(RAR_MAGIC_STR))) {
 	    ret = cli_scanrar(desc, virname, scanned, root, limits, options, reclev);
 	}
 #else
-	if(!strncmp(magic, RAR_MAGIC_STR, strlen(RAR_MAGIC_STR))) {
+	if(SCAN_ARCHIVE && !strncmp(magic, RAR_MAGIC_STR, strlen(RAR_MAGIC_STR))) {
 	    ret = cli_scanrar(desc, virname, scanned, root, limits, options, reclev);
 	}
 #endif
 #ifdef HAVE_ZLIB_H
-	else if(!strncmp(magic, ZIP_MAGIC_STR, strlen(ZIP_MAGIC_STR))) {
+	else if(SCAN_ARCHIVE && !strncmp(magic, ZIP_MAGIC_STR, strlen(ZIP_MAGIC_STR))) {
 	    ret = cli_scanzip(desc, virname, scanned, root, limits, options, reclev);
 	} else if(!strncmp(magic, GZIP_MAGIC_STR, strlen(GZIP_MAGIC_STR))) {
 	    ret = cli_scangzip(desc, virname, scanned, root, limits, options, reclev);
 	}
 #endif
 #ifdef HAVE_BZLIB_H
-	else if(!strncmp(magic, BZIP_MAGIC_STR, strlen(BZIP_MAGIC_STR))) {
+	else if(SCAN_ARCHIVE && !strncmp(magic, BZIP_MAGIC_STR, strlen(BZIP_MAGIC_STR))) {
 	    ret = cli_scanbzip(desc, virname, scanned, root, limits, options, reclev);
 	}
 #endif
-	(*reclev)--;
-    }
-
-/*
-#ifdef CL_THREAD_SAFE
-    if(!cli_mbox_inuse && SCAN_MAIL) {
-#else
-    if(SCAN_MAIL) {
-#endif
-*/
-
-    if(SCAN_MAIL) {
-	read(desc, magic, MAGIC_BUFFER_SIZE);
-	lseek(desc, 0, SEEK_SET);
-
-	if(!strncmp(magic, MAIL_MAGIC_STR, strlen(MAIL_MAGIC_STR))) {
-	    cli_dbgmsg("Recognized Mbox mail file.\n");
+	else if(SCAN_MAIL && !strncmp(magic, MAIL_MAGIC_STR, strlen(MAIL_MAGIC_STR))) {
 	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
 	}
-	else if(!strncmp(magic, RAWMAIL_MAGIC_STR, strlen(RAWMAIL_MAGIC_STR))) {
-	    cli_dbgmsg("Recognized raw mail file.\n");
+	else if(SCAN_MAIL && !strncmp(magic, RAWMAIL_MAGIC_STR, strlen(RAWMAIL_MAGIC_STR))) {
 	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
 	} else if(!strncmp(magic, MAILDIR_MAGIC_STR, strlen(MAILDIR_MAGIC_STR))) {
 	    cli_dbgmsg("Recognized Maildir mail file.\n");
 	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
 	}
-
-	lseek(desc, 0, SEEK_SET);
+	(*reclev)--;
     }
 
     if(ret != CL_VIRUS) /* scan the raw file */
+	lseek(desc, 0, SEEK_SET); /* If archive scan didn't rewind desc */
 	if(cli_scandesc(desc, virname, scanned, root) == CL_VIRUS) {
 	    cli_dbgmsg("%s virus found in descriptor %d.\n", *virname, desc);
 	    return CL_VIRUS;
