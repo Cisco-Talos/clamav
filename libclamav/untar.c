@@ -20,6 +20,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.5  2004/09/06 14:16:48  nigelhorne
+ * Added CYGWIN support
+ *
  * Revision 1.4  2004/09/06 08:45:44  nigelhorne
  * Code Tidy
  *
@@ -33,7 +36,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.4 2004/09/06 08:45:44 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.5 2004/09/06 14:16:48 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -50,6 +53,20 @@ static	char	const	rcsid[] = "$Id: untar.c,v 1.4 2004/09/06 08:45:44 nigelhorne E
 
 #define BLOCKSIZE 512
 
+/* Maximum filenames under various systems */
+#ifndef	NAME_MAX	/* e.g. Linux */
+
+#ifdef	MAXNAMELEN	/* e.g. Solaris */
+#define	NAME_MAX	MAXNAMELEN
+#else
+
+#ifdef	FILENAME_MAX	/* e.g. SCO */
+#define	NAME_MAX	FILENAME_MAX
+#endif
+
+#endif
+
+#endif
 static int
 octal(const char *str)
 {
@@ -71,7 +88,7 @@ cli_untar(const char *dir, int desc)
 
 	for(;;) {
 		char block[BLOCKSIZE];
-		const int nread = read(desc, block, sizeof(block));
+		const int nread = cli_readn(desc, block, sizeof(block));
 
 		if(!in_block && nread == 0)
 			break;
