@@ -20,6 +20,7 @@
 ** rebuildpe.c
 ** 
 ** 28/07/2k4 - Moved out of petitep.c
+** 08/08/2k4 - Fixed typo for sects characteristics
 **
 */
 
@@ -161,7 +162,7 @@ char *rebuildpe(char *buffer, struct SECTION *sections, int sects, uint32_t base
       cli_writeint32(curpe+24, 0);
       cli_writeint32(curpe+28, 0);
       cli_writeint32(curpe+32, 0);
-      cli_writeint32(curpe+24, 0xffffffff);
+      cli_writeint32(curpe+0x24, 0xffffffff);
       curpe+=40;
     }
     memcpy(curpe, buffer, datasize);
@@ -169,3 +170,5 @@ char *rebuildpe(char *buffer, struct SECTION *sections, int sects, uint32_t base
 
   return pefile;
 }
+
+
