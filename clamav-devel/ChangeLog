@@ -1,3 +1,7 @@
+Sat Nov 20 23:04:59 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter:	Better parsing of clamd's reply
+
 Sat Nov 20 13:18:58 GMT 2004 (njh)
 ----------------------------------
   * libclamav/untar.c:	Better handling of false file type identification

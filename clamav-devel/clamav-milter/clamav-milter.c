@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.154  2004/11/20 23:02:23  nigelhorne
+ * Validate error message from clamd
+ *
  * Revision 1.153  2004/11/14 15:18:49  nigelhorne
  * Use SCAN in more places rather than STREAM
  *
@@ -470,9 +473,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.153 2004/11/14 15:18:49 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.154 2004/11/20 23:02:23 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80s"
+#define	CM_VERSION	"0.80t"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -679,7 +682,7 @@ static	void	header_list_print(header_list_t list, FILE *fp);
 static	int	connect2clamd(struct privdata *privdata);
 static	void	checkClamd(void);
 static	int	sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *virusname);
-static	int	qfile(struct privdata *privdata, const char *virusname);
+static	int	qfile(struct privdata *privdata, const char *sendmailId, const char *virusname);
 static	void	setsubject(SMFICTX *ctx, const char *virusname);
 static	int	clamfi_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
 static	int	isLocalAddr(in_addr_t addr);
@@ -837,7 +840,9 @@ static	int	quitting;
  */
 static	const	char	*ignoredEmailAddresses[] = {
 	/*"Mailer-Daemon@bandsman.co.uk",
-	"postmaster@bandsman.co.uk",*/
+	"postmaster@bandsman.co.uk",
+	"<Mailer-Daemon@bandsman.co.uk>",
+	"<postmaster@bandsman.co.uk>",*/
 	NULL
 };
 
@@ -1518,9 +1523,10 @@ main(int argc, char **argv)
 
 	if((quarantine_dir == NULL) && localSocket) {
 		/* set the temporary dir */
-		if((cpt = cfgopt(copt, "TemporaryDirectory")))
+		if((cpt = cfgopt(copt, "TemporaryDirectory"))) {
 			tmpdir = cpt->strarg;
-		else if((tmpdir = getenv("TMPDIR")) == (char *)NULL)
+			cl_settempdir(tmpdir, (cfgopt(copt, "LeaveTemporaryFiles") != NULL));
+		} else if((tmpdir = getenv("TMPDIR")) == (char *)NULL)
 			if((tmpdir = getenv("TMP")) == (char *)NULL)
 				if((tmpdir = getenv("TEMP")) == (char *)NULL)
 #ifdef	P_tmpdir
@@ -1529,13 +1535,12 @@ main(int argc, char **argv)
 					tmpdir = "/tmp";
 #endif
 
-		tmpdir = cli_gentemp(tmpdir);
+		tmpdir = cli_gentemp(NULL);
 
 		if(mkdir(tmpdir, 0700)) {
 			perror(tmpdir);
 			return EX_CANTCREAT;
 		}
-		cl_settempdir(tmpdir, (cfgopt(copt, "LeaveTemporaryFiles") != NULL));
 	} else
 		tmpdir = NULL;
 
@@ -2439,7 +2444,7 @@ clamfi_eoh(SMFICTX *ctx)
 	if(use_syslog)
 		syslog(LOG_NOTICE, _("clamfi_eoh: ignoring whitelisted message"));
 #ifdef	CL_DEBUG
-	cli_dbgmsg(_("clamfi_eoh: not scanning outgoing messages\n"));
+	cli_dbgmsg(_("clamfi_eoh: ignoring whitelisted message\n"));
 #endif
 	clamfi_cleanup(ctx);
 
@@ -2707,33 +2712,7 @@ clamfi_eom(SMFICTX *ctx)
 		if(use_syslog)
 			syslog(LOG_ERR, "%s: %s\n", sendmailId, mess);
 		rc = cl_error;
-	} else if((ptr = strstr(mess, "FOUND")) == NULL) {
-		if(!nflag)
-			smfi_addheader(ctx, "X-Virus-Status", _("Clean"));
-
-		if(use_syslog && logClean)
-			/* Include the sendmail queue ID in the log */
-			syslog(LOG_NOTICE, _("%s: clean message from %s"),
-				sendmailId,
-				(privdata->from) ? privdata->from : _("an unknown sender"));
-
-		if(privdata->body) {
-			/*
-			 * Add a signature that all has been scanned OK
-			 */
-			off_t len = updateSigFile();
-
-			if(len) {
-				assert(Sflag != 0);
-
-				privdata->body = cli_realloc(privdata->body, privdata->bodyLen + len);
-				if(privdata->body) {
-					memcpy(&privdata->body[privdata->bodyLen], signature, len);
-					smfi_replacebody(ctx, privdata->body, privdata->bodyLen + len);
-				}
-			}
-		}
-	} else {
+	} else if((ptr = strstr(mess, "FOUND")) != NULL) {
 		char reject[1024];
 		char **to, *virusname;
 
@@ -2901,7 +2880,7 @@ clamfi_eom(SMFICTX *ctx)
 					fprintf(sendmail, _("contained %s and has not been delivered.\n"), virusname);
 
 					if(quarantine_dir != NULL)
-						if(qfile(privdata, virusname) == 0)
+						if(qfile(privdata, sendmailId, virusname) == 0)
 							fprintf(sendmail, _("\nThe message in question has been quarantined as %s\n"), privdata->filename);
 
 					if(hflag) {
@@ -2974,6 +2953,40 @@ clamfi_eom(SMFICTX *ctx)
 		snprintf(reject, sizeof(reject) - 1, _("virus %s detected by ClamAV - http://www.clamav.net"), virusname);
 		smfi_setreply(ctx, (char *)privdata->rejectCode, "5.7.1", reject);
 		broadcast(mess);
+	} else if((ptr = strstr(mess, "OK")) == NULL) {
+		if(!nflag)
+			smfi_addheader(ctx, "X-Virus-Status", _("Unknown"));
+		if(use_syslog)
+			syslog(LOG_ERR, _("%s: incorrect message \"%s\" from clamd"),
+				sendmailId,
+				mess);
+		rc = cl_error;
+	} else {
+		if(!nflag)
+			smfi_addheader(ctx, "X-Virus-Status", _("Clean"));
+
+		if(use_syslog && logClean)
+			/* Include the sendmail queue ID in the log */
+			syslog(LOG_NOTICE, _("%s: clean message from %s"),
+				sendmailId,
+				(privdata->from) ? privdata->from : _("an unknown sender"));
+
+		if(privdata->body) {
+			/*
+			 * Add a signature that all has been scanned OK
+			 */
+			off_t len = updateSigFile();
+
+			if(len) {
+				assert(Sflag != 0);
+
+				privdata->body = cli_realloc(privdata->body, privdata->bodyLen + len);
+				if(privdata->body) {
+					memcpy(&privdata->body[privdata->bodyLen], signature, len);
+					smfi_replacebody(ctx, privdata->body, privdata->bodyLen + len);
+				}
+			}
+		}
 	}
 	clamfi_cleanup(ctx);
 
@@ -3455,11 +3468,7 @@ connect2clamd(struct privdata *privdata)
 		cli_dbgmsg("connect2clamd\n");
 #endif
 
-	if(quarantine_dir || tmpdir) {
-		/*
-		 * quarantine_dir is specified
-		 * store message in a temporary file
-		 */
+	if(quarantine_dir || tmpdir) {	/* store message in a temporary file */
 		int ntries = 5;
 		time_t t;
 		int MM, YY, DD;
@@ -3512,7 +3521,8 @@ connect2clamd(struct privdata *privdata)
 			return 0;
 		}
 		privdata->serverNumber = 0;
-	} else {
+		cli_dbgmsg("Saving message to %s to scan later\n", privdata->filename);
+	} else {	/* communicate to clamd */
 		int freeServer, nbytes;
 		struct sockaddr_in reply;
 		unsigned short p;
@@ -3546,7 +3556,7 @@ connect2clamd(struct privdata *privdata)
 			privdata->serverNumber = 0;
 #endif
 			freeServer = 0;
-		} else {
+		} else {	/* TCP/IP */
 #ifdef	SESSION
 			freeServer = findServer();
 			if(freeServer < 0)
@@ -3580,18 +3590,7 @@ connect2clamd(struct privdata *privdata)
 
 #ifdef	SESSION
 		if(serverIPs[freeServer] == inet_addr("127.0.0.1")) {
-			const char *dir;
-
-			if((dir = getenv("TMPDIR")) == (char *)NULL)
-				if((dir = getenv("TMP")) == (char *)NULL)
-					if((dir = getenv("TEMP")) == (char *)NULL)
-#ifdef	P_tmpdir
-						dir = P_tmpdir;
-#else
-						dir = "/tmp";
-#endif
-
-			privdata->filename = cli_gentemp(dir);
+			privdata->filename = cli_gentemp(NULL);
 			if(privdata->filename) {
 				cli_dbgmsg("connect2clamd(%d): creating %s\n", freeServer, privdata->filename);
 #ifdef	O_TEXT
@@ -3721,7 +3720,6 @@ connect2clamd(struct privdata *privdata)
 	}
 
 end:
-
 	/*
 	 * Combine the To and From into one clamfi_send to save bandwidth
 	 * when sending using TCP/IP to connect to a remote clamd, by band
@@ -3915,7 +3913,7 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
  * Keep the infected file in quarantine, return success (0) or failure
  */
 static int
-qfile(struct privdata *privdata, const char *virusname)
+qfile(struct privdata *privdata, const char *sendmailId, const char *virusname)
 {
 	char *newname, *ptr;
 	size_t len;
@@ -3927,12 +3925,12 @@ qfile(struct privdata *privdata, const char *virusname)
 
 	len = strlen(privdata->filename);
 
-	newname = cli_malloc(len + strlen(virusname) + 2);
+	newname = cli_malloc(len + strlen(sendmailId) + strlen(virusname) + 3);
 
 	if(newname == NULL)
 		return -1;
 
-	sprintf(newname, "%s.%s", privdata->filename, virusname);
+	sprintf(newname, "%s.%s.%s", privdata->filename, sendmailId, virusname);
 
 	/*
 	 * Strip out funnies that may be in the name of the virus, such as '/'
@@ -4184,9 +4182,12 @@ watchdog(void *a)
 						if(strncmp(buf, "ClamAV ", 7) == 0) {
 							/* Remove the trailing new line from the reply */
 							char *ptr;
+
 							if((ptr = strchr(buf, '\n')) != NULL)
 								*ptr = '\0';
-							if(strcmp(buf, clamav_versions[i]) != 0) {
+							if(clamav_versions[i] == NULL)
+								clamav_versions[i] = strdup(buf);
+							else if(strcmp(buf, clamav_versions[i]) != 0) {
 								if(use_syslog)
 									syslog(LOG_INFO, "New version received for server %d: '%s'\n", i, buf);
 								free(clamav_versions[i]);
