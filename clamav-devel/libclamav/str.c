@@ -118,15 +118,24 @@ int cli_strbcasestr(const char *haystack, const char *needle)
 
 void cli_chomp(char *string)
 {
-	int l = strlen(string);
+	size_t l = strlen(string);
 
-    if(string[l - 1] == 10 || string[l - 1] == 13)
-	string[l - 1] = 0;
 
-    l = strlen(string);
-    if(string[l - 1] == '\r')
-	string[l - 1] = 0;
+    if(l == 0)
+	return;
+
+    --l;
+    if((string[l] == '\n') || (string[l] == '\r')) {
+	string[l] = '\0';
+
+	if(l > 0) {
+	    --l;
+	    if(string[l] == '\r')
+		string[l] = '\0';
+	}
+    }
 }
+
 
 /*
  * char *cli_strok(const char *line, int fieldno, char *delim)

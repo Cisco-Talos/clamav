@@ -921,7 +921,7 @@ void move_infected(const char *filename, const struct optstruct *opt)
         return;
     }
     
-    if(!(movefilename = malloc(sizeof(char) * (strlen(movedir) + strlen(tmp)))))
+    if(!(movefilename = malloc(sizeof(char) * (strlen(movedir) + strlen(tmp) + 1))))
     {
         mprintf("@error moving file '%s'.\n", filename);
         mprintf("clamscan: malloc() returned NULL.\n");
