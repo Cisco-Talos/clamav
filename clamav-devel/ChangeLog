@@ -1,3 +1,9 @@
+Wed Jan 28 15:57:44 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter: Fixed compilation error with --enable-debug
+  		Thanks to "Serhiy V. Matveyev" <matveyev@uatele.com> for
+		pointing this out to me
+
 Wed Jan 28 10:16:49 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Added support to scan some bounce messages
