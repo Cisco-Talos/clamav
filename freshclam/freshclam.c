@@ -81,7 +81,7 @@ static void writepid(char *pidfile) {
     if((fd = fopen(pidfile, "w")) == NULL) {
 	logg("!Can't save PID to file %s: %s\n", pidfile, strerror(errno));
     } else {
-	fprintf(fd, "%d", getpid());
+	fprintf(fd, "%d", (int) getpid());
 	fclose(fd);
     }
     umask(old_umask);
@@ -90,7 +90,7 @@ static void writepid(char *pidfile) {
 
 int freshclam(struct optstruct *opt)
 {
-	int ret;
+	int ret = 52;
 	char *newdir, *cfgfile;
 	char *pidfile = NULL;
 	struct cfgstruct *copt, *cpt;
@@ -226,7 +226,7 @@ int freshclam(struct optstruct *opt)
 	daemonize();
 	if (optc(opt, 'p')) {
 	    pidfile = getargc(opt, 'p');
-	} else if (cpt = cfgopt(copt, "PidFile")) {
+	} else if ((cpt = cfgopt(copt, "PidFile"))) {
 	    pidfile = cpt->strarg;
 	}
 	if (pidfile) {

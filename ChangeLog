@@ -45,7 +45,7 @@ Wed Mar 10 11:40:14 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	Use new HAVE_STRERROR_R rather than TARGET_OS_SOLARIS
  			to determine if strerror_r exists
-			Thanks to Phil Oleson <oz@nixil.net>.
+			Thanks to Phil Oleson <oz*nixil.net>.
   * docs/man:		Corrected documentation of --postmaster-only flag.
 
 Wed Mar 10 05:43:34 GMT 2004 (njh)
@@ -53,7 +53,7 @@ Wed Mar 10 05:43:34 GMT 2004 (njh)
   * libclamav/message.c:	Implemented a couple of small speed ups:
   	1) Only save arguments that we're going to retrieve
 	2) No need to store \n in messageToText fast copy mode, which allows
-		an sprintf to be removed (Dirk Mueller <dmuell@gmx.net>)
+		an sprintf to be removed (Dirk Mueller <dmuell*gmx.net>)
 
 Wed Mar 10 01:35:40 CET 2004 (tk)
 ---------------------------------
@@ -324,7 +324,7 @@ Fri Feb 20 16:49:05 CET 2004 (tk)
 ---------------------------------
   * clamscan, freshclam: removed --log-verbose (but it's still accepted by the
     option parser)
-  * libclamav: cli_rmdirs() fixed directory permission problem (reported by
+  * libclamav: cli_rmdirs(): fixed directory permission problem (reported by
 	       Brian J. France <list*firehawksystems.com> and Nigel)
   * doc: clamscan, clamdscan and freshclam manual pages updated
 

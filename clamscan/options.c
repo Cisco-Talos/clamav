@@ -35,7 +35,7 @@
 #include "others.h"
 #include "shared.h"
 
-void clamscan(struct optstruct *opt);
+extern int clamscan(struct optstruct *opt);
 
 int main(int argc, char **argv)
 {
@@ -143,11 +143,11 @@ int main(int argc, char **argv)
 	}
 
     }
-    clamscan(opt);
+    ret = clamscan(opt);
 
     free_opt(opt);
 
-    return(0);
+    return  ret;
 }
 
 void register_char_option(struct optstruct *opt, char ch)

@@ -143,11 +143,6 @@ AC_ARG_ENABLE(clamav,
 [  --disable-clamav	  Disable test for clamav user/group],
 test_clamav=no,)
 
-want_clamuko=yes
-AC_ARG_ENABLE(clamuko,
-[  --disable-clamuko	  Don't include Clamuko code /Linux/],
-want_clamuko=no,)
-
 AC_ARG_ENABLE(debug,
 [  --enable-debug	  Enable debug messages.],
 AC_DEFINE(CL_DEBUG,1,[enable debugging]),)
