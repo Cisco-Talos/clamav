@@ -1,3 +1,7 @@
+Thu Apr  8 14:27:30 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Removed warning message on FreeBSD5.2
+
 Wed Apr  7 19:31:29 BST 2004 (njh)
 ----------------------------------
   * Handle continuation markers placed incorrectly by W97M.Lexar

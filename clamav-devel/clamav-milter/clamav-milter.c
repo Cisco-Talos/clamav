@@ -314,9 +314,13 @@
  *			ThreadTimeout seems to have been changed to ReadTimeout
  *	0.70g	3/4/04	Error if ReadTimeout is -ve
  *			Honour StreamMaxLength
+ *	0.70h	8/4/04	Cleanup StreamMaxLength code
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.71  2004/04/08 13:14:07  nigelhorne
+ * Code tidy up
+ *
  * Revision 1.70  2004/04/06 22:43:43  kojm
  * reverse strlcpy/strlcat patch
  *
@@ -512,9 +516,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.70 2004/04/06 22:43:43 kojm Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.71 2004/04/08 13:14:07 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70g"
+#define	CM_VERSION	"0.70h"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -624,7 +628,7 @@ struct	privdata {
 	u_char	*body;		/* body of the message if Sflag is set */
 	size_t	bodyLen;	/* number of bytes in body */
 	header_list_t headers;	/* Message headers */
-	off_t	numBytes;	/* Number of bytes sent so far */
+	long	numBytes;	/* Number of bytes sent so far */
 };
 
 static	int		pingServer(int serverNumber);
@@ -711,7 +715,7 @@ static	int	readTimeout = CL_DEFAULT_SCANTIMEOUT; /*
 				 * number of seconds to wait for clamd to
 				 * respond, see ReadTimeout in clamav.conf
 				 */
-static	off_t	streamMaxLength = -1;	/* StreamMaxLength from clamav.conf */
+static	long	streamMaxLength = -1;	/* StreamMaxLength from clamav.conf */
 static	int	logClean = 1;	/*
 				 * Add clean items to the log file
 				 */
@@ -1098,7 +1102,7 @@ main(int argc, char **argv)
 				argv[0], cfgfile);
 			return EX_CONFIG;
 		}
-		streamMaxLength = cpt->numarg;
+		streamMaxLength = (long)cpt->numarg;
 	}
 	/*
 	 * Get the outgoing socket details - the way to talk to clamd
@@ -1688,8 +1692,8 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 	privdata->from = strdup(argv[0]);
 
-	if(streamMaxLength > 0)
-		privdata->numBytes = strlen(argv[0]) + 6;
+	if(streamMaxLength > 0L)
+		privdata->numBytes = (long)(strlen(argv[0]) + 6);
 
 	if(hflag)
 		privdata->headers = header_list_new();
@@ -1722,8 +1726,8 @@ clamfi_envrcpt(SMFICTX *ctx, char **argv)
 	privdata->to[privdata->numTo] = strdup(argv[0]);
 	privdata->to[++privdata->numTo] = NULL;
 
-	if(streamMaxLength > 0)
-		privdata->numBytes += strlen(argv[0]) + 4;
+	if(streamMaxLength > 0L)
+		privdata->numBytes += (long)(strlen(argv[0]) + 4);
 
 	return SMFIS_CONTINUE;
 }
@@ -1756,8 +1760,8 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 		return cl_error;
 	}
 
-	if(streamMaxLength > 0)
-		privdata->numBytes += strlen(headerf) + strlen(headerv) + 3;
+	if(streamMaxLength > 0L)
+		privdata->numBytes += (long)(strlen(headerf) + strlen(headerv) + 3);
 
 	if(hflag)
 		header_list_add(privdata->headers, headerf, headerv);
@@ -1791,7 +1795,7 @@ clamfi_eoh(SMFICTX *ctx)
 		clamfi_cleanup(ctx);
 		return cl_error;
 	}
-	if(streamMaxLength > 0)
+	if(streamMaxLength > 0L)
 		privdata->numBytes++;
 
 	/*
@@ -1849,8 +1853,8 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 	cli_dbgmsg("clamfi_envbody: %u bytes\n", len);
 #endif
 
-	if(streamMaxLength > 0) {
-		privdata->numBytes += len;
+	if(streamMaxLength > 0L) {
+		privdata->numBytes += (long)len;
 		if(privdata->numBytes > streamMaxLength) {
 			if(use_syslog)
 				syslog(LOG_NOTICE, "%s: Message more than StreamMaxLength (%ld) bytes - not scanned\n",
