@@ -62,7 +62,7 @@ static int doubleebx(char *src, int32_t *myebx, int *scur, int ssize)
   *myebx*=2;
   if ( !(oldebx & 0x7fffffff)) {
     if (*scur<0 || ssize-*scur<4)
-      return 0;
+      return -1;
 #if WORDS_BIGENDIAN == 0
     oldebx = *(int*)(src+*scur);
 #else
@@ -85,21 +85,28 @@ static int doubleebx(char *src, int32_t *myebx, int *scur, int ssize)
 int upx_inflate2b(char *src, int ssize, char *dst, int dsize)
 {
   int32_t backbytes, unp_offset = -1, myebx = 0;
-  int scur=0, dcur=0, i, backsize;
+  int scur=0, dcur=0, i, backsize,oob;
 
   while (1) {
-    while (doubleebx(src, &myebx, &scur, ssize)) {
+    while ((oob = doubleebx(src, &myebx, &scur, ssize)) == 1) {
       if (scur<0 || scur>=ssize || dcur<0 || dcur>=dsize)
 	return -1;
       dst[dcur++] = src[scur++];
     }
 
+    if ( oob == -1 )
+      return -1;
+    
     backbytes = 1;
 
     while (1) {
-      backbytes = backbytes*2+doubleebx(src, &myebx, &scur, ssize);
-      if (doubleebx(src, &myebx, &scur, ssize))
-	break;
+      if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1 )
+        return -1;
+      backbytes = backbytes*2+oob;
+      if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1 )
+	return -1;
+      if (oob)
+        break;
     }
 
     backsize = 0;	
@@ -118,13 +125,21 @@ int upx_inflate2b(char *src, int ssize, char *dst, int dsize)
       unp_offset = backbytes;
     }
 
-    backsize = doubleebx(src, &myebx, &scur, ssize);
-    backsize = backsize*2 + doubleebx(src, &myebx, &scur, ssize);
+    if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1)
+      return -1;
+    backsize = oob;
+    if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1)
+      return -1;
+    backsize = backsize*2 + oob;
     if (!backsize) {
       backsize++;
       do {
-	backsize = backsize*2 + doubleebx(src, &myebx, &scur, ssize);
-      } while (!doubleebx(src, &myebx, &scur, ssize));
+        if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1)
+          return -1;
+	backsize = backsize*2 + oob;
+      } while ((oob = doubleebx(src, &myebx, &scur, ssize)) == 0);
+      if ( oob == -1 )
+        return -1;
       backsize+=2;
     }
 
@@ -146,26 +161,35 @@ int upx_inflate2b(char *src, int ssize, char *dst, int dsize)
 int upx_inflate2d(char *src, int ssize, char *dst, int dsize)
 {
   int32_t backbytes, unp_offset = -1, myebx = 0;
-  int scur=0, dcur=0, i, backsize;
+  int scur=0, dcur=0, i, backsize, oob;
 
   while (1) {
-    while (doubleebx(src, &myebx, &scur, ssize)) {
+    while ( (oob = doubleebx(src, &myebx, &scur, ssize)) == 1) {
       if (scur<0 || scur>=ssize || dcur<0 || dcur>=dsize)
 	return -1;
       dst[dcur++] = src[scur++];
     }
 
+    if ( oob == -1 )
+      return -1;
+
     backbytes = 1;
 
     while (1) {
-      backbytes = backbytes*2+doubleebx(src, &myebx, &scur, ssize);
-      if (doubleebx(src, &myebx, &scur, ssize))
+      if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1 )
+        return -1;
+      backbytes = backbytes*2+oob;
+      if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1 )
+        return -1;
+      if (oob)
 	break;
       backbytes--;
-      backbytes=backbytes*2+doubleebx(src, &myebx, &scur, ssize);
+      if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1 )
+        return -1;
+      backbytes=backbytes*2+oob;
     }
 
-    backsize = 0;	
+    backsize = 0;
     backbytes-=3;
   
     if ( backbytes >= 0 ) {
@@ -182,15 +206,23 @@ int upx_inflate2d(char *src, int ssize, char *dst, int dsize)
       backbytes>>=1;
       unp_offset = backbytes;
     }
-    else
-      backsize = doubleebx(src, &myebx, &scur, ssize);
+    else {
+      if ( (backsize = doubleebx(src, &myebx, &scur, ssize)) == -1 )
+        return -1;
+    }
  
-    backsize = backsize*2 + doubleebx(src, &myebx, &scur, ssize);
+    if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1 )
+      return -1;
+    backsize = backsize*2 + oob;
     if (!backsize) {
       backsize++;
       do {
-	backsize = backsize*2 + doubleebx(src, &myebx, &scur, ssize);
-      } while (!doubleebx(src, &myebx, &scur, ssize));
+        if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1 )
+          return -1;
+	backsize = backsize*2 + oob;
+      } while ( (oob = doubleebx(src, &myebx, &scur, ssize)) == 0);
+      if ( oob == -1 )
+        return -1;
       backsize+=2;
     }
 
@@ -211,10 +243,12 @@ int upx_inflate2d(char *src, int ssize, char *dst, int dsize)
 int upx_inflate2e(char *src, int ssize, char *dst, int dsize)
 {
   int32_t backbytes, unp_offset = -1, myebx = 0;
-  int scur=0, dcur=0, i, backsize;
+  int scur=0, dcur=0, i, backsize, oob;
 
   while (1) {
-    while (doubleebx(src, &myebx, &scur, ssize)) {
+    while ( (oob = doubleebx(src, &myebx, &scur, ssize)) ) {
+      if (oob == -1)
+        return -1;
       if (scur<0 || scur>=ssize || dcur<0 || dcur>=dsize)
 	return -1;
       dst[dcur++] = src[scur++];
@@ -223,11 +257,17 @@ int upx_inflate2e(char *src, int ssize, char *dst, int dsize)
     backbytes = 1;
 
     while (1) {
-      backbytes = backbytes*2+doubleebx(src, &myebx, &scur, ssize);
-      if (doubleebx(src, &myebx, &scur, ssize))
+      if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1 )
+        return -1;
+      backbytes = backbytes*2+oob;
+      if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1 )
+        return -1;
+      if ( oob )
 	break;
       backbytes--;
-      backbytes=backbytes*2+doubleebx(src, &myebx, &scur, ssize);
+      if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1 )
+        return -1;
+      backbytes=backbytes*2+oob;
     }
 
     backsize = 0;
@@ -247,20 +287,32 @@ int upx_inflate2e(char *src, int ssize, char *dst, int dsize)
       backbytes>>=1;
       unp_offset = backbytes;
     }
-    else
-      backsize = doubleebx(src, &myebx, &scur, ssize); /* Using backsize to carry on the doubleebx result (UPX uses CF) */
+    else {
+      if ( (backsize = doubleebx(src, &myebx, &scur, ssize)) == -1 )
+        return -1;
+    } /* Using backsize to carry on the doubleebx result (UPX uses CF) */
 
     if (backsize) { /* i.e. IF ( last sar shifted out 1 bit || last doubleebx()==1 ) */
-      backsize = doubleebx(src, &myebx, &scur, ssize);
+      if ( (backsize = doubleebx(src, &myebx, &scur, ssize)) == -1 )
+        return -1;
     }
     else {
       backsize = 1;
-      if (doubleebx(src, &myebx, &scur, ssize))
-	backsize = 2 + doubleebx(src, &myebx, &scur, ssize);
+      if ((oob = doubleebx(src, &myebx, &scur, ssize)) == -1)
+        return -1;
+      if (oob) {
+	if ((oob = doubleebx(src, &myebx, &scur, ssize)) == -1)
+	  return -1;
+	  backsize = 2 + oob;
+	}
       else {
 	do {
-	  backsize = backsize * 2 + doubleebx(src, &myebx, &scur, ssize);
-	} while (!doubleebx(src, &myebx, &scur, ssize));
+          if ((oob = doubleebx(src, &myebx, &scur, ssize)) == -1)
+          return -1;
+	  backsize = backsize * 2 + oob;
+	} while ((oob = doubleebx(src, &myebx, &scur, ssize)) == 0);
+	if (oob == -1)
+          return -1;
 	backsize+=2;
       }
     }
@@ -278,3 +330,4 @@ int upx_inflate2e(char *src, int ssize, char *dst, int dsize)
   }
   return 0;
 }
+

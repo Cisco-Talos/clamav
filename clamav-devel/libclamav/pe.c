@@ -376,7 +376,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	strncpy(sname, section_hdr[i].Name, 8);
 	sname[8] = 0;
 	cli_dbgmsg("------------------------------------\n");
-	cli_dbgmsg("Section %d of %d\n", i, nsections);
+	cli_dbgmsg("Section %d\n", i);
 	cli_dbgmsg("Section name: %s\n", sname);
 	cli_dbgmsg("VirtualSize: %d\n", EC32(section_hdr[i].VirtualSize));
 	cli_dbgmsg("VirtualAddress: 0x%x\n", EC32(section_hdr[i].VirtualAddress));
@@ -490,7 +490,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
 	lseek(desc, EC32(section_hdr[i + 1].PointerToRawData), SEEK_SET);
 	if(read(desc, src, ssize) != ssize) {
-	    cli_dbgmsg("Can't read raw data of section %d\n", i + 1);
+	    cli_dbgmsg("Can't read raw data of section %d\n", i);
 	    free(section_hdr);
 	    free(src);
 	    free(dest);

@@ -1,3 +1,7 @@
+Tue Jul 13 18:37:23 CEST 2004 (tk)
+----------------------------------
+  * libclamav: upx: fix potential infinite loop (aCaB)
+
 Tue Jul 13 05:24:07 CEST 2004 (tk)
 ----------------------------------
   * libclamav: initial support for MD5 signatures
