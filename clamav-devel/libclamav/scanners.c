@@ -686,6 +686,7 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
     ret = cl_scanbuff(newbuff, strlen(newbuff), virname, root);
 
     free(newbuff);
+    munmap(membuff, statbuf.st_size);
     return ret;
 #else /* FIXME */
     return CL_CLEAN;
