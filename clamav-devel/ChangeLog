@@ -1,3 +1,8 @@
+Sat Jan  1 15:56:48 GMT 2005 (njh)
+----------------------------------
+  * libclamav/mbox.c:		Changes handling of unbalanced quotes in
+			multipart headers
+
 Sat Jan  1 12:54:04 GMT 2005 (njh)
 ----------------------------------
   * libclamav/message.c:	Some uuencoded viruses were getting through
