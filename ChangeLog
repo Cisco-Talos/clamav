@@ -1,8 +1,13 @@
+Tue Feb 10 23:54:47 CET 2004 (tk)
+---------------------------------
+  * docs: updated clamdoc.pdf
+  * docs: updated Polish how-to (thanks to Przemyslaw Holowczyc)
+
 Tue Feb 10 19:17:53 CET 2004 (tk)
 ---------------------------------
   * docs: complete clamdoc.pdf French translation by Stephane Jeannenot
   * docs: Polish how-to on ClamAV and Sendmail integration (with clamav-milter)
-	  by  Przemyslaw Holowczyc
+	  by Przemyslaw Holowczyc
 
 Tue Feb 10 17:05:31 GMT 2004 (njh)
 ----------------------------------
