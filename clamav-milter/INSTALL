@@ -76,6 +76,8 @@ or if clamd is on a different machine
 
 You should have received a script to put into /etc/init.d with this software.
 
+run 'chown clamav /usr/local/sbin/clamav-milter; chmod 4700 /usr/local/sbin/clamav-milter
+
 CHANGE HISTORY
 
 Changes
@@ -148,6 +150,8 @@ Changes
 0.65	15/11/03 Upissue of clamav
 0.65a	19/11/03 Close cmdSocket earlier
 		Added setpgrp()
+0.65b	22/11/03 Ensure milter is not run as root if requested
+		Added quarantine support
 
 BUG REPORTS
 
