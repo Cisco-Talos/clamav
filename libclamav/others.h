@@ -21,6 +21,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "cltypes.h"
 
 void cli_warnmsg(const char *str, ...);
 void cli_errmsg(const char *str, ...);
@@ -32,5 +33,6 @@ int cli_rmdirs(const char *dirname);
 char *cli_md5stream(FILE *fd);
 int cli_readn(int fd, void *buff, unsigned int count);
 int cli_writen(int fd, void *buff, unsigned int count);
+int32_t cli_readint32(const char *buff);
 
 #endif

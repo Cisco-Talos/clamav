@@ -112,27 +112,22 @@ static const struct cli_magic_s cli_magic[] = {
 
 static const struct cli_smagic_s cli_smagic[] = {
 
-    /* <html>*<body */
     /* "From: " * "Content-Type: " */
     {"46726f6d3a20*436f6e74656e742d547970653a20",    "Mail file", CL_MAILFILE},
 
-    /* matcher is case sensitive - we have to check all variants of <html> */
-    {"3c68746d6c3e",    "HTML data", CL_HTMLFILE},
-    {"3c48746d6c3e",    "HTML data", CL_HTMLFILE},
-    {"3c68546d6c3e",    "HTML data", CL_HTMLFILE},
-    {"3c68744d6c3e",    "HTML data", CL_HTMLFILE},
-    {"3c68746d4c3e",    "HTML data", CL_HTMLFILE},
-    {"3c48546d6c3e",    "HTML data", CL_HTMLFILE},
-    {"3c48744d6c3e",    "HTML data", CL_HTMLFILE},
-    {"3c48746d4c3e",    "HTML data", CL_HTMLFILE},
-    {"3c68544d6c3e",    "HTML data", CL_HTMLFILE},
-    {"3c68546d4c3e",    "HTML data", CL_HTMLFILE},
-    {"3c68744d4c3e",    "HTML data", CL_HTMLFILE},
-    {"3c48544d6c3e",    "HTML data", CL_HTMLFILE},
-    {"3c48744d4c3e",    "HTML data", CL_HTMLFILE},
-    {"3c68544d4c3e",    "HTML data", CL_HTMLFILE},
-    {"3c48546d4c3e",    "HTML data", CL_HTMLFILE},
-    {"3c48544d4c3e",    "HTML data", CL_HTMLFILE},
+    /* remember the matcher is case sensitive */
+    {"3c62723e",    "HTML data", CL_HTMLFILE},	/* <br> */
+    {"3c42723e",    "HTML data", CL_HTMLFILE},	/* <Br> */
+    {"3c42523e",    "HTML data", CL_HTMLFILE},	/* <BR> */
+    {"3c703e",	    "HTML data", CL_HTMLFILE},	/* <p> */
+    {"3c503e",	    "HTML data", CL_HTMLFILE},	/* <P> */
+    {"68726566",    "HTML data", CL_HTMLFILE},	/* href */
+    {"48726566",    "HTML data", CL_HTMLFILE},	/* Href */
+    {"48524546",    "HTML data", CL_HTMLFILE},	/* HREF */
+    {"3c666f6e74",  "HTML data", CL_HTMLFILE},	/* <font */
+    {"3c466f6e74",  "HTML data", CL_HTMLFILE},	/* <Font */
+    {"3c464f4e54",  "HTML data", CL_HTMLFILE},	/* <FONT */
+
 
     {NULL,  NULL,   CL_UNKNOWN_TYPE}
 };
