@@ -1,3 +1,9 @@
+Sun Sep 28 17:38:44 BST 2003 (njh)
+----------------------------------
+  * clamav-milter: added --force-scan flag
+  		Use MaxThreads if --max-children not set
+		(thanks to "Richard G. Roberto" <rgr@dedlegend.com>)
+
 Sun Sep 28 11:07:49 BST 2003 (njh)
 ----------------------------------
   * libclamav: mbox.c now compiles on SCO5
