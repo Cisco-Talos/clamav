@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.184  2004/11/26 21:51:48  nigelhorne
+ * Scan uuencodes after the final MIME section
+ *
  * Revision 1.183  2004/11/26 17:32:42  nigelhorne
  * Add debug message for end of multipart headers
  *
@@ -537,7 +540,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.183 2004/11/26 17:32:42 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.184 2004/11/26 21:51:48 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1260,7 +1263,7 @@ static int	/* success or fail */
 parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, unsigned int options)
 {
 	message **messages;	/* parts of a multipart message */
-	int inhead, inMimeHead, i, rc = 1, htmltextPart, multiparts = 0;
+	int inMimeHead, i, rc = 1, htmltextPart, multiparts = 0;
 	text *aText;
 	const char *cptr;
 	message *mainMessage;
@@ -1275,7 +1278,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 	/* Anything left to be parsed? */
 	if(mainMessage && (messageGetBody(mainMessage) != NULL)) {
 		mime_type mimeType;
-		int subtype;
+		int subtype, inhead;
 		const char *mimeSubtype, *boundary;
 		char *protocol;
 		const text *t_line;
@@ -1456,8 +1459,9 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				do {
 					const char *line = lineGetData(t_line->t_line);
 
-					/*cli_dbgmsg("inMimeHead %d inhead %d boundary %s line '%s' next '%s'\n",
-						inMimeHead, inhead, boundary, line, t_line->t_next ? t_line->t_next->t_text : "(null)");*/
+					/*printf("inMimeHead %d inhead %d boundary %s line '%s' next '%s'\n",
+						inMimeHead, inhead, boundary, line,
+						t_line->t_next && t_line->t_next->t_line ? lineGetData(t_line->t_next->t_line) : "(null)");*/
 
 					if(inMimeHead) {	/* continuation line */
 						if(line == NULL) {
@@ -1598,9 +1602,6 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							if(ptr)
 								free(ptr);
 						}
-					} else if(boundaryStart(line, boundary)) {
-						inhead = 1;
-						break;
 					} else if(endOfMessage(line, boundary)) {
 						/*
 						 * Some viruses put information
@@ -1611,6 +1612,9 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						 * is the end of the message
 						 */
 						/* t_line = NULL;*/
+						break;
+					} else if(boundaryStart(line, boundary)) {
+						inhead = 1;
 						break;
 					} else {
 						if(messageAddLine(aMessage, t_line->t_line) < 0)
@@ -1840,6 +1844,18 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							if(mainMessage != messageIn)
 								messageDestroy(mainMessage);
 							mainMessage = NULL;
+						} else if(aMessage) {
+							const text *u_line = uuencodeBegin(aMessage);
+							if(u_line) {
+								cli_dbgmsg("Found uuencoded message in multipart/mixed non mime part\n");
+								messageSetEncoding(aMessage, "x-uuencode");
+								fb = messageToFileblob(aMessage, dir);
+
+								if(fb)
+									fileblobDestroy(fb);
+								assert(aMessage == messages[i]);
+								messageReset(messages[i]);
+							}
 						}
 						addToText = TRUE;
 						if(messageGetBody(aMessage) == NULL)
