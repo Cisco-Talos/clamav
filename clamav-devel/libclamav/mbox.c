@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.121  2004/09/15 18:08:23  nigelhorne
+ * Handle multiple encoding types
+ *
  * Revision 1.120  2004/09/15 08:47:07  nigelhorne
  * Cleaner way to initialise hrefs
  *
@@ -348,7 +351,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.120 2004/09/15 08:47:07 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.121 2004/09/15 18:08:23 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -581,7 +584,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 	message *m, *body;
 	FILE *fd;
 	char buffer[LINE_LENGTH];
-#ifdef	CL_DEBUG
+#ifdef HAVE_BACKTRACE
 	void (*segv)(int);
 #endif
 	static table_t *rfc821, *subtype;
@@ -1659,8 +1662,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 		fb = messageToFileblob(messages[i], dir);
 
 		if(fb) {
-			cli_dbgmsg("Saving multipart %d, encoded with scheme %d\n",
-				i, messageGetEncoding(messages[i]));
+			cli_dbgmsg("Saving multipart %d\n", i);
 
 			fileblobDestroy(fb);
 		}
@@ -2110,8 +2112,7 @@ saveTextPart(message *m, const char *dir)
 		/*
 		 * Save main part to scan that
 		 */
-		cli_dbgmsg("Saving main message, encoded with scheme %d\n",
-				messageGetEncoding(m));
+		cli_dbgmsg("Saving main message, encoded with scheme\n");
 
 		fileblobDestroy(fb);
 	}

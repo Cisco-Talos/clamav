@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: message.h,v $
+ * Revision 1.17  2004/09/15 18:08:23  nigelhorne
+ * Handle multiple encoding types
+ *
  * Revision 1.16  2004/08/23 13:15:16  nigelhorne
  * messageClearMarkers
  *
@@ -62,7 +65,8 @@
 
 typedef struct message {
 	mime_type	mimeType;
-	encoding_type	encodingType;
+	encoding_type	*encodingTypes;
+	int	numberOfEncTypes;	/* size of encodingTypes */
 	char	*mimeSubtype;
 	int	numberOfArguments;	/* count of mimeArguments */
 	char	**mimeArguments;

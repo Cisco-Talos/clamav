@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.78  2004/09/15 18:08:23  nigelhorne
+ * Handle multiple encoding types
+ *
  * Revision 1.77  2004/09/13 16:44:01  kojm
  * minor cleanup
  *
@@ -228,7 +231,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.77 2004/09/13 16:44:01 kojm Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.78 2004/09/15 18:08:23 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -280,7 +283,7 @@ typedef enum { FALSE = 0, TRUE = 1 } bool;
 
 static	void	messageIsEncoding(message *m);
 static	const	text	*binhexBegin(const message *m);
-static	unsigned char	*decodeLine(message *m, const char *line, unsigned char *buf, size_t buflen);
+static	unsigned char	*decodeLine(message *m, encoding_type enctype, const char *line, unsigned char *buf, size_t buflen);
 static unsigned char *decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast);
 static	void	squeeze(char *s);
 static	unsigned	char	hex(char c);
@@ -292,7 +295,7 @@ static	int	usefulArg(const char *arg);
 
 /*
  * These maps are ordered in decreasing likelyhood of their appearance
- * in an e-mail
+ * in an e-mail. Probably these should be in a table...
  */
 static	const	struct	encoding_map {
 	const	char	*string;
@@ -328,10 +331,8 @@ messageCreate(void)
 {
 	message *m = (message *)cli_calloc(1, sizeof(message));
 
-	if(m) {
+	if(m)
 		m->mimeType = NOMIME;
-		m->encodingType = NOENCODING;
-	}
 
 	return m;
 }
@@ -370,7 +371,12 @@ messageReset(message *m)
 
 	memset(m, '\0', sizeof(message));
 	m->mimeType = NOMIME;
-	m->encodingType = NOENCODING;
+
+	if(m->encodingTypes) {
+		assert(m->numberOfEncTypes > 0);
+		free(m->encodingTypes);
+		m->numberOfEncTypes = 0;
+	}
 }
 
 void
@@ -804,29 +810,72 @@ void
 messageSetEncoding(message *m, const char *enctype)
 {
 	const struct encoding_map *e;
+	int i = 0;
+	char *type;
 	assert(m != NULL);
 	assert(enctype != NULL);
 
-	m->encodingType = EEXTENSION;
+	/*m->encodingType = EEXTENSION;*/
 
 	while((*enctype == '\t') || (*enctype == ' '))
 		enctype++;
 
-	for(e = encoding_map; e->string; e++)
-		if(strcasecmp(enctype, e->string) == 0) {
-			m->encodingType = e->type;
-			cli_dbgmsg("Encoding type is \"%s\"\n", enctype);
-			return;
+	/*
+	 * Iterate through
+	 *	Content-Transfer-Encoding: base64 binary
+	 * cli_strtok's fieldno counts from 0
+	 */
+	i = 0;
+	while((type = cli_strtok(enctype, i++, " \t")) != NULL) {
+		for(e = encoding_map; e->string; e++)
+			if(strcasecmp(type, e->string) == 0) {
+				int j;
+				encoding_type *et;
+
+				for(j = 0; j < m->numberOfEncTypes; j++) {
+					if(m->encodingTypes[j] == e->type) {
+						cli_dbgmsg("Ignoring duplicate encoding mechanism\n");
+						break;
+					}
+				}
+				if(j < m->numberOfEncTypes)
+					break;
+				et = (encoding_type *)cli_realloc(m->encodingTypes, (m->numberOfEncTypes + 1) * sizeof(encoding_type));
+				if(et == NULL) {
+					free(type);
+					return;
+				}
+
+				m->encodingTypes = et;
+				m->encodingTypes[m->numberOfEncTypes++] = e->type;
+
+				cli_dbgmsg("Encoding type %d is \"%s\"\n", m->numberOfEncTypes, type);
+				break;
+			}
+
+		if(e->string == NULL) {
+			cli_warnmsg("Unknown encoding type \"%s\"\n", type);
+			/*
+			 * Err on the side of safety, enable all decoding
+			 * modules
+			 */
+			/*messageSetEncoding(m, "base64");
+			messageSetEncoding(m, "quoted-printable");*/
+			break;
 		}
 
-	cli_warnmsg("Unknown encoding type \"%s\"\n", enctype);
+		free(type);
+	}
 }
 
 encoding_type
 messageGetEncoding(const message *m)
 {
 	assert(m != NULL);
-	return(m->encodingType);
+
+	if(m->numberOfEncTypes == 0)
+		return NOENCODING;
+	return m->encodingTypes[0];
 }
 
 int
@@ -988,40 +1037,19 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 	void *ret;
 	const text *t_line;
 	char *filename;
+	int i;
 
 	assert(m != NULL);
+
+	if(messageGetBody(m) == NULL)
+		return NULL;
 
 	ret = (*create)();
 
 	if(ret == NULL)
 		return NULL;
 
-	/*
-	 * Find the filename to decode
-	 */
-	if(messageGetEncoding(m) == UUENCODE) {
-		t_line = uuencodeBegin(m);
-
-		if(t_line == NULL) {
-			/*cli_warnmsg("UUENCODED attachment is missing begin statement\n");*/
-			(*destroy)(ret);
-			return NULL;
-		}
-
-		filename = cli_strtok(lineGetData(t_line->t_line), 2, " ");
-
-		if(filename == NULL) {
-			cli_dbgmsg("UUencoded attachment sent with no filename\n");
-			(*destroy)(ret);
-			return NULL;
-		}
-		cli_chomp(filename);
-
-		cli_dbgmsg("Set uuencode filename to \"%s\"\n", filename);
-
-		(*setFilename)(ret, dir, filename);
-		t_line = t_line->t_next;
-	} else if((t_line = binhexBegin(m)) != NULL) {
+	if((t_line = binhexBegin(m)) != NULL) {
 		unsigned char byte;
 		unsigned long len, l, newlen = 0L;
 		unsigned char *uptr, *data;
@@ -1286,8 +1314,13 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 
 		blobDestroy(tmp);
 
-		return ret;
-	} else {
+		m->binhex = NULL;
+	}
+
+	if(m->numberOfEncTypes == 0) {
+		/*
+		 * Fast copy
+		 */
 		filename = (char *)messageFindArgument(m, "filename");
 		if(filename == NULL) {
 			filename = (char *)messageFindArgument(m, "name");
@@ -1296,7 +1329,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 				cli_dbgmsg("Attachment sent with no filename\n");
 				messageAddArgument(m, "name=attachment");
 				filename = strdup("attachment");
-			} else if(messageGetEncoding(m) == NOENCODING)
+			} else
 				/*
 				 * Some virus attachments don't say how they've
 				 * been encoded. We assume base64
@@ -1306,62 +1339,123 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 
 		(*setFilename)(ret, dir, filename);
 
-		t_line = messageGetBody(m);
-	}
-	free((char *)filename);
+		free((char *)filename);
 
-	/*
-	 * t_line should now point to the first (encoded) line of the message
-	 */
-	if(t_line == NULL) {
-		cli_warnmsg("Empty attachment not saved\n");
-		(*destroy)(ret);
-		return NULL;
+		if(m->numberOfEncTypes == 0) {
+			if(uuencodeBegin(m))
+				messageSetEncoding(m, "x-uuencode");
+			else
+				return exportText(messageGetBody(m), ret);
+		}
 	}
 
-	if(messageGetEncoding(m) == NOENCODING)
+	for(i = 0; i < m->numberOfEncTypes; i++) {
+		encoding_type enctype = m->encodingTypes[i];
+
 		/*
-		 * Fast copy
+		 * Find the filename to decode
 		 */
-		return exportText(t_line, ret);
+		if((enctype == UUENCODE) || ((i == 0) && uuencodeBegin(m))) {
+			t_line = uuencodeBegin(m);
 
-	do {
-		unsigned char data[1024];
-		unsigned char *uptr;
-		const char *line = lineGetData(t_line->t_line);
+			if(t_line == NULL) {
+				/*cli_warnmsg("UUENCODED attachment is missing begin statement\n");*/
+				(*destroy)(ret);
+				return NULL;
+			}
 
-		if(messageGetEncoding(m) == UUENCODE) {
-			/*
-			 * There should be no blank lines in uuencoded files...
-			 */
-			if(line == NULL)
-				continue;
-			if(strcasecmp(line, "end") == 0)
-				break;
+			filename = cli_strtok(lineGetData(t_line->t_line), 2, " ");
+
+			if(filename == NULL) {
+				cli_dbgmsg("UUencoded attachment sent with no filename\n");
+				(*destroy)(ret);
+				return NULL;
+			}
+			cli_chomp(filename);
+
+			cli_dbgmsg("Set uuencode filename to \"%s\"\n", filename);
+
+			(*setFilename)(ret, dir, filename);
+			t_line = t_line->t_next;
+			enctype = UUENCODE;
+		} else {
+			filename = (char *)messageFindArgument(m, "filename");
+			if(filename == NULL) {
+				filename = (char *)messageFindArgument(m, "name");
+
+				if(filename == NULL) {
+					cli_dbgmsg("Attachment sent with no filename\n");
+					messageAddArgument(m, "name=attachment");
+					filename = strdup("attachment");
+				} else if(enctype == NOENCODING)
+					/*
+					 * Some virus attachments don't say how they've
+					 * been encoded. We assume base64
+					 */
+					messageSetEncoding(m, "base64");
+			}
+
+			(*setFilename)(ret, dir, filename);
+
+			t_line = messageGetBody(m);
+		}
+		free((char *)filename);
+
+		/*
+		 * t_line should now point to the first (encoded) line of the message
+		 */
+		if(t_line == NULL) {
+			cli_warnmsg("Empty attachment not saved\n");
+			(*destroy)(ret);
+			return NULL;
 		}
 
-		uptr = decodeLine(m, line, data, sizeof(data));
+		if(enctype == NOENCODING) {
+			/*
+			 * Fast copy
+			 */
+			(void)exportText(t_line, ret);
+			continue;
+		}
 
-		if(uptr == NULL)
-			break;
+		do {
+			unsigned char data[1024];
+			unsigned char *uptr;
+			const char *line = lineGetData(t_line->t_line);
 
-		assert(uptr <= &data[sizeof(data)]);
+			if(enctype == UUENCODE) {
+				/*
+				 * There should be no blank lines in uuencoded files...
+				 */
+				if(line == NULL)
+					continue;
+				if(strcasecmp(line, "end") == 0)
+					break;
+			}
 
-		if(uptr != data)
-			(*addData)(ret, data, (size_t)(uptr - data));
+			uptr = decodeLine(m, enctype, line, data, sizeof(data));
 
-		/*
-		 * According to RFC1521, '=' is used to pad out
-		 * the last byte and should be used as evidence
-		 * of the end of the data. Some mail clients
-		 * annoyingly then put plain text after the '='
-		 * byte and viruses exploit this bug. Sigh
-		 */
-		/*if(messageGetEncoding(m) == BASE64)
-			if(strchr(line, '='))
-				break;*/
+			if(uptr == NULL)
+				break;
 
-	} while((t_line = t_line->t_next) != NULL);
+			assert(uptr <= &data[sizeof(data)]);
+
+			if(uptr != data)
+				(*addData)(ret, data, (size_t)(uptr - data));
+
+			/*
+			 * According to RFC1521, '=' is used to pad out
+			 * the last byte and should be used as evidence
+			 * of the end of the data. Some mail clients
+			 * annoyingly then put plain text after the '='
+			 * byte and viruses exploit this bug. Sigh
+			 */
+			/*if(enctype == BASE64)
+				if(strchr(line, '='))
+					break;*/
+
+		} while((t_line = t_line->t_next) != NULL);
+	}
 
 	/* Verify we have nothing left to flush out */
 	if(m->base64chars) {
@@ -1405,12 +1499,13 @@ messageToBlob(message *m)
 text *
 messageToText(message *m)
 {
+	int i;
 	text *first = NULL, *last = NULL;
 	const text *t_line;
 
 	assert(m != NULL);
 
-	if(messageGetEncoding(m) == NOENCODING)
+	if(m->numberOfEncTypes == 0) {
 		/*
 		 * Fast copy
 		 */
@@ -1429,17 +1524,53 @@ messageToText(message *m)
 			}
 			last->t_line = lineLink(t_line->t_line);
 		}
-	else {
-		if(messageGetEncoding(m) == UUENCODE) {
+		if(last)
+			last->t_next = NULL;
+
+		return first;
+	}
+	/*
+	 * Scan over the data a number of times once for each claimed encoding
+	 * type
+	 */
+	for(i = 0; i < m->numberOfEncTypes; i++) {
+		const encoding_type enctype = m->encodingTypes[i];
+
+		cli_dbgmsg("messageToText: export transfer method %d = %d\n",
+			i, enctype);
+		if(enctype == NOENCODING) {
+			/*
+			 * Fast copy
+			 */
+			for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next) {
+				if(first == NULL)
+					first = last = cli_malloc(sizeof(text));
+				else {
+					last->t_next = cli_malloc(sizeof(text));
+					last = last->t_next;
+				}
+
+				if(last == NULL) {
+					if(first)
+						textDestroy(first);
+					return NULL;
+				}
+				last->t_line = lineLink(t_line->t_line);
+			}
+			continue;
+		}
+		if(enctype == UUENCODE) {
 			t_line = uuencodeBegin(m);
 
 			if(t_line == NULL) {
 				/*cli_warnmsg("UUENCODED attachment is missing begin statement\n");*/
+				if(first)
+					textDestroy(first);
 				return NULL;
 			}
 			t_line = t_line->t_next;
 		} else {
-			if(binhexBegin(m))
+			if((i == 0) && binhexBegin(m))
 				cli_warnmsg("Binhex messages not supported yet.\n");
 			t_line = messageGetBody(m);
 		}
@@ -1449,18 +1580,18 @@ messageToText(message *m)
 			unsigned char *uptr;
 			const char *line = lineGetData(t_line->t_line);
 
-			if(messageGetEncoding(m) == BASE64) {
+			if(enctype == BASE64) {
 				/*
 				 * ignore blanks - breaks RFC which is
 				 * probably the point!
 				 */
 				if(line == NULL)
 					continue;
-			} else if(messageGetEncoding(m) == UUENCODE)
+			} else if(enctype == UUENCODE)
 				if(strcasecmp(line, "end") == 0)
 					break;
 
-			uptr = decodeLine(m, line, data, sizeof(data));
+			uptr = decodeLine(m, enctype, line, data, sizeof(data));
 
 			if(uptr == NULL)
 				break;
@@ -1479,7 +1610,7 @@ messageToText(message *m)
 
 			last->t_line = ((data[0] != '\n') && data[0]) ? lineCreate((char *)data) : NULL;
 
-			if(line && messageGetEncoding(m) == BASE64)
+			if(line && enctype == BASE64)
 				if(strchr(line, '='))
 					break;
 		}
@@ -1635,7 +1766,7 @@ messageClearMarkers(message *m)
  * len is sizeof(ptr)
  */
 static unsigned char *
-decodeLine(message *m, const char *line, unsigned char *buf, size_t buflen)
+decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, size_t buflen)
 {
 	size_t len;
 	bool softbreak;
@@ -1645,7 +1776,7 @@ decodeLine(message *m, const char *line, unsigned char *buf, size_t buflen)
 	assert(m != NULL);
 	assert(buf != NULL);
 
-	switch(messageGetEncoding(m)) {
+	switch(et) {
 		case BINARY:
 			/*
 			 * TODO: find out what this is, encoded as binary??
