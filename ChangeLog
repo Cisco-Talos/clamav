@@ -1,10 +1,15 @@
+Mon Aug  9 09:27:02 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	checkURLs code (not enabled by default) is now thread
+				safe
+
 Mon Aug  9 02:32:49 CEST 2004 (tk)
 ----------------------------------
   * libclamav: matcher-bm: fix another bug in node sorting (spotted by Nigel)
 
 Sun Aug  8 22:31:12 BST 2004 (njh)
 ----------------------------------
-  * libclamav/mbox:	Started code (not yet enabled by default) to scan URLs
+  * libclamav/mbox.c:	Started code (not yet enabled by default) to scan URLs
   				embedded in emails for viruses.
 
 Sun Aug  8 20:14:04 BST 2004 (njh)

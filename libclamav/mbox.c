@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.94  2004/08/09 08:26:36  nigelhorne
+ * Thread safe checkURL
+ *
  * Revision 1.93  2004/08/08 21:30:47  nigelhorne
  * First draft of CheckURL
  *
@@ -267,7 +270,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.93 2004/08/08 21:30:47 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.94 2004/08/09 08:26:36 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -433,6 +436,7 @@ static	table_t	*rfc821Table, *subtypeTable;
 #endif
 
 #define	SAVE_TO_DISC	/* multipart/message are saved in a temporary file */
+/*#define	CHECKURLS	/* If an email contains URLs, check them */
 
 /*
  * TODO: when signal handling is added, need to remove temp files when a
@@ -2197,7 +2201,7 @@ saveFile(const blob *b, const char *dir)
 	return (close(fd) >= 0);
 }
 
-#if	0
+#ifdef	CHECKURLS
 static void
 checkURLs(message *m, const char *dir)
 {
@@ -2211,13 +2215,21 @@ checkURLs(message *m, const char *dir)
 	ptr = blobGetData(b);
 	len = blobGetDataSize(b);
 
+	/*
+	 * cli_memstr(ptr, len, "<a href=", 8)
+	 * Don't use cli_memstr() until bounds problem sorted and it becomes
+	 * case independant
+	 */
 	while(len >= 8) {
 		/* FIXME: allow any number of white space */
 		if(strncasecmp(ptr, "<a href=", 8) == 0) {
+#ifdef	CL_THREAD_SAFE
+			static pthread_mutex_t system_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
 			char *p2 = &ptr[8];
 			char *p3;
-			char cmd[512];
-			char name[512];
+			char cmd[512], name[512];
+			struct stat statb;
 
 			len -= 8;
 			while((len > 0) && ((*p2 == '\"') || isspace(*p2))) {
@@ -2234,7 +2246,9 @@ checkURLs(message *m, const char *dir)
 			if(len == 0)
 				break;
 			*ptr = '\0';
-			cli_dbgmsg("Downloading URL %s to be scanned", p2);
+			if(strncasecmp(p2, "mailto:", 7) == 0)
+				continue;
+			cli_dbgmsg("Downloading URL %s to be scanned\n", p2);
 			strncpy(name, p2, sizeof(name));
 			for(p3 = name; *p3; p3++)
 				if(*p3 == '/')
@@ -2242,11 +2256,25 @@ checkURLs(message *m, const char *dir)
 
 			snprintf(cmd, sizeof(cmd), "GET %s > %s/%s", p2, dir, name);
 			cli_dbgmsg("%s\n", cmd);
+#ifdef	CL_THREAD_SAFE
+			pthread_mutex_lock(&system_mutex);
+#endif
 			system(cmd);
-		} else {
-			ptr++;
-			len--;
+#ifdef	CL_THREAD_SAFE
+			pthread_mutex_unlock(&system_mutex);
+#endif
+			snprintf(cmd, sizeof(cmd), "%s/%s", dir, name);
+			if(stat(cmd, &statb) >= 0)
+				if(statb.st_size == 0) {
+					cli_warnmsg("URL %s failed to download\n", p2);
+					/*
+					 * Don't bother scanning an empty file
+					 */
+					(void)unlink(cmd);
+				}
 		}
+		ptr++;
+		len--;
 	}
 	blobDestroy(b);
 }
@@ -2259,7 +2287,7 @@ checkURLs(message *m, const char *dir)
 
 
 #ifdef HAVE_BACKTRACE
-static void
+	static void
 sigsegv(int sig)
 {
 	signal(SIGSEGV, SIG_DFL);
@@ -2267,7 +2295,7 @@ sigsegv(int sig)
 	exit(SIGSEGV);
 }
 
-static void
+	static void
 print_trace(int use_syslog)
 {
 	void *array[10];
