@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.223 2005/03/02 20:08:24 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.224 2005/03/06 21:13:16 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -105,20 +105,17 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
  * is not recommended so it is not compiled by default
  */
 #ifdef	WITH_CURL
-#define	FOLLOWURLS	/*
-			 * If an email contains URLs, check them - helps to
-			 * find Dialer.gen-45
-			 */
+#define	FOLLOWURLS	5	/*
+				 * Maximum number of URLs scanned in a message
+				 * part. Helps to find Dialier.gen-45. If
+				 * not defined, don't check any URLs
+				 */
 #endif
 
 #ifdef	FOLLOWURLS
 
 #include "htmlnorm.h"
 
-#define	MAX_URLS	5	/*
-				 * Maximum number of URLs scanned in a message
-				 * part
-				 */
 #ifdef	WITH_CURL	/* Set in configure */
 /*
  * To build with WITH_CURL:
@@ -1100,6 +1097,10 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 				 */
 				cli_dbgmsg("End of header information\n");
 				inHeader = FALSE;
+				if(!anyHeadersFound) {
+					cli_dbgmsg("Nothing interesting in the header\n");
+					break;
+				}
 			} else {
 				char *ptr;
 				const char *qptr;
@@ -1968,7 +1969,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 								if(options&CL_SCAN_MAILURL)
 									if(tableFind(subtypeTable, cptr) == HTML)
 										checkURLs(aMessage, dir);
-								messageAddArgument(aMessage, "filename=textportion");
+								messageAddArgument(aMessage, "filename=mixedtextportion");
 							}
 						} else {
 							cli_dbgmsg("Text type %s is not supported\n", dtype);
@@ -3343,7 +3344,7 @@ rfc1341(message *m, const char *dir)
 }
 #endif
 
-#ifdef	FOLLOWURLS
+#if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
 static void
 checkURLs(message *m, const char *dir)
 {
@@ -3352,8 +3353,8 @@ checkURLs(message *m, const char *dir)
 	table_t *t;
 	int i, n;
 #if	defined(WITH_CURL) && defined(CL_THREAD_SAFE)
-	pthread_t tid[MAX_URLS];
-	struct arg args[MAX_URLS];
+	pthread_t tid[FOLLOWURLS];
+	struct arg args[FOLLOWURLS];
 #endif
 	tag_arguments_t hrefs;
 
@@ -3419,7 +3420,7 @@ checkURLs(message *m, const char *dir)
 				cli_dbgmsg("URL %s already downloaded\n", url);
 				continue;
 			}
-			if(n == MAX_URLS) {
+			if(n == FOLLOWURLS) {
 				cli_warnmsg("Not all URLs will be scanned\n");
 				break;
 			}
@@ -3487,7 +3488,7 @@ checkURLs(message *m, const char *dir)
 	tableDestroy(t);
 
 #if	defined(WITH_CURL) && defined(CL_THREAD_SAFE)
-	assert(n <= MAX_URLS);
+	assert(n <= FOLLOWURLS);
 	cli_dbgmsg("checkURLs: waiting for %d thread(s) to finish\n", n);
 	while(--n >= 0) {
 		pthread_join(tid[n], NULL);
