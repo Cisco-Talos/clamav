@@ -1,3 +1,7 @@
+Wed Jul 21 23:18:51 CEST 2004 (tk)
+----------------------------------
+  * configure: test for gethostbyname_r
+
 Wed Jul 21 20:45:49 CEST 2004 (tk)
 ----------------------------------
   * libclamav: pe: enhance UPX skew detection (aCaB)

@@ -42,7 +42,7 @@ AC_TYPE_OFF_T
 AC_COMPILE_CHECK_SIZEOF(short)
 AC_COMPILE_CHECK_SIZEOF(int)
 AC_COMPILE_CHECK_SIZEOF(long)
-AC_CHECK_FUNCS(poll setsid memcpy snprintf vsnprintf strerror_r strlcpy strlcat inet_ntop setgroups initgroups)
+AC_CHECK_FUNCS(poll setsid memcpy snprintf vsnprintf strerror_r strlcpy strlcat inet_ntop setgroups initgroups gethostbyname_r)
 AC_FUNC_MMAP
 AC_FUNC_FSEEKO
 
