@@ -1,3 +1,7 @@
+Thu Oct 21 11:14:35 BST 2004 (njh)
+----------------------------------
+  libclamav/mbox.c:	PARTIAL MODE: Extend yesterday's Solaris fix to BeOS
+
 Wed Oct 20 23:51:46 CEST 2004 (tk)
 ----------------------------------
   * clamd, clamscan: do not initialise procdev when /proc is not mounted
@@ -7,7 +11,7 @@ Wed Oct 20 22:37:24 CEST 2004 (tk)
 ----------------------------------
   * shared/misc.c: print version information to stdin instead of stderr
 		   (reported by spaze <spaze*exploited.cz>)
-		   
+
 Wed Oct 20 22:31:10 CEST 2004 (tk)
 ----------------------------------
   * docs/MacOSX: update (Dale Enterprise L.L.C)
