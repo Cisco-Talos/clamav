@@ -21,6 +21,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.24  2005/03/20 18:34:18  nigelhorne
+ * Minor tidy
+ *
  * Revision 1.23  2005/03/20 09:09:25  nigelhorne
  * Consolidate NAME_MAX
  *
@@ -91,7 +94,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.23 2005/03/20 09:09:25 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.24 2005/03/20 18:34:18 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -271,7 +274,7 @@ cli_untar(const char *dir, int desc)
 			cli_dbgmsg("cli_untar: size = %d\n", size);
 		} else { /* write or continue writing file contents */
 			const int nbytes = size>512? 512:size;
-			const int nwritten = fwrite(block, 1, nbytes, outfile);
+			const int nwritten = fwrite(block, 1, (size_t)nbytes, outfile);
 
 			if(nwritten != nbytes) {
 				cli_errmsg("cli_untar: only wrote %d bytes to file %s (out of disk space?)\n",
