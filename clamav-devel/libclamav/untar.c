@@ -20,6 +20,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.10  2004/09/20 13:37:44  kojm
+ * 0.80rc
+ *
  * Revision 1.9  2004/09/14 10:29:31  nigelhorne
  * Fix compilation error on AIX and OSF
  *
@@ -48,7 +51,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.9 2004/09/14 10:29:31 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.10 2004/09/20 13:37:44 kojm Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -141,7 +144,7 @@ cli_untar(const char *dir, int desc)
 			strncpy(magic, block+257, 6);
 			magic[6] = '\0';
 			if(strcmp(magic, "ustar ") != 0) {
-				cli_errmsg("Incorrect magic number in tar header\n");
+				cli_dbgmsg("Incorrect magic number in tar header\n");
 				return CL_EFORMAT;
 			}
 
