@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *  With enhancements from Thomas Lamy <Thomas.Lamy@in-online.net>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -39,6 +39,7 @@ typedef enum {
     CL_TYPE_MSCHM,
     CL_TYPE_SCRENC,
     CL_TYPE_GRAPHICS,
+    CL_TYPE_RIFF,
     CL_TYPE_BINHEX,
 
     /* bigger numbers have higher priority (in o-t-f detection) */

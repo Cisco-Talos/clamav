@@ -21,5 +21,6 @@
 
 int cli_check_mydoom_log(int desc, const char **virname);
 int cli_check_jpeg_exploit(int fd);
+int cli_check_riff_exploit(int fd);
 
 #endif
