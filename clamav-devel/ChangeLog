@@ -1,3 +1,8 @@
+Mon Nov 24 17:18:03 CET 2003 (tk)
+---------------------------------
+  * libclamav: cvd.c: small cleanups
+  * included mbox testing tool (test/mbox/debugm.c) from Nigel
+
 Mon Nov 24 10:19:48 IST 2003 (njh)
 ----------------------------------
   * clamav-milter: Support AllowSupplementaryGroups

@@ -669,7 +669,7 @@ void cvdinfo(struct optstruct *opt)
 
     pt = getargc(opt, 'i');
     if((cvd = cl_cvdhead(pt)) == NULL) {
-	mprintf("!Can't read CVD header from %s\n", pt);
+	mprintf("!Can't read/parse CVD header from %s\n", pt);
 	exit(1);
     }
 
