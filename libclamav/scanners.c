@@ -134,7 +134,7 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 	    files++;
 	    cli_dbgmsg("RAR: Encrypted files found in archive.\n");
 	    lseek(desc, 0, SEEK_SET);
-	    if(cli_scandesc(desc, virname, scanned, root, 0) != CL_VIRUS)
+	    if(cli_scandesc(desc, virname, scanned, root, 0, 0) != CL_VIRUS)
 		*virname = "Encrypted.RAR";
 	    ret = CL_VIRUS;
 	    break;
@@ -325,7 +325,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	    files++;
 	    cli_dbgmsg("Zip: Encrypted files found in archive.\n");
 	    lseek(desc, 0, SEEK_SET);
-	    if(cli_scandesc(desc, virname, scanned, root, 0) != CL_VIRUS)
+	    if(cli_scandesc(desc, virname, scanned, root, 0, 0) != CL_VIRUS)
 		*virname = "Encrypted.Zip";
 	    ret = CL_VIRUS;
 	    break;
@@ -705,7 +705,7 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
     snprintf(fullname, 1024, "%s/comment.html", tempname);
     fd = open(fullname, O_RDONLY);
     if (fd >= 0) {
-        ret = cli_scandesc(fd, virname, scanned, root, 0);
+        ret = cli_scandesc(fd, virname, scanned, root, 0, CL_TYPE_HTML);
 	close(fd);
     }
 
@@ -713,7 +713,7 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
 	snprintf(fullname, 1024, "%s/nocomment.html", tempname);
 	fd = open(fullname, O_RDONLY);
 	if (fd >= 0) {
-	    ret = cli_scandesc(fd, virname, scanned, root, 0);
+	    ret = cli_scandesc(fd, virname, scanned, root, 0, CL_TYPE_HTML);
 	    close(fd);
 	}
     }
@@ -722,7 +722,7 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
 	snprintf(fullname, 1024, "%s/script.html", tempname);
 	fd = open(fullname, O_RDONLY);
 	if (fd >= 0) {
-	    ret = cli_scandesc(fd, virname, scanned, root, 0);
+	    ret = cli_scandesc(fd, virname, scanned, root, 0, CL_TYPE_HTML);
 	    close(fd);
 	}
     }
@@ -1138,8 +1138,8 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
     }
 
     if(!options) { /* raw mode (stdin, etc.) */
-	cli_dbgmsg("Raw mode: no support for archives.\n");
-	if((ret = cli_scandesc(desc, virname, scanned, root, 0) == CL_VIRUS))
+	cli_dbgmsg("Raw mode: No support for special files\n");
+	if((ret = cli_scandesc(desc, virname, scanned, root, 0, 0) == CL_VIRUS))
 	    cli_dbgmsg("%s found in descriptor %d\n", *virname, desc);
 	return ret;
     }
@@ -1255,7 +1255,7 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 	type == CL_TYPE_UNKNOWN_TEXT ? (typerec = 1) : (typerec = 0);
 	lseek(desc, 0, SEEK_SET);
 
-	if((nret = cli_scandesc(desc, virname, scanned, root, typerec)) == CL_VIRUS) {
+	if((nret = cli_scandesc(desc, virname, scanned, root, typerec, type)) == CL_VIRUS) {
 	    cli_dbgmsg("%s found in descriptor %d.\n", *virname, desc);
 	    return CL_VIRUS;
 

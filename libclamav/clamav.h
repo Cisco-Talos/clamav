@@ -89,17 +89,20 @@ extern "C"
 
 
 struct cli_bm_patt {
-    char *pattern;
-    char *virname;
-    int length; 
+    char *pattern, *virname, *offset;
+    const char *viralias;
+    unsigned int length;
+    unsigned short target;
     struct cli_bm_patt *next;
 };
 
 struct cli_ac_patt {
     short int *pattern;
     unsigned int length, mindist, maxdist;
-    char *virname;
-    unsigned short int sigid, parts, partno, type, alt, *altn;
+    char *virname, *offset;
+    const char *viralias;
+    unsigned short int sigid, parts, partno, alt, *altn;
+    unsigned short type, target;
     char **altc;
     struct cli_ac_patt *next;
 };

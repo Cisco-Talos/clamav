@@ -21,6 +21,12 @@
 
 #include "clamav.h"
 
-int cli_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, int typerec);
+int cli_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, short otfrec, unsigned short ftype);
+
+struct cli_voffset {
+    const char *offstr;
+    unsigned long int fileoff;
+    unsigned short target;
+};
 
 #endif

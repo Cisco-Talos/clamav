@@ -20,6 +20,7 @@
 #include "memory.h"
 #include "others.h"
 #include "cltypes.h"
+#include "matcher.h"
 
 #define BM_MIN_LENGTH	10
 #define BM_TEST_OFFSET	5
@@ -108,6 +109,8 @@ void cli_bm_free(struct cl_node *root)
 		b1 = b1->next;
 		if(b2->virname)
 		    free(b2->virname);
+		if(b2->offset)
+		    free(b2->offset);
 		if(b2->pattern)
 		    free(b2->pattern);
 		free(b2);
@@ -117,7 +120,7 @@ void cli_bm_free(struct cl_node *root)
     }
 }
 
-int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root)
+int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, unsigned long int offset, struct cli_voffset *voffset)
 {
 	int i, j, shift, off, found = 0;
 	uint16_t idx;
@@ -163,6 +166,12 @@ int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virnam
 		}
 
 		if(found && p->length == j) {
+		    if(voffset) {
+			voffset->offstr = p->offset;
+			voffset->fileoff = offset + i - BM_MIN_LENGTH + BM_BLOCK_SIZE;
+                        voffset->target = p->target;
+		    }
+
 		    if(virname)
 			*virname = p->virname;
 
