@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Clam daemon</TITLE>
-<META NAME="description" CONTENT="Clam daemon">
+<TITLE>Clamuko</TITLE>
+<META NAME="description" CONTENT="Clamuko">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -21,132 +21,116 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node18.html">
 <LINK REL="previous" HREF="node16.html">
-<LINK REL="up" HREF="node16.html">
+<LINK REL="up" HREF="node15.html">
 <LINK REL="next" HREF="node18.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html340"
+<A NAME="tex2html382"
   HREF="node18.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html336"
-  HREF="node16.html">
+<A NAME="tex2html378"
+  HREF="node15.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html330"
+<A NAME="tex2html372"
   HREF="node16.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html338"
+<A NAME="tex2html380"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html341"
-  HREF="node18.html">Clamuko</A>
-<B> Up:</B> <A NAME="tex2html337"
-  HREF="node16.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html331"
-  HREF="node16.html">Usage</A>
- &nbsp <B>  <A NAME="tex2html339"
+<B> Next:</B> <A NAME="tex2html383"
+  HREF="node18.html">Archives and compressed files</A>
+<B> Up:</B> <A NAME="tex2html379"
+  HREF="node15.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html373"
+  HREF="node16.html">Clam daemon</A>
+ &nbsp <B>  <A NAME="tex2html381"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00041000000000000000"></A><A NAME="clamd"></A>
+<H2><A NAME="SECTION00042000000000000000"></A><A NAME="clamuko"></A>
 <BR>
-Clam daemon
+Clamuko
 </H2>
-    <I>clamd</I> is a fully multi-threaded daemon, based on <I>libclamav</I>.
-    It's able to work in one of the two modes, using:
+    Clamuko is a special thread in <I>clamd</I> that performs on-access
+    scanning under Linux. It was implemented as a thread in clamd due
+    to the Dazuko implementation. Client (clamuko) - server (clamd) model is
+    currently not supported by Dazuko. However there are some benefits of
+    the current implementation - clamuko is sharing the internal virus
+    database with clamd and it's updated with the RELOAD command. <B>You
+    must obey the following important principles when using clamuko:</B>
     
 <UL>
-<LI>Unix (local) sockets
+<LI>Always stop the daemon cleanly - using the QUIT command or
+	      SIGTERM signal. In other case you can lose your access
+	      to protected files until the system is restarted.
 </LI>
-<LI>TCP sockets
+<LI>Never protect a directory your mail-scanner software
+	      uses for attachment unpacking. Access to all infected
+	      files will be automagically blocked and the scanner (even clamd)
+	      won't be able to detect a virus. <B>The infected mail will
+	      be delivered.</B>
     
 </LI>
 </UL>
-    The daemon is configured by the <I>clamav.conf</I> file. You will find
-    a description of all the options in the <B>clamav.conf(5)</B> manual.
-    <I>clamd</I> recognizes the following commands:
-    
-<UL>
-<LI><B>PING</B>
-<BR>
-Check server's state. It should reply with "PONG".
-</LI>
-<LI><B>VERSION</B>
-<BR>
-Print the version information.
-</LI>
-<LI><B>RELOAD</B>
-<BR>
-Reload the databases.
-</LI>
-<LI><B>QUIT</B>
-<BR>
-Perform a clean exit.
-</LI>
-<LI><B>SCAN file/directory</B>
-	    Scan a file or directory (recursively) with archive support. A
-	    full path is required.
-</LI>
-<LI><B>RAWSCAN file/directory</B>
-	    Scan a file or directory (recursively) with archive support
-	    disabled. A full path is required.
-</LI>
-<LI><B>CONTSCAN file/directory</B>
-	    Scan a file or directory (recursively) with archive
-	    support enabled and  continue  scanning  even  when
-	    virus was found. A full path is required.
-</LI>
-<LI><B>STREAM</B>
-	    Scan stream - on this command clamd will return "PORT number"
-	    and you can connect to that port and send a data to scan.
-
-<P>
-</LI>
-</UL>
-    Internal threads (except clamuko) are ignoring all external signals.
-    The main thread handles <I>SIGTERM</I> and <I>SIGINT</I> signals
-    and performs a proper exit when one of them is caught.
+    You need to enable clamuko in <I>clamav.conf</I>. To protect the /home
+    directory enable the following directive:
+    <PRE>
+	ClamukoIncludePath /home
+</PRE>
+    To protect the whole system:
+    <PRE>
+	ClamukoIncludePath /
+	ClamukoExcludePath /proc
+	ClamukoExcludePath /temporary/dir/of/your/mail/scanning/software
+</PRE>
+    You can use clamuko to protect file access on Samba/Netatalk (but far
+    more better and safe idea is to use the <B>samba-vscan</B> software
+    <A HREF="node40.html#samba-vscan">5.17</A>. NFS is not supported (Dazuko doesn't intercept NFS
+    access calls). Yet another idea - you may build a database that contains
+    signatures for popular exploits and setup clamd to protect your server
+    from script-kiddies.
 
 <P>
 <HR>
 <!--Navigation Panel-->
-<A NAME="tex2html340"
+<A NAME="tex2html382"
   HREF="node18.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html336"
-  HREF="node16.html">
+<A NAME="tex2html378"
+  HREF="node15.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html330"
+<A NAME="tex2html372"
   HREF="node16.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html338"
+<A NAME="tex2html380"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html341"
-  HREF="node18.html">Clamuko</A>
-<B> Up:</B> <A NAME="tex2html337"
-  HREF="node16.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html331"
-  HREF="node16.html">Usage</A>
- &nbsp <B>  <A NAME="tex2html339"
+<B> Next:</B> <A NAME="tex2html383"
+  HREF="node18.html">Archives and compressed files</A>
+<B> Up:</B> <A NAME="tex2html379"
+  HREF="node15.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html373"
+  HREF="node16.html">Clam daemon</A>
+ &nbsp <B>  <A NAME="tex2html381"
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2003-06-21
+2003-11-11
 </ADDRESS>
 </BODY>
 </HTML>

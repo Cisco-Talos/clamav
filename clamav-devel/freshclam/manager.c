@@ -72,8 +72,13 @@ int downloadmanager(const struct optstruct *opt, const char *hostname)
 	updated = 1;
 
     if(updated) {
-	mprintf("Database updated (%d signatures) from %s (%s).\n", signo, hostname, ipaddr);
-	logg("Database updated (%d signatures) from %s (%s).\n", signo, hostname, ipaddr);
+	if(optl(opt, "http-proxy")) {
+	    mprintf("Database updated (%d signatures) from %s.\n", signo, hostname);
+	    logg("Database updated (%d signatures) from %s.\n", signo, hostname);
+	} else {
+	    mprintf("Database updated (%d signatures) from %s (%s).\n", signo, hostname, ipaddr);
+	    logg("Database updated (%d signatures) from %s (%s).\n", signo, hostname, ipaddr);
+	}
 
 #ifdef BUILD_CLAMD
 	if(optl(opt, "daemon-notify")) {

@@ -1,4 +1,4 @@
-This is TeX, Version 3.14159 (Web2C 7.3.7) (format=latex 2002.10.16)  21 JUN 2003 05:02
+This is TeX, Version 3.14159 (Web2C 7.3.7) (format=latex 2002.10.16)  11 NOV 2003 22:09
 **./images.tex
 (./images.tex
 LaTeX2e <2001/06/01>
@@ -91,24 +91,15 @@ File: dvips.def 1999/02/16 v3.0i Driver-dependant file (DPC,SPQR)
 \WF@box=\box26
 \WF@everypar=\toks16
 Package: wrapfig 1999/10/12  v 3.3
-) (/usr/share/texmf/tex/latex/latex2html/url.sty
+) (/usr/share/texmf/tex/latex/misc/boxedminipage.sty) (/usr/share/texmf/tex/lat
+ex/latex2html/url.sty
 Package: url 1999/03/02  ver 1.4  Verb mode for urls, email addresses, and file
  names
-) (/usr/share/texmf/tex/latex/misc/fancybox.sty
-Package: fancybox 2000/09/19 1.3
-Style option: `fancybox' v1.3 <2000/09/19> (tvz)
-\@fancybox=\box27
-\shadowsize=\dimen107
-\@Sbox=\box28
-\do@VerbBox=\toks17
-\the@fancyput=\toks18
-\this@fancyput=\toks19
-\EndVerbatimTokens=\toks20
-\Verbatim@Outfile=\write3
-\Verbatim@Infile=\read1
+) (/usr/share/texmf/tex/latex/fancyhdr/fancyhdr.sty
+\headwidth=\dimen107
 ) (/usr/share/texmf/tex/latex/titlesec/titlesec.sty
 Package: titlesec 2001/01/23 v2.4 Sectioning titles
-\ttl@box=\box29
+\ttl@box=\box27
 \titlewidth=\dimen108
 (/usr/share/texmf/tex/latex/titlesec/titlesec.new *** titlesec 2.4, loading pat
 ch level 2 ***)) (/usr/share/texmf/tex/latex/graphics/color.sty
@@ -119,42 +110,40 @@ File: color.cfg 2001/08/31 v1.1 color configuration of teTeX/TeXLive
 Package color Info: Driver file: dvips.def on input line 125.
 (/usr/share/texmf/tex/latex/graphics/dvipsnam.def
 File: dvipsnam.def 1999/02/16 v3.0i Driver-dependant file (DPC,SPQR)
-)) (/usr/share/texmf/tex/latex/fancyhdr/fancyhdr.sty
-\headwidth=\dimen109
-)
+))
 
 Package Fancyhdr Warning: fancyhdr's E option without twoside option is useless
- on input line 27.
+ on input line 26.
 
 (/usr/share/texmf/tex/latex/base/inputenc.sty
 Package: inputenc 2001/07/10 v0.99a Input encoding file 
 )
-\sizebox=\box30
-\lthtmlwrite=\write4
+\sizebox=\box28
+\lthtmlwrite=\write3
 (./images.aux)
 \openout1 = `images.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 142.
-LaTeX Font Info:    ... okay on input line 142.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 142.
-LaTeX Font Info:    ... okay on input line 142.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 142.
-LaTeX Font Info:    ... okay on input line 142.
-LaTeX Font Info:    Checking defaults for OMS/pzccm/m/n on input line 142.
-LaTeX Font Info:    Try loading font information for OMS+pzccm on input line 14
-2.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 139.
+LaTeX Font Info:    ... okay on input line 139.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 139.
+LaTeX Font Info:    ... okay on input line 139.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 139.
+LaTeX Font Info:    ... okay on input line 139.
+LaTeX Font Info:    Checking defaults for OMS/pzccm/m/n on input line 139.
+LaTeX Font Info:    Try loading font information for OMS+pzccm on input line 13
+9.
 (/usr/share/texmf/tex/latex/mathptm/omspzccm.fd
 File: omspzccm.fd 1998/07/01 Fontinst v1.800 font definitions for OMS/pzccm.
 )
-LaTeX Font Info:    ... okay on input line 142.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 142.
-LaTeX Font Info:    ... okay on input line 142.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 142.
-LaTeX Font Info:    ... okay on input line 142.
+LaTeX Font Info:    ... okay on input line 139.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 139.
+LaTeX Font Info:    ... okay on input line 139.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 139.
+LaTeX Font Info:    ... okay on input line 139.
 
 latex2htmlLength hsize=349.0pt
 
-latex2htmlLength vsize=681.0pt
+latex2htmlLength vsize=679.0pt
 
 latex2htmlLength hoffset=0.0pt
 
@@ -174,63 +163,69 @@ latex2htmlLength oddsidemargin=31.0pt
 
 latex2htmlLength evensidemargin=31.0pt
 
-l2hSize :picture607:0.0pt::0.0pt::349.0pt.
+l2hSize :picture731:0.0pt::0.0pt::349.0pt.
 [1
 
 
 
 ]
-LaTeX Font Info:    Try loading font information for OT1+ptmcm on input line 19
-3.
-(/usr/share/texmf/tex/latex/mathptm/ot1ptmcm.fd
-File: ot1ptmcm.fd 1998/07/01 Fontinst v1.800 font definitions for OT1/ptmcm.
-)
-LaTeX Font Info:    Try loading font information for OML+ptmcm on input line 19
-3.
-(/usr/share/texmf/tex/latex/mathptm/omlptmcm.fd
-File: omlptmcm.fd 1998/07/01 Fontinst v1.800 font definitions for OML/ptmcm.
-)
-LaTeX Font Info:    Try loading font information for OMX+psycm on input line 19
-3.
-(/usr/share/texmf/tex/latex/mathptm/omxpsycm.fd
-File: omxpsycm.fd 1998/07/01 Fontinst v1.800 font definitions for OMX/psycm.
-)
-LaTeX Font Info:    Try loading font information for U+msa on input line 193.
-(/usr/share/texmf/tex/latex/amsfonts/umsa.fd
-File: umsa.fd 1995/01/05 v2.2e AMS font definitions
-)
-LaTeX Font Info:    Try loading font information for U+msb on input line 193.
-(/usr/share/texmf/tex/latex/amsfonts/umsb.fd
-File: umsb.fd 1995/01/05 v2.2e AMS font definitions
-)
-LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <12> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 193.
-LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <9> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 193.
-LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <7> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 193.
-l2hSize :tex2html_wrap_inline670:8.09999pt::0.0pt::9.9239pt.
+File: clam.eps Graphic file (type eps)
+<clam.eps>
+Overfull \hbox (4.0pt too wide) detected at line 174
+ [] 
+ []
+
+l2hSize :tex2html_wrap1659:346.70613pt::0.0pt::349.0pt.
 [2
 
 
 ]
-l2hSize :tex2html_wrap_inline672:8.59999pt::8.59999pt::18.59053pt.
+l2hSize :boxedminipage65:162.58174pt::0.0pt::349.0pt.
 [3
 
 
 ]
-l2hSize :tex2html_wrap_inline674:10.50275pt::0.0pt::5.60004pt.
+LaTeX Font Info:    Try loading font information for OT1+ptmcm on input line 21
+7.
+(/usr/share/texmf/tex/latex/mathptm/ot1ptmcm.fd
+File: ot1ptmcm.fd 1998/07/01 Fontinst v1.800 font definitions for OT1/ptmcm.
+)
+LaTeX Font Info:    Try loading font information for OML+ptmcm on input line 21
+7.
+(/usr/share/texmf/tex/latex/mathptm/omlptmcm.fd
+File: omlptmcm.fd 1998/07/01 Fontinst v1.800 font definitions for OML/ptmcm.
+)
+LaTeX Font Info:    Try loading font information for OMX+psycm on input line 21
+7.
+(/usr/share/texmf/tex/latex/mathptm/omxpsycm.fd
+File: omxpsycm.fd 1998/07/01 Fontinst v1.800 font definitions for OMX/psycm.
+)
+LaTeX Font Info:    Try loading font information for U+msa on input line 217.
+(/usr/share/texmf/tex/latex/amsfonts/umsa.fd
+File: umsa.fd 1995/01/05 v2.2e AMS font definitions
+)
+LaTeX Font Info:    Try loading font information for U+msb on input line 217.
+(/usr/share/texmf/tex/latex/amsfonts/umsb.fd
+File: umsb.fd 1995/01/05 v2.2e AMS font definitions
+)
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <12> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 217.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <9> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 217.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <7> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 217.
+l2hSize :tex2html_wrap_inline792:10.50275pt::0.0pt::5.60004pt.
 [4
 
 
 ] (./images.aux) ) 
 Here is how much of TeX's memory you used:
- 1945 strings out of 10823
- 23741 string characters out of 70674
- 64265 words of memory out of 263001
- 4865 multiletter control sequences out of 10000+0
+ 1780 strings out of 10823
+ 21876 string characters out of 70674
+ 62384 words of memory out of 263001
+ 4697 multiletter control sequences out of 10000+0
  13711 words of font info for 40 fonts, out of 400000 for 1000
  34 hyphenation exceptions out of 1000
  25i,5n,43p,205b,262s stack positions out of 300i,100n,500p,50000b,4000s
 
-Output written on images.dvi (4 pages, 1132 bytes).
+Output written on images.dvi (4 pages, 1976 bytes).

@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Usage</TITLE>
-<META NAME="description" CONTENT="Usage">
+<TITLE>Clam daemon</TITLE>
+<META NAME="description" CONTENT="Clam daemon">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,69 +19,134 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node22.html">
-<LINK REL="previous" HREF="node6.html">
-<LINK REL="up" HREF="clamdoc.html">
+<LINK REL="next" HREF="node17.html">
+<LINK REL="previous" HREF="node15.html">
+<LINK REL="up" HREF="node15.html">
 <LINK REL="next" HREF="node17.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html323"
+<A NAME="tex2html370"
   HREF="node17.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html319"
-  HREF="clamdoc.html">
+<A NAME="tex2html366"
+  HREF="node15.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html313"
+<A NAME="tex2html360"
   HREF="node15.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html321"
+<A NAME="tex2html368"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html324"
-  HREF="node17.html">Clam daemon</A>
-<B> Up:</B> <A NAME="tex2html320"
-  HREF="clamdoc.html">clamdoc</A>
-<B> Previous:</B> <A NAME="tex2html314"
-  HREF="node15.html">FreshClam: Mirrors and mirrors.txt</A>
- &nbsp <B>  <A NAME="tex2html322"
+<B> Next:</B> <A NAME="tex2html371"
+  HREF="node17.html">Clamuko</A>
+<B> Up:</B> <A NAME="tex2html367"
+  HREF="node15.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html361"
+  HREF="node15.html">Usage</A>
+ &nbsp <B>  <A NAME="tex2html369"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H1><A NAME="SECTION00040000000000000000">
-Usage</A>
-</H1>
+<H2><A NAME="SECTION00041000000000000000"></A><A NAME="clamd"></A>
+<BR>
+Clam daemon
+</H2>
+    <I>clamd</I> is a multi-threaded daemon based on <I>libclamav</I>.
+    It may work in one of the two following two modes, listening on:
+    
+<UL>
+<LI>Unix (local) socket
+</LI>
+<LI>TCP socket
+    
+</LI>
+</UL>
+    The daemon is fully configurable via a <I>clamav.conf</I> file. You will
+    find a description for every directive in the <B>clamav.conf(5)</B>
+    manual. <I>clamd</I> recognizes the following commands:
+    
+<UL>
+<LI><B>PING</B>
+<BR>
+Check a daemon state ( should reply with "PONG").
+</LI>
+<LI><B>VERSION</B>
+<BR>
+Print version information.
+</LI>
+<LI><B>RELOAD</B>
+<BR>
+Reload databases.
+</LI>
+<LI><B>QUIT</B>
+<BR>
+Perform a clean exit.
+</LI>
+<LI><B>SCAN file/directory</B>
+	    Scan a file or directory (recursively) with archive support
+	    enabled. A full path is required.
+</LI>
+<LI><B>RAWSCAN file/directory</B>
+	    Scan a file or directory (recursively) with archive support
+	    disabled. A full path is required.
+</LI>
+<LI><B>CONTSCAN file/directory</B>
+	    Scan a file or directory (recursively) with archive support
+	    enabled and don't stop even if virus is found.
+</LI>
+<LI><B>STREAM</B>
+	    Scan stream - clamd will return a new port number you should
+	    connect to and send a data to scan. <I>The protocol is
+	    obsolete and there will be a new version soon (however this one
+	    will still be supported).</I>
+    
+</LI>
+</UL>
+    Internal threads (except clamuko) ignore all external signals. The main
+    thread handles <I>SIGTERM</I> and <I>SIGINT</I> signals and performs a
+    clean exit.
 
 <P>
-<BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
-
-<UL>
-<LI><A NAME="tex2html325"
-  HREF="node17.html">Clam daemon</A>
-<LI><A NAME="tex2html326"
-  HREF="node18.html">Clamuko</A>
-<LI><A NAME="tex2html327"
-  HREF="node19.html">Archives and compressed files</A>
-<LI><A NAME="tex2html328"
-  HREF="node20.html">Output format</A>
-<LI><A NAME="tex2html329"
-  HREF="node21.html">Signature Tool</A>
-</UL>
-<!--End of Table of Child-Links-->
-<BR><HR>
+<HR>
+<!--Navigation Panel-->
+<A NAME="tex2html370"
+  HREF="node17.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html366"
+  HREF="node15.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html360"
+  HREF="node15.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html368"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html371"
+  HREF="node17.html">Clamuko</A>
+<B> Up:</B> <A NAME="tex2html367"
+  HREF="node15.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html361"
+  HREF="node15.html">Usage</A>
+ &nbsp <B>  <A NAME="tex2html369"
+  HREF="node1.html">Contents</A></B> 
+<!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2003-06-21
+2003-11-11
 </ADDRESS>
 </BODY>
 </HTML>

@@ -1,14 +1,14 @@
-.\" Manual page created by Tomasz Kojm, 29.06.2002
-.TH "sigtool" "1" "October 1, 2002" "Tomasz Kojm" "Clam Antivirus"
+.\" Manual page created by Tomasz Kojm, 20020629
+.TH "sigtool" "1" "November 11, 2003" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
-sigtool \- generate virus signature
+sigtool \- generate a virus signature
 .SH "SYNOPSIS"
 .LP 
 sigtool [options]
 .SH "DESCRIPTION"
 .LP 
-sigtool generates virus signature using an external anti\-virus scanner, which is able to detect the virus. It's a part of the Clam AntiVirus package. Its purpose is the simplification of signature creation process when infected file and console scanner which recognizes it are available. Its speed depends on scanner, and file and signature sizes. sigtool may generate hexadecimal strings from input data, also.
+sigtool generates a virus signature using an external anti\-virus scanner which is able to detect the virus. It can also create a hexadecimal dump and build and unpack a CVD database.
 .SH "OPTIONS"
 .LP 
 
@@ -17,7 +17,7 @@ sigtool generates virus signature using an external anti\-virus scanner, which i
 Output help information and exit.
 .TP 
 \fB\-V, \-\-version\fR
-Print the version number and exit.
+Print version number and exit.
 .TP 
 \fB\-\-quiet\fR
 Be quiet \- output only error messages.
@@ -29,13 +29,28 @@ Write all messages to standard output (stdout), instead of standard error output
 Read data from stdin and write hex string to stdout.
 .TP 
 \fB\-c, \-\-command\fR
-Scanner command with options. Remember about quotes, if the argument string contains spaces. Command should contain everything except infected file.
+Anti\-virus scanner command with options. Remember about quotes if the argument string contains white characters. Command should contain everything except infected file name.
 .TP 
 \fB\-f, \-\-file\fR
-Infected file.
+Infected file name.
 .TP 
 \fB\-s, \-\-string\fR
-Unique string from anti\-virus scanner's output when it detects the virus. In most cases it should be the virus name.
+Unique string from anti\-virus scanner's output when it detects the virus. In most cases it should be a virus name.
+.TP 
+\fB\-i, \-\-info\fR
+Print a CVD information and verify MD5 and a digital signature.
+.TP 
+\fB\-b, \-\-build\fR
+Build a CVD file. \-s, \-\-server is required.
+.TP 
+\fB\-\-server\fR
+ClamAV Signing Service address (for virus database developers only).
+.TP 
+\fB\-\-unpack, \-u\fR
+Unpack a selected CVD file to a current directory.
+.TP 
+\fB\-\-unpack\-current\fR
+Unpack a local CVD file to a current directory.
 .SH "EXAMPLES"
 .LP 
 .TP 
@@ -43,12 +58,12 @@ Unique string from anti\-virus scanner's output when it detects the virus. In mo
 
 \fBcat testfile | sigtool \-\-hex\-dump > testfile.hex\fR
 .TP 
-(1) Please check clamdoc for example of usage.
+(1) Please check clamdoc.pdf and signatures.pdf for more example of usage.
 .SH "CREDITS"
 Please check the full documentation for credits.
 .SH "AUTHOR"
 .LP 
-Tomasz Kojm <zolw@konarski.edu.pl>
+Tomasz Kojm <tkojm@clamav.net>
 .SH "SEE ALSO"
 .LP 
-clamd(8), clamdscan(1), clamscan(1), freshclam(1), clamav.conf(5)
+clamd(8), clamdscan(1), clamscan(1), freshclam(1), clamav.conf(5), clamav\-milter(8)

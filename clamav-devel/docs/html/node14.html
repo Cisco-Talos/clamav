@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>FreshClam: Setting up auto-updating</TITLE>
-<META NAME="description" CONTENT="FreshClam: Setting up auto-updating">
+<TITLE>freshclam: Mirrors and mirrors.txt</TITLE>
+<META NAME="description" CONTENT="freshclam: Mirrors and mirrors.txt">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,7 +19,6 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node15.html">
 <LINK REL="previous" HREF="node13.html">
 <LINK REL="up" HREF="node6.html">
 <LINK REL="next" HREF="node15.html">
@@ -27,111 +26,207 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html301"
+<A NAME="tex2html341"
   HREF="node15.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html297"
+<A NAME="tex2html337"
   HREF="node6.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html291"
+<A NAME="tex2html333"
   HREF="node13.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html299"
+<A NAME="tex2html339"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html302"
-  HREF="node15.html">FreshClam: Mirrors and mirrors.txt</A>
-<B> Up:</B> <A NAME="tex2html298"
+<B> Next:</B> <A NAME="tex2html342"
+  HREF="node15.html">Usage</A>
+<B> Up:</B> <A NAME="tex2html338"
   HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html292"
-  HREF="node13.html">Testing</A>
- &nbsp <B>  <A NAME="tex2html300"
+<B> Previous:</B> <A NAME="tex2html334"
+  HREF="node13.html">freshclam: Setting up auto-updating</A>
+ &nbsp <B>  <A NAME="tex2html340"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00038000000000000000">
-FreshClam: Setting up auto-updating</A>
+<H2><A NAME="SECTION00038000000000000000"></A><A NAME="mirrors"></A>
+<BR>
+freshclam: Mirrors and mirrors.txt
 </H2>
-    The <I>freshclam</I> utility is the default database updater for Clam
-    AntiVirus. It works in two modes:
+    freshclam downloads the database from <TT><A NAME="tex2html14"
+  HREF="http://database.clamav.net">http://database.clamav.net</A></TT>.
+    This is a round robin record that tries to equally balance the traffic
+    between all the database mirrors:
+    <DIV ALIGN="CENTER">
+<FONT SIZE="-1">    </FONT><TABLE CELLPADDING=3 BORDER="1">
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1">
+	Mirror </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> IP </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Location </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Administrator</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
+	<TT><A NAME="tex2html15"
+  HREF="clamav.man.olsztyn.pl">clamav.man.olsztyn.pl</A></TT> </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> 213.184.16.3 </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Olsztyn, </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Robert d`Aystetten</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
+				    </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">		   </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Poland   </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> dart*man.olsztyn.pl</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html16"
+  HREF="avmirror1.prod.rxgsys.com">avmirror1.prod.rxgsys.com</A></TT> </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> 64.74.124.90 </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> USA </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> graham*rxgsys.com</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1">  
+	<TT><A NAME="tex2html17"
+  HREF="avmirror2.prod.rxgsys.com">avmirror2.prod.rxgsys.com</A></TT> </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> 207.201.202.73 </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> USA </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> graham*rxgsys.com</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html18"
+  HREF="clamav.e-admin.de">clamav.e-admin.de</A></TT> </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> 212.162.12.159 </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Dusseldorf, </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Andreas Gietl</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
+				</FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">		 </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Germany     </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> a.gietl*e-admin.de</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html19"
+  HREF="clamav.essentkabel.com">clamav.essentkabel.com</A></TT> </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> 195.85.130.84 </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Netherlands </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Chris van Meerendonk</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
+				     </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">		     </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">		   </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> mirror*essentkabel.com</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html20"
+  HREF="clamav.inet6.fr">clamav.inet6.fr</A></TT> </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> 62.210.153.201 </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> France </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Lionel Bouton</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
+			      </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> 62.210.153.202 </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">        </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> clamavdb*inet6.fr</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html21"
+  HREF="clamav.netopia.pt">clamav.netopia.pt</A></TT> </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> 193.126.14.29 </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Portugal </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Miguel Bettencourt Dias</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
+				</FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">		</FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">	   </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> mbd*netopia.pt</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html22"
+  HREF="clamav.sonic.net">clamav.sonic.net</A></TT> </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> 209.204.175.217 </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> USA </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Kelsey Cummings</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
+			       </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">		 </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">     </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> kgc*sonic.net</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html23"
+  HREF="clamav.nettron.co.za">clamav.nettron.co.za</A></TT> </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> 160.124.112.17 </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> South Africa </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Ryan Zwankhuizen</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
+				   </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">		    </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">		   </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> info*nettron.co.za</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"><TT><A NAME="tex2html24"
+  HREF="clamav.nchost.net">clamav.nchost.net</A></TT> </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> 203.208.228.153 </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Singapore </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> Nicholas Chua</FONT></TD>
+</TR>
+<TR><TD ALIGN="CENTER"><FONT SIZE="-1"> 
+				</FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">		  </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1">	      </FONT></TD>
+<TD ALIGN="CENTER"><FONT SIZE="-1"> nicholas*ncmbox.net</FONT></TD>
+</TR>
+<TR><TD></TD>
+<TD></TD>
+<TD></TD>
+<TD></TD>
+</TR>
+</TABLE>
     
-<UL>
-<LI>interactive - from command line
-</LI>
-<LI>as a daemon - works alone, silently
-    
-</LI>
-</UL>
-    When started by the superuser it drops the privileges, by default it works
-    as <I>clamav</I>. <I>freshclam</I> downloads the database from the Clam
-    AntiVirus homepage and checks its consistency using MD5 sum.
-    process for Clam AntiVirus.
-    <B>Run <I>freshclam</I> (as root) without any parameters to check
-    is it working correctly</B>. If everything is OK, create the log file in
-    /var/log owned by <I>clamav</I>:
-    <PRE>
-	# touch /var/log/clam-update.log
-	# chmod 600 /var/log/clam-update.log
-	# chown clamav /var/log/clam-update.log
-</PRE>
-    Now you can run <I>freshclam</I> as a daemon:
-    <PRE>
-	# freshclam -d -c 2 -l /var/log/clam-update.log
-</PRE>
-    It will check for a new database 2 times a day. Please add the above line
-    to your startup scripts. The other way is to use the <I>cron</I> daemon.
-    You have to add a similar line to the crontab of <B>root</B> or
-    <B>clamav</B>:
-    <FONT SIZE="-1">    </FONT><PRE>
-0 8	* * *	/usr/local/bin/freshclam --quiet -l /var/log/clam-update.log
-</PRE>
-    It will check for a new database daily at 8 am. You may need
-    to setup the proxy support on your system. You should set the environment
-    variable <I>$http_proxy</I>, eg.
-    <PRE>
-	export http_proxy="my.proxy.server:8080"
-</PRE>
-    There is also <I>-http-proxy</I> and <I>-proxy-user</I> option available.
+</DIV>
+In the local database directory there is a <I>mirror.txt</I> file which
+    freshclam reads every time it tries to update the database. freshclam
+    connects to a first server from the list and if it fails a next one will
+    be used. Normally you shouldn't touch this file unless you want to use
+    your own local mirror for database updates.
 
 <P>
 <HR>
 <!--Navigation Panel-->
-<A NAME="tex2html301"
+<A NAME="tex2html341"
   HREF="node15.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html297"
+<A NAME="tex2html337"
   HREF="node6.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html291"
+<A NAME="tex2html333"
   HREF="node13.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html299"
+<A NAME="tex2html339"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html302"
-  HREF="node15.html">FreshClam: Mirrors and mirrors.txt</A>
-<B> Up:</B> <A NAME="tex2html298"
+<B> Next:</B> <A NAME="tex2html342"
+  HREF="node15.html">Usage</A>
+<B> Up:</B> <A NAME="tex2html338"
   HREF="node6.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html292"
-  HREF="node13.html">Testing</A>
- &nbsp <B>  <A NAME="tex2html300"
+<B> Previous:</B> <A NAME="tex2html334"
+  HREF="node13.html">freshclam: Setting up auto-updating</A>
+ &nbsp <B>  <A NAME="tex2html340"
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2003-06-21
+2003-11-11
 </ADDRESS>
 </BODY>
 </HTML>

@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Security</TITLE>
-<META NAME="description" CONTENT="Security">
+<TITLE>OpenAntiVirus samba-vscan</TITLE>
+<META NAME="description" CONTENT="OpenAntiVirus samba-vscan">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -21,63 +21,57 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node41.html">
 <LINK REL="previous" HREF="node39.html">
-<LINK REL="up" HREF="node39.html">
+<LINK REL="up" HREF="node23.html">
 <LINK REL="next" HREF="node41.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html624"
+<A NAME="tex2html675"
   HREF="node41.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html620"
-  HREF="node39.html">
+<A NAME="tex2html671"
+  HREF="node23.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html614"
+<A NAME="tex2html665"
   HREF="node39.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html622"
+<A NAME="tex2html673"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html625"
-  HREF="node41.html">Scan engine</A>
-<B> Up:</B> <A NAME="tex2html621"
-  HREF="node39.html">Technicals</A>
-<B> Previous:</B> <A NAME="tex2html615"
-  HREF="node39.html">Technicals</A>
- &nbsp <B>  <A NAME="tex2html623"
+<B> Next:</B> <A NAME="tex2html676"
+  HREF="node41.html">Sylpheed Claws</A>
+<B> Up:</B> <A NAME="tex2html672"
+  HREF="node23.html">Compatible software</A>
+<B> Previous:</B> <A NAME="tex2html666"
+  HREF="node39.html">Mail::ClamAV</A>
+ &nbsp <B>  <A NAME="tex2html674"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00081000000000000000">
-Security</A>
+<H2><A NAME="SECTION000617000000000000000"></A><A NAME="samba-vscan"></A>
+<BR>
+OpenAntiVirus samba-vscan
 </H2>
-    Clam AntiVirus cares about security. Dangerous operations in clamscan
-    (such as extracting, temporary file creation, unlink() operations) are
-    executed with <I>clamav</I> privileges. <B>But there are no programs
-    without bugs.</B> This is a young project and everything is possible. In some
-    places it uses the <I>snprintf()</I> function, some older systems (C
-    libraries) however the buffer length in this function isn't checked. This
-    example shows, that you should check your system first. Never set SUID/SGID
-    bits on Clam AntiVirus executables. If the SUID bit is set and
-    <I>clamscan</I> is owned by root, every file on the system may be modified
-    with the <I>-log</I> option. Normal users may use <I>clamscan</I> to scan
-    their files, other files shouldn't interest them. Clam AntiVirus Daemon
-    was written with security in mind - it doesn't allow external unpackers
-    (uses only libclamav unarchivers) and contains some additional protections.
+    <B>Homepage:</B> <TT><A NAME="tex2html41"
+  HREF="http://www.openantivirus.org/projects.php#samba-vscan">http://www.openantivirus.org/projects.php#samba-vscan</A></TT>
+<BR>    <B>Supports:</B> clamd
+<BR>
+samba-vscan provides on-access scanning of Samba shares. It supports
+    Samba 2.2.x/3.0 with working virtual file system (VFS) support. 
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2003-06-21
+2003-11-11
 </ADDRESS>
 </BODY>
 </HTML>

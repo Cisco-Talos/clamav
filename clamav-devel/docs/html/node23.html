@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>clamav-milter</TITLE>
-<META NAME="description" CONTENT="clamav-milter">
+<TITLE>Compatible software</TITLE>
+<META NAME="description" CONTENT="Compatible software">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,83 +19,101 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node24.html">
-<LINK REL="previous" HREF="node22.html">
-<LINK REL="up" HREF="node22.html">
+<LINK REL="next" HREF="node44.html">
+<LINK REL="previous" HREF="node21.html">
+<LINK REL="up" HREF="clamdoc.html">
 <LINK REL="next" HREF="node24.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html422"
+<A NAME="tex2html451"
   HREF="node24.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html418"
-  HREF="node22.html">
+<A NAME="tex2html447"
+  HREF="clamdoc.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html412"
+<A NAME="tex2html441"
   HREF="node22.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html420"
+<A NAME="tex2html449"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html423"
-  HREF="node24.html">mod_clamav</A>
-<B> Up:</B> <A NAME="tex2html419"
-  HREF="node22.html">Compatible software</A>
-<B> Previous:</B> <A NAME="tex2html413"
-  HREF="node22.html">Compatible software</A>
- &nbsp <B>  <A NAME="tex2html421"
+<B> Next:</B> <A NAME="tex2html452"
+  HREF="node24.html">clamav-milter</A>
+<B> Up:</B> <A NAME="tex2html448"
+  HREF="clamdoc.html">clamdoc</A>
+<B> Previous:</B> <A NAME="tex2html442"
+  HREF="node22.html">Return codes</A>
+ &nbsp <B>  <A NAME="tex2html450"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00051000000000000000">
-clamav-milter</A>
-</H2>
-    <B>Location:</B> included in clamav package
-<BR>    <B>Supports:</B> clamd
-<BR>
-clamav-milter by Nigel Horne is a very fast email scanner designed for
-    sendmail. It's entirely written in C and uses ClamAV's internal mail
-    scanner (also written by Nigel).
-<BR>    <B>Installation:</B>
-<BR>
-You need libmilter development files. Configure ClamAV with
-    <PRE>
-    $ ./configure --enable-milter
-</PRE>
-    and recompile. The program will be installed in
-    /usr/local/sbin/clamav-milter. The following instructions were adopted
-    from Nigel's INSTALL file: add to /etc/mail/sendmail.mc:
-    <PRE>
-INPUT_MAIL_FILTER(`clmilter',`S=local:/var/run/clmilter.sock,
-F=, T=S:4m;R:4m')dnl
-define(`confINPUT_MAIL_FILTERS', `clmilter')
-</PRE>
-    Check entries in clamav.conf of the form:
-    <PRE>
-	LocalSocket /var/run/clamd.sock
-	ScanMail
-	SaveStreamToDisk
-</PRE>
-    Start clamav-milter:
-    <PRE>
-	/usr/local/sbin/clamav-milter -blo /var/run/clmilter.sock
-</PRE>
-    and restart sendmail.
+<H1><A NAME="SECTION00060000000000000000">
+Compatible software</A>
+</H1>
+    There are many projects that support ClamAV. Here is a list of software
+    that was tested and is known to work well.
 
 <P>
 <BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL>
+<LI><A NAME="tex2html453"
+  HREF="node24.html">clamav-milter</A>
+<LI><A NAME="tex2html454"
+  HREF="node25.html">IVS Milter</A>
+<LI><A NAME="tex2html455"
+  HREF="node26.html">smtp-vilter</A>
+<LI><A NAME="tex2html456"
+  HREF="node27.html">mod_clamav</A>
+<LI><A NAME="tex2html457"
+  HREF="node28.html">TrashScan</A>
+<LI><A NAME="tex2html458"
+  HREF="node29.html">AMaViS - "Next Generation"</A>
+<LI><A NAME="tex2html459"
+  HREF="node30.html">amavisd-new</A>
+<LI><A NAME="tex2html460"
+  HREF="node31.html">Qmail-Scanner</A>
+<LI><A NAME="tex2html461"
+  HREF="node32.html">Sagator</A>
+<LI><A NAME="tex2html462"
+  HREF="node33.html">ClamdMail</A>
+<LI><A NAME="tex2html463"
+  HREF="node34.html">BlackHole</A>
+<LI><A NAME="tex2html464"
+  HREF="node35.html">MailScanner</A>
+<LI><A NAME="tex2html465"
+  HREF="node36.html">MIMEDefang</A>
+<LI><A NAME="tex2html466"
+  HREF="node37.html">exiscan</A>
+<LI><A NAME="tex2html467"
+  HREF="node38.html">scanexi</A>
+<LI><A NAME="tex2html468"
+  HREF="node39.html">Mail::ClamAV</A>
+<LI><A NAME="tex2html469"
+  HREF="node40.html">OpenAntiVirus samba-vscan</A>
+<LI><A NAME="tex2html470"
+  HREF="node41.html">Sylpheed Claws</A>
+<LI><A NAME="tex2html471"
+  HREF="node42.html">nclamd</A>
+<LI><A NAME="tex2html472"
+  HREF="node43.html">cgpav</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2003-06-21
+2003-11-11
 </ADDRESS>
 </BODY>
 </HTML>

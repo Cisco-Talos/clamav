@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>API</TITLE>
-<META NAME="description" CONTENT="API">
+<TITLE>MIMEDefang</TITLE>
+<META NAME="description" CONTENT="MIMEDefang">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,191 +19,57 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node37.html">
 <LINK REL="previous" HREF="node35.html">
-<LINK REL="up" HREF="node35.html">
+<LINK REL="up" HREF="node23.html">
 <LINK REL="next" HREF="node37.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html575"
+<A NAME="tex2html627"
   HREF="node37.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html571"
-  HREF="node35.html">
+<A NAME="tex2html623"
+  HREF="node23.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html567"
+<A NAME="tex2html617"
   HREF="node35.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html573"
+<A NAME="tex2html625"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html576"
-  HREF="node37.html">Problem solving</A>
-<B> Up:</B> <A NAME="tex2html572"
-  HREF="node35.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html568"
-  HREF="node35.html">LibClamAV</A>
- &nbsp <B>  <A NAME="tex2html574"
+<B> Next:</B> <A NAME="tex2html628"
+  HREF="node37.html">exiscan</A>
+<B> Up:</B> <A NAME="tex2html624"
+  HREF="node23.html">Compatible software</A>
+<B> Previous:</B> <A NAME="tex2html618"
+  HREF="node35.html">MailScanner</A>
+ &nbsp <B>  <A NAME="tex2html626"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00061000000000000000">
-API</A>
+<H2><A NAME="SECTION000613000000000000000">
+MIMEDefang</A>
 </H2>
-    Each program using libclamav must include <I>clamav.h</I> header file:
-    <PRE>
-	#include &lt;clamav.h&gt;
-</PRE>
-    The first step is an engine initialization. There are three functions
-    available:
-    <PRE>
-	int cl_loaddb(const char *filename, struct cl_node **root,
-	int *virnum);
-
-	int cl_loaddbdir(const char *dirname, struct cl_node **root,
-	int *virnum);
-
-	char *cl_retdbdir(void);
-</PRE>
-    <I>cl_loaddb()</I> loads one database per time, <I>cl_loaddbdir()</I>
-    loads all <I>.db</I> and .db2 files from the directory <I>dirname</I>.
-    <I>cl_retdbdir()</I> returns hardcoded database directory path.
-    The database will be saved under <I>root</I> and the number of the loaded
-    signatures will be <B>added</B> to <I>virnum</I>. Pointer to the tree
-    structure (trie, see <A HREF="node41.html#engine">7.2</A>) must initially point to the NULL. If you
-    don't want to save the number of signatures loaded pass the NULL as the
-    third argument. <I>cl_loaddb</I> functions return 0 on success and
-    other value on failure.
-    <PRE>
-	    struct cl_node *root = NULL;
-	    int ret;
-
-	ret = cl_loaddbdir(cl_retdbdir(), &amp;root, NULL);
-</PRE>
-    There's elegant way to print libclamav's error codes:
-    <PRE>
-	char *cl_perror(int clerror);
-</PRE>
-    <I>cl_perror()</I> returns a (statically allocated) string describing
-    <I>clerror</I> code:
-    <PRE>
-	if(ret) {
-	    printf("cl_loaddbdir() error: %s\n", cl_perror(ret));
-	    exit(1);
-	}
-</PRE>
-    When database is loaded, you must create the proper trie with:
-    <PRE>
-	void cl_buildtrie(struct cl_node *root);
-</PRE>
-    In our example:
-    <PRE>
-	cl_buildtrie(root);
-</PRE>
-    OK, now you can scan a buffer, descriptor or file with:
-    <PRE>
-	int cl_scanbuff(const char *buffer, unsigned int length,
-	char **virname, const struct cl_node *root);
-
-	int cl_scandesc(int desc, char **virname, unsigned long int
-	*scanned, const struct cl_node *root, const struct cl_limits
-	*limits, int options);
-
-	int cl_scanfile(const char *filename, char **virname,
-	unsigned long int *scanned, const struct cl_node *root,
-	const struct cl_limits *limits, int options);
-</PRE>
-    All the functions save a virus name address under <I>virname</I> pointer.
-    <I>virname</I> points to the name in the trie structure, thus it can't be
-    released directly. <I>cl_scandesc()</I> and <I>cl_scanfile()</I> can
-    increase <I>scanned</I> value in CL_COUNT_PRECISION units. They also
-    support archive limits:
-    <PRE>
-	struct cl_limits {
-	    int maxreclevel;
-	    int maxfiles;
-	    long int maxfilesize;
-	};
-</PRE>
-    The last argument configures scan engine. Currently it supports
-    <B>CL_ARCHIVE</B> (enables archive scanning), <B>CL_RAW</B>
-    (disables archive scanning) and <B>CL_MAIL</B> (enables mbox
-    and Maildir scanning).
-    The functions return 0 (<B>CL_CLEAN</B>) when no virus is found,
-    <B>CL_VIRUS</B> when virus is found and other value on failure.
-    <PRE>
-	    struct cl_limits limits;
-	    char *virname;
-
-	/* maximal number of files in archive */;
-	limits.maxfiles = 100
-	/* maximal archived file size == 10 Mb */
-	limits.maxfilesize = 10 * 1048576;
-	/* maximal recursion level */
-	limits.maxreclevel = 8;
-
-
-	if((ret = cl_scanfile("/home/zolw/test", &amp;virname, NULL, root,
-	&amp;limits, CL_ARCHIVE)) == CL_VIRUS) {
-	    printf("Detected %s virus.\n", virname);
-	} else {
-	    printf("No virus detected.\n");
-	    if(ret != CL_CLEAN)
-	        printf("Error: %s\n", cl_perror(ret));
-	}
-</PRE>
-    When you don't need to scan more files, the trie should be released
-    with:
-    <PRE>
-	void cl_freetrie(struct cl_node *root);
-</PRE>
-    You will find some examples in clamav sources. Each program using
-    libclamav must be linked against it:
-    <PRE>
-	gcc -Wall ex1.c -o ex1 -lclamav
-</PRE>
-    Enjoy !
+    <B>Homepage:</B> <TT><A NAME="tex2html37"
+  HREF="http://www.roaringpenguin.com/mimedefang">http://www.roaringpenguin.com/mimedefang</A></TT>
+<BR>    <B>Supports:</B> clamscan, clamd
+<BR>
+This is an efficient mail scanner for Sendmail/milter.
 
 <P>
-<HR>
-<!--Navigation Panel-->
-<A NAME="tex2html575"
-  HREF="node37.html">
-<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
- SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html571"
-  HREF="node35.html">
-<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
- SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html567"
-  HREF="node35.html">
-<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
- SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html573"
-  HREF="node1.html">
-<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
- SRC="/usr/share/latex2html/icons/contents.png"></A>  
-<BR>
-<B> Next:</B> <A NAME="tex2html576"
-  HREF="node37.html">Problem solving</A>
-<B> Up:</B> <A NAME="tex2html572"
-  HREF="node35.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html568"
-  HREF="node35.html">LibClamAV</A>
- &nbsp <B>  <A NAME="tex2html574"
-  HREF="node1.html">Contents</A></B> 
-<!--End of Navigation Panel-->
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2003-06-21
+2003-11-11
 </ADDRESS>
 </BODY>
 </HTML>

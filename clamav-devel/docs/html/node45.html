@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>About this document ...</TITLE>
-<META NAME="description" CONTENT="About this document ...">
+<TITLE>General API</TITLE>
+<META NAME="description" CONTENT="General API">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,61 +19,193 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node46.html">
 <LINK REL="previous" HREF="node44.html">
-<LINK REL="up" HREF="clamdoc.html">
+<LINK REL="up" HREF="node44.html">
+<LINK REL="next" HREF="node46.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
+<A NAME="tex2html737"
+  HREF="node46.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
- SRC="/usr/share/latex2html/icons/next_g.png"> 
-<A NAME="tex2html676"
-  HREF="clamdoc.html">
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html733"
+  HREF="node44.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html672"
+<A NAME="tex2html727"
   HREF="node44.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html678"
+<A NAME="tex2html735"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Up:</B> <A NAME="tex2html677"
-  HREF="clamdoc.html">clamdoc</A>
-<B> Previous:</B> <A NAME="tex2html673"
-  HREF="node44.html">Bibliography</A>
- &nbsp <B>  <A NAME="tex2html679"
+<B> Next:</B> <A NAME="tex2html738"
+  HREF="node46.html">Database reloading</A>
+<B> Up:</B> <A NAME="tex2html734"
+  HREF="node44.html">LibClamAV</A>
+<B> Previous:</B> <A NAME="tex2html728"
+  HREF="node44.html">LibClamAV</A>
+ &nbsp <B>  <A NAME="tex2html736"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H1><A NAME="SECTION000120000000000000000">
-About this document ...</A>
-</H1>
- <P>
-This document was generated using the
-<A HREF="http://www-texdev.mpce.mq.edu.au/l2h/docs/manual/"><STRONG>LaTeX</STRONG>2<tt>HTML</tt></A> translator Version 2K.1beta (1.48)
+<H2><A NAME="SECTION00071000000000000000">
+General API</A>
+</H2>
+    Every program based on libclamav must include the <I>clamav.h</I> header
+    file:
+    <PRE>
+	#include &lt;clamav.h&gt;
+</PRE>
+    A first step is to initialize the scanning engine. There are three
+    functions available:
+    <PRE>
+	int cl_loaddb(const char *filename, struct cl_node **root,
+	int *virnum);
+
+	int cl_loaddbdir(const char *dirname, struct cl_node **root,
+	int *virnum);
+
+	char *cl_retdbdir(void);
+</PRE>
+    <I>cl_loaddb()</I> loads a particular database, <I>cl_loaddbdir()</I>
+    loads all <I>.cvd</I> (and older <I>.db</I>, .db2) databases from a
+    directory <I>dirname</I>. <I>cl_retdbdir()</I> returns a hardcoded
+    database directory path. Initial internal database (Aho-Corasick tree,
+    trie; see <A HREF="node47.html#engine">6.3</A>) will be saved under <I>root</I> and a number of
+    signatures loaded will be <B>added</B> <A NAME="tex2html45"
+  HREF="footnode.html#foot510"><SUP>7</SUP></A> to <I>virnum</I>. Pointer to the trie
+    must initially point to NULL. If you don't care about number of signatures
+    pass NULL as a third argument. <I>cl_loaddb</I> functions return 0 on
+    success and other value on failure.
+    <PRE>
+	    struct cl_node *root = NULL;
+	    int ret;
+
+	ret = cl_loaddbdir(cl_retdbdir(), &amp;root, NULL);
+</PRE>
+    There's an elegant way to print libclamav's error codes:
+    <PRE>
+	char *cl_strerror(int clerror);
+</PRE>
+    <I>cl_strerror()</I> returns a (statically allocated) string describing
+    a <I>clerror</I> code:
+    <PRE>
+	if(ret) {
+	    printf("cl_loaddbdir() error: %s\n", cl_strerror(ret));
+	    exit(1);
+	}
+</PRE>
+    When database is loaded you must build the final trie with:
+    <PRE>
+	void cl_buildtrie(struct cl_node *root);
+</PRE>
+    In our example:
+    <PRE>
+	cl_buildtrie(root);
+</PRE>
+    OK, now you can scan a buffer, a descriptor or a file with:
+    <PRE>
+	int cl_scanbuff(const char *buffer, unsigned int length,
+	char **virname, const struct cl_node *root);
+
+	int cl_scandesc(int desc, char **virname, unsigned long int
+	*scanned, const struct cl_node *root, const struct cl_limits
+	*limits, int options);
+
+	int cl_scanfile(const char *filename, char **virname,
+	unsigned long int *scanned, const struct cl_node *root,
+	const struct cl_limits *limits, int options);
+</PRE>
+    All the functions save a virus name address under <I>virname</I> pointer.
+    <I>virname</I> points to a name in the trie structure thus it can't be
+    released directly. <I>cl_scandesc()</I> and <I>cl_scanfile()</I> can
+    increase the <I>scanned</I> value in CL_COUNT_PRECISION units, they also
+    support archive limits:
+    <PRE>
+	struct cl_limits {
+	    int maxreclevel;
+	    int maxfiles;
+	    long int maxfilesize;
+	};
+</PRE>
+    The last argument configures scan engine. Currently it supports
+    <B>CL_ARCHIVE</B> (enables archive scanning), <B>CL_RAW</B>
+    (disables archive scanning) and <B>CL_MAIL</B> (enables mbox
+    and Maildir scanning) and <B>CL_DISABLERAR</B> (disables the built-in
+    RAR unpacker which leaks like hell). These functions return 0
+    (<B>CL_CLEAN</B>) when no virus is found, <B>CL_VIRUS</B> when virus
+    is found and other value on failure.
+    <PRE>
+	    struct cl_limits limits;
+	    char *virname;
+
+	/* maximal number of files in archive */;
+	limits.maxfiles = 1000
+	/* maximal archived file size == 10 MB */
+	limits.maxfilesize = 10 * 1048576;
+	/* maximal recursion level */
+	limits.maxreclevel = 5;
+
+	if((ret = cl_scanfile("/home/zolw/test", &amp;virname, NULL, root,
+	&amp;limits, CL_ARCHIVE)) == CL_VIRUS) {
+	    printf("Detected %s virus.\n", virname);
+	} else {
+	    printf("No virus detected.\n");
+	    if(ret != CL_CLEAN)
+	        printf("Error: %s\n", cl_strerror(ret));
+	}
+</PRE>
+    Release the trie if you no longer need it:
+    <PRE>
+	void cl_freetrie(struct cl_node *root);
+</PRE>
+    You will find an example scanner in clamav sources (/example). Program
+    based on libclamav must be linked against it:
+    <PRE>
+	gcc -Wall ex1.c -o ex1 -lclamav
+</PRE>
+    Enjoy !
+
 <P>
-Copyright &#169; 1993, 1994, 1995, 1996,
-<A HREF="http://cbl.leeds.ac.uk/nikos/personal.html">Nikos Drakos</A>, 
-Computer Based Learning Unit, University of Leeds.
+<HR>
+<!--Navigation Panel-->
+<A NAME="tex2html737"
+  HREF="node46.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html733"
+  HREF="node44.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html727"
+  HREF="node44.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html735"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-Copyright &#169; 1997, 1998, 1999,
-<A HREF="http://www.maths.mq.edu.au/~ross/">Ross Moore</A>, 
-Mathematics Department, Macquarie University, Sydney.
-<P>
-The command line arguments were: <BR>
- <STRONG>latex2html</STRONG> <TT><A NAME="tex2html33"
-  HREF="../clamdoc.tex">clamdoc.tex</A></TT>
-<P>
-The translation was initiated by Tomasz Kojm on 2003-06-21
-<BR><HR>
+<B> Next:</B> <A NAME="tex2html738"
+  HREF="node46.html">Database reloading</A>
+<B> Up:</B> <A NAME="tex2html734"
+  HREF="node44.html">LibClamAV</A>
+<B> Previous:</B> <A NAME="tex2html728"
+  HREF="node44.html">LibClamAV</A>
+ &nbsp <B>  <A NAME="tex2html736"
+  HREF="node1.html">Contents</A></B> 
+<!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2003-06-21
+2003-11-11
 </ADDRESS>
 </BODY>
 </HTML>

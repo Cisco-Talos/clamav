@@ -122,7 +122,7 @@ install_sh = @install_sh@
 
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@clamav_milter_LDADD = ../clamd/cfgfile.o ../clamd/others.o ../clamscan/getopt.o
 
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@man_MANS = ../docs/clamav-milter.1
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@man_MANS = ../docs/clamav-milter.8
 
 DEFS = @DEFS@
 # CLAMD_LIBS is used, because clamav-milter requires the same libraries as clamd
@@ -251,15 +251,15 @@ distclean-libtool:
 	-rm -f libtool
 uninstall-info-am:
 
-man1dir = $(mandir)/man1
-install-man1: $(man1_MANS) $(man_MANS)
+man8dir = $(mandir)/man8
+install-man8: $(man8_MANS) $(man_MANS)
 	@$(NORMAL_INSTALL)
-	$(mkinstalldirs) $(DESTDIR)$(man1dir)
-	@list='$(man1_MANS) $(dist_man1_MANS) $(nodist_man1_MANS)'; \
+	$(mkinstalldirs) $(DESTDIR)$(man8dir)
+	@list='$(man8_MANS) $(dist_man8_MANS) $(nodist_man8_MANS)'; \
 	l2='$(man_MANS) $(dist_man_MANS) $(nodist_man_MANS)'; \
 	for i in $$l2; do \
 	  case "$$i" in \
-	    *.1*) list="$$list $$i" ;; \
+	    *.8*) list="$$list $$i" ;; \
 	  esac; \
 	done; \
 	for i in $$list; do \
@@ -269,16 +269,16 @@ install-man1: $(man1_MANS) $(man_MANS)
 	  inst=`echo $$i | sed -e 's/\\.[0-9a-z]*$$//'`; \
 	  inst=`echo $$inst | sed -e 's/^.*\///'`; \
 	  inst=`echo $$inst | sed '$(transform)'`.$$ext; \
-	  echo " $(INSTALL_DATA) $$file $(DESTDIR)$(man1dir)/$$inst"; \
-	  $(INSTALL_DATA) $$file $(DESTDIR)$(man1dir)/$$inst; \
+	  echo " $(INSTALL_DATA) $$file $(DESTDIR)$(man8dir)/$$inst"; \
+	  $(INSTALL_DATA) $$file $(DESTDIR)$(man8dir)/$$inst; \
 	done
-uninstall-man1:
+uninstall-man8:
 	@$(NORMAL_UNINSTALL)
-	@list='$(man1_MANS) $(dist_man1_MANS) $(nodist_man1_MANS)'; \
+	@list='$(man8_MANS) $(dist_man8_MANS) $(nodist_man8_MANS)'; \
 	l2='$(man_MANS) $(dist_man_MANS) $(nodist_man_MANS)'; \
 	for i in $$l2; do \
 	  case "$$i" in \
-	    *.1*) list="$$list $$i" ;; \
+	    *.8*) list="$$list $$i" ;; \
 	  esac; \
 	done; \
 	for i in $$list; do \
@@ -286,8 +286,8 @@ uninstall-man1:
 	  inst=`echo $$i | sed -e 's/\\.[0-9a-z]*$$//'`; \
 	  inst=`echo $$inst | sed -e 's/^.*\///'`; \
 	  inst=`echo $$inst | sed '$(transform)'`.$$ext; \
-	  echo " rm -f $(DESTDIR)$(man1dir)/$$inst"; \
-	  rm -f $(DESTDIR)$(man1dir)/$$inst; \
+	  echo " rm -f $(DESTDIR)$(man8dir)/$$inst"; \
+	  rm -f $(DESTDIR)$(man8dir)/$$inst; \
 	done
 
 ETAGS = etags
@@ -356,7 +356,7 @@ check: check-am
 all-am: Makefile $(PROGRAMS) $(MANS)
 
 installdirs:
-	$(mkinstalldirs) $(DESTDIR)$(sbindir) $(DESTDIR)$(man1dir)
+	$(mkinstalldirs) $(DESTDIR)$(sbindir) $(DESTDIR)$(man8dir)
 
 install: install-am
 install-exec: install-exec-am
@@ -405,7 +405,7 @@ install-exec-am: install-sbinPROGRAMS
 
 install-info: install-info-am
 
-install-man: install-man1
+install-man: install-man8
 
 installcheck-am:
 
@@ -420,7 +420,7 @@ mostlyclean-am: mostlyclean-compile mostlyclean-generic \
 
 uninstall-am: uninstall-info-am uninstall-man uninstall-sbinPROGRAMS
 
-uninstall-man: uninstall-man1
+uninstall-man: uninstall-man8
 
 .PHONY: GTAGS all all-am check check-am clean clean-generic \
 	clean-libtool clean-sbinPROGRAMS distclean distclean-compile \
@@ -428,11 +428,11 @@ uninstall-man: uninstall-man1
 	distclean-tags distdir dvi dvi-am info info-am install \
 	install-am install-data install-data-am install-exec \
 	install-exec-am install-info install-info-am install-man \
-	install-man1 install-sbinPROGRAMS install-strip installcheck \
+	install-man8 install-sbinPROGRAMS install-strip installcheck \
 	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool tags uninstall \
-	uninstall-am uninstall-info-am uninstall-man uninstall-man1 \
+	uninstall-am uninstall-info-am uninstall-man uninstall-man8 \
 	uninstall-sbinPROGRAMS
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

@@ -1,8 +1,8 @@
-.\" Manual page created by Tomasz Kojm, 21.11.2002
-.TH "Clamd client" "1" "November 21, 2002" "Tomasz Kojm" "Clam AntiVirus"
+.\" Manual page created by Tomasz Kojm, 20021121
+.TH "Clamd client" "1" "November 11, 2003" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
-clamdscan \- scan files/directories against viruses using Clam AntiVirus Daemon
+clamdscan \- scan files and directories against viruses using Clam AntiVirus Daemon
 .SH "SYNOPSIS"
 .LP 
 clamscan [options] [file/directory]
@@ -17,7 +17,7 @@ clamdscan is a simple clamd client, which may be used as a clamscan replacement.
 Output help information and exit.
 .TP 
 \fB\-V, \-\-version\fR
-Print the version number and exit.
+Print version number and exit.
 .TP 
 \fB\-v, \-\-verbose\fR
 Be verbose. This option causes clamscan to print many additional informations.
@@ -26,16 +26,16 @@ Be verbose. This option causes clamscan to print many additional informations.
 Be quiet \- only output error messages.
 .TP 
 \fB\-\-stdout\fR
-Write all messages to the standard output (stdout), instead of the standard error output (stderr). The buffer is automatically flushed (stdout unlike stderr is buffered), to avoid a race conditions on output.
+Write all messages to the standard output (stdout) instead of the standard error output (stderr).
 .TP 
 \fB\-l FILE, \-\-log=FILE\fR
-Save the scan report to FILE. By default the log isn't saved.
+Save the scan report to FILE.
 .TP 
 \fB\-\-log\-verbose\fR
-Save an additional information (mostly needless) to the report file.
+Save additional messages (mostly useless) to the report file.
 .TP 
 \fB\-\-disable\-summary\fR
-Disable summary printing at the end of a scanning.
+Disable summary at the end of scanning.
 .SH "EXAMPLES"
 .LP 
 .TP 
@@ -43,7 +43,7 @@ Disable summary printing at the end of a scanning.
 
 \fBclamdscan file\fR
 .TP 
-(1) To scan a current directory:
+(1) To scan a current working directory:
 
 \fBclamdscan\fR
 .TP 
@@ -56,12 +56,12 @@ Disable summary printing at the end of a scanning.
 .TP 
 1 : Virus(es) found.
 .TP 
-2 : Error occured.
+2 : An error occured.
 .SH "CREDITS"
 Please check the full documentation for credits.
 .SH "AUTHOR"
 .LP 
-Tomasz Kojm <zolw@konarski.edu.pl>
+Tomasz Kojm <tkojm@clamav.net>
 .SH "SEE ALSO"
 .LP 
-clamscan(1), clamd(8), freshclam(1), sigtool(1), clamav.conf(5)
+clamscan(1), clamd(8), freshclam(1), sigtool(1), clamav.conf(5), clamav\-milter(8)

@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Output format</TITLE>
-<META NAME="description" CONTENT="Output format">
+<TITLE>Signature Tool</TITLE>
+<META NAME="description" CONTENT="Signature Tool">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,126 +19,166 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node21.html">
 <LINK REL="previous" HREF="node19.html">
-<LINK REL="up" HREF="node16.html">
+<LINK REL="up" HREF="node15.html">
 <LINK REL="next" HREF="node21.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html376"
+<A NAME="tex2html416"
   HREF="node21.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html372"
-  HREF="node16.html">
+<A NAME="tex2html412"
+  HREF="node15.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html366"
+<A NAME="tex2html408"
   HREF="node19.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html374"
+<A NAME="tex2html414"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html377"
-  HREF="node21.html">Signature Tool</A>
-<B> Up:</B> <A NAME="tex2html373"
-  HREF="node16.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html367"
-  HREF="node19.html">Archives and compressed files</A>
- &nbsp <B>  <A NAME="tex2html375"
+<B> Next:</B> <A NAME="tex2html417"
+  HREF="node21.html">Problem solving</A>
+<B> Up:</B> <A NAME="tex2html413"
+  HREF="node15.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html409"
+  HREF="node19.html">Output format</A>
+ &nbsp <B>  <A NAME="tex2html415"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00044000000000000000">
-Output format</A>
+<H2><A NAME="SECTION00045000000000000000">
+Signature Tool</A>
 </H2>
-    <I>clamd</I> uses clamscan compatible (see below) output format.
+    <I>sigtool</I> automates signature creation. If you have got an infected
+    file not recognized by ClamAV and there is another anti-virus scanner
+    working in a console that detects the virus, then you can try to create
+    the signature automatically. <I>Sigtool is only partially useful because
+    it only detects a last part of a real signature. It will fail for multipart
+    signatures (often used to match polymorphic viruses).</I>
+    <I>Example of usage:</I>
+    Create a random file (with any content) and insert the <B>test1</B> file
+    content into it. We will use <I>clamscan</I> to generate the signature.
+    This is only an example - in real life you don't need such tricks - just
+    an infected file. Scan it with <I>clamscan -stdout testfile</I> - the
+    output should be:
     <PRE>
-	zolw@Wierszokleta:~$ telnet localhost 3310
-	Trying 127.0.0.1...
-	Connected to localhost.
-	Escape character is '^]'.
-	SCAN /home/zolw/infected
-	/home/zolw/infected/sobre.com: W32/Magistr.B FOUND
-	Connection closed by foreign host.
-</PRE>
-    In <B>SCAN</B> mode it closes the connection when first virus is found.
-    In the case of archives, the output is exactly the same as with normal
-    files:
-    <PRE>
-	SCAN /home/zolw/Clam/test/test2.zip
-	/home/zolw/Clam/test/test2.zip: ClamAV-Test-Signature FOUND
-</PRE>
-    <B>CONTSCAN</B> displays all infected files found.
-<BR>
-Error messages are printed in the following format:
-    <PRE>
-	SCAN /no/such/file
-	/no/such/file: Can't stat() the file ERROR
-</PRE>
-    and they can be easily parsed.
+	testfile: ClamAV-Test-Signature FOUND
 
-<P>
-<I>clamscan</I> writes all messages (only help is written to <B>stdout</B>    by default) to <B>stderr</B>. In some situations
-    you may want to redirect it to <B>stdout</B> with <I>-stdout</I>.
-    <I>stdout</I> in contrast to <I>stderr</I> is buffered, that's why
-    <I>clamscan</I> flushes this buffer after each message, to prevent
-    the creation of trashes on the output. During scanning it writes something
-    like this:
-    <PRE>
-	/TEST/test: OK
-	/TEST/Makefile: OK
-	/TEST/getopt.c: OK
-	/TEST/virfile: Phantom #1 FOUND
+	----------- SCAN SUMMARY -----------
+	Known viruses: 10213
+	Scanned directories: 0
+	Scanned files: 1
+	Data scanned: 0.95 MB
+	Infected files: 1
+	I/O buffer size: 131072 bytes
+	Time: 0.245 sec (0 m 0 s)
 </PRE>
-    When a virus is found, its name is printed between <I>filename:</I> and
-    <I>FOUND</I>.
-    If a virus is found in an archive scanned with an external unpacker
-    it's noticed with <I>Infected Archive</I>. "Infected Archives" are not
-    counted as infected files - just files in them are. Please note the
-    difference between an internal unarchiving - because it's realized
-    transparently by the libclamav, clamscan doesn't even know the file is
-    an archive.
+    The unique string in this output is "ClamAV-Test-Signature" so run
+    <I>sigtool</I> with the following arguments:
+    <PRE>
+	$ sigtool -c "clamscan --stdout" -f testfile -s "ClamAV-Test"
+</PRE>
+    The program will concatenate arguments for <I>-c (-command)</I> and
+    <I>-f (-file)</I>, that's why the scanner's options must be given in the
+    proper order. At the end it will generate a file <I>testfile.sig</I>,
+    which should contain 100 bytes in our example. It contains the proper
+    signature.
+    <PRE>
+	Detected, decreasing end 20051 -&gt; 16040
+	Detected, decreasing end 16040 -&gt; 12029
+	Detected, decreasing end 12029 -&gt; 8018
+	Not detected at 8018, moving forward.
+	Detected, decreasing end 10024 -&gt; 8018
+	Not detected at 8018, moving forward.
+	Detected, decreasing end 9021 -&gt; 8018
+	Not detected at 8018, moving forward.
+	Not detected at 8520, moving forward.
+	Detected, decreasing end 8771 -&gt; 8520
+	Not detected at 8520, moving forward.
+	Not detected at 8646, moving forward.
+	Not detected at 8709, moving forward.
+	Detected, decreasing end 8741 -&gt; 8709
+	Not detected at 8709, moving forward.
+	Not detected at 8725, moving forward.
+	Detected, decreasing end 8733 -&gt; 8725
+	Not detected at 8725, moving forward.
+	Not detected at 8729, moving forward.
+	Detected, decreasing end 8731 -&gt; 8729
+	Not detected at 8729, moving forward.
+	Detected, decreasing end 8730 -&gt; 8729
+	Not detected at 8729, moving forward.
+	Increasing end 8729 -&gt; 8730
+	 *** Signature end found at 8730
+	Detected at 8680, moving forward.
+	Detected at 8680, moving forward.
+	Not detected, moving backward 8693 -&gt; 8680
+	Detected at 8680, moving forward.
+	Not detected, moving backward 8687 -&gt; 8680
+	Detected at 8680, moving forward.
+	Not detected, moving backward 8684 -&gt; 8680
+	Detected at 8680, moving forward.
+	Not detected, moving backward 8682 -&gt; 8680
+	Detected at 8680, moving forward.
+	Not detected, moving backward 8681 -&gt; 8680
+	Detected at 8680, moving forward.
+	Not detected, moving backward 8681 -&gt; 8680
+	Detected at 8680, moving forward.
+	Moving forward 8680 -&gt; 8681
+	 *** Signature start found at 8681
+
+	The scanner was executed 33 times.
+	The signature length is 49 (98 hex)
+	Saving signature in testfile.sig file.
+	Saving binary signature in testfile.bsig file.
+</PRE>
+    To make the generated signature complete you only to add the
+    <I>VirusName=</I> string at the beginning of the hexadecimal signature in
+    testfile.sig.
+<BR>    <I><B>TIP:</B> ClamAV scanners read all .db files in the database
+    directory. You can create your own database files (e.g. local.db) and they
+    won't be modified by freshclam !</I>
 
 <P>
 <HR>
 <!--Navigation Panel-->
-<A NAME="tex2html376"
+<A NAME="tex2html416"
   HREF="node21.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html372"
-  HREF="node16.html">
+<A NAME="tex2html412"
+  HREF="node15.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html366"
+<A NAME="tex2html408"
   HREF="node19.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html374"
+<A NAME="tex2html414"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html377"
-  HREF="node21.html">Signature Tool</A>
-<B> Up:</B> <A NAME="tex2html373"
-  HREF="node16.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html367"
-  HREF="node19.html">Archives and compressed files</A>
- &nbsp <B>  <A NAME="tex2html375"
+<B> Next:</B> <A NAME="tex2html417"
+  HREF="node21.html">Problem solving</A>
+<B> Up:</B> <A NAME="tex2html413"
+  HREF="node15.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html409"
+  HREF="node19.html">Output format</A>
+ &nbsp <B>  <A NAME="tex2html415"
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2003-06-21
+2003-11-11
 </ADDRESS>
 </BODY>
 </HTML>
