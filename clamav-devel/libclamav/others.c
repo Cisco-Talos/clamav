@@ -153,6 +153,8 @@ const char *cl_strerror(int clerror)
 	    return "Null argument passed while initialized is required";
 	case CL_EIO:
 	    return "Input/Output error";
+	case CL_EFORMAT:
+	    return "Bad format or broken data";
 	default:
 	    return "Unknown error code";
     }
