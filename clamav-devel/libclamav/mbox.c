@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.220  2005/02/17 19:06:32  nigelhorne
+ * Prescan bounces
+ *
  * Revision 1.219  2005/02/16 22:20:49  nigelhorne
  * New code now called NEW_WORLD
  *
@@ -645,7 +648,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.219 2005/02/16 22:20:49 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.220 2005/02/17 19:06:32 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -986,6 +989,8 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 	if(size > 10*1024*1024)
 		return cli_parse_mbox(dir, desc, options);	/* should be StreamMaxLength, I guess */
+
+	cli_warnmsg("NEW_WORLD is new code - use at your own risk.\n");
 
 	start = mmap(NULL, size, PROT_READ, MAP_PRIVATE, desc, 0);
 	if(start == MAP_FAILED)
@@ -2888,6 +2893,10 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					 * plain/html
 					 */
 					if(strstr(s, "text/") == NULL)
+						/*
+						 * Don't bother to save the unuseful
+						 * part
+						 */
 						break;
 			}
 
@@ -2898,6 +2907,33 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				continue;
 			}
 
+			/*
+			 * Prescan the bounce message to see if there's likely
+			 * to be anything nasty.
+			 * This algorithm is hand crafted and may be breakable
+			 * so all submissions are welcome. It's best NOT to
+			 * remove this however you may be tempted, because it
+			 * significantly speeds up the scanning of multiple
+			 * bounces (i.e. bounces within many bounces)
+			 */
+			for(; lookahead; lookahead = lookahead->t_next) {
+				l = lookahead->t_line;
+
+				if(l) {
+					s = lineGetData(l);
+					if((strncasecmp(s, "Content-Type:", 13) == 0) &&
+					   (strstr(s, "multipart/") == NULL) &&
+					   (strstr(s, "message/rfc822") == NULL) &&
+					   (strstr(s, "text/plain") == NULL))
+						break;
+				}
+			}
+			if(lookahead == NULL) {
+				/* warning not dbg during the trial period */
+				cli_warnmsg("cli_mbox: I believe it's plain text which must be clean\n");
+				/* nothing here, move along please */
+				break;
+			}
 			if((fb = fileblobCreate()) != NULL) {
 				cli_dbgmsg("Save non mime part bounce message\n");
 				fileblobSetFilename(fb, dir, "bounce");
