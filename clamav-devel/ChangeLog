@@ -1,3 +1,8 @@
+Thu Jul  1 03:18:04 CEST 2004 (tk)
+----------------------------------
+  * clamdscan: fix bug (introduced in -20040622) in stream scanning in TCP
+	       mode. Patch by Piotr Gackiewicz <gacek*intertele.pl>.
+
 Wed Jun 30 20:49:46 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Some TR.Happy99.SKA were getting through

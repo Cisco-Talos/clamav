@@ -95,6 +95,8 @@ int dsstream(int sockd)
 {
 	int wsockd, loopw = 60, bread, port, infected = 0;
 	struct sockaddr_in server;
+	struct sockaddr_in peer;
+	int peer_size;
 	char buff[4096], *pt;
 
     if(write(sockd, "STREAM", 6) <= 0) {
@@ -128,6 +130,15 @@ int dsstream(int sockd)
 
     server.sin_family = AF_INET;
     server.sin_port = htons(port);
+
+    peer_size = sizeof(peer);
+    if(getpeername(sockd, (struct sockaddr *) &peer, &peer_size) < 0) {
+	perror("getpeername()");
+	mprintf("@Can't get socket peer name.\n");
+	return -1;
+    }
+
+    server.sin_addr.s_addr = peer.sin_addr.s_addr;
 
     if(connect(wsockd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) < 0) {
 	close(wsockd);
