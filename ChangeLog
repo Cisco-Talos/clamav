@@ -1,3 +1,9 @@
+Tue Sep  7 23:14:42 CEST 2004 (tk)
+----------------------------------
+  * libclamav/filetypes.c: add rule for "PK00PK" Zip archives (thanks to
+			   Tomasz Papszun)
+  * libclamav: enable support for POSIX tar files (patch by Nigel)
+
 Mon Sep  6 12:04:08 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Normalise the HTML before looking for URLs to scan

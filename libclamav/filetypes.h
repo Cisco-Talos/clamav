@@ -20,7 +20,7 @@
 #ifndef __FILETYPES_H
 #define __FILETYPES_H
 
-#define MAGIC_BUFFER_SIZE 26
+#define MAGIC_BUFFER_SIZE 262
 #define CL_TYPENO 500
 
 typedef enum {
@@ -28,6 +28,7 @@ typedef enum {
     CL_UNKNOWN_DATA_TYPE,
     CL_DOSEXE,
     CL_DATAFILE,
+    CL_TARFILE,
     CL_GZFILE,
     CL_ZIPFILE,
     CL_BZFILE,

@@ -209,7 +209,7 @@ void register_char_option(struct optstruct *opt, char ch, const char *longname)
 void register_long_option(struct optstruct *opt, const char *optname)
 {
 	struct optnode *newnode;
-	int i, found;
+	int i, found = 0;
 
 
     if(clamdscan_mode) {

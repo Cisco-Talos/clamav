@@ -27,6 +27,8 @@
 #include "clamav.h"
 #include "cfgparser.h"
 #include "memory.h"
+#include "output.h"
+
 
 const char *freshdbdir(void)
 {
@@ -70,7 +72,7 @@ const char *freshdbdir(void)
 void print_version(void)
 {
 	const char *dbdir;
-	char *path, *timecpy;
+	char *path;
 	struct cl_cvd *daily;
 
 

@@ -79,7 +79,7 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	blob.lo mbox.lo message.lo snprintf.lo strrcpy.lo table.lo \
 	text.lo ole2_extract.lo vba_extract.lo msexpand.lo pe.lo \
 	cabd.lo lzxd.lo mszipd.lo qtmd.lo system.lo upx.lo htmlnorm.lo \
-	chmunpack.lo rebuildpe.lo petite.lo fsg.lo line.lo
+	chmunpack.lo rebuildpe.lo petite.lo fsg.lo line.lo untar.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -102,8 +102,8 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/str.Plo ./$(DEPDIR)/strc.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/strrcpy.Plo ./$(DEPDIR)/system.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/table.Plo ./$(DEPDIR)/text.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/unrarlib.Plo ./$(DEPDIR)/upx.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/vba_extract.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/unrarlib.Plo ./$(DEPDIR)/untar.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/upx.Plo ./$(DEPDIR)/vba_extract.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/zzip-dir.Plo ./$(DEPDIR)/zzip-err.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/zzip-file.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/zzip-info.Plo ./$(DEPDIR)/zzip-io.Plo \
@@ -324,7 +324,9 @@ libclamav_la_SOURCES = \
 	fsg.c \
 	fsg.h \
 	line.c \
-	line.h
+	line.h \
+	untar.c \
+	untar.h
 
 lib_LTLIBRARIES = libclamav.la
 all: all-am
@@ -430,6 +432,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/table.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/text.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrarlib.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/untar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/upx.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vba_extract.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/zzip-dir.Plo@am__quote@
