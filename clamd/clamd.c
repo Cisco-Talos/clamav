@@ -90,6 +90,9 @@ void clamd(struct optstruct *opt)
     else
 	logsize = CL_DEFAULT_LOGSIZE;
 
+    if(cfgopt(copt, "Debug")) /* enable debug messages in libclamav */
+	cl_debug();
+
     if(cfgopt(copt, "LogVerbose"))
 	logverbose = 1;
     else
@@ -190,6 +193,7 @@ void clamd(struct optstruct *opt)
     /* fork into background */
     if(!cfgopt(copt, "Foreground"))
 	daemonize();
+
 
     if(tcpsock)
 	ret = tcpserver(opt, copt, root);

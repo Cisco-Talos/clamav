@@ -243,3 +243,45 @@ int rndnum(unsigned int max)
     return generated % max;
 }
 #endif
+
+void virusaction(const char *filename, const char *virname, const struct cfgstruct *copt)
+{
+	char *buffer, *pt, *cmd;
+	struct cfgstruct *cpt;
+
+
+    logg("InVirusAction\n", cmd);
+    if(!(cpt = cfgopt(copt, "VirusEvent")))
+	return;
+
+    cmd = strdup(cpt->strarg);
+    logg("COMMAND: %s\n", cmd);
+
+    buffer = (char *) cli_malloc(strlen(cmd) + strlen(filename) + strlen(virname) + 10, sizeof(char));
+
+    if((pt = strstr(cmd, "%f"))) {
+	*pt = 0; pt += 2;
+	strcpy(buffer, cmd);
+	strcat(buffer, filename);
+	strcat(buffer, pt);
+	free(cmd);
+	cmd = strdup(buffer);
+    }
+
+    if((pt = strstr(cmd, "%v"))) {
+	*pt = 0; pt += 2;
+	strcpy(buffer, cmd);
+	strcat(buffer, virname);
+	strcat(buffer, pt);
+	free(cmd);
+	cmd = strdup(buffer);
+    }
+
+    free(buffer);
+
+    logg("Executing: %s\n", cmd);
+    /* WARNING: this is uninterruptable ! */
+    system(cmd);
+
+    free(cmd);
+}

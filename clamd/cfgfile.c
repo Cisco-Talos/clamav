@@ -62,9 +62,11 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 	    {"FollowDirectorySymlinks", OPT_NOARG},
 	    {"FollowFileSymlinks", OPT_NOARG},
 	    {"Foreground", OPT_NOARG},
+	    {"Debug", OPT_NOARG},
 	    {"User", OPT_STR},
 	    {"AllowSupplementaryGroups", OPT_NOARG},
 	    {"SelfCheck", OPT_NUM},
+	    {"VirusEvent", OPT_FULLSTR},
 	    {"ClamukoScanOnLine", OPT_NOARG},
 	    {"ClamukoScanOnOpen", OPT_NOARG},
 	    {"ClamukoScanOnClose", OPT_NOARG},
@@ -110,6 +112,18 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 				    fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires string as argument.\n", line, name);
 				    return NULL;
 				}
+				copt = regcfg(copt, name, arg, 0);
+				break;
+			    case OPT_FULLSTR:
+				if(!arg) {
+				    fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires string as argument.\n", line, name);
+				    return NULL;
+				}
+				// FIXME: this one is an ugly hack of the above
+				// case
+				free(arg);
+				arg = strstr(buff, " ");
+				arg = strdup(++arg);
 				copt = regcfg(copt, name, arg, 0);
 				break;
 			    case OPT_NUM:

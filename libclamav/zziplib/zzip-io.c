@@ -15,6 +15,7 @@
 #include <zzip-io.h>
 
 #include <string.h>
+#include <sys/types.h>  /* njh@bandsman.co.uk: for icc7.0 */
 #include <sys/stat.h>
 #include <errno.h>
 #include <stdlib.h>
