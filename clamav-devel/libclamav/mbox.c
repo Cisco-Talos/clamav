@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.93  2004/08/08 21:30:47  nigelhorne
+ * First draft of CheckURL
+ *
  * Revision 1.92  2004/08/08 19:13:14  nigelhorne
  * Better handling of bounces
  *
@@ -264,7 +267,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.92 2004/08/08 19:13:14 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.93 2004/08/08 21:30:47 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -351,6 +354,7 @@ static	bool	continuationMarker(const char *line);
 static	int	parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg);
 static	void	saveTextPart(message *m, const char *dir);
 static	bool	saveFile(const blob *b, const char *dir);
+static	void	checkURLs(message *m, const char *dir);
 
 /* Maximum number of attachments that we accept */
 #define	MAX_ATTACHMENTS	10
@@ -1258,6 +1262,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 									addAttachment = TRUE;
 								}
 							} else {
+								checkURLs(aMessage, dir);
 								messageAddArgument(aMessage, "filename=textportion");
 								addAttachment = TRUE;
 							}
@@ -2191,6 +2196,67 @@ saveFile(const blob *b, const char *dir)
 
 	return (close(fd) >= 0);
 }
+
+#if	0
+static void
+checkURLs(message *m, const char *dir)
+{
+	blob *b = messageToBlob(m);
+	char *ptr;
+	size_t len;
+
+	if(b == NULL)
+		return;
+
+	ptr = blobGetData(b);
+	len = blobGetDataSize(b);
+
+	while(len >= 8) {
+		/* FIXME: allow any number of white space */
+		if(strncasecmp(ptr, "<a href=", 8) == 0) {
+			char *p2 = &ptr[8];
+			char *p3;
+			char cmd[512];
+			char name[512];
+
+			len -= 8;
+			while((len > 0) && ((*p2 == '\"') || isspace(*p2))) {
+				len--;
+				p2++;
+			}
+			if(len == 0)
+				break;
+			ptr = p2;
+			while((len > 0) && (isalnum(*ptr) || strchr("?/:.", *ptr))) {
+				ptr++;
+				len--;
+			}
+			if(len == 0)
+				break;
+			*ptr = '\0';
+			cli_dbgmsg("Downloading URL %s to be scanned", p2);
+			strncpy(name, p2, sizeof(name));
+			for(p3 = name; *p3; p3++)
+				if(*p3 == '/')
+					*p3 = '_';
+
+			snprintf(cmd, sizeof(cmd), "GET %s > %s/%s", p2, dir, name);
+			cli_dbgmsg("%s\n", cmd);
+			system(cmd);
+		} else {
+			ptr++;
+			len--;
+		}
+	}
+	blobDestroy(b);
+}
+#else
+static void
+checkURLs(message *m, const char *dir)
+{
+}
+#endif
+
 
 #ifdef HAVE_BACKTRACE
 static void

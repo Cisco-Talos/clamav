@@ -1,3 +1,8 @@
+Sun Aug  8 22:31:12 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox:	Started code (not yet enabled by default) to scan URLs
+  				embedded in emails for viruses.
+
 Sun Aug  8 20:14:04 BST 2004 (njh)
 ----------------------------------
   * libclamav:		Improved the efficiency of scanning of emails for
