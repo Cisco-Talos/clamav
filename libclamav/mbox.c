@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.138  2004/09/22 15:21:50  nigelhorne
+ * Fix typo
+ *
  * Revision 1.137  2004/09/21 20:47:38  nigelhorne
  * FOLLOWURL: Set a default username and password for password protected pages
  *
@@ -399,7 +402,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.137 2004/09/21 20:47:38 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.138 2004/09/22 15:21:50 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2742,7 +2745,7 @@ getURL(struct arg *arg)
 	 * Prevent password: prompting with older versions
 	 * FIXME: a better username?
 	 */
-	curl_easy_settop(curl, CURLOPT_USERPWD, "username:password");
+	curl_easy_setopt(curl, CURLOPT_USERPWD, "username:password");
 
 	/*
 	 * FIXME: valgrind reports "pthread_mutex_unlock: mutex is not locked"
