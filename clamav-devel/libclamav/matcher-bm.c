@@ -78,7 +78,7 @@ int cli_bm_addpatt(struct cl_node *root, struct cli_bm_patt *pattern)
 
 int cli_bm_init(struct cl_node *root)
 {
-	int i;
+	unsigned int i;
 	unsigned int size = DHASH(256, 256, 256);
 
 
@@ -102,7 +102,7 @@ int cli_bm_init(struct cl_node *root)
 void cli_bm_free(struct cl_node *root)
 {
 	struct cli_bm_patt *b1, *b2;
-	int i;
+	unsigned int i;
 	unsigned int size = DHASH(256, 256, 256);
 
 
@@ -130,7 +130,7 @@ void cli_bm_free(struct cl_node *root)
 
 int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, unsigned long int offset, unsigned short ftype, int fd)
 {
-	int i, j, shift, off, found = 0;
+	unsigned int i, j, shift, off, found = 0;
 	uint16_t idx;
 	struct cli_bm_patt *p;
 	const char *bp;

@@ -172,7 +172,7 @@ int cli_checkfp(int fd, const struct cl_node *root)
 	    if(fstat(fd, &sb))
 		return CL_EIO;
 
-	    if(sb.st_size != md5_node->size) {
+	    if((unsigned int) sb.st_size != md5_node->size) {
 		cli_warnmsg("Detected false positive MD5 match. Please report.\n");
 	    } else {
 		cli_dbgmsg("Eliminated false positive match (fp sig: %s)\n", md5_node->virname);
@@ -212,7 +212,7 @@ int cli_validatesig(unsigned short target, unsigned short ftype, const char *off
 	    return 0;
 	}
 
-	if(fileoff != off) {
+	if(fileoff != (unsigned long int) off) {
 	    cli_dbgmsg("Virus offset: %d, expected: %d (%s)\n", fileoff, off, virname);
 	    return 0;
 	}
@@ -347,7 +347,7 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 	    if(fstat(desc, &sb))
 		return CL_EIO;
 
-	    if(sb.st_size != md5_node->size) {
+	    if((unsigned int) sb.st_size != md5_node->size) {
 		cli_warnmsg("Detected false positive MD5 match. Please report.\n");
 	    } else {
 		if(virname)

@@ -64,7 +64,8 @@ static int cli_ac_addsig(struct cl_node *root, const char *virname, const char *
 {
 	struct cli_ac_patt *new;
 	char *pt, *hex;
-	int virlen, ret, i, error = 0;
+	int virlen, ret, error = 0;
+	unsigned int i;
 
 
     if((new = (struct cli_ac_patt *) cli_calloc(1, sizeof(struct cli_ac_patt))) == NULL)
@@ -248,7 +249,8 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig,
 {
 	struct cli_bm_patt *bm_new;
 	char *pt, *hexcpy, *start, *n;
-	int ret, virlen, parts = 0, i, j, len, asterisk;
+	int ret, virlen, asterisk = 0;
+	unsigned int i, j, len, parts = 0;
 	int mindist = 0, maxdist = 0, error = 0;
 
 

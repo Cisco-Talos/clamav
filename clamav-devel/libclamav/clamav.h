@@ -122,7 +122,8 @@ struct cli_md5_node {
 };
 
 struct cli_meta_node {
-    int method, csize, size, encrypted, crc32, fileno, maxdepth;
+    int csize, size;
+    unsigned int crc32, fileno, method, encrypted, maxdepth;
     char *filename, *virname;
     struct cli_meta_node *next;
 };
@@ -151,15 +152,15 @@ struct cl_node {
 };
 
 struct cl_limits {
-    int maxreclevel; /* maximal recursion level */
-    int maxfiles; /* maximal number of files to be
-		   * scanned within an archive
-		   */
-    int maxratio; /* maximal compression ratio */
-    short archivememlim; /* limit memory usage for bzip2 (0/1) */
-    long int maxfilesize; /* files in an archive larger than
-			   * this value will not be scanned
-			   */
+    unsigned int maxreclevel; /* maximal recursion level */
+    unsigned int maxfiles; /* maximal number of files to be
+			    * scanned within an archive
+			    */
+    unsigned int maxratio; /* maximal compression ratio */
+    unsigned short archivememlim; /* limit memory usage for bzip2 (0/1) */
+    unsigned long int maxfilesize; /* files in an archive larger than
+				    * this limit will not be scanned
+				    */
 };
 
 struct cl_stat {

@@ -227,7 +227,7 @@ void cli_ac_free(struct cl_node *root)
 	free(root->ac_root);
 }
 
-static int inline cli_findpos(const char *buffer, int offset, int length, const struct cli_ac_patt *pattern)
+inline static int cli_findpos(const char *buffer, int offset, int length, const struct cli_ac_patt *pattern)
 {
 	int bufferpos = offset + AC_MIN_LENGTH;
 	int postfixend = offset + length;

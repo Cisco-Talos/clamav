@@ -1,3 +1,7 @@
+Fri Mar 18 22:03:10 CET 2005 (tk)
+---------------------------------
+  * libclamav: fix compiler warnings
+
 Fri Mar 18 16:26:18 CET 2005 (tk)
 ---------------------------------
   * libclamav: properly define NAME_MAX on non-compatible systems

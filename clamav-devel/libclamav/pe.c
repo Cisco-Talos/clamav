@@ -70,7 +70,7 @@ static inline uint32_t EC32(uint32_t v)
 
 extern short cli_leavetemps_flag;
 
-static uint32_t cli_rawaddr(uint32_t rva, struct pe_image_section_hdr *shp, uint16_t nos)
+static uint32_t cli_rawaddr(uint32_t rva, struct pe_image_section_hdr *shp, uint16_t nos, unsigned int *err)
 {
 	int i, found = 0;
 
@@ -84,12 +84,15 @@ static uint32_t cli_rawaddr(uint32_t rva, struct pe_image_section_hdr *shp, uint
 
     if(!found) {
 	cli_dbgmsg("Can't calculate raw address from RVA 0x%x\n", rva);
-	return -1;
+	*err = 1;
+	return 0;
     }
 
+    *err = 0;
     return rva - EC32(shp[i].VirtualAddress) + EC32(shp[i].PointerToRawData);
 }
 
+/*
 static int cli_ddump(int desc, int offset, int size, const char *file)
 {
 	int pos, ndesc, bread, sum = 0;
@@ -141,8 +144,9 @@ static int cli_ddump(int desc, int offset, int size, const char *file)
     lseek(desc, pos, SEEK_SET);
     return 0;
 }
+*/
 
-int cli_scanpe(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
+int cli_scanpe(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	uint16_t e_magic; /* DOS signature ("MZ") */
 	uint16_t nsections;
@@ -154,10 +158,11 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	struct pe_image_section_hdr *section_hdr;
 	struct stat sb;
 	char sname[9], buff[4096], *tempfile;
-	int i, found, upx_success = 0, min = 0, max = 0, ret;
+	unsigned int i, found, upx_success = 0, min = 0, max = 0, err;
+	unsigned int ssize = 0, dsize = 0;
 	int (*upxfn)(char *, int , char *, int *, uint32_t, uint32_t, uint32_t) = NULL;
 	char *src = NULL, *dest = NULL;
-	int ssize = -1, dsize = -1, ndesc;
+	int ndesc, ret;
 
 
     if(read(desc, &e_magic, sizeof(e_magic)) != sizeof(e_magic)) {
@@ -410,7 +415,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    cli_dbgmsg("Section's memory is executable\n");
 	cli_dbgmsg("------------------------------------\n");
 
-	if(EC32(section_hdr[i].PointerToRawData) + EC32(section_hdr[i].SizeOfRawData) > sb.st_size) {
+	if(EC32(section_hdr[i].PointerToRawData) + EC32(section_hdr[i].SizeOfRawData) > (unsigned long int) sb.st_size) {
 	    cli_dbgmsg("Possibly broken PE file - Section %d out of file (Offset@ %d, Rsize %d, Total filesize %d)\n", i, EC32(section_hdr[i].PointerToRawData), EC32(section_hdr[i].SizeOfRawData), sb.st_size);
 	    free(section_hdr);
 	    if(DETECT_BROKEN) {
@@ -434,7 +439,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
     }
 
-    if((ep = EC32(optional_hdr.AddressOfEntryPoint)) >= min && (ep = cli_rawaddr(EC32(optional_hdr.AddressOfEntryPoint), section_hdr, nsections)) == -1) {
+    if((ep = EC32(optional_hdr.AddressOfEntryPoint)) >= min && !(ep = cli_rawaddr(EC32(optional_hdr.AddressOfEntryPoint), section_hdr, nsections, &err)) && err) {
 	cli_dbgmsg("Possibly broken PE file\n");
 	free(section_hdr);
 	if(DETECT_BROKEN) {
@@ -471,7 +476,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
     /* try to find the first section with physical size == 0 */
     found = 0;
-    for(i = 0; i < nsections - 1; i++) {
+    for(i = 0; i < (unsigned int) nsections - 1; i++) {
 	if(!section_hdr[i].SizeOfRawData && section_hdr[i].VirtualSize && section_hdr[i + 1].SizeOfRawData && section_hdr[i + 1].VirtualSize) {
 	    found = 1;
 	    cli_dbgmsg("UPX/FSG: empty section found - assuming compression\n");
@@ -528,14 +533,14 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		}
 
 		lseek(desc, EC32(section_hdr[i + 1].PointerToRawData), SEEK_SET);
-		if(read(desc, src, ssize) != ssize) {
+		if((unsigned int) read(desc, src, ssize) != ssize) {
 		    cli_dbgmsg("Can't read raw data of section %d\n", i);
 		    free(section_hdr);
 		    free(src);
 		    return CL_EIO;
 		}
 
-		if((newedx - EC32(section_hdr[i + 1].VirtualAddress)) < 0 || ((dest = src + newedx - EC32(section_hdr[i + 1].VirtualAddress)) < src && dest >= src + EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData) - 4)) {
+		if(newedx < EC32(section_hdr[i + 1].VirtualAddress) || ((dest = src + newedx - EC32(section_hdr[i + 1].VirtualAddress)) < src && dest >= src + EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData) - 4)) {
 		    cli_dbgmsg("FSG: New ESP out of bounds\n");
 		    free(src);
 		    break;
@@ -624,7 +629,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    return CL_CLEAN;
 		}
 
-		if((gp = cli_readint32(buff + 1) - EC32(optional_hdr.ImageBase)) >= EC32(section_hdr[i + 1].PointerToRawData) || gp < 0) {
+		if((gp = cli_readint32(buff + 1) - EC32(optional_hdr.ImageBase)) >= (int) EC32(section_hdr[i + 1].PointerToRawData) || gp < 0) {
 		    cli_dbgmsg("FSG: Support data out of padding area (vaddr: %d)\n", EC32(section_hdr[i].VirtualAddress));
 		    break;
 		}
@@ -632,7 +637,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		lseek(desc, gp, SEEK_SET);
 		gp = EC32(section_hdr[i + 1].PointerToRawData) - gp;
 
-		if(limits && limits->maxfilesize && gp > limits->maxfilesize) {
+		if(limits && limits->maxfilesize && (unsigned int) gp > limits->maxfilesize) {
 		    cli_dbgmsg("FSG: Buffer size exceeded (size: %d, max: %lu)\n", gp, limits->maxfilesize);
 		    free(section_hdr);
 		    return CL_CLEAN;
@@ -710,7 +715,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		}
 
 		lseek(desc, EC32(section_hdr[i + 1].PointerToRawData), SEEK_SET);
-		if(read(desc, src, ssize) != ssize) {
+		if((unsigned int) read(desc, src, ssize) != ssize) {
 		    cli_dbgmsg("Can't read raw data of section %d\n", i);
 		    free(section_hdr);
 		    free(sections);
@@ -834,7 +839,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    return CL_CLEAN;
 		}
 
-		if(gp >= EC32(section_hdr[i + 1].PointerToRawData) || gp < 0) {
+		if(gp >= (int) EC32(section_hdr[i + 1].PointerToRawData) || gp < 0) {
 		    cli_dbgmsg("FSG: Support data out of padding area (newedi: %d, vaddr: %d)\n", newedi, EC32(section_hdr[i].VirtualAddress));
 		    break;
 		}
@@ -842,7 +847,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		lseek(desc, gp, SEEK_SET);
 		gp = EC32(section_hdr[i + 1].PointerToRawData) - gp;
 
-		if(limits && limits->maxfilesize && gp > limits->maxfilesize) {
+		if(limits && limits->maxfilesize && (unsigned int) gp > limits->maxfilesize) {
 		    cli_dbgmsg("FSG: Buffer size exceeded (size: %d, max: %lu)\n", gp, limits->maxfilesize);
 		    free(section_hdr);
 		    return CL_CLEAN;
@@ -901,7 +906,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		}
 
 		lseek(desc, EC32(section_hdr[i + 1].PointerToRawData), SEEK_SET);
-		if(read(desc, src, ssize) != ssize) {
+		if((unsigned int) read(desc, src, ssize) != ssize) {
 		    cli_dbgmsg("Can't read raw data of section %d\n", i);
 		    free(section_hdr);
 		    free(sections);
@@ -1027,7 +1032,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    }
 
 	    lseek(desc, EC32(section_hdr[i + 1].PointerToRawData), SEEK_SET);
-	    if(read(desc, src, ssize) != ssize) {
+	    if((unsigned int) read(desc, src, ssize) != ssize) {
 		cli_dbgmsg("Can't read raw data of section %d\n", i);
 		free(section_hdr);
 		free(src);
@@ -1133,7 +1138,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		return CL_EIO;
 	    }
 
-	    if(write(ndesc, dest, dsize) != dsize) {
+	    if((unsigned int) write(ndesc, dest, dsize) != dsize) {
 		cli_dbgmsg("UPX/FSG: Can't write %d bytes\n", dsize);
 		free(tempfile);
 		free(dest);
@@ -1176,8 +1181,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	return CL_EIO;
     }
 
-    if(buff[0] != '\xb8' || cli_readint32(buff + 1) != EC32(section_hdr[nsections - 1].VirtualAddress) + EC32(optional_hdr.ImageBase)) {
-	if(nsections < 2 || buff[0] != '\xb8' || cli_readint32(buff + 1) != EC32(section_hdr[nsections - 2].VirtualAddress) + EC32(optional_hdr.ImageBase))
+    if(buff[0] != '\xb8' || (uint32_t) cli_readint32(buff + 1) != EC32(section_hdr[nsections - 1].VirtualAddress) + EC32(optional_hdr.ImageBase)) {
+	if(nsections < 2 || buff[0] != '\xb8' || (uint32_t) cli_readint32(buff + 1) != EC32(section_hdr[nsections - 2].VirtualAddress) + EC32(optional_hdr.ImageBase))
 	    found = 0;
 	else
 	    found = 1;
@@ -1205,9 +1210,9 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
 	    for(i = 0 ; i < nsections; i++) {
 		if(section_hdr[i].SizeOfRawData) {
-			uint32_t offset = cli_rawaddr(EC32(section_hdr[i].VirtualAddress), section_hdr, nsections);
+			uint32_t offset = cli_rawaddr(EC32(section_hdr[i].VirtualAddress), section_hdr, nsections, &err);
 
-		    if(offset == -1 || lseek(desc, offset, SEEK_SET) == -1 || read(desc, dest + EC32(section_hdr[i].VirtualAddress) - min, EC32(section_hdr[i].SizeOfRawData)) != EC32(section_hdr[i].SizeOfRawData)) {
+		    if(err || lseek(desc, offset, SEEK_SET) == -1 || (unsigned int) read(desc, dest + EC32(section_hdr[i].VirtualAddress) - min, EC32(section_hdr[i].SizeOfRawData)) != EC32(section_hdr[i].SizeOfRawData)) {
 			free(section_hdr);
 			free(dest);
 			return CL_EIO;
@@ -1285,6 +1290,7 @@ int cli_peheader(int desc, struct cli_pe_info *peinfo)
 	struct pe_image_section_hdr *section_hdr;
 	struct stat sb;
 	int i;
+	unsigned int err;
 
 
     cli_dbgmsg("in cli_peheader\n");
@@ -1379,7 +1385,9 @@ int cli_peheader(int desc, struct cli_pe_info *peinfo)
 	peinfo->section[i].rsz = EC32(section_hdr[i].SizeOfRawData);
     }
 
-    if((peinfo->ep = cli_rawaddr(EC32(optional_hdr.AddressOfEntryPoint), section_hdr, peinfo->nsections)) == -1) {
+    peinfo->ep = cli_rawaddr(EC32(optional_hdr.AddressOfEntryPoint), section_hdr, peinfo->nsections, &err);
+
+    if(err) {
 	cli_dbgmsg("Possibly broken PE file\n");
 	free(section_hdr);
 	free(peinfo->section);

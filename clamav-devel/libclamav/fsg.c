@@ -82,7 +82,7 @@ static int doubledl(char **scur, uint8_t *mydlptr, char *buffer, int buffersize)
 
 static int unfsg(char *source, char *dest, int ssize, int dsize, char **endsrc, char **enddst) {
   uint8_t mydl=0x80;
-  uint32_t backbytes, backsize, oldback;
+  uint32_t backbytes, backsize, oldback = 0;
   char *csrc = source, *cdst = dest;
   int oob, lostbit = 1;
 
