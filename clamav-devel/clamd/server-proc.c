@@ -39,6 +39,8 @@
 #include "clamuko.h"
 #include "tests.h"
 
+int sighup = 0;
+
 #define CMD1 "SCAN"
 #define CMD2 "RAWSCAN"
 #define CMD3 "QUIT"
