@@ -519,6 +519,12 @@ Changes
 		Improved tracing of the infected machine
 0.80j	8/10/04	SESSION: reset the session if the PORT command fails
 		Correct --broadcast code if BINDTODEVICE isn't supported
+0.80k	24/10/04 Validate the length of the server hostnames
+		Die if the name of the sockets are the same. By dying earlier
+			we can generate a more useful message than libmilter's
+			bind failure message
+		SESSION code now on by default
+		Use cli_strtokbuf() instead of cli_strtok() whereever possible
 
 INTERNATIONALISATION
 
