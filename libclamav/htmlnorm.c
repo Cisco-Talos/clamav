@@ -439,7 +439,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 		}
 		
 		snprintf(filename, 1024, "%s/comment.html", dirname);
-		file_buff_o1->fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
+		file_buff_o1->fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
 		if (!file_buff_o1->fd) {
 			cli_dbgmsg("open failed: %s\n", filename);
 			free(file_buff_o1);
@@ -450,7 +450,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 		}
 
 		snprintf(filename, 1024, "%s/nocomment.html", dirname);
-		file_buff_o2->fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
+		file_buff_o2->fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
 		if (!file_buff_o2->fd) {
 			cli_dbgmsg("open failed: %s\n", filename);
 			close(file_buff_o1->fd);
@@ -462,7 +462,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 		}
 
 		snprintf(filename, 1024, "%s/script.html", dirname);
-		file_buff_script->fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
+		file_buff_script->fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
 		if (!file_buff_script->fd) {
 			cli_dbgmsg("open failed: %s\n", filename);
 			close(file_buff_o1->fd);
@@ -1014,7 +1014,7 @@ int html_screnc_decode(int fd, const char *dirname)
 	}
 	
 	snprintf(filename, 1024, "%s/screnc.html", dirname);
-	file_buff.fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
+	file_buff.fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
 	file_buff.length = 0;
 	
 	if (!file_buff.fd) {
