@@ -1,3 +1,9 @@
+Wed Feb  4 13:34:28 GMT 2004 (njh)
+  * libclamav:	Binhex now removes repetitive characters before handling the
+			header (used to be the other way around)
+		Handle partial writes in mbox - and print when write fails
+		Handle blobAddData of more than 128K
+
 Tue Feb  3 22:58:10 GMT 2004 (njh)
 ---------------------------------
   * libclamav:	Catch another example of Worm.Dumaru.Y
