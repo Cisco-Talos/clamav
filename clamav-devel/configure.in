@@ -42,6 +42,10 @@ AC_TYPE_OFF_T
 AC_COMPILE_CHECK_SIZEOF(short)
 AC_COMPILE_CHECK_SIZEOF(int)
 AC_COMPILE_CHECK_SIZEOF(long)
+
+AC_CHECK_LIB(socket, bind, [LIBS="$LIBS -lsocket"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsocket"; LDFLAGS="$LDFLAGS -lsocket"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsocket"; CLAMD_LIBS="$CLAMD_LIBS -lsocket"])
+AC_CHECK_LIB(nsl, gethostent, [LIBS="$LIBS -lnsl"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lnsl"; LDFLAGS="$LDFLAGS -lnsl"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lnsl"; CLAMD_LIBS="$CLAMD_LIBS -lnsl"])
+
 AC_CHECK_FUNCS(poll setsid memcpy snprintf vsnprintf strerror_r strlcpy strlcat inet_ntop setgroups initgroups)
 AC_FUNC_MMAP
 AC_FUNC_FSEEKO
@@ -377,9 +381,6 @@ AC_SUBST(CLAMAV_MILTER_LIBS)
 AC_SUBST(FRESHCLAM_LIBS)
 AC_SUBST(TH_SAFE)
 AC_SUBST(ADDITIONAL_LIBS)
-
-AC_CHECK_LIB(socket, bind, [LIBS="$LIBS -lsocket"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsocket"; LDFLAGS="$LDFLAGS -lsocket"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsocket"; CLAMD_LIBS="$CLAMD_LIBS -lsocket"])
-AC_CHECK_LIB(nsl, gethostent, [LIBS="$LIBS -lnsl"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lnsl"; LDFLAGS="$LDFLAGS -lnsl"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lnsl"; CLAMD_LIBS="$CLAMD_LIBS -lnsl"])
 
 dnl --enable-milter
 if test "$have_milter" = "yes"; then
