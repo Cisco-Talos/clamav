@@ -1116,6 +1116,7 @@ static int cli_scanmail(int desc, const char **virname, long int *scanned, const
 	 * Extract the attachments into the temporary directory
 	 */
 	if((ret = cli_mbox(dir, desc, options))) {
+	    cli_rmdirs(dir);
 	    free(dir);
 	    return ret;
 	}

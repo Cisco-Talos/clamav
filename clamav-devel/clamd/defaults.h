@@ -19,7 +19,7 @@
 #ifndef __DEFAULTS_H
 #define __DEFAULTS_H
 
-#define CL_DEFAULT_CFG CONFDIR"/clamav.conf"
+#define CL_DEFAULT_CFG CONFDIR"/clamd.conf"
 #define CL_DEFAULT_BACKLOG 15
 #define CL_DEFAULT_MAXTHREADS 5
 #define CL_DEFAULT_SCANTIMEOUT 120

@@ -339,7 +339,7 @@ uninstall-am: uninstall-info-am
 
 install:
 	$(mkinstalldirs) $(DESTDIR)$(CFGINST)
-@INSTALL_CLAMAV_CONF_TRUE@	@$(INSTALL_DATA) $(srcdir)/clamav.conf $(DESTDIR)$(CFGINST)
+@INSTALL_CLAMAV_CONF_TRUE@	@$(INSTALL_DATA) $(srcdir)/clamd.conf $(DESTDIR)$(CFGINST)
 @INSTALL_FRESHCLAM_CONF_TRUE@	@$(INSTALL_DATA) $(srcdir)/freshclam.conf $(DESTDIR)$(CFGINST)
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
