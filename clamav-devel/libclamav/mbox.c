@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.137  2004/09/21 20:47:38  nigelhorne
+ * FOLLOWURL: Set a default username and password for password protected pages
+ *
  * Revision 1.136  2004/09/21 12:18:52  nigelhorne
  * Fallback to CURLOPT_FILE if CURLOPT_WRITEDATA isn't defined
  *
@@ -396,7 +399,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.136 2004/09/21 12:18:52 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.137 2004/09/21 20:47:38 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2734,6 +2737,13 @@ getURL(struct arg *arg)
 #ifdef  CL_THREAD_SAFE
 	curl_easy_setopt(curl, CURLOPT_DNS_USE_GLOBAL_CACHE, 0);
 #endif
+
+	/*
+	 * Prevent password: prompting with older versions
+	 * FIXME: a better username?
+	 */
+	curl_easy_settop(curl, CURLOPT_USERPWD, "username:password");
+
 	/*
 	 * FIXME: valgrind reports "pthread_mutex_unlock: mutex is not locked"
 	 * from gethostbyaddr_r within this. It may be a bug in libcurl
