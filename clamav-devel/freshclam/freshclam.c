@@ -158,7 +158,6 @@ int download(struct optstruct *opt)
 {
 	int ret = 0;
 	mirrors *m = NULL, *h = NULL;
-	char *datadir, *mirror_last;
 	int mirror_used = 0;
 
     /*

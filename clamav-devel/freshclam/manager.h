@@ -24,9 +24,9 @@
 
 int downloadmanager(const struct optstruct *opt, const char *hostname);
 
-int downloaddb(const char *localname, const char *remotename, const char *hostname, int *signo, const struct optstruct *opt);
+int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct optstruct *opt);
 
-int wwwconnect(const char *server, const char *proxy);
+int wwwconnect(const char *server, const char *proxy, char *ip);
 
 struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostname, const char *proxy, const char *user);
 

@@ -1,12 +1,19 @@
+Mon Oct 27 22:08:53 CET 2003 (tk)
+---------------------------------
+  * freshclam: fixed a segmentation fault (thanks to Graham Murray); only
+	       use a one mirror for a full update; display IP addresses
+  * clamd: use SO_REUSEADDR in tcpserver (Laurent Wacrenier)
+  * configure: set $sysconfdir with respect to --prefix (thanks NERvOus)
+
 Sun Oct 26 06:26:14 CET 2003 (tk)
-----------------------------------
+---------------------------------
   * clamd: report file errors with CONTSCAN (suggested by Daniel Fraga)
   * libclamav: cvd and general cleanups
   * freshclam: rewritten to use cvd, cleanups; --debug added
   * mirrors.txt: only use database.clamav.net
 
 Fri Oct 24 02:19:54 CEST 2003 (tk)
-----------------------------------
+---------------------------------
   * clamd: initialize the virus-number variable (Igor Brezac)
   * sigtool: fixed compilation issue on Solaris (bug reported by
 	     Christopher X. Candreva)

@@ -37,10 +37,12 @@ int tcpserver(const struct optstruct *opt, const struct cfgstruct *copt, struct 
 	struct cfgstruct *cpt;
 	struct cfgstruct *taddr;
 	char *estr;
+	int true = 1;
 
     memset((char *) &server, 0, sizeof(server));
     server.sin_family = AF_INET;
     server.sin_port = htons(cfgopt(copt, "TCPSocket")->numarg);
+
 
     if (taddr = cfgopt(copt, "TCPAddr"))
     {
@@ -56,6 +58,10 @@ int tcpserver(const struct optstruct *opt, const struct cfgstruct *copt, struct 
 	//fprintf(stderr, "ERROR: socket() error: %s\n", estr);
 	logg("!socket() error: %s\n", estr);
 	exit(1);
+    }
+
+    if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (void *) &true, sizeof(true)) == -1) {
+	logg("!setsocktopt(SO_REUSEADDR) error: %s\n", strerror(errno));
     }
 
     if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1) {
