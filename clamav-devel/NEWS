@@ -2,6 +2,34 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.74
+----
+
+Bugfixes in this version include crashes with multipart/mixed messages
+and corrupted OLE2 and Zip files. Improvements include various optimisations
+of mail scanning and clamav-milter and clamdscan behaviour.
+
+
+New members of our "3rd party software" list:
+
+    + MyClamMailFilter	    an e-mail filter for procmail (written in C)
+    + clamaktion	    scan files from the right-click Konqueror menu
+    + QMVC		    Qmail Mail and Virus Control
+    + pyclamav		    Python binding for ClamAV
+    + FETCAV		    Front End To Clam AntiVirus based on Xdialog
+    + Famuko		    an on-access scanner working in a userspace
+    + SoftlabsAV	    a generic anti-virus filter for procmail
+
+
+Japanese users can take an advantage of the new ClamAV related site:
+    http://clamav-jp.sourceforge.jp/
+and join the clamav-jp-users mailing list.
+
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
+
 0.73
 ----
 

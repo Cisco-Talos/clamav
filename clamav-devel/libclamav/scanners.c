@@ -475,6 +475,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 
 	zzip_file_close(zfp);
 
+
 	if(fflush(tmp) != 0) {
 	    cli_dbgmsg("fflush() failed: %s\n", strerror(errno));
 	    ret = CL_EFSYNC;

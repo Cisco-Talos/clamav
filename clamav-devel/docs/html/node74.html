@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Database reloading</TITLE>
-<META NAME="description" CONTENT="Database reloading">
+<TITLE>LibClamAV</TITLE>
+<META NAME="description" CONTENT="LibClamAV">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,76 +19,72 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node75.html">
-<LINK REL="previous" HREF="node73.html">
-<LINK REL="up" HREF="node72.html">
+<LINK REL="next" HREF="node79.html">
+<LINK REL="previous" HREF="node28.html">
+<LINK REL="up" HREF="clamdoc.html">
 <LINK REL="next" HREF="node75.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1277"
+<A NAME="tex2html1285"
   HREF="node75.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html1273"
-  HREF="node72.html">
+<A NAME="tex2html1281"
+  HREF="clamdoc.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html1267"
+<A NAME="tex2html1275"
   HREF="node73.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html1275"
+<A NAME="tex2html1283"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1278"
-  HREF="node75.html">Scan engine</A>
-<B> Up:</B> <A NAME="tex2html1274"
-  HREF="node72.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html1268"
-  HREF="node73.html">General API</A>
- &nbsp <B>  <A NAME="tex2html1276"
+<B> Next:</B> <A NAME="tex2html1286"
+  HREF="node75.html">General API</A>
+<B> Up:</B> <A NAME="tex2html1282"
+  HREF="clamdoc.html">clamdoc</A>
+<B> Previous:</B> <A NAME="tex2html1276"
+  HREF="node73.html">SoftlabsAV</A>
+ &nbsp <B>  <A NAME="tex2html1284"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00072000000000000000">
-Database reloading</A>
-</H2>
-    The most important thing is to keep the internal instance of the database
-    up to date. You can watch database changes with the <code>cl_stat</code>
-    functions family:
-    <PRE>
-	int cl_statinidir(const char *dirname, struct cl_stat *dbstat);
-	int cl_statchkdir(const struct cl_stat *dbstat);
-	int cl_statfree(struct cl_stat *dbstat);
-</PRE>
-    Initialization:
-    <PRE>
-	    struct cl_stat dbstat;
-    
-	memset(&amp;dbstat, 0, sizeof(struct cl_stat));
-	cl_statinidir(dbdir, &amp;dbstat);
-</PRE>
-    To check for a change you only need to call <code>cl_statchkdir</code>:
-    <PRE>
-	if(cl_statchkdir(&amp;dbstat) == 1) {
-	    reload_database...;
-	    cl_statfree(&amp;dbstat);
-	    cl_statinidir(cl_retdbdir(), &amp;dbstat);
-	}
-</PRE>
-    Remember to reinitialize the structure after a reload.
+<H1><A NAME="SECTION00070000000000000000">
+LibClamAV</A>
+</H1>
+
+<P>
+libclamav may be used to add a virus protection to your software.
+    The library is thread-safe and can transparently recognize and scan
+    archives, mail files and MS Office document files.
 
 <P>
 <BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL>
+<LI><A NAME="tex2html1287"
+  HREF="node75.html">General API</A>
+<LI><A NAME="tex2html1288"
+  HREF="node76.html">Database reloading</A>
+<LI><A NAME="tex2html1289"
+  HREF="node77.html">Scan engine</A>
+<LI><A NAME="tex2html1290"
+  HREF="node78.html">CVD format</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-06-14
+2004-06-29
 </ADDRESS>
 </BODY>
 </HTML>
