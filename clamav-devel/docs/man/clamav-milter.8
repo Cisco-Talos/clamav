@@ -96,10 +96,11 @@ Always scan, whereever the message came from (see also --local and --outgoing).
 You probably don't want this.
 .TP
 \fB-e, \-\-external\fR
-Usually clamav\-milter to scan the emails itself without the use of an
+Usually clamav\-milter scans the emails itself without the use of an
 external program.
-Informs clamav\-milter to use an external program such as clamd(8) running
-either on the local server or other server(s) to perform the scanning.
+The \-\-external option informs clamav\-milter to use an external program such
+as clamd(8) running either on the local server or other server(s) to perform
+the scanning.
 The setting in clamd.conf for LocalSocket or TCPSocket is ignored.
 .TP
 \fB-l, \-\-local\fR
