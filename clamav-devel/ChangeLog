@@ -1,3 +1,9 @@
+Sat Mar 20 17:49:43 GMT 2004 (njh)
+----------------------------------
+  * libclamav:	More flexable approach to scanning bounce messages within
+  	emails means more bounces are caught but at the expense of some
+	duplication of code for now
+
 Sat Mar 20 15:53:10 CET 2004 (tk)
 ---------------------------------
   * libclamav: make cli_filetype non static
