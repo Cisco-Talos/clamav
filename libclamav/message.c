@@ -61,12 +61,12 @@
 
 typedef enum    { FALSE = 0, TRUE = 1 } bool;
 
+static	const	text	*uuencodeBegin(const message *m);
 static	unsigned char	*decodeLine(const message *m, const char *line, unsigned char *ptr);
 static unsigned char *decode(const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast);
 static	unsigned	char	hex(char c);
 static	unsigned	char	base64(char c);
 static	unsigned	char	uudecode(char c);
-void   logerr(const char *address, const char *format, ...);
 static	const	char	*messageGetArgument(const message *m, int arg);
 
 /*
@@ -131,8 +131,11 @@ messageReset(message *m)
 	if(m->mimeDispositionType)
 		free(m->mimeDispositionType);
 
-	for(i = 0; i < m->numberOfArguments; i++)
-		free(m->mimeArguments[i]);
+	if(m->mimeArguments) {
+		for(i = 0; i < m->numberOfArguments; i++)
+			free(m->mimeArguments[i]);
+		free(m->mimeArguments);
+	}
 
 	if(m->body_first)
 		textDestroy(m->body_first);
@@ -167,8 +170,15 @@ messageSetMimeType(message *mess, const char *type)
 	if(mess->mimeType == NOMIME) {
 		if(strncasecmp(type, "x-", 2) == 0)
 			mess->mimeType = MEXTENSION;
-		else
-			fprintf(stderr, "Unknown MIME type `%s'", type);
+		else {
+			/*
+			 * Based on a suggestion by James Stevens
+			 *	<James@kyzo.com>
+			 * Force scanning of strange messages
+			 */
+			cli_warnmsg("Unknown MIME type: `%s' - set to Application\n", type);
+			mess->mimeType = APPLICATION;
+		}
 	}
 }
 
@@ -510,7 +520,7 @@ messageToBlob(const message *m)
 {
 	blob *b;
 	const text *t_line = NULL;
-	const char *line, *filename;
+	const char *filename;
 
 	assert(m != NULL);
 
@@ -527,24 +537,7 @@ messageToBlob(const message *m)
 		char *strptr;
 #endif
 
-		/*
-		 * Scan to find the UUENCODED message (if any)
-		 *
-		 * Fix based on an idea by Magnus Jonsson
-		 * <Magnus.Jonsson@umdac.umu.se>, to allow for blank
-		 * lines before the begin. Should not happen, but some
-		 * e-mail clients are rather broken...
-		 */
-		for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next) {
-			line = t_line->t_text;
-
-			if((strncasecmp(line, "begin ", 6) == 0) &&
-			   (isdigit(line[6])) &&
-			   (isdigit(line[7])) &&
-			   (isdigit(line[8])) &&
-			   (line[9] == ' '))
-				break;
-		}
+		t_line = uuencodeBegin(m);
 
 		if(t_line == NULL) {
 			/*cli_warnmsg("UUENCODED attachment is missing begin statement\n");*/
@@ -552,7 +545,7 @@ messageToBlob(const message *m)
 			return NULL;
 		}
 
-		copy = strdup(line);
+		copy = strdup(t_line->t_text);
 		(void)strtok_r(copy, " ", &strptr);
 		(void)strtok_r(NULL, " ", &strptr);
 		filename = strtok_r(NULL, "\r\n", &strptr);
@@ -611,8 +604,7 @@ messageToBlob(const message *m)
 		do {
 			unsigned char data[1024];
 			unsigned char *uptr;
-
-			line = t_line->t_text;
+			const char *line = t_line->t_text;
 
 			if(messageGetEncoding(m) == UUENCODE)
 				if(strcasecmp(line, "end") == 0)
@@ -664,28 +656,44 @@ messageToText(const message *m)
 
 			sprintf(last->t_text, "%s\n", line);
 		}
-	else for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next) {
-		unsigned char data[1024];
-		unsigned char *uptr;
-		const char *line = t_line->t_text;
+	else {
+		if(messageGetEncoding(m) == UUENCODE) {
+			t_line = uuencodeBegin(m);
 
-		uptr = decodeLine(m, line, data);
+			if(t_line == NULL) {
+				/*cli_warnmsg("UUENCODED attachment is missing begin statement\n");*/
+				return NULL;
+			}
+			t_line = t_line->t_next;
+		} else
+			t_line = messageGetBody(m);
 
-		if(uptr == NULL)
-			break;
+		for(; t_line; t_line = t_line->t_next) {
+			unsigned char data[1024];
+			unsigned char *uptr;
+			const char *line = t_line->t_text;
 
-		assert(uptr <= &data[sizeof(data)]);
+			if(messageGetEncoding(m) == UUENCODE)
+				if(strcasecmp(line, "end") == 0)
+					break;
+			uptr = decodeLine(m, line, data);
 
-		if(first == NULL)
-			first = last = cli_malloc(sizeof(text));
-		else {
-			last->t_next = cli_malloc(sizeof(text));
-			last = last->t_next;
+			if(uptr == NULL)
+				break;
+
+			assert(uptr <= &data[sizeof(data)]);
+
+			if(first == NULL)
+				first = last = cli_malloc(sizeof(text));
+			else {
+				last->t_next = cli_malloc(sizeof(text));
+				last = last->t_next;
+			}
+			assert(last != NULL);
+
+			last->t_text = strdup((char *)data);
+			assert(last->t_text != NULL);
 		}
-		assert(last != NULL);
-
-		last->t_text = strdup((char *)data);
-		assert(last->t_text != NULL);
 	}
 
 	if(last)
@@ -694,9 +702,35 @@ messageToText(const message *m)
 	return first;
 }
 
+static const text *
+uuencodeBegin(const message *m)
+{
+	const text *t_line;
+
+	/*
+	 * Scan to find the UUENCODED message (if any)
+	 *
+	 * Fix based on an idea by Magnus Jonsson
+	 * <Magnus.Jonsson@umdac.umu.se>, to allow for blank
+	 * lines before the begin. Should not happen, but some
+	 * e-mail clients are rather broken...
+	 */
+	for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next) {
+		const char *line = t_line->t_text;
+
+		if((strncasecmp(line, "begin ", 6) == 0) &&
+		   (isdigit(line[6])) &&
+		   (isdigit(line[7])) &&
+		   (isdigit(line[8])) &&
+		   (line[9] == ' '))
+			return t_line;
+	}
+	return NULL;
+}
+
 /*
  * Decode a line and add it to a buffer, return the end of the buffer
- * to help appending callers
+ * to help appending callers. There is no new line at the end of "line"
  */
 static unsigned char *
 decodeLine(const message *m, const char *line, unsigned char *ptr)
