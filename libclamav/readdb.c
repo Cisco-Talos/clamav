@@ -68,6 +68,11 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexstr,
     else
 	virlen = strlen(virname);
 
+    if(virlen <= 0) {
+	free(new);
+	return CL_EMALFDB;
+    }
+
     if((new->virname = cli_calloc(virlen + 1, sizeof(char))) == NULL) {
 	free(new);
 	return CL_EMEM;
