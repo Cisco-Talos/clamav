@@ -357,11 +357,13 @@ int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, c
 
     if((partoff = (unsigned long int *) cli_calloc(root->partsigs + 1, sizeof(unsigned long int))) == NULL) {
 	cli_dbgmsg("cli_scanbuff(): unable to cli_calloc(%d, %d)\n", root->partsigs + 1, sizeof(unsigned long int));
+	free(partcnt);
 	return CL_EMEM;
     }
 
     ret = cli_scanbuff(buffer, length, virname, root, partcnt, 0, 0, partoff);
 
     free(partcnt);
+    free(partoff);
     return ret;
 }

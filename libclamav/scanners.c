@@ -127,6 +127,8 @@ static int cli_scandesc(int desc, const char **virname, long int *scanned, const
 
     if((partoff = (unsigned long int *) cli_calloc(root->partsigs + 1, sizeof(unsigned long int))) == NULL) {
 	cli_dbgmsg("cli_scanbuff(): unable to cli_calloc(%d, %d)\n", root->partsigs + 1, sizeof(unsigned long int));
+	free(buffer);
+	free(partcnt);
 	return CL_EMEM;
     }
 
@@ -151,6 +153,7 @@ static int cli_scandesc(int desc, const char **virname, long int *scanned, const
 	if((ret = cli_scanbuff(pt, length, virname, root, partcnt, typerec, offset, partoff)) == CL_VIRUS) {
 	    free(buffer);
 	    free(partcnt);
+	    free(partoff);
 	    return ret;
 
 	} else if(typerec && ret >= CL_TYPENO) {
@@ -187,6 +190,7 @@ static int cli_scandesc(int desc, const char **virname, long int *scanned, const
 
     free(buffer);
     free(partcnt);
+    free(partoff);
 
     md5_finish_ctx(&ctx, &md5buff);
 
@@ -777,6 +781,7 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
     return CL_CLEAN;
 #endif
 
+#ifdef HAVE_MMAP
     /* TODO: do file operations if mmap fails */
     if(membuff == MAP_FAILED) {
 	cli_dbgmsg("mmap failed\n");
@@ -802,6 +807,7 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
 
     free(newbuff);
     return ret;
+#endif
 }
 
 static int cli_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *arec, int *mrec)
