@@ -1,3 +1,8 @@
+Sat Mar 27 19:55:52 CET 2004 (tk)
+---------------------------------
+  * freshclam: remove timeout code; clean up return codes
+  * docs: freshclam.1 updated
+
 Fri Mar 26 23:23:21 CET 2004 (tk)
 ---------------------------------
   * clamdscan: don't call getcwd() in streaming mode (patch by Dale Woolridge
