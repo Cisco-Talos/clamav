@@ -1,3 +1,9 @@
+Thu Feb 19 10:05:39 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter: Reworked TCPwrappers code thanks to
+		"Hector M. Rulot Segovia" <Hector.Rulot@uv.es>
+		Changed some printf/puts to cli_dbgmsg
+
 Wed Feb 18 13:35:59 GMT 2004 (njh)
 ----------------------------------
   * libclamav:		Handle buffer overflows on files with long suffixes
