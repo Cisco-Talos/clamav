@@ -88,7 +88,7 @@ want_dsig="no",)
 
 if test "$want_dsig" = "yes"
 then
-    AC_CHECK_LIB(gmp, __gmpz_init, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; AC_DEFINE(HAVE_GMP)], [echo "WARNING: GNU MP 3 or newer NOT FOUND - digital signature support will be disabled !"; want_dsig="no"])
+    AC_CHECK_LIB(gmp, __gmpz_init, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; AC_DEFINE(HAVE_GMP)], [AC_CHECK_LIB(gmp, mpz_init, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; AC_DEFINE(HAVE_GMP)], [echo "WARNING: GNU MP 2 or newer NOT FOUND - digital signature support will be disabled !"; want_dsig="no"])])
 fi
 
 AC_CHECK_HEADER(syslog.h,AC_DEFINE(CLAMD_USE_SYSLOG),)
@@ -98,7 +98,7 @@ dnl AC_CHECK_LIB(c, mkstemp, AC_DEFINE(HAVE_MKSTEMP),)
 
 AC_ARG_ENABLE(pthreads,
 [  --disable-pthreads      Disable POSIX threads support],
-have_pthreads=no,)
+have_pthreads=no, AC_DEFINE(_REENTRANT))
 
 AC_ARG_ENABLE(cr,
 [  --disable-cr      Don't link with C reentrant library (BSD) ],

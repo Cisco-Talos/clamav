@@ -24,10 +24,10 @@ CLAMAVGROUP = @CLAMAVGROUP@
  
 install:
 	$(mkinstalldirs) $(DESTDIR)$(DBINST)
-#	@$(INSTALL_DATA) main.cvd $(DESTDIR)$(DBINST)
-#	@$(INSTALL_DATA) daily.cvd $(DESTDIR)$(DBINST)
+	@$(INSTALL_DATA) main.cvd $(DESTDIR)$(DBINST)
+	@$(INSTALL_DATA) daily.cvd $(DESTDIR)$(DBINST)
 	@$(INSTALL_DATA) mirrors.txt $(DESTDIR)$(DBINST)
-	@if test -n "${CLAMAVUSER}" && test -n "${CLAMAVGROUP}"; then \
+	@if test `id -u` -eq 0 && test -n "${CLAMAVUSER}" && test -n "${CLAMAVGROUP}"; then \
 	    chmod 775 $(DESTDIR)$(DBINST); \
 	    chown ${CLAMAVUSER} $(DESTDIR)$(DBINST); \
 	    chgrp ${CLAMAVGROUP} $(DESTDIR)$(DBINST); \

@@ -1,3 +1,10 @@
+Thu Nov  6 03:00:44 CET 2003 (tk)
+---------------------------------
+  * database/Makefile: fixed an installation problem with unprivileged user
+		       (thanks to Tomasz Papszun)
+  * configure: + _REENTRANT defined globally (thanks to Ed Phillips)
+	       + test for GMP 2 (and not only v3)
+
 Wed Nov  5 22:31:26 CET 2003 (tk)
 ---------------------------------
   * clamd: cl_scanfile() error message fixed (thanks to Ed Phillips)
