@@ -1,3 +1,8 @@
+Wed Dec  1 22:29:33 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter:	Added --internal flag (some functionality to do)
+			SESSIONS: Don't hang when StreamMaxLength is hit
+
 Wed Dec  1 21:05:07 CET 2004 (tk)
 ---------------------------------
   * libclamav/scanners.c: improved recursion limits (thanks to Maxim Dounin)
