@@ -1,3 +1,7 @@
+Fri Mar 25 23:21:18 CET 2005 (tk)
+---------------------------------
+  * clamscan: add --max-dir-recursion
+
 Fri Mar 25 19:48:42 GMT 2005 (njh)
 ----------------------------------
   * libclamav:	Added TNEF (winmail.dat) decoding. Now finds eicar in test 14

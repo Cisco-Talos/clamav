@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -240,10 +240,13 @@ void help(void)
     mprintf("    --mail-follow-urls                   Download and scan URLs\n");
 
     mprintf("\n");
-    mprintf("    --max-space=#n                       Extract first #n kilobytes only\n");
-    mprintf("    --max-files=#n                       Extract first #n files only\n");
-    mprintf("    --max-recursion=#n                   Maximal recursion level\n");
+    mprintf("    --max-space=#n                       Only extract first #n kilobytes from\n");
+    mprintf("                                         archived files\n");
+    mprintf("    --max-files=#n                       Only extract first #n files from\n");
+    mprintf("                                         archives\n");
+    mprintf("    --max-recursion=#n                   Maximum archive recursion level\n");
     mprintf("    --max-ratio=#n                       Maximum compression ratio limit\n");
+    mprintf("    --max-dir-recursion=#n               Maximum directory recursion level\n");
     mprintf("    --unzip[=FULLPATH]                   Enable support for .zip files\n");
     mprintf("    --unrar[=FULLPATH]                   Enable support for .rar files\n");
     mprintf("    --arj[=FULLPATH]                     Enable support for .arj files\n");
