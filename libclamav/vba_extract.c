@@ -803,6 +803,13 @@ static int wm_read_macro_entry(int fd, macro_entry_t *macro_entry)
 		cli_dbgmsg("read macro_entry failed\n");
 		return FALSE;
 	}
+	
+	macro_entry->intname_i = vba_endian_convert_16(macro_entry->intname_i, FALSE);
+	macro_entry->extname_i = vba_endian_convert_16(macro_entry->extname_i, FALSE);
+	macro_entry->xname_i = vba_endian_convert_16(macro_entry->xname_i, FALSE);
+	macro_entry->len = vba_endian_convert_32(macro_entry->len, FALSE);
+	macro_entry->state = vba_endian_convert_32(macro_entry->state, FALSE);
+	macro_entry->offset = vba_endian_convert_32(macro_entry->offset, FALSE);
 	return TRUE;
 }
 
@@ -819,7 +826,7 @@ static macro_info_t *wm_read_macro_info(int fd)
 		cli_dbgmsg("read macro_info failed\n");
 		return NULL;
 	}
-	
+	macro_info->count = vba_endian_convert_16(macro_info->count, FALSE);
 	cli_dbgmsg("macro count: %d\n", macro_info->count);
 	macro_info->macro_entry = (macro_entry_t *)
 			cli_malloc(sizeof(macro_entry_t) * macro_info->count);
@@ -905,6 +912,7 @@ static menu_info_t *wm_read_menu_info(int fd)
 		free(menu_info);
 		return NULL;
 	}
+	menu_info->count = vba_endian_convert_16(menu_info->count, FALSE);
 	cli_dbgmsg("menu_info count: %d\n", menu_info->count);
 	
 	menu_info->menu_entry =
@@ -934,6 +942,11 @@ static menu_info_t *wm_read_menu_info(int fd)
 		if (cli_readn(fd, &menu_entry->pos, 2) != 2) {
 			goto abort;
 		}
+		menu_entry->context = vba_endian_convert_16(menu_entry->context, FALSE);
+		menu_entry->menu = vba_endian_convert_16(menu_entry->menu, FALSE);
+		menu_entry->extname_i = vba_endian_convert_16(menu_entry->extname_i, FALSE);
+		menu_entry->intname_i = vba_endian_convert_16(menu_entry->intname_i, FALSE);
+		menu_entry->pos = vba_endian_convert_16(menu_entry->pos, FALSE);
 		cli_dbgmsg("menu entry: %d.%d\n", menu_entry->menu, menu_entry->pos);
 	}
 	return menu_info;
@@ -977,6 +990,7 @@ static macro_extnames_t *wm_read_macro_extnames(int fd)
 		free(macro_extnames);
 		return NULL;
 	}
+	size = vba_endian_convert_16(size, FALSE);
 	if (size == -1) { /* Unicode flag */
 		is_unicode=1;
 		if (cli_readn(fd, &size, 2) != 2) {
@@ -984,6 +998,7 @@ static macro_extnames_t *wm_read_macro_extnames(int fd)
 			free(macro_extnames);
 			return NULL;
 		}
+		size = vba_endian_convert_16(size, FALSE);
 	}
 	cli_dbgmsg("ext names size: 0x%x\n", size);
 
@@ -1008,45 +1023,56 @@ static macro_extnames_t *wm_read_macro_extnames(int fd)
 		}
 		macro_extname = &macro_extnames->macro_extname[macro_extnames->count-1];
 		if (is_unicode) {
-			if (cli_readn(fd, &macro_extname->length, 2) != 2) {
+			if (cli_readn(fd, &macro_extname->length, 1) != 1) {
 				cli_dbgmsg("read macro_extnames failed\n");
 				return NULL;
 			}
-			name_tmp = (char *) cli_malloc(macro_extname->length*2);
-			if (name_tmp == NULL) {
+			lseek(fd, 1, SEEK_CUR);
+			if (macro_extname->length > 0) {
+			    name_tmp = (char *) cli_malloc(macro_extname->length*2);
+			    if (name_tmp == NULL) {
 				goto abort;
-			}
-			if (cli_readn(fd, name_tmp, macro_extname->length*2) != 
+			    }
+			    if (cli_readn(fd, name_tmp, macro_extname->length*2) != 
 						macro_extname->length*2) {
 				cli_dbgmsg("read macro_extnames failed\n");
 				free(name_tmp);
 				goto abort;
+			    }
+			    macro_extname->extname =
+				get_unicode_name(name_tmp, macro_extname->length*2, FALSE);
+			    free(name_tmp);
+			} else {
+			    macro_extname->extname = strdup("[no name]");
+			    macro_extname->length = 10;
 			}
-			macro_extname->extname =
-			get_unicode_name(name_tmp, macro_extname->length*2, FALSE);
-			free(name_tmp);
 		} else {
-			if (cli_readn(fd, &length_tmp, 1) != 1) {
+			if (cli_readn(fd, &macro_extname->length, 1) != 1) {
 				cli_dbgmsg("read macro_extnames failed\n");
 				goto abort;
 			}
-			macro_extname->length = (uint16_t) length_tmp;
-			macro_extname->extname = (char *) cli_malloc(macro_extname->length+1);
-			if (!macro_extname->extname) {
+			if (macro_extname->length > 0) {
+			    macro_extname->extname = (char *) cli_malloc(macro_extname->length+1);
+			    if (!macro_extname->extname) {
 				macro_extnames->count--;
 				goto abort;
-			}
-			if (cli_readn(fd, macro_extname->extname, macro_extname->length) != 
+			    }
+			    if (cli_readn(fd, macro_extname->extname, macro_extname->length) != 
 						macro_extname->length) {
 				cli_dbgmsg("read macro_extnames failed\n");
 				goto abort;
+			    }
+			    macro_extname->extname[macro_extname->length] = '\0';
+			} else {
+			    macro_extname->extname = strdup("[no name]");
+			    macro_extname->length = 10;
 			}
-			macro_extname->extname[macro_extname->length] = '\0';
 		}
 		if (cli_readn(fd, &macro_extname->numref, 2) != 2) {
 			cli_dbgmsg("read macro_extnames failed\n");
 			return NULL;
-		}		
+		}	
+		macro_extname->numref = vba_endian_convert_16(macro_extname->numref, FALSE);
 		cli_dbgmsg("ext name: %s\n", macro_extname->extname);
 	}
 	return macro_extnames;
@@ -1092,6 +1118,7 @@ static macro_intnames_t *wm_read_macro_intnames(int fd)
 		cli_dbgmsg("read macro_intnames failed\n");
 		return NULL;
 	}
+	macro_intnames->count = vba_endian_convert_16(macro_intnames->count, FALSE);
 	cli_dbgmsg("int names count: %d\n", macro_intnames->count);
 	
 	macro_intnames->macro_intname =
@@ -1106,7 +1133,8 @@ static macro_intnames_t *wm_read_macro_intnames(int fd)
 			cli_dbgmsg("read macro_intnames failed\n");
 			macro_intnames->count = i;
 			goto abort;
-		}		
+		}
+		macro_intname->id = vba_endian_convert_16(macro_intname->id, FALSE);
 		if (cli_readn(fd, &macro_intname->length, 1) != 1) {
 			cli_dbgmsg("read macro_intnames failed\n");
 			macro_intnames->count = i;

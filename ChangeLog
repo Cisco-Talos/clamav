@@ -1,3 +1,7 @@
+Wed May  5 13:33:12 BST 2004 (trog)
+-----------------------------------
+  * libclamav/vba_extract.c: Do endian conversion in Word6 macro code.
+
 Wed May  5 11:32:22 BST 2004 (trog)
 -----------------------------------
   * libclamav/vba_extract.c: Add another Office2003 VBA signature.
