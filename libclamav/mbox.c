@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.36  2004/02/02 09:52:57  nigelhorne
+ * Some instances of Worm.Dumaru.Y got through the net
+ *
  * Revision 1.35  2004/01/28 10:15:24  nigelhorne
  * Added support to scan some bounce messages
  *
@@ -96,7 +99,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.35 2004/01/28 10:15:24 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.36 2004/02/02 09:52:57 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -630,6 +633,32 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 							inhead = 0;
 							continue;
 						}
+						if(isspace((int)*line)) {
+							/*
+							 * The first line is
+							 * continuation line.
+							 * This is tricky
+							 * to handle, but
+							 * all we can do is our
+							 * best
+							 */
+							cli_dbgmsg("Part %d starts with a continuation line\n",
+								multiparts);
+							messageAddArgument(aMessage, line);
+							/*
+							 * Give it a default
+							 * MIME type since
+							 * that may be the
+							 * missing line
+							 *
+							 * Choose application to
+							 * force a save
+							 */
+							if(messageGetMimeType(aMessage) == NOMIME)
+								messageSetMimeType(aMessage, "application");
+							continue;
+						}
+
 						/*
 						 * Some clients are broken and
 						 * put white space after the ;

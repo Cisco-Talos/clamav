@@ -1,3 +1,7 @@
+Mon Feb  2 09:55:12 GMT 2004 (njh)
+----------------------------------
+  * libclamav: Some instances of Worm.Dumaru.Y got through the net
+
 Mon Feb  2 08:28:41 GMT 2004 (njh)
 ----------------------------------
   * contrib: added CLI to the Windows client to allow integration with
