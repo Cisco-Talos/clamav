@@ -1,3 +1,7 @@
+Mon Nov  8 10:28:41 CET 2004 (tk)
+---------------------------------
+  * clamd: force SHUTDOWN on memory errors from libclamav
+
 Mon Nov  8 10:01:48 CET 2004 (tk)
 ---------------------------------
   * libclamav/scanners.c: handle error conditions of cli_scandesc()

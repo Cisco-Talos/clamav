@@ -93,11 +93,13 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
     cli_chomp(buff);
 
     if(!strncmp(buff, CMD1, strlen(CMD1))) { /* SCAN */
-	scan(buff + strlen(CMD1) + 1, NULL, root, limits, options, copt, desc, 0);
+	if(scan(buff + strlen(CMD1) + 1, NULL, root, limits, options, copt, desc, 0) == -2)
+	    return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD2, strlen(CMD2))) { /* RAWSCAN */
 	opt = options & ~CL_SCAN_ARCHIVE;
-	scan(buff + strlen(CMD2) + 1, NULL, root, NULL, opt, copt, desc, 0);
+	if(scan(buff + strlen(CMD2) + 1, NULL, root, NULL, opt, copt, desc, 0) == -2)
+	    return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD3, strlen(CMD3))) { /* QUIT */
 	return COMMAND_SHUTDOWN;
@@ -110,7 +112,8 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
 	mdprintf(desc, "PONG\n");
 
     } else if(!strncmp(buff, CMD6, strlen(CMD6))) { /* CONTSCAN */
-	scan(buff + strlen(CMD6) + 1, NULL, root, limits, options, copt, desc, 1);
+	if(scan(buff + strlen(CMD6) + 1, NULL, root, limits, options, copt, desc, 1) == -2)
+	    return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD7, strlen(CMD7))) { /* VERSION */
 	    const char *dbdir;
@@ -143,7 +146,8 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
 	free(path);
 
     } else if(!strncmp(buff, CMD8, strlen(CMD8))) { /* STREAM */
-	scanstream(desc, NULL, root, limits, options, copt);
+	if(scanstream(desc, NULL, root, limits, options, copt) == CL_EMEM)
+	    return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD9, strlen(CMD9))) { /* SESSION */
 	do {

@@ -154,9 +154,16 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 					return 1;
 				    } else
 					ret = 2;
+
 				} else if(scanret != CL_CLEAN) {
 				    mdprintf(odesc, "%s: %s ERROR\n", fname, cl_strerror(scanret));
 				    logg("%s: %s ERROR\n", fname, cl_strerror(scanret));
+				    if(scanret == CL_EMEM) {
+					closedir(dd);
+				        free(fname);
+				        return -2;
+				    }
+
 				} else if(logok) {
 				    logg("%s: OK\n", fname);
 				}
@@ -222,6 +229,8 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_node 
 	    } else if(ret != CL_CLEAN) {
 		mdprintf(odesc, "%s: %s ERROR\n", filename, cl_strerror(ret));
 		logg("%s: %s ERROR\n", filename, cl_strerror(ret));
+		if(ret == CL_EMEM)
+		    return -2;
 	    } else if (logok) {
 		logg("%s: OK\n", filename);
 	    }
