@@ -46,7 +46,7 @@ while test $# -gt 0; do
 	;;
 
     --version)
-	echo devel-20040718
+	echo devel-20040721
 	exit 0
 	;;
 

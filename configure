@@ -11218,7 +11218,7 @@ if test "$have_milter" = "yes"; then
     if test -d /usr/lib/libmilter ; then
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -L/usr/lib/libmilter"
     fi
-    LDFLAGS="$LDFLAGS $CLAMAV_MILTER_LIBS"
+    LDFLAGS="$LDFLAGS -lmilter $CLAMAV_MILTER_LIBS"
     echo "$as_me:$LINENO: checking for mi_stop in -lmilter" >&5
 echo $ECHO_N "checking for mi_stop in -lmilter... $ECHO_C" >&6
 if test "${ac_cv_lib_milter_mi_stop+set}" = set; then
@@ -11283,7 +11283,7 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_lib_milter_mi_stop" >&5
 echo "${ECHO_T}$ac_cv_lib_milter_mi_stop" >&6
 if test $ac_cv_lib_milter_mi_stop = yes; then
-  CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lmilter"
+  CLAMAV_MILTER_LIBS="-lmilter $CLAMAV_MILTER_LIBS"
 else
 
 	# Older sendmails require libsm or libsmutil for support functions
@@ -11477,7 +11477,7 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_lib_milter_mi_stop" >&5
 echo "${ECHO_T}$ac_cv_lib_milter_mi_stop" >&6
 if test $ac_cv_lib_milter_mi_stop = yes; then
-  CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lmilter $CLAMAV_MILTER_XLIB"
+  CLAMAV_MILTER_LIBS="-lmilter $CLAMAV_MILTER_XLIB $CLAMAV_MILTER_LIBS"
 else
 
 	    { { echo "$as_me:$LINENO: error: Cannot find libmilter" >&5
