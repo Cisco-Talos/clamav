@@ -1015,6 +1015,7 @@ Optional Features:
   --enable-static=PKGS  build static libraries default=yes
   --enable-fast-install=PKGS  optimize for fast installation default=yes
   --disable-libtool-lock  avoid locking (might break parallel builds)
+  --disable-zlib-vcheck	  do not check for buggy zlib version
   --disable-bzip2	  disable bzip2 support
   --disable-dns           disable support for database verification through
                           DNS
@@ -5020,7 +5021,7 @@ test "x$enable_libtool_lock" != xno && enable_libtool_lock=yes
 case $host in
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5023 "configure"' > conftest.$ac_ext
+  echo '#line 5024 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -5593,7 +5594,7 @@ chmod -w .
 save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -o out/conftest2.$ac_objext"
 compiler_c_o=no
-if { (eval echo configure:5596: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
+if { (eval echo configure:5597: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
   # The compiler can only warn and ignore the option if not recognized
   # So say no if there are warnings
   if test -s out/conftest.err; then
@@ -7520,7 +7521,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 7523 "configure"
+#line 7524 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -7618,7 +7619,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 7621 "configure"
+#line 7622 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10258,21 +10259,38 @@ echo "${ECHO_T}$ZLIB_HOME" >&6
 
 fi;
 
+zlib_check="yes"
+# Check whether --enable-zlib-vcheck or --disable-zlib-vcheck was given.
+if test "${enable_zlib_vcheck+set}" = set; then
+  enableval="$enable_zlib_vcheck"
+  zlib_check="no"
+fi;
+
 if test ! -f "$ZLIB_HOME/include/zlib.h"
 then
     { { echo "$as_me:$LINENO: error: Please install zlib and zlib-devel packages" >&5
 echo "$as_me: error: Please install zlib and zlib-devel packages" >&2;}
    { (exit 1); exit 1; }; }
 else
+
     vuln=`grep "ZLIB_VERSION \"1.2.0" $ZLIB_HOME/include/zlib.h`
     if test -z "$vuln"; then
 	vuln=`grep "ZLIB_VERSION \"1.2.1" $ZLIB_HOME/include/zlib.h`
     fi
 
     if test -n "$vuln"; then
-	{ { echo "$as_me:$LINENO: error: Installed zlib version contains a security bug. Please install version 1.2.2 or later." >&5
-echo "$as_me: error: Installed zlib version contains a security bug. Please install version 1.2.2 or later." >&2;}
+	if test "$zlib_check" = "yes"; then
+	    { { echo "$as_me:$LINENO: error: The installed zlib version may contain a security bug. Please upgrade to 1.2.2 or later: http://www.zlib.net" >&5
+echo "$as_me: error: The installed zlib version may contain a security bug. Please upgrade to 1.2.2 or later: http://www.zlib.net" >&2;}
    { (exit 1); exit 1; }; }
+	else
+	    { echo "$as_me:$LINENO: WARNING: ****** This ClamAV installation may be linked against" >&5
+echo "$as_me: WARNING: ****** This ClamAV installation may be linked against" >&2;}
+	    { echo "$as_me:$LINENO: WARNING: ****** a broken zlib version. Please DO NOT report any" >&5
+echo "$as_me: WARNING: ****** a broken zlib version. Please DO NOT report any" >&2;}
+	    { echo "$as_me:$LINENO: WARNING: ****** stability problems to the ClamAV developers!" >&5
+echo "$as_me: WARNING: ****** stability problems to the ClamAV developers!" >&2;}
+	fi
     fi
 
     if test "$ZLIB_HOME" != "/usr"; then

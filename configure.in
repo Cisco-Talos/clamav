@@ -93,17 +93,29 @@ fi
 AC_MSG_RESULT($ZLIB_HOME)
 ])
 
+zlib_check="yes"
+AC_ARG_ENABLE(zlib-vcheck,
+[  --disable-zlib-vcheck	  do not check for buggy zlib version ],
+zlib_check="no",)
+
 if test ! -f "$ZLIB_HOME/include/zlib.h"
 then
     AC_MSG_ERROR(Please install zlib and zlib-devel packages)
 else
+
     vuln=`grep "ZLIB_VERSION \"1.2.0" $ZLIB_HOME/include/zlib.h`
     if test -z "$vuln"; then
 	vuln=`grep "ZLIB_VERSION \"1.2.1" $ZLIB_HOME/include/zlib.h`
     fi
 
     if test -n "$vuln"; then
-	AC_MSG_ERROR(Installed zlib version contains a security bug. Please install version 1.2.2 or later.)
+	if test "$zlib_check" = "yes"; then
+	    AC_MSG_ERROR(The installed zlib version may contain a security bug. Please upgrade to 1.2.2 or later: http://www.zlib.net)
+	else
+	    AC_MSG_WARN([****** This ClamAV installation may be linked against])
+	    AC_MSG_WARN([****** a broken zlib version. Please DO NOT report any])
+	    AC_MSG_WARN([****** stability problems to the ClamAV developers!])
+	fi
     fi
 
     if test "$ZLIB_HOME" != "/usr"; then
