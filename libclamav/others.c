@@ -192,6 +192,27 @@ const char *cl_perror(int clerror)
     return cl_strerror(clerror);
 }
 
+unsigned char *cli_md5digest(int desc)
+{
+	unsigned char *digest;
+	char buff[FILEBUFF];
+	MD5_CTX ctx;
+	int bytes;
+
+
+    if(!(digest = cli_malloc(16)))
+	return NULL;
+
+    MD5_Init(&ctx);
+
+    while((bytes = cli_readn(desc, buff, FILEBUFF)))
+	MD5_Update(&ctx, buff, bytes);
+
+    MD5_Final(digest, &ctx);
+
+    return digest;
+}
+
 char *cli_md5stream(FILE *fs, unsigned char *digcpy)
 {
 	unsigned char digest[16];

@@ -1,3 +1,7 @@
+Mon Mar  7 00:37:34 CET 2005 (tk)
+---------------------------------
+  * libclamav: add MD5 based false positive eliminator
+
 Mon Mar  7 00:32:38 CET 2005 (tk)
 ---------------------------------
   * configure: add support for QNX 6 (patch by mikep*kaluga.org)

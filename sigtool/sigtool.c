@@ -288,7 +288,7 @@ int build(struct optstruct *opt)
 	    exit(1);
 	case 0:
 	    {
-		char *args[] = { "tar", "-cvf", NULL, "COPYING", "main.db", "daily.db", "Notes", "viruses.db3", "main.hdb", "daily.hdb", "main.ndb", "daily.ndb", "main.zmd", "daily.zmd", NULL };
+		char *args[] = { "tar", "-cvf", NULL, "COPYING", "main.db", "daily.db", "Notes", "viruses.db3", "main.hdb", "daily.hdb", "main.ndb", "daily.ndb", "main.zmd", "daily.zmd", "main.fp", "daily.fp", NULL };
 		args[2] = tarfile;
 		execv("/bin/tar", args);
 		mprintf("!Can't execute tar\n");
