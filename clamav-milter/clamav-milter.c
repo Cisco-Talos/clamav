@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.156  2004/12/02 11:09:05  nigelhorne
+ * --internal now reloads the database
+ *
  * Revision 1.155  2004/12/01 22:27:38  nigelhorne
  * Added --internal
  *
@@ -476,9 +479,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.155 2004/12/01 22:27:38 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.156 2004/12/02 11:09:05 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80u"
+#define	CM_VERSION	"0.80v"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -697,6 +700,7 @@ static	void	*watchdog(void *a);
 static	int	logg_facility(const char *name);
 static	void	quit(void);
 static	void	broadcast(const char *mess);
+static	int	loadDatabase(void);
 
 #ifdef	SESSION
 static	char	**clamav_versions;
@@ -707,6 +711,8 @@ static	char	clamav_version[VERSION_LENGTH + 1];
 static	int	fflag = 0;	/* force a scan, whatever */
 static	int	oflag = 0;	/* scan messages from our machine? */
 static	int	lflag = 0;	/* scan messages from our site? */
+
+/* Variables for --internal */
 static	int	internal = 0;	/* scan messages ourself or use clamd? */
 static	struct	cl_node	*root = NULL;
 static	struct	cl_limits	limits;
@@ -790,7 +796,7 @@ static	pthread_mutex_t	n_children_mutex = PTHREAD_MUTEX_INITIALIZER;
 static	pthread_cond_t	n_children_cond = PTHREAD_COND_INITIALIZER;
 static	unsigned	int	n_children = 0;
 static	unsigned	int	max_children = 0;
-static	int	child_timeout = 60;	/* number of seconds to wait for
+static	int	child_timeout = 0;	/* number of seconds to wait for
 					 * a child to die. Set to 0 to
 					 * wait forever
 					 */
@@ -1371,72 +1377,16 @@ main(int argc, char **argv)
 	 * we're doing the scanning internally
 	 */
 	if(internal) {
-		int signatures = 0;
-		int ret;
-		extern const char *cl_retdbdir(void);	/* FIXME */
-		const char *dbdir = cl_retdbdir();
-
-		/*
-		 * TODO: Set a better version string if DataDirectory hasn't
-		 * been set
-		 * TODO: Set limits
-		 */
-		if((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory")))
-			if(strcmp(dbdir, cpt->strarg) != 0) {
-				char *daily = cli_malloc(strlen(cpt->strarg) + strlen(dbdir) + 15);
-				struct cl_cvd *d1;
-				time_t t = (time_t)0;
-				int v = 0;
-
-				sprintf(daily, "%s/daily.cvd", cpt->strarg);
-				if((d1 = cl_cvdhead(daily))) {
-					struct cl_cvd *d2;
-
-					t = d1->stime;
-					v = d1->version;
-
-					sprintf(daily, "%s/daily.cvd", dbdir);
-					if((d2 = cl_cvdhead(daily))) {
-						if(d1->version > d2->version)
-							dbdir = cpt->strarg;
-						else
-							dbdir = dbdir;
-						t = d2->stime;
-						v = d2->version;
-						cl_cvdfree(d2);
-					} else
-						dbdir = cpt->strarg;
-					cl_cvdfree(d1);
-				}
-				free(daily);
-
-				if(t)
-					snprintf(version, sizeof(version) - 1,
-						"ClamAV %s/%d/%s", VERSION, v,
-						ctime(&t));
-
-			}
-
-		ret = cl_loaddbdir(dbdir, &root, &signatures);
-		if(ret != 0) {
-			fprintf(stderr, "%s\n", cl_strerror(ret));
+		if(max_children == 0) {
+			fprintf(stderr, _("%s: --max-children must be given in internal mode\n"), argv[0]);
 			return EX_CONFIG;
 		}
-		if(!root) {
-			fputs("Can't initialize the virus database.\n", stderr);
+		if(child_timeout) {
+			fprintf(stderr, _("%s: --timeout must not be given in internal mode\n"), argv[0]);
 			return EX_CONFIG;
 		}
-
-		ret = cl_build(root);
-		if(ret != 0) {
-			fprintf(stderr, "Database initialization error: %s\n", cl_strerror(ret));
+		if(loadDatabase() != 0)
 			return EX_CONFIG;
-		}
-		if(use_syslog)
-			syslog(LOG_INFO, _("ClamAV: Protecting against %d viruses"), signatures);
-
-		cl_statinidir(dbdir, &dbstat);
-
 	} else if((cpt = cfgopt(copt, "LocalSocket")) != NULL) {
 #ifdef	SESSION
 		struct sockaddr_un server;
@@ -1624,10 +1574,12 @@ main(int argc, char **argv)
 	}
 
 	if(internal) {
-		clamav_versions = (char **)cli_malloc(sizeof(char *));
-		if(clamav_versions == NULL)
-			return EX_TEMPFAIL;
-		clamav_version = strdup(version);
+		if(clamav_versions == NULL) {
+			clamav_versions = (char **)cli_malloc(sizeof(char *));
+			if(clamav_versions == NULL)
+				return EX_TEMPFAIL;
+			clamav_version = strdup(version);
+		}
 #ifdef	SESSION
 	} else {
 		clamav_versions = (char **)cli_malloc(numServers * sizeof(char *));
@@ -1769,8 +1721,6 @@ main(int argc, char **argv)
 	if(use_syslog) {
 		if(logVerbose)
 			syslog(LOG_INFO, _("Starting: %s"), clamav_version);
-		else
-			syslog(LOG_INFO, "%s", clamav_version);
 #ifdef	CL_DEBUG
 		if(debug_level > 0)
 			syslog(LOG_DEBUG, _("Debugging is on"));
@@ -2319,7 +2269,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			}
 			/*
 			 * Wait for an amount of time for a child to go (default
-			 * 60 seconds).
+			 * wait for ever)
 			 *
 			 * Use pthread_cond_timedwait rather than
 			 * pthread_cond_wait since the sendmail which calls
@@ -3823,7 +3773,6 @@ connect2clamd(struct privdata *privdata)
 				cli_warnmsg(_("Expected port information from clamd, got '%s'\n"),
 					buf);
 #ifdef	SESSION
-			pthread_mutex_lock(&sstatus_mutex);
 			session->status = CMDSOCKET_DOWN;
 			pthread_mutex_unlock(&sstatus_mutex);
 #endif
@@ -4310,11 +4259,21 @@ watchdog(void *a)
 
 		if(internal) {
 			/*
-			 * TODO: reload automatically
+			 * Re-load the database if the server's not busy.
+			 * TODO: If a reload is needed go into a mode when
+			 *	new scans aren't accepted, to force the number
+			 *	of children to 0 so that we can reload,
+			 *	otherwise a reload may not occur on overloaded
+			 *	servers
 			 */
-			if((n_children == 0) && (cl_statchkdir(&dbstat) == 1))
+			pthread_mutex_lock(&n_children_mutex);
+			if((n_children == 0) && (cl_statchkdir(&dbstat) == 1)) {
 				if(use_syslog)
-					syslog(LOG_WARNING, _("Freshclam has been run - please restart clamav-milter\n"));
+					syslog(LOG_WARNING, _("Loading new database"));
+				if(loadDatabase() != 0)
+					exit(EX_CONFIG);
+			}
+			pthread_mutex_unlock(&n_children_mutex);
 			continue;
 		}
 		i = 0;
@@ -4550,4 +4509,99 @@ broadcast(const char *mess)
 
 	if(sendto(broadcastSock, mess, strlen(mess), 0, (struct sockaddr *)&s, sizeof(struct sockaddr_in)) < 0)
 		perror("sendto");
+}
+
+/*
+ * Load a new database into the internal scanner - it is up to the caller to
+ * ensure that no threads are currently scanning
+ */
+static int
+loadDatabase(void)
+{
+	extern const char *cl_retdbdir(void);	/* FIXME: should be included */
+	int ret, firsttime, signatures, v;
+	time_t t;
+	char *daily, *ptr;
+	struct cl_cvd *d;
+	const struct cfgstruct *cpt;
+	static const char *dbdir;
+
+	assert(internal);
+
+	firsttime = (dbdir == NULL);
+
+	if(firsttime) {
+		/*
+		 * TODO: Set limits
+		 */
+
+		if((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory")))
+			dbdir = cpt->strarg;
+		else
+			dbdir = cl_retdbdir();
+	}
+
+	daily = cli_malloc(strlen(dbdir) + 11);
+	sprintf(daily, "%s/daily.cvd", dbdir);
+
+	d = cl_cvdhead(daily);
+
+	if(d == NULL) {
+		cli_errmsg("Can't find %s\n", daily);
+		free(daily);
+		return -1;
+	}
+
+	t = d->stime;
+	v = d->version;
+
+	cl_cvdfree(d);
+	free(daily);
+
+#ifdef	SESSION
+	if(clamav_versions == NULL) {
+		clamav_versions = (char **)cli_malloc(sizeof(char *));
+		if(clamav_versions == NULL)
+			return -1;
+		clamav_version = cli_malloc(VERSION_LENGTH + 1);
+		if(clamav_version == NULL) {
+			free(clamav_versions);
+			clamav_versions = NULL;
+			return -1;
+		}
+	}
+#endif
+	snprintf(clamav_version, VERSION_LENGTH,
+		"ClamAV %s/%d/%s", VERSION, v, ctime(&t));
+	/* Remove ctime's trailing \n */
+	if((ptr = strchr(clamav_version, '\n')) != NULL)
+		*ptr = '\0';
+
+	if(root) {
+		cl_free(root);
+		root = NULL;
+	}
+	signatures = 0;
+	ret = cl_loaddbdir(dbdir, &root, &signatures);
+	if(ret != 0) {
+		cli_errmsg("%s\n", cl_strerror(ret));
+		return -1;
+	}
+	if(root == NULL) {
+		cli_errmsg("Can't initialize the virus database.\n");
+		return -1;
+	}
+
+	ret = cl_build(root);
+	if(ret != 0) {
+		cli_errmsg("Database initialization error: %s\n", cl_strerror(ret));
+		return -1;
+	}
+	if(use_syslog)
+		syslog(LOG_INFO, _("ClamAV: Protecting against %d viruses"), signatures);
+
+	if(use_syslog)
+		syslog(LOG_INFO, _("Loaded %s\n"), clamav_version);
+
+	return cl_statinidir(dbdir, &dbstat);
 }
