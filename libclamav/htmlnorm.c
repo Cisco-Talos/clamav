@@ -68,6 +68,12 @@ typedef enum {
     HTML_JSDECODE_LENGTH,
     HTML_JSDECODE_DECRYPT,
     HTML_SPECIAL_CHAR,
+    HTML_RFC2397_TYPE,
+    HTML_RFC2397_INIT,
+    HTML_RFC2397_DATA,
+    HTML_RFC2397_FINISH,
+    HTML_RFC2397_ESC,
+    HTML_ESCAPE_CHAR,
 } html_state;
 
 typedef enum {
@@ -383,18 +389,19 @@ void html_tag_arg_free(tag_arguments_t *tags)
 
 static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag_arguments_t *hrefs)
 {
-	int fd_tmp, tag_length, tag_arg_length;
+	int fd_tmp, tag_length, tag_arg_length, binary;
 	int retval=FALSE, escape, value, hex, tag_val_length, table_pos, in_script=FALSE;
 	FILE *stream_in;
 	html_state state=HTML_NORM, next_state=HTML_BAD_STATE;
 	char filename[1024], tag[HTML_STR_LENGTH+1], tag_arg[HTML_STR_LENGTH+1];
-	char tag_val[HTML_STR_LENGTH+1];
+	char tag_val[HTML_STR_LENGTH+1], *tmp_file;
 	unsigned char *line, *ptr, *arg_value;
 	tag_arguments_t tag_args;
 	quoted_state quoted;
 	unsigned long length;
 	file_buff_t *file_buff_o1, *file_buff_o2, *file_buff_script;
-	
+	file_buff_t *file_tmp_o1;
+
 	if (!m_area) {
 		if (fd < 0) {
 			cli_dbgmsg("Invalid HTML fd\n");
@@ -417,6 +424,11 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	tag_args.value = NULL;
 	
 	if (dirname) {
+		snprintf(filename, 1024, "%s/rfc2397", dirname);
+		if (mkdir(filename, 0700)) {
+			file_buff_o1 = file_buff_o2 = file_buff_script = NULL;
+			goto abort;
+		}
 		file_buff_o1 = (file_buff_t *) cli_malloc(sizeof(file_buff_t));
 		if (!file_buff_o1) {
 			file_buff_o1 = file_buff_o2 = file_buff_script = NULL;
@@ -482,19 +494,21 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 		file_buff_o2 = NULL;
 		file_buff_script = NULL;
 	}
-			
+	
+	binary = FALSE;
+		
 	ptr = line = cli_readline(stream_in, m_area, 8192);
 	while (line) {
 		while (*ptr && isspace(*ptr)) {
 			ptr++;
 		}
 		while (*ptr) {
-			if (*ptr == '\n') {
+			if (!binary && *ptr == '\n') {
 				/* Convert it to a space and re-process */
 				*ptr = ' ';
 				continue;
 			}
-			if (*ptr == '\r') {
+			if (!binary && *ptr == '\r') {
 				ptr++;
 				continue;
 			}
@@ -647,7 +661,42 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				}
 				break;
 			case HTML_TAG_ARG_VAL:
-				if (*ptr == '&') {
+				if ((tag_val_length == 5) && (strncmp(tag_val, "data:", 5) == 0)) {
+					/* RFC2397 inline data */
+
+					/* Rewind one byte so we don't recursuive */
+					if (file_buff_o1 && (file_buff_o1->length > 0)) {
+						file_buff_o1->length--;
+					}
+					if (file_buff_o2 && (file_buff_o2->length > 0)) {
+						file_buff_o2->length--;
+					}
+					
+					if (quoted != NOT_QUOTED) {
+						html_output_c(file_buff_o1, file_buff_o2, '"');
+					}
+					tag_val_length = 0;
+					state = HTML_RFC2397_TYPE;
+					next_state = HTML_TAG_ARG;
+				} else if ((tag_val_length == 6) && (strncmp(tag_val, "\"data:", 6) == 0)) {
+					/* RFC2397 inline data */
+
+					/* Rewind one byte so we don't recursuive */
+					if (file_buff_o1 && (file_buff_o1->length > 0)) {
+						file_buff_o1->length--;
+					}
+					if (file_buff_o2 && (file_buff_o2->length > 0)) {
+						file_buff_o2->length--;
+					}
+					
+					if (quoted != NOT_QUOTED) {
+						html_output_c(file_buff_o1, file_buff_o2, '"');
+					}
+
+					tag_val_length = 0;
+					state = HTML_RFC2397_TYPE;
+					next_state = HTML_TAG_ARG;
+				} else if (*ptr == '&') {
 					state = HTML_CHAR_REF;
 					next_state = HTML_TAG_ARG_VAL;
 					ptr++;
@@ -923,6 +972,188 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				ptr++;
 				length--;
 				break;
+				
+			case HTML_RFC2397_TYPE:
+				if (*ptr == '\'') {
+					if (!escape && (quoted==SINGLE_QUOTED)) {
+						/* Early end of data detected. Error */
+						ptr++;
+						state = HTML_SKIP_WS;
+						tag_arg_length=0;
+						next_state = HTML_TAG_ARG;
+					} else {
+						if (tag_val_length < HTML_STR_LENGTH) {
+							tag_val[tag_val_length++] = '"';
+						}
+						ptr++;
+					}
+				} else if (*ptr == '"') {
+					if (!escape && (quoted==DOUBLE_QUOTED)) {
+						/* Early end of data detected. Error */
+						ptr++;
+						state = HTML_SKIP_WS;
+						tag_arg_length=0;
+						next_state = HTML_TAG_ARG;
+					} else {
+						if (tag_val_length < HTML_STR_LENGTH) {
+							tag_val[tag_val_length++] = '"';
+						}
+						ptr++;
+					}
+				} else if (isspace(*ptr) || (*ptr == '>')) {
+					if (quoted == NOT_QUOTED) {
+						/* Early end of data detected. Error */
+						state = HTML_SKIP_WS;
+						tag_arg_length=0;
+						next_state = HTML_TAG_ARG;
+					} else {
+						if (tag_val_length < HTML_STR_LENGTH) {
+							if (isspace(*ptr)) {
+								tag_val[tag_val_length++] = ' ';
+							} else {
+								tag_val[tag_val_length++] = '>';
+							}
+						}
+						state = HTML_SKIP_WS;
+						escape = FALSE;
+						quoted = NOT_QUOTED;
+						next_state = HTML_RFC2397_TYPE;
+						ptr++;
+					}
+				} else if (*ptr == ',') {
+					/* Beginning of data */
+					tag_val[tag_val_length] = '\0';
+					state = HTML_RFC2397_INIT;
+					escape = FALSE;
+					next_state = HTML_BAD_STATE;
+					ptr++;
+				
+				} else {
+					if (tag_val_length < HTML_STR_LENGTH) {
+						tag_val[tag_val_length++] = tolower(*ptr);
+					}
+					ptr++;
+				}
+				if (*ptr == '\\') {
+					escape = TRUE;
+				} else {
+					escape = FALSE;
+				}
+				break;
+			case HTML_RFC2397_INIT:
+				file_tmp_o1 = (file_buff_t *) cli_malloc(sizeof(file_buff_t));
+				if (!file_tmp_o1) {
+					goto abort;
+				}
+				snprintf(filename, 1024, "%s/rfc2397", dirname);
+				tmp_file = cli_gentemp(filename);
+				cli_dbgmsg("RFC2397 data file: %s\n", tmp_file);
+				file_tmp_o1->fd = open(tmp_file, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
+				free(tmp_file);
+				if (!file_tmp_o1->fd) {
+					cli_dbgmsg("open failed: %s\n", filename);
+					free(file_tmp_o1);
+					goto abort;
+				}
+				file_tmp_o1->length = 0;
+				
+				html_output_str(file_tmp_o1, "From html-normalise\n", 20);
+				html_output_str(file_tmp_o1, "Content-type: ", 14);
+				if ((tag_val_length == 0) && (*tag_val == ';')) {
+						html_output_str(file_tmp_o1, "text/plain\n", 11);
+				}
+				html_output_str(file_tmp_o1, tag_val, tag_val_length);
+				html_output_c(file_tmp_o1, NULL, '\n');
+				if (strstr(tag_val, ";base64") != NULL) {
+					html_output_str(file_tmp_o1, "Content-transfer-encoding: base64\n", 34);
+				}
+				html_output_c(file_tmp_o1, NULL, '\n');
+				state = HTML_RFC2397_DATA;
+				binary = TRUE;
+				break;
+			case HTML_RFC2397_DATA:
+				if (*ptr == '&') {
+					state = HTML_CHAR_REF;
+					next_state = HTML_RFC2397_DATA;
+					ptr++;
+				} else if (*ptr == '%') {
+					length = 0;
+					value = 0;
+					state = HTML_ESCAPE_CHAR;
+					next_state = HTML_RFC2397_ESC;
+					ptr++;
+				} else if (*ptr == '\'') {
+					if (!escape && (quoted==SINGLE_QUOTED)) {
+						state = HTML_RFC2397_FINISH;
+						ptr++;
+					} else {
+						html_output_c(file_tmp_o1, NULL, *ptr);
+						ptr++;
+					}
+				} else if (*ptr == '\"') {
+					if (!escape && (quoted=DOUBLE_QUOTED)) {
+						state = HTML_RFC2397_FINISH;
+						ptr++;
+					} else {
+						html_output_c(file_tmp_o1, NULL, *ptr);
+						ptr++;
+					}
+				} else if (isspace(*ptr) || (*ptr == '>')) {
+					if (quoted == NOT_QUOTED) {
+						state = HTML_RFC2397_FINISH;
+						ptr++;
+					} else {
+						html_output_c(file_tmp_o1, NULL, *ptr);
+						ptr++;
+					}
+				} else {
+					html_output_c(file_tmp_o1, NULL, *ptr);
+					ptr++;
+				}
+				if (*ptr == '\\') {
+					escape = TRUE;
+				} else {
+					escape = FALSE;
+				}
+				break;
+			case HTML_RFC2397_FINISH:
+				html_output_flush(file_tmp_o1);
+				close(file_tmp_o1->fd);
+				free(file_tmp_o1);
+				state = HTML_SKIP_WS;
+				escape = FALSE;
+				quoted = NOT_QUOTED;
+				next_state = HTML_TAG_ARG;
+				binary = FALSE;
+				break;
+			case HTML_RFC2397_ESC:
+				if (length == 2) {
+					html_output_c(file_tmp_o1, NULL, value);
+				} else if (length == 1) {
+					html_output_c(file_tmp_o1, NULL, '%');
+					html_output_c(file_tmp_o1, NULL, value+'0');
+				} else {
+					html_output_c(file_tmp_o1, NULL, '%');
+				}
+				state = HTML_RFC2397_DATA;
+				break;		
+			case HTML_ESCAPE_CHAR:
+				value *= 16;
+				length++;
+				if (isxdigit(*ptr)) {
+					if (isdigit(*ptr)) {
+						value += (*ptr - '0');
+					} else {
+						value += (tolower(*ptr) - 'a' + 10);
+					}
+				} else {
+					state = next_state;
+				}
+				if (length == 2) {
+					state = next_state;
+				}
+				ptr++;
+				break;	
 			}
 		}
 		free(line);
