@@ -498,6 +498,9 @@ int acceptloop(int socketd, struct cl_node *root, const struct cfgstruct *copt)
     sigdelset(&sigset, SIGSEGV);
     sigprocmask(SIG_SETMASK, &sigset, NULL);
 
+    /* Initialize sication struct for valgrind's sake */
+    memset(&sigact, 0, sizeof(struct sigaction));
+
     /* SIGINT, SIGTERM, SIGSEGV */
     sigact.sa_handler = sigexit;
     sigsegvact.sa_handler = sigsegv;
