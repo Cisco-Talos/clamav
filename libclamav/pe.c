@@ -307,6 +307,9 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     cli_dbgmsg("SizeOfHeaders: %d\n", EC32(optional_hdr.SizeOfHeaders));
 
     switch(EC16(optional_hdr.Subsystem)) {
+	case 0:
+	    cli_dbgmsg("Subsystem: Unknown\n");
+	    break;
 	case 1:
 	    cli_dbgmsg("Subsystem: Native (a driver ?)\n");
 	    break;
@@ -338,7 +341,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    cli_dbgmsg("Subsystem: EFI runtime driver\n");
 	    break;
 	default:
-	    cli_warnmsg("Unknown subsystem in PE header\n");
+	    cli_warnmsg("Unknown subsystem in PE header (0x%x)\n", EC16(optional_hdr.Subsystem));
     }
 
     cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr.NumberOfRvaAndSizes));
