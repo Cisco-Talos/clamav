@@ -241,6 +241,7 @@ Changes
 		the order of includes so some prototypes weren't getting in
 0.67f	20/2/04	Added checkClamd() - if possible attempts to see if clamd has
 		died
+0.67g	21/2/04	Don't run if the quarantine-dir is publically accessable
 
 BUG REPORTS
 
