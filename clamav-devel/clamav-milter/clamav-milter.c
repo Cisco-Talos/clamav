@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.139  2004/10/04 12:37:11  nigelhorne
+ * Fix quarantine files being saved twice
+ *
  * Revision 1.138  2004/10/04 10:53:58  nigelhorne
  * Better SMTP message when virus is found
  *
@@ -425,9 +428,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.138 2004/10/04 10:53:58 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.139 2004/10/04 12:37:11 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80g"
+#define	CM_VERSION	"0.80h"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -3696,6 +3699,7 @@ qfile(struct privdata *privdata, const char *virusname)
 		free(newname);
 		return -1;
 	}
+	unlink(privdata->filename);
 	free(privdata->filename);
 	privdata->filename = newname;
 
