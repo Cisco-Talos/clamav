@@ -258,7 +258,7 @@ static void print_ole2_header(ole2_header_t *hdr)
 
 static int ole2_read_block(int fd, ole2_header_t *hdr, void *buff, int32_t blockno)
 {
-	off_t offset;
+	off_t offset, offend;
 
 	if (blockno < 0) {
 		return FALSE;
@@ -275,7 +275,8 @@ static int ole2_read_block(int fd, ole2_header_t *hdr, void *buff, int32_t block
 			return FALSE;
 		}
 	} else {
-		if ((offset + (1 << hdr->log2_big_block_size)) > hdr->m_length) {
+		offend = offset + (1 << hdr->log2_big_block_size);
+		if ((offend <= 0) || (offend > hdr->m_length)) {
 			return FALSE;
 		}
 		memcpy(buff, hdr->m_area+offset, (1 << hdr->log2_big_block_size));
@@ -515,7 +516,10 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 		case 2: /* File */
 			if (!handler(fd, hdr, &prop_block[index], dir)) {
 				cli_dbgmsg("ERROR: handler failed\n");
-				return;
+				/* If we don't return on this error then
+					we can sometimes pull VBA code
+					from corrupted files.
+				*/
 			}
 			ole2_walk_property_tree(fd, hdr, dir,
 				prop_block[index].prev, handler, rec_level, file_count+1);
