@@ -1,3 +1,8 @@
+Mon Dec 27 01:09:20 CET 2004 (tk)
+---------------------------------
+  * libclamav/scanners.c: Add missing ArchiveBlockMax rule for recursion limit
+			  (reported by HR <haavard*zyf.no-ip.org>)
+
 Wed Dec 22 16:08:49 GMT 2004 (trog)
 -----------------------------------
   * sigtool/vba.c: Add some more Word6 tokens.

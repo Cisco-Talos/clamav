@@ -1181,7 +1181,10 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
     if(SCAN_ARCHIVE && limits && limits->maxreclevel)
 	if(*arec > limits->maxreclevel) {
 	    cli_dbgmsg("Archive recursion limit exceeded (arec == %d).\n", *arec);
-	    /* return CL_EMAXREC; */
+	    if(BLOCKMAX) {
+		*virname = "Archive.ExceededRecursionLimit";
+		return CL_VIRUS;
+	    }
 	    return CL_CLEAN;
 	}
 
