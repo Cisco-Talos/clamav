@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 1999 - 2004 Tomasz Kojm <tk@clamav.net>
+ *  Copyright (C) 1999 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -545,43 +545,6 @@ void cli_writeint32(char *offset, uint32_t value)
     offset[1] = (value & 0xff00) >> 8;
     offset[2] = (value & 0xff0000) >> 16;
     offset[3] = (value & 0xff000000) >> 24;
-}
-
-int cli_memstr(const char *haystack, int hs, const char *needle, int ns)
-{
-	const char *pt, *hay;
-	int n;
-
-
-    if(hs < ns)
-	return 0;
-
-    if(haystack == needle)
-	return 1;
-
-    if(!memcmp(haystack, needle, ns))
-	return 1;
-
-    pt = hay = haystack;
-    n = hs;
-
-    while((pt = memchr(hay, needle[0], n)) != NULL) {
-	n -= (int) pt - (int) hay;
-	if(n < ns)
-	    break;
-
-	if(!memcmp(pt, needle, ns))
-	    return 1;
-
-	if(hay == pt) {
-	    n--;
-	    hay++;
-	} else {
-	    hay = pt;
-	}
-    }
-
-    return 0;
 }
 
 int cli_filecopy(const char *src, const char *dest)

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,5 +26,6 @@ short int *cli_hex2si(const char *hex);
 char *cli_hex2str(const char *hex);
 char *cli_str2hex(const char *string, unsigned int len);
 char *cli_strtokbuf(const char *input, int fieldno, const char *delim, char *output);
+int cli_memstr(const char *haystack, int hs, const char *needle, int ns);
 
 #endif
