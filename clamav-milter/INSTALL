@@ -372,6 +372,8 @@ Changes
 		If CL_DEBUG is defined, don't redirect stdout/stderr
 		Don't attempt to return an old signature if no filename has
 			been given. There has never been one to return
+0.70u	29/4/04	When changing from realloc to cli_realloc I forgot to keep the
+		assignment of signature
 
 BUG REPORTS
 
