@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.25  2004/01/06 14:41:18  nigelhorne
+ * Handle headers which do not not have a space after the ':'
+ *
  * Revision 1.24  2003/12/20 13:55:36  nigelhorne
  * Ensure multipart just save the bodies of attachments
  *
@@ -63,7 +66,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.24 2003/12/20 13:55:36 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.25 2004/01/06 14:41:18 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -374,14 +377,40 @@ parseEmailHeaders(const message *m, const table_t *rfc821Table)
 				inHeader = FALSE;
 			} else {
 				const bool isLastLine = !continuationMarker(buffer);
-				const char *cmd = strtok_r(buffer, " \t", &strptr);
+				char *cmd = strtok_r(buffer, " \t", &strptr);
 
-				if(cmd && *cmd) {
-					const char *arg = strtok_r(NULL, "", &strptr);
+				if(*cmd) {
+					char *arg = strtok_r(NULL, "", &strptr);
 
-					if(arg)
+					if(arg) {
+						/*
+						 * Found a header such as
+						 * Content-Type: multipart/mixed;
+						 * set arg to be
+						 * "multipart/mixed" and cmd to
+						 * be "Content-Type:"
+						 */
 						if(parseMimeHeader(ret, cmd, rfc821Table, arg) == CONTENT_TYPE)
 							inContinuationHeader = !isLastLine;
+					} else {
+						/*
+						 * Handle the case where the
+						 * header does not have a space
+						 * after the ':', e.g.
+						 * Content-Type:multipart/mixed;
+						 */
+						arg = strchr(cmd, ':');
+						if(arg && (*++arg != '\0')) {
+							char *p;
+
+							cmd = strdup(cmd);
+							p = strchr(cmd, ':');
+							*++p = '\0';
+							if(parseMimeHeader(ret, cmd, rfc821Table, arg) == CONTENT_TYPE)
+								inContinuationHeader = !isLastLine;
+							free(cmd);
+						}
+					}
 				}
 			}
 		} else

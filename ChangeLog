@@ -1,3 +1,8 @@
+Tue Jan  6 14:42:00 GMT 2004 (njh)
+----------------------------------
+  * libclamav: Handle headers which do not not have a space after the ':'
+  	Example mail submitted by "Diego d'Ambra" <da@softcom.dk>
+
 Tue Jan  6 14:43:42 CET 2004 (tk)
 ---------------------------------
   * clamd: cfgfile.c: HTTPProxyPort is now OPT_NUM and not OPT_STR (the bug
