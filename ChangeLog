@@ -1,3 +1,11 @@
+Mon Sep 13 11:23:21 BST 2004 (trog)
+-----------------------------------
+  * libclamav: re-write HTML code:
+	- decode MS Script Encoder code
+	- doesn't require mmap(), uses it if available
+	- extract href tag values
+	- single pass parser
+
 Mon Sep 13 03:31:58 CEST 2004 (tk)
 ----------------------------------
   * libclamav: CL_BLOCKMAX: allow blocking (i.e. marking as viruses) of

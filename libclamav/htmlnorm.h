@@ -15,15 +15,21 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+ 
 #ifndef __HTMLNORM_H
 #define __HTMLNORM_H
 
-#include <sys/types.h>
+typedef struct tag_arguments_tag
+{
+        int count;
+        unsigned char **tag;
+        unsigned char **value;
+} tag_arguments_t;
 
-unsigned char *html_normalize(unsigned char *in_buff, off_t in_size);
-unsigned char *remove_html_comments(unsigned char *line);
-unsigned char *remove_html_char_ref(unsigned char *line);
-char *quoted_decode(unsigned char *line, off_t in_size);
-
+int html_normalise_mem(unsigned char *in_buff, off_t in_size, const char *dirname, tag_arguments_t *hrefs);
+int html_normalise_fd(int fd, const char *dirname, tag_arguments_t *hrefs);
+void html_tag_arg_free(tag_arguments_t *tags);
+int html_screnc_decode(int fd, const char *dirname);
+ 
 #endif
+
