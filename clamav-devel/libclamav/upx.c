@@ -73,7 +73,7 @@
 int pefromupx (char *src, char *dst, int *dsize, uint32_t ep, uint32_t upx0, uint32_t upx1, uint32_t magic)
 {
   char *imports, *sections, *pehdr, *newbuf;
-  int sectcnt, upd=1, realstuffsz, align;
+  int sectcnt, upd=1, realstuffsz;
   int foffset=0xd0+0xf8;
 
   imports = dst + cli_readint32(src + ep - upx1 + magic);
@@ -108,7 +108,7 @@ int pefromupx (char *src, char *dst, int *dsize, uint32_t ep, uint32_t upx0, uin
     return 0;
   }
   
-  if (! (align = cli_readint32(pehdr+0x38))) {
+  if (! cli_readint32(pehdr+0x38)) {
     cli_dbgmsg("UPX: Cant align to a NULL bound - giving up rebuild\n");
     return 0;
   }
@@ -397,7 +397,7 @@ int upx_inflate2e(char *src, int ssize, char *dst, int *dsize, uint32_t upx0, ui
   int32_t backbytes, unp_offset = -1, myebx = 0;
   int scur=0, dcur=0, i, backsize, oob;
 
-  while (1) {
+  for(;;) {
     while ( (oob = doubleebx(src, &myebx, &scur, ssize)) ) {
       if (oob == -1)
         return -1;
@@ -408,7 +408,7 @@ int upx_inflate2e(char *src, int ssize, char *dst, int *dsize, uint32_t upx0, ui
 
     backbytes = 1;
 
-    while (1) {
+    for(;;) {
       if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1 )
         return -1;
       backbytes = backbytes*2+oob;

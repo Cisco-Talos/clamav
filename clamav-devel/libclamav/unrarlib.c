@@ -325,7 +325,7 @@ static int MainHeadSize;
 
 static long CurBlockPos,NextBlockPos;
 
-static unsigned long CurUnpRead, CurUnpWrite;
+static unsigned long CurUnpRead;
 static long UnpPackedSize;
 static long DestUnpSize;
 
@@ -535,7 +535,7 @@ int urarlib_list(int desc, ArchiveList_struct *list)
 #endif
   (*(DWORD*)list) = (DWORD)NULL;            /* init file list               */
   /* do while file is not extracted and there's no error                    */
-  while (TRUE)
+  for(;;)
   {
     int ReadBlockResult;
     if ((ReadBlockResult = ReadBlock(FILE_HEAD | READSUBBLOCK)) <= 0) /* read name of the next  */
@@ -1037,7 +1037,7 @@ BOOL ExtrFile(int desc)
         break;                              /* error, can't extract file!   */
       }
 
-      CurUnpRead=CurUnpWrite=0;
+      CurUnpRead=0;
       if ((*Password!=0) && (NewLhd.Flags & LHD_PASSWORD))
         Encryption=NewLhd.UnpVer;
       else
