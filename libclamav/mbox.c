@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.132  2004/09/20 08:31:56  nigelhorne
+ * FOLLOWURLS now compiled if libcurl is found
+ *
  * Revision 1.131  2004/09/18 14:59:25  nigelhorne
  * Code tidy
  *
@@ -381,7 +384,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.131 2004/09/18 14:59:25 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.132 2004/09/20 08:31:56 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -459,10 +462,16 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 
 #define	SAVE_TO_DISC	/* multipart/message are saved in a temporary file */
 
-/*#define	FOLLOWURLS	/*
+/*
+ * Code does exist to run FOLLORURLS on systems without libcurl, however that
+ * is not recommended so it is not compiled by default
+ */
+#ifdef	WITH_CURL
+#define	FOLLOWURLS	/*
 			 * If an email contains URLs, check them - helps to
 			 * find Dialer.gen-45
 			 */
+#endif
 
 #ifdef	FOLLOWURLS
 
@@ -2101,13 +2110,19 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 	cli_dbgmsg("parseMimeHeader: cmd='%s', arg='%s'\n", cmd, arg);
 
 	ptr = rfc822comments(cmd);
-	commandNumber = tableFind(rfc821Table, ptr);
-	free(ptr);
+	if(ptr) {
+		commandNumber = tableFind(rfc821Table, ptr);
+		free(ptr);
+	} else
+		commandNumber = tableFind(rfc821Table, cmd);
 
 	copy = rfc822comments(arg);
-	ptr = copy;
+	if(copy == NULL)
+		copy = strdup(arg);
 	if(copy == NULL)
 		return -1;
+
+	ptr = copy;
 
 	switch(commandNumber) {
 		case CONTENT_TYPE:
@@ -2149,11 +2164,6 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 					messageSetMimeType(m, "application");
 					messageSetMimeSubtype(m, "octet-stream");
 				} else {
-					char *s;
-					char *mimeType;	/* LHS of the ; */
-					size_t len;
-
-					s = mimeType = cli_strtok(copy, 0, ";");
 					/*
 					 * The content type could be in quotes:
 					 *	Content-Type: "multipart/mixed"
@@ -2161,12 +2171,16 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 					 *	the quotes, it doesn't handle
 					 *	them properly
 					 */
-					while(isspace(*s))
-						s++;
-					if(s[0] == '\"')
-						s++;
+					while(isspace(*copy))
+						copy++;
+					if(copy[0] == '\"')
+						copy++;
 
-					if(s[0] != '/')
+					if(copy[0] != '/') {
+						char *s;
+						char *mimeType;	/* LHS of the ; */
+
+						s = mimeType = cli_strtok(copy, 0, ";");
 						/*
 						 * Handle
 						 * Content-Type: foo/bar multipart/mixed
@@ -2187,16 +2201,19 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 							if(s == NULL)
 								break;
 							if(set) {
-								len = strstrip(s) - 1;
+								size_t len = strstrip(s) - 1;
 								if(s[len] == '\"') {
 									s[len] = '\0';
 									len = strstrip(s);
 								}
 								if(len) {
-									char *t = cli_strtok(s, 0, " ");
+									if(strchr(s, ' ')) {
+										char *t = cli_strtok(s, 0, " ");
 
-									messageSetMimeSubtype(m, t);
-									free(t);
+										messageSetMimeSubtype(m, t);
+										free(t);
+									} else
+										messageSetMimeSubtype(m, s);
 								}
 							}
 
@@ -2207,7 +2224,8 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 							if(*s == '\0')
 								break;
 						}
-					free(mimeType);
+						free(mimeType);
+					}
 				}
 
 				/*
@@ -2257,8 +2275,10 @@ saveTextPart(message *m, const char *dir)
 }
 
 /*
- * Handle RFC822 comments in headers. Returns a malloc'd buffer that the
- * caller must free, or NULL on error. See seciont 3.4.3 of RFC822
+ * Handle RFC822 comments in headers.
+ * Returns a buffer without the comments or NULL on error or if the input
+ * has no comments. The caller must free the returned buffer
+ * See secion 3.4.3 of RFC822
  * TODO: handle comments that go on to more than one line
  */
 static char *
@@ -2269,10 +2289,10 @@ rfc822comments(const char *in)
 	int backslash, inquote, commentlevel;
 
 	if(in == NULL)
-		in = "";
+		return NULL;
 
 	if(strchr(in, '(') == NULL)
-		return strdup(in);
+		return NULL;
 
 	out = cli_malloc(strlen(in) + 1);
 	if(out == NULL)
