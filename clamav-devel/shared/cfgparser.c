@@ -109,7 +109,7 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 	    {"MaxAttempts", OPT_NUM}, /* freshclam */
 	    {"HTTPProxyServer", OPT_STR}, /* freshclam */
 	    {"HTTPProxyPort", OPT_NUM}, /* freshclam */
-	    {"HTTPProxyUsername", OPT_STR}, /* freshclam */
+	    {"HTTPProxyUsername", OPT_FULLSTR}, /* freshclam */
 	    {"HTTPProxyPassword", OPT_STR}, /* freshclam */
 	    {"NotifyClamd", OPT_OPTARG}, /* freshclam */
 	    {"OnUpdateExecute", OPT_FULLSTR}, /* freshclam */

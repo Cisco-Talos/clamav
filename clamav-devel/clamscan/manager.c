@@ -67,7 +67,7 @@ int scanmanager(const struct optstruct *opt)
 	struct cl_limits *limits = NULL;
 	struct passwd *user = NULL;
 	struct stat sb;
-	char *fullpath = NULL, cwd[200];
+	char *fullpath = NULL, cwd[1024];
 	struct cfgstruct *copt, *cpt;
 	struct cl_cvd *d1, *d2;
 	const char *dbdir;
@@ -204,7 +204,7 @@ int scanmanager(const struct optstruct *opt)
     if(opt->filename == NULL || strlen(opt->filename) == 0) {
 
 	/* we need full path for some reasons (eg. archive handling) */
-	if(!getcwd(cwd, 200)) {
+	if(!getcwd(cwd, sizeof(cwd))) {
 	    mprintf("@Can't get absolute pathname of current working directory.\n");
 	    ret = 57;
 	} else
@@ -287,7 +287,7 @@ int scanmanager(const struct optstruct *opt)
 
 		if(compression && (thefilename[0] != '/')) {
 		    /* we need to complete the path */
-		    if(!getcwd(cwd, 200)) {
+		    if(!getcwd(cwd, sizeof(cwd))) {
 			mprintf("@Can't get absolute pathname of current working directory.\n");
 			return 57;
 		    } else {
