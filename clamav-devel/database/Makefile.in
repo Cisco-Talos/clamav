@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 #
-#  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+#  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
 #  Fixes by Arkadiusz Miskiewicz <misiek@pld.org.pl>
 #	    Masaki Ogawa <proc@mac.com>
 #
@@ -117,7 +117,7 @@ am__include = @am__include@
 am__quote = @am__quote@
 install_sh = @install_sh@
 
-EXTRA_DIST = main.cvd daily.cvd mirrors.txt
+EXTRA_DIST = main.cvd daily.cvd
 DBINST = @DBDIR@
 subdir = database
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
@@ -250,7 +250,6 @@ install:
 	$(mkinstalldirs) $(DESTDIR)$(DBINST)
 	test -f $(DESTDIR)$(DBINST)/main.cvd || @$(INSTALL_DATA) main.cvd $(DESTDIR)$(DBINST)
 	test -f $(DESTDIR)$(DBINST)/daily.cvd || @$(INSTALL_DATA) daily.cvd $(DESTDIR)$(DBINST)
-	test -f $(DESTDIR)$(DBINST)/mirrors.txt || @$(INSTALL_DATA) mirrors.txt $(DESTDIR)$(DBINST)
 	test -f $(DESTDIR)$(DBINST)/viruses.db && rm -f $(DESTDIR)$(DBINST)/viruses.db || true
 	test -f $(DESTDIR)$(DBINST)/viruses.db2 && rm -f $(DESTDIR)$(DBINST)/viruses.db2 || true
 	@if test `id -u` -eq 0 && test -n "${CLAMAVUSER}" && test -n "${CLAMAVGROUP}"; then \
@@ -263,9 +262,6 @@ install:
 	    chmod 664 $(DESTDIR)$(DBINST)/daily.cvd; \
 	    chown ${CLAMAVUSER} $(DESTDIR)$(DBINST)/daily.cvd; \
 	    chgrp ${CLAMAVGROUP} $(DESTDIR)$(DBINST)/daily.cvd; \
-	    chmod 664 $(DESTDIR)$(DBINST)/mirrors.txt; \
-	    chown ${CLAMAVUSER} $(DESTDIR)$(DBINST)/mirrors.txt; \
-	    chgrp ${CLAMAVGROUP} $(DESTDIR)$(DBINST)/mirrors.txt; \
 	fi
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
