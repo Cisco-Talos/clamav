@@ -201,6 +201,10 @@ void sigtool(struct optstruct *opt)
 
 	unpack(opt);
 
+    } else if(optl(opt, "unpack-current")) {
+
+	unpack(opt);
+
     } else if(optc(opt, 'i')) {
 
 	cvdinfo(opt);
@@ -669,7 +673,7 @@ void cvdinfo(struct optstruct *opt)
 	exit(1);
     }
 
-    mprintf("Creation time: %s\n", cvd->time);
+    mprintf("Build time: %s\n", cvd->time);
     mprintf("Version: %d\n", cvd->version);
     mprintf("# of signatures: %d\n", cvd->sigs);
     mprintf("Functionality level: %d\n", cvd->fl);
@@ -711,6 +715,7 @@ void help(void)
     mprintf("   --build NAME		    -b NAME	Build a CVD file\n");
     mprintf("   --server ADDR	    -s ADDR	ClamAV Signing Service address\n");
     mprintf("   --unpack FILE	    -u FILE	Unpack a CVD file\n");
+    mprintf("   --unpack-current NAME		Unpack local CVD\n");
     mprintf("\n");
 
     exit(0);
@@ -785,10 +790,16 @@ int unpack(struct optstruct *opt)
 {
 	FILE *fd;
 	struct cl_cvd *cvd;
+	char *name;
 
+    if(optl(opt, "unpack-current")) {
+	name = mcalloc(300, sizeof(char)); /* FIXME */
+	sprintf(name, "%s/%s", cl_retdbdir(), getargl(opt, "unpack-current"));
+    } else
+	name = getargc(opt, 'u');
 
-    if((fd = fopen(getargc(opt, 'u'), "rb")) == NULL) {
-	mprintf("!Can't open CVD file %s\n");
+    if((fd = fopen(name, "rb")) == NULL) {
+	mprintf("!Can't open CVD file %s\n", name);
 	exit(1);
     }
 

@@ -176,14 +176,14 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 {
 	int ret, portscan = CL_DEFAULT_MAXPORTSCAN, sockfd, port, acceptd, tmpd, bread;
 	long int size = 0, maxsize = 0;
-	short binded = 0;
+	short bound = 0;
 	char *virname, buff[32768];
 	struct sockaddr_in server;
 	struct cfgstruct *cpt;
-	FILE *tmp;
+	FILE *tmp = NULL;
 
 
-    while(!binded && portscan--) {
+    while(!bound && portscan--) {
 	if((port = cl_rndnum(60000)) < 1024)
 	    port += 2139;
 
@@ -198,11 +198,11 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1)
 	    close(sockfd);
 	else
-	    binded = 1;
+	    bound = 1;
 
     }
 
-    if(!binded && !portscan) {
+    if(!bound && !portscan) {
 	mdprintf(odesc, "ERROR\n");
 	logg("!ScanStream: Can't find any free port.\n");
 	return -1;
@@ -219,12 +219,13 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
     }
 
 
-    logg("*Accepted connection on port %d\n", port);
+    logg("*Accepted connection on port %d, fd %d\n", port, acceptd);
 
     if(cfgopt(copt, "StreamSaveToDisk")) {
 	if((tmp = tmpfile()) == NULL) {
 	    shutdown(sockfd, 2);
 	    close(sockfd);
+	    close(acceptd);
 	    mdprintf(odesc, "Temporary file ERROR\n");
 	    logg("!ScanStream: Can't create temporary file.\n");
 	    return -1;
@@ -240,18 +241,22 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	    if(maxsize && (size + sizeof(buff)) > maxsize) {
 		shutdown(sockfd, 2);
 		close(sockfd);
+		close(acceptd);
 		mdprintf(odesc, "Size exceeded ERROR\n");
 		logg("^ScanStream: Size exceeded (stopped at %d, max: %d)\n", size, maxsize);
-		close(tmpd);
+		if(tmp)
+		    fclose(tmp);
 		return -1;
 	    }
 
 	    if(write(tmpd, buff, bread) < 0) {
 		shutdown(sockfd, 2);
 		close(sockfd);
+		close(acceptd);
 		mdprintf(odesc, "Temporary file -> write ERROR\n");
 		logg("!ScanStream: Can't write to temporary file.\n");
-		close(tmpd);
+		if(tmp)
+		    fclose(tmp);
 		return -1;
 	    }
 
@@ -259,7 +264,8 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 
 	lseek(tmpd, 0, SEEK_SET);
 	ret = cl_scandesc(tmpd, &virname, scanned, root, limits, options);
-	close(tmpd);
+	if(tmp)
+	    fclose(tmp);
 
     } else
 	ret = cl_scandesc(acceptd, &virname, scanned, root, limits, 0);

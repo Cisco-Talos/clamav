@@ -1,3 +1,9 @@
+Sat Nov  1 04:14:14 CET 2003 (tk)
+---------------------------------
+  * clamd: scanner: close a whole file stream and not only a file descriptor;
+	   fixed potential descriptor leaks on error situation (patches by
+	   Michael Dankov)
+
 Fri Oct 31 13:34:18 GMT 2003 (njh)
 ----------------------------------
   * clamav-milter: added dont scan on error flag

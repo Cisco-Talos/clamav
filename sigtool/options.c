@@ -55,6 +55,7 @@ int main(int argc, char **argv)
 	    {"build", 1, 0, 'b'},
 	    {"server", 1, 0, 's'},
 	    {"unpack", 1, 0, 'u'},
+	    {"unpack-current", 1, 0, 0},
 	    {"info", 1, 0, 'i'},
 	    {0, 0, 0, 0}
     	};
