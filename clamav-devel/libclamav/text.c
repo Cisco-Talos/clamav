@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: text.c,v $
+ * Revision 1.11  2004/11/27 21:54:26  nigelhorne
+ * Tidy
+ *
  * Revision 1.10  2004/08/22 10:34:24  nigelhorne
  * Use fileblob
  *
@@ -39,7 +42,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: text.c,v 1.10 2004/08/22 10:34:24 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: text.c,v 1.11 2004/11/27 21:54:26 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -81,71 +84,14 @@ textDestroy(text *t_head)
 
 /*
  * Remove trailing spaces from the lines and trailing blank lines
+ * This could be used to remove trailing blank lines, empty lines etc.,
+ *	but it probably isn't worth the time taken given that it won't reclaim
+ *	much memory
  */
 text *
 textClean(text *t_head)
 {
-#if	0	/* not needed in ClamAV */
-	text *t_lastnonempty = NULL, *t_ret;
-
-	while(t_head) {
-		char *line = t_head->t_text;
-		const size_t len = strlen(line);
-		int uuencoded = 0;
-
-		if((len > 0) && !uuencoded) {
-			int last = len;
-
-			if((strncasecmp(line, "begin ", 6) == 0) &&
-			   (isdigit(line[6])) &&
-			   (isdigit(line[7])) &&
-			   (isdigit(line[8])) &&
-			   (line[9] == ' '))
-				uuencoded = 1;
-			else
-				/*
-				 * Don't remove trailing spaces since that may
-				 * break uuencoded files
-				 */
-				while((--last >= 0) && isspace(line[last]))
-					;
-			if(++last > 0) {
-				t_lastnonempty = t_head;
-				if(last < len) {
-					line[last] = '\0';
-					t_head->t_text = cli_realloc(line, ++last);
-				}
-			} else {
-				t_head->t_text = cli_realloc(line, 1);
-				t_head->t_text[0] = '\0';
-			}
-		}
-		t_head = t_head->t_next;
-	}
-
-	if(t_lastnonempty == NULL)
-		return(NULL);	/* empty message I presume */
-
-	t_ret = t_lastnonempty;
-	t_lastnonempty = t_lastnonempty->t_next;
-
-	while(t_lastnonempty) {
-		text *t_next = t_lastnonempty->t_next;
-
-		assert(strlen(t_lastnonempty->t_text) == 0);
-
-		free(t_lastnonempty->t_text);
-		free(t_lastnonempty);
-
-		t_lastnonempty = t_next;
-	}
-
-	t_ret->t_next = NULL;
-
-	return t_ret;
-#else
 	return t_head;
-#endif
 }
 
 /* Clone the current object */
