@@ -1,3 +1,8 @@
+Wed Jan 26 09:23:48 CET 2005 (tk)
+---------------------------------
+  * libclamav/snprintf.c: add missing MAX macro (thanks to Ted Mittelstaedt
+			  <tedm*toybox.placo.com>)
+
 Tue Jan 25 08:12:51 GMT 2005 (njh)
 ----------------------------------
   * clamav-milter:	Internal mode is now the default. Removed --internal
