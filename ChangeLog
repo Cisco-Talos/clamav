@@ -1,3 +1,7 @@
+Sat Nov 22 17:23:10 IST 2003 (njh)
+----------------------------------
+  * clamav-milter: Drop root privileges and support quarantine
+
 Fri Nov 21 12:58:02 IST 2003 (njh)
 ---------------------------------
   * libclamav:	Scan multipart alternatives that have no boundaries, finds some
