@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.75  2004/08/23 13:15:16  nigelhorne
+ * messageClearMarkers
+ *
  * Revision 1.74  2004/08/22 15:08:59  nigelhorne
  * messageExport
  *
@@ -219,7 +222,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.74 2004/08/22 15:08:59 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.75 2004/08/23 13:15:16 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -270,6 +273,7 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.74 2004/08/22 15:08:59 nigelhorn
 typedef enum { FALSE = 0, TRUE = 1 } bool;
 
 static	void	messageIsEncoding(message *m);
+static	const	text	*binhexBegin(const message *m);
 static	unsigned char	*decodeLine(message *m, const char *line, unsigned char *buf, size_t buflen);
 static unsigned char *decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast);
 static	void	squeeze(char *s);
@@ -277,6 +281,7 @@ static	unsigned	char	hex(char c);
 static	unsigned	char	base64(char c);
 static	unsigned	char	uudecode(char c);
 static	const	char	*messageGetArgument(const message *m, int arg);
+static	void	*messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), void (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(const text *, void *));
 
 /*
  * These maps are ordered in decreasing likelyhood of their appearance
@@ -978,11 +983,11 @@ messageClean(message *m)
 /*
  * Export a message using the given export routines
  */
-void *
+static void *
 messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), void (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(const text *, void *))
 {
 	void *ret;
-	const text *t_line = NULL;
+	const text *t_line;
 	char *filename;
 
 	assert(m != NULL);
@@ -1380,6 +1385,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 fileblob *
 messageToFileblob(message *m, const char *dir)
 {
+	cli_dbgmsg("messageToFileblob\n");
 	return messageExport(m, dir, fileblobCreate, fileblobDestroy, fileblobSetFilename, fileblobAddData, textToFileblob);
 }
 
@@ -1436,7 +1442,7 @@ messageToText(message *m)
 			t_line = t_line->t_next;
 		} else {
 			if(binhexBegin(m))
-				cli_warnmsg("Binhex messages not supported yet (2).\n");
+				cli_warnmsg("Binhex messages not supported yet.\n");
 			t_line = messageGetBody(m);
 		}
 
@@ -1543,7 +1549,7 @@ uuencodeBegin(const message *m)
  * Scan to find the BINHEX message (if any)
  */
 #if	0
-const text *
+static const text *
 binhexBegin(const message *m)
 {
 	const text *t_line;
@@ -1555,7 +1561,7 @@ binhexBegin(const message *m)
 	return NULL;
 }
 #else
-const text *
+static const text *
 binhexBegin(const message *m)
 {
 	return m->binhex;
@@ -1617,6 +1623,12 @@ encodingLine(const message *m)
 	return m->encoding;
 }
 #endif
+
+void
+messageClearMarkers(message *m)
+{
+	m->encoding = m->bounce = m->uuencode = m->binhex = NULL;
+}
 
 /*
  * Decode a line and add it to a buffer, return the end of the buffer
