@@ -74,7 +74,7 @@ int scanmanager(const struct optstruct *opt)
 
 /* njh@bandsman.co.uk: BeOS */
 #if !defined(C_CYGWIN) && !defined(C_BEOS)
-    if(!getuid()) {
+    if(!geteuid()) {
 	if((user = getpwnam(UNPUSER)) == NULL) {
 	    mprintf("@Can't get information about user "UNPUSER".\n");
 	    exit(60); /* this is critical problem, so we just exit here */
@@ -220,7 +220,7 @@ int scanmanager(const struct optstruct *opt)
 
 		/* njh@bandsman.co.uk: BeOS */
 #if !defined(C_CYGWIN) && !defined(C_BEOS)
-		if(!getuid()) {
+		if(!geteuid()) {
 		    if((user = getpwnam(UNPUSER)) == NULL) {
 			mprintf("@Can't get information about user %s\n", UNPUSER);
 			exit(60); /* this is critical problem, so we just exit here */
@@ -481,7 +481,7 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 		mprintf("@Can't fork.\n");
 		exit(61);
 	    case 0: /* read access denied */
-		if(getuid()) {
+		if(geteuid()) {
 		    if(!printinfected)
 			mprintf("%s: Access denied to archive.\n", filename);
 		} else {
@@ -501,7 +501,7 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	}
     }
 
-    if(getuid())
+    if(geteuid())
 	if(checkaccess(filename, NULL, R_OK) != 1) {
 	    if(!printinfected)
 		mprintf("%s: Access denied.\n", filename);
@@ -902,7 +902,7 @@ int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struc
 	    return -1;
 	case 0:
 #ifndef C_CYGWIN
-	    if(!getuid() && user) {
+	    if(!geteuid() && user) {
 
 #ifdef HAVE_SETGROUPS
 		if(setgroups(1, &user->pw_gid)) {

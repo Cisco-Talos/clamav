@@ -1,3 +1,10 @@
+Tue Jun 15 22:41:03 CEST 2004 (tk)
+----------------------------------
+  * clamscan, clamd, freshclam: call geteuid() instead of getuid() to avoid
+			error messages when the parent process is running
+			with unprivileged effective UID (thanks to Al
+			Smith <ajs+clamav*aeschi.ch.eu.org>)
+
 Mon Jun 14 17:38:37 CEST 2004 (tk)
 ----------------------------------
   * doc: update

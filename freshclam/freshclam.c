@@ -147,7 +147,7 @@ int freshclam(struct optstruct *opt)
 	unpuser = UNPUSER;
     }
 
-    if(!getuid()) {
+    if(!geteuid()) {
 	if((user = getpwnam(unpuser)) == NULL) {
 	    mprintf("@Can't get information about user %s.\n", unpuser);
 	    exit(60); /* this is critical problem, so we just exit here */
