@@ -118,11 +118,14 @@ int cli_strbcasestr(const char *haystack, const char *needle)
 
 void cli_chomp(char *string)
 {
-    if(string[strlen(string) - 1] == 10 || string[strlen(string) - 1 ] == 13)
-	string[strlen(string) -1] = 0;
+	int l = strlen(string);
 
-    if(string[strlen(string) - 1] == '\r')
-	string[strlen(string) -1] = 0;
+    if(string[l - 1] == 10 || string[l - 1] == 13)
+	string[l - 1] = 0;
+
+    l = strlen(string);
+    if(string[l - 1] == '\r')
+	string[l - 1] = 0;
 }
 
 char *cli_tok(const char *line, int field, char delimiter)
@@ -131,7 +134,9 @@ char *cli_tok(const char *line, int field, char delimiter)
         char *buffer;
 
 
-    length = strlen(line);
+    if(!(length = strlen(line)))
+	return NULL;
+
     buffer = (char *) cli_calloc(length, sizeof(char));
 
     for(i = 0; i < length; i++) {
@@ -150,5 +155,10 @@ char *cli_tok(const char *line, int field, char delimiter)
 
     cli_chomp(buffer); /* preventive */
 
-    return (char *) cli_realloc(buffer, strlen(buffer) + 1);
+    if((length = strlen(buffer)))
+	return (char *) cli_realloc(buffer, strlen(buffer) + 1);
+    else {
+	free(buffer);
+	return NULL;
+    }
 }

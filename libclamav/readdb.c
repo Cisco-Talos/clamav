@@ -149,7 +149,11 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 	    if(parts) /* there's always one part more */
 		parts++;
 	    for(i = 1; i <= parts; i++) {
-		pt2 = cli_tok(pt, i, '*');
+		if((pt2 = cli_tok(pt, i, '*')) == NULL) {
+		    cli_errmsg("Can't extract part %d of partial signature in line %d\n", i, line);
+		    return CL_EMALFDB;
+		}
+
 		if((ret = cli_parse_add(*root, start, pt2, sigid, parts, i))) {
 		    cli_dbgmsg("parse_add() return code: %d\n", ret);
 		    cli_errmsg("readdb(): Malformed pattern line %d (file %s).\n", line, filename);
