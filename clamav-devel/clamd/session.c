@@ -59,9 +59,16 @@
 int command(int desc, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt)
 {
 	char buff[1025];
-	int bread, opt, ret, retval;
+	int bread, opt, ret, retval, timeout;
+	struct cfgstruct *cpt;
 
-    retval = poll_fd(desc, CL_DEFAULT_SCANTIMEOUT);
+    if((cpt = cfgopt(copt, "ReadTimeout"))) {
+	timeout = cpt->numarg;
+    } else {
+	timeout = CL_DEFAULT_SCANTIMEOUT;
+    }
+    
+    retval = poll_fd(desc, timeout);
     switch (retval) {
     case 0: /* timeout */
 	mdprintf(desc, "ERROR\n");
