@@ -1,3 +1,7 @@
+Wed Jan 14 18:03:17 GMT 2004 (njh)
+----------------------------------
+  * libclamav: added definition of binhexBegin
+
 Wed Jan 14 10:09:30 GMT 2004 (njh)
 ----------------------------------
   * libclamav: blobGetData now allows contents to be changed - tuttut

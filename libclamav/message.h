@@ -14,6 +14,11 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * $Log: message.h,v $
+ * Revision 1.4  2004/01/14 18:02:55  nigelhorne
+ * added definition of binhexBegin
+ *
  */
 
 #ifndef	_MESSAGE_H
@@ -49,5 +54,6 @@ void	messageClean(message *m);
 blob	*messageToBlob(const message *m);
 text	*messageToText(const message *m);
 const	text	*uuencodeBegin(const message *m);
+const	text	*binhexBegin(const message *m);
 
 #endif	/*_MESSAGE_H*/
