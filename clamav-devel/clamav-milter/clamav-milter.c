@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.162  2004/12/13 11:17:15  nigelhorne
+ * Handle cross file system quarantine
+ *
  * Revision 1.161  2004/12/07 19:23:48  nigelhorne
  * Ensure that the qurantine daily directory is created
  *
@@ -494,9 +497,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.161 2004/12/07 19:23:48 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.162 2004/12/13 11:17:15 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80aa"
+#define	CM_VERSION	"0.80bb"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -545,6 +548,7 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.161 2004/12/07 19:23:48 ni
 #include <sys/param.h>
 
 #ifdef	C_LINUX
+#include <sys/sendfile.h>
 #include <libintl.h>
 #include <locale.h>
 
@@ -705,6 +709,7 @@ static	int	connect2clamd(struct privdata *privdata);
 static	void	checkClamd(void);
 static	int	sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *virusname);
 static	int	qfile(struct privdata *privdata, const char *sendmailId, const char *virusname);
+static	int	move(const char *oldfile, const char *newfile);
 static	void	setsubject(SMFICTX *ctx, const char *virusname);
 static	int	clamfi_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
 static	int	isLocalAddr(in_addr_t addr);
@@ -1781,7 +1786,12 @@ main(int argc, char **argv)
 					pidfile);
 			cli_warnmsg(_("Can't save PID in file %s\n"), pidfile);
 		} else {
+#ifdef	C_LINUX
+			/* Ensure that all threads are kill()ed */
+			fprintf(fd, "-%d\n", (int)getpgrp());
+#else
 			fprintf(fd, "%d\n", (int)getpid());
+#endif
 			fclose(fd);
 		}
 		umask(old_umask);
@@ -4193,12 +4203,7 @@ qfile(struct privdata *privdata, const char *sendmailId, const char *virusname)
 	}
 	cli_dbgmsg("qfile move '%s' to '%s'\n", privdata->filename, newname);
 
-	/*
-	 * FIXME: handle cross file linking failure meaning that we'd have
-	 *	to copy
-	 */
-#ifdef	C_LINUX
-	if(rename(privdata->filename, newname) < 0) {
+	if(move(privdata->filename, newname) < 0) {
 		perror(newname);
 		if(use_syslog)
 			syslog(LOG_WARNING, _("Can't rename %1$s to %2$s"),
@@ -4206,17 +4211,6 @@ qfile(struct privdata *privdata, const char *sendmailId, const char *virusname)
 		free(newname);
 		return -1;
 	}
-#else
-	if(link(privdata->filename, newname) < 0) {
-		perror(newname);
-		if(use_syslog)
-			syslog(LOG_WARNING, _("Can't rename %1$s to %2$s"),
-				privdata->filename, newname);
-		free(newname);
-		return -1;
-	}
-	unlink(privdata->filename);
-#endif
 	free(privdata->filename);
 	privdata->filename = newname;
 
@@ -4224,6 +4218,81 @@ qfile(struct privdata *privdata, const char *sendmailId, const char *virusname)
 		syslog(LOG_INFO, _("File quarantined as %s"), newname);
 
 	return 0;
+}
+
+/*
+ * Move oldfile to newfile using the fastest possible method
+ */
+static int
+move(const char *oldfile, const char *newfile)
+{
+	int ret;
+#ifdef	C_LINUX
+	struct stat statb;
+	int fin, fout;
+	off_t offset;
+
+	ret = rename(oldfile, newfile);
+#else
+	FILE *fin, *fout;
+	int c;
+
+	ret = link(oldfile, newfile);
+#endif
+
+	if(ret >= 0)
+		return 0;
+	if((ret < 0) && (errno != EXDEV)) {
+		perror(newfile);
+		return -1;
+	}
+
+#ifdef	C_LINUX	/* >= 2.2 */
+	fin = open(oldfile, O_RDONLY);
+	if(fin < 0) {
+		perror(oldfile);
+		return -1;
+	}
+
+	if(fstat(fin, &statb) < 0) {
+		perror(oldfile);
+		close(fin);
+		return -1;
+	}
+	fout = open(newfile, O_WRONLY|O_CREAT, 0600);
+	if(fout < 0) {
+		perror(newfile);
+		close(fin);
+		return -1;
+	}
+	offset = (off_t)0;
+	ret = sendfile(fout, fin, &offset, statb.st_size);
+	close(fin);
+	if(ret < 0) {
+		perror(newfile);
+		close(fout);
+		unlink(newfile);
+		return -1;
+	}
+	close(fout);
+#else
+	fin = fopen(oldfile, "r");
+	if(fin == NULL)
+		return -1;
+
+	fout = fopen(newfile, "w");
+	if(fout == NULL) {
+		fclose(fin);
+		return -1;
+	}
+	while((c = getc(fin)) != EOF)
+		putc(c, fout);
+
+	fclose(fin);
+	fclose(fout);
+#endif
+
+	return unlink(oldfile);
 }
 
 /*
@@ -4248,6 +4317,7 @@ setsubject(SMFICTX *ctx, const char *virusname)
 /*
  * TODO: gethostbyname_r is non-standard so different operating
  * systems do it in different ways. Need more examples
+ * Perhaps we could use res_search()?
  *
  * Returns 0 for success
  */
@@ -4683,7 +4753,8 @@ static int
 loadDatabase(void)
 {
 	extern const char *cl_retdbdir(void);	/* FIXME: should be included */
-	int ret, signatures, v;
+	int ret, v;
+	unsigned int signatures;
 	time_t t;
 	char *daily, *ptr;
 	struct cl_cvd *d;
@@ -4756,7 +4827,7 @@ loadDatabase(void)
 		return -1;
 	}
 	if(use_syslog)
-		syslog(LOG_INFO, _("ClamAV: Protecting against %d viruses"), signatures);
+		syslog(LOG_INFO, _("ClamAV: Protecting against %u viruses"), signatures);
 
 	if(use_syslog)
 		syslog(LOG_INFO, _("Loaded %s\n"), clamav_version);

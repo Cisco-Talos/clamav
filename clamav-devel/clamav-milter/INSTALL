@@ -611,6 +611,10 @@ Changes
 		Fix compilation error if is SESSION not defined.
 		Quarantine files could lose the date from the path
 0.80aa	7/12/04: Daily quarantine directories were not always being created
+0.80bb	12/12/04: On Linux store the -ve process group in the pid file to
+			ensure that all threads are sent signals
+		Support the temporary and quarantine directories being on
+			different filesystems
 
 INTERNATIONALISATION
 
