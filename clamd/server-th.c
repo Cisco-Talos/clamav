@@ -311,6 +311,13 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	logg("Archive support disabled.\n");
     }
 
+    if(cfgopt(copt, "ScanPE")) {
+	logg("Portable Executable support enabled.\n");
+	options |= CL_PE;
+    } else {
+	logg("Portable Executable support disabled.\n");
+    }
+
     if(cfgopt(copt, "ScanMail")) {
 	logg("Mail files support enabled.\n");
 	options |= CL_MAIL;

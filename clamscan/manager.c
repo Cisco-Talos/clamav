@@ -422,6 +422,11 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
     if(optl(opt, "block-encrypted"))
 	options |= CL_ENCRYPTED;
 
+    if(optl(opt, "no-pe"))
+	options &= ~CL_PE;
+    else
+	options |= CL_PE;
+
     if(optl(opt, "no-ole2"))
 	options &= ~CL_OLE2;
     else
@@ -817,6 +822,9 @@ int checkfile(const char *filename, const struct cl_node *root, const struct cl_
 {
 	int fd, ret;
 	const char *virname;
+
+
+    mprintf("*Scanning %s\n", filename);
 
     if((fd = open(filename, O_RDONLY)) == -1) {
 	mprintf("@Can't open file %s\n", filename);

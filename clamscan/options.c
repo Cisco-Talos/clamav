@@ -81,6 +81,7 @@ int main(int argc, char **argv)
 	    {"disable-archive", 0, 0, 0},
 	    {"no-archive", 0, 0, 0},
 	    {"block-encrypted", 0, 0, 0},
+	    {"no-pe", 0, 0, 0},
 	    {"no-ole2", 0, 0, 0},
 	    {"no-html", 0, 0, 0},
 	    {"mbox", 0, 0, 'm'},
