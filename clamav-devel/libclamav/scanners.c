@@ -113,12 +113,18 @@ static int cli_scandesc(int desc, const char **virname, long int *scanned, const
 cl_node *root)
 {
  	char *buffer, *buff, *endbl, *pt;
-	int bytes, buffsize, length, ret;
+	int bytes, buffsize, length, ret, *partcnt;
 
     /* prepare the buffer */
     buffsize = root->maxpatlen + SCANBUFF;
     if(!(buffer = (char *) cli_calloc(buffsize, sizeof(char)))) {
 	cli_dbgmsg("cli_scandesc(): unable to malloc(%d)\n", buffsize);
+	return CL_EMEM;
+    }
+
+    if((partcnt = (int *) cli_calloc(root->partsigs + 1, sizeof(int))) == NULL) {
+	cli_dbgmsg("cl_scandesc(): unable to calloc(%d, %d)\n", root->partsigs + 1, sizeof(int));
+	free(buffer);
 	return CL_EMEM;
     }
 
@@ -138,8 +144,9 @@ cl_node *root)
 	if(bytes < SCANBUFF)
 	    length -= SCANBUFF - bytes;
 
-	if((ret = cl_scanbuff(pt, length, virname, root)) != CL_CLEAN) {
+	if((ret = cli_scanbuff(pt, length, virname, root, partcnt)) != CL_CLEAN) {
 	    free(buffer);
+	    free(partcnt);
 	    return ret;
 	}
 
@@ -152,6 +159,7 @@ cl_node *root)
     }
 
     free(buffer);
+    free(partcnt);
     return CL_CLEAN;
 }
 

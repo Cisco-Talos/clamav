@@ -31,5 +31,6 @@ struct nodelist *cli_bfsadd(struct nodelist *bfs, struct cl_node *n);
 void cli_failtrans(struct cl_node *root);
 void cli_fasttrie(struct cl_node *n, struct cl_node *root);
 int cli_findpos(const char *buffer, int offset, int length, const struct cli_patt *pattern);
+int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *pcnt);
 
 #endif
