@@ -252,6 +252,9 @@ Changes
 		received just as the milter is starting but isn't ready to
 		handle it causing the milter to go to an error state
 		Hardend umask
+0.67i	27/2/04	Dropping priv message now same as clamd
+		Only use TCPwrappers when using TCP/IP to establish
+		communications with the milter
 
 BUG REPORTS
 

@@ -252,9 +252,15 @@
  *			but isn't ready to handle it causing the milter to
  *			go to an error state
  *			Hardend umask
+ *	0.67i	27/2/04	Dropping priv message now same as clamd
+ *			Only use TCPwrappers when using TCP/IP to establish
+ *			communications with the milter
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.56  2004/02/27 09:23:56  nigelhorne
+ * Don't use TCP wrappers when UNIX domain sockets are used
+ *
  * Revision 1.55  2004/02/22 22:53:50  nigelhorne
  * Handle ERROR message from clamd
  *
@@ -405,9 +411,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.55 2004/02/22 22:53:50 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.56 2004/02/27 09:23:56 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.67h"
+#define	CM_VERSION	"0.67i"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -624,8 +630,9 @@ short	use_syslog = 0;
 static	const	char	*pidFile;
 static	int	logVerbose = 0;
 static	struct	cfgstruct	*copt;
-static	const	char	*localSocket;
-static	in_port_t	tcpSocket;
+static	const	char	*localSocket;	/* milter->clamd comms */
+static	in_port_t	tcpSocket;	/* milter->clamd comms */
+static	char	*port = NULL;	/* sendmail->milter comms */
 static	const	char	*serverHostNames = "127.0.0.1";
 static	long	*serverIPs;	/* IPv4 only */
 static	int	numServers;	/* numer of elements in serverIPs */
@@ -677,7 +684,6 @@ int
 main(int argc, char **argv)
 {
 	extern char *optarg;
-	char *port = NULL;
 	const char *cfgfile = CL_DEFAULT_CFG;
 	struct cfgstruct *cpt;
 	struct passwd *user;
@@ -920,10 +926,11 @@ main(int argc, char **argv)
 			else
 				setgroups(1, &user->pw_gid);
 
-			cli_dbgmsg("Dropping user privileges\n");
-
 			setgid(user->pw_gid);
 			setuid(user->pw_uid);
+
+			cli_dbgmsg("Running as user %s (UID %d, GID %d)\n",
+				cpt->strarg, user->pw_uid, user->pw_gid);
 		} else
 			fprintf(stderr, "%s: running as root is not recommended\n", argv[0]);
 	}
@@ -1370,11 +1377,6 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	char ip[INET_ADDRSTRLEN];	/* IPv4 only */
 	char *remoteIP;
 
-#ifdef	WITH_TCPWRAP
-	const char *hostmail;
-	const struct hostent *hp = NULL;
-#endif
-
 	if(hostname == NULL) {
 		if(use_syslog)
 			syslog(LOG_ERR, "clamfi_connect: hostname is null");
@@ -1406,27 +1408,36 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	/*
 	 * Support /etc/hosts.allow and /etc/hosts.deny
 	 */
-	if((hostmail = smfi_getsymval(ctx, "{if_name}")) == NULL) {
-		if(use_syslog)
-			syslog(LOG_WARNING, "Can't get sendmail hostname");
-		hostmail = "unknown";
-	}
+	if((strncasecmp(port, "unix:", 5) != 0) &&
+	   (strncasecmp(port, "local:", 6) != 0)) {
+		const char *hostmail;
+		const struct hostent *hp = NULL;
 
-	if((hp = gethostbyname(hostmail)) == NULL) {
-		if(use_syslog)
-			syslog(LOG_WARNING, "Access Denied: Host Unknown (%s)", hostname);
-		return SMFIS_TEMPFAIL;
-	}
+	   	/*
+		 * Using TCP/IP for the sendmail->clamav-milter connection
+		 */
+		if((hostmail = smfi_getsymval(ctx, "{if_name}")) == NULL) {
+			if(use_syslog)
+				syslog(LOG_WARNING, "Can't get sendmail hostname");
+			hostmail = "unknown";
+		}
 
-	strcpy(ip, (char *)inet_ntoa(*(struct in_addr *)hp->h_addr));
+		if((hp = gethostbyname(hostmail)) == NULL) {
+			if(use_syslog)
+				syslog(LOG_WARNING, "Access Denied: Host Unknown (%s)", hostname);
+			return SMFIS_TEMPFAIL;
+		}
 
-	/*
-	 * Ask is this is a allowed name or IP number
-	 */
-	if(!hosts_ctl("clamav-milter", hp->h_name, ip, STRING_UNKNOWN)) {
-		if(use_syslog)
-			syslog(LOG_WARNING, "Access Denied for %s[%s]", hp->h_name, ip);
-		return SMFIS_TEMPFAIL;
+		strcpy(ip, (char *)inet_ntoa(*(struct in_addr *)hp->h_addr));
+
+		/*
+		 * Ask is this is a allowed name or IP number
+		 */
+		if(!hosts_ctl("clamav-milter", hp->h_name, ip, STRING_UNKNOWN)) {
+			if(use_syslog)
+				syslog(LOG_WARNING, "Access Denied for %s[%s]", hp->h_name, ip);
+			return SMFIS_TEMPFAIL;
+		}
 	}
 #endif
 
