@@ -340,7 +340,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     pthread_attr_init(&thattr);
     pthread_attr_setdetachstate(&thattr, PTHREAD_CREATE_DETACHED);
 
-    if(cfgopt(copt, "ClamukoScanOnLine"))
+    if(cfgopt(copt, "ClamukoScanOnLine") || cfgopt(copt, "ClamukoScanOnAccess"))
 #ifdef CLAMUKO
     {
 	pthread_attr_init(&clamuko_attr);
@@ -476,7 +476,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 		exit(-1);
 	    }
 #ifdef CLAMUKO
-	    if(cfgopt(copt, "ClamukoScanOnLine")) {
+	    if(cfgopt(copt, "ClamukoScanOnLine") || cfgopt(copt, "ClamukoScanOnAccess")) {
 		logg("Stopping and restarting Clamuko.\n");
 		pthread_kill(clamuko_pid, SIGUSR1);
 		pthread_join(clamuko_pid, NULL);
@@ -490,7 +490,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     }
 
 #ifdef CLAMUKO
-    if(cfgopt(copt, "ClamukoScanOnLine")) {
+    if(cfgopt(copt, "ClamukoScanOnLine") || cfgopt(copt, "ClamukoScanOnAccess")) {
 	logg("Stopping Clamuko.\n");
 	pthread_kill(clamuko_pid, SIGUSR1);
 	pthread_join(clamuko_pid, NULL);

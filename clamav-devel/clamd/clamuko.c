@@ -56,6 +56,8 @@ void clamuko_exit(int sig)
 
     /* clamuko_running = 0; */
     logg("Clamuko stopped.\n");
+
+    pthread_exit(NULL);
 }
 
 void *clamukoth(void *arg)
