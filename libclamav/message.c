@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.40  2004/03/18 21:51:41  nigelhorne
+ * If a message only contains a single RFC822 message that has no encoding don't save for scanning
+ *
  * Revision 1.39  2004/03/18 14:05:25  nigelhorne
  * Added bounce and handle text/plain encoding messages
  *
@@ -114,7 +117,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.39 2004/03/18 14:05:25 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.40 2004/03/18 21:51:41 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -174,7 +177,7 @@ static	const	struct	encoding_map {
 	encoding_type	type;
 } encoding_map[] = {
 	{	"7bit",			NOENCODING	},
-{	"text/plain",		NOENCODING	},
+	{	"text/plain",		NOENCODING	},
 	{	"quoted-printable",	QUOTEDPRINTABLE	},	/* rfc1522 */
 	{	"base64",		BASE64		},
 	{	"8bit",			EIGHTBIT	},
@@ -223,6 +226,7 @@ messageCreate(void)
 	message *m = (message *)cli_calloc(1, sizeof(message));
 
 	m->mimeType = NOMIME;
+	m->encodingType = NOENCODING;
 
 	return m;
 }

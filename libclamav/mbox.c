@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.52  2004/03/18 21:51:41  nigelhorne
+ * If a message only contains a single RFC822 message that has no encoding don't save for scanning
+ *
  * Revision 1.51  2004/03/17 19:48:12  nigelhorne
  * Improved embedded RFC822 message handling
  *
@@ -144,7 +147,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.51 2004/03/17 19:48:12 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.52 2004/03/18 21:51:41 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -244,7 +247,7 @@ static	const	struct tableinit {
 	int	value;
 } rfc821headers[] = {
 	/* TODO: make these regular expressions */
-	{	"Content-Type",		CONTENT_TYPE		},
+	{	"Content-Type",			CONTENT_TYPE		},
 	{	"Content-Transfer-Encoding",	CONTENT_TRANSFER_ENCODING	},
 	{	"Content-Disposition",		CONTENT_DISPOSITION	},
 	{	NULL,				0			}
@@ -373,10 +376,13 @@ cl_mbox(const char *dir, int desc)
 		/*
 		 * It's a single message, parse the headers then the body
 		 */
-		do {
-			cli_chomp(buffer);
+		do
+			/*
+			 * No need to preprocess such as cli_chomp() since
+			 * that'll be done by parseEmailHeaders()
+			 */
 			messageAddLine(m, buffer);
-		} while(fgets(buffer, sizeof(buffer), fd) != NULL);
+		while(fgets(buffer, sizeof(buffer), fd) != NULL);
 
 	fclose(fd);
 
@@ -1382,9 +1388,39 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					blobDestroy(b);
 				}
 			} else {
+				bool saveIt;
+
 				cli_dbgmsg("Not found uuencoded file\n");
 
-				saveTextPart(mainMessage, dir);
+				if(messageGetMimeType(mainMessage) == MESSAGE) {
+					/*
+					 * Quick peek, if the encapsulated
+					 * message has no
+					 * content encoding statement don't
+					 * bother saving to scan, it's safe
+					 *
+					 * TODO: check to see if we need to
+					 * find anything else, perhaps anything
+					 * from the RFC821 table?
+					 */
+					const text *t;
+
+					saveIt = FALSE;
+					
+					for(t = messageGetBody(mainMessage); t; t = t->t_next)
+						if(strncasecmp(t->t_text,
+							"Content-Transfer-Encoding", 
+							strlen("Content-Transfer-Encoding")) == 0) {
+								saveIt = TRUE;
+								break;
+						}
+				} else
+					saveIt = TRUE;
+
+				if(saveIt) {
+					cli_dbgmsg("Saving text part to scan\n");
+					saveTextPart(mainMessage, dir);
+				}
 			}
 		} else
 			rc = (multiparts) ? 1 : 2;	/* anything saved? */
