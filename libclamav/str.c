@@ -73,7 +73,7 @@ short int *cl_hex2str(const char *hex)
 		val = c;
 		if((c = cli_hex2int(hex[i+1])) >= 0) {
 		    val = (val << 4) + c;
-		} else { 
+		} else {
 		    free(str);
 		    return NULL;
 		}
@@ -122,26 +122,30 @@ int cli_strbcasestr(const char *haystack, const char *needle)
     return !strcasecmp(pt, needle);
 }
 
-void cli_chomp(char *string)
+/*
+ * Remove trailing NL and CR characters from the end of the given string.
+ * Return the new length of the string (ala strlen)
+ */
+int
+cli_chomp(char *string)
 {
-	size_t l = strlen(string);
+	int l;
 
+	if(string == NULL)
+		return -1;
 
-    if(l == 0)
-	return;
+	l  = strlen(string);
 
-    --l;
-    if((string[l] == '\n') || (string[l] == '\r')) {
-	string[l] = '\0';
+	if(l == 0)
+		return 0;
 
-	if(l > 0) {
-	    --l;
-	    if(string[l] == '\r')
-		string[l] = '\0';
-	}
-    }
+	--l;
+
+	while((l >= 0) && ((string[l] == '\n') || (string[l] == '\r')))
+		string[l--] = '\0';
+
+	return l + 1;
 }
-
 
 /*
  * char *cli_strok(const char *line, int fieldno, char *delim)

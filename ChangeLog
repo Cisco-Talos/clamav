@@ -1,3 +1,8 @@
+Tue Jun 22 11:58:06 BST 2004 (njh/trog)
+---------------------------------------
+  * libclamav/str.c:	Rewrote cli_chomp() as discussed in the clamav-devel
+  	mailing list
+
 Tue Jun 22 05:09:54 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Avoid unlocking an already unlocked mutex in
