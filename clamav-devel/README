@@ -2,6 +2,32 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+
+0.70
+----
+
+
+We are happy to announce new programs that support ClamAV (all of them
+have been reviewed by us):
+    + j-chkmail - a powerful filter for sendmail
+    + qscanq - Virus Scanning for Qmail
+    + clamavr - Ruby binding for ClamAV
+    + DansGuardian Anti-Virus Plugin
+    + ClamAssassin - a filter for procmail
+    + Gadoyanvirus - a filter for Qmail
+    + OpenProtect - a complete e-mail protection solution
+    + POP3 Virus Scanner Daemon
+    + mailman-clamav - a virus filter for Mailman
+    + wbmclamav - a webmin module to manage ClamAV
+    + Scan Log Analyzer
+    + mailgraph - a RRDtool frontend for Postfix Statistics
+    + INSERT - a security toolkit on a credit card size CD
+    + Local Area Security - a Live CD Linux distribution
+
+
+
+
+
 0.67
 ----
 This release fixes a memory management problem (platform dependent; can lead

@@ -107,6 +107,12 @@ void sighandler_th(int sig)
 	    sighup = 1;
 	    break;
 
+	case SIGUSR2:
+	    pthread_mutex_lock(&reload_mutex);
+	    reload = 1;
+	    pthread_mutex_unlock(&reload_mutex);
+	    break;
+
 	default:
 	    break; /* Take no action on other signals - e.g. SIGPIPE */
     }
@@ -358,6 +364,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     sigdelset(&sigset, SIGSEGV);
     sigdelset(&sigset, SIGHUP);
     sigdelset(&sigset, SIGPIPE);
+    sigdelset(&sigset, SIGUSR2);
     sigprocmask(SIG_SETMASK, &sigset, NULL);
  
     /* SIGINT, SIGTERM, SIGSEGV */
@@ -367,13 +374,17 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     sigaddset(&sigact.sa_mask, SIGTERM);
     sigaddset(&sigact.sa_mask, SIGHUP);
     sigaddset(&sigact.sa_mask, SIGPIPE);
+    sigaddset(&sigact.sa_mask, SIGUSR2);
     sigaction(SIGINT, &sigact, NULL);
     sigaction(SIGTERM, &sigact, NULL);
     sigaction(SIGHUP, &sigact, NULL);
     sigaction(SIGPIPE, &sigact, NULL);
-    
-    if(!debug_mode)
+    sigaction(SIGUSR2, &sigact, NULL);
+
+    if(!debug_mode) {
+	sigaddset(&sigact.sa_mask, SIGHUP);
 	sigaction(SIGSEGV, &sigact, NULL);
+    }
 
 #if defined(C_BIGSTACK) || defined(C_BSD)
     /*
