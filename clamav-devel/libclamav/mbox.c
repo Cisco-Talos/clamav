@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.37  2004/02/03 22:54:59  nigelhorne
+ * Catch another example of Worm.Dumaru.Y
+ *
  * Revision 1.36  2004/02/02 09:52:57  nigelhorne
  * Some instances of Worm.Dumaru.Y got through the net
  *
@@ -99,7 +102,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.36 2004/02/02 09:52:57 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.37 2004/02/03 22:54:59 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -604,8 +607,22 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 
 				cli_dbgmsg("Now read in part %d\n", multiparts);
 
-				/* tk: shut up parentheses warning */
-				while((t_line = t_line->t_next)) {
+				/*
+				 * Ignore blank lines. There shouldn't be ANY
+				 * but some viruses insert them
+				 */
+				while((t_line = t_line->t_next) != NULL) {
+					cli_chomp(t_line->t_text);
+					if(strlen(t_line->t_text) != 0)
+						break;
+				}
+
+				if(t_line == NULL) {
+					cli_dbgmsg("Empty part\n");
+					continue;
+				}
+
+				do {
 					const char *line = t_line->t_text;
 
 					/*cli_dbgmsg("inMimeHead %d inhead %d boundary %s line '%s' next '%s'\n",
@@ -685,7 +702,8 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						break;
 					} else
 						messageAddLine(aMessage, line);
-				}
+				} while((t_line = t_line->t_next) != NULL);
+
 				messageClean(aMessage);
 			}
 

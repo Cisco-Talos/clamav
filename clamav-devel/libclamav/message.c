@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.22  2004/02/03 22:54:59  nigelhorne
+ * Catch another example of Worm.Dumaru.Y
+ *
  * Revision 1.21  2004/02/03 14:35:37  nigelhorne
  * Fixed an infinite loop on binhex
  *
@@ -60,7 +63,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.21 2004/02/03 14:35:37 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.22 2004/02/03 22:54:59 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -307,6 +310,18 @@ messageAddArgument(message *m, const char *arg)
 	}
 
 	m->mimeArguments[offset] = strdup(arg);
+
+	/*
+	 * This is terribly broken from an RFC point of view but is useful
+	 * for catching viruses which have a filename but no type of
+	 * mime. By pretending defaulting to an application rather than
+	 * to nomime we can ensure they're saved and scanned
+	 */
+	if((strncasecmp(arg, "filename=", 9) == 0) || (strncasecmp(arg, "name=", 5) == 0))
+		if(messageGetMimeType(m) == NOMIME) {
+			cli_dbgmsg("Force mime encoding to application\n");
+			messageSetMimeType(m, "application");
+		}
 }
 
 /*
@@ -641,7 +656,7 @@ messageToBlob(const message *m)
 		/*
 		 * Decode BinHex4. First create a temporary blob which contains
 		 * the encoded message. Then decode that blob to the target
-		 * blob, free the temporary blob adn return the target one
+		 * blob, free the temporary blob and return the target one
 		 */
 		while((t_line = t_line->t_next) != NULL) {
 			blobAddData(tmp, (unsigned char *)t_line->t_text, strlen(t_line->t_text));
