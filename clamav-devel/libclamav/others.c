@@ -119,8 +119,14 @@ char *cl_strerror(int clerror)
 	    return "Malformed database.";
 	case CL_EPATSHORT:
 	    return "Too short pattern detected.";
+	case CL_ECVD:
+	    return "Broken or not a CVD file.";
 	case CL_ECVDEXTR:
-	     return "CVD extraction failure.";
+	    return "CVD extraction failure.";
+	case CL_EMD5:
+	    return "MD5 verification error.";
+	case CL_EDSIG:
+	    return "Digital signature verification error.";
 	case CL_ENULLARG:
 	    return "Null argument passed while initialized is required.";
 	default:
@@ -147,6 +153,22 @@ char *cl_md5file(const char *filename)
 
     md5_stream(fd, &buffer);
     fclose(fd);
+
+    md5str = (char*) calloc(32 + 1, sizeof(char));
+
+    for(i=0; i<16; i++)
+	cnt += sprintf(md5str + cnt, "%02x", buffer[i]);
+
+    return(md5str);
+}
+
+char *cli_md5stream(FILE *fd)
+{
+	unsigned char buffer[16];
+	char *md5str;
+	int i, cnt=0;
+
+    md5_stream(fd, &buffer);
 
     md5str = (char*) calloc(32 + 1, sizeof(char));
 

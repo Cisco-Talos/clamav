@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 1999-2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2003 Tomasz Kojm <zolw@konarski.edu.pl>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,19 +16,12 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __OTHERS_H
-#define __OTHERS_H
+#ifndef __CVD_H
+#define __CVD_H
 
 #include <stdio.h>
-#include <stdlib.h>
+#include "clamav.h"
 
-void cli_warnmsg(const char *str, ...);
-void cli_errmsg(const char *str, ...);
-void cli_dbgmsg(const char *str, ...);
-void *cli_malloc(size_t nmemb);
-void *cli_calloc(size_t nmemb, size_t size);
-void *cli_realloc(void *ptr, size_t size);
-int cli_rmdirs(const char *dirname);
-char *cli_md5stream(FILE *fd);
+int cli_cvdload(FILE *fd, struct cl_node **root, int *virnum);
 
 #endif

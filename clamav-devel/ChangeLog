@@ -1,3 +1,7 @@
+Wed Oct  8 14:49:40 CEST 2003 (tk)
+----------------------------------
+  * libclamav: CVS: commited missing files
+
 Wed Oct  8 12:39:26 CEST 2003 (tk)
 ----------------------------------
   * clamd: (!!!) fixed race condition in database reloading code
