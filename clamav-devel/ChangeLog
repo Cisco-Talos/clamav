@@ -1,3 +1,7 @@
+Sun Oct 10 12:11:31 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Replace (commented out) perror calls with cli_errmsg
+
 Sun Oct 10 01:12:04 CEST 2004 (tk)
 ----------------------------------
   * configure: check libcurl's version number
