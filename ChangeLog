@@ -1,3 +1,8 @@
+Tue Mar  1 01:13:20 CET 2005 (tk)
+---------------------------------
+  * libclamav: use new MD5 implementation (thanks to Solar Designer
+	       <solar*openwall.com>)
+
 Sun Feb 27 02:26:42 CET 2005 (tk)
 ---------------------------------
   * libclamav: improve metadata scanner

@@ -196,17 +196,17 @@ char *cli_md5stream(FILE *fs, unsigned char *digcpy)
 {
 	unsigned char digest[16];
 	char buff[FILEBUFF];
-	struct MD5Context ctx;
+	MD5_CTX ctx;
 	char *md5str, *pt;
 	int i, bytes;
 
 
-    MD5Init(&ctx);
+    MD5_Init(&ctx);
 
     while((bytes = fread(buff, 1, FILEBUFF, fs)))
-	MD5Update(&ctx, buff, bytes);
+	MD5_Update(&ctx, buff, bytes);
 
-    MD5Final(digest, &ctx);
+    MD5_Final(digest, &ctx);
 
     if(!(md5str = (char *) cli_calloc(32 + 1, sizeof(char))))
 	return NULL;
@@ -244,13 +244,13 @@ static char *cli_md5buff(const char *buffer, unsigned int len)
 {
 	unsigned char digest[16];
 	char *md5str, *pt;
-	struct MD5Context ctx;
+	MD5_CTX ctx;
 	int i;
 
 
-    MD5Init(&ctx);
-    MD5Update(&ctx, buffer, len);
-    MD5Final(digest, &ctx);
+    MD5_Init(&ctx);
+    MD5_Update(&ctx, (unsigned char *) buffer, len);
+    MD5_Final(digest, &ctx);
     memcpy(oldmd5buff, digest, 16);
 
     if(!(md5str = (char *) cli_calloc(32 + 1, sizeof(char))))
