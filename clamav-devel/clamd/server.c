@@ -38,7 +38,7 @@
     close(ths[tharg->sid].desc);		    \
     ths[tharg->sid].active = 0;			    \
     /* this mutex is rather useless */		    \
-    pthread_mutex_unlock(&ths[tharg->sid].mutex);   \
+    /* pthread_mutex_unlock(&ths[tharg->sid].mutex);   */ \
     free(tharg);				    \
     return NULL
 
@@ -184,14 +184,14 @@ void *threadwatcher(void *arg)
 	    i = 0;
 
 	/* check time */
-        if(ths[i].active) /* races are harmless here (timeout is reset) */
+        if(ths[i].active) /* races are harmless here (timeout is re-set) */
 	    if(time(NULL) - ths[i].start > timeout) {
 		pthread_cancel(ths[i].id);
 		mdprintf(ths[i].desc, "Session(%d): Time out ERROR\n", i);
 		close(ths[i].desc);
 		logg("Session %d stopped due to timeout.\n", i);
 		ths[i].active = 0;
-		pthread_mutex_unlock(&ths[i].mutex);
+//		pthread_mutex_unlock(&ths[i].mutex);
 	    }
 
 	/* cancel all threads in case of quit */
@@ -217,26 +217,26 @@ void *threadwatcher(void *arg)
 		    mdprintf(ths[j].desc, "Session(%d): Stopped (exiting)\n", j);
 		    close(ths[j].desc);
 		    logg("Session %d stopped (exiting).\n", j);
-		    pthread_mutex_unlock(&ths[j].mutex);
+//		    pthread_mutex_unlock(&ths[j].mutex);
 		}
 #ifndef C_BSD
 	    logg("*Freeing trie structure.\n");
 	    cl_freetrie(*thwarg->root);
 #endif
-	    logg("*Shutting down main socket.\n");
+	    logg("*Shutting down the main socket.\n");
 	    shutdown(thwarg->socketd, 2);
-	    logg("*Closing main socket.\n");
+	    logg("*Closing the main socket.\n");
 	    close(thwarg->socketd);
 	    if((cpt = cfgopt(thwarg->copt, "LocalSocket"))) {
 		if(unlink(cpt->strarg) == -1)
-		    logg("!Can't unlink socket file %s\n", cpt->strarg);
+		    logg("!Can't unlink the socket file %s\n", cpt->strarg);
 		else
 		    logg("Socket file removed.\n");
 	    }
 
 	    if((cpt = cfgopt(thwarg->copt, "PidFile"))) {
 		if(unlink(cpt->strarg) == -1)
-		    logg("!Can't unlink pid file %s\n", cpt->strarg);
+		    logg("!Can't unlink the pid file %s\n", cpt->strarg);
 		else
 		    logg("Pid file removed.\n");
 	    }
@@ -352,16 +352,18 @@ void *threadwatcher(void *arg)
     return NULL;
 }
 
+int threads;
+pthread_t watcherid;
+
 int acceptloop(int socketd, struct cl_node *root, const struct cfgstruct *copt)
 {
-	int acceptd, threads, i, options = 0, maxwait;
+	int acceptd, i, options = 0, maxwait;
 	struct cfgstruct *cpt;
 	struct thrarg *tharg;
 	struct thrwarg thwarg;
 	struct cl_limits limits;
 	pthread_attr_t thattr;
-	pthread_t watcherid;
-	struct sigaction sigact;
+	struct sigaction sigact, sigsegvact;
 	sigset_t sigset;
 	mode_t old_umask;
 
@@ -493,15 +495,20 @@ int acceptloop(int socketd, struct cl_node *root, const struct cfgstruct *copt)
     sigfillset(&sigset);
     sigdelset(&sigset, SIGINT);
     sigdelset(&sigset, SIGTERM);
+    sigdelset(&sigset, SIGSEGV);
     sigprocmask(SIG_SETMASK, &sigset, NULL);
 
-    /* SIGINT, SIGTERM */
+    /* SIGINT, SIGTERM, SIGSEGV */
     sigact.sa_handler = sigexit;
+    sigsegvact.sa_handler = sigsegv;
     sigemptyset(&sigact.sa_mask);
+    sigemptyset(&sigsegvact.sa_mask);
     sigaddset(&sigact.sa_mask, SIGINT);
     sigaddset(&sigact.sa_mask, SIGTERM);
+    sigaddset(&sigsegvact.sa_mask, SIGSEGV);
     sigaction(SIGINT, &sigact, NULL);
     sigaction(SIGTERM, &sigact, NULL);
+    sigaction(SIGSEGV, &sigsegvact, NULL);
 
     /* we need to save program's PID, because under Linux each thread
      * has another PID, it works with other OSes as well
@@ -516,7 +523,7 @@ int acceptloop(int socketd, struct cl_node *root, const struct cfgstruct *copt)
      * We need to allow for that.
      */
     pthread_attr_getstacksize(&thattr, &stacksize);
-    cli_dbgmsg("set stacksize to %u\n", stacksize + BUFFSIZE + 256 * 1024);
+    cli_dbgmsg("set stacksize to %u\n", stacksize + BUFFSIZE + 64 * 1024);
     pthread_attr_setstacksize(&thattr, stacksize + BUFFSIZE + 64 * 1024);
 #endif
 
@@ -564,12 +571,12 @@ int acceptloop(int socketd, struct cl_node *root, const struct cfgstruct *copt)
 	tharg->limits = &limits;
 	tharg->options = options;
 
-	pthread_mutex_lock(&ths[i].mutex);
+	//pthread_mutex_lock(&ths[i].mutex);
 	ths[i].desc = acceptd;
 	ths[i].reload = 0;
-	ths[i].active = 1;
 	pthread_create(&ths[i].id, &thattr, threadscanner, tharg);
 	ths[i].start = time(NULL);
+	ths[i].active = 1;
     }
 }
 
@@ -590,4 +597,18 @@ void sigexit(int sig)
     time(&currtime);
     logg("--- Stopped at %s", ctime(&currtime));
     exit(0);
+}
+
+void sigsegv(int sig)
+{
+	int i;
+
+    logg("Segmentation fault :-( Bye..\n");
+
+    for(i = 0; i < threads; i++)
+	if(ths[i].active)
+	    pthread_kill(ths[i].id, 9);
+
+    pthread_kill(watcherid, 9);
+    exit(11); /* probably not reached at all */
 }

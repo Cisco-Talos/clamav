@@ -54,5 +54,6 @@ short int reload, clamuko_reload;
 int acceptloop(int socketd, struct cl_node *root, const struct cfgstruct *copt);
 void sigexit(int sig);
 void daemonize(void);
+void sigsegv(int sig);
 
 #endif
