@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: message.h,v $
+ * Revision 1.8  2004/03/29 09:22:03  nigelhorne
+ * Tidy up code and reduce shuffling of data
+ *
  * Revision 1.7  2004/03/21 17:19:49  nigelhorne
  * Handle bounce messages with no headers
  *
@@ -65,7 +68,7 @@ void	messageAddArguments(message *m, const char *arg);
 const	char	*messageFindArgument(const message *m, const char *variable);
 void	messageSetEncoding(message *m, const char *enctype);
 encoding_type	messageGetEncoding(const message *m);
-void	messageAddLine(message *m, const char *line);
+void	messageAddLine(message *m, const char *line, int takeCopy);
 const	text	*messageGetBody(const message *m);
 void	messageClean(message *m);
 blob	*messageToBlob(const message *m);

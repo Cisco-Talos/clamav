@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.60  2004/03/29 09:22:03  nigelhorne
+ * Tidy up code and reduce shuffling of data
+ *
  * Revision 1.59  2004/03/26 11:08:36  nigelhorne
  * Use cli_writen
  *
@@ -168,7 +171,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.59 2004/03/26 11:08:36 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.60 2004/03/29 09:22:03 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -391,7 +394,7 @@ cl_mbox(const char *dir, int desc)
 				cli_dbgmsg("Finished processing message\n");
 			} else
 				lastLineWasEmpty = (bool)(buffer[0] == '\0');
-			messageAddLine(m, buffer);
+			messageAddLine(m, buffer, 1);
 		} while(fgets(buffer, sizeof(buffer), fd) != NULL);
 	} else
 		/*
@@ -402,7 +405,7 @@ cl_mbox(const char *dir, int desc)
 			 * No need to preprocess such as cli_chomp() since
 			 * that'll be done by parseEmailHeaders()
 			 */
-			messageAddLine(m, buffer);
+			messageAddLine(m, buffer, 1);
 		while(fgets(buffer, sizeof(buffer), fd) != NULL);
 
 	fclose(fd);
@@ -444,24 +447,22 @@ parseEmailHeaders(const message *m, const table_t *rfc821Table)
 {
 	bool inContinuationHeader = FALSE;
 	bool inHeader = TRUE;
-	text *t, *msgText;
+	const text *t;
 	message *ret;
 
 	if(m == NULL)
 		return NULL;
 
-	msgText = messageToText(m);
-	if(msgText == NULL)
-		return NULL;
-
-	t = msgText;
 	ret = messageCreate();
 
-	do {
+	for(t = messageGetBody(m); t; t = t->t_next) {
 		char *buffer = strdup(t->t_text);
 #ifdef CL_THREAD_SAFE
 		char *strptr;
 #endif
+
+		if(buffer == NULL)
+			break;
 
 		cli_chomp(buffer);
 
@@ -483,6 +484,7 @@ parseEmailHeaders(const message *m, const table_t *rfc821Table)
 			 */
 			for(ptr = strtok_r(buffer, ";", &strptr); ptr; ptr = strtok_r(NULL, ":", &strptr))
 				messageAddArgument(ret, ptr);
+			free(buffer);
 		} else if(inHeader) {
 			cli_dbgmsg("Deal with header %s\n", buffer);
 
@@ -490,21 +492,17 @@ parseEmailHeaders(const message *m, const table_t *rfc821Table)
 			 * A blank line signifies the end of the header and
 			 * the start of the text
 			 */
-			if(strstrip(buffer) == 0) {
+			if(strlen(buffer) == 0) {
 				cli_dbgmsg("End of header information\n");
 				inContinuationHeader = inHeader = FALSE;
 			} else if(parseEmailHeader(ret, buffer, rfc821Table) == CONTENT_TYPE)
 				inContinuationHeader = continuationMarker(buffer);
+			free(buffer);
 		} else {
 			/*cli_dbgmsg("Add line to body '%s'\n", buffer);*/
-			messageAddLine(ret, buffer);
+			messageAddLine(ret, buffer, 0);
 		}
-		free(buffer);
-	} while((t = t->t_next) != NULL);
-
-	cli_dbgmsg("parseEmailHeaders: calling textDestroy\n");
-
-	textDestroy(msgText);
+	}
 
 	cli_dbgmsg("parseEmailHeaders: return\n");
 
@@ -780,7 +778,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						/* t_line = NULL;*/
 						break;
 					} else {
-						messageAddLine(aMessage, line);
+						messageAddLine(aMessage, line, 1);
 						lines++;
 					}
 				} while((t_line = t_line->t_next) != NULL);
@@ -958,7 +956,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 							/*
 							 * No plain text version
 							 */
-							messageAddLine(aMessage, "No plain text alternative");
+							messageAddLine(aMessage, "No plain text alternative", 1);
 						assert(messageGetBody(aMessage) != NULL);
 						break;
 					case TEXT:
@@ -998,9 +996,12 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 						break;
 					case MESSAGE:
 						cli_dbgmsg("Found message inside multipart\n");
-						if(encodingLine(aMessage) == NULL)
+						if(encodingLine(aMessage) == NULL) {
+							assert(aMessage == messages[i]);
+							messageDestroy(messages[i]);
+							messages[i] = NULL;
 							continue;
-
+						}
 						body = parseEmailHeaders(aMessage, rfc821Table);
 						/*
 						 * We've fininished with the
