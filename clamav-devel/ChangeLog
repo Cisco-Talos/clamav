@@ -1,3 +1,7 @@
+Tue Apr  5 14:27:32 BST 2005 (trog)
+-----------------------------------
+  * libclamav/vba_extract.c: fix possible crash
+
 Sat Apr  2 22:19:12 BST 2005 (njh)
 ----------------------------------
   * libclamav/tnef.c:	Handle attachments where the data are before the title
