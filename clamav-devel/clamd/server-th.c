@@ -34,6 +34,7 @@
 #include "clamuko.h"
 #include "tests.h"
 #include "session.h"
+#include "../target.h"
 
 #ifdef CLAMUKO
 pthread_t clamukoid;

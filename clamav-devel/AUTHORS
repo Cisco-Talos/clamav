@@ -1,18 +1,21 @@
 Tomasz Kojm <tkojm*clamav.net>
 home page : http://www.konarski.edu.pl/~zolw
 gpg key   : http://www.clamav.net/gpg/tkojm.gpg
-GPG = 0DCA 5A08 407D 5288 279D  B434 5482 2DC8 985A 444B
+GPG fingerprint = 0DCA 5A08 407D 5288 279D  B434 5482 2DC8 985A 444B
+Project leader.
 
 Nigel Horne <njh*clamav.net>
 home page : http://bandsman.co.uk
 Author of clamav-milter and the whole mbox code.
 
-System administrator (www, mailing lists, mirror issues, virus
-submission mechanisms): Luca 'NERvOus' Gibelli <nervous*clamav.net>
+Luca 'NERvOus' Gibelli <nervous*clamav.net>
+home page : http://www.nervous.it
+GPG fingerprint = C782 121E 8C3A 90E3 7A87  D802 6277 8FF4 5EFC 5582
+System administrator (WWW, mailing lists, mirror mechanism, virus
+submission mechanism)
 
 Submission management interface (for database developers only): Diego D'Ambra
 <diego*clamav.net>, Thomas Madsen <tm*softcom.dk>
-
 
 Database developers:
 
@@ -20,8 +23,15 @@ aCaB <acab*clamav.net>
 Diego D'Ambra <diego*clamav.net>
 Jason Englander <jason*clamav.net>
 Tomasz Kojm <tkojm*clamav.net>
+
 Denis De Messemacker <ddm*clamav.net>
+gpg key   : http://www.clamav.net/gpg/ddm.gpg
+GPG fingerprint = E697 81BD A912 3F5A 737E  C254 B3B1 F81A 0278 7880
+
 Tomasz Papszun <tomek*clamav.net>
+gpg key	  : http://www.lodz.tpsa.pl/~tomek/pgp.txt
+GPG fingerprint = F115 0CA4 775D 9898 6F32  0F98 C0C2 2079 C1CA 59EE
+
 
 ClamAV logo: Mia Kalenius and Sergei Pronin <sp*finndesign.fi>
 TrashScan was written by Trashware <trashware*gmx.net>.

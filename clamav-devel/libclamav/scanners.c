@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,8 +29,6 @@
 #  include <pthread.h>
 pthread_mutex_t cli_scanrar_mutex = PTHREAD_MUTEX_INITIALIZER;
 int cli_scanrar_inuse = 0;
-//pthread_mutex_t cli_mbox_mutex = PTHREAD_MUTEX_INITIALIZER;
-//int cli_mbox_inuse = 0;
 #endif
 
 #include "clamav.h"
@@ -596,16 +594,17 @@ int cli_scanole2(int desc, char **virname, long int *scanned, const struct cl_no
 		free(data);
 	    }
 
+	    for(i = 0; i < vba_project->count; i++)
+		free(vba_project->name[i]);
+	    free(vba_project->name);
+	    free(vba_project->dir);
+	    free(vba_project->offset);
+
 	} else {
 	    cli_errmsg("ScanOLE2 -> Can't decode VBA streams.\n");
 	    ret = CL_EOLE2;
 	}
 
-	for(i = 0; i < vba_project->count; i++)
-	    free(vba_project->name[i]);
-	free(vba_project->name);
-	free(vba_project->dir);
-	free(vba_project->offset);
 
 	cli_rmdirs(dir);
 	free(dir);
@@ -665,13 +664,6 @@ int cli_scanmail(int desc, char **virname, long int *scanned, const struct cl_no
     if(*reclev > 5) /* FIXME: a temporary workaround */
 	return CL_CLEAN;
 
-/*
-#ifdef CL_THREAD_SAFE
-    pthread_cleanup_push(cli_unlock_mutex, &cli_mbox_mutex);
-    pthread_mutex_lock(&cli_mbox_mutex);
-    cli_mbox_inuse = 1;
-#endif
-*/
     tmpdir = getenv("TMPDIR");
 
     if(tmpdir == NULL)
@@ -685,12 +677,6 @@ int cli_scanmail(int desc, char **virname, long int *scanned, const struct cl_no
 	dir = cl_gentemp(tmpdir);
 	if(mkdir(dir, 0700)) {
 	    cli_errmsg("ScanMail -> Can't create temporary directory %s\n", dir);
-/*
-#ifdef CL_THREAD_SAFE
-	    pthread_mutex_unlock(&cli_mbox_mutex);
-	    cli_mbox_inuse = 0;
-#endif
-*/
 	    return CL_ETMPDIR;
 	}
 
@@ -704,14 +690,6 @@ int cli_scanmail(int desc, char **virname, long int *scanned, const struct cl_no
 
 	cli_rmdirs(dir);
 	free(dir);
-
-/*
-#ifdef CL_THREAD_SAFE
-	pthread_mutex_unlock(&cli_mbox_mutex);
-        cli_mbox_inuse = 0;
-	pthread_cleanup_pop(0);
-#endif
-*/
 
 	return ret;
 }

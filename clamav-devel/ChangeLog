@@ -1,3 +1,10 @@
+Sun Jan 25 07:31:00 CET 2004 (tk)
+---------------------------------
+  * libclamav: VBA wrapper - fixed NULL dereference in new code (reported
+	       by Nigel)
+  * clamscan: fixed possible crash with uninitialized filename variable
+	      (thanks to Nigel)
+
 Sat Jan 24 18:17:51 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter: Allow clamd server name as well as IPaddress in -s option

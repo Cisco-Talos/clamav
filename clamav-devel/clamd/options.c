@@ -57,7 +57,7 @@ int main(int argc, char **argv)
     if(setrlimit(RLIMIT_CORE, &rlim) < 0)
 	perror("setrlimit");
 #endif
-    opt=(struct optstruct*)mmalloc(sizeof(struct optstruct));
+    opt=(struct optstruct*)mcalloc(sizeof(struct optstruct));
     opt->optlist = NULL;
     opt->filename = NULL;
 
