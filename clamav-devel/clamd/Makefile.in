@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 #
-#  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+#  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -151,11 +151,11 @@ install_sh = @install_sh@
 @BUILD_CLAMD_TRUE@    tests.h
 
 
-@BUILD_CLAMD_TRUE@clamd_LDADD = ../clamscan/getopt.o
+@BUILD_CLAMD_TRUE@clamd_LDADD = $(top_builddir)/clamscan/getopt.o
 
 DEFS = @DEFS@
-LIBS = -L../libclamav -lclamav @CLAMD_LIBS@
-INCLUDES = -I../clamscan -I../libclamav
+LIBS = -L$(top_builddir)/libclamav -lclamav @CLAMD_LIBS@
+INCLUDES = -I$(top_srcdir)/clamscan -I$(top_srcdir)/libclamav
 subdir = clamd
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/clamav-config.h
@@ -172,7 +172,7 @@ PROGRAMS = $(sbin_PROGRAMS)
 @BUILD_CLAMD_TRUE@	clamuko.$(OBJEXT) dazukoio_compat12.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	dazukoio.$(OBJEXT) tests.$(OBJEXT)
 clamd_OBJECTS = $(am_clamd_OBJECTS)
-@BUILD_CLAMD_TRUE@clamd_DEPENDENCIES = ../clamscan/getopt.o
+@BUILD_CLAMD_TRUE@clamd_DEPENDENCIES = $(top_builddir)/clamscan/getopt.o
 @BUILD_CLAMD_FALSE@clamd_DEPENDENCIES =
 clamd_LDFLAGS =
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)

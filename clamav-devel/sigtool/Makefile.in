@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 #
-#  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+#  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -116,7 +116,7 @@ am__include = @am__include@
 am__quote = @am__quote@
 install_sh = @install_sh@
 
-INCLUDES = -I../clamscan -I../libclamav
+INCLUDES = -I$(top_srcdir)/clamscan -I$(top_srcdir)/libclamav
 
 bin_PROGRAMS = sigtool
 
@@ -125,10 +125,10 @@ sigtool_SOURCES = \
     sigtool.c
 
 
-sigtool_LDADD = ../clamscan/getopt.o ../clamscan/others.o
+sigtool_LDADD = $(top_builddir)/clamscan/getopt.o $(top_builddir)/clamscan/others.o
 
 DEFS = @DEFS@
-LIBS = -L../libclamav -lclamav @FRESHCLAM_LIBS@
+LIBS = -L$(top_builddir)/libclamav -lclamav @FRESHCLAM_LIBS@
 subdir = sigtool
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/clamav-config.h
@@ -138,7 +138,8 @@ PROGRAMS = $(bin_PROGRAMS)
 
 am_sigtool_OBJECTS = options.$(OBJEXT) sigtool.$(OBJEXT)
 sigtool_OBJECTS = $(am_sigtool_OBJECTS)
-sigtool_DEPENDENCIES = ../clamscan/getopt.o ../clamscan/others.o
+sigtool_DEPENDENCIES = $(top_builddir)/clamscan/getopt.o \
+	$(top_builddir)/clamscan/others.o
 sigtool_LDFLAGS =
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
 CPPFLAGS = @CPPFLAGS@

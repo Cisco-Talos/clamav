@@ -375,7 +375,7 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 
     if((strbcasestr(filename, ".zip") || strbcasestr(filename, ".rar")) && (options & CL_ARCHIVE)) {
 	/* try to use internal archivers */
-	if((ret = checkfile(filename, root, limits, CL_ARCHIVE)) == CL_VIRUS) {
+	if((ret = checkfile(filename, root, limits, options)) == CL_VIRUS) {
 	    if(optl(opt, "remove")) {
 		if(unlink(filename)) {
 		    mprintf("%s: Can't remove.\n", filename);

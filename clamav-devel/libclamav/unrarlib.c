@@ -935,7 +935,7 @@ BOOL ExtrFile(int desc)
 #else
   /* open and identify archive                                              */
   newdesc = dup(desc);
-  cli_dbgmsg("ExtrFile(): dup(%d) = %d\n");
+  cli_dbgmsg("ExtrFile(): dup(%d) = %d\n", desc, newdesc);
   if ((ArcPtr=fdopen(newdesc,READBINARY))!=NULL)
   {
     if (!IsArchive())

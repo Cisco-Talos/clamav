@@ -350,7 +350,7 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	    break;
 	}
 
-	if(DETECT_ENCRYPTED && (zdirent.d_flags & (1 | 2^6))) {
+	if(DETECT_ENCRYPTED && (zdirent.d_flags & 1 )) {
 	    files++;
 	    cli_dbgmsg("Zip -> Encrypted files found in archive.\n");
 	    *virname = "Encrypted.Zip";

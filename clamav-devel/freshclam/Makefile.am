@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+#  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
 #  Fixes - Arkadiusz Miskiewicz <misiek@pld.org.pl>
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -29,12 +29,12 @@ freshclam_SOURCES = \
     notify.h
 
 if BUILD_CLAMD
-freshclam_LDADD = ../clamscan/getopt.o ../clamscan/others.o ../clamd/cfgfile.o
+freshclam_LDADD = $(top_builddir)/clamscan/getopt.o $(top_builddir)/clamscan/others.o $(top_builddir)/clamd/cfgfile.o
 else
-freshclam_LDADD = ../clamscan/getopt.o ../clamscan/others.o
+freshclam_LDADD = $(top_builddir)/clamscan/getopt.o $(top_builddir)/clamscan/others.o
 endif
 
 
 DEFS = @DEFS@
-INCLUDES = -I../clamscan -I../clamd -I../libclamav
-LIBS = -L../libclamav -lclamav @FRESHCLAM_LIBS@
+INCLUDES = -I$(top_srcdir)/clamscan -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav
+LIBS = -L$(top_builddir)/libclamav -lclamav @FRESHCLAM_LIBS@

@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 #
-#  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+#  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
 #  Fixes - Arkadiusz Miskiewicz <misiek@pld.org.pl>
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -130,12 +130,12 @@ freshclam_SOURCES = \
     notify.h
 
 
-@BUILD_CLAMD_TRUE@freshclam_LDADD = ../clamscan/getopt.o ../clamscan/others.o ../clamd/cfgfile.o
-@BUILD_CLAMD_FALSE@freshclam_LDADD = ../clamscan/getopt.o ../clamscan/others.o
+@BUILD_CLAMD_TRUE@freshclam_LDADD = $(top_builddir)/clamscan/getopt.o $(top_builddir)/clamscan/others.o $(top_builddir)/clamd/cfgfile.o
+@BUILD_CLAMD_FALSE@freshclam_LDADD = $(top_builddir)/clamscan/getopt.o $(top_builddir)/clamscan/others.o
 
 DEFS = @DEFS@
-INCLUDES = -I../clamscan -I../clamd -I../libclamav
-LIBS = -L../libclamav -lclamav @FRESHCLAM_LIBS@
+INCLUDES = -I$(top_srcdir)/clamscan -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav
+LIBS = -L$(top_builddir)/libclamav -lclamav @FRESHCLAM_LIBS@
 subdir = freshclam
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/clamav-config.h
@@ -146,10 +146,13 @@ PROGRAMS = $(bin_PROGRAMS)
 am_freshclam_OBJECTS = freshclam.$(OBJEXT) options.$(OBJEXT) \
 	manager.$(OBJEXT) notify.$(OBJEXT)
 freshclam_OBJECTS = $(am_freshclam_OBJECTS)
-@BUILD_CLAMD_TRUE@freshclam_DEPENDENCIES = ../clamscan/getopt.o \
-@BUILD_CLAMD_TRUE@	../clamscan/others.o ../clamd/cfgfile.o
-@BUILD_CLAMD_FALSE@freshclam_DEPENDENCIES = ../clamscan/getopt.o \
-@BUILD_CLAMD_FALSE@	../clamscan/others.o
+@BUILD_CLAMD_TRUE@freshclam_DEPENDENCIES = \
+@BUILD_CLAMD_TRUE@	$(top_builddir)/clamscan/getopt.o \
+@BUILD_CLAMD_TRUE@	$(top_builddir)/clamscan/others.o \
+@BUILD_CLAMD_TRUE@	$(top_builddir)/clamd/cfgfile.o
+@BUILD_CLAMD_FALSE@freshclam_DEPENDENCIES = \
+@BUILD_CLAMD_FALSE@	$(top_builddir)/clamscan/getopt.o \
+@BUILD_CLAMD_FALSE@	$(top_builddir)/clamscan/others.o
 freshclam_LDFLAGS =
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
 CPPFLAGS = @CPPFLAGS@
