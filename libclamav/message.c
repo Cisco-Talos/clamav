@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.24  2004/02/04 13:29:16  nigelhorne
+ * Handle blobAddData of more than 128K
+ *
  * Revision 1.23  2004/02/03 23:04:09  nigelhorne
  * Disabled binhex code
  *
@@ -66,7 +69,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.23 2004/02/03 23:04:09 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.24 2004/02/04 13:29:16 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -650,16 +653,35 @@ messageToBlob(const message *m)
 		blobSetFilename(b, filename);
 		t_line = t_line->t_next;
 	} else if((t_line = binhexBegin(m)) != NULL) {
-		blob *tmp = blobCreate();
-		unsigned char *data;
 		unsigned char byte;
-		unsigned long len, l;
+		unsigned long len, l, newlen = 0L;
 		char *filename;
+		unsigned char *ptr, *data;
+		int bytenumber = 0;
+		blob *tmp = blobCreate();
+
+		/*
+		 * Table look up by Thomas Lamy <Thomas.Lamy@in-online.net>
+		 * HQX conversion table - illegal chars are 0xff
+		 */
+		const unsigned char hqxtbl[] = {
+			     /*   00   01   02   03   04   05   06   07   08   09   0a   0b   0c   0d   0e   0f */
+		/* 00-0f */	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+		/* 10-1f */	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+		/* 20-2f */	0xff,0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0xff,0xff,
+		/* 30-3f */	0x0d,0x0e,0x0f,0x10,0x11,0x12,0x13,0xff,0x14,0x15,0xff,0xff,0xff,0xff,0xff,0xff,
+		/* 40-4f */	0x16,0x17,0x18,0x19,0x1a,0x1b,0x1c,0x1d,0x1e,0x1f,0x20,0x21,0x22,0x23,0x24,0xff,
+		/* 50-5f */	0x25,0x26,0x27,0x28,0x29,0x2a,0x2b,0xff,0x2c,0x2d,0x2e,0x2f,0xff,0xff,0xff,0xff,
+		/* 60-6f */	0x30,0x31,0x32,0x33,0x34,0x35,0x36,0xff,0x37,0x38,0x39,0x3a,0x3b,0x3c,0xff,0xff,
+		/* 70-7f */	0x3d,0x3e,0x3f,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+		};
 
 		/*
 		 * Decode BinHex4. First create a temporary blob which contains
 		 * the encoded message. Then decode that blob to the target
 		 * blob, free the temporary blob and return the target one
+		 *
+		 * See RFC1741
 		 */
 		while((t_line = t_line->t_next) != NULL) {
 			blobAddData(tmp, (unsigned char *)t_line->t_text, strlen(t_line->t_text));
@@ -676,96 +698,143 @@ messageToBlob(const message *m)
 		}
 		len = blobGetDataSize(tmp);
 
-		/*
-		 * FIXME: this is dirty code, modification of the contents
-		 * of a member of the blob object should be done through blob.c
-		 */
-		if(data[0] == ':') {
-			char *ptr;
-			int bytenumber = 0;
-			unsigned long newlen = 0L;
-			const unsigned char hqxtbl[] = {
-				     /*   00   01   02   03   04   05   06   07   08   09   0a   0b   0c   0d   0e   0f */
-			/* 00-0f */	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
-			/* 10-1f */	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
-			/* 20-2f */	0xff,0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0xff,0xff,
-			/* 30-3f */	0x0d,0x0e,0x0f,0x10,0x11,0x12,0x13,0xff,0x14,0x15,0xff,0xff,0xff,0xff,0xff,0xff,
-			/* 40-4f */	0x16,0x17,0x18,0x19,0x1a,0x1b,0x1c,0x1d,0x1e,0x1f,0x20,0x21,0x22,0x23,0x24,0xff,
-			/* 50-5f */	0x25,0x26,0x27,0x28,0x29,0x2a,0x2b,0xff,0x2c,0x2d,0x2e,0x2f,0xff,0xff,0xff,0xff,
-			/* 60-6f */	0x30,0x31,0x32,0x33,0x34,0x35,0x36,0xff,0x37,0x38,0x39,0x3a,0x3b,0x3c,0xff,0xff,
-			/* 70-7f */	0x3d,0x3e,0x3f,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
-			};
-
-			/*
-			 * Convert 7 bit data into 8 bit
-			 */
-			cli_dbgmsg("decode HQX7 message (%d bytes)\n", len);
-
-			ptr = cli_malloc(len);
-			memcpy(ptr, data, len);
-
-			for(l = 1; l < len; l++) {
-				unsigned char c = ptr[l];
-
-				if((c == '\n') || (c == '\r'))
-					continue;
-				if(c == ':')
-					break;
-
-				if((c < 0x20) || (c > 0x7f) || (hqxtbl[c] == 0xff)) {
-					cli_warnmsg("Invalid HQX7 character '%c' (0x%02x)\n", c, c);
-					break;
-				}
-				c = hqxtbl[c];
-				assert(c <= 63);
-
-				/*
-				 * These masks probably aren't needed, but
-				 * they're here to verify the code is correct
-				 */
-				switch(bytenumber) {
-					case 0:
-						data[newlen] = (c << 2) & 0xFC;
-						bytenumber = 1;
-						break;
-					case 1:
-						data[newlen++] |= (c >> 4) & 0x3;
-						data[newlen] = (c << 4) & 0xF0;
-						bytenumber = 2;
-						break;
-					case 2:
-						data[newlen++] |= (c >> 2) & 0xF;
-						data[newlen] = (c << 6) & 0xC0;
-						bytenumber = 3;
-						break;
-					case 3:
-						data[newlen++] |= c & 0x3F;
-						bytenumber = 0;
-						break;
-				}
-			}
-			cli_dbgmsg("decoded HQX7 message (now %d bytes)\n", newlen);
-			free(ptr);
-		} else {
+		if(data[0] != ':') {
 			/*
 			 * TODO: Need an example of this before I can be
 			 * sure it works
+			 * Possibly data[0] = '#'
 			 */
 			cli_warnmsg("8 bit binhex code is not yet supported\n");
 			blobDestroy(tmp);
 			blobDestroy(b);
 			return NULL;
 		}
+		/*
+		 * FIXME: this is dirty code, modification of the contents
+		 * of a member of the blob object should be done through blob.c
+		 *
+		 * Convert 7 bit data into 8 bit
+		 */
+		cli_dbgmsg("decode HQX7 message (%lu bytes)\n", len);
+
+		ptr = cli_malloc(len);
+		memcpy(ptr, data, len);
 
 		/*
+		 * ptr now contains the encoded (7bit) data - len bytes long
+		 * data will contain the unencoded (8bit) data
+		 */
+		for(l = 1; l < len; l++) {
+			unsigned char c = ptr[l];
+
+			if((c == '\n') || (c == '\r'))
+				continue;
+			if(c == ':')
+				break;
+
+			if((c < 0x20) || (c > 0x7f) || (hqxtbl[c] == 0xff)) {
+				cli_warnmsg("Invalid HQX7 character '%c' (0x%02x)\n", c, c);
+				break;
+			}
+			c = hqxtbl[c];
+			assert(c <= 63);
+
+			/*
+			 * These masks probably aren't needed, but
+			 * they're here to verify the code is correct
+			 */
+			switch(bytenumber) {
+				case 0:
+					data[newlen] = (c << 2) & 0xFC;
+					bytenumber = 1;
+					break;
+				case 1:
+					data[newlen++] |= (c >> 4) & 0x3;
+					data[newlen] = (c << 4) & 0xF0;
+					bytenumber = 2;
+					break;
+				case 2:
+					data[newlen++] |= (c >> 2) & 0xF;
+					data[newlen] = (c << 6) & 0xC0;
+					bytenumber = 3;
+					break;
+				case 3:
+					data[newlen++] |= c & 0x3F;
+					bytenumber = 0;
+					break;
+			}
+		}
+		cli_dbgmsg("decoded HQX7 message (now %lu bytes)\n", newlen);
+
+		/*
+		 * Throw away the old encoded (7bit) data
+		 * data now points to the encoded (8bit) data - newlen bytes
+		 *
+		 * The data array may contain repetitive characters
+		 */
+		free(ptr);
+
+		/*
+		 * Uncompress repetitive characters
+		 */
+		if(memchr(data, 0x90, newlen)) {
+			blob *u = blobCreate();	/* uncompressed data */
+
+			/*
+			 * Includes compression
+			 */
+			for(l = 0L; l < newlen; l++) {
+				unsigned char c = data[l];
+
+				/*
+				 * TODO: handle the case where the first byte
+				 * is 0x90
+				 */
+				blobAddData(u, &c, 1);
+
+				if((l < (newlen - 1L)) && (data[l + 1] == 0x90)) {
+					int count;
+
+					l += 2;
+					count = data[l];
+#ifdef	CL_DEBUG
+					cli_dbgmsg("uncompress HQX7 at 0x%06x: %d repetitive bytes\n", l, count);
+#endif
+
+					if(count == 0) {
+						c = 0x90;
+						blobAddData(u, &c, 1);
+					} else
+						while(--count > 0)
+							blobAddData(u, &c, 1);
+				}
+			}
+			blobDestroy(tmp);
+			tmp = u;
+			data = blobGetData(tmp);
+			len = blobGetDataSize(tmp);
+			cli_dbgmsg("Uncompressed %lu bytes to %lu\n", newlen, len);
+		} else {
+			len = newlen;
+			cli_dbgmsg("HQX7 message (%lu bytes) is not compressed\n",
+				len);
+		}
+
+		/*
+		 * The blob tmp now contains the uncompressed data
+		 * of len bytes, i.e. the repetitive bytes have been removed
+		 */
+
+		/*
+		 * Parse the header
+		 *
 		 * TODO: set filename argument in message as well
 		 */
 		byte = data[0];
 		filename = cli_malloc(byte + 1);
-		memcpy(filename, &data[1], byte + 1);
+		memcpy(filename, &data[1], byte);
 		filename[byte] = '\0';
 		blobSetFilename(b, filename);
-		free((char *)filename);
 
 		/*
 		 * skip over length, filename, version, type, creator and flags
@@ -775,51 +844,22 @@ messageToBlob(const message *m)
 		/*
 		 * Set len to be the data fork length
 		 */
-		len = (data[byte] << 24) + (data[byte + 1] << 16) + (data[byte + 2] << 8) + data[byte + 3];
+		len = ((data[byte] << 24) & 0xFF000000) |
+		      ((data[byte + 1] << 16) & 0xFF0000) |
+		      ((data[byte + 2] << 8) & 0xFF00) |
+		      (data[byte + 3] & 0xFF);
+
+		cli_dbgmsg("Filename = '%s', data fork length = %lu bytes\n",
+			filename, len);
+
+		free((char *)filename);
 
 		/*
 		 * Skip over data fork length, resource fork length and CRC
 		 */
 		byte += 10;
-		data = &data[byte];
 
-		/*
-		 * Check for compression of repetitive characters in
-		 * the data fork
-		 */
-		if(memchr(data, 0x90, len))
-			/*
-			 * Includes compression
-			 * TODO: sections of data that are not compressed
-			 *	can be added to the blob all at once
-			 */
-			for(l = 0; l < len; l++) {
-				unsigned char c = data[l];
-
-				blobAddData(b, &c, 1);
-
-				if(l < len - 1)
-					if(data[l + 1] == 0x90) {
-						int count;
-
-						l += 2;
-						count = data[l];
-						cli_dbgmsg("uncompress HQX7 at 0x%06x: %d repetitive bytes\n", l, count);
-
-						if(count == 0) {
-							c = 0x90;
-							blobAddData(b, &c, 1);
-						} else while(--count > 0)
-							blobAddData(b, &c, 1);
-					}
-			}
-		else {
-			/*
-			 * No compression - quickly copy all across
-			 */
-			cli_dbgmsg("HQX7 message is not compressed...\n");
-			blobAddData(b, data, len);
-		}
+		blobAddData(b, &data[byte], len);
 
 		blobDestroy(tmp);
 
@@ -1017,8 +1057,6 @@ uuencodeBegin(const message *m)
 const text *
 binhexBegin(const message *m)
 {
-	return NULL;
-	/*
 	const text *t_line;
 
 	for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next)
@@ -1026,7 +1064,6 @@ binhexBegin(const message *m)
 			return t_line;
 
 	return NULL;
-	*/
 }
 
 /*
