@@ -1,3 +1,7 @@
+Fri Oct 31 13:34:18 GMT 2003 (njh)
+----------------------------------
+  * clamav-milter: added dont scan on error flag
+
 Fri Oct 31 02:51:59 CET 2003 (tk)
 ---------------------------------
   * clamd: initialize a session start-time in proper order (thanks to Michael

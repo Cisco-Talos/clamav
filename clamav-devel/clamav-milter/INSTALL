@@ -139,6 +139,8 @@ Changes
 		Gets version info from clamd
 		Only reset fd's 0/1/2 if !ForeGround
 0.60n	22/10/03 Call pthread_cont_broadcast more often
+0.60o	31/10/03 Optionally accept all mails if scanning procedure
+		fails (Joe Talbott <josepht@cstone.net>)
 
 BUG REPORTS
 
