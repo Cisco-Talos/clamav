@@ -1,3 +1,7 @@
+Tue Sep 21 03:25:59 CEST 2004 (tk)
+----------------------------------
+  * libclamav/filetypes.c: fix JPEG rule
+
 Mon Sep 20 18:08:53 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Some performance enhancements

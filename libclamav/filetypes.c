@@ -101,7 +101,7 @@ static const struct cli_magic_s cli_magic[] = {
 
     {0,  "GIF",				 3, "GIF",	    CL_TYPE_GRAPHICS},
     {0,  "BM",				 2, "BMP",          CL_TYPE_GRAPHICS},
-    {0,  "\377\330\377",		 4, "JPEG",         CL_TYPE_GRAPHICS},
+    {0,  "\377\330\377",		 3, "JPEG",         CL_TYPE_GRAPHICS},
     {6,  "JFIF",			 4, "JPEG",         CL_TYPE_GRAPHICS},
     {6,  "Exif",			 4, "JPEG",         CL_TYPE_GRAPHICS},
     {0,  "\x89PNG",			 4, "PNG",          CL_TYPE_GRAPHICS},

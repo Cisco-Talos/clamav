@@ -225,7 +225,7 @@ AC_SUBST(CFGDIR)
 AC_DEFINE_UNQUOTED(CONFDIR,"$cfg_dir",[where to look for the config file])
 
 dnl Do not overwrite current config files
-AM_CONDITIONAL(INSTALL_CLAMAV_CONF, test ! -r "$cfg_dir/clamav.conf")
+AM_CONDITIONAL(INSTALL_CLAMD_CONF, test ! -r "$cfg_dir/clamd.conf")
 AM_CONDITIONAL(INSTALL_FRESHCLAM_CONF, test ! -r "$cfg_dir/freshclam.conf")
 
 dnl check for in_port_t definition
