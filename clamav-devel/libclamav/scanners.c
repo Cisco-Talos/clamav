@@ -30,11 +30,15 @@
 #include <fcntl.h>
 #include <dirent.h>
 
+#include <mspack.h>
+
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
 pthread_mutex_t cli_scanrar_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 int cli_scanrar_inuse = 0;
+
+extern short cli_leavetemps_flag;
 
 #include "clamav.h"
 #include "others.h"
@@ -73,7 +77,7 @@ static const struct cli_magic_s cli_magic[] = {
 
     /* Executables */
 
-    /* {0,  "MZ",				2,  "DOS/W32 executable", CL_DOSEXE}, */
+/*  {0,  "MZ",				2,  "DOS/W32 executable", CL_DOSEXE},*/
 
     /* Archives */
 
@@ -82,6 +86,7 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "\037\213",			2,  "GZip",		  CL_GZFILE},
     {0,  "BZh",				3,  "BZip",		  CL_BZFILE},
     {0,  "SZDD",			4,  "compress.exe'd",	  CL_MSCFILE},
+    {0,  "MSCF",			4,  "MS CAB",		  CL_MSCABFILE},
 
     /* Mail */
 
@@ -469,7 +474,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	zzip_file_close(zfp);
 
 	if(fflush(tmp) != 0) {
-	    cli_errmsg("fflush() failed: %s\n", strerror(errno));
+	    cli_dbgmsg("fflush() failed: %s\n", strerror(errno));
 	    ret = CL_EFSYNC;
 	    break;
 	}
@@ -596,7 +601,7 @@ static int cli_scanbzip(int desc, const char **virname, long int *scanned, const
 
 
     if((fs = fdopen(dup(desc), "rb")) == NULL) {
-	cli_errmsg("Can't fdopen() descriptor %d.\n", desc);
+	cli_dbgmsg("Can't fdopen() descriptor %d.\n", desc);
 	return CL_EBZIP;
     }
 
@@ -708,6 +713,61 @@ static int cli_scanmscomp(int desc, const char **virname, long int *scanned, con
     return ret;
 }
 
+static int cli_scanmscab(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+{
+	struct mscab_decompressor *cabd = NULL;
+	struct mscabd_cabinet *base, *cab;
+	struct mscabd_file *file;
+	const char *tmpdir;
+	char *tempname;
+	int ret = CL_CLEAN;
+
+
+    cli_dbgmsg("in cli_scanmscab()\n");
+
+    if((cabd = mspack_create_cab_decompressor(NULL)) == NULL) {
+	cli_dbgmsg("Can't create libmspack CAB decompressor\n");
+	return CL_EMSCAB;
+    }
+
+    if((base = cabd->dsearch(cabd, desc)) == NULL) {
+	cli_dbgmsg("I/O error or no valid cabinets found\n");
+	mspack_destroy_cab_decompressor(cabd);
+	return CL_EMSCAB;
+    }
+
+    if((tmpdir = getenv("TMPDIR")) == NULL)
+#ifdef P_tmpdir
+	tmpdir = P_tmpdir;
+#else
+	tmpdir = "/tmp";
+#endif
+
+    for(cab = base; cab; cab = cab->next) {
+	for(file = cab->files; file; file = file->next) {
+	    tempname = cl_gentemp(tmpdir);
+	    cli_dbgmsg("Extracting data to %s\n", tempname);
+	    if(cabd->extract(cabd, file, tempname)) {
+		cli_dbgmsg("libmscab error code: %d\n", cabd->last_error(cabd));
+	    } else {
+		ret = cli_scanfile(tempname, virname, scanned, root, limits, options, reclev);
+	    }
+	    if(!cli_leavetemps_flag)
+		unlink(tempname);
+	    free(tempname);
+	    if(ret == CL_VIRUS)
+		break;
+	}
+	if(ret == CL_VIRUS)
+	    break;
+    }
+
+    cabd->close(cabd, base);
+    mspack_destroy_cab_decompressor(cabd);
+
+    return ret;
+}
+
 static int cli_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
 {
 	DIR *dd;
@@ -746,7 +806,7 @@ static int cli_scandir(const char *dirname, const char **virname, long int *scan
 	    }
 	}
     } else {
-	cli_errmsg("ScanDir -> Can't open directory %s.\n", dirname);
+	cli_dbgmsg("ScanDir -> Can't open directory %s.\n", dirname);
 	return CL_EOPEN;
     }
 
@@ -772,7 +832,7 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 	    sprintf(fullname, "%s/%s", vba_project->dir, vba_project->name[i]);
 	    fd = open(fullname, O_RDONLY);
 	    if(fd == -1) {
-		cli_errmsg("Scan->OLE2 -> Can't open file %s\n", fullname);
+		cli_dbgmsg("Scan->OLE2 -> Can't open file %s\n", fullname);
 		free(fullname);
 		ret = CL_EOPEN;
 		break;
@@ -813,7 +873,7 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 		sprintf(fullname, "%s/%s", vba_project->dir, vba_project->name[i]);
 		fd = open(fullname, O_RDONLY);
 		if(fd == -1) {
-			cli_errmsg("Scan->OLE2 -> Can't open file %s\n", fullname);
+			cli_dbgmsg("Scan->OLE2 -> Can't open file %s\n", fullname);
 			free(fullname);
 			ret = CL_EOPEN;
 			break;
@@ -869,7 +929,7 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 	    }
 	}
     } else {
-	cli_errmsg("ScanDir -> Can't open directory %s.\n", dirname);
+	cli_dbgmsg("ScanDir -> Can't open directory %s.\n", dirname);
 	return CL_EOPEN;
     }
 
@@ -885,9 +945,7 @@ static int cli_scanole2(int desc, const char **virname, long int *scanned, const
 
     cli_dbgmsg("in cli_scanole2()\n");
 
-    tmpdir = getenv("TMPDIR");
-
-    if(tmpdir == NULL)
+    if((tmpdir = getenv("TMPDIR")) == NULL)
 #ifdef P_tmpdir
 	tmpdir = P_tmpdir;
 #else
@@ -897,12 +955,12 @@ static int cli_scanole2(int desc, const char **virname, long int *scanned, const
     /* generate the temporary directory */
     dir = cl_gentemp(tmpdir);
     if(mkdir(dir, 0700)) {
-	cli_errmsg("ScanOLE2 -> Can't create temporary directory %s\n", dir);
+	cli_dbgmsg("ScanOLE2 -> Can't create temporary directory %s\n", dir);
 	return CL_ETMPDIR;
     }
 
     if((ret = cli_ole2_extract(desc, dir))) {
-	cli_errmsg("ScanOLE2 -> %s\n", cl_strerror(ret));
+	cli_dbgmsg("ScanOLE2 -> %s\n", cl_strerror(ret));
 	cli_rmdirs(dir);
 	free(dir);
 	return ret;
@@ -931,9 +989,7 @@ static int cli_scanmail(int desc, const char **virname, long int *scanned, const
     if(*reclev > 5) /* FIXME: a temporary workaround */
 	return CL_CLEAN;
 
-    tmpdir = getenv("TMPDIR");
-
-    if(tmpdir == NULL)
+    if((tmpdir = getenv("TMPDIR")) == NULL)
 #ifdef P_tmpdir
 	tmpdir = P_tmpdir;
 #else
@@ -943,7 +999,7 @@ static int cli_scanmail(int desc, const char **virname, long int *scanned, const
 	/* generate the temporary directory */
 	dir = cl_gentemp(tmpdir);
 	if(mkdir(dir, 0700)) {
-	    cli_errmsg("ScanMail -> Can't create temporary directory %s\n", dir);
+	    cli_dbgmsg("ScanMail -> Can't create temporary directory %s\n", dir);
 	    return CL_ETMPDIR;
 	}
 
@@ -970,7 +1026,7 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
 
 
     if(!root) {
-	cli_errmsg("root == NULL\n");
+	cli_errmsg("CRITICAL: root == NULL\n");
 	return -1;
     }
 
@@ -1031,6 +1087,11 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
 	case CL_MSCFILE:
 	    if(SCAN_ARCHIVE)
 		ret = cli_scanmscomp(desc, virname, scanned, root, limits, options, reclev);
+	    break;
+
+	case CL_MSCABFILE:
+	    if(SCAN_ARCHIVE)
+		ret = cli_scanmscab(desc, virname, scanned, root, limits, options, reclev);
 	    break;
 
 	case CL_MAILFILE:

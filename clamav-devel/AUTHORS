@@ -1,5 +1,5 @@
 Tomasz Kojm <tkojm*clamav.net>
-home page : http://www.konarski.edu.pl/~zolw
+home page : http://www.mat.uni.torun.pl/~tk
 gpg key   : http://www.clamav.net/gpg/tkojm.gpg
 GPG fingerprint = 0DCA 5A08 407D 5288 279D  B434 5482 2DC8 985A 444B
 Project leader.
@@ -56,6 +56,7 @@ TrashScan was written by Trashware <trashware*gmx.net>.
 libclamav/zziplib: Guido Draheim <guidod*gmx.de>
 libclamav/unrarlib.c: Christian Scheurer and Johannes Winkelmann, see
 							    www.unrarlib.org
+libclamav/mspack: Stuart Caie
 
 ClamAV patches were submitted by (in alphabetical order):
 

@@ -38,6 +38,7 @@ extern "C"
 /* return codes */
 #define CL_CLEAN	0   /* virus not found */
 #define CL_VIRUS	1   /* virus found */
+
 #define CL_EMAXREC	10  /* recursion level limit exceeded */
 #define CL_EMAXSIZE	11  /* size limit exceeded */
 #define CL_EMAXFILES	12  /* files limit exceeded */
@@ -48,6 +49,7 @@ extern "C"
 #define CL_EBZIP	104 /* bzip2 handler error */
 #define CL_EOLE2	105 /* OLE2 handler error */
 #define CL_EMSCOMP	106 /* compress.exe handler error */
+#define CL_EMSCAB	107 /* MS CAB module error */
 #define CL_EACCES	200 /* access denied */
 #define CL_ENULLARG	300 /* null argument error */
 
