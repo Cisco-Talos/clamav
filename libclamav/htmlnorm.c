@@ -877,15 +877,21 @@ abort:
 	if (!m_area) {
 		fclose(stream_in);
 	}
-	html_output_flush(file_buff_o1);
-	html_output_flush(file_buff_o2);
-	html_output_flush(file_buff_script);
-	close(file_buff_o1->fd);
-	close(file_buff_o2->fd);
-	close(file_buff_script->fd);
-	free(file_buff_o1);
-	free(file_buff_o2);
-	free(file_buff_script);
+	if (file_buff_o1) {
+		html_output_flush(file_buff_o1);
+		close(file_buff_o1->fd);
+		free(file_buff_o1);
+	}
+	if (file_buff_o2) {
+		html_output_flush(file_buff_o2);
+		close(file_buff_o2->fd);
+		free(file_buff_o2);
+	}
+	if (file_buff_script) {
+		html_output_flush(file_buff_script);
+		close(file_buff_script->fd);
+		free(file_buff_script);
+	}
 	return retval;
 }
 
