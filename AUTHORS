@@ -27,8 +27,14 @@ Random hacker.
 
 aCaB <acab*clamav.net>
 gpg key   : http://www.clamav.net/gpg/acab.gpg
-GPG fingerprint = 977D EAED 219F F275 6DAF  F83A BA15 97C6 9D6D E6DGPG
+GPG fingerprint = 977D EAED 219F F275 6DAF  F83A BA15 97C6 9D6D E6D8
 Executable unpackers.
+
+Mike Cathey <mike*clamav.net>
+gpg key   : http://www.clamav.net/gpg/cathey.gpg
+GPG fingerprint = A23A D4AA DFEC ACF8 2F7C  B82F 7C9E 12F7 DDD9 BCFD
+Co-sysadmin.
+
 
 Submission management interface (for database developers only): Diego d'Ambra
 <diego*clamav.net>, Thomas Madsen <tm*softcom.dk>
@@ -80,6 +86,7 @@ Tom G. Christensen <tgc*statsbiblioteket.dk>
 Eugene Crosser <crosser*rol.ru>
 Damien Curtain <damien*pagefault.org>
 Michael Dankov <misha*btrc.ru>
+David <djgardner*users.sourceforge.net>
 Maxim Dounin <mdounin*rambler-co.ru>
 Alejandro Dubrovsky <s328940*student.uq.edu.au>
 Magnus Ekdahl <magnus*debian.org>

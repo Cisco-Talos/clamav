@@ -1,3 +1,7 @@
+Sun Oct 17 18:19:24 CEST 2004 (tk)
+----------------------------------
+  * docs: update (thanks to Tomasz Papszun for corrections)
+
 Sun Oct 17 16:50:37 CEST 2004 (acab)
 ------------------------------------
   * libclamav/pe.c: fixed a bug preventing one-section fsg1.33 files to be
