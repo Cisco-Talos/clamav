@@ -831,7 +831,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		}
 
 		/* Better not increasing buff size any further, let's go the hard way */
-		oldep = EC32(optional_hdr.AddressOfEntryPoint) + 0xda + 6 + cli_readint32(src+0xdc+oldep);
+		gp = 0xda + 6*(buff[16]=='\xe8');
+		oldep = EC32(optional_hdr.AddressOfEntryPoint) + gp + 6 + cli_readint32(src+gp+2+oldep);
 		cli_dbgmsg("FSG: found old EP @%x\n", oldep);
 
 		tempfile = cli_gentemp(NULL);
