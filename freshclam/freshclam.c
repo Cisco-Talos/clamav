@@ -17,10 +17,13 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/* TODO: Handle SIGALRM more gently */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -34,6 +37,7 @@
 #include "defaults.h"
 #include "freshclam.h"
 
+#define TIMEOUT 1200
 
 void freshclam(struct optstruct *opt)
 {
@@ -154,11 +158,21 @@ void freshclam(struct optstruct *opt)
 
 }
 
+void d_timeout(int sig)
+{
+    mprintf("@Maximal time (%d seconds) reached.\n", TIMEOUT);
+    exit(1);
+}
+
 int download(struct optstruct *opt)
 {
 	int ret = 0;
 	mirrors *m = NULL, *h = NULL;
 	int mirror_used = 0;
+	struct sigaction sigalrm;
+
+    sigalrm.sa_handler = d_timeout;
+    sigaction(SIGALRM, &sigalrm, NULL);
 
     /*
      * There's an error in __nss_hostname_digits_dots () from /lib/libc.so.6
@@ -171,7 +185,11 @@ int download(struct optstruct *opt)
     
     while(m != NULL)
     {
-        if((ret = downloadmanager(opt, m->mirror)) == 0)
+	alarm(TIMEOUT);
+	ret = downloadmanager(opt, m->mirror);
+	alarm(0);
+
+        if(ret == 0)
         {
             if(mirror_used)
             {
