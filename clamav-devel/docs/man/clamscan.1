@@ -57,6 +57,7 @@ Don't scan file names containing PATT. It may be used multiple times.
 .TP 
 \fB\-\-include=PATT\fR
 Only scan file names containing PATT. It may be used multiple times.
+.TP 
 \fB\-i, \-\-infected\fR
 Only print infected files.
 .TP 
@@ -70,7 +71,7 @@ Move infected files into DIRECTORY. Directory must be writeable for the 'clamav'
 Disable scanning of mail files.
 .TP 
 \fB\-\-no\-pe\fR
-PE stands for Portable Executable \- it's an executable file format used in all 32\-bit versions of Windows operating systems. By default ClamAV performs deeper analysis of executable files and tries to decompress popular executable packers such as UPX. This option \fBdisables\fR PE support and is not recommended !
+PE stands for Portable Executable \- it's an executable file format used in all 32\-bit versions of Windows operating systems. By default ClamAV performs deeper analysis of executable files and attempts to decompress popular executable packers such as UPX, Petite, and FSG. This option \fBdisables\fR PE support and should be used with care!
 .TP 
 \fB\-\-no\-ole2\fR
 Disable support for Microsoft Office document files.
