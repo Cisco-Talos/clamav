@@ -130,7 +130,7 @@ void help(void)
     mprintf("    --log=FILE          -l FILE        Save scan report in FILE\n");
     mprintf("    --log-verbose                      Log additional messages\n");
     mprintf("    --config-file=FILE                 Read configuration from FILE.\n");
-    mprintf("    --disable-summary                  Disable summary at end of scanning\n");
+    mprintf("    --no-summary                       Disable summary at end of scanning\n");
     mprintf("\n");
 
     exit(0);
