@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.107  2004/07/22 09:14:32  nigelhorne
+ * Use gethostbyname_r when available
+ *
  * Revision 1.106  2004/07/21 21:23:29  nigelhorne
  * Mutex gethostbyname result
  *
@@ -329,9 +332,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.106 2004/07/21 21:23:29 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.107 2004/07/22 09:14:32 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.74e"
+#define	CM_VERSION	"0.74f"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1502,7 +1505,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	 */
 	if(strncasecmp(port, "inet:", 5) == 0) {
 		const char *hostmail;
-#ifdef	GETHOSTBYNAME_R
+#ifdef	HAVE_GETHOSTBYNAME_R
 		struct hostent *hp, hostent;
 		char buf[BUFSIZ];
 		int ret;
@@ -1521,7 +1524,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 			hostmail = "unknown";
 		}
 
-#ifdef	GETHOSTBYNAME_R
+#ifdef	HAVE_GETHOSTBYNAME_R
 		if(gethostbyname_r(hostmail, &hostent, buf, sizeof(buf), &hp, &ret) != 0) {
 			if(use_syslog)
 				syslog(LOG_WARNING, "Access Denied: Host Unknown (%s)", hostname);
