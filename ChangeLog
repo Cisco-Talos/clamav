@@ -1,3 +1,7 @@
+Sat Jul  3 17:20:45 CEST 2004 (tk)
+----------------------------------
+  * libclamav: use new method to detect mail files
+
 Sat Jul  3 00:37:28 CEST 2004 (tk)
 ----------------------------------
   * libclamav: matcher: add support for file type detection via signature

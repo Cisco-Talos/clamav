@@ -27,7 +27,6 @@ typedef enum {
     CL_UNKNOWN_TYPE = CL_TYPENO,
     CL_DOSEXE,
     CL_DATAFILE,
-    CL_MAILFILE,
     CL_GZFILE,
     CL_ZIPFILE,
     CL_BZFILE,
@@ -36,8 +35,9 @@ typedef enum {
     CL_OLE2FILE,
     CL_MSCABFILE,
 
-    /* file types recognized on-the-fly: bigger numbers have bigger priority */
-    CL_HTMLFILE
+    /* bigger numbers have higher priority (in o-t-f detection) */
+    CL_HTMLFILE, /* on the fly */
+    CL_MAILFILE  /* magic + on the fly */
 
 } cli_file_t;
 

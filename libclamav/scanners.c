@@ -1010,6 +1010,7 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
     }
 
     if(!options) { /* raw mode (stdin, etc.) */
+	cli_dbgmsg("Raw mode: no support for archives.\n");
 	if((ret = cli_scandesc(desc, virname, scanned, root, 0) == CL_VIRUS))
 	    cli_dbgmsg("%s virus found in descriptor %d.\n", *virname, desc);
 	return ret;
@@ -1027,6 +1028,7 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
     lseek(desc, 0, SEEK_SET);
 
     if(bread != MAGIC_BUFFER_SIZE) {
+	cli_dbgmsg("File recognition failed: bread != MAGIC_BUFFER_SIZE (%d != %d)\n", bread, MAGIC_BUFFER_SIZE);
 	/* short read: No need to do magic */
 	if((ret = cli_scandesc(desc, virname, scanned, root, 0) == CL_VIRUS))
 	    cli_dbgmsg("%s virus found in descriptor %d.\n", *virname, desc);
@@ -1115,6 +1117,12 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
 			if(cli_scanhtml(desc, virname, scanned, root, limits, options, reclev) == CL_VIRUS)
 			    return CL_VIRUS;
 		    break;
+
+		case CL_MAILFILE:
+		    if(SCAN_MAIL)
+			if(cli_scanmail(desc, virname, scanned, root, limits, options, reclev) == CL_VIRUS)
+			    return CL_VIRUS;
+		    break;
 	    }
 	}
     }
@@ -1134,7 +1142,6 @@ static int cli_scanfile(const char *filename, const char **virname, unsigned lon
 	int fd, ret;
 
     /* internal version of cl_scanfile with reclev preserved */
-
     if((fd = open(filename, O_RDONLY)) == -1)
 	return CL_EOPEN;
 
@@ -1147,6 +1154,7 @@ static int cli_scanfile(const char *filename, const char **virname, unsigned lon
 int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options)
 {
 	int fd, ret;
+
 
     if((fd = open(filename, O_RDONLY)) == -1)
 	return CL_EOPEN;
