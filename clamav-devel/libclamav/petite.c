@@ -217,8 +217,8 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
       }
 
       /* Let's compact data */
-      for (t = 1; t < j ; t++) {
-	usects[t].raw = usects[t-1].raw + usects[t-1].rsz;
+      for (t = 0; t < j ; t++) {
+	usects[t].raw = (usects[t-1].raw + usects[t-1].rsz)*(t>0);
 	if (usects[t].rsz != 0)
 	  memmove(buf + usects[t].raw, adjbuf + usects[t].rva, usects[t].rsz);
       }

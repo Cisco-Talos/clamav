@@ -1,3 +1,7 @@
+Tue Aug 31 13:43:11 CEST 2004 (acab)
+------------------------------------
+  * libclamav/petite.c: Fixed section compacting for v2.1
+
 Tue Aug 31 00:09:42 CEST 2004 (tk)
 ----------------------------------
   * sigtool: --md5 now can generate MD5 sigs from file list (requested by
