@@ -21,6 +21,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.19  2004/12/16 15:34:57  nigelhorne
+ * Tidy
+ *
  * Revision 1.18  2004/11/20 13:15:46  nigelhorne
  * Better handling of false file type identification
  *
@@ -76,7 +79,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.18 2004/11/20 13:15:46 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.19 2004/12/16 15:34:57 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -118,7 +121,7 @@ octal(const char *str)
 {
 	int ret = -1;
 
-	sscanf(str, "%o", &ret);
+	sscanf(str, "%o", (unsigned int *)&ret);
 	return ret;
 }
 
