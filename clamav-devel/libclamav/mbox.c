@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.216  2005/02/06 09:21:55  nigelhorne
+ * Better check for boundaries with comments
+ *
  * Revision 1.215  2005/02/03 21:07:33  nigelhorne
  * Faster handling of bounce messages
  *
@@ -633,7 +636,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.215 2005/02/03 21:07:33 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.216 2005/02/06 09:21:55 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3036,7 +3039,7 @@ boundaryStart(const char *line, const char *boundary)
 	else if(*ptr++ != '-')
 		rc = 0;
 	else
-		rc = (strcasecmp(line, boundary) == 0);
+		rc = (strcasecmp(ptr, boundary) == 0);
 
 	if(p)
 		free(p);
