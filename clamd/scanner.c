@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -294,7 +294,7 @@ int scanfd(const int fd, unsigned long int *scanned, const struct cl_node *root,
 
 int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt)
 {
-	int ret, portscan = CL_DEFAULT_MAXPORTSCAN, sockfd, port, acceptd;
+	int ret, portscan = CL_DEFAULT_MAXPORTSCAN, sockfd, port = 0, acceptd;
 	int tmpd, bread, retval, timeout, btread, min_port, max_port;
 	long int size = 0, maxsize = 0;
 	short bound = 0, rnd_port_first = 1;

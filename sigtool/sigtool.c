@@ -49,10 +49,12 @@
 #include "output.h"
 #include "cfgparser.h"
 #include "misc.h"
+#include "vba.h"
 #include "../clamscan/others.h"
 #include "../libclamav/others.h"
 #include "../libclamav/str.h"
-#include "vba.h"
+#include "../libclamav/ole2_extract.h"
+#include "../libclamav/htmlnorm.h"
 
 #ifndef	O_BINARY
 #define	O_BINARY	0

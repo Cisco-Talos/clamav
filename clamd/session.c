@@ -49,7 +49,7 @@ pthread_mutex_t ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
 int command(int desc, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt, int timeout)
 {
 	char buff[1025];
-	int bread, opt, ret, retval;
+	int bread, opt, retval;
 	struct cfgstruct *cpt;
 
 

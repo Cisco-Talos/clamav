@@ -30,6 +30,7 @@
 #include "../libclamav/vba_extract.h"
 #include "../libclamav/others.h"
 #include "../libclamav/cltypes.h"
+#include "../libclamav/ole2_extract.h"
 
 typedef struct mac_token_tag
 {
@@ -43,6 +44,8 @@ typedef struct mac_token2_tag
     unsigned char *str;
 
 } mac_token2_t;
+
+int sigtool_vba_scandir(const char *dirname, int hex_output);
 
 static char *get_unicode_name (char *name, int size)
 {
@@ -897,7 +900,7 @@ static int sigtool_scandir (const char *dirname, int hex_output)
     char *fname;
     const char *tmpdir;
     char *dir;
-    int retval, ret = CL_CLEAN, desc;
+    int ret = CL_CLEAN, desc;
 
 
     if ((dd = opendir (dirname)) != NULL) {

@@ -28,6 +28,9 @@
 #include <ctype.h>
 
 #include <zzipformat.h>
+
+#include "others.h"
+
 /*
 #include "__debug.h"
 */

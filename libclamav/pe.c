@@ -443,7 +443,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     if(ep == EC32(section_hdr[nsections - 1].PointerToRawData)) {
 	lseek(desc, ep, SEEK_SET);
 	if(read(desc, buff, 4096) == 4096) {
-		char *pt = cli_memstr(buff, 4040, "\x47\x65\x74\x50\x72\x6f\x63\x41\x64\x64\x72\x65\x73\x73\x00", 15);
+		const char *pt = cli_memstr(buff, 4040, "\x47\x65\x74\x50\x72\x6f\x63\x41\x64\x64\x72\x65\x73\x73\x00", 15);
 	    if(pt) {
 		    uint32_t dw1, dw2;
 
