@@ -84,8 +84,14 @@
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #undef HAVE_FSEEKO
 
-/* Define to 1 if you have the `gethostbyname_r' function. */
-#undef HAVE_GETHOSTBYNAME_R
+/* gethostbyname_r takes 3 arguments */
+#undef HAVE_GETHOSTBYNAME_R_3
+
+/* gethostbyname_r takes 5 arguments */
+#undef HAVE_GETHOSTBYNAME_R_5
+
+/* gethostbyname_r takes 6 arguments */
+#undef HAVE_GETHOSTBYNAME_R_6
 
 /* Define to 1 if you have the `getpagesize' function. */
 #undef HAVE_GETPAGESIZE
