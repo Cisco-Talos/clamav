@@ -1,3 +1,13 @@
+2/2/04
+Added a command line interface. This allows the client to be used either
+in conjunction with download managers which often ask users to specify
+a CLI to a AV system to scan files that have been downloaded. It also
+allows a full system scan to be done either manually or via the Windows
+scheduler, for example
+	clamav.exe 192.168.1.1 eicar.com
+	clamav.exe 192.168.1.1 c:\
+
+----------------------------
 This is a small Windows client for ClamAV that I hope will turn into
 something bigger with time.
 
@@ -9,7 +19,7 @@ You will need a clamd server machine where the clamd daemon is listening
 on port 3310. When firing up the Windows client you will be asked to
 enter in the hostname/IPv4 address of the clamd server. Once you have done
 that simply drag 'n' drop files or folders on to the program, they will
-then be scaned for Viruses.
+then be scanned for viruses.
 
 Nigel Horne njh@bandsman.co.uk
 29/01/04
