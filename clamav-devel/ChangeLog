@@ -1,3 +1,8 @@
+Fri Dec  5 02:31:24 CET 2003 (tk)
+---------------------------------
+  * clamav-milter: Makefile: link against libclamav (needed for cli_strtok())
+		   Problem reported by Troy and solved by Thomas Lamy.
+
 Wed Dec  3 22:03:19 CET 2003 (tk)
 ---------------------------------
   * libclamav: cli_scandir(): fixed a recursive loop (a wrong file argument
