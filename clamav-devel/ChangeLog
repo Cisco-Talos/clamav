@@ -1,3 +1,8 @@
+Fri May  7 19:46:05 CEST 2004 (tk)
+----------------------------------
+  * clamscan: fixperms(): do not follow file symlinks (Debian Bug #247574)
+  * libclamav: detect more mail file types
+
 Thu May  6 22:14:39 CEST 2004 (tk)
 ----------------------------------
   * libclamav: scanners: enable decoding of Word6 macro code (Trog)

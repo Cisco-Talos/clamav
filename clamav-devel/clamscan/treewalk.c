@@ -199,7 +199,7 @@ int fixperms(const char *dirname)
 			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
 			    chmod(fname, 0700);
 			    fixperms(fname);
-			} else
+			} else if(S_ISREG(statbuf.st_mode))
 			    chmod(fname, 0700);
 		    }
 
