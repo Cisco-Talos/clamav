@@ -59,6 +59,7 @@ static void daemon_sighandler(int sig) {
 
 	case SIGHUP:
 	    action = "re-opening log file";
+	    terminate = -2;
 	    break;
 
 	default:
@@ -66,10 +67,8 @@ static void daemon_sighandler(int sig) {
 	    terminate = 1;
 	    break;
     }
+
     logg("Received signal %d, %s\n", sig, action);
-    if (sig == SIGHUP) {
-	logg(NULL);	/* forces log file re-opening */
-    }
     return;
 }
 
@@ -270,7 +269,7 @@ int freshclam(struct optstruct *opt)
 		    system(cpt->strarg);
 	    }
 
-	    logg("\n--------------------------------------\n");
+	    logg("--------------------------------------\n");
 	    sigaction(SIGALRM, &sigact, &oldact);
 	    sigaction(SIGUSR1, &sigact, &oldact);
 	    time(&wakeup);
@@ -280,9 +279,14 @@ int freshclam(struct optstruct *opt)
 		pause();
 		time(&now);
 	    } while (!terminate && now < wakeup);
+
 	    if (terminate == -1) {
 		terminate = 0;
+	    } else if (terminate == -2) {
+		terminate = 0;
+		logg_close();
 	    }
+
 	    sigaction(SIGALRM, &oldact, NULL);
 	    sigaction(SIGUSR1, &oldact, NULL);
 	}

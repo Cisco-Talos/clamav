@@ -69,7 +69,7 @@ on our website: http://www.clamav.net/3rdparty.html):
     + ClamAssassin - a filter for procmail
     + Gadoyanvirus - a filter for Qmail
     + OpenProtect - a complete e-mail protection solution
-    + RevolSys-SMTP - a complete e-mail protection solution
+    + RevolSys SMTP kit for Postfix - an antispam/antivirus tools installation
     + POP3 Virus Scanner Daemon
     + mailman-clamav - a virus filter for Mailman
     + wbmclamav - a webmin module to manage ClamAV
