@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.108  2004/07/22 15:45:03  nigelhorne
+ * Up-issue
+ *
  * Revision 1.107  2004/07/22 09:14:32  nigelhorne
  * Use gethostbyname_r when available
  *
@@ -332,9 +335,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.107 2004/07/22 09:14:32 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.108 2004/07/22 15:45:03 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.74f"
+#define	CM_VERSION	"0.75"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
