@@ -299,9 +299,14 @@
  *			for timing out when the remote end (the end talking to
  *			sendmail) is slow
  *			Prefer cli_dbgmsg/cli_warnmsg over printf
+ *	0.70d	29/3/04	Print the sendmail ID with the virus note in syslog
+ *			config file location has changed
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.66  2004/03/31 20:48:03  nigelhorne
+ * Config file has changed
+ *
  * Revision 1.65  2004/03/27 21:44:21  nigelhorne
  * Attempt to handle clamd quick timeout for slow remote sites
  *
@@ -482,9 +487,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.65 2004/03/27 21:44:21 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.66 2004/03/31 20:48:03 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70c"
+#define	CM_VERSION	"0.70d"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -493,7 +498,7 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.65 2004/03/27 21:44:21 nig
 #endif
 
 #include "defaults.h"
-#include "cfgfile.h"
+#include "cfgparser.h"
 #include "../target.h"
 #include "str.h"
 #include "../libclamav/others.h"
@@ -680,6 +685,7 @@ static	int	cl_error = SMFIS_TEMPFAIL; /*
 static	int	threadtimeout = CL_DEFAULT_SCANTIMEOUT; /*
 				 * number of seconds to wait for clamd to
 				 * respond
+				 * TODO: consider changing to ReadTimeout
 				 */
 static	int	logClean = 1;	/*
 				 * Add clean items to the log file
@@ -1817,6 +1823,7 @@ clamfi_eom(SMFICTX *ctx)
 {
 	int rc = SMFIS_CONTINUE;
 	char *ptr;
+	const char *sendmailId;
 	struct privdata *privdata = (struct privdata *)smfi_getpriv(ctx);
 	char mess[128];
 
@@ -1892,13 +1899,13 @@ clamfi_eom(SMFICTX *ctx)
 	close(privdata->cmdSocket);
 	privdata->cmdSocket = -1;
 
+	sendmailId = smfi_getsymval(ctx, "i");
+
 	if(strstr(mess, "ERROR") != NULL) {
 
-		ptr = smfi_getsymval(ctx, "i");
-
-		cli_warnmsg("%s: %s\n", ptr, mess);
+		cli_warnmsg("%s: %s\n", sendmailId, mess);
 		if(use_syslog)
-			syslog(LOG_ERR, "%s: %s\n", ptr, mess);
+			syslog(LOG_ERR, "%s: %s\n", sendmailId, mess);
 		clamfi_cleanup(ctx);
 		return cl_error;
 	}
@@ -1914,7 +1921,7 @@ clamfi_eom(SMFICTX *ctx)
 		if(use_syslog && logClean)
 			/* Include the sendmail queue ID in the log */
 			syslog(LOG_NOTICE, "%s: clean message from %s",
-				smfi_getsymval(ctx, "i"),
+				sendmailId,
 				(privdata->from) ? privdata->from : "an unknown sender");
 
 		if(privdata->body) {
@@ -1936,9 +1943,6 @@ clamfi_eom(SMFICTX *ctx)
 		int i;
 		char **to, *err;
 
-		if(use_syslog)
-			syslog(LOG_NOTICE, mess);
-
 		/*
 		 * Setup err as a list of recipients
 		 */
@@ -1949,7 +1953,8 @@ clamfi_eom(SMFICTX *ctx)
 		 * length of privdata->from and may get a buffre overrun
 		 * causing a crash
 		 */
-		snprintf(err, 1024, "Intercepted virus from %s to", privdata->from);
+		snprintf(err, 1024, "Intercepted virus from %s to",
+			privdata->from);
 
 		ptr = strchr(err, '\0');
 
@@ -1971,9 +1976,7 @@ clamfi_eom(SMFICTX *ctx)
 
 		if(use_syslog)
 			/* Include the sendmail queue ID in the log */
-			syslog(LOG_NOTICE, "%s: %s",
-				smfi_getsymval(ctx, "i"),
-				err);
+			syslog(LOG_NOTICE, "%s: %s %s", sendmailId, mess, err);
 #ifdef	CL_DEBUG
 		cli_dbgmsg("%s\n", err);
 #endif
@@ -2027,7 +2030,7 @@ clamfi_eom(SMFICTX *ctx)
 					 * information
 					 */
 					fprintf(sendmail, "The message %s sent from %s to\n\t",
-						smfi_getsymval(ctx, "i"), from);
+						sendmailId, from);
 				else
 					fprintf(sendmail, "A message sent from %s to\n\t",
 						from);

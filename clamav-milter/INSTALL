@@ -300,6 +300,8 @@ Changes
 		out when the remote end (the end talking to
 		sendmail) is slow
 		Prefer cli_dbgmsg/cli_warnmsg over printf
+0.70d	29/3/04	Print the sendmail ID with the virus note in syslog
+		config file location has changed
 
 BUG REPORTS
 
