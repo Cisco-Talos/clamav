@@ -1,14 +1,14 @@
 .\" Manual page created by Tomasz Kojm, 20021121
-.TH "Clamd client" "1" "November 11, 2003" "Tomasz Kojm" "Clam AntiVirus"
+.TH "Clamd client" "1" "February 20, 2004" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 clamdscan \- scan files and directories against viruses using Clam AntiVirus Daemon
 .SH "SYNOPSIS"
 .LP 
-clamscan [options] [file/directory]
+clamdscan [options] [file/directory]
 .SH "DESCRIPTION"
 .LP 
-clamdscan is a simple clamd client, which may be used as a clamscan replacement. clamdscan accepts all the options implemented in clamscan. It's a part of the Clam AntiVirus package.
+clamdscan is a simple clamd client which may be used as a clamscan replacement. clamdscan accepts all the options implemented in clamscan but most of them will be ignored because its scanning abilities only depend on clamd. clamdscan is a part of the Clam AntiVirus package.
 .SH "OPTIONS"
 .LP 
 
@@ -27,6 +27,9 @@ Be quiet \- only output error messages.
 .TP 
 \fB\-\-stdout\fR
 Write all messages to the standard output (stdout) instead of the standard error output (stderr).
+.TP 
+\fB\-\-config\-file=FILE\fR
+Read clamd settings from FILE.
 .TP 
 \fB\-l FILE, \-\-log=FILE\fR
 Save the scan report to FILE.
@@ -64,4 +67,4 @@ Please check the full documentation for credits.
 Tomasz Kojm <tkojm@clamav.net>
 .SH "SEE ALSO"
 .LP 
-clamscan(1), clamd(8), freshclam(1), sigtool(1), clamav.conf(5), clamav\-milter(8)
+clamscan(1), clamd(8), freshclam(1), clamav.conf(5)

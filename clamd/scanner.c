@@ -186,7 +186,7 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_node 
 
 int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt)
 {
-	int ret, flags, portscan = CL_DEFAULT_MAXPORTSCAN, sockfd, port, acceptd, tmpd, bread, count;
+	int ret, portscan = CL_DEFAULT_MAXPORTSCAN, sockfd, port, acceptd, tmpd, bread, count;
 	long int size = 0, maxsize = 0;
 	short bound = 0;
 	char *virname, buff[32768];

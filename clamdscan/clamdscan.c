@@ -80,9 +80,6 @@ void clamscan(struct optstruct *opt)
 
     /* initialize logger */
 
-    if(optl(opt, "log-verbose")) logverbose = 1;
-    else logverbose = 0;
-
     if(optc(opt, 'l')) {
 	logfile = getargc(opt, 'l');
 	if(logg("--------------------------------------\n")) {

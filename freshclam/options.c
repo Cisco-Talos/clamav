@@ -37,6 +37,10 @@ int main(int argc, char **argv)
 	const char *getopt_parameters = "hvdp:Vl:c:u:";
 
 	static struct option long_options[] = {
+	    /* 
+	     * WARNING: For compatibility reasons options marked as "not used"
+	     *		must still be accepted !
+	     */
 	    {"help", 0, 0, 'h'},
 	    {"quiet", 0, 0, 0},
 	    {"verbose", 0, 0, 'v'},
@@ -44,7 +48,7 @@ int main(int argc, char **argv)
 	    {"version", 0, 0, 'V'},
 	    {"datadir", 1, 0, 0},
 	    {"log", 1, 0, 'l'},
-	    {"log-verbose", 0, 0, 0},
+	    {"log-verbose", 0, 0, 0}, /* not used */
 	    {"stdout", 0, 0, 0},
 	    {"daemon", 0, 0, 'd'},
 	    {"pid", 1, 0, 'p'},

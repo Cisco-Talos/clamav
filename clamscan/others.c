@@ -154,8 +154,7 @@ int logg(const char *str, ...)
 	    fprintf(fd, "WARNING: ");
 	    vfprintf(fd, ++str, args);
 	} else if(*str == '*') {
-	    if(logverbose)
-		vfprintf(fd, ++str, args);
+	    vfprintf(fd, ++str, args);
 	} else vfprintf(fd, str, args);
 
 	va_end(args);

@@ -104,9 +104,6 @@ void clamscan(struct optstruct *opt)
 
     /* initialize logger */
 
-    if(optl(opt, "log-verbose")) logverbose = 1;
-    else logverbose = 0;
-
     if(optc(opt, 'l')) {
 	logfile = getargc(opt, 'l');
 	if(logg("--------------------------------------\n")) {
@@ -203,8 +200,7 @@ void help(void)
     mprintf("    --tempdir=DIRECTORY                  create temporary files in DIRECTORY\n");
     mprintf("    --database=FILE/DIR   -d FILE/DIR    Load virus database from FILE or load\n");
     mprintf("                                         all .db and .db2 files from DIR\n");
-    mprintf("    --log=FILE            -l FILE        Save scan report in FILE\n");
-    mprintf("    --log-verbose                        Save additional informations\n");
+    mprintf("    --log=FILE            -l FILE        Save scan report to FILE\n");
     mprintf("    --recursive           -r             Scan directories recursively\n");
     mprintf("    --infected            -i             Print infected files only\n");
     mprintf("    --remove                             Remove infected files. Be careful.\n");
