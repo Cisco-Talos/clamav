@@ -217,7 +217,7 @@ static void *msp_alloc(struct mspack_system *this, size_t bytes) {
   *((size_t *)buf) = bytes;
   return &buf[8];
 #else
-  return malloc(bytes);
+  return cli_calloc(bytes, 1);
 #endif
 }
 
