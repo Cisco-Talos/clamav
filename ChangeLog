@@ -1,3 +1,7 @@
+Wed Jul 21 16:47:06 BST 2004 (trog)
+-----------------------------------
+  * libclamav/chmunpack.c: use fclose() to flush data
+
 Wed Jul 21 04:14:34 CEST 2004 (tk)
 ----------------------------------
   * libclamav: pe: fix debug message
