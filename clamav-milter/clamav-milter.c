@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.129  2004/09/17 15:40:02  nigelhorne
+ * Handle sendmail variables after clamav variables
+ *
  * Revision 1.128  2004/09/15 08:46:33  nigelhorne
  * Added --max-children to --help
  *
@@ -395,7 +398,7 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.128 2004/09/15 08:46:33 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.129 2004/09/17 15:40:02 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.75r"
 
@@ -3489,6 +3492,7 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 							filename, *ptr);
 						break;
 				}
+				break;
 			case '$': /* sendmail string */ {
 				const char *val;
 				char *end = strchr(++ptr, '$');
@@ -3511,6 +3515,7 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 				} else
 					fputs(val, sendmail);
 				ptr = end;
+				break;
 			}
 			case '\\':
 				if(*++ptr == '\0') {
@@ -3745,8 +3750,9 @@ watchdog(void *a)
 		 * How often (in seconds) to try to fix broken clamd sessions.
 		 * We may try more often than this e.g. when we're idle or all
 		 * connections are down, so you can put this figure quite high.
-		 * But can't be too high because a SESSION doesn't remain
-		 * open if no data goes down for ReadTimeout seconds
+		 * But can't be too high because with older clamd SESSION
+		 * didn't remain open if no data goes down for ReadTimeout
+		 * seconds
 		 */
 		ts.tv_sec = tp.tv_sec + readTimeout - 1;
 		ts.tv_nsec = tp.tv_usec * 1000;
