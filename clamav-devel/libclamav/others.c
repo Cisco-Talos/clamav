@@ -473,3 +473,35 @@ int32_t cli_readint32(const char *buff)
 
     return ret;
 }
+
+int cli_memstr(const char *haystack, int hs, const char *needle, int ns)
+{
+	const char *pt, *hay;
+	int n;
+
+
+    if(hs < ns)
+	return 0;
+
+    if(haystack == needle)
+	return 1;
+
+    if(!memcmp(haystack, needle, ns))
+	return 1;
+
+    pt = hay = haystack;
+    n = hs;
+
+    while((pt = memchr(hay, needle[0], n)) != NULL) {
+	n = (int) pt - (int) hay;
+	if(n < ns)
+	    break;
+
+	if(!memcmp(pt, needle, ns))
+	    return 1;
+
+	hay = pt;
+    }
+
+    return 0;
+}

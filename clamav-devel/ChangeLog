@@ -1,3 +1,8 @@
+Mon Aug 16 18:52:42 CEST 2004 (tk)
+----------------------------------
+  * libclamav: cli_memstr: fix bounds error (thanks to Nigel) and move to
+	       others.c
+
 Sun Aug 15 02:19:54 CEST 2004 (tk)
 ----------------------------------
   * freshclam: try all IP addresses provided by gethostbyname() in single
