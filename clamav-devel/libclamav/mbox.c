@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.23  2003/12/14 18:07:01  nigelhorne
+ * Some viruses in embedded messages were not being found
+ *
  * Revision 1.22  2003/12/13 16:42:23  nigelhorne
  * call new cli_chomp
  *
@@ -57,7 +60,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.22 2003/12/13 16:42:23 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.23 2003/12/14 18:07:01 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -109,7 +112,7 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.22 2003/12/13 16:42:23 nigelhorne E
 
 typedef enum    { FALSE = 0, TRUE = 1 } bool;
 
-static	void	parseEmailHeaders(message *m, table_t *rfc821Table);
+static	message	*parseEmailHeaders(const message *m, const table_t *rfc821Table);
 static	int	parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const char *dir, table_t *rfc821Table, table_t *subtypeTable);
 static	int	boundaryStart(const char *line, const char *boundary);
 static	int	endOfMessage(const char *line, const char *boundary);
@@ -342,12 +345,16 @@ cl_mbox(const char *dir, int desc)
 		/*
 		 * It's a single message, parse the headers then the body
 		 */
+		message *body;
+
 		do {
 			cli_chomp(buffer);
 			messageAddLine(m, buffer);
 		} while(fgets(buffer, sizeof(buffer), fd) != NULL);
 
-		parseEmailHeaders(m, rfc821Table);
+		body = parseEmailHeaders(m, rfc821Table);
+		messageDestroy(m);
+		m = body;
 	}
 
 	fclose(fd);
@@ -379,12 +386,16 @@ cl_mbox(const char *dir, int desc)
  * The given message contains a raw e-mail.
  *
  * This function parses the headers of m and sets the message's arguments
+ *
+ * Returns the message's body with the correct arguments set
  */
-static void
-parseEmailHeaders(message *m, table_t *rfc821Table)
+static message *
+parseEmailHeaders(const message *m, const table_t *rfc821Table)
 {
 	bool inContinuationHeader = FALSE;
+	bool inHeader = TRUE;
 	text *t, *msgText = messageToText(m);
+	message *ret = messageCreate();
 
 	t = msgText;
 	assert(t != NULL);
@@ -401,7 +412,7 @@ parseEmailHeaders(message *m, table_t *rfc821Table)
 		 * Section B.2 of RFC822 says TAB or SPACE means
 		 * a continuation of the previous entry.
 		 */
-		if((buffer[0] == '\t') || (buffer[0] == ' '))
+		if(inHeader && ((buffer[0] == '\t') || (buffer[0] == ' ')))
 			inContinuationHeader = TRUE;
 
 		if(inContinuationHeader) {
@@ -414,8 +425,8 @@ parseEmailHeaders(message *m, table_t *rfc821Table)
 			 * Add all the arguments on the line
 			 */
 			for(ptr = strtok_r(buffer, ";", &strptr); ptr; ptr = strtok_r(NULL, ":", &strptr))
-				messageAddArgument(m, ptr);
-		} else {
+				messageAddArgument(ret, ptr);
+		} else if(inHeader) {
 			cli_dbgmsg("Deal with header %s\n", buffer);
 
 			/*
@@ -423,26 +434,28 @@ parseEmailHeaders(message *m, table_t *rfc821Table)
 			 * the start of the text
 			 */
 			if(strstrip(buffer) == 0) {
-				free(buffer);
 				cli_dbgmsg("End of header information\n");
-				break;
+				inHeader = FALSE;
 			} else {
 				const bool isLastLine = !continuationMarker(buffer);
 				const char *cmd = strtok_r(buffer, " \t", &strptr);
 
-				if (cmd && *cmd) {
+				if(cmd && *cmd) {
 					const char *arg = strtok_r(NULL, "", &strptr);
 
 					if(arg)
-						if(parseMimeHeader(m, cmd, rfc821Table, arg) == CONTENT_TYPE)
+						if(parseMimeHeader(ret, cmd, rfc821Table, arg) == CONTENT_TYPE)
 							inContinuationHeader = !isLastLine;
 				}
 			}
-		}
+		} else
+			messageAddLine(ret, buffer);
 		free(buffer);
 	} while((t = t->t_next) != NULL);
 
 	textDestroy(msgText);
+
+	return ret;
 }
 
 /*
@@ -450,7 +463,8 @@ parseEmailHeaders(message *m, table_t *rfc821Table)
  *
  * This function parses the body of mainMessage and saves its attachments in dir
  *
- * mainMessage is the buffer to be parsed, it contains an e-mail's body. First
+ * mainMessage is the buffer to be parsed, it contains an e-mail's body, without
+ * any headers. First
  * time of calling it'll be
  *	the whole message. Later it'll be parts of a multipart message
  * textIn is the plain text message being built up so far
@@ -565,6 +579,10 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 			inhead = 1;
 			inMimeHead = 0;
 
+			/*
+			 * This looks like parseEmailHeaders() - maybe there's
+			 * some duplication of code to be cleaned up
+			 */
 			for(multiparts = 0; t_line && (multiparts < MAXALTERNATIVE); multiparts++) {
 				aMessage = messages[multiparts] = messageCreate();
 
@@ -574,10 +592,12 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 				while((t_line = t_line->t_next)) {
 					const char *line = t_line->t_text;
 
-					/*cli_dbgmsg("inMimeHead %d inhead %d boundary %s line %s\n",
-						inMimeHead, inhead, boundary, line);*/
+					/*cli_dbgmsg("inMimeHead %d inhead %d boundary %s line '%s' next '%s'\n",
+						inMimeHead, inhead, boundary, line, t_line->t_next ? t_line->t_next->t_text : "(null)");*/
 
 					if(inMimeHead) {
+						cli_dbgmsg("About to add mime Argument '%s'\n",
+							line);
 						while(isspace((int)*line))
 							line++;
 
@@ -585,8 +605,6 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 							inhead = inMimeHead = 0;
 							continue;
 						}
-						cli_dbgmsg("About to add mime Argument '%s'\n",
-							line);
 						/*
 						 * This may cause a trailing ';'
 						 * to be added if this test
@@ -705,6 +723,7 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 
 			switch(tableFind(subtypeTable, mimeSubtype)) {
 			case RELATED:
+				cli_dbgmsg("Multipart related handler\n");
 				/*
 				 * Have a look to see if there's HTML code
 				 * which will need scanning
@@ -811,9 +830,7 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 				if(aText)
 					mainMessage = NULL;
 
-#ifdef	CL_DEBUG
 				cli_dbgmsg("Mixed message with %d parts\n", multiparts);
-#endif
 				for(i = 0; i < multiparts; i++) {
 					bool addAttachment = FALSE;
 					bool addToText = FALSE;
@@ -827,10 +844,8 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 					dtype = messageGetDispositionType(aMessage);
 					cptr = messageGetMimeSubtype(aMessage);
 
-#ifdef	CL_DEBUG
 					cli_dbgmsg("Mixed message part %d is of type %d\n",
 						i, messageGetMimeType(aMessage));
-#endif
 
 					switch(messageGetMimeType(aMessage)) {
 					case APPLICATION:
@@ -1020,7 +1035,7 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 				 * ensure t is correctly freed
 				 */
 				text *t, *msgText = messageToText(mainMessage);
-				message *m;
+				message *m, *body;
 
 				t = msgText;
 				assert(t != NULL);
@@ -1040,7 +1055,10 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 
 				textDestroy(msgText);
 
-				parseEmailHeaders(m, rfc821Table);
+				body = parseEmailHeaders(m, rfc821Table);
+
+				messageDestroy(m);
+				m = body;
 
 				messageClean(m);
 				if(messageGetBody(m))
@@ -1106,6 +1124,7 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 	}
 
 	cli_dbgmsg("%d attachments found\n", nBlobs);
+	rc = 1;
 
 	if(nBlobs == 0) {
 		blob *b;
@@ -1114,19 +1133,14 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 		 * No attachments - scan the text portions, often files
 		 * are hidden in HTML code
 		 */
-
-#ifdef	CL_DEBUG
 		cli_dbgmsg("%d multiparts found\n", multiparts);
-#endif
 		for(i = 0; i < multiparts; i++) {
 			b = messageToBlob(messages[i]);
 
 			assert(b != NULL);
 
-#ifdef	CL_DEBUG
 			cli_dbgmsg("Saving multipart %d, encoded with scheme %d\n",
 				i, messageGetEncoding(messages[i]));
-#endif
 
 			(void)saveFile(b, dir);
 
@@ -1171,7 +1185,8 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 					blobDestroy(b);
 				}
 			}
-		}
+		} else
+			rc = (multiparts) ? 1 : 2;	/* anything saved? */
 	} else {
 		short attachmentNumber;
 
@@ -1194,9 +1209,9 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 	if(blobs && (blobsIn == NULL))
 		blobArrayDestroy(blobs, nBlobs);
 
-	cli_dbgmsg("parseEmailBody() returning 1\n");
+	cli_dbgmsg("parseEmailBody() returning %d\n", rc);
 
-	return 1;
+	return rc;
 }
 
 /*
@@ -1461,6 +1476,9 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 	return type;
 }
 
+/*
+ * Save some data as a unique file in the given directory.
+ */
 static bool
 saveFile(const blob *b, const char *dir)
 {
