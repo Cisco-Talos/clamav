@@ -63,6 +63,8 @@ static const struct cli_magic_s cli_magic[] = {
     {0,	    "ITSF",			4,  "MS CHM",           CL_TYPE_MSCHM},
     {257,   "ustar",			5,  "POSIX tar",	CL_TYPE_TAR},
     {0,     "#@~^",			4,  "SCRENC",		CL_TYPE_SCRENC},
+    {0,     "(This file must be converted with BinHex 4.0)",
+				       45, "BinHex",		CL_TYPE_BINHEX},
 
     /* Mail */
 

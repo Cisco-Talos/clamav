@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: binhex.c,v $
+ * Revision 1.4  2004/11/18 19:30:29  kojm
+ * add support for Mac's HQX file format
+ *
  * Revision 1.3  2004/11/18 18:24:45  nigelhorne
  * Added binhex.h
  *
@@ -24,7 +27,7 @@
  * First draft of binhex.c
  *
  */
-static	char	const	rcsid[] = "$Id: binhex.c,v 1.3 2004/11/18 18:24:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: binhex.c,v 1.4 2004/11/18 19:30:29 kojm Exp $";
 
 #include "clamav.h"
 
@@ -71,8 +74,8 @@ cli_binhex(const char *dir, int desc)
 	fileblob *fb;
 
 #ifndef HAVE_MMAP
-	cli_errmsg("Binhex decoding needs mmap() (for now)\n");
-	return CL_EMEM;
+	cli_warnmsg("File not decoded - binhex decoding needs mmap() (for now)\n");
+	return CL_CLEAN;
 #else
 	if(fstat(desc, &statb) < 0)
 		return CL_EOPEN;
@@ -99,14 +102,14 @@ cli_binhex(const char *dir, int desc)
 			--bytesleft;
 		}
 
-		printf("%d: ", length);
+		/* printf("%d: ", length); */
 
 		line = cli_malloc(length + 1);
 
 		memcpy(line, buf, length);
 		line[length] = '\0';
 
-		puts(line);
+		/* puts(line); */
 
 		if(messageAddStr(m, line) < 0)
 			break;
