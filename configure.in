@@ -45,6 +45,7 @@ AC_TYPE_OFF_T
 AC_COMPILE_CHECK_SIZEOF(short)
 AC_COMPILE_CHECK_SIZEOF(int)
 AC_COMPILE_CHECK_SIZEOF(long)
+AC_COMPILE_CHECK_SIZEOF(long long)
 
 AC_CHECK_LIB(socket, bind, [LIBS="$LIBS -lsocket"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsocket"; LDFLAGS="$LDFLAGS -lsocket"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsocket"; CLAMD_LIBS="$CLAMD_LIBS -lsocket"])
 AC_CHECK_LIB(nsl, gethostent, [LIBS="$LIBS -lnsl"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lnsl"; LDFLAGS="$LDFLAGS -lnsl"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lnsl"; CLAMD_LIBS="$CLAMD_LIBS -lnsl"])
@@ -355,20 +356,6 @@ freebsd*)
     AC_DEFINE(C_BSD,1,[os is freebsd])
     disable_gethostbyname_r="yes"
     ;;
-openbsd3.3*)
-    if test "$have_pthreads" = "yes"; then
-	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread"
-	if test "$disable_cr" = "yes"; then
-	    CLAMD_LIBS="$CLAMD_LIBS -pthread"
-	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread"
-	fi
-	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
-	AC_DEFINE(_REENTRANT,1,[thread safe])
-    fi
-    AC_DEFINE(C_BSD,1,[os is bsd flavor])
-    disable_gethostbyname_r="yes"
-    ;;
 openbsd*)
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread"
@@ -383,7 +370,19 @@ openbsd*)
 	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
 	AC_DEFINE(_REENTRANT,1,[thread safe])
     fi
-    AC_DEFINE(C_BSD,1,[os is bsd flavor])
+    AC_DEFINE(C_BSD,1,[os is OpenBSD])
+    disable_gethostbyname_r="yes"
+    ;;
+bsdi*)
+    if test "$have_pthreads" = "yes"; then
+	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread"
+	CLAMD_LIBS="$CLAMD_LIBS -pthread"
+	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread"
+	TH_SAFE="-thread-safe"
+	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
+	AC_DEFINE(_REENTRANT,1,[thread safe])
+    fi
+    AC_DEFINE(C_BSD,1,[os is BSDI BSD/OS])
     disable_gethostbyname_r="yes"
     ;;
 netbsd*)
@@ -395,7 +394,7 @@ netbsd*)
 	AC_DEFINE(_REENTRANT,1,[thread safe])
 	ADDITIONAL_LIBS="$LIBS -lpthread"
      fi
-    AC_DEFINE(C_BSD,1,[os is bsd flavor])
+    AC_DEFINE(C_BSD,1,[os is NetBSD])
     disable_gethostbyname_r="yes"
     ;;
 bsd*)
