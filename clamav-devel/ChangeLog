@@ -1,3 +1,7 @@
+Tue Feb 24 10:56:44 CET 2004 (tk)
+---------------------------------
+  * libclamav: scan mail files modified by Symantec software
+
 Mon Feb 23 22:29:16 GMT 2004 (tl)
 ---------------------------------
   * freshclam:	Fix bug in -p option recognition
