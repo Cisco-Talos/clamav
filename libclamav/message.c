@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.95  2004/10/05 10:58:00  nigelhorne
+ * Table driven base64 decoding
+ *
  * Revision 1.94  2004/10/04 12:18:08  nigelhorne
  * Better warning message about PGP attachments not being scanned
  *
@@ -279,7 +282,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.94 2004/10/04 12:18:08 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.95 2004/10/05 10:58:00 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -374,6 +377,29 @@ static	struct	mime_map {
 	{	"video",		VIDEO		},
 	{	NULL,			TEXT		}
 };
+
+#define	USE_TABLE	/* table driven base64 decoder */
+
+#ifdef	USE_TABLE
+static unsigned char base64Table[256] = {
+	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+	255,255,255,255,255,255,255,255,255,255,255,62,255,255,255,63,
+	52,53,54,55,56,57,58,59,60,61,255,255,255,0,255,255,
+	255,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,
+	15,16,17,18,19,20,21,22,23,24,25,255,255,255,255,255,
+	255,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,
+	41,42,43,44,45,46,47,48,49,50,51,255,255,255,255,255,
+	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255
+};
+#endif
 
 message *
 messageCreate(void)
@@ -1026,7 +1052,8 @@ messageAddStr(message *m, const char *data)
 		}
 		/* cli_chomp(m->body_last->t_text); */
 
-		messageIsEncoding(m);
+		if(repeat == NULL)
+			messageIsEncoding(m);
 	} else
 		m->body_last->t_line = NULL;
 
@@ -1083,9 +1110,6 @@ messageIsEncoding(message *m)
 	else if(/*(m->bounce == NULL) &&*/
 		(cli_filetype(line, strlen(line)) == CL_TYPE_MAIL))
 			m->bounce = m->body_last;
-	else if((m->binhex == NULL) &&
-		(strncasecmp(line, binhex, sizeof(binhex) - 1) == 0))
-			m->binhex = m->body_last;
 	else if((m->uuencode == NULL) &&
 		((strncasecmp(line, "begin ", 6) == 0) &&
 		(isdigit(line[6])) &&
@@ -1093,6 +1117,9 @@ messageIsEncoding(message *m)
 		(isdigit(line[8])) &&
 		(line[9] == ' ')))
 			m->uuencode = m->body_last;
+	else if((m->binhex == NULL) &&
+		(strncasecmp(line, binhex, sizeof(binhex) - 1) == 0))
+			m->binhex = m->body_last;
 	else if((m->yenc == NULL) && (strncmp(line, "=ybegin line=", 13) == 0))
 		m->yenc = m->body_last;
 }
@@ -2254,23 +2281,37 @@ hex(char c)
 	return '=';
 }
 
+#ifdef	USE_TABLE
+static unsigned char
+base64(char c)
+{
+	const unsigned char ret = base64Table[c];
+
+	if(ret == 255) {
+		cli_dbgmsg("Illegal character <%c> in base64 encoding\n", c);
+		return 63;
+	}
+	return ret;
+}
+#else
 static unsigned char
 base64(char c)
 {
 	if(isupper(c))
 		return c - 'A';
-	if(islower(c))
-		return c - 'a' + 26;
 	if(isdigit(c))
 		return c - '0' + 52;
 	if(c == '+')
 		return 62;
+	if(islower(c))	/* call last, most base64 is upper case */
+		return c - 'a' + 26;
 
 	if(c != '/')
 		cli_dbgmsg("Illegal character <%c> in base64 encoding\n", c);
 
 	return 63;
 }
+#endif
 
 static unsigned char
 uudecode(char c)

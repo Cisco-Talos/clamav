@@ -1,3 +1,7 @@
+Tue Oct  5 11:59:09 BST 2004 (njh)
+----------------------------------
+  * libclamav/message.c:	Faster base64 decoding
+
 Mon Oct  4 14:48:16 BST 2004 (njh)
 ----------------------------------
   * libclamav/untar.c:	Handle GNU tar files
