@@ -1,3 +1,7 @@
+Wed Nov 17 17:35:26 GMT 2004 (njh)
+----------------------------------
+  * libclamav/message.c:	Scan some more bounce messages
+
 Tue Nov 16 18:24:06 CET 2004 (tk)
 ---------------------------------
   * libclamav/filetypes.c: add new mail detection rule

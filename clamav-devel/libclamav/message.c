@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.116  2004/11/17 17:32:15  nigelhorne
+ * Find more bounce messages
+ *
  * Revision 1.115  2004/11/12 22:21:57  nigelhorne
  * Binxhex detection speeded up
  *
@@ -342,7 +345,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.115 2004/11/12 22:21:57 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.116 2004/11/17 17:32:15 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1030,6 +1033,9 @@ messageSetEncoding(message *m, const char *enctype)
 
 		if(e->string == NULL) {
 			/*
+			 * The stated encoding type is illegal, so we
+			 * use a best guess of what it should be.
+			 *
 			 * 50% is arbitary. For example 7bi will match as
 			 * 66% certain to be 7bit
 			 */
@@ -1214,7 +1220,7 @@ messageIsEncoding(message *m)
 	   (strncasecmp(line, encoding, sizeof(encoding) - 1) == 0) &&
 	   (strstr(line, "7bit") == NULL))
 		m->encoding = m->body_last;
-	else if(/*(m->bounce == NULL) &&*/
+	else if((m->bounce == NULL) &&
 		(cli_filetype(line, strlen(line)) == CL_TYPE_MAIL))
 			m->bounce = m->body_last;
 	else if((m->uuencode == NULL) &&
