@@ -52,7 +52,7 @@ AC_CHECK_FUNCS(poll setsid memcpy snprintf vsnprintf strerror_r strlcpy strlcat 
 AC_FUNC_MMAP
 AC_FUNC_FSEEKO
 
-dnl Check for broken snprintf (code from Phil Oleson <oz*nixil.net>)
+dnl Check for broken snprintf (code by Phil Oleson <oz*nixil.net>)
 if test "x$ac_cv_func_snprintf" = "xyes" ; then
         AC_MSG_CHECKING([whether snprintf correctly terminates long strings])
         AC_TRY_RUN(
@@ -76,7 +76,7 @@ AC_CHECK_HEADER(zlib.h,[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lz"; AC_DEFINE(HAVE_ZLI
 
 want_bzip2="yes"
 AC_ARG_ENABLE(bzip2,
-[  --disable-bzip2	  Disable bzip2 support.],
+[  --disable-bzip2	  disable bzip2 support],
 want_bzip2="no",)
 
 if test "$want_bzip2" = "yes"
@@ -87,7 +87,7 @@ fi
 
 want_dns="yes"
 AC_ARG_ENABLE(dns,
-[  --disable-dns	  Disable support for database verification with DNS],
+[  --disable-dns	          disable support for database verification through DNS],
 want_dns="no",)
 
 if test "$want_dns" = "yes"
@@ -98,18 +98,18 @@ fi
 
 want_clamuko="yes"
 AC_ARG_ENABLE(clamuko,
-[  --disable-clamuko	  Disable clamuko support (Linux and FreeBSD only)],
+[  --disable-clamuko	  disable clamuko support (Linux and FreeBSD only)],
 want_clamuko="no",)
 
 AC_FUNC_SETPGRP
 
 AC_ARG_ENABLE(milter,
-[  --enable-milter	  Build clamav-milter],
+[  --enable-milter	  build clamav-milter],
 have_milter=$enableval,have_milter="no")
 
 want_dsig="yes"
 AC_ARG_ENABLE(dsig,
-[  --disable-dsig	  Disable digital signature support.],
+[  --disable-dsig	  disable support for digital signatures],
 want_dsig="no",)
 
 if test "$want_dsig" = "yes"
@@ -119,7 +119,7 @@ fi
 
 dnl libcurl
 AC_ARG_WITH(libcurl,
-[  --with-libcurl	    Support URLs downloading with libcurl (default=auto)],
+[  --with-libcurl	  support URLs downloading with libcurl (default=auto)],
 [ case "$withval" in
   yes|no) lcurl="$withval" ;;
   *)      AC_MSG_ERROR([--with-libcurl does not take an argument]) ;;
@@ -140,32 +140,27 @@ then
 fi
 
 AC_ARG_ENABLE(pthreads,
-[  --disable-pthreads      Disable POSIX threads support],
+[  --disable-pthreads      disable POSIX threads support],
 have_pthreads=no, )
 
 AC_ARG_ENABLE(cr,
-[  --disable-cr      Don't link with C reentrant library (BSD) ],
+[  --disable-cr		  don't link with C reentrant library (BSD) ],
 disable_cr=yes,)
 
-test_urandom=yes
-AC_ARG_ENABLE(urandom,
-[  --disable-urandom       Disable test for /dev/urandom],
-test_urandom=no,)
-
 AC_ARG_ENABLE(id-check,
-[  --enable-id-check	  Use id utility instead of /etc/passwd parsing],
+[  --enable-id-check	  use id utility instead of /etc/passwd parsing],
 use_id="yes", use_id="no")
 
 AC_ARG_ENABLE(yp-check,
-[  --enable-yp-check	  Use ypmatch utility instead of /etc/passwd parsing],
+[  --enable-yp-check	  use ypmatch utility instead of /etc/passwd parsing],
 use_yp="yes", use_yp="no")
 
 AC_ARG_WITH(user, 
-[  --with-user=uid	  name of the clamav user (default=clamav).],
+[  --with-user=uid	  name of the clamav user (default=clamav)],
 clamav_user="$withval", clamav_user="clamav")
 
 AC_ARG_WITH(group, 
-[  --with-group=gid	  name of the clamav group (default=clamav).],
+[  --with-group=gid	  name of the clamav group (default=clamav)],
 clamav_group="$withval", clamav_group="clamav")
 
 AC_DEFINE_UNQUOTED(CLAMAVUSER,"$clamav_user",[name of the clamav user])
@@ -173,27 +168,27 @@ AC_DEFINE_UNQUOTED(CLAMAVGROUP,"$clamav_group",[name of the clamav group])
 
 test_clamav=yes
 AC_ARG_ENABLE(clamav,
-[  --disable-clamav	  Disable test for clamav user/group],
+[  --disable-clamav	  disable test for clamav user/group],
 test_clamav=no,)
 
 AC_ARG_ENABLE(debug,
-[  --enable-debug	  Enable debug messages.],
+[  --enable-debug	  enable debug code],
 AC_DEFINE(CL_DEBUG,1,[enable debugging]),)
 
 AC_ARG_ENABLE(bigstack,
-[  --enable-bigstack	  Increase thread stack size.],
+[  --enable-bigstack	  increase thread stack size],
 AC_DEFINE(C_BIGSTACK,1,[Increase thread stack size.]),)
 
 AC_ARG_WITH(dbdir, 
-[  --with-dbdir=path	  Path to virus database directory.],
+[  --with-dbdir=path	  path to virus database directory],
 db_dir="$withval", db_dir="_default_")
 
 AC_ARG_WITH(db1, 
-[  --with-db1=name	  Name of the main database (main.cvd).],
+[  --with-db1=name	  name of the main database (default=main.cvd)],
 AC_DEFINE_UNQUOTED(DB1NAME,"$withval",[Name of the main database]), AC_DEFINE(DB1NAME, "main.cvd",[Name of the main database]))
 
 AC_ARG_WITH(db2, 
-[  --with-db2=name	  Name of the daily database (daily.cvd).],
+[  --with-db2=name	  name of the daily database (default=daily.cvd)],
 AC_DEFINE_UNQUOTED(DB2NAME,"$withval",[Name of the daily database]), AC_DEFINE(DB2NAME, "daily.cvd",[Name of the daily database]))
 
 dnl I had problems with $pkgdatadir thus these funny checks
@@ -457,7 +452,7 @@ fi
 dnl tcpwrappers support
 dnl rules from http://ma.ph-freiburg.de/tng/tng-technical/2002-01/msg00094.html
 AC_ARG_WITH(tcpwrappers,
-[  --with-tcpwrappers      Support hosts.allow / hosts.deny (default=auto)],
+[  --with-tcpwrappers      support hosts.allow / hosts.deny (default=auto)],
 [ case "$withval" in
   yes|no) tcpw="$withval" ;;
   *)      AC_MSG_ERROR([--with-tcpwrappers does not take an argument]) ;;
@@ -554,6 +549,11 @@ int h_errno;
 rc = gethostbyname_r(name, &h, buf, 10, &hp, &h_errno);
 ], ac_cv_gethostbyname_args=6)
 fi
+
+AC_ARG_ENABLE(gethostbyname_r,
+[  --disable-gethostbyname_r	  disable support for gethostbyname_r],
+ac_cv_gethostbyname_args="",)
+
 if test -z "$ac_cv_gethostbyname_args"; then
     AC_MSG_RESULT(no)
 else
