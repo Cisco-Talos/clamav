@@ -437,6 +437,96 @@ static void ole2_read_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 	return;
 }
 
+static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir, int32_t prop_index,
+				int (*handler)(int fd, ole2_header_t *hdr, property_t *prop, const char *dir),
+				int rec_level, int file_count)
+{
+	property_t prop_block[4];
+	int32_t index, current_block, count=0, i;
+	unsigned char *dirname;
+	current_block = hdr->prop_start;
+	
+	if ((prop_index < 0) || (rec_level > 100) || (file_count > 100000)) {
+		return;
+	}
+	
+	index = prop_index / 4;
+	for (i=0 ; i < index ; i++) {
+		current_block = ole2_get_next_block_number(fd, hdr, current_block);
+		if (current_block < 0) {
+			return;
+		}
+	}
+	index = prop_index % 4;
+	if (!ole2_read_block(fd, hdr, prop_block,
+			current_block)) {
+		return;
+	}	
+	if (prop_block[index].type <= 0) {
+		return;
+	}
+	prop_block[index].name_size = ole2_endian_convert_16(prop_block[index].name_size);
+	prop_block[index].prev = ole2_endian_convert_32(prop_block[index].prev);
+	prop_block[index].next = ole2_endian_convert_32(prop_block[index].next);
+	prop_block[index].child = ole2_endian_convert_32(prop_block[index].child);
+	prop_block[index].user_flags = ole2_endian_convert_32(prop_block[index].user_flags);
+	prop_block[index].create_lowdate = ole2_endian_convert_32(prop_block[index].create_lowdate);
+	prop_block[index].create_highdate = ole2_endian_convert_32(prop_block[index].create_highdate);
+	prop_block[index].mod_lowdate = ole2_endian_convert_32(prop_block[index].mod_lowdate);
+	prop_block[index].mod_highdate = ole2_endian_convert_32(prop_block[index].mod_highdate);
+	prop_block[index].start_block = ole2_endian_convert_32(prop_block[index].start_block);
+	prop_block[index].size = ole2_endian_convert_32(prop_block[index].size);
+	
+	print_ole2_property(&prop_block[index]);
+	switch (prop_block[index].type) {
+		case 5: /* Root Entry */
+			if (prop_index != 0) {
+				/* Can only have RootEntry as the top */
+				cli_dbgmsg("ERROR: illegal Root Entry\n");
+				return;
+			}
+			hdr->sbat_root_start = prop_block[index].start_block;
+			ole2_walk_property_tree(fd, hdr, dir,
+				prop_block[index].prev, handler, rec_level+1, file_count);
+			ole2_walk_property_tree(fd, hdr, dir,
+				prop_block[index].next, handler, rec_level+1, file_count);
+			ole2_walk_property_tree(fd, hdr, dir,
+				prop_block[index].child, handler, rec_level+1, file_count);
+			break;
+		case 2: /* File */
+			if (!handler(fd, hdr, &prop_block[index], dir)) {
+				cli_dbgmsg("ERROR: handler failed\n");
+				return;
+			}
+			ole2_walk_property_tree(fd, hdr, dir,
+				prop_block[index].prev, handler, rec_level, file_count+1);
+			ole2_walk_property_tree(fd, hdr, dir,
+				prop_block[index].next, handler, rec_level, file_count+1);
+			ole2_walk_property_tree(fd, hdr, dir,
+				prop_block[index].child, handler, rec_level, file_count+1);
+			break;
+		case 1: /* Directory */
+			dirname = (char *) cli_malloc(strlen(dir)+8);
+			if (!dirname)  {
+				return;
+			}
+			snprintf(dirname, strlen(dir)+8, "%s/%.6d", dir, prop_index);
+			mkdir(dirname, 0700);
+			cli_dbgmsg("OLE2 dir entry: %s\n",dirname);
+			ole2_walk_property_tree(fd, hdr, dirname,
+				prop_block[index].prev, handler, rec_level+1, file_count);
+			ole2_walk_property_tree(fd, hdr, dirname,
+				prop_block[index].next, handler, rec_level+1, file_count);
+			ole2_walk_property_tree(fd, hdr, dirname,
+				prop_block[index].child, handler, rec_level+1, file_count);
+			free(dirname);
+			break;
+		default:
+			cli_errmsg("ERROR: unknown OLE2 entry type: %d\n", prop_block[index].type);
+			break;
+	}
+	return;
+}
 /* Write file Handler - write the contents of the entry to a file */
 static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char *dir)
 {
@@ -627,7 +717,13 @@ int cli_ole2_extract(int fd, const char *dirname)
 
 	print_ole2_header(&hdr);
 
+	/* NOTE: Select only ONE of the following two methods */
+	
 	ole2_read_property_tree(fd, &hdr, dirname, handler_writefile);
-
+	
+	/* OR */
+	
+	/* ole2_walk_property_tree(fd, &hdr, dirname, 0, handler_writefile, 0, 0); */
+	
 	return 0;
 }
