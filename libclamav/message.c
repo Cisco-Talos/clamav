@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.12  2003/12/05 09:34:00  nigelhorne
+ * Use cli_tok instead of strtok - replaced now by cli_strtok
+ *
  * Revision 1.11  2003/11/17 07:57:12  nigelhorne
  * Prevent buffer overflow in broken uuencoded files
  *
@@ -30,14 +33,16 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.11 2003/11/17 07:57:12 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.12 2003/12/05 09:34:00 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
 #endif
 
 #ifdef CL_THREAD_SAFE
+#ifndef	_REENTRANT
 #define	_REENTRANT	/* for Solaris 2.8 */
+#endif
 #endif
 
 #if	C_DARWIN
@@ -60,12 +65,7 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.11 2003/11/17 07:57:12 nigelhorn
 #include "text.h"
 #include "strrcpy.h"
 #include "others.h"
-
-#if	defined(NO_STRTOK_R) || !defined(CL_THREAD_SAFE)
-#undef strtok_r
-#undef __strtok_r
-#define strtok_r(a,b,c)	strtok(a,b)
-#endif
+#include "str.h"
 
 /* required for AIX and Tru64 */
 #ifdef TRUE
@@ -276,7 +276,7 @@ messageAddArgument(message *m, const char *arg)
 
 	if(offset == m->numberOfArguments) {
 		m->numberOfArguments++;
-		m->mimeArguments = (char **)realloc(m->mimeArguments, m->numberOfArguments * sizeof(char *));
+		m->mimeArguments = (char **)cli_realloc(m->mimeArguments, m->numberOfArguments * sizeof(char *));
 	}
 
 	m->mimeArguments[offset] = strdup(arg);
@@ -571,7 +571,7 @@ messageToBlob(const message *m)
 {
 	blob *b;
 	const text *t_line = NULL;
-	const char *filename;
+	char *filename;
 
 	assert(m != NULL);
 
@@ -583,11 +583,6 @@ messageToBlob(const message *m)
 	 * Find the filename to decode
 	 */
 	if(messageGetEncoding(m) == UUENCODE) {
-		char *copy;
-#ifdef CL_THREAD_SAFE
-		char *strptr;
-#endif
-
 		t_line = uuencodeBegin(m);
 
 		if(t_line == NULL) {
@@ -596,22 +591,18 @@ messageToBlob(const message *m)
 			return NULL;
 		}
 
-		copy = strdup(t_line->t_text);
-		(void)strtok_r(copy, " ", &strptr);
-		(void)strtok_r(NULL, " ", &strptr);
-		filename = strtok_r(NULL, "\r\n", &strptr);
+		filename = cli_strtok(t_line->t_text, 2, " ");
 
 		if(filename == NULL) {
 			cli_dbgmsg("UUencoded attachment sent with no filename\n");
 			blobDestroy(b);
-			free(copy);
 			return NULL;
 		}
+		cli_chomp(filename);
 
 		cli_dbgmsg("Set uuencode filename to \"%s\"\n", filename);
 
 		blobSetFilename(b, filename);
-		free(copy);
 		t_line = t_line->t_next;
 	} else {
 		/*
@@ -630,9 +621,9 @@ messageToBlob(const message *m)
 
 		blobSetFilename(b, filename);
 
-		free((char *)filename);
 		t_line = messageGetBody(m);
 	}
+	free((char *)filename);
 
 	/*
 	 * t_line should now point to the first (encoded) line of the message
@@ -805,7 +796,7 @@ uuencodeBegin(const message *m)
 static unsigned char *
 decodeLine(const message *m, const char *line, unsigned char *buf, size_t buflen)
 {
-	int len;
+	size_t len;
 	bool softbreak;
 	char *p2;
 	char *copy;

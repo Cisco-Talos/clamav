@@ -1,3 +1,7 @@
+Fri Dec  5 09:34:44 GMT 2003 (njh)
+----------------------------------
+  * libclamav: Use cli_tok instead of strtok - replaced now by cli_strtok
+
 Fri Dec  5 02:31:24 CET 2003 (tk)
 ---------------------------------
   * clamav-milter: Makefile: link against libclamav (needed for cli_strtok())
