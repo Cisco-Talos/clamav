@@ -160,6 +160,8 @@ Changes
 0.65e	29/11/03 Fix problem of possible confused pointers if large
 		number of recipients given.
 		Fix by Michael Dankov <misha@btrc.ru>.
+0.65f	29/11/03 Added --quarantine-dir
+		Thanks to Michael Dankov <misha@btrc.ru>.
 
 BUG REPORTS
 

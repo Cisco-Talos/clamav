@@ -1,3 +1,8 @@
+Sun Nov 30 06:13:28 GMT 2003 (njh)
+----------------------------------
+  * clamav-milter: Added --quarantine-dir
+		Thanks to Michael Dankov <misha@btrc.ru>.
+
 Sat Nov 29 12:52:21 GMT 2003 (njh)
 ----------------------------------
   * clamav-milter: Fix problem of possible confused pointers if large number of
