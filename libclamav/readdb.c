@@ -229,7 +229,7 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig,
 {
 	struct cli_bm_patt *bm_new;
 	char *pt, *hexcpy, *start, *n;
-	int ret, virlen, parts = 0, i, len;
+	int ret, virlen, parts = 0, i, j, len, asterisk;
 	int mindist = 0, maxdist = 0, error = 0;
 
 
@@ -242,7 +242,7 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig,
 
 	len = strlen(hexsig);
 	for(i = 0; i < len; i++)
-	    if(hexsig[i] == '{')
+	    if(hexsig[i] == '{' || hexsig[i] == '*')
 		parts++;
 
 	if(parts)
@@ -252,18 +252,36 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig,
 	for(i = 1; i <= parts; i++) {
 
 	    if(i != parts) {
-		pt = strchr(start, '{');
+		for(j = 0; j < strlen(start); j++) {
+		    if(start[j] == '{') {
+			asterisk = 0;
+			pt = start + j;
+			break;
+		    }
+		    if(start[j] == '*') {
+			asterisk = 1;
+			pt = start + j;
+			break;
+		    }
+		}
 		*pt++ = 0;
 	    }
 
 	    if((ret = cli_ac_addsig(root, virname, start, root->ac_partsigs, parts, i, type, mindist, maxdist, offset, target))) {
-		cli_errmsg("cli_parse_add(): Problem adding signature.\n");
+		cli_errmsg("cli_parse_add(): Problem adding signature (1).\n");
 		error = 1;
 		break;
 	    }
 
 	    if(i == parts)
 		break;
+
+	    mindist = maxdist = 0;
+
+	    if(asterisk) {
+		start = pt;
+		continue;
+	    }
 
 	    if(!(start = strchr(pt, '}'))) {
 		error = 1;
@@ -276,7 +294,6 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig,
 		break;
 	    }
 
-	    mindist = maxdist = 0;
 	    if(!strchr(pt, '-')) {
 		if((mindist = maxdist = atoi(pt)) < 0) {
 		    error = 1;
@@ -325,7 +342,7 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig,
 	    }
 
 	    if((ret = cli_ac_addsig(root, virname, pt, root->ac_partsigs, parts, i, type, 0, 0, offset, target))) {
-		cli_errmsg("cli_parse_add(): Problem adding signature.\n");
+		cli_errmsg("cli_parse_add(): Problem adding signature (2).\n");
 		free(pt);
 		return ret;
 	    }
@@ -335,7 +352,7 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig,
 
     } else if(strpbrk(hexsig, "?(") || type) {
 	if((ret = cli_ac_addsig(root, virname, hexsig, 0, 0, 0, type, 0, 0, offset, target))) {
-	    cli_errmsg("cli_parse_add(): Problem adding signature\n");
+	    cli_errmsg("cli_parse_add(): Problem adding signature (3).\n");
 	    return ret;
 	}
 
@@ -377,7 +394,7 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig,
 	    root->maxpatlen = bm_new->length;
 
 	if((ret = cli_bm_addpatt(root, bm_new))) {
-	    cli_errmsg("cli_parse_add(): Problem adding signature\n");
+	    cli_errmsg("cli_parse_add(): Problem adding signature (4).\n");
 	    free(bm_new->pattern);
 	    free(bm_new->virname);
 	    free(bm_new);
