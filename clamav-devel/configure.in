@@ -43,6 +43,7 @@ AC_COMPILE_CHECK_SIZEOF(short)
 AC_COMPILE_CHECK_SIZEOF(int)
 AC_COMPILE_CHECK_SIZEOF(long)
 AC_CHECK_FUNCS(poll setsid memcpy snprintf vsnprintf strerror_r strlcpy strlcat inet_ntop)
+AC_FUNC_MMAP
 
 # Check for broken snprintf
 if test "x$ac_cv_func_snprintf" = "xyes" ; then
@@ -196,60 +197,6 @@ AC_DEFINE_UNQUOTED(CONFDIR,"$cfg_dir",[where to look for the config file])
 dnl Do not overwrite current config files
 AM_CONDITIONAL(INSTALL_CLAMAV_CONF, test ! -r "$cfg_dir/clamav.conf")
 AM_CONDITIONAL(INSTALL_FRESHCLAM_CONF, test ! -r "$cfg_dir/freshclam.conf")
-
-# tcpwrappers support
-# rules from http://ma.ph-freiburg.de/tng/tng-technical/2002-01/msg00094.html
-AC_ARG_WITH(tcpwrappers,
-[  --with-tcpwrappers      Support hosts.allow / hosts.deny (default=auto)],
-[ case "$withval" in
-  yes|no) tcpw="$withval" ;;
-  *)      AC_MSG_ERROR([--with-tcpwrappers does not take an argument]) ;;
-  esac],
-[ tcpw=auto ])
-
-if test $tcpw != no ; then
-        AC_CHECK_HEADERS(tcpd.h,[
-                AC_MSG_CHECKING([for TCP wrappers library])
-                save_LIBS="$LIBS"
-                LIBS="$LIBS -lwrap"
-                AC_TRY_LINK([
-#include <tcpd.h>
-int allow_severity = 0;
-int deny_severity  = 0;
-
-struct request_info *req;
-                ],[
-hosts_access(req)
-                ],[AC_MSG_RESULT([-lwrap])
-                have_wrappers=yes
-		LIBS="$save_LIBS"
-                CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lwrap"],[
-                dnl try with -lnsl
-                LIBS="$LIBS -lnsl"
-                AC_TRY_LINK([
-#include <tcpd.h>
-int allow_severity = 0;
-int deny_severity  = 0;
-
-struct request_info *req;
-                ],[
-hosts_access(req)
-                ],[AC_MSG_RESULT([-lwrap -lnsl])
-                have_wrappers=yes
-                CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lwrap"],[
-                AC_MSG_RESULT(no)
-                have_wrappers=no
-                LIBS=$save_LIBS])],[
-                have_wrappers=no])],[have_wrappers=no])
-
-        if test $have_wrappers = yes ; then
-                AC_DEFINE(WITH_TCPWRAP,1, [tcpwrappers support])
-        elif test $tcpw = yes ; then
-                AC_MSG_ERROR([could not find TCP wrappers])
-        else
-                AC_MSG_WARN([could not find TCP wrappers, support disabled])
-        fi
-fi
 
 # check for in_port_t definition
 AC_TRY_RUN([
@@ -431,6 +378,60 @@ fi
 if test "$have_milter" = "yes"
 then
     AC_PATH_PROG(SENDMAIL, sendmail, /usr/lib/sendmail, $PATH:/usr/lib:/usr/sbin:/etc:/usr/local/lib:/usr/local/sbin:/usr/bin:/usr/local/bin)
+fi
+
+# tcpwrappers support
+# rules from http://ma.ph-freiburg.de/tng/tng-technical/2002-01/msg00094.html
+AC_ARG_WITH(tcpwrappers,
+[  --with-tcpwrappers      Support hosts.allow / hosts.deny (default=auto)],
+[ case "$withval" in
+  yes|no) tcpw="$withval" ;;
+  *)      AC_MSG_ERROR([--with-tcpwrappers does not take an argument]) ;;
+  esac],
+[ tcpw=auto ])
+
+if test "$tcpw" != "no" && test "$have_milter" = "yes" ; then
+        AC_CHECK_HEADERS(tcpd.h,[
+                AC_MSG_CHECKING([for TCP wrappers library])
+                save_LIBS="$LIBS"
+                LIBS="$LIBS -lwrap $FRESHCLAM_LIBS"
+                AC_TRY_LINK([
+#include <tcpd.h>
+int allow_severity = 0;
+int deny_severity  = 0;
+
+struct request_info *req;
+                ],[
+hosts_access(req)
+                ],[AC_MSG_RESULT([-lwrap])
+                have_wrappers=yes
+		LIBS="$save_LIBS"
+                CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lwrap"],[
+                dnl try with -lnsl
+                LIBS="$LIBS -lnsl $FRESHCLAM_LIBS"
+                AC_TRY_LINK([
+#include <tcpd.h>
+int allow_severity = 0;
+int deny_severity  = 0;
+
+struct request_info *req;
+                ],[
+hosts_access(req)
+                ],[AC_MSG_RESULT([-lwrap -lnsl])
+                have_wrappers=yes
+                CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lwrap"],[
+                AC_MSG_RESULT(no)
+                have_wrappers=no
+                LIBS=$save_LIBS])],[
+                have_wrappers=no])],[have_wrappers=no])
+
+        if test $have_wrappers = yes ; then
+                AC_DEFINE(WITH_TCPWRAP,1, [tcpwrappers support])
+        elif test $tcpw = yes ; then
+                AC_MSG_ERROR([could not find TCP wrappers])
+        else
+                AC_MSG_WARN([could not find TCP wrappers, support disabled])
+        fi
 fi
 
 dnl Check for clamav in /etc/passwd
