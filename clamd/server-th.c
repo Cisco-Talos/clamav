@@ -325,6 +325,13 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	logg("OLE2 support disabled.\n");
     }
 
+    if(cfgopt(copt, "ScanHTML")) {
+	logg("HTML support enabled.\n");
+	options |= CL_HTML;
+    } else {
+	logg("HTML support disabled.\n");
+    }
+
     if((cpt = cfgopt(copt, "SelfCheck"))) {
 	selfchk = cpt->numarg;
     } else {

@@ -63,6 +63,7 @@ struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 	    {"TemporaryDirectory", OPT_STR},
 	    {"MaxFileSize", OPT_COMPSIZE},
 	    {"ScanMail", OPT_NOARG},
+	    {"ScanHTML", OPT_NOARG},
 	    {"ScanOLE2", OPT_NOARG},
 	    {"ScanArchive", OPT_NOARG},
 	    {"ScanRAR", OPT_NOARG},

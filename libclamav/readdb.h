@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,21 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __MATCHER_H
-#define __MATCHER_H
+#ifndef __READDB_H
+#define __READDB_H
 
-#include "clamav.h"
-
-struct nodelist {
-    struct cl_node *node;
-    struct nodelist *next;
-};
-
-int cli_addpatt(struct cl_node *root, struct cli_patt *pattern);
-struct nodelist *cli_bfsadd(struct nodelist *bfs, struct cl_node *n);
-void cli_failtrans(struct cl_node *root);
-void cli_fasttrie(struct cl_node *n, struct cl_node *root);
-int cli_findpos(const char *buffer, int offset, int length, const struct cli_patt *pattern);
-int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *partcnt, int typerec);
+int cli_parse_add(struct cl_node *root, char *virname, const char *hexsig, int type);
 
 #endif

@@ -35,6 +35,7 @@
 #include "matcher.h"
 #include "unrarlib.h"
 #include "defaults.h"
+#include "filetypes.h"
 
 int cli_addpatt(struct cl_node *root, struct cli_patt *pattern)
 {
@@ -161,6 +162,14 @@ static int cli_maketrans(struct cl_node *root)
 
 int cl_buildtrie(struct cl_node *root)
 {
+	int ret;
+
+    if(!root)
+	return CL_EMALFDB;
+
+    if((ret = cli_addtypesigs(root)))
+	return ret;
+
     return cli_maketrans(root);
 }
 
@@ -219,11 +228,11 @@ int inline cli_findpos(const char *buffer, int offset, int length, const struct 
     return 1;
 }
 
-int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *partcnt)
+int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *partcnt, int typerec)
 {
 	struct cl_node *current;
 	struct cli_patt *pt;
-	int position;
+	int position, type = CL_CLEAN;
         unsigned int i;
 
 
@@ -246,15 +255,31 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 		    if(pt->sigid) { /* it's a partial signature */
 			if(partcnt[pt->sigid] + 1 == pt->partno) {
 			    if(++partcnt[pt->sigid] == pt->parts) { /* the last one */
-				if(virname)
-				    *virname = pt->virname;
-				return CL_VIRUS;
+				if(pt->type) {
+				    if(typerec) {
+					cli_dbgmsg("Matched signature for file type: %s\n", pt->virname);
+					type = pt->type;
+				    }
+				} else {
+				    if(virname)
+					*virname = pt->virname;
+
+				    return CL_VIRUS;
+				}
 			    }
 			}
 		    } else { /* old type signature */
-			if(virname)
-			    *virname = pt->virname;
-			return CL_VIRUS;
+			if(pt->type) {
+			    if(typerec) {
+				cli_dbgmsg("Matched signature for file type: %s\n", pt->virname);
+				type = pt->type;
+			    }
+			} else {
+			    if(virname)
+				*virname = pt->virname;
+
+			    return CL_VIRUS;
+			}
 		    }
 		}
 
@@ -265,7 +290,7 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 	}
     }
 
-    return CL_CLEAN;
+    return typerec ? type : CL_CLEAN;
 }
 
 int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root)
@@ -273,12 +298,13 @@ int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, c
 {
 	int ret, *partcnt;
 
+
     if((partcnt = (int *) cli_calloc(root->partsigs + 1, sizeof(int))) == NULL) {
 	cli_dbgmsg("cli_scanbuff(): unable to cli_calloc(%d, %d)\n", root->partsigs + 1, sizeof(int));
 	return CL_EMEM;
     }
 
-    ret = cli_scanbuff(buffer, length, virname, root, partcnt);
+    ret = cli_scanbuff(buffer, length, virname, root, partcnt, 0);
 
     free(partcnt);
     return ret;

@@ -1,5 +1,6 @@
 /*
  *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  With enhancements from Thomas Lamy <Thomas.Lamy@in-online.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,21 +17,31 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __MATCHER_H
-#define __MATCHER_H
+#ifndef __FILETYPES_H
+#define __FILETYPES_H
 
-#include "clamav.h"
+#define MAGIC_BUFFER_SIZE 26
+#define CL_TYPENO 500
 
-struct nodelist {
-    struct cl_node *node;
-    struct nodelist *next;
-};
+typedef enum {
+    CL_UNKNOWN_TYPE = CL_TYPENO,
+    CL_DOSEXE,
+    CL_DATAFILE,
+    CL_MAILFILE,
+    CL_GZFILE,
+    CL_ZIPFILE,
+    CL_BZFILE,
+    CL_RARFILE,
+    CL_MSCFILE,
+    CL_OLE2FILE,
+    CL_MSCABFILE,
 
-int cli_addpatt(struct cl_node *root, struct cli_patt *pattern);
-struct nodelist *cli_bfsadd(struct nodelist *bfs, struct cl_node *n);
-void cli_failtrans(struct cl_node *root);
-void cli_fasttrie(struct cl_node *n, struct cl_node *root);
-int cli_findpos(const char *buffer, int offset, int length, const struct cli_patt *pattern);
-int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *partcnt, int typerec);
+    /* file types recognized on-the-fly: bigger numbers have bigger priority */
+    CL_HTMLFILE
+
+} cli_file_t;
+
+cli_file_t cli_filetype(const char *buf, size_t buflen);
+int cli_addtypesigs(struct cl_node *root);
 
 #endif

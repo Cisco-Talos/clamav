@@ -220,6 +220,7 @@ void help(void)
     mprintf("    --mbox                -m             Treat stdin as a mailbox\n");
     mprintf("\n");
     mprintf("    --no-ole2                            Disable OLE2 support\n");
+    mprintf("    --no-html                            Disable HTML support\n");
     mprintf("    --no-archive                         Disable libclamav archive support\n");
     mprintf("    --block-encrypted                    Block encrypted archives.\n");
     mprintf("    --max-space=#n                       Extract first #n kilobytes only\n");
