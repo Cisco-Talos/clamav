@@ -1,3 +1,8 @@
+Fri Nov 19 11:34:56 GMT 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Scan email footers (portions after the last MIME
+				boundary)
+
 Thu Nov 18 20:28:13 CET 2004 (tk)
 ---------------------------------
   * libclamav: add support for Mac's HQX file format (patch by Nigel)
