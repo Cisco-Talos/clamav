@@ -1,3 +1,7 @@
+Sun Sep  5 01:43:31 CEST 2004 (tk)
+----------------------------------
+  * libclamav/cvd.c: display warning if engine is outdated
+
 Sat Sep  4 23:27:12 CEST 2004 (tk)
 ----------------------------------
   * libclamav/clamav.h: define set of recommended scan options (CL_STDOPT)
