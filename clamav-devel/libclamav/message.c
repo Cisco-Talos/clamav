@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.127  2004/11/30 12:03:57  nigelhorne
+ * Handle unbalanced quote characters in headers better
+ *
  * Revision 1.126  2004/11/28 22:06:39  nigelhorne
  * Tidy space only headers code
  *
@@ -375,7 +378,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.126 2004/11/28 22:06:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.127 2004/11/30 12:03:57 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -834,6 +837,9 @@ messageAddArguments(message *m, const char *s)
 
 		cptr = string++;
 
+		if(strlen(key) == 0)
+			continue;
+
 		if(*cptr == '"') {
 			char *ptr;
 
@@ -855,14 +861,11 @@ messageAddArguments(message *m, const char *s)
 
 			string = strchr(cptr, '"');
 
-			if((string == NULL) || (strlen(key) == 0)) {
-				if(usefulArg(key))
-					cli_warnmsg("Can't parse header (1) \"%s\" - report to bugs@clamav.net\n", s);
-				free((char *)key);
-				return;
-			}
-
-			string++;
+			if(string == NULL) {
+				cli_dbgmsg("Unbalanced quote character in \"%s\"\n", s);
+				string = "";
+			} else
+				string++;
 
 			if(!usefulArg(key)) {
 				free((char *)key);
@@ -884,7 +887,7 @@ messageAddArguments(message *m, const char *s)
 				 * TODO: the file should still be saved and
 				 * virus checked
 				 */
-				cli_warnmsg("Can't parse header (2) \"%s\"\n", s);
+				cli_dbgmsg("Can't parse header\"%s\" - report to bugs@clamav.net\n", s);
 				if(data)
 					free(data);
 				free((char *)key);
