@@ -39,10 +39,6 @@
 #include <target.h>
 #include <clamav.h>
 
-#ifdef C_LINUX	/* njh@bandsman.co.uk */
-#include <sys/sendfile.h>
-#endif
-
 #include "shared.h"
 #include "others.h"
 #include "defaults.h"
@@ -375,14 +371,8 @@ int writeaccess(const char *path, const char *username)
 
 int filecopy(const char *src, const char *dest)
 {
-#ifdef C_LINUX
-	struct stat statb;
-	int s, d;
-	off_t offset;
-#else
 	char buffer[FILEBUFF];
 	int s, d, bytes;
-#endif
 
     if((s = open(src, O_RDONLY)) == -1)
 	return -1;
@@ -392,27 +382,8 @@ int filecopy(const char *src, const char *dest)
 	return -1;
     }
 
-#ifdef C_LINUX
-    	/* njh@bandsman.co.uk: sendfile is much quicker */
-	if(fstat(s, &statb) < 0) {
-		perror(src);
-		close(s);
-		close(d);
-		unlink(dest);
-		return -1;
-	}
-	offset = 0L;
-	if(sendfile(d, s, &offset, statb.st_size) < 0) {
-		perror(dest);
-		close(s);
-		close(d);
-		unlink(dest);
-		return -1;
-	}
-#else
     while((bytes = read(s, buffer, FILEBUFF)) > 0)
 	write(d, buffer, bytes);
-#endif
 
     close(s);
 
