@@ -20,7 +20,7 @@
 #ifndef __FILETYPES_H
 #define __FILETYPES_H
 
-#define MAGIC_BUFFER_SIZE 262
+#define MAGIC_BUFFER_SIZE 50
 #define CL_TYPENO 500
 
 typedef enum {
@@ -28,7 +28,8 @@ typedef enum {
     CL_TYPE_UNKNOWN_DATA,
     CL_TYPE_MSEXE,
     CL_TYPE_DATA,
-    CL_TYPE_TAR,
+    CL_TYPE_POSIX_TAR,
+    CL_TYPE_OLD_TAR,
     CL_TYPE_GZ,
     CL_TYPE_ZIP,
     CL_TYPE_BZ,
@@ -49,6 +50,7 @@ typedef enum {
 } cli_file_t;
 
 cli_file_t cli_filetype(const char *buf, size_t buflen);
+cli_file_t cli_filetype2(int desc);
 int cli_addtypesigs(struct cl_node *root);
 
 #endif

@@ -61,7 +61,6 @@ static const struct cli_magic_s cli_magic[] = {
     {0,	    "SZDD",			4,  "compress.exe'd",	CL_TYPE_MSSZDD},
     {0,	    "MSCF",			4,  "MS CAB",		CL_TYPE_MSCAB},
     {0,	    "ITSF",			4,  "MS CHM",           CL_TYPE_MSCHM},
-    {257,   "ustar",			5,  "POSIX tar",	CL_TYPE_TAR},
     {0,     "#@~^",			4,  "SCRENC",		CL_TYPE_SCRENC},
     {0,     "(This file must be converted with BinHex 4.0)",
 				       45, "BinHex",		CL_TYPE_BINHEX},
@@ -195,6 +194,48 @@ cli_file_t cli_filetype(const char *buf, size_t buflen)
 	}
 
     return ascii ? CL_TYPE_UNKNOWN_TEXT : CL_TYPE_UNKNOWN_DATA;
+}
+
+int is_tar(unsigned char *buf, int nbytes);
+
+cli_file_t cli_filetype2(int desc)
+{
+	char smallbuff[MAGIC_BUFFER_SIZE + 1];
+	unsigned char *bigbuff;
+	int bread;
+	cli_file_t ret = CL_TYPE_UNKNOWN_DATA;
+
+
+    memset(smallbuff, 0, sizeof(smallbuff));
+    if((bread = read(desc, smallbuff, MAGIC_BUFFER_SIZE)) > 0)
+	ret = cli_filetype(smallbuff, bread);
+
+    if(ret == CL_TYPE_UNKNOWN_DATA || ret == CL_TYPE_UNKNOWN_TEXT) {
+
+	if(!(bigbuff = (unsigned char *) cli_calloc(16384 + 1, sizeof(unsigned char))))
+	    return ret;
+
+	lseek(desc, 0, SEEK_SET);
+	if((bread = read(desc, bigbuff, 16384)) > 0) {
+
+	    bigbuff[bread] = 0;
+
+	    switch(is_tar(bigbuff, bread)) {
+		case 1:
+		    ret = CL_TYPE_OLD_TAR;
+		    cli_dbgmsg("Recognized old fashioned tar file\n");
+		    break;
+		case 2:
+		    ret = CL_TYPE_POSIX_TAR;
+		    cli_dbgmsg("Recognized POSIX tar file\n");
+		    break;
+	    }
+	}
+
+	free(bigbuff);
+    }
+
+    return ret;
 }
 
 int cli_addtypesigs(struct cl_node *root)

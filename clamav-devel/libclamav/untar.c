@@ -21,6 +21,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.25  2005/03/22 21:26:27  kojm
+ * add support for old fashioned tar archives
+ *
  * Revision 1.24  2005/03/20 18:34:18  nigelhorne
  * Minor tidy
  *
@@ -94,7 +97,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.24 2005/03/20 18:34:18 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.25 2005/03/22 21:26:27 kojm Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -126,7 +129,7 @@ octal(const char *str)
 }
 
 int
-cli_untar(const char *dir, int desc)
+cli_untar(const char *dir, int desc, unsigned int posix)
 {
 	int size = 0;
 	int in_block = 0;
@@ -169,11 +172,13 @@ cli_untar(const char *dir, int desc)
 				break;
 
 			/* Notice assumption that BLOCKSIZE > 262 */
-			strncpy(magic, block+257, 5);
-			magic[5] = '\0';
-			if(strcmp(magic, "ustar") != 0) {
-				cli_dbgmsg("Incorrect magic string '%s' in tar header\n", magic);
-				return CL_EFORMAT;
+			if(posix) {
+				strncpy(magic, block+257, 5);
+				magic[5] = '\0';
+				if(strcmp(magic, "ustar") != 0) {
+					cli_dbgmsg("Incorrect magic string '%s' in tar header\n", magic);
+					return CL_EFORMAT;
+				}
 			}
 
 			type = block[156];
