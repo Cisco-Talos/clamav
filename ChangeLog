@@ -1,3 +1,8 @@
+Wed May 19 11:02:53 BST 2004 (njh)
+---------------------------------
+  * libclamav/message.c:	Assume attachments which don't declare how
+  	they've been encoded are base64
+
 Wed May 19 09:10:12 BST 2004 (trog)
 -----------------------------------
   * libclamav/ole2_extract.c: use mmap() when available.
