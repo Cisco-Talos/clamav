@@ -123,6 +123,9 @@ Changes
 0.60h	28/9/03	Support MaxThreads option in config file,
 		overriden by --max-children.
 		Patch from "Richard G. Roberto" <rgr@dedlegend.com>
+0.60i	30/9/03	clamfi_envfrom() now correctly returns SMFIS_TEMPFAIL,
+		in a few circumstances it used to return EX_TEMPFAIL
+		Patch from Matt Sullivan <matt@sullivan.gen.nz>
 
 BUG REPORTS
 
