@@ -1,3 +1,7 @@
+Wed Nov  5 15:43:15 GMT 2003 (njh)
+----------------------------------
+  * clamav-milter: tidied up the calls to pthread_cond_timedwait
+
 Wed Nov  5 11:35:22 CET 2003 (tk)
 ---------------------------------
   * clamscan.1: fixed a typo (thanks to Damien Curtain)

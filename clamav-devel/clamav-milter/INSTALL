@@ -141,6 +141,8 @@ Changes
 0.60n	22/10/03 Call pthread_cont_broadcast more often
 0.60o	31/10/03 Optionally accept all mails if scanning procedure
 		fails (Joe Talbott <josepht@cstone.net>)
+0.60p	5/11/03	Only call mutex_unlock when max_children is set
+		Tidy up the call to pthread_cond_timedwait
 
 BUG REPORTS
 

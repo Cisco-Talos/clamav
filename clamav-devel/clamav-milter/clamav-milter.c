@@ -146,9 +146,14 @@
  *	0.60n	22/10/03 Call pthread_cont_broadcast more often
  *	0.60o	31/10/03 Optionally accept all mails if scanning procedure
  *			fails (Joe Talbott <josepht@cstone.net>)
+ *	0.60p	5/11/03	Only call mutex_unlock when max_children is set
+ *			Tidy up the call to pthread_cond_timedwait
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.17  2003/11/05 15:41:11  nigelhorne
+ * Tidyup pthread_cond_timewait call
+ *
  * Revision 1.16  2003/10/31 13:33:40  nigelhorne
  * Added dont scan on error flag
  *
@@ -183,9 +188,9 @@
  * Added -f flag use MaxThreads if --max-children not set
  *
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.16 2003/10/31 13:33:40 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.17 2003/11/05 15:41:11 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.60o"
+#define	CM_VERSION	"0.60p"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -825,7 +830,12 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 		pthread_mutex_lock(&n_children_mutex);
 
-		while((n_children >= max_children) && (rc != ETIMEDOUT)) {
+		/*
+		 * Not a while since sendmail doesn't like it if we
+		 * take too long replying. Effectively this means that
+		 * max_children is more of a hint than a rule
+		 */
+		if(n_children >= max_children) {
 			struct timeval now;
 			struct timespec timeout;
 			struct timezone tz;
@@ -848,41 +858,9 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 				syslog(LOG_NOTICE,
 					"hit max-children limit (%u >= %u): waiting for some to exit",
 					n_children, max_children);
-			rc = pthread_cond_timedwait(&n_children_cond, &n_children_mutex, &timeout);
-#ifdef	CL_DEBUG
-			if(rc != 0) {
-#else
-			if((rc != 0) && use_syslog) {
-#endif
-				char message[64];
-
-#ifdef TARGET_OS_SOLARIS	/* no strerror_r */
-				snprintf(message, sizeof(message), "pthread_cond_timedwait: %s", strerror(rc));
-#else
-				if(strerror_r(rc, buf, sizeof(buf)) == NULL)
-					switch(rc) {
-						case EINTR:
-							strcpy(buf, "Interrupted system call");
-							break;
-						case ETIMEDOUT:
-							strcpy(buf, "Timedout");
-							break;
-						default:
-							strcpy(buf, "Unknown error");
-							break;
-						}
-				snprintf(message, sizeof(message), "pthread_cond_timedwait: (rc = %d) %s", rc, buf);
-#endif
-				if(use_syslog) {
-					if(rc == ETIMEDOUT)
-						syslog(LOG_NOTICE, message);
-					else
-						syslog(LOG_ERR, message);
-				}
-#ifdef	CL_DEBUG
-				puts(message);
-#endif
-			}
+			do
+				rc = pthread_cond_timedwait(&n_children_cond, &n_children_mutex, &timeout);
+			while(rc != ETIMEDOUT);
 		}
 		n_children++;
 
@@ -1311,7 +1289,8 @@ clamfi_abort(SMFICTX *ctx)
 	 *
 	 * TODO: There *must* be a tidier way of doing this!
 	 */
-	(void)pthread_mutex_unlock(&n_children_mutex);
+	if(max_children > 0)
+		(void)pthread_mutex_unlock(&n_children_mutex);
 
 	clamfi_cleanup(ctx);
 
@@ -1402,8 +1381,7 @@ clamfi_cleanup(SMFICTX *ctx)
 #ifdef	CL_DEBUG
 		puts("pthread_cond_broadcast");
 #endif
-		if(pthread_cond_broadcast(&n_children_cond) < 0)
-			perror("pthread_cond_broadcast");
+		pthread_cond_broadcast(&n_children_cond);
 #ifdef	CL_DEBUG
 		printf("<n_children = %d\n", n_children);
 #endif
