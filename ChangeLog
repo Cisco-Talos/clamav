@@ -1,3 +1,8 @@
+Tue Nov  9 08:53:24 CET 2004 (tk)
+---------------------------------
+  * clamscan, clamd: increase value of maximal recursion limit (current: 8,
+		     was: 5)
+
 Mon Nov  8 20:37:41 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	Don't start the clamd watchdog when in localSocket mode

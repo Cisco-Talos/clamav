@@ -276,7 +276,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 		logg("^Archive: Recursion level limit protection disabled.\n");
 	    }
 	} else {
-	    limits.maxreclevel = 5;
+	    limits.maxreclevel = 8;
 	    logg("Archive: Recursion level limit set to %d.\n", limits.maxreclevel);
 	}
 
