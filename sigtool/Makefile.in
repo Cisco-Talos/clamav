@@ -85,6 +85,7 @@ target_triplet = @target@
 EXEEXT = @EXEEXT@
 OBJEXT = @OBJEXT@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+ADDITIONAL_LIBS = @ADDITIONAL_LIBS@
 AMTAR = @AMTAR@
 AS = @AS@
 AWK = @AWK@
@@ -134,7 +135,7 @@ sigtool_LDADD = $(top_builddir)/clamscan/others.o
 
 DEFS = @DEFS@
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
-LIBS = -L$(top_builddir)/libclamav -lclamav @FRESHCLAM_LIBS@
+LIBS = -L$(top_builddir)/libclamav -lclamav @FRESHCLAM_LIBS@ @ADDITIONAL_LIBS@
 subdir = sigtool
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/clamav-config.h

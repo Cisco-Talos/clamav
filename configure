@@ -7695,10 +7695,6 @@ LIBTOOL='$(SHELL) $(top_builddir)/libtool'
 
 
 
-
-
-
-
 cat >>confdefs.h <<\_ACEOF
 #define SCANBUFF 131072
 _ACEOF
@@ -7865,7 +7861,8 @@ fi
 
 
 
-for ac_header in stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h poll.h
+
+for ac_header in stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h poll.h regex.h
 do
 as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
 if eval "test \"\${$as_ac_Header+set}\" = set"; then
@@ -8699,6 +8696,8 @@ cat >>confdefs.h <<\_ACEOF
 #define HAVE_BZLIB_H 1
 _ACEOF
 
+else
+  echo "WARNING: Bzip2 support disabled"
 fi
 
 
@@ -9208,7 +9207,6 @@ fi
 
 
 
-
 # Check whether --enable-pthreads or --disable-pthreads was given.
 if test "${enable_pthreads+set}" = set; then
   enableval="$enable_pthreads"
@@ -9702,7 +9700,6 @@ fi
 rm -f core core.* *.core conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
 fi
 
-
 case "$target_os" in
 linux*)
 
@@ -9883,7 +9880,7 @@ cat >>confdefs.h <<\_ACEOF
 #define _REENTRANT 1
 _ACEOF
 
-	LIBS="$LIBS -lpthread"
+	ADDITIONAL_LIBS="$LIBS -lpthread"
      fi
 
 cat >>confdefs.h <<\_ACEOF
@@ -9923,12 +9920,12 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
     use_netinfo="yes"
-            ;;
+    ;;
 sco*)
         FRESHCLAM_LIBS="-lsocket"
     CLAMD_LIBS="-lsocket"
     CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsocket"
-        ;;
+    ;;
 hpux*)
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
@@ -9997,11 +9994,12 @@ cat >>confdefs.h <<\_ACEOF
 #define C_IRIX 1
 _ACEOF
 
-        ;;
+    ;;
 
 *)
     ;;
 esac
+
 
 
 
@@ -11497,6 +11495,7 @@ s,@CLAMD_LIBS@,$CLAMD_LIBS,;t t
 s,@CLAMAV_MILTER_LIBS@,$CLAMAV_MILTER_LIBS,;t t
 s,@FRESHCLAM_LIBS@,$FRESHCLAM_LIBS,;t t
 s,@TH_SAFE@,$TH_SAFE,;t t
+s,@ADDITIONAL_LIBS@,$ADDITIONAL_LIBS,;t t
 s,@BUILD_CLAMD_TRUE@,$BUILD_CLAMD_TRUE,;t t
 s,@BUILD_CLAMD_FALSE@,$BUILD_CLAMD_FALSE,;t t
 s,@HAVE_MILTER_TRUE@,$HAVE_MILTER_TRUE,;t t

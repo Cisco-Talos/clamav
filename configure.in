@@ -18,7 +18,6 @@ dnl   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 AC_INIT(clamscan/clamscan.c)
 AC_CREATE_TARGET_H(target.h)
 AM_INIT_AUTOMAKE(clamav, "devel-`date +%Y%m%d`")
-dnl AM_INIT_AUTOMAKE(clamav, `date +%Y%m%d`)
 AM_CONFIG_HEADER(clamav-config.h)
 
 LC_CURRENT=1
@@ -34,25 +33,11 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_LIBTOOL
 
-dnl Version numbers for libtool
-
-dnl LT_RELEASE=$CLAMAV_MAJOR_VERSION.$CLAMAV_MINOR_VERSION
-dnl LT_CURRENT=$CLAMAV_MINOR_VERSION
-dnl LT_REVISION=1
-dnl LT_AGE=2
-
-dnl AC_SUBST(LT_RELEASE)
-dnl AC_SUBST(LT_CURRENT)
-dnl AC_SUBST(LT_REVISION)
-dnl AC_SUBST(LT_AGE)
-
-dnl BUFFSIZE must be at least 16 kb !!!
-
 AC_DEFINE(SCANBUFF, 131072, [scan buffer size])
 AC_DEFINE(FILEBUFF, 8192,   [file i/o buffer size])
 
 AC_HEADER_STDC
-AC_CHECK_HEADERS(stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h poll.h)
+AC_CHECK_HEADERS(stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h poll.h regex.h)
 AC_TYPE_OFF_T
 AC_COMPILE_CHECK_SIZEOF(short)
 AC_COMPILE_CHECK_SIZEOF(int)
@@ -88,7 +73,7 @@ want_bzip2="no",)
 
 if test "$want_bzip2" = "yes"
 then
-    AC_CHECK_HEADER(bzlib.h,[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lbz2"; AC_DEFINE(HAVE_BZLIB_H,1,have bzip2)],)
+    AC_CHECK_HEADER(bzlib.h,[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lbz2"; AC_DEFINE(HAVE_BZLIB_H,1,have bzip2)],[echo "WARNING: Bzip2 support disabled"])
     AC_CHECK_LIB(bz2, bzReadOpen, AC_DEFINE(NOBZ2PREFIX,1,bzip funtions do not have bz2 prefix),)
 fi
 
@@ -118,9 +103,6 @@ fi
 
 AC_CHECK_HEADER(syslog.h,AC_DEFINE(USE_SYSLOG,1,[use syslog]),)
 
-dnl AC_CHECK_LIB(c, strtok_r,, AC_DEFINE(NO_STRTOK_R))
-dnl AC_CHECK_LIB(c, mkstemp, AC_DEFINE(HAVE_MKSTEMP),)
-
 AC_ARG_ENABLE(pthreads,
 [  --disable-pthreads      Disable POSIX threads support],
 have_pthreads=no, )
@@ -142,12 +124,10 @@ AC_ARG_ENABLE(yp-check,
 [  --enable-yp-check	  Use ypmatch utility instead of /etc/passwd parsing],
 use_yp="yes", use_yp="no")
 
-dnl clamav user
 AC_ARG_WITH(user, 
 [  --with-user=uid	  name of the clamav user (default=clamav).],
 clamav_user="$withval", clamav_user="clamav")
 
-dnl clamav group
 AC_ARG_WITH(group, 
 [  --with-group=gid	  name of the clamav group (default=clamav).],
 clamav_group="$withval", clamav_group="clamav")
@@ -168,22 +148,19 @@ AC_ARG_ENABLE(bigstack,
 [  --enable-bigstack	  Increase thread stack size.],
 AC_DEFINE(C_BIGSTACK,1,[Increase thread stack size.]),)
 
-dnl database directory
 AC_ARG_WITH(dbdir, 
 [  --with-dbdir=path	  Path to virus database directory.],
 db_dir="$withval", db_dir="_default_")
 
-dnl main.cvd
 AC_ARG_WITH(db1, 
 [  --with-db1=name	  Name of the main database (main.cvd).],
 AC_DEFINE_UNQUOTED(DB1NAME,"$withval",[Name of the main database]), AC_DEFINE(DB1NAME, "main.cvd",[Name of the main database]))
 
-dnl daily.cvd
 AC_ARG_WITH(db2, 
 [  --with-db2=name	  Name of the daily database (daily.cvd).],
 AC_DEFINE_UNQUOTED(DB2NAME,"$withval",[Name of the daily database]), AC_DEFINE(DB2NAME, "daily.cvd",[Name of the daily database]))
 
-dnl I had problems with $pkgdatadir, that's why I'm using these funny checks
+dnl I had problems with $pkgdatadir thus these funny checks
 if test "$db_dir" = "_default_"
 then
     if test "$prefix" = "NONE"
@@ -216,7 +193,7 @@ CFGDIR=$cfg_dir
 AC_SUBST(CFGDIR)
 AC_DEFINE_UNQUOTED(CONFDIR,"$cfg_dir",[where to look for the config file])
 
-dnl Do not overwrite the current config file
+dnl Do not overwrite current config files
 AM_CONDITIONAL(INSTALL_CLAMAV_CONF, test ! -r "$cfg_dir/clamav.conf")
 AM_CONDITIONAL(INSTALL_FRESHCLAM_CONF, test ! -r "$cfg_dir/freshclam.conf")
 
@@ -281,11 +258,6 @@ AC_TRY_RUN([
 int main(int argc, char **argv) { in_port_t pt; pt = 0; return pt; }
 ], AC_DEFINE(HAVE_IN_PORT_T,1,[in_port_t is defined]), AC_MSG_RESULT(in_port_t is not defined))
 
-dnl CLAMSCAN_LIBS=""
-dnl FRESHCLAM_LIBS=""
-dnl CLAMD_LIBS=""
-dnl TH_SAFE=""
-
 case "$target_os" in
 linux*)
     AC_DEFINE(C_LINUX,1,[target is linux])
@@ -303,7 +275,6 @@ linux*)
     fi
     ;;
 cygwin*)
-    dnl It probably won't work.
     AC_DEFINE(C_CYGWIN,1,[os is cygwin])
     if test "$test_clamav" = "yes"; then
 	if test ! -r /etc/passwd; then
@@ -379,7 +350,7 @@ netbsd*)
  	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
 	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
 	AC_DEFINE(_REENTRANT,1,[thread safe])
-	LIBS="$LIBS -lpthread"
+	ADDITIONAL_LIBS="$LIBS -lpthread"
      fi
     AC_DEFINE(C_BSD,1,[os is bsd flavor])
     ;;
@@ -397,15 +368,12 @@ darwin*)
     AC_DEFINE(C_BSD,1,[os is bsd flavor])
     AC_DEFINE(C_DARWIN,1,[os is darwin])
     use_netinfo="yes"
-    dnl have_pthreads="no"
-    dnl AC_MSG_RESULT(Darwin detected. Disabling thread support.)
     ;;
 sco*)
     dnl njh@bandsman.sco.uk: SCO Unix port
     FRESHCLAM_LIBS="-lsocket"
     CLAMD_LIBS="-lsocket"
     CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsocket"
-    dnl AC_DEFINE(NO_SNPRINTF)
     ;;
 hpux*)
     if test "$have_pthreads" = "yes"; then
@@ -439,7 +407,6 @@ irix*)
 	AC_DEFINE(_REENTRANT,1,[thread safe])
     fi
     AC_DEFINE(C_IRIX,1,[os is irix])
-    dnl AC_DEFINE(NO_SNPRINTF,1,no snprintf available)
     ;;
 
 *)
@@ -451,6 +418,7 @@ AC_SUBST(CLAMD_LIBS)
 AC_SUBST(CLAMAV_MILTER_LIBS)
 AC_SUBST(FRESHCLAM_LIBS)
 AC_SUBST(TH_SAFE)
+AC_SUBST(ADDITIONAL_LIBS)
 
 AM_CONDITIONAL(BUILD_CLAMD, test "$have_pthreads" = "yes")
 AM_CONDITIONAL(HAVE_MILTER, test "$have_milter" = "yes")

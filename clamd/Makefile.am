@@ -61,5 +61,5 @@ clamd_SOURCES = \
 endif
 
 DEFS = @DEFS@
-LIBS = -L$(top_builddir)/libclamav -lclamav @CLAMD_LIBS@
+LIBS = -L$(top_builddir)/libclamav -lclamav @CLAMD_LIBS@ @ADDITIONAL_LIBS@
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav

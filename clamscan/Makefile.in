@@ -86,6 +86,7 @@ target_triplet = @target@
 EXEEXT = @EXEEXT@
 OBJEXT = @OBJEXT@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+ADDITIONAL_LIBS = @ADDITIONAL_LIBS@
 AMTAR = @AMTAR@
 AS = @AS@
 AWK = @AWK@
@@ -140,7 +141,7 @@ clamscan_SOURCES = \
 
 
 DEFS = @DEFS@
-LIBS = -L$(top_builddir)/libclamav -lclamav
+LIBS = -L$(top_builddir)/libclamav -lclamav @ADDITIONAL_LIBS@
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 subdir = clamscan
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
