@@ -65,7 +65,7 @@ int downloadmanager(const struct optstruct *opt, const char *hostname)
     else if(ret == 0)
 	updated = 1;
 
-    /* if ipaddr[0] != 0 it will use ipaddr to connect to the web host */
+    /* if ipaddr[0] != 0 it will use it to connect to the web host */
     if((ret = downloaddb(DB2NAME, "daily.cvd", hostname, ipaddr, &signo, opt)) > 50)
 	return ret;
     else if(ret == 0)

@@ -1,3 +1,8 @@
+Wed Nov  5 01:52:03 CET 2003 (tk)
+---------------------------------
+  * libclamav: zziplib: few files converted to UNIX format (thanks to
+	       Ed Phillips)
+
 Tue Nov  4 13:37:21 CET 2003 (tk)
 ---------------------------------
   * clamd: yesterday's fix fixed (missing virno variable). Thanks to Nigel.
