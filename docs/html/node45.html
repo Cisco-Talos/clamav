@@ -27,30 +27,30 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html737"
+<A NAME="tex2html757"
   HREF="node46.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html733"
+<A NAME="tex2html753"
   HREF="node44.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html727"
+<A NAME="tex2html747"
   HREF="node44.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html735"
+<A NAME="tex2html755"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html738"
+<B> Next:</B> <A NAME="tex2html758"
   HREF="node46.html">Database reloading</A>
-<B> Up:</B> <A NAME="tex2html734"
+<B> Up:</B> <A NAME="tex2html754"
   HREF="node44.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html728"
+<B> Previous:</B> <A NAME="tex2html748"
   HREF="node44.html">LibClamAV</A>
- &nbsp <B>  <A NAME="tex2html736"
+ &nbsp <B>  <A NAME="tex2html756"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
@@ -80,8 +80,8 @@ General API</A>
     directory <I>dirname</I>. <I>cl_retdbdir()</I> returns a hardcoded
     database directory path. Initial internal database (Aho-Corasick tree,
     trie; see <A HREF="node47.html#engine">6.3</A>) will be saved under <I>root</I> and a number of
-    signatures loaded will be <B>added</B> <A NAME="tex2html45"
-  HREF="footnode.html#foot510"><SUP>7</SUP></A> to <I>virnum</I>. Pointer to the trie
+    signatures loaded will be <B>added</B> <A NAME="tex2html56"
+  HREF="footnode.html#foot537"><SUP>7</SUP></A> to <I>virnum</I>. Pointer to the trie
     must initially point to NULL. If you don't care about number of signatures
     pass NULL as a third argument. <I>cl_loaddb</I> functions return 0 on
     success and other value on failure.
@@ -147,6 +147,7 @@ General API</A>
 	    struct cl_limits limits;
 	    char *virname;
 
+	memset(&amp;limits, 0, sizeof(struct cl_limits));
 	/* maximal number of files in archive */;
 	limits.maxfiles = 1000
 	/* maximal archived file size == 10 MB */
@@ -177,35 +178,35 @@ General API</A>
 <P>
 <HR>
 <!--Navigation Panel-->
-<A NAME="tex2html737"
+<A NAME="tex2html757"
   HREF="node46.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html733"
+<A NAME="tex2html753"
   HREF="node44.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html727"
+<A NAME="tex2html747"
   HREF="node44.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html735"
+<A NAME="tex2html755"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html738"
+<B> Next:</B> <A NAME="tex2html758"
   HREF="node46.html">Database reloading</A>
-<B> Up:</B> <A NAME="tex2html734"
+<B> Up:</B> <A NAME="tex2html754"
   HREF="node44.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html728"
+<B> Previous:</B> <A NAME="tex2html748"
   HREF="node44.html">LibClamAV</A>
- &nbsp <B>  <A NAME="tex2html736"
+ &nbsp <B>  <A NAME="tex2html756"
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2003-11-11
+2004-02-11
 </ADDRESS>
 </BODY>
 </HTML>

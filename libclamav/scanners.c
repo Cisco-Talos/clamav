@@ -78,16 +78,17 @@ struct cl_magic_s {
 
 #define MAGIC_BUFFER_SIZE 14
 static const struct cl_magic_s cl_magic[] = {
-    {0,  "Rar!",            4, "RAR file",        CL_RARFILE},
-    {0,  "PK\003\004",      4, "ZIP file",        CL_ZIPFILE},
-    {0,  "\037\213",        2, "GZip file",       CL_GZFILE},
-    {0,  "BZh",             3, "BZip file",       CL_BZFILE},
-    {0,  "From ",           5, "MBox file",       CL_MAILFILE},
-    {0,  "Received: ",     10, "Raw mail",        CL_MAILFILE},
-    {0,  "Return-Path: ",  13, "Maildir file",    CL_MAILFILE},
-    {0,  "Return-path: ",  13, "Maildir file",    CL_MAILFILE},
-    {0,  "Delivered-To: ", 14, "Mail file",       CL_MAILFILE},
-    {0,  "X-UIDL: ",	    8, "Mail file",       CL_MAILFILE},
+    {0,  "Rar!",            4, "RAR",		    CL_RARFILE},
+    {0,  "PK\003\004",      4, "ZIP",		    CL_ZIPFILE},
+    {0,  "\037\213",        2, "GZip",		    CL_GZFILE},
+    {0,  "BZh",             3, "BZip",		    CL_BZFILE},
+    {0,  "From ",           5, "MBox",		    CL_MAILFILE},
+    {0,  "Received: ",     10, "Raw mail",	    CL_MAILFILE},
+    {0,  "Return-Path: ",  13, "Maildir",	    CL_MAILFILE},
+    {0,  "Return-path: ",  13, "Maildir",	    CL_MAILFILE},
+    {0,  "Delivered-To: ", 14, "Mail",		    CL_MAILFILE},
+    {0,  "X-UIDL: ",	    8, "Mail",		    CL_MAILFILE},
+    {0,  "For: ",           5, "Eserv mail",	    CL_MAILFILE},
     {0,  "\320\317\021\340\241\261\032\341",
 	                    8, "OLE2 container",  CL_OLE2FILE},
     {-1, NULL,              0, NULL,              CL_UNKNOWN_TYPE}

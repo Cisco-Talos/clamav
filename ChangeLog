@@ -1,3 +1,8 @@
+Wed Feb 11 18:00:13 CET 2004 (tk)
+---------------------------------
+  * libclamav: enabled autodetection of Eserv/2 mail files (thanks to
+	       Andrey Cherezov <andrey@cherezov.koenig.su>)
+
 Wed Feb 11 08:19:54 GMT 2004 (njh)
 ----------------------------------
   * libclamav: Use O_BINARY when saving attachments which is required for

@@ -7,7 +7,7 @@ $ref_files{$key} = "$dir".q|node16.html|;
 $noresave{$key} = "$nosave";
 
 $key = q/cite_acwww/;
-$ref_files{$key} = "$dir".q|node55.html|; 
+$ref_files{$key} = "$dir".q|node57.html|; 
 $noresave{$key} = "$nosave";
 
 $key = q/clamuko/;
@@ -15,7 +15,7 @@ $ref_files{$key} = "$dir".q|node17.html|;
 $noresave{$key} = "$nosave";
 
 $key = q/cite_clr/;
-$ref_files{$key} = "$dir".q|node55.html|; 
+$ref_files{$key} = "$dir".q|node57.html|; 
 $noresave{$key} = "$nosave";
 
 $key = q/samba-vscan/;

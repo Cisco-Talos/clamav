@@ -1,4 +1,4 @@
-This is TeX, Version 3.14159 (Web2C 7.3.7) (format=latex 2002.10.16)  11 NOV 2003 22:09
+This is TeX, Version 3.14159 (Web2C 7.3.7) (format=latex 2002.10.16)  11 FEB 2004 00:39
 **./images.tex
 (./images.tex
 LaTeX2e <2001/06/01>
@@ -113,7 +113,7 @@ File: dvipsnam.def 1999/02/16 v3.0i Driver-dependant file (DPC,SPQR)
 ))
 
 Package Fancyhdr Warning: fancyhdr's E option without twoside option is useless
- on input line 26.
+ on input line 27.
 
 (/usr/share/texmf/tex/latex/base/inputenc.sty
 Package: inputenc 2001/07/10 v0.99a Input encoding file 
@@ -123,23 +123,23 @@ Package: inputenc 2001/07/10 v0.99a Input encoding file
 (./images.aux)
 \openout1 = `images.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 139.
-LaTeX Font Info:    ... okay on input line 139.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 139.
-LaTeX Font Info:    ... okay on input line 139.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 139.
-LaTeX Font Info:    ... okay on input line 139.
-LaTeX Font Info:    Checking defaults for OMS/pzccm/m/n on input line 139.
-LaTeX Font Info:    Try loading font information for OMS+pzccm on input line 13
-9.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 140.
+LaTeX Font Info:    ... okay on input line 140.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 140.
+LaTeX Font Info:    ... okay on input line 140.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 140.
+LaTeX Font Info:    ... okay on input line 140.
+LaTeX Font Info:    Checking defaults for OMS/pzccm/m/n on input line 140.
+LaTeX Font Info:    Try loading font information for OMS+pzccm on input line 14
+0.
 (/usr/share/texmf/tex/latex/mathptm/omspzccm.fd
 File: omspzccm.fd 1998/07/01 Fontinst v1.800 font definitions for OMS/pzccm.
 )
-LaTeX Font Info:    ... okay on input line 139.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 139.
-LaTeX Font Info:    ... okay on input line 139.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 139.
-LaTeX Font Info:    ... okay on input line 139.
+LaTeX Font Info:    ... okay on input line 140.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 140.
+LaTeX Font Info:    ... okay on input line 140.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 140.
+LaTeX Font Info:    ... okay on input line 140.
 
 latex2htmlLength hsize=349.0pt
 
@@ -163,7 +163,7 @@ latex2htmlLength oddsidemargin=31.0pt
 
 latex2htmlLength evensidemargin=31.0pt
 
-l2hSize :picture731:0.0pt::0.0pt::349.0pt.
+l2hSize :picture800:0.0pt::0.0pt::349.0pt.
 [1
 
 
@@ -171,11 +171,11 @@ l2hSize :picture731:0.0pt::0.0pt::349.0pt.
 ]
 File: clam.eps Graphic file (type eps)
 <clam.eps>
-Overfull \hbox (4.0pt too wide) detected at line 174
+Overfull \hbox (4.0pt too wide) detected at line 175
  [] 
  []
 
-l2hSize :tex2html_wrap1659:346.70613pt::0.0pt::349.0pt.
+l2hSize :tex2html_wrap1886:346.70613pt::0.0pt::349.0pt.
 [2
 
 
@@ -186,42 +186,42 @@ l2hSize :boxedminipage65:162.58174pt::0.0pt::349.0pt.
 
 ]
 LaTeX Font Info:    Try loading font information for OT1+ptmcm on input line 21
-7.
+8.
 (/usr/share/texmf/tex/latex/mathptm/ot1ptmcm.fd
 File: ot1ptmcm.fd 1998/07/01 Fontinst v1.800 font definitions for OT1/ptmcm.
 )
 LaTeX Font Info:    Try loading font information for OML+ptmcm on input line 21
-7.
+8.
 (/usr/share/texmf/tex/latex/mathptm/omlptmcm.fd
 File: omlptmcm.fd 1998/07/01 Fontinst v1.800 font definitions for OML/ptmcm.
 )
 LaTeX Font Info:    Try loading font information for OMX+psycm on input line 21
-7.
+8.
 (/usr/share/texmf/tex/latex/mathptm/omxpsycm.fd
 File: omxpsycm.fd 1998/07/01 Fontinst v1.800 font definitions for OMX/psycm.
 )
-LaTeX Font Info:    Try loading font information for U+msa on input line 217.
+LaTeX Font Info:    Try loading font information for U+msa on input line 218.
 (/usr/share/texmf/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 1995/01/05 v2.2e AMS font definitions
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 217.
+LaTeX Font Info:    Try loading font information for U+msb on input line 218.
 (/usr/share/texmf/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 1995/01/05 v2.2e AMS font definitions
 )
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <12> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 217.
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 218.
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <9> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 217.
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 218.
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <7> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 217.
-l2hSize :tex2html_wrap_inline792:10.50275pt::0.0pt::5.60004pt.
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 218.
+l2hSize :tex2html_wrap_inline861:10.50275pt::0.0pt::5.60004pt.
 [4
 
 
 ] (./images.aux) ) 
 Here is how much of TeX's memory you used:
  1780 strings out of 10823
- 21876 string characters out of 70674
+ 21883 string characters out of 70674
  62384 words of memory out of 263001
  4697 multiletter control sequences out of 10000+0
  13711 words of font info for 40 fonts, out of 400000 for 1000
