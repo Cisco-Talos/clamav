@@ -1,3 +1,15 @@
+Sat Nov 15 01:17:29 CET 2003 (tk)
+---------------------------------
+  * libclamav: cli_scanzip: do malloc() outside of the zip scanning loop;
+	       handle properly write error condition (patches by Rudolph
+	       Pereira <r.pereira*isu.usyd.edu.au>)
+  * libclamav: zziplib: fixed comp. problem under FreeBSD 5 (Rudolph Pereira)
+  * freshclam: fixed compilation error under Cygwin (patch by Robert Hogan
+	       <robert*roberthogan.net>)
+  * libclamav: cli_scanzip: increased oversize ratio
+  * freshclam: always initialize the ipaddr variable (patch by Mark Mielke
+	       <mark@mark.mielke.cc>)
+
 Thu Nov 13 20:03:53 CET 2003 (tk)
 ---------------------------------
   * clamav-milter/Makefile: clamav-milter.8 manual path fixed

@@ -61,7 +61,7 @@ int cli_scanrar_inuse = 0;
 #define DELIVERED_MAGIC_STR "Delivered-To: "
 #define BZIP_MAGIC_STR "BZh"
 
-#define ZIPOSDET 20 /* FIXME: Make it user definable */
+#define ZIPOSDET 50 /* FIXME: Make it user definable */
 
 int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev);
 
@@ -256,6 +256,11 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 
     fstat(desc, &source);
 
+    if(!(buff = (char *) cli_malloc(FILEBUFF))) {
+	zzip_dir_close(zdir);
+	return CL_EMEM;
+    }
+
     while(zzip_dir_read(zdir, &zdirent)) {
 
 	if(!zdirent.d_name || !strlen(zdirent.d_name)) { /* Mimail fix */
@@ -317,23 +322,18 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	    break;
 	}
 
-	if(!(buff = (char *) cli_malloc(FILEBUFF))) {
-	    ret = CL_EMEM;
-	    break;
-	}
 
 	while((bytes = zzip_file_read(zfp, buff, FILEBUFF)) > 0) {
 	    if(fwrite(buff, bytes, 1, tmp)*bytes != bytes) {
 		cli_dbgmsg("Zip -> Can't fwrite() file: %s\n", strerror(errno));
 		zzip_file_close(zfp);
-		files++;
+		zzip_dir_close(zdir);
+		fclose(tmp);
 		free(buff);
-		ret = CL_EZIP;
-		break;
+		return CL_EZIP;
 	    }
 	}
 
-	free(buff);
 	zzip_file_close(zfp);
 
 	if(fflush(tmp) != 0) {
@@ -372,6 +372,8 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	fclose(tmp);
 	tmp = NULL;
     }
+
+    free(buff);
     return ret;
 }
 

@@ -143,7 +143,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	mprintf("Connecting via %s\n", proxy);
 
     if(ip[0])
-	hostfd = wwwconnect(ip, proxy, NULL); /* we use ip to connect */
+	hostfd = wwwconnect(ip, proxy, ipaddr); /* we use ip to connect */
     else
 	hostfd = wwwconnect(hostname, proxy, ipaddr);
 
