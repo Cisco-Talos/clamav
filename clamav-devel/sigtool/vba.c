@@ -24,12 +24,12 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <dirent.h>
-#include <stdint.h>
 #include <clamav.h>
 #include <ctype.h>
 
 #include "../libclamav/vba_extract.h"
 #include "../libclamav/others.h"
+#include "../libclamav/cltypes.h"
 
 typedef struct mac_token_tag
 {
