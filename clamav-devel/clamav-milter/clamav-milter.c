@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.165  2004/12/19 17:00:28  nigelhorne
+ * Ensure --max-children > 0 in LocalSocket mode with SESSIONS
+ *
  * Revision 1.164  2004/12/19 13:49:28  nigelhorne
  * Fix non SESSION compilation error
  *
@@ -503,9 +506,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.164 2004/12/19 13:49:28 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.165 2004/12/19 17:00:28 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80dd"
+#define	CM_VERSION	"0.80ee"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1634,6 +1637,14 @@ main(int argc, char **argv)
 			clamav_version = strdup(version);
 		}
 	} else {
+		/*
+		 * We need to know how many connections to establish to clamd
+		 */
+		if(max_children == 0) {
+			fprintf(stderr, _("%s: --max-children must be given in sessions mode\n"), argv[0]);
+			return EX_CONFIG;
+		}
+
 		clamav_versions = (char **)cli_malloc(max_children * sizeof(char *));
 		if(clamav_versions == NULL)
 			return EX_TEMPFAIL;
