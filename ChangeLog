@@ -1,3 +1,8 @@
+Wed Feb  2 08:32:46 GMT 2005 (njh)
+----------------------------------
+  * clamav-milter:	Call watchdog when neither SESSION nor --external is
+				given
+
 Tue Feb  1 14:47:21 GMT 2005 (njh)
 ----------------------------------
   * libclamav/blob.c:	Sanitise tab characters in filenames ("Heinz Martin"
