@@ -346,7 +346,7 @@ void sigtool(struct optstruct *opt)
 			    }
 
 			} else {
-			    mprintf(" *** Found signature's start at %d\n", pos);
+			    mprintf(" *** Signature start found at %d\n", pos);
 			    found = 1;
 			    break;
 			}
