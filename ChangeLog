@@ -1,3 +1,8 @@
+Sun Feb  6 09:45:53 GMT 2005 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Speed up the (unimplemented) next generation of mbox
+				code
+
 Sat Feb  5 16:48:46 CET 2005 (tk)
 ---------------------------------
   * libclamav: activate RIFF code (patch by Trog)
