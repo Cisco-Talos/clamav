@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: binhex.c,v $
+ * Revision 1.13  2005/01/19 05:29:41  nigelhorne
+ * tidy
+ *
  * Revision 1.12  2004/12/27 14:17:14  nigelhorne
  * Fix segfault if write to temporary file fails
  *
@@ -51,7 +54,7 @@
  * First draft of binhex.c
  *
  */
-static	char	const	rcsid[] = "$Id: binhex.c,v 1.12 2004/12/27 14:17:14 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: binhex.c,v 1.13 2005/01/19 05:29:41 nigelhorne Exp $";
 
 #include "clamav.h"
 
@@ -105,12 +108,16 @@ cli_binhex(const char *dir, int desc)
 	if(fstat(desc, &statb) < 0)
 		return CL_EOPEN;
 
+	size = statb.st_size;
+
+	if(size == 0)
+		return CL_CLEAN;
+
 	m = messageCreate();
 	if(m == NULL)
 		return CL_EMEM;
 
-	size = statb.st_size;
-	start = buf = mmap(NULL, size, PROT_READ, MAP_PRIVATE, desc, 0);
+	start = buf = mmap(NULL, size, PROT_READ, MAP_SHARED, desc, 0);
 	if(buf == MAP_FAILED) {
 		messageDestroy(m);
 		return CL_EMEM;
