@@ -1,3 +1,9 @@
+Sat Jan  8 02:53:20 CET 2005 (tk)
+---------------------------------
+  * libclamav/filetypes.c: Add support for mail files parsed by CMU Sieve
+			   (sampled provided by Stefan Kaltenbrunner
+			   <stefan*kaltenbrunner.cc>)
+
 Sat Jan  8 02:25:58 CET 2005 (tk)
 ---------------------------------
   * libclamav: Fix cli_writeint32 alignment problem on SPARC (reported by
