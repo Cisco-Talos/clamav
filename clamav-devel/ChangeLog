@@ -1,3 +1,7 @@
+Thu Jan  6 23:24:35 GMT 2005 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Better handler of single quotes in headers
+
 Thu Jan  6 11:54:54 GMT 2005 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Scan for bounces in non mime-encoded emails

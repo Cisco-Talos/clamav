@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.207  2005/01/06 23:21:34  nigelhorne
+ * Improved handling of quotes over multiple lines in headers
+ *
  * Revision 1.206  2005/01/06 11:53:29  nigelhorne
  * Handle bounces in non mime encoded messages
  *
@@ -606,7 +609,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.206 2005/01/06 11:53:29 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.207 2005/01/06 23:21:34 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1431,8 +1434,9 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine)
 		 * otherwise they'll be treated as the end of header marker
 		 */
 		if(inHeader) {
-			cli_dbgmsg("parseEmailFile: check '%s'\n", start ? start : "");
-			if(start == NULL) {	/* empty line */
+			cli_dbgmsg("parseEmailFile: check '%s' contMarker %d\n",
+				buffer ? buffer : "", (int)contMarker);
+			if((start == NULL) && (fullline == NULL)) {	/* empty line */
 				if(!contMarker) {
 					/*
 					 * A blank line signifies the end of
@@ -1445,7 +1449,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine)
 			} else {
 				char *ptr;
 				const char *qptr;
-				int quotes, lookahead;
+				int lookahead;
 
 				if(fullline == NULL) {
 					char cmd[LINE_LENGTH + 1];
@@ -1492,10 +1496,13 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine)
 					strcat(fullline, start);
 				}
 
-				contMarker = continuationMarker(start);
+				if(start) {
+					contMarker = continuationMarker(start);
 
-				if(contMarker)
-					continue;
+					if(contMarker)
+						continue;
+				} else
+					contMarker = FALSE;
 
 				assert(fullline != NULL);
 
@@ -1514,13 +1521,15 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine)
 						continue;
 				}
 
-				quotes = 0;
-				for(qptr = start; *qptr; qptr++)
-					if(*qptr == '\"')
-						quotes++;
+				if(start) {
+					int quotes = 0;
+					for(qptr = fullline; *qptr; qptr++)
+						if(*qptr == '\"')
+							quotes++;
 
-				if(quotes & 1)
-					continue;
+					if(quotes & 1)
+						continue;
+				}
 
 				ptr = rfc822comments(fullline);
 				if(ptr) {
@@ -1545,7 +1554,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine)
 			case CONTENT_TRANSFER_ENCODING:
 			case CONTENT_DISPOSITION:
 			case CONTENT_TYPE:
-				cli_warnmsg("parseEmailHeaders: Fullline set '%s' - report to bugs@clamav.net\n", fullline);
+				cli_warnmsg("parseEmailFile: Fullline set '%s' - report to bugs@clamav.net\n", fullline);
 		}
 		free(fullline);
 	}
@@ -1606,7 +1615,8 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 			buffer = NULL;
 
 		if(inHeader) {
-			cli_dbgmsg("parseEmailHeaders: check '%s'\n", buffer ? buffer : "");
+			cli_dbgmsg("parseEmailHeaders: check '%s' contMarker %d\n",
+				buffer ? buffer : "", (int)contMarker);
 			if(buffer == NULL) {
 				if(!contMarker) {
 					/*
@@ -1689,7 +1699,7 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 					}
 
 				quotes = 0;
-				for(qptr = buffer; *qptr; qptr++)
+				for(qptr = fullline; *qptr; qptr++)
 					if(*qptr == '\"')
 						quotes++;
 
