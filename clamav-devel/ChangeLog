@@ -1,3 +1,7 @@
+Thu Nov 13 20:03:53 CET 2003 (tk)
+---------------------------------
+  * clamav-milter/Makefile: clamav-milter.8 manual path fixed
+
 Wed Nov 12 02:34:56 CET 2003 (tk)
 ---------------------------------
   * docs: included clamav-mirror-howto.pdf by Luca Gibelli
