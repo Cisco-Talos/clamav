@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.69  2004/08/04 18:59:19  nigelhorne
+ * Tidy up multipart handling
+ *
  * Revision 1.68  2004/07/30 11:50:39  nigelhorne
  * Code tidy
  *
@@ -201,7 +204,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.68 2004/07/30 11:50:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.69 2004/08/04 18:59:19 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -658,12 +661,22 @@ messageAddArguments(message *m, const char *s)
 
 			*ptr = '\0';
 
+#if	0
 			field = cli_malloc(strlen(key) + strlen(data) + 2);
 			if(field)
 				sprintf(field, "%s=%s", key, data);
 
 			free((char *)key);
 			free(data);
+#else
+			field = cli_realloc((char *)key, strlen(key) + strlen(data) + 2);
+			if(field) {
+				strcat(field, "=");
+				strcat(field, data);
+			} else
+				free((char *)key);
+			free(data);
+#endif
 		} else {
 			size_t len;
 
