@@ -1,3 +1,9 @@
+Tue Feb 17 20:49:23 GMT 2004 (njh)
+----------------------------------
+  * libclamav: Added a new bounce delimeter
+  * test:	Updated mbox/debugm.c compilation instructions
+  		removed SIGINT signal handler
+
 Tue Feb 17 17:09:24 GMT 2004 (trog)
 -----------------------------------
   * clamd: SIGHUP re-open log file support

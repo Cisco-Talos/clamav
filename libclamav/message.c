@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.32  2004/02/17 20:43:50  nigelhorne
+ * Added bounce message
+ *
  * Revision 1.31  2004/02/17 09:53:56  nigelhorne
  * Added bounce message
  *
@@ -90,7 +93,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.31 2004/02/17 09:53:56 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.32 2004/02/17 20:43:50 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -186,6 +189,7 @@ static const char *bounces[] = {
 	"------- Original mail message ----",
 	"------ A continuacion adjuntamos copia del mensaje, incluyendo las cabeceras. ------",
 	",------- Returned Message --------",
+	"--- Below this line is the original bounce.",
 	"A copy of the original message below this line:",
 	NULL
 };
