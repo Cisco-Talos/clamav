@@ -227,7 +227,6 @@ void help(void)
     mprintf("    --max-recursion=#n                   Maximal recursion level\n");
     mprintf("    --unzip[=FULLPATH]                   Enable support for .zip files\n");
     mprintf("    --unrar[=FULLPATH]                   Enable support for .rar files\n");
-    mprintf("    --unace[=FULLPATH]                   Enable support for .ace files\n");
     mprintf("    --arj[=FULLPATH]                     Enable support for .arj files\n");
     mprintf("    --unzoo[=FULLPATH]                   Enable support for .zoo files\n");
     mprintf("    --lha[=FULLPATH]                     Enable support for .lha files\n");

@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 	    {"stdout", 0, 0, 0},
 	    {"unzip", 2, 0, 0},
 	    {"unrar", 2, 0, 0},
-	    {"unace", 2, 0, 0},
+	    {"unace", 2, 0, 0}, /* not used */
 	    {"unarj", 2, 0, 0}, /* not used */
 	    {"arj", 2, 0, 0},
 	    {"zoo", 2, 0, 0}, /* not used */

@@ -82,10 +82,9 @@ int scanmanager(const struct optstruct *opt)
     }
 #endif
 
-    if(optl(opt, "unzip") || optl(opt, "unrar") || optl(opt, "unace") ||
-       optl(opt, "arj") || optl(opt, "unzoo") || optl(opt, "jar") ||
-       optl(opt, "lha") || optl(opt, "tar") || optl(opt, "tgz") ||
-       optl(opt, "deb"))
+    if(optl(opt, "unzip") || optl(opt, "unrar") || optl(opt, "arj") ||
+       optl(opt, "unzoo") || optl(opt, "jar") || optl(opt, "lha") ||
+       optl(opt, "tar") || optl(opt, "tgz") || optl(opt, "deb"))
 	    compression = 1;
 
     /* now initialize the database */
@@ -464,7 +463,6 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 
     if((cli_strbcasestr(filename, ".zip") && optl(opt, "unzip"))
     || (cli_strbcasestr(filename, ".rar") && optl(opt, "unrar"))
-    || (cli_strbcasestr(filename, ".ace") && optl(opt, "unace"))
     || (cli_strbcasestr(filename, ".arj") && optl(opt, "arj"))
     || (cli_strbcasestr(filename, ".zoo") && optl(opt, "unzoo"))
     || (cli_strbcasestr(filename, ".jar") && optl(opt, "jar"))
@@ -583,13 +581,6 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("unrar", args, gendir, user, opt);
-
-    } else if(cli_strbcasestr(filename, ".ace")) { 
-	char *args[] = { "unace", "x", "-y", (char *) filename, NULL };
-	if((userprg = getargl(opt, "unace")))
-	    ret = clamav_unpack(userprg, args, gendir, user, opt);
-	else
-	    ret = clamav_unpack("unace", args, gendir, user, opt);
 
     } else if(cli_strbcasestr(filename, ".arj")) { 
         char *args[] = { "arj", "x","-y", (char *) filename, NULL };
