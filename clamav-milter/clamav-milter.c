@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.103  2004/07/08 22:22:39  nigelhorne
+ * Don't pass empty arguments to inet_ntop
+ *
  * Revision 1.102  2004/06/29 15:26:14  nigelhorne
  * Support the --timeout argument
  *
@@ -317,9 +320,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.102 2004/06/29 15:26:14 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.103 2004/07/08 22:22:39 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.74a"
+#define	CM_VERSION	"0.74b"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1414,7 +1417,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 			syslog(LOG_ERR, "clamfi_connect: hostname is null");
 		return cl_error;
 	}
-	if(hostaddr == NULL)
+	if((hostaddr == NULL) || (&(((struct sockaddr_in *)(hostaddr))->sin_addr) == NULL))
 		/*
 		 * According to the sendmail API hostaddr is NULL if
 		 * "the type is not supported in the current version". What
@@ -1469,7 +1472,8 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		}
 
 #ifdef HAVE_INET_NTOP
-		if(inet_ntop(AF_INET, (struct in_addr *)hp->h_addr, ip, sizeof(ip)) == NULL) {
+		if(hp && hp->h_addr &&
+		   (inet_ntop(AF_INET, (struct in_addr *)hp->h_addr, ip, sizeof(ip)) == NULL)) {
 			perror(hp->h_name);
 			/*if(use_syslog)
 				syslog(LOG_WARNING, "Can't get IP address for (%s)", hp->h_name);
