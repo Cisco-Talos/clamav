@@ -1,3 +1,7 @@
+Sun May 30 01:38:43 CEST 2004 (tk)
+----------------------------------
+  * libclamav: scanners: enable PowerPoint code (Trog)
+
 Fri May 28 14:01:48 BST 2004 (trog)
 -----------------------------------
   *  libclamav/vba_extract.[ch]: Add PowerPoint endian conversion and small

@@ -801,6 +801,12 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 	free(vba_project->dir);
 	free(vba_project->offset);
 	free(vba_project);
+    } else if ((fullname = ppt_vba_read(dirname))) {
+    	if(cli_scandir(fullname, virname, scanned, root, limits, options, reclev) == CL_VIRUS) {
+	    ret = CL_VIRUS;
+	}
+	cli_rmdirs(fullname);
+    	free(fullname);
     } else if ((vba_project = (vba_project_t *) wm_dir_read(dirname))) {
     	for (i = 0; i < vba_project->count; i++) {
 		fullname = (char *) cli_malloc(strlen(vba_project->dir) + strlen(vba_project->name[i]) + 2);
