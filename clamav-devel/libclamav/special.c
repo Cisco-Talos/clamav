@@ -224,6 +224,12 @@ int cli_check_riff_exploit(int fd)
 		return 0;
 	}
 
+	if (memcmp(&form_type, "ACON", 4) != 0) {
+		/* Only scan MS animated icon files */
+		/* There is a *lot* of broken software out there that produces bad RIFF files */
+		return 0;
+	}
+
 	chunk_size = riff_endian_convert_32(chunk_size, big_endian);
 
 	do {
@@ -234,6 +240,6 @@ int cli_check_riff_exploit(int fd)
 
 	if (offset < chunk_size) {
 		retval = 2;
-	};
+	}
 	return retval;
 }
