@@ -1,5 +1,5 @@
 .\" Manual page created by Tomasz Kojm, 20021001.
-.TH "clamav.conf" "5" "March 14, 2004" "Tomasz Kojm" "Clam AntiVirus"
+.TH "clamav.conf" "5" "August 4, 2004" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 \fBclamav.conf\fR \- a configuration file for Clam AntiVirus Daemon
@@ -163,6 +163,11 @@ Default: disabled.
 PE stands for Portable Executable \- it's an executable file format used in all 32\-bit versions of Windows operating systems. This option allows ClamAV to perform a deeper analysis of executable files and it's also required for decompression of popular executable packers such as UPX.
 .br 
 Default: enabled.
+.TP 
+\fBDetectBrokenExecutables\fR
+With this option clamav will try to detect broken executables and mark them as Broken.Executable.
+.br 
+Default: disabled.
 .TP 
 \fBScanOLE2\fR
 Enables scanning of Microsoft Office document macros.
