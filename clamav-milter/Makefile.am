@@ -25,7 +25,7 @@ clamav_milter_SOURCES = clamav-milter.c
 
 clamav_milter_LDADD = ../clamd/cfgfile.o ../clamd/others.o ../clamscan/getopt.o
 
-man_MANS = ../docs/clamav-milter.8
+man_MANS = ../docs/man/clamav-milter.8
 
 endif
 endif

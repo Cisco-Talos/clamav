@@ -122,7 +122,7 @@ install_sh = @install_sh@
 
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@clamav_milter_LDADD = ../clamd/cfgfile.o ../clamd/others.o ../clamscan/getopt.o
 
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@man_MANS = ../docs/clamav-milter.8
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@man_MANS = ../docs/man/clamav-milter.8
 
 DEFS = @DEFS@
 # CLAMD_LIBS is used, because clamav-milter requires the same libraries as clamd
