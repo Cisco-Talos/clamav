@@ -61,7 +61,7 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 	    {"MaxConnectionQueueLength", OPT_NUM},
 	    {"StreamSaveToDisk", OPT_NOARG},
 	    {"StreamMaxLength", OPT_COMPSIZE},
-	    {"UseProcesses", OPT_NOARG},
+	    {"UseProcessess", OPT_NOARG},
 	    {"MaxThreads", OPT_NUM},
 	    {"ThreadTimeout", OPT_NUM},
 	    {"MaxDirectoryRecursion", OPT_NUM},
@@ -88,7 +88,7 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 	    {"DatabaseMirror", OPT_STR}, /* freshclam */
 	    {"MaxAttempts", OPT_NUM}, /* freshclam */
 	    {"HTTPProxyServer", OPT_STR}, /* freshclam */
-	    {"HTTPProxyPort", OPT_STR}, /* freshclam */
+	    {"HTTPProxyPort", OPT_NUM}, /* freshclam */
 	    {"HTTPProxyUsername", OPT_STR}, /* freshclam */
 	    {"HTTPProxyPassword", OPT_STR}, /* freshclam */
 	    {"NotifyClamd", OPT_OPTARG}, /* freshclam */

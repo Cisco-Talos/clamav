@@ -95,7 +95,7 @@ int tcpserver(const struct optstruct *opt, const struct cfgstruct *copt, struct 
 	exit(1);
     }
 
-    if(cfgopt(copt, "UseProcesses"))
+    if(cfgopt(copt, "UseProcessess"))
 	acceptloop_proc(sockfd, root, copt);
     else
 	acceptloop_th(sockfd, root, copt);
