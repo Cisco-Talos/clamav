@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.112  2004/07/29 15:24:47  nigelhorne
+ * Don't say waiting for some to exit if dont_wait is set
+ *
  * Revision 1.111  2004/07/29 06:38:05  nigelhorne
  * GETHOSTBYNAME_R_6
  *
@@ -344,9 +347,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.111 2004/07/29 06:38:05 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.112 2004/07/29 15:24:47 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.75c"
+#define	CM_VERSION	"0.75d"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1683,7 +1686,9 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 			if(use_syslog)
 				syslog(LOG_NOTICE,
-					"hit max-children limit (%u >= %u): waiting for some to exit",
+					((dont_wait) ?
+						"hit max-children limit (%u >= %u)" :
+						"hit max-children limit (%u >= %u): waiting for some to exit"),
 					n_children, max_children);
 
 			if(dont_wait) {
