@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.146  2004/10/30 07:01:55  nigelhorne
+ * Tidy
+ *
  * Revision 1.145  2004/10/30 06:49:08  nigelhorne
  * Fix crash when a server can't be contacted
  *
@@ -446,7 +449,7 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.145 2004/10/30 06:49:08 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.146 2004/10/30 07:01:55 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.80n"
 
@@ -1643,8 +1646,10 @@ createSession(int session)
 		char *hostname = cli_strtok(serverHostNames, serverNumber, ":");
 #endif
 
-		if(cmdSockets[session] >= 0)
+		if(cmdSockets[session] >= 0) {
 			close(cmdSockets[session]);
+			cmdSockets[session] = -1;
+		}
 
 		cli_warnmsg(_("Check clamd server %s - it may be down\n"), hostname);
 #ifndef	MAXHOSTNAMELEN
@@ -3577,12 +3582,12 @@ connect2clamd(struct privdata *privdata)
 #else
 				syslog(LOG_ERR, _("Failed to connect to port %d given by clamd: %s"), p, strerror(errno));
 #endif
-#ifdef	SESSION
-				pthread_mutex_lock(&sstatus_mutex);
-				cmdSocketsStatus[privdata->serverNumber] = CMDSOCKET_DOWN;
-				pthread_mutex_unlock(&sstatus_mutex);
-#endif
 			}
+#ifdef	SESSION
+			pthread_mutex_lock(&sstatus_mutex);
+			cmdSocketsStatus[privdata->serverNumber] = CMDSOCKET_DOWN;
+			pthread_mutex_unlock(&sstatus_mutex);
+#endif
 			return 0;
 		}
 	}
@@ -4069,8 +4074,10 @@ watchdog(void *a)
 				 * The END command probably won't get through,
 				 * but let's give it a go anyway
 				 */
-				send(sock, "END\n", 4, 0);
-				close(sock);
+				if(sock >= 0) {
+					send(sock, "END\n", 4, 0);
+					close(sock);
+				}
 
 				cli_dbgmsg("Trying to restart session %d\n", i);
 				if(createSession(i) == 0) {
