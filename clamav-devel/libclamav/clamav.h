@@ -121,6 +121,7 @@ extern int cl_scanfile(const char *filename, char **virname, unsigned long int *
 extern int cl_loaddb(const char *filename, struct cl_node **root, int *virnum);
 extern int cl_loaddbdir(const char *dirname, struct cl_node **root, int *virnum);
 extern char *cl_retdbdir(void);
+extern int cl_retflevel(void);
 
 extern struct cl_cvd *cl_cvdhead(const char *file);
 extern struct cl_cvd *cl_cvdparse(const char *head);
