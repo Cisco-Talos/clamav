@@ -173,28 +173,18 @@ void sigtool(struct optstruct *opt)
     } else if(optl(opt, "vba") || optl(opt, "vba-hex")) {
             int fd, hex_output=0;
 	    char *dir;
-	    const char *tmpdir;
 
 
 	if (optl(opt, "vba-hex"))
 		hex_output = 1;
  
-	tmpdir = getenv("TMPDIR");
-                                                                                                                                                     
-	if(tmpdir == NULL)
-#ifdef P_tmpdir
-	    tmpdir = P_tmpdir;
-#else
-	    tmpdir = "/tmp";
-#endif
-                                                                                                                                                     
         /* generate the temporary directory */
-        dir = cli_gentemp(tmpdir);
+        dir = cli_gentemp(NULL);
         if(mkdir(dir, 0700)) {
             mprintf("vba dump: Can't create temporary directory %s\n", dir);
             return;
         }
-                                                                                                                                     
+
         if((fd = open(getargl(opt, "vba"), O_RDONLY)) == -1) {
 	    if((fd = open(getargl(opt, "vba-hex"), O_RDONLY)) == -1) {
         	mprintf("Can't open file %s\n", getargl(opt, "vba"));
@@ -207,11 +197,10 @@ void sigtool(struct optstruct *opt)
             free(dir);
 	    close(fd);
             return;
-        }                                                                                                                                        
+        }
 
 	close(fd);
         sigtool_vba_scandir(dir, hex_output);
-                                                                                                                                                     
         cli_rmdirs(dir);
         free(dir);
 
