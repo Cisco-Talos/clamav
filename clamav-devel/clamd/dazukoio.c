@@ -330,6 +330,7 @@ int dazukoRegister_TS(dazuko_id_t **dazuko_id, const char *groupName, const char
 		free(request->buffer);
 		free(request->reply_buffer);
 		free(request);
+		free(temp_id);
 
 		return -1;
 	}
