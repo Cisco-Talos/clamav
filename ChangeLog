@@ -1,3 +1,7 @@
+Wed Jun 23 15:16:20 BST 2004 (trog)
+-----------------------------------
+  * libclamav/ole2_extract.c: fix possible mmap overrun.
+
 Tue Jun 22 18:47:32 CEST 2004 (tk)
 ----------------------------------
   * clamdscan: support multiple arguments on command line (requested by
