@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.41  2004/02/12 18:43:58  nigelhorne
+ * Use mkstemp on Solaris
+ *
  * Revision 1.40  2004/02/11 08:15:59  nigelhorne
  * Use O_BINARY for cygwin
  *
@@ -111,7 +114,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.40 2004/02/11 08:15:59 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.41 2004/02/12 18:43:58 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1646,11 +1649,11 @@ saveFile(const blob *b, const char *dir)
 	/*
 	 * TODO: add a HAVE_MKSTEMP property
 	 */
-#if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP)
+#if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS)
 	fd = mkstemp(filename);
 #else
 	(void)mktemp(filename);
-	fd = open(filename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
+	fd = open(filename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC, 0600);
 #endif
 
 	if(fd < 0) {

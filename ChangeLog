@@ -1,3 +1,7 @@
+Thu Feb 12 18:47:44 GMT 2004 (njh)
+----------------------------------
+  * libclamav: Use mkstemp() on Solaris in cl_mbox()
+
 Wed Feb 11 18:00:13 CET 2004 (tk)
 ---------------------------------
   * libclamav: enabled autodetection of Eserv/2 mail files (thanks to
