@@ -1,3 +1,7 @@
+Sat Feb 14 19:08:44 GMT 2004 (njh)
+---------------------------------
+  * libclamav:	Handle spaces in boundaries
+
 Sat Feb 14 17:28:15 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Had deleted O_BINARY by mistake
