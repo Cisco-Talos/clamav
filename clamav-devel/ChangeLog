@@ -1,3 +1,7 @@
+Sat Jan  1 12:54:04 GMT 2005 (njh)
+----------------------------------
+  * libclamav/message.c:	Some uuencoded viruses were getting through
+
 Thu Dec 30 14:06:03 GMT 2004 (njh)
 ----------------------------------
   * contrib/init/NetBSD2.0:	Added startup and shutdown scripts for NetBSD2.0
