@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.212  2005/01/27 14:10:53  nigelhorne
+ * Scan sendmail queue df files
+ *
  * Revision 1.211  2005/01/19 17:41:25  nigelhorne
  * Downgraded warning message
  *
@@ -621,7 +624,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.211 2005/01/19 17:41:25 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.212 2005/01/27 14:10:53 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1454,6 +1457,10 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine)
 					 * A blank line signifies the end of
 					 * the header and the start of the text
 					 */
+					if(!anyHeadersFound)
+						/* Ignore the junk at the top */
+						continue;
+
 					cli_dbgmsg("End of header information\n");
 					inHeader = FALSE;
 				} else
