@@ -53,6 +53,12 @@ configured with \-\-clamav-debug.
 Will be replaced by \-\-debug for compatability with other programs in the
 suite.
 .TP
+\fB-A, \-\-advisory\fR
+When in advisory mode, clamav\-milter flags emails with viruses but
+still forwards them. The default option is to stop viruses.
+.LP
+This mode is in compatible with \-\-quarantine and \-\-quarantine-dir.
+.TP
 \fB\-b, \-\-bounce\fR
 Send a failure message to the sender, and to the postmaster.
 [ \fBWarning\fR: most viruses and worms
@@ -150,6 +156,12 @@ in \fBclamav.conf\fR.
 .LP
 Most users will not need this option, if in doubt do not set it.
 .TP
+\fB\-\-dont\-wait\fR
+Tells clamav\-milter what do to if the max-children number is exceeded.
+Usuaully clamav\-milter waits until a child dies or the timeout value has been
+exceeded, which ever comes first, however with dont-wait enabled, clamav\-milter
+will inform the remote SMTP client to retry later.
+.TP
 \fB\-\-template\-file=file \-t file\fR
 File points to a file whose contents is sent as the warning message whenever a
 virus is intercepted.
@@ -165,6 +177,8 @@ Used in conjuction with max\-children. If clamav\-milter waits for more than
 \fIn\fR seconds (default 60) it proceeds with scanning. Setting \fIn\fR to zero
 will turn off the timeout and clamav\-milter will wait indefinately for the
 scanning to quit. In practice the timeout set by sendmail will then take over.
+.SH "BUGS"
+There is no support for IPv6.
 .SH "EXAMPLES"
 .LP
 clamav\-milter \-ol local:/var/run/clamav/clmilter.sock

@@ -421,6 +421,8 @@ Changes
 0.74	29/6/04	Up-issued
 0.74a	29/6/04	Allow the child timeout to be configurable
 0.74b	8/7/04	Validate the arguments to inet_ntop
+0.74c	14/7/04	Added --dont-wait
+		Added --advisory
 
 BUG REPORTS
 

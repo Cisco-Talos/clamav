@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.104  2004/07/14 10:17:05  nigelhorne
+ * Added dont-wait and advisory options
+ *
  * Revision 1.103  2004/07/08 22:22:39  nigelhorne
  * Don't pass empty arguments to inet_ntop
  *
@@ -320,9 +323,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.103 2004/07/08 22:22:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.104 2004/07/14 10:17:05 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.74b"
+#define	CM_VERSION	"0.74c"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -469,6 +472,7 @@ static	void	header_list_print(header_list_t list, FILE *fp);
 static	int	connect2clamd(struct privdata *privdata);
 static	void	checkClamd(void);
 static	int	sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *clamdMessage);
+static	void	setsubject(SMFICTX *ctx, const char *virusname);
 
 static	char	clamav_version[128];
 static	int	fflag = 0;	/* force a scan, whatever */
@@ -550,6 +554,16 @@ static	int	child_timeout = 60;	/* number of seconds to wait for
 					 * a child to die. Set to 0 to
 					 * wait forever
 					 */
+static	int	dont_wait = 0;	/*
+				 * If 1 send retry later to the remote end
+				 * if max_chilren is exceeded, otherwise we
+				 * wait for the number to go down
+				 */
+static	int	advisory = 0;	/*
+				 * Run clamav-milter in advisory mode - viruses
+				 * are flagged rather than deleted. Incompatible
+				 * with quarantine options
+				 */
 short	use_syslog = 0;
 static	const	char	*pidFile;
 static	int	logVerbose = 0;
@@ -581,11 +595,13 @@ help(void)
 	printf("\n\tclamav-milter version %s\n", CM_VERSION);
 	puts("\tCopyright (C) 2004 Nigel Horne <njh@despammed.com>\n");
 
+	puts("\t--advisory\t\t-A\tFlag viruses rather than deleting them.");
 	puts("\t--bounce\t\t-b\tSend a failure message to the sender.");
 	puts("\t--config-file=FILE\t-c FILE\tRead configuration from FILE.");
 	puts("\t--debug\t\t\t-D\tPrint debug messages.");
 	puts("\t--dont-log-clean\t-C\tDon't add an entry to syslog that a mail is clean.");
 	puts("\t--dont-scan-on-error\t-d\tPass e-mails through unscanned if a system error occurs.");
+	puts("\t--dont-wait\t\t\tAsk remote end to resend if max-children exceeded.");
 	puts("\t--from=EMAIL\t\t-a EMAIL\tError messages come from here.");
 	puts("\t--force-scan\t\t-f\tForce scan all messages (overrides (-o and -l).");
 	puts("\t--help\t\t\t-h\tThis message.");
@@ -604,7 +620,7 @@ help(void)
 	puts("\t--sign\t\t\t-S\tAdd a hard-coded signature to each scanned message.");
 	puts("\t--signature-file=FILE\t-F FILE\tLocation of signature file.");
 	puts("\t--template-file=FILE\t-t FILE\tLocation of e-mail template file.");
-	puts("\t--timeout=SECS\t-T SECS\tTimeout waiting to childen to die.");
+	puts("\t--timeout=SECS\t\t-T SECS\tTimeout waiting to childen to die.");
 	puts("\t--version\t\t-V\tPrint the version number of this software.");
 #ifdef	CL_DEBUG
 	puts("\t--debug-level=n\t\t-x n\tSets the debug level to 'n'.");
@@ -653,14 +669,17 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "a:bc:CDfF:lm:nNop:PqQ:dhHs:St:T:U:Vx:";
+		const char *args = "a:Abc:CDfF:lm:nNop:PqQ:dhHs:St:T:U:Vx:";
 #else
-		const char *args = "a:bc:CDfF:lm:nNop:PqQ:dhHs:St:T:U:V";
+		const char *args = "a:Abc:CDfF:lm:nNop:PqQ:dhHs:St:T:U:V";
 #endif
 
 		static struct option long_options[] = {
 			{
 				"from", 1, NULL, 'a'
+			},
+			{
+				"advisory", 0, NULL, 'A'
 			},
 			{
 				"bounce", 0, NULL, 'b'
@@ -673,6 +692,9 @@ main(int argc, char **argv)
 			},
 			{
 				"dont-scan-on-error", 0, NULL, 'd'
+			},
+			{
+				"dont-wait", 0, NULL, 'w'
 			},
 			{
 				"debug", 0, NULL, 'D'
@@ -758,6 +780,10 @@ main(int argc, char **argv)
 			case 'a':	/* e-mail errors from here */
 				from = optarg;
 				break;
+			case 'A':
+				advisory++;
+				smfilter.xxfi_flags |= SMFIF_CHGHDRS;
+				break;
 			case 'b':	/* bounce worms/viruses */
 				bflag++;
 				break;
@@ -837,6 +863,9 @@ main(int argc, char **argv)
 			case 'V':
 				puts(clamav_version);
 				return EX_OK;
+			case 'w':
+				dont_wait++;
+				break;
 #ifdef	CL_DEBUG
 			case 'x':
 				debug_level = atoi(optarg);
@@ -906,16 +935,24 @@ main(int argc, char **argv)
 		} else
 			fprintf(stderr, "%s: running as root is not recommended\n", argv[0]);
 	}
+	if(advisory && quarantine) {
+		fprintf(stderr, "%s: Advisory mode doesn't work with quarantine mode\n", argv[0]);
+		return EX_USAGE;
+	}
 	if(quarantine_dir) {
 		struct stat statb;
 
+		if(advisory) {
+			fprintf(stderr, "%s: Advisory mode doesn't work with quarantine directories\n", argv[0]);
+			return EX_USAGE;
+		}
 		if(access(quarantine_dir, W_OK) < 0) {
 			perror(quarantine_dir);
-			return EX_CONFIG;
+			return EX_USAGE;
 		}
 		if(stat(quarantine_dir, &statb) < 0) {
 			perror(quarantine_dir);
-			return EX_CONFIG;
+			return EX_USAGE;
 		}
 		/*
 		 * Quit if the quarantine directory is publically readable
@@ -1587,6 +1624,14 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 					"hit max-children limit (%u >= %u): waiting for some to exit",
 					n_children, max_children);
 
+			if(dont_wait) {
+				pthread_mutex_unlock(&n_children_mutex);
+				/*
+				 * TODO: use smfi_setreply to send a useful
+				 * message to the remote SMTP client
+				 */
+				return SMFIS_TEMPFAIL;
+			}
 			/*
 			 * Wait for an amount of time for a child to go (default
 			 * 60 seconds).
@@ -2228,17 +2273,11 @@ clamfi_eom(SMFICTX *ctx)
 					syslog(LOG_DEBUG, "Can't set quarantine user %s", quarantine);
 				else
 					cli_warnmsg("Can't set quarantine user %s\n", quarantine);
-			} else {
-				char subject[128];
-
-				/*
-				 * FIXME: doesn't work if there's no subject
-				 */
-				snprintf(subject, sizeof(subject) - 1,
-					"[Virus] %s", virusname);
-				smfi_chgheader(ctx, "Subject", 1, subject);
-			}
-		} else if(rejectmail) {
+			} else
+				setsubject(ctx, virusname);
+		} else if(advisory)
+			setsubject(ctx, virusname);
+		else if(rejectmail) {
 			if(privdata->discard)
 				rc = SMFIS_DISCARD;
 			else
@@ -3000,4 +3039,19 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *cla
 	free(buf);
 
 	return 0;
+}
+
+/*
+ * Store the name of the virus in the subject of the e-mail
+ */
+static void
+setsubject(SMFICTX *ctx, const char *virusname)
+{
+	char subject[128];
+
+	/*
+	 * FIXME: doesn't work if there's no subject
+	 */
+	snprintf(subject, sizeof(subject) - 1, "[Virus] %s", virusname);
+	smfi_chgheader(ctx, "Subject", 1, subject);
 }
