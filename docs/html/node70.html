@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Scan engine</TITLE>
-<META NAME="description" CONTENT="Scan engine">
+<TITLE>Database reloading</TITLE>
+<META NAME="description" CONTENT="Database reloading">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -21,70 +21,74 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node71.html">
 <LINK REL="previous" HREF="node69.html">
-<LINK REL="up" HREF="node67.html">
+<LINK REL="up" HREF="node68.html">
 <LINK REL="next" HREF="node71.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1193"
+<A NAME="tex2html1206"
   HREF="node71.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html1189"
-  HREF="node67.html">
+<A NAME="tex2html1202"
+  HREF="node68.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html1183"
+<A NAME="tex2html1196"
   HREF="node69.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html1191"
+<A NAME="tex2html1204"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1194"
-  HREF="node71.html">CVD format</A>
-<B> Up:</B> <A NAME="tex2html1190"
-  HREF="node67.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html1184"
-  HREF="node69.html">Database reloading</A>
- &nbsp <B>  <A NAME="tex2html1192"
+<B> Next:</B> <A NAME="tex2html1207"
+  HREF="node71.html">Scan engine</A>
+<B> Up:</B> <A NAME="tex2html1203"
+  HREF="node68.html">LibClamAV</A>
+<B> Previous:</B> <A NAME="tex2html1197"
+  HREF="node69.html">General API</A>
+ &nbsp <B>  <A NAME="tex2html1205"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00073000000000000000"></A><A NAME="engine"></A>
-<BR>
-Scan engine
+<H2><A NAME="SECTION00072000000000000000">
+Database reloading</A>
 </H2>
-    New versions of Clam AntiVirus use a mutation of the Aho-Corasick
-    pattern matching algorithm. The algorithm is based a finite state pattern
-    matching automaton [<A
- HREF="node80.html#clr">1</A>] and it's a generalization of the famous
-    Knuth-Morris-Pratt algorithm. Please take a look at the <code>matcher.h</code>
-    for data type definitions. The automaton is represented by a trie. It
-    is a rooted tree with some specific properties [<A
- HREF="node80.html#acwww">2</A>]. Every node
-    of the trie represents some state of the automaton. In our implementation,
-    the node is defined as follows:
+    The most important thing is to keep the internal instance of the database
+    up to date. You can watch database changes with the <code>cl_stat</code>
+    functions family:
     <PRE>
-	struct cl_node {
-	    short int islast;
-	    struct cli_patt *list;
-	    int maxpatlen;
-	    struct node *next[NUM_CHILDS], *trans[NUM_CHILDS], *fail;
-	};
+	int cl_statinidir(const char *dirname, struct cl_stat *dbstat);
+	int cl_statchkdir(const struct cl_stat *dbstat);
+	int cl_statfree(struct cl_stat *dbstat);
 </PRE>
-    [To be continued...]
+    Initialization:
+    <PRE>
+	    struct cl_stat dbstat;
+    
+	memset(&amp;dbstat, 0, sizeof(struct cl_stat));
+	cl_statinidir(dbdir, &amp;dbstat);
+</PRE>
+    To check for a change you only need to call <code>cl_statchkdir</code>:
+    <PRE>
+	if(cl_statchkdir(&amp;dbstat) == 1) {
+	    reload_database...;
+	    cl_statfree(&amp;dbstat);
+	    cl_statinidir(cl_retdbdir(), &amp;dbstat);
+	}
+</PRE>
+    Remember to reinitialize the structure after a reload.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-04-16
+2004-05-18
 </ADDRESS>
 </BODY>
 </HTML>

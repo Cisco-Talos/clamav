@@ -5,7 +5,7 @@ here may not be available in binary packages.
 0.71
 ----
 
-This release fixes all bugs found in 0.70 and introduces a few new features,
+This release fixes all bugs found in 0.70 and introduces a few new features -
 the noteworthy changes include:
 
 -) libclamav:
@@ -27,7 +27,7 @@ the noteworthy changes include:
     + fix file permission corruption with --deb in a superuser mode
 
 -) clamd
-    + support log facility specification in syslog style (LogFacility)
+    + support log facility specification in syslog's style (LogFacility)
     + new directive LeaveTemporaryFiles (Debug no longer leaves temporary
       files not removed)
 
@@ -42,7 +42,9 @@ the noteworthy changes include:
     + save PID (--pidfile)
 
 -) documentation:
-    + new Japanese documentation
+    + German clamdoc.pdf translation (Rupert Roesler-Schmidt and Karina
+      Schwarz, uplink coherent solutions, http://www.uplink.at)
+    + new Japanese documentation (Masaki Ogawa)
 
 
 --
@@ -105,9 +107,10 @@ virus database mirrors in 22 regions and the number is still growing.
 As of March 2004 we attempt to redirect our users to the closest pool
 of mirrors by looking at their ip source address when they try to resolve
 database.clamav.net. Our DNS servers can answer with a CNAME to:
-europe.clamav.net, america.clamav.net, asia.clamav.net or other.clamav.net.
-Our advanced push-mirroring mechanism (maintained by Luca Gibelli) allows
-database maintainers to update all the mirrors in less than one minute !
+db.europe.clamav.net, db.america.clamav.net, db.asia.clamav.net or
+db.other.clamav.net. Our advanced push-mirroring mechanism (maintained by
+Luca Gibelli) allows database maintainers to update all the mirrors in less
+than one minute !
 
 
 There will be no major feature enhancements in the 0.7x series. Our work
