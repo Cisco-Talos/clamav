@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.150 2005/03/16 14:43:17 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.151 2005/03/18 18:12:24 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -949,13 +949,8 @@ messageIsEncoding(message *m)
 		(strncasecmp(line, "Received: ", 10) == 0) &&
 		(cli_filetype(line, strlen(line)) == CL_TYPE_MAIL))
 			m->bounce = m->body_last;
-	else if((m->uuencode == NULL) &&
-		((strncasecmp(line, "begin ", 6) == 0) &&
-		isdigit(line[6]) &&
-		isdigit(line[7]) &&
-		isdigit(line[8]) &&
-		(line[9] == ' ')))
-			m->uuencode = m->body_last;
+	else if((m->uuencode == NULL) && isuuencodebegin(line))
+		m->uuencode = m->body_last;
 	else if((m->binhex == NULL) &&
 		strstr(line, "BinHex") &&
 		(simil(line, binhex) > 90))
@@ -1746,16 +1741,9 @@ uuencodeBegin(const message *m)
 	 * lines before the begin. Should not happen, but some
 	 * e-mail clients are rather broken...
 	 */
-	for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next) {
-		const char *line = t_line->t_text;
-
-		if((strncasecmp(line, "begin ", 6) == 0) &&
-		   (isdigit(line[6])) &&
-		   (isdigit(line[7])) &&
-		   (isdigit(line[8])) &&
-		   (line[9] == ' '))
+	for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next)
+		if(isuuencodebegin(t_line->t_text))
 			return t_line;
-	}
 	return NULL;
 }
 #else
@@ -1965,9 +1953,9 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 		case UUENCODE:
 			if((line == NULL) || (*line == '\0'))	/* empty line */
 				break;
-			if(strncasecmp(line, "begin ", 6) == 0)
-				break;
 			if(strcasecmp(line, "end") == 0)
+				break;
+			if(isuuencodebegin(line))
 				break;
 
 			if((line[0] & 0x3F) == ' ')
@@ -2641,4 +2629,18 @@ pop(LINK1 *top, char *buffer)
 		return SUCCESS;
 	}
 	return FAILURE;
+}
+
+/*
+ * Have we found a line that is a start of a uuencoded file (see uuencode(5))?
+ */
+int
+isuuencodebegin(const char *line)
+{
+	if(strlen(line) < 10)
+		return 0;
+
+	return (strncasecmp(line, "begin ", 6) == 0) &&
+		isdigit(line[6]) && isdigit(line[7]) &&
+		isdigit(line[8]) && (line[9] == ' ');
 }

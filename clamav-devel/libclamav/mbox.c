@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.228 2005/03/16 21:27:59 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.229 2005/03/18 18:12:25 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -413,7 +413,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		if(((p = (char *)cli_pmemstr(q, s, "\nFrom ", 6)) != NULL) ||
 		   ((p = (char *)cli_pmemstr(q, s, "base64", 6)) != NULL) ||
 		   ((p = (char *)cli_pmemstr(q, s, "quoted-printable", 16)) != NULL)) {
-		   	scanelem->size = (size_t)(p - q);
+			scanelem->size = (size_t)(p - q);
 			q = p;
 			s -= scanelem->size;
 		} else
@@ -439,7 +439,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		if(((p = (char *)cli_pmemstr(q, s, "\nFrom ", 6)) != NULL) ||
 		   ((p = (char *)cli_pmemstr(q, s, "quoted-printable", 16)) != NULL) ||
 		   ((p = (char *)cli_pmemstr(q, s, "base64", 6)) != NULL)) {
-		   	scanelem->size = (size_t)(p - q);
+			scanelem->size = (size_t)(p - q);
 			q = p;
 			s -= scanelem->size;
 		} else
@@ -851,12 +851,8 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 			} else
 				lastLineWasEmpty = (bool)(buffer[0] == '\0');
 
-			if((strncasecmp(buffer, "begin ", 6) == 0) &&
-			    isdigit(buffer[6]) &&
-			    isdigit(buffer[7]) &&
-			    isdigit(buffer[8]) &&
-			    buffer[9] == ' ') {
-			    	/*
+			if(isuuencodebegin(buffer)) {
+				/*
 				 * Fast track visa to uudecode.
 				 * TODO: binhex, yenc
 				 */
@@ -1656,13 +1652,13 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							 * Content-Type: application/octet-stream; name=text.zip
 							 * Content-Transfer-Encoding: base64
 							 * Content-Disposition: attachment; filename="text.zip"
-							 * 
+							 *
 							 * Content-Disposition: attachment;
 							 *	filename=text.zip
 							 * Content-Type: application/octet-stream;
 							 *	name=text.zip
 							 * Content-Transfer-Encoding: base64
-							 * 
+							 *
 							 * UEsDBAoAAAAAAACgPjJ2RHw676gAAO+oAABEAAAAbWFpbF90ZXh0LWluZm8udHh0ICAgICAgICAg
 							 */
 							next = t_line->t_next;
