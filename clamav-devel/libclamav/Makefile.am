@@ -37,6 +37,7 @@ libclamav_la_SOURCES = \
         others.c \
         others.h \
         readdb.c \
+	readdb.h \
 	cvd.c \
 	cvd.h \
 	dsig.c \

@@ -556,7 +556,6 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
     /* Petite */
 
-    /*
     found = 2;
 
     lseek(desc, ep, SEEK_SET);
@@ -646,7 +645,6 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    }
 	}
     }
-    */
 
     /* to be continued ... */
 
