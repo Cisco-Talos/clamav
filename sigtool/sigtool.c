@@ -52,6 +52,7 @@
 #include "../clamscan/others.h"
 #include "../libclamav/others.h"
 #include "../libclamav/str.h"
+#include "vba.h"
 
 #ifndef	O_BINARY
 #define	O_BINARY	0
@@ -168,6 +169,51 @@ void sigtool(struct optstruct *opt)
     } else if(optc(opt, 'l')) {
 
 	listsigs(opt);
+
+    } else if(optl(opt, "vba") || optl(opt, "vba-hex")) {
+            int fd, hex_output=0;
+	    char *dir;
+	    const char *tmpdir;
+
+
+	if (optl(opt, "vba-hex"))
+		hex_output = 1;
+ 
+	tmpdir = getenv("TMPDIR");
+                                                                                                                                                     
+	if(tmpdir == NULL)
+#ifdef P_tmpdir
+	    tmpdir = P_tmpdir;
+#else
+	    tmpdir = "/tmp";
+#endif
+                                                                                                                                                     
+        /* generate the temporary directory */
+        dir = cli_gentemp(tmpdir);
+        if(mkdir(dir, 0700)) {
+            mprintf("vba dump: Can't create temporary directory %s\n", dir);
+            return;
+        }
+                                                                                                                                     
+        if((fd = open(getargl(opt, "vba"), O_RDONLY)) == -1) {
+	    if((fd = open(getargl(opt, "vba-hex"), O_RDONLY)) == -1) {
+        	mprintf("Can't open file %s\n", getargl(opt, "vba"));
+        	exit(1);
+	    }
+        }
+
+        if(cli_ole2_extract(fd, dir, NULL)) {
+            cli_rmdirs(dir);
+            free(dir);
+	    close(fd);
+            return;
+        }                                                                                                                                        
+
+	close(fd);
+        sigtool_vba_scandir(dir, hex_output);
+                                                                                                                                                     
+        cli_rmdirs(dir);
+        free(dir);
 
     } else {
 
@@ -773,6 +819,8 @@ void help(void)
     mprintf("    --unpack=FILE          -u FILE         Unpack a CVD file\n");
     mprintf("    --unpack-current=NAME                  Unpack local CVD\n");
     mprintf("    --list-sigs[=FILE]     -l[FILE]        List signature names\n");
+    mprintf("    --vba=FILE                             Extract VBA/Word6 macro code\n");
+    mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
     mprintf("\n");
 
     exit(0);
