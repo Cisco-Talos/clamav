@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.114  2004/08/05 07:44:28  nigelhorne
+ * Better Template Handling
+ *
  * Revision 1.113  2004/07/30 14:34:56  nigelhorne
  * Handle changed clamd message
  *
@@ -350,9 +353,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.113 2004/07/30 14:34:56 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.114 2004/08/05 07:44:28 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.75e"
+#define	CM_VERSION	"0.75f"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -500,6 +503,7 @@ static	int	connect2clamd(struct privdata *privdata);
 static	void	checkClamd(void);
 static	int	sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *virusname);
 static	void	setsubject(SMFICTX *ctx, const char *virusname);
+static	int	clamfi_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
 
 static	char	clamav_version[128];
 static	int	fflag = 0;	/* force a scan, whatever */
@@ -1534,69 +1538,44 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	 */
 	if(strncasecmp(port, "inet:", 5) == 0) {
 		const char *hostmail;
-		/*
-		 * TODO: gethostbyname_r is non-standard so different operating
-		 * systems do it in different ways. Need more examples
-		 */
-#ifdef	HAVE_GETHOSTBYNAME_R_6
-		struct hostent *hp, hostent;
-		char buf[BUFSIZ];
-		int ret;
-#else
-		const struct hostent *hp2, *hp;
 		struct hostent hostent;
-		static pthread_mutex_t hostent_mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
+		char buf[BUFSIZ];
 
 		/*
 		 * Using TCP/IP for the sendmail->clamav-milter connection
 		 */
 		if((hostmail = smfi_getsymval(ctx, "{if_name}")) == NULL) {
 			if(use_syslog)
-				syslog(LOG_WARNING, "Can't get sendmail hostname");
-			hostmail = "unknown";
+				syslog(LOG_ERR, "Can't get sendmail hostname");
+			return cl_error;
 		}
-
-#ifdef	HAVE_GETHOSTBYNAME_R_6
-		if(gethostbyname_r(hostmail, &hostent, buf, sizeof(buf), &hp, &ret) != 0) {
+		if(clamfi_gethostbyname(hostmail, &hostent, buf, sizeof(buf)) != 0) {
 			if(use_syslog)
 				syslog(LOG_WARNING, "Access Denied: Host Unknown (%s)", hostname);
 			return cl_error;
 		}
-#else
-		pthread_mutex_lock(&hostent_mutex);
-		if((hp2 = gethostbyname(hostmail)) == NULL) {
-			pthread_mutex_unlock(&hostent_mutex);
-			if(use_syslog)
-				syslog(LOG_WARNING, "Access Denied: Host Unknown (%s)", hostname);
-			return cl_error;
-		}
-		memcpy(&hostent, hp2, sizeof(struct hostent));
-		pthread_mutex_unlock(&hostent_mutex);
-		hp = &hostent;
-#endif
 
 #ifdef HAVE_INET_NTOP
-		if(hp->h_addr &&
-		   (inet_ntop(AF_INET, (struct in_addr *)hp->h_addr, ip, sizeof(ip)) == NULL)) {
-			perror(hp->h_name);
+		if(hostent.h_addr &&
+		   (inet_ntop(AF_INET, (struct in_addr *)hostent.h_addr, ip, sizeof(ip)) == NULL)) {
+			perror(hostent.h_name);
 			/*if(use_syslog)
-				syslog(LOG_WARNING, "Can't get IP address for (%s)", hp->h_name);
-			strcpy(ip, (char *)inet_ntoa(*(struct in_addr *)hp->h_addr));*/
+				syslog(LOG_WARNING, "Can't get IP address for (%s)", hostent.h_name);
+			strcpy(ip, (char *)inet_ntoa(*(struct in_addr *)hostent.h_addr));*/
 			if(use_syslog)
-				syslog(LOG_WARNING, "Access Denied: Can't get IP address for (%s)", hp->h_name);
+				syslog(LOG_WARNING, "Access Denied: Can't get IP address for (%s)", hostent.h_name);
 			return cl_error;
 		}
 #else
-		strncpy(ip, (char *)inet_ntoa(*(struct in_addr *)hp->h_addr), sizeof(ip));
+		strncpy(ip, (char *)inet_ntoa(*(struct in_addr *)hostent.h_addr), sizeof(ip));
 #endif
 
 		/*
 		 * Ask is this is a allowed name or IP number
 		 */
-		if(!hosts_ctl("clamav-milter", hp->h_name, ip, STRING_UNKNOWN)) {
+		if(!hosts_ctl("clamav-milter", hostent.h_name, ip, STRING_UNKNOWN)) {
 			if(use_syslog)
-				syslog(LOG_WARNING, "Access Denied for %s[%s]", hp->h_name, ip);
+				syslog(LOG_WARNING, "Access Denied for %s[%s]", hostent.h_name, ip);
 			return SMFIS_TEMPFAIL;
 		}
 	}
@@ -1624,12 +1603,20 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		 * local machines are not scanned.
 		 *
 		 * TODO: read these from clamav.conf
+		 *
+		 * Better table by Damian Menscher <menscher@uiuc.edu>
+		 *
+		 * Andy Fiddaman <clam@fiddaman.net> added
+		 *	169.254.0.0/16 (Microsoft default DHCP)
 		 */
 		static const char *localAddresses[] = {
-			/*"^192\\.168\\.[0-9]+\\.[0-9]+$",*/
-			"^192\\.168\\.[0-9]*\\.[0-9]*$",
-			"^10\\.0\\.0\\.[0-9]*$",
-			"127.0.0.1",
+			"^127\\.0\\.0\\.1$",
+			"^192\\.168\\.[0-9]+\\.[0-9]+$",
+			"^10\\.[0-9]*\\.[0-9]*\\.[0-9]*$",
+			"^172\\.1[6-9]\\.[0-9]*\\.[0-9]*$",
+			"^172\\.2[0-9]\\.[0-9]*\\.[0-9]*$",
+			"^172\\.3[0-1]\\.[0-9]*\\.[0-9]*$",
+			"^169\\.254\\.[0-9]+\\.[0-9]+$",
 			NULL
 		};
 		const char **possible;
@@ -1638,7 +1625,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 			int rc;
 			regex_t reg;
 
-			if(regcomp(&reg, *possible, 0) != 0) {
+			if(regcomp(&reg, *possible, REG_EXTENDED) != 0) {
 				if(use_syslog)
 					syslog(LOG_ERR, "Couldn't parse local regexp");
 				return cl_error;
@@ -2070,10 +2057,24 @@ clamfi_eom(SMFICTX *ctx)
 		if(localSocket) {
 			char hostname[32];
 
-			if(gethostname(hostname, sizeof(hostname)) < 0)
-				strncpy(hostname,
-					smfi_getsymval(ctx, "{j}"),
-					sizeof(hostname) - 1);
+			if(gethostname(hostname, sizeof(hostname)) < 0) {
+				const char *ptr = smfi_getsymval(ctx, "{j}");
+
+				if(ptr)
+					strncpy(hostname, ptr,
+						sizeof(hostname) - 1);
+				else
+					strcpy(buf, "Error determining host");
+			} else if(strchr(hostname, '.') == NULL) {
+				/*
+				 * Determine fully qualified name
+				 */
+				struct hostent hostent;
+				char buf[BUFSIZ];
+
+				if(clamfi_gethostbyname(hostname, &hostent, buf, sizeof(buf)) == 0)
+					strncpy(hostname, hostent.h_name, sizeof(hostname));
+			}
 
 			snprintf(buf, sizeof(buf) - 1, "%s\n\ton %s",
 				clamav_version, hostname);
@@ -2149,7 +2150,10 @@ clamfi_eom(SMFICTX *ctx)
 		char reject[1024];
 		char **to, *virusname;
 
-		*ptr = '\0';	/* Remove the "FOUND" word */
+		/*
+		 Remove the "FOUND" word, and the space before it
+		 */
+		*--ptr = '\0';
 
 		/* skip over 'stream/filename: ' at the start */
 		if((virusname = strchr(mess, ':')) != NULL)
@@ -2296,7 +2300,7 @@ clamfi_eom(SMFICTX *ctx)
 
 					for(to = privdata->to; *to; to++)
 						fprintf(sendmail, "\t%s\n", *to);
-					fprintf(sendmail, "contained %sand has not been delivered.\n", virusname);
+					fprintf(sendmail, "contained %s and has not been delivered.\n", virusname);
 
 					if(privdata->filename != NULL)
 						fprintf(sendmail, "\nThe message in question has been quarantined as %s\n", privdata->filename);
@@ -2370,7 +2374,7 @@ clamfi_eom(SMFICTX *ctx)
 		} else
 			rc = SMFIS_DISCARD;
 
-		snprintf(reject, sizeof(reject) - 1, "%sdetected by ClamAV - http://www.clamav.net", virusname);
+		snprintf(reject, sizeof(reject) - 1, "%s detected by ClamAV - http://www.clamav.net", virusname);
 		smfi_setreply(ctx, (char *)privdata->rejectCode, "5.7.1", reject);
 	}
 	clamfi_cleanup(ctx);
@@ -3044,22 +3048,18 @@ checkClamd(void)
 /*
  * Send a templated message about an intercepted message. Very basic for
  * now, just to prove it works, will enhance the flexability later, only
- * supports %v and {sendmail_variables} at present. And only one instance of
- * %v or {sendmail_variable} at that.
+ * supports %v and $sendmail_variables$ at present.
  *
  * TODO: more template features
  * TODO: allow filename to start with a '|' taken to mean the output of
  *	a program
- * TODO: allow { to be escaped with a \ character
- * TODO: allow more than one substitution in a file
  */
 static int
 sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *virusname)
 {
 	FILE *fin = fopen(filename, "r");
 	struct stat statb;
-	char *buf, *ptr, *ptr2;
-	int rc;
+	char *buf, *ptr /* , *ptr2 */;
 
 	if(fin == NULL) {
 		perror(filename);
@@ -3088,41 +3088,53 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 	fread(buf, sizeof(char), statb.st_size, fin);
 	fclose(fin);
 	buf[statb.st_size] = '\0';
-	rc = 0;
 
-	/* FIXME: \%v should be %%v */
-	if(((ptr = strstr(buf, "%v")) != NULL) && (strstr(buf, "\\%v") == NULL)) {
-		*ptr = '\0';
-		ptr = &ptr[2];
-		fputs(buf, sendmail);
-		fputs(virusname, sendmail);
-		rc = (fputs(ptr, sendmail) == EOF) ? -1 : 0;
-	} else if((ptr = strchr(buf, '{')) && (ptr2 = strchr(ptr, '}'))) {
-		char *var;
-
-		*ptr++ = '\0';
-		fputs(buf, sendmail);
-		*ptr2++ = '\0';
-
-		if((var = cli_malloc(strlen(ptr) + 3)) != NULL) {
-			sprintf(var, "{%s}", ptr);
-			if((ptr = smfi_getsymval(ctx, var)) != NULL)
-				fputs(ptr, sendmail);
-			else if(use_syslog) {
-				fputs(var, sendmail);
+	for(ptr = buf; *ptr; ptr++)
+		if(*ptr == '\\') {
+			if(*++ptr == '\0')
+				break;
+			putc(*ptr, sendmail);
+		} else if(*ptr == '%') {
+			/* clamAV variable */
+			if(*++ptr == 'v')
+				fputs(virusname, sendmail);
+			else if(*ptr == '%')
+				putc('%', sendmail);
+			else if(*ptr == '\0')
+				break;
+			else if(use_syslog)
 				syslog(LOG_ERR,
-					"%s: Unknown sendmail variable \"%s\"\n",
-					filename, var);
+					"%s: Unknown clamAV variable \"%c\"\n",
+					filename, *ptr);
+		} else if(*ptr == '$') {
+			const char *val;
+			char *end = strchr(++ptr, '$');
+
+			if(end == NULL) {
+				syslog(LOG_ERR,
+					"%s: Unterminated sendmail variable \"%s\"\n",
+						filename, ptr);
+				continue;
 			}
-			free(var);
-		}
-		fputs(ptr2, sendmail);
-	} else
-		rc = (fputs(buf, sendmail) == EOF) ? -1 : 0;
+			*end = '\0';
+
+			val = smfi_getsymval(ctx, ptr);
+			if(val == NULL) {
+				if(use_syslog) {
+					fputs(ptr, sendmail);
+					syslog(LOG_ERR,
+						"%s: Unknown sendmail variable \"%s\"\n",
+						filename, ptr);
+				}
+			} else
+				fputs(val, sendmail);
+			ptr = end;
+		} else
+			putc(*ptr, sendmail);
 
 	free(buf);
 
-	return rc;
+	return 0;
 }
 
 /*
@@ -3138,4 +3150,56 @@ setsubject(SMFICTX *ctx, const char *virusname)
 	 */
 	snprintf(subject, sizeof(subject) - 1, "[Virus] %s", virusname);
 	smfi_chgheader(ctx, "Subject", 1, subject);
+}
+
+/*
+ * TODO: gethostbyname_r is non-standard so different operating
+ * systems do it in different ways. Need more examples
+ *
+ * Returns 0 for success
+ */
+static int
+clamfi_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len)
+{
+#if	defined(HAVE_GETHOSTBYNAME_R_6)
+	/* e.g. Linux */
+	struct hostent *hp2;
+	int ret;
+
+	if((hostname == NULL) || (hp == NULL))
+		return -1;
+	if(gethostbyname_r(hostname, hp, buf, len, &hp2, &ret) < 0)
+		return errno;
+#elif	defined(HAVE_GETHOSTBYNAME_R_5)
+	/* e.g. BSD, Solaris, Cygwin */
+	int ret;
+
+	if((hostname == NULL) || (hp == NULL))
+		return -1;
+	if(gethostbyname_r(hostname, hp, buf, len, &ret) == NULL)
+		return errno;
+#elif	defined(HAVE_GETHOSTBYNAME_R_3)
+	/* e.g. HP/UX, AIX */
+	if((hostname == NULL) || (hp == NULL))
+		return -1;
+	if(gethostbyname_r(hostname, &hp, (struct hostent_data *)buf) < 0)
+		return errno;
+#else
+	/* Single thread the code */
+	struct hostent *hp2;
+	static pthread_mutex_t hostent_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+	if((hostname == NULL) || (hp == NULL))
+		return -1;
+
+	pthread_mutex_lock(&hostent_mutex);
+	if((hp2 = gethostbyname(hostname)) == NULL) {
+		pthread_mutex_unlock(&hostent_mutex);
+		return errno;
+	}
+	memcpy(hp, hp2, sizeof(struct hostent));
+	pthread_mutex_unlock(&hostent_mutex);
+#endif
+
+	return 0;
 }

@@ -162,11 +162,11 @@ will inform the remote SMTP client to retry later.
 \fB\-\-template\-file=file \-t file\fR
 File points to a file whose contents is sent as the warning message whenever a
 virus is intercepted.
-The first occurance of %v within the file is replaced with the message
+Occurances of %v within the file is replaced with the message
 returned from clamd, which includes the name of the virus.
-The %v string can be escaped, thus \\%v, to send the string %v.
-Any occurance of strings in braces are replaced with the appropriate
-{sendmail-variable}.
+The %v string can be escaped thus, \\%v, to send the string %v.
+Any occurance of strings in dollar signs are replaced with the appropriate
+sendmail-variable, e.g. ${if_addr}$.
 If the \-t option is not given, clamav\-milter defaults to a hardcoded message.
 .TP
 \fB\-\-timeout=n \-T n\fR
