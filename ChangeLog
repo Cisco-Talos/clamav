@@ -1,3 +1,7 @@
+Tue Mar  9 12:36:10 GMT 2004 (trog)
+-----------------------------------
+  * clamd/others.c: fix includes
+
 Mon Mar  8 22:26:48 CET 2004 (tk)
 ---------------------------------
   * clamav-milter: fixed a typo in Makefile

@@ -31,8 +31,10 @@
 #include <time.h>
 #include <sys/stat.h>
 #include <errno.h>
-
-#undef HAVE_POLL
+#include <sys/time.h>
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 
 #if HAVE_POLL
 #if HAVE_POLL_H
