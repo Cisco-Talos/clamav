@@ -140,9 +140,15 @@
  *			Removed remote possibility of crash if the target
  *			e-mail address is very long
  *			No longer calls clamdscan to get the version
+ *	0.60m	12/10/03 Now does sanity check if using localSocket
+ *			Gets version info from clamd
+ *			Only reset fd's 0/1/2 if !ForeGround
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.14  2003/10/12 08:37:21  nigelhorne
+ * Uses VERSION command to get version information
+ *
  * Revision 1.13  2003/10/11 15:42:15  nigelhorne
  * Don't call clamdscan
  *
@@ -168,9 +174,9 @@
  * Added -f flag use MaxThreads if --max-children not set
  *
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.13 2003/10/11 15:42:15 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.14 2003/10/12 08:37:21 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.60k"
+#define	CM_VERSION	"0.60m"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -250,7 +256,7 @@ static	void		clamfi_cleanup(SMFICTX *ctx);
 static	int		clamfi_send(const struct privdata *privdata, size_t len, const char *format, ...);
 static	char		*strrcpy(char *dest, const char *source);
 
-static	char	clamav_version[64];
+static	char	clamav_version[128];
 static	int	fflag = 0;	/* force a scan, whatever */
 static	int	oflag = 0;	/* scan messages from our machine? */
 static	int	lflag = 0;	/* scan messages from our site? */
@@ -344,6 +350,10 @@ main(int argc, char **argv)
 		clamfi_close, /* connection cleanup callback */
 	};
 
+	/*
+	 * Temporarily enter guessed value into clamav_version, will
+	 * be overwritten later by the value returned by clamd
+	 */
 	snprintf(clamav_version, sizeof(clamav_version),
 		"ClamAV version %s, clamav-milter version %s",
 		VERSION, CM_VERSION);
@@ -504,14 +514,25 @@ main(int argc, char **argv)
 
 	/*
 	 * Get the outgoing socket details - the way to talk to clamd
-	 * TODO: support TCP sockets
 	 */
-	if((cpt = cfgopt(copt, "LocalSocket")) != NULL)
+	if((cpt = cfgopt(copt, "LocalSocket")) != NULL) {
+		if(cfgopt(copt, "TCPSocket") != NULL) {
+			fprintf(stderr, "%s: You can select one server type only (local/TCP) in %s\n",
+				argv[0], cfgfile);
+			return EX_CONFIG;
+		}
 		/*
 		 * TODO: check --server hasn't been set
 		 */
 		localSocket = cpt->strarg;
-	else if((cpt = cfgopt(copt, "TCPSocket")) != NULL) {
+		if(!pingServer()) {
+			fprintf(stderr, "Can't talk to clamd server via %s\n",
+				localSocket);
+			fprintf(stderr, "Check your entry for LocalSocket in %s\n",
+				cfgfile);
+			return EX_CONFIG;
+		}
+	} else if((cpt = cfgopt(copt, "TCPSocket")) != NULL) {
 		/*
 		 * TCPSocket is in fact a port number not a full socket
 		 */
@@ -528,13 +549,8 @@ main(int argc, char **argv)
 			argv[0], cfgfile);
 		return EX_CONFIG;
 	}
-	if(localSocket && tcpSocket) {
-		fprintf(stderr, "%s: You can select one server type only (local/TCP) in %s\n",
-			argv[0], cfgfile);
-		return EX_CONFIG;
-	}
 
-	if(!cfgopt(copt, "Foreground"))
+	if(!cfgopt(copt, "Foreground")) {
 		switch(fork()) {
 			case -1:
 				perror("fork");
@@ -544,6 +560,13 @@ main(int argc, char **argv)
 			default:	/* parent */
 				return EX_OK;
 		}
+		close(0);
+		close(1);
+		close(2);
+		open("/dev/null", O_RDONLY);
+		if(open("/dev/console", O_WRONLY) == 1)
+			dup(1);
+	}
 
 	if(smfi_setconn(port) == MI_FAILURE) {
 		fprintf(stderr, "%s: smfi_setconn failed\n",
@@ -592,13 +615,6 @@ main(int argc, char **argv)
 
 	signal(SIGPIPE, SIG_IGN);
 
-	close(0);
-	close(1);
-	close(2);
-	open("/dev/null", O_RDONLY);
-	if(open("/dev/console", O_WRONLY) == 1)
-		dup(1);
-
 	return smfi_main();
 }
 
@@ -609,24 +625,54 @@ main(int argc, char **argv)
 static int
 pingServer(void)
 {
-	struct sockaddr_in server;
+	char *ptr;
 	int sock, nbytes;
-	char buf[6];
+	char buf[128];
 
-	memset((char *)&server, 0, sizeof(struct sockaddr_in));
-	server.sin_family = AF_INET;
-	server.sin_port = htons(tcpSocket);
-	server.sin_addr.s_addr = inet_addr(serverIP);
+	if(localSocket) {
+		struct sockaddr_un server;
 
-	if((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		perror("socket");
-		return 0;
+		memset((char *)&server, 0, sizeof(struct sockaddr_un));
+		server.sun_family = AF_UNIX;
+		strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
+
+		if((sock = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+			perror("socket");
+			return 0;
+		}
+		if(connect(sock, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
+			perror(localSocket);
+			return 0;
+		}
+	} else {
+		struct sockaddr_in server;
+
+		memset((char *)&server, 0, sizeof(struct sockaddr_in));
+		server.sin_family = AF_INET;
+		server.sin_port = htons(tcpSocket);
+		server.sin_addr.s_addr = inet_addr(serverIP);
+
+		if((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+			perror("socket");
+			return 0;
+		}
+		if(connect(sock, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
+			perror("connect");
+			return 0;
+		}
 	}
-	if(connect(sock, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
-		perror("connect");
-		return 0;
-	}
-	if(send(sock, "PING\n", 5, 0) < 5) {
+
+	/*
+	 * It would be better to use PING, check for PONG then issue the
+	 * VERSION command, since that would better validate that we're
+	 * talking to clamd, however clamd closes the session after
+	 * sending PONG :-(
+	 * So this code does not really validate that we're talking to clamd
+	 * Needs a fix to clamd
+	 * Also version command is verbose: says "clamd / ClamAV version"
+	 * instead of "clamAV version"
+	 */
+	if(send(sock, "VERSION\n", 8, 0) < 8) {
 		perror("send");
 		close(sock);
 		return 0;
@@ -644,7 +690,18 @@ pingServer(void)
 	}
 	buf[nbytes] = '\0';
 
-	return strcmp(buf, "PONG\n") == 0;
+	/* Remove the trailing new line from the reply */
+	if((ptr = strchr(buf, '\n')) != NULL)
+		*ptr = '\0';
+
+	/*
+	 * No real validation is done here
+	 */
+	snprintf(clamav_version, sizeof(clamav_version),
+		"ClamAV version '%s', clamav-milter version '%s'",
+		buf, CM_VERSION);
+		
+	return 1;
 }
 
 static sfsistat
