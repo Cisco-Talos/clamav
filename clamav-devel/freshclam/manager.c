@@ -155,7 +155,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	hostfd = wwwconnect(hostname, proxy, port, ipaddr);
 
     if(hostfd < 0) {
-	mprintf("@Connection with %s (IP: %s) failed.\n", hostname, ipaddr);
+	mprintf("@Connection with %s failed.\n", hostname);
 	return 52;
     } else
 	mprintf("*Connected to %s (%s).\n", hostname, ipaddr);
@@ -278,7 +278,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 /* proxy support finshed by njh@bandsman.co.uk */
 int wwwconnect(const char *server, const char *proxy, int pport, char *ip)
 {
-	int socketfd, port;
+	int socketfd, port, i;
 	struct sockaddr_in name;
 	struct hostent *host;
 	char ipaddr[16];
@@ -326,23 +326,31 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip)
 	return -1;
     }
 
-    /* this dirty hack comes from pink - Nosuid TCP/IP ping 1.6 */
-    ia = (unsigned char *) host->h_addr;
-    sprintf(ipaddr, "%u.%u.%u.%u", ia[0], ia[1], ia[2], ia[3]);
+    for(i = 0; host->h_addr_list[i] != 0; i++) {
+	/* this dirty hack comes from pink - Nosuid TCP/IP ping 1.6 */
+	ia = (unsigned char *) host->h_addr_list[i];
+	sprintf(ipaddr, "%u.%u.%u.%u", ia[0], ia[1], ia[2], ia[3]);
 
-    if(ip)
-	strcpy(ip, ipaddr);
+	if(ip)
+	    strcpy(ip, ipaddr);
 
-    name.sin_addr = *((struct in_addr *) host->h_addr);
-    name.sin_port = htons(port);
+	if(i > 0)
+	    mprintf("Trying host %s (%s)...\n", hostpt, ipaddr);
 
-    if(connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in)) == -1) {
-	mprintf("@Can't connect to port %d of host %s (%s)\n", port, hostpt, ipaddr);
-	close(socketfd);
-	return -2;
+	name.sin_addr = *((struct in_addr *) host->h_addr_list[i]);
+	name.sin_port = htons(port);
+
+	if(connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in)) == -1) {
+	    mprintf("@Can't connect to port %d of host %s (%s)\n", port, hostpt, ipaddr);
+	    continue;
+	}
+
+	return socketfd;
     }
 
-    return socketfd;
+    close(socketfd);
+    mprintf("@No servers could be reached. Giving up\n");
+    return -2;
 }
 
 /* njh@bandsman.co.uk: added proxy support */
