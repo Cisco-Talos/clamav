@@ -1066,6 +1066,9 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		free(tempfile);
 	    }
 
+	    if(scanned)
+		*scanned += dsize / CL_COUNT_PRECISION;
+
 	    ret = cl_scanbuff(dest, dsize, virname, root);
 	    free(section_hdr);
 	    free(src);

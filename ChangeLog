@@ -1,3 +1,7 @@
+Sun Oct 17 01:28:48 CEST 2004 (tk)
+----------------------------------
+  * libclamav: count unpacked data scanned with cl_scanbuff()
+
 Sat Oct 16 20:11:15 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Rudimentary handling of BeMail (BeOS) messages.
@@ -12,7 +16,7 @@ Sat Oct 16 18:24:33 BST 2004 (njh)
 Sat Oct 16 17:10:06 BST 2004 (njh)
 ----------------------------------
   * libclamav/untar.c:	Handle empty files in the middle of archives, reported
-				by René Bellora <rbellora@tecnoaccion.com.ar>
+				by René Bellora <rbellora*tecnoaccion.com.ar>
 
 Sat Oct 16 14:55:03 BST 2004 (njh)
 ----------------------------------
