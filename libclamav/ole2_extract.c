@@ -187,7 +187,7 @@ static char *get_property_name(char *name, int size)
 	int i, j;
 	char *newname;
 
-	if (*name == 0 || size == 0 || size > 64) {
+	if (*name == 0 || size <= 0 || size > 64) {
 		return NULL;
 	}
 

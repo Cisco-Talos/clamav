@@ -1,3 +1,6 @@
+Mon Mar 15 18:40:44 GMT 2004 (trog)
+  * libvlamav/ole2_extract.c: fix cli_malloc() error
+
 Mon Mar 15 17:05:01 CET 2004 (tk)
 ---------------------------------
   * libclamav: unrarlib: fixed segfault with some Bagle's RAR archives
