@@ -201,9 +201,8 @@ int scanmanager(const struct optstruct *opt)
     }
 
 #ifdef C_LINUX
-    if(stat("/proc", &sb) == -1)
-	procdev = 0;
-    else
+    procdev = 0;
+    if(stat("/proc", &sb) != -1 && !sb.st_size)
 	procdev = sb.st_dev;
 #endif
 

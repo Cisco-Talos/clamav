@@ -760,7 +760,7 @@ static int cli_scandir(const char *dirname, const char **virname, long int *scan
 	struct dirent *dent;
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #ifdef C_SOLARIS
-	char result[sizeof(struct dirent) + MAX_PATH + 1];
+	char result[sizeof(struct dirent) + PATH_MAX + 1];
 #else
 	struct dirent result;
 #endif
@@ -824,7 +824,7 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 	struct dirent *dent;
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #ifdef C_SOLARIS
-	char result[sizeof(struct dirent) + MAX_PATH + 1];
+	char result[sizeof(struct dirent) + PATH_MAX + 1];
 #else
 	struct dirent result;
 #endif

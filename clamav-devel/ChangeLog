@@ -1,3 +1,8 @@
+Wed Oct 20 23:51:46 CEST 2004 (tk)
+----------------------------------
+  * clamd, clamscan: do not initialise procdev when /proc is not mounted
+		     (thanks to Andrey J. Melnikoff (TEMHOTA) <temnota*kmv.ru>)
+
 Wed Oct 20 22:37:24 CEST 2004 (tk)
 ----------------------------------
   * shared/misc.c: print version information to stdin instead of stderr
