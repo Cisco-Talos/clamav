@@ -113,6 +113,7 @@ Changes
 0.60c	22/8/03	Another go at Solaris support
 0.60d	26/8/03	Removed superflous buffer and unneeded strerror call
 		ETIMEDOUT isn't an error, but should give a warning
+0.60e	09/9/03	Added -P and -q flags by "Nicholas M. Kirsch" <nick@kirsch.org>
 
 BUG REPORTS
 
