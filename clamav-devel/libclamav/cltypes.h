@@ -51,6 +51,16 @@
 #   error unable to typedef int32_t from either int or long
     typedef unsigned long uint32_t;     typedef signed long int32_t;
 # endif
+
+# if SIZEOF_LONG == 8
+    typedef unsigned long uint64_t;      typedef signed long int64_t;
+# elif SIZEOF_LONG_LONG == 8
+    typedef unsigned long long uint64_t;     typedef signed long long int64_t;
+# else
+#   error unable to typedef int64_t from either long or long long
+    typedef unsigned long long uint64_t;     typedef signed long long int64_t;
+# endif
+
 #endif
 
 /*

@@ -261,6 +261,9 @@
 /* The number of bytes in type long */
 #undef SIZEOF_LONG
 
+/* The number of bytes in type long long */
+#undef SIZEOF_LONG_LONG
+
 /* The number of bytes in type short */
 #undef SIZEOF_SHORT
 

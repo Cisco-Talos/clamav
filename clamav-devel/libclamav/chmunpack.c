@@ -44,6 +44,7 @@
 #include "others.h"
 #include "mspack/mspack.h"
 #include "mspack/lzx.h"
+#include "cltypes.h"
 
 #define FALSE (0)
 #define TRUE (1)

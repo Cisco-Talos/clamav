@@ -1,3 +1,8 @@
+Tue Nov 30 16:47:54 CET 2004 (tk)
+---------------------------------
+  * improved support for BSDI BSD/OS (access to test environment provided by
+    David Wu <dyw*iohk.com>)
+
 Tue Nov 30 12:06:12 GMT 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Better handling for  unbalanced quotes in
@@ -5,17 +10,17 @@ Tue Nov 30 12:06:12 GMT 2004 (njh)
 
 Mon Nov 29 13:25:25 GMT 2004 (njh)
 ----------------------------------
-* libclamav/blob.c:	Fix potential crash if a temporary file can't be
+  * libclamav/blob.c:	Fix potential crash if a temporary file can't be
 	created
-libclamav/mbox.c:	Disable the old continuation marker detection scheme
+  * libclamav/mbox.c:	Disable the old continuation marker detection scheme
 
 Mon Nov 29 00:23:55 CET 2004 (tk)
 ---------------------------------
-* clamdscan: add support for --move and --remove options
+  * clamdscan: add support for --move and --remove options
 
 Sun Nov 28 21:08:44 GMT 2004 (njh)
 ----------------------------------
-* libclamav:	Email headers of only white space are no longer treated as
+  * libclamav:	Email headers of only white space are no longer treated as
 		the end of the headers
 
 Sun Nov 28 16:30:18 GMT 2004 (njh)
