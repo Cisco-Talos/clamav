@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.113  2004/11/11 22:15:46  nigelhorne
+ * Rewrite handling of folded headers
+ *
  * Revision 1.112  2004/11/09 19:40:06  nigelhorne
  * Find uuencoded files in preambles to multipart messages
  *
@@ -333,7 +336,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.112 2004/11/09 19:40:06 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.113 2004/11/11 22:15:46 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1572,15 +1575,17 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		encoding_type enctype = m->encodingTypes[i];
 		size_t size;
 
+		cli_dbgmsg("messageExport: enctype %d is %d\n", i, enctype);
 		/*
 		 * Find the filename to decode
 		 */
-		if((enctype == UUENCODE) || ((i == 0) && uuencodeBegin(m))) {
+		if((enctype == UUENCODE) || ((enctype == NOENCODING) && (i == 0) && uuencodeBegin(m))) {
 			t_line = uuencodeBegin(m);
 
 			if(t_line == NULL) {
 				/*cli_warnmsg("UUENCODED attachment is missing begin statement\n");*/
 				(*destroy)(ret);
+				m->base64chars = NULL;
 				return NULL;
 			}
 
@@ -1643,6 +1648,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 
 			t_line = messageGetBody(m);
 		}
+
 		if(filename)
 			free((char *)filename);
 
