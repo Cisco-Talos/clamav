@@ -1,3 +1,7 @@
+Fri Sep 24 09:14:44 BST 2004 (trog)
+-----------------------------------
+  * libclamav/filetypes.c: Add more HTML markers
+
 Thu Sep 23 09:46:06 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Scan multipart/digest messages (suggested by "Andrey J.
