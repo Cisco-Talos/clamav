@@ -117,9 +117,11 @@
  *	0.60c	22/8/03	Another go at Solaris support
  *	0.60d	26/8/03	Removed superflous buffer and unneeded strerror call
  *			ETIMEDOUT isn't an error, but should give a warning
+ *	0.60e	09/9/03	Added -P and -q flags by "Nicholas M. Kirsch"
+ *			<nick@kirsch.org>
  */
 
-#define	CM_VERSION	"0.60d"
+#define	CM_VERSION	"0.60e"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -207,6 +209,17 @@ static	int	bflag = 0;	/*
 				 * sender. This probably isn't a good idea
 				 * since most reply addresses will be fake
 				 */
+static	int	pflag = 0;	/*
+				 * Send a warning to the postmaster only,
+				 * this means user's won't be told when someone
+				 * sent them a virus
+				 */
+static	int	qflag = 0;	/*
+				 * Send no warnings when a virus is found,
+				 * this means that the only log of viruses
+				 * found is the syslog, so it's best to
+				 * enable LogSyslog in clamav.conf
+				 */
 
 #ifdef	CL_DEBUG
 static	int	debug_level = 0;
@@ -235,9 +248,11 @@ help(void)
 	puts("\t--help\t\t\t-h\tThis message.");
 	puts("\t--local\t\t\t-l\tScan messages sent from machines on our LAN.");
 	puts("\t--outgoing\t\t-o\tScan outgoing messages from this machine.");
+	puts("\t--postmaster\t\t-p\tPostmaster address [default=postmaster].");
+	puts("\t--postmaster-only\t\t-P\tSend warnings only to the postmaster.");
+	puts("\t--quiet\t\t\t-q\tDon't send e-mail notifications of interceptions.");
 	puts("\t--server=ADDRESS\t-s ADDRESS\tIP address of server running clamd (when using TCPsocket).");
 	puts("\t--version\t\t-V\tPrint the version number of this software.");
-	puts("\t--postmaster\t\t-p\tPostmaster address [default=postmaster].");
 #ifdef	CL_DEBUG
 	puts("\t--debug-level=n\t\t-x n\tSets the debug level to 'n'.");
 #endif
@@ -271,9 +286,9 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "bc:lodhs:Vx:";
+		const char *args = "bc:lopPqdhs:Vx:";
 #else
-		const char *args = "bc:lodhs:V";
+		const char *args = "bc:lopPqdhs:V";
 #endif
 		static struct option long_options[] = {
 			{
@@ -293,6 +308,12 @@ main(int argc, char **argv)
 			},
 			{
 				"postmaster", 0, NULL, 'p'
+			},
+			{
+				"postmaster-only", 0, NULL, 'P',
+			},
+			{
+				"quiet", 0, NULL, 'q'
 			},
 			{
 				"max-children", 1, NULL, 'm'
@@ -342,6 +363,12 @@ main(int argc, char **argv)
 			case 'p':	/* postmaster e-mail address */
 				postmaster = optarg;
 				break;
+			case 'P':	/* postmaster only */
+				pflag++;
+				break;
+			case 'q':	/* send NO notification email */
+				qflag++;
+				break;
 			case 's':	/* server running clamd */
 				serverIP = optarg;
 				break;
@@ -355,9 +382,9 @@ main(int argc, char **argv)
 #endif
 			default:
 #ifdef	CL_DEBUG
-				fprintf(stderr, "Usage: %s [-b] [-c=FILE] [--max-children=num] [-l] [-o] [-x#] socket-addr\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-b] [-c=FILE] [--max-children=num] [-l] [-o] [-p=address] [-P] [-q] [-x#] socket-addr\n", argv[0]);
 #else
-				fprintf(stderr, "Usage: %s [-b] [-c=FILE] [--max-children=num] [-l] [-o] socket-addr\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-b] [-c=FILE] [--max-children=num] [-l] [-o] [-p=address] [-P] [-q] socket-addr\n", argv[0]);
 #endif
 				return EX_USAGE;
 		}
@@ -472,8 +499,12 @@ main(int argc, char **argv)
 
 		if(cfgopt(copt, "LogVerbose"))
 			logVerbose = 1;
-	} else
+	} else {
+		if(qflag)
+			fprintf(stderr, "%s: (-q && !LogSysLog): warning - all interception message methods are off\n",
+				argv[0]);
 		use_syslog = 0;
+	}
 
 	/*
 	 * Get the incoming socket details - the way sendmail talks to us
@@ -998,30 +1029,33 @@ clamfi_eom(SMFICTX *ctx)
 		puts(err);
 #endif
 
-		sendmail = popen("/usr/lib/sendmail -t", "w");
-		if(sendmail) {
-			fputs("From: MAILER-DAEMON\n", sendmail);
-			if(bflag) {
-				fprintf(sendmail, "To: %s\n", privdata->from);
-				fprintf(sendmail, "Cc: %s\n", postmaster);
-			} else
-				fprintf(sendmail, "To: %s\n", postmaster);
+		if(!qflag) {
+			sendmail = popen("/usr/lib/sendmail -t", "w");
+			if(sendmail) {
+				fputs("From: MAILER-DAEMON\n", sendmail);
+				if(bflag) {
+					fprintf(sendmail, "To: %s\n", privdata->from);
+					fprintf(sendmail, "Cc: %s\n", postmaster);
+				} else
+					fprintf(sendmail, "To: %s\n", postmaster);
 
-			for(to = privdata->to; *to; to++)
-				fprintf(sendmail, "Cc: %s\n", *to);
-			fputs("Subject: Virus intercepted\n\n", sendmail);
+				if(!pflag)
+					for(to = privdata->to; *to; to++)
+						fprintf(sendmail, "Cc: %s\n", *to);
+				fputs("Subject: Virus intercepted\n\n", sendmail);
 
-			if(bflag)
-				fputs("A message you sent to\n\t", sendmail);
-			else
-				fprintf(sendmail, "A message sent from %s to\n\t", privdata->from);
+				if(bflag)
+					fputs("A message you sent to\n\t", sendmail);
+				else
+					fprintf(sendmail, "A message sent from %s to\n\t", privdata->from);
 
-			for(to = privdata->to; *to; to++)
-				fprintf(sendmail, "%s\n", *to);
-			fputs("contained a virus and has not been delivered.\n\t", sendmail);
-			fputs(mess, sendmail);
+				for(to = privdata->to; *to; to++)
+					fprintf(sendmail, "%s\n", *to);
+				fputs("contained a virus and has not been delivered.\n\t", sendmail);
+				fputs(mess, sendmail);
 
-			pclose(sendmail);
+				pclose(sendmail);
+			}
 		}
 
 		smfi_setreply(ctx, "550", "5.7.1", "Virus detected by ClamAV - http://clamav.elektrapro.com");
