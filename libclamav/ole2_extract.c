@@ -37,6 +37,27 @@
 
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
 
+#ifdef WORDS_LITTLEENDIAN
+#define ole2_endian_convert_16(v)	(v)
+#warning Little Endian
+#else
+static uint16_t ole2_endian_convert_16(uint16_t v)
+{
+	return ((v >> 8) + (v << 8));
+}
+#warning Big Endian
+#endif
+
+#ifdef WORDS_LITTLEENDIAN
+#define ole2_endian_convert_32(v)    (v)
+#else
+static uint32_t ole2_endian_convert_32(uint32_t v)
+{
+        return ((v >> 24) | ((v & 0x00FF0000) >> 8) |
+                ((v & 0x0000FF00) << 8) | (v << 24));
+}
+#endif
+
 typedef struct ole2_header_tag
 {
 	unsigned char magic[8];			/* should be: 0xd0cf11e0a1b11ae1 */
@@ -290,8 +311,8 @@ int ole2_get_next_bat_block(int fd, ole2_header_t *hdr, int current_block)
 		cli_dbgmsg("bat_array index error\n");
 		return -10;
 	}
-	ole2_read_block(fd, hdr, &bat, hdr->bat_array[bat_array_index]);
-	return bat[current_block-(bat_array_index * 128)];
+	ole2_read_block(fd, hdr, &bat, ole2_endian_convert_32(hdr->bat_array[bat_array_index]));
+	return ole2_endian_convert_32(bat[current_block-(bat_array_index * 128)]);
 }
 
 int ole2_get_next_sbat_block(int fd, ole2_header_t *hdr, int current_block)
@@ -306,7 +327,7 @@ int ole2_get_next_sbat_block(int fd, ole2_header_t *hdr, int current_block)
 		iter--;
 	}
 	ole2_read_block(fd, hdr, &sbat, current_bat_block);
-	return sbat[current_block % 128];
+	return ole2_endian_convert_32(sbat[current_block % 128]);
 }
 
 int ole2_get_next_xbat_block(int fd, ole2_header_t *hdr, int current_block)
@@ -328,13 +349,13 @@ int ole2_get_next_xbat_block(int fd, ole2_header_t *hdr, int current_block)
 
 	/* Follow the chain of XBAT blocks */
 	while (xbat_block_index > 0) {
-		ole2_read_block(fd, hdr, &xbat, xbat[127]);
+		ole2_read_block(fd, hdr, &xbat, ole2_endian_convert_32(xbat[127]));
 		xbat_block_index--;
 	}
 
 	ole2_read_block(fd, hdr, &bat, xbat[bat_blockno]);
 
-	return bat[bat_index];
+	return ole2_endian_convert_32(bat[bat_index]);
 }
 
 int ole2_get_next_block_number(int fd, ole2_header_t *hdr, int current_block)
@@ -384,6 +405,17 @@ void ole2_read_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 		ole2_read_block(fd, hdr, prop_block, current_block);
 		for (index=0 ; index < 4 ; index++) {
 			if (prop_block[index].type > 0) {
+				prop_block[index].name_size = ole2_endian_convert_16(prop_block[index].name_size);
+				prop_block[index].prev = ole2_endian_convert_32(prop_block[index].prev);
+				prop_block[index].next = ole2_endian_convert_32(prop_block[index].next);
+				prop_block[index].child = ole2_endian_convert_32(prop_block[index].child);
+				prop_block[index].user_flags = ole2_endian_convert_16(prop_block[index].user_flags);
+				prop_block[index].create_lowdate = ole2_endian_convert_32(prop_block[index].create_lowdate);
+				prop_block[index].create_highdate = ole2_endian_convert_32(prop_block[index].create_highdate);
+				prop_block[index].mod_lowdate = ole2_endian_convert_32(prop_block[index].mod_lowdate);
+				prop_block[index].mod_highdate = ole2_endian_convert_32(prop_block[index].mod_highdate);
+				prop_block[index].start_block = ole2_endian_convert_32(prop_block[index].start_block);
+				prop_block[index].size = ole2_endian_convert_32(prop_block[index].size);
 				if (prop_block[index].type == 5) {
 					hdr->sbat_root_start = prop_block[index].start_block;
 				}
@@ -486,6 +518,19 @@ int cli_ole2_extract(int fd, const char *dirname)
 
 	/* size of header - size of other values in struct */
 	readn(fd, &hdr, sizeof(struct ole2_header_tag) - sizeof(int));
+
+	hdr.minor_version = ole2_endian_convert_16(hdr.minor_version);
+	hdr.dll_version = ole2_endian_convert_16(hdr.dll_version);
+	hdr.byte_order = ole2_endian_convert_16(hdr.byte_order);
+	hdr.log2_big_block_size = ole2_endian_convert_16(hdr.log2_big_block_size);
+	hdr.log2_small_block_size = ole2_endian_convert_32(hdr.log2_small_block_size);
+	hdr.bat_count = ole2_endian_convert_32(hdr.bat_count);
+	hdr.prop_start = ole2_endian_convert_32(hdr.prop_start);
+	hdr.sbat_cutoff = ole2_endian_convert_32(hdr.sbat_cutoff);
+	hdr.sbat_start = ole2_endian_convert_32(hdr.sbat_start);
+	hdr.sbat_block_count = ole2_endian_convert_32(hdr.sbat_block_count);
+	hdr.xbat_start = ole2_endian_convert_32(hdr.xbat_start);
+	hdr.xbat_count = ole2_endian_convert_32(hdr.xbat_count);
 
 	hdr.sbat_root_start = -1;
 
