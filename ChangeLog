@@ -1,3 +1,8 @@
+Wed Mar 17 11:53:05 GMT 2004 (trog)
+-----------------------------------
+  * libclamav/vba_extract.c: VBA alignment check. Should now work with
+	all MacOffice documents.
+
 Wed Mar 17 09:32:45 GMT 2004 (trog)
 -----------------------------------
   * libclamav/vba_extract.c: Add support for MacOffice98 documents
