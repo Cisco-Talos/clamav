@@ -290,6 +290,7 @@ vba_project_t *vba56_dir_read(const char *dir)
         if (fd == -1) {
                 cli_dbgmsg("Can't open %s\n", fullname);
 		free(fullname);
+		/* vba56_old_dir_read(dir); */
                 return NULL;
         }
 	free(fullname);
@@ -672,7 +673,7 @@ unsigned char *vba_decompress(int fd, uint32_t offset, int *size)
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-/* Code to extract Power Point Embedded OLE2 Objects
+/* Code to extract Power Point Embedded OLE2 Objects		     */
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
@@ -685,24 +686,6 @@ typedef struct atom_header_tag {
 	uint16_t type;
 	uint32_t length;
 } atom_header_t;
-
-typedef struct ppt_currentuser_tag {
-	atom_header_t atom_hdr;
-	uint32_t len;
-	uint32_t magic;
-	uint32_t current_edit_offset;
-} ppt_currentuser_t;
-
-typedef struct ppt_useredit_tag {
-	atom_header_t atom_hdr;
-	int32_t last_slide_id;
-	uint32_t version;
-	uint32_t last_edit_offset;
-	uint32_t persist_dir_offset;
-	uint32_t document_ref;
-	uint32_t max_persist;
-	int16_t	 last_view_type;
-} ppt_useredit_t;
 
 static int ppt_read_atom_header(int fd, atom_header_t *atom_header)
 {
@@ -736,168 +719,6 @@ static void ppt_print_atom_header(atom_header_t *atom_header)
 	cli_dbgmsg("  Length: 0x%.8x\n", atom_header->length);
 }
 
-static void ppt_print_useredit(ppt_useredit_t *ppt_useredit)
-{
-	ppt_print_atom_header(&ppt_useredit->atom_hdr);
-	cli_dbgmsg("Last Slide ID: 0x%.4x\n", ppt_useredit->last_slide_id);
-	cli_dbgmsg("Version: 0x%.4x\n", ppt_useredit->version);
-	cli_dbgmsg("Last Edit Offset: 0x%.4x\n", ppt_useredit->last_edit_offset);
-	cli_dbgmsg("Persist Dir Offset: 0x%.4x\n", ppt_useredit->persist_dir_offset);
-	cli_dbgmsg("Document Ref: 0x%.4x\n", ppt_useredit->document_ref);
-	cli_dbgmsg("Max Persist: 0x%.4x\n", ppt_useredit->max_persist);
-	cli_dbgmsg("Last view type: 0x%.4x\n\n", ppt_useredit->last_view_type);
-}
-
-static int ppt_read_useredit(int fd, ppt_useredit_t *ppt_useredit)
-{
-	if (!ppt_read_atom_header(fd, &ppt_useredit->atom_hdr)) {
-		return FALSE;
-	}
-	if (ppt_useredit->atom_hdr.type != 0x0FF5) {
-		cli_dbgmsg("read ppt_useredit failed, wrong atom type\n");
-		return FALSE;
-	}
-	if (cli_readn(fd, &ppt_useredit->last_slide_id, 4) != 4) {
-		cli_dbgmsg("read ppt_useredit failed\n");
-		return FALSE;
-	}
-	if (cli_readn(fd, &ppt_useredit->version, 4) != 4) {
-		cli_dbgmsg("read ppt_useredit failed\n");
-		return FALSE;
-	}
-	if (cli_readn(fd, &ppt_useredit->last_edit_offset, 4) != 4) {
-		cli_dbgmsg("read ppt_useredit failed\n");
-		return FALSE;
-	}
-	if (cli_readn(fd, &ppt_useredit->persist_dir_offset, 4) != 4) {
-		cli_dbgmsg("read ppt_useredit failed\n");
-		return FALSE;
-	}
-	if (cli_readn(fd, &ppt_useredit->document_ref, 4) != 4) {
-		cli_dbgmsg("read ppt_useredit failed\n");
-		return FALSE;
-	}
-	if (cli_readn(fd, &ppt_useredit->max_persist, 4) != 4) {
-		cli_dbgmsg("read ppt_useredit failed\n");
-		return FALSE;
-	}
-	if (cli_readn(fd, &ppt_useredit->last_view_type, 2) != 2) {
-		cli_dbgmsg("read ppt_useredit failed\n");
-		return FALSE;
-	}
-	ppt_useredit->last_slide_id = vba_endian_convert_32(ppt_useredit->last_slide_id, FALSE);
-	ppt_useredit->version = vba_endian_convert_32(ppt_useredit->version, FALSE);
-	ppt_useredit->last_edit_offset = vba_endian_convert_32(ppt_useredit->last_edit_offset, FALSE);
-	ppt_useredit->persist_dir_offset = vba_endian_convert_32(ppt_useredit->persist_dir_offset, FALSE);
-	ppt_useredit->document_ref = vba_endian_convert_32(ppt_useredit->document_ref, FALSE);
-	ppt_useredit->max_persist = vba_endian_convert_32(ppt_useredit->max_persist, FALSE);
-	ppt_useredit->last_view_type = vba_endian_convert_16(ppt_useredit->last_view_type, FALSE);
-	return TRUE;
-}
-
-static void ppt_print_current_user(ppt_currentuser_t *ppt_current_user)
-{
-	ppt_print_atom_header(&ppt_current_user->atom_hdr);
-	cli_dbgmsg("Magic: 0x%.8x\n", ppt_current_user->magic);
-	cli_dbgmsg("Curr Edit Offset: 0x%.8x\n", ppt_current_user->current_edit_offset);
-}
-
-static int ppt_read_current_user(int fd, ppt_currentuser_t *ppt_current_user)
-{
-	if (!ppt_read_atom_header(fd, &ppt_current_user->atom_hdr)) {
-		return FALSE;
-	}
-	if (ppt_current_user->atom_hdr.type != 0x0FF6) {
-		cli_dbgmsg("read ppt_current_user failed, wrong atom type\n");
-		return FALSE;
-	}
-	if (cli_readn(fd, &ppt_current_user->len, 4) != 4) {
-		cli_dbgmsg("read ppt_current_user failed\n");
-		return FALSE;
-	}
-	
-	if (cli_readn(fd, &ppt_current_user->magic, 4) != 4) {
-		cli_dbgmsg("read ppt_current_user 1 failed\n");
-		return FALSE;
-	}
-	if (cli_readn(fd, &ppt_current_user->current_edit_offset, 4) != 4) {
-		cli_dbgmsg("read ppt_current_user 2 failed\n");
-		return FALSE;
-	}
-	
-	/* Don't need to read the rest of the Current User file in order
-		to extract what we need */
-	
-	ppt_current_user->len = vba_endian_convert_32(ppt_current_user->len, FALSE);
-	ppt_current_user->magic = vba_endian_convert_32(ppt_current_user->magic, FALSE);
-	ppt_current_user->current_edit_offset = vba_endian_convert_32(ppt_current_user->current_edit_offset, FALSE);
-	if (ppt_current_user->magic != 0xE391C05F) {
-		cli_dbgmsg("read ppt_current_user failed, wrong magic\n");
-		return FALSE;
-	}
-	return TRUE;
-}
-
-static uint32_t *ppt_read_persist_dir(int fd, ppt_useredit_t *ppt_useredit)
-{
-	uint32_t *persist_dir, noffsets, off_index;
-	atom_header_t atom_header;
-	int size, i, off_count=0;
-	
-	if (lseek(fd, ppt_useredit->persist_dir_offset, SEEK_SET) != 
-			ppt_useredit->persist_dir_offset) {
-		return NULL;
-	}
-
-	if (!ppt_read_atom_header(fd, &atom_header)) {
-		return NULL;
-	}
-	ppt_print_atom_header(&atom_header);
-	if (atom_header.type != 0x1772) {
-		cli_dbgmsg("read ppt_current_user failed, wrong atom type\n");
-		return NULL;
-	}
-	size = sizeof(uint32_t) * (ppt_useredit->max_persist+1);
-	persist_dir = cli_malloc(size);
-	if (!persist_dir) {
-		return NULL;
-	}
-	memset(persist_dir, 0xFF, size);
-	
-	while ((off_count < ppt_useredit->max_persist) && 
-			(lseek(fd, 0, SEEK_CUR) < atom_header.foffset+atom_header.length)) {
-		if (cli_readn(fd, &noffsets, 4) != 4) {
-			cli_dbgmsg("read ppt_current_user failed\n");
-			free(persist_dir);
-			return NULL;
-		}
-		noffsets = vba_endian_convert_32(noffsets, FALSE);
-		off_index = noffsets & 0x000FFFFF;
-		noffsets = noffsets >> 20;
-		cli_dbgmsg("nOffsets: %d\n", noffsets);
-		cli_dbgmsg("Offset index: %d\n",off_index);
-		for (i=0 ; i<noffsets; i++) {
-			if ((off_index+i-1) > ppt_useredit->max_persist)
-			{
-				cli_dbgmsg("ppt_read_persist_dir overflow\n");
-				free(persist_dir);
-				return NULL;
-			}
-			if (cli_readn(fd, &persist_dir[off_index+i-1], 4) != 4) {
-				cli_dbgmsg("read ppt_read_persist_dir failed\n");
-				free(persist_dir);
-				return NULL;
-			}
-			persist_dir[off_index+i-1] = vba_endian_convert_32(persist_dir[off_index+i-1], FALSE);
-			cli_dbgmsg("persist_dir[%d] = 0x%.8x\n", off_index+i-1, persist_dir[off_index+i-1]);
-			off_count++;
-		}
-	}
-	cli_dbgmsg("File offset: 0x%.8x\n\n", lseek(fd, 0, SEEK_CUR));
-	
-	return persist_dir;
-}
-
 #define PPT_LZW_BUFFSIZE 8192
 static int ppt_unlzw(const char *dir, int fd, uint32_t length)
 {
@@ -911,7 +732,7 @@ static int ppt_unlzw(const char *dir, int fd, uint32_t length)
 	if (!fullname) {
 		return FALSE;
 	}
-	sprintf(fullname, "%s/ppt%.8x.doc", dir, lseek(fd, 0, SEEK_CUR));
+	sprintf(fullname, "%s/ppt%.8lx.doc", dir, lseek(fd, 0, SEEK_CUR));
 	
 	ofd = open(fullname, O_WRONLY|O_CREAT|O_TRUNC, 0600);
 	free(fullname);
@@ -1035,8 +856,6 @@ char *ppt_vba_read(const char *dir)
 {
 	char *fullname, *out_dir;
 	int fd;
-	atom_header_t atom_header;
-	uint32_t ole_id;
 
 	fullname = (char *) cli_malloc(strlen(dir) + 21);
 	if (!fullname) {
@@ -1054,148 +873,10 @@ char *ppt_vba_read(const char *dir)
 	close(fd);
 	return out_dir;
 }
-	
-	
-/* Strictly speaking, the method below is the correct way to access the
-	componenets of a PowerPoint file. However, it appears Microsoft
-	don't do it that way.
-	
-char *ppt_vba_read_strict(const char *dir)
-{
-	ppt_currentuser_t ppt_current_user;
-	ppt_useredit_t ppt_useredit;
-	uint32_t *persist_dir;
-	char *fullname, *out_dir, *tmpdir;
-	int fd, i, ofd;
-	unsigned char *buffer;
-	atom_header_t atom_header;
-	uint32_t ole_id;
-	
-	fullname = (char *) cli_malloc(strlen(dir) + 14);
-	if (!fullname) {
-		return NULL;
-	}
-	sprintf(fullname, "%s/Current User", dir);
-	fd = open(fullname, O_RDONLY);
-	free(fullname);
-	if (fd == -1) {
-		cli_dbgmsg("Open Current User failed\n");
-		return NULL;
-	}
-	
-	if (!ppt_read_current_user(fd, &ppt_current_user)) {
-		close(fd);
-		return NULL;
-	}
-	
-	ppt_print_current_user(&ppt_current_user);
-	close(fd);
-
-	fullname = (char *) cli_malloc(strlen(dir) + 21);
-	if (!fullname) {
-		return NULL;
-	}
-	sprintf(fullname, "%s/PowerPoint Document", dir);
-	fd = open(fullname, O_RDONLY);
-	free(fullname);
-	if (fd == -1) {
-		cli_dbgmsg("Open PowerPoint Document failed\n");
-		return NULL;
-	}
-		
-	if (lseek(fd, ppt_current_user.current_edit_offset, SEEK_SET) !=
-					ppt_current_user.current_edit_offset) {
-		cli_dbgmsg("lseek cli_ppt_vbaread failed\n");
-		close(fd);
-		return FALSE;
-	}
-
-	tmpdir = getenv("TMPDIR");
-
-	if(tmpdir == NULL)
-#ifdef P_tmpdir
-		tmpdir = P_tmpdir;
-#else
-		tmpdir = "/tmp";
-#endif
-
-	out_dir = cl_gentemp(tmpdir);
-	if(mkdir(out_dir, 0700)) {
-	    printf("ScanOLE2 -> Can't create temporary directory %s\n", dir);
-	    close(fd);
-	    return NULL;
-	}
-
-	do {	
-		if (!ppt_read_useredit(fd, &ppt_useredit)) {
-			close(fd);
-			cli_rmdirs(out_dir);
-			free(out_dir);
-			return NULL;
-		}
-		ppt_print_useredit(&ppt_useredit);
-		
-		persist_dir = ppt_read_persist_dir(fd, &ppt_useredit);
-		if (!persist_dir) {
-			close(fd);
-			cli_rmdirs(out_dir);
-			free(out_dir);
-			return NULL;
-		}
-		for (i=0 ; i < ppt_useredit.max_persist ; i++) {
-			if (persist_dir[i] != 0xFFFFFFFF) {
-				if (lseek(fd, persist_dir[i], SEEK_SET) == persist_dir[i]) {				
-					if (!ppt_read_atom_header(fd, &atom_header)) {
-						close(fd);
-						free(persist_dir);
-						cli_rmdirs(out_dir);
-						free(out_dir);
-						return NULL;
-					}
-					ppt_print_atom_header(&atom_header);
-					if (atom_header.type == 0x1011) {
-						if (cli_readn(fd, &ole_id, 4) != 4) {
-							cli_dbgmsg("read ole_id failed\n");
-							close(fd);
-							free(persist_dir);
-							cli_rmdirs(out_dir);
-							free(out_dir);
-							return NULL;
-						}
-						ole_id = vba_endian_convert_32(ole_id, FALSE);
-						cli_dbgmsg("OleID: %d, length: %d\n",
-								ole_id, atom_header.length-4);
-						if (!ppt_unlzw(out_dir, fd, atom_header.length-4)) {
-							cli_dbgmsg("ppt_unlzw failed\n");
-							close(fd);
-							free(persist_dir);
-							cli_rmdirs(out_dir);
-							free(out_dir);
-							return NULL;
-						}
-							
-					}	
-				}
-			}
-		}
-		free(persist_dir);
-		
-		if (lseek(fd, ppt_useredit.last_edit_offset, SEEK_SET) !=
-					ppt_useredit.last_edit_offset) {
-			cli_dbgmsg("lseek cli_ppt_vbaread failed\n");
-			close(fd);
-			return NULL;
-		}
-	} while (ppt_useredit.last_edit_offset != 0);
-	
-	close(fd);
-	return out_dir;
-}	
-*/
 
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-/* Code to extract Word6 macros
+/* Code to extract Word6 macros					     */
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 typedef struct mso_fib_tag {
@@ -1543,7 +1224,6 @@ static macro_extnames_t *wm_read_macro_extnames(int fd)
 {
 	int i, is_unicode=0;
 	int16_t size;
-	uint8_t length_tmp;
 	off_t offset_end;	
 	macro_extnames_t *macro_extnames;
 	macro_extname_t *macro_extname;
