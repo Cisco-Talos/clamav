@@ -54,9 +54,6 @@
 /* os is solaris */
 #undef C_SOLARIS
 
-/* use /dev/urandom */
-#undef C_URANDOM
-
 /* Path to virus database directory. */
 #undef DATADIR
 

@@ -203,16 +203,6 @@ dnl Do not overwrite the current config file
 AM_CONDITIONAL(INSTALL_CLAMAV_CONF, test ! -r "$cfg_dir/clamav.conf")
 AM_CONDITIONAL(INSTALL_FRESHCLAM_CONF, test ! -r "$cfg_dir/freshclam.conf")
 
-if test "$test_urandom" = "yes"
-then
-    if test -r /dev/urandom ; then
-	AC_MSG_RESULT(/dev/(u)random detected.)
-	AC_DEFINE(C_URANDOM,1,[use /dev/urandom])
-    else
-	AC_MSG_RESULT(/dev/(u)random not detected - using weak software rand())
-    fi
-fi
-
 # tcpwrappers support
 # rules from http://ma.ph-freiburg.de/tng/tng-technical/2002-01/msg00094.html
 AC_ARG_WITH(tcpwrappers,
