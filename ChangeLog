@@ -1,3 +1,7 @@
+Tue Aug  3 02:03:17 CEST 2004 (tk)
+----------------------------------
+  * libclamav: matcher-bm: fix scan boundary
+
 Mon Aug  2 19:03:33 CEST 2004 (tk)
 ----------------------------------
   * libclamav: pe: integrate Petite unpacker from aCaB (not yet activated)
