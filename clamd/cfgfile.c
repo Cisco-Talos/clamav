@@ -67,7 +67,6 @@ struct cfgstruct *parsecfg(const char *cfgfile)
 	    {"MaxConnectionQueueLength", OPT_NUM},
 	    {"StreamSaveToDisk", OPT_NOARG},
 	    {"StreamMaxLength", OPT_COMPSIZE},
-	    {"UseProcesses", OPT_NOARG},
 	    {"MaxThreads", OPT_NUM},
 	    {"ThreadTimeout", OPT_NUM},
 	    {"MaxDirectoryRecursion", OPT_NUM},
