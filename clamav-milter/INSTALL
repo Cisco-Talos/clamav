@@ -409,6 +409,10 @@ Changes
 		In template files support {sendmail-variable} and support \%v
 			to send the %v string
 		Tidyup handling if the quarantine directory can't be created
+0.73c	21/6/04	Call trylock in clamfi_abort before unlock to prevent attempt
+			to unlock not locked mutex since we have no control
+			over when clamfi_abort() is called
+		Remove warning message on FreeBSD5.2
 
 BUG REPORTS
 
