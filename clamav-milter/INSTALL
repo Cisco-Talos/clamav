@@ -558,6 +558,8 @@ Changes
 0.80r	10/11/04 Define SHUT_* and INET_ADDRSTRLEN if not already defined
 		SCAN in situ rather than passing the file through a socket if
 			localSocket and not quarantine_dir
+0.80s	13/11/04 Use SCAN when UNIX socket (localSocket) is used or when the
+			load balancing algorithm favours localhost
 
 INTERNATIONALISATION
 

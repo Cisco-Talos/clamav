@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.153  2004/11/14 15:18:49  nigelhorne
+ * Use SCAN in more places rather than STREAM
+ *
  * Revision 1.152  2004/11/12 16:48:57  nigelhorne
  * Use SCAN when in localSocket mode
  *
@@ -467,9 +470,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.152 2004/11/12 16:48:57 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.153 2004/11/14 15:18:49 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80r"
+#define	CM_VERSION	"0.80s"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -580,7 +583,7 @@ typedef	unsigned int	in_addr_t;
  * TODO: Encrypt mails sent to clamd to stop sniffers
  * TODO: Test with IPv6
  * TODO: Files can be scanned with "SCAN" not "STREAM" if clamd is on the same
- *	machine when talking via INEt domain socket.
+ *	machine when talking via INET domain socket.
  * TODO: Load balancing, allow local machine to talk via UNIX domain socket.
  */
 
@@ -650,7 +653,7 @@ struct	privdata {
 };
 
 #ifdef	SESSION
-static	int		createSession(int session);
+static	int		createSession(int s);
 #else
 static	int		pingServer(int serverNumber);
 #endif
@@ -799,15 +802,14 @@ static	char	*port = NULL;	/* sendmail->milter comms */
 
 static	const	char	*serverHostNames = "127.0.0.1";
 static	long	*serverIPs;	/* IPv4 only */
-static	int	numServers;	/* number of elements in serverIPs/cmdSockets */
+static	int	numServers;	/* number of elements in sessions array */
 
 #ifdef	SESSION
-static	int	*cmdSockets;
-static	int	*cmdSocketsStatus;
+static	struct	session {
+	int	sock;	/* fd */
+	enum	{ CMDSOCKET_FREE, CMDSOCKET_INUSE, CMDSOCKET_DOWN }	status;
+} *sessions;
 static	pthread_mutex_t sstatus_mutex = PTHREAD_MUTEX_INITIALIZER;
-#define	CMDSOCKET_FREE	0
-#define	CMDSOCKET_INUSE	1
-#define	CMDSOCKET_DOWN	2
 
 static	pthread_cond_t	watchdog_cond = PTHREAD_COND_INITIALIZER;
 
@@ -1365,8 +1367,8 @@ main(int argc, char **argv)
 		server.sun_family = AF_UNIX;
 		strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
 
-		cmdSockets = (int *)cli_malloc(sizeof(int));
-		if((cmdSockets[0] = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+		sessions = (struct session *)cli_malloc(sizeof(struct session));
+		if((sessions[0].sock = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 			perror(localSocket);
 			fprintf(stderr, _("Can't talk to clamd server via %s\n"),
 				localSocket);
@@ -1374,18 +1376,17 @@ main(int argc, char **argv)
 				cfgfile);
 			return EX_CONFIG;
 		}
-		if(connect(cmdSockets[0], (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
+		if(connect(sessions[0].sock, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
 			perror(localSocket);
 			return EX_UNAVAILABLE;
 		}
-		if(send(cmdSockets[0], "SESSION\n", 7, 0) < 7) {
+		if(send(sessions[0].sock, "SESSION\n", 7, 0) < 7) {
 			perror("send");
 			if(use_syslog)
 				syslog(LOG_ERR, _("Can't create a clamd session"));
 			return EX_UNAVAILABLE;
 		}
-		cmdSocketsStatus = (int *)cli_malloc(sizeof(int));
-		cmdSocketsStatus[0] = CMDSOCKET_FREE;
+		sessions[0].status = CMDSOCKET_FREE;
 #endif
 		/*
 		 * FIXME: Allow connection to remote servers by TCP/IP whilst
@@ -1480,8 +1481,7 @@ main(int argc, char **argv)
 #ifdef	SESSION
 		activeServers = numServers;
 
-		cmdSockets = (int *)cli_malloc(max_children * sizeof(int));
-		cmdSocketsStatus = (int *)cli_calloc(max_children, sizeof(int));
+		sessions = (struct session *)cli_calloc(max_children, sizeof(struct session));
 		for(i = 0; i < max_children; i++)
 			if(createSession(i) < 0)
 				return EX_UNAVAILABLE;
@@ -1679,14 +1679,15 @@ main(int argc, char **argv)
 /*
  * Use the SESSION command of clamd.
  * Returns -1 for terminal failure, 0 for OK, 1 for nonterminal failure
- * The caller must take care of locking the cmdSocketsStatus array
+ * The caller must take care of locking the sessions array
  */
 static int
-createSession(int session)
+createSession(int s)
 {
 	int ret = 0;
 	struct sockaddr_in server;
-	const int serverNumber = session % numServers;
+	const int serverNumber = s % numServers;
+	struct session *session = &sessions[s];
 
 	memset((char *)&server, 0, sizeof(struct sockaddr_in));
 	server.sin_family = AF_INET;
@@ -1694,13 +1695,13 @@ createSession(int session)
 
 	server.sin_addr.s_addr = serverIPs[serverNumber];
 
-	if((cmdSockets[session] = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+	if((session->sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		perror("socket");
 		ret = -1;
-	} else if(connect(cmdSockets[session], (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
+	} else if(connect(session->sock, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
 		perror("connect");
 		ret = 1;
-	} else if(send(cmdSockets[session], "SESSION\n", 7, 0) < 7) {
+	} else if(send(session->sock, "SESSION\n", 7, 0) < 7) {
 		perror("send");
 		ret = 1;
 	}
@@ -1714,9 +1715,9 @@ createSession(int session)
 		char *hostname = cli_strtok(serverHostNames, serverNumber, ":");
 #endif
 
-		if(cmdSockets[session] >= 0) {
-			close(cmdSockets[session]);
-			cmdSockets[session] = -1;
+		if(session->sock >= 0) {
+			close(session->sock);
+			session->sock = -1;
 		}
 
 		cli_warnmsg(_("Check clamd server %s - it may be down\n"), hostname);
@@ -1726,7 +1727,7 @@ createSession(int session)
 
 		broadcast(_("Check clamd server - it may be down\n"));
 
-		cmdSocketsStatus[session] = CMDSOCKET_DOWN;
+		session->status = CMDSOCKET_DOWN;
 	}
 
 	return ret;
@@ -1853,10 +1854,11 @@ static int
 findServer(void)
 {
 	int i;
+	struct session *session;
 
 	/*
 	 * FIXME: Sessions code isn't flexible at handling servers
-	 *	appearing and disappearing, e.g. cmdSockets[n_children] == -1
+	 *	appearing and disappearing, e.g. sessions[n_children].sock == -1
 	 */
 	pthread_mutex_lock(&n_children_mutex);
 	assert(n_children > 0);
@@ -1864,10 +1866,11 @@ findServer(void)
 	i = n_children - 1;
 	pthread_mutex_unlock(&n_children_mutex);
 
+	session = sessions;
 	pthread_mutex_lock(&sstatus_mutex);
-	for(; i < max_children; i++)
-		if(cmdSocketsStatus[i] == CMDSOCKET_FREE) {
-			cmdSocketsStatus[i] = CMDSOCKET_INUSE;
+	for(; i < max_children; i++, session++)
+		if(session->status == CMDSOCKET_FREE) {
+			session->status = CMDSOCKET_INUSE;
 			pthread_mutex_unlock(&sstatus_mutex);
 			return i;
 		}
@@ -1877,10 +1880,11 @@ findServer(void)
 		perror("pthread_cond_broadcast");
 
 	i = 0;
+	session = sessions;
 	pthread_mutex_lock(&sstatus_mutex);
-	for(; i < max_children; i++)
-		if(cmdSocketsStatus[i] == CMDSOCKET_FREE) {
-			cmdSocketsStatus[i] = CMDSOCKET_INUSE;
+	for(; i < max_children; i++, session++)
+		if(session->status == CMDSOCKET_FREE) {
+			session->status = CMDSOCKET_INUSE;
 			pthread_mutex_unlock(&sstatus_mutex);
 			return i;
 		}
@@ -2498,11 +2502,16 @@ clamfi_eom(SMFICTX *ctx)
 	const char *sendmailId;
 	struct privdata *privdata = (struct privdata *)smfi_getpriv(ctx);
 	char mess[128];
+#ifdef	SESSION
+	struct session *session;
+#endif
 
 	if(logVerbose)
 		syslog(LOG_DEBUG, "clamfi_eom");
-#ifdef	CL_DEBUG
+
 	cli_dbgmsg("clamfi_eom\n");
+
+#ifdef	CL_DEBUG
 	assert(privdata != NULL);
 #ifndef	SESSION
 	assert((privdata->cmdSocket >= 0) || (privdata->filename != NULL));
@@ -2514,19 +2523,15 @@ clamfi_eom(SMFICTX *ctx)
 	close(privdata->dataSocket);
 	privdata->dataSocket = -1;
 
-	if(quarantine_dir || tmpdir) {
+	if(privdata->filename) {
 		char cmdbuf[1024];
 		/*
 		 * Create socket to talk to clamd.
 		 */
+#ifdef	SESSION
 		struct sockaddr_un server;
+#endif
 		int nbytes;
-
-		assert(localSocket != NULL);
-
-		memset((char *)&server, 0, sizeof(struct sockaddr_un));
-		server.sun_family = AF_UNIX;
-		strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
 
 		snprintf(cmdbuf, sizeof(cmdbuf) - 1, "SCAN %s", privdata->filename);
 		cli_dbgmsg("clamfi_eom: SCAN %s\n", privdata->filename);
@@ -2534,7 +2539,8 @@ clamfi_eom(SMFICTX *ctx)
 		nbytes = (int)strlen(cmdbuf);
 
 #ifdef	SESSION
-		if(send(cmdSockets[0], cmdbuf, nbytes, 0) < nbytes) {
+		session = sessions;
+		if(send(session->sock, cmdbuf, nbytes, 0) < nbytes) {
 			perror("send");
 			clamfi_cleanup(ctx);
 			if(use_syslog)
@@ -2547,6 +2553,10 @@ clamfi_eom(SMFICTX *ctx)
 			clamfi_cleanup(ctx);
 			return cl_error;
 		}
+		memset((char *)&server, 0, sizeof(struct sockaddr_un));
+		server.sun_family = AF_UNIX;
+		strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
+
 		if(connect(privdata->cmdSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
 			perror(localSocket);
 			clamfi_cleanup(ctx);
@@ -2563,9 +2573,13 @@ clamfi_eom(SMFICTX *ctx)
 		shutdown(privdata->cmdSocket, SHUT_WR);
 #endif
 	}
+#ifdef	SESSION
+	else
+		session = &sessions[privdata->serverNumber];
+#endif
 
 #ifdef	SESSION
-	if(clamd_recv(cmdSockets[privdata->serverNumber], mess, sizeof(mess)) > 0) {
+	if(clamd_recv(session->sock, mess, sizeof(mess)) > 0) {
 #else
 	if(clamd_recv(privdata->cmdSocket, mess, sizeof(mess)) > 0) {
 #endif
@@ -2588,7 +2602,7 @@ clamfi_eom(SMFICTX *ctx)
 #endif
 #ifdef	SESSION
 		pthread_mutex_lock(&sstatus_mutex);
-		cmdSocketsStatus[privdata->serverNumber] = CMDSOCKET_DOWN;
+		session->status = CMDSOCKET_DOWN;
 		pthread_mutex_unlock(&sstatus_mutex);
 #endif
 		return cl_error;
@@ -2596,8 +2610,8 @@ clamfi_eom(SMFICTX *ctx)
 
 #ifdef	SESSION
 	pthread_mutex_lock(&sstatus_mutex);
-	if(cmdSocketsStatus[privdata->serverNumber] == CMDSOCKET_INUSE)
-		cmdSocketsStatus[privdata->serverNumber] = CMDSOCKET_FREE;
+	if(session->status == CMDSOCKET_INUSE)
+		session->status = CMDSOCKET_FREE;
 	pthread_mutex_unlock(&sstatus_mutex);
 #else
 	close(privdata->cmdSocket);
@@ -2692,11 +2706,8 @@ clamfi_eom(SMFICTX *ctx)
 		cli_warnmsg("%s: %s\n", sendmailId, mess);
 		if(use_syslog)
 			syslog(LOG_ERR, "%s: %s\n", sendmailId, mess);
-		clamfi_cleanup(ctx);
-		return cl_error;
-	}
-
-	if((ptr = strstr(mess, "FOUND")) == NULL) {
+		rc = cl_error;
+	} else if((ptr = strstr(mess, "FOUND")) == NULL) {
 		if(!nflag)
 			smfi_addheader(ctx, "X-Virus-Status", _("Clean"));
 
@@ -2919,9 +2930,7 @@ clamfi_eom(SMFICTX *ctx)
 			}
 		}
 
-		if(privdata->filename) {
-			assert(quarantine_dir || tmpdir);
-
+		if(quarantine_dir) {
 			if(use_syslog)
 				syslog(LOG_NOTICE, _("Quarantined infected mail as %s"), privdata->filename);
 			/*
@@ -3026,6 +3035,9 @@ clamfi_free(struct privdata *privdata)
 {
 	cli_dbgmsg("clamfi_free\n");
 	if(privdata) {
+#ifdef	SESSION
+		struct session *session;
+#endif
 		if(privdata->body)
 			free(privdata->body);
 
@@ -3083,13 +3095,14 @@ clamfi_free(struct privdata *privdata)
 		}
 
 #ifdef	SESSION
+		session = &sessions[privdata->serverNumber];
 		pthread_mutex_lock(&sstatus_mutex);
-		if(cmdSocketsStatus[privdata->serverNumber] == CMDSOCKET_INUSE) {
+		if(session->status == CMDSOCKET_INUSE) {
 #if	0
 			pthread_mutex_unlock(&sstatus_mutex);
 			if(readTimeout) {
 				char buf[64];
-				const int fd = cmdSockets[privdata->serverNumber];
+				const int fd = session->status;
 
 				cli_dbgmsg("clamfi_free: flush server %d fd %d\n",
 					privdata->serverNumber, fd);
@@ -3104,7 +3117,7 @@ clamfi_free(struct privdata *privdata)
 			}
 			pthread_mutex_lock(&sstatus_mutex);
 #endif
-			cmdSocketsStatus[privdata->serverNumber] = CMDSOCKET_FREE;
+			session->status = CMDSOCKET_FREE;
 		}
 		pthread_mutex_unlock(&sstatus_mutex);
 #else
@@ -3200,14 +3213,14 @@ clamfi_send(struct privdata *privdata, size_t len, const char *format, ...)
 #endif
 
 	while(len > 0) {
-		const int nbytes = (quarantine_dir || tmpdir) ?
+		const int nbytes = (privdata->filename) ?
 			write(privdata->dataSocket, ptr, len) :
 			send(privdata->dataSocket, ptr, len, 0);
 
 		assert(privdata->dataSocket >= 0);
 
 		if(nbytes == -1) {
-			if(quarantine_dir || tmpdir) {
+			if(privdata->filename) {
 				perror(privdata->filename);
 				if(use_syslog) {
 #ifdef HAVE_STRERROR_R
@@ -3504,6 +3517,7 @@ connect2clamd(struct privdata *privdata)
 		struct sockaddr_in reply;
 		unsigned short p;
 		char buf[64];
+		struct session *session;
 
 #ifndef	SESSION
 		assert(privdata->cmdSocket == -1);
@@ -3565,15 +3579,45 @@ connect2clamd(struct privdata *privdata)
 		}
 
 #ifdef	SESSION
+		if(serverIPs[freeServer] == inet_addr("127.0.0.1")) {
+			const char *dir;
+
+			if((dir = getenv("TMPDIR")) == (char *)NULL)
+				if((dir = getenv("TMP")) == (char *)NULL)
+					if((dir = getenv("TEMP")) == (char *)NULL)
+#ifdef	P_tmpdir
+						dir = P_tmpdir;
+#else
+						dir = "/tmp";
+#endif
+
+			privdata->filename = cli_gentemp(dir);
+			if(privdata->filename) {
+				cli_dbgmsg("connect2clamd(%d): creating %s\n", freeServer, privdata->filename);
+#ifdef	O_TEXT
+				privdata->dataSocket = open(privdata->filename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_TEXT, 0600);
+#else
+				privdata->dataSocket = open(privdata->filename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC, 0600);
+#endif
+				if(privdata->dataSocket < 0) {
+					perror(privdata->filename);
+					free(privdata->filename);
+					privdata->filename = NULL;
+				} else
+					/* FIXME:!!!!!!!!!!!!!!!!!*/
+					goto end;
+			}
+		}
 		cli_dbgmsg("connect2clamd(%d): STREAM\n", freeServer);
 
-		if(send(cmdSockets[freeServer], "STREAM\n", 7, 0) < 7) {
+		session = &sessions[freeServer];
+		if(send(session->sock, "STREAM\n", 7, 0) < 7) {
 			perror("send");
 			pthread_mutex_lock(&sstatus_mutex);
-			cmdSocketsStatus[privdata->serverNumber] = CMDSOCKET_DOWN;
+			session->status = CMDSOCKET_DOWN;
 			pthread_mutex_unlock(&sstatus_mutex);
 			cli_warnmsg("Failed sending stream to server %d (fd %d) errno %d\n",
-				freeServer, cmdSockets[freeServer], errno);
+				freeServer, session->sock, errno);
 			if(use_syslog)
 				syslog(LOG_ERR, _("send failed to clamd"));
 			return 0;
@@ -3601,13 +3645,13 @@ connect2clamd(struct privdata *privdata)
 		shutdown(privdata->dataSocket, SHUT_RD);
 
 #ifdef	SESSION
-		nbytes = clamd_recv(cmdSockets[privdata->serverNumber], buf, sizeof(buf));
+		nbytes = clamd_recv(session->sock, buf, sizeof(buf));
 		if(nbytes < 0) {
 			perror("recv");
 			if(use_syslog)
 				syslog(LOG_ERR, _("recv failed from clamd getting PORT"));
 			pthread_mutex_lock(&sstatus_mutex);
-			cmdSocketsStatus[privdata->serverNumber] = CMDSOCKET_DOWN;
+			session->status = CMDSOCKET_DOWN;
 			pthread_mutex_unlock(&sstatus_mutex);
 			return 0;
 		}
@@ -3634,7 +3678,7 @@ connect2clamd(struct privdata *privdata)
 					buf);
 #ifdef	SESSION
 			pthread_mutex_lock(&sstatus_mutex);
-			cmdSocketsStatus[privdata->serverNumber] = CMDSOCKET_DOWN;
+			session->status = CMDSOCKET_DOWN;
 			pthread_mutex_unlock(&sstatus_mutex);
 #endif
 			return 0;
@@ -3669,12 +3713,14 @@ connect2clamd(struct privdata *privdata)
 			}
 #ifdef	SESSION
 			pthread_mutex_lock(&sstatus_mutex);
-			cmdSocketsStatus[privdata->serverNumber] = CMDSOCKET_DOWN;
+			session->status = CMDSOCKET_DOWN;
 			pthread_mutex_unlock(&sstatus_mutex);
 #endif
 			return 0;
 		}
 	}
+
+end:
 
 	/*
 	 * Combine the To and From into one clamfi_send to save bandwidth
@@ -4082,12 +4128,13 @@ watchdog(void *a)
 {
 	static pthread_mutex_t watchdog_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-	assert(cmdSockets != NULL);
+	assert(sessions != NULL);
 
 	while(!quitting) {
 		int i;
 		struct timespec ts;
 		struct timeval tp;
+		struct session *session;
 
 		gettimeofday(&tp, NULL);
 
@@ -4110,9 +4157,11 @@ watchdog(void *a)
 		cli_dbgmsg("watchdog wakes\n");
 		pthread_mutex_unlock(&watchdog_mutex);
 
+		i = 0;
+		session = sessions;
 		pthread_mutex_lock(&sstatus_mutex);
-		for(i = 0; i < max_children; i++) {
-			const int sock = cmdSockets[i];
+		for(; i < max_children; i++, session++) {
+			const int sock = session->sock;
 
 			/*
 			 * Check all free sessions are still usable
@@ -4123,13 +4172,13 @@ watchdog(void *a)
 			 * that doesn't really matter)
 			 */
 			cli_dbgmsg("watchdog: check server %d\n", i);
-			if((n_children == 0) && (cmdSocketsStatus[i] == CMDSOCKET_FREE)) {
+			if((n_children == 0) && (session->status == CMDSOCKET_FREE)) {
 				if(send(sock, "VERSION\n", 8, 0) == 8) {
 					char buf[81];
 					const int nbytes = clamd_recv(sock, buf, sizeof(buf) - 1);
 
 					if(nbytes <= 0)
-						cmdSocketsStatus[i] = CMDSOCKET_DOWN;
+						session->status = CMDSOCKET_DOWN;
 					else {
 						buf[nbytes] = '\0';
 						if(strncmp(buf, "ClamAV ", 7) == 0) {
@@ -4145,21 +4194,21 @@ watchdog(void *a)
 							}
 						} else {
 							cli_warnmsg("watchdog: expected \"ClamAV\", got \"%s\"\n", buf);
-							cmdSocketsStatus[i] = CMDSOCKET_DOWN;
+							session->status = CMDSOCKET_DOWN;
 						}
 					}
 				} else {
 					perror("send");
-					cmdSocketsStatus[i] = CMDSOCKET_DOWN;
+					session->status = CMDSOCKET_DOWN;
 				}
 
-				if(cmdSocketsStatus[i] == CMDSOCKET_DOWN)
+				if(session->status == CMDSOCKET_DOWN)
 					cli_warnmsg("Session %d has gone down\n", i);
 			}
 			/*
 			 * Reset all all dead sessions
 			 */
-			if(cmdSocketsStatus[i] == CMDSOCKET_DOWN) {
+			if(session->status == CMDSOCKET_DOWN) {
 				/*
 				 * The END command probably won't get through,
 				 * but let's give it a go anyway
@@ -4171,13 +4220,13 @@ watchdog(void *a)
 
 				cli_dbgmsg("Trying to restart session %d\n", i);
 				if(createSession(i) == 0) {
-					cmdSocketsStatus[i] = CMDSOCKET_FREE;
+					session->status = CMDSOCKET_FREE;
 					cli_warnmsg("Session %d restarted OK\n", i);
 				}
 			}
 		}
 		for(i = 0; i < max_children; i++)
-			if(cmdSocketsStatus[i] != CMDSOCKET_DOWN)
+			if(sessions[i].status != CMDSOCKET_DOWN)
 				break;
 
 		if(i == max_children)
@@ -4278,16 +4327,17 @@ quit(void)
 
 #ifdef	SESSION
 	int i;
+	struct session *session;
 
 	quitting++;
 
 	if(use_syslog)
 		syslog(LOG_INFO, _("Stopping %s"), clamav_version);
 
+	i = 0;
+	session = sessions;
 	pthread_mutex_lock(&sstatus_mutex);
-	for(i = 0; i < ((localSocket != NULL) ? 1 : max_children); i++) {
-		const int sock = cmdSockets[i];
-
+	for(; i < ((localSocket != NULL) ? 1 : max_children); i++) {
 		/*
 		 * Check all free sessions are still usable
 		 * This could take some time with many free
@@ -4297,10 +4347,12 @@ quit(void)
 		 * that doesn't really matter)
 		 */
 		cli_dbgmsg("quit: close server %d\n", i);
-		if(cmdSocketsStatus[i] == CMDSOCKET_FREE) {
+		if(session->status == CMDSOCKET_FREE) {
+			const int sock = session->sock;
+
 			send(sock, "END\n", 4, 0);
 			shutdown(sock, SHUT_WR);
-			cmdSocketsStatus[i] = CMDSOCKET_DOWN;
+			session->status = CMDSOCKET_DOWN;
 			pthread_mutex_unlock(&sstatus_mutex);
 			close(sock);
 			pthread_mutex_lock(&sstatus_mutex);
