@@ -1,3 +1,7 @@
+Thu Mar 25 22:51:53 GMT 2004 (njh)
+----------------------------------
+  * libclamav:	Removed even more calls to realloc and some duplicate code
+
 Thu Mar 25 13:53:37 CET 2004 (tk)
 ---------------------------------
   * libclamav: scanners: scan "X-Apparently-To: " mail files

@@ -39,3 +39,4 @@ unsigned char *blobGetData(const blob *b);
 unsigned	long	blobGetDataSize(const blob *b);
 void	blobClose(blob *b);
 int	blobcmp(const blob *b1, const blob *b2);
+void	blobGrow(blob *b, size_t len);

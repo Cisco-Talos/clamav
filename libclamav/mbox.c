@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.58  2004/03/25 22:40:46  nigelhorne
+ * Removed even more calls to realloc and some duplicated code
+ *
  * Revision 1.57  2004/03/21 17:19:49  nigelhorne
  * Handle bounce messages with no headers
  *
@@ -162,7 +165,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.57 2004/03/21 17:19:49 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.58 2004/03/25 22:40:46 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1372,13 +1375,8 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				 * directory and call us again (with any luck)
 				 * having found an e-mail message to handle
 				 */
-				if((b = blobCreate()) != NULL) {
+				if((b = textToBlob(t_line, NULL)) != NULL) {
 					cli_dbgmsg("Found a bounce message\n");
-
-					do {
-						blobAddData(b, (unsigned char *)t_line->t_text, strlen(t_line->t_text));
-						blobAddData(b, (unsigned char *)"\n", 1);
-					} while((t_line = t_line->t_next) != NULL);
 
 					saveFile(b, dir);
 
@@ -1405,10 +1403,8 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					if((b = blobCreate()) != NULL) {
 						cli_dbgmsg("Found a bounce message with no header\n");
 						blobAddData(b, "Received: by clamd\n", 19);
-						do {
-							blobAddData(b, (unsigned char *)t_line->t_text, strlen(t_line->t_text));
-							blobAddData(b, (unsigned char *)"\n", 1);
-						} while((t_line = t_line->t_next) != NULL);
+
+						b = textToBlob(t_line, b);
 
 						saveFile(b, dir);
 

@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.48  2004/03/25 22:40:46  nigelhorne
+ * Removed even more calls to realloc and some duplicated code
+ *
  * Revision 1.47  2004/03/21 17:19:49  nigelhorne
  * Handle bounce messages with no headers
  *
@@ -138,7 +141,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.47 2004/03/21 17:19:49 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.48 2004/03/25 22:40:46 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -741,6 +744,7 @@ messageClean(message *m)
 
 /*
  * Decode and transfer the contents of the message into a blob
+ * The caller must free the returned blob
  */
 blob *
 messageToBlob(const message *m)
@@ -753,7 +757,8 @@ messageToBlob(const message *m)
 
 	b = blobCreate();
 
-	assert(b != NULL);
+	if(b == NULL)
+		return NULL;
 
 	/*
 	 * Find the filename to decode
@@ -1028,40 +1033,38 @@ messageToBlob(const message *m)
 		/*
 		 * Fast copy
 		 */
-		do {
-			blobAddData(b, (unsigned char *)t_line->t_text, strlen(t_line->t_text));
-			blobAddData(b, (unsigned char *)"\n", 1);
-		} while((t_line = t_line->t_next) != NULL);
-	else
-		do {
-			unsigned char data[1024];
-			unsigned char *uptr;
-			const char *line = t_line->t_text;
+		return textToBlob(t_line, b);
 
-			if(messageGetEncoding(m) == UUENCODE)
-				if(strcasecmp(line, "end") == 0)
-					break;
+	do {
+		unsigned char data[1024];
+		unsigned char *uptr;
+		const char *line = t_line->t_text;
 
-			uptr = decodeLine(m, line, data, sizeof(data));
-
-			if(uptr == NULL)
+		if(messageGetEncoding(m) == UUENCODE)
+			if(strcasecmp(line, "end") == 0)
 				break;
 
-			assert(uptr <= &data[sizeof(data)]);
+		uptr = decodeLine(m, line, data, sizeof(data));
 
-			blobAddData(b, data, (size_t)(uptr - data));
-			/*
-			 * According to RFC1521, '=' is used to pad out
-			 * the last byte and should be used as evidence
-			 * of the end of the data. Some mail clients
-			 * annoyingly then put plain text after the '='
-			 * bytes. Sigh
-			 */
-			/*if(messageGetEncoding(m) == BASE64)
-				if(strchr(line, '='))
-					break;*/
+		if(uptr == NULL)
+			break;
 
-		} while((t_line = t_line->t_next) != NULL);
+		assert(uptr <= &data[sizeof(data)]);
+
+		blobAddData(b, data, (size_t)(uptr - data));
+		/*
+		 * According to RFC1521, '=' is used to pad out
+		 * the last byte and should be used as evidence
+		 * of the end of the data. Some mail clients
+		 * annoyingly then put plain text after the '='
+		 * bytes. Sigh
+		 */
+		/*if(messageGetEncoding(m) == BASE64)
+			if(strchr(line, '='))
+				break;*/
+
+	} while((t_line = t_line->t_next) != NULL);
+
 	return b;
 }
 

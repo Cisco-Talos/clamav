@@ -16,12 +16,15 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: text.c,v $
+ * Revision 1.5  2004/03/25 22:40:46  nigelhorne
+ * Removed even more calls to realloc and some duplicated code
+ *
  * Revision 1.4  2004/02/26 13:26:34  nigelhorne
  * Handle spaces at the end of uuencoded lines
  *
  */
 
-static	char	const	rcsid[] = "$Id: text.c,v 1.4 2004/02/26 13:26:34 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: text.c,v 1.5 2004/03/25 22:40:46 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -48,10 +51,8 @@ static	char	const	rcsid[] = "$Id: text.c,v 1.4 2004/02/26 13:26:34 nigelhorne Ex
 void
 textDestroy(text *t_head)
 {
-	text *t_next;
-
 	while(t_head) {
-		t_next = t_head->t_next;
+		text *t_next = t_head->t_next;
 		free(t_head->t_text);
 		free(t_head);
 		t_head = t_next;
@@ -84,10 +85,10 @@ textClean(text *t_head)
 				t_lastnonempty = t_head;
 				if(last < len) {
 					line[last] = '\0';
-					t_head->t_text = realloc(line, ++last);
+					t_head->t_text = cli_realloc(line, ++last);
 				}
 			} else {
-				t_head->t_text = realloc(line, 1);
+				t_head->t_text = cli_realloc(line, 1);
 				t_head->t_text[0] = '\0';
 			}
 		}
@@ -145,7 +146,7 @@ textCopy(const text *t_head)
 	return first;
 }
 
-/* Add a message to the end of the current object */
+/* Add a copy of a text to the end of the current object */
 text *
 textAdd(text *t_head, const text *t)
 {
@@ -200,4 +201,38 @@ textAddMessage(text *aText, const message *aMessage)
 		}
 		return anotherText;
 	}
+}
+
+/*
+ * Transfer the contents of the text into a blob
+ * The caller must free the returned blob if b is NULL
+ */
+blob *
+textToBlob(const text *t, blob *b)
+{
+	const text *t1;
+	size_t s = 0;
+
+	assert(t != NULL);
+
+	if(b == NULL) {
+		b = blobCreate();
+
+		if(b == NULL)
+			return NULL;
+	}
+
+	for(t1 = t; t1; t1 = t1->t_next)
+		s += strlen(t1->t_text) + 1;
+
+	blobGrow(b, s);
+
+	do {
+		blobAddData(b, (unsigned char *)t->t_text, strlen(t->t_text));
+		blobAddData(b, (unsigned char *)"\n", 1);
+	} while((t = t->t_next) != NULL);
+
+	blobClose(b);
+
+	return(b);
 }
