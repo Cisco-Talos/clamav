@@ -302,7 +302,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	    options |= CL_DISABLERAR;
 	}
 
-	if(cfgopt(copt, "ArchiveDetectEncrypted")) {
+	if(cfgopt(copt, "ArchiveBlockEncrypted")) {
 	    logg("Blocking encrypted archives.\n");
 	    options |= CL_ENCRYPTED;
 	}
