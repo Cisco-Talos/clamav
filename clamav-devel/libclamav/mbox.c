@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.54  2004/03/19 15:40:45  nigelhorne
+ * Handle empty content-disposition types
+ *
  * Revision 1.53  2004/03/19 08:08:02  nigelhorne
  * If a message part of a multipart contains an RFC822 message that has no encoding don't scan it
  *
@@ -150,7 +153,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.53 2004/03/19 08:08:02 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.54 2004/03/19 15:40:45 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1713,8 +1716,11 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 			messageSetEncoding(m, copy);
 			break;
 		case CONTENT_DISPOSITION:
-			messageSetDispositionType(m, strtok_r(copy, ";", &strptr));
-			messageAddArgument(m, strtok_r(NULL, "\r\n", &strptr));
+			arg = strtok_r(copy, ";", &strptr);
+			if(arg && *arg) {
+				messageSetDispositionType(m, arg);
+				messageAddArgument(m, strtok_r(NULL, "\r\n", &strptr));
+			}
 	}
 	free(ptr);
 
