@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.131  2004/09/18 14:59:25  nigelhorne
+ * Code tidy
+ *
  * Revision 1.130  2004/09/17 10:56:29  nigelhorne
  * Handle multiple content-type headers and use the most likely
  *
@@ -378,7 +381,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.130 2004/09/17 10:56:29 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.131 2004/09/18 14:59:25 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1943,6 +1946,7 @@ initialiseTables(table_t **rfc821Table, table_t **subtypeTable)
 	for(tableinit = rfc821headers; tableinit->key; tableinit++)
 		if(tableInsert(*rfc821Table, tableinit->key, tableinit->value) < 0) {
 			tableDestroy(*rfc821Table);
+			*rfc821Table = NULL;
 			return -1;
 		}
 
@@ -1953,6 +1957,8 @@ initialiseTables(table_t **rfc821Table, table_t **subtypeTable)
 		if(tableInsert(*subtypeTable, tableinit->key, tableinit->value) < 0) {
 			tableDestroy(*rfc821Table);
 			tableDestroy(*subtypeTable);
+			*rfc821Table = NULL;
+			*subtypeTable = NULL;
 			return -1;
 		}
 
@@ -1986,7 +1992,13 @@ getTextPart(message *const messages[], size_t size)
 
 /*
  * strip -
- *	Remove the trailing spaces from a buffer
+ *	Remove the trailing spaces from a buffer. Don't call this directly,
+ * always call strstrip() which is a wrapper to this routine to be used with
+ * NUL terminated strings. This code looks a bit strange because of it's
+ * heritage from code that worked on strings that weren't necessarily NUL
+ * terminated.
+ * TODO: rewrite for clamAV
+ *
  * Returns it's new length (a la strlen)
  *
  * len must be int not size_t because of the >= 0 test, it is sizeof(buf)
@@ -1999,12 +2011,11 @@ strip(char *buf, int len)
 	register size_t i;
 
 	if((buf == NULL) || (len <= 0))
-		return(0);
+		return 0;
 
 	i = strlen(buf);
 	if(len > (int)(i + 1))
-		return(i);
-
+		return i;
 	ptr = &buf[--len];
 
 #if	defined(UNIX) || defined(C_LINUX) || defined(C_DARWIN)	/* watch - it may be in shared text area */
@@ -2378,7 +2389,7 @@ rfc2047(const char *in)
 		}
 		messageAddStr(m, enctext);
 		free(enctext);
-		switch(tolower(encoding)) {
+		switch(encoding) {
 			case 'q':
 				messageSetEncoding(m, "quoted-printable");
 				break;
@@ -2421,6 +2432,7 @@ checkURLs(message *m, const char *dir)
 	if(b == NULL)
 		return;
 
+	blobClose(b);
 	len = blobGetDataSize(b);
 
 	if(len == 0)
@@ -2688,7 +2700,7 @@ print_trace(int use_syslog)
 
 	for(i = 0; i < size; i++)
 		if(use_syslog)
-			syslog(LOG_ERR, "bt[%d]: %s", i, strings[i]);
+			syslog(LOG_ERR, "bt[%d]: %s", (int)i, strings[i]);
 		else
 			cli_dbgmsg("%s\n", strings[i]);
 

@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.86  2004/09/18 14:59:26  nigelhorne
+ * Code tidy
+ *
  * Revision 1.85  2004/09/17 13:47:19  nigelhorne
  * Handle yEnc attachments
  *
@@ -252,7 +255,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.85 2004/09/17 13:47:19 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.86 2004/09/18 14:59:26 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -362,6 +365,8 @@ messageCreate(void)
 void
 messageDestroy(message *m)
 {
+	assert(m != NULL);
+
 	messageReset(m);
 
 	free(m);
@@ -478,7 +483,9 @@ messageSetMimeType(message *mess, const char *type)
 mime_type
 messageGetMimeType(const message *m)
 {
-	return(m->mimeType);
+	assert(m != NULL);
+
+	return m->mimeType;
 }
 
 void
@@ -678,6 +685,10 @@ messageAddArguments(message *m, const char *s)
 			 * closing quotes
 			 */
 			key = strdup(key);
+
+			if(key == NULL)
+				return;
+
 			ptr = strchr(key, '=');
 			if(ptr == NULL)
 				ptr = strchr(key, ':');
