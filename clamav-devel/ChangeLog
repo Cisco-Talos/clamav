@@ -1,3 +1,25 @@
+Sun Feb  1 02:12:50 CET 2004 (tk)
+---------------------------------
+  * libclamav: + use strcasecmp() instead of strcmp() when comparing
+		 "Return-path" (Nigel). It may cause compilation errors on
+		 some systems so please report potential problems.
+	       + small cleanup for Solaris (patch by Andy Igoshin <ai*vsu.ru>)
+	       + readdb: free resources in critical error conditions: (patch by
+	         Everton da Silva Marques <everton*lab.ipaccess.diveo.net.br>)
+  * clamdscan: return 2 if clamd returns error messages (patch by Len Budney
+	       <lbudney*pobox.com>
+  * clamd: + new directives: TemporaryDirectory, LogClean (patch by Andrey
+	     V. Malyshev" <amal*krasn.ru>)
+	   + UseProcesses has been temporarily disabled (the code is broken and
+	     must be updated for the new protocol)
+  * sigtool: + fixed compilation error with Sun's compiler (reported by
+	       Alex S Moore <asmoore*edge.net>)
+	     + -l (short option for --list-sigs)
+  * freshclam: reply to -h before parsing a config file (patch by Dustin Mollo
+	       <dustin.mollo*sonoma.edu>)
+  * configure: + check for __attribute__((packed)) (Trog) 
+	       + use --disable-cr on OpenBSD 3.3 automatically (thanks to Nigel)
+
 Fri Jan 30 12:45:10 GMT 2004 (njh)
 ----------------------------------
   * contrib:	   Recursive scan into folders by the Windows client is now
@@ -6,7 +28,7 @@ Fri Jan 30 12:45:10 GMT 2004 (njh)
 Thu Jan 29 12:54:08 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter: added --noreject flag, thanks to
-			"Vijay Sarvepalli" <vssarvep@office.uncg.edu>
+			"Vijay Sarvepalli" <vssarvep*office.uncg.edu>
   * contrib:	   Added Windows client
 
 Thu Jan 29 10:29:02 GMT 2004 (trog)
@@ -16,13 +38,13 @@ Thu Jan 29 10:29:02 GMT 2004 (trog)
 Wed Jan 28 15:57:44 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter: Fixed compilation error with --enable-debug
-  		Thanks to "Serhiy V. Matveyev" <matveyev@uatele.com> for
+  		Thanks to "Serhiy V. Matveyev" <matveyev*uatele.com> for
 		pointing this out to me
 
 Wed Jan 28 10:16:49 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Added support to scan some bounce messages
-  		Thanks to Jay <sysop-clamav@coronastreet.net> for
+  		Thanks to Jay <sysop-clamav*coronastreet.net> for
 		letting me bounce ideas off him
 
 Tue Jan 27 22:36:31 CET 2004 (tk)
@@ -80,7 +102,7 @@ Sat Jan 24 17:45:40 GMT 2004 (njh)
 Fri Jan 23 12:12:30 CET 2004 (tk)
 ---------------------------------
   * libclamav: added support for OLE2 / VBA streams scanning (!!), based on
-	       code written by Trog <trog@uncon.org>. It may be enabled
+	       code written by Trog <trog*uncon.org>. It may be enabled
 	       with CL_OLE2 passed in options to cli_scandesc().
   * clamscan: support for OLE2 scanning is enabled by default and may be
 	      disabled with --no-ole2
@@ -153,7 +175,7 @@ Mon Jan 12 08:58:59 GMT 2004 (njh)
 
 Sat Jan 10 16:23:54 GMT 2004 (njh)
 ----------------------------------
-  * clamav-milter: Added OpenBSD instructions from <peo_s@incedo.org>
+  * clamav-milter: Added OpenBSD instructions from <peo_s*incedo.org>
 	and --signature-file option
 
 Sat Jan 10 14:52:00 GMT 2004 (njh)
@@ -204,7 +226,7 @@ Wed Jan  7 21:50:28 CET 2004 (tk)
 Tue Jan  6 14:42:00 GMT 2004 (njh)
 ----------------------------------
   * libclamav: Handle headers which do not not have a space after the ':'
-	Example mail submitted by "Diego d'Ambra" <da@softcom.dk>
+	Example mail submitted by "Diego d'Ambra" <da*softcom.dk>
 
 Tue Jan  6 14:43:42 CET 2004 (tk)
 ---------------------------------
@@ -226,7 +248,7 @@ Sat Jan  3 11:30:38 CET 2004 (tk)
 Wed Dec 31 14:47:13 GMT 2003 (njh)
 ----------------------------------
   * clamav-milter: Included the sendmail queue ID in the log, from an
-		idea by Andy Fiddaman <af@jeamland.org>
+		idea by Andy Fiddaman <af*jeamland.org>
 
 Tue Dec 30 04:33:29 CET 2003 (tk)
 ---------------------------------
@@ -243,7 +265,7 @@ Mon Dec 29 06:19:54 CET 2003 (tk)
 Sat Dec 27 17:29:30 GMT 2003 (njh)
 ----------------------------------
   * clamav-devel: Moved --sign data to private area
-		(suggestion by Michael Dankov <misha@btrc.ru>)
+		(suggestion by Michael Dankov <misha*btrc.ru>)
 
 Wed Dec 24 15:27:22 CET 2003 (tk)
 ---------------------------------
@@ -333,7 +355,7 @@ Sun Dec  7 22:46:15 CET 2003 (tk)
 Sat Dec  6 04:04:00 GMT 2003 (njh)
 ----------------------------------
   * libclamav: Handle hand crafted emails that incorrectly set multipart headers
-	Handcrafted examples sent by Michael Dankov <misha@btrc.ru>
+	Handcrafted examples sent by Michael Dankov <misha*btrc.ru>
 
 Sat Dec  6 00:43:08 CET 2003 (tk)
 ---------------------------------
@@ -346,12 +368,12 @@ Fri Dec  5 19:16:08 GMT 2003 (njh)
   * clamav-milter: Added call to umask to ensure that the local socket
 	is not publically writeable. If it is sendmail
 	will (correctly!) refuse to start this program
-	Thanks for Nicklaus Wicker <n.wicker@cnk-networks.de>
+	Thanks for Nicklaus Wicker <n.wicker*cnk-networks.de>
 
 	Don't sent From as the first line since that means
 	clamd will think it is an mbox and not handle
 	unescaped From at the start of lines properly
-	Thanks to Michael Dankov <misha@btrc.ru>
+	Thanks to Michael Dankov <misha*btrc.ru>
 
 Fri Dec  5 09:34:44 GMT 2003 (njh)
 ----------------------------------
@@ -396,7 +418,7 @@ Tue Dec  2 23:41:04 CET 2003 (tk)
 Tue Dec  2 06:38:13 GMT 2003 (njh)
 ----------------------------------
   * clamav-milter: use setsid if setpgrp not available
-	Thanks to Eugene Crosser <crosser@rol.ru> and Tomasz
+	Thanks to Eugene Crosser <crosser*rol.ru> and Tomasz
 
 Mon Dec  1 23:51:25 CET 2003 (tk)
 ---------------------------------
@@ -417,12 +439,12 @@ Mon Dec  1 20:26:45 CET 2003 (tk)
 Sun Nov 30 06:13:28 GMT 2003 (njh)
 ----------------------------------
   * clamav-milter: Added --quarantine-dir
-		Thanks to Michael Dankov <misha@btrc.ru>.
+		Thanks to Michael Dankov <misha*btrc.ru>.
 
 Sat Nov 29 12:52:21 GMT 2003 (njh)
 ----------------------------------
   * clamav-milter: Fix problem of possible confused pointers if large number of
-	recipients given. Fix by Michael Dankov <misha@btrc.ru>.
+	recipients given. Fix by Michael Dankov <misha*btrc.ru>.
 
 Sat Nov 29 04:35:03 CET 2003 (tk)
 ---------------------------------
@@ -443,7 +465,7 @@ Wed Nov 26 14:31:49 CET 2003 (tk)
 Tue Nov 25 11:28:28 IST 2003 (njh)
 ----------------------------------
   * clamav-milter: Handle empty hostname or hostaddr
-	Thanks to Michael Dankov <misha@btrc.ru> for the idea
+	Thanks to Michael Dankov <misha*btrc.ru> for the idea
 
 Mon Nov 24 17:18:03 CET 2003 (tk)
 ---------------------------------
@@ -501,7 +523,7 @@ Sat Nov 15 01:17:29 CET 2003 (tk)
 	       <robert*roberthogan.net>)
   * libclamav: cli_scanzip: increased oversize ratio
   * freshclam: always initialize the ipaddr variable (patch by Mark Mielke
-	       <mark@mark.mielke.cc>)
+	       <mark*mark.mielke.cc>)
 
 Thu Nov 13 20:03:53 CET 2003 (tk)
 ---------------------------------
@@ -529,7 +551,7 @@ Tue Nov 11 22:47:37 CET 2003 (tk)
 Tue Nov 11 13:51:23 IST 2003 (njh)
 ----------------------------------
   * clamav-milter: Fixed handling of % characters in e-mail addresses
-		pointed out by dotslash@snosoft.com
+		pointed out by dotslash*snosoft.com
 
 Sun Nov  9 20:25:11 CET 2003 (tk)
 ---------------------------------
@@ -580,7 +602,7 @@ Wed Nov  5 11:35:22 CET 2003 (tk)
 Wed Nov  5 12:34:34 IST 2003 (njh)
 ----------------------------------
   * libclamav: Handle spam that sends broken content-disposition
-	(Fix by NJH, Bug notified by Laurent Wacrenier <lwa@teaser.fr>)
+	(Fix by NJH, Bug notified by Laurent Wacrenier <lwa*teaser.fr>)
 
 Wed Nov  5 01:52:03 CET 2003 (tk)
 ---------------------------------
@@ -594,7 +616,7 @@ Tue Nov  4 13:37:21 CET 2003 (tk)
 Tue Nov  4 08:27:00 GMT 2003 (njh)
 ----------------------------------
   * libclamav: Handle multipart messages that have no text portion
-	(Fix by NJH, Bug notified by Laurent Wacrenier <lwa@teaser.fr>)
+	(Fix by NJH, Bug notified by Laurent Wacrenier <lwa*teaser.fr>)
 
 Tue Nov  4 00:37:03 CET 2003 (tk)
 ---------------------------------
@@ -667,7 +689,7 @@ Fri Oct 17 05:08:22 CEST 2003 (tk)
 Sun Oct 12 21:14:21 BST 2003 (njh)
 ---------------------------------
   * libclamav: mbox.c now uses NO_STRTOK_R consistently with message.c
-		Patch by Bernd Kuhls <spiralvoice@hotmail.com>
+		Patch by Bernd Kuhls <spiralvoice*hotmail.com>
 
 Sun Oct 12 19:46:18 CEST 2003 (tk)
 ----------------------------------
@@ -763,7 +785,7 @@ Sun Sep 28 17:38:44 BST 2003 (njh)
 ----------------------------------
   * clamav-milter: added --force-scan flag
 		Use MaxThreads if --max-children not set
-		(thanks to "Richard G. Roberto" <rgr@dedlegend.com>)
+		(thanks to "Richard G. Roberto" <rgr*dedlegend.com>)
 
 Sun Sep 28 11:07:49 BST 2003 (njh)
 ----------------------------------
@@ -952,7 +974,7 @@ Wed Jul 17 23:33:17 CEST 2003
 
 Mon Jul 14 03:43:35 CEST 2003
 -----------------------------
-  * clamav-milter: Some TODOs done by Nigel Kukard <nkukard@lbsd.net>
+  * clamav-milter: Some TODOs done by Nigel Kukard <nkukard*lbsd.net>
                    Should stop a couple of remote chances of crashes (Nigel)
 
 Thu Jul 10 17:16:32 CEST 2003
@@ -984,13 +1006,13 @@ Wed Jun 25 03:07:10 CEST 2003
 -----------------------------
   * freshclam: fixed a typo - missing 2 in "nodb" in (should be "nodb2") in
 	       one clause. That was causing a strange behaviour in some
-	       situations. Patch by Damien Curtain <damien@pagefault.org>.
+	       situations. Patch by Damien Curtain <damien*pagefault.org>.
   * freshclam: new option --user (-u) USER - run as USER instead of the
 	       default 'clamav' user. Patch by Damien Curtain.
   * freshclam: switch to a mirror when downloaded md5 check sum doesn't
 	       match the database (errno 54, man freshclam)
   * freshclam: mirrors.txt - added clamav.rulez.pl mirror managed by
-	       £ukasz Jaros³aw Mozer <lukasz@netx.waw.pl>
+	       £ukasz Jaros³aw Mozer <lukasz*netx.waw.pl>
   * clamd, libclamav, clamscan: fixed a bug introduced in 0.60 - closedir(dd)
 				was called even when dd was not correctly opened
   * libclamav: mbox - patch for a segfault with some nasty messages which
@@ -1019,7 +1041,7 @@ Wed Jun 18 05:33:15 CEST 2003
     clamd: dirscan()
     clamscan: treewalk.c functions: fixed descriptor leak (missing closedir()
 				    in error conditions). Bug found thanks
-				    to Kristof Petr <Kristof.P@fce.vutbr.cz>
+				    to Kristof Petr <Kristof.P*fce.vutbr.cz>
 				    bug report.
   * configure, libclamav: detect for bzip2 library type instead of using
 			  hardcoded change for Solaris (a conflict with
@@ -1038,18 +1060,18 @@ Thu Jun  5 14:38:20 CEST 2003
   * clamd: new directive - AllowSupplementaryGroups (feature requested by
 	   exiscan users)
   * freshclam: new options --on-error-execute, --on-update-execute (suggested
-	       by Douglas J Hunley <doug@hunley.homeip.net>).
+	       by Douglas J Hunley <doug*hunley.homeip.net>).
 
 Fri May 30 06:06:28 CEST 2003
 -----------------------------
   * freshclam: fixed segfault with --proxy-user (patch by Damien Curtain
-	       <damien@pagefault.org> also independently submitted by
-		Nick Gazaloff <nick@sbin.org>)
+	       <damien*pagefault.org> also independently submitted by
+		Nick Gazaloff <nick*sbin.org>)
   * libclamav: mbox code fixed to find the party virus (Nigel)
   * clamav-milter: wasn't thread safe - fixed (thanks to Krzysztof
-		   Oledzki <ole@ans.pl>) (Nigel)
+		   Oledzki <ole*ans.pl>) (Nigel)
   * clamd: fixed compilation problem when --enable-bigstack is used on a non
-	   BSD system (thanks to Mike Loewen <mcl8@psu.edu>)
+	   BSD system (thanks to Mike Loewen <mcl8*psu.edu>)
 
 Thu May 22 05:18:56 CEST 2003
 -----------------------------
@@ -1064,38 +1086,38 @@ Mon May 12 01:47:18 CEST 2003
 -----------------------------
   * clamd: added missing close(acceptd) in scanstream() which was causing
 	   a leak of socket descriptors when using clamav-milter. Bug fixed
-	   by Nick Gazaloff <nick@sbin.org>, also was earlier reported by
-	   Kristof Petr <Kristof.P@fce.vutbr.cz> and Nigel.
+	   by Nick Gazaloff <nick*sbin.org>, also was earlier reported by
+	   Kristof Petr <Kristof.P*fce.vutbr.cz> and Nigel.
   * clamscan: use unzoo instead of non-free zoo (patch by Magnus Ekdahl)
   * libclamav: updated mbox code (Nigel)
 
 Wed Apr 30 22:23:50 CEST 2003
 -----------------------------
   * libclamav: use bzReadOpen instead of BZ2_bzReadOpen under Solaris
-	       (patch by Hrvoje Habjanic <hrvoje.habjanic@zg.hinet.hr>)
+	       (patch by Hrvoje Habjanic <hrvoje.habjanic*zg.hinet.hr>)
 
 Thu Apr 24 02:07:45 CEST 2003
 -----------------------------
   * freshclam: proxy authorization support (Gernot Tenchio
-	       <g.tenchio@telco-tech.de>)
+	       <g.tenchio*telco-tech.de>)
   * clamav-milter: ported clamfi_envrcpt which fixes the bug reported by
-		   Joe Talbott <jtalbott@halifax.com> from 0.52 to 0.53.
+		   Joe Talbott <jtalbott*halifax.com> from 0.52 to 0.53.
 		   Nigel, please check it - there is a version problem with
 		   clamav-milter.
   * clamd: in some cases it was writing to stderr, which was already closed by
-	   daemonize(). Bug found by Brian May <bam@debian.org>.
+	   daemonize(). Bug found by Brian May <bam*debian.org>.
   * freshclam: remove 'mirror' file (it remembers the last accessible mirror
 	       when the first one from the list is not working) only after
 	       next succesful database update
 
 Mon Apr 21 05:15:42 CEST 2003
 -----------------------------
-  * freshclam: mirror list support (Damien Curtain <damien@pagefault.org>)
+  * freshclam: mirror list support (Damien Curtain <damien*pagefault.org>)
 
 Tue Apr 15 20:11:32 CEST 2003
 -----------------------------
   * libclamav: cl_md5sum: stream wasn't closed after reading (fixed by Damien
-	       Curtain <damien@pagefault.org>)
+	       Curtain <damien*pagefault.org>)
 
 Fri Apr  4 04:09:14 CEST 2003
 -----------------------------
@@ -1125,8 +1147,8 @@ Thu Mar 20 15:25:47 CET 2003
 ----------------------------
   * clamav-milter: v 0.51 (Nigel)
   * clamd: fixed compile problem on systems without /dev/urandom (AIX,
-	   Solaris) (bug reported some time ago by Mike Loewen <mcl8@psu.edu>,
-	   and recently by Piotr Kasztelowicz <pekasz@am.torun.pl>)
+	   Solaris) (bug reported some time ago by Mike Loewen <mcl8*psu.edu>,
+	   and recently by Piotr Kasztelowicz <pekasz*am.torun.pl>)
   * configure: --disable-bzip2 (disables automatic support for bzip2 library)
 
 Mon Mar 17 10:36:01 CET 2003
@@ -1157,7 +1179,7 @@ Thu Mar 13 04:39:13 CET 2003
 Wed Mar 12 02:56:57 CET 2003
 ----------------------------
   * libclamav: fixed buffer overflow in unrarlib (patch by Robbert Kouprie
-	       <robbert@exx.nl>)
+	       <robbert*exx.nl>)
   * clamav-milter: 
 	+ v 0.3 (Nigel)
 	+ --enable-milter must be enabled with ./configure
@@ -1167,7 +1189,7 @@ Wed Mar 12 02:56:57 CET 2003
 
 Wed Mar  5 04:05:37 CET 2003
 ----------------------------
-  * clamscan: --move option (by Damien Curtain <damien@pagefault.org>)
+  * clamscan: --move option (by Damien Curtain <damien*pagefault.org>)
 
 Thu Feb 27 02:51:32 CET 2003
 ----------------------------
@@ -1182,7 +1204,7 @@ Wed Feb 26 02:17:33 CET 2003
   * libclamav: fixed strcasecmp() compile problem in zziplib on
 	       Free/NetBSD and others
   * clamd: disabled syslog support on AIX [it doesn't have vsyslog()]
-	   (thanks to Mike Loewen <mcl8@psu.edu>)
+	   (thanks to Mike Loewen <mcl8*psu.edu>)
 
 Mon Feb 24 19:21:19 CET 2003
 ----------------------------
@@ -1204,13 +1226,13 @@ Thu Jan 23 23:51:58 CET 2003
 ----------------------------
   * clamd: 
 	+ fixed segfault with extra space between option and argument
-	  in config file (Magnus Ekdahl <magnus@debian.org>)
+	  in config file (Magnus Ekdahl <magnus*debian.org>)
 	+ additional protection - timeouts for infinite (wait) loops
-	  (idea by Hrvoje Habjanic <hrvoje.habjanic@zg.hinet.hr>)
+	  (idea by Hrvoje Habjanic <hrvoje.habjanic*zg.hinet.hr>)
   * clamscan: enhanced -i option (Magnus Ekdahl)
   * libclamav: mbox update (detection of viruses that put their payloads
 	       after the end of message marker) (Nigel). Thanks to Stephen
-	       White <stephen@earth.li> for finding the bugs; test viruses
+	       White <stephen*earth.li> for finding the bugs; test viruses
 	       and for the CGI infector :)
 
 Fri Jan 10 01:52:41 CET 2003
@@ -1221,7 +1243,7 @@ Fri Jan 10 01:52:41 CET 2003
 Thu Jan  9 01:06:35 CET 2003
 ----------------------------
   * clamd: syslog support (patch by Hrvoje Habjanic
-	   <hrvoje.habjanic@zg.hinet.hr>), slightly modified to use LogSyslog
+	   <hrvoje.habjanic*zg.hinet.hr>), slightly modified to use LogSyslog
   * clamscan: temporarily disabled thread autoconfiguration (few people
 	      reported problem on SMP systems), will be fixed soon.
 
@@ -1248,12 +1270,12 @@ Mon Dec  9 02:01:31 CET 2002
 	       message bodies) (Nigel)
   * clamscan: logging (-l) of infected files was missing ! added
   * clamd: ScannerDaemonOutputFormat (patch by Andreas Piesk
-	   <Andreas.Piesk@heise.de>)
+	   <Andreas.Piesk*heise.de>)
 
 Thu Dec  5 05:32:21 CET 2002
 ----------------------------
   * libclamav: scanners.c -> cli_scandesc() optimization (patch by
-	       Hendrik Muhs <Hendrik.Muhs@student.uni-magdeburg.de>)
+	       Hendrik Muhs <Hendrik.Muhs*student.uni-magdeburg.de>)
 
 Wed Dec  4 01:31:24 CET 2002
 ----------------------------
@@ -1274,18 +1296,18 @@ Mon Dec  2 01:21:14 CET 2002
 Fri Nov 29 23:18:36 CET 2002
 ----------------------------
   * configure: fixed --enable-id-check option (Jason Englander
-	       <jason@englanders.cc>)
+	       <jason*englanders.cc>)
   * clamscan: fixed --remove option in clamscan (it didn't work with internal
-	      archivers) (patch by Damien Curtain <damien@pagefault.org>)
-  * AIX support (thanks to Mike Loewen <mloewen@sturgeon.cac.psu.edu>)
-  * Tru64 support (thanks to Christophe Varoqui <ext.devoteam.varoqui@sncf.fr>)
+	      archivers) (patch by Damien Curtain <damien*pagefault.org>)
+  * AIX support (thanks to Mike Loewen <mloewen*sturgeon.cac.psu.edu>)
+  * Tru64 support (thanks to Christophe Varoqui <ext.devoteam.varoqui*sncf.fr>)
   * libclamav: mbox: fixed memory leak (Nigel)
 
 Thu Nov 21 01:27:21 CET 2002
 ----------------------------
   * configure: do not overwrite existing clamav.conf file
   * clamd: disable logging of a unnecessary time stamps with LogTime when
-	   LogVerbose isn't used (patch by Ed Phillips <ed@UDel.Edu>)
+	   LogVerbose isn't used (patch by Ed Phillips <ed*UDel.Edu>)
   * freshclam: no-cache enabled by default; Cygwin support fix
   V 0.54
 
@@ -1296,7 +1318,7 @@ Wed Nov 20 01:15:48 CET 2002
 	       if it doesn't detect clamav group.
   * all tools: removed huge printf() in help() (there was a buffer overflow
 	       problem with --help option under Windows and SCO Unix
-	       (reported by Wojciech Noworyta <wnow@konarski.edu.pl> and
+	       (reported by Wojciech Noworyta <wnow*konarski.edu.pl> and
 	       Nigel respectively)
 
 Sun Nov 17 00:37:19 CET 2002
@@ -1307,7 +1329,7 @@ Sat Nov 16 00:37:19 CET 2002
 ----------------------------
   * libclamav: zziplib updated to 0.10.66
   * libclamav: work-around for zziplib bug (segfault with some strange files)
-	       (thanks to Oliver Paukstadt <pstadt@stud.fh-heilbronn.de> for
+	       (thanks to Oliver Paukstadt <pstadt*stud.fh-heilbronn.de> for
 	       the bug ruport)
   * mbox code: updated and moved into libclamav (Nigel)
   * rewritten pattern matcher
@@ -1332,7 +1354,7 @@ Thu Nov  7 12:14:54 CET 2002
 
 Fri Nov  1 21:16:34 CET 2002
 ----------------------------
-  * applied patch from Patrick Bihan-Faou <patrick@mindstep.com>, which
+  * applied patch from Patrick Bihan-Faou <patrick*mindstep.com>, which
     allows configuration of the clamav user and group with --with-user and
     --with-group
 
@@ -1358,8 +1380,8 @@ Tue Oct 29 02:15:11 CET 2002
 	      --enable-debug
   * included "Installing qmail-scanner, Clam Antivirus and SpamAssassin under
     FreeBSD" how-to by Paul Hoadley and Eric Parsonage
-  * HPUX support (thanks to Joe Oaks <joe.oaks@hp.com>)
-  * freshclam: included patch from Ant La Porte <ant@dvere.net> - it forces
+  * HPUX support (thanks to Joe Oaks <joe.oaks*hp.com>)
+  * freshclam: included patch from Ant La Porte <ant*dvere.net> - it forces
 	       'no-cache' option in proxy servers - you need to enable
 	       it with --disable-cache, though.
   * clamd is a system command (clamd.1 -> clamd.8, /usr/local/bin ->
@@ -1376,7 +1398,7 @@ Fri Oct 25 23:21:49 CEST 2002
   * clamd: fixed problem with recursive scanning of the directories with
 	   st_size == 0 (the initial check in scan() was treating them like
 	   an empty files) (bug reported by Jason Englander
-	   <jason@englanders.cc>)
+	   <jason*englanders.cc>)
 
 Wed Oct 23 02:27:13 CEST 2002
 -----------------------------
@@ -1385,14 +1407,14 @@ Wed Oct 23 02:27:13 CEST 2002
 Mon Oct 21 01:36:31 CEST 2002
 -----------------------------
   * freshclam: applied http-proxy patch from http://bugs.debian.org/clamav (by
-    Martin Lesser <admin-debian@bettercom.de>)
+    Martin Lesser <admin-debian*bettercom.de>)
   * clamd: drop supplementary groups (suggested by Enrico Scholz
-    <enrico.scholz@informatik.tu-chemnitz.de>)
+    <enrico.scholz*informatik.tu-chemnitz.de>)
   * clamd: work-around for the segmentation fault at QUIT under FreeBSD
 
 Wed Oct 16 23:58:45 CEST 2002
 -----------------------------
-  * included TrashScan 0.08 (from Trashware <trashware@gmx.de>)
+  * included TrashScan 0.08 (from Trashware <trashware*gmx.de>)
 
 Sun Oct 13 20:23:43 CEST 2002
 -----------------------------
@@ -1400,7 +1422,7 @@ Sun Oct 13 20:23:43 CEST 2002
 
 Wed Oct  9 00:52:08 CEST 2002
 -----------------------------
-  * clamd: fixed THREXIT (thanks to Piotr Gackiewicz <gacek@intertele.pl>)
+  * clamd: fixed THREXIT (thanks to Piotr Gackiewicz <gacek*intertele.pl>)
   * clamd: fixed thread argument passing
   * clamscan: mbox: don't scan empty attachments (Nigel Horne)
   * configure: --with-db1, --with-db2 (suggested by Magnus Ekdahl)
@@ -1410,7 +1432,7 @@ Mon Oct  7 19:47:21 CEST 2002
   * libclamav: OAV database support
   * libclamav: limited memory usage
   * clamscan: fixed compile error reported by Henk Kuipers
-	      <henk@opensourcesolutions.nl>.
+	      <henk*opensourcesolutions.nl>.
 
 Fri Oct  4 23:41:18 CEST 2002
 -----------------------------
@@ -1512,16 +1534,16 @@ Thu Sep 19 01:27:26 CEST 2002
 
 Tue Sep 17 02:50:23 CEST 2002
 -----------------------------
-  * included Japanese documentation by Masaki Ogawa <proc@mac.com>
+  * included Japanese documentation by Masaki Ogawa <proc*mac.com>
   * clamscan: included mbox code (--mbox) and few small fixes from
-    Nigel Horne <njh@bandsman.co.uk>
+    Nigel Horne <njh*bandsman.co.uk>
   * clamd: LocalSocket, Foreground, User.
   * updated examples/ex1.c
 
 Sun Sep 15 17:22:01 CEST 2002
 -----------------------------
   * freshclam: log 'Database updated.' (thanks to Jeffrey Moskot
-    <jef@math.miami.edu> for the bug report), log number of signatures
+    <jef*math.miami.edu> for the bug report), log number of signatures
     in a downloaded database.
   * clamd: RAWSCAN, small cleanups
   * clamscan: thread support is disabled on non-Linux systems, due to
@@ -1531,9 +1553,9 @@ Sun Sep 15 02:18:58 CEST 2002
 -----------------------------
   * clamscan: 
     * applied patch for including and excluding multiple
-      patterns (by Alejandro Dubrovsky <s328940@student.uq.edu.au>);
+      patterns (by Alejandro Dubrovsky <s328940*student.uq.edu.au>);
     * applied patch for processing all files/directories from argument list
-      (by Nigel Horne <njh@smsltd.demon.co.uk>);
+      (by Nigel Horne <njh*smsltd.demon.co.uk>);
     * -d switch recognises directory and loads all .db files from
       (requested by debian user)
   * libclamav: better handling of malformed databases in cl_loaddb()
@@ -1582,7 +1604,7 @@ Sat Aug 31 02:48:56 CEST 2002
 -----------------------------
   * clamd: tcpserver() and others
   * updated Sendmail+Amavis+ClamAv installation how-to, thanks to
-    Erick I. Lopez Carreon <elopezc@technitrade.com>
+    Erick I. Lopez Carreon <elopezc*technitrade.com>
 
 Fri Aug 30 03:32:37 CEST 2002
 -----------------------------
@@ -1716,14 +1738,14 @@ Thu Jul 18 20:52:54 CEST 2002
 -----------------------------
   * fixed amavis-perl patch
   * fixed database download problem in freshclam
-  * initial NetBSD support (thanks to Marc Baudoin <babafou@babafou.eu.org>
-    and Jean-Edouard BABIN <Jeb@jeb.com.fr>)
+  * initial NetBSD support (thanks to Marc Baudoin <babafou*babafou.eu.org>
+    and Jean-Edouard BABIN <Jeb*jeb.com.fr>)
   * --strange-unzip
   V 0.21
 
 Tue Jul 16 16:49:57 CEST 2002
 -----------------------------
-  * applied patch from Masaki Ogawa <proc@mac.com>, it adds support
+  * applied patch from Masaki Ogawa <proc*mac.com>, it adds support
     for Mac OS X specific users database
   * additional check for options with numerical arguments
   * clamdoc fixes by Dennis Leeuw
@@ -1748,7 +1770,7 @@ Sat Jul 13 00:09:56 CEST 2002
 Thu Jul  4 13:23:00 CEST 2002
 -----------------------------
   * fixed mode_t data type problem in manager.c under Mac OS X (thanks
-    to Peter N Lewis <peter@stairways.com.au>)
+    to Peter N Lewis <peter*stairways.com.au>)
 
 Tue Jul  2 03:31:55 CEST 2002
 -----------------------------
@@ -1781,13 +1803,13 @@ Thu Jun 27 16:02:44 CEST 2002
 Tue Jun 25 10:36:41 CEST 2002
 -----------------------------
   * included Sendmail+Amavis+ClamAv installation how-to from
-    Erick I. Lopez Carreon <elopezc@technitrade.com>
+    Erick I. Lopez Carreon <elopezc*technitrade.com>
 
 Sun Jun 23 02:09:52 CEST 2002
 -----------------------------
-  * applied gcc3 support patch from David Ford <david+cert@blue-labs.org>
+  * applied gcc3 support patch from David Ford <david+cert*blue-labs.org>
   * fixed detectCpu() for systems without /proc/cpuinfo or without
-    'processor' string in it (thanks to Stefan Martig <sm@officeco.ch> for
+    'processor' string in it (thanks to Stefan Martig <sm*officeco.ch> for
     info)
 
 Mon Jun 17 02:35:24 CEST 2002
@@ -1796,7 +1818,7 @@ Mon Jun 17 02:35:24 CEST 2002
 
 Sat Jun 15 00:53:54 CEST 2002
 -----------------------------
-  * updated qmail-scanner patch (thanks to Kazuhiko <kazuhiko@fdiary.net>)
+  * updated qmail-scanner patch (thanks to Kazuhiko <kazuhiko*fdiary.net>)
 
 Wed Jun 12 07:09:33 CEST 2002
 -----------------------------
@@ -1810,21 +1832,21 @@ Sun Jun  9 01:50:30 CEST 2002
 
 Fri Jun  7 21:03:50 CEST 2002
 -----------------------------
-  * applied OpenBSD support patch from Kamil Andrusz <wizz@mniam.net>
+  * applied OpenBSD support patch from Kamil Andrusz <wizz*mniam.net>
   * fixed problem with password protected archives (unpackers were waiting
     for password)
 
 Fri May 31 18:51:31 CEST 2002
 -----------------------------
   * fixed segfault in freshclam in some situations: return status in md5_file
-    wasn't checked (thanks to Dennis Leeuv <leeuw@stone-it.com>)
+    wasn't checked (thanks to Dennis Leeuv <leeuw*stone-it.com>)
   * other freshclam fixes
 
 Thu May 30 01:50:21 CEST 2002
 -----------------------------
-  * applied freshclam patch from Arkadiusz Miskiewicz <misiek@pld.org.pl>
+  * applied freshclam patch from Arkadiusz Miskiewicz <misiek*pld.org.pl>
   * included "Debian GNU/Linux Mail Server v. 0.1.0" by Dennis Leeuw
-    <leeuw@stone-it.com> to the documentation
+    <leeuw*stone-it.com> to the documentation
   * removed CFLAGS from freshclam's Makefile.am
   V 0.14
 
@@ -1838,15 +1860,15 @@ Mon May 27 03:10:20 CEST 2002
 Sat May 25 18:13:58 CEST 2002
 -----------------------------
   * fixed crash during extracting when clamscan is started as non-root user
-    (thanks to Andoni Zubimendi <andoni@lpsat.net>), this was included
+    (thanks to Andoni Zubimendi <andoni*lpsat.net>), this was included
     in 0.13
   * --max-files, --max-space
 
 Fri May 24 19:59:09 CEST 2002
 -----------------------------
   * improved automake-support - patch from
-    Arkadiusz Miskiewicz <misiek@pld.org.pl>
-  * support for Mac OS X (thanks to Masaki Ogawa <proc@mac.com>)
+    Arkadiusz Miskiewicz <misiek*pld.org.pl>
+  * support for Mac OS X (thanks to Masaki Ogawa <proc*mac.com>)
   * updated database
   * updated documentation
 
@@ -1857,20 +1879,20 @@ Sun May 19 18:05:05 CEST 2002
 
 Sun May 19 01:39:21 CEST 2002
 -----------------------------
-  * Solaris 2.6 support (thanks to Thomas W. Holt Jr. <twh@cohesive.net>)
-  * added threads autodetection code from Magnus Ekdahl <magnus@debian.org>
+  * Solaris 2.6 support (thanks to Thomas W. Holt Jr. <twh*cohesive.net>)
+  * added threads autodetection code from Magnus Ekdahl <magnus*debian.org>
   * fixed probably-not-possible race condition with directory creating
     in clamscan (not a security problem) (thanks to Magnus Ekdahl)
   * removed this nasty N(x) macro (thanks to Martijn van Oosterhout
-    <kleptog@svana.org>, who forced ;) me to do this)
+    <kleptog*svana.org>, who forced ;) me to do this)
 
 Sat May 18 01:20:29 CEST 2002
 -----------------------------
-  * applied patch from Thomas Quinot <thomas@cuivre.fr.eu.org>
+  * applied patch from Thomas Quinot <thomas*cuivre.fr.eu.org>
     WARNING: share/clamav is a new database directory
   * changed detection of lha extension -> lzh
   * fixed buffer overflow in option parser (not a security problem)
-    (thanks to Dave Jones <dave@kalkbay.co.za>, who found it first)
+    (thanks to Dave Jones <dave*kalkbay.co.za>, who found it first)
   * updated documentation/Supported platforms, Credits
 
 Fri May 10 14:25:32 CEST 2002
@@ -1880,7 +1902,7 @@ Fri May 10 14:25:32 CEST 2002
 Thu May  9 21:52:54 CEST 2002
 -----------------------------
   * fixed problem with inaccessible directories in archives, which caused
-    clamscan hangs (Thanks to Troy Wollenslegel <troy@intranet.org>)
+    clamscan hangs (Thanks to Troy Wollenslegel <troy*intranet.org>)
   * fixed unwanted path completing when using compression and absolute
     pathname as argument
   * added support for lha

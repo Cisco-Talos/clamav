@@ -265,6 +265,18 @@ freebsd*)
     fi
     AC_DEFINE(C_BSD)
     ;;
+openbsd3.3*)
+    if test "$have_pthreads" = "yes"; then
+	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread"
+	if test "$disable_cr" = "yes"; then
+	    CLAMD_LIBS="-pthread"
+	fi
+	TH_SAFE="-thread-safe"
+	AC_DEFINE(CL_THREAD_SAFE)
+	AC_DEFINE(_REENTRANT)
+    fi
+    AC_DEFINE(C_BSD)
+    ;;
 openbsd*)
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread"
@@ -411,6 +423,37 @@ if test $ac_cv_c_bigendian = yes; then
   AC_DEFINE(WORDS_BIGENDIAN)
 else
   AC_DEFINE(WORDS_LITTLEENDIAN)
+fi
+
+dnl check for __attribute__((packed))
+AC_MSG_CHECKING([for structure packing via __attribute__((packed))])
+AC_CACHE_VAL(have_attrib_packed,[
+	AC_TRY_COMPILE(,
+		[struct { int i __attribute__((packed)); } s; ],
+		[have_attrib_packed=yes],
+		[have_attrib_packed=no])
+	])
+AC_MSG_RESULT($have_attrib_packed)
+
+if test "$have_attrib_packed" = no; then
+	AC_MSG_CHECKING(for structure packing via pragma)
+	AC_CACHE_VAL(have_pragma_pack,[
+		AC_TRY_RUN([int main(void) {
+#pragma pack(1)			/* has to be in column 1 ! */
+			struct { char c; long l; } s;
+			return sizeof(s)==sizeof(s.c)+sizeof(s.l) ? 0:1; } ],
+			[have_pragma_pack=yes],
+			[have_pragma_pack=no])
+		])
+	AC_MSG_RESULT($have_pragma_pack)
+	AC_DEFINE(HAVE_PRAGMA_PACK)
+fi
+
+if test "$have_attrib_packed" = no -a "$have_pragma_pack" = no ; then
+	AC_MSG_ERROR(Need to know how to pack structures with this compiler)
+fi
+if test "$have_attrib_packed" = yes; then
+	AC_DEFINE(HAVE_ATTRIB_PACKED)
 fi
 
 AC_OUTPUT([

@@ -9417,6 +9417,27 @@ _ACEOF
 _ACEOF
 
     ;;
+openbsd3.3*)
+    if test "$have_pthreads" = "yes"; then
+	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread"
+	if test "$disable_cr" = "yes"; then
+	    CLAMD_LIBS="-pthread"
+	fi
+	TH_SAFE="-thread-safe"
+	cat >>confdefs.h <<\_ACEOF
+#define CL_THREAD_SAFE 1
+_ACEOF
+
+	cat >>confdefs.h <<\_ACEOF
+#define _REENTRANT 1
+_ACEOF
+
+    fi
+    cat >>confdefs.h <<\_ACEOF
+#define C_BSD 1
+_ACEOF
+
+    ;;
 openbsd*)
     if test "$have_pthreads" = "yes"; then
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread"
@@ -10119,6 +10140,119 @@ _ACEOF
 else
   cat >>confdefs.h <<\_ACEOF
 #define WORDS_LITTLEENDIAN 1
+_ACEOF
+
+fi
+
+echo "$as_me:$LINENO: checking for structure packing via __attribute__((packed))" >&5
+echo $ECHO_N "checking for structure packing via __attribute__((packed))... $ECHO_C" >&6
+if test "${have_attrib_packed+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+
+	cat >conftest.$ac_ext <<_ACEOF
+#line $LINENO "configure"
+#include "confdefs.h"
+
+#ifdef F77_DUMMY_MAIN
+#  ifdef __cplusplus
+     extern "C"
+#  endif
+   int F77_DUMMY_MAIN() { return 1; }
+#endif
+int
+main ()
+{
+struct { int i __attribute__((packed)); } s;
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+  (eval $ac_compile) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+         { ac_try='test -s conftest.$ac_objext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  have_attrib_packed=yes
+else
+  echo "$as_me: failed program was:" >&5
+cat conftest.$ac_ext >&5
+have_attrib_packed=no
+fi
+rm -f conftest.$ac_objext conftest.$ac_ext
+
+fi
+
+echo "$as_me:$LINENO: result: $have_attrib_packed" >&5
+echo "${ECHO_T}$have_attrib_packed" >&6
+
+if test "$have_attrib_packed" = no; then
+	echo "$as_me:$LINENO: checking for structure packing via pragma" >&5
+echo $ECHO_N "checking for structure packing via pragma... $ECHO_C" >&6
+	if test "${have_pragma_pack+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+
+		if test "$cross_compiling" = yes; then
+  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling" >&5
+echo "$as_me: error: cannot run test program while cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+else
+  cat >conftest.$ac_ext <<_ACEOF
+#line $LINENO "configure"
+#include "confdefs.h"
+int main(void) {
+#pragma pack(1)			/* has to be in column 1 ! */
+			struct { char c; long l; } s;
+			return sizeof(s)==sizeof(s.c)+sizeof(s.l) ? 0:1; }
+_ACEOF
+rm -f conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  have_pragma_pack=yes
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+cat conftest.$ac_ext >&5
+( exit $ac_status )
+have_pragma_pack=no
+fi
+rm -f core core.* *.core conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+
+fi
+
+	echo "$as_me:$LINENO: result: $have_pragma_pack" >&5
+echo "${ECHO_T}$have_pragma_pack" >&6
+	cat >>confdefs.h <<\_ACEOF
+#define HAVE_PRAGMA_PACK 1
+_ACEOF
+
+fi
+
+if test "$have_attrib_packed" = no -a "$have_pragma_pack" = no ; then
+	{ { echo "$as_me:$LINENO: error: Need to know how to pack structures with this compiler" >&5
+echo "$as_me: error: Need to know how to pack structures with this compiler" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test "$have_attrib_packed" = yes; then
+	cat >>confdefs.h <<\_ACEOF
+#define HAVE_ATTRIB_PACKED 1
 _ACEOF
 
 fi

@@ -244,8 +244,9 @@ int cli_scanzip(int desc, char **virname, long int *scanned, const struct cl_nod
 	ZZIP_FILE *zfp;
 	FILE *tmp = NULL;
 	char *buff;
-	int fd, bytes, files = 0, ret = CL_CLEAN, err;
+	int fd, bytes, files = 0, ret = CL_CLEAN;
 	struct stat source;
+	zzip_error_t err;
 
     cli_dbgmsg("Starting scanzip()\n");
 
@@ -763,7 +764,7 @@ int cli_magic_scandesc(int desc, char **virname, long int *scanned, const struct
 	else if(SCAN_MAIL && !strncmp(magic, RAWMAIL_MAGIC_STR, strlen(RAWMAIL_MAGIC_STR))) {
 	    cli_dbgmsg("Recognized raw mail file.\n");
 	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
-	} else if(SCAN_MAIL && !strncmp(magic, MAILDIR_MAGIC_STR, strlen(MAILDIR_MAGIC_STR))) {
+	} else if(SCAN_MAIL && !strncasecmp(magic, MAILDIR_MAGIC_STR, strlen(MAILDIR_MAGIC_STR))) {
 	    cli_dbgmsg("Recognized Maildir mail file.\n");
 	    ret = cli_scanmail(desc, virname, scanned, root, limits, options, reclev);
 	} else if(SCAN_MAIL && !strncmp(magic, DELIVERED_MAGIC_STR, strlen(DELIVERED_MAGIC_STR))) {

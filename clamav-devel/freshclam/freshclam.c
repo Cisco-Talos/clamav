@@ -49,6 +49,10 @@ int freshclam(struct optstruct *opt)
 	struct passwd *user;
 #endif
 
+    if(optc(opt, 'h')) {
+	free_opt(opt);
+    	help();
+    }
 
     /* parse the config file */
     if((cfgfile = getargc(opt, 'c'))) {
@@ -111,10 +115,6 @@ int freshclam(struct optstruct *opt)
 	mexit(0);
     }
 
-    if(optc(opt, 'h')) {
-	free_opt(opt);
-    	help();
-    }
 
     /* initialize logger */
 

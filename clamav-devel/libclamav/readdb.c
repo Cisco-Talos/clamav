@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -64,12 +64,18 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexstr,
     else
 	virlen = strlen(virname);
 
-    if((new->virname = cli_calloc(virlen + 1, sizeof(char))) == NULL)
+    if((new->virname = cli_calloc(virlen + 1, sizeof(char))) == NULL) {
+	free(new);
 	return CL_EMEM;
+    }
+
     strncpy(new->virname, virname, virlen);
 
-    if((ret = cli_addpatt(root, new)))
+    if((ret = cli_addpatt(root, new))) {
+	free(new->virname);
+	free(new);
 	return ret;
+    }
 
     return 0;
 }
@@ -90,19 +96,29 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 
     cli_dbgmsg("Loading %s\n", filename);
 
-    if(!(buffer = (char *) cli_malloc(FILEBUFF)))
+    if(!(buffer = (char *) cli_malloc(FILEBUFF))) {
+	fclose(fd);
 	return CL_EMEM;
+    }
 
     memset(buffer, 0, FILEBUFF);
+
     /* test for CVD file */
-    fgets(buffer, 12, fd);
+
+    if (fgets(buffer, 12, fd) == NULL) {
+	cli_dbgmsg("%s: failure reading header\n", filename);
+	free(buffer);
+	fclose(fd);
+	return CL_EMALFDB;
+    }
+
     rewind(fd);
 
     if(!strncmp(buffer, "ClamAV-VDB:", 11)) {
 	cli_dbgmsg("%s: CVD file detected\n", filename);
 	ret = cli_cvdload(fd, root, virnum);
-	fclose(fd);
 	free(buffer);
+	fclose(fd);
 	return ret;
     }
 
@@ -121,6 +137,7 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 	if(!pt) {
 	    cli_errmsg("readdb(): Malformed pattern line %d (file %s).\n", line, filename);
 	    free(buffer);
+	    fclose(fd);
 	    return CL_EMALFDB;
 	}
 
@@ -134,6 +151,7 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 	    *root = (struct cl_node *) cli_calloc(1, sizeof(struct cl_node));
 	    if(!*root) {
 		free(buffer);
+		fclose(fd);
 		return CL_EMEM;
 	    }
 	    (*root)->maxpatlen = 0;
@@ -152,13 +170,17 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 	    for(i = 1; i <= parts; i++) {
 		if((pt2 = cli_strtok(pt, i - 1, "*")) == NULL) {
 		    cli_errmsg("Can't extract part %d of partial signature in line %d\n", i + 1, line);
+		    free(buffer);
+		    fclose(fd);
 		    return CL_EMALFDB;
 		}
 
 		if((ret = cli_parse_add(*root, start, pt2, sigid, parts, i))) {
 		    cli_dbgmsg("parse_add() return code: %d\n", ret);
 		    cli_errmsg("readdb(): Malformed pattern line %d (file %s).\n", line, filename);
+		    free(pt2);
 		    free(buffer);
+		    fclose(fd);
 		    return ret;
 		}
 //		cli_dbgmsg("Added part %d of partial signature (id %d)\n", i, sigid);
@@ -170,15 +192,17 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 		cli_dbgmsg("parse_add() return code: %d\n", ret);
 		cli_errmsg("readdb(): Malformed pattern line %d (file %s).\n", line, filename);
 		free(buffer);
+		fclose(fd);
 		return ret;
 	    }
 	}
     }
 
-    free(buffer);
-    fclose(fd);
     if(virnum != NULL)
 	*virnum += line;
+
+    free(buffer);
+    fclose(fd);
 
     return 0;
 }
