@@ -1125,11 +1125,14 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 	    {
 		struct stat s;
 		if(fstat(desc, &s) == 0 && S_ISREG(s.st_mode) && s.st_size < 65536)
-		type = CL_UNKNOWN_TYPE;
+		type = CL_UNKNOWN_DATA_TYPE;
 	    }
 
-	default:
+	case CL_UNKNOWN_DATA_TYPE:
 	    ret = cli_scan_mydoom_log(desc, virname, scanned, root, limits, options, arec, mrec);
+	    break;
+
+	default:
 	    break;
     }
 
@@ -1138,7 +1141,7 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
     if(type != CL_DATAFILE && ret != CL_VIRUS) { /* scan the raw file */
 	    int typerec;
 
-	type == CL_UNKNOWN_TYPE ? (typerec = 1) : (typerec = 0);
+	type == CL_UNKNOWN_TEXT_TYPE ? (typerec = 1) : (typerec = 0);
 	lseek(desc, 0, SEEK_SET);
 
 	if((nret = cli_scandesc(desc, virname, scanned, root, typerec)) == CL_VIRUS) {
