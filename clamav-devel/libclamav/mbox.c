@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.127  2004/09/16 18:00:43  nigelhorne
+ * Handle RFC2047
+ *
  * Revision 1.126  2004/09/16 14:23:57  nigelhorne
  * Handle quotes around mime type
  *
@@ -366,7 +369,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.126 2004/09/16 14:23:57 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.127 2004/09/16 18:00:43 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -480,6 +483,7 @@ static	size_t	strip(char *buf, int len);
 static	bool	continuationMarker(const char *line);
 static	int	parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg);
 static	void	saveTextPart(message *m, const char *dir);
+static	char	*rfc2047(const char *in);
 
 static	void	checkURLs(message *m, const char *dir);
 #ifdef	WITH_CURL
@@ -871,7 +875,7 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 	char *strptr;
 #endif
 	const char *separater;
-	char copy[LINE_LENGTH+1], tokenseparater[2];
+	char *copy, tokenseparater[2];
 
 	cli_dbgmsg("parseEmailHeader '%s'\n", line);
 
@@ -890,7 +894,9 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 
 	assert(strlen(line) <= LINE_LENGTH);	/* RFC 821 */
 
-	strcpy(copy, line);
+	copy = rfc2047(line);
+	if(copy == NULL)
+		return -1;
 
 	tokenseparater[0] = *separater;
 	tokenseparater[1] = '\0';
@@ -910,6 +916,7 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 			 */
 			ret = parseMimeHeader(m, cmd, rfc821, arg);
 	}
+	free(copy);
 	return ret;
 }
 
@@ -2253,6 +2260,105 @@ saveTextPart(message *m, const char *dir)
 
 		fileblobDestroy(fb);
 	}
+}
+
+
+/*
+ * Handle RFC2047 encoding. Returns a malloc'd buffer that the caller must
+ * free, or NULL on error
+ */
+static char *
+rfc2047(const char *in)
+{
+	char *out, *pout;
+	size_t len;
+
+	if(strstr(in, "=?") == NULL)
+		return strdup(in);
+
+	cli_dbgmsg("rfc2047 '%s'\n", in);
+	out = cli_malloc(strlen(in) + 1);
+
+	if(out == NULL)
+		return NULL;
+
+	pout = out;
+
+	/* For each RFC2047 string */
+	while(*in) {
+		char encoding, *enctext, *ptr;
+		message *m;
+		blob *b;
+
+		/* Find next RFC2047 string */
+		while(*in) {
+			if((*in == '=') && (in[1] == '?')) {
+				in += 2;
+				break;
+			}
+			*pout++ = *in++;
+		}
+		/* Skip over charset, find encoding */
+		while((*in != '?') && *in)
+			in++;
+		if(*in == '\0')
+			break;
+		encoding = *++in;
+		encoding = tolower(encoding);
+
+		if((encoding != 'q') && (encoding != 'b')) {
+			cli_warnmsg("Unsupported RFC2047 encoding type - report to bugs@clamav.net\n");
+			break;
+		}
+		/* Skip to encoded text */
+		if(*++in != '?')
+			break;
+		if(*++in == '\0')
+			break;
+
+		enctext = strdup(in);
+		in = strstr(in, "?=");
+		if(in == NULL) {
+			free(enctext);
+			break;
+		}
+		in += 2;
+		ptr = strstr(enctext, "?=");
+		assert(ptr != NULL);
+		*ptr = '\0';
+		/*cli_dbgmsg("Need to decode '%s' with method '%c'\n", enctext, encoding);*/
+
+		m = messageCreate();
+		if(m == NULL) {
+			free(enctext);
+			break;
+		}
+		messageAddStr(m, enctext);
+		free(enctext);
+		switch(tolower(encoding)) {
+			case 'q':
+				messageSetEncoding(m, "quoted-printable");
+				break;
+			case 'b':
+				messageSetEncoding(m, "base64");
+				break;
+		}
+		b = messageToBlob(m);
+		len = blobGetDataSize(b);
+		cli_dbgmsg("Decoded as '%*.*s'\n", len, len, blobGetData(b));
+		memcpy(pout, blobGetData(b), len);
+		blobDestroy(b);
+		messageDestroy(m);
+		if(pout[len - 1] == '\n')
+			pout += len - 1;
+		else
+			pout += len;
+
+	}
+	*pout = '\0';
+
+	cli_dbgmsg("rfc2047 returns '%s'\n", out);
+	return out;
 }
 
 #ifdef	FOLLOWURLS
