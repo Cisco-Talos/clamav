@@ -24,7 +24,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.9 2005/03/26 07:49:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.10 2005/03/26 09:51:24 nigelhorne Exp $";
 
 #include <stdio.h>
 
@@ -56,9 +56,10 @@ static	int	tnef_attachment(FILE *fp, const char *dir, fileblob **fbref);
 #define host16(v)	(v)
 #define host32(v)	(v)
 #else
-#ifdef	__GNUC__
-#define	host16(v)	__bswap_16(x)
-#define	host32(v)	__bswap_32(x)
+#ifdef	C_LINUX
+#include <byteswap.h>
+#define	host16(v)	__bswap_16(v)
+#define	host32(v)	__bswap_32(v)
 #else
 #define	host16(v)	((v >> 8) | (v << 8))
 #define	host32(v)	((v >> 24) | ((v & 0x00FF0000) >> 8) | \
@@ -90,7 +91,7 @@ cli_tnef(const char *dir, int desc)
 		fclose(fp);
 		return CL_EIO;
 	}
-	if(i32 != TNEF_SIGNATURE) {
+	if(host32(i32) != TNEF_SIGNATURE) {
 		fclose(fp);
 		return CL_EFORMAT;
 	}
@@ -154,7 +155,9 @@ cli_tnef(const char *dir, int desc)
 		fb = NULL;
 	}
 	fclose(fp);
-	return CL_CLEAN;
+
+	cli_dbgmsg("cli_tnef: returning 0\n");
+	return CL_CLEAN;	/* we don't know if it's clean or not :-) */
 }
 
 static int
@@ -170,13 +173,13 @@ tnef_message(FILE *fp)
 	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1)
 		return -1;
 
+	i32 = host32(i32);
 	tag = i32 & 0xFFFF;
 	type = (i32 & 0xFFFF0000) >> 16;
 
 	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1)
 		return -1;
-
-	length = i32;
+	length = host32(i32);
 
 	cli_dbgmsg("message tag 0x%x, type 0x%x, length %u\n", tag, type, length);
 
@@ -194,6 +197,7 @@ tnef_message(FILE *fp)
 			/*assert(length == sizeof(uint32_t))*/
 			if(fread(&i32, sizeof(uint32_t), 1, fp) != 1)
 				return -1;
+			i32 = host32(i32);
 			cli_dbgmsg("TNEF version %d\n", i32);
 			break;
 		case attOEMCODEPAGE:
@@ -201,6 +205,7 @@ tnef_message(FILE *fp)
 			/*assert(length == sizeof(uint32_t))*/
 			if(fread(&i32, sizeof(uint32_t), 1, fp) != 1)
 				return -1;
+			i32 = host32(i32);
 			cli_dbgmsg("TNEF codepage %d\n", i32);
 			break;
 		case attDATEMODIFIED:
@@ -242,13 +247,13 @@ tnef_attachment(FILE *fp, const char *dir, fileblob **fbref)
 	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1)
 		return -1;
 
+	i32 = host32(i32);
 	tag = i32 & 0xFFFF;
 	type = (i32 & 0xFFFF0000) >> 16;
 
 	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1)
 		return -1;
-
-	length = i32;
+	length = host32(i32);
 
 	cli_dbgmsg("attachment tag 0x%x, type 0x%x, length %u\n", tag, type, length);
 
@@ -279,11 +284,21 @@ tnef_attachment(FILE *fp, const char *dir, fileblob **fbref)
 					return -1;
 			}
 			for(todo = length; todo; todo--) {
+#if WORDS_BIGENDIAN == 1
+				int c;
+				unsigned char c2;
+
+				if((c = fgetc(fp)) == EOF)
+					break;
+				c2 = (unsigned char)c;
+				fileblobAddData(*fbref, (const unsigned char *)&c2, 1);
+#else
 				int c;
 
 				if((c = fgetc(fp)) == EOF)
 					break;
 				fileblobAddData(*fbref, (const unsigned char *)&c, 1);
+#endif
 			}
 			break;
 		default:
