@@ -131,9 +131,15 @@
  *	0.60i	30/9/03	clamfi_envfrom() now correctly returns SMFIS_TEMPFAIL,
  *			in a few circumstances it used to return EX_TEMPFAIL
  *			Patch from Matt Sullivan <matt@sullivan.gen.nz>
+ *	0.60j	1/10/03	strerror_r doesn't work on Linux, attempting workaround
+ *			Added support for hard-coded list of email addresses
+ *			who's e-mail is not scanned
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.10  2003/10/03 11:54:53  nigelhorne
+ * Added white list of recipients
+ *
  * Revision 1.9  2003/09/30 11:53:55  nigelhorne
  * clamfi_envfrom was returning EX_TEMPFAIL in some places rather than SMFIS_TEMPFAIL
  *
@@ -147,9 +153,9 @@
  * Added -f flag use MaxThreads if --max-children not set
  *
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.9 2003/09/30 11:53:55 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.10 2003/10/03 11:54:53 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.60i"
+#define	CM_VERSION	"0.60j"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -269,6 +275,13 @@ static	const	char	*localSocket;
 static	in_port_t	tcpSocket;
 static	const	char	*serverIP = "127.0.0.1";
 static	const	char	*postmaster = "postmaster";
+
+/* TODO: read in from a file */
+static	const	char	*ignoredEmailAddresses[] = {
+	/*"Mailer-Daemon@bandsman.co.uk",
+	"postmaster@bandsman.co.uk",*/
+	NULL
+};
 
 static void
 help(void)
@@ -582,8 +595,8 @@ main(int argc, char **argv)
 	close(1);
 	close(2);
 	open("/dev/null", O_RDONLY);
-	open("/dev/console", O_WRONLY);
-	open("/dev/console", O_WRONLY);
+	if(open("/dev/console", O_WRONLY) == 1)
+		dup(1);
 
 	return smfi_main();
 }
@@ -706,7 +719,6 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 			}
 		}
 	}
-
 	return SMFIS_CONTINUE;
 }
 
@@ -765,8 +777,19 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 #ifdef TARGET_OS_SOLARIS	/* no strerror_r */
 				snprintf(message, sizeof(message), "pthread_cond_timedwait: %s", strerror(rc));
 #else
-				strerror_r(rc, buf, sizeof(buf));
-				snprintf(message, sizeof(message), "pthread_cond_timedwait: %s", buf);
+				if(strerror_r(rc, buf, sizeof(buf)) == NULL)
+					switch(rc) {
+						case EINTR:
+							strcpy(buf, "Interrupted system call");
+							break;
+						case ETIMEDOUT:
+							strcpy(buf, "Timedout");
+							break;
+						default:
+							strcpy(buf, "Unknown error");
+							break;
+						}
+				snprintf(message, sizeof(message), "pthread_cond_timedwait: (rc = %d) %s", rc, buf);
 #endif
 				if(use_syslog) {
 					if(rc == ETIMEDOUT)
@@ -984,6 +1007,7 @@ static sfsistat
 clamfi_eoh(SMFICTX *ctx)
 {
 	struct privdata *privdata = (struct privdata *)smfi_getpriv(ctx);
+	char **to;
 
 	if(logVerbose)
 		syslog(LOG_DEBUG, "clamfi_eoh");
@@ -996,7 +1020,48 @@ clamfi_eoh(SMFICTX *ctx)
 		return SMFIS_TEMPFAIL;
 	}
 
-	return SMFIS_CONTINUE;
+	/*
+	 * See if the e-mail is only going to members of the list
+	 * of users we don't scan for. If it is, don't scan, otherwise
+	 * scan
+	 *
+	 * scan = false
+	 * FORALL recipients
+	 *	IF receipient NOT MEMBER OF white address list
+	 *	THEN
+	 *		scan = true
+	 *	FI
+	 * ENDFOR
+	 */
+	for(to = privdata->to; *to; to++) {
+		const char **s;
+
+		for(s = ignoredEmailAddresses; *s; s++)
+			if(strcasecmp(*s, *to) == 0)
+				/*
+				 * This recipient is on the whitelist
+				 */
+				break;
+
+		if(*s == NULL)
+			/*
+			 * This recipient is not on the whitelist,
+			 * no need to check any further
+			 */
+			return SMFIS_CONTINUE;
+	}
+	/*
+	 * Didn't find a recipient who is not on the white list, so all
+	 * must be on the white list, so just accept the e-mail
+	 */
+	if(use_syslog)
+		syslog(LOG_NOTICE, "clamfi_connect: ignoring whitelisted message");
+#ifdef	CL_DEBUG
+	puts("clamfi_connect: not scanning outgoing messages");
+#endif
+	clamfi_cleanup(ctx);
+
+	return SMFIS_ACCEPT;
 }
 
 static sfsistat
