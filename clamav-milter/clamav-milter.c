@@ -158,9 +158,14 @@
  *			Added quarantine support
  *	0.65c	24/11/03 Support AllowSupplementaryGroups
  *			Fix warning about root usage
+ *	0.65d	25/11/03 Handle empty hostname or hostaddr
+ *			Fix based on a submission by Michael Dankov <misha@btrc.ru>
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.23  2003/11/25 05:56:43  nigelhorne
+ * Handle empty hostname or hostaddr
+ *
  * Revision 1.22  2003/11/24 04:48:44  nigelhorne
  * Support AllowSupplementaryGroups
  *
@@ -212,9 +217,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.22 2003/11/24 04:48:44 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.23 2003/11/25 05:56:43 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.65c"
+#define	CM_VERSION	"0.65d"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -805,11 +810,26 @@ static sfsistat
 clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 {
 	char buf[INET_ADDRSTRLEN];	/* IPv4 only */
-	const char *remoteIP = inet_ntop(AF_INET, &((struct sockaddr_in *)(hostaddr))->sin_addr, buf, sizeof(buf));
+	const char *remoteIP;
 
-#ifdef	CL_DEBUG
-	assert(remoteIP != NULL);
-#endif
+	if(hostname == NULL) {
+		if(use_syslog)
+			syslog(LOG_ERR, "clamfi_connect: hostname is null");
+		return cl_error;
+	}
+	if(hostaddr == NULL) {
+		if(use_syslog)
+			syslog(LOG_ERR, "clamfi_connect: hostaddr is null");
+		return cl_error;
+	}
+
+	remoteIP = inet_ntop(AF_INET, &((struct sockaddr_in *)(hostaddr))->sin_addr, buf, sizeof(buf));
+
+	if(remoteIP == NULL) {
+		if(use_syslog)
+			syslog(LOG_ERR, "clamfi_connect: remoteIP is null");
+		return cl_error;
+	}
 
 	if(use_syslog)
 		syslog(LOG_NOTICE, "clamfi_connect: connection from %s [%s]", hostname, remoteIP);
@@ -979,11 +999,11 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 		if((privdata->cmdSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 			perror("socket");
-			return SMFIS_TEMPFAIL;
+			return cl_error;
 		}
 		if(connect(privdata->cmdSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
 			perror("connect");
-			return SMFIS_TEMPFAIL;
+			return cl_error;
 		}
 	}
 
