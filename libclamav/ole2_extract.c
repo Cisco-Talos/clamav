@@ -596,7 +596,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 		/* Sanitize the file name */
                 for(newname = name; *newname; newname++) {
 #ifdef  C_DARWIN
-                        *newname &= '\200';
+                        *newname &= '\177';
 #endif
 #if     defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32)
                         if(strchr("/*?<>|\"+=,;: ", *newname))
