@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Clam daemon</TITLE>
-<META NAME="description" CONTENT="Clam daemon">
+<TITLE>Usage</TITLE>
+<META NAME="description" CONTENT="Usage">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,149 +19,73 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node19.html">
-<LINK REL="previous" HREF="node17.html">
-<LINK REL="up" HREF="node17.html">
+<LINK REL="next" HREF="node26.html">
+<LINK REL="previous" HREF="node6.html">
+<LINK REL="up" HREF="clamdoc.html">
 <LINK REL="next" HREF="node19.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html552"
+<A NAME="tex2html556"
   HREF="node19.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html548"
-  HREF="node17.html">
+<A NAME="tex2html552"
+  HREF="clamdoc.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html542"
+<A NAME="tex2html546"
   HREF="node17.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html550"
+<A NAME="tex2html554"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
  SRC="/usr/share/latex2html/icons/contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html553"
-  HREF="node19.html">Clamdscan</A>
-<B> Up:</B> <A NAME="tex2html549"
-  HREF="node17.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html543"
-  HREF="node17.html">Usage</A>
- &nbsp <B>  <A NAME="tex2html551"
+<B> Next:</B> <A NAME="tex2html557"
+  HREF="node19.html">Clam daemon</A>
+<B> Up:</B> <A NAME="tex2html553"
+  HREF="clamdoc.html">clamdoc</A>
+<B> Previous:</B> <A NAME="tex2html547"
+  HREF="node17.html">Database mirrors</A>
+ &nbsp <B>  <A NAME="tex2html555"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00041000000000000000"></A><A NAME="clamd"></A>
-<BR>
-Clam daemon
-</H2>
-    <I>clamd</I> is a multi-threaded daemon and uses <I>libclamav</I>
-    to scan files against viruses.  It may work in one of the two
-    following network modes, listening on a:
-    
-<UL>
-<LI>Unix (local) socket
-</LI>
-<LI>TCP socket
-    
-</LI>
-</UL>
-    The daemon is fully configurable via the <I>clamav.conf</I> file. You will
-    find a description for every directive in the <I>clamav.conf(5)</I>
-    manual. <I>clamd</I> recognizes the following commands:
-    
-<UL>
-<LI><B>PING</B>
-<BR>
-Check a daemon state (should reply with "PONG").
-</LI>
-<LI><B>VERSION</B>
-<BR>
-Print version information.
-</LI>
-<LI><B>RELOAD</B>
-<BR>
-Reload databases.
-</LI>
-<LI><B>SHUTDOWN</B>
-<BR>
-Perform a clean exit.
-</LI>
-<LI><B>SCAN file/directory</B>
-	    Scan a file or directory (recursively) with archive support
-	    enabled. A full path is required.
-</LI>
-<LI><B>RAWSCAN file/directory</B>
-	    Scan a file or directory (recursively) with archive support
-	    disabled. A full path is required.
-</LI>
-<LI><B>CONTSCAN file/directory</B>
-	    Scan a file or directory (recursively) with archive support
-	    enabled and don't stop even if virus is found.
-</LI>
-<LI><B>STREAM</B>
-	    Scan stream - clamd will return a new port number you should
-	    connect to and send a data to scan. <I>The protocol is
-	    obsolete and there will be a new version soon (however this one
-	    will still be supported).</I>
-</LI>
-<LI><B>SESSION, END</B>
-	    Start/end a clamd session - you can do multiple commands per TCP
-	    session (WARNING: due to the clamd implementation the
-	    <B>RELOAD</B> command will break the session).
+<H1><A NAME="SECTION00040000000000000000">
+Usage</A>
+</H1>
 
 <P>
-</LI>
-</UL>
-    Clamd reacts on the three special signals:
-    
-<UL>
-<LI><B>SIGTERM</B> - perform a clean exit
-</LI>
-<LI><B>SIGHUP</B> - reopen the log file
-</LI>
-<LI><B>SIGUSR2</B> - reload the database
-    
-</LI>
-</UL>
+<BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
 
-<P>
-<HR>
-<!--Navigation Panel-->
-<A NAME="tex2html552"
-  HREF="node19.html">
-<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
- SRC="/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html548"
-  HREF="node17.html">
-<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
- SRC="/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html542"
-  HREF="node17.html">
-<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
- SRC="/usr/share/latex2html/icons/prev.png"></A> 
-<A NAME="tex2html550"
-  HREF="node1.html">
-<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
- SRC="/usr/share/latex2html/icons/contents.png"></A>  
-<BR>
-<B> Next:</B> <A NAME="tex2html553"
-  HREF="node19.html">Clamdscan</A>
-<B> Up:</B> <A NAME="tex2html549"
-  HREF="node17.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html543"
-  HREF="node17.html">Usage</A>
- &nbsp <B>  <A NAME="tex2html551"
-  HREF="node1.html">Contents</A></B> 
-<!--End of Navigation Panel-->
+<UL>
+<LI><A NAME="tex2html558"
+  HREF="node19.html">Clam daemon</A>
+<LI><A NAME="tex2html559"
+  HREF="node20.html">Clam<B>d</B>scan</A>
+<LI><A NAME="tex2html560"
+  HREF="node21.html">Clamuko</A>
+<LI><A NAME="tex2html561"
+  HREF="node22.html">Archives and compressed files</A>
+<LI><A NAME="tex2html562"
+  HREF="node23.html">Mail files</A>
+<LI><A NAME="tex2html563"
+  HREF="node24.html">Output format</A>
+<LI><A NAME="tex2html564"
+  HREF="node25.html">Signature Tool</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2004-06-03
+2004-06-14
 </ADDRESS>
 </BODY>
 </HTML>
