@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.226 2005/03/15 18:01:25 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.227 2005/03/16 12:14:37 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -103,7 +103,19 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 /*
  * Code does exist to run FOLLORURLS on systems without libcurl, however that
  * is not recommended so it is not compiled by default
+ *
+ * On Solaris, the clamAV build system uses the SUN supplied ld instead of
+ * the GNU ld causing this error. Therefore you cannot use WITH_CURL on
+ * Solaris, you must configure with "--without-libcurl"
+ * Fails to link on Solaris 10 with this error:
+ *      Undefined                       first referenced
+ *  symbol                             in file
+ *  __floatdidf                         /opt/sfw/lib/libcurl.s
  */
+#ifdef	C_SOLARIS
+#undef	WITH_CURL
+#endif
+
 #ifdef	WITH_CURL
 #define	FOLLOWURLS	5	/*
 				 * Maximum number of URLs scanned in a message
@@ -2465,7 +2477,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 
 			if((fb = messageToFileblob(mainMessage, dir)) != NULL) {
 				if((cptr = fileblobGetFilename(fb)) != NULL)
-					cli_dbgmsg("Found uuencoded message %s\n", cptr);
+					cli_dbgmsg("Saving uuencoded message %s\n", cptr);
 				fileblobDestroy(fb);
 			}
 			rc = 1;
@@ -2524,9 +2536,11 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			if(t && ((fb = fileblobCreate()) != NULL)) {
 				cli_dbgmsg("Found a bounce message\n");
 				fileblobSetFilename(fb, dir, "bounce");
-				fb = textToFileblob(start, fb);
+				if(textToFileblob(start, fb) == NULL)
+					cli_dbgmsg("Nothing new to save in the bounce message");
+				else
+					rc = 1;
 				fileblobDestroy(fb);
-				rc = 1;
 			} else
 				cli_dbgmsg("Not found a bounce message\n");
 		} else {
