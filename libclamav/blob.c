@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: blob.c,v $
+ * Revision 1.35  2005/03/03 09:28:19  nigelhorne
+ * Tidy
+ *
  * Revision 1.34  2005/02/18 20:41:59  nigelhorne
  * Added debug statement
  *
@@ -104,7 +107,7 @@
  * Change LOG to Log
  *
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.34 2005/02/18 20:41:59 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.35 2005/03/03 09:28:19 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -481,6 +484,9 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 	if(fb->b.name)
 		return;
 
+	assert(filename != NULL);
+	assert(dir != NULL);
+
 	/*
 	 * Some programs are broken and use an idea of a ".suffix"
 	 * to determine the file type rather than looking up the
@@ -505,6 +511,8 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 	 * asked for, e.g. '/'s taken out
 	 */
 	filename = blobGetFilename(&fb->b);
+
+	assert(filename != NULL);
 
 	snprintf(fullname, sizeof(fullname) - 1 - suffixLen, "%s/%.*sXXXXXX", dir,
 		(int)(sizeof(fullname) - 9 - suffixLen - strlen(dir)), filename);
