@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: line.c,v $
+ * Revision 1.8  2005/03/01 11:38:11  nigelhorne
+ * Fix typo
+ *
  * Revision 1.7  2004/12/08 20:07:23  nigelhorne
  * Fix compilation error on Solaris
  *
@@ -39,7 +42,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: line.c,v 1.7 2004/12/08 20:07:23 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: line.c,v 1.8 2005/03/01 11:38:11 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -60,7 +63,7 @@ static	char	const	rcsid[] = "$Id: line.c,v 1.7 2004/12/08 20:07:23 nigelhorne Ex
 line_t *
 lineCreate(const char *data)
 {
-	line_t *ret = (line_t *)li_malloc(sizeof(struct line));
+	line_t *ret = (line_t *)cli_malloc(sizeof(struct line));
 
 	if(ret == NULL)
 		return NULL;
