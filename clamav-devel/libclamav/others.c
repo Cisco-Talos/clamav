@@ -38,6 +38,7 @@
 #include <errno.h>
 #include <target.h>
 #include <sys/time.h>
+#include <sys/param.h>
 
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
@@ -53,6 +54,17 @@ pthread_mutex_t cli_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
 #include "others.h"
 #include "md5.h"
 #include "cltypes.h"
+
+/* Maximum filenames under various systems - njh */
+#ifndef	NAME_MAX	/* e.g. Linux */
+# ifdef	MAXNAMELEN	/* e.g. Solaris */
+#   define	NAME_MAX	MAXNAMELEN
+# else
+#   ifdef	FILENAME_MAX	/* e.g. SCO */
+#     define	NAME_MAX	FILENAME_MAX
+#   endif
+# endif
+#endif
 
 #define CL_FLEVEL 3 /* don't touch it */
 

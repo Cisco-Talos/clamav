@@ -1,3 +1,8 @@
+Sat Nov 13 15:45:38 CET 2004 (tk)
+---------------------------------
+  * libclamav, clamd: readdir_r code: fix compilation error on systems that
+		      don't define NAME_MAX
+
 Sat Nov 13 14:26:21 CET 2004 (tk)
 ---------------------------------
   * docs/MacOSX: update (Dale Enterprise L.L.C)
