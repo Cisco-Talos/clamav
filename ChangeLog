@@ -1,3 +1,10 @@
+Mon Sep 27 18:12:17 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	added optional iface argument to --broadcast
+  * contrib/clamavmon:	created first draft of a network monitor/management
+				utility for clamAV. Currently displays incoming
+				viruses trapped by clamav-milter
+
 Mon Sep 27 18:46:26 CEST 2004 (tk)
 ----------------------------------
   * clamd/others.c: disable broken poll() code in is_fd_connected()
