@@ -156,9 +156,14 @@
  *			Added setpgrp()
  *	0.65b	22/11/03 Ensure milter is not run as root if requested
  *			Added quarantine support
+ *	0.65c	24/11/03 Support AllowSupplementaryGroups
+ *			Fix warning about root usage
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.22  2003/11/24 04:48:44  nigelhorne
+ * Support AllowSupplementaryGroups
+ *
  * Revision 1.21  2003/11/22 11:47:45  nigelhorne
  * Drop root priviliges and support quanrantine
  *
@@ -207,9 +212,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.21 2003/11/22 11:47:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.22 2003/11/24 04:48:44 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.65b"
+#define	CM_VERSION	"0.65c"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -245,15 +250,18 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.21 2003/11/22 11:47:45 nig
 #include <regex.h>
 #include <fcntl.h>
 #include <pwd.h>
+#include <grp.h>
 
 #define _GNU_SOURCE
 #include "getopt.h"
 
 /*
  * TODO: optional: xmessage on console when virus stopped (SNMP would be real nice!)
+ *	Having said that, with LogSysLog you can (on Linux) configure the system
+ *	to get messages on the system console, see syslog.conf(5), also you
+ *	can use wall(1) in the VirusEvent entry in clamav.conf
  * TODO: allow -s server to use a name as well as an IP address
  * TODO: build with libclamav.so rather than libclamav.a
- * TODO: check security - which UID will this run under?
  * TODO: bounce message should optionally be read from a file
  * TODO: optionally add a signature that the message has been scanned with ClamAV
  * TODO: Support ThreadTimeout, LogTime and Logfile from the conf
@@ -342,7 +350,10 @@ static	in_port_t	tcpSocket;
 static	const	char	*serverIP = "127.0.0.1";
 static	const	char	*postmaster = "postmaster";
 
-/* TODO: read in from a file */
+/*
+ * Whitelist of e-mail addresses that we do NOT scan
+ * TODO: read in from a file
+ */
 static	const	char	*ignoredEmailAddresses[] = {
 	/*"Mailer-Daemon@bandsman.co.uk",
 	"postmaster@bandsman.co.uk",*/
@@ -363,10 +374,10 @@ help(void)
 	puts("\t--local\t\t\t-l\tScan messages sent from machines on our LAN.");
 	puts("\t--outgoing\t\t-o\tScan outgoing messages from this machine.");
 	puts("\t--noxheader\t\t-n\tSuppress X-Virus-Scanned header.");
-	puts("\t--postmaster\t\t-p\tPostmaster address [default=postmaster].");
+	puts("\t--postmaster\t\t-p EMAIL\tPostmaster address [default=postmaster].");
 	puts("\t--postmaster-only\t-P\tSend warnings only to the postmaster.");
-	puts("\t--quarantine=USER\t-Q USER\tQuanrantine e-mail account.");
 	puts("\t--quiet\t\t\t-q\tDon't send e-mail notifications of interceptions.");
+	puts("\t--quarantine=USER\t-Q EMAIL\tQuanrantine e-mail account.");
 	puts("\t--server=ADDRESS\t-s ADDR\tIP address of server running clamd (when using TCPsocket).");
 	puts("\t--version\t\t-V\tPrint the version number of this software.");
 #ifdef	CL_DEBUG
@@ -440,7 +451,7 @@ main(int argc, char **argv)
 				"outgoing", 0, NULL, 'o'
 			},
 			{
-				"postmaster", 0, NULL, 'p'
+				"postmaster", 1, NULL, 'p'
 			},
 			{
 				"postmaster-only", 0, NULL, 'P',
@@ -555,16 +566,26 @@ main(int argc, char **argv)
 		return EX_CONFIG;
 	}
 
-	/* drop priviledges */
-	if((getuid() == 0) && (cpt = cfgopt(copt, "User"))) {
-		if((user = getpwnam(cpt->strarg)) == NULL) {
-			fprintf(stderr, "%s: Can't get information about user %s.\n", argv[0], cpt->strarg);
-			return EX_CONFIG;
-		}
+	/*
+	 * Drop privileges
+	 */
+	if(getuid() == 0) {
+		if((cpt = cfgopt(copt, "User")) != NULL) {
+			if((user = getpwnam(cpt->strarg)) == NULL) {
+				fprintf(stderr, "%s: Can't get information about user %s\n", argv[0], cpt->strarg);
+				return EX_CONFIG;
+			}
 
-		setuid(user->pw_uid);
-	} else
-		fprintf(stderr, "%s: running as root is not recommended\n", argv[0]);
+			if(cfgopt(copt, "AllowSupplementaryGroups"))
+				initgroups(cpt->strarg, user->pw_gid);
+			else
+				setgroups(1, &user->pw_gid);
+
+			setgid(user->pw_gid);
+			setuid(user->pw_uid);
+		} else
+			fprintf(stderr, "%s: running as root is not recommended\n", argv[0]);
+	}
 
 	if(!cfgopt(copt, "StreamSaveToDisk")) {
 		fprintf(stderr, "%s: StreamSavetoDisk not enabled in %s\n",
@@ -672,7 +693,8 @@ main(int argc, char **argv)
 		 * Get the incoming socket details - the way sendmail talks to
 		 * us
 		 *
-		 * TODO: There's a security problem here that'll need fixing
+		 * TODO: There's a security problem here that'll need fixing if
+		 * the User entry of clamav.conf is not used
 		 */
 		if(strncasecmp(port, "unix:", 5) == 0) {
 			if(unlink(&port[5]) < 0)
