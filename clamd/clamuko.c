@@ -192,7 +192,7 @@ void *clamukoth(void *arg)
 
 	    if(scan && cl_scanfile(acc->filename, &virname, NULL, tharg->root, tharg->limits, options) == CL_VIRUS) {
 		logg("Clamuko: %s: %s FOUND\n", acc->filename, virname);
-		virusaction(acc->filename, virname, tharg->copt);
+		virusaction(virname, tharg->copt);
 		acc->deny = 1;
 	    } else
 		acc->deny = 0;

@@ -105,7 +105,7 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 				if((scanret = cl_scanfile(fname, virname, scanned, root, limits, options)) == CL_VIRUS) {
 				    mdprintf(odesc, "%s: %s FOUND\n", fname, *virname);
 				    logg("%s: %s FOUND\n", fname, *virname);
-				    virusaction(fname, *virname, copt);
+				    virusaction(*virname, copt);
 				    if(!contscan) {
 					closedir(dd);
 					free(fname);
@@ -170,7 +170,7 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_node 
 	    if(ret == CL_VIRUS) {
 		mdprintf(odesc, "%s: %s FOUND\n", filename, virname);
 		logg("%s: %s FOUND\n", filename, virname);
-		virusaction(filename, virname, copt);
+		virusaction(virname, copt);
 	    } else if(ret != CL_CLEAN) {
 		mdprintf(odesc, "%s: %s ERROR\n", filename, cl_strerror(ret));
 		logg("%s: %s ERROR\n", filename, cl_strerror(ret));
@@ -333,7 +333,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
     if(ret == CL_VIRUS) {
 	mdprintf(odesc, "stream: %s FOUND\n", virname);
 	logg("stream: %s FOUND\n", virname);
-	virusaction("InputStream", virname, copt);
+	virusaction(virname, copt);
     } else if(ret != CL_CLEAN) {
 	mdprintf(odesc, "stream: %s ERROR\n", cl_strerror(ret));
 	logg("stream: %s ERROR\n", cl_strerror(ret));

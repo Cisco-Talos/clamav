@@ -49,7 +49,7 @@
 #include "memory.h"
 #include "cfgparser.h"
 
-void virusaction(const char *filename, const char *virname, const struct cfgstruct *copt)
+void virusaction(const char *virname, const struct cfgstruct *copt)
 {
 	char *buffer, *pt, *cmd;
 	struct cfgstruct *cpt;
@@ -60,16 +60,7 @@ void virusaction(const char *filename, const char *virname, const struct cfgstru
 
     cmd = strdup(cpt->strarg);
 
-    buffer = (char *) mcalloc(strlen(cmd) + strlen(filename) + strlen(virname) + 10, sizeof(char));
-
-    if((pt = strstr(cmd, "%f"))) {
-	*pt = 0; pt += 2;
-	strcpy(buffer, cmd);
-	strcat(buffer, filename);
-	strcat(buffer, pt);
-	free(cmd);
-	cmd = strdup(buffer);
-    }
+    buffer = (char *) mcalloc(strlen(cmd) + strlen(virname) + 10, sizeof(char));
 
     if((pt = strstr(cmd, "%v"))) {
 	*pt = 0; pt += 2;
