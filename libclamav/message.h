@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: message.h,v $
+ * Revision 1.24  2004/11/28 22:06:40  nigelhorne
+ * Tidy space only headers code
+ *
  * Revision 1.23  2004/11/28 21:05:50  nigelhorne
  * Handle headers with only spaces
  *
@@ -120,7 +123,7 @@ const	char	*messageFindArgument(const message *m, const char *variable);
 void	messageSetEncoding(message *m, const char *enctype);
 encoding_type	messageGetEncoding(const message *m);
 int	messageAddLine(message *m, line_t *line);
-int	messageAddStr(message *m, const char *data, int stripSpaces);
+int	messageAddStr(message *m, const char *data);
 int	messageAddStrAtTop(message *m, const char *data);
 const	text	*messageGetBody(const message *m);
 void	messageClean(message *m);
