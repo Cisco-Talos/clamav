@@ -27,7 +27,6 @@ then that user must have the rights to create the file.
 .LP
 
 .TP
-.TP
 \fB-a FROM, \-\-from=EMAIL\fR
 Source email address of notices. The default is MAILER-DAEMON.
 \fB\-h, \-\-help\fR
@@ -56,7 +55,6 @@ suite.
 \fB-A, \-\-advisory\fR
 When in advisory mode, clamav\-milter flags emails with viruses but
 still forwards them. The default option is to stop viruses.
-.LP
 This mode is in compatible with \-\-quarantine and \-\-quarantine-dir.
 .TP
 \fB\-b, \-\-bounce\fR
@@ -153,7 +151,6 @@ number of threads can exceed this number for short periods of time.
 There is no default, if this argument is not \fBclamav\-milter\fR will
 spawn as many children as is necessary up to the MaxThreads limit set
 in \fBclamav.conf\fR.
-.LP
 Most users will not need this option, if in doubt do not set it.
 .TP
 \fB\-\-dont\-wait\fR
