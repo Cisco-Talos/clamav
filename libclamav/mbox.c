@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.103  2004/08/18 10:49:45  nigelhorne
+ * CHECKURLs was mistakenly turned on
+ *
  * Revision 1.102  2004/08/18 07:45:20  nigelhorne
  * Use configure WITH_CURL value
  *
@@ -294,7 +297,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.102 2004/08/18 07:45:20 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.103 2004/08/18 10:49:45 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -371,7 +374,7 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 
 #define	SAVE_TO_DISC	/* multipart/message are saved in a temporary file */
 
-#define	CHECKURLS	/*
+/*#define	CHECKURLS	/*
 			 * If an email contains URLs, check them - helps to
 			 * find Dialer.gen-45
 			 */
