@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.35  2004/01/28 10:15:24  nigelhorne
+ * Added support to scan some bounce messages
+ *
  * Revision 1.34  2004/01/24 17:43:37  nigelhorne
  * Removed (incorrect) warning about uninitialised variable
  *
@@ -93,7 +96,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.34 2004/01/24 17:43:37 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.35 2004/01/28 10:15:24 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -156,6 +159,7 @@ static	size_t	strip(char *buf, int len);
 static	size_t	strstrip(char *s);
 static	bool	continuationMarker(const char *line);
 static	int	parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg);
+static	void	saveTextPart(message *m, const char *dir);
 static	bool	saveFile(const blob *b, const char *dir);
 
 /* Maximum number of attachments that we accept */
@@ -1158,9 +1162,9 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 			/*
 			 * Look for uu-encoded main file
 			 */
-			const text *t_line = uuencodeBegin(mainMessage);
+			const text *t_line;
 
-			if(t_line != NULL) {
+			if((t_line = uuencodeBegin(mainMessage)) != NULL) {
 				cli_dbgmsg("Found uuencoded file\n");
 
 				/*
@@ -1176,21 +1180,40 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 					}
 					blobDestroy(b);
 				}
-			} else {
-				cli_dbgmsg("Not found uuencoded file\n");
+			} else if((t_line = bounceBegin(mainMessage)) != NULL) {
+				/*
+				 * Attempt to save the original (unbounced)
+				 * message - clamscan will find that in the
+				 * directory and call us again (with any luck)
+				 * having found an e-mail message to handle
+				 */
 
-				messageAddArgument(mainMessage, "filename=textportion");
-				if((b = messageToBlob(mainMessage)) != NULL) {
-					/*
-					 * Save main part to scan that
-					 */
-					cli_dbgmsg("Saving main message, encoded with scheme %d\n",
-						messageGetEncoding(mainMessage));
+				/*
+				 * Ignore the blank lines before the message
+				 * proper
+				 */
+				while((t_line = t_line->t_next) != NULL)
+					if(strcmp(t_line->t_text, "") != 0)
+						break;
 
-					(void)saveFile(b, dir);
+				if(t_line == NULL) {
+					cli_dbgmsg("Not found bounce message\n");
+					saveTextPart(mainMessage, dir);
+				} else if((b = blobCreate()) != NULL) {
+					cli_dbgmsg("Found a bounce message\n");
+					do {
+						blobAddData(b, (unsigned char *)t_line->t_text, strlen(t_line->t_text));
+						blobAddData(b, (unsigned char *)"\n", 1);
+					} while((t_line = t_line->t_next) != NULL);
+
+					saveFile(b, dir);
 
 					blobDestroy(b);
 				}
+			} else {
+				cli_dbgmsg("Not found uuencoded file\n");
+
+				saveTextPart(mainMessage, dir);
 			}
 		} else
 			rc = (multiparts) ? 1 : 2;	/* anything saved? */
@@ -1492,6 +1515,28 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 	free(ptr);
 
 	return type;
+}
+
+/*
+ * Save the text portion of the message
+ */
+static void
+saveTextPart(message *m, const char *dir)
+{
+	blob *b;
+
+	messageAddArgument(m, "filename=textportion");
+	if((b = messageToBlob(m)) != NULL) {
+		/*
+		 * Save main part to scan that
+		 */
+		cli_dbgmsg("Saving main message, encoded with scheme %d\n",
+				messageGetEncoding(m));
+
+		(void)saveFile(b, dir);
+
+		blobDestroy(b);
+	}
 }
 
 /*

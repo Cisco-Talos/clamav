@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.16  2004/01/28 10:15:24  nigelhorne
+ * Added support to scan some bounce messages
+ *
  * Revision 1.15  2004/01/14 10:08:45  nigelhorne
  * blobGetData now allows contents to be changed - tuttut
  *
@@ -42,7 +45,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.15 2004/01/14 10:08:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.16 2004/01/28 10:15:24 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -959,6 +962,23 @@ binhexBegin(const message *m)
 
 	for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next)
 		if(strcasecmp(t_line->t_text, "(This file must be converted with BinHex 4.0)") == 0)
+			return t_line;
+
+	return NULL;
+}
+
+/*
+ * Scan to find a bounce message. There is no standard for these, not
+ * even a convention, so don't expect this to be foolproof
+ */
+const text *
+bounceBegin(const message *m)
+{
+	const text *t_line;
+
+	for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next)
+		if((strcasecmp(t_line->t_text, "--- Below this line is a copy of the message.") == 0) ||
+		   (strcasecmp(t_line->t_text, "------ This is a copy of the message, including all the headers. ------") == 0))
 			return t_line;
 
 	return NULL;
