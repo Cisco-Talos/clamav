@@ -1,3 +1,9 @@
+Mon Feb 16 09:44:34 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter:	Upissued to 0.67
+  * docs:		Documented support for TCPWrappers in clamav-milter
+  		This is experimental - feedback welcomed
+
 Sun Feb 15 14:10:19 CET 2004 (tk)
 ---------------------------------
   V 0.67 (released with OLE2 and Dazuko support disabled)
