@@ -28,6 +28,9 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <zlib.h>
+
+#include "clamav.h"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -651,6 +654,407 @@ unsigned char *vba_decompress(int fd, uint32_t offset, int *size)
 	return result.data;
 
 }
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+/* Code to extract Power Point Embedded OLE2 Objects
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+#define MIN(a, b)  (((a) < (b)) ? (a) : (b))
+
+typedef struct atom_header_tag {
+	off_t foffset;
+	uint16_t ver_inst;
+	uint8_t version;
+	uint16_t instance;
+	uint16_t type;
+	uint32_t length;
+} atom_header_t;
+
+typedef struct ppt_currentuser_tag {
+	atom_header_t atom_hdr;
+	uint32_t len;
+	uint32_t magic;
+	uint32_t current_edit_offset;
+} ppt_currentuser_t;
+
+typedef struct ppt_useredit_tag {
+	atom_header_t atom_hdr;
+	int32_t last_slide_id;
+	uint32_t version;
+	uint32_t last_edit_offset;
+	uint32_t persist_dir_offset;
+	uint32_t document_ref;
+	uint32_t max_persist;
+	int16_t	 last_view_type;
+} ppt_useredit_t;
+
+static int ppt_read_atom_header(int fd, atom_header_t *atom_header)
+{
+	atom_header->foffset = lseek(fd, 0, SEEK_CUR);
+	if (cli_readn(fd, &atom_header->ver_inst, 2) != 2) {
+		cli_dbgmsg("read ppt_current_user failed\n");
+		return FALSE;
+	}	
+	atom_header->version = atom_header->ver_inst & 0x000f;
+	atom_header->instance = atom_header->ver_inst >> 4;
+	if (cli_readn(fd, &atom_header->type, 2) != 2) {
+		cli_dbgmsg("read ppt_current_user failed\n");
+		return FALSE;
+	}
+	if (cli_readn(fd, &atom_header->length, 4) != 4) {
+		cli_dbgmsg("read ppt_current_user failed\n");
+		return FALSE;
+	}
+	return TRUE;
+}
+
+static void ppt_print_atom_header(atom_header_t *atom_header)
+{
+	cli_dbgmsg("Atom Hdr:\n");
+	cli_dbgmsg("  Version: 0x%.2x\n", atom_header->version);
+	cli_dbgmsg("  Instance: 0x%.4x\n", atom_header->instance);
+	cli_dbgmsg("  Type: 0x%.4x\n", atom_header->type);
+	cli_dbgmsg("  Length: 0x%.8x\n", atom_header->length);
+}
+
+static void ppt_print_useredit(ppt_useredit_t *ppt_useredit)
+{
+	ppt_print_atom_header(&ppt_useredit->atom_hdr);
+	cli_dbgmsg("Last Slide ID: 0x%.4x\n", ppt_useredit->last_slide_id);
+	cli_dbgmsg("Version: 0x%.4x\n", ppt_useredit->version);
+	cli_dbgmsg("Last Edit Offset: 0x%.4x\n", ppt_useredit->last_edit_offset);
+	cli_dbgmsg("Persist Dir Offset: 0x%.4x\n", ppt_useredit->persist_dir_offset);
+	cli_dbgmsg("Document Ref: 0x%.4x\n", ppt_useredit->document_ref);
+	cli_dbgmsg("Max Persist: 0x%.4x\n", ppt_useredit->max_persist);
+	cli_dbgmsg("Last view type: 0x%.4x\n\n", ppt_useredit->last_view_type);
+}
+
+static int ppt_read_useredit(int fd, ppt_useredit_t *ppt_useredit)
+{
+	if (!ppt_read_atom_header(fd, &ppt_useredit->atom_hdr)) {
+		return FALSE;
+	}
+	if (cli_readn(fd, &ppt_useredit->last_slide_id, 4) != 4) {
+		cli_dbgmsg("read ppt_useredit failed\n");
+		return FALSE;
+	}
+	if (cli_readn(fd, &ppt_useredit->version, 4) != 4) {
+		cli_dbgmsg("read ppt_useredit failed\n");
+		return FALSE;
+	}
+	if (cli_readn(fd, &ppt_useredit->last_edit_offset, 4) != 4) {
+		cli_dbgmsg("read ppt_useredit failed\n");
+		return FALSE;
+	}
+	if (cli_readn(fd, &ppt_useredit->persist_dir_offset, 4) != 4) {
+		cli_dbgmsg("read ppt_useredit failed\n");
+		return FALSE;
+	}
+	if (cli_readn(fd, &ppt_useredit->document_ref, 4) != 4) {
+		cli_dbgmsg("read ppt_useredit failed\n");
+		return FALSE;
+	}
+	if (cli_readn(fd, &ppt_useredit->max_persist, 4) != 4) {
+		cli_dbgmsg("read ppt_useredit failed\n");
+		return FALSE;
+	}
+	if (cli_readn(fd, &ppt_useredit->last_view_type, 2) != 2) {
+		cli_dbgmsg("read ppt_useredit failed\n");
+		return FALSE;
+	}
+	return TRUE;
+}
+
+static void ppt_print_current_user(ppt_currentuser_t *ppt_current_user)
+{
+	ppt_print_atom_header(&ppt_current_user->atom_hdr);
+	cli_dbgmsg("Magic: 0x%.8x\n", ppt_current_user->magic);
+	cli_dbgmsg("Curr Edit Offset: 0x%.8x\n", ppt_current_user->current_edit_offset);
+}
+
+static int ppt_read_current_user(int fd, ppt_currentuser_t *ppt_current_user)
+{
+	if (!ppt_read_atom_header(fd, &ppt_current_user->atom_hdr)) {
+		return FALSE;
+	}
+	if (cli_readn(fd, &ppt_current_user->len, 4) != 4) {
+		cli_dbgmsg("read ppt_current_user failed\n");
+		return FALSE;
+	}
+	
+	if (cli_readn(fd, &ppt_current_user->magic, 4) != 4) {
+		cli_dbgmsg("read ppt_current_user 1 failed\n");
+		return FALSE;
+	}
+	if (cli_readn(fd, &ppt_current_user->current_edit_offset, 4) != 4) {
+		cli_dbgmsg("read ppt_current_user 2 failed\n");
+		return FALSE;
+	}
+	
+	/* Don't need to read the rest of the Current User file in order
+		to extract what we need */
+	return TRUE;
+}
+
+static uint32_t *ppt_read_persist_dir(int fd, ppt_useredit_t *ppt_useredit)
+{
+	uint32_t *persist_dir, noffsets, off_index;
+	atom_header_t atom_header;
+	int size, i, off_count=0;
+	
+	if (lseek(fd, ppt_useredit->persist_dir_offset, SEEK_SET) != 
+			ppt_useredit->persist_dir_offset) {
+		return NULL;
+	}
+
+	if (!ppt_read_atom_header(fd, &atom_header)) {
+		return NULL;
+	}
+	ppt_print_atom_header(&atom_header);
+	
+	size = sizeof(uint32_t) * (ppt_useredit->max_persist+1);
+	persist_dir = malloc(size);
+	if (!persist_dir) {
+		return NULL;
+	}
+	memset(persist_dir, 0xFF, size);
+	
+	while ((off_count < ppt_useredit->max_persist) && 
+			(lseek(fd, 0, SEEK_CUR) < atom_header.foffset+atom_header.length)) {
+		if (cli_readn(fd, &noffsets, 4) != 4) {
+			cli_dbgmsg("read ppt_current_user failed\n");
+			free(persist_dir);
+			return NULL;
+		}
+		off_index = noffsets & 0x000FFFFF;
+		noffsets = noffsets >> 20;
+		cli_dbgmsg("nOffsets: %d\n", noffsets);
+		cli_dbgmsg("Offset index: %d\n",off_index);
+		for (i=0 ; i<noffsets; i++) {
+			if ((off_index+i-1) > ppt_useredit->max_persist)
+			{
+				cli_dbgmsg("ppt_read_persist_dir overflow\n");
+				free(persist_dir);
+				return NULL;
+			}
+			if (cli_readn(fd, &persist_dir[off_index+i-1], 4) != 4) {
+				cli_dbgmsg("read ppt_read_persist_dir failed\n");
+				free(persist_dir);
+				return NULL;
+			}
+			cli_dbgmsg("persist_dir[%d] = 0x%.8x\n", off_index+i-1, persist_dir[off_index+i-1]);
+			off_count++;
+		}
+	}
+	cli_dbgmsg("File offset: 0x%.8x\n\n", lseek(fd, 0, SEEK_CUR));
+	
+	return persist_dir;
+}
+
+#define PPT_LZW_BUFFSIZE 8192
+static int ppt_unlzw(const char *dir, int fd, uint32_t length)
+{
+	int ofd, retval;
+	unsigned char inbuff[PPT_LZW_BUFFSIZE], outbuff[PPT_LZW_BUFFSIZE];
+	char *fullname;
+	uint32_t bufflen;
+	z_stream stream;
+	
+	fullname = malloc(strlen(dir) + 17);
+	sprintf(fullname, "%s/ppt%.8x.doc", dir, lseek(fd, 0, SEEK_CUR));
+	
+	ofd = open(fullname, O_WRONLY|O_CREAT|O_TRUNC, 0600);
+	free(fullname);
+        if (ofd == -1) {
+                cli_dbgmsg("ppt_unlzw Open outfile failed\n");
+                return -1;
+        }
+	
+	stream.zalloc = Z_NULL;
+	stream.zfree = Z_NULL;
+	stream.opaque = (void *)0;
+	
+	stream.next_in = inbuff;
+	bufflen = stream.avail_in = MIN(length, PPT_LZW_BUFFSIZE);
+	
+	if (cli_readn(fd, inbuff, stream.avail_in) != stream.avail_in) {
+		close(ofd);
+		return FALSE;
+	}
+	length -= stream.avail_in;
+	
+	retval = inflateInit(&stream);
+	if (retval != Z_OK) {
+		cli_dbgmsg(" ppt_unlzw !Z_OK: %d\n", retval);
+	}
+	
+	stream.next_out = outbuff;
+	stream.avail_out = PPT_LZW_BUFFSIZE;
+	
+	do {
+		if (stream.avail_out == 0) {
+			if (cli_writen(ofd, outbuff, PPT_LZW_BUFFSIZE)
+						!= PPT_LZW_BUFFSIZE) {
+				close(ofd);
+				inflateEnd(&stream);
+				return FALSE;
+			}
+			stream.next_out = outbuff;
+			stream.avail_out = PPT_LZW_BUFFSIZE;
+		}
+		if (stream.avail_in == 0) {
+			stream.next_in = inbuff;
+			bufflen = stream.avail_in = MIN(length, PPT_LZW_BUFFSIZE);
+			if (cli_readn(fd, inbuff, stream.avail_in) != stream.avail_in) {
+				close(ofd);
+				inflateEnd(&stream);
+				return FALSE;
+			}
+			length -= stream.avail_in;
+		}
+		retval = inflate(&stream, Z_NO_FLUSH);
+	} while (retval == Z_OK);
+	
+	if (cli_writen(ofd, outbuff, bufflen) != bufflen) {
+		close(ofd);
+		inflateEnd(&stream);
+		return FALSE;
+	}
+	inflateEnd(&stream);
+	close(ofd);
+	return TRUE;
+}
+
+char *ppt_vba_read(const char *dir)
+{
+	ppt_currentuser_t ppt_current_user;
+	ppt_useredit_t ppt_useredit;
+	uint32_t *persist_dir;
+	char *fullname, *out_dir, *tmpdir;
+	int fd, i, ofd;
+	unsigned char *buffer;
+	atom_header_t atom_header;
+	uint32_t ole_id;
+	
+	fullname = (char *) cli_malloc(strlen(dir) + 14);
+	if (!fullname) {
+		return NULL;
+	}
+	sprintf(fullname, "%s/Current User", dir);
+	fd = open(fullname, O_RDONLY);
+	free(fullname);
+	if (fd == -1) {
+		cli_dbgmsg("Open Current User failed\n");
+		return NULL;
+	}
+	
+	if (!ppt_read_current_user(fd, &ppt_current_user)) {
+		close(fd);
+		return NULL;
+	}
+	
+	ppt_print_current_user(&ppt_current_user);
+	close(fd);
+
+	fullname = (char *) cli_malloc(strlen(dir) + 21);
+	if (!fullname) {
+		return NULL;
+	}
+	sprintf(fullname, "%s/PowerPoint Document", dir);
+	fd = open(fullname, O_RDONLY);
+	free(fullname);
+	if (fd == -1) {
+		cli_dbgmsg("Open Current User failed\n");
+		return NULL;
+	}
+	if (lseek(fd, ppt_current_user.current_edit_offset, SEEK_SET) !=
+					ppt_current_user.current_edit_offset) {
+		cli_dbgmsg("lseek cli_ppt_vbaread failed\n");
+		close(fd);
+		return FALSE;
+	}
+
+	/* Create a directory to store the extracted OLE2 objects */
+	tmpdir = getenv("TMPDIR");
+
+	if(tmpdir == NULL)
+#ifdef P_tmpdir
+		tmpdir = P_tmpdir;
+#else
+		tmpdir = "/tmp";
+#endif
+
+	/* generate the temporary directory */
+	out_dir = cl_gentemp(tmpdir);
+	if(mkdir(out_dir, 0700)) {
+	    printf("ScanOLE2 -> Can't create temporary directory %s\n", dir);
+	    close(fd);
+	    return NULL;
+	}
+
+	do {	
+		if (!ppt_read_useredit(fd, &ppt_useredit)) {
+			close(fd);
+			cli_rmdirs(out_dir);
+			free(out_dir);
+			return NULL;
+		}
+		ppt_print_useredit(&ppt_useredit);
+		
+		persist_dir = ppt_read_persist_dir(fd, &ppt_useredit);
+		if (!persist_dir) {
+			close(fd);
+			cli_rmdirs(out_dir);
+			free(out_dir);
+			return NULL;
+		}
+		for (i=0 ; i < ppt_useredit.max_persist ; i++) {
+			if (persist_dir[i] != 0xFFFFFFFF) {
+				if (lseek(fd, persist_dir[i], SEEK_SET) == persist_dir[i]) {				
+					if (!ppt_read_atom_header(fd, &atom_header)) {
+						close(fd);
+						free(persist_dir);
+						cli_rmdirs(out_dir);
+						free(out_dir);
+						return NULL;
+					}
+					ppt_print_atom_header(&atom_header);
+					if (atom_header.type == 0x1011) {
+						if (cli_readn(fd, &ole_id, 4) != 4) {
+							cli_dbgmsg("read ole_id failed\n");
+							close(fd);
+							free(persist_dir);
+							cli_rmdirs(out_dir);
+							free(out_dir);
+							return NULL;
+						}
+						cli_dbgmsg("OleID: %d, length: %d\n",
+								ole_id, atom_header.length-4);
+						if (!ppt_unlzw(out_dir, fd, atom_header.length-4)) {
+							cli_dbgmsg("ppt_unlzw failed\n");
+							close(fd);
+							free(persist_dir);
+							cli_rmdirs(out_dir);
+							free(out_dir);
+							return NULL;
+						}
+							
+					}	
+				}
+			}
+		}
+		free(persist_dir);
+		
+		if (lseek(fd, ppt_useredit.last_edit_offset, SEEK_SET) !=
+					ppt_useredit.last_edit_offset) {
+			cli_dbgmsg("lseek cli_ppt_vbaread failed\n");
+			close(fd);
+			return NULL;
+		}
+	} while (ppt_useredit.last_edit_offset != 0);
+
+	return out_dir;
+}	
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /* Code to extract Word6 macros
