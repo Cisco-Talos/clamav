@@ -525,6 +525,16 @@ Changes
 			bind failure message
 		SESSION code now on by default
 		Use cli_strtokbuf() instead of cli_strtok() whereever possible
+0.80l	27/10/04 Remove X-VIRUS-STATUS on incoming messages since there's no
+			way to verify it's statement about being clean
+		Plug remote possibility of file descriptor leak
+		Return EX_OSERR if fork fails, not EX_TEMPFAIL
+		If clamav-milter points to more than one server, ensure that
+			the version information for that server is added to
+			the header
+		Update version information in the watchdog. There may therefore
+			be a delay between the server updating and this being
+			reflected in the headers
 
 INTERNATIONALISATION
 
