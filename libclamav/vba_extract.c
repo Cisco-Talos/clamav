@@ -122,7 +122,7 @@ static char *get_unicode_name(char *name, int size, int is_mac)
         int i, j;
         char *newname;
 
-	 if (*name == 0 || size <= 0) {
+	if (!name || *name == 0 || size <= 0) {
                 return NULL;
         }
 
@@ -481,6 +481,10 @@ vba_project_t *vba56_dir_read(const char *dir)
 			goto out_error;
 		}
 		length = vba_endian_convert_16(length, is_mac);
+		if (length == 0) {
+			cli_dbgmsg("zero name length\n");
+			goto out_error;
+                }
 		buff = (unsigned char *) cli_malloc(length);
 		if (!buff) {
 			cli_dbgmsg("cli_malloc failed\n");
