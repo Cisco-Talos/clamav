@@ -114,7 +114,9 @@ am__include = @am__include@
 am__quote = @am__quote@
 install_sh = @install_sh@
 
-INCLUDES = -I.. -Izziplib
+CFLAGS = -Wall
+
+INCLUDES = -I.. -I@srcdir@/zziplib
 
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@
 
@@ -130,6 +132,7 @@ libclamav_la_SOURCES = \
         others.c \
         others.h \
         readdb.c \
+	cvd.c \
         str.c \
 	str.h \
 	defaults.h \
@@ -174,10 +177,10 @@ CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(lib_LTLIBRARIES)
 
 libclamav_la_DEPENDENCIES =
-am_libclamav_la_OBJECTS = matcher.lo md5.lo others.lo readdb.lo str.lo \
-	scanners.lo unrarlib.lo zzip-dir.lo zzip-err.lo zzip-file.lo \
-	zzip-info.lo zzip-io.lo zzip-stat.lo zzip-zip.lo strc.lo \
-	blob.lo mbox.lo message.lo strrcpy.lo table.lo text.lo
+am_libclamav_la_OBJECTS = matcher.lo md5.lo others.lo readdb.lo cvd.lo \
+	str.lo scanners.lo unrarlib.lo zzip-dir.lo zzip-err.lo \
+	zzip-file.lo zzip-info.lo zzip-io.lo zzip-stat.lo zzip-zip.lo \
+	strc.lo blob.lo mbox.lo message.lo strrcpy.lo table.lo text.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 
 DEFS = @DEFS@
@@ -187,17 +190,17 @@ LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
-@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/blob.Plo ./$(DEPDIR)/matcher.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/mbox.Plo ./$(DEPDIR)/md5.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/message.Plo ./$(DEPDIR)/others.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/readdb.Plo ./$(DEPDIR)/scanners.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/str.Plo ./$(DEPDIR)/strc.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/strrcpy.Plo ./$(DEPDIR)/table.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/text.Plo ./$(DEPDIR)/unrarlib.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/zzip-dir.Plo ./$(DEPDIR)/zzip-err.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/zzip-file.Plo ./$(DEPDIR)/zzip-info.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/zzip-io.Plo ./$(DEPDIR)/zzip-stat.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/zzip-zip.Plo
+@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/blob.Plo ./$(DEPDIR)/cvd.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/matcher.Plo ./$(DEPDIR)/mbox.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/md5.Plo ./$(DEPDIR)/message.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/others.Plo ./$(DEPDIR)/readdb.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/scanners.Plo ./$(DEPDIR)/str.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/strc.Plo ./$(DEPDIR)/strrcpy.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/table.Plo ./$(DEPDIR)/text.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/unrarlib.Plo ./$(DEPDIR)/zzip-dir.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/zzip-err.Plo ./$(DEPDIR)/zzip-file.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/zzip-info.Plo ./$(DEPDIR)/zzip-io.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/zzip-stat.Plo ./$(DEPDIR)/zzip-zip.Plo
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
@@ -205,7 +208,6 @@ LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-CFLAGS = @CFLAGS@
 DIST_SOURCES = $(libclamav_la_SOURCES)
 HEADERS = $(include_HEADERS)
 
@@ -261,6 +263,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/blob.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cvd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/matcher.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mbox.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/md5.Plo@am__quote@
