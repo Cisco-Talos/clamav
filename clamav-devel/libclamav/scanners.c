@@ -719,67 +719,6 @@ static int cli_scanmscab(int desc, const char **virname, long int *scanned, cons
     return ret;
 }
 
-static int cli_scanhtml(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
-{
-	char *tempname, fullname[1024];
-	int ret=CL_CLEAN, fd;
-
-
-    cli_dbgmsg("in cli_scanhtml()\n");
-
-    tempname = cli_gentemp(NULL);
-    if(mkdir(tempname, 0700)) {
-        cli_dbgmsg("ScanHTML -> Can't create temporary directory %s\n", tempname);
-        return CL_ETMPDIR;
-    }
-
-    html_normalise_fd(desc, tempname, NULL);
-    snprintf(fullname, 1024, "%s/comment.html", tempname);
-    fd = open(fullname, O_RDONLY);
-    if (fd >= 0) {
-        ret = cli_scandesc(fd, virname, scanned, root, 0, CL_TYPE_HTML);
-	close(fd);
-    }
-
-    if(ret < 0 || ret == CL_VIRUS) {
-	if(!cli_leavetemps_flag)
-	    cli_rmdirs(tempname);
-	free(tempname);
-	return ret;
-    }
-
-    if (ret == CL_CLEAN) {
-	snprintf(fullname, 1024, "%s/nocomment.html", tempname);
-	fd = open(fullname, O_RDONLY);
-	if (fd >= 0) {
-	    ret = cli_scandesc(fd, virname, scanned, root, 0, CL_TYPE_HTML);
-	    close(fd);
-	}
-    }
-
-    if(ret < 0 || ret == CL_VIRUS) {
-	if(!cli_leavetemps_flag)
-	    cli_rmdirs(tempname);
-	free(tempname);
-	return ret;
-    }
-
-    if (ret == CL_CLEAN) {
-	snprintf(fullname, 1024, "%s/script.html", tempname);
-	fd = open(fullname, O_RDONLY);
-	if (fd >= 0) {
-	    ret = cli_scandesc(fd, virname, scanned, root, 0, CL_TYPE_HTML);
-	    close(fd);
-	}
-    }
-
-    if(!cli_leavetemps_flag)
-        cli_rmdirs(tempname);
-
-    free(tempname);
-    return ret;
-}
-
 static int cli_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
 {
 	DIR *dd;
@@ -983,6 +922,79 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
     }
 
     closedir(dd);
+    return ret;
+}
+
+static int cli_scanhtml(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, int *arec, int *mrec)
+{
+	char *tempname, fullname[1024];
+	int ret=CL_CLEAN, fd;
+
+
+    cli_dbgmsg("in cli_scanhtml()\n");
+
+    tempname = cli_gentemp(NULL);
+    if(mkdir(tempname, 0700)) {
+        cli_dbgmsg("ScanHTML -> Can't create temporary directory %s\n", tempname);
+        return CL_ETMPDIR;
+    }
+
+    html_normalise_fd(desc, tempname, NULL);
+    snprintf(fullname, 1024, "%s/comment.html", tempname);
+    fd = open(fullname, O_RDONLY);
+    if (fd >= 0) {
+        ret = cli_scandesc(fd, virname, scanned, root, 0, CL_TYPE_HTML);
+	close(fd);
+    }
+
+    if(ret < 0 || ret == CL_VIRUS) {
+	if(!cli_leavetemps_flag)
+	    cli_rmdirs(tempname);
+	free(tempname);
+	return ret;
+    }
+
+    if (ret == CL_CLEAN) {
+	snprintf(fullname, 1024, "%s/nocomment.html", tempname);
+	fd = open(fullname, O_RDONLY);
+	if (fd >= 0) {
+	    ret = cli_scandesc(fd, virname, scanned, root, 0, CL_TYPE_HTML);
+	    close(fd);
+	}
+    }
+
+    if(ret < 0 || ret == CL_VIRUS) {
+	if(!cli_leavetemps_flag)
+	    cli_rmdirs(tempname);
+	free(tempname);
+	return ret;
+    }
+
+    if (ret == CL_CLEAN) {
+	snprintf(fullname, 1024, "%s/script.html", tempname);
+	fd = open(fullname, O_RDONLY);
+	if (fd >= 0) {
+	    ret = cli_scandesc(fd, virname, scanned, root, 0, CL_TYPE_HTML);
+	    close(fd);
+	}
+    }
+
+    if(ret < 0 || ret == CL_VIRUS) {
+	if(!cli_leavetemps_flag)
+	    cli_rmdirs(tempname);
+	free(tempname);
+	return ret;
+    }
+
+    if (ret == CL_CLEAN) {
+    	snprintf(fullname, 1024, "%s/rfc2397", tempname);
+    	ret = cli_scandir(fullname, virname, scanned, root, limits, options, arec, mrec);
+    }
+
+    if(!cli_leavetemps_flag)
+        cli_rmdirs(tempname);
+
+    free(tempname);
     return ret;
 }
 

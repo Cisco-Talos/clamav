@@ -1,3 +1,8 @@
+Fri Jan 14 14:53:59 GMT 2005 (trog)
+-----------------------------------
+  * libclamav/htmlnorm.c: RFC2397 ("data" URL scheme) support.
+  * libclamav/scanner.c: scan RFC2397 data.
+
 Wed Jan 12 08:58:29 GMT 2005 (njh)
 ----------------------------------
   * clamav-milter:	Fixed DNS resolution error messages which could print
