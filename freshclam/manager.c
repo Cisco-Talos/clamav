@@ -245,6 +245,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	    logg("WARNING: Current functionality level = %d, required = %d\n", flevel, current->fl);
 	}
 
+	*signo += current->sigs;
 	cl_cvdfree(current);
 	return 1;
     }
