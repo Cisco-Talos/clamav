@@ -90,6 +90,11 @@ You may find INPUT_MAIL_FILTERS is not needed on your machine, however it
 is recommended by the Sendmail documentation and I recommend going along
 with that.
 
+The above example shows clamav-milter, clamd and sendmail all on the
+same machine, however using TCP they may reside on different machines,
+indeed clamav-milter is capable of talking to multiple clamds for redundancy
+and load balancing.
+
 I suggest putting SpamAssassin first since you're more likely to get spam
 than a virus/worm sent to you.
 
@@ -97,6 +102,13 @@ Add to /etc/sysconfig/clamav-milter
 	CLAMAV_FLAGS="--max-children=2 local:/var/run/clamav/clmilter.sock"
 or if clamd is on a different machine
 	CLAMAV_FLAGS="--max-children=2 --server=192.168.1.9 local:/var/run/clamav/clmilter.sock"
+
+If you want clamav-milter to listen on TCP for communication with sendmail,
+for example if they are on different machines use inet:<port>.
+On machine A (running sendmail) you would have in sendmail.mc:
+INPUT_MAIL_FILTER(`clamav', `S=inet:3311@machineb, F=, T=S:4m;R:4m')dnl
+On machine B (running clamav-milter) you would start up clamav-milter thus:
+clamav-milter inet:3311
 
 You should have received a script to put into /etc/init.d with this software.
 
