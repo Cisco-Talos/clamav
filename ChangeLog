@@ -1,3 +1,16 @@
+Wed Apr 28 15:29:29 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Better quarantine message error report when failing
+				to create the temporary file
+			Send 554 after DATA received, not 550
+			Don't send rejection notices to rejection notices, we
+				just end up playing ping-pong (patch by "Andrey
+				J.Melnikoff (TEMHOTA)" <temnota@kmv.ru>
+			If CL_DEBUG is defined, don't redirect stdout/stderr
+			Don't attempt to return an old signature if no
+				filename has been given. There has never been
+				one to return
+
 Wed Apr 28 01:33:10 CEST 2004 (tk)
 ----------------------------------
   * libclamav: detect more mail file types
@@ -25,7 +38,7 @@ Sun Apr 25 13:58:35 BST 2004 (njh)
 Fri Apr 23 11:48:07 BST 2004 (njh)
 ----------------------------------
  * libclamav/mbox.c:	If an inline text portion has been given a filename,
- 	treat the disposition type as attachment not inline. Some
+	treat the disposition type as attachment not inline. Some
 	Worm.BadTrans.B1 need this.
 
 Fri Apr 23 10:14:00 BST 2004 (njh)
@@ -51,7 +64,7 @@ Thu Apr 22 17:48:49 BST 2004 (njh)
 Wed Apr 21 16:28:49 BST 2004 (njh)
 ----------------------------------
  * clamav-milter: If /dev/console fails to open, open /dev/null instead on fds 1
- 			and 2
+			and 2
 		TCP_WRAPPERS code now uses inet_ntop()
 		Simplify virus string
 		Sort out tabs in the hard coded e-mail message
@@ -73,7 +86,7 @@ Wed Apr 21 00:27:18 CEST 2004 (tk)
 Tue Apr 20 15:18:58 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Handle hostaddr == NULL
-  	Added X-Virus-Scanned
+	Added X-Virus-Scanned
 	Consistent handling of X-Virus-Status
 
 Tue Apr 20 09:13:46 BST 2004 (njh)
@@ -85,7 +98,7 @@ Tue Apr 20 09:13:46 BST 2004 (njh)
 Mon Apr 19 23:11:48 BST 2004 (njh)
 ----------------------------------
   * clamav-milter: Added --from
-  	Return SMFIS_TEMPFAIL on some out of memory errors (some still to do),
+	Return SMFIS_TEMPFAIL on some out of memory errors (some still to do),
 		based on an idea by Joe Maimon <jmaimon*ttec.com>
 	Quarantine messages now sorted by date, based on an idea by Christian
 		Pelissier <Christian.Pelissier*onera.fr>.
@@ -96,7 +109,7 @@ Mon Apr 19 23:11:48 BST 2004 (njh)
 Mon Apr 19 14:33:35 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Started work on handling user defined templates
-  	for the e-mail sent. For now very little is handled, though %v
+	for the e-mail sent. For now very little is handled, though %v
 	is replaced with the message from clamd
 
 Mon Apr 19 13:39:23 BST 2004 (trog)
@@ -107,12 +120,12 @@ Mon Apr 19 13:39:23 BST 2004 (trog)
 Sat Apr 17 21:40:19 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Include the virus name in the 550 rejection if
-  	appropriate
+	appropriate
 
 Sat Apr 17 15:19:41 BST 2004 (njh)
 ----------------------------------
   * libclamav/blob.c:	Filenames with high byte characters were not
-  	being scanned on MACOS/X
+	being scanned on MACOS/X
 
 Sat Apr 17 00:19:08 CEST 2004 (tk)
 ----------------------------------
@@ -233,7 +246,7 @@ Mon Apr  5 13:19:02 BST 2004 (njh)
 Mon Apr  5 10:47:43 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Added SAVE_TO_DISC #define which, when activated,
-  	scans embedded RFC822 messages from disc rather than in memory. It
+	scans embedded RFC822 messages from disc rather than in memory. It
 	is recommended that this option is always enabled unless ClamAV is
 	to be installed on a system where many nested levels of RFC822 messages
 	cannot occur
@@ -259,7 +272,7 @@ Thu Apr  1 16:46:22 BST 2004 (njh)
 ----------------------------------
   * libclamav:	Stop gracefully if messageAddLine() fails
   * clamav-milter:	ThreadTimeout has been replaced by ReadTimeout -
-  	clamav-milter now supports this
+	clamav-milter now supports this
 
 Thu Apr  1 11:37:25 BST 2004 (trog)
 -----------------------------------
@@ -378,7 +391,7 @@ Thu Mar 25 12:20:05 CET 2004 (tk)
 Wed Mar 24 09:19:12 GMT 2004 (njh)
 ----------------------------------
   * libclamav/blob.c:	Reduce the number of calls to cli_realloc, since realloc
-  	seems to be very slow on FreeBSD
+	seems to be very slow on FreeBSD
 
 Tue Mar 23 15:39:09 GMT 2004 (trog)
 -----------------------------------
@@ -392,7 +405,7 @@ Tue Mar 23 11:09:30 GMT 2004 (njh)
 Tue Mar 23 09:26:18 GMT 2004 (njh)
 ----------------------------------
   * docs/man/clamav-milter.8:	Document the default value for --server, and
-  	clamav-milter's load balancing/fault tolerance capabilities
+	clamav-milter's load balancing/fault tolerance capabilities
 
 Mon Mar 22 21:30:24 CET 2004 (tk)
 ---------------------------------
@@ -410,7 +423,7 @@ Sun Mar 21 17:30:22 GMT 2004 (njh)
 Sun Mar 21 09:51:45 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Faster scanning for non MIME messages, only scan the message
-  	once for binhex, uuencode, bounces etc.
+	once for binhex, uuencode, bounces etc.
 
 Sat Mar 20 19:37:11 GMT 2004 (njh)
 ----------------------------------
@@ -419,7 +432,7 @@ Sat Mar 20 19:37:11 GMT 2004 (njh)
 Sat Mar 20 17:49:43 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	More flexable approach to scanning bounce messages within
-  	emails means more bounces are caught but at the expense of some
+	emails means more bounces are caught but at the expense of some
 	duplication of code for now
 
 Sat Mar 20 15:53:10 CET 2004 (tk)
@@ -450,7 +463,7 @@ Fri Mar 19 21:42:51 CET 2004 (tk)
 Fri Mar 19 17:48:31 GMT 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Handle "binary encoding" (whatever that is :-)
-  	the same as no encoding
+	the same as no encoding
 
 Fri Mar 19 15:50:47 GMT 2004 (njh)
 ----------------------------------
@@ -464,9 +477,9 @@ Fri Mar 19 16:00:51 CET 2004 (tk)
 Fri Mar 19 08:18:24 GMT 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	If an RFC822 message is found as part of a multipart
-  	message and that message has no encoding, don't save for scanning
+	message and that message has no encoding, don't save for scanning
   * libclamav/message.c:	Handle content encoding of '8 bit' as well
-  	as the more correct '8bit'
+	as the more correct '8bit'
 
 Thu Mar 18 22:01:39 GMT 2004 (njh)
 ----------------------------------
@@ -494,7 +507,7 @@ Wed Mar 17 19:48:56 GMT 2004 (njh)
   * clamav-milter: upissued history to 0.70
   * libclamav/message.c: Handle spaces before the disposition type
   * libclamav/mbox.c:	Added some speed ups and reduced memory usage when
-  		scanning embedded RFC822 messages
+		scanning embedded RFC822 messages
 
 Wed Mar 17 15:06:44 GMT 2004 (trog)
 -----------------------------------
@@ -561,7 +574,7 @@ Thu Mar 11 00:16:11 CET 2004 (tk)
 Wed Mar 10 22:14:45 GMT 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Fixed segfault which happens when a UNIX mailbox
-  	with more than one message quits because a message before the last
+	with more than one message quits because a message before the last
 	one can't be parsed
 
 Wed Mar 10 20:51:54 CET 2004 (tk)
@@ -584,14 +597,14 @@ Wed Mar 10 12:58:55 GMT 2004 (trog)
 Wed Mar 10 11:40:14 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	Use new HAVE_STRERROR_R rather than TARGET_OS_SOLARIS
- 			to determine if strerror_r exists
+			to determine if strerror_r exists
 			Thanks to Phil Oleson <oz*nixil.net>.
   * docs/man:		Corrected documentation of --postmaster-only flag.
 
 Wed Mar 10 05:43:34 GMT 2004 (njh)
 ----------------------------------
   * libclamav/message.c:	Implemented a couple of small speed ups:
-  	1) Only save arguments that we're going to retrieve
+	1) Only save arguments that we're going to retrieve
 	2) No need to store \n in messageToText fast copy mode, which allows
 		an sprintf to be removed (Dirk Mueller <dmuell*gmx.net>)
 
@@ -758,7 +771,7 @@ Fri Feb 27 09:30:20 GMT 2004 (njh)
 Thu Feb 26 22:22:43 CET 2004 (tl)
 ---------------------------------
   * freshclam:	cleaner and descriptive error messages for
-  		daemon notification failures
+		daemon notification failures
 
 Thu Feb 26 16:22:59 CET 2004 (tk)
 ---------------------------------
@@ -820,12 +833,12 @@ Mon Feb 23 00:43:44 CET 2004 (tk)
 Sun Feb 22 22:59:39 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter: Change the log level TCPwrapper denying
- 			Handle ERROR message from clamd
- 			Moved smfi_setconn to avoid race condictions when
- 			an e-mail is received just as the milter is starting
- 			but isn't ready to handle it causing the milter to
- 			go to an error state
- 			Hardend umask
+			Handle ERROR message from clamd
+			Moved smfi_setconn to avoid race condictions when
+			an e-mail is received just as the milter is starting
+			but isn't ready to handle it causing the milter to
+			go to an error state
+			Hardend umask
 
 Sun Feb 22 17:34:08 GMT 2004 (njh)
 ----------------------------------
@@ -857,7 +870,7 @@ Fri Feb 20 23:21:42 CET 2004 (tk)
 Fri Feb 20 17:13:10 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	If clamd is on the local machine and PidFile is defined
-  		check if clamd is dead when send() fails
+		check if clamd is dead when send() fails
   * libclamav:		Added a new bounce delimeter
 
 Fri Feb 20 16:49:05 CET 2004 (tk)
@@ -906,7 +919,7 @@ Wed Feb 18 10:12:54 GMT 2004 (njh)
   * libclamav:	Found some occurances of Yaha
 	Added debug of number of lines in (encoded) attachment
   * clamav-milter:	clamav-milter now builds on freeBSD 5.2 (wrong logic
-  		in including malloc.h)
+		in including malloc.h)
 	clamav-milter no longer allows --force to override TCPwrappers
 
 Wed Feb 18 04:09:56 CET 2004 (tk)
@@ -924,7 +937,7 @@ Tue Feb 17 20:49:23 GMT 2004 (njh)
 ----------------------------------
   * libclamav: Added a new bounce delimeter
   * test:	Updated mbox/debugm.c compilation instructions
-  		removed SIGINT signal handler
+		removed SIGINT signal handler
 
 Tue Feb 17 17:09:24 GMT 2004 (trog)
 -----------------------------------
@@ -947,13 +960,13 @@ Mon Feb 16 14:19:42 CET 2004 (tk)
 Mon Feb 16 12:00:06 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	Added clamfi_free, this helps to ease the task
-  		of writing cleanups for unexpected errors
+		of writing cleanups for unexpected errors
 
 Mon Feb 16 09:44:34 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	Upissued to 0.67
   * docs:		Documented support for TCPWrappers in clamav-milter
-  		This is experimental - feedback welcomed
+		This is experimental - feedback welcomed
 
 Sun Feb 15 14:10:19 CET 2004 (tk)
 ---------------------------------
@@ -1046,7 +1059,7 @@ Tue Feb 10 17:05:31 GMT 2004 (njh)
 Tue Feb 10 14:38:35 GMT 2004 (njh)
 ----------------------------------
   * contrib:	Removed mfc30d.dll. It can now be downloaded (if needed)
-  	from http://www.clamav.net/w32/mfc30d.zip
+	from http://www.clamav.net/w32/mfc30d.zip
 
 Tue Feb 10 14:35:07 CET 2004 (tk)
 ---------------------------------
@@ -1059,7 +1072,7 @@ Tue Feb 10 10:38:08 GMT 2004 (trog)
 Tue Feb 10 10:21:02 GMT 2004 (njh)
 ----------------------------------
   * contrib:	The Windows client now recovers better from errors during
-  	scanning
+	scanning
 
 Mon Feb  9 17:46:29 GMT 2004 (njh)
 ----------------------------------
@@ -1099,7 +1112,7 @@ Sat Feb  7 23:18:51 GMT 2004 (njh)
   * libclamav: Handle empty content-type subtypes, e.g. headers such as
 		Content-Type: text/
 		Noted by Stefan Kaltenbrunner <mm-mailinglist*madness.at>
-  		
+ 
 Sat Feb  7 23:37:52 CET 2004 (tk)
 ---------------------------------
   * libclamav: scan "Return-path: " mail files (detection was broken due to
@@ -1135,7 +1148,7 @@ Thu Feb  5 13:49:24 GMT 2004 (njh)
 Thu Feb  5 11:25:56 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Bounce delimeters were found by a list of strcasecmps,
-  			now handled in a table which means it's easier to
+			now handled in a table which means it's easier to
 			add new examples as they are found
 
 Wed Feb  4 16:33:08 GMT 2004 (trog)
@@ -1156,7 +1169,7 @@ Tue Feb  3 22:58:10 GMT 2004 (njh)
 Tue Feb  3 14:38:04 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Speeded up binhex decoding using table look up
-  		Fixed possible infinite loop when decoding compressed binhex
+		Fixed possible infinite loop when decoding compressed binhex
 		Both fixes thanks to Thomas Lamy <Thomas.Lamy*in-online.net>
 
 Tue Feb  3 02:31:55 CET 2004 (tk)
@@ -1173,13 +1186,13 @@ Tue Feb  3 02:31:55 CET 2004 (tk)
 Mon Feb  2 17:12:25 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Scan a rare form of bounce message identified by
-  	Denis De Messemacker <ddm*e-labs.org>
+	Denis De Messemacker <ddm*e-labs.org>
 
 Mon Feb  2 13:46:51 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	   Carefully crafted binhex messages could have caused a crash
   * clamav-milter: Include the ID of the message when warnings are sent to
-  	postmaster-only
+	postmaster-only
 
 Mon Feb  2 12:43:55 GMT 2004 (trog)
 -----------------------------------
@@ -1195,7 +1208,7 @@ Mon Feb  2 09:55:12 GMT 2004 (njh)
 Mon Feb  2 08:28:41 GMT 2004 (njh)
 ----------------------------------
   * contrib: added CLI to the Windows client to allow integration with
-  	download managers, or scheduled scanning of an entire disc
+	download managers, or scheduled scanning of an entire disc
 
 Sun Feb  1 17:50:30 CET 2004 (tk)
 ---------------------------------
@@ -1221,13 +1234,13 @@ Sun Feb  1 02:12:50 CET 2004 (tk)
 	     + -l (short option for --list-sigs)
   * freshclam: reply to -h before parsing a config file (patch by Dustin Mollo
 	       <dustin.mollo*sonoma.edu>)
-  * configure: + check for __attribute__((packed)) (Trog) 
+  * configure: + check for __attribute__((packed)) (Trog)
 	       + use --disable-cr on OpenBSD 3.3 automatically (thanks to Nigel)
 
 Fri Jan 30 12:45:10 GMT 2004 (njh)
 ----------------------------------
   * contrib:	   Recursive scan into folders by the Windows client is now
-  		optional (File->Options). Default=TRUE
+		optional (File->Options). Default=TRUE
 
 Thu Jan 29 12:54:08 GMT 2004 (njh)
 ----------------------------------
@@ -1242,13 +1255,13 @@ Thu Jan 29 10:29:02 GMT 2004 (trog)
 Wed Jan 28 15:57:44 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter: Fixed compilation error with --enable-debug
-  		Thanks to "Serhiy V. Matveyev" <matveyev*uatele.com> for
+		Thanks to "Serhiy V. Matveyev" <matveyev*uatele.com> for
 		pointing this out to me
 
 Wed Jan 28 10:16:49 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Added support to scan some bounce messages
-  		Thanks to Jay <sysop-clamav*coronastreet.net> for
+		Thanks to Jay <sysop-clamav*coronastreet.net> for
 		letting me bounce ideas off him
 
 Tue Jan 27 22:36:31 CET 2004 (tk)
@@ -2384,7 +2397,7 @@ Wed Mar 12 02:56:57 CET 2003
 ----------------------------
   * libclamav: fixed buffer overflow in unrarlib (patch by Robbert Kouprie
 	       <robbert*exx.nl>)
-  * clamav-milter: 
+  * clamav-milter:
 	+ v 0.3 (Nigel)
 	+ --enable-milter must be enabled with ./configure
   * clamscan:
@@ -2428,7 +2441,7 @@ Mon Feb 17 03:20:27 CET 2003
 
 Thu Jan 23 23:51:58 CET 2003
 ----------------------------
-  * clamd: 
+  * clamd:
 	+ fixed segfault with extra space between option and argument
 	  in config file (Magnus Ekdahl <magnus*debian.org>)
 	+ additional protection - timeouts for infinite (wait) loops
@@ -2454,7 +2467,7 @@ Thu Jan  9 01:06:35 CET 2003
 Tue Dec 31 13:25:27 CET 2002
 ----------------------------
   * mboxscan update from Nigel
-  * clamscan: archive limits (for libclamav) enabled by default: 
+  * clamscan: archive limits (for libclamav) enabled by default:
 	      max-files = 500, max-size = 10M, max-recursion = 5. They
 	      might be disabled (with value of 0) or changed from a command
 	      line.
@@ -2755,7 +2768,7 @@ Sun Sep 15 17:22:01 CEST 2002
 
 Sun Sep 15 02:18:58 CEST 2002
 -----------------------------
-  * clamscan: 
+  * clamscan:
     * applied patch for including and excluding multiple
       patterns (by Alejandro Dubrovsky <s328940*student.uq.edu.au>);
     * applied patch for processing all files/directories from argument list
