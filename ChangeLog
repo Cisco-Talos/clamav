@@ -1,3 +1,7 @@
+Fri Jan 14 16:12:21 GMT 2005 (trog)
+-----------------------------------
+  * libclamav/filetypes.c: add a few more HTML filetype markers
+
 Fri Jan 14 14:53:59 GMT 2005 (trog)
 -----------------------------------
   * libclamav/htmlnorm.c: RFC2397 ("data" URL scheme) support.
