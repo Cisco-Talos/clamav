@@ -1,3 +1,8 @@
+Wed Jan 26 15:10:02 CET 2005 (tk)
+---------------------------------
+  * shared/misc.c: freshdbdir(): fix possible dbdir string corruption
+		   (reported by ST Wong <st-wong*cuhk.edu.hk>)
+
 Wed Jan 26 10:38:08 CET 2005 (tk)
 ---------------------------------
   * configure: improve curl check (thanks to Martin Forssen <maf*appgate.com>)
