@@ -1,3 +1,7 @@
+Wed Nov  5 22:31:26 CET 2003 (tk)
+---------------------------------
+  * clamd: cl_scanfile() error message fixed (thanks to Ed Phillips)
+
 Wed Nov  5 15:43:15 GMT 2003 (njh)
 ----------------------------------
   * clamav-milter: tidied up the calls to pthread_cond_timedwait
@@ -13,7 +17,7 @@ Wed Nov  5 12:34:34 IST 2003 (njh)
 
 Wed Nov  5 01:52:03 CET 2003 (tk)
 ---------------------------------
-  * libclamav: zziplib: few files converted to UNIX format (thanks to
+  * libclamav: zziplib: a few files converted to UNIX format (thanks to
 	       Ed Phillips)
 
 Tue Nov  4 13:37:21 CET 2003 (tk)
