@@ -20,6 +20,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.13  2004/10/04 13:46:50  nigelhorne
+ * Handle GNU tar files
+ *
  * Revision 1.12  2004/10/04 10:53:15  nigelhorne
  * Handle tar files less than 512 bytes
  *
@@ -57,7 +60,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.12 2004/10/04 10:53:15 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.13 2004/10/04 13:46:50 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -147,10 +150,10 @@ cli_untar(const char *dir, int desc)
 				break;
 
 			/* Notice assumption that BLOCKSIZE > 262 */
-			strncpy(magic, block+257, 6);
-			magic[6] = '\0';
-			if(strcmp(magic, "ustar ") != 0) {
-				cli_dbgmsg("Incorrect magic number in tar header\n");
+			strncpy(magic, block+257, 5);
+			magic[5] = '\0';
+			if(strcmp(magic, "ustar") != 0) {
+				cli_dbgmsg("Incorrect magic string '%s' in tar header\n", magic);
 				return CL_EFORMAT;
 			}
 
