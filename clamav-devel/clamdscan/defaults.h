@@ -16,4 +16,4 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#define DEFAULT_CFG CONFDIR"/clamav.conf"
+#define DEFAULT_CFG CONFDIR"/clamd.conf"

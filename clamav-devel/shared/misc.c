@@ -38,7 +38,7 @@ const char *freshdbdir(void)
 
     /* try to find fresh directory */
     dbdir = cl_retdbdir();
-    if((copt = parsecfg(CONFDIR"/clamav.conf", 0))) {
+    if((copt = parsecfg(CONFDIR"/clamd.conf", 0))) {
 	if((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory"))) {
 	    if(strcmp(cl_retdbdir(), cpt->strarg)) {
 		    char *daily = (char *) mmalloc(strlen(cpt->strarg) + strlen(cl_retdbdir()) + 15);

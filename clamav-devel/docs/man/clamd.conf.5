@@ -1,11 +1,11 @@
 .\" Manual page created by Tomasz Kojm, 20021001.
-.TH "clamav.conf" "5" "September 2, 2004" "Tomasz Kojm" "Clam AntiVirus"
+.TH "clamd.conf" "5" "September 2, 2004" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
-\fBclamav.conf\fR \- a configuration file for Clam AntiVirus Daemon
+\fBclamd.conf\fR \- a configuration file for Clam AntiVirus Daemon
 .SH "DESCRIPTION"
 .LP 
-clamav.conf configures the Clam AntiVirus daemon, clamd(8).
+clamd.conf configures the Clam AntiVirus daemon, clamd(8).
 .SH "FILE FORMAT"
 The file consists of comments and options with arguments. Each line that starts with a hash (\fB#\fR) symbol is a comment. Options are are case sensitive and of the form \fBOption Argument\fR. The (possibly optional) arguments are are of the following types:
 .TP 
@@ -274,9 +274,9 @@ Enable archive scanning. It uses ArchiveMax* limits.
 Default: disabled.
 .SH "FILES"
 .LP 
-/etc/clamav.conf
+/etc/clamd.conf
 .br 
-/usr/local/etc/clamav.conf
+/usr/local/etc/clamd.conf
 .SH "AUTHOR"
 .LP 
 Tomasz Kojm <tkojm@clamav.net>

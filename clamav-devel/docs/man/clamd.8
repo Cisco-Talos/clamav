@@ -8,7 +8,7 @@ clamd \- an anti\-virus daemon
 clamd [options]
 .SH "DESCRIPTION"
 .LP 
-The daemon listens for incoming connections on Unix or TCP socket and scans files or directories on demand. It's a part of the Clam AntiVirus package. It reads its configuration information from a clamav.conf file. It provides on\-access scanning feature (clamuko) under Linux.
+The daemon listens for incoming connections on Unix or TCP socket and scans files or directories on demand. It's a part of the Clam AntiVirus package. It reads its configuration information from a clamd.conf file. It provides on\-access scanning feature (clamuko) under Linux.
 .SH "COMMANDS"
 .LP 
 clamd recognizes the following commands:
@@ -26,7 +26,7 @@ Reload the virus databases.
 Perform a clean exit.
 .TP 
 \fBSCAN file/directory\fR
-Scan a file or directory (recursively) with archive support enabled (if not disabled in clamav.conf). A full path is required.
+Scan a file or directory (recursively) with archive support enabled (if not disabled in clamd.conf). A full path is required.
 .TP 
 \fBRAWSCAN file/directory\fR
 Scan a file or directory (recursively) with archive support disabled. A full path is required.
@@ -55,4 +55,4 @@ Please check the full documentation for credits.
 Tomasz Kojm <tkojm@clamav.net>
 .SH "SEE ALSO"
 .LP 
-clamdscan(1), clamscan(1), freshclam(1), sigtool(1), clamav.conf(5), clamav\-milter(8)
+clamdscan(1), clamscan(1), freshclam(1), sigtool(1), clamd.conf(5), clamav\-milter(8)

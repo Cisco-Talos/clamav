@@ -21,7 +21,7 @@ The socket_address argument is the socket used to communicate with
 It must agree with the entry in sendmail.cf or sendmail.mc.
 The file associated with the socket must be createable by clamav\-milter,
 if the User option is set in
-\fBclamav.conf(5)\fR,
+\fBclamd.conf(5)\fR,
 then that user must have the rights to create the file.
 .SH "OPTIONS"
 .LP
@@ -65,7 +65,7 @@ See also \-\-noreject.
 .TP
 \fB-C, \-\-dont-log-clean\fR
 Messages without viruses are usually logged if SysLog is set in
-\fBclamav.conf\fR since it gives a feel-good factor.
+\fBclamd.conf\fR since it gives a feel-good factor.
 This option turns that off.
 .TP
 \fB-d, \-\-dont-scan-on-error\fR
@@ -102,7 +102,7 @@ Scan messages generated from this machine. You probably don't need this.
 Notifies clamav\-milter to store its process ID in FILE.
 The file must be createable by clamav\-milter,
 if the User option is set in
-\fBclamav.conf(5)\fR,
+\fBclamd.conf(5)\fR,
 then that user must have the rights to create the file.
 .TP
 \fB-p, \-\-postmaster=EMAILADDRESS\fR
@@ -152,7 +152,7 @@ maximum time a pending thread will be held up is set by \-\-timeout, so the
 number of threads can exceed this number for short periods of time.
 There is no default, if this argument is not \fBclamav\-milter\fR will
 spawn as many children as is necessary up to the MaxThreads limit set
-in \fBclamav.conf\fR.
+in \fBclamd.conf\fR.
 Most users will not need this option, if in doubt do not set it.
 .TP
 \fB\-\-dont\-wait\fR
@@ -188,4 +188,4 @@ clamav\-milter \-ol local:/var/run/clamav/clmilter.sock
 Nigel Horne <njh@clamav.net>
 .SH "SEE ALSO"
 .LP
-clamd(8), clamscan(1), freshclam(1), sigtool(1), clamav.conf(5), hosts_access(5)
+clamd(8), clamscan(1), freshclam(1), sigtool(1), clamd.conf(5), hosts_access(5)

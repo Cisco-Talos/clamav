@@ -17,7 +17,7 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-EXTRA_DIST = clamav.conf freshclam.conf
+EXTRA_DIST = clamd.conf freshclam.conf
 CFGINST = @CFGDIR@
  
 install:

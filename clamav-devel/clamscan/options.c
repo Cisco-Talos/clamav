@@ -187,9 +187,9 @@ void register_char_option(struct optstruct *opt, char ch, const char *longname)
 
 	if(!found) {
 	    if(longname)
-		mprintf("WARNING: Ignoring option -%c (--%s): please edit clamav.conf instead.\n", ch, longname);
+		mprintf("WARNING: Ignoring option -%c (--%s): please edit clamd.conf instead.\n", ch, longname);
 	    else
-		mprintf("WARNING: Ignoring option -%c: please edit clamav.conf instead.\n", ch);
+		mprintf("WARNING: Ignoring option -%c: please edit clamd.conf instead.\n", ch);
 
 	    return;
 	}
@@ -219,7 +219,7 @@ void register_long_option(struct optstruct *opt, const char *optname)
 		found = 1;
 
 	if(!found) {
-	    mprintf("WARNING: Ignoring option --%s: please edit clamav.conf instead.\n", optname);
+	    mprintf("WARNING: Ignoring option --%s: please edit clamd.conf instead.\n", optname);
 	    return;
 	}
     }

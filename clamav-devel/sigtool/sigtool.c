@@ -189,44 +189,6 @@ int countlines(const char *filename)
     return lines;
 }
 
-const char *getdbdir(void)
-{
-        struct cfgstruct *copt, *cpt;
-	struct cl_cvd *d1, *d2;
-        const char *dbdir;
-
-
-    dbdir = cl_retdbdir();
-    if((copt = parsecfg(CONFDIR"/clamav.conf", 0))) {
-	if((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory"))) {
-	    if(strcmp(cl_retdbdir(), cpt->strarg)) {
-		char *daily = (char *) mmalloc(strlen(cpt->strarg) + strlen(cl_retdbdir()) + 15);
-		sprintf(daily, "%s/daily.cvd", cpt->strarg);
-		if((d1 = cl_cvdhead(daily))) {
-		    sprintf(daily, "%s/daily.cvd", cl_retdbdir());
-		    if((d2 = cl_cvdhead(daily))) {
-			free(daily);
-			if(d1->version > d2->version)
-			    dbdir = cpt->strarg;
-			else
-			    dbdir = cl_retdbdir();
-			cl_cvdfree(d2);
-		    } else {
-			free(daily);
-			dbdir = cpt->strarg;
-		    }
-		    cl_cvdfree(d1);
-		} else {
-		    free(daily);
-		    dbdir = cl_retdbdir();
-		}
-	    }
-	}
-    }
-
-    return dbdir;
-}
-
 int build(struct optstruct *opt)
 {
 	int ret, no = 0, realno = 0, bytes, itmp;
@@ -321,7 +283,7 @@ int build(struct optstruct *opt)
 
 
     /* try to read cvd header of old database */
-    sprintf(buffer, "%s/%s", getdbdir(), getargc(opt, 'b'));
+    sprintf(buffer, "%s/%s", freshdbdir(), getargc(opt, 'b'));
     if((oldcvd = cl_cvdhead(buffer)) == NULL)
 	mprintf("WARNING: CAN'T READ CVD HEADER OF CURRENT DATABASE %s\n", buffer);
 
@@ -535,7 +497,7 @@ int unpack(struct optstruct *opt)
 
     if(optl(opt, "unpack-current")) {
 	name = mcalloc(300, sizeof(char)); /* FIXME */
-	sprintf(name, "%s/%s", getdbdir(), getargl(opt, "unpack-current"));
+	sprintf(name, "%s/%s", freshdbdir(), getargl(opt, "unpack-current"));
     } else
 	name = getargc(opt, 'u');
 
@@ -779,7 +741,7 @@ void listsigs(struct optstruct *opt)
     if((name = getargc(opt, 'l')))
 	ret = listdb(name);
     else
-	ret = listdir(getdbdir());
+	ret = listdir(freshdbdir());
 
     ret ? exit(1) : exit(0);
 }
