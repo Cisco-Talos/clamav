@@ -1,3 +1,8 @@
+Fri Jan  9 10:21:27 GMT 2004 (njh)
+----------------------------------
+  * libclamav: Locate uuencoded viruses hidden in text poritions of
+  	multipart/mixed mime messages
+
 Fri Jan  9 02:07:53 CET 2004 (tk)
 ---------------------------------
   * freshclam: restored old command line options (except for proxy settings) -

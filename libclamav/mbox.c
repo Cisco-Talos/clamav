@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.26  2004/01/09 10:20:54  nigelhorne
+ * Locate uuencoded viruses hidden in text poritions of multipart/mixed mime messages
+ *
  * Revision 1.25  2004/01/06 14:41:18  nigelhorne
  * Handle headers which do not not have a space after the ':'
  *
@@ -66,7 +69,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.25 2004/01/06 14:41:18 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.26 2004/01/09 10:20:54 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -130,7 +133,7 @@ static	bool	continuationMarker(const char *line);
 static	int	parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg);
 static	bool	saveFile(const blob *b, const char *dir);
 
-/* Maximum number of attachements that we accept */
+/* Maximum number of attachments that we accept */
 #define	MAX_ATTACHMENTS	10
 
 /* Maximum line length according to RFC821 */
@@ -437,8 +440,8 @@ parseEmailHeaders(const message *m, const table_t *rfc821Table)
  *
  * Returns:
  *	0 for fail
- *	1 for success, attachements saved
- *	2 for success, attachements not saved
+ *	1 for success, attachments saved
+ *	2 for success, attachments not saved
  */
 static int	/* success or fail */
 parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, const char *dir, table_t *rfc821Table, table_t *subtypeTable)
@@ -841,21 +844,30 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 						assert(messageGetBody(aMessage) != NULL);
 						break;
 					case TEXT:
+						cli_dbgmsg("Mixed message text part disposition \"%s\"\n",
+							dtype);
 						if(strcasecmp(dtype, "attachment") == 0)
 							addAttachment = TRUE;
 						else if((*dtype == '\0') || (strcasecmp(dtype, "inline") == 0)) {
+							const text *t_line = uuencodeBegin(aMessage);
+
 							mainMessage = NULL;
-							/*
-							 * Strictly speaking
-							 * a text/html part is
-							 * not an attachment. We
-							 * pretend it is so that
-							 * we can decode and
-							 * scan it
-							 */
-							if(strcasecmp(messageGetMimeSubtype(aMessage), "plain") == 0)
+							if(t_line) {
+								cli_dbgmsg("Found uuencoded message in multipart/mixed text portion\n");
+								messageSetEncoding(aMessage, "x-uuencode");
+								addAttachment = TRUE;
+							} else if(strcasecmp(messageGetMimeSubtype(aMessage), "plain") == 0) {
+								/*
+								 * Strictly speaking
+								 * a text/html part is
+								 * not an attachment. We
+								 * pretend it is so that
+								 * we can decode and
+								 * scan it
+								 */
+								cli_dbgmsg("Adding part to main message\n");
 								addToText = TRUE;
-							else {
+							} else {
 								messageAddArgument(aMessage, "filename=textportion");
 								addAttachment = TRUE;
 							}
@@ -1143,7 +1155,7 @@ parseEmailBody(message *mainMessage, blob **blobsIn, int nBlobs, text *textIn, c
 				/*
 				 * Main part contains uuencoded section
 				 */
-				messageSetEncoding(mainMessage,	"x-uuencode");
+				messageSetEncoding(mainMessage, "x-uuencode");
 
 				if((b = messageToBlob(mainMessage)) != NULL) {
 					if((cptr = blobGetFilename(b)) != NULL) {
