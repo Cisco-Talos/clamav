@@ -1,3 +1,10 @@
+Sat Nov 27 13:18:42 GMT 2004 (njh)
+----------------------------------
+ * libclamav:	Assume x-uue is the same as x-uuencode
+		If uudecoding fails and other possibilities have been
+			registered, don't take the failure as fatal, also try
+			the other decoding methods
+
 Sat Nov 27 12:01:03 GMT 2004 (njh)
 ----------------------------------
  * libclamav/mbox.c:	Handle RFC822 comments in the commands, e.g.:

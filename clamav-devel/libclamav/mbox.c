@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.187  2004/11/27 13:16:56  nigelhorne
+ * uuencode failures no longer fatal
+ *
  * Revision 1.186  2004/11/27 11:59:28  nigelhorne
  * Handle comments in the command part of headers
  *
@@ -546,7 +549,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.186 2004/11/27 11:59:28 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.187 2004/11/27 13:16:56 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1817,28 +1820,12 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					if(aMessage == NULL)
 						continue;
 
-					dtype = messageGetDispositionType(aMessage);
-					cptr = messageGetMimeSubtype(aMessage);
-
 					cli_dbgmsg("Mixed message part %d is of type %d\n",
 						i, messageGetMimeType(aMessage));
 
 					switch(messageGetMimeType(aMessage)) {
 					case APPLICATION:
-#if	0
-						/* strict checking... */
-						if((strcasecmp(dtype, "attachment") == 0) ||
-						   (strcasecmp(cptr, "x-msdownload") == 0) ||
-						   (strcasecmp(cptr, "octet-stream") == 0) ||
-						   (strcasecmp(dtype, "octet-stream") == 0))
-							addAttachment = TRUE;
-						else {
-							cli_dbgmsg("Discarded mixed/application not sent as attachment\n");
-							continue;
-						}
-#endif
 						addAttachment = TRUE;
-
 						break;
 					case NOMIME:
 						cli_dbgmsg("No mime headers found in multipart part %d\n", i);
@@ -1884,18 +1871,18 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						assert(messageGetBody(aMessage) != NULL);
 						break;
 					case TEXT:
+						dtype = messageGetDispositionType(aMessage);
 						cli_dbgmsg("Mixed message text part disposition \"%s\"\n",
 							dtype);
 						if(strcasecmp(dtype, "attachment") == 0)
 							addAttachment = TRUE;
 						else if((*dtype == '\0') || (strcasecmp(dtype, "inline") == 0)) {
-							const text *u_line = uuencodeBegin(aMessage);
-
 							if(mainMessage && (mainMessage != messageIn))
 								messageDestroy(mainMessage);
 							mainMessage = NULL;
+							cptr = messageGetMimeSubtype(aMessage);
 							cli_dbgmsg("Mime subtype \"%s\"\n", cptr);
-							if(u_line) {
+							if(uuencodeBegin(aMessage)) {
 								cli_dbgmsg("Found uuencoded message in multipart/mixed text portion\n");
 								messageSetEncoding(aMessage, "x-uuencode");
 								addAttachment = TRUE;
@@ -2445,6 +2432,10 @@ endOfMessage(const char *line, const char *boundary)
 	len = strlen(boundary);
 	if(strncasecmp(line, boundary, len) != 0)
 		return 0;
+	/*
+	 * Use < rather than == because some broken mails have white
+	 * space after the boundary
+	 */
 	if(strlen(line) < (len + 2))
 		return 0;
 	line = &line[len];

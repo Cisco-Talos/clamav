@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.122  2004/11/27 13:16:54  nigelhorne
+ * uuencode failures no longer fatal
+ *
  * Revision 1.121  2004/11/26 16:58:52  nigelhorne
  * Tidy
  *
@@ -360,7 +363,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.121 2004/11/26 16:58:52 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.122 2004/11/27 13:16:54 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -442,6 +445,7 @@ static	const	struct	encoding_map {
 	{	"x-yencode",		YENCODE		},
 	{	"x-binhex",		BINHEX		},
 	{	"us-ascii",		NOENCODING	},	/* incorrect */
+	{	"x-uue",		UUENCODE	},	/* incorrect */
 	{	NULL,			NOENCODING	}
 };
 
@@ -1623,9 +1627,13 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 
 			if(t_line == NULL) {
 				/*cli_warnmsg("UUENCODED attachment is missing begin statement\n");*/
-				(*destroy)(ret);
+				m->uuencode = NULL;
 				m->base64chars = 0;
-				return NULL;
+				if(i == m->numberOfEncTypes - 1) {
+					(*destroy)(ret);
+					return NULL;
+				}
+				continue;
 			}
 
 			filename = cli_strtok(lineGetData(t_line->t_line), 2, " ");
