@@ -58,9 +58,12 @@ target_triplet = @target@
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/clamav-config.h.in \
 	$(srcdir)/clamav-config.in $(srcdir)/libclamav.pc.in \
-	$(top_srcdir)/configure AUTHORS COPYING ChangeLog INSTALL NEWS \
-	TODO config.guess config.sub depcomp install-sh ltmain.sh \
-	missing mkinstalldirs
+	$(top_srcdir)/configure $(top_srcdir)/docs/man/clamd.8.in \
+	$(top_srcdir)/docs/man/clamd.conf.5.in \
+	$(top_srcdir)/docs/man/freshclam.1.in \
+	$(top_srcdir)/docs/man/freshclam.conf.5.in AUTHORS COPYING \
+	ChangeLog INSTALL NEWS TODO config.guess config.sub depcomp \
+	install-sh ltmain.sh missing mkinstalldirs
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/acinclude.m4 \
@@ -71,7 +74,9 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno configure.status.lineno
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = clamav-config.h
-CONFIG_CLEAN_FILES = clamav-config libclamav.pc
+CONFIG_CLEAN_FILES = clamav-config libclamav.pc docs/man/clamd.8 \
+	docs/man/clamd.conf.5 docs/man/freshclam.1 \
+	docs/man/freshclam.conf.5
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pkgconfigdir)"
 binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 SCRIPTS = $(bin_SCRIPTS)
@@ -269,6 +274,14 @@ clamav-config: $(top_builddir)/config.status $(srcdir)/clamav-config.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 libclamav.pc: $(top_builddir)/config.status $(srcdir)/libclamav.pc.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
+docs/man/clamd.8: $(top_builddir)/config.status $(top_srcdir)/docs/man/clamd.8.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+docs/man/clamd.conf.5: $(top_builddir)/config.status $(top_srcdir)/docs/man/clamd.conf.5.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+docs/man/freshclam.1: $(top_builddir)/config.status $(top_srcdir)/docs/man/freshclam.1.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+docs/man/freshclam.conf.5: $(top_builddir)/config.status $(top_srcdir)/docs/man/freshclam.conf.5.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
 install-binSCRIPTS: $(bin_SCRIPTS)
 	@$(NORMAL_INSTALL)
 	test -z "$(bindir)" || $(mkdir_p) "$(DESTDIR)$(bindir)"
@@ -439,7 +452,7 @@ distclean-tags:
 distdir: $(DISTFILES)
 	$(am__remove_distdir)
 	mkdir $(distdir)
-	$(mkdir_p) $(distdir)/.
+	$(mkdir_p) $(distdir)/. $(distdir)/docs/man
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \

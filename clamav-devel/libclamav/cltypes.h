@@ -53,4 +53,17 @@
 # endif
 #endif
 
+/*
+** Interix Support: Brian A. Reiter <breiter@wolfereiter.com>
+** In Interix, <sys/typedef.h> defines int64_t but not uint64_t.
+** Interix defines u_int64_t instead.
+*/
+#if __INTERIX
+#ifdef __GNUC__
+    typedef unsigned long long 	uint64_t;  
+#elif MSC_VER
+    typedef unsigned __int64 	uint64_t;
+#endif/*__GNUC__*/
+#endif /*Interix*/
+
 #endif
