@@ -1,3 +1,8 @@
+Mon Feb  7 22:13:47 GMT 2005 (njh)
+----------------------------------
+  * clamav-milter:	--detect-forged-email-address
+  			--external: NUL terminate the string read from clamd
+
 Sun Feb  6 22:22:10 CET 2005 (tk)
 ---------------------------------
   * contrib/clamdwatch: v0.7.1 (http://mikecathey.com/code/clamdwatch/)
