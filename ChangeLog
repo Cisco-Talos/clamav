@@ -1,3 +1,9 @@
+Thu Jun 24 22:38:16 BST 2004 (njh)
+----------------------------------
+  * libclamav:	Plug small memory leak when scanning emails with a large
+  	number of attachments
+		Handle uuencoded files created with buggy software
+
 Thu Jun 24 09:09:27 BST 2004 (trog)
 -----------------------------------
   * libclamav ole2_extract.[ch],scanners.c: proper file accounting (original patch
