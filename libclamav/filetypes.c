@@ -112,8 +112,8 @@ static const struct cli_magic_s cli_magic[] = {
 
 static const struct cli_smagic_s cli_smagic[] = {
 
-    /* <html>*<body> */
-    {"3c68746d6c3e*3c626f64793e",    "HTML data", CL_HTMLFILE},
+    /* <html>*<body */
+    {"3c68746d6c3e*3c626f6479",    "HTML data", CL_HTMLFILE},
 
     /* "From: " * "Content-Type: " */
     {"46726f6d3a20*436f6e74656e742d547970653a20",    "Mail file", CL_MAILFILE},
