@@ -3,6 +3,7 @@ Sun Aug 22 11:35:30 BST 2004 (njh)
   * libclamav:	Save email attachments to disc earlier (as the attachment is
   			decoded rather than after decoding has finished), this
 			saves memory at a small speed penalty
+			Currently this is incompatible with FOLLOWURLS
 
 Sun Aug 22 02:07:13 CEST 2004 (tk)
 ----------------------------------
