@@ -48,7 +48,7 @@ int main(int argc, char **argv)
 	exit(2);
     }
 
-    printf("Loaded %d viruses.\n", no);
+    printf("Loaded %d signatures.\n", no);
 
     /* build the trie */
     cl_buildtrie(root);
@@ -58,12 +58,12 @@ int main(int argc, char **argv)
 	exit(2);
     }
 
-    /* set up an archive limits */
+    /* set up archive limits */
     limits.maxfiles = 1000; /* max files */
     limits.maxfilesize = 10 * 1048576; /* maximal archived file size == 10 Mb */
     limits.maxreclevel = 8; /* maximal recursion level */
 
-    /* scan the descriptor (with archive and mail scanning enabled) */
+    /* scan descriptor (with archive and mail scanning enabled) */
     if((ret = cl_scandesc(fd, &virname, &size, root, &limits, CL_ARCHIVE | CL_MAIL)) == CL_VIRUS)
 	printf("Detected %s virus.\n", virname);
     else {

@@ -1,3 +1,10 @@
+Wed Nov 12 02:34:56 CET 2003 (tk)
+---------------------------------
+  * docs: included clamav-mirror-howto.pdf by Luca Gibelli
+  * docs: included clamd+daemontools HOWTO by Jesse D. Guardiani
+  * docs: included signatures.pdf
+  V 0.65
+
 Tue Nov 11 22:47:37 CET 2003 (tk)
 ---------------------------------
   * sigtool: CVD builder: now date contains a numeric timezone (suggested
