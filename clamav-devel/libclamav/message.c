@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.132  2004/12/16 15:29:51  nigelhorne
+ * Tidy
+ *
  * Revision 1.131  2004/12/14 16:45:43  nigelhorne
  * Backtrack quoted-printable broken fix
  *
@@ -390,7 +393,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.131 2004/12/14 16:45:43 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.132 2004/12/16 15:29:51 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1326,6 +1329,10 @@ messageClean(message *m)
 
 /*
  * Export a message using the given export routines
+ *
+ * TODO: It really should export into an array, one
+ * for each encoding algorithm. However, what it does is it returns the
+ * last item that was exported. That's sufficient for now.
  */
 static void *
 messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), void (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(const text *, void *))
@@ -1514,14 +1521,14 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 
 					l += 2;
 					count = data[l];
-#ifdef	CL_DEBUG
-					cli_dbgmsg("uncompress HQX7 at 0x%06x: %d repetitive bytes\n", l, count);
-#endif
 
 					if(count == 0) {
 						c = 0x90;
 						blobAddData(u, &c, 1);
 					} else {
+#ifdef	CL_DEBUG
+						cli_dbgmsg("uncompress HQX7 at 0x%06x: %d repetitive bytes\n", l, count);
+#endif
 						blobGrow(u, count);
 						while(--count > 0)
 							blobAddData(u, &c, 1);
@@ -1656,6 +1663,17 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		encoding_type enctype = m->encodingTypes[i];
 		size_t size;
 
+		if(i > 0) {
+			void *newret;
+
+			newret = (*create)();
+			if(newret == NULL) {
+				cli_errmsg("Not all decoding algorithms were run\n");
+				return ret;
+			}
+			(*destroy)(ret);
+			ret = newret;
+		}
 		cli_dbgmsg("messageExport: enctype %d is %d\n", i, enctype);
 		/*
 		 * Find the filename to decode
@@ -1756,13 +1774,16 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 
 		size = 0;
 		do {
-			unsigned char data[1024];
-			unsigned char *uptr;
+			unsigned char smallbuf[1024];
+			unsigned char *uptr, *data;
 			const char *line = lineGetData(t_line->t_line);
+			unsigned char *bigbuf;
+			size_t datasize;
 
 			if(enctype == UUENCODE) {
 				/*
-				 * There should be no blank lines in uuencoded files...
+				 * There should be no blank lines in uuencoded
+				 * files...
 				 */
 				if(line == NULL)
 					continue;
@@ -1775,17 +1796,33 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 					break;
 			}
 
-			uptr = decodeLine(m, enctype, line, data, sizeof(data));
+			/*
+			 * Add two bytes for '\n' and '\0'
+			 */
+			datasize = (line) ? strlen(line) + 2 : 0;
 
-			if(uptr == NULL)
+			if(line && (datasize >= sizeof(smallbuf)))
+				data = bigbuf = cli_malloc(datasize);
+			else {
+				bigbuf = NULL;
+				data = smallbuf;
+				datasize = sizeof(smallbuf);
+			}
+
+			uptr = decodeLine(m, enctype, line, data, datasize); 
+			if(uptr == NULL) {
+				if(data == bigbuf)
+					free(data);
 				break;
-
-			assert(uptr <= &data[sizeof(data)]);
+			}
 
 			if(uptr != data) {
 				(*addData)(ret, data, (size_t)(uptr - data));
 				size += (size_t)(uptr - data);
 			}
+
+			if(data == bigbuf)
+				free(data);
 
 			/*
 			 * According to RFC2045, '=' is used to pad out
@@ -1952,6 +1989,8 @@ messageToText(message *m)
 			} else if(enctype == UUENCODE)
 				if(strcasecmp(line, "end") == 0)
 					break;
+
+			assert((line == NULL) || (strlen(line) <= sizeof(data)));
 
 			uptr = decodeLine(m, enctype, line, data, sizeof(data));
 
@@ -2158,6 +2197,8 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 	char *p2;
 	char *copy;
 
+	/*printf("decodeLine(et = %d buflen = %u)\n", (int)et, buflen);*/
+
 	assert(m != NULL);
 	assert(buf != NULL);
 
@@ -2246,7 +2287,7 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 			}
 #else
 			softbreak = FALSE;
-			while(*line) {
+			while((line < (char *)&buf[buflen]) && *line) {
 				if(*line == '=') {
 					unsigned char byte;
 
@@ -2301,13 +2342,6 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 			 * Klez doesn't always put "=" on the last line
 			 */
 			buf = decode(m, copy, buf, base64, (p2 == NULL) && ((strlen(copy) & 3) == 0));
-#if	0
-			if(p2)
-				/* flush the read ahead bytes */
-				buf = decode(m, NULL, buf, base64, FALSE);
-#endif
-
-			/*buf = decode(m, copy, buf, base64, FALSE);*/
 
 			free(copy);
 			break;
@@ -2409,11 +2443,9 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
 	unsigned char b1, b2, b3, b4;
 	unsigned char cb1, cb2, cb3;	/* carried over from last line */
 
-#ifdef	CL_DEBUG
-	/*cli_dbgmsg("decode %s (len %d isFast %d base64chars %d)\n", in,
+	/*printf("decode %s (len %d isFast %d base64chars %d)\n", in,
 		in ? strlen(in) : 0,
 		isFast, m->base64chars);*/
-#endif
 
 	cb1 = cb2 = cb3 = '\0';
 
@@ -2451,115 +2483,112 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
 			*out++ = (b2 << 4) | ((b3 >> 2) & 0xF);
 			*out++ = (b3 << 6) | (b4 & 0x3F);
 		}
-	else {
-		if(in == NULL) {	/* flush */
-			int nbytes;
+	else if(in == NULL) {	/* flush */
+		int nbytes;
 
-			if(m->base64chars == 0)
-				return out;
+		if(m->base64chars == 0)
+			return out;
 
-			cli_dbgmsg("base64chars = %d (%c %c %c)\n", m->base64chars,
-				cb1 ? cb1 : '@',
-				cb2 ? cb2 : '@',
-				cb3 ? cb3 : '@');
+		cli_dbgmsg("base64chars = %d (%c %c %c)\n", m->base64chars,
+			cb1 ? cb1 : '@',
+			cb2 ? cb2 : '@',
+			cb3 ? cb3 : '@');
 
+		m->base64chars--;
+		b1 = cb1;
+		nbytes = 1;
+
+		if(m->base64chars) {
+			m->base64chars--;
+			b2 = cb2;
+
+			if(m->base64chars) {
+				nbytes++;
+				m->base64chars--;
+				b3 = cb3;
+				if(b3)
+					nbytes++;
+			} else if(b2)
+				nbytes++;
+		}
+
+		switch(nbytes) {
+			case 3:
+				b4 = '\0';
+				/* fall through */
+			case 4:
+				*out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
+				*out++ = (b2 << 4) | ((b3 >> 2) & 0xF);
+				*out++ = (b3 << 6) | (b4 & 0x3F);
+				break;
+			case 2:
+				*out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
+				*out++ = b2 << 4;
+				break;
+			case 1:
+				*out++ = b1 << 2;
+				break;
+			default:
+				assert(0);
+		}
+	} else while(*in) {
+		int nbytes;
+
+		if(m->base64chars) {
 			m->base64chars--;
 			b1 = cb1;
-			nbytes = 1;
+		} else
+			b1 = (*decoder)(*in++);
 
+		if(*in == '\0') {
+			b2 = '\0';
+			nbytes = 1;
+		} else {
 			if(m->base64chars) {
 				m->base64chars--;
 				b2 = cb2;
-
-				if(m->base64chars) {
-					nbytes++;
-					m->base64chars--;
-					b3 = cb3;
-					if(b3)
-						nbytes++;
-				} else if(b2)
-					nbytes++;
-			}
-
-			switch(nbytes) {
-				case 3:
-					b4 = '\0';
-					/* fall through */
-				case 4:
-					*out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
-					*out++ = (b2 << 4) | ((b3 >> 2) & 0xF);
-					*out++ = (b3 << 6) | (b4 & 0x3F);
-					break;
-				case 2:
-					*out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
-					*out++ = b2 << 4;
-					break;
-				case 1:
-					*out++ = b1 << 2;
-					break;
-				default:
-					assert(0);
-			}
-
-		} else while(*in) {
-			int nbytes;
-
-			if(m->base64chars) {
-				m->base64chars--;
-				b1 = cb1;
 			} else
-				b1 = (*decoder)(*in++);
+				b2 = (*decoder)(*in++);
 
 			if(*in == '\0') {
-				b2 = '\0';
-				nbytes = 1;
+				b3 = '\0';
+				nbytes = 2;
 			} else {
 				if(m->base64chars) {
 					m->base64chars--;
-					b2 = cb2;
+					b3 = cb3;
 				} else
-					b2 = (*decoder)(*in++);
+					b3 = (*decoder)(*in++);
 
 				if(*in == '\0') {
-					b3 = '\0';
-					nbytes = 2;
+					b4 = '\0';
+					nbytes = 3;
 				} else {
-					if(m->base64chars) {
-						m->base64chars--;
-						b3 = cb3;
-					} else
-						b3 = (*decoder)(*in++);
-
-					if(*in == '\0') {
-						b4 = '\0';
-						nbytes = 3;
-					} else {
-						b4 = (*decoder)(*in++);
-						nbytes = 4;
-					}
+					b4 = (*decoder)(*in++);
+					nbytes = 4;
 				}
 			}
+		}
 
-			switch(nbytes) {
-				case 3:
-					m->base64_3 = b3;
-				case 2:
-					m->base64_2 = b2;
-				case 1:
-					m->base64_1 = b1;
-					break;
-				case 4:
-					*out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
-					*out++ = (b2 << 4) | ((b3 >> 2) & 0xF);
-					*out++ = (b3 << 6) | (b4 & 0x3F);
-					break;
-				default:
-					assert(0);
-			}
-			if(nbytes != 4) {
-				m->base64chars = nbytes;
+		switch(nbytes) {
+			case 3:
+				m->base64_3 = b3;
+			case 2:
+				m->base64_2 = b2;
+			case 1:
+				m->base64_1 = b1;
 				break;
-			}
+			case 4:
+				*out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
+				*out++ = (b2 << 4) | ((b3 >> 2) & 0xF);
+				*out++ = (b3 << 6) | (b4 & 0x3F);
+				break;
+			default:
+				assert(0);
+		}
+		if(nbytes != 4) {
+			m->base64chars = nbytes;
+			break;
 		}
 	}
 	return out;
@@ -2590,7 +2619,7 @@ base64(char c)
 	const unsigned char ret = base64Table[(int)c];
 
 	if(ret == 255) {
-		cli_dbgmsg("Illegal character <%c> in base64 encoding\n", c);
+		/*cli_dbgmsg("Illegal character <%c> in base64 encoding\n", c);*/
 		return 63;
 	}
 	return ret;
