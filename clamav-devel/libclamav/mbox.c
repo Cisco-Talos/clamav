@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.171  2004/11/09 12:24:32  nigelhorne
+ * Better handling of mail-follow-urls when CURL is not installed
+ *
  * Revision 1.170  2004/11/09 10:08:02  nigelhorne
  * Added basic handling of folded headers in the main message
  *
@@ -498,7 +501,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.170 2004/11/09 10:08:02 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.171 2004/11/09 12:24:32 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3054,7 +3057,7 @@ checkURLs(message *m, const char *dir)
 			}
 			(void)tableInsert(t, url, 1);
 			cli_dbgmsg("Downloading URL %s to be scanned\n", url);
-			strncpy(name, url, sizeof(name));
+			strncpy(name, url, sizeof(name) - 1);
 			for(ptr = name; *ptr; ptr++)
 				if(*ptr == '/')
 					*ptr = '_';
@@ -3076,7 +3079,20 @@ checkURLs(message *m, const char *dir)
 			/*
 			 * TODO: maximum size and timeouts
 			 */
-			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 %s > %s/%s 2>/dev/null", url, dir, name);
+			len = sizeof(cmd) - 26 - strlen(dir) - strlen(name);
+#ifdef	CL_DEBUG
+			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 %.*s >%s/%s", len, url, dir, name);
+#else
+			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 %.*s >%s/%s 2>/dev/null", len, url, dir, name);
+#endif
+			cmd[sizeof(cmd) - 1] = '\0';
+
+#ifndef	WITH_CURL
+			for(ptr = cmd; *ptr; ptr++)
+				if(strchr(";&", *ptr))
+					*ptr = '_';
+#endif
+
 			cli_dbgmsg("%s\n", cmd);
 #ifdef	CL_THREAD_SAFE
 			pthread_mutex_lock(&system_mutex);
