@@ -227,6 +227,9 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
     } else {
 	timeout = CL_DEFAULT_SCANTIMEOUT;
     }
+    if (timeout == 0) {
+    	timeout = -1;
+    }
 
     if(!bound && !portscan) {
 	mdprintf(odesc, "ERROR\n");

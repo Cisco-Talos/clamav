@@ -98,8 +98,11 @@ int poll_fd(int fd, int timeout_sec)
     poll_data[0].events = POLLIN;
     poll_data[0].revents = 0;
 
+    if (timeout_sec > 0) {
+    	timeout_sec *= 1000;
+    }
     while (1) {
-    	retval = poll(poll_data, 1, timeout_sec*1000);
+    	retval = poll(poll_data, 1, timeout_sec);
 	if (retval == -1) {
    	    if (errno == EINTR) {
 		continue;
@@ -123,7 +126,8 @@ int poll_fd(int fd, int timeout_sec)
 	tv.tv_sec = timeout_sec;
 	tv.tv_usec = 0;
 
-	retval = select(fd+1, &rfds, NULL, NULL, &tv);
+	retval = select(fd+1, &rfds, NULL, NULL,
+			(timeout_sec>0 ? &tv : NULL));
 	if (retval == -1) {
 	    if (errno == EINTR) {
 		continue;
