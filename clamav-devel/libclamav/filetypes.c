@@ -113,11 +113,26 @@ static const struct cli_magic_s cli_magic[] = {
 static const struct cli_smagic_s cli_smagic[] = {
 
     /* <html>*<body */
-    {"3c68746d6c3e*3c626f6479",    "HTML data", CL_HTMLFILE},
-
     /* "From: " * "Content-Type: " */
     {"46726f6d3a20*436f6e74656e742d547970653a20",    "Mail file", CL_MAILFILE},
 
+    /* matcher is case sensitive - we have to check all variants of <html> */
+    {"3c68746d6c3e",    "HTML data", CL_HTMLFILE},
+    {"3c48746d6c3e",    "HTML data", CL_HTMLFILE},
+    {"3c68546d6c3e",    "HTML data", CL_HTMLFILE},
+    {"3c68744d6c3e",    "HTML data", CL_HTMLFILE},
+    {"3c68746d4c3e",    "HTML data", CL_HTMLFILE},
+    {"3c48546d6c3e",    "HTML data", CL_HTMLFILE},
+    {"3c48744d6c3e",    "HTML data", CL_HTMLFILE},
+    {"3c48746d4c3e",    "HTML data", CL_HTMLFILE},
+    {"3c68544d6c3e",    "HTML data", CL_HTMLFILE},
+    {"3c68546d4c3e",    "HTML data", CL_HTMLFILE},
+    {"3c68744d4c3e",    "HTML data", CL_HTMLFILE},
+    {"3c48544d6c3e",    "HTML data", CL_HTMLFILE},
+    {"3c48744d4c3e",    "HTML data", CL_HTMLFILE},
+    {"3c68544d4c3e",    "HTML data", CL_HTMLFILE},
+    {"3c48546d4c3e",    "HTML data", CL_HTMLFILE},
+    {"3c48544d4c3e",    "HTML data", CL_HTMLFILE},
 
     {NULL,  NULL,   CL_UNKNOWN_TYPE}
 };
