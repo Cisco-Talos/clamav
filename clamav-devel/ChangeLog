@@ -1,3 +1,13 @@
+Sun Jun  6 03:38:08 CEST 2004 (tk)
+----------------------------------
+  * clamscan, freshclam, clamd: make sure privileges are properly dropped
+    (problem on system with CAP_SETUID disabled reported by Tuomas Silen
+    <tuomas.silen*nodeta.fi>)
+  * Makefiles: prevent linking against old libclamav versions (patch (from PLD)
+	       submitted by Oden Eriksson <oeriksson*mandrakesoft.com>)
+  * configure: support pkg-config and clamav-config (patch by Scott Beck
+	       <sbeck*gossamer-threads.com>)
+
 Thu Jun  3 17:53:45 CEST 2004 (tk)
 ----------------------------------
   * doc: update

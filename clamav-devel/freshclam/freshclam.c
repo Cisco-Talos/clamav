@@ -152,9 +152,20 @@ int freshclam(struct optstruct *opt)
 	    exit(60); /* this is critical problem, so we just exit here */
 	}
 
-	setgroups(1, &user->pw_gid);
-	setgid(user->pw_gid);
-	setuid(user->pw_uid);
+	if(setgroups(1, &user->pw_gid)) {
+	    mprintf("@setgroups() failed.\n");
+	    exit(61);
+	}
+
+	if(setgid(user->pw_gid)) {
+	    mprintf("@setgid(%d) failed.\n", (int) user->pw_gid);
+	    exit(61);
+	}
+
+	if(setuid(user->pw_uid)) {
+	    mprintf("@setuid(%d) failed.\n", (int) user->pw_uid);
+	    exit(61);
+	}
     }
 #endif
 

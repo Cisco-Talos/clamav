@@ -40,4 +40,4 @@ freshclam_SOURCES = \
 
 DEFS = @DEFS@ -DCL_NOTHREADS
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
-LIBS = -L$(top_builddir)/libclamav -lclamav @FRESHCLAM_LIBS@ @ADDITIONAL_LIBS@
+LIBS = $(top_builddir)/libclamav/libclamav.la @FRESHCLAM_LIBS@ @ADDITIONAL_LIBS@

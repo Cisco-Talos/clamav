@@ -35,8 +35,7 @@ man_MANS = $(top_srcdir)/docs/man/clamav-milter.8
 endif
 endif
 
-DEFS = @DEFS@ -DSENDMAIL_BIN=\"@SENDMAIL@\"
-# CLAMD_LIBS is used, because clamav-milter requires the same libraries as clamd
-LIBS = -L$(top_builddir)/libclamav -lclamav -L/usr/lib/libmilter -lmilter @CLAMAV_MILTER_LIBS@
+AM_CFLAGS = -DSENDMAIL_BIN=\"$(SENDMAIL)\"
+LIBS = $(top_builddir)/libclamav/libclamav.la -L/usr/lib/libmilter -lmilter @CLAMAV_MILTER_LIBS@
 INCLUDES = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_srcdir)/shared
 EXTRA_DIST = clamav-milter.c INSTALL

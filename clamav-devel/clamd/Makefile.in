@@ -159,8 +159,7 @@ install_sh = @install_sh@
 @BUILD_CLAMD_TRUE@    shared.h
 
 
-DEFS = @DEFS@
-LIBS = -L$(top_builddir)/libclamav -lclamav @CLAMD_LIBS@ @ADDITIONAL_LIBS@
+LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMD_LIBS@ @ADDITIONAL_LIBS@
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 subdir = clamd
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
@@ -183,6 +182,8 @@ clamd_OBJECTS = $(am_clamd_OBJECTS)
 clamd_LDADD = $(LDADD)
 clamd_DEPENDENCIES =
 clamd_LDFLAGS =
+
+DEFS = @DEFS@
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
