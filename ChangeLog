@@ -1,3 +1,8 @@
+Thu Dec 11 14:36:32 GMT 2003 (njh)
+----------------------------------
+  * libclamav: better handling of encapsulated messages, i.e. emails
+  	within other emails such as forwarded messages
+
 Wed Dec 10 12:01:27 GMT 2003 (njh)
 ----------------------------------
   * clamav-milter: Timeout on waiting for data from clamd, by honouring
