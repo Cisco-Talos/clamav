@@ -1,3 +1,9 @@
+Tue Dec 28 16:26:49 GMT 2004 (njh)
+----------------------------------
+  * clamav-milter/INSTALL:	Added instructions for FreeBSD5.3
+    contrib/init/FreeBSD5.2:	Clarified installation instructions - tested
+			under FreeBSD5.3
+
 Mon Dec 27 05:12:29 CET 2004 (tk)
 ---------------------------------
   * freshclam/manager.c: Remove "Cache-Control: no-cache" from remote_cvdhead()
