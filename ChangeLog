@@ -1,3 +1,7 @@
+Sun Aug 22 14:18:53 CEST 2004 (tk)
+----------------------------------
+  * libclamav: cli_scanhtml: Respect file size limit
+
 Sun Aug 22 11:35:30 BST 2004 (njh)
 ----------------------------------
   * libclamav:	Save email attachments to disc earlier (as the attachment is

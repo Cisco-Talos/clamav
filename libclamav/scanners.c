@@ -654,6 +654,7 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
 	int ret;
 
 
+#ifdef HAVE_MMAP
     cli_dbgmsg("in cli_scanhtml()\n");
 
     if(fstat(desc, &statbuf) != 0) {
@@ -661,7 +662,11 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
         return CL_EIO;
     }
 
-#ifdef HAVE_MMAP
+    if(limits && limits->maxfilesize && (statbuf.st_size > limits->maxfilesize)) {
+	cli_dbgmsg("ScanHTML -> Size exceeded (%d, max: %ld)\n", statbuf.st_size, limits->maxfilesize);
+	return CL_CLEAN;
+    }
+
     membuff = mmap(NULL, statbuf.st_size, PROT_READ, MAP_PRIVATE, desc, 0);
 
     /* TODO: do file operations if mmap fails */
