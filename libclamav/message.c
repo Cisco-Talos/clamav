@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.25  2004/02/05 11:23:07  nigelhorne
+ * Bounce messages are now table driven
+ *
  * Revision 1.24  2004/02/04 13:29:16  nigelhorne
  * Handle blobAddData of more than 128K
  *
@@ -69,7 +72,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.24 2004/02/04 13:29:16 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.25 2004/02/05 11:23:07 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -99,6 +102,7 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.24 2004/02/04 13:29:16 nigelhorn
 #include "mbox.h"
 #include "blob.h"
 #include "text.h"
+#include "table.h"
 #include "strrcpy.h"
 #include "others.h"
 #include "str.h"
@@ -657,7 +661,7 @@ messageToBlob(const message *m)
 		unsigned long len, l, newlen = 0L;
 		char *filename;
 		unsigned char *ptr, *data;
-		int bytenumber = 0;
+		int bytenumber;
 		blob *tmp = blobCreate();
 
 		/*
@@ -683,10 +687,8 @@ messageToBlob(const message *m)
 		 *
 		 * See RFC1741
 		 */
-		while((t_line = t_line->t_next) != NULL) {
+		while((t_line = t_line->t_next) != NULL)
 			blobAddData(tmp, (unsigned char *)t_line->t_text, strlen(t_line->t_text));
-			blobAddData(tmp, (unsigned char *)"\n", 1);
-		}
 
 		data = blobGetData(tmp);
 
@@ -696,8 +698,6 @@ messageToBlob(const message *m)
 			blobDestroy(b);
 			return NULL;
 		}
-		len = blobGetDataSize(tmp);
-
 		if(data[0] != ':') {
 			/*
 			 * TODO: Need an example of this before I can be
@@ -709,6 +709,9 @@ messageToBlob(const message *m)
 			blobDestroy(b);
 			return NULL;
 		}
+
+		len = blobGetDataSize(tmp);
+
 		/*
 		 * FIXME: this is dirty code, modification of the contents
 		 * of a member of the blob object should be done through blob.c
@@ -719,6 +722,7 @@ messageToBlob(const message *m)
 
 		ptr = cli_malloc(len);
 		memcpy(ptr, data, len);
+		bytenumber = 0;
 
 		/*
 		 * ptr now contains the encoded (7bit) data - len bytes long
@@ -727,10 +731,11 @@ messageToBlob(const message *m)
 		for(l = 1; l < len; l++) {
 			unsigned char c = ptr[l];
 
-			if((c == '\n') || (c == '\r'))
-				continue;
 			if(c == ':')
 				break;
+
+			if((c == '\n') || (c == '\r'))
+				continue;
 
 			if((c < 0x20) || (c > 0x7f) || (hqxtbl[c] == 0xff)) {
 				cli_warnmsg("Invalid HQX7 character '%c' (0x%02x)\n", c, c);
@@ -764,6 +769,7 @@ messageToBlob(const message *m)
 					break;
 			}
 		}
+
 		cli_dbgmsg("decoded HQX7 message (now %lu bytes)\n", newlen);
 
 		/*
@@ -1074,11 +1080,27 @@ const text *
 bounceBegin(const message *m)
 {
 	const text *t_line;
+	static table_t *bounceMessages;
+	const char *bounces[] = {
+		"--- Below this line is a copy of the message.",
+		"------ This is a copy of the message, including all the headers. ------",
+		"=================================================================================",
+		NULL
+	};
+
+	if(bounceMessages == NULL) {
+		const char **bounce;
+
+		bounceMessages = tableCreate();
+
+		for(bounce = bounces; *bounce; bounce++)
+			if(tableInsert(bounceMessages, *bounce, 1) < 0)
+				cli_warnmsg("Bounce messages starting with\n\t%s\nwon't be detected\n",
+					*bounce);
+	}
 
 	for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next)
-		if((strcasecmp(t_line->t_text, "--- Below this line is a copy of the message.") == 0) ||
-		   (strcmp(t_line->t_text, "=================================================================================") == 0) ||
-		   (strcasecmp(t_line->t_text, "------ This is a copy of the message, including all the headers. ------") == 0))
+		if(tableFind(bounceMessages, t_line->t_text) == 1)
 			return t_line;
 
 	return NULL;
