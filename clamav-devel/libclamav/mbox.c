@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.126  2004/09/16 14:23:57  nigelhorne
+ * Handle quotes around mime type
+ *
  * Revision 1.125  2004/09/16 12:59:36  nigelhorne
  * Handle = and space as header separaters
  *
@@ -363,7 +366,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.125 2004/09/16 12:59:36 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.126 2004/09/16 14:23:57 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -862,7 +865,7 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 static int
 parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 {
-	char *cmd, *ptr;
+	char *cmd;
 	int ret = -1;
 #ifdef CL_THREAD_SAFE
 	char *strptr;
@@ -2171,18 +2174,40 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 					strtok_r(copy, ";", &strptr);
 				} else {
 					char *s;
-
-					messageSetMimeType(m, strtok_r(copy, "/", &strptr));
+					size_t len;
 
 					/*
-					 * Stephen White <stephen@earth.li>
-					 * Some clients put space after
-					 * the mime type but before
-					 * the ;
+					 * The content type could be in quotes:
+					 *	Content-Type: "multipart/mixed"
+					 * FIXME: this is a hack in that ignores
+					 *	the quotes, it doesn't handle
+					 *	them properly
 					 */
-					s = strtok_r(NULL, ";", &strptr);
-					strstrip(s);
-					messageSetMimeSubtype(m, s);
+					while(isspace(*copy))
+						copy++;
+					if(copy[0] == '\"')
+						copy++;
+					if(copy[0] != '/') {
+						messageSetMimeType(m, strtok_r(copy, "/", &strptr));
+
+						/*
+						 * Stephen White <stephen@earth.li>
+						 * Some clients put space after
+						 * the mime type but before
+						 * the ;
+						 */
+						s = strtok_r(NULL, ";", &strptr);
+						if(s) {
+							len = strstrip(s) - 1;
+							if(s[len] == '\"') {
+								s[len] = '\0';
+								len = strstrip(s);
+							}
+							if(len)
+								messageSetMimeSubtype(m, s);
+						}
+					} else
+						(void)strtok_r(copy, ";", &strptr);
 				}
 
 				/*

@@ -1,3 +1,8 @@
+Thu Sep 16 15:25:26 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Handle mime types in quotation marks such as:
+				Content-Type: "multipart/mixed"
+
 Thu Sep 16 14:30:15 BST 2004 (trog)
 -----------------------------------
   * libclamav/htmlnorm.c: properly initialise output buffer

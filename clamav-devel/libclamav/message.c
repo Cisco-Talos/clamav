@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.82  2004/09/16 14:23:57  nigelhorne
+ * Handle quotes around mime type
+ *
  * Revision 1.81  2004/09/16 12:59:36  nigelhorne
  * Handle = and space as header separaters
  *
@@ -240,7 +243,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.81 2004/09/16 12:59:36 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.82 2004/09/16 14:23:57 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -387,6 +390,9 @@ messageReset(message *m)
 	m->mimeType = NOMIME;
 }
 
+/*
+ * Handle the Content-Type header
+ */
 void
 messageSetMimeType(message *mess, const char *type)
 {
