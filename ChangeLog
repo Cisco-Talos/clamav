@@ -1,3 +1,8 @@
+Sun Feb 29 18:28:22 CET 2004 (tk)
+---------------------------------
+  * clamd, configure: enabled support for on-access scanning under Linux and
+		      FreeBSD. Tested with Dazuko 2.0.0.
+
 Sat Feb 28 23:06:43 CET 2004 (tk)
 ---------------------------------
   * config parser: fixed segfault with empty argument for numerical option

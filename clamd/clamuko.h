@@ -21,7 +21,8 @@
 #ifndef __CLAMUKO_H
 #define __CLAMUKO_H
 
-short int clamuko_running, clamuko_scanning;
+/* short int clamuko_running, clamuko_scanning; */
+short int clamuko_scanning;
 void *clamukoth(void *arg);
 
 #endif

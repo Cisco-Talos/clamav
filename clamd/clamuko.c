@@ -37,7 +37,7 @@
 #include "clamuko.h"
 #include "defaults.h"
 
-struct access_t acc;
+struct dazuko_access *acc;
 
 void clamuko_exit(int sig)
 {
@@ -45,13 +45,15 @@ void clamuko_exit(int sig)
     logg("*Clamuko: clamuko_exit(), signal %d\n", sig);
 
     if(clamuko_scanning) {
-	logg("*Clamuko: stopped while scanning %s\n", acc.filename);
-	acc.deny = 0;
+	logg("*Clamuko: stopped while scanning %s\n", acc->filename);
+	acc->deny = 0;
 	dazukoReturnAccess(&acc); /* is it needed ? */
     }
 
-    dazukoUnregister();
-    clamuko_running = 0;
+    if(dazukoUnregister())
+	logg("!Can't unregister with Dazuko\n");
+
+    /* clamuko_running = 0; */
     logg("Clamuko stopped.\n");
 }
 
@@ -68,7 +70,7 @@ void *clamukoth(void *arg)
 	struct stat sb;
 
 
-    clamuko_running = 1;
+    /* clamuko_running = 1; */
     clamuko_scanning = 0;
 
     /* ignore all signals except SIGUSR1 */
@@ -84,9 +86,9 @@ void *clamukoth(void *arg)
 #endif
 
     /* register */
-    if(dazukoRegister()) {
+    if(dazukoRegister("ClamAV", "r+")) {
 	logg("!Clamuko: Can't register with Dazuko\n");
-	clamuko_running = 0;
+	/* clamuko_running = 0; */
 	return NULL;
     } else
 	logg("Clamuko: Correctly registered with Dazuko.\n");
@@ -94,35 +96,34 @@ void *clamukoth(void *arg)
     /* access mask */
     if(cfgopt(tharg->copt, "ClamukoScanOnOpen")) {
 	logg("Clamuko: Scan-on-open mode activated.\n");
-	mask |= ON_OPEN;
+	mask |= DAZUKO_ON_OPEN;
     }
     if(cfgopt(tharg->copt, "ClamukoScanOnClose")) {
 	logg("Clamuko: Scan-on-close mode activated.\n");
-	mask |= ON_CLOSE;
+	mask |= DAZUKO_ON_CLOSE;
     }
     if(cfgopt(tharg->copt, "ClamukoScanOnExec")) {
 	logg("Clamuko: Scan-on-exec mode activated.\n");
-	mask |= ON_EXEC;
+	mask |= DAZUKO_ON_EXEC;
     }
 
     if(!mask) {
 	logg("!Access mask is not configured properly.\n");
-	clamuko_running = 0;
+	/* clamuko_running = 0; */
 	return NULL;
     }
 
     if(dazukoSetAccessMask(mask)) {
 	logg("!Clamuko: Can't set access mask in Dazuko.\n");
-	clamuko_running = 0;
+	/* clamuko_running = 0; */
 	return NULL;
     }
-
 
     if((pt = cfgopt(tharg->copt, "ClamukoIncludePath"))) {
 	while(pt) {
 	    if((dazukoAddIncludePath(pt->strarg))) {
 		logg("!Clamuko: Dazuko -> Can't include path %s\n", pt->strarg);
-		clamuko_running = 0;
+		/* clamuko_running = 0; */
 		return NULL;
 	    } else
 		logg("Clamuko: Included path %s\n", pt->strarg);
@@ -131,7 +132,7 @@ void *clamukoth(void *arg)
 	}
     } else {
 	logg("!Clamuko: please include at least one path.\n");
-	clamuko_running = 0;
+	/* clamuko_running = 0; */
 	return NULL;
     }
 
@@ -139,7 +140,7 @@ void *clamukoth(void *arg)
 	while(pt) {
 	    if((dazukoAddExcludePath(pt->strarg))) {
 		logg("!Clamuko: Dazuko -> Can't exclude path %s\n", pt->strarg);
-		clamuko_running = 0;
+		/* clamuko_running = 0; */
 		return NULL;
 	    } else
 		logg("Clamuko: Excluded path %s\n", pt->strarg);
@@ -179,25 +180,25 @@ void *clamukoth(void *arg)
 	    scan = 1;
 
 	    if(sizelimit) {
-		stat(acc.filename, &sb);
+		stat(acc->filename, &sb);
 		if(sb.st_size > sizelimit) {
 		    scan = 0;
-		    logg("*Clamuko: %s skipped (too big)\n", acc.filename);
+		    logg("*Clamuko: %s skipped (too big)\n", acc->filename);
 		}
 	    }
 
-	    if(scan && cl_scanfile(acc.filename, &virname, NULL, tharg->root, tharg->limits, options) == CL_VIRUS) {
-		logg("Clamuko: %s: %s FOUND\n", acc.filename, virname);
-		virusaction(acc.filename, virname, tharg->copt);
-		acc.deny = 1;
+	    if(scan && cl_scanfile(acc->filename, &virname, NULL, tharg->root, tharg->limits, options) == CL_VIRUS) {
+		logg("Clamuko: %s: %s FOUND\n", acc->filename, virname);
+		virusaction(acc->filename, virname, tharg->copt);
+		acc->deny = 1;
 	    } else
-		acc.deny = 0;
+		acc->deny = 0;
 
 	    if(dazukoReturnAccess(&acc)) {
 		logg("!Can't return access to Dazuko.\n");
 		logg("Clamuko stopped.\n");
 		dazukoUnregister();
-		clamuko_running = 0;
+		/* clamuko_running = 0; */
 		clamuko_scanning = 0;
 		return NULL;
 	    }
@@ -207,7 +208,7 @@ void *clamukoth(void *arg)
     }
 
     /* can't be ;) */
-    clamuko_running = 0;
+    /* clamuko_running = 0; */
     return NULL;
 }
 
