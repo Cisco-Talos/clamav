@@ -329,6 +329,8 @@ Changes
 			<Christian.Pelissier@onera.fr>. Store different
 			day's quarantines in different directories to
 			make them easier to manage
+0.70n	20/4/04	Allow for "i" macro not defined in sendmail.cf
+		clamfi_connect: print better message if hostaddr is null
 
 BUG REPORTS
 
