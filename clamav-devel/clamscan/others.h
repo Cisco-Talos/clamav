@@ -21,7 +21,6 @@
 
 int fileinfo(const char *filename, short i);
 int checkaccess(const char *path, const char *username, int mode);
-int filecopy(const char *src, const char *dest);
 int isnumb(const char *str);
 
 #endif

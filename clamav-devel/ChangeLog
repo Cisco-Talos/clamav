@@ -1,3 +1,7 @@
+Mon Nov 29 00:23:55 CET 2004 (tk)
+---------------------------------
+  * clamdscan: add support for --move and --remove options
+
 Sun Nov 28 21:08:44 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Email headers of only white space are no longer treated as

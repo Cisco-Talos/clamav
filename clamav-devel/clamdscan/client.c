@@ -21,15 +21,17 @@
 #endif
 
 #include <stdio.h>
+#include <unistd.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <string.h>
+#include <utime.h>
+#include <errno.h>
 
 #include "others.h"
 #include "defaults.h"
@@ -38,7 +40,9 @@
 #include "cfgparser.h"
 #include "memory.h"
 #include "output.h"
+#include "misc.h"
 #include "str.h"
+#include "strrcpy.h" /* libclamav */
 
 #ifdef PF_INET
 # define SOCKET_INET	PF_INET
@@ -46,11 +50,13 @@
 # define SOCKET_INET	AF_INET
 #endif
 
+void move_infected(const char *filename, const struct optstruct *opt);
+int notremoved = 0, notmoved = 0;
 
-int dsfile(int sockd, const char *filename)
+int dsfile(int sockd, const char *filename, const struct optstruct *opt)
 {
 	int infected = 0, waserror = 0;
-	char buff[4096], *scancmd;
+	char buff[4096], *scancmd, *pt;
 	FILE *fd;
 
 
@@ -75,8 +81,25 @@ int dsfile(int sockd, const char *filename)
 	    infected++;
 	    logg("%s", buff);
 	    mprintf("%s", buff);
+	    if(optl(opt, "move")) {
+		pt = strrchr(buff, ':');
+		*pt = 0;
+		move_infected(buff, opt);
+
+	    } else if(optl(opt, "remove")) {
+		pt = strrchr(buff, ':');
+		*pt = 0;
+		if(unlink(buff)) {
+		    mprintf("%s: Can't remove.\n", buff);
+		    logg("%s: Can't remove.\n", buff);
+		    notremoved++;
+		} else {
+		    mprintf("%s: Removed.\n", buff);
+		    logg("%s: Removed.\n", buff);
+		}
+	    }
 	}
-	if (strstr(buff, "ERROR\n")) {
+	if(strstr(buff, "ERROR\n")) {
 	    logg("%s", buff);
 	    mprintf("%s", buff);
 	    waserror = 1;
@@ -91,7 +114,7 @@ int dsfile(int sockd, const char *filename)
     return infected ? infected : (waserror ? -1 : 0);
 }
 
-int dsstream(int sockd)
+int dsstream(int sockd, const struct optstruct *opt)
 {
 	int wsockd, loopw = 60, bread, port, infected = 0;
 	struct sockaddr_in server;
@@ -172,6 +195,23 @@ int dsstream(int sockd)
 	if(strstr(buff, "FOUND\n")) {
 	    infected++;
 	    logg("%s", buff);
+	    if(optl(opt, "move")) {
+		pt = strrchr(buff, ':');
+		*pt = 0;
+		move_infected(buff, opt);
+
+	    } else if(optl(opt, "remove")) {
+		pt = strrchr(buff, ':');
+		*pt = 0;
+		if(unlink(buff)) {
+		    mprintf("%s: Can't remove.\n", buff);
+		    logg("%s: Can't remove.\n", buff);
+		    notremoved++;
+		} else {
+		    mprintf("%s: Removed.\n", buff);
+		    logg("%s: Removed.\n", buff);
+		}
+	    }
 	}
 	if(strstr(buff, "ERROR\n")) {
 	    logg("%s", buff);
@@ -307,7 +347,7 @@ int client(const struct optstruct *opt, int *infected)
 	if((sockd = dconnect(opt)) < 0)
 	    return 2;
 
-	if((ret = dsfile(sockd, cwd)) >= 0)
+	if((ret = dsfile(sockd, cwd, opt)) >= 0)
 	    *infected += ret;
 	else
 	    errors++;
@@ -318,7 +358,7 @@ int client(const struct optstruct *opt, int *infected)
 	if((sockd = dconnect(opt)) < 0)
 	    return 2;
 
-	if((ret = dsstream(sockd)) >= 0)
+	if((ret = dsstream(sockd, opt)) >= 0)
 	    *infected += ret;
 	else
 	    errors++;
@@ -352,7 +392,7 @@ int client(const struct optstruct *opt, int *infected)
 			if((sockd = dconnect(opt)) < 0)
 			    return 2;
 
-			if((ret = dsfile(sockd, fullpath)) >= 0)
+			if((ret = dsfile(sockd, fullpath, opt)) >= 0)
 			    *infected += ret;
 			else
 			    errors++;
@@ -371,4 +411,113 @@ int client(const struct optstruct *opt, int *infected)
     }
 
     return *infected ? 1 : (errors ? 2 : 0);
+}
+
+void move_infected(const char *filename, const struct optstruct *opt)
+{
+	char *movedir, *movefilename, *tmp, numext[4 + 1];
+	struct stat fstat, mfstat;
+	int n, len, movefilename_size;
+	struct utimbuf ubuf;
+
+
+    if(!(movedir = getargl(opt, "move"))) {
+        /* Should never reach here */
+        mprintf("@getargc() returned NULL\n", filename);
+        notmoved++;
+        return;
+    }
+
+    if(access(movedir, W_OK|X_OK) == -1) {
+        mprintf("@error moving file '%s': cannot write to '%s': %s\n", filename, movedir, strerror(errno));
+        notmoved++;
+        return;
+    }
+
+    if(stat(filename, &fstat) == -1) {
+        mprintf("@Can't stat file %s\n", movefilename);
+	mprintf("Try to run clamdscan with clamd privileges\n");
+        notmoved++;
+	return;
+    }
+
+    if(!(tmp = strrchr(filename, '/')))
+	tmp = (char *) filename;
+
+    movefilename_size = sizeof(char) * (strlen(movedir) + strlen(tmp) + sizeof(numext) + 2);
+
+    if(!(movefilename = mmalloc(movefilename_size))) {
+        mprintf("@Memory allocation error\n");
+	exit(2);
+    }
+
+    if(!(strrcpy(movefilename, movedir))) {
+        mprintf("@strrcpy() returned NULL\n");
+        notmoved++;
+        free(movefilename);
+        return;
+    }
+
+    strcat(movefilename, "/");
+
+    if(!(strcat(movefilename, tmp))) {
+        mprintf("@strcat() returned NULL\n");
+        notmoved++;
+        free(movefilename);
+        return;
+    }
+
+    if(!stat(movefilename, &mfstat)) {
+        if(fstat.st_ino == mfstat.st_ino) { /* It's the same file*/
+            mprintf("File excluded '%s'\n", filename);
+            logg("File excluded '%s'\n", filename);
+            notmoved++;
+            free(movefilename);
+            return;
+        } else {
+            /* file exists - try to append an ordinal number to the
+	     * quranatined file in an attempt not to overwrite existing
+	     * files in quarantine  
+	     */
+            len = strlen(movefilename);
+            n = 0;        		        		
+            do {
+                /* reset the movefilename to it's initial value by
+		 * truncating to the original filename length
+		 */
+                movefilename[len] = 0;
+                /* append .XXX */
+                sprintf(numext, ".%03d", n++);
+                strcat(movefilename, numext);            	
+            } while(!stat(movefilename, &mfstat) && (n < 1000));
+       }
+    }
+
+    if(rename(filename, movefilename) == -1) {
+	if(filecopy(filename, movefilename) == -1) {
+	    mprintf("@cannot move '%s' to '%s': %s\n", filename, movefilename, strerror(errno));
+	    notmoved++;
+	    free(movefilename);
+	    return;
+	}
+
+	chmod(movefilename, fstat.st_mode);
+	chown(movefilename, fstat.st_uid, fstat.st_gid);
+
+	ubuf.actime = fstat.st_atime;
+	ubuf.modtime = fstat.st_mtime;
+	utime(movefilename, &ubuf);
+
+	if(unlink(filename)) {
+	    mprintf("@cannot unlink '%s': %s\n", filename, strerror(errno));
+	    notremoved++;            
+	    free(movefilename);
+	    return;
+	}
+    }
+
+    mprintf("%s: moved to '%s'\n", filename, movefilename);
+    logg("%s: moved to '%s'\n", filename, movefilename);
+
+    free(movefilename);
 }

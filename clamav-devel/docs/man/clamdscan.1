@@ -1,5 +1,5 @@
 .\" Manual page created by Tomasz Kojm, 20021121
-.TH "Clamd client" "1" "February 20, 2004" "Tomasz Kojm" "Clam AntiVirus"
+.TH "Clamd client" "1" "November 29, 2004" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 clamdscan \- scan files and directories against viruses using Clam AntiVirus Daemon
@@ -33,6 +33,12 @@ Read clamd settings from FILE.
 .TP 
 \fB\-l FILE, \-\-log=FILE\fR
 Save the scan report to FILE.
+.TP 
+\fB\-\-remove\fR
+Remove infected files. \fBBe careful.\fR
+.TP 
+\fB\-\-move=DIRECTORY\fR
+Move infected files into DIRECTORY.
 .TP 
 \fB\-\-no\-summary\fR
 Do not display summary at the end of scanning.
