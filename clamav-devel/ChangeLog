@@ -1,3 +1,7 @@
+Fri Feb  6 13:20:51 GMT 2004 (njh)
+----------------------------------
+  * libclamav:	Added new bounce message
+
 Thu Feb  5 13:49:24 GMT 2004 (njh)
 ----------------------------------
   * contrib:	clamav.exe now integrates with WinZip8.1
