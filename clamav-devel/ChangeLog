@@ -1,3 +1,7 @@
+Sun Apr 25 13:58:35 BST 2004 (njh)
+----------------------------------
+ * clamav-milter:	Added --pidfile
+
 Fri Apr 23 11:48:07 BST 2004 (njh)
 ----------------------------------
  * libclamav/mbox.c:	If an inline text portion has been given a filename,

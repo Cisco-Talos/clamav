@@ -92,7 +92,8 @@ with that.
 
 If you see an unsafe socket error from sendmail, it means that the permissions
 of the /var/run/clamav directory are too open. Check you have correctly run
-chown and chmod.
+chown and chmod, it may also mean that clamav-milter hasn't started, run
+ps and check your logs.
 
 The above example shows clamav-milter, clamd and sendmail all on the
 same machine, however using TCP they may reside on different machines,
@@ -361,6 +362,7 @@ Changes
 0.70r	23/4/04	Ensure only From lines are escaped
 		Also defer generated emails if --force-scan is given
 		Better subject for quarantine e-mails
+0.70s	25/4/04	Added --pidfile support
 
 BUG REPORTS
 

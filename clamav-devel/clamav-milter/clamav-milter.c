@@ -41,7 +41,8 @@
  *
  * If you see an unsafe socket error from sendmail, it means that the
  * permissions of the /var/run/clamav directory are too open. Check you have
- * correctly run chown and chmod.
+ * correctly run chown and chmod, it may also mean that clamav-milter hasn't
+ * started, run ps and check your logs.
  *
  * The above example shows clamav-milter, clamd and sendmail all on the
  * same machine, however using TCP they may reside on different machines,
@@ -353,7 +354,7 @@
  *			twice at the same time (one on the incoming one on the
  *				outgoing)
  *			header_list_print, ensure From lines are escaped, may
- * 				not be needed but it is better to be on the
+ *				not be needed but it is better to be on the
  *				safe side
  *			When loadbalancing, fail to start only if no servers
  *				can be reached (used to fail if any one server
@@ -362,9 +363,13 @@
  *	0.70r	23/4/04	Ensure only From lines are escaped
  *			Also defer generated emails if --force-scan is given
  *			Better subject for quarantine e-mails
+ *	0.70s	25/4/04	Added --pidfile support
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.83  2004/04/25 12:56:35  nigelhorne
+ * Added --pidfile
+ *
  * Revision 1.82  2004/04/23 09:13:30  nigelhorne
  * Better quarantine email subject
  *
@@ -596,9 +601,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.82 2004/04/23 09:13:30 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.83 2004/04/25 12:56:35 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70r"
+#define	CM_VERSION	"0.70s"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -857,6 +862,7 @@ help(void)
 	puts("\t--outgoing\t\t-o\tScan outgoing messages from this machine.");
 	puts("\t--noreject\t\t-N\tDon't reject viruses, silently throw them away.");
 	puts("\t--noxheader\t\t-n\tSuppress X-Virus-Scanned/X-Virus-Status headers.");
+	puts("\t--pidfile=FILE\t\t-i FILE\tLocation of pidfile.");
 	puts("\t--postmaster\t\t-p EMAIL\tPostmaster address [default=postmaster].");
 	puts("\t--postmaster-only\t-P\tSend warnings only to the postmaster.");
 	puts("\t--quiet\t\t\t-q\tDon't send e-mail notifications of interceptions.");
@@ -879,6 +885,7 @@ main(int argc, char **argv)
 	const char *cfgfile = CL_DEFAULT_CFG;
 	struct cfgstruct *cpt;
 	struct passwd *user;
+	const char *pidfile = NULL;
 	struct smfiDesc smfilter = {
 		"ClamAv", /* filter name */
 		SMFI_VERSION,	/* version code -- leave untouched */
@@ -945,6 +952,9 @@ main(int argc, char **argv)
 			},
 			{
 				"help", 0, NULL, 'h'
+			},
+			{
+				"pidfile", 1, NULL, 'i'
 			},
 			{
 				"local", 0, NULL, 'l'
@@ -1035,6 +1045,9 @@ main(int argc, char **argv)
 				return EX_OK;
 			case 'H':
 				hflag++;
+				break;
+			case 'i':	/* pidfile */
+				pidfile = optarg;
 				break;
 			case 'l':	/* scan mail from the lan */
 				lflag++;
@@ -1367,6 +1380,23 @@ main(int argc, char **argv)
 			fprintf(stderr, "%s: (-q && !LogSysLog): warning - all interception message methods are off\n",
 				argv[0]);
 		use_syslog = 0;
+	}
+
+	if(pidfile) {
+		/* save the PID */
+		FILE *fd;
+		const mode_t old_umask = umask(0006);
+
+		if((fd = fopen(pidfile, "w")) == NULL) {
+			if(use_syslog)
+				syslog(LOG_WARNING, "Can't save PID in file %s",
+					pidfile);
+			cli_warnmsg("Can't save PID in file %s\n", pidfile);
+		} else {
+			fprintf(fd, "%d\n", (int)getpid());
+			fclose(fd);
+		}
+		umask(old_umask);
 	}
 
 	if(cfgopt(copt, "FixStaleSocket")) {

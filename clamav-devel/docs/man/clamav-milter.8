@@ -91,6 +91,13 @@ use this option when NOT using the \-\-bounce option.
 \fB-o, \-\-outgoing\fR
 Scan outgoing messages from this machine.
 .TP
+\fB-i, \-\-pidfile=FILE\fR
+Notifies clamav\-milter to store its process ID in FILE.
+The file must be createable by clamav\-milter,
+if the User option is set in
+\fBclamav.conf(5)\fR,
+then that user must have the rights to create the file.
+.TP
 \fB-p, \-\-postmaster=EMAILADDRESS\fR
 Sets the e-mail address to send notifications to when the \-\-quiet option
 is not given.
