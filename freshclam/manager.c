@@ -359,7 +359,7 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
 
         if(user) {
             int len;
-	    char* buf = mmalloc(strlen(user)*2+4);
+	    char* buf = mmalloc((strlen(pass) + strlen(user)) * 2 + 4);
 	    char *userpass = mmalloc(strlen(user) + strlen(pass) + 2);
 	    sprintf(userpass, "%s:%s", user, pass);
             len=fmt_base64(buf,userpass,strlen(userpass));
@@ -457,7 +457,7 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
 
         if(user) {
             int len;
-	    char* buf = mmalloc(strlen(user)*2+4);
+	    char* buf = mmalloc((strlen(pass) + strlen(user)) * 2 + 4);
 	    char *userpass = mmalloc(strlen(user) + strlen(pass) + 2);
 	    sprintf(userpass, "%s:%s", user, pass);
             len=fmt_base64(buf,userpass,strlen(userpass));

@@ -1,3 +1,9 @@
+Sun Feb 15 12:52:25 CET 2004 (tk)
+---------------------------------
+  * freshclam: fixed proxy user/pass buffer overflow (it was causing
+	       problems with HTTPProxy* directives). Thanks to
+	       Bill Maidment <bill*maidment.com.au>.
+
 Sun Feb 15 08:50:21 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	added blobClose and blobCmp to reduce likelyhood of scanning the
