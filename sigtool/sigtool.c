@@ -80,6 +80,7 @@ int scanfile(const char *cmd, const char *str, const char *file)
     while(fgets(buffer, LINE, pd)) {
 	if(strstr(buffer, str)) {
 	    free(command);
+            fclose(pd);
 	    return 1; /* found */
 	}
     }

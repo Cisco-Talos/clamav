@@ -79,7 +79,7 @@ int cli_addpatt(struct cl_node *root, struct cli_patt *pattern)
     return 0;
 }
 
-int cli_enqueue(struct nodelist **bfs, struct cl_node *n)
+static int cli_enqueue(struct nodelist **bfs, struct cl_node *n)
 {
 	struct nodelist *new;
 
@@ -95,7 +95,7 @@ int cli_enqueue(struct nodelist **bfs, struct cl_node *n)
     return 0;
 }
 
-struct cl_node *cli_dequeue(struct nodelist **bfs)
+static struct cl_node *cli_dequeue(struct nodelist **bfs)
 {
 	struct nodelist *handler, *prev = NULL;
 	struct cl_node *pt;
@@ -121,7 +121,7 @@ struct cl_node *cli_dequeue(struct nodelist **bfs)
     }
 }
 
-int cli_maketrans(struct cl_node *root)
+static int cli_maketrans(struct cl_node *root)
 {
 	struct nodelist *bfs = NULL;
 	struct cl_node *child, *node;
@@ -164,7 +164,7 @@ int cl_buildtrie(struct cl_node *root)
     return cli_maketrans(root);
 }
 
-void cli_freepatt(struct cli_patt *list)
+static void cli_freepatt(struct cli_patt *list)
 {
 	struct cli_patt *handler, *prev;
 
@@ -182,7 +182,7 @@ void cli_freepatt(struct cli_patt *list)
 
 void cl_freetrie(struct cl_node *root)
 {
-	int i;
+	unsigned int i;
 
     for(i = 0; i < root->nodes; i++) {
 	cli_freepatt(root->nodetable[i]->list);
@@ -197,7 +197,8 @@ int cl_scanbuff(const char *buffer, unsigned int length, char **virname, const s
 {
 	struct cl_node *current;
 	struct cli_patt *pt;
-	int i, position, *partcnt;
+	int position, *partcnt;
+        unsigned int i;
 
     current = (struct cl_node *) root;
 
@@ -248,7 +249,7 @@ int cli_findpos(const char *buffer, int offset, int length, const struct cli_pat
 {
 	int bufferpos = offset + CL_MIN_LENGTH;
 	int postfixend = offset + length;
-	int i;
+	unsigned int i;
 
 
     for(i = CL_MIN_LENGTH; i < pattern->length; i++) {

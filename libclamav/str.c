@@ -20,6 +20,8 @@
 #include "clamav-config.h"
 #endif
 
+#include "str.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,7 +31,7 @@
 #include "others.h"
 #include "defaults.h"
 
-int cli_hex2int(int c)
+static int cli_hex2int(int c)
 {
 	int l = tolower(c);
 
@@ -91,7 +93,7 @@ char *cl_str2hex(const char *string, unsigned int len)
 	char *hexstr;
 	char HEX[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 		       'a', 'b', 'c', 'd', 'e', 'f' };
-	int i, j;
+	unsigned int i, j;
 
     if((hexstr = (char *) cli_calloc(2 * len + 1, sizeof(char))) == NULL)
 	return NULL;
@@ -148,7 +150,7 @@ void cli_chomp(char *string)
  * doesn't have <fieldno> fields or not enough memory is available.
  * The caller has to free() the result afterwards.
  */
-char *cli_strtok(const char *line, int fieldno, char *delim)
+char *cli_strtok(const char *line, int fieldno, const char *delim)
 {
     int counter = 0, i, j;
     char *buffer = NULL;

@@ -80,7 +80,7 @@ extern "C"
 /* ------------------------------------------------------------------------ */
 
 /* detected by clamav/configure */
-#if WORDS_LITTLEENDIAN
+#if 1 - WORDS_BIGENDIAN
 #define NON_INTEL_BYTE_ORDER
 #endif
 

@@ -1,3 +1,9 @@
+Tue Mar  9 23:49:06 CET 2004 (tk)
+---------------------------------
+  * libclamav, sigtool: small code cleanups (Dirk Mueller <mueller*kde.org>)
+  * libclamav: unrarlib: properly detect little endian (Dirk Mueller)
+  * clamscan: do not print "Excluded" messages with -i (reported by Gordon E.)
+
 Tue Mar  9 12:36:10 GMT 2004 (trog)
 -----------------------------------
   * clamd/others.c: fix includes
