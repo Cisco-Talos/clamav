@@ -94,7 +94,7 @@ int cl_loaddb(const char *filename, struct cl_node **root, int *virnum)
 	return CL_EMEM;
 
     memset(buffer, 0, FILEBUFF);
-    /* check for CVD file */
+    /* test for CVD file */
     fgets(buffer, 12, fd);
     rewind(fd);
 

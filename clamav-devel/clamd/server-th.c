@@ -75,16 +75,19 @@ void *threadscanner(void *arg)
 void *threadwatcher(void *arg)
 {
 	struct thrwarg *thwarg = (struct thrwarg *) arg;
-	struct thrarg *tharg;
-	pthread_attr_t thattr;
 	struct cfgstruct *cpt;
 	sigset_t sigset;
-	int i, j, ret, maxwait, virnum;
+	int i, j, ret, virnum;
 	unsigned long int timer = 0;
 	unsigned int timeout, threads, selfchk;
 	short int need_wait = 0, do_loop = 0, db_problem = 0;
 	const char *dbdir;
 	struct cl_stat dbstat;
+#ifdef CLAMUKO
+	struct thrarg *tharg;
+	pthread_attr_t thattr;
+	int maxwait;
+#endif
 
 
     /* ignore all signals (except for SIGSEGV) */

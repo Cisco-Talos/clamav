@@ -32,6 +32,7 @@
 #include <arpa/inet.h>
 #include <clamav.h>
 #include <sys/wait.h>
+#include <dirent.h>
 
 #include "options.h"
 #include "others.h"
@@ -51,6 +52,10 @@ char *getdsig(const char *host, const char *user, const char *data);
 void cvdinfo(struct optstruct *opt);
 int build(struct optstruct *opt);
 int unpack(struct optstruct *opt);
+int listdb(const char *filename);
+int listdir(const char *dirname);
+void listsigs(struct optstruct *opt);
+int cli_rmdirs(const char *dirname); /* libclamav's internal */
 
 int scanfile(const char *cmd, const char *str, const char *file)
 {
@@ -215,10 +220,14 @@ void sigtool(struct optstruct *opt)
 
 	cvdinfo(opt);
 
+    } else if(optl(opt, "list-sigs")) {
+
+	listsigs(opt);
+
     } else {
-	    int jmp, lastjmp, end, found = 0, exec = 0, pos, filesize,
+	    int jmp, lastjmp = 0, end, found = 0, exec = 0, pos, filesize,
 		maxsize = 0, ret;
-	    char *c, *s, *f, *tmp, *signame, *bsigname, *f2;
+	    char *c, *s, *f, *tmp, *signame, *bsigname, *f2 = NULL;
 	    FILE *fd, *wd;
 
 	if(!optc(opt, 'c')) {
@@ -608,7 +617,7 @@ int build(struct optstruct *opt)
     /* builder - question */
     fflush(stdin);
     mprintf("Builder id: ");
-    fscanf(stdin, "%s", &smbuff);
+    fscanf(stdin, "%s", smbuff);
 
     /* digital signature */
     fd = fopen(gzfile, "rb");
@@ -705,7 +714,7 @@ void help(void)
 {
     mprintf("\n");
     mprintf("                Clam AntiVirus: Signature Tool (sigtool)  "VERSION"\n");
-    mprintf("                (c) 2002, 2003 Tomasz Kojm <tkojm@clamav.net>\n\n");
+    mprintf("                (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>\n\n");
 
     mprintf("    --help                 -h              show help\n");
     mprintf("    --version              -V              print version number and exit\n");
@@ -723,6 +732,7 @@ void help(void)
     mprintf("    --server=ADDR                          ClamAV Signing Service address\n");
     mprintf("    --unpack=FILE          -u FILE         Unpack a CVD file\n");
     mprintf("    --unpack-current=NAME                  Unpack local CVD\n");
+    mprintf("    --list-sigs[=FILE]                     List virus signatures\n");
     mprintf("\n");
 
     exit(0);
@@ -820,4 +830,182 @@ int unpack(struct optstruct *opt)
 
     fclose(fd);
     exit(0);
+}
+
+int listdb(const char *filename)
+{
+	FILE *fd, *tmpd;
+	char *buffer, *pt, *start, *dir, *tmp;
+	int line = 0, bytes;
+	const char *tmpdir;
+
+
+    if((fd = fopen(filename, "rb")) == NULL) {
+	mprintf("!listdb(): Can't open file %s\n", filename);
+	return -1;
+    }
+
+    if(!(buffer = (char *) mmalloc(FILEBUFF))) {
+	mprintf("!listdb(): Can't allocate memory.\n");
+	return -1;
+    }
+
+    memset(buffer, 0, FILEBUFF);
+    /* check for CVD file */
+    fgets(buffer, 12, fd);
+    rewind(fd);
+
+    if(!strncmp(buffer, "ClamAV-VDB:", 11)) {
+
+	fseek(fd, 512, SEEK_SET);
+
+	tmpdir = getenv("TMPDIR");
+	if(tmpdir == NULL)
+#ifdef P_tmpdir
+	    tmpdir = P_tmpdir;
+#else
+	    tmpdir = "/tmp";
+#endif
+
+	dir = cl_gentemp(tmpdir);
+	if(mkdir(dir, 0700)) {
+	    mprintf("!listdb(): Can't create temporary directory %s\n", dir);
+	    free(buffer);
+	    fclose(fd);
+	    return -1;
+	}
+
+	/* FIXME: it seems there is some problem with current position indicator
+	* after gzdopen() call in cli_untgz(). Temporarily we need this wrapper:
+	*/
+
+	/* start */
+
+	tmp = cl_gentemp(tmpdir);
+	if((tmpd = fopen(tmp, "wb+")) == NULL) {
+	    mprintf("!listdb(): Can't create temporary file %s\n", tmp);
+	    free(dir);
+	    free(tmp);
+	    free(buffer);
+	    fclose(fd);
+	    return -1;
+	}
+
+	while((bytes = fread(buffer, 1, FILEBUFF, fd)) > 0)
+	    fwrite(buffer, 1, bytes, tmpd);
+
+	free(buffer);
+	fclose(fd);
+
+	fflush(tmpd);
+	fseek(tmpd, 0L, SEEK_SET);
+
+	if(cli_untgz(fileno(tmpd), dir)) {
+	    mprintf("!listdb(): Can't unpack CVD file.\n");
+	    cli_rmdirs(dir);
+	    free(dir);
+	    unlink(tmp);
+	    free(tmp);
+	    free(buffer);
+	    return -1;
+	}
+
+	fclose(tmpd);
+	unlink(tmp);
+	free(tmp);
+
+	/* wrapper end */
+
+	/* list extracted directory */
+	listdir(dir);
+
+	cli_rmdirs(dir);
+	free(dir);
+
+	return 0;
+    }
+
+
+    /* old style database */
+
+    while(fgets(buffer, FILEBUFF, fd)) {
+	line++;
+	pt = strchr(buffer, '=');
+	if(!pt) {
+	    mprintf("!listdb(): Malformed pattern line %d (file %s).\n", line, filename);
+	    fclose(fd);
+	    free(buffer);
+	    return -1;
+	}
+
+	start = buffer;
+	*pt = 0;
+
+	if((pt = strstr(start, " (Clam)")))
+	    *pt = 0;
+
+	mprintf("%s\n", start);
+    }
+
+    fclose(fd);
+    free(buffer);
+    return 0;
+}
+
+int listdir(const char *dirname)
+{
+	DIR *dd;
+	struct dirent *dent;
+	char *dbfile;
+
+
+    if((dd = opendir(dirname)) == NULL) {
+        mprintf("!Can't open directory %s\n", dirname);
+        return -1;
+    }
+
+    while((dent = readdir(dd))) {
+	if(dent->d_ino) {
+	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") &&
+	    (cli_strbcasestr(dent->d_name, ".db")  ||
+	     cli_strbcasestr(dent->d_name, ".db2") ||
+	     cli_strbcasestr(dent->d_name, ".cvd"))) {
+
+		dbfile = (char *) mcalloc(strlen(dent->d_name) + strlen(dirname) + 2, sizeof(char));
+
+		if(!dbfile) {
+		    mprintf("!listdir(): Can't allocate memory.\n");
+		    closedir(dd);
+		    return -1;
+		}
+		sprintf(dbfile, "%s/%s", dirname, dent->d_name);
+
+		if(listdb(dbfile)) {
+		    mprintf("!listdb(): error listing database %s\n", dbfile);
+		    free(dbfile);
+		    closedir(dd);
+		    return -1;
+		}
+		free(dbfile);
+	    }
+	}
+    }
+
+    closedir(dd);
+    return 0;
+}
+
+void listsigs(struct optstruct *opt)
+{
+	int ret;
+	const char *name;
+
+    mprintf_stdout = 1;
+
+    if((name = getargl(opt, "list-sigs")))
+	ret = listdb(name);
+    else
+	ret = listdir(cl_retdbdir());
+
+    return ret ? exit(1) : exit(0);
 }
