@@ -1,3 +1,7 @@
+Sat Jan 10 13:02:43 GMT 2004 (njh)
+----------------------------------
+  * libclamav: Added BinHex compression support
+
 Fri Jan  9 18:27:19 GMT 2004 (njh)
 ----------------------------------
   * libclamav: ParseMimeHeader could corrupt arg
