@@ -156,7 +156,7 @@ int clamav_rmdirs(const char *dir)
 	    return -1;
 	case 0:
 #ifndef C_CYGWIN
-	    if(!getuid()) { 
+	    if(!geteuid()) { 
 		if((user = getpwnam(UNPUSER)) == NULL)
 		    return -3;
 

@@ -199,7 +199,7 @@ void clamd(struct optstruct *opt)
     }
 
     /* drop priviledges */
-    if(getuid() == 0 && (cpt = cfgopt(copt, "User"))) {
+    if(geteuid() == 0 && (cpt = cfgopt(copt, "User"))) {
 	if((user = getpwnam(cpt->strarg)) == NULL) {
 	    fprintf(stderr, "ERROR: Can't get information about user %s.\n", cpt->strarg);
 	    logg("!Can't get information about user %s.\n", cpt->strarg);

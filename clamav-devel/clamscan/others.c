@@ -73,7 +73,7 @@ int checkaccess(const char *path, const char *username, int mode)
 	struct passwd *user;
 	int ret = 0, status;
 
-    if(!getuid()) {
+    if(!geteuid()) {
 
 	if((user = getpwnam(username)) == NULL) {
 	    return -1;
