@@ -88,7 +88,7 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
     if(bread <= 0) {
 	logg("!Command parser: read() failed.\n");
 	/* at least try to display this error message */
-	mdprintf(desc, "ERROR: Command parser: read() failed.\n");
+	/* mdprintf(desc, "ERROR: Command parser: read() failed.\n"); */
 	return -1;
     }
 
