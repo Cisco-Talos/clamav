@@ -148,12 +148,18 @@ static const struct cli_smagic_s cli_smagic[] = {
     {"68726566",       "HTML data", CL_TYPE_HTML},	/* href */
     {"48726566",       "HTML data", CL_TYPE_HTML},	/* Href */
     {"48524546",       "HTML data", CL_TYPE_HTML},	/* HREF */
+    {"3c68746d6c3e",   "HTML data", CL_TYPE_HTML},      /* <html> */
+    {"3c48544d4c3e",   "HTML data", CL_TYPE_HTML},      /* <HTML> */
+    {"3c48746d6c3e",   "HTML data", CL_TYPE_HTML},      /* <Html> */
     {"3c686561643e",   "HTML data", CL_TYPE_HTML},      /* <head> */
     {"3c484541443e",   "HTML data", CL_TYPE_HTML},      /* <HEAD> */
     {"3c486561643e",   "HTML data", CL_TYPE_HTML},      /* <Head> */
     {"3c666f6e74",     "HTML data", CL_TYPE_HTML},	/* <font */
     {"3c466f6e74",     "HTML data", CL_TYPE_HTML},	/* <Font */
     {"3c464f4e54",     "HTML data", CL_TYPE_HTML},	/* <FONT */
+    {"3c696d67",       "HTML data", CL_TYPE_HTML},      /* <img */
+    {"3c494d47",       "HTML data", CL_TYPE_HTML},      /* <IMG */
+    {"3c496d67",       "HTML data", CL_TYPE_HTML},      /* <Img */
     {"3c736372697074", "HTML data", CL_TYPE_HTML},	/* <script */
     {"3c536372697074", "HTML data", CL_TYPE_HTML},	/* <Script */
     {"3c534352495054", "HTML data", CL_TYPE_HTML},	/* <SCRIPT */
