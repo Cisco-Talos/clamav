@@ -1,3 +1,7 @@
+Mon Mar 22 09:28:04 GMT 2004 (trog)
+-----------------------------------
+  * libclamav/vba_extract.c: minor cleanup
+
 Sun Mar 21 17:30:22 GMT 2004 (njh)
 ----------------------------------
   * libclamav:	Scan bounce messages with no headers for encoded viruses/worms
