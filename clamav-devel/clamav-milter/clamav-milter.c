@@ -330,9 +330,14 @@
  *				<Christian.Pelissier@onera.fr>. Store different
  *				day's quarantines in different directories to
  *				make them easier to manage
+ *	0.70n	20/4/04	Allow for "i" macro not defined in sendmail.cf
+ *			clamfi_connect: print better message if hostaddr is null
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.78  2004/04/20 08:13:15  nigelhorne
+ * Print better message if hostaddr is null
+ *
  * Revision 1.77  2004/04/19 22:11:20  nigelhorne
  * Many changes
  *
@@ -549,9 +554,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.77 2004/04/19 22:11:20 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.78 2004/04/20 08:13:15 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.70m"
+#define	CM_VERSION	"0.70n"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1574,7 +1579,9 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	}
 	if(hostaddr == NULL) {
 		if(use_syslog)
-			syslog(LOG_ERR, "clamfi_connect: hostaddr is null");
+			syslog(LOG_ERR,
+				"clamfi_connect: hostaddr for '%s' is null",
+				hostname);
 		return cl_error;
 	}
 
@@ -1758,7 +1765,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 	privdata = (struct privdata *)cli_calloc(1, sizeof(struct privdata));
 	if(privdata == NULL)
-		return SMFIS_TEMPFAIL;
+		return cl_error;
 
 	privdata->dataSocket = -1;	/* 0.4 */
 	privdata->cmdSocket = -1;	/* 0.4 */
@@ -1797,7 +1804,7 @@ clamfi_envrcpt(SMFICTX *ctx, char **argv)
 		privdata->to = cli_realloc(privdata->to, sizeof(char *) * (privdata->numTo + 2));
 
 	if(privdata->to == NULL)
-		return SMFIS_TEMPFAIL;
+		return cl_error;
 
 	privdata->to[privdata->numTo] = strdup(argv[0]);
 	privdata->to[++privdata->numTo] = NULL;
@@ -1939,10 +1946,13 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 	if(streamMaxLength > 0L) {
 		privdata->numBytes += (long)len;
 		if(privdata->numBytes > streamMaxLength) {
-			if(use_syslog)
+			if(use_syslog) {
+				const char *sendmailId = smfi_getsymval(ctx, "i");
+				if(sendmailId == NULL)
+					sendmailId = "Unknown";
 				syslog(LOG_NOTICE, "%s: Message more than StreamMaxLength (%ld) bytes - not scanned\n",
-					smfi_getsymval(ctx, "i"),
-					streamMaxLength);
+					sendmailId, streamMaxLength);
+			}
 			clamfi_cleanup(ctx);	/* not needed, but just to be safe */
 			return SMFIS_ACCEPT;
 		}
@@ -2049,6 +2059,8 @@ clamfi_eom(SMFICTX *ctx)
 	privdata->cmdSocket = -1;
 
 	sendmailId = smfi_getsymval(ctx, "i");
+	if(sendmailId == NULL)
+		sendmailId = "Unknown";
 
 	if(strstr(mess, "ERROR") != NULL) {
 		if(strstr(mess, "Size exceeded") != NULL) {
@@ -2110,7 +2122,7 @@ clamfi_eom(SMFICTX *ctx)
 
 		if(err == NULL) {
 			clamfi_cleanup(ctx);
-			return SMFIS_TEMPFAIL;
+			return cl_error;
 		}
 
 		/*

@@ -1,3 +1,9 @@
+Tue Apr 20 09:13:46 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Print a better message if hostaddr is null in
+		clamfi_connect()
+	Handle "i" macro not being set in sendmail.cf
+
 Mon Apr 19 23:11:48 BST 2004 (njh)
 ----------------------------------
   * clamav-milter: Added --from
