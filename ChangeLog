@@ -1,3 +1,8 @@
+Wed Dec 10 12:01:27 GMT 2003 (njh)
+----------------------------------
+  * clamav-milter: Timeout on waiting for data from clamd, by honouring
+  	ThreadTimeout in clamav.conf
+
 Tue Dec  9 09:22:46 GMT 2003 (njh)
 ----------------------------------
   * clamav-milter: Use the location of sendmail discovered by configure
