@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: text.c,v $
+ * Revision 1.13  2004/12/08 19:03:41  nigelhorne
+ * Fix compilation error on Solaris
+ *
  * Revision 1.12  2004/12/04 16:03:55  nigelhorne
  * Text/plain now handled as no encoding
  *
@@ -45,10 +48,14 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: text.c,v 1.12 2004/12/04 16:03:55 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: text.c,v 1.13 2004/12/08 19:03:41 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
+#endif
+
+#ifndef	CL_DEBUG
+#define	NDEBUG	/* map CLAMAV debug onto standard */
 #endif
 
 #include <stdlib.h>
