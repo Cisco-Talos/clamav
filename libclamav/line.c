@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: line.c,v $
+ * Revision 1.3  2004/08/25 12:30:36  nigelhorne
+ * Use memcpy rather than strcpy
+ *
  * Revision 1.2  2004/08/21 11:57:57  nigelhorne
  * Use line.[ch]
  *
@@ -24,7 +27,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: line.c,v 1.2 2004/08/21 11:57:57 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: line.c,v 1.3 2004/08/25 12:30:36 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -84,13 +87,16 @@ lineGetData(const line_t *line)
 line_t *
 lineCreate(const char *data)
 {
-	line_t *ret = (line_t *)cli_malloc(strlen(data) + 2);
+	const size_t size = strlen(data);
+	line_t *ret = (line_t *)cli_malloc(size + 2);
 
 	if(ret == NULL)
 		return NULL;
 
 	ret[0] = (char)1;
-	strcpy(&ret[1], data);
+	/*strcpy(&ret[1], data);*/
+	memcpy(&ret[1], data, size);
+	ret[size + 1] = '\0';
 
 	return ret;
 }

@@ -1,6 +1,10 @@
+Wed Aug 25 13:32:22 BST 2004 (njh)
+----------------------------------
+  * libclamav/line.c:	Small code optimisation
+
 Wed Aug 25 12:45:53 BST 2004 (njh)
 ----------------------------------
-  * clamav-milter Give hint about what do to if the running as root warning
+  * clamav-milter: Give hint about what do to if the running as root warning
 			appears
 		Optimise the sending of headers to clamd
 		Give better SMTP status message when asking for retransmit
