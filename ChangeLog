@@ -1,3 +1,7 @@
+Fri Sep 17 14:47:53 BST 2004 (njh)
+----------------------------------
+  * libclamav:	Scan  yEnc mime attachments
+
 Fri Sep 17 11:56:58 BST 2004 (njh)
 ----------------------------------
   * libclamav:	Handle even more attempts to falsify the mime type
