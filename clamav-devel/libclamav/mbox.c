@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.175  2004/11/11 22:15:46  nigelhorne
+ * Rewrite handling of folded headers
+ *
  * Revision 1.174  2004/11/10 10:08:45  nigelhorne
  * Fix escaped parenthesis in rfc822 comments
  *
@@ -510,7 +513,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.174 2004/11/10 10:08:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.175 2004/11/11 22:15:46 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -997,9 +1000,9 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 	const text *t;
 	message *ret;
 	bool anyHeadersFound = FALSE;
-	bool Xheader = FALSE;
 	int commandNumber = -1;
 	char *fullline = NULL;
+	size_t fulllinelength = 0;
 
 	cli_dbgmsg("parseEmailHeaders\n");
 
@@ -1024,44 +1027,76 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 				 */
 				cli_dbgmsg("End of header information\n");
 				inHeader = FALSE;
-			} else if(((buffer[0] == '\t') || (buffer[0] == ' ') || contMarker) &&
-				  (!Xheader)) {
-				/*
-				 * Section B.2 of RFC822 says TAB or SPACE means
-				 * a continuation of the previous entry.
-				 *
-				 * Add all the arguments on the line
-				 */
+			} else {
 				char *ptr;
-				char copy[LINE_LENGTH + 1];
 				bool inquotes = FALSE;
 				bool arequotes = FALSE;
+				const char *qptr;
+				int quotes;
 #ifdef CL_THREAD_SAFE
 				char *strptr;
 #endif
+				char cmd[LINE_LENGTH + 1];
+
+				if(fullline == NULL) {
+					commandNumber = tableFind(rfc821, buffer);
+					fullline = strdup("");
+					fulllinelength = 1;
+				}
+				fulllinelength += strlen(buffer);
+				fullline = cli_realloc(fullline, fulllinelength);
+				strcat(fullline, buffer);
 
 				contMarker = continuationMarker(buffer);
+				if(contMarker)
+					continue;
+
+				if(t->t_next && (t->t_next->t_line != NULL)) {
+					const char *next = lineGetData(t->t_next->t_line);
+
+					/*
+					 * Section B.2 of RFC822 says TAB or SPACE means
+					 * a continuation of the previous entry.
+					 *
+					 * Add all the arguments on the line
+					 */
+					if((next[0] == '\t') || (next[0] == ' '))
+						continue;
+				}
+
+				quotes = 0;
+				for(qptr = buffer; *qptr; qptr++)
+					if(*qptr == '\"')
+						quotes++;
+
+				if(quotes & 1) {
+					contMarker = TRUE;
+					continue;
+				}
+
+				ptr = rfc822comments(fullline);
+				if(ptr) {
+					free(fullline);
+					fullline = ptr;
+				}
+				if(cli_strtokbuf(fullline, 0, ":", cmd) != NULL) {
+					anyHeadersFound = TRUE;
+					commandNumber = tableFind(rfc821, cmd);
+				}
+
 				switch(commandNumber) {
 					case CONTENT_TRANSFER_ENCODING:
 					case CONTENT_DISPOSITION:
 					case CONTENT_TYPE:
 						break;
 					default:
+						free(fullline);
+						fullline = NULL;
 						continue;
 				}
 
-				if(fullline) {
-					/*
-					 * FIXME: Handle more than one line spanned by
-					 * quote marks, and handle two very long lines
-					 */
-					snprintf(copy, sizeof(copy) - 1, "%s%s", fullline, buffer);
-					free(fullline);
-					fullline = NULL;
-				} else {
-					assert(strlen(buffer) < sizeof(copy));
-					strcpy(copy, buffer);
-				}
+				if(parseEmailHeader(ret, fullline, rfc821) < 0)
+					continue;
 
 				/*
 				 * Ensure that the colon in headers such as
@@ -1069,7 +1104,7 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 				 * separator
 				 *	boundary="=.J:gysAG)N(3_zv"
 				 */
-				for(ptr = copy; *ptr; ptr++)
+				for(ptr = fullline; *ptr; ptr++)
 					if(*ptr == '\"')
 						inquotes = !inquotes;
 					else if(inquotes) {
@@ -1078,7 +1113,7 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 					}
 
 #ifdef	CL_THREAD_SAFE
-				for(ptr = strtok_r(copy, ";", &strptr); ptr; ptr = strtok_r(NULL, ":", &strptr))
+				for(ptr = strtok_r(fullline, ";", &strptr); ptr; ptr = strtok_r(NULL, ":", &strptr))
 					if(strchr(ptr, '=')) {
 						if(arequotes) {
 							char *p2;
@@ -1088,7 +1123,7 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 						messageAddArguments(ret, ptr);
 					}
 #else
-				for(ptr = strtok(copy, ";"); ptr; ptr = strtok(NULL, ":"))
+				for(ptr = strtok(fullline, ";"); ptr; ptr = strtok(NULL, ":"))
 					if(strchr(ptr, '=')) {
 						if(arequotes) {
 							char *p2;
@@ -1098,35 +1133,8 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 						messageAddArguments(ret, ptr);
 					}
 #endif
-			} else {
-				const char *qptr;
-				int quotes = 0;
-				bool parsed = FALSE;
-				char cmd[LINE_LENGTH + 1];
-
-				Xheader = (bool)(buffer[0] == 'X');
-				contMarker = continuationMarker(buffer);
-
-				if(!Xheader)
-					for(qptr = buffer; *qptr; qptr++)
-						if(*qptr == '\"')
-							quotes++;
-
+				free(fullline);
 				fullline = NULL;
-
-				if(quotes & 1) {
-					contMarker = TRUE;
-					fullline = strdup(buffer);
-					parsed = TRUE;
-				} else if((parseEmailHeader(ret, buffer, rfc821) >= 0) ||
-					  (strncasecmp(buffer, "From ", 5) == 0))
-					parsed = TRUE;
-
-				if(parsed)
-					if(cli_strtokbuf(buffer, 0, ":", cmd) != NULL) {
-						anyHeadersFound = TRUE;
-						commandNumber = tableFind(rfc821, cmd);
-					}
 			}
 		} else {
 			/*cli_dbgmsg("Add line to body '%s'\n", buffer);*/
@@ -1136,8 +1144,12 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 	}
 
 	if(fullline) {
-		if(*fullline)
-			cli_warnmsg("parseEmailHeaders: Fullline set '%s' - report to bugs@clamav.net\n");
+		if(*fullline) switch(commandNumber) {
+			case CONTENT_TRANSFER_ENCODING:
+			case CONTENT_DISPOSITION:
+			case CONTENT_TYPE:
+				cli_warnmsg("parseEmailHeaders: Fullline set '%s' - report to bugs@clamav.net\n", fullline);
+		}
 		free(fullline);
 	}
 
@@ -1466,6 +1478,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						inMimeHead = continuationMarker(line);
 						messageAddArgument(aMessage, line);
 					} else if(inhead) {	/* handling normal headers */
+						char *ptr;
+
 						if(line == NULL) {
 							/* empty line */
 							inhead = 0;
@@ -1504,13 +1518,17 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						inMimeHead = continuationMarker(line);
 						if(!inMimeHead) {
 							const text *next = t_line->t_next;
-							char *fullline = strdup(line);
+							char *fullline;
 							int quotes = 0;
 							const char *qptr;
 
 							assert(strlen(line) <= LINE_LENGTH);
 
-							for(qptr = line; *qptr; qptr++)
+							fullline = rfc822comments(line);
+							if(fullline == NULL)
+								fullline = strdup(line);
+
+							for(qptr = fullline; *qptr; qptr++)
 								if(*qptr == '\"')
 									quotes++;
 
@@ -1523,7 +1541,6 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							 */
 							while(next && next->t_line) {
 								const char *data = lineGetData(next->t_line);
-								char *ptr;
 
 								if((!isspace(data[0])) &&
 								   ((quotes & 1) == 0))
@@ -1554,7 +1571,12 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							cli_dbgmsg("Multipart %d: About to parse header '%s'\n",
 								multiparts, line);
 
-							parseEmailHeader(aMessage, line, rfc821Table);
+							ptr = rfc822comments(line);
+
+							parseEmailHeader(aMessage, (ptr) ? ptr : line, rfc821Table);
+
+							if(ptr)
+								free(ptr);
 						}
 					} else if(boundaryStart(line, boundary)) {
 						inhead = 1;
@@ -2255,12 +2277,22 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 static int
 boundaryStart(const char *line, const char *boundary)
 {
+	char *ptr, *p;
+
 	if(line == NULL)
 		return 0;	/* empty line */
 
 	cli_dbgmsg("boundaryStart: line = '%s' boundary = '%s'\n", line, boundary);
-	if(*line++ != '-')
+
+	p = ptr = rfc822comments(line);
+	if(ptr == NULL)
+		ptr = line;
+
+	if(*ptr++ != '-') {
+		if(p)
+			free(p);
 		return 0;
+	}
 
 	/*
 	 * Gibe.B3 is broken, it has:
@@ -2277,12 +2309,16 @@ boundaryStart(const char *line, const char *boundary)
 	 * boundary="1" we want to ensure that we don't break out of every line
 	 * that has -1 in it instead of starting --1. This needs some more work.
 	 */
-	if(strstr(line, boundary) != NULL) {
+	if(strstr(ptr, boundary) != NULL) {
 		cli_dbgmsg("boundaryStart: found %s in %s\n", boundary, line);
+		if(p)
+			free(p);
 		return 1;
 	}
-	if(*line++ != '-')
+	if(*ptr++ != '-')
 		return 0;
+	if(p)
+		free(p);
 	return strcasecmp(line, boundary) == 0;
 }
 

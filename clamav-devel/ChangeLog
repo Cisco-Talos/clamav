@@ -1,3 +1,7 @@
+Thu Nov 11 22:17:31 GMT 2004 (njh)
+----------------------------------
+  * libclamav:		Rewrote the parsing of headers to improve folded lines
+
 Wed Nov 10 10:12:18 GMT 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Fix escaped parenthesis in rfc822 comments
