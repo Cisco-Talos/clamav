@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.64  2004/04/05 09:32:20  nigelhorne
+ * Added SCAN_TO_DISC define
+ *
  * Revision 1.63  2004/04/01 15:32:34  nigelhorne
  * Graceful exit if messageAddLine fails in strdup
  *
@@ -180,7 +183,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.63 2004/04/01 15:32:34 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.64 2004/04/05 09:32:20 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -321,6 +324,8 @@ static	const	struct tableinit {
 #define	O_BINARY	0
 #endif
 
+#define	SAVE_TO_DISC	/* multipart/message are saved in a temporary file */
+
 /*
  * TODO: when signal handling is added, need to remove temp files when a
  * signal is received
@@ -388,7 +393,6 @@ cl_mbox(const char *dir, int desc)
 				 */
 				body = parseEmailHeaders(m, rfc821Table);
 				messageDestroy(m);
-				messageClean(body);
 				if(messageGetBody(body))
 					if(!parseEmailBody(body,  NULL, 0, NULL, dir, rfc821Table, subtypeTable)) {
 						messageReset(body);
@@ -416,6 +420,12 @@ cl_mbox(const char *dir, int desc)
 			/*
 			 * No need to preprocess such as cli_chomp() since
 			 * that'll be done by parseEmailHeaders()
+			 *
+			 * TODO: this needlessly creates a message object,
+			 * it'd be better if parseEmailHeaders could also
+			 * read in from a file. I do not want to lump the
+			 * parseEmailHeaders code here, that'd be a duplication
+			 * of code I want to avoid
 			 */
 			if(messageAddLine(m, buffer, 1) < 0)
 				break;
@@ -430,7 +440,6 @@ cl_mbox(const char *dir, int desc)
 	/*
 	 * Write out the last entry in the mailbox
 	 */
-	messageClean(body);
 	if(messageGetBody(body))
 		if(!parseEmailBody(body, NULL, 0, NULL, dir, rfc821Table, subtypeTable))
 			retcode = -1;
@@ -458,7 +467,7 @@ cl_mbox(const char *dir, int desc)
 static message *
 parseEmailHeaders(const message *m, const table_t *rfc821Table)
 {
-	bool inContinuationHeader = FALSE;
+	bool inContinuationHeader = FALSE;	/* state machine: ugh */
 	bool inHeader = TRUE;
 	const text *t;
 	message *ret;
@@ -516,6 +525,8 @@ parseEmailHeaders(const message *m, const table_t *rfc821Table)
 			messageAddLine(ret, buffer, 0);
 		}
 	}
+
+	messageClean(ret);
 
 	cli_dbgmsg("parseEmailHeaders: return\n");
 
@@ -1023,6 +1034,22 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 							messages[i] = NULL;
 							continue;
 						}
+#ifdef	SAVE_TO_DISC
+						/*
+						 * Save this embedded message
+						 * to a temporary file
+						 */
+						saveTextPart(aMessage, dir);
+						assert(aMessage == messages[i]);
+						messageDestroy(messages[i]);
+						messages[i] = NULL;
+#else
+						/*
+						 * Scan in memory, faster but
+						 * is open to DoS attacks when
+						 * many nested levels are
+						 * involved.
+						 */
 						body = parseEmailHeaders(aMessage, rfc821Table);
 						/*
 						 * We've fininished with the
@@ -1039,7 +1066,7 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 							rc = parseEmailBody(body, blobs, nBlobs, NULL, dir, rfc821Table, subtypeTable);
 							messageDestroy(body);
 						}
-
+#endif
 						continue;
 					case MULTIPART:
 						/*
@@ -1244,8 +1271,10 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				if(m) {
 					cli_dbgmsg("Decode rfc822");
 
-					messageClean(m);
-
+					if(mainMessage && (mainMessage != messageIn)) {
+						messageDestroy(mainMessage);
+						mainMessage = NULL;
+					}
 					if(messageGetBody(m))
 						rc = parseEmailBody(m, NULL, 0, NULL, dir, rfc821Table, subtypeTable);
 

@@ -1,3 +1,11 @@
+Mon Apr  5 10:47:43 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Added SAVE_TO_DISC #define which, when activated,
+  	scans embedded RFC822 messages from disc rather than in memory. It
+	is recommended that this option is always enabled unless ClamAV is
+	to be installed on a system where many nested levels of RFC822 messages
+	cannot occur
+
 Mon Apr  5 10:16:29 BST 2004 (trog)
 -----------------------------------
   * libclamav/vba_extract.c: minor code update
