@@ -20,6 +20,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.9  2004/09/14 10:29:31  nigelhorne
+ * Fix compilation error on AIX and OSF
+ *
  * Revision 1.8  2004/09/12 23:43:45  kojm
  * return with CL_EFORMAT instead of CL_EDSIG
  *
@@ -45,7 +48,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.8 2004/09/12 23:43:45 kojm Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.9 2004/09/14 10:29:31 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -76,6 +79,10 @@ static	char	const	rcsid[] = "$Id: untar.c,v 1.8 2004/09/12 23:43:45 kojm Exp $";
 
 #endif
 
+#endif
+
+#ifndef	O_BINARY
+#define	O_BINARY	0
 #endif
 
 static int
