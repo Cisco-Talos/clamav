@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.120  2004/09/15 08:47:07  nigelhorne
+ * Cleaner way to initialise hrefs
+ *
  * Revision 1.119  2004/09/14 20:47:28  nigelhorne
  * Use new normalise code
  *
@@ -345,7 +348,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.119 2004/09/14 20:47:28 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.120 2004/09/15 08:47:07 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2144,7 +2147,8 @@ checkURLs(message *m, const char *dir)
 
 	t = tableCreate();
 
-	memset(&hrefs, '\0', sizeof(hrefs));
+	hrefs.count = 0;
+	hrefs.tag = hrefs.value = NULL;
 
 	cli_dbgmsg("checkURLs: calling html_normalise_mem\n");
 	html_normalise_mem(blobGetData(b), len, NULL, &hrefs);

@@ -1,3 +1,8 @@
+Wed Sep 15 09:47:15 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	--help now includes --max-children
+  * libclamav/mbox.c:	FOLLOWURL: Small code tidy
+
 Tue Sep 14 21:48:36 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	FOLLOWURL: now uses the new normalisation code to
