@@ -1,3 +1,7 @@
+Wed May  5 11:32:22 BST 2004 (trog)
+-----------------------------------
+  * libclamav/vba_extract.c: Add another Office2003 VBA signature.
+
 Wed May  5 10:39:58 BST 2004 (njh)
 ----------------------------------
   * libclamav/text.c:	Removed the functionality of textClean, it isn't needed
