@@ -198,6 +198,8 @@ void *thrmgr_worker(void *arg)
 		} else if (must_exit) {
 			break;
 		}
+
+		usleep(200000);
 	}
 	if (pthread_mutex_lock(&(threadpool->pool_mutex)) != 0) {
 		/* Fatal error */
