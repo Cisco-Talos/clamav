@@ -404,6 +404,11 @@ Changes
 0.72a	8/6/04	--from didn't take an option (fix to 0.71a)
 0.73	14/6/04	Up-issued
 0.73a	14/6/04	Added support for Windows SFU 3.5
+0.73b	15/6/04	Use fully qualified host name for X-Virus-Scanned header when
+			localSocket is set
+		In template files support {sendmail-variable} and support \%v
+			to send the %v string
+		Tidyup handling if the quarantine directory can't be created
 
 BUG REPORTS
 
