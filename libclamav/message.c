@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.140  2005/02/02 08:35:09  nigelhorne
+ * Improved debug message
+ *
  * Revision 1.139  2005/01/27 20:20:58  nigelhorne
  * Some Worm.Mydoom.Gen-unp were getting through
  *
@@ -414,7 +417,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.139 2005/01/27 20:20:58 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.140 2005/02/02 08:35:09 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1889,7 +1892,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 
 		} while((t_line = t_line->t_next) != NULL);
 
-		cli_dbgmsg("Exported %u bytes\n", size);
+		cli_dbgmsg("Exported %u bytes using enctype %d\n", size, enctype);
 	}
 
 	/* Verify we have nothing left to flush out */
