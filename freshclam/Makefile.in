@@ -74,17 +74,18 @@ PROGRAMS = $(bin_PROGRAMS)
 am_freshclam_OBJECTS = output.$(OBJEXT) cfgparser.$(OBJEXT) \
 	getopt.$(OBJEXT) memory.$(OBJEXT) misc.$(OBJEXT) \
 	freshclam.$(OBJEXT) options.$(OBJEXT) manager.$(OBJEXT) \
-	notify.$(OBJEXT) dns.$(OBJEXT)
+	notify.$(OBJEXT) dns.$(OBJEXT) execute.$(OBJEXT)
 freshclam_OBJECTS = $(am_freshclam_OBJECTS)
 freshclam_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/cfgparser.Po ./$(DEPDIR)/dns.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/freshclam.Po ./$(DEPDIR)/getopt.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/manager.Po ./$(DEPDIR)/memory.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/misc.Po ./$(DEPDIR)/notify.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/options.Po ./$(DEPDIR)/output.Po
+@AMDEP_TRUE@	./$(DEPDIR)/execute.Po ./$(DEPDIR)/freshclam.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/getopt.Po ./$(DEPDIR)/manager.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/memory.Po ./$(DEPDIR)/misc.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/notify.Po ./$(DEPDIR)/options.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/output.Po
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) \
@@ -225,7 +226,9 @@ freshclam_SOURCES = \
     notify.c \
     notify.h \
     dns.c \
-    dns.h
+    dns.h \
+    execute.c \
+    execute.h
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 all: all-am
@@ -301,6 +304,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cfgparser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dns.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/execute.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/freshclam.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/manager.Po@am__quote@
