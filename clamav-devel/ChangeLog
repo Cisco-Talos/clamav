@@ -1,3 +1,7 @@
+Sat Oct 16 10:02:32 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Improved handling for wraparound headers
+
 Sat Oct 16 02:41:17 CEST 2004 (tk)
 ----------------------------------
   * clamdscan: add missing support for --no-summary (problem reported by
