@@ -38,12 +38,13 @@
 #include "upx.h"
 
 #define IMAGE_DOS_SIGNATURE	    0x5a4d	    /* MZ */
+#define IMAGE_DOS_SIGNATURE_OLD	    0x4d5a          /* ZM */
 #define IMAGE_NT_SIGNATURE	    0x00004550
 #define IMAGE_OPTIONAL_SIGNATURE    0x010b
 
-#define UPX_NRV2B "\x11\xc9\x75\x20\x41\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9\x01\xdb\x73\xef\x75\x09"
-#define UPX_NRV2D "\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9\x75\x20"
-#define UPX_NRV2E "\x83\xf0\xff\x74\x75\xd1\xf8\x89\xc5\xeb\x0b\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x72\xcc"
+#define UPX_NRV2B "\x11\xdb\x11\xc9\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9\x11\xc9\x75\x20\x41\x01\xdb"
+#define UPX_NRV2D "\x83\xf0\xff\x74\x78\xd1\xf8\x89\xc5\xeb\x0b\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9"
+#define UPX_NRV2E "\xeb\x52\x31\xc9\x83\xe8\x03\x72\x11\xc1\xe0\x08\x8a\x06\x46\x83\xf0\xff\x74\x75\xd1\xf8\x89\xc5"
 
 #if WORDS_BIGENDIAN == 0
 #define EC16(v)	(v)
@@ -234,7 +235,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	struct pe_image_section_hdr *section_hdr;
 	struct stat sb;
 	char sname[9], buff[24], *tempfile;
-	int i, found, upx_success = 0;
+	int i, found, upx_success = 0, broken = 0;
 	int (*upxfn)(char *, int , char *, int) = NULL;
 
 
@@ -243,7 +244,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	return CL_EIO;
     }
 
-    if(EC16(e_magic) != IMAGE_DOS_SIGNATURE) {
+    if(EC16(e_magic) != IMAGE_DOS_SIGNATURE && EC16(e_magic) != IMAGE_DOS_SIGNATURE_OLD) {
 	cli_dbgmsg("Invalid DOS signature\n");
 	return CL_CLEAN;
     }
@@ -375,6 +376,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	strncpy(sname, section_hdr[i].Name, 8);
 	sname[8] = 0;
 	cli_dbgmsg("------------------------------------\n");
+	cli_dbgmsg("Section %d of %d\n", i, nsections);
 	cli_dbgmsg("Section name: %s\n", sname);
 	cli_dbgmsg("VirtualSize: %d\n", EC32(section_hdr[i].VirtualSize));
 	cli_dbgmsg("VirtualAddress: 0x%x\n", EC32(section_hdr[i].VirtualAddress));
@@ -414,11 +416,18 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	return CL_EIO;
     }
 
-    ep = cli_rawaddr(EC32(optional_hdr.AddressOfEntryPoint), section_hdr, nsections);
+    if((ep = cli_rawaddr(EC32(optional_hdr.AddressOfEntryPoint), section_hdr, nsections)) == -1) {
+	cli_dbgmsg("Possibly broken PE file - Entry Point @%d out of file.\n", ep);
+	broken = 1;
+    }
 
     /* simple sanity check */
-    if(EC32(section_hdr[nsections - 1].PointerToRawData) + EC32(section_hdr[nsections - 1].SizeOfRawData) > sb.st_size || ep == -1) {
-	cli_dbgmsg("Possibly broken PE file\n");
+    if(!broken && EC32(section_hdr[nsections - 1].PointerToRawData) + EC32(section_hdr[nsections - 1].SizeOfRawData) > sb.st_size) {
+	cli_dbgmsg("Possibly broken PE file - Section %d out of file (Offset@ %d, Rsize %d, Total filesize %d, EP@ %d)\n", i, EC32(section_hdr[i].PointerToRawData), EC32(section_hdr[i].SizeOfRawData), sb.st_size, ep);
+	broken = 1;
+    }
+
+    if(broken) {
 	free(section_hdr);
 	return CL_CLEAN;
     }
@@ -431,7 +440,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     /* try to find the first section with physical size == 0 */
     found = 0;
     for(i = 0; i < nsections - 1; i++) {
-	if(!section_hdr[i].SizeOfRawData) {
+	if(!section_hdr[i].SizeOfRawData && section_hdr[i].VirtualSize && section_hdr[i+1].SizeOfRawData && section_hdr[i+1].VirtualSize) {
 	    found = 1;
 	    cli_dbgmsg("UPX: empty section found - assuming UPX compression\n");
 	    break;
@@ -484,23 +493,23 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
 	/* try to detect UPX code */
 
-	if(lseek(desc, ep + 0x78, SEEK_SET) == -1) {
+	if(lseek(desc, ep + 0x69, SEEK_SET) == -1) {
 	    cli_dbgmsg("lseek() failed\n");
 	    free(section_hdr);
 	    return CL_EIO;
 	}
 
-	if(read(desc, buff, 13) != 13) {
-	    cli_dbgmsg("UPX: Can't read 13 bytes at 0x%x (%d)\n", ep + 0x78, ep + 0x78);
+	if(read(desc, buff, 21) != 21) {
+	    cli_dbgmsg("UPX: Can't read 21 bytes at 0x%x (%d)\n", ep + 0x69, ep + 0x78);
 	    return CL_EIO;
 	} else {
-	    if(cli_memstr(UPX_NRV2B, 24, buff, 13)) {
+	    if(cli_memstr(UPX_NRV2B, 24, buff, 13) || cli_memstr(UPX_NRV2B, 24, buff + 8, 13)) {
 		cli_dbgmsg("UPX: Looks like a NRV2B decompression routine\n");
 		upxfn = upx_inflate2b;
-	    } else if(cli_memstr(UPX_NRV2D, 24, buff, 13)) {
+	    } else if(cli_memstr(UPX_NRV2D, 24, buff, 13) || cli_memstr(UPX_NRV2D, 24, buff + 8, 13)) {
 		cli_dbgmsg("UPX: Looks like a NRV2D decompression routine\n");
 		upxfn = upx_inflate2d;
-	    } else if(cli_memstr(UPX_NRV2E, 24, buff, 13)) {
+	    } else if(cli_memstr(UPX_NRV2E, 24, buff, 13) || cli_memstr(UPX_NRV2E, 24, buff + 8, 13)) {
 		cli_dbgmsg("UPX: Looks like a NRV2E decompression routine\n");
 		upxfn = upx_inflate2e;
 	    }
@@ -511,7 +520,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		cli_dbgmsg("UPX: Prefered decompressor failed\n");
 	    } else {
 		upx_success = 1;
-		cli_dbgmsg("UPX: Successfuly decompressed\n");
+		cli_dbgmsg("UPX: Successfully decompressed\n");
 	    }
 	}
 
@@ -520,7 +529,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		cli_dbgmsg("UPX: NRV2B decompressor failed\n");
 	    } else {
 		upx_success = 1;
-		cli_dbgmsg("UPX: Successfuly decompressed with NRV2B\n");
+		cli_dbgmsg("UPX: Successfully decompressed with NRV2B\n");
 	    }
 	}
 
@@ -529,7 +538,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		cli_dbgmsg("UPX: NRV2D decompressor failed\n");
 	    } else {
 		upx_success = 1;
-		cli_dbgmsg("UPX: Successfuly decompressed with NRV2D\n");
+		cli_dbgmsg("UPX: Successfully decompressed with NRV2D\n");
 	    }
 	}
 
@@ -538,7 +547,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		cli_dbgmsg("UPX: NRV2E decompressor failed\n");
 	    } else {
 		upx_success = 1;
-		cli_dbgmsg("UPX: Successfuly decompressed with NRV2E\n");
+		cli_dbgmsg("UPX: Successfully decompressed with NRV2E\n");
 	    }
 	}
 
