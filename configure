@@ -9573,9 +9573,11 @@ else
   cat >conftest.$ac_ext <<_ACEOF
 #line $LINENO "configure"
 #include "confdefs.h"
-#include <netinet/in.h>
+
 #include <sys/types.h>
+#include <netinet/in.h>
 int main(int argc, char **argv) { in_port_t pt; pt = 0; return pt; }
+
 _ACEOF
 rm -f conftest$ac_exeext
 if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5

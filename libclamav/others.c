@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 1999-2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 1999 - 2004 Tomasz Kojm <tk@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -263,13 +263,13 @@ unsigned int cl_rndnum(unsigned int max)
 
 unsigned int cl_rndnum(unsigned int max)
 {
-	FILE *fd;
+	int fd;
 	unsigned int generated;
 	char *byte;
 	int size;
 
 
-    if((fd = fopen("/dev/urandom", "rb")) == NULL) {
+    if((fd = open("/dev/urandom", O_RDONLY)) < 0) {
 	cli_errmsg("!Can't open /dev/urandom.\n");
 	return -1;
     }
@@ -278,12 +278,12 @@ unsigned int cl_rndnum(unsigned int max)
     size = sizeof(generated);
     do {
 	int bread;
-	bread = fread(byte, 1, size, fd);
+	bread = read(fd, byte, 1);
 	size -= bread;
 	byte += bread;
     } while(size > 0);
 
-    fclose(fd);
+    close(fd);
     return generated % max;
 }
 #endif
