@@ -1,3 +1,7 @@
+Wed Aug 18 13:01:06 CEST 2004 (tk)
+----------------------------------
+  * libclamav/filetypes.c: add new e-mail detection rule
+
 Wed Aug 18 08:45:38 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:	If CHECKURLS is compiled in, use libcurl automatically
