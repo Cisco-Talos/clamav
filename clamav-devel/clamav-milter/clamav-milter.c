@@ -25,14 +25,14 @@
  * Installations for RedHat Linux and it's derivatives such as YellowDog:
  * 1) Ensure that you have the sendmail-devel RPM installed
  * 2) Add to /etc/mail/sendmail.mc:
- *	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clamav.sock, F=, T=S:4m;R:4m')dnl
+ *	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clmilter.sock, F=, T=S:4m;R:4m')dnl
  *	define(`confINPUT_MAIL_FILTERS', `clamav')
  * 3) Check entry in /usr/local/etc/clamav.conf of the form:
- *	LocalSocket /var/run/clamd.sock
+ *	LocalSocket /var/run/clamav/clamd.sock
  *	StreamSaveToDisk
  * 4) If you already have a filter (such as spamassassin-milter from
  * http://savannah.nongnu.org/projects/spamass-milt) add it thus:
- *	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clamav.sock, F=, T=S:4m;R:4m')dnl
+ *	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clmilter.sock, F=, T=S:4m;R:4m')dnl
  *	INPUT_MAIL_FILTER(`spamassassin', `S=local:/var/run/spamass.sock, F=, T=C:15m;S:4m;R:4m;E:10m')
  *	define(`confINPUT_MAIL_FILTERS', `spamassassin,clamav')dnl
  *	mkdir /var/run/clamav
@@ -44,9 +44,9 @@
  * 6) I suggest putting SpamAssassin first since you're more likely to get spam
  * than a virus/worm sent to you.
  * 7) Add to /etc/sysconfig/clamav-milter
- *	CLAMAV_FLAGS="--max-children=2 local:/var/run/clamav/clamav.sock"
+ *	CLAMAV_FLAGS="--max-children=2 local:/var/run/clamav/clmilter.sock"
  * or if clamd is on a different machine
- *	CLAMAV_FLAGS="--max-children=2 --server=192.168.1.9 local:/var/run/clamav/clamav.sock"
+ *	CLAMAV_FLAGS="--max-children=2 --server=192.168.1.9 local:/var/run/clamav/clmilter.sock"
  * 8) You should have received a script to put into /etc/init.d with this
  * software.
  * 9) run 'chown clamav /usr/local/sbin/clamav-milter; chmod 4700 /usr/local/sbin/clamav-milter
@@ -255,9 +255,19 @@
  *	0.67i	27/2/04	Dropping priv message now same as clamd
  *			Only use TCPwrappers when using TCP/IP to establish
  *			communications with the milter
+ *	0.67j	27/2/04	Call checkClamd() before attempting to connect, it's
+ *			a way of warning the user if they've started the
+ *			milter before clamd
+ *			checkClamd() now stashes pid in syslog
+ *			Ensure installation instructions tally with man page
+ *			and put sockets into subdirectory for security
+ *			
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.57  2004/02/27 15:27:11  nigelhorne
+ * call checkClamd on start
+ *
  * Revision 1.56  2004/02/27 09:23:56  nigelhorne
  * Don't use TCP wrappers when UNIX domain sockets are used
  *
@@ -411,9 +421,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.56 2004/02/27 09:23:56 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.57 2004/02/27 15:27:11 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.67i"
+#define	CM_VERSION	"0.67j"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -1193,6 +1203,7 @@ pingServer(int serverNumber)
 			perror("socket");
 			return 0;
 		}
+		checkClamd();
 		if(connect(sock, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
 			perror(localSocket);
 			return 0;
@@ -2527,18 +2538,16 @@ checkClamd(void)
 		perror(pidFile);
 		if(use_syslog)
 			syslog(LOG_ERR, "Can't open %s\n", pidFile);
-
 		return;
 	}
 	nbytes = read(fd, buf, sizeof(buf) - 1);
 	close(fd);
 	buf[nbytes] = '\0';
 	pid = atoi(buf);
-	if(kill(pid, 0) < 0) {
-		if(errno == ESRCH) {
-			if(use_syslog)
-				syslog(LOG_ERR, "Clamd seems to have died\n");
-			perror("clamd");
-		}
+	if((kill(pid, 0) < 0) && (errno == ESRCH)) {
+		if(use_syslog)
+			syslog(LOG_ERR, "Clamd (pid %d) seems to have died\n",
+				pid);
+		perror("clamd");
 	}
 }
