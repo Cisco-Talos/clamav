@@ -154,7 +154,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	struct stat sb;
 	char sname[9], buff[256], *tempfile;
 	int i, found, upx_success = 0, min = 0, max = 0, ret;
-	int (*upxfn)(char *, int , char *, int) = NULL;
+	int (*upxfn)(char *, int , char *, int *, uint32_t, uint32_t, uint32_t) = NULL;
 	char *src = NULL, *dest = NULL;
 	int ssize = -1, dsize = -1, ndesc;
 
@@ -717,6 +717,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 			fsync(ndesc);
 			lseek(ndesc, 0, SEEK_SET);
 
+			cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
 			if(cli_magic_scandesc(ndesc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS) {
 			    free(section_hdr);
 			    close(ndesc);
@@ -909,6 +910,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 			fsync(ndesc);
 			lseek(ndesc, 0, SEEK_SET);
 
+			cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
 			if(cli_magic_scandesc(ndesc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS) {
 			    free(section_hdr);
 			    close(ndesc);
@@ -987,7 +989,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		return CL_EMEM;
 	    }
 
-	    if((dest = (char *) cli_calloc(dsize, sizeof(char))) == NULL) {
+	    if((dest = (char *) cli_calloc(dsize + 1024 + nsections * 40, sizeof(char))) == NULL) {
 		free(section_hdr);
 		free(src);
 		return CL_EMEM;
@@ -1037,12 +1039,12 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
 		if(buff[1] != '\xbe' || skew <= 0 || skew > 0xfff ) { /* FIXME: legit skews?? */
 		    skew = 0; 
-		    if(!upxfn(src, ssize, dest, dsize))
+		    if(upxfn(src, ssize, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr.AddressOfEntryPoint)) >= 0)
 			upx_success = 1;
 
 		} else {
 		    cli_dbgmsg("UPX: UPX1 seems skewed by %d bytes\n", skew);
-		    if(!upxfn(src + skew, ssize - skew, dest, dsize) || !upxfn(src, ssize, dest, dsize))
+                    if(upxfn(src + skew, ssize - skew, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr.AddressOfEntryPoint)-skew) >= 0 || upxfn(src, ssize, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr.AddressOfEntryPoint)) >= 0)
 			upx_success = 1;
 		}
 
@@ -1053,7 +1055,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    }
 
 	    if(!upx_success && upxfn != upx_inflate2b) {
-		if(upx_inflate2b(src, ssize, dest, dsize) && upx_inflate2b(src + 0x15, ssize - 0x15, dest, dsize) ) {
+		if(upx_inflate2b(src, ssize, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr.AddressOfEntryPoint)) == -1 && upx_inflate2b(src + 0x15, ssize - 0x15, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr.AddressOfEntryPoint) - 0x15) == -1) {
+
 		    cli_dbgmsg("UPX: NRV2B decompressor failed\n");
 		} else {
 		    upx_success = 1;
@@ -1062,7 +1065,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    }
 
 	    if(!upx_success && upxfn != upx_inflate2d) {
-		if(upx_inflate2d(src, ssize, dest, dsize) && upx_inflate2d(src + 0x15, ssize - 0x15, dest, dsize) ) {
+		if(upx_inflate2d(src, ssize, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr.AddressOfEntryPoint)) == -1 && upx_inflate2d(src + 0x15, ssize - 0x15, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr.AddressOfEntryPoint) - 0x15) == -1) {
+
 		    cli_dbgmsg("UPX: NRV2D decompressor failed\n");
 		} else {
 		    upx_success = 1;
@@ -1071,7 +1075,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    }
 
 	    if(!upx_success && upxfn != upx_inflate2e) {
-		if(upx_inflate2e(src, ssize, dest, dsize) && upx_inflate2e(src + 0x15, ssize - 0x15, dest, dsize) ) {
+		if(upx_inflate2e(src, ssize, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr.AddressOfEntryPoint)) == -1 && upx_inflate2e(src + 0x15, ssize - 0x15, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr.AddressOfEntryPoint) - 0x15) == -1) {
 		    cli_dbgmsg("UPX: NRV2E decompressor failed\n");
 		} else {
 		    upx_success = 1;
@@ -1087,40 +1091,45 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	}
 
 	if(upx_success) {
-		int ndesc;
+	    free(src);
+	    free(section_hdr);
 
-	    if(cli_leavetemps_flag) {
-		tempfile = cli_gentemp(NULL);
-		if((ndesc = open(tempfile, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
-		    cli_dbgmsg("UPX/FSG: Can't create file %s\n", tempfile);
-		    free(tempfile);
-		    free(section_hdr);
-		    free(src);
-		    free(dest);
-		    return CL_EIO;
-		}
-
-		if(write(ndesc, dest, dsize) != dsize) {
-		    cli_dbgmsg("UPX/FSG: Can't write %d bytes\n", dsize);
-		    free(tempfile);
-		    free(section_hdr);
-		    free(src);
-		    free(dest);
-		    return CL_EIO;
-		}
-
-		close(ndesc);
-		cli_dbgmsg("UPX/FSG: Decompressed data saved in %s\n", tempfile);
+	    tempfile = cli_gentemp(NULL);
+	    if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+		cli_dbgmsg("UPX/FSG: Can't create file %s\n", tempfile);
 		free(tempfile);
+		free(dest);
+		return CL_EIO;
 	    }
 
-	    if(scanned)
-		*scanned += dsize / CL_COUNT_PRECISION;
+	    if(write(ndesc, dest, dsize) != dsize) {
+		cli_dbgmsg("UPX/FSG: Can't write %d bytes\n", dsize);
+		free(tempfile);
+		free(dest);
+		close(ndesc);
+		return CL_EIO;
+	    }
 
-	    ret = cl_scanbuff(dest, dsize, virname, root);
-	    free(section_hdr);
-	    free(src);
 	    free(dest);
+	    fsync(ndesc);
+	    lseek(ndesc, 0, SEEK_SET);
+
+	    if(cli_leavetemps_flag)
+		cli_dbgmsg("UPX/FSG: Decompressed data saved in %s\n", tempfile);
+
+	    cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
+	    if((ret = cli_magic_scandesc(ndesc, virname, scanned, root, limits, options, arec, mrec)) == CL_VIRUS) {
+		close(ndesc);
+		if(!cli_leavetemps_flag)
+		    unlink(tempfile);
+		free(tempfile);
+		return CL_VIRUS;
+	    }
+
+	    close(ndesc);
+	    if(!cli_leavetemps_flag)
+		unlink(tempfile);
+	    free(tempfile);
 	    return ret;
 	}
     }
@@ -1192,6 +1201,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    EC32(optional_hdr.DataDirectory[2].Size))) {
 		case 1:
 		    cli_dbgmsg("Petite: Unpacked and rebuilt executable saved in %s\n", tempfile);
+		    cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
 		    break;
 
 		case 0:
