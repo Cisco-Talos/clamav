@@ -26,6 +26,9 @@
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.132  2004/09/25 15:47:19  nigelhorne
+ * Honour LogFacility
+ *
  * Revision 1.131  2004/09/20 12:46:05  nigelhorne
  * Up issued
  *
@@ -404,9 +407,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.131 2004/09/20 12:46:05 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.132 2004/09/25 15:47:19 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.80"
+#define	CM_VERSION	"0.80a"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -436,9 +439,9 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.131 2004/09/20 12:46:05 ni
 #include <string.h>
 #include <sys/wait.h>
 #include <assert.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <sys/socket.h>
 #include <sys/un.h>
 #include <stdarg.h>
 #include <errno.h>
@@ -454,6 +457,7 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.131 2004/09/20 12:46:05 ni
 
 #ifdef	C_LINUX
 #include <libintl.h>
+#include <locale.h>
 
 #define	gettext_noop(s)	s
 #define	_(s)	gettext(s)
@@ -491,7 +495,8 @@ typedef	unsigned short	in_port_t;
 
 /*
  * Do not define SESSION in a production environment - it has been known to put
- * clamd/ into a loop and sending STREAM often returns EPIPE
+ * clamd into a loop when clamav-milter is restarted and sending STREAM often
+ * returns EPIPE
  *
  * It is however OK for testing: code is now in place to reopen as session
  * that has gone bad, and it would be useful to find out the set of
@@ -616,6 +621,7 @@ static	void	clamdIsDown(void);
 #ifdef	SESSION
 static	void	*watchdog(void *a);
 #endif
+static	int	logg_facility(const char *name);
 
 static	char	clamav_version[128];
 static	int	fflag = 0;	/* force a scan, whatever */
@@ -1374,11 +1380,20 @@ main(int argc, char **argv)
 		pidFile = cpt->strarg;
 
 	if(cfgopt(copt, "LogSyslog")) {
+		int fac = LOG_LOCAL6;
+
 		if(cfgopt(copt, "LogVerbose"))
 			logVerbose = 1;
 		use_syslog = 1;
 
-		openlog("clamav-milter", LOG_CONS|LOG_PID, LOG_MAIL);
+		if((cpt = cfgopt(copt, "LogFacility")) != NULL)
+			if((fac = logg_facility(cpt->strarg)) == -1) {
+				fprintf(stderr, "%s: LogFacility: %s: No such facility\n",
+					argv[0], cpt->strarg);
+				return EX_CONFIG;
+			}
+
+		openlog("clamav-milter", LOG_CONS|LOG_PID, fac);
 		if(logVerbose)
 			syslog(LOG_INFO, _("Starting: %s"), clamav_version);
 		else
@@ -2780,6 +2795,7 @@ clamfi_free(struct privdata *privdata)
 #ifdef	SESSION
 		pthread_mutex_lock(&sstatus_mutex);
 		if(cmdSocketsStatus[privdata->serverNumber] == CMDSOCKET_INUSE) {
+#if	0
 			pthread_mutex_unlock(&sstatus_mutex);
 			if(readTimeout) {
 				char buf[64];
@@ -2797,6 +2813,7 @@ clamfi_free(struct privdata *privdata)
 					;
 			}
 			pthread_mutex_lock(&sstatus_mutex);
+#endif
 			cmdSocketsStatus[privdata->serverNumber] = CMDSOCKET_FREE;
 		}
 		pthread_mutex_unlock(&sstatus_mutex);
@@ -3540,13 +3557,16 @@ static int
 qfile(struct privdata *privdata, const char *virusname)
 {
 	char *newname, *ptr;
+	size_t len;
 
 	assert(privdata != NULL);
 
 	if((privdata->filename == NULL) || (virusname == NULL))
 		return -1;
 
-	newname = cli_malloc(strlen(privdata->filename) + strlen(virusname) + 2);
+	len = strlen(privdata->filename);
+
+	newname = cli_malloc(len + strlen(virusname) + 2);
 
 	if(newname == NULL)
 		return -1;
@@ -3558,7 +3578,7 @@ qfile(struct privdata *privdata, const char *virusname)
 	 * that would cause the quarantine to fail to save since the name
 	 * of the virus is included in the filename
 	 */
-	for(ptr = newname; *ptr; ptr++) {
+	for(ptr = &newname[len]; *ptr; ptr++) {
 #ifdef	C_DARWIN
 		*ptr &= '\177';
 #endif
@@ -3656,8 +3676,8 @@ clamfi_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t
  * Check whether addr is on network by applying netmasks.
  * addr must be a 32-bit integer-packed IPv4 address in network order.
  * For example:
- *     struct in_addr IPAddress;
- *     isLocal = isLocalAddr(IPAddress.s_addr);
+ *	struct in_addr IPAddress;
+ *	isLocal = isLocalAddr(IPAddress.s_addr);
  */
 static int
 isLocalAddr(in_addr_t addr)
@@ -3834,3 +3854,85 @@ watchdog(void *a)
 	return NULL;
 }
 #endif
+
+static const struct {
+	const char *name;
+	int code;
+} facilitymap[] = {
+#ifdef LOG_AUTH
+	{ "LOG_AUTH",	LOG_AUTH },
+#endif
+#ifdef LOG_AUTHPRIV
+	{ "LOG_AUTHPRIV",	LOG_AUTHPRIV },
+#endif
+#ifdef LOG_CRON
+	{ "LOG_CRON",	LOG_CRON },
+#endif
+#ifdef LOG_DAEMON
+	{ "LOG_DAEMON",	LOG_DAEMON },
+#endif
+#ifdef LOG_FTP
+	{ "LOG_FTP",	LOG_FTP },
+#endif
+#ifdef LOG_KERN
+	{ "LOG_KERN",	LOG_KERN },
+#endif
+#ifdef LOG_LPR
+	{ "LOG_LPR",	LOG_LPR },
+#endif
+#ifdef LOG_MAIL
+	{ "LOG_MAIL",	LOG_MAIL },
+#endif
+#ifdef LOG_NEWS
+	{ "LOG_NEWS",	LOG_NEWS },
+#endif
+#ifdef LOG_AUTH
+	{ "LOG_AUTH",	LOG_AUTH },
+#endif
+#ifdef LOG_SYSLOG
+	{ "LOG_SYSLOG",	LOG_SYSLOG },
+#endif
+#ifdef LOG_USER
+	{ "LOG_USER",	LOG_USER },
+#endif
+#ifdef LOG_UUCP
+	{ "LOG_UUCP",	LOG_UUCP },
+#endif
+#ifdef LOG_LOCAL0
+	{ "LOG_LOCAL0",	LOG_LOCAL0 },
+#endif
+#ifdef LOG_LOCAL1
+	{ "LOG_LOCAL1",	LOG_LOCAL1 },
+#endif
+#ifdef LOG_LOCAL2
+	{ "LOG_LOCAL2",	LOG_LOCAL2 },
+#endif
+#ifdef LOG_LOCAL3
+	{ "LOG_LOCAL3",	LOG_LOCAL3 },
+#endif
+#ifdef LOG_LOCAL4
+	{ "LOG_LOCAL4",	LOG_LOCAL4 },
+#endif
+#ifdef LOG_LOCAL5
+	{ "LOG_LOCAL5",	LOG_LOCAL5 },
+#endif
+#ifdef LOG_LOCAL6
+	{ "LOG_LOCAL6",	LOG_LOCAL6 },
+#endif
+#ifdef LOG_LOCAL7
+	{ "LOG_LOCAL7",	LOG_LOCAL7 },
+#endif
+	{ NULL,		-1 }
+};
+
+static int
+logg_facility(const char *name)
+{
+	int i;
+
+	for(i = 0; facilitymap[i].name; i++)
+		if(strcasecmp(facilitymap[i].name, name) == 0)
+			return facilitymap[i].code;
+
+	return -1;
+}

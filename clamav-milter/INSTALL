@@ -117,9 +117,9 @@ I suggest putting SpamAssassin first since you're more likely to get spam
 than a virus/worm sent to you.
 
 Add to /etc/sysconfig/clamav-milter
-	CLAMAV_FLAGS="--max-children=2 local:/var/run/clamav/clmilter.sock"
+	CLAMAV_FLAGS="local:/var/run/clamav/clmilter.sock"
 or if clamd is on a different machine
-	CLAMAV_FLAGS="--max-children=2 --server=192.168.1.9 local:/var/run/clamav/clmilter.sock"
+	CLAMAV_FLAGS="--server=192.168.1.9 local:/var/run/clamav/clmilter.sock"
 
 If you want clamav-milter to listen on TCP for communication with sendmail,
 for example if they are on different machines use inet:<port>.
@@ -497,6 +497,10 @@ Changes
 0.75s	20/9/04	StreamSaveToDisk is longer used
 		Update references to clamav.conf, should now be clamd.conf
 0.80	20/9/04	Up-issued
+0.80a	25/9/04	Some Linux's need locale.h as well as libintl.h
+		Honour LogFacility
+		When sanitising the quarantine's filename, don't sanitise
+		the directory name as well
 
 INTERNATIONALISATION
 

@@ -1,3 +1,10 @@
+Sat Sep 25 16:48:18 BST 2004 (njh)
+----------------------------------
+  * clamav-milter:	Didn't compile with some older Linuxes
+			Honour LogFacility
+			When sanitising the quarantine's filename, don't
+				sanitise the directory name as well
+
 Fri Sep 24 09:14:44 BST 2004 (trog)
 -----------------------------------
   * libclamav/filetypes.c: Add more HTML markers
