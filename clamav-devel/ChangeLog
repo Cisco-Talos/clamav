@@ -1,3 +1,8 @@
+Wed Jul 28 22:21:10 CEST 2004 (tk)
+----------------------------------
+  * clamdscan: fix stdin scanning in local mode (patch by Stephen Gran
+	       <steve*lobefin.net>)
+
 Wed Jul 28 20:09:32 CEST 2004 (tk)
 ----------------------------------
   * libclamav: improve mail detection
