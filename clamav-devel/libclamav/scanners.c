@@ -592,7 +592,7 @@ int cli_scanole2(int desc, char **virname, long int *scanned, const struct cl_no
 	const char *tmpdir;
 	char *dir, *fullname;
 	unsigned char *data;
-	int ret = CL_CLEAN, fd, i;
+	int ret = CL_CLEAN, fd, i, data_len;
 	vba_project_t *vba_project;
 
     cli_dbgmsg("in cli_scanole2()\n");
@@ -634,13 +634,13 @@ int cli_scanole2(int desc, char **virname, long int *scanned, const struct cl_no
 		}
 		free(fullname);
                 cli_dbgmsg("decompress VBA project '%s'\n", vba_project->name[i]);
-		data = (unsigned char *) vba_decompress(fd, vba_project->offset[i]);
+		data = (unsigned char *) vba_decompress(fd, vba_project->offset[i], &data_len);
 		close(fd);
 
 		if(!data) {
 		    cli_dbgmsg("WARNING: VBA project '%s' decompressed to NULL\n", vba_project->name[i]);
 		} else {
-		    if(cl_scanbuff(data, strlen(data), virname, root) == CL_VIRUS) {
+		    if(cl_scanbuff(data, data_len, virname, root) == CL_VIRUS) {
 			free(data);
 			ret = CL_VIRUS;
 			break;

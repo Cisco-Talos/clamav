@@ -1,3 +1,7 @@
+Fri Feb 20 14:55:32 GMT 2004 (trog)
+-----------------------------------
+  * libclamav/vba_extract.c: vba_decompress returns explicit data length
+
 Fri Feb 20 09:55:58 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter: The recent changes to the configure script changed
