@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.26  2004/02/06 13:10:34  nigelhorne
+ * Now integrates with winzip
+ *
  * Revision 1.25  2004/02/05 11:23:07  nigelhorne
  * Bounce messages are now table driven
  *
@@ -72,7 +75,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.25 2004/02/05 11:23:07 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.26 2004/02/06 13:10:34 nigelhorne Exp $";
 
 #ifndef	CL_DEBUG
 /*#define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -1085,6 +1088,7 @@ bounceBegin(const message *m)
 		"--- Below this line is a copy of the message.",
 		"------ This is a copy of the message, including all the headers. ------",
 		"=================================================================================",
+		"------- The original message sent:",
 		NULL
 	};
 
