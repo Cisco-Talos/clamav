@@ -76,8 +76,24 @@
  *	gcc30 -O3 -DCONFDIR=\"/usr/local/etc\" -I. -I.. -I../clamd -I../libclamav -pedantic -Wuninitialized -Wall -pipe -mcpu=pentium -march=pentium -fomit-frame-pointer -ffast-math -finline-functions -funroll-loops clamav-milter.c -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o -lgnugetopt
  *
  * FreeBSD4.8: compiles out of the box with either gcc2.95 or gcc3
- * OpenBSD3.3: the supplied sendmail does not come with Milter support. You
- * will need to rebuild sendmail from source
+ *
+ * OpenBSD3.4: the supplied sendmail does not come with Milter support.
+ * Do this *before* running configure (thanks for Per-Olov Sjöhol
+ * <peo_s@incedo.org>for these instructions).
+ *
+ *	echo WANT_LIBMILTER=1 > /etc/mk.conf
+ *	cd /usr/src/gnu/usr.sbin/sendmail
+ *	make depend
+ *	make
+ *	make install
+ *	kill -HUP `sed q /var/run/sendmail.pid`
+ *
+ * Then do this to make the milter headers available to clamav...
+ * (the libmilter.a file is already in the right place after the sendmail
+ * recompiles above)
+ *
+ *	cd /usr/include
+ *	ln -s ../src/gnu/usr.sbin/sendmail/include/libmilter libmilter
  *
  * Solaris 9 and FreeBSD5 have milter support in the supplied sendmail, but
  * doesn't include libmilter so you can't develop milter applications on it.
@@ -187,9 +203,14 @@
  *	0.66b	27/12/03 --sign moved to privdata
  *	0.66c	31/12/03 Included the sendmail queue ID in the log, from an
  *			idea by Andy Fiddaman <af@jeamland.org>
+ *	0.66d	10/1/04	Added OpenBSD instructions
+ *			Added --signature-file option
  *
  * Change History:
  * $Log: clamav-milter.c,v $
+ * Revision 1.35  2004/01/10 16:22:14  nigelhorne
+ * Added OpenBSD instructions and --signature-file
+ *
  * Revision 1.34  2003/12/31 14:46:35  nigelhorne
  * Include the sendmail queue ID in the log
  *
@@ -277,9 +298,9 @@
  * Revision 1.6  2003/09/28 16:37:23  nigelhorne
  * Added -f flag use MaxThreads if --max-children not set
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.34 2003/12/31 14:46:35 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.35 2004/01/10 16:22:14 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.66c"
+#define	CM_VERSION	"0.66d"
 
 /*#define	CONFDIR	"/usr/local/etc"*/
 
@@ -356,7 +377,7 @@ struct	privdata {
 	size_t	bodyLen;	/* number of bytes in body */
 };
 
-static	int	pingServer(void);
+static	int		pingServer(void);
 static	sfsistat	clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr);
 static	sfsistat	clamfi_envfrom(SMFICTX *ctx, char **argv);
 static	sfsistat	clamfi_envrcpt(SMFICTX *ctx, char **argv);
@@ -369,7 +390,8 @@ static	sfsistat	clamfi_close(SMFICTX *ctx);
 static	void		clamfi_cleanup(SMFICTX *ctx);
 static	int		clamfi_send(const struct privdata *privdata, size_t len, const char *format, ...);
 static	char		*strrcpy(char *dest, const char *source);
-static	int	clamd_recv(int sock, char *buf, size_t len);
+static	int		clamd_recv(int sock, char *buf, size_t len);
+static	off_t		updateSigFile(void);
 
 static	char	clamav_version[128];
 static	int	fflag = 0;	/* force a scan, whatever */
@@ -395,6 +417,10 @@ static	int	Sflag = 0;	/*
 				 * Add a signature to each message that
 				 * has been scanned
 				 */
+static	const	char	*sigFilename;	/*
+				 * File where the scanned message signature
+				 * can be found
+				 */
 static	char	*quarantine;	/*
 				 * If a virus is found in an email redirect
 				 * it to this account
@@ -419,8 +445,8 @@ static	int	threadtimeout = CL_DEFAULT_SCANTIMEOUT; /*
 				 * number of seconds to wait for clamd to
 				 * respond
 				 */
-static	const	char	signature[] =	/* TODO: read in from a file */
-	"-- \nScanned by ClamAv - http://clamav.elektrapro.com\n";
+static	char	*signature = "-- \nScanned by ClamAv - http://www.clamav.net\n";
+static	time_t	signatureStamp;
 
 #ifdef	CL_DEBUG
 static	int	debug_level = 0;
@@ -468,7 +494,8 @@ help(void)
 	puts("\t--quarantine=USER\t-Q EMAIL\tQuanrantine e-mail account.");
 	puts("\t--quarantine-dir=DIR\t-U DIR\tDirectory to store infected emails.");
 	puts("\t--server=ADDRESS\t-s ADDR\tIP address of server running clamd (when using TCPsocket).");
-	puts("\t--sign\t\t\t-S\tAdd a signature to each scanned message.");
+	puts("\t--sign\t\t\t-S\tAdd a hard-coded signature to each scanned message.");
+	puts("\t--signature-file\t-F\tLocation of signature file.");
 	puts("\t--version\t\t-V\tPrint the version number of this software.");
 #ifdef	CL_DEBUG
 	puts("\t--debug-level=n\t\t-x n\tSets the debug level to 'n'.");
@@ -510,9 +537,9 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "bc:flm:nop:PqQ:dhs:SU:Vx:";
+		const char *args = "bc:fF:lm:nop:PqQ:dhs:SU:Vx:";
 #else
-		const char *args = "bc:flm:nop:PqQ:dhs:SU:V";
+		const char *args = "bc:fF:lm:nop:PqQ:dhs:SU:V";
 #endif
 
 		static struct option long_options[] = {
@@ -562,7 +589,10 @@ main(int argc, char **argv)
 				"server", 1, NULL, 's'
 			},
 			{
-				"sign", 1, NULL, 'S'
+				"sign", 0, NULL, 'S'
+			},
+			{
+				"signature-file", 1, NULL, 'F'
 			},
 			{
 				"version", 0, NULL, 'V'
@@ -629,6 +659,10 @@ main(int argc, char **argv)
 			case 's':	/* server running clamd */
 				serverIP = optarg;
 				break;
+			case 'F':	/* signature file */
+				sigFilename = optarg;
+				signature = NULL;
+				/* fall through */
 			case 'S':	/* sign */
 				smfilter.xxfi_flags |= SMFIF_CHGBODY;
 				Sflag++;
@@ -646,9 +680,9 @@ main(int argc, char **argv)
 #endif
 			default:
 #ifdef	CL_DEBUG
-				fprintf(stderr, "Usage: %s [-b] [-c FILE] [--max-children=num] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-S] [-x#] [-U PATH] socket-addr\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-b] [-c FILE] [-F FILE] [--max-children=num] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-S] [-x#] [-U PATH] socket-addr\n", argv[0]);
 #else
-				fprintf(stderr, "Usage: %s [-b] [-c FILE] [--max-children=num] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-S] [-U PATH] socket-addr\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-b] [-c FILE] [-F FILE] [--max-children=num] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-S] [-U PATH] socket-addr\n", argv[0]);
 #endif
 				return EX_USAGE;
 		}
@@ -693,6 +727,9 @@ main(int argc, char **argv)
 		perror(quarantine_dir);
 		return EX_CONFIG;
 	}
+
+	if(sigFilename && !updateSigFile())
+		return EX_USAGE;
 
 	if(!cfgopt(copt, "StreamSaveToDisk")) {
 		fprintf(stderr, "%s: StreamSavetoDisk not enabled in %s\n",
@@ -769,6 +806,12 @@ main(int argc, char **argv)
 	}
 
 	if(!cfgopt(copt, "Foreground")) {
+
+#ifdef	CL_DEBUG
+		printf("When debugging it is recommended that you use Foreground mode in %s\n", cfgfile);
+		puts("So that you can see all of the messages");
+#endif
+
 		switch(fork()) {
 			case -1:
 				perror("fork");
@@ -1123,7 +1166,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 				privdata->filename = NULL;
 				return cl_error;
 			}
-			privdata->dataSocket = open(privdata->filename, O_CREAT|O_EXCL|O_WRONLY,0600);
+			privdata->dataSocket = open(privdata->filename, O_CREAT|O_EXCL|O_WRONLY|O_TRUNC, 0600);
 #endif
 		} while((--ntries > 0) && (privdata->dataSocket < 0));
 
@@ -1508,13 +1551,16 @@ clamfi_eom(SMFICTX *ctx)
 			/*
 			 * Add a signature that all has been scanned OK
 			 */
-			assert(Sflag != 0);
+			off_t len = updateSigFile();
 
-			privdata->body = realloc(privdata->body, privdata->bodyLen + sizeof(signature));
-			memcpy(&privdata->body[privdata->bodyLen], signature, sizeof(signature));
+			if(len) {
+				assert(Sflag != 0);
 
-			smfi_replacebody(ctx, privdata->body, privdata->bodyLen + sizeof(signature));
+				privdata->body = realloc(privdata->body, privdata->bodyLen + len);
+				memcpy(&privdata->body[privdata->bodyLen], signature, len);
 
+				smfi_replacebody(ctx, privdata->body, privdata->bodyLen + len);
+			}
 		}
 	} else {
 		int i;
@@ -1863,4 +1909,44 @@ clamd_recv(int sock, char *buf, size_t len)
 			return 0;
 	}
 	return recv(sock, buf, len, 0);
+}
+
+/*
+ * Read in the signature file
+ */
+static off_t
+updateSigFile(void)
+{
+	struct stat statb;
+	int fd;
+
+	if(sigFilename == NULL)
+		/* nothing to read */
+		return signature ? strlen(signature) : 0;
+
+	if(stat(sigFilename, &statb) < 0) {
+		perror(sigFilename);
+		if(use_syslog)
+			syslog(LOG_ERR, "Can't stat %s\n", sigFilename);
+		return 0;
+	}
+
+	if(statb.st_mtime <= signatureStamp)
+		return statb.st_size;	/* not changed */
+
+	fd = open(sigFilename, O_RDONLY);
+	if(fd < 0) {
+		perror(sigFilename);
+		if(use_syslog)
+			syslog(LOG_ERR, "Can't open %s\n", sigFilename);
+		return 0;
+	}
+
+	signatureStamp = statb.st_mtime;
+
+	signature = realloc(signature, statb.st_size);
+	read(fd, signature, statb.st_size);
+	close(fd);
+
+	return statb.st_size;
 }

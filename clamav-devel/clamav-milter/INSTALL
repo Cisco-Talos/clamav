@@ -34,8 +34,24 @@ FreeBSD. It comes with getopt.h which is handy. To link you need
 	gcc30 -O3 -DCONFDIR=\"/usr/local/etc\" -I. -I.. -I../clamd -I../libclamav -pedantic -Wuninitialized -Wall -pipe -mcpu=pentium -march=pentium -fomit-frame-pointer -ffast-math -finline-functions -funroll-loops clamav-milter.c -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o -lgnugetopt
 
 FreeBSD4.8: compiles out of the box with either gcc2.95 or gcc3
-OpenBSD3.3: the supplied sendmail does not come with Milter support. You
-will need to rebuild sendmail from source
+
+OpenBSD3.4: the supplied sendmail does not come with Milter support.
+Do this *before* running configure (thanks for Per-Olov Sjöhol
+<peo_s@incedo.org> for these instructions).
+
+	echo WANT_LIBMILTER=1 > /etc/mk.conf
+	cd /usr/src/gnu/usr.sbin/sendmail
+	make depend
+	make
+	make install
+	kill -HUP `sed q /var/run/sendmail.pid`
+
+Then do this to make the milter headers available to clamav...
+(the libmilter.a file is already in the right place after the sendmail
+recompiles above)
+
+	cd /usr/include
+	ln -s ../src/gnu/usr.sbin/sendmail/include/libmilter libmilter
 
 Solaris 9 and FreeBSD5 have milter support in the supplied sendmail, but
 doesn't include libmilter so you can't develop milter applications on it.
@@ -184,6 +200,8 @@ Changes
 0.66b	27/12/03 --sign moved to privdata
 0.66c	31/12/03 Included the sendmail queue ID in the log, from an
 		idea by Andy Fiddaman <af@jeamland.org>
+0.66d	10/1/04	Added OpenBSD instructions
+		Added --signature-file option
 
 BUG REPORTS
 
