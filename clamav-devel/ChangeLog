@@ -1,3 +1,9 @@
+Wed Dec 24 15:27:22 CET 2003 (tk)
+---------------------------------
+  * libclamav: zziplib - fixed a bus error when compiled with the Sun compiler
+			 on the 64 bit SPARC (patch by Marty Lee
+			 <marty*maui.co.uk>)
+
 Wed Dec 24 02:28:42 CET 2003 (tk)
 ---------------------------------
   * libclamav: fixed my last patch (instead of a value, a pointer was compared)
