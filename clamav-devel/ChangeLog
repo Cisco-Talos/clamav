@@ -1,3 +1,8 @@
+Thu Mar  4 13:07:04 GMT 2004 (njh)
+----------------------------------
+  * libclamav:	Some bounce messages weren't being rescanned, fix thanks
+	to "Andrey J. Melnikoff (TEMHOTA)" <temnota@kmv.ru>
+
 Thu Mar  4 03:29:07 CET 2004 (tk)
 ---------------------------------
   * libclamav: CL_ENCRYPTED: mark encrypted Zip archives as a virus type
