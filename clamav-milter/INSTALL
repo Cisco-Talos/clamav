@@ -204,6 +204,12 @@ Changes
 		Added --signature-file option
 0.66e	12/1/04	FixStaleSocket: no longer complain if asked to remove
 		an old socket when there was none to remove
+0.66f	24/1/04	-s: Allow clamd server name as well as IPaddress
+0.66g	25/1/04 Corrected usage message
+		Started to honour --debug
+		Dump core on LINUX if CL_DEBUG set
+		Support multiple servers separated by colons
+0.66h	26/1/04	Corrected endian problem (ntohs instead of htons)
 
 BUG REPORTS
 
