@@ -1,3 +1,7 @@
+Fri May 14 09:16:12 BST 2004 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Use mkstemp() on Cygwin
+
 Thu May 13 02:22:50 CEST 2004 (tk)
 ----------------------------------
   * libclamav: move putenv(TMPDIR) code from clamd to cl_settempdir()

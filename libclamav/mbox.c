@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.73  2004/05/14 08:15:55  nigelhorne
+ * Use mkstemp on cygwin
+ *
  * Revision 1.72  2004/05/12 11:20:37  nigelhorne
  * More bounce message false positives handled
  *
@@ -204,7 +207,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.72 2004/05/12 11:20:37 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.73 2004/05/14 08:15:55 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1905,7 +1908,7 @@ saveFile(const blob *b, const char *dir)
 	/*
 	 * TODO: add a HAVE_MKSTEMP property
 	 */
-#if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS)
+#if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN)
 	fd = mkstemp(filename);
 #else
 	(void)mktemp(filename);
