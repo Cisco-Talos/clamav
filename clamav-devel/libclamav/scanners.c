@@ -42,6 +42,7 @@ int cli_scanrar_inuse = 0;
 #include "unrarlib.h"
 #include "ole2_extract.h"
 #include "vba_extract.h"
+#include "msexpand.h"
 #include "scanners.h"
 
 #ifdef HAVE_ZLIB_H
@@ -76,6 +77,7 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "PK\003\004",			4,  "ZIP",		  CL_ZIPFILE},
     {0,  "\037\213",			2,  "GZip",		  CL_GZFILE},
     {0,  "BZh",				3,  "BZip",		  CL_BZFILE},
+    {0,  "SZDD",			4,  "compress.exe'd",	  CL_MSCFILE},
 
     /* Mail */
 
@@ -659,6 +661,48 @@ static int cli_scanbzip(int desc, const char **virname, long int *scanned, const
 }
 #endif
 
+static int cli_scanmscomp(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
+{
+	int fd, ret = CL_CLEAN;
+	FILE *tmp = NULL, *in;
+
+    cli_dbgmsg("in cli_scanmscomp()\n");
+
+    if((in = fdopen(dup(desc), "rb")) == NULL) {
+	cli_dbgmsg("Can't fdopen() descriptor %d.\n", desc);
+	return CL_EMSCOMP;
+    }
+
+    if((tmp = tmpfile()) == NULL) {
+	cli_dbgmsg("Can't generate tmpfile().\n");
+	fclose(in);
+	return CL_ETMPFILE;
+    }
+
+    if(cli_msexpand(in, tmp) == -1) {
+	cli_dbgmsg("msexpand failed.\n");
+	return CL_EMSCOMP;
+    }
+
+    fclose(in);
+    if(fflush(tmp)) {
+	cli_dbgmsg("fflush() failed\n");
+	fclose(tmp);
+	return CL_EFSYNC;
+    }
+
+    fd = fileno(tmp);
+    lseek(fd, 0, SEEK_SET);
+    if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, reclev)) == CL_VIRUS) {
+	cli_dbgmsg("MSCompress -> Found %s virus.\n", *virname);
+	fclose(tmp);
+	return CL_VIRUS;
+    }
+
+    fclose(tmp);
+    return ret;
+}
+
 static int cli_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
 {
 	DIR *dd;
@@ -925,6 +969,11 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
 	    if(SCAN_ARCHIVE)
 		ret = cli_scanbzip(desc, virname, scanned, root, limits, options, reclev);
 #endif
+	    break;
+
+	case CL_MSCFILE:
+	    if(SCAN_ARCHIVE)
+		ret = cli_scanmscomp(desc, virname, scanned, root, limits, options, reclev);
 	    break;
 
 	case CL_MAILFILE:

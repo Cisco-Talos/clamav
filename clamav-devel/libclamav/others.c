@@ -120,6 +120,8 @@ const char *cl_strerror(int clerror)
 	    return "Malformed Zip detected.";
 	case CL_EGZIP:
 	    return "GZip module failure.";
+	case CL_EMSCOMP:
+	    return "MSExpand module failure.";
 	case CL_EOLE2:
 	    return "OLE2 module failure.";
 	case CL_ETMPFILE:

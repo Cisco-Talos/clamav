@@ -47,6 +47,7 @@ extern "C"
 #define CL_EGZIP	103 /* gzip handler error */
 #define CL_EBZIP	104 /* bzip2 handler error */
 #define CL_EOLE2	105 /* OLE2 handler error */
+#define CL_EMSCOMP	106 /* compress.exe handler error */
 #define CL_EACCES	200 /* access denied */
 #define CL_ENULLARG	300 /* null argument error */
 

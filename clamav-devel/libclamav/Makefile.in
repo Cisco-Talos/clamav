@@ -179,7 +179,9 @@ libclamav_la_SOURCES = \
 	ole2_extract.h \
 	vba_extract.c \
 	vba_extract.h \
-	cltypes.h
+	cltypes.h \
+	msexpand.c \
+	msexpand.h
 
 
 lib_LTLIBRARIES = libclamav.la
@@ -194,7 +196,7 @@ am_libclamav_la_OBJECTS = matcher.lo md5.lo others.lo readdb.lo cvd.lo \
 	dsig.lo str.lo scanners.lo unrarlib.lo zzip-dir.lo zzip-err.lo \
 	zzip-file.lo zzip-info.lo zzip-io.lo zzip-stat.lo zzip-zip.lo \
 	strc.lo blob.lo mbox.lo message.lo snprintf.lo strrcpy.lo \
-	table.lo text.lo ole2_extract.lo vba_extract.lo
+	table.lo text.lo ole2_extract.lo vba_extract.lo msexpand.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 
 DEFS = @DEFS@
@@ -207,7 +209,7 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/blob.Plo ./$(DEPDIR)/cvd.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/dsig.Plo ./$(DEPDIR)/matcher.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/mbox.Plo ./$(DEPDIR)/md5.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/message.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/message.Plo ./$(DEPDIR)/msexpand.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/ole2_extract.Plo ./$(DEPDIR)/others.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/readdb.Plo ./$(DEPDIR)/scanners.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/snprintf.Plo ./$(DEPDIR)/str.Plo \
@@ -288,6 +290,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mbox.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/md5.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/message.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msexpand.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ole2_extract.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/others.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/readdb.Plo@am__quote@

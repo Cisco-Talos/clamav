@@ -1,10 +1,14 @@
+Sun May  2 02:48:04 CEST 2004 (tk)
+----------------------------------
+  * libclamav: support files compressed with compress.exe (test/test1.msc)
+
 Sat May  1 21:29:29 CEST 2004 (tk)
 ----------------------------------
   * clamd: stream scanner:
 	+ scan exactly up to StreamMaxLength (patch by Joe Maimon
 	  <jmaimon*ttec.com>)
 	+ fix description leak on ReadTimeout (patch by Maxim Dounin
-	  <mdounin@rambler-co.ru>)
+	  <mdounin*rambler-co.ru>)
   * contrib/trashscan: v. 0.12 (Trashware <trashware*gmx.de>)
   * libclamav: in block-encrypted mode scan a raw encrypted archive before
 	       marking it as encrypted (requested by Andy Fiddaman
@@ -32,7 +36,7 @@ Wed Apr 28 15:29:29 BST 2004 (njh)
 			Send 554 after DATA received, not 550
 			Don't send rejection notices to rejection notices, we
 				just end up playing ping-pong (patch by "Andrey
-				J.Melnikoff (TEMHOTA)" <temnota@kmv.ru>
+				J.Melnikoff (TEMHOTA)" <temnota*kmv.ru>
 			If CL_DEBUG is defined, don't redirect stdout/stderr
 			Don't attempt to return an old signature if no
 				filename has been given. There has never been
