@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.94  2004/10/04 12:18:08  nigelhorne
+ * Better warning message about PGP attachments not being scanned
+ *
  * Revision 1.93  2004/10/01 13:49:22  nigelhorne
  * Minor code tidy
  *
@@ -276,7 +279,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.93 2004/10/01 13:49:22 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.94 2004/10/04 12:18:08 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2288,6 +2291,7 @@ usefulArg(const char *arg)
 	if((strncasecmp(arg, "name", 4) != 0) &&
 	   (strncasecmp(arg, "filename", 8) != 0) &&
 	   (strncasecmp(arg, "boundary", 8) != 0) &&
+	   (strncasecmp(arg, "protocol", 8) != 0) &&
 	   (strncasecmp(arg, "type", 4) != 0)) {
 		cli_dbgmsg("Discarding unwanted argument '%s'\n", arg);
 		return 0;

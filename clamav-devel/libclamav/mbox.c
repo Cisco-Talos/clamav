@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.147  2004/10/04 12:18:09  nigelhorne
+ * Better warning message about PGP attachments not being scanned
+ *
  * Revision 1.146  2004/10/04 10:52:39  nigelhorne
  * Better error message on RFC2047 decode error
  *
@@ -426,7 +429,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.146 2004/10/04 10:52:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.147 2004/10/04 12:18:09 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -594,6 +597,12 @@ static	void	*getURL(struct arg *arg);
 				 * presence etc. (which also has disappeared
 				 * in the final version)
 				 */
+#define	ENCRYPTED	13	/*
+				 * e.g. RFC2015
+				 * Content-Type: multipart/encrypted;
+				 * boundary="nextPart1383049.XCRrrar2yq";
+				 * protocol="application/pgp-encrypted"
+				 */
 
 static	const	struct tableinit {
 	const	char	*key;
@@ -620,6 +629,7 @@ static	const	struct tableinit {
 	{	"report",	REPORT		},
 	{	"appledouble",	APPLEDOUBLE	},
 	{	"fax-message",	FAX		},
+	{	"encrypted",	ENCRYPTED	},
 	{	NULL,		0		}
 };
 
@@ -1036,10 +1046,10 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 	if(mainMessage && (messageGetBody(mainMessage) != NULL)) {
 		mime_type mimeType;
 		int subtype;
-		const char *mimeSubtype;
+		const char *mimeSubtype, *boundary;
+		char *protocol;
 		const text *t_line;
 		/*bool isAlternative;*/
-		const char *boundary;
 		message *aMessage;
 
 		cli_dbgmsg("Parsing mail file\n");
@@ -1139,6 +1149,10 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			inMimeHead = 0;
 
 			/*
+			 * Parse the mainMessage object and create an array
+			 * of objects called messages, one for each of the
+			 * multiparts that mainMessage contains
+			 *
 			 * This looks like parseEmailHeaders() - maybe there's
 			 * some duplication of code to be cleaned up
 			 */
@@ -1333,6 +1347,14 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			free((char *)boundary);
 
 			/*
+			 * For multipart/encrypted
+			 */
+			if(tableFind(subtypeTable, mimeSubtype) == ENCRYPTED)
+				protocol = (char *)messageFindArgument(mainMessage, "protocol");
+			else
+				protocol = NULL;
+
+			/*
 			 * We've finished message we're parsing
 			 */
 			if(mainMessage && (mainMessage != messageIn)) {
@@ -1341,6 +1363,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			}
 
 			if(multiparts == 0) {
+				if(protocol)
+					free(protocol);
 				if(messages)
 					free(messages);
 				return 2;	/* Nothing to do */
@@ -1349,6 +1373,12 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			cli_dbgmsg("The message has %d parts\n", multiparts);
 			cli_dbgmsg("Find out the multipart type (%s)\n", mimeSubtype);
 
+			/*
+			 * We now have all the parts of the multipart message
+			 * in the messages array:
+			 *	message *messages[multiparts]
+			 * Let's decide what to do with them all
+			 */
 			switch(tableFind(subtypeTable, mimeSubtype)) {
 			case RELATED:
 				cli_dbgmsg("Multipart related handler\n");
@@ -1703,6 +1733,20 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					htmltextPart = 0;
 
 				rc = parseEmailBody(messages[htmltextPart], aText, dir, rfc821Table, subtypeTable, options);
+				break;
+			case ENCRYPTED:
+				rc = 0;
+				if(protocol) {
+					if(strcasecmp(protocol, "application/pgp-encrypted") == 0) {
+						/* RFC2015 */
+						cli_warnmsg("PGP encoded attachment not scanned\n");
+						rc = 2;
+					} else
+						cli_warnmsg("Unknown encryption protocol '%s' - report to bugs@clamav.net\n");
+					free(protocol);
+				} else
+					cli_warnmsg("Encryption method missing protocol name - report to bugs@clamav.net\n");
+
 				break;
 			default:
 				/*

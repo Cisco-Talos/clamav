@@ -1,3 +1,9 @@
+Mon Oct  4 13:20:17 BST 2004 (njh)
+----------------------------------
+  * libclamav:		More informative message when scanning PGP encoded
+				emails
+			PGP encoded emails are now passed through
+
 Mon Oct  4 11:59:02 BST 2004 (njh)
 ----------------------------------
   * clamav-milter:	Better SMTP message when virus is found
