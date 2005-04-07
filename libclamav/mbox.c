@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.235 2005/04/04 13:52:46 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.236 2005/04/07 16:38:37 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -763,8 +763,14 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 #endif
 
 	/*
-	 * is it a UNIX style mbox with more than one
+	 * Is it a UNIX style mbox with more than one
 	 * mail message, or just a single mail message?
+	 *
+	 * TODO: It would be better if we called cli_scandir here rather than
+	 * in cli_scanmail. Then we could improve the way mailboxes with more
+	 * than one message is handled, e.g. stopping parsing when an infected
+	 * message is stopped, and giving a better indication of which message
+	 * within the mailbox is infected
 	 */
 	if(strncmp(buffer, "From ", 5) == 0) {
 		/*
@@ -1382,6 +1388,7 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 
 /*
  * This is a recursive routine.
+ * FIXME: We are not passed &mrec so we can't check against MAX_MAIL_RECURSION
  *
  * This function parses the body of mainMessage and saves its attachments in dir
  *
@@ -3622,6 +3629,9 @@ getURL(struct arg *arg)
 	const char *dir = arg->dir;
 	const char *filename = arg->filename;
 	char fout[NAME_MAX + 1];
+#ifdef	CURLOPT_ERRORBUFFER
+	char errorbuffer[128];
+#endif
 
 #ifdef	CL_THREAD_SAFE
 	pthread_mutex_lock(&init_mutex);
@@ -3698,6 +3708,10 @@ getURL(struct arg *arg)
 	 */
 	curl_easy_setopt(curl, CURLOPT_USERPWD, "username:password");
 
+#ifdef	CURLOPT_ERRORBUFFER
+	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errorbuffer);
+#endif
+
 	/*
 	 * FIXME: valgrind reports "pthread_mutex_unlock: mutex is not locked"
 	 * from gethostbyaddr_r within this. It may be a bug in libcurl
@@ -3713,8 +3727,13 @@ getURL(struct arg *arg)
 	 *	https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=139559
 	 */
 
-	if(curl_easy_perform(curl) != CURLE_OK)
+	if(curl_easy_perform(curl) != CURLE_OK) {
+#ifdef	CURLOPT_ERRORBUFFER
+		cli_warnmsg("URL %s failed to download: %s\n", url, errorbuffer);
+#else
 		cli_warnmsg("URL %s failed to download\n", url);
+#endif
+	}
 
 	fclose(fp);
 	curl_slist_free_all(headers);
