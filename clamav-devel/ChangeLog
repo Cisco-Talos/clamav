@@ -1,3 +1,13 @@
+Thu Apr  7 17:38:53 BST 2005 (njh)
+----------------------------------
+  * clamav-milter:	Added installation notes about Solaris 10
+			Internal mode: print virus and error information on
+				stdout. This goes to LogFile when not in debug
+				mode.
+			Included patch by Andy Feldt <feldt at nhn.ou.edu> for
+				AIX 5.2. I do not have access to such a machine
+				so any feedback would be helpful
+
 Thu Apr  7 00:46:14 CEST 2005 (tk)
 ----------------------------------
   * libclamav/scanners.c: support ArchiveBlockMax in scan(g|b)zip()
