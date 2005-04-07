@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>OpenAntiVirus samba-vscan</TITLE>
-<META NAME="description" CONTENT="OpenAntiVirus samba-vscan">
+<TITLE>SquidClamAV Redirector</TITLE>
+<META NAME="description" CONTENT="SquidClamAV Redirector">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,54 +19,58 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node98.html">
 <LINK REL="previous" HREF="node96.html">
-<LINK REL="up" HREF="node94.html">
+<LINK REL="up" HREF="node90.html">
 <LINK REL="next" HREF="node98.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1800"
+<A NAME="tex2html1837"
   HREF="node98.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html1796"
-  HREF="node94.html">
+<A NAME="tex2html1833"
+  HREF="node90.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html1792"
+<A NAME="tex2html1827"
   HREF="node96.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html1798"
+<A NAME="tex2html1835"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1801"
-  HREF="node98.html">Mail User Agent +</A>
-<B> Up:</B> <A NAME="tex2html1797"
-  HREF="node94.html">Filesystem + ClamAV</A>
-<B> Previous:</B> <A NAME="tex2html1793"
-  HREF="node96.html">Famuko</A>
- &nbsp <B>  <A NAME="tex2html1799"
+<B> Next:</B> <A NAME="tex2html1838"
+  HREF="node98.html">Squidclam</A>
+<B> Up:</B> <A NAME="tex2html1834"
+  HREF="node90.html">Web/FTP Proxy + ClamAV</A>
+<B> Previous:</B> <A NAME="tex2html1828"
+  HREF="node96.html">SafeSquid</A>
+ &nbsp <B>  <A NAME="tex2html1836"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00094300000000000000"></A><A NAME="samba-vscan"></A>
-<BR>
-OpenAntiVirus samba-vscan
+<H3><A NAME="SECTION00093700000000000000">
+SquidClamAV Redirector</A>
 </H3>
-    <B>Homepage:</B> <TT><A NAME="tex2html96"
-  HREF="http://www.openantivirus.org/projects.php#samba-vscan">http://www.openantivirus.org/projects.php#samba-vscan</A></TT>
-<BR>    <B>Supports:</B> clamd
+    <B>Homepage:</B> <TT><A NAME="tex2html97"
+  HREF="http://www.jackal-net.at/tiki-read_article.php?articleId=1">http://www.jackal-net.at/tiki-read_article.php?articleId=1</A></TT>
+<BR>    <B>Supports:</B> libclamav
 <BR>
-samba-vscan provides on-access scanning of Samba shares. It supports
-    Samba 2.2.x/3.0 with working virtual file system (VFS) support. 
+SquidClamAV Redirector is a Squid helper script which adds virus scanning
+    for defined filename extensions. It has been tested with Python, pyclamav,
+    ClamAV, and Squid. SCAVR handles the request as given from Squid, downloads
+    the URL, and scans it for known viruses. It rewrites the URL from Squid to
+    a blocked URL or an information page with information about the scanning
+    results.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2005-02-06
+2005-04-07
 </ADDRESS>
 </BODY>
 </HTML>

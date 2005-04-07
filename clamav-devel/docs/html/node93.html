@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Viralator</TITLE>
-<META NAME="description" CONTENT="Viralator">
+<TITLE>HTTP Anti Virus Proxy</TITLE>
+<META NAME="description" CONTENT="HTTP Anti Virus Proxy">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,53 +19,56 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node94.html">
 <LINK REL="previous" HREF="node92.html">
-<LINK REL="up" HREF="node87.html">
+<LINK REL="up" HREF="node90.html">
 <LINK REL="next" HREF="node94.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1751"
+<A NAME="tex2html1789"
   HREF="node94.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html1747"
-  HREF="node87.html">
+<A NAME="tex2html1785"
+  HREF="node90.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html1743"
+<A NAME="tex2html1779"
   HREF="node92.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html1749"
+<A NAME="tex2html1787"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1752"
-  HREF="node94.html">Filesystem + ClamAV</A>
-<B> Up:</B> <A NAME="tex2html1748"
-  HREF="node87.html">Web/FTP Proxy + ClamAV</A>
-<B> Previous:</B> <A NAME="tex2html1744"
-  HREF="node92.html">SquidClamAV Redirector</A>
- &nbsp <B>  <A NAME="tex2html1750"
+<B> Next:</B> <A NAME="tex2html1790"
+  HREF="node94.html">Frox</A>
+<B> Up:</B> <A NAME="tex2html1786"
+  HREF="node90.html">Web/FTP Proxy + ClamAV</A>
+<B> Previous:</B> <A NAME="tex2html1780"
+  HREF="node92.html">Frox</A>
+ &nbsp <B>  <A NAME="tex2html1788"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00093600000000000000">
-Viralator</A>
+<H3><A NAME="SECTION00093300000000000000">
+HTTP Anti Virus Proxy</A>
 </H3>
     <B>Homepage:</B> <TT><A NAME="tex2html93"
-  HREF="http://viralator.sourceforge.net/">http://viralator.sourceforge.net/</A></TT>
-<BR>    <B>Supports:</B> clamscan
+  HREF="http://www.server-side.de/">http://www.server-side.de/</A></TT>
+<BR>    <B>Supports:</B> libclamav
 <BR>
-Viralator is a perl script that virus scans http downloads on a linux
-    server after passing through the squid proxy server.
+HAVP is a proxy with an antivirus filter. It does not cache or filter
+    content. At the moment the complete traffic is scanned. A reason for that
+    is the chance of malicious code in nearly every filetypes e.g. HTML
+    (JavaScript) or JPEG files.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2005-02-06
+2005-04-07
 </ADDRESS>
 </BODY>
 </HTML>

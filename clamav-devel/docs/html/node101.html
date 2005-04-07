@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>clamscan-procfilter</TITLE>
-<META NAME="description" CONTENT="clamscan-procfilter">
+<TITLE>Dazuko</TITLE>
+<META NAME="description" CONTENT="Dazuko">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -21,53 +21,59 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node102.html">
 <LINK REL="previous" HREF="node100.html">
-<LINK REL="up" HREF="node98.html">
+<LINK REL="up" HREF="node100.html">
 <LINK REL="next" HREF="node102.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1858"
+<A NAME="tex2html1886"
   HREF="node102.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html1854"
-  HREF="node98.html">
+<A NAME="tex2html1882"
+  HREF="node100.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html1848"
+<A NAME="tex2html1876"
   HREF="node100.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html1856"
+<A NAME="tex2html1884"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1859"
-  HREF="node102.html">KMail</A>
-<B> Up:</B> <A NAME="tex2html1855"
-  HREF="node98.html">Mail User Agent +</A>
-<B> Previous:</B> <A NAME="tex2html1849"
-  HREF="node100.html">ClamAssassin</A>
- &nbsp <B>  <A NAME="tex2html1857"
+<B> Next:</B> <A NAME="tex2html1887"
+  HREF="node102.html">Famuko</A>
+<B> Up:</B> <A NAME="tex2html1883"
+  HREF="node100.html">Filesystem + ClamAV</A>
+<B> Previous:</B> <A NAME="tex2html1877"
+  HREF="node100.html">Filesystem + ClamAV</A>
+ &nbsp <B>  <A NAME="tex2html1885"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00095300000000000000">
-clamscan-procfilter</A>
+<H3><A NAME="SECTION00094100000000000000">
+Dazuko</A>
 </H3>
-    <B>Homepage:</B> <TT><A NAME="tex2html99"
-  HREF="http://www.virtualblueness.net/~blueness/clamscan-procfilter/">http://www.virtualblueness.net/~blueness/clamscan-procfilter/</A></TT>
-<BR>    <B>Supports:</B> clamscan
+    <B>Homepage:</B> <TT><A NAME="tex2html100"
+  HREF="http://www.dazuko.org/">http://www.dazuko.org/</A></TT>
+<BR>    <B>Supports:</B> clamuko
 <BR>
-A procmail filter for clamscan to work in conjunction with procmail.
-    A new email field, X-CLAMAV, with all the viruses found, is generated in
-    the email header.                       
+This project provides a kernel module, which provides 3d-party applications
+    an interface for file access control. It was originally developed by H+BEDV
+    Datentechnik GmbH to be used for on-access virus scanning. Other uses
+    include a file-access monitor/logger or external security implementations.
+    It operates by intercepting file-access calls and passing the file
+    information to a 3rd-party application. The 3rd-party application then has
+    the opportunity to tell the kernel module to allow or deny the file-access.
+    The 3rd-party application also receives information about the file, type
+    of access, process id, and user id.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2005-02-06
+2005-04-07
 </ADDRESS>
 </BODY>
 </HTML>

@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>simscan</TITLE>
-<META NAME="description" CONTENT="simscan">
+<TITLE>Scrubber</TITLE>
+<META NAME="description" CONTENT="Scrubber">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -27,47 +27,52 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1593"
+<A NAME="tex2html1625"
   HREF="node81.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html1589"
+<A NAME="tex2html1621"
   HREF="node48.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html1583"
+<A NAME="tex2html1615"
   HREF="node79.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html1591"
+<A NAME="tex2html1623"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1594"
-  HREF="node81.html">smtpfilter</A>
-<B> Up:</B> <A NAME="tex2html1590"
+<B> Next:</B> <A NAME="tex2html1626"
+  HREF="node81.html">Secure Mail Intelligence!</A>
+<B> Up:</B> <A NAME="tex2html1622"
   HREF="node48.html">MTA + ClamAV</A>
-<B> Previous:</B> <A NAME="tex2html1584"
-  HREF="node79.html">Secure Mail Intelligence!</A>
- &nbsp <B>  <A NAME="tex2html1592"
+<B> Previous:</B> <A NAME="tex2html1616"
+  HREF="node79.html">Sagator</A>
+ &nbsp <B>  <A NAME="tex2html1624"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
 <H3><A NAME="SECTION000913200000000000000">
-simscan</A>
+Scrubber</A>
 </H3>
     <B>Homepage:</B> <TT><A NAME="tex2html82"
-  HREF="http://www.inter7.com/?page=simscan">http://www.inter7.com/?page=simscan</A></TT>
-<BR>    <B>Supports:</B> clamscan
+  HREF="http://projects.gasperino.org/scrubber/">http://projects.gasperino.org/scrubber/</A></TT>
+<BR>    <B>Supports:</B> libclamav
 <BR>
-Simscan is a mail filter for qmail, designed to block attachments during
-    the SMTP conversation. It is open source and only uses open components.
-    Very efficent (written in C).
+Scrubber is a server-side daemon for filtering mail content. It attempts
+    to solve the issues that plague many server-side content filtering
+    solutions such as extensibility, speed, SMTP-specific dependencies, and
+    virtual hosting. The core of the project a client-server daemon that
+    accepts raw content from SMTP-side client applications, breaking the
+    message into MIME parts, and then sending the content through a series of
+    loadable filter plugins to handle the message accordingly. The final
+    message is sent back to the client-side programs for SMTP reinjection.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2005-02-06
+2005-04-07
 </ADDRESS>
 </BODY>
 </HTML>
