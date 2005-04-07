@@ -24,9 +24,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.190 2005/03/28 08:15:41 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.191 2005/04/07 16:37:16 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.84c"
+#define	CM_VERSION	"0.84d"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -105,6 +105,11 @@ int	deny_severity = LOG_NOTICE;
 
 #endif
 
+#ifndef	CL_DEBUG
+static	const	char	*logFile;
+static	int	logTime;
+#endif
+
 #if defined(CL_DEBUG) && defined(C_LINUX)
 #include <sys/resource.h>
 #endif
@@ -145,7 +150,6 @@ typedef	unsigned int	in_addr_t;
  *	to get messages on the system console, see syslog.conf(5), also you
  *	can use wall(1) in the VirusEvent entry in clamd.conf
  * TODO: build with libclamav.so rather than libclamav.a
- * TODO: Support LogTime and Logfile from the conf file
  * TODO: Warn if TCPAddr doesn't allow connection from us
  * TODO: Decide action (bounce, discard, reject etc.) based on the virus
  *	found. Those with faked addresses, such as SCO.A want discarding,
@@ -226,7 +230,7 @@ struct	privdata {
 };
 
 #ifdef	SESSION
-static	int		createSession(int s);
+static	int		createSession(unsigned int s);
 #else
 static	int		pingServer(int serverNumber);
 #endif
@@ -290,6 +294,9 @@ static	int	bflag = 0;	/*
 				 * send a failure (bounce) message to the
 				 * sender. This probably isn't a good idea
 				 * since most reply addresses will be fake
+				 *
+				 * TODO: Perhaps we can have an option to
+				 * bounce outgoing mail, but not incoming?
 				 */
 static	const	char	*iface;	/*
 				 * Broadcast a message when a virus is found,
@@ -448,6 +455,7 @@ static	void	print_trace(void);
 
 static	int	verifyIncomingSocketName(const char *sockName);
 static	int	isWhitelisted(const char *emailaddress);
+static	void	logger(const char *mess);
 
 static void
 help(void)
@@ -1220,7 +1228,7 @@ main(int argc, char **argv)
 		activeServers = numServers;
 
 		sessions = (struct session *)cli_calloc(max_children, sizeof(struct session));
-		for(i = 0; i < max_children; i++)
+		for(i = 0; i < (int)max_children; i++)
 			if(createSession(i) < 0)
 				return EX_UNAVAILABLE;
 		if(activeServers == 0) {
@@ -1251,6 +1259,8 @@ main(int argc, char **argv)
 			clamav_version = strdup(version);
 		}
 	} else {
+		unsigned int session;
+
 		/*
 		 * We need to know how many connections to establish to clamd
 		 */
@@ -1263,9 +1273,9 @@ main(int argc, char **argv)
 		if(clamav_versions == NULL)
 			return EX_TEMPFAIL;
 
-		for(i = 0; i < max_children; i++) {
-			clamav_versions[i] = strdup(version);
-			if(clamav_versions[i] == NULL)
+		for(session = 0; session < max_children; session++) {
+			clamav_versions[session] = strdup(version);
+			if(clamav_versions[session] == NULL)
 				return EX_TEMPFAIL;
 		}
 	}
@@ -1305,8 +1315,6 @@ main(int argc, char **argv)
 #ifdef	CL_DEBUG
 		printf(_("When debugging it is recommended that you use Foreground mode in %s\n"), cfgfile);
 		puts(_("\tso that you can see all of the messages"));
-#else
-		const char *logFile;
 #endif
 
 		switch(fork()) {
@@ -1342,7 +1350,9 @@ main(int argc, char **argv)
 		if((open(logFile, O_WRONLY|O_APPEND) == 1) ||
 		   (open("/dev/null", O_WRONLY) == 1))
 			dup(1);
-#endif
+		if(cfgopt(copt, "LogTime"))
+			logTime++;
+#endif	/*!CL_DEBUG*/
 
 #ifdef HAVE_SETPGRP
 #ifdef SETPGRP_VOID
@@ -1514,7 +1524,7 @@ main(int argc, char **argv)
  * The caller must take care of locking the sessions array
  */
 static int
-createSession(int s)
+createSession(unsigned int s)
 {
 	int ret = 0, fd;
 	struct sockaddr_in server;
@@ -1690,7 +1700,7 @@ pingServer(int serverNumber)
 static int
 findServer(void)
 {
-	int i, j;
+	unsigned int i, j;
 	struct session *session;
 
 	/*
@@ -2386,7 +2396,6 @@ clamfi_eoh(SMFICTX *ctx)
 			 * no need to check any further
 			 */
 			return SMFIS_CONTINUE;
-
 	/*
 	 * Didn't find a recipient who is not on the white list, so all
 	 * must be on the white list, so just accept the e-mail
@@ -2508,9 +2517,11 @@ clamfi_eom(SMFICTX *ctx)
 				break;
 			case CL_VIRUS:
 				snprintf(mess, sizeof(mess), "%s: %s FOUND", privdata->filename, virname);
+				logger(mess);
 				break;
 			default:
 				snprintf(mess, sizeof(mess), "%s: %s ERROR", privdata->filename, cl_strerror(rc));
+				logger(mess);
 				break;
 		}
 
@@ -3509,7 +3520,17 @@ connect2clamd(struct privdata *privdata)
 		/*
 		 * TODO: investigate mkdtemp on LINUX and possibly others
 		 */
+#ifdef	C_AIX
+		/*
+		 * Patch by Andy Feldt <feldt@nhn.ou.edu>, AIX 5.2 sets errno
+		 * to ENOENT often and sometimes sets errno to 0 (after a
+		 * database reload) for the mkdir call
+		 */
+		if((mkdir(dir, 0700) < 0) && (errno != EEXIST) && (errno > 0) &&
+		    (errno != ENOENT)) {
+#else
 		if((mkdir(dir, 0700) < 0) && (errno != EEXIST)) {
+#endif
 			perror(dir);
 			if(use_syslog)
 				syslog(LOG_ERR, _("mkdir %s failed"), dir);
@@ -3609,7 +3630,7 @@ connect2clamd(struct privdata *privdata)
 		}
 
 #ifdef	SESSION
-		if(serverIPs[freeServer] == inet_addr("127.0.0.1")) {
+		if(serverIPs[freeServer] == (int)inet_addr("127.0.0.1")) {
 			privdata->filename = cli_gentemp(NULL);
 			if(privdata->filename) {
 				cli_dbgmsg("connect2clamd(%d): creating %s\n", freeServer, privdata->filename);
@@ -3989,7 +4010,12 @@ qfile(struct privdata *privdata, const char *sendmailId, const char *virusname)
 	DD = tm->tm_mday;
 
 	sprintf(newname, "%s/%02d%02d%02d", quarantine_dir, YY, MM, DD);
+#ifdef	C_AIX
+	if((mkdir(newname, 0700) < 0) && (errno != EEXIST) && (errno > 0) &&
+	    (errno != ENOENT)) {
+#else
 	if((mkdir(newname, 0700) < 0) && (errno != EEXIST)) {
+#endif
 		perror(newname);
 		if(use_syslog)
 			syslog(LOG_ERR, _("mkdir %s failed"), newname);
@@ -4276,7 +4302,7 @@ watchdog(void *a)
 	assert((!external) || (sessions != NULL));
 
 	while(!quitting) {
-		int i;
+		unsigned int i;
 		struct timespec ts;
 		struct timeval tp;
 		struct session *session;
@@ -4670,7 +4696,7 @@ quit(void)
 		struct session *session = sessions;
 
 		pthread_mutex_lock(&sstatus_mutex);
-		for(; i < ((localSocket != NULL) ? 1 : max_children); i++) {
+		for(; i < ((localSocket != NULL) ? 1 : (int)max_children); i++) {
 			/*
 			 * Check all free sessions are still usable
 			 * This could take some time with many free
@@ -4986,4 +5012,34 @@ isWhitelisted(const char *emailaddress)
 		return 1;
 
 	return 0;
+}
+
+static void
+logger(const char *mess)
+{
+#ifdef	CL_DEBUG
+	puts(mess);
+#else
+	FILE *fout = fopen(logFile, "a");
+
+	if(fout == NULL)
+		return;
+
+	if(logTime) {
+		time_t currtime = time((time_t)0);
+		char buf[27];
+
+		/*
+		 * FIXME: This should be HAS_CTIME_R2 and HAS_CTIME_R3
+		 */
+#ifdef	C_SOLARIS
+		ctime_r(&currtime, buf, sizeof(buf));
+#else
+		ctime_r(&currtime, buf);
+#endif
+		fprintf(fout, "%.*s -> %s\n", strlen(buf) - 1, buf, mess);
+	} else
+		fprintf(fout, "%s\n", mess);
+	fclose(fout);
+#endif
 }

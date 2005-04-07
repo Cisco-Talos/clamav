@@ -1,4 +1,4 @@
-BUILD INSTRUCTIONS
+1. BUILD INSTRUCTIONS
 
 A makefile was supplied with this which should have built the program. If it
 fails please let us know, and here are some hints for building on different
@@ -72,7 +72,7 @@ Go to sendmail.org, download the lastest sendmail, cd to libmilter and
 
 Needs -lresolv on Solaris
 
-INSTALLATION
+2. INSTALLATION
 
 Install into /usr/local/sbin/clamav-milter.
 
@@ -89,11 +89,16 @@ If you see no output you MUST upgrade your sendmail.
 
 See http://www.nmt.edu/~wcolburn/sendmail-8.12.5/libmilter/docs/sample.html
 
+2.1 LINUX (RedHat, Fedora, YellowDog etc)
+
 Installations for RedHat Linux and it's derivatives such as YellowDog:
 	Ensure that you have the sendmail-devel RPM installed
 	Add to /etc/mail/sendmail.mc before the MAILER statement:
 	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clmilter.sock, F=, T=S:4m;R:4m')dnl
 	define(`confINPUT_MAIL_FILTERS', `clamav')
+
+	Note that the INPUT_MAIL_FILTER line must come before the
+		confINPUT_MAIL_FILTERS line
 
 	Check entry in /usr/local/etc/clamd.conf of the form:
 	LocalSocket /var/run/clamav/clamd.sock
@@ -111,9 +116,15 @@ Installations for RedHat Linux and it's derivatives such as YellowDog:
 	Where /var/run/spamass.sock is the location of the spamass-milt
 	socket file (on some systems it is in /var/run/sendmail/spamass.sock).
 
+2.2 LINUX (Debian)
+
 Installations for Debian Linux:
 	As above for RedHat, except that you need the libmilter-dev package:
 		apt-get install libmilter-dev
+	To use TCPwrappers you need to:
+		apt-get install libwrap0-dev
+
+2.3 FreeBSD
 
 Installations for FreeBSD5 (may be true for other BSDs)
 	Add to /etc/mail/freebsd.mc:
@@ -139,14 +150,37 @@ Installations for FreeBSD5 (may be true for other BSDs)
 FreeBSD5.3 sendmail comes without libmilter support. You can upgrade by
 	cd /usr/ports/mail/sendmail
 	make install
-This may overwrite your existing sendmail configuration, so ensure that you
-back up first.
+
+This may overwrite your existing sendmail configuration, so ensure
+that you back up first.
 
 You should have received a script to install into /etc/rc.d as /etc/rc.d/clamav
 with this software. Add to /etc/rc.conf:
 	clamd_enable="YES"
 	clamav_milter_enable="YES"
 	clamav_milter_flags="--max-children=2 --dont-wait --timeout=0 -P local:/var/run/clamav/clamav.sock --pidfile=/var/run/clamav/clamav-milter.pid --quarantine-dir=/var/run/clamav/quarantine"
+
+2.4 Solaris 10
+
+Solaris 10 should install out of the box. Edit /etc/mail/cf/cf/main.mc adding
+the line:
+	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clmilter.sock, F=, T=S:4m;R:4m')dnl
+Then:
+	cp /etc/mail/cf/cf/main.cf /etc/mail/main.cf
+	/usr/local/sbin/clamav-milter  local:/var/run/clamav/clmilter.sock
+	mkdir /var/run/clamav
+	chown clamav /var/run/clamav	(if you use User clamav in clamd.conf)
+	chmod 700 /var/run/clamav
+
+You should have received a script to install into /etc/init.d as
+/etc/init.d/clamav-milter. Then:
+	
+	chmod 755 /etc/init.d/clamav-milter
+	ln -s /etc/init.d/clamav-milter /etc/rc2.d/S90clamav-milter
+	/etc/init.d/clamav-milter start
+	/etc/init.d/sendmail restart
+
+2.6 General Instalation Issues
 
 You may find INPUT_MAIL_FILTERS is not needed on your machine, however it
 is recommended by the Sendmail documentation and I recommend going along
@@ -210,7 +244,7 @@ able to call sendmail, for example on a Fedora Linux system:
 To test that your clamAV system is now intercepting viruses, visit
 http://www.testvirus.org
 
-CHANGE HISTORY
+3. CHANGE HISTORY
 
 Changes
 0.2:	4/3/03	clamfi_abort() now always calls pthread_mutex_unlock
@@ -716,8 +750,14 @@ Changes
 				header set (e.g. mailing lists)
 			Use {mail_addr} if no From field is received
 0.84c	18/3/05:	Better handling of {mail_addr} / <>
+0.84d	6/4/05:		Internal mode: print virus and error information on
+				stdout. This goes to LogFile when not in debug
+				mode.
+			Included patch by Andy Feldt <feldt@nhn.ou.edu> for
+				AIX 5.2. I do not have access to such a machine
+				so any feedback would be helpful
 
-INTERNATIONALISATION
+4. INTERNATIONALISATION
 
 The .po file was created with the command
 	xgettext --msgid-bugs-address=bugs@clamav.net --copyright-holder=njh@bandsman.co.uk -L c -d clamav-milter -k_ clamav-milter.c
@@ -725,12 +765,12 @@ The .po file was created with the command
 If you're interested in helping to translate this program please drop the
 author an e-mail.
 
-BUG REPORTS
+5. BUG REPORTS
 
 Please send bug reports and/or comments to Nigel Horne <njh@despammed.com> or
 bugs@clamav.net.
 
-TODO
+6. TODO
 
 There are several ideas marked as TODO in the source code. If anyone has
 any other suggestions please feel free to contact me.
