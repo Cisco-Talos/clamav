@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>SquidClamAV Redirector</TITLE>
-<META NAME="description" CONTENT="SquidClamAV Redirector">
+<TITLE>Frox</TITLE>
+<META NAME="description" CONTENT="Frox">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -21,56 +21,55 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node93.html">
 <LINK REL="previous" HREF="node91.html">
-<LINK REL="up" HREF="node87.html">
+<LINK REL="up" HREF="node90.html">
 <LINK REL="next" HREF="node93.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1741"
+<A NAME="tex2html1777"
   HREF="node93.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html1737"
-  HREF="node87.html">
+<A NAME="tex2html1773"
+  HREF="node90.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html1731"
+<A NAME="tex2html1767"
   HREF="node91.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html1739"
+<A NAME="tex2html1775"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1742"
-  HREF="node93.html">Viralator</A>
-<B> Up:</B> <A NAME="tex2html1738"
-  HREF="node87.html">Web/FTP Proxy + ClamAV</A>
-<B> Previous:</B> <A NAME="tex2html1732"
-  HREF="node91.html">SafeSquid</A>
- &nbsp <B>  <A NAME="tex2html1740"
+<B> Next:</B> <A NAME="tex2html1778"
+  HREF="node93.html">HTTP Anti Virus Proxy</A>
+<B> Up:</B> <A NAME="tex2html1774"
+  HREF="node90.html">Web/FTP Proxy + ClamAV</A>
+<B> Previous:</B> <A NAME="tex2html1768"
+  HREF="node91.html">DansGuardian Anti-Virus Patch</A>
+ &nbsp <B>  <A NAME="tex2html1776"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00093500000000000000">
-SquidClamAV Redirector</A>
+<H3><A NAME="SECTION00093200000000000000">
+Frox</A>
 </H3>
     <B>Homepage:</B> <TT><A NAME="tex2html92"
-  HREF="http://www.jackal-net.at/tiki-read_article.php?articleId=1">http://www.jackal-net.at/tiki-read_article.php?articleId=1</A></TT>
-<BR>    <B>Supports:</B> libclamav
+  HREF="http://www.hollo.org/frox/">http://www.hollo.org/frox/</A></TT>
+<BR>    <B>Supports:</B> clamscan
 <BR>
-SquidClamAV Redirector is a Squid helper script which adds virus scanning
-    for defined filename extensions. It has been tested with Python, pyclamav,
-    ClamAV, and Squid. SCAVR handles the request as given from Squid, downloads
-    the URL, and scans it for known viruses. It rewrites the URL from Squid to
-    a blocked URL or an information page with information about the scanning
-    results.
+Frox is a transparent FTP proxy which is released under the GPL. It
+    optionally supports caching (either through an external http cache
+    (eg. squid), or by maintaining a cache locally), and/or running a virus
+    scanner on downloaded files. It is written with security in mind, and in
+    the default setup it runs as a non root user in a chroot jail.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2005-02-06
+2005-04-07
 </ADDRESS>
 </BODY>
 </HTML>
