@@ -176,7 +176,9 @@ You should have received a script to install into /etc/init.d as
 /etc/init.d/clamav-milter. Then:
 	
 	chmod 755 /etc/init.d/clamav-milter
-	ln -s /etc/init.d/clamav-milter /etc/rc2.d/S90clamav-milter
+	cd /etc
+	ln init.d/clamav-milter rc2.d/S90clamav-milter
+	ln init.d/clamav-milter rc0.d/K90clamav-milter
 	/etc/init.d/clamav-milter start
 	/etc/init.d/sendmail restart
 
