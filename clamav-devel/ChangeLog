@@ -1,3 +1,8 @@
+Tue Apr 12 09:54:58 BST 2005 (trog)
+-----------------------------------
+  * libclamav/unrar: First commit of RAR3, RAR2 and RAR1 code.
+		Not yet activated.
+
 Thu Apr  7 20:00:23 CEST 2005 (tk)
 ----------------------------------
   V 0.84rc1

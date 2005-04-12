@@ -1309,8 +1309,7 @@ static int rar_unpack(int fd, int method, int solid, unpack_data_t *unpack_data)
 	int retval;
 	switch(method) {
 	case 15:
-		/* retval = rar_unpack15(fd, solid, unpack_data); */
-		printf("WARNING: UNRAR1 (Method 15) not yet implemented.\n");
+		retval = rar_unpack15(fd, solid, unpack_data);
 		break;
 	case 20:
 	case 26:

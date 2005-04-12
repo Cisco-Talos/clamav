@@ -67,14 +67,14 @@ static void corr_huff(unpack_data_t *unpack_data, unsigned int *char_set,
 		}
 	}
 	memset(num_to_place, 0, sizeof(unpack_data->ntopl));
-	for (i=6 ; i >= 0 ; i++) {
-		num_to_place[i] = (7-i) *32;
+	for (i=6 ; i >= 0 ; i--) {
+		num_to_place[i] = (7-i) * 32;
 	}
 }
 
 static void init_huff(unpack_data_t *unpack_data)
 {
-	int i;
+	unsigned int i;
 	
 	for (i=0 ; i<256 ; i++) {
 		unpack_data->place[i] = unpack_data->placea[i] = unpack_data->placeb[i] = i;
@@ -105,7 +105,7 @@ static unsigned int decode_num(unpack_data_t *unpack_data, int num, unsigned int
 {
 	int i;
 	
-	for (num&=0xff00, i=0 ; dec_tab[i] <= num ; i++) {
+	for (num&=0xfff0, i=0 ; dec_tab[i] <= num ; i++) {
 		start_pos++;
 	}
 	addbits(unpack_data, start_pos);
@@ -166,7 +166,7 @@ static void huff_decode(unpack_data_t *unpack_data)
 	unpack_data->nhfb += 16;
 	if (unpack_data->nhfb > 0xff) {
 		unpack_data->nhfb = 0x90;
-		unpack_data->nlzb >> 1;
+		unpack_data->nlzb >>= 1;
 	}
 	
 	unpack_data->window[unpack_data->unp_ptr++] = 
@@ -195,7 +195,7 @@ static void get_flag_buf(unpack_data_t *unpack_data)
 	
 	flags_place = decode_num(unpack_data, getbits(unpack_data), STARTHF2,
 				dec_hf2, pos_hf2);
-	while (1) {
+	for (;;) {
 		flags = unpack_data->chsetc[flags_place];
 		unpack_data->flag_buf = flags >> 8;
 		new_flags_place = unpack_data->ntoplc[flags++ & 0xff]++;
