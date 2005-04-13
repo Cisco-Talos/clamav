@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.236 2005/04/07 16:38:37 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.237 2005/04/13 09:10:29 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -329,6 +329,10 @@ struct scanlist {
  * FIXME: Some mailbox scans are slower with this method. I suspect that it's
  * because the scan can proceed to the end of the file rather than the end
  * of the attachment which can mean than later emails are scanned many times
+ *
+ * TODO: Also all those pmemstr()s are slow, so we need to reduce the number
+ *	and size of data scanned each time, and we fall through to
+ *	cli_parse_mbox() too often
  */
 int
 cli_mbox(const char *dir, int desc, unsigned int options)
@@ -402,8 +406,10 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			scanelem->size = (size_t)(p - q);
 			q = p;
 			s -= scanelem->size;
-		} else
-			s = scanelem->size = (size_t)(last - scanelem->start) + 1;
+		} else {
+			scanelem->size = (size_t)(last - scanelem->start) + 1;
+			break;
+		}
 		cli_dbgmsg("base64: last %u q %u s %u\n", (unsigned int)last, (unsigned int)q, s);
 		assert(scanelem->size <= size);
 		assert(&q[s - 1] <= last);
@@ -411,6 +417,20 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 	q = start;
 	s = size;
 	while((p = (char *)cli_pmemstr(q, s, "quoted-printable", 16)) != NULL) {
+		if(p != q)
+			switch(p[-1]) {
+				case ' ':
+				case ':':
+				case '=':	/* wrong but allow it */
+					break;
+				default:
+					s -= (p - q) + 16;
+					q = &p[16];
+					cli_dbgmsg("Ignore quoted-printable false positive\n");
+					cli_dbgmsg("s = %u\n", s);
+					continue;	/* false positive */
+			}
+			
 		cli_dbgmsg("Found quoted-printable\n");
 		if(scanelem) {
 			scanelem->next = cli_malloc(sizeof(struct scanlist));
@@ -428,8 +448,11 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			scanelem->size = (size_t)(p - q);
 			q = p;
 			s -= scanelem->size;
-		} else
-			s = scanelem->size = (size_t)(last - scanelem->start) + 1;
+			cli_dbgmsg("qp: scanelem->size = %u\n", scanelem->size);
+		} else {
+			scanelem->size = (size_t)(last - scanelem->start) + 1;
+			break;
+		}
 		assert(scanelem->size <= size);
 		assert(&q[s - 1] <= last);
 	}
@@ -437,6 +460,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 	if(scanlist == NULL) {
 		const struct tableinit *tableinit;
 		bool anyHeadersFound = FALSE;
+		bool hasuuencode = FALSE;
 
 		/* FIXME: message: There could of course be no decoder needed... */
 		for(tableinit = rfc821headers; tableinit->key; tableinit++)
@@ -445,15 +469,21 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				break;
 			}
 
+		if((!anyHeadersFound) && cli_pmemstr(start, size, "\nbegin ", 7))
+			/* uuencoded part */
+			hasuuencode = TRUE;
+
 		if(wasAlloced)
 			free(start);
 		else
 			munmap(start, size);
 
-		if(anyHeadersFound) {
-			cli_warnmsg("cli_mbox: unknown encoder\n");
+		if(anyHeadersFound || hasuuencode) {
+			/* TODO: reduce the number of falls through here */
+			cli_warnmsg("cli_mbox: uuencode or unknown encoder\n");
 			return cli_parse_mbox(dir, desc, options);
 		}
+
 		cli_warnmsg("cli_mbox: I believe it's plain text which must be clean\n");
 		return CL_CLEAN;
 	}
@@ -489,7 +519,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			}
 
 			if(b64size > 0L)
-				while(!isalnum(*b64start)) {
+				while((!isalnum(*b64start)) && (*b64start != '/')) {
 					if(b64size-- == 0L)
 						break;
 					b64start++;
@@ -505,7 +535,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 					return CL_EMEM;
 				messageSetEncoding(m, "base64");
 
-				while(b64size > 0L) {
+				do {
 					int length = 0;
 
 					/*printf("%ld: ", b64size); fflush(stdout);*/
@@ -535,7 +565,8 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 					--b64size;
 					if(strchr(line, '='))
 						break;
-				}
+				} while(b64size > 0L);
+
 				free(line);
 				fb = messageToFileblob(m, dir);
 				messageDestroy(m);
@@ -589,7 +620,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 				line = NULL;
 
-				while(quotedsize > 0L) {
+				do {
 					int length = 0;
 
 					/*printf("%ld: ", quotedsize); fflush(stdout);*/
@@ -617,7 +648,8 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 					}
 					quotedstart = ++ptr;
 					--quotedsize;
-				}
+				} while(quotedsize > 0L);
+
 				free(line);
 				fb = messageToFileblob(m, dir);
 				messageDestroy(m);
@@ -650,6 +682,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		return CL_CLEAN;	/* a lie - but it gets things going */
 
 	/* Fall back for now */
+	lseek(desc, 0L, SEEK_SET);
 	return cli_parse_mbox(dir, desc, options);
 }
 #else
