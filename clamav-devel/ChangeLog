@@ -1,3 +1,7 @@
+Thu Apr 14 19:39:49 BST 2005 (trog)
+  * libclamav/scanners.c, libclamav/vba_extract.[ch]:
+	Decode and scan OLE objects embedded in MS Office documents.
+
 Thu Apr 14 14:35:37 BST 2005 (trog)
 -----------------------------------
   * libclamav/scanners.c: Activate new RAR code.

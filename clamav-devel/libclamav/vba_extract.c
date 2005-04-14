@@ -42,6 +42,10 @@
 #define FALSE (0)
 #define TRUE (1)
 
+#ifndef MIN
+#define MIN(a, b)  (((a) < (b)) ? (a) : (b))
+#endif
+
 typedef struct vba_version_tag {
 	unsigned char signature[4];
 	const char *name;
@@ -685,11 +689,96 @@ unsigned char *vba_decompress(int fd, uint32_t offset, int *size)
 
 }
 
+static uint32_t ole_copy_file_data(int ifd, int ofd, uint32_t len)
+{
+        unsigned char data[8192];
+        unsigned int count, rem;
+        unsigned int todo;
+
+        rem = len;
+
+        while (rem > 0) {
+                todo = MIN(8192, rem);
+                count = cli_readn(ifd, data, todo);
+                if (count != todo) {
+                        return len-rem;
+                }
+                if (cli_writen(ofd, data, count) != count) {
+                        return len-rem-count;
+                }
+                rem -= count;
+        }
+        return len;
+}
+
+int cli_decode_ole_object(int fd, const char *dir)
+{
+	int ofd;
+	struct stat statbuf;
+	char ch, *fullname;
+	uint32_t object_size;
+
+	if (fstat(fd, &statbuf) == -1) {
+		return -1;
+	}
+	
+	if (cli_readn(fd, &object_size, 4) != 4) {
+		return -1;
+	}
+	object_size = vba_endian_convert_32(object_size, FALSE);
+
+	if ((statbuf.st_size -  object_size) >= 4) {
+		/* Probably the OLE type id */
+		if (lseek(fd, 2, SEEK_CUR) == -1) {
+			return -1;
+		}
+		
+		/* Skip attachment name */
+		do {
+			if (cli_readn(fd, &ch, 1) != 1) {
+				return -1;
+			}
+		} while (ch);
+		
+		/* Skip attachment full path */
+		do {
+			if (cli_readn(fd, &ch, 1) != 1) {
+				return -1;
+			}
+		} while (ch);
+		
+		/* Skip unknown data */
+		if (lseek(fd, 8, SEEK_CUR) == -1) {
+			return -1;
+		}
+		
+		/* Skip attachment full path */
+		do {
+			if (cli_readn(fd, &ch, 1) != 1) {
+				return -1;
+			}
+		} while (ch);
+		
+		if (cli_readn(fd, &object_size, 4) != 4) {
+			return -1;
+		}
+		object_size = vba_endian_convert_32(object_size, FALSE);
+	}
+	fullname = cli_malloc(strlen(dir) + 18);
+	sprintf(fullname, "%s/_clam_ole_object", dir);
+	ofd = open(fullname, O_WRONLY|O_CREAT|O_TRUNC, 0600);
+	free(fullname);
+        if (ofd < 0) {
+		return -1;
+	}
+	ole_copy_file_data(fd, ofd, object_size);
+	lseek(0, ofd, SEEK_SET);
+	return ofd;
+}
+
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /* Code to extract Power Point Embedded OLE2 Objects		     */
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
-#define MIN(a, b)  (((a) < (b)) ? (a) : (b))
 
 typedef struct atom_header_tag {
 	off_t foffset;
