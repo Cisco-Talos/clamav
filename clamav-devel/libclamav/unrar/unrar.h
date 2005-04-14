@@ -13,10 +13,24 @@ struct unpack_data_tag;
 #include "unrarvm.h"
 #include "unrarcmd.h"
 #include "unrarfilter.h"
+#include "clamav.h"
 
 #define FALSE (0)
 #define TRUE (1)
+#ifndef MIN
 #define MIN(a,b) ((a < b) ? a : b)
+#endif
+
+typedef struct rar_metadata_tag
+{
+	uint32_t pack_size;
+	uint32_t unpack_size;
+	uint32_t crc;
+	int encrypted;
+	uint8_t method;
+	unsigned char *filename;
+	struct rar_metadata_tag *next;
+} rar_metadata_t;
 
 #define SIZEOF_MARKHEAD 7
 #define SIZEOF_NEWMHD 13
@@ -251,6 +265,7 @@ enum BLOCK_TYPES
 	BLOCK_PPM
 };
 
+rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *limits);
 unsigned int rar_get_char(int fd, unpack_data_t *unpack_data);
 void addbits(unpack_data_t *unpack_data, int bits);
 unsigned int getbits(unpack_data_t *unpack_data);

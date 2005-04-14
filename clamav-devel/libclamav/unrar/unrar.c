@@ -13,14 +13,11 @@
 #include "unrarvm.h"
 #include "unrarfilter.h"
 #include "unrar20.h"
+#include "unrar15.h"
+#include "clamav.h"
+#include "others.h"
 
 #define int64to32(x) ((uint)(x))
-
-#ifdef RAR_DEBUG
-#define cli_dbgmsg printf
-#else
-static void cli_dbgmsg(){};
-#endif
 
 #ifdef RAR_HIGH_DEBUG
 #define rar_dbgmsg printf
@@ -125,62 +122,6 @@ static uint32_t rar_endian_convert_32(uint32_t v)
 }
 #endif
 
-int cli_readn(int fd, void *buff, unsigned int count)
-{
-        int retval;
-        unsigned int todo;
-        void *current;
-
-
-        todo = count;
-        current = buff;
-
-
-        do {
-                retval = read(fd, current, todo);
-                if (retval == 0) {
-                        return (count - todo);
-                }
-                if (retval < 0) {
-                        return -1;
-                }
-                todo -= retval;
-                current += retval;
-        } while (todo > 0);
-
-
-        return count;
-}
-
-/* Function: writen
-        Try hard to write the specified number of bytes
-*/
-int cli_writen(int fd, void *buff, unsigned int count)
-{
-        int retval;
-        unsigned int todo;
-        unsigned char *current;
-
-
-        todo = count;
-        current = (unsigned char *) buff;
-
-        do {
-                retval = write(fd, current, todo);
-                if (retval < 0) {
-                        if (errno == EINTR) {
-                                continue;
-                        }
-                        return -1;
-                }
-                todo -= retval;
-                current += retval;
-        } while (todo > 0);
-
-
-        return count;
-}
-
 static uint64_t copy_file_data(int ifd, int ofd, uint64_t len)
 {
 	unsigned char data[8192];
@@ -213,10 +154,10 @@ static int is_rar_archive(int fd)
 		return FALSE;
 	}
 	
-	if (memcmp(&mark, rar_hdr, SIZEOF_MARKHEAD) == 0) {
+	if (memcmp(&mark, &rar_hdr[0], SIZEOF_MARKHEAD) == 0) {
 		return TRUE;
 	}
-	if (memcmp(&mark, rar_hdr, SIZEOF_MARKHEAD) == 0) {
+	if (memcmp(&mark, &rar_hdr[1], SIZEOF_MARKHEAD) == 0) {
 		return TRUE;
 	}
 
@@ -224,6 +165,33 @@ static int is_rar_archive(int fd)
 	return FALSE;
 }
 
+static int is_sfx_rar_archive(int fd)
+{
+	unsigned char buff[8192];
+	const mark_header_t rar_hdr = {0x52, 0x61, 0x72, 0x21, 0x1a, 0x07, 0x00};
+	off_t offset=0, size, pos;
+	
+	lseek(fd, 0, SEEK_SET);
+	for (;;) {
+		size = cli_readn(fd, buff, 8192);
+		if ((size == 0) || (size <= 9)) {
+			return FALSE;
+		}
+		for (pos=0 ; pos < size-9 ; pos++) {
+			if (buff[0] == 0x52) {
+				if (memcmp(buff, &rar_hdr, 7) == 0) {
+					offset += pos;
+					lseek(fd, offset, SEEK_SET);
+					return TRUE;
+				}
+			}
+		}
+		offset += size-9;
+		lseek(fd, offset, SEEK_SET);
+	}
+	return FALSE;
+}
+	
 static void insert_old_dist(unpack_data_t *unpack_data, unsigned int distance)
 {
 	unpack_data->old_dist[3] = unpack_data->old_dist[2];
@@ -1325,7 +1293,7 @@ static int rar_unpack(int fd, int method, int solid, unpack_data_t *unpack_data)
 	return retval;
 }
 
-static int cli_unrar(int fd, const char *dirname)
+rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *limits)
 {
 	main_header_t *main_hdr;
 	int ofd;
@@ -1333,7 +1301,9 @@ static int cli_unrar(int fd, const char *dirname)
 	file_header_t *file_header;
 	unsigned char filename[1024];
 	unpack_data_t *unpack_data;
+	rar_metadata_t *metadata=NULL, *metadata_tail=NULL, *new_metadata;
 	
+	cli_dbgmsg("in cli_unrar\n");
 	if (!is_rar_archive(fd)) {
 		return FALSE;
 	}
@@ -1349,7 +1319,7 @@ static int cli_unrar(int fd, const char *dirname)
 	
 	main_hdr = read_header(fd, MAIN_HEAD);
 	if (!main_hdr) {
-		return FALSE;
+		return metadata;
 	}
 	cli_dbgmsg("Head CRC: %.4x\n", main_hdr->head_crc);
 	cli_dbgmsg("Head Type: %.2x\n", main_hdr->head_type);
@@ -1357,12 +1327,12 @@ static int cli_unrar(int fd, const char *dirname)
 	cli_dbgmsg("Head Size: %.4x\n", main_hdr->head_size);
 	if (main_hdr->head_size < SIZEOF_NEWMHD) {
 		free(main_hdr);
-		return FALSE;
+		return metadata;
 	}
 	if (main_hdr->head_size > SIZEOF_NEWMHD) {
 		if (!lseek(fd, main_hdr->head_size - SIZEOF_NEWMHD, SEEK_CUR)) {
 			free(main_hdr);
-			return FALSE;
+			return metadata;
 		}
 	}
 	for (;;) {
@@ -1370,9 +1340,43 @@ static int cli_unrar(int fd, const char *dirname)
 		if (!file_header) {
 			break;
 		}
+		new_metadata = malloc(sizeof(rar_metadata_t));
+		if (!new_metadata) {
+			break;
+		}
+		new_metadata->pack_size = file_header->pack_size;
+		new_metadata->unpack_size = file_header->unpack_size;
+		new_metadata->crc = file_header->file_crc;
+		new_metadata->method = file_header->method;
+		new_metadata->filename = strdup(file_header->filename);
+		new_metadata->next = NULL;
+		new_metadata->encrypted = FALSE;
+		if (metadata_tail == NULL) {
+			metadata_tail = metadata = new_metadata;
+		} else {
+			metadata_tail->next = new_metadata;
+			metadata_tail = new_metadata;
+		}
+		if (limits) {
+			if (limits->maxratio && file_header->unpack_size && file_header->pack_size) {
+				if(file_header->unpack_size / file_header->pack_size >= limits->maxratio) {
+					free(file_header->filename);
+					free(file_header);
+					break;
+				}
+			}
+
+			if (limits->maxfilesize && (metadata->unpack_size > (unsigned int) limits->maxfilesize)) {
+				free(file_header->filename);
+				free(file_header);
+				break;
+			}
+		}
+
 		if (file_header->flags & LHD_PASSWORD) {
 			cli_dbgmsg("PASSWORDed file: %s\n", file_header->filename);
-		} else {
+			metadata_tail->encrypted = TRUE;
+		} else if (metadata->unpack_size) {
 			snprintf(filename, 1024, "%s/%lu.ura", dirname, file_count);
 			ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0600);
 			if (ofd < 0) {
@@ -1397,7 +1401,7 @@ static int cli_unrar(int fd, const char *dirname)
 				cli_dbgmsg("Computed File CRC: 0x%x\n", unpack_data->unp_crc^0xffffffff);
 				if (unpack_data->unp_crc != 0xffffffff) {
 					if (file_header->file_crc != (unpack_data->unp_crc^0xffffffff)) {
-						printf("CRC error. Please send file to trog.");
+						cli_warnmsg("RAR CRC error. Please send file to trog@clamav.net");
 					}
 				}
 			}
@@ -1408,7 +1412,7 @@ static int cli_unrar(int fd, const char *dirname)
 			cli_dbgmsg("ERROR: seek failed: %ld\n", file_header->next_offset);
 			free(file_header->filename);
 			free(file_header);
-			return FALSE;
+			return metadata;
 		}
 		free(file_header->filename);
 		free(file_header);
@@ -1420,32 +1424,5 @@ static int cli_unrar(int fd, const char *dirname)
 	init_filters(unpack_data);
 	unpack_free_data(unpack_data);
 	free(unpack_data);
-	return TRUE;
-}
-
-int main(int argc, char *argv[])
-{
-	int fd, retval, i;
-
-	if (argc == 1) {
-		printf("Usage: %s <filename>\n", argv[0]);
-		exit(-1);
-	}
-	
-	for (i=1 ; i < argc ; i++) {
-		printf("%s: ", argv[i]);
-		fd = open(argv[i], O_RDONLY);
-		if (fd == -1) {
-			printf("Open failed\n");
-			exit(-1);
-		}
-		retval = cli_unrar(fd, ".");
-		if (!retval) {
-			printf(" FAILED\n");
-		} else {
-			printf(" OK\n");
-		}
-		close(fd);
-	}
-	return retval;
+	return metadata;
 }

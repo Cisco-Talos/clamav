@@ -42,12 +42,6 @@
 
 #include <mspack.h>
 
-#ifdef CL_THREAD_SAFE
-#  include <pthread.h>
-pthread_mutex_t cli_scanrar_mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
-int cli_scanrar_inuse = 0;
-
 extern short cli_leavetemps_flag;
 
 extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME */
@@ -58,7 +52,7 @@ extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME *
 #include "matcher-ac.h"
 #include "matcher-bm.h"
 #include "matcher.h"
-#include "unrarlib.h"
+#include "unrar.h"
 #include "ole2_extract.h"
 #include "vba_extract.h"
 #include "msexpand.h"
@@ -110,6 +104,7 @@ extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME *
 
 static int cli_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec);
 
+static int cli_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec);
 
 #ifdef CL_THREAD_SAFE
 static void cli_unlock_mutex(void *mtx)
@@ -121,59 +116,52 @@ static void cli_unlock_mutex(void *mtx)
 
 static int cli_scanrar(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
-	FILE *tmp = NULL;
 	int fd, ret = CL_CLEAN;
-	unsigned int files = 0, encrypted, afiles;
-	ArchiveList_struct *rarlist = NULL;
-	ArchiveList_struct *rarlist_head = NULL;
-	char *rar_data_ptr;
-	unsigned long rar_data_size;
+	unsigned int files = 0;
+	rar_metadata_t *metadata, *metadata_tmp;
 	struct cli_meta_node *mdata;
+	char *dir;
 
 
     cli_dbgmsg("in scanrar()\n");
 
-#ifdef CL_THREAD_SAFE
-    pthread_cleanup_push(cli_unlock_mutex, &cli_scanrar_mutex);
-    pthread_mutex_lock(&cli_scanrar_mutex);
-    cli_scanrar_inuse = 1;
-#endif
-
-    if(!(afiles = urarlib_list(desc, (ArchiveList_struct *) &rarlist))) {
-#ifdef CL_THREAD_SAFE
-	pthread_mutex_unlock(&cli_scanrar_mutex);
-	cli_scanrar_inuse = 0;
-#endif
-	return CL_ERAR;
+    /* generate the temporary directory */
+    dir = cli_gentemp(NULL);
+    if(mkdir(dir, 0700)) {
+	cli_dbgmsg("RAR: Can't create temporary directory %s\n", dir);
+	free(dir);
+	return CL_ETMPDIR;
     }
 
-    cli_dbgmsg("RAR: Number of archived files: %d\n", afiles);
+    metadata = metadata_tmp = cli_unrar(desc, dir, limits);
 
-    rarlist_head = rarlist;
-
-    while(rarlist) {
+    if(cli_scandir(dir, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS) {
+	    ret = CL_VIRUS;
+    } else while(metadata) {
 
 	files++;
-	encrypted = rarlist->item.Flags & 0x04;
 
-	cli_dbgmsg("RAR: %s, crc32: 0x%x, encrypted: %d, compressed: %u, normal: %u, method: %d, ratio: %d (max: %d)\n", rarlist->item.Name, rarlist->item.FileCRC, encrypted, rarlist->item.PackSize, rarlist->item.UnpSize, rarlist->item.Method, rarlist->item.PackSize ? ((unsigned int) rarlist->item.UnpSize / (unsigned int) rarlist->item.PackSize) : 0, limits ? limits->maxratio : 0);
+	cli_dbgmsg("RAR: %s, crc32: 0x%x, encrypted: %d, compressed: %u, normal: %u, method: %d, ratio: %d (max: %d)\n",
+		metadata->filename, metadata->crc, metadata->encrypted, metadata->pack_size,
+		metadata->unpack_size, metadata->method,
+		metadata->pack_size ? ((unsigned int) metadata->unpack_size / (unsigned int) metadata->pack_size) : 0, limits ? limits->maxratio : 0);
 
 	/* Scan metadata */
 	mdata = root->rar_mlist;
 	if(mdata) do {
-	    if(mdata->encrypted != encrypted)
+	    if(mdata->encrypted != metadata->encrypted)
 		continue;
 
-	    if(mdata->crc32 && (unsigned int) mdata->crc32 != rarlist->item.FileCRC)
+	    if(mdata->crc32 && (unsigned int) mdata->crc32 != metadata->crc)
 		continue;
 
-	    if(mdata->csize > 0 && (unsigned int) mdata->csize != rarlist->item.PackSize)
+	    if(mdata->csize > 0 && (unsigned int) mdata->csize != metadata->pack_size)
 		continue;
 
-	    if(mdata->size >= 0 && (unsigned int) mdata->size != rarlist->item.UnpSize)
+	    if(mdata->size >= 0 && (unsigned int) mdata->size != metadata->unpack_size)
 		continue;
 
-	    if(mdata->method && mdata->method != rarlist->item.Method)
+	    if(mdata->method && mdata->method != metadata->method)
 		continue;
 
 	    if(mdata->fileno && mdata->fileno != files)
@@ -184,7 +172,7 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 
 	    /* TODO add support for regex */
 	    /*if(mdata->filename && !strstr(zdirent.d_name, mdata->filename))*/
-	    if(mdata->filename && strcmp(rarlist->item.Name, mdata->filename))
+	    if(mdata->filename && strcmp(metadata->filename, mdata->filename))
 		continue;
 
 	    break; /* matched */
@@ -197,7 +185,7 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 	    break;
 	}
 
-	if(DETECT_ENCRYPTED && (rarlist->item.Flags & 0x04)) {
+	if(DETECT_ENCRYPTED && metadata->encrypted) {
 	    cli_dbgmsg("RAR: Encrypted files found in archive.\n");
 	    lseek(desc, 0, SEEK_SET);
 	    ret = cli_scandesc(desc, virname, scanned, root, 0, 0);
@@ -210,31 +198,34 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 	    break;
 	}
 
+/*
+	TROG - TODO: multi-volume files
 	if((rarlist->item.Flags & 0x03) != 0) {
-	    cli_dbgmsg("RAR: Skipping %s (splitted)\n", rarlist->item.Name);
+	    cli_dbgmsg("RAR: Skipping %s (split)\n", rarlist->item.Name);
 	    rarlist = rarlist->next;
 	    continue;
 	}
-
+*/
 	if(limits) {
-
-	    if(limits->maxratio && rarlist->item.UnpSize && rarlist->item.PackSize) {
-		if((unsigned int) rarlist->item.UnpSize / (unsigned int) rarlist->item.PackSize >= limits->maxratio) {
-		    cli_dbgmsg("RAR: Max ratio reached (normal: %d, compressed: %d, max: %ld)\n", (int) rarlist->item.UnpSize, (int) rarlist->item.PackSize, limits->maxratio);
+	    if(limits->maxratio && metadata->unpack_size && metadata->pack_size) {
+		if((unsigned int) metadata->unpack_size / (unsigned int) metadata->pack_size >= limits->maxratio) {
+		    cli_dbgmsg("RAR: Max ratio reached (normal: %u, compressed: %u, max: %ld)\n", metadata->unpack_size,
+		    		metadata->pack_size, limits->maxratio);
 		    *virname = "Oversized.RAR";
 		    ret = CL_VIRUS;
 		    break;
 		}
 	    }
 
-	    if(limits->maxfilesize && (rarlist->item.UnpSize > (unsigned int) limits->maxfilesize)) {
-		cli_dbgmsg("RAR: %s: Size exceeded (%u, max: %lu)\n", rarlist->item.Name, (unsigned int) rarlist->item.UnpSize, limits->maxfilesize);
-		rarlist = rarlist->next;
+	    if(limits->maxfilesize && (metadata->unpack_size > (unsigned int) limits->maxfilesize)) {
+		cli_dbgmsg("RAR: %s: Size exceeded (%u, max: %lu)\n", metadata->filename,
+					metadata->unpack_size, limits->maxfilesize);
 		if(BLOCKMAX) {
 		    *virname = "RAR.ExceededFileSize";
 		    ret = CL_VIRUS;
 		    break;
 		}
+		metadata = metadata->next;
 		continue;
 	    }
 
@@ -249,83 +240,20 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 	    }
 	}
 
-        if(rarlist->item.FileAttr & RAR_FENTRY_ATTR_DIRECTORY) {
-            rarlist = rarlist->next;
-            continue;
-        }
-
-	if((tmp = tmpfile()) == NULL) {
-	    cli_dbgmsg("RAR: Can't generate temporary file.\n");
-#ifdef CL_THREAD_SAFE
-	    pthread_mutex_unlock(&cli_scanrar_mutex);
-	    cli_scanrar_inuse = 0;
-#endif
-	    return CL_ETMPFILE;
-	}
-	fd = fileno(tmp);
-
-	if( urarlib_get(&rar_data_ptr, &rar_data_size, rarlist->item.Name, desc, "clam")) {
-	    cli_dbgmsg("RAR: Extracted: %s, size: %lu\n", rarlist->item.Name, rar_data_size);
-	    if(fwrite(rar_data_ptr, 1, rar_data_size, tmp) != rar_data_size) {
-		cli_dbgmsg("RAR: Can't write to file.\n");
-		fclose(tmp);
-		tmp = NULL;
-		ret = CL_ERAR;
-		if(rar_data_ptr) {
-		    free(rar_data_ptr);
-		    rar_data_ptr = NULL;
-		}
-		break;
-	    }
-
-	    if(rar_data_ptr) {
-		free(rar_data_ptr);
-		rar_data_ptr = NULL;
-	    }
-	    if(fflush(tmp) != 0) {
-		cli_dbgmsg("RAR: fflush() failed: %s\n", strerror(errno));
-		fclose(tmp);
-		urarlib_freelist(rarlist_head);
-#ifdef CL_THREAD_SAFE
-		pthread_mutex_unlock(&cli_scanrar_mutex);
-		cli_scanrar_inuse = 0;
-#endif
-		return CL_EFSYNC;
-	    }
-
-	    lseek(fd, 0, SEEK_SET);
-	    if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, arec, mrec)) == CL_VIRUS ) {
-		cli_dbgmsg("RAR: Infected with %s\n", *virname);
-
-		fclose(tmp);
-		urarlib_freelist(rarlist);
-#ifdef CL_THREAD_SAFE
-		pthread_mutex_unlock(&cli_scanrar_mutex);
-		cli_scanrar_inuse = 0;
-#endif
-  		return ret;
-	    }
-
-	} else {
-	    cli_dbgmsg("RAR: Can't decompress file %s\n", rarlist->item.Name);
-	    fclose(tmp);
-	    tmp = NULL;
-	    ret = CL_ERAR; /* WinRAR 3.0 ? */
-	    break;
-	}
-
-	fclose(tmp);
-	tmp = NULL;
-	rarlist = rarlist->next;
+	metadata = metadata->next;
     }
 
-    urarlib_freelist(rarlist_head);
-#ifdef CL_THREAD_SAFE
-    pthread_mutex_unlock(&cli_scanrar_mutex);
-    cli_scanrar_inuse = 0;
-    pthread_cleanup_pop(0);
-#endif
-    
+    if(!cli_leavetemps_flag)
+        cli_rmdirs(dir);
+
+    free(dir);
+    metadata = metadata_tmp;
+    while (metadata) {
+    	metadata_tmp = metadata->next;
+    	free(metadata->filename);
+    	free(metadata);
+    	metadata = metadata_tmp;
+    }
     cli_dbgmsg("RAR: Exit code: %d\n", ret);
 
     return ret;
@@ -1391,7 +1319,7 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 
     switch(type) {
 	case CL_TYPE_RAR:
-	    if(!DISABLE_RAR && SCAN_ARCHIVE && !cli_scanrar_inuse)
+	    if(!DISABLE_RAR && SCAN_ARCHIVE)
 		ret = cli_scanrar(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
