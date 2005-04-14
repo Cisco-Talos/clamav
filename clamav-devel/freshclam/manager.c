@@ -196,9 +196,9 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 
 	if(arg) {
 	    if(optc(opt, 'd'))
-		execute( "OnUpdateExecute", pt );
+		execute("OnUpdateExecute", arg);
             else
-		system(pt);
+		system(arg);
 	}
 
 	return 0;
