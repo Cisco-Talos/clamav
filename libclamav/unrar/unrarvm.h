@@ -6,7 +6,9 @@
 
 #define FALSE (0)
 #define TRUE (1)
+#ifndef MIN
 #define MIN(a,b) ((a < b) ? a : b)
+#endif
 
 #define RARVM_MEMSIZE	0x40000
 #define RARVM_MEMMASK	(RARVM_MEMSIZE-1)

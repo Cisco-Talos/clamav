@@ -1,3 +1,11 @@
+Thu Apr 14 14:35:37 BST 2005 (trog)
+-----------------------------------
+  * libclamav/scanners.c: Activate new RAR code.
+
+  * libclamav/unrar.c, unrar.h, unrarvm.h: update code for activation
+
+  * libclamav/Makefile.am, Makefile.in: compile in new RAR code
+ 
 Thu Apr 14 14:11:31 CEST 2005 (tk)
 ----------------------------------
   * freshclam/manager.c: pass proper argument to OnErrorExecute (patch by

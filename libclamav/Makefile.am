@@ -16,7 +16,7 @@
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 
-INCLUDES = -I$(top_srcdir) -I@srcdir@/zziplib -I@srcdir@/mspack
+INCLUDES = -I$(top_srcdir) -I@srcdir@/zziplib -I@srcdir@/mspack -I@srcdir@/unrar
 
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@
 
@@ -49,8 +49,6 @@ libclamav_la_SOURCES = \
 	scanners.h \
 	filetypes.c \
 	filetypes.h \
-	unrarlib.c \
-	unrarlib.h \
 	zziplib/zzip-conf.h \
 	zziplib/zzip-config.h \
 	zziplib/zzip-dir.c \
@@ -124,6 +122,21 @@ libclamav_la_SOURCES = \
 	is_tar.c \
 	is_tar.h \
 	tnef.c \
-	tnef.h
+	tnef.h \
+	unrar/unrar15.c \
+	unrar/unrar20.h \
+	unrar/unrarcmd.h \
+	unrar/unrar.h \
+	unrar/unrarvm.c \
+	unrar/unrar15.h \
+	unrar/unrar.c \
+	unrar/unrarfilter.c \
+	unrar/unrarppm.c \
+	unrar/unrarvm.h \
+	unrar/unrar20.c \
+	unrar/unrarcmd.c \
+	unrar/unrarfilter.h \
+	unrar/unrarppm.h
+
 
 lib_LTLIBRARIES = libclamav.la
