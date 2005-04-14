@@ -1,3 +1,7 @@
+Thu Apr 14 14:04:46 CEST 2005 (tk)
+----------------------------------
+  * configure: check for ctime_r
+
 Tue Apr 12 09:54:58 BST 2005 (trog)
 -----------------------------------
   * libclamav/unrar: First commit of RAR3, RAR2 and RAR1 code.

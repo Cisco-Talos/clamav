@@ -93,6 +93,15 @@
 /* ancillary data style fd pass */
 #undef HAVE_CONTROL_IN_MSGHDR
 
+/* Define to 1 if you have the `ctime_r' function. */
+#undef HAVE_CTIME_R
+
+/* ctime_r takes 2 arguments */
+#undef HAVE_CTIME_R_2
+
+/* ctime_r takes 3 arguments */
+#undef HAVE_CTIME_R_3
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
