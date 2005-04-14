@@ -1,3 +1,8 @@
+Thu Apr 14 14:11:31 CEST 2005 (tk)
+----------------------------------
+  * freshclam/manager.c: pass proper argument to OnErrorExecute (patch by
+			 Alexandre Biancalana <ale*seudns.net>)
+
 Thu Apr 14 14:04:46 CEST 2005 (tk)
 ----------------------------------
   * configure: check for ctime_r
