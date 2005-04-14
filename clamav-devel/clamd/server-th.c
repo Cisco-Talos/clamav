@@ -30,6 +30,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <clamav.h>
 
 #include "server.h"
 #include "thrmgr.h"
