@@ -157,7 +157,8 @@ clamav\-milter will issue an error and fail to start.
 \fBNote\fR - this option only works when using LocalSocket.
 .TP
 \fB\-\-server=HOSTNAME/ADDRESS, \-s HOSTNAME/ADDRESS\fR
-IP address or hostname of server(s) running clamd (when using TCPsocket).
+IP address or hostname of server(s) running clamd (when using TCPsocket and
+\-\-external).
 More than one server may be specified, separating the server's names by colons.
 If more than one server is specified, clamav\-milter will load balance
 between the available servers. All the servers must be up when clamav\-milter
