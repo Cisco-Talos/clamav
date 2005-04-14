@@ -516,8 +516,10 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	}
     }
 
-    if(broken)
+    if(broken) {
+	free(section_hdr);
 	return CL_CLEAN;
+    }
 
     /* UPX & FSG support */
 
