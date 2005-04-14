@@ -822,7 +822,7 @@ static int cli_scandir(const char *dirname, const char **virname, long int *scan
 
 static int cli_vba_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
-	int ret = CL_CLEAN, i, fd, data_len;
+	int ret = CL_CLEAN, i, fd, ofd, data_len;
 	vba_project_t *vba_project;
 	DIR *dd;
 	struct dirent *dent;
@@ -925,6 +925,22 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 			
     if(ret != CL_CLEAN)
     	return ret;
+
+    /* Check directory for embedded OLE objects */
+    fullname = (char *) cli_malloc(strlen(dirname) + 16);
+    sprintf(fullname, "%s/_1_Ole10Native", dirname);
+    fd = open(fullname, O_RDONLY);
+    free(fullname);
+    if (fd >= 0) {
+    	ofd = cli_decode_ole_object(fd, dirname);
+	if (ofd >= 0) {
+		ret = cli_scandesc(ofd, virname, scanned, root, 0, 0);
+		close(ofd);
+	}
+	close(fd);
+	if(ret != CL_CLEAN)
+	    return ret;
+    }
 
     if((dd = opendir(dirname)) != NULL) {
 #ifdef HAVE_READDIR_R_3
