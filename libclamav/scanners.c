@@ -106,6 +106,7 @@ static int cli_scanfile(const char *filename, const char **virname, unsigned lon
 
 static int cli_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec);
 
+/*
 #ifdef CL_THREAD_SAFE
 static void cli_unlock_mutex(void *mtx)
 {
@@ -113,6 +114,7 @@ static void cli_unlock_mutex(void *mtx)
     pthread_mutex_unlock(mtx);
 }
 #endif
+*/
 
 static int cli_scanrar(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
