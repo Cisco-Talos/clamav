@@ -758,6 +758,9 @@ Changes
 			Included patch by Andy Feldt <feldt@nhn.ou.edu> for
 				AIX 5.2. I do not have access to such a machine
 				so any feedback would be helpful
+0.84e	18/4/05:	Fixed a multi-threading problem relating to updating
+				the database when in internal mode
+			Use HAVE_CTIME_R_[23]
 
 4. INTERNATIONALISATION
 
