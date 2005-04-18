@@ -1,3 +1,9 @@
+Mon Apr 18 11:55:48 BST 2005
+----------------------------
+  * clamav-milter:	Fixed a multi-threading problem relating to updating
+				the database when in internal mode
+			Use HAVE_CTIME_R_[23]
+
 Thu Apr 14 19:39:49 BST 2005 (trog)
   * libclamav/scanners.c, libclamav/vba_extract.[ch]:
 	Decode and scan OLE objects embedded in MS Office documents.

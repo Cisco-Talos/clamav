@@ -20,13 +20,11 @@
  *
  * Install into /usr/local/sbin/clamav-milter
  *
- * See http://www.nmt.edu/~wcolburn/sendmail-8.12.5/libmilter/docs/sample.html
- *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.191 2005/04/07 16:37:16 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.192 2005/04/18 10:53:34 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.84d"
+#define	CM_VERSION	"0.84e"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1362,7 +1360,7 @@ main(int argc, char **argv)
 #endif
 #else
 #ifdef HAVE_SETSID
-		 setsid();
+		setsid();
 #endif
 #endif
 	}
@@ -1482,8 +1480,7 @@ main(int argc, char **argv)
 	}
 
 	if(smfi_setconn(port) == MI_FAILURE) {
-		fprintf(stderr, _("%s: smfi_setconn failed\n"),
-			argv[0]);
+		cli_errmsg("smfi_setconn failure\n");
 		return EX_SOFTWARE;
 	}
 
@@ -1491,6 +1488,14 @@ main(int argc, char **argv)
 		cli_errmsg("smfi_register failure\n");
 		return EX_UNAVAILABLE;
 	}
+
+#if	0
+	/* Only supported by later libmilter */
+	if(smfi_opensocket(1) == MI_FAILURE) {
+		cli_errmsg("can't open/create %s\n", port);
+		return EX_CONFIG;
+	}
+#endif
 
 	signal(SIGPIPE, SIG_IGN);
 
@@ -1707,10 +1712,10 @@ findServer(void)
 	 * FIXME: Sessions code isn't flexible at handling servers
 	 *	appearing and disappearing, e.g. sessions[n_children].sock == -1
 	 */
+	i = 0;
 	pthread_mutex_lock(&n_children_mutex);
 	assert(n_children > 0);
 	assert(n_children <= max_children);
-	i = 0;
 	j = n_children - 1;
 	pthread_mutex_unlock(&n_children_mutex);
 
@@ -1915,12 +1920,10 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		cli_warnmsg("Not accepting inputs at the moment\n");
 		if(dont_wait)
 			return SMFIS_TEMPFAIL;
-		do {
+		pthread_mutex_lock(&accept_mutex);
+		while(!accept_inputs)
 			pthread_cond_wait(&accept_cond, &accept_mutex);
-			pthread_mutex_lock(&accept_mutex);
-			accepting = accept_inputs;
-			pthread_mutex_unlock(&accept_mutex);
-		} while(!accepting);
+		pthread_mutex_unlock(&accept_mutex);
 		cli_warnmsg("Accepting inputs again\n");
 	}
 
@@ -5026,18 +5029,20 @@ logger(const char *mess)
 		return;
 
 	if(logTime) {
+#ifdef HAVE_CTIME_R
 		time_t currtime = time((time_t)0);
 		char buf[27];
 
-		/*
-		 * FIXME: This should be HAS_CTIME_R2 and HAS_CTIME_R3
-		 */
-#ifdef	C_SOLARIS
+#ifdef HAVE_CTIME_R_3
 		ctime_r(&currtime, buf, sizeof(buf));
 #else
 		ctime_r(&currtime, buf);
 #endif
 		fprintf(fout, "%.*s -> %s\n", strlen(buf) - 1, buf, mess);
+#else	/*!HAVE_CTIME_R*/
+		/* TODO */
+		fprintf(fout, "%s\n", mess);
+#endif
 	} else
 		fprintf(fout, "%s\n", mess);
 	fclose(fout);
