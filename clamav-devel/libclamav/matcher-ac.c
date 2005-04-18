@@ -34,7 +34,6 @@
 #include "others.h"
 #include "matcher.h"
 #include "matcher-ac.h"
-#include "unrarlib.h"
 #include "defaults.h"
 #include "filetypes.h"
 
