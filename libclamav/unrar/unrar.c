@@ -1,3 +1,25 @@
+/*
+ *  Extract RAR archives
+ *
+ *  Copyright (C) 2005 trog@uncon.org
+ *
+ *  This code is based on the work of Alexander L. Roshal
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -1366,7 +1388,7 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 				}
 			}
 
-			if (limits->maxfilesize && (metadata->unpack_size > (unsigned int) limits->maxfilesize)) {
+			if (limits->maxfilesize && (file_header->unpack_size > (unsigned int) limits->maxfilesize)) {
 				free(file_header->filename);
 				free(file_header);
 				break;
@@ -1376,7 +1398,7 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 		if (file_header->flags & LHD_PASSWORD) {
 			cli_dbgmsg("PASSWORDed file: %s\n", file_header->filename);
 			metadata_tail->encrypted = TRUE;
-		} else if (metadata->unpack_size) {
+		} else if (file_header->unpack_size) {
 			snprintf(filename, 1024, "%s/%lu.ura", dirname, file_count);
 			ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0600);
 			if (ofd < 0) {
