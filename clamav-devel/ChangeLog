@@ -1,3 +1,8 @@
+Tue Apr 19 10:22:26 BST 2005 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Some Sober.N were getting through, thanks to Christoph
+				for pointing this out
+
 Tue Apr 19 01:26:56 CEST 2005 (tk)
 ----------------------------------
   * libclamav/unrarlib.[ch]: removed
