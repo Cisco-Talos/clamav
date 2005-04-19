@@ -220,14 +220,19 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     }
 
     switch(EC16(file_hdr.Machine)) {
+	case 0x0:
+	    cli_dbgmsg("Machine type: Unknown\n");
 	case 0x14c:
 	    cli_dbgmsg("Machine type: 80386\n");
 	    break;
-	case 0x014d:
+	case 0x14d:
 	    cli_dbgmsg("Machine type: 80486\n");
 	    break;
-	case 0x014e:
+	case 0x14e:
 	    cli_dbgmsg("Machine type: 80586\n");
+	    break;
+	case 0x160:
+	    cli_dbgmsg("Machine type: R30000 (big-endian)\n");
 	    break;
 	case 0x162:
 	    cli_dbgmsg("Machine type: R3000\n");
@@ -265,14 +270,44 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	case 0x1a2:
 	    cli_dbgmsg("Machine type: Hitachi SH3\n");
 	    break;
+	case 0x1a3:
+	    cli_dbgmsg("Machine type: Hitachi SH3-DSP\n");
+	    break;
+	case 0x1a4:
+	    cli_dbgmsg("Machine type: Hitachi SH3-E\n");
+	    break;
 	case 0x1a6:
 	    cli_dbgmsg("Machine type: Hitachi SH4\n");
+	    break;
+	case 0x1a8:
+	    cli_dbgmsg("Machine type: Hitachi SH5\n");
 	    break;
 	case 0x1c0:
 	    cli_dbgmsg("Machine type: ARM\n");
 	    break;
 	case 0x1c2:
 	    cli_dbgmsg("Machine type: THUMB\n");
+	    break;
+	case 0x1d3:
+	    cli_dbgmsg("Machine type: AM33\n");
+	    break;
+	case 0x520:
+	    cli_dbgmsg("Machine type: Infineon TriCore\n");
+	    break;
+	case 0xcef:
+	    cli_dbgmsg("Machine type: CEF\n");
+	    break;
+	case 0xebc:
+	    cli_dbgmsg("Machine type: EFI Byte Code\n");
+	    break;
+	case 0x9041:
+	    cli_dbgmsg("Machine type: M32R\n");
+	    break;
+	case 0xc0ee:
+	    cli_dbgmsg("Machine type: CEE\n");
+	    break;
+	case 0x8664:
+	    cli_dbgmsg("Machine type: AMD64\n");
 	    break;
 	default:
 	    cli_warnmsg("Unknown machine type in PE header (0x%x)\n", EC16(file_hdr.Machine));
