@@ -1,4 +1,9 @@
+Wed Apr 20 01:50:36 CEST 2005 (tk)
+----------------------------------
+  * libclamav/pe.c: Add more machine types (thanks to Christoph)
+
 Tue Apr 19 15:11:19 CEST 2005 (acab)
+------------------------------------
   * libclamav/pe.c: Fixed a typo in FSG detection
                   (reported by Didi Rieder <adrieder*sbox.tugraz.at>)
 
