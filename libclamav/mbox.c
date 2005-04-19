@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.237 2005/04/13 09:10:29 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.238 2005/04/19 09:20:55 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -188,6 +188,7 @@ static	int	rfc1341(message *m, const char *dir);
 #endif
 static	bool	usefulHeader(int commandNumber, const char *cmd);
 static	void	uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin);
+static	char	*getline(char *buffer, size_t len, FILE *fin);
 #ifdef	NEW_WORLD
 static	const	char	*cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns);
 #endif
@@ -430,7 +431,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 					cli_dbgmsg("s = %u\n", s);
 					continue;	/* false positive */
 			}
-			
+
 		cli_dbgmsg("Found quoted-printable\n");
 		if(scanelem) {
 			scanelem->next = cli_malloc(sizeof(struct scanlist));
@@ -908,7 +909,7 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 		 * Ignore any blank lines at the top of the message
 		 */
 		while(strchr("\r\n", buffer[0]) &&
-		     (fgets(buffer, sizeof(buffer) - 1, fd) != NULL))
+		     (getline(buffer, sizeof(buffer) - 1, fd) != NULL))
 			;
 
 		buffer[sizeof(buffer) - 1] = '\0';
@@ -977,18 +978,14 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 
 	strcpy(buffer, firstLine);
 	do {
-		const char *start;
+		char *line;
 
 		(void)cli_chomp(buffer);
-		/*
-		 * Ignore leading CR, e.g. if newlines are LFCR instead
-		 * or CRLF
-		 */
-		for(start = buffer; *start == '\r'; start++)
-			;
 
-		if(start[0] == '\0')
-			start = NULL;
+		line = buffer;
+
+		if(line[0] == '\0')
+			line = NULL;
 
 		/*
 		 * Don't blank lines which are only spaces from headers,
@@ -1008,7 +1005,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 		if(inHeader) {
 			cli_dbgmsg("parseEmailFile: check '%s' contMarker %d fullline 0x%p\n",
 				buffer ? buffer : "", (int)contMarker, fullline);
-			if(start && isspace(start[0])) {
+			if(line && isspace(line[0])) {
 				char copy[sizeof(buffer)];
 
 				strcpy(copy, buffer);
@@ -1041,7 +1038,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 				}
 			}
 			lastWasBlank = FALSE;
-			if((start == NULL) && (fullline == NULL)) {	/* empty line */
+			if((line == NULL) && (fullline == NULL)) {	/* empty line */
 				if(!contMarker) {
 					/*
 					 * A blank line signifies the end of
@@ -1066,17 +1063,17 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 					/*
 					 * Continuation of line we're ignoring?
 					 */
-					if((start[0] == '\t') || (start[0] == ' ') || contMarker) {
-						contMarker = continuationMarker(start);
+					if((line[0] == '\t') || (line[0] == ' ') || contMarker) {
+						contMarker = continuationMarker(line);
 						continue;
 					}
 
 					/*
 					 * Is this a header we're interested in?
 					 */
-					if((strchr(start, ':') == NULL) ||
-					   (cli_strtokbuf(start, 0, ":", cmd) == NULL)) {
-						if(strncmp(start, "From ", 5) == 0)
+					if((strchr(line, ':') == NULL) ||
+					   (cli_strtokbuf(line, 0, ":", cmd) == NULL)) {
+						if(strncmp(line, "From ", 5) == 0)
 							anyHeadersFound = TRUE;
 						continue;
 					}
@@ -1095,16 +1092,16 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 								anyHeadersFound = usefulHeader(commandNumber, cmd);
 							continue;
 					}
-					fullline = strdup(start);
-					fulllinelength = strlen(start) + 1;
-				} else if(start != NULL) {
-					fulllinelength += strlen(start);
+					fullline = strdup(line);
+					fulllinelength = strlen(line) + 1;
+				} else if(line != NULL) {
+					fulllinelength += strlen(line);
 					fullline = cli_realloc(fullline, fulllinelength);
-					strcat(fullline, start);
+					strcat(fullline, line);
 				}
 
-				if(start) {
-					contMarker = continuationMarker(start);
+				if(line) {
+					contMarker = continuationMarker(line);
 
 					if(contMarker)
 						continue;
@@ -1128,7 +1125,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 						continue;
 				}
 
-				if(start) {
+				if(line) {
 					int quotes = 0;
 					for(qptr = fullline; *qptr; qptr++)
 						if(*qptr == '\"')
@@ -1150,16 +1147,16 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 				free(fullline);
 				fullline = NULL;
 			}
-		} else if(start && isuuencodebegin(start))
+		} else if(line && isuuencodebegin(line))
 			/*
 			 * Fast track visa to uudecode.
 			 * TODO: binhex, yenc
 			 */
-			uufasttrack(ret, start, dir, fin);
+			uufasttrack(ret, line, dir, fin);
 		else
-			if(messageAddStr(ret, start) < 0)
+			if(messageAddStr(ret, line) < 0)
 				break;
-	} while(fgets(buffer, sizeof(buffer) - 1, fin) != NULL);
+	} while(getline(buffer, sizeof(buffer) - 1, fin) != NULL);
 
 	if(fullline) {
 		if(*fullline) switch(commandNumber) {
@@ -2024,6 +2021,9 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 
 					switch(messageGetMimeType(aMessage)) {
 					case APPLICATION:
+					case AUDIO:
+					case IMAGE:
+					case VIDEO:
 						break;
 					case NOMIME:
 						cli_dbgmsg("No mime headers found in multipart part %d\n", i);
@@ -2201,10 +2201,6 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							mainMessage = NULL;
 						}
 						continue;
-					case AUDIO:
-					case IMAGE:
-					case VIDEO:
-						break;
 					default:
 						cli_warnmsg("Only text and application attachments are supported, type = %d\n",
 							messageGetMimeType(aMessage));
@@ -3880,6 +3876,62 @@ uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin)
 	}
 
 	fileblobDestroy(fb);
+}
+
+/*
+ * Like fgets but cope with end of line by "\n", "\r\n", "\n\r", "\r"
+ */
+static char *
+getline(char *buffer, size_t len, FILE *fin)
+{
+	char *ret;
+
+	if(feof(fin))
+		return NULL;
+
+	if((len == 0) || (buffer == NULL)) {
+		cli_errmsg("Invalid call to getline(). Report to bugs@clamav.net\n");
+		return NULL;
+	}
+
+	ret = buffer;
+
+	do {
+		int c = getc(fin);
+
+		if(ferror(fin))
+			return NULL;
+
+		switch(c) {
+			case '\n':
+				*buffer++ = '\n';
+				c = getc(fin);
+				if((c != '\r') && !feof(fin))
+					ungetc(c, fin);
+				break;
+			default:
+				*buffer++ = c;
+				continue;
+			case EOF:
+				break;
+			case '\r':
+				*buffer++ = '\n';
+				c = getc(fin);
+				if((c != '\n') && !feof(fin))
+					ungetc(c, fin);
+				break;
+		}
+		break;
+	} while(--len > 0);
+
+	if(len == 0) {
+		/* probably, the email breaks RFC821 */
+		cli_dbgmsg("getline: buffer overflow stopped\n");
+		return NULL;
+	}
+	*buffer = '\0';
+
+	return ret;
 }
 
 #ifdef	NEW_WORLD
