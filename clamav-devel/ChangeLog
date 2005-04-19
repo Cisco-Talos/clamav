@@ -1,3 +1,7 @@
+Tue Apr 19 15:11:19 CEST 2005 (acab)
+  * bclamav/pe.c: Fixed a typo in FSG detection
+                  (reported by Didi Rieder <adrieder*sbox.tugraz.at>)
+
 Tue Apr 19 12:30:58 BST 2005 (trog)
 -----------------------------------
   * libclamav/unrar: Add copyright notice. Fix metadata ref bug.

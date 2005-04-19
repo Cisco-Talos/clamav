@@ -708,7 +708,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		newedi = cli_readint32(support + 4) - EC32(optional_hdr.ImageBase); /* 1st dest */
 		newesi = cli_readint32(support + 8) - EC32(optional_hdr.ImageBase); /* Source */
 
-		if(newesi < EC32(section_hdr[i + 1].VirtualAddress || newesi >= EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData))) {
+		if(newesi < EC32(section_hdr[i + 1].VirtualAddress) || newesi >= EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData)) {
 		    cli_dbgmsg("FSG: Source buffer out of section bounds\n");
 		    free(support);
 		    break;
@@ -866,7 +866,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		}
 		oldep -= EC32(section_hdr[i + 1].VirtualAddress);
 
-		if(newesi < EC32(section_hdr[i + 1].VirtualAddress || newesi >= EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData))) {
+		if(newesi < EC32(section_hdr[i + 1].VirtualAddress) || newesi >= EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData)) {
 		    cli_dbgmsg("FSG: Source buffer out of section bounds\n");
 		    break;
 		}
