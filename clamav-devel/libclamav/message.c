@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.152 2005/03/28 11:03:15 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.153 2005/04/21 11:12:06 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -712,6 +712,13 @@ messageSetEncoding(message *m, const char *enctype)
 				 */
 				continue;
 
+			if(strcmp(e->string, "uuencode") == 0)
+				/*
+				 * No need to test here - fast track visa will have
+				 * handled uuencoded files
+				 */
+				continue;
+
 			sim = simil(type, e->string);
 
 			if(sim == 100) {
@@ -949,8 +956,9 @@ messageIsEncoding(message *m)
 		(strncasecmp(line, "Received: ", 10) == 0) &&
 		(cli_filetype(line, strlen(line)) == CL_TYPE_MAIL))
 			m->bounce = m->body_last;
-	else if((m->uuencode == NULL) && isuuencodebegin(line))
-		m->uuencode = m->body_last;
+		/* Not needed with fast track visa technology */
+	/*else if((m->uuencode == NULL) && isuuencodebegin(line))
+		m->uuencode = m->body_last;*/
 	else if((m->binhex == NULL) &&
 		strstr(line, "BinHex") &&
 		(simil(line, binhex) > 90))
@@ -1305,12 +1313,8 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		if(filename)
 			free((char *)filename);
 
-		if(m->numberOfEncTypes == 0) {
-			if(uuencodeBegin(m))
-				messageSetEncoding(m, "x-uuencode");
-			else
-				return exportText(messageGetBody(m), ret);
-		}
+		if(m->numberOfEncTypes == 0)
+			return exportText(messageGetBody(m), ret);
 	}
 
 	for(i = 0; i < m->numberOfEncTypes; i++) {
@@ -1332,36 +1336,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		/*
 		 * Find the filename to decode
 		 */
-		if((enctype == UUENCODE) || uuencodeBegin(m)) {
-			t_line = uuencodeBegin(m);
-
-			if(t_line == NULL) {
-				/*cli_warnmsg("UUENCODED attachment is missing begin statement\n");*/
-				m->uuencode = NULL;
-				m->base64chars = 0;
-				if(i == m->numberOfEncTypes - 1) {
-					(*destroy)(ret);
-					return NULL;
-				}
-				continue;
-			}
-
-			filename = cli_strtok(lineGetData(t_line->t_line), 2, " ");
-
-			if(filename == NULL) {
-				cli_dbgmsg("UUencoded attachment sent with no filename\n");
-				(*destroy)(ret);
-				return NULL;
-			}
-			cli_chomp(filename);
-
-			cli_dbgmsg("Set uuencode filename to \"%s\"\n", filename);
-
-			(*setFilename)(ret, dir, filename);
-			t_line = t_line->t_next;
-			enctype = UUENCODE;
-			m->uuencode = NULL;
-		} else if(((enctype == YENCODE) && yEncBegin(m)) || ((i == 0) && yEncBegin(m))) {
+		if(((enctype == YENCODE) && yEncBegin(m)) || ((i == 0) && yEncBegin(m))) {
 			/*
 			 * TODO: handle multipart yEnc encoded files
 			 */
@@ -1386,6 +1361,15 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			enctype = YENCODE;
 			m->yenc = NULL;
 		} else {
+			if(enctype == UUENCODE) {
+				/*
+				 * The body will have been stripped out by the fast track visa
+				 * system. Treat as plain/text, which means we'll still scan
+				 * for funnies outside of the uuencoded portion.
+				 */
+				cli_dbgmsg("messageExport: treat uuencode as text/plain");
+				enctype = m->encodingTypes[i] = NOENCODING;
+			}
 			filename = (char *)messageFindArgument(m, "filename");
 			if(filename == NULL) {
 				filename = (char *)messageFindArgument(m, "name");
@@ -1397,6 +1381,8 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 					/*
 					 * Some virus attachments don't say how they've
 					 * been encoded. We assume base64
+					 *
+					 * FIXME: don't do this if it's a fall through from uuencode
 					 */
 					messageSetEncoding(m, "base64");
 			}
@@ -1435,16 +1421,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			unsigned char *bigbuf;
 			size_t datasize;
 
-			if(enctype == UUENCODE) {
-				/*
-				 * There should be no blank lines in uuencoded
-				 * files...
-				 */
-				if(line == NULL)
-					continue;
-				if(strcasecmp(line, "end") == 0)
-					break;
-			} else if(enctype == YENCODE) {
+			if(enctype == YENCODE) {
 				if(line == NULL)
 					continue;
 				if(strncmp(line, "=yend ", 6) == 0)
@@ -1612,19 +1589,12 @@ messageToText(message *m)
 				}
 				continue;
 			case UUENCODE:
-				t_line = uuencodeBegin(m);
-
-				if(t_line == NULL) {
-					/*cli_warnmsg("UUENCODED attachment is missing begin statement\n");*/
-					if(first) {
-						last->t_next = NULL;
-						textDestroy(first);
-					}
-					return NULL;
+				cli_errmsg("messageToText: Unexpected attempt to handle uuencoded file - report to bugs@clamav.net\n");
+				if(first) {
+					last->t_next = NULL;
+					textDestroy(first);
 				}
-				t_line = t_line->t_next;
-				m->uuencode = NULL;
-				break;
+				return NULL;
 			case YENCODE:
 				t_line = yEncBegin(m);
 
@@ -1648,16 +1618,13 @@ messageToText(message *m)
 			unsigned char *uptr;
 			const char *line = lineGetData(t_line->t_line);
 
-			if(enctype == BASE64) {
+			if(enctype == BASE64)
 				/*
 				 * ignore blanks - breaks RFC which is
 				 * probably the point!
 				 */
 				if(line == NULL)
 					continue;
-			} else if(enctype == UUENCODE)
-				if(strcasecmp(line, "end") == 0)
-					break;
 
 			assert((line == NULL) || (strlen(line) <= sizeof(data)));
 
@@ -1725,34 +1692,6 @@ messageToText(message *m)
 
 	return first;
 }
-
-/*
- * Scan to find the UUENCODED message (if any)
- */
-#if	0
-const text *
-uuencodeBegin(const message *m)
-{
-	const text *t_line;
-
-	/*
-	 * Fix based on an idea by Magnus Jonsson
-	 * <Magnus.Jonsson@umdac.umu.se>, to allow for blank
-	 * lines before the begin. Should not happen, but some
-	 * e-mail clients are rather broken...
-	 */
-	for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next)
-		if(isuuencodebegin(t_line->t_text))
-			return t_line;
-	return NULL;
-}
-#else
-const text *
-uuencodeBegin(const message *m)
-{
-	return m->uuencode;
-}
-#endif
 
 const text *
 yEncBegin(const message *m)
@@ -1842,7 +1781,7 @@ encodingLine(const message *m)
 void
 messageClearMarkers(message *m)
 {
-	m->encoding = m->bounce = m->uuencode = m->binhex = NULL;
+	m->encoding = m->bounce = m->binhex = NULL;
 }
 
 /*
@@ -2330,8 +2269,6 @@ messageDedup(message *m)
 			continue;
 		if(t1 == m->bounce)
 			continue;
-		if(t1 == m->uuencode)
-			continue;
 		if(t1 == m->binhex)
 			continue;
 		if(t1 == m->yenc)
@@ -2640,6 +2577,9 @@ pop(LINK1 *top, char *buffer)
 int
 isuuencodebegin(const char *line)
 {
+	if(line[0] != 'b')	/* quick check */
+		return 0;
+
 	if(strlen(line) < 10)
 		return 0;
 

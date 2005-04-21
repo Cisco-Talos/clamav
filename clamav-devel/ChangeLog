@@ -1,3 +1,9 @@
+Thu Apr 21 12:12:29 BST 2005 (njh)
+----------------------------------
+  * libclamav:		Removed the support for non fast-tracked uuencoded
+				messages. All uuencoded messages are now
+				handled by the fast track visa system
+
 Wed Apr 20 01:50:36 CEST 2005 (tk)
 ----------------------------------
   * libclamav/pe.c: Add more machine types (thanks to Christoph)
@@ -38,7 +44,7 @@ Thu Apr 14 14:35:37 BST 2005 (trog)
   * libclamav/unrar.c, unrar.h, unrarvm.h: update code for activation
 
   * libclamav/Makefile.am, Makefile.in: compile in new RAR code
- 
+
 Thu Apr 14 14:11:31 CEST 2005 (tk)
 ----------------------------------
   * freshclam/manager.c: pass proper argument to OnErrorExecute (patch by
