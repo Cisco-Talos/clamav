@@ -37,7 +37,6 @@ typedef struct message {
 	 */
 	const text	*bounce;	/* start of a bounced message */
 	const text	*binhex;	/* start of a binhex message */
-	const text	*uuencode;	/* start of a uuencoded message */
 	const text	*yenc;		/* start of a yEnc message */
 	const text	*encoding;	/* is the non MIME message encoded? */
 	const text	*dedupedThisFar;
@@ -66,7 +65,6 @@ fileblob	*messageToFileblob(message *m, const char *dir);
 blob	*messageToBlob(message *m);
 text	*messageToText(message *m);
 const	text	*binhexBegin(const message *m);
-const	text	*uuencodeBegin(const message *m);
 const	text	*yEncBegin(const message *m);
 const	text	*bounceBegin(const message *m);
 const	text	*encodingLine(const message *m);

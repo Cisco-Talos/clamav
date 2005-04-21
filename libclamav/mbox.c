@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.238 2005/04/19 09:20:55 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.239 2005/04/21 11:12:06 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1537,19 +1537,11 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					if(boundaryStart(lineGetData(t_line->t_line), boundary))
 						break;
 					/*
-					 * Found a uuencoded/binhex file before
+					 * Found a binhex file before
 					 *	the first multipart
 					 * TODO: check yEnc
 					 */
-					if(uuencodeBegin(mainMessage) == t_line) {
-						if(messageGetEncoding(mainMessage) == NOENCODING) {
-							messageSetEncoding(mainMessage, "x-uuencode");
-							fb = messageToFileblob(mainMessage, dir);
-
-							if(fb)
-								fileblobDestroy(fb);
-						}
-					} else if(binhexBegin(mainMessage) == t_line) {
+					if(binhexBegin(mainMessage) == t_line) {
 						if(messageGetEncoding(mainMessage) == NOENCODING) {
 							messageSetEncoding(mainMessage, "x-binhex");
 							fb = messageToFileblob(mainMessage, dir);
@@ -1584,7 +1576,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				mimeType = NOMIME;
 				/*
 				 * The break means that we will still
-				 * check if the file contains a uuencoded file
+				 * check if the file contains a yEnc/binhex file
 				 */
 				break;
 			}
@@ -1635,12 +1627,12 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					cli_dbgmsg("Empty part\n");
 					/*
 					 * Remove this part unless there's
-					 * a uuencoded portion somewhere in
+					 * a binhex portion somewhere in
 					 * the complete message that we may
 					 * throw away by mistake if the MIME
 					 * encoding information is incorrect
 					 */
-					if(uuencodeBegin(mainMessage) == NULL) {
+					if(binhexBegin(mainMessage) == NULL) {
 						messageDestroy(aMessage);
 						--multiparts;
 					}
@@ -2028,9 +2020,9 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					case NOMIME:
 						cli_dbgmsg("No mime headers found in multipart part %d\n", i);
 						if(mainMessage) {
-							if(uuencodeBegin(aMessage)) {
-								cli_dbgmsg("Found uuencoded message in multipart/mixed mainMessage\n");
-								messageSetEncoding(mainMessage, "x-uuencode");
+							if(binhexBegin(aMessage)) {
+								cli_dbgmsg("Found binhex message in multipart/mixed mainMessage\n");
+								messageSetEncoding(mainMessage, "x-bunhex");
 								fb = messageToFileblob(mainMessage, dir);
 
 								if(fb)
@@ -2040,16 +2032,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 								messageDestroy(mainMessage);
 							mainMessage = NULL;
 						} else if(aMessage) {
-							if(uuencodeBegin(aMessage)) {
-								cli_dbgmsg("Found uuencoded message in multipart/mixed non mime part\n");
-								messageSetEncoding(aMessage, "x-uuencode");
-								fb = messageToFileblob(aMessage, dir);
-
-								if(fb)
-									fileblobDestroy(fb);
-								assert(aMessage == messages[i]);
-								messageReset(messages[i]);
-							} else if(binhexBegin(aMessage)) {
+							if(binhexBegin(aMessage)) {
 								cli_dbgmsg("Found binhex message in multipart/mixed non mime part\n");
 								messageSetEncoding(aMessage, "x-binhex");
 								fb = messageToFileblob(aMessage, dir);
@@ -2080,10 +2063,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							mainMessage = NULL;
 							cptr = messageGetMimeSubtype(aMessage);
 							cli_dbgmsg("Mime subtype \"%s\"\n", cptr);
-							if(uuencodeBegin(aMessage)) {
-								cli_dbgmsg("Found uuencoded message in multipart/mixed text portion\n");
-								messageSetEncoding(aMessage, "x-uuencode");
-							} else if((tableFind(subtypeTable, cptr) == PLAIN) &&
+							if((tableFind(subtypeTable, cptr) == PLAIN) &&
 								  (messageGetEncoding(aMessage) == NOENCODING)) {
 								char *filename;
 								/*
@@ -2517,21 +2497,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 		 */
 		const text *t_line;
 
-		if((t_line = uuencodeBegin(mainMessage)) != NULL) {
-			cli_dbgmsg("Found uuencoded file\n");
-
-			/*
-			 * Main part contains uuencoded section
-			 */
-			messageSetEncoding(mainMessage, "x-uuencode");
-
-			if((fb = messageToFileblob(mainMessage, dir)) != NULL) {
-				if((cptr = fileblobGetFilename(fb)) != NULL)
-					cli_dbgmsg("Saving uuencoded message %s\n", cptr);
-				fileblobDestroy(fb);
-			}
-			rc = 1;
-		} else if((encodingLine(mainMessage) != NULL) &&
+		if((encodingLine(mainMessage) != NULL) &&
 			  ((t_line = bounceBegin(mainMessage)) != NULL)) {
 			const text *t, *start;
 			/*
@@ -2595,8 +2561,6 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				cli_dbgmsg("Not found a bounce message\n");
 		} else {
 			bool saveIt;
-
-			cli_dbgmsg("Not found uuencoded file\n");
 
 			if(messageGetMimeType(mainMessage) == MESSAGE)
 				/*
@@ -3925,7 +3889,7 @@ getline(char *buffer, size_t len, FILE *fin)
 	} while(--len > 0);
 
 	if(len == 0) {
-		/* probably, the email breaks RFC821 */
+		/* the email probably breaks RFC821 */
 		cli_dbgmsg("getline: buffer overflow stopped\n");
 		return NULL;
 	}
