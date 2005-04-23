@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.40 2005/04/04 13:52:46 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.41 2005/04/23 10:33:44 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -431,15 +431,12 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 
 		return;
 	}
-	if(fb->b.data) {
-		if(fwrite(fb->b.data, fb->b.len, 1, fb->fp) != 1)
-			cli_errmsg("fileblobSetFilename: Can't write to temporary file %s: %s\n", fullname, strerror(errno));
-		else
-			fb->isNotEmpty = 1;
-		free(fb->b.data);
-		fb->b.data = NULL;
-		fb->b.len = fb->b.size = 0;
-	}
+	if(fb->b.data)
+		if(fileblobAddData(fb, fb->b.data, fb->b.len) == 0) {
+			free(fb->b.data);
+			fb->b.data = NULL;
+			fb->b.len = fb->b.size = 0;
+		}
 }
 
 int
