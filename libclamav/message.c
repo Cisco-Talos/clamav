@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.153 2005/04/21 11:12:06 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.154 2005/04/24 10:01:15 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -117,9 +117,6 @@ static	struct	mime_map {
 	{	NULL,			TEXT		}
 };
 
-#define	USE_TABLE	/* table driven base64 decoder */
-
-#ifdef	USE_TABLE
 /*
  * See RFC2045, section 6.8, table 1
  */
@@ -141,7 +138,6 @@ static const unsigned char base64Table[256] = {
 	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
 	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255
 };
-#endif
 
 message *
 messageCreate(void)
@@ -1955,7 +1951,6 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 static void
 sanitiseBase64(char *s)
 {
-#ifdef	USE_TABLE
 	/*cli_dbgmsg("sanitiseBase64 '%s'\n", s);*/
 	for(; *s; s++)
 		if(base64Table[(unsigned int)(*s & 0xFF)] == 255) {
@@ -1964,26 +1959,6 @@ sanitiseBase64(char *s)
 			for(p1 = s; p1[0] != '\0'; p1++)
 				p1[0] = p1[1];
 		}
-#else
-	for(; *s; s++) {
-		char *p1;
-		char c = *s;
-
-		if(isupper(c))
-			continue;
-		if(isdigit(c))
-			continue;
-		if(c == '+')
-			continue;
-		if(c == '/')
-			continue;
-		if(islower(c))
-			continue;
-
-		for(p1 = s; p1[0] != '\0'; p1++)
-			p1[0] = p1[1];
-	}
-#endif
 }
 
 /*
@@ -2168,7 +2143,6 @@ hex(char c)
 	return '=';
 }
 
-#ifdef	USE_TABLE
 static unsigned char
 base64(char c)
 {
@@ -2180,25 +2154,6 @@ base64(char c)
 	}
 	return ret;
 }
-#else
-static unsigned char
-base64(char c)
-{
-	if(isupper(c))
-		return c - 'A';
-	if(isdigit(c))
-		return c - '0' + 52;
-	if(c == '+')
-		return 62;
-	if(islower(c))	/* call last, most base64 is upper case */
-		return c - 'a' + 26;
-
-	if(c != '/')
-		cli_dbgmsg("Illegal character <%c> in base64 encoding\n", c);
-
-	return 63;
-}
-#endif
 
 static unsigned char
 uudecode(char c)
