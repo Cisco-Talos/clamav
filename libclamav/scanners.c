@@ -270,6 +270,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	FILE *tmp = NULL;
 	char *buff;
 	int fd, bytes, ret = CL_CLEAN;
+	unsigned long int size = 0;
 	unsigned int files = 0, encrypted;
 	struct stat source;
 	struct cli_meta_node *mdata;
@@ -434,7 +435,9 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	    break;
 	}
 
+	size = 0;
 	while((bytes = zzip_file_read(zfp, buff, FILEBUFF)) > 0) {
+	    size += bytes;
 	    if(fwrite(buff, 1, bytes, tmp) != (size_t) bytes) {
 		cli_dbgmsg("Zip: Can't write to file.\n");
 		zzip_file_close(zfp);
@@ -446,6 +449,12 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	}
 
 	zzip_file_close(zfp);
+
+	if(size != zdirent.st_size) {
+	    cli_dbgmsg("Zip: Incorrectly decompressed (%d != %d)\n", size, zdirent.st_size);
+	    ret = CL_EIO;
+	    break;
+	}
 
 	if(fflush(tmp) != 0) {
 	    cli_dbgmsg("Zip: fflush() failed: %s\n", strerror(errno));
