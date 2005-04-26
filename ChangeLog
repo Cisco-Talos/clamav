@@ -1,3 +1,8 @@
+Tue Apr 26 19:37:24 CEST 2005 (tk)
+----------------------------------
+  * libclamav/readdb.c: improve parsing of broken signatures (bug reported by
+			Arnaud Jacques <arnaud*clamav.net>)
+
 Tue Apr 26 18:59:16 CEST 2005 (tk)
 ----------------------------------
   * libclamav/scanners.c: improve error detection in zip code
