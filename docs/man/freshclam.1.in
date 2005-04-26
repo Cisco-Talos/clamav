@@ -39,10 +39,6 @@ Run as USER. By default (when started by root) freshclam drops privileges and wo
 .TP 
 \fB\-d, \-\-daemon\fR
 Run in a daemon mode. This option requires \-\-checks.
-.TP 
-\fB\-f, \-\-foreground\fR
-Run daemon in foreground.  Useful for supervising freshclam with daemontools or runit.
-.TP
 \fB\-p FILE, \-\-pid=FILE\fR
 Save daemon's pid in FILE.
 .TP 
