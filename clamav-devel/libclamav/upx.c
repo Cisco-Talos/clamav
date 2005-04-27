@@ -76,6 +76,9 @@ int pefromupx (char *src, char *dst, int *dsize, uint32_t ep, uint32_t upx0, uin
   int sectcnt, upd=1, realstuffsz;
   int foffset=0xd0+0xf8;
 
+  if((dst == NULL) || (src == NULL))
+    return 0;
+
   imports = dst + cli_readint32(src + ep - upx1 + magic);
 
   realstuffsz = imports-dst;
