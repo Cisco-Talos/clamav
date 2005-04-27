@@ -1,6 +1,6 @@
 Wed Apr 27 23:54:46 CEST 2005 (tk)
 ----------------------------------
-  * libclamav/upx.c: add sanity check to pefromupx()
+  * libclamav/upx.c: add sanity check to pefromupx() (patch by NJH)
 
 Tue Apr 26 19:37:24 CEST 2005 (tk)
 ----------------------------------
