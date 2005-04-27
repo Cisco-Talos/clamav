@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.239 2005/04/21 11:12:06 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.240 2005/04/27 09:57:33 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3874,7 +3874,7 @@ getline(char *buffer, size_t len, FILE *fin)
 					ungetc(c, fin);
 				break;
 			default:
-				*buffer++ = c;
+				*buffer++ = (char)c;
 				continue;
 			case EOF:
 				break;
