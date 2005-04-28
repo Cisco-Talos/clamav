@@ -1,3 +1,9 @@
+Thu Apr 28 15:50:01 BST 2005 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Work around to handle long lines transmitted by
+				MTAs, following a sample by Mark Davidson
+				passed on by Trog.
+
 Thu Apr 28 08:52:05 BST 2005 (trog)
 -----------------------------------
   * libclamav/chmunpack.c: Add extra sanity check.
