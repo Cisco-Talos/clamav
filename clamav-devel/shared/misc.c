@@ -107,17 +107,22 @@ int filecopy(const char *src, const char *dest)
 {
 
 #ifdef C_DARWIN
-    /* On Mac OS X use ditto and copy resource fork, too. */
-    char *ditto = (char *) mcalloc(strlen(src) + strlen(dest) + 30, sizeof(char));
-    sprintf(ditto, "/usr/bin/ditto --rsrc %s %s", src, dest);
+	pid_t pid;
 
-    if(system(ditto)) {
-	free(ditto);
-	return -1;
+    /* On Mac OS X use ditto and copy resource fork, too. */
+    switch(pid = fork()) {
+	case -1:
+	    return -1;
+	case 0:
+	    execl("/usr/bin/ditto", "ditto", "--rsrc", src, dest, NULL);
+	    perror("execv(ditto)");
+	    break;
+	default:
+	    wait(NULL);
+	    return 0;
     }
 
-    free(ditto);
-    return 0;
+    return -1;
 
 #else
 	char buffer[FILEBUFF];
