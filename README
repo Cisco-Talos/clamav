@@ -40,10 +40,12 @@ have been made.
 -) contrib:
     + clamdmon 1.0 - clamdwatch replacement written in C
 
--) 3rd party software:
+-) 3rd party software (check clamdoc.pdf for details):
     + hMailServer - open source e-mail server for Microsoft Window
     + pop3.proxy - proxy server for the POP3 protocol
     + HTTP Anti Virus Proxy
+    + SmarterMail Filter - ClamAV based plugin for SmarterMail Mail Server
+    + smf-clamd - small & fast virus filter for Sendmail
     + Squidclam - replacement for SquidClamAV-Redirector.py written in C
     + QtClamAVclient - remote clamd client based on the Qt Toolkit
     + qpsmtp - flexible smtpd daemon written in Perl
