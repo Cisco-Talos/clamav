@@ -15,11 +15,13 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.1 2005/04/27 12:45:16 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.2 2005/04/28 13:04:05 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
+
+#include "clamav.h"
 
 int
 cli_pdf(const char *dir, int desc)
