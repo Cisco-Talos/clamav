@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.240 2005/04/27 09:57:33 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.241 2005/04/28 14:46:44 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -208,7 +208,7 @@ static	void	*getURL(struct arg *arg);
 #endif
 
 /* Maximum line length according to RFC821 */
-#define	LINE_LENGTH	1000
+#define	RFC2821LENGTH	1000
 
 /* Hashcodes for our hash tables */
 #define	CONTENT_TYPE			1
@@ -718,7 +718,7 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 	int retcode, i;
 	message *body;
 	FILE *fd;
-	char buffer[LINE_LENGTH + 1];
+	char buffer[RFC2821LENGTH + 1];
 #ifdef HAVE_BACKTRACE
 	void (*segv)(int);
 #endif
@@ -968,7 +968,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 	int commandNumber = -1;
 	char *fullline = NULL, *boundary = NULL;
 	size_t fulllinelength = 0;
-	char buffer[LINE_LENGTH+1];
+	char buffer[RFC2821LENGTH + 1];
 
 	cli_dbgmsg("parseEmailFile\n");
 
@@ -1058,7 +1058,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 				int lookahead;
 
 				if(fullline == NULL) {
-					char cmd[LINE_LENGTH + 1], out[LINE_LENGTH + 1];
+					char cmd[RFC2821LENGTH + 1], out[RFC2821LENGTH + 1];
 
 					/*
 					 * Continuation of line we're ignoring?
@@ -1242,7 +1242,7 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 				int quotes;
 
 				if(fullline == NULL) {
-					char cmd[LINE_LENGTH + 1];
+					char cmd[RFC2821LENGTH + 1];
 
 					/*
 					 * Continuation of line we're ignoring?
@@ -1766,7 +1766,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 
 						inMimeHead = FALSE;
 
-						assert(strlen(line) <= LINE_LENGTH);
+						assert(strlen(line) <= RFC2821LENGTH);
 
 						fullline = rfc822comments(line, NULL);
 						if(fullline == NULL)
@@ -2520,7 +2520,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			 * won't be scanned
 			 */
 			for(t = start = t_line; t; t = t->t_next) {
-				char cmd[LINE_LENGTH + 1];
+				char cmd[RFC2821LENGTH + 1];
 				const char *txt = lineGetData(t->t_line);
 
 				if(txt == NULL)
@@ -2639,7 +2639,7 @@ boundaryStart(const char *line, const char *boundary)
 {
 	char *ptr, *out;
 	int rc;
-	char buf[LINE_LENGTH + 1];
+	char buf[RFC2821LENGTH + 1];
 
 	if(line == NULL)
 		return 0;	/* empty line */
@@ -3809,7 +3809,7 @@ static void
 uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin)
 {
 	fileblob *fb = fileblobCreate();
-	char buffer[LINE_LENGTH + 1];
+	char buffer[RFC2821LENGTH + 1];
 	char *filename = cli_strtok(firstline, 2, " ");
 
 	fileblobSetFilename(fb, dir, filename);
@@ -3886,13 +3886,16 @@ getline(char *buffer, size_t len, FILE *fin)
 				break;
 		}
 		break;
-	} while(--len > 0);
+	} while(--len > 1);
 
 	if(len == 0) {
 		/* the email probably breaks RFC821 */
-		cli_dbgmsg("getline: buffer overflow stopped\n");
+		cli_warnmsg("getline: buffer overflow stopped - line lost\n");
 		return NULL;
 	}
+	if(len == 1)
+		/* over flows will have appear on separate lines */
+		cli_dbgmsg("getline: buffer overflow stopped - line recovered\n");
 	*buffer = '\0';
 
 	return ret;
