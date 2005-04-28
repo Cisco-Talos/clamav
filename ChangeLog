@@ -1,3 +1,9 @@
+Thu Apr 28 08:52:05 BST 2005 (trog)
+-----------------------------------
+  * libclamav/chmunpack.c: Add extra sanity check.
+
+  * libclamav/unrar/unrar20.c: Fix typo spotted by NJH.
+
 Wed Apr 27 23:54:46 CEST 2005 (tk)
 ----------------------------------
   * libclamav/upx.c: add sanity check to pefromupx() (patch by NJH)

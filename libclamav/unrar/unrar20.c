@@ -182,7 +182,7 @@ static unsigned char decode_audio(unpack_data_t *unpack_data, int delta)
 	
 	pch = 8 * v->last_char + v->K1 * v->D1 + v->K2 * v->D2 + v->K3 *
 		v->D3 + v->K4 * v->D4 + v->K5 * unpack_data->unp_channel_delta;
-	pch - (pch >> 3) & 0xff;
+	pch = (pch >> 3) & 0xff;
 	
 	ch = pch - delta;
 	
