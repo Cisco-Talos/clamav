@@ -1,3 +1,10 @@
+Fri Apr 29 00:42:45 CEST 2005 (tk)
+----------------------------------
+  * shared/misc.c: (Mac OS X only) execute ditto with execl to eliminate
+		   potential security problem on multi-user OS X versions
+		   (reported by Tim Morgan <tim*sentinelchicken.org> and
+		   Kevin Amorin <kamorin*ccs.neu.edu>)
+
 Thu Apr 28 15:50:01 BST 2005 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Work around to handle long lines transmitted by
