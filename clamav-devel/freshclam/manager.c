@@ -46,6 +46,7 @@
 #include "notify.h"
 #include "memory.h"
 #include "output.h"
+#include "misc.h"
 #include "../libclamav/others.h"
 #include "../libclamav/str.h" /* cli_strtok */
 #include "dns.h"
@@ -218,17 +219,6 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 
     } else
 	return 1;
-}
-
-static int isnumb(const char *str)
-{
-	int i;
-
-    for(i = 0; i < strlen(str); i++)
-	if(!isdigit(str[i]))
-	    return 0;
-
-    return 1;
 }
 
 int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, const char *dnsreply, char *localip)

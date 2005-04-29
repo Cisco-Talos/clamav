@@ -1,3 +1,7 @@
+Fri Apr 29 03:19:44 CEST 2005 (tk)
+----------------------------------
+  * shared/misc.c: improve isnumb() (thanks to NJH) and move it to misc.c
+
 Fri Apr 29 02:57:07 CEST 2005 (tk)
 ----------------------------------
   * freshclam/manager.c: allow warning control via txt record
