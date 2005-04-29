@@ -1,3 +1,7 @@
+Fri Apr 29 02:57:07 CEST 2005 (tk)
+----------------------------------
+  * freshclam/manager.c: allow warning control via txt record
+
 Fri Apr 29 00:42:45 CEST 2005 (tk)
 ----------------------------------
   * shared/misc.c: (Mac OS X only) execute ditto with execl to eliminate

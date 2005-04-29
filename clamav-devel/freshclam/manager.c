@@ -105,19 +105,32 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 		dnsreply = NULL;
 	    }
 
-	    if(dnsreply && (pt = cli_strtok(dnsreply, 0, ":"))) {
-		mprintf("*Software version from DNS: %s\n", pt);
-		if(!strstr(cl_retver(), "devel") && !strstr(cl_retver(), "rc")) {
-		    if(strcmp(cl_retver(), pt)) {
-			mprintf("WARNING: Your ClamAV installation is OUTDATED!\n");
-			mprintf("WARNING: Local version: %s Recommended version: %s\n", cl_retver(), pt);
-			mprintf("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
-			logg("WARNING: Your ClamAV installation is OUTDATED!\n");
-			logg("WARNING: Local version: %s Recommended version: %s\n", cl_retver(), pt);
-			logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
-		    }
+	    if(dnsreply) {
+		    int vwarning = 1;
+
+		if((pt = cli_strtok(dnsreply, 4, ":"))) {
+		    if(*pt == '0')
+			vwarning = 0;
+
+		    free(pt);
 		}
-		free(pt);
+
+		if((pt = cli_strtok(dnsreply, 0, ":"))) {
+
+		    mprintf("*Software version from DNS: %s\n", pt);
+
+		    if(vwarning && !strstr(cl_retver(), "devel") && !strstr(cl_retver(), "rc")) {
+			if(strcmp(cl_retver(), pt)) {
+			    mprintf("WARNING: Your ClamAV installation is OUTDATED!\n");
+			    mprintf("WARNING: Local version: %s Recommended version: %s\n", cl_retver(), pt);
+			    mprintf("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
+			    logg("WARNING: Your ClamAV installation is OUTDATED!\n");
+			    logg("WARNING: Local version: %s Recommended version: %s\n", cl_retver(), pt);
+			    logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
+			}
+		    }
+		    free(pt);
+		}
 
 	    } else {
 		if(dnsreply) {
