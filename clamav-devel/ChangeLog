@@ -1,3 +1,7 @@
+Sat Apr 30 02:50:11 CEST 2005 (tk)
+----------------------------------
+  * libclamav/scanners.c: do not report I/O error with encrypted zips
+
 Fri Apr 29 03:19:44 CEST 2005 (tk)
 ----------------------------------
   * shared/misc.c: improve isnumb() (thanks to NJH) and move it to misc.c
