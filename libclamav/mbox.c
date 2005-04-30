@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.241 2005/04/28 14:46:44 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.242 2005/04/30 13:12:28 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -189,9 +189,6 @@ static	int	rfc1341(message *m, const char *dir);
 static	bool	usefulHeader(int commandNumber, const char *cmd);
 static	void	uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin);
 static	char	*getline(char *buffer, size_t len, FILE *fin);
-#ifdef	NEW_WORLD
-static	const	char	*cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns);
-#endif
 
 static	void	checkURLs(message *m, const char *dir);
 #ifdef	WITH_CURL
@@ -3901,12 +3898,11 @@ getline(char *buffer, size_t len, FILE *fin)
 	return ret;
 }
 
-#ifdef	NEW_WORLD
 /*
  * like cli_memstr - but returns the location of the match
  * FIXME: need a case insensitive version
  */
-static const char *
+const char *
 cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns)
 {
 	const char *pt, *hay;
@@ -3941,4 +3937,3 @@ cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns)
 
 	return NULL;
 }
-#endif
