@@ -95,11 +95,6 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "Hi. This is the qmail-send",  26, "Qmail bounce",	  CL_TYPE_MAIL},
     {0,  "\170\237\076\042",		 4, "TNEF",               CL_TYPE_TNEF},
 
-    /* Others */
-
-    {0,  "\320\317\021\340\241\261\032\341",
-	                    8, "OLE2 container",  CL_TYPE_MSOLE2},
-
     /* Graphics (may contain exploits against MS systems) */
 
     {0,  "GIF",				 3, "GIF",	    CL_TYPE_GRAPHICS},
@@ -111,6 +106,11 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "RIFF",                         4, "RIFF",         CL_TYPE_RIFF},
     {0,  "RIFX",                         4, "RIFX",         CL_TYPE_RIFF},
 
+    /* Others */
+
+    {0,  "\320\317\021\340\241\261\032\341", 8, "OLE2 container", CL_TYPE_MSOLE2},
+    //{0,  "\%PDF-",  5, "PDF document", CL_TYPE_PDF},
+
     /* Ignored types */
 
     {0,  "\000\000\001\263",             4, "MPEG video stream",  CL_TYPE_DATA},
@@ -118,7 +118,6 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "OggS",                         4, "Ogg Stream",         CL_TYPE_DATA},
     {0,  "ID3",				 3, "MP3",		  CL_TYPE_DATA},
     {0,  "\377\373\220",		 3, "MP3",		  CL_TYPE_DATA},
-    {0,  "\%PDF-",			 5, "PDF document",	  CL_TYPE_DATA},
     {0,  "\%!PS-Adobe-",		11, "PostScript",	  CL_TYPE_DATA},
     {0,  "\060\046\262\165\216\146\317", 7, "WMA/WMV/ASF",	  CL_TYPE_DATA},
     {0,  ".RMF" ,			 4, "Real Media File",	  CL_TYPE_DATA},
