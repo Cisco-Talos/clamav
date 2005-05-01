@@ -74,11 +74,13 @@ PROGRAMS = $(sbin_PROGRAMS)
 am__clamav_milter_SOURCES_DIST = $(top_srcdir)/shared/cfgparser.c \
 	$(top_srcdir)/shared/cfgparser.h $(top_srcdir)/shared/getopt.c \
 	$(top_srcdir)/shared/getopt.h $(top_srcdir)/shared/memory.c \
-	$(top_srcdir)/shared/memory.h clamav-milter.c
+	$(top_srcdir)/shared/memory.h $(top_srcdir)/shared/misc.c \
+	$(top_srcdir)/shared/misc.h clamav-milter.c
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@am_clamav_milter_OBJECTS =  \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	cfgparser.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	getopt.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	memory.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	misc.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	clamav-milter.$(OBJEXT)
 clamav_milter_OBJECTS = $(am_clamav_milter_OBJECTS)
 clamav_milter_LDADD = $(LDADD)
@@ -216,6 +218,8 @@ target_vendor = @target_vendor@
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/getopt.h \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/memory.c \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/memory.h \
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/misc.c \
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/misc.h \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    clamav-milter.c
 
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@man_MANS = $(top_srcdir)/docs/man/clamav-milter.8
@@ -297,6 +301,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamav-milter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/memory.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -360,6 +365,20 @@ memory.obj: $(top_srcdir)/shared/memory.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/memory.c' object='memory.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o memory.obj `if test -f '$(top_srcdir)/shared/memory.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/memory.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/memory.c'; fi`
+
+misc.o: $(top_srcdir)/shared/misc.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT misc.o -MD -MP -MF "$(DEPDIR)/misc.Tpo" -c -o misc.o `test -f '$(top_srcdir)/shared/misc.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/misc.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/misc.Tpo" "$(DEPDIR)/misc.Po"; else rm -f "$(DEPDIR)/misc.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/misc.c' object='misc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o misc.o `test -f '$(top_srcdir)/shared/misc.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/misc.c
+
+misc.obj: $(top_srcdir)/shared/misc.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT misc.obj -MD -MP -MF "$(DEPDIR)/misc.Tpo" -c -o misc.obj `if test -f '$(top_srcdir)/shared/misc.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/misc.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/misc.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/misc.Tpo" "$(DEPDIR)/misc.Po"; else rm -f "$(DEPDIR)/misc.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/misc.c' object='misc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o misc.obj `if test -f '$(top_srcdir)/shared/misc.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/misc.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/misc.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
