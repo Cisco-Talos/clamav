@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.3 2005/04/30 13:12:28 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.4 2005/05/01 11:47:49 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -39,6 +39,7 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.3 2005/04/30 13:12:28 nigelhorne Exp
 #include <fcntl.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <errno.h>
 
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>
@@ -130,8 +131,6 @@ cli_pdf(const char *dir, int desc)
 #endif
 
 		if(fout < 0) {
-			extern int errno;
-
 			cli_errmsg("cli_pdf: can't create temporary file %s: %s\n", fullname, strerror(errno));
 			close(fout);
 			munmap(buf, size);
