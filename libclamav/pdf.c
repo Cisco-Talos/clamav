@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.4 2005/05/01 11:47:49 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.5 2005/05/03 00:10:46 kojm Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -64,6 +64,8 @@ cli_pdf(const char *dir, int desc)
 	off_t size;
 	char *buf;
 	const char *p, *q;
+
+	cli_dbgmsg("in cli_pdf()\n");
 
 	if(fstat(desc, &statb) < 0)
 		return CL_EOPEN;

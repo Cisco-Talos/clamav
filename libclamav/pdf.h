@@ -16,4 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#ifndef __PDF_H
+#define __PDF_H
+
 int cli_pdf(const char *dir, int desc);
+
+#endif

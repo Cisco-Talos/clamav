@@ -1,3 +1,7 @@
+Tue May  3 02:09:08 CEST 2005 (tk)
+----------------------------------
+  * libclamav: activate PDF code (patch by NJH)
+
 Sat Apr 30 02:50:11 CEST 2005 (tk)
 ----------------------------------
   * libclamav/scanners.c: do not report I/O error with encrypted zips

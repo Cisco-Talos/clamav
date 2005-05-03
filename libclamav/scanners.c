@@ -1232,6 +1232,30 @@ static int cli_scanjpeg(int desc, const char **virname)
     return ret;
 }
 
+static int cli_scanpdf(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+{
+	int ret;
+	char *dir = cli_gentemp(NULL);
+
+
+    if(mkdir(dir, 0700)) {
+	cli_dbgmsg("Can't create temporary directory for PDF file %s\n", dir);
+	free(dir);
+	return CL_ETMPDIR;
+    }
+
+    ret = cli_pdf(dir, desc);
+
+    if(ret == CL_CLEAN)
+	ret = cli_scandir(dir, virname, scanned, root, limits, options, arec, mrec);
+
+    if(!cli_leavetemps_flag)
+	cli_rmdirs(dir);
+
+    free(dir);
+    return ret;
+}
+
 static int cli_scantnef(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	int ret;
@@ -1422,6 +1446,11 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 
 	case CL_TYPE_GRAPHICS:
 	    ret = cli_scanjpeg(desc, virname);
+	    break;
+
+	case CL_TYPE_PDF:
+	    if(SCAN_ARCHIVE)    /* you may wish to change this line */
+		ret = cli_scanpdf(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
 	case CL_TYPE_DATA:
