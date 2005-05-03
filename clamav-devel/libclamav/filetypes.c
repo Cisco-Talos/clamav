@@ -109,7 +109,7 @@ static const struct cli_magic_s cli_magic[] = {
     /* Others */
 
     {0,  "\320\317\021\340\241\261\032\341", 8, "OLE2 container", CL_TYPE_MSOLE2},
-    //{0,  "\%PDF-",  5, "PDF document", CL_TYPE_PDF},
+    {0,  "\%PDF-",			 5, "PDF document", CL_TYPE_PDF},
 
     /* Ignored types */
 

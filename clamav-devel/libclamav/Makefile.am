@@ -136,7 +136,9 @@ libclamav_la_SOURCES = \
 	unrar/unrar20.c \
 	unrar/unrarcmd.c \
 	unrar/unrarfilter.h \
-	unrar/unrarppm.h
+	unrar/unrarppm.h \
+	pdf.c \
+	pdf.h
 
 
 lib_LTLIBRARIES = libclamav.la
