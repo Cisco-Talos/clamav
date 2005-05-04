@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.242 2005/04/30 13:12:28 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.243 2005/05/04 19:11:52 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3355,6 +3355,7 @@ rfc1341(message *m, const char *dir)
 		if((n == t) && ((dd = opendir(pdir)) != NULL)) {
 			FILE *fout;
 			char outname[NAME_MAX + 1];
+			time_t now;
 
 			snprintf(outname, sizeof(outname) - 1, "%s/%s", dir, id);
 
@@ -3369,6 +3370,7 @@ rfc1341(message *m, const char *dir)
 				return -1;
 			}
 
+			time(&now);
 			for(n = 1; n <= t; n++) {
 				char filename[NAME_MAX + 1];
 				const struct dirent *dent;
@@ -3389,20 +3391,29 @@ rfc1341(message *m, const char *dir)
 				while((dent = readdir(dd))) {
 #endif
 					FILE *fin;
-					char buffer[BUFSIZ];
+					char buffer[BUFSIZ], fullname[NAME_MAX + 1];
 					int nblanks;
 					extern short cli_leavetemps_flag;
+					struct stat statb;
 
 					if(dent->d_ino == 0)
 						continue;
 
-					if(strncmp(filename, dent->d_name, strlen(filename)) != 0)
+					sprintf(fullname, "%s/%s", pdir, dent->d_name);
+					if(strncmp(filename, dent->d_name, strlen(filename)) != 0) {
+						if(!cli_leavetemps_flag)
+							continue;
+						if(stat(fullname, &statb) < 0)
+							continue;
+						if(now - statb.st_mtime > (time_t)(7 * 24 * 3600))
+							if(unlink(fullname) >= 0)
+								cli_warnmsg("removed old RFC1341 file %s\n", fullname);
 						continue;
+					}
 
-					sprintf(filename, "%s/%s", pdir, dent->d_name);
-					fin = fopen(filename, "rb");
+					fin = fopen(fullname, "rb");
 					if(fin == NULL) {
-						cli_errmsg("Can't open '%s' for reading", filename);
+						cli_errmsg("Can't open '%s' for reading", fullname);
 						fclose(fout);
 						unlink(outname);
 						free(id);
@@ -3429,7 +3440,7 @@ rfc1341(message *m, const char *dir)
 
 					/* don't unlink if leave temps */
 					if(!cli_leavetemps_flag)
-						unlink(filename);
+						unlink(fullname);
 					break;
 				}
 				rewinddir(dd);
