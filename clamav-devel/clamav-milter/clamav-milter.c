@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.192 2005/04/18 10:53:34 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.193 2005/05/04 19:15:08 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.84e"
+#define	CM_VERSION	"0.84f"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1029,8 +1029,13 @@ main(int argc, char **argv)
 	if(cfgopt(copt, "LogSyslog")) {
 		int fac = LOG_LOCAL6;
 
-		if(cfgopt(copt, "LogVerbose"))
+		if(cfgopt(copt, "LogVerbose")) {
 			logVerbose = 1;
+#if	0
+			/* Only supported by Sendmail >= V8.13 */
+			smfi_setdbg(6);
+#endif
+		}
 		use_syslog = 1;
 
 		if((cpt = cfgopt(copt, "LogFacility")) != NULL)
@@ -1329,7 +1334,6 @@ main(int argc, char **argv)
 
 #ifndef	CL_DEBUG
 		close(1);
-		close(2);
 
 		if((cpt = cfgopt(copt, "LogFile"))) {
 			logFile = cpt->strarg;
@@ -1342,12 +1346,20 @@ main(int argc, char **argv)
 				fprintf(stderr, "%s: LogFile requires full path\n", argv[0]);
 				return EX_CONFIG;
 			}
-		} else
+			if(open(logFile, O_WRONLY|O_APPEND) < 0) {
+				perror(logFile);
+				return EX_CANTCREAT;
+			}
+		} else {
 			logFile = "/dev/console";
+			if(open(logFile, O_WRONLY) < 0) {
+				perror(logFile);
+				return EX_OSFILE;
+			}
+		}
 
-		if((open(logFile, O_WRONLY|O_APPEND) == 1) ||
-		   (open("/dev/null", O_WRONLY) == 1))
-			dup(1);
+		close(2);
+		dup(1);
 		if(cfgopt(copt, "LogTime"))
 			logTime++;
 #endif	/*!CL_DEBUG*/
@@ -1428,7 +1440,7 @@ main(int argc, char **argv)
 
 #ifdef	SESSION
 	/* FIXME: add localSocket support to watchdog */
-	if(localSocket == NULL)
+	if((localSocket == NULL) || external)
 #endif
 		pthread_create(&tid, NULL, watchdog, NULL);
 
@@ -1439,8 +1451,25 @@ main(int argc, char **argv)
 
 	if(pidfile) {
 		/* save the PID */
+		char *p, *q;
 		FILE *fd;
 		const mode_t old_umask = umask(0006);
+
+		if(pidfile[0] != '/') {
+			if(use_syslog)
+				syslog(LOG_ERR, _("pidfile: '%s' must be a full pathname"),
+					pidfile);
+			cli_errmsg(_("pidfile '%s' must be a full pathname\n"), pidfile);
+
+			return EX_CONFIG;
+		}
+		p = strdup(pidfile);
+		q = strrchr(p, '/');
+		*q = '\0';
+
+		if(chdir(p) < 0)	/* safety */
+			perror(p);
+		free(p);
 
 		if((fd = fopen(pidfile, "w")) == NULL) {
 			if(use_syslog)
@@ -1448,17 +1477,23 @@ main(int argc, char **argv)
 					pidfile);
 			cli_errmsg(_("Can't save PID in file %s\n"), pidfile);
 			return EX_CONFIG;
-		} else {
-#ifdef	C_LINUX
-			/* Ensure that all threads are kill()ed */
-			fprintf(fd, "-%d\n", (int)getpgrp());
-#else
-			fprintf(fd, "%d\n", (int)getpid());
-#endif
-			fclose(fd);
 		}
+#ifdef	C_LINUX
+		/* Ensure that all threads are kill()ed */
+		fprintf(fd, "-%d\n", (int)getpgrp());
+#else
+		fprintf(fd, "%d\n", (int)getpid());
+#endif
+		fclose(fd);
 		umask(old_umask);
-	}
+	} else if(tmpdir)
+		chdir(tmpdir);	/* safety */
+	else
+#ifdef	P_tmpdir
+		chdir(P_tmpdir);
+#else
+		chdir("/tmp");
+#endif
 
 	if(cfgopt(copt, "FixStaleSocket")) {
 		/*
@@ -1490,14 +1525,14 @@ main(int argc, char **argv)
 	}
 
 #if	0
-	/* Only supported by later libmilter */
+	/* Only supported by Sendmail >= V8.13 */
 	if(smfi_opensocket(1) == MI_FAILURE) {
 		cli_errmsg("can't open/create %s\n", port);
 		return EX_CONFIG;
 	}
 #endif
 
-	signal(SIGPIPE, SIG_IGN);
+	signal(SIGPIPE, SIG_IGN);	/* libmilter probably does this as well */
 
 #ifdef	SESSION
 	pthread_mutex_lock(&version_mutex);
@@ -1918,6 +1953,13 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	pthread_mutex_unlock(&accept_mutex);
 	if(!accepting) {
 		cli_warnmsg("Not accepting inputs at the moment\n");
+		/*
+		 * We must refuse here even if dont_wait isn't set, since
+		 * it could take some time, and sendmail could time us out
+		 * and refuse to have anything more to do with us until
+		 * the program is restarted
+		 */
+#if	0
 		if(dont_wait)
 			return SMFIS_TEMPFAIL;
 		pthread_mutex_lock(&accept_mutex);
@@ -1925,6 +1967,8 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 			pthread_cond_wait(&accept_cond, &accept_mutex);
 		pthread_mutex_unlock(&accept_mutex);
 		cli_warnmsg("Accepting inputs again\n");
+#endif
+		return SMFIS_TEMPFAIL;
 	}
 
 	if(ctx == NULL) {
@@ -2425,6 +2469,9 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 	cli_dbgmsg(_("clamfi_envbody: %u bytes\n"), len);
 #endif
 
+	if(len == 0)	/* unlikely */
+		return SMFIS_CONTINUE;
+
 	nbytes = clamfi_send(privdata, len, (char *)bodyp);
 	if(streamMaxLength > 0L) {
 		if(privdata->numBytes > streamMaxLength) {
@@ -2618,8 +2665,8 @@ clamfi_eom(SMFICTX *ctx)
 #endif
 			/*
 			 * TODO: if more than one host has been specified, try
-			 * another one - setting cl_error to SMFIS_TEMPFAIL helps
-			 * by forcing a retry
+			 * another one - setting cl_error to SMFIS_TEMPFAIL
+			 * helps by forcing a retry
 			 */
 			clamfi_cleanup(ctx);
 			syslog(LOG_NOTICE, _("clamfi_eom: read nothing from clamd on %s"), hostname);
@@ -2962,10 +3009,7 @@ clamfi_eom(SMFICTX *ctx)
 					syslog(LOG_ERR, _("Can't set quarantine user %s"), quarantine);
 				else
 					cli_warnmsg(_("Can't set quarantine user %s\n"), quarantine);
-				if(privdata->discard)
-					rc = SMFIS_DISCARD;
-				else
-					rc = SMFIS_REJECT;
+				rc = (privdata->discard) ? SMFIS_DISCARD : SMFIS_REJECT;
 			} else {
 				if(use_syslog)
 					syslog(LOG_DEBUG, "Redirected virus to %s", quarantine);
@@ -5038,7 +5082,7 @@ logger(const char *mess)
 #else
 		ctime_r(&currtime, buf);
 #endif
-		fprintf(fout, "%.*s -> %s\n", strlen(buf) - 1, buf, mess);
+		fprintf(fout, "%.*s -> %s\n", (int)strlen(buf) - 1, buf, mess);
 #else	/*!HAVE_CTIME_R*/
 		/* TODO */
 		fprintf(fout, "%s\n", mess);

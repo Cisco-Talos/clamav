@@ -16,7 +16,8 @@ Fails to compile on Linux/x86 with icc6.0 (complains about stdio.h...)
 Fails to build on Linux/x86 with icc7.1 with -ipo (fails on libclamav.a - keeps saying run ranlib). Otherwise it builds and runs OK.
 	icc -O2 -tpp7 -xiMKW -parallel -i_dynamic -w2 -march=pentium4 -mcpu=pentium4 clamav-milter.c...
 
-Tested with Electric Fence 2.2.2
+Tested with Electric Fence 2.2.2, and the bounds checking C compiler from
+	http://web.inter.nl.net/hcc/Haj.Ten.Brugge/
 
 Compiles OK on Linux/ppc (YDL2.3) with gcc2.95.4. Needs -lsmutil to link.
 	cc -O3 -pedantic -Wuninitialized -Wall -pipe -fomit-frame-pointer -ffast-math -finline-functions -funroll-loop -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o -lsmutil
@@ -761,6 +762,9 @@ Changes
 0.84e	18/4/05:	Fixed a multi-threading problem relating to updating
 				the database when in internal mode
 			Use HAVE_CTIME_R_[23]
+0.84f	4/5/05:		Better handling of open failures for LogFile
+			Always send 451 when reloading a database, even if
+				dont-wait isn't set
 
 4. INTERNATIONALISATION
 
@@ -774,6 +778,10 @@ author an e-mail.
 
 Please send bug reports and/or comments to Nigel Horne <njh@despammed.com> or
 bugs@clamav.net.
+
+Various tips will go here, for example
+	define(`confMILTER_LOG_LEVEL',`22')
+Running in the foreground, valgrind, LogSyslog, LogVerbose, LogFile etc.
 
 6. TODO
 
