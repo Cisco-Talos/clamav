@@ -24,7 +24,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.16 2005/05/04 16:43:07 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.17 2005/05/04 20:22:08 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -121,7 +121,7 @@ cli_tnef(const char *dir, int desc)
 			break;
 		switch(i8) {
 			case LVL_MESSAGE:
-				/*cli_dbgmsg("TNEF - found message\n");*/
+				cli_dbgmsg("TNEF - found message\n");
 				if(fb != NULL) {
 					fileblobDestroy(fb);
 					fb = NULL;
@@ -134,7 +134,7 @@ cli_tnef(const char *dir, int desc)
 				}
 				break;
 			case LVL_ATTACHMENT:
-				/*cli_dbgmsg("TNEF - found attachment\n");*/
+				cli_dbgmsg("TNEF - found attachment\n");
 				if(tnef_attachment(fp, dir, &fb) != 0) {
 					cli_errmsg("Error reading TNEF message\n");
 					ret = CL_EFORMAT;
@@ -167,7 +167,7 @@ cli_tnef(const char *dir, int desc)
 						cli_warnmsg("Saving dump to %s - send to bugs@clamav.net\n", filename);
 
 						lseek(desc, 0L, SEEK_SET);
-						while((count = cli_readn(desc, buffer, sizeof(buffer))) >= 0)
+						while((count = cli_readn(desc, buffer, sizeof(buffer))) > 0)
 							cli_writen(fout, buffer, count);
 						close(fout);
 					}
