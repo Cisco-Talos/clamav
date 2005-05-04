@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.5 2005/05/03 00:10:46 kojm Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.6 2005/05/04 12:38:00 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -134,7 +134,6 @@ cli_pdf(const char *dir, int desc)
 
 		if(fout < 0) {
 			cli_errmsg("cli_pdf: can't create temporary file %s: %s\n", fullname, strerror(errno));
-			close(fout);
 			munmap(buf, size);
 			return CL_ETMPFILE;
 		}
