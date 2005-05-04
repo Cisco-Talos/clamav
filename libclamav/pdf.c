@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.6 2005/05/04 12:38:00 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.7 2005/05/04 16:43:07 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -142,13 +142,12 @@ cli_pdf(const char *dir, int desc)
 			z_stream stream;
 			size_t len = (size_t)(u - t);
 			unsigned char output[BUFSIZ];
-			size_t buflen;
 
 			stream.zalloc = (alloc_func)Z_NULL;
 			stream.zfree = (free_func)Z_NULL;
 			stream.opaque = (void *)NULL;
 			stream.next_in = (unsigned char *)t;
-			buflen = stream.avail_in = len;
+			stream.avail_in = len;
 
 			if(inflateInit(&stream) != Z_OK) {
 				cli_warnmsg("cli_pdf: inflateInit failed");

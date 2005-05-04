@@ -24,7 +24,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.15 2005/05/04 12:57:28 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.16 2005/05/04 16:43:07 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -98,7 +98,7 @@ cli_tnef(const char *dir, int desc)
 	}
 
 	fb = NULL;
-	ret = CL_CLEAN;
+	ret = CL_CLEAN;	/* we don't know if it's clean or not :-) */
 	alldone = 0;
 
 	do {
@@ -185,8 +185,8 @@ cli_tnef(const char *dir, int desc)
 	}
 	fclose(fp);
 
-	cli_dbgmsg("cli_tnef: returning 0\n");
-	return CL_CLEAN;	/* we don't know if it's clean or not :-) */
+	cli_dbgmsg("cli_tnef: returning %d\n", ret);
+	return ret;
 }
 
 static int
