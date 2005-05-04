@@ -24,9 +24,10 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.14 2005/04/04 13:29:02 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.15 2005/05/04 12:57:28 nigelhorne Exp $";
 
 #include <stdio.h>
+#include <fcntl.h>
 
 #include "cltypes.h"
 #include "clamav.h"
@@ -60,6 +61,8 @@ static	int	tnef_attachment(FILE *fp, const char *dir, fileblob **fbref);
 #define	host32(v)	((v >> 24) | ((v & 0x00FF0000) >> 8) | \
 				((v & 0x0000FF00) << 8) | (v << 24))
 #endif
+
+extern	short	cli_debug_flag;
 
 int
 cli_tnef(const char *dir, int desc)
@@ -142,6 +145,34 @@ cli_tnef(const char *dir, int desc)
 				break;
 			default:
 				cli_errmsg("TNEF - unknown level %d\n", (int)i8);
+				
+				/*
+				 * Dump the file incase it was part of an
+				 * email that's about to be deleted
+				 */
+				if(cli_debug_flag) {
+					int fout;
+					char *filename = cli_gentemp(NULL);
+					char buffer[BUFSIZ];
+
+#ifdef	O_BINARY
+					fout = open(filename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
+#else
+					fout = open(filename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC, 0600);
+#endif
+
+					if(fout >= 0) {
+						int count;
+
+						cli_warnmsg("Saving dump to %s - send to bugs@clamav.net\n", filename);
+
+						lseek(desc, 0L, SEEK_SET);
+						while((count = cli_readn(desc, buffer, sizeof(buffer))) >= 0)
+							cli_writen(fout, buffer, count);
+						close(fout);
+					}
+					free(filename);
+				}
 				ret = CL_EFORMAT;
 				alldone = 1;
 				break;

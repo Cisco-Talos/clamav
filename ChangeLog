@@ -1,3 +1,8 @@
+Wed May  4 13:58:59 BST 2005 (njh)
+----------------------------------
+  * libclamav/tnef.c:	If a parse fails and debugging is on, the file being
+  				scanned is dumped to a temporary file
+
 Tue May  3 02:09:08 CEST 2005 (tk)
 ----------------------------------
   * libclamav: activate PDF code (patch by NJH)
