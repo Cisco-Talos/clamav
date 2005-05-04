@@ -1,3 +1,10 @@
+Wed May  4 20:15:33 BST 2005 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Remove old unused RFC1341 parts
+  * clamav-milter:	Better handling of log file errors
+  			Always send 451 when loading a new database when
+				--external is not set
+
 Wed May  4 13:58:59 BST 2005 (njh)
 ----------------------------------
   * libclamav/tnef.c:	If a parse fails and debugging is on, the file being
