@@ -24,7 +24,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.17 2005/05/04 20:22:08 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.18 2005/05/04 21:01:45 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -50,7 +50,6 @@ static	int	tnef_attachment(FILE *fp, const char *dir, fileblob **fbref);
 #define	attATTACHDATA	0x800f	/* Attachment Data */
 #define	attATTACHTITLE	0x8010	/* Attachment File Name */
 #define	attDATEMODIFIED	0x8020
-#define	attTNEFVERSION	0x9006
 #define	attOEMCODEPAGE	0x9007
 
 #if WORDS_BIGENDIAN == 0
@@ -144,7 +143,7 @@ cli_tnef(const char *dir, int desc)
 			case 0:
 				break;
 			default:
-				cli_errmsg("TNEF - unknown level %d\n", (int)i8);
+				cli_warnmsg("TNEF - unknown level %d\n", (int)i8);
 				
 				/*
 				 * Dump the file incase it was part of an
@@ -256,7 +255,7 @@ tnef_message(FILE *fp)
 #endif
 	}
 
-	cli_dbgmsg("%lu %lu\n", (long)(offset + length), ftell(fp));
+	/*cli_dbgmsg("%lu %lu\n", (long)(offset + length), ftell(fp));*/
 
 	fseek(fp, offset + length, SEEK_SET);
 
@@ -338,7 +337,7 @@ tnef_attachment(FILE *fp, const char *dir, fileblob **fbref)
 			break;
 	}
 
-	/*cli_dbgmsg("%lu %lu\n", offset + length, lseek(desc, 0L, SEEK_CUR));*/
+	/*cli_dbgmsg("%lu %lu\n", (long)(offset + length), ftell(fp));*/
 
 	fseek(fp, (long)(offset + length), SEEK_SET);	/* shouldn't be needed */
 
