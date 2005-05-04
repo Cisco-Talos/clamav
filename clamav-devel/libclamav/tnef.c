@@ -24,7 +24,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.18 2005/05/04 21:01:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.19 2005/05/04 21:41:18 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -38,8 +38,9 @@ static	char	const	rcsid[] = "$Id: tnef.c,v 1.18 2005/05/04 21:01:45 nigelhorne E
 #endif
 #include "blob.h"
 
-static	int	tnef_message(FILE *fp);
-static	int	tnef_attachment(FILE *fp, const char *dir, fileblob **fbref);
+static	int	tnef_message(FILE *fp, uint16_t type, uint16_t tag, uint32_t length);
+static	int	tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, uint32_t length, const char *dir, fileblob **fbref);
+static	int	tnef_header(FILE *fp, uint8_t *part, uint16_t *type, uint16_t *tag, uint32_t *length);
 
 #define	TNEF_SIGNATURE	0x223E9f78
 #define	LVL_MESSAGE	0x01
@@ -68,7 +69,6 @@ cli_tnef(const char *dir, int desc)
 {
 	uint32_t i32;
 	uint16_t i16;
-	uint8_t i8;
 	fileblob *fb;
 	int i, ret, alldone;
 	FILE *fp;
@@ -101,7 +101,11 @@ cli_tnef(const char *dir, int desc)
 	alldone = 0;
 
 	do {
-		switch(fread(&i8, sizeof(uint8_t), 1, fp)) {
+		uint8_t part;
+		uint16_t type, tag;
+		uint32_t length;
+
+		switch(tnef_header(fp, &part, &type, &tag, &length)) {
 			case 0:
 				if(ferror(fp)) {
 					perror("read");
@@ -118,7 +122,7 @@ cli_tnef(const char *dir, int desc)
 		}
 		if(alldone)
 			break;
-		switch(i8) {
+		switch(part) {
 			case LVL_MESSAGE:
 				cli_dbgmsg("TNEF - found message\n");
 				if(fb != NULL) {
@@ -126,7 +130,7 @@ cli_tnef(const char *dir, int desc)
 					fb = NULL;
 				}
 				fb = fileblobCreate();
-				if(tnef_message(fp) != 0) {
+				if(tnef_message(fp, type, tag, length) != 0) {
 					cli_errmsg("Error reading TNEF message\n");
 					ret = CL_EFORMAT;
 					alldone = 1;
@@ -134,7 +138,7 @@ cli_tnef(const char *dir, int desc)
 				break;
 			case LVL_ATTACHMENT:
 				cli_dbgmsg("TNEF - found attachment\n");
-				if(tnef_attachment(fp, dir, &fb) != 0) {
+				if(tnef_attachment(fp, type, tag, length, dir, &fb) != 0) {
 					cli_errmsg("Error reading TNEF message\n");
 					ret = CL_EFORMAT;
 					alldone = 1;
@@ -143,7 +147,7 @@ cli_tnef(const char *dir, int desc)
 			case 0:
 				break;
 			default:
-				cli_warnmsg("TNEF - unknown level %d\n", (int)i8);
+				cli_warnmsg("TNEF - unknown level %d tag 0x%x\n", (int)part, (int)tag);
 				
 				/*
 				 * Dump the file incase it was part of an
@@ -189,25 +193,13 @@ cli_tnef(const char *dir, int desc)
 }
 
 static int
-tnef_message(FILE *fp)
+tnef_message(FILE *fp, uint16_t type, uint16_t tag, uint32_t length)
 {
-	uint32_t i32, length;
-	uint16_t i16, tag, type;
+	uint16_t i16;
 	off_t offset;
 #if	CL_DEBUG
 	char *string;
 #endif
-
-	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1)
-		return -1;
-
-	i32 = host32(i32);
-	tag = i32 & 0xFFFF;
-	type = (i32 & 0xFFFF0000) >> 16;
-
-	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1)
-		return -1;
-	length = host32(i32);
 
 	cli_dbgmsg("message tag 0x%x, type 0x%x, length %u\n", tag, type, length);
 
@@ -267,23 +259,12 @@ tnef_message(FILE *fp)
 }
 
 static int
-tnef_attachment(FILE *fp, const char *dir, fileblob **fbref)
+tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, uint32_t length, const char *dir, fileblob **fbref)
 {
-	uint32_t i32, length, todo;
-	uint16_t i16, tag, type;
+	uint32_t todo;
+	uint16_t i16;
 	off_t offset;
 	char *string;
-
-	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1)
-		return -1;
-
-	i32 = host32(i32);
-	tag = i32 & 0xFFFF;
-	type = (i32 & 0xFFFF0000) >> 16;
-
-	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1)
-		return -1;
-	length = host32(i32);
 
 	cli_dbgmsg("attachment tag 0x%x, type 0x%x, length %u\n", tag, type, length);
 
@@ -346,4 +327,31 @@ tnef_attachment(FILE *fp, const char *dir, fileblob **fbref)
 		return -1;
 
 	return 0;
+}
+
+static int
+tnef_header(FILE *fp, uint8_t *part, uint16_t *type, uint16_t *tag, uint32_t *length)
+{
+	uint32_t i32;
+
+	if(fread(part, sizeof(uint8_t), 1, fp) != 1)
+		return 0;
+
+	if(*part == (uint8_t)0)
+		return 0;
+
+	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1)
+		return -1;
+
+	i32 = host32(i32);
+	*tag = i32 & 0xFFFF;
+	*type = (i32 & 0xFFFF0000) >> 16;
+
+	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1)
+		return -1;
+	*length = host32(i32);
+
+	cli_dbgmsg("message tag 0x%x, type 0x%x, length %u\n", *tag, *type, *length);
+
+	return 1;
 }
