@@ -22,7 +22,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.193 2005/05/04 19:15:08 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.194 2005/05/05 16:36:17 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.84f"
 
@@ -4410,13 +4410,15 @@ watchdog(void *a)
 			} else if(dbstatus == 0)
 				cli_dbgmsg("Database has not changed\n");
 			else if(dbstatus == 1) {
-				cli_warnmsg("Not reloading database until idle\n");
+				cli_warnmsg("Not reloading database until idle - waiting for %d children\n", n_children);
 				pthread_mutex_lock(&accept_mutex);
 				accept_inputs = 0;
 				pthread_mutex_unlock(&accept_mutex);
 
-				while(n_children > 0)
+				while(n_children > 0) {
 					pthread_cond_wait(&n_children_cond, &n_children_mutex);
+					cli_warnmsg("Waiting for %d children until databae reload\n", n_children);
+				}
 
 				cl_statfree(&dbstat);
 				if(use_syslog)
@@ -4599,12 +4601,15 @@ watchdog(void *a)
 		} else if(dbstatus == 0)
 			cli_dbgmsg("Database has not changed\n");
 		else if(dbstatus == 1) {
-			cli_warnmsg("Not reloading database until idle\n");
+			cli_warnmsg("Not reloading database until idle - waiting for %d children\n", n_children);
 			pthread_mutex_lock(&accept_mutex);
 			accept_inputs = 0;
 			pthread_mutex_unlock(&accept_mutex);
-			while(n_children > 0)
+
+			while(n_children > 0) {
 				pthread_cond_wait(&n_children_cond, &n_children_mutex);
+				cli_warnmsg("Waiting for %d children until databae reload\n", n_children);
+			}
 			cl_statfree(&dbstat);
 			if(use_syslog)
 				syslog(LOG_WARNING, _("Loading new database"));
