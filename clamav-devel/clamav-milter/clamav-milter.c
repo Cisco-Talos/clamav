@@ -22,7 +22,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.194 2005/05/05 16:36:17 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.195 2005/05/06 07:31:33 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.84f"
 
@@ -367,8 +367,8 @@ static	int	debug_level = 0;
 
 static	pthread_mutex_t	n_children_mutex = PTHREAD_MUTEX_INITIALIZER;
 static	pthread_cond_t	n_children_cond = PTHREAD_COND_INITIALIZER;
-static	unsigned	int	n_children = 0;
-static	unsigned	int	max_children = 0;
+static	volatile	unsigned	int	n_children = 0;
+static	volatile	unsigned	int	max_children = 0;
 static	pthread_mutex_t	accept_mutex = PTHREAD_MUTEX_INITIALIZER;
 static	pthread_cond_t	accept_cond = PTHREAD_COND_INITIALIZER;
 static	int	accept_inputs;
