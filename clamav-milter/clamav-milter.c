@@ -22,7 +22,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.196 2005/05/06 16:22:07 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.197 2005/05/06 17:55:50 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.84f"
 
@@ -1952,6 +1952,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	accepting = accept_inputs;
 	pthread_mutex_unlock(&accept_mutex);
 	if(!accepting) {
+#if	1
 		cli_warnmsg("Not accepting inputs at the moment\n");
 		/*
 		 * We must refuse here even if dont_wait isn't set, since
@@ -1959,7 +1960,6 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		 * and refuse to have anything more to do with us until
 		 * the program is restarted
 		 */
-#if	0
 		if(dont_wait)
 			return SMFIS_TEMPFAIL;
 		pthread_mutex_lock(&accept_mutex);
@@ -1968,7 +1968,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		pthread_mutex_unlock(&accept_mutex);
 		cli_warnmsg("Accepting inputs again\n");
 #endif
-		return SMFIS_TEMPFAIL;
+		/*return SMFIS_TEMPFAIL;*/
 	}
 
 	if(ctx == NULL) {
@@ -4620,7 +4620,8 @@ watchdog(void *a)
 			}
 			pthread_mutex_lock(&accept_mutex);
 			accept_inputs = 1;
-			pthread_cond_broadcast(&accept_cond);
+			if(pthread_cond_broadcast(&accept_cond) < 0)
+				perror("pthread_cond_broadcast");
 			pthread_mutex_unlock(&accept_mutex);
 		} else {
 			smfi_stop();
