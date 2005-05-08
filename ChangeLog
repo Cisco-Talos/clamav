@@ -1,3 +1,7 @@
+Sun May  8 16:42:46 CEST 2005 (tk)
+----------------------------------
+  * sigtool/sigtool.c: fix support for *.fp databases
+
 Wed May  4 20:15:33 BST 2005 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Remove old unused RFC1341 parts
