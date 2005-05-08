@@ -271,7 +271,7 @@ int build(struct optstruct *opt)
 	mprintf("WARNING: There are no signatures in the database(s).\n");
     } else {
 	mprintf("Signatures: %d\n", no);
-	realno = countlines("main.db") + countlines("daily.db") + countlines("main.hdb") + countlines("daily.hdb") + countlines("main.ndb") + countlines("daily.ndb") + countlines("main.zmd") + countlines("daily.zmd") + countlines("main.rmd") + countlines("daily.rmd");
+	realno = countlines("main.db") + countlines("daily.db") + countlines("main.hdb") + countlines("daily.hdb") + countlines("main.ndb") + countlines("daily.ndb") + countlines("main.zmd") + countlines("daily.zmd") + countlines("main.rmd") + countlines("daily.rmd") + countlines("main.fp") + countlines("daily.fp");
 	if(realno != no) {
 	    mprintf("!Signatures in database: %d. Loaded: %d.\n", realno, no);
 	    mprintf("Please check the current directory and remove unnecessary databases\n");
