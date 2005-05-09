@@ -1,3 +1,8 @@
+Mon May  9 18:06:53 BST 2005 (njh)
+----------------------------------
+  * clamav-milter:	Print segfault diagnostic, even if print_trace is
+				not available
+
 Sun May  8 16:42:46 CEST 2005 (tk)
 ----------------------------------
   * sigtool/sigtool.c: fix support for *.fp databases
@@ -6,13 +11,13 @@ Wed May  4 20:15:33 BST 2005 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Remove old unused RFC1341 parts
   * clamav-milter:	Better handling of log file errors
-  			Always send 451 when loading a new database when
+			Always send 451 when loading a new database when
 				--external is not set
 
 Wed May  4 13:58:59 BST 2005 (njh)
 ----------------------------------
   * libclamav/tnef.c:	If a parse fails and debugging is on, the file being
-  				scanned is dumped to a temporary file
+				scanned is dumped to a temporary file
 
 Tue May  3 02:09:08 CEST 2005 (tk)
 ----------------------------------
