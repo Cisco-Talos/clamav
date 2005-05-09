@@ -765,6 +765,7 @@ Changes
 0.84f	4/5/05:		Better handling of open failures for LogFile
 			Always send 451 when reloading a database, even if
 				dont-wait isn't set
+0.84g	9/5/05:		Print an error in the log if a segfault is received
 
 4. INTERNATIONALISATION
 
