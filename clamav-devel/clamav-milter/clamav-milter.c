@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.197 2005/05/06 17:55:50 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.198 2005/05/09 17:02:26 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.84f"
+#define	CM_VERSION	"0.84g"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -441,10 +441,11 @@ static	const	char	*pidfile;
 #endif
 #endif
 
+static	void	sigsegv(int sig);
+
 #ifdef HAVE_BACKTRACE
 #include <execinfo.h>
 
-static	void	sigsegv(int sig);
 static	void	print_trace(void);
 
 #define	BACKTRACE_SIZE	200
@@ -1550,9 +1551,7 @@ main(int argc, char **argv)
 	pthread_mutex_unlock(&version_mutex);
 #endif
 
-#ifdef HAVE_BACKTRACE
 	(void)signal(SIGSEGV, sigsegv);
-#endif
 
 	return smfi_main();
 }
@@ -4911,19 +4910,23 @@ loadDatabase(void)
 	return cl_statinidir(dbdir, &dbstat);
 }
 
-#ifdef HAVE_BACKTRACE
 static void
 sigsegv(int sig)
 {
 	signal(SIGSEGV, SIG_DFL);
+
+#ifdef HAVE_BACKTRACE
 	print_trace();
+#endif
+
 	if(use_syslog)
 		syslog(LOG_ERR, "Segmentation fault :-( Bye..");
-	cli_dbgmsg("Segmentation fault :-( Bye..\n");
+	cli_errmsg("Segmentation fault :-( Bye..\n");
 
 	smfi_stop();
 }
 
+#ifdef HAVE_BACKTRACE
 static void
 print_trace(void)
 {
