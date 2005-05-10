@@ -1,3 +1,8 @@
+Tue May 10 04:47:28 CEST 2005 (tk)
+----------------------------------
+  * libclamav/matcher.c: fix signature offset calculation in large files
+			 (problem reported by Christoph)
+
 Mon May  9 18:06:53 BST 2005 (njh)
 ----------------------------------
   * clamav-milter:	Print segfault diagnostic, even if print_trace is
