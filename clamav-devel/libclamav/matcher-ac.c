@@ -1,10 +1,10 @@
 /*
  *  C implementation of the Aho-Corasick pattern matching algorithm. It's based
- *  on ScannerDaemon's Java version by Kurt Huwig and
+ *  on the ScannerDaemon's version (coded in Java) by Kurt Huwig and
  *  http://www-sr.informatik.uni-tuebingen.de/~buehler/AC/AC.html
  *  Thanks to Kurt Huwig for pointing me to this page.
  *
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -295,7 +295,8 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
 			    t = type;
 			else
 			    t = ftype;
-			if(fd == -1 || !cli_validatesig(pt->target, t, pt->offset, offset + position, fd, pt->virname)) {
+
+			if((fd == -1 && !t) || !cli_validatesig(pt->target, t, pt->offset, offset + position, fd, pt->virname)) {
 			    pt = pt->next;
 			    continue;
 			}

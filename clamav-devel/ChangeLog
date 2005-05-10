@@ -1,3 +1,9 @@
+Tue May 10 21:29:45 CEST 2005 (tk)
+----------------------------------
+  * libclamav/matcher-ac.c, libclamav/matcher-bm.c: fix detection problem with
+						    *.ndb OLE2 signatures
+						    (problem reported by Trog)
+
 Tue May 10 04:47:28 CEST 2005 (tk)
 ----------------------------------
   * libclamav/matcher.c: fix signature offset calculation in large files
