@@ -69,6 +69,7 @@
 #ifdef   ZZIP_ssize_t
 #define _zzip_ssize_t ZZIP_ssize_t
 #else
+#include <unistd.h>
 #define _zzip_ssize_t ssize_t
 #endif
 #endif
