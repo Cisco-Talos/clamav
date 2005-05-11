@@ -1,3 +1,7 @@
+Wed May 11 18:02:24 CEST 2005 (tk)
+----------------------------------
+  * libclamav/others: increase f-level
+
 Wed May 11 03:29:50 CEST 2005 (tk)
 ----------------------------------
   * freshclam/manager.c: fix socket descriptor leak in --no-dns mode (patch by
