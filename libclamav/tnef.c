@@ -24,7 +24,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.20 2005/05/11 15:22:17 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.21 2005/05/11 21:43:57 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -51,6 +51,7 @@ static	int	tnef_header(FILE *fp, uint8_t *part, uint16_t *type, uint16_t *tag, u
 #define	attATTACHDATA	0x800f	/* Attachment Data */
 #define	attATTACHTITLE	0x8010	/* Attachment File Name */
 #define	attDATEMODIFIED	0x8020
+#define	attTNEFVERSION	0x9006
 #define	attOEMCODEPAGE	0x9007
 
 #if WORDS_BIGENDIAN == 0
