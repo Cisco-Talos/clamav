@@ -122,8 +122,8 @@ struct cli_md5_node {
 };
 
 struct cli_meta_node {
-    int csize, size;
-    unsigned int crc32, fileno, method, encrypted, maxdepth;
+    int csize, size, method;
+    unsigned int crc32, fileno, encrypted, maxdepth;
     char *filename, *virname;
     struct cli_meta_node *next;
 };
