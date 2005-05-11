@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.243 2005/05/04 19:11:52 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.244 2005/05/11 15:24:33 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2225,7 +2225,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						cli_warnmsg("PGP encoded attachment not scanned\n");
 						rc = 2;
 					} else
-						cli_warnmsg("Unknown encryption protocol '%s' - if you believe this file contains a virus, report it to bugs@clamav.net\n");
+						cli_warnmsg("Unknown encryption protocol '%s' - if you believe this file contains a virus, submit it to www.clamav.net\n", protocol);
 					free(protocol);
 				} else
 					cli_dbgmsg("Encryption method missing protocol name\n");
@@ -2307,7 +2307,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				/* TODO */
 				cli_warnmsg("Attempt to send Content-type message/external-body trapped");
 			else
-				cli_warnmsg("Unsupported message format `%s' - if you believe this file contains a virus, report it to bugs@clamav.net\n", mimeSubtype);
+				cli_warnmsg("Unsupported message format `%s' - if you believe this file contains a virus, submit it to www.clamav.net\n", mimeSubtype);
 
 
 			if(mainMessage && (mainMessage != messageIn))
@@ -3201,7 +3201,7 @@ rfc2047(const char *in)
 		encoding = tolower(encoding);
 
 		if((encoding != 'q') && (encoding != 'b')) {
-			cli_warnmsg("Unsupported RFC2047 encoding type '%c' - if you believe this file contains a virus that was missed, report it to bugs@clamav.net\n", encoding);
+			cli_warnmsg("Unsupported RFC2047 encoding type '%c' - if you believe this file contains a virus, submit it to www.clamav.net\n", encoding);
 			free(out);
 			out = NULL;
 			break;
