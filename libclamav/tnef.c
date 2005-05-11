@@ -24,7 +24,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.19 2005/05/04 21:41:18 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.20 2005/05/11 15:22:17 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -210,7 +210,7 @@ tnef_message(FILE *fp, uint16_t type, uint16_t tag, uint32_t length)
 	 */
 	switch(tag) {
 		case attBODY:
-			cli_warnmsg("TNEF body not being scanned - report to bugs@clamav.net\n");
+			cli_warnmsg("TNEF body not being scanned - if you believe this file contains a virus, submit it to www.clamav.net\n");
 			break;
 #if	CL_DEBUG
 		case attTNEFVERSION:

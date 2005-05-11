@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.154 2005/04/24 10:01:15 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.155 2005/05/11 15:22:17 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -291,7 +291,7 @@ messageSetMimeType(message *mess, const char *type)
 						type, closest, highestSimil);
 					mess->mimeType = (mime_type)t;
 				} else {
-					cli_dbgmsg("Unknown MIME type: `%s', set to Application - if you believe this file contains a missed virus, report it to bugs@clamav.net\n", type);
+					cli_dbgmsg("Unknown MIME type: `%s', set to Application - if you believe this file contains a virus, submit it to www.clamav.net\n", type);
 					mess->mimeType = APPLICATION;
 				}
 			}
@@ -542,7 +542,7 @@ messageAddArguments(message *m, const char *s)
 				 * TODO: the file should still be saved and
 				 * virus checked
 				 */
-				cli_dbgmsg("Can't parse header \"%s\" - if you believe this file contains a missed virus, report it to bugs@clamav.net\n", s);
+				cli_dbgmsg("Can't parse header \"%s\" - if you believe this file contains a virus, submit it to www.clamav.net\n", s);
 				if(data)
 					free(data);
 				free((char *)key);
@@ -759,7 +759,7 @@ messageSetEncoding(message *m, const char *enctype)
 					type, closest, highestSimil);
 				messageSetEncoding(m, closest);
 			} else {
-				cli_dbgmsg("Unknown encoding type \"%s\" - if you believe this file contains a virus, report it to bugs@clamav.net\n", type);
+				cli_dbgmsg("Unknown encoding type \"%s\" - if you believe this file contains a virus, submit it to www.clamav.net\n", type);
 				/*
 				 * Err on the side of safety, enable all
 				 * decoding modules
@@ -1147,7 +1147,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			 */
 			free(uptr);
 		} else {
-			cli_warnmsg("HQX8 messages not yet supported - if you believe this file contains a virus, report it to bugs@clamav.net\n", len);
+			cli_warnmsg("HQX8 messages not yet supported - if you believe this file contains a virus, submit it to www.clamav.net\n");
 			newlen = len;
 		}
 
