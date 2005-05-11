@@ -51,8 +51,8 @@ Check #n times per day for a new database. #n must be between 1 and 50.
 \fB\-\-daemon\-notify=/path/to/clamd.conf\fR
 Notify the daemon about the new database. By default it reads a hardcoded config file but you can use an another one. Both local and TCP sockets are supported.
 .TP 
-\fB\-a IP, \-\-local-address=IP\fR
-Use (local) IP for HTTP downloads. Useful for multi-homed systems. If binding fails for whatever reason, a warning is issued and freshclam behaves like without this flag.
+\fB\-a IP, \-\-local\-address=IP\fR
+Use (local) IP for HTTP downloads. Useful for multi\-homed systems. If binding fails for whatever reason, a warning is issued and freshclam behaves like without this flag.
 .TP 
 \fB\-\-on\-error\-execute=COMMAND\fR
 Execute COMMAND if error occured. Remeber, that virus database freshness is the most important thing in anti\-virus system. With this option freshclam can alert you (eg. send SMS) when something is going wrong.
@@ -86,7 +86,7 @@ Execute COMMAND after succesful update.
 .TP 
 52: Connection (network) problem.
 .TP 
-53: Can't unlink a file.
+53: Can't unlink file.
 .TP 
 54: MD5 or digital signature verification error.
 .TP 
@@ -94,7 +94,7 @@ Execute COMMAND after succesful update.
 .TP 
 56: Config file error.
 .TP 
-57: Can't create a new file.
+57: Can't create new file.
 .TP 
 58: Can't read database from remote server.
 .TP 
@@ -103,6 +103,8 @@ Execute COMMAND after succesful update.
 60: Can't get information about clamav user from /etc/passwd.
 .TP 
 61: Can't drop privileges.
+.TP 
+62: Can't initialze logger.
 .SH "FILES"
 .LP 
 @CFGDIR@/freshclam.conf

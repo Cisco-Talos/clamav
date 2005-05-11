@@ -1,3 +1,8 @@
+Wed May 11 02:44:41 CEST 2005 (tk)
+----------------------------------
+  * clamscan, freshclam: return with 62 (instead of 1) when logger can't be
+			 initialized
+
 Tue May 10 21:29:45 CEST 2005 (tk)
 ----------------------------------
   * libclamav/matcher-ac.c, libclamav/matcher-bm.c: fix detection problem with
