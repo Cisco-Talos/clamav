@@ -163,7 +163,7 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 	    if(mdata->size >= 0 && (unsigned int) mdata->size != metadata->unpack_size)
 		continue;
 
-	    if(mdata->method && mdata->method != metadata->method)
+	    if(mdata->method >= 0 && mdata->method != metadata->method)
 		continue;
 
 	    if(mdata->fileno && mdata->fileno != files)
@@ -337,7 +337,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	    if(mdata->size >= 0 && mdata->size != zdirent.st_size)
 		continue;
 
-	    if(mdata->method && mdata->method != (unsigned int) zdirent.d_compr)
+	    if(mdata->method >= 0 && mdata->method != (unsigned int) zdirent.d_compr)
 		continue;
 
 	    if(mdata->fileno && mdata->fileno != files)
