@@ -1,3 +1,8 @@
+Wed May 11 03:29:50 CEST 2005 (tk)
+----------------------------------
+  * freshclam/manager.c: fix socket descriptor leak in --no-dns mode (patch by
+			 GertJan Spoelman <cav*gjs.cc>)
+
 Wed May 11 02:44:41 CEST 2005 (tk)
 ----------------------------------
   * clamscan, freshclam: return with 62 (instead of 1) when logger can't be
