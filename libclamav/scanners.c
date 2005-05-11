@@ -452,7 +452,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 
 	if(!encrypted && size != zdirent.st_size) {
 	    cli_dbgmsg("Zip: Incorrectly decompressed (%d != %d)\n", size, zdirent.st_size);
-	    ret = CL_EIO;
+	    ret = CL_EZIP;
 	    break;
 	}
 
