@@ -766,6 +766,7 @@ Changes
 			Always send 451 when reloading a database, even if
 				dont-wait isn't set
 0.84g	9/5/05:		Print an error in the log if a segfault is received
+0.85	11/5/05:	Up-issue
 
 4. INTERNATIONALISATION
 
