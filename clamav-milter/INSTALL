@@ -767,6 +767,8 @@ Changes
 				dont-wait isn't set
 0.84g	9/5/05:		Print an error in the log if a segfault is received
 0.85	11/5/05:	Up-issue
+0.85a	12/5/05:	Open /dev/console before dropping privilege, reported
+				by David L. Crow <crow@orangeblood.org>
 
 4. INTERNATIONALISATION
 
