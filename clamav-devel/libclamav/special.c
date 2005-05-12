@@ -93,7 +93,8 @@ int cli_check_mydoom_log(int desc, const char **virname)
 static int jpeg_check_photoshop_8bim(int fd)
 {
 	unsigned char bim[5];
-	uint16_t id, nlength;
+	uint16_t id, ntmp;
+	uint8_t nlength;
 	uint32_t size;
 	off_t offset;
 	int retval;
@@ -114,15 +115,12 @@ static int jpeg_check_photoshop_8bim(int fd)
 	}
 	id = special_endian_convert_16(id);
 	cli_dbgmsg("ID: 0x%.4x\n", id);
-	if (cli_readn(fd, &nlength, 2) != 2) {
+	if (cli_readn(fd, &nlength, 1) != 1) {
 		return -1;
 	}
-	nlength = special_endian_convert_16(nlength);
-	/* Seek past the name string */
-	if (nlength > 0) {
-		lseek(fd, nlength, SEEK_CUR);
-	}
-
+	ntmp = nlength + ((((uint16_t)nlength)+1) & 0x01);
+	lseek(fd, ntmp, SEEK_CUR);
+	
 	if (cli_readn(fd, &size, 4) != 4) {
 		return -1;
 	}
