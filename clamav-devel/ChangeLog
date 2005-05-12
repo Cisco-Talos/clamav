@@ -1,3 +1,9 @@
+Thu May 12 08:32:22 BST 2005 (njh)
+----------------------------------
+  * clamav-milter:	Open /dev/console (if LogFile not set) before
+  				dropping priv so that error messages aren't
+				lost reported by David Crow.
+
 Wed May 11 18:02:24 CEST 2005 (tk)
 ----------------------------------
   * libclamav/others: increase f-level
