@@ -99,7 +99,12 @@ Installations for RedHat Linux and it's derivatives such as YellowDog:
 	define(`confINPUT_MAIL_FILTERS', `clamav')
 
 	Note that the INPUT_MAIL_FILTER line must come before the
-		confINPUT_MAIL_FILTERS line
+		confINPUT_MAIL_FILTERS line.
+
+	Don't worry that the file /var/run/clamav/clmilter.sock doesn't exist,
+		clamav-milter will create it for you. However you will need
+		to create the directory /var/run/clamav (usually owned
+		by user clamav, mode 700).
 
 	Check entry in /usr/local/etc/clamd.conf of the form:
 	LocalSocket /var/run/clamav/clamd.sock
@@ -768,7 +773,7 @@ Changes
 0.84g	9/5/05:		Print an error in the log if a segfault is received
 0.85	11/5/05:	Up-issue
 0.85a	12/5/05:	Open /dev/console before dropping privilege, reported
-				by David L. Crow <crow@orangeblood.org>
+				by David Crow <crow@orangeblood.org>
 
 4. INTERNATIONALISATION
 
