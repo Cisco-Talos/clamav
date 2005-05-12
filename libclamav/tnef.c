@@ -24,7 +24,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.21 2005/05/11 21:43:57 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.22 2005/05/12 12:39:57 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -199,6 +199,7 @@ tnef_message(FILE *fp, uint16_t type, uint16_t tag, uint32_t length)
 	uint16_t i16;
 	off_t offset;
 #if	CL_DEBUG
+	uint32_t i32;
 	char *string;
 #endif
 
