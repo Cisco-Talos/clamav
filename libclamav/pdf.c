@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.7 2005/05/04 16:43:07 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.8 2005/05/13 09:56:00 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -48,6 +48,7 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.7 2005/05/04 16:43:07 nigelhorne Exp
 #include "table.h"
 #include "mbox.h"
 #include "others.h"
+#include "blob.h"
 
 #ifndef	MIN
 #define	MIN(a, b)	(((a) < (b)) ? (a) : (b))
