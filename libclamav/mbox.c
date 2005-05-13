@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.244 2005/05/11 15:24:33 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.245 2005/05/13 19:43:37 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -535,6 +535,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 				do {
 					int length = 0;
+					char *newline;
 
 					/*printf("%ld: ", b64size); fflush(stdout);*/
 
@@ -545,7 +546,10 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 					/*printf("%d: ", length); fflush(stdout);*/
 
-					line = cli_realloc(line, length + 1);
+					newline = cli_realloc(line, length + 1);
+					if(newline == NULL)
+						break;
+					line = newline;
 
 					memcpy(line, b64start, length);
 					line[length] = '\0';
@@ -620,6 +624,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 				do {
 					int length = 0;
+					char *newline;
 
 					/*printf("%ld: ", quotedsize); fflush(stdout);*/
 
@@ -630,7 +635,10 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 					/*printf("%d: ", length); fflush(stdout);*/
 
-					line = cli_realloc(line, length + 1);
+					newline = cli_realloc(line, length + 1);
+					if(newline == NULL)
+						break;
+					line = newline;
 
 					memcpy(line, quotedstart, length);
 					line[length] = '\0';
@@ -1093,7 +1101,10 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 					fulllinelength = strlen(line) + 1;
 				} else if(line != NULL) {
 					fulllinelength += strlen(line);
-					fullline = cli_realloc(fullline, fulllinelength);
+					ptr = cli_realloc(fullline, fulllinelength);
+					if(ptr == NULL)
+						continue;
+					fullline = ptr;
 					strcat(fullline, line);
 				}
 
@@ -1277,7 +1288,10 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 					fulllinelength = strlen(buffer) + 1;
 				} else if(buffer) {
 					fulllinelength += strlen(buffer);
-					fullline = cli_realloc(fullline, fulllinelength);
+					ptr = cli_realloc(fullline, fulllinelength);
+					if(ptr == NULL)
+						continue;
+					fullline = ptr;
 					strcat(fullline, buffer);
 				}
 
@@ -3533,7 +3547,7 @@ checkURLs(message *m, const char *dir)
 				continue;
 			}
 			if(n == FOLLOWURLS) {
-				cli_warnmsg("Not all URLs will be scanned\n");
+				cli_warnmsg("URL %s will not be scanned\n", url);
 				break;
 			}
 			(void)tableInsert(t, url, 1);
