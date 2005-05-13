@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: binhex.c,v $
+ * Revision 1.15  2005/05/13 19:30:34  nigelhorne
+ * Clean cli_realloc call
+ *
  * Revision 1.14  2005/03/10 08:51:30  nigelhorne
  * Tidy
  *
@@ -57,7 +60,7 @@
  * First draft of binhex.c
  *
  */
-static	char	const	rcsid[] = "$Id: binhex.c,v 1.14 2005/03/10 08:51:30 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: binhex.c,v 1.15 2005/05/13 19:30:34 nigelhorne Exp $";
 
 #include "clamav.h"
 
@@ -133,7 +136,7 @@ cli_binhex(const char *dir, int desc)
 
 	while(bytesleft > 0) {
 		int length = 0;
-		char *ptr;
+		char *ptr, *newline;
 
 		/*printf("%d: ", bytesleft);*/
 
@@ -144,7 +147,11 @@ cli_binhex(const char *dir, int desc)
 
 		/*printf("%d: ", length);*/
 
-		line = cli_realloc(line, (size_t)(length + 1));
+		newline = cli_realloc(line, (size_t)(length + 1));
+		if(newline == NULL)
+			break;
+
+		line = newline;
 
 		memcpy(line, buf, length);
 		line[length] = '\0';
