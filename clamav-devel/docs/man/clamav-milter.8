@@ -10,10 +10,10 @@ clamav\-milter [options] socket_address
 Clamav\-milter is a filter for \fBsendmail(1)\fR mail server.
 It uses a mail scanning engine built into \fBclamd(8)\fR.
 .LP
-Clamav\-milter can, when configured to use communicate to clamd on other
-machines, use load balancing and fault tolerant techniques to connect to
-more than one clamd and seemlessly hot swap to even the load between different
-servers and to keep scanning for viruses even when a server goes down.
+Clamav\-milter can use load balancing and fault tolerant techniques to connect
+to more than one clamd(8) server and seemlessly hot swap to even the load
+between different machines and to keep scanning for viruses even when a server
+goes down.
 When it is configured to use clamd on the the localhost, when
 the \-\-external flag (see below) is not given or
 LocalSocket in set in \fBclamd.conf(5)\fR,
