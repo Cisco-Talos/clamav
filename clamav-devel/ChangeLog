@@ -1,3 +1,9 @@
+Sat May 14 17:14:52 BST 2005 (njh)
+----------------------------------
+  * libclamav/pdf.c:	Fix problem with munmap not unmapping all the area,
+				thanks to Martin Blapp <mb at imp.ch> for
+				pointing this out
+
 Thu May 12 09:23:52 BST 2005 (trog)
 -----------------------------------
   * libclamav/speical.c: Fix reading PString type in Photoshop thumbnails.
@@ -5,7 +11,7 @@ Thu May 12 09:23:52 BST 2005 (trog)
 Thu May 12 08:32:22 BST 2005 (njh)
 ----------------------------------
   * clamav-milter:	Open /dev/console (if LogFile not set) before
-  				dropping priv so that error messages aren't
+				dropping priv so that error messages aren't
 				lost reported by David Crow.
 
 Wed May 11 18:02:24 CEST 2005 (tk)

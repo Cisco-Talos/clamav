@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.8 2005/05/13 09:56:00 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.9 2005/05/14 16:13:25 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -63,6 +63,7 @@ cli_pdf(const char *dir, int desc)
 #else
 	struct stat statb;
 	off_t size;
+	long bytesleft;
 	char *buf;
 	const char *p, *q;
 
@@ -80,7 +81,8 @@ cli_pdf(const char *dir, int desc)
 	if(buf == MAP_FAILED)
 		return CL_EMEM;
 
-	while((q = cli_pmemstr(p, size, "obj", 3)) != NULL) {
+	bytesleft = (long)size;
+	while((q = cli_pmemstr(p, bytesleft, "obj", 3)) != NULL) {
 		int length, flatedecode;
 		const char *s, *t;
 		const char *u, *obj;
@@ -88,14 +90,14 @@ cli_pdf(const char *dir, int desc)
 		int fout;
 		char fullname[NAME_MAX + 1];
 
-		size -= (q - p) + 3;
+		bytesleft -= (q - p) + 3;
 		obj = p = &q[3];
-		q = cli_pmemstr(p, size, "endobj", 6);
+		q = cli_pmemstr(p, bytesleft, "endobj", 6);
 		if(q == NULL) {
 			cli_dbgmsg("No matching endobj");
 			break;
 		}
-		size -= (q - p) + 6;
+		bytesleft -= (q - p) + 6;
 		p = &q[6];
 		objlen = (size_t)(q - obj);
 
