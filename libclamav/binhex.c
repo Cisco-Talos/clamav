@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: binhex.c,v $
+ * Revision 1.16  2005/05/14 16:13:25  nigelhorne
+ * Ensure munmap is the right size
+ *
  * Revision 1.15  2005/05/13 19:30:34  nigelhorne
  * Clean cli_realloc call
  *
@@ -60,7 +63,7 @@
  * First draft of binhex.c
  *
  */
-static	char	const	rcsid[] = "$Id: binhex.c,v 1.15 2005/05/13 19:30:34 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: binhex.c,v 1.16 2005/05/14 16:13:25 nigelhorne Exp $";
 
 #include "clamav.h"
 
@@ -131,7 +134,7 @@ cli_binhex(const char *dir, int desc)
 
 	cli_dbgmsg("mmap'ed binhex file\n");
 
-	bytesleft = (int)size;
+	bytesleft = (long)size;
 	line = NULL;
 
 	while(bytesleft > 0) {
