@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.155 2005/05/11 15:22:17 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.156 2005/05/15 15:46:12 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -359,7 +359,8 @@ messageSetDispositionType(message *m, const char *disptype)
 		m->mimeDispositionType = strdup(disptype);
 		if(m->mimeDispositionType)
 			strstrip(m->mimeDispositionType);
-	}
+	} else
+		m->mimeDispositionType = NULL;
 }
 
 const char *
