@@ -1,3 +1,8 @@
+Mon May 16 23:02:13 CEST 2005 (tk)
+----------------------------------
+  * freshclam/manager.c: remove superfluous close(hostfd), thanks to Pavel V.
+			 Rochnyack <rpv*fsf.tsu.ru>
+
 Mon May 16 02:51:03 CEST 2005 (tk)
 ----------------------------------
   * configure.in: detect and define SENDMAIL_VERSION
