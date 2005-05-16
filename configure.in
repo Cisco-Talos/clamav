@@ -172,11 +172,11 @@ if test "$have_milter" = "yes"; then
     AC_PATH_PROG(sendmailprog, sendmail, no, $PATH:/sbin:/usr/sbin:/usr/lib:/usr/libexec)
   fi
 
-  AC_DEFINE(SENDMAIL_BIN, $sendmailprog, [location of Sendmail binary])
+  AC_DEFINE_UNQUOTED(SENDMAIL_BIN, "$sendmailprog", [location of Sendmail binary])
 
   sendmailver=`$sendmailprog -d0 < /dev/null | head -1 | awk '{print $2}'`
 
-  AC_DEFINE(SENDMAIL_VERSION, $sendmailver, [version of Sendmail])
+  AC_DEFINE_UNQUOTED(SENDMAIL_VERSION, "$sendmailver", [version of Sendmail])
 fi
 
 want_dsig="yes"
