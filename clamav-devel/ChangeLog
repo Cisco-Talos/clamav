@@ -1,3 +1,7 @@
+Mon May 16 02:51:03 CEST 2005 (tk)
+----------------------------------
+  * configure.in: detect and define SENDMAIL_VERSION
+
 Sun May 15 16:47:48 BST 2005 (njh)
 ----------------------------------
   * libclamav/message.c:	Fixed a problem where an email with more

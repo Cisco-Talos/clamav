@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2003 - 2004 Tomasz Kojm <tkojm@clamav.net>
+#  Copyright (C) 2003 - 2005 Tomasz Kojm <tkojm@clamav.net>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -37,7 +37,6 @@ man_MANS = $(top_srcdir)/docs/man/clamav-milter.8
 endif
 endif
 
-AM_CFLAGS = -DSENDMAIL_BIN=\"$(SENDMAIL)\"
 LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMAV_MILTER_LIBS@
 INCLUDES = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_srcdir)/shared
 EXTRA_DIST = clamav-milter.c INSTALL

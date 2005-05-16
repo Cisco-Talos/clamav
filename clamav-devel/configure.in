@@ -162,6 +162,23 @@ AC_ARG_ENABLE(milter,
 [  --enable-milter	  build clamav-milter],
 have_milter=$enableval,have_milter="no")
 
+if test "$have_milter" = "yes"; then
+  sendmailprog=no
+  AC_ARG_WITH(sendmail,
+  [  --with-sendmail=PATH    specify location of Sendmail binary (default=auto find)],
+  sendmailprog=$with_sendmail, sendmailprog=no)
+
+  if test "$sendmailprog" = "no" ; then
+    AC_PATH_PROG(sendmailprog, sendmail, no, $PATH:/sbin:/usr/sbin:/usr/lib:/usr/libexec)
+  fi
+
+  AC_DEFINE(SENDMAIL_BIN, $sendmailprog, [location of Sendmail binary])
+
+  sendmailver=`$sendmailprog -d0 < /dev/null | head -1 | awk '{print $2}'`
+
+  AC_DEFINE(SENDMAIL_VERSION, $sendmailver, [version of Sendmail])
+fi
+
 want_dsig="yes"
 AC_ARG_ENABLE(dsig,
 [  --disable-dsig	  disable support for digital signatures],
@@ -550,11 +567,6 @@ AM_CONDITIONAL(HAVE_MILTER, test "$have_milter" = "yes")
 if test "$have_pthreads" = "yes"
 then
     AC_DEFINE(BUILD_CLAMD, 1, "build clamd")
-fi
-
-if test "$have_milter" = "yes"
-then
-    AC_PATH_PROG(SENDMAIL, sendmail, /usr/lib/sendmail, $PATH:/usr/lib:/usr/sbin:/etc:/usr/local/lib:/usr/local/sbin:/usr/bin:/usr/local/bin)
 fi
 
 dnl Check if we can do fd passing

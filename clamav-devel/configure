@@ -468,7 +468,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar LIBCLAMAV_VERSION CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE LN_S ECHO EGREP RANLIB ac_ct_RANLIB CPP LIBTOOL MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT DBDIR CFGDIR LIBCLAMAV_LIBS CLAMD_LIBS CLAMAV_MILTER_LIBS FRESHCLAM_LIBS TH_SAFE ADDITIONAL_LIBS BUILD_CLAMD_TRUE BUILD_CLAMD_FALSE HAVE_MILTER_TRUE HAVE_MILTER_FALSE SENDMAIL GETENT CLAMAVUSER CLAMAVGROUP LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar LIBCLAMAV_VERSION CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE LN_S ECHO EGREP RANLIB ac_ct_RANLIB CPP LIBTOOL MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT sendmailprog DBDIR CFGDIR LIBCLAMAV_LIBS CLAMD_LIBS CLAMAV_MILTER_LIBS FRESHCLAM_LIBS TH_SAFE ADDITIONAL_LIBS BUILD_CLAMD_TRUE BUILD_CLAMD_FALSE HAVE_MILTER_TRUE HAVE_MILTER_FALSE GETENT CLAMAVUSER CLAMAVGROUP LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1041,6 +1041,7 @@ Optional Packages:
   --with-pic              try to use only PIC/non-PIC objects default=use both
   --with-zlib=DIR	  path to directory containing zlib library (default=
 			  /usr/local or /usr if not found in /usr/local)
+  --with-sendmail=PATH    specify location of Sendmail binary (default=auto find)
   --with-libcurl	  support URLs downloading with libcurl (default=auto)
   --with-user=uid	  name of the clamav user (default=clamav)
   --with-group=gid	  name of the clamav group (default=clamav)
@@ -5035,7 +5036,7 @@ test "x$enable_libtool_lock" != xno && enable_libtool_lock=yes
 case $host in
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5038 "configure"' > conftest.$ac_ext
+  echo '#line 5039 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -5626,7 +5627,7 @@ chmod -w .
 save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -o out/conftest2.$ac_objext"
 compiler_c_o=no
-if { (eval echo configure:5629: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
+if { (eval echo configure:5630: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
   # The compiler can only warn and ignore the option if not recognized
   # So say no if there are warnings
   if test -s out/conftest.err; then
@@ -7560,7 +7561,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 7563 "configure"
+#line 7564 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -7658,7 +7659,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 7661 "configure"
+#line 7662 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11122,6 +11123,76 @@ else
   have_milter="no"
 fi;
 
+if test "$have_milter" = "yes"; then
+  sendmailprog=no
+
+# Check whether --with-sendmail or --without-sendmail was given.
+if test "${with_sendmail+set}" = set; then
+  withval="$with_sendmail"
+  sendmailprog=$with_sendmail
+else
+  sendmailprog=no
+fi;
+
+  if test "$sendmailprog" = "no" ; then
+    # Extract the first word of "sendmail", so it can be a program name with args.
+set dummy sendmail; ac_word=$2
+echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
+if test "${ac_cv_path_sendmailprog+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $sendmailprog in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_sendmailprog="$sendmailprog" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+as_dummy="$PATH:/sbin:/usr/sbin:/usr/lib:/usr/libexec"
+for as_dir in $as_dummy
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_sendmailprog="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+
+  test -z "$ac_cv_path_sendmailprog" && ac_cv_path_sendmailprog="no"
+  ;;
+esac
+fi
+sendmailprog=$ac_cv_path_sendmailprog
+
+if test -n "$sendmailprog"; then
+  echo "$as_me:$LINENO: result: $sendmailprog" >&5
+echo "${ECHO_T}$sendmailprog" >&6
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
+
+  fi
+
+
+cat >>confdefs.h <<\_ACEOF
+#define SENDMAIL_BIN $sendmailprog
+_ACEOF
+
+
+  sendmailver=`$sendmailprog -d0 < /dev/null | head -1 | awk '{print $2}'`
+
+
+cat >>confdefs.h <<\_ACEOF
+#define SENDMAIL_VERSION $sendmailver
+_ACEOF
+
+fi
+
 want_dsig="yes"
 # Check whether --enable-dsig or --disable-dsig was given.
 if test "${enable_dsig+set}" = set; then
@@ -12445,51 +12516,6 @@ then
 cat >>confdefs.h <<\_ACEOF
 #define BUILD_CLAMD 1
 _ACEOF
-
-fi
-
-if test "$have_milter" = "yes"
-then
-    # Extract the first word of "sendmail", so it can be a program name with args.
-set dummy sendmail; ac_word=$2
-echo "$as_me:$LINENO: checking for $ac_word" >&5
-echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
-if test "${ac_cv_path_SENDMAIL+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  case $SENDMAIL in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_SENDMAIL="$SENDMAIL" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-as_dummy="$PATH:/usr/lib:/usr/sbin:/etc:/usr/local/lib:/usr/local/sbin:/usr/bin:/usr/local/bin"
-for as_dir in $as_dummy
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-  for ac_exec_ext in '' $ac_executable_extensions; do
-  if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_SENDMAIL="$as_dir/$ac_word$ac_exec_ext"
-    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-done
-
-  test -z "$ac_cv_path_SENDMAIL" && ac_cv_path_SENDMAIL="/usr/lib/sendmail"
-  ;;
-esac
-fi
-SENDMAIL=$ac_cv_path_SENDMAIL
-
-if test -n "$SENDMAIL"; then
-  echo "$as_me:$LINENO: result: $SENDMAIL" >&5
-echo "${ECHO_T}$SENDMAIL" >&6
-else
-  echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6
-fi
 
 fi
 
@@ -14969,6 +14995,7 @@ s,@LIBTOOL@,$LIBTOOL,;t t
 s,@MAINTAINER_MODE_TRUE@,$MAINTAINER_MODE_TRUE,;t t
 s,@MAINTAINER_MODE_FALSE@,$MAINTAINER_MODE_FALSE,;t t
 s,@MAINT@,$MAINT,;t t
+s,@sendmailprog@,$sendmailprog,;t t
 s,@DBDIR@,$DBDIR,;t t
 s,@CFGDIR@,$CFGDIR,;t t
 s,@LIBCLAMAV_LIBS@,$LIBCLAMAV_LIBS,;t t
@@ -14981,7 +15008,6 @@ s,@BUILD_CLAMD_TRUE@,$BUILD_CLAMD_TRUE,;t t
 s,@BUILD_CLAMD_FALSE@,$BUILD_CLAMD_FALSE,;t t
 s,@HAVE_MILTER_TRUE@,$HAVE_MILTER_TRUE,;t t
 s,@HAVE_MILTER_FALSE@,$HAVE_MILTER_FALSE,;t t
-s,@SENDMAIL@,$SENDMAIL,;t t
 s,@GETENT@,$GETENT,;t t
 s,@CLAMAVUSER@,$CLAMAVUSER,;t t
 s,@CLAMAVGROUP@,$CLAMAVGROUP,;t t
