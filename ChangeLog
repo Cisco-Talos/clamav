@@ -7,8 +7,8 @@ Sun May 15 16:47:48 BST 2005 (njh)
   * libclamav/message.c:	Fixed a problem where an email with more
 					than one content-disposition type line,
 					one or more of which was empty, could
-					crash libclamav. Reported by arnaud at
-					clamav.net.
+					crash libclamav. Reported by Daniel
+					Theodoro <dtheodoro at ig.com.br>
 
 Sat May 14 17:14:52 BST 2005 (njh)
 ----------------------------------
