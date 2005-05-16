@@ -11179,16 +11179,16 @@ fi
   fi
 
 
-cat >>confdefs.h <<\_ACEOF
-#define SENDMAIL_BIN $sendmailprog
+cat >>confdefs.h <<_ACEOF
+#define SENDMAIL_BIN "$sendmailprog"
 _ACEOF
 
 
   sendmailver=`$sendmailprog -d0 < /dev/null | head -1 | awk '{print $2}'`
 
 
-cat >>confdefs.h <<\_ACEOF
-#define SENDMAIL_VERSION $sendmailver
+cat >>confdefs.h <<_ACEOF
+#define SENDMAIL_VERSION "$sendmailver"
 _ACEOF
 
 fi
