@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 #
-#  Copyright (C) 2003 - 2004 Tomasz Kojm <tkojm@clamav.net>
+#  Copyright (C) 2003 - 2005 Tomasz Kojm <tkojm@clamav.net>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -163,7 +163,6 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 RANLIB = @RANLIB@
-SENDMAIL = @SENDMAIL@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
@@ -204,6 +203,7 @@ oldincludedir = @oldincludedir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 sbindir = @sbindir@
+sendmailprog = @sendmailprog@
 sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target = @target@
@@ -223,7 +223,6 @@ target_vendor = @target_vendor@
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    clamav-milter.c
 
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@man_MANS = $(top_srcdir)/docs/man/clamav-milter.8
-AM_CFLAGS = -DSENDMAIL_BIN=\"$(SENDMAIL)\"
 INCLUDES = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_srcdir)/shared
 EXTRA_DIST = clamav-milter.c INSTALL
 all: all-am

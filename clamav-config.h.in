@@ -285,6 +285,12 @@
 /* scan buffer size */
 #undef SCANBUFF
 
+/* location of Sendmail binary */
+#undef SENDMAIL_BIN
+
+/* version of Sendmail */
+#undef SENDMAIL_VERSION
+
 /* Define to 1 if the `setpgrp' function takes no argument. */
 #undef SETPGRP_VOID
 
