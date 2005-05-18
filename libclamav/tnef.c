@@ -24,7 +24,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.22 2005/05/12 12:39:57 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.23 2005/05/18 20:29:44 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -184,6 +184,11 @@ cli_tnef(const char *dir, int desc)
 	} while(!alldone);
 
 	if(fb) {
+		cli_dbgmsg("cli_tnef: flushing final data\n");
+		if(fileblobGetFilename(fb) == NULL) {
+			cli_dbgmsg("Saving TNEF portion with an unknown name");
+			fileblobSetFilename(fb, dir, "unknownTNEFfile");
+		}
 		fileblobDestroy(fb);
 		fb = NULL;
 	}
