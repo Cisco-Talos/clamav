@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.41 2005/04/23 10:33:44 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.42 2005/05/18 20:29:45 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -361,10 +361,12 @@ fileblobDestroy(fileblob *fb)
 
 		assert(fb->b.data == NULL);
 	} else if(fb->b.data) {
-		cli_errmsg("fileblobDestroy: file not saved: report to bugs@clamav.net\n");
 		free(fb->b.data);
-		if(fb->b.name)
+		if(fb->b.name) {
+			cli_errmsg("fileblobDestroy: %s not saved: report to bugs@clamav.net\n", fb->b.name);
 			free(fb->b.name);
+		} else
+			cli_errmsg("fileblobDestroy: file not saved (%lu bytes): report to bugs@clamav.net\n", fb->b.len);
 	}
 #ifdef	CL_DEBUG
 	fb->b.magic = INVALIDCLASS;

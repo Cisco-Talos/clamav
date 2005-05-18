@@ -1,3 +1,9 @@
+Wed May 18 21:31:34 BST 2005 (njh)
+----------------------------------
+  * libclamav:	Extract TNEF files even when the filename isn't known - problem
+			reported by John Miller (contact at
+			glideslopesoftware.co.uk)
+
 Mon May 16 23:02:13 CEST 2005 (tk)
 ----------------------------------
   * freshclam/manager.c: remove superfluous close(hostfd), thanks to Pavel V.
