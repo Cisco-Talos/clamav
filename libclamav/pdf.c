@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.9 2005/05/14 16:13:25 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.10 2005/05/18 20:55:17 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -82,12 +82,13 @@ cli_pdf(const char *dir, int desc)
 		return CL_EMEM;
 
 	bytesleft = (long)size;
+
+	cli_dbgmsg("cli_pdf: scanning %lu bytes\n", bytesleft);
+
 	while((q = cli_pmemstr(p, bytesleft, "obj", 3)) != NULL) {
-		int length, flatedecode;
-		const char *s, *t;
-		const char *u, *obj;
+		int length, flatedecode, fout;
+		const char *s, *t, *u, *obj;
 		size_t objlen;
-		int fout;
 		char fullname[NAME_MAX + 1];
 
 		bytesleft -= (q - p) + 3;
@@ -102,8 +103,11 @@ cli_pdf(const char *dir, int desc)
 		objlen = (size_t)(q - obj);
 
 		t = cli_pmemstr(obj, objlen, "stream\n", 7);
-		if(t == NULL)
-			continue;
+		if(t == NULL) {
+			t = cli_pmemstr(obj, objlen, "stream\r", 7);
+			if(t == NULL)
+				continue;
+		}
 
 		length = flatedecode = 0;
 		for(s = obj; s < t; s++) {
@@ -113,7 +117,6 @@ cli_pdf(const char *dir, int desc)
 					length = atoi(s);
 					while(isdigit(*s))
 						s++;
-					cli_dbgmsg("length %d\n", length);
 				} else if((strncmp(s, "FlateDecode ", 12) == 0) ||
 					  (strncmp(s, "FlateDecode\n", 12) == 0)) {
 					flatedecode = 1;
@@ -124,8 +127,11 @@ cli_pdf(const char *dir, int desc)
 		t += 7;
 		u = cli_pmemstr(t, objlen - 7, "endstream\n", 10);
 		if(u == NULL) {
-			cli_dbgmsg("No endstream");
-			break;
+			u = cli_pmemstr(t, objlen - 7, "endstream\r", 10);
+			if(u == NULL) {
+				cli_dbgmsg("No endstream");
+				break;
+			}
 		}
 		snprintf(fullname, sizeof(fullname), "%s/pdfXXXXXX", dir);
 #if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN)
@@ -177,6 +183,8 @@ cli_pdf(const char *dir, int desc)
 	}
 
 	munmap(buf, size);
+
+	cli_dbgmsg("cli_pdf: returning CL_CLEAN\n");
 	return CL_CLEAN;
 #endif
 }
