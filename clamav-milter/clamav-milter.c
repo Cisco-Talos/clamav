@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.200 2005/05/12 07:31:09 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.201 2005/05/19 09:32:22 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.85"
+#define	CM_VERSION	"0.85b"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -105,7 +105,6 @@ int	deny_severity = LOG_NOTICE;
 
 #ifndef	CL_DEBUG
 static	const	char	*logFile;
-static	int	logTime;
 static	char	console[] = "/dev/console";
 #endif
 
@@ -149,7 +148,6 @@ typedef	unsigned int	in_addr_t;
  *	to get messages on the system console, see syslog.conf(5), also you
  *	can use wall(1) in the VirusEvent entry in clamd.conf
  * TODO: build with libclamav.so rather than libclamav.a
- * TODO: Warn if TCPAddr doesn't allow connection from us
  * TODO: Decide action (bounce, discard, reject etc.) based on the virus
  *	found. Those with faked addresses, such as SCO.A want discarding,
  *	others could be bounced properly.
@@ -158,6 +156,8 @@ typedef	unsigned int	in_addr_t;
  * TODO: Files can be scanned with "SCAN" not "STREAM" if clamd is on the same
  *	machine when talking via INET domain socket.
  * TODO: Load balancing, allow local machine to talk via UNIX domain socket.
+ * TODO: allow each line in the whitelist file to specify a quarantine email
+ *	address
  */
 
 struct header_node_t {
@@ -456,6 +456,9 @@ static	void	print_trace(void);
 static	int	verifyIncomingSocketName(const char *sockName);
 static	int	isWhitelisted(const char *emailaddress);
 static	void	logger(const char *mess);
+
+short	logg_time, logg_lock, logok;
+int	logg_size;
 
 static void
 help(void)
@@ -945,7 +948,7 @@ main(int argc, char **argv)
 				cli_dbgmsg(_("Running as user %s (UID %d, GID %d)\n"),
 					cpt->strarg, user->pw_uid, user->pw_gid);
 		} else
-			fprintf(stderr, _("%s: running as root is not recommended (check \"User\" in clamd.conf)\n"), argv[0]);
+			fprintf(stderr, _("%s: running as root is not recommended (check \"User\" in %s)\n"), argv[0], cfgfile);
 	} else if(iface) {
 		fprintf(stderr, _("%s: Only root can set an interface for --broadcast\n"), argv[0]);
 		return EX_USAGE;
@@ -1041,9 +1044,10 @@ main(int argc, char **argv)
 
 		if(cfgopt(copt, "LogVerbose")) {
 			logVerbose = 1;
-#if	0
-			/* Only supported by Sendmail >= V8.13 */
-			smfi_setdbg(6);
+#ifdef	SENDMAIL_VERSION
+			if(strncmp(SENDMAIL_VERSION, "8.13", 4) == 0)
+				/* Only supported by Sendmail >= V8.13 */
+				smfi_setdbg(6);
 #endif
 		}
 		use_syslog = 1;
@@ -1230,6 +1234,11 @@ main(int argc, char **argv)
 			else {
 				cli_warnmsg(_("Can't talk to clamd server %s on port %d\n"),
 					hostname, tcpSocket);
+				if(serverIPs[i] == (int)inet_addr("127.0.0.1")) {
+					if(cfgopt(copt, "TCPAddr") != NULL)
+						cli_warnmsg(_("Check the value for TCPAddr in %s\n"), cfgfile);
+				} else
+					cli_warnmsg(_("Check the value for TCPAddr in clamd.conf on %s\n"), hostname);
 			}
 #endif
 
@@ -1357,8 +1366,18 @@ main(int argc, char **argv)
 				return EX_CONFIG;
 			}
 			if(open(logFile, O_WRONLY|O_APPEND) < 0) {
-				perror(logFile);
-				return EX_CANTCREAT;
+				if(errno == ENOENT) {
+					/*
+					 * There is low risk race condition here
+					 */
+					if(open(logFile, O_WRONLY|O_CREAT, 0644) < 0) {
+						perror(logFile);
+						return EX_CANTCREAT;
+					}
+				} else {
+					perror(logFile);
+					return EX_CANTCREAT;
+				}
 			}
 		} else {
 			logFile = console;
@@ -1373,9 +1392,19 @@ main(int argc, char **argv)
 		if(consolefd >= 0)
 			close(consolefd);
 
-		if(cfgopt(copt, "LogTime"))
-			logTime++;
 #endif	/*!CL_DEBUG*/
+
+		if(cfgopt(copt, "LogTime"))
+			logg_time = 1;
+		if(cfgopt(copt, "LogFileUnlock"))
+			logg_lock = 0;
+		if(cfgopt(copt, "LogClean"))
+			logok = 1;
+		if((cpt = cfgopt(copt, "LogFileMaxSize")))
+			logg_size = cpt->numarg;
+		else
+			logg_size = CL_DEFAULT_LOGSIZE;
+
 
 #ifdef HAVE_SETPGRP
 #ifdef SETPGRP_VOID
@@ -1537,12 +1566,13 @@ main(int argc, char **argv)
 		return EX_UNAVAILABLE;
 	}
 
-#if	0
-	/* Only supported by Sendmail >= V8.13 */
-	if(smfi_opensocket(1) == MI_FAILURE) {
-		cli_errmsg("can't open/create %s\n", port);
-		return EX_CONFIG;
-	}
+#ifdef	SENDMAIL_VERSION
+	if(strncmp(SENDMAIL_VERSION, "8.13", 4) == 0)
+		/* Only supported by Sendmail >= V8.13 */
+		if(smfi_opensocket(1) == MI_FAILURE) {
+			cli_errmsg("Can't open/create %s\n", port);
+			return EX_CONFIG;
+		}
 #endif
 
 	signal(SIGPIPE, SIG_IGN);	/* libmilter probably does this as well */
@@ -2986,7 +3016,9 @@ clamfi_eom(SMFICTX *ctx)
 				}
 
 				cli_dbgmsg("Waiting for %s to finish\n", cmd);
-				pclose(sendmail);
+				if(pclose(sendmail) != 0)
+					if(use_syslog)
+						syslog(LOG_ERR, "%s: Failed to notify clamAV interception - see dead.letter", sendmailId);
 			} else if(use_syslog)
 				syslog(LOG_WARNING, _("Can't execute '%s' to send virus notice"), cmd);
 		}
@@ -4428,7 +4460,7 @@ watchdog(void *a)
 
 				while(n_children > 0) {
 					pthread_cond_wait(&n_children_cond, &n_children_mutex);
-					cli_warnmsg("Waiting for %d children until databae reload\n", n_children);
+					cli_warnmsg("Waiting for %d children until database reload\n", n_children);
 				}
 
 				cl_statfree(&dbstat);
@@ -4619,7 +4651,7 @@ watchdog(void *a)
 
 			while(n_children > 0) {
 				pthread_cond_wait(&n_children_cond, &n_children_mutex);
-				cli_warnmsg("Waiting for %d children until databae reload\n", n_children);
+				cli_warnmsg("Waiting for %d children until database reload\n", n_children);
 			}
 			cl_statfree(&dbstat);
 			if(use_syslog)
@@ -5093,7 +5125,7 @@ logger(const char *mess)
 	if(fout == NULL)
 		return;
 
-	if(logTime) {
+	if(logg_time) {
 #ifdef HAVE_CTIME_R
 		time_t currtime = time((time_t)0);
 		char buf[27];
