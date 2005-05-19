@@ -188,7 +188,7 @@ You should have received a script to install into /etc/init.d as
 	/etc/init.d/clamav-milter start
 	/etc/init.d/sendmail restart
 
-2.6 General Instalation Issues
+2.6 General Installation Issues
 
 You may find INPUT_MAIL_FILTERS is not needed on your machine, however it
 is recommended by the Sendmail documentation and I recommend going along
@@ -251,6 +251,12 @@ able to call sendmail, for example on a Fedora Linux system:
 
 To test that your clamAV system is now intercepting viruses, visit
 http://www.testvirus.org
+
+If, under heavy strain on Linux, you see the message
+	thread_create() failed: 12, abort
+appearing in a log file, you will need to increase the number of threads on
+your system (/proc/sys/kernel/threads-max), or decrease the value of
+--max-children.
 
 3. CHANGE HISTORY
 
@@ -774,6 +780,10 @@ Changes
 0.85	11/5/05:	Up-issue
 0.85a	12/5/05:	Open /dev/console before dropping privilege, reported
 				by David Crow <crow@orangeblood.org>
+0.85b	19/5/05:	Warn if TCPAddr doesn't allow connection from us
+			Warn if notification email fails
+			Enable some sendmail debug if LogVerbose is set
+			Added sanity checks that the socket can be created
 
 4. INTERNATIONALISATION
 

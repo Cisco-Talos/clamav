@@ -1,3 +1,8 @@
+Thu May 19 10:33:52 BST 2005 (njh)
+----------------------------------
+  * clamav-milter:	Used some of sendmail V8.13's features for sanity
+				checks and logging
+
 Wed May 18 21:31:34 BST 2005 (njh)
 ----------------------------------
   * libclamav:	Extract TNEF files even when the filename isn't known - problem
