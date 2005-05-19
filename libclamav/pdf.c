@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.10 2005/05/18 20:55:17 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.11 2005/05/19 10:17:39 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -66,6 +66,7 @@ cli_pdf(const char *dir, int desc)
 	long bytesleft;
 	char *buf;
 	const char *p, *q;
+	int rc = CL_CLEAN;
 
 	cli_dbgmsg("in cli_pdf()\n");
 
@@ -152,6 +153,8 @@ cli_pdf(const char *dir, int desc)
 			size_t len = (size_t)(u - t);
 			unsigned char output[BUFSIZ];
 
+			cli_dbgmsg("cli_pdf: flatedecode %lu bytes\n", len);
+
 			stream.zalloc = (alloc_func)Z_NULL;
 			stream.zfree = (free_func)Z_NULL;
 			stream.opaque = (void *)NULL;
@@ -165,15 +168,33 @@ cli_pdf(const char *dir, int desc)
 			}
 			stream.next_out = output;
 			stream.avail_out = sizeof(output);
-			do
+			for(;;) {
+				int zstat;
+
 				if(stream.avail_out == 0) {
+					cli_dbgmsg("write BUFSIZ\n");
 					write(fout, output, BUFSIZ);
 					stream.next_out = output;
 					stream.avail_out = BUFSIZ;
 				}
-			while(inflate(&stream, Z_NO_FLUSH) == Z_OK);
+				zstat = inflate(&stream, Z_NO_FLUSH);
+				switch(zstat) {
+					case Z_OK:
+						continue;
+					case Z_STREAM_END:
+						break;
+					default:
+						cli_warnmsg("Error %d inflating PDF attachment\n", zstat);
+						rc = CL_EZIP;
+						break;
+				}
+				break;
+			}
 
-			write(fout, output, sizeof(output) - stream.avail_out);
+			if(stream.avail_out != sizeof(output)) {
+				cli_dbgmsg("flush %lu\n", sizeof(output) - stream.avail_out);
+				write(fout, output, sizeof(output) - stream.avail_out);
+			}
 			inflateEnd(&stream);
 		} else
 			write(fout, t, (size_t)(u - t));
@@ -185,6 +206,6 @@ cli_pdf(const char *dir, int desc)
 	munmap(buf, size);
 
 	cli_dbgmsg("cli_pdf: returning CL_CLEAN\n");
-	return CL_CLEAN;
+	return rc;
 #endif
 }
