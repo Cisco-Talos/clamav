@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.11 2005/05/19 10:17:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.12 2005/05/20 08:14:34 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -144,8 +144,8 @@ cli_pdf(const char *dir, int desc)
 
 		if(fout < 0) {
 			cli_errmsg("cli_pdf: can't create temporary file %s: %s\n", fullname, strerror(errno));
-			munmap(buf, size);
-			return CL_ETMPFILE;
+			rc = CL_ETMPFILE;
+			break;
 		}
 
 		if(flatedecode) {
@@ -154,6 +154,11 @@ cli_pdf(const char *dir, int desc)
 			unsigned char output[BUFSIZ];
 
 			cli_dbgmsg("cli_pdf: flatedecode %lu bytes\n", len);
+
+			if(strchr("\r\n", *t)) {
+				len--;
+				t++;
+			}
 
 			stream.zalloc = (alloc_func)Z_NULL;
 			stream.zfree = (free_func)Z_NULL;
@@ -205,7 +210,7 @@ cli_pdf(const char *dir, int desc)
 
 	munmap(buf, size);
 
-	cli_dbgmsg("cli_pdf: returning CL_CLEAN\n");
+	cli_dbgmsg("cli_pdf: returning %d\n", rc);
 	return rc;
 #endif
 }
