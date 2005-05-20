@@ -1,0 +1,18 @@
+#!/bin/sh
+
+CONF_FILE=/usr/local/etc/clamd.conf
+
+if [ ! -f $CONF_FILE ]; then
+	exit 0
+fi
+
+case "$1" in
+	start)
+		/usr/local/sbin/clamd
+		;;
+	stop)
+		kill `ps -ef | awk '$NF ~ /clamd/ { print $2 }'` > /dev/null 2>&1
+		;;
+	*)
+		echo "usage: $0 {start|stop}"
+esac
