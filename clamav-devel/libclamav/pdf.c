@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.12 2005/05/20 08:14:34 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.13 2005/05/21 19:48:29 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -87,7 +87,7 @@ cli_pdf(const char *dir, int desc)
 	cli_dbgmsg("cli_pdf: scanning %lu bytes\n", bytesleft);
 
 	while((q = cli_pmemstr(p, bytesleft, "obj", 3)) != NULL) {
-		int length, flatedecode, fout;
+		int length, ascii85decode, flatedecode, fout;
 		const char *s, *t, *u, *obj;
 		size_t objlen;
 		char fullname[NAME_MAX + 1];
@@ -110,8 +110,8 @@ cli_pdf(const char *dir, int desc)
 				continue;
 		}
 
-		length = flatedecode = 0;
-		for(s = obj; s < t; s++) {
+		length = ascii85decode = flatedecode = 0;
+		for(s = obj; s < t; s++)
 			if(*s == '/') {
 				if(strncmp(++s, "Length ", 7) == 0) {
 					s += 7;
@@ -122,17 +122,32 @@ cli_pdf(const char *dir, int desc)
 					  (strncmp(s, "FlateDecode\n", 12) == 0)) {
 					flatedecode = 1;
 					s += 12;
+				} else if(strncmp(s, "ASCII85Decode ", 12) == 0) {
+					ascii85decode++;
+					break;
 				}
+			
 			}
+
+		if(ascii85decode) {
+			cli_warnmsg("ASCII85Decode not yet supported\n");
+			continue;
 		}
+
 		t += 7;
 		u = cli_pmemstr(t, objlen - 7, "endstream\n", 10);
 		if(u == NULL) {
+			const char *v = u;
+
 			u = cli_pmemstr(t, objlen - 7, "endstream\r", 10);
 			if(u == NULL) {
 				cli_dbgmsg("No endstream");
 				break;
 			}
+			v = u;
+			while(strchr("\r\n", *--v))
+				--u;
+
 		}
 		snprintf(fullname, sizeof(fullname), "%s/pdfXXXXXX", dir);
 #if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN)
@@ -155,7 +170,7 @@ cli_pdf(const char *dir, int desc)
 
 			cli_dbgmsg("cli_pdf: flatedecode %lu bytes\n", len);
 
-			if(strchr("\r\n", *t)) {
+			while(strchr("\r\n", *t)) {
 				len--;
 				t++;
 			}
