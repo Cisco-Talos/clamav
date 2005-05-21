@@ -370,7 +370,7 @@ void cl_settempdir(const char *dir, short leavetemps)
     cli_leavetemps_flag = leavetemps;
 }
 
-char *cli_gentemp(const char *dir)
+static char *cli_gentempname(const char *dir)
 {
 	char *name, *tmp;
         const char *mdir;
@@ -391,19 +391,15 @@ char *cli_gentemp(const char *dir)
 
     name = (char*) cli_calloc(strlen(mdir) + 1 + 16 + 1 + 7, sizeof(char));
     if(name == NULL) {
-	cli_dbgmsg("cli_gentemp('%s'): out of memory\n", dir);
+	cli_dbgmsg("cli_gentempname('%s'): out of memory\n", mdir);
 	return NULL;
     }
 
-#ifdef CL_THREAD_SAFE
-    pthread_mutex_lock(&cli_gentemp_mutex);
-#endif
-
     memcpy(salt, oldmd5buff, 16);
 
-    do {
+    do {	
 	for(i = 16; i < 48; i++)
-	    salt[i] = cli_rndnum(255);
+	    salt[i] = cli_rndnum(256);
 
 	tmp = cli_md5buff(( char* ) salt, 48);
 	sprintf(name, "%s/clamav-", mdir);
@@ -411,9 +407,92 @@ char *cli_gentemp(const char *dir)
 	free(tmp);
     } while(stat(name, &foo) != -1);
 
+    return(name);
+}
+
+char *cli_gentemp(const char *dir)
+{
+	char *name;
+
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_lock(&cli_gentemp_mutex);
+#endif
+
+    name = cli_gentempname(dir);
+
 #ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&cli_gentemp_mutex);
 #endif
+
+    return(name);
+}
+
+
+char *cli_gentempdir(const char *dir)
+{
+	char *name;
+
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_lock(&cli_gentemp_mutex);
+#endif
+
+    name = cli_gentempname(dir);
+
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_unlock(&cli_gentemp_mutex);
+#endif
+
+    if(name && mkdir(name, 0700)) {
+	cli_dbgmsg("cli_gentempdir(): can't create temp directory: %s\n", name);
+        free(name);
+        name = NULL;
+    }
+
+    return(name);
+}
+
+char *cli_gentempdesc(const char *dir, int *fd)
+{
+	char *name;
+
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_lock(&cli_gentemp_mutex);
+#endif
+
+    name = cli_gentempname(dir);
+
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_unlock(&cli_gentemp_mutex);
+#endif
+
+    if(name && ((*fd = open(name, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0)) {
+	cli_dbgmsg("cli_gentempdesc(): can't create temp file: %s\n", name);
+        free(name);
+        name = NULL;
+    }
+
+    return(name);
+}
+
+char *cli_gentempstream(const char *dir, FILE **fs)
+{
+	char *name;
+
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_lock(&cli_gentemp_mutex);
+#endif
+
+    name = cli_gentempname(dir);
+
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_unlock(&cli_gentemp_mutex);
+#endif
+
+    if(name && ((*fs = fopen(name, "wb+")) == NULL)) {
+	cli_dbgmsg("cli_gentempstream(): can't create temp file: %s\n", name);
+        free(name);
+        name = NULL;
+    }
 
     return(name);
 }

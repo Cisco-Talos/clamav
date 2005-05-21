@@ -268,6 +268,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	ZZIP_DIRENT zdirent;
 	ZZIP_FILE *zfp;
 	FILE *tmp = NULL;
+	char *tmpname;
 	char *buff;
 	int fd, bytes, ret = CL_CLEAN;
 	unsigned long int size = 0;
@@ -428,7 +429,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	}
 
 	/* generate temporary file and get its descriptor */
-	if((tmp = tmpfile()) == NULL) {
+	if((tmpname = cli_gentempstream(NULL, &tmp)) == NULL) {
 	    cli_dbgmsg("Zip: Can't generate tmpfile().\n");
 	    zzip_file_close(zfp);
 	    ret = CL_ETMPFILE;
@@ -443,6 +444,9 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 		zzip_file_close(zfp);
 		zzip_dir_close(zdir);
 		fclose(tmp);
+		if(!cli_leavetemps_flag)
+		    unlink(tmpname);
+		free(tmpname);
 		free(buff);
 		return CL_EIO;
 	    }
@@ -478,6 +482,9 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 
 	if (tmp) {
 	    fclose(tmp);
+	    if(!cli_leavetemps_flag)
+		unlink(tmpname);
+	    free(tmpname);
 	    tmp = NULL;
 	}
     }
@@ -485,6 +492,9 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
     zzip_dir_close(zdir);
     if (tmp) {
 	fclose(tmp);
+	if(!cli_leavetemps_flag)
+	    unlink(tmpname);
+	free(tmpname);
 	tmp = NULL;
     }
 
@@ -498,6 +508,7 @@ static int cli_scangzip(int desc, const char **virname, long int *scanned, const
 	unsigned long int size = 0;
 	char *buff;
 	FILE *tmp = NULL;
+	char *tmpname;
 	gzFile gd;
 
 
@@ -508,7 +519,7 @@ static int cli_scangzip(int desc, const char **virname, long int *scanned, const
 	return CL_EGZIP;
     }
 
-    if((tmp = tmpfile()) == NULL) {
+    if((tmpname = cli_gentempstream(NULL, &tmp)) == NULL) {
 	cli_dbgmsg("GZip: Can't generate temporary file.\n");
 	gzclose(gd);
 	return CL_ETMPFILE;
@@ -518,6 +529,10 @@ static int cli_scangzip(int desc, const char **virname, long int *scanned, const
     if(!(buff = (char *) cli_malloc(FILEBUFF))) {
 	cli_dbgmsg("GZip: Unable to malloc %d bytes.\n", FILEBUFF);
 	gzclose(gd);
+	fclose(tmp);
+	if(!cli_leavetemps_flag)
+	    unlink(tmpname);
+	free(tmpname);	
 	return CL_EMEM;
     }
 
@@ -537,6 +552,9 @@ static int cli_scangzip(int desc, const char **virname, long int *scanned, const
 	if(cli_writen(fd, buff, bytes) != bytes) {
 	    cli_dbgmsg("GZip: Can't write to file.\n");
 	    fclose(tmp);
+	    if(!cli_leavetemps_flag)
+		unlink(tmpname);
+	    free(tmpname);	
 	    gzclose(gd);
 	    free(buff);
 	    return CL_EGZIP;
@@ -548,12 +566,18 @@ static int cli_scangzip(int desc, const char **virname, long int *scanned, const
 
     if(ret == CL_VIRUS) {
 	fclose(tmp);
+	if(!cli_leavetemps_flag)
+	    unlink(tmpname);
+	free(tmpname);	
 	return ret;
     }
 
     if(fsync(fd) == -1) {
 	cli_dbgmsg("GZip: Can't synchronise descriptor %d\n", fd);
 	fclose(tmp);
+	if(!cli_leavetemps_flag)
+	    unlink(tmpname);
+	free(tmpname);	
 	return CL_EFSYNC;
     }
 
@@ -561,9 +585,15 @@ static int cli_scangzip(int desc, const char **virname, long int *scanned, const
     if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, arec, mrec)) == CL_VIRUS ) {
 	cli_dbgmsg("GZip: Infected with %s\n", *virname);
 	fclose(tmp);
+	if(!cli_leavetemps_flag)
+	    unlink(tmpname);
+	free(tmpname);	
 	return CL_VIRUS;
     }
     fclose(tmp);
+    if(!cli_leavetemps_flag)
+	unlink(tmpname);
+    free(tmpname);	
 
     return ret;
 }
@@ -584,6 +614,7 @@ static int cli_scanbzip(int desc, const char **virname, long int *scanned, const
 	unsigned long int size = 0;
 	char *buff;
 	FILE *fs, *tmp = NULL;
+	char *tmpname;
 	BZFILE *bfd;
 
 
@@ -602,7 +633,7 @@ static int cli_scanbzip(int desc, const char **virname, long int *scanned, const
 	return CL_EBZIP;
     }
 
-    if((tmp = tmpfile()) == NULL) {
+    if((tmpname = cli_gentempstream(NULL, &tmp)) == NULL) {
 	cli_dbgmsg("Bzip: Can't generate temporary file.\n");
 	BZ2_bzReadClose(&bzerror, bfd);
 	fclose(fs);
@@ -613,6 +644,9 @@ static int cli_scanbzip(int desc, const char **virname, long int *scanned, const
     if(!(buff = (char *) malloc(FILEBUFF))) {
 	cli_dbgmsg("Bzip: Unable to malloc %d bytes.\n", FILEBUFF);
 	fclose(tmp);
+	if(!cli_leavetemps_flag)
+	    unlink(tmpname);
+	free(tmpname);	
 	fclose(fs);
 	BZ2_bzReadClose(&bzerror, bfd);
 	return CL_EMEM;
@@ -635,6 +669,9 @@ static int cli_scanbzip(int desc, const char **virname, long int *scanned, const
 	    cli_dbgmsg("Bzip: Can't write to file.\n");
 	    BZ2_bzReadClose(&bzerror, bfd);
 	    fclose(tmp);
+	    if(!cli_leavetemps_flag)
+		unlink(tmpname);
+	    free(tmpname);	
 	    free(buff);
 	    fclose(fs);
 	    return CL_EGZIP;
@@ -646,6 +683,9 @@ static int cli_scanbzip(int desc, const char **virname, long int *scanned, const
 
     if(ret == CL_VIRUS) {
 	fclose(tmp);
+	if(!cli_leavetemps_flag)
+	    unlink(tmpname);
+	free(tmpname);	
 	fclose(fs);
 	return ret;
     }
@@ -653,6 +693,9 @@ static int cli_scanbzip(int desc, const char **virname, long int *scanned, const
     if(fsync(fd) == -1) {
 	cli_dbgmsg("Bzip: Synchronisation failed for descriptor %d\n", fd);
 	fclose(tmp);
+	if(!cli_leavetemps_flag)
+	    unlink(tmpname);
+	free(tmpname);	
 	fclose(fs);
 	return CL_EFSYNC;
     }
@@ -662,6 +705,9 @@ static int cli_scanbzip(int desc, const char **virname, long int *scanned, const
 	cli_dbgmsg("Bzip: Infected with %s\n", *virname);
     }
     fclose(tmp);
+    if(!cli_leavetemps_flag)
+	unlink(tmpname);
+    free(tmpname);	
     fclose(fs);
 
     return ret;
@@ -672,6 +718,7 @@ static int cli_scanszdd(int desc, const char **virname, long int *scanned, const
 {
 	int fd, ret = CL_CLEAN;
 	FILE *tmp = NULL, *in;
+	char *tmpname;
 
 
     cli_dbgmsg("in cli_scanmscomp()\n");
@@ -681,7 +728,7 @@ static int cli_scanszdd(int desc, const char **virname, long int *scanned, const
 	return CL_EMSCOMP;
     }
 
-    if((tmp = tmpfile()) == NULL) {
+    if((tmpname = cli_gentempstream(NULL, &tmp)) == NULL) {
 	cli_dbgmsg("SZDD: Can't generate temporary file.\n");
 	fclose(in);
 	return CL_ETMPFILE;
@@ -689,6 +736,11 @@ static int cli_scanszdd(int desc, const char **virname, long int *scanned, const
 
     if(cli_msexpand(in, tmp) == -1) {
 	cli_dbgmsg("SZDD: msexpand failed.\n");
+	fclose(in);
+	fclose(tmp);
+	if(!cli_leavetemps_flag)
+	    unlink(tmpname);
+	free(tmpname);	
 	return CL_EMSCOMP;
     }
 
@@ -696,6 +748,9 @@ static int cli_scanszdd(int desc, const char **virname, long int *scanned, const
     if(fflush(tmp)) {
 	cli_dbgmsg("SZDD: fflush() failed.\n");
 	fclose(tmp);
+	if(!cli_leavetemps_flag)
+	    unlink(tmpname);
+	free(tmpname);	
 	return CL_EFSYNC;
     }
 
@@ -704,10 +759,16 @@ static int cli_scanszdd(int desc, const char **virname, long int *scanned, const
     if((ret = cli_magic_scandesc(fd, virname, scanned, root, limits, options, arec, mrec)) == CL_VIRUS) {
 	cli_dbgmsg("SZDD: Infected with %s\n", *virname);
 	fclose(tmp);
+	if(!cli_leavetemps_flag)
+	    unlink(tmpname);
+	free(tmpname);	
 	return CL_VIRUS;
     }
 
     fclose(tmp);
+    if(!cli_leavetemps_flag)
+	unlink(tmpname);
+    free(tmpname);	
     return ret;
 }
 
