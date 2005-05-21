@@ -22,7 +22,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.201 2005/05/19 09:32:22 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.202 2005/05/21 09:32:38 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.85b"
 
@@ -1044,7 +1044,7 @@ main(int argc, char **argv)
 
 		if(cfgopt(copt, "LogVerbose")) {
 			logVerbose = 1;
-#ifdef	SENDMAIL_VERSION
+#if	0
 			if(strncmp(SENDMAIL_VERSION, "8.13", 4) == 0)
 				/* Only supported by Sendmail >= V8.13 */
 				smfi_setdbg(6);
@@ -1566,13 +1566,13 @@ main(int argc, char **argv)
 		return EX_UNAVAILABLE;
 	}
 
-#ifdef	SENDMAIL_VERSION
+#if	0
 	if(strncmp(SENDMAIL_VERSION, "8.13", 4) == 0)
 		/* Only supported by Sendmail >= V8.13 */
 		if(smfi_opensocket(1) == MI_FAILURE) {
 			cli_errmsg("Can't open/create %s\n", port);
 			return EX_CONFIG;
-		}
+		}*/
 #endif
 
 	signal(SIGPIPE, SIG_IGN);	/* libmilter probably does this as well */
