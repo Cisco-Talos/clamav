@@ -1,3 +1,31 @@
+Sat May 21 02:17:08 CEST 2005 (tk)
+----------------------------------
+  * Remove the use of tmpfile(). Patch by Mark Pizzolato
+    <clamav-devel@subscriptions.pizzolato.net>, full list of changes:
+
+  * libclamav/others.c
+    - in cli_gentempname call cli_rndnum with 256 instead of 255 to get the
+      full range of possible byte values
+    - new functions: cli_gentempdir, cli_gentempdesc, and cli_gentempstream
+      which generate the appropriate type of object (and return its name)
+    - fix bug in memory error path of cli_gentemp (now cli_gentempname)
+      which printed the wrong (possibly null) value for the directory name
+
+  * libclamav/scanners.c
+    - use cli_gentempstream instead of tmpfile()
+    - fix file descriptor leak in error path in cli_scangzip()
+    - fix file descriptor leaks if cli_msexpand returns an error in cli_scanszdd
+
+  * clamd/scanner.c
+    - use cli_gentempstream instead of tmpfile() and remove the old tmpfile()
+      logic
+    - add port number to log messages for stream connections (helps
+      interpreting log data when multiple sessions are active)
+    - fix error path for a read timeout which logged messages indicating
+      that both a timeout and a poll error occurred.
+    - support configuration option LeaveTemporaryFiles for stream scanned
+      temporary files.
+
 Fri May 20 09:16:36 BST 2005 (njh)
 ----------------------------------
   * libclamav/pdf.c:	Ignore leading NL in FlateDecode messages

@@ -38,6 +38,9 @@ int cli_writen(int fd, void *buff, unsigned int count);
 int32_t cli_readint32(const char *buff);
 void cli_writeint32(char *offset, uint32_t value);
 char *cli_gentemp(const char *dir);
+char *cli_gentempdir(const char *dir);
+char *cli_gentempdesc(const char *dir, int *fd);
+char *cli_gentempstream(const char *dir, FILE **fs);
 unsigned int cli_rndnum(unsigned int max);
 int cli_filecopy(const char *src, const char *dest);
 
