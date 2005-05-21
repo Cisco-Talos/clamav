@@ -221,7 +221,7 @@ extern const char *cl_strerror(int clerror);
 extern const char *cl_perror(int clerror); /* deprecated */
 
 #ifdef __cplusplus
-};
+}
 #endif
  
 #endif

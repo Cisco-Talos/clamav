@@ -325,7 +325,7 @@ _zzip_inline static void        zzip_mkfifo(zzip_char_t* name, int o_mode) {}
 #endif /* _ZZIP_WRITE_SOURCE */
 
 #ifdef __cplusplus
-};
+}
 #endif
 
 #endif /* _ZZIPLIB_H */
