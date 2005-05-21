@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.13 2005/05/21 19:48:29 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.14 2005/05/21 22:04:22 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -54,6 +54,9 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.13 2005/05/21 19:48:29 nigelhorne Ex
 #define	MIN(a, b)	(((a) < (b)) ? (a) : (b))
 #endif
 
+static	int	flatedecode(const unsigned char *buf, size_t len, int fout);
+static	int	ascii85decode(const char *buf, size_t len, unsigned char *output);
+
 int
 cli_pdf(const char *dir, int desc)
 {
@@ -87,7 +90,7 @@ cli_pdf(const char *dir, int desc)
 	cli_dbgmsg("cli_pdf: scanning %lu bytes\n", bytesleft);
 
 	while((q = cli_pmemstr(p, bytesleft, "obj", 3)) != NULL) {
-		int length, ascii85decode, flatedecode, fout;
+		int length, is_ascii85decode, is_flatedecode, fout;
 		const char *s, *t, *u, *obj;
 		size_t objlen;
 		char fullname[NAME_MAX + 1];
@@ -110,7 +113,7 @@ cli_pdf(const char *dir, int desc)
 				continue;
 		}
 
-		length = ascii85decode = flatedecode = 0;
+		length = is_ascii85decode = is_flatedecode = 0;
 		for(s = obj; s < t; s++)
 			if(*s == '/') {
 				if(strncmp(++s, "Length ", 7) == 0) {
@@ -120,19 +123,14 @@ cli_pdf(const char *dir, int desc)
 						s++;
 				} else if((strncmp(s, "FlateDecode ", 12) == 0) ||
 					  (strncmp(s, "FlateDecode\n", 12) == 0)) {
-					flatedecode = 1;
+					is_flatedecode = 1;
 					s += 12;
-				} else if(strncmp(s, "ASCII85Decode ", 12) == 0) {
-					ascii85decode++;
-					break;
+				} else if((strncmp(s, "ASCII85Decode ", 12) == 0) ||
+					  (strncmp(s, "ASCII85Decode\n", 12) == 0)) {
+					is_ascii85decode = 1;
+					s += 12;
 				}
-			
 			}
-
-		if(ascii85decode) {
-			cli_warnmsg("ASCII85Decode not yet supported\n");
-			continue;
-		}
 
 		t += 7;
 		u = cli_pmemstr(t, objlen - 7, "endstream\n", 10);
@@ -163,59 +161,35 @@ cli_pdf(const char *dir, int desc)
 			break;
 		}
 
-		if(flatedecode) {
-			z_stream stream;
-			size_t len = (size_t)(u - t);
-			unsigned char output[BUFSIZ];
+		if(is_ascii85decode) {
+			int len = (int)(u - t);
+			unsigned char *tmpbuf = cli_malloc(len * 2);
 
-			cli_dbgmsg("cli_pdf: flatedecode %lu bytes\n", len);
+			len = ascii85decode(t, (size_t)len, tmpbuf);
 
-			while(strchr("\r\n", *t)) {
-				len--;
-				t++;
-			}
-
-			stream.zalloc = (alloc_func)Z_NULL;
-			stream.zfree = (free_func)Z_NULL;
-			stream.opaque = (void *)NULL;
-			stream.next_in = (unsigned char *)t;
-			stream.avail_in = len;
-
-			if(inflateInit(&stream) != Z_OK) {
-				cli_warnmsg("cli_pdf: inflateInit failed");
-				close(fout);
+			if(len == -1) {
+				free(tmpbuf);
+				rc = CL_EFORMAT;
 				continue;
 			}
-			stream.next_out = output;
-			stream.avail_out = sizeof(output);
-			for(;;) {
-				int zstat;
+			/* free unused traling bytes */
+			tmpbuf = cli_realloc(tmpbuf, len);
+			/*
+			 * Note that it will probably be both ascii85encoded
+			 * and flateencoded
+			 */
+			if(is_flatedecode) {
+				const int zstat = flatedecode((unsigned char *)tmpbuf, (size_t)len, fout);
 
-				if(stream.avail_out == 0) {
-					cli_dbgmsg("write BUFSIZ\n");
-					write(fout, output, BUFSIZ);
-					stream.next_out = output;
-					stream.avail_out = BUFSIZ;
-				}
-				zstat = inflate(&stream, Z_NO_FLUSH);
-				switch(zstat) {
-					case Z_OK:
-						continue;
-					case Z_STREAM_END:
-						break;
-					default:
-						cli_warnmsg("Error %d inflating PDF attachment\n", zstat);
-						rc = CL_EZIP;
-						break;
-				}
-				break;
+				if(zstat != Z_OK)
+					rc = zstat;
 			}
+			free(tmpbuf);
+		} else if(is_flatedecode) {
+			const int zstat = flatedecode((unsigned char *)t, (size_t)(u - t), fout);
 
-			if(stream.avail_out != sizeof(output)) {
-				cli_dbgmsg("flush %lu\n", sizeof(output) - stream.avail_out);
-				write(fout, output, sizeof(output) - stream.avail_out);
-			}
-			inflateEnd(&stream);
+			if(zstat != Z_OK)
+				rc = zstat;
 		} else
 			write(fout, t, (size_t)(u - t));
 
@@ -228,4 +202,127 @@ cli_pdf(const char *dir, int desc)
 	cli_dbgmsg("cli_pdf: returning %d\n", rc);
 	return rc;
 #endif
+}
+
+/* flate inflation - returns zlib status, e.g. Z_OK */
+static int
+flatedecode(const unsigned char *buf, size_t len, int fout)
+{
+	int zstat;
+	z_stream stream;
+	unsigned char output[BUFSIZ];
+
+	cli_dbgmsg("cli_pdf: flatedecode %lu bytes\n", len);
+
+	while(strchr("\r\n", *buf)) {
+		len--;
+		buf++;
+	}
+
+	stream.zalloc = (alloc_func)Z_NULL;
+	stream.zfree = (free_func)Z_NULL;
+	stream.opaque = (void *)NULL;
+	stream.next_in = (unsigned char *)buf;
+	stream.avail_in = len;
+
+	zstat = inflateInit(&stream);
+	if(zstat != Z_OK) {
+		cli_warnmsg("cli_pdf: inflateInit failed");
+		return zstat;
+	}
+	stream.next_out = output;
+	stream.avail_out = sizeof(output);
+	for(;;) {
+		if(stream.avail_out == 0) {
+			cli_dbgmsg("write BUFSIZ\n");
+			write(fout, output, BUFSIZ);
+			stream.next_out = output;
+			stream.avail_out = BUFSIZ;
+		}
+		zstat = inflate(&stream, Z_NO_FLUSH);
+		switch(zstat) {
+			case Z_OK:
+				continue;
+			case Z_STREAM_END:
+				break;
+			default:
+				cli_warnmsg("Error %d inflating PDF attachment\n", zstat);
+				inflateEnd(&stream);
+				return zstat;
+		}
+		break;
+	}
+
+	if(stream.avail_out != sizeof(output)) {
+		cli_dbgmsg("flush %lu\n", sizeof(output) - stream.avail_out);
+		write(fout, output, sizeof(output) - stream.avail_out);
+	}
+	return inflateEnd(&stream);
+}
+
+/*
+ * http://cvs.gnome.org/viewcvs/sketch/Filter/ascii85filter.c?rev=1.2
+ */
+/* ascii85 inflation, returns number of bytes in output, -1 for error */
+static int
+ascii85decode(const char *buf, size_t len, unsigned char *output)
+{
+	const char *ptr = buf;
+	uint32_t sum = 0;
+	int quintet = 0;
+	int ret = 0;
+
+	cli_dbgmsg("cli_pdf: ascii85decode %lu bytes\n", len);
+
+	for(;;) {
+		int byte = (len--) ? *ptr++ : EOF;
+
+		if((byte == '~') && (*ptr == '>'))
+			byte = EOF;
+
+		if(byte >= '!' && byte <= 'u') {
+			sum = sum * 85 + ((unsigned long)byte - '!');
+			if(++quintet == 5) {
+				*output++ = sum >> 24;
+				*output++ = (sum >> 16) & 0xFF;
+				*output++ = (sum >> 8) & 0xFF;
+				*output++ = sum & 0xFF;
+				ret += 4;
+				quintet = 0;
+				sum = 0;
+			}
+		} else if(byte == 'z') {
+			if(quintet) {
+				cli_warnmsg("ascii85decode: z in wrong position\n");
+				return -1;
+			}
+			*output++ = '\0';
+			*output++ = '\0';
+			*output++ = '\0';
+			*output++ = '\0';
+			ret += 4;
+		} else if(byte == EOF) {
+			if(quintet) {
+				int i;
+
+				if(quintet == 1) {
+					cli_warnmsg("ascii85Decode: only 1 byte in last quintet\n");
+					return -1;
+				}
+				for(i = 0; i < 5 - quintet; i++)
+					sum *= 85;
+				if(quintet > 1)
+					sum += (0xFFFFFF >> ((quintet - 2) * 8));
+				ret += quintet;
+				for(i = 0; i < quintet - 1; i++)
+					*output++ = (sum >> (24 - 8 * i)) & 0xFF;
+				quintet = 0;
+			}
+			break;
+		} else if(!isspace(byte)) {
+			cli_warnmsg("ascii85Decode: invalid character 0x%x, len %lu\n", byte, len);
+			return -1;
+		}
+	}
+	return ret;
 }
