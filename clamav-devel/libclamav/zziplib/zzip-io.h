@@ -68,7 +68,7 @@ int zzip_init_io(struct zzip_plugin_io* io, int flags);
 # define ZZIP_IO_USE_MMAP 1
 
 #ifdef __cplusplus
-};
+}
 #endif
 
 #endif
