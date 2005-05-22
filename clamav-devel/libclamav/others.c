@@ -42,7 +42,7 @@
 
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
-pthread_mutex_t cli_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t cli_gentempname_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
@@ -78,7 +78,7 @@ pthread_mutex_t cli_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 short cli_debug_flag = 0, cli_leavetemps_flag = 0;
 
-static unsigned char oldmd5buff[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
+static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
 
 void cli_warnmsg(const char *str, ...)
 {
@@ -263,7 +263,7 @@ char *cli_md5file(const char *filename)
     return md5str;
 }
 
-static char *cli_md5buff(const char *buffer, unsigned int len)
+static char *cli_md5buff(const char *buffer, unsigned int len, unsigned char *dig)
 {
 	unsigned char digest[16];
 	char *md5str, *pt;
@@ -274,7 +274,9 @@ static char *cli_md5buff(const char *buffer, unsigned int len)
     MD5_Init(&ctx);
     MD5_Update(&ctx, (unsigned char *) buffer, len);
     MD5_Final(digest, &ctx);
-    memcpy(oldmd5buff, digest, 16);
+
+    if(dig)
+	memcpy(dig, digest, 16);
 
     if(!(md5str = (char *) cli_calloc(32 + 1, sizeof(char))))
 	return NULL;
@@ -378,7 +380,6 @@ static char *cli_gentempname(const char *dir)
 	int i;
 	struct stat foo;
 
-
     if(!dir) {
 	if((mdir = getenv("TMPDIR")) == NULL)
 #ifdef P_tmpdir
@@ -389,23 +390,36 @@ static char *cli_gentempname(const char *dir)
     } else
 	mdir = dir;
 
-    name = (char*) cli_calloc(strlen(mdir) + 1 + 16 + 1 + 7, sizeof(char));
-    if(name == NULL) {
+    name = (char *) cli_calloc(strlen(mdir) + 1 + 32 + 1 + 7, sizeof(char));
+    if(!name) {
 	cli_dbgmsg("cli_gentempname('%s'): out of memory\n", mdir);
 	return NULL;
     }
 
-    memcpy(salt, oldmd5buff, 16);
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_lock(&cli_gentempname_mutex);
+#endif
 
-    do {	
-	for(i = 16; i < 48; i++)
-	    salt[i] = cli_rndnum(256);
+    memcpy(salt, name_salt, 16);
 
-	tmp = cli_md5buff(( char* ) salt, 48);
-	sprintf(name, "%s/clamav-", mdir);
-	strncat(name, tmp, 16);
-	free(tmp);
-    } while(stat(name, &foo) != -1);
+    for(i = 16; i < 48; i++)
+	salt[i] = cli_rndnum(256);
+
+    tmp = cli_md5buff((char *) salt, 48, name_salt);
+
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_unlock(&cli_gentempname_mutex);
+#endif
+
+    if(!tmp) {
+	free(name);
+	cli_dbgmsg("cli_gentempname('%s'): out of memory\n", mdir);
+	return NULL;
+    }
+
+    sprintf(name, "%s/clamav-", mdir);
+    strncat(name, tmp, 32);
+    free(tmp);
 
     return(name);
 }
@@ -414,15 +428,7 @@ char *cli_gentemp(const char *dir)
 {
 	char *name;
 
-#ifdef CL_THREAD_SAFE
-    pthread_mutex_lock(&cli_gentemp_mutex);
-#endif
-
     name = cli_gentempname(dir);
-
-#ifdef CL_THREAD_SAFE
-    pthread_mutex_unlock(&cli_gentemp_mutex);
-#endif
 
     return(name);
 }
@@ -432,15 +438,7 @@ char *cli_gentempdir(const char *dir)
 {
 	char *name;
 
-#ifdef CL_THREAD_SAFE
-    pthread_mutex_lock(&cli_gentemp_mutex);
-#endif
-
     name = cli_gentempname(dir);
-
-#ifdef CL_THREAD_SAFE
-    pthread_mutex_unlock(&cli_gentemp_mutex);
-#endif
 
     if(name && mkdir(name, 0700)) {
 	cli_dbgmsg("cli_gentempdir(): can't create temp directory: %s\n", name);
@@ -455,15 +453,7 @@ char *cli_gentempdesc(const char *dir, int *fd)
 {
 	char *name;
 
-#ifdef CL_THREAD_SAFE
-    pthread_mutex_lock(&cli_gentemp_mutex);
-#endif
-
     name = cli_gentempname(dir);
-
-#ifdef CL_THREAD_SAFE
-    pthread_mutex_unlock(&cli_gentemp_mutex);
-#endif
 
     if(name && ((*fd = open(name, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0)) {
 	cli_dbgmsg("cli_gentempdesc(): can't create temp file: %s\n", name);
@@ -478,15 +468,7 @@ char *cli_gentempstream(const char *dir, FILE **fs)
 {
 	char *name;
 
-#ifdef CL_THREAD_SAFE
-    pthread_mutex_lock(&cli_gentemp_mutex);
-#endif
-
     name = cli_gentempname(dir);
-
-#ifdef CL_THREAD_SAFE
-    pthread_mutex_unlock(&cli_gentemp_mutex);
-#endif
 
     if(name && ((*fs = fopen(name, "wb+")) == NULL)) {
 	cli_dbgmsg("cli_gentempstream(): can't create temp file: %s\n", name);
