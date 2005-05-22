@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.14 2005/05/21 22:04:22 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.15 2005/05/22 12:55:38 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -165,6 +165,11 @@ cli_pdf(const char *dir, int desc)
 			int len = (int)(u - t);
 			unsigned char *tmpbuf = cli_malloc(len * 2);
 
+			if(tmpbuf == NULL) {
+				rc = CL_EMEM;
+				continue;
+			}
+
 			len = ascii85decode(t, (size_t)len, tmpbuf);
 
 			if(len == -1) {
@@ -182,14 +187,14 @@ cli_pdf(const char *dir, int desc)
 				const int zstat = flatedecode((unsigned char *)tmpbuf, (size_t)len, fout);
 
 				if(zstat != Z_OK)
-					rc = zstat;
+					rc = CL_EZIP;
 			}
 			free(tmpbuf);
 		} else if(is_flatedecode) {
 			const int zstat = flatedecode((unsigned char *)t, (size_t)(u - t), fout);
 
 			if(zstat != Z_OK)
-				rc = zstat;
+				rc = CL_EZIP;
 		} else
 			write(fout, t, (size_t)(u - t));
 
@@ -233,15 +238,15 @@ flatedecode(const unsigned char *buf, size_t len, int fout)
 	stream.next_out = output;
 	stream.avail_out = sizeof(output);
 	for(;;) {
-		if(stream.avail_out == 0) {
-			cli_dbgmsg("write BUFSIZ\n");
-			write(fout, output, BUFSIZ);
-			stream.next_out = output;
-			stream.avail_out = BUFSIZ;
-		}
 		zstat = inflate(&stream, Z_NO_FLUSH);
 		switch(zstat) {
 			case Z_OK:
+				if(stream.avail_out == 0) {
+					cli_dbgmsg("write BUFSIZ\n");
+					write(fout, output, BUFSIZ);
+					stream.next_out = output;
+					stream.avail_out = BUFSIZ;
+				}
 				continue;
 			case Z_STREAM_END:
 				break;
@@ -293,7 +298,7 @@ ascii85decode(const char *buf, size_t len, unsigned char *output)
 			}
 		} else if(byte == 'z') {
 			if(quintet) {
-				cli_warnmsg("ascii85decode: z in wrong position\n");
+				cli_warnmsg("ascii85decode: unexpected 'z'\n");
 				return -1;
 			}
 			*output++ = '\0';
