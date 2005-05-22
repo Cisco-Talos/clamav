@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.15 2005/05/22 12:55:38 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.16 2005/05/22 21:37:29 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -242,7 +242,6 @@ flatedecode(const unsigned char *buf, size_t len, int fout)
 		switch(zstat) {
 			case Z_OK:
 				if(stream.avail_out == 0) {
-					cli_dbgmsg("write BUFSIZ\n");
 					write(fout, output, BUFSIZ);
 					stream.next_out = output;
 					stream.avail_out = BUFSIZ;
@@ -251,17 +250,18 @@ flatedecode(const unsigned char *buf, size_t len, int fout)
 			case Z_STREAM_END:
 				break;
 			default:
-				cli_warnmsg("Error %d inflating PDF attachment\n", zstat);
+				if(stream.msg)
+					cli_warnmsg("Error \"%s\" inflating PDF attachment\n", stream.msg);
+				else
+					cli_warnmsg("Error %d inflating PDF attachment\n", zstat);
 				inflateEnd(&stream);
 				return zstat;
 		}
 		break;
 	}
 
-	if(stream.avail_out != sizeof(output)) {
-		cli_dbgmsg("flush %lu\n", sizeof(output) - stream.avail_out);
+	if(stream.avail_out != sizeof(output))
 		write(fout, output, sizeof(output) - stream.avail_out);
-	}
 	return inflateEnd(&stream);
 }
 
