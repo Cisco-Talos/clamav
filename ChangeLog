@@ -1,5 +1,9 @@
+Mon May 23 00:00:22 CEST 2005 (tk)
+----------------------------------
+  * libclamav/others.c: improve temporary name generation
+
 Sat May 21 23:06:03 BST 2005 (njh)
----------------------------------
+----------------------------------
   * libclamav/pdf.c:	Added decoder for ascii85 encoded files
 
 Sat May 21 02:17:08 CEST 2005 (tk)
