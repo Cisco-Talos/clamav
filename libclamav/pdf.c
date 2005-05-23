@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.17 2005/05/23 15:45:04 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.18 2005/05/23 21:07:22 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -66,9 +66,9 @@ cli_pdf(const char *dir, int desc)
 #else
 	struct stat statb;
 	off_t size;
-	long bytesleft;
+	long bytesleft, l;
 	char *buf;
-	const char *p, *q;
+	const char *p, *q, *r;
 	int rc = CL_CLEAN;
 
 	cli_dbgmsg("in cli_pdf()\n");
@@ -81,6 +81,9 @@ cli_pdf(const char *dir, int desc)
 	if(size == 0)
 		return CL_CLEAN;
 
+	if(size <= 7)	/* doesn't even include the file header */
+		return CL_EFORMAT;
+
 	p = buf = mmap(NULL, size, PROT_READ, MAP_SHARED, desc, 0);
 	if(buf == MAP_FAILED)
 		return CL_EMEM;
@@ -89,7 +92,44 @@ cli_pdf(const char *dir, int desc)
 
 	cli_dbgmsg("cli_pdf: scanning %lu bytes\n", bytesleft);
 
-	if(cli_pmemstr(p, bytesleft, "Encrypt", 7)) {
+	/* Lines are terminated by \r, \n or both */
+
+	/* File Header */
+	if(memcmp(p, "%PDF-1.", 7) != 0) {
+		munmap(buf, size);
+		return CL_EFORMAT;
+	}
+
+	while(strchr("\r\n", *p) == NULL) {
+		if(--bytesleft == 0L) {
+			munmap(buf, size);
+			return CL_EFORMAT;
+		}
+		p++;
+	}
+	p++;
+	bytesleft--;
+
+	/* Find the file trailer */
+	for(q = &p[bytesleft - 1]; q > p; --q)
+		if(memcmp(q, "%%EOF", 5) == 0)
+			break;
+
+	if(q == p) {
+		munmap(buf, size);
+		return CL_EFORMAT;
+	}
+
+	for(r = q; r > p; --r)
+		if(memcmp(r, "trailer", 7) == 0)
+			break;
+
+	/*
+	 * r points to the start of the file trailer section, q points to its
+	 * end
+	 */
+	l = (long)(q - r);
+	if(cli_pmemstr(r, l, "Encrypt", 7)) {
 		/*
 		 * This tends to mean that the file is, in effect, read-only
 		 */
@@ -100,7 +140,7 @@ cli_pdf(const char *dir, int desc)
 	}
 
 	while((q = cli_pmemstr(p, bytesleft, "obj", 3)) != NULL) {
-		int length, is_encrypted, is_ascii85decode, is_flatedecode, fout;
+		int length, is_ascii85decode, is_flatedecode, fout;
 		const char *s, *t, *u, *obj;
 		size_t objlen;
 		char fullname[NAME_MAX + 1];
@@ -123,7 +163,7 @@ cli_pdf(const char *dir, int desc)
 				continue;
 		}
 
-		length = is_encrypted = is_ascii85decode = is_flatedecode = 0;
+		length = is_ascii85decode = is_flatedecode = 0;
 		for(s = obj; s < t; s++)
 			if(*s == '/') {
 				if(strncmp(++s, "Length ", 7) == 0) {
@@ -139,18 +179,9 @@ cli_pdf(const char *dir, int desc)
 					  (strncmp(s, "ASCII85Decode\n", 13) == 0)) {
 					is_ascii85decode = 1;
 					s += 12;
-				} else if((strncmp(s, "Encrypt ", 8) == 0) ||
-					  (strncmp(s, "Encrypt\n", 8) == 0)) {
-					is_encrypted = 1;
-					s += 8;
 				}
 			}
 
-		if(is_encrypted) {
-			cli_warnmsg("Encrypted PDF files not yet supported\n");
-			rc = CL_EFORMAT;
-			break;
-		}
 		t += 7;
 		u = cli_pmemstr(t, objlen - 7, "endstream\n", 10);
 		if(u == NULL) {
