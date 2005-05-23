@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.16 2005/05/22 21:37:29 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.17 2005/05/23 15:45:04 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -89,8 +89,18 @@ cli_pdf(const char *dir, int desc)
 
 	cli_dbgmsg("cli_pdf: scanning %lu bytes\n", bytesleft);
 
+	if(cli_pmemstr(p, bytesleft, "Encrypt", 7)) {
+		/*
+		 * This tends to mean that the file is, in effect, read-only
+		 */
+		cli_warnmsg("Encrypted PDF files not yet supported\n");
+		munmap(buf, size);
+
+		return CL_EFORMAT;
+	}
+
 	while((q = cli_pmemstr(p, bytesleft, "obj", 3)) != NULL) {
-		int length, is_ascii85decode, is_flatedecode, fout;
+		int length, is_encrypted, is_ascii85decode, is_flatedecode, fout;
 		const char *s, *t, *u, *obj;
 		size_t objlen;
 		char fullname[NAME_MAX + 1];
@@ -113,7 +123,7 @@ cli_pdf(const char *dir, int desc)
 				continue;
 		}
 
-		length = is_ascii85decode = is_flatedecode = 0;
+		length = is_encrypted = is_ascii85decode = is_flatedecode = 0;
 		for(s = obj; s < t; s++)
 			if(*s == '/') {
 				if(strncmp(++s, "Length ", 7) == 0) {
@@ -125,13 +135,22 @@ cli_pdf(const char *dir, int desc)
 					  (strncmp(s, "FlateDecode\n", 12) == 0)) {
 					is_flatedecode = 1;
 					s += 12;
-				} else if((strncmp(s, "ASCII85Decode ", 12) == 0) ||
-					  (strncmp(s, "ASCII85Decode\n", 12) == 0)) {
+				} else if((strncmp(s, "ASCII85Decode ", 13) == 0) ||
+					  (strncmp(s, "ASCII85Decode\n", 13) == 0)) {
 					is_ascii85decode = 1;
 					s += 12;
+				} else if((strncmp(s, "Encrypt ", 8) == 0) ||
+					  (strncmp(s, "Encrypt\n", 8) == 0)) {
+					is_encrypted = 1;
+					s += 8;
 				}
 			}
 
+		if(is_encrypted) {
+			cli_warnmsg("Encrypted PDF files not yet supported\n");
+			rc = CL_EFORMAT;
+			break;
+		}
 		t += 7;
 		u = cli_pmemstr(t, objlen - 7, "endstream\n", 10);
 		if(u == NULL) {
@@ -229,22 +248,22 @@ flatedecode(const unsigned char *buf, size_t len, int fout)
 	stream.opaque = (void *)NULL;
 	stream.next_in = (unsigned char *)buf;
 	stream.avail_in = len;
+	stream.next_out = output;
+	stream.avail_out = sizeof(output);
 
 	zstat = inflateInit(&stream);
 	if(zstat != Z_OK) {
 		cli_warnmsg("cli_pdf: inflateInit failed");
 		return zstat;
 	}
-	stream.next_out = output;
-	stream.avail_out = sizeof(output);
 	for(;;) {
 		zstat = inflate(&stream, Z_NO_FLUSH);
 		switch(zstat) {
 			case Z_OK:
 				if(stream.avail_out == 0) {
-					write(fout, output, BUFSIZ);
+					write(fout, output, sizeof(output));
 					stream.next_out = output;
-					stream.avail_out = BUFSIZ;
+					stream.avail_out = sizeof(output);
 				}
 				continue;
 			case Z_STREAM_END:
