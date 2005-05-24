@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.203 2005/05/21 17:21:01 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.204 2005/05/24 20:11:26 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.85b"
+#define	CM_VERSION	"0.85c"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -281,6 +281,7 @@ static	char	clamav_version[VERSION_LENGTH + 1];
 static	int	fflag = 0;	/* force a scan, whatever */
 static	int	oflag = 0;	/* scan messages from our machine? */
 static	int	lflag = 0;	/* scan messages from our site? */
+static	const	char	*progname;	/* our name - usually clamav-milter */
 
 /* Variables for --external */
 static	int	external = 0;	/* scan messages ourself or use clamd? */
@@ -553,10 +554,16 @@ main(int argc, char **argv)
 		"ClamAV version %s, clamav-milter version %s",
 		VERSION, CM_VERSION);
 
+	progname = strrchr(argv[0], '/');
+	if(progname)
+		progname++;
+	else
+		progname = "clamav-milter";
+
 #ifdef	C_LINUX
 	setlocale(LC_ALL, "");
-	bindtextdomain("clamav-milter", DATADIR"/clamav-milter/locale");
-	textdomain("clamav-milter");
+	bindtextdomain(progname, DATADIR"/clamav-milter/locale");
+	textdomain(progname);
 #endif
 
 	for(;;) {
@@ -1058,7 +1065,7 @@ main(int argc, char **argv)
 					argv[0], cpt->strarg);
 				return EX_CONFIG;
 			}
-		openlog("clamav-milter", LOG_CONS|LOG_PID, fac);
+		openlog(progname, LOG_CONS|LOG_PID, fac);
 	} else {
 		if(qflag)
 			fprintf(stderr, _("%s: (-q && !LogSyslog): warning - all interception message methods are off\n"),
@@ -2117,7 +2124,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		 * hosts_access(3)
 		 */
 		pthread_mutex_lock(&wrap_mutex);
-		if(!hosts_ctl("clamav-milter", hostent.h_name, ip, STRING_UNKNOWN)) {
+		if(!hosts_ctl(progname, hostent.h_name, ip, STRING_UNKNOWN)) {
 			pthread_mutex_unlock(&wrap_mutex);
 			if(use_syslog)
 				syslog(LOG_WARNING, _("Access Denied for %s[%s]"), hostent.h_name, ip);
@@ -3307,7 +3314,7 @@ clamfi_free(struct privdata *privdata)
 		 */
 		if(n_children > 0)
 			if(--n_children == 0) {
-				cli_dbgmsg("clamav-milter is idle\n");
+				cli_dbgmsg("%s is idle\n", progname);
 				if(pthread_cond_broadcast(&watchdog_cond) < 0)
 					perror("pthread_cond_broadcast");
 			}
@@ -4444,6 +4451,7 @@ watchdog(void *a)
 				if(loadDatabase() != 0) {
 					pthread_mutex_unlock(&n_children_mutex);
 					smfi_stop();
+					cli_errmsg("Failed to load updated database\n");
 					return NULL;
 				}
 				pthread_mutex_lock(&accept_mutex);
@@ -4469,6 +4477,7 @@ watchdog(void *a)
 				if(loadDatabase() != 0) {
 					pthread_mutex_unlock(&n_children_mutex);
 					smfi_stop();
+					cli_errmsg("Failed to load updated database\n");
 					return NULL;
 				}
 				pthread_mutex_lock(&accept_mutex);
@@ -4477,7 +4486,7 @@ watchdog(void *a)
 				pthread_mutex_unlock(&accept_mutex);
 			} else {
 				smfi_stop();
-				cli_errmsg("Database error - clamav-milter is stopping\n");
+				cli_errmsg("Database error - %s is stopping\n", progname);
 				pthread_mutex_unlock(&n_children_mutex);
 				return NULL;
 			}
@@ -4635,6 +4644,7 @@ watchdog(void *a)
 			if(loadDatabase() != 0) {
 				pthread_mutex_unlock(&n_children_mutex);
 				smfi_stop();
+				cli_errmsg("Failed to load updated database\n");
 				return NULL;
 			}
 			pthread_mutex_lock(&accept_mutex);
@@ -4659,6 +4669,7 @@ watchdog(void *a)
 			if(loadDatabase() != 0) {
 				pthread_mutex_unlock(&n_children_mutex);
 				smfi_stop();
+				cli_errmsg("Failed to load updated database\n");
 				return NULL;
 			}
 			pthread_mutex_lock(&accept_mutex);
@@ -4668,7 +4679,7 @@ watchdog(void *a)
 			pthread_mutex_unlock(&accept_mutex);
 		} else {
 			smfi_stop();
-			cli_errmsg("Database error - clamav-milter is stopping\n");
+			cli_errmsg("Database error - %s is stopping\n", progname);
 			pthread_mutex_unlock(&n_children_mutex);
 			return NULL;
 		}
@@ -4964,7 +4975,7 @@ sigsegv(int sig)
 #endif
 
 	if(use_syslog)
-		syslog(LOG_ERR, "Segmentation fault :-( Bye..");
+		syslog(LOG_CRIT, "Segmentation fault :-( Bye..");
 	cli_errmsg("Segmentation fault :-( Bye..\n");
 
 	smfi_stop();
