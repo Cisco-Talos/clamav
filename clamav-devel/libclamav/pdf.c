@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.18 2005/05/23 21:07:22 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.19 2005/05/24 18:44:03 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -56,6 +56,7 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.18 2005/05/23 21:07:22 nigelhorne Ex
 
 static	int	flatedecode(const unsigned char *buf, size_t len, int fout);
 static	int	ascii85decode(const char *buf, size_t len, unsigned char *output);
+static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 
 int
 cli_pdf(const char *dir, int desc)
@@ -66,9 +67,9 @@ cli_pdf(const char *dir, int desc)
 #else
 	struct stat statb;
 	off_t size;
-	long bytesleft, l;
+	long bytesleft, trailerlength;
 	char *buf;
-	const char *p, *q, *r;
+	const char *p, *q, *trailerstart;
 	int rc = CL_CLEAN;
 
 	cli_dbgmsg("in cli_pdf()\n");
@@ -100,15 +101,13 @@ cli_pdf(const char *dir, int desc)
 		return CL_EFORMAT;
 	}
 
-	while(strchr("\r\n", *p) == NULL) {
-		if(--bytesleft == 0L) {
-			munmap(buf, size);
-			return CL_EFORMAT;
-		}
-		p++;
+	q = pdf_nextlinestart(p, bytesleft);
+	if(q == NULL) {
+		munmap(buf, size);
+		return CL_EFORMAT;
 	}
-	p++;
-	bytesleft--;
+	bytesleft -= (int)(q - p);
+	p = q;
 
 	/* Find the file trailer */
 	for(q = &p[bytesleft - 1]; q > p; --q)
@@ -120,16 +119,15 @@ cli_pdf(const char *dir, int desc)
 		return CL_EFORMAT;
 	}
 
-	for(r = q; r > p; --r)
-		if(memcmp(r, "trailer", 7) == 0)
+	for(trailerstart = q; trailerstart > p; --trailerstart)
+		if(memcmp(trailerstart, "trailer", 7) == 0)
 			break;
 
 	/*
-	 * r points to the start of the file trailer section, q points to its
-	 * end
+	 * q points to the end of the trailer section
 	 */
-	l = (long)(q - r);
-	if(cli_pmemstr(r, l, "Encrypt", 7)) {
+	trailerlength = (long)(q - trailerstart);
+	if(cli_pmemstr(trailerstart, trailerlength, "Encrypt", 7)) {
 		/*
 		 * This tends to mean that the file is, in effect, read-only
 		 */
@@ -139,14 +137,16 @@ cli_pdf(const char *dir, int desc)
 		return CL_EFORMAT;
 	}
 
-	while((q = cli_pmemstr(p, bytesleft, "obj", 3)) != NULL) {
-		int length, is_ascii85decode, is_flatedecode, fout;
-		const char *s, *t, *u, *obj;
-		size_t objlen;
+	bytesleft -= trailerlength;
+
+	while((q = cli_pmemstr(p, bytesleft, " obj", 4)) != NULL) {
+		int is_ascii85decode, is_flatedecode, fout, len;
+		const char *s, *streamstart, *u, *v, *objstart;
+		size_t length, objlen, streamlen;
 		char fullname[NAME_MAX + 1];
 
-		bytesleft -= (q - p) + 3;
-		obj = p = &q[3];
+		bytesleft -= (q - p) + 4;
+		objstart = p = &q[4];
 		q = cli_pmemstr(p, bytesleft, "endobj", 6);
 		if(q == NULL) {
 			cli_dbgmsg("No matching endobj");
@@ -154,17 +154,17 @@ cli_pdf(const char *dir, int desc)
 		}
 		bytesleft -= (q - p) + 6;
 		p = &q[6];
-		objlen = (size_t)(q - obj);
+		objlen = (size_t)(q - objstart);
 
-		t = cli_pmemstr(obj, objlen, "stream\n", 7);
-		if(t == NULL) {
-			t = cli_pmemstr(obj, objlen, "stream\r", 7);
-			if(t == NULL)
-				continue;
-		}
+		streamstart = cli_pmemstr(objstart, objlen, "stream", 6);
+		if(streamstart == NULL)
+			continue;
 
 		length = is_ascii85decode = is_flatedecode = 0;
-		for(s = obj; s < t; s++)
+		/*
+		 * TODO: handle F and FFilter?
+		 */
+		for(s = objstart; s < streamstart; s++)
 			if(*s == '/') {
 				if(strncmp(++s, "Length ", 7) == 0) {
 					s += 7;
@@ -182,21 +182,25 @@ cli_pdf(const char *dir, int desc)
 				}
 			}
 
-		t += 7;
-		u = cli_pmemstr(t, objlen - 7, "endstream\n", 10);
+		/* q points to the end of the object (objend) */
+		streamstart += 6;
+		len = (int)(q - streamstart);
+		u = pdf_nextlinestart(streamstart, len);
+		if(u == NULL)
+			break;
+		len -= (int)(u - streamstart);
+		streamstart = u;
+		u = cli_pmemstr(streamstart, len, "endstream\n", 10);
 		if(u == NULL) {
-			const char *v = u;
-
-			u = cli_pmemstr(t, objlen - 7, "endstream\r", 10);
+			u = cli_pmemstr(streamstart, len, "endstream\r", 10);
 			if(u == NULL) {
 				cli_dbgmsg("No endstream");
 				break;
 			}
-			v = u;
-			while(strchr("\r\n", *--v))
-				--u;
-
 		}
+		v = u;
+		while(strchr("\r\n", *--v))
+			--u;
 		snprintf(fullname, sizeof(fullname), "%s/pdfXXXXXX", dir);
 #if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN)
 		fout = mkstemp(fullname);
@@ -211,42 +215,54 @@ cli_pdf(const char *dir, int desc)
 			break;
 		}
 
+		streamlen = (int)(u - streamstart) + 1;
+
+		/*cli_dbgmsg("length %d, streamlen %d\n", length, streamlen);*/
+
+#if	0
+		/* FIXME: this isn't right... */
+		if(length)
+			/*streamlen = (is_flatedecode) ? length : MIN(length, streamlen);*/
+			streamlen = MIN(length, streamlen);
+#endif
+
 		if(is_ascii85decode) {
-			int len = (int)(u - t);
-			unsigned char *tmpbuf = cli_malloc(len * 2);
+			unsigned char *tmpbuf = cli_malloc(streamlen * 2);
+			int ret;
 
 			if(tmpbuf == NULL) {
 				rc = CL_EMEM;
 				continue;
 			}
 
-			len = ascii85decode(t, (size_t)len, tmpbuf);
+			ret = ascii85decode(streamstart, streamlen, tmpbuf);
 
-			if(len == -1) {
+			if(ret == -1) {
 				free(tmpbuf);
 				rc = CL_EFORMAT;
 				continue;
 			}
+			streamlen = (size_t)ret;
 			/* free unused traling bytes */
-			tmpbuf = cli_realloc(tmpbuf, len);
+			tmpbuf = cli_realloc(tmpbuf, streamlen);
 			/*
 			 * Note that it will probably be both ascii85encoded
 			 * and flateencoded
 			 */
 			if(is_flatedecode) {
-				const int zstat = flatedecode((unsigned char *)tmpbuf, (size_t)len, fout);
+				const int zstat = flatedecode((unsigned char *)tmpbuf, streamlen, fout);
 
 				if(zstat != Z_OK)
 					rc = CL_EZIP;
 			}
 			free(tmpbuf);
 		} else if(is_flatedecode) {
-			const int zstat = flatedecode((unsigned char *)t, (size_t)(u - t), fout);
+			const int zstat = flatedecode((unsigned char *)streamstart, streamlen, fout);
 
 			if(zstat != Z_OK)
 				rc = CL_EZIP;
 		} else
-			write(fout, t, (size_t)(u - t));
+			write(fout, streamstart, streamlen);
 
 		close(fout);
 		cli_dbgmsg("cli_pdf: extracted to %s\n", fullname);
@@ -329,8 +345,8 @@ ascii85decode(const char *buf, size_t len, unsigned char *output)
 
 	cli_dbgmsg("cli_pdf: ascii85decode %lu bytes\n", len);
 
-	for(;;) {
-		int byte = (len--) ? *ptr++ : EOF;
+	while(len > 0) {
+		int byte = (len--) ? (int)*ptr++ : EOF;
 
 		if((byte == '~') && (*ptr == '>'))
 			byte = EOF;
@@ -380,4 +396,23 @@ ascii85decode(const char *buf, size_t len, unsigned char *output)
 		}
 	}
 	return ret;
+}
+
+/*
+ * Find the start of the next line
+ */
+static const char *
+pdf_nextlinestart(const char *ptr, size_t len)
+{
+	while(strchr("\r\n", *ptr) == NULL) {
+		if(--len == 0L)
+			return NULL;
+		ptr++;
+	}
+	while(strchr("\r\n", *ptr) != NULL) {
+		if(--len == 0L)
+			return NULL;
+		ptr++;
+	}
+	return ptr;
 }
