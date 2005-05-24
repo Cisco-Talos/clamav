@@ -1,3 +1,7 @@
+Tue May 24 22:24:08 CEST 2005 (tk)
+----------------------------------
+  * libclamav/others.c: enable REG_EXTENDED in match_regex
+
 Mon May 23 00:00:22 CEST 2005 (tk)
 ----------------------------------
   * libclamav/others.c: improve temporary name generation

@@ -123,9 +123,9 @@ int match_regex(const char *filename, const char *pattern)
 	regex_t reg;
 	int match, flags;
 #if !defined(C_CYGWIN) && !defined(C_OS2)
-	flags = 0;
+	flags = REG_EXTENDED;
 #else
-	flags = REG_ICASE; /* case insensitive on Windows */
+	flags = REG_EXTENDED | REG_ICASE; /* case insensitive on Windows */
 #endif	
 	if(regcomp(&reg, pattern, flags) != 0) {
 	    mprintf("!%s: Could not parse regular expression %s.\n", filename, pattern);
