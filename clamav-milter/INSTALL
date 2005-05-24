@@ -784,6 +784,9 @@ Changes
 			Warn if notification email fails
 			Enable some sendmail debug if LogVerbose is set
 			Added sanity checks that the socket can be created
+0.85c	24/5/05:	Use the program name from argv[0], based on an
+				idea by Joe Maimon <jmaimon@ttec.com>
+			When dying use LOG_CRIT rather than LOG_ERR
 
 4. INTERNATIONALISATION
 
