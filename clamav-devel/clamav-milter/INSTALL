@@ -68,7 +68,7 @@ recompiles above)
 
 Solaris 9 and FreeBSD5 have milter support in the supplied sendmail, but
 doesn't include libmilter so you can't develop milter applications on it.
-Go to sendmail.org, download the lastest sendmail, cd to libmilter and
+Go to sendmail.org, download the latest sendmail, cd to libmilter and
 "make install" there.
 
 Needs -lresolv on Solaris
@@ -215,7 +215,7 @@ or if clamd is on a different machine
 If you want clamav-milter to listen on TCP for communication with sendmail,
 for example if they are on different machines use inet:<port>.
 On machine A (running sendmail) you would have in sendmail.mc:
-	INPUT_MAIL_FILTER(`clamav', `S=inet:3311@machineb, F=, T=S:4m;R:4m')dnl
+	INPUT_MAIL_FILTER(`clamav', `S=inet:3311@machineb, F=T, T=S:4m;R:4m')dnl
 On machine B (running clamav-milter) you would start up clamav-milter thus:
 	clamav-milter inet:3311
 
@@ -226,8 +226,22 @@ You should always start clamd before clamav-milter.
 You may also think about the F= entry in sendmail.mc, since it tells sendmail
 what to do with emails if clamav-milter is not running. Setting F=T will tell
 the remote end to resend later (temporary failure), setting F=R will reject
-the email and setting F= will pass the email through, in this case you should
-warn your users that emails are not being scanned.
+the email (permanent failure) and setting F= will pass the email through as
+though clamav-milter were not installed, in this case you should warn your
+users that emails are not being scanned. We recommend setting F=T.
+
+You may wish to experiment with the T= entry which governs timeout options. You
+MUST set some type of timeout or a malicious client could cause a Denial of
+Service attack by keeping your clamav-milter threads alive. The types of
+timeout are C (time for clamav-milter to acknowledge to sendmail that it
+has accepted a new connection), S (timeout for sending information from sendmail
+to clamav-milter), R (timeout for sendmail reading a reply from clamav-milter
+when it has been sent some information) and E (timeout for clamav-milter to
+handle the end-of-message request, this needs to be high enough to scan the
+largest file that you will receive since it is at this stage that the file is
+scanned, but short enough to ensure that a DoS can't occur when lots of scans
+are requested). The important entries for clamav-milter are C and E (both
+default to 5 minutes).
 
 Don't forget to rebuild sendmail.cf after modifying sendmail.mc. You will
 need to restart sendmail after rebuilding sendmail.cf and starting clamd and
@@ -236,7 +250,7 @@ clamav-milter.
 As with all software it is wise to ensure that clamav-milter has the least
 privileges it needs to run. So don't run it as root and don't store the sockets
 in a directory that can be written by everyone. For example ensure that /var/run
-is owned and writable only by root and add entries for 'User' and
+is owned and writeable only by root and add entries for 'User' and
 'FixStaleSocket' in clamd.conf.
 
 When using UNIX domain sockets via the LocalSocket option of clamd.conf,
@@ -703,7 +717,7 @@ Changes
 0.81	19/1/05:	Up issued
 0.81a	22/1/05:	If forwarding to a quarantine user fails log as LOG_ERR
 				not LOG_DEBUG
-			Try to santity check that the input socket name is the
+			Try to sanity check that the input socket name is the
 				same as the same given to sendmail
 			Redirect stdout and stderr to LogFile, if that is set
 			--quarantine didn't redirect to the given email address
