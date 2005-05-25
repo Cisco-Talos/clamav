@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.19 2005/05/24 18:44:03 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.20 2005/05/25 13:37:33 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -66,10 +66,12 @@ cli_pdf(const char *dir, int desc)
 	return CL_CLEAN;
 #else
 	struct stat statb;
-	off_t size;
+	off_t size;	/* total number of bytes in the file */
 	long bytesleft, trailerlength;
-	char *buf;
+	char *buf;	/* start of memory mapped area */
 	const char *p, *q, *trailerstart;
+	const char *xrefstart;	/* cross reference table */
+	size_t xreflength;
 	int rc = CL_CLEAN;
 
 	cli_dbgmsg("in cli_pdf()\n");
@@ -89,9 +91,7 @@ cli_pdf(const char *dir, int desc)
 	if(buf == MAP_FAILED)
 		return CL_EMEM;
 
-	bytesleft = (long)size;
-
-	cli_dbgmsg("cli_pdf: scanning %lu bytes\n", bytesleft);
+	cli_dbgmsg("cli_pdf: scanning %lu bytes\n", size);
 
 	/* Lines are terminated by \r, \n or both */
 
@@ -101,16 +101,16 @@ cli_pdf(const char *dir, int desc)
 		return CL_EFORMAT;
 	}
 
-	q = pdf_nextlinestart(p, bytesleft);
+	q = pdf_nextlinestart(p, size);
 	if(q == NULL) {
 		munmap(buf, size);
 		return CL_EFORMAT;
 	}
-	bytesleft -= (int)(q - p);
+	bytesleft = size - (long)(q - p);
 	p = q;
 
 	/* Find the file trailer */
-	for(q = &p[bytesleft - 1]; q > p; --q)
+	for(q = &p[bytesleft - 6]; q > p; --q)
 		if(memcmp(q, "%%EOF", 5) == 0)
 			break;
 
@@ -131,31 +131,47 @@ cli_pdf(const char *dir, int desc)
 		/*
 		 * This tends to mean that the file is, in effect, read-only
 		 */
-		cli_warnmsg("Encrypted PDF files not yet supported\n");
 		munmap(buf, size);
-
+		cli_warnmsg("Encrypted PDF files not yet supported\n");
 		return CL_EFORMAT;
 	}
 
 	bytesleft -= trailerlength;
 
+	for(xrefstart = trailerstart; xrefstart > p; --xrefstart)
+		if(memcmp(xrefstart, "xref", 4) == 0)
+			break;
+
+	if(xrefstart == p) {
+		munmap(buf, size);
+		return CL_EFORMAT;
+	}
+
+	xreflength = (size_t)(trailerstart - xrefstart);
+
+	bytesleft -= xreflength;
+
+	/*
+	 * For each object in the body section
+	 */
 	while((q = cli_pmemstr(p, bytesleft, " obj", 4)) != NULL) {
 		int is_ascii85decode, is_flatedecode, fout, len;
-		const char *s, *streamstart, *u, *v, *objstart;
+		const char *objstart, *objend, *streamstart, *streamend;
 		size_t length, objlen, streamlen;
 		char fullname[NAME_MAX + 1];
 
 		bytesleft -= (q - p) + 4;
 		objstart = p = &q[4];
-		q = cli_pmemstr(p, bytesleft, "endobj", 6);
-		if(q == NULL) {
+		objend = cli_pmemstr(p, bytesleft, "endobj", 6);
+		if(objend == NULL) {
 			cli_dbgmsg("No matching endobj");
 			break;
 		}
-		bytesleft -= (q - p) + 6;
-		p = &q[6];
-		objlen = (size_t)(q - objstart);
+		bytesleft -= (objend - p) + 6;
+		p = &objend[6];
+		objlen = (size_t)(objend - objstart);
 
+		/* Is this object a stream? */
 		streamstart = cli_pmemstr(objstart, objlen, "stream", 6);
 		if(streamstart == NULL)
 			continue;
@@ -164,43 +180,41 @@ cli_pdf(const char *dir, int desc)
 		/*
 		 * TODO: handle F and FFilter?
 		 */
-		for(s = objstart; s < streamstart; s++)
-			if(*s == '/') {
-				if(strncmp(++s, "Length ", 7) == 0) {
-					s += 7;
-					length = atoi(s);
-					while(isdigit(*s))
-						s++;
-				} else if((strncmp(s, "FlateDecode ", 12) == 0) ||
-					  (strncmp(s, "FlateDecode\n", 12) == 0)) {
+		for(q = objstart; q < streamstart; q++)
+			if(*q == '/') {
+				if(strncmp(++q, "Length ", 7) == 0) {
+					q += 7;
+					length = atoi(q);
+					while(isdigit(*q))
+						q++;
+					q--;
+				} else if(strncmp(q, "FlateDecode", 11) == 0) {
 					is_flatedecode = 1;
-					s += 12;
-				} else if((strncmp(s, "ASCII85Decode ", 13) == 0) ||
-					  (strncmp(s, "ASCII85Decode\n", 13) == 0)) {
+					q += 12;
+				} else if(strncmp(q, "ASCII85Decode", 12) == 0) {
 					is_ascii85decode = 1;
-					s += 12;
+					q += 13;
 				}
 			}
 
-		/* q points to the end of the object (objend) */
-		streamstart += 6;
-		len = (int)(q - streamstart);
-		u = pdf_nextlinestart(streamstart, len);
-		if(u == NULL)
+		/* objend points to the end of the object (start of "endobj") */
+		streamstart += 6;	/* go past the word "stream" */
+		len = (int)(objend - streamstart);
+		q = pdf_nextlinestart(streamstart, len);
+		if(q == NULL)
 			break;
-		len -= (int)(u - streamstart);
-		streamstart = u;
-		u = cli_pmemstr(streamstart, len, "endstream\n", 10);
-		if(u == NULL) {
-			u = cli_pmemstr(streamstart, len, "endstream\r", 10);
-			if(u == NULL) {
+		len -= (int)(q - streamstart);
+		streamstart = q;
+		streamend = cli_pmemstr(streamstart, len, "endstream\n", 10);
+		if(streamend == NULL) {
+			streamend = cli_pmemstr(streamstart, len, "endstream\r", 10);
+			if(streamend == NULL) {
 				cli_dbgmsg("No endstream");
 				break;
 			}
 		}
-		v = u;
-		while(strchr("\r\n", *--v))
-			--u;
+		/*while(strchr("\r\n", *--streamend))
+			;*/
 		snprintf(fullname, sizeof(fullname), "%s/pdfXXXXXX", dir);
 #if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN)
 		fout = mkstemp(fullname);
@@ -215,9 +229,9 @@ cli_pdf(const char *dir, int desc)
 			break;
 		}
 
-		streamlen = (int)(u - streamstart) + 1;
+		streamlen = (int)(streamend - streamstart) + 1;
 
-		/*cli_dbgmsg("length %d, streamlen %d\n", length, streamlen);*/
+		cli_dbgmsg("length %d, streamlen %d\n", length, streamlen);
 
 #if	0
 		/* FIXME: this isn't right... */
@@ -285,11 +299,6 @@ flatedecode(const unsigned char *buf, size_t len, int fout)
 
 	cli_dbgmsg("cli_pdf: flatedecode %lu bytes\n", len);
 
-	while(strchr("\r\n", *buf)) {
-		len--;
-		buf++;
-	}
-
 	stream.zalloc = (alloc_func)Z_NULL;
 	stream.zfree = (free_func)Z_NULL;
 	stream.opaque = (void *)NULL;
@@ -352,7 +361,7 @@ ascii85decode(const char *buf, size_t len, unsigned char *output)
 			byte = EOF;
 
 		if(byte >= '!' && byte <= 'u') {
-			sum = sum * 85 + ((unsigned long)byte - '!');
+			sum = sum * 85 + ((uint32_t)byte - '!');
 			if(++quintet == 5) {
 				*output++ = sum >> 24;
 				*output++ = (sum >> 16) & 0xFF;
@@ -380,8 +389,7 @@ ascii85decode(const char *buf, size_t len, unsigned char *output)
 					cli_warnmsg("ascii85Decode: only 1 byte in last quintet\n");
 					return -1;
 				}
-				for(i = 0; i < 5 - quintet; i++)
-					sum *= 85;
+				sum *= 85 * (5 - quintet);
 				if(quintet > 1)
 					sum += (0xFFFFFF >> ((quintet - 2) * 8));
 				ret += quintet;
@@ -389,9 +397,10 @@ ascii85decode(const char *buf, size_t len, unsigned char *output)
 					*output++ = (sum >> (24 - 8 * i)) & 0xFF;
 				quintet = 0;
 			}
+			len = 0;
 			break;
 		} else if(!isspace(byte)) {
-			cli_warnmsg("ascii85Decode: invalid character 0x%x, len %lu\n", byte, len);
+			cli_warnmsg("ascii85Decode: invalid character 0x%x, len %lu\n", byte & 0xFF, len);
 			return -1;
 		}
 	}
