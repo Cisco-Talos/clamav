@@ -248,7 +248,9 @@ will need to wait for all connections to stop before it can reload the database
 after running freshclam. It is therefore important that NO timeouts in
 sendmail.cf are set too high or worse still turned off, otherwise clamav-milter
 can wait a long time, perhaps indefinately, while waiting for the system to
-quieten down.
+quieten down. The same goes for disabling StreamMaxLength, since receiving a
+very large email to be scanned may take a long time. We advise setting
+StreamMaxLength to 1M.
 
 Don't forget to rebuild sendmail.cf after modifying sendmail.mc. You will
 need to restart sendmail after rebuilding sendmail.cf and starting clamd and
