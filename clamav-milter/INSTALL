@@ -810,6 +810,8 @@ Changes
 0.85c	24/5/05:	Use the program name from argv[0], based on an
 				idea by Joe Maimon <jmaimon@ttec.com>
 			When dying use LOG_CRIT rather than LOG_ERR
+0.84d	25/5/05:	When not in external mode, TEMPFAIL when loading a new
+				database, even when --dont-wait isn't given
 
 4. INTERNATIONALISATION
 

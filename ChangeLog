@@ -1,3 +1,8 @@
+Wed May 25 20:41:40 BST 2005 (njh)
+----------------------------------
+  * clamav-milter:	When not in external mode, TEMPFAIL when loading a new
+				database, even when --dont-wait isn't given
+
 Tue May 24 22:24:08 CEST 2005 (tk)
 ----------------------------------
   * clamscan/others.c: enable REG_EXTENDED in match_regex

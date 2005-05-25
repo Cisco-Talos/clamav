@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.204 2005/05/24 20:11:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.205 2005/05/25 19:39:03 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.85c"
+#define	CM_VERSION	"0.85d"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2000,8 +2000,8 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	accepting = accept_inputs;
 	pthread_mutex_unlock(&accept_mutex);
 	if(!accepting) {
-#if	1
 		cli_warnmsg("Not accepting inputs at the moment\n");
+#if	0
 		/*
 		 * We must refuse here even if dont_wait isn't set, since
 		 * it could take some time, and sendmail could time us out
@@ -2016,7 +2016,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		pthread_mutex_unlock(&accept_mutex);
 		cli_warnmsg("Accepting inputs again\n");
 #endif
-		/*return SMFIS_TEMPFAIL;*/
+		return SMFIS_TEMPFAIL;
 	}
 
 	if(ctx == NULL) {
@@ -4880,6 +4880,10 @@ loadDatabase(void)
 	assert(!external);
 
 	if(dbdir == NULL) {
+		/*
+		 * First time through, find out in which directory the signature
+		 * databases are
+		 */
 		if((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory")))
 			dbdir = cpt->strarg;
 		else
