@@ -243,6 +243,13 @@ scanned, but short enough to ensure that a DoS can't occur when lots of scans
 are requested). The important entries for clamav-milter are C and E (both
 default to 5 minutes).
 
+WARNING: When running on internal mode (--external is NOT used), clamav-milter
+will need to wait for all connections to stop before it can reload the database
+after running freshclam. It is therefore important that NO timeouts in
+sendmail.cf are set too high or worse still turned off, otherwise clamav-milter
+can wait a long time, perhaps indefinately, while waiting for the system to
+quieten down.
+
 Don't forget to rebuild sendmail.cf after modifying sendmail.mc. You will
 need to restart sendmail after rebuilding sendmail.cf and starting clamd and
 clamav-milter.
