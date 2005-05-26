@@ -288,8 +288,14 @@
 /* location of Sendmail binary */
 #undef SENDMAIL_BIN
 
-/* version of Sendmail */
-#undef SENDMAIL_VERSION
+/* major version of Sendmail */
+#undef SENDMAIL_VERSION_A
+
+/* minor version of Sendmail */
+#undef SENDMAIL_VERSION_B
+
+/* subversion of Sendmail */
+#undef SENDMAIL_VERSION_C
 
 /* Define to 1 if the `setpgrp' function takes no argument. */
 #undef SETPGRP_VOID
