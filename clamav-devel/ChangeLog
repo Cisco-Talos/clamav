@@ -1,3 +1,8 @@
+Thu May 26 03:20:44 CEST 2005 (tk)
+----------------------------------
+  * libclamav/others.c: print warnings and errors in single call to write
+			(thanks to Denis Vlasenko <vda*ilport.com.ua>)
+
 Wed May 25 20:41:40 BST 2005 (njh)
 ----------------------------------
   * clamav-milter:	When not in external mode, TEMPFAIL when loading a new

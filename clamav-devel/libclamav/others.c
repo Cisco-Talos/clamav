@@ -80,38 +80,51 @@ short cli_debug_flag = 0, cli_leavetemps_flag = 0;
 
 static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
 
+
 void cli_warnmsg(const char *str, ...)
 {
 	va_list args;
+	int sz = sizeof("LibClamAV Warning: ") - 1;
+	char buff[256];
 
+    strncpy(buff, "LibClamAV Warning: ", sz);
     va_start(args, str);
-    fprintf(stderr, "LibClamAV Warning: ");
-    vfprintf(stderr, str, args);
+    vsnprintf(buff + sz, sizeof(buff) - sz, str, args);
+    buff[sizeof(buff) - 1] = '\0';
+    fputs(buff, stderr);
     va_end(args);
 }
 
 void cli_errmsg(const char *str, ...)
 {
 	va_list args;
+	int sz = sizeof("LibClamAV Error: ") - 1;
+	char buff[256];
 
+    strncpy(buff, "LibClamAV Error: ", sz);
     va_start(args, str);
-    fprintf(stderr, "LibClamAV Error: ");
-    vfprintf(stderr, str, args);
+    vsnprintf(buff + sz, sizeof(buff) - sz, str, args);
+    buff[sizeof(buff) - 1] = '\0';
+    fputs(buff, stderr);
     va_end(args);
 }
 
 void cli_dbgmsg(const char *str, ...)
 {
-	va_list args;
 
     if(cli_debug_flag) {
+	    va_list args;
+	    int sz = sizeof("LibClamAV debug: ") - 1;
+	    char buff[256];
+
+	memcpy(buff, "LibClamAV debug: ", sz);
 	va_start(args, str);
-	fprintf(stderr, "LibClamAV debug: ");
-	vfprintf(stderr, str, args);
+	vsnprintf(buff + sz, sizeof(buff) - sz, str, args);
+	buff[sizeof(buff) - 1] = '\0';
+	fputs(buff, stderr);
 	va_end(args);
     } else
 	return;
-
 }
 
 void cl_debug(void)
