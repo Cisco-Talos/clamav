@@ -1,3 +1,9 @@
+Thu May 26 04:03:31 CEST 2005 (tk)
+----------------------------------
+  * clamd/scanner.c: quick recovery of thread resources when clamd clients
+		     abandon stream connection requests (patch by Mark
+		     Pizzolato <clamav-devel*subscriptions.pizzolato.net>)
+
 Thu May 26 03:20:44 CEST 2005 (tk)
 ----------------------------------
   * libclamav/others.c: print warnings and errors in single call to write

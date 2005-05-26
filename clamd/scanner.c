@@ -380,7 +380,11 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	return -1;
     } else {
 	listen(sockfd, 1);
-	mdprintf(odesc, "PORT %d\n", port);
+	if(mdprintf(odesc, "PORT %d\n", port) <= 0) {
+	    logg("!ScanStream: error transmitting port.\n");
+	    close(sockfd);
+	    return -1;
+	}
     }
 
     switch(retval = poll_fd(sockfd, timeout)) {
@@ -478,11 +482,11 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	virusaction("stream", virname, copt);
     } else if(ret != CL_CLEAN) {
 	mdprintf(odesc, "stream: %s ERROR\n", cl_strerror(ret));
-	logg("stream: %s ERROR\n", cl_strerror(ret));
+	logg("stream %d: %s ERROR\n", port, cl_strerror(ret));
     } else {
 	mdprintf(odesc, "stream: OK\n");
         if(logok)
-	    logg("stream: OK\n"); 
+	    logg("stream %d: OK\n", port); 
     }
 
     return ret;

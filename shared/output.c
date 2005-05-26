@@ -73,8 +73,7 @@ int mdprintf(int desc, const char *str, ...)
     va_start(args, str);
     bytes = vsnprintf(buff, 512, str, args);
     va_end(args);
-    write(desc, buff, bytes);
-    return bytes;
+    return send(desc, buff, bytes, 0);
 }
 
 void logg_close(void) {
