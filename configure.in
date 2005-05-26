@@ -174,9 +174,9 @@ if test "$have_milter" = "yes"; then
 
   AC_DEFINE_UNQUOTED(SENDMAIL_BIN, "$sendmailprog", [location of Sendmail binary])
 
-  sendmailver=`$sendmailprog -d0 < /dev/null | head -1 | awk '{print $2}'`
+  sendmailver=`$sendmailprog -d0 < /dev/null | head -1 | awk '{print $2}' | awk -F. '{printf $1"."$2}'`
 
-  AC_DEFINE_UNQUOTED(SENDMAIL_VERSION, "$sendmailver", [version of Sendmail])
+  AC_DEFINE_UNQUOTED(SENDMAIL_VERSION, $sendmailver, [version of Sendmail])
 fi
 
 want_dsig="yes"
