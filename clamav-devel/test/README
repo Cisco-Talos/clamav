@@ -1,9 +1,3 @@
 clam.exe is an extremely small (544 bytes!) MZ+PE executable that prints
 a nice message :-) You can use it to test attachment scanning in your ClamAV
 based mail scanner.
-
-Due to license issues libclamav does not support RAR 3.0 archives (only 2.0
-are supported). Currently only clamscan is able to scan the clam-error.rar
-file (clamd only depends on libclamav's decompressors). Please use the --unrar
-option and it will automatically switch to the external unrar utility after
-libclamav's error.
