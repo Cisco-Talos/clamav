@@ -11184,11 +11184,11 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-  sendmailver=`$sendmailprog -d0 < /dev/null | head -1 | awk '{print $2}'`
+  sendmailver=`$sendmailprog -d0 < /dev/null | head -1 | awk '{print $2}' | awk -F. '{printf $1"."$2}'`
 
 
 cat >>confdefs.h <<_ACEOF
-#define SENDMAIL_VERSION "$sendmailver"
+#define SENDMAIL_VERSION $sendmailver
 _ACEOF
 
 fi
