@@ -812,6 +812,11 @@ Changes
 			When dying use LOG_CRIT rather than LOG_ERR
 0.85d	25/5/05:	When not in external mode, TEMPFAIL when loading a new
 				database, even when --dont-wait isn't given
+0.85e	27/5/05:	When loading a new database when not in external mode,
+				keep scanning with the old one rather than
+				hold up incoming mails while waiting for
+				clamav-milter to become idle then reloading the
+				database
 
 4. INTERNATIONALISATION
 
