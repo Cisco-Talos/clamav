@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.20 2005/05/25 13:37:33 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.21 2005/05/27 13:57:02 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -138,9 +138,17 @@ cli_pdf(const char *dir, int desc)
 
 	bytesleft -= trailerlength;
 
+	/*
+	 * FIXME: Handle more than one xref section in the xref table
+	 */
 	for(xrefstart = trailerstart; xrefstart > p; --xrefstart)
 		if(memcmp(xrefstart, "xref", 4) == 0)
-			break;
+			/*
+			 * Make sure it's the start of the line, not a startxref
+			 * token
+			 */
+			if((xrefstart[-1] == '\n') || (xrefstart[-1] == '\r'))
+				break;
 
 	if(xrefstart == p) {
 		munmap(buf, size);
