@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.21 2005/05/27 13:57:02 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.22 2005/05/27 14:44:00 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -57,6 +57,7 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.21 2005/05/27 13:57:02 nigelhorne Ex
 static	int	flatedecode(const unsigned char *buf, size_t len, int fout);
 static	int	ascii85decode(const char *buf, size_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
+static	const	char	*pdf_nexttoken(const char *ptr, size_t len);
 
 int
 cli_pdf(const char *dir, int desc)
@@ -188,7 +189,8 @@ cli_pdf(const char *dir, int desc)
 		/*
 		 * TODO: handle F and FFilter?
 		 */
-		for(q = objstart; q < streamstart; q++)
+		q = objstart;
+		while(q < streamstart) {
 			if(*q == '/') {
 				if(strncmp(++q, "Length ", 7) == 0) {
 					q += 7;
@@ -204,6 +206,10 @@ cli_pdf(const char *dir, int desc)
 					q += 13;
 				}
 			}
+			q = pdf_nexttoken(q, (size_t)(streamstart - q));
+			if(q == NULL)
+				break;
+		}
 
 		/* objend points to the end of the object (start of "endobj") */
 		streamstart += 6;	/* go past the word "stream" */
@@ -348,9 +354,6 @@ flatedecode(const unsigned char *buf, size_t len, int fout)
 	return inflateEnd(&stream);
 }
 
-/*
- * http://cvs.gnome.org/viewcvs/sketch/Filter/ascii85filter.c?rev=1.2
- */
 /* ascii85 inflation, returns number of bytes in output, -1 for error */
 static int
 ascii85decode(const char *buf, size_t len, unsigned char *output)
@@ -432,4 +435,56 @@ pdf_nextlinestart(const char *ptr, size_t len)
 		ptr++;
 	}
 	return ptr;
+}
+
+/*
+ * Return the next PDF token. This assumes that we're not in a stream
+ */
+static const char *
+pdf_nexttoken(const char *ptr, size_t len)
+{
+	const char *p;
+	int intoken = 1;
+
+	while(len) {
+		switch(*ptr) {
+			case '\n':
+			case '\r':
+			case '%':	/* comment */
+				p = pdf_nextlinestart(ptr, len);
+				if(p == NULL)
+					return NULL;
+				len -= (size_t)(p - ptr);
+				ptr = p;
+				intoken = 0;
+				break;
+
+			/*case '(':
+			case ')':
+			case '<':
+			case '>':
+			case '[':
+			case ']':
+			case '{':
+			case '}':
+			case '/':
+				if(!intoken)
+					return ptr;
+				ptr++;
+				len--;
+				break;*/
+			case ' ':
+			case '\t':
+				intoken = 0;
+				ptr++;
+				len--;
+				break;
+			default:
+				if(!intoken)
+					return ptr;
+				ptr++;
+				len--;
+		}
+	}
+	return NULL;
 }
