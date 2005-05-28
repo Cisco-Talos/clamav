@@ -22,7 +22,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.206 2005/05/27 14:52:58 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.207 2005/05/28 10:28:52 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.85e"
 
@@ -1382,6 +1382,7 @@ main(int argc, char **argv)
 					return EX_CANTCREAT;
 				}
 			}
+			logFile = strdup(logFile);
 		} else {
 			logFile = console;
 			if(consolefd < 0) {
