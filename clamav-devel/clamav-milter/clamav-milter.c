@@ -22,7 +22,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.207 2005/05/28 10:28:52 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.208 2005/05/28 11:37:27 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.85e"
 
@@ -1382,7 +1382,6 @@ main(int argc, char **argv)
 					return EX_CANTCREAT;
 				}
 			}
-			logFile = strdup(logFile);
 		} else {
 			logFile = console;
 			if(consolefd < 0) {
@@ -5036,7 +5035,12 @@ logger(const char *mess)
 #ifdef	CL_DEBUG
 	puts(mess);
 #else
-	FILE *fout = fopen(logFile, "a");
+	FILE *fout;
+	
+	if(cfgopt(copt, "Foreground"))
+		fout = stderr;
+	else
+		fout = fopen(logFile, "a");
 
 	if(fout == NULL)
 		return;
@@ -5058,6 +5062,7 @@ logger(const char *mess)
 #endif
 	} else
 		fprintf(fout, "%s\n", mess);
-	fclose(fout);
+	if(fout != stderr)
+		fclose(fout);
 #endif
 }
