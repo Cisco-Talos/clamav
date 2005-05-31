@@ -11,7 +11,7 @@ Clamav\-milter is a filter for \fBsendmail(1)\fR mail server.
 It uses a mail scanning engine built into \fBclamd(8)\fR.
 .LP
 Clamav\-milter can use load balancing and fault tolerant techniques to connect
-to more than one clamd(8) server and seemlessly hot swap to even the load
+to more than one clamd(8) server and seamlessly hot-swap to even the load
 between different machines and to keep scanning for viruses even when a server
 goes down.
 When it is configured to use clamd on the the localhost, when
@@ -26,7 +26,7 @@ is "clamav\-milter".
 The socket_address argument is the socket used to communicate with
 \fBsendmail(8)\fR.
 It must agree with the entry in sendmail.cf or sendmail.mc.
-The file associated with the socket must be createable by clamav\-milter,
+The file associated with the socket must be creatable by clamav\-milter,
 if the User option is set in clamd.conf,
 then that user must have the rights to create the file.
 .SH "OPTIONS"
@@ -58,7 +58,7 @@ Enables debugging.
 \fB\-x n, \-\-debug\-level=n\fR
 Set the debug level to n (where n from [0..9]) if \fBclamav\-milter\fR was
 configured and compiled with \-\-clamav-debug enabled.
-Will be replaced by \-\-debug for compatability with other programs in the
+Will be replaced by \-\-debug for compatibility with other programs in the
 suite.
 .TP
 \fB-A, \-\-advisory\fR
@@ -76,7 +76,7 @@ See also \-\-noreject.
 When a virus is intercepted, broadcast a UDP message to the TCPSocket port set
 in \fBclamd.conf\fR.
 If the optional \fIiface\fR option is given, broadcasts will be sent on
-that interface. The default is set by the opertating system, usually to the
+that interface. The default is set by the operating system, usually to the
 first NIC.
 A future network management program (yet to be written) will intercept these
 broadcasts to raise a warning on the operator's desk.
@@ -92,7 +92,7 @@ usually when a system error occurs the milter raises a temporary failure which
 generally causes the message to remain in the queue.
 .TP
 \fB-f, \-\-force-scan\fR
-Always scan, whereever the message came from (see also --local and --outgoing).
+Always scan, wherever the message came from (see also --local and --outgoing).
 You probably don't want this.
 .TP
 \fB-e, \-\-external\fR
@@ -125,7 +125,7 @@ Scan messages generated from this machine. You probably don't need this.
 .TP
 \fB-i, \-\-pidfile=FILE\fR
 Notifies clamav\-milter to store its process ID in FILE.
-The file must be createable by clamav\-milter,
+The file must be creatable by clamav\-milter,
 if the User option is set in
 \fBclamd.conf(5)\fR,
 then that user must have the rights to create the file.
@@ -151,7 +151,7 @@ redirected to it.
 .TP
 \fB-U, \-\-quarantine-dir=DIR\fR
 If this option is given, infected files are left in this directory.
-The directory must not be publically readable or writeable, if it is,
+The directory must not be publicly readable or writable, if it is,
 clamav\-milter will issue an error and fail to start.
 \fBNote\fR - this option only works when using LocalSocket.
 .TP
@@ -195,21 +195,21 @@ will inform the remote SMTP client to retry later.
 \fB\-\-template\-file=file \-t file\fR
 File points to a file whose contents is sent as the warning message whenever a
 virus is intercepted.
-Occurances of %v within the file is replaced with the message
+Occurrences of %v within the file is replaced with the message
 returned from clamd, which includes the name of the virus.
-Occurances of %h are replaced with the message's headers.
+Occurrences of %h are replaced with the message's headers.
 The %v string can be escaped thus, \\%v, to send the string %v.
 The % character can be escaped thus, %%, to send the % character.
-Any occurance of strings in dollar signs are replaced with the appropriate
+Any occurrence of strings in dollar signs are replaced with the appropriate
 sendmail-variable, e.g. ${if_addr}$.
-If the \-t option is not given, clamav\-milter defaults to a hardcoded message.
+If the \-t option is not given, clamav\-milter defaults to a hard-coded message.
 Note that to send warning messages, clamav\-milter must be able to execute
 sendmail.
 .TP
 \fB\-\-timeout=n \-T n\fR
-Used in conjuction with max\-children. If clamav\-milter waits for more than
+Used in conjunction with max\-children. If clamav\-milter waits for more than
 \fIn\fR seconds (default 0) it proceeds with scanning. Setting \fIn\fR to zero
-will turn off the timeout and clamav\-milter will wait indefinately for the
+will turn off the timeout and clamav\-milter will wait indefinitely for the
 scanning to quit. In practice the timeout set by sendmail will then take over.
 .TP
 \fB\-\-detect-forged-local-address \-L\fR
@@ -221,7 +221,7 @@ local domain.
 This option specifies a file which contains a list of e-mail addresses.
 E-mails sent to these addresses will NOT be checked.
 While this is not an Anti-Virus function, it is quite useful for some systems.
-The address given to the \-\-quarantine directive is always whitelisted.
+The address given to the \-\-quarantine directive is always white-listed.
 .TP
 \fB\-\-sendmail-cf=FILE
 When starting, clamav\-milter runs some sanity checks against the sendmail.cf
