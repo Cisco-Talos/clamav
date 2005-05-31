@@ -1,3 +1,7 @@
+Tue May 31 19:15:01 BST 2005 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Fix mishandling of fast track uuencoded files
+
 Fri May 27 15:55:00 BST 2005 (njh)
 ----------------------------------
   * clamav-milter:	When loading a new database when not in external mode,
