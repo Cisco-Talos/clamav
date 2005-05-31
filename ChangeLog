@@ -1,7 +1,6 @@
 Fri May 27 15:55:00 BST 2005 (njh)
 ----------------------------------
-  * clamav-milter:	EXPERIMENTAL
-			When loading a new database when not in external mode,
+  * clamav-milter:	When loading a new database when not in external mode,
 				keep scanning with the old one rather than
 				hold up incoming mails while waiting for
 				clamav-milter to become idle then reloading the
