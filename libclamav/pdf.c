@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.22 2005/05/27 14:44:00 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.23 2005/06/01 12:58:44 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -374,10 +374,10 @@ ascii85decode(const char *buf, size_t len, unsigned char *output)
 		if(byte >= '!' && byte <= 'u') {
 			sum = sum * 85 + ((uint32_t)byte - '!');
 			if(++quintet == 5) {
-				*output++ = sum >> 24;
-				*output++ = (sum >> 16) & 0xFF;
-				*output++ = (sum >> 8) & 0xFF;
-				*output++ = sum & 0xFF;
+				*output++ = (unsigned char)(sum >> 24);
+				*output++ = (unsigned char)((sum >> 16) & 0xFF);
+				*output++ = (unsigned char)((sum >> 8) & 0xFF);
+				*output++ = (unsigned char)(sum & 0xFF);
 				ret += 4;
 				quintet = 0;
 				sum = 0;
@@ -405,7 +405,7 @@ ascii85decode(const char *buf, size_t len, unsigned char *output)
 					sum += (0xFFFFFF >> ((quintet - 2) * 8));
 				ret += quintet;
 				for(i = 0; i < quintet - 1; i++)
-					*output++ = (sum >> (24 - 8 * i)) & 0xFF;
+					*output++ = (unsigned char)((sum >> (24 - 8 * i)) & 0xFF);
 				quintet = 0;
 			}
 			len = 0;
@@ -438,7 +438,8 @@ pdf_nextlinestart(const char *ptr, size_t len)
 }
 
 /*
- * Return the next PDF token. This assumes that we're not in a stream
+ * Return the start of the next PDF token.
+ * This assumes that we're not in a stream.
  */
 static const char *
 pdf_nexttoken(const char *ptr, size_t len)
