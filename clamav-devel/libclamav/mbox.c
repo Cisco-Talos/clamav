@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.246 2005/05/31 18:13:48 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.247 2005/06/01 15:01:44 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3835,12 +3835,18 @@ usefulHeader(int commandNumber, const char *cmd)
 static int
 uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin)
 {
-	fileblob *fb = fileblobCreate();
+	fileblob *fb;
 	char buffer[RFC2821LENGTH + 1];
 	char *filename = cli_strtok(firstline, 2, " ");
 
 	if(filename == NULL)
 		return -1;
+
+	fb = fileblobCreate();
+	if(fb == NULL) {
+		free(filename);
+		return -1;
+	}
 
 	fileblobSetFilename(fb, dir, filename);
 	cli_dbgmsg("Fast track uudecode %s\n", filename);
