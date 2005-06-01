@@ -1,3 +1,16 @@
+Wed Jun  1 02:39:14 CEST 2005 (tk)
+----------------------------------
+  * misc/cfgparser.c: reimplementation of config parser:
+			- all options require arguments (old ones without
+			  args must be now followed by boolean values: yes, no,
+			  1, 0, or true, false)
+			- optional arguments (as in NotifyClamd) are no longer
+			  supported
+			- default values are directly associated with options
+  * clamd/defaults.h: remove
+  * clamd, clamdscan, freshclam: use new parser scheme
+  * etc/clamd.conf: remove DisableDefaultScanOptions
+
 Tue May 31 19:15:01 BST 2005 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Fix mishandling of fast track uuencoded files

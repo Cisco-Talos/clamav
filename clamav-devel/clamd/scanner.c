@@ -45,7 +45,6 @@
 #include "cfgparser.h"
 #include "others.h"
 #include "scanner.h"
-#include "defaults.h"
 #include "memory.h"
 #include "shared.h"
 #include "output.h"
@@ -102,11 +101,7 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 	int ret = 0, scanret = 0, maxdirrec = 0;
 
 
-    if((cpt = cfgopt(copt, "MaxDirectoryRecursion")))
-	maxdirrec = cpt->numarg;
-    else
-	maxdirrec = CL_DEFAULT_MAXDIRREC;
-
+    maxdirrec = cfgopt(copt, "MaxDirectoryRecursion")->numarg;
     if(maxdirrec) {
 	if(*reclev > maxdirrec) {
 	    logg("*Directory recursion limit exceeded at %s\n", dirname);
@@ -139,14 +134,14 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 
 		    /* stat the file */
 		    if(lstat(fname, &statbuf) != -1) {
-			if((S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 1) && cfgopt(copt, "FollowDirectorySymlinks"))) {
+			if((S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 1) && cfgopt(copt, "FollowDirectorySymlinks")->enabled)) {
 			    if(dirscan(fname, virname, scanned, root, limits, options, copt, odesc, reclev, contscan) == 1) {
 				free(fname);
 				closedir(dd);
 				return 1;
 			    }
 			} else {
-			    if(S_ISREG(statbuf.st_mode) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 2) && cfgopt(copt, "FollowFileSymlinks"))) {
+			    if(S_ISREG(statbuf.st_mode) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 2) && cfgopt(copt, "FollowFileSymlinks")->enabled)) {
 
 #ifdef C_LINUX
 				if(procdev && (statbuf.st_dev == procdev))
@@ -219,7 +214,7 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_node 
 
     switch(sb.st_mode & S_IFMT) {
 	case S_IFLNK:
-	    if(!cfgopt(copt, "FollowFileSymlinks"))
+	    if(!cfgopt(copt, "FollowFileSymlinks")->enabled)
 		break;
 	    /* else go to the next case */
 	case S_IFREG: 
@@ -297,7 +292,7 @@ int scanfd(const int fd, unsigned long int *scanned, const struct cl_node *root,
 
 int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt)
 {
-	int ret, portscan = CL_DEFAULT_MAXPORTSCAN, sockfd, port = 0, acceptd;
+	int ret, portscan = 1000, sockfd, port = 0, acceptd;
 	int tmpd, bread, retval, timeout, btread, min_port, max_port;
 	long int size = 0, maxsize = 0;
 	short bound = 0, rnd_port_first = 1;
@@ -310,22 +305,14 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 
 
     /* get min port */
-    if((cpt = cfgopt(copt, "StreamMinPort"))) {
-	if(cpt->numarg < 1024 || cpt->numarg > 65535)
-	    min_port = 1024;
-	else 
-	    min_port = cpt->numarg;
-    } else 
+    min_port = cfgopt(copt, "StreamMinPort")->numarg;
+    if(min_port < 1024 || min_port > 65535)
 	min_port = 1024;
 
     /* get max port */
-    if((cpt = cfgopt(copt, "StreamMaxPort"))) {
-	if(cpt->numarg < min_port || cpt->numarg > 65535)
-	    max_port = 65535;
-	else
-	    max_port = cpt->numarg;
-    } else
-	max_port = 2048;
+    max_port = cfgopt(copt, "StreamMaxPort")->numarg;
+    if(max_port < min_port || max_port > 65535)
+	max_port = 65535;
 
     /* bind to a free port */
     while(!bound && --portscan) {
@@ -343,7 +330,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	server.sin_family = AF_INET;
 	server.sin_port = htons(port);
 
-	if((cpt = cfgopt(copt, "TCPAddr"))) {
+	if((cpt = cfgopt(copt, "TCPAddr"))->enabled) {
 	    pthread_mutex_lock(&gh_mutex);
 	    if((he = gethostbyname(cpt->strarg)) == 0) {
 		logg("!gethostbyname(%s) error: %s\n", cpt->strarg);
@@ -365,11 +352,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	    bound = 1;
     }
 
-    if((cpt = cfgopt(copt, "ReadTimeout")))
-	timeout = cpt->numarg;
-    else
-	timeout = CL_DEFAULT_SCANTIMEOUT;
-
+    timeout = cfgopt(copt, "ReadTimeout")->numarg;
     if(timeout == 0)
     	timeout = -1;
 
@@ -418,11 +401,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	return -1;
     }
 
-    if((cpt = cfgopt(copt, "StreamMaxLength")))
-	maxsize = cpt->numarg;
-    else
-	maxsize = CL_DEFAULT_STREAMMAXLEN;
-
+    maxsize = cfgopt(copt, "StreamMaxLength")->numarg;
 
     btread = sizeof(buff);
 
@@ -439,7 +418,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	    mdprintf(odesc, "Temporary file -> write ERROR\n");
 	    logg("!ScanStream %d: Can't write to temporary file.\n", port);
 	    close(tmpd);
-	    if(!cfgopt(copt, "LeaveTemporaryFiles"))
+	    if(!cfgopt(copt, "LeaveTemporaryFiles")->enabled)
 		unlink(tmpname);
 	    free(tmpname);
 	    return -1;
@@ -469,7 +448,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
     lseek(tmpd, 0, SEEK_SET);
     ret = cl_scandesc(tmpd, &virname, scanned, root, limits, options);
     close(tmpd);
-    if(!cfgopt(copt, "LeaveTemporaryFiles"))
+    if(!cfgopt(copt, "LeaveTemporaryFiles")->enabled)
 	unlink(tmpname);
     free(tmpname);
 

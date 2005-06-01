@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *			      Trog <trog@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -35,7 +35,6 @@
 #include "server.h"
 #include "thrmgr.h"
 #include "session.h"
-#include "defaults.h"
 #include "clamuko.h"
 #include "others.h"
 #include "memory.h"
@@ -75,12 +74,7 @@ void scanner_thread(void *arg)
     sigfillset(&sigset);
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
 
-    if((cpt = cfgopt(conn->copt, "ReadTimeout"))) {
-	timeout = cpt->numarg;
-    } else {
-	timeout = CL_DEFAULT_SCANTIMEOUT;
-    }
-
+    timeout = cfgopt(conn->copt, "ReadTimeout")->numarg;
     if(!timeout)
     	timeout = -1;
 
@@ -188,11 +182,7 @@ static struct cl_node *reload_db(struct cl_node *root, const struct cfgstruct *c
 	root = NULL;
     }
 
-    if((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory"))) {
-	dbdir = cpt->strarg;
-    } else {
-	dbdir = cl_retdbdir();
-    }
+    dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
     logg("Reading databases from %s\n", dbdir);
 
     if(dbstat == NULL) {
@@ -225,7 +215,7 @@ static struct cl_node *reload_db(struct cl_node *root, const struct cfgstruct *c
 
 int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *copt)
 {
-	int new_sd, max_threads, stdopt;
+	int new_sd, max_threads;
 	unsigned int options = 0;
 	threadpool_t *thr_pool;
 	struct sigaction sigact;
@@ -256,7 +246,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 
     /* save the PID */
     mainpid = getpid();
-    if((cpt = cfgopt(copt, "PidFile"))) {
+    if((cpt = cfgopt(copt, "PidFile"))->enabled) {
 	    FILE *fd;
 	old_umask = umask(0006);
 	if((fd = fopen(cpt->strarg, "w")) == NULL) {
@@ -269,95 +259,55 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     }
 
     logg("*Listening daemon: PID: %d\n", getpid());
-    if((cpt = cfgopt(copt, "MaxThreads"))) {
-	max_threads = cpt->numarg;
-    } else {
-	max_threads = CL_DEFAULT_MAXTHREADS;
-    }
+    max_threads = cfgopt(copt, "MaxThreads")->numarg;
 
-    if(cfgopt(copt, "DisableDefaultScanOptions")) {
-	logg("RECOMMENDED OPTIONS DISABLED.\n");
-	stdopt = 0;
-    } else {
-	options |= CL_SCAN_STDOPT;
-	stdopt = 1;
-    }
-
-    if(stdopt || cfgopt(copt, "ScanArchive") || cfgopt(copt, "ClamukoScanArchive")) {
+    if(cfgopt(copt, "ScanArchive")->enabled || cfgopt(copt, "ClamukoScanArchive")->enabled) {
 
 	/* set up limits */
 	memset(&limits, 0, sizeof(struct cl_limits));
 
-	if((cpt = cfgopt(copt, "ArchiveMaxFileSize"))) {
-	    if((limits.maxfilesize = cpt->numarg)) {
-		logg("Archive: Archived file size limit set to %d bytes.\n", limits.maxfilesize);
-	    } else {
-		logg("^Archive: File size limit protection disabled.\n");
-	    }
-	} else {
-	    limits.maxfilesize = 10485760;
+	if((limits.maxfilesize = cfgopt(copt, "ArchiveMaxFileSize")->numarg)) {
 	    logg("Archive: Archived file size limit set to %d bytes.\n", limits.maxfilesize);
+	} else {
+	    logg("^Archive: File size limit protection disabled.\n");
 	}
 
-	if((cpt = cfgopt(copt, "ArchiveMaxRecursion"))) {
-	    if((limits.maxreclevel = cpt->numarg)) {
-		logg("Archive: Recursion level limit set to %d.\n", limits.maxreclevel);
-	    } else {
-		logg("^Archive: Recursion level limit protection disabled.\n");
-	    }
-	} else {
-	    limits.maxreclevel = 8;
+	if((limits.maxreclevel = cfgopt(copt, "ArchiveMaxRecursion")->numarg)) {
 	    logg("Archive: Recursion level limit set to %d.\n", limits.maxreclevel);
+	} else {
+	    logg("^Archive: Recursion level limit protection disabled.\n");
 	}
 
-	if((cpt = cfgopt(copt, "ArchiveMaxFiles"))) {
-	    if((limits.maxfiles = cpt->numarg)) {
-		logg("Archive: Files limit set to %d.\n", limits.maxfiles);
-	    } else {
-		logg("^Archive: Files limit protection disabled.\n");
-	    }
-	} else {
-	    limits.maxfiles = 1000;
+	if((limits.maxfiles = cfgopt(copt, "ArchiveMaxFiles")->numarg)) {
 	    logg("Archive: Files limit set to %d.\n", limits.maxfiles);
-	}
-
-	if((cpt = cfgopt(copt, "ArchiveMaxCompressionRatio"))) {
-	    if((limits.maxratio = cpt->numarg)) {
-		logg("Archive: Compression ratio limit set to %d.\n", limits.maxratio);
-	    } else {
-		logg("^Archive: Compression ratio limit disabled.\n");
-	    }
 	} else {
-	    limits.maxratio = 250;
-	    logg("Archive: Compression ratio limit set to %d.\n", limits.maxratio);
+	    logg("^Archive: Files limit protection disabled.\n");
 	}
 
-	if(cfgopt(copt, "ArchiveLimitMemoryUsage")) {
+	if((limits.maxratio = cfgopt(copt, "ArchiveMaxCompressionRatio")->numarg)) {
+	    logg("Archive: Compression ratio limit set to %d.\n", limits.maxratio);
+	} else {
+	    logg("^Archive: Compression ratio limit disabled.\n");
+	}
+
+	if(cfgopt(copt, "ArchiveLimitMemoryUsage")->enabled) {
 	    limits.archivememlim = 1;
 	    logg("Archive: Limited memory usage.\n");
 	} else {
 	    limits.archivememlim = 0;
 	}
-
     }
 
-    if(stdopt || cfgopt(copt, "ScanArchive")) {
+    if(cfgopt(copt, "ScanArchive")->enabled) {
 	logg("Archive support enabled.\n");
 	options |= CL_SCAN_ARCHIVE;
 
-	if(cfgopt(copt, "ScanRAR")) {
-	    logg("Archive: RAR support enabled.\n");
-	} else {
-	    logg("Archive: RAR support disabled.\n");
-	    options |= CL_SCAN_DISABLERAR;
-	}
-
-	if(cfgopt(copt, "ArchiveBlockEncrypted")) {
+	if(cfgopt(copt, "ArchiveBlockEncrypted")->enabled) {
 	    logg("Archive: Blocking encrypted archives.\n");
 	    options |= CL_SCAN_BLOCKENCRYPTED;
 	}
 
-	if(cfgopt(copt, "ArchiveBlockMax")) {
+	if(cfgopt(copt, "ArchiveBlockMax")->enabled) {
 	    logg("Archive: Blocking archives that exceed limits.\n");
 	    options |= CL_SCAN_BLOCKMAX;
 	}
@@ -366,11 +316,11 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	logg("Archive support disabled.\n");
     }
 
-    if(stdopt || cfgopt(copt, "ScanPE")) {
+    if(cfgopt(copt, "ScanPE")->enabled) {
 	logg("Portable Executable support enabled.\n");
 	options |= CL_SCAN_PE;
 
-	if(cfgopt(copt, "DetectBrokenExecutables")) {
+	if(cfgopt(copt, "DetectBrokenExecutables")->enabled) {
 	    logg("Detection of broken executables enabled.\n");
 	    options |= CL_SCAN_BLOCKBROKEN;
 	}
@@ -379,11 +329,11 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	logg("Portable Executable support disabled.\n");
     }
 
-    if(stdopt || cfgopt(copt, "ScanMail")) {
+    if(cfgopt(copt, "ScanMail")->enabled) {
 	logg("Mail files support enabled.\n");
 	options |= CL_SCAN_MAIL;
 
-	if(cfgopt(copt, "MailFollowURLs")) {
+	if(cfgopt(copt, "MailFollowURLs")->enabled) {
 	    logg("Mail: URL scanning enabled.\n");
 	    options |= CL_SCAN_MAILURL;
 	}
@@ -392,26 +342,21 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	logg("Mail files support disabled.\n");
     }
 
-    if(stdopt || cfgopt(copt, "ScanOLE2")) {
+    if(cfgopt(copt, "ScanOLE2")->enabled) {
 	logg("OLE2 support enabled.\n");
 	options |= CL_SCAN_OLE2;
     } else {
 	logg("OLE2 support disabled.\n");
     }
 
-    if(stdopt || cfgopt(copt, "ScanHTML")) {
+    if(cfgopt(copt, "ScanHTML")->enabled) {
 	logg("HTML support enabled.\n");
 	options |= CL_SCAN_HTML;
     } else {
 	logg("HTML support disabled.\n");
     }
 
-    if((cpt = cfgopt(copt, "SelfCheck"))) {
-	selfchk = cpt->numarg;
-    } else {
-	selfchk = CL_DEFAULT_SELFCHECK;
-    }
-
+    selfchk = cfgopt(copt, "SelfCheck")->numarg;
     if(!selfchk) {
 	logg("Self checking disabled.\n");
     } else {
@@ -421,7 +366,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     pthread_attr_init(&thattr);
     pthread_attr_setdetachstate(&thattr, PTHREAD_CREATE_DETACHED);
 
-    if(cfgopt(copt, "ClamukoScanOnLine") || cfgopt(copt, "ClamukoScanOnAccess"))
+    if(cfgopt(copt, "ClamukoScanOnAccess")->enabled)
 #ifdef CLAMUKO
     {
 	pthread_attr_init(&clamuko_attr);
@@ -483,11 +428,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     pthread_mutex_init(&exit_mutex, NULL);
     pthread_mutex_init(&reload_mutex, NULL);
 
-
-    if((cpt = cfgopt(copt, "IdleTimeout")))
-	idletimeout = cpt->numarg;
-    else
-	idletimeout = CL_DEFAULT_IDLETIMEOUT;
+    idletimeout = cfgopt(copt, "IdleTimeout")->numarg;
 
     if((thr_pool=thrmgr_new(max_threads, idletimeout, scanner_thread)) == NULL) {
 	logg("!thrmgr_new failed\n");
@@ -512,7 +453,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 		logg("SIGHUP caught: re-opening log file.\n");
 		logg_close();
 		sighup = 0;
-		if(!logg_file && (cpt = cfgopt(copt, "LogFile")))
+		if(!logg_file && (cpt = cfgopt(copt, "LogFile"))->enabled)
 		    logg_file = cpt->strarg;
 	}
 
@@ -563,7 +504,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	    time(&reloaded_time);
 	    pthread_mutex_unlock(&reload_mutex);
 #ifdef CLAMUKO
-	    if(cfgopt(copt, "ClamukoScanOnLine") || cfgopt(copt, "ClamukoScanOnAccess")) {
+	    if(cfgopt(copt, "ClamukoScanOnAccess")->enabled) {
 		logg("Stopping and restarting Clamuko.\n");
 		pthread_kill(clamuko_pid, SIGUSR1);
 		pthread_join(clamuko_pid, NULL);
@@ -581,7 +522,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
      */
     thrmgr_destroy(thr_pool);
 #ifdef CLAMUKO
-    if(cfgopt(copt, "ClamukoScanOnLine") || cfgopt(copt, "ClamukoScanOnAccess")) {
+    if(cfgopt(copt, "ClamukoScanOnAccess")->enabled) {
 	logg("Stopping Clamuko.\n");
 	pthread_kill(clamuko_pid, SIGUSR1);
 	pthread_join(clamuko_pid, NULL);
@@ -594,7 +535,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     close(socketd);
 
 #ifndef C_OS2
-    if((cpt = cfgopt(copt, "LocalSocket"))) {
+    if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
 	if(unlink(cpt->strarg) == -1)
 	    logg("!Can't unlink the socket file %s\n", cpt->strarg);
 	else
@@ -602,7 +543,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     }
 #endif
 
-    if((cpt = cfgopt(copt, "PidFile"))) {
+    if((cpt = cfgopt(copt, "PidFile"))->enabled) {
 	if(unlink(cpt->strarg) == -1)
 	    logg("!Can't unlink the pid file %s\n", cpt->strarg);
 	else

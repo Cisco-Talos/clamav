@@ -112,11 +112,11 @@ int freshclam(struct optstruct *opt)
 
     /* parse the config file */
     if((cfgfile = getargl(opt, "config-file"))) {
-	copt = parsecfg(cfgfile, 1);
+	copt = getcfg(cfgfile, 1);
     } else {
 	/* TODO: force strict permissions on freshclam.conf */
-	if((copt = parsecfg((cfgfile = CONFDIR"/freshclam.conf"), 1)) == NULL)
-	    copt = parsecfg((cfgfile = CONFDIR"/clamd.conf"), 1);
+	if((copt = getcfg((cfgfile = CONFDIR"/freshclam.conf"), 1)) == NULL)
+	    copt = getcfg((cfgfile = CONFDIR"/clamd.conf"), 1);
     }
 
     if(!copt) {
@@ -127,7 +127,7 @@ int freshclam(struct optstruct *opt)
     if(optl(opt, "http-proxy") || optl(opt, "proxy-user"))
 	mprintf("WARNING: Proxy settings are now only configurable in the config file.\n");
 
-    if(cfgopt(copt, "HTTPProxyPassword")) {
+    if(cfgopt(copt, "HTTPProxyPassword")->enabled) {
 	if(stat(cfgfile, &statbuf) == -1) {
 	    mprintf("@Can't stat %s (critical error)\n", cfgfile);
 	    return 56;
@@ -144,7 +144,7 @@ int freshclam(struct optstruct *opt)
     /* freshclam shouldn't work with root privileges */
     if(optc(opt, 'u')) {
 	unpuser = getargc(opt, 'u');
-    } else if((cpt = cfgopt(copt, "DatabaseOwner"))) {
+    } else if((cpt = cfgopt(copt, "DatabaseOwner"))->enabled) {
 	unpuser = cpt->strarg;
     } else {
 	unpuser = UNPUSER;
@@ -156,7 +156,7 @@ int freshclam(struct optstruct *opt)
 	    exit(60); /* this is critical problem, so we just exit here */
 	}
 
-	if(cfgopt(copt, "AllowSupplementaryGroups")) {
+	if(cfgopt(copt, "AllowSupplementaryGroups")->enabled) {
 #ifdef HAVE_INITGROUPS
 	    if(initgroups(unpuser, user->pw_gid)) {
 		mprintf("@initgroups() failed.\n");
@@ -186,7 +186,7 @@ int freshclam(struct optstruct *opt)
 
     /* initialize some important variables */
 
-    if(optl(opt, "debug") || cfgopt(copt, "Debug"))
+    if(optl(opt, "debug") || cfgopt(copt, "Debug")->enabled)
 	cl_debug();
 
     if(optc(opt, 'v'))
@@ -205,7 +205,7 @@ int freshclam(struct optstruct *opt)
 
     /* initialize logger */
 
-    if(cfgopt(copt, "LogVerbose"))
+    if(cfgopt(copt, "LogVerbose")->enabled)
 	logg_verbose = 1;
 
     if(optc(opt, 'l')) {
@@ -214,7 +214,7 @@ int freshclam(struct optstruct *opt)
 	    mprintf("!Problem with internal logger.\n");
 	    exit(62);
 	}
-    } else if((cpt = cfgopt(copt, "UpdateLogFile"))) {
+    } else if((cpt = cfgopt(copt, "UpdateLogFile"))->enabled) {
 	logg_file = cpt->strarg; 
 	if(logg("--------------------------------------\n")) {
 	    mprintf("!Problem with internal logger.\n");
@@ -224,10 +224,10 @@ int freshclam(struct optstruct *opt)
 	logg_file = NULL;
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
-    if(cfgopt(copt, "LogSyslog")) {
+    if(cfgopt(copt, "LogSyslog")->enabled) {
 	    int fac = LOG_LOCAL6;
 
-	if((cpt = cfgopt(copt, "LogFacility"))) {
+	if((cpt = cfgopt(copt, "LogFacility"))->enabled) {
 	    if((fac = logg_facility(cpt->strarg)) == -1) {
 		mprintf("!LogFacility: %s: No such facility.\n", cpt->strarg);
 		exit(62);
@@ -241,14 +241,10 @@ int freshclam(struct optstruct *opt)
 #endif
 
     /* change the current working directory */
-    if(optl(opt, "datadir")) {
+    if(optl(opt, "datadir"))
 	newdir = getargl(opt, "datadir");
-    } else {
-	if((cpt = cfgopt(copt, "DatabaseDirectory")))
-	    newdir = cpt->strarg;
-	else
-	    newdir = VIRUSDBDIR;
-    }
+    else
+	newdir = cfgopt(copt, "DatabaseDirectory")->strarg;
 
     if(chdir(newdir)) {
 	mprintf("Can't change dir to %s\n", newdir);
@@ -264,20 +260,17 @@ int freshclam(struct optstruct *opt)
 	memset(&sigact, 0, sizeof(struct sigaction));
 	sigact.sa_handler = daemon_sighandler;
 
-	if(optc(opt, 'c')) {
+	if(optc(opt, 'c'))
 	    checks = atoi(getargc(opt, 'c'));
-	} else if((cpt = cfgopt(copt, "Checks"))) {
-	    checks = cpt->numarg;
-	} else {
-	    checks = CL_DEFAULT_CHECKS;
-	}
+	else
+	    checks = cfgopt(copt, "Checks")->numarg;
 
 	if(checks <= 0) {
 	    mprintf("@Number of checks must be a positive integer.\n");
 	    exit(41);
 	}
 
-	if(!cfgopt(copt, "DNSDatabaseInfo")) {
+	if(!cfgopt(copt, "DNSDatabaseInfo")->enabled || optl(opt, "no-dns")) {
 	    if(checks > 50) {
 		mprintf("@Number of checks must be between 1 and 50.\n");
 		exit(41);
@@ -286,12 +279,12 @@ int freshclam(struct optstruct *opt)
 
 	bigsleep = 24 * 3600 / checks;
 
-	if(!cfgopt(copt, "Foreground"))
+	if(!cfgopt(copt, "Foreground")->enabled)
 	    daemonize();
 
 	if (optc(opt, 'p')) {
 	    pidfile = getargc(opt, 'p');
-	} else if ((cpt = cfgopt(copt, "PidFile"))) {
+	} else if ((cpt = cfgopt(copt, "PidFile"))->enabled) {
 	    pidfile = cpt->strarg;
 	}
 	if (pidfile) {
@@ -315,7 +308,7 @@ int freshclam(struct optstruct *opt)
 
 	        if(optl(opt, "on-error-execute"))
 		    arg = getargl(opt, "on-error-execute");
-		else if((cpt = cfgopt(copt, "OnErrorExecute")))
+		else if((cpt = cfgopt(copt, "OnErrorExecute"))->enabled)
 		    arg = cpt->strarg;
 
 		if(arg)
@@ -353,7 +346,7 @@ int freshclam(struct optstruct *opt)
 	if(ret > 1)
 	    system(getargl(opt, "on-error-execute"));
 
-    } else if((cpt = cfgopt(copt, "OnErrorExecute"))) {
+    } else if((cpt = cfgopt(copt, "OnErrorExecute"))->enabled) {
 	if(ret > 1)
 	    system(cpt->strarg);
     }
@@ -370,15 +363,10 @@ int download(const struct cfgstruct *copt, const struct optstruct *opt)
 	struct cfgstruct *cpt;
 
 
-    if((cpt = cfgopt(copt, "MaxAttempts")))
-	maxattempts = cpt->numarg;
-    else
-	maxattempts = CL_DEFAULT_MAXATTEMPTS;
-
-
+    maxattempts = cfgopt(copt, "MaxAttempts")->numarg;
     mprintf("*Max retries == %d\n", maxattempts);
 
-    if((cpt = cfgopt(copt, "DatabaseMirror")) == NULL) {
+    if(!(cpt = cfgopt(copt, "DatabaseMirror"))->enabled) {
 	mprintf("@You must specify at least one database mirror.\n");
 	return 56;
     } else {

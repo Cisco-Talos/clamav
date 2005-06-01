@@ -49,7 +49,6 @@
 #include "tcpserver.h"
 #include "localserver.h"
 #include "others.h"
-#include "defaults.h"
 #include "memory.h"
 #include "output.h"
 #include "shared.h"
@@ -101,9 +100,9 @@ void clamd(struct optstruct *opt)
     if(optc(opt, 'c'))
 	cfgfile = getargc(opt, 'c');
     else
-	cfgfile = CL_DEFAULT_CFG;
+	cfgfile = CONFDIR"/clamd.conf";
 
-    if((copt = parsecfg(cfgfile, 1)) == NULL) {
+    if((copt = getcfg(cfgfile, 1)) == NULL) {
 	fprintf(stderr, "ERROR: Can't open/parse the config file %s\n", cfgfile);
 	exit(1);
     }
@@ -112,29 +111,16 @@ void clamd(struct optstruct *opt)
 
     /* initialize logger */
 
-    if(cfgopt(copt, "LogFileUnlock"))
-	logg_lock = 0;
+    logg_lock = cfgopt(copt, "LogFileUnlock")->enabled;
+    logg_time = cfgopt(copt, "LogTime")->enabled;
+    logok = cfgopt(copt, "LogClean")->enabled;
+    logg_size = cfgopt(copt, "LogFileMaxSize")->numarg;
+    logg_verbose = cfgopt(copt, "LogVerbose")->enabled;
 
-    if(cfgopt(copt, "LogTime"))
-	logg_time = 1;
-
-    if(cfgopt(copt, "LogClean"))
-	logok = 1;
-
-    if((cpt = cfgopt(copt, "LogFileMaxSize")))
-	logg_size = cpt->numarg;
-    else
-	logg_size = CL_DEFAULT_LOGSIZE;
-
-    if(cfgopt(copt, "Debug")) /* enable debug messages in libclamav */
+    if(cfgopt(copt, "Debug")->enabled) /* enable debug messages in libclamav */
 	cl_debug();
 
-    if(cfgopt(copt, "LogVerbose"))
-	logg_verbose = 1;
-    else
-	logg_verbose = 0;
-
-    if((cpt = cfgopt(copt, "LogFile"))) {
+    if((cpt = cfgopt(copt, "LogFile"))->enabled) {
 	logg_file = cpt->strarg;
 	if(strlen(logg_file) < 2 || (logg_file[0] != '/' && logg_file[0] != '\\' && logg_file[1] != ':')) {
 	    fprintf(stderr, "ERROR: LogFile requires full path.\n");
@@ -148,16 +134,14 @@ void clamd(struct optstruct *opt)
     } else
 	logg_file = NULL;
 
-
 #if defined(USE_SYSLOG) && !defined(C_AIX)
-    if(cfgopt(copt, "LogSyslog")) {
+    if(cfgopt(copt, "LogSyslog")->enabled) {
 	    int fac = LOG_LOCAL6;
 
-	if((cpt = cfgopt(copt, "LogFacility"))) {
-	    if((fac = logg_facility(cpt->strarg)) == -1) {
-		fprintf(stderr, "ERROR: LogFacility: %s: No such facility.\n", cpt->strarg);
-		exit(1);
-	    }
+	cpt = cfgopt(copt, "LogFacility");
+	if((fac = logg_facility(cpt->strarg)) == -1) {
+	    fprintf(stderr, "ERROR: LogFacility: %s: No such facility.\n", cpt->strarg);
+	    exit(1);
 	}
 
 	openlog("clamd", LOG_PID, fac);
@@ -183,13 +167,13 @@ void clamd(struct optstruct *opt)
 
     /* check socket type */
 
-    if(cfgopt(copt, "TCPSocket") && cfgopt(copt, "LocalSocket")) {
-	fprintf(stderr, "ERROR: You can select one mode only (local/TCP).\n");
-	logg("!Two modes (local & TCP) selected.\n");
+    if(cfgopt(copt, "TCPSocket")->enabled && cfgopt(copt, "LocalSocket")->enabled) {
+	fprintf(stderr, "ERROR: You can only select one mode (local or TCP).\n");
+	logg("!Two modes (local and TCP) selected.\n");
 	exit(1);
-    } else if(cfgopt(copt, "TCPSocket")) {
+    } else if(cfgopt(copt, "TCPSocket")->enabled) {
 	tcpsock = 1;
-    } else if(cfgopt(copt, "LocalSocket")) {
+    } else if(cfgopt(copt, "LocalSocket")->enabled) {
 	tcpsock = 0;
     } else {
 	fprintf(stderr, "ERROR: You must select server type (local/tcp).\n");
@@ -199,14 +183,14 @@ void clamd(struct optstruct *opt)
 
     /* drop privileges */
 #ifndef C_OS2
-    if(geteuid() == 0 && (cpt = cfgopt(copt, "User"))) {
+    if(geteuid() == 0 && (cpt = cfgopt(copt, "User"))->enabled) {
 	if((user = getpwnam(cpt->strarg)) == NULL) {
 	    fprintf(stderr, "ERROR: Can't get information about user %s.\n", cpt->strarg);
 	    logg("!Can't get information about user %s.\n", cpt->strarg);
 	    exit(1);
 	}
 
-	if(cfgopt(copt, "AllowSupplementaryGroups")) {
+	if(cfgopt(copt, "AllowSupplementaryGroups")->enabled) {
 #ifdef HAVE_INITGROUPS
 	    if(initgroups(cpt->strarg, user->pw_gid)) {
 		fprintf(stderr, "ERROR: initgroups() failed.\n");
@@ -243,18 +227,14 @@ void clamd(struct optstruct *opt)
 #endif
 
     /* set the temporary dir */
-    if((cpt = cfgopt(copt, "TemporaryDirectory")))
+    if((cpt = cfgopt(copt, "TemporaryDirectory"))->enabled)
 	cl_settempdir(cpt->strarg, 0);
 
-    if(cfgopt(copt, "LeaveTemporaryFiles"))
+    if(cfgopt(copt, "LeaveTemporaryFiles")->enabled)
 	cl_settempdir(NULL, 1);
 
     /* load the database(s) */
-    if((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory")))
-	dbdir = cpt->strarg;
-    else
-	dbdir = cl_retdbdir();
-
+    dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
     logg("Reading databases from %s\n", dbdir);
 
     if((ret = cl_loaddbdir(dbdir, &root, &virnum))) {
@@ -277,7 +257,7 @@ void clamd(struct optstruct *opt)
     }
 
     /* fork into background */
-    if(!cfgopt(copt, "Foreground"))
+    if(!cfgopt(copt, "Foreground")->enabled)
 	daemonize();
 
     if(tcpsock)
