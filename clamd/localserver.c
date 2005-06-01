@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,7 +31,6 @@
 
 #include "options.h"
 #include "cfgparser.h"
-#include "defaults.h"
 #include "others.h"
 #include "server.h"
 #include "output.h"
@@ -64,7 +63,7 @@ int localserver(const struct optstruct *opt, const struct cfgstruct *copt, struc
 		logg("!Socket file %s is in use by another process.\n", server.sun_path);
 		exit(1);
 	    }
-	    if(cfgopt(copt, "FixStaleSocket")) {
+	    if(cfgopt(copt, "FixStaleSocket")->enabled) {
 		logg("^Socket file %s exists. Unclean shutdown? Removing...\n", server.sun_path);
 		if(unlink(server.sun_path) == -1) {
 		    estr = strerror(errno);
@@ -89,11 +88,7 @@ int localserver(const struct optstruct *opt, const struct cfgstruct *copt, struc
 
     logg("Unix socket file %s\n", server.sun_path);
 
-    if((cpt = cfgopt(copt, "MaxConnectionQueueLength")))
-	backlog = cpt->numarg;
-    else
-	backlog = CL_DEFAULT_BACKLOG;
-
+    backlog = cfgopt(copt, "MaxConnectionQueueLength")->numarg;
     logg("Setting connection queue length to %d\n", backlog);
 
     if(listen(sockfd, backlog) == -1) {

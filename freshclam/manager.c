@@ -76,10 +76,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 #endif
 
 #ifdef HAVE_RESOLV_H
-    if((cpt = cfgopt(copt, "DNSDatabaseInfo")))
-	dnsdbinfo = cpt->strarg;
-    else
-	dnsdbinfo = "current.cvd.clamav.net";
+    dnsdbinfo = cfgopt(copt, "DNSDatabaseInfo")->strarg;
 
     if(optl(opt, "no-dns")) {
 	dnsreply = NULL;
@@ -150,7 +147,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 
     if(optl(opt, "localip")) {
         localip = getargl(opt, "localip");
-    } else if((cpt = cfgopt(copt, "LocalIPAddress"))) {
+    } else if((cpt = cfgopt(copt, "LocalIPAddress"))->enabled) {
 	localip = cpt->strarg;
     }
 
@@ -179,7 +176,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	free(dnsreply);
 
     if(updated) {
-	if(cfgopt(copt, "HTTPProxyServer")) {
+	if(cfgopt(copt, "HTTPProxyServer")->enabled) {
 	    mprintf("Database updated (%d signatures) from %s\n", signo, hostname);
 	    logg("Database updated (%d signatures) from %s\n", signo, hostname);
 	} else {
@@ -194,18 +191,14 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 		clamav_conf = CONFDIR"/clamd.conf";
 
 	    notify(clamav_conf);
-	} else if((cpt = cfgopt(copt, "NotifyClamd"))) {
-		const char *clamav_conf = cpt->strarg;
-	    if(!clamav_conf)
-		clamav_conf = CONFDIR"/clamd.conf";
-
-	    notify(clamav_conf);
+	} else if((cpt = cfgopt(copt, "NotifyClamd"))->enabled) {
+	    notify(cpt->strarg);
 	}
 #endif
 
 	if(optl(opt, "on-update-execute"))
 	    arg = getargl(opt, "on-update-execute");
-	else if((cpt = cfgopt(copt, "OnUpdateExecute")))
+	else if((cpt = cfgopt(copt, "OnUpdateExecute"))->enabled)
 	    arg = cpt->strarg;
 
 	if(arg) {
@@ -263,14 +256,14 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     }
 
     /* Initialize proxy settings */
-    if((cpt = cfgopt(copt, "HTTPProxyServer"))) {
+    if((cpt = cfgopt(copt, "HTTPProxyServer"))->enabled) {
 	proxy = cpt->strarg;
 	if(strncasecmp(proxy, "http://", 7) == 0)
 	    proxy += 7;
 
-	if((cpt = cfgopt(copt, "HTTPProxyUsername"))) {
+	if((cpt = cfgopt(copt, "HTTPProxyUsername"))->enabled) {
 	    user = cpt->strarg;
-	    if((cpt = cfgopt(copt, "HTTPProxyPassword"))) {
+	    if((cpt = cfgopt(copt, "HTTPProxyPassword"))->enabled) {
 		pass = cpt->strarg;
 	    } else {
 		mprintf("HTTPProxyUsername requires HTTPProxyPassword\n");
@@ -280,7 +273,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	    }
 	}
 
-	if((cpt = cfgopt(copt, "HTTPProxyPort")))
+	if((cpt = cfgopt(copt, "HTTPProxyPort"))->enabled)
 	    port = cpt->numarg;
 
 	mprintf("Connecting via %s\n", proxy);
@@ -295,7 +288,6 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	    hostfd = wwwconnect(hostname, proxy, port, ipaddr, localip);
 
 	if(hostfd < 0) {
-            mprintf("@No servers could be reached. Giving up\n");
 	    if(current)
 		cl_cvdfree(current);
 	    return 52;

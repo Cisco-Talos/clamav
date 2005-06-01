@@ -77,7 +77,7 @@ void virusaction(const char *filename, const char *virname, const struct cfgstru
 	pid_t pid;
 	struct cfgstruct *cpt;
 
-    if(!(cpt = cfgopt(copt, "VirusEvent")))
+    if(!(cpt = cfgopt(copt, "VirusEvent"))->enabled)
 	return;
 
     /* NB: we need to fork here since this function modifies the environment. 

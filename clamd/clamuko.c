@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -35,7 +35,6 @@
 #include "cfgparser.h"
 #include "dazukoio.h"
 #include "clamuko.h"
-#include "defaults.h"
 #include "output.h"
 
 struct dazuko_access *acc;
@@ -92,15 +91,15 @@ void *clamukoth(void *arg)
 	logg("Clamuko: Correctly registered with Dazuko.\n");
 
     /* access mask */
-    if(cfgopt(tharg->copt, "ClamukoScanOnOpen")) {
+    if(cfgopt(tharg->copt, "ClamukoScanOnOpen")->enabled) {
 	logg("Clamuko: Scan-on-open mode activated.\n");
 	mask |= DAZUKO_ON_OPEN;
     }
-    if(cfgopt(tharg->copt, "ClamukoScanOnClose")) {
+    if(cfgopt(tharg->copt, "ClamukoScanOnClose")->enabled) {
 	logg("Clamuko: Scan-on-close mode activated.\n");
 	mask |= DAZUKO_ON_CLOSE;
     }
-    if(cfgopt(tharg->copt, "ClamukoScanOnExec")) {
+    if(cfgopt(tharg->copt, "ClamukoScanOnExec")->enabled) {
 	logg("Clamuko: Scan-on-exec mode activated.\n");
 	mask |= DAZUKO_ON_EXEC;
     }
@@ -117,7 +116,7 @@ void *clamukoth(void *arg)
 	return NULL;
     }
 
-    if((pt = cfgopt(tharg->copt, "ClamukoIncludePath"))) {
+    if((pt = cfgopt(tharg->copt, "ClamukoIncludePath"))->enabled) {
 	while(pt) {
 	    if((dazukoAddIncludePath(pt->strarg))) {
 		logg("!Clamuko: Dazuko -> Can't include path %s\n", pt->strarg);
@@ -134,7 +133,7 @@ void *clamukoth(void *arg)
 	return NULL;
     }
 
-    if((pt = cfgopt(tharg->copt, "ClamukoExcludePath"))) {
+    if((pt = cfgopt(tharg->copt, "ClamukoExcludePath"))->enabled) {
 	while(pt) {
 	    if((dazukoAddExcludePath(pt->strarg))) {
 		logg("!Clamuko: Dazuko -> Can't exclude path %s\n", pt->strarg);
@@ -147,11 +146,7 @@ void *clamukoth(void *arg)
 	}
     }
 
-    if((pt = cfgopt(tharg->copt, "ClamukoMaxFileSize"))) {
-	sizelimit = pt->numarg;
-    } else
-	sizelimit = CL_DEFAULT_CLAMUKOMAXFILESIZE;
-
+    sizelimit = cfgopt(tharg->copt, "ClamukoMaxFileSize")->numarg;
     if(sizelimit)
 	logg("Clamuko: Max file size limited to %d bytes.\n", sizelimit);
     else

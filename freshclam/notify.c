@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002, 2003 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -47,15 +47,15 @@ int notify(const char *cfgfile)
 	char *socktype;
 
 
-    if((copt = parsecfg(cfgfile, 1)) == NULL) {
+    if((copt = getcfg(cfgfile, 1)) == NULL) {
 	mprintf("@Clamd was NOT notified: Can't find or parse configuration file %s\n", cfgfile);
 	return 1;
     }
 
-    if(cfgopt(copt, "TCPSocket") && cfgopt(copt, "LocalSocket")) {
+    if(cfgopt(copt, "TCPSocket")->enabled && cfgopt(copt, "LocalSocket")->enabled) {
 	mprintf("@Clamd was NOT notified: Both socket types (TCP and local) declared in %s\n", cfgfile);
 	return 1;
-    } else if((cpt = cfgopt(copt, "LocalSocket"))) {
+    } else if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
 	socktype = "UNIX";
 	server.sun_family = AF_UNIX;
 	strncpy(server.sun_path, cpt->strarg, sizeof(server.sun_path));
@@ -73,7 +73,7 @@ int notify(const char *cfgfile)
 	    return 1;
 	}
 
-    } else if((cpt = cfgopt(copt, "TCPSocket"))) {
+    } else if((cpt = cfgopt(copt, "TCPSocket"))->enabled) {
 
 	socktype = "TCP";
 #ifdef PF_INET
@@ -89,7 +89,7 @@ int notify(const char *cfgfile)
 	server2.sin_family = AF_INET;
 	server2.sin_port = htons(cpt->numarg);
 
-	if ((cpt = cfgopt(copt, "TCPAddr"))) {
+	if((cpt = cfgopt(copt, "TCPAddr"))->enabled) {
 	    if ((he = gethostbyname(cpt->strarg)) == 0) {
 		perror("gethostbyname()");
 		mprintf("@Clamd was NOT notified: Can't resolve hostname '%s'\n", cpt->strarg);

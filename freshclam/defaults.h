@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -36,6 +36,4 @@
 #define UNPGROUP "clamav"
 #endif
 
-#define CL_DEFAULT_CHECKS 12
-#define CL_DEFAULT_MAXATTEMPTS 3
 #define CL_MAX_CHILDREN 5

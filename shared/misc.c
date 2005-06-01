@@ -44,8 +44,8 @@ char *freshdbdir(void)
 
     /* try to find fresh directory */
     dbdir = cl_retdbdir();
-    if((copt = parsecfg(CONFDIR"/clamd.conf", 0))) {
-	if((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory"))) {
+    if((copt = getcfg(CONFDIR"/clamd.conf", 0))) {
+	if((cpt = cfgopt(copt, "DatabaseDirectory"))->enabled || (cpt = cfgopt(copt, "DataDirectory"))->enabled) {
 	    if(strcmp(dbdir, cpt->strarg)) {
 		    char *daily = (char *) mmalloc(strlen(cpt->strarg) + strlen(dbdir) + 15);
 		sprintf(daily, "%s/daily.cvd", cpt->strarg);

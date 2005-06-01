@@ -318,7 +318,7 @@ int dconnect(const struct optstruct *opt)
     if(!clamav_conf)
 	clamav_conf = DEFAULT_CFG;
 
-    if((copt = parsecfg(clamav_conf, 1)) == NULL) {
+    if((copt = getcfg(clamav_conf, 1)) == NULL) {
 	mprintf("@Can't parse the configuration file.\n");
 	return -1;
     }
@@ -329,10 +329,10 @@ int dconnect(const struct optstruct *opt)
     /* Set default address to connect to */
     server2.sin_addr.s_addr = inet_addr("127.0.0.1");    
 
-    if(cfgopt(copt, "TCPSocket") && cfgopt(copt, "LocalSocket")) {
+    if(cfgopt(copt, "TCPSocket")->enabled && cfgopt(copt, "LocalSocket")->enabled) {
 	mprintf("@Clamd is not configured properly.\n");
 	return -1;
-    } else if((cpt = cfgopt(copt, "LocalSocket"))) {
+    } else if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
 
 	server.sun_family = AF_UNIX;
 	strncpy(server.sun_path, cpt->strarg, sizeof(server.sun_path));
@@ -350,7 +350,7 @@ int dconnect(const struct optstruct *opt)
 	    return -1;
 	}
 
-    } else if((cpt = cfgopt(copt, "TCPSocket"))) {
+    } else if((cpt = cfgopt(copt, "TCPSocket"))->enabled) {
 
 	if((sockd = socket(SOCKET_INET, SOCK_STREAM, 0)) < 0) {
 	    perror("socket()");
@@ -361,7 +361,7 @@ int dconnect(const struct optstruct *opt)
 	server2.sin_family = AF_INET;
 	server2.sin_port = htons(cpt->numarg);
 
-	if((cpt = cfgopt(copt, "TCPAddr"))) {
+	if((cpt = cfgopt(copt, "TCPAddr"))->enabled) {
 	    if ((he = gethostbyname(cpt->strarg)) == 0) {
 		close(sockd);
 		perror("gethostbyname()");

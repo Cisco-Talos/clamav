@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,10 +30,8 @@
 #include <errno.h>
 #include <netdb.h>
 
-
 #include "options.h"
 #include "cfgparser.h"
-#include "defaults.h"
 #include "others.h"
 #include "server.h"
 #include "output.h"
@@ -52,8 +50,7 @@ int tcpserver(const struct optstruct *opt, const struct cfgstruct *copt, struct 
     server.sin_family = AF_INET;
     server.sin_port = htons(cfgopt(copt, "TCPSocket")->numarg);
 
-
-    if((taddr = cfgopt(copt, "TCPAddr"))) {
+    if((taddr = cfgopt(copt, "TCPAddr"))->enabled) {
 	if ((he = gethostbyname(taddr->strarg)) == 0) {
 	    logg("!gethostbyname(%s) error: %s\n", taddr->strarg, strerror(errno));
 	    exit(1);
@@ -65,9 +62,6 @@ int tcpserver(const struct optstruct *opt, const struct cfgstruct *copt, struct 
 
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
 	estr = strerror(errno);
-	/*
-	fprintf(stderr, "ERROR: socket() error: %s\n", estr);
-	*/
 	logg("!socket() error: %s\n", estr);
 	exit(1);
     }
@@ -78,38 +72,25 @@ int tcpserver(const struct optstruct *opt, const struct cfgstruct *copt, struct 
 
     if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1) {
 	estr = strerror(errno);
-	/* 
-	fprintf(stderr, "ERROR: can't bind(): %s\n", estr);
-	*/
 	logg("!bind() error: %s\n", estr);
 	exit(1);
     } else {
-	if ( taddr != NULL && *taddr->strarg )
+	if(taddr->enabled)
 	    logg("Bound to address %s on port %d\n", taddr->strarg, cfgopt(copt, "TCPSocket")->numarg);
 	else
 	    logg("Bound to port %d\n", cfgopt(copt, "TCPSocket")->numarg);
     }
 
-    if((cpt = cfgopt(copt, "MaxConnectionQueueLength")))
-	backlog = cpt->numarg;
-    else
-	backlog = CL_DEFAULT_BACKLOG;
-
+    backlog = cfgopt(copt, "MaxConnectionQueueLength")->numarg;
     logg("Setting connection queue length to %d\n", backlog);
 
     if(listen(sockfd, backlog) == -1) {
 	estr = strerror(errno);
-	/*
-	fprintf(stderr, "ERROR: listen() error: %s\n", estr);
-	*/
 	logg("!listen() error: %s\n", estr);
 	exit(1);
     }
 
-    /* if(cfgopt(copt, "UseProcesses"))
-	acceptloop_proc(sockfd, root, copt);
-    else */
-	acceptloop_th(sockfd, root, copt);
+    acceptloop_th(sockfd, root, copt);
 
     return 0;
 }
