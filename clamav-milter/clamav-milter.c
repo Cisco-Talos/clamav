@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.208 2005/05/28 11:37:27 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.209 2005/06/01 16:18:03 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.85e"
+#define	CM_VERSION	"0.85f"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -351,7 +351,7 @@ static	int	cl_error = SMFIS_TEMPFAIL; /*
 				 * an error. Patch from
 				 * Joe Talbott <josepht@cstone.net>
 				 */
-static	int	readTimeout = CL_DEFAULT_SCANTIMEOUT; /*
+static	int	readTimeout = 0; /*
 				 * number of seconds to wait for clamd to
 				 * respond, see ReadTimeout in clamd.conf
 				 */
@@ -510,7 +510,7 @@ main(int argc, char **argv)
 {
 	extern char *optarg;
 	int i, Bflag = 0;
-	const char *cfgfile = CL_DEFAULT_CFG;
+	char *cfgfile = NULL;
 	const struct cfgstruct *cpt;
 	char version[VERSION_LENGTH + 1];
 	pthread_t tid;
@@ -853,7 +853,11 @@ main(int argc, char **argv)
 	/*
 	 * Sanity checks on the clamav configuration file
 	 */
-	if((copt = parsecfg(cfgfile, 1)) == NULL) {
+	if(cfgfile == NULL) {
+		cfgfile = cli_malloc(strlen(CONFDIR) + 12);
+		sprintf(cfgfile, "%s/clamd.conf", CONFDIR);
+	}
+	if((copt = getcfg(cfgfile, 1)) == NULL) {
 		fprintf(stderr, _("%s: Can't parse the config file %s\n"),
 			argv[0], cfgfile);
 		return EX_CONFIG;
@@ -918,7 +922,7 @@ main(int argc, char **argv)
 #endif
 		}
 
-		if((cpt = cfgopt(copt, "User")) != NULL) {
+		if(((cpt = cfgopt(copt, "User")) != NULL) && cpt->enabled) {
 			const struct passwd *user;
 
 			if((user = getpwnam(cpt->strarg)) == NULL) {
@@ -1022,10 +1026,10 @@ main(int argc, char **argv)
 	 * If the --max-children flag isn't set, see if MaxThreads
 	 * is set in the config file
 	 */
-	if((max_children == 0) && ((cpt = cfgopt(copt, "MaxThreads")) != NULL))
+	if((max_children == 0) && ((cpt = cfgopt(copt, "MaxThreads")) != NULL) && cpt->enabled)
 		max_children = cpt->numarg;
 
-	if((cpt = cfgopt(copt, "ReadTimeout")) != NULL) {
+	if(((cpt = cfgopt(copt, "ReadTimeout")) != NULL) && cpt->enabled) {
 		readTimeout = cpt->numarg;
 
 		if(readTimeout < 0) {
@@ -1033,9 +1037,10 @@ main(int argc, char **argv)
 				argv[0], cfgfile);
 			return EX_CONFIG;
 		}
-	}
+	} else
+		readTimeout = 0;
 
-	if((cpt = cfgopt(copt, "StreamMaxLength")) != NULL) {
+	if(((cpt = cfgopt(copt, "StreamMaxLength")) != NULL) && cpt->enabled) {
 		if(cpt->numarg < 0) {
 			fprintf(stderr, _("%s: StreamMaxLength must not be negative in %s\n"),
 				argv[0], cfgfile);
@@ -1044,10 +1049,10 @@ main(int argc, char **argv)
 		streamMaxLength = (long)cpt->numarg;
 	}
 
-	if(cfgopt(copt, "LogSyslog")) {
+	if(cfgopt(copt, "LogSyslog")->enabled) {
 		int fac = LOG_LOCAL6;
 
-		if(cfgopt(copt, "LogVerbose")) {
+		if(cfgopt(copt, "LogVerbose")->enabled) {
 			logVerbose = 1;
 #if	((SENDMAIL_VERSION_A > 8) || ((SENDMAIL_VERSION_A == 8) && (SENDMAIL_VERSION_B >= 13)))
 			smfi_setdbg(6);
@@ -1055,7 +1060,7 @@ main(int argc, char **argv)
 		}
 		use_syslog = 1;
 
-		if((cpt = cfgopt(copt, "LogFacility")) != NULL)
+		if(((cpt = cfgopt(copt, "LogFacility")) != NULL) && cpt->enabled)
 			if((fac = logg_facility(cpt->strarg)) == -1) {
 				fprintf(stderr, "%s: LogFacility: %s: No such facility\n",
 					argv[0], cpt->strarg);
@@ -1084,13 +1089,13 @@ main(int argc, char **argv)
 		if(loadDatabase() != 0)
 			return EX_CONFIG;
 		numServers = 1;
-	} else if((cpt = cfgopt(copt, "LocalSocket")) != NULL) {
+	} else if(((cpt = cfgopt(copt, "LocalSocket")) != NULL) && cpt->enabled) {
 #ifdef	SESSION
 		struct sockaddr_un server;
 #endif
 		char *sockname = NULL;
 
-		if(cfgopt(copt, "TCPSocket") != NULL) {
+		if(cfgopt(copt, "TCPSocket")->enabled) {
 			fprintf(stderr, _("%s: You can select one server type only (local/TCP) in %s\n"),
 				argv[0], cfgfile);
 			return EX_CONFIG;
@@ -1159,7 +1164,7 @@ main(int argc, char **argv)
 		 * connecting to the localserver via a UNIX domain socket
 		 */
 		numServers = 1;
-	} else if((cpt = cfgopt(copt, "TCPSocket")) != NULL) {
+	} else if(((cpt = cfgopt(copt, "TCPSocket")) != NULL) && cpt->enabled) {
 		int activeServers;
 
 		/*
@@ -1238,7 +1243,7 @@ main(int argc, char **argv)
 				cli_warnmsg(_("Can't talk to clamd server %s on port %d\n"),
 					hostname, tcpSocket);
 				if(serverIPs[i] == (int)inet_addr("127.0.0.1")) {
-					if(cfgopt(copt, "TCPAddr") != NULL)
+					if(cfgopt(copt, "TCPAddr")->enabled)
 						cli_warnmsg(_("Check the value for TCPAddr in %s\n"), cfgfile);
 				} else
 					cli_warnmsg(_("Check the value for TCPAddr in clamd.conf on %s\n"), hostname);
@@ -1310,9 +1315,9 @@ main(int argc, char **argv)
 
 	if(((quarantine_dir == NULL) && localSocket) || !external) {
 		/* set the temporary dir */
-		if((cpt = cfgopt(copt, "TemporaryDirectory"))) {
+		if((cpt = cfgopt(copt, "TemporaryDirectory")) && cpt->enabled) {
 			tmpdir = cpt->strarg;
-			cl_settempdir(tmpdir, (short)(cfgopt(copt, "LeaveTemporaryFiles") != NULL));
+			cl_settempdir(tmpdir, (short)(cfgopt(copt, "LeaveTemporaryFiles")->enabled));
 		} else if((tmpdir = getenv("TMPDIR")) == (char *)NULL)
 			if((tmpdir = getenv("TMP")) == (char *)NULL)
 				if((tmpdir = getenv("TEMP")) == (char *)NULL)
@@ -1336,7 +1341,7 @@ main(int argc, char **argv)
 	} else
 		tmpdir = NULL;
 
-	if(!cfgopt(copt, "Foreground")) {
+	if(!cfgopt(copt, "Foreground")->enabled) {
 #ifdef	CL_DEBUG
 		printf(_("When debugging it is recommended that you use Foreground mode in %s\n"), cfgfile);
 		puts(_("\tso that you can see all of the messages"));
@@ -1357,7 +1362,7 @@ main(int argc, char **argv)
 #ifndef	CL_DEBUG
 		close(1);
 
-		if((cpt = cfgopt(copt, "LogFile"))) {
+		if((cpt = cfgopt(copt, "LogFile")) && cpt->enabled) {
 			logFile = cpt->strarg;
 
 #if	defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32)
@@ -1397,17 +1402,14 @@ main(int argc, char **argv)
 
 #endif	/*!CL_DEBUG*/
 
-		if(cfgopt(copt, "LogTime"))
+		if(cfgopt(copt, "LogTime")->enabled)
 			logg_time = 1;
-		if(cfgopt(copt, "LogFileUnlock"))
+		if(cfgopt(copt, "LogFileUnlock")->enabled)
 			logg_lock = 0;
-		if(cfgopt(copt, "LogClean"))
+		if(cfgopt(copt, "LogClean")->enabled)
 			logok = 1;
-		if((cpt = cfgopt(copt, "LogFileMaxSize")))
+		if((cpt = cfgopt(copt, "LogFileMaxSize")) != NULL)
 			logg_size = cpt->numarg;
-		else
-			logg_size = CL_DEFAULT_LOGSIZE;
-
 
 #ifdef HAVE_SETPGRP
 #ifdef SETPGRP_VOID
@@ -1427,55 +1429,53 @@ main(int argc, char **argv)
 	if(!external) {
 		/* TODO: read the limits from clamd.conf */
 
-		if(cfgopt(copt, "DisableDefaultScanOptions")) {
-			options &= ~CL_SCAN_STDOPT;
-			if(!cfgopt(copt, "ScanMail"))
-				printf(_("%s: ScanMail not defined in %s (needed without --external), enabling\n"),
-					argv[0], cfgfile);
-		}
+		if(!cfgopt(copt, "ScanMail")->enabled)
+			printf(_("%s: ScanMail not defined in %s (needed without --external), enabling\n"),
+				argv[0], cfgfile);
+
 		options |= CL_SCAN_MAIL;	/* no choice */
-		if(!cfgopt(copt, "ScanRAR"))
-			options |= CL_SCAN_DISABLERAR;
-		if(cfgopt(copt, "ArchiveBlockEncrypted"))
+		/*if(!cfgopt(copt, "ScanRAR")->enabled)
+			options |= CL_SCAN_DISABLERAR;*/
+		if(cfgopt(copt, "ArchiveBlockEncrypted")->enabled)
 			options |= CL_SCAN_BLOCKENCRYPTED;
-		if(cfgopt(copt, "ArchiveBlockMax"))
+		if(cfgopt(copt, "ArchiveBlockMax")->enabled)
 			options |= CL_SCAN_BLOCKMAX;
-		if(cfgopt(copt, "ScanPE"))
+		if(cfgopt(copt, "ScanPE")->enabled)
 			options |= CL_SCAN_PE;
-		if(cfgopt(copt, "DetectBrokenExecutables"))
+		if(cfgopt(copt, "DetectBrokenExecutables")->enabled)
 			options |= CL_SCAN_BLOCKBROKEN;
-		if(cfgopt(copt, "MailFollowURLs"))
+		if(cfgopt(copt, "MailFollowURLs")->enabled)
 			options |= CL_SCAN_MAILURL;
-		if(cfgopt(copt, "ScanOLE2"))
+		if(cfgopt(copt, "ScanOLE2")->enabled)
 			options |= CL_SCAN_OLE2;
-		if(cfgopt(copt, "ScanHTML"))
+		if(cfgopt(copt, "ScanHTML")->enabled)
 			options |= CL_SCAN_HTML;
 
 		memset(&limits, '\0', sizeof(struct cl_limits));
 
-		if(cfgopt(copt, "ScanArchive")) {
+		if(cfgopt(copt, "ScanArchive")->enabled) {
 			options |= CL_SCAN_ARCHIVE;
-			if((cpt = cfgopt(copt, "ArchiveMaxFileSize")) != NULL)
+			if(((cpt = cfgopt(copt, "ArchiveMaxFileSize")) != NULL) && cpt->enabled)
 				limits.maxfilesize = cpt->numarg;
 			else
 				limits.maxfilesize = 10485760;
 
-			if((cpt = cfgopt(copt, "ArchiveMaxRecursion")) != NULL)
+			if(((cpt = cfgopt(copt, "ArchiveMaxRecursion")) != NULL) && cpt->enabled)
 				limits.maxreclevel = cpt->numarg;
 			else
 				limits.maxreclevel = 8;
 
-			if((cpt = cfgopt(copt, "ArchiveMaxFiles")) != NULL)
+			if(((cpt = cfgopt(copt, "ArchiveMaxFiles")) != NULL) && cpt->enabled)
 				limits.maxfiles = cpt->numarg;
 			else
 				limits.maxfiles = 1000;
 
-			if((cpt = cfgopt(copt, "ArchiveMaxCompressionRatio")) != NULL)
+			if(((cpt = cfgopt(copt, "ArchiveMaxCompressionRatio")) != NULL) && cpt->enabled)
 				limits.maxratio = cpt->numarg;
 			else
 				limits.maxratio = 250;
 
-			if(cfgopt(copt, "ArchiveLimitMemoryUsage") != NULL)
+			if(cfgopt(copt, "ArchiveLimitMemoryUsage")->enabled)
 				limits.archivememlim = 1;
 			else
 				limits.archivememlim = 0;
@@ -1488,7 +1488,7 @@ main(int argc, char **argv)
 #endif
 		pthread_create(&tid, NULL, watchdog, NULL);
 
-	if((cpt = cfgopt(copt, "PidFile")) != NULL)
+	if(((cpt = cfgopt(copt, "PidFile")) != NULL) && cpt->enabled)
 		pidFile = cpt->strarg;
 
 	broadcast(_("Starting clamav-milter"));
@@ -1539,7 +1539,7 @@ main(int argc, char **argv)
 		chdir("/tmp");
 #endif
 
-	if(cfgopt(copt, "FixStaleSocket")) {
+	if(cfgopt(copt, "FixStaleSocket")->enabled) {
 		/*
 		 * Get the incoming socket details - the way sendmail talks to
 		 * us
@@ -4778,7 +4778,7 @@ loadDatabase(void)
 		 * First time through, find out in which directory the signature
 		 * databases are
 		 */
-		if((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory")))
+		if(((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory"))) && cpt->enabled)
 			dbdir = cpt->strarg;
 		else
 			dbdir = cl_retdbdir();
@@ -5037,7 +5037,7 @@ logger(const char *mess)
 #else
 	FILE *fout;
 	
-	if(cfgopt(copt, "Foreground"))
+	if(cfgopt(copt, "Foreground")->enabled)
 		fout = stderr;
 	else
 		fout = fopen(logFile, "a");

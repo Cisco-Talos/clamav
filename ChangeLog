@@ -1,3 +1,7 @@
+Wed Jun  1 17:20:07 BST 2005 (njh)
+----------------------------------
+  * clamav-milter:	Support the new config parser
+
 Wed Jun  1 02:39:14 CEST 2005 (tk)
 ----------------------------------
   * misc/cfgparser.c: reimplementation of config parser:
