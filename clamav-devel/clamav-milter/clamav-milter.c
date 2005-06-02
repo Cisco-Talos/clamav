@@ -22,7 +22,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.209 2005/06/01 16:18:03 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.210 2005/06/02 07:42:46 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.85f"
 
@@ -930,7 +930,7 @@ main(int argc, char **argv)
 				return EX_CONFIG;
 			}
 
-			if(cfgopt(copt, "AllowSupplementaryGroups")) {
+			if(cfgopt(copt, "AllowSupplementaryGroups")->enabled) {
 #ifdef HAVE_INITGROUPS
 				if(initgroups(cpt->strarg, user->pw_gid) < 0) {
 					perror(cpt->strarg);
