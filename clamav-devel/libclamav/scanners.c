@@ -96,7 +96,6 @@ extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME *
 #define SCAN_OLE2	    (options & CL_SCAN_OLE2)
 #define SCAN_HTML	    (options & CL_SCAN_HTML)
 #define SCAN_PE		    (options & CL_SCAN_PE)
-#define DISABLE_RAR	    (options & CL_SCAN_DISABLERAR)
 #define DETECT_ENCRYPTED    (options & CL_SCAN_BLOCKENCRYPTED)
 #define BLOCKMAX	    (options & CL_SCAN_BLOCKMAX)
 
@@ -1431,7 +1430,7 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 
     switch(type) {
 	case CL_TYPE_RAR:
-	    if(!DISABLE_RAR && SCAN_ARCHIVE)
+	    if(SCAN_ARCHIVE)
 		ret = cli_scanrar(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
