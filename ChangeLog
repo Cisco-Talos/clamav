@@ -1,3 +1,8 @@
+Thu Jun  2 20:04:04 CEST 2005 (tk)
+----------------------------------
+  * libclamav: remove support for CL_SCAN_DISABLERAR (RAR unpacker is now
+	       enabled with CL_SCAN_ARCHIVE)
+
 Thu Jun  2 08:56:39 BST 2005 (njh)
 ----------------------------------
   * libclamav/pdf.c:	Handle ascii85encoded streams that are full of z's.
@@ -19,7 +24,11 @@ Wed Jun  1 02:39:14 CEST 2005 (tk)
 			- default values are directly associated with options
   * clamd/defaults.h: remove
   * clamd, clamdscan, freshclam: use new parser scheme
-  * etc/clamd.conf: remove DisableDefaultScanOptions
+  * etc/clamd.conf: - remove DisableDefaultScanOptions (scan options can be
+		      now configured individually)
+		    - remove ScanRAR (RAR unpacker is now enabled with
+		      ScanArchive)
+
 
 Tue May 31 19:15:01 BST 2005 (njh)
 ----------------------------------
