@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.23 2005/06/01 12:58:44 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.24 2005/06/02 07:55:07 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -255,7 +255,7 @@ cli_pdf(const char *dir, int desc)
 #endif
 
 		if(is_ascii85decode) {
-			unsigned char *tmpbuf = cli_malloc(streamlen * 2);
+			unsigned char *tmpbuf = cli_malloc(streamlen * 5);
 			int ret;
 
 			if(tmpbuf == NULL) {
