@@ -1,3 +1,9 @@
+Thu Jun  2 08:56:39 BST 2005 (njh)
+----------------------------------
+  * libclamav/pdf.c:	Handle ascii85encoded streams that are full of z's.
+  				Reported by "Kevin Heneveld" <kevin at
+				northstar.k12.ak.us>
+
 Wed Jun  1 17:20:07 BST 2005 (njh)
 ----------------------------------
   * clamav-milter:	Support the new config parser
