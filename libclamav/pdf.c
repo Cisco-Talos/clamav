@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.24 2005/06/02 07:55:07 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.25 2005/06/04 20:38:43 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -120,7 +120,7 @@ cli_pdf(const char *dir, int desc)
 		return CL_EFORMAT;
 	}
 
-	for(trailerstart = q; trailerstart > p; --trailerstart)
+	for(trailerstart = &q[-7]; trailerstart > p; --trailerstart)
 		if(memcmp(trailerstart, "trailer", 7) == 0)
 			break;
 
