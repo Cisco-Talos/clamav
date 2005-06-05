@@ -1,3 +1,8 @@
+Sun Jun  5 06:58:45 BST 2005 (njh)
+----------------------------------
+  * clamav-milter:	Better error message if the white-list file can't be
+				opened
+
 Thu Jun  2 20:04:04 CEST 2005 (tk)
 ----------------------------------
   * libclamav: remove support for CL_SCAN_DISABLERAR (RAR unpacker is now
@@ -6,7 +11,7 @@ Thu Jun  2 20:04:04 CEST 2005 (tk)
 Thu Jun  2 08:56:39 BST 2005 (njh)
 ----------------------------------
   * libclamav/pdf.c:	Handle ascii85encoded streams that are full of z's.
-  				Reported by "Kevin Heneveld" <kevin at
+				Reported by "Kevin Heneveld" <kevin at
 				northstar.k12.ak.us>
 
 Wed Jun  1 17:20:07 BST 2005 (njh)
