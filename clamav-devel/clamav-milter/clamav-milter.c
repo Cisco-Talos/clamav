@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.210 2005/06/02 07:42:46 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.211 2005/06/05 05:57:52 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.85f"
+#define	CM_VERSION	"0.85g"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1017,6 +1017,10 @@ main(int argc, char **argv)
 		return EX_USAGE;
 
 	if(templatefile && (access(templatefile, R_OK) < 0)) {
+		perror(templatefile);
+		return EX_CONFIG;
+	}
+	if(whitelistFile && (access(whitelistFile, R_OK) < 0)) {
 		perror(templatefile);
 		return EX_CONFIG;
 	}
@@ -4989,6 +4993,14 @@ isWhitelisted(const char *emailaddress)
 {
 	static table_t *whitelist;
 
+	cli_dbgmsg("isWhitelisted %s\n", emailaddress);
+
+	/*
+	 * Don't scan messages to the quarantine email address
+	 */
+	if(quarantine && (strcasecmp(quarantine, emailaddress) == 0))
+		return 1;
+
 	if((whitelist == NULL) && whitelistFile) {
 		FILE *fin;
 		char buf[BUFSIZ + 1];
@@ -4997,6 +5009,9 @@ isWhitelisted(const char *emailaddress)
 
 		if(fin == NULL) {
 			perror(whitelistFile);
+			if(use_syslog)
+				syslog(LOG_ERR, _("Can't open white-list file %s"),
+					whitelistFile);
 			return 0;
 		}
 		whitelist = tableCreate();
@@ -5018,12 +5033,6 @@ isWhitelisted(const char *emailaddress)
 		/*
 		 * This recipient is on the whitelist
 		 */
-		return 1;
-
-	/*
-	 * Don't scan messages to the quarantine email address
-	 */
-	if(quarantine && (strcasecmp(quarantine, emailaddress) == 0))
 		return 1;
 
 	return 0;

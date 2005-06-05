@@ -818,6 +818,11 @@ Changes
 				clamav-milter to become idle then reloading the
 				database
 0.85f	1/6/05:		Support the new configuration functions
+0.85g	4/6/05:		When checking if an email address is in the white-list,
+				check if it is the quarantine email address
+				before checking against the white-list file
+			When starting, check that the white-list file can be
+				opened
 
 4. INTERNATIONALISATION
 
