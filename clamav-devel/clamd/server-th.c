@@ -421,7 +421,7 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
      * We need to allow for that.
      */
     pthread_attr_getstacksize(&thattr, &stacksize);
-    cli_dbgmsg("set stacksize to %u\n", stacksize + SCANBUFF + 64 * 1024);
+    logg("*set stacksize to %u\n", stacksize + SCANBUFF + 64 * 1024);
     pthread_attr_setstacksize(&thattr, stacksize + SCANBUFF + 64 * 1024);
 #endif
 

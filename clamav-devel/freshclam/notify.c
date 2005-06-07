@@ -48,12 +48,12 @@ int notify(const char *cfgfile)
 
 
     if((copt = getcfg(cfgfile, 1)) == NULL) {
-	mprintf("@Clamd was NOT notified: Can't find or parse configuration file %s\n", cfgfile);
+	logg("^Clamd was NOT notified: Can't find or parse configuration file %s\n", cfgfile);
 	return 1;
     }
 
     if(cfgopt(copt, "TCPSocket")->enabled && cfgopt(copt, "LocalSocket")->enabled) {
-	mprintf("@Clamd was NOT notified: Both socket types (TCP and local) declared in %s\n", cfgfile);
+	logg("^Clamd was NOT notified: Both socket types (TCP and local) declared in %s\n", cfgfile);
 	return 1;
     } else if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
 	socktype = "UNIX";
@@ -61,14 +61,14 @@ int notify(const char *cfgfile)
 	strncpy(server.sun_path, cpt->strarg, sizeof(server.sun_path));
 
 	if((sockd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-	    mprintf("@Clamd was NOT notified: Can't create socket endpoint for %s\n", cpt->strarg);
+	    logg("^Clamd was NOT notified: Can't create socket endpoint for %s\n", cpt->strarg);
 	    perror("socket()");
 	    return 1;
 	}
 
 	if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
 	    close(sockd);
-	    mprintf("@Clamd was NOT notified: Can't connect to clamd through %s\n", cpt->strarg);
+	    logg("^Clamd was NOT notified: Can't connect to clamd through %s\n", cpt->strarg);
 	    perror("connect()");
 	    return 1;
 	}
@@ -81,7 +81,7 @@ int notify(const char *cfgfile)
 #else
 	if((sockd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 #endif
-	    mprintf("@Clamd was NOT notified: Can't create TCP socket\n");
+	    logg("^Clamd was NOT notified: Can't create TCP socket\n");
 	    perror("socket()");
 	    return 1;
 	}
@@ -92,7 +92,7 @@ int notify(const char *cfgfile)
 	if((cpt = cfgopt(copt, "TCPAddr"))->enabled) {
 	    if ((he = gethostbyname(cpt->strarg)) == 0) {
 		perror("gethostbyname()");
-		mprintf("@Clamd was NOT notified: Can't resolve hostname '%s'\n", cpt->strarg);
+		logg("^Clamd was NOT notified: Can't resolve hostname '%s'\n", cpt->strarg);
 		return 1;
 	    }
 	    server2.sin_addr = *(struct in_addr *) he->h_addr_list[0];
@@ -102,19 +102,19 @@ int notify(const char *cfgfile)
 
 	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
 	    close(sockd);
-	    mprintf("@Clamd was NOT notified: Can't connect to clamd on %s:%d\n",
+	    logg("^Clamd was NOT notified: Can't connect to clamd on %s:%d\n",
 		    inet_ntoa(server2.sin_addr), ntohs(server2.sin_port));
 	    perror("connect()");
 	    return 1;
 	}
 
     } else {
-	mprintf("@Clamd was NOT notified: No socket specified in %s\n", cfgfile);
+	logg("^Clamd was NOT notified: No socket specified in %s\n", cfgfile);
 	return 1;
     }
 
     if(write(sockd, "RELOAD", 6) < 0) {
-	mprintf("@Clamd was NOT notified: Could not write to %s socket\n", socktype);
+	logg("^Clamd was NOT notified: Could not write to %s socket\n", socktype);
 	perror("write()");
 	close(sockd);
 	return 1;
@@ -124,13 +124,12 @@ int notify(const char *cfgfile)
     memset(buff, 0, sizeof(buff));
     if((bread = read(sockd, buff, sizeof(buff))) > 0)
 	if(!strstr(buff, "RELOADING")) {
-	    mprintf("@Clamd was NOT notified: Unknown answer from clamd: '%s'\n", buff);
+	    logg("^Clamd was NOT notified: Unknown answer from clamd: '%s'\n", buff);
 	    close(sockd);
 	    return 1;
 	}
 
     close(sockd);
-    mprintf("Clamd successfully notified about the update.\n");
     logg("Clamd successfully notified about the update.\n");
     return 0;
 }

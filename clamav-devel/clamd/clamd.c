@@ -60,6 +60,8 @@ void daemonize(void);
 
 short debug_mode = 0, logok = 0;
 
+short foreground = 0;
+
 void clamd(struct optstruct *opt)
 {
 	struct cfgstruct *copt, *cpt;
@@ -109,78 +111,6 @@ void clamd(struct optstruct *opt)
 
     umask(0);
 
-    /* initialize logger */
-
-    logg_lock = cfgopt(copt, "LogFileUnlock")->enabled;
-    logg_time = cfgopt(copt, "LogTime")->enabled;
-    logok = cfgopt(copt, "LogClean")->enabled;
-    logg_size = cfgopt(copt, "LogFileMaxSize")->numarg;
-    logg_verbose = cfgopt(copt, "LogVerbose")->enabled;
-
-    if(cfgopt(copt, "Debug")->enabled) /* enable debug messages in libclamav */
-	cl_debug();
-
-    if((cpt = cfgopt(copt, "LogFile"))->enabled) {
-	logg_file = cpt->strarg;
-	if(strlen(logg_file) < 2 || (logg_file[0] != '/' && logg_file[0] != '\\' && logg_file[1] != ':')) {
-	    fprintf(stderr, "ERROR: LogFile requires full path.\n");
-	    exit(1);
-	}
-	time(&currtime);
-	if(logg("+++ Started at %s", ctime(&currtime))) {
-	    fprintf(stderr, "ERROR: Problem with internal logger. Please check the permissions on the %s file.\n", logg_file);
-	    exit(1);
-	}
-    } else
-	logg_file = NULL;
-
-#if defined(USE_SYSLOG) && !defined(C_AIX)
-    if(cfgopt(copt, "LogSyslog")->enabled) {
-	    int fac = LOG_LOCAL6;
-
-	cpt = cfgopt(copt, "LogFacility");
-	if((fac = logg_facility(cpt->strarg)) == -1) {
-	    fprintf(stderr, "ERROR: LogFacility: %s: No such facility.\n", cpt->strarg);
-	    exit(1);
-	}
-
-	openlog("clamd", LOG_PID, fac);
-	logg_syslog = 1;
-	syslog(LOG_INFO, "Daemon started.\n");
-    }
-#endif
-
-    logg("clamd daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
-
-    if(logg_size)
-	logg("Log file size limited to %d bytes.\n", logg_size);
-    else
-	logg("Log file size limit disabled.\n");
-
-    logg("*Verbose logging activated.\n");
-
-#ifdef C_LINUX
-    procdev = 0;
-    if(stat("/proc", &sb) != -1 && !sb.st_size)
-	procdev = sb.st_dev;
-#endif
-
-    /* check socket type */
-
-    if(cfgopt(copt, "TCPSocket")->enabled && cfgopt(copt, "LocalSocket")->enabled) {
-	fprintf(stderr, "ERROR: You can only select one mode (local or TCP).\n");
-	logg("!Two modes (local and TCP) selected.\n");
-	exit(1);
-    } else if(cfgopt(copt, "TCPSocket")->enabled) {
-	tcpsock = 1;
-    } else if(cfgopt(copt, "LocalSocket")->enabled) {
-	tcpsock = 0;
-    } else {
-	fprintf(stderr, "ERROR: You must select server type (local/tcp).\n");
-	logg("!Please select server type (local/TCP).\n");
-	exit(1);
-    }
-
     /* drop privileges */
 #ifndef C_OS2
     if(geteuid() == 0 && (cpt = cfgopt(copt, "User"))->enabled) {
@@ -221,10 +151,79 @@ void clamd(struct optstruct *opt)
 	    logg("!setuid(%d) failed.\n", (int) user->pw_uid);
 	    exit(1);
 	}
-
-	logg("Running as user %s (UID %d, GID %d)\n", cpt->strarg, user->pw_uid, user->pw_gid);
     }
 #endif
+
+    /* initialize logger */
+
+    logg_lock = cfgopt(copt, "LogFileUnlock")->enabled;
+    logg_time = cfgopt(copt, "LogTime")->enabled;
+    logok = cfgopt(copt, "LogClean")->enabled;
+    logg_size = cfgopt(copt, "LogFileMaxSize")->numarg;
+    logg_verbose = cfgopt(copt, "LogVerbose")->enabled;
+
+    if(cfgopt(copt, "Debug")->enabled) /* enable debug messages in libclamav */
+	cl_debug();
+
+    if((cpt = cfgopt(copt, "LogFile"))->enabled) {
+	logg_file = cpt->strarg;
+	if(strlen(logg_file) < 2 || (logg_file[0] != '/' && logg_file[0] != '\\' && logg_file[1] != ':')) {
+	    fprintf(stderr, "ERROR: LogFile requires full path.\n");
+	    exit(1);
+	}
+	time(&currtime);
+	if(logg("+++ Started at %s", ctime(&currtime))) {
+	    fprintf(stderr, "ERROR: Problem with internal logger. Please check the permissions on the %s file.\n", logg_file);
+	    exit(1);
+	}
+    } else
+	logg_file = NULL;
+
+#if defined(USE_SYSLOG) && !defined(C_AIX)
+    if(cfgopt(copt, "LogSyslog")->enabled) {
+	    int fac = LOG_LOCAL6;
+
+	cpt = cfgopt(copt, "LogFacility");
+	if((fac = logg_facility(cpt->strarg)) == -1) {
+	    fprintf(stderr, "ERROR: LogFacility: %s: No such facility.\n", cpt->strarg);
+	    exit(1);
+	}
+
+	openlog("clamd", LOG_PID, fac);
+	logg_syslog = 1;
+    }
+#endif
+
+    logg("clamd daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
+
+    if(logg_size)
+	logg("Log file size limited to %d bytes.\n", logg_size);
+    else
+	logg("Log file size limit disabled.\n");
+
+    logg("*Verbose logging activated.\n");
+
+#ifdef C_LINUX
+    procdev = 0;
+    if(stat("/proc", &sb) != -1 && !sb.st_size)
+	procdev = sb.st_dev;
+#endif
+
+    /* check socket type */
+
+    if(cfgopt(copt, "TCPSocket")->enabled && cfgopt(copt, "LocalSocket")->enabled) {
+	fprintf(stderr, "ERROR: You can only select one mode (local or TCP).\n");
+	logg("!Two modes (local and TCP) selected.\n");
+	exit(1);
+    } else if(cfgopt(copt, "TCPSocket")->enabled) {
+	tcpsock = 1;
+    } else if(cfgopt(copt, "LocalSocket")->enabled) {
+	tcpsock = 0;
+    } else {
+	fprintf(stderr, "ERROR: You must select server type (local/tcp).\n");
+	logg("!Please select server type (local/TCP).\n");
+	exit(1);
+    }
 
     /* set the temporary dir */
     if((cpt = cfgopt(copt, "TemporaryDirectory"))->enabled)
@@ -256,9 +255,13 @@ void clamd(struct optstruct *opt)
 	exit(1);
     }
 
+
+    logg("Running as user %s (UID %d, GID %d)\n", cpt->strarg, user->pw_uid, user->pw_gid);
     /* fork into background */
     if(!cfgopt(copt, "Foreground")->enabled)
 	daemonize();
+    else
+        foreground = 1;
 
     if(tcpsock)
 	ret = tcpserver(opt, copt, root);

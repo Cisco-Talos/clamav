@@ -67,7 +67,7 @@ int fileinfo(const char *filename, short i)
 	case 5: /* GID */
 	    return infostruct.st_gid;
 	default:
-	    mprintf("!fileinfo(): Unknown option.\n");
+	    logg("!fileinfo(): Unknown option.\n");
 	    exit(1);
     }
 }
@@ -128,7 +128,6 @@ int match_regex(const char *filename, const char *pattern)
 	flags = REG_EXTENDED | REG_ICASE; /* case insensitive on Windows */
 #endif	
 	if(regcomp(&reg, pattern, flags) != 0) {
-	    mprintf("!%s: Could not parse regular expression %s.\n", filename, pattern);
 	    logg("!%s: Could not parse regular expression %s.\n", filename, pattern);
 		return 2;
 	}

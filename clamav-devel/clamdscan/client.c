@@ -71,7 +71,7 @@ int dsresult(int sockd, const struct optstruct *opt)
 #else /* FIXME: accoriding to YD OS/2 does not support dup() for sockets */
     if((fd = fdopen(sockd, "r")) == NULL) {
 #endif
-	mprintf("@Can't open descriptor for reading.\n");
+	logg("^Can't open descriptor for reading.\n");
 	return -1;
     }
 
@@ -79,7 +79,6 @@ int dsresult(int sockd, const struct optstruct *opt)
 	if(strstr(buff, "FOUND\n")) {
 	    infected++;
 	    logg("%s", buff);
-	    mprintf("%s", buff);
 	    if(optl(opt, "move")) {
 		pt = strrchr(buff, ':');
 		*pt = 0;
@@ -89,11 +88,9 @@ int dsresult(int sockd, const struct optstruct *opt)
 		pt = strrchr(buff, ':');
 		*pt = 0;
 		if(unlink(buff)) {
-		    mprintf("%s: Can't remove.\n", buff);
 		    logg("%s: Can't remove.\n", buff);
 		    notremoved++;
 		} else {
-		    mprintf("%s: Removed.\n", buff);
 		    logg("%s: Removed.\n", buff);
 		}
 	    }
@@ -101,7 +98,6 @@ int dsresult(int sockd, const struct optstruct *opt)
 
 	if(strstr(buff, "ERROR\n")) {
 	    logg("%s", buff);
-	    mprintf("%s", buff);
 	    waserror = 1;
 	}
     }
@@ -123,7 +119,7 @@ int dsfile(int sockd, const char *filename, const struct optstruct *opt)
     sprintf(scancmd, "CONTSCAN %s", filename);
 
     if(write(sockd, scancmd, strlen(scancmd)) <= 0) {
-	mprintf("@Can't write to the socket.\n");
+	logg("^Can't write to the socket.\n");
 	free(scancmd);
 	return -1;
     }
@@ -133,7 +129,7 @@ int dsfile(int sockd, const char *filename, const struct optstruct *opt)
     ret = dsresult(sockd, opt);
 
     if(!ret)
-	mprintf("%s: OK\n", filename);
+	logg("%s: OK\n", filename);
 
     return ret;
 }
@@ -175,7 +171,7 @@ int dsfd(int sockfd, int fd, const struct optstruct *opt)
     msg.msg_accrightslen = sizeof(fd);
 #endif
     if (sendmsg(sockfd, &msg, 0) != iov[0].iov_len) {
-	mprintf("@Can't write to the socket.\n");
+	logg("^Can't write to the socket.\n");
 	return -1;
     }
     return dsresult(sockfd, opt);
@@ -197,7 +193,7 @@ int dsstream(int sockd, const struct optstruct *opt)
 
 
     if(write(sockd, "STREAM", 6) <= 0) {
-	mprintf("@Can't write to the socket.\n");
+	logg("^Can't write to the socket.\n");
 	return 2;
     }
 
@@ -213,7 +209,7 @@ int dsstream(int sockd, const struct optstruct *opt)
     }
 
     if(!loopw) {
-	mprintf("@Daemon not ready for stream scanning.\n");
+	logg("^Daemon not ready for stream scanning.\n");
 	return -1;
     }
 
@@ -221,7 +217,7 @@ int dsstream(int sockd, const struct optstruct *opt)
 
     if((wsockd = socket(SOCKET_INET, SOCK_STREAM, 0)) < 0) {
 	perror("socket()");
-	mprintf("@Can't create the socket.\n");
+	logg("^Can't create the socket.\n");
 	return -1;
     }
 
@@ -231,7 +227,7 @@ int dsstream(int sockd, const struct optstruct *opt)
     peer_size = sizeof(peer);
     if(getpeername(sockd, (struct sockaddr *) &peer, &peer_size) < 0) {
 	perror("getpeername()");
-	mprintf("@Can't get socket peer name.\n");
+	logg("^Can't get socket peer name.\n");
 	return -1;
     }
 
@@ -243,20 +239,20 @@ int dsstream(int sockd, const struct optstruct *opt)
 	    server.sin_addr.s_addr = peer.sin_addr.s_addr;
 	    break;
 	default:
-	    mprintf("@Unexpected socket type: %d.\n", peer.sin_family);
+	    mprintf("^Unexpected socket type: %d.\n", peer.sin_family);
 	    return -1;
     }
 
     if(connect(wsockd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) < 0) {
 	close(wsockd);
 	perror("connect()");
-	mprintf("@Can't connect to clamd [port: %d].\n", port);
+	logg("^Can't connect to clamd [port: %d].\n", port);
 	return -1;
     }
 
     while((bread = read(0, buff, sizeof(buff))) > 0) {
 	if(write(wsockd, buff, bread) <= 0) {
-	    mprintf("@Can't write to the socket.\n");
+	    logg("^Can't write to the socket.\n");
 	    close(wsockd);
 	    return -1;
 	}
@@ -265,10 +261,9 @@ int dsstream(int sockd, const struct optstruct *opt)
 
     memset(buff, 0, sizeof(buff));
     while((bread = read(sockd, buff, sizeof(buff))) > 0) {
-	mprintf("%s", buff);
+	logg("%s", buff);
 	if(strstr(buff, "FOUND\n")) {
 	    infected++;
-	    logg("%s", buff);
 
 	} else if(strstr(buff, "ERROR\n")) {
 	    logg("%s", buff);
@@ -286,7 +281,7 @@ char *abpath(const char *filename)
 	char *fullpath, cwd[200];
 
     if(stat(filename, &foo) == -1) {
-	mprintf("@Can't access file %s\n", filename);
+	logg("^Can't access file %s\n", filename);
 	perror(filename);
 	return NULL;
     } else {
@@ -295,7 +290,7 @@ char *abpath(const char *filename)
 	sprintf(fullpath, "%s", filename);
 #else
 	if(!getcwd(cwd, 200)) {
-	    mprintf("@Can't get absolute pathname of current working directory.\n");
+	    logg("^Can't get absolute pathname of current working directory.\n");
 	    return NULL;
 	}
 	sprintf(fullpath, "%s/%s", cwd, filename);
@@ -319,7 +314,7 @@ int dconnect(const struct optstruct *opt)
 	clamav_conf = DEFAULT_CFG;
 
     if((copt = getcfg(clamav_conf, 1)) == NULL) {
-	mprintf("@Can't parse the configuration file.\n");
+	logg("^Can't parse the configuration file.\n");
 	return -1;
     }
 
@@ -330,7 +325,7 @@ int dconnect(const struct optstruct *opt)
     server2.sin_addr.s_addr = inet_addr("127.0.0.1");    
 
     if(cfgopt(copt, "TCPSocket")->enabled && cfgopt(copt, "LocalSocket")->enabled) {
-	mprintf("@Clamd is not configured properly.\n");
+	logg("^Clamd is not configured properly.\n");
 	return -1;
     } else if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
 
@@ -339,14 +334,14 @@ int dconnect(const struct optstruct *opt)
 
 	if((sockd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 	    perror("socket()");
-	    mprintf("@Can't create the socket.\n");
+	    logg("^Can't create the socket.\n");
 	    return -1;
 	}
 
 	if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
 	    close(sockd);
 	    perror("connect()");
-	    mprintf("@Can't connect to clamd.\n");
+	    logg("^Can't connect to clamd.\n");
 	    return -1;
 	}
 
@@ -354,7 +349,7 @@ int dconnect(const struct optstruct *opt)
 
 	if((sockd = socket(SOCKET_INET, SOCK_STREAM, 0)) < 0) {
 	    perror("socket()");
-	    mprintf("@Can't create the socket.\n");
+	    logg("^Can't create the socket.\n");
 	    return -1;
 	}
 
@@ -365,7 +360,7 @@ int dconnect(const struct optstruct *opt)
 	    if ((he = gethostbyname(cpt->strarg)) == 0) {
 		close(sockd);
 		perror("gethostbyname()");
-		mprintf("@Can't lookup clamd hostname.\n");
+		logg("^Can't lookup clamd hostname.\n");
 		return -1;
 	    }
 	    server2.sin_addr = *(struct in_addr *) he->h_addr_list[0];
@@ -374,12 +369,12 @@ int dconnect(const struct optstruct *opt)
 	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
 	    close(sockd);
 	    perror("connect()");
-	    mprintf("@Can't connect to clamd.\n");
+	    logg("^Can't connect to clamd.\n");
 	    return -1;
 	}
 
     } else {
-	mprintf("@Clamd is not configured properly.\n");
+	logg("^Clamd is not configured properly.\n");
 	return -1;
     }
 
@@ -400,7 +395,7 @@ int client(const struct optstruct *opt, int *infected)
     if(opt->filename == NULL || strlen(opt->filename) == 0) {
 	/* scan current directory */
 	if(!getcwd(cwd, 200)) {
-	    mprintf("@Can't get absolute pathname of current working directory.\n");
+	    logg("^Can't get absolute pathname of current working directory.\n");
 	    return 2;
 	}
 
@@ -445,7 +440,7 @@ int client(const struct optstruct *opt, int *infected)
 	    fullpath = thefilename;
 
 	    if(stat(fullpath, &sb) == -1) {
-		mprintf("@Can't access file %s\n", fullpath);
+		logg("^Can't access file %s\n", fullpath);
 		perror(fullpath);
 		errors++;
 	    } else {
@@ -454,7 +449,7 @@ int client(const struct optstruct *opt, int *infected)
 		    free(thefilename);
 
 		    if(!fullpath) {
-			mprintf("@Can't determine absolute path.\n");
+			logg("^Can't determine absolute path.\n");
 			return 2;
 		    }
 		}
@@ -474,7 +469,7 @@ int client(const struct optstruct *opt, int *infected)
 			break;
 
 		    default:
-			mprintf("@Not supported file type (%s)\n", fullpath);
+			logg("^Not supported file type (%s)\n", fullpath);
 			errors++;
 		}
 	    }
@@ -496,20 +491,20 @@ void move_infected(const char *filename, const struct optstruct *opt)
 
     if(!(movedir = getargl(opt, "move"))) {
         /* Should never reach here */
-        mprintf("@getargc() returned NULL\n", filename);
+        logg("^getargc() returned NULL\n");
         notmoved++;
         return;
     }
 
     if(access(movedir, W_OK|X_OK) == -1) {
-        mprintf("@error moving file '%s': cannot write to '%s': %s\n", filename, movedir, strerror(errno));
+        logg("^error moving file '%s': cannot write to '%s': %s\n", filename, movedir, strerror(errno));
         notmoved++;
         return;
     }
 
     if(stat(filename, &fstat) == -1) {
-        mprintf("@Can't stat file %s\n", filename);
-	mprintf("Try to run clamdscan with clamd privileges\n");
+        logg("^Can't stat file %s\n", filename);
+	logg("Try to run clamdscan with clamd privileges\n");
         notmoved++;
 	return;
     }
@@ -520,12 +515,12 @@ void move_infected(const char *filename, const struct optstruct *opt)
     movefilename_size = sizeof(char) * (strlen(movedir) + strlen(tmp) + sizeof(numext) + 2);
 
     if(!(movefilename = mmalloc(movefilename_size))) {
-        mprintf("@Memory allocation error\n");
+        logg("^Memory allocation error\n");
 	exit(2);
     }
 
     if(!(strrcpy(movefilename, movedir))) {
-        mprintf("@strrcpy() returned NULL\n");
+        logg("^strrcpy() returned NULL\n");
         notmoved++;
         free(movefilename);
         return;
@@ -534,7 +529,7 @@ void move_infected(const char *filename, const struct optstruct *opt)
     strcat(movefilename, "/");
 
     if(!(strcat(movefilename, tmp))) {
-        mprintf("@strcat() returned NULL\n");
+        logg("^strcat() returned NULL\n");
         notmoved++;
         free(movefilename);
         return;
@@ -542,7 +537,6 @@ void move_infected(const char *filename, const struct optstruct *opt)
 
     if(!stat(movefilename, &mfstat)) {
         if(fstat.st_ino == mfstat.st_ino) { /* It's the same file*/
-            mprintf("File excluded '%s'\n", filename);
             logg("File excluded '%s'\n", filename);
             notmoved++;
             free(movefilename);
@@ -568,7 +562,7 @@ void move_infected(const char *filename, const struct optstruct *opt)
 
     if(rename(filename, movefilename) == -1) {
 	if(filecopy(filename, movefilename) == -1) {
-	    mprintf("@cannot move '%s' to '%s': %s\n", filename, movefilename, strerror(errno));
+	    logg("^cannot move '%s' to '%s': %s\n", filename, movefilename, strerror(errno));
 	    notmoved++;
 	    free(movefilename);
 	    return;
@@ -582,14 +576,13 @@ void move_infected(const char *filename, const struct optstruct *opt)
 	utime(movefilename, &ubuf);
 
 	if(unlink(filename)) {
-	    mprintf("@cannot unlink '%s': %s\n", filename, strerror(errno));
+	    logg("^cannot unlink '%s': %s\n", filename, strerror(errno));
 	    notremoved++;            
 	    free(movefilename);
 	    return;
 	}
     }
 
-    mprintf("%s: moved to '%s'\n", filename, movefilename);
     logg("%s: moved to '%s'\n", filename, movefilename);
 
     free(movefilename);
