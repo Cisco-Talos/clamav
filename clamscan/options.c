@@ -47,6 +47,8 @@ static char clamdscan_short[] = { 'h', 'V', 'v', 'l', 0 };
 
 int clamdscan_mode = 0;
 
+short foreground = 1;
+
 int main(int argc, char **argv)
 {
 	int ret, opt_index, i, len;
@@ -145,7 +147,7 @@ int main(int argc, char **argv)
 			register_char_option(opt, ret, NULL);
 
 		} else {
-		    mprintf("!Unknown option passed.\n");
+		    logg("!Unknown option passed.\n");
 		    free_opt(opt);
 		    if(clamdscan_mode)
 			exit(2);
@@ -194,9 +196,9 @@ void register_char_option(struct optstruct *opt, char ch, const char *longname)
 
 	if(!found) {
 	    if(longname)
-		mprintf("WARNING: Ignoring option -%c (--%s): please edit clamd.conf instead.\n", ch, longname);
+		logg("WARNING: Ignoring option -%c (--%s): please edit clamd.conf instead.\n", ch, longname);
 	    else
-		mprintf("WARNING: Ignoring option -%c: please edit clamd.conf instead.\n", ch);
+		logg("WARNING: Ignoring option -%c: please edit clamd.conf instead.\n", ch);
 
 	    return;
 	}
@@ -226,7 +228,7 @@ void register_long_option(struct optstruct *opt, const char *optname)
 		found = 1;
 
 	if(!found) {
-	    mprintf("WARNING: Ignoring option --%s: please edit clamd.conf instead.\n", optname);
+	    logg("WARNING: Ignoring option --%s: please edit clamd.conf instead.\n", optname);
 	    return;
 	}
     }

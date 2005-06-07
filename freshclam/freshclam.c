@@ -51,6 +51,8 @@
 static short terminate = 0;
 extern int active_children;
 
+short foreground = 1;
+
 static void daemon_sighandler(int sig) {
 
     switch(sig) {
@@ -120,21 +122,21 @@ int freshclam(struct optstruct *opt)
     }
 
     if(!copt) {
-	mprintf("!Can't parse the config file %s\n", cfgfile);
+	logg("!Can't parse the config file %s\n", cfgfile);
 	return 56;
     }
 
     if(optl(opt, "http-proxy") || optl(opt, "proxy-user"))
-	mprintf("WARNING: Proxy settings are now only configurable in the config file.\n");
+	logg("WARNING: Proxy settings are now only configurable in the config file.\n");
 
     if(cfgopt(copt, "HTTPProxyPassword")->enabled) {
 	if(stat(cfgfile, &statbuf) == -1) {
-	    mprintf("@Can't stat %s (critical error)\n", cfgfile);
+	    logg("^Can't stat %s (critical error)\n", cfgfile);
 	    return 56;
 	}
 #ifndef C_CYGWIN
 	if(statbuf.st_mode & (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH)) {
-	    mprintf("@Insecure permissions (for HTTPProxyPassword): %s must have no more than 0700 permissions.\n", cfgfile);
+	    logg("^Insecure permissions (for HTTPProxyPassword): %s must have no more than 0700 permissions.\n", cfgfile);
 	    return 56;
 	}
 #endif
@@ -152,33 +154,33 @@ int freshclam(struct optstruct *opt)
 
     if(!geteuid()) {
 	if((user = getpwnam(unpuser)) == NULL) {
-	    mprintf("@Can't get information about user %s.\n", unpuser);
+	    logg("^Can't get information about user %s.\n", unpuser);
 	    exit(60); /* this is critical problem, so we just exit here */
 	}
 
 	if(cfgopt(copt, "AllowSupplementaryGroups")->enabled) {
 #ifdef HAVE_INITGROUPS
 	    if(initgroups(unpuser, user->pw_gid)) {
-		mprintf("@initgroups() failed.\n");
+		logg("^initgroups() failed.\n");
 		exit(61);
 	    }
 #endif
 	} else {
 #ifdef HAVE_SETGROUPS
 	    if(setgroups(1, &user->pw_gid)) {
-		mprintf("@setgroups() failed.\n");
+		logg("^setgroups() failed.\n");
 		exit(61);
 	    }
 #endif
 	}
 
 	if(setgid(user->pw_gid)) {
-	    mprintf("@setgid(%d) failed.\n", (int) user->pw_gid);
+	    logg("^setgid(%d) failed.\n", (int) user->pw_gid);
 	    exit(61);
 	}
 
 	if(setuid(user->pw_uid)) {
-	    mprintf("@setuid(%d) failed.\n", (int) user->pw_uid);
+	    logg("^setuid(%d) failed.\n", (int) user->pw_uid);
 	    exit(61);
 	}
     }
@@ -236,7 +238,6 @@ int freshclam(struct optstruct *opt)
 
 	openlog("freshclam", LOG_PID, fac);
 	logg_syslog = 1;
-	syslog(LOG_INFO, "Daemon started.\n");
     }
 #endif
 
@@ -247,10 +248,10 @@ int freshclam(struct optstruct *opt)
 	newdir = cfgopt(copt, "DatabaseDirectory")->strarg;
 
     if(chdir(newdir)) {
-	mprintf("Can't change dir to %s\n", newdir);
+	logg("Can't change dir to %s\n", newdir);
 	exit(50);
     } else
-	mprintf("*Current working dir is %s\n", newdir);
+	logg("*Current working dir is %s\n", newdir);
 
 
     if(optc(opt, 'd')) {
@@ -266,21 +267,23 @@ int freshclam(struct optstruct *opt)
 	    checks = cfgopt(copt, "Checks")->numarg;
 
 	if(checks <= 0) {
-	    mprintf("@Number of checks must be a positive integer.\n");
+	    logg("^Number of checks must be a positive integer.\n");
 	    exit(41);
 	}
 
 	if(!cfgopt(copt, "DNSDatabaseInfo")->enabled || optl(opt, "no-dns")) {
 	    if(checks > 50) {
-		mprintf("@Number of checks must be between 1 and 50.\n");
+		logg("^Number of checks must be between 1 and 50.\n");
 		exit(41);
 	    }
 	}
 
 	bigsleep = 24 * 3600 / checks;
 
-	if(!cfgopt(copt, "Foreground")->enabled)
+	if(!cfgopt(copt, "Foreground")->enabled) {
+            foreground = 0;
 	    daemonize();
+        }
 
 	if (optc(opt, 'p')) {
 	    pidfile = getargc(opt, 'p');
@@ -364,10 +367,10 @@ int download(const struct cfgstruct *copt, const struct optstruct *opt)
 
 
     maxattempts = cfgopt(copt, "MaxAttempts")->numarg;
-    mprintf("*Max retries == %d\n", maxattempts);
+    logg("*Max retries == %d\n", maxattempts);
 
     if(!(cpt = cfgopt(copt, "DatabaseMirror"))->enabled) {
-	mprintf("@You must specify at least one database mirror.\n");
+	logg("^You must specify at least one database mirror.\n");
 	return 56;
     } else {
 
@@ -377,18 +380,15 @@ int download(const struct cfgstruct *copt, const struct optstruct *opt)
 
 	    if(ret == 52 || ret == 54 || ret == 58 || ret == 59) {
 		if(try < maxattempts - 1) {
-		    mprintf("Trying again in 5 secs...\n");
 		    logg("Trying again in 5 secs...\n");
 		    try++;
 		    sleep(5);
 		    continue;
 		} else {
-		    mprintf("Giving up on %s...\n", cpt->strarg);
 		    logg("Giving up on %s...\n", cpt->strarg);
 		    cpt = (struct cfgstruct *) cpt->nextarg;
 		    if(!cpt) {
-			mprintf("@Update failed. Your network may be down or none of the mirrors listed in freshclam.conf is working.\n");
-			logg("ERROR: Update failed. Your network may be down or none of the mirrors listed in freshclam.conf is working.\n");
+			logg("^Update failed. Your network may be down or none of the mirrors listed in freshclam.conf is working.\n");
 		    }
 		    try = 0;
 		}

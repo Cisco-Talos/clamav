@@ -57,7 +57,7 @@ int treewalk(const char *dirname, struct cl_node *root, const struct passwd *use
 	while(argument) {
 	    if(match_regex(dirname, argument) == 1) {
 		if(!printinfected)
-		    mprintf("%s: Excluded\n", dirname);
+		    logg("%s: Excluded\n", dirname);
 		return 0;
 	    }
 	    argument = getnextargl(&optnode, "exclude");
@@ -77,7 +77,7 @@ int treewalk(const char *dirname, struct cl_node *root, const struct passwd *use
 
 	if(!included) {
 	    if(!printinfected)
-		mprintf("%s: Excluded\n", dirname);
+		logg("%s: Excluded\n", dirname);
 	    return 0;
 	}
     }
@@ -121,7 +121,7 @@ int treewalk(const char *dirname, struct cl_node *root, const struct passwd *use
 	}
     } else {
 	if(!printinfected)
-	    mprintf("%s: Can't open directory.\n", dirname);
+	    logg("%s: Can't open directory.\n", dirname);
 	return 53;
     }
 
@@ -159,7 +159,7 @@ int rmdirs(const char *dirname)
 			    if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
 				if(rmdir(fname) == -1) { /* can't be deleted */
 				    if(errno == EACCES) {
-					mprintf("@Can't remove some temporary directories due to access problem.\n");
+					logg("^Can't remove some temporary directories due to access problem.\n");
 					closedir(dd);
 					return 0;
 				    }
@@ -180,7 +180,7 @@ int rmdirs(const char *dirname)
 
     } else { 
 	if(!printinfected)
-	    mprintf("%s: Can't open directory.\n", dirname);
+	    logg("%s: Can't open directory.\n", dirname);
 	return 53;
     }
 
@@ -271,7 +271,7 @@ int fixperms(const char *dirname)
 	}
     } else {
 	if(!printinfected)
-	    mprintf("%s: Can't open directory.\n", dirname);
+	    logg("%s: Can't open directory.\n", dirname);
 	return 53;
     }
 
@@ -319,7 +319,7 @@ int du(const char *dirname, struct s_du *n)
 	}
     } else {
 	if(!printinfected)
-	    mprintf("%s: Can't open directory.\n", dirname);
+	    logg("%s: Can't open directory.\n", dirname);
 	return 53;
     }
 

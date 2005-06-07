@@ -52,7 +52,6 @@ int clamscan(struct optstruct *opt)
 	double mb;
 	struct timeval t1, t2;
 	struct timezone tz;
-	time_t starttime;
 
     /* initialize some important variables */
 
@@ -121,26 +120,22 @@ int clamscan(struct optstruct *opt)
     if(optl(opt, "max-space"))
 	if(!strchr(getargl(opt, "max-space"), 'M') && !strchr(getargl(opt, "max-space"), 'm'))
 	    if(!isnumb(getargl(opt, "max-space"))) {
-		mprintf("!--max-space requires natural number.\n");
+		logg("!--max-space requires natural number.\n");
 		return 40;
 	    }
 
     if(optl(opt, "max-files"))
 	if(!isnumb(getargl(opt, "max-files"))) {
-	    mprintf("!--max-files requires natural number.\n");
+	    logg("!--max-files requires natural number.\n");
 	    return 40;
 	}
 
     if(optl(opt, "max-recursion"))
 	if(!isnumb(getargl(opt, "max-recursion"))) {
-	    mprintf("!--max-recursion requires natural number.\n");
+	    logg("!--max-recursion requires natural number.\n");
 	    return 40;
 	}
 
-
-    time(&starttime);
-    /* ctime() does \n, but I need it once more */
-    logg("Scan started: %s\n", ctime(&starttime));
 
     memset(&claminfo, 0, sizeof(struct s_info));
 
@@ -153,36 +148,26 @@ int clamscan(struct optstruct *opt)
 	dms = t2.tv_usec - t1.tv_usec;
 	ds -= (dms < 0) ? (1):(0);
 	dms += (dms < 0) ? (1000000):(0);
-	mprintf("\n----------- SCAN SUMMARY -----------\n");
-	    logg("\n-- summary --\n");
-	mprintf("Known viruses: %d\n", claminfo.signs);
-	    logg("Known viruses: %d\n", claminfo.signs);
-	mprintf("Engine version: %s\n", cl_retver());
-	    logg("Engine version: %s\n", cl_retver());
-	mprintf("Scanned directories: %d\n", claminfo.dirs);
-	    logg("Scanned directories: %d\n", claminfo.dirs);
-	mprintf("Scanned files: %d\n", claminfo.files);
-	    logg("Scanned files: %d\n", claminfo.files);
-	mprintf("Infected files: %d\n", claminfo.ifiles);
-	    logg("Infected files: %d\n", claminfo.ifiles);
+	logg("\n----------- SCAN SUMMARY -----------\n");
+	logg("Known viruses: %d\n", claminfo.signs);
+	logg("Engine version: %s\n", cl_retver());
+	logg("Scanned directories: %d\n", claminfo.dirs);
+	logg("Scanned files: %d\n", claminfo.files);
+	logg("Infected files: %d\n", claminfo.ifiles);
 	if(claminfo.notremoved) {
-	    mprintf("Not removed: %d\n", claminfo.notremoved);
-		logg("Not removed: %d\n", claminfo.notremoved);
+	    logg("Not removed: %d\n", claminfo.notremoved);
 	}
 	if(claminfo.notmoved) {
-	    mprintf("Not moved: %d\n", claminfo.notmoved);
-		logg("Not moved: %d\n", claminfo.notmoved);
+	    logg("Not moved: %d\n", claminfo.notmoved);
 	}
 	mb = claminfo.blocks * (CL_COUNT_PRECISION / 1024) / 1024.0;
-	mprintf("Data scanned: %2.2lf MB\n", mb);
-	    logg("Data scanned: %2.2lf MB\n", mb);
+	logg("Data scanned: %2.2lf MB\n", mb);
 /*
 	mprintf("I/O buffer size: %d bytes\n", SCANBUFF);
 	    logg("I/O buffer size: %d bytes\n", SCANBUFF);
 */
 
-	mprintf("Time: %d.%3.3d sec (%d m %d s)\n", ds, dms/1000, ds/60, ds%60);
-	    logg("Time: %d.%3.3d sec (%d m %d s)\n", ds, dms/1000, ds/60, ds%60);
+	logg("Time: %d.%3.3d sec (%d m %d s)\n", ds, dms/1000, ds/60, ds%60);
     }
 
     return ret;

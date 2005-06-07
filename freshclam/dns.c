@@ -45,22 +45,22 @@ char *txtquery(const char *domain, unsigned int *ttl)
 
 
     if(res_init() < 0) {
-	mprintf("@res_init failed\n");
+	logg("^res_init failed\n");
 	return NULL;
     }
 
-    mprintf("*Querying %s\n", domain);
+    logg("*Querying %s\n", domain);
 
     memset(answer, 0, PACKETSZ);
     if((len = res_query(domain, C_IN, T_TXT, answer, PACKETSZ)) < 0) {
-	mprintf("@Can't query %s\n", domain);
+	logg("^Can't query %s\n", domain);
 	return NULL;
     }
 
     pt = answer + sizeof(HEADER);
 
     if((exp = dn_expand(answer, answer + len, pt, host, sizeof(host))) < 0) {
-	mprintf("@dn_expand failed\n");
+	logg("^dn_expand failed\n");
 	return NULL;
     }
 
@@ -68,21 +68,21 @@ char *txtquery(const char *domain, unsigned int *ttl)
 
     GETSHORT(type, pt);
     if(type != T_TXT) {
-	mprintf("@Broken DNS reply.\n");
+	logg("^Broken DNS reply.\n");
 	return NULL;
     }
 
     pt += INT16SZ; /* class */
 
     if((exp = dn_expand(answer, answer + len, pt, host, sizeof(host))) < 0) {
-	mprintf("@second dn_expand failed\n");
+	logg("^second dn_expand failed\n");
 	return NULL;
     }
 
     pt += exp;
     GETSHORT(type, pt);
     if(type != T_TXT) {
-	mprintf("@Not a TXT record\n");
+	logg("^Not a TXT record\n");
 	return NULL;
     }
 
@@ -93,7 +93,7 @@ char *txtquery(const char *domain, unsigned int *ttl)
     txtlen = *pt;
 
     if(txtlen >= size || !txtlen) {
-	mprintf("@Broken TXT record (txtlen = %d, size = %d)\n", txtlen, size);
+	logg("^Broken TXT record (txtlen = %d, size = %d)\n", txtlen, size);
 	return NULL;
     }
 

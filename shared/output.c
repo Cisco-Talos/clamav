@@ -52,14 +52,32 @@
 pthread_mutex_t logg_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
+#ifdef  C_LINUX
+#include <sys/sendfile.h>
+#include <libintl.h>
+#include <locale.h>
+
+#define gettext_noop(s) s
+#define _(s)    gettext(s)
+#define N_(s)   gettext_noop(s)
+
+#else
+
+#define _(s)    s
+#define N_(s)   s
+
+#endif
+
 FILE *logg_fd = NULL;
 
 short int logg_verbose = 0, logg_lock = 0, logg_time = 0;
 int logg_size = 0;
 const char *logg_file = NULL;
 #if defined(USE_SYSLOG) && !defined(C_AIX)
-short logg_syslog = 0;
+short logg_syslog;
 #endif
+
+short foreground;
 
 short int mprintf_disabled = 0, mprintf_verbose = 0, mprintf_quiet = 0,
 	  mprintf_stdout = 0;
@@ -98,7 +116,7 @@ void logg_close(void) {
 
 int logg(const char *str, ...)
 {
-	va_list args, argscpy;
+	va_list args, argscpy, argsout;
 	struct flock fl;
 	char *pt, *timestr, vbuff[1025];
 	time_t currtime;
@@ -109,6 +127,7 @@ int logg(const char *str, ...)
     va_start(args, str);
     /* va_copy is less portable so we just use va_start once more */
     va_start(argscpy, str);
+    va_start(argsout, str);
 
     if(logg_file) {
 #ifdef CL_THREAD_SAFE
@@ -137,6 +156,21 @@ int logg(const char *str, ...)
 	    }
 	}
 
+	if(logg_size) {
+	    if(stat(logg_file, &sb) != -1) {
+		if(sb.st_size > logg_size) {
+		    logg_file = NULL;
+		    fprintf(logg_fd, "Log size = %d, maximal = %d\n", (int) sb.st_size, logg_size);
+		    fprintf(logg_fd, "LOGGING DISABLED (Maximal log file size exceeded).\n");
+		    fclose(logg_fd);
+		    logg_fd = NULL;
+#ifdef CL_THREAD_SAFE
+		    pthread_mutex_unlock(&logg_mutex);
+#endif
+		}
+	    }
+	}
+
         /* Need to avoid logging time for verbose messages when logverbose
            is not set or we get a bunch of timestamps in the log without
            newlines... */
@@ -149,23 +183,7 @@ int logg(const char *str, ...)
 	    free(timestr);
 	}
 
-	if(logg_size) {
-	    if(stat(logg_file, &sb) != -1) {
-		if(sb.st_size > logg_size) {
-		    logg_file = NULL;
-		    fprintf(logg_fd, "Log size = %d, maximal = %d\n", (int) sb.st_size, logg_size);
-		    fprintf(logg_fd, "LOGGING DISABLED (Maximal log file size exceeded).\n");
-		    fclose(logg_fd);
-		    logg_fd = NULL;
-#ifdef CL_THREAD_SAFE
-		    pthread_mutex_unlock(&logg_mutex);
-#endif
-		    return 0;
-		}
-	    }
-	}
-
-
+        _(str);
 	if(*str == '!') {
 	    fprintf(logg_fd, "ERROR: ");
 	    vfprintf(logg_fd, str + 1, args);
@@ -194,6 +212,7 @@ int logg(const char *str, ...)
 	 *
 	 * FIXME: substitute %% instead of _
 	 */
+        _(str);
 	vsnprintf(vbuff, 1024, str, argscpy);
 	vbuff[1024] = 0;
 
@@ -213,31 +232,26 @@ int logg(const char *str, ...)
     }
 #endif
 
+    if(foreground) {
+           _(str);
+           vsnprintf(vbuff, 1024, str, argsout);
+           mprintf(vbuff, str);
+    }
+
     va_end(args);
     va_end(argscpy);
+    va_end(argsout);
     return 0;
 }
 
 void mprintf(const char *str, ...)
 {
-	va_list args, argscpy;
+	va_list args;
 	FILE *fd;
-	char logbuf[512];
 
 
-    if(mprintf_disabled) {
-	if(*str == '@') {
-	    va_start(args, str);
-#ifdef NO_SNPRINTF
-	    vsprintf(logbuf, ++str, args);
-#else
-	    vsnprintf(logbuf, sizeof(logbuf), ++str, args);
-#endif
-	    va_end(args);
-	    logg("ERROR: %s", logbuf);
-	}
+    if(mprintf_disabled) 
 	return;
-    }
 
     fd = stdout;
 
@@ -258,8 +272,6 @@ void mprintf(const char *str, ...)
 
 
     va_start(args, str);
-    /* va_copy is less portable so we just use va_start once more */
-    va_start(argscpy, str);
 
     if(*str == '!') {
        if(!mprintf_stdout)
@@ -271,12 +283,6 @@ void mprintf(const char *str, ...)
            fd = stderr;
 	fprintf(fd, "ERROR: ");
 	vfprintf(fd, ++str, args);
-#ifdef NO_SNPRINTF
-	vsprintf(logbuf, str, argscpy);
-#else
-	vsnprintf(logbuf, sizeof(logbuf), str, argscpy);
-#endif
-	logg("ERROR: %s", logbuf);
     } else if(!mprintf_quiet) {
 	if(*str == '^') {
            if(!mprintf_stdout)
@@ -290,7 +296,6 @@ void mprintf(const char *str, ...)
     }
 
     va_end(args);
-    va_end(argscpy);
 
     if(fd == stdout)
 	fflush(stdout);

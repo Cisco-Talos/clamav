@@ -32,7 +32,6 @@ int freshclam(struct optstruct *opt);
 static void register_char_opt(struct optstruct *opt, char ch, struct option* longopts);
 static void register_long_opt(struct optstruct *opt, const char *optname, struct option* longopts);
 
-
 int main(int argc, char **argv)
 {
 	int ret, opt_index, i, len;
@@ -265,7 +264,7 @@ void free_opt(struct optstruct *opt)
     if(!opt)
 	return;
 
-    mprintf("*Freeing option list...");
+    logg("*Freeing option list...");
     handler = opt->optlist;
 
     while(handler != NULL) {
@@ -280,5 +279,5 @@ void free_opt(struct optstruct *opt)
     if (opt->filename)
 	free(opt->filename);
     free(opt);
-    mprintf("*done\n");
+    logg("*done\n");
 }

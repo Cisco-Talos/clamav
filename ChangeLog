@@ -1,3 +1,9 @@
+Tue Jun  7 03:34:25 CEST 2005 (tk)
+----------------------------------
+  * Simplify output handling in all programs: move most of the logic of how
+    to handle output into the logg() function, and change all of the programs
+    to use logg(). Patch by Stephen Gran <steve*lobefin.net>
+
 Sun Jun  5 06:58:45 BST 2005 (njh)
 ----------------------------------
   * clamav-milter:	Better error message if the white-list file can't be

@@ -42,6 +42,7 @@ short printinfected = 0;
 
 extern int notremoved, notmoved;
 
+
 void clamscan(struct optstruct *opt)
 {
 	int ds, dms, ret, infected;
@@ -103,20 +104,15 @@ void clamscan(struct optstruct *opt)
 	dms = t2.tv_usec - t1.tv_usec;
 	ds -= (dms < 0) ? (1):(0);
 	dms += (dms < 0) ? (1000000):(0);
-	mprintf("\n----------- SCAN SUMMARY -----------\n");
-	    logg("\n-- summary --\n");
-	mprintf("Infected files: %d\n", infected);
-	    logg("Infected files: %d\n", infected);
+	logg("\n----------- SCAN SUMMARY -----------\n");
+	logg("Infected files: %d\n", infected);
 	if(notremoved) {
-	    mprintf("Not removed: %d\n", notremoved);
-		logg("Not removed: %d\n", notremoved);
+	    logg("Not removed: %d\n", notremoved);
 	}
 	if(notmoved) {
-	    mprintf("Not moved: %d\n", notmoved);
-		logg("Not moved: %d\n", notmoved);
+	    logg("Not moved: %d\n", notmoved);
 	}
-	mprintf("Time: %d.%3.3d sec (%d m %d s)\n", ds, dms/1000, ds/60, ds%60);
-	    logg("Time: %d.%3.3d sec (%d m %d s)\n", ds, dms/1000, ds/60, ds%60);
+	logg("Time: %d.%3.3d sec (%d m %d s)\n", ds, dms/1000, ds/60, ds%60);
     }
 
     exit(ret);

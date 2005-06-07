@@ -65,12 +65,9 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 #endif
 
     time(&currtime);
-    mprintf("ClamAV update process started at %s", ctime(&currtime));
     logg("ClamAV update process started at %s", ctime(&currtime));
 
 #ifndef HAVE_GMP
-    mprintf("SECURITY WARNING: NO SUPPORT FOR DIGITAL SIGNATURES\n");
-    mprintf("See the FAQ at http://www.clamav.net/faq.html for an explanation.\n");
     logg("SECURITY WARNING: NO SUPPORT FOR DIGITAL SIGNATURES\n");
     logg("See the FAQ at http://www.clamav.net/faq.html for an explanation.\n");
 #endif
@@ -82,7 +79,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	dnsreply = NULL;
     } else {
 	if((dnsreply = txtquery(dnsdbinfo, &ttl))) {
-	    mprintf("*TTL: %d\n", ttl);
+	    logg("*TTL: %d\n", ttl);
 
 	    if((pt = cli_strtok(dnsreply, 3, ":"))) {
 		    int rt;
@@ -92,8 +89,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 		free(pt);
 		time(&ct);
 		if((int) ct - rt > 10800) {
-		    mprintf("WARNING: DNS record is older than 3 hours.\n");
-		    logg("WARNING: DNS record is older than 3 hours.\n");
+		    logg("^DNS record is older than 3 hours.\n");
 		    free(dnsreply);
 		    dnsreply = NULL;
 		}
@@ -115,15 +111,12 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 
 		if((pt = cli_strtok(dnsreply, 0, ":"))) {
 
-		    mprintf("*Software version from DNS: %s\n", pt);
+		    logg("*Software version from DNS: %s\n", pt);
 
 		    if(vwarning && !strstr(cl_retver(), "devel") && !strstr(cl_retver(), "rc")) {
 			if(strcmp(cl_retver(), pt)) {
-			    mprintf("WARNING: Your ClamAV installation is OUTDATED!\n");
-			    mprintf("WARNING: Local version: %s Recommended version: %s\n", cl_retver(), pt);
-			    mprintf("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
-			    logg("WARNING: Your ClamAV installation is OUTDATED!\n");
-			    logg("WARNING: Local version: %s Recommended version: %s\n", cl_retver(), pt);
+			    logg("^Your ClamAV installation is OUTDATED!\n");
+			    logg("^Local version: %s Recommended version: %s\n", cl_retver(), pt);
 			    logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
 			}
 		    }
@@ -139,8 +132,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	}
 
 	if(!dnsreply) {
-	    mprintf("WARNING: Invalid DNS reply. Falling back to HTTP mode.\n");
-	    logg("WARNING: Invalid DNS reply. Falling back to HTTP mode.\n");
+	    logg("^Invalid DNS reply. Falling back to HTTP mode.\n");
 	}
     }
 #endif /* HAVE_RESOLV_H */
@@ -177,10 +169,8 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 
     if(updated) {
 	if(cfgopt(copt, "HTTPProxyServer")->enabled) {
-	    mprintf("Database updated (%d signatures) from %s\n", signo, hostname);
 	    logg("Database updated (%d signatures) from %s\n", signo, hostname);
 	} else {
-	    mprintf("Database updated (%d signatures) from %s (IP: %s)\n", signo, hostname, ipaddr);
 	    logg("Database updated (%d signatures) from %s (IP: %s)\n", signo, hostname, ipaddr);
 	}
 
@@ -235,22 +225,19 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	} else if(!strcmp(remotename, "daily.cvd")) {
 	    field = 2;
 	} else {
-	    mprintf("WARNING: Unknown database name (%s) passed.\n", remotename);
-	    logg("WARNING: Unknown database name (%s) passed.\n", remotename);
+	    logg("^Unknown database name (%s) passed.\n", remotename);
 	}
 
 	if(field && (pt = cli_strtok(dnsreply, field, ":"))) {
 	    if(!isnumb(pt)) {
-		mprintf("WARNING: Broken database version in TXT record.\n");
-		logg("WARNING: Broken database version in TXT record.\n");
+		logg("^Broken database version in TXT record.\n");
 	    } else {
 		dbver = atoi(pt);
-		mprintf("*%s version from DNS: %d\n", remotename, dbver);
+		logg("*%s version from DNS: %d\n", remotename, dbver);
 	    }
 	    free(pt);
 	} else {
-	    mprintf("WARNING: Invalid DNS reply. Falling back to HTTP mode.\n");
-	    logg("WARNING: Invalid DNS reply. Falling back to HTTP mode.\n");
+	    logg("^Invalid DNS reply. Falling back to HTTP mode.\n");
 	}
 
     }
@@ -266,7 +253,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	    if((cpt = cfgopt(copt, "HTTPProxyPassword"))->enabled) {
 		pass = cpt->strarg;
 	    } else {
-		mprintf("HTTPProxyUsername requires HTTPProxyPassword\n");
+		logg("HTTPProxyUsername requires HTTPProxyPassword\n");
 		if(current)
 		    cl_cvdfree(current);
 		return 56;
@@ -276,7 +263,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	if((cpt = cfgopt(copt, "HTTPProxyPort"))->enabled)
 	    port = cpt->numarg;
 
-	mprintf("Connecting via %s\n", proxy);
+	logg("Connecting via %s\n", proxy);
     }
 
     memset(ipaddr, 0, sizeof(ipaddr));
@@ -292,8 +279,8 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 		cl_cvdfree(current);
 	    return 52;
 	} else {
-	    mprintf("*Connected to %s (IP: %s).\n", hostname, ipaddr);
-	    mprintf("*Trying to retrieve http://%s/%s\n", hostname, remotename);
+	    logg("*Connected to %s (IP: %s).\n", hostname, ipaddr);
+	    logg("*Trying to retrieve http://%s/%s\n", hostname, remotename);
 	}
 
 	if(!ip[0])
@@ -302,7 +289,6 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	remote = remote_cvdhead(remotename, hostfd, hostname, proxy, user, pass, &ims);
 
 	if(!nodb && !ims) {
-	    mprintf("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
 	    logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
 	    *signo += current->sigs;
 	    close(hostfd);
@@ -311,7 +297,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	}
 
 	if(!remote) {
-	    mprintf("@Can't read %s header from %s (IP: %s)\n", remotename, hostname, ipaddr);
+	    logg("^Can't read %s header from %s (IP: %s)\n", remotename, hostname, ipaddr);
 	    close(hostfd);
 	    if(current)
 		cl_cvdfree(current);
@@ -324,16 +310,12 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     }
 
     if(!nodb && (current->version >= dbver)) {
-	mprintf("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
 	logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
 
 	if(flevel < current->fl) {
 	    /* display warning even for already installed database */
-	    mprintf("WARNING: Your ClamAV installation is OUTDATED!\n");
-	    mprintf("WARNING: Current functionality level = %d, recommended = %d\n", flevel, current->fl);
-	    mprintf("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
-	    logg("WARNING: Your ClamAV installation is OUTDATED!\n");
-	    logg("WARNING: Current functionality level = %d, recommended = %d\n", flevel, current->fl);
+	    logg("^Your ClamAV installation is OUTDATED!\n");
+	    logg("^Current functionality level = %d, recommended = %d\n", flevel, current->fl);
 	    logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
 	}
 
@@ -356,9 +338,9 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 
     if(hostfd < 0) {
 	if(ipaddr[0])
-	    mprintf("Connection with %s (IP: %s) failed.\n", hostname, ipaddr);
+	    logg("Connection with %s (IP: %s) failed.\n", hostname, ipaddr);
 	else
-	    mprintf("Connection with %s failed.\n", hostname);
+	    logg("Connection with %s failed.\n", hostname);
 	return 52;
     };
 
@@ -367,9 +349,9 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
      */
     tempname = cli_gentemp(".");
 
-    mprintf("*Retrieving http://%s/%s\n", hostname, remotename);
+    logg("*Retrieving http://%s/%s\n", hostname, remotename);
     if((ret = get_database(remotename, hostfd, tempname, hostname, proxy, user, pass))) {
-        mprintf("@Can't download %s from %s (IP: %s)\n", remotename, hostname, ipaddr);
+        logg("^Can't download %s from %s (IP: %s)\n", remotename, hostname, ipaddr);
         unlink(tempname);
         free(tempname);
         close(hostfd);
@@ -379,21 +361,21 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     close(hostfd);
 
     if((ret = cl_cvdverify(tempname))) {
-        mprintf("@Verification: %s\n", cl_strerror(ret));
+        logg("^Verification: %s\n", cl_strerror(ret));
         unlink(tempname);
         free(tempname);
         return 54;
     }
 
     if((current = cl_cvdhead(tempname)) == NULL) {
-	mprintf("@Can't read CVD header of new %s database.\n", localname);
+	logg("^Can't read CVD header of new %s database.\n", localname);
 	unlink(tempname);
 	free(tempname);
 	return 54;
     }
 
     if(current->version < dbver) {
-	mprintf("@Mirrors are not fully synchronized. Please try again later.\n");
+	logg("^Mirrors are not fully synchronized. Please try again later.\n");
     	cl_cvdfree(current);
 	unlink(tempname);
 	free(tempname);
@@ -401,31 +383,27 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     }
 
     if(!nodb && unlink(localname)) {
-	mprintf("@Can't unlink %s. Please fix it and try again.\n", localname);
+	logg("^Can't unlink %s. Please fix it and try again.\n", localname);
     	cl_cvdfree(current);
 	unlink(tempname);
 	free(tempname);
 	return 53;
     } else {
     	if(rename(tempname, localname) == -1) {
-    	    mprintf("@Can't rename %s to %s: %s\n", tempname, localname, strerror(errno));
+    	    logg("^Can't rename %s to %s: %s\n", tempname, localname, strerror(errno));
     	    if(errno == EEXIST) {
     	        unlink(localname);
     	        if(rename(tempname, localname) == -1)
-                   mprintf("@All attempts to rename the temporary file failed: %s\n", strerror(errno));
+                   logg("^All attempts to rename the temporary file failed: %s\n", strerror(errno));
             }
         }
     }
 
-    mprintf("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
     logg("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
 
     if(flevel < current->fl) {
-	mprintf("WARNING: Your ClamAV installation is OUTDATED!\n");
-	mprintf("WARNING: Current functionality level = %d, recommended = %d\n", flevel, current->fl);
-	mprintf("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
-	logg("WARNING: Your ClamAV installation is OUTDATED!\n");
-	logg("WARNING: Current functionality level = %d, recommended = %d\n", flevel, current->fl);
+	logg("^Your ClamAV installation is OUTDATED!\n");
+	logg("^Current functionality level = %d, recommended = %d\n", flevel, current->fl);
 	logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
     }
 
@@ -476,20 +454,20 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip, char 
 		    herr = "Unknown error";
 		    break;
 	    }
-	    mprintf("!Could not resolve local ip address '%s': %s\n", localip, herr);
-	    mprintf("^Using standard local ip address and port for fetching.\n");
+	    logg("!Could not resolve local ip address '%s': %s\n", localip, herr);
+	    logg("^Using standard local ip address and port for fetching.\n");
 	} else {
 	    struct sockaddr_in client;
 	    memset ((char *) &client, 0, sizeof(struct sockaddr_in));
 	    client.sin_family = AF_INET;
 	    client.sin_addr = *(struct in_addr *) he->h_addr_list[0];
 	    if (bind(socketfd, (struct sockaddr *) &client, sizeof(struct sockaddr_in)) != 0) {
-		mprintf("!Could not bind to local ip address '%s': %s\n", localip, strerror(errno));
-		mprintf("^Using default client ip.\n");
+		logg("!Could not bind to local ip address '%s': %s\n", localip, strerror(errno));
+		logg("^Using default client ip.\n");
 	    } else {
 		ia = (unsigned char *) he->h_addr_list[0];
 		sprintf(ipaddr, "%u.%u.%u.%u", ia[0], ia[1], ia[2], ia[3]);
-		mprintf("*Using ip '%s' for fetching.\n", ipaddr);
+		logg("*Using ip '%s' for fetching.\n", ipaddr);
 	    }
 	}
     }
@@ -539,7 +517,7 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip, char 
 		herr = "Unknown error";
 		break;
 	}
-        mprintf("@Can't get information about %s: %s\n", hostpt, herr);
+        logg("^Can't get information about %s: %s\n", hostpt, herr);
 	return -1;
     }
 
@@ -552,7 +530,7 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip, char 
 	    strcpy(ip, ipaddr);
 
 	if(i > 0)
-	    mprintf("Trying host %s (%s)...\n", hostpt, ipaddr);
+	    logg("Trying host %s (%s)...\n", hostpt, ipaddr);
 
 	name.sin_addr = *((struct in_addr *) host->h_addr_list[i]);
 	name.sin_port = htons(port);
@@ -564,7 +542,7 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip, char 
 #endif
 
 	if(connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in)) == -1) {
-	    mprintf("Can't connect to port %d of host %s (IP: %s)\n", port, hostpt, ipaddr);
+	    logg("Can't connect to port %d of host %s (IP: %s)\n", port, hostpt, ipaddr);
 	    close(socketfd);
 	    continue;
 	}
@@ -616,12 +594,12 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
     } else {
 	    time_t mtime = 1104119530;
 	Rfc2822DateTime(last_modified, mtime);
-	mprintf("*Assuming modification time in the past\n");
+	logg("*Assuming modification time in the past\n");
     }
 
-    mprintf("*If-Modified-Since: %s\n", last_modified);
+    logg("*If-Modified-Since: %s\n", last_modified);
 
-    mprintf("Reading CVD header (%s): ", file);
+    logg("Reading CVD header (%s): ", file);
 #ifdef	NO_SNPRINTF
     sprintf(cmd, "GET %s/%s HTTP/1.1\r\n"
 	"Host: %s\r\n%s"
@@ -653,12 +631,12 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
     }
 
     if(bread == -1) {
-	mprintf("@Error while reading CVD header of database from %s\n", hostname);
+	logg("^Error while reading CVD header of database from %s\n", hostname);
 	return NULL;
     }
 
     if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
-	mprintf("@CVD file not found on remote server\n");
+	logg("^CVD file not found on remote server\n");
 	return NULL;
     }
 
@@ -666,7 +644,7 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
     if((strstr(buffer, "HTTP/1.1 304")) != NULL || (strstr(buffer, "HTTP/1.0 304")) != NULL) { 
 
 	*ims = 0;
-	mprintf("OK (IMS)\n");
+	logg("OK (IMS)\n");
 	return NULL;
     } else {
 	*ims = 1;
@@ -688,16 +666,16 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
 
     for (j=0; j<512; j++) {
       if (!ch || (ch && !*ch) || (ch && !isprint(ch[j]))) {
-	mprintf("@Malformed CVD header detected.\n");
+	logg("^Malformed CVD header detected.\n");
 	return NULL;
       }
       head[j] = ch[j];
     }
 
     if((cvd = cl_cvdparse(head)) == NULL)
-	mprintf("@Broken CVD header.\n");
+	logg("^Broken CVD header.\n");
     else
-	mprintf("OK\n");
+	logg("OK\n");
 
     return cvd;
 }
@@ -736,8 +714,8 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
 	    char currdir[512];
 
 	getcwd(currdir, sizeof(currdir));
-	mprintf("@Can't create new file %s in %s\n", file, currdir);
-	mprintf("@The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
+	logg("^Can't create new file %s in %s\n", file, currdir);
+	logg("^The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
 	return 57;
     }
 
@@ -769,7 +747,7 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
       /* recv one byte at a time, until we reach \r\n\r\n */
 
       if(recv(socketfd, buffer + i, 1, 0) == -1) {
-        mprintf("@Error while reading database from %s\n", hostname);
+        logg("^Error while reading database from %s\n", hostname);
         close(fd);
         unlink(file);
         return 52;
@@ -788,7 +766,7 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
     /* check whether the resource actually existed or not */
 
     if ((strstr(buffer, "HTTP/1.1 404")) != NULL) { 
-      mprintf("@%s not found on remote server\n", dbfile);
+      logg("^%s not found on remote server\n", dbfile);
       close(fd);
       unlink(file);
       return 58;
@@ -798,13 +776,13 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
 
     while((bread = read(socketfd, buffer, FILEBUFF))) {
 	write(fd, buffer, bread);
-	mprintf("Downloading %s [%c]\r", dbfile, rotation[rot]);
+	logg("Downloading %s [%c]\r", dbfile, rotation[rot]);
 	fflush(stdout);
 	rot++;
 	rot %= 4;
     }
 
-    mprintf("Downloading %s [*]\n", dbfile);
+    logg("Downloading %s [*]\n", dbfile);
     close(fd);
     return 0;
 }

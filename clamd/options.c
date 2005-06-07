@@ -115,7 +115,7 @@ int main(int argc, char **argv)
 
     free_opt(opt);
 
-    cli_dbgmsg("exit main()");
+    logg("*exit main()");
     return(0);
 }
 

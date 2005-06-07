@@ -41,17 +41,17 @@ void execute( const char *type, const char *text )
 	case 0:
 		if ( -1==system(text) )
 		{
-		mprintf("@%s: couldn't execute \"%s\".\n", type, text);
+		logg("^%s: couldn't execute \"%s\".\n", type, text);
 		}
 		exit(0);
 	case -1:
-		mprintf("@%s::fork() failed, %s.\n", type, strerror(errno));
+		logg("^%s::fork() failed, %s.\n", type, strerror(errno));
 		break;
 	default:
 		active_children++;
 	}
 	else
 	{
-		mprintf("@%s: already %d processes active.\n", type, active_children);
+		logg("^%s: already %d processes active.\n", type, active_children);
 	}
 }

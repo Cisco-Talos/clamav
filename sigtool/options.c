@@ -34,6 +34,8 @@
 
 void sigtool(struct optstruct *opt);
 
+short foreground = 1;
+
 int main(int argc, char **argv)
 {
 	int ret, opt_index, i, len;
@@ -89,7 +91,7 @@ int main(int argc, char **argv)
 			register_char_option(opt, ret, NULL);
 
 		} else {
-		    mprintf("!Unknown option passed.\n");
+		    logg("!Unknown option passed.\n");
 		    free_opt(opt);
 		    exit(40);
 		}
