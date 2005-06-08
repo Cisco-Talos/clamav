@@ -194,6 +194,7 @@ zzip_file_open(ZZIP_DIR * dir, zzip_char_t* name, int o_mode)
 	    case 6: /* implode */
             case 8: /* inflate */
 	    case 9: /* deflate */
+	    case 99: /* AES encrypted file: go on and try to unpack it (zip headers are not reliable) */
                 break;
             default:
 		cli_dbgmsg("ZzipLib: Unsupported compression mode (%d)\n", hdr->d_compr);
