@@ -363,7 +363,7 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 
     if((cli_strbcasestr(filename, ".zip") || cli_strbcasestr(filename, ".rar")) && (options & CL_SCAN_ARCHIVE)) {
 	/* try to use internal archivers */
-	if((ret = checkfile(filename, root, limits, options)) == CL_VIRUS) {
+	if((ret = checkfile(filename, root, limits, options, 1)) == CL_VIRUS) {
 	    if(optl(opt, "remove")) {
 		if(unlink(filename)) {
 		    logg("%s: Can't remove\n", filename);
@@ -383,7 +383,7 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	}
 
 	/* in other case try to continue with external archivers */
-	options &= ~CL_SCAN_ARCHIVE; /* and disable decompression for the below checkfile() */
+	options &= ~CL_SCAN_ARCHIVE; /* and disable decompression for the checkfile() below */
     }
 
     if((cli_strbcasestr(filename, ".zip") && optl(opt, "unzip"))
@@ -426,8 +426,7 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	}
     }
 
-
-    if((ret = checkfile(filename, root, limits, options)) == CL_VIRUS) {
+    if((ret = checkfile(filename, root, limits, options, 0)) == CL_VIRUS) {
 	if(optl(opt, "remove")) {
 	    if(unlink(filename)) {
 		logg("%s: Can't remove\n", filename);
@@ -593,7 +592,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	    if(!printinfected)
 		logg("(raw) ");
 
-	    if((ret = checkfile(filename, root, limits, 0)) == CL_VIRUS) {
+	    if((ret = checkfile(filename, root, limits, 0, 0)) == CL_VIRUS) {
 		if(optl(opt, "remove")) {
 		    if(unlink(filename)) {
 			logg("%s: Can't remove\n", filename);
@@ -610,7 +609,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	case 0:
 	    /* no viruses found in archive, we scan just in case a raw file
 	     */
-	    if((ret = checkfile(filename, root, limits, 0)) == CL_VIRUS) {
+	    if((ret = checkfile(filename, root, limits, 0, 1)) == CL_VIRUS) {
 		if(optl(opt, "remove")) {
 		    if(unlink(filename)) {
 			logg("%s: Can't remove\n", filename);
@@ -733,7 +732,7 @@ int scandirs(const char *dirname, struct cl_node *root, const struct passwd *use
 	return treewalk(dirname, root, user, opt, limits, options, 1);
 }
 
-int checkfile(const char *filename, const struct cl_node *root, const struct cl_limits *limits, int options)
+int checkfile(const char *filename, const struct cl_node *root, const struct cl_limits *limits, int options, short printclean)
 {
 	int fd, ret;
 	const char *virname;
@@ -754,7 +753,7 @@ int checkfile(const char *filename, const struct cl_node *root, const struct cl_
 	    fprintf(stderr, "\007");
 
     } else if(ret == CL_CLEAN) {
-	if(!printinfected)
+	if(!printinfected && printclean)
 	    logg("%s: OK\n", filename);
     } else
 	if(!printinfected)
