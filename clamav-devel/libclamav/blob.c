@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.42 2005/05/18 20:29:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.43 2005/06/11 20:58:36 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -410,6 +410,15 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 #if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN) || defined(C_QNX6)
 	cli_dbgmsg("fileblobSetFilename: mkstemp(%s)\n", fullname);
 	fd = mkstemp(fullname);
+	if((fd < 0) && (errno == EINVAL)) {
+		/*
+		 * This happens with some Linux flavours when (mis)handling
+		 * filenames with foreign characters
+		 */
+		snprintf(fullname, sizeof(fullname), "%s/clamavtmpXXXXXXXXXXXXX", dir);
+		cli_dbgmsg("fileblobSetFilename: retry as mkstemp(%s)\n", fullname);
+		fd = mkstemp(fullname);
+	}
 #else
 	cli_dbgmsg("fileblobSetFilename: mktemp(%s)\n", fullname);
 	(void)mktemp(fullname);
