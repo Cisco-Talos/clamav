@@ -715,15 +715,21 @@ static int cli_scanbzip(int desc, const char **virname, long int *scanned, const
 
 static int cli_scanszdd(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
-	int fd, ret = CL_CLEAN;
+	int fd, ret = CL_CLEAN, dcpy;
 	FILE *tmp = NULL, *in;
 	char *tmpname;
 
 
-    cli_dbgmsg("in cli_scanmscomp()\n");
+    cli_dbgmsg("in cli_scanszdd()\n");
 
-    if((in = fdopen(dup(desc), "rb")) == NULL) {
+    if((dcpy = dup(desc)) == -1) {
+	cli_dbgmsg("SZDD: Can't duplicate descriptor %d\n", desc);
+	return CL_EIO;
+    }
+
+    if((in = fdopen(dcpy, "rb")) == NULL) {
 	cli_dbgmsg("SZDD: Can't open descriptor %d\n", desc);
+	close(dcpy);
 	return CL_EMSCOMP;
     }
 
