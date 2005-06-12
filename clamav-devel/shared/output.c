@@ -193,6 +193,8 @@ int logg(const char *str, ...)
 	} else if(*str == '*') {
 	    if(logg_verbose)
 		vfprintf(logg_fd, str + 1, args);
+	} else if(*str == '#') {
+	    vfprintf(logg_fd, str + 1, args);
 	} else vfprintf(logg_fd, str, args);
 
 
@@ -227,15 +229,19 @@ int logg(const char *str, ...)
 	    if(logg_verbose) {
 		syslog(LOG_DEBUG, vbuff + 1);
 	    }
+	} else if(vbuff[0] == '#') {
+	    syslog(LOG_INFO, vbuff + 1);
 	} else syslog(LOG_INFO, vbuff);
 
     }
 #endif
 
     if(foreground) {
-           _(str);
-           vsnprintf(vbuff, 1024, str, argsout);
-           mprintf(vbuff, str);
+	_(str);
+        vsnprintf(vbuff, 1024, str, argsout);
+	vbuff[1024] = 0;
+	if(vbuff[0] != '#')
+	    mprintf(vbuff, str);
     }
 
     va_end(args);

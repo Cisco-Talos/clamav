@@ -109,7 +109,7 @@ int clamscan(struct optstruct *opt)
 
     if(optc(opt, 'l')) {
 	logg_file = getargc(opt, 'l');
-	if(logg("--------------------------------------\n")) {
+	if(logg("#\n-------------------------------------------------------------------------------\n\n")) {
 	    mprintf("!Problem with internal logger.\n");
 	    return 62;
 	}

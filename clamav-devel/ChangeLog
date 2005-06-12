@@ -1,7 +1,11 @@
+Sun Jun 12 11:24:59 CEST 2005 (tk)
+----------------------------------
+  * clamscan: improve output handling
+
 Wed Jun  8 16:01:22 CEST 2005 (tk)
 ----------------------------------
-  * libclamav/zziplib/zzip-file.c: add method id for AES encrypted archives (thanks to
-    David Majorel <dm*lagoon.nc>). 
+  * libclamav/zziplib/zzip-file.c: add method id for AES encrypted archives
+    (thanks to David Majorel <dm*lagoon.nc>). 
 
 Wed Jun  8 15:37:34 CEST 2005 (tk)
 ----------------------------------
