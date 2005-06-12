@@ -293,7 +293,7 @@ int scanmanager(const struct optstruct *opt)
 
 int scanfile(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options)
 {
-	int ret, included;
+	int ret, included, printclean = 1;
 	struct optnode *optnode;
 	char *argument;
 #ifdef C_LINUX
@@ -384,6 +384,7 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 
 	/* in other case try to continue with external archivers */
 	options &= ~CL_SCAN_ARCHIVE; /* and disable decompression for the checkfile() below */
+	printclean = 0;
     }
 
     if((cli_strbcasestr(filename, ".zip") && optl(opt, "unzip"))
@@ -426,7 +427,7 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	}
     }
 
-    if((ret = checkfile(filename, root, limits, options, 0)) == CL_VIRUS) {
+    if((ret = checkfile(filename, root, limits, options, printclean)) == CL_VIRUS) {
 	if(optl(opt, "remove")) {
 	    if(unlink(filename)) {
 		logg("%s: Can't remove\n", filename);
@@ -754,7 +755,7 @@ int checkfile(const char *filename, const struct cl_node *root, const struct cl_
 
     } else if(ret == CL_CLEAN) {
 	if(!printinfected && printclean)
-	    logg("%s: OK\n", filename);
+	    mprintf("%s: OK\n", filename);
     } else
 	if(!printinfected)
 	    logg("%s: %s\n", filename, cl_strerror(ret));
@@ -810,7 +811,7 @@ int checkstdin(const struct cl_node *root, const struct cl_limits *limits, int o
 
     } else if(ret == CL_CLEAN) {
 	if(!printinfected)
-	    logg("stdin: OK\n");
+	    mprintf("stdin: OK\n");
     } else
 	if(!printinfected)
 	    logg("stdin: %s\n", cl_strerror(ret));
