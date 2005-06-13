@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2003 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  untgz() is based on public domain minitar utility by Charles G. Waldman
  *
@@ -54,7 +54,6 @@ int cli_untgz(int fd, const char *destdir)
 	return -1;
     }
 
-
     fullname = (char *) calloc(sizeof(char), strlen(destdir) + 100 + 5);
 
     while(1) {
@@ -77,6 +76,14 @@ int cli_untgz(int fd, const char *destdir)
 
 	    strncpy(name, block, 100);
 	    name[100] = '\0';
+
+	    if(strchr(name, '/')) {
+		cli_errmsg("Slash separators are not allowed in CVD.\n");
+		free(fullname);
+	        gzclose(infile);
+		return -1;
+	    }
+
 	    strcpy(fullname, destdir);
 	    strcat(fullname, "/");
 	    strcat(fullname, name);
