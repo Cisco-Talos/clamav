@@ -590,9 +590,6 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	    /* This is no longer a critical error (since 0.24). We scan
 	     * raw archive.
 	     */
-	    if(!printinfected)
-		logg("(raw) ");
-
 	    if((ret = checkfile(filename, root, limits, 0, 0)) == CL_VIRUS) {
 		if(optl(opt, "remove")) {
 		    if(unlink(filename)) {
