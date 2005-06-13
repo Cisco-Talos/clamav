@@ -10327,11 +10327,12 @@ echo "${ECHO_T}$ZLIB_HOME" >&6
 
 fi;
 
-zlib_check="yes"
 # Check whether --enable-zlib-vcheck or --disable-zlib-vcheck was given.
 if test "${enable_zlib_vcheck+set}" = set; then
   enableval="$enable_zlib_vcheck"
-  zlib_check="no"
+  zlib_check=$enableval
+else
+  zlib_check="yes"
 fi;
 
 if test ! -f "$ZLIB_HOME/include/zlib.h"
@@ -10518,11 +10519,12 @@ fi
     fi
 fi
 
-want_bzip2="yes"
 # Check whether --enable-bzip2 or --disable-bzip2 was given.
 if test "${enable_bzip2+set}" = set; then
   enableval="$enable_bzip2"
-  want_bzip2="no"
+  want_bzip2=$enableval
+else
+  want_bzip2="yes"
 fi;
 
 if test "$want_bzip2" = "yes"
@@ -11043,11 +11045,12 @@ fi
 
 fi
 
-want_clamuko="yes"
 # Check whether --enable-clamuko or --disable-clamuko was given.
 if test "${enable_clamuko+set}" = set; then
   enableval="$enable_clamuko"
-  want_clamuko="no"
+  want_clamuko=$enableval
+else
+  want_clamuko="yes"
 fi;
 
 echo "$as_me:$LINENO: checking whether setpgrp takes no argument" >&5
@@ -11207,11 +11210,12 @@ _ACEOF
 
 fi
 
-want_dsig="yes"
 # Check whether --enable-dsig or --disable-dsig was given.
 if test "${enable_dsig+set}" = set; then
   enableval="$enable_dsig"
-  want_dsig="no"
+  want_dsig=$enableval
+else
+  want_dsig="yes"
 fi;
 
 if test "$want_dsig" = "yes"
@@ -11420,19 +11424,19 @@ fi
 # Check whether --enable-pthreads or --disable-pthreads was given.
 if test "${enable_pthreads+set}" = set; then
   enableval="$enable_pthreads"
-  have_pthreads=no
+  have_pthreads=$enableval
 fi;
 
 # Check whether --enable-cr or --disable-cr was given.
 if test "${enable_cr+set}" = set; then
   enableval="$enable_cr"
-  disable_cr=yes
+  disable_cr=$enableval
 fi;
 
 # Check whether --enable-id-check or --disable-id-check was given.
 if test "${enable_id_check+set}" = set; then
   enableval="$enable_id_check"
-  use_id="yes"
+  use_id=$enableval
 else
   use_id="no"
 fi;
@@ -11440,7 +11444,7 @@ fi;
 # Check whether --enable-yp-check or --disable-yp-check was given.
 if test "${enable_yp_check+set}" = set; then
   enableval="$enable_yp_check"
-  use_yp="yes"
+  use_yp=$enableval
 else
   use_yp="no"
 fi;
@@ -11474,32 +11478,45 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-test_clamav=yes
 # Check whether --enable-clamav or --disable-clamav was given.
 if test "${enable_clamav+set}" = set; then
   enableval="$enable_clamav"
-  test_clamav=no
+  test_clamav=$enableval
+else
+  test_clamav=yes
 fi;
 
 # Check whether --enable-debug or --disable-debug was given.
 if test "${enable_debug+set}" = set; then
   enableval="$enable_debug"
+  enable_debug=$enableval
+else
+  enable_debug="no"
+fi;
+
+if test "$enable_debug" = "yes"; then
 
 cat >>confdefs.h <<\_ACEOF
 #define CL_DEBUG 1
 _ACEOF
 
-fi;
+fi
 
 # Check whether --enable-bigstack or --disable-bigstack was given.
 if test "${enable_bigstack+set}" = set; then
   enableval="$enable_bigstack"
+  enable_bigstack=$enableval
+else
+  enable_bigstack="no"
+fi;
+
+if test "$enable_bigstack" = "yes"; then
 
 cat >>confdefs.h <<\_ACEOF
 #define C_BIGSTACK 1
 _ACEOF
 
-fi;
+fi
 
 
 # Check whether --with-dbdir or --without-dbdir was given.
@@ -13248,7 +13265,7 @@ fi
 # Check whether --enable-gethostbyname_r or --disable-gethostbyname_r was given.
 if test "${enable_gethostbyname_r+set}" = set; then
   enableval="$enable_gethostbyname_r"
-  disable_gethostbyname_r="yes"
+  disable_gethostbyname_r=$enableval
 fi;
 
 if test "$disable_gethostbyname_r" = "yes"; then
@@ -13393,12 +13410,12 @@ fi
 # Check whether --enable-readdir_r or --disable-readdir_r was given.
 if test "${enable_readdir_r+set}" = set; then
   enableval="$enable_readdir_r"
-
+  enable_readdir_r=$enableval
 else
-  disable_readdir_r="yes"
+  enable_readdir_r="no"
 fi;
 
-if test "$disable_readdir_r" = "yes"; then
+if test "$enable_readdir_r" = "no"; then
     echo "$as_me:$LINENO: result: support disabled" >&5
 echo "${ECHO_T}support disabled" >&6
 elif test -z "$ac_cv_readdir_args"; then
