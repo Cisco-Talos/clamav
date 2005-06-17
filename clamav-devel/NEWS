@@ -1,80 +1,10 @@
-0.84rc1
+0.86rc1
 -------
 
-This version improves detection of JPEG (MS04-028) based exploits, introduces
-support for TNEF files and new detection mechanisms. Various bugfixes
-(including problems with scanning of digest mail files) and improvements
-have been made.
-
-
--) libclamav:
-    + JPEG exploit detector now also checks embedded Photoshop thumbnail images
-    + archive meta-data scanner (improves malware detection within encrypted
-      archives)
-    + support for TNEF (winmail.dat) decoding
-    + support for all tar archive formats
-    + MD5 implementation replaced with a slightly faster one
-    + improved database reloading with reference counter
-    + database updateable false positive eliminator
-    + speed improvements
-    + various bugfixes
-
--) clamd:
-    + VirusEvent now sets CLAM_VIRUSEVENT_FILENAME and CLAM_VIRUSEVENT_VIRUSNAME
-      environment variables
-
--) clamav-milter:
-    + improved database update detection when not --external
-
--) clamscan:
-    + new options --include-dir and exclude-dir
-    + new option --max-dir-recursion
-
--) freshclam:
-    + new directive LocalIPAddress
-
--) contrib:
-    + clamdmon 1.0 - clamdwatch replacement written in C
-
--) 3rd party software:
-    + hMailServer - open source e-mail server for Microsoft Window
-    + pop3.proxy - proxy server for the POP3 protocol
-    + HTTP Anti Virus Proxy
-    + Squidclam - replacement for SquidClamAV-Redirector.py written in C
-    + QtClamAVclient - remote clamd client based on the Qt Toolkit
-    + qpsmtp - flexible smtpd daemon written in Perl
-
-
-News:
-
-Palo Alto, Calif. March 31st 2005 - Clam AntiVirus, the leading Open Source
-antivirus toolkit, and Sensory Networks, the leading provider of hardware
-acceleration for network security applications, announced a partnership
-to provide hardware acceleration support for the Clam AntiVirus suite.
-[...]
-Support for Sensory Networks' NodalCore acceleration in ClamAV will be
-available in version 0.90 of the software suite in Q3 2005. For more
-information please visit:
-http://www.clamav.net/partners/partner-sn.html
-http://www.sensorynetworks.com/
-
-
-The ClamAV project announces the opening of the official merchandise store:
-
-http://www.cafepress.com/clamav/
-
-A big thank you to Finndesign (http://www.finndesign.fi) which
-volunteered to design the whole line of products, including:
-
-- t-shirts (for women and men)
-- golf shirt
-- sweatshirt
-- coffee mug
-- mousepad
-- stickers
-- scrapbook
-
-By purchasing our merchandise, you contribute to the development of ClamAV.
+This release candidate introduces a number of bugfixes and cleanups.
+Possible descriptor leaks in archive unpackers and mishandling of fast track
+uuencoded files have been fixed in libclamav. Database reloading in
+clamav-milter has been improved.
 
 --
 The ClamAV team (http://www.clamav.net/team.html)

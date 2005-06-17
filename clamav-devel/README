@@ -2,13 +2,48 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
-0.84rc1
+0.86rc1
 -------
+
+This release candidate introduces a number of bugfixes and cleanups.
+Possible descriptor leaks in archive unpackers and mishandling of fast track
+uuencoded files have been fixed in libclamav. Database reloading in
+clamav-milter has been improved.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
+0.85.1
+------
+
+A problem where an email with more than one content-disposition type line,
+one or more of which was empty, could crash libclamav has been fixed. Other
+minor bugfixes have been made.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
+0.85
+----
+
+Bugfixes in this release include correct signature offset calculation in large
+files, proper handling of encrypted zip archives, and others.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
+0.84
+----
 
 This version improves detection of JPEG (MS04-028) based exploits, introduces
 support for TNEF files and new detection mechanisms. Various bugfixes
 (including problems with scanning of digest mail files) and improvements
 have been made.
+
+
+** We encourage users to help testing the development versions, now with **
+** rewritten RAR code and support for 3.0 archives!			 **
+**		    http://www.clamav.net/snapshot/			 **
 
 
 -) libclamav:
@@ -40,7 +75,7 @@ have been made.
 -) contrib:
     + clamdmon 1.0 - clamdwatch replacement written in C
 
--) 3rd party software (check clamdoc.pdf for details):
+-) 3rd party software:
     + hMailServer - open source e-mail server for Microsoft Window
     + pop3.proxy - proxy server for the POP3 protocol
     + HTTP Anti Virus Proxy
@@ -49,7 +84,6 @@ have been made.
     + Squidclam - replacement for SquidClamAV-Redirector.py written in C
     + QtClamAVclient - remote clamd client based on the Qt Toolkit
     + qpsmtp - flexible smtpd daemon written in Perl
-
 
 News:
 
