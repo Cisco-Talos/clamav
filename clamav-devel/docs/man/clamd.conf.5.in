@@ -146,7 +146,7 @@ Execute the COMMAND when virus is found. In the command string %v will be replac
 Default: disabled
 .TP 
 \fBExitOnOOM\fR
-Stop deamon when libclamav reports out of memory condition.
+Stop daemon when libclamav reports out of memory condition.
 .br 
 Default: disabled
 .TP 
