@@ -1,3 +1,7 @@
+Sat Jun 18 02:22:26 CEST 2005 (tk)
+----------------------------------
+  * libclamav/mspack/cabd.c: fix possible infinite loop
+
 Sat Jun 18 01:55:58 CEST 2005 (tk)
 ----------------------------------
   * sigtool/vba.c: revert incorrect logg() patch (thanks to Trog)
