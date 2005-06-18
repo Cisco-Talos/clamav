@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.247 2005/06/01 15:01:44 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.248 2005/06/18 13:23:42 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -811,7 +811,7 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 	 * message is stopped, and giving a better indication of which message
 	 * within the mailbox is infected
 	 */
-	if(strncmp(buffer, "From ", 5) == 0) {
+	if((strncmp(buffer, "From ", 5) == 0) && isalnum(buffer[5])) {
 		/*
 		 * Have been asked to check a UNIX style mbox file, which
 		 * may contain more than one e-mail message to decode
@@ -850,7 +850,7 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 
 		do {
 			cli_chomp(buffer);
-			if(lastLineWasEmpty && (strncmp(buffer, "From ", 5) == 0)) {
+			if(lastLineWasEmpty && (strncmp(buffer, "From ", 5) == 0) && isalnum(buffer[5])) {
 				cli_dbgmsg("Deal with email number %d\n", messagenumber++);
 				/*
 				 * End of a message in the mail box

@@ -1,3 +1,9 @@
+Sat Jun 18 14:24:54 BST 2005 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Harden the test for the start of a new message in mbox,
+		based on a suggestion by "Andrey J. Melnikoff (TEMHOTA)"
+		<temnota at kmv.ru>
+
 Sat Jun 18 02:22:26 CEST 2005 (tk)
 ----------------------------------
   * libclamav/mspack/cabd.c: fix possible infinite loop
@@ -23,7 +29,7 @@ Sun Jun 12 11:24:59 CEST 2005 (tk)
 Wed Jun  8 16:01:22 CEST 2005 (tk)
 ----------------------------------
   * libclamav/zziplib/zzip-file.c: add method id for AES encrypted archives
-    (thanks to David Majorel <dm*lagoon.nc>). 
+    (thanks to David Majorel <dm*lagoon.nc>).
 
 Wed Jun  8 15:37:34 CEST 2005 (tk)
 ----------------------------------
