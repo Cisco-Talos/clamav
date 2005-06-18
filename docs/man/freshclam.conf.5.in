@@ -98,7 +98,7 @@ Use \fBIP\fR as client address for downloading databases. Useful for multi homed
 Default: Use OS\'es default outgoing IP address.
 .TP 
 \fBNotifyClamd \[STRING\]\fR
-Notify a running clamd(8) to reload it\'s database after a download has occured. Optionally a clamd.conf(5) file location may be given to tell freshclam(1) how to communicate with clamd(8).
+Notify a running clamd(8) to reload it\'s database after a download has occurred. Optionally a clamd.conf(5) file location may be given to tell freshclam(1) how to communicate with clamd(8).
 .br .
 Default: The default is to not notify clamd. See clamd.conf(5)\'s option SelfCheck for how clamd(8) handles database updates in this case.
 .TP 

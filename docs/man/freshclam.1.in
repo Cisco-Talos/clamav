@@ -55,10 +55,10 @@ Notify the daemon about the new database. By default it reads a hardcoded config
 Use (local) IP for HTTP downloads. Useful for multi\-homed systems. If binding fails for whatever reason, a warning is issued and freshclam behaves like without this flag.
 .TP 
 \fB\-\-on\-error\-execute=COMMAND\fR
-Execute COMMAND if error occured. Remeber, that virus database freshness is the most important thing in anti\-virus system. With this option freshclam can alert you (eg. send SMS) when something is going wrong.
+Execute COMMAND if error occurred. Remember, that virus database freshness is the most important thing in anti\-virus system. With this option freshclam can alert you (eg. send SMS) when something is going wrong.
 .TP 
 \fB\-\-on\-update\-execute=COMMAND\fR
-Execute COMMAND after succesful update.
+Execute COMMAND after successful update.
 .SH "EXAMPLES"
 .LP 
 .TP 
@@ -74,7 +74,7 @@ Execute COMMAND after succesful update.
 
 \fBfreshclam \-d \-c 2\fR
 .SH "RETURN CODES"
-0 : Database succesfully updated.
+0 : Database successfully updated.
 .TP 
 1 : Database is up\-to\-date.
 .TP 
@@ -104,7 +104,7 @@ Execute COMMAND after succesful update.
 .TP 
 61: Can't drop privileges.
 .TP 
-62: Can't initialze logger.
+62: Can't initialize logger.
 .SH "FILES"
 .LP 
 @CFGDIR@/freshclam.conf
