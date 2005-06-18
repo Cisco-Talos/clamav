@@ -164,11 +164,11 @@ void output_token (unsigned char token)
 
     for (i = 0; mac_token[i].token != 0x00; i++) {
 	if (token == mac_token[i].token) {
-	    logg (" %s ", mac_token[i].str);
+	    printf (" %s ", mac_token[i].str);
 	    return;
 	}
     }
-    logg ("[#0x%x]", token);
+    printf ("[#0x%x]", token);
     return;
 }
 
@@ -514,11 +514,11 @@ void output_token67 (uint16_t token)
     };
     for (i = 0; mac_token[i].token != 0x0000; i++) {
 	if (token == mac_token[i].token) {
-	    logg ("%s", mac_token[i].str);
+	    printf ("%s", mac_token[i].str);
 	    return;
 	}
     }
-    logg ("[#67(0x%x)]", token);
+    printf ("[#67(0x%x)]", token);
     return;
 }
 
@@ -765,11 +765,11 @@ void output_token73 (uint16_t token)
 
     for (i = 0; mac_token[i].token != 0x0000; i++) {
 	if (token == mac_token[i].token) {
-	    logg ("%s", mac_token[i].str);
+	    printf ("%s", mac_token[i].str);
 	    return;
 	}
     }
-    logg ("[#73(0x%x)]", token);
+    printf ("[#73(0x%x)]", token);
     return;
 }
 
@@ -778,12 +778,12 @@ void print_hex_buff (unsigned char *start, unsigned char *end, int hex_output)
     if (!hex_output) {
 	return;
     }
-    logg ("[clam hex:");
+    printf ("[clam hex:");
     while (start < end) {
-	logg (" %.2x", *start);
+	printf (" %.2x", *start);
 	start++;
     }
-    logg ("]\n");
+    printf ("]\n");
 }
 
 void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
@@ -803,7 +803,7 @@ void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	    strncpy (tmp_buff, buff + i + 2, s_length);
 	    tmp_buff[s_length] = '\0';
 	    print_hex_buff (line_start, buff + i + 2 + s_length, hex_output);
-	    logg ("\n%s", tmp_buff);
+	    printf ("\n%s", tmp_buff);
 	    free (tmp_buff);
 	    i += 2 + s_length;
 	    line_start = buff + i;
@@ -813,7 +813,7 @@ void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	    tmp_buff = (unsigned char *) malloc (s_length + 1);
 	    strncpy (tmp_buff, buff + i + 2, s_length);
 	    tmp_buff[s_length] = '\0';
-	    logg (" %s", tmp_buff);
+	    printf (" %s", tmp_buff);
 	    free (tmp_buff);
 	    i += 2 + s_length;
 	    break;
@@ -822,7 +822,7 @@ void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	    tmp_buff = (unsigned char *) malloc (s_length + 1);
 	    strncpy (tmp_buff, buff + i + 2, s_length);
 	    tmp_buff[s_length] = '\0';
-	    logg (" \"%s\"", tmp_buff);
+	    printf (" \"%s\"", tmp_buff);
 	    free (tmp_buff);
 	    i += 2 + s_length;
 	    break;
@@ -831,7 +831,7 @@ void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	    tmp_buff = (unsigned char *) malloc (s_length + 1);
 	    strncpy (tmp_buff, buff + i + 2, s_length);
 	    tmp_buff[s_length] = '\0';
-	    logg (" '%s", tmp_buff);
+	    printf (" '%s", tmp_buff);
 	    free (tmp_buff);
 	    i += 2 + s_length;
 	    break;
@@ -840,7 +840,7 @@ void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	    tmp_buff = (unsigned char *) malloc (s_length + 1);
 	    strncpy (tmp_buff, buff + i + 2, s_length);
 	    tmp_buff[s_length] = '\0';
-	    logg (" %s", tmp_buff);
+	    printf (" %s", tmp_buff);
 	    free (tmp_buff);
 	    i += 2 + s_length;
 	    break;
@@ -849,7 +849,7 @@ void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	    tmp_buff = (unsigned char *) malloc (s_length + 1);
 	    strncpy (tmp_buff, buff + i + 2, s_length);
 	    tmp_buff[s_length] = '\0';
-	    logg ("REM%s", tmp_buff);
+	    printf ("REM%s", tmp_buff);
 	    free (tmp_buff);
 	    i += 2 + s_length;
 	    break;
@@ -858,7 +858,7 @@ void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	    tmp_buff = (unsigned char *) malloc (s_length + 1);
 	    strncpy (tmp_buff, buff + i + 2, s_length);
 	    tmp_buff[s_length] = '\0';
-	    logg (" .%s", tmp_buff);
+	    printf (" .%s", tmp_buff);
 	    free (tmp_buff);
 	    i += 2 + s_length;
 	    break;
@@ -867,7 +867,7 @@ void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	    tmp_buff = (unsigned char *) malloc (s_length + 1);
 	    strncpy (tmp_buff, buff + i + 2, s_length);
 	    tmp_buff[s_length] = '\0';
-	    logg ("%s", tmp_buff);
+	    printf ("%s", tmp_buff);
 	    free (tmp_buff);
 	    i += 2 + s_length;
 	    break;
@@ -877,7 +877,7 @@ void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	    memcpy (tmp_buff, buff + i + 3, w_length * 2);
 	    tmp_name = get_unicode_name (tmp_buff, w_length * 2);
 	    free (tmp_buff);
-	    logg ("\"%s\"", tmp_name);
+	    printf ("\"%s\"", tmp_name);
 	    free (tmp_name);
 	    i += 3 + (w_length * 2);
 	    break;
@@ -888,7 +888,7 @@ void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	    memcpy (tmp_buff, buff + i + 2, s_length * 2);
 	    tmp_name = get_unicode_name (tmp_buff, s_length * 2);
 	    free (tmp_buff);
-	    logg ("'%s", tmp_name);
+	    printf ("'%s", tmp_name);
 	    free (tmp_name);
 	    i += 2 + (s_length * 2);
 	    break;
@@ -896,7 +896,7 @@ void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	case 0x66:
 	    int_val = (uint8_t) (buff[i + 2] << 8) + buff[i + 1];
 	    print_hex_buff (line_start, buff + i + 3, hex_output);
-	    logg ("\n%d", int_val);
+	    printf ("\n%d", int_val);
 	    i += 3;
 	    line_start = buff + i;
 	    break;
@@ -907,25 +907,25 @@ void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	    break;
 	case 0x68:
 	    /* 8-byte float */
-	    logg ("(float)");
+	    printf ("(float)");
 	    i += 9;
 	    break;
 	case 0x6c:
 	    int_val = (uint16_t) (buff[i + 2] << 8) + buff[i + 1];
-	    logg (" %d", int_val);
+	    printf (" %d", int_val);
 	    i += 3;
 	    break;
 	case 0x6e:
 	    s_length = (uint8_t) buff[i + 1];
 	    for (j = 0; j < s_length; j++) {
-		logg (" ");
+		printf (" ");
 	    }
 	    i += 2;
 	    break;
 	case 0x6f:
 	    s_length = (uint8_t) buff[i + 1];
 	    for (j = 0; j < s_length; j++) {
-		logg ("\t");
+		printf ("\t");
 	    }
 	    i += 2;
 	    break;
@@ -936,7 +936,7 @@ void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	    break;
 	case 0x64:
 	    print_hex_buff (line_start, buff + i + 1, hex_output);
-	    logg ("\n");
+	    printf ("\n");
 	    i++;
 	    line_start = buff + i;
 	    break;
@@ -990,17 +990,17 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 				/* generate the temporary directory */
 				dir = cli_gentemp (tmpdir);
 				if (mkdir (dir, 0700)) {
-				    logg ("Can't create temporary directory %s\n", dir);
+				    printf ("Can't create temporary directory %s\n", dir);
 				    return CL_ETMPDIR;
 				}
 
 				if ((desc = open (fname, O_RDONLY)) == -1) {
-				    logg ("Can't open file %s\n", fname);
+				    printf ("Can't open file %s\n", fname);
 				    return 1;
 				}
 
 				if ((ret = cli_ole2_extract (desc, dir, NULL))) {
-				    logg ("ERROR %s\n", cl_strerror (ret));
+				    printf ("ERROR %s\n", cl_strerror (ret));
 				    cli_rmdirs (dir);
 				    free (dir);
 				    return ret;
@@ -1019,7 +1019,7 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 	    }
 	}
     } else {
-	logg("!Can't open directory %s.\n", dirname);
+	cli_errmsg ("Can't open directory %s.\n", dirname);
 	return CL_EOPEN;
     }
 
@@ -1037,7 +1037,7 @@ int sigtool_vba_scandir (const char *dirname, int hex_output)
     char *fname, *fullname;
     unsigned char *data;
 
-    logg("^VBA scan dir: %s\n", dirname);
+    cli_dbgmsg ("VBA scan dir: %s\n", dirname);
     if ((vba_project = (vba_project_t *) vba56_dir_read (dirname))) {
 
 	for (i = 0; i < vba_project->count; i++) {
@@ -1045,27 +1045,27 @@ int sigtool_vba_scandir (const char *dirname, int hex_output)
 	    sprintf (fullname, "%s/%s", vba_project->dir, vba_project->name[i]);
 	    fd = open (fullname, O_RDONLY);
 	    if (fd == -1) {
-		logg("!Scan->OLE2 -> Can't open file %s\n", fullname);
+		cli_errmsg ("Scan->OLE2 -> Can't open file %s\n", fullname);
 		free (fullname);
 		ret = CL_EOPEN;
 		break;
 	    }
 	    free (fullname);
-	    logg("*decompress VBA project '%s'\n", vba_project->name[i]);
-	    logg ("-------------- start of %s ------------------\n", vba_project->name[i]);
+	    cli_dbgmsg ("decompress VBA project '%s'\n", vba_project->name[i]);
+	    printf ("-------------- start of %s ------------------\n", vba_project->name[i]);
 	    data = (unsigned char *) vba_decompress (fd, vba_project->offset[i], &data_len);
 	    close (fd);
 
 	    if (!data) {
-		logg("*VBA project '%s' decompressed to NULL\n", vba_project->name[i]);
+		cli_dbgmsg ("WARNING: VBA project '%s' decompressed to NULL\n", vba_project->name[i]);
 	    } else {
 		data = (char *) realloc (data, data_len + 1);
 		data[data_len] = '\0';
-		logg ("%s", data);
+		printf ("%s", data);
 		free (data);
 
 	    }
-	    logg ("-------------- end of %s ------------------\n", vba_project->name[i]);
+	    printf ("-------------- end of %s ------------------\n", vba_project->name[i]);
 	}
 
 	for (i = 0; i < vba_project->count; i++)
@@ -1086,26 +1086,26 @@ int sigtool_vba_scandir (const char *dirname, int hex_output)
 	    sprintf (fullname, "%s/%s", vba_project->dir, vba_project->name[i]);
 	    fd = open (fullname, O_RDONLY);
 	    if (fd == -1) {
-		logg("!Scan->OLE2 -> Can't open file %s\n", fullname);
+		cli_errmsg ("Scan->OLE2 -> Can't open file %s\n", fullname);
 		free (fullname);
 		ret = CL_EOPEN;
 		break;
 	    }
 	    free (fullname);
-	    logg("*decompress WM project '%s' macro %d\n", vba_project->name[i], i);
-	    logg ("\n\n-------------- start of macro:%d key:%d length:%d ------------------\n", i,
+	    cli_dbgmsg ("decompress WM project '%s' macro %d\n", vba_project->name[i], i);
+	    printf ("\n\n-------------- start of macro:%d key:%d length:%d ------------------\n", i,
 		    vba_project->key[i], vba_project->length[i]);
 	    data = (unsigned char *) wm_decrypt_macro (fd, vba_project->offset[i], vba_project->length[i],
 						    vba_project->key[i]);
 	    close (fd);
 
 	    if (!data) {
-		logg("*WM project '%s' macro %d decrypted to NULL\n", vba_project->name[i], i);
+		cli_dbgmsg ("WARNING: WM project '%s' macro %d decrypted to NULL\n", vba_project->name[i], i);
 	    } else {
 		wm_decode_macro (data, vba_project->length[i], hex_output);
 		free (data);
 	    }
-	    logg ("\n-------------- end of macro %d ------------------\n\n", i);
+	    printf ("\n-------------- end of macro %d ------------------\n\n", i);
 	}
 	for (i = 0; i < vba_project->count; i++)
 	    free (vba_project->name[i]);
@@ -1135,7 +1135,7 @@ int sigtool_vba_scandir (const char *dirname, int hex_output)
 	    }
 	}
     } else {
-	logg("!ScanDir -> Can't open directory %s.\n", dirname);
+	cli_errmsg ("ScanDir -> Can't open directory %s.\n", dirname);
 	return CL_EOPEN;
     }
 
