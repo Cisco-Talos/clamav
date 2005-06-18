@@ -151,6 +151,8 @@ void clamd(struct optstruct *opt)
 	    logg("!setuid(%d) failed.\n", (int) user->pw_uid);
 	    exit(1);
 	}
+
+	logg("Running as user %s (UID %d, GID %d)\n", user->pw_name, user->pw_uid, user->pw_gid);
     }
 #endif
 
@@ -256,7 +258,6 @@ void clamd(struct optstruct *opt)
     }
 
 
-    logg("Running as user %s (UID %d, GID %d)\n", cpt->strarg, user->pw_uid, user->pw_gid);
     /* fork into background */
     if(!cfgopt(copt, "Foreground")->enabled)
 	daemonize();
