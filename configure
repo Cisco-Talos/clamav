@@ -11188,9 +11188,11 @@ _ACEOF
 
 
   sendmailver=`$sendmailprog -d0 < /dev/null | head -1 | awk '{print $2}'`
-  sendmailver_a=`echo $sendmailver | awk -F. '{printf $1}'`
-  sendmailver_b=`echo $sendmailver | awk -F. '{printf $2}'`
-  sendmailver_c=`echo $sendmailver | awk -F. '{printf $3}'`
+
+  if test -n "$sendmailver"; then
+    sendmailver_a=`echo $sendmailver | awk -F. '{printf $1}'`
+    sendmailver_b=`echo $sendmailver | awk -F. '{printf $2}'`
+    sendmailver_c=`echo $sendmailver | awk -F. '{printf $3}'`
 
 
 cat >>confdefs.h <<_ACEOF
@@ -11207,7 +11209,7 @@ cat >>confdefs.h <<_ACEOF
 #define SENDMAIL_VERSION_C $sendmailver_c
 _ACEOF
 
-
+  fi
 fi
 
 # Check whether --enable-dsig or --disable-dsig was given.
