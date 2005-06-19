@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.249 2005/06/19 12:09:10 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.250 2005/06/19 16:04:43 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2064,7 +2064,6 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							 * No plain text version
 							 */
 							cli_dbgmsg("No plain text alternative");
-						assert(messageGetBody(aMessage) != NULL);
 						break;
 					case TEXT:
 						dtype = messageGetDispositionType(aMessage);
