@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.156 2005/05/15 15:46:12 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.157 2005/06/19 12:03:43 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2189,6 +2189,10 @@ usefulArg(const char *arg)
 /*
  * We've run out of memory. Try to recover some by
  * deduping the message
+ *
+ * FIXME: this can take a long time. The real solution is for system admins
+ *	to refrain from setting ulimits too low, then this routine won't be
+ *	called
  */
 static void
 messageDedup(message *m)
