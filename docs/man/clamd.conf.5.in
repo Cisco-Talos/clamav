@@ -104,6 +104,11 @@ Maximum length the queue of pending connections may grow to.
 .br 
 Default: 15
 .TP 
+\fBMaxConnectionQueueTime NUMBER\fR
+Maximum number of seconds a connection can be queued and unprocessed without being aborted when it finally comes time to process it. The value of zero disables the limit.
+.br 
+Default: 20
+.TP 
 \fBMaxThreads NUMBER\fR
 Maximal number of threads running at the same time.
 .br 

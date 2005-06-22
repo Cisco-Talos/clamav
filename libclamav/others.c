@@ -42,7 +42,7 @@
 
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
-pthread_mutex_t cli_gentempname_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t cli_gentempname_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)

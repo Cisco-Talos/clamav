@@ -1,3 +1,10 @@
+Wed Jun 22 16:43:43 CEST 2005 (tk)
+----------------------------------
+  * clamd: limit the internal queue of requests to MaxConnectionQueueLength
+	   and add new option MaxConnectionQueueTime (maximum number of seconds
+	   a connection can be queued and unprocessed without being aborted).
+	   Patch by Mark Pizzolato <clamav-devel*subscriptions.pizzolato.net>
+
 Sun Jun 19 13:11:20 BST 2005 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Changed debug message when no text part is found in
@@ -126,7 +133,7 @@ Sat May 21 23:06:03 BST 2005 (njh)
 Sat May 21 02:17:08 CEST 2005 (tk)
 ----------------------------------
   * Remove the use of tmpfile(). Patch by Mark Pizzolato
-    <clamav-devel@subscriptions.pizzolato.net>, full list of changes:
+    <clamav-devel*subscriptions.pizzolato.net>, full list of changes:
 
   * libclamav/others.c
     - in cli_gentempname call cli_rndnum with 256 instead of 255 to get the
