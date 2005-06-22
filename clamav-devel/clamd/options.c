@@ -115,7 +115,7 @@ int main(int argc, char **argv)
 
     free_opt(opt);
 
-    logg("*exit main()");
+    mprintf("*exit main()");
     return(0);
 }
 

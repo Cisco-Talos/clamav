@@ -163,7 +163,7 @@ void clamd(struct optstruct *opt)
     logg_time = cfgopt(copt, "LogTime")->enabled;
     logok = cfgopt(copt, "LogClean")->enabled;
     logg_size = cfgopt(copt, "LogFileMaxSize")->numarg;
-    logg_verbose = cfgopt(copt, "LogVerbose")->enabled;
+    logg_verbose = mprintf_verbose = cfgopt(copt, "LogVerbose")->enabled;
 
     if(cfgopt(copt, "Debug")->enabled) /* enable debug messages in libclamav */
 	cl_debug();

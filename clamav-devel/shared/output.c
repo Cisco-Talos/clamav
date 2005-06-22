@@ -129,10 +129,10 @@ int logg(const char *str, ...)
     va_start(argscpy, str);
     va_start(argsout, str);
 
-    if(logg_file) {
 #ifdef CL_THREAD_SAFE
-	pthread_mutex_lock(&logg_mutex);
+    pthread_mutex_lock(&logg_mutex);
 #endif
+    if(logg_file) {
 	if(!logg_fd) {
 	    old_umask = umask(0037);
 	    if((logg_fd = fopen(logg_file, "a")) == NULL) {
@@ -200,9 +200,6 @@ int logg(const char *str, ...)
 
 	fflush(logg_fd);
 
-#ifdef CL_THREAD_SAFE
-	pthread_mutex_unlock(&logg_mutex);
-#endif
     }
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
@@ -243,6 +240,10 @@ int logg(const char *str, ...)
 	if(vbuff[0] != '#')
 	    mprintf(vbuff, str);
     }
+
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_unlock(&logg_mutex);
+#endif
 
     va_end(args);
     va_end(argscpy);
