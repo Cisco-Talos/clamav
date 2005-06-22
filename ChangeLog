@@ -1,3 +1,8 @@
+Wed Jun 22 21:51:49 BST 2005 (njh)
+----------------------------------
+  * libclamav/pdf.c:	Remember to close a file that fails to parse. Fix by
+				John Callaghan <jpc at msu.edu>
+
 Wed Jun 22 20:12:54 CEST 2005 (tk)
 ----------------------------------
   * clamd/clamd.c, shared/output.c: improve output handling (Patch by Mark
