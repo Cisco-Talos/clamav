@@ -126,26 +126,45 @@ void virusaction(const char *filename, const char *virname, const struct cfgstru
     }
 }
 
-int poll_fd(int fd, int timeout_sec)
+int poll_fds(int *fds, int nfds, int timeout_sec)
 {
 	int retval;
+	int i;
 #ifdef HAVE_POLL
-	struct pollfd poll_data[1];
+	struct pollfd poll_1[1];
+	struct pollfd *poll_data = poll_1;
 
-    poll_data[0].fd = fd;
-    poll_data[0].events = POLLIN;
-    poll_data[0].revents = 0;
+    if (nfds>1)
+	poll_data = malloc(nfds*sizeof(*poll_data));
+    for (i=0; i<nfds; i++) {
+	poll_data[i].fd = fds[i];
+	poll_data[i].events = POLLIN;
+	poll_data[i].revents = 0;
+    }
 
     if (timeout_sec > 0) {
     	timeout_sec *= 1000;
     }
     while (1) {
-    	retval = poll(poll_data, 1, timeout_sec);
+    	retval = poll(poll_data, nfds, timeout_sec);
 	if (retval == -1) {
    	    if (errno == EINTR) {
 		continue;
 	    }
+	    if (nfds>1)
+		free(poll_data);
 	    return -1;
+	}
+	if (nfds>1) {
+	    if (retval>0) {
+		for (i=0; i<nfds; i++) {
+		    if (poll_data[i].revents) {
+			retval = i+1;
+			break;
+		    }
+		}
+	    }
+	    free(poll_data);
 	}
 	return retval;
     }
@@ -153,18 +172,24 @@ int poll_fd(int fd, int timeout_sec)
 #else
 	fd_set rfds;
 	struct timeval tv;
+	int maxfd = 0;
 
-    if (fd >= DEFAULT_FD_SETSIZE) {
-	return -1;
+    for (i=0; i<nfds; i++) {
+	if (fds[i] >= DEFAULT_FD_SETSIZE) {
+	    return -1;
+	}
+	if (fds[i] > maxfd)
+	    maxfd = fds[i];
     }
 
     while (1) {
 	FD_ZERO(&rfds);
-	FD_SET(fd, &rfds);
+	for (i=0; i<nfds; i++)
+	    FD_SET(fds[i], &rfds);
 	tv.tv_sec = timeout_sec;
 	tv.tv_usec = 0;
 
-	retval = select(fd+1, &rfds, NULL, NULL,
+	retval = select(maxfd+1, &rfds, NULL, NULL,
 			(timeout_sec>0 ? &tv : NULL));
 	if (retval == -1) {
 	    if (errno == EINTR) {
@@ -172,11 +197,24 @@ int poll_fd(int fd, int timeout_sec)
 	    }
 	    return -1;
 	}
+	if ((nfds>1) && (retval>0)) {
+	    for (i=0; i<nfds; i++) {
+		if (FD_ISSET(fds[i],&rfds)) {
+		    retval = i+1;
+		    break;
+		}
+	    }
+	}
 	return retval;
     }
 #endif
 
     return -1;
+}
+
+int poll_fd(int fd, int timeout_sec)
+{
+    return poll_fds(&fd, 1, timeout_sec);
 }
 
 int is_fd_connected(int fd)

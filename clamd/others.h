@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include "cfgparser.h"
 
+int poll_fds(int *fds, int nfds, int timeout_sec);
 int poll_fd(int fd, int timeout_sec);
 int is_fd_connected(int fd);
 void virusaction(const char *filename, const char *virname, const struct cfgstruct *copt);

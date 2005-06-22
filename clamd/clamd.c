@@ -69,7 +69,8 @@ void clamd(struct optstruct *opt)
 	time_t currtime;
 	struct cl_node *root = NULL;
 	const char *dbdir, *cfgfile;
-	int ret, virnum = 0, tcpsock;
+	int ret, virnum = 0, tcpsock = 0, localsock = 0;
+	int lsockets[2], nlsockets = 0;
 #ifdef C_LINUX
 	struct stat sb;
 #endif
@@ -213,15 +214,13 @@ void clamd(struct optstruct *opt)
 
     /* check socket type */
 
-    if(cfgopt(copt, "TCPSocket")->enabled && cfgopt(copt, "LocalSocket")->enabled) {
-	fprintf(stderr, "ERROR: You can only select one mode (local or TCP).\n");
-	logg("!Two modes (local and TCP) selected.\n");
-	exit(1);
-    } else if(cfgopt(copt, "TCPSocket")->enabled) {
+    if(cfgopt(copt, "TCPSocket")->enabled)
 	tcpsock = 1;
-    } else if(cfgopt(copt, "LocalSocket")->enabled) {
-	tcpsock = 0;
-    } else {
+
+    if(cfgopt(copt, "LocalSocket")->enabled)
+	localsock = 1;
+
+    if(!tcpsock && !localsock) {
 	fprintf(stderr, "ERROR: You must select server type (local/tcp).\n");
 	logg("!Please select server type (local/TCP).\n");
 	exit(1);
@@ -265,15 +264,15 @@ void clamd(struct optstruct *opt)
         foreground = 1;
 
     if(tcpsock)
-	ret = tcpserver(opt, copt, root);
-    else
-	ret = localserver(opt, copt, root);
+	lsockets[nlsockets++] = tcpserver(copt, root);
 
-    printf("server ended; result=%d\n", ret);
+    if(localsock)
+	lsockets[nlsockets++] = localserver(copt, root);
+
+    ret = acceptloop_th(lsockets, nlsockets, root, copt);
+
     logg_close();
     freecfg(copt);
-    printf("free() copt\n");
-
 }
 
 void help(void)

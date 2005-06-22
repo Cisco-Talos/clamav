@@ -36,7 +36,7 @@
 #include "server.h"
 #include "output.h"
 
-int tcpserver(const struct optstruct *opt, const struct cfgstruct *copt, struct cl_node *root)
+int tcpserver(const struct cfgstruct *copt, struct cl_node *root)
 {
 	struct sockaddr_in server;
 	int sockfd, backlog;
@@ -76,9 +76,9 @@ int tcpserver(const struct optstruct *opt, const struct cfgstruct *copt, struct 
 	exit(1);
     } else {
 	if(taddr->enabled)
-	    logg("Bound to address %s on port %d\n", taddr->strarg, cfgopt(copt, "TCPSocket")->numarg);
+	    logg("Bound to address %s on tcp port %d\n", taddr->strarg, cfgopt(copt, "TCPSocket")->numarg);
 	else
-	    logg("Bound to port %d\n", cfgopt(copt, "TCPSocket")->numarg);
+	    logg("Bound to tcp port %d\n", cfgopt(copt, "TCPSocket")->numarg);
     }
 
     backlog = cfgopt(copt, "MaxConnectionQueueLength")->numarg;
@@ -90,7 +90,5 @@ int tcpserver(const struct optstruct *opt, const struct cfgstruct *copt, struct 
 	exit(1);
     }
 
-    acceptloop_th(sockfd, root, copt);
-
-    return 0;
+    return sockfd;
 }

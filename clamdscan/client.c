@@ -324,10 +324,7 @@ int dconnect(const struct optstruct *opt)
     /* Set default address to connect to */
     server2.sin_addr.s_addr = inet_addr("127.0.0.1");    
 
-    if(cfgopt(copt, "TCPSocket")->enabled && cfgopt(copt, "LocalSocket")->enabled) {
-	logg("^Clamd is not configured properly.\n");
-	return -1;
-    } else if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
+    if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
 
 	server.sun_family = AF_UNIX;
 	strncpy(server.sun_path, cpt->strarg, sizeof(server.sun_path));

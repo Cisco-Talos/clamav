@@ -62,14 +62,15 @@ typedef struct client_conn_tag {
     time_t root_timestamp;
     time_t queue_time;
     const struct cl_limits *limits;
-    pid_t mainpid;
+    int *socketds;
+    int nsockets;
 } client_conn_t;
 
 void scanner_thread(void *arg)
 {
 	client_conn_t *conn = (client_conn_t *) arg;
 	sigset_t sigset;
-	int ret, timeout, session=FALSE;
+	int ret, timeout, i, session=FALSE;
 	struct cfgstruct *cpt;
 
 
@@ -109,7 +110,10 @@ void scanner_thread(void *arg)
 	    case COMMAND_SHUTDOWN:
 		pthread_mutex_lock(&exit_mutex);
 		progexit = 1;
-		kill(conn->mainpid, SIGTERM);
+		for(i = 0; i < conn->nsockets; i++) {
+		    shutdown(conn->socketds[i], 2);
+		    close(conn->socketds[i]);
+		}
 		pthread_mutex_unlock(&exit_mutex);
 		break;
 
@@ -258,9 +262,9 @@ static struct cl_node *reload_db(struct cl_node *root, const struct cfgstruct *c
     return root;
 }
 
-int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *copt)
+int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, const struct cfgstruct *copt)
 {
-	int new_sd, max_threads, max_queue_size;
+	int new_sd, max_threads, max_queue_size, i;
 	unsigned int options = 0;
 	threadpool_t *thr_pool;
 	struct sigaction sigact;
@@ -485,8 +489,20 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     time(&start_time);
 
     for(;;) {
+    	int socketd = socketds[0];
+    	if(nsockets > 1) {
+    	    int pollret = poll_fds(socketds, nsockets, -1);
+    	    if(pollret > 0) {
+    		socketd = socketds[pollret - 1];
+    	    } else {
+    		socketd = socketds[0]; /* on a poll error use the first socket */
+    	    }
+    	}    
 	new_sd = accept(socketd, NULL, NULL);
 	if((new_sd == -1) && (errno != EINTR)) {
+	    if(progexit) {
+	    	break;
+	    }
 	    /* very bad - need to exit or restart */
 #ifdef HAVE_STRERROR_R
 	    logg("!accept() failed: %s\n", strerror_r(errno, buff, BUFFSIZE));
@@ -513,7 +529,8 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 		client_conn->root_timestamp = reloaded_time;
 		time(&client_conn->queue_time);
 		client_conn->limits = &limits;
-		client_conn->mainpid = mainpid;
+		client_conn->socketds = socketds;
+		client_conn->nsockets = nsockets;
 		if (!thrmgr_dispatch(thr_pool, client_conn)) {
 		    close(client_conn->sd);
 		    free(client_conn);
@@ -577,11 +594,12 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
     }
 #endif
     cl_free(root);
-    logg("*Shutting down the main socket.\n");
-    shutdown(socketd, 2);
-    logg("*Closing the main socket.\n");
-    close(socketd);
-
+    logg("*Shutting down the main socket%s.\n", (nsockets > 1) ? "s" : "");
+    for (i = 0; i < nsockets; i++)
+	shutdown(socketds[i], 2);
+    logg("*Closing the main socket%s.\n", (nsockets > 1) ? "s" : "");
+    for (i = 0; i < nsockets; i++)
+	close(socketds[i]);
 #ifndef C_OS2
     if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
 	if(unlink(cpt->strarg) == -1)

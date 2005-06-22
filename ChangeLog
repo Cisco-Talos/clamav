@@ -1,3 +1,8 @@
+Wed Jun 22 17:52:08 CEST 2005 (tk)
+----------------------------------
+  * clamd: support operation of both TCP and Unix domain sockets simultaneously
+	   Patch by Mark Pizzolato <clamav-devel*subscriptions.pizzolato.net>
+
 Wed Jun 22 16:43:43 CEST 2005 (tk)
 ----------------------------------
   * clamd: limit the internal queue of requests to MaxConnectionQueueLength

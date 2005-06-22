@@ -35,7 +35,7 @@
 #include "server.h"
 #include "output.h"
 
-int localserver(const struct optstruct *opt, const struct cfgstruct *copt, struct cl_node *root)
+int localserver(const struct cfgstruct *copt, struct cl_node *root)
 {
 	struct sockaddr_un server;
 	int sockfd, backlog;
@@ -100,7 +100,5 @@ int localserver(const struct optstruct *opt, const struct cfgstruct *copt, struc
 	exit(1);
     }
 
-    acceptloop_th(sockfd, root, copt);
-
-    return 0;
+    return sockfd;
 }
