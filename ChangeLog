@@ -1,3 +1,8 @@
+Wed Jun 22 20:12:54 CEST 2005 (tk)
+----------------------------------
+  * clamd/clamd.c, shared/output.c: improve output handling (Patch by Mark
+				Pizzolato <clamav-devel*subscriptions.pizzolato.net>)
+
 Wed Jun 22 17:52:08 CEST 2005 (tk)
 ----------------------------------
   * clamd: support operation of both TCP and Unix domain sockets simultaneously
