@@ -52,10 +52,7 @@ int notify(const char *cfgfile)
 	return 1;
     }
 
-    if(cfgopt(copt, "TCPSocket")->enabled && cfgopt(copt, "LocalSocket")->enabled) {
-	logg("^Clamd was NOT notified: Both socket types (TCP and local) declared in %s\n", cfgfile);
-	return 1;
-    } else if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
+    if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
 	socktype = "UNIX";
 	server.sun_family = AF_UNIX;
 	strncpy(server.sun_path, cpt->strarg, sizeof(server.sun_path));

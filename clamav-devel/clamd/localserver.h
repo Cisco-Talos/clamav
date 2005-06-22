@@ -19,6 +19,6 @@
 #ifndef __LOCALSERVER_H
 #define __LOCALSERVER_H
 
-int localserver(const struct optstruct *opt, const struct cfgstruct *copt, struct cl_node *root);
+int localserver(const struct cfgstruct *copt, struct cl_node *root);
 
 #endif

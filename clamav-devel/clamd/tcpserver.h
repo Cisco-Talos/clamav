@@ -22,6 +22,6 @@
 #include "options.h"
 #include "cfgparser.h"
 
-int tcpserver(const struct optstruct *opt, const struct cfgstruct *copt, struct cl_node *root);
+int tcpserver(const struct cfgstruct *copt, struct cl_node *root);
 
 #endif
