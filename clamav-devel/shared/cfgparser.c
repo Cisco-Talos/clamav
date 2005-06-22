@@ -72,6 +72,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 	    {"TCPSocket", OPT_NUM, -1, NULL, 0},
 	    {"LocalSocket", OPT_STR, -1, NULL, 0},
 	    {"MaxConnectionQueueLength", OPT_NUM, 15, NULL, 0},
+	    {"MaxConnectionQueueTime", OPT_NUM, 20, NULL, 0},
 	    {"StreamMaxLength", OPT_COMPSIZE, 10485760, NULL, 0},
 	    {"StreamMinPort", OPT_NUM, 1024, NULL, 0},
 	    {"StreamMaxPort", OPT_NUM, 2048, NULL, 0},

@@ -45,7 +45,7 @@ extern short cli_debug_flag;
 
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
-pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, unsigned short ftype)

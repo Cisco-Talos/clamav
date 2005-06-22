@@ -445,8 +445,12 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	    break;
     }
 
-    lseek(tmpd, 0, SEEK_SET);
-    ret = cl_scandesc(tmpd, &virname, scanned, root, limits, options);
+    if(retval == 1) {
+	lseek(tmpd, 0, SEEK_SET);
+	ret = cl_scandesc(tmpd, &virname, scanned, root, limits, options);
+    } else {
+    	ret = -1;
+    }
     close(tmpd);
     if(!cfgopt(copt, "LeaveTemporaryFiles")->enabled)
 	unlink(tmpname);
@@ -460,8 +464,10 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	logg("stream %d: %s FOUND\n", port, virname);
 	virusaction("stream", virname, copt);
     } else if(ret != CL_CLEAN) {
-	mdprintf(odesc, "stream: %s ERROR\n", cl_strerror(ret));
-	logg("stream %d: %s ERROR\n", port, cl_strerror(ret));
+    	if(retval == 1) {
+	    mdprintf(odesc, "stream: %s ERROR\n", cl_strerror(ret));
+	    logg("stream %d: %s ERROR\n", port, cl_strerror(ret));
+	}
     } else {
 	mdprintf(odesc, "stream: OK\n");
         if(logok)

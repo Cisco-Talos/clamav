@@ -43,7 +43,7 @@
 #include "output.h"
 #include "memory.h"
 
-pthread_mutex_t ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int command(int desc, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt, int timeout)
 {
