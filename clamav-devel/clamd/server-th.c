@@ -45,14 +45,12 @@
 #define FALSE (0)
 #define TRUE (1)
 
-volatile int progexit = 0;
-static pthread_mutex_t exit_mutex = PTHREAD_MUTEX_INITIALIZER;
-volatile int reload = 0;
-volatile time_t reloaded_time = 0;
-static pthread_mutex_t reload_mutex = PTHREAD_MUTEX_INITIALIZER;
-volatile int sighup = 0;
-static pthread_mutex_t session_mutex = PTHREAD_MUTEX_INITIALIZER;
-volatile int session_count = 0;
+int progexit = 0;
+pthread_mutex_t exit_mutex;
+int reload = 0;
+time_t reloaded_time = 0;
+pthread_mutex_t reload_mutex;
+int sighup = 0;
 
 typedef struct client_conn_tag {
     int sd;
@@ -60,7 +58,6 @@ typedef struct client_conn_tag {
     const struct cfgstruct *copt;
     struct cl_node *root;
     time_t root_timestamp;
-    time_t queue_time;
     const struct cl_limits *limits;
     int *socketds;
     int nsockets;
@@ -78,24 +75,6 @@ void scanner_thread(void *arg)
     sigfillset(&sigset);
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
 
-    timeout = cfgopt(conn->copt, "MaxConnectionQueueTime")->numarg;
-    if(timeout && (conn->queue_time+timeout < time(NULL))) {
-	logg("^Aborting Stale connection request\n");
-	close(conn->sd);
-	cl_free(conn->root);
-	free(conn);
-	return;
-    }
-    pthread_mutex_lock(&exit_mutex);
-    if(progexit) {
-	pthread_mutex_unlock(&exit_mutex);
-	logg("^Dropping connection request to exit\n");
-	close(conn->sd);
-	cl_free(conn->root);
-	free(conn);
-	return;
-    }
-    pthread_mutex_unlock(&exit_mutex);
     timeout = cfgopt(conn->copt, "ReadTimeout")->numarg;
     if(!timeout)
     	timeout = -1;
@@ -124,52 +103,28 @@ void scanner_thread(void *arg)
 		break;
 
 	    case COMMAND_SESSION:
-		if(!session) {
-		    pthread_mutex_lock(&session_mutex);
-		    session_count++;
-		    if(cfgopt(conn->copt, "MaxThreads")->numarg <= session_count) {
-			logg("^Active sessions(%d) consuming all available threads(%d)\n", session_count, cfgopt(conn->copt, "MaxThreads")->numarg);
-		    }
-		    pthread_mutex_unlock(&session_mutex);
-		    session = TRUE;
-		}
+		session = TRUE;
 		timeout = 5;
 		break;
 
 	    case COMMAND_END:
-		if(session) {
-		    pthread_mutex_lock(&session_mutex);
-		    session_count--;
-		    pthread_mutex_unlock(&session_mutex);
-		    session = FALSE;
-		}
+		session = FALSE;
 		break;
 	}
 	if (session) {
 	    pthread_mutex_lock(&exit_mutex);
 	    if(progexit) {
 		session = FALSE;
-		pthread_mutex_lock(&session_mutex);
-		--session_count;
-		pthread_mutex_unlock(&session_mutex);
 	    }
 	    pthread_mutex_unlock(&exit_mutex);
 	    pthread_mutex_lock(&reload_mutex);
 	    if (conn->root_timestamp != reloaded_time) {
 		session = FALSE;
-		pthread_mutex_lock(&session_mutex);
-		--session_count;
-		pthread_mutex_unlock(&session_mutex);
 	    }
 	    pthread_mutex_unlock(&reload_mutex);
 	}
     } while (session);
 
-    if(session) {
-	pthread_mutex_lock(&session_mutex);
-	--session_count;
-	pthread_mutex_unlock(&session_mutex);
-    }
     close(conn->sd);
     cl_free(conn->root);
     free(conn);
@@ -264,7 +219,7 @@ static struct cl_node *reload_db(struct cl_node *root, const struct cfgstruct *c
 
 int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, const struct cfgstruct *copt)
 {
-	int new_sd, max_threads, max_queue_size, i;
+	int new_sd, max_threads, i;
 	unsigned int options = 0;
 	threadpool_t *thr_pool;
 	struct sigaction sigact;
@@ -309,8 +264,6 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, const struc
 
     logg("*Listening daemon: PID: %d\n", getpid());
     max_threads = cfgopt(copt, "MaxThreads")->numarg;
-
-    max_queue_size = cfgopt(copt, "MaxConnectionQueueLength")->numarg;
 
     if(cfgopt(copt, "ScanArchive")->enabled || cfgopt(copt, "ClamukoScanArchive")->enabled) {
 
@@ -481,14 +434,14 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, const struc
 
     idletimeout = cfgopt(copt, "IdleTimeout")->numarg;
 
-    if((thr_pool=thrmgr_new(max_threads, max_queue_size, idletimeout, scanner_thread)) == NULL) {
+    if((thr_pool=thrmgr_new(max_threads, idletimeout, scanner_thread)) == NULL) {
 	logg("!thrmgr_new failed\n");
 	exit(-1);
     }
 
     time(&start_time);
 
-    for(;;) {
+    for(;;) {				
     	int socketd = socketds[0];
     	if(nsockets > 1) {
     	    int pollret = poll_fds(socketds, nsockets, -1);
@@ -507,7 +460,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, const struc
 #ifdef HAVE_STRERROR_R
 	    logg("!accept() failed: %s\n", strerror_r(errno, buff, BUFFSIZE));
 #else
-	    logg("!accept() failed: %d\n", errno);
+	    logg("!accept() failed\n");
 #endif
 	    continue;
 	}
@@ -527,7 +480,6 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, const struc
 		client_conn->copt = copt;
 		client_conn->root = cl_dup(root);
 		client_conn->root_timestamp = reloaded_time;
-		time(&client_conn->queue_time);
 		client_conn->limits = &limits;
 		client_conn->socketds = socketds;
 		client_conn->nsockets = nsockets;
@@ -566,7 +518,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, const struc
 	    root = reload_db(root, copt, FALSE);
 	    pthread_mutex_lock(&reload_mutex);
 	    reload = 0;
-	    time((time_t *)&reloaded_time);
+	    time(&reloaded_time);
 	    pthread_mutex_unlock(&reload_mutex);
 #ifdef CLAMUKO
 	    if(cfgopt(copt, "ClamukoScanOnAccess")->enabled) {
