@@ -400,7 +400,7 @@ freebsd*)
 	fi
     fi
     AC_DEFINE(C_BSD,1,[os is freebsd])
-    disable_gethostbyname_r="yes"
+    use_gethostbyname_r="no"
     ;;
 openbsd*)
     if test "$have_pthreads" = "yes"; then
@@ -417,7 +417,7 @@ openbsd*)
 	AC_DEFINE(_REENTRANT,1,[thread safe])
     fi
     AC_DEFINE(C_BSD,1,[os is OpenBSD])
-    disable_gethostbyname_r="yes"
+    use_gethostbyname_r="no"
     ;;
 bsdi*)
     if test "$have_pthreads" = "yes"; then
@@ -429,7 +429,7 @@ bsdi*)
 	AC_DEFINE(_REENTRANT,1,[thread safe])
     fi
     AC_DEFINE(C_BSD,1,[os is BSDI BSD/OS])
-    disable_gethostbyname_r="yes"
+    use_gethostbyname_r="no"
     ;;
 netbsd*)
      if test "$have_pthreads" = "yes"; then
@@ -441,13 +441,13 @@ netbsd*)
 	ADDITIONAL_LIBS="$LIBS -lpthread"
      fi
     AC_DEFINE(C_BSD,1,[os is NetBSD])
-    disable_gethostbyname_r="yes"
+    use_gethostbyname_r="no"
     ;;
 bsd*)
     AC_MSG_RESULT(Unknown BSD detected. Disabling thread support.)
     have_pthreads="no"
     AC_DEFINE(C_BSD,1,[os is bsd flavor])
-    disable_gethostbyname_r="yes"
+    use_gethostbyname_r="no"
     ;;
 beos*)
     AC_MSG_RESULT(BeOS detected. Disabling thread support.)
@@ -459,7 +459,7 @@ darwin*)
     AC_DEFINE(C_DARWIN,1,[os is darwin])
     AC_DEFINE(BIND_8_COMPAT,1,[enable bind8 compatibility])
     use_netinfo="yes"
-    disable_gethostbyname_r="yes"
+    use_gethostbyname_r="no"
     ;;
 os2*)
     FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsyslog"
@@ -734,9 +734,9 @@ fi
 
 AC_ARG_ENABLE(gethostbyname_r,
 [  --disable-gethostbyname_r	  disable support for gethostbyname_r],
-disable_gethostbyname_r=$enableval,)
+use_gethostbyname_r=$enableval,)
 
-if test "$disable_gethostbyname_r" = "yes"; then
+if test "$use_gethostbyname_r" = "no"; then
     AC_MSG_RESULT(support disabled)
 elif test -z "$ac_cv_gethostbyname_args"; then
     AC_MSG_RESULT(no)

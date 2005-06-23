@@ -11816,7 +11816,7 @@ cat >>confdefs.h <<\_ACEOF
 #define C_BSD 1
 _ACEOF
 
-    disable_gethostbyname_r="yes"
+    use_gethostbyname_r="no"
     ;;
 openbsd*)
     if test "$have_pthreads" = "yes"; then
@@ -11845,7 +11845,7 @@ cat >>confdefs.h <<\_ACEOF
 #define C_BSD 1
 _ACEOF
 
-    disable_gethostbyname_r="yes"
+    use_gethostbyname_r="no"
     ;;
 bsdi*)
     if test "$have_pthreads" = "yes"; then
@@ -11869,7 +11869,7 @@ cat >>confdefs.h <<\_ACEOF
 #define C_BSD 1
 _ACEOF
 
-    disable_gethostbyname_r="yes"
+    use_gethostbyname_r="no"
     ;;
 netbsd*)
      if test "$have_pthreads" = "yes"; then
@@ -11893,7 +11893,7 @@ cat >>confdefs.h <<\_ACEOF
 #define C_BSD 1
 _ACEOF
 
-    disable_gethostbyname_r="yes"
+    use_gethostbyname_r="no"
     ;;
 bsd*)
     echo "$as_me:$LINENO: result: Unknown BSD detected. Disabling thread support." >&5
@@ -11904,7 +11904,7 @@ cat >>confdefs.h <<\_ACEOF
 #define C_BSD 1
 _ACEOF
 
-    disable_gethostbyname_r="yes"
+    use_gethostbyname_r="no"
     ;;
 beos*)
     echo "$as_me:$LINENO: result: BeOS detected. Disabling thread support." >&5
@@ -11933,7 +11933,7 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
     use_netinfo="yes"
-    disable_gethostbyname_r="yes"
+    use_gethostbyname_r="no"
     ;;
 os2*)
     FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsyslog"
@@ -13267,10 +13267,10 @@ fi
 # Check whether --enable-gethostbyname_r or --disable-gethostbyname_r was given.
 if test "${enable_gethostbyname_r+set}" = set; then
   enableval="$enable_gethostbyname_r"
-  disable_gethostbyname_r=$enableval
+  use_gethostbyname_r=$enableval
 fi;
 
-if test "$disable_gethostbyname_r" = "yes"; then
+if test "$use_gethostbyname_r" = "no"; then
     echo "$as_me:$LINENO: result: support disabled" >&5
 echo "${ECHO_T}support disabled" >&6
 elif test -z "$ac_cv_gethostbyname_args"; then
