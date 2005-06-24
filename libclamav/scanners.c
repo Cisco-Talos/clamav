@@ -189,7 +189,7 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 	if(DETECT_ENCRYPTED && metadata->encrypted) {
 	    cli_dbgmsg("RAR: Encrypted files found in archive.\n");
 	    lseek(desc, 0, SEEK_SET);
-	    ret = cli_scandesc(desc, virname, scanned, root, 0, 0);
+	    ret = cli_scandesc(desc, virname, scanned, root, 0, 0, NULL);
 	    if(ret < 0) {
 		break;
 	    } else if(ret != CL_VIRUS) {
@@ -388,7 +388,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	if(DETECT_ENCRYPTED && encrypted) {
 	    cli_dbgmsg("Zip: Encrypted files found in archive.\n");
 	    lseek(desc, 0, SEEK_SET);
-	    ret = cli_scandesc(desc, virname, scanned, root, 0, 0);
+	    ret = cli_scandesc(desc, virname, scanned, root, 0, 0, NULL);
 	    if(ret < 0) {
 		break;
 	    } else if(ret != CL_VIRUS) {
@@ -1011,7 +1011,7 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
     if (fd >= 0) {
     	ofd = cli_decode_ole_object(fd, dirname);
 	if (ofd >= 0) {
-		ret = cli_scandesc(ofd, virname, scanned, root, 0, 0);
+		ret = cli_scandesc(ofd, virname, scanned, root, 0, 0, NULL);
 		close(ofd);
 	}
 	close(fd);
@@ -1077,7 +1077,7 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
     snprintf(fullname, 1024, "%s/comment.html", tempname);
     fd = open(fullname, O_RDONLY);
     if (fd >= 0) {
-        ret = cli_scandesc(fd, virname, scanned, root, 0, CL_TYPE_HTML);
+        ret = cli_scandesc(fd, virname, scanned, root, 0, CL_TYPE_HTML, NULL);
 	close(fd);
     }
 
@@ -1092,7 +1092,7 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
 	snprintf(fullname, 1024, "%s/nocomment.html", tempname);
 	fd = open(fullname, O_RDONLY);
 	if (fd >= 0) {
-	    ret = cli_scandesc(fd, virname, scanned, root, 0, CL_TYPE_HTML);
+	    ret = cli_scandesc(fd, virname, scanned, root, 0, CL_TYPE_HTML, NULL);
 	    close(fd);
 	}
     }
@@ -1108,7 +1108,7 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
 	snprintf(fullname, 1024, "%s/script.html", tempname);
 	fd = open(fullname, O_RDONLY);
 	if (fd >= 0) {
-	    ret = cli_scandesc(fd, virname, scanned, root, 0, CL_TYPE_HTML);
+	    ret = cli_scandesc(fd, virname, scanned, root, 0, CL_TYPE_HTML, NULL);
 	    close(fd);
 	}
     }
@@ -1406,7 +1406,7 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 
     if(!options) { /* raw mode (stdin, etc.) */
 	cli_dbgmsg("Raw mode: No support for special files\n");
-	if((ret = cli_scandesc(desc, virname, scanned, root, 0, 0) == CL_VIRUS))
+	if((ret = cli_scandesc(desc, virname, scanned, root, 0, 0, NULL) == CL_VIRUS))
 	    cli_dbgmsg("%s found in descriptor %d\n", *virname, desc);
 	return ret;
     }
@@ -1538,13 +1538,22 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
     type == CL_TYPE_MAIL ? mrec-- : arec--;
 
     if(type != CL_TYPE_DATA && ret != CL_VIRUS) { /* scan the raw file */
-	    int typerec;
+	    int ftrec;
+	    unsigned long int ftoffset;
 
-	type == CL_TYPE_UNKNOWN_TEXT ? (typerec = 1) : (typerec = 0);
+	switch(type) {
+	    case CL_TYPE_UNKNOWN_TEXT:
+	    case CL_TYPE_MSEXE:
+		ftrec = 1;
+		break;
+	    default:
+		ftrec = 0;
+	}
+
 	if(lseek(desc, 0, SEEK_SET) < 0)
 	    cli_errmsg("lseek() failed, trying to continue anyway...\n");
 
-	if((nret = cli_scandesc(desc, virname, scanned, root, typerec, type)) == CL_VIRUS) {
+	if((nret = cli_scandesc(desc, virname, scanned, root, ftrec, type, &ftoffset)) == CL_VIRUS) {
 	    cli_dbgmsg("%s found in descriptor %d.\n", *virname, desc);
 	    return CL_VIRUS;
 
@@ -1566,6 +1575,11 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 		    if(SCAN_MAIL)
 			if(cli_scanmail(desc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS)
 			    return CL_VIRUS;
+		    break;
+
+		case CL_TYPE_RARSFX:
+		    if(SCAN_ARCHIVE)
+			cli_dbgmsg("RAR-SFX found at %d\n", ftoffset);
 		    break;
 	    }
 	    nret == CL_TYPE_MAIL ? mrec-- : arec--;

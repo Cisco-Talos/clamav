@@ -23,7 +23,7 @@
 #include "matcher.h"
 
 int cli_ac_addpatt(struct cl_node *root, struct cli_ac_patt *pattern);
-int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *partcnt, short otfrec, unsigned long int offset, unsigned long int *partoff, unsigned short ftype, int fd);
+int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *partcnt, short otfrec, unsigned long int offset, unsigned long int *partoff, unsigned short ftype, int fd, unsigned long int *ftoffset);
 int cli_ac_buildtrie(struct cl_node *root);
 void cli_ac_free(struct cl_node *root);
 
