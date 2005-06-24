@@ -66,7 +66,7 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
     }
 
     if((ret = cli_bm_scanbuff(buffer, length, virname, root, 0, ftype, -1)) != CL_VIRUS)
-	ret = cli_ac_scanbuff(buffer, length, virname, root, partcnt, 0, 0, partoff, ftype, -1);
+	ret = cli_ac_scanbuff(buffer, length, virname, root, partcnt, 0, 0, partoff, ftype, -1, NULL);
 
     free(partcnt);
     free(partoff);
@@ -237,7 +237,7 @@ int cli_validatesig(unsigned short target, unsigned short ftype, const char *off
     return 1;
 }
 
-int cli_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, short otfrec, unsigned short ftype)
+int cli_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, short otfrec, unsigned short ftype, unsigned long int *ftoffset)
 {
  	char *buffer, *buff, *endbl, *pt;
 	int bytes, buffsize, length, ret, *partcnt, type = CL_CLEAN;
@@ -293,7 +293,7 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 	    length -= SCANBUFF - bytes;
 
 	if(cli_bm_scanbuff(pt, length, virname, root, offset, ftype, desc) == CL_VIRUS ||
-	   (ret = cli_ac_scanbuff(pt, length, virname, root, partcnt, otfrec, offset, partoff, ftype, desc)) == CL_VIRUS) {
+	   (ret = cli_ac_scanbuff(pt, length, virname, root, partcnt, otfrec, offset, partoff, ftype, desc, ftoffset)) == CL_VIRUS) {
 	    free(buffer);
 	    free(partcnt);
 	    free(partoff);

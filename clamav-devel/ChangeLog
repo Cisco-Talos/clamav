@@ -1,3 +1,7 @@
+Fri Jun 24 15:48:26 CEST 2005 (tk)
+----------------------------------
+  * libclamav: improve file type recognizer and add CL_TYPE_RARSFX
+
 Thu Jun 23 22:52:43 CEST 2005 (tk)
 ----------------------------------
   * libclamav/mspack/qtmd.c: fix possible crash

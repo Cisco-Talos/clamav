@@ -263,7 +263,7 @@ inline static int cli_findpos(const char *buffer, int offset, int length, const 
     return 1;
 }
 
-int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *partcnt, short otfrec, unsigned long int offset, unsigned long int *partoff, unsigned short ftype, int fd)
+int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *partcnt, short otfrec, unsigned long int offset, unsigned long int *partoff, unsigned short ftype, int fd, unsigned long int *ftoffset)
 {
 	struct cli_ac_node *current;
 	struct cli_ac_patt *pt;
@@ -322,6 +322,8 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
 					    if(pt->type > type) {
 						cli_dbgmsg("Matched signature for file type: %s\n", pt->virname);
 						type = pt->type;
+						if(ftoffset)
+						    *ftoffset = offset + position;
 					    }
 					}
 				    } else {
@@ -341,6 +343,8 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
 				    cli_dbgmsg("Matched signature for file type: %s\n", pt->virname);
 
 				    type = pt->type;
+				    if(ftoffset)
+					*ftoffset = offset + position;
 				}
 			    }
 			} else {

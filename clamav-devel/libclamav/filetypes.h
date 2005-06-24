@@ -46,6 +46,7 @@ typedef enum {
     CL_TYPE_PDF,
 
     /* bigger numbers have higher priority (in o-t-f detection) */
+    CL_TYPE_RARSFX,
     CL_TYPE_HTML, /* on the fly */
     CL_TYPE_MAIL  /* magic + on the fly */
 
