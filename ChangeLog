@@ -1,3 +1,7 @@
+Thu Jun 23 22:52:43 CEST 2005 (tk)
+----------------------------------
+  * libclamav/mspack/qtmd.c: fix possible crash
+
 Thu Jun 23 15:49:10 CEST 2005 (tk)
 ----------------------------------
   * clamd: revert the queue limit patch
