@@ -40,17 +40,14 @@ work_queue_t *work_queue_new()
 	return work_q;
 }
 
-int work_queue_add(work_queue_t *work_q, void *data)
+void work_queue_add(work_queue_t *work_q, void *data)
 {
 	work_item_t *work_item;
 	
 	if (!work_q) {
-		return FALSE;
+		return;
 	}
 	work_item = (work_item_t *) mmalloc(sizeof(work_item_t));
-	if (!work_item) {
-		return FALSE;
-	}
 	work_item->next = NULL;
 	work_item->data = data;
 	gettimeofday(&(work_item->time_queued), NULL);
@@ -63,7 +60,7 @@ int work_queue_add(work_queue_t *work_q, void *data)
 		work_q->tail = work_item;
 		work_q->item_count++;
 	}
-	return TRUE;
+	return;
 }
 
 void *work_queue_pop(work_queue_t *work_q)
@@ -115,13 +112,12 @@ void thrmgr_destroy(threadpool_t *threadpool)
 	
 	pthread_mutex_destroy(&(threadpool->pool_mutex));
 	pthread_cond_destroy(&(threadpool->pool_cond));
-	pthread_cond_destroy(&(threadpool->pool_notfull_cond));
 	pthread_attr_destroy(&(threadpool->pool_attr));
 	free(threadpool);
 	return;
 }
 
-threadpool_t *thrmgr_new(int max_threads, int max_dispatch_queue, int idle_timeout, void (*handler)(void *))
+threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void *))
 {
 	threadpool_t *threadpool;
 	
@@ -137,8 +133,6 @@ threadpool_t *thrmgr_new(int max_threads, int max_dispatch_queue, int idle_timeo
 		return NULL;
 	}	
 	threadpool->thr_max = max_threads;
-	threadpool->thr_max_queue = max_dispatch_queue;
-	threadpool->thr_queued = 0;
 	threadpool->thr_alive = 0;
 	threadpool->thr_idle = 0;
 	threadpool->idle_timeout = idle_timeout;
@@ -149,15 +143,8 @@ threadpool_t *thrmgr_new(int max_threads, int max_dispatch_queue, int idle_timeo
 		free(threadpool);
 		return NULL;
 	}
-	if (pthread_cond_init(&(threadpool->pool_notfull_cond), NULL) != 0) {
-		pthread_cond_destroy(&(threadpool->pool_cond));
-		free(threadpool);
-		return NULL;
-	}
 		
 	if (pthread_attr_init(&(threadpool->pool_attr)) != 0) {
-		pthread_cond_destroy(&(threadpool->pool_cond));
-		pthread_cond_destroy(&(threadpool->pool_notfull_cond));
 		free(threadpool);
 		return NULL;
 	}
@@ -175,7 +162,7 @@ void *thrmgr_worker(void *arg)
 {
 	threadpool_t *threadpool = (threadpool_t *) arg;
 	void *job_data;
-	int retval;
+	int retval, must_exit = FALSE;
 	struct timespec timeout;
 	
 	/* loop looking for work */
@@ -194,20 +181,15 @@ void *thrmgr_worker(void *arg)
 			retval = pthread_cond_timedwait(&(threadpool->pool_cond),
 				&(threadpool->pool_mutex), &timeout);
 			if (retval == ETIMEDOUT) {
+				must_exit = TRUE;
 				break;
 			}
 		}
 		threadpool->thr_idle--;
-
-		if (job_data) {
-			if ((threadpool->thr_max_queue > 0) &&
-			    (threadpool->thr_queued == threadpool->thr_max_queue)) {
-				logg("*Thread Queue: Resuming...\n");
-				/* signal that queue no longer full */
-				pthread_cond_signal(&threadpool->pool_notfull_cond);
-			}
-			threadpool->thr_queued--;
+		if (threadpool->state == POOL_EXIT) {
+			must_exit = TRUE;
 		}
+		
 		if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
 			/* Fatal error */
 			logg("!Fatal: mutex unlock failed\n");
@@ -215,7 +197,7 @@ void *thrmgr_worker(void *arg)
 		}
 		if (job_data) {
 			threadpool->handler(job_data);
-		} else {
+		} else if (must_exit) {
 			break;
 		}
 	}
@@ -247,81 +229,33 @@ int thrmgr_dispatch(threadpool_t *threadpool, void *user_data)
 
 	/* Lock the threadpool */
 	if (pthread_mutex_lock(&(threadpool->pool_mutex)) != 0) {
-		logg("!Mutex lock failed: %d\n", errno);
+		logg("!Mutex lock failed\n");
 		return FALSE;
 	}
 
 	if (threadpool->state != POOL_VALID) {
 		if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
-			logg("!Mutex unlock failed (!POOL_VALID): %d\n", errno);
+			logg("!Mutex unlock failed\n");
 			return FALSE;
 		}
 		return FALSE;
 	}
-	if (work_queue_add(threadpool->queue, user_data) == FALSE) {
-		if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
-			logg("!Mutex unlock failed (work_queue_add): %d\n", errno);
-			return FALSE;
-		}
-		return FALSE;
-	}
-	threadpool->thr_queued++;
-	while ((threadpool->thr_max_queue > 0) && 
-		(threadpool->thr_queued >= threadpool->thr_max_queue) &&
-		(threadpool->state == POOL_VALID)) {
-		logg("*Thread Queue: Full, waiting...\n");
-		if (pthread_cond_wait(&threadpool->pool_notfull_cond, &threadpool->pool_mutex) != 0) {
-			logg("!pthread_cond_wait failed: %d\n", errno);
-			pthread_mutex_unlock(&threadpool->pool_mutex);
-			return FALSE;
-		}
-	}
+	work_queue_add(threadpool->queue, user_data);
 
 	if ((threadpool->thr_idle == 0) &&
-	    (threadpool->thr_alive < threadpool->thr_max) &&
-	    (threadpool->state == POOL_VALID)) {
+			(threadpool->thr_alive < threadpool->thr_max)) {
 		/* Start a new thread */
 		if (pthread_create(&thr_id, &(threadpool->pool_attr),
 				thrmgr_worker, threadpool) != 0) {
-			logg("!pthread_create failed: %d\n", errno);
+			logg("!pthread_create failed\n");
 		} else {
 			threadpool->thr_alive++;
 		}
 	}
-	switch(threadpool->thr_idle) {
-		case 0:
-			break;
-		case 1:
-			if (pthread_cond_signal(&(threadpool->pool_cond)) != 0) {
-				logg("!pthread_cond_signal failed: %d\n", errno);
-				if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
-					logg("!Mutex unlock failed (after pthread_cond_signal failure): %d\n", errno);
-				}
-				return FALSE;
-			}
-			break;
-		default:
-			if(threadpool->thr_queued > 1) {
-				if (pthread_cond_broadcast(&(threadpool->pool_cond)) != 0) {
-					logg("!pthread_cond_broadcast failed: %d\n", errno);
-					if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
-						logg("!Mutex unlock failed (after pthread_cond_broadcast failure): %d\n", errno);
-					}
-					return FALSE;
-				}
-			} else {
-				if (pthread_cond_signal(&(threadpool->pool_cond)) != 0) {
-					logg("!pthread_cond_signal failed: %d\n", errno);
-					if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
-						logg("!Mutex unlock failed (after pthread_cond_signal failure): %d\n", errno);
-					}
-					return FALSE;
-				}
-			}
-	}
+	pthread_cond_signal(&(threadpool->pool_cond));
 
 	if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
-		logg("!Mutex unlock failed (before complete): %d\n", errno);
+		logg("!Mutex unlock failed\n");
 		return FALSE;
 	}
 	return TRUE;

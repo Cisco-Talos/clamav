@@ -43,15 +43,12 @@ typedef enum {
 typedef struct threadpool_tag {
 	pthread_mutex_t pool_mutex;
 	pthread_cond_t pool_cond;
-	pthread_cond_t pool_notfull_cond;
 	pthread_attr_t pool_attr;
 	
-	volatile pool_state_t state;
-	volatile int thr_max;
-	volatile int thr_max_queue;
-	volatile int thr_queued;
-	volatile int thr_alive;
-	volatile int thr_idle;
+	pool_state_t state;
+	int thr_max;
+	int thr_alive;
+	int thr_idle;
 	int idle_timeout;
 	
 	void (*handler)(void *);
@@ -59,7 +56,7 @@ typedef struct threadpool_tag {
 	work_queue_t *queue;
 } threadpool_t;
 
-threadpool_t *thrmgr_new(int max_threads, int max_dispatch_queue, int idle_timeout, void (*handler)(void *));
+threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void *));
 void thrmgr_destroy(threadpool_t *threadpool);
 int thrmgr_dispatch(threadpool_t *threadpool, void *user_data);
 
