@@ -73,6 +73,20 @@ Go to sendmail.org, download the latest sendmail, cd to libmilter and
 
 Needs -lresolv on Solaris
 
+If, when building clamav-milter, you see the error
+	"undefined reference to smfi_opensocket",
+it means that your sendmail installation is broken. More specifically it means
+that your installed version of libmilter does not agree with your installed
+version of Sendmail. Naturally they must be the same. Check to see if you have
+more than one mfapi.h on your system; if you installed sendmail from source,
+did you remember to install libmilter at the same time? You can ensure that
+your Sendmail is correctly installed if you follow these instructions:
+	cd .../sendmail-source-directory
+	sh Build
+	make install
+	cd libmilter
+	make install
+
 2. INSTALLATION
 
 Install into /usr/local/sbin/clamav-milter.
