@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.211 2005/06/05 05:57:52 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.212 2005/06/27 21:01:09 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.85g"
+#define	CM_VERSION	"0.85h"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -177,6 +177,7 @@ typedef struct header_list_struct *header_list_t;
  * 127.0.0.0 is not in this table since that's goverend by --outgoing
  * Andy Fiddaman <clam@fiddaman.net> added 69.254.0.0/16
  *	(Microsoft default DHCP)
+ * TODO: compare this with RFC1918
  *
  * TODO: read this table in from a file (clamd.conf?)
  */
@@ -196,7 +197,7 @@ static const struct cidr_net {
 };
 
 /*
- * Each thread has one of these
+ * Each libmilter thread has one of these
  */
 struct	privdata {
 	char	*from;	/* Who sent the message */
@@ -226,6 +227,7 @@ struct	privdata {
 				 */
 	int	statusCount;	/* number of X-Virus-Status headers */
 	int	serverNumber;	/* Index into serverIPs */
+	struct	cl_node	*root;	/* database of viruses used to scan this one */
 };
 
 #ifdef	SESSION
@@ -372,7 +374,7 @@ static	pthread_mutex_t	n_children_mutex = PTHREAD_MUTEX_INITIALIZER;
 static	pthread_cond_t	n_children_cond = PTHREAD_COND_INITIALIZER;
 static	volatile	unsigned	int	n_children = 0;
 static	unsigned	int	max_children = 0;
-static	int	child_timeout = 0;	/* number of seconds to wait for
+static	int	child_timeout = 300;	/* number of seconds to wait for
 					 * a child to die. Set to 0 to
 					 * wait forever
 					 */
@@ -1086,10 +1088,12 @@ main(int argc, char **argv)
 			fprintf(stderr, _("%s: --max-children must be given if --external is not given\n"), argv[0]);
 			return EX_CONFIG;
 		}
+#if	0
 		if(child_timeout) {
 			fprintf(stderr, _("%s: --timeout must not be given if --external is not given\n"), argv[0]);
 			return EX_CONFIG;
 		}
+#endif
 		if(loadDatabase() != 0)
 			return EX_CONFIG;
 		numServers = 1;
@@ -2577,21 +2581,20 @@ clamfi_eom(SMFICTX *ctx)
 	if(!external) {
 		const char *virname;
 		unsigned long int scanned = 0L;
-		struct cl_node *scanning_root;
 
 		/*
 		 * TODO: consider using cl_scandesc and not using a temporary
 		 *	file from the mail being read in
 		 */
 		pthread_mutex_lock(&root_mutex);
-		scanning_root = cl_dup(root);
+		privdata->root = cl_dup(root);
 		pthread_mutex_unlock(&root_mutex);
-		if(scanning_root == NULL) {
-			cli_errmsg("scanning_root == NULL\n");
+		if(privdata->root == NULL) {
+			cli_errmsg("privdata->root == NULL\n");
 			clamfi_cleanup(ctx);
 			return cl_error;
 		}
-		switch(cl_scanfile(privdata->filename, &virname, &scanned, scanning_root, &limits, options)) {
+		switch(cl_scanfile(privdata->filename, &virname, &scanned, privdata->root, &limits, options)) {
 			case CL_CLEAN:
 				strcpy(mess, "OK");
 				break;
@@ -2604,7 +2607,8 @@ clamfi_eom(SMFICTX *ctx)
 				logger(mess);
 				break;
 		}
-		cl_free(scanning_root);
+		cl_free(privdata->root);
+		privdata->root = NULL;
 
 #ifdef	SESSION
 		session = NULL;
@@ -3115,15 +3119,6 @@ clamfi_abort(SMFICTX *ctx)
 #endif
 
 	cli_dbgmsg("clamfi_abort\n");
-	/*
-	 * Unlock incase we're called during a cond_timedwait in envfrom
-	 *
-	 * TODO: There *must* be a tidier a safer way of doing this!
-	 */
-	if((max_children > 0) && (n_children >= max_children)) {
-		(void)pthread_mutex_trylock(&n_children_mutex);
-		(void)pthread_mutex_unlock(&n_children_mutex);
-	}
 
 	clamfi_cleanup(ctx);
 
@@ -3276,7 +3271,9 @@ clamfi_free(struct privdata *privdata)
 				privdata->cmdSocket = -1;
 			}
 #endif
-		}
+		} else if(privdata->root)
+			cl_free(privdata->root);
+
 		if(privdata->headers)
 			header_list_free(privdata->headers);
 
