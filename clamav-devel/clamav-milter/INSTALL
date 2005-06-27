@@ -837,6 +837,9 @@ Changes
 				before checking against the white-list file
 			When starting, check that the white-list file can be
 				opened
+0.85h	27/6/05:	Changed the default child_timeout to 5 minutes
+			Keep a copy of the trie root in privdata
+			Removed trylock/unlock code in clamfi_abort
 
 4. INTERNATIONALISATION
 
