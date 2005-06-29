@@ -1566,19 +1566,19 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 	    nret == CL_TYPE_MAIL ? mrec++ : arec++;
 	    switch(nret) {
 		case CL_TYPE_HTML:
-		    if(SCAN_HTML)
+		    if(SCAN_HTML && type == CL_TYPE_UNKNOWN_TEXT)
 			if(cli_scanhtml(desc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS)
 			    return CL_VIRUS;
 		    break;
 
 		case CL_TYPE_MAIL:
-		    if(SCAN_MAIL)
+		    if(SCAN_MAIL && type == CL_TYPE_UNKNOWN_TEXT)
 			if(cli_scanmail(desc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS)
 			    return CL_VIRUS;
 		    break;
 
 		case CL_TYPE_RARSFX:
-		    if(SCAN_ARCHIVE)
+		    if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE)
 			cli_dbgmsg("RAR-SFX found at %d\n", ftoffset);
 		    break;
 	    }
