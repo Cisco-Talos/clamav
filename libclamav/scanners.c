@@ -115,7 +115,7 @@ static void cli_unlock_mutex(void *mtx)
 #endif
 */
 
-static int cli_scanrar(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanrar(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec, unsigned long int offset)
 {
 	int fd, ret = CL_CLEAN;
 	unsigned int files = 0;
@@ -134,6 +134,7 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 	return CL_ETMPDIR;
     }
 
+    lseek(desc, offset, SEEK_SET);
     metadata = metadata_tmp = cli_unrar(desc, dir, limits);
 
     if(cli_scandir(dir, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS) {
@@ -1437,7 +1438,7 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
     switch(type) {
 	case CL_TYPE_RAR:
 	    if(SCAN_ARCHIVE)
-		ret = cli_scanrar(desc, virname, scanned, root, limits, options, arec, mrec);
+		ret = cli_scanrar(desc, virname, scanned, root, limits, options, arec, mrec, 0);
 	    break;
 
 	case CL_TYPE_ZIP:
@@ -1580,6 +1581,8 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 		case CL_TYPE_RARSFX:
 		    if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE)
 			cli_dbgmsg("RAR-SFX found at %d\n", ftoffset);
+			if(cli_scanrar(desc, virname, scanned, root, limits, options, arec, mrec, ftoffset) == CL_VIRUS)
+			    return CL_VIRUS;
 		    break;
 	    }
 	    nret == CL_TYPE_MAIL ? mrec-- : arec--;
