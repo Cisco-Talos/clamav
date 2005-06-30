@@ -840,6 +840,11 @@ Changes
 0.85h	27/6/05:	Changed the default child_timeout to 5 minutes
 			Keep a copy of the trie root in privdata
 			Removed trylock/unlock code in clamfi_abort
+0.85i	30/6/05:	Honour Logclean
+			Only syslog once when storing email in quarantine,
+				reported by Panagiotis Christias, christias
+				at gmail.com
+			Log database reloads to the LogFile
 
 4. INTERNATIONALISATION
 

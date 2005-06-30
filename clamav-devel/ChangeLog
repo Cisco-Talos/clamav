@@ -1,3 +1,11 @@
+Thu Jun 30 15:51:54 BST 2005 (njh)
+----------------------------------
+  * clamav-milter:	Honour LogClean
+			Only syslog once when storing email in quarantine,
+				reported by Panagiotis Christias, christias
+				at gmail.com
+			Log database reloads to the LogFile
+
 Wed Jun 29 10:45:33 BST 2005 (trog)
 -----------------------------------
   * libclamav: enable RAR SFX unpacking
