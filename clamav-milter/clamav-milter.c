@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.212 2005/06/27 21:01:09 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.213 2005/06/30 14:51:05 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.85h"
+#define	CM_VERSION	"0.85i"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2596,6 +2596,10 @@ clamfi_eom(SMFICTX *ctx)
 		}
 		switch(cl_scanfile(privdata->filename, &virname, &scanned, privdata->root, &limits, options)) {
 			case CL_CLEAN:
+				if(logClean) {
+					snprintf(mess, sizeof(mess), "%s: OK", privdata->filename);
+					logger(mess);
+				}
 				strcpy(mess, "OK");
 				break;
 			case CL_VIRUS:
@@ -2899,9 +2903,6 @@ clamfi_eom(SMFICTX *ctx)
 			free(err);
 		}
 
-		if(quarantine_dir != NULL)
-			qfile(privdata, sendmailId, virusname);
-
 		if(!qflag) {
 			char cmd[128];
 			FILE *sendmail;
@@ -3018,8 +3019,8 @@ clamfi_eom(SMFICTX *ctx)
 		}
 
 		if(quarantine_dir) {
-			if(use_syslog)
-				syslog(LOG_NOTICE, _("Quarantined infected mail as %s"), privdata->filename);
+			qfile(privdata, sendmailId, virusname);
+
 			/*
 			 * Cleanup filename here otherwise clamfi_free() will
 			 * delete the file that we wish to keep because it
@@ -3272,6 +3273,12 @@ clamfi_free(struct privdata *privdata)
 			}
 #endif
 		} else if(privdata->root)
+			/*
+			 * Since only one of clamfi_abort() and clamfi_eom()
+			 * can ever be called, and the only cl_dup is in
+			 * clamfi_eom() which calls cl_free soon after, this
+			 * should be overkill, since this can "never happen"
+			 */
 			cl_free(privdata->root);
 
 		if(privdata->headers)
@@ -4130,7 +4137,7 @@ qfile(struct privdata *privdata, const char *sendmailId, const char *virusname)
 	privdata->filename = newname;
 
 	if(use_syslog)
-		syslog(LOG_INFO, _("File quarantined as %s"), newname);
+		syslog(LOG_INFO, _("Email quarantined as %s"), newname);
 
 	return 0;
 }
@@ -4558,6 +4565,13 @@ watchdog(void *a)
 		pthread_mutex_unlock(&watchdog_mutex);
 
 		/*
+		 * TODO: sanity check that if n_children == 0, that
+		 * root->refcount == 0. Unfortunatly root->refcount isn't
+		 * thread-safe, since it's governed by a mutex that we can't
+		 * see, and there's no access to it via an approved method
+		 */
+
+		/*
 		 * Re-load the database.
 		 */
 		switch(cl_statchkdir(&dbstat)) {
@@ -4580,7 +4594,6 @@ watchdog(void *a)
 				cli_errmsg("Database error - %s is stopping\n", progname);
 				return NULL;
 		}
-		continue;
 	}
 	cli_dbgmsg("watchdog quits\n");
 	return NULL;
@@ -4862,8 +4875,12 @@ loadDatabase(void)
 		syslog(LOG_INFO, _("ClamAV: Protecting against %u viruses"), signatures);
 	}
 	if(oldroot) {
-		cli_dbgmsg("Database updated\n");
+		char mess[128];
+
 		cl_free(oldroot);
+		sprintf(mess, "Database correctly reloaded (%d viruses)\n", signatures);
+		logger(mess);
+		cli_dbgmsg("Database updated\n");
 	} else
 		cli_dbgmsg("Database loaded\n");
 
@@ -5042,7 +5059,7 @@ logger(const char *mess)
 	puts(mess);
 #else
 	FILE *fout;
-	
+
 	if(cfgopt(copt, "Foreground")->enabled)
 		fout = stderr;
 	else
