@@ -1,3 +1,8 @@
+Sat Jul  2 22:05:03 BST 2005 (njh)
+----------------------------------
+  * libclamav/mbox.c:	NEW_WORLD: Improved the handling of files which contain
+				carriage returns
+
 Thu Jun 30 15:51:54 BST 2005 (njh)
 ----------------------------------
   * clamav-milter:	Honour LogClean

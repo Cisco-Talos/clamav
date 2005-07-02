@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.250 2005/06/19 16:04:43 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.251 2005/07/02 21:04:04 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -492,7 +492,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			long b64size = scanelem->size;
 
 			cli_dbgmsg("b64size = %lu\n", b64size);
-			while(*b64start != '\n') {
+			while((*b64start != '\n') && (*b64start != '\r')) {
 				b64start++;
 				b64size--;
 			}
@@ -503,14 +503,15 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				if(*b64start == ';') {
 					b64start++;
 					b64size--;
-				} else if(*b64start == '\n') {
-					b64start++;
-					b64size--;
-					if((*b64start == '\n') || (*b64start == '\r')) {
-						b64start++;
-						b64size--;
-						break;
-					}
+				} else if((memcmp(b64start, "\n\n", 2) == 0) ||
+					  (memcmp(b64start, "\r\r", 2) == 0)) {
+					b64start += 2;
+					b64size -= 2;
+					break;
+				} else if(memcmp(b64start, "\r\n\r\n", 4) == 0) {
+					b64start += 4;
+					b64size -= 4;
+					break;
 				}
 				b64start++;
 				b64size--;
@@ -524,6 +525,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				}
 
 			if(b64size > 0L) {
+				int lastline;
 				cli_dbgmsg("cli_mbox: decoding %ld base64 bytes\n", b64size);
 
 				line = NULL;
@@ -533,9 +535,11 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 					return CL_EMEM;
 				messageSetEncoding(m, "base64");
 
+				lastline = 0;
+
 				do {
 					int length = 0;
-					char *newline;
+					char *newline, *equal;
 
 					/*printf("%ld: ", b64size); fflush(stdout);*/
 
@@ -554,18 +558,25 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 					memcpy(line, b64start, length);
 					line[length] = '\0';
 
+					equal = strchr(line, '=');
+					if(equal) {
+						lastline++;
+						*equal = '\0';
+					}
 					/*puts(line);*/
 
 					if(messageAddStr(m, line) < 0)
 						break;
 
 					if((b64size > 0) && (*ptr == '\r')) {
-						ptr++;
+						b64start = ++ptr;
 						--b64size;
 					}
-					b64start = ++ptr;
-					--b64size;
-					if(strchr(line, '='))
+					if((b64size > 0) && (*ptr == '\n')) {
+						b64start = ++ptr;
+						--b64size;
+					}
+					if(lastline)
 						break;
 				} while(b64size > 0L);
 
@@ -594,7 +605,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				if(*quotedstart == ';') {
 					quotedstart++;
 					quotedsize--;
-				} else if(*quotedstart == '\n') {
+				} else if((*quotedstart == '\n') || (*quotedstart == '\r')) {
 					quotedstart++;
 					quotedsize--;
 					if((*quotedstart == '\n') || (*quotedstart == '\r')) {
@@ -649,11 +660,13 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 						break;
 
 					if((quotedsize > 0) && (*ptr == '\r')) {
-						ptr++;
+						quotedstart = ++ptr;
 						--quotedsize;
 					}
-					quotedstart = ++ptr;
-					--quotedsize;
+					if((quotedsize > 0) && (*ptr == '\n')) {
+						quotedstart = ++ptr;
+						--quotedsize;
+					}
 				} while(quotedsize > 0L);
 
 				free(line);
