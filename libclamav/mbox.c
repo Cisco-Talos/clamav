@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.251 2005/07/02 21:04:04 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.252 2005/07/03 08:31:33 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -328,6 +328,9 @@ struct scanlist {
  * because the scan can proceed to the end of the file rather than the end
  * of the attachment which can mean than later emails are scanned many times
  *
+ * FIXME: quoted printable doesn't know when to stop, so size related virus
+ *	matching breaks
+ *
  * TODO: Also all those pmemstr()s are slow, so we need to reduce the number
  *	and size of data scanned each time, and we fall through to
  *	cli_parse_mbox() too often
@@ -361,6 +364,9 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		return cli_parse_mbox(dir, desc, options);	/* should be StreamMaxLength, I guess */
 
 	cli_warnmsg("NEW_WORLD is new code - use at your own risk.\n");
+#ifdef	PARTIAL_DIR
+	cli_warnmsg("PARTIAL_DIR doesn't work in the NEW_WORLD yet\n");
+#endif
 
 	start = mmap(NULL, size, PROT_READ, MAP_PRIVATE, desc, 0);
 	if(start == MAP_FAILED)
