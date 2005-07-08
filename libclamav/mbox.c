@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.252 2005/07/03 08:31:33 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.253 2005/07/08 07:27:57 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -166,7 +166,7 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
  */
 #define	PARTIAL_DIR
 
-/*#define	NEW_WORLD*/
+#define	NEW_WORLD
 
 static	int	cli_parse_mbox(const char *dir, int desc, unsigned int options);
 static	message	*parseEmailFile(FILE *fin, const table_t *rfc821Table, const char *firstLine, const char *dir);
