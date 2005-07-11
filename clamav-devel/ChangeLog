@@ -1,3 +1,9 @@
+Mon Jul 11 15:57:05 BST 2005 (njh)
+----------------------------------
+  * libclamav/tnef.c:	Fix possible crash if the length field is 0 or negative
+				in headers - reported by Alex Wheeler (alexbling
+				at gmail.com)
+
 Sat Jul  2 22:05:03 BST 2005 (njh)
 ----------------------------------
   * libclamav/mbox.c:	NEW_WORLD: Improved the handling of files which contain

@@ -24,7 +24,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.24 2005/05/18 20:55:59 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.25 2005/07/11 14:55:10 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -38,9 +38,9 @@ static	char	const	rcsid[] = "$Id: tnef.c,v 1.24 2005/05/18 20:55:59 nigelhorne E
 #endif
 #include "blob.h"
 
-static	int	tnef_message(FILE *fp, uint16_t type, uint16_t tag, uint32_t length);
-static	int	tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, uint32_t length, const char *dir, fileblob **fbref);
-static	int	tnef_header(FILE *fp, uint8_t *part, uint16_t *type, uint16_t *tag, uint32_t *length);
+static	int	tnef_message(FILE *fp, uint16_t type, uint16_t tag, int32_t length);
+static	int	tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, int32_t length, const char *dir, fileblob **fbref);
+static	int	tnef_header(FILE *fp, uint8_t *part, uint16_t *type, uint16_t *tag, int32_t *length);
 
 #define	TNEF_SIGNATURE	0x223E9f78
 #define	LVL_MESSAGE	0x01
@@ -104,7 +104,7 @@ cli_tnef(const char *dir, int desc)
 	do {
 		uint8_t part;
 		uint16_t type, tag;
-		uint32_t length;
+		int32_t length;
 
 		switch(tnef_header(fp, &part, &type, &tag, &length)) {
 			case 0:
@@ -183,6 +183,8 @@ cli_tnef(const char *dir, int desc)
 		}
 	} while(!alldone);
 
+	fclose(fp);
+
 	if(fb) {
 		cli_dbgmsg("cli_tnef: flushing final data\n");
 		if(fileblobGetFilename(fb) == NULL) {
@@ -192,14 +194,13 @@ cli_tnef(const char *dir, int desc)
 		fileblobDestroy(fb);
 		fb = NULL;
 	}
-	fclose(fp);
 
 	cli_dbgmsg("cli_tnef: returning %d\n", ret);
 	return ret;
 }
 
 static int
-tnef_message(FILE *fp, uint16_t type, uint16_t tag, uint32_t length)
+tnef_message(FILE *fp, uint16_t type, uint16_t tag, int32_t length)
 {
 	uint16_t i16;
 	off_t offset;
@@ -208,7 +209,7 @@ tnef_message(FILE *fp, uint16_t type, uint16_t tag, uint32_t length)
 	char *string;
 #endif
 
-	cli_dbgmsg("message tag 0x%x, type 0x%x, length %u\n", tag, type, length);
+	cli_dbgmsg("message tag 0x%x, type 0x%x, length %d\n", tag, type, length);
 
 	offset = ftell(fp);
 
@@ -239,8 +240,12 @@ tnef_message(FILE *fp, uint16_t type, uint16_t tag, uint32_t length)
 			/* 14 bytes, long */
 			break;
 		case attMSGCLASS:
+			if(length <= 0)
+				return -1;
 			string = cli_malloc(length + 1);
-			if(fread(string, 1, length, fp) != length) {
+			if(string == NULL)
+				return -1;
+			if(fread(string, 1, (uint32_t)length, fp) != (uint32_t)length) {
 				free(string);
 				return -1;
 			}
@@ -266,21 +271,25 @@ tnef_message(FILE *fp, uint16_t type, uint16_t tag, uint32_t length)
 }
 
 static int
-tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, uint32_t length, const char *dir, fileblob **fbref)
+tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, int32_t length, const char *dir, fileblob **fbref)
 {
 	uint32_t todo;
 	uint16_t i16;
 	off_t offset;
 	char *string;
 
-	cli_dbgmsg("attachment tag 0x%x, type 0x%x, length %u\n", tag, type, length);
+	cli_dbgmsg("attachment tag 0x%x, type 0x%x, length %d\n", tag, type, length);
 
 	offset = ftell(fp);
 
 	switch(tag) {
 		case attATTACHTITLE:
+			if(length <= 0)
+				return -1;
 			string = cli_malloc(length + 1);
-			if(fread(string, 1, length, fp) != length) {
+			if(string == NULL)
+				return -1;
+			if(fread(string, 1, (uint32_t)length, fp) != (uint32_t)length) {
 				free(string);
 				return -1;
 			}
@@ -337,7 +346,7 @@ tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, uint32_t length, const ch
 }
 
 static int
-tnef_header(FILE *fp, uint8_t *part, uint16_t *type, uint16_t *tag, uint32_t *length)
+tnef_header(FILE *fp, uint8_t *part, uint16_t *type, uint16_t *tag, int32_t *length)
 {
 	uint32_t i32;
 
@@ -356,7 +365,7 @@ tnef_header(FILE *fp, uint8_t *part, uint16_t *type, uint16_t *tag, uint32_t *le
 
 	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1)
 		return -1;
-	*length = host32(i32);
+	*length = (int32_t)host32(i32);
 
 	cli_dbgmsg("message tag 0x%x, type 0x%x, length %u\n", *tag, *type, *length);
 
