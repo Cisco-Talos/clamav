@@ -24,7 +24,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.25 2005/07/11 14:55:10 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.26 2005/07/11 15:01:40 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -254,7 +254,7 @@ tnef_message(FILE *fp, uint16_t type, uint16_t tag, int32_t length)
 			free(string);
 			break;
 		default:
-			cli_dbgmsg("TNEF - unsupported message tag 0x%x type 0x%d length %u\n", tag, type, length);
+			cli_dbgmsg("TNEF - unsupported message tag 0x%x type 0x%d length %d\n", tag, type, length);
 			break;
 #endif
 	}
@@ -330,7 +330,7 @@ tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, int32_t length, const cha
 			}
 			break;
 		default:
-			cli_dbgmsg("TNEF - unsupported attachment tag 0x%x type 0x%d length %u\n", tag, type, length);
+			cli_dbgmsg("TNEF - unsupported attachment tag 0x%x type 0x%d length %d\n", tag, type, length);
 			break;
 	}
 
@@ -367,7 +367,7 @@ tnef_header(FILE *fp, uint8_t *part, uint16_t *type, uint16_t *tag, int32_t *len
 		return -1;
 	*length = (int32_t)host32(i32);
 
-	cli_dbgmsg("message tag 0x%x, type 0x%x, length %u\n", *tag, *type, *length);
+	cli_dbgmsg("message tag 0x%x, type 0x%x, length %d\n", *tag, *type, *length);
 
 	return 1;
 }
