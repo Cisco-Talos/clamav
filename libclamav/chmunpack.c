@@ -1,7 +1,7 @@
 /*
  *  Extract component parts of MS CHM files
  *
- *  Copyright (C) 2004 trog@uncon.org
+ *  Copyright (C) 2004-2005 trog@uncon.org
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -480,13 +480,23 @@ static int read_chunk_entries(unsigned char *chunk, uint32_t chunk_len,
 		file_e->next = NULL;
 		
 		name_len = read_enc_int(&current, end);
-		file_e->name = (unsigned char *) cli_malloc(name_len+1);
-		if (!file_e->name) {
-			free(file_e);
-			return FALSE;
+		if (name_len > 0xFFFFFF) {
+			cli_dbgmsg("CHM file name too long: %llu\n", name_len);
+			file_e->name = (unsigned char *) cli_malloc(10);
+	                if (!file_e->name) {
+        	                free(file_e);
+                	        return FALSE;
+                	}
+			file_e->name = strdup("truncated");
+		} else {
+			file_e->name = (unsigned char *) cli_malloc(name_len+1);
+			if (!file_e->name) {
+				free(file_e);
+				return FALSE;
+			}
+			strncpy(file_e->name, current, name_len);
+			file_e->name[name_len] = '\0';
 		}
-		strncpy(file_e->name, current, name_len);
-		file_e->name[name_len] = '\0';
 		current += name_len;
 		file_e->section = read_enc_int(&current, end);
 		file_e->offset = read_enc_int(&current, end);
