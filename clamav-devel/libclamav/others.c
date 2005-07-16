@@ -308,7 +308,7 @@ void *cli_malloc(size_t size)
 	void *alloc;
 
 
-    if(size > MAX_ALLOCATION) {
+    if(!size || size > MAX_ALLOCATION) {
 	cli_errmsg("Attempt to allocate %d bytes. Please report to bugs@clamav.net\n", size);
 	return NULL;
     }
@@ -328,7 +328,7 @@ void *cli_calloc(size_t nmemb, size_t size)
 	void *alloc;
 
 
-    if(size > MAX_ALLOCATION) {
+    if(!size || size > MAX_ALLOCATION) {
 	cli_errmsg("Attempt to allocate %d bytes. Please report to bugs@clamav.net\n", size);
 	return NULL;
     }
@@ -347,6 +347,11 @@ void *cli_realloc(void *ptr, size_t size)
 {
 	void *alloc;
 
+
+    if(!size || size > MAX_ALLOCATION) {
+	cli_errmsg("Attempt to allocate %d bytes. Please report to bugs@clamav.net\n", size);
+	return NULL;
+    }
 
     alloc = realloc(ptr, size);
 
