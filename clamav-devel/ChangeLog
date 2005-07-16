@@ -1,3 +1,8 @@
+Sat Jul 16 16:52:17 BST 2005 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Fix name clash with glibc library, reported by
+				Brian Bruns <bruns at 2mbit.com>
+
 Sat Jul 16 17:02:53 CEST 2005 (tk)
 ----------------------------------
   * libclamav/others.c: Check for 0 byte allocations in cli_(m|c|re)alloc
