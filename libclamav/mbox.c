@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.254 2005/07/08 07:31:13 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.255 2005/07/16 15:51:30 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -188,7 +188,7 @@ static	int	rfc1341(message *m, const char *dir);
 #endif
 static	bool	usefulHeader(int commandNumber, const char *cmd);
 static	int	uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin);
-static	char	*getline(char *buffer, size_t len, FILE *fin);
+static	char	*getline_from_mbox(char *buffer, size_t len, FILE *fin);
 
 static	void	checkURLs(message *m, const char *dir);
 #ifdef	WITH_CURL
@@ -935,7 +935,7 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 		 * Ignore any blank lines at the top of the message
 		 */
 		while(strchr("\r\n", buffer[0]) &&
-		     (getline(buffer, sizeof(buffer) - 1, fd) != NULL))
+		     (getline_from_mbox(buffer, sizeof(buffer) - 1, fd) != NULL))
 			;
 
 		buffer[sizeof(buffer) - 1] = '\0';
@@ -1187,7 +1187,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 		} else
 			if(messageAddStr(ret, line) < 0)
 				break;
-	} while(getline(buffer, sizeof(buffer) - 1, fin) != NULL);
+	} while(getline_from_mbox(buffer, sizeof(buffer) - 1, fin) != NULL);
 
 	if(fullline) {
 		if(*fullline) switch(commandNumber) {
@@ -3902,7 +3902,7 @@ uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin)
  * Like fgets but cope with end of line by "\n", "\r\n", "\n\r", "\r"
  */
 static char *
-getline(char *buffer, size_t len, FILE *fin)
+getline_from_mbox(char *buffer, size_t len, FILE *fin)
 {
 	char *ret;
 
@@ -3910,7 +3910,7 @@ getline(char *buffer, size_t len, FILE *fin)
 		return NULL;
 
 	if((len == 0) || (buffer == NULL)) {
-		cli_errmsg("Invalid call to getline(). Report to bugs@clamav.net\n");
+		cli_errmsg("Invalid call to getline_from_mbox(). Report to bugs@clamav.net\n");
 		return NULL;
 	}
 
@@ -3946,12 +3946,12 @@ getline(char *buffer, size_t len, FILE *fin)
 
 	if(len == 0) {
 		/* the email probably breaks RFC821 */
-		cli_warnmsg("getline: buffer overflow stopped - line lost\n");
+		cli_warnmsg("getline_from_mbox: buffer overflow stopped - line lost\n");
 		return NULL;
 	}
 	if(len == 1)
 		/* over flows will have appear on separate lines */
-		cli_dbgmsg("getline: buffer overflow stopped - line recovered\n");
+		cli_dbgmsg("getline_from_mbox: buffer overflow stopped - line recovered\n");
 	*buffer = '\0';
 
 	return ret;
