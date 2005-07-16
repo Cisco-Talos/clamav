@@ -1,3 +1,7 @@
+Sat Jul 16 17:02:53 CEST 2005 (tk)
+----------------------------------
+  * libclamav/others.c: Check for 0 byte allocations in cli_(m|c|re)alloc
+
 Fri Jul 15 11:19:54 BST 2005 (trog)
 -----------------------------------
   * libclamav/chmunpack.c: Fix possible malloc overflow. Reported by Alex Wheeler.
