@@ -1021,7 +1021,7 @@ Optional Features:
   --disable-bzip2	  disable bzip2 support
   --disable-dns           disable support for database verification through
                           DNS
-  --disable-clamuko	  disable clamuko support (Linux and FreeBSD only)
+  --disable-clamuko	  disable clamuko support (Linux, DragonFly and FreeBSD only)
   --enable-milter	  build clamav-milter
   --disable-dsig	  disable support for digital signatures
   --disable-pthreads      disable POSIX threads support
@@ -11792,6 +11792,37 @@ freebsd*)
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread -lc_r"
 	CLAMD_LIBS="$CLAMD_LIBS -pthread -lc_r"
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread -lc_r"
+	TH_SAFE="-thread-safe"
+
+cat >>confdefs.h <<\_ACEOF
+#define CL_THREAD_SAFE 1
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define _REENTRANT 1
+_ACEOF
+
+	if test "$want_clamuko" = "yes"; then
+
+cat >>confdefs.h <<\_ACEOF
+#define CLAMUKO 1
+_ACEOF
+
+	fi
+    fi
+
+cat >>confdefs.h <<\_ACEOF
+#define C_BSD 1
+_ACEOF
+
+    use_gethostbyname_r="no"
+    ;;
+dragonfly*)
+    if test "$have_pthreads" = "yes"; then
+	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread"
+	CLAMD_LIBS="$CLAMD_LIBS -pthread"
+	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread"
 	TH_SAFE="-thread-safe"
 
 cat >>confdefs.h <<\_ACEOF
