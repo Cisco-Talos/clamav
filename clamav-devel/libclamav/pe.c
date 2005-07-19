@@ -1369,6 +1369,7 @@ int cli_peheader(int desc, struct cli_pe_info *peinfo)
 {
 	uint16_t e_magic; /* DOS signature ("MZ") */
 	uint32_t e_lfanew; /* address of new exe header */
+	uint32_t min, max;
 	struct pe_image_file_hdr file_hdr;
 	struct pe_image_optional_hdr optional_hdr;
 	struct pe_image_section_hdr *section_hdr;
@@ -1467,11 +1468,20 @@ int cli_peheader(int desc, struct cli_pe_info *peinfo)
 	peinfo->section[i].vsz = EC32(section_hdr[i].VirtualSize);
 	peinfo->section[i].raw = EC32(section_hdr[i].PointerToRawData);
 	peinfo->section[i].rsz = EC32(section_hdr[i].SizeOfRawData);
+
+	if(!i) {
+	    min = EC32(section_hdr[i].VirtualAddress);
+	    max = EC32(section_hdr[i].VirtualAddress) + EC32(section_hdr[i].SizeOfRawData);
+	} else {
+	    if(EC32(section_hdr[i].VirtualAddress) < min)
+		min = EC32(section_hdr[i].VirtualAddress);
+
+	    if(EC32(section_hdr[i].VirtualAddress) + EC32(section_hdr[i].SizeOfRawData) > max)
+		max = EC32(section_hdr[i].VirtualAddress) + EC32(section_hdr[i].SizeOfRawData);
+	}
     }
 
-    peinfo->ep = cli_rawaddr(EC32(optional_hdr.AddressOfEntryPoint), section_hdr, peinfo->nsections, &err);
-
-    if(err) {
+    if((peinfo->ep = EC32(optional_hdr.AddressOfEntryPoint)) >= min && !(peinfo->ep = cli_rawaddr(EC32(optional_hdr.AddressOfEntryPoint), section_hdr, peinfo->nsections, &err)) && err) {
 	cli_dbgmsg("Possibly broken PE file\n");
 	free(section_hdr);
 	free(peinfo->section);
