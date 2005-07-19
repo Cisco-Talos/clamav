@@ -11400,7 +11400,11 @@ echo $ECHO_N "checking for curl >= $check... $ECHO_C" >&6
 
 	if test x$fail != x1; then
 	    curl_libs=`curl-config --libs`
-	    LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $curl_libs"
+	    # openssl libs are required to link libcurl
+	    openssl_libs="`pkg-config --libs openssl`"
+	    curl_flags=`curl-config --cflags`
+	    LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $curl_libs $openssl_libs"
+	    CPPFLAGS="$CPPFLAGS -I$ZLIB_HOME/include $curl_flags"
 	    my_cv_curl_vers="$ver"
 	    echo "$as_me:$LINENO: result: $my_cv_curl_vers" >&5
 echo "${ECHO_T}$my_cv_curl_vers" >&6
