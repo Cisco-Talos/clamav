@@ -1237,7 +1237,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    if(cli_leavetemps_flag)
 		cli_dbgmsg("UPX/FSG: Decompressed data saved in %s\n", tempfile);
 
-	    cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
+	    cli_dbgmsg("***** Scanning decompressed file *****\n");
 	    if((ret = cli_magic_scandesc(ndesc, virname, scanned, root, limits, options, arec, mrec)) == CL_VIRUS) {
 		close(ndesc);
 		if(!cli_leavetemps_flag)
