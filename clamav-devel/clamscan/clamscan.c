@@ -136,6 +136,17 @@ int clamscan(struct optstruct *opt)
 	    return 40;
 	}
 
+    if(optl(opt, "max-dir-recursion"))
+	if(!isnumb(getargl(opt, "max-dir-recursion"))) {
+	    logg("!--max-dir-recursion requires natural number.\n");
+	    return 40;
+	}
+
+    if(optl(opt, "max-ratio"))
+	if(!isnumb(getargl(opt, "max-ratio"))) {
+	    logg("!--max-ratio requires natural number.\n");
+	    return 40;
+	}
 
     memset(&claminfo, 0, sizeof(struct s_info));
 
