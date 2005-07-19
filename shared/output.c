@@ -164,42 +164,40 @@ int logg(const char *str, ...)
 		    fprintf(logg_fd, "LOGGING DISABLED (Maximal log file size exceeded).\n");
 		    fclose(logg_fd);
 		    logg_fd = NULL;
-#ifdef CL_THREAD_SAFE
-		    pthread_mutex_unlock(&logg_mutex);
-#endif
 		}
 	    }
 	}
 
-        /* Need to avoid logging time for verbose messages when logverbose
-           is not set or we get a bunch of timestamps in the log without
-           newlines... */
-	if(logg_time && ((*str != '*') || logg_verbose)) {
-	    time(&currtime);
-	    pt = ctime(&currtime);
-	    timestr = mcalloc(strlen(pt), sizeof(char));
-	    strncpy(timestr, pt, strlen(pt) - 1);
-	    fprintf(logg_fd, "%s -> ", timestr);
-	    free(timestr);
-	}
+	if(logg_fd) {
+            /* Need to avoid logging time for verbose messages when logverbose
+               is not set or we get a bunch of timestamps in the log without
+               newlines... */
+	    if(logg_time && ((*str != '*') || logg_verbose)) {
+		time(&currtime);
+		pt = ctime(&currtime);
+		timestr = mcalloc(strlen(pt), sizeof(char));
+		strncpy(timestr, pt, strlen(pt) - 1);
+		fprintf(logg_fd, "%s -> ", timestr);
+		free(timestr);
+	    }
 
-        _(str);
-	if(*str == '!') {
-	    fprintf(logg_fd, "ERROR: ");
-	    vfprintf(logg_fd, str + 1, args);
-	} else if(*str == '^') {
-	    fprintf(logg_fd, "WARNING: ");
-	    vfprintf(logg_fd, str + 1, args);
-	} else if(*str == '*') {
-	    if(logg_verbose)
+	    _(str);
+	    if(*str == '!') {
+		fprintf(logg_fd, "ERROR: ");
 		vfprintf(logg_fd, str + 1, args);
-	} else if(*str == '#') {
-	    vfprintf(logg_fd, str + 1, args);
-	} else vfprintf(logg_fd, str, args);
+	    } else if(*str == '^') {
+		fprintf(logg_fd, "WARNING: ");
+		vfprintf(logg_fd, str + 1, args);
+	    } else if(*str == '*') {
+		if(logg_verbose)
+		    vfprintf(logg_fd, str + 1, args);
+	    } else if(*str == '#') {
+		vfprintf(logg_fd, str + 1, args);
+	    } else vfprintf(logg_fd, str, args);
 
 
-	fflush(logg_fd);
-
+	    fflush(logg_fd);
+	}
     }
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
