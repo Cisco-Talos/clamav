@@ -220,7 +220,11 @@ then
 
 	if test x$fail != x1; then
 	    curl_libs=`curl-config --libs`
-	    LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $curl_libs"
+	    # openssl libs are required to link libcurl
+	    openssl_libs="`pkg-config --libs openssl`"
+	    curl_flags=`curl-config --cflags`
+	    LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $curl_libs $openssl_libs"
+	    CPPFLAGS="$CPPFLAGS -I$ZLIB_HOME/include $curl_flags"
 	    my_cv_curl_vers="$ver"
 	    AC_MSG_RESULT([$my_cv_curl_vers])
 	    AC_DEFINE(WITH_CURL,1,use libcurl in mbox code)
