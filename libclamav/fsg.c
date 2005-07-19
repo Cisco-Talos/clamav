@@ -186,7 +186,7 @@ static int unfsg(char *source, char *dest, int ssize, int dsize, char **endsrc, 
 	}
 	lostbit = 0;
       }
-      if (cdst-backbytes < dest || cdst+backsize >= dest+dsize)
+      if ((backsize >= dest + dsize - cdst) || (backbytes > cdst - dest))
 	return -1;
       while(backsize--) {
 	*cdst=*(cdst-backbytes);

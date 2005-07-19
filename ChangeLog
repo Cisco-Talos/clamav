@@ -1,3 +1,7 @@
+Tue Jul 19 09:55:52 CEST 2005 (acab)
+------------------------------------
+  * libclamav/fsg.c:    Fix possible integer overflow. Reported by Alex Wheeler.
+
 Sat Jul 16 16:52:17 BST 2005 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Fix name clash with glibc library, reported by
