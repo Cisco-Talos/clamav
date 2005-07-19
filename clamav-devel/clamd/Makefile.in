@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 #
-#  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+#  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -76,9 +76,9 @@ am__clamd_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 	$(top_srcdir)/shared/getopt.h $(top_srcdir)/shared/memory.c \
 	$(top_srcdir)/shared/memory.h $(top_srcdir)/shared/misc.c \
 	$(top_srcdir)/shared/misc.h options.c options.h clamd.c \
-	defaults.h tcpserver.c tcpserver.h localserver.c localserver.h \
-	session.c session.h thrmgr.c thrmgr.h server-th.c server.h \
-	scanner.c scanner.h others.c others.h clamuko.c clamuko.h \
+	tcpserver.c tcpserver.h localserver.c localserver.h session.c \
+	session.h thrmgr.c thrmgr.h server-th.c server.h scanner.c \
+	scanner.h others.c others.h clamuko.c clamuko.h \
 	dazukoio_compat12.c dazukoio_compat12.h dazukoio.c dazukoio.h \
 	dazuko_xp.h dazukoio_xp.h shared.h
 @BUILD_CLAMD_TRUE@am_clamd_OBJECTS = output.$(OBJEXT) \
@@ -231,7 +231,6 @@ target_vendor = @target_vendor@
 @BUILD_CLAMD_TRUE@    options.c \
 @BUILD_CLAMD_TRUE@    options.h \
 @BUILD_CLAMD_TRUE@    clamd.c \
-@BUILD_CLAMD_TRUE@    defaults.h \
 @BUILD_CLAMD_TRUE@    tcpserver.c \
 @BUILD_CLAMD_TRUE@    tcpserver.h \
 @BUILD_CLAMD_TRUE@    localserver.c \
