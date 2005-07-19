@@ -1,3 +1,8 @@
+Tue Jul 19 22:35:02 CEST 2005 (tk)
+----------------------------------
+  * libclamav/pe.c: cli_peheader: sync entry point calculation with cli_scanpe
+		    (problem reported by Christoph Cordes <ccordes*clamav.net>)
+
 Tue Jul 19 22:07:15 CEST 2005 (tk)
 ----------------------------------
   * configure.in: fix compilation error when curl is installed in a
