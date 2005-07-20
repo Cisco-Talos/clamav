@@ -1,3 +1,8 @@
+Wed Jul 20 03:41:00 CEST 2005 (tk)
+----------------------------------
+  * libclamav/mspack: some cab archives were not properly decompressed (problem
+		      reported by Diego d'Ambra <diego*clamav.net>)
+
 Tue Jul 19 22:35:02 CEST 2005 (tk)
 ----------------------------------
   * libclamav/pe.c: cli_peheader: sync entry point calculation with cli_scanpe
