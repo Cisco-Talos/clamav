@@ -95,7 +95,7 @@ static const unsigned short bit_mask[17] = {
 
 static int zipd_read_input(struct mszipd_stream *zip) {
   int read = zip->sys->read(zip->input, &zip->inbuf[0], (int)zip->inbuf_size);
-  if (read < 0) return zip->error = MSPACK_ERR_READ;
+  if (read <= 0) return zip->error = MSPACK_ERR_READ;
   zip->i_ptr = &zip->inbuf[0];
   zip->i_end = &zip->inbuf[read];
 

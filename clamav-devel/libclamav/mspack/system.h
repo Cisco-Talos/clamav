@@ -15,7 +15,7 @@
 # define D(x) do { printf("%s:%d (%s) ",__FILE__, __LINE__, __FUNCTION__); \
                    printf x ; fputc('\n', stdout); fflush(stdout);} while (0);
 #else
-# define D(x)
+# define D(x) cli_dbgmsg x ;
 #endif
 
 /* endian-neutral reading of little-endian data */
