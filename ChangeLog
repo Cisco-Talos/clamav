@@ -1,3 +1,8 @@
+Thu Jul 21 03:47:03 CEST 2005 (tk)
+----------------------------------
+  * libclamav/others.c: cli_rmdirs: fix possible infinite loop. Patch by Mark
+			Pizzolato.
+
 Wed Jul 20 03:41:00 CEST 2005 (tk)
 ----------------------------------
   * libclamav/mspack: some cab archives were not properly decompressed (problem
