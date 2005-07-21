@@ -144,6 +144,11 @@ int rmdirs(const char *dirname)
     if((dd = opendir(dirname)) != NULL) {
 	while(stat(dirname, &maind) != -1) {
 	    if(!rmdir(dirname)) break;
+	    if(errno != ENOTEMPTY) {
+		logg("^Can't remove temporary directory %s: %s\n", dirname, strerror(errno));
+		closedir(dd);
+		return 0;
+	    }
 
 	    while((dent = readdir(dd))) {
 #ifndef C_INTERIX

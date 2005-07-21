@@ -515,6 +515,11 @@ int cli_rmdirs(const char *dirname)
     if((dd = opendir(dirname)) != NULL) {
 	while(stat(dirname, &maind) != -1) {
 	    if(!rmdir(dirname)) break;
+	    if(errno != ENOTEMPTY) {
+		cli_errmsg("Can't remove temporary directory %s: %s\n", dirname, strerror(errno));
+		closedir(dd);
+		return 0;
+	    }
 
 #ifdef HAVE_READDIR_R_3
 	    while(!readdir_r(dd, &result.d, &dent) && dent) {
