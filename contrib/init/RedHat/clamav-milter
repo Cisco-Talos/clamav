@@ -29,7 +29,7 @@ RETVAL=0
 
 start() {
         echo -n "Starting clamav-milter: "
-        daemon clamav-milter ${CLAMAV_FLAGS}
+        LANG= daemon clamav-milter ${CLAMAV_FLAGS}
         RETVAL=$?
         echo
 	test $RETVAL -eq 0 && touch /var/lock/subsys/clamav-milter
