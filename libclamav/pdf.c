@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.27 2005/06/24 20:48:53 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.28 2005/07/22 22:15:08 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -227,6 +227,13 @@ cli_pdf(const char *dir, int desc)
 				break;
 			}
 		}
+		streamlen = (int)(streamend - streamstart) + 1;
+
+		if(streamlen == 0) {
+			cli_dbgmsg("Empty stream");
+			continue;
+		}
+
 		/*while(strchr("\r\n", *--streamend))
 			;*/
 		snprintf(fullname, sizeof(fullname), "%s/pdfXXXXXX", dir);
@@ -242,8 +249,6 @@ cli_pdf(const char *dir, int desc)
 			rc = CL_ETMPFILE;
 			break;
 		}
-
-		streamlen = (int)(streamend - streamstart) + 1;
 
 		cli_dbgmsg("length %d, streamlen %d\n", length, streamlen);
 
@@ -274,18 +279,20 @@ cli_pdf(const char *dir, int desc)
 				rc = CL_EFORMAT;
 				continue;
 			}
-			streamlen = (size_t)ret;
-			/* free unused traling bytes */
-			tmpbuf = cli_realloc(tmpbuf, streamlen);
-			/*
-			 * Note that it will probably be both ascii85encoded
-			 * and flateencoded
-			 */
-			if(is_flatedecode) {
-				const int zstat = flatedecode((unsigned char *)tmpbuf, streamlen, fout);
+			if(ret) {
+				streamlen = (size_t)ret;
+				/* free unused trailing bytes */
+				tmpbuf = cli_realloc(tmpbuf, streamlen);
+				/*
+				 * Note that it will probably be both
+				 * ascii85encoded and flateencoded
+				 */
+				if(is_flatedecode) {
+					const int zstat = flatedecode((unsigned char *)tmpbuf, streamlen, fout);
 
-				if(zstat != Z_OK)
-					rc = CL_EZIP;
+					if(zstat != Z_OK)
+						rc = CL_EZIP;
+				}
 			}
 			free(tmpbuf);
 		} else if(is_flatedecode) {
