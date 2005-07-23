@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.28 2005/07/22 22:15:08 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.29 2005/07/23 08:54:16 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -301,7 +301,7 @@ cli_pdf(const char *dir, int desc)
 			if(zstat != Z_OK)
 				rc = CL_EZIP;
 		} else
-			write(fout, streamstart, streamlen);
+			cli_writen(fout, (char *)streamstart, streamlen);
 
 		close(fout);
 		cli_dbgmsg("cli_pdf: extracted to %s\n", fullname);
@@ -342,7 +342,7 @@ flatedecode(const unsigned char *buf, size_t len, int fout)
 		switch(zstat) {
 			case Z_OK:
 				if(stream.avail_out == 0) {
-					write(fout, output, sizeof(output));
+					cli_writen(fout, output, sizeof(output));
 					stream.next_out = output;
 					stream.avail_out = sizeof(output);
 				}
@@ -361,7 +361,7 @@ flatedecode(const unsigned char *buf, size_t len, int fout)
 	}
 
 	if(stream.avail_out != sizeof(output))
-		write(fout, output, sizeof(output) - stream.avail_out);
+		cli_writen(fout, output, sizeof(output) - stream.avail_out);
 	return inflateEnd(&stream);
 }
 
