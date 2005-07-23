@@ -845,6 +845,7 @@ Changes
 				reported by Panagiotis Christias, christias
 				at gmail.com
 			Log database reloads to the LogFile
+0.85j	23/7/05:	FORTIFY the code
 
 4. INTERNATIONALISATION
 

@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.213 2005/06/30 14:51:05 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.214 2005/07/23 08:52:56 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.85i"
+#define	CM_VERSION	"0.85j"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3500,7 +3500,7 @@ updateSigFile(void)
 
 	signature = cli_realloc(signature, statb.st_size);
 	if(signature)
-		read(fd, signature, statb.st_size);
+		cli_readn(fd, signature, statb.st_size);
 	close(fd);
 
 	return statb.st_size;
@@ -3992,7 +3992,14 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 			syslog(LOG_ERR, _("Out of memory"));
 		return -1;
 	}
-	fread(buf, sizeof(char), statb.st_size, fin);
+	if(fread(buf, sizeof(char), statb.st_size, fin) != statb.st_size) {
+		perror(filename);
+		if(use_syslog)
+			syslog(LOG_ERR, _("Error reading e-mail template file %s"),
+				filename);
+		fclose(fin);
+		return -1;
+	}
 	fclose(fin);
 	buf[statb.st_size] = '\0';
 
@@ -4878,7 +4885,7 @@ loadDatabase(void)
 		char mess[128];
 
 		cl_free(oldroot);
-		sprintf(mess, "Database correctly reloaded (%d viruses)\n", signatures);
+		sprintf(mess, "Database correctly reloaded (%d viruses)", signatures);
 		logger(mess);
 		cli_dbgmsg("Database updated\n");
 	} else
@@ -4996,7 +5003,7 @@ verifyIncomingSocketName(const char *sockName)
 }
 
 /*
- * If the given email address is whitelisted don't scan their emails
+ * If the given email address is whitelisted don't scan emails to them
  *
  * TODO: Allow regular expressions in the emails
  * TODO: Syntax check the contents of the files
