@@ -233,7 +233,9 @@ void help(void)
     mprintf("    --detect-broken                      Try to detect broken executable files\n");
     mprintf("    --block-encrypted                    Block encrypted archives\n");
     mprintf("    --block-max                          Block archives that exceed limits\n");
+#ifdef WITH_CURL
     mprintf("    --mail-follow-urls                   Download and scan URLs\n");
+#endif
 
     mprintf("\n");
     mprintf("    --max-space=#n                       Only extract first #n kilobytes from\n");
