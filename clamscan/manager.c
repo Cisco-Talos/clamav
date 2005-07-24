@@ -196,7 +196,11 @@ int scanmanager(const struct optstruct *opt)
 	options |= CL_SCAN_MAIL;
 
 	if(optl(opt, "mail-follow-urls"))
+#ifdef WITH_CURL
 	    options |= CL_SCAN_MAILURL;
+#else
+	    logg("^Support for URLs downloading with libcurl not compiled in\n");
+#endif
     }
 
 #ifdef C_LINUX
