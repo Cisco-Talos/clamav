@@ -262,7 +262,7 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 }
 
 #ifdef HAVE_ZLIB_H
-static int cli_scanzip(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanzip(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec, unsigned long int offset)
 {
 	ZZIP_DIR *zdir;
 	ZZIP_DIRENT zdirent;
@@ -279,6 +279,9 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 
 
     cli_dbgmsg("in scanzip()\n");
+
+    if(offset)
+	lseek(desc, offset, SEEK_SET);
 
     if((zdir = zzip_dir_fdopen(dup(desc), &err)) == NULL) {
 	cli_dbgmsg("Zip: Not supported file format ?.\n");
@@ -1443,7 +1446,7 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 
 	case CL_TYPE_ZIP:
 	    if(SCAN_ARCHIVE)
-		ret = cli_scanzip(desc, virname, scanned, root, limits, options, arec, mrec);
+		ret = cli_scanzip(desc, virname, scanned, root, limits, options, arec, mrec, 0);
 	    break;
 
 	case CL_TYPE_GZ:
@@ -1582,6 +1585,13 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 		    if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE)
 			cli_dbgmsg("RAR-SFX found at %d\n", ftoffset);
 			if(cli_scanrar(desc, virname, scanned, root, limits, options, arec, mrec, ftoffset) == CL_VIRUS)
+			    return CL_VIRUS;
+		    break;
+
+		case CL_TYPE_ZIPSFX:
+		    if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE)
+			cli_dbgmsg("ZIP-SFX found at %d\n", ftoffset);
+			if(cli_scanzip(desc, virname, scanned, root, limits, options, arec, mrec, ftoffset) == CL_VIRUS)
 			    return CL_VIRUS;
 		    break;
 	    }

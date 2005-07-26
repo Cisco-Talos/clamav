@@ -1,3 +1,8 @@
+Tue Jul 26 03:31:12 CEST 2005 (tk)
+----------------------------------
+  * libclamav: add support for Zip SFX unpacking (patch by Sven Strickroth
+	       <sven*clamav.net>)
+
 Tue Jul 26 02:54:18 CEST 2005 (tk)
 ----------------------------------
   * configure.in: --disable-cr was not working properly, reported by Stephane

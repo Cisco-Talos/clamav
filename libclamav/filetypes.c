@@ -170,6 +170,7 @@ static const struct cli_smagic_s cli_smagic[] = {
     {"3c494652414d45", "HTML data", CL_TYPE_HTML},      /* <IFRAME */
 
     {"526172211a0700", "RAR-SFX", CL_TYPE_RARSFX},
+    {"504b03041400", "ZIP-SFX", CL_TYPE_ZIPSFX},
 
     {NULL,  NULL,   CL_TYPE_UNKNOWN_DATA}
 };
