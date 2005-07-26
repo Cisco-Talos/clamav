@@ -1,3 +1,8 @@
+Tue Jul 26 02:54:18 CEST 2005
+----------------------------------
+  * configure.in: --disable-cr was not working properly, reported by Stephane
+		  Leclerc <sleclerc*aliastec.net>
+
 Fri Jul 22 23:15:20 BST 2005 (njh)
 ----------------------------------
   * libclamav/pdf.c:	Remove allocation of 0 bytes if ascii85decode decodes
