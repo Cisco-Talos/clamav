@@ -1,4 +1,4 @@
-Tue Jul 26 02:54:18 CEST 2005
+Tue Jul 26 02:54:18 CEST 2005 (tk)
 ----------------------------------
   * configure.in: --disable-cr was not working properly, reported by Stephane
 		  Leclerc <sleclerc*aliastec.net>
