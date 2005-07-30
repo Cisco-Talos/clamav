@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.255 2005/07/16 15:51:30 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.256 2005/07/30 15:41:16 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -121,7 +121,7 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 #ifdef	WITH_CURL
 #define	FOLLOWURLS	5	/*
 				 * Maximum number of URLs scanned in a message
-				 * part. Helps to find Dialier.gen-45. If
+				 * part. Helps to find Dialer.gen-45. If
 				 * not defined, don't check any URLs
 				 */
 #endif
@@ -3756,7 +3756,8 @@ getURL(struct arg *arg)
 	 * If pushed really hard it will sometimes say
 	 * Conditional jump or move depends on uninitialised value(s) and
 	 * quit. But the program seems to work OK without valgrind...
-	 * Perhaps Curl_resolv() isn't thread safe?
+	 * Perhaps Curl_resolv() isn't thread safe? I have seen segfaults
+	 * Curl_resolv() as well in version 7.12.3.
 	 */
 	/*
 	 * On some C libraries (notably with FC3, glibc-2.3.3-74) you get a
