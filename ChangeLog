@@ -1,3 +1,7 @@
+Sat Jul 30 11:09:47 BST 2005 (njh)
+----------------------------------
+  * libclamav/pdf.c:	Improved parsing
+
 Tue Jul 26 03:31:12 CEST 2005 (tk)
 ----------------------------------
   * libclamav: add support for Zip SFX unpacking (patch by Sven Strickroth
