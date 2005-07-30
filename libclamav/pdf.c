@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.29 2005/07/23 08:54:16 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.30 2005/07/30 10:08:59 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -57,7 +57,10 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.29 2005/07/23 08:54:16 nigelhorne Ex
 static	int	flatedecode(const unsigned char *buf, size_t len, int fout);
 static	int	ascii85decode(const char *buf, size_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
+#if	0
 static	const	char	*pdf_nexttoken(const char *ptr, size_t len);
+#endif
+static	const	char	*pdf_nextobject(const char *ptr, size_t len);
 
 int
 cli_pdf(const char *dir, int desc)
@@ -102,13 +105,18 @@ cli_pdf(const char *dir, int desc)
 		return CL_EFORMAT;
 	}
 
-	q = pdf_nextlinestart(p, size);
+#if	0
+	q = pdf_nextlinestart(&p[6], size - 6);
 	if(q == NULL) {
 		munmap(buf, size);
 		return CL_EFORMAT;
 	}
 	bytesleft = size - (long)(q - p);
 	p = q;
+#else
+	p = &p[6];
+	bytesleft = size - 6;
+#endif
 
 	/* Find the file trailer */
 	for(q = &p[bytesleft - 6]; q > p; --q)
@@ -137,7 +145,10 @@ cli_pdf(const char *dir, int desc)
 		return CL_EFORMAT;
 	}
 
+	/*
+	 * not true, since edits may put data after the trailer
 	bytesleft -= trailerlength;
+	 */
 
 	/*
 	 * FIXME: Handle more than one xref section in the xref table
@@ -158,22 +169,56 @@ cli_pdf(const char *dir, int desc)
 
 	xreflength = (size_t)(trailerstart - xrefstart);
 
+	/*
+	 * not true, since edits may put data after the trailer
 	bytesleft -= xreflength;
+	 */
 
 	/*
-	 * For each object in the body section
+	 * The body section consists of a sequence of indirect objects
 	 */
-	while((q = cli_pmemstr(p, bytesleft, " obj", 4)) != NULL) {
+	while((p < xrefstart) && ((q = pdf_nextobject(p, bytesleft)) != NULL)) {
 		int is_ascii85decode, is_flatedecode, fout, len;
+		int object_number, generation_number;
 		const char *objstart, *objend, *streamstart, *streamend;
 		size_t length, objlen, streamlen;
 		char fullname[NAME_MAX + 1];
 
-		bytesleft -= (q - p) + 4;
-		objstart = p = &q[4];
+		if(q == xrefstart)
+			break;
+		if(memcmp(q, "xref", 4) == 0)
+			break;
+		if(!isdigit(*q)) {
+			cli_warnmsg("Object number missing\n");
+			rc = CL_EFORMAT;
+			break;
+		}
+		object_number = atoi(q);
+		bytesleft -= (q - p);
+		p = q;
+
+		q = pdf_nextobject(p, bytesleft);
+		if((q == NULL) || !isdigit(*q)) {
+			cli_warnmsg("Generation number missing\n");
+			rc = CL_EFORMAT;
+			break;
+		}
+		generation_number = atoi(q);
+		bytesleft -= (q - p);
+		p = q;
+
+		q = pdf_nextobject(p, bytesleft);
+		if((q == NULL) || (memcmp(q, "obj", 3) != 0)) {
+			cli_warnmsg("Indirect object missing \"obj\"\n");
+			rc = CL_EFORMAT;
+			break;
+		}
+
+		bytesleft -= (q - p) + 3;
+		objstart = p = &q[3];
 		objend = cli_pmemstr(p, bytesleft, "endobj", 6);
 		if(objend == NULL) {
-			cli_dbgmsg("No matching endobj");
+			cli_dbgmsg("No matching endobj\n");
 			break;
 		}
 		bytesleft -= (objend - p) + 6;
@@ -191,7 +236,7 @@ cli_pdf(const char *dir, int desc)
 		 */
 		q = objstart;
 		while(q < streamstart) {
-			if(*q == '/') {
+			if(*q == '/') {	/* name object */
 				if(strncmp(++q, "Length ", 7) == 0) {
 					q += 7;
 					length = atoi(q);
@@ -206,7 +251,7 @@ cli_pdf(const char *dir, int desc)
 					q += 13;
 				}
 			}
-			q = pdf_nexttoken(q, (size_t)(streamstart - q));
+			q = pdf_nextobject(q, (size_t)(streamstart - q));
 			if(q == NULL)
 				break;
 		}
@@ -292,7 +337,8 @@ cli_pdf(const char *dir, int desc)
 
 					if(zstat != Z_OK)
 						rc = CL_EZIP;
-				}
+				} else
+					cli_writen(fout, (char *)streamstart, streamlen);
 			}
 			free(tmpbuf);
 		} else if(is_flatedecode) {
@@ -305,6 +351,7 @@ cli_pdf(const char *dir, int desc)
 
 		close(fout);
 		cli_dbgmsg("cli_pdf: extracted to %s\n", fullname);
+
 	}
 
 	munmap(buf, size);
@@ -448,6 +495,7 @@ pdf_nextlinestart(const char *ptr, size_t len)
 	return ptr;
 }
 
+#if	0
 /*
  * Return the start of the next PDF token.
  * This assumes that we're not in a stream.
@@ -471,7 +519,8 @@ pdf_nexttoken(const char *ptr, size_t len)
 				intoken = 0;
 				break;
 
-			/*case '(':
+			case ' ':
+			case '(':
 			case ')':
 			case '<':
 			case '>':
@@ -480,19 +529,58 @@ pdf_nexttoken(const char *ptr, size_t len)
 			case '{':
 			case '}':
 			case '/':
-				if(!intoken)
-					return ptr;
-				ptr++;
-				len--;
-				break;*/
-			case ' ':
 			case '\t':
+			case '\v':
+			case '\f':
 				intoken = 0;
 				ptr++;
 				len--;
 				break;
 			default:
 				if(!intoken)
+					return ptr;
+				ptr++;
+				len--;
+		}
+	}
+	return NULL;
+}
+#endif
+
+/*
+ * Return the start of the next PDF object.
+ * This assumes that we're not in a stream.
+ */
+static const char *
+pdf_nextobject(const char *ptr, size_t len)
+{
+	const char *p;
+	int inobject = 1;
+
+	while(len) {
+		switch(*ptr) {
+			case '\n':
+			case '\r':
+			case '%':	/* comment */
+				p = pdf_nextlinestart(ptr, len);
+				if(p == NULL)
+					return NULL;
+				len -= (size_t)(p - ptr);
+				ptr = p;
+				inobject = 0;
+				break;
+
+			case ' ':
+			case '\t':
+			case '\v':
+			case '\f':
+				inobject = 0;
+				ptr++;
+				len--;
+				break;
+			default:
+				if(!inobject)
+					/* TODO: parse and return object type */
 					return ptr;
 				ptr++;
 				len--;
