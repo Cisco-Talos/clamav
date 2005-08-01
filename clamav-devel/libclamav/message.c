@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.158 2005/08/01 11:41:00 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.159 2005/08/01 20:37:15 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -264,7 +264,7 @@ messageSetMimeType(message *mess, const char *type)
 			 * Force scanning of strange messages
 			 */
 			if(strcasecmp(type, "plain") == 0) {
-				cli_dbgmsg("Incorrect MIME type: `plain', set to Text\n", type);
+				cli_dbgmsg("Incorrect MIME type: `plain', set to Text\n");
 				mess->mimeType = TEXT;
 			} else {
 				/*
