@@ -21,6 +21,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.26  2005/08/01 11:30:59  nigelhorne
+ * Spelling fix
+ *
  * Revision 1.25  2005/03/22 21:26:27  kojm
  * add support for old fashioned tar archives
  *
@@ -97,7 +100,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.25 2005/03/22 21:26:27 kojm Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.26 2005/08/01 11:30:59 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -282,7 +285,7 @@ cli_untar(const char *dir, int desc, unsigned int posix)
 			const int nwritten = fwrite(block, 1, (size_t)nbytes, outfile);
 
 			if(nwritten != nbytes) {
-				cli_errmsg("cli_untar: only wrote %d bytes to file %s (out of disk space?)\n",
+				cli_errmsg("cli_untar: only wrote %d bytes to file %s (out of disc space?)\n",
 					nwritten, fullname);
 				fclose(outfile);
 				return CL_EIO;
