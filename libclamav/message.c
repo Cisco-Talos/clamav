@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.157 2005/06/19 12:03:43 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.158 2005/08/01 11:41:00 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -629,7 +629,7 @@ messageFindArgument(const message *m, const char *variable)
 			while(isspace(*ptr))
 				ptr++;
 			if(*ptr != '=') {
-				cli_warnmsg("messageFindArgument: no '=' sign found in MIME header\n");
+				cli_warnmsg("messageFindArgument: no '=' sign found in MIME header '%s'\n", variable);
 				return NULL;
 			}
 			if((*++ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {
