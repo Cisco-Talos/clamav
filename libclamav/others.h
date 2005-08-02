@@ -34,7 +34,7 @@ unsigned char *cli_md5digest(int desc);
 char *cli_md5stream(FILE *fs, unsigned char *digcpy);
 char *cli_md5file(const char *filename);
 int cli_readn(int fd, void *buff, unsigned int count);
-int cli_writen(int fd, void *buff, unsigned int count);
+int cli_writen(int fd, const void *buff, unsigned int count);
 int32_t cli_readint32(const char *buff);
 void cli_writeint32(char *offset, uint32_t value);
 char *cli_gentemp(const char *dir);

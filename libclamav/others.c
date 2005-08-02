@@ -591,6 +591,7 @@ int cli_readn(int fd, void *buff, unsigned int count)
 			if (errno == EINTR) {
 				continue;
 			}
+			cli_errmsg("cli_writen: read error: %s\n", strerror(errno));
                         return -1;
                 }
                 todo -= retval;
@@ -604,15 +605,15 @@ int cli_readn(int fd, void *buff, unsigned int count)
 /* Function: writen
         Try hard to write the specified number of bytes
 */
-int cli_writen(int fd, void *buff, unsigned int count)
+int cli_writen(int fd, const void *buff, unsigned int count)
 {
         int retval;
         unsigned int todo;
-        unsigned char *current;
+        const unsigned char *current;
 
 
         todo = count;
-        current = (unsigned char *) buff;
+        current = (const unsigned char *) buff;
 
         do {
                 retval = write(fd, current, todo);
@@ -620,6 +621,7 @@ int cli_writen(int fd, void *buff, unsigned int count)
 			if (errno == EINTR) {
 				continue;
 			}
+			cli_errmsg("cli_writen: write error: %s\n", strerror(errno));
                         return -1;
                 }
                 todo -= retval;
