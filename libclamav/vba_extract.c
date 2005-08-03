@@ -451,6 +451,10 @@ vba_project_t *vba56_dir_read(const char *dir)
 	}
 	record_count = vba_endian_convert_16(record_count, is_mac);
 	cli_dbgmsg("\nVBA Record count: %d\n", record_count);
+	if (record_count == 0) {
+		close(fd);
+                return NULL;
+        }
 	if (record_count > 1000) {
 		/* Almost certainly an error */
 		cli_dbgmsg("\nVBA Record count too big");
