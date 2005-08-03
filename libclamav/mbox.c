@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.256 2005/07/30 15:41:16 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.257 2005/08/03 21:15:19 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3764,7 +3764,6 @@ getURL(struct arg *arg)
 	 * memory leak * here in getaddrinfo(), see
 	 *	https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=139559
 	 */
-
 	if(curl_easy_perform(curl) != CURLE_OK) {
 #ifdef	CURLOPT_ERRORBUFFER
 		cli_warnmsg("URL %s failed to download: %s\n", url, errorbuffer);
@@ -3774,8 +3773,8 @@ getURL(struct arg *arg)
 	}
 
 	fclose(fp);
-	curl_slist_free_all(headers);
 	curl_easy_cleanup(curl);
+	curl_slist_free_all(headers);
 
 	return NULL;
 }
