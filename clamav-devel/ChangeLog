@@ -1,3 +1,8 @@
+Wed Aug  3 16:28:20 CEST 2005 (tk)
+----------------------------------
+  * libclamav/others.c: cli_rmdirs: ENOTEMPTY is EBADF on AIX (thanks to
+			Tayfun Asker <tasker*metu.edu.tr>)
+
 Wed Aug  3 16:16:59 CEST 2005 (tk)
 ----------------------------------
   * freshclam: --on-outdated-execute: do not trigger on f-level warning (which
