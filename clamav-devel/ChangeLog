@@ -1,3 +1,10 @@
+Wed Aug  3 16:16:59 CEST 2005 (tk)
+----------------------------------
+  * freshclam: --on-outdated-execute: do not trigger on f-level warning (which
+	       in most cases means software was linked against improper
+	       version of libclamav); add support for %v (new version string)
+	       in command string
+
 Wed Aug  3 09:56:33 BST 2005 (trog)
 -----------------------------------
   * libclamav/chmunpack.c: Fix possible memory leak (TK)
