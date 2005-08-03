@@ -1,3 +1,8 @@
+Wed Aug  3 04:57:36 CEST 2005 (tk)
+----------------------------------
+  * freshclam: add new option --on-update-execute (OnUpdateExecute). Requested
+	       by Per Jessen
+
 Sat Jul 30 11:09:47 BST 2005 (njh)
 ----------------------------------
   * libclamav/pdf.c:	Improved parsing
