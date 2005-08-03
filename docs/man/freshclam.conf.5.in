@@ -108,7 +108,7 @@ Execute this command after the database has been successfully updated.
 Default: disabled
 .TP 
 \fBOnOutdatedExecute STRING\fR
-Execute this command when freshclam reports outdated version.
+Execute this command when freshclam reports outdated version. In the command string %v will be replaced by the new version number.
 .br 
 Default: disabled
 .TP

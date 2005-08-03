@@ -56,10 +56,9 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 {
 	time_t currtime;
 	int ret, updated = 0, outdated = 0, signo = 0, ttl = -1;
-	char ipaddr[16], *dnsreply = NULL, *pt;
-	struct cfgstruct *cpt;
-	char *localip = NULL;
+	char ipaddr[16], *dnsreply = NULL, *pt, *localip = NULL, *newver = NULL;
 	const char *arg = NULL;
+	struct cfgstruct *cpt;
 #ifdef HAVE_RESOLV_H
 	const char *dnsdbinfo;
 #endif
@@ -109,19 +108,18 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 		    free(pt);
 		}
 
-		if((pt = cli_strtok(dnsreply, 0, ":"))) {
+		if((newver = cli_strtok(dnsreply, 0, ":"))) {
 
-		    logg("*Software version from DNS: %s\n", pt);
+		    logg("*Software version from DNS: %s\n", newver);
 
 		    if(vwarning && !strstr(cl_retver(), "devel") && !strstr(cl_retver(), "rc")) {
-			if(strcmp(cl_retver(), pt)) {
+			if(strcmp(cl_retver(), newver)) {
 			    logg("^Your ClamAV installation is OUTDATED!\n");
 			    logg("^Local version: %s Recommended version: %s\n", cl_retver(), pt);
 			    logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
 			    outdated = 1;
 			}
 		    }
-		    free(pt);
 		}
 
 	    } else {
@@ -146,9 +144,12 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 
     memset(ipaddr, 0, sizeof(ipaddr));
 
-    if((ret = downloaddb(DB1NAME, "main.cvd", hostname, ipaddr, &signo, copt, dnsreply, localip, &outdated)) > 50) {
+    if((ret = downloaddb(DB1NAME, "main.cvd", hostname, ipaddr, &signo, copt, dnsreply, localip, outdated)) > 50) {
 	if(dnsreply)
 	    free(dnsreply);
+
+	if(newver)
+	    free(newver);
 
 	return ret;
 
@@ -156,9 +157,12 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	updated = 1;
 
     /* if ipaddr[0] != 0 it will use it to connect to the web host */
-    if((ret = downloaddb(DB2NAME, "daily.cvd", hostname, ipaddr, &signo, copt, dnsreply, localip, &outdated)) > 50) {
+    if((ret = downloaddb(DB2NAME, "daily.cvd", hostname, ipaddr, &signo, copt, dnsreply, localip, outdated)) > 50) {
 	if(dnsreply)
 	    free(dnsreply);
+
+	if(newver)
+	    free(newver);
 
 	return ret;
 
@@ -207,17 +211,35 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	    arg = cpt->strarg;
 
 	if(arg) {
+		char *cmd = strdup(arg);
+
+	    if((pt = strstr(cmd, "%v")) && newver && isdigit(*newver)) {
+		    char *buffer = (char *) mcalloc(strlen(cmd) + strlen(newver) + 10, sizeof(char));
+		*pt = 0; pt += 2;
+		strcpy(buffer, cmd);
+		strcat(buffer, newver);
+		strcat(buffer, pt);
+		free(cmd);
+		cmd = strdup(buffer);
+		free(buffer);
+	    }
+
 	    if(optc(opt, 'd'))
-		execute("OnOutdatedExecute", arg);
+		execute("OnOutdatedExecute", cmd);
 	    else
-		system(arg);
+		system(cmd);
+
+	    free(cmd);
 	}
     }
+
+    if(newver)
+	free(newver);
 
     return updated ? 0 : 1;
 }
 
-int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, const char *dnsreply, char *localip, int *outdated)
+int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, const char *dnsreply, char *localip, int outdated)
 {
 	struct cl_cvd *current, *remote;
 	struct cfgstruct *cpt;
@@ -325,12 +347,11 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     if(!nodb && (current->version >= dbver)) {
 	logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
 
-	if(!*outdated && flevel < current->fl) {
+	if(!outdated && flevel < current->fl) {
 	    /* display warning even for already installed database */
-	    logg("^Your ClamAV installation is OUTDATED!\n");
 	    logg("^Current functionality level = %d, recommended = %d\n", flevel, current->fl);
+	    logg("Please check if ClamAV tools are linked against proper version of libclamav\n");
 	    logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
-	    *outdated = 1;
 	}
 
 	*signo += current->sigs;
