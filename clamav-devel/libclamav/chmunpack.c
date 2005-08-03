@@ -482,12 +482,11 @@ static int read_chunk_entries(unsigned char *chunk, uint32_t chunk_len,
 		name_len = read_enc_int(&current, end);
 		if (name_len > 0xFFFFFF) {
 			cli_dbgmsg("CHM file name too long: %llu\n", name_len);
-			file_e->name = (unsigned char *) cli_malloc(10);
+			file_e->name = (unsigned char *) strdup("truncated");
 	                if (!file_e->name) {
         	                free(file_e);
                 	        return FALSE;
                 	}
-			file_e->name = strdup("truncated");
 		} else {
 			file_e->name = (unsigned char *) cli_malloc(name_len+1);
 			if (!file_e->name) {

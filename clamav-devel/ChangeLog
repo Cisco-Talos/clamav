@@ -1,3 +1,9 @@
+Wed Aug  3 09:56:33 BST 2005 (trog)
+-----------------------------------
+  * libclamav/chmunpack.c: Fix possible memory leak (TK)
+
+  * libclamav/vba_extract.c: Fix zero allocation warning.
+
 Wed Aug  3 04:57:36 CEST 2005 (tk)
 ----------------------------------
   * freshclam: add new option --on-update-execute (OnUpdateExecute). Requested
