@@ -111,6 +111,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 	    {"NotifyClamd", OPT_STR, -1, NULL, 0}, /* freshclam */
 	    {"OnUpdateExecute", OPT_FULLSTR, -1, NULL, 0}, /* freshclam */
 	    {"OnErrorExecute", OPT_FULLSTR, -1, NULL, 0}, /* freshclam */
+	    {"OnOutdatedExecute", OPT_FULLSTR, -1, NULL, 0}, /* freshclam */
 	    {"LocalIPAddress", OPT_STR, -1, NULL, 0}, /* freshclam */
 	    {0, 0}
 	};

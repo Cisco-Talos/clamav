@@ -55,7 +55,7 @@
 int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname)
 {
 	time_t currtime;
-	int ret, updated = 0, signo = 0, ttl = -1;
+	int ret, updated = 0, outdated = 0, signo = 0, ttl = -1;
 	char ipaddr[16], *dnsreply = NULL, *pt;
 	struct cfgstruct *cpt;
 	char *localip = NULL;
@@ -118,6 +118,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 			    logg("^Your ClamAV installation is OUTDATED!\n");
 			    logg("^Local version: %s Recommended version: %s\n", cl_retver(), pt);
 			    logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
+			    outdated = 1;
 			}
 		    }
 		    free(pt);
@@ -145,7 +146,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 
     memset(ipaddr, 0, sizeof(ipaddr));
 
-    if((ret = downloaddb(DB1NAME, "main.cvd", hostname, ipaddr, &signo, copt, dnsreply, localip)) > 50) {
+    if((ret = downloaddb(DB1NAME, "main.cvd", hostname, ipaddr, &signo, copt, dnsreply, localip, &outdated)) > 50) {
 	if(dnsreply)
 	    free(dnsreply);
 
@@ -155,7 +156,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	updated = 1;
 
     /* if ipaddr[0] != 0 it will use it to connect to the web host */
-    if((ret = downloaddb(DB2NAME, "daily.cvd", hostname, ipaddr, &signo, copt, dnsreply, localip)) > 50) {
+    if((ret = downloaddb(DB2NAME, "daily.cvd", hostname, ipaddr, &signo, copt, dnsreply, localip, &outdated)) > 50) {
 	if(dnsreply)
 	    free(dnsreply);
 
@@ -197,14 +198,26 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
             else
 		system(arg);
 	}
+    }
 
-	return 0;
+    if(outdated) {
+	if(optl(opt, "on-outdated-execute"))
+	    arg = getargl(opt, "on-outdated-execute");
+	else if((cpt = cfgopt(copt, "OnOutdatedExecute"))->enabled)
+	    arg = cpt->strarg;
 
-    } else
-	return 1;
+	if(arg) {
+	    if(optc(opt, 'd'))
+		execute("OnOutdatedExecute", arg);
+	    else
+		system(arg);
+	}
+    }
+
+    return updated ? 0 : 1;
 }
 
-int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, const char *dnsreply, char *localip)
+int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, const char *dnsreply, char *localip, int *outdated)
 {
 	struct cl_cvd *current, *remote;
 	struct cfgstruct *cpt;
@@ -312,11 +325,12 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     if(!nodb && (current->version >= dbver)) {
 	logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
 
-	if(flevel < current->fl) {
+	if(!*outdated && flevel < current->fl) {
 	    /* display warning even for already installed database */
 	    logg("^Your ClamAV installation is OUTDATED!\n");
 	    logg("^Current functionality level = %d, recommended = %d\n", flevel, current->fl);
 	    logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
+	    *outdated = 1;
 	}
 
 	*signo += current->sigs;

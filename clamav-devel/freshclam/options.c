@@ -65,6 +65,7 @@ int main(int argc, char **argv)
 	    {"daemon-notify", 2, 0, 0},
 	    {"on-update-execute", 1, 0, 0},
 	    {"on-error-execute", 1, 0, 0},
+	    {"on-outdated-execute", 1, 0, 0},
 	    {0, 0, 0, 0}
     	};
 
