@@ -107,6 +107,11 @@ Execute this command after the database has been successfully updated.
 .br 
 Default: disabled
 .TP 
+\fBOnOutdatedExecute STRING\fR
+Execute this command when freshclam reports outdated version.
+.br 
+Default: disabled
+.TP
 \fBOnErrorExecute STRING\fR
 Execute this command after a database update has failed.
 .br 
