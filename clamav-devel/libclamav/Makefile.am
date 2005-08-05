@@ -138,7 +138,9 @@ libclamav_la_SOURCES = \
 	unrar/unrarfilter.h \
 	unrar/unrarppm.h \
 	pdf.c \
-	pdf.h
+	pdf.h \
+	spin.c \
+	spin.h
 
 
 lib_LTLIBRARIES = libclamav.la
