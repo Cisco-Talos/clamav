@@ -1,3 +1,7 @@
+Fri Aug  5 02:48:47 CEST 2005 (tk)
+----------------------------------
+  * libclamav: merge PESpin unpacker from aCaB
+
 Wed Aug  3 16:28:20 CEST 2005 (tk)
 ----------------------------------
   * libclamav/others.c: cli_rmdirs: ENOTEMPTY is EBADF on AIX (thanks to

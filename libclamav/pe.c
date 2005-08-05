@@ -38,6 +38,7 @@
 #include "upx.h"
 #include "petite.h"
 #include "fsg.h"
+#include "spin.h"
 #include "scanners.h"
 #include "rebuildpe.h"
 #include "str.h"
@@ -1356,6 +1357,75 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    } else {
 		free(tempfile);
 	    }
+	}
+    }
+
+    /* PESpin 1.1 */
+
+    if(nsections > 1 &&
+       EC32(optional_hdr.AddressOfEntryPoint) >= EC32(section_hdr[nsections - 1].VirtualAddress) &&
+       EC32(optional_hdr.AddressOfEntryPoint) < EC32(section_hdr[nsections - 1].VirtualAddress) + EC32(section_hdr[nsections - 1].SizeOfRawData) - 0x3217 - 4 &&
+       memcmp(buff+4, "\xe8\x00\x00\x00\x00\x8b\x1c\x24\x83\xc3", 10) == 0)  {
+
+	    struct stat fstats;
+	    char *spinned;
+
+	if(fstat(desc, &fstats) == -1) {
+	    free(section_hdr);
+	    return CL_EIO;
+	}
+
+	if((spinned = (char *) cli_malloc(fstats.st_size)) == NULL) {
+	    free(section_hdr);
+	    return CL_EMEM;
+	}
+
+	lseek(desc, 0, SEEK_SET);
+	if(read(desc, spinned, fstats.st_size) != fstats.st_size) {
+	    cli_dbgmsg("PESpin: Can't read %d bytes\n", fstats.st_size);
+	    free(spinned);
+	    free(section_hdr);
+	    return CL_EIO;
+	}
+
+	tempfile = cli_gentemp(NULL);
+	if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+	    cli_dbgmsg("PESpin: Can't create file %s\n", tempfile);
+	    free(tempfile);
+	    free(spinned);
+	    free(section_hdr);
+	    return CL_EIO;
+	}
+
+	if(!unspin(spinned, fstats.st_size, section_hdr, nsections - 1, EC32(optional_hdr.AddressOfEntryPoint), ndesc)) {
+	    free(spinned);
+	    cli_dbgmsg("PESpin: Unpacked and rebuilt executable saved in %s\n", tempfile);
+	    fsync(ndesc);
+	    lseek(ndesc, 0, SEEK_SET);
+
+	    if(cli_magic_scandesc(ndesc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS) {
+		free(section_hdr);
+		close(ndesc);
+		if(!cli_leavetemps_flag) {
+		    unlink(tempfile);
+		    free(tempfile);
+		} else {
+		    free(tempfile);
+		}
+		return CL_VIRUS;
+	    }
+
+	} else {
+	    free(spinned);
+	    cli_dbgmsg("PESpin: Rebuilding failed\n");
+	}
+
+	close(ndesc);
+	if(!cli_leavetemps_flag) {
+	    unlink(tempfile);
+	    free(tempfile);
+	} else {
+	    free(tempfile);
 	}
     }
 
