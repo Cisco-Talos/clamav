@@ -436,7 +436,6 @@ void help(void)
     mprintf("    --config-file=FILE                   read configuration from FILE.\n");
     mprintf("    --log=FILE           -l FILE         log into FILE\n");
     mprintf("    --daemon             -d              run in daemon mode\n");
-    mprintf("    --foreground         -f              run daemon in foreground\n");
     mprintf("    --pid=FILE           -p FILE         save daemon's pid in FILE\n");
     mprintf("    --user=USER          -u USER         run as USER\n");
     mprintf("    --no-dns                             force old non-DNS verification method\n");
