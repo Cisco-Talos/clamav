@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.30 2005/07/30 10:08:59 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.31 2005/08/07 12:12:12 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -75,7 +75,7 @@ cli_pdf(const char *dir, int desc)
 	char *buf;	/* start of memory mapped area */
 	const char *p, *q, *trailerstart;
 	const char *xrefstart;	/* cross reference table */
-	size_t xreflength;
+	/*size_t xreflength;*/
 	int rc = CL_CLEAN;
 
 	cli_dbgmsg("in cli_pdf()\n");
@@ -167,10 +167,9 @@ cli_pdf(const char *dir, int desc)
 		return CL_EFORMAT;
 	}
 
-	xreflength = (size_t)(trailerstart - xrefstart);
-
 	/*
 	 * not true, since edits may put data after the trailer
+	xreflength = (size_t)(trailerstart - xrefstart);
 	bytesleft -= xreflength;
 	 */
 
