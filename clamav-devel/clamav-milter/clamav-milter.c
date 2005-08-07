@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.214 2005/07/23 08:52:56 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.215 2005/08/07 12:19:29 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.85j"
+#define	CM_VERSION	"devel-070805"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2222,8 +2222,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 				return SMFIS_TEMPFAIL;
 			}
 			/*
-			 * Wait for an amount of time for a child to go (default
-			 * wait for ever)
+			 * Wait for an amount of time for a child to go
 			 *
 			 * Use pthread_cond_timedwait rather than
 			 * pthread_cond_wait since the sendmail which calls
@@ -3259,6 +3258,7 @@ clamfi_free(struct privdata *privdata)
 			pthread_mutex_unlock(&sstatus_mutex);
 #else
 			if(privdata->cmdSocket >= 0) {
+#if	0
 				char buf[64];
 
 				/*
@@ -3268,6 +3268,7 @@ clamfi_free(struct privdata *privdata)
 				if(readTimeout)
 					while(clamd_recv(privdata->cmdSocket, buf, sizeof(buf)) > 0)
 						;
+#endif
 				close(privdata->cmdSocket);
 				privdata->cmdSocket = -1;
 			}
@@ -3992,7 +3993,7 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 			syslog(LOG_ERR, _("Out of memory"));
 		return -1;
 	}
-	if(fread(buf, sizeof(char), statb.st_size, fin) != statb.st_size) {
+	if(fread(buf, sizeof(char), statb.st_size, fin) != (size_t)statb.st_size) {
 		perror(filename);
 		if(use_syslog)
 			syslog(LOG_ERR, _("Error reading e-mail template file %s"),
@@ -4885,7 +4886,7 @@ loadDatabase(void)
 		char mess[128];
 
 		cl_free(oldroot);
-		sprintf(mess, "Database correctly reloaded (%d viruses)", signatures);
+		sprintf(mess, "Database correctly reloaded (%u viruses)", signatures);
 		logger(mess);
 		cli_dbgmsg("Database updated\n");
 	} else
