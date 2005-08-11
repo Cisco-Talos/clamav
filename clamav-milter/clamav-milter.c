@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.215 2005/08/07 12:19:29 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.216 2005/08/11 11:20:45 nigelhorne Exp $";
 
-#define	CM_VERSION	"devel-070805"
+#define	CM_VERSION	"devel-110805"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2242,9 +2242,10 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			}
 
 			do
-				if(child_timeout == 0)
-					rc = pthread_cond_wait(&n_children_cond, &n_children_mutex);
-				else
+				if(child_timeout == 0) {
+					pthread_cond_wait(&n_children_cond, &n_children_mutex);
+					rc = 0;
+				} else
 					rc = pthread_cond_timedwait(&n_children_cond, &n_children_mutex, &timeout);
 			while((n_children >= max_children) && (rc != ETIMEDOUT));
 		}
