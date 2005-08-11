@@ -22,7 +22,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.216 2005/08/11 11:20:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.217 2005/08/11 20:13:38 nigelhorne Exp $";
 
 #define	CM_VERSION	"devel-110805"
 
@@ -2232,21 +2232,20 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			 * Patch from Damian Menscher <menscher@uiuc.edu> to
 			 * ensure it wakes up when a child goes away
 			 */
-			if(child_timeout) {
-				struct timeval now;
-				struct timezone tz;
-
-				gettimeofday(&now, &tz);
-				timeout.tv_sec = now.tv_sec + child_timeout;
-				timeout.tv_nsec = 0;
-			}
-
 			do
 				if(child_timeout == 0) {
 					pthread_cond_wait(&n_children_cond, &n_children_mutex);
 					rc = 0;
-				} else
+				} else {
+					struct timeval now;
+					struct timezone tz;
+
+					gettimeofday(&now, &tz);
+					timeout.tv_sec = now.tv_sec + child_timeout;
+					timeout.tv_nsec = 0;
+
 					rc = pthread_cond_timedwait(&n_children_cond, &n_children_mutex, &timeout);
+				}
 			while((n_children >= max_children) && (rc != ETIMEDOUT));
 		}
 		n_children++;

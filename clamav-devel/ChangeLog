@@ -1,3 +1,7 @@
+Thu Aug 11 21:15:26 BST 2005 (njh)
+----------------------------------
+  * clamav-milter:	--timeout wasn't always being honoured
+
 Fri Aug  5 02:48:47 CEST 2005 (tk)
 ----------------------------------
   * libclamav: merge PESpin unpacker from aCaB
