@@ -1,3 +1,7 @@
+Fri Aug 12 18:17:59 CEST 2005 (tk)
+----------------------------------
+  * libclamav/filetypes.c: update zip-sfx type signature (Sven Strickroth)
+
 Thu Aug 11 21:15:26 BST 2005 (njh)
 ----------------------------------
   * clamav-milter:	--timeout wasn't always being honoured
