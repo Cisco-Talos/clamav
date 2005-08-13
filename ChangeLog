@@ -1,3 +1,7 @@
+Sat Aug 13 19:08:55 CEST 2005 (acab)
+-----------------------------------
+  * libclamav/spin.c: improvements and fixups
+
 Fri Aug 12 18:17:59 CEST 2005 (tk)
 ----------------------------------
   * libclamav/filetypes.c: update zip-sfx type signature (Sven Strickroth)

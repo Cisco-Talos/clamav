@@ -75,16 +75,16 @@ static inline uint32_t EC32(uint32_t v)
 #define ROR(a,b) a = ( a >> (b % (sizeof(a)<<3) ))  |  (a << (  (sizeof(a)<<3)  -  (b % (sizeof(a)<<3 )) ) )
 
 
-/* FIXME: poly block is fixed size */
-static char exec86(uint8_t aelle, uint8_t cielle, char *curremu) {  
-  while (*curremu!='\xaa') {
-    uint8_t opcode = *curremu, support;
-    curremu++;
+static char exec86(uint8_t aelle, uint8_t cielle, char *curremu) {
+  int len = 0;
+  while (len <0x24) {
+    uint8_t opcode = curremu[len], support;
+    len++;
     switch (opcode) {
       case 0xeb:
-        curremu++;
+        len++;
       case 0x0a:
-        curremu++;
+        len++;
       case 0x90:
       case 0xf8:
       case 0xf9:
@@ -92,47 +92,49 @@ static char exec86(uint8_t aelle, uint8_t cielle, char *curremu) {
 
       case 0x02: /* add al, cl */
         aelle+=cielle;
-	curremu++;
+	len++;
         break;
       case 0x2a: /* sub al, cl */
         aelle-=cielle;
-	curremu++;
+	len++;
         break;
       case 0x04: /* add al, ?? */
-        aelle+=*curremu;
-	curremu++;
+        aelle+=curremu[len];
+	len++;
         break;
       case 0x2c: /* sub al, ?? */
-        aelle-=*curremu;
-	curremu++;
+        aelle-=curremu[len];
+	len++;
         break;
       case 0x32: /* xor al, cl */
         aelle^=cielle;
-	curremu++;
+	len++;
         break;
       case 0x34: /* xor al, ?? */
-        aelle^=*curremu;
-	curremu++;
+        aelle^=curremu[len];
+	len++;
         break;
 
       case 0xfe: /* inc/dec al */
-        if ( *curremu == '\xc0' ) aelle++;
+        if ( curremu[len] == '\xc0' ) aelle++;
 	else aelle--;
-        curremu++;
+        len++;
         break;
 
       case 0xc0: /* ror/rol al, ?? */
-	support = *curremu;
-        curremu++;
-        if ( support == 0xc0 ) ROL(aelle, *curremu);
-        else ROR(aelle, *curremu);
-        curremu++;
+	support = curremu[len];
+        len++;
+        if ( support == 0xc0 ) ROL(aelle, curremu[len]);
+        else ROR(aelle, curremu[len]);
+        len++;
         break;
 
       default:
         cli_dbgmsg("Bogus opcode %x\n", opcode);
     }
   }
+  if ( len!=0x24 || curremu[len]!='\xaa' )
+    cli_dbgmsg("spin: bad emucode\n"); // FIXME: I should really give up here
   return aelle;
 }
 
@@ -261,7 +263,7 @@ static int unfsg(char *source, char *dest, int ssize, int dsize) {
 	}
 	lostbit = 0;
       }
-      if ((backsize >= dest + dsize - cdst) || (backbytes > cdst - dest))
+      if ((backsize > dest + dsize - cdst) || (backbytes > cdst - dest))
 	return -1;
       while(backsize--) {
 	*cdst=*(cdst-backbytes);
@@ -346,11 +348,19 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
 
   cli_dbgmsg("spin: Key8 is %x, Len is %x\n", key8, len);
 
-  if (  ep - spinned >= EC32(sections[sectcnt].SizeOfRawData) - len - 0x1fe5 ) {
+  if ( ep - spinned >= EC32(sections[sectcnt].SizeOfRawData) - len - 0x1fe5 ) {
     free(spinned);
     cli_dbgmsg("spin: len out of bounds, giving up\n");
     return 1; // Outta bounds - HELP: i suppose i should check for wraps.. not sure though
   }
+
+
+  if ( ep[0x1e0]!='\xb8' )
+    cli_dbgmsg("spin: prolly not spinned, expect failure\n");
+  
+  if ( (cli_readint32(ep+0x1e1) & 0x00200000) )
+    cli_dbgmsg("spin: password protected, expect failure\n");
+
 
   curr = ep+0x1fe5+len-1;
   while ( len-- ) {
@@ -363,7 +373,7 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
   if ( (len = cli_readint32(curr+5)) != 0x5a0) {
     free(spinned);
     cli_dbgmsg("spin: Not spinned or bad version\n");
-    return 1; // FIXME: apparently static
+    return 1;
   }
 
   curr = ep+0x2d5; // 0x2d5+5a0 < 0x3217 - still within bounds (checked by caller)
@@ -380,8 +390,6 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
     curr++;
   }
 
-
-  cli_dbgmsg("spin: here\n");
   len = ssize - cli_readint32(ep+0x429); // sub size, value
   if ( len >= ssize ) {
     free(spinned);
@@ -394,11 +402,10 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
   free(spinned); // done CRC'ing - can have a dirty buffer now
   ep = src + nep + sections[sectcnt].PointerToRawData - sections[sectcnt].VirtualAddress; // Fix the helper
 
-  cli_dbgmsg("spin: Key32 is %x\n", key32);
-
   bitmap = cli_readint32(ep+0x3207);
-  cli_dbgmsg("spin: XORbitmap is %x\n", bitmap);
-
+  cli_dbgmsg("spin: Key32 is %x - XORbitmap is %x\n", key32, bitmap);
+  
+  cli_dbgmsg("spin: Decrypting sects (xor)\n");
   for (j=0; j<sectcnt; j++) {
     if (bitmap&1) {
       uint32_t size = EC32(sections[j].SizeOfRawData);
@@ -424,9 +431,10 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
       bitmap = bitmap >>1 & 0x7fffffff; /* HELP: clear sign bit for unsigned values too? */
     }
   }
+  
   cli_dbgmsg("spin: done\n");
 
-
+  
   curr = ep+0x644; // 0x28d3+0x180 < 0x3217 - still within bounds (checked by caller)
   if ( (len = cli_readint32(curr)) != 0x180) {
     cli_dbgmsg("spin: Not spinned or bad version\n");
@@ -465,8 +473,9 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
     emu++;
   }
 
+
   bitmap = cli_readint32(ep+0x6f1);
-  cli_dbgmsg("spin: POLYbitmap is %x\n", bitmap);
+  cli_dbgmsg("spin: POLYbitmap is %x - decrypting sects (poly)\n", bitmap);
   curr = ep+0x755;
 
   for (j=0; j<sectcnt; j++) {
@@ -489,6 +498,8 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
 
     }
   }
+  
+  cli_dbgmsg("spin: done\n");
 
   bitmap = cli_readint32(ep+0x3061);
   bitman = bitmap;
@@ -500,13 +511,17 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
   for (j=0; j<sectcnt; j++) {
     if (bitmap&1) {
        if ( (sects[j] = (char *) cli_malloc(EC32(sections[j].VirtualSize)) ) == NULL ) { // FIXME: use "static" maxmalloc @4380b6 instead???
+	 cli_dbgmsg("spin: malloc(%d) failed\n", EC32(sections[j].VirtualSize));
 	 len = 1;
 	 break;
        }
        blobsz+=EC32(sections[j].VirtualSize);
        memset(sects[j], 0, EC32(sections[j].VirtualSize));
        cli_dbgmsg("spin: Growing sect%d: was %x will be %x\n", j, EC32(sections[j].SizeOfRawData), EC32(sections[j].VirtualSize));
-       len = unfsg(src + EC32(sections[j].PointerToRawData), sects[j], EC32(sections[j].SizeOfRawData), EC32(sections[j].VirtualSize)); // FIXME: checr retval
+       if ( unfsg(src + EC32(sections[j].PointerToRawData), sects[j], EC32(sections[j].SizeOfRawData), EC32(sections[j].VirtualSize)) == -1 ) {
+	 len++;
+         cli_dbgmsg("spin: Unpack failure\n");
+       }
        // sections[j].rsz = sections[j].vsz; FIXME: can't hack the caller, gotta find a better way!
     } else {
       blobsz+=EC32(sections[j].SizeOfRawData);
@@ -515,12 +530,16 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
     }
     bitmap = bitmap >>1 & 0x7fffffff;
   }
-
+  
+  cli_dbgmsg("spin: decompression complete\n");
+ 
   if ( len ) {
     int t;
-    for (t=0 ; t<j ; t++)
+    for (t=0 ; t<j ; t++) {
       if (bitman&1)
 	free(sects[t]);
+      bitman = bitman >>1 & 0x7fffffff;
+    }
     free(sects);
     return 1;
   }
@@ -535,10 +554,10 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
 	break;
     }
 
-      cli_dbgmsg("spin: --- %x < %x < %x  %d / %d\n", EC32(sections[j].VirtualAddress), key32, EC32(sections[j].VirtualAddress)+EC32(sections[j].SizeOfRawData), j, sectcnt);
+//      cli_dbgmsg("spin: --- %x < %x < %x  %d / %d\n", EC32(sections[j].VirtualAddress), key32, EC32(sections[j].VirtualAddress)+EC32(sections[j].SizeOfRawData), j, sectcnt);
 
     if (j!=sectcnt && ((bitman & (1<<j)) == 0)) { // FIXME: not really sure either the res sect is lamed or just compressed, but this'll save some major headakes
-      cli_dbgmsg("spin: Resources (sect%d) appear to be compressed\n  uncompressed offset %x, len %x\n  compressed offset %x, len %x\n", j, EC32(sections[j].VirtualAddress), key32 - EC32(sections[j].VirtualAddress), key32, EC32(sections[j].VirtualSize) - (key32 - EC32(sections[j].VirtualAddress)));
+      cli_dbgmsg("spin: Resources (sect%d) appear to be compressed\n\tuncompressed offset %x, len %x\n\tcompressed offset %x, len %x\n", j, EC32(sections[j].VirtualAddress), key32 - EC32(sections[j].VirtualAddress), key32, EC32(sections[j].VirtualSize) - (key32 - EC32(sections[j].VirtualAddress)));
 
       if ( (curr=(char *)cli_malloc(EC32(sections[j].VirtualSize))) != NULL ) {
 	memcpy(curr, src + EC32(sections[j].PointerToRawData), key32 - EC32(sections[j].VirtualAddress)); // Uncompressed part
