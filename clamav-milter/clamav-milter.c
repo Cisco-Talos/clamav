@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.217 2005/08/11 20:13:38 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.218 2005/08/15 21:12:21 nigelhorne Exp $";
 
-#define	CM_VERSION	"devel-110805"
+#define	CM_VERSION	"devel-150805"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3442,11 +3442,17 @@ clamd_recv(int sock, char *buf, size_t len)
 {
 	fd_set rfds;
 	struct timeval tv;
+	int ret;
 
 	assert(sock >= 0);
 
-	if(readTimeout == 0)
-		return recv(sock, buf, len, 0);
+	if(readTimeout == 0) {
+		do
+			ret = recv(sock, buf, len, 0);
+		while((ret < 0) && (errno == EINTR));
+
+		return ret;
+	}
 
 	FD_ZERO(&rfds);
 	FD_SET(sock, &rfds);
@@ -3454,16 +3460,27 @@ clamd_recv(int sock, char *buf, size_t len)
 	tv.tv_sec = readTimeout;
 	tv.tv_usec = 0;
 
-	switch(select(sock + 1, &rfds, NULL, NULL, &tv)) {
-		case -1:
-			perror("select");
-			return -1;
-		case 0:
-			if(use_syslog)
-				syslog(LOG_ERR, _("No data received from clamd in %d seconds\n"), readTimeout);
-			return 0;
+	for(;;) {
+		switch(select(sock + 1, &rfds, NULL, NULL, &tv)) {
+			case -1:
+				if(errno == EINTR)
+					/* FIXME: work out time left */
+					continue;
+				perror("select");
+				return -1;
+			case 0:
+				if(use_syslog)
+					syslog(LOG_ERR, _("No data received from clamd in %d seconds\n"), readTimeout);
+				return 0;
+		}
+		break;
 	}
-	return recv(sock, buf, len, 0);
+
+	do
+		ret = recv(sock, buf, len, 0);
+	while((ret < 0) && (errno == EINTR));
+
+	return ret;
 }
 
 /*
