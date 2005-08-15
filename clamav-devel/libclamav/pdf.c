@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.31 2005/08/07 12:12:12 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.32 2005/08/15 08:20:15 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -57,9 +57,6 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.31 2005/08/07 12:12:12 nigelhorne Ex
 static	int	flatedecode(const unsigned char *buf, size_t len, int fout);
 static	int	ascii85decode(const char *buf, size_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
-#if	0
-static	const	char	*pdf_nexttoken(const char *ptr, size_t len);
-#endif
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
 
 int
@@ -493,58 +490,6 @@ pdf_nextlinestart(const char *ptr, size_t len)
 	}
 	return ptr;
 }
-
-#if	0
-/*
- * Return the start of the next PDF token.
- * This assumes that we're not in a stream.
- */
-static const char *
-pdf_nexttoken(const char *ptr, size_t len)
-{
-	const char *p;
-	int intoken = 1;
-
-	while(len) {
-		switch(*ptr) {
-			case '\n':
-			case '\r':
-			case '%':	/* comment */
-				p = pdf_nextlinestart(ptr, len);
-				if(p == NULL)
-					return NULL;
-				len -= (size_t)(p - ptr);
-				ptr = p;
-				intoken = 0;
-				break;
-
-			case ' ':
-			case '(':
-			case ')':
-			case '<':
-			case '>':
-			case '[':
-			case ']':
-			case '{':
-			case '}':
-			case '/':
-			case '\t':
-			case '\v':
-			case '\f':
-				intoken = 0;
-				ptr++;
-				len--;
-				break;
-			default:
-				if(!intoken)
-					return ptr;
-				ptr++;
-				len--;
-		}
-	}
-	return NULL;
-}
-#endif
 
 /*
  * Return the start of the next PDF object.
