@@ -666,8 +666,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    break;
 		}
 
-		/* FIXME: unused atm, needed for pe rebuilding */
-		cli_dbgmsg("FSG: found old EP @%x\n", cli_readint32(newebx + 12 - EC32(section_hdr[i + 1].VirtualAddress) + src) - EC32(optional_hdr.ImageBase));
+		newedx=cli_readint32(newebx + 12 - EC32(section_hdr[i + 1].VirtualAddress) + src) - EC32(optional_hdr.ImageBase);
+		cli_dbgmsg("FSG: found old EP @%x\n",newedx);
 
 		if((dest = (char *) cli_calloc(dsize, sizeof(char))) == NULL) {
 		    free(section_hdr);
@@ -675,16 +675,60 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    return CL_EMEM;
 		}
 
-		if(unfsg_200(newesi - EC32(section_hdr[i + 1].VirtualAddress) + src, dest, ssize + EC32(section_hdr[i + 1].VirtualAddress) - newesi, dsize) == -1) {
-		    cli_dbgmsg("FSG: Unpacking failed\n");
+		tempfile = cli_gentemp(NULL);
+		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+		    cli_dbgmsg("FSG: Can't create file %s\n", tempfile);
+		    free(tempfile);
+		    free(section_hdr);
 		    free(src);
 		    free(dest);
-		    break;
+		    return CL_EIO;
+		}
+		
+		switch (unfsg_200(newesi - EC32(section_hdr[i + 1].VirtualAddress) + src, dest, ssize + EC32(section_hdr[i + 1].VirtualAddress) - newesi, dsize, newedi, EC32(optional_hdr.ImageBase), newedx, ndesc)) {
+		    case 1: /* Everything OK */
+			cli_dbgmsg("FSG: Unpacked and rebuilt executable saved in %s\n", tempfile);
+			free(src);
+			free(dest);
+			fsync(ndesc);
+			lseek(ndesc, 0, SEEK_SET);
+
+			cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
+			if(cli_magic_scandesc(ndesc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS) {
+			    free(section_hdr);
+			    close(ndesc);
+			    if(!cli_leavetemps_flag)
+				unlink(tempfile);
+			    free(tempfile);
+			    return CL_VIRUS;
+			}
+
+			close(ndesc);
+			if(!cli_leavetemps_flag)
+			    unlink(tempfile);
+			free(tempfile);
+			free(section_hdr);
+			return CL_CLEAN;
+
+		    case 0: /* We've got an unpacked buffer, no exe though */
+			cli_dbgmsg("FSG: FSG: Successfully decompressed\n");
+			close(ndesc);
+			unlink(tempfile);
+			free(tempfile);
+			found = 0;
+			upx_success = 1;
+			break; /* Go and scan the buffer! */
+
+		    default: /* Everything gone wrong */
+			cli_dbgmsg("FSG: Unpacking failed\n");
+			close(ndesc);
+			unlink(tempfile); // It's empty anyway
+			free(tempfile);
+			free(src);
+			free(dest);
+			break;
 		}
 
-		found = 0;
-		upx_success = 1;
-		cli_dbgmsg("FSG: Successfully decompressed\n");
 	    }
 	}
 

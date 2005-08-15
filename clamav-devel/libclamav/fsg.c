@@ -186,7 +186,7 @@ static int unfsg(char *source, char *dest, int ssize, int dsize, char **endsrc, 
 	}
 	lostbit = 0;
       }
-      if ((backsize >= dest + dsize - cdst) || (backbytes > cdst - dest))
+      if ((backsize > dest + dsize - cdst) || (backbytes > cdst - dest))
 	return -1;
       while(backsize--) {
 	*cdst=*(cdst-backbytes);
@@ -207,11 +207,27 @@ static int unfsg(char *source, char *dest, int ssize, int dsize, char **endsrc, 
   return 0;
 }
 
-int unfsg_200(char *source, char *dest, int ssize, int dsize) {
-  char *fake;
 
-  return unfsg(source, dest, ssize, dsize, &fake, &fake);
+int unfsg_200(char *source, char *dest, int ssize, int dsize, uint32_t rva, uint32_t base, uint32_t ep, int file) {
+  char *fake, *tsrc;
+  struct SECTION section; // Yup, just one ;)
+
+  if ( unfsg(source, dest, ssize, dsize, &fake, &fake) ) return -1;
+  
+  section.raw=0;
+  section.rsz = dsize;
+  section.vsz = dsize;
+  section.rva = rva;
+  if ( (tsrc = rebuildpe(dest, &section, 1, base, ep, 0, 0)) ) {
+    write(file, tsrc, 0x148+0x80+0x28+dsize);
+    free(tsrc);
+  } else {
+    cli_dbgmsg("FSG: Rebuilding failed\n");
+    return 0;
+  }
+  return 1;
 }
+
 
 int unfsg_133(char *source, char *dest, int ssize, int dsize, struct SECTION *sections, int sectcount, uint32_t base, uint32_t ep, int file) {
   char *tsrc=source, *tdst=dest;
@@ -266,7 +282,6 @@ int unfsg_133(char *source, char *dest, int ssize, int dsize, struct SECTION *se
     write(file, tsrc, 0x148+0x80+0x28*(sectcount+1)+offs);
     free(tsrc);
   } else {
-    free(tsrc);
     cli_dbgmsg("FSG: Rebuilding failed\n");
     return 0;
   }

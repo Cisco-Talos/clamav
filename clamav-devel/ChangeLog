@@ -1,3 +1,7 @@
+Mon Aug 15 18:17:29 CEST 2005 (acab)
+------------------------------------
+  * libclamav: fsg handler improved
+
 Sat Aug 13 19:08:55 CEST 2005 (acab)
 -----------------------------------
   * libclamav/spin.c: improvements and fixups
