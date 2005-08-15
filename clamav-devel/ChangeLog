@@ -1,3 +1,7 @@
+Mon Aug 15 22:13:11 BST 2005 (njh)
+----------------------------------
+  * clamav-milter:	Improved signal handling
+
 Mon Aug 15 18:17:29 CEST 2005 (acab)
 ------------------------------------
   * libclamav: fsg handler improved
