@@ -1,3 +1,7 @@
+Tue Aug 16 12:50:30 CEST 2005 (acab)
+------------------------------------
+  * libclamav: fixed compiler warnings (thx njh)
+
 Mon Aug 15 22:13:11 BST 2005 (njh)
 ----------------------------------
   * clamav-milter:	Improved signal handling

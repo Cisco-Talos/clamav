@@ -296,7 +296,7 @@ int upx_inflate2b(char *src, int ssize, char *dst, int *dsize, uint32_t upx0, ui
   }
 
 
-  if ( ep - upx1 + 0x108 <= ssize-5  &&    /* Wondering how we got so far?! */
+  if ( ep - upx1 + 0x108 <= (uint32_t)ssize-5  &&    /* Wondering how we got so far?! */
        src[ep - upx1 + 0x106] == '\x8d' && /* lea edi, ...                  */
        src[ep - upx1 + 0x107] == '\xbe' )  /* ... [esi + offset]          */
     return pefromupx (src, dst, dsize, ep, upx0, upx1, 0x108);
@@ -385,7 +385,7 @@ int upx_inflate2d(char *src, int ssize, char *dst, int *dsize, uint32_t upx0, ui
     dcur+=backsize;
   }
 
-  if ( ep - upx1 + 0x124 <= ssize-5 ) {   /* Wondering how we got so far?! */
+  if ( ep - upx1 + 0x124 <= (uint32_t)ssize-5 ) {   /* Wondering how we got so far?! */
     if ( src[ep - upx1 + 0x11a] == '\x8d' && src[ep - upx1 + 0x11b] == '\xbe' )
       return pefromupx (src, dst, dsize, ep, upx0, upx1, 0x11c);
     if ( src[ep - upx1 + 0x122] == '\x8d' && src[ep - upx1 + 0x123] == '\xbe' )
@@ -484,7 +484,7 @@ int upx_inflate2e(char *src, int ssize, char *dst, int *dsize, uint32_t upx0, ui
     dcur+=backsize;
   }
 
-  if ( ep - upx1 + 0x130 <= ssize-5 ) {   /* Wondering how we got so far?! */
+  if ( ep - upx1 + 0x130 <= (uint32_t)ssize-5 ) {   /* Wondering how we got so far?! */
     if ( src[ep - upx1 + 0x126] == '\x8d' && src[ep - upx1 + 0x127] == '\xbe' )
       return pefromupx (src, dst, dsize, ep, upx0, upx1, 0x128);
     if ( src[ep - upx1 + 0x12e] == '\x8d' && src[ep - upx1 + 0x12f] == '\xbe' )

@@ -134,7 +134,7 @@ static char exec86(uint8_t aelle, uint8_t cielle, char *curremu) {
     }
   }
   if ( len!=0x24 || curremu[len]!='\xaa' )
-    cli_dbgmsg("spin: bad emucode\n"); // FIXME: I should really give up here
+    cli_dbgmsg("spin: bad emucode\n"); /* FIXME: I should really give up here */
   return aelle;
 }
 
@@ -263,7 +263,7 @@ static int unfsg(char *source, char *dest, int ssize, int dsize) {
 	}
 	lostbit = 0;
       }
-      if ((backsize > dest + dsize - cdst) || (backbytes > cdst - dest))
+      if ((backsize > (uint32_t)(dest + dsize - cdst)) || (backbytes > (uint32_t)(cdst - dest)))
 	return -1;
       while(backsize--) {
 	*cdst=*(cdst-backbytes);
@@ -323,9 +323,7 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
   memcpy(spinned, src + EC32(sections[sectcnt].PointerToRawData), EC32(sections[sectcnt].SizeOfRawData)); 
   ep = spinned + nep - sections[sectcnt].VirtualAddress;
 
-  //  ep = src + nep + sections[sectcnt].PointerToRawData - sections[sectcnt].VirtualAddress; // Just a helper
-  
-  curr = ep+0xdb; // HELP: as a general rule, can i do char* math or should use monsters like "&ep[0xdb]" instead?
+  curr = ep+0xdb; /* HELP: as a general rule, can i do char* math or should use monsters like "&ep[0xdb]" instead? */
   if ( *curr != '\xbb' ) {
     free(spinned);
     cli_dbgmsg("spin: Not spinned or bad version\n");
@@ -348,10 +346,10 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
 
   cli_dbgmsg("spin: Key8 is %x, Len is %x\n", key8, len);
 
-  if ( ep - spinned >= EC32(sections[sectcnt].SizeOfRawData) - len - 0x1fe5 ) {
+  if ( (uint32_t)(ep - spinned) >= EC32(sections[sectcnt].SizeOfRawData) - len - 0x1fe5 ) {
     free(spinned);
     cli_dbgmsg("spin: len out of bounds, giving up\n");
-    return 1; // Outta bounds - HELP: i suppose i should check for wraps.. not sure though
+    return 1; /* Outta bounds - HELP: i suppose i should check for wraps.. not sure though */
   }
 
 
@@ -376,7 +374,7 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
     return 1;
   }
 
-  curr = ep+0x2d5; // 0x2d5+5a0 < 0x3217 - still within bounds (checked by caller)
+  curr = ep+0x2d5; /* 0x2d5+5a0 < 0x3217 - still within bounds (checked by caller) */
   cli_dbgmsg("spin: Key is %x, Len is %x\n", key32, len);
 
   while ( len-- ) {
@@ -390,17 +388,17 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
     curr++;
   }
 
-  len = ssize - cli_readint32(ep+0x429); // sub size, value
-  if ( len >= ssize ) {
+  len = ssize - cli_readint32(ep+0x429); /* sub size, value */
+  if ( len >= (uint32_t)ssize ) {
     free(spinned);
     cli_dbgmsg("spin: crc out of bounds, giving up\n");
-    return 1; // We wrapped
+    return 1; /* We wrapped */
   }
   key32 = cli_readint32(ep+0x3217) - summit(src,len);
 
   memcpy(src + EC32(sections[sectcnt].PointerToRawData), spinned, EC32(sections[sectcnt].SizeOfRawData)); 
-  free(spinned); // done CRC'ing - can have a dirty buffer now
-  ep = src + nep + sections[sectcnt].PointerToRawData - sections[sectcnt].VirtualAddress; // Fix the helper
+  free(spinned); /* done CRC'ing - can have a dirty buffer now */
+  ep = src + nep + sections[sectcnt].PointerToRawData - sections[sectcnt].VirtualAddress; /* Fix the helper */
 
   bitmap = cli_readint32(ep+0x3207);
   cli_dbgmsg("spin: Key32 is %x - XORbitmap is %x\n", key32, bitmap);
@@ -412,9 +410,9 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
       char *ptr = src + EC32(sections[j].PointerToRawData);
       uint32_t keydup = key32;
       
-      if ( EC32(sections[j].PointerToRawData) + size >=  ssize ) {
+      if ( EC32(sections[j].PointerToRawData) + size >=  (uint32_t)ssize ) {
 	cli_dbgmsg("spin: sect %d out of file, giving up\n", j);
-	return 1; // sect outta bounds - HELP: i suppose i should check for wraps.. not sure though
+	return 1; /* sect outta bounds - HELP: i suppose i should check for wraps.. not sure though */
       }
 
       while (size--) {
@@ -435,7 +433,7 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
   cli_dbgmsg("spin: done\n");
 
   
-  curr = ep+0x644; // 0x28d3+0x180 < 0x3217 - still within bounds (checked by caller)
+  curr = ep+0x644; /* 0x28d3+0x180 < 0x3217 - still within bounds (checked by caller) */
   if ( (len = cli_readint32(curr)) != 0x180) {
     cli_dbgmsg("spin: Not spinned or bad version\n");
     return 1;
@@ -464,12 +462,11 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
   }
 
   cli_dbgmsg("spin: POLY1 len is %x\n", len);
-  curr+=0xf; // POLY1
-
-  emu = ep+0x6d4; // Still within bounds
+  curr+=0xf; /* POLY1 */
+  emu = ep+0x6d4; /* Still within bounds */
 
   while (len) {
-    *emu=exec86(*emu, len-- & 0xff, curr); // unlame POLY1
+    *emu=exec86(*emu, len-- & 0xff, curr); /* unlame POLY1 */
     emu++;
   }
 
@@ -480,17 +477,17 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
 
   for (j=0; j<sectcnt; j++) {
     if (bitmap&1) {
-      uint32_t len = EC32(sections[j].SizeOfRawData);
+      uint32_t notthesamelen = EC32(sections[j].SizeOfRawData);
 
       emu = src + EC32(sections[j].PointerToRawData);
 
-      if ( emu < src || EC32(sections[j].PointerToRawData) + len >= ssize) { // HELP: Is this enough for me to be within bounds?
+      if ( emu < src || EC32(sections[j].PointerToRawData) + notthesamelen >= (uint32_t)ssize) { /* HELP: Is this enough for me to be within bounds? */
 	cli_dbgmsg("spin: code to exec is out of file?\n");
 	return 1;
       }
 
-      while (len) {
-        *emu=exec86(*emu, len-- & 0xff, curr);
+      while (notthesamelen) {
+        *emu=exec86(*emu, notthesamelen-- & 0xff, curr);
         emu++;
       }
 
@@ -510,7 +507,7 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
   len = 0;
   for (j=0; j<sectcnt; j++) {
     if (bitmap&1) {
-       if ( (sects[j] = (char *) cli_malloc(EC32(sections[j].VirtualSize)) ) == NULL ) { // FIXME: use "static" maxmalloc @4380b6 instead???
+       if ( (sects[j] = (char *) cli_malloc(EC32(sections[j].VirtualSize)) ) == NULL ) { /* FIXME: use "static" maxmalloc @4380b6 instead??? */
 	 cli_dbgmsg("spin: malloc(%d) failed\n", EC32(sections[j].VirtualSize));
 	 len = 1;
 	 break;
@@ -522,7 +519,7 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
 	 len++;
          cli_dbgmsg("spin: Unpack failure\n");
        }
-       // sections[j].rsz = sections[j].vsz; FIXME: can't hack the caller, gotta find a better way!
+       /* sections[j].rsz = sections[j].vsz; FIXME: can't hack the caller, gotta find a better way! */
     } else {
       blobsz+=EC32(sections[j].SizeOfRawData);
       sects[j] = src + EC32(sections[j].PointerToRawData);
@@ -550,31 +547,29 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
     /*    len = cli_readint32(ep+0x2fc8); -- Using vsizes instead */
 
     for (j=0; j<sectcnt; j++) {
-      if (EC32(sections[j].VirtualAddress) <= key32 && EC32(sections[j].VirtualAddress)+EC32(sections[j].SizeOfRawData) > key32) // HELP: wraps?
+      if (EC32(sections[j].VirtualAddress) <= key32 && EC32(sections[j].VirtualAddress)+EC32(sections[j].SizeOfRawData) > key32) /* HELP: wraps? */
 	break;
     }
 
-//      cli_dbgmsg("spin: --- %x < %x < %x  %d / %d\n", EC32(sections[j].VirtualAddress), key32, EC32(sections[j].VirtualAddress)+EC32(sections[j].SizeOfRawData), j, sectcnt);
-
-    if (j!=sectcnt && ((bitman & (1<<j)) == 0)) { // FIXME: not really sure either the res sect is lamed or just compressed, but this'll save some major headakes
+    if (j!=sectcnt && ((bitman & (1<<j)) == 0)) { /* FIXME: not really sure either the res sect is lamed or just compressed, but this'll save some major headakes */
       cli_dbgmsg("spin: Resources (sect%d) appear to be compressed\n\tuncompressed offset %x, len %x\n\tcompressed offset %x, len %x\n", j, EC32(sections[j].VirtualAddress), key32 - EC32(sections[j].VirtualAddress), key32, EC32(sections[j].VirtualSize) - (key32 - EC32(sections[j].VirtualAddress)));
 
       if ( (curr=(char *)cli_malloc(EC32(sections[j].VirtualSize))) != NULL ) {
-	memcpy(curr, src + EC32(sections[j].PointerToRawData), key32 - EC32(sections[j].VirtualAddress)); // Uncompressed part
-	memset(curr + key32 - EC32(sections[j].VirtualAddress), 0, EC32(sections[j].VirtualSize) - (key32 - EC32(sections[j].VirtualAddress))); // bzero
-	if ( unfsg(src + EC32(sections[j].PointerToRawData) + key32 - EC32(sections[j].VirtualAddress), curr + key32 - EC32(sections[j].VirtualAddress), EC32(sections[j].SizeOfRawData) - (key32 - EC32(sections[j].VirtualAddress)), EC32(sections[j].VirtualSize) - (key32 - EC32(sections[j].VirtualAddress))) ) { // HELP: i can't read my own line - hope's ok :(
+	memcpy(curr, src + EC32(sections[j].PointerToRawData), key32 - EC32(sections[j].VirtualAddress)); /* Uncompressed part */
+	memset(curr + key32 - EC32(sections[j].VirtualAddress), 0, EC32(sections[j].VirtualSize) - (key32 - EC32(sections[j].VirtualAddress))); /* bzero */
+	if ( unfsg(src + EC32(sections[j].PointerToRawData) + key32 - EC32(sections[j].VirtualAddress), curr + key32 - EC32(sections[j].VirtualAddress), EC32(sections[j].SizeOfRawData) - (key32 - EC32(sections[j].VirtualAddress)), EC32(sections[j].VirtualSize) - (key32 - EC32(sections[j].VirtualAddress))) ) { /* HELP: i can't read my own line - hope's ok :( */
       
 	  free(curr);
 	  cli_dbgmsg("spin: Failed to grow resources, continuing anyway\n");
 	  blobsz+=EC32(sections[j].SizeOfRawData);
 	} else {
-	  sects[j]=curr; // FIXME: bitman check above should save me from leaks
+	  sects[j]=curr; /* FIXME: bitman check above should save me from leaks */
 	  bitman|=1<<j;
 	  cli_dbgmsg("spin: Resources grown\n");
 	  blobsz+=EC32(sections[j].VirtualSize);
 	}
       } else {
-	// HELP: malloc failed but i'm too deep into this crap to worry... what to do next?
+	/* HELP: malloc failed but i'm too deep into this crap to worry... what to do next? */
 	blobsz+=EC32(sections[j].SizeOfRawData);
       }
     } else {
@@ -583,7 +578,7 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
   }
   
 
-  bitmap=bitman; // save as a free() bitmap
+  bitmap=bitman; /* save as a free() bitmap */
 
   if ( (ep = (char *) cli_malloc(blobsz)) != NULL ) {
     struct SECTION *rebhlp;
@@ -603,8 +598,11 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
 	bitmap = bitmap >>1 & 0x7fffffff;
       }
 
-      if ( (to = rebuildpe(ep, rebhlp, sectcnt, 0x400000, 0x1000, 0, 0))) { // HELP: should i bother fixing those values? the rebuilt exe is completely broken anyway.
-	write(desc, to, 0x148+0x80+0x28*j+rebhlp[j-1].raw+rebhlp[j-1].rsz);
+      if ( (to = rebuildpe(ep, rebhlp, sectcnt, 0x400000, 0x1000, 0, 0))) { /* HELP: should i bother fixing those values? the rebuilt exe is completely broken anyway. */
+	if (cli_writen(desc, to, 0x148+0x80+0x28*j+rebhlp[j-1].raw+rebhlp[j-1].rsz)==-1) {
+	  cli_dbgmsg("spin: Cannot write unpacked file\n");
+	  retval = 1;
+	}
 	free(to);
       } else {
 	cli_dbgmsg("spin: Cannot write unpacked file\n");
@@ -624,5 +622,5 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
     bitman = bitman >>1 & 0x7fffffff;
   }
   free(sects);
-  return 1; // :(
+  return 1; /* :( */
 }
