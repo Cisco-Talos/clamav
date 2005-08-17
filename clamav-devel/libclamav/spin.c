@@ -405,6 +405,7 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
   
   cli_dbgmsg("spin: Decrypting sects (xor)\n");
   for (j=0; j<sectcnt; j++) {
+
     if (bitmap&1) {
       uint32_t size = EC32(sections[j].SizeOfRawData);
       char *ptr = src + EC32(sections[j].PointerToRawData);
@@ -425,9 +426,8 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
 	*ptr = *ptr ^ (keydup & 0xff);
 	ptr++;
       }
-      
-      bitmap = bitmap >>1 & 0x7fffffff; /* HELP: clear sign bit for unsigned values too? */
-    }
+    } 
+    bitmap = bitmap >>1 & 0x7fffffff; /* HELP: clear sign bit for unsigned values too? */
   }
   
   cli_dbgmsg("spin: done\n");
@@ -490,10 +490,8 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
         *emu=exec86(*emu, notthesamelen-- & 0xff, curr);
         emu++;
       }
-
-      bitmap = bitmap >>1 & 0x7fffffff;
-
     }
+      bitmap = bitmap >>1 & 0x7fffffff;
   }
   
   cli_dbgmsg("spin: done\n");
