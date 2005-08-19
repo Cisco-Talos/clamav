@@ -450,7 +450,7 @@ void cvdinfo(struct optstruct *opt)
 
     logg("Build time: %s\n", cvd->time);
     logg("Version: %d\n", cvd->version);
-    logg("# of signatures: %d\n", cvd->sigs);
+    logg("Signatures: %d\n", cvd->sigs);
     logg("Functionality level: %d\n", cvd->fl);
     logg("Builder: %s\n", cvd->builder);
     logg("MD5: %s\n", cvd->md5);
