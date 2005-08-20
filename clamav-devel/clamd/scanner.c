@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -48,6 +49,7 @@
 #include "memory.h"
 #include "shared.h"
 #include "output.h"
+#include "network.h"
 
 #include "../libclamav/others.h"
 
@@ -65,8 +67,6 @@ dev_t procdev; /* /proc device */
 #   endif
 # endif
 #endif
-
-pthread_mutex_t gh_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int checksymlink(const char *path)
 {
@@ -299,7 +299,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	const char *virname;
 	char buff[FILEBUFF];
 	struct sockaddr_in server;
-	struct hostent *he;
+	struct hostent he;
 	struct cfgstruct *cpt;
 	char *tmpname;
 
@@ -331,15 +331,12 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	server.sin_port = htons(port);
 
 	if((cpt = cfgopt(copt, "TCPAddr"))->enabled) {
-	    pthread_mutex_lock(&gh_mutex);
-	    if((he = gethostbyname(cpt->strarg)) == 0) {
-		logg("!gethostbyname(%s) error: %s\n", cpt->strarg);
-		mdprintf(odesc, "gethostbyname(%s) ERROR\n", cpt->strarg);
-		pthread_mutex_unlock(&gh_mutex);
+	    if(r_gethostbyname(cpt->strarg, &he, buff, sizeof(buff)) == -1) {
+		logg("!r_gethostbyname(%s) error: %s\n", cpt->strarg, strerror(errno));
+		mdprintf(odesc, "r_gethostbyname(%s) ERROR\n", cpt->strarg);
 		return -1;
 	    }
-	    server.sin_addr = *(struct in_addr *) he->h_addr_list[0];
-	    pthread_mutex_unlock(&gh_mutex);
+	    server.sin_addr = *(struct in_addr *) he.h_addr_list[0];
 	} else
 	    server.sin_addr.s_addr = INADDR_ANY;
 
