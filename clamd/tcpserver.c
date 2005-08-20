@@ -42,8 +42,8 @@ int tcpserver(const struct cfgstruct *copt, struct cl_node *root)
 	int sockfd, backlog;
 	struct cfgstruct *cpt;
 	struct cfgstruct *taddr;
-	struct hostent *he;
-	char *estr;
+	struct hostent he;
+	char *estr, buf[1024];
 	int true = 1;
 
     memset((char *) &server, 0, sizeof(server));
@@ -51,11 +51,11 @@ int tcpserver(const struct cfgstruct *copt, struct cl_node *root)
     server.sin_port = htons(cfgopt(copt, "TCPSocket")->numarg);
 
     if((taddr = cfgopt(copt, "TCPAddr"))->enabled) {
-	if ((he = gethostbyname(taddr->strarg)) == 0) {
-	    logg("!gethostbyname(%s) error: %s\n", taddr->strarg, strerror(errno));
+	if(r_gethostbyname(taddr->strarg, &he, buf, sizeof(buf)) == -1) {
+	    logg("!r_gethostbyname(%s) error: %s\n", taddr->strarg, strerror(errno));
 	    exit(1);
 	}
-	server.sin_addr = *(struct in_addr *) he->h_addr_list[0];
+	server.sin_addr = *(struct in_addr *) he.h_addr_list[0];
     } else
 	server.sin_addr.s_addr = INADDR_ANY;
 

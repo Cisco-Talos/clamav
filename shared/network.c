@@ -85,4 +85,5 @@ int r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t 
 #endif
 
 	return 0;
+#endif
 }

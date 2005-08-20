@@ -30,6 +30,8 @@ clamd_SOURCES = \
     $(top_srcdir)/shared/memory.h \
     $(top_srcdir)/shared/misc.c \
     $(top_srcdir)/shared/misc.h \
+    $(top_srcdir)/shared/network.c \
+    $(top_srcdir)/shared/network.h \
     options.c \
     options.h \
     clamd.c \
