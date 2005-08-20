@@ -1,3 +1,7 @@
+Sun Aug 21 00:32:10 CEST 2005 (tk)
+----------------------------------
+  * shared/network.[ch]: new files (include r_gethostbyname by NJH)
+
 Wed Aug 17 15:53:33 CEST 2005 (acab)
 ------------------------------------
   * libclamav/spin.c: fixed bitmap shifting
