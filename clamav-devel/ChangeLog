@@ -1,3 +1,8 @@
+Sun Aug 21 03:19:15 CEST 2005 (tk)
+----------------------------------
+  * libclamav: improve scanning of zip files (patch by Daniel Fahlgren
+	       <fahlgren*ardendo.se>)
+
 Sun Aug 21 01:06:54 CEST 2005 (tk)
 ----------------------------------
   * clamd: use reentrant version of gethostbyname when available

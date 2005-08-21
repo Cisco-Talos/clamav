@@ -102,6 +102,7 @@ struct zzip_dirent
     unsigned short d_flags;	/* general purpose flags */
     char * 	d_name;		/* file name / strdupped name */
     int	        d_crc32;        /* the adler32-checksum */
+    int	        d_off;          /* the offset in the file */
 };
 
 /*
@@ -187,7 +188,7 @@ void	 	zzip_seekdir(ZZIP_DIR * dir, zzip_off_t offset);
  * zzip/file.c
  */
 _zzip_export
-ZZIP_FILE * 	zzip_file_open(ZZIP_DIR * dir, zzip_char_t* name, int modes);
+ZZIP_FILE * 	zzip_file_open(ZZIP_DIR * dir, zzip_char_t* name, int modes, int d_off);
 _zzip_export
 int  		zzip_file_close(ZZIP_FILE * fp);
 _zzip_export
