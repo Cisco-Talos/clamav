@@ -418,6 +418,11 @@ __zzip_parse_root_directory(int fd,
         hdr->d_csize = ZZIP_GET32(d->z_csize); 
         hdr->d_usize = ZZIP_GET32(d->z_usize); 
         hdr->d_off   = ZZIP_GET32(d->z_off);
+        if(hdr->d_off < 0)
+        {
+                free(hdr0);
+                return ZZIP_DIR_READ;
+        }
         hdr->d_compr = (uint8_t)ZZIP_GET16(d->z_compr);
 	hdr->d_flags = u_flags;
 
@@ -731,6 +736,7 @@ zzip_dir_read(ZZIP_DIR * dir, ZZIP_DIRENT * d )
     d->st_size = dir->hdr->d_usize;
     d->d_name  = dir->hdr->d_name;
     d->d_flags = dir->hdr->d_flags;
+    d->d_off   = dir->hdr->d_off;
     d->d_crc32 = (int) dir->hdr->d_crc32;
 
     if (! dir->hdr->d_reclen) 

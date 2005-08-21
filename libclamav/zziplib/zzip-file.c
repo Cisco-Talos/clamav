@@ -153,7 +153,7 @@ static int zzip_inflate_init(ZZIP_FILE *, struct zzip_dir_hdr *);
  *       memchunk here... just to be safe.
  */
 ZZIP_FILE * 
-zzip_file_open(ZZIP_DIR * dir, zzip_char_t* name, int o_mode)
+zzip_file_open(ZZIP_DIR * dir, zzip_char_t* name, int o_mode, int d_off)
 {
     zzip_error_t err = 0;
     struct zzip_file * fp = 0;
@@ -185,7 +185,7 @@ zzip_file_open(ZZIP_DIR * dir, zzip_char_t* name, int o_mode)
 	      hdr->d_name, hdr->d_compr, hdr->d_usize);
 	*/
 
-        if (!cmp(hdr_name, name))
+        if (!cmp(hdr_name, name) && (d_off == -1 || d_off == hdr->d_off))
         {
             switch (hdr->d_compr)
             {
@@ -744,7 +744,7 @@ zzip_open_shared_io (ZZIP_FILE* stream,
 	      filename[len] == '/' && filename[len+1])
 	  {
 	      ZZIP_FILE* fp = 
-		  zzip_file_open (stream->dir, filename+len+1, o_modes);
+		  zzip_file_open (stream->dir, filename+len+1, o_modes, -1); // XXX d_off
 	      if (! fp) { errno = zzip_errno (stream->dir->errcode); }
 	      return fp;
 	  }
@@ -767,7 +767,7 @@ zzip_open_shared_io (ZZIP_FILE* stream,
           if (e) { errno = zzip_errno(e); io->close(fd); return 0; }
 
           /* (p - basename) is the lenghtof zzip_dir part of the filename */
-          fp = zzip_file_open(dir, filename + (p - basename) +1, o_modes);
+          fp = zzip_file_open(dir, filename + (p - basename) +1, o_modes, -1); // XXX d_off
           if (! fp) { errno = zzip_errno(dir->errcode); }
 	  else { if (! dir->realname) dir->realname = strdup (basename); }
 

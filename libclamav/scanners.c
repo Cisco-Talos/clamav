@@ -314,7 +314,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	 */
 	encrypted = (zdirent.d_flags & 0x2041 != 0);
 
-	cli_dbgmsg("Zip: %s, crc32: 0x%x, encrypted: %d, compressed: %u, normal: %u, method: %d, ratio: %d (max: %d)\n", zdirent.d_name, zdirent.d_crc32, encrypted, zdirent.d_csize, zdirent.st_size, zdirent.d_compr, zdirent.d_csize ? (zdirent.st_size / zdirent.d_csize) : 0, limits ? limits->maxratio : 0);
+	cli_dbgmsg("Zip: %s, crc32: 0x%x, offset: %d, encrypted: %d, compressed: %u, normal: %u, method: %d, ratio: %d (max: %d)\n", zdirent.d_name, zdirent.d_crc32, zdirent.d_off, encrypted, zdirent.d_csize, zdirent.st_size, zdirent.d_compr, zdirent.d_csize ? (zdirent.st_size / zdirent.d_csize) : 0, limits ? limits->maxratio : 0);
 
 	if(!zdirent.st_size) {
 	    if(zdirent.d_crc32) {
@@ -425,7 +425,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	    }
 	}
 
-	if((zfp = zzip_file_open(zdir, zdirent.d_name, 0)) == NULL) {
+	if((zfp = zzip_file_open(zdir, zdirent.d_name, 0, zdirent.d_off)) == NULL) {
 	    cli_dbgmsg("Zip: Can't open file %s\n", zdirent.d_name);
 	    ret = CL_EZIP;
 	    break;
