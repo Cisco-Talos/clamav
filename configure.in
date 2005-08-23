@@ -378,6 +378,7 @@ cygwin*)
 	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
 	AC_DEFINE(_REENTRANT,1,[thread safe])
     fi
+    use_gethostbyname_r="no"
     ;;
 solaris*)
     FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lresolv"
