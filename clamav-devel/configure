@@ -11766,6 +11766,7 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
     fi
+    use_gethostbyname_r="no"
     ;;
 solaris*)
     FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lresolv"
