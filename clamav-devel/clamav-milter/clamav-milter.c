@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.218 2005/08/15 21:12:21 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.219 2005/08/24 19:02:11 nigelhorne Exp $";
 
-#define	CM_VERSION	"devel-150805"
+#define	CM_VERSION	"devel-240805"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -264,7 +264,7 @@ static	int	sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, cons
 static	int	qfile(struct privdata *privdata, const char *sendmailId, const char *virusname);
 static	int	move(const char *oldfile, const char *newfile);
 static	void	setsubject(SMFICTX *ctx, const char *virusname);
-static	int	clamfi_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
+/*static	int	clamfi_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);*/
 static	int	isLocalAddr(in_addr_t addr);
 static	void	clamdIsDown(void);
 static	void	*watchdog(void *a);
@@ -2065,7 +2065,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		 * Use hostmail for error statements, not hostname, suggestion
 		 * by Yar Tikhiy <yar@comp.chem.msu.su>
 		 */
-		if(clamfi_gethostbyname(hostmail, &hostent, buf, sizeof(buf)) != 0) {
+		if(r_gethostbyname(hostmail, &hostent, buf, sizeof(buf)) != 0) {
 			if(use_syslog)
 				syslog(LOG_WARNING, _("Access Denied: Host Unknown (%s)"), hostmail);
 			if(hostmail[0] == '[')
@@ -2761,7 +2761,7 @@ clamfi_eom(SMFICTX *ctx)
 				 */
 				struct hostent hostent;
 
-				if(clamfi_gethostbyname(hostname, &hostent, buf, sizeof(buf)) == 0)
+				if(r_gethostbyname(hostname, &hostent, buf, sizeof(buf)) == 0)
 					strncpy(hostname, hostent.h_name, sizeof(hostname));
 			}
 
@@ -4261,6 +4261,7 @@ setsubject(SMFICTX *ctx, const char *virusname)
 		smfi_addheader(ctx, "Subject", subject);
 }
 
+#if	0
 /*
  * TODO: gethostbyname_r is non-standard so different operating
  * systems do it in different ways. Need more examples
@@ -4313,6 +4314,7 @@ clamfi_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t
 
 	return 0;
 }
+#endif
 
 /*
  * David Champion <dgc@uchicago.edu>
