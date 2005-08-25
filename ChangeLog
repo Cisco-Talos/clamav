@@ -1,3 +1,8 @@
+Thu Aug 25 04:54:51 CEST 2005 (tk)
+----------------------------------
+  * libclamav/elf.[ch]: new files (initial version of ELF scanning module),
+			not yet activated
+
 Sun Aug 21 03:19:15 CEST 2005 (tk)
 ----------------------------------
   * libclamav: improve scanning of zip files (patch by Daniel Fahlgren
