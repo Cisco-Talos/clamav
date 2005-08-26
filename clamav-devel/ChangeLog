@@ -3,6 +3,10 @@ Thu Aug 25 04:54:51 CEST 2005 (tk)
   * libclamav/elf.[ch]: new files (initial version of ELF scanning module),
 			not yet activated
 
+Wed Aug 24 20:02:54 BST 2005 (njh)
+----------------------------------
+  * clamav-milter:	Use r_gethostbyname
+
 Sun Aug 21 03:19:15 CEST 2005 (tk)
 ----------------------------------
   * libclamav: improve scanning of zip files (patch by Daniel Fahlgren
