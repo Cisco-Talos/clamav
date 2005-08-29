@@ -1,3 +1,7 @@
+Mon Aug 29 17:00:36 CEST 2005 (tk)
+----------------------------------
+  * libclamav: activate ELF code
+
 Mon Aug 29 16:38:06 CEST 2005 (tk)
 ----------------------------------
   * libclamav/elf.c: detect file endianness and properly analyse executables on
