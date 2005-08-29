@@ -1523,6 +1523,10 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 		ret = cli_scanpdf(desc, virname, scanned, root, limits, options, arec, mrec);
 	    break;
 
+	case CL_TYPE_ELF: /* TODO: Add ScanELF option */
+		ret = cli_scanelf(desc, virname, scanned, root, limits, options, arec, mrec);
+	    break;
+
 	case CL_TYPE_DATA:
 	    /* it could be a false positive and a standard DOS .COM file */
 	    {

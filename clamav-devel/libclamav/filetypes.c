@@ -50,7 +50,7 @@ static const struct cli_magic_s cli_magic[] = {
     /* Executables */
 
     {0,  "MZ",				2,  "DOS/W32 executable/library/driver", CL_TYPE_MSEXE},
-
+    {0,	 "\177ELF",			4,  "ELF",		CL_TYPE_ELF},
     /* Archives */
 
     {0,	    "Rar!",			4,  "RAR",		CL_TYPE_RAR},
