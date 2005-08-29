@@ -35,27 +35,30 @@
 
 #define DETECT_BROKEN		    (options & CL_SCAN_BLOCKBROKEN)
 
-#if WORDS_BIGENDIAN == 0
-#define EC16(v)	(v)
-#define EC32(v) (v)
-#else
+static short need_conversion = 0;
+
 static inline uint16_t EC16(uint16_t v)
 {
-    return ((v >> 8) + (v << 8));
+    if(!need_conversion)
+	return v;
+    else
+	return ((v >> 8) + (v << 8));
 }
 
 static inline uint32_t EC32(uint32_t v)
 {
-    return ((v >> 24) | ((v & 0x00FF0000) >> 8) | ((v & 0x0000FF00) << 8) | (v << 24));
+    if(!need_conversion)
+	return v;
+    else
+	return ((v >> 24) | ((v & 0x00FF0000) >> 8) | ((v & 0x0000FF00) << 8) | (v << 24));
 }
-#endif
 
 int cli_scanelf(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	struct elf_file_hdr32 file_hdr;
 	struct elf_section_hdr32 *section_hdr;
 	uint16_t shnum, shentsize;
-	uint32_t entry, shoff;
+	uint32_t entry, shoff, image;
 	int i;
 
     cli_dbgmsg("in cli_elfheader\n");
@@ -69,6 +72,29 @@ int cli_scanelf(int desc, const char **virname, long int *scanned, const struct 
     if(memcmp(file_hdr.e_ident, "\x7f\x45\x4c\x46", 4)) {
 	cli_dbgmsg("ELF: Not an ELF file\n");
 	return CL_CLEAN;
+    }
+
+    if(file_hdr.e_ident[4] != 1) {
+	cli_dbgmsg("ELF: 64-bit binaries not supported\n");
+	return CL_CLEAN;
+    }
+
+    if(file_hdr.e_ident[5] == 1) {
+	image =  0x8048000;
+#if WORDS_BIGENDIAN == 0
+	cli_dbgmsg("ELF: File is little-endian - conversion not required\n");
+#else
+	cli_dbgmsg("ELF: File is little-endian - data conversion enabled\n");
+	need_conversion = 1;
+#endif
+    } else {
+	image =  0x10000;
+#if WORDS_BIGENDIAN == 0
+	cli_dbgmsg("ELF: File is big-endian - data conversion enabled\n");
+	need_conversion = 1;
+#else
+	cli_dbgmsg("ELF: File is big-endian - conversion not required\n");
+#endif
     }
 
     switch(EC16(file_hdr.e_type)) {
@@ -138,7 +164,7 @@ int cli_scanelf(int desc, const char **virname, long int *scanned, const struct 
 
     entry = EC32(file_hdr.e_entry);
     cli_dbgmsg("ELF: Entry point address: 0x%.8x\n", entry);
-    cli_dbgmsg("ELF: Entry point offset: 0x%.8x (%d)\n", entry - 0x8048000, entry - 0x8048000);
+    cli_dbgmsg("ELF: Entry point offset: 0x%.8x (%d)\n", entry - image, entry - image);
 
     shnum = EC16(file_hdr.e_shnum);
     cli_dbgmsg("ELF: Number of sections: %d\n", shnum);
@@ -177,7 +203,7 @@ int cli_scanelf(int desc, const char **virname, long int *scanned, const struct 
 
     section_hdr = (struct elf_section_hdr32 *) cli_calloc(shnum, shentsize);
     if(!section_hdr) {
-	cli_dbgmsg("ELF: Can't allocate memory for section headers\n");
+	cli_errmsg("ELF: Can't allocate memory for section headers\n");
 	return CL_EMEM;
     }
 

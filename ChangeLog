@@ -1,3 +1,8 @@
+Mon Aug 29 16:38:06 CEST 2005 (tk)
+----------------------------------
+  * libclamav/elf.c: detect file endianness and properly analyse executables on
+		     different architectures
+
 Thu Aug 25 04:54:51 CEST 2005 (tk)
 ----------------------------------
   * libclamav/elf.[ch]: new files (initial version of ELF scanning module),
