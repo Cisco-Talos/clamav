@@ -21,6 +21,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.27  2005/09/01 21:03:46  nigelhorne
+ * Added support for various GNU extensions
+ *
  * Revision 1.26  2005/08/01 11:30:59  nigelhorne
  * Spelling fix
  *
@@ -100,7 +103,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.26 2005/08/01 11:30:59 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.27 2005/09/01 21:03:46 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -159,7 +162,7 @@ cli_untar(const char *dir, int desc, unsigned int posix)
 			char type;
 			const char *suffix;
 			size_t suffixLen = 0;
-			int fd, directory;
+			int fd, directory, skipEntry = 0;
 			char magic[7], name[101], osize[13];
 
 			if(outfile) {
@@ -201,11 +204,18 @@ cli_untar(const char *dir, int desc, unsigned int posix)
 				case '3':	/* char device */
 				case '4':	/* block device */
 				case '6':	/* fifo special */
+				case 'V':	/* Volume header */
 					directory = 1;
 					break;
-				case 'L':	/* GNU extension - ././@LongLink */
-					cli_errmsg("cli_untar: only standard TAR files are currently supported\n", type);
-					return CL_EFORMAT;
+				case 'K':
+				case 'L':
+					/* GNU extension - ././@LongLink
+					 * Discard the blocks with the extended filename,
+					 * the last header will contain parts of it anyway
+					 */
+					directory = 0;
+					skipEntry = 1;
+					break;
 				default:
 					/*cli_errmsg("cli_untar: unknown type flag %c\n", type);
 					return CL_EFORMAT;*/
@@ -224,6 +234,23 @@ cli_untar(const char *dir, int desc, unsigned int posix)
 
 			if(directory) {
 				in_block = 0;
+				continue;
+			}
+
+			strncpy(osize, block+124, 12);
+			osize[12] = '\0';
+			size = octal(osize);
+			if(size < 0) {
+				cli_errmsg("Invalid size in tar header\n");
+				fclose(outfile);
+				return CL_EFORMAT;
+			}
+			cli_dbgmsg("cli_untar: size = %d\n", size);
+
+			if(skipEntry) {
+				const int nskip = (size % BLOCKSIZE || !size) ? size + BLOCKSIZE - (size % BLOCKSIZE) : size;
+				cli_dbgmsg("cli_untar: GNU extension, skipping entry\n");
+				lseek(desc, nskip, SEEK_CUR);
 				continue;
 			}
 
@@ -270,16 +297,6 @@ cli_untar(const char *dir, int desc, unsigned int posix)
 				close(fd);
 				return CL_ETMPFILE;
 			}
-
-			strncpy(osize, block+124, 12);
-			osize[12] = '\0';
-			size = octal(osize);
-			if(size < 0) {
-				cli_errmsg("Invalid size in tar header\n");
-				fclose(outfile);
-				return CL_EFORMAT;
-			}
-			cli_dbgmsg("cli_untar: size = %d\n", size);
 		} else { /* write or continue writing file contents */
 			const int nbytes = size>512? 512:size;
 			const int nwritten = fwrite(block, 1, (size_t)nbytes, outfile);
