@@ -1,3 +1,8 @@
+Mon Sep  5 18:18:24 CEST 2005 (tk)
+----------------------------------
+  * libclamav/matcher.c: handle EP-n offset specification (requested by
+			 Arnaud Jacques)
+
 Thu Sep  1 22:04:00 BST 2005 (njh)
 ----------------------------------
   * libclamav/untar.c:	Added support for various GNU extensions: volume

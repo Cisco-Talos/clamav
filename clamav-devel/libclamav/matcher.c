@@ -105,7 +105,7 @@ static long int cli_caloff(const char *offstr, int fd)
 
     if(isdigit(offstr[0])) {
 	return atoi(offstr);
-    } if(!strncmp(offstr, "EP+", 3)) {
+    } if(!strncmp(offstr, "EP+", 3) || !strncmp(offstr, "EP-", 3)) {
 	if((n = lseek(fd, 0, SEEK_CUR)) == -1) {
 	    cli_dbgmsg("Invalid descriptor\n");
 	    return -1;
@@ -117,7 +117,12 @@ static long int cli_caloff(const char *offstr, int fd)
 	}
 	free(peinfo.section);
 	lseek(fd, n, SEEK_SET);
-	return peinfo.ep + atoi(offstr + 3);
+
+	if(offstr[2] == '+')
+	    return peinfo.ep + atoi(offstr + 3);
+	else
+	    return peinfo.ep - atoi(offstr + 3);
+
     } else if(offstr[0] == 'S') {
 	if((n = lseek(fd, 0, SEEK_CUR)) == -1) {
 	    cli_dbgmsg("Invalid descriptor\n");
