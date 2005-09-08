@@ -22,7 +22,7 @@
 # the machine name gives the version of clamd running there.
 
 # TODO: clicking should give the data base information and date of last
-#	freshclam
+#	freshclam, and then allow remote update
 # TODO:	Resizing the program should resize the text area
 
 eval 'exec /usr/bin/perl -w -S $0 ${1+"$@"}' if 0;
