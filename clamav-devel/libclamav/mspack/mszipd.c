@@ -95,7 +95,20 @@ static const unsigned short bit_mask[17] = {
 
 static int zipd_read_input(struct mszipd_stream *zip) {
   int read = zip->sys->read(zip->input, &zip->inbuf[0], (int)zip->inbuf_size);
-  if (read <= 0) return zip->error = MSPACK_ERR_READ;
+  if (read < 0) return zip->error = MSPACK_ERR_READ;
+
+  if (read == 0) {
+    if (zip->input_end) {
+      D(("out of input bytes"))
+      return zip->error = MSPACK_ERR_READ;
+    }
+    else {
+      read = 1;
+      zip->inbuf[0] = 0;
+      zip->input_end = 1;
+    }
+  }
+
   zip->i_ptr = &zip->inbuf[0];
   zip->i_end = &zip->inbuf[read];
 
@@ -554,6 +567,7 @@ struct mszipd_stream *mszipd_init(struct mspack_system *system,
   zip->error           = MSPACK_ERR_OK;
   zip->repair_mode     = repair_mode;
   zip->flush_window    = &mszipd_flush_window;
+  zip->input_end       = 0;
 
   zip->i_ptr = zip->i_end = &zip->inbuf[0];
   zip->o_ptr = zip->o_end = NULL;
