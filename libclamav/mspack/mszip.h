@@ -48,7 +48,7 @@ struct mszipd_stream {
   /* inflate() will call this whenever the window should be emptied. */
   int (*flush_window)(struct mszipd_stream *, unsigned int);
 
-  int error, repair_mode, bytes_output;
+  int error, repair_mode, bytes_output, input_end;
 
   /* I/O buffering */
   unsigned char *inbuf, *i_ptr, *i_end, *o_ptr, *o_end;
