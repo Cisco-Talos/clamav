@@ -72,7 +72,7 @@ static pthread_mutex_t cli_gentempname_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define	O_BINARY	0
 #endif
 
-#define CL_FLEVEL 5 /* don't touch it */
+#define CL_FLEVEL 6 /* don't touch it */
 
 #define MAX_ALLOCATION 134217728
 

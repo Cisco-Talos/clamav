@@ -1,3 +1,7 @@
+Thu Sep 15 23:32:07 CEST 2005 (tk)
+----------------------------------
+  * libclamav/others: increase f-level
+
 Thu Sep 15 14:03:15 CEST 2005 (tk)
 ----------------------------------
   * libclamav/mspack/mszipd.c: zipd_read_input: fake one more byte if input
