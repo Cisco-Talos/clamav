@@ -214,7 +214,7 @@ int cli_validatesig(unsigned short target, unsigned short ftype, const char *off
 
     if(target) {
 	if(target >= TARGET_TABLE_SIZE) {
-	    cli_errmsg("Bad target in signature (%s)\n", virname);
+	    cli_dbgmsg("Unknown target in signature (%s)\n", virname);
 	    return 0;
 	} else {
 	    if(targettab[target] != ftype) {
