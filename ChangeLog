@@ -1,3 +1,7 @@
+Fri Sep 16 16:49:14 CEST 2005 (tk)
+----------------------------------
+  * libclamav/upx.c: fix possible buffer overflow (acab)
+
 Fri Sep 16 16:39:37 CEST 2005 (tk)
 ----------------------------------
   * libclamav/fsg.c: fix possible infinite loop (acab)
