@@ -1,3 +1,7 @@
+Fri Sep 16 16:39:37 CEST 2005 (tk)
+----------------------------------
+  * libclamav/fsg.c: fix possible infinite loop (acab)
+
 Thu Sep 15 23:32:07 CEST 2005 (tk)
 ----------------------------------
   * libclamav/others: increase f-level

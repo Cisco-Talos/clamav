@@ -251,7 +251,7 @@ int unfsg_133(char *source, char *dest, int ssize, int dsize, struct SECTION *se
     for (i = 0; i < sectcount  ; i++) {
       uint32_t trva,trsz,traw;
       
-      if ( sections[i].rva < sections[i+1].rva )
+      if ( sections[i].rva <= sections[i+1].rva )
 	continue;
       trva = sections[i].rva;
       traw = sections[i].raw;
