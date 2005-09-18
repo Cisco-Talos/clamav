@@ -142,7 +142,8 @@ libclamav_la_SOURCES = \
 	spin.c \
 	spin.h \
 	elf.c \
-	elf.h
+	elf.h \
+	execs.h
 
 
 lib_LTLIBRARIES = libclamav.la

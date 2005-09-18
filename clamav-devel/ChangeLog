@@ -1,3 +1,9 @@
+Mon Sep 19 01:15:02 CEST 2005 (tk)
+----------------------------------
+  * libclamav/elf.c: add cli_elfheader()
+  * libclamav/execs.h: new file
+  * libclamav/matcher.c: support ELF files in cli_caloff()
+
 Fri Sep 16 16:49:14 CEST 2005 (tk)
 ----------------------------------
   * libclamav/upx.c: fix possible buffer overflow (acab)

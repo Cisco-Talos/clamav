@@ -32,6 +32,7 @@
 #include "cltypes.h"
 #include "elf.h"
 #include "clamav.h"
+#include "execs.h"
 
 #define DETECT_BROKEN		    (options & CL_SCAN_BLOCKBROKEN)
 
@@ -61,7 +62,7 @@ int cli_scanelf(int desc, const char **virname, long int *scanned, const struct 
 	uint32_t entry, shoff, image;
 	int i;
 
-    cli_dbgmsg("in cli_elfheader\n");
+    cli_dbgmsg("in cli_scanelf\n");
 
     if(read(desc, &file_hdr, sizeof(file_hdr)) != sizeof(file_hdr)) {
 	/* Not an ELF file? */
@@ -75,7 +76,7 @@ int cli_scanelf(int desc, const char **virname, long int *scanned, const struct 
     }
 
     if(file_hdr.e_ident[4] != 1) {
-	cli_dbgmsg("ELF: 64-bit binaries not supported\n");
+	cli_dbgmsg("ELF: 64-bit binaries are not supported (yet)\n");
 	return CL_CLEAN;
     }
 
@@ -180,7 +181,7 @@ int cli_scanelf(int desc, const char **virname, long int *scanned, const struct 
 
     shentsize = EC16(file_hdr.e_shentsize);
     if(shentsize != sizeof(struct elf_section_hdr32)) {
-	cli_errmsg("ELF: shentsize != sizeof(struct elf_section_hdr32)\n");
+	cli_dbgmsg("ELF: shentsize != sizeof(struct elf_section_hdr32)\n");
         if(DETECT_BROKEN) {
 	    if(virname)
             *virname = "Broken.Executable";
@@ -225,6 +226,7 @@ int cli_scanelf(int desc, const char **virname, long int *scanned, const struct 
 
 	cli_dbgmsg("ELF: Section %d\n", i);
 	cli_dbgmsg("ELF: Section offset: %d\n", EC32(section_hdr[i].sh_offset));
+	cli_dbgmsg("ELF: Section size: %d\n", EC32(section_hdr[i].sh_size));
 
 	switch(EC32(section_hdr[i].sh_type)) {
 	    case 0x6: /* SHT_DYNAMIC */
@@ -296,4 +298,92 @@ int cli_scanelf(int desc, const char **virname, long int *scanned, const struct 
 
     free(section_hdr);
     return CL_CLEAN;
+}
+
+int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
+{
+	struct elf_file_hdr32 file_hdr;
+	struct elf_section_hdr32 *section_hdr;
+	uint16_t shnum, shentsize;
+	uint32_t entry, shoff, image;
+	int i;
+
+    cli_dbgmsg("in cli_elfheader\n");
+
+    if(read(desc, &file_hdr, sizeof(file_hdr)) != sizeof(file_hdr)) {
+	/* Not an ELF file? */
+	cli_dbgmsg("ELF: Can't read file header\n");
+	return -1;
+    }
+
+    if(memcmp(file_hdr.e_ident, "\x7f\x45\x4c\x46", 4)) {
+	cli_dbgmsg("ELF: Not an ELF file\n");
+	return -1;
+    }
+
+    if(file_hdr.e_ident[4] != 1) {
+	cli_dbgmsg("ELF: 64-bit binaries are not supported (yet)\n");
+	return -1;
+    }
+
+    if(file_hdr.e_ident[5] == 1) {
+	image =  0x8048000;
+#if WORDS_BIGENDIAN == 1
+	need_conversion = 1;
+#endif
+    } else {
+	image =  0x10000;
+#if WORDS_BIGENDIAN == 0
+	need_conversion = 1;
+#endif
+    }
+
+    entry = EC32(file_hdr.e_entry);
+
+    shnum = EC16(file_hdr.e_shnum);
+    if(shnum > 256) {
+	cli_dbgmsg("ELF: Suspicious number of sections\n");
+	return -1;
+    }
+    elfinfo->nsections = shnum;
+
+    shentsize = EC16(file_hdr.e_shentsize);
+    if(shentsize != sizeof(struct elf_section_hdr32)) {
+	cli_dbgmsg("ELF: shentsize != sizeof(struct elf_section_hdr32)\n");
+	return -1;
+    }
+
+    shoff = EC32(file_hdr.e_shoff);
+    if(lseek(desc, shoff, SEEK_SET) != shoff) {
+	/* Possibly broken end of file */
+	return -1;
+    }
+
+    elfinfo->section = (struct cli_exe_section *) cli_calloc(elfinfo->nsections, sizeof(struct cli_exe_section));
+    if(!elfinfo->section) {
+	cli_dbgmsg("ELF: Can't allocate memory for section headers\n");
+	return -1;
+    }
+
+    section_hdr = (struct elf_section_hdr32 *) cli_calloc(shnum, shentsize);
+    if(!section_hdr) {
+	cli_errmsg("ELF: Can't allocate memory for section headers\n");
+	return -1;
+    }
+
+    for(i = 0; i < shnum; i++) {
+
+	if(read(desc, &section_hdr[i], sizeof(struct elf_section_hdr32)) != sizeof(struct elf_section_hdr32)) {
+            free(section_hdr);
+	    free(elfinfo->section);
+            return -1;
+        }
+
+	elfinfo->section[i].rva = EC32(section_hdr[i].sh_addr);
+	elfinfo->section[i].raw = EC32(section_hdr[i].sh_offset);
+	elfinfo->section[i].rsz = EC32(section_hdr[i].sh_size);
+    }
+
+    free(section_hdr);
+    return 0;
 }
