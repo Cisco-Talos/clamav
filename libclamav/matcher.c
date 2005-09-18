@@ -34,12 +34,14 @@
 #include "filetypes.h"
 #include "matcher.h"
 #include "pe.h"
+#include "elf.h"
+#include "execs.h"
 #include "special.h"
 
 #define MD5_BLOCKSIZE 4096
 
-#define TARGET_TABLE_SIZE 6
-static int targettab[TARGET_TABLE_SIZE] = { 0, CL_TYPE_MSEXE, CL_TYPE_MSOLE2, CL_TYPE_HTML, CL_TYPE_MAIL, CL_TYPE_GRAPHICS };
+#define TARGET_TABLE_SIZE 7
+static int targettab[TARGET_TABLE_SIZE] = { 0, CL_TYPE_MSEXE, CL_TYPE_MSOLE2, CL_TYPE_HTML, CL_TYPE_MAIL, CL_TYPE_GRAPHICS, CL_TYPE_ELF };
 
 extern short cli_debug_flag;
 
@@ -96,40 +98,47 @@ static struct cli_md5_node *cli_vermd5(const unsigned char *md5, const struct cl
     return NULL;
 }
 
-static long int cli_caloff(const char *offstr, int fd)
+static long int cli_caloff(const char *offstr, int fd, unsigned short ftype)
 {
-	struct cli_pe_info peinfo;
+	struct cli_exe_info exeinfo;
+	int (*einfo)(int, struct cli_exe_info *) = NULL;
 	long int offset = -1;
 	int n;
 
 
+    if(ftype == CL_TYPE_MSEXE)
+	einfo = cli_peheader;
+    else if(ftype == CL_TYPE_ELF)
+	einfo = cli_elfheader;
+
     if(isdigit(offstr[0])) {
 	return atoi(offstr);
-    } if(!strncmp(offstr, "EP+", 3) || !strncmp(offstr, "EP-", 3)) {
+
+    } else if(einfo && (!strncmp(offstr, "EP+", 3) || !strncmp(offstr, "EP-", 3))) {
 	if((n = lseek(fd, 0, SEEK_CUR)) == -1) {
 	    cli_dbgmsg("Invalid descriptor\n");
 	    return -1;
 	}
 	lseek(fd, 0, SEEK_SET);
-	if(cli_peheader(fd, &peinfo)) {
+	if(einfo(fd, &exeinfo)) {
 	    lseek(fd, n, SEEK_SET);
 	    return -1;
 	}
-	free(peinfo.section);
+	free(exeinfo.section);
 	lseek(fd, n, SEEK_SET);
 
 	if(offstr[2] == '+')
-	    return peinfo.ep + atoi(offstr + 3);
+	    return exeinfo.ep + atoi(offstr + 3);
 	else
-	    return peinfo.ep - atoi(offstr + 3);
+	    return exeinfo.ep - atoi(offstr + 3);
 
-    } else if(offstr[0] == 'S') {
+    } else if(einfo && offstr[0] == 'S') {
 	if((n = lseek(fd, 0, SEEK_CUR)) == -1) {
 	    cli_dbgmsg("Invalid descriptor\n");
 	    return -1;
 	}
 	lseek(fd, 0, SEEK_SET);
-	if(cli_peheader(fd, &peinfo)) {
+	if(einfo(fd, &exeinfo)) {
 	    lseek(fd, n, SEEK_SET);
 	    return -1;
 	}
@@ -138,28 +147,28 @@ static long int cli_caloff(const char *offstr, int fd)
 	if(!strncmp(offstr, "SL", 2)) {
 
 	    if(sscanf(offstr, "SL+%ld", &offset) != 1) {
-		free(peinfo.section);
+		free(exeinfo.section);
 		return -1;
 	    }
 
-	    offset += peinfo.section[peinfo.nsections - 1].raw;
+	    offset += exeinfo.section[exeinfo.nsections - 1].raw;
 
 	} else {
 
 	    if(sscanf(offstr, "S%d+%ld", &n, &offset) != 2) {
-		free(peinfo.section);
+		free(exeinfo.section);
 		return -1;
 	    }
 
-	    if(n >= peinfo.nsections) {
-		free(peinfo.section);
+	    if(n >= exeinfo.nsections) {
+		free(exeinfo.section);
 		return -1;
 	    }
 
-	    offset += peinfo.section[n].raw;
+	    offset += exeinfo.section[n].raw;
 	}
 
-	free(peinfo.section);
+	free(exeinfo.section);
 	return offset;
 
     } else if(!strncmp(offstr, "EOF-", 4)) {
@@ -226,7 +235,7 @@ int cli_validatesig(unsigned short target, unsigned short ftype, const char *off
     }
 
     if(offstr && desc != -1) {
-	    long int off = cli_caloff(offstr, desc);
+	    long int off = cli_caloff(offstr, desc, ftype);
 
 	if(off == -1) {
 	    cli_dbgmsg("Bad offset in signature (%s)\n", virname);

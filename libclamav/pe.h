@@ -23,7 +23,7 @@
 #define __PE_H
 
 #include "clamav.h"
-#include "rebuildpe.h"
+#include "execs.h"
 
 struct pe_image_file_hdr {
     uint32_t Magic;
@@ -94,14 +94,8 @@ struct pe_image_section_hdr {
     uint32_t Characteristics;
 };
 
-struct cli_pe_info {
-    uint32_t ep; /* raw entry point */
-    uint16_t nsections;
-    struct SECTION *section;
-};
-
 int cli_scanpe(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec);
 
-int cli_peheader(int desc, struct cli_pe_info *peinfo);
+int cli_peheader(int desc, struct cli_exe_info *peinfo);
 
 #endif

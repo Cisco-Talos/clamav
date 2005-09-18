@@ -42,6 +42,7 @@
 #include "scanners.h"
 #include "rebuildpe.h"
 #include "str.h"
+#include "execs.h"
 
 #define IMAGE_DOS_SIGNATURE	    0x5a4d	    /* MZ */
 #define IMAGE_DOS_SIGNATURE_OLD	    0x4d5a          /* ZM */
@@ -1479,7 +1480,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     return CL_CLEAN;
 }
 
-int cli_peheader(int desc, struct cli_pe_info *peinfo)
+int cli_peheader(int desc, struct cli_exe_info *peinfo)
 {
 	uint16_t e_magic; /* DOS signature ("MZ") */
 	uint32_t e_lfanew; /* address of new exe header */
@@ -1547,7 +1548,7 @@ int cli_peheader(int desc, struct cli_pe_info *peinfo)
 	return -1;
     }
 
-    peinfo->section = (struct SECTION *) cli_calloc(peinfo->nsections, sizeof(struct SECTION));
+    peinfo->section = (struct cli_exe_section *) cli_calloc(peinfo->nsections, sizeof(struct cli_exe_section));
 
     if(!peinfo->section) {
 	cli_dbgmsg("Can't allocate memory for section headers\n");
