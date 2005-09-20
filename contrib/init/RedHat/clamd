@@ -25,7 +25,7 @@ fi
 
 start() {
 	echo -n $"Starting $prog: "
-	daemon $progdir/$prog
+        LANG= daemon $progdir/$prog
 	RETVAL=$?
 	echo
 	[ $RETVAL -eq 0 ] && touch /var/lock/subsys/clamd
