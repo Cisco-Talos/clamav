@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.32 2005/08/15 08:20:15 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.33 2005/09/22 06:34:18 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -58,6 +58,10 @@ static	int	flatedecode(const unsigned char *buf, size_t len, int fout);
 static	int	ascii85decode(const char *buf, size_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
+
+/*
+ * TODO: handle embedded URLs if (options&CL_SCAN_MAILURL)
+ */
 
 int
 cli_pdf(const char *dir, int desc)
@@ -179,7 +183,7 @@ cli_pdf(const char *dir, int desc)
 		const char *objstart, *objend, *streamstart, *streamend;
 		size_t length, objlen, streamlen;
 		char fullname[NAME_MAX + 1];
-
+  
 		if(q == xrefstart)
 			break;
 		if(memcmp(q, "xref", 4) == 0)
