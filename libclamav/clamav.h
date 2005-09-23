@@ -84,6 +84,7 @@ extern "C"
 #define CL_MAIL		CL_SCAN_MAIL
 #define CL_OLE2		CL_SCAN_OLE2
 #define CL_ENCRYPTED    CL_SCAN_BLOCKENCRYPTED
+#define cl_node		cl_engine
 
 
 struct cli_bm_patt {
@@ -126,8 +127,7 @@ struct cli_meta_node {
     struct cli_meta_node *next;
 };
 
-struct cl_node {
-    unsigned int refcount;
+struct cli_matcher {
     unsigned int maxpatlen; /* maximal length of pattern in db */
 
     /* Extended Boyer-Moore */
@@ -137,6 +137,13 @@ struct cl_node {
     /* Extended Aho-Corasick */
     struct cli_ac_node *ac_root, **ac_nodetable;
     unsigned int ac_partsigs, ac_nodes;
+};
+
+struct cl_engine {
+    unsigned int refcount; /* reference counter */
+
+    /* Roots table */
+    struct cli_matcher **root;
 
     /* MD5 */
     struct cli_md5_node **md5_hlist;
@@ -180,21 +187,21 @@ struct cl_cvd {
 };
 
 /* file scanning */
-extern int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root);
+extern int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_engine *engine);
 
-extern int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options);
+extern int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options);
 
-extern int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options);
+extern int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options);
 
 /* software versions */
 extern int cl_retflevel(void);
 extern const char *cl_retver(void);
 
 /* database */
-extern int cl_loaddb(const char *filename, struct cl_node **root, unsigned int *signo);
-extern int cl_loaddbdir(const char *dirname, struct cl_node **root, unsigned int *signo);
+extern int cl_loaddb(const char *filename, struct cl_engine **engine, unsigned int *signo);
+extern int cl_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo);
 extern const char *cl_retdbdir(void);
-extern struct cl_node *cl_dup(struct cl_node *root);
+extern struct cl_engine *cl_dup(struct cl_engine *engine);
 
 /* CVD */
 extern struct cl_cvd *cl_cvdhead(const char *file);
@@ -212,8 +219,8 @@ extern void cl_debug(void);
 
 extern void cl_settempdir(const char *dir, short leavetemps);
 
-extern int cl_build(struct cl_node *root);
-extern void cl_free(struct cl_node *root);
+extern int cl_build(struct cl_engine *engine);
+extern void cl_free(struct cl_engine *engine);
 
 extern const char *cl_strerror(int clerror);
 extern const char *cl_perror(int clerror); /* deprecated */

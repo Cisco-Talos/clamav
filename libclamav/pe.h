@@ -94,7 +94,7 @@ struct pe_image_section_hdr {
     uint32_t Characteristics;
 };
 
-int cli_scanpe(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec);
+int cli_scanpe(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec);
 
 int cli_peheader(int desc, struct cli_exe_info *peinfo);
 

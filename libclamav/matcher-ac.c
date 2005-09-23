@@ -44,7 +44,7 @@ struct nodelist {
     struct nodelist *next;
 };
 
-int cli_ac_addpatt(struct cl_node *root, struct cli_ac_patt *pattern)
+int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 {
 	struct cli_ac_node *pos, *next;
 	int i;
@@ -60,14 +60,14 @@ int cli_ac_addpatt(struct cl_node *root, struct cli_ac_patt *pattern)
 	if(!next) {
 	    next = (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));
 	    if(!next) {
-		cli_dbgmsg("Unable to allocate pattern node (%d)\n", sizeof(struct cl_node));
+		cli_dbgmsg("Unable to allocate pattern node (%d)\n", sizeof(struct cli_matcher));
 		return CL_EMEM;
 	    }
 
 	    root->ac_nodes++;
 	    root->ac_nodetable = (struct cli_ac_node **) cli_realloc(root->ac_nodetable, (root->ac_nodes) * sizeof(struct cli_ac_node *));
 	    if(root->ac_nodetable == NULL) {
-		cli_dbgmsg("Unable to realloc nodetable (%d)\n", (root->ac_nodes) * sizeof(struct cl_node *));
+		cli_dbgmsg("Unable to realloc nodetable (%d)\n", (root->ac_nodes) * sizeof(struct cli_matcher *));
 		return CL_EMEM;
 	    }
 	    root->ac_nodetable[root->ac_nodes - 1] = next;
@@ -128,7 +128,7 @@ static struct cli_ac_node *cli_dequeue(struct nodelist **bfs)
     }
 }
 
-static int cli_maketrans(struct cl_node *root)
+static int cli_maketrans(struct cli_matcher *root)
 {
 	struct nodelist *bfs = NULL;
 	struct cli_ac_node *ac_root = root->ac_root, *child, *node;
@@ -166,7 +166,7 @@ static int cli_maketrans(struct cl_node *root)
     return 0;
 }
 
-int cli_ac_buildtrie(struct cl_node *root)
+int cli_ac_buildtrie(struct cli_matcher *root)
 {
 	int ret;
 
@@ -177,9 +177,6 @@ int cli_ac_buildtrie(struct cl_node *root)
 	cli_dbgmsg("Pattern matcher not initialised\n");
 	return 0;
     }
-
-    if((ret = cli_addtypesigs(root)))
-	return ret;
 
     return cli_maketrans(root);
 }
@@ -209,7 +206,7 @@ static void cli_freepatt(struct cli_ac_patt *list)
     }
 }
 
-void cli_ac_free(struct cl_node *root)
+void cli_ac_free(struct cli_matcher *root)
 {
 	unsigned int i;
 
@@ -263,7 +260,7 @@ inline static int cli_findpos(const char *buffer, int offset, int length, const 
     return 1;
 }
 
-int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, int *partcnt, short otfrec, unsigned long int offset, unsigned long int *partoff, unsigned short ftype, int fd, unsigned long int *ftoffset)
+int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cli_matcher *root, int *partcnt, short otfrec, unsigned long int offset, unsigned long int *partoff, unsigned short ftype, int fd, unsigned long int *ftoffset)
 {
 	struct cli_ac_node *current;
 	struct cli_ac_patt *pt;

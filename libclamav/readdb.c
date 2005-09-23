@@ -60,7 +60,7 @@
 
 /* TODO: clean up the code */
 
-static int cli_ac_addsig(struct cl_node *root, const char *virname, const char *hexsig, int sigid, int parts, int partno, unsigned short type, unsigned int mindist, unsigned int maxdist, char *offset, unsigned short target)
+static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, int sigid, int parts, int partno, unsigned short type, unsigned int mindist, unsigned int maxdist, char *offset, unsigned short target)
 {
 	struct cli_ac_patt *new;
 	char *pt, *hex;
@@ -247,7 +247,7 @@ static int cli_ac_addsig(struct cl_node *root, const char *virname, const char *
     return 0;
 }
 
-int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig, unsigned short type, char *offset, unsigned short target)
+int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, unsigned short type, char *offset, unsigned short target)
 {
 	struct cli_bm_patt *bm_new;
 	char *pt, *hexcpy, *start, *n;
@@ -428,37 +428,86 @@ int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig,
     return 0;
 }
 
-static int cli_loaddb(FILE *fd, struct cl_node **root, unsigned int *signo)
+static int cli_initengine(struct cl_engine **engine)
+{
+	struct cli_matcher *root;
+	int i, ret;
+
+
+    if(!*engine) {
+	cli_dbgmsg("Initializing the engine structure\n");
+
+	*engine = (struct cl_engine *) cli_calloc(1, sizeof(struct cl_engine));
+	if(!*engine) {
+	    cli_errmsg("Can't allocate memory for the engine structure!\n");
+	    return CL_EMEM;
+	}
+
+	(*engine)->refcount = 1;
+
+	(*engine)->root = (struct cli_matcher **) cli_calloc(CL_TARGET_TABLE_SIZE, sizeof(struct cli_matcher *));
+	if(!(*engine)->root) {
+	    /* no need to free previously allocated memory here */
+	    cli_errmsg("Can't allocate memory for roots!\n");
+	    return CL_EMEM;
+	}
+    }
+
+    return 0;
+}
+
+static int cli_initroots(struct cl_engine *engine)
+{
+	int i, ret;
+	struct cli_matcher *root;
+
+
+    for(i = 0; i < CL_TARGET_TABLE_SIZE; i++) {
+	if(!engine->root[i]) {
+	    cli_dbgmsg("Initializing engine->root[%d]\n", i);
+	    root = engine->root[i] = (struct cli_matcher *) cli_calloc(1, sizeof(struct cli_matcher));
+	    if(!root) {
+		cli_errmsg("Can't initialise AC pattern matcher\n");
+		return CL_EMEM;
+	    }
+
+	    cli_dbgmsg("Initialising AC pattern matcher of root[%d]\n", i);
+	    root->ac_root =  (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));
+	    if(!root->ac_root) {
+		/* no need to free previously allocated memory here */
+		cli_errmsg("Can't initialise AC pattern matcher\n");
+		return CL_EMEM;
+	    }
+
+	    cli_dbgmsg("Initializing BM tables of root[%d]\n", i);
+	    if((ret = cli_bm_init(root))) {
+		cli_errmsg("Can't initialise BM pattern matcher\n");
+		return ret;
+	    }
+	}
+    }
+
+    return 0;
+}
+
+static int cli_loaddb(FILE *fd, struct cl_engine **engine, unsigned int *signo)
 {
 	char buffer[FILEBUFF], *pt, *start;
 	int line = 0, ret = 0;
+	struct cli_matcher *root;
 
 
-    if(!*root) {
-	cli_dbgmsg("Initializing main node\n");
-	*root = (struct cl_node *) cli_calloc(1, sizeof(struct cl_node));
-	if(!*root)
-	    return CL_EMEM;
-	(*root)->refcount = 1;
+    if((ret = cli_initengine(engine))) {
+	cl_free(*engine);
+	return ret;
     }
 
-    if(!(*root)->ac_root) {
-	cli_dbgmsg("Initializing trie\n");
-	(*root)->ac_root =  (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));
-	if(!(*root)->ac_root) {
-	    free(*root);
-	    cli_errmsg("Can't initialise AC pattern matcher\n");
-	    return CL_EMEM;
-	}
+    if((ret = cli_initroots(*engine))) {
+	cl_free(*engine);
+	return ret;
     }
 
-    if(!(*root)->bm_shift) {
-	cli_dbgmsg("Initializing BM tables\n");
-	if((ret = cli_bm_init(*root))) {
-	    cli_errmsg("Can't initialise BM pattern matcher\n");
-	    return ret;
-	}
-    }
+    root = (*engine)->root[0];
 
     while(fgets(buffer, FILEBUFF, fd)) {
 	line++;
@@ -476,7 +525,7 @@ static int cli_loaddb(FILE *fd, struct cl_node **root, unsigned int *signo)
 
 	if(*pt == '=') continue;
 
-	if((ret = cli_parse_add(*root, start, pt, 0, NULL, 0))) {
+	if((ret = cli_parse_add(root, start, pt, 0, NULL, 0))) {
 	    cli_errmsg("Problem parsing signature at line %d\n", line);
 	    ret = CL_EMALFDB;
 	    break;
@@ -485,13 +534,13 @@ static int cli_loaddb(FILE *fd, struct cl_node **root, unsigned int *signo)
 
     if(!line) {
 	cli_errmsg("Empty database file\n");
-	cl_free(*root);
+	cl_free(*engine);
 	return CL_EMALFDB;
     }
 
     if(ret) {
 	cli_errmsg("Problem parsing database at line %d\n", line);
-	cl_free(*root);
+	cl_free(*engine);
 	return ret;
     }
 
@@ -501,37 +550,22 @@ static int cli_loaddb(FILE *fd, struct cl_node **root, unsigned int *signo)
     return 0;
 }
 
-static int cli_loadndb(FILE *fd, struct cl_node **root, unsigned int *signo)
+static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo)
 {
 	char buffer[FILEBUFF], *sig, *virname, *offset, *pt;
+	struct cli_matcher *root;
 	int line = 0, sigs = 0, ret = 0;
 	unsigned short target;
 
 
-    if(!*root) {
-	cli_dbgmsg("Initializing main node\n");
-	*root = (struct cl_node *) cli_calloc(1, sizeof(struct cl_node));
-	if(!*root)
-	    return CL_EMEM;
-	(*root)->refcount = 1;
+    if((ret = cli_initengine(engine))) {
+	cl_free(*engine);
+	return ret;
     }
 
-    if(!(*root)->ac_root) {
-	cli_dbgmsg("Initializing trie\n");
-	(*root)->ac_root =  (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));
-	if(!(*root)->ac_root) {
-	    free(*root);
-	    cli_errmsg("Can't initialise AC pattern matcher\n");
-	    return CL_EMEM;
-	}
-    }
-
-    if(!(*root)->bm_shift) {
-	cli_dbgmsg("Initializing BM tables\n");
-	if((ret = cli_bm_init(*root))) {
-	    cli_errmsg("Can't initialise BM pattern matcher\n");
-	    return ret;
-	}
+    if((ret = cli_initroots(*engine))) {
+	cl_free(*engine);
+	return ret;
     }
 
     while(fgets(buffer, FILEBUFF, fd)) {
@@ -557,7 +591,7 @@ static int cli_loadndb(FILE *fd, struct cl_node **root, unsigned int *signo)
 	    }
 
 	    if(atoi(pt) > cl_retflevel()) {
-		cli_warnmsg("Signature for %s requires new ClamAV version. Please update!\n", virname);
+		cli_dbgmsg("Signature for %s requires new ClamAV version. Please update!\n", virname);
 		sigs--;
 		free(virname);
 		free(pt);
@@ -577,6 +611,16 @@ static int cli_loadndb(FILE *fd, struct cl_node **root, unsigned int *signo)
 	target = (unsigned short) atoi(pt);
 	free(pt);
 
+	if(target >= CL_TARGET_TABLE_SIZE) {
+	    cli_dbgmsg("Not supported target type in signature for %s\n", virname);
+	    sigs--;
+	    free(virname);
+	    free(pt);
+	    continue;
+	}
+
+	root = (*engine)->root[target];
+
 	if(!(offset = cli_strtok(buffer, 2, ":"))) {
 	    free(virname);
 	    ret = CL_EMALFDB;
@@ -593,7 +637,7 @@ static int cli_loadndb(FILE *fd, struct cl_node **root, unsigned int *signo)
 	    break;
 	}
 
-	if((ret = cli_parse_add(*root, virname, sig, 0, offset, target))) {
+	if((ret = cli_parse_add(root, virname, sig, 0, offset, target))) {
 	    cli_errmsg("Problem parsing signature at line %d\n", line);
 	    free(virname);
 	    free(offset);
@@ -608,13 +652,13 @@ static int cli_loadndb(FILE *fd, struct cl_node **root, unsigned int *signo)
 
     if(!line) {
 	cli_errmsg("Empty database file\n");
-	cl_free(*root);
+	cl_free(*engine);
 	return CL_EMALFDB;
     }
 
     if(ret) {
 	cli_errmsg("Problem parsing database at line %d\n", line);
-	cl_free(*root);
+	cl_free(*engine);
 	return ret;
     }
 
@@ -624,19 +668,16 @@ static int cli_loadndb(FILE *fd, struct cl_node **root, unsigned int *signo)
     return 0;
 }
 
-static int cli_loadhdb(FILE *fd, struct cl_node **root, unsigned int *signo, unsigned short fp)
+static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo, unsigned short fp)
 {
 	char buffer[FILEBUFF], *pt;
 	int line = 0, ret = 0;
 	struct cli_md5_node *new;
 
 
-    if(!*root) {
-	cli_dbgmsg("Initializing main node\n");
-	*root = (struct cl_node *) cli_calloc(1, sizeof(struct cl_node));
-	if(!*root)
-	    return CL_EMEM;
-	(*root)->refcount = 1;
+    if((ret = cli_initengine(engine))) {
+	cl_free(*engine);
+	return ret;
     }
 
     while(fgets(buffer, FILEBUFF, fd)) {
@@ -684,28 +725,28 @@ static int cli_loadhdb(FILE *fd, struct cl_node **root, unsigned int *signo, uns
 
 	new->viralias = cli_strtok(buffer, 3, ":"); /* aliases are optional */
 
-	if(!(*root)->md5_hlist) {
+	if(!(*engine)->md5_hlist) {
 	    cli_dbgmsg("Initializing md5 list structure\n");
-	    (*root)->md5_hlist = (struct cli_md5_node **) cli_calloc(256, sizeof(struct cli_md5_node *));
-	    if(!(*root)->md5_hlist) {
+	    (*engine)->md5_hlist = (struct cli_md5_node **) cli_calloc(256, sizeof(struct cli_md5_node *));
+	    if(!(*engine)->md5_hlist) {
 		ret = CL_EMEM;
 		break;
 	    }
 	}
 
-	new->next = (*root)->md5_hlist[new->md5[0] & 0xff];
-	(*root)->md5_hlist[new->md5[0] & 0xff] = new;
+	new->next = (*engine)->md5_hlist[new->md5[0] & 0xff];
+	(*engine)->md5_hlist[new->md5[0] & 0xff] = new;
     }
 
     if(!line) {
 	cli_errmsg("Empty database file\n");
-	cl_free(*root);
+	cl_free(*engine);
 	return CL_EMALFDB;
     }
 
     if(ret) {
 	cli_errmsg("Problem parsing database at line %d\n", line);
-	cl_free(*root);
+	cl_free(*engine);
 	return ret;
     }
 
@@ -715,19 +756,16 @@ static int cli_loadhdb(FILE *fd, struct cl_node **root, unsigned int *signo, uns
     return 0;
 }
 
-static int cli_loadmd(FILE *fd, struct cl_node **root, unsigned int *signo, int type)
+static int cli_loadmd(FILE *fd, struct cl_engine **engine, unsigned int *signo, int type)
 {
 	char buffer[FILEBUFF], *pt;
 	int line = 0, comments = 0, ret = 0;
 	struct cli_meta_node *new;
 
 
-    if(!*root) {
-	cli_dbgmsg("Initializing main node\n");
-	*root = (struct cl_node *) cli_calloc(1, sizeof(struct cl_node));
-	if(!*root)
-	    return CL_EMEM;
-	(*root)->refcount = 1;
+    if((ret = cli_initengine(engine))) {
+	cl_free(*engine);
+	return ret;
     }
 
     while(fgets(buffer, FILEBUFF, fd)) {
@@ -863,23 +901,23 @@ static int cli_loadmd(FILE *fd, struct cl_node **root, unsigned int *signo, int 
 	}
 
 	if(type == 1) {
-	    new->next = (*root)->zip_mlist;
-	    (*root)->zip_mlist = new;
+	    new->next = (*engine)->zip_mlist;
+	    (*engine)->zip_mlist = new;
 	} else {
-	    new->next = (*root)->rar_mlist;
-	    (*root)->rar_mlist = new;
+	    new->next = (*engine)->rar_mlist;
+	    (*engine)->rar_mlist = new;
 	}
     }
 
     if(!line) {
 	cli_errmsg("Empty database file\n");
-	cl_free(*root);
+	cl_free(*engine);
 	return CL_EMALFDB;
     }
 
     if(ret) {
 	cli_errmsg("Problem parsing database at line %d\n", line);
-	cl_free(*root);
+	cl_free(*engine);
 	return ret;
     }
 
@@ -889,7 +927,7 @@ static int cli_loadmd(FILE *fd, struct cl_node **root, unsigned int *signo, int 
     return 0;
 }
 
-int cl_loaddb(const char *filename, struct cl_node **root, unsigned int *signo)
+int cl_loaddb(const char *filename, struct cl_engine **engine, unsigned int *signo)
 {
 	FILE *fd;
 	int ret;
@@ -903,7 +941,7 @@ int cl_loaddb(const char *filename, struct cl_node **root, unsigned int *signo)
     cli_dbgmsg("Loading %s\n", filename);
 
     if(cli_strbcasestr(filename, ".db")  || cli_strbcasestr(filename, ".db2") || cli_strbcasestr(filename, ".db3")) {
-	ret = cli_loaddb(fd, root, signo);
+	ret = cli_loaddb(fd, engine, signo);
 
     } else if(cli_strbcasestr(filename, ".cvd")) {
 	    int warn = 0;
@@ -911,26 +949,26 @@ int cl_loaddb(const char *filename, struct cl_node **root, unsigned int *signo)
 	if(!strcmp(filename, "daily.cvd"))
 	    warn = 1;
 
-	ret = cli_cvdload(fd, root, signo, warn);
+	ret = cli_cvdload(fd, engine, signo, warn);
 
     } else if(cli_strbcasestr(filename, ".hdb")) {
-	ret = cli_loadhdb(fd, root, signo, 0);
+	ret = cli_loadhdb(fd, engine, signo, 0);
 
     } else if(cli_strbcasestr(filename, ".fp")) {
-	ret = cli_loadhdb(fd, root, signo, 1);
+	ret = cli_loadhdb(fd, engine, signo, 1);
 
     } else if(cli_strbcasestr(filename, ".ndb")) {
-	ret = cli_loadndb(fd, root, signo);
+	ret = cli_loadndb(fd, engine, signo);
 
     } else if(cli_strbcasestr(filename, ".zmd")) {
-	ret = cli_loadmd(fd, root, signo, 1);
+	ret = cli_loadmd(fd, engine, signo, 1);
 
     } else if(cli_strbcasestr(filename, ".rmd")) {
-	ret = cli_loadmd(fd, root, signo, 2);
+	ret = cli_loadmd(fd, engine, signo, 2);
 
     } else {
 	cli_dbgmsg("cl_loaddb: unknown extension - assuming old database format\n");
-	ret = cli_loaddb(fd, root, signo);
+	ret = cli_loaddb(fd, engine, signo);
     }
 
     if(ret)
@@ -940,7 +978,7 @@ int cl_loaddb(const char *filename, struct cl_node **root, unsigned int *signo)
     return ret;
 }
 
-int cl_loaddbdir(const char *dirname, struct cl_node **root, unsigned int *signo)
+int cl_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo)
 {
 	DIR *dd;
 	struct dirent *dent;
@@ -991,7 +1029,7 @@ int cl_loaddbdir(const char *dirname, struct cl_node **root, unsigned int *signo
 		    return CL_EMEM;
 		}
 		sprintf(dbfile, "%s/%s", dirname, dent->d_name);
-		if((ret = cl_loaddb(dbfile, root, signo))) {
+		if((ret = cl_loaddb(dbfile, engine, signo))) {
 		    cli_dbgmsg("cl_loaddbdir(): error loading database %s\n", dbfile);
 		    free(dbfile);
 		    closedir(dd);
