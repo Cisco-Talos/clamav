@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2004 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,6 +19,6 @@
 #ifndef __READDB_H
 #define __READDB_H
 
-int cli_parse_add(struct cl_node *root, const char *virname, const char *hexsig, unsigned short type, char *offset, unsigned short target);
+int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, unsigned short type, char *offset, unsigned short target);
 
 #endif

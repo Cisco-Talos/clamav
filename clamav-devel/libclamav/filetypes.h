@@ -56,6 +56,6 @@ typedef enum {
 
 cli_file_t cli_filetype(const char *buf, size_t buflen);
 cli_file_t cli_filetype2(int desc);
-int cli_addtypesigs(struct cl_node *root);
+int cli_addtypesigs(struct cl_engine *engine);
 
 #endif

@@ -148,7 +148,7 @@ static int cli_ddump(int desc, int offset, int size, const char *file)
 }
 */
 
-int cli_scanpe(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+int cli_scanpe(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	uint16_t e_magic; /* DOS signature ("MZ") */
 	uint16_t nsections;
@@ -695,7 +695,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 			lseek(ndesc, 0, SEEK_SET);
 
 			cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
-			if(cli_magic_scandesc(ndesc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS) {
+			if(cli_magic_scandesc(ndesc, virname, scanned, engine, limits, options, arec, mrec) == CL_VIRUS) {
 			    free(section_hdr);
 			    close(ndesc);
 			    if(!cli_leavetemps_flag)
@@ -884,7 +884,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 			lseek(ndesc, 0, SEEK_SET);
 
 			cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
-			if(cli_magic_scandesc(ndesc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS) {
+			if(cli_magic_scandesc(ndesc, virname, scanned, engine, limits, options, arec, mrec) == CL_VIRUS) {
 			    free(section_hdr);
 			    close(ndesc);
 			    if(!cli_leavetemps_flag)
@@ -1077,7 +1077,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 			lseek(ndesc, 0, SEEK_SET);
 
 			cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
-			if(cli_magic_scandesc(ndesc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS) {
+			if(cli_magic_scandesc(ndesc, virname, scanned, engine, limits, options, arec, mrec) == CL_VIRUS) {
 			    free(section_hdr);
 			    close(ndesc);
 			    if(!cli_leavetemps_flag)
@@ -1284,7 +1284,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		cli_dbgmsg("UPX/FSG: Decompressed data saved in %s\n", tempfile);
 
 	    cli_dbgmsg("***** Scanning decompressed file *****\n");
-	    if((ret = cli_magic_scandesc(ndesc, virname, scanned, root, limits, options, arec, mrec)) == CL_VIRUS) {
+	    if((ret = cli_magic_scandesc(ndesc, virname, scanned, engine, limits, options, arec, mrec)) == CL_VIRUS) {
 		close(ndesc);
 		if(!cli_leavetemps_flag)
 		    unlink(tempfile);
@@ -1382,7 +1382,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    fsync(ndesc);
 	    lseek(ndesc, 0, SEEK_SET);
 
-	    if(cli_magic_scandesc(ndesc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS) {
+	    if(cli_magic_scandesc(ndesc, virname, scanned, engine, limits, options, arec, mrec) == CL_VIRUS) {
 		free(section_hdr);
 		close(ndesc);
 		if(!cli_leavetemps_flag) {
@@ -1448,7 +1448,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    fsync(ndesc);
 	    lseek(ndesc, 0, SEEK_SET);
 
-	    if(cli_magic_scandesc(ndesc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS) {
+	    if(cli_magic_scandesc(ndesc, virname, scanned, engine, limits, options, arec, mrec) == CL_VIRUS) {
 		free(section_hdr);
 		close(ndesc);
 		if(!cli_leavetemps_flag) {

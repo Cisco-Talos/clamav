@@ -335,7 +335,7 @@ int cl_cvdverify(const char *file)
     return ret;
 }
 
-int cli_cvdload(FILE *fd, struct cl_node **root, unsigned int *signo, short warn)
+int cli_cvdload(FILE *fd, struct cl_engine **engine, unsigned int *signo, short warn)
 {
         char *dir, *tmp, *buffer;
 	struct cl_cvd cvd;
@@ -430,7 +430,7 @@ int cli_cvdload(FILE *fd, struct cl_node **root, unsigned int *signo, short warn
 	    /* end */
 
     /* load extracted directory */
-    cl_loaddbdir(dir, root, signo);
+    cl_loaddbdir(dir, engine, signo);
 
     cli_rmdirs(dir);
     free(dir);

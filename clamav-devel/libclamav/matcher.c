@@ -39,9 +39,9 @@
 #include "special.h"
 
 #define MD5_BLOCKSIZE 4096
+#define MAX(a,b) ((a > b) ? a : b)
 
-#define TARGET_TABLE_SIZE 7
-static int targettab[TARGET_TABLE_SIZE] = { 0, CL_TYPE_MSEXE, CL_TYPE_MSOLE2, CL_TYPE_HTML, CL_TYPE_MAIL, CL_TYPE_GRAPHICS, CL_TYPE_ELF };
+static int targettab[CL_TARGET_TABLE_SIZE] = { 0, CL_TYPE_MSEXE, CL_TYPE_MSOLE2, CL_TYPE_HTML, CL_TYPE_MAIL, CL_TYPE_GRAPHICS, CL_TYPE_ELF };
 
 extern short cli_debug_flag;
 
@@ -50,42 +50,84 @@ extern short cli_debug_flag;
 static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
-int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, unsigned short ftype)
+int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_engine *engine, unsigned short ftype)
 {
-	int ret, *partcnt;
+	int ret, i, tid = 0, *partcnt;
 	unsigned long int *partoff;
+	struct cli_matcher *groot, *troot = NULL;
 
 
-    if((partcnt = (int *) cli_calloc(root->ac_partsigs + 1, sizeof(int))) == NULL) {
-	cli_dbgmsg("cl_scanbuff(): unable to cli_calloc(%d, %d)\n", root->ac_partsigs + 1, sizeof(int));
+    if(!engine) {
+	cli_errmsg("cli_scanbuff: engine == NULL\n");
+	return CL_ENULLARG;
+    }
+
+    groot = engine->root[0]; /* generic signatures */
+
+    if(ftype) {
+	for(i = 0; i < CL_TARGET_TABLE_SIZE; i++) {
+	    if(targettab[i] == ftype) {
+		tid = i;
+		break;
+	    }
+	}
+	if(tid)
+	    troot = engine->root[tid];
+    }
+
+    if(troot) {
+
+	if((partcnt = (int *) cli_calloc(troot->ac_partsigs + 1, sizeof(int))) == NULL) {
+	    cli_dbgmsg("cl_scanbuff(): unable to cli_calloc(%d, %d)\n", troot->ac_partsigs + 1, sizeof(int));
+	    return CL_EMEM;
+	}
+
+	if((partoff = (unsigned long int *) cli_calloc(troot->ac_partsigs + 1, sizeof(unsigned long int))) == NULL) {
+	    cli_dbgmsg("cl_scanbuff(): unable to cli_calloc(%d, %d)\n", troot->ac_partsigs + 1, sizeof(unsigned long int));
+	    free(partcnt);
+	    return CL_EMEM;
+	}
+
+	if((ret = cli_bm_scanbuff(buffer, length, virname, troot, 0, ftype, -1)) != CL_VIRUS)
+	    ret = cli_ac_scanbuff(buffer, length, virname, troot, partcnt, 0, 0, partoff, ftype, -1, NULL);
+
+	free(partcnt);
+	free(partoff);
+
+	if(ret == CL_VIRUS)
+	    return ret;
+    }
+
+    if((partcnt = (int *) cli_calloc(groot->ac_partsigs + 1, sizeof(int))) == NULL) {
+	cli_dbgmsg("cl_scanbuff(): unable to cli_calloc(%d, %d)\n", groot->ac_partsigs + 1, sizeof(int));
 	return CL_EMEM;
     }
 
-    if((partoff = (unsigned long int *) cli_calloc(root->ac_partsigs + 1, sizeof(unsigned long int))) == NULL) {
-	cli_dbgmsg("cl_scanbuff(): unable to cli_calloc(%d, %d)\n", root->ac_partsigs + 1, sizeof(unsigned long int));
+    if((partoff = (unsigned long int *) cli_calloc(groot->ac_partsigs + 1, sizeof(unsigned long int))) == NULL) {
+	cli_dbgmsg("cl_scanbuff(): unable to cli_calloc(%d, %d)\n", groot->ac_partsigs + 1, sizeof(unsigned long int));
 	free(partcnt);
 	return CL_EMEM;
     }
 
-    if((ret = cli_bm_scanbuff(buffer, length, virname, root, 0, ftype, -1)) != CL_VIRUS)
-	ret = cli_ac_scanbuff(buffer, length, virname, root, partcnt, 0, 0, partoff, ftype, -1, NULL);
+    if((ret = cli_bm_scanbuff(buffer, length, virname, groot, 0, ftype, -1)) != CL_VIRUS)
+	ret = cli_ac_scanbuff(buffer, length, virname, groot, partcnt, 0, 0, partoff, ftype, -1, NULL);
 
     free(partcnt);
     free(partoff);
     return ret;
 }
 
-int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root)
+int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_engine *engine)
 {
-    return cli_scanbuff(buffer, length, virname, root, 0);
+    return cli_scanbuff(buffer, length, virname, engine, 0);
 }
 
-static struct cli_md5_node *cli_vermd5(const unsigned char *md5, const struct cl_node *root)
+static struct cli_md5_node *cli_vermd5(const unsigned char *md5, const struct cl_engine *engine)
 {
 	struct cli_md5_node *pt;
 
 
-    if(!(pt = root->md5_hlist[md5[0] & 0xff]))
+    if(!(pt = engine->md5_hlist[md5[0] & 0xff]))
 	return NULL;
 
     while(pt) {
@@ -183,20 +225,20 @@ static long int cli_caloff(const char *offstr, int fd, unsigned short ftype)
     return -1;
 }
 
-int cli_checkfp(int fd, const struct cl_node *root)
+int cli_checkfp(int fd, const struct cl_engine *engine)
 {
 	struct cli_md5_node *md5_node;
 	char *digest;
 
 
-    if(root->md5_hlist) {
+    if(engine->md5_hlist) {
 
 	if(!(digest = cli_md5digest(fd))) {
 	    cli_errmsg("cli_checkfp(): Can't generate MD5 checksum\n");
 	    return 0;
 	}
 
-	if((md5_node = cli_vermd5(digest, root)) && md5_node->fp) {
+	if((md5_node = cli_vermd5(digest, engine)) && md5_node->fp) {
 		struct stat sb;
 
 	    if(fstat(fd, &sb))
@@ -220,20 +262,6 @@ int cli_checkfp(int fd, const struct cl_node *root)
 int cli_validatesig(unsigned short target, unsigned short ftype, const char *offstr, unsigned long int fileoff, int desc, const char *virname)
 {
 
-
-    if(target) {
-	if(target >= TARGET_TABLE_SIZE) {
-	    cli_dbgmsg("Unknown target in signature (%s)\n", virname);
-	    return 0;
-	} else {
-	    if(targettab[target] != ftype) {
-		cli_dbgmsg("Type: %d, expected: %d (%s)\n", ftype, targettab[target], virname);
-		return 0;
-	    }
-	} 
-
-    }
-
     if(offstr && desc != -1) {
 	    long int off = cli_caloff(offstr, desc, ftype);
 
@@ -251,49 +279,90 @@ int cli_validatesig(unsigned short target, unsigned short ftype, const char *off
     return 1;
 }
 
-int cli_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, short otfrec, unsigned short ftype, unsigned long int *ftoffset)
+int cli_scandesc(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, short otfrec, unsigned short ftype, unsigned long int *ftoffset)
 {
  	char *buffer, *buff, *endbl, *pt;
-	int bytes, buffsize, length, ret, *partcnt, type = CL_CLEAN;
-	unsigned long int *partoff, offset = 0;
+	int bytes, buffsize, length, ret, *gpartcnt, *tpartcnt;
+	int type = CL_CLEAN, i, tid = 0;
+	unsigned int maxpatlen;
+	unsigned long int *gpartoff, *tpartoff, offset = 0;
 	MD5_CTX ctx;
 	unsigned char digest[16];
 	struct cli_md5_node *md5_node;
+	struct cli_matcher *groot, *troot = NULL;
 
 
-    if(!root) {
-	cli_errmsg("cli_scandesc: root == NULL\n");
+    if(!engine) {
+	cli_errmsg("cli_scandesc: engine == NULL\n");
 	return CL_ENULLARG;
     }
 
+    groot = engine->root[0]; /* generic signatures */
+
+    if(ftype) {
+	for(i = 0; i < CL_TARGET_TABLE_SIZE; i++) {
+	    if(targettab[i] == ftype) {
+		tid = i;
+		break;
+	    }
+	}
+	if(tid)
+	    troot = engine->root[tid];
+    }
+
+    if(troot)
+	maxpatlen = MAX(troot->maxpatlen, groot->maxpatlen);
+    else
+	maxpatlen = groot->maxpatlen;
+
     /* prepare the buffer */
-    buffsize = root->maxpatlen + SCANBUFF;
+    buffsize = maxpatlen + SCANBUFF;
     if(!(buffer = (char *) cli_calloc(buffsize, sizeof(char)))) {
 	cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%d)\n", buffsize);
 	return CL_EMEM;
     }
 
-    if((partcnt = (int *) cli_calloc(root->ac_partsigs + 1, sizeof(int))) == NULL) {
-	cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%d, %d)\n", root->ac_partsigs + 1, sizeof(int));
+    if((gpartcnt = (int *) cli_calloc(groot->ac_partsigs + 1, sizeof(int))) == NULL) {
+	cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%d, %d)\n", groot->ac_partsigs + 1, sizeof(int));
 	free(buffer);
 	return CL_EMEM;
     }
 
-    if((partoff = (unsigned long int *) cli_calloc(root->ac_partsigs + 1, sizeof(unsigned long int))) == NULL) {
-	cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%d, %d)\n", root->ac_partsigs + 1, sizeof(unsigned long int));
+    if((gpartoff = (unsigned long int *) cli_calloc(groot->ac_partsigs + 1, sizeof(unsigned long int))) == NULL) {
+	cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%d, %d)\n", groot->ac_partsigs + 1, sizeof(unsigned long int));
 	free(buffer);
-	free(partcnt);
+	free(gpartcnt);
 	return CL_EMEM;
     }
 
-    if(root->md5_hlist)
+    if(troot) {
+
+	if((tpartcnt = (int *) cli_calloc(troot->ac_partsigs + 1, sizeof(int))) == NULL) {
+	    cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%d, %d)\n", troot->ac_partsigs + 1, sizeof(int));
+	    free(buffer);
+	    free(gpartcnt);
+	    free(gpartoff);
+	    return CL_EMEM;
+	}
+
+	if((tpartoff = (unsigned long int *) cli_calloc(troot->ac_partsigs + 1, sizeof(unsigned long int))) == NULL) {
+	    cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%d, %d)\n", troot->ac_partsigs + 1, sizeof(unsigned long int));
+	    free(buffer);
+	    free(gpartcnt);
+	    free(gpartoff);
+	    free(tpartcnt);
+	    return CL_EMEM;
+	}
+    }
+
+    if(engine->md5_hlist)
 	MD5_Init(&ctx);
 
 
     buff = buffer;
-    buff += root->maxpatlen; /* pointer to read data block */
-    endbl = buff + SCANBUFF - root->maxpatlen; /* pointer to the last block
-						* length of root->maxpatlen
+    buff += maxpatlen; /* pointer to read data block */
+    endbl = buff + SCANBUFF - maxpatlen; /* pointer to the last block
+						* length of maxpatlen
 						*/
 
     pt = buff;
@@ -306,14 +375,34 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 	if(bytes < SCANBUFF)
 	    length -= SCANBUFF - bytes;
 
-	if(cli_bm_scanbuff(pt, length, virname, root, offset, ftype, desc) == CL_VIRUS ||
-	   (ret = cli_ac_scanbuff(pt, length, virname, root, partcnt, otfrec, offset, partoff, ftype, desc, ftoffset)) == CL_VIRUS) {
-	    free(buffer);
-	    free(partcnt);
-	    free(partoff);
+	if(troot) {
+	    if(cli_bm_scanbuff(pt, length, virname, troot, offset, ftype, desc) == CL_VIRUS ||
+	    (ret = cli_ac_scanbuff(pt, length, virname, troot, tpartcnt, otfrec, offset, tpartoff, ftype, desc, ftoffset)) == CL_VIRUS) {
+		free(buffer);
+		free(gpartcnt);
+		free(gpartoff);
+		free(tpartcnt);
+		free(tpartoff);
 
+		lseek(desc, 0, SEEK_SET);
+		if(cli_checkfp(desc, engine))
+		    return CL_CLEAN;
+		else
+		    return CL_VIRUS;
+	    }
+	}
+
+	if(cli_bm_scanbuff(pt, length, virname, groot, offset, ftype, desc) == CL_VIRUS ||
+	   (ret = cli_ac_scanbuff(pt, length, virname, groot, gpartcnt, otfrec, offset, gpartoff, ftype, desc, ftoffset)) == CL_VIRUS) {
+	    free(buffer);
+	    free(gpartcnt);
+	    free(gpartoff);
+	    if(troot) {
+		free(tpartcnt);
+		free(tpartoff);
+	    }
 	    lseek(desc, 0, SEEK_SET);
-	    if(cli_checkfp(desc, root))
+	    if(cli_checkfp(desc, engine))
 		return CL_CLEAN;
 	    else
 		return CL_VIRUS;
@@ -324,26 +413,30 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 	}
 
 	if(bytes == SCANBUFF) {
-	    memmove(buffer, endbl, root->maxpatlen);
+	    memmove(buffer, endbl, maxpatlen);
 
 	    if(pt == buffer) {
 		offset += SCANBUFF;
 	    } else {
-		offset += SCANBUFF - root->maxpatlen;
+		offset += SCANBUFF - maxpatlen;
 		pt = buffer;
 		length = buffsize;
 	    }
 	}
 
-	if(root->md5_hlist)
+	if(engine->md5_hlist)
 	    MD5_Update(&ctx, buff, bytes);
     }
 
     free(buffer);
-    free(partcnt);
-    free(partoff);
+    free(gpartcnt);
+    free(gpartoff);
+    if(troot) {
+	free(tpartcnt);
+	free(tpartoff);
+    }
 
-    if(root->md5_hlist) {
+    if(engine->md5_hlist) {
 	MD5_Final(digest, &ctx);
 
 	if(cli_debug_flag) {
@@ -359,7 +452,7 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 	    cli_dbgmsg("Calculated MD5 checksum: %s\n", md5str);
 	}
 
-	if((md5_node = cli_vermd5(digest, root)) && !md5_node->fp) {
+	if((md5_node = cli_vermd5(digest, engine)) && !md5_node->fp) {
 		struct stat sb;
 
 	    if(fstat(desc, &sb))
@@ -379,15 +472,26 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
     return otfrec ? type : CL_CLEAN;
 }
 
-int cl_build(struct cl_node *root)
+int cl_build(struct cl_engine *engine)
 {
-    return cli_ac_buildtrie(root);
+	int i, ret;
+	struct cli_matcher *root;
+
+    for(i = 0; i < CL_TARGET_TABLE_SIZE; i++)
+	if((root = engine->root[i]))
+	    cli_ac_buildtrie(root);
+    /* FIXME: check return values of cli_ac_buildtree */
+
+    if((ret = cli_addtypesigs(engine)))
+	return ret;
+
+    return 0;
 }
 
-struct cl_node *cl_dup(struct cl_node *root)
+struct cl_engine *cl_dup(struct cl_engine *engine)
 {
-    if(!root) {
-	cli_errmsg("cl_dup: root == NULL\n");
+    if(!engine) {
+	cli_errmsg("cl_dup: engine == NULL\n");
 	return NULL;
     }
 
@@ -395,23 +499,24 @@ struct cl_node *cl_dup(struct cl_node *root)
     pthread_mutex_lock(&cli_ref_mutex);
 #endif
 
-    root->refcount++;
-    
+    engine->refcount++;
+
 #ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&cli_ref_mutex);
 #endif
 
-    return root;
+    return engine;
 }
 
-void cl_free(struct cl_node *root)
+void cl_free(struct cl_engine *engine)
 {
 	int i;
 	struct cli_md5_node *md5pt, *md5h;
 	struct cli_meta_node *metapt, *metah;
+	struct cli_matcher *root;
 
-    if(!root) {
-	cli_errmsg("cl_free: root == NULL\n");
+    if(!engine) {
+	cli_errmsg("cl_free: engine == NULL\n");
 	return;
     }
 
@@ -419,8 +524,8 @@ void cl_free(struct cl_node *root)
     pthread_mutex_lock(&cli_ref_mutex);
 #endif
 
-    root->refcount--;
-    if (root->refcount) {
+    engine->refcount--;
+    if(engine->refcount) {
 #ifdef CL_THREAD_SAFE
 	pthread_mutex_unlock(&cli_ref_mutex);
 #endif
@@ -431,12 +536,16 @@ void cl_free(struct cl_node *root)
     pthread_mutex_unlock(&cli_ref_mutex);
 #endif
 
-    cli_ac_free(root);
-    cli_bm_free(root);
+    for(i = 0; i < CL_TARGET_TABLE_SIZE; i++) {
+	if((root = engine->root[i])) {
+	    cli_ac_free(root);
+	    cli_bm_free(root);
+	}
+    }
 
-    if(root->md5_hlist) {
+    if(engine->md5_hlist) {
 	for(i = 0; i < 256; i++) {
-	    md5pt = root->md5_hlist[i];
+	    md5pt = engine->md5_hlist[i];
 	    while(md5pt) {
 		md5h = md5pt;
 		md5pt = md5pt->next;
@@ -447,10 +556,10 @@ void cl_free(struct cl_node *root)
 		free(md5h);
 	    }
 	}
-	free(root->md5_hlist);
+	free(engine->md5_hlist);
     }
 
-    metapt = root->zip_mlist;
+    metapt = engine->zip_mlist;
     while(metapt) {
 	metah = metapt;
 	metapt = metapt->next;
@@ -460,7 +569,7 @@ void cl_free(struct cl_node *root)
 	free(metah);
     }
 
-    metapt = root->rar_mlist;
+    metapt = engine->rar_mlist;
     while(metapt) {
 	metah = metapt;
 	metapt = metapt->next;
@@ -470,15 +579,15 @@ void cl_free(struct cl_node *root)
 	free(metah);
     }
 
-    free(root);
+    free(engine);
 }
 
-int cl_buildtrie(struct cl_node *root) /* for backward compatibility */
+int cl_buildtrie(struct cl_engine *engine) /* for backward compatibility */
 {
-    return cl_build(root);
+    return cl_build(engine);
 }
 
-void cl_freetrie(struct cl_node *root) /* for backward compatibility */
+void cl_freetrie(struct cl_engine *engine) /* for backward compatibility */
 {
-    cl_free(root);
+    cl_free(engine);
 }

@@ -54,7 +54,7 @@ static inline uint32_t EC32(uint32_t v)
 	return ((v >> 24) | ((v & 0x00FF0000) >> 8) | ((v & 0x0000FF00) << 8) | (v << 24));
 }
 
-int cli_scanelf(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+int cli_scanelf(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	struct elf_file_hdr32 file_hdr;
 	struct elf_section_hdr32 *section_hdr;

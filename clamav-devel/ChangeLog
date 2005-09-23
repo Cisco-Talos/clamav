@@ -1,3 +1,10 @@
+Fri Sep 23 04:05:07 CEST 2005 (tk)
+----------------------------------
+  * libclamav/clamav.h: split cl_node into cli_matcher and cl_engine
+  * libclamav/readdb.c: read signatures into separate trees depending on
+			their type
+  * libclamav/matcher.c: scan data with suitable trees
+
 Mon Sep 19 01:15:02 CEST 2005 (tk)
 ----------------------------------
   * libclamav/elf.c: add cli_elfheader()

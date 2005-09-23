@@ -272,9 +272,12 @@ cli_file_t cli_filetype2(int desc)
     return ret;
 }
 
-int cli_addtypesigs(struct cl_node *root)
+int cli_addtypesigs(struct cl_engine *engine)
 {
 	int i, ret;
+	struct cli_matcher *root;
+
+    root = engine->root[0];
 
     for(i = 0; cli_smagic[i].sig; i++) {
 	if((ret = cli_parse_add(root, cli_smagic[i].descr, cli_smagic[i].sig, cli_smagic[i].type, NULL, 0))) {

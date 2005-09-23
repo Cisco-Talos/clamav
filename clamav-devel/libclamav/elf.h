@@ -56,7 +56,7 @@ struct elf_section_hdr32 {
     uint32_t sh_entsize;
 };
 
-int cli_scanelf(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec);
+int cli_scanelf(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec);
 
 int cli_elfheader(int desc, struct cli_exe_info *elfinfo);
 
