@@ -1,3 +1,8 @@
+Mon Sep 26 19:40:14 CEST 2005 (tk)
+----------------------------------
+  * libclamav/matcher.c: cl_build: cli_addtypesigs was corrupting AC trie in
+			 engine->root[0]
+
 Fri Sep 23 04:05:07 CEST 2005 (tk)
 ----------------------------------
   * libclamav/clamav.h: split cl_node into cli_matcher and cl_engine

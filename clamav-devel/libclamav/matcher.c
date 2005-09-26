@@ -449,7 +449,6 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 		pt += 2;
 	    }
 	    md5str[32] = 0;
-	    cli_dbgmsg("Calculated MD5 checksum: %s\n", md5str);
 	}
 
 	if((md5_node = cli_vermd5(digest, engine)) && !md5_node->fp) {
@@ -477,13 +476,14 @@ int cl_build(struct cl_engine *engine)
 	int i, ret;
 	struct cli_matcher *root;
 
+
+    if((ret = cli_addtypesigs(engine)))
+	return ret;
+
     for(i = 0; i < CL_TARGET_TABLE_SIZE; i++)
 	if((root = engine->root[i]))
 	    cli_ac_buildtrie(root);
     /* FIXME: check return values of cli_ac_buildtree */
-
-    if((ret = cli_addtypesigs(engine)))
-	return ret;
 
     return 0;
 }
