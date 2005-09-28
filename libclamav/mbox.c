@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.258 2005/08/12 12:00:06 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.259 2005/09/28 10:12:56 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3548,6 +3548,11 @@ checkURLs(message *m, const char *dir)
 	for(i = 0; i < hrefs.count; i++) {
 		const char *url = (const char *)hrefs.value[i];
 
+		/*
+		 * TODO: If it's an image source, it'd be nice to note beacons
+		 *	where width="0" height="0", which needs support from
+		 *	the HTML normalise code
+		 */
 		if(strncasecmp("http://", url, 7) == 0) {
 			char *ptr;
 #ifdef	WITH_CURL
@@ -3572,6 +3577,17 @@ checkURLs(message *m, const char *dir)
 				cli_warnmsg("URL %s will not be scanned\n", url);
 				break;
 			}
+
+			/*
+			 * What about foreign character spoofing?
+			 * It would be useful be able to check if url
+			 *	is the same as the text displayed, e.g.
+			 *	<a href="http://dodgy.biz">www.paypal.com</a>
+			 *	but that needs support from HTML normalise
+			 */
+			if(strchr(url, '%') && strchr(url, '@'))
+				cli_warnmsg("Possible URL spoofing attempt noticed, but not yet handled");
+
 			(void)tableInsert(t, url, 1);
 			cli_dbgmsg("Downloading URL %s to be scanned\n", url);
 			strncpy(name, url, sizeof(name) - 1);
