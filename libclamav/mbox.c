@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.259 2005/09/28 10:12:56 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.260 2005/09/30 14:58:37 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3586,7 +3586,7 @@ checkURLs(message *m, const char *dir)
 			 *	but that needs support from HTML normalise
 			 */
 			if(strchr(url, '%') && strchr(url, '@'))
-				cli_warnmsg("Possible URL spoofing attempt noticed, but not yet handled");
+				cli_warnmsg("Possible URL spoofing attempt noticed, but not yet handled (%s)\n", url);
 
 			(void)tableInsert(t, url, 1);
 			cli_dbgmsg("Downloading URL %s to be scanned\n", url);
