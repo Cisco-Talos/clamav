@@ -1,3 +1,7 @@
+Fri Sep 30 17:00:49 BST 2005 (njh)
+----------------------------------
+  * clamav-milter:	Added --freshclam-monitor
+
 Mon Sep 26 19:40:14 CEST 2005 (tk)
 ----------------------------------
   * libclamav/matcher.c: cl_build: cli_addtypesigs was corrupting AC trie in

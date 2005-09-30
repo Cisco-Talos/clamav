@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.219 2005/08/24 19:02:11 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.220 2005/09/30 16:01:57 nigelhorne Exp $";
 
-#define	CM_VERSION	"devel-240805"
+#define	CM_VERSION	"devel-300905"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -128,6 +128,9 @@ typedef	unsigned int	in_addr_t;
 #endif
 
 #define	VERSION_LENGTH	128
+
+/* DO NOT ENABLE THIS, it is for my research only */
+/*#define	REPORT_PHISHING	"reportphishing@antiphishing.org"*/
 
 /*#define	SESSION	/*
 		 * Keep one command connection open to clamd, otherwise a new
@@ -374,6 +377,11 @@ static	pthread_mutex_t	n_children_mutex = PTHREAD_MUTEX_INITIALIZER;
 static	pthread_cond_t	n_children_cond = PTHREAD_COND_INITIALIZER;
 static	volatile	unsigned	int	n_children = 0;
 static	unsigned	int	max_children = 0;
+static	unsigned	int	freshclam_monitor = 10;	/*
+							 * how often, in
+							 * seconds, to scan for
+							 * database updates
+							 */
 static	int	child_timeout = 300;	/* number of seconds to wait for
 					 * a child to die. Set to 0 to
 					 * wait forever
@@ -477,6 +485,7 @@ help(void)
 	puts(_("\t--dont-scan-on-error\t-d\tPass e-mails through unscanned if a system error occurs."));
 	puts(_("\t--dont-wait\t\t\tAsk remote end to resend if max-children exceeded."));
 	puts(_("\t--external\t\t-e\tUse an external scanner (usually clamd)."));
+	puts(_("\t--freshclam-monitor=SECS\t-M SECS\tHow often to check for database update."));
 	puts(_("\t--from=EMAIL\t\t-a EMAIL\tError messages come from here."));
 	puts(_("\t--force-scan\t\t-f\tForce scan all messages (overrides (-o and -l)."));
 	puts(_("\t--help\t\t\t-h\tThis message."));
@@ -569,9 +578,9 @@ main(int argc, char **argv)
 	for(;;) {
 		int opt_index = 0;
 #ifdef	CL_DEBUG
-		const char *args = "a:AbB:c:CdDefF:lLm:nNop:PqQ:hHs:St:T:U:VwW:x:0:";
+		const char *args = "a:AbB:c:CdDefF:lLm:M:nNop:PqQ:hHs:St:T:U:VwW:x:0:";
 #else
-		const char *args = "a:AbB:c:CdDefF:lLm:nNop:PqQ:hHs:St:T:U:VwW:0:";
+		const char *args = "a:AbB:c:CdDefF:lLm:M:nNop:PqQ:hHs:St:T:U:VwW:0:";
 #endif
 
 		static struct option long_options[] = {
@@ -650,6 +659,12 @@ main(int argc, char **argv)
 			{
 				"max-children", 1, NULL, 'm'
 			},
+			{	
+				"freshclam-monitor", 1, NULL, 'M'
+			},
+			{
+				"sendmail-cf", 1, NULL, '0'
+			},
 			{
 				"server", 1, NULL, 's'
 			},
@@ -670,9 +685,6 @@ main(int argc, char **argv)
 			},
 			{
 				"version", 0, NULL, 'V'
-			},
-			{
-				"sendmail-cf", 1, NULL, '0'
 			},
 #ifdef	CL_DEBUG
 			{
@@ -747,6 +759,9 @@ main(int argc, char **argv)
 			case 'm':	/* maximum number of children */
 				max_children = atoi(optarg);
 				break;
+			case 'M':	/* how often to monitor for freshclam */
+				freshclam_monitor = atoi(optarg);
+				break;
 			case 'n':	/* don't add X-Virus-Scanned */
 				nflag++;
 				smfilter.xxfi_flags &= ~(SMFIF_ADDHDRS|SMFIF_CHGHDRS);
@@ -815,9 +830,9 @@ main(int argc, char **argv)
 #endif
 			default:
 #ifdef	CL_DEBUG
-				fprintf(stderr, "Usage: %s [-b] [-c FILE] [-F FILE] [--max-children=num] [-e] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-s SERVER] [-S] [-x#] [-U PATH] socket-addr\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-b] [-c FILE] [-F FILE] [--max-children=num] [-e] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-s SERVER] [-S] [-x#] [-U PATH] [-M#] socket-addr\n", argv[0]);
 #else
-				fprintf(stderr, "Usage: %s [-b] [-c FILE] [-F FILE] [--max-children=num] [-e] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-s SERVER] [-S] [-U PATH] socket-addr\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-b] [-c FILE] [-F FILE] [--max-children=num] [-e] [-l] [-o] [-p address] [-P] [-q] [-Q USER] [-s SERVER] [-S] [-U PATH] [-M#] socket-addr\n", argv[0]);
 #endif
 				return EX_USAGE;
 		}
@@ -1086,6 +1101,10 @@ main(int argc, char **argv)
 	if(!external) {
 		if(max_children == 0) {
 			fprintf(stderr, _("%s: --max-children must be given if --external is not given\n"), argv[0]);
+			return EX_CONFIG;
+		}
+		if(freshclam_monitor <= 0) {
+			fprintf(stderr, _("%s: --freshclam_monitor must be at least one second\n"), argv[0]);
 			return EX_CONFIG;
 		}
 #if	0
@@ -2232,7 +2251,13 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			 * Patch from Damian Menscher <menscher@uiuc.edu> to
 			 * ensure it wakes up when a child goes away
 			 */
-			do
+			do {
+				if(use_syslog)
+					/* LOG_INFO */
+					syslog(LOG_NOTICE,
+						_("n_children %u: waiting %d seconds for some to exit"),
+						n_children, child_timeout);
+
 				if(child_timeout == 0) {
 					pthread_cond_wait(&n_children_cond, &n_children_mutex);
 					rc = 0;
@@ -2246,7 +2271,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 					rc = pthread_cond_timedwait(&n_children_cond, &n_children_mutex, &timeout);
 				}
-			while((n_children >= max_children) && (rc != ETIMEDOUT));
+			} while((n_children >= max_children) && (rc != ETIMEDOUT));
 		}
 		n_children++;
 
@@ -2805,6 +2830,10 @@ clamfi_eom(SMFICTX *ctx)
 		smfi_addheader(ctx, "X-Virus-Scanned", buf);
 	}
 
+	/*
+	 * TODO: it would be useful to add a header if mbox.c/FOLLOWURLS was
+	 *      exceeded
+	 */
 	if(strstr(mess, "ERROR") != NULL) {
 		if(strstr(mess, "Size limit reached") != NULL) {
 			/*
@@ -2827,7 +2856,7 @@ clamfi_eom(SMFICTX *ctx)
 		rc = cl_error;
 	} else if((ptr = strstr(mess, "FOUND")) != NULL) {
 		/*
-		 * Fixme: This will give false positives if the
+		 * FIXME: This will give false positives if the
 		 *	word "FOUND" is in the email, e.g. the
 		 *	quarantine directory is /tmp/VIRUSES-FOUND
 		 */
@@ -3029,6 +3058,42 @@ clamfi_eom(SMFICTX *ctx)
 			privdata->filename = NULL;
 		}
 
+#ifdef	REPORT_PHISHING
+		if((quarantine == NULL) && (!advisory) &&
+		   (strstr(virusname, "Phishing") != NULL)) {
+			for(to = privdata->to; *to; to++) {
+				smfi_delrcpt(ctx, *to);
+				smfi_addheader(ctx, "X-Original-To", *to);
+				free(*to);
+			}
+			free(privdata->to);
+			privdata->to = NULL;
+			if(smfi_addrcpt(ctx, REPORT_PHISHING) == MI_FAILURE) {
+				/* It's a remote site */
+				if(privdata->filename) {
+					char cmd[128];
+
+					snprintf(cmd, sizeof(cmd), "rmail %s < %s", REPORT_PHISHING, privdata->filename);
+					if(system(cmd) == 0)
+						if(use_syslog)
+							syslog(LOG_INFO, _("Reported phishing to %s"), REPORT_PHISHING);
+
+				}
+				if(use_syslog)
+					syslog(LOG_ERR, _("Can't set anti-phish header"));
+				else
+					cli_warnmsg(_("Can't set anti-phish header\n"));
+				rc = (privdata->discard) ? SMFIS_DISCARD : SMFIS_REJECT;
+			} else {
+				setsubject(ctx, "Phishing attempt trapped and redirected");
+
+				if(use_syslog)
+					syslog(LOG_DEBUG, "Redirected phish to %s", REPORT_PHISHING);
+				cli_dbgmsg("Redirected phish to %s\n", REPORT_PHISHING);
+			}
+		} else
+#endif
+
 		if(quarantine) {
 			for(to = privdata->to; *to; to++) {
 				smfi_delrcpt(ctx, *to);
@@ -3048,10 +3113,17 @@ clamfi_eom(SMFICTX *ctx)
 					cli_warnmsg(_("Can't set quarantine user %s\n"), quarantine);
 				rc = (privdata->discard) ? SMFIS_DISCARD : SMFIS_REJECT;
 			} else {
+#ifdef	REPORT_PHISHING
+				if(strstr(virusname, "Phishing") != NULL) {
+					(void)smfi_addrcpt(ctx, REPORT_PHISHING);
+					setsubject(ctx, "Blocked Phishing Attempt");
+				} else
+#endif
+					setsubject(ctx, virusname);
+
 				if(use_syslog)
 					syslog(LOG_DEBUG, "Redirected virus to %s", quarantine);
 				cli_dbgmsg("Redirected virus to %s\n", quarantine);
-				setsubject(ctx, virusname);
 			}
 		} else if(advisory)
 			setsubject(ctx, virusname);
@@ -4420,7 +4492,7 @@ watchdog(void *a)
 
 		gettimeofday(&tp, NULL);
 
-		ts.tv_sec = tp.tv_sec + readTimeout - 1;
+		ts.tv_sec = tp.tv_sec + freshclam_monitor;
 		ts.tv_nsec = tp.tv_usec * 1000;
 		cli_dbgmsg("watchdog sleeps\n");
 		pthread_mutex_lock(&watchdog_mutex);
@@ -4572,7 +4644,7 @@ watchdog(void *a)
 
 		gettimeofday(&tp, NULL);
 
-		ts.tv_sec = tp.tv_sec + readTimeout - 1;
+		ts.tv_sec = tp.tv_sec + freshclam_monitor;
 		ts.tv_nsec = tp.tv_usec * 1000;
 		cli_dbgmsg("watchdog sleeps\n");
 		pthread_mutex_lock(&watchdog_mutex);
