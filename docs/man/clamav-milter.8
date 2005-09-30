@@ -106,6 +106,15 @@ the scanning.
 Also scan messages sent from LAN. You probably want this especially if
 your LAN is populated by machines running Windows or DOS.
 .TP
+\fB-M, \-\-freshclam-monitor\fR
+When not running in external mode, this option tells clamav\-milter how
+often to check that the virus database has been updated, probably by
+freshclam(1).
+The option takes one parameter, which is a number in seconds.
+The default is 300 seconds.
+The checking cannot be disabled, a value less than or equal to zero will be
+rejected.
+.TP
 \fB-n, \-\-noxheader\fR
 Usually clamav\-milter adds headings to messages that are scanned.
 The headers are of the form "X-Virus-Scanned: version",
