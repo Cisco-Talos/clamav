@@ -665,7 +665,7 @@ int cli_filecopy(const char *src, const char *dest)
     if((s = open(src, O_RDONLY)) == -1)
 	return -1;
 
-    if((d = open(dest, O_CREAT|O_WRONLY|O_TRUNC|O_BINARY)) == -1) {
+    if((d = open(dest, O_CREAT|O_WRONLY|O_TRUNC|O_BINARY, S_IRWXU)) == -1) {
 	close(s);
 	return -1;
     }
