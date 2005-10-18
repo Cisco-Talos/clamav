@@ -681,3 +681,89 @@ int cli_filecopy(const char *src, const char *dest)
 
     return close(d);
 }
+
+/* Implement a generic bitset */
+
+#define BITS_PER_CHAR (8)
+#define BITSET_DEFAULT_SIZE (1024)
+#define FALSE (0)
+#define TRUE (1)
+
+static unsigned long nearest_power(unsigned long num)
+{
+	unsigned long n = BITSET_DEFAULT_SIZE;
+
+	while (n < num) {
+		n <<= 1;
+		if (n == 0) {
+			return num;
+		}
+	}
+	return n;
+}
+
+bitset_t *cli_bitset_init()
+{
+	bitset_t *bs;
+	
+	bs = malloc(sizeof(bitset_t));
+	if (!bs) {
+		return NULL;
+	}
+	bs->length = BITSET_DEFAULT_SIZE;
+	bs->bitset = calloc(BITSET_DEFAULT_SIZE, 1);
+	return bs;
+}
+
+void cli_bitset_free(bitset_t *bs)
+{
+	if (!bs) {
+		return;
+	}
+	if (bs->bitset) {
+		free(bs->bitset);
+	}
+	free(bs);
+}
+
+static bitset_t *bitset_realloc(bitset_t *bs, unsigned long min_size)
+{
+	unsigned long new_length;
+	
+	new_length = nearest_power(min_size);
+	bs->bitset = (unsigned char *) realloc(bs->bitset, new_length);
+	if (!bs->bitset) {
+		return NULL;
+	}
+	memset(bs->bitset+bs->length, 0, new_length-bs->length);
+	bs->length = new_length;
+	return bs;
+}
+
+int cli_bitset_set(bitset_t *bs, unsigned long bit_offset)
+{
+	unsigned long char_offset;
+	
+	char_offset = bit_offset / BITS_PER_CHAR;
+	bit_offset = bit_offset % BITS_PER_CHAR;
+
+	if (char_offset >= bs->length) {
+		bs = bitset_realloc(bs, char_offset+1);
+		if (!bs) {
+			return FALSE;
+		}
+	}
+	bs->bitset[char_offset] |= ((unsigned char)1 << bit_offset);
+	return TRUE;
+}
+
+int cli_bitset_test(bitset_t *bs, unsigned long bit_offset)
+{
+	unsigned long char_offset;
+	
+	char_offset = bit_offset / BITS_PER_CHAR;
+	bit_offset = bit_offset % BITS_PER_CHAR;
+	
+	return (bs->bitset[char_offset] & ((unsigned char)1 << bit_offset));
+}
+

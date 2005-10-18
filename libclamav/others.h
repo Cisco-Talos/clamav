@@ -23,6 +23,12 @@
 #include <stdlib.h>
 #include "cltypes.h"
 
+typedef struct bitset_tag
+{
+        unsigned char *bitset;
+        unsigned long length;
+} bitset_t;
+
 void cli_warnmsg(const char *str, ...);
 void cli_errmsg(const char *str, ...);
 void cli_dbgmsg(const char *str, ...);
@@ -43,5 +49,8 @@ char *cli_gentempdesc(const char *dir, int *fd);
 char *cli_gentempstream(const char *dir, FILE **fs);
 unsigned int cli_rndnum(unsigned int max);
 int cli_filecopy(const char *src, const char *dest);
-
+bitset_t *cli_bitset_init();
+void cli_bitset_free(bitset_t *bs);
+int cli_bitset_set(bitset_t *bs, unsigned long bit_offset);
+int cli_bitset_test(bitset_t *bs, unsigned long bit_offset);
 #endif
