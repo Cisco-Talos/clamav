@@ -111,6 +111,7 @@ typedef struct ole2_header_tag
 	int32_t sbat_root_start __attribute__ ((packed));
 	unsigned char *m_area;
 	off_t m_length;
+	bitset_t *bitset;
 } ole2_header_t;
 
 typedef struct property_tag
@@ -468,7 +469,7 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 	if ((prop_index < 0) || (rec_level > 100) || (*file_count > 100000)) {
 		return;
 	}
-	
+
 	if (limits && limits->maxfiles && (*file_count > limits->maxfiles)) {
 		cli_dbgmsg("OLE2: File limit reached (max: %d)\n", limits->maxfiles);
 		return;
@@ -507,6 +508,17 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 	prop_block[index].size = ole2_endian_convert_32(prop_block[index].size);
 	
 	print_ole2_property(&prop_block[index]);
+
+	/* Check we aren't in a loop */
+	if (cli_bitset_test(hdr->bitset, (unsigned long) prop_index)) {
+		/* Loop in property tree detected */
+		cli_dbgmsg("OLE2: Property tree loop detected at index %d\n", prop_index);
+		return;
+	}
+	if (!cli_bitset_set(hdr->bitset, (unsigned long) prop_index)) {
+		return;
+	}
+
 	switch (prop_block[index].type) {
 		case 5: /* Root Entry */
 			if ((prop_index != 0) || (rec_level !=0) ||
@@ -745,7 +757,7 @@ int cli_ole2_extract(int fd, const char *dirname, const struct cl_limits *limits
 	
 	/* size of header - size of other values in struct */
 	hdr_size = sizeof(struct ole2_header_tag) - sizeof(int32_t) -
-			sizeof(unsigned char *) - sizeof(off_t);
+			sizeof(unsigned char *) - sizeof(off_t) - sizeof(bitset_t *);
 
 	hdr.m_area = NULL;
 
@@ -791,7 +803,12 @@ int cli_ole2_extract(int fd, const char *dirname, const struct cl_limits *limits
 	hdr.xbat_count = ole2_endian_convert_32(hdr.xbat_count);
 
 	hdr.sbat_root_start = -1;
-	
+
+	hdr.bitset = cli_bitset_init();
+	if (!hdr.bitset) {
+		return CL_EOLE2;
+	}
+
 	if (strncmp(hdr.magic, magic_id, 8) != 0) {
 		cli_dbgmsg("OLE2 magic failed!\n");
 #ifdef HAVE_MMAP
@@ -799,6 +816,7 @@ int cli_ole2_extract(int fd, const char *dirname, const struct cl_limits *limits
 			munmap(hdr.m_area, hdr.m_length);
 		}
 #endif
+		cli_bitset_free(hdr.bitset);
 		return CL_EOLE2;
 	}
 
@@ -831,5 +849,6 @@ abort:
 		munmap(hdr.m_area, hdr.m_length);
 	}
 #endif
+	cli_bitset_free(hdr.bitset);
 	return 0;
 }

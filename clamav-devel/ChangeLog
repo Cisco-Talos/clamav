@@ -1,3 +1,9 @@
+Tue Oct 18 11:29:04 BST 2005 (trog)
+-----------------------------------
+  * libclamav/others.c,h: Add generic bitset implementation
+
+  * libclamav/ole2_extract.c: Make sure the property tree doesn't loop
+
 Fri Sep 30 17:00:49 BST 2005 (njh)
 ----------------------------------
   * clamav-milter:	Added --freshclam-monitor
