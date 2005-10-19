@@ -1,3 +1,8 @@
+Thu Oct 20 00:54:13 CEST 2005 (tk)
+----------------------------------
+  * libclamav/filetypes.c: cli_addtypesigs: initialise AC matcher in
+			   engine->root[0] if needed
+
 Tue Oct 18 11:29:04 BST 2005 (trog)
 -----------------------------------
   * libclamav/others.c,h: Add generic bitset implementation

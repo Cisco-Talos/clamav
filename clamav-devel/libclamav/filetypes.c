@@ -277,11 +277,29 @@ int cli_addtypesigs(struct cl_engine *engine)
 	int i, ret;
 	struct cli_matcher *root;
 
-    root = engine->root[0];
+
+    if(!engine->root[0]) {
+	cli_dbgmsg("cli_addtypesigs: Need to allocate AC trie in engine->root[0]\n");
+	root = engine->root[0] = (struct cli_matcher *) cli_calloc(1, sizeof(struct cli_matcher));
+	if(!root) {
+	    cli_errmsg("cli_addtypesigs: Can't initialise AC pattern matcher\n");
+	    return CL_EMEM;
+	}
+	root->ac_root =  (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));
+	if(!root->ac_root) {
+	    cli_errmsg("cli_addtypesigs: Can't initialise AC pattern matcher\n");
+	    /* No need to free previously allocated memory here - all engine
+	     * elements will be properly freed by cl_free()
+	     */
+	    return CL_EMEM;
+	}
+    } else {
+	root = engine->root[0];
+    }
 
     for(i = 0; cli_smagic[i].sig; i++) {
 	if((ret = cli_parse_add(root, cli_smagic[i].descr, cli_smagic[i].sig, cli_smagic[i].type, NULL, 0))) {
-	    cli_errmsg("cli_addtypesigs(): Problem adding signature for %s\n", cli_smagic[i].descr);
+	    cli_errmsg("cli_addtypesigs: Problem adding signature for %s\n", cli_smagic[i].descr);
 	    return ret;
 	}
     }
