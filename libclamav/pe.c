@@ -730,6 +730,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 			break;
 		}
 
+		break; /* were done with 2 */
 	    }
 	}
 
