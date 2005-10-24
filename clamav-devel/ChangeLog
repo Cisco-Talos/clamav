@@ -1,3 +1,7 @@
+Mon Oct 24 12:29:31 CEST 2005 (acab)
+------------------------------------
+  * libclamav/pe.c: fixed possible infinite loop, reported by Christoph 
+
 Thu Oct 20 00:54:13 CEST 2005 (tk)
 ----------------------------------
   * libclamav/filetypes.c: cli_addtypesigs: initialise AC matcher in
