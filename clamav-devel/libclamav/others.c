@@ -682,7 +682,7 @@ int cli_filecopy(const char *src, const char *dest)
     return close(d);
 }
 
-/* Implement a generic bitset */
+/* Implement a generic bitset, trog@clamav.net */
 
 #define BITS_PER_CHAR (8)
 #define BITSET_DEFAULT_SIZE (1024)
@@ -706,12 +706,12 @@ bitset_t *cli_bitset_init()
 {
 	bitset_t *bs;
 	
-	bs = malloc(sizeof(bitset_t));
+	bs = cli_malloc(sizeof(bitset_t));
 	if (!bs) {
 		return NULL;
 	}
 	bs->length = BITSET_DEFAULT_SIZE;
-	bs->bitset = calloc(BITSET_DEFAULT_SIZE, 1);
+	bs->bitset = cli_calloc(BITSET_DEFAULT_SIZE, 1);
 	return bs;
 }
 
@@ -731,7 +731,7 @@ static bitset_t *bitset_realloc(bitset_t *bs, unsigned long min_size)
 	unsigned long new_length;
 	
 	new_length = nearest_power(min_size);
-	bs->bitset = (unsigned char *) realloc(bs->bitset, new_length);
+	bs->bitset = (unsigned char *) cli_realloc(bs->bitset, new_length);
 	if (!bs->bitset) {
 		return NULL;
 	}
@@ -766,4 +766,3 @@ int cli_bitset_test(bitset_t *bs, unsigned long bit_offset)
 	
 	return (bs->bitset[char_offset] & ((unsigned char)1 << bit_offset));
 }
-
