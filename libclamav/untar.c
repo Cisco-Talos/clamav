@@ -21,6 +21,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.28  2005/10/29 16:18:09  nigelhorne
+ * Better error handler
+ *
  * Revision 1.27  2005/09/01 21:03:46  nigelhorne
  * Added support for various GNU extensions
  *
@@ -103,7 +106,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.27 2005/09/01 21:03:46 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.28 2005/10/29 16:18:09 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -128,9 +131,10 @@ static	char	const	rcsid[] = "$Id: untar.c,v 1.27 2005/09/01 21:03:46 nigelhorne 
 static int
 octal(const char *str)
 {
-	int ret = -1;
+	int ret;
 
-	(void)sscanf(str, "%o", (unsigned int *)&ret);
+	if(sscanf(str, "%o", (unsigned int *)&ret) != 1)
+		return -1;
 	return ret;
 }
 
