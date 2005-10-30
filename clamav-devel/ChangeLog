@@ -1,3 +1,7 @@
+Sun Oct 30 21:22:35 CET 2005 (tk)
+---------------------------------
+  * clamd/others.c: fix compilation error on Cobalt Qube 1
+
 Sun Oct 30 18:46:36 CET 2005 (tk)
 ---------------------------------
   * libclamav/scanners.c: fix logic bug in cli_scandesc(). Patch by Andrey J.
