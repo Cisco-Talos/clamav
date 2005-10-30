@@ -1586,17 +1586,19 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 		    break;
 
 		case CL_TYPE_RARSFX:
-		    if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE)
+		    if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE) {
 			cli_dbgmsg("RAR-SFX found at %d\n", ftoffset);
 			if(cli_scanrar(desc, virname, scanned, engine, limits, options, arec, mrec, ftoffset) == CL_VIRUS)
 			    return CL_VIRUS;
+                    }
 		    break;
 
 		case CL_TYPE_ZIPSFX:
-		    if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE)
+		    if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE) {
 			cli_dbgmsg("ZIP-SFX found at %d\n", ftoffset);
 			if(cli_scanzip(desc, virname, scanned, engine, limits, options, arec, mrec, ftoffset) == CL_VIRUS)
 			    return CL_VIRUS;
+                    }
 		    break;
 	    }
 	    nret == CL_TYPE_MAIL ? mrec-- : arec--;
