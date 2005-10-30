@@ -300,7 +300,7 @@ int writen(int fd, void *buff, unsigned int count)
 
 /* Submitted by Richard Lyons <frob-clamav*webcentral.com.au> */
 
-#if defined(HAVE_RECVMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN) && !defined(C_OS2)
+#if defined(HAVE_RECVMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN) && !defined(C_OS2) && !defined(INCOMPLETE_CMSG)
 
 int readsock(int sockfd, char *buf, size_t size)
 {
@@ -346,12 +346,10 @@ int readsock(int sockfd, char *buf, size_t size)
     cmsg = CMSG_FIRSTHDR(&msg);
     if (cmsg == NULL)
 	return -1;
-#ifndef INCOMPLETE_CMSG
     if (cmsg->cmsg_type != SCM_RIGHTS)
 	return -1;
     if (cmsg->cmsg_len != CMSG_LEN(sizeof(fd)))
 	return -1;
-#endif
     fd = *(int *)CMSG_DATA(cmsg);
 #endif
     if (fd < 0)
