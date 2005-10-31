@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.260 2005/09/30 14:58:37 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.261 2005/10/31 21:21:13 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3092,6 +3092,17 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 				}
 				free(p);
 			}
+			if((p = (char *)messageFindArgument(m, "filename")) == NULL)
+				/*
+				 * Handle this type of header, without
+				 * a filename (e.g. some Worm.Torvil.D)
+				 *	Content-ID: <nRfkHdrKsAxRU>
+				 * Content-Transfer-Encoding: base64
+				 * Content-Disposition: attachment
+				 */
+				messageAddArgument(m, "filename=unknown");
+			else
+				free(p);
 	}
 	if(copy)
 		free(copy);
