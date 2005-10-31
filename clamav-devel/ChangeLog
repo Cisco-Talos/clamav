@@ -1,3 +1,7 @@
+Mon Oct 31 21:21:38 GMT 2005 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Scan attachments that have no filename
+
 Sun Oct 30 21:22:35 CET 2005 (tk)
 ---------------------------------
   * clamd/others.c: fix compilation error on Cobalt Qube 1
