@@ -55,7 +55,7 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
     retval = poll_fd(desc, timeout);
     switch (retval) {
     case 0: /* timeout */
-	return COMMAND_TIMEOUT;
+	return -2;
     case -1:
 	mdprintf(desc, "ERROR\n");
 	logg("!Command: poll_fd failed.\n");
