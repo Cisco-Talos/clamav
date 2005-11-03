@@ -235,7 +235,7 @@ int unfsg_133(char *source, char *dest, int ssize, int dsize, struct SECTION *se
 
   for (i = 0 ; i <= sectcount ; i++) {
     char *startd=tdst;
-    if ( unfsg(tsrc, tdst, tsrc - source + ssize, tdst - dest + dsize, &tsrc, &tdst) == -1 )
+    if ( unfsg(tsrc, tdst, ssize - (tsrc - source), dsize - (tdst - dest), &tsrc, &tdst) == -1 )
       return -1;
 
     /* RVA has been filled already in pe.c */
