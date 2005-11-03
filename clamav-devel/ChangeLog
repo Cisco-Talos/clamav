@@ -1,3 +1,8 @@
+Thu Nov  3 22:46:21 CET 2005 (tk)
+---------------------------------
+  * libclamav/mspack/cabd.c: fix possible infinite loop in cabd_find
+			     Reported by iDEFENSE (IDEF1180)
+
 Thu Nov  3 22:44:00 CET 2005 (tk)
 ---------------------------------
   * libclamav/tnef.c: fix possible infinite loop

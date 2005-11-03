@@ -827,7 +827,9 @@ static int cabd_find(struct mscab_decompressor_p *this, unsigned char *buf,
 
 	    /* cause the search to restart after this cab's data. */
 	    offset = caboff + cablen;
-	      
+	    if (!offset)
+		return MSPACK_ERR_DATAFORMAT;
+
 	    /* link the cab into the list */
 	    if (!link) *firstcab = cab;
 	    else link->base.next = (struct mscabd_cabinet *) cab;
