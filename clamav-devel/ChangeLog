@@ -1,3 +1,8 @@
+Thu Nov  3 22:44:00 CET 2005 (tk)
+---------------------------------
+  * libclamav/tnef.c: fix possible infinite loop
+		      Reported by iDEFENSE (IDEF1169)
+
 Thu Nov  3 22:36:11 CET 2005 (tk)
 ---------------------------------
   * libclamav/petite.c: fix boundary checks, patch by aCaB
