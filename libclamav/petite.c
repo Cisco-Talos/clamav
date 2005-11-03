@@ -258,7 +258,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
       ssrc = adjbuf + cli_readint32(packed+4) - (size-1)*4;
       ddst = adjbuf + cli_readint32(packed+8) - (size-1)*4;
 
-      if ( ssrc < buf || ssrc + size*4 >= buf + bufsz || ddst < buf || ddst + size*4 >= buf + bufsz ) {
+      if ( ssrc < buf || size*4 >= buf + bufsz - ssrc || ddst < buf || size*4 >= buf + bufsz - ddst ) {
 	if (usects)
 	  free(usects);
 	return -1;
@@ -437,7 +437,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
 	  }
 	  backsize+=addsize;
 	  size-=backsize;
-	  if ( ddst<buf || ddst+backsize>=buf+bufsz || ddst+backbytes<buf || ddst+backbytes+backsize>=buf+bufsz ) {
+	  if(backsize < 0 || backbytes >= 0 || (buf - ddst > backbytes - backsize) || (ddst - buf >= bufsz - backsize)) {
 	    free(usects);
 	    return -1;
 	  }
