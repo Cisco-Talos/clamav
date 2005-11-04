@@ -20,7 +20,7 @@ Thu Nov  3 22:36:11 CET 2005 (tk)
 Thu Nov  3 22:33:20 CET 2005 (tk)
 ---------------------------------
   * libclamav/fsg.c: fix buffer size calculation in unfsg_133
-		     Reported by Zero Day Initiative (ZDI-CAN-004)
+		     Reported by 3Com's Zero Day Initiative (ZDI-05-002)
 
 Mon Oct 31 21:21:38 GMT 2005 (njh)
 ----------------------------------
