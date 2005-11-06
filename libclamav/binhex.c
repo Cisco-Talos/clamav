@@ -17,6 +17,9 @@
  *
  * Change History:
  * $Log: binhex.c,v $
+ * Revision 1.17  2005/11/06 14:03:26  nigelhorne
+ * Ensure NAME_MAX isn't redefined on BeOS
+ *
  * Revision 1.16  2005/05/14 16:13:25  nigelhorne
  * Ensure munmap is the right size
  *
@@ -63,7 +66,7 @@
  * First draft of binhex.c
  *
  */
-static	char	const	rcsid[] = "$Id: binhex.c,v 1.16 2005/05/14 16:13:25 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: binhex.c,v 1.17 2005/11/06 14:03:26 nigelhorne Exp $";
 
 #include "clamav.h"
 
@@ -92,13 +95,13 @@ static	char	const	rcsid[] = "$Id: binhex.c,v 1.16 2005/05/14 16:13:25 nigelhorne
 #include <stdio.h>
 #include <memory.h>
 #include <sys/stat.h>
+#include "others.h"
 #include "line.h"
 #include "mbox.h"
 #include "table.h"
 #include "blob.h"
 #include "text.h"
 #include "binhex.h"
-#include "others.h"
 
 int
 cli_binhex(const char *dir, int desc)
