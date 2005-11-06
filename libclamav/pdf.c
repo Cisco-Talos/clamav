@@ -15,13 +15,14 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.33 2005/09/22 06:34:18 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.34 2005/11/06 14:41:18 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
 
 #include "clamav.h"
+#include "others.h"
 
 #if HAVE_MMAP
 #if HAVE_SYS_MMAN_H
@@ -31,6 +32,7 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.33 2005/09/22 06:34:18 nigelhorne Ex
 #endif
 #endif
 
+#if HAVE_MMAP
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -47,7 +49,6 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.33 2005/09/22 06:34:18 nigelhorne Ex
 
 #include "table.h"
 #include "mbox.h"
-#include "others.h"
 #include "blob.h"
 
 #ifndef	MIN
@@ -62,14 +63,9 @@ static	const	char	*pdf_nextobject(const char *ptr, size_t len);
 /*
  * TODO: handle embedded URLs if (options&CL_SCAN_MAILURL)
  */
-
 int
 cli_pdf(const char *dir, int desc)
 {
-#ifndef HAVE_MMAP
-	cli_warnmsg("File not decoded - PDF decoding needs mmap() (for now)\n");
-	return CL_CLEAN;
-#else
 	struct stat statb;
 	off_t size;	/* total number of bytes in the file */
 	long bytesleft, trailerlength;
@@ -358,7 +354,6 @@ cli_pdf(const char *dir, int desc)
 
 	cli_dbgmsg("cli_pdf: returning %d\n", rc);
 	return rc;
-#endif
 }
 
 /* flate inflation - returns zlib status, e.g. Z_OK */
@@ -536,3 +531,11 @@ pdf_nextobject(const char *ptr, size_t len)
 	}
 	return NULL;
 }
+#else	/*!HAVE_MMAP*/
+int
+cli_pdf(const char *dir, int desc)
+{
+	cli_warnmsg("File not decoded - PDF decoding needs mmap() (for now)\n");
+	return CL_CLEAN;
+}
+#endif
