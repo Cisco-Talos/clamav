@@ -78,12 +78,12 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
     if(troot) {
 
 	if((partcnt = (int *) cli_calloc(troot->ac_partsigs + 1, sizeof(int))) == NULL) {
-	    cli_dbgmsg("cl_scanbuff(): unable to cli_calloc(%d, %d)\n", troot->ac_partsigs + 1, sizeof(int));
+	    cli_dbgmsg("cli_scanbuff(): unable to cli_calloc(%d, %d)\n", troot->ac_partsigs + 1, sizeof(int));
 	    return CL_EMEM;
 	}
 
 	if((partoff = (unsigned long int *) cli_calloc(troot->ac_partsigs + 1, sizeof(unsigned long int))) == NULL) {
-	    cli_dbgmsg("cl_scanbuff(): unable to cli_calloc(%d, %d)\n", troot->ac_partsigs + 1, sizeof(unsigned long int));
+	    cli_dbgmsg("cli_scanbuff(): unable to cli_calloc(%d, %d)\n", troot->ac_partsigs + 1, sizeof(unsigned long int));
 	    free(partcnt);
 	    return CL_EMEM;
 	}
@@ -99,12 +99,12 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
     }
 
     if((partcnt = (int *) cli_calloc(groot->ac_partsigs + 1, sizeof(int))) == NULL) {
-	cli_dbgmsg("cl_scanbuff(): unable to cli_calloc(%d, %d)\n", groot->ac_partsigs + 1, sizeof(int));
+	cli_dbgmsg("cli_scanbuff(): unable to cli_calloc(%d, %d)\n", groot->ac_partsigs + 1, sizeof(int));
 	return CL_EMEM;
     }
 
     if((partoff = (unsigned long int *) cli_calloc(groot->ac_partsigs + 1, sizeof(unsigned long int))) == NULL) {
-	cli_dbgmsg("cl_scanbuff(): unable to cli_calloc(%d, %d)\n", groot->ac_partsigs + 1, sizeof(unsigned long int));
+	cli_dbgmsg("cli_scanbuff(): unable to cli_calloc(%d, %d)\n", groot->ac_partsigs + 1, sizeof(unsigned long int));
 	free(partcnt);
 	return CL_EMEM;
     }
@@ -115,11 +115,6 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
     free(partcnt);
     free(partoff);
     return ret;
-}
-
-int cl_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_engine *engine)
-{
-    return cli_scanbuff(buffer, length, virname, engine, 0);
 }
 
 static struct cli_md5_node *cli_vermd5(const unsigned char *md5, const struct cl_engine *engine)

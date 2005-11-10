@@ -1,3 +1,7 @@
+Thu Nov 10 19:28:40 CET 2005 (tk)
+---------------------------------
+  * libclamav/matcher.c, clamav.h: remove cl_scanbuff
+
 Thu Nov  3 23:04:20 CET 2005 (tk)
 ---------------------------------
   * clamd: properly handle ReadTimeout in SESSION
