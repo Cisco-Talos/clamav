@@ -576,13 +576,3 @@ void cl_free(struct cl_engine *engine)
 
     free(engine);
 }
-
-int cl_buildtrie(struct cl_engine *engine) /* for backward compatibility */
-{
-    return cl_build(engine);
-}
-
-void cl_freetrie(struct cl_engine *engine) /* for backward compatibility */
-{
-    cl_free(engine);
-}
