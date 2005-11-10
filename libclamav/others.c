@@ -202,11 +202,6 @@ const char *cl_strerror(int clerror)
     }
 }
 
-const char *cl_perror(int clerror)
-{
-    return cl_strerror(clerror);
-}
-
 unsigned char *cli_md5digest(int desc)
 {
 	unsigned char *digest;

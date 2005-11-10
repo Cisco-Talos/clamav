@@ -1,3 +1,7 @@
+Thu Nov 10 23:48:27 CET 2005 (tk)
+---------------------------------
+  * libclamav/others.c, clamav.h: remove cl_perror()
+
 Thu Nov 10 20:26:44 CET 2005 (tk)
 ---------------------------------
   * libclamav/matcher.c: remove cl_buildtrie(), cl_freetrie()
