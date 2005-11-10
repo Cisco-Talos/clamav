@@ -1,6 +1,10 @@
+Thu Nov 10 20:26:44 CET 2005 (tk)
+---------------------------------
+  * libclamav/matcher.c: remove cl_buildtrie(), cl_freetrie()
+
 Thu Nov 10 19:28:40 CET 2005 (tk)
 ---------------------------------
-  * libclamav/matcher.c, clamav.h: remove cl_scanbuff
+  * libclamav/matcher.c, clamav.h: remove cl_scanbuff()
 
 Thu Nov  3 23:04:20 CET 2005 (tk)
 ---------------------------------
