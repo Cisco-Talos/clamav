@@ -135,6 +135,7 @@ struct cli_matcher {
     struct cli_bm_patt **bm_suffix;
 
     /* Extended Aho-Corasick */
+    unsigned int ac_depth;
     struct cli_ac_node *ac_root, **ac_nodetable;
     unsigned int ac_partsigs, ac_nodes;
 };

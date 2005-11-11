@@ -472,6 +472,7 @@ static int cli_initroots(struct cl_engine *engine)
 	    }
 
 	    cli_dbgmsg("Initialising AC pattern matcher of root[%d]\n", i);
+	    root->ac_depth = AC_DEFAULT_DEPTH;
 	    root->ac_root =  (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));
 	    if(!root->ac_root) {
 		/* no need to free previously allocated memory here */

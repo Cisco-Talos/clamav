@@ -1,3 +1,7 @@
+Fri Nov 11 01:27:56 CET 2005 (tk)
+---------------------------------
+  * libclamav/matcher-ac.c: replace AC_MIN_LENGTH with cli_matcher->ac_depth
+
 Thu Nov 10 23:48:27 CET 2005 (tk)
 ---------------------------------
   * libclamav/others.c, clamav.h: remove cl_perror()
