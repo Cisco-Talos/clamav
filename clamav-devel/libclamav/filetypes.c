@@ -30,6 +30,7 @@
 #include "filetypes.h"
 #include "others.h"
 #include "readdb.h"
+#include "matcher-ac.h"
 
 struct cli_magic_s {
     int offset;
@@ -285,6 +286,7 @@ int cli_addtypesigs(struct cl_engine *engine)
 	    cli_errmsg("cli_addtypesigs: Can't initialise AC pattern matcher\n");
 	    return CL_EMEM;
 	}
+	root->ac_depth = AC_DEFAULT_DEPTH;
 	root->ac_root =  (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));
 	if(!root->ac_root) {
 	    cli_errmsg("cli_addtypesigs: Can't initialise AC pattern matcher\n");

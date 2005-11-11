@@ -37,8 +37,6 @@
 #include "defaults.h"
 #include "filetypes.h"
 
-#define AC_MIN_LENGTH 2
-
 struct nodelist {
     struct cli_ac_node *node;
     struct nodelist *next;
@@ -49,12 +47,12 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 	struct cli_ac_node *pos, *next;
 	int i;
 
-    if(pattern->length < AC_MIN_LENGTH)
+    if(pattern->length < root->ac_depth)
 	return CL_EPATSHORT;
 
     pos = root->ac_root;
 
-    for(i = 0; i < AC_MIN_LENGTH; i++) {
+    for(i = 0; i < root->ac_depth; i++) {
 	next = pos->trans[((unsigned char) pattern->pattern[i]) & 0xff]; 
 
 	if(!next) {
@@ -223,17 +221,17 @@ void cli_ac_free(struct cli_matcher *root)
 	free(root->ac_root);
 }
 
-inline static int cli_findpos(const char *buffer, int offset, int length, const struct cli_ac_patt *pattern)
+inline static int cli_findpos(const char *buffer, unsigned int depth, unsigned int offset, unsigned int length, const struct cli_ac_patt *pattern)
 {
-	int bufferpos = offset + AC_MIN_LENGTH;
-	int postfixend = offset + length;
+	unsigned int bufferpos = offset + depth;
+	unsigned int postfixend = offset + length;
 	unsigned int i, j, alt = 0, found = 0;
 
 
     if(bufferpos >= length)
 	bufferpos %= length;
 
-    for(i = AC_MIN_LENGTH; i < pattern->length; i++) {
+    for(i = depth; i < pattern->length; i++) {
 
 	if(bufferpos == postfixend)
 	    return 0;
@@ -264,8 +262,8 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
 {
 	struct cli_ac_node *current;
 	struct cli_ac_patt *pt;
-	int position, type = CL_CLEAN, dist, t;
-        unsigned int i;
+	int type = CL_CLEAN, dist, t;
+        unsigned int i, position;
 
 
     if(!root->ac_root)
@@ -282,11 +280,11 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
 	current = current->trans[(unsigned char) buffer[i] & 0xff];
 
 	if(current->islast) {
-	    position = i - AC_MIN_LENGTH + 1;
+	    position = i - root->ac_depth + 1;
 
 	    pt = current->list;
 	    while(pt) {
-		if(cli_findpos(buffer, position, length, pt)) {
+		if(cli_findpos(buffer, root->ac_depth, position, length, pt)) {
 		    if((pt->offset || pt->target) && (!pt->sigid || pt->partno == 1)) {
 			if(ftype == CL_TYPE_UNKNOWN_TEXT)
 			    t = type;
