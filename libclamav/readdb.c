@@ -928,7 +928,7 @@ static int cli_loadmd(FILE *fd, struct cl_engine **engine, unsigned int *signo, 
     return 0;
 }
 
-int cl_loaddb(const char *filename, struct cl_engine **engine, unsigned int *signo)
+static int cli_load(const char *filename, struct cl_engine **engine, unsigned int *signo, unsigned int options)
 {
 	FILE *fd;
 	int ret;
@@ -979,7 +979,11 @@ int cl_loaddb(const char *filename, struct cl_engine **engine, unsigned int *sig
     return ret;
 }
 
-int cl_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo)
+int cl_loaddb(const char *filename, struct cl_engine **engine, unsigned int *signo) {
+    return cli_load(filename, engine, signo, 0);
+}
+
+static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo, unsigned int options)
 {
 	DIR *dd;
 	struct dirent *dent;
@@ -1043,6 +1047,33 @@ int cl_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *s
 
     closedir(dd);
     return 0;
+}
+
+int cl_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo) {
+    return cli_loaddbdir(dirname, engine, signo, 0);
+}
+
+int cl_load(const char *path, struct cl_engine **engine, unsigned int *signo, unsigned int options)
+{
+	struct stat sb;
+
+
+    if(stat(path, &sb) == -1) {
+        cli_errmsg("cl_loaddbdir(): Can't get status of %s\n", path);
+        return CL_EIO;
+    }
+
+    switch(sb.st_mode & S_IFMT) {
+	case S_IFREG: 
+	    return cli_load(path, engine, signo, options);
+
+	case S_IFDIR:
+	    return cli_loaddbdir(path, engine, signo, options);
+
+	default:
+	    cli_errmsg("cl_load(): Not supported database file type\n");
+	    return CL_EOPEN;
+    }
 }
 
 const char *cl_retdbdir(void)
