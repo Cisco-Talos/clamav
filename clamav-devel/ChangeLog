@@ -1,3 +1,7 @@
+Sat Nov 12 02:25:03 CET 2005 (tk)
+---------------------------------
+  * libclamav/readdb.c: add cl_load(), successor of cl_loaddb and cl_loaddbdir
+
 Fri Nov 11 01:27:56 CET 2005 (tk)
 ---------------------------------
   * libclamav/matcher-ac.c: replace AC_MIN_LENGTH with cli_matcher->ac_depth
