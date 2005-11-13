@@ -1,3 +1,9 @@
+Mon Nov 14 00:32:27 CET 2005 (tk)
+---------------------------------
+  * libclamav: add support for CL_DB_NOPHISHING (disables phishing signatures)
+  * clamscan: add --no-phishing option
+  * clamd: add DetectPhishing option
+
 Sun Nov 13 03:05:52 CET 2005 (tk)
 ---------------------------------
   * libclamav: prepare for hardware acceleration

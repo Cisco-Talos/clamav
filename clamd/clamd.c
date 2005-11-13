@@ -71,6 +71,7 @@ void clamd(struct optstruct *opt)
 	const char *dbdir, *cfgfile;
 	int ret, virnum = 0, tcpsock = 0, localsock = 0;
 	int lsockets[2], nlsockets = 0;
+	unsigned int dboptions = 0;
 #ifdef C_LINUX
 	struct stat sb;
 #endif
@@ -237,7 +238,12 @@ void clamd(struct optstruct *opt)
     dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
     logg("Reading databases from %s\n", dbdir);
 
-    if((ret = cl_loaddbdir(dbdir, &root, &virnum))) {
+    if(!cfgopt(copt, "DetectPhishing")->enabled) {
+	dboptions |= CL_DB_NOPHISHING;
+	logg("Not loading phishing signatures.\n");
+    }
+
+    if((ret = cl_load(dbdir, &root, &virnum, dboptions))) {
 	fprintf(stderr, "ERROR: %s\n", cl_strerror(ret));
 	logg("!%s\n", cl_strerror(ret));
 	exit(1);

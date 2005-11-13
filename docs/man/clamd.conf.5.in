@@ -1,5 +1,5 @@
 .\" Manual page created by Tomasz Kojm, 20021001.
-.TH "clamd.conf" "5" "February 13, 2005" "Tomasz Kojm" "Clam AntiVirus"
+.TH "clamd.conf" "5" "November 14, 2005" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 \fBclamd.conf\fR \- Configuration file for Clam AntiVirus Daemon
@@ -223,6 +223,11 @@ Default: enabled
 If an email contains URLs ClamAV can download and scan them. \fBWARNING: This option may open your system to a DoS attack. Never use it on loaded servers.\fR
 .br 
 Default: disabled
+.TP 
+\fBDetectPhishing\fR
+With this option enabled ClamAV will try to detect phishing attempts.
+.br 
+Default: enabled
 .TP 
 \fBScanArchive\fR
 Enable archive scanning.

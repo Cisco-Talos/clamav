@@ -557,6 +557,7 @@ static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	struct cli_matcher *root;
 	int line = 0, sigs = 0, ret = 0;
 	unsigned short target;
+	unsigned int nophish = options & CL_DB_NOPHISHING;
 
 
     if((ret = cli_initengine(engine))) {
@@ -574,6 +575,10 @@ static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 
 	if(!strncmp(buffer, "Exploit.JPEG.Comment", 20)) /* temporary */
 	    continue;
+
+	if(nophish)
+	    if(!strncmp(buffer, "HTML.Phishing", 13) || !strncmp(buffer, "Email.Phishing", 14))
+		continue;
 
 	sigs++;
 	cli_chomp(buffer);

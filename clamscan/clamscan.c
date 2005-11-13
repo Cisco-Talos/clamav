@@ -226,6 +226,7 @@ void help(void)
 
     mprintf("\n");
     mprintf("    --no-mail                            Disable mail file support\n");
+    mprintf("    --no-phishing                        Disable phishing detection\n");
     mprintf("    --no-pe                              Disable PE analysis\n");
     mprintf("    --no-ole2                            Disable OLE2 support\n");
     mprintf("    --no-html                            Disable HTML support\n");
@@ -253,7 +254,7 @@ void help(void)
     mprintf("    --jar[=FULLPATH]                     Enable support for .jar files\n");
     mprintf("    --tar[=FULLPATH]                     Enable support for .tar files\n");
     mprintf("    --deb[=FULLPATH to ar]               Enable support for .deb files\n");
-    mprintf("    --tgz[=FULLPATH]                     enable support for .tar.gz, .tgz files\n\n");
+    mprintf("    --tgz[=FULLPATH]                     Enable support for .tar.gz, .tgz files\n\n");
 
     exit(0);
 }

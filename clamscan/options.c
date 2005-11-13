@@ -104,6 +104,7 @@ int main(int argc, char **argv)
 	    {"mbox", 0, 0, 'm'}, /* not used */
 	    {"no-mail", 0, 0, 0},
 	    {"mail-follow-urls", 0, 0, 0},
+	    {"no-phishing", 0, 0, 0},
 	    {"unzip", 2, 0, 0},
 	    {"unrar", 2, 0, 0},
 	    {"unace", 2, 0, 0}, /* not used */

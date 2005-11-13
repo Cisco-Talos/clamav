@@ -163,7 +163,7 @@ static struct cl_node *reload_db(struct cl_node *root, const struct cfgstruct *c
 	int virnum=0, retval;
 	struct cfgstruct *cpt;
 	static struct cl_stat *dbstat=NULL;
-
+	unsigned int dboptions = 0;
 
     if(do_check) {
 	if(dbstat == NULL) {
@@ -197,7 +197,13 @@ static struct cl_node *reload_db(struct cl_node *root, const struct cfgstruct *c
 
     memset(dbstat, 0, sizeof(struct cl_stat));
     cl_statinidir(dbdir, dbstat);
-    if((retval = cl_loaddbdir(dbdir, &root, &virnum))) {
+
+    if(!cfgopt(copt, "DetectPhishing")->enabled) {
+	dboptions |= CL_DB_NOPHISHING;
+	logg("Not loading phishing signatures.\n");
+    }
+
+    if((retval = cl_load(dbdir, &root, &virnum, dboptions))) {
 	logg("!reload db failed: %s\n", cl_strerror(retval));
 	exit(-1);
     }

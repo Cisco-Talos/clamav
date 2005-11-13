@@ -57,6 +57,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 	    {"DetectBrokenExecutables", OPT_BOOL, 0, NULL, 0},
 	    {"ScanMail", OPT_BOOL, 1, NULL, 0},
 	    {"MailFollowURLs", OPT_BOOL, 0, NULL, 0},
+	    {"DetectPhishing", OPT_BOOL, 1, NULL, 0},
 	    {"ScanHTML", OPT_BOOL, 1, NULL, 0},
 	    {"ScanOLE2", OPT_BOOL, 1, NULL, 0},
 	    {"ScanArchive", OPT_BOOL, 1, NULL, 0},

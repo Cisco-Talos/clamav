@@ -1,5 +1,5 @@
 .\" Manual page created by Tomasz Kojm, 14/15 IV 2002
-.TH "clamscan" "1" "March 25, 2005" "Tomasz Kojm" "Clam AntiVirus"
+.TH "clamscan" "1" "November 14, 2005" "Tomasz Kojm" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 clamscan \- scan files and directories against viruses
@@ -69,6 +69,9 @@ Move infected files into DIRECTORY. Directory must be writeable for the 'clamav'
 .TP 
 \fB\-\-no\-mail\fR
 Disable scanning of mail files.
+.TP 
+\fB\-\-no\-phishing\fR
+Disable detection of phishing messages.
 .TP 
 \fB\-\-no\-pe\fR
 PE stands for Portable Executable \- it's an executable file format used in all 32\-bit versions of Windows operating systems. By default ClamAV performs deeper analysis of executable files and attempts to decompress popular executable packers such as UPX, Petite, and FSG. This option \fBdisables\fR PE support and should be used with care!
