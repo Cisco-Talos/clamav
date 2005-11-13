@@ -1,3 +1,7 @@
+Sun Nov 13 03:05:52 CET 2005 (tk)
+---------------------------------
+  * libclamav: prepare for hardware acceleration
+
 Sat Nov 12 02:25:03 CET 2005 (tk)
 ---------------------------------
   * libclamav/readdb.c: add cl_load(), successor of cl_loaddb and cl_loaddbdir

@@ -63,6 +63,9 @@ extern "C"
 #define CL_EIO		-12 /* general I/O error */
 #define CL_EFORMAT	-13 /* bad format or broken file */
 
+/* db options */
+#define CL_DB_HWACCEL		1
+
 /* scan options */
 #define CL_SCAN_RAW		0
 #define CL_SCAN_ARCHIVE		1
@@ -142,6 +145,7 @@ struct cli_matcher {
 
 struct cl_engine {
     unsigned int refcount; /* reference counter */
+    unsigned short hwaccel;
 
     /* Roots table */
     struct cli_matcher **root;
@@ -199,6 +203,7 @@ extern const char *cl_retver(void);
 /* database */
 extern int cl_loaddb(const char *filename, struct cl_engine **engine, unsigned int *signo);
 extern int cl_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo);
+extern int cl_load(const char *path, struct cl_engine **engine, unsigned int *signo, unsigned int options);
 extern const char *cl_retdbdir(void);
 extern struct cl_engine *cl_dup(struct cl_engine *engine);
 

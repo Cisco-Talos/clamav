@@ -286,7 +286,14 @@ int cli_addtypesigs(struct cl_engine *engine)
 	    cli_errmsg("cli_addtypesigs: Can't initialise AC pattern matcher\n");
 	    return CL_EMEM;
 	}
-	root->ac_depth = AC_DEFAULT_DEPTH;
+
+	if(engine->hwaccel) {
+	    cli_dbgmsg("cli_addtypesigs: AC depth 10 (hwaccel mode)\n");
+	    root->ac_depth = 10;
+	} else {
+	    root->ac_depth = AC_DEFAULT_DEPTH;
+	}
+
 	root->ac_root =  (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));
 	if(!root->ac_root) {
 	    cli_errmsg("cli_addtypesigs: Can't initialise AC pattern matcher\n");
