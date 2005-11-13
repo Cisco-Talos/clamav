@@ -61,6 +61,7 @@ int scanmanager(const struct optstruct *opt)
 {
 	mode_t fmode;
 	int ret = 0, compression = 0, fmodeint, options = 0, i, x;
+	unsigned int dboptions = 0;
 	struct cl_node *trie = NULL;
 	struct cl_limits *limits = NULL;
 	struct passwd *user = NULL;
@@ -84,37 +85,24 @@ int scanmanager(const struct optstruct *opt)
 	    compression = 1;
 
     /* now initialize the database */
+    if(optl(opt, "no-phishing"))
+	dboptions |= CL_DB_NOPHISHING;
 
     if(optc(opt, 'd')) {
-	stat(getargc(opt, 'd'), &sb);
-	switch(sb.st_mode & S_IFMT) {
-	    case S_IFREG:
-		if((ret = cl_loaddb(getargc(opt, 'd'), &trie, &claminfo.signs))) {
-		    logg("^%s\n", cl_strerror(ret));
-		    return 50;
-		}
-		break;
-            case S_IFDIR:
-		if((ret = cl_loaddbdir(getargc(opt, 'd'), &trie, &claminfo.signs))) {
-		    logg("^%s\n", cl_strerror(ret));
-		    return 50;
-		}
-		break;
-            default:
-		logg("^%s: Not supported database file type\n", getargc(opt, 'd'));
-		return 50;
+	if((ret = cl_load(getargc(opt, 'd'), &trie, &claminfo.signs, dboptions))) {
+	    logg("^%s\n", cl_strerror(ret));
+	    return 50;
 	}
 
     } else {
 	    char *dbdir = freshdbdir();
 
-	if((ret = cl_loaddbdir(dbdir, &trie, &claminfo.signs))) {
+	if((ret = cl_load(dbdir, &trie, &claminfo.signs, dboptions))) {
 	    logg("^%s\n", cl_strerror(ret));
 	    free(dbdir);
 	    return 50;
 	}
 	free(dbdir);
-
     }
 
     if(!trie) {
