@@ -1056,6 +1056,7 @@ int cl_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *s
 int cl_load(const char *path, struct cl_engine **engine, unsigned int *signo, unsigned int options)
 {
 	struct stat sb;
+	int ret;
 
 
     if(stat(path, &sb) == -1) {
@@ -1063,7 +1064,19 @@ int cl_load(const char *path, struct cl_engine **engine, unsigned int *signo, un
         return CL_EIO;
     }
 
-    switch(sb.st_mode & S_IFMT) {
+    if((ret = cli_initengine(engine))) {
+	cl_free(*engine);
+	return ret;
+    }
+
+    if(options & CL_DB_HWACCEL) {
+	(*engine)->hwaccel = 1;
+
+	/* load hw db  */
+
+	return 0;
+
+    } else switch(sb.st_mode & S_IFMT) {
 	case S_IFREG: 
 	    return cli_load(path, engine, signo, options);
 
