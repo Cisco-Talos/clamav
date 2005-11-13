@@ -65,6 +65,7 @@ extern "C"
 
 /* db options */
 #define CL_DB_HWACCEL		1
+#define CL_DB_NOPHISHING	2
 
 /* scan options */
 #define CL_SCAN_RAW		0

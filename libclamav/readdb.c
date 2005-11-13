@@ -491,7 +491,7 @@ static int cli_initroots(struct cl_engine *engine)
     return 0;
 }
 
-static int cli_loaddb(FILE *fd, struct cl_engine **engine, unsigned int *signo)
+static int cli_loaddb(FILE *fd, struct cl_engine **engine, unsigned int *signo, unsigned int options)
 {
 	char buffer[FILEBUFF], *pt, *start;
 	int line = 0, ret = 0;
@@ -551,7 +551,7 @@ static int cli_loaddb(FILE *fd, struct cl_engine **engine, unsigned int *signo)
     return 0;
 }
 
-static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo)
+static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo, unsigned int options)
 {
 	char buffer[FILEBUFF], *sig, *virname, *offset, *pt;
 	struct cli_matcher *root;
@@ -669,7 +669,7 @@ static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo)
     return 0;
 }
 
-static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo, unsigned short fp)
+static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo, unsigned short fp, unsigned int options)
 {
 	char buffer[FILEBUFF], *pt;
 	int line = 0, ret = 0;
@@ -757,7 +757,7 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
     return 0;
 }
 
-static int cli_loadmd(FILE *fd, struct cl_engine **engine, unsigned int *signo, int type)
+static int cli_loadmd(FILE *fd, struct cl_engine **engine, unsigned int *signo, int type, unsigned int options)
 {
 	char buffer[FILEBUFF], *pt;
 	int line = 0, comments = 0, ret = 0;
@@ -935,14 +935,14 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
 
 
     if((fd = fopen(filename, "rb")) == NULL) {
-	cli_errmsg("cl_loaddb(): Can't open file %s\n", filename);
+	cli_errmsg("cli_loaddb(): Can't open file %s\n", filename);
 	return CL_EOPEN;
     }
 
     cli_dbgmsg("Loading %s\n", filename);
 
     if(cli_strbcasestr(filename, ".db")  || cli_strbcasestr(filename, ".db2") || cli_strbcasestr(filename, ".db3")) {
-	ret = cli_loaddb(fd, engine, signo);
+	ret = cli_loaddb(fd, engine, signo, options);
 
     } else if(cli_strbcasestr(filename, ".cvd")) {
 	    int warn = 0;
@@ -950,26 +950,26 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
 	if(!strcmp(filename, "daily.cvd"))
 	    warn = 1;
 
-	ret = cli_cvdload(fd, engine, signo, warn);
+	ret = cli_cvdload(fd, engine, signo, warn, options);
 
     } else if(cli_strbcasestr(filename, ".hdb")) {
-	ret = cli_loadhdb(fd, engine, signo, 0);
+	ret = cli_loadhdb(fd, engine, signo, 0, options);
 
     } else if(cli_strbcasestr(filename, ".fp")) {
-	ret = cli_loadhdb(fd, engine, signo, 1);
+	ret = cli_loadhdb(fd, engine, signo, 1, options);
 
     } else if(cli_strbcasestr(filename, ".ndb")) {
-	ret = cli_loadndb(fd, engine, signo);
+	ret = cli_loadndb(fd, engine, signo, options);
 
     } else if(cli_strbcasestr(filename, ".zmd")) {
-	ret = cli_loadmd(fd, engine, signo, 1);
+	ret = cli_loadmd(fd, engine, signo, 1, options);
 
     } else if(cli_strbcasestr(filename, ".rmd")) {
-	ret = cli_loadmd(fd, engine, signo, 2);
+	ret = cli_loadmd(fd, engine, signo, 2, options);
 
     } else {
-	cli_dbgmsg("cl_loaddb: unknown extension - assuming old database format\n");
-	ret = cli_loaddb(fd, engine, signo);
+	cli_dbgmsg("cli_loaddb: unknown extension - assuming old database format\n");
+	ret = cli_loaddb(fd, engine, signo, options);
     }
 
     if(ret)
@@ -998,7 +998,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigne
 
 
     if((dd = opendir(dirname)) == NULL) {
-        cli_errmsg("cl_loaddbdir(): Can't open directory %s\n", dirname);
+        cli_errmsg("cli_loaddbdir(): Can't open directory %s\n", dirname);
         return CL_EOPEN;
     }
 
@@ -1029,13 +1029,13 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigne
 		dbfile = (char *) cli_calloc(strlen(dent->d_name) + strlen(dirname) + 2, sizeof(char));
 
 		if(!dbfile) {
-		    cli_dbgmsg("cl_loaddbdir(): dbfile == NULL\n");
+		    cli_dbgmsg("cli_loaddbdir(): dbfile == NULL\n");
 		    closedir(dd);
 		    return CL_EMEM;
 		}
 		sprintf(dbfile, "%s/%s", dirname, dent->d_name);
-		if((ret = cl_loaddb(dbfile, engine, signo))) {
-		    cli_dbgmsg("cl_loaddbdir(): error loading database %s\n", dbfile);
+		if((ret = cli_load(dbfile, engine, signo, options))) {
+		    cli_dbgmsg("cli_loaddbdir(): error loading database %s\n", dbfile);
 		    free(dbfile);
 		    closedir(dd);
 		    return ret;
