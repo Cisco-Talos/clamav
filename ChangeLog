@@ -1,3 +1,7 @@
+Mon Nov 14 21:59:56 CET 2005 (tk)
+---------------------------------
+  * libclamav: add support for CryptFF, thanks to Arnaud Jacques
+
 Mon Nov 14 00:32:27 CET 2005 (tk)
 ---------------------------------
   * libclamav: add support for CL_DB_NOPHISHING (disables phishing signatures)

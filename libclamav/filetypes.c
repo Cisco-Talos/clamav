@@ -52,6 +52,7 @@ static const struct cli_magic_s cli_magic[] = {
 
     {0,  "MZ",				2,  "DOS/W32 executable/library/driver", CL_TYPE_MSEXE},
     {0,	 "\177ELF",			4,  "ELF",		CL_TYPE_ELF},
+
     /* Archives */
 
     {0,	    "Rar!",			4,  "RAR",		CL_TYPE_RAR},
@@ -111,6 +112,7 @@ static const struct cli_magic_s cli_magic[] = {
 
     {0,  "\320\317\021\340\241\261\032\341", 8, "OLE2 container", CL_TYPE_MSOLE2},
     {0,  "\%PDF-",			 5, "PDF document", CL_TYPE_PDF},
+    {0,  "\266\271\254\256\376\377\377\377", 8, "CryptFF", CL_TYPE_CRYPTFF},
 
     /* Ignored types */
 
