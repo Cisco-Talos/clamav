@@ -1302,6 +1302,94 @@ static int cli_scanjpeg(int desc, const char **virname)
     return ret;
 }
 
+static int cli_scancryptff(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+{
+	int ret = CL_CLEAN, i, ndesc;
+	unsigned int length;
+	unsigned char *src = NULL, *dest = NULL;
+	char *tempfile;
+	struct stat sb;
+
+
+    if(fstat(desc, &sb) == -1) {
+	cli_errmsg("CryptFF: Can's fstat descriptor %d\n", desc);
+	return CL_EIO;
+    }
+
+    /* Skip the CryptFF file header */
+    if(lseek(desc, 0x10, SEEK_SET) < 0) {
+	cli_errmsg("CryptFF: Can's fstat descriptor %d\n", desc);
+	return ret;
+    }
+
+    length = sb.st_size  - 0x10;
+ 
+    if((dest = (char *) cli_malloc(length)) == NULL) {
+	cli_dbgmsg("CryptFF: Can't allocate memory\n");
+        return CL_EMEM;
+    }
+
+    if((src = (char *) cli_malloc(length)) == NULL) {
+	cli_dbgmsg("CryptFF: Can't allocate memory\n");
+	free(dest);
+        return CL_EMEM;
+    }
+
+    if((unsigned int) read(desc, src, length) != length) {
+	cli_dbgmsg("CryptFF: Can't read from descriptor %d\n", desc);
+	free(dest);
+	free(src);
+	return CL_EIO;
+    }
+
+    for(i = 0; i < length; i++)
+	dest[i] = src[i] ^ (unsigned char) 0xff;
+
+    free(src);
+
+    tempfile = cli_gentemp(NULL);
+    if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+	cli_errmsg("CryptFF: Can't create file %s\n", tempfile);
+	free(dest);
+	free(tempfile);
+	return CL_EIO;
+    }
+
+    if(write(ndesc, dest, length) == -1) {
+	cli_dbgmsg("CryptFF: Can't write to descriptor %d\n", ndesc);
+	free(dest);
+	close(ndesc);
+	free(tempfile);
+	return CL_EIO;
+    }
+
+    free(dest);
+
+    if(fsync(ndesc) == -1) {
+	cli_errmsg("CryptFF: Can't fsync descriptor %d\n", ndesc);
+	close(ndesc);
+	free(tempfile);
+	return CL_EIO;
+    }
+
+    lseek(ndesc, 0, SEEK_SET);
+
+    cli_dbgmsg("CryptFF: Scanning decrypted data\n");
+
+    if((ret = cli_magic_scandesc(ndesc, virname, scanned, engine, limits, options, arec, mrec)) == CL_VIRUS)
+	cli_dbgmsg("CryptFF: Infected with %s\n", *virname);
+
+    close(ndesc);
+
+    if(cli_leavetemps_flag)
+	cli_dbgmsg("CryptFF: Decompressed data saved in %s\n", tempfile);
+    else
+	unlink(tempfile);
+
+    free(tempfile);
+    return ret;
+}
+
 static int cli_scanpdf(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	int ret;
@@ -1521,6 +1609,10 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 	case CL_TYPE_PDF:
 	    if(SCAN_ARCHIVE)    /* you may wish to change this line */
 		ret = cli_scanpdf(desc, virname, scanned, engine, limits, options, arec, mrec);
+	    break;
+
+	case CL_TYPE_CRYPTFF:
+	    ret = cli_scancryptff(desc, virname, scanned, engine, limits, options, arec, mrec);
 	    break;
 
 	case CL_TYPE_ELF: /* TODO: Add ScanELF option */
