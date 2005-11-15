@@ -60,7 +60,7 @@ int treewalk(const char *dirname, struct cl_node *root, const struct passwd *use
 		    logg("%s: Excluded\n", dirname);
 		return 0;
 	    }
-	    argument = getnextargl(&optnode, "exclude");
+	    argument = getnextargl(&optnode, "exclude-dir");
 	}
     }
 
