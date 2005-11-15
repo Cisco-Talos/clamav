@@ -1336,7 +1336,7 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 	unpack_data->PrgStack.num_items = unpack_data->Filters.num_items = 0;
 	unpack_data->unp_crc = 0xffffffff;
 	
-	/*unpack_init_data(FALSE, unpack_data);*/
+	/* unpack_init_data(FALSE, unpack_data); */
 	ppm_constructor(&unpack_data->ppm_data);
 	
 	main_hdr = read_header(fd, MAIN_HEAD);
@@ -1347,6 +1347,13 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 	cli_dbgmsg("Head Type: %.2x\n", main_hdr->head_type);
 	cli_dbgmsg("Flags: %.4x\n", main_hdr->flags);
 	cli_dbgmsg("Head Size: %.4x\n", main_hdr->head_size);
+	if ((main_hdr->flags & MHD_VOLUME) != 0) {
+		/* Part of a RAR VOLUME - Skip it */
+		cli_dbgmsg("RAR MUTIPART VOLUME - Skippng.\n");
+		free(main_hdr);
+		return metadata;
+        }
+
 	if (main_hdr->head_size < SIZEOF_NEWMHD) {
 		free(main_hdr);
 		return metadata;
@@ -1416,8 +1423,13 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 					rar_unpack(fd, 15, (file_count>1) &&
 						((main_hdr->flags&MHD_SOLID)!=0), unpack_data);
 				} else {
-					rar_unpack(fd, file_header->unpack_ver,
-						file_header->flags & LHD_SOLID,	unpack_data);
+					if ((file_count == 1) && (file_header->flags & LHD_SOLID)) {
+						cli_warnmsg("RAR: First file can't be SOLID.\n");
+						break;
+					} else {
+						rar_unpack(fd, file_header->unpack_ver,
+							file_header->flags & LHD_SOLID,	unpack_data);
+					}
 				}
 				cli_dbgmsg("Expected File CRC: 0x%x\n", file_header->file_crc);
 				cli_dbgmsg("Computed File CRC: 0x%x\n", unpack_data->unp_crc^0xffffffff);
