@@ -387,8 +387,13 @@ __zzip_parse_root_directory(int fd,
                 return ZZIP_DIR_SEEK;
 	    }
             if (io->read(fd, &dirent, sizeof(dirent)) < __sizeof(dirent)) {
-		free(hdr0);
-                return ZZIP_DIR_READ;
+		if(entries != u_entries) {
+		    entries = 0;
+		    break;
+		} else {
+		    free(hdr0);
+		    return ZZIP_DIR_READ;
+		}
 	    }
             d = &dirent;
         }
