@@ -1,3 +1,8 @@
+Tue Nov 15 20:54:27 CET 2005 (tk)
+---------------------------------
+  * clamscan/treewalk.c: --exclude-dir was taking bad arguments when used
+			 multiple times
+
 Tue Nov 15 19:23:01 CET 2005 (tk)
 ---------------------------------
   * freshclam/manager.c: disable rotor in quiet mode, patch by Andrey J.
