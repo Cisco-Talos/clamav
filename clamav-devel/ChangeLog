@@ -1,3 +1,8 @@
+Tue Nov 15 10:27:15 GMT 2005 (trog)
+-----------------------------------
+  * libclamav/unrar/unrar.c: Skip multipart volumes.
+		Don't try and unpack invalid SOLID archives.
+
 Mon Nov 14 21:59:56 CET 2005 (tk)
 ---------------------------------
   * libclamav: add support for CryptFF, thanks to Arnaud Jacques
