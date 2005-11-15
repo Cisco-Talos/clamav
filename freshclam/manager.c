@@ -811,10 +811,12 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
 
     while((bread = read(socketfd, buffer, FILEBUFF))) {
 	write(fd, buffer, bread);
-	logg("Downloading %s [%c]\r", dbfile, rotation[rot]);
-	fflush(stdout);
-	rot++;
-	rot %= 4;
+	if(!mprintf_quiet) {
+	    logg("Downloading %s [%c]\r", dbfile, rotation[rot]);
+	    fflush(stdout);
+	    rot++;
+	    rot %= 4;
+	}
     }
 
     logg("Downloading %s [*]\n", dbfile);

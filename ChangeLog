@@ -1,3 +1,8 @@
+Tue Nov 15 19:23:01 CET 2005 (tk)
+---------------------------------
+  * freshclam/manager.c: disable rotor in quiet mode, patch by Andrey J.
+			 Melnikoff (TEMHOTA) <temnota*kmv.ru>
+
 Tue Nov 15 10:27:15 GMT 2005 (trog)
 -----------------------------------
   * libclamav/unrar/unrar.c: Skip multipart volumes.
