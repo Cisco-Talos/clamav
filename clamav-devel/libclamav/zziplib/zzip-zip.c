@@ -430,10 +430,17 @@ __zzip_parse_root_directory(int fd,
         }
         hdr->d_compr = (uint8_t)ZZIP_GET16(d->z_compr);
 
+	/* If d_compr is incorrect scanning will result in CL_EZIP (Zip
+	 * module failure)
+	 */
 	if(!hdr->d_compr && hdr->d_csize != hdr->d_usize) {
 	    cli_dbgmsg("Zziplib: File claims to be stored but csize != usize\n");
 	    cli_dbgmsg("Zziplib: Switching to the inflate method\n");
 	    hdr->d_compr = 8;
+	} else if(hdr->d_compr && hdr->d_csize == hdr->d_usize) {
+	    cli_dbgmsg("Zziplib: File claims to be deflated but csize == usize\n");
+	    cli_dbgmsg("Zziplib: Switching to the stored method\n");
+	    hdr->d_compr = 0;
 	}
 
 	hdr->d_flags = u_flags;
