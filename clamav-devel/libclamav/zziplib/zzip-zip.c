@@ -429,6 +429,13 @@ __zzip_parse_root_directory(int fd,
                 return ZZIP_DIR_READ;
         }
         hdr->d_compr = (uint8_t)ZZIP_GET16(d->z_compr);
+
+	if(!hdr->d_compr && hdr->d_csize != hdr->d_usize) {
+	    cli_dbgmsg("Zziplib: File claims to be stored but csize != usize\n");
+	    cli_dbgmsg("Zziplib: Switching to the inflate method\n");
+	    hdr->d_compr = 8;
+	}
+
 	hdr->d_flags = u_flags;
 
         /* bull: hdr->d_compr is uint8_t
