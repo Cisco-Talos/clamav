@@ -50,6 +50,7 @@
 #define IMAGE_OPTIONAL_SIGNATURE    0x010b
 
 #define DETECT_BROKEN		    (options & CL_SCAN_BLOCKBROKEN)
+#define BLOCKMAX		    (options & CL_SCAN_BLOCKMAX)
 
 #define UPX_NRV2B "\x11\xdb\x11\xc9\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9\x11\xc9\x75\x20\x41\x01\xdb"
 #define UPX_NRV2D "\x83\xf0\xff\x74\x78\xd1\xf8\x89\xc5\xeb\x0b\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9"
@@ -599,7 +600,12 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		if(limits && limits->maxfilesize && (ssize > limits->maxfilesize || dsize > limits->maxfilesize)) {
 		    cli_dbgmsg("FSG: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize , limits->maxfilesize);
 		    free(section_hdr);
-		    return CL_CLEAN;
+		    if(BLOCKMAX) {
+			*virname = "PE.FSG.ExceededFileSize";
+			return CL_VIRUS;
+		    } else {
+			return CL_CLEAN;
+		    }
 		}
 
 		if(ssize <= 0x19 || dsize <= ssize) {
@@ -751,7 +757,12 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		if(limits && limits->maxfilesize && (ssize > limits->maxfilesize || dsize > limits->maxfilesize)) {
 		    cli_dbgmsg("FSG: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize, limits->maxfilesize);
 		    free(section_hdr);
-		    return CL_CLEAN;
+		    if(BLOCKMAX) {
+			*virname = "PE.FSG.ExceededFileSize";
+			return CL_VIRUS;
+		    } else {
+			return CL_CLEAN;
+		    }
 		}
 
 		if(ssize <= 0x19 || dsize <= ssize) {
@@ -771,7 +782,12 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		if(limits && limits->maxfilesize && (unsigned int) gp > limits->maxfilesize) {
 		    cli_dbgmsg("FSG: Buffer size exceeded (size: %d, max: %lu)\n", gp, limits->maxfilesize);
 		    free(section_hdr);
-		    return CL_CLEAN;
+		    if(BLOCKMAX) {
+			*virname = "PE.FSG.ExceededFileSize";
+			return CL_VIRUS;
+		    } else {
+			return CL_CLEAN;
+		    }
 		}
 
 		if((support = (char *) cli_malloc(gp)) == NULL) {
@@ -961,7 +977,12 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		if(limits && limits->maxfilesize && (ssize > limits->maxfilesize || dsize > limits->maxfilesize)) {
 		    cli_dbgmsg("FSG: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize, limits->maxfilesize);
 		    free(section_hdr);
-		    return CL_CLEAN;
+		    if(BLOCKMAX) {
+			*virname = "PE.FSG.ExceededFileSize";
+			return CL_VIRUS;
+		    } else {
+			return CL_CLEAN;
+		    }
 		}
 
 		if(ssize <= 0x19 || dsize <= ssize) {
@@ -981,7 +1002,12 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		if(limits && limits->maxfilesize && (unsigned int) gp > limits->maxfilesize) {
 		    cli_dbgmsg("FSG: Buffer size exceeded (size: %d, max: %lu)\n", gp, limits->maxfilesize);
 		    free(section_hdr);
-		    return CL_CLEAN;
+		    if(BLOCKMAX) {
+			*virname = "PE.FSG.ExceededFileSize";
+			return CL_VIRUS;
+		    } else {
+			return CL_CLEAN;
+		    }
 		}
 
 		if((support = (char *) cli_malloc(gp)) == NULL) {
@@ -1141,7 +1167,12 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    if(limits && limits->maxfilesize && (ssize > limits->maxfilesize || dsize > limits->maxfilesize)) {
 		cli_dbgmsg("UPX: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize , limits->maxfilesize);
 		free(section_hdr);
-		return CL_CLEAN;
+		if(BLOCKMAX) {
+		    *virname = "PE.UPX.ExceededFileSize";
+		    return CL_VIRUS;
+		} else {
+		    return CL_CLEAN;
+		}
 	    }
 
 	    if(ssize <= 0x19 || dsize <= ssize) { /* FIXME: What are reasonable values? */
@@ -1330,7 +1361,12 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    if(limits && limits->maxfilesize && dsize > limits->maxfilesize) {
 		cli_dbgmsg("Petite: Size exceeded (dsize: %d, max: %lu)\n", dsize, limits->maxfilesize);
 		free(section_hdr);
-		return CL_CLEAN;
+		if(BLOCKMAX) {
+		    *virname = "PE.Petite.ExceededFileSize";
+		    return CL_VIRUS;
+		} else {
+		    return CL_CLEAN;
+		}
 	    }
 
 	    if((dest = (char *) cli_calloc(dsize, sizeof(char))) == NULL) {
