@@ -1,3 +1,7 @@
+Thu Nov 17 13:52:43 CET 2005 (tk)
+---------------------------------
+  * libclamav/pe.c: respect CL_SCAN_BLOCKMAX
+
 Wed Nov 16 18:47:31 CET 2005 (tk)
 ---------------------------------
   * libclamav/zziplib: improve handling of incorrectly created/handcrafted zip
