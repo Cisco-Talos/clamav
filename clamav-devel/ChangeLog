@@ -1,3 +1,7 @@
+Mon Nov 21 21:57:29 CET 2005 (tk)
+---------------------------------
+  * configure.in: check for __attribute__((aligned))
+
 Mon Nov 21 19:29:24 CET 2005 (tk)
 ---------------------------------
   * clamd/others.h: fix compilation error on systems with INCOMPLETE_CMSG
