@@ -1,3 +1,8 @@
+Mon Nov 21 19:29:24 CET 2005 (tk)
+---------------------------------
+  * clamd/others.h: fix compilation error on systems with INCOMPLETE_CMSG
+		    Reported by Fukuda Manabu <fukuda*cri-mw.co.jp>
+
 Thu Nov 17 13:52:43 CET 2005 (tk)
 ---------------------------------
   * libclamav/pe.c: respect CL_SCAN_BLOCKMAX
