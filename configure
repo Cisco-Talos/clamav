@@ -14177,15 +14177,80 @@ _ACEOF
 
 fi
 
+echo "$as_me:$LINENO: checking for type aligning via __attribute__((aligned))" >&5
+echo $ECHO_N "checking for type aligning via __attribute__((aligned))... $ECHO_C" >&6
+if test "${have_attrib_aligned+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+
+	cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+int
+main ()
+{
+typedef int cl_aligned_int __attribute__((aligned));
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+  (eval $ac_compile) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest.$ac_objext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  have_attrib_aligned=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+have_attrib_aligned=no
+fi
+rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
+
+fi
+
+echo "$as_me:$LINENO: result: $have_attrib_aligned" >&5
+echo "${ECHO_T}$have_attrib_aligned" >&6
+
 if test "$have_attrib_packed" = no -a "$have_pragma_pack" = no ; then
 	{ { echo "$as_me:$LINENO: error: Need to know how to pack structures with this compiler" >&5
 echo "$as_me: error: Need to know how to pack structures with this compiler" >&2;}
    { (exit 1); exit 1; }; }
 fi
+
 if test "$have_attrib_packed" = yes; then
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_ATTRIB_PACKED 1
+_ACEOF
+
+fi
+
+if test "$have_attrib_aligned" = yes; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_ATTRIB_ALIGNED 1
 _ACEOF
 
 fi

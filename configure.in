@@ -922,11 +922,26 @@ if test "$have_attrib_packed" = no; then
 	AC_DEFINE(HAVE_PRAGMA_PACK, 1, "pragma pack")
 fi
 
+dnl check for __attribute__((aligned))
+AC_MSG_CHECKING([for type aligning via __attribute__((aligned))])
+AC_CACHE_VAL(have_attrib_aligned,[
+	AC_TRY_COMPILE(,
+		[typedef int cl_aligned_int __attribute__((aligned));],
+		[have_attrib_aligned=yes],
+		[have_attrib_aligned=no])
+	])
+AC_MSG_RESULT($have_attrib_aligned)
+
 if test "$have_attrib_packed" = no -a "$have_pragma_pack" = no ; then
 	AC_MSG_ERROR(Need to know how to pack structures with this compiler)
 fi
+
 if test "$have_attrib_packed" = yes; then
-	AC_DEFINE(HAVE_ATTRIB_PACKED, 1, "attrib packed")
+	AC_DEFINE(HAVE_ATTRIB_PACKED, 1, [attrib packed])
+fi
+
+if test "$have_attrib_aligned" = yes; then
+	AC_DEFINE(HAVE_ATTRIB_ALIGNED, 1, [attrib aligned])
 fi
 
 dnl Check if <sys/select.h> needs to be included for fd_set

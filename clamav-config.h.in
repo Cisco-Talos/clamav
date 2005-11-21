@@ -84,7 +84,10 @@
 /* access rights in msghdr */
 #undef HAVE_ACCRIGHTS_IN_MSGHDR
 
-/* "attrib packed" */
+/* attrib aligned */
+#undef HAVE_ATTRIB_ALIGNED
+
+/* attrib packed */
 #undef HAVE_ATTRIB_PACKED
 
 /* have bzip2 */
