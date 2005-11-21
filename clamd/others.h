@@ -32,7 +32,7 @@ int is_fd_connected(int fd);
 void virusaction(const char *filename, const char *virname, const struct cfgstruct *copt);
 int writen(int fd, void *buff, unsigned int count);
 
-#if defined(HAVE_RECVMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN) && !defined(C_OS2)
+#if defined(HAVE_RECVMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN) && !defined(C_OS2) && !defined(INCOMPLETE_CMSG)
 int readsock(int sockfd, char *buf, size_t size);
 #else
 #define	readsock	read
