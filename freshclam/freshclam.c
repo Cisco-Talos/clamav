@@ -212,13 +212,13 @@ int freshclam(struct optstruct *opt)
 
     if(optc(opt, 'l')) {
 	logg_file = getargc(opt, 'l');
-	if(logg("--------------------------------------\n")) {
+	if(logg("#--------------------------------------\n")) {
 	    mprintf("!Problem with internal logger.\n");
 	    exit(62);
 	}
     } else if((cpt = cfgopt(copt, "UpdateLogFile"))->enabled) {
 	logg_file = cpt->strarg; 
-	if(logg("--------------------------------------\n")) {
+	if(logg("#--------------------------------------\n")) {
 	    mprintf("!Problem with internal logger.\n");
 	    exit(62);
 	}
@@ -296,7 +296,7 @@ int freshclam(struct optstruct *opt)
 
 	active_children = 0;
 
-	logg("freshclam daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
+	logg("#freshclam daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
 
 	sigaction(SIGTERM, &sigact, NULL);
 	sigaction(SIGHUP, &sigact, NULL);
@@ -318,7 +318,7 @@ int freshclam(struct optstruct *opt)
 		    execute("OnErrorExecute", arg);
 	    }
 
-	    logg("--------------------------------------\n");
+	    logg("#--------------------------------------\n");
 	    sigaction(SIGALRM, &sigact, &oldact);
 	    sigaction(SIGUSR1, &sigact, &oldact);
 	    time(&wakeup);
