@@ -15,6 +15,8 @@
 #include "clamav-config.h"
 #endif
 
+#include "target.h"
+
 #include <zzip.h>                                  /* archive handling */
 #include <zzip-file.h>
 #include <zzipformat.h>
@@ -640,7 +642,11 @@ __zzip_dir_parse (ZZIP_DIR* dir)
 {
     zzip_error_t rv;
     zzip_off_t filesize;
+#if defined(TARGET_CPU_SPARC64) && defined(HAVE_ATTRIB_ALIGNED)
+    struct zzip_disk_trailer trailer __attribute__((aligned));
+#else
     struct zzip_disk_trailer trailer;
+#endif
     /* if (! dir || dir->fd < 0) 
      *     { rv = EINVAL; goto error; } 
      */
