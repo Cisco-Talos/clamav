@@ -642,7 +642,7 @@ __zzip_dir_parse (ZZIP_DIR* dir)
 {
     zzip_error_t rv;
     zzip_off_t filesize;
-#if defined(TARGET_CPU_SPARC64) && defined(HAVE_ATTRIB_ALIGNED)
+#if (defined(TARGET_CPU_SPARC64) || defined(TARGET_CPU_SPARC)) && defined(HAVE_ATTRIB_ALIGNED)
     struct zzip_disk_trailer trailer __attribute__((aligned));
 #else
     struct zzip_disk_trailer trailer;

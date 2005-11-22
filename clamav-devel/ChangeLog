@@ -1,3 +1,9 @@
+Tue Nov 22 12:45:35 CET 2005 (tk)
+---------------------------------
+  * libclamav/zziplib/zzip-zip.c: enable pointer fix on TARGET_CPU_SPARC, too
+				  (configure doesn't detect sparc64 in some
+				  cases)
+
 Mon Nov 21 22:36:35 CET 2005 (tk)
 ---------------------------------
   * libclamav/zziplib/zzip-zip.c: fix pointer misalignment problem on sparc64
