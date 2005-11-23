@@ -1,3 +1,8 @@
+Wed Nov 23 11:20:54 GMT 2005 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Multipart headers: handle end of header lines that are
+				not empty
+
 Tue Nov 22 12:45:35 CET 2005 (tk)
 ---------------------------------
   * libclamav/zziplib/zzip-zip.c: enable pointer fix on TARGET_CPU_SPARC, too

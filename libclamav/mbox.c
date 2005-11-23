@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.261 2005/10/31 21:21:13 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.262 2005/11/23 11:19:40 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1827,6 +1827,19 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 								break;*/
 							if(!isspace(data[0]))
 								break;
+
+							if(data[1] == '\0') {
+								/*
+								 * Broken message: the
+								 * blank line at the end
+								 * of the headers isn't blank -
+								 * it contains a space
+								 */
+								cli_dbgmsg("Multipart %d: headers not terminated by blank line\n",
+									multiparts);
+								inhead = FALSE;
+								break;
+							}
 
 							ptr = cli_realloc(fullline,
 								strlen(fullline) + strlen(data) + 1);
