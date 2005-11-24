@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.220 2005/09/30 16:01:57 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.221 2005/11/24 13:20:46 nigelhorne Exp $";
 
-#define	CM_VERSION	"devel-300905"
+#define	CM_VERSION	"devel-241105"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -659,7 +659,7 @@ main(int argc, char **argv)
 			{
 				"max-children", 1, NULL, 'm'
 			},
-			{	
+			{
 				"freshclam-monitor", 1, NULL, 'M'
 			},
 			{
@@ -2222,6 +2222,8 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		 */
 		if(n_children >= max_children) {
 			struct timespec timeout;
+			struct timeval now;
+			struct timezone tz;
 
 			cli_dbgmsg((dont_wait) ?
 					_("hit max-children limit (%u >= %u)\n") :
@@ -2251,6 +2253,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			 * Patch from Damian Menscher <menscher@uiuc.edu> to
 			 * ensure it wakes up when a child goes away
 			 */
+			gettimeofday(&now, &tz);
 			do {
 				if(use_syslog)
 					/* LOG_INFO */
@@ -2262,10 +2265,6 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 					pthread_cond_wait(&n_children_cond, &n_children_mutex);
 					rc = 0;
 				} else {
-					struct timeval now;
-					struct timezone tz;
-
-					gettimeofday(&now, &tz);
 					timeout.tv_sec = now.tv_sec + child_timeout;
 					timeout.tv_nsec = 0;
 
