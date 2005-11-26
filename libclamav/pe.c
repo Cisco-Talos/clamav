@@ -47,7 +47,8 @@
 #define IMAGE_DOS_SIGNATURE	    0x5a4d	    /* MZ */
 #define IMAGE_DOS_SIGNATURE_OLD	    0x4d5a          /* ZM */
 #define IMAGE_NT_SIGNATURE	    0x00004550
-#define IMAGE_OPTIONAL_SIGNATURE    0x010b
+#define PE32_SIGNATURE		    0x010b
+#define PE32P_SIGNATURE		    0x020b
 
 #define DETECT_BROKEN		    (options & CL_SCAN_BLOCKBROKEN)
 #define BLOCKMAX		    (options & CL_SCAN_BLOCKMAX)
@@ -155,14 +156,16 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	uint16_t nsections;
 	uint32_t e_lfanew; /* address of new exe header */
 	uint32_t ep; /* entry point (raw) */
+	uint32_t tmp;
 	time_t timestamp;
 	struct pe_image_file_hdr file_hdr;
-	struct pe_image_optional_hdr optional_hdr;
+	struct pe_image_optional_hdr32 optional_hdr32;
+	struct pe_image_optional_hdr64 optional_hdr64;
 	struct pe_image_section_hdr *section_hdr;
 	struct stat sb;
 	char sname[9], buff[4096], *tempfile;
 	unsigned int i, found, upx_success = 0, min = 0, max = 0, err, broken = 0;
-	unsigned int ssize = 0, dsize = 0, dll = 0;
+	unsigned int ssize = 0, dsize = 0, dll = 0, pe_plus = 0;
 	int (*upxfn)(char *, int , char *, int *, uint32_t, uint32_t, uint32_t) = NULL;
 	char *src = NULL, *dest = NULL;
 	int ndesc, ret;
@@ -334,40 +337,96 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
     cli_dbgmsg("SizeOfOptionalHeader: %d\n", EC16(file_hdr.SizeOfOptionalHeader));
 
-    if(EC16(file_hdr.SizeOfOptionalHeader) != sizeof(struct pe_image_optional_hdr)) {
-	cli_warnmsg("Broken PE header detected.\n");
-	if(DETECT_BROKEN) {
-	    if(virname)
-		*virname = "Broken.Executable";
-	    return CL_VIRUS;
+    if(EC16(file_hdr.SizeOfOptionalHeader) != sizeof(struct pe_image_optional_hdr32)) {
+	if(EC16(file_hdr.SizeOfOptionalHeader) == sizeof(struct pe_image_optional_hdr64)) {
+	    pe_plus = 1;
+	} else {
+	    cli_warnmsg("Broken PE header detected.\n");
+	    if(DETECT_BROKEN) {
+		if(virname)
+		    *virname = "Broken.Executable";
+		return CL_VIRUS;
+	    }
+	    return CL_CLEAN;
 	}
-	return CL_CLEAN;
     }
 
-    if(read(desc, &optional_hdr, sizeof(struct pe_image_optional_hdr)) != sizeof(struct pe_image_optional_hdr)) {
-	cli_dbgmsg("Can't optional file header\n");
-	if(DETECT_BROKEN) {
-	    if(virname)
-		*virname = "Broken.Executable";
-	    return CL_VIRUS;
+    if(!pe_plus) { /* PE */
+
+	if(read(desc, &optional_hdr32, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32)) {
+	    cli_dbgmsg("Can't optional file header\n");
+	    if(DETECT_BROKEN) {
+		if(virname)
+		    *virname = "Broken.Executable";
+		return CL_VIRUS;
+	    }
+	    return CL_CLEAN;
 	}
-	return CL_CLEAN;
+
+	if(EC16(optional_hdr32.Magic) != PE32_SIGNATURE) {
+	    cli_warnmsg("Incorrect magic number in optional header\n");
+	    if(DETECT_BROKEN) {
+		if(virname)
+		    *virname = "Broken.Executable";
+		return CL_VIRUS;
+	    }
+	}
+	cli_dbgmsg("File format: PE\n");
+
+	cli_dbgmsg("MajorLinkerVersion: %d\n", optional_hdr32.MajorLinkerVersion);
+	cli_dbgmsg("MinorLinkerVersion: %d\n", optional_hdr32.MinorLinkerVersion);
+	cli_dbgmsg("SizeOfCode: %d\n", EC32(optional_hdr32.SizeOfCode));
+	cli_dbgmsg("SizeOfInitializedData: %d\n", EC32(optional_hdr32.SizeOfInitializedData));
+	cli_dbgmsg("SizeOfUninitializedData: %d\n", EC32(optional_hdr32.SizeOfUninitializedData));
+	cli_dbgmsg("AddressOfEntryPoint: 0x%x\n", EC32(optional_hdr32.AddressOfEntryPoint));
+	cli_dbgmsg("BaseOfCode: 0x%x\n", EC32(optional_hdr32.BaseOfCode));
+	cli_dbgmsg("SectionAlignment: %d\n", EC32(optional_hdr32.SectionAlignment));
+	cli_dbgmsg("FileAlignment: %d\n", EC32(optional_hdr32.FileAlignment));
+	cli_dbgmsg("MajorSubsystemVersion: %d\n", EC16(optional_hdr32.MajorSubsystemVersion));
+	cli_dbgmsg("MinorSubsystemVersion: %d\n", EC16(optional_hdr32.MinorSubsystemVersion));
+	cli_dbgmsg("SizeOfImage: %d\n", EC32(optional_hdr32.SizeOfImage));
+	cli_dbgmsg("SizeOfHeaders: %d\n", EC32(optional_hdr32.SizeOfHeaders));
+	cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr32.NumberOfRvaAndSizes));
+
+    } else { /* PE+ */
+
+	if(read(desc, &optional_hdr64, sizeof(struct pe_image_optional_hdr64)) != sizeof(struct pe_image_optional_hdr64)) {
+	    cli_dbgmsg("Can't optional file header\n");
+	    if(DETECT_BROKEN) {
+		if(virname)
+		    *virname = "Broken.Executable";
+		return CL_VIRUS;
+	    }
+	    return CL_CLEAN;
+	}
+
+	if(EC16(optional_hdr64.Magic) != PE32P_SIGNATURE) {
+	    cli_warnmsg("Incorrect magic number in optional header\n");
+	    if(DETECT_BROKEN) {
+		if(virname)
+		    *virname = "Broken.Executable";
+		return CL_VIRUS;
+	    }
+	}
+	cli_dbgmsg("File format: PE32+\n");
+
+	cli_dbgmsg("MajorLinkerVersion: %d\n", optional_hdr64.MajorLinkerVersion);
+	cli_dbgmsg("MinorLinkerVersion: %d\n", optional_hdr64.MinorLinkerVersion);
+	cli_dbgmsg("SizeOfCode: %d\n", EC32(optional_hdr64.SizeOfCode));
+	cli_dbgmsg("SizeOfInitializedData: %d\n", EC32(optional_hdr64.SizeOfInitializedData));
+	cli_dbgmsg("SizeOfUninitializedData: %d\n", EC32(optional_hdr64.SizeOfUninitializedData));
+	cli_dbgmsg("AddressOfEntryPoint: 0x%x\n", EC32(optional_hdr64.AddressOfEntryPoint));
+	cli_dbgmsg("BaseOfCode: 0x%x\n", EC32(optional_hdr64.BaseOfCode));
+	cli_dbgmsg("SectionAlignment: %d\n", EC32(optional_hdr64.SectionAlignment));
+	cli_dbgmsg("FileAlignment: %d\n", EC32(optional_hdr64.FileAlignment));
+	cli_dbgmsg("MajorSubsystemVersion: %d\n", EC16(optional_hdr64.MajorSubsystemVersion));
+	cli_dbgmsg("MinorSubsystemVersion: %d\n", EC16(optional_hdr64.MinorSubsystemVersion));
+	cli_dbgmsg("SizeOfImage: %d\n", EC32(optional_hdr64.SizeOfImage));
+	cli_dbgmsg("SizeOfHeaders: %d\n", EC32(optional_hdr64.SizeOfHeaders));
+	cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr64.NumberOfRvaAndSizes));
     }
 
-    cli_dbgmsg("MajorLinkerVersion: %d\n", optional_hdr.MajorLinkerVersion);
-    cli_dbgmsg("MinorLinkerVersion: %d\n", optional_hdr.MinorLinkerVersion);
-    cli_dbgmsg("SizeOfCode: %d\n", EC32(optional_hdr.SizeOfCode));
-    cli_dbgmsg("SizeOfInitializedData: %d\n", EC32(optional_hdr.SizeOfInitializedData));
-    cli_dbgmsg("SizeOfUninitializedData: %d\n", EC32(optional_hdr.SizeOfUninitializedData));
-    cli_dbgmsg("AddressOfEntryPoint: 0x%x\n", EC32(optional_hdr.AddressOfEntryPoint));
-    cli_dbgmsg("SectionAlignment: %d\n", EC32(optional_hdr.SectionAlignment));
-    cli_dbgmsg("FileAlignment: %d\n", EC32(optional_hdr.FileAlignment));
-    cli_dbgmsg("MajorSubsystemVersion: %d\n", EC16(optional_hdr.MajorSubsystemVersion));
-    cli_dbgmsg("MinorSubsystemVersion: %d\n", EC16(optional_hdr.MinorSubsystemVersion));
-    cli_dbgmsg("SizeOfImage: %d\n", EC32(optional_hdr.SizeOfImage));
-    cli_dbgmsg("SizeOfHeaders: %d\n", EC32(optional_hdr.SizeOfHeaders));
-
-    switch(EC16(optional_hdr.Subsystem)) {
+    switch(pe_plus ? EC16(optional_hdr64.Subsystem) : EC16(optional_hdr32.Subsystem)) {
 	case 0:
 	    cli_dbgmsg("Subsystem: Unknown\n");
 	    break;
@@ -402,10 +461,9 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    cli_dbgmsg("Subsystem: EFI runtime driver\n");
 	    break;
 	default:
-	    cli_warnmsg("Unknown subsystem in PE header (0x%x)\n", EC16(optional_hdr.Subsystem));
+	    cli_warnmsg("Unknown subsystem in PE header (0x%x)\n", pe_plus ? EC16(optional_hdr64.Subsystem) : EC16(optional_hdr32.Subsystem));
     }
 
-    cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr.NumberOfRvaAndSizes));
     cli_dbgmsg("------------------------------------\n");
 
     if(fstat(desc, &sb) == -1) {
@@ -488,7 +546,12 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
     }
 
-    if((ep = EC32(optional_hdr.AddressOfEntryPoint)) >= min && !(ep = cli_rawaddr(EC32(optional_hdr.AddressOfEntryPoint), section_hdr, nsections, &err)) && err) {
+    if(pe_plus)
+	ep = EC32(optional_hdr64.AddressOfEntryPoint);
+    else
+	ep = EC32(optional_hdr32.AddressOfEntryPoint);
+
+    if(ep >= min && !(ep = cli_rawaddr(ep, section_hdr, nsections, &err)) && err) {
 	cli_dbgmsg("Possibly broken PE file\n");
 	free(section_hdr);
 	if(DETECT_BROKEN) {
@@ -559,6 +622,12 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	return CL_CLEAN;
     }
 
+    if(pe_plus) { /* Do not continue for PE32+ files */
+	free(section_hdr);
+	return CL_CLEAN;
+    }
+
+
     /* UPX & FSG support */
 
     /* try to find the first section with physical size == 0 */
@@ -614,7 +683,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    return CL_CLEAN;
 		}
 
-		if((newedx = cli_readint32(buff + 2) - EC32(optional_hdr.ImageBase)) < EC32(section_hdr[i + 1].VirtualAddress) || newedx >= EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData) - 4) {
+		if((newedx = cli_readint32(buff + 2) - EC32(optional_hdr32.ImageBase)) < EC32(section_hdr[i + 1].VirtualAddress) || newedx >= EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData) - 4) {
 		    cli_dbgmsg("FSG: xchg out of bounds (%x), giving up\n", newedx);
 		    break;
 		}
@@ -638,7 +707,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    break;
 		}
 
-		if((newedx = cli_readint32(dest) - EC32(optional_hdr.ImageBase)) <= EC32(section_hdr[i + 1].VirtualAddress) || newedx >= EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData) - 4) {
+		if((newedx = cli_readint32(dest) - EC32(optional_hdr32.ImageBase)) <= EC32(section_hdr[i + 1].VirtualAddress) || newedx >= EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData) - 4) {
 		    cli_dbgmsg("FSG: New ESP (%x) is wrong\n", newedx);
 		    free(src);
 		    break;
@@ -650,9 +719,9 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    break;
 		}
 
-		newedi = cli_readint32(dest) - EC32(optional_hdr.ImageBase);
-		newesi = cli_readint32(dest + 4) - EC32(optional_hdr.ImageBase);
-		newebx = cli_readint32(dest + 16) - EC32(optional_hdr.ImageBase);
+		newedi = cli_readint32(dest) - EC32(optional_hdr32.ImageBase);
+		newesi = cli_readint32(dest + 4) - EC32(optional_hdr32.ImageBase);
+		newebx = cli_readint32(dest + 16) - EC32(optional_hdr32.ImageBase);
 		newedx = cli_readint32(dest + 20);
 
 		if(newedi != EC32(section_hdr[i].VirtualAddress)) {
@@ -673,7 +742,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    break;
 		}
 
-		newedx=cli_readint32(newebx + 12 - EC32(section_hdr[i + 1].VirtualAddress) + src) - EC32(optional_hdr.ImageBase);
+		newedx=cli_readint32(newebx + 12 - EC32(section_hdr[i + 1].VirtualAddress) + src) - EC32(optional_hdr32.ImageBase);
 		cli_dbgmsg("FSG: found old EP @%x\n",newedx);
 
 		if((dest = (char *) cli_calloc(dsize, sizeof(char))) == NULL) {
@@ -692,7 +761,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    return CL_EIO;
 		}
 		
-		switch (unfsg_200(newesi - EC32(section_hdr[i + 1].VirtualAddress) + src, dest, ssize + EC32(section_hdr[i + 1].VirtualAddress) - newesi, dsize, newedi, EC32(optional_hdr.ImageBase), newedx, ndesc)) {
+		switch (unfsg_200(newesi - EC32(section_hdr[i + 1].VirtualAddress) + src, dest, ssize + EC32(section_hdr[i + 1].VirtualAddress) - newesi, dsize, newedi, EC32(optional_hdr32.ImageBase), newedx, ndesc)) {
 		    case 1: /* Everything OK */
 			cli_dbgmsg("FSG: Unpacked and rebuilt executable saved in %s\n", tempfile);
 			free(src);
@@ -740,7 +809,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    }
 	}
 
- 	if(found && buff[0] == '\xbe' && cli_readint32(buff + 1) - EC32(optional_hdr.ImageBase) < min) {
+ 	if(found && buff[0] == '\xbe' && cli_readint32(buff + 1) - EC32(optional_hdr32.ImageBase) < min) {
 
 	    /* FSG support - v. 1.33 (thx trog for the many samples) */
 
@@ -771,7 +840,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    return CL_CLEAN;
 		}
 
-		if((gp = cli_readint32(buff + 1) - EC32(optional_hdr.ImageBase)) >= (int) EC32(section_hdr[i + 1].PointerToRawData) || gp < 0) {
+		if((gp = cli_readint32(buff + 1) - EC32(optional_hdr32.ImageBase)) >= (int) EC32(section_hdr[i + 1].PointerToRawData) || gp < 0) {
 		    cli_dbgmsg("FSG: Support data out of padding area (vaddr: %d)\n", EC32(section_hdr[i].VirtualAddress));
 		    break;
 		}
@@ -802,9 +871,9 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    return CL_EIO;
 		}
 
-		newebx = cli_readint32(support) - EC32(optional_hdr.ImageBase); /* Unused */
-		newedi = cli_readint32(support + 4) - EC32(optional_hdr.ImageBase); /* 1st dest */
-		newesi = cli_readint32(support + 8) - EC32(optional_hdr.ImageBase); /* Source */
+		newebx = cli_readint32(support) - EC32(optional_hdr32.ImageBase); /* Unused */
+		newedi = cli_readint32(support + 4) - EC32(optional_hdr32.ImageBase); /* 1st dest */
+		newesi = cli_readint32(support + 8) - EC32(optional_hdr32.ImageBase); /* Source */
 
 		if(newesi < EC32(section_hdr[i + 1].VirtualAddress) || newesi >= EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData)) {
 		    cli_dbgmsg("FSG: Source buffer out of section bounds\n");
@@ -825,7 +894,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    if(!rva)
 			break;
 
-		    rva -= EC32(optional_hdr.ImageBase)+1;
+		    rva -= EC32(optional_hdr32.ImageBase)+1;
 		    sectcnt++;
 
 		    if(rva % 0x1000)
@@ -851,7 +920,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
 		sections[0].rva = newedi;
 		for(t = 1; t <= sectcnt; t++)
-		    sections[t].rva = cli_readint32(support + 8 + t * 4) - 1 -EC32(optional_hdr.ImageBase);
+		    sections[t].rva = cli_readint32(support + 8 + t * 4) - 1 -EC32(optional_hdr32.ImageBase);
 
 		free(support);
 
@@ -877,7 +946,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    return CL_EMEM;
 		}
 
-		oldep = EC32(optional_hdr.AddressOfEntryPoint) + 161 + 6 + cli_readint32(buff+163);
+		oldep = EC32(optional_hdr32.AddressOfEntryPoint) + 161 + 6 + cli_readint32(buff+163);
 		cli_dbgmsg("FSG: found old EP @%x\n", oldep);
 
 		tempfile = cli_gentemp(NULL);
@@ -891,7 +960,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    return CL_EIO;
 		}
 
-		switch(unfsg_133(src + newesi - EC32(section_hdr[i + 1].VirtualAddress), dest, ssize + EC32(section_hdr[i + 1].VirtualAddress) - newesi, dsize, sections, sectcnt, EC32(optional_hdr.ImageBase), oldep, ndesc)) {
+		switch(unfsg_133(src + newesi - EC32(section_hdr[i + 1].VirtualAddress), dest, ssize + EC32(section_hdr[i + 1].VirtualAddress) - newesi, dsize, sections, sectcnt, EC32(optional_hdr32.ImageBase), oldep, ndesc)) {
 		    case 1: /* Everything OK */
 			cli_dbgmsg("FSG: Unpacked and rebuilt executable saved in %s\n", tempfile);
 			free(src);
@@ -943,7 +1012,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	}
 
 	/* FIXME: easy 2 hack */
- 	if(found && buff[0] == '\xbb' && cli_readint32(buff + 1) - EC32(optional_hdr.ImageBase) < min && buff[5] == '\xbf' && buff[10] == '\xbe') {
+ 	if(found && buff[0] == '\xbb' && cli_readint32(buff + 1) - EC32(optional_hdr32.ImageBase) < min && buff[5] == '\xbf' && buff[10] == '\xbe') {
 
 	    /* FSG support - v. 1.31 */
 
@@ -951,11 +1020,11 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    dsize = EC32(section_hdr[i].VirtualSize);
 
 	    while(found) {
-		    int gp = cli_readint32(buff+1) - EC32(optional_hdr.ImageBase), t, sectcnt = 0;
+		    int gp = cli_readint32(buff+1) - EC32(optional_hdr32.ImageBase), t, sectcnt = 0;
 		    char *support;
-		    uint32_t newesi = cli_readint32(buff+11) - EC32(optional_hdr.ImageBase);
-		    uint32_t newedi = cli_readint32(buff+6) - EC32(optional_hdr.ImageBase);
-		    uint32_t oldep = EC32(optional_hdr.AddressOfEntryPoint);
+		    uint32_t newesi = cli_readint32(buff+11) - EC32(optional_hdr32.ImageBase);
+		    uint32_t newedi = cli_readint32(buff+6) - EC32(optional_hdr32.ImageBase);
+		    uint32_t oldep = EC32(optional_hdr32.AddressOfEntryPoint);
 		    struct SECTION *sections;
 
 	        if (oldep <= EC32(section_hdr[i + 1].VirtualAddress) || oldep > EC32(section_hdr[i + 1].VirtualAddress)+EC32(section_hdr[i + 1].SizeOfRawData) - 0xe0) {
@@ -1029,7 +1098,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		  if (rva == 2 || rva == 1)
 		    break;
 
-		  rva = ((rva-2)<<12) - EC32(optional_hdr.ImageBase);
+		  rva = ((rva-2)<<12) - EC32(optional_hdr32.ImageBase);
 		  sectcnt++;
 
 		  if(rva < EC32(section_hdr[i].VirtualAddress) || rva >= EC32(section_hdr[i].VirtualAddress)+EC32(section_hdr[i].VirtualSize)) {
@@ -1051,7 +1120,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
 		sections[0].rva = newedi;
 		for(t = 0; t <= sectcnt - 1; t++) {
-		  sections[t+1].rva = (((support[t*2]+256*support[t*2+1])-2)<<12)-EC32(optional_hdr.ImageBase);
+		  sections[t+1].rva = (((support[t*2]+256*support[t*2+1])-2)<<12)-EC32(optional_hdr32.ImageBase);
 		}
 
 		free(support);
@@ -1080,7 +1149,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
 		/* Better not increasing buff size any further, let's go the hard way */
 		gp = 0xda + 6*(buff[16]=='\xe8');
-		oldep = EC32(optional_hdr.AddressOfEntryPoint) + gp + 6 + cli_readint32(src+gp+2+oldep);
+		oldep = EC32(optional_hdr32.AddressOfEntryPoint) + gp + 6 + cli_readint32(src+gp+2+oldep);
 		cli_dbgmsg("FSG: found old EP @%x\n", oldep);
 
 		tempfile = cli_gentemp(NULL);
@@ -1094,7 +1163,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    return CL_EIO;
 		}
 
-		switch(unfsg_133(src + newesi - EC32(section_hdr[i + 1].VirtualAddress), dest, ssize + EC32(section_hdr[i + 1].VirtualAddress) - newesi, dsize, sections, sectcnt, EC32(optional_hdr.ImageBase), oldep, ndesc)) {
+		switch(unfsg_133(src + newesi - EC32(section_hdr[i + 1].VirtualAddress), dest, ssize + EC32(section_hdr[i + 1].VirtualAddress) - newesi, dsize, sections, sectcnt, EC32(optional_hdr32.ImageBase), oldep, ndesc)) {
 		    case 1: /* Everything OK */
 			cli_dbgmsg("FSG: Unpacked and rebuilt executable saved in %s\n", tempfile);
 			free(src);
@@ -1233,16 +1302,16 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    }
 
 	    if(upxfn) {
-		    int skew = cli_readint32(buff + 2) - EC32(optional_hdr.ImageBase) - EC32(section_hdr[i + 1].VirtualAddress);
+		    int skew = cli_readint32(buff + 2) - EC32(optional_hdr32.ImageBase) - EC32(section_hdr[i + 1].VirtualAddress);
 
 		if(buff[1] != '\xbe' || skew <= 0 || skew > 0xfff) { /* FIXME: legit skews?? */
 		    skew = 0; 
-		    if(upxfn(src, ssize, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr.AddressOfEntryPoint)) >= 0)
+		    if(upxfn(src, ssize, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr32.AddressOfEntryPoint)) >= 0)
 			upx_success = 1;
 
 		} else {
 		    cli_dbgmsg("UPX: UPX1 seems skewed by %d bytes\n", skew);
-                    if(upxfn(src + skew, ssize - skew, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr.AddressOfEntryPoint)-skew) >= 0 || upxfn(src, ssize, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr.AddressOfEntryPoint)) >= 0)
+                    if(upxfn(src + skew, ssize - skew, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr32.AddressOfEntryPoint)-skew) >= 0 || upxfn(src, ssize, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr32.AddressOfEntryPoint)) >= 0)
 			upx_success = 1;
 		}
 
@@ -1253,7 +1322,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    }
 
 	    if(!upx_success && upxfn != upx_inflate2b) {
-		if(upx_inflate2b(src, ssize, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr.AddressOfEntryPoint)) == -1 && upx_inflate2b(src + 0x15, ssize - 0x15, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr.AddressOfEntryPoint) - 0x15) == -1) {
+		if(upx_inflate2b(src, ssize, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr32.AddressOfEntryPoint)) == -1 && upx_inflate2b(src + 0x15, ssize - 0x15, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr32.AddressOfEntryPoint) - 0x15) == -1) {
 
 		    cli_dbgmsg("UPX: NRV2B decompressor failed\n");
 		} else {
@@ -1263,7 +1332,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    }
 
 	    if(!upx_success && upxfn != upx_inflate2d) {
-		if(upx_inflate2d(src, ssize, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr.AddressOfEntryPoint)) == -1 && upx_inflate2d(src + 0x15, ssize - 0x15, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr.AddressOfEntryPoint) - 0x15) == -1) {
+		if(upx_inflate2d(src, ssize, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr32.AddressOfEntryPoint)) == -1 && upx_inflate2d(src + 0x15, ssize - 0x15, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr32.AddressOfEntryPoint) - 0x15) == -1) {
 
 		    cli_dbgmsg("UPX: NRV2D decompressor failed\n");
 		} else {
@@ -1273,7 +1342,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    }
 
 	    if(!upx_success && upxfn != upx_inflate2e) {
-		if(upx_inflate2e(src, ssize, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr.AddressOfEntryPoint)) == -1 && upx_inflate2e(src + 0x15, ssize - 0x15, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr.AddressOfEntryPoint) - 0x15) == -1) {
+		if(upx_inflate2e(src, ssize, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr32.AddressOfEntryPoint)) == -1 && upx_inflate2e(src + 0x15, ssize - 0x15, dest, &dsize, EC32(section_hdr[i].VirtualAddress), EC32(section_hdr[i + 1].VirtualAddress), EC32(optional_hdr32.AddressOfEntryPoint) - 0x15) == -1) {
 		    cli_dbgmsg("UPX: NRV2E decompressor failed\n");
 		} else {
 		    upx_success = 1;
@@ -1343,8 +1412,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	return CL_EIO;
     }
 
-    if(buff[0] != '\xb8' || (uint32_t) cli_readint32(buff + 1) != EC32(section_hdr[nsections - 1].VirtualAddress) + EC32(optional_hdr.ImageBase)) {
-	if(nsections < 2 || buff[0] != '\xb8' || (uint32_t) cli_readint32(buff + 1) != EC32(section_hdr[nsections - 2].VirtualAddress) + EC32(optional_hdr.ImageBase))
+    if(buff[0] != '\xb8' || (uint32_t) cli_readint32(buff + 1) != EC32(section_hdr[nsections - 1].VirtualAddress) + EC32(optional_hdr32.ImageBase)) {
+	if(nsections < 2 || buff[0] != '\xb8' || (uint32_t) cli_readint32(buff + 1) != EC32(section_hdr[nsections - 2].VirtualAddress) + EC32(optional_hdr32.ImageBase))
 	    found = 0;
 	else
 	    found = 1;
@@ -1398,10 +1467,10 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
 	    /* aCaB: Fixed to allow petite v2.1 unpacking (last section is a ghost) */
 	    switch(petite_inflate2x_1to9(dest, min, max - min, section_hdr,
-		    nsections - (found == 1 ? 1 : 0), EC32(optional_hdr.ImageBase),
-		    EC32(optional_hdr.AddressOfEntryPoint), ndesc,
-		    found, EC32(optional_hdr.DataDirectory[2].VirtualAddress),
-		    EC32(optional_hdr.DataDirectory[2].Size))) {
+		    nsections - (found == 1 ? 1 : 0), EC32(optional_hdr32.ImageBase),
+		    EC32(optional_hdr32.AddressOfEntryPoint), ndesc,
+		    found, EC32(optional_hdr32.DataDirectory[2].VirtualAddress),
+		    EC32(optional_hdr32.DataDirectory[2].Size))) {
 		case 1:
 		    cli_dbgmsg("Petite: Unpacked and rebuilt executable saved in %s\n", tempfile);
 		    cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
@@ -1445,8 +1514,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     /* PESpin 1.1 */
 
     if(nsections > 1 &&
-       EC32(optional_hdr.AddressOfEntryPoint) >= EC32(section_hdr[nsections - 1].VirtualAddress) &&
-       EC32(optional_hdr.AddressOfEntryPoint) < EC32(section_hdr[nsections - 1].VirtualAddress) + EC32(section_hdr[nsections - 1].SizeOfRawData) - 0x3217 - 4 &&
+       EC32(optional_hdr32.AddressOfEntryPoint) >= EC32(section_hdr[nsections - 1].VirtualAddress) &&
+       EC32(optional_hdr32.AddressOfEntryPoint) < EC32(section_hdr[nsections - 1].VirtualAddress) + EC32(section_hdr[nsections - 1].SizeOfRawData) - 0x3217 - 4 &&
        memcmp(buff+4, "\xe8\x00\x00\x00\x00\x8b\x1c\x24\x83\xc3", 10) == 0)  {
 
 	    struct stat fstats;
@@ -1479,7 +1548,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    return CL_EIO;
 	}
 
-	if(!unspin(spinned, fstats.st_size, section_hdr, nsections - 1, EC32(optional_hdr.AddressOfEntryPoint), ndesc)) {
+	if(!unspin(spinned, fstats.st_size, section_hdr, nsections - 1, EC32(optional_hdr32.AddressOfEntryPoint), ndesc)) {
 	    free(spinned);
 	    cli_dbgmsg("PESpin: Unpacked and rebuilt executable saved in %s\n", tempfile);
 	    fsync(ndesc);
@@ -1523,11 +1592,12 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	uint32_t e_lfanew; /* address of new exe header */
 	uint32_t min, max;
 	struct pe_image_file_hdr file_hdr;
-	struct pe_image_optional_hdr optional_hdr;
+	struct pe_image_optional_hdr32 optional_hdr32;
+	struct pe_image_optional_hdr64 optional_hdr64;
 	struct pe_image_section_hdr *section_hdr;
 	struct stat sb;
 	int i;
-	unsigned int err;
+	unsigned int err, pe_plus = 0;
 
 
     cli_dbgmsg("in cli_peheader\n");
@@ -1573,16 +1643,30 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	return -1;
     }
 
-    if(EC16(file_hdr.SizeOfOptionalHeader) != sizeof(struct pe_image_optional_hdr)) {
-	cli_warnmsg("Broken PE header detected.\n");
-	return -1;
-    }
-
     peinfo->nsections = EC16(file_hdr.NumberOfSections);
 
-    if(read(desc, &optional_hdr, sizeof(struct pe_image_optional_hdr)) != sizeof(struct pe_image_optional_hdr)) {
-	cli_dbgmsg("Can't optional file header\n");
-	return -1;
+    if(EC16(file_hdr.SizeOfOptionalHeader) != sizeof(struct pe_image_optional_hdr32)) {
+	if(EC16(file_hdr.SizeOfOptionalHeader) == sizeof(struct pe_image_optional_hdr64)) {
+	    pe_plus = 1;
+	} else {
+	    cli_warnmsg("Broken PE header detected\n");
+	    return -1;
+	}
+    }
+
+    if(!pe_plus) { /* PE */
+
+	if(read(desc, &optional_hdr32, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32)) {
+	    cli_dbgmsg("Can't optional file header\n");
+	    return -1;
+	}
+
+    } else { /* PE+ */
+
+	if(read(desc, &optional_hdr64, sizeof(struct pe_image_optional_hdr64)) != sizeof(struct pe_image_optional_hdr64)) {
+	    cli_dbgmsg("Can't optional file header\n");
+	    return -1;
+	}
     }
 
     peinfo->section = (struct cli_exe_section *) cli_calloc(peinfo->nsections, sizeof(struct cli_exe_section));
@@ -1633,7 +1717,12 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	}
     }
 
-    if((peinfo->ep = EC32(optional_hdr.AddressOfEntryPoint)) >= min && !(peinfo->ep = cli_rawaddr(EC32(optional_hdr.AddressOfEntryPoint), section_hdr, peinfo->nsections, &err)) && err) {
+    if(pe_plus)
+	peinfo->ep = EC32(optional_hdr64.AddressOfEntryPoint);
+    else
+	peinfo->ep = EC32(optional_hdr32.AddressOfEntryPoint);
+
+    if(peinfo->ep >= min && !(peinfo->ep = cli_rawaddr(peinfo->ep, section_hdr, peinfo->nsections, &err)) && err) {
 	cli_dbgmsg("Possibly broken PE file\n");
 	free(section_hdr);
 	free(peinfo->section);

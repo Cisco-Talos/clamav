@@ -1,3 +1,7 @@
+Sat Nov 26 23:32:35 CET 2005 (tk)
+---------------------------------
+  * libclamav/pe.[ch]: add support for PE32+ executables (used on win64)
+
 Wed Nov 23 11:20:54 GMT 2005 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Multipart headers: handle end of header lines that are
