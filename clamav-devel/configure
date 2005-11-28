@@ -1019,6 +1019,7 @@ Optional Features:
                           (and sometimes confusing) to the casual installer
   --disable-zlib-vcheck	  do not check for buggy zlib version
   --disable-bzip2	  disable bzip2 support
+  --disable-hwaccel	  disable support for hardware acceleration
   --disable-dns           disable support for database verification through
                           DNS
   --disable-clamuko	  disable clamuko support (Linux, DragonFly and FreeBSD only)
@@ -5036,7 +5037,7 @@ test "x$enable_libtool_lock" != xno && enable_libtool_lock=yes
 case $host in
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5039 "configure"' > conftest.$ac_ext
+  echo '#line 5040 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -5627,7 +5628,7 @@ chmod -w .
 save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -o out/conftest2.$ac_objext"
 compiler_c_o=no
-if { (eval echo configure:5630: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
+if { (eval echo configure:5631: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
   # The compiler can only warn and ignore the option if not recognized
   # So say no if there are warnings
   if test -s out/conftest.err; then
@@ -7561,7 +7562,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 7564 "configure"
+#line 7565 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -7659,7 +7660,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 7662 "configure"
+#line 7663 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10747,6 +10748,89 @@ else
 echo "$as_me: WARNING: ****** bzip2 support disabled" >&2;}
 fi
 
+
+fi
+
+# Check whether --enable-hwaccel or --disable-hwaccel was given.
+if test "${enable_hwaccel+set}" = set; then
+  enableval="$enable_hwaccel"
+  want_hwaccel=$enableval
+else
+  want_hwaccel="yes"
+fi;
+
+if test "$want_hwaccel" = "yes"
+then
+    echo "$as_me:$LINENO: checking for sn_sigscan_initdb in -lsn_sigscan" >&5
+echo $ECHO_N "checking for sn_sigscan_initdb in -lsn_sigscan... $ECHO_C" >&6
+if test "${ac_cv_lib_sn_sigscan_sn_sigscan_initdb+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lsn_sigscan  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any gcc2 internal prototype to avoid an error.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+/* We use char because int might match the return type of a gcc2
+   builtin and then its argument prototype would still apply.  */
+char sn_sigscan_initdb ();
+int
+main ()
+{
+sn_sigscan_initdb ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_lib_sn_sigscan_sn_sigscan_initdb=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_cv_lib_sn_sigscan_sn_sigscan_initdb=no
+fi
+rm -f conftest.err conftest.$ac_objext \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+echo "$as_me:$LINENO: result: $ac_cv_lib_sn_sigscan_sn_sigscan_initdb" >&5
+echo "${ECHO_T}$ac_cv_lib_sn_sigscan_sn_sigscan_initdb" >&6
+if test $ac_cv_lib_sn_sigscan_sn_sigscan_initdb = yes; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_HWACCEL 1
+_ACEOF
+
+fi
 
 fi
 
