@@ -137,6 +137,15 @@ then
     AC_CHECK_HEADER(bzlib.h,[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lbz2"; AC_DEFINE(HAVE_BZLIB_H,1,have bzip2)], AC_MSG_WARN([****** bzip2 support disabled]))
 fi
 
+AC_ARG_ENABLE(hwaccel,
+[  --disable-hwaccel	  disable support for hardware acceleration],
+want_hwaccel=$enableval, want_hwaccel="yes")
+
+if test "$want_hwaccel" = "yes"
+then
+    AC_CHECK_LIB(sn_sigscan, sn_sigscan_initdb, AC_DEFINE(HAVE_HWACCEL,1,hardware acceleration),)
+fi
+
 AC_ARG_ENABLE(dns,
     AC_HELP_STRING([--disable-dns], [disable support for database verification through DNS]),
     [want_dns=$enableval], [want_dns=yes]
