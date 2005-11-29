@@ -1,3 +1,7 @@
+Tue Nov 29 16:31:23 GMT 2005 (trog)
+-----------------------------------
+  * libclamav/unrar/unrar.c unrarvm.c: #include clamav-config.h
+
 Mon Nov 28 20:45:20 CET 2005 (tk)
 ---------------------------------
   * configure.in: check for hardware acceleration library (--disable-hwaccel

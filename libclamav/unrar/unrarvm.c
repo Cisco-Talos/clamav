@@ -20,6 +20,10 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <string.h>
 
 #include "unrar.h"
@@ -586,6 +590,14 @@ static int rarvm_execute_code(rarvm_data_t *rarvm_data,
 	rar_dbgmsg("in rarvm_execute_code\n");
 	cmd = prepared_code;
 	while (1) {
+		if (cmd > (prepared_code + code_size)) {
+			cli_dbgmsg("RAR: code overrun detected\n");
+			return FALSE;
+		}
+		if (cmd < prepared_code) {
+			cli_dbgmsg("RAR: code underrun detected\n");
+                        return FALSE;
+                }
 		op1 = rarvm_get_operand(rarvm_data, &cmd->op1);
 		op2 = rarvm_get_operand(rarvm_data, &cmd->op2);
 		rar_dbgmsg("op(%d) op_code: %d, op1=%u, op2=%u\n", 25000000-max_ops,
