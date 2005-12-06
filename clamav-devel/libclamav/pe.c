@@ -341,7 +341,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	if(EC16(file_hdr.SizeOfOptionalHeader) == sizeof(struct pe_image_optional_hdr64)) {
 	    pe_plus = 1;
 	} else {
-	    cli_warnmsg("Broken PE header detected.\n");
+	    cli_dbgmsg("Incorrect value of SizeOfOptionalHeader\n");
 	    if(DETECT_BROKEN) {
 		if(virname)
 		    *virname = "Broken.Executable";
@@ -1649,7 +1649,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	if(EC16(file_hdr.SizeOfOptionalHeader) == sizeof(struct pe_image_optional_hdr64)) {
 	    pe_plus = 1;
 	} else {
-	    cli_warnmsg("Broken PE header detected\n");
+	    cli_dbgmsg("Incorrect value of SizeOfOptionalHeader\n");
 	    return -1;
 	}
     }
