@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.262 2005/11/23 11:19:40 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.263 2005/12/09 17:19:10 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -97,6 +97,10 @@ static	void	print_trace(int use_syslog);
 #endif
 
 typedef enum	{ FALSE = 0, TRUE = 1 } bool;
+
+#ifndef isblank
+#define isblank(c)	(((c) == ' ') || ((c) == '\t'))
+#endif
 
 #define	SAVE_TO_DISC	/* multipart/message are saved in a temporary file */
 
@@ -735,6 +739,8 @@ cli_mbox(const char *dir, int desc, unsigned int options)
  * TODO: ensure parseEmailHeaders is always called before parseEmailBody
  * TODO: create parseEmail which calls parseEmailHeaders then parseEmailBody
  * TODO: Look into TNEF. Is there anything that needs to be done here?
+ * TODO: Handle unepected NUL bytes in header lines which stop strcmp()s:
+ *	e.g. \0Content-Type: application/binary;
  */
 static int
 cli_parse_mbox(const char *dir, int desc, unsigned int options)
@@ -1089,7 +1095,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 					/*
 					 * Continuation of line we're ignoring?
 					 */
-					if((line[0] == '\t') || (line[0] == ' ') || contMarker) {
+					if(isblank(line[0])) {
 						contMarker = continuationMarker(line);
 						continue;
 					}
@@ -1150,7 +1156,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 					 *
 					 * Add all the arguments on the line
 					 */
-					if((lookahead == '\t') || (lookahead == ' '))
+					if(isblank(lookahead))
 						continue;
 				}
 
@@ -1278,7 +1284,7 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 					/*
 					 * Continuation of line we're ignoring?
 					 */
-					if((buffer[0] == '\t') || (buffer[0] == ' '))
+					if(isblank(buffer[0]))
 						continue;
 
 					/*
@@ -1328,11 +1334,8 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 					 *
 					 * Add all the arguments on the line
 					 */
-					switch(lineGetData(t->t_next->t_line)[0]) {
-						case ' ':
-						case '\t':
-							continue;
-					}
+					if(isblank(lineGetData(t->t_next->t_line)[0]))
+						continue;
 
 				quotes = 0;
 				for(qptr = fullline; *qptr; qptr++)
@@ -3482,7 +3485,7 @@ rfc1341(message *m, const char *dir)
 						return -1;
 					}
 					nblanks = 0;
-					while(fgets(buffer, sizeof(buffer), fin) != NULL)
+					while(fgets(buffer, sizeof(buffer) - 1, fin) != NULL)
 						/*
 						 * Ensure that trailing newlines
 						 * aren't copied
@@ -3597,11 +3600,6 @@ checkURLs(message *m, const char *dir)
 				cli_dbgmsg("URL %s already downloaded\n", url);
 				continue;
 			}
-			if(n == FOLLOWURLS) {
-				cli_warnmsg("URL %s will not be scanned\n", url);
-				break;
-			}
-
 			/*
 			 * What about foreign character spoofing?
 			 * It would be useful be able to check if url
@@ -3611,6 +3609,11 @@ checkURLs(message *m, const char *dir)
 			 */
 			if(strchr(url, '%') && strchr(url, '@'))
 				cli_warnmsg("Possible URL spoofing attempt noticed, but not yet handled (%s)\n", url);
+
+			if(n == FOLLOWURLS) {
+				cli_warnmsg("URL %s will not be scanned\n", url);
+				break;
+			}
 
 			(void)tableInsert(t, url, 1);
 			cli_dbgmsg("Downloading URL %s to be scanned\n", url);
