@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.159 2005/08/01 20:37:15 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.160 2005/12/10 18:56:35 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -61,6 +61,10 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.159 2005/08/01 20:37:15 nigelhor
 #endif
 #ifdef FALSE
 #undef FALSE
+#endif
+
+#ifndef isblank
+#define isblank(c)	(((c) == ' ') || ((c) == '\t'))
 #endif
 
 #define	RFC2045LENGTH	76	/* maximum number of characters on a line */
@@ -563,7 +567,7 @@ messageAddArguments(message *m, const char *s)
 			size_t len;
 
 			if(*cptr == '\0') {
-				cli_warnmsg("Ignoring empty field in \"%s\"\n", s);
+				cli_dbgmsg("Ignoring empty field in \"%s\"\n", s);
 				return;
 			}
 
@@ -673,7 +677,7 @@ messageSetEncoding(message *m, const char *enctype)
 
 	/*m->encodingType = EEXTENSION;*/
 
-	while((*enctype == '\t') || (*enctype == ' '))
+	while(isblank(*enctype))
 		enctype++;
 
 	cli_dbgmsg("messageSetEncoding: '%s'\n", enctype);
