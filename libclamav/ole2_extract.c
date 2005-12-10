@@ -44,6 +44,7 @@
 
 #include "cltypes.h"
 #include "others.h"
+#include "ole2_extract.h"
 
 #ifndef FALSE
 #define FALSE (0)

@@ -588,7 +588,7 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip, char 
     return -2;
 }
 
-int Rfc2822DateTime(char *buf, time_t mtime)
+static int Rfc2822DateTime(char *buf, time_t mtime)
 {
 	struct tm *time;
 

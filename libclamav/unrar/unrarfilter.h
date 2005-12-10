@@ -34,6 +34,6 @@ typedef struct rar_filter_array_tag
 void rar_filter_array_init(rar_filter_array_t *filter_a);
 void rar_filter_array_reset(rar_filter_array_t *filter_a);
 int rar_filter_array_add(rar_filter_array_t *filter_a, int num);
-struct UnpackFilter *rar_filter_new();
+struct UnpackFilter *rar_filter_new(void);
 void rar_filter_delete(struct UnpackFilter *filter);
 #endif

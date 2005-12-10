@@ -29,7 +29,7 @@
 #define FALSE (0)
 #define TRUE (1)
 
-work_queue_t *work_queue_new()
+static work_queue_t *work_queue_new(void)
 {
 	work_queue_t *work_q;
 	
@@ -40,7 +40,7 @@ work_queue_t *work_queue_new()
 	return work_q;
 }
 
-void work_queue_add(work_queue_t *work_q, void *data)
+static void work_queue_add(work_queue_t *work_q, void *data)
 {
 	work_item_t *work_item;
 	
@@ -63,7 +63,7 @@ void work_queue_add(work_queue_t *work_q, void *data)
 	return;
 }
 
-void *work_queue_pop(work_queue_t *work_q)
+static void *work_queue_pop(work_queue_t *work_q)
 {
 	work_item_t *work_item;
 	void *data;

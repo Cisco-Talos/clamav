@@ -213,7 +213,7 @@ void sigtool(struct optstruct *opt)
 
 }
 
-int countlines(const char *filename)
+static int countlines(const char *filename)
 {
 	FILE *fd;
 	char buff[65536];

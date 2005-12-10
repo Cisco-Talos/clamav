@@ -13,6 +13,7 @@
 
 #include <mspack.h>
 #include "others.h"
+#include "system.h"
 
 int mspack_version(int entity) {
   switch (entity) {

@@ -35,6 +35,7 @@
 #include "others.h"
 #include "dsig.h"
 #include "str.h"
+#include "cvd.h"
 
 #define TAR_BLOCKSIZE 512
 
@@ -274,7 +275,7 @@ void cl_cvdfree(struct cl_cvd *cvd)
     free(cvd);
 }
 
-int cli_cvdverify(FILE *fd, struct cl_cvd *cvdpt)
+static int cli_cvdverify(FILE *fd, struct cl_cvd *cvdpt)
 {
 	struct cl_cvd *cvd;
 	char *md5, head[513];

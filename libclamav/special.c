@@ -28,6 +28,7 @@
 #include "clamav.h"
 #include "others.h"
 #include "cltypes.h"
+#include "special.h"
 
 #define FALSE (0)
 #define TRUE (1)

@@ -354,7 +354,7 @@ static int lzxd_read_lens(struct lzxd_stream *lzx, unsigned char *lens,
 static unsigned int  position_base[51];
 static unsigned char extra_bits[51];
 
-static void lzxd_static_init() {
+static void lzxd_static_init(void) {
   int i, j;
 
   for (i = 0, j = 0; i < 51; i += 2) {

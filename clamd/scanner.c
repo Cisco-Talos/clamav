@@ -68,7 +68,7 @@ dev_t procdev; /* /proc device */
 # endif
 #endif
 
-int checksymlink(const char *path)
+static int checksymlink(const char *path)
 {
 	struct stat statbuf;
 

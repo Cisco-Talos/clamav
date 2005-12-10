@@ -58,6 +58,7 @@
 #include "pe.h"
 #include "rebuildpe.h"
 #include "others.h"
+#include "petite.h"
 
 #if WORDS_BIGENDIAN == 0
 #define EC32(v) (v)
