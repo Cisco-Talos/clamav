@@ -61,7 +61,7 @@ int rar_filter_array_add(rar_filter_array_t *filter_a, int num)
 	return TRUE;
 }
 
-struct UnpackFilter *rar_filter_new()
+struct UnpackFilter *rar_filter_new(void)
 {
 	struct UnpackFilter *filter;
 	

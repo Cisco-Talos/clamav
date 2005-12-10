@@ -33,6 +33,7 @@
 
 #include "memory.h"
 #include "output.h"
+#include "dns.h"
 
 #ifndef PACKETSZ
 #define PACKETSZ 512

@@ -68,6 +68,7 @@
 #include "memory.h"
 #include "cfgparser.h"
 #include "session.h"
+#include "others.h"
 
 #define ENV_FILE  "CLAM_VIRUSEVENT_FILENAME"
 #define ENV_VIRUS "CLAM_VIRUSEVENT_VIRUSNAME"

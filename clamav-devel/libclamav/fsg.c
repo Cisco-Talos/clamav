@@ -47,6 +47,7 @@
 #include "pe.h"
 #include "rebuildpe.h"
 #include "others.h"
+#include "fsg.h"
 
 #if WORDS_BIGENDIAN == 0
 #define EC16(v)	(v)

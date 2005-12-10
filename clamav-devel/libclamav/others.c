@@ -697,7 +697,7 @@ static unsigned long nearest_power(unsigned long num)
 	return n;
 }
 
-bitset_t *cli_bitset_init()
+bitset_t *cli_bitset_init(void)
 {
 	bitset_t *bs;
 	

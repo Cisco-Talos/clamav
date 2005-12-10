@@ -76,7 +76,7 @@ static char *get_unicode_name (char *name, int size)
     return newname;
 }
 
-void output_token (unsigned char token)
+static void output_token (unsigned char token)
 {
     int i;
     mac_token_t mac_token[] = {
@@ -172,7 +172,7 @@ void output_token (unsigned char token)
     return;
 }
 
-void output_token67 (uint16_t token)
+static void output_token67 (uint16_t token)
 {
     int i;
     mac_token2_t mac_token[] = {
@@ -522,7 +522,7 @@ void output_token67 (uint16_t token)
     return;
 }
 
-void output_token73 (uint16_t token)
+static void output_token73 (uint16_t token)
 {
     int i;
     mac_token2_t mac_token[] = {
@@ -773,7 +773,7 @@ void output_token73 (uint16_t token)
     return;
 }
 
-void print_hex_buff (unsigned char *start, unsigned char *end, int hex_output)
+static void print_hex_buff (unsigned char *start, unsigned char *end, int hex_output)
 {
     if (!hex_output) {
 	return;
@@ -786,7 +786,7 @@ void print_hex_buff (unsigned char *start, unsigned char *end, int hex_output)
     printf ("]\n");
 }
 
-void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
+static void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 {
     int i, j;
     uint8_t s_length;

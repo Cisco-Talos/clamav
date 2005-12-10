@@ -21,6 +21,7 @@
 
 #include "clamav.h"
 #include "matcher.h"
+#include "matcher-bm.h"
 
 int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern);
 int cli_bm_init(struct cli_matcher *root);

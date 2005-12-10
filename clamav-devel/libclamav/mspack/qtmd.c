@@ -119,7 +119,7 @@ static int qtmd_read_input(struct qtmd_stream *qtm) {
 static unsigned int  position_base[42];
 static unsigned char extra_bits[42], length_base[27], length_extra[27];
 
-static void qtmd_static_init() {
+static void qtmd_static_init(void) {
   unsigned int i, offset;
 
   for (i = 0, offset = 0; i < 42; i++) {

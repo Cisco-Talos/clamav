@@ -59,7 +59,7 @@
 void move_infected(const char *filename, const struct optstruct *opt);
 int notremoved = 0, notmoved = 0;
 
-int dsresult(int sockd, const struct optstruct *opt)
+static int dsresult(int sockd, const struct optstruct *opt)
 {
 	int infected = 0, waserror = 0;
 	char buff[4096], *pt;
@@ -109,7 +109,7 @@ int dsresult(int sockd, const struct optstruct *opt)
     return infected ? infected : (waserror ? -1 : 0);
 }
 
-int dsfile(int sockd, const char *filename, const struct optstruct *opt)
+static int dsfile(int sockd, const char *filename, const struct optstruct *opt)
 {
 	int ret;
 	char *scancmd;
@@ -137,7 +137,7 @@ int dsfile(int sockd, const char *filename, const struct optstruct *opt)
 #if defined(ENABLE_FD_PASSING) && defined(HAVE_SENDMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN)
 
 /* Submitted by Richard Lyons <frob-clamav*webcentral.com.au> */
-int dsfd(int sockfd, int fd, const struct optstruct *opt)
+static int dsfd(int sockfd, int fd, const struct optstruct *opt)
 {
 	struct iovec iov[1];
 	struct msghdr msg;
@@ -177,13 +177,13 @@ int dsfd(int sockfd, int fd, const struct optstruct *opt)
     return dsresult(sockfd, opt);
 }
 #else
-int dsfd(int sockfd, int fd, const struct optstruct *opt)
+static int dsfd(int sockfd, int fd, const struct optstruct *opt)
 {
     return -1;
 }
 #endif
 
-int dsstream(int sockd, const struct optstruct *opt)
+static int dsstream(int sockd, const struct optstruct *opt)
 {
 	int wsockd, loopw = 60, bread, port, infected = 0;
 	struct sockaddr_in server;
@@ -275,7 +275,7 @@ int dsstream(int sockd, const struct optstruct *opt)
     return infected;
 }
 
-char *abpath(const char *filename)
+static char *abpath(const char *filename)
 {
 	struct stat foo;
 	char *fullpath, cwd[200];
@@ -300,7 +300,7 @@ char *abpath(const char *filename)
     return fullpath;
 }
 
-int dconnect(const struct optstruct *opt)
+static int dconnect(const struct optstruct *opt)
 {
 	struct sockaddr_un server;
 	struct sockaddr_in server2;

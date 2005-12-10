@@ -31,6 +31,7 @@
 #endif
 #include "cltypes.h"
 #include "others.h"
+#include "msexpand.h"
 
 int cli_msexpand(FILE *in, FILE *out)
 {

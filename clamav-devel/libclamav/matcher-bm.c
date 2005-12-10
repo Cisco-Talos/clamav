@@ -21,6 +21,7 @@
 #include "others.h"
 #include "cltypes.h"
 #include "matcher.h"
+#include "matcher-bm.h"
 
 /* TODO: Check prefix regularity and automatically transfer some signatures
  *	 to AC
