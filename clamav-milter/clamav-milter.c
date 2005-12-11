@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.221 2005/11/24 13:20:46 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.222 2005/12/11 16:55:57 nigelhorne Exp $";
 
-#define	CM_VERSION	"devel-241105"
+#define	CM_VERSION	"devel-111205"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -38,6 +38,7 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.221 2005/11/24 13:20:46 ni
 #include "strrcpy.h"
 #include "clamav.h"
 #include "../libclamav/table.h"
+#include "network.h"
 
 #ifndef	CL_DEBUG
 #define	NDEBUG
@@ -45,7 +46,6 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.221 2005/11/24 13:20:46 ni
 
 #include <stdio.h>
 #include <sysexits.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <syslog.h>
 #include <unistd.h>
@@ -68,7 +68,6 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.221 2005/11/24 13:20:46 ni
 #include <fcntl.h>
 #include <pwd.h>
 #include <grp.h>
-#include <netdb.h>
 #include <sys/param.h>
 
 #if HAVE_MMAP
@@ -254,7 +253,7 @@ static	sfsistat	clamfi_close(SMFICTX *ctx);
 static	void		clamfi_cleanup(SMFICTX *ctx);
 static	void		clamfi_free(struct privdata *privdata);
 static	int		clamfi_send(struct privdata *privdata, size_t len, const char *format, ...);
-static	int		clamd_recv(int sock, char *buf, size_t len);
+static	long		clamd_recv(int sock, char *buf, size_t len);
 static	off_t		updateSigFile(void);
 static	header_list_t	header_list_new(void);
 static	void	header_list_free(header_list_t list);
@@ -1638,6 +1637,7 @@ createSession(unsigned int s)
 	struct sockaddr_in server;
 	const int serverNumber = s % numServers;
 	struct session *session = &sessions[s];
+	const struct protoent *proto;
 
 	cli_dbgmsg("createSession session %d, server %d\n", s, serverNumber);
 	assert(s < max_children);
@@ -1649,7 +1649,11 @@ createSession(unsigned int s)
 	server.sin_addr.s_addr = serverIPs[serverNumber];
 
 	session->sock = -1;
-	if((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+	proto = getprotoentbyname("tcp");
+	if(proto == NULL) {
+		fputs("Unknown prototol tcp, check /etc/protocols\n", stderr);
+		ret = -1;
+	} else if((fd = socket(AF_INET, SOCK_STREAM, p->p_proto)) < 0) {
 		perror("socket");
 		ret = -1;
 	} else if(connect(fd, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
@@ -1700,7 +1704,8 @@ static int
 pingServer(int serverNumber)
 {
 	char *ptr;
-	int sock, nbytes;
+	int sock;
+	long nbytes;
 	char buf[128];
 
 	if(localSocket) {
@@ -2648,7 +2653,7 @@ clamfi_eom(SMFICTX *ctx)
 #ifndef	SESSION
 		struct sockaddr_un server;
 #endif
-		int nbytes;
+		long nbytes;
 
 		snprintf(cmdbuf, sizeof(cmdbuf) - 1, "SCAN %s", privdata->filename);
 		cli_dbgmsg("clamfi_eom: SCAN %s\n", privdata->filename);
@@ -3508,18 +3513,19 @@ strrcpy(char *dest, const char *source)
 /*
  * Read from clamav - timeout if necessary
  */
-static int
+static long
 clamd_recv(int sock, char *buf, size_t len)
 {
 	fd_set rfds;
 	struct timeval tv;
-	int ret;
+	long ret;
 
 	assert(sock >= 0);
 
 	if(readTimeout == 0) {
 		do
-			ret = recv(sock, buf, len, 0);
+			/* TODO: Needs a test for ssize_t in configure */
+			ret = (long)recv(sock, buf, len, 0);
 		while((ret < 0) && (errno == EINTR));
 
 		return ret;
