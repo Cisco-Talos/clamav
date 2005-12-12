@@ -51,6 +51,7 @@
 #include "output.h"
 #include "misc.h"
 #include "../libclamav/others.h"
+#include "../libclamav/matcher-ac.h"
 
 #ifdef C_LINUX
 dev_t procdev;
@@ -87,6 +88,13 @@ int scanmanager(const struct optstruct *opt)
     /* now initialize the database */
     if(optl(opt, "no-phishing"))
 	dboptions |= CL_DB_NOPHISHING;
+
+    if(optl(opt, "dev-ac-only")) {
+	dboptions |= CL_DB_ACONLY;
+
+	if(optl(opt, "dev-ac-depth"))
+	    cli_ac_setdepth(atoi(getargl(opt, "dev-ac-depth")));
+    }
 
     if(optc(opt, 'd')) {
 	if((ret = cl_load(getargc(opt, 'd'), &trie, &claminfo.signs, dboptions))) {

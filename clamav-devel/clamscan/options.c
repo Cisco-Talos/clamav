@@ -118,6 +118,11 @@ int main(int argc, char **argv)
 	    {"tar", 2, 0, 0},
 	    {"tgz", 2, 0, 0},
 	    {"deb", 2, 0, 0},
+
+	    /* developers only */
+	    {"dev-ac-only", 0, 0, 0},
+	    {"dev-ac-depth", 1, 0, 0},
+
 	    {0, 0, 0, 0}
     	};
 

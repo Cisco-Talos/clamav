@@ -88,7 +88,7 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 	    return CL_EMEM;
 	}
 
-	if((ret = cli_bm_scanbuff(buffer, length, virname, troot, 0, ftype, -1)) != CL_VIRUS)
+	if(troot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, troot, 0, ftype, -1)) != CL_VIRUS)
 	    ret = cli_ac_scanbuff(buffer, length, virname, troot, partcnt, 0, 0, partoff, ftype, -1, NULL);
 
 	free(partcnt);
@@ -109,7 +109,7 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 	return CL_EMEM;
     }
 
-    if((ret = cli_bm_scanbuff(buffer, length, virname, groot, 0, ftype, -1)) != CL_VIRUS)
+    if(groot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, groot, 0, ftype, -1)) != CL_VIRUS)
 	ret = cli_ac_scanbuff(buffer, length, virname, groot, partcnt, 0, 0, partoff, ftype, -1, NULL);
 
     free(partcnt);
@@ -371,8 +371,10 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 	    length -= SCANBUFF - bytes;
 
 	if(troot) {
-	    if(cli_bm_scanbuff(pt, length, virname, troot, offset, ftype, desc) == CL_VIRUS ||
-	    (ret = cli_ac_scanbuff(pt, length, virname, troot, tpartcnt, otfrec, offset, tpartoff, ftype, desc, ftoffset)) == CL_VIRUS) {
+	    if(troot->ac_only || (ret = cli_bm_scanbuff(pt, length, virname, troot, offset, ftype, desc)) != CL_VIRUS)
+		ret = cli_ac_scanbuff(pt, length, virname, troot, tpartcnt, otfrec, offset, tpartoff, ftype, desc, ftoffset);
+
+	    if(ret == CL_VIRUS) {
 		free(buffer);
 		free(gpartcnt);
 		free(gpartoff);
@@ -387,8 +389,10 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 	    }
 	}
 
-	if(cli_bm_scanbuff(pt, length, virname, groot, offset, ftype, desc) == CL_VIRUS ||
-	   (ret = cli_ac_scanbuff(pt, length, virname, groot, gpartcnt, otfrec, offset, gpartoff, ftype, desc, ftoffset)) == CL_VIRUS) {
+	if(groot->ac_only || (ret = cli_bm_scanbuff(pt, length, virname, groot, offset, ftype, desc)) != CL_VIRUS)
+	    ret = cli_ac_scanbuff(pt, length, virname, groot, gpartcnt, otfrec, offset, gpartoff, ftype, desc, ftoffset);
+
+	if(ret == CL_VIRUS) {
 	    free(buffer);
 	    free(gpartcnt);
 	    free(gpartoff);
@@ -534,7 +538,8 @@ void cl_free(struct cl_engine *engine)
     for(i = 0; i < CL_TARGET_TABLE_SIZE; i++) {
 	if((root = engine->root[i])) {
 	    cli_ac_free(root);
-	    cli_bm_free(root);
+	    if(!engine->root[i]->ac_only)
+		cli_bm_free(root);
 	}
     }
 
