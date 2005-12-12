@@ -96,6 +96,7 @@ extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME *
 #define SCAN_OLE2	    (options & CL_SCAN_OLE2)
 #define SCAN_HTML	    (options & CL_SCAN_HTML)
 #define SCAN_PE		    (options & CL_SCAN_PE)
+#define SCAN_ALGO 	    (options & CL_SCAN_ALGO)
 #define DETECT_ENCRYPTED    (options & CL_SCAN_BLOCKENCRYPTED)
 #define BLOCKMAX	    (options & CL_SCAN_BLOCKMAX)
 
@@ -1599,11 +1600,13 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 	    break;
 
 	case CL_TYPE_RIFF:
-	    ret = cli_scanriff(desc, virname);
+	    if(SCAN_ALGO)
+		ret = cli_scanriff(desc, virname);
 	    break;
 
 	case CL_TYPE_GRAPHICS:
-	    ret = cli_scanjpeg(desc, virname);
+	    if(SCAN_ALGO)
+		ret = cli_scanjpeg(desc, virname);
 	    break;
 
 	case CL_TYPE_PDF:

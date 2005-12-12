@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2001-2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright (C) 2001 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -105,6 +105,7 @@ int main(int argc, char **argv)
 	    {"no-mail", 0, 0, 0},
 	    {"mail-follow-urls", 0, 0, 0},
 	    {"no-phishing", 0, 0, 0},
+	    {"no-algo", 0, 0, 0},
 	    {"unzip", 2, 0, 0},
 	    {"unrar", 2, 0, 0},
 	    {"unace", 2, 0, 0}, /* not used */

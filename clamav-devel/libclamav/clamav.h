@@ -78,9 +78,10 @@ extern "C"
 #define CL_SCAN_BLOCKBROKEN	64
 #define CL_SCAN_MAILURL		128
 #define CL_SCAN_BLOCKMAX	256
+#define CL_SCAN_ALGO		512
 
 /* recommended options */
-#define CL_SCAN_STDOPT		(CL_SCAN_ARCHIVE | CL_SCAN_MAIL | CL_SCAN_OLE2 | CL_SCAN_HTML | CL_SCAN_PE) 
+#define CL_SCAN_STDOPT		(CL_SCAN_ARCHIVE | CL_SCAN_MAIL | CL_SCAN_OLE2 | CL_SCAN_HTML | CL_SCAN_PE | CL_SCAN_ALGO) 
 
 /* aliases for backward compatibility */
 #define CL_RAW		CL_SCAN_RAW

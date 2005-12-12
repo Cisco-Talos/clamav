@@ -52,6 +52,7 @@
 
 #define DETECT_BROKEN		    (options & CL_SCAN_BLOCKBROKEN)
 #define BLOCKMAX		    (options & CL_SCAN_BLOCKMAX)
+#define SCAN_ALGO		    (options & CL_SCAN_ALGO)
 
 #define UPX_NRV2B "\x11\xdb\x11\xc9\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9\x11\xc9\x75\x20\x41\x01\xdb"
 #define UPX_NRV2D "\x83\xf0\xff\x74\x78\xd1\xf8\x89\xc5\xeb\x0b\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9"
@@ -567,7 +568,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     /* Attempt to detect some popular polymorphic viruses */
 
     /* W32.Parite.B */
-    if(!dll && ep == EC32(section_hdr[nsections - 1].PointerToRawData)) {
+    if(SCAN_ALGO && !dll && ep == EC32(section_hdr[nsections - 1].PointerToRawData)) {
 	lseek(desc, ep, SEEK_SET);
 	if(read(desc, buff, 4096) == 4096) {
 		const char *pt = cli_memstr(buff, 4040, "\x47\x65\x74\x50\x72\x6f\x63\x41\x64\x64\x72\x65\x73\x73\x00", 15);
@@ -585,7 +586,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     }
 
     /* W32.Magistr.A/B */
-    if(!dll && (EC32(section_hdr[nsections - 1].Characteristics) & 0x80000000)) {
+    if(SCAN_ALGO && !dll && (EC32(section_hdr[nsections - 1].Characteristics) & 0x80000000)) {
 	    uint32_t rsize, vsize;
 
 	rsize = EC32(section_hdr[nsections - 1].SizeOfRawData);

@@ -189,10 +189,10 @@ Limit data port range.
 .br 
 Default: 2048
 .TP 
-\fBDisableDefaultScanOptions\fR
-By default clamd uses scan options recommended by libclamav. This option disables recommended options and allows you to enable selected options. DO NOT ENABLE IT unless you know what you are doing.
+\fBScanAlgo\fR
+In some cases (eg. complex malware, exploits in graphic files, and others), ClamAV uses special algorithms to provide accurate detection. This option controls the algorithmic detection.
 .br 
-Default: disabled
+Default: yes
 .TP 
 \fBScanPE\fR
 PE stands for Portable Executable \- it's an executable file format used in all 32\-bit versions of Windows operating systems. This option allows ClamAV to perform a deeper analysis of executable files and it's also required for decompression of popular executable packers such as UPX.

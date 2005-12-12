@@ -191,6 +191,11 @@ int scanmanager(const struct optstruct *opt)
 #endif
     }
 
+    if(optl(opt, "no-algo"))
+	options &= ~CL_SCAN_ALGO;
+    else
+	options |= CL_SCAN_ALGO;
+
 #ifdef C_LINUX
     procdev = (dev_t) 0;
     if(stat("/proc", &sb) != -1 && !sb.st_size)
