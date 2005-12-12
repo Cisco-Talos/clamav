@@ -66,6 +66,7 @@ extern "C"
 /* db options */
 #define CL_DB_HWACCEL		1
 #define CL_DB_NOPHISHING	2
+#define CL_DB_ACONLY		4   /* for developers only */
 
 /* scan options */
 #define CL_SCAN_RAW		0
@@ -134,6 +135,7 @@ struct cli_meta_node {
 
 struct cli_matcher {
     unsigned int maxpatlen; /* maximal length of pattern in db */
+    unsigned short ac_only;
 
     /* Extended Boyer-Moore */
     int *bm_shift;

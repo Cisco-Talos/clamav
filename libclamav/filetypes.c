@@ -291,9 +291,7 @@ int cli_addtypesigs(struct cl_engine *engine)
 
 	if(engine->hwaccel) {
 	    cli_dbgmsg("cli_addtypesigs: AC depth 10 (hwaccel mode)\n");
-	    root->ac_depth = 10;
-	} else {
-	    root->ac_depth = AC_DEFAULT_DEPTH;
+	    cli_ac_setdepth(10);
 	}
 
 	root->ac_root =  (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));

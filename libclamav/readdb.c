@@ -373,7 +373,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	    free(pt);
 	}
 
-    } else if(strpbrk(hexsig, "?(") || type) {
+    } else if(root->ac_only || strpbrk(hexsig, "?(") || type) {
 	if((ret = cli_ac_addsig(root, virname, hexsig, 0, 0, 0, type, 0, 0, offset, target))) {
 	    cli_errmsg("cli_parse_add(): Problem adding signature (3).\n");
 	    return ret;
@@ -428,7 +428,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     return 0;
 }
 
-static int cli_initengine(struct cl_engine **engine)
+static int cli_initengine(struct cl_engine **engine, unsigned int options)
 {
 	struct cli_matcher *root;
 	int i, ret;
@@ -456,7 +456,7 @@ static int cli_initengine(struct cl_engine **engine)
     return 0;
 }
 
-static int cli_initroots(struct cl_engine *engine)
+static int cli_initroots(struct cl_engine *engine, unsigned int options)
 {
 	int i, ret;
 	struct cli_matcher *root;
@@ -471,8 +471,12 @@ static int cli_initroots(struct cl_engine *engine)
 		return CL_EMEM;
 	    }
 
+	    if(options & CL_DB_ACONLY) {
+		cli_dbgmsg("Only using AC pattern matcher.\n");
+		root->ac_only = 1;
+	    }
+
 	    cli_dbgmsg("Initialising AC pattern matcher of root[%d]\n", i);
-	    root->ac_depth = AC_DEFAULT_DEPTH;
 	    root->ac_root =  (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));
 	    if(!root->ac_root) {
 		/* no need to free previously allocated memory here */
@@ -480,10 +484,12 @@ static int cli_initroots(struct cl_engine *engine)
 		return CL_EMEM;
 	    }
 
-	    cli_dbgmsg("Initializing BM tables of root[%d]\n", i);
-	    if((ret = cli_bm_init(root))) {
-		cli_errmsg("Can't initialise BM pattern matcher\n");
-		return ret;
+	    if(!root->ac_only) {
+		cli_dbgmsg("Initializing BM tables of root[%d]\n", i);
+		if((ret = cli_bm_init(root))) {
+		    cli_errmsg("Can't initialise BM pattern matcher\n");
+		    return ret;
+		}
 	    }
 	}
     }
@@ -498,12 +504,12 @@ static int cli_loaddb(FILE *fd, struct cl_engine **engine, unsigned int *signo, 
 	struct cli_matcher *root;
 
 
-    if((ret = cli_initengine(engine))) {
+    if((ret = cli_initengine(engine, options))) {
 	cl_free(*engine);
 	return ret;
     }
 
-    if((ret = cli_initroots(*engine))) {
+    if((ret = cli_initroots(*engine, options))) {
 	cl_free(*engine);
 	return ret;
     }
@@ -560,12 +566,12 @@ static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	unsigned int nophish = options & CL_DB_NOPHISHING;
 
 
-    if((ret = cli_initengine(engine))) {
+    if((ret = cli_initengine(engine, options))) {
 	cl_free(*engine);
 	return ret;
     }
 
-    if((ret = cli_initroots(*engine))) {
+    if((ret = cli_initroots(*engine, options))) {
 	cl_free(*engine);
 	return ret;
     }
@@ -681,7 +687,7 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	struct cli_md5_node *new;
 
 
-    if((ret = cli_initengine(engine))) {
+    if((ret = cli_initengine(engine, options))) {
 	cl_free(*engine);
 	return ret;
     }
@@ -769,7 +775,7 @@ static int cli_loadmd(FILE *fd, struct cl_engine **engine, unsigned int *signo, 
 	struct cli_meta_node *new;
 
 
-    if((ret = cli_initengine(engine))) {
+    if((ret = cli_initengine(engine, options))) {
 	cl_free(*engine);
 	return ret;
     }
@@ -1069,7 +1075,7 @@ int cl_load(const char *path, struct cl_engine **engine, unsigned int *signo, un
         return CL_EIO;
     }
 
-    if((ret = cli_initengine(engine))) {
+    if((ret = cli_initengine(engine, options))) {
 	cl_free(*engine);
 	return ret;
     }

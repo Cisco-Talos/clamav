@@ -42,17 +42,19 @@ struct nodelist {
     struct nodelist *next;
 };
 
+unsigned short ac_depth = AC_DEFAULT_DEPTH;
+
 int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 {
 	struct cli_ac_node *pos, *next;
 	int i;
 
-    if(pattern->length < root->ac_depth)
+    if(pattern->length < ac_depth)
 	return CL_EPATSHORT;
 
     pos = root->ac_root;
 
-    for(i = 0; i < root->ac_depth; i++) {
+    for(i = 0; i < ac_depth; i++) {
 	next = pos->trans[((unsigned char) pattern->pattern[i]) & 0xff]; 
 
 	if(!next) {
@@ -280,11 +282,11 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
 	current = current->trans[(unsigned char) buffer[i] & 0xff];
 
 	if(current->islast) {
-	    position = i - root->ac_depth + 1;
+	    position = i - ac_depth + 1;
 
 	    pt = current->list;
 	    while(pt) {
-		if(cli_findpos(buffer, root->ac_depth, position, length, pt)) {
+		if(cli_findpos(buffer, ac_depth, position, length, pt)) {
 		    if((pt->offset || pt->target) && (!pt->sigid || pt->partno == 1)) {
 			if(ftype == CL_TYPE_UNKNOWN_TEXT)
 			    t = type;
@@ -359,4 +361,9 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
     }
 
     return otfrec ? type : CL_CLEAN;
+}
+
+void cli_ac_setdepth(unsigned int depth)
+{
+    ac_depth = depth;
 }
