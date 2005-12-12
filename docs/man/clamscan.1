@@ -73,6 +73,9 @@ Disable scanning of mail files.
 \fB\-\-no\-phishing\fR
 Disable detection of phishing messages.
 .TP 
+\fB\-\-no\-algo\fR
+In some cases (eg. complex malware, exploits in graphic files, and others), ClamAV uses special algorithms to provide accurate detection. This option disables the algorithmic detection.
+.TP 
 \fB\-\-no\-pe\fR
 PE stands for Portable Executable \- it's an executable file format used in all 32\-bit versions of Windows operating systems. By default ClamAV performs deeper analysis of executable files and attempts to decompress popular executable packers such as UPX, Petite, and FSG. This option \fBdisables\fR PE support and should be used with care!
 .TP 
