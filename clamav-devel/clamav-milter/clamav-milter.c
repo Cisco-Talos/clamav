@@ -22,7 +22,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.222 2005/12/11 16:55:57 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.223 2005/12/12 22:17:06 nigelhorne Exp $";
 
 #define	CM_VERSION	"devel-111205"
 
@@ -3717,6 +3717,9 @@ connect2clamd(struct privdata *privdata)
 		}
 		privdata->filename = (char *)cli_malloc(strlen(dir) + 12);
 
+		if(privdata->filename == NULL)
+			return 0;
+
 		do {
 			sprintf(privdata->filename, "%s/msg.XXXXXX", dir);
 #if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS)
@@ -3735,6 +3738,8 @@ connect2clamd(struct privdata *privdata)
 			perror(privdata->filename);
 			if(use_syslog)
 				syslog(LOG_ERR, _("Temporary quarantine file %s creation failed"), privdata->filename);
+			free(privdata->filename);
+			privdata->filename = NULL;
 			return 0;
 		}
 		privdata->serverNumber = 0;
