@@ -2,7 +2,7 @@
  * clamav-milter.c
  *	.../clamav-milter/clamav-milter.c
  *
- *  Copyright (C) 2003 Nigel Horne <njh@bandsman.co.uk>
+ *  Copyright (C) 2003-2005 Nigel Horne <njh@bandsman.co.uk>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.223 2005/12/12 22:17:06 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.224 2005/12/14 08:51:04 nigelhorne Exp $";
 
-#define	CM_VERSION	"devel-111205"
+#define	CM_VERSION	"devel-141205"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -4255,14 +4255,12 @@ qfile(struct privdata *privdata, const char *sendmailId, const char *virusname)
 static int
 move(const char *oldfile, const char *newfile)
 {
-	int ret;
+	int ret, c;
+	FILE *fin, *fout;
 #ifdef	C_LINUX
 	struct stat statb;
-	int fin, fout;
+	int in, out;
 	off_t offset;
-#else
-	FILE *fin, *fout;
-	int c;
 #endif
 
 	ret = rename(oldfile, newfile);
@@ -4275,33 +4273,48 @@ move(const char *oldfile, const char *newfile)
 	}
 
 #ifdef	C_LINUX	/* >= 2.2 */
-	fin = open(oldfile, O_RDONLY);
-	if(fin < 0) {
+	in = open(oldfile, O_RDONLY);
+	if(in < 0) {
 		perror(oldfile);
 		return -1;
 	}
 
-	if(fstat(fin, &statb) < 0) {
+	if(fstat(in, &statb) < 0) {
 		perror(oldfile);
-		close(fin);
+		close(in);
 		return -1;
 	}
-	fout = open(newfile, O_WRONLY|O_CREAT, 0600);
-	if(fout < 0) {
+	out = open(newfile, O_WRONLY|O_CREAT, 0600);
+	if(out < 0) {
 		perror(newfile);
-		close(fin);
+		close(in);
 		return -1;
 	}
 	offset = (off_t)0;
-	ret = sendfile(fout, fin, &offset, statb.st_size);
-	close(fin);
+	ret = sendfile(out, in, &offset, statb.st_size);
+	close(in);
 	if(ret < 0) {
+		/* fall back if sendfile fails, which shouldn't happen */
 		perror(newfile);
-		close(fout);
+		close(out);
 		unlink(newfile);
-		return -1;
-	}
-	close(fout);
+
+		fin = fopen(oldfile, "r");
+		if(fin == NULL)
+			return -1;
+
+		fout = fopen(newfile, "w");
+		if(fout == NULL) {
+			fclose(fin);
+			return -1;
+		}
+		while((c = getc(fin)) != EOF)
+			putc(c, fout);
+
+		fclose(fin);
+		fclose(fout);
+	} else
+		close(out);
 #else
 	fin = fopen(oldfile, "r");
 	if(fin == NULL)
