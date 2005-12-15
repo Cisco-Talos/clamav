@@ -86,7 +86,7 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	chmunpack.lo rebuildpe.lo petite.lo fsg.lo line.lo untar.lo \
 	special.lo binhex.lo is_tar.lo tnef.lo unrar15.lo unrarvm.lo \
 	unrar.lo unrarfilter.lo unrarppm.lo unrar20.lo unrarcmd.lo \
-	pdf.lo spin.lo elf.lo
+	pdf.lo spin.lo elf.lo sis.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -337,7 +337,9 @@ libclamav_la_SOURCES = \
 	spin.h \
 	elf.c \
 	elf.h \
-	execs.h
+	execs.h \
+	sis.c \
+	sis.h
 
 lib_LTLIBRARIES = libclamav.la
 all: all-am
@@ -439,6 +441,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/readdb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rebuildpe.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scanners.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sis.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/snprintf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/special.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spin.Plo@am__quote@

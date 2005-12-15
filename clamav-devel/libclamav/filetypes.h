@@ -39,6 +39,7 @@ typedef enum {
     CL_TYPE_MSOLE2,
     CL_TYPE_MSCAB,
     CL_TYPE_MSCHM,
+    CL_TYPE_SIS,
     CL_TYPE_SCRENC,
     CL_TYPE_GRAPHICS,
     CL_TYPE_RIFF,
