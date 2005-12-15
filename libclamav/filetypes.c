@@ -63,6 +63,7 @@ static const struct cli_magic_s cli_magic[] = {
     {0,	    "SZDD",			4,  "compress.exe'd",	CL_TYPE_MSSZDD},
     {0,	    "MSCF",			4,  "MS CAB",		CL_TYPE_MSCAB},
     {0,	    "ITSF",			4,  "MS CHM",           CL_TYPE_MSCHM},
+    {8,	    "\x19\x04\x00\x10",		4,  "SIS",		CL_TYPE_SIS},
     {0,     "#@~^",			4,  "SCRENC",		CL_TYPE_SCRENC},
     {0,     "(This file must be converted with BinHex 4.0)",
 				       45, "BinHex",		CL_TYPE_BINHEX},

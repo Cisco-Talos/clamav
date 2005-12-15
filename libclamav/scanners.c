@@ -63,6 +63,7 @@ extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME *
 #include "untar.h"
 #include "special.h"
 #include "binhex.h"
+#include "sis.h"
 
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>
@@ -1620,6 +1621,10 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 
 	case CL_TYPE_ELF: /* TODO: Add ScanELF option */
 		ret = cli_scanelf(desc, virname, scanned, engine, limits, options, arec, mrec);
+	    break;
+
+	case CL_TYPE_SIS:
+		ret = cli_scansis(desc, virname, scanned, engine, limits, options, arec, mrec);
 	    break;
 
 	case CL_TYPE_DATA:

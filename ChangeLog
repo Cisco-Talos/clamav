@@ -1,3 +1,8 @@
+Thu Dec 15 02:52:01 CET 2005 (tk)
+---------------------------------
+  * libclamav/sis.[ch]: new files
+  * libclamav: inital support for SIS files (Symbian OS packages)
+
 Mon Dec 12 19:34:00 CET 2005 (tk)
 ---------------------------------
   * libclamav: add support for CL_SCAN_ALGO (to control algorithmic detection)
