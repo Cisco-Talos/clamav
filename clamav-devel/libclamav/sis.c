@@ -29,6 +29,14 @@
 #include <unistd.h>
 #include <time.h>
 
+#if HAVE_MMAP
+#if HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#else /* HAVE_SYS_MMAN_H */
+#undef HAVE_MMAP
+#endif
+#endif
+
 #include "cltypes.h"
 #include "clamav.h"
 #include "others.h"
@@ -69,17 +77,46 @@ int cli_scansis(int desc, const char **virname, long int *scanned, const struct 
 	struct sis_file_hdr6 file_hdr6;
 	uint8_t release = 0;
 	uint16_t opts, nlangs, *langrecs;
-	char *langs;
+	char *mfile = NULL, *langs;
+	struct stat sb;
 	int i;
 
 
-    if(read(desc, &file_hdr, sizeof(struct sis_file_hdr)) != sizeof(struct sis_file_hdr)) {
-	cli_dbgmsg("SIS: Can't read file header\n"); /* Not a SIS file? */
+    if(fstat(desc, &sb) == -1) {
+	cli_errmsg("SIS: fstat() failed\n");
+	return CL_EIO;
+    }
+
+    if(sb.st_size < sizeof(struct sis_file_hdr)) {
+	cli_dbgmsg("SIS: Broken or not a SIS file (too small)\n");
 	return CL_CLEAN;
+    }
+
+#if HAVE_MMAP
+    if(sb.st_size < 33554432) {
+	mfile = (char *) mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, desc, 0);
+	if(mfile == MAP_FAILED) {
+	    mfile = NULL;
+	} else {
+	    cli_dbgmsg("SIS: mmap'ed file\n");
+	    memcpy(&file_hdr, mfile, sizeof(struct sis_file_hdr));
+	}
+    }
+#endif
+
+    if(!mfile) {
+	if(read(desc, &file_hdr, sizeof(struct sis_file_hdr)) != sizeof(struct sis_file_hdr)) {
+	    cli_dbgmsg("SIS: Can't read file header\n"); /* Not a SIS file? */
+	    return CL_CLEAN;
+	}
     }
 
     if(EC32(file_hdr.uid3) != 0x10000419) {
 	cli_dbgmsg("SIS: Not a SIS file\n");
+#if HAVE_MMAP
+	if(mfile)
+	    munmap(mfile, sb.st_size);
+#endif
 	return CL_CLEAN;
     }
 
@@ -104,17 +141,32 @@ int cli_scansis(int desc, const char **virname, long int *scanned, const struct 
     cli_dbgmsg("SIS: Offset of languages records: %d\n", EC32(file_hdr.plangs));
 
     if(nlangs && nlangs < 100) {
-	if(lseek(desc, EC32(file_hdr.plangs), SEEK_SET) < 0) {
-	    cli_errmsg("SIS: No language records\n");
+
+	if(EC32(file_hdr.plangs) + nlangs * 2 >= sb.st_size) {
+	    cli_errmsg("SIS: Broken file structure (language records)\n");
+#if HAVE_MMAP
+	    if(mfile)
+		munmap(mfile, sb.st_size);
+#endif
 	    return CL_EFORMAT;
 	}
 
 	langrecs = (uint16_t *) cli_malloc(nlangs * 2);
 
-	if(read(desc, langrecs, nlangs * 2) != nlangs * 2) {
-	    cli_errmsg("SIS: Can't read language records\n");
-	    free(langrecs);
-	    return CL_EFORMAT;
+	if(!mfile) {
+	    if(lseek(desc, EC32(file_hdr.plangs), SEEK_SET) < 0) {
+		cli_errmsg("SIS: No language records\n");
+		free(langrecs);
+		return CL_EFORMAT;
+	    }
+
+	    if(read(desc, langrecs, nlangs * 2) != nlangs * 2) {
+		cli_errmsg("SIS: Can't read language records\n");
+		free(langrecs);
+		return CL_EFORMAT;
+	    }
+	} else {
+	    memcpy(langrecs, mfile + EC32(file_hdr.plangs), nlangs * 2);
 	}
 
 	langs = (char *) cli_calloc(nlangs * 3 + 1, sizeof(char));
@@ -184,16 +236,33 @@ int cli_scansis(int desc, const char **virname, long int *scanned, const struct 
 
     if(release == 6) {
 
-	lseek(desc, sizeof(struct sis_file_hdr), SEEK_SET);
-
-	if(read(desc, &file_hdr6, sizeof(struct sis_file_hdr6)) != sizeof(struct sis_file_hdr6)) {
-	    cli_dbgmsg("SIS: Can't read additional data of EPOC 6 file header\n"); /* Not a SIS file? */
+	if(sizeof(struct sis_file_hdr) + sizeof(struct sis_file_hdr6) >= sb.st_size) {
+	    cli_errmsg("SIS: Broken file structure (language records)\n");
+#if HAVE_MMAP
+	    if(mfile)
+		munmap(mfile, sb.st_size);
+#endif
 	    return CL_EFORMAT;
 	}
 
+
+	if(!mfile) {
+	    lseek(desc, sizeof(struct sis_file_hdr), SEEK_SET);
+
+	    if(read(desc, &file_hdr6, sizeof(struct sis_file_hdr6)) != sizeof(struct sis_file_hdr6)) {
+		cli_dbgmsg("SIS: Can't read additional data of EPOC 6 file header\n"); /* Not a SIS file? */
+		return CL_EFORMAT;
+	    }
+	} else {
+	    memcpy(&file_hdr6, mfile + sizeof(struct sis_file_hdr), sizeof(struct sis_file_hdr6));
+	}
 	cli_dbgmsg("SIS: Maximum space required: %d\n", EC32(file_hdr6.maxispace));
     }
 
+#if HAVE_MMAP
+    if(mfile)
+	munmap(mfile, sb.st_size);
+#endif
 
     return CL_CLEAN;
 }
