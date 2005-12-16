@@ -24,7 +24,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.28 2005/11/03 21:45:18 kojm Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.29 2005/12/16 15:47:55 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -102,9 +102,9 @@ cli_tnef(const char *dir, int desc)
 	alldone = 0;
 
 	do {
-		uint8_t part;
-		uint16_t type, tag;
-		int32_t length;
+		uint8_t part = 0;
+		uint16_t type = 0, tag = 0;
+		int32_t length = 0;
 
 		switch(tnef_header(fp, &part, &type, &tag, &length)) {
 			case 0:
@@ -120,6 +120,13 @@ cli_tnef(const char *dir, int desc)
 				ret = CL_EIO;
 				alldone = 1;
 				break;
+		}
+		if(length == 0)
+			continue;
+		if(length < 0) {
+			cli_warnmsg("Corrupt TNEF header detected - length %d\n", length);
+			ret = CL_EFORMAT;
+			break;
 		}
 		if(alldone)
 			break;
@@ -203,7 +210,7 @@ static int
 tnef_message(FILE *fp, uint16_t type, uint16_t tag, int32_t length)
 {
 	uint16_t i16;
-	/* off_t offset; */
+	off_t offset;
 #if	CL_DEBUG
 	uint32_t i32;
 	char *string;
@@ -211,7 +218,7 @@ tnef_message(FILE *fp, uint16_t type, uint16_t tag, int32_t length)
 
 	cli_dbgmsg("message tag 0x%x, type 0x%x, length %d\n", tag, type, length);
 
-	/* offset = ftell(fp); */
+	offset = ftell(fp);
 
 	/*
 	 * a lot of this stuff should be only discovered in debug mode...
@@ -261,11 +268,11 @@ tnef_message(FILE *fp, uint16_t type, uint16_t tag, int32_t length)
 
 	/*cli_dbgmsg("%lu %lu\n", (long)(offset + length), ftell(fp));*/
 
-	/* fseek(fp, offset + length, SEEK_SET); */
+	fseek(fp, offset + length, SEEK_SET);
 
 	/* Checksum - TODO, verify */
-	/* if(fread(&i16, sizeof(uint16_t), 1, fp) != 1)
-		return -1; */
+	if(fread(&i16, sizeof(uint16_t), 1, fp) != 1)
+		return -1;
 
 	return 0;
 }
@@ -275,12 +282,12 @@ tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, int32_t length, const cha
 {
 	uint32_t todo;
 	uint16_t i16;
-	/* off_t offset; */
+	off_t offset;
 	char *string;
 
 	cli_dbgmsg("attachment tag 0x%x, type 0x%x, length %d\n", tag, type, length);
 
-	/* offset = ftell(fp); */
+	offset = ftell(fp);
 
 	switch(tag) {
 		case attATTACHTITLE:
@@ -336,11 +343,11 @@ tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, int32_t length, const cha
 
 	/*cli_dbgmsg("%lu %lu\n", (long)(offset + length), ftell(fp));*/
 
-	/* fseek(fp, (long)(offset + length), SEEK_SET); */	/* shouldn't be needed */
+	fseek(fp, (long)(offset + length), SEEK_SET);	/* shouldn't be needed */
 
 	/* Checksum - TODO, verify */
-	/* if(fread(&i16, sizeof(uint16_t), 1, fp) != 1) 
-		return -1; */
+	if(fread(&i16, sizeof(uint16_t), 1, fp) != 1) 
+		return -1;
 
 	return 0;
 }
@@ -360,8 +367,8 @@ tnef_header(FILE *fp, uint8_t *part, uint16_t *type, uint16_t *tag, int32_t *len
 		return -1;
 
 	i32 = host32(i32);
-	*tag = i32 & 0xFFFF;
-	*type = (i32 & 0xFFFF0000) >> 16;
+	*tag = (uint16_t)(i32 & 0xFFFF);
+	*type = (uint16_t)((i32 & 0xFFFF0000) >> 16);
 
 	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1)
 		return -1;
