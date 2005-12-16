@@ -22,7 +22,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.224 2005/12/14 08:51:04 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.225 2005/12/16 13:30:52 nigelhorne Exp $";
 
 #define	CM_VERSION	"devel-141205"
 
@@ -2133,7 +2133,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		}
 		pthread_mutex_unlock(&wrap_mutex);
 	}
-#endif
+#endif	/*WITH_TCPWRAP*/
 
 	if(fflag)
 		/*
@@ -3167,6 +3167,12 @@ clamfi_eom(SMFICTX *ctx)
 		if(privdata->body) {
 			/*
 			 * Add a signature that all has been scanned OK
+			 *
+			 * Note that this is simple minded and isn't aware of
+			 *	any MIME segments in the message. In practice
+			 *	this means that the message will only display
+			 *	on users' terminals if the message is
+			 *	plain/text
 			 */
 			off_t len = updateSigFile();
 
