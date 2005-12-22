@@ -586,7 +586,7 @@ int cli_readn(int fd, void *buff, unsigned int count)
 			if (errno == EINTR) {
 				continue;
 			}
-			cli_errmsg("cli_writen: read error: %s\n", strerror(errno));
+			cli_errmsg("cli_readn: read error: %s\n", strerror(errno));
                         return -1;
                 }
                 todo -= retval;
