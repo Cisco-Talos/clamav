@@ -22,7 +22,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.225 2005/12/16 13:30:52 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.226 2005/12/22 17:15:24 nigelhorne Exp $";
 
 #define	CM_VERSION	"devel-141205"
 
@@ -4903,7 +4903,7 @@ broadcast(const char *mess)
 static int
 loadDatabase(void)
 {
-	extern const char *cl_retdbdir(void);	/* FIXME: should be included */
+	/*extern const char *cl_retdbdir(void);	/* FIXME: should be included */
 	int ret, v;
 	unsigned int signatures;
 	time_t t;
@@ -5129,6 +5129,8 @@ verifyIncomingSocketName(const char *sockName)
  * TODO: Allow regular expressions in the emails
  * TODO: Syntax check the contents of the files
  * TODO: Allow emails of the form "name <address>"
+ * TODO: Assume that if a '@' is missing from the address, that all emails
+ *	to that domain are to be whitelisted
  */
 static int
 isWhitelisted(const char *emailaddress)
