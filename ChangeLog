@@ -1,3 +1,10 @@
+Wed Dec 28 13:49:46 GMT 2005 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Added patches by Gianluigi Tiesi <sherpya*netfarm.it>
+  				Improve CURL support on Windows
+				Improve CURL error message for systems without
+					CURL_ERRORBUFFER
+
 Thu Dec 15 20:51:27 CET 2005 (tk)
 ---------------------------------
   * libclamav/sis.c: use mmap() when available

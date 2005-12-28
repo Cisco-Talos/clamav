@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.263 2005/12/09 17:19:10 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.264 2005/12/28 13:46:57 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3689,6 +3689,9 @@ checkURLs(message *m, const char *dir)
 	html_tag_arg_free(&hrefs);
 }
 
+/*
+ * Includes some Win32 patches by Gianluigi Tiesi <sherpya@netfarm.it>
+ */
 #ifdef	WITH_CURL
 static void *
 #ifdef	CL_THREAD_SAFE
@@ -3711,13 +3714,15 @@ getURL(struct arg *arg)
 	char fout[NAME_MAX + 1];
 #ifdef	CURLOPT_ERRORBUFFER
 	char errorbuffer[CURL_ERROR_SIZE];
+#else
+	CURLcode res = CURLE_OK;
 #endif
 
 #ifdef	CL_THREAD_SAFE
 	pthread_mutex_lock(&init_mutex);
 #endif
 	if(!initialised) {
-		if(curl_global_init(CURL_GLOBAL_NOTHING) != 0) {
+		if(curl_global_init(CURL_GLOBAL_ALL) != 0) {
 #ifdef	CL_THREAD_SAFE
 			pthread_mutex_unlock(&init_mutex);
 #endif
@@ -3741,7 +3746,7 @@ getURL(struct arg *arg)
 
 	snprintf(fout, NAME_MAX, "%s/%s", dir, filename);
 
-	fp = fopen(fout, "w");
+	fp = fopen(fout, "wb");
 
 	if(fp == NULL) {
 		cli_errmsg("Can't open '%s' for writing", fout);
@@ -3808,11 +3813,12 @@ getURL(struct arg *arg)
 	 * memory leak * here in getaddrinfo(), see
 	 *	https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=139559
 	 */
-	if(curl_easy_perform(curl) != CURLE_OK) {
+	if((res = curl_easy_perform(curl)) != CURLE_OK) {
 #ifdef	CURLOPT_ERRORBUFFER
 		cli_warnmsg("URL %s failed to download: %s\n", url, errorbuffer);
 #else
-		cli_warnmsg("URL %s failed to download\n", url);
+		cli_warnmsg("URL %s failed to download: %s\n", url,
+			curl_easy_strerror(res));
 #endif
 	}
 
