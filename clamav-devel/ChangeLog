@@ -1,3 +1,9 @@
+Mon Jan  2 17:38:35 GMT 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	NEW_WORLD code (not enabled by default) now finds all
+  				malware in my database and is now ready for
+				testing
+
 Wed Dec 28 13:49:46 GMT 2005 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Added patches by Gianluigi Tiesi <sherpya*netfarm.it>

@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.265 2005/12/28 13:49:36 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.266 2006/01/02 17:37:57 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -300,6 +300,8 @@ static	pthread_mutex_t	tables_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef	NEW_WORLD
 
+#undef	PARTIAL_DIR
+
 #if HAVE_MMAP
 #if HAVE_SYS_MMAN_H
 #include <sys/mman.h>
@@ -338,6 +340,10 @@ struct scanlist {
  * TODO: Also all those pmemstr()s are slow, so we need to reduce the number
  *	and size of data scanned each time, and we fall through to
  *	cli_parse_mbox() too often
+ *
+ * FIXME: Fall through on systems without mmap()
+ *
+ * TODO: partial_dir fall through
  */
 int
 cli_mbox(const char *dir, int desc, unsigned int options)
@@ -367,7 +373,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 	if(size > 10*1024*1024)
 		return cli_parse_mbox(dir, desc, options);	/* should be StreamMaxLength, I guess */
 
-	cli_warnmsg("NEW_WORLD is new code - use at your own risk.\n");
+	/*cli_warnmsg("NEW_WORLD is new code - use at your own risk.\n");*/
 #ifdef	PARTIAL_DIR
 	cli_warnmsg("PARTIAL_DIR doesn't work in the NEW_WORLD yet\n");
 #endif
@@ -422,6 +428,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		assert(scanelem->size <= size);
 		assert(&q[s - 1] <= last);
 	}
+
 	q = start;
 	s = size;
 	while((p = (char *)cli_pmemstr(q, s, "quoted-printable", 16)) != NULL) {
@@ -440,6 +447,11 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			}
 
 		cli_dbgmsg("Found quoted-printable\n");
+#ifdef	notdef
+		/*
+		 * The problem with quoted printable is recognising when to stop
+		 * parsing
+		 */
 		if(scanelem) {
 			scanelem->next = cli_malloc(sizeof(struct scanlist));
 			scanelem = scanelem->next;
@@ -463,12 +475,21 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		}
 		assert(scanelem->size <= size);
 		assert(&q[s - 1] <= last);
+#else
+		if(wasAlloced)
+			free(start);
+		else
+			munmap(start, size);
+
+		return cli_parse_mbox(dir, desc, options);
+#endif
 	}
 
 	if(scanlist == NULL) {
 		const struct tableinit *tableinit;
 		bool anyHeadersFound = FALSE;
 		bool hasuuencode = FALSE;
+		cli_file_t type;
 
 		/* FIXME: message: There could of course be no decoder needed... */
 		for(tableinit = rfc821headers; tableinit->key; tableinit++)
@@ -481,6 +502,12 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			/* uuencoded part */
 			hasuuencode = TRUE;
 
+		type = cli_filetype(start, size);
+
+		if((type == CL_TYPE_UNKNOWN_TEXT) &&
+		   (strncmp(start, "Microsoft Mail Internet Headers", 31) == 0))
+		   	type = CL_TYPE_MAIL;
+
 		if(wasAlloced)
 			free(start);
 		else
@@ -488,11 +515,17 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 		if(anyHeadersFound || hasuuencode) {
 			/* TODO: reduce the number of falls through here */
-			cli_warnmsg("cli_mbox: uuencode or unknown encoder\n");
-			return cli_parse_mbox(dir, desc, options);
+			if(hasuuencode)
+				cli_dbgmsg("New world - fall back to old uudecoder, type %d\n", type);
+			else
+				cli_dbgmsg("cli_mbox: unknown encoder, type %d\n", type);
+			if(type == CL_TYPE_MAIL)
+				return cli_parse_mbox(dir, desc, options);
+			cli_dbgmsg("Unknown filetype %d, return CLEAN\n", type);
+			return CL_CLEAN;
 		}
 
-		cli_warnmsg("cli_mbox: I believe it's plain text which must be clean\n");
+		cli_dbgmsg("cli_mbox: I believe it's plain text which must be clean\n");
 		return CL_CLEAN;
 	}
 
@@ -522,6 +555,24 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 					b64start += 4;
 					b64size -= 4;
 					break;
+				} else if(memcmp(b64start, "\n \n", 3) == 0) {
+					/*
+					 * Some viruses are broken and have
+					 * one space character at the end of
+					 * the headers
+					 */
+					b64start += 3;
+					b64size -= 3;
+					break;
+				} else if(memcmp(b64start, "\r\n \r\n", 5) == 0) {
+					/*
+					 * Some viruses are broken and have
+					 * one space character at the end of
+					 * the headers
+					 */
+					b64start += 5;
+					b64size -= 5;
+					break;
 				}
 				b64start++;
 				b64size--;
@@ -541,8 +592,14 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				line = NULL;
 
 				m = messageCreate();
-				if(m == NULL)
+				if(m == NULL) {
+					if(wasAlloced)
+						free(start);
+					else
+						munmap(start, size);
+
 					return CL_EMEM;
+				}
 				messageSetEncoding(m, "base64");
 
 				lastline = 0;
@@ -637,8 +694,14 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				cli_dbgmsg("cli_mbox: decoding %ld quoted-printable bytes\n", quotedsize);
 
 				m = messageCreate();
-				if(m == NULL)
+				if(m == NULL) {
+					if(wasAlloced)
+						free(start);
+					else
+						munmap(start, size);
+
 					return CL_EMEM;
+				}
 				messageSetEncoding(m, "quoted-printable");
 
 				line = NULL;
@@ -710,6 +773,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 	if(ret == 0)
 		return CL_CLEAN;	/* a lie - but it gets things going */
 
+	cli_dbgmsg("New world - don't know what to do - fall back to old world\n");
 	/* Fall back for now */
 	lseek(desc, 0L, SEEK_SET);
 	return cli_parse_mbox(dir, desc, options);
