@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.267 2006/01/02 18:01:54 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.268 2006/01/02 18:10:32 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3778,7 +3778,7 @@ getURL(struct arg *arg)
 	char fout[NAME_MAX + 1];
 #ifdef	CURLOPT_ERRORBUFFER
 	char errorbuffer[CURL_ERROR_SIZE];
-#else
+#elif	(LIBCURL_VERSION_NUM >= 0x070C00)
 	CURLcode res = CURLE_OK;
 #endif
 
@@ -3857,10 +3857,6 @@ getURL(struct arg *arg)
 	 */
 	curl_easy_setopt(curl, CURLOPT_USERPWD, "username:password");
 
-#ifdef	CURLOPT_ERRORBUFFER
-	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errorbuffer);
-#endif
-
 	/*
 	 * FIXME: valgrind reports "pthread_mutex_unlock: mutex is not locked"
 	 * from gethostbyaddr_r within this. It may be a bug in libcurl
@@ -3878,6 +3874,8 @@ getURL(struct arg *arg)
 	 *	https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=139559
 	 */
 #ifdef	CURLOPT_ERRORBUFFER
+	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errorbuffer);
+
 	if(curl_easy_perform(curl) != CURLE_OK)
 		cli_warnmsg("URL %s failed to download: %s\n", url, errorbuffer);
 #elif	(LIBCURL_VERSION_NUM >= 0x070C00)
@@ -3885,7 +3883,7 @@ getURL(struct arg *arg)
 		cli_warnmsg("URL %s failed to download: %s\n", url,
 			curl_easy_strerror(res));
 #else
-	if((res = curl_easy_perform(curl)) != CURLE_OK)
+	if(curl_easy_perform(curl) != CURLE_OK)
 		cli_warnmsg("URL %s failed to download\n", url);
 #endif
 
