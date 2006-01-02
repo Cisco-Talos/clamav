@@ -1,3 +1,8 @@
+Mon Jan  2 18:02:20 GMT 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Bug fix to the patch of 28/12 for versions of curl
+  				that don't support curl_easy_strerror()
+
 Mon Jan  2 17:38:35 GMT 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	NEW_WORLD code (not enabled by default) now finds all
