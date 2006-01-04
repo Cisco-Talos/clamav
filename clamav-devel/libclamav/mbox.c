@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.269 2006/01/04 09:29:51 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.270 2006/01/04 09:52:56 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -142,10 +142,11 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 #include <curl/curl.h>
 
 /*
- * Needs curl >= 7.11 (I've heard that 7.9 can cause crashes and 7.10 is
+ * Needs curl >= 7.11 (I've heard that 7.9 can cause crashes and I have seen
+ *	7.10 segfault, later versions can be flakey as well)
  * untested)
  */
-#if     (LIBCURL_VERSION_NUM < 0x070A00)
+#if     (LIBCURL_VERSION_NUM < 0x070B00)
 #undef	WITH_CURL	/* also undef FOLLOWURLS? */
 #endif
 
