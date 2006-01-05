@@ -38,5 +38,4 @@ typedef enum {
 #endif
 
 size_t	strstrip(char *s);	/* remove trailing white space */
-const	char	*cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns);
 int cli_mbox(const char *dir, int desc, unsigned int options);
