@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.271 2006/01/05 11:16:27 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.272 2006/01/05 12:42:39 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -366,7 +366,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 {
 	char *start, *ptr, *line, *p, *q;
 	const char *last;
-	size_t size, s;
+	size_t size;
 	struct stat statb;
 	message *m;
 	fileblob *fb;
@@ -418,7 +418,6 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 	scanelem = scanlist = NULL;
 	q = start;
-	s = size;
 	/*
 	 * FIXME: mismatch of const char * and char * here and in later calls
 	 *	to find_in_map()
@@ -432,25 +431,21 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			scanlist = scanelem = cli_malloc(sizeof(struct scanlist));
 		scanelem->next = NULL;
 		scanelem->decoder = BASE64;
-		s -= (p - q) + 6;
 		q = scanelem->start = &p[6];
 		if(((p = find_in_map(q, "\nFrom ")) != NULL) ||
 		   ((p = find_in_map(q, "base64")) != NULL) ||
 		   ((p = find_in_map(q, "quoted-printable")) != NULL)) {
 			scanelem->size = (size_t)(p - q);
 			q = p;
-			s -= scanelem->size;
 		} else {
 			scanelem->size = (size_t)(last - scanelem->start) + 1;
 			break;
 		}
-		cli_dbgmsg("base64: last %u q %u s %u\n", (unsigned int)last, (unsigned int)q, s);
+		cli_dbgmsg("base64: last %u q %u\n", (unsigned int)last, (unsigned int)q);
 		assert(scanelem->size <= size);
-		assert(&q[s - 1] <= last);
 	}
 
 	q = start;
-	s = size;
 	while((p = find_in_map(q, "quoted-printable")) != NULL) {
 		if(p != q)
 			switch(p[-1]) {
@@ -459,10 +454,8 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				case '=':	/* wrong but allow it */
 					break;
 				default:
-					s -= (p - q) + 16;
 					q = &p[16];
 					cli_dbgmsg("Ignore quoted-printable false positive\n");
-					cli_dbgmsg("s = %u\n", s);
 					continue;	/* false positive */
 			}
 
@@ -479,22 +472,19 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			scanlist = scanelem = cli_malloc(sizeof(struct scanlist));
 		scanelem->next = NULL;
 		scanelem->decoder = QUOTEDPRINTABLE;
-		s -= (p - q) + 16;
 		q = scanelem->start = &p[16];
-		cli_dbgmsg("qp: last %u q %u s %u\n", (unsigned int)last, (unsigned int)q, s);
+		cli_dbgmsg("qp: last %u q %u\n", (unsigned int)last, (unsigned int)q);
 		if(((p = find_in_map(q, "\nFrom ")) != NULL) ||
 		   ((p = find_in_map(q, "quoted-printable")) != NULL) ||
 		   ((p = find_in_map(q, "base64")) != NULL)) {
 			scanelem->size = (size_t)(p - q);
 			q = p;
-			s -= scanelem->size;
 			cli_dbgmsg("qp: scanelem->size = %u\n", scanelem->size);
 		} else {
 			scanelem->size = (size_t)(last - scanelem->start) + 1;
 			break;
 		}
 		assert(scanelem->size <= size);
-		assert(&q[s - 1] <= last);
 #else
 		if(wasAlloced)
 			free(start);
