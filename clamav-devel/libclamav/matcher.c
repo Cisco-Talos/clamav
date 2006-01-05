@@ -223,7 +223,7 @@ static long int cli_caloff(const char *offstr, int fd, unsigned short ftype)
 int cli_checkfp(int fd, const struct cl_engine *engine)
 {
 	struct cli_md5_node *md5_node;
-	char *digest;
+	unsigned char *digest;
 
 
     if(engine->md5_hlist) {
