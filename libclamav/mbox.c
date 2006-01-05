@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.270 2006/01/04 09:52:56 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.271 2006/01/05 11:16:27 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -307,12 +307,33 @@ static	pthread_mutex_t	tables_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 #endif
 
+/*
+ * Files larger than this are scanned with the old method, should be
+ *	StreamMaxLength, I guess
+ * If NW_MAX_FILE_SIZE is not defined, all files go through the
+ *	new method. This definition is for machines very tight on RAM, or
+ *	with large StreamMaxLength values
+ */
+#define	MAX_ALLOCATION	134217728	/* see libclamav/others.c */
+#define	NW_MAX_FILE_SIZE	MAX_ALLOCATION
+
 struct scanlist {
-	char *start;
-	size_t size;
-	encoding_type decoder;	/* only BASE64 and QUOTEDPRINTABLE for now */
-	struct scanlist *next;
+	const	char	*start;
+	size_t	size;
+	encoding_type	decoder;	/* only BASE64 and QUOTEDPRINTABLE for now */
+	struct	scanlist *next;
 };
+
+static struct map {
+	const	char	*offset;	/* sorted */
+	const	char	*word;
+	struct	map	*next;
+} *map, *tail;
+
+static	void	create_map(const char *begin, const char *end);
+static	void	add_to_map(const char *offset, const char *word);
+static	const	char	*find_in_map(const char *offset, const char *word);
+static	void	free_map(void);
 
 /*
  * This could be the future. Instead of parsing and decoding it just decodes.
@@ -334,9 +355,7 @@ struct scanlist {
  * FIXME: quoted printable doesn't know when to stop, so size related virus
  *	matching breaks
  *
- * TODO: Also all those pmemstr()s are slow, so we need to reduce the number
- *	and size of data scanned each time, and we fall through to
- *	cli_parse_mbox() too often
+ * TODO: Fall through to cli_parse_mbox() too often
  *
  * FIXME: Fall through on systems without mmap()
  *
@@ -367,8 +386,10 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 	if(size == 0)
 		return CL_CLEAN;
 
-	if(size > 10*1024*1024)
-		return cli_parse_mbox(dir, desc, options);	/* should be StreamMaxLength, I guess */
+#ifdef	NW_MAX_FILE_SIZE
+	if(size > NW_MAX_FILE_SIZE)
+		return cli_parse_mbox(dir, desc, options);
+#endif
 
 	/*cli_warnmsg("NEW_WORLD is new code - use at your own risk.\n");*/
 #ifdef	PARTIAL_DIR
@@ -381,26 +402,28 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 	cli_dbgmsg("mmap'ed mbox\n");
 
-	/* last points to the last *valid* address in the array */
-	last = &start[size - 1];
-
 	ptr = cli_malloc(size);
 	if(ptr) {
-		wasAlloced = 1;
 		memcpy(ptr, start, size);
 		munmap(start, size);
 		start = ptr;
-		last = &start[size - 1];
+		wasAlloced = 1;
 	} else
 		wasAlloced = 0;
 
-	/*
-	 * Would be nice to have a case insensitive cli_memstr()
-	 */
+	/* last points to the last *valid* address in the array */
+	last = &start[size - 1];
+
+	create_map(start, last);
+
 	scanelem = scanlist = NULL;
 	q = start;
 	s = size;
-	while((p = (char *)cli_pmemstr(q, s, "base64", 6)) != NULL) {
+	/*
+	 * FIXME: mismatch of const char * and char * here and in later calls
+	 *	to find_in_map()
+	 */
+	while((p = find_in_map(q, "base64")) != NULL) {
 		cli_dbgmsg("Found base64\n");
 		if(scanelem) {
 			scanelem->next = cli_malloc(sizeof(struct scanlist));
@@ -411,9 +434,9 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		scanelem->decoder = BASE64;
 		s -= (p - q) + 6;
 		q = scanelem->start = &p[6];
-		if(((p = (char *)cli_pmemstr(q, s, "\nFrom ", 6)) != NULL) ||
-		   ((p = (char *)cli_pmemstr(q, s, "base64", 6)) != NULL) ||
-		   ((p = (char *)cli_pmemstr(q, s, "quoted-printable", 16)) != NULL)) {
+		if(((p = find_in_map(q, "\nFrom ")) != NULL) ||
+		   ((p = find_in_map(q, "base64")) != NULL) ||
+		   ((p = find_in_map(q, "quoted-printable")) != NULL)) {
 			scanelem->size = (size_t)(p - q);
 			q = p;
 			s -= scanelem->size;
@@ -428,7 +451,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 	q = start;
 	s = size;
-	while((p = (char *)cli_pmemstr(q, s, "quoted-printable", 16)) != NULL) {
+	while((p = find_in_map(q, "quoted-printable")) != NULL) {
 		if(p != q)
 			switch(p[-1]) {
 				case ' ':
@@ -459,9 +482,9 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		s -= (p - q) + 16;
 		q = scanelem->start = &p[16];
 		cli_dbgmsg("qp: last %u q %u s %u\n", (unsigned int)last, (unsigned int)q, s);
-		if(((p = (char *)cli_pmemstr(q, s, "\nFrom ", 6)) != NULL) ||
-		   ((p = (char *)cli_pmemstr(q, s, "quoted-printable", 16)) != NULL) ||
-		   ((p = (char *)cli_pmemstr(q, s, "base64", 6)) != NULL)) {
+		if(((p = find_in_map(q, "\nFrom ")) != NULL) ||
+		   ((p = find_in_map(q, "quoted-printable")) != NULL) ||
+		   ((p = find_in_map(q, "base64")) != NULL)) {
 			scanelem->size = (size_t)(p - q);
 			q = p;
 			s -= scanelem->size;
@@ -478,6 +501,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		else
 			munmap(start, size);
 
+		free_map();
 		return cli_parse_mbox(dir, desc, options);
 #endif
 	}
@@ -490,20 +514,22 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 		/* FIXME: message: There could of course be no decoder needed... */
 		for(tableinit = rfc821headers; tableinit->key; tableinit++)
-			if(cli_pmemstr(start, size, tableinit->key, strlen(tableinit->key))) {
+			if(find_in_map(start, tableinit->key)) {
 				anyHeadersFound = TRUE;
 				break;
 			}
 
-		if((!anyHeadersFound) && cli_pmemstr(start, size, "\nbegin ", 7))
+		if((!anyHeadersFound) && find_in_map(start, "\nbegin "))
 			/* uuencoded part */
 			hasuuencode = TRUE;
+
+		free_map();
 
 		type = cli_filetype(start, size);
 
 		if((type == CL_TYPE_UNKNOWN_TEXT) &&
 		   (strncmp(start, "Microsoft Mail Internet Headers", 31) == 0))
-		   	type = CL_TYPE_MAIL;
+			type = CL_TYPE_MAIL;
 
 		if(wasAlloced)
 			free(start);
@@ -522,14 +548,39 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			return CL_CLEAN;
 		}
 
+#ifdef	notdef
+		/* Not true, since the message could be a plain text phish */
 		cli_dbgmsg("cli_mbox: I believe it's plain text which must be clean\n");
 		return CL_CLEAN;
+#else
+		if(type == CL_TYPE_MAIL)
+			return cli_parse_mbox(dir, desc, options);
+		cli_dbgmsg("cli_mbox: I believe it's plain text which must be clean\n");
+		return CL_CLEAN;
+#endif
 	}
+	free_map();
+
+#if	0
+	if(wasAlloced) {
+		const char *max = NULL;
+
+		for(scanelem = scanlist; scanelem; scanelem = scanelem->next) {
+			const char *end = &scanelem->start[scanelem->size];
+
+			if(end > max)
+				max = end;
+		}
+
+		if(max < last)
+			printf("could free %d bytes\n", (int)(last - max));
+	}
+#endif
 
 	for(scanelem = scanlist; scanelem; scanelem = scanelem->next) {
 		if(scanelem->decoder == BASE64) {
-			char *b64start = scanelem->start;
-			long b64size = scanelem->size;
+			const char *b64start = scanelem->start;
+			size_t b64size = scanelem->size;
 
 			cli_dbgmsg("b64size = %lu\n", b64size);
 			while((*b64start != '\n') && (*b64start != '\r')) {
@@ -654,8 +705,8 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 					ret = -1;
 			}
 		} else if(scanelem->decoder == QUOTEDPRINTABLE) {
-			char *quotedstart = scanelem->start;
-			long quotedsize = scanelem->size;
+			const char *quotedstart = scanelem->start;
+			size_t quotedsize = scanelem->size;
 
 			cli_dbgmsg("quotedsize = %lu\n", quotedsize);
 			while(*quotedstart != '\n') {
@@ -775,7 +826,81 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 	lseek(desc, 0L, SEEK_SET);
 	return cli_parse_mbox(dir, desc, options);
 }
-#else
+
+static void
+create_map(const char *begin, const char *end)
+{
+	const struct wordlist {
+		const char *word;
+		int len;
+	} wordlist[] = {
+		{	"base64",		6	},
+		{	"quoted-printable",	16	},
+		{	"\nbegin ",		7	},
+		{	"\nFrom ",		7	},
+		{	NULL,			0	}
+	};
+
+	if(map) {
+		cli_warnmsg("create_map called without free_map\n");
+		free_map();
+	}
+	while(begin < end) {
+		const struct wordlist *word;
+
+		for(word = wordlist; word->word; word++) {
+			if((end - begin) < word->len)
+				continue;
+			if(strncasecmp(begin, word->word, word->len) == 0) {
+				add_to_map(begin, word->word);
+				break;
+			}
+		}
+		begin++;
+	}
+}
+
+/* To sort map, assume 'offset' is presented in sorted order */
+static void
+add_to_map(const char *offset, const char *word)
+{
+	if(map) {
+		tail->next = cli_malloc(sizeof(struct map));	/* FIXME: verify */
+		tail = tail->next;
+	} else
+		map = tail = cli_malloc(sizeof(struct map));	/* FIXME: verify */
+
+	tail->offset = offset;
+	tail->word = word;
+	tail->next = NULL;
+}
+
+static const char *
+find_in_map(const char *offset, const char *word)
+{
+	const struct map *item;
+
+	for(item = map; item; item = item->next)
+		if(item->offset >= offset)
+			if(strcasecmp(word, item->word) == 0)
+				return item->offset;
+
+	return NULL;
+}
+
+static void
+free_map(void)
+{
+	while(map) {
+		struct map *next = map->next;
+
+		free(map);
+		map = next;
+	}
+	map = NULL;
+}
+
+#else	/*!NEW_WORLD*/
 int
 cli_mbox(const char *dir, int desc, unsigned int options)
 {
@@ -1096,7 +1221,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 			boundary = NULL;
 		}
 		if(inHeader) {
-			cli_dbgmsg("parseEmailFile: check '%s' contMarker %d fullline 0x%p\n",
+			cli_dbgmsg("parseEmailFile: check '%s' contMarker %d fullline %p\n",
 				buffer ? buffer : "", (int)contMarker, fullline);
 			if(line && isspace(line[0])) {
 				char copy[sizeof(buffer)];
@@ -4067,44 +4192,4 @@ getline_from_mbox(char *buffer, size_t len, FILE *fin)
 	*buffer = '\0';
 
 	return ret;
-}
-
-/*
- * like cli_memstr - but returns the location of the match
- * FIXME: need a case insensitive version
- */
-const char *
-cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns)
-{
-	const char *pt, *hay;
-	size_t n;
-
-	if(haystack == needle)
-		return haystack;
-
-	if(hs < ns)
-		return NULL;
-
-	if(memcmp(haystack, needle, ns) == 0)
-		return haystack;
-
-	pt = hay = haystack;
-	n = hs;
-
-	while((pt = memchr(hay, needle[0], n)) != NULL) {
-		n -= (int) pt - (int) hay;
-		if(n < ns)
-			break;
-
-		if(memcmp(pt, needle, ns) == 0)
-			return pt;
-
-		if(hay == pt) {
-			n--;
-			hay++;
-		} else
-			hay = pt;
-	}
-
-	return NULL;
 }

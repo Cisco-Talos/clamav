@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.38 2006/01/02 17:26:16 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.39 2006/01/05 11:16:27 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -60,6 +60,7 @@ static	int	flatedecode(const unsigned char *buf, size_t len, int fout);
 static	int	ascii85decode(const char *buf, size_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
+static	const	char	*cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns);
 
 /*
  * TODO: handle embedded URLs if (options&CL_SCAN_MAILURL)
@@ -530,6 +531,46 @@ pdf_nextobject(const char *ptr, size_t len)
 				len--;
 		}
 	}
+	return NULL;
+}
+
+/*
+ * like cli_memstr - but returns the location of the match
+ * FIXME: need a case insensitive version
+ */
+static const char *
+cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns)
+{
+	const char *pt, *hay;
+	size_t n;
+
+	if(haystack == needle)
+		return haystack;
+
+	if(hs < ns)
+		return NULL;
+
+	if(memcmp(haystack, needle, ns) == 0)
+		return haystack;
+
+	pt = hay = haystack;
+	n = hs;
+
+	while((pt = memchr(hay, needle[0], n)) != NULL) {
+		n -= (int) pt - (int) hay;
+		if(n < ns)
+			break;
+
+		if(memcmp(pt, needle, ns) == 0)
+			return pt;
+
+		if(hay == pt) {
+			n--;
+			hay++;
+		} else
+			hay = pt;
+	}
+
 	return NULL;
 }
 #else	/*!HAVE_MMAP*/
