@@ -23,7 +23,7 @@
 
 #define CL_TARGET_TABLE_SIZE 7
 
-int cli_scandesc(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, short otfrec, unsigned short ftype, unsigned long int *ftoffset);
+int cli_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, short otfrec, unsigned short ftype, unsigned long int *ftoffset);
 
 int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_engine *engine, unsigned short ftype);
 

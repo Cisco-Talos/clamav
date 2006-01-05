@@ -105,7 +105,7 @@ extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME *
 
 static int cli_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec);
 
-static int cli_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec);
+static int cli_scandir(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec);
 
 /*
 #ifdef CL_THREAD_SAFE
@@ -117,7 +117,7 @@ static void cli_unlock_mutex(void *mtx)
 #endif
 */
 
-static int cli_scanrar(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec, unsigned long int offset)
+static int cli_scanrar(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec, unsigned long int offset)
 {
 	int fd, ret = CL_CLEAN;
 	unsigned int files = 0;
@@ -176,7 +176,7 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 
 	    /* TODO add support for regex */
 	    /*if(mdata->filename && !strstr(zdirent.d_name, mdata->filename))*/
-	    if(mdata->filename && strcmp(metadata->filename, mdata->filename))
+	    if(mdata->filename && strcmp((char *) metadata->filename, mdata->filename))
 		continue;
 
 	    break; /* matched */
@@ -264,7 +264,7 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 }
 
 #ifdef HAVE_ZLIB_H
-static int cli_scanzip(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec, unsigned long int offset)
+static int cli_scanzip(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec, unsigned long int offset)
 {
 	ZZIP_DIR *zdir;
 	ZZIP_DIRENT zdirent;
@@ -507,7 +507,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
     return ret;
 }
 
-static int cli_scangzip(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scangzip(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	int fd, bytes, ret = CL_CLEAN;
 	unsigned long int size = 0;
@@ -612,7 +612,7 @@ static int cli_scangzip(int desc, const char **virname, long int *scanned, const
 #define BZ2_bzRead bzRead
 #endif
 
-static int cli_scanbzip(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanbzip(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	int fd, bytes, ret = CL_CLEAN, bzerror = 0;
 	short memlim = 0;
@@ -719,7 +719,7 @@ static int cli_scanbzip(int desc, const char **virname, long int *scanned, const
 }
 #endif
 
-static int cli_scanszdd(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanszdd(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	int fd, ret = CL_CLEAN, dcpy;
 	FILE *tmp = NULL, *in;
@@ -783,7 +783,7 @@ static int cli_scanszdd(int desc, const char **virname, long int *scanned, const
     return ret;
 }
 
-static int cli_scanmscab(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanmscab(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	struct mscab_decompressor *cabd = NULL;
 	struct mscabd_cabinet *base, *cab;
@@ -842,7 +842,7 @@ static int cli_scanmscab(int desc, const char **virname, long int *scanned, cons
     return ret;
 }
 
-static int cli_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scandir(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	DIR *dd;
 	struct dirent *dent;
@@ -903,7 +903,7 @@ static int cli_scandir(const char *dirname, const char **virname, long int *scan
     return 0;
 }
 
-static int cli_vba_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_vba_scandir(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	int ret = CL_CLEAN, i, fd, ofd, data_len;
 	vba_project_t *vba_project;
@@ -944,7 +944,7 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 		if(scanned)
 		    *scanned += data_len / CL_COUNT_PRECISION;
 
-		if(cli_scanbuff(data, data_len, virname, engine, CL_TYPE_MSOLE2) == CL_VIRUS) {
+		if(cli_scanbuff((char *) data, data_len, virname, engine, CL_TYPE_MSOLE2) == CL_VIRUS) {
 		    free(data);
 		    ret = CL_VIRUS;
 		    break;
@@ -988,7 +988,7 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 		} else {
 			if(scanned)
 			    *scanned += vba_project->length[i] / CL_COUNT_PRECISION;
-			if(cli_scanbuff(data, vba_project->length[i], virname, engine, CL_TYPE_MSOLE2) == CL_VIRUS) {
+			if(cli_scanbuff((char *) data, vba_project->length[i], virname, engine, CL_TYPE_MSOLE2) == CL_VIRUS) {
 				free(data);
 				ret = CL_VIRUS;
 				break;
@@ -1064,7 +1064,7 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
     return ret;
 }
 
-static int cli_scanhtml(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanhtml(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	char *tempname, fullname[1024];
 	int ret=CL_CLEAN, fd;
@@ -1138,7 +1138,7 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
     return ret;
 }
 
-static int cli_scanole2(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanole2(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	char *dir;
 	int ret = CL_CLEAN;
@@ -1174,7 +1174,7 @@ static int cli_scanole2(int desc, const char **virname, long int *scanned, const
     return ret;
 }
 
-static int cli_scantar(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec, unsigned int posix)
+static int cli_scantar(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec, unsigned int posix)
 {
 	char *dir;
 	int ret = CL_CLEAN;
@@ -1202,7 +1202,7 @@ static int cli_scantar(int desc, const char **virname, long int *scanned, const 
     return ret;
 }
 
-static int cli_scanbinhex(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanbinhex(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	char *dir;
 	int ret = CL_CLEAN;
@@ -1231,7 +1231,7 @@ static int cli_scanbinhex(int desc, const char **virname, long int *scanned, con
     return ret;
 }
 
-static int cli_scanmschm(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanmschm(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	char *tempname;
 	int ret = CL_CLEAN;
@@ -1256,7 +1256,7 @@ static int cli_scanmschm(int desc, const char **virname, long int *scanned, cons
     return ret;
 }
 
-static int cli_scanscrenc(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanscrenc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	char *tempname;
 	int ret = CL_CLEAN;
@@ -1326,12 +1326,12 @@ static int cli_scancryptff(int desc, const char **virname, unsigned long int *sc
 
     length = sb.st_size  - 0x10;
  
-    if((dest = (char *) cli_malloc(length)) == NULL) {
+    if((dest = (unsigned char *) cli_malloc(length)) == NULL) {
 	cli_dbgmsg("CryptFF: Can't allocate memory\n");
         return CL_EMEM;
     }
 
-    if((src = (char *) cli_malloc(length)) == NULL) {
+    if((src = (unsigned char *) cli_malloc(length)) == NULL) {
 	cli_dbgmsg("CryptFF: Can't allocate memory\n");
 	free(dest);
         return CL_EMEM;
@@ -1392,7 +1392,7 @@ static int cli_scancryptff(int desc, const char **virname, unsigned long int *sc
     return ret;
 }
 
-static int cli_scanpdf(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanpdf(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	int ret;
 	char *dir = cli_gentemp(NULL);
@@ -1416,7 +1416,7 @@ static int cli_scanpdf(int desc, const char **virname, long int *scanned, const 
     return ret;
 }
 
-static int cli_scantnef(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scantnef(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	int ret;
 	char *dir = cli_gentemp(NULL);
@@ -1440,7 +1440,7 @@ static int cli_scantnef(int desc, const char **virname, long int *scanned, const
     return ret;
 }
 
-static int cli_scanmail(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanmail(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	char *dir;
 	int ret;
@@ -1475,7 +1475,7 @@ static int cli_scanmail(int desc, const char **virname, long int *scanned, const
     return ret;
 }
 
-int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+int cli_magic_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	int ret = CL_CLEAN, nret;
 	int bread = 0;
