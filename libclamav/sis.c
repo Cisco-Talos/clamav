@@ -161,9 +161,11 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 	    break;
 	case 0x04:
 	    cli_dbgmsg("SIS: File type: Null file\n");
+	    return CL_CLEAN;
 	    break;
 	case 0x05:
 	    cli_dbgmsg("SIS: File type: MIME file\n");
+	    return CL_CLEAN;
 	    break;
 	default:
 	    cli_warnmsg("SIS: Unknown file type in file record\n");
