@@ -105,7 +105,6 @@ extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME *
 
 static int cli_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec);
 
-static int cli_scandir(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec);
 
 /*
 #ifdef CL_THREAD_SAFE
@@ -842,7 +841,7 @@ static int cli_scanmscab(int desc, const char **virname, unsigned long int *scan
     return ret;
 }
 
-static int cli_scandir(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+int cli_scandir(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	DIR *dd;
 	struct dirent *dent;
