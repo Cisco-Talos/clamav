@@ -1,3 +1,7 @@
+Sat Jan  7 04:27:05 CET 2006 (tk)
+---------------------------------
+  * libclamav/sis.c: extract and scan SIS packages
+
 Mon Jan  2 18:02:20 GMT 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Bug fix to the patch of 28/12 for versions of curl
