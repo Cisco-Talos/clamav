@@ -1,3 +1,6 @@
+Tue Jan 10 01:53:20 CET 2006 (acab)
+  * libclamav: bugfix/hardening of unpacking code
+
 Sat Jan  7 04:27:05 CET 2006 (tk)
 ---------------------------------
   * libclamav/sis.c: extract and scan SIS packages
