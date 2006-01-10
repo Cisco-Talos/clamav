@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.272 2006/01/05 12:42:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.273 2006/01/10 14:55:26 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -934,7 +934,11 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 	int tmpfd;
 #endif
 
+#ifdef	NEW_WORLD
+	cli_dbgmsg("fall back to old world\n");
+#else
 	cli_dbgmsg("in mbox()\n");
+#endif
 
 	i = dup(desc);
 	if((fd = fdopen(i, "rb")) == NULL) {
@@ -3818,17 +3822,11 @@ checkURLs(message *m, const char *dir)
 			 */
 			len = sizeof(cmd) - 26 - strlen(dir) - strlen(name);
 #ifdef	CL_DEBUG
-			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 %.*s >%s/%s", len, url, dir, name);
+			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 \"%.*s\" >%s/%s", len, url, dir, name);
 #else
-			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 %.*s >%s/%s 2>/dev/null", len, url, dir, name);
+			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 \"%.*s\" >%s/%s 2>/dev/null", len, url, dir, name);
 #endif
 			cmd[sizeof(cmd) - 1] = '\0';
-
-#ifndef	WITH_CURL
-			for(ptr = cmd; *ptr; ptr++)
-				if(strchr(";&", *ptr))
-					*ptr = '_';
-#endif
 
 			cli_dbgmsg("%s\n", cmd);
 #ifdef	CL_THREAD_SAFE
