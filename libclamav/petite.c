@@ -58,7 +58,6 @@
 #include "pe.h"
 #include "rebuildpe.h"
 #include "others.h"
-#include "petite.h"
 
 #if WORDS_BIGENDIAN == 0
 #define EC32(v) (v)
@@ -69,7 +68,9 @@ static inline uint32_t EC32(uint32_t v)
 }
 #endif
 
-static int doubledl(char **scur, uint8_t *mydlptr, char *buffer, int buffersize)
+#define MAX(a,b) ((a > b) ? a : b)
+
+static int doubledl(char **scur, uint8_t *mydlptr, char *buffer, uint32_t buffersize)
 {
   unsigned char mydl = *mydlptr;
   unsigned char olddl = mydl;
@@ -86,7 +87,7 @@ static int doubledl(char **scur, uint8_t *mydlptr, char *buffer, int buffersize)
   return (olddl>>7)&1;
 }
 
-int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image_section_hdr *sections, int sectcount, uint32_t Imagebase, uint32_t pep, int desc, int version, uint32_t ResRva, uint32_t ResSize)
+int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_image_section_hdr *sections, unsigned int sectcount, uint32_t Imagebase, uint32_t pep, int desc, int version, uint32_t ResRva, uint32_t ResSize)
 {
   char *adjbuf = buf - minrva;
   char *packed = NULL;
@@ -119,7 +120,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
     uint32_t size, srva;
     int backbytes, oldback, backsize, addsize;
     
-    if ( packed < buf || packed >= buf+bufsz-4) {
+    if ( ! CLI_ISCONTAINED(buf, bufsz, packed, 4)) {
       if (usects)
 	free(usects);
       return -1;
@@ -170,26 +171,28 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
       if (enc_ep) {
 	uint32_t virtaddr = pep + 5 + Imagebase, tmpep;
 	int rndm = 0, dummy = 1;
-	uint32_t *thunk = (uint32_t*)(adjbuf+irva);
-	uint32_t *imports;
+	char *thunk = adjbuf+irva;
+	char *imports;
 
 	if ( version == 2 ) { /* 2.2 onley */
 
-	  while ( (char *)thunk >=buf && (char *)thunk<buf+bufsz-4 && dummy ) {
+	  while ( dummy && CLI_ISCONTAINED(buf, bufsz, thunk, 4) ) {
 	    uint32_t api;
 
-	    if (! *thunk ) {
+	    if (! cli_readint32(thunk)) {
 	      workdone = 1;
 	      break;
 	    }
 
-	    imports = (uint32_t *) (adjbuf + EC32(*thunk++));
+	    imports = adjbuf + cli_readint32(thunk);
+	    thunk+=4;
 	    dummy = 0;
 
-	    while ( (char *)imports >=buf && (char *)imports<buf+bufsz-4 ) {
-	      dummy = 0;	    
+	    while ( CLI_ISCONTAINED(buf, bufsz, imports, 4)) {
+	      dummy = 0;
 
-	      if ( ! (api = EC32(*imports++)) ) {
+	      imports+=4;
+	      if ( ! (api = cli_readint32(imports-4)) ) {
 		dummy  = 1;
 		break;
 	      }
@@ -220,7 +223,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
       /* Let's compact data */
       for (t = 0; t < j ; t++) {
 	usects[t].raw = (usects[t-1].raw + usects[t-1].rsz)*(t>0);
-	if (usects[t].rsz != 0)
+	if (usects[t].rsz != 0 && CLI_ISCONTAINED(buf, bufsz, buf + usects[t].raw, usects[t].rsz))
 	  memmove(buf + usects[t].raw, adjbuf + usects[t].rva, usects[t].rsz);
       }
 
@@ -249,7 +252,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
 	- 1 time for the all_the_rest section
       */
 
-      if ( packed < buf || packed >= buf+bufsz-12) {
+      if ( ! CLI_ISCONTAINED(buf, bufsz, packed+4, 8) ) {
 	if (usects)
 	  free(usects);
 	return -1;
@@ -259,7 +262,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
       ssrc = adjbuf + cli_readint32(packed+4) - (size-1)*4;
       ddst = adjbuf + cli_readint32(packed+8) - (size-1)*4;
 
-      if ( ssrc < buf || size*4 >= buf + bufsz - ssrc || ddst < buf || size*4 >= buf + bufsz - ddst ) {
+      if ( !CLI_ISCONTAINED(buf, bufsz, ssrc, size*4) || !CLI_ISCONTAINED(buf, bufsz, ddst, size*4) ) {
 	if (usects)
 	  free(usects);
 	return -1;
@@ -275,15 +278,15 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
       
       /* Unpak each original section in turn */
 
-      if ( packed < buf || packed >= buf+bufsz-16) {
+      if ( ! CLI_ISCONTAINED(buf, bufsz, packed+4, 8)) {
 	if (usects)
 	  free(usects);
 	return -1;
       }
 
       size = cli_readint32(packed+4); /* How many bytes to unpack */
+      thisrva=cli_readint32(packed+8); /* RVA of the original section */
       packed += 0x10;
-      thisrva=cli_readint32(packed-8); /* RVA of the original section */
 
       /* Alloc 1 more struct */
       if ( ! (tmpsct = realloc(usects, sizeof(struct SECTION) * (j+1))) ) {
@@ -350,7 +353,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
        * func to get called instead... ehehe very smart ;)
        */
 
-      if ( ddst < buf || ddst >= buf+bufsz-1 || ssrc < buf || ssrc >= buf+bufsz-1 ) {
+      if ( !CLI_ISCONTAINED(buf, bufsz, ssrc, 1) || !CLI_ISCONTAINED(buf, bufsz, ddst, 1)) {
 	free(usects);
 	return -1;
       }
@@ -368,7 +371,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
 	  return -1;
 	}
 	if (!oob) {
-	  if ( ddst < buf || ddst >= buf+bufsz-1 || ssrc < buf || ssrc >= buf+bufsz-1 ) {
+	  if ( !CLI_ISCONTAINED(buf, bufsz, ssrc, 1) || !CLI_ISCONTAINED(buf, bufsz, ddst, 1) ) {
 	    free(usects);
 	    return -1;
 	  }
@@ -438,7 +441,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
 	  }
 	  backsize+=addsize;
 	  size-=backsize;
-	  if(backsize < 0 || backbytes >= 0 || (buf - ddst > backbytes - backsize) || (ddst - buf >= bufsz - backsize)) {
+	  if(!CLI_ISCONTAINED(buf, bufsz, ddst, backsize) || !CLI_ISCONTAINED(buf, bufsz, ddst+backbytes, backsize)) {
 	    free(usects);
 	    return -1;
 	  }
@@ -455,36 +458,46 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image
        * We've done version adjustments already, see above
        */
 
-      if ( j &&
-	   ( /* LONG MAGIC = 33C05E64 8B188B1B 8D63D65D */
-	    ( (usects[j-1].rsz > grown ) &&
-	      cli_readint32(ddst-grown+5+0x4f) == 0x645ec033 &&
-	      cli_readint32(ddst-grown+5+0x4f+4) == 0x1b8b188b )
-	    ||
-	    /* This crap is ugly! Gotta make it all pretty one day or another */
-	    ( (usects[j-1].rsz > grown+skew ) &&
+      if ( j ) {
+	int strippetite=0;
+	uint32_t reloc;
+	
+	/* LONG MAGIC = 33C05E64 8B188B1B 8D63D65D */
+	if ( usects[j-1].rsz > grown && 
+	     CLI_ISCONTAINED(buf, bufsz, ddst-grown+5+0x4f, 8) &&
+	     cli_readint32(ddst-grown+5+0x4f) == 0x645ec033 &&
+	     cli_readint32(ddst-grown+5+0x4f+4) == 0x1b8b188b
+	     ) {
+	  reloc = 0;
+	  strippetite = 1;
+	}
+	if ( !strippetite && 
+	     usects[j-1].rsz > grown+skew &&
+	     CLI_ISCONTAINED(buf, bufsz, ddst-grown+5+0x4f-skew, 8) &&
 	      cli_readint32(ddst-grown+5+0x4f-skew) == 0x645ec033 &&
-	      cli_readint32(ddst-grown+5+0x4f+4-skew) == 0x1b8b188b )
-	    )
-	   )
-	{
+	     cli_readint32(ddst-grown+5+0x4f+4-skew) == 0x1b8b188b
+	     ) {
+	  reloc = skew; /* If the original exe had a .reloc were skewed */
+	  strippetite = 1;
+	}
+	
+	if (strippetite && CLI_ISCONTAINED(buf, bufsz, ddst-grown+0x0f-8-reloc, 8)) {
 	  uint32_t test1, test2;
-	  /* If the original exe had a .reloc were skewed */
-	  int reloc = skew*(cli_readint32(ddst-grown+5+0x4f-skew) == 0x645ec033);
 	  
 	  /* REMINDER: DON'T BPX IN HERE U DUMBASS!!!!!!!!!!!!!!!!!!!!!!!! */
 	  test1 = cli_readint32(ddst-grown+0x0f-8-reloc)^0x9d6661aa;
 	  test2 = cli_readint32(ddst-grown+0x0f-4-reloc)^0xe908c483;
+	  
 	  cli_dbgmsg("Petite: Found petite code in sect%d(%x). Let's strip it.\n", j-1, usects[j-1].rva);
-	  if (test1 == test2) {
+	  if (test1 == test2 && CLI_ISCONTAINED(buf, bufsz, ddst-grown+0x0f-reloc, 0x1c0-0x0f+4)) {
 	    irva = cli_readint32(ddst-grown+0x121-reloc);
 	    enc_ep = cli_readint32(ddst-grown+0x0f-reloc)^test1;
 	    mangled = ((uint32_t) cli_readint32(ddst-grown+0x1c0-reloc) != 0x90909090); /* FIXME: Magic's too short??? */
 	    cli_dbgmsg("Petite: Encrypted EP: %x | Array of imports: %x\n",enc_ep, irva);
 	  }
 	  usects[j-1].rsz -= grown+reloc;
-	  
-	}
+    	}
+      }
       check4resources++;
     } /* outer else */
   } /* while true */

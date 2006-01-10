@@ -167,7 +167,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	char sname[9], buff[4096], *tempfile;
 	unsigned int i, found, upx_success = 0, min = 0, max = 0, err, broken = 0;
 	unsigned int ssize = 0, dsize = 0, dll = 0, pe_plus = 0;
-	int (*upxfn)(char *, int , char *, int *, uint32_t, uint32_t, uint32_t) = NULL;
+	int (*upxfn)(char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t) = NULL;
 	char *src = NULL, *dest = NULL;
 	int ndesc, ret;
 
