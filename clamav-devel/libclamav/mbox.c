@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.273 2006/01/10 14:55:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.274 2006/01/11 09:49:03 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -305,8 +305,12 @@ static	pthread_mutex_t	tables_mutex = PTHREAD_MUTEX_INITIALIZER;
 #else /* HAVE_SYS_MMAN_H */
 #undef HAVE_MMAP
 #endif
+#else	/*HAVE_MMAP*/
+#undef	NEW_WORLD
+#endif
 #endif
 
+#ifdef	NEW_WORLD
 /*
  * Files larger than this are scanned with the old method, should be
  *	StreamMaxLength, I guess
@@ -357,15 +361,15 @@ static	void	free_map(void);
  *
  * TODO: Fall through to cli_parse_mbox() too often
  *
- * FIXME: Fall through on systems without mmap()
+ * TODO: Add support for systems without mmap()
  *
  * TODO: partial_dir fall through
  */
 int
 cli_mbox(const char *dir, int desc, unsigned int options)
 {
-	char *start, *ptr, *line, *p, *q;
-	const char *last;
+	char *start, *ptr, *line;
+	const char *last, *p, *q;
 	size_t size;
 	struct stat statb;
 	message *m;
