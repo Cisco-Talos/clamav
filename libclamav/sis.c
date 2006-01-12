@@ -648,6 +648,8 @@ int cli_scansis(int desc, const char **virname, long int *scanned, const struct 
 
 #else /* HAVE_MMAP */
 
+#include "clamav.h"
+
 int cli_scansis(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
     cli_warnmsg("Support for SIS files not compiled in!\n");
