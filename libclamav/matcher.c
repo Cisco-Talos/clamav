@@ -362,7 +362,7 @@ int cli_scandesc(int desc, const char **virname, unsigned long int *scanned, con
 
     pt = buff;
     length = SCANBUFF;
-    while((bytes = read(desc, buff, SCANBUFF)) > 0) {
+    while((bytes = cli_readn(desc, buff, SCANBUFF)) > 0) {
 
 	if(scanned)
 	    *scanned += bytes / CL_COUNT_PRECISION;
