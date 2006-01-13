@@ -1187,6 +1187,7 @@ static macro_info_t *wm_read_macro_info(int fd)
 	}
 	if (cli_readn(fd, &macro_info->count, 2) != 2) {
 		cli_dbgmsg("read macro_info failed\n");
+		free(macro_info);
 		return NULL;
 	}
 	macro_info->count = vba_endian_convert_16(macro_info->count, FALSE);
