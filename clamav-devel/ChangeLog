@@ -1,4 +1,10 @@
+Fri Jan 13 14:53:45 CET 2006 (tk)
+---------------------------------
+  * libclamav/vba_extract.c: fix possible memory leak, reported by  Cesar
+			     Lopez <clc1972*gmail.com>
+
 Tue Jan 10 01:53:20 CET 2006 (acab)
+-----------------------------------
   * libclamav: bugfix/hardening of unpacking code
 
 Sat Jan  7 04:27:05 CET 2006 (tk)
