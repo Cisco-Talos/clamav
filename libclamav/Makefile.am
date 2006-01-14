@@ -141,6 +141,8 @@ libclamav_la_SOURCES = \
 	pdf.h \
 	spin.c \
 	spin.h \
+	yc.c \
+	yc.h \
 	elf.c \
 	elf.h \
 	execs.h \
