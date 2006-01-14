@@ -35,10 +35,11 @@
 #include "clamav.h"
 #include "others.h"
 #include "pe.h"
-#include "upx.h"
 #include "petite.h"
 #include "fsg.h"
 #include "spin.h"
+#include "upx.h"
+#include "yc.h"
 #include "scanners.h"
 #include "rebuildpe.h"
 #include "str.h"
@@ -1578,6 +1579,79 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    free(tempfile);
 	} else {
 	    free(tempfile);
+	}
+    }
+
+
+    /* yC 1.3 */
+
+    if(nsections > 1 &&
+       EC32(optional_hdr32.AddressOfEntryPoint) == EC32(section_hdr[nsections - 1].VirtualAddress) + 0x60 &&
+       memcmp(buff, "\x55\x8B\xEC\x53\x56\x57\x60\xE8\x00\x00\x00\x00\x5D\x81\xED\x6C\x28\x40\x00\xB9\x5D\x34\x40\x00\x81\xE9\xC6\x28\x40\x00\x8B\xD5\x81\xC2\xC6\x28\x40\x00\x8D\x3A\x8B\xF7\x33\xC0\xEB\x04\x90\xEB\x01\xC2\xAC", 51) == 0)  {
+
+	    struct stat fstats;
+	    char *spinned;
+
+	if(fstat(desc, &fstats) == -1) {
+	    free(section_hdr);
+	    return CL_EIO;
+	}
+
+	if ( fstats.st_size >= EC32(section_hdr[nsections - 1].PointerToRawData) + 0xC6 + 0xb97 ) { /* size check on yC sect */
+	  if((spinned = (char *) cli_malloc(fstats.st_size)) == NULL) {
+	    free(section_hdr);
+	    return CL_EMEM;
+	  }
+
+	  lseek(desc, 0, SEEK_SET);
+	  if(read(desc, spinned, fstats.st_size) != fstats.st_size) {
+	    cli_dbgmsg("yC: Can't read %d bytes\n", fstats.st_size);
+	    free(spinned);
+	    free(section_hdr);
+	    return CL_EIO;
+	  }
+	  
+	  tempfile = cli_gentemp(NULL);
+	  if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+	    cli_dbgmsg("yC: Can't create file %s\n", tempfile);
+	    free(tempfile);
+	    free(spinned);
+	    free(section_hdr);
+	    return CL_EIO;
+	  }
+	  
+	  if(!yc_decrypt(spinned, fstats.st_size, section_hdr, nsections-1, e_lfanew, ndesc)) {
+	    free(spinned);
+	    cli_dbgmsg("yC: Unpacked and rebuilt executable saved in %s\n", tempfile);
+	    fsync(ndesc);
+	    lseek(ndesc, 0, SEEK_SET);
+	    
+	    if(cli_magic_scandesc(ndesc, virname, scanned, engine, limits, options, arec, mrec) == CL_VIRUS) {
+	      free(section_hdr);
+	      close(ndesc);
+	      if(!cli_leavetemps_flag) {
+		unlink(tempfile);
+		free(tempfile);
+	      } else {
+		free(tempfile);
+	      }
+	      return CL_VIRUS;
+	    }
+	    
+	  } else {
+	    free(spinned);
+	    cli_dbgmsg("yC: Rebuilding failed\n");
+	  }
+	  
+	  close(ndesc);
+	  if(!cli_leavetemps_flag) {
+	    unlink(tempfile);
+	    free(tempfile);
+	  } else {
+	    free(tempfile);
+	  }
+
+
 	}
     }
 

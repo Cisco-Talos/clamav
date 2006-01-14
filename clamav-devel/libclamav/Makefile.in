@@ -86,7 +86,7 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	chmunpack.lo rebuildpe.lo petite.lo fsg.lo line.lo untar.lo \
 	special.lo binhex.lo is_tar.lo tnef.lo unrar15.lo unrarvm.lo \
 	unrar.lo unrarfilter.lo unrarppm.lo unrar20.lo unrarcmd.lo \
-	pdf.lo spin.lo elf.lo sis.lo
+	pdf.lo spin.lo yc.lo elf.lo sis.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -335,6 +335,8 @@ libclamav_la_SOURCES = \
 	pdf.h \
 	spin.c \
 	spin.h \
+	yc.c \
+	yc.h \
 	elf.c \
 	elf.h \
 	execs.h \
@@ -462,6 +464,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/untar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/upx.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vba_extract.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/zzip-dir.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/zzip-err.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/zzip-file.Plo@am__quote@

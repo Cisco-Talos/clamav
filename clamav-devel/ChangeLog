@@ -1,3 +1,8 @@
+Fri Jan 14 14:51:01 CET 2006 (acab)
+---------------------------------
+  * libclamav: added yC support
+  		thanks a lot to Ivan Zlatev <pumqara*gmail.com>
+  
 Fri Jan 13 14:53:45 CET 2006 (tk)
 ---------------------------------
   * libclamav/vba_extract.c: fix possible memory leak, reported by  Cesar
