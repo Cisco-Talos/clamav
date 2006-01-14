@@ -171,6 +171,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	int (*upxfn)(char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t) = NULL;
 	char *src = NULL, *dest = NULL;
 	int ndesc, ret;
+	size_t fsize;
 
 
     if(read(desc, &e_magic, sizeof(e_magic)) != sizeof(e_magic)) {
@@ -473,6 +474,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	return CL_EIO;
     }
 
+    fsize = sb.st_size;
+
     section_hdr = (struct pe_image_section_hdr *) cli_calloc(nsections, sizeof(struct pe_image_section_hdr));
 
     if(!section_hdr) {
@@ -524,8 +527,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
 	cli_dbgmsg("------------------------------------\n");
 
-	if(EC32(section_hdr[i].PointerToRawData) + EC32(section_hdr[i].SizeOfRawData) > (unsigned long int) sb.st_size) {
-	    cli_dbgmsg("Possibly broken PE file - Section %d out of file (Offset@ %d, Rsize %d, Total filesize %d)\n", i, EC32(section_hdr[i].PointerToRawData), EC32(section_hdr[i].SizeOfRawData), sb.st_size);
+	if(!CLI_ISCONTAINED(0, (uint32_t) fsize, EC32(section_hdr[i].PointerToRawData), EC32(section_hdr[i].SizeOfRawData)) || EC32(section_hdr[i].PointerToRawData) >= fsize) {
+	    cli_dbgmsg("Possibly broken PE file - Section %d out of file (Offset@ %d, Rsize %d, Total filesize %d)\n", i, EC32(section_hdr[i].PointerToRawData), EC32(section_hdr[i].SizeOfRawData), fsize);
 	    if(DETECT_BROKEN) {
 		if(virname)
 		    *virname = "Broken.Executable";
@@ -753,7 +756,9 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    return CL_EMEM;
 		}
 
-		tempfile = cli_gentemp(NULL);
+		if(!(tempfile = cli_gentemp(NULL)))
+		    return CL_EMEM;
+
 		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
 		    cli_dbgmsg("FSG: Can't create file %s\n", tempfile);
 		    free(tempfile);
@@ -951,7 +956,9 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		oldep = EC32(optional_hdr32.AddressOfEntryPoint) + 161 + 6 + cli_readint32(buff+163);
 		cli_dbgmsg("FSG: found old EP @%x\n", oldep);
 
-		tempfile = cli_gentemp(NULL);
+		if(!(tempfile = cli_gentemp(NULL)))
+		    return CL_EMEM;
+
 		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
 		    cli_dbgmsg("FSG: Can't create file %s\n", tempfile);
 		    free(tempfile);
@@ -1154,7 +1161,9 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		oldep = EC32(optional_hdr32.AddressOfEntryPoint) + gp + 6 + cli_readint32(src+gp+2+oldep);
 		cli_dbgmsg("FSG: found old EP @%x\n", oldep);
 
-		tempfile = cli_gentemp(NULL);
+		if(!(tempfile = cli_gentemp(NULL)))
+		    return CL_EMEM;
+
 		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
 		    cli_dbgmsg("FSG: Can't create file %s\n", tempfile);
 		    free(tempfile);
@@ -1363,7 +1372,9 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    free(src);
 	    free(section_hdr);
 
-	    tempfile = cli_gentemp(NULL);
+	    if(!(tempfile = cli_gentemp(NULL)))
+		return CL_EMEM;
+
 	    if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
 		cli_dbgmsg("UPX/FSG: Can't create file %s\n", tempfile);
 		free(tempfile);
@@ -1458,7 +1469,9 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		}
 	    }
 
-	    tempfile = cli_gentemp(NULL);
+	    if(!(tempfile = cli_gentemp(NULL)))
+		return CL_EMEM;
+
 	    if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
 		cli_dbgmsg("Petite: Can't create file %s\n", tempfile);
 		free(tempfile);
@@ -1520,28 +1533,24 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
        EC32(optional_hdr32.AddressOfEntryPoint) < EC32(section_hdr[nsections - 1].VirtualAddress) + EC32(section_hdr[nsections - 1].SizeOfRawData) - 0x3217 - 4 &&
        memcmp(buff+4, "\xe8\x00\x00\x00\x00\x8b\x1c\x24\x83\xc3", 10) == 0)  {
 
-	    struct stat fstats;
 	    char *spinned;
 
-	if(fstat(desc, &fstats) == -1) {
-	    free(section_hdr);
-	    return CL_EIO;
-	}
-
-	if((spinned = (char *) cli_malloc(fstats.st_size)) == NULL) {
+	if((spinned = (char *) cli_malloc(fsize)) == NULL) {
 	    free(section_hdr);
 	    return CL_EMEM;
 	}
 
 	lseek(desc, 0, SEEK_SET);
-	if(read(desc, spinned, fstats.st_size) != fstats.st_size) {
-	    cli_dbgmsg("PESpin: Can't read %d bytes\n", fstats.st_size);
+	if(read(desc, spinned, fsize) != fsize) {
+	    cli_dbgmsg("PESpin: Can't read %d bytes\n", fsize);
 	    free(spinned);
 	    free(section_hdr);
 	    return CL_EIO;
 	}
 
-	tempfile = cli_gentemp(NULL);
+	if(!(tempfile = cli_gentemp(NULL)))
+	    return CL_EMEM;
+
 	if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
 	    cli_dbgmsg("PESpin: Can't create file %s\n", tempfile);
 	    free(tempfile);
@@ -1550,7 +1559,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    return CL_EIO;
 	}
 
-	if(!unspin(spinned, fstats.st_size, section_hdr, nsections - 1, EC32(optional_hdr32.AddressOfEntryPoint), ndesc)) {
+	if(!unspin(spinned, fsize, section_hdr, nsections - 1, EC32(optional_hdr32.AddressOfEntryPoint), ndesc)) {
 	    free(spinned);
 	    cli_dbgmsg("PESpin: Unpacked and rebuilt executable saved in %s\n", tempfile);
 	    fsync(ndesc);
@@ -1589,29 +1598,25 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
        EC32(optional_hdr32.AddressOfEntryPoint) == EC32(section_hdr[nsections - 1].VirtualAddress) + 0x60 &&
        memcmp(buff, "\x55\x8B\xEC\x53\x56\x57\x60\xE8\x00\x00\x00\x00\x5D\x81\xED\x6C\x28\x40\x00\xB9\x5D\x34\x40\x00\x81\xE9\xC6\x28\x40\x00\x8B\xD5\x81\xC2\xC6\x28\x40\x00\x8D\x3A\x8B\xF7\x33\xC0\xEB\x04\x90\xEB\x01\xC2\xAC", 51) == 0)  {
 
-	    struct stat fstats;
 	    char *spinned;
 
-	if(fstat(desc, &fstats) == -1) {
-	    free(section_hdr);
-	    return CL_EIO;
-	}
-
-	if ( fstats.st_size >= EC32(section_hdr[nsections - 1].PointerToRawData) + 0xC6 + 0xb97 ) { /* size check on yC sect */
-	  if((spinned = (char *) cli_malloc(fstats.st_size)) == NULL) {
+	if ( fsize >= EC32(section_hdr[nsections - 1].PointerToRawData) + 0xC6 + 0xb97 ) { /* size check on yC sect */
+	  if((spinned = (char *) cli_malloc(fsize)) == NULL) {
 	    free(section_hdr);
 	    return CL_EMEM;
 	  }
 
 	  lseek(desc, 0, SEEK_SET);
-	  if(read(desc, spinned, fstats.st_size) != fstats.st_size) {
-	    cli_dbgmsg("yC: Can't read %d bytes\n", fstats.st_size);
+	  if(read(desc, spinned, fsize) != fsize) {
+	    cli_dbgmsg("yC: Can't read %d bytes\n", fsize);
 	    free(spinned);
 	    free(section_hdr);
 	    return CL_EIO;
 	  }
-	  
-	  tempfile = cli_gentemp(NULL);
+
+	  if(!(tempfile = cli_gentemp(NULL)))
+	      return CL_EMEM;
+
 	  if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
 	    cli_dbgmsg("yC: Can't create file %s\n", tempfile);
 	    free(tempfile);
@@ -1619,8 +1624,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    free(section_hdr);
 	    return CL_EIO;
 	  }
-	  
-	  if(!yc_decrypt(spinned, fstats.st_size, section_hdr, nsections-1, e_lfanew, ndesc)) {
+
+	  if(!yc_decrypt(spinned, fsize, section_hdr, nsections-1, e_lfanew, ndesc)) {
 	    free(spinned);
 	    cli_dbgmsg("yC: Unpacked and rebuilt executable saved in %s\n", tempfile);
 	    fsync(ndesc);
@@ -1650,7 +1655,6 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	  } else {
 	    free(tempfile);
 	  }
-
 
 	}
     }
