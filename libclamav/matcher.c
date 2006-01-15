@@ -274,7 +274,7 @@ int cli_validatesig(unsigned short target, unsigned short ftype, const char *off
     return 1;
 }
 
-int cli_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, short otfrec, unsigned short ftype, unsigned long int *ftoffset)
+int cli_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, short otfrec, unsigned short ftype, struct cli_matched_type **ftoffset)
 {
  	char *buffer, *buff, *endbl, *pt;
 	int bytes, buffsize, length, ret, *gpartcnt, *tpartcnt;

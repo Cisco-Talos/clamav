@@ -21,11 +21,12 @@
 
 #include "clamav.h"
 #include "matcher.h"
+#include "filetypes.h"
 
 #define AC_DEFAULT_DEPTH 2
 
 int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern);
-int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cli_matcher *root, int *partcnt, short otfrec, unsigned long int offset, unsigned long int *partoff, unsigned short ftype, int fd, unsigned long int *ftoffset);
+int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cli_matcher *root, int *partcnt, short otfrec, unsigned long int offset, unsigned long int *partoff, unsigned short ftype, int fd, struct cli_matched_type **ftoffset);
 int cli_ac_buildtrie(struct cli_matcher *root);
 void cli_ac_free(struct cli_matcher *root);
 void cli_ac_setdepth(unsigned int depth);

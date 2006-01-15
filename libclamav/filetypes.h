@@ -51,10 +51,17 @@ typedef enum {
     /* bigger numbers have higher priority (in o-t-f detection) */
     CL_TYPE_HTML, /* on the fly */
     CL_TYPE_MAIL,  /* magic + on the fly */
+    CL_TYPE_SFX, /* foo SFX marker */
     CL_TYPE_ZIPSFX, /* on the fly */
     CL_TYPE_RARSFX /* on the fly */
 
 } cli_file_t;
+
+struct cli_matched_type {
+    cli_file_t type;
+    size_t offset;
+    struct cli_matched_type *next;
+};
 
 cli_file_t cli_filetype(const char *buf, size_t buflen);
 cli_file_t cli_filetype2(int desc);

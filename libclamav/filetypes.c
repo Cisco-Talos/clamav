@@ -33,7 +33,7 @@
 #include "matcher-ac.h"
 
 struct cli_magic_s {
-    int offset;
+    size_t offset;
     const char *magic;
     size_t length;
     const char *descr;
@@ -126,7 +126,7 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "\060\046\262\165\216\146\317", 7, "WMA/WMV/ASF",	  CL_TYPE_DATA},
     {0,  ".RMF" ,			 4, "Real Media File",	  CL_TYPE_DATA},
 
-    {-1, NULL,				 0, NULL,		  CL_TYPE_UNKNOWN_DATA}
+    {0, NULL,				 0, NULL,		  CL_TYPE_UNKNOWN_DATA}
 };
 
 static const struct cli_smagic_s cli_smagic[] = {
