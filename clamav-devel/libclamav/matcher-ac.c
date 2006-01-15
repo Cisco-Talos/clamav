@@ -260,12 +260,13 @@ inline static int cli_findpos(const char *buffer, unsigned int depth, unsigned i
     return 1;
 }
 
-int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cli_matcher *root, int *partcnt, short otfrec, unsigned long int offset, unsigned long int *partoff, unsigned short ftype, int fd, unsigned long int *ftoffset)
+int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cli_matcher *root, int *partcnt, short otfrec, unsigned long int offset, unsigned long int *partoff, unsigned short ftype, int fd, struct cli_matched_type **ftoffset)
 {
 	struct cli_ac_node *current;
 	struct cli_ac_patt *pt;
 	int type = CL_CLEAN, dist, t;
         unsigned int i, position;
+	struct cli_matched_type *tnode;
 
 
     if(!root->ac_root)
@@ -316,11 +317,19 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
 				if(++partcnt[pt->sigid] == pt->parts) { /* the last one */
 				    if(pt->type) {
 					if(otfrec) {
-					    if(pt->type > type) {
+					    if(pt->type > type || pt->type >= CL_TYPE_SFX) {
 						cli_dbgmsg("Matched signature for file type: %s\n", pt->virname);
 						type = pt->type;
-						if(ftoffset)
-						    *ftoffset = offset + position;
+						if(ftoffset && ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) {
+						    if(!(tnode = cli_calloc(1, sizeof(struct cli_matched_type)))) {
+							cli_errmsg("Can't alloc memory for new type node\n");
+							return CL_EMEM;
+						    }
+						    tnode->type = type;
+						    tnode->offset = offset + position;
+						    tnode->next = *ftoffset;
+						    *ftoffset = tnode;
+						}
 					    }
 					}
 				    } else {
@@ -336,12 +345,20 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
 		    } else { /* old type signature */
 			if(pt->type) {
 			    if(otfrec) {
-				if(pt->type > type) {
+				if(pt->type > type || pt->type >= CL_TYPE_SFX) {
 				    cli_dbgmsg("Matched signature for file type: %s\n", pt->virname);
 
 				    type = pt->type;
-				    if(ftoffset)
-					*ftoffset = offset + position;
+				    if(ftoffset && ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) {
+					if(!(tnode = cli_calloc(1, sizeof(struct cli_matched_type)))) {
+					    cli_errmsg("Can't alloc memory for new type node\n");
+					    return CL_EMEM;
+					}
+					tnode->type = type;
+					tnode->offset = offset + position;
+					tnode->next = *ftoffset;
+					*ftoffset = tnode;
+				    }
 				}
 			    }
 			} else {

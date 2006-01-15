@@ -285,7 +285,6 @@ static int cli_scanzip(int desc, const char **virname, unsigned long int *scanne
 	lseek(desc, offset, SEEK_SET);
 
     if((zdir = zzip_dir_fdopen(dup(desc), &err)) == NULL) {
-	cli_dbgmsg("Zip: Not supported file format ?.\n");
 	cli_dbgmsg("Zip: zzip_dir_fdopen() return code: %d\n", err);
 	/* no return with CL_EZIP due to password protected zips */
 	return CL_CLEAN;
@@ -1646,7 +1645,7 @@ int cli_magic_scandesc(int desc, const char **virname, unsigned long int *scanne
 
     if(type != CL_TYPE_DATA && ret != CL_VIRUS) { /* scan the raw file */
 	    int ftrec;
-	    unsigned long int ftoffset;
+	    struct cli_matched_type *ftoffset = NULL, *fpt;
 
 	switch(type) {
 	    case CL_TYPE_UNKNOWN_TEXT:
@@ -1685,19 +1684,36 @@ int cli_magic_scandesc(int desc, const char **virname, unsigned long int *scanne
 		    break;
 
 		case CL_TYPE_RARSFX:
-		    if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE) {
-			cli_dbgmsg("RAR-SFX found at %d\n", ftoffset);
-			if(cli_scanrar(desc, virname, scanned, engine, limits, options, arec, mrec, ftoffset) == CL_VIRUS)
-			    return CL_VIRUS;
-                    }
+		case CL_TYPE_ZIPSFX:
+		    if(type == CL_TYPE_MSEXE) {
+			if(SCAN_ARCHIVE) {
+			    fpt = ftoffset;
+			    while(fpt) {
+				if(fpt->type == CL_TYPE_RARSFX) {
+				    cli_dbgmsg("RAR-SFX signature found at %d\n", fpt->offset);
+				    if((ret = cli_scanrar(desc, virname, scanned, engine, limits, options, arec, mrec, fpt->offset) == CL_VIRUS))
+					break;
+				} else if(fpt->type == CL_TYPE_ZIPSFX) {
+				    cli_dbgmsg("ZIP-SFX signature found at %d\n", fpt->offset);
+				    if((ret = cli_scanzip(desc, virname, scanned, engine, limits, options, arec, mrec, fpt->offset) == CL_VIRUS))
+					break;
+				}
+				fpt = fpt->next;
+			    }
+			}
+
+			while(ftoffset) {
+			    fpt = ftoffset;
+			    ftoffset = ftoffset->next;
+			    free(fpt);
+			}
+
+			if(ret == CL_VIRUS)
+			    return ret;
+		    }
 		    break;
 
-		case CL_TYPE_ZIPSFX:
-		    if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE) {
-			cli_dbgmsg("ZIP-SFX found at %d\n", ftoffset);
-			if(cli_scanzip(desc, virname, scanned, engine, limits, options, arec, mrec, ftoffset) == CL_VIRUS)
-			    return CL_VIRUS;
-                    }
+		default:
 		    break;
 	    }
 	    nret == CL_TYPE_MAIL ? mrec-- : arec--;

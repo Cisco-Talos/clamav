@@ -1,3 +1,7 @@
+Sun Jan 15 16:43:36 CET 2006 (tk)
+---------------------------------
+  * libclamav: bruteforce sfx detection
+
 Fri Jan 14 14:51:01 CET 2006 (acab)
 ---------------------------------
   * libclamav: added yC support
