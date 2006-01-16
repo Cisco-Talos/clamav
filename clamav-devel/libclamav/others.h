@@ -29,7 +29,7 @@
 
 #define CLI_ISCONTAINED2(bb, bb_size, sb, sb_size)	\
     (bb_size > 0 && sb_size >= 0 && sb_size <= bb_size	\
-     && sb >= bb && sb + sb_size <= bb + bb_size && sb + sb_size > bb)
+     && sb >= bb && sb + sb_size <= bb + bb_size && sb + sb_size >= bb)
 
 typedef struct bitset_tag
 {
