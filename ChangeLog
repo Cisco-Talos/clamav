@@ -1,3 +1,7 @@
+Tue Jan 17 17:31:06 GMT 2006 (njh)
+----------------------------------
+  * libclamav/uuencode.[ch]:	Created, but not yet called
+
 Sun Jan 15 16:43:36 CET 2006 (tk)
 ---------------------------------
   * libclamav: bruteforce sfx detection
