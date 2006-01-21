@@ -1,3 +1,8 @@
+Sat Jan 21 18:35:34 GMT 2006 (njh)
+----------------------------------
+  * libclamav:		Scan uuencoded files. Helps to catch doubly encoded
+				emails such as Worm.VB-8
+
 Tue Jan 17 17:31:06 GMT 2006 (njh)
 ----------------------------------
   * libclamav/uuencode.[ch]:	Created, but not yet called
@@ -27,18 +32,18 @@ Sat Jan  7 04:27:05 CET 2006 (tk)
 Mon Jan  2 18:02:20 GMT 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Bug fix to the patch of 28/12 for versions of curl
-  				that don't support curl_easy_strerror()
+				that don't support curl_easy_strerror()
 
 Mon Jan  2 17:38:35 GMT 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	NEW_WORLD code (not enabled by default) now finds all
-  				malware in my database and is now ready for
+				malware in my database and is now ready for
 				testing
 
 Wed Dec 28 13:49:46 GMT 2005 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Added patches by Gianluigi Tiesi <sherpya*netfarm.it>
-  				Improve CURL support on Windows
+				Improve CURL support on Windows
 				Improve CURL error message for systems without
 					CURL_ERRORBUFFER
 
