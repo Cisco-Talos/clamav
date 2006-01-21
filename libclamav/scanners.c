@@ -1438,6 +1438,30 @@ static int cli_scantnef(int desc, const char **virname, unsigned long int *scann
     return ret;
 }
 
+static int
+cli_scanuuencoded(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+{
+	int ret;
+	char *dir = cli_gentemp(NULL);
+
+    if(mkdir(dir, 0700)) {
+	cli_dbgmsg("Can't create temporary directory for uuencoded file %s\n", dir);
+	free(dir);
+	return CL_ETMPDIR;
+    }
+
+    ret = cli_uuencode(dir, desc);
+
+    if(ret == CL_CLEAN)
+	ret = cli_scandir(dir, virname, scanned, engine, limits, options, arec, mrec);
+
+    if(!cli_leavetemps_flag)
+	cli_rmdirs(dir);
+
+    free(dir);
+    return ret;
+}
+
 static int cli_scanmail(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	char *dir;
@@ -1567,6 +1591,10 @@ int cli_magic_scandesc(int desc, const char **virname, unsigned long int *scanne
 	case CL_TYPE_TNEF:
 	    if(SCAN_MAIL)
 		ret = cli_scantnef(desc, virname, scanned, engine, limits, options, arec, mrec);
+	    break;
+
+	case CL_TYPE_UUENCODED:
+		ret = cli_scanuuencoded(desc, virname, scanned, engine, limits, options, arec, mrec);
 	    break;
 
 	case CL_TYPE_MSCHM:

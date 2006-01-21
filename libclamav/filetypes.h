@@ -47,6 +47,7 @@ typedef enum {
     CL_TYPE_TNEF,
     CL_TYPE_CRYPTFF,
     CL_TYPE_PDF,
+    CL_TYPE_UUENCODED,
 
     /* bigger numbers have higher priority (in o-t-f detection) */
     CL_TYPE_HTML, /* on the fly */

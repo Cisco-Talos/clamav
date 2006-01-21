@@ -147,7 +147,8 @@ libclamav_la_SOURCES = \
 	elf.h \
 	execs.h \
 	sis.c \
-	sis.h
-
+	sis.h \
+	uuencode.c \
+	uuencode.h
 
 lib_LTLIBRARIES = libclamav.la
