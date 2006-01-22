@@ -1,3 +1,7 @@
+Sun Jan 22 20:23:56 GMT 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c	NEW_WORLD: speed up when not looking for Phish
+
 Sat Jan 21 18:35:34 GMT 2006 (njh)
 ----------------------------------
   * libclamav:		Scan uuencoded files. Helps to catch doubly encoded

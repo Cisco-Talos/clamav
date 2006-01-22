@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.276 2006/01/21 18:39:18 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.277 2006/01/22 20:22:40 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -39,10 +39,7 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.276 2006/01/21 18:39:18 nigelhorne 
 #include <strings.h>
 #include <ctype.h>
 #include <time.h>
-#include <unistd.h>
 #include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <sys/param.h>
 #include <clamav.h>
 #include <dirent.h>
@@ -542,16 +539,11 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			return CL_CLEAN;
 		}
 
-#ifdef	notdef
-		/* Not true, since the message could be a plain text phish */
-		cli_dbgmsg("cli_mbox: I believe it's plain text which must be clean\n");
-		return CL_CLEAN;
-#else
-		if(type == CL_TYPE_MAIL)
+		/* The message could be a plain text phish */
+		if((type == CL_TYPE_MAIL) && (!(options&CL_DB_NOPHISHING)))
 			return cli_parse_mbox(dir, desc, options);
 		cli_dbgmsg("cli_mbox: I believe it's plain text which must be clean\n");
 		return CL_CLEAN;
-#endif
 	}
 	free_map();
 
@@ -3570,9 +3562,11 @@ rfc1341(message *m, const char *dir)
 		oldfilename = (char *)messageFindArgument(m, "name");
 
 	arg = cli_malloc(10 + strlen(id) + strlen(number));
-	sprintf(arg, "filename=%s%s", id, number);
-	messageAddArgument(m, arg);
-	free(arg);
+	if(arg) {
+		sprintf(arg, "filename=%s%s", id, number);
+		messageAddArgument(m, arg);
+		free(arg);
+	}
 
 	if(oldfilename) {
 		cli_warnmsg("Must reset to %s\n", oldfilename);
@@ -3646,7 +3640,9 @@ rfc1341(message *m, const char *dir)
 					if(dent->d_ino == 0)
 						continue;
 
-					sprintf(fullname, "%s/%s", pdir, dent->d_name);
+					snprintf(fullname, sizeof(fullname) - 1,
+						"%s/%s", pdir, dent->d_name);
+
 					if(strncmp(filename, dent->d_name, strlen(filename)) != 0) {
 						if(!cli_leavetemps_flag)
 							continue;
