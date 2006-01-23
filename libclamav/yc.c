@@ -79,9 +79,9 @@ static int yc_poly_emulator(char* decryptor_offset, char* code, unsigned int ecx
   */
   unsigned char al;
   unsigned char cl = ecx & 0xff;
-  unsigned int j=0,i=0;
+  unsigned int j,i;
 
-  for(i;i<ecx;i++) /* Byte looper - Decrypts every byte and write it back */
+  for(i=0;i<ecx;i++) /* Byte looper - Decrypts every byte and write it back */
     {
       al = code[i];
 
@@ -182,7 +182,7 @@ static int yc_poly_emulator(char* decryptor_offset, char* code, unsigned int ecx
 int yc_decrypt(char *fbuf, unsigned int filesize, struct pe_image_section_hdr *sections, unsigned int sectcount, uint32_t peoffset, int desc)
 {
   uint32_t ycsect = EC32(sections[sectcount].PointerToRawData);
-  int i = 0;
+  int i;
   struct pe_image_file_hdr *pe = (struct pe_image_file_hdr*) (fbuf + peoffset);
 
   /* 
@@ -211,7 +211,7 @@ int yc_decrypt(char *fbuf, unsigned int filesize, struct pe_image_section_hdr *s
 
 
   /* Loop through all sections and decrypt them... */
-  for(i;i<sectcount;i++)
+  for(i=0;i<sectcount;i++)
     {
       uint32_t name = (uint32_t) cli_readint32((char *)sections[i].Name);
       if ( name == 0x63727372 || /* rsrc */
