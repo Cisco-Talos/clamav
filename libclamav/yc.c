@@ -136,7 +136,7 @@ static int yc_poly_emulator(char* decryptor_offset, char* code, unsigned int ecx
 	      if(decryptor_offset[j]=='\xC0') /* ROL AL,num */
 		{
 		  j++;
-		  al = ROL(al,decryptor_offset[j]);
+		  ROL(al,decryptor_offset[j]);
 		}
 	      else			/* ROR AL,num */
 		{
@@ -166,6 +166,7 @@ static int yc_poly_emulator(char* decryptor_offset, char* code, unsigned int ecx
 
 	    default:
 	      cli_dbgmsg("yC: Unhandled opcode %x\n", (unsigned char)decryptor_offset[j]);
+	      return 1;
 	    }
 	}
       cl--;
@@ -182,7 +183,7 @@ static int yc_poly_emulator(char* decryptor_offset, char* code, unsigned int ecx
 int yc_decrypt(char *fbuf, unsigned int filesize, struct pe_image_section_hdr *sections, unsigned int sectcount, uint32_t peoffset, int desc)
 {
   uint32_t ycsect = EC32(sections[sectcount].PointerToRawData);
-  int i;
+  unsigned int i;
   struct pe_image_file_hdr *pe = (struct pe_image_file_hdr*) (fbuf + peoffset);
 
   /* 

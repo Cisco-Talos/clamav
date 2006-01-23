@@ -232,7 +232,11 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
       for (t = 0; t < j ; t++)
 	cli_dbgmsg("Petite: .SECT%d RVA:%x VSize:%x ROffset: %x, RSize:% x\n", t, usects[t].rva, usects[t].vsz, usects[t].raw, usects[t].rsz);
       if ( (ssrc = rebuildpe(buf, usects, j, Imagebase, enc_ep, ResRva, ResSize)) ) {
-	write(desc, ssrc, 0x148+0x80+0x28*j+usects[j-1].raw+usects[j-1].rsz);
+	if (cli_writen(desc, ssrc, 0x148+0x80+0x28*j+usects[j-1].raw+usects[j-1].rsz)==-1) {
+	  free(ssrc);
+	  free(usects);
+	  return -1;
+	}
 	free(ssrc);
       } else
 	cli_dbgmsg("Petite: Rebuilding failed\n");
@@ -318,7 +322,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
        */
 
       if (!check4resources) {
-	int q;
+	unsigned int q;
 	for ( q = 0 ; q < sectcount ; q++ ) {
 	  if ( thisrva <= EC32(sections[q].VirtualAddress) || thisrva >= EC32(sections[q].VirtualAddress) + EC32(sections[q].VirtualSize))
 	    continue;
