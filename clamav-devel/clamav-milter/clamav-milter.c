@@ -22,7 +22,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.226 2005/12/22 17:15:24 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.227 2006/01/23 10:38:00 nigelhorne Exp $";
 
 #define	CM_VERSION	"devel-141205"
 
@@ -1024,7 +1024,7 @@ main(int argc, char **argv)
 		 */
 		if(statb.st_mode & 077) {
 			fprintf(stderr, _("%s: insecure quarantine directory %s (mode 0%o)\n"),
-				argv[0], quarantine_dir, statb.st_mode & 0777);
+				argv[0], quarantine_dir, (int)statb.st_mode & 0777);
 			return EX_CONFIG;
 		}
 	}
