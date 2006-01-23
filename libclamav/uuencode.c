@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: uuencode.c,v 1.1 2006/01/17 17:30:17 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: uuencode.c,v 1.2 2006/01/23 10:35:38 nigelhorne Exp $";
 
 #include "clamav.h"
 
@@ -23,6 +23,7 @@ static	char	const	rcsid[] = "$Id: uuencode.c,v 1.1 2006/01/17 17:30:17 nigelhorn
 #include "clamav-config.h"
 #endif
 
+#include <strings.h>
 #include <stdio.h>
 #include <memory.h>
 #include <sys/stat.h>
