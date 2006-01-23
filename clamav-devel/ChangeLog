@@ -1,3 +1,9 @@
+Mon Jan 23 17:09:26 CET 2006 (acab)
+-----------------------------------
+  * libclamav:		Fixed more warnings
+  			Wrapped write()
+			Finalized yc emulator
+
 Mon Jan 23 12:12:07 CET 2006 (acab)
 -----------------------------------
   * libclamav/yc.c	Fix warnings
