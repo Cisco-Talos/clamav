@@ -23,7 +23,7 @@
 #ifndef _RAR_VM_
 #define _RAR_VM_
 
-#include <inttypes.h>
+#include "cltypes.h"
 #include "unrarcmd.h"
 
 #define FALSE (0)

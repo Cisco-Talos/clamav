@@ -23,7 +23,7 @@
 #ifndef UNRAR_PPM_H
 #define UNRAR_PPM_H 1
 
-#include <inttypes.h>
+#include "cltypes.h"
 
 #define N1 4
 #define N2 4

@@ -28,7 +28,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include <inttypes.h>
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -42,6 +41,7 @@
 #include "unrar15.h"
 #include "clamav.h"
 #include "others.h"
+#include "cltypes.h"
 
 #define int64to32(x) ((uint)(x))
 
