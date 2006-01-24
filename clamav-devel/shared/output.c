@@ -53,7 +53,6 @@ pthread_mutex_t logg_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 #ifdef  C_LINUX
-#include <sys/sendfile.h>
 #include <libintl.h>
 #include <locale.h>
 
