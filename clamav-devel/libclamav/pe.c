@@ -527,7 +527,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
 	cli_dbgmsg("------------------------------------\n");
 
-	if(!CLI_ISCONTAINED2(0, (uint32_t) fsize, EC32(section_hdr[i].PointerToRawData), EC32(section_hdr[i].SizeOfRawData)) || EC32(section_hdr[i].PointerToRawData) >= fsize) {
+	if(!CLI_ISCONTAINED2(0, (uint32_t) fsize, EC32(section_hdr[i].PointerToRawData), EC32(section_hdr[i].SizeOfRawData)) || EC32(section_hdr[i].PointerToRawData) > fsize) {
 	    cli_dbgmsg("Possibly broken PE file - Section %d out of file (Offset@ %d, Rsize %d, Total filesize %d)\n", i, EC32(section_hdr[i].PointerToRawData), EC32(section_hdr[i].SizeOfRawData), fsize);
 	    if(DETECT_BROKEN) {
 		if(virname)
