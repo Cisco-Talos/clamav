@@ -1438,8 +1438,7 @@ static int cli_scantnef(int desc, const char **virname, unsigned long int *scann
     return ret;
 }
 
-static int
-cli_scanuuencoded(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanuuencoded(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	int ret;
 	char *dir = cli_gentemp(NULL);
@@ -1497,6 +1496,90 @@ static int cli_scanmail(int desc, const char **virname, unsigned long int *scann
     return ret;
 }
 
+static int cli_scanraw(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec, cli_file_t type)
+{
+	int ret = CL_CLEAN;
+	unsigned short ftrec;
+	struct cli_matched_type *ftoffset = NULL, *fpt;
+
+
+    switch(type) {
+	case CL_TYPE_UNKNOWN_TEXT:
+	case CL_TYPE_MSEXE:
+	    ftrec = 1;
+	    break;
+	default:
+	    ftrec = 0;
+    }
+
+    if(lseek(desc, 0, SEEK_SET) < 0) {
+	cli_errmsg("cli_scanraw: lseek() failed\n");
+	return CL_EIO;
+    }
+
+    if((ret = cli_scandesc(desc, virname, scanned, engine, ftrec, type, &ftoffset)) == CL_VIRUS) {
+	cli_dbgmsg("%s found in descriptor %d.\n", *virname, desc);
+	return CL_VIRUS;
+
+    } else if(ret < 0) {
+	return ret;
+
+    } else if(ret >= CL_TYPENO) {
+	lseek(desc, 0, SEEK_SET);
+
+	ret == CL_TYPE_MAIL ? mrec++ : arec++;
+	switch(ret) {
+	    case CL_TYPE_HTML:
+		if(SCAN_HTML && type == CL_TYPE_UNKNOWN_TEXT)
+		    if(cli_scanhtml(desc, virname, scanned, engine, limits, options, arec, mrec) == CL_VIRUS)
+			return CL_VIRUS;
+		break;
+
+	    case CL_TYPE_MAIL:
+		if(SCAN_MAIL && type == CL_TYPE_UNKNOWN_TEXT)
+		    if(cli_scanmail(desc, virname, scanned, engine, limits, options, arec, mrec) == CL_VIRUS)
+			return CL_VIRUS;
+		break;
+
+	    case CL_TYPE_RARSFX:
+	    case CL_TYPE_ZIPSFX:
+		if(type == CL_TYPE_MSEXE) {
+		    if(SCAN_ARCHIVE) {
+			fpt = ftoffset;
+			while(fpt) {
+			    if(fpt->type == CL_TYPE_RARSFX) {
+				cli_dbgmsg("RAR-SFX signature found at %d\n", fpt->offset);
+				if((ret = cli_scanrar(desc, virname, scanned, engine, limits, options, arec, mrec, fpt->offset) == CL_VIRUS))
+				    break;
+			    } else if(fpt->type == CL_TYPE_ZIPSFX) {
+				cli_dbgmsg("ZIP-SFX signature found at %d\n", fpt->offset);
+				if((ret = cli_scanzip(desc, virname, scanned, engine, limits, options, arec, mrec, fpt->offset) == CL_VIRUS))
+				    break;
+			    }
+			    fpt = fpt->next;
+			}
+		    }
+
+		    while(ftoffset) {
+			fpt = ftoffset;
+			ftoffset = ftoffset->next;
+			free(fpt);
+		    }
+
+		    if(ret == CL_VIRUS)
+			return ret;
+		}
+		break;
+
+	    default:
+		break;
+	}
+	ret == CL_TYPE_MAIL ? mrec-- : arec--;
+    }
+
+    return ret;
+}
+
 int cli_magic_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	int ret = CL_CLEAN, nret;
@@ -1547,6 +1630,12 @@ int cli_magic_scandesc(int desc, const char **virname, unsigned long int *scanne
     lseek(desc, 0, SEEK_SET);
     type = cli_filetype2(desc);
     lseek(desc, 0, SEEK_SET);
+
+    if(type != CL_TYPE_DATA && engine->sdb) {
+	if((ret = cli_scanraw(desc, virname, scanned, engine, limits, options, arec, mrec, type) == CL_VIRUS))
+	    return CL_VIRUS;
+	lseek(desc, 0, SEEK_SET);
+    }
 
     type == CL_TYPE_MAIL ? mrec++ : arec++;
 
@@ -1671,81 +1760,9 @@ int cli_magic_scandesc(int desc, const char **virname, unsigned long int *scanne
 
     type == CL_TYPE_MAIL ? mrec-- : arec--;
 
-    if(type != CL_TYPE_DATA && ret != CL_VIRUS) { /* scan the raw file */
-	    int ftrec;
-	    struct cli_matched_type *ftoffset = NULL, *fpt;
-
-	switch(type) {
-	    case CL_TYPE_UNKNOWN_TEXT:
-	    case CL_TYPE_MSEXE:
-		ftrec = 1;
-		break;
-	    default:
-		ftrec = 0;
-	}
-
-	if(lseek(desc, 0, SEEK_SET) < 0)
-	    cli_errmsg("lseek() failed, trying to continue anyway...\n");
-
-	if((nret = cli_scandesc(desc, virname, scanned, engine, ftrec, type, &ftoffset)) == CL_VIRUS) {
-	    cli_dbgmsg("%s found in descriptor %d.\n", *virname, desc);
+    if(type != CL_TYPE_DATA && ret != CL_VIRUS && !engine->sdb) {
+	if((ret = cli_scanraw(desc, virname, scanned, engine, limits, options, arec, mrec, type) == CL_VIRUS))
 	    return CL_VIRUS;
-
-	} else if(nret < 0) {
-	    return nret;
-
-	} else if(nret >= CL_TYPENO) {
-	    lseek(desc, 0, SEEK_SET);
-
-	    nret == CL_TYPE_MAIL ? mrec++ : arec++;
-	    switch(nret) {
-		case CL_TYPE_HTML:
-		    if(SCAN_HTML && type == CL_TYPE_UNKNOWN_TEXT)
-			if(cli_scanhtml(desc, virname, scanned, engine, limits, options, arec, mrec) == CL_VIRUS)
-			    return CL_VIRUS;
-		    break;
-
-		case CL_TYPE_MAIL:
-		    if(SCAN_MAIL && type == CL_TYPE_UNKNOWN_TEXT)
-			if(cli_scanmail(desc, virname, scanned, engine, limits, options, arec, mrec) == CL_VIRUS)
-			    return CL_VIRUS;
-		    break;
-
-		case CL_TYPE_RARSFX:
-		case CL_TYPE_ZIPSFX:
-		    if(type == CL_TYPE_MSEXE) {
-			if(SCAN_ARCHIVE) {
-			    fpt = ftoffset;
-			    while(fpt) {
-				if(fpt->type == CL_TYPE_RARSFX) {
-				    cli_dbgmsg("RAR-SFX signature found at %d\n", fpt->offset);
-				    if((ret = cli_scanrar(desc, virname, scanned, engine, limits, options, arec, mrec, fpt->offset) == CL_VIRUS))
-					break;
-				} else if(fpt->type == CL_TYPE_ZIPSFX) {
-				    cli_dbgmsg("ZIP-SFX signature found at %d\n", fpt->offset);
-				    if((ret = cli_scanzip(desc, virname, scanned, engine, limits, options, arec, mrec, fpt->offset) == CL_VIRUS))
-					break;
-				}
-				fpt = fpt->next;
-			    }
-			}
-
-			while(ftoffset) {
-			    fpt = ftoffset;
-			    ftoffset = ftoffset->next;
-			    free(fpt);
-			}
-
-			if(ret == CL_VIRUS)
-			    return ret;
-		    }
-		    break;
-
-		default:
-		    break;
-	    }
-	    nret == CL_TYPE_MAIL ? mrec-- : arec--;
-	}
     }
 
     arec++;
