@@ -150,6 +150,7 @@ struct cli_matcher {
 struct cl_engine {
     unsigned int refcount; /* reference counter */
     unsigned short hwaccel;
+    unsigned short sdb;
 
     /* Roots table */
     struct cli_matcher **root;
