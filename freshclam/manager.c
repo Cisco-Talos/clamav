@@ -388,7 +388,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     tempname = cli_gentemp(".");
 
     logg("*Retrieving http://%s/%s\n", hostname, remotename);
-    if((ret = get_database(remotename, hostfd, tempname, hostname, proxy, user, pass))) {
+    if((ret = get_database(remotename, hostfd, tempname, hostname, proxy, user, pass, uas))) {
         logg("^Can't download %s from %s (IP: %s)\n", remotename, hostname, ipaddr);
         unlink(tempname);
         free(tempname);
@@ -660,7 +660,7 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
 	"Connection: close\r\n"
 	"Range: bytes=0-511\r\n"
         "If-Modified-Since: %s\r\n"
-        "\r\n", (remotename != NULL)?remotename:"", file, hostname, (authorization != NULL)?authorization:"", uas, last_modified);
+        "\r\n", (remotename != NULL)?remotename:"", file, hostname, (authorization != NULL)?authorization:"", agent, last_modified);
 #endif
     write(socketfd, cmd, strlen(cmd));
 
@@ -725,12 +725,12 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
     return cvd;
 }
 
-int get_database(const char *dbfile, int socketfd, const char *file, const char *hostname, const char *proxy, const char *user, const char *pass)
+int get_database(const char *dbfile, int socketfd, const char *file, const char *hostname, const char *proxy, const char *user, const char *pass, const char *uas)
 {
 	char cmd[512], buffer[FILEBUFF], *ch;
 	int bread, fd, i, rot = 0;
 	char *remotename = NULL, *authorization = NULL;
-	const char *rotation = "|/-\\";
+	const char *rotation = "|/-\\", *agent;
 
 
     if(proxy) {
@@ -764,20 +764,25 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
 	return 57;
     }
 
+    if(uas)
+	agent = uas;
+    else
+	agent = PACKAGE"/"VERSION;
+
 #ifdef NO_SNPRINTF
     sprintf(cmd, "GET %s/%s HTTP/1.1\r\n"
 	     "Host: %s\r\n%s"
-	     "User-Agent: "PACKAGE"/"VERSION"\r\n"
+	     "User-Agent: %s\r\n"
 	     "Cache-Control: no-cache\r\n"
 	     "Connection: close\r\n"
-	     "\r\n", (remotename != NULL)?remotename:"", dbfile, hostname, (authorization != NULL)?authorization:"");
+	     "\r\n", (remotename != NULL)?remotename:"", dbfile, hostname, (authorization != NULL)?authorization:"", agent);
 #else
     snprintf(cmd, sizeof(cmd), "GET %s/%s HTTP/1.1\r\n"
 	     "Host: %s\r\n%s"
-	     "User-Agent: "PACKAGE"/"VERSION"\r\n"
+	     "User-Agent: %s\r\n"
 	     "Cache-Control: no-cache\r\n"
 	     "Connection: close\r\n"
-	     "\r\n", (remotename != NULL)?remotename:"", dbfile, hostname, (authorization != NULL)?authorization:"");
+	     "\r\n", (remotename != NULL)?remotename:"", dbfile, hostname, (authorization != NULL)?authorization:"", agent);
 #endif
     write(socketfd, cmd, strlen(cmd));
 
