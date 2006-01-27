@@ -110,6 +110,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 	    {"HTTPProxyPort", OPT_NUM, -1, NULL, 0}, /* freshclam */
 	    {"HTTPProxyUsername", OPT_STR, -1, NULL, 0}, /* freshclam */
 	    {"HTTPProxyPassword", OPT_STR, -1, NULL, 0}, /* freshclam */
+	    {"HTTPUserAgent", OPT_FULLSTR, -1, NULL, 0}, /* freshclam */
 	    {"NotifyClamd", OPT_STR, -1, NULL, 0}, /* freshclam */
 	    {"OnUpdateExecute", OPT_FULLSTR, -1, NULL, 0}, /* freshclam */
 	    {"OnErrorExecute", OPT_FULLSTR, -1, NULL, 0}, /* freshclam */

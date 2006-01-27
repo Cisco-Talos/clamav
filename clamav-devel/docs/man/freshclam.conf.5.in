@@ -92,6 +92,11 @@ Proxy usage is authenticated through given username and password.
 .br .
 Default: no proxy authentication
 .TP 
+\fBHTTPUserAgent STRING\fR
+If your servers are behind a firewall/proxy which applies User-Agent filtering, you can use this option to force the use of a different User-Agent header.
+.br .
+Default: clamav/version_number
+.TP 
 \fBLocalIPAddress IP\fR
 Use \fBIP\fR as client address for downloading databases. Useful for multi homed systems.
 .br .

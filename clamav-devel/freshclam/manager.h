@@ -28,7 +28,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 
 int wwwconnect(const char *server, const char *proxy, int pport, char *remoteip, char *localip);
 
-struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostname, const char *proxy, const char *user, const char *pass, int *ims);
+struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostname, const char *proxy, const char *user, const char *pass, const char *uas, int *ims);
 
 int get_database(const char *dbfile, int socketfd, const char *file, const char *hostname, const char *proxy, const char *user, const char *pass);
 
