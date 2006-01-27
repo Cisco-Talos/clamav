@@ -245,7 +245,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	struct cfgstruct *cpt;
 	int hostfd, nodb = 0, dbver = -1, ret, port = 0, ims = -1;
 	char  *tempname, ipaddr[16], *pt;
-	const char *proxy = NULL, *user = NULL, *pass = NULL;
+	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL;
 	int flevel = cl_retflevel();
 
 
@@ -301,6 +301,9 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	logg("Connecting via %s\n", proxy);
     }
 
+    if((cpt = cfgopt(copt, "HTTPUserAgent"))->enabled)
+	uas = cpt->strarg;
+
     memset(ipaddr, 0, sizeof(ipaddr));
 
     if(!nodb && dbver == -1) {
@@ -321,7 +324,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	if(!ip[0])
 	    strcpy(ip, ipaddr);
 
-	remote = remote_cvdhead(remotename, hostfd, hostname, proxy, user, pass, &ims);
+	remote = remote_cvdhead(remotename, hostfd, hostname, proxy, user, pass, uas, &ims);
 
 	if(!nodb && !ims) {
 	    logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
@@ -596,11 +599,12 @@ static int Rfc2822DateTime(char *buf, time_t mtime)
     return strftime(buf, 36, "%a, %d %b %Y %X GMT", time);
 }
 
-struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostname, const char *proxy, const char *user, const char *pass, int *ims)
+struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostname, const char *proxy, const char *user, const char *pass, const char *uas, int *ims)
 {
 	char cmd[512], head[513], buffer[FILEBUFF], *ch, *tmp;
 	int i, j, bread, cnt;
 	char *remotename = NULL, *authorization = NULL;
+	const char *agent;
 	struct cl_cvd *cvd;
 	char last_modified[36];
 	struct stat sb;
@@ -635,22 +639,28 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
     logg("*If-Modified-Since: %s\n", last_modified);
 
     logg("Reading CVD header (%s): ", file);
+
+    if(uas)
+	agent = uas;
+    else
+	agent = PACKAGE"/"VERSION;
+
 #ifdef	NO_SNPRINTF
     sprintf(cmd, "GET %s/%s HTTP/1.1\r\n"
 	"Host: %s\r\n%s"
-	"User-Agent: "PACKAGE"/"VERSION"\r\n"
+	"User-Agent: %s\r\n"
 	"Connection: close\r\n"
 	"Range: bytes=0-511\r\n"
         "If-Modified-Since: %s\r\n"
-        "\r\n", (remotename != NULL)?remotename:"", file, hostname, (authorization != NULL)?authorization:"", last_modified);
+        "\r\n", (remotename != NULL)?remotename:"", file, hostname, (authorization != NULL)?authorization:"", agent, last_modified);
 #else
     snprintf(cmd, sizeof(cmd), "GET %s/%s HTTP/1.1\r\n"
 	"Host: %s\r\n%s"
-	"User-Agent: "PACKAGE"/"VERSION"\r\n"
+	"User-Agent: %s\r\n"
 	"Connection: close\r\n"
 	"Range: bytes=0-511\r\n"
         "If-Modified-Since: %s\r\n"
-        "\r\n", (remotename != NULL)?remotename:"", file, hostname, (authorization != NULL)?authorization:"", last_modified);
+        "\r\n", (remotename != NULL)?remotename:"", file, hostname, (authorization != NULL)?authorization:"", uas, last_modified);
 #endif
     write(socketfd, cmd, strlen(cmd));
 
