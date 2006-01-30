@@ -253,6 +253,15 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 	    filelen = cli_readint32(mfile + offset + 24 + 8 * (i + 1));
 	    osize = (uLongf) filelen;
 
+	    if(!osize) {
+		cli_dbgmsg("SIS: Empty file, skipping\n");
+		free(fname);
+		continue;
+	    }
+
+	    cli_dbgmsg("SIS: Compressed size: %d\n", csize);
+	    cli_dbgmsg("SIS: Original size: %d\n", osize);
+
 	    if(limits && limits->maxfilesize && osize > limits->maxfilesize) {
 		cli_dbgmsg("SIS: Size exceeded (%d, max: %ld)\n", osize, limits->maxfilesize);
 		if(BLOCKMAX) {
