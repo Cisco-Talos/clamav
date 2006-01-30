@@ -1,3 +1,7 @@
+Mon Jan 30 21:10:57 CET 2006 (tk)
+---------------------------------
+  * libclamav/sis.c: handle empty files in SIS archives
+
 Fri Jan 27 16:01:31 CET 2006 (tk)
 ---------------------------------
   * freshclam: new option HTTPUserAgent to force different User-Agent header
