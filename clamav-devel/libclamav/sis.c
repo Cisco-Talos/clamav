@@ -652,7 +652,7 @@ int cli_scansis(int desc, const char **virname, long int *scanned, const struct 
     free(dir);
     munmap(mfile, length);
 
-    return CL_CLEAN;
+    return ret;
 }
 
 #else /* HAVE_MMAP */
