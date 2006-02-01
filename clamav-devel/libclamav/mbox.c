@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.277 2006/01/22 20:22:40 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.278 2006/02/01 09:38:20 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3865,6 +3865,13 @@ checkURLs(message *m, const char *dir)
 
 /*
  * Includes some Win32 patches by Gianluigi Tiesi <sherpya@netfarm.it>
+ *
+ * FIXME: Often WMF exploits work by sending people an email directing them
+ *	to a page which displays a picture containing the exploit. This is not
+ *	currently found, since only the HTML on the referred page is downloaded.
+ *	It would be useful to scan the HTML for references to pictures and
+ *	download them for scanning. But that will hit performance so there is
+ *	an issue here.
  */
 #ifdef	WITH_CURL
 static void *
