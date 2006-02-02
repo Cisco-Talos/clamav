@@ -1,3 +1,10 @@
+Thu Feb  2 14:36:53 GMT 2006 (njh)
+----------------------------------
+  * clamav-milter:	Added defensive programming against multiple MAIL FROM
+  				calls.
+			Added debug information when --max-children throttle
+				is lifted
+
 Mon Jan 30 21:10:57 CET 2006 (tk)
 ---------------------------------
   * libclamav/sis.c: handle empty files in SIS archives

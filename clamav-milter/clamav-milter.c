@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.227 2006/01/23 10:38:00 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.228 2006/02/02 14:39:05 nigelhorne Exp $";
 
-#define	CM_VERSION	"devel-141205"
+#define	CM_VERSION	"devel-020206"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2184,6 +2184,11 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	return SMFIS_CONTINUE;
 }
 
+/*
+ * Since sendmail requires that MAIL FROM is called before RCPT TO, it is
+ *	safe to assume that this routine is called first, so the n_children
+ *	handler is put here
+ */
 static sfsistat
 clamfi_envfrom(SMFICTX *ctx, char **argv)
 {
@@ -2214,6 +2219,15 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			mailaddr = "<>";
 		}
 	}
+	if(smfi_getpriv(ctx) != NULL) {
+		/* More than one MAIL FROM command, "can't happen" */
+		cli_warnmsg("clamfi_envfrom: called more than once\n");
+		return SMFIS_CONTINUE;
+	}
+
+	privdata = (struct privdata *)cli_calloc(1, sizeof(struct privdata));
+	if(privdata == NULL)
+		return cl_error;
 
 	if(max_children > 0) {
 		int rc = 0;
@@ -2243,6 +2257,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 					n_children, max_children);
 
 			if(dont_wait) {
+				free(privdata);
 				pthread_mutex_unlock(&n_children_mutex);
 				smfi_setreply(ctx, "451", "4.3.2", _("AV system temporarily overloaded - please try later"));
 				return SMFIS_TEMPFAIL;
@@ -2276,6 +2291,11 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 					rc = pthread_cond_timedwait(&n_children_cond, &n_children_mutex, &timeout);
 				}
 			} while((n_children >= max_children) && (rc != ETIMEDOUT));
+			if(use_syslog)
+				/* LOG_INFO */
+				syslog(LOG_NOTICE,
+					_("Finished waiting, n_children = %u"),
+						n_children);
 		}
 		n_children++;
 
@@ -2290,10 +2310,6 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			cli_dbgmsg(_("Timeout waiting for a child to die\n"));
 		}
 	}
-
-	privdata = (struct privdata *)cli_calloc(1, sizeof(struct privdata));
-	if(privdata == NULL)
-		return cl_error;
 
 	privdata->dataSocket = -1;	/* 0.4 */
 #ifndef	SESSION
