@@ -1,3 +1,10 @@
+Sun Feb  5 13:56:56 GMT 2006 (njh)
+----------------------------------
+  * clamav-milter:	Added --template-headers option, based on a whishlist
+				by Denis Eremenko <moonshade*mail.kz> for
+				the support of foreign language and HTML
+				emails in --template-file
+
 Sun Feb  5 13:29:42 GMT 2006 (njh)
 ----------------------------------
   * clamav-milter:	Correct the error message if the given whitelistFile

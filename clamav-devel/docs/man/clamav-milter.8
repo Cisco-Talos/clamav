@@ -217,6 +217,12 @@ If the \-t option is not given, clamav\-milter defaults to a hard-coded message.
 Note that to send warning messages, clamav\-milter must be able to execute
 sendmail.
 .TP
+\fB\-\-template\-headers=file\fR
+File points to a file whose contents are added to the headers of the
+warning message given to the \fB\-\-template\-file\fR option.
+For example, to state the character set of the message,
+put "Content-Type: text/plain; charset=koi8-r" into the file.
+.TP
 \fB\-\-timeout=n \-T n\fR
 Used in conjunction with max\-children. If clamav\-milter waits for more than
 \fIn\fR seconds (default 300) it proceeds with scanning. Setting \fIn\fR to zero
