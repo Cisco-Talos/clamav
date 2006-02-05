@@ -22,7 +22,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.231 2006/02/05 14:02:24 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.232 2006/02/05 14:16:46 nigelhorne Exp $";
 
 #define	CM_VERSION	"devel-050206"
 
@@ -3047,9 +3047,18 @@ clamfi_eom(SMFICTX *ctx)
 								templateHeaders);
 					} else {
 						int c;
-						while((c = getc(fin)) != EOF)
+						int lastc = EOF;
+
+						while((c = getc(fin)) != EOF) {
 							putc(c, sendmail);
+							lastc = c;
+						}
 						fclose(fin);
+						/*
+						 * File not new line terminated
+						 */
+						if(lastc != '\n')
+							fputs(_("\n"), sendmail);
 					}
 				}
 
