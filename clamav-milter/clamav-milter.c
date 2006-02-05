@@ -2,7 +2,7 @@
  * clamav-milter.c
  *	.../clamav-milter/clamav-milter.c
  *
- *  Copyright (C) 2003-2005 Nigel Horne <njh@bandsman.co.uk>
+ *  Copyright (C) 2003-2006 Nigel Horne <njh@bandsman.co.uk>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.229 2006/02/05 13:31:27 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.230 2006/02/05 13:33:35 nigelhorne Exp $";
 
 #define	CM_VERSION	"devel-050206"
 
@@ -4120,6 +4120,7 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 			syslog(LOG_ERR, _("Error reading e-mail template file %s"),
 				filename);
 		fclose(fin);
+		free(buf);
 		return -1;
 	}
 	fclose(fin);
