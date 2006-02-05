@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.228 2006/02/02 14:39:05 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.229 2006/02/05 13:31:27 nigelhorne Exp $";
 
-#define	CM_VERSION	"devel-020206"
+#define	CM_VERSION	"devel-050206"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1037,7 +1037,7 @@ main(int argc, char **argv)
 		return EX_CONFIG;
 	}
 	if(whitelistFile && (access(whitelistFile, R_OK) < 0)) {
-		perror(templatefile);
+		perror(whitelistFile);
 		return EX_CONFIG;
 	}
 
