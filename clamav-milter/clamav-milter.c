@@ -22,7 +22,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.230 2006/02/05 13:33:35 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.231 2006/02/05 14:02:24 nigelhorne Exp $";
 
 #define	CM_VERSION	"devel-050206"
 
@@ -365,7 +365,8 @@ static	int	logClean = 1;	/*
 				 */
 static	char	*signature = N_("-- \nScanned by ClamAv - http://www.clamav.net\n");
 static	time_t	signatureStamp;
-static	char	*templatefile;	/* e-mail to be sent when virus detected */
+static	char	*templateFile;	/* e-mail to be sent when virus detected */
+static	char	*templateHeaders;	/* headers to be added to the above */
 static	const char	*tmpdir;
 
 #ifdef	CL_DEBUG
@@ -505,6 +506,7 @@ help(void)
 	puts(_("\t--sign\t\t\t-S\tAdd a hard-coded signature to each scanned message."));
 	puts(_("\t--signature-file=FILE\t-F FILE\tLocation of signature file."));
 	puts(_("\t--template-file=FILE\t-t FILE\tLocation of e-mail template file."));
+	puts(_("\t--template-headers=FILE\t\tLocation of e-mail headers for template file."));
 	puts(_("\t--timeout=SECS\t\t-T SECS\tTimeout waiting to childen to die."));
 	puts(_("\t--whitelist-file=FILE\t-W FILE\tLocation of the file of whitelisted addresses"));
 	puts(_("\t--version\t\t-V\tPrint the version number of this software."));
@@ -677,6 +679,9 @@ main(int argc, char **argv)
 				"template-file", 1, NULL, 't'
 			},
 			{
+				"template-headers", 1, NULL, '1'
+			},
+			{
 				"timeout", 1, NULL, 'T'
 			},
 			{
@@ -802,7 +807,10 @@ main(int argc, char **argv)
 				Sflag++;
 				break;
 			case 't':	/* e-mail template file */
-				templatefile = optarg;
+				templateFile = optarg;
+				break;
+			case '1':	/* headers for the template file */
+				templateHeaders = optarg;
 				break;
 			case 'T':	/* time to wait for child to die */
 				child_timeout = atoi(optarg);
@@ -1032,9 +1040,20 @@ main(int argc, char **argv)
 	if(sigFilename && !updateSigFile())
 		return EX_USAGE;
 
-	if(templatefile && (access(templatefile, R_OK) < 0)) {
-		perror(templatefile);
+	if(templateFile && (access(templateFile, R_OK) < 0)) {
+		perror(templateFile);
 		return EX_CONFIG;
+	}
+	if(templateHeaders) {
+		if(templateFile == NULL) {
+			fputs(("%s: --template-headers requires --template-file\n"),
+				stderr);
+			return EX_CONFIG;
+		}
+		if(access(templateHeaders, R_OK) < 0) {
+			perror(templateHeaders);
+			return EX_CONFIG;
+		}
 	}
 	if(whitelistFile && (access(whitelistFile, R_OK) < 0)) {
 		perror(whitelistFile);
@@ -3008,10 +3027,36 @@ clamfi_eom(SMFICTX *ctx)
 					fprintf(sendmail,
 						"X-Infected-Received-From: %s\n",
 						ptr);
-				fputs(_("Subject: Virus intercepted\n\n"), sendmail);
+				fputs(_("Subject: Virus intercepted\n"), sendmail);
 
-				if((templatefile == NULL) ||
-				   (sendtemplate(ctx, templatefile, sendmail, virusname) < 0)) {
+				if(templateHeaders) {
+					/*
+					 * For example, to state the character
+					 * set of the message:
+					 *	Content-Type: text/plain; charset=koi8-r
+					 *
+					 * Based on a suggestion by Denis
+					 *	Eremenko <moonshade@mail.kz>
+					 */
+					FILE *fin = fopen(templateHeaders, "r");
+
+					if(fin == NULL) {
+						perror(templateHeaders);
+						if(use_syslog)
+							syslog(LOG_ERR, _("Can't open e-mail template header file %s"),
+								templateHeaders);
+					} else {
+						int c;
+						while((c = getc(fin)) != EOF)
+							putc(c, sendmail);
+						fclose(fin);
+					}
+				}
+
+				fputs(_("\n"), sendmail);
+
+				if((templateFile == NULL) ||
+				   (sendtemplate(ctx, templateFile, sendmail, virusname) < 0)) {
 					/*
 					 * Use our own hardcoded template
 					 */

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: bugs@clamav.net\n"
-"POT-Creation-Date: 2005-06-30 10:14+0100\n"
+"POT-Creation-Date: 2006-02-05 13:59+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,727 +16,759 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: clamav-milter.c:470
+#: clamav-milter.c:478
 msgid "\t--advisory\t\t-A\tFlag viruses rather than deleting them."
 msgstr ""
 
-#: clamav-milter.c:471
+#: clamav-milter.c:479
 msgid "\t--bounce\t\t-b\tSend a failure message to the sender."
 msgstr ""
 
-#: clamav-milter.c:472
+#: clamav-milter.c:480
 msgid ""
 "\t--broadcast\t\t-B [IFACE]\tBroadcast to a network manager when a virus is "
 "found."
 msgstr ""
 
-#: clamav-milter.c:473
+#: clamav-milter.c:481
 msgid "\t--config-file=FILE\t-c FILE\tRead configuration from FILE."
 msgstr ""
 
-#: clamav-milter.c:474
+#: clamav-milter.c:482
 msgid "\t--debug\t\t\t-D\tPrint debug messages."
 msgstr ""
 
-#: clamav-milter.c:475
+#: clamav-milter.c:483
 msgid ""
 "\t--detect-forged-local-address\t-L\tReject mails that claim to be from us."
 msgstr ""
 
-#: clamav-milter.c:476
+#: clamav-milter.c:484
 msgid ""
 "\t--dont-log-clean\t-C\tDon't add an entry to syslog that a mail is clean."
 msgstr ""
 
-#: clamav-milter.c:477
+#: clamav-milter.c:485
 msgid ""
 "\t--dont-scan-on-error\t-d\tPass e-mails through unscanned if a system error "
 "occurs."
 msgstr ""
 
-#: clamav-milter.c:478
+#: clamav-milter.c:486
 msgid "\t--dont-wait\t\t\tAsk remote end to resend if max-children exceeded."
 msgstr ""
 
-#: clamav-milter.c:479
+#: clamav-milter.c:487
 msgid "\t--external\t\t-e\tUse an external scanner (usually clamd)."
 msgstr ""
 
-#: clamav-milter.c:480
-msgid "\t--from=EMAIL\t\t-a EMAIL\tError messages come from here."
-msgstr ""
-
-#: clamav-milter.c:481
-msgid "\t--force-scan\t\t-f\tForce scan all messages (overrides (-o and -l)."
-msgstr ""
-
-#: clamav-milter.c:482
-msgid "\t--help\t\t\t-h\tThis message."
-msgstr ""
-
-#: clamav-milter.c:483
-msgid "\t--headers\t\t-H\tInclude original message headers in the report."
-msgstr ""
-
-#: clamav-milter.c:484
-msgid "\t--local\t\t\t-l\tScan messages sent from machines on our LAN."
-msgstr ""
-
-#: clamav-milter.c:485
-msgid "\t--max-childen\t\t-m\tMaximum number of concurrent scans."
-msgstr ""
-
-#: clamav-milter.c:486
-msgid "\t--outgoing\t\t-o\tScan outgoing messages from this machine."
-msgstr ""
-
-#: clamav-milter.c:487
-msgid "\t--noreject\t\t-N\tDon't reject viruses, silently throw them away."
-msgstr ""
-
 #: clamav-milter.c:488
-msgid "\t--noxheader\t\t-n\tSuppress X-Virus-Scanned/X-Virus-Status headers."
+msgid ""
+"\t--freshclam-monitor=SECS\t-M SECS\tHow often to check for database update."
 msgstr ""
 
 #: clamav-milter.c:489
-msgid "\t--pidfile=FILE\t\t-i FILE\tLocation of pidfile."
+msgid "\t--from=EMAIL\t\t-a EMAIL\tError messages come from here."
 msgstr ""
 
 #: clamav-milter.c:490
-msgid "\t--postmaster\t\t-p EMAIL\tPostmaster address [default=postmaster]."
+msgid "\t--force-scan\t\t-f\tForce scan all messages (overrides (-o and -l)."
 msgstr ""
 
 #: clamav-milter.c:491
-msgid "\t--postmaster-only\t-P\tSend warnings only to the postmaster."
+msgid "\t--help\t\t\t-h\tThis message."
 msgstr ""
 
 #: clamav-milter.c:492
-msgid "\t--quiet\t\t\t-q\tDon't send e-mail notifications of interceptions."
+msgid "\t--headers\t\t-H\tInclude original message headers in the report."
 msgstr ""
 
 #: clamav-milter.c:493
-msgid "\t--quarantine=USER\t-Q EMAIL\tQuanrantine e-mail account."
+msgid "\t--local\t\t\t-l\tScan messages sent from machines on our LAN."
 msgstr ""
 
 #: clamav-milter.c:494
-msgid "\t--quarantine-dir=DIR\t-U DIR\tDirectory to store infected emails."
+msgid "\t--max-childen\t\t-m\tMaximum number of concurrent scans."
 msgstr ""
 
 #: clamav-milter.c:495
+msgid "\t--outgoing\t\t-o\tScan outgoing messages from this machine."
+msgstr ""
+
+#: clamav-milter.c:496
+msgid "\t--noreject\t\t-N\tDon't reject viruses, silently throw them away."
+msgstr ""
+
+#: clamav-milter.c:497
+msgid "\t--noxheader\t\t-n\tSuppress X-Virus-Scanned/X-Virus-Status headers."
+msgstr ""
+
+#: clamav-milter.c:498
+msgid "\t--pidfile=FILE\t\t-i FILE\tLocation of pidfile."
+msgstr ""
+
+#: clamav-milter.c:499
+msgid "\t--postmaster\t\t-p EMAIL\tPostmaster address [default=postmaster]."
+msgstr ""
+
+#: clamav-milter.c:500
+msgid "\t--postmaster-only\t-P\tSend warnings only to the postmaster."
+msgstr ""
+
+#: clamav-milter.c:501
+msgid "\t--quiet\t\t\t-q\tDon't send e-mail notifications of interceptions."
+msgstr ""
+
+#: clamav-milter.c:502
+msgid "\t--quarantine=USER\t-Q EMAIL\tQuanrantine e-mail account."
+msgstr ""
+
+#: clamav-milter.c:503
+msgid "\t--quarantine-dir=DIR\t-U DIR\tDirectory to store infected emails."
+msgstr ""
+
+#: clamav-milter.c:504
 msgid ""
 "\t--server=SERVER\t\t-s SERVER\tHostname/IP address of server(s) running "
 "clamd (when using TCPsocket)."
 msgstr ""
 
-#: clamav-milter.c:496
+#: clamav-milter.c:505
 msgid "\t--sendmail-cf=FILE\t\tLocation of the sendmail.cf file to verify"
 msgstr ""
 
-#: clamav-milter.c:497
+#: clamav-milter.c:506
 msgid "\t--sign\t\t\t-S\tAdd a hard-coded signature to each scanned message."
 msgstr ""
 
-#: clamav-milter.c:498
+#: clamav-milter.c:507
 msgid "\t--signature-file=FILE\t-F FILE\tLocation of signature file."
 msgstr ""
 
-#: clamav-milter.c:499
+#: clamav-milter.c:508
 msgid "\t--template-file=FILE\t-t FILE\tLocation of e-mail template file."
 msgstr ""
 
-#: clamav-milter.c:500
+#: clamav-milter.c:509
+msgid ""
+"\t--template-headers=FILE\tLocation of e-mail headers for template file."
+msgstr ""
+
+#: clamav-milter.c:510
 msgid "\t--timeout=SECS\t\t-T SECS\tTimeout waiting to childen to die."
 msgstr ""
 
-#: clamav-milter.c:501
+#: clamav-milter.c:511
 msgid ""
 "\t--whitelist-file=FILE\t-W FILE\tLocation of the file of whitelisted "
 "addresses"
 msgstr ""
 
-#: clamav-milter.c:502
+#: clamav-milter.c:512
 msgid "\t--version\t\t-V\tPrint the version number of this software."
 msgstr ""
 
-#: clamav-milter.c:504
+#: clamav-milter.c:514
 msgid "\t--debug-level=n\t\t-x n\tSets the debug level to 'n'."
 msgstr ""
 
-#: clamav-milter.c:506
+#: clamav-milter.c:516
 msgid ""
 "\n"
 "For more information type \"man clamav-milter\"."
 msgstr ""
 
-#: clamav-milter.c:507
+#: clamav-milter.c:517
 msgid "Report bugs to bugs@clamav.net."
 msgstr ""
 
-#: clamav-milter.c:830
+#: clamav-milter.c:852
 #, c-format
 msgid "%s: No socket-addr given\n"
 msgstr ""
 
-#: clamav-milter.c:836
+#: clamav-milter.c:858
 #, c-format
 msgid "%s: socket-addr (%s) doesn't agree with sendmail.cf\n"
 msgstr ""
 
-#: clamav-milter.c:851
+#: clamav-milter.c:873
 #, c-format
 msgid "%s: when using inet: connection to sendmail you must enable --local\n"
 msgstr ""
 
-#: clamav-milter.c:863
+#: clamav-milter.c:885
 #, c-format
 msgid "%s: Can't parse the config file %s\n"
 msgstr ""
 
-#: clamav-milter.c:870
+#: clamav-milter.c:892
 #, c-format
 msgid "%s: --detect-forged-local-addresses is not compatible with --outgoing\n"
 msgstr ""
 
-#: clamav-milter.c:874
+#: clamav-milter.c:896
 #, c-format
 msgid "%s: --detect-forged-local-addresses is not compatible with --local\n"
 msgstr ""
 
-#: clamav-milter.c:878
+#: clamav-milter.c:900
 #, c-format
 msgid "%s: --detect-forged-local-addresses is not compatible with --force\n"
 msgstr ""
 
-#: clamav-milter.c:922
+#: clamav-milter.c:944
 #, c-format
 msgid ""
 "%s: The iface option to --broadcast is not supported on your operating "
 "system\n"
 msgstr ""
 
-#: clamav-milter.c:931
+#: clamav-milter.c:953
 #, c-format
 msgid "%s: Can't get information about user %s\n"
 msgstr ""
 
-#: clamav-milter.c:942
+#: clamav-milter.c:964
 #, c-format
 msgid "%s: AllowSupplementaryGroups: initgroups not supported.\n"
 msgstr ""
 
-#: clamav-milter.c:959
+#: clamav-milter.c:981
 #, c-format
 msgid "Running as user %s (UID %d, GID %d)\n"
 msgstr ""
 
-#: clamav-milter.c:962
+#: clamav-milter.c:984
 #, c-format
 msgid "%s: running as root is not recommended (check \"User\" in %s)\n"
 msgstr ""
 
-#: clamav-milter.c:964
+#: clamav-milter.c:986
 #, c-format
 msgid "%s: Only root can set an interface for --broadcast\n"
 msgstr ""
 
-#: clamav-milter.c:969
+#: clamav-milter.c:991
 #, c-format
 msgid "%s: Advisory mode doesn't work with quarantine mode\n"
 msgstr ""
 
-#: clamav-milter.c:977
+#: clamav-milter.c:999
 #, c-format
 msgid "%s: Advisory mode doesn't work with quarantine directories\n"
 msgstr ""
 
-#: clamav-milter.c:983
+#: clamav-milter.c:1005
 #, c-format
 msgid "%s: the quarantine directory must not contain the string 'ERROR'\n"
 msgstr ""
 
-#: clamav-milter.c:989
+#: clamav-milter.c:1011
 #, c-format
 msgid "%s: the quarantine directory must not contain the string 'FOUND'\n"
 msgstr ""
 
-#: clamav-milter.c:995
+#: clamav-milter.c:1017
 #, c-format
 msgid "%s: the quarantine directory must not contain the string 'OK'\n"
 msgstr ""
 
-#: clamav-milter.c:1012
+#: clamav-milter.c:1034
 #, c-format
 msgid "%s: insecure quarantine directory %s (mode 0%o)\n"
 msgstr ""
 
-#: clamav-milter.c:1042
+#: clamav-milter.c:1075
 #, c-format
 msgid "%s: ReadTimeout must not be negative in %s\n"
 msgstr ""
 
-#: clamav-milter.c:1051
+#: clamav-milter.c:1084
 #, c-format
 msgid "%s: StreamMaxLength must not be negative in %s\n"
 msgstr ""
 
-#: clamav-milter.c:1078
+#: clamav-milter.c:1111
 #, c-format
 msgid ""
 "%s: (-q && !LogSyslog): warning - all interception message methods are off\n"
 msgstr ""
 
-#: clamav-milter.c:1088
+#: clamav-milter.c:1121
 #, c-format
 msgid "%s: --max-children must be given if --external is not given\n"
 msgstr ""
 
-#: clamav-milter.c:1093
+#: clamav-milter.c:1125
+#, c-format
+msgid "%s: --freshclam_monitor must be at least one second\n"
+msgstr ""
+
+#: clamav-milter.c:1130
 #, c-format
 msgid "%s: --timeout must not be given if --external is not given\n"
 msgstr ""
 
-#: clamav-milter.c:1107
+#: clamav-milter.c:1144
 #, c-format
 msgid "%s: You can select one server type only (local/TCP) in %s\n"
 msgstr ""
 
-#: clamav-milter.c:1117
+#: clamav-milter.c:1154
 #, c-format
 msgid "The connection from sendmail to %s (%s) must not\n"
 msgstr ""
 
-#: clamav-milter.c:1119
+#: clamav-milter.c:1156
 #, c-format
 msgid "be the same as the connection to clamd (%s) in %s\n"
 msgstr ""
 
-#: clamav-milter.c:1129 clamav-milter.c:1152
+#: clamav-milter.c:1166 clamav-milter.c:1189
 #, c-format
 msgid "Can't talk to clamd server via %s\n"
 msgstr ""
 
-#: clamav-milter.c:1131 clamav-milter.c:1154
+#: clamav-milter.c:1168 clamav-milter.c:1191
 #, c-format
 msgid "Check your entry for LocalSocket in %s\n"
 msgstr ""
 
-#: clamav-milter.c:1165
+#: clamav-milter.c:1202
 msgid "Can't create a clamd session"
 msgstr ""
 
-#: clamav-milter.c:1182
+#: clamav-milter.c:1219
 #, c-format
 msgid "%s: --quarantine-dir not supported for TCPSocket - use --quarantine\n"
 msgstr ""
 
-#: clamav-milter.c:1197
+#: clamav-milter.c:1234
 #, c-format
 msgid "%s: hostname %s is longer than %d characters\n"
 msgstr ""
 
-#: clamav-milter.c:1216 clamav-milter.c:1306
+#: clamav-milter.c:1253 clamav-milter.c:1343
 #, c-format
 msgid "%s: --max-children must be given in sessions mode\n"
 msgstr ""
 
-#: clamav-milter.c:1239
+#: clamav-milter.c:1276
 #, c-format
 msgid "%s: Unknown host %s\n"
 msgstr ""
 
-#: clamav-milter.c:1251
+#: clamav-milter.c:1288
 #, c-format
 msgid "Can't talk to clamd server %s on port %d\n"
 msgstr ""
 
-#: clamav-milter.c:1255
+#: clamav-milter.c:1292
 #, c-format
 msgid "Check the value for TCPAddr in %s\n"
 msgstr ""
 
-#: clamav-milter.c:1257
+#: clamav-milter.c:1294
 #, c-format
 msgid "Check the value for TCPAddr in clamd.conf on %s\n"
 msgstr ""
 
-#: clamav-milter.c:1273
+#: clamav-milter.c:1310
 msgid "Can't find any active clamd servers\n"
 msgstr ""
 
-#: clamav-milter.c:1274 clamav-milter.c:1280
+#: clamav-milter.c:1311 clamav-milter.c:1317
 #, c-format
 msgid "Check your entry for TCPSocket in %s\n"
 msgstr ""
 
-#: clamav-milter.c:1279
+#: clamav-milter.c:1316
 msgid "Can't find any clamd servers\n"
 msgstr ""
 
-#: clamav-milter.c:1286
+#: clamav-milter.c:1323
 #, c-format
 msgid "%s: You must select server type (local/TCP) in %s\n"
 msgstr ""
 
-#: clamav-milter.c:1354
+#: clamav-milter.c:1391
 #, c-format
 msgid "When debugging it is recommended that you use Foreground mode in %s\n"
 msgstr ""
 
-#: clamav-milter.c:1355
+#: clamav-milter.c:1392
 msgid "\tso that you can see all of the messages"
 msgstr ""
 
-#: clamav-milter.c:1441
+#: clamav-milter.c:1478
 #, c-format
 msgid "%s: ScanMail not defined in %s (needed without --external), enabling\n"
 msgstr ""
 
-#: clamav-milter.c:1502
+#: clamav-milter.c:1539
 msgid "Starting clamav-milter"
 msgstr ""
 
-#: clamav-milter.c:1512
+#: clamav-milter.c:1549
 #, c-format
 msgid "pidfile: '%s' must be a full pathname"
 msgstr ""
 
-#: clamav-milter.c:1514
+#: clamav-milter.c:1551
 #, c-format
 msgid "pidfile '%s' must be a full pathname\n"
 msgstr ""
 
-#: clamav-milter.c:1528
+#: clamav-milter.c:1565
 #, c-format
 msgid "Can't save PID in file %s"
 msgstr ""
 
-#: clamav-milter.c:1530
+#: clamav-milter.c:1567
 #, c-format
 msgid "Can't save PID in file %s\n"
 msgstr ""
 
-#: clamav-milter.c:1592
+#: clamav-milter.c:1629
 #, c-format
 msgid "Starting %s"
 msgstr ""
 
-#: clamav-milter.c:1595
+#: clamav-milter.c:1632
 msgid "Debugging is on"
 msgstr ""
 
-#: clamav-milter.c:1660 clamav-milter.c:1919
+#: clamav-milter.c:1702 clamav-milter.c:1962
 #, c-format
 msgid "Check clamd server %s - it may be down\n"
 msgstr ""
 
-#: clamav-milter.c:1665
+#: clamav-milter.c:1707
 msgid "Check clamd server - it may be down"
 msgstr ""
 
-#: clamav-milter.c:1840
+#: clamav-milter.c:1883
 msgid "No free clamd sessions\n"
 msgstr ""
 
-#: clamav-milter.c:1922
+#: clamav-milter.c:1965
 #, c-format
 msgid "Check clamd server %s - it may be down"
 msgstr ""
 
-#: clamav-milter.c:1928
+#: clamav-milter.c:1971
 msgid "Check clamd server - it may be down\n"
 msgstr ""
 
-#: clamav-milter.c:1964
+#: clamav-milter.c:2007
 msgid "findServer: select failed"
 msgstr ""
 
-#: clamav-milter.c:1973
+#: clamav-milter.c:2016
 #, c-format
 msgid "findServer: using server %d\n"
 msgstr ""
 
-#: clamav-milter.c:1978
+#: clamav-milter.c:2021
 msgid "findServer: No response from any server\n"
 msgstr ""
 
-#: clamav-milter.c:1980
+#: clamav-milter.c:2023
 msgid "findServer: No response from any server"
 msgstr ""
 
-#: clamav-milter.c:2001
+#: clamav-milter.c:2044
 msgid "clamfi_connect: ctx is null"
 msgstr ""
 
-#: clamav-milter.c:2006
+#: clamav-milter.c:2049
 msgid "clamfi_connect: hostname is null"
 msgstr ""
 
-#: clamav-milter.c:2027
-msgid "clamfi_connect: remoteIP is null"
-msgstr ""
-
-#: clamav-milter.c:2036
-#, c-format
-msgid "clamfi_connect: connection from %s"
-msgstr ""
-
-#: clamav-milter.c:2037
-#, c-format
-msgid "clamfi_connect: connection from %s\n"
-msgstr ""
-
-#: clamav-milter.c:2040
-#, c-format
-msgid "clamfi_connect: connection from %s [%s]"
-msgstr ""
-
-#: clamav-milter.c:2041
-#, c-format
-msgid "clamfi_connect: connection from %s [%s]\n"
-msgstr ""
-
-#: clamav-milter.c:2061
-msgid "Can't get sendmail hostname"
-msgstr ""
-
 #: clamav-milter.c:2070
-#, c-format
-msgid "Access Denied: Host Unknown (%s)"
+msgid "clamfi_connect: remoteIP is null"
 msgstr ""
 
 #: clamav-milter.c:2079
 #, c-format
+msgid "clamfi_connect: connection from %s"
+msgstr ""
+
+#: clamav-milter.c:2080
+#, c-format
+msgid "clamfi_connect: connection from %s\n"
+msgstr ""
+
+#: clamav-milter.c:2083
+#, c-format
+msgid "clamfi_connect: connection from %s [%s]"
+msgstr ""
+
+#: clamav-milter.c:2084
+#, c-format
+msgid "clamfi_connect: connection from %s [%s]\n"
+msgstr ""
+
+#: clamav-milter.c:2104
+msgid "Can't get sendmail hostname"
+msgstr ""
+
+#: clamav-milter.c:2113
+#, c-format
+msgid "Access Denied: Host Unknown (%s)"
+msgstr ""
+
+#: clamav-milter.c:2122
+#, c-format
 msgid "Can't find entry for IP address %s in DNS - check your DNS setting\n"
 msgstr ""
 
-#: clamav-milter.c:2090
+#: clamav-milter.c:2133
 #, c-format
 msgid "Access Denied: Can't get IP address for (%s)"
 msgstr ""
 
-#: clamav-milter.c:2107
+#: clamav-milter.c:2150
 #, c-format
 msgid "Access Denied for %s[%s]"
 msgstr ""
 
-#: clamav-milter.c:2125
+#: clamav-milter.c:2168
 msgid "clamfi_connect: not scanning outgoing messages"
 msgstr ""
 
-#: clamav-milter.c:2126
+#: clamav-milter.c:2169
 msgid "clamfi_connect: not scanning outgoing messages\n"
 msgstr ""
 
-#: clamav-milter.c:2134
+#: clamav-milter.c:2177
 msgid "clamfi_connect: not scanning local messages"
 msgstr ""
 
-#: clamav-milter.c:2135
+#: clamav-milter.c:2178
 msgid "clamfi_connect: not scanning local messages\n"
 msgstr ""
 
-#: clamav-milter.c:2149
+#: clamav-milter.c:2192
 msgid "clamfi_connect: gethostname failed"
 msgstr ""
 
-#: clamav-milter.c:2154
+#: clamav-milter.c:2197
 msgid "Rejected email falsely claiming to be from here"
 msgstr ""
 
-#: clamav-milter.c:2155
+#: clamav-milter.c:2198
 msgid "You have claimed to be me, but you are not"
 msgstr ""
 
-#: clamav-milter.c:2156 clamav-milter.c:2440
+#: clamav-milter.c:2199 clamav-milter.c:2503
 msgid "Forged local address detected"
 msgstr ""
 
-#: clamav-milter.c:2184
+#: clamav-milter.c:2232
 msgid "Rejected email with empty from field"
 msgstr ""
 
-#: clamav-milter.c:2185
+#: clamav-milter.c:2233
 msgid "You have not said who the email is from"
 msgstr ""
 
-#: clamav-milter.c:2186
+#: clamav-milter.c:2234
 msgid "Reject email with empty from field"
 msgstr ""
 
-#: clamav-milter.c:2208
+#: clamav-milter.c:2267
 #, c-format
 msgid "hit max-children limit (%u >= %u)\n"
 msgstr ""
 
-#: clamav-milter.c:2209
+#: clamav-milter.c:2268
 #, c-format
 msgid "hit max-children limit (%u >= %u): waiting for some to exit\n"
 msgstr ""
 
-#: clamav-milter.c:2215
+#: clamav-milter.c:2274
 #, c-format
 msgid "hit max-children limit (%u >= %u)"
 msgstr ""
 
-#: clamav-milter.c:2216
+#: clamav-milter.c:2275
 #, c-format
 msgid "hit max-children limit (%u >= %u): waiting for some to exit"
 msgstr ""
 
-#: clamav-milter.c:2221
+#: clamav-milter.c:2281
 msgid "AV system temporarily overloaded - please try later"
 msgstr ""
 
-#: clamav-milter.c:2254
+#: clamav-milter.c:2300
+#, c-format
+msgid "n_children %u: waiting %d seconds for some to exit"
+msgstr ""
+
+#: clamav-milter.c:2316
+#, c-format
+msgid "Finished waiting, n_children = %u"
+msgstr ""
+
+#: clamav-milter.c:2321
 #, c-format
 msgid ">n_children = %d\n"
 msgstr ""
 
-#: clamav-milter.c:2260
+#: clamav-milter.c:2327
 msgid "Timeout waiting for a child to die"
 msgstr ""
 
-#: clamav-milter.c:2262
+#: clamav-milter.c:2329
 msgid "Timeout waiting for a child to die\n"
 msgstr ""
 
-#: clamav-milter.c:2405
+#: clamav-milter.c:2468
 msgid "clamfi_eoh"
 msgstr ""
 
-#: clamav-milter.c:2408
+#: clamav-milter.c:2471
 msgid "clamfi_eoh\n"
 msgstr ""
 
-#: clamav-milter.c:2432
+#: clamav-milter.c:2495
 msgid "clamfi_eoh: gethostname failed"
 msgstr ""
 
-#: clamav-milter.c:2438
+#: clamav-milter.c:2501
 #, c-format
 msgid "Rejected email falsely claiming to be from %s"
 msgstr ""
 
-#: clamav-milter.c:2439
+#: clamav-milter.c:2502
 msgid "You have claimed to be from me, but you are not"
 msgstr ""
 
-#: clamav-milter.c:2476
+#: clamav-milter.c:2539
 msgid "clamfi_eoh: ignoring whitelisted message"
 msgstr ""
 
-#: clamav-milter.c:2478
+#: clamav-milter.c:2541
 msgid "clamfi_eoh: ignoring whitelisted message\n"
 msgstr ""
 
-#: clamav-milter.c:2492
+#: clamav-milter.c:2555
 #, c-format
 msgid "clamfi_envbody: %u bytes"
 msgstr ""
 
-#: clamav-milter.c:2494
+#: clamav-milter.c:2557
 #, c-format
 msgid "clamfi_envbody: %u bytes\n"
 msgstr ""
 
-#: clamav-milter.c:2507 clamav-milter.c:2815
+#: clamav-milter.c:2570 clamav-milter.c:2882
 #, c-format
 msgid "%s: Message more than StreamMaxLength (%ld) bytes - not scanned"
 msgstr ""
 
-#: clamav-milter.c:2511 clamav-milter.c:2818
+#: clamav-milter.c:2574 clamav-milter.c:2885
 msgid "Not Scanned - StreamMaxLength exceeded"
 msgstr ""
 
-#: clamav-milter.c:2564
+#: clamav-milter.c:2627
 #, c-format
 msgid "Failed to delete X-Virus-Status header %d"
 msgstr ""
 
-#: clamav-milter.c:2641
+#: clamav-milter.c:2704
 #, c-format
 msgid "failed to send SCAN %s command to clamd"
 msgstr ""
 
-#: clamav-milter.c:2663
+#: clamav-milter.c:2726
 msgid "failed to send SCAN command to clamd"
 msgstr ""
 
-#: clamav-milter.c:2680
+#: clamav-milter.c:2743
 #, c-format
 msgid "Waiting to read status from fd %d\n"
 msgstr ""
 
-#: clamav-milter.c:2693
+#: clamav-milter.c:2756
 #, c-format
 msgid "clamfi_eom: read %s"
 msgstr ""
 
-#: clamav-milter.c:2694
+#: clamav-milter.c:2757
 #, c-format
 msgid "clamfi_eom: read %s\n"
 msgstr ""
 
-#: clamav-milter.c:2711
+#: clamav-milter.c:2774
 #, c-format
 msgid "clamfi_eom: read nothing from clamd on %s"
 msgstr ""
 
-#: clamav-milter.c:2713
+#: clamav-milter.c:2776
 #, c-format
 msgid "clamfi_eom: read nothing from clamd on %s\n"
 msgstr ""
 
-#: clamav-milter.c:2758 clamav-milter.c:2804
+#: clamav-milter.c:2821 clamav-milter.c:2867
 msgid "Error determining host"
 msgstr ""
 
-#: clamav-milter.c:2823
+#: clamav-milter.c:2890
 msgid "Not Scanned"
 msgstr ""
 
-#: clamav-milter.c:2852
+#: clamav-milter.c:2919
 msgid "Infected with"
 msgstr ""
 
-#: clamav-milter.c:2873
+#: clamav-milter.c:2940
 #, c-format
 msgid "Intercepted virus from %s to"
 msgstr ""
 
-#: clamav-milter.c:2963
-msgid ""
-"Subject: Virus intercepted\n"
-"\n"
+#: clamav-milter.c:3030
+msgid "Subject: Virus intercepted\n"
 msgstr ""
 
-#: clamav-milter.c:2971
+#: clamav-milter.c:3046
+#, c-format
+msgid "Can't open e-mail template header file %s"
+msgstr ""
+
+#: clamav-milter.c:3056
+msgid "\n"
+msgstr ""
+
+#: clamav-milter.c:3064
 msgid "A message you sent to\n"
 msgstr ""
 
-#: clamav-milter.c:2978
+#: clamav-milter.c:3071
 #, c-format
 msgid "The message %1$s sent from %2$s to\n"
 msgstr ""
 
-#: clamav-milter.c:2981
+#: clamav-milter.c:3074
 #, c-format
 msgid "A message sent from %s to\n"
 msgstr ""
 
-#: clamav-milter.c:2986
+#: clamav-milter.c:3079
 #, c-format
 msgid "contained %s and has not been delivered.\n"
 msgstr ""
 
-#: clamav-milter.c:2989
+#: clamav-milter.c:3082
 #, c-format
 msgid ""
 "\n"
 "The message in question has been quarantined as %s\n"
 msgstr ""
 
-#: clamav-milter.c:2992
+#: clamav-milter.c:3085
 #, c-format
 msgid ""
 "\n"
@@ -744,13 +776,13 @@ msgid ""
 "\n"
 msgstr ""
 
-#: clamav-milter.c:2995
+#: clamav-milter.c:3088
 msgid ""
 "For your information, the original message headers were:\n"
 "\n"
 msgstr ""
 
-#: clamav-milter.c:3008
+#: clamav-milter.c:3101
 #, c-format
 msgid ""
 "\n"
@@ -758,239 +790,257 @@ msgid ""
 "%s\t\n"
 msgstr ""
 
-#: clamav-milter.c:3018
+#: clamav-milter.c:3111
 #, c-format
 msgid "Can't execute '%s' to send virus notice"
 msgstr ""
 
-#: clamav-milter.c:3047
+#: clamav-milter.c:3144
+#, c-format
+msgid "Reported phishing to %s"
+msgstr ""
+
+#: clamav-milter.c:3148
+msgid "Can't set anti-phish header"
+msgstr ""
+
+#: clamav-milter.c:3150
+msgid "Can't set anti-phish header\n"
+msgstr ""
+
+#: clamav-milter.c:3176
 #, c-format
 msgid "Can't set quarantine user %s"
 msgstr ""
 
-#: clamav-milter.c:3049
+#: clamav-milter.c:3178
 #, c-format
 msgid "Can't set quarantine user %s\n"
 msgstr ""
 
-#: clamav-milter.c:3071
+#: clamav-milter.c:3207
 #, c-format
 msgid "virus %s detected by ClamAV - http://www.clamav.net"
 msgstr ""
 
-#: clamav-milter.c:3076
+#: clamav-milter.c:3212
 msgid "Unknown"
 msgstr ""
 
-#: clamav-milter.c:3078
+#: clamav-milter.c:3214
 #, c-format
 msgid "%s: incorrect message \"%s\" from clamd"
 msgstr ""
 
-#: clamav-milter.c:3084
+#: clamav-milter.c:3220
 msgid "Clean"
 msgstr ""
 
-#: clamav-milter.c:3088
+#: clamav-milter.c:3224
 #, c-format
 msgid "%s: clean message from %s"
 msgstr ""
 
-#: clamav-milter.c:3090
+#: clamav-milter.c:3226
 msgid "an unknown sender"
 msgstr ""
 
-#: clamav-milter.c:3185
+#: clamav-milter.c:3327
 #, c-format
 msgid "Can't remove clean file %s"
 msgstr ""
 
-#: clamav-milter.c:3376 clamav-milter.c:3379
+#: clamav-milter.c:3520 clamav-milter.c:3523
 #, c-format
 msgid "write failure (%u bytes) to %s: %s"
 msgstr ""
 
-#: clamav-milter.c:3393 clamav-milter.c:3396
+#: clamav-milter.c:3537 clamav-milter.c:3540
 #, c-format
 msgid "write failure (%u bytes) to clamd: %s"
 msgstr ""
 
-#: clamav-milter.c:3462
+#: clamav-milter.c:3617
 #, c-format
 msgid "No data received from clamd in %d seconds\n"
 msgstr ""
 
-#: clamav-milter.c:3484
+#: clamav-milter.c:3646
 #, c-format
 msgid "Can't stat %s"
 msgstr ""
 
-#: clamav-milter.c:3495 clamav-milter.c:3936
+#: clamav-milter.c:3657 clamav-milter.c:4103
 #, c-format
 msgid "Can't open %s"
 msgstr ""
 
-#: clamav-milter.c:3620 clamav-milter.c:4105
+#: clamav-milter.c:3782 clamav-milter.c:4280
 #, c-format
 msgid "mkdir %s failed"
 msgstr ""
 
-#: clamav-milter.c:3632
+#: clamav-milter.c:3797
 #, c-format
 msgid "mktemp %s failed"
 msgstr ""
 
-#: clamav-milter.c:3642
+#: clamav-milter.c:3807
 #, c-format
 msgid "Temporary quarantine file %s creation failed"
 msgstr ""
 
-#: clamav-milter.c:3745
+#: clamav-milter.c:3912
 #, c-format
 msgid "failed to send STREAM command clamd server %d"
 msgstr ""
 
-#: clamav-milter.c:3754
+#: clamav-milter.c:3921
 msgid "failed to send STREAM command clamd"
 msgstr ""
 
-#: clamav-milter.c:3766
+#: clamav-milter.c:3933
 msgid "failed to create TCPSocket to talk to clamd"
 msgstr ""
 
-#: clamav-milter.c:3778 clamav-milter.c:3794
+#: clamav-milter.c:3945 clamav-milter.c:3961
 msgid "recv failed from clamd getting PORT"
 msgstr ""
 
-#: clamav-milter.c:3782 clamav-milter.c:3796
+#: clamav-milter.c:3949 clamav-milter.c:3963
 msgid "EOF from clamd getting PORT"
-msgstr ""
-
-#: clamav-milter.c:3807
-#, c-format
-msgid "Expected port information from clamd, got '%s'"
-msgstr ""
-
-#: clamav-milter.c:3810
-#, c-format
-msgid "Expected port information from clamd, got '%s'\n"
-msgstr ""
-
-#: clamav-milter.c:3830 clamav-milter.c:3833
-#, c-format
-msgid "Connecting to local port %d - data %d cmd %d\n"
-msgstr ""
-
-#: clamav-milter.c:3848 clamav-milter.c:3851
-#, c-format
-msgid "Failed to connect to port %d given by clamd: %s"
-msgstr ""
-
-#: clamav-milter.c:3948
-#, c-format
-msgid "Clamd (pid %d) seems to have died"
 msgstr ""
 
 #: clamav-milter.c:3974
 #, c-format
+msgid "Expected port information from clamd, got '%s'"
+msgstr ""
+
+#: clamav-milter.c:3977
+#, c-format
+msgid "Expected port information from clamd, got '%s'\n"
+msgstr ""
+
+#: clamav-milter.c:3997 clamav-milter.c:4000
+#, c-format
+msgid "Connecting to local port %d - data %d cmd %d\n"
+msgstr ""
+
+#: clamav-milter.c:4015 clamav-milter.c:4018
+#, c-format
+msgid "Failed to connect to port %d given by clamd: %s"
+msgstr ""
+
+#: clamav-milter.c:4115
+#, c-format
+msgid "Clamd (pid %d) seems to have died"
+msgstr ""
+
+#: clamav-milter.c:4141
+#, c-format
 msgid "Can't open e-mail template file %s"
 msgstr ""
 
-#: clamav-milter.c:3983
+#: clamav-milter.c:4150
 #, c-format
 msgid "Can't stat e-mail template file %s"
 msgstr ""
 
-#: clamav-milter.c:3992
+#: clamav-milter.c:4159
 msgid "Out of memory"
 msgstr ""
 
-#: clamav-milter.c:4019
+#: clamav-milter.c:4165
+#, c-format
+msgid "Error reading e-mail template file %s"
+msgstr ""
+
+#: clamav-milter.c:4194
 #, c-format
 msgid "%s: Unknown clamAV variable \"%c\"\n"
 msgstr ""
 
-#: clamav-milter.c:4030
+#: clamav-milter.c:4205
 #, c-format
 msgid "%s: Unterminated sendmail variable \"%s\"\n"
 msgstr ""
 
-#: clamav-milter.c:4041
+#: clamav-milter.c:4216
 #, c-format
 msgid "%s: Unknown sendmail variable \"%s\"\n"
 msgstr ""
 
-#: clamav-milter.c:4131
+#: clamav-milter.c:4306
 #, c-format
 msgid "Can't rename %1$s to %2$s"
 msgstr ""
 
-#: clamav-milter.c:4140
+#: clamav-milter.c:4315
 #, c-format
 msgid "Email quarantined as %s"
 msgstr ""
 
-#: clamav-milter.c:4232
+#: clamav-milter.c:4420
 #, c-format
 msgid "[Virus] %s"
 msgstr ""
 
-#: clamav-milter.c:4326
+#: clamav-milter.c:4516
 msgid ""
 "No response from any clamd server - your AV system is not scanning emails\n"
 msgstr ""
 
-#: clamav-milter.c:4329
+#: clamav-milter.c:4519
 msgid ""
 "No response from any clamd server - your AV system is not scanning emails"
 msgstr ""
 
-#: clamav-milter.c:4347
+#: clamav-milter.c:4537
 msgid "Subject: ClamAV Down\n"
 msgstr ""
 
-#: clamav-milter.c:4350
+#: clamav-milter.c:4540
 msgid ""
 "This is an automatic message\n"
 "\n"
 msgstr ""
 
-#: clamav-milter.c:4353
+#: clamav-milter.c:4543
 msgid "The clamd program cannot be contacted.\n"
 msgstr ""
 
-#: clamav-milter.c:4355
+#: clamav-milter.c:4545
 msgid "No clamd server can be contacted.\n"
 msgstr ""
 
-#: clamav-milter.c:4357
+#: clamav-milter.c:4547
 msgid "Emails may not be being scanned, please check your servers.\n"
 msgstr ""
 
-#: clamav-milter.c:4424 clamav-milter.c:4582
+#: clamav-milter.c:4614 clamav-milter.c:4772
 msgid "Loading new database"
 msgstr ""
 
-#: clamav-milter.c:4696
+#: clamav-milter.c:4886
 #, c-format
 msgid "Stopping %s"
 msgstr ""
 
-#: clamav-milter.c:4744
+#: clamav-milter.c:4934
 msgid "Stopping clamav-milter"
 msgstr ""
 
-#: clamav-milter.c:4871
+#: clamav-milter.c:5061
 #, c-format
 msgid "Loaded %s"
 msgstr ""
 
-#: clamav-milter.c:4875
+#: clamav-milter.c:5065
 #, c-format
 msgid "ClamAV: Protecting against %u viruses"
 msgstr ""
 
-#: clamav-milter.c:5027
+#: clamav-milter.c:5219
 #, c-format
 msgid "Can't open white-list file %s"
 msgstr ""
