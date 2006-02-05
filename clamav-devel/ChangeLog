@@ -1,7 +1,12 @@
+Sun Feb  5 13:29:42 GMT 2006 (njh)
+----------------------------------
+  * clamav-milter:	Correct the error message if the given whitelistFile
+				doesn't exist
+
 Thu Feb  2 14:36:53 GMT 2006 (njh)
 ----------------------------------
   * clamav-milter:	Added defensive programming against multiple MAIL FROM
-  				calls.
+				calls.
 			Added debug information when --max-children throttle
 				is lifted
 
