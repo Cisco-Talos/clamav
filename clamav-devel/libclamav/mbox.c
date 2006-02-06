@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 Nigel Horne <njh@bandsman.co.uk>
+ *  Copyright (C) 2002-2006 Nigel Horne <njh@bandsman.co.uk>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.278 2006/02/01 09:38:20 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.279 2006/02/06 02:36:39 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3907,6 +3907,7 @@ getURL(struct arg *arg)
 #ifdef	CL_THREAD_SAFE
 			pthread_mutex_unlock(&init_mutex);
 #endif
+			cli_errmsg("curl_global_init failed");
 			return NULL;
 		}
 		initialised = 1;
@@ -3917,13 +3918,18 @@ getURL(struct arg *arg)
 
 	/* easy isn't the word I'd use... */
 	curl = curl_easy_init();
-	if(curl == NULL)
+	if(curl == NULL) {
+		cli_errmsg("curl_easy_init failed");
 		return NULL;
+	}
 
 	(void)curl_easy_setopt(curl, CURLOPT_USERAGENT, "www.clamav.net");
 
-	if(curl_easy_setopt(curl, CURLOPT_URL, url) != 0)
+	if(curl_easy_setopt(curl, CURLOPT_URL, url) != 0) {
+		cli_errmsg("%s: curl_easy_setopt failed", url);
+		curl_easy_cleanup(curl);
 		return NULL;
+	}
 
 	snprintf(fout, NAME_MAX, "%s/%s", dir, filename);
 
@@ -3987,7 +3993,7 @@ getURL(struct arg *arg)
 	 */
 	/*
 	 * On some C libraries (notably with FC3, glibc-2.3.3-74) you get a
-	 * memory leak * here in getaddrinfo(), see
+	 * memory leak here in getaddrinfo(), see
 	 *	https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=139559
 	 */
 #ifdef	CURLOPT_ERRORBUFFER
