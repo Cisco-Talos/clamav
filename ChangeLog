@@ -1,3 +1,8 @@
+Tue Feb  7 11:34:17 GMT 2006 (njh)
+----------------------------------
+  * libclamav/message.c:	Some Trojan.Downloader.Small-1011 were not
+					being spotted - reported by Diego
+
 Sun Feb  5 13:56:56 GMT 2006 (njh)
 ----------------------------------
   * clamav-milter:	Added --template-headers option, based on a whishlist

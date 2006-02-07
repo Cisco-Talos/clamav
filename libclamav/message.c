@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 Nigel Horne <njh@bandsman.co.uk>
+ *  Copyright (C) 2002-2006 Nigel Horne <njh@bandsman.co.uk>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.160 2005/12/10 18:56:35 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.161 2006/02/07 11:35:45 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -78,6 +78,9 @@ static	unsigned	char	hex(char c);
 static	unsigned	char	base64(char c);
 static	unsigned	char	uudecode(char c);
 static	const	char	*messageGetArgument(const message *m, int arg);
+/*
+ * http://oopweb.com/CPP/Documents/FunctionPointers/Volume/CCPP/callback/callback.html
+ */
 static	void	*messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), void (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(const text *, void *));
 static	int	usefulArg(const char *arg);
 static	void	messageDedup(message *m);
@@ -2054,7 +2057,8 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
 			case 4:
 				*out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
 				*out++ = (b2 << 4) | ((b3 >> 2) & 0xF);
-				*out++ = (b3 << 6) | (b4 & 0x3F);
+				if((nbytes == 4) || b3)
+					*out++ = (b3 << 6) | (b4 & 0x3F);
 				break;
 			case 2:
 				*out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
