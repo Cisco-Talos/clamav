@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.232 2006/02/05 14:16:46 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.233 2006/02/09 21:44:17 nigelhorne Exp $";
 
-#define	CM_VERSION	"devel-050206"
+#define	CM_VERSION	"devel-090206"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3216,7 +3216,7 @@ clamfi_eom(SMFICTX *ctx)
 		snprintf(reject, sizeof(reject) - 1, _("virus %s detected by ClamAV - http://www.clamav.net"), virusname);
 		smfi_setreply(ctx, (char *)privdata->rejectCode, "5.7.1", reject);
 		broadcast(mess);
-	} else if(strstr(mess, "OK") == NULL) {
+	} else if((strstr(mess, "OK") == NULL) && (strstr(mess, "Empty file") == NULL)) {
 		if(!nflag)
 			smfi_addheader(ctx, "X-Virus-Status", _("Unknown"));
 		if(use_syslog)
@@ -4077,9 +4077,10 @@ sendToFrom(struct privdata *privdata)
 		}
 		free(msg);
 	} else {
-		clamfi_send(privdata, 0,
-			"Received: by clamav-milter\nFrom: %s\n",
-			privdata->from);
+		if(clamfi_send(privdata, 0,
+		    "Received: by clamav-milter\nFrom: %s\n",
+		    privdata->from) <= 0)
+			return 0;
 
 		for(to = privdata->to; *to; to++)
 			if(clamfi_send(privdata, 0, "To: %s\n", *to) <= 0)
