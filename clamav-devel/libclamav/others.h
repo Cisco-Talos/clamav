@@ -31,6 +31,28 @@
     (bb_size > 0 && sb_size >= 0 && sb_size <= bb_size	\
      && sb >= bb && sb + sb_size <= bb + bb_size && sb + sb_size >= bb)
 
+/* internal clamav context */
+typedef struct {
+    const char **virname;
+    unsigned long int *scanned;
+    const struct cli_matcher *root;
+    const struct cl_engine *engine;
+    const struct cl_limits *limits;
+    unsigned int options;
+    unsigned int arec;
+    unsigned int mrec;
+} cli_ctx;
+
+#define SCAN_ARCHIVE	    (ctx->options & CL_SCAN_ARCHIVE)
+#define SCAN_MAIL	    (ctx->options & CL_SCAN_MAIL)
+#define SCAN_OLE2	    (ctx->options & CL_SCAN_OLE2)
+#define SCAN_HTML	    (ctx->options & CL_SCAN_HTML)
+#define SCAN_PE		    (ctx->options & CL_SCAN_PE)
+#define SCAN_ALGO 	    (ctx->options & CL_SCAN_ALGO)
+#define DETECT_ENCRYPTED    (ctx->options & CL_SCAN_BLOCKENCRYPTED)
+#define BLOCKMAX	    (ctx->options & CL_SCAN_BLOCKMAX)
+#define DETECT_BROKEN	    (ctx->options & CL_SCAN_BLOCKBROKEN)
+
 typedef struct bitset_tag
 {
         unsigned char *bitset;

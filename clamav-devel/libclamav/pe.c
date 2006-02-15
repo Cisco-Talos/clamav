@@ -51,10 +51,6 @@
 #define PE32_SIGNATURE		    0x010b
 #define PE32P_SIGNATURE		    0x020b
 
-#define DETECT_BROKEN		    (options & CL_SCAN_BLOCKBROKEN)
-#define BLOCKMAX		    (options & CL_SCAN_BLOCKMAX)
-#define SCAN_ALGO		    (options & CL_SCAN_ALGO)
-
 #define UPX_NRV2B "\x11\xdb\x11\xc9\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9\x11\xc9\x75\x20\x41\x01\xdb"
 #define UPX_NRV2D "\x83\xf0\xff\x74\x78\xd1\xf8\x89\xc5\xeb\x0b\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9"
 #define UPX_NRV2E "\xeb\x52\x31\xc9\x83\xe8\x03\x72\x11\xc1\xe0\x08\x8a\x06\x46\x83\xf0\xff\x74\x75\xd1\xf8\x89\xc5"
@@ -152,7 +148,7 @@ static int cli_ddump(int desc, int offset, int size, const char *file)
 }
 */
 
-int cli_scanpe(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+int cli_scanpe(int desc, cli_ctx *ctx)
 {
 	uint16_t e_magic; /* DOS signature ("MZ") */
 	uint16_t nsections;
@@ -190,8 +186,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	cli_dbgmsg("Can't read new header address\n");
 	/* truncated header? */
 	if(DETECT_BROKEN) {
-	    if(virname)
-		*virname = "Broken.Executable";
+	    if(ctx->virname)
+		*ctx->virname = "Broken.Executable";
 	    return CL_VIRUS;
 	}
 	return CL_CLEAN;
@@ -325,8 +321,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     nsections = EC16(file_hdr.NumberOfSections);
     if(nsections < 1) {
 	if(DETECT_BROKEN) {
-	    if(virname)
-		*virname = "Broken.Executable";
+	    if(ctx->virname)
+		*ctx->virname = "Broken.Executable";
 	    return CL_VIRUS;
 	}
 	cli_warnmsg("PE file contains no sections\n");
@@ -346,8 +342,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	} else {
 	    cli_dbgmsg("Incorrect value of SizeOfOptionalHeader\n");
 	    if(DETECT_BROKEN) {
-		if(virname)
-		    *virname = "Broken.Executable";
+		if(ctx->virname)
+		    *ctx->virname = "Broken.Executable";
 		return CL_VIRUS;
 	    }
 	    return CL_CLEAN;
@@ -359,8 +355,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	if(read(desc, &optional_hdr32, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32)) {
 	    cli_dbgmsg("Can't optional file header\n");
 	    if(DETECT_BROKEN) {
-		if(virname)
-		    *virname = "Broken.Executable";
+		if(ctx->virname)
+		    *ctx->virname = "Broken.Executable";
 		return CL_VIRUS;
 	    }
 	    return CL_CLEAN;
@@ -369,8 +365,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	if(EC16(optional_hdr32.Magic) != PE32_SIGNATURE) {
 	    cli_warnmsg("Incorrect magic number in optional header\n");
 	    if(DETECT_BROKEN) {
-		if(virname)
-		    *virname = "Broken.Executable";
+		if(ctx->virname)
+		    *ctx->virname = "Broken.Executable";
 		return CL_VIRUS;
 	    }
 	}
@@ -396,8 +392,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	if(read(desc, &optional_hdr64, sizeof(struct pe_image_optional_hdr64)) != sizeof(struct pe_image_optional_hdr64)) {
 	    cli_dbgmsg("Can't optional file header\n");
 	    if(DETECT_BROKEN) {
-		if(virname)
-		    *virname = "Broken.Executable";
+		if(ctx->virname)
+		    *ctx->virname = "Broken.Executable";
 		return CL_VIRUS;
 	    }
 	    return CL_CLEAN;
@@ -406,8 +402,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	if(EC16(optional_hdr64.Magic) != PE32P_SIGNATURE) {
 	    cli_warnmsg("Incorrect magic number in optional header\n");
 	    if(DETECT_BROKEN) {
-		if(virname)
-		    *virname = "Broken.Executable";
+		if(ctx->virname)
+		    *ctx->virname = "Broken.Executable";
 		return CL_VIRUS;
 	    }
 	}
@@ -490,8 +486,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    cli_dbgmsg("Possibly broken PE file\n");
 	    free(section_hdr);
 	    if(DETECT_BROKEN) {
-		if(virname)
-		    *virname = "Broken.Executable";
+		if(ctx->virname)
+		    *ctx->virname = "Broken.Executable";
 		return CL_VIRUS;
 	    }
 	    return CL_CLEAN;
@@ -530,8 +526,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	if(!CLI_ISCONTAINED2(0, (uint32_t) fsize, EC32(section_hdr[i].PointerToRawData), EC32(section_hdr[i].SizeOfRawData)) || EC32(section_hdr[i].PointerToRawData) > fsize) {
 	    cli_dbgmsg("Possibly broken PE file - Section %d out of file (Offset@ %d, Rsize %d, Total filesize %d)\n", i, EC32(section_hdr[i].PointerToRawData), EC32(section_hdr[i].SizeOfRawData), fsize);
 	    if(DETECT_BROKEN) {
-		if(virname)
-		    *virname = "Broken.Executable";
+		if(ctx->virname)
+		    *ctx->virname = "Broken.Executable";
 		free(section_hdr);
 		return CL_VIRUS;
 	    }
@@ -560,8 +556,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	cli_dbgmsg("Possibly broken PE file\n");
 	free(section_hdr);
 	if(DETECT_BROKEN) {
-	    if(virname)
-		*virname = "Broken.Executable";
+	    if(ctx->virname)
+		*ctx->virname = "Broken.Executable";
 	    return CL_VIRUS;
 	}
 	return CL_CLEAN;
@@ -581,7 +577,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 
 		pt += 15;
 		if(((dw1 = cli_readint32(pt)) ^ (dw2 = cli_readint32(pt + 4))) == 0x505a4f && ((dw1 = cli_readint32(pt + 8)) ^ (dw2 = cli_readint32(pt + 12))) == 0xffffb && ((dw1 = cli_readint32(pt + 16)) ^ (dw2 = cli_readint32(pt + 20))) == 0xb8) {
-		    *virname = "W32.Parite.B";
+		    *ctx->virname = "W32.Parite.B";
 		    free(section_hdr);
 		    return CL_VIRUS;
 		}
@@ -602,7 +598,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    lseek(desc, EC32(section_hdr[nsections - 1].PointerToRawData) + rsize - bw, SEEK_SET);
 	    if(read(desc, buff, 4096) == 4096) {
 		if(cli_memstr(buff, 4091, "\xe8\x2c\x61\x00\x00", 5)) {
-		    *virname = "W32.Magistr.A";
+		    *ctx->virname = "W32.Magistr.A";
 		    free(section_hdr);
 		    return CL_VIRUS;
 		} 
@@ -614,7 +610,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    lseek(desc, EC32(section_hdr[nsections - 1].PointerToRawData) + rsize - bw, SEEK_SET);
 	    if(read(desc, buff, 4096) == 4096) {
 		if(cli_memstr(buff, 4091, "\xe8\x04\x72\x00\x00", 5)) {
-		    *virname = "W32.Magistr.B";
+		    *ctx->virname = "W32.Magistr.B";
 		    free(section_hdr);
 		    return CL_VIRUS;
 		} 
@@ -671,11 +667,11 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    while(found) {
 		    uint32_t newesi, newedi, newebx, newedx;
 
-		if(limits && limits->maxfilesize && (ssize > limits->maxfilesize || dsize > limits->maxfilesize)) {
-		    cli_dbgmsg("FSG: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize , limits->maxfilesize);
+		if(ctx->limits && ctx->limits->maxfilesize && (ssize > ctx->limits->maxfilesize || dsize > ctx->limits->maxfilesize)) {
+		    cli_dbgmsg("FSG: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize , ctx->limits->maxfilesize);
 		    free(section_hdr);
 		    if(BLOCKMAX) {
-			*virname = "PE.FSG.ExceededFileSize";
+			*ctx->virname = "PE.FSG.ExceededFileSize";
 			return CL_VIRUS;
 		    } else {
 			return CL_CLEAN;
@@ -777,7 +773,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 			lseek(ndesc, 0, SEEK_SET);
 
 			cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
-			if(cli_magic_scandesc(ndesc, virname, scanned, engine, limits, options, arec, mrec) == CL_VIRUS) {
+			if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) {
 			    free(section_hdr);
 			    close(ndesc);
 			    if(!cli_leavetemps_flag)
@@ -830,11 +826,11 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    struct SECTION *sections;
 
 
-		if(limits && limits->maxfilesize && (ssize > limits->maxfilesize || dsize > limits->maxfilesize)) {
-		    cli_dbgmsg("FSG: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize, limits->maxfilesize);
+		if(ctx->limits && ctx->limits->maxfilesize && (ssize > ctx->limits->maxfilesize || dsize > ctx->limits->maxfilesize)) {
+		    cli_dbgmsg("FSG: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize, ctx->limits->maxfilesize);
 		    free(section_hdr);
 		    if(BLOCKMAX) {
-			*virname = "PE.FSG.ExceededFileSize";
+			*ctx->virname = "PE.FSG.ExceededFileSize";
 			return CL_VIRUS;
 		    } else {
 			return CL_CLEAN;
@@ -855,11 +851,11 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		lseek(desc, gp, SEEK_SET);
 		gp = EC32(section_hdr[i + 1].PointerToRawData) - gp;
 
-		if(limits && limits->maxfilesize && (unsigned int) gp > limits->maxfilesize) {
-		    cli_dbgmsg("FSG: Buffer size exceeded (size: %d, max: %lu)\n", gp, limits->maxfilesize);
+		if(ctx->limits && ctx->limits->maxfilesize && (unsigned int) gp > ctx->limits->maxfilesize) {
+		    cli_dbgmsg("FSG: Buffer size exceeded (size: %d, max: %lu)\n", gp, ctx->limits->maxfilesize);
 		    free(section_hdr);
 		    if(BLOCKMAX) {
-			*virname = "PE.FSG.ExceededFileSize";
+			*ctx->virname = "PE.FSG.ExceededFileSize";
 			return CL_VIRUS;
 		    } else {
 			return CL_CLEAN;
@@ -979,7 +975,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 			lseek(ndesc, 0, SEEK_SET);
 
 			cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
-			if(cli_magic_scandesc(ndesc, virname, scanned, engine, limits, options, arec, mrec) == CL_VIRUS) {
+			if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) {
 			    free(section_hdr);
 			    close(ndesc);
 			    if(!cli_leavetemps_flag)
@@ -1052,11 +1048,11 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    break;
 		}
 
-		if(limits && limits->maxfilesize && (ssize > limits->maxfilesize || dsize > limits->maxfilesize)) {
-		    cli_dbgmsg("FSG: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize, limits->maxfilesize);
+		if(ctx->limits && ctx->limits->maxfilesize && (ssize > ctx->limits->maxfilesize || dsize > ctx->limits->maxfilesize)) {
+		    cli_dbgmsg("FSG: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize, ctx->limits->maxfilesize);
 		    free(section_hdr);
 		    if(BLOCKMAX) {
-			*virname = "PE.FSG.ExceededFileSize";
+			*ctx->virname = "PE.FSG.ExceededFileSize";
 			return CL_VIRUS;
 		    } else {
 			return CL_CLEAN;
@@ -1077,11 +1073,11 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		lseek(desc, gp, SEEK_SET);
 		gp = EC32(section_hdr[i + 1].PointerToRawData) - gp;
 
-		if(limits && limits->maxfilesize && (unsigned int) gp > limits->maxfilesize) {
-		    cli_dbgmsg("FSG: Buffer size exceeded (size: %d, max: %lu)\n", gp, limits->maxfilesize);
+		if(ctx->limits && ctx->limits->maxfilesize && (unsigned int) gp > ctx->limits->maxfilesize) {
+		    cli_dbgmsg("FSG: Buffer size exceeded (size: %d, max: %lu)\n", gp, ctx->limits->maxfilesize);
 		    free(section_hdr);
 		    if(BLOCKMAX) {
-			*virname = "PE.FSG.ExceededFileSize";
+			*ctx->virname = "PE.FSG.ExceededFileSize";
 			return CL_VIRUS;
 		    } else {
 			return CL_CLEAN;
@@ -1184,7 +1180,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 			lseek(ndesc, 0, SEEK_SET);
 
 			cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
-			if(cli_magic_scandesc(ndesc, virname, scanned, engine, limits, options, arec, mrec) == CL_VIRUS) {
+			if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) {
 			    free(section_hdr);
 			    close(ndesc);
 			    if(!cli_leavetemps_flag)
@@ -1244,11 +1240,11 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    ssize = EC32(section_hdr[i + 1].SizeOfRawData);
 	    dsize = EC32(section_hdr[i].VirtualSize) + EC32(section_hdr[i + 1].VirtualSize);
 
-	    if(limits && limits->maxfilesize && (ssize > limits->maxfilesize || dsize > limits->maxfilesize)) {
-		cli_dbgmsg("UPX: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize , limits->maxfilesize);
+	    if(ctx->limits && ctx->limits->maxfilesize && (ssize > ctx->limits->maxfilesize || dsize > ctx->limits->maxfilesize)) {
+		cli_dbgmsg("UPX: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize , ctx->limits->maxfilesize);
 		free(section_hdr);
 		if(BLOCKMAX) {
-		    *virname = "PE.UPX.ExceededFileSize";
+		    *ctx->virname = "PE.UPX.ExceededFileSize";
 		    return CL_VIRUS;
 		} else {
 		    return CL_CLEAN;
@@ -1398,7 +1394,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		cli_dbgmsg("UPX/FSG: Decompressed data saved in %s\n", tempfile);
 
 	    cli_dbgmsg("***** Scanning decompressed file *****\n");
-	    if((ret = cli_magic_scandesc(ndesc, virname, scanned, engine, limits, options, arec, mrec)) == CL_VIRUS) {
+	    if((ret = cli_magic_scandesc(ndesc, ctx)) == CL_VIRUS) {
 		close(ndesc);
 		if(!cli_leavetemps_flag)
 		    unlink(tempfile);
@@ -1440,11 +1436,11 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	} else {
 	    dsize = max - min;
 
-	    if(limits && limits->maxfilesize && dsize > limits->maxfilesize) {
-		cli_dbgmsg("Petite: Size exceeded (dsize: %d, max: %lu)\n", dsize, limits->maxfilesize);
+	    if(ctx->limits && ctx->limits->maxfilesize && dsize > ctx->limits->maxfilesize) {
+		cli_dbgmsg("Petite: Size exceeded (dsize: %d, max: %lu)\n", dsize, ctx->limits->maxfilesize);
 		free(section_hdr);
 		if(BLOCKMAX) {
-		    *virname = "PE.Petite.ExceededFileSize";
+		    *ctx->virname = "PE.Petite.ExceededFileSize";
 		    return CL_VIRUS;
 		} else {
 		    return CL_CLEAN;
@@ -1503,7 +1499,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    fsync(ndesc);
 	    lseek(ndesc, 0, SEEK_SET);
 
-	    if(cli_magic_scandesc(ndesc, virname, scanned, engine, limits, options, arec, mrec) == CL_VIRUS) {
+	    if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) {
 		free(section_hdr);
 		close(ndesc);
 		if(!cli_leavetemps_flag) {
@@ -1565,7 +1561,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    fsync(ndesc);
 	    lseek(ndesc, 0, SEEK_SET);
 
-	    if(cli_magic_scandesc(ndesc, virname, scanned, engine, limits, options, arec, mrec) == CL_VIRUS) {
+	    if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) {
 		free(section_hdr);
 		close(ndesc);
 		if(!cli_leavetemps_flag) {
@@ -1631,7 +1627,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    fsync(ndesc);
 	    lseek(ndesc, 0, SEEK_SET);
 	    
-	    if(cli_magic_scandesc(ndesc, virname, scanned, engine, limits, options, arec, mrec) == CL_VIRUS) {
+	    if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) {
 	      free(section_hdr);
 	      close(ndesc);
 	      if(!cli_leavetemps_flag) {
