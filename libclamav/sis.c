@@ -43,8 +43,6 @@
 #include "others.h"
 #include "sis.h"
 
-#define BLOCKMAX		    (options & CL_SCAN_BLOCKMAX)
-
 #if WORDS_BIGENDIAN == 0
 #define EC16(v)	(v)
 #define EC32(v) (v)
@@ -105,7 +103,7 @@ static char *sis_utf16_decode(const char *str, uint32_t length)
     return decoded;
 }
 
-static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t offset, uint16_t nlangs, uint8_t compressed, const char *dir, const char **virname, const struct cl_limits *limits, unsigned int options)
+static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t offset, uint16_t nlangs, uint8_t compressed, const char *dir, cli_ctx *ctx)
 {
 	const char *typedir = NULL;
 	char *sname = NULL, *dname = NULL, *subdir, *fname, *buff;
@@ -262,10 +260,10 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 	    cli_dbgmsg("SIS: Compressed size: %d\n", csize);
 	    cli_dbgmsg("SIS: Original size: %d\n", osize);
 
-	    if(limits && limits->maxfilesize && osize > limits->maxfilesize) {
-		cli_dbgmsg("SIS: Size exceeded (%d, max: %ld)\n", osize, limits->maxfilesize);
+	    if(ctx->limits && ctx->limits->maxfilesize && osize > ctx->limits->maxfilesize) {
+		cli_dbgmsg("SIS: Size exceeded (%d, max: %ld)\n", osize, ctx->limits->maxfilesize);
 		if(BLOCKMAX) {
-		    *virname = "SIS.ExceededFileSize";
+		    *ctx->virname = "SIS.ExceededFileSize";
 		    free(subdir);
 		    free(fname);
 		    return CL_VIRUS;
@@ -336,7 +334,7 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
     return 0;
 }
 
-int cli_scansis(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+int cli_scansis(int desc, cli_ctx *ctx)
 {
 	struct sis_file_hdr file_hdr;
 	struct sis_file_hdr6 file_hdr6;
@@ -506,10 +504,10 @@ int cli_scansis(int desc, const char **virname, long int *scanned, const struct 
     /* Files */
     nfiles = EC16(file_hdr.nfiles);
 
-    if(limits && limits->maxfiles && nfiles > limits->maxfiles) {
-	cli_dbgmsg("SIS: Files limit reached (max: %d)\n", limits->maxfiles);
+    if(ctx->limits && ctx->limits->maxfiles && nfiles > ctx->limits->maxfiles) {
+	cli_dbgmsg("SIS: Files limit reached (max: %d)\n", ctx->limits->maxfiles);
 	if(BLOCKMAX) {
-	    *virname = "SIS.ExceededFilesLimit";
+	    *ctx->virname = "SIS.ExceededFilesLimit";
 	    munmap(mfile, length);
 	    return CL_VIRUS;
 	}
@@ -548,7 +546,7 @@ int cli_scansis(int desc, const char **virname, long int *scanned, const struct 
 	switch(cli_readint32(mfile + frecord)) {
 	    case 0x00000000:
 		cli_dbgmsg("SIS: Simple file record\n");
-		if((ret = sis_extract_simple(desc, mfile, sb.st_size, frecord + 4, nlangs, compressed, dir, virname, limits, options))) {
+		if((ret = sis_extract_simple(desc, mfile, sb.st_size, frecord + 4, nlangs, compressed, dir, ctx))) {
 		    munmap(mfile, length);
 		    if(!cli_leavetemps_flag)
 			cli_rmdirs(dir);
@@ -565,7 +563,7 @@ int cli_scansis(int desc, const char **virname, long int *scanned, const struct 
 	    case 0x00000001:
 		cli_dbgmsg("SIS: Multiple languages file record\n");
 		/* TODO: Pass language strings into sis_extract */
-		if((ret = sis_extract_simple(desc, mfile, sb.st_size, frecord + 4, nlangs, compressed, dir, virname, limits, options))) {
+		if((ret = sis_extract_simple(desc, mfile, sb.st_size, frecord + 4, nlangs, compressed, dir, ctx))) {
 		    munmap(mfile, length);
 		    if(!cli_leavetemps_flag)
 			cli_rmdirs(dir);
@@ -644,7 +642,7 @@ int cli_scansis(int desc, const char **virname, long int *scanned, const struct 
 
     /* scan extracted files */
     cli_dbgmsg("SIS:  ****** Scanning extracted files ******\n");
-    ret = cli_scandir(dir, virname, scanned, engine, limits, options, arec, mrec);
+    ret = cli_scandir(dir, ctx);
 
     if(!cli_leavetemps_flag)
 	cli_rmdirs(dir);
@@ -659,7 +657,7 @@ int cli_scansis(int desc, const char **virname, long int *scanned, const struct 
 
 #include "clamav.h"
 
-int cli_scansis(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+int cli_scansis(int desc, cli_ctx *ctx)
 {
     cli_warnmsg("Support for SIS files not compiled in!\n");
     return CL_CLEAN;

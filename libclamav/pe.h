@@ -24,6 +24,7 @@
 
 #include "clamav.h"
 #include "execs.h"
+#include "others.h"
 
 struct pe_image_file_hdr {
     uint32_t Magic;
@@ -127,7 +128,7 @@ struct pe_image_section_hdr {
     uint32_t Characteristics;
 };
 
-int cli_scanpe(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec);
+int cli_scanpe(int desc, cli_ctx *ctx);
 
 int cli_peheader(int desc, struct cli_exe_info *peinfo);
 

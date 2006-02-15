@@ -20,6 +20,7 @@
 #define __SIS_H
 
 #include "clamav.h"
+#include "others.h"
 
 struct sis_file_hdr {
     uint32_t uid1;
@@ -55,6 +56,6 @@ struct sis_file_hdr6 {
     uint32_t reserved[4];
 };
 
-int cli_scansis(int desc, const char **virname, long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec);
+int cli_scansis(int desc, cli_ctx *ctx);
 
 #endif

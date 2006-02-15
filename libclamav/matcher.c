@@ -274,25 +274,25 @@ int cli_validatesig(unsigned short target, unsigned short ftype, const char *off
     return 1;
 }
 
-int cli_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned short otfrec, unsigned short ftype, struct cli_matched_type **ftoffset)
+int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short ftype, struct cli_matched_type **ftoffset)
 {
  	char *buffer, *buff, *endbl, *pt;
 	int bytes, buffsize, length, ret, *gpartcnt, *tpartcnt;
 	int type = CL_CLEAN, i, tid = 0;
 	unsigned int maxpatlen;
 	unsigned long int *gpartoff, *tpartoff, offset = 0;
-	MD5_CTX ctx;
+	MD5_CTX md5ctx;
 	unsigned char digest[16];
 	struct cli_md5_node *md5_node;
 	struct cli_matcher *groot, *troot = NULL;
 
 
-    if(!engine) {
+    if(!ctx->engine) {
 	cli_errmsg("cli_scandesc: engine == NULL\n");
 	return CL_ENULLARG;
     }
 
-    groot = engine->root[0]; /* generic signatures */
+    groot = ctx->engine->root[0]; /* generic signatures */
 
     if(ftype) {
 	for(i = 0; i < CL_TARGET_TABLE_SIZE; i++) {
@@ -302,7 +302,7 @@ int cli_scandesc(int desc, const char **virname, unsigned long int *scanned, con
 	    }
 	}
 	if(tid)
-	    troot = engine->root[tid];
+	    troot = ctx->engine->root[tid];
     }
 
     if(troot)
@@ -350,8 +350,8 @@ int cli_scandesc(int desc, const char **virname, unsigned long int *scanned, con
 	}
     }
 
-    if(engine->md5_hlist)
-	MD5_Init(&ctx);
+    if(ctx->engine->md5_hlist)
+	MD5_Init(&md5ctx);
 
 
     buff = buffer;
@@ -364,15 +364,15 @@ int cli_scandesc(int desc, const char **virname, unsigned long int *scanned, con
     length = SCANBUFF;
     while((bytes = cli_readn(desc, buff, SCANBUFF)) > 0) {
 
-	if(scanned)
-	    *scanned += bytes / CL_COUNT_PRECISION;
+	if(ctx->scanned)
+	    *ctx->scanned += bytes / CL_COUNT_PRECISION;
 
 	if(bytes < SCANBUFF)
 	    length -= SCANBUFF - bytes;
 
 	if(troot) {
-	    if(troot->ac_only || (ret = cli_bm_scanbuff(pt, length, virname, troot, offset, ftype, desc)) != CL_VIRUS)
-		ret = cli_ac_scanbuff(pt, length, virname, troot, tpartcnt, otfrec, offset, tpartoff, ftype, desc, ftoffset);
+	    if(troot->ac_only || (ret = cli_bm_scanbuff(pt, length, ctx->virname, troot, offset, ftype, desc)) != CL_VIRUS)
+		ret = cli_ac_scanbuff(pt, length, ctx->virname, troot, tpartcnt, otfrec, offset, tpartoff, ftype, desc, ftoffset);
 
 	    if(ret == CL_VIRUS) {
 		free(buffer);
@@ -382,15 +382,15 @@ int cli_scandesc(int desc, const char **virname, unsigned long int *scanned, con
 		free(tpartoff);
 
 		lseek(desc, 0, SEEK_SET);
-		if(cli_checkfp(desc, engine))
+		if(cli_checkfp(desc, ctx->engine))
 		    return CL_CLEAN;
 		else
 		    return CL_VIRUS;
 	    }
 	}
 
-	if(groot->ac_only || (ret = cli_bm_scanbuff(pt, length, virname, groot, offset, ftype, desc)) != CL_VIRUS)
-	    ret = cli_ac_scanbuff(pt, length, virname, groot, gpartcnt, otfrec, offset, gpartoff, ftype, desc, ftoffset);
+	if(groot->ac_only || (ret = cli_bm_scanbuff(pt, length, ctx->virname, groot, offset, ftype, desc)) != CL_VIRUS)
+	    ret = cli_ac_scanbuff(pt, length, ctx->virname, groot, gpartcnt, otfrec, offset, gpartoff, ftype, desc, ftoffset);
 
 	if(ret == CL_VIRUS) {
 	    free(buffer);
@@ -401,7 +401,7 @@ int cli_scandesc(int desc, const char **virname, unsigned long int *scanned, con
 		free(tpartoff);
 	    }
 	    lseek(desc, 0, SEEK_SET);
-	    if(cli_checkfp(desc, engine))
+	    if(cli_checkfp(desc, ctx->engine))
 		return CL_CLEAN;
 	    else
 		return CL_VIRUS;
@@ -423,8 +423,8 @@ int cli_scandesc(int desc, const char **virname, unsigned long int *scanned, con
 	    }
 	}
 
-	if(engine->md5_hlist)
-	    MD5_Update(&ctx, buff, bytes);
+	if(ctx->engine->md5_hlist)
+	    MD5_Update(&md5ctx, buff, bytes);
     }
 
     free(buffer);
@@ -435,8 +435,8 @@ int cli_scandesc(int desc, const char **virname, unsigned long int *scanned, con
 	free(tpartoff);
     }
 
-    if(engine->md5_hlist) {
-	MD5_Final(digest, &ctx);
+    if(ctx->engine->md5_hlist) {
+	MD5_Final(digest, &md5ctx);
 
 	if(cli_debug_flag) {
 		char md5str[33];
@@ -450,7 +450,7 @@ int cli_scandesc(int desc, const char **virname, unsigned long int *scanned, con
 	    md5str[32] = 0;
 	}
 
-	if((md5_node = cli_vermd5(digest, engine)) && !md5_node->fp) {
+	if((md5_node = cli_vermd5(digest, ctx->engine)) && !md5_node->fp) {
 		struct stat sb;
 
 	    if(fstat(desc, &sb))
@@ -459,8 +459,8 @@ int cli_scandesc(int desc, const char **virname, unsigned long int *scanned, con
 	    if((unsigned int) sb.st_size != md5_node->size) {
 		cli_warnmsg("Detected false positive MD5 match. Please report.\n");
 	    } else {
-		if(virname)
-		    *virname = md5_node->virname;
+		if(ctx->virname)
+		    *ctx->virname = md5_node->virname;
 
 		return CL_VIRUS;
 	    }

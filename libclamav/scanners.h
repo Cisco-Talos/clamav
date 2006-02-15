@@ -20,9 +20,10 @@
 #define __SCANNERS_H
 
 #include "clamav.h"
+#include "others.h"
 
-int cli_magic_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec);
+int cli_magic_scandesc(int desc, cli_ctx *ctx);
 
-int cli_scandir(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec);
+int cli_scandir(const char *dirname, cli_ctx *ctx);
 
 #endif

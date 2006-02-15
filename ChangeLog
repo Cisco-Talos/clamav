@@ -1,3 +1,9 @@
+Wed Feb 15 01:39:12 CET 2006 (tk)
+---------------------------------
+  * libclamav: simplify internal function declarations by passing a context
+	       structure. Patch by Andrey J. Melnikoff (TEMHOTA)
+	       <temnota*kmv.ru>
+
 Thu Feb  9 21:42:22 GMT 2006 (njh)
 ----------------------------------
   * clamav-milter:	Improved handling of messages with no body

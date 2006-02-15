@@ -21,10 +21,11 @@
 
 #include "clamav.h"
 #include "filetypes.h"
+#include "others.h"
 
 #define CL_TARGET_TABLE_SIZE 7
 
-int cli_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned short otfrec, unsigned short ftype, struct cli_matched_type **ftoffset);
+int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short ftype, struct cli_matched_type **ftoffset);
 
 int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_engine *engine, unsigned short ftype);
 
