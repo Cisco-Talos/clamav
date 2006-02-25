@@ -22,7 +22,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.233 2006/02/09 21:44:17 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.234 2006/02/25 11:11:32 nigelhorne Exp $";
 
 #define	CM_VERSION	"devel-090206"
 
@@ -2946,7 +2946,11 @@ clamfi_eom(SMFICTX *ctx)
 
 			for(to = privdata->to; *to; to++) {
 				/*
-				 * Re-alloc if we are about run out of buffer space
+				 * Re-alloc if we are about run out of buffer
+				 * space
+				 *
+				 * TODO: Only append *to if it's a valid, local
+				 *	email address
 				 */
 				if(&ptr[strlen(*to) + 2] >= &err[i]) {
 					i += 1024;
@@ -3115,7 +3119,7 @@ clamfi_eom(SMFICTX *ctx)
 				cli_dbgmsg("Waiting for %s to finish\n", cmd);
 				if(pclose(sendmail) != 0)
 					if(use_syslog)
-						syslog(LOG_ERR, "%s: Failed to notify clamAV interception - see dead.letter", sendmailId);
+						syslog(LOG_ERR, _("%s: Failed to notify clamAV interception - see dead.letter"), sendmailId);
 			} else if(use_syslog)
 				syslog(LOG_WARNING, _("Can't execute '%s' to send virus notice"), cmd);
 		}
