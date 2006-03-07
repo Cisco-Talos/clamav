@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.39 2006/01/05 11:16:27 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.40 2006/03/07 21:49:03 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -403,6 +403,9 @@ flatedecode(const unsigned char *buf, size_t len, int fout)
 		}
 		break;
 	}
+
+	cli_dbgmsg("cli_pdf: flatedecode in=%lu out=%lu\n",
+		stream.total_in, stream.total_out);
 
 	if(stream.avail_out != sizeof(output))
 		cli_writen(fout, output, sizeof(output) - stream.avail_out);
