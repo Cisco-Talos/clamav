@@ -28,14 +28,14 @@
 
 struct zzip_version 
 { 
-    char   version[1]; 
-    char   ostype[1]; 
+    unsigned char   version[1]; 
+    unsigned char   ostype[1]; 
 } __attribute__((packed));
 
 struct zzip_dostime 
 { 
-    char   time[2]; 
-    char   date[2]; 
+    unsigned char   time[2]; 
+    unsigned char   date[2]; 
 } __attribute__((packed)); 
 
 #define ZZIP_CHECKMAGIC(__p,__A,__B,__C,__D) \
@@ -49,16 +49,16 @@ struct zzip_file_header
 {
 #   define ZZIP_FILE_HEADER_MAGIC 0x04034b50
 #   define ZZIP_FILE_HEADER_CHECKMAGIC(__p) ZZIP_CHECKMAGIC(__p,'P','K','\3','\4')
-    char   z_magic[4]; /* local file header signature (0x04034b50) */
+    unsigned char   z_magic[4]; /* local file header signature (0x04034b50) */
     struct zzip_version z_extract; /* version needed to extract */
-    char   z_flags[2]; /* general purpose bit flag */
-    char   z_compr[2]; /* compression method */
+    unsigned char   z_flags[2]; /* general purpose bit flag */
+    unsigned char   z_compr[2]; /* compression method */
     struct zzip_dostime z_dostime; /* last mod file time (dos format) */
-    char   z_crc32[4]; /* crc-32 */
-    char   z_csize[4]; /* compressed size */
-    char   z_usize[4]; /* uncompressed size */
-    char   z_namlen[2]; /* filename length (null if stdin) */
-    char   z_extras[2]; /* extra field length */
+    unsigned char   z_crc32[4]; /* crc-32 */
+    unsigned char   z_csize[4]; /* compressed size */
+    unsigned char   z_usize[4]; /* uncompressed size */
+    unsigned char   z_namlen[2]; /* filename length (null if stdin) */
+    unsigned char   z_extras[2]; /* extra field length */
     /* followed by filename (of variable size) */
     /* followed by extra field (of variable size) */
 } __attribute__((packed));
@@ -90,22 +90,22 @@ struct zzip_root_dirent
 {
 #   define ZZIP_ROOT_DIRENT_MAGIC 0x02014b50
 #   define ZZIP_ROOT_DIRENT_CHECKMAGIC(__p) ZZIP_CHECKMAGIC(__p,'P','K','\1','\2')
-    char  z_magic[4];  /* central file header signature (0x02014b50) */
+    unsigned char  z_magic[4];  /* central file header signature (0x02014b50) */
     struct zzip_version z_encoder;  /* version made by */
     struct zzip_version z_extract;  /* version need to extract */
-    char  z_flags[2];  /* general purpose bit flag */
-    char  z_compr[2];  /* compression method */
+    unsigned char  z_flags[2];  /* general purpose bit flag */
+    unsigned char  z_compr[2];  /* compression method */
     struct zzip_dostime z_dostime;  /* last mod file time&date (dos format) */
-    char  z_crc32[4];  /* crc-32 */
-    char  z_csize[4];  /* compressed size */
-    char  z_usize[4];  /* uncompressed size */
-    char  z_namlen[2]; /* filename length (null if stdin) */
-    char  z_extras[2];  /* extra field length */
-    char  z_comment[2]; /* file comment length */
-    char  z_diskstart[2]; /* disk number of start (if spanning zip over multiple disks) */
-    char  z_filetype[2];  /* internal file attributes, bit0 = ascii */
-    char  z_filemode[4];  /* extrnal file attributes, eg. msdos attrib byte */
-    char  z_off[4];    /* relative offset of local file header, seekval if singledisk */
+    unsigned char  z_crc32[4];  /* crc-32 */
+    unsigned char  z_csize[4];  /* compressed size */
+    unsigned char  z_usize[4];  /* uncompressed size */
+    unsigned char  z_namlen[2]; /* filename length (null if stdin) */
+    unsigned char  z_extras[2];  /* extra field length */
+    unsigned char  z_comment[2]; /* file comment length */
+    unsigned char  z_diskstart[2]; /* disk number of start (if spanning zip over multiple disks) */
+    unsigned char  z_filetype[2];  /* internal file attributes, bit0 = ascii */
+    unsigned char  z_filemode[4];  /* extrnal file attributes, eg. msdos attrib byte */
+    unsigned char  z_off[4];    /* relative offset of local file header, seekval if singledisk */
     /* followed by filename (of variable size) */
     /* followed by extra field (of variable size) */
     /* followed by file comment (of variable size) */
@@ -116,15 +116,15 @@ struct zzip_disk_trailer
 {
 #   define ZZIP_DISK_TRAILER_MAGIC 0x06054b50
 #   define ZZIP_DISK_TRAILER_CHECKMAGIC(__p) ZZIP_CHECKMAGIC(__p,'P','K','\5','\6')
-    char  z_magic[4]; /* end of central dir signature (0x06054b50) */
-    char  z_disk[2];  /* number of this disk */
-    char  z_finaldisk[2]; /* number of the disk with the start of the central dir */
-    char  z_entries[2]; /* total number of entries in the central dir on this disk */
-    char  z_finalentries[2]; /* total number of entries in the central dir */
-    char  z_rootsize[4]; /* size of the central directory */
-    char  z_rootseek[4]; /* offset of start of central directory with respect to *
+    unsigned char  z_magic[4]; /* end of central dir signature (0x06054b50) */
+    unsigned char  z_disk[2];  /* number of this disk */
+    unsigned char  z_finaldisk[2]; /* number of the disk with the start of the central dir */
+    unsigned char  z_entries[2]; /* total number of entries in the central dir on this disk */
+    unsigned char  z_finalentries[2]; /* total number of entries in the central dir */
+    unsigned char  z_rootsize[4]; /* size of the central directory */
+    unsigned char  z_rootseek[4]; /* offset of start of central directory with respect to *
                           * the starting disk number */
-    char  z_comment[2];  /* zipfile comment length */
+    unsigned char  z_comment[2];  /* zipfile comment length */
     /* followed by zipfile comment (of variable size) */
 } __attribute__((packed));
 

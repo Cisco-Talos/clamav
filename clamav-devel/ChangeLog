@@ -1,3 +1,7 @@
+Tue Mar  7 11:04:37 CET 2006 (tk)
+---------------------------------
+  * libclamav/zziplib: fix compiler warnings (patch by Stephen Gran)
+
 Wed Feb 15 01:39:12 CET 2006 (tk)
 ---------------------------------
   * libclamav: simplify internal function declarations by passing a context
