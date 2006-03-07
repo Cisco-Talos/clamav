@@ -61,11 +61,9 @@ static const struct zzip_plugin_io default_io =
 {
     &open,
     &close,
-    /* (int (*)(int, void*, unsigned)) */
-    &zzip_wrap_read,
-    /* (zzip_off_t (*)(int, zzip_off_t, int)) */
-    &zzip_wrap_lseek,
-    &zzip_filesize,
+    (int (*)(int, void*, unsigned)) &zzip_wrap_read,
+    (zzip_off_t (*)(int, zzip_off_t, int)) &zzip_wrap_lseek,
+    (zzip_off_t (*)(int)) &zzip_filesize,
     1
 };
 
