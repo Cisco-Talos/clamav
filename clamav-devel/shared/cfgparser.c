@@ -36,7 +36,7 @@ static int regcfg(struct cfgstruct **copt, char *optname, char *strarg, int numa
 
 struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 {
-	char buff[LINE_LENGTH], *name, *arg;
+	char buff[LINE_LENGTH], *name, *arg, *c;
 	FILE *fs;
 	int line = 0, i, found, ctype, calc, val;
 	struct cfgstruct *copt = NULL;
@@ -188,6 +188,8 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 				free(arg);
 				arg = strstr(buff, " ");
 				arg = strdup(++arg);
+				if((c = strpbrk(arg, "\n\r")))
+				    *c = '\0';
 				if(regcfg(&copt, name, arg, -1, pt->multiple) < 0) {
 				    fprintf(stderr, "ERROR: Can't register new options (not enough memory)\n");
 				    fclose(fs);
