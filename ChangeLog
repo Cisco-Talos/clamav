@@ -1,3 +1,7 @@
+Tue Mar  7 19:56:58 CET 2006 (tk)
+---------------------------------
+  * shared/cfgparser.c: strip newlines from FULLSTR args
+
 Tue Mar  7 11:04:37 CET 2006 (tk)
 ---------------------------------
   * libclamav/zziplib: fix compiler warnings (patch by Stephen Gran)
