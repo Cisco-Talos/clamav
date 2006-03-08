@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.41 2006/03/08 15:37:52 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.42 2006/03/08 16:04:22 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -56,7 +56,7 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.41 2006/03/08 15:37:52 nigelhorne Ex
 #define	MIN(a, b)	(((a) < (b)) ? (a) : (b))
 #endif
 
-static	int	flatedecode(const unsigned char *buf, size_t len, int fout);
+static	int	flatedecode(const unsigned char *buf, size_t len, int fout, const cli_ctx *ctx);
 static	int	ascii85decode(const char *buf, size_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
@@ -331,7 +331,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 				 * ascii85encoded and flateencoded
 				 */
 				if(is_flatedecode) {
-					const int zstat = flatedecode((unsigned char *)tmpbuf, streamlen, fout);
+					const int zstat = flatedecode((unsigned char *)tmpbuf, streamlen, fout, ctx);
 
 					if(zstat != Z_OK)
 						rc = CL_EZIP;
@@ -340,7 +340,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 			}
 			free(tmpbuf);
 		} else if(is_flatedecode) {
-			const int zstat = flatedecode((unsigned char *)streamstart, streamlen, fout);
+			const int zstat = flatedecode((unsigned char *)streamstart, streamlen, fout, ctx);
 
 			if(zstat != Z_OK)
 				rc = CL_EZIP;
@@ -349,7 +349,6 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 
 		close(fout);
 		cli_dbgmsg("cli_pdf: extracted to %s\n", fullname);
-
 	}
 
 	munmap(buf, size);
@@ -360,9 +359,10 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 
 /* flate inflation - returns zlib status, e.g. Z_OK */
 static int
-flatedecode(const unsigned char *buf, size_t len, int fout)
+flatedecode(const unsigned char *buf, size_t len, int fout, const cli_ctx *ctx)
 {
 	int zstat;
+	off_t nbytes;
 	z_stream stream;
 	unsigned char output[BUFSIZ];
 
@@ -381,12 +381,23 @@ flatedecode(const unsigned char *buf, size_t len, int fout)
 		cli_warnmsg("cli_pdf: inflateInit failed");
 		return zstat;
 	}
+	nbytes = 0;
 	for(;;) {
 		zstat = inflate(&stream, Z_NO_FLUSH);
 		switch(zstat) {
 			case Z_OK:
 				if(stream.avail_out == 0) {
-					cli_writen(fout, output, sizeof(output));
+					nbytes += cli_writen(fout, output, sizeof(output));
+					if(ctx->limits &&
+					   ctx->limits->maxfilesize &&
+					   (nbytes > (off_t) ctx->limits->maxfilesize)) {
+						cli_dbgmsg("cli_pdf: flatedecode size exceeded (%lu)\n", nbytes);
+						inflateEnd(&stream);
+#ifdef	notdef
+						*ctx->virname = "PDF.ExceededFileSize";
+#endif
+						return Z_DATA_ERROR;
+					}
 					stream.next_out = output;
 					stream.avail_out = sizeof(output);
 				}
@@ -404,9 +415,21 @@ flatedecode(const unsigned char *buf, size_t len, int fout)
 		break;
 	}
 
-	cli_dbgmsg("cli_pdf: flatedecode in=%lu out=%lu\n",
-		stream.total_in, stream.total_out);
+	cli_dbgmsg("cli_pdf: flatedecode in=%lu out=%lu ratio %ld (max %d)\n",
+		stream.total_in, stream.total_out,
+		stream.total_out / stream.total_in,
+		ctx->limits ? ctx->limits->maxratio : 0);
 
+	if(ctx->limits &&
+	   ctx->limits->maxratio &&
+	   ((stream.total_out / stream.total_in) > ctx->limits->maxratio)) {
+		cli_dbgmsg("cli_pdf: flatedecode Max ratio reached\n");
+		inflateEnd(&stream);
+#ifdef	notdef
+		*ctx->virname = "Oversized.PDF";
+#endif
+		return Z_DATA_ERROR;
+	}
 	if(stream.avail_out != sizeof(output))
 		cli_writen(fout, output, sizeof(output) - stream.avail_out);
 
