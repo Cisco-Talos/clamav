@@ -1,3 +1,9 @@
+Wed Mar  8 16:05:44 GMT 2006 (njh)
+----------------------------------
+  * libclamav/pdf.c:	Fix potential DoS discovered in Vector Data Adobe
+				Photoshop 7.0 files by Andy Fiddaman
+				<clam*fiddaman.net>
+
 Wed Mar  8 14:25:14 CET 2006 (tk)
 ---------------------------------
   * freshclam/manager.c: if possible, use percent idicator instead of rotor
