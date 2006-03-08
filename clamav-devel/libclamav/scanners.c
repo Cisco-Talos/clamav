@@ -64,6 +64,7 @@ extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME *
 #include "special.h"
 #include "binhex.h"
 #include "sis.h"
+#include "pdf.h"
 
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>
@@ -1392,7 +1393,7 @@ static int cli_scanpdf(int desc, cli_ctx *ctx)
 	return CL_ETMPDIR;
     }
 
-    ret = cli_pdf(dir, desc);
+    ret = cli_pdf(dir, desc, ctx);
 
     if(ret == CL_CLEAN)
 	ret = cli_scandir(dir, ctx);

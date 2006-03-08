@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.40 2006/03/07 21:49:03 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.41 2006/03/08 15:37:52 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -66,7 +66,7 @@ static	const	char	*cli_pmemstr(const char *haystack, size_t hs, const char *need
  * TODO: handle embedded URLs if (options&CL_SCAN_MAILURL)
  */
 int
-cli_pdf(const char *dir, int desc)
+cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 {
 	struct stat statb;
 	off_t size;	/* total number of bytes in the file */
@@ -409,6 +409,7 @@ flatedecode(const unsigned char *buf, size_t len, int fout)
 
 	if(stream.avail_out != sizeof(output))
 		cli_writen(fout, output, sizeof(output) - stream.avail_out);
+
 	return inflateEnd(&stream);
 }
 
