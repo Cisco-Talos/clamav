@@ -19,6 +19,6 @@
 #ifndef __PDF_H
 #define __PDF_H
 
-int cli_pdf(const char *dir, int desc);
+int cli_pdf(const char *dir, int desc, const cli_ctx *ctx);
 
 #endif
