@@ -1,3 +1,8 @@
+Wed Mar  8 14:25:14 CET 2006 (tk)
+---------------------------------
+  * freshclam/manager.c: if possible, use percent idicator instead of rotor
+			 Patch by Robert Hogan <robert*roberthogan.net>
+
 Tue Mar  7 19:56:58 CET 2006 (tk)
 ---------------------------------
   * shared/cfgparser.c: strip newlines from FULLSTR args

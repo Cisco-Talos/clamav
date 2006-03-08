@@ -728,9 +728,9 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
 int get_database(const char *dbfile, int socketfd, const char *file, const char *hostname, const char *proxy, const char *user, const char *pass, const char *uas)
 {
 	char cmd[512], buffer[FILEBUFF], *ch;
-	int bread, fd, i, rot = 0;
+	int bread, fd, i, totalsize = 0,  rot = 0, totaldownloaded = 0, percentage;
 	char *remotename = NULL, *authorization = NULL;
-	const char *rotation = "|/-\\", *agent;
+	const char *rotation = "|/-\\", *agent, *headerline;
 
 
     if(proxy) {
@@ -815,26 +815,43 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
 
     /* check whether the resource actually existed or not */
 
-    if ((strstr(buffer, "HTTP/1.1 404")) != NULL) { 
+    if(strstr(buffer, "HTTP/1.1 404")) { 
       logg("^%s not found on remote server\n", dbfile);
       close(fd);
       unlink(file);
       return 58;
     }
 
+    /* get size of resource */
+    for(i = 0; (headerline = cli_strtok(buffer, i, "\n")); i++){
+        if(strstr(headerline, "Content-Length:")) { 
+            totalsize = atoi(cli_strtok(headerline, 1, ": "));
+        }
+    }
+
     /* receive body and write it to disk */
 
     while((bread = read(socketfd, buffer, FILEBUFF))) {
-	write(fd, buffer, bread);
-	if(!mprintf_quiet) {
-	    mprintf("Downloading %s [%c]\r", dbfile, rotation[rot]);
-	    fflush(stdout);
-	    rot++;
-	    rot %= 4;
-	}
+        write(fd, buffer, bread);
+        if(!mprintf_quiet) {
+            if(totalsize > 0) {
+                totaldownloaded = totaldownloaded + bread;
+                percentage = (int)(100 * (float)totaldownloaded/totalsize);
+                mprintf("Downloading %s [%i%]\r", dbfile, percentage);
+            } else {
+                mprintf("Downloading %s [%c]\r", dbfile, rotation[rot]);
+                rot++;
+                rot %= 4;
+            }
+            fflush(stdout);
+        }
     }
 
-    logg("Downloading %s [*]\n", dbfile);
+    if(totalsize > 0)
+        logg("Downloading %s [%i%]\n", dbfile, percentage);
+    else
+        logg("Downloading %s [*]\n", dbfile);
+
     close(fd);
     return 0;
 }
