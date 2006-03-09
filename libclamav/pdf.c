@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.42 2006/03/08 16:04:22 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.43 2006/03/09 10:35:42 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -381,13 +381,17 @@ flatedecode(const unsigned char *buf, size_t len, int fout, const cli_ctx *ctx)
 		cli_warnmsg("cli_pdf: inflateInit failed");
 		return zstat;
 	}
+
 	nbytes = 0;
+
 	for(;;) {
 		zstat = inflate(&stream, Z_NO_FLUSH);
 		switch(zstat) {
 			case Z_OK:
 				if(stream.avail_out == 0) {
+
 					nbytes += cli_writen(fout, output, sizeof(output));
+
 					if(ctx->limits &&
 					   ctx->limits->maxfilesize &&
 					   (nbytes > (off_t) ctx->limits->maxfilesize)) {
@@ -415,6 +419,9 @@ flatedecode(const unsigned char *buf, size_t len, int fout, const cli_ctx *ctx)
 		break;
 	}
 
+	if(stream.avail_out != sizeof(output))
+		(void)cli_writen(fout, output, sizeof(output) - stream.avail_out);
+
 	cli_dbgmsg("cli_pdf: flatedecode in=%lu out=%lu ratio %ld (max %d)\n",
 		stream.total_in, stream.total_out,
 		stream.total_out / stream.total_in,
@@ -430,8 +437,6 @@ flatedecode(const unsigned char *buf, size_t len, int fout, const cli_ctx *ctx)
 #endif
 		return Z_DATA_ERROR;
 	}
-	if(stream.avail_out != sizeof(output))
-		cli_writen(fout, output, sizeof(output) - stream.avail_out);
 
 	return inflateEnd(&stream);
 }
