@@ -1,3 +1,7 @@
+Fri Mar 10 16:08:25 CET 2006 (tk)
+---------------------------------
+  * libclamav/matcher.c: properly handle partial reads in cli_scandesc()
+
 Wed Mar  8 16:05:44 GMT 2006 (njh)
 ----------------------------------
   * libclamav/pdf.c:	Fix potential DoS discovered in Vector Data Adobe
