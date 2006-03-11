@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.43 2006/03/09 10:35:42 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.44 2006/03/11 15:24:57 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -186,15 +186,18 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 			break;
 		if(memcmp(q, "xref", 4) == 0)
 			break;
+
+		/*object_number = atoi(q);*/
+		bytesleft -= (q - p);
+		p = q;
+
+		if(memcmp(q, "endobj", 6) == 0)
+			continue;
 		if(!isdigit(*q)) {
 			cli_warnmsg("cli_pdf: Object number missing\n");
 			rc = CL_EFORMAT;
 			break;
 		}
-		/*object_number = atoi(q);*/
-		bytesleft -= (q - p);
-		p = q;
-
 		q = pdf_nextobject(p, bytesleft);
 		if((q == NULL) || !isdigit(*q)) {
 			cli_warnmsg("cli_pdf: Generation number missing\n");
