@@ -1,3 +1,9 @@
+Sat Mar 11 15:54:42 GMT 2006 (njh)
+----------------------------------
+  * libclamav/pdf.c:	Handle files with consecutive 'endobj' statements,
+				reported by by Andy Fiddaman <clam*fiddaman.net>
+			Only scan files embedded more than once one time.
+
 Sat Mar 11 15:23:20 CET 2006 (tk)
 ---------------------------------
   * libclamav/sis.c: improve support for multi-language files
