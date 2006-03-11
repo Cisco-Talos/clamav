@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.44 2006/03/11 15:24:57 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.45 2006/03/11 15:54:09 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -51,6 +51,7 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.44 2006/03/11 15:24:57 nigelhorne Ex
 #include "mbox.h"
 #include "blob.h"
 #include "pdf.h"
+#include "md5.h"
 
 #ifndef	MIN
 #define	MIN(a, b)	(((a) < (b)) ? (a) : (b))
@@ -76,6 +77,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	const char *xrefstart;	/* cross reference table */
 	/*size_t xreflength;*/
 	int rc = CL_CLEAN;
+	struct table *md5table;
 
 	cli_dbgmsg("in cli_pdf()\n");
 
@@ -166,6 +168,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		return CL_EFORMAT;
 	}
 
+	md5table = tableCreate();
 	/*
 	 * not true, since edits may put data after the trailer
 	xreflength = (size_t)(trailerstart - xrefstart);
@@ -179,6 +182,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		int is_ascii85decode, is_flatedecode, fout, len;
 		/*int object_number, generation_number;*/
 		const char *objstart, *objend, *streamstart, *streamend;
+		char *md5digest;
 		size_t length, objlen, streamlen;
 		char fullname[NAME_MAX + 1];
   
@@ -351,10 +355,19 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 			cli_writen(fout, (char *)streamstart, streamlen);
 
 		close(fout);
+		md5digest = cli_md5file(fullname);
+		if(tableFind(md5table, md5digest) >= 0) {
+			cli_dbgmsg("cli_pdf: not scanning duplicate embedded file '%s'\n", fullname);
+			unlink(fullname);
+		} else
+			tableInsert(md5table, md5digest, 1);
+		free(md5digest);
 		cli_dbgmsg("cli_pdf: extracted to %s\n", fullname);
 	}
 
 	munmap(buf, size);
+
+	tableDestroy(md5table);
 
 	cli_dbgmsg("cli_pdf: returning %d\n", rc);
 	return rc;
