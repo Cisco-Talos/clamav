@@ -24,7 +24,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.29 2005/12/16 15:47:55 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.30 2006/03/11 17:09:22 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -268,7 +268,8 @@ tnef_message(FILE *fp, uint16_t type, uint16_t tag, int32_t length)
 
 	/*cli_dbgmsg("%lu %lu\n", (long)(offset + length), ftell(fp));*/
 
-	fseek(fp, offset + length, SEEK_SET);
+	if(fseek(fp, offset + length, SEEK_SET) < 0)
+		return -1;
 
 	/* Checksum - TODO, verify */
 	if(fread(&i16, sizeof(uint16_t), 1, fp) != 1)
@@ -343,7 +344,8 @@ tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, int32_t length, const cha
 
 	/*cli_dbgmsg("%lu %lu\n", (long)(offset + length), ftell(fp));*/
 
-	fseek(fp, (long)(offset + length), SEEK_SET);	/* shouldn't be needed */
+	if(fseek(fp, (long)(offset + length), SEEK_SET) < 0)	/* shouldn't be needed */
+		return -1;
 
 	/* Checksum - TODO, verify */
 	if(fread(&i16, sizeof(uint16_t), 1, fp) != 1) 
