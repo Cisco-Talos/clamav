@@ -32,6 +32,8 @@
 #include <time.h>
 #include <zlib.h>
 
+#include "others.h"
+
 #if HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #else /* HAVE_SYS_MMAN_H */
@@ -40,7 +42,6 @@
 
 #include "cltypes.h"
 #include "clamav.h"
-#include "others.h"
 #include "sis.h"
 
 #if WORDS_BIGENDIAN == 0
@@ -160,11 +161,9 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 	case 0x04:
 	    cli_dbgmsg("SIS: File type: Null file\n");
 	    return CL_CLEAN;
-	    break;
 	case 0x05:
 	    cli_dbgmsg("SIS: File type: MIME file\n");
 	    return CL_CLEAN;
-	    break;
 	default:
 	    cli_warnmsg("SIS: Unknown file type in file record\n");
     }
@@ -233,7 +232,7 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 
     for(i = 0; i < nlangs; i++) {
 	filelen = cli_readint32(mfile + offset + 24 + 4 * i);
-	fileoff = cli_readint32(mfile + offset + 24 + 4 * (i + 1));
+	fileoff = cli_readint32(mfile + offset + 24 + 4 * i + 4 * nlangs);
 
 	if(filelen >= length || fileoff >= length || filelen + fileoff > length) {
 	    cli_errmsg("SIS: sis_extract_simple: Broken file data (filelen, fileoff)\n");
@@ -388,8 +387,12 @@ int cli_scansis(int desc, cli_ctx *ctx)
 	    cli_dbgmsg("SIS: EPOC release 6\n");
 	    release = 6;
 	    break;
+	case 0x100039ce:
+	case 0x10003a38:
+	    cli_dbgmsg("SIS: Application(???)\n");
+	    return CL_CLEAN;
 	default:
-	    cli_warnmsg("SIS: Unknown value of UID 2 (EPOC release) -> not a real SIS file??\n");
+	    cli_warnmsg("SIS: Unknown value of UID 2 (EPOC release == 0x%x) -> not a real SIS file??\n", EC32(file_hdr.uid2));
 	    munmap(mfile, length);
 	    return CL_CLEAN;
     }
@@ -546,7 +549,7 @@ int cli_scansis(int desc, cli_ctx *ctx)
 	switch(cli_readint32(mfile + frecord)) {
 	    case 0x00000000:
 		cli_dbgmsg("SIS: Simple file record\n");
-		if((ret = sis_extract_simple(desc, mfile, sb.st_size, frecord + 4, nlangs, compressed, dir, ctx))) {
+		if((ret = sis_extract_simple(desc, mfile, sb.st_size, frecord + 4, 1, compressed, dir, ctx))) {
 		    munmap(mfile, length);
 		    if(!cli_leavetemps_flag)
 			cli_rmdirs(dir);
@@ -555,9 +558,9 @@ int cli_scansis(int desc, cli_ctx *ctx)
 		}
 
 		if(release == 6)
-		    frecord += 32 + 12 * nlangs + 4;
+		    frecord += 32 + 12 + 4;
 		else
-		    frecord += 28 + 4 * nlangs + 4;
+		    frecord += 28 + 4 + 4;
 
 		break;
 	    case 0x00000001:
