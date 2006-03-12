@@ -23,6 +23,15 @@
 #include <stdlib.h>
 #include "cltypes.h"
 
+/*
+ * CLI_ISCONTAINED(buf1, size1, buf2, size2) checks if buf2 is contained
+ * within buf1.
+ *
+ * buf1 and buf2 are pointers (or offsets) for the main buffer and the
+ * sub-buffer respectively, and size1/2 are their sizes
+ *
+ * The macro can be used to protect against wraps.
+ */
 #define CLI_ISCONTAINED(bb, bb_size, sb, sb_size)	\
     (bb_size > 0 && sb_size > 0 && sb_size <= bb_size	\
      && sb >= bb && sb + sb_size <= bb + bb_size && sb + sb_size > bb)
