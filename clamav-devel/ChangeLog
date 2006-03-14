@@ -1,3 +1,8 @@
+Tue Mar 14 11:40:49 GMT 2006 (njh)
+----------------------------------
+  * libclamav/tnef.c:	Check fseeks will work before calling fseek
+				(requirement by TK)
+
 Sat Mar 11 15:54:42 GMT 2006 (njh)
 ----------------------------------
   * libclamav/pdf.c:	Handle files with consecutive 'endobj' statements,
