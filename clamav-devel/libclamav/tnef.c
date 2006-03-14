@@ -24,7 +24,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.30 2006/03/11 17:09:22 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.31 2006/03/14 11:39:43 nigelhorne Exp $";
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -38,8 +38,8 @@ static	char	const	rcsid[] = "$Id: tnef.c,v 1.30 2006/03/11 17:09:22 nigelhorne E
 #endif
 #include "blob.h"
 
-static	int	tnef_message(FILE *fp, uint16_t type, uint16_t tag, int32_t length);
-static	int	tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, int32_t length, const char *dir, fileblob **fbref);
+static	int	tnef_message(FILE *fp, uint16_t type, uint16_t tag, int32_t length, off_t fsize);
+static	int	tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, int32_t length, const char *dir, fileblob **fbref, off_t fsize);
 static	int	tnef_header(FILE *fp, uint8_t *part, uint16_t *type, uint16_t *tag, int32_t *length);
 
 #define	TNEF_SIGNATURE	0x223E9f78
@@ -73,8 +73,16 @@ cli_tnef(const char *dir, int desc)
 	fileblob *fb;
 	int i, ret, alldone;
 	FILE *fp;
+	off_t fsize;
+	struct stat statb;
 
 	lseek(desc, 0L, SEEK_SET);
+
+	if(fstat(desc, &statb) < 0) {
+		cli_errmsg("Can't fstat descriptor %d\n", desc);
+		return CL_EIO;
+	}
+	fsize = statb.st_size;
 
 	i = dup(desc);
 	if((fp = fdopen(i, "rb")) == NULL) {
@@ -138,7 +146,7 @@ cli_tnef(const char *dir, int desc)
 					fb = NULL;
 				}
 				fb = fileblobCreate();
-				if(tnef_message(fp, type, tag, length) != 0) {
+				if(tnef_message(fp, type, tag, length, fsize) != 0) {
 					cli_errmsg("Error reading TNEF message\n");
 					ret = CL_EFORMAT;
 					alldone = 1;
@@ -146,7 +154,7 @@ cli_tnef(const char *dir, int desc)
 				break;
 			case LVL_ATTACHMENT:
 				cli_dbgmsg("TNEF - found attachment\n");
-				if(tnef_attachment(fp, type, tag, length, dir, &fb) != 0) {
+				if(tnef_attachment(fp, type, tag, length, dir, &fb, fsize) != 0) {
 					cli_errmsg("Error reading TNEF message\n");
 					ret = CL_EFORMAT;
 					alldone = 1;
@@ -156,7 +164,7 @@ cli_tnef(const char *dir, int desc)
 				break;
 			default:
 				cli_warnmsg("TNEF - unknown level %d tag 0x%x\n", (int)part, (int)tag);
-				
+
 				/*
 				 * Dump the file incase it was part of an
 				 * email that's about to be deleted
@@ -207,7 +215,7 @@ cli_tnef(const char *dir, int desc)
 }
 
 static int
-tnef_message(FILE *fp, uint16_t type, uint16_t tag, int32_t length)
+tnef_message(FILE *fp, uint16_t type, uint16_t tag, int32_t length, off_t fsize)
 {
 	uint16_t i16;
 	off_t offset;
@@ -268,6 +276,10 @@ tnef_message(FILE *fp, uint16_t type, uint16_t tag, int32_t length)
 
 	/*cli_dbgmsg("%lu %lu\n", (long)(offset + length), ftell(fp));*/
 
+	if(!CLI_ISCONTAINED2(0, fsize, (off_t)offset, (off_t)length)) {
+		cli_errmsg("TNEF: Incorrect length field\n");
+		return -1;
+	}
 	if(fseek(fp, offset + length, SEEK_SET) < 0)
 		return -1;
 
@@ -279,7 +291,7 @@ tnef_message(FILE *fp, uint16_t type, uint16_t tag, int32_t length)
 }
 
 static int
-tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, int32_t length, const char *dir, fileblob **fbref)
+tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, int32_t length, const char *dir, fileblob **fbref, off_t fsize)
 {
 	uint32_t todo;
 	uint16_t i16;
@@ -344,11 +356,15 @@ tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, int32_t length, const cha
 
 	/*cli_dbgmsg("%lu %lu\n", (long)(offset + length), ftell(fp));*/
 
+	if(!CLI_ISCONTAINED2(0, fsize, (off_t)offset, (off_t)length)) {
+		cli_errmsg("TNEF: Incorrect length field\n");
+		return -1;
+	}
 	if(fseek(fp, (long)(offset + length), SEEK_SET) < 0)	/* shouldn't be needed */
 		return -1;
 
 	/* Checksum - TODO, verify */
-	if(fread(&i16, sizeof(uint16_t), 1, fp) != 1) 
+	if(fread(&i16, sizeof(uint16_t), 1, fp) != 1)
 		return -1;
 
 	return 0;
