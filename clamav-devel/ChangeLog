@@ -1,3 +1,8 @@
+Sun Mar 19 21:49:19 CET 2006 (tk)
+---------------------------------
+  * freshclam: fix support for LocalIPAddress (patch by Anton Yuzhaninov
+	       <citrin*citrin.ru>)
+
 Tue Mar 14 11:40:49 GMT 2006 (njh)
 ----------------------------------
   * libclamav/tnef.c:	Check fseeks will work before calling fseek
