@@ -1,3 +1,8 @@
+Mon Mar 20 21:56:38 CET 2006 (acab)
+-----------------------------------
+  * libclamav/fsg.c: fix wrong write size calculation (reported by Andrey J.
+  				Melnikoff (TEMHOTA) <temnota*kmv.ru>)
+
 Sun Mar 19 21:49:19 CET 2006 (tk)
 ---------------------------------
   * freshclam: fix support for LocalIPAddress (patch by Anton Yuzhaninov
