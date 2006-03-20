@@ -265,7 +265,7 @@ int unfsg_133(char *source, char *dest, int ssize, int dsize, struct SECTION *se
   }
 
   if ( (tsrc = rebuildpe(dest, sections, sectcount+1, base, ep, 0, 0)) ) {
-    if (cli_writen(file, tsrc, 0x148+0x80+0x28+dsize)==-1) {
+    if (cli_writen(file, tsrc, 0x148+0x80+0x28*(sectcount+1)+offs)==-1) {
       free(tsrc);
       return 0;
     }
