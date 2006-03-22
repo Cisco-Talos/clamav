@@ -1,3 +1,7 @@
+Wed Mar 22 13:14:52 CET 2006 (tk)
+---------------------------------
+  * docs/man: multiple manpage typo fixes (patch by A. Costa <agcosta*gis.net>)
+
 Mon Mar 20 21:56:38 CET 2006 (acab)
 -----------------------------------
   * libclamav/fsg.c: fix wrong write size calculation (reported by Andrey J.

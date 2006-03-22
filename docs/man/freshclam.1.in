@@ -32,7 +32,7 @@ Write all messages to the standard output (stdout), instead of the standard erro
 Save download report in FILE.
 .TP 
 \fB\-\-datadir=DIRECTORY\fR
-Install new database in DIRECTORY. The directory must be writeable for the 'clamav' user or unprivileged user running freshclam.
+Install new database in DIRECTORY. The directory must be writable for the 'clamav' user or unprivileged user running freshclam.
 .TP 
 \fB\-u USER, \-\-user USER\fR
 Run as USER. By default (when started by root) freshclam drops privileges and works as the 'clamav' user.
