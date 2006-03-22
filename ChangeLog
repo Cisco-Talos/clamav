@@ -1,3 +1,8 @@
+Wed Mar 22 18:44:25 CET 2006 (tk)
+---------------------------------
+  * shared/output.c: properly handle return value of vsnprintf
+		     Thanks to Anton Yuzhaninov <citrin*rambler-co.ru>
+
 Wed Mar 22 13:14:52 CET 2006 (tk)
 ---------------------------------
   * docs/man: multiple manpage typo fixes (patch by A. Costa <agcosta*gis.net>)
