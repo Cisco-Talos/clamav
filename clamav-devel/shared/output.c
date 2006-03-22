@@ -88,8 +88,15 @@ int mdprintf(int desc, const char *str, ...)
 	int bytes;
 
     va_start(args, str);
-    bytes = vsnprintf(buff, 512, str, args);
+    bytes = vsnprintf(buff, sizeof(buff), str, args);
     va_end(args);
+
+    if(bytes == -1)
+	return bytes;
+
+    if(bytes >= sizeof(buff))
+	bytes = sizeof(buff) - 1;
+
     return send(desc, buff, bytes, 0);
 }
 
