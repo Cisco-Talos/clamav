@@ -295,7 +295,7 @@ Scan files on execute.
 Default: disabled
 .TP 
 \fBClamukoIncludePath STRING\fR
-Set the include paths (all files and directories in them will be scanned). You can have multiple ClamukoIncludePath directives but each directory must be added in a seperate line).
+Set the include paths (all files and directories in them will be scanned). You can have multiple ClamukoIncludePath directives but each directory must be added in a separate line).
 .br 
 Default: disabled
 .TP 
