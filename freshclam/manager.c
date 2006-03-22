@@ -843,7 +843,7 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
             if(totalsize > 0) {
                 totaldownloaded = totaldownloaded + bread;
                 percentage = (int)(100 * (float)totaldownloaded/totalsize);
-                mprintf("Downloading %s [%i%]\r", dbfile, percentage);
+                mprintf("Downloading %s [%3i%%]\r", dbfile, percentage);
             } else {
                 mprintf("Downloading %s [%c]\r", dbfile, rotation[rot]);
                 rot++;
