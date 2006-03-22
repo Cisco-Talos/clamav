@@ -1,3 +1,8 @@
+Wed Mar 22 19:04:15 CET 2006 (tk)
+---------------------------------
+  * libclamav/htmlnorm.c: fix typo spotted by Gianluigi Tiesi
+			  <sherpya*netfarm.it>
+
 Wed Mar 22 18:44:25 CET 2006 (tk)
 ---------------------------------
   * shared/output.c: properly handle return value of vsnprintf
