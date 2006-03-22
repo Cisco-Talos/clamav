@@ -1091,7 +1091,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						ptr++;
 					}
 				} else if (*ptr == '\"') {
-					if (!escape && (quoted=DOUBLE_QUOTED)) {
+					if (!escape && (quoted==DOUBLE_QUOTED)) {
 						state = HTML_RFC2397_FINISH;
 						ptr++;
 					} else {
