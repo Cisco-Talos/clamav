@@ -43,7 +43,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 	struct cfgoption *pt;
 
 	struct cfgoption cfg_options[] = {
-	    {"LogFile",	OPT_STR, -1, NULL, 0},
+	    {"LogFile",	OPT_FULLSTR, -1, NULL, 0},
 	    {"LogFileUnlock", OPT_BOOL, 0, NULL, 0},
 	    {"LogFileMaxSize", OPT_COMPSIZE, 1048576, NULL, 0},
 	    {"LogTime", OPT_BOOL, 0, NULL, 0},
@@ -51,8 +51,8 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 	    {"LogVerbose", OPT_BOOL, 0, NULL, 0}, /* clamd + freshclam */
 	    {"LogSyslog", OPT_BOOL, 0, NULL, 0},
 	    {"LogFacility", OPT_STR, -1, "LOG_LOCAL6", 0},
-	    {"PidFile", OPT_STR, -1, NULL, 0},
-	    {"TemporaryDirectory", OPT_STR, -1, NULL, 0},
+	    {"PidFile", OPT_FULLSTR, -1, NULL, 0},
+	    {"TemporaryDirectory", OPT_FULLSTR, -1, NULL, 0},
 	    {"ScanPE", OPT_BOOL, 1, NULL, 0},
 	    {"DetectBrokenExecutables", OPT_BOOL, 0, NULL, 0},
 	    {"ScanMail", OPT_BOOL, 1, NULL, 0},
@@ -69,10 +69,10 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 	    {"ArchiveLimitMemoryUsage", OPT_BOOL, 0, NULL, 0},
 	    {"ArchiveBlockEncrypted", OPT_BOOL, 0, NULL, 0},
 	    {"ArchiveBlockMax", OPT_BOOL, 0, NULL, 0},
-	    {"DatabaseDirectory", OPT_STR, -1, DATADIR, 0}, /* clamd + freshclam */
+	    {"DatabaseDirectory", OPT_FULLSTR, -1, DATADIR, 0}, /* clamd + freshclam */
 	    {"TCPAddr", OPT_STR, -1, NULL, 0},
 	    {"TCPSocket", OPT_NUM, -1, NULL, 0},
-	    {"LocalSocket", OPT_STR, -1, NULL, 0},
+	    {"LocalSocket", OPT_FULLSTR, -1, NULL, 0},
 	    {"MaxConnectionQueueLength", OPT_NUM, 15, NULL, 0},
 	    {"StreamMaxLength", OPT_COMPSIZE, 10485760, NULL, 0},
 	    {"StreamMinPort", OPT_NUM, 1024, NULL, 0},
@@ -102,7 +102,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 	    {"ClamukoScanArchive", OPT_BOOL, 0, NULL, 0},
 	    {"DatabaseOwner", OPT_STR, -1, NULL, 0}, /* freshclam */
 	    {"Checks", OPT_NUM, 12, NULL, 0}, /* freshclam */
-	    {"UpdateLogFile", OPT_STR, -1, NULL, 0}, /* freshclam */
+	    {"UpdateLogFile", OPT_FULLSTR, -1, NULL, 0}, /* freshclam */
 	    {"DNSDatabaseInfo", OPT_STR, -1, "current.cvd.clamav.net", 0}, /* freshclam */
 	    {"DatabaseMirror", OPT_STR, -1, NULL, 1}, /* freshclam */
 	    {"MaxAttempts", OPT_NUM, 3, NULL, 0}, /* freshclam */
