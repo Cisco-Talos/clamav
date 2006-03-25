@@ -318,17 +318,25 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
 				    if(pt->type) {
 					if(otfrec) {
 					    if(pt->type > type || pt->type >= CL_TYPE_SFX) {
-						cli_dbgmsg("Matched signature for file type: %s\n", pt->virname);
+						cli_dbgmsg("Matched signature for file type %s at %d\n", pt->virname, offset + position);
 						type = pt->type;
-						if(ftoffset && ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) {
+						if(ftoffset && (!*ftoffset || (*ftoffset)->cnt < SFX_MAX_TESTS) && ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) {
 						    if(!(tnode = cli_calloc(1, sizeof(struct cli_matched_type)))) {
 							cli_errmsg("Can't alloc memory for new type node\n");
 							return CL_EMEM;
 						    }
+
 						    tnode->type = type;
 						    tnode->offset = offset + position;
+
+						    if(*ftoffset)
+							tnode->cnt = (*ftoffset)->cnt + 1;
+						    else
+							tnode->cnt = 1;
+
 						    tnode->next = *ftoffset;
 						    *ftoffset = tnode;
+
 						}
 					    }
 					}
@@ -346,16 +354,21 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
 			if(pt->type) {
 			    if(otfrec) {
 				if(pt->type > type || pt->type >= CL_TYPE_SFX) {
-				    cli_dbgmsg("Matched signature for file type: %s\n", pt->virname);
-
+				    cli_dbgmsg("Matched signature for file type %s at %d\n", pt->virname, offset + position);
 				    type = pt->type;
-				    if(ftoffset && ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) {
+				    if(ftoffset && (!*ftoffset ||(*ftoffset)->cnt < SFX_MAX_TESTS) && ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) {
 					if(!(tnode = cli_calloc(1, sizeof(struct cli_matched_type)))) {
 					    cli_errmsg("Can't alloc memory for new type node\n");
 					    return CL_EMEM;
 					}
 					tnode->type = type;
 					tnode->offset = offset + position;
+
+					if(*ftoffset)
+					    tnode->cnt = (*ftoffset)->cnt + 1;
+					else
+					    tnode->cnt = 1;
+
 					tnode->next = *ftoffset;
 					*ftoffset = tnode;
 				    }
