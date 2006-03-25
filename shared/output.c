@@ -208,31 +208,21 @@ int logg(const char *str, ...)
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
     if(logg_syslog) {
-
-	/* due to a problem with superfluous control characters (which
-	 * vsnprintf() handles correctly) in (v)syslog we have to remove
-	 * them in a final string
-	 *
-	 * FIXME: substitute %% instead of _
-	 */
         _(str);
 	vsnprintf(vbuff, 1024, str, argscpy);
 	vbuff[1024] = 0;
 
-	while((pt = strchr(vbuff, '%')))
-	    *pt = '_';
-
 	if(vbuff[0] == '!') {
-	    syslog(LOG_ERR, vbuff + 1);
+	    syslog(LOG_ERR, "%s", vbuff + 1);
 	} else if(vbuff[0] == '^') {
-	    syslog(LOG_WARNING, vbuff + 1);
+	    syslog(LOG_WARNING, "%s", vbuff + 1);
 	} else if(vbuff[0] == '*') {
 	    if(logg_verbose) {
-		syslog(LOG_DEBUG, vbuff + 1);
+		syslog(LOG_DEBUG, "%s", vbuff + 1);
 	    }
 	} else if(vbuff[0] == '#') {
-	    syslog(LOG_INFO, vbuff + 1);
-	} else syslog(LOG_INFO, vbuff);
+	    syslog(LOG_INFO, "%s", vbuff + 1);
+	} else syslog(LOG_INFO, "%s", vbuff);
 
     }
 #endif
@@ -242,7 +232,7 @@ int logg(const char *str, ...)
         vsnprintf(vbuff, 1024, str, argsout);
 	vbuff[1024] = 0;
 	if(vbuff[0] != '#')
-	    mprintf(vbuff, str);
+	    mprintf("%s", vbuff);
     }
 
 #ifdef CL_THREAD_SAFE
@@ -259,6 +249,7 @@ void mprintf(const char *str, ...)
 {
 	va_list args;
 	FILE *fd;
+	char buff[512];
 
 
     if(mprintf_disabled) 
@@ -281,36 +272,31 @@ void mprintf(const char *str, ...)
  * quiet       stderr     no         no
  */
 
-
     va_start(args, str);
+    vsnprintf(buff, sizeof(buff), str, args);
+    va_end(args);
 
-    if(*str == '!') {
+    if(buff[0] == '!') {
        if(!mprintf_stdout)
            fd = stderr;
-	fprintf(fd, "ERROR: ");
-	vfprintf(fd, ++str, args);
-    } else if(*str == '@') {
+	fprintf(fd, "ERROR: %s", &buff[1]);
+    } else if(buff[0] == '@') {
        if(!mprintf_stdout)
            fd = stderr;
-	fprintf(fd, "ERROR: ");
-	vfprintf(fd, ++str, args);
+	fprintf(fd, "ERROR: %s", &buff[1]);
     } else if(!mprintf_quiet) {
-	if(*str == '^') {
+	if(buff[0] == '^') {
            if(!mprintf_stdout)
                fd = stderr;
-	    fprintf(fd, "WARNING: ");
-	    vfprintf(fd, ++str, args);
-	} else if(*str == '*') {
+	    fprintf(fd, "WARNING: %s", &buff[1]);
+	} else if(buff[0] == '*') {
 	    if(mprintf_verbose)
-		vfprintf(fd, ++str, args);
-	} else vfprintf(fd, str, args);
+		fprintf(fd, "%s", &buff[1]);
+	} else fprintf(fd, "%s", buff);
     }
-
-    va_end(args);
 
     if(fd == stdout)
 	fflush(stdout);
-
 }
 
 struct facstruct {
