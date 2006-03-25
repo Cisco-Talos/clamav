@@ -1,3 +1,7 @@
+Sat Mar 25 01:05:50 CET 2006 (tk)
+---------------------------------
+  * libclamav: optimise scanning of SFX archives
+
 Wed Mar 22 19:04:15 CET 2006 (tk)
 ---------------------------------
   * libclamav/htmlnorm.c: fix typo spotted by Gianluigi Tiesi

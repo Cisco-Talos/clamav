@@ -20,8 +20,11 @@
 #ifndef __FILETYPES_H
 #define __FILETYPES_H
 
+#include <sys/types.h>
+
 #define MAGIC_BUFFER_SIZE 50
 #define CL_TYPENO 500
+#define SFX_MAX_TESTS 10
 
 typedef enum {
     CL_TYPE_UNKNOWN_TEXT = CL_TYPENO,
@@ -60,7 +63,8 @@ typedef enum {
 
 struct cli_matched_type {
     cli_file_t type;
-    size_t offset;
+    off_t offset;
+    unsigned short cnt;
     struct cli_matched_type *next;
 };
 

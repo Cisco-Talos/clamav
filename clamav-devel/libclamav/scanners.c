@@ -107,7 +107,7 @@ static void cli_unlock_mutex(void *mtx)
 #endif
 */
 
-static int cli_scanrar(int desc, cli_ctx *ctx, unsigned long int offset)
+static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 {
 	int fd, ret = CL_CLEAN;
 	unsigned int files = 0;
@@ -126,7 +126,9 @@ static int cli_scanrar(int desc, cli_ctx *ctx, unsigned long int offset)
 	return CL_ETMPDIR;
     }
 
-    lseek(desc, offset, SEEK_SET);
+    if(sfx_offset)
+	lseek(desc, sfx_offset, SEEK_SET);
+
     metadata = metadata_tmp = cli_unrar(desc, dir, ctx->limits);
 
     if(cli_scandir(dir, ctx) == CL_VIRUS) {
@@ -134,6 +136,13 @@ static int cli_scanrar(int desc, cli_ctx *ctx, unsigned long int offset)
     } else while(metadata) {
 
 	files++;
+
+	if(files == 1 && sfx_check) {
+	    if(*sfx_check == metadata->crc)
+		break;
+	    else
+		*sfx_check = metadata->crc;
+	}
 
 	cli_dbgmsg("RAR: %s, crc32: 0x%x, encrypted: %d, compressed: %u, normal: %u, method: %d, ratio: %d (max: %d)\n",
 		metadata->filename, metadata->crc, metadata->encrypted, metadata->pack_size,
@@ -254,7 +263,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, unsigned long int offset)
 }
 
 #ifdef HAVE_ZLIB_H
-static int cli_scanzip(int desc, cli_ctx *ctx, unsigned long int offset)
+static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 {
 	ZZIP_DIR *zdir;
 	ZZIP_DIRENT zdirent;
@@ -272,8 +281,8 @@ static int cli_scanzip(int desc, cli_ctx *ctx, unsigned long int offset)
 
     cli_dbgmsg("in scanzip()\n");
 
-    if(offset)
-	lseek(desc, offset, SEEK_SET);
+    if(sfx_offset)
+	lseek(desc, sfx_offset, SEEK_SET);
 
     if((zdir = zzip_dir_fdopen(dup(desc), &err)) == NULL) {
 	cli_dbgmsg("Zip: zzip_dir_fdopen() return code: %d\n", err);
@@ -291,6 +300,13 @@ static int cli_scanzip(int desc, cli_ctx *ctx, unsigned long int offset)
 
     while(zzip_dir_read(zdir, &zdirent)) {
 	files++;
+
+	if(files == 1 && sfx_check) {
+	    if(*sfx_check == zdirent.d_crc32)
+		break;
+	    else
+		*sfx_check = zdirent.d_crc32;
+	}
 
 	if(!zdirent.d_name || !strlen(zdirent.d_name)) { /* Mimail fix */
 	    cli_dbgmsg("Zip: strlen(zdirent.d_name) == %d\n", strlen(zdirent.d_name));
@@ -1492,6 +1508,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 	int ret = CL_CLEAN;
 	unsigned short ftrec;
 	struct cli_matched_type *ftoffset = NULL, *fpt;
+	uint32_t lastzip, lastrar;
 
 
     switch(type) {
@@ -1536,15 +1553,16 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 	    case CL_TYPE_ZIPSFX:
 		if(type == CL_TYPE_MSEXE) {
 		    if(SCAN_ARCHIVE) {
+			lastzip = lastrar = 0xdeadbeef;
 			fpt = ftoffset;
 			while(fpt) {
 			    if(fpt->type == CL_TYPE_RARSFX) {
 				cli_dbgmsg("RAR-SFX signature found at %d\n", fpt->offset);
-				if((ret = cli_scanrar(desc, ctx, fpt->offset) == CL_VIRUS))
+				if((ret = cli_scanrar(desc, ctx, fpt->offset, &lastrar) == CL_VIRUS))
 				    break;
 			    } else if(fpt->type == CL_TYPE_ZIPSFX) {
 				cli_dbgmsg("ZIP-SFX signature found at %d\n", fpt->offset);
-				if((ret = cli_scanzip(desc, ctx, fpt->offset) == CL_VIRUS))
+				if((ret = cli_scanzip(desc, ctx, fpt->offset, &lastzip) == CL_VIRUS))
 				    break;
 			    }
 			    fpt = fpt->next;
@@ -1633,12 +1651,12 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     switch(type) {
 	case CL_TYPE_RAR:
 	    if(SCAN_ARCHIVE)
-		ret = cli_scanrar(desc, ctx, 0);
+		ret = cli_scanrar(desc, ctx, 0, NULL);
 	    break;
 
 	case CL_TYPE_ZIP:
 	    if(SCAN_ARCHIVE)
-		ret = cli_scanzip(desc, ctx, 0);
+		ret = cli_scanzip(desc, ctx, 0, NULL);
 	    break;
 
 	case CL_TYPE_GZ:
