@@ -587,13 +587,13 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip, char 
 
 	if(connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in)) == -1) {
 	    logg("Can't connect to port %d of host %s (IP: %s)\n", port, hostpt, ipaddr);
-	    close(socketfd);
 	    continue;
+	} else {
+	    return socketfd;
 	}
-
-	return socketfd;
     }
 
+    close(socketfd);
     return -2;
 }
 
