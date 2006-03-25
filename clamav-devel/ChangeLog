@@ -1,3 +1,7 @@
+Sat Mar 25 17:35:30 CET 2006 (tk)
+---------------------------------
+  * sigtool/sigtool.c: fix possible crash in build(), thanks to Sven
+
 Sat Mar 25 01:05:50 CET 2006 (tk)
 ---------------------------------
   * libclamav: optimise scanning of SFX archives
