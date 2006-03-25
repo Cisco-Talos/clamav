@@ -236,7 +236,7 @@ int build(struct optstruct *opt)
 {
 	int ret, no = 0, realno = 0, bytes, itmp;
 	struct stat foo;
-	char buffer[FILEBUFF], *tarfile = NULL, *gzfile = NULL, header[512],
+	char buffer[FILEBUFF], *tarfile = NULL, *gzfile = NULL, header[513],
 	     smbuff[30], *pt, *dbdir;
         struct cl_node *root = NULL;
 	FILE *tar, *cvd, *fd;
