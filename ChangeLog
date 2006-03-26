@@ -1,3 +1,8 @@
+Sun Mar 26 22:33:42 CEST 2006 (tk)
+----------------------------------
+  * clamd/session.c: remove static timeout (5s) for SESSION
+		     Pointed out by Joseph Benden <joe*thrallingpenguin.com>
+
 Sat Mar 25 21:29:25 CET 2006 (tk)
 ---------------------------------
   * shared/output.c: fix bug reported by Alch <alch*users.sourceforge.net>
