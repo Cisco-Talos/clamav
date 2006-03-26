@@ -199,16 +199,15 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_node 
 	const char *virname;
 
 
-    /* check permissions  */
-    if(access(filename, R_OK)) {
-	mdprintf(odesc, "%s: Access denied. ERROR\n", filename);
+    /* stat file */
+    if(lstat(filename, &sb) == -1) {
+	mdprintf(odesc, "%s: lstat() failed. ERROR\n", filename);
 	return -1;
     }
 
-    /* stat file */
-
-    if(lstat(filename, &sb) == -1) {
-	mdprintf(odesc, "%s: lstat() failed. ERROR\n", filename);
+    /* check permissions  */
+    if(access(filename, R_OK)) {
+	mdprintf(odesc, "%s: Access denied. ERROR\n", filename);
 	return -1;
     }
 
