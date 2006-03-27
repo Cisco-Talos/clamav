@@ -69,7 +69,7 @@ pthread_mutex_t logg_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 FILE *logg_fd = NULL;
 
-short int logg_verbose = 0, logg_lock = 0, logg_time = 0;
+short int logg_verbose = 0, logg_lock = 1, logg_time = 0;
 int logg_size = 0;
 const char *logg_file = NULL;
 #if defined(USE_SYSLOG) && !defined(C_AIX)
