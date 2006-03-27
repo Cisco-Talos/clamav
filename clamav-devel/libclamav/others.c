@@ -304,14 +304,14 @@ void *cli_malloc(size_t size)
 
 
     if(!size || size > MAX_ALLOCATION) {
-	cli_errmsg("cli_malloc(): Attempt to allocate %d bytes. Please report to bugs@clamav.net\n", size);
+	cli_errmsg("cli_malloc(): Attempt to allocate %u bytes. Please report to bugs@clamav.net\n", size);
 	return NULL;
     }
 
     alloc = malloc(size);
 
     if(!alloc) {
-	cli_errmsg("cli_malloc(): Can't allocate memory (%d bytes).\n", size);
+	cli_errmsg("cli_malloc(): Can't allocate memory (%u bytes).\n", size);
 	perror("malloc_problem");
 	/* _exit(1); */
 	return NULL;
@@ -324,14 +324,14 @@ void *cli_calloc(size_t nmemb, size_t size)
 
 
     if(!size || size > MAX_ALLOCATION) {
-	cli_errmsg("cli_calloc(): Attempt to allocate %d bytes. Please report to bugs@clamav.net\n", size);
+	cli_errmsg("cli_calloc(): Attempt to allocate %u bytes. Please report to bugs@clamav.net\n", size);
 	return NULL;
     }
 
     alloc = calloc(nmemb, size);
 
     if(!alloc) {
-	cli_errmsg("cli_calloc(): Can't allocate memory (%d bytes).\n", nmemb * size);
+	cli_errmsg("cli_calloc(): Can't allocate memory (%u bytes).\n", nmemb * size);
 	perror("calloc_problem");
 	/* _exit(1); */
 	return NULL;
@@ -344,14 +344,14 @@ void *cli_realloc(void *ptr, size_t size)
 
 
     if(!size || size > MAX_ALLOCATION) {
-	cli_errmsg("cli_realloc(): Attempt to allocate %d bytes. Please report to bugs@clamav.net\n", size);
+	cli_errmsg("cli_realloc(): Attempt to allocate %u bytes. Please report to bugs@clamav.net\n", size);
 	return NULL;
     }
 
     alloc = realloc(ptr, size);
 
     if(!alloc) {
-	cli_errmsg("cli_realloc(): Can't re-allocate memory to %d byte.\n", size);
+	cli_errmsg("cli_realloc(): Can't re-allocate memory to %u byte.\n", size);
 	perror("realloc_problem");
 	return NULL;
     } else return alloc;
