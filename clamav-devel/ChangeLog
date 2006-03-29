@@ -1,3 +1,9 @@
+Wed Mar 29 15:45:03 CEST 2006 (tk)
+----------------------------------
+  * libclamav/scanners.c: properly report archive unpacking errors
+			  Problem spotted by David F. Skoll
+			  <dfs*roaringpenguin.com>
+
 Sun Mar 26 22:33:42 CEST 2006 (tk)
 ----------------------------------
   * clamd/session.c: remove static timeout (5s) for SESSION
