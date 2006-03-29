@@ -1770,7 +1770,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     type == CL_TYPE_MAIL ? ctx->mrec-- : ctx->arec--;
 
     if(type != CL_TYPE_DATA && ret != CL_VIRUS && !ctx->engine->sdb) {
-	if((ret = cli_scanraw(desc, ctx, type) == CL_VIRUS))
+	if(cli_scanraw(desc, ctx, type) == CL_VIRUS)
 	    return CL_VIRUS;
     }
 
