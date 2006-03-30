@@ -1614,7 +1614,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
     if(!ctx->options) { /* raw mode (stdin, etc.) */
 	cli_dbgmsg("Raw mode: No support for special files\n");
-	if((ret = cli_scandesc(desc, ctx, 0, 0, NULL) == CL_VIRUS))
+	if((ret = cli_scandesc(desc, ctx, 0, 0, NULL)) == CL_VIRUS)
 	    cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, desc);
 	return ret;
     }
@@ -1641,7 +1641,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     lseek(desc, 0, SEEK_SET);
 
     if(type != CL_TYPE_DATA && ctx->engine->sdb) {
-	if((ret = cli_scanraw(desc, ctx, type) == CL_VIRUS))
+	if((ret = cli_scanraw(desc, ctx, type)) == CL_VIRUS)
 	    return CL_VIRUS;
 	lseek(desc, 0, SEEK_SET);
     }
