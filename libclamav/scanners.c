@@ -1558,11 +1558,11 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 			while(fpt) {
 			    if(fpt->type == CL_TYPE_RARSFX) {
 				cli_dbgmsg("RAR-SFX signature found at %d\n", fpt->offset);
-				if((ret = cli_scanrar(desc, ctx, fpt->offset, &lastrar) == CL_VIRUS))
+				if((ret = cli_scanrar(desc, ctx, fpt->offset, &lastrar)) == CL_VIRUS)
 				    break;
 			    } else if(fpt->type == CL_TYPE_ZIPSFX) {
 				cli_dbgmsg("ZIP-SFX signature found at %d\n", fpt->offset);
-				if((ret = cli_scanzip(desc, ctx, fpt->offset, &lastzip) == CL_VIRUS))
+				if((ret = cli_scanzip(desc, ctx, fpt->offset, &lastzip)) == CL_VIRUS)
 				    break;
 			    }
 			    fpt = fpt->next;
