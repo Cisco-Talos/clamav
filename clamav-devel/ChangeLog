@@ -1,3 +1,8 @@
+Wed Apr  5 01:13:22 CEST 2006 (tk)
+----------------------------------
+  * libclamav/scanners.c: don't return type values in cli_scanraw()
+			  Spotted by Alch <alch*users.sourceforge.net>
+
 Wed Apr  5 00:52:12 CEST 2006 (tk)
 ----------------------------------
   * libclamav/pe.c: fix possible integer overflow reported by Damian Put

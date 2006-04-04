@@ -1505,7 +1505,7 @@ static int cli_scanmail(int desc, cli_ctx *ctx)
 
 static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 {
-	int ret = CL_CLEAN;
+	int ret = CL_CLEAN, nret = CL_CLEAN;
 	unsigned short ftrec;
 	struct cli_matched_type *ftoffset = NULL, *fpt;
 	uint32_t lastzip, lastrar;
@@ -1539,13 +1539,13 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 	switch(ret) {
 	    case CL_TYPE_HTML:
 		if(SCAN_HTML && type == CL_TYPE_UNKNOWN_TEXT)
-		    if(cli_scanhtml(desc, ctx) == CL_VIRUS)
+		    if((nret = cli_scanhtml(desc, ctx)) == CL_VIRUS)
 			return CL_VIRUS;
 		break;
 
 	    case CL_TYPE_MAIL:
 		if(SCAN_MAIL && type == CL_TYPE_UNKNOWN_TEXT)
-		    if(cli_scanmail(desc, ctx) == CL_VIRUS)
+		    if((nret = cli_scanmail(desc, ctx)) == CL_VIRUS)
 			return CL_VIRUS;
 		break;
 
@@ -1558,11 +1558,11 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 			while(fpt) {
 			    if(fpt->type == CL_TYPE_RARSFX) {
 				cli_dbgmsg("RAR-SFX signature found at %d\n", fpt->offset);
-				if((ret = cli_scanrar(desc, ctx, fpt->offset, &lastrar)) == CL_VIRUS)
+				if((nret = cli_scanrar(desc, ctx, fpt->offset, &lastrar)) == CL_VIRUS)
 				    break;
 			    } else if(fpt->type == CL_TYPE_ZIPSFX) {
 				cli_dbgmsg("ZIP-SFX signature found at %d\n", fpt->offset);
-				if((ret = cli_scanzip(desc, ctx, fpt->offset, &lastzip)) == CL_VIRUS)
+				if((nret = cli_scanzip(desc, ctx, fpt->offset, &lastzip)) == CL_VIRUS)
 				    break;
 			    }
 			    fpt = fpt->next;
@@ -1575,8 +1575,8 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 			free(fpt);
 		    }
 
-		    if(ret == CL_VIRUS)
-			return ret;
+		    if(nret == CL_VIRUS)
+			return nret;
 		}
 		break;
 
@@ -1584,6 +1584,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 		break;
 	}
 	ret == CL_TYPE_MAIL ? ctx->mrec-- : ctx->arec--;
+	ret = nret;
     }
 
     return ret;
