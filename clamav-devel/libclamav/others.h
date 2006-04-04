@@ -40,6 +40,8 @@
     (bb_size > 0 && sb_size >= 0 && sb_size <= bb_size	\
      && sb >= bb && sb + sb_size <= bb + bb_size && sb + sb_size >= bb)
 
+#define CLI_MAX_ALLOCATION 134217728
+
 /* internal clamav context */
 typedef struct {
     const char **virname;

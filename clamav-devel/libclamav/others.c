@@ -74,8 +74,6 @@ static pthread_mutex_t cli_gentempname_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define CL_FLEVEL 7 /* don't touch it */
 
-#define MAX_ALLOCATION 134217728
-
 short cli_debug_flag = 0, cli_leavetemps_flag = 0;
 
 static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
@@ -303,7 +301,7 @@ void *cli_malloc(size_t size)
 	void *alloc;
 
 
-    if(!size || size > MAX_ALLOCATION) {
+    if(!size || size > CLI_MAX_ALLOCATION) {
 	cli_errmsg("cli_malloc(): Attempt to allocate %u bytes. Please report to bugs@clamav.net\n", size);
 	return NULL;
     }
@@ -323,7 +321,7 @@ void *cli_calloc(size_t nmemb, size_t size)
 	void *alloc;
 
 
-    if(!size || size > MAX_ALLOCATION) {
+    if(!size || size > CLI_MAX_ALLOCATION) {
 	cli_errmsg("cli_calloc(): Attempt to allocate %u bytes. Please report to bugs@clamav.net\n", size);
 	return NULL;
     }
@@ -343,7 +341,7 @@ void *cli_realloc(void *ptr, size_t size)
 	void *alloc;
 
 
-    if(!size || size > MAX_ALLOCATION) {
+    if(!size || size > CLI_MAX_ALLOCATION) {
 	cli_errmsg("cli_realloc(): Attempt to allocate %u bytes. Please report to bugs@clamav.net\n", size);
 	return NULL;
     }
