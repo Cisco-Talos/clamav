@@ -1,3 +1,8 @@
+Wed Apr  5 00:38:15 CEST 2006 (tk)
+----------------------------------
+  * libclamav/zziplib: fix possible crash on FreeBSD
+		       Reported by Robert Rebbun <robert*desertsurf.com>
+
 Wed Mar 29 15:45:03 CEST 2006 (tk)
 ----------------------------------
   * libclamav/scanners.c: properly report archive unpacking errors
