@@ -1,3 +1,9 @@
+Wed Apr  5 00:52:12 CEST 2006 (tk)
+----------------------------------
+  * libclamav/pe.c: fix possible integer overflow reported by Damian Put
+		    Note: only exploitable if file size limit
+		    (ArchiveMaxFileSize) disabled
+
 Wed Apr  5 00:38:15 CEST 2006 (tk)
 ----------------------------------
   * libclamav/zziplib: fix possible crash on FreeBSD
