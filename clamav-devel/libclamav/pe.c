@@ -319,16 +319,18 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     }
 
     nsections = EC16(file_hdr.NumberOfSections);
-    if(nsections < 1) {
+    if(nsections < 1 || nsections > 99) {
 	if(DETECT_BROKEN) {
 	    if(ctx->virname)
 		*ctx->virname = "Broken.Executable";
 	    return CL_VIRUS;
 	}
-	cli_warnmsg("PE file contains no sections\n");
+	if(nsections)
+	    cli_warnmsg("PE file contains %d sections\n", nsections);
+	else
+	    cli_warnmsg("PE file contains no sections\n");
 	return CL_CLEAN;
     }
-
     cli_dbgmsg("NumberOfSections: %d\n", nsections);
 
     timestamp = (time_t) EC32(file_hdr.TimeDateStamp);
@@ -668,7 +670,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    uint32_t newesi, newedi, newebx, newedx;
 
 		if(ctx->limits && ctx->limits->maxfilesize && (ssize > ctx->limits->maxfilesize || dsize > ctx->limits->maxfilesize)) {
-		    cli_dbgmsg("FSG: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize , ctx->limits->maxfilesize);
+		    cli_dbgmsg("FSG: Sizes exceeded (ssize: %u, dsize: %u, max: %lu)\n", ssize, dsize , ctx->limits->maxfilesize);
 		    free(section_hdr);
 		    if(BLOCKMAX) {
 			*ctx->virname = "PE.FSG.ExceededFileSize";
@@ -827,7 +829,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 
 		if(ctx->limits && ctx->limits->maxfilesize && (ssize > ctx->limits->maxfilesize || dsize > ctx->limits->maxfilesize)) {
-		    cli_dbgmsg("FSG: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize, ctx->limits->maxfilesize);
+		    cli_dbgmsg("FSG: Sizes exceeded (ssize: %u, dsize: %u, max: %lu)\n", ssize, dsize, ctx->limits->maxfilesize);
 		    free(section_hdr);
 		    if(BLOCKMAX) {
 			*ctx->virname = "PE.FSG.ExceededFileSize";
@@ -1049,7 +1051,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		}
 
 		if(ctx->limits && ctx->limits->maxfilesize && (ssize > ctx->limits->maxfilesize || dsize > ctx->limits->maxfilesize)) {
-		    cli_dbgmsg("FSG: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize, ctx->limits->maxfilesize);
+		    cli_dbgmsg("FSG: Sizes exceeded (ssize: %u, dsize: %u, max: %lu)\n", ssize, dsize, ctx->limits->maxfilesize);
 		    free(section_hdr);
 		    if(BLOCKMAX) {
 			*ctx->virname = "PE.FSG.ExceededFileSize";
@@ -1241,7 +1243,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    dsize = EC32(section_hdr[i].VirtualSize) + EC32(section_hdr[i + 1].VirtualSize);
 
 	    if(ctx->limits && ctx->limits->maxfilesize && (ssize > ctx->limits->maxfilesize || dsize > ctx->limits->maxfilesize)) {
-		cli_dbgmsg("UPX: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize , ctx->limits->maxfilesize);
+		cli_dbgmsg("UPX: Sizes exceeded (ssize: %u, dsize: %u, max: %lu)\n", ssize, dsize , ctx->limits->maxfilesize);
 		free(section_hdr);
 		if(BLOCKMAX) {
 		    *ctx->virname = "PE.UPX.ExceededFileSize";
@@ -1260,6 +1262,13 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    /* FIXME: use file operations in case of big files */
 	    if((src = (char *) cli_malloc(ssize)) == NULL) {
 		free(section_hdr);
+		return CL_EMEM;
+	    }
+
+	    if(dsize > CLI_MAX_ALLOCATION) {
+		cli_errmsg("UPX: Too big value of dsize\n");
+		free(section_hdr);
+		free(src);
 		return CL_EMEM;
 	    }
 
@@ -1437,7 +1446,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    dsize = max - min;
 
 	    if(ctx->limits && ctx->limits->maxfilesize && dsize > ctx->limits->maxfilesize) {
-		cli_dbgmsg("Petite: Size exceeded (dsize: %d, max: %lu)\n", dsize, ctx->limits->maxfilesize);
+		cli_dbgmsg("Petite: Size exceeded (dsize: %u, max: %lu)\n", dsize, ctx->limits->maxfilesize);
 		free(section_hdr);
 		if(BLOCKMAX) {
 		    *ctx->virname = "PE.Petite.ExceededFileSize";
