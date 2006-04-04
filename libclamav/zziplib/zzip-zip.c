@@ -26,9 +26,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
-#ifdef ZZIP_HAVE_SYS_STAT_H
+#include <sys/types.h>
 #include <sys/stat.h>
-#endif
+#include <unistd.h>
 
 /*
 #include "__mmap.h"
@@ -185,7 +185,7 @@ __zzip_find_disk_trailer(int fd, zzip_off_t filesize,
     auto char buffer[2*ZZIP_BUFSIZ];
     char* buf = buffer;
 #else
-    char* buf = malloc(2*ZZIP_BUFSIZ);
+    char* buf = cli_malloc(2*ZZIP_BUFSIZ);
 #endif
     zzip_off_t offset = 0;
     zzip_off_t maplen = 0; /* mmap(),read(),getpagesize() use size_t !! */
@@ -349,12 +349,24 @@ __zzip_parse_root_directory(int fd,
     long offset;          /* offset from start of root directory */
     char* fd_map = 0; 
     int32_t  fd_gap = 0;
+    struct stat sb;
     uint16_t u_entries  = ZZIP_GET16(trailer->z_entries);   
     uint32_t u_rootsize = ZZIP_GET32(trailer->z_rootsize);  
     uint32_t u_rootseek = ZZIP_GET32(trailer->z_rootseek);
     __correct_rootseek (u_rootseek, u_rootsize, trailer);
 
-    hdr0 = (struct zzip_dir_hdr*) malloc(u_rootsize);
+
+    if(fstat(fd, &sb) == -1) {
+	cli_errmsg("zziplib: Can't fstat file descriptor %d\n", fd);
+	return ZZIP_DIR_STAT;
+    }
+
+    if(u_rootsize > sb.st_size) {
+	cli_errmsg("zziplib: Incorrect root size\n");
+	return ZZIP_CORRUPTED;
+    }
+
+    hdr0 = (struct zzip_dir_hdr*) cli_malloc(u_rootsize);
     if (!hdr0) 
         return ZZIP_DIRSIZE;
     hdr = hdr0;                  __debug_dir_hdr (hdr);
@@ -533,7 +545,7 @@ ZZIP_DIR*
 zzip_dir_alloc_ext_io (zzip_strings_t* ext, const zzip_plugin_io_t io)
 {
     ZZIP_DIR* dir;
-    if ((dir = (ZZIP_DIR *)calloc(1, sizeof(*dir))) == NULL)
+    if ((dir = (ZZIP_DIR *)cli_calloc(1, sizeof(*dir))) == NULL)
         return 0; 
 
     /* dir->fileext is currently unused - so what, still initialize it */
