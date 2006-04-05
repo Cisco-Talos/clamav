@@ -1,3 +1,7 @@
+Wed Apr  5 09:06:48 BST 2006 (trog)
+-----------------------------------
+  * libclamav/others.c: fix possible crash in cli_bitset_test()
+
 Wed Apr  5 01:13:22 CEST 2006 (tk)
 ----------------------------------
   * libclamav/scanners.c: don't return type values in cli_scanraw()

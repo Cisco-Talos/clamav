@@ -756,6 +756,9 @@ int cli_bitset_test(bitset_t *bs, unsigned long bit_offset)
 	
 	char_offset = bit_offset / BITS_PER_CHAR;
 	bit_offset = bit_offset % BITS_PER_CHAR;
-	
+
+	if (char_offset >= bs->length) {	
+		return FALSE;
+	}
 	return (bs->bitset[char_offset] & ((unsigned char)1 << bit_offset));
 }
