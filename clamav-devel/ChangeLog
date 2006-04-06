@@ -1,3 +1,9 @@
+Thu Apr  6 19:39:36 CEST 2006 (tk)
+----------------------------------
+  * libclamav/zziplib/zzip-zip.c: add missing #include "others.h"
+	Patch by Alex Deiter <tiamat*komi.mts.ru>
+	Note: It may be required for proper zip scanning on 64-bit platforms
+
 Wed Apr  5 09:06:48 BST 2006 (trog)
 -----------------------------------
   * libclamav/others.c: fix possible crash in cli_bitset_test()
