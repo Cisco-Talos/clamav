@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.279 2006/02/06 02:36:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.280 2006/04/06 12:10:19 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -910,7 +910,6 @@ cli_mbox(const char *dir, int desc, unsigned int options)
  *	http://www.lazerware.com/formats/Specs/AppleSingle_AppleDouble.pdf
  * TODO: ensure parseEmailHeaders is always called before parseEmailBody
  * TODO: create parseEmail which calls parseEmailHeaders then parseEmailBody
- * TODO: Look into TNEF. Is there anything that needs to be done here?
  * TODO: Handle unepected NUL bytes in header lines which stop strcmp()s:
  *	e.g. \0Content-Type: application/binary;
  */
