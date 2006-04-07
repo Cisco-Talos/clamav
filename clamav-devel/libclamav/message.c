@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.161 2006/02/07 11:35:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.162 2006/04/07 12:03:13 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -887,22 +887,21 @@ messageAddStr(message *m, const char *data)
 	if(data && *data) {
 		if(repeat)
 			m->body_last->t_line = lineLink(repeat);
-		else
-			m->body_last->t_line = lineCreate(data);
-
-		if((m->body_last->t_line == NULL) && (repeat == NULL)) {
-			messageDedup(m);
+		else {
 			m->body_last->t_line = lineCreate(data);
 
 			if(m->body_last->t_line == NULL) {
-				cli_errmsg("messageAddStr: out of memory\n");
-				return -1;
-			}
-		}
-		/* cli_chomp(m->body_last->t_text); */
+				messageDedup(m);
+				m->body_last->t_line = lineCreate(data);
 
-		if(repeat == NULL)
+				if(m->body_last->t_line == NULL) {
+					cli_errmsg("messageAddStr: out of memory\n");
+					return -1;
+				}
+			}
+			/* cli_chomp(m->body_last->t_text); */
 			messageIsEncoding(m);
+		}
 	} else
 		m->body_last->t_line = NULL;
 
