@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.280 2006/04/06 12:10:19 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.281 2006/04/07 10:15:49 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1244,7 +1244,6 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 					}
 				}
 			}
-			lastWasBlank = FALSE;
 			if((line == NULL) && (fullline == NULL)) {	/* empty line */
 				if(!contMarker) {
 					/*
