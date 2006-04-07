@@ -58,7 +58,7 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 #ifdef HAVE_HWACCEL
 	void *streamhandle;
 	void *resulthandle;
-	uint32_t datamask[2] = { 1, 1 };
+	uint32_t datamask[2] = { 0xffffffff, 0xffffffff };
 	int count, hret;
 	unsigned long long offset;
 #endif
@@ -338,7 +338,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	void *streamhandle;
 	void *resulthandle;
 	unsigned long long hoffset;
-	uint32_t datamask[2] = { 1, 1 };
+	uint32_t datamask[2] = { 0xffffffff, 0xffffffff };
 	int count, hret;
 #endif
 
