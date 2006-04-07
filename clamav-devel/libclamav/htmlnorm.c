@@ -47,8 +47,6 @@
 #include "htmlnorm.h"
 
 #define HTML_STR_LENGTH 1024
-#define FALSE (0)
-#define TRUE (1)
 
 typedef enum {
     HTML_BAD_STATE,

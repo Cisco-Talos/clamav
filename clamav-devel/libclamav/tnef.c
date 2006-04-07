@@ -24,7 +24,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.31 2006/03/14 11:39:43 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.32 2006/04/07 23:31:41 kojm Exp $";
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -54,14 +54,8 @@ static	int	tnef_header(FILE *fp, uint8_t *part, uint16_t *type, uint16_t *tag, i
 #define	attTNEFVERSION	0x9006
 #define	attOEMCODEPAGE	0x9007
 
-#if WORDS_BIGENDIAN == 0
-#define host16(v)	(v)
-#define host32(v)	(v)
-#else
-#define	host16(v)	((v >> 8) | (v << 8))
-#define	host32(v)	((v >> 24) | ((v & 0x00FF0000) >> 8) | \
-				((v & 0x0000FF00) << 8) | (v << 24))
-#endif
+#define host16(v)	le16_to_host(v)
+#define host32(v)	le32_to_host(v)
 
 extern	short	cli_debug_flag;
 

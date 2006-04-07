@@ -64,6 +64,51 @@ typedef struct {
 #define BLOCKMAX	    (ctx->options & CL_SCAN_BLOCKMAX)
 #define DETECT_BROKEN	    (ctx->options & CL_SCAN_BLOCKBROKEN)
 
+#if WORDS_BIGENDIAN == 0
+/* new macros from A. Melnikoff */
+#define le16_to_host(v)	(v)
+#define le32_to_host(v)	(v)
+#define le64_to_host(v)	(v)
+#define	be16_to_host(v)	((v >> 8) | (v << 8))
+#define	be32_to_host(v)	((v >> 24) | ((v & 0x00FF0000) >> 8) | \
+				((v & 0x0000FF00) << 8) | (v << 24))
+#define be64_to_host(v)	((v >> 56) | ((v & 0x00FF000000000000LL) >> 40) | \
+				((v & 0x0000FF0000000000LL) >> 24) | \
+				((v & 0x000000FF00000000LL) >> 8) |  \
+				((v & 0x00000000FF000000LL) << 8) |  \
+				((v & 0x0000000000FF0000LL) << 24) | \
+				((v & 0x000000000000FF00LL) << 40) | \
+				(v << 56))
+#else
+#define	le16_to_host(v)	((v >> 8) | (v << 8))
+#define	le32_to_host(v)	((v >> 24) | ((v & 0x00FF0000) >> 8) | \
+				((v & 0x0000FF00) << 8) | (v << 24))
+#define le64_to_host(v)	((v >> 56) | ((v & 0x00FF000000000000LL) >> 40) | \
+				((v & 0x0000FF0000000000LL) >> 24) | \
+				((v & 0x000000FF00000000LL) >> 8) |  \
+				((v & 0x00000000FF000000LL) << 8) |  \
+				((v & 0x0000000000FF0000LL) << 24) | \
+				((v & 0x000000000000FF00LL) << 40) | \
+				(v << 56))
+#define be16_to_host(v)	(v)
+#define be32_to_host(v)	(v)
+#define be64_to_host(v)	(v)
+#endif
+
+/* used by: spin, yc (C) aCaB */
+#define ROL(a,b) a = ( a << (b % (sizeof(a)<<3) ))  |  (a >> (  (sizeof(a)<<3)  -  (b % (sizeof(a)<<3 )) ) )
+#define ROR(a,b) a = ( a >> (b % (sizeof(a)<<3) ))  |  (a << (  (sizeof(a)<<3)  -  (b % (sizeof(a)<<3 )) ) )
+
+#define FALSE (0)
+#define TRUE (1)
+
+#ifndef MIN
+#define MIN(a, b)	(((a) < (b)) ? (a) : (b))
+#endif
+#ifndef MAX
+#define MAX(a,b)	(((a) > (b)) ? (a) : (b))
+#endif
+
 typedef struct bitset_tag
 {
         unsigned char *bitset;

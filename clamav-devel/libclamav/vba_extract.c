@@ -39,13 +39,6 @@
 #include "vba_extract.h"
 #include "others.h"
 
-#define FALSE (0)
-#define TRUE (1)
-
-#ifndef MIN
-#define MIN(a, b)  (((a) < (b)) ? (a) : (b))
-#endif
-
 typedef struct vba_version_tag {
 	unsigned char signature[4];
 	const char *name;
@@ -56,38 +49,18 @@ typedef struct vba_version_tag {
 
 static uint16_t vba_endian_convert_16(uint16_t value, int is_mac)
 {
-	if (is_mac) {
-#if WORDS_BIGENDIAN == 0
-		return ((value >> 8) + (value << 8));
-#else
-		return value;
-#endif
-	} else {
-#if WORDS_BIGENDIAN == 0
-		return value;
-#else
-		return ((value >> 8) + (value << 8));
-#endif
-	}
+	if (is_mac)
+		return be16_to_host(value);
+	else
+		return le16_to_host(value);
 }
  
 static uint32_t vba_endian_convert_32(uint32_t value, int is_mac)
 {
-	if (is_mac) {
-#if WORDS_BIGENDIAN == 0
-		return ((value >> 24) | ((value & 0x00FF0000) >> 8) |
-		((value & 0x0000FF00) << 8) | (value << 24));
-#else
-		return value;
-#endif
-	} else {
-#if WORDS_BIGENDIAN == 0
-		return value;
-#else
-		return ((value >> 24) | ((value & 0x00FF0000) >> 8) |
-			((value & 0x0000FF00) << 8) | (value << 24));
-#endif
-	}
+	if (is_mac)
+		return be32_to_host(value);
+	else
+		return le32_to_host(value);
 }
 
 typedef struct byte_array_tag {

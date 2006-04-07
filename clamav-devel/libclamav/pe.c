@@ -55,20 +55,8 @@
 #define UPX_NRV2D "\x83\xf0\xff\x74\x78\xd1\xf8\x89\xc5\xeb\x0b\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9"
 #define UPX_NRV2E "\xeb\x52\x31\xc9\x83\xe8\x03\x72\x11\xc1\xe0\x08\x8a\x06\x46\x83\xf0\xff\x74\x75\xd1\xf8\x89\xc5"
 
-#if WORDS_BIGENDIAN == 0
-#define EC16(v)	(v)
-#define EC32(v) (v)
-#else
-static inline uint16_t EC16(uint16_t v)
-{
-    return ((v >> 8) + (v << 8));
-}
-
-static inline uint32_t EC32(uint32_t v)
-{
-    return ((v >> 24) | ((v & 0x00FF0000) >> 8) | ((v & 0x0000FF00) << 8) | (v << 24));
-}
-#endif
+#define EC32(x) le32_to_host(x) /* Convert little endian to host */
+#define EC16(x) le16_to_host(x)
 
 extern short cli_leavetemps_flag;
 

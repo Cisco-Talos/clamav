@@ -30,29 +30,11 @@
 #include "cltypes.h"
 #include "special.h"
 
-#define FALSE (0)
-#define TRUE (1)
-
 /* NOTE: Photoshop stores data in BIG ENDIAN format, this is the opposite
 	to virtually everything else */
-#if WORDS_BIGENDIAN == 0
-static uint16_t special_endian_convert_16(uint16_t v)
-{
-        return ((v >> 8) + (v << 8));
-}
-#else
-#define special_endian_convert_16(v)       (v)
-#endif
 
-#if WORDS_BIGENDIAN == 0
-static uint32_t special_endian_convert_32(uint32_t v)
-{
-        return ((v >> 24) | ((v & 0x00FF0000) >> 8) |
-                ((v & 0x0000FF00) << 8) | (v << 24));
-}
-#else
-#define special_endian_convert_32(v)    (v)
-#endif
+#define special_endian_convert_16(v) be16_to_host(v)
+#define special_endian_convert_32(v) be32_to_host(v)
 
 int cli_check_mydoom_log(int desc, const char **virname)
 {
@@ -243,21 +225,10 @@ int cli_check_jpeg_exploit(int fd)
 
 static uint32_t riff_endian_convert_32(uint32_t value, int big_endian)
 {
-	if (big_endian) {
-#if WORDS_BIGENDIAN == 0
-		return ((value >> 24) | ((value & 0x00FF0000) >> 8) |
-			((value & 0x0000FF00) << 8) | (value << 24));
-#else
-		return value;
-#endif
-	} else {
-#if WORDS_BIGENDIAN == 0
-		return value;
-#else
-		return ((value >> 24) | ((value & 0x00FF0000) >> 8) |
-			((value & 0x0000FF00) << 8) | (value << 24));
-#endif
-        }
+	if (big_endian)
+		return be32_to_host(value);
+	else
+		return le32_to_host(value);
 }
 
 static int riff_read_chunk(int fd, int big_endian, int rec_level)
