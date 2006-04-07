@@ -59,16 +59,7 @@
 #include "rebuildpe.h"
 #include "others.h"
 
-#if WORDS_BIGENDIAN == 0
-#define EC32(v) (v)
-#else
-static inline uint32_t EC32(uint32_t v)
-{
-    return ((v >> 24) | ((v & 0x00FF0000) >> 8) | ((v & 0x0000FF00) << 8) | (v << 24));
-}
-#endif
-
-#define MAX(a,b) ((a > b) ? a : b)
+#define EC32(x) le32_to_host(x) /* Convert little endian to host */
 
 static int doubledl(char **scur, uint8_t *mydlptr, char *buffer, uint32_t buffersize)
 {

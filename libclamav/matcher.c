@@ -39,7 +39,6 @@
 #include "special.h"
 
 #define MD5_BLOCKSIZE 4096
-#define MAX(a,b) ((a > b) ? a : b)
 
 static int targettab[CL_TARGET_TABLE_SIZE] = { 0, CL_TYPE_MSEXE, CL_TYPE_MSOLE2, CL_TYPE_HTML, CL_TYPE_MAIL, CL_TYPE_GRAPHICS, CL_TYPE_ELF };
 

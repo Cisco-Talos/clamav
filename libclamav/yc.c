@@ -34,25 +34,8 @@
 #include "pe.h"
 #include "others.h"
 
-
-/* Macros were created by aCaB */
-#define ROL(a,b) a = ( a << (b % (sizeof(a)<<3) ))  |  (a >> (  (sizeof(a)<<3)  -  (b % (sizeof(a)<<3 )) ) )
-#define ROR(a,b) a = ( a >> (b % (sizeof(a)<<3) ))  |  (a << (  (sizeof(a)<<3)  -  (b % (sizeof(a)<<3 )) ) )
-
-#if WORDS_BIGENDIAN == 0
-#define EC16(v)	(v)
-#define EC32(v) (v)
-#else
-static inline uint16_t EC16(uint16_t v)
-{
-  return ((v >> 8) + (v << 8));
-}
-
-static inline uint32_t EC32(uint32_t v)
-{
-  return ((v >> 24) | ((v & 0x00FF0000) >> 8) | ((v & 0x0000FF00) << 8) | (v << 24));
-}
-#endif
+#define EC32(x) le32_to_host(x) /* Convert little endian to host */
+#define EC16(x) le16_to_host(x) /* Convert little endian to host */
 
 /* ========================================================================== */
 /* "Emulates" the poly decryptors */

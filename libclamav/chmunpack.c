@@ -46,11 +46,6 @@
 #include "mspack/lzx.h"
 #include "cltypes.h"
 
-#define FALSE (0)
-#define TRUE (1)
-
-#define MIN(a,b) ((a < b) ? a : b)
-
 #ifndef HAVE_ATTRIB_PACKED
 #define __attribute__(x)
 #endif
@@ -149,39 +144,9 @@ typedef struct lzx_content_tag {
 #pragma pack()
 #endif
 
-#if WORDS_BIGENDIAN == 0
-#define chm_endian_convert_16(v)	(v)
-#else
-static uint16_t chm_endian_convert_16(uint16_t v)
-{
-	return ((v >> 8) + (v << 8));
-}
-#endif
-
-#if WORDS_BIGENDIAN == 0
-#define chm_endian_convert_32(v)    (v)
-#else
-static uint32_t chm_endian_convert_32(uint32_t v)
-{
-        return ((v >> 24) | ((v & 0x00FF0000) >> 8) |
-                ((v & 0x0000FF00) << 8) | (v << 24));
-}
-#endif
-
-#if WORDS_BIGENDIAN == 0
-#define chm_endian_convert_64(v)    (v)
-#else
-static uint64_t chm_endian_convert_64(uint64_t v)
-{
-	return ((v >> 56) | ((v & 0x00FF000000000000LL) >> 40) |
-		((v & 0x0000FF0000000000LL) >> 24) |
-		((v & 0x000000FF00000000LL) >> 8) |
-		((v & 0x00000000FF000000LL) << 8) |
-		((v & 0x0000000000FF0000LL) << 24) |
-		((v & 0x000000000000FF00LL) << 40) |
-		(v << 56));
-}
-#endif
+#define chm_endian_convert_16(x) le16_to_host(x) 
+#define chm_endian_convert_32(x) le32_to_host(x) 
+#define chm_endian_convert_64(x) le64_to_host(x)
 
 /* Read in a block of data from either the mmap area or the given fd */
 int chm_read_data(int fd, unsigned char *dest, off_t offset, off_t len,

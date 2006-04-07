@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.45 2006/03/11 15:54:09 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.46 2006/04/07 23:31:41 kojm Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -52,10 +52,6 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.45 2006/03/11 15:54:09 nigelhorne Ex
 #include "blob.h"
 #include "pdf.h"
 #include "md5.h"
-
-#ifndef	MIN
-#define	MIN(a, b)	(((a) < (b)) ? (a) : (b))
-#endif
 
 static	int	flatedecode(const unsigned char *buf, size_t len, int fout, const cli_ctx *ctx);
 static	int	ascii85decode(const char *buf, size_t len, unsigned char *output);

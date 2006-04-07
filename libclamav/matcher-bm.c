@@ -31,7 +31,6 @@
 /* #define BM_TEST_OFFSET	5 */
 #define BM_BLOCK_SIZE	3
 
-#define MIN(a,b) (a < b) ? a : b
 #define HASH(a,b,c) 211 * (unsigned char) a + 37 * (unsigned char) b + (unsigned char) c
 #define DHASH(a,b,c) 211 * a + 37 * b + c
 

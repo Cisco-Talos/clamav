@@ -46,33 +46,8 @@
 #include "others.h"
 #include "ole2_extract.h"
 
-#ifndef FALSE
-#define FALSE (0)
-#define TRUE (1)
-#endif
-
-#ifndef MIN
-#define MIN(a, b)  (((a) < (b)) ? (a) : (b))
-#endif
-
-#if WORDS_BIGENDIAN == 0
-#define ole2_endian_convert_16(v)	(v)
-#else
-static uint16_t ole2_endian_convert_16(uint16_t v)
-{
-	return ((v >> 8) + (v << 8));
-}
-#endif
-
-#if WORDS_BIGENDIAN == 0
-#define ole2_endian_convert_32(v)    (v)
-#else
-static uint32_t ole2_endian_convert_32(uint32_t v)
-{
-        return ((v >> 24) | ((v & 0x00FF0000) >> 8) |
-                ((v & 0x0000FF00) << 8) | (v << 24));
-}
-#endif
+#define ole2_endian_convert_16(v) le16_to_host(v)
+#define ole2_endian_convert_32(v) le32_to_host(v)
 
 #ifndef HAVE_ATTRIB_PACKED
 #define __attribute__(x)

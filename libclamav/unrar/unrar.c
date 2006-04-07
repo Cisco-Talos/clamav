@@ -44,6 +44,8 @@
 #include "cltypes.h"
 
 #define int64to32(x) ((uint)(x))
+#define rar_endian_convert_16(v)	le16_to_host(v)
+#define rar_endian_convert_32(v)	le32_to_host(v)
 
 #ifdef RAR_HIGH_DEBUG
 #define rar_dbgmsg printf
@@ -128,25 +130,6 @@ static void dump_tables(unpack_data_t *unpack_data)
 	}
 	cli_dbgmsg("\n");
 }
-
-#if WORDS_BIGENDIAN == 0
-#define rar_endian_convert_16(v)        (v)
-#else
-static uint16_t rar_endian_convert_16(uint16_t v)
-{
-        return ((v >> 8) + (v << 8));
-}
-#endif
-
-#if WORDS_BIGENDIAN == 0
-#define rar_endian_convert_32(v)    (v)
-#else
-static uint32_t rar_endian_convert_32(uint32_t v)
-{
-        return ((v >> 24) | ((v & 0x00FF0000) >> 8) |
-                ((v & 0x0000FF00) << 8) | (v << 24));
-}
-#endif
 
 static uint64_t copy_file_data(int ifd, int ofd, uint64_t len)
 {

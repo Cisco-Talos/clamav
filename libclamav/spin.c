@@ -63,18 +63,7 @@
 #include "others.h"
 #include "spin.h"
 
-#if WORDS_BIGENDIAN == 0
-#define EC32(v) (v)
-#else
-static inline uint32_t EC32(uint32_t v)
-{
-    return ((v >> 24) | ((v & 0x00FF0000) >> 8) | ((v & 0x0000FF00) << 8) | (v << 24));
-}
-#endif
-
-#define ROL(a,b) a = ( a << (b % (sizeof(a)<<3) ))  |  (a >> (  (sizeof(a)<<3)  -  (b % (sizeof(a)<<3 )) ) )
-#define ROR(a,b) a = ( a >> (b % (sizeof(a)<<3) ))  |  (a << (  (sizeof(a)<<3)  -  (b % (sizeof(a)<<3 )) ) )
-
+#define EC32(x) le32_to_host(x) /* Convert little endian to host */
 
 static char exec86(uint8_t aelle, uint8_t cielle, char *curremu) {
   int len = 0;
