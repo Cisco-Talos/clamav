@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -45,22 +45,72 @@ static int targettab[CL_TARGET_TABLE_SIZE] = { 0, CL_TYPE_MSEXE, CL_TYPE_MSOLE2,
 
 extern short cli_debug_flag;
 
-#ifdef CL_THREAD_SAFE
-#  include <pthread.h>
-static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
+#ifdef HAVE_HWACCEL
+#include <sn_sigscan/sn_sigscan.h>
+#define HWBUFFSIZE 32768
 #endif
 
 int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_engine *engine, unsigned short ftype)
 {
-	int ret, i, tid = 0, *partcnt;
+	int ret = CL_CLEAN, i, tid = 0, *partcnt;
 	unsigned long int *partoff;
 	struct cli_matcher *groot, *troot = NULL;
+#ifdef HAVE_HWACCEL
+	void *streamhandle;
+	void *resulthandle;
+	uint32_t datamask[2] = { 1, 1 };
+	int count, hret;
+	unsigned long long offset;
+#endif
 
 
     if(!engine) {
 	cli_errmsg("cli_scanbuff: engine == NULL\n");
 	return CL_ENULLARG;
     }
+
+#ifdef HAVE_HWACCEL
+    if(engine->hwaccel) {
+	/* TODO: Setup proper data bitmask (need specs) */
+	if((hret = sn_sigscan_createstream(engine->hwdb, datamask, 2, &streamhandle)) < 0) {
+	    cli_errmsg("cli_scanbuff: can't create new hardware stream: %d\n", hret);
+	    return CL_EHWIO;
+	}
+
+	if((hret = sn_sigscan_writestream(streamhandle, buffer, length)) < 0) {
+	    cli_errmsg("cli_scanbuff: can't write %u bytes to hardware stream: %d\n", length, hret);
+	    sn_sigscan_closestream(streamhandle, &resulthandle);
+	    return CL_EHWIO;
+	}
+
+	if((hret = sn_sigscan_closestream(streamhandle, &resulthandle)) < 0) {
+	    cli_errmsg("cli_scanbuff: can't close hardware stream: %d\n", hret);
+	    return CL_EHWIO;
+	}
+
+	count = sn_sigscan_resultcount(resulthandle);
+	cli_dbgmsg("cli_scanbuff: number of results: %d\n", count);
+
+	if(count > 0) {
+	    if((hret = sn_sigscan_resultget(resulthandle, 0, virname, &offset)) < 0) {
+		cli_errmsg("cli_scanbuff: can't get hardware match result: %d\n", hret);
+		sn_sigscan_resultfree(resulthandle);
+		return CL_EHWIO;
+	    } else {
+		cli_dbgmsg("cli_scanbuff: hardware match %s at %u\n", *virname, offset);
+		ret = CL_VIRUS;
+	    }
+	}
+
+	if((hret = sn_sigscan_resultfree(resulthandle)) < 0) {
+	    cli_errmsg("cli_scanbuff: can't free results: %d\n", ret);
+	    return CL_EHWIO;
+	}
+
+	return ret;
+    }
+#endif /* HAVE_HWACCEL */
+
 
     groot = engine->root[0]; /* generic signatures */
 
@@ -277,19 +327,81 @@ int cli_validatesig(unsigned short target, unsigned short ftype, const char *off
 int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short ftype, struct cli_matched_type **ftoffset)
 {
  	char *buffer, *buff, *endbl, *pt;
-	int ret, *gpartcnt, *tpartcnt, type = CL_CLEAN, i, tid = 0, bytes;
+	int ret = CL_CLEAN, *gpartcnt, *tpartcnt, type = CL_CLEAN, i, tid = 0, bytes;
 	unsigned int buffersize, length, maxpatlen, shift = 0;
 	unsigned long int *gpartoff, *tpartoff, offset = 0;
 	MD5_CTX md5ctx;
 	unsigned char digest[16];
 	struct cli_md5_node *md5_node;
 	struct cli_matcher *groot, *troot = NULL;
+#ifdef HAVE_HWACCEL
+	void *streamhandle;
+	void *resulthandle;
+	unsigned long long hoffset;
+	uint32_t datamask[2] = { 1, 1 };
+	int count, hret;
+#endif
 
 
     if(!ctx->engine) {
 	cli_errmsg("cli_scandesc: engine == NULL\n");
 	return CL_ENULLARG;
     }
+
+#ifdef HAVE_HWACCEL
+    if(ctx->engine->hwaccel) {
+	/* TODO: Setup proper data bitmask (need specs) */
+	if((hret = sn_sigscan_createstream(ctx->engine->hwdb, datamask, 2, &streamhandle)) < 0) {
+	    cli_errmsg("cli_scandesc: can't create new hardware stream: %d\n", hret);
+	    return CL_EHWIO;
+	}
+
+	if(!(buffer = (char *) cli_calloc(HWBUFFSIZE, sizeof(char)))) {
+	    cli_dbgmsg("cli_scandesc: unable to cli_calloc(%u)\n", HWBUFFSIZE);
+	    return CL_EMEM;
+	}
+
+	while((bytes = cli_readn(desc, buffer, HWBUFFSIZE)) > 0) {
+	    if((hret = sn_sigscan_writestream(streamhandle, buffer, bytes)) < 0) {
+		cli_errmsg("cli_scandesc: can't write to hardware stream: %d\n", hret);
+		ret = CL_EHWIO;
+		break;
+	    } else {
+		if(ctx->scanned)
+		    *ctx->scanned += bytes / CL_COUNT_PRECISION;
+	    }
+	}
+
+	free(buffer);
+
+	if((hret = sn_sigscan_closestream(streamhandle, &resulthandle)) < 0) {
+	    cli_errmsg("cli_scandesc: can't close hardware stream: %d\n", hret);
+	    return CL_EHWIO;
+	}
+
+	count = sn_sigscan_resultcount(resulthandle);
+	cli_dbgmsg("cli_scandesc: number of results: %d\n", count);
+
+	if(count > 0) {
+	    if((hret = sn_sigscan_resultget(resulthandle, 0, ctx->virname, &hoffset)) < 0) {
+		cli_errmsg("cli_scandesc: can't get hardware match result: %d\n", hret);
+		sn_sigscan_resultfree(resulthandle);
+		return CL_EHWIO;
+	    } else {
+		cli_dbgmsg("cli_scandesc: hardware match %s at %u\n", *ctx->virname, hoffset);
+		ret = CL_VIRUS;
+	    }
+	}
+
+	if((hret = sn_sigscan_resultfree(resulthandle)) < 0) {
+	    cli_errmsg("cli_scandesc: can't free results: %d\n", ret);
+	    return CL_EHWIO;
+	}
+
+	return ret;
+    }
+#endif /* HAVE_HWACCEL */
+
 
     groot = ctx->engine->root[0]; /* generic signatures */
 
@@ -471,116 +583,4 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
     }
 
     return otfrec ? type : CL_CLEAN;
-}
-
-int cl_build(struct cl_engine *engine)
-{
-	int i, ret;
-	struct cli_matcher *root;
-
-
-    if((ret = cli_addtypesigs(engine)))
-	return ret;
-
-    for(i = 0; i < CL_TARGET_TABLE_SIZE; i++)
-	if((root = engine->root[i]))
-	    cli_ac_buildtrie(root);
-    /* FIXME: check return values of cli_ac_buildtree */
-
-    return 0;
-}
-
-struct cl_engine *cl_dup(struct cl_engine *engine)
-{
-    if(!engine) {
-	cli_errmsg("cl_dup: engine == NULL\n");
-	return NULL;
-    }
-
-#ifdef CL_THREAD_SAFE
-    pthread_mutex_lock(&cli_ref_mutex);
-#endif
-
-    engine->refcount++;
-
-#ifdef CL_THREAD_SAFE
-    pthread_mutex_unlock(&cli_ref_mutex);
-#endif
-
-    return engine;
-}
-
-void cl_free(struct cl_engine *engine)
-{
-	int i;
-	struct cli_md5_node *md5pt, *md5h;
-	struct cli_meta_node *metapt, *metah;
-	struct cli_matcher *root;
-
-    if(!engine) {
-	cli_errmsg("cl_free: engine == NULL\n");
-	return;
-    }
-
-#ifdef CL_THREAD_SAFE
-    pthread_mutex_lock(&cli_ref_mutex);
-#endif
-
-    engine->refcount--;
-    if(engine->refcount) {
-#ifdef CL_THREAD_SAFE
-	pthread_mutex_unlock(&cli_ref_mutex);
-#endif
-	return;
-    }
-    
-#ifdef CL_THREAD_SAFE
-    pthread_mutex_unlock(&cli_ref_mutex);
-#endif
-
-    for(i = 0; i < CL_TARGET_TABLE_SIZE; i++) {
-	if((root = engine->root[i])) {
-	    cli_ac_free(root);
-	    if(!engine->root[i]->ac_only)
-		cli_bm_free(root);
-	}
-    }
-
-    if(engine->md5_hlist) {
-	for(i = 0; i < 256; i++) {
-	    md5pt = engine->md5_hlist[i];
-	    while(md5pt) {
-		md5h = md5pt;
-		md5pt = md5pt->next;
-		free(md5h->md5);
-		free(md5h->virname);
-		if(md5h->viralias)
-		    free(md5h->viralias);
-		free(md5h);
-	    }
-	}
-	free(engine->md5_hlist);
-    }
-
-    metapt = engine->zip_mlist;
-    while(metapt) {
-	metah = metapt;
-	metapt = metapt->next;
-	free(metah->virname);
-	if(metah->filename)
-	    free(metah->filename);
-	free(metah);
-    }
-
-    metapt = engine->rar_mlist;
-    while(metapt) {
-	metah = metapt;
-	metapt = metapt->next;
-	free(metah->virname);
-	if(metah->filename)
-	    free(metah->filename);
-	free(metah);
-    }
-
-    free(engine);
 }

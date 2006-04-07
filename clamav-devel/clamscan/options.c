@@ -93,6 +93,9 @@ int main(int argc, char **argv)
             {"max-ratio", 1, 0, 0},
 	    {"max-recursion", 1, 0, 0},
 	    {"max-dir-recursion", 1, 0, 0},
+#ifdef HWACCEL
+	    {"hwaccel", 0, 0, 0},
+#endif
 	    {"disable-archive", 0, 0, 0},
 	    {"no-archive", 0, 0, 0},
 	    {"detect-broken", 0, 0, 0},

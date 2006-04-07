@@ -34,6 +34,7 @@ extern "C"
 /* return codes */
 #define CL_CLEAN	0   /* virus not found */
 #define CL_VIRUS	1   /* virus found */
+#define CL_SUCCESS	CL_CLEAN
 
 #define CL_EMAXREC	10  /* recursion level limit exceeded */
 #define CL_EMAXSIZE	11  /* size limit exceeded */
@@ -62,6 +63,11 @@ extern "C"
 #define CL_EDSIG	-11 /* digital signature verification error */
 #define CL_EIO		-12 /* general I/O error */
 #define CL_EFORMAT	-13 /* bad format or broken file */
+
+#define CL_EHWINIT	-14 /* hardware initialization failed */
+#define	CL_EHWLOAD	-15 /* error loading hardware database */
+#define CL_EHWIO	-16 /* general hardware I/O error */
+
 
 /* db options */
 #define CL_DB_HWACCEL		1
@@ -164,6 +170,8 @@ struct cl_engine {
     /* RAR metadata */
     struct cli_meta_node *rar_mlist;
 
+    /* Hardware database handle */
+    void *hwdb;
 };
 
 struct cl_limits {

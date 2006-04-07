@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -57,6 +57,16 @@
 #   endif
 # endif
 #endif
+
+#ifdef CL_THREAD_SAFE
+#  include <pthread.h>
+static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
+#ifdef HAVE_HWACCEL
+#include <sn_sigscan/sn_sigscan.h>
+#endif
+
 
 /* TODO: clean up the code */
 
@@ -962,14 +972,56 @@ static int cli_loadmd(FILE *fd, struct cl_engine **engine, unsigned int *signo, 
     return 0;
 }
 
+#ifdef HAVE_HWACCEL
+static int cli_loadhw(const char *filename, struct cl_engine **engine, unsigned int *signo, unsigned int options)
+{
+	int ret = 0;
+
+
+    if((ret = cli_initengine(engine, options))) {
+	cl_free(*engine);
+	return ret;
+    }
+
+    if((ret = sn_sigscan_initdb(&(*engine)->hwdb)) < 0) {
+	cli_errmsg("hwaccel: error initializing the matcher: %d\n", ret);
+	cl_free(*engine);
+	return CL_EHWINIT;
+    }
+
+    (*engine)->hwaccel = 1;
+
+    if((ret = sn_sigscan_loaddb((*engine)->hwdb, filename, 0, signo)) < 0) {
+	cli_errmsg("hwaccel: can't load hardware database: %d\n", ret);
+	cl_free(*engine);
+	return CL_EHWLOAD;
+    }
+
+    return CL_SUCCESS;
+}
+#endif /* HAVE_HWACCEL */
+
 static int cli_load(const char *filename, struct cl_engine **engine, unsigned int *signo, unsigned int options)
 {
 	FILE *fd;
-	int ret;
+	int ret = CL_SUCCESS;
 
+
+#ifdef HAVE_HWACCEL
+    if(options & CL_DB_HWACCEL) {
+	if(cli_strbcasestr(filename, ".hw")) {
+	    cli_dbgmsg("Loading %s\n", filename);
+	    ret = cli_loadhw(filename, engine, signo, options);
+	} else {
+	    cli_dbgmsg("Ignoring %s\n", filename);
+	}
+
+	return ret;
+    }
+#endif /* HAVE_HWACCEL */
 
     if((fd = fopen(filename, "rb")) == NULL) {
-	cli_errmsg("cli_loaddb(): Can't open file %s\n", filename);
+	cli_errmsg("cli_load(): Can't open file %s\n", filename);
 	return CL_EOPEN;
     }
 
@@ -1005,7 +1057,7 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
 	ret = cli_loadmd(fd, engine, signo, 2, options);
 
     } else {
-	cli_dbgmsg("cli_loaddb: unknown extension - assuming old database format\n");
+	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
 	ret = cli_loaddb(fd, engine, signo, options);
     }
 
@@ -1062,6 +1114,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigne
 	     cli_strbcasestr(dent->d_name, ".sdb")  ||
 	     cli_strbcasestr(dent->d_name, ".zmd")  ||
 	     cli_strbcasestr(dent->d_name, ".rmd")  ||
+	     cli_strbcasestr(dent->d_name, ".hw")  ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbfile = (char *) cli_calloc(strlen(dent->d_name) + strlen(dirname) + 2, sizeof(char));
@@ -1107,14 +1160,7 @@ int cl_load(const char *path, struct cl_engine **engine, unsigned int *signo, un
 	return ret;
     }
 
-    if(options & CL_DB_HWACCEL) {
-	(*engine)->hwaccel = 1;
-
-	/* load hw db  */
-
-	return 0;
-
-    } else switch(sb.st_mode & S_IFMT) {
+    switch(sb.st_mode & S_IFMT) {
 	case S_IFREG: 
 	    return cli_load(path, engine, signo, options);
 
@@ -1178,11 +1224,12 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".db2")  || 
 	    cli_strbcasestr(dent->d_name, ".db3")  || 
 	    cli_strbcasestr(dent->d_name, ".hdb")  || 
-	    cli_strbcasestr(dent->d_name, ".fp")  || 
+	    cli_strbcasestr(dent->d_name, ".fp")   || 
 	    cli_strbcasestr(dent->d_name, ".ndb")  || 
 	    cli_strbcasestr(dent->d_name, ".sdb")  || 
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 
 	    cli_strbcasestr(dent->d_name, ".rmd")  || 
+	    cli_strbcasestr(dent->d_name, ".hw")   ||
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbstat->no++;
@@ -1250,11 +1297,12 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".db2")  || 
 	    cli_strbcasestr(dent->d_name, ".db3")  || 
 	    cli_strbcasestr(dent->d_name, ".hdb")  || 
-	    cli_strbcasestr(dent->d_name, ".fp")  || 
+	    cli_strbcasestr(dent->d_name, ".fp")   || 
 	    cli_strbcasestr(dent->d_name, ".ndb")  || 
 	    cli_strbcasestr(dent->d_name, ".sdb")  || 
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 
 	    cli_strbcasestr(dent->d_name, ".rmd")  || 
+	    cli_strbcasestr(dent->d_name, ".hw")   ||
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
                 fname = cli_calloc(strlen(dbstat->dir) + strlen(dent->d_name) + 2, sizeof(char));
@@ -1317,4 +1365,124 @@ int cl_statfree(struct cl_stat *dbstat)
     }
 
     return 0;
+}
+
+void cl_free(struct cl_engine *engine)
+{
+	int i, ret;
+	struct cli_md5_node *md5pt, *md5h;
+	struct cli_meta_node *metapt, *metah;
+	struct cli_matcher *root;
+
+    if(!engine) {
+	cli_errmsg("cl_free: engine == NULL\n");
+	return;
+    }
+
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_lock(&cli_ref_mutex);
+#endif
+
+    engine->refcount--;
+    if(engine->refcount) {
+#ifdef CL_THREAD_SAFE
+	pthread_mutex_unlock(&cli_ref_mutex);
+#endif
+	return;
+    }
+
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_unlock(&cli_ref_mutex);
+#endif
+
+#ifdef HAVE_HWACCEL
+    if(engine->hwaccel) {
+	if((ret = sn_sigscan_closedb(engine->hwdb)) < 0) {
+	    cli_errmsg("cl_free: can't close hardware database: %d\n", ret);
+	}
+    }
+#endif
+
+    for(i = 0; i < CL_TARGET_TABLE_SIZE; i++) {
+	if((root = engine->root[i])) {
+	    cli_ac_free(root);
+	    if(!engine->root[i]->ac_only)
+		cli_bm_free(root);
+	}
+    }
+
+    if(engine->md5_hlist) {
+	for(i = 0; i < 256; i++) {
+	    md5pt = engine->md5_hlist[i];
+	    while(md5pt) {
+		md5h = md5pt;
+		md5pt = md5pt->next;
+		free(md5h->md5);
+		free(md5h->virname);
+		if(md5h->viralias)
+		    free(md5h->viralias);
+		free(md5h);
+	    }
+	}
+	free(engine->md5_hlist);
+    }
+
+    metapt = engine->zip_mlist;
+    while(metapt) {
+	metah = metapt;
+	metapt = metapt->next;
+	free(metah->virname);
+	if(metah->filename)
+	    free(metah->filename);
+	free(metah);
+    }
+
+    metapt = engine->rar_mlist;
+    while(metapt) {
+	metah = metapt;
+	metapt = metapt->next;
+	free(metah->virname);
+	if(metah->filename)
+	    free(metah->filename);
+	free(metah);
+    }
+
+    free(engine);
+}
+
+int cl_build(struct cl_engine *engine)
+{
+	int i, ret;
+	struct cli_matcher *root;
+
+
+    if((ret = cli_addtypesigs(engine)))
+	return ret;
+
+    for(i = 0; i < CL_TARGET_TABLE_SIZE; i++)
+	if((root = engine->root[i]))
+	    cli_ac_buildtrie(root);
+    /* FIXME: check return values of cli_ac_buildtree */
+
+    return 0;
+}
+
+struct cl_engine *cl_dup(struct cl_engine *engine)
+{
+    if(!engine) {
+	cli_errmsg("cl_dup: engine == NULL\n");
+	return NULL;
+    }
+
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_lock(&cli_ref_mutex);
+#endif
+
+    engine->refcount++;
+
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_unlock(&cli_ref_mutex);
+#endif
+
+    return engine;
 }

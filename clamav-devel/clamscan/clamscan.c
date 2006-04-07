@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -161,7 +161,10 @@ int clamscan(struct optstruct *opt)
 	dms += (dms < 0) ? (1000000):(0);
 	logg("\n----------- SCAN SUMMARY -----------\n");
 	logg("Known viruses: %d\n", claminfo.signs);
-	logg("Engine version: %s\n", cl_retver());
+	if(optl(opt, "hwaccel"))
+	    logg("Engine version: %s [hwaccel]\n", cl_retver());
+	else
+	    logg("Engine version: %s\n", cl_retver());
 	logg("Scanned directories: %d\n", claminfo.dirs);
 	logg("Scanned files: %d\n", claminfo.files);
 	logg("Infected files: %d\n", claminfo.ifiles);
@@ -223,7 +226,9 @@ void help(void)
     mprintf("    --include=PATT                       Only scan file names containing PATT\n");
     mprintf("    --include-dir=PATT                   Only scan directories containing PATT\n");
 #endif
-
+#ifdef HAVE_HWACCEL
+    mprintf("\n    --hwaccel                            Use hardware acceleration\n");
+#endif
     mprintf("\n");
     mprintf("    --no-mail                            Disable mail file support\n");
     mprintf("    --no-phishing                        Disable phishing detection\n");
