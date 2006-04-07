@@ -61,6 +61,7 @@ int	messageAddStr(message *m, const char *data);
 int	messageAddStrAtTop(message *m, const char *data);
 const	text	*messageGetBody(const message *m);
 void	messageClean(message *m);
+unsigned	char	*base64Flush(message *m, unsigned char *buf);
 fileblob	*messageToFileblob(message *m, const char *dir);
 blob	*messageToBlob(message *m);
 text	*messageToText(message *m);
