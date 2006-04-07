@@ -1,6 +1,6 @@
 Fri Apr  7 21:09:25 CEST 2006 (tk)
 ----------------------------------
-  * libclamav: initial support for Sensory Network's NodalCore Accelerator
+  * libclamav: initial support for Sensory Networks' NodalCore Accelerator
   * clamscan: new option --hwaccel (only available on systems with hardware
 	      accelerators)
 
