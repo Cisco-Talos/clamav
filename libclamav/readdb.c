@@ -1056,6 +1056,9 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
     } else if(cli_strbcasestr(filename, ".rmd")) {
 	ret = cli_loadmd(fd, engine, signo, 2, options);
 
+    } else if(cli_strbcasestr(filename, ".hw")) {
+	/* ignore */
+
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
 	ret = cli_loaddb(fd, engine, signo, options);
