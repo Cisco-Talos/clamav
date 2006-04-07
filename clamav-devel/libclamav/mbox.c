@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.282 2006/04/07 11:24:22 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.283 2006/04/07 16:30:53 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -112,9 +112,9 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
  * "--without-libcurl". I don't know if it works with Sun's own compiler
  *
  * Fails to link on Solaris 10 with this error:
- *      Undefined                       first referenced
- *  symbol                             in file
- *  __floatdidf                         /opt/sfw/lib/libcurl.s
+ *      Undefined			first referenced
+ *  symbol				in file
+ *  __floatdidf				/opt/sfw/lib/libcurl.s
  */
 #if	C_SOLARIS && __GNUC__
 #undef	WITH_CURL
@@ -620,8 +620,37 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				}
 
 			if(b64size > 0L) {
-				int lastline;
+				int lastline, tmpfd;
+				char *tmpfilename;
+				unsigned char *uptr;
+
 				cli_dbgmsg("cli_mbox: decoding %ld base64 bytes\n", b64size);
+
+				tmpfilename = cli_gentemp(dir);
+				if(tmpfilename == 0) {
+					if(wasAlloced)
+						free(start);
+					else
+						munmap(start, size);
+
+					return CL_EMEM;
+				}
+
+#ifdef	O_TEXT
+				tmpfd = open(tmpfilename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_TEXT, 0600);
+#else
+				tmpfd = open(tmpfilename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC, 0600);
+#endif
+				if(tmpfd < 0) {
+					cli_errmsg("Can't make %s\n", tmpfilename);
+					free(tmpfilename);
+					if(wasAlloced)
+						free(start);
+					else
+						munmap(start, size);
+
+					return CL_ETMPFILE;
+				}
 
 				line = NULL;
 
@@ -631,16 +660,22 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 						free(start);
 					else
 						munmap(start, size);
+					close(tmpfd);
+					unlink(tmpfilename);
+					free(tmpfilename);
 
 					return CL_EMEM;
 				}
 				messageSetEncoding(m, "base64");
+				free(tmpfilename);
 
 				lastline = 0;
 
 				do {
-					int length = 0;
+					int length = 0, datalen;
 					char *newline, *equal;
+					unsigned char *bigbuf, *data;
+					unsigned char smallbuf[1024];
 
 					/*printf("%ld: ", b64size); fflush(stdout);*/
 
@@ -666,8 +701,31 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 					}
 					/*puts(line);*/
 
+#if	0
 					if(messageAddStr(m, line) < 0)
 						break;
+#endif
+					if(length >= sizeof(smallbuf)) {
+						datalen = length + 2;
+						data = bigbuf = cli_malloc(datalen);
+						if(data == NULL)
+							break;
+					} else {
+						bigbuf = NULL;
+						data = smallbuf;
+						datalen = sizeof(data) - 1;
+					}
+					uptr = decodeLine(m, BASE64, line, data, datalen);
+
+					if(uptr == NULL) {
+						if(bigbuf)
+							free(bigbuf);
+						break;
+					}
+					/*cli_dbgmsg("base64: write %u bytes\n", (size_t)(uptr - data));*/
+					cli_writen(tmpfd, data, (size_t)(uptr - data));
+					if(bigbuf)
+						free(bigbuf);
 
 					if((b64size > 0) && (*ptr == '\r')) {
 						b64start = ++ptr;
@@ -681,6 +739,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 						break;
 				} while(b64size > 0L);
 
+#if	0
 				free(line);
 				fb = messageToFileblob(m, dir);
 				messageDestroy(m);
@@ -689,6 +748,21 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 					fileblobDestroy(fb);
 				else
 					ret = -1;
+#else
+				if(m->base64chars) {
+					unsigned char data[4];
+
+					uptr = base64Flush(m, data);
+					if(uptr) {
+						/*cli_dbgmsg("base64: flush %u bytes\n", (size_t)(uptr - data));*/
+						cli_writen(tmpfd, data, (size_t)(uptr - data));
+					}
+				}
+
+				messageDestroy(m);
+				free(line);
+				close(tmpfd);
+#endif
 			}
 		} else if(scanelem->decoder == QUOTEDPRINTABLE) {
 			const char *quotedstart = scanelem->start;
@@ -804,6 +878,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 	/*
 	 * FIXME: Need to run cl_scandir() here and return that value
 	 */
+	cli_dbgmsg("cli_mbox: ret = %d\n", ret);
 	if(ret == 0)
 		return CL_CLEAN;	/* a lie - but it gets things going */
 
