@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.281 2006/04/07 10:15:49 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.282 2006/04/07 11:24:22 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1169,7 +1169,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 {
 	bool inHeader = TRUE;
 	bool contMarker = FALSE;
-	bool lastWasBlank = FALSE;
+	bool lastWasBlank = FALSE, lastBodyLineWasBlank = FALSE;
 	message *ret;
 	bool anyHeadersFound = FALSE;
 	int commandNumber = -1;
@@ -1364,9 +1364,19 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 			if(uudecodeFile(ret, line, dir, fin) < 0)
 				if(messageAddStr(ret, line) < 0)
 					break;
-		} else
+		} else {
+			if(line == NULL) {
+				if(lastBodyLineWasBlank) {
+					cli_dbgmsg("Ignoring consecutive blank lines in the body\n");
+					continue;
+				}
+				lastBodyLineWasBlank = TRUE;
+			} else
+				lastBodyLineWasBlank = FALSE;
+
 			if(messageAddStr(ret, line) < 0)
 				break;
+		}
 	} while(getline_from_mbox(buffer, sizeof(buffer) - 1, fin) != NULL);
 
 	if(fullline) {
