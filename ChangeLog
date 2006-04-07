@@ -1,3 +1,8 @@
+Fri Apr  7 11:13:29 BST 2006 (trog)
+-----------------------------------
+  * libclamav/unrar/unrar.c: Fix error path error leaks.
+		Patch from Andrey J. Melnikoff.
+
 Thu Apr  6 19:39:36 CEST 2006 (tk)
 ----------------------------------
   * libclamav/zziplib/zzip-zip.c: add missing #include "others.h"

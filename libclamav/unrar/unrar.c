@@ -1345,6 +1345,10 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 	
 	main_hdr = read_header(fd, MAIN_HEAD);
 	if (!main_hdr) {
+		ppm_destructor(&unpack_data->ppm_data);
+		init_filters(unpack_data);
+		unpack_free_data(unpack_data);
+		free(unpack_data);
 		return metadata;
 	}
 	cli_dbgmsg("Head CRC: %.4x\n", main_hdr->head_crc);
@@ -1355,16 +1359,28 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 		/* Part of a RAR VOLUME - Skip it */
 		cli_dbgmsg("RAR MUTIPART VOLUME - Skippng.\n");
 		free(main_hdr);
+		ppm_destructor(&unpack_data->ppm_data);
+		init_filters(unpack_data);
+		unpack_free_data(unpack_data);
+		free(unpack_data);
 		return metadata;
         }
 
 	if (main_hdr->head_size < SIZEOF_NEWMHD) {
 		free(main_hdr);
+		ppm_destructor(&unpack_data->ppm_data);
+		init_filters(unpack_data);
+		unpack_free_data(unpack_data);
+		free(unpack_data);
 		return metadata;
 	}
 	if (main_hdr->head_size > SIZEOF_NEWMHD) {
 		if (!lseek(fd, main_hdr->head_size - SIZEOF_NEWMHD, SEEK_CUR)) {
 			free(main_hdr);
+			ppm_destructor(&unpack_data->ppm_data);
+			init_filters(unpack_data);
+			unpack_free_data(unpack_data);
+			free(unpack_data);
 			return metadata;
 		}
 	}
@@ -1450,6 +1466,11 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 			cli_dbgmsg("ERROR: seek failed: %ld\n", file_header->next_offset);
 			free(file_header->filename);
 			free(file_header);
+			free(main_hdr);
+			ppm_destructor(&unpack_data->ppm_data);
+			init_filters(unpack_data);
+			unpack_free_data(unpack_data);
+			free(unpack_data);
 			return metadata;
 		}
 		free(file_header->filename);
