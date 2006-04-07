@@ -85,7 +85,10 @@ int scanmanager(const struct optstruct *opt)
        optl(opt, "tar") || optl(opt, "tgz") || optl(opt, "deb"))
 	    compression = 1;
 
-    /* now initialize the database */
+
+    if(optl(opt, "hwaccel"))
+	dboptions |= CL_DB_HWACCEL;
+
     if(optl(opt, "no-phishing"))
 	dboptions |= CL_DB_NOPHISHING;
 

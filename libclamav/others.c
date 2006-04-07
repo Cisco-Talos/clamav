@@ -195,6 +195,12 @@ const char *cl_strerror(int clerror)
 	    return "Input/Output error";
 	case CL_EFORMAT:
 	    return "Bad format or broken data";
+	case CL_EHWINIT:
+	    return "Hardware initialization failure";
+	case CL_EHWLOAD:
+	    return "Error loading hardware database";
+	case CL_EHWIO:
+	    return "Hardware accelerator Input/Output error";
 	default:
 	    return "Unknown error code";
     }
