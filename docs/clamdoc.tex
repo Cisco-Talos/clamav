@@ -16,7 +16,8 @@
 %
 %  You should have received a copy of the GNU General Public License
 %  along with this program; if not, write to the Free Software
-%  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+%  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+%  MA 02110-1301, USA.
 
 \documentclass[a4paper,titlepage,12pt]{article}
 \usepackage{amssymb}
@@ -69,18 +70,18 @@
     \vspace{3cm}
     \begin{flushright}
 	\rule[-1ex]{8cm}{3pt}\\
-	\huge Clam AntiVirus 0.86rc1\\
+	\huge Clam AntiVirus 0.88.1\\
 	\huge \emph{User Manual}\\
     \end{flushright}
 
     \newpage
     \pagestyle{fancy}
     \tableofcontents
-    \vspace{11.5cm}
+    \vspace{9.5cm}
 
     \noindent
     \begin{boxedminipage}[b]{\textwidth}
-    ClamAV User Manual, \copyright \  2002 - 2005 Tomasz Kojm\\
+    ClamAV User Manual, \copyright \  2002 - 2006 Tomasz Kojm\\
     This document is distributed under the terms of the GNU General
     Public License v2.
     \end{boxedminipage}
@@ -101,7 +102,8 @@
 
     You should have received a copy of the GNU General Public License
     along with this program; if not, write to the Free Software
-    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+    MA 02110-1301, USA.
     \end{boxedminipage}
 
     \newpage
@@ -449,18 +451,18 @@
     to connect it with Sendmail add the following lines to
     \verb+/etc/mail/sendmail.mc+:
     \begin{verbatim}
-INPUT_MAIL_FILTER(`clmilter',`S=local:/var/run/clmilter.sock,
+INPUT_MAIL_FILTER(`clmilter',`S=local:/var/run/clamav/clmilter.sock,
 F=, T=S:4m;R:4m')dnl
 define(`confINPUT_MAIL_FILTERS', `clmilter')
     \end{verbatim}
     If you're running it in \verb+--external+ mode, check entry in
     \verb+clamd.conf+ of the form:
     \begin{verbatim}
-	LocalSocket /var/run/clamd.sock
+	LocalSocket /var/run/clamav/clamd.sock
     \end{verbatim}
     Start clamav-milter
     \begin{verbatim}
-	/usr/local/sbin/clamav-milter -lo /var/run/clmilter.sock
+	/usr/local/sbin/clamav-milter -lo /var/run/clamav/clmilter.sock
     \end{verbatim}
     and restart sendmail.
 
@@ -1231,6 +1233,14 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     \textbf{Supports:} clamd\\[4pt]
     A mail processing client for ClamAV. Small, fast and easy to install.
 
+    \subsubsection{Clement}
+    \textbf{Homepage:} \url{http://www.clement.safe.ca/}\\
+    \textbf{Supports:} libclamav\\[4pt]
+    Clement is an application working as an mail server firewall. Its only
+    purpose is to trap most of the unwanted mail at the earliest possible stage.
+    Clement uses ClamAV to detect viruses and SpamAssassin to check for spam
+    content.
+
     \subsubsection{cgpav}
     \textbf{Homepage:} \url{http://program.farit.ru/}\\
     \textbf{Supports:} clamd\\[4pt]
@@ -1258,7 +1268,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     without major dependencies.
 
     \subsubsection{clapf}
-    \textbf{Homepage:} \url{http://thorium.ath.cx/clapf/}\\
+    \textbf{Homepage:} \url{http://dev.acts.hu/clapf/}\\
     \textbf{Supports:} libclamav\\[4pt]
     Clapf is a clamav based virus scanning and anti-spam content filter for
     Postfix.
@@ -1375,6 +1385,13 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     is used for virus detection. Fully configurable scheduled database scanning
     offers an additional layer of protection.
 
+    \subsubsection{PSCM}
+    \textbf{Homepage:} \url{http://www.metawire.org/~pscm/}\\
+    \textbf{Supports:} clamd\\[4pt]
+    PSCM is an RPM package that provides out-of-box easy installation for
+    a secure smtp mailserver with spam filtering and virus scanning
+    capabilities.
+
     \subsubsection{PTSMail Utilities}
     \textbf{Homepage:} \url{http://www.scanmail-software.com/}\\
     \textbf{Supports:} clamscan\\[4pt]
@@ -1413,9 +1430,9 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     \subsubsection{qSheff}
     \textbf{Homepage:} \url{http://www.enderunix.org/qsheff}\\
     \textbf{Supports:} clamdscan, clamd\\[4pt]
-    The tool allows running anti-virus and content filtering software
-    simultaneously. Supports ClamAV for virus checking and Zabit for
-    content filtering.
+    The tool allows running anti-virus, body/subject/attachment filtering, user 
+    defined white/black lists, and alternative qmail logging. Supports ClamAV
+    for virus checking.
 
     \subsubsection{RevolSys SMTP kit for Postfix}
     \textbf{Homepage:} \url{http://smtp.revolsys.org/}\\
@@ -1474,7 +1491,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     antivirus scanning using ClamAV.
 
     \subsubsection{smf-clamd}
-    \textbf{Homepage:} \url{}\\
+    \textbf{Homepage:} \url{http://smfs.sourceforge.net/smf-clamd.html}\\
     \textbf{Supports:} clamd\\[4pt]
     SmartSendmailFilter-clamd is a lightweight filter for Sendmail. It's
     a small (less than 550 lines of C code), fast and very stable filter
@@ -1486,6 +1503,15 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     smtpfilter is a filter for an SMTP session which passes the session through
     transparently in real time, except for the DATA command which is
     intercepted in order to scan the data for spam and/or viruses.
+
+    \subsubsection{smtp-gated}
+    \textbf{Homepage:} \url{http://smtp-proxy.klolik.org/}\\
+    \textbf{Supports:} clamd\\[4pt]
+    smtp-gated is a transparent SMTP proxy supporting: NAT on Linux (netfilter),
+    NAT on FreeBSD (ipfw and others getsockopt-compatible), or dedicated mode
+    (separate/external machine). DATA traffic is spooled in write-thru mode
+    and then scanned for viruses or spam. The program is transparent for TLS
+    connections.
 
     \subsubsection{smtp-vilter}
     \textbf{Homepage:} \url{http://www.etc.msys.ch/software/smtp-vilter/}\\
@@ -1517,8 +1543,8 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     \subsubsection{POP3 Virus Scanner Daemon}
     \textbf{Homepage:} \url{http://p3scan.sourceforge.net/}\\
     \textbf{Supports:} clamscan\\[4pt]
-    This is a full-transparent proxy-server for POP3-clients. It runs on
-    a Linux box with iptables (for port re-direction). It can be used to
+    This is a fully transparent proxy server for POP3-clients. It runs on
+    a Linux box with iptables (for port redirection). It can be used to
     provide POP3 email scanning from the Internet, to any internal network
     and is ideal for helping to protect your Other OS LAN from harm,
     especially when used in conjunction with a firewall and other Internet
@@ -1562,15 +1588,19 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     is the chance of malicious code in nearly every filetypes e.g. HTML
     (JavaScript) or JPEG files.
 
-    \subsubsection{Frox}
-    \textbf{Homepage:} \url{http://www.hollo.org/frox/}\\
-    \textbf{Supports:} clamscan\\[4pt]
-
     \subsubsection{mod\_clamav}
     \textbf{Homepage:} \url{http://software.othello.ch/mod_clamav/}\\
     \textbf{Supports:} libclamav, clamd\\[4pt]
     mod\_clamav is an Apache virus scanning filter. It was written
     and is currently maintained by Andreas Muller.
+
+    \subsubsection{ClamAV module for ProFTPD}
+    \textbf{Homepage:} \url{http://www.uglyboxindustries.com/open-source.php}\\
+    \textbf{Supports:} libclamav\\[4pt]
+    This is an add on module for ProFTPD that enables the FTP server to scan
+    newly uploaded files for viruses, before allowing the file upload to
+    complete. This is very valuable, as you, the administrator, can ensure
+    that your FTP sites do not contain viruses uploaded by your users.
 
     \subsubsection{SafeSquid}
     \textbf{Homepage:} \url{http://www.safesquid.com/}\\
@@ -1695,13 +1725,13 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     with the "dot-qmail" mechanism for qmail-local and is entirely designed
     for qmail (no additional patches required).
 
-    \subsubsection{Sylpheed Claws}
+    \subsubsection{Sylpheed-Claws}
     \textbf{Homepage:} \url{http://claws.sylpheed.org/}\\
     \textbf{Supports:} libclamav\\[4pt]
-    Sylpheed Claws is a bleeding edge branch of Sylpheed, a light weight mail
-    user agent for UNIX. It can scan attachments in mail received from POP,
-    IMAP or a local account and optionally delete the mail or save it to a
-    designated folder.
+    Sylpheed-Claws is the extended branch of Sylpheed, a lightweight mail user
+    agent for UNIX. It can scan attachments in mail received from
+    POP/IMAP/local accounts using the Clam AntiVirus plugin. Preferences can
+    be set under Configuration/Preferences/Plugins/Clam AntiVirus.
  
     \subsubsection{SoftlabsAV}
     \textbf{Homepage:} \url{http://antivirus.softlabs.info/}\\
@@ -1787,6 +1817,11 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 
     \subsection{\emph{Library + ClamAV}}
 
+    \subsubsection{ClamAV-Sharp}
+    \textbf{Homepage:} \url{http://clamav-sharp.pcode.nl/}\\
+    \textbf{Supports:} libclamav\\[4pt]
+    Mono binding for ClamAV.
+
     \subsubsection{ClamAVPlugin}
     \textbf{Homepage:} \url{http://wiki.apache.org/spamassassin/ClamAVPlugin}\\
     \textbf{Supports:} libclamav via File::Scan::ClamAV\\[4pt]
@@ -1813,11 +1848,11 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     \textbf{Supports:} libclamav\\[4pt]
     Perl binding for ClamAV.
 
-    \subsubsection{php-clamav}
-    \textbf{Homepage:} \url{http://freshmeat.net/projects/php-clam/}\\
+    \subsubsection{PHP ClamAV Lib}
+    \textbf{Homepage:} \url{http://phpclamavlib.org/}\\
     \textbf{Supports:} libclamav\\[4pt]
-    php-clamav is a small module that implements a limited subset of the
-    libclamav API in order to scan buffers and files from within PHP.
+    PHP ClamAV Lib is a PHP extension that allows to incorporate virus
+    scanning features in PHP scripts.
 
     \subsubsection{pyclamav}
     \textbf{Homepage:} \url{http://xael.org/norman/python/pyclamav/index.html}\\
@@ -1927,9 +1962,6 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\hline
 	Mirror & IP & Location & Administrator\\ \hline\hline
 
-	\url{clamav.man.olsztyn.pl} & 213.184.16.3 & Olsztyn, & Robert d`Aystetten\\
-				    &		   & Poland   & \email{<dart*man.olsztyn.pl>}\\ \hline
-
 	\url{avmirror1.prod.rxgsys.com} & 64.74.124.90 & USA & Graham Wooden\\
 					&	       &     & \email{<graham*rxgsys.com>}\\ \hline
 
@@ -1965,7 +1997,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 				     &		      &	    & \email{<scott*perlcode.org>}\\ \hline
 	\url{clamav-sj.viaverio.com} & 128.121.60.235 & USA & Scott Wiersdorf\\
 				     &		      &	    & \email{<scott*perlcode.org>}\\ \hline
-	\url{clamavdb.heanet.ie} & 193.1.219.100 & Ireland & Colm MacCarthaigh\\
+	\url{clamavdb.heanet.ie} & 193.1.193.64 & Ireland & Colm MacCarthaigh\\
 				 &		 &	   & \email{<mirrors*heanet.ie>}\\ \hline
 	\url{clamav.crysys.hu} & 152.66.249.132 & Hungary & Bencsath Boldizsar\\
 			       &		&	  & \email{<boldi*mail2004.crysys.hit.bme.hu>}\\ \hline
@@ -1982,18 +2014,8 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\url{clamav.ialfa.net} & 210.22.201.152 & People's Republic & Alfa Shen\\
 			       &		& of China	    & \email{<alfa*ialfa.net>}\\ \hline
 
-	\url{clamavdb.ikk.sztaki.hu} & 193.225.86.3 & Hungary & Gabor Kiss\\
+	\url{clamavdb.ikk.sztaki.hu} & 193.225.12.21 & Hungary & Gabor Kiss\\
 				     &		    &	      & \email{<kissg*debella.ikk.sztaki.hu>}\\ \hline
-
-    \end{tabular}}
-    \end{center}
-    % new page
-    \begin{center}
-    {\footnotesize
-    \begin{tabular}{|c|c|c|c|}
-	\hline
-	Mirror & IP & Location & Administrator\\ \hline\hline
-
 
 	\url{clamav.mirrors.nks.net} & 24.73.112.74 & Florida, USA & James Neal\\
 				     &		    &		   & \email{<clam-admin*nks.net>}\\ \hline
@@ -2007,8 +2029,18 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\url{clamav.dbplc.com} & 217.154.108.81 & United Kingdom & Simon Pither\\
 			       &		&		 & \email{<simon*digitalbrain.com>}\\ \hline
 
-	\url{clamav.unet.brandeis.edu} & 129.64.99.170 & USA & Rich Graves\\
-				       &	       &     & \email{<rcgraves*brandeis.edu>}\\ \hline
+    \end{tabular}}
+    \end{center}
+    % new page
+    \begin{center}
+    {\footnotesize
+    \begin{tabular}{|c|c|c|c|}
+	\hline
+	Mirror & IP & Location & Administrator\\ \hline\hline
+
+
+	\url{clamav.unet.brandeis.edu} & 129.64.99.170 & USA & Elliot Kendall\\
+				       &	       &     & \email{<ekendall*brandeis.edu>}\\ \hline
 
 	\url{clamav.im1.net} & 65.77.42.207 & Florida, US & Dmitri Pavlenkov\\
 			     &		    &		  & \email{<dmitri*im1.com>}\\ \hline
@@ -2039,7 +2071,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 			     & 213.186.33.37 &        & \email{<germain.masse*ovh.net>}\\ \hline
 	\url{clamav.spod.org} & 195.92.99.99 & United Kingdom & Ian Kirk\\
 			      &		     &		      & \email{<blob*blob.co.uk>}\\ \hline
-	\url{clamav.intercom.net.ua} & 195.13.43.28 & Ukraine & Artie Missirov\\
+	\url{clamav.intercom.net.ua} & 83.218.226.76 & Ukraine & Artie Missirov\\
 				     &		    &	      & \email{<kadjy*intercom.net.ua>}\\ \hline
 	\url{clamav.mirror.vutbr.cz} & 147.229.3.16 & Czech Republic & Tomas Kreuzwieser\\
 				     &		    &		     & \email{<mirror-adm*cis.vutbr.cz>}\\ \hline
@@ -2047,6 +2079,16 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 				    &		   &	    & \email{<adam*popik.pl>}\\ \hline
 	\url{clamav.fx-services.com} & 69.93.108.98 & USA & Robin Vley\\
 				     &		    &	  & \email{<robin*fx-services.com>}\\ \hline
+	\url{clamav.univ-nantes.fr} & 193.52.101.131 & France & Yann Dupont\\
+				    &		     &	      &	\email{<yann.dupont*univ-nantes.fr>}\\ \hline
+	\url{clamav.blackroute.net} & 64.246.44.108 & Texas, USA & Maarten Van Horenbeeck\\
+				    &		    &		 & \email{<maarten*daemon.be>}\\ \hline
+	\url{clamavdb.mithril-linux.org} & 211.10.155.48 & Japan & Hideki Yamane\\
+					 &		 &	 & \email{<henrich*samba.gr.jp>}\\ \hline
+	\url{clamavdb.planetmirror.com} & 203.16.234.78 & Australia & Jason Andrade\\
+					&		&	    & \email{<support*planetmirror.com>}\\ \hline
+	\url{clamav.pathlink.com} & 129.250.169.81 & USA & Kachun Lee\\
+				  &		   &	 & \email{<kachun*pathlink.com>}\\ \hline
     \end{tabular}}
     \end{center}
     % new page
@@ -2056,18 +2098,6 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\hline
 	Mirror & IP & Location & Administrator\\ \hline\hline
 
-	\url{clamav.univ-nantes.fr} & 193.52.101.131 & France & Yann Dupont\\
-				    &		     &	      &	\email{<yann.dupont*univ-nantes.fr>}\\ \hline
-	\url{clamav.blackroute.net} & 64.246.44.108 & Texas, USA & Maarten Van Horenbeeck\\
-				    &		    &		 & \email{<maarten*daemon.be>}\\ \hline
-	\url{clamavdb.mithril-linux.org} & 211.10.155.48 & Japan & Hideki Yamane\\
-					 &		 &	 & \email{<henrich*samba.gr.jp>}\\ \hline
-	\url{clamavdb.planetmirror.com} & 203.16.234.78 & Australia & Jason Andrade\\
-					&		&	    & \email{<support*planetmirror.com>}\\ \hline
-	\url{clamavdb.raimei.co.jp} & 219.106.255.66 & Japan & Araki Musashi\\
-				    &		     &	     & \email{<araki*raimei.co.jp>}\\ \hline
-	\url{clamav.pathlink.com} & 129.250.169.81 & USA & Kachun Lee\\
-				  &		   &	 & \email{<kachun*pathlink.com>}\\ \hline
 	\url{clamav.mirror.camelnetwork.com} & 213.230.200.242 & UK & Chris Burton\\
 					     &		       &    & \email{<clamav.mirror*camelnetwork.com>}\\ \hline
 	\url{clamav.unnet.nl} & 62.133.206.90 & Netherlands & Cliff Albert\\
@@ -2104,6 +2134,18 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 				       &		&	 & \email{<fd*waycom.net>}\\ \hline
 	\url{clamav.cryms.info} & 194.29.5.19 & Lugano,	    & Lorenzo Patocchi\\
 				&	      & Switzerland & \email{<lorenzo.patocchi*cryms.com>}\\ \hline
+	\url{clamav-mirror.wiseknot.co.jp} & 59.87.0.36 & Japan & Michiaki Tada\\
+					   &		&	& \email{<m-tada*wiseknot.co.jp>}\\ \hline
+	\url{clamav.host.bg} & 87.120.40.28 & Bulgaria & Anton Titov\\
+			     &		     &		& \email{<a.titov*host.bg>}\\ \hline
+	\url{clamav.yukiguni.net} & 219.127.68.136 & Japan & Takehisa Obata\\
+				  &		   &	   & \email{<indytech*yukiguni.net>}\\ \hline
+	\url{clamav.begi.net} & 219.106.242.51 & Japan & Hiromichi Itou\\
+			      &		       &       & \email{<ito*begi.net>}\\ \hline
+	\url{clamav.meiwing.com} & 210.245.226.117 & Hong Kong & Thomas Koo\\
+				 &		  &	      & \email{<thomas*meiwing.com>}\\ \hline
+	\url{clamav.unix.su} & 62.181.41.8 & Russian Federation & Konstantin A. Mikhailov\\
+			     &		   &			& \email{<kam*unix.su>}\\ \hline
     \end{tabular}}
     \end{center}
     % new page
@@ -2127,13 +2169,11 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 				  &		  &	& \email{<pavalos*theshell.com>}\\ \hline
 	\url{clamav.inode.at} & 81.223.20.171 & Austria & Michael Renner\\
 			      &		      &		& \email{<mirror*inode.at>}\\ \hline
-	\url{clamav.informatik.fh-furtwangen.de} & 141.28.73.8 & Germany & Sebastian Siewior\\
-						 &	       &	 & \email{<bigeasy*foo.fh-furtwangen.de>}\\ \hline
 	\url{clamav.cpss.edu.hk} & 218.189.210.14 & Hong Kong & Wan Pui Wa\\
 				 &		  &	      & \email{<puiwa*cpss.edu.hk>}\\ \hline
 	\url{clamav.irontec.com} & 66.111.55.10 & Tampa, & Iker Sagasti Markina\\
-				 &		& USA	 & \email{<iker*irontec.com>}\\
-	\url{clamav.optical.com.mx} & 200.53.122.8 & Mexico & Omar Armas\\
+				 &		& USA	 & \email{<iker*irontec.com>}\\ \hline
+	\url{clamav.mpsnet.com.mx} & 200.4.48.8 & Mexico & Omar Armas\\
 				    &		   &	    & \email{<oarmas*mpsnet.net.mx>}\\ \hline
 	\url{idea.sec.dico.unimi.it} & 159.149.155.69 & Italy & Lorenzo Martignoni\\
 				     &		      &	      & \email{<lorenzo*cert-it.dico.unimi.it>}\\ \hline
@@ -2146,21 +2186,23 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\url{clamav.ecualinux.com} & 66.111.57.40 & Ecuador & E. Perez Estevez\\
 				   &		  &	    & \email{<info*ecualinux.com>}\\ \hline
 	\url{clamav.oc1.mirrors.redwire.net} & 64.186.250.53 & USA & Japheth Cleaver\\
-	\url{clamav.sd2.mirrors.redwire.net} & 64.186.240.118 &	   & \email{<mirror*redwire.net>}\\ \hline
+					     &		     &	   & \email{<mirror*redwire.net>}\\ \hline
 	\url{clamav.edpnet.net} & 212.71.0.71 & Belgium & Daan Kerkhofs\\
 				&	      &		& \url{<d.kerkhofs*edpnet.net>}\\ \hline
 	\url{clamav.edgescape.com} & 67.19.5.178 & USA & Timothy Folks\\
 				   &		 &     & \url{<timothy.folks*edgescape.com>}\\ \hline
 	\url{clamav.hanbiro.com} & 211.234.111.17 & Korea & Kwon Taek Sool\\
 				 &		  &	  & \email{<master*hanbiro.com>}\\ \hline
-	\url{clamav.kyit.edu.tw} & 210.60.80.8 & Taiwan & Rui-Xiang Guo\\
-				 &	       &	& \email{<rxg*cc.kyit.edu.tw>}\\ \hline
 	\url{clamav.vtu.lt} & 193.219.149.170 & Lithuania & Eugenijus J.\\
 			    &		      &		  & \email{<ejs*ar.vtu.lt>}\\ \hline
-	\url{clamav.ftpproxy.org} & 217.110.63.228 & Germany & Andreas Schoenberg\\
+	\url{clamav.ftpproxy.org} & 195.246.234.199 & Germany & Andreas Schoenberg\\
 				  &		   &	     & \email{<asg*ftpproxy.org>}\\ \hline
 	\url{clamav.iasi.roedu.net} & 192.129.4.120 & Romania & Subredu Manuel\\
 				    &		    &	      & \email{<ftpadmin*iasi.roedu.net>}\\ \hline
+	\url{clamav.infonet.ee} & 212.7.0.71 & Estonia & Konstantin Barinov\\
+				&	     &	       & \email{<sbr*infonet.ee>}\\ \hline
+	\url{clamav.savework.de} & 85.214.44.186 & Germany & Kai-H. Weutzing\\
+				 &		 &	   & \email{<clamavdb*savework.de>}\\ \hline
     \end{tabular}}
     \end{center}
     % new page
@@ -2170,18 +2212,62 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\hline
 	Mirror & IP & Location & Administrator\\ \hline\hline
 
-	\url{clamav.infonet.ee} & 212.7.0.71 & Estonia & Konstantin Barinov\\
-				&	     &	       & \email{<sbr*infonet.ee>}\\ \hline
-	\url{clamav.savework.de} & 81.169.151.96 & Germany & Kai-H. Weutzing\\
-				 &		 &	   & \email{<clamavdb*savework.de>}\\ \hline
 	\url{clamav.citrin.ru} & 213.248.60.121 & Russia & Anton Yuzhaninov\\
 			       &		&	 & \email{<citrin*citrin.ru>}\\ \hline
-	\url{clamav.keystreams.com} & 207.158.28.8 & USA & Roman Volf\\
-				    &		   &	 & \email{<volfman*keystreams.com>}\\ \hline
 	\url{clamav.paralax.org} & 83.148.101.196 & Bulgaria & Svetoslav Vesselkoff\\
 				 &		  &	     & \email{<soho*paralax.org>}\\ \hline
 	\url{clamav.linux.pt} & 194.65.79.153 & Portugal & Jose Celestino\\
 			      &		      &		 & \email{<japc*co.sapo.pt>}\\ \hline
+	\url{clamav.westlinks.com} & 67.43.173.205 & USA & Tim Treaster\\
+				   &		   &	 & \email{<tim*westlinks.com>}\\ \hline
+	\url{clamav.liquidweb.com} & 209.59.139.38 & USA & Steven Collins\\
+				   &		   &	 & \email{<scollins*liquidweb.com>}\\ \hline
+	\url{clamav.xs4all.nl} & 194.109.6.74 & Netherlands & Eric Veldhuyzen\\
+			       &	      &		    & \email{<ericv*xs4all.net>}\\ \hline
+        \url{clamav.pinna.cx} & 69.57.154.46 & Texas, & Nicola Pinna\\
+			      &		     & USA    &	\email{<pinna*pinna.cx>}\\ \hline
+	\url{switch.clamav.net} & 130.59.10.35 & Switzerland & Thomas Lenggenhager\\
+				&	       &	     & \email{<lenggenhager*switch.ch>}\\ \hline
+	\url{clamav.public-internet.co.uk} & 195.85.245.20 & London, & Tom Beard\\
+					   &		   & United Kingdom & \email{<tom.beard*public-internet.co.uk>}\\ \hline
+	\url{clamav.mainloop.se} & 192.71.58.30 & Sweden & Thomas Althoff\\
+				 &		&	 & \email{<thomas*mainloop.se>}\\ \hline
+	\url{clamav.dc.hu} & 195.228.75.149 & Hungary & Bencsath Boldizsar\\
+			   &		    &	      & \email{<boldi*mail2004.crysys.hit.bme.hu>}\\ \hline
+	\url{clamav.mirror.myebs.de} & 193.239.17.68 & Germany & Thomas Schwanhaeuser\\
+				     &		     &	       & \email{<thomas.schwanhaeuser*aps-web.de>}\\ \hline
+	\url{clamav.s-lines.net} & 61.205.61.201 & Japan & Tatsuya Ueda\\
+				 &		 &	 & \email{<tatsuya*staff.s-lines.net>}\\ \hline
+	\url{clamav.mcs.de} & 194.77.146.139 & Germany & Christian Kuehn\\
+			    &		     &	       & \email{<christian.kuehn*mcs.de>}\\ \hline
+	\url{clamav.mirror.fizzelpark.com} & 217.115.136.170 & Germany & Thilo Bangert\\
+					   &		     &	       & \email{<bangert*fizzelpark.com>}\\ \hline
+	\url{clamav.talika.eii.us.es} & 150.214.142.249 & Spain & Javier Miguel Rodriguez\\
+				      &			&	& \email{<javier.miguel*talika.eii.us.es>}\\ \hline
+	\url{clamav.nara.wide.ad.jp} & 203.178.137.175 & Japan & Yoshiaki Saita\\
+				     &		       &       & \email{<ftp-admin*is.naist.jp>}\\ \hline
+	\url{clamavdb.ml-club.jp} & 219.117.246.122 & Japan & Takahiro Morizono\\
+				  &		    &	    & \email{<morizono*coop.kadai.ne.jp>}\\ \hline
+	\url{clamav.packetstorm.nu} & 213.222.11.220 & The Netherlands & Niek Baakman\\
+				    &		     &		       & \email{<niek*asbak.coding-slaves.com>}\\ \hline
+	\url{clamav.mirror.garr.it} & 193.206.139.37 & Italy & Enrico Cavalli\\
+				    &		     &	     & \email{<mirror-service*garr.it>}\\ \hline
+	\url{clamav.uoc.gr} & 147.52.3.21 & Greece & Kissandrakis S. George\\
+			    &		  &	   & \email{<kissand*ucnet.uoc.gr>}\\ \hline
+	\url{clamav.lug-norderstedt.de} & 213.209.100.191 & Germany & Fabian Caspers\\
+					&		  &	    & \email{<fabian*lug-norderstedt.de>}\\ \hline
+	\url{clamav.df.lth.se} & 194.47.250.218 & Sweden & Rune Anderson\\
+			       &		&	 & \email{<rpa*df.lth.se>}\\ \hline
+	\url{clamav.gueth.net} & 217.160.141.39 & Germany & Volker Gueth\\
+			       &		&	  & \email{<volker*gueth.net>}\\ \hline
+	\url{b.clamav.mirror.fizzelpark.com} & 217.115.136.170 & Germany & Thilo Bangert\\
+					     &		       &	 & \email{<bangert*fizzelpark.com>}\\ \hline
+	\url{clamav.dg.net.ua} & 213.186.196.225 & Ukraine & Oleksandr V. Typlynskyi\\
+			       &		 &	   & \email{<clamavdb*dg.net.ua>}\\ \hline
+	\url{clamav.i24horas.com.br} & 200.242.49.19 & Brazil & Renato Lins\\
+				     &		     &	      & \email{<renato-clamav*autoservico.com>}\\ \hline
+	\url{clamav.gva.es} & 82.159.137.16 & Spain & Jose Antonio Amador\\
+			    &		    &	    & \email{<jamador*gva.es>}\\ \hline
     \end{tabular}}
     \end{center}
 
@@ -2189,23 +2275,27 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     The following people contributed to our project in some way (providing
     patches, bug reports, technical support, documentation, good ideas...):
     \begin{itemize}
+	\item Clint Adams \email{<schizo*debian.org>}
 	\item Sergey Y. Afonin \email{<asy*kraft-s.ru>}
 	\item Robert Allerstorfer \email{<roal*anet.at>}
 	\item Claudio Alonso \email{<cfalonso*yahoo.com>}
 	\item Kevin Amorin \email{<kamorin*ccs.neu.edu>}
 	\item Kamil Andrusz \email{<wizz*mniam.net>}
+	\item Tayfun Asker \email{<tasker*metu.edu.tr>}
 	\item Jean-Edouard Babin \email{<Jeb*jeb.com.fr>}
 	\item Marc Baudoin \email{<babafou*babafou.eu.org>}
 	\item Scott Beck \email{<sbeck*gossamer-threads.com>}
 	\item Rolf Eike Beer \email{<eike*mail.math.uni-mannheim.de>}
 	\item Rene Bellora \email{<rbellora*tecnoaccion.com.ar>}
 	\item Carlo Marcelo Arenas Belon \email{<carenas*sajinet.com.pe>}
+	\item Joseph Benden \email{<joe*thrallingpenguin.com>}
 	\item Hilko Bengen \email{<bengen*vdst-ka.inka.de>}
 	\item Hank Beatty \email{<hbeatty*starband.net>}
 	\item Alexandre Biancalana \email{<ale*seudns.net>}
 	\item Patrick Bihan-Faou \email{<patrick*mindstep.com>}
 	\item Martin Blapp \email{<mb*imp.ch>}
 	\item Dale Blount \email{<dale*velocity.net>}
+	\item Serge van den Boom \email{<svdb*stack.nl>}
 	\item Oliver Brandmueller \email{<ob*e-Gitt.NET>}
 	\item Boguslaw Brandys \email{<brandys*o2.pl>}
 	\item Igor Brezac \email{<igor*ipass.net>}
@@ -2240,6 +2330,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Fred van Engen \email{<fred*wooha.org>}
 	\item Jason Englander \email{<jason*englanders.cc>}
 	\item Oden Eriksson \email{<oeriksson*mandrakesoft.com>}
+	\item Daniel Fahlgren \email{<fahlgren*ardendo.se>}
 	\item Andy Fiddaman \email{<af*jeamland.org>}
 	\item Edison Figueira Junior \email{<edison*brc.com.br>}
 	\item David Ford \email{<david+cert*blue-labs.org>}
@@ -2283,9 +2374,11 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Per Jessen \email{<per*computer.org>}
 	\item Dave Jones \email{<dave*kalkbay.co.za>}
 	\item Jesper Juhl \email{<juhl*dif.dk>}
+	\item Kamil Kaczkowski \email{<kamil*kamil.eisp.pl>}
 	\item Alex Kah \email{<alex*narfonix.com>}
 	\item Stefan Kaltenbrunner \email{<stefan*kaltenbrunner.cc>}
 	\item Lloyd Kamara \email{<l.kamara*imperial.ac.uk>}
+	\item Stefan Kanthak \email{<stefan.kanthak*fujitsu-siemens.com>}
 	\item Kazuhiko \email{<kazuhiko*fdiary.net>}
 	\item Jeremy Kitchen \email{<kitchen*scriptkitchen.com>}
 	\item Tomasz Klim \email{<tomek*euroneto.pl>}
@@ -2299,6 +2392,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Mark Kushinsky \email{<mark*mdspc.com>}
 	\item Mike Lambert \email{<lambert*jeol.com>}
 	\item Thomas Lamy \email{<Thomas.Lamy*in-online.net>}
+	\item Stephane Leclerc \email{<sleclerc*aliastec.net>}
 	\item Marty Lee \email{<marty*maui.co.uk>}
 	\item Dennis Leeuw \email{<dleeuw*made-it.com>}
 	\item Martin Lesser \email{<admin-debian*bettercom.de>}
@@ -2308,6 +2402,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Jerome Limozin \email{<jerome*limozin.net>}
 	\item Mike Loewen \email{<mloewen*sturgeon.cac.psu.edu>}
 	\item Roger Lucas \email{<roger*planbit.co.uk>}
+	\item David Luyer \email{<david\_luyer*pacific.net.au>}
 	\item Richard Lyons \email{<frob-clamav*webcentral.com.au>}
 	\item David S. Madole \email{<david*madole.net>}
 	\item Thomas Madsen \email{<tm*softcom.dk>}
@@ -2315,6 +2410,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Joe Maimon \email{<jmaimon*ttec.com>}
 	\item David Majorel \email{<dm*lagoon.nc>}
 	\item Andrey V. Malyshev \email{<amal*krasn.ru>}
+	\item Fukuda Manabu \email{<fukuda*cri-mw.co.jp>}
 	\item Stefan Martig \email{<sm*officeco.ch>}
 	\item Alexander Marx \email{<mad-ml*madness.at>}
 	\item Andreas Marx (\url{http://www.av-test.org/})
@@ -2327,6 +2423,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Chris van Meerendonk \email{<cvm*castel.nl>}
 	\item Andrey J. Melnikoff \email{<temnota*kmv.ru>}
 	\item Damian Menscher \email{<menscher*uiuc.edu>}
+	\item Jasper Metselaar \email{<jasper*formmailer.net>}
 	\item Arkadiusz Miskiewicz \email{<misiek*pld-linux.org>}
 	\item Ted Mittelstaedt \email{<tedm*toybox.placo.com>}
 	\item Mark Mielke \email{<mark*mark.mielke.cc>}
@@ -2370,6 +2467,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Sergei Pronin \email{<sp*finndesign.fi>}
 	\item Thomas Quinot \email{<thomas*cuivre.fr.eu.org>}
 	\item Ed Ravin \email{<eravin*panix.com>}
+	\item Robert Rebbun \email{<robert*desertsurf.com>}
 	\item Brian A. Reiter \email{<breiter*wolfereiter.com>}
 	\item Didi Rieder \email{<adrieder*sbox.tugraz.at>}
 	\item Pavel V. Rochnyack \email{<rpv*fsf.tsu.ru>}
@@ -2387,9 +2485,11 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Omer Faruk Sen \email{<ofsen*enderunix.org>}
 	\item Sergey \email{<a\_s\_y*sama.ru>}
 	\item Tuomas Silen \email{<tuomas.silen*nodeta.fi>}
+	\item David F. Skoll \email{<dfs*roaringpenguin.com>}
 	\item Al Smith \email{<ajs+clamav*aeschi.ch.eu.org>}
 	\item Sergey Smitienko \email{<hunter*comsys.com.ua>}
 	\item Solar Designer \email{<solar*openwall.com>}
+	\item Joerg Sonnenberger \email{<joerg*britannica.bec.de>}
 	\item Kevin Spicer \email{<kevin*kevinspicer.co.uk>}
 	\item GertJan Spoelman \email{<cav*gjs.cc>}
 	\item Ole Stanstrup \email{<ole*stanstrup.dk>}
@@ -2404,7 +2504,9 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Masahiro Teramoto \email{<markun*onohara.to>}
 	\item Daniel Theodoro \email{<dtheodoro*ig.com.br>}
 	\item Ryan Thompson \email{<clamav*sasknow.com>}
+	\item Gianluigi Tiesi \email{<sherpya*netfarm.it>}
 	\item Yar Tikhiy \email{<yar*comp.chem.msu.su>}
+	\item Andrew Toller \email{<atoller*connectfree.co.uk>}
 	\item Michael L. Torrie \email{<torriem*chem.byu.edu>}
 	\item Trashware \email{<trashware*gmx.net>}
 	\item Matthew Trent \email{<mtrent*localaccess.com>}
@@ -2423,6 +2525,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item David Wu \email{<dyw*iohk.com>}
 	\item Takumi Yamane \email{<yamtak*b-session.com>}
 	\item Youza Youzovic \email{<youza*post.cz>}
+	\item Anton Yuzhaninov \email{<citrin*rambler-co.ru>}
 	\item Leonid Zeitlin \email{<lz*europe.com>}
 	\item ZMan Z. \email{<x86zman*go-a-way.dyndns.org>}
 	\item Andoni Zubimendi \email{<andoni*lpsat.net>}
@@ -2435,8 +2538,11 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Advance Healthcare Group (\url{http://www.ahgl.com.au/})
 	\item American Computer \& Electronic Services Corp. (\url{http://www.acesnw.com/})
 	\item Anonymous donor from Colorado, US
+	\item Peter Ashman
 	\item Atlas College (\url{http://www.atlascollege.nl/})
 	\item AWD Online (\url{http://www.awdonline.com/})
+	\item BackupAssist Backup Software (\url{http://www.backupassist.com/})
+	\item Dave Baker
 	\item Bear and Bear Consulting, Inc. (\url{http://www.bear-consulting.com/})
 	\item Aaron Begley
 	\item Craig H. Block
@@ -2446,8 +2552,11 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Thanos Chatziathanassiou
 	\item Cheahch from Singapore
 	\item Conexim Australia - business web hosting (\url{http://www.conexim.com.au})
+	\item Alan Cook
 	\item Joe Cooper
+	\item CustomLogic LLC (\url{http://www.customlogic.com/})
 	\item Ron DeFulio
+	\item Digirati (\url{http://oss.digirati.com.br/})
 	\item Steve Donegan (\url{http://www.donegan.org/})
 	\item Dynamic Network Services, Inc (\url{http://www.dyndns.org/})
 	\item EAS Enterprises LLC
@@ -2465,6 +2574,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item The Free Shopping Cart people (\url{http://www.precisionweb.net/})
 	\item Paul Freeman
 	\item Jack Fung
+	\item Stephen Gageby
 	\item Paolo Galeazzi
 	\item GANDI (\url{http://www.gandi.net/})
 	\item Jeremy Garcia (\url{http://www.linuxquestions.org/})
@@ -2479,17 +2589,21 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Hosting Metro LLC (\url{http://www.hostingmetro.com/})
 	\item IDEAL Software GmbH (\url{http://www.IdealSoftware.com/})
 	\item Industry Standard Computers (\url{http://www.ISCnetwork.com/})
+	\item Interact2Day (\url{http://www.interact2day.com/})
 	\item Invisik Corporation (\url{http://www.invisik.com/})
 	\item itXcel Internet - Domain Registration (\url{http://www.itxcel.com})
 	\item Craig Jackson
 	\item Stuart Jones
 	\item Jason Judge
 	\item Keith (\url{http://www.textpad.com/})
+	\item Ewald Kicker (\url{http://www.very-clever.com/})
 	\item Brad Koehn
+	\item Christina Kuratli (\url{http://www.virusprotect.ch/})
 	\item Logic Partners Inc. (\url{http://www.logicpartners.com/})
 	\item Mark Lotspaih (\url{http://www.lotcom.org/})
 	\item Michel Machado (\url{http://oss.digirati.com.br/})
 	\item Olivier Marechal
+	\item Matthew McKenzie
 	\item Micro Logic Systems (\url{http://www.mls.nc/})
 	\item Midcoast Internet Solutions
 	\item Mimecast (\url{http://www.mimecast.com/})
@@ -2497,12 +2611,17 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Bozidar Mladenovic
 	\item Paul Morgan
 	\item Tomas Morkus
+	\item The Names Database (\url{http://static.namesdatabase.com})
 	\item Michael Nolan (\url{http://www.michaelnolan.co.uk/})
+	\item Jorgen Norgaard
+	\item Numedeon, Inc. creators of Whyville (\url{http://www.whyville.net/})
 	\item Oneworkspace.com (\url{http://www.oneworkspace.com/})
 	\item Origin Solutions (\url{http://www.originsolutions.com.au/})
 	\item outermedia GmbH (\url{http://www.outermedia.de/})
+	\item Kevin Pang (\url{http://www.freebsdblog.org/})
 	\item Alexander Panzhin
-	\item Dan Pelleg
+	\item Passageway Communications (\url{http://www.passageway.com})
+	\item Dan Pelleg (\url{http://www.libagent.org/})
 	\item Thodoris Pitikaris
 	\item Paul Rantin
 	\item Thomas J. Raef (\url{http://www.ebasedsecurity.com})
@@ -2517,12 +2636,17 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Software Workshop Inc (\url{http://www.softwareworkshop.com/})
 	\item Solutions In A Box (\url{http://www.siab.com.au/})
 	\item Stephane Rault
+	\item SearchMain (\url{http://www.searchmain.com/})
+	\item Olivier Silber
 	\item Fernando Augusto Medeiros Silva (\url{http://www.linuxplace.com.br/})
+	\item Sollentuna Fria Gymnasium, Sweden (\url{http://www.sfg.se/})
 	\item StarBand (\url{http://www.starband.com/})
 	\item Stroke of Color, Inc.
 	\item Synchro Sistemas de Informacao (\url{http://synchro.com.br/})
 	\item Sahil Tandon
+	\item The Spamex Disposable Email Address Service (\url{http://www.spamex.com})
 	\item Brad Tarver
+	\item TGT Tampermeier \& Grill Steuerberatungs- und Wirtschaftstreuhand OEG (\url{http://www.tgt.at/})
 	\item Per Reedtz Thomsen
 	\item William Tisdale
 	\item Up Time Technology (\url{http://www.uptimetech.com/})
@@ -2531,9 +2655,12 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Web.arbyte - Online-Marketing (\url{http://www.webarbyte.de/})
 	\item Webzone Srl (\url{http://www.webzone.it/})
 	\item Markus Welsch (\url{http://www.linux-corner.net/})
+	\item Julia White (\url{http://www.convert-tools.com/})
 	\item Nicklaus Wicker
 	\item David Williams (\url{http://kayakero.net/})
 	\item Glenn R Williams
+	\item Kelly Williams
+	\item Zimbra open-source collaboration suite (\url{http://www.zimbra.com/})
     \end{itemize}
 
     \subsection{Graphics}
@@ -2588,7 +2715,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	Role: inactive
 
 	\item Tomasz Papszun \email{<tomek*clamav.net>}, Poland\\
-	Role: temporarily inactive
+	Role: virus database maintainer
 
 	\item Sven Strickroth \email{<sven*clamav.net>}, Germany\\
 	Role: virus database maintainer

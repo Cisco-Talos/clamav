@@ -13,7 +13,8 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *  MA 02110-1301, USA.
  *
  *  Sat May 18 15:23:21 CEST 2002: included cpu autodetection from Magnus Ekdahl
  *  Wed Mar  5 03:45:31 CET 2003: included --move code from Damien Curtain

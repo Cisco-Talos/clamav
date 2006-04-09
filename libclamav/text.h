@@ -13,9 +13,13 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *  MA 02110-1301, USA.
  *
  * $Log: text.h,v $
+ * Revision 1.8  2006/04/09 19:59:28  kojm
+ * update GPL headers with new address for FSF
+ *
  * Revision 1.7  2004/12/04 16:03:55  nigelhorne
  * Text/plain now handled as no encoding
  *

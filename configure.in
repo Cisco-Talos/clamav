@@ -14,7 +14,8 @@ dnl   GNU General Public License for more details.
 dnl
 dnl   You should have received a copy of the GNU General Public License
 dnl   along with this program; if not, write to the Free Software
-dnl   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+dnl   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+dnl   MA 02110-1301, USA.
 
 AC_INIT(clamscan/clamscan.c)
 AC_CREATE_TARGET_H(target.h)

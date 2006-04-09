@@ -13,10 +13,14 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *  MA 02110-1301, USA.
  *
  * Change History:
  * $Log: untar.h,v $
+ * Revision 1.4  2006/04/09 19:59:28  kojm
+ * update GPL headers with new address for FSF
+ *
  * Revision 1.3  2005/03/22 21:26:27  kojm
  * add support for old fashioned tar archives
  *

@@ -1,3 +1,7 @@
+Sun Apr  9 21:49:22 CEST 2006 (tk)
+----------------------------------
+  * update GPL headers with new address for FSF
+
 Sun Apr  9 10:35:15 BST 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Fix compilation error on CYGWIN
