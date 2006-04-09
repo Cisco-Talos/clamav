@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.283 2006/04/07 16:30:53 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.284 2006/04/09 09:32:59 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3601,7 +3601,7 @@ rfc1341(message *m, const char *dir)
 	if(id == NULL)
 		return -1;
 
-#ifdef  CYGWIN
+#ifdef  C_CYGWIN
 	if((tmpdir = getenv("TEMP")) == (char *)NULL)
 		if((tmpdir = getenv("TMP")) == (char *)NULL)
 			if((tmpdir = getenv("TMPDIR")) == (char *)NULL)
@@ -3720,8 +3720,10 @@ rfc1341(message *m, const char *dir)
 					extern short cli_leavetemps_flag;
 					struct stat statb;
 
+#ifdef  C_CYGWIN
 					if(dent->d_ino == 0)
 						continue;
+#endif
 
 					snprintf(fullname, sizeof(fullname) - 1,
 						"%s/%s", pdir, dent->d_name);
