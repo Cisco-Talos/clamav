@@ -13,7 +13,8 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *  MA 02110-1301, USA.
  *
  * Much of this code is based on minitar.c which is in the public domain.
  * Author: Charles G. Waldman (cgw@pgt.com),  Aug 4 1998
@@ -21,6 +22,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.29  2006/04/09 19:59:28  kojm
+ * update GPL headers with new address for FSF
+ *
  * Revision 1.28  2005/10/29 16:18:09  nigelhorne
  * Better error handler
  *
@@ -106,7 +110,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.28 2005/10/29 16:18:09 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.29 2006/04/09 19:59:28 kojm Exp $";
 
 #include <stdio.h>
 #include <errno.h>

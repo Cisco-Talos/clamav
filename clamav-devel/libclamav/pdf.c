@@ -13,9 +13,10 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.46 2006/04/07 23:31:41 kojm Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.47 2006/04/09 19:59:27 kojm Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"

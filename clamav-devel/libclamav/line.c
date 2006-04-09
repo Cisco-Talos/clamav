@@ -13,9 +13,13 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *  MA 02110-1301, USA.
  *
  * $Log: line.c,v $
+ * Revision 1.10  2006/04/09 19:59:27  kojm
+ * update GPL headers with new address for FSF
+ *
  * Revision 1.9  2005/03/10 08:53:33  nigelhorne
  * Tidy
  *
@@ -45,7 +49,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: line.c,v 1.9 2005/03/10 08:53:33 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: line.c,v 1.10 2006/04/09 19:59:27 kojm Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"

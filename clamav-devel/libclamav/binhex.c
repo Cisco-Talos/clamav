@@ -13,10 +13,14 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *  MA 02110-1301, USA.
  *
  * Change History:
  * $Log: binhex.c,v $
+ * Revision 1.18  2006/04/09 19:59:27  kojm
+ * update GPL headers with new address for FSF
+ *
  * Revision 1.17  2005/11/06 14:03:26  nigelhorne
  * Ensure NAME_MAX isn't redefined on BeOS
  *
@@ -66,7 +70,7 @@
  * First draft of binhex.c
  *
  */
-static	char	const	rcsid[] = "$Id: binhex.c,v 1.17 2005/11/06 14:03:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: binhex.c,v 1.18 2006/04/09 19:59:27 kojm Exp $";
 
 #include "clamav.h"
 

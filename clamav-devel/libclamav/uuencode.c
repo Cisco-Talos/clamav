@@ -13,9 +13,10 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: uuencode.c,v 1.2 2006/01/23 10:35:38 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: uuencode.c,v 1.3 2006/04/09 19:59:28 kojm Exp $";
 
 #include "clamav.h"
 
