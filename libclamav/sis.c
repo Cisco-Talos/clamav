@@ -93,7 +93,7 @@ static char *sis_utf16_decode(const char *str, uint32_t length)
     return decoded;
 }
 
-static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t offset, uint16_t nlangs, uint8_t compressed, const char *dir, cli_ctx *ctx)
+static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t offset, uint16_t nlangs, uint8_t compressed, uint8_t *ifile, const char *dir, cli_ctx *ctx)
 {
 	const char *typedir = NULL;
 	char *sname = NULL, *dname = NULL, *subdir, *fname, *buff;
@@ -163,7 +163,7 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 	cli_warnmsg("SIS: sis_extract_simple: Source name too long and will not be decoded\n");
     } else {
 	nameoff = cli_readint32(mfile + offset + 12);
-	if(nameoff >= length ||  nameoff + namelen >= length) {
+	if(nameoff >= length || nameoff + namelen >= length) {
 	    cli_errmsg("SIS: sis_extract_simple: Broken source name data\n");
 	    return CL_EFORMAT;
 	}
@@ -223,7 +223,22 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 	filelen = cli_readint32(mfile + offset + 24 + 4 * i);
 	fileoff = cli_readint32(mfile + offset + 24 + 4 * i + 4 * nlangs);
 
-	if(filelen >= length || fileoff >= length || filelen + fileoff > length) {
+	if(fileoff == length) {
+	    cli_dbgmsg("SIS: Null file (installation record)\n");
+	    *ifile = 1;
+	    continue;
+	} else if (fileoff > length) {
+	    if(!*ifile) {
+		cli_errmsg("SIS: sis_extract_simple: Broken file data (fileoff)\n");
+		free(subdir);
+		return CL_EFORMAT;
+	    } else {
+		cli_dbgmsg("SIS: Null file (installation track)\n");
+		continue;
+	    }
+	}
+
+	if(filelen >= length || filelen + fileoff > length) {
 	    cli_errmsg("SIS: sis_extract_simple: Broken file data (filelen, fileoff)\n");
 	    free(subdir);
 	    return CL_EFORMAT;
@@ -319,14 +334,14 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
     }
 
     free(subdir);
-    return 0;
+    return CL_SUCCESS;
 }
 
 int cli_scansis(int desc, cli_ctx *ctx)
 {
 	struct sis_file_hdr file_hdr;
 	struct sis_file_hdr6 file_hdr6;
-	uint8_t release = 0, compressed;
+	uint8_t release = 0, compressed, ifile = 0;
 	uint16_t opts, nlangs, *langrecs, nfiles;
 	uint32_t recp, frecord, n;
 	size_t length;
@@ -378,7 +393,7 @@ int cli_scansis(int desc, cli_ctx *ctx)
 	    break;
 	case 0x100039ce:
 	case 0x10003a38:
-	    cli_dbgmsg("SIS: Application(???)\n");
+	    cli_dbgmsg("SIS: Application(?)\n");
 	    return CL_CLEAN;
 	default:
 	    cli_warnmsg("SIS: Unknown value of UID 2 (EPOC release == 0x%x) -> not a real SIS file??\n", EC32(file_hdr.uid2));
@@ -538,7 +553,7 @@ int cli_scansis(int desc, cli_ctx *ctx)
 	switch(cli_readint32(mfile + frecord)) {
 	    case 0x00000000:
 		cli_dbgmsg("SIS: Simple file record\n");
-		if((ret = sis_extract_simple(desc, mfile, sb.st_size, frecord + 4, 1, compressed, dir, ctx))) {
+		if((ret = sis_extract_simple(desc, mfile, sb.st_size, frecord + 4, 1, compressed, &ifile, dir, ctx))) {
 		    munmap(mfile, length);
 		    if(!cli_leavetemps_flag)
 			cli_rmdirs(dir);
@@ -555,7 +570,7 @@ int cli_scansis(int desc, cli_ctx *ctx)
 	    case 0x00000001:
 		cli_dbgmsg("SIS: Multiple languages file record\n");
 		/* TODO: Pass language strings into sis_extract */
-		if((ret = sis_extract_simple(desc, mfile, sb.st_size, frecord + 4, nlangs, compressed, dir, ctx))) {
+		if((ret = sis_extract_simple(desc, mfile, sb.st_size, frecord + 4, nlangs, compressed, &ifile, dir, ctx))) {
 		    munmap(mfile, length);
 		    if(!cli_leavetemps_flag)
 			cli_rmdirs(dir);
