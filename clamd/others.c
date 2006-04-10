@@ -31,6 +31,8 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <sys/wait.h>
+
 
 #if HAVE_SYS_PARAM_H
 #include <sys/param.h>
@@ -70,6 +72,7 @@
 #include "cfgparser.h"
 #include "session.h"
 #include "others.h"
+#include "output.h"
 
 #define ENV_FILE  "CLAM_VIRUSEVENT_FILENAME"
 #define ENV_VIRUS "CLAM_VIRUSEVENT_VIRUSNAME"

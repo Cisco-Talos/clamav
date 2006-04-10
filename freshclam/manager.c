@@ -51,6 +51,8 @@
 #include "../libclamav/others.h"
 #include "../libclamav/str.h" /* cli_strtok */
 #include "dns.h"
+#include "execute.h"
+
 
 
 int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname)
