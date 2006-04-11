@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.48 2006/04/11 11:57:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.49 2006/04/11 20:25:40 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -481,7 +481,7 @@ ascii85decode(const char *buf, size_t len, unsigned char *output)
 			byte = EOF;
 
 		if(byte >= '!' && byte <= 'u') {
-			sum = sum * 85 + ((uint32_t)byte - '!');
+			sum = (sum * 85) + ((uint32_t)byte - '!');
 			if(++quintet == 5) {
 				*output++ = (unsigned char)(sum >> 24);
 				*output++ = (unsigned char)((sum >> 16) & 0xFF);
@@ -510,7 +510,9 @@ ascii85decode(const char *buf, size_t len, unsigned char *output)
 					cli_warnmsg("ascii85Decode: only 1 byte in last quintet\n");
 					return -1;
 				}
-				sum *= 85 * (5 - quintet);
+				for(i = quintet; i < 5; i++)
+					sum *= 85;
+
 				if(quintet > 1)
 					sum += (0xFFFFFF >> ((quintet - 2) * 8));
 				ret += quintet;
