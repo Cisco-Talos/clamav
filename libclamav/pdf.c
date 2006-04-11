@@ -13,10 +13,9 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- *  MA 02110-1301, USA.
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.47 2006/04/09 19:59:27 kojm Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.48 2006/04/11 11:57:39 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -274,6 +273,9 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 				break;
 			}
 		}
+		/*while(strchr("\r\n", *--streamend))
+			;*/
+
 		streamlen = (int)(streamend - streamstart) + 1;
 
 		if(streamlen == 0) {
@@ -281,8 +283,6 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 			continue;
 		}
 
-		/*while(strchr("\r\n", *--streamend))
-			;*/
 		snprintf(fullname, sizeof(fullname), "%s/pdfXXXXXX", dir);
 #if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN)
 		fout = mkstemp(fullname);
@@ -454,16 +454,25 @@ flatedecode(const unsigned char *buf, size_t len, int fout, const cli_ctx *ctx)
 	return inflateEnd(&stream);
 }
 
-/* ascii85 inflation, returns number of bytes in output, -1 for error */
+/*
+ * ascii85 inflation, returns number of bytes in output, -1 for error
+ *
+ * See http://www.piclist.com/techref/method/encode.htm (look for base85)
+ */
 static int
 ascii85decode(const char *buf, size_t len, unsigned char *output)
 {
-	const char *ptr = buf;
+	const char *ptr;
 	uint32_t sum = 0;
 	int quintet = 0;
 	int ret = 0;
 
-	cli_dbgmsg("cli_pdf: ascii85decode %lu bytes\n", len);
+	if(cli_pmemstr(buf, len, "~>", 2) == NULL)
+		cli_warnmsg("ascii85decode: no EOF marker found\n");
+
+	ptr = buf;
+
+	cli_dbgmsg("cli_pdf: ascii85decode %u bytes\n", len);
 
 	while(len > 0) {
 		int byte = (len--) ? (int)*ptr++ : EOF;
@@ -493,6 +502,7 @@ ascii85decode(const char *buf, size_t len, unsigned char *output)
 			*output++ = '\0';
 			ret += 4;
 		} else if(byte == EOF) {
+			cli_dbgmsg("ascii85decode: quintet %d\n", quintet);
 			if(quintet) {
 				int i;
 
