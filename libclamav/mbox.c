@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.286 2006/04/13 12:09:44 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.287 2006/04/13 19:24:17 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -886,7 +886,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 	 */
 	cli_dbgmsg("cli_mbox: ret = %d\n", ret);
 	if(ret == 0)
-		return CL_CLEAN;	/* a lie - but it gets things going */
+		return CL_SUCCESS;
 
 	cli_dbgmsg("New world - don't know what to do - fall back to old world\n");
 	/* Fall back for now */
@@ -1206,12 +1206,7 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 		fclose(fd);
 	}
 
-	/*
-	 * This is not necessarily true, but since the only options are
-	 * CL_CLEAN and CL_VIRUS this is the better choice. It would be
-	 * nice to have CL_CONTINUESCANNING or something like that
-	 */
-	retcode = CL_CLEAN;
+	retcode = CL_SUCCESS;
 
 	if(body) {
 		/*
