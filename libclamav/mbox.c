@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.285 2006/04/09 19:59:27 kojm Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.286 2006/04/13 12:09:44 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -167,6 +167,11 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 #define	PARTIAL_DIR
 
 /*#define	NEW_WORLD*/
+
+/*#define	SCAN_UNENCODED_BOUNCES	/*
+					 * Slows things down a lot and only catches unencoded copies
+					 * of EICAR within bounces, which don't metter
+					 */
 
 static	int	cli_parse_mbox(const char *dir, int desc, unsigned int options);
 static	message	*parseEmailFile(FILE *fin, const table_t *rfc821Table, const char *firstLine, const char *dir);
@@ -2410,6 +2415,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						/* Content-Type: message/rfc822 */
 						cli_dbgmsg("Found message inside multipart (encoding type %d)\n",
 							messageGetEncoding(aMessage));
+#ifndef	SCAN_UNENCODED_BOUNCES
 						switch(messageGetEncoding(aMessage)) {
 							case NOENCODING:
 							case EIGHTBIT:
@@ -2428,6 +2434,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 									continue;
 								}
 						}
+#endif
 #if	0
 						messageAddStrAtTop(aMessage,
 							"Received: by clamd (message/rfc822)");
