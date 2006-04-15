@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.287 2006/04/13 19:24:17 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.288 2006/04/15 10:51:11 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3282,7 +3282,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 						char *s;
 						char *mimeType;	/* LHS of the ; */
 #ifdef CL_THREAD_SAFE
-						char *strptr;
+						char *strptr = NULL;
 #endif
 
 						s = mimeType = cli_strtok(ptr, 0, ";");
