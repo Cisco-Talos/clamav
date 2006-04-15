@@ -14624,7 +14624,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-                                                                                                                                                                          ac_config_files="$ac_config_files libclamav/Makefile clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile etc/Makefile Makefile clamav-config libclamav.pc docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/freshclam.1 docs/man/freshclam.conf.5"
+                                                                                                                                                                                    ac_config_files="$ac_config_files libclamav/Makefile clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile Makefile clamav-config libclamav.pc docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/freshclam.1 docs/man/freshclam.conf.5"
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -15204,6 +15204,7 @@ do
   "clamav-milter/Makefile" ) CONFIG_FILES="$CONFIG_FILES clamav-milter/Makefile" ;;
   "freshclam/Makefile" ) CONFIG_FILES="$CONFIG_FILES freshclam/Makefile" ;;
   "sigtool/Makefile" ) CONFIG_FILES="$CONFIG_FILES sigtool/Makefile" ;;
+  "clamconf/Makefile" ) CONFIG_FILES="$CONFIG_FILES clamconf/Makefile" ;;
   "etc/Makefile" ) CONFIG_FILES="$CONFIG_FILES etc/Makefile" ;;
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
   "clamav-config" ) CONFIG_FILES="$CONFIG_FILES clamav-config" ;;

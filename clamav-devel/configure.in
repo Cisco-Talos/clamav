@@ -1004,6 +1004,7 @@ clamdscan/Makefile
 clamav-milter/Makefile
 freshclam/Makefile
 sigtool/Makefile
+clamconf/Makefile
 etc/Makefile
 Makefile
 clamav-config
