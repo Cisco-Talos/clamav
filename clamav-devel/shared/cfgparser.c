@@ -26,12 +26,88 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "options.h"
 #include "cfgparser.h"
-#include "defaults.h"
-#include "str.h"
 #include "memory.h"
 #include "misc.h"
+
+#include "../libclamav/str.h"
+
+struct cfgoption cfg_options[] = {
+    {"LogFile",	OPT_FULLSTR, -1, NULL, 0, OPT_CLAMD},
+    {"LogFileUnlock", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"LogFileMaxSize", OPT_COMPSIZE, 1048576, NULL, 0, OPT_CLAMD},
+    {"LogTime", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"LogClean", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"LogVerbose", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
+    {"LogSyslog", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
+    {"LogFacility", OPT_STR, -1, "LOG_LOCAL6", 0, OPT_CLAMD | OPT_FRESHCLAM},
+    {"PidFile", OPT_FULLSTR, -1, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
+    {"TemporaryDirectory", OPT_FULLSTR, -1, NULL, 0, OPT_CLAMD},
+    {"ScanPE", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
+    {"DetectBrokenExecutables", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"ScanMail", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
+    {"MailFollowURLs", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"DetectPhishing", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
+    {"ScanAlgo", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
+    {"ScanHTML", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
+    {"ScanOLE2", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
+    {"ScanArchive", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
+    {"ArchiveMaxFileSize", OPT_COMPSIZE, 10485760, NULL, 0, OPT_CLAMD},
+    {"ArchiveMaxRecursion", OPT_NUM, 8, NULL, 0, OPT_CLAMD},
+    {"ArchiveMaxFiles", OPT_NUM, 1000, NULL, 0, OPT_CLAMD},
+    {"ArchiveMaxCompressionRatio", OPT_NUM, 250, NULL, 0, OPT_CLAMD},
+    {"ArchiveLimitMemoryUsage", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"ArchiveBlockEncrypted", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"ArchiveBlockMax", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"DatabaseDirectory", OPT_FULLSTR, -1, DATADIR, 0, OPT_CLAMD | OPT_FRESHCLAM},
+    {"TCPAddr", OPT_STR, -1, NULL, 0, OPT_CLAMD},
+    {"TCPSocket", OPT_NUM, -1, NULL, 0, OPT_CLAMD},
+    {"LocalSocket", OPT_FULLSTR, -1, NULL, 0, OPT_CLAMD},
+    {"MaxConnectionQueueLength", OPT_NUM, 15, NULL, 0, OPT_CLAMD},
+    {"StreamMaxLength", OPT_COMPSIZE, 10485760, NULL, 0, OPT_CLAMD},
+    {"StreamMinPort", OPT_NUM, 1024, NULL, 0, OPT_CLAMD},
+    {"StreamMaxPort", OPT_NUM, 2048, NULL, 0, OPT_CLAMD},
+    {"MaxThreads", OPT_NUM, 10, NULL, 0, OPT_CLAMD},
+    {"ReadTimeout", OPT_NUM, 120, NULL, 0, OPT_CLAMD},
+    {"IdleTimeout", OPT_NUM, 30, NULL, 0, OPT_CLAMD},
+    {"MaxDirectoryRecursion", OPT_NUM, 15, NULL, 0, OPT_CLAMD},
+    {"FollowDirectorySymlinks", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"FollowFileSymlinks", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"ExitOnOOM", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"Foreground", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
+    {"Debug", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
+    {"LeaveTemporaryFiles", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"FixStaleSocket", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"User", OPT_STR, -1, NULL, 0, OPT_CLAMD},
+    {"AllowSupplementaryGroups", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
+    {"SelfCheck", OPT_NUM, 1800, NULL, 0, OPT_CLAMD},
+    {"VirusEvent", OPT_FULLSTR, -1, NULL, 0, OPT_CLAMD},
+    {"ClamukoScanOnAccess", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"ClamukoScanOnOpen", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"ClamukoScanOnClose", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"ClamukoScanOnExec", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"ClamukoIncludePath", OPT_STR, 0, NULL, 0, OPT_CLAMD},
+    {"ClamukoExcludePath", OPT_STR, 0, NULL, 0, OPT_CLAMD},
+    {"ClamukoMaxFileSize", OPT_COMPSIZE, 5242880, NULL, 0, OPT_CLAMD},
+    {"ClamukoScanArchive", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"DatabaseOwner", OPT_STR, -1, NULL, 0, OPT_FRESHCLAM},
+    {"Checks", OPT_NUM, 12, NULL, 0, OPT_FRESHCLAM},
+    {"UpdateLogFile", OPT_FULLSTR, -1, NULL, 0, OPT_FRESHCLAM},
+    {"DNSDatabaseInfo", OPT_STR, -1, "current.cvd.clamav.net", 0, OPT_FRESHCLAM},
+    {"DatabaseMirror", OPT_STR, -1, NULL, 1, OPT_FRESHCLAM},
+    {"MaxAttempts", OPT_NUM, 3, NULL, 0, OPT_FRESHCLAM},
+    {"HTTPProxyServer", OPT_STR, -1, NULL, 0, OPT_FRESHCLAM},
+    {"HTTPProxyPort", OPT_NUM, -1, NULL, 0, OPT_FRESHCLAM},
+    {"HTTPProxyUsername", OPT_STR, -1, NULL, 0, OPT_FRESHCLAM},
+    {"HTTPProxyPassword", OPT_STR, -1, NULL, 0, OPT_FRESHCLAM},
+    {"HTTPUserAgent", OPT_FULLSTR, -1, NULL, 0, OPT_FRESHCLAM},
+    {"NotifyClamd", OPT_STR, -1, NULL, 0, OPT_FRESHCLAM},
+    {"OnUpdateExecute", OPT_FULLSTR, -1, NULL, 0, OPT_FRESHCLAM},
+    {"OnErrorExecute", OPT_FULLSTR, -1, NULL, 0, OPT_FRESHCLAM},
+    {"OnOutdatedExecute", OPT_FULLSTR, -1, NULL, 0, OPT_FRESHCLAM},
+    {"LocalIPAddress", OPT_STR, -1, NULL, 0, OPT_FRESHCLAM},
+    {NULL, 0, 0, NULL, 0, 0}
+};
 
 static int regcfg(struct cfgstruct **copt, char *optname, char *strarg, int numarg, short multiple);
 
@@ -42,83 +118,6 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 	int line = 0, i, found, ctype, calc, val;
 	struct cfgstruct *copt = NULL;
 	struct cfgoption *pt;
-
-	struct cfgoption cfg_options[] = {
-	    {"LogFile",	OPT_FULLSTR, -1, NULL, 0},
-	    {"LogFileUnlock", OPT_BOOL, 0, NULL, 0},
-	    {"LogFileMaxSize", OPT_COMPSIZE, 1048576, NULL, 0},
-	    {"LogTime", OPT_BOOL, 0, NULL, 0},
-	    {"LogClean", OPT_BOOL, 0, NULL, 0},
-	    {"LogVerbose", OPT_BOOL, 0, NULL, 0}, /* clamd + freshclam */
-	    {"LogSyslog", OPT_BOOL, 0, NULL, 0},
-	    {"LogFacility", OPT_STR, -1, "LOG_LOCAL6", 0},
-	    {"PidFile", OPT_FULLSTR, -1, NULL, 0},
-	    {"TemporaryDirectory", OPT_FULLSTR, -1, NULL, 0},
-	    {"ScanPE", OPT_BOOL, 1, NULL, 0},
-	    {"DetectBrokenExecutables", OPT_BOOL, 0, NULL, 0},
-	    {"ScanMail", OPT_BOOL, 1, NULL, 0},
-	    {"MailFollowURLs", OPT_BOOL, 0, NULL, 0},
-	    {"DetectPhishing", OPT_BOOL, 1, NULL, 0},
-	    {"ScanAlgo", OPT_BOOL, 1, NULL, 0},
-	    {"ScanHTML", OPT_BOOL, 1, NULL, 0},
-	    {"ScanOLE2", OPT_BOOL, 1, NULL, 0},
-	    {"ScanArchive", OPT_BOOL, 1, NULL, 0},
-	    {"ArchiveMaxFileSize", OPT_COMPSIZE, 10485760, NULL, 0},
-	    {"ArchiveMaxRecursion", OPT_NUM, 8, NULL, 0},
-	    {"ArchiveMaxFiles", OPT_NUM, 1000, NULL, 0},
-	    {"ArchiveMaxCompressionRatio", OPT_NUM, 250, NULL, 0},
-	    {"ArchiveLimitMemoryUsage", OPT_BOOL, 0, NULL, 0},
-	    {"ArchiveBlockEncrypted", OPT_BOOL, 0, NULL, 0},
-	    {"ArchiveBlockMax", OPT_BOOL, 0, NULL, 0},
-	    {"DatabaseDirectory", OPT_FULLSTR, -1, DATADIR, 0}, /* clamd + freshclam */
-	    {"TCPAddr", OPT_STR, -1, NULL, 0},
-	    {"TCPSocket", OPT_NUM, -1, NULL, 0},
-	    {"LocalSocket", OPT_FULLSTR, -1, NULL, 0},
-	    {"MaxConnectionQueueLength", OPT_NUM, 15, NULL, 0},
-	    {"StreamMaxLength", OPT_COMPSIZE, 10485760, NULL, 0},
-	    {"StreamMinPort", OPT_NUM, 1024, NULL, 0},
-	    {"StreamMaxPort", OPT_NUM, 2048, NULL, 0},
-	    {"MaxThreads", OPT_NUM, 10, NULL, 0},
-	    {"ReadTimeout", OPT_NUM, 120, NULL, 0},
-	    {"IdleTimeout", OPT_NUM, 30, NULL, 0},
-	    {"MaxDirectoryRecursion", OPT_NUM, 15, NULL, 0},
-	    {"FollowDirectorySymlinks", OPT_BOOL, 0, NULL, 0},
-	    {"FollowFileSymlinks", OPT_BOOL, 0, NULL, 0},
-	    {"ExitOnOOM", OPT_BOOL, 0, NULL, 0},
-	    {"Foreground", OPT_BOOL, 0, NULL, 0}, /* clamd + freshclam */
-	    {"Debug", OPT_BOOL, 0, NULL, 0},
-	    {"LeaveTemporaryFiles", OPT_BOOL, 0, NULL, 0},
-	    {"FixStaleSocket", OPT_BOOL, 0, NULL, 0},
-	    {"User", OPT_STR, -1, NULL, 0},
-	    {"AllowSupplementaryGroups", OPT_BOOL, 0, NULL, 0},
-	    {"SelfCheck", OPT_NUM, 1800, NULL, 0},
-	    {"VirusEvent", OPT_FULLSTR, -1, NULL, 0},
-	    {"ClamukoScanOnAccess", OPT_BOOL, 0, NULL, 0},
-	    {"ClamukoScanOnOpen", OPT_BOOL, 0, NULL, 0},
-	    {"ClamukoScanOnClose", OPT_BOOL, 0, NULL, 0},
-	    {"ClamukoScanOnExec", OPT_BOOL, 0, NULL, 0},
-	    {"ClamukoIncludePath", OPT_STR, 0, NULL, 0},
-	    {"ClamukoExcludePath", OPT_STR, 0, NULL, 0},
-	    {"ClamukoMaxFileSize", OPT_COMPSIZE, 5242880, NULL, 0},
-	    {"ClamukoScanArchive", OPT_BOOL, 0, NULL, 0},
-	    {"DatabaseOwner", OPT_STR, -1, NULL, 0}, /* freshclam */
-	    {"Checks", OPT_NUM, 12, NULL, 0}, /* freshclam */
-	    {"UpdateLogFile", OPT_FULLSTR, -1, NULL, 0}, /* freshclam */
-	    {"DNSDatabaseInfo", OPT_STR, -1, "current.cvd.clamav.net", 0}, /* freshclam */
-	    {"DatabaseMirror", OPT_STR, -1, NULL, 1}, /* freshclam */
-	    {"MaxAttempts", OPT_NUM, 3, NULL, 0}, /* freshclam */
-	    {"HTTPProxyServer", OPT_STR, -1, NULL, 0}, /* freshclam */
-	    {"HTTPProxyPort", OPT_NUM, -1, NULL, 0}, /* freshclam */
-	    {"HTTPProxyUsername", OPT_STR, -1, NULL, 0}, /* freshclam */
-	    {"HTTPProxyPassword", OPT_STR, -1, NULL, 0}, /* freshclam */
-	    {"HTTPUserAgent", OPT_FULLSTR, -1, NULL, 0}, /* freshclam */
-	    {"NotifyClamd", OPT_STR, -1, NULL, 0}, /* freshclam */
-	    {"OnUpdateExecute", OPT_FULLSTR, -1, NULL, 0}, /* freshclam */
-	    {"OnErrorExecute", OPT_FULLSTR, -1, NULL, 0}, /* freshclam */
-	    {"OnOutdatedExecute", OPT_FULLSTR, -1, NULL, 0}, /* freshclam */
-	    {"LocalIPAddress", OPT_STR, -1, NULL, 0}, /* freshclam */
-	    {0, 0, 0, 0, 0}
-	};
 
 
     for(i = 0; ; i++) {
