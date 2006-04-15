@@ -28,12 +28,16 @@
 #define OPT_BOOL 4 /* boolean value */
 #define OPT_FULLSTR 5 /* string argument, but get a full line */
 
+#define OPT_CLAMD 1
+#define OPT_FRESHCLAM 2
+
 struct cfgoption {
     const char *name;
-    int argtype;
+    unsigned short argtype;
     int numarg;
     const char *strarg;
     short multiple;
+    unsigned short owner;
 };
 
 struct cfgstruct {
@@ -46,11 +50,10 @@ struct cfgstruct {
     struct cfgstruct *next;
 };
 
+extern struct cfgoption cfg_options[];
 
 struct cfgstruct *getcfg(const char *cfgfile, int verbose);
-
 struct cfgstruct *cfgopt(const struct cfgstruct *copt, const char *optname);
-
 void freecfg(struct cfgstruct *copt);
 
 #endif
