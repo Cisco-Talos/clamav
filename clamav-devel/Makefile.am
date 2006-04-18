@@ -16,7 +16,7 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-SUBDIRS = libclamav clamscan clamd clamdscan freshclam sigtool database docs etc clamav-milter
+SUBDIRS = libclamav clamscan clamd clamdscan freshclam sigtool clamconf database docs etc clamav-milter
 EXTRA_DIST = FAQ contrib test examples BUGS shared libclamav.pc.in UPGRADE
 
 bin_SCRIPTS=clamav-config
