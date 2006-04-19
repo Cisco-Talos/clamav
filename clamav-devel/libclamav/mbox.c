@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.288 2006/04/15 10:51:11 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.289 2006/04/19 11:33:49 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -148,6 +148,9 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 #if     (LIBCURL_VERSION_NUM < 0x070B00)
 #undef	WITH_CURL	/* also undef FOLLOWURLS? */
 #endif
+
+#else
+#error	"FOLLOWURLS without CURL is no longer supported"
 
 #endif	/*WITH_CURL*/
 
@@ -3904,7 +3907,8 @@ checkURLs(message *m, const char *dir)
 			getURL(&arg);
 #endif
 
-#else
+#else	/*!WITH_CURL*/
+			cli_warnmsg("The use of mail-follow-urls without CURL being installed is deprecated\n");
 			/*
 			 * TODO: maximum size and timeouts
 			 */
