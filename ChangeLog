@@ -1,3 +1,9 @@
+Wed Apr 19 12:31:44 BST 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Mark the use of --mail-follow-urls without CURL as
+			deprecated - it will be completely removed in a future
+			release
+
 Sat Apr 15 19:55:35 CEST 2006 (tk)
 ----------------------------------
   * clamconf: initial version of configuration tool
@@ -41,7 +47,7 @@ Fri Apr  7 21:09:25 CEST 2006 (tk)
 Fri Apr  7 12:25:20 BST 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:		Better handling of messages with lots of
-  					consecutive blank lines
+					consecutive blank lines
 
 Fri Apr  7 11:13:29 BST 2006 (trog)
 -----------------------------------
