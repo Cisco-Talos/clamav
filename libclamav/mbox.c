@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.289 2006/04/19 11:33:49 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.290 2006/04/20 10:25:47 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -629,14 +629,12 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				}
 
 			if(b64size > 0L) {
-				int lastline, tmpfd;
+				int lastline;
 				char *tmpfilename;
 				unsigned char *uptr;
 
 				cli_dbgmsg("cli_mbox: decoding %ld base64 bytes\n", b64size);
-
-				tmpfilename = cli_gentemp(dir);
-				if(tmpfilename == 0) {
+				if((fb = fileblobCreate()) == NULL) {
 					if(wasAlloced)
 						free(start);
 					else
@@ -645,21 +643,18 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 					return CL_EMEM;
 				}
 
-#ifdef	O_TEXT
-				tmpfd = open(tmpfilename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_TEXT, 0600);
-#else
-				tmpfd = open(tmpfilename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC, 0600);
-#endif
-				if(tmpfd < 0) {
-					cli_errmsg("Can't make %s\n", tmpfilename);
-					free(tmpfilename);
+				tmpfilename = cli_gentemp(dir);
+				if(tmpfilename == 0) {
 					if(wasAlloced)
 						free(start);
 					else
 						munmap(start, size);
+					fileblobDestroy(fb);
 
-					return CL_ETMPFILE;
+					return CL_EMEM;
 				}
+				fileblobSetFilename(fb, dir, tmpfilename);
+				free(tmpfilename);
 
 				line = NULL;
 
@@ -669,17 +664,13 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 						free(start);
 					else
 						munmap(start, size);
-					close(tmpfd);
-					unlink(tmpfilename);
-					free(tmpfilename);
+					fileblobDestroy(fb);
 
 					return CL_EMEM;
 				}
 				messageSetEncoding(m, "base64");
-				free(tmpfilename);
 
 				lastline = 0;
-
 				do {
 					int length = 0, datalen;
 					char *newline, *equal;
@@ -714,7 +705,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 					if(messageAddStr(m, line) < 0)
 						break;
 #endif
-					if(length >= sizeof(smallbuf)) {
+					if(length >= (int)sizeof(smallbuf)) {
 						datalen = length + 2;
 						data = bigbuf = cli_malloc(datalen);
 						if(data == NULL)
@@ -732,9 +723,12 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 						break;
 					}
 					/*cli_dbgmsg("base64: write %u bytes\n", (size_t)(uptr - data));*/
-					cli_writen(tmpfd, data, (size_t)(uptr - data));
+					datalen = fileblobAddData(fb, data, (size_t)(uptr - data));
 					if(bigbuf)
 						free(bigbuf);
+
+					if(datalen < 0)
+						break;
 
 					if((b64size > 0) && (*ptr == '\r')) {
 						b64start = ++ptr;
@@ -748,30 +742,22 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 						break;
 				} while(b64size > 0L);
 
-#if	0
-				free(line);
-				fb = messageToFileblob(m, dir);
-				messageDestroy(m);
-
-				if(fb)
-					fileblobDestroy(fb);
-				else
-					ret = -1;
-#else
 				if(m->base64chars) {
 					unsigned char data[4];
 
 					uptr = base64Flush(m, data);
 					if(uptr) {
 						/*cli_dbgmsg("base64: flush %u bytes\n", (size_t)(uptr - data));*/
-						cli_writen(tmpfd, data, (size_t)(uptr - data));
+						(void)fileblobAddData(fb, data, (size_t)(uptr - data));
 					}
 				}
+				if(fb)
+					fileblobDestroy(fb);
+				else
+					ret = -1;
 
 				messageDestroy(m);
 				free(line);
-				close(tmpfd);
-#endif
 			}
 		} else if(scanelem->decoder == QUOTEDPRINTABLE) {
 			const char *quotedstart = scanelem->start;
