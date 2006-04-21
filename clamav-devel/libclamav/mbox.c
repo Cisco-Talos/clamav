@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.290 2006/04/20 10:25:47 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.291 2006/04/21 14:45:19 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -370,6 +370,8 @@ static	void	free_map(void);
  * TODO: Add support for systems without mmap()
  *
  * TODO: partial_dir fall through
+ *
+ * FIXME:	Doesn't catch all phishes
  */
 int
 cli_mbox(const char *dir, int desc, unsigned int options)
