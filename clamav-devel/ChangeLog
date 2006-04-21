@@ -1,3 +1,7 @@
+Fri Apr 21 14:28:43 CEST 2006 (tk)
+----------------------------------
+  * libclamav/readdb.c: load *.hdb, *.fp, *.zmd and *.rmd in hwaccel mode
+
 Fri Apr 21 13:44:44 CEST 2006 (tk)
 ----------------------------------
   * libclamav/matcher.c: add support for *.hdb and *.fp databases in hwaccel
