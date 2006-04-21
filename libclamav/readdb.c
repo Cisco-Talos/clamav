@@ -1006,35 +1006,24 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
 {
 	FILE *fd;
 	int ret = CL_SUCCESS;
+	uint8_t skipped = 0;
 
-
-#ifdef HAVE_HWACCEL
-    if(options & CL_DB_HWACCEL) {
-	if(cli_strbcasestr(filename, ".hw")) {
-	    cli_dbgmsg("Loading %s\n", filename);
-	    ret = cli_loadhw(filename, engine, signo, options);
-	} else {
-	    cli_dbgmsg("Ignoring %s\n", filename);
-	}
-
-	return ret;
-    }
-#endif /* HAVE_HWACCEL */
 
     if((fd = fopen(filename, "rb")) == NULL) {
 	cli_errmsg("cli_load(): Can't open file %s\n", filename);
 	return CL_EOPEN;
     }
 
-    cli_dbgmsg("Loading %s\n", filename);
-
-    if(cli_strbcasestr(filename, ".db")  || cli_strbcasestr(filename, ".db2") || cli_strbcasestr(filename, ".db3")) {
-	ret = cli_loaddb(fd, engine, signo, options);
+    if(cli_strbcasestr(filename, ".db")) {
+	if(options & CL_DB_HWACCEL)
+	    skipped = 1;
+	else
+	    ret = cli_loaddb(fd, engine, signo, options);
 
     } else if(cli_strbcasestr(filename, ".cvd")) {
 	    int warn = 0;
 
-	if(!strcmp(filename, "daily.cvd"))
+	if(strstr(filename, "daily.cvd"))
 	    warn = 1;
 
 	ret = cli_cvdload(fd, engine, signo, warn, options);
@@ -1046,10 +1035,17 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
 	ret = cli_loadhdb(fd, engine, signo, 1, options);
 
     } else if(cli_strbcasestr(filename, ".ndb")) {
-	ret = cli_loadndb(fd, engine, signo, 0, options);
+	if(options & CL_DB_HWACCEL)
+	    skipped = 1;
+	else
+	    ret = cli_loadndb(fd, engine, signo, 0, options);
 
     } else if(cli_strbcasestr(filename, ".sdb")) {
-	ret = cli_loadndb(fd, engine, signo, 1, options);
+	/* FIXME: Add support in hwaccel mode */
+	if(options & CL_DB_HWACCEL)
+	    skipped = 1;
+	else
+	    ret = cli_loadndb(fd, engine, signo, 1, options);
 
     } else if(cli_strbcasestr(filename, ".zmd")) {
 	ret = cli_loadmd(fd, engine, signo, 1, options);
@@ -1058,15 +1054,26 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
 	ret = cli_loadmd(fd, engine, signo, 2, options);
 
     } else if(cli_strbcasestr(filename, ".hw")) {
-	/* ignore */
+#ifdef HAVE_HWACCEL
+	if(options & CL_DB_HWACCEL)
+	    ret = cli_loadhw(filename, engine, signo, options);
+	else
+#endif
+	    skipped = 1;
 
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
 	ret = cli_loaddb(fd, engine, signo, options);
     }
 
-    if(ret)
+    if(ret) {
 	cli_errmsg("Can't load %s: %s\n", filename, cl_strerror(ret));
+    } else  {
+	if(skipped)
+	    cli_dbgmsg("%s skipped\n", filename);
+	else
+	    cli_dbgmsg("%s loaded\n", filename);
+    }
 
     fclose(fd);
     return ret;
