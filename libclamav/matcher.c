@@ -39,8 +39,6 @@
 #include "execs.h"
 #include "special.h"
 
-#define MD5_BLOCKSIZE 4096
-
 static int targettab[CL_TARGET_TABLE_SIZE] = { 0, CL_TYPE_MSEXE, CL_TYPE_MSOLE2, CL_TYPE_HTML, CL_TYPE_MAIL, CL_TYPE_GRAPHICS, CL_TYPE_ELF };
 
 extern short cli_debug_flag;
@@ -270,7 +268,7 @@ static long int cli_caloff(const char *offstr, int fd, unsigned short ftype)
     return -1;
 }
 
-int cli_checkfp(int fd, const struct cl_engine *engine)
+static int cli_checkfp(int fd, const struct cl_engine *engine)
 {
 	struct cli_md5_node *md5_node;
 	unsigned char *digest;
@@ -361,6 +359,9 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	    return CL_EMEM;
 	}
 
+	if(ctx->engine->md5_hlist)
+	    MD5_Init(&md5ctx);
+
 	while((bytes = cli_readn(desc, buffer, HWBUFFSIZE)) > 0) {
 	    if((hret = sn_sigscan_writestream(streamhandle, buffer, bytes)) < 0) {
 		cli_errmsg("cli_scandesc: can't write to hardware stream: %d\n", hret);
@@ -369,6 +370,9 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	    } else {
 		if(ctx->scanned)
 		    *ctx->scanned += bytes / CL_COUNT_PRECISION;
+
+		if(ctx->engine->md5_hlist)
+		    MD5_Update(&md5ctx, buffer, bytes);
 	    }
 	}
 
@@ -396,6 +400,30 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	if((hret = sn_sigscan_resultfree(resulthandle)) < 0) {
 	    cli_errmsg("cli_scandesc: can't free results: %d\n", ret);
 	    return CL_EHWIO;
+	}
+
+	if(ctx->engine->md5_hlist) {
+	    MD5_Final(digest, &md5ctx);
+
+	    if((md5_node = cli_vermd5(digest, ctx->engine))) {
+		struct stat sb;
+
+		if(fstat(desc, &sb))
+		    return CL_EIO;
+
+		if((unsigned int) sb.st_size != md5_node->size) {
+		    cli_warnmsg("Detected false positive MD5 match. Please report.\n");
+		} else {
+		    if(md5_node->fp) {
+			cli_dbgmsg("Eliminated false positive match (fp sig: %s)\n", md5_node->virname);
+			ret = CL_CLEAN;
+		    } else {
+			if(ctx->virname)
+			    *ctx->virname = md5_node->virname;
+			ret = CL_VIRUS;
+		    }
+		}
+	    }
 	}
 
 	return ret;
@@ -552,18 +580,6 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 
     if(ctx->engine->md5_hlist) {
 	MD5_Final(digest, &md5ctx);
-
-	if(cli_debug_flag) {
-		char md5str[33];
-		int i;
-
-	    pt = md5str;
-	    for(i = 0; i < 16; i++) {
-		sprintf(pt, "%02x", digest[i]);
-		pt += 2;
-	    }
-	    md5str[32] = 0;
-	}
 
 	if((md5_node = cli_vermd5(digest, ctx->engine)) && !md5_node->fp) {
 		struct stat sb;

@@ -1,3 +1,8 @@
+Fri Apr 21 13:44:44 CEST 2006 (tk)
+----------------------------------
+  * libclamav/matcher.c: add support for *.hdb and *.fp databases in hwaccel
+			 mode
+
 Wed Apr 19 12:31:44 BST 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Mark the use of --mail-follow-urls without CURL as
