@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.235 2006/04/09 19:59:25 kojm Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.236 2006/04/23 13:00:49 nigelhorne Exp $";
 
-#define	CM_VERSION	"devel-090206"
+#define	CM_VERSION	"devel-230406"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2921,6 +2921,9 @@ clamfi_eom(SMFICTX *ctx)
 			smfi_addheader(ctx, "X-Virus-Status", buf);
 		}
 
+		if(quarantine_dir)
+			qfile(privdata, sendmailId, virusname);
+
 		if(use_syslog) {
 			/*
 			 * Setup err as a list of recipients
@@ -3126,8 +3129,6 @@ clamfi_eom(SMFICTX *ctx)
 		}
 
 		if(quarantine_dir) {
-			qfile(privdata, sendmailId, virusname);
-
 			/*
 			 * Cleanup filename here otherwise clamfi_free() will
 			 * delete the file that we wish to keep because it
