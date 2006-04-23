@@ -1,3 +1,9 @@
+Sun Apr 23 13:58:31 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	Ensure that the quarantine location reported in
+  				notifications is correct. Patch by
+				Simon Munton <simon at nidoran.m5data.com>
+
 Fri Apr 21 14:28:43 CEST 2006 (tk)
 ----------------------------------
   * libclamav/readdb.c: load *.hdb, *.fp, *.zmd and *.rmd in hwaccel mode
