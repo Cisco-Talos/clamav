@@ -150,6 +150,8 @@ libclamav_la_SOURCES = \
 	sis.c \
 	sis.h \
 	uuencode.c \
-	uuencode.h
+	uuencode.h \
+	pst.c \
+	pst.h
 
 lib_LTLIBRARIES = libclamav.la

@@ -1,3 +1,7 @@
+Mon Apr 24 18:22:22 CEST 2006 (tk)
+----------------------------------
+  * libclamav: add skeleton support for PST files (patch from NJH)
+
 Sun Apr 23 13:58:31 BST 2006 (njh)
 ----------------------------------
   * clamav-milter:	Ensure that the quarantine location reported in
