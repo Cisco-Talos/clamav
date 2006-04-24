@@ -87,7 +87,7 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	chmunpack.lo rebuildpe.lo petite.lo fsg.lo line.lo untar.lo \
 	special.lo binhex.lo is_tar.lo tnef.lo unrar15.lo unrarvm.lo \
 	unrar.lo unrarfilter.lo unrarppm.lo unrar20.lo unrarcmd.lo \
-	pdf.lo spin.lo yc.lo elf.lo sis.lo uuencode.lo
+	pdf.lo spin.lo yc.lo elf.lo sis.lo uuencode.lo pst.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -344,7 +344,9 @@ libclamav_la_SOURCES = \
 	sis.c \
 	sis.h \
 	uuencode.c \
-	uuencode.h
+	uuencode.h \
+	pst.c \
+	pst.h
 
 lib_LTLIBRARIES = libclamav.la
 all: all-am
@@ -442,6 +444,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pe.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/petite.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pst.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qtmd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/readdb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rebuildpe.Plo@am__quote@

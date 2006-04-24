@@ -52,6 +52,7 @@ typedef enum {
     CL_TYPE_CRYPTFF,
     CL_TYPE_PDF,
     CL_TYPE_UUENCODED,
+    CL_TYPE_PST,	/* Microsoft Outlook binary email folder (.pst file) */
 
     /* bigger numbers have higher priority (in o-t-f detection) */
     CL_TYPE_HTML, /* on the fly */

@@ -1470,6 +1470,30 @@ static int cli_scanuuencoded(int desc, cli_ctx *ctx)
     return ret;
 }
 
+/* Outlook PST file */
+static int cli_scanpst(int desc, cli_ctx *ctx)
+{
+	int ret;
+	char *dir = cli_gentemp(NULL);
+
+    if(mkdir(dir, 0700)) {
+	cli_dbgmsg("Can't create temporary directory for PST file %s\n", dir);
+	free(dir);
+	return CL_ETMPDIR;
+    }
+
+    ret = cli_pst(dir, desc);
+
+    if(ret == CL_SUCCESS)
+	ret = cli_scandir(dir, ctx);
+
+    if(!cli_leavetemps_flag)
+	cli_rmdirs(dir);
+
+    free(dir);
+    return ret;
+}
+
 static int cli_scanmail(int desc, cli_ctx *ctx)
 {
 	char *dir;
@@ -1695,6 +1719,11 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 	case CL_TYPE_UUENCODED:
 		ret = cli_scanuuencoded(desc, ctx);
+	    break;
+
+	case CL_TYPE_PST:
+	    if(SCAN_MAIL)
+		ret = cli_scanpst(desc, ctx);
 	    break;
 
 	case CL_TYPE_MSCHM:
