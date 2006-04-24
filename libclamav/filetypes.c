@@ -100,7 +100,7 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "\170\237\076\042",		 4, "TNEF",               CL_TYPE_TNEF},
 
     {0,  "begin ",			6,  "UUencoded",	  CL_TYPE_UUENCODED},
-    {0, "\116\104\102\031",		4, "PST",		  CL_TYPE_PST},
+    {0, "\041\102\104\116",		4, "PST",		  CL_TYPE_PST},
 
     /* Graphics (may contain exploits against MS systems) */
 
