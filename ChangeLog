@@ -1,3 +1,8 @@
+Tue Apr 25 18:48:23 BST 2006 (njh)
+----------------------------------
+  * libclamav/pst.c:	Apply patch from TK to use le??_to_host and to include
+  				clamav-config.h first
+
 Mon Apr 24 22:19:34 BST 2006 (njh)
 ----------------------------------
   * libclamav/pst.[ch]:	Added first PST support - code yet to be cleaned or
