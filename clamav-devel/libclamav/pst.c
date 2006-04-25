@@ -4,7 +4,8 @@
  * For copyright information on that code, refer to libpst
  *
  * Portions Copyright (C) 2006 Nigel Horne <njh@bandsman.co.uk>
- *	NJH changes: tidy up, remove most code warnings, fixed segfaults
+ *	NJH changes: tidy up, remove most code warnings, fixed segfaults,
+ *		started on the memory leaks, but still a lot to fix
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,8 +31,9 @@
  * TODO: This code works by converting into an mbox - it would be better to
  *	save the attachments directly rather than encode to base64, then have
  *	cli_mbox decode it
+ * TODO: Remove the vcard handling
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.6 2006/04/25 13:26:42 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.7 2006/04/25 15:28:26 nigelhorne Exp $";
 
 #include <unistd.h>
 #include <stdio.h>
@@ -418,9 +420,9 @@ struct holder {
   int32_t base64_extra;
 };
 
-static	int32_t	pst_open(pst_file *pf, int desc, const char *mode);
+static	int32_t	pst_open(pst_file *pf, int desc);
 static	int32_t	pst_close(pst_file *pf);
-pst_desc_ll * pst_getTopOfFolders(pst_file *pf, pst_item *root);
+static	pst_desc_ll	*pst_getTopOfFolders(pst_file *pf, pst_item *root);
 static	int32_t pst_attach_to_file_base64(pst_file *pf, pst_item_attach *attach, FILE* fp);
 int32_t pst_load_index (pst_file *pf);
 pst_desc_ll* pst_getNextDptr(pst_desc_ll* d);
@@ -430,7 +432,7 @@ int32_t _pst_build_id_ptr(pst_file *pf, int32_t offset, int32_t depth, int32_t s
 int32_t _pst_build_desc_ptr (pst_file *pf, int32_t offset, int32_t depth, int32_t *high_id,
 			     int32_t start_id, int32_t end_val);
 pst_item* _pst_getItem(pst_file *pf, pst_desc_ll *d_ptr);
-void * _pst_parse_item (pst_file *pf, pst_desc_ll *d_ptr);
+static	void	*_pst_parse_item (pst_file *pf, pst_desc_ll *d_ptr);
 pst_num_array * _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll *i2_head);
 int32_t _pst_process(pst_num_array *list, pst_item *item);
 int32_t _pst_free_list(pst_num_array *list);
@@ -446,7 +448,7 @@ static	pst_index_ll	*_pst_getID2(pst_index2_ll * ptr, u_int32_t id);
 pst_desc_ll * _pst_getDptr(pst_file *pf, u_int32_t id);
 static	size_t _pst_read_block_size(pst_file *pf, int32_t offset, size_t size, char ** buf, int32_t do_enc, unsigned char is_index);
 int32_t _pst_decrypt(unsigned char *buf, size_t size, int32_t type);
-int32_t _pst_getAtPos(FILE *fp, int32_t pos, void* buf, u_int32_t size);
+static int32_t _pst_getAtPos(FILE* fp, int32_t pos, void *buf, u_int32_t size);
 int32_t _pst_get (FILE *fp, void *buf, u_int32_t size);
 size_t _pst_ff_getIDblock_dec(pst_file *pf, u_int32_t id, unsigned char **b);
 size_t _pst_ff_getIDblock(pst_file *pf, u_int32_t id, unsigned char** b);
@@ -566,17 +568,17 @@ fileTimeToUnixTime(const FILETIME *filetime, DWORD *remainder)
 	a0 /=       1000;
 
 	/* If a was negative, replace a by (-1-a) and r by (9999999 - r) */
-	if (negative)
-	{
-	/* Set a to -a - 1 (a is a2/a1/a0) */
-	a0 = 0xffff - a0;
-	a1 = 0xffff - a1;
-	a2 = ~a2;
+	if (negative) {
+		/* Set a to -a - 1 (a is a2/a1/a0) */
+		a0 = 0xffff - a0;
+		a1 = 0xffff - a1;
+		a2 = ~a2;
 
-	r  = 9999999 - r;
+		r  = 9999999 - r;
 	}
 
-	if (remainder) *remainder = r;
+	if (remainder)
+		*remainder = r;
 
 	/* Do not replace this by << 32, it gives a compiler warning and it does
 	not work. */
@@ -671,13 +673,13 @@ static const unsigned char comp_enc [] = {
 	0x47, 0xf1, 0xb4, 0xe6, 0x0b, 0x6a, 0x72, 0x48,
 	0x85, 0x4e, 0x9e, 0xeb, 0xe2, 0xf8, 0x94, 0x53, /*0x0f*/
 	0xe0, 0xbb, 0xa0, 0x02, 0xe8, 0x5a, 0x09, 0xab,
-	0xdb, 0xe3, 0xba, 0xc6, 0x7c, 0xc3, 0x10, 0xdd, /*0x1f*/ 
+	0xdb, 0xe3, 0xba, 0xc6, 0x7c, 0xc3, 0x10, 0xdd, /*0x1f*/
 	0x39, 0x05, 0x96, 0x30, 0xf5, 0x37, 0x60, 0x82,
-	0x8c, 0xc9, 0x13, 0x4a, 0x6b, 0x1d, 0xf3, 0xfb, /*0x2f*/ 
+	0x8c, 0xc9, 0x13, 0x4a, 0x6b, 0x1d, 0xf3, 0xfb, /*0x2f*/
 	0x8f, 0x26, 0x97, 0xca, 0x91, 0x17, 0x01, 0xc4,
-	0x32, 0x2d, 0x6e, 0x31, 0x95, 0xff, 0xd9, 0x23, /*0x3f*/ 
+	0x32, 0x2d, 0x6e, 0x31, 0x95, 0xff, 0xd9, 0x23, /*0x3f*/
 	0xd1, 0x00, 0x5e, 0x79, 0xdc, 0x44, 0x3b, 0x1a,
-	0x28, 0xc5, 0x61, 0x57, 0x20, 0x90, 0x3d, 0x83, /*0x4f*/ 
+	0x28, 0xc5, 0x61, 0x57, 0x20, 0x90, 0x3d, 0x83, /*0x4f*/
 	0xb9, 0x43, 0xbe, 0x67, 0xd2, 0x46, 0x42, 0x76,
 	0xc0, 0x6d, 0x5b, 0x7e, 0xb2, 0x0f, 0x16, 0x29, /*0x5f*/
 	0x3c, 0xa9, 0x03, 0x54, 0x0d, 0xda, 0x5d, 0xdf,
@@ -703,23 +705,23 @@ static const unsigned char comp_enc [] = {
 }; /*0xff*/
 
 static int32_t
-pst_open(pst_file *pf, int desc, const char *mode)
+pst_open(pst_file *pf, int desc)
 {
 	int i;
 	u_int32_t sig;
-
-#ifdef	_O_BINARY
-	_fmode = _O_BINARY;
-#endif
 
 	if (pf == NULL) {
 	    cli_errmsg("cannot be passed a NULL pst_file\n");
 	    return CL_ENULLARG;
 	}
 	memset(pf, 0, sizeof(pst_file));
-  
+
 	i = dup(desc);
-	if ((pf->fp = fdopen(i, mode)) == NULL) {
+#ifdef  C_CYGWIN
+	if ((pf->fp = fdopen(i, "rb")) == NULL) {
+#else
+	if ((pf->fp = fdopen(i, "r")) == NULL) {
+#endif
 		close(i);
 		cli_errmsg("cannot open PST file. Error\n");
 		return CL_EOPEN;
@@ -730,49 +732,55 @@ pst_open(pst_file *pf, int desc, const char *mode)
 		return CL_EIO;
 	}
 
-  // architecture independant byte-swapping (little, big, pdp)
-  LE32_CPU(sig);
+	/* architecture independant byte-swapping (little, big, pdp) */
+	LE32_CPU(sig);
 
-  cli_dbgmsg("sig = %X\n", sig);
-  if (sig != PST_SIGNATURE) {
-    fclose(pf->fp);
-    cli_warnmsg("not a PST file that I know. Closing with error\n");
-    return -1;
-  }
-  _pst_getAtPos(pf->fp, INDEX_TYPE_OFFSET, &(pf->ind_type), sizeof(unsigned char));
-  cli_dbgmsg("index_type = %i\n", pf->ind_type);
-  if (pf->ind_type != 0x0E) {
-    cli_warnmsg("unknown index structure. Could this be a new Outlook 2003 PST file?\n");
-    return -1;
-  }
+	cli_dbgmsg("sig = %X\n", sig);
+	if (sig != PST_SIGNATURE) {
+		fclose(pf->fp);
+		cli_warnmsg("not a PST file that I know. Closing with error\n");
+		return CL_EFORMAT;
+	}
+	_pst_getAtPos(pf->fp, INDEX_TYPE_OFFSET, &(pf->ind_type), sizeof(unsigned char));
+	cli_dbgmsg("index_type = %i\n", pf->ind_type);
+	if (pf->ind_type != 0x0E) {
+		fclose(pf->fp);
+		cli_warnmsg("unknown index structure. Could this be a new Outlook 2003 PST file?\n");
+		return CL_EFORMAT;
+	}
 
-  _pst_getAtPos(pf->fp, ENC_OFFSET, &(pf->encryption), sizeof(unsigned char));
-  cli_dbgmsg("encrypt = %i\n", pf->encryption);
-  //  pf->encryption = encrypt;
-    
-  _pst_getAtPos(pf->fp, SECOND_POINTER-4, &(pf->index2_count), sizeof(pf->index2_count));
-  _pst_getAtPos(pf->fp, SECOND_POINTER, &(pf->index2), sizeof(pf->index2));
-  LE32_CPU(pf->index2_count);
-  LE32_CPU(pf->index2);
+	_pst_getAtPos(pf->fp, ENC_OFFSET, &(pf->encryption), sizeof(unsigned char));
+	cli_dbgmsg("encrypt = %i\n", pf->encryption);
+	/*  pf->encryption = encrypt; */
 
-  _pst_getAtPos(pf->fp, FILE_SIZE_POINTER, &(pf->size), sizeof(pf->size));
-  LE32_CPU(pf->size);
+	_pst_getAtPos(pf->fp, SECOND_POINTER-4, &(pf->index2_count), sizeof(pf->index2_count));
+	_pst_getAtPos(pf->fp, SECOND_POINTER, &(pf->index2), sizeof(pf->index2));
+	LE32_CPU(pf->index2_count);
+	LE32_CPU(pf->index2);
 
-  // very tempting to leave these values set way too high and let the exploration of the tables set them...
-  pf->index1_depth = pf->index2_depth = 255;
+	_pst_getAtPos(pf->fp, FILE_SIZE_POINTER, &(pf->size), sizeof(pf->size));
+	LE32_CPU(pf->size);
 
-  cli_dbgmsg("Pointer2 is %#X, count %i[%#x], depth %#x\n", 
-    pf->index2, pf->index2_count, pf->index2_count, pf->index2_depth);
-  _pst_getAtPos(pf->fp, INDEX_POINTER-4, &(pf->index1_count), sizeof(pf->index1_count));
-  _pst_getAtPos(pf->fp, INDEX_POINTER, &(pf->index1), sizeof(pf->index1));
-  LE32_CPU(pf->index1_count);
-  LE32_CPU(pf->index1);
+	/*
+	 * very tempting to leave these values set way too high and let the
+	 * exploration of the tables set them...
+	 */
+	pf->index1_depth = pf->index2_depth = 255;
 
-  cli_dbgmsg("Pointer1 is %#X, count %i[%#x], depth %#x\n", 
-    pf->index1, pf->index1_count, pf->index1_count, pf->index1_depth);
-  pf->id_depth_ok = 0;
-  pf->desc_depth_ok = 0;
-  return 0;
+	cli_dbgmsg("Pointer2 is %#X, count %i[%#x], depth %#x\n", 
+		pf->index2, pf->index2_count, pf->index2_count, pf->index2_depth);
+
+	_pst_getAtPos(pf->fp, INDEX_POINTER-4, &(pf->index1_count), sizeof(pf->index1_count));
+	_pst_getAtPos(pf->fp, INDEX_POINTER, &(pf->index1), sizeof(pf->index1));
+	LE32_CPU(pf->index1_count);
+	LE32_CPU(pf->index1);
+
+	cli_dbgmsg("Pointer1 is %#X, count %i[%#x], depth %#x\n", 
+		pf->index1, pf->index1_count, pf->index1_count, pf->index1_depth);
+	pf->id_depth_ok = 0;
+	pf->desc_depth_ok = 0;
+
+	return CL_SUCCESS;
 }
 
 static int32_t
@@ -793,24 +801,18 @@ pst_close(pst_file *pf)
 	return CL_SUCCESS;
 }
 
-pst_desc_ll* pst_getTopOfFolders(pst_file *pf, pst_item *root) {
-  pst_desc_ll *ret;
-  //  pst_item *i;
-  //  char *a, *b;
-  //  int x,z;
-  if (root == NULL || root->message_store == NULL
-      /*      || (root->message_store->top_of_personal_folder == NULL 
-	      && root->message_store->top_of_folder == NULL)*/) {
-    cli_dbgmsg("There isn't a top of folder record here.\n");
-    ret = NULL;
-  } else if (root->message_store->top_of_personal_folder == NULL) { 
-    // this is the OST way
-    // ASSUMPTION: Top Of Folders record in PST files is *always* descid 0x2142
-    ret = _pst_getDptr(pf, 0x2142);
-  } else {
-    ret = _pst_getDptr(pf, root->message_store->top_of_personal_folder->id);
-  }
-  return ret;
+static pst_desc_ll *
+pst_getTopOfFolders(pst_file *pf, pst_item *root)
+{
+	if (root == NULL || root->message_store == NULL) {
+		cli_dbgmsg("There isn't a top of folder record here.\n");
+		return NULL;
+	} else if (root->message_store->top_of_personal_folder == NULL) 
+		// this is the OST way
+		// ASSUMPTION: Top Of Folders record in PST files is *always* descid 0x2142
+		return _pst_getDptr(pf, 0x2142);
+	else
+		return _pst_getDptr(pf, root->message_store->top_of_personal_folder->id);
 }
 
 static int32_t
@@ -821,14 +823,16 @@ pst_attach_to_file_base64(pst_file *pf, pst_item_attach *attach, FILE *fp)
 	int32_t size;
 	char *c;
 
-  if (attach->id_val != -1) {
-    ptr = _pst_getID(pf, attach->id_val);
+	if (attach->id_val != -1) {
+		ptr = _pst_getID(pf, attach->id_val);
     if (ptr != NULL) {
       size = _pst_ff_getID2data(pf, ptr, &h);
       // will need to encode any bytes left over
       c = base64_encode(h.base64_extra_chars, h.base64_extra);
-      if(c)
+      if(c) {
 	      fputs(c, fp);
+	      free(c);
+	}
     } else {
       cli_dbgmsg ("Couldn't find ID pointer. Cannot save attachement to Base64\n");
       return 0;
@@ -837,8 +841,10 @@ pst_attach_to_file_base64(pst_file *pf, pst_item_attach *attach, FILE *fp)
   } else {
     // encode the attachment to the file
     c = base64_encode(attach->data, attach->size);
-    if(c)
+    if(c) {
     	fputs(c, fp);
+	free(c);
+	}
     size = attach->size;
   }
   return 1;
@@ -1558,46 +1564,45 @@ int32_t _pst_build_desc_ptr (pst_file *pf, int32_t offset, int32_t depth, int32_
   return 0;
 }
 
-void* _pst_parse_item(pst_file *pf, pst_desc_ll *d_ptr) {
-  pst_num_array * list;
-  pst_index2_ll *id2_head = NULL;
-  pst_index_ll *id_ptr = NULL;
-  pst_item *item = NULL;
-  pst_item_attach *attach = NULL;
-  int x;
-  if (d_ptr == NULL) {
-    cli_dbgmsg("you cannot pass me a NULL! I don't want it!\n");
-    return NULL;
-  }
+static void *
+_pst_parse_item(pst_file *pf, pst_desc_ll *d_ptr)
+{
+	pst_num_array * list;
+	pst_index2_ll *id2_head = NULL;
+	pst_index_ll *id_ptr = NULL;
+	pst_item *item = NULL;
+	pst_item_attach *attach = NULL;
+	int x;
 
-  if (d_ptr->list_index != NULL) {
-    id2_head = _pst_build_id2(pf, d_ptr->list_index, NULL);
-  } //else {
-  //    cli_dbgmsg("Have not been able to fetch any id2 values for this item. Brace yourself!\n");
-  //  }
+	if(d_ptr == NULL) {
+		cli_errmsg("you cannot pass me a NULL! I don't want it!\n");
+		return NULL;
+	}
 
-  if (d_ptr->desc == NULL) {
-    cli_dbgmsg("why is d_ptr->desc == NULL? I don't want to do anything else with this record\n");
-    return NULL;
-  }
+	if (d_ptr->list_index != NULL) {
+		id2_head = _pst_build_id2(pf, d_ptr->list_index, NULL);
+	}
 
+	if (d_ptr->desc == NULL) {
+		cli_errmsg("why is d_ptr->desc == NULL? I don't want to do anything else with this record\n");
+		return NULL;
+	}
 
-  if ((list = _pst_parse_block(pf, d_ptr->desc->id, id2_head)) == NULL) {
-    cli_dbgmsg("_pst_parse_block() returned an error for d_ptr->desc->id [%#x]\n", d_ptr->desc->id);
-    return NULL;
-  }
+	if((list = _pst_parse_block(pf, d_ptr->desc->id, id2_head)) == NULL) {
+		cli_errmsg("_pst_parse_block() returned an error for d_ptr->desc->id [%#x]\n", d_ptr->desc->id);
+		return NULL;
+	}
 
-  item = (pst_item*) cli_malloc(sizeof(pst_item));
-  memset(item, 0, sizeof(pst_item));
+	item = (pst_item*) cli_calloc(1, sizeof(pst_item));
 
-  if (_pst_process(list, item)) {
-    cli_dbgmsg("_pst_process() returned non-zero value. That is an error\n");
-    _pst_free_list(list);
-    return NULL;
-  } else {
-    _pst_free_list(list);
-    list = NULL; //_pst_process will free the items in the list
-  }
+	if (_pst_process(list, item)) {
+		cli_dbgmsg("_pst_process() returned non-zero value. That is an error\n");
+		_pst_free_list(list);
+		return NULL;
+	} else {
+		_pst_free_list(list);
+		list = NULL; /* _pst_process will free the items in the list */
+	}
 
   if ((id_ptr = _pst_getID2(id2_head, 0x671)) != NULL) {
     // attachements exist - so we will process them
@@ -1614,8 +1619,7 @@ void* _pst_parse_item(pst_file *pf, pst_desc_ll *d_ptr) {
     }
     x = 0;
     while (x < list->count_array) {
-      attach = (pst_item_attach*) cli_malloc (sizeof(pst_item_attach));
-      memset (attach, 0, sizeof(pst_item_attach));
+      attach = (pst_item_attach*) cli_calloc (1, sizeof(pst_item_attach));
       attach->next = item->attach;
       item->attach = attach;
       x++;
@@ -1639,7 +1643,7 @@ void* _pst_parse_item(pst_file *pf, pst_desc_ll *d_ptr) {
 	// we pass NULL instead of id2_head cause we don't want it to
 	// load all the extra stuff here.
 	if ((list = _pst_parse_block(pf, id_ptr->id, NULL)) == NULL) {
-	  cli_dbgmsg("ERROR error processing an attachment record\n");
+	  cli_warnmsg("ERROR error processing an attachment record\n");
 	  attach = attach->next;
 	  continue;
 	}
@@ -1673,7 +1677,9 @@ void* _pst_parse_item(pst_file *pf, pst_desc_ll *d_ptr) {
   return item;
 }
 
-pst_num_array * _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll *i2_head) {
+pst_num_array *
+_pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll *i2_head)
+{
   unsigned char *buf = NULL;
   pst_num_array *na_ptr = NULL, *na_head = NULL;
   pst_block_offset block_offset;
@@ -1719,15 +1725,9 @@ pst_num_array * _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll
     u_int32_t u1;
   } * type_d_rec;
 
-  /*  if (block == NULL) {
-    cli_dbgmsg("block == NULL. Cannot continue with this block\n");
-    return NULL;
-    }*/
-
-  //  cli_dbgmsg("About to read %i bytes from offset %#x\n", block->size, block->offset);
+  /*  cli_dbgmsg("About to read %i bytes from offset %#x\n", block->size, block->offset); */
 
   if ((read_size = _pst_ff_getIDblock_dec(pf, block_id, &buf)) == 0) {
-    //  if (_pst_read_block_size(pf, block->offset, block->size, &buf, PST_ENC, 0) < block->size) {
     cli_warnmsg("Error reading block id %#x\n", block_id);
     if (buf) free (buf);
     return NULL;
@@ -1877,6 +1877,7 @@ pst_num_array * _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll
       } else {
 	cli_warnmsg("Missing code for block_type %i\n", block_type);
 	if (buf) free(buf);
+	_pst_free_list(na_head);
 	return NULL;
       }
       cur_list++; // get ready to read next bit from list
@@ -2017,6 +2018,7 @@ pst_num_array * _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll
 	  na_ptr->items[x]->type = table_rec.ref_type;
       } else {
 	cli_warnmsg("ERROR Unknown ref_type %#x\n", table_rec.ref_type);
+	_pst_free_list(na_head);
 	return NULL;
       }
       x++;
@@ -3798,7 +3800,9 @@ int32_t _pst_free_xattrib(pst_x_attrib_ll *x) {
   }
   return 1;
 }
-pst_index2_ll * _pst_build_id2(pst_file *pf, pst_index_ll* list, pst_index2_ll* head_ptr) {
+
+pst_index2_ll *
+_pst_build_id2(pst_file *pf, pst_index_ll* list, pst_index2_ll* head_ptr) {
   pst_block_header block_head;
   pst_index2_ll *head = NULL, *tail = NULL;
   int32_t x = 0, b_ptr = 0;
@@ -4096,57 +4100,54 @@ int32_t _pst_getBlockOffset(char *buf, int32_t i_offset, int32_t offset, pst_blo
   return 0;
 }
 
-pst_index_ll * _pst_getID(pst_file* pf, u_int32_t id) {
-  //  static pst_index_ll *old_val = NULL; //this should make it quicker
+pst_index_ll *
+_pst_getID(pst_file* pf, u_int32_t id)
+{
   pst_index_ll *ptr = NULL;
+
   if (id == 0) {
     return NULL;
   }
 
-  /*  if (id & 0x3) { // if either of the last two bits on the id are set
-    cli_dbgmsg(not even) is this a pointer to a table?\n");
-    }*/
-  // Dave: I don't think I should do this. next bit. I really think it doesn't work
-  // it isn't based on sound principles either.
-  // update: seems that the last two sig bits are flags. u tell me!
-  id &= 0xFFFFFFFE; // remove least sig. bit. seems that it might work if I do this
+  id &= 0xFFFFFFFE; /* remove least sig. bit. seems that it might work if I do this */
 
   cli_dbgmsg("Trying to find %#x\n", id);
   
-  if (ptr == NULL) 
-    ptr = pf->i_head;
-  while (ptr->id != id) {
-    ptr = ptr->next;
-    if (ptr == NULL) {
-      break;
-    }
-  }
-  if (ptr == NULL) {
-    cli_dbgmsg("ERROR: Value not found\n");
-  } else {
-    cli_dbgmsg("Found Value %#x\n", ptr->id);
-  }
-  return ptr;
+	if (ptr == NULL) 
+		ptr = pf->i_head;
+
+	while (ptr->id != id) {
+		ptr = ptr->next;
+		if (ptr == NULL)
+			break;
+	}
+	
+	if (ptr == NULL)
+		cli_dbgmsg("ERROR: Value not found\n");
+	else
+		cli_dbgmsg("Found Value %#x\n", ptr->id);
+
+	return ptr;
 }
 
 static pst_index_ll *
 _pst_getID2(pst_index2_ll *ptr, u_int32_t id)
 {
-  cli_dbgmsg("Head = %p\n", ptr);
-  cli_dbgmsg("Trying to find %#x\n", id);
-  while (ptr != NULL && ptr->id2 != (int32_t)id) {
-    ptr = ptr->next;
-  }
-  if (ptr != NULL) {
-    if (ptr->id != NULL) {
-      cli_dbgmsg("Found value %#x\n", ptr->id->id);
-    } else {
-      cli_dbgmsg("Found value, though it is NULL!\n");
-    }
-    return ptr->id;
-  }
-  cli_dbgmsg("ERROR Not Found\n");
-  return NULL;
+	cli_dbgmsg("Head = %p\n", ptr);
+	cli_dbgmsg("Trying to find %#x\n", id);
+
+	while (ptr != NULL && ptr->id2 != (int32_t)id)
+		ptr = ptr->next;
+
+	if (ptr != NULL) {
+		if (ptr->id != NULL)
+			cli_dbgmsg("Found value %#x\n", ptr->id->id);
+		else
+			cli_dbgmsg("Found value, though it is NULL!\n");
+		return ptr->id;
+	}
+	cli_dbgmsg("ERROR Not Found\n");
+	return NULL;
 }
 
 pst_desc_ll * _pst_getDptr(pst_file *pf, u_int32_t id) {
@@ -4310,15 +4311,16 @@ int32_t _pst_decrypt(unsigned char *buf, size_t size, int32_t type) {
   return 0;
 }
 
-int32_t _pst_getAtPos(FILE *fp, int32_t pos, void* buf, u_int32_t size) {
-  if (fseek(fp, pos, SEEK_SET) == -1) {
-    return 1;
-  }
+static int32_t
+_pst_getAtPos(FILE *fp, int32_t pos, void* buf, u_int32_t size)
+{
+	if(fseek(fp, pos, SEEK_SET) == -1)
+		return 1;
   
-  if (fread(buf, 1, size, fp) < size) {
-    return 2;
-  }
-  return 0;
+	if(fread(buf, size, 1, fp) != 1)
+		return 2;
+
+	return 0;
 }
 
 int32_t _pst_get (FILE *fp, void *buf, u_int32_t size) {
@@ -4393,7 +4395,10 @@ _pst_ff_getID2data(pst_file *pf, pst_index_ll *ptr, struct holder *h)
       *(h->buf) = b;
     } else if (h->base64 == 1 && h->fp != NULL) {
       t = base64_encode(b, ret);
-      pst_fwrite(t, 1, strlen(t), h->fp);
+      if(t) {
+	      fputs(t, h->fp);
+	      free(t);
+	}
       free(b);
     } else if (h->fp != NULL) {
       pst_fwrite(b, 1, ret, h->fp);
@@ -4434,7 +4439,10 @@ _pst_ff_compile_ID(pst_file *pf, u_int32_t id, struct holder *h, int32_t size)
       *(h->buf) = buf3;
     else if (h->base64 == 1 && h->fp != NULL) {
       t = base64_encode(buf3, a);
-      pst_fwrite(t, 1, strlen(t), h->fp);
+      if(t) {
+	      fputs(t, h->fp);
+	      free(t);
+	}
       free(buf3);
     } else if (h->fp != NULL) {
       pst_fwrite(buf3, 1, a, h->fp);
@@ -4478,9 +4486,12 @@ _pst_ff_compile_ID(pst_file *pf, u_int32_t id, struct holder *h, int32_t size)
 	memcpy(h->base64_extra_chars, &(buf2[z-b]), b);
 	h->base64_extra = b;
 	t = base64_encode(buf2, z-b);
-	pst_fwrite(t, 1, strlen(t), h->fp);
 	cli_dbgmsg("writing %i bytes to file as base64 [%i]. Currently %i\n", 
 		    z, strlen(t), size);
+	if(t) {
+		fputs(t, h->fp);
+		free(t);
+	}
       } else if (h->fp != NULL) {
 	cli_dbgmsg("writing %i bytes to file. Currently %i\n", z, size);
 	pst_fwrite(buf2, 1, z, h->fp);
@@ -4945,8 +4956,9 @@ pst_decode(const char *dir, int desc)
 	struct file_ll  *f, *head;
 	char *enc = NULL;	/* base64 encoded attachment */
 
-	if(pst_open(&pstfile, desc, "r") != 0)
-		return CL_EOPEN;
+	x = pst_open(&pstfile, desc);
+	if(x != CL_SUCCESS)
+		return x;
 
 	if(pst_load_index(&pstfile) != 0) {
 		pst_close(&pstfile);
@@ -5495,9 +5507,10 @@ pst_decode(const char *dir, int desc)
 			item->current_attach->filename2);
 	      }
 	    }
-	    if (item->current_attach->data != NULL)
+	    if (item->current_attach->data != NULL) {
 		fputs(enc, f->output);
-	    else
+		free(enc);
+	    } else
 	      pst_attach_to_file_base64(&pstfile, item->current_attach, f->output);
 	    fprintf(f->output, "\n\n");
 	  item->current_attach = item->current_attach->next;
