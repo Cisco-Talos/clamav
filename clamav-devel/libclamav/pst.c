@@ -1,5 +1,9 @@
 /*
- *  Copyright (C) 2006 Nigel Horne <njh@bandsman.co.uk>
+ * Based on libpst version 0.5.1, written by Dave Smith, dave.s at earthcorp.com
+ *	http://alioth.debian.org/projects/libpst/
+ * For copyright information on that code, refer to libpst
+ *
+ * Portions Copyright (C) 2006 Nigel Horne <njh@bandsman.co.uk>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,13 +20,11 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  *
- * Based on libpst version 0.5.1, written by Dave Smith, dave.s at earthcorp.com
- *	http://alioth.debian.org/projects/libpst/
- *
  * Notice that this code has yet to be sanitised, and audited. Use at your
  *	peril
+ * FIXME: lots of memory leaks on error returns
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.4 2006/04/24 21:19:02 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.5 2006/04/25 08:11:22 nigelhorne Exp $";
 
 #include <unistd.h>
 #include <stdio.h>
@@ -85,15 +87,6 @@ typedef struct {
 	unsigned int dwLowDateTime;
 	unsigned int dwHighDateTime;
 } FILETIME;
-
-typedef struct _pst_misc_6_struct {
-  int32_t i1;
-  int32_t i2;
-  int32_t i3;
-  int32_t i4;
-  int32_t i5;
-  int32_t i6;
-} pst_misc_6;
 
 typedef struct _pst_entryid_struct {
   int32_t u1;
@@ -486,9 +479,9 @@ static	char	*base64_encode(void *data, size_t size);
 int
 cli_pst(const char *dir, int desc)
 {
-	/*cli_warnmsg("PST files not yet supported\n");
-	return CL_EFORMAT;*/
-	return pst_decode(dir, desc);
+	cli_warnmsg("PST files not yet supported\n");
+	return CL_EFORMAT;
+	/*return pst_decode(dir, desc);*/
 }
 
 static const char *
@@ -519,86 +512,84 @@ fileTimeToStructTM(const FILETIME *filetime)
 static time_t
 fileTimeToUnixTime(const FILETIME *filetime, DWORD *remainder)
 {
-    /* Read the comment in the function DOSFS_UnixTimeToFileTime. */
 #if USE_LONG_LONG
-
-    long long int t = filetime->dwHighDateTime;
-    t <<= 32;
-    t += (uint32_t)filetime->dwLowDateTime;
-    t -= 116444736000000000LL;
-    if (t < 0) {
-	if (remainder) *remainder = 9999999 - (-t - 1) % 10000000;
-	return -1 - ((-t - 1) / 10000000);
-    } else {
-	if (remainder) *remainder = t % 10000000;
-	return t / 10000000;
-    }
-
+	long long int t = filetime->dwHighDateTime;
+	t <<= 32;
+	t += (uint32_t)filetime->dwLowDateTime;
+	t -= 116444736000000000LL;
+	if (t < 0) {
+		if (remainder)
+			*remainder = 9999999 - (-t - 1) % 10000000;
+		return -1 - ((-t - 1) / 10000000);
+	} else {
+		if (remainder)
+			*remainder = t % 10000000;
+		return t / 10000000;
+	}
 #else  /* ISO version */
+	uint32_t a0;			/* 16 bit, low    bits */
+	uint32_t a1;			/* 16 bit, medium bits */
+	uint32_t a2;			/* 32 bit, high   bits */
+	uint32_t r;			/* remainder of division */
+	unsigned int carry;		/* carry bit for subtraction */
+	int negative;		/* whether a represents a negative value */
 
-    uint32_t a0;			/* 16 bit, low    bits */
-    uint32_t a1;			/* 16 bit, medium bits */
-    uint32_t a2;			/* 32 bit, high   bits */
-    uint32_t r;			/* remainder of division */
-    unsigned int carry;		/* carry bit for subtraction */
-    int negative;		/* whether a represents a negative value */
+	/* Copy the time values to a2/a1/a0 */
+	a2 =  (uint32_t)filetime->dwHighDateTime;
+	a1 = ((uint32_t)filetime->dwLowDateTime ) >> 16;
+	a0 = ((uint32_t)filetime->dwLowDateTime ) & 0xffff;
 
-    /* Copy the time values to a2/a1/a0 */
-    a2 =  (uint32_t)filetime->dwHighDateTime;
-    a1 = ((uint32_t)filetime->dwLowDateTime ) >> 16;
-    a0 = ((uint32_t)filetime->dwLowDateTime ) & 0xffff;
+	/* Subtract the time difference */
+	if (a0 >= 32768           ) a0 -=             32768        , carry = 0;
+	else                        a0 += (1 << 16) - 32768        , carry = 1;
 
-    /* Subtract the time difference */
-    if (a0 >= 32768           ) a0 -=             32768        , carry = 0;
-    else                        a0 += (1 << 16) - 32768        , carry = 1;
+	if (a1 >= 54590    + carry) a1 -=             54590 + carry, carry = 0;
+	else                        a1 += (1 << 16) - 54590 - carry, carry = 1;
 
-    if (a1 >= 54590    + carry) a1 -=             54590 + carry, carry = 0;
-    else                        a1 += (1 << 16) - 54590 - carry, carry = 1;
+	a2 -= 27111902 + carry;
 
-    a2 -= 27111902 + carry;
-
-    /* If a is negative, replace a by (-1-a) */
-    negative = (a2 >= ((uint32_t)1) << 31);
-    if (negative)
-    {
+	/* If a is negative, replace a by (-1-a) */
+	negative = (a2 >= ((uint32_t)1) << 31);
+	if (negative)
+	{
 	/* Set a to -a - 1 (a is a2/a1/a0) */
 	a0 = 0xffff - a0;
 	a1 = 0xffff - a1;
 	a2 = ~a2;
-    }
+	}
 
-    /* Divide a by 10000000 (a = a2/a1/a0), put the rest into r.
-       Split the divisor into 10000 * 1000 which are both less than 0xffff. */
-    a1 += (a2 % 10000) << 16;
-    a2 /=       10000;
-    a0 += (a1 % 10000) << 16;
-    a1 /=       10000;
-    r   =  a0 % 10000;
-    a0 /=       10000;
+	/* Divide a by 10000000 (a = a2/a1/a0), put the rest into r.
+	Split the divisor into 10000 * 1000 which are both less than 0xffff. */
+	a1 += (a2 % 10000) << 16;
+	a2 /=       10000;
+	a0 += (a1 % 10000) << 16;
+	a1 /=       10000;
+	r   =  a0 % 10000;
+	a0 /=       10000;
 
-    a1 += (a2 % 1000) << 16;
-    a2 /=       1000;
-    a0 += (a1 % 1000) << 16;
-    a1 /=       1000;
-    r  += (a0 % 1000) * 10000;
-    a0 /=       1000;
+	a1 += (a2 % 1000) << 16;
+	a2 /=       1000;
+	a0 += (a1 % 1000) << 16;
+	a1 /=       1000;
+	r  += (a0 % 1000) * 10000;
+	a0 /=       1000;
 
-    /* If a was negative, replace a by (-1-a) and r by (9999999 - r) */
-    if (negative)
-    {
+	/* If a was negative, replace a by (-1-a) and r by (9999999 - r) */
+	if (negative)
+	{
 	/* Set a to -a - 1 (a is a2/a1/a0) */
 	a0 = 0xffff - a0;
 	a1 = 0xffff - a1;
 	a2 = ~a2;
 
-        r  = 9999999 - r;
-    }
+	r  = 9999999 - r;
+	}
 
-    if (remainder) *remainder = r;
+	if (remainder) *remainder = r;
 
-    /* Do not replace this by << 32, it gives a compiler warning and it does
-       not work. */
-    return ((((time_t)a2) << 16) << 16) + (a1 << 16) + a0;
+	/* Do not replace this by << 32, it gives a compiler warning and it does
+	not work. */
+	return ((((time_t)a2) << 16) << 16) + (a1 << 16) + a0;
 #endif
 }
 
@@ -685,39 +676,40 @@ typedef struct _pst_id2_assoc {
 // of the encrypted value. ie the encrypted value 0x13 represents 0x02
 //                     0     1     2     3     4     5     6     7
 //                     8     9     a     b     c     d     e     f
-static const unsigned char comp_enc [] =
-  { 0x47, 0xf1, 0xb4, 0xe6, 0x0b, 0x6a, 0x72, 0x48,
-    0x85, 0x4e, 0x9e, 0xeb, 0xe2, 0xf8, 0x94, 0x53, /*0x0f*/
-    0xe0, 0xbb, 0xa0, 0x02, 0xe8, 0x5a, 0x09, 0xab,
-    0xdb, 0xe3, 0xba, 0xc6, 0x7c, 0xc3, 0x10, 0xdd, /*0x1f*/ 
-    0x39, 0x05, 0x96, 0x30, 0xf5, 0x37, 0x60, 0x82,
-    0x8c, 0xc9, 0x13, 0x4a, 0x6b, 0x1d, 0xf3, 0xfb, /*0x2f*/ 
-    0x8f, 0x26, 0x97, 0xca, 0x91, 0x17, 0x01, 0xc4,
-    0x32, 0x2d, 0x6e, 0x31, 0x95, 0xff, 0xd9, 0x23, /*0x3f*/ 
-    0xd1, 0x00, 0x5e, 0x79, 0xdc, 0x44, 0x3b, 0x1a,
-    0x28, 0xc5, 0x61, 0x57, 0x20, 0x90, 0x3d, 0x83, /*0x4f*/ 
-    0xb9, 0x43, 0xbe, 0x67, 0xd2, 0x46, 0x42, 0x76,
-    0xc0, 0x6d, 0x5b, 0x7e, 0xb2, 0x0f, 0x16, 0x29, /*0x5f*/
-    0x3c, 0xa9, 0x03, 0x54, 0x0d, 0xda, 0x5d, 0xdf,
-    0xf6, 0xb7, 0xc7, 0x62, 0xcd, 0x8d, 0x06, 0xd3, /*0x6f*/
-    0x69, 0x5c, 0x86, 0xd6, 0x14, 0xf7, 0xa5, 0x66,
-    0x75, 0xac, 0xb1, 0xe9, 0x45, 0x21, 0x70, 0x0c, /*0x7f*/
-    0x87, 0x9f, 0x74, 0xa4, 0x22, 0x4c, 0x6f, 0xbf,
-    0x1f, 0x56, 0xaa, 0x2e, 0xb3, 0x78, 0x33, 0x50, /*0x8f*/
-    0xb0, 0xa3, 0x92, 0xbc, 0xcf, 0x19, 0x1c, 0xa7,
-    0x63, 0xcb, 0x1e, 0x4d, 0x3e, 0x4b, 0x1b, 0x9b, /*0x9f*/
-    0x4f, 0xe7, 0xf0, 0xee, 0xad, 0x3a, 0xb5, 0x59,
-    0x04, 0xea, 0x40, 0x55, 0x25, 0x51, 0xe5, 0x7a, /*0xaf*/
-    0x89, 0x38, 0x68, 0x52, 0x7b, 0xfc, 0x27, 0xae,
-    0xd7, 0xbd, 0xfa, 0x07, 0xf4, 0xcc, 0x8e, 0x5f, /*0xbf*/
-    0xef, 0x35, 0x9c, 0x84, 0x2b, 0x15, 0xd5, 0x77,
-    0x34, 0x49, 0xb6, 0x12, 0x0a, 0x7f, 0x71, 0x88, /*0xcf*/
-    0xfd, 0x9d, 0x18, 0x41, 0x7d, 0x93, 0xd8, 0x58,
-    0x2c, 0xce, 0xfe, 0x24, 0xaf, 0xde, 0xb8, 0x36, /*0xdf*/
-    0xc8, 0xa1, 0x80, 0xa6, 0x99, 0x98, 0xa8, 0x2f,
-    0x0e, 0x81, 0x65, 0x73, 0xe4, 0xc2, 0xa2, 0x8a, /*0xef*/
-    0xd4, 0xe1, 0x11, 0xd0, 0x08, 0x8b, 0x2a, 0xf2,
-    0xed, 0x9a, 0x64, 0x3f, 0xc1, 0x6c, 0xf9, 0xec}; /*0xff*/
+static const unsigned char comp_enc [] = {
+	0x47, 0xf1, 0xb4, 0xe6, 0x0b, 0x6a, 0x72, 0x48,
+	0x85, 0x4e, 0x9e, 0xeb, 0xe2, 0xf8, 0x94, 0x53, /*0x0f*/
+	0xe0, 0xbb, 0xa0, 0x02, 0xe8, 0x5a, 0x09, 0xab,
+	0xdb, 0xe3, 0xba, 0xc6, 0x7c, 0xc3, 0x10, 0xdd, /*0x1f*/ 
+	0x39, 0x05, 0x96, 0x30, 0xf5, 0x37, 0x60, 0x82,
+	0x8c, 0xc9, 0x13, 0x4a, 0x6b, 0x1d, 0xf3, 0xfb, /*0x2f*/ 
+	0x8f, 0x26, 0x97, 0xca, 0x91, 0x17, 0x01, 0xc4,
+	0x32, 0x2d, 0x6e, 0x31, 0x95, 0xff, 0xd9, 0x23, /*0x3f*/ 
+	0xd1, 0x00, 0x5e, 0x79, 0xdc, 0x44, 0x3b, 0x1a,
+	0x28, 0xc5, 0x61, 0x57, 0x20, 0x90, 0x3d, 0x83, /*0x4f*/ 
+	0xb9, 0x43, 0xbe, 0x67, 0xd2, 0x46, 0x42, 0x76,
+	0xc0, 0x6d, 0x5b, 0x7e, 0xb2, 0x0f, 0x16, 0x29, /*0x5f*/
+	0x3c, 0xa9, 0x03, 0x54, 0x0d, 0xda, 0x5d, 0xdf,
+	0xf6, 0xb7, 0xc7, 0x62, 0xcd, 0x8d, 0x06, 0xd3, /*0x6f*/
+	0x69, 0x5c, 0x86, 0xd6, 0x14, 0xf7, 0xa5, 0x66,
+	0x75, 0xac, 0xb1, 0xe9, 0x45, 0x21, 0x70, 0x0c, /*0x7f*/
+	0x87, 0x9f, 0x74, 0xa4, 0x22, 0x4c, 0x6f, 0xbf,
+	0x1f, 0x56, 0xaa, 0x2e, 0xb3, 0x78, 0x33, 0x50, /*0x8f*/
+	0xb0, 0xa3, 0x92, 0xbc, 0xcf, 0x19, 0x1c, 0xa7,
+	0x63, 0xcb, 0x1e, 0x4d, 0x3e, 0x4b, 0x1b, 0x9b, /*0x9f*/
+	0x4f, 0xe7, 0xf0, 0xee, 0xad, 0x3a, 0xb5, 0x59,
+	0x04, 0xea, 0x40, 0x55, 0x25, 0x51, 0xe5, 0x7a, /*0xaf*/
+	0x89, 0x38, 0x68, 0x52, 0x7b, 0xfc, 0x27, 0xae,
+	0xd7, 0xbd, 0xfa, 0x07, 0xf4, 0xcc, 0x8e, 0x5f, /*0xbf*/
+	0xef, 0x35, 0x9c, 0x84, 0x2b, 0x15, 0xd5, 0x77,
+	0x34, 0x49, 0xb6, 0x12, 0x0a, 0x7f, 0x71, 0x88, /*0xcf*/
+	0xfd, 0x9d, 0x18, 0x41, 0x7d, 0x93, 0xd8, 0x58,
+	0x2c, 0xce, 0xfe, 0x24, 0xaf, 0xde, 0xb8, 0x36, /*0xdf*/
+	0xc8, 0xa1, 0x80, 0xa6, 0x99, 0x98, 0xa8, 0x2f,
+	0x0e, 0x81, 0x65, 0x73, 0xe4, 0xc2, 0xa2, 0x8a, /*0xef*/
+	0xd4, 0xe1, 0x11, 0xd0, 0x08, 0x8b, 0x2a, 0xf2,
+	0xed, 0x9a, 0x64, 0x3f, 0xc1, 0x6c, 0xf9, 0xec
+}; /*0xff*/
 
 static int32_t
 pst_open(pst_file *pf, int desc, const char *mode)
@@ -726,7 +718,7 @@ pst_open(pst_file *pf, int desc, const char *mode)
   u_int32_t sig;
   //  unsigned char ind_type;
 
-#ifdef _MSC_VER
+#ifdef	_O_BINARY
   // set the default open mode for windows
   _fmode = _O_BINARY;
 #endif //_MSC_VER
@@ -5416,30 +5408,47 @@ pst_decode(const char *dir, int desc)
   struct file_ll  *f, *head;
   char *enc; // base64 encoded attachment
 
-  if(pst_open(&pstfile, desc, "r") != 0)
-  	return(1);
-  if(pst_load_index(&pstfile) != 0)
-  	return(2);
+	if(pst_open(&pstfile, desc, "r") != 0)
+		return CL_EOPEN;
+
+	if(pst_load_index(&pstfile) != 0)
+		return CL_EFORMAT;
+
   pst_load_extended_attributes(&pstfile);
 
   d_ptr = pstfile.d_head; // first record is main record
-  if ((item = _pst_parse_item(&pstfile, d_ptr)) == NULL || item->message_store == NULL) {
-    pst_close(&pstfile);
-    return(3);
-  }
+	if ((item = _pst_parse_item(&pstfile, d_ptr)) == NULL || item->message_store == NULL) {
+		pst_close(&pstfile);
+		return CL_EFORMAT;
+	}
   
-   // default the file_as to the same as the main filename if it doesn't exist
-  if (item->file_as == NULL) {
-    item->file_as = strdup("clamav-pst");
-  }
-  f = (struct file_ll*) cli_malloc(sizeof(struct file_ll));
-  memset(f, 0, sizeof(struct file_ll));
-  f->email_count = 0;
-  f->skip_count = 0;
-  f->next = NULL;
-  head = f;
-    f->name = (char*) cli_malloc(strlen(item->file_as)+strlen(OUTPUT_TEMPLATE)+1);
-    sprintf(f->name, OUTPUT_TEMPLATE, item->file_as);
+	/*
+	 * default the file_as to the same as the main filename if it doesn't
+	 * exist
+	 */
+	if (item->file_as == NULL) {
+		item->file_as = strdup("clamav-pst");
+		if(item->file_as == NULL) {
+			pst_close(&pstfile);
+			return CL_EMEM;
+		}
+	}
+	head = f = (struct file_ll*)cli_calloc(1, sizeof(struct file_ll));
+
+	if(f == NULL) {
+		free(item->file_as);
+		pst_close(&pstfile);
+		return CL_EMEM;
+	}
+
+	f->name = (char*) cli_malloc(strlen(item->file_as)+strlen(OUTPUT_TEMPLATE)+1);
+	if(f->name == NULL) {
+		free(f);
+		free(item->file_as);
+		pst_close(&pstfile);
+		return CL_EMEM;
+	}
+	sprintf(f->name, OUTPUT_TEMPLATE, item->file_as);
 
   f->dname = (char*) cli_malloc(strlen(item->file_as)+1);
   strcpy(f->dname, item->file_as);
@@ -5467,10 +5476,11 @@ pst_decode(const char *dir, int desc)
     f->name = check_filename(f->name);
     filename = cli_malloc(strlen(f->name) + strlen(dir) + 2);
     sprintf(filename, "%s/%s", dir, f->name);
+    	cli_dbgmsg("PST: create %s\n", filename);
     if ((f->output = fopen(filename, "w")) == NULL) {
       cli_errmsg("main: Could not open file \"%s\" for write\n", filename);
     free(filename);
-    return 1;
+	return CL_ETMPFILE;
     }
     free(filename);
   f->type = item->type;
@@ -5554,10 +5564,11 @@ pst_decode(const char *dir, int desc)
 
 	  filename = cli_malloc(strlen(dir) + strlen(f->name) + 2);
 	  sprintf(filename, "%s/%s", dir, f->name);
+	cli_dbgmsg("PST: create %s\n", filename);
 	  if ((f->output = fopen(filename, "w")) == NULL) {
 	    cli_errmsg("main: Could not open file \"%s\" for write\n", f->name);
 	    free(filename);
-	    return(6);
+	    return CL_ETMPFILE;
 	  }
 	    free(filename);
 	if (d_ptr->child != NULL) {
