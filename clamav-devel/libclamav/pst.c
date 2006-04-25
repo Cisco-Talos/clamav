@@ -33,7 +33,11 @@
  *	cli_mbox decode it
  * TODO: Remove the vcard handling
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.7 2006/04/25 15:28:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.8 2006/04/25 17:49:56 nigelhorne Exp $";
+
+#if HAVE_CONFIG_H
+#include "clamav-config.h"	/* must come first */
+#endif
 
 #include <unistd.h>
 #include <stdio.h>
@@ -44,10 +48,6 @@ static	char	const	rcsid[] = "$Id: pst.c,v 1.7 2006/04/25 15:28:26 nigelhorne Exp
 #include <limits.h>
 #include <time.h>
 
-#if HAVE_CONFIG_H
-#include "clamav-config.h"
-#endif
-
 #include "clamav.h"
 #include "others.h"
 
@@ -56,31 +56,20 @@ static	char	const	rcsid[] = "$Id: pst.c,v 1.7 2006/04/25 15:28:26 nigelhorne Exp
 #define	DWORD	unsigned int
 
 #define DEBUG_VERSION 1
-#if BYTE_ORDER == BIG_ENDIAN
-#  define LE64_CPU(x) \
-  x = ((((x) & 0xff00000000000000) >> 56) | \
-       (((x) & 0x00ff000000000000) >> 40) | \
-       (((x) & 0x0000ff0000000000) >> 24) | \
-       (((x) & 0x000000ff00000000) >> 8 ) | \
-       (((x) & 0x00000000ff000000) << 8 ) | \
-       (((x) & 0x0000000000ff0000) << 24) | \
-       (((x) & 0x000000000000ff00) << 40) | \
-       (((x) & 0x00000000000000ff) << 56));
-#  define LE32_CPU(x) \
-  x = ((((x) & 0xff000000) >> 24) | \
-       (((x) & 0x00ff0000) >> 8 ) | \
-       (((x) & 0x0000ff00) << 8 ) | \
-       (((x) & 0x000000ff) << 24));
-#  define LE16_CPU(x) \
-  x = ((((x) & 0xff00) >> 8) | \
-       (((x) & 0x00ff) << 8));
-#elif BYTE_ORDER == LITTLE_ENDIAN
-#  define LE64_CPU(x) {}
-#  define LE32_CPU(x) {}
-#  define LE16_CPU(x) {}
+
+#if WORDS_BIGENDIAN == 0
+/*
+ * don't use le??_to_host because they generate a huge number of statement with
+ * no effect warnings
+ */
+#define	LE64_CPU(x)
+#define	LE32_CPU(x)
+#define	LE16_CPU(x)
 #else
-#  error "Byte order not supported by this library"
-#endif /* BYTE_ORDER */
+#define	LE64_CPU(x)	le64_to_host(x)
+#define	LE32_CPU(x)	le32_to_host(x)
+#define	LE16_CPU(x)	le16_to_host(x)
+#endif
 
 typedef struct {
 	unsigned int dwLowDateTime;
