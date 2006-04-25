@@ -4,6 +4,7 @@
  * For copyright information on that code, refer to libpst
  *
  * Portions Copyright (C) 2006 Nigel Horne <njh@bandsman.co.uk>
+ *	NJH changes: tidy up, remove most code warnings, fixed segfaults
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,8 +24,14 @@
  * Notice that this code has yet to be sanitised, and audited. Use at your
  *	peril
  * FIXME: lots of memory leaks on error returns
+ * FIXME: rfc*_datetime_format routines are not thread safe
+ * FIXME: valgrind has a field day on this code :-(
+ *
+ * TODO: This code works by converting into an mbox - it would be better to
+ *	save the attachments directly rather than encode to base64, then have
+ *	cli_mbox decode it
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.5 2006/04/25 08:11:22 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.6 2006/04/25 13:26:42 nigelhorne Exp $";
 
 #include <unistd.h>
 #include <stdio.h>
@@ -44,17 +51,7 @@ static	char	const	rcsid[] = "$Id: pst.c,v 1.5 2006/04/25 08:11:22 nigelhorne Exp
 
 #include "pst.h"
 
-/*#include "define.h"
-#include "libstrfunc.h"
-
-#include "libpst.h"
-#include "timeconv.h"
-#include "lzfu.h"*/
-
 #define	DWORD	unsigned int
-
-//number of items to save in memory between writes
-#define DEBUG_MAX_ITEMS 0
 
 #define DEBUG_VERSION 1
 #if BYTE_ORDER == BIG_ENDIAN
@@ -313,7 +310,7 @@ typedef struct _pst_item_attach {
   char *data;
   size_t  size;
   int32_t  id2_val;
-  int32_t  id_val; // calculated from id2_val during creation of record
+  int32_t  id_val; /* calculated from id2_val during creation of record */
   int32_t  method;
   int32_t  position;
   int32_t  sequence;
@@ -343,10 +340,10 @@ typedef struct _pst_item_appointment {
 } pst_item_appointment;
 
 typedef struct _pst_item {
-  struct _pst_item_email *email; // data reffering to email
-  struct _pst_item_folder *folder; // data reffering to folder
-  struct _pst_item_contact *contact; // data reffering to contact
-  struct _pst_item_attach *attach; // linked list of attachments
+  struct _pst_item_email *email; /* data reffering to email */
+  struct _pst_item_folder *folder; /* data reffering to folder */
+  struct _pst_item_contact *contact; /* data reffering to contact */
+  struct _pst_item_attach *attach; /* linked list of attachments */
   struct _pst_item_attach *current_attach; // pointer to current attachment
   struct _pst_item_message_store * message_store; // data referring to the message store
   struct _pst_item_extra_field *extra_fields; // linked list of extra headers and such
@@ -421,16 +418,13 @@ struct holder {
   int32_t base64_extra;
 };
 
-// prototypes
-static	int32_t pst_open(pst_file *pf, int desc, const char *mode);
-int32_t pst_close(pst_file *pf);
+static	int32_t	pst_open(pst_file *pf, int desc, const char *mode);
+static	int32_t	pst_close(pst_file *pf);
 pst_desc_ll * pst_getTopOfFolders(pst_file *pf, pst_item *root);
-int32_t pst_attach_to_mem(pst_file *pf, pst_item_attach *attach, unsigned char **b);
-int32_t pst_attach_to_file(pst_file *pf, pst_item_attach *attach, FILE* fp);
-int32_t pst_attach_to_file_base64(pst_file *pf, pst_item_attach *attach, FILE* fp);
+static	int32_t pst_attach_to_file_base64(pst_file *pf, pst_item_attach *attach, FILE* fp);
 int32_t pst_load_index (pst_file *pf);
 pst_desc_ll* pst_getNextDptr(pst_desc_ll* d);
-int32_t pst_load_extended_attributes(pst_file *pf);
+static	int32_t	pst_load_extended_attributes(pst_file *pf);
 
 int32_t _pst_build_id_ptr(pst_file *pf, int32_t offset, int32_t depth, int32_t start_val, int32_t end_val);
 int32_t _pst_build_desc_ptr (pst_file *pf, int32_t offset, int32_t depth, int32_t *high_id,
@@ -448,33 +442,31 @@ int32_t _pst_free_xattrib(pst_x_attrib_ll *x);
 int32_t _pst_getBlockOffset(char *buf, int32_t i_offset, int32_t offset, pst_block_offset *p);
 pst_index2_ll * _pst_build_id2(pst_file *pf, pst_index_ll* list, pst_index2_ll* head_ptr);
 pst_index_ll * _pst_getID(pst_file* pf, u_int32_t id);
-pst_index_ll * _pst_getID2(pst_index2_ll * ptr, u_int32_t id);
+static	pst_index_ll	*_pst_getID2(pst_index2_ll * ptr, u_int32_t id);
 pst_desc_ll * _pst_getDptr(pst_file *pf, u_int32_t id);
-size_t _pst_read_block_size(pst_file *pf, int32_t offset, size_t size, char ** buf, int32_t do_enc,
-			 unsigned char is_index);
+static	size_t _pst_read_block_size(pst_file *pf, int32_t offset, size_t size, char ** buf, int32_t do_enc, unsigned char is_index);
 int32_t _pst_decrypt(unsigned char *buf, size_t size, int32_t type);
 int32_t _pst_getAtPos(FILE *fp, int32_t pos, void* buf, u_int32_t size);
 int32_t _pst_get (FILE *fp, void *buf, u_int32_t size);
 size_t _pst_ff_getIDblock_dec(pst_file *pf, u_int32_t id, unsigned char **b);
 size_t _pst_ff_getIDblock(pst_file *pf, u_int32_t id, unsigned char** b);
 size_t _pst_ff_getID2block(pst_file *pf, u_int32_t id2, pst_index2_ll *id2_head, unsigned char** buf);
-size_t _pst_ff_getID2data(pst_file *pf, pst_index_ll *ptr, struct holder *h);
+static	size_t _pst_ff_getID2data(pst_file *pf, pst_index_ll *ptr, struct holder *h);
 size_t _pst_ff_compile_ID(pst_file *pf, u_int32_t id, struct holder *h, int32_t size);
 
-int32_t pst_strincmp(char *a, char *b, int32_t x);
-int32_t pst_stricmp(char *a, char *b);
-size_t pst_fwrite(const void*ptr, size_t size, size_t nmemb, FILE*stream);
+size_t	pst_fwrite(const void*ptr, size_t size, size_t nmemb, FILE*stream);
 char * _pst_wide_to_single(char *wt, int32_t size);
-// DEBUG functions
-int32_t _pst_printDptr(pst_file *pf);
-int32_t _pst_printIDptr(pst_file* pf);
-int32_t _pst_printID2ptr(pst_index2_ll *ptr);
+static	unsigned	char	*lzfu_decompress(const unsigned char* rtfcomp);
 
 static	time_t	fileTimeToUnixTime(const FILETIME *filetime, DWORD *remainder);
 static	const	char	*fileTimeToAscii(const FILETIME *filetime);
 static	const	struct	tm	*fileTimeToStructTM(const FILETIME *filetime);
 static	int	pst_decode(const char *dir, int desc);
-static	char	*base64_encode(void *data, size_t size);
+static	char	*base64_encode(const void *data, size_t size);
+static	int	chr_count(const char *str, char x);
+static	const	char	*rfc2426_escape(const char *str);
+static	size_t	write_email_body(FILE *f, const char *body);
+static	char	*my_stristr(const char *haystack, const char *needle);
 
 int
 cli_pst(const char *dir, int desc)
@@ -550,12 +542,11 @@ fileTimeToUnixTime(const FILETIME *filetime, DWORD *remainder)
 
 	/* If a is negative, replace a by (-1-a) */
 	negative = (a2 >= ((uint32_t)1) << 31);
-	if (negative)
-	{
-	/* Set a to -a - 1 (a is a2/a1/a0) */
-	a0 = 0xffff - a0;
-	a1 = 0xffff - a1;
-	a2 = ~a2;
+	if (negative) {
+		/* Set a to -a - 1 (a is a2/a1/a0) */
+		a0 = 0xffff - a0;
+		a1 = 0xffff - a1;
+		a2 = ~a2;
 	}
 
 	/* Divide a by 10000000 (a = a2/a1/a0), put the rest into r.
@@ -667,9 +658,9 @@ typedef struct _pst_block_header {
 } pst_block_header;
 
 typedef struct _pst_id2_assoc {
-  int32_t id2;
-  int32_t id;
-  int32_t table2;
+	int32_t id2;
+	int32_t id;
+	int32_t table2;
 } pst_id2_assoc;
 
 // this is an array of the un-encrypted values. the un-encrypyed value is in the position
@@ -715,31 +706,29 @@ static int32_t
 pst_open(pst_file *pf, int desc, const char *mode)
 {
 	int i;
-  u_int32_t sig;
-  //  unsigned char ind_type;
+	u_int32_t sig;
 
 #ifdef	_O_BINARY
-  // set the default open mode for windows
-  _fmode = _O_BINARY;
-#endif //_MSC_VER
+	_fmode = _O_BINARY;
+#endif
 
-  if (pf == NULL) {
-    cli_warnmsg ("cannot be passed a NULL pst_file\n");
-    return -1;
-  }
-  memset(pf, 0, sizeof(pst_file));
+	if (pf == NULL) {
+	    cli_errmsg("cannot be passed a NULL pst_file\n");
+	    return CL_ENULLARG;
+	}
+	memset(pf, 0, sizeof(pst_file));
   
 	i = dup(desc);
-  if ((pf->fp = fdopen(i, mode)) == NULL) {
-  	close(i);
-    cli_warnmsg("cannot open PST file. Error\n");
-    return -1;
-  }
-  if (fread(&sig, sizeof(sig), 1, pf->fp) == 0) {
-    fclose(pf->fp);
-    cli_warnmsg("cannot read signature from PST file. Closing on error\n");
-    return -1;
-  }
+	if ((pf->fp = fdopen(i, mode)) == NULL) {
+		close(i);
+		cli_errmsg("cannot open PST file. Error\n");
+		return CL_EOPEN;
+	}
+	if (fread(&sig, sizeof(sig), 1, pf->fp) == 0) {
+		fclose(pf->fp);
+		cli_errmsg("cannot read signature from PST file. Closing on error\n");
+		return CL_EIO;
+	}
 
   // architecture independant byte-swapping (little, big, pdp)
   LE32_CPU(sig);
@@ -786,20 +775,22 @@ pst_open(pst_file *pf, int desc, const char *mode)
   return 0;
 }
 
-int32_t pst_close(pst_file *pf) {
-  if (pf->fp == NULL) {
-    cli_warnmsg("cannot close NULL fp\n");
-    return -1;
-  }
-  if (fclose(pf->fp)) {
-    cli_warnmsg("fclose returned non-zero value\n");
-    return -1;
-  }
-  // we must free the id linklist and the desc tree
-  _pst_free_id (pf->i_head);
-  _pst_free_desc (pf->d_head);
-  _pst_free_xattrib (pf->x_head);
-  return 0;
+static int32_t
+pst_close(pst_file *pf)
+{
+	if (pf->fp == NULL) {
+		cli_warnmsg("cannot close NULL fp\n");
+		return CL_ENULLARG;
+	}
+	if (fclose(pf->fp)) {
+		cli_warnmsg("fclose returned non-zero value\n");
+		return CL_EIO;
+	}
+	// we must free the id linklist and the desc tree
+	_pst_free_id (pf->i_head);
+	_pst_free_desc (pf->d_head);
+	_pst_free_xattrib (pf->x_head);
+	return CL_SUCCESS;
 }
 
 pst_desc_ll* pst_getTopOfFolders(pst_file *pf, pst_item *root) {
@@ -822,64 +813,32 @@ pst_desc_ll* pst_getTopOfFolders(pst_file *pf, pst_item *root) {
   return ret;
 }
 
-int32_t pst_attach_to_mem(pst_file *pf, pst_item_attach *attach, unsigned char **b){
-  int32_t size=0;
-  pst_index_ll *ptr;
-  struct holder h = {b, NULL, 0, "", 0};
-  if (attach->id_val != -1) {
-    ptr = _pst_getID(pf, attach->id_val);
-    if (ptr != NULL) {
-      size = _pst_ff_getID2data(pf,ptr, &h);
-    } else {
-      cli_dbgmsg("Couldn't find ID pointer. Cannot handle attachment\n");
-    }
-    attach->size = size; // may aswell update it to what is correct for this instance
-  } else {
-    size = attach->size;
-  }
-  return size;
-}
+static int32_t
+pst_attach_to_file_base64(pst_file *pf, pst_item_attach *attach, FILE *fp)
+{
+	pst_index_ll *ptr;
+	struct holder h = {NULL, fp, 1, "", 0};
+	int32_t size;
+	char *c;
 
-int32_t pst_attach_to_file(pst_file *pf, pst_item_attach *attach, FILE* fp) {
-  pst_index_ll *ptr;
-  struct holder h = {NULL, fp, 0, "", 0};
-  int32_t size;
-  if (attach->id_val != -1) {
-    ptr = _pst_getID(pf, attach->id_val);
-    if (ptr != NULL) {
-      size = _pst_ff_getID2data(pf, ptr, &h);
-    } else {
-      cli_dbgmsg("Couldn't find ID pointer. Cannot save attachment to file\n");
-    }
-    attach->size = size;
-  } else {
-    // save the attachment to file
-    size = attach->size;
-    pst_fwrite(attach->data, 1, size, fp);
-  }
-  return 1;
-}
-
-int32_t pst_attach_to_file_base64(pst_file *pf, pst_item_attach *attach, FILE* fp) {
-  pst_index_ll *ptr;
-  struct holder h = {NULL, fp, 1, "", 0};
-  int32_t size;
-  char *c;
   if (attach->id_val != -1) {
     ptr = _pst_getID(pf, attach->id_val);
     if (ptr != NULL) {
       size = _pst_ff_getID2data(pf, ptr, &h);
       // will need to encode any bytes left over
       c = base64_encode(h.base64_extra_chars, h.base64_extra);
-      pst_fwrite(c, 1, strlen(c), fp);
+      if(c)
+	      fputs(c, fp);
     } else {
       cli_dbgmsg ("Couldn't find ID pointer. Cannot save attachement to Base64\n");
+      return 0;
     }
     attach->size = size;
   } else {
     // encode the attachment to the file
     c = base64_encode(attach->data, attach->size);
-    pst_fwrite(c, 1, strlen(c), fp);
+    if(c)
+    	fputs(c, fp);
     size = attach->size;
   }
   return 1;
@@ -938,34 +897,38 @@ typedef struct _pst_x_attrib {
   u_int16_t map;
 } pst_x_attrib;
 
-int32_t pst_load_extended_attributes(pst_file *pf) {
+static int32_t
+pst_load_extended_attributes(pst_file *pf)
+{
   // for PST files this will load up ID2 0x61 and check it's "list" attribute.
   pst_desc_ll *p;
   pst_num_array *na;
-  //  pst_index_ll *list;
-  pst_index2_ll *list2;//, *t;
-  unsigned char * buffer=NULL, *headerbuffer=NULL;//, *tc;
+  pst_index2_ll *list2;
+  unsigned char * buffer=NULL, *headerbuffer=NULL;
   pst_x_attrib xattrib;
   int32_t bptr = 0, bsize, hsize, tint, err=0, x;
   pst_x_attrib_ll *ptr, *p_head=NULL, *p_sh=NULL, *p_sh2=NULL;
   char *wt;
 
   if ((p = _pst_getDptr(pf, 0x61)) == NULL) {
-    cli_dbgmsg("Cannot find DescID 0x61 for loading the Extended Attributes\n");
+    cli_warnmsg("Cannot find DescID 0x61 for loading the Extended Attributes\n");
     return 0;
   }
-  if (p->list_index != NULL) {
-    list2 = _pst_build_id2(pf, p->list_index, NULL);
-  }
+	if (p->list_index != NULL)
+		list2 = _pst_build_id2(pf, p->list_index, NULL);
+  	else
+		list2 = NULL;
+
   if (p->desc == NULL) {
-    cli_dbgmsg("desc is NULL for item 0x61. Cannot load Extended Attributes\n");
+    cli_warnmsg("desc is NULL for item 0x61. Cannot load Extended Attributes\n");
     return 0;
   }
   if ((na = _pst_parse_block(pf, p->desc->id, list2)) == NULL) {
-    cli_dbgmsg("Cannot process desc block for item 0x61. Not loading extended Attributes\n");
+    cli_warnmsg("Cannot process desc block for item 0x61. Not loading extended Attributes\n");
     return 0;
   }
   x = 0;
+  hsize = bsize = 0;
   while (x < na->count_item) {
     if (na->items[x]->id == 0x0003) {
       buffer = na->items[x]->data;
@@ -978,7 +941,7 @@ int32_t pst_load_extended_attributes(pst_file *pf) {
   }
 
   if (buffer == NULL) {
-    cli_dbgmsg("No extended attributes buffer found. Not processing\n");
+    cli_warnmsg("No extended attributes buffer found. Not processing\n");
     return 0;
   }
 
@@ -1088,11 +1051,11 @@ _pst_build_id_ptr(pst_file *pf, int32_t offset, int32_t depth, int32_t start_val
     LE16_CPU(pindex.u1);
     bptr += sizeof(pindex);
 
-    while(pindex.id != 0 && x < 42 && bptr < buf+BLOCK_SIZE && pindex.id < end_val) {
+    while(pindex.id != 0 && x < 42 && bptr < buf+BLOCK_SIZE && (int32_t)pindex.id < end_val) {
       if (pindex.id & 0x02) {
 	cli_dbgmsg("two-bit set!!\n");
       }
-      if (start_val != -1 && pindex.id != start_val) {
+      if (start_val != -1 && (int32_t)pindex.id != start_val) {
 	cli_dbgmsg("This item isn't right. Must be corruption, or I got it wrong!\n");
 	cli_dbgmsg(buf, BLOCK_SIZE, 12);
 	//	fseek(pf->fp, fpos, SEEK_SET);
@@ -1105,7 +1068,7 @@ _pst_build_id_ptr(pst_file *pf, int32_t offset, int32_t depth, int32_t start_val
       // u1 could be a flag. if bit 0x2 is not set, it might be deleted
       //      if (pindex.u1 & 0x2 || pindex.u1 & 0x4) { 
       // ignore the above condition. it doesn't appear to hold
-      if (old > pindex.id) { // then we have back-slid on the new values
+      if (old > (int32_t)pindex.id) { // then we have back-slid on the new values
 	cli_dbgmsg("Back slider detected - Old value [%#x] greater than new [%#x]. Progressing to next table\n", old, pindex.id);
 	return 2;
       }
@@ -1134,7 +1097,7 @@ _pst_build_id_ptr(pst_file *pf, int32_t offset, int32_t depth, int32_t start_val
 	cli_dbgmsg("Found index.id == 0\n");
       } else if (!(bptr < buf+BLOCK_SIZE)) {
 	cli_dbgmsg("Read past end of buffer\n");
-      } else if (pindex.id >= end_val) {
+      } else if ((int32_t)pindex.id >= end_val) {
 	cli_dbgmsg("pindex.id[%x] > end_val[%x]\n",
 		    pindex.id, end_val);
       } else {
@@ -1270,10 +1233,10 @@ int32_t _pst_build_desc_ptr (pst_file *pf, int32_t offset, int32_t depth, int32_
 		  start_id, end_val);
     }
 
-    while (i < 0x1F && desc_rec.d_id < end_val && (prev_id == -1 || desc_rec.d_id > prev_id)) {
+    while (i < 0x1F && (int32_t)desc_rec.d_id < end_val && (prev_id == -1 || (int32_t)desc_rec.d_id > prev_id)) {
       i++;
 
-      if (start_id != -1 && desc_rec.d_id != start_id) {
+      if (start_id != -1 && (int32_t)desc_rec.d_id != start_id) {
 	cli_dbgmsg("Error: This table appears to be corrupt. Perhaps"
 		    " we are looking too deep!\n");
 	if (buf) free(buf);
@@ -1297,7 +1260,7 @@ int32_t _pst_build_desc_ptr (pst_file *pf, int32_t offset, int32_t depth, int32_
       // When duplicates found, just update the info.... perhaps this is correct functionality
       cli_dbgmsg("Searching for existing record\n");
 
-      if (desc_rec.d_id <= *high_id && (d_ptr = _pst_getDptr(pf, desc_rec.d_id)) !=  NULL) { 
+      if (desc_rec.d_id <= (uint32_t)*high_id && (d_ptr = _pst_getDptr(pf, desc_rec.d_id)) !=  NULL) { 
 	cli_dbgmsg("Updating Existing Values\n");
 	d_ptr->list_index = _pst_getID(pf, desc_rec.list_id);
 	d_ptr->desc = _pst_getID(pf, desc_rec.desc_id);
@@ -1404,7 +1367,7 @@ int32_t _pst_build_desc_ptr (pst_file *pf, int32_t offset, int32_t depth, int32_
 	}
 
       } else {     
-	if (*high_id < desc_rec.d_id) {
+	if (*high_id < (int32_t)desc_rec.d_id) {
 	  cli_dbgmsg("Updating New High\n");
 	  *high_id = desc_rec.d_id;
 	}
@@ -1497,7 +1460,7 @@ int32_t _pst_build_desc_ptr (pst_file *pf, int32_t offset, int32_t depth, int32_
       // check here to see if d_ptr is the parent of any of the items in the lost / found list
       lf_ptr = lf_head; lf_shd = NULL;
       while (lf_ptr != NULL) {
-	if (lf_ptr->parent == d_ptr->id) {
+	if (lf_ptr->parent == (int32_t)d_ptr->id) {
 	  d_par = d_ptr;
 	  d_ptr = lf_ptr->ptr;
 
@@ -1609,7 +1572,6 @@ void* _pst_parse_item(pst_file *pf, pst_desc_ll *d_ptr) {
 
   if (d_ptr->list_index != NULL) {
     id2_head = _pst_build_id2(pf, d_ptr->list_index, NULL);
-    _pst_printID2ptr(id2_head);
   } //else {
   //    cli_dbgmsg("Have not been able to fetch any id2 values for this item. Brace yourself!\n");
   //  }
@@ -1782,7 +1744,7 @@ pst_num_array * _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll
   if (block_hdr.type == 0xBCEC) { //type 1
     block_type = 1;
     
-    _pst_getBlockOffset(buf, ind_ptr, block_hdr.offset, &block_offset);
+    _pst_getBlockOffset((char *)buf, ind_ptr, block_hdr.offset, &block_offset);
     fr_ptr = block_offset.from;
     
     memcpy(&table_rec, &(buf[fr_ptr]), sizeof(table_rec));
@@ -1796,7 +1758,7 @@ pst_num_array * _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll
       return NULL;
     }
 
-    _pst_getBlockOffset(buf, ind_ptr, table_rec.value, &block_offset);
+    _pst_getBlockOffset((char *)buf, ind_ptr, table_rec.value, &block_offset);
     list_start = fr_ptr = block_offset.from;
     to_ptr = block_offset.to;
     num_list = (to_ptr - fr_ptr)/sizeof(table_rec);
@@ -1805,7 +1767,7 @@ pst_num_array * _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll
   } else if (block_hdr.type == 0x7CEC) { //type 2
     block_type = 2;
     
-    _pst_getBlockOffset(buf, ind_ptr, block_hdr.offset, &block_offset);
+    _pst_getBlockOffset((char *)buf, ind_ptr, block_hdr.offset, &block_offset);
     fr_ptr = block_offset.from; //now got pointer to "7C block"
     memset(&seven_c_blk, 0, sizeof(seven_c_blk));
     memcpy(&seven_c_blk, &(buf[fr_ptr]), sizeof(seven_c_blk));
@@ -1832,7 +1794,7 @@ pst_num_array * _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll
     num_list = seven_c_blk.item_count;
     cli_dbgmsg("b5 offset = %#x\n", seven_c_blk.b_five_offset);
 
-    _pst_getBlockOffset(buf, ind_ptr, seven_c_blk.b_five_offset, &block_offset);
+    _pst_getBlockOffset((char *)buf, ind_ptr, seven_c_blk.b_five_offset, &block_offset);
     fr_ptr = block_offset.from;
     memcpy(&table_rec, &(buf[fr_ptr]), sizeof(table_rec));
     cli_dbgmsg("before convert %#x\n", table_rec.type);
@@ -1853,14 +1815,13 @@ pst_num_array * _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll
       return NULL;
     }
 
-    _pst_getBlockOffset(buf, ind_ptr, table_rec.value, &block_offset);
+    _pst_getBlockOffset((char *)buf, ind_ptr, table_rec.value, &block_offset);
     num_recs = (block_offset.to - block_offset.from) / 6; // this will give the number of records in this block
     
-    _pst_getBlockOffset(buf, ind_ptr, seven_c_blk.ind2_offset, &block_offset);
+    _pst_getBlockOffset((char *)buf, ind_ptr, seven_c_blk.ind2_offset, &block_offset);
     ind2_ptr = block_offset.from;
   } else {
     cli_warnmsg("ERROR: Unknown block constant - %#X for id %#x\n", block_hdr.type, block_id);
-    cli_dbgmsg(buf, read_size,0x10);
     if (buf) free(buf);
     return NULL;
   }
@@ -2003,14 +1964,14 @@ pst_num_array * _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll
 	    na_ptr->count_item --;
 	    continue;
 	  }
-	  if (_pst_getBlockOffset(buf, ind_ptr, table_rec.value, &block_offset)) { 
+	  if (_pst_getBlockOffset((char *)buf, ind_ptr, table_rec.value, &block_offset)) { 
 	    cli_dbgmsg("failed to get block offset for table_rec.value of %#x\n", 
 		  table_rec.value); 
 	    na_ptr->count_item --; //we will be skipping a row
 	    continue; 
 	  } 
 	  t_ptr = block_offset.from; 
-	  if (t_ptr <= block_offset.to) {
+	  if (t_ptr <= (u_int32_t)block_offset.to) {
 	    na_ptr->items[x]->size = size = block_offset.to - t_ptr; 
 	  } else {
 	    cli_dbgmsg("I don't want to malloc less than zero sized block. from=%#x, to=%#x."
@@ -2019,7 +1980,7 @@ pst_num_array * _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll
 	  }
 
 	  // plus one for good luck (and strings) we will null terminate all reads
-	  na_ptr->items[x]->data = (char*) cli_malloc(size+1); 
+	  na_ptr->items[x]->data = (unsigned char *)cli_malloc(size+1); 
 	  memcpy(na_ptr->items[x]->data, &(buf[t_ptr]), size);
 	  na_ptr->items[x]->data[size] = '\0'; // null terminate buffer
 	  
@@ -2080,7 +2041,7 @@ pst_num_array * _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll
 #define MALLOC_APPOINTMENT(x) { if (x->appointment == NULL) { x->appointment = (pst_item_appointment*) cli_malloc(sizeof(pst_item_appointment)); memset(x->appointment, 0, sizeof(pst_item_appointment)); } }
 // malloc space and copy the current item's data -- plus one on the size for good luck (and string termination)
 #define LIST_COPY(targ, type) { \
-  targ = type realloc(targ, list->items[x]->size+1); \
+  targ = type cli_realloc(targ, list->items[x]->size+1); \
   memset(targ, 0, list->items[x]->size+1); \
   memcpy(targ, list->items[x]->data, list->items[x]->size); \
 }
@@ -2171,21 +2132,21 @@ int32_t _pst_process(pst_num_array *list , pst_item *item) {
 	// must be case insensitive
 	cli_dbgmsg("IPM.x - ");
 	LIST_COPY(item->ascii_type, (char*));
-	if (pst_strincmp("IPM.Note", item->ascii_type, 8) == 0)
+	if (strncasecmp("IPM.Note", item->ascii_type, 8) == 0)
 	  // the string begins with IPM.Note...
 	  item->type = PST_TYPE_NOTE;
-	else if (pst_stricmp("IPM", item->ascii_type) == 0)
+	else if (strcasecmp("IPM", item->ascii_type) == 0)
 	  // the whole string is just IPM
 	  item->type = PST_TYPE_NOTE;
-	else if (pst_strincmp("IPM.Contact", item->ascii_type, 11) == 0)
+	else if (strncasecmp("IPM.Contact", item->ascii_type, 11) == 0)
 	  // the string begins with IPM.Contact...
 	  item->type = PST_TYPE_CONTACT;
-	else if (pst_strincmp("REPORT.IPM.Note", item->ascii_type, 15) == 0)
+	else if (strncasecmp("REPORT.IPM.Note", item->ascii_type, 15) == 0)
 	  // the string begins with the above
 	  item->type = PST_TYPE_REPORT;
-	else if (pst_strincmp("IPM.Activity", item->ascii_type, 12) == 0)
+	else if (strncasecmp("IPM.Activity", item->ascii_type, 12) == 0)
 	  item->type = PST_TYPE_JOURNAL;
-	else if (pst_strincmp("IPM.Appointment", item->ascii_type, 15) == 0)
+	else if (strncasecmp("IPM.Appointment", item->ascii_type, 15) == 0)
 	  item->type = PST_TYPE_APPOINTMENT;
 	else
 	  item->type = PST_TYPE_OTHER;
@@ -2270,7 +2231,7 @@ int32_t _pst_process(pst_num_array *list , pst_item *item) {
 	//      if (list->items[x]->id == 0x0037) { 
 	cli_dbgmsg("Raw Subject - ");
 	MALLOC_EMAIL(item);
-	item->email->subject = (pst_item_email_subject*) realloc(item->email->subject, sizeof(pst_item_email_subject));
+	item->email->subject = (pst_item_email_subject*) cli_realloc(item->email->subject, sizeof(pst_item_email_subject));
 	memset(item->email->subject, 0, sizeof(pst_item_email_subject));
 	cli_dbgmsg(" [size = %i] ", list->items[x]->size);
 	if (list->items[x]->size > 0) {
@@ -2278,7 +2239,7 @@ int32_t _pst_process(pst_num_array *list , pst_item *item) {
 	    // then there are no control bytes at the front
 	    item->email->subject->off1 = 0;
 	    item->email->subject->off2 = 0;
-	    item->email->subject->subj = realloc(item->email->subject->subj, list->items[x]->size+1);
+	    item->email->subject->subj = cli_realloc(item->email->subject->subj, list->items[x]->size+1);
 	    memset(item->email->subject->subj, 0, list->items[x]->size+1);
 	    memcpy(item->email->subject->subj, list->items[x]->data, list->items[x]->size);
 	  } else {
@@ -2286,7 +2247,7 @@ int32_t _pst_process(pst_num_array *list , pst_item *item) {
 	    // there might be some control bytes in the first and second bytes
 	    item->email->subject->off1 = list->items[x]->data[0];
 	    item->email->subject->off2 = list->items[x]->data[1];
-	    item->email->subject->subj = realloc(item->email->subject->subj, (list->items[x]->size-2)+1);
+	    item->email->subject->subj = cli_realloc(item->email->subject->subj, (list->items[x]->size-2)+1);
 	    memset(item->email->subject->subj, 0, list->items[x]->size-1);
 	    memcpy(item->email->subject->subj, &(list->items[x]->data[2]), list->items[x]->size-2);
 	  }
@@ -3233,13 +3194,11 @@ int32_t _pst_process(pst_num_array *list , pst_item *item) {
 	cli_dbgmsg("Wedding Anniversary - ");
 	MALLOC_CONTACT(item);
 	LIST_COPY(item->contact->wedding_anniversary, (FILETIME*));
-	cli_dbgmsg(item->contact->wedding_anniversary);
 	break;
       case 0x3A42: // PR_BIRTHDAY
 	cli_dbgmsg("Birthday - ");
 	MALLOC_CONTACT(item);
 	LIST_COPY(item->contact->birthday, (FILETIME*));
-	cli_dbgmsg(item->contact->birthday);
 	break;
       case 0x3A43: // PR_HOBBIES
 	cli_dbgmsg("Hobbies - ");
@@ -4170,10 +4129,12 @@ pst_index_ll * _pst_getID(pst_file* pf, u_int32_t id) {
   return ptr;
 }
 
-pst_index_ll * _pst_getID2(pst_index2_ll *ptr, u_int32_t id) {
+static pst_index_ll *
+_pst_getID2(pst_index2_ll *ptr, u_int32_t id)
+{
   cli_dbgmsg("Head = %p\n", ptr);
   cli_dbgmsg("Trying to find %#x\n", id);
-  while (ptr != NULL && ptr->id2 != id) {
+  while (ptr != NULL && ptr->id2 != (int32_t)id) {
     ptr = ptr->next;
   }
   if (ptr != NULL) {
@@ -4203,51 +4164,18 @@ pst_desc_ll * _pst_getDptr(pst_file *pf, u_int32_t id) {
   return ptr; // will be NULL or record we are looking for
 }
 
-int32_t _pst_printDptr(pst_file *pf) {
-  pst_desc_ll *ptr = pf->d_head;
-  int32_t depth = 0;
-  char spaces[100];
-  memset(spaces, ' ', 99);
-  spaces[99] = '\0';
-  while (ptr != NULL) {
-    if (ptr->child != NULL) {
-      depth++;
-      ptr = ptr->child;
-      continue;
-    }
-    while (ptr->next == NULL && ptr->parent != NULL) {
-      depth--;
-      ptr = ptr->parent;
-    }
-    ptr = ptr->next;
-  }
-  return 0;
-}
-
-int32_t _pst_printIDptr(pst_file* pf) {
-  /*pst_index_ll *ptr = pf->i_head;
-  while (ptr != NULL) {
-    cli_dbgmsg("%#x offset=%#x size=%#x\n", ptr->id, ptr->offset, ptr->size);
-    ptr = ptr->next;
-  }*/
-  return 0;
-}
-
-int32_t _pst_printID2ptr(pst_index2_ll *ptr) {
-  /*while (ptr != NULL) {
-    cli_dbgmsg(ptr->id!=NULL?ptr->id->id:0);
-    ptr = ptr->next;
-  }*/
-  return 0;
-}
-
-size_t _pst_read_block(FILE *fp, int32_t offset, void **buf) {
+size_t
+_pst_read_block(FILE *fp, int32_t offset, void **buf)
+{
   size_t size;
   int32_t fpos;
   cli_dbgmsg("Reading block from %#x\n", offset);
   fpos = ftell(fp);
   fseek(fp, offset, SEEK_SET);
-  fread(&size, sizeof(int16_t), 1, fp);
+
+  if(fread(&size, sizeof(int16_t), 1, fp) != 1)
+  	return 0;
+
   fseek(fp, offset, SEEK_SET);
   cli_dbgmsg("Allocating %i bytes\n", size);
   if (*buf != NULL) {
@@ -4264,15 +4192,21 @@ size_t _pst_read_block(FILE *fp, int32_t offset, void **buf) {
 // that it is a list of further ids to read and we will follow those ids
 // recursively calling this function until we have all the data
 // we could do decryption of the encrypted PST files here
-size_t _pst_read_block_size(pst_file *pf, int32_t offset, size_t size, char ** buf, int32_t do_enc, 
-			 unsigned char is_index) {
+static size_t
+_pst_read_block_size(pst_file *pf, int32_t offset, size_t size, char ** buf, int32_t do_enc, unsigned char is_index)
+{
   u_int32_t fpos, x;
   int16_t count, y;
   char *buf2 = NULL, *buf3 = NULL;
   unsigned char fdepth;
   pst_index_ll *ptr = NULL;
   size_t rsize, z;
+
   cli_dbgmsg("Reading block from %#x, %i bytes\n", offset, size);
+
+  if(size == 0)
+  	return 0;
+
   fpos = ftell(pf->fp);
   fseek(pf->fp, offset, SEEK_SET);
   if (*buf != NULL) {
@@ -4317,21 +4251,21 @@ size_t _pst_read_block_size(pst_file *pf, int32_t offset, size_t size, char ** b
       LE32_CPU(x);
       if ((ptr = _pst_getID(pf, x)) == NULL) {
 	cli_warnmsg("Error. Cannot find ID [%#x] during multi-block read\n", x);
-	buf3 = (char*) realloc(buf3, size+1);
+	buf3 = (char*) cli_realloc(buf3, size+1);
 	buf3[size] = '\0';
 	*buf = buf3;
 	fseek(pf->fp, fpos, SEEK_SET);
 	return size;
       }
       if ((z = _pst_read_block_size(pf, ptr->offset, ptr->size, &buf2, do_enc, fdepth-1)) < ptr->size) {
-	buf3 = (char*) realloc(buf3, size+1);
+	buf3 = (char*) cli_realloc(buf3, size+1);
 	buf3[size] = '\0';
 	*buf = buf3;
 	fseek(pf->fp, fpos, SEEK_SET);
 	return size;
       }
       cli_dbgmsg("Melding newley retrieved block with bigger one. New size is %i\n", size+z);
-      buf3 = (char*) realloc(buf3, size+z+1); //plus one so that we can null terminate it later
+      buf3 = (char*) cli_realloc(buf3, size+z+1); //plus one so that we can null terminate it later
       cli_dbgmsg("Doing copy. Start pos is %i, length is %i\n", size, z);
       memcpy(&(buf3[size]), buf2, z);
       size += z;
@@ -4347,7 +4281,7 @@ size_t _pst_read_block_size(pst_file *pf, int32_t offset, size_t size, char ** b
     }
     *buf = buf3;
   } else if (do_enc && pf->encryption)
-    _pst_decrypt(*buf, size, pf->encryption);
+    _pst_decrypt((unsigned char *)*buf, size, pf->encryption);
 
   (*buf)[size] = '\0'; //should be byte after last one read
   fseek(pf->fp, fpos, SEEK_SET);
@@ -4418,7 +4352,7 @@ size_t _pst_ff_getIDblock(pst_file *pf, u_int32_t id, unsigned char** b) {
   }
 
   cli_dbgmsg("record size = %#x, estimated size = %#x\n", rec->size, rec->size);
-  *b = (char*) cli_malloc(rec->size+1);
+  *b = (unsigned char*) cli_malloc(rec->size+1);
   rsize = fread(*b, 1, rec->size, pf->fp);
   if (rsize != rec->size) {
     cli_dbgmsg("Didn't read all the size. fread returned less [%i instead of %i]\n", rsize, rec->size);
@@ -4436,8 +4370,7 @@ size_t _pst_ff_getIDblock(pst_file *pf, u_int32_t id, unsigned char** b) {
 #define PST_PTR_BLOCK_SIZE 0x120
 size_t _pst_ff_getID2block(pst_file *pf, u_int32_t id2, pst_index2_ll *id2_head, unsigned char** buf) {
   pst_index_ll* ptr;
-  //  size_t ret;
-  struct holder h = {buf, NULL, 0};
+  struct holder h = {buf, NULL, 0, {'\0', '\0', '\0'}, 0};
   ptr = _pst_getID2(id2_head, id2);
 
   if (ptr == NULL) {
@@ -4447,10 +4380,13 @@ size_t _pst_ff_getID2block(pst_file *pf, u_int32_t id2, pst_index2_ll *id2_head,
   return _pst_ff_getID2data(pf, ptr, &h);
 }
 
-size_t _pst_ff_getID2data(pst_file *pf, pst_index_ll *ptr, struct holder *h) {
+static size_t 
+_pst_ff_getID2data(pst_file *pf, pst_index_ll *ptr, struct holder *h)
+{
   // if the attachment begins with 01 01, <= 256 bytes, it is stored in the record
   int32_t ret;
-  unsigned char *b = NULL, *t;
+  unsigned char *b = NULL;
+  char *t;
   if (!(ptr->id & 0x02)) {
     ret = _pst_ff_getIDblock_dec(pf, ptr->id, &b);
     if (h->buf != NULL) {
@@ -4476,11 +4412,14 @@ size_t _pst_ff_getID2data(pst_file *pf, pst_index_ll *ptr, struct holder *h) {
   return ret;
 }
 
-size_t _pst_ff_compile_ID(pst_file *pf, u_int32_t id, struct holder *h, int32_t size) {
+size_t
+_pst_ff_compile_ID(pst_file *pf, u_int32_t id, struct holder *h, int32_t size)
+{
   size_t z, a;
   u_int16_t count, y;
   u_int32_t x, b;
-  unsigned char * buf3 = NULL, *buf2 = NULL, *t;
+  unsigned char * buf3 = NULL, *buf2 = NULL;
+  char *t;
   unsigned char fdepth;
 
   if ((a = _pst_ff_getIDblock(pf, id, &buf3))==0)
@@ -4524,12 +4463,12 @@ size_t _pst_ff_compile_ID(pst_file *pf, u_int32_t id, struct holder *h, int32_t 
       if (pf->encryption)
 	_pst_decrypt(buf2, z, pf->encryption);
       if (h->buf != NULL) {
-	*(h->buf) = realloc(*(h->buf), size+z+1);
+	*(h->buf) = cli_realloc(*(h->buf), size+z+1);
 	cli_dbgmsg("appending read data of size %i onto main buffer from pos %i\n", z, size);
 	memcpy(&((*(h->buf))[size]), buf2, z);
       } else if (h->base64 == 1 && h->fp != NULL) {
 	// include any byte left over from the last one encoding
-	buf2 = (char*)realloc(buf2, z+h->base64_extra);
+	buf2 = (unsigned char*)cli_realloc(buf2, z+h->base64_extra);
 	memmove(buf2+h->base64_extra, buf2, z);
 	memcpy(buf2, h->base64_extra_chars, h->base64_extra);
 	z+= h->base64_extra;
@@ -4564,43 +4503,13 @@ size_t _pst_ff_compile_ID(pst_file *pf, u_int32_t id, struct holder *h, int32_t 
   return size;
 }
 
-int32_t pst_stricmp(char *a, char *b) {
-  // compare strings case-insensitive.
-  // returns -1 if a < b, 0 if a==b, 1 if a > b
-  while(*a != '\0' && *b != '\0' && toupper(*a)==toupper(*b)) {
-    a++; b++;
-  }
-  if (toupper(*a) == toupper(*b))
-    return 0;
-  else if (toupper(*a) < toupper(*b))
-    return -1;
-  else
-    return 1;
-}
-
-int32_t pst_strincmp(char *a, char *b, int32_t x) {
-  // compare upto x chars in string a and b case-insensitively
-  // returns -1 if a < b, 0 if a==b, 1 if a > b  
-  int32_t y = 0;
-  while (*a != '\0' && *b != '\0' && y < x && toupper(*a)==toupper(*b)) {
-    a++; b++; y++;
-  }
-  // if we have reached the end of either string, or a and b still match
-  if (*a == '\0' || *b == '\0' || toupper(*a)==toupper(*b))
-    return 0;
-  else if (toupper(*a) < toupper(*b)) 
-    return -1;
-  else 
-    return 1;
-}
-
 size_t pst_fwrite(const void*ptr, size_t size, size_t nmemb, FILE*stream) {
   size_t r;
   if (ptr != NULL)
     r = fwrite(ptr, size, nmemb, stream);
   else {
     r = 0;
-    cli_dbgmsg("An attempt to write a NULL Pointer was made\n");
+    cli_warnmsg("An attempt to write a NULL Pointer was made\n");
   }
   return r;
 }
@@ -4640,9 +4549,6 @@ void _debug_msg_info (int line, char *file, int type);
 void _debug_msg(char* fmt, ...);
 void _debug_hexdump(char *x, int y, int cols);
 void _debug_func(char *function);
-void _debug_func_ret();
-void _debug_close();
-void _debug_write();
 void _debug_write_msg(struct _debug_item *item, char *fmt, va_list *ap, int size);
 void _debug_write_hex(struct _debug_item *item, char *buf, int size, int col);
 void * cli_malloc(size_t size);
@@ -4658,401 +4564,13 @@ void _pst_debug(char *fmt, ...) {
   cli_errmsg(fmt, ap);
   va_end(ap);
 }
-
-#define NUM_COL 30
-void _pst_debug_hexdump(FILE *out, unsigned char *buf, size_t size, int col) {
-  int off = 0, toff;
-  int count = 0;
-  
-  if (col == -1) {
-    col = NUM_COL;
-  }
-  fprintf(out, "\n");
-  while (off < size) {
-    fprintf(out, "%X\t:", off);
-    toff = off;
-    while (count < col && off < size) {
-      fprintf(out, "%02hhx ", buf[off]);
-      off++; count++;
-    }
-    off = toff;
-    while (count < col) {
-      // only happens at end of block to pad the text over to the text column
-      fprintf(out, "   ");
-      count++;
-    }
-    count = 0;
-    fprintf(out, ":");
-    while (count < col && off < size) {
-      fprintf(out, "%c", isgraph(buf[off])?buf[off]:'.');
-      off++; count ++;
-    }
-
-    fprintf(out, "\n");
-    count=0;
-  }
-
-  fprintf(out, "\n");
-}
-
-#if	0
-void _pst_debug_hexprint(char *data, int size) {
-  int i = 0;
-  while (i < size) {
-    cli_errmsg("%02hhX", data[i]);
-    i++;
-  }
-}
-
-FILE *debug_fp = NULL;
-unsigned int max_items=DEBUG_MAX_ITEMS, curr_items=0;
-
-void _debug_init(char* fname) {
-  unsigned char version = DEBUG_VERSION;
-  item_head = item_tail = NULL;
-  curr_items = 0;
-  if (debug_fp != NULL)
-    _debug_close();
-  if ((debug_fp = fopen(fname, "wb")) == NULL) {
-    cli_errmsg("Opening of file %s failed\n", fname);
-    return;
-  }
-  fwrite(&version, 1, sizeof(char), debug_fp);
-}
-
-// function must be called before _debug_msg. It sets up the
-// structure for the function that follows
-void _debug_msg_info(int line, char* file, int type) {
-  char *x;
-  if (debug_fp == NULL) {
-    cli_errmsg("debug_fp is NULL\n");
-    return;
-  }
-  info_ptr = (struct _debug_item*) cli_malloc(sizeof(struct _debug_item));
-  info_ptr->type = type;
-  info_ptr->line = line;
-  x = (func_head==NULL?"No Function":func_head->name);
-  info_ptr->function = (char*) cli_malloc(strlen(x)+1);
-  strcpy(info_ptr->function, x);
-  
-  info_ptr->file = (char*) cli_malloc(strlen(file)+1);
-  strcpy(info_ptr->file, file);
-  
-  //put the current record on a temp linked list
-  info_ptr->next = temp_list;
-  temp_list = info_ptr; 
-}
-
-void _debug_msg_text(char* fmt, ...) {
-  va_list ap;
-  int f, g;
-  char x[2];
-  struct _debug_item *temp;
-  if (debug_fp == NULL)
-    return;
-  va_start(ap, fmt);
-  // get the record off of the temp_list
-  info_ptr = temp_list;
-  if (info_ptr != NULL)
-    temp_list = info_ptr->next;
-  else {
-    cli_errmsg("NULL info_ptr. ERROR!!\n");
-    return(-2);
-  }
-  // according to glibc 2.1, this should return the req. number of bytes for 
-  // the string
-#ifdef _WIN32
-  // vsnprintf trick doesn't work. must use function called _vscprintf
-  // cannot find much documentation about this on internet or anywhere.
-  // I assume it isn't a standard function, but only in VisualC++
-  f = _vscprintf(fmt, ap);
-#else
-  f = vsnprintf(x, 1, fmt, ap);
-#endif
-
-  if (f > 0 && f < MAX_MESSAGE_SIZE) {
-    info_ptr->text = (char*) cli_malloc(f+1);
-    if ((g = vsnprintf(info_ptr->text, f, fmt, ap)) == -1) {
-      cli_errmsg("_debug_msg: Dieing! vsnprintf returned -1 for format \"%s\"\n", fmt);
-      return(-2);
-    }
-    info_ptr->text[g] = '\0';
-    if (f != g) {
-      cli_errmsg("_debug_msg: f != g\n");
-    }
-  } else if (f > 0) { // it is over the max_message_size then
-    f += strlen(info_ptr->file)+strlen(info_ptr->function);
-    temp = info_ptr;
-    _debug_write(); // dump the current messages
-    info_ptr = temp;
-    _debug_write_msg(info_ptr, fmt, &ap, f);
-    free(info_ptr->function);
-    free(info_ptr->file);
-    free(info_ptr);
-    info_ptr = NULL;
-    return;
-  } else {
-    cli_errmsg("_debug_msg: error getting requested size of debug message\n");
-    info_ptr->text = "ERROR Saving\n";
-  }
-  va_end(ap);
-
-  if (item_head == NULL)
-    item_head = info_ptr;
-
-  info_ptr->next = NULL;
-  if (item_tail != NULL)
-    item_tail->next = info_ptr;
-  item_tail = info_ptr;
-
-  if (++curr_items == max_items) {
-    // here we will jump off and save the contents
-    _debug_write();
-    info_ptr = NULL;
-  }
-}
-
-void _debug_hexdump(char *x, int y, int cols) {
-  struct _debug_item *temp;
-  if (debug_fp == NULL)
-    return;
-  info_ptr = temp_list;
-  if (info_ptr != NULL)
-    temp_list = info_ptr->next;
-  temp = info_ptr;
-  _debug_write();
-  info_ptr = temp;
-  _debug_write_hex(info_ptr, x, y, cols);
-  free(info_ptr->function);
-  free(info_ptr->file);
-  free(info_ptr);
-  info_ptr = NULL;
-}
-
-void _debug_func(char *function) {
-  func_ptr = cli_malloc (sizeof(struct _debug_func));
-  func_ptr->name = cli_malloc(strlen(function)+1);
-  strcpy(func_ptr->name, function);
-  func_ptr->next = func_head;
-  func_head = func_ptr;
-}
-
-void _debug_func_ret() {
-  //remove the head item
-  func_ptr = func_head;
-  if (func_head != NULL) {
-    func_head = func_head->next;
-    free(func_ptr->name);
-    free(func_ptr);
-  } else {
-    DIE(("function list is empty!\n"));
-  }
-}
-
-void _debug_close(void) {
-  _debug_write();
-  while (func_head != NULL) {
-    func_ptr = func_head;
-    func_head = func_head->next;
-    free(func_ptr->name);
-    free(func_ptr);
-  }
-
-  if (debug_fp != NULL)
-    fclose(debug_fp);
-  debug_fp = NULL;
-
-  if (func_head != NULL)
-    while (func_head != NULL) {
-      printf("function '%s' still on stack\n", func_head->name);
-      func_head = func_head->next;
-    }
-}
-
-void _debug_write() {
-  size_t size, ptr, funcname, filename, text, end;
-  char *buf, rec_type;
-  long index_pos = ftell (debug_fp), file_pos = index_pos;
-  // add 2. One for the pointer to the next index, 
-  // one for the count of this index
-  int index_size = ((curr_items+2) * sizeof(int));
-  int *pindex;
-  int index_ptr = 0;
-  struct _debug_file_rec_m mfile_rec;
-  struct _debug_file_rec_l lfile_rec;
-
-  if (curr_items == 0)
-    // no items to write.
-    return; 
-  pindex = (int*) cli_malloc(index_size);
-  file_pos += index_size;
-  // write the index first, we will re-write it later, but
-  // we want to allocate the space
-  fwrite(pindex, index_size, 1, debug_fp);
-  pindex[index_ptr++] = curr_items;
-
-  item_ptr = item_head;
-  while (item_ptr != NULL) {
-    file_pos = ftell(debug_fp);
-    pindex[index_ptr++] = file_pos;
-    size = strlen(item_ptr->function)+strlen(item_ptr->file)+
-      strlen(item_ptr->text) + 3; //for the three \0s
-    buf = cli_malloc(size+1);
-    ptr = 0;
-    funcname=ptr;
-    ptr += sprintf(&(buf[ptr]), "%s", item_ptr->function)+1;
-    filename=ptr;
-    ptr += sprintf(&(buf[ptr]), "%s", item_ptr->file)+1;
-    text=ptr;
-    ptr += sprintf(&(buf[ptr]), "%s", item_ptr->text)+1;
-    end=ptr;
-    if (end > USHRT_MAX) { // bigger than can be stored in a short
-      rec_type = 'L';
-      fwrite(&rec_type, 1, sizeof(char), debug_fp);
-      lfile_rec.type = item_ptr->type;
-      lfile_rec.line = item_ptr->line;
-      lfile_rec.funcname = funcname;
-      lfile_rec.filename = filename;
-      lfile_rec.text = text;
-      lfile_rec.end = end;
-      fwrite(&lfile_rec, sizeof(lfile_rec), 1, debug_fp);
-    } else {
-      rec_type = 'M';
-      fwrite(&rec_type, 1, sizeof(char), debug_fp);
-      mfile_rec.type = item_ptr->type;
-      mfile_rec.line = item_ptr->line;
-      mfile_rec.funcname = funcname;
-      mfile_rec.filename = filename;
-      mfile_rec.text = text;
-      mfile_rec.end = end;
-      fwrite(&mfile_rec, sizeof(mfile_rec), 1, debug_fp);
-    }
-    fwrite(buf, 1, ptr, debug_fp);
-    item_head = item_ptr->next;
-    free(item_ptr->function);
-    free(item_ptr->file);
-    free(item_ptr->text);
-    free(item_ptr);
-    item_ptr = item_head;
-  }
-  curr_items = 0;
-  pindex[index_ptr] = ftell(debug_fp);
-
-  // we should now have a complete index
-  fseek(debug_fp, index_pos, SEEK_SET);
-  fwrite(pindex, index_size, 1, debug_fp);
-  fseek(debug_fp, 0, SEEK_END);
-  item_ptr = item_head = item_tail = NULL;
-  free(pindex);
-}
-
-void _debug_write_msg(struct _debug_item *item, char *fmt, va_list *ap, int size) {
-  struct _debug_file_rec_l lfile_rec;
-  struct _debug_file_rec_m mfile_rec;
-  unsigned char rec_type;
-  int index_size = 3 * sizeof(int);
-  int *pindex = malloc(index_size);
-  int index_pos, file_pos;
-  char zero='\0';
-  unsigned int end;
-  pindex[0] = 1; //only one item in this index
-  index_pos = ftell(debug_fp);
-  fwrite(pindex, index_size, 1, debug_fp);
-
-  pindex[1] = ftell(debug_fp);
-  
-  if (size > USHRT_MAX) { // bigger than can be stored in a short
-    rec_type = 'L';
-    fwrite(&rec_type, 1, sizeof(char), debug_fp);
-    lfile_rec.type = item->type;
-    lfile_rec.line = item->line;
-    lfile_rec.funcname = 0;
-    lfile_rec.filename = strlen(item->function)+1;
-    lfile_rec.text = lfile_rec.filename+strlen(item->file)+1;
-    fwrite(&lfile_rec, sizeof(lfile_rec), 1, debug_fp);
-  } else {
-    rec_type = 'M';
-    fwrite(&rec_type, 1, sizeof(char), debug_fp);
-    mfile_rec.type = item->type;
-    mfile_rec.line = item->line;
-    mfile_rec.funcname = 0;
-    mfile_rec.filename = strlen(item->function)+1;
-    mfile_rec.text = mfile_rec.filename+strlen(item->file)+1;
-    fwrite(&mfile_rec, sizeof(mfile_rec), 1, debug_fp);
-  }
-  file_pos = ftell(debug_fp);
-  fwrite(item->function, strlen(item->function)+1, 1, debug_fp);
-  fwrite(item->file, strlen(item->file)+1, 1, debug_fp);
-  vfprintf(debug_fp, fmt, *ap);
-  fwrite(&zero, 1, 1, debug_fp);
-
-  end = ftell(debug_fp)-file_pos;
-
-  pindex[2] = ftell(debug_fp);
-  fseek(debug_fp, index_pos, SEEK_SET);
-  fwrite(pindex, index_size, 1, debug_fp);
-  if (size > USHRT_MAX) {
-    fwrite(&rec_type, 1, sizeof(char), debug_fp);
-    lfile_rec.end = end;
-    fwrite(&lfile_rec, sizeof(lfile_rec), 1, debug_fp);
-  } else {
-    fwrite(&rec_type, 1, sizeof(char), debug_fp);
-    mfile_rec.end = end;
-    fwrite(&mfile_rec, sizeof(mfile_rec), 1, debug_fp);
-  }
-  fseek(debug_fp, 0, SEEK_END);
-  // that should do it...
-}
-
-void _debug_write_hex(struct _debug_item *item, char *buf, int size, int col) {
-  struct _debug_file_rec_l lfile_rec;
-  unsigned char rec_type;
-  int index_size = 3 * sizeof(int);
-  int *pindex = malloc(index_size);
-  int index_pos, file_pos;
-  char zero='\0';
-  pindex[0] = 1; // only one item in this index run
-  index_pos = ftell(debug_fp);
-  fwrite(pindex, index_size, 1, debug_fp);
-  pindex[1] = ftell(debug_fp);
-
-  // always use the long
-  rec_type = 'L';
-  fwrite(&rec_type, 1, sizeof(char), debug_fp);
-  lfile_rec.type = item->type;
-  lfile_rec.line = item->line;
-  lfile_rec.funcname = 0;
-  lfile_rec.filename = strlen(item->function)+1;
-  lfile_rec.text = lfile_rec.filename+strlen(item->file)+1;
-  fwrite(&lfile_rec, sizeof(lfile_rec), 1, debug_fp);
-
-  file_pos = ftell(debug_fp);
-  fwrite(item->function, strlen(item->function)+1, 1, debug_fp);
-  fwrite(item->file, strlen(item->file)+1, 1, debug_fp);
-  
-  _pst_debug_hexdump(debug_fp, buf, size, col);
-  fwrite(&zero, 1, 1, debug_fp);
-  lfile_rec.end = ftell(debug_fp)-file_pos;
-
-  pindex[2] = ftell(debug_fp);
-  fseek(debug_fp, index_pos, SEEK_SET);
-  fwrite(pindex, index_size, 1, debug_fp);
-  fwrite(&rec_type, 1, sizeof(char), debug_fp);
-  fwrite(&lfile_rec, sizeof(lfile_rec), 1, debug_fp);
-  fseek(debug_fp, 0, SEEK_END);
-}
-#endif
   
 /* Taken from LibStrfunc v7.3 */
 
-char *_sf_b64_buf=NULL;
-size_t _sf_b64_len=0;
-
-
-static unsigned char _sf_uc_ib[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/==";
+static const unsigned char _sf_uc_ib[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/==";
 
 static char *
-base64_encode(void *data, size_t size) {
+base64_encode(const void *data, size_t size) {
   char *output;
   register char *ou;
   register unsigned char *p=(unsigned char *)data;
@@ -5068,12 +4586,15 @@ base64_encode(void *data, size_t size) {
   
   if(data == NULL)
     return NULL;
-  
+
+    if(size == 0)
+    	return NULL;
+
   ou=output=(char *)cli_malloc(size / 3 * 4 + (size / 50) + 5);
   if(!output)
     return NULL;
-  
-  while((char *)dte - (char *)p >= 3) {
+
+  while(((char *)dte - (char *)p) >= 3) {
     *ou = _sf_uc_ib[ *p >> 2 ];
     ou[1] = _sf_uc_ib[ ((*p & 0x03) << 4) | (p[1] >> 4) ];
     ou[2] = _sf_uc_ib[ ((p[1] & 0x0F) << 2) | (p[2] >> 6) ];
@@ -5085,12 +4606,12 @@ base64_encode(void *data, size_t size) {
     nc+=4;
     if(!(nc % 76)) *ou++='\n';
   };
-  if((char *)dte - (char *)p == 2) {
+  if(((char *)dte - (char *)p) == 2) {
     *ou++ = _sf_uc_ib[ *p >> 2 ];
     *ou++ = _sf_uc_ib[ ((*p & 0x03) << 4) | (p[1] >> 4) ];
     *ou++ = _sf_uc_ib[ ((p[1] & 0x0F) << 2) ];
     *ou++ = '=';
-  } else if((char *)dte - (char *)p == 1) {
+  } else if(((char *)dte - (char *)p) == 1) {
     *ou++ = _sf_uc_ib[ *p >> 2 ];
     *ou++ = _sf_uc_ib[ ((*p & 0x03) << 4) ];
     *ou++ = '=';
@@ -5098,16 +4619,11 @@ base64_encode(void *data, size_t size) {
   };
   
   *ou=0;
-  
-  _sf_b64_len = (ou - output);
-  
-  if(_sf_b64_buf)
-    free(_sf_b64_buf);
-  return _sf_b64_buf=output;
-};
+  	return output;
+}
 
 
-/* main - NJH, hacked from readpst.c */
+/* NJH, hacked from readpst.c */
 #define RTF_ATTACH_NAME "rtf-body.rtf"
 // mime type for the attachment
 #define RTF_ATTACH_TYPE "application/rtf"
@@ -5143,21 +4659,27 @@ char *check_filename(char *fname) {
   return fname;
 }
 
-int chr_count(char *str, char x) {
-  int r = 0;
-  while (*str != '\0') {
-    if (*str == x)
-      r++;
-    str++;
-  }
-  return r;
+static int
+chr_count(const char *str, char x)
+{
+	int r = 0;
+
+	while (*str != '\0') {
+		if (*str == x)
+			r++;
+		str++;
+	}
+	return r;
 }
 
-// char *rfc2426_escape(char *str) {{{1
-char *rfc2426_escape(char *str) {
-  static char* buf = NULL;
-  char *ret, *a, *b;
-  int x = 0, y, z;
+static const char *
+rfc2426_escape(const char *str)
+{
+	static char* buf = NULL;
+	const char *ret, *a;
+	char *b;
+	int x = 0, y, z;
+
   if (str == NULL) 
     ret = str;
   else {
@@ -5169,7 +4691,7 @@ char *rfc2426_escape(char *str) {
       // there isn't any extra space required
       ret = str;
     else {
-      buf = (char*) realloc(buf, x+1);
+      buf = (char*) cli_realloc(buf, x+1);
       a = str;
       b = buf;
       while (*a != '\0') {
@@ -5196,36 +4718,43 @@ char *rfc2426_escape(char *str) {
   return ret;
 }
 
-char *my_stristr(char *haystack, char *needle) {
-// my_stristr varies from strstr in that its searches are case-insensitive
-  char *x=haystack, *y=needle, *z = NULL;
-  if (haystack == NULL || needle == NULL)
-    return NULL;
-  while (*y != '\0' && *x != '\0') {
-    if (tolower(*y) == tolower(*x)) {
-      // move y on one
-      y++;
-      if (z == NULL) {
-	z = x; // store first position in haystack where a match is made
-      }
-    } else {
-      y = needle; // reset y to the beginning of the needle
-      z = NULL; // reset the haystack storage point
-    }
-    x++; // advance the search in the haystack
-  }
-  return z;
+/* my_stristr varies from strstr in that its searches are case-insensitive */
+static char *
+my_stristr(const char *haystack, const char *needle)
+{
+	const char *x=haystack, *y=needle, *z = NULL;
+	if (haystack == NULL || needle == NULL)
+		return NULL;
+
+	while (*y != '\0' && *x != '\0') {
+		if (tolower(*y) == tolower(*x)) {
+			// move y on one
+			y++;
+			if (z == NULL) {
+				z = x; // store first position in haystack where a match is made
+			}
+		} else {
+			y = needle; // reset y to the beginning of the needle
+			z = NULL; // reset the haystack storage point
+		}
+		x++; // advance the search in the haystack
+	}
+	return (char *)z;
 }
-char *rfc2445_datetime_format(FILETIME *ft) {
-  static char* buffer = NULL;
-  struct tm *stm = NULL;
-  if (buffer == NULL)
-    buffer = cli_malloc(30); // should be enough
-  stm = fileTimeToStructTM(ft);
-  if (strftime(buffer, 30, "%Y%m%dT%H%M%SZ", stm)==0) {
-    cli_dbgmsg("Problem occured formatting date\n");
-  }
-  return buffer;
+
+static const char *
+rfc2445_datetime_format(FILETIME *ft)
+{
+	static char *buffer = NULL;
+	const struct tm *stm = NULL;
+	if (buffer == NULL)
+		buffer = cli_malloc(30); // should be enough
+	stm = fileTimeToStructTM(ft);
+	if (strftime(buffer, 30, "%Y%m%dT%H%M%SZ", stm)==0) {
+		cli_dbgmsg("Problem occured formatting date\n");
+		return NULL;
+	}
+	return buffer;
 }
 
 char *removeCR (char *c) {
@@ -5242,20 +4771,23 @@ char *removeCR (char *c) {
   return c;
 }
 
-void write_email_body(FILE *f, char *body) {
-  char *n = body;
-  //  cli_dbgmsg(): \"%s\"\n", body);
-  while (n != NULL) {
-    if (strncmp(body, "From ", 5) == 0)
-      fprintf(f, ">");
-    if ((n = strchr(body, '\n'))) {
-      n++;
-      fwrite(body, n-body, 1, f); //write just a line
-      
-      body = n;
-    }
-  }
-  fwrite(body, strlen(body), 1, f);
+static size_t
+write_email_body(FILE *f, const char *body)
+{
+	const char *n = body;
+
+	while (n != NULL) {
+		if (strncmp(body, "From ", 5) == 0)
+			putc('>', f);
+
+		if((n = strchr(body, '\n')) != NULL) {
+			n++;
+			(void)fwrite(body, n-body, 1, f);	/* write just a line */
+
+			body = n;
+		}
+	}
+	return fputs(body, f);
 }
 
 // The sole purpose of this function is to bypass the pseudo-header prologue
@@ -5275,18 +4807,21 @@ char *skip_header_prologue(char *headers) {
 	return headers;
 }
 
-char *rfc2425_datetime_format(FILETIME *ft) {
-  static char * buffer = NULL;
-  struct tm *stm = NULL;
-  if (buffer == NULL)
-    buffer = cli_malloc(30); // should be enough for the date as defined below
-    
-  stm = fileTimeToStructTM(ft);
-  //Year[4]-Month[2]-Day[2] Hour[2]:Min[2]:Sec[2]
-  if (strftime(buffer, 30, "%Y-%m-%dT%H:%M:%SZ", stm)==0) {
-    cli_dbgmsg("Problem occured formatting date\n");
-  }
-  return buffer;
+static const char *
+rfc2425_datetime_format(const FILETIME *ft)
+{
+	static char *buffer = NULL;
+	const struct tm *stm = NULL;
+	if (buffer == NULL)
+		buffer = cli_malloc(30); // should be enough for the date as defined below
+
+	stm = fileTimeToStructTM(ft);
+	//Year[4]-Month[2]-Day[2] Hour[2]:Min[2]:Sec[2]
+	if(strftime(buffer, 30, "%Y-%m-%dT%H:%M:%SZ", stm) == 0) {
+		cli_errmsg("Problem occured formatting date\n");
+		return NULL;
+	}
+	return buffer;
 }
 
 #define LZFU_COMPRESSED         0x75465a4c
@@ -5315,7 +4850,9 @@ typedef struct _lzfuheader {
     We always need to add 0x10 to the buffer offset because we need to skip past the header info
 */
 
-unsigned char* lzfu_decompress (unsigned char* rtfcomp) {
+static unsigned char *
+lzfu_decompress(const unsigned char* rtfcomp)
+{
   // the dictionary buffer
   unsigned char dict[4096];
   // the dictionary pointer
@@ -5393,30 +4930,36 @@ unsigned char* lzfu_decompress (unsigned char* rtfcomp) {
 static int
 pst_decode(const char *dir, int desc)
 {
-  int base64_body = 0;
-  char *boundary = NULL, *b1, *b2; // the boundary marker between multipart sections
-  char * c_time, *filename;
-  time_t em_time;
-  int contact_mode = CMODE_VCARD;
-  int skip_child = 0;
-  int attach_num = 0;
+	int base64_body = 0;
+	char *boundary = NULL, *b1, *b2;	/* the boundary marker between multipart sections */
+	char *c_time, *filename;
+	time_t em_time;
+	int contact_mode = CMODE_VCARD;
+	int skip_child = 0;
+	int attach_num = 0;
 	int x;
-  char *temp = NULL; //temporary char pointer
-  pst_item *item = NULL;
-  pst_file pstfile;
-  pst_desc_ll *d_ptr;
-  struct file_ll  *f, *head;
-  char *enc; // base64 encoded attachment
+	char *temp = NULL;	/* temporary char pointer */
+	pst_item *item = NULL;
+	pst_file pstfile;
+	pst_desc_ll *d_ptr;
+	struct file_ll  *f, *head;
+	char *enc = NULL;	/* base64 encoded attachment */
 
 	if(pst_open(&pstfile, desc, "r") != 0)
 		return CL_EOPEN;
 
-	if(pst_load_index(&pstfile) != 0)
+	if(pst_load_index(&pstfile) != 0) {
+		pst_close(&pstfile);
 		return CL_EFORMAT;
+	}
 
-  pst_load_extended_attributes(&pstfile);
+	if(pst_load_extended_attributes(&pstfile) == 0) {
+		pst_close(&pstfile);
+		return CL_EFORMAT;
+	}
 
-  d_ptr = pstfile.d_head; // first record is main record
+	d_ptr = pstfile.d_head;	/* first record is main record */
+
 	if ((item = _pst_parse_item(&pstfile, d_ptr)) == NULL || item->message_store == NULL) {
 		pst_close(&pstfile);
 		return CL_EFORMAT;
@@ -5486,7 +5029,7 @@ pst_decode(const char *dir, int desc)
   f->type = item->type;
 
   if ((d_ptr = pst_getTopOfFolders(&pstfile, item)) == NULL) {
-    return(4);
+	return CL_EFORMAT;
   }
 
   if (item){
@@ -5718,9 +5261,9 @@ pst_decode(const char *dir, int desc)
 	  if (c_time != NULL)
 	    c_time[strlen(c_time)-1] = '\0'; //remove end \n
 	  else
-	    c_time = "Fri Dec 28 12:06:21 2001";
+	    c_time = (char *)"Fri Dec 28 12:06:21 2001";
 	} else
-	  c_time= "Fri Dec 28 12:06:21 2001";
+	  c_time= (char *)"Fri Dec 28 12:06:21 2001";
 
 	// if the boundary is still set from the previous run, then free it
 	if (boundary != NULL) {
@@ -5771,8 +5314,8 @@ pst_decode(const char *dir, int desc)
 		
 	      while (*b2 == ' ' || *b2 == '\t')
 		b2++;
-	      if (pst_strincmp(b2, "base64", 6)==0) {
-		printf("body is base64 encoded\n");
+	      if (strncasecmp(b2, "base64", 6)==0) {
+		cli_dbgmsg("body is base64 encoded\n");
 		base64_body = 1;
 	      }
 	    } else {
@@ -5791,6 +5334,7 @@ pst_decode(const char *dir, int desc)
 	}
 
 	if (item->email->header != NULL) {
+	    char *soh = NULL;  // real start of headers.
 	  // some of the headers we get from the file are not properly defined.
 	  // they can contain some email stuff too. We will cut off the header
 	  // when we see a \n\n or \r\n\r\n
@@ -5804,7 +5348,6 @@ pst_decode(const char *dir, int desc)
 	    *temp = '\0';
 	  }
 	  
-	    char *soh = NULL;  // real start of headers.
 	    // don't put rubbish in if we are doing seperate
 	    fprintf(f->output, "From \"%s\" %s\n", item->email->outlook_sender_name, c_time);
 	    soh = skip_header_prologue(item->email->header);
@@ -5815,11 +5358,11 @@ pst_decode(const char *dir, int desc)
 	    if (item->email->outlook_sender_name != NULL) {
 	      temp = item->email->outlook_sender_name;
 	    } else {
-	      temp = "(readpst_null)";
+	      temp = (char *)"(readpst_null)";
 	    }
 	    fprintf(f->output, "From \"%s\" %s\n", temp, c_time);
 	  if ((temp = item->email->outlook_sender) == NULL)
-	    temp = "";
+	    temp = (char *)"";
 	  fprintf(f->output, "From: \"%s\" <%s>\n", item->email->outlook_sender_name, temp);
 	  if (item->email->subject != NULL) {
 	    fprintf(f->output, "Subject: %s\n", item->email->subject->subj);
@@ -5886,11 +5429,10 @@ pst_decode(const char *dir, int desc)
 	attach_num = 0;
 
 	if (item->email->rtf_compressed != NULL) {
-	  item->current_attach = (pst_item_attach*)cli_malloc(sizeof(pst_item_attach));
-	  memset(item->current_attach, 0, sizeof(pst_item_attach));
+	  item->current_attach = (pst_item_attach*)cli_calloc(1, sizeof(pst_item_attach));
 	  item->current_attach->next = item->attach;
 	  item->attach = item->current_attach;
-	  item->current_attach->data = lzfu_decompress(item->email->rtf_compressed);
+	  item->current_attach->data = (char *)lzfu_decompress((const unsigned char *)item->email->rtf_compressed);
 	  item->current_attach->filename2 = cli_malloc(strlen(RTF_ATTACH_NAME)+2);
 	  strcpy(item->current_attach->filename2, RTF_ATTACH_NAME);
 	  item->current_attach->mimetype = cli_malloc(strlen(RTF_ATTACH_TYPE)+2);
@@ -5929,7 +5471,7 @@ pst_decode(const char *dir, int desc)
 	item->current_attach = item->attach;
 	while (item->current_attach != NULL) {
 	  if (item->current_attach->data == NULL) {
-	    /*cli_errmsg("main: Data of attachment is NULL!. Size is supposed to be %i\n", item->current_attach->size);*/
+	    cli_dbgmsg("main: Data of attachment is NULL!. Size is supposed to be %i\n", item->current_attach->size);
 	  }
 	    if (item->current_attach->data != NULL) {
 	      if ((enc = base64_encode (item->current_attach->data, item->current_attach->size)) == NULL) {
@@ -5953,11 +5495,10 @@ pst_decode(const char *dir, int desc)
 			item->current_attach->filename2);
 	      }
 	    }
-	    if (item->current_attach->data != NULL) {
-	      fwrite(enc, 1, strlen(enc), f->output);
-	    } else {
+	    if (item->current_attach->data != NULL)
+		fputs(enc, f->output);
+	    else
 	      pst_attach_to_file_base64(&pstfile, item->current_attach, f->output);
-	    }
 	    fprintf(f->output, "\n\n");
 	  item->current_attach = item->current_attach->next;
 	  attach_num++;
@@ -5971,13 +5512,13 @@ pst_decode(const char *dir, int desc)
 	// deal with journal items
 	f->email_count++;
 	
-	printf("main: Processing Journal Entry\n");
+	cli_dbgmsg("main: Processing Journal Entry\n");
 	if (f->type != PST_TYPE_JOURNAL) {
-	  printf("main: I have a journal entry, but folder isn't specified as a journal type. Processing...\n");
+	  cli_dbgmsg("main: I have a journal entry, but folder isn't specified as a journal type. Processing...\n");
 	}
 
 	/*	if (item->type != PST_TYPE_JOURNAL) {
- 	  printf("main: I have an item with journal info, but it's type is \"%s\" \n. Processing...\n", 
+ 	  printf("main: I have an item with journal info, but it's type is \"%s\" \n. Processing...\n",
 		      item->ascii_type));
 	}*/
 	fprintf(f->output, "BEGIN:VJOURNAL\n");
@@ -6093,21 +5634,17 @@ pst_decode(const char *dir, int desc)
 
   }	
 
-  	// Cleanup {{{2
-  pst_close(&pstfile);
-  //  fclose(pstfile.fp);
-  while (f != NULL) {
-    if (f->output != NULL)
-     fclose(f->output);
-    free(f->name);
-    free(f->dname);
+	//  fclose(pstfile.fp);
+	while (f != NULL) {
+		if (f->output != NULL)
+			fclose(f->output);
+		free(f->name);
+		free(f->dname);
 
-    head = f->next;
-    free (f);
-    f = head;
-  }
+		head = f->next;
+		free (f);
+		f = head;
+	}
 
-	// }}}2
-
-  return 0;
+	return pst_close(&pstfile);
 }
