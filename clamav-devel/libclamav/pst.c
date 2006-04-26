@@ -5,7 +5,8 @@
  *
  * Portions Copyright (C) 2006 Nigel Horne <njh@bandsman.co.uk>
  *	NJH changes: tidy up, remove most code warnings, fixed segfaults,
- *		started on the memory leaks, but still a lot to fix
+ *		started on the memory leaks, but still a lot to fix,
+ *		don't trust the "raw data size" of LZFU encoded attachments
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -33,7 +34,7 @@
  *	cli_mbox decode it
  * TODO: Remove the vcard handling
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.8 2006/04/25 17:49:56 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.9 2006/04/26 10:07:25 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -447,13 +448,13 @@ size_t _pst_ff_compile_ID(pst_file *pf, u_int32_t id, struct holder *h, int32_t 
 
 size_t	pst_fwrite(const void*ptr, size_t size, size_t nmemb, FILE*stream);
 char * _pst_wide_to_single(char *wt, int32_t size);
-static	unsigned	char	*lzfu_decompress(const unsigned char* rtfcomp);
+static	unsigned	char	*lzfu_decompress(const unsigned char* rtfcomp, size_t *nbytes);
 
 static	time_t	fileTimeToUnixTime(const FILETIME *filetime, DWORD *remainder);
 static	const	char	*fileTimeToAscii(const FILETIME *filetime);
 static	const	struct	tm	*fileTimeToStructTM(const FILETIME *filetime);
 static	int	pst_decode(const char *dir, int desc);
-static	char	*base64_encode(const void *data, size_t size);
+static	char	*base64_encode(const unsigned char *data, size_t size);
 static	int	chr_count(const char *str, char x);
 static	const	char	*rfc2426_escape(const char *str);
 static	size_t	write_email_body(FILE *f, const char *body);
@@ -464,7 +465,7 @@ cli_pst(const char *dir, int desc)
 {
 	cli_warnmsg("PST files not yet supported\n");
 	return CL_EFORMAT;
-	/*return pst_decode(dir, desc);*/
+	return pst_decode(dir, desc);
 }
 
 static const char *
@@ -756,7 +757,7 @@ pst_open(pst_file *pf, int desc)
 	 */
 	pf->index1_depth = pf->index2_depth = 255;
 
-	cli_dbgmsg("Pointer2 is %#X, count %i[%#x], depth %#x\n", 
+	cli_dbgmsg("Pointer2 is %#X, count %i[%#x], depth %#x\n",
 		pf->index2, pf->index2_count, pf->index2_count, pf->index2_depth);
 
 	_pst_getAtPos(pf->fp, INDEX_POINTER-4, &(pf->index1_count), sizeof(pf->index1_count));
@@ -764,7 +765,7 @@ pst_open(pst_file *pf, int desc)
 	LE32_CPU(pf->index1_count);
 	LE32_CPU(pf->index1);
 
-	cli_dbgmsg("Pointer1 is %#X, count %i[%#x], depth %#x\n", 
+	cli_dbgmsg("Pointer1 is %#X, count %i[%#x], depth %#x\n",
 		pf->index1, pf->index1_count, pf->index1_count, pf->index1_depth);
 	pf->id_depth_ok = 0;
 	pf->desc_depth_ok = 0;
@@ -796,7 +797,7 @@ pst_getTopOfFolders(pst_file *pf, pst_item *root)
 	if (root == NULL || root->message_store == NULL) {
 		cli_dbgmsg("There isn't a top of folder record here.\n");
 		return NULL;
-	} else if (root->message_store->top_of_personal_folder == NULL) 
+	} else if (root->message_store->top_of_personal_folder == NULL)
 		// this is the OST way
 		// ASSUMPTION: Top Of Folders record in PST files is *always* descid 0x2142
 		return _pst_getDptr(pf, 0x2142);
@@ -817,7 +818,7 @@ pst_attach_to_file_base64(pst_file *pf, pst_item_attach *attach, FILE *fp)
     if (ptr != NULL) {
       size = _pst_ff_getID2data(pf, ptr, &h);
       // will need to encode any bytes left over
-      c = base64_encode(h.base64_extra_chars, h.base64_extra);
+      c = base64_encode((const unsigned char *)h.base64_extra_chars, h.base64_extra);
       if(c) {
 	      fputs(c, fp);
 	      free(c);
@@ -829,7 +830,7 @@ pst_attach_to_file_base64(pst_file *pf, pst_item_attach *attach, FILE *fp)
     attach->size = size;
   } else {
     // encode the attachment to the file
-    c = base64_encode(attach->data, attach->size);
+    c = base64_encode((const unsigned char *)attach->data, attach->size);
     if(c) {
     	fputs(c, fp);
 	free(c);
@@ -1866,7 +1867,8 @@ _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll *i2_head)
       } else {
 	cli_warnmsg("Missing code for block_type %i\n", block_type);
 	if (buf) free(buf);
-	_pst_free_list(na_head);
+	if(na_head)
+		_pst_free_list(na_head);
 	return NULL;
       }
       cur_list++; // get ready to read next bit from list
@@ -2007,6 +2009,7 @@ _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll *i2_head)
 	  na_ptr->items[x]->type = table_rec.ref_type;
       } else {
 	cli_warnmsg("ERROR Unknown ref_type %#x\n", table_rec.ref_type);
+	if(na_head)
 	_pst_free_list(na_head);
 	return NULL;
       }
@@ -4207,13 +4210,13 @@ _pst_read_block_size(pst_file *pf, int32_t offset, size_t size, char ** buf, int
   *buf = (void*) cli_malloc(size+1); //plus one so that we can NULL terminate it later
   rsize = fread(*buf, 1, size, pf->fp);
   if (rsize != size) {
-    cli_dbgmsg("Didn't read all that I could. fread returned less [%i instead of %i]\n", rsize, size);
+    cli_warnmsg("Didn't read all that I could. fread returned less [%i instead of %i]\n", rsize, size);
     if (feof(pf->fp)) {
-      cli_dbgmsg("We tried to read past the end of the file at [offset %#x, size %#x]\n", offset, size);
+      cli_warnmsg("We tried to read past the end of the file at [offset %#x, size %#x]\n", offset, size);
     } else if (ferror(pf->fp)) {
-      cli_dbgmsg("Error is set on file stream.\n");
+      cli_warnmsg("Error is set on file stream.\n");
     } else {
-      cli_dbgmsg("I can't tell why it failed\n");
+      cli_warnmsg("I can't tell why it failed\n");
     }
     size = rsize;
   }
@@ -4225,7 +4228,7 @@ _pst_read_block_size(pst_file *pf, int32_t offset, size_t size, char ** buf, int
     cli_dbgmsg(*buf)[1]);
     }*/
 
-  if ((*buf)[0] == 0x01 && (*buf)[1] != 0x00 && is_index) { 
+  if ((*buf)[0] == 0x01 && (*buf)[1] != 0x00 && is_index) {
     //don't do this recursion if we should be at a leaf node
     memcpy(&count, &((*buf)[2]), sizeof(int16_t));
     LE16_CPU(count);
@@ -4570,19 +4573,13 @@ void _pst_debug(char *fmt, ...) {
 static const unsigned char _sf_uc_ib[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/==";
 
 static char *
-base64_encode(const void *data, size_t size) {
-  char *output;
-  register char *ou;
-  register unsigned char *p=(unsigned char *)data;
-#ifdef __LINUX__
-  register void * dte = ((char*)data + size);
-#endif
-
-#ifndef  __LINUX__
-  register void * dte = (void*)((char*)data + size);
-#endif
-  //register void *dte=data + size;
-  register int nc=0;
+base64_encode(const unsigned char *data, size_t size)
+{
+	char *output;
+	char *ou;
+	const unsigned char *p = data;
+	const unsigned char *dte = &data[size];
+	int nc=0;
   
   if(data == NULL)
     return NULL;
@@ -4594,7 +4591,7 @@ base64_encode(const void *data, size_t size) {
   if(!output)
     return NULL;
 
-  while(((char *)dte - (char *)p) >= 3) {
+  while((dte - p) >= 3) {
     *ou = _sf_uc_ib[ *p >> 2 ];
     ou[1] = _sf_uc_ib[ ((*p & 0x03) << 4) | (p[1] >> 4) ];
     ou[2] = _sf_uc_ib[ ((p[1] & 0x0F) << 2) | (p[2] >> 6) ];
@@ -4606,12 +4603,12 @@ base64_encode(const void *data, size_t size) {
     nc+=4;
     if(!(nc % 76)) *ou++='\n';
   };
-  if(((char *)dte - (char *)p) == 2) {
+  if((dte - p) == 2) {
     *ou++ = _sf_uc_ib[ *p >> 2 ];
     *ou++ = _sf_uc_ib[ ((*p & 0x03) << 4) | (p[1] >> 4) ];
     *ou++ = _sf_uc_ib[ ((p[1] & 0x0F) << 2) ];
     *ou++ = '=';
-  } else if(((char *)dte - (char *)p) == 1) {
+  } else if((dte - p) == 1) {
     *ou++ = _sf_uc_ib[ *p >> 2 ];
     *ou++ = _sf_uc_ib[ ((*p & 0x03) << 4) ];
     *ou++ = '=';
@@ -4851,7 +4848,7 @@ typedef struct _lzfuheader {
 */
 
 static unsigned char *
-lzfu_decompress(const unsigned char* rtfcomp)
+lzfu_decompress(const unsigned char* rtfcomp, size_t *nbytes)
 {
   // the dictionary buffer
   unsigned char dict[4096];
@@ -4867,12 +4864,13 @@ lzfu_decompress(const unsigned char* rtfcomp)
   unsigned char *out_buf;
   unsigned int out_ptr = 0;
 
+	*nbytes = 0;
   memcpy(dict, LZFU_INITDICT, LZFU_INITLENGTH);
   dict_length = LZFU_INITLENGTH;
   memcpy(&lzfuhdr, rtfcomp, sizeof(lzfuhdr));
   LE32_CPU(lzfuhdr.cbSize);   LE32_CPU(lzfuhdr.cbRawSize);
   LE32_CPU(lzfuhdr.dwMagic);  LE32_CPU(lzfuhdr.dwCRC);
-  /*  printf("total size: %d\n", lzfuhdr.cbSize+4);
+  /*printf("total size: %d\n", lzfuhdr.cbSize+4);
   printf("raw size  : %d\n", lzfuhdr.cbRawSize);
   printf("compressed: %s\n", (lzfuhdr.dwMagic == LZFU_COMPRESSED ? "yes" : "no"));
   printf("CRC       : %#x\n", lzfuhdr.dwCRC);
@@ -4924,6 +4922,8 @@ lzfu_decompress(const unsigned char* rtfcomp)
   out_buf[out_ptr++] = '}';
   out_buf[out_ptr++] = '}';
   out_buf[out_ptr++] = '\0';
+  	if(nbytes)
+		*nbytes = (size_t)out_ptr;
   return out_buf;
 }
 
@@ -4965,7 +4965,7 @@ pst_decode(const char *dir, int desc)
 		pst_close(&pstfile);
 		return CL_EFORMAT;
 	}
-  
+
 	/*
 	 * default the file_as to the same as the main filename if it doesn't
 	 * exist
@@ -4994,8 +4994,7 @@ pst_decode(const char *dir, int desc)
 	}
 	sprintf(f->name, OUTPUT_TEMPLATE, item->file_as);
 
-  f->dname = (char*) cli_malloc(strlen(item->file_as)+1);
-  strcpy(f->dname, item->file_as);
+	f->dname = strdup(item->file_as);
 
     // if overwrite is set to 1 we keep the existing name and don't modify anything
     // we don't want to go changing the file name of the SEPERATE items
@@ -5046,7 +5045,7 @@ pst_decode(const char *dir, int desc)
 
   while (d_ptr != NULL) {
     if (d_ptr->desc == NULL) {
-      cli_errmsg("main: ERROR ?? item's desc record is NULL\n");
+      cli_warnmsg("pst_decode: item's desc record is NULL\n");
       f->skip_count++;
       goto check_parent;
     }
@@ -5406,7 +5405,7 @@ pst_decode(const char *dir, int desc)
 	  }
 	  removeCR(item->email->body);
 	  if (base64_body)
-	    write_email_body(f->output, base64_encode(item->email->body,
+	    write_email_body(f->output, base64_encode((const unsigned char *)item->email->body,
 						      strlen(item->email->body)));
 	  else
 	    write_email_body(f->output, item->email->body);
@@ -5421,7 +5420,7 @@ pst_decode(const char *dir, int desc)
 	  }
 	  removeCR(item->email->htmlbody);
 	  if (base64_body)
-	    write_email_body(f->output, base64_encode(item->email->htmlbody,
+	    write_email_body(f->output, base64_encode((const unsigned char *)item->email->htmlbody,
 						      strlen(item->email->htmlbody)));
 	  else
 	    write_email_body(f->output, item->email->htmlbody);
@@ -5430,16 +5429,18 @@ pst_decode(const char *dir, int desc)
 	attach_num = 0;
 
 	if (item->email->rtf_compressed != NULL) {
+		size_t nbytes;
 	  item->current_attach = (pst_item_attach*)cli_calloc(1, sizeof(pst_item_attach));
 	  item->current_attach->next = item->attach;
 	  item->attach = item->current_attach;
-	  item->current_attach->data = (char *)lzfu_decompress((const unsigned char *)item->email->rtf_compressed);
+	  item->current_attach->data = (char *)lzfu_decompress((const unsigned char *)item->email->rtf_compressed, &nbytes);
 	  item->current_attach->filename2 = cli_malloc(strlen(RTF_ATTACH_NAME)+2);
 	  strcpy(item->current_attach->filename2, RTF_ATTACH_NAME);
 	  item->current_attach->mimetype = cli_malloc(strlen(RTF_ATTACH_TYPE)+2);
 	  strcpy(item->current_attach->mimetype, RTF_ATTACH_TYPE);
-	  memcpy(&(item->current_attach->size), item->email->rtf_compressed+sizeof(int32_t), sizeof(int32_t));
-	  LE32_CPU(item->current_attach->size);
+	  /*memcpy(&(item->current_attach->size), item->email->rtf_compressed+sizeof(int32_t), sizeof(int32_t));
+	  LE32_CPU(item->current_attach->size);*/
+	  item->current_attach->size = nbytes;
 	  //	  item->email->rtf_compressed = ;
 	  //	  attach_num++;
 	}
@@ -5475,7 +5476,7 @@ pst_decode(const char *dir, int desc)
 	    cli_dbgmsg("main: Data of attachment is NULL!. Size is supposed to be %i\n", item->current_attach->size);
 	  }
 	    if (item->current_attach->data != NULL) {
-	      if ((enc = base64_encode (item->current_attach->data, item->current_attach->size)) == NULL) {
+	      if ((enc = base64_encode ((const unsigned char *)item->current_attach->data, item->current_attach->size)) == NULL) {
 		cli_errmsg("main: ERROR base64_encode returned NULL. Must have failed\n");
 		item->current_attach = item->current_attach->next;
 		continue;
