@@ -35,7 +35,7 @@
  *	cli_mbox decode it
  * TODO: Remove the vcard handling
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.12 2006/04/28 09:23:01 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.13 2006/04/28 12:53:26 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -431,11 +431,11 @@ static	size_t _pst_read_block_size(pst_file *pf, int32_t offset, size_t size, ch
 int32_t _pst_decrypt(unsigned char *buf, size_t size, int32_t type);
 static int32_t _pst_getAtPos(FILE* fp, int32_t pos, void *buf, u_int32_t size);
 int32_t _pst_get (FILE *fp, void *buf, u_int32_t size);
-size_t _pst_ff_getIDblock_dec(pst_file *pf, u_int32_t id, unsigned char **b);
-size_t _pst_ff_getIDblock(pst_file *pf, u_int32_t id, unsigned char** b);
+size_t	_pst_ff_getIDblock_dec(pst_file *pf, u_int32_t id, unsigned char **b);
+static	size_t _pst_ff_getIDblock(pst_file *pf, u_int32_t id, unsigned char** b);
 size_t _pst_ff_getID2block(pst_file *pf, u_int32_t id2, pst_index2_ll *id2_head, unsigned char** buf);
 static	size_t _pst_ff_getID2data(pst_file *pf, pst_index_ll *ptr, struct holder *h);
-size_t _pst_ff_compile_ID(pst_file *pf, u_int32_t id, struct holder *h, int32_t size);
+static	size_t _pst_ff_compile_ID(pst_file *pf, u_int32_t id, struct holder *h, int32_t size);
 
 size_t	pst_fwrite(const void*ptr, size_t size, size_t nmemb, FILE*stream);
 char * _pst_wide_to_single(char *wt, int32_t size);
@@ -454,9 +454,9 @@ static	char	*my_stristr(const char *haystack, const char *needle);
 int
 cli_pst(const char *dir, int desc)
 {
-	/*cli_warnmsg("PST files not yet supported\n");
-	return CL_EFORMAT;*/
-	return pst_decode(dir, desc);
+	cli_warnmsg("PST files not yet supported\n");
+	return CL_EFORMAT;
+	/*return pst_decode(dir, desc);*/
 }
 
 static const char *
@@ -1208,9 +1208,11 @@ int32_t _pst_build_desc_ptr (pst_file *pf, int32_t offset, int32_t depth, int32_
   // list and check it each time you read a new item
 
   int32_t d_ptr_count = 0;
+
   if (pf->index2_depth-depth == 0) {
-    // leaf node
+    /* leaf node */
     if (_pst_read_block_size(pf, offset, DESC_BLOCK_SIZE, &buf, 0, 0) < DESC_BLOCK_SIZE) {
+	if (buf) free(buf);
       cli_dbgmsg("I didn't get all the index that I wanted. _pst_read_block_size returned less than requested\n");
       return -1;
     }
@@ -1605,8 +1607,10 @@ _pst_parse_item(pst_file *pf, pst_desc_ll *d_ptr)
 
     cli_dbgmsg("ATTACHEMENT processing attachement\n");
     if ((list = _pst_parse_block(pf, id_ptr->id, id2_head)) == NULL) {
-      cli_dbgmsg("ERROR error processing main attachment record\n");
-      return NULL;
+	_pst_free_id2(id2_head);
+	_pst_free_list(list);
+	cli_errmsg("error processing main attachment record\n");
+	return NULL;
     }
     x = 0;
     while (x < list->count_array) {
@@ -1618,8 +1622,9 @@ _pst_parse_item(pst_file *pf, pst_desc_ll *d_ptr)
     item->current_attach = item->attach;
 
     if (_pst_process(list, item)) {
-      cli_dbgmsg("ERROR _pst_process() failed with attachments\n");
-      _pst_free_list(list);
+	_pst_free_list(list);
+	_pst_free_id2(id2_head);
+      cli_errmsg("_pst_process() failed with attachments\n");
       return NULL;
     }
     _pst_free_list(list);
@@ -1800,11 +1805,11 @@ _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll *i2_head)
       return NULL;
     }
 
-    if (table_rec.value == 0) { // this is for the 2nd index offset
-      cli_warnmsg("reference to second index block is zero. ERROR\n");
-      if (buf) free(buf);
-      return NULL;
-    }
+	if (table_rec.value == 0) { // this is for the 2nd index offset
+		cli_errmsg("reference to second index block is zero\n");
+		if (buf) free(buf);
+		return NULL;
+	}
 
     _pst_getBlockOffset((char *)buf, ind_ptr, table_rec.value, &block_offset);
     num_recs = (block_offset.to - block_offset.from) / 6; // this will give the number of records in this block
@@ -1819,8 +1824,7 @@ _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll *i2_head)
 
   cli_dbgmsg("Mallocing number of items %i\n", num_recs);
   while (count_rec < num_recs) {
-    na_ptr = (pst_num_array*) cli_malloc(sizeof(pst_num_array));
-    memset(na_ptr, 0, sizeof(pst_num_array));
+    na_ptr = (pst_num_array*) cli_calloc(1, sizeof(pst_num_array));
     if (na_head == NULL) {
       na_head = na_ptr;
       na_ptr->next = NULL;
@@ -2091,10 +2095,8 @@ int32_t _pst_process(pst_num_array *list , pst_item *item) {
       switch (list->items[x]->id) {
       case PST_ATTRIB_HEADER: // CUSTOM attribute for saying the Extra Headers
 	cli_dbgmsg("Extra Field - ");
-	ef = (pst_item_extra_field*) cli_malloc(sizeof(pst_item_extra_field));
-	memset(ef, 0, sizeof(pst_item_extra_field));
-	ef->field_name = (char*) cli_malloc(strlen(list->items[x]->extra)+1);
-	strcpy(ef->field_name, list->items[x]->extra);
+	ef = (pst_item_extra_field*) cli_calloc(1, sizeof(pst_item_extra_field));
+	ef->field_name = strdup(list->items[x]->extra);
 	LIST_COPY(ef->value, (char*));
 	ef->next = item->extra_fields;
 	item->extra_fields = ef;
@@ -3816,6 +3818,8 @@ _pst_build_id2(pst_file *pf, pst_index_ll* list, pst_index2_ll* head_ptr) {
   if (_pst_read_block_size(pf, list->offset, list->size, &buf, PST_NO_ENC,0) < list->size) {
     //an error occured in block read
     cli_warnmsg("block read error occured. offset = %#x, size = %#x\n", list->offset, list->size);
+    if(buf)
+    	free(buf);
     return NULL;
   }
 
@@ -3825,6 +3829,8 @@ _pst_build_id2(pst_file *pf, pst_index_ll* list, pst_index2_ll* head_ptr) {
 
   if (block_head.type != 0x0002) { // some sort of constant?
     cli_warnmsg("Unknown constant [%#x] at start of id2 values [offset %#x].\n", block_head.type, list->offset);
+    if(buf)
+    	free(buf);
     return NULL;
   }
 
@@ -4163,30 +4169,6 @@ pst_desc_ll * _pst_getDptr(pst_file *pf, u_int32_t id) {
   return ptr; // will be NULL or record we are looking for
 }
 
-size_t
-_pst_read_block(FILE *fp, int32_t offset, void **buf)
-{
-  size_t size;
-  int32_t fpos;
-  cli_dbgmsg("Reading block from %#x\n", offset);
-  fpos = ftell(fp);
-  fseek(fp, offset, SEEK_SET);
-
-  if(fread(&size, sizeof(int16_t), 1, fp) != 1)
-	return 0;
-
-  fseek(fp, offset, SEEK_SET);
-  cli_dbgmsg("Allocating %i bytes\n", size);
-  if (*buf != NULL) {
-    cli_dbgmsg("Freeing old memory\n");
-    free(*buf);
-  }
-  *buf = (void*)cli_malloc(size);
-  size = fread(*buf, 1, size, fp);
-  fseek(fp, fpos, SEEK_SET);
-  return size;
-}
-
 // when the first byte of the block being read is 01, then we can assume
 // that it is a list of further ids to read and we will follow those ids
 // recursively calling this function until we have all the data
@@ -4208,12 +4190,14 @@ _pst_read_block_size(pst_file *pf, int32_t offset, size_t size, char ** buf, int
 
   fpos = ftell(pf->fp);
   fseek(pf->fp, offset, SEEK_SET);
+
   if (*buf != NULL) {
     cli_dbgmsg("Freeing old memory\n");
     free(*buf);
-  }
+    *buf = (void *)cli_realloc(*buf, size + 1);
+  } else
+	  *buf = (void*) cli_malloc(size+1); //plus one so that we can NULL terminate it later
 
-  *buf = (void*) cli_malloc(size+1); //plus one so that we can NULL terminate it later
   rsize = fread(*buf, 1, size, pf->fp);
   if (rsize != size) {
     cli_warnmsg("Didn't read all that I could. fread returned less [%i instead of %i]\n", rsize, size);
@@ -4254,7 +4238,7 @@ _pst_read_block_size(pst_file *pf, int32_t offset, size_t size, char ** buf, int
       memcpy(&x, &(*buf)[0x08+(y*4)], sizeof(int32_t));
       LE32_CPU(x);
       if ((ptr = _pst_getID(pf, x)) == NULL) {
-	cli_warnmsg("Error. Cannot find ID [%#x] during multi-block read\n", x);
+	cli_errmsg("Error. Cannot find ID [%#x] during multi-block read\n", x);
 	buf3 = (char*) cli_realloc(buf3, size+1);
 	buf3[size] = '\0';
 	*buf = buf3;
@@ -4343,7 +4327,9 @@ size_t _pst_ff_getIDblock_dec(pst_file *pf, u_int32_t id, unsigned char **b) {
 
 /** the get ID function for the default file format that I am working with
     ie the one in the PST files */
-size_t _pst_ff_getIDblock(pst_file *pf, u_int32_t id, unsigned char** b) {
+static size_t
+_pst_ff_getIDblock(pst_file *pf, u_int32_t id, unsigned char** b)
+{
   pst_index_ll *rec;
   size_t rsize = 0;//, re_size=0;
   if ((rec = _pst_getID(pf, id)) == NULL) {
@@ -4353,11 +4339,11 @@ size_t _pst_ff_getIDblock(pst_file *pf, u_int32_t id, unsigned char** b) {
   fseek(pf->fp, rec->offset, SEEK_SET);
   if (*b != NULL) {
     cli_dbgmsg("freeing old memory in b\n");
-    free(*b);
-  }
+	*b = (unsigned char*) cli_realloc(*b, rec->size+1);
+  } else
+	*b = (unsigned char*) cli_malloc(rec->size+1);
 
   cli_dbgmsg("record size = %#x, estimated size = %#x\n", rec->size, rec->size);
-  *b = (unsigned char*) cli_malloc(rec->size+1);
   rsize = fread(*b, 1, rec->size, pf->fp);
   if (rsize != rec->size) {
     cli_dbgmsg("Didn't read all the size. fread returned less [%i instead of %i]\n", rsize, rec->size);
@@ -4420,18 +4406,22 @@ _pst_ff_getID2data(pst_file *pf, pst_index_ll *ptr, struct holder *h)
   return ret;
 }
 
-size_t
+static size_t
 _pst_ff_compile_ID(pst_file *pf, u_int32_t id, struct holder *h, int32_t size)
 {
-  size_t z, a;
-  u_int16_t count, y;
-  u_int32_t x, b;
-  unsigned char * buf3 = NULL, *buf2 = NULL;
-  char *t;
-  unsigned char fdepth;
+	size_t z, a;
+	u_int16_t count, y;
+	u_int32_t x, b;
+	unsigned char * buf3 = NULL, *buf2 = NULL;
+	char *t;
+	unsigned char fdepth;
 
-  if ((a = _pst_ff_getIDblock(pf, id, &buf3))==0)
-    return 0;
+	if ((a = _pst_ff_getIDblock(pf, id, &buf3))==0) {
+		if(buf3)
+			free(buf3);
+		return 0;
+	}
+
   if ((buf3[0] != 0x1)) { // if bit 8 is set) {
     //  if ((buf3)[0] != 0x1 && (buf3)[1] > 4) {
     cli_dbgmsg("WARNING: buffer doesn't start with 0x1, but I expected it to or doesn't have it's two-bit set!\n");
