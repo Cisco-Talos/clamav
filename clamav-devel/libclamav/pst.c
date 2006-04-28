@@ -35,7 +35,7 @@
  *	cli_mbox decode it
  * TODO: Remove the vcard handling
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.11 2006/04/28 07:56:55 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.12 2006/04/28 09:23:01 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -59,15 +59,9 @@ static	char	const	rcsid[] = "$Id: pst.c,v 1.11 2006/04/28 07:56:55 nigelhorne Ex
 
 #define DEBUG_VERSION 1
 
-#if WORDS_BIGENDIAN == 0
-#define LE64_CPU(x) {}
-#define LE32_CPU(x) {}
-#define LE16_CPU(x) {}
-#else
 #define	LE64_CPU(x)	x = le64_to_host(x);
 #define	LE32_CPU(x)	x = le32_to_host(x);
 #define	LE16_CPU(x)	x = le16_to_host(x);
-#endif
 
 typedef struct {
 	unsigned int dwLowDateTime;
@@ -460,9 +454,9 @@ static	char	*my_stristr(const char *haystack, const char *needle);
 int
 cli_pst(const char *dir, int desc)
 {
-	cli_warnmsg("PST files not yet supported\n");
-	return CL_EFORMAT;
-	/*return pst_decode(dir, desc);*/
+	/*cli_warnmsg("PST files not yet supported\n");
+	return CL_EFORMAT;*/
+	return pst_decode(dir, desc);
 }
 
 static const char *
