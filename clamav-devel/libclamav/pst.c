@@ -35,7 +35,7 @@
  *	cli_mbox decode it
  * TODO: Remove the vcard handling
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.10 2006/04/26 14:23:28 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.11 2006/04/28 07:56:55 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -60,17 +60,13 @@ static	char	const	rcsid[] = "$Id: pst.c,v 1.10 2006/04/26 14:23:28 nigelhorne Ex
 #define DEBUG_VERSION 1
 
 #if WORDS_BIGENDIAN == 0
-/*
- * don't use le??_to_host because they generate a huge number of statement with
- * no effect warnings
- */
-#define	LE64_CPU(x)
-#define	LE32_CPU(x)
-#define	LE16_CPU(x)
+#define LE64_CPU(x) {}
+#define LE32_CPU(x) {}
+#define LE16_CPU(x) {}
 #else
-#define	LE64_CPU(x)	le64_to_host(x)
-#define	LE32_CPU(x)	le32_to_host(x)
-#define	LE16_CPU(x)	le16_to_host(x)
+#define	LE64_CPU(x)	x = le64_to_host(x);
+#define	LE32_CPU(x)	x = le32_to_host(x);
+#define	LE16_CPU(x)	x = le16_to_host(x);
 #endif
 
 typedef struct {
