@@ -35,7 +35,7 @@
  *	cli_mbox decode it
  * TODO: Remove the vcard handling
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.13 2006/04/28 12:53:26 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.14 2006/04/29 08:31:19 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -599,9 +599,7 @@ fileTimeToUnixTime(const FILETIME *filetime, DWORD *remainder)
 #define PST_ENC 1
 
 // defines types of possible encryption
-#define PST_NO_ENCRYPT 0
 #define PST_COMP_ENCRYPT 1
-#define PST_ENCRYPT 2
 
 // defines different types of mappings
 #define PST_MAP_ATTRIB 1
@@ -944,8 +942,7 @@ pst_load_extended_attributes(pst_file *pf)
   bptr += sizeof(xattrib);
 
   while (xattrib.type != 0 && bptr < bsize) {
-    ptr = (pst_x_attrib_ll*) cli_malloc(sizeof(pst_x_attrib_ll));
-    memset(ptr, 0, sizeof(pst_x_attrib_ll));
+    ptr = (pst_x_attrib_ll*) cli_calloc(1, sizeof(pst_x_attrib_ll));
     ptr->type = xattrib.type;
     ptr->map = xattrib.map+0x8000;
     ptr->next = NULL;
@@ -958,8 +955,7 @@ pst_load_extended_attributes(pst_file *pf)
 	// copy the size of the header. It is 32 bit int
 	memcpy(&tint, &(headerbuffer[xattrib.extended]), sizeof(tint));
 	LE32_CPU(tint);
-	wt = (char*) cli_malloc(tint+2); // plus 2 for a uni-code zero
-	memset(wt, 0, tint+2);
+	wt = (char*) cli_calloc(1, tint+2); // plus 2 for a uni-code zero
 	memcpy(wt, &(headerbuffer[xattrib.extended+sizeof(tint)]), tint);
 	ptr->data = _pst_wide_to_single(wt, tint);
 	free(wt);
@@ -970,8 +966,7 @@ pst_load_extended_attributes(pst_file *pf)
       ptr->mytype = PST_MAP_HEADER;
     } else {
       // contains the attribute code to map to.
-      ptr->data = (int*)cli_malloc(sizeof(int32_t));
-      memset(ptr->data, 0, sizeof(int32_t));
+      ptr->data = (int*)cli_calloc(1, sizeof(int32_t));
       *((int32_t*)ptr->data) = xattrib.extended;
       ptr->mytype = PST_MAP_ATTRIB;
     }
@@ -4964,7 +4959,7 @@ pst_decode(const char *dir, int desc)
     // if overwrite is set to 1 we keep the existing name and don't modify anything
     // we don't want to go changing the file name of the SEPERATE items
     temp = (char*) cli_malloc (strlen(f->name)+10); //enough room for 10 digits
-    sprintf(temp, "%s", f->name);
+    strcpy(temp, f->name);
     temp = check_filename(temp);
     x = 0;
     while ((f->output = fopen(temp, "r")) != NULL) {
@@ -5045,11 +5040,10 @@ pst_decode(const char *dir, int desc)
 	  f->name = (char*) cli_malloc(strlen(item->file_as)+strlen(OUTPUT_TEMPLATE+1));
 	  sprintf(f->name, OUTPUT_TEMPLATE, item->file_as);
 
-	f->dname = (char*) cli_malloc(strlen(item->file_as)+1);
-	strcpy(f->dname, item->file_as);
+	f->dname = strdup(item->file_as);
 
 	  temp = (char*) cli_malloc (strlen(f->name)+10); //enough room for 10 digits
-	  sprintf(temp, "%s", f->name);
+	  strcpy(temp, f->name);
 	  x = 0;
 	  temp = check_filename(temp);
 	  while ((f->output = fopen(temp, "r")) != NULL) {
@@ -5253,8 +5247,7 @@ pst_decode(const char *dir, int desc)
 		b1++;
 	    }
 
-	    boundary = cli_malloc ((b1-b2)+1); //malloc that length
-	    memset (boundary, 0, (b1-b2)+1);  // blank it
+	    boundary = cli_calloc (1, (b1-b2)+1); //malloc that length
 	    strncpy(boundary, b2, b1-b2); // copy boundary to another variable
 	    b1 = b2 = boundary;
 	    while (*b2 != '\0') { // remove any CRs and Tabs
@@ -5292,7 +5285,6 @@ pst_decode(const char *dir, int desc)
 				 || item->email->encrypted_htmlbody)) {
 	  // we need to create a boundary here.
 	  boundary = cli_malloc(50 * sizeof(char)); // allow 50 chars for boundary
-	  boundary[0] = '\0';
 	  sprintf(boundary, "--boundary-LibPST-iamunique-%i_-_-", rand());
 	}
 
@@ -5397,10 +5389,8 @@ pst_decode(const char *dir, int desc)
 	  item->current_attach->next = item->attach;
 	  item->attach = item->current_attach;
 	  item->current_attach->data = (char *)lzfu_decompress((const unsigned char *)item->email->rtf_compressed, &nbytes);
-	  item->current_attach->filename2 = cli_malloc(strlen(RTF_ATTACH_NAME)+2);
-	  strcpy(item->current_attach->filename2, RTF_ATTACH_NAME);
-	  item->current_attach->mimetype = cli_malloc(strlen(RTF_ATTACH_TYPE)+2);
-	  strcpy(item->current_attach->mimetype, RTF_ATTACH_TYPE);
+	  item->current_attach->filename2 = strdup(RTF_ATTACH_NAME);
+	  item->current_attach->mimetype = strdup(RTF_ATTACH_TYPE);
 	  /*memcpy(&(item->current_attach->size), item->email->rtf_compressed+sizeof(int32_t), sizeof(int32_t));
 	  LE32_CPU(item->current_attach->size);*/
 	  item->current_attach->size = nbytes;
@@ -5410,8 +5400,7 @@ pst_decode(const char *dir, int desc)
 	if (item->email->encrypted_body || item->email->encrypted_htmlbody) {
 	  // if either the body or htmlbody is encrypted, add them as attachments
 	  if (item->email->encrypted_body) {
-	    item->current_attach = (pst_item_attach*) cli_malloc(sizeof(pst_item_attach));
-	    memset(item->current_attach, 0, sizeof(pst_item_attach));
+	    item->current_attach = (pst_item_attach*) cli_calloc(1, sizeof(pst_item_attach));
 	    item->current_attach->next = item->attach;
 	    item->attach = item->current_attach;
 
@@ -5420,8 +5409,7 @@ pst_decode(const char *dir, int desc)
 	    item->email->encrypted_body = NULL;
 	  }
 	  if (item->email->encrypted_htmlbody) {
-	    item->current_attach = (pst_item_attach*) cli_malloc(sizeof(pst_item_attach));
-	    memset(item->current_attach, 0, sizeof(pst_item_attach));
+	    item->current_attach = (pst_item_attach*) cli_calloc(1, sizeof(pst_item_attach));
 	    item->current_attach->next = item->attach;
 	    item->attach = item->current_attach;
 
