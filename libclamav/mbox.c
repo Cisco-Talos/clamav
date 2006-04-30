@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.291 2006/04/21 14:45:19 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.292 2006/04/30 18:22:44 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3714,7 +3714,7 @@ rfc1341(message *m, const char *dir)
 					extern short cli_leavetemps_flag;
 					struct stat statb;
 
-#ifdef  C_CYGWIN
+#ifndef  C_CYGWIN
 					if(dent->d_ino == 0)
 						continue;
 #endif
