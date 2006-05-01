@@ -35,7 +35,7 @@
  *	cli_mbox decode it
  * TODO: Remove the vcard handling
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.15 2006/05/01 17:05:17 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.16 2006/05/01 17:36:05 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -625,6 +625,10 @@ fileTimeToUnixTime(const FILETIME *filetime, DWORD *remainder)
 #define PST_APP_LABEL_BIRTHDAY    8 // Birthday
 #define PST_APP_LABEL_ANNIVERSARY 9 // Anniversary
 #define PST_APP_LABEL_PHONE_CALL  10// Phone Call
+
+#ifndef	INT32_MAX	/* e.g. Old Linux */
+#define	INT32_MAX	INT_MAX
+#endif
 
 struct _pst_table_ptr_struct{
   int32_t start;
