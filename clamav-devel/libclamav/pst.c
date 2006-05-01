@@ -35,7 +35,7 @@
  *	cli_mbox decode it
  * TODO: Remove the vcard handling
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.14 2006/04/29 08:31:19 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.15 2006/05/01 17:05:17 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -406,7 +406,6 @@ static	int32_t	pst_close(pst_file *pf);
 static	pst_desc_ll	*pst_getTopOfFolders(pst_file *pf, pst_item *root);
 static	int32_t pst_attach_to_file_base64(pst_file *pf, pst_item_attach *attach, FILE* fp);
 int32_t pst_load_index (pst_file *pf);
-pst_desc_ll* pst_getNextDptr(pst_desc_ll* d);
 static	int32_t	pst_load_extended_attributes(pst_file *pf);
 
 static	int32_t	_pst_build_id_ptr(pst_file *pf, int32_t offset, int32_t depth, int32_t start_val, int32_t end_val);
@@ -861,18 +860,6 @@ int32_t pst_load_index (pst_file *pf) {
   }
 
   return 0;
-}
-
-pst_desc_ll* pst_getNextDptr(pst_desc_ll* d) {
-  pst_desc_ll* r = NULL;
-  if (d != NULL) {
-    if ((r = d->child) == NULL) {
-      while(d->next == NULL && d->parent != NULL)
-	d = d->parent;
-      r = d->next;
-    }
-  }
-  return r;
 }
 
 typedef struct _pst_x_attrib {
