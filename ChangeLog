@@ -1,3 +1,7 @@
+Mon May  1 22:22:28 CEST 2006 (tk)
+----------------------------------
+  * clamconf/clamconf.c: fix typo spotted by NJH
+
 Mon May  1 20:30:10 CEST 2006 (tk)
 ----------------------------------
   * libclamav/pe.c: add W32.Polipos.A detection
