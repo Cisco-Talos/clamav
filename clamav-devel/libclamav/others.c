@@ -73,7 +73,7 @@ static pthread_mutex_t cli_gentempname_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define	O_BINARY	0
 #endif
 
-#define CL_FLEVEL 7 /* don't touch it */
+#define CL_FLEVEL 8 /* don't touch it */
 
 short cli_debug_flag = 0, cli_leavetemps_flag = 0;
 
