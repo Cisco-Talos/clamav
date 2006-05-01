@@ -60,7 +60,7 @@ void printopt(const struct cfgoption *opt, const struct cfgstruct *cpt)
 		printf("%s = no\n", opt->name);
 	    break;
 	default:
-	    printf("%s: UNKNOWN ARGUMENT TYPE\n, opt->name");
+	    printf("%s: UNKNOWN ARGUMENT TYPE\n", opt->name);
     }
 }
 
