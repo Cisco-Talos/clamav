@@ -1,3 +1,8 @@
+Mon May  1 20:30:10 CEST 2006 (tk)
+----------------------------------
+  * libclamav/pe.c: add W32.Polipos.A detection
+		    Thanks to aCaB for virus analysis and detection improvements
+
 Mon May  1 19:54:57 CEST 2006 (tk)
 ----------------------------------
   * freshclam/manager.c: fix possible buffer overflow
