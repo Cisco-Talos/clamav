@@ -1,3 +1,7 @@
+Tue May  2 16:21:06 BST 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Reduce bounce false positives
+
 Mon May  1 22:22:28 CEST 2006 (tk)
 ----------------------------------
   * clamconf/clamconf.c: fix typo spotted by NJH
@@ -20,7 +24,7 @@ Sun Apr 30 19:23:35 BST 2006 (njh)
 Tue Apr 25 18:48:23 BST 2006 (njh)
 ----------------------------------
   * libclamav/pst.c:	Apply patch from TK to use le??_to_host and to include
-  				clamav-config.h first
+				clamav-config.h first
 
 Mon Apr 24 22:19:34 BST 2006 (njh)
 ----------------------------------

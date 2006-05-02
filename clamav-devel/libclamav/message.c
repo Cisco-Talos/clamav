@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.164 2006/04/09 19:59:27 kojm Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.165 2006/05/02 15:19:24 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -637,7 +637,7 @@ messageFindArgument(const message *m, const char *variable)
 			while(isspace(*ptr))
 				ptr++;
 			if(*ptr != '=') {
-				cli_warnmsg("messageFindArgument: no '=' sign found in MIME header '%s'\n", variable);
+				cli_warnmsg("messageFindArgument: no '=' sign found in MIME header '%s' (%s)\n", variable, messageGetArgument(m, i));
 				return NULL;
 			}
 			if((*++ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {

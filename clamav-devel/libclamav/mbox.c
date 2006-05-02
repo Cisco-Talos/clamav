@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.292 2006/04/30 18:22:44 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.293 2006/05/02 15:19:24 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -196,6 +196,7 @@ static	int	rfc1341(message *m, const char *dir);
 #endif
 static	bool	usefulHeader(int commandNumber, const char *cmd);
 static	char	*getline_from_mbox(char *buffer, size_t len, FILE *fin);
+static	bool	mailStart(const char *line);
 
 static	void	checkURLs(message *m, const char *dir);
 #ifdef	WITH_CURL
@@ -2666,9 +2667,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			if(l == NULL)
 				continue;
 
-			s = lineGetData(l);
-
-			if(cli_filetype(s, strlen(s)) != CL_TYPE_MAIL)
+			if(!mailStart(lineGetData(l)))
 				continue;
 
 			/*
@@ -2758,8 +2757,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				l = t->t_line;
 				if((!inheader) && l) {
 					s = lineGetData(l);
-					if(cli_filetype(s, strlen(s)) == CL_TYPE_MAIL) {
-						cli_dbgmsg("Found the start of another bounce candidate\n");
+					if(mailStart(s)) {
+						cli_dbgmsg("Found the start of another bounce candidate (%s)\n", s);
 						break;
 					}
 				}
@@ -4220,4 +4219,37 @@ getline_from_mbox(char *buffer, size_t len, FILE *fin)
 	*buffer = '\0';
 
 	return ret;
+}
+
+static bool
+mailStart(const char *line)
+{
+	if(line == NULL)
+		return FALSE;
+	if(*line == '\0')
+		return FALSE;
+	if((strncmp(line, "From ", 5) == 0) && !isalnum(line[5]))
+		return FALSE;
+	if((strncmp(line, ">From ", 6) == 0) && !isalnum(line[6]))
+		return FALSE;
+	if(cli_filetype(line, strlen(line)) != CL_TYPE_MAIL)
+		return FALSE;
+
+	if((strncmp(line, "From ", 5) == 0) ||
+	   (strncmp(line, ">From ", 6) == 0)) {
+		int numSpaces = 0, numDigits = 0;
+
+		do
+			if(*line == ' ')
+				numSpaces++;
+			else if(isdigit(*line))
+				numDigits++;
+		while(*++line != '\0');
+
+		if(numSpaces < 6)
+			return FALSE;
+		if(numDigits < 11)
+			return FALSE;
+	}
+	return TRUE;
 }
