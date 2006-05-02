@@ -35,7 +35,7 @@
  *	cli_mbox decode it
  * TODO: Remove the vcard handling
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.16 2006/05/01 17:36:05 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.17 2006/05/02 15:20:12 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -327,9 +327,9 @@ typedef struct _pst_item {
   struct _pst_item_folder *folder; /* data reffering to folder */
   struct _pst_item_contact *contact; /* data reffering to contact */
   struct _pst_item_attach *attach; /* linked list of attachments */
-  struct _pst_item_attach *current_attach; // pointer to current attachment
-  struct _pst_item_message_store * message_store; // data referring to the message store
-  struct _pst_item_extra_field *extra_fields; // linked list of extra headers and such
+  struct _pst_item_attach *current_attach; /* pointer to current attachment */
+  struct _pst_item_message_store * message_store; /* data referring to the message store */
+  struct _pst_item_extra_field *extra_fields; /* linked list of extra headers and such */
   struct _pst_item_journal *journal; // data reffering to a journal entry
   struct _pst_item_appointment *appointment; // data reffering to a calendar entry
   int32_t type;
@@ -432,7 +432,7 @@ static int32_t _pst_getAtPos(FILE* fp, int32_t pos, void *buf, u_int32_t size);
 int32_t _pst_get (FILE *fp, void *buf, u_int32_t size);
 size_t	_pst_ff_getIDblock_dec(pst_file *pf, u_int32_t id, unsigned char **b);
 static	size_t _pst_ff_getIDblock(pst_file *pf, u_int32_t id, unsigned char** b);
-size_t _pst_ff_getID2block(pst_file *pf, u_int32_t id2, pst_index2_ll *id2_head, unsigned char** buf);
+static	size_t	_pst_ff_getID2block(pst_file *pf, u_int32_t id2, pst_index2_ll *id2_head, unsigned char** buf);
 static	size_t _pst_ff_getID2data(pst_file *pf, pst_index_ll *ptr, struct holder *h);
 static	size_t _pst_ff_compile_ID(pst_file *pf, u_int32_t id, struct holder *h, int32_t size);
 
@@ -801,13 +801,20 @@ static int32_t
 pst_attach_to_file_base64(pst_file *pf, pst_item_attach *attach, FILE *fp)
 {
 	pst_index_ll *ptr;
-	struct holder h = {NULL, fp, 1, "", 0};
 	int32_t size;
 	char *c;
 
 	if (attach->id_val != -1) {
 		ptr = _pst_getID(pf, attach->id_val);
+
     if (ptr != NULL) {
+	struct holder h;
+
+	memset(&h, '\0', sizeof(struct holder));
+
+	h.fp = fp;
+	h.base64 = 1;
+
       size = _pst_ff_getID2data(pf, ptr, &h);
       // will need to encode any bytes left over
       c = base64_encode((const unsigned char *)h.base64_extra_chars, h.base64_extra);
@@ -3805,7 +3812,7 @@ _pst_build_id2(pst_file *pf, pst_index_ll* list, pst_index2_ll* head_ptr) {
     //an error occured in block read
     cli_warnmsg("block read error occured. offset = %#x, size = %#x\n", list->offset, list->size);
     if(buf)
-    	free(buf);
+	free(buf);
     return NULL;
   }
 
@@ -3816,7 +3823,7 @@ _pst_build_id2(pst_file *pf, pst_index_ll* list, pst_index2_ll* head_ptr) {
   if (block_head.type != 0x0002) { // some sort of constant?
     cli_warnmsg("Unknown constant [%#x] at start of id2 values [offset %#x].\n", block_head.type, list->offset);
     if(buf)
-    	free(buf);
+	free(buf);
     return NULL;
   }
 
@@ -4345,16 +4352,23 @@ _pst_ff_getIDblock(pst_file *pf, u_int32_t id, unsigned char** b)
 }
 
 #define PST_PTR_BLOCK_SIZE 0x120
-size_t _pst_ff_getID2block(pst_file *pf, u_int32_t id2, pst_index2_ll *id2_head, unsigned char** buf) {
-  pst_index_ll* ptr;
-  struct holder h = {buf, NULL, 0, {'\0', '\0', '\0'}, 0};
-  ptr = _pst_getID2(id2_head, id2);
+static size_t
+_pst_ff_getID2block(pst_file *pf, u_int32_t id2, pst_index2_ll *id2_head, unsigned char** buf)
+{
+	pst_index_ll* ptr;
+	struct holder h;
 
-  if (ptr == NULL) {
-    cli_dbgmsg("Cannot find id2 value %#x\n", id2);
-    return 0;
-  }
-  return _pst_ff_getID2data(pf, ptr, &h);
+	ptr = _pst_getID2(id2_head, id2);
+
+	if (ptr == NULL) {
+		cli_dbgmsg("Cannot find id2 value %#x\n", id2);
+		return 0;
+	}
+
+	memset(&h, '\0', sizeof(struct holder));
+	h.buf = buf;
+
+	return _pst_ff_getID2data(pf, ptr, &h);
 }
 
 static size_t
@@ -4624,46 +4638,48 @@ static const char *
 rfc2426_escape(const char *str)
 {
 	static char* buf = NULL;
-	const char *ret, *a;
+	const char *a;
 	char *b;
-	int x = 0, y, z;
+	int x, y, z;
 
-  if (str == NULL)
-    ret = str;
-  else {
+	if(str == NULL)
+		return NULL;
 
-    // calculate space required to escape all the following characters
-    x = strlen(str) +(y=(chr_count(str, ',')*2) + (chr_count(str, '\\')*2) + (chr_count(str, ';')*2) + (chr_count(str, '\n')*2));
-    z = chr_count(str, '\r');
-    if (y == 0 && z == 0)
-      // there isn't any extra space required
-      ret = str;
-    else {
-      buf = (char*) cli_realloc(buf, x+1);
-      a = str;
-      b = buf;
-      while (*a != '\0') {
-	switch(*a) {
-	case ',' :
-	case '\\':
-	case ';' :
-	case '\n':
-	  *(b++)='\\';
-	  *b=*a;
-	break;
-	case '\r':
-	  break;
-	default:
-	  *b=*a;
+	/* calculate space required to escape all the following characters */
+	x = strlen(str) +(y=(chr_count(str, ',')*2) + (chr_count(str, '\\')*2) + (chr_count(str, ';')*2) + (chr_count(str, '\n')*2));
+	z = chr_count(str, '\r');
+
+	if (y == 0 && z == 0) /* there isn't any extra space required */
+		return str;
+
+	buf = (char *)cli_realloc(buf, x + 1 - z);
+	a = str;
+	b = buf;
+
+	while(*a != '\0') {
+		switch(*a) {
+			case '\n':
+				*b++ = '\\';
+				*b = 'n';
+				break;
+			case ',' :
+			case '\\':
+			case ';' :
+				*b++ = '\\';
+				*b = *a;
+				break;
+			case '\r':
+				b--;
+				break;
+			default:
+				*b = *a;
+		}
+		b++;
+		a++;
 	}
-	b++;
-      a++;
-      }
-      *b = '\0';
-      ret = buf;
-    }
-  }
-  return ret;
+	*b = '\0';
+
+	return buf;
 }
 
 /* my_stristr varies from strstr in that its searches are case-insensitive */
@@ -4729,8 +4745,16 @@ write_email_body(FILE *f, const char *body)
 			putc('>', f);
 
 		if((n = strchr(body, '\n')) != NULL) {
+			size_t ret;
+
 			n++;
-			(void)fwrite(body, n-body, 1, f);	/* write just a line */
+			/* write just a line */
+			ret = fwrite(body, 1, (size_t)(n - body), f);
+			if(ret != (size_t)(n - body)) {
+				cli_errmsg("write_email_body: only wrote %u of $u bytes\n",
+					ret, n - body);
+				return ret;
+			}
 
 			body = n;
 		}
@@ -4957,7 +4981,7 @@ pst_decode(const char *dir, int desc)
       x++;
       sprintf(temp, "%s%08d", f->name, x);
       if (x == 99999999) {
-	cli_errmsg("main: Why can I not create a folder %s? I have tried %i extensions...\n", f->name, x);
+	cli_errmsg("pst_decode: Why can I not create a folder %s? I have tried %i extensions...\n", f->name, x);
       }
       fclose(f->output);
     }
@@ -4972,7 +4996,7 @@ pst_decode(const char *dir, int desc)
     sprintf(filename, "%s/%s", dir, f->name);
 	cli_dbgmsg("PST: create %s\n", filename);
     if ((f->output = fopen(filename, "w")) == NULL) {
-      cli_errmsg("main: Could not open file \"%s\" for write\n", filename);
+      cli_errmsg("pst_decode: Could not open file \"%s\" for write\n", filename);
     free(filename);
 	return CL_ETMPFILE;
     }
@@ -4989,7 +5013,7 @@ pst_decode(const char *dir, int desc)
   }
 
   /*  if ((item = _pst_parse_item(&pstfile, d_ptr)) == NULL || item->folder == NULL) {
-    printf("main: Could not get \"Top Of Personal Folder\" record\n");
+    printf("pst_decode: Could not get \"Top Of Personal Folder\" record\n");
     return -2;
     }*/
   d_ptr = d_ptr->child; // do the children of TOPF
@@ -5010,7 +5034,7 @@ pst_decode(const char *dir, int desc)
     if (item != NULL) {
       if (item->message_store != NULL) {
 	// there should only be one message_store, and we have already done it
-	cli_errmsg("main: A second message_store has been found. Sorry, this must be an error.\n");
+	cli_errmsg("pst_decode: A second message_store has been found. Sorry, this must be an error.\n");
       }
 
 
@@ -5041,7 +5065,7 @@ pst_decode(const char *dir, int desc)
 	    x++;
 	    sprintf(temp, "%s%08d", f->name, x);
 	    if (x == 99999999) {
-	      cli_errmsg("main: Why can I not create a folder %s? I have tried %i extensions...\n", f->name, x);
+	      cli_errmsg("pst_decode: Why can I not create a folder %s? I have tried %i extensions...\n", f->name, x);
 	      return(5);
 	    }
 	    fclose(f->output);
@@ -5057,7 +5081,7 @@ pst_decode(const char *dir, int desc)
 	  sprintf(filename, "%s/%s", dir, f->name);
 	cli_dbgmsg("PST: create %s\n", filename);
 	  if ((f->output = fopen(filename, "w")) == NULL) {
-	    cli_errmsg("main: Could not open file \"%s\" for write\n", f->name);
+	    cli_errmsg("pst_decode: Could not open file \"%s\" for write\n", f->name);
 	    free(filename);
 	    return CL_ETMPFILE;
 	  }
@@ -5087,11 +5111,11 @@ pst_decode(const char *dir, int desc)
 	f->email_count++;
 
 	if (item->contact == NULL) { // this is an incorrect situation. Inform user
-	  cli_errmsg("main: ERROR. This contact has not been fully parsed. one of the pre-requisties is NULL\n");
+	  cli_errmsg("pst_decode: ERROR. This contact has not been fully parsed. one of the pre-requisties is NULL\n");
 	} else {
 	  if (contact_mode == CMODE_VCARD) {
 	    // the specification I am following is (hopefully) RFC2426 vCard Mime Directory Profile
-	    fprintf(f->output, "BEGIN:VCARD\n");
+	    fputs("BEGIN:VCARD\n", f->output);
 	    fprintf(f->output, "FN:%s\n", rfc2426_escape(item->contact->fullname));
 	    fprintf(f->output, "N:%s;%s;%s;%s;%s\n",
 		    rfc2426_escape((item->contact->surname==NULL?"":item->contact->surname)),
@@ -5177,20 +5201,20 @@ pst_decode(const char *dir, int desc)
 	    if (item->contact->profession != NULL)
 	      fprintf(f->output, "ROLE:%s\n", rfc2426_escape(item->contact->profession));
 	    if (item->contact->assistant_name != NULL || item->contact->assistant_phone != NULL) {
-	      fprintf(f->output, "AGENT:BEGIN:VCARD\\n");
+	      fputs("AGENT:BEGIN:VCARD\n", f->output);
 	      if (item->contact->assistant_name != NULL)
-		fprintf(f->output, "FN:%s\\n", rfc2426_escape(item->contact->assistant_name));
+		fprintf(f->output, "FN:%s\n", rfc2426_escape(item->contact->assistant_name));
 	      if (item->contact->assistant_phone != NULL)
-		fprintf(f->output, "TEL:%s\\n", rfc2426_escape(item->contact->assistant_phone));
-	      fprintf(f->output, "END:VCARD\\n\n");
+		fprintf(f->output, "TEL:%s\n", rfc2426_escape(item->contact->assistant_phone));
+		fputs("END:VCARD\n\n", f->output);
 	    }
 	    if (item->contact->company_name != NULL)
 	      fprintf(f->output, "ORG:%s\n", rfc2426_escape(item->contact->company_name));
 	    if (item->comment != NULL)
 	      fprintf(f->output, "NOTE:%s\n", rfc2426_escape(item->comment));
 
-	    fprintf(f->output, "VERSION: 3.0\n");
-	    fprintf(f->output, "END:VCARD\n\n");
+	    fputs("VERSION: 3.0\n", f->output);
+	    fputs("END:VCARD\n\n", f->output);
 	  } else {
 	    fprintf(f->output, "%s <%s>\n", item->contact->fullname, item->contact->address1);
 	  }
@@ -5250,9 +5274,8 @@ pst_decode(const char *dir, int desc)
 	    }
 	    *b1 = '\0';
 
-	  } else {
-	    cli_errmsg("main: boundary not found in header\n");
-	  }
+	  } else
+		cli_errmsg("pst_decode: boundary not found in header\n");
 
 	  // also possible to set 7bit encoding detection here.
 	  if ((b2 = my_stristr(item->email->header, "Content-Transfer-Encoding:")) != NULL) {
@@ -5265,9 +5288,8 @@ pst_decode(const char *dir, int desc)
 		cli_dbgmsg("body is base64 encoded\n");
 		base64_body = 1;
 	      }
-	    } else {
+	    } else
 	      cli_errmsg("found a ':' during the my_stristr, but not after that..\n");
-	    }
 	  }
 
 	}
@@ -5312,9 +5334,8 @@ pst_decode(const char *dir, int desc)
 	  fprintf(f->output, "From: \"%s\" <%s>\n", item->email->outlook_sender_name, temp);
 	  if (item->email->subject != NULL) {
 	    fprintf(f->output, "Subject: %s\n", item->email->subject->subj);
-	  } else {
-	    fprintf(f->output, "Subject: \n");
-	  }
+	  } /*else
+	    fprintf(f->output, "Subject: \n");*/
 	  fprintf(f->output, "To: %s\n", item->email->sentto_address);
 	  if (item->email->cc_address != NULL) {
 	    fprintf(f->output, "CC: %s\n", item->email->cc_address);
@@ -5326,7 +5347,7 @@ pst_decode(const char *dir, int desc)
 	    free(c_time);
 	  }
 
-	  fprintf(f->output, "MIME-Version: 1.0\n");
+	  fputs("MIME-Version: 1.0\n", f->output);
 	  if (item->attach != NULL) {
 	    // write the boundary stuff if we have attachments
 	    fprintf(f->output, "Content-type: multipart/mixed;\n\tboundary=\"%s\"\n",
@@ -5336,18 +5357,18 @@ pst_decode(const char *dir, int desc)
 	    fprintf(f->output, "Content-type: multipart/alternate;\n\tboundary=\"%s\"\n",
 		    boundary);
 	  } else if (item->email->htmlbody) {
-	    fprintf(f->output, "Content-type: text/html\n");
+	    fputs("Content-type: text/html\n", f->output);
 	  }
-	  fprintf(f->output, "\n");
+	  putc('\n', f->output);
 	}
 
 
 	if (item->email->body != NULL) {
 	  if (boundary) {
 	    fprintf(f->output, "\n--%s\n", boundary);
-	    fprintf(f->output, "Content-type: text/plain\n\n");
+	    fputs("Content-type: text/plain\n\n", f->output);
 	    if (base64_body)
-	      fprintf(f->output, "Content-Transfer-Encoding: base64\n");
+	      fputs("Content-Transfer-Encoding: base64\n", f->output);
 	  }
 	  removeCR(item->email->body);
 	  if (base64_body)
@@ -5360,9 +5381,9 @@ pst_decode(const char *dir, int desc)
 	if (item->email->htmlbody != NULL) {
 	  if (boundary) {
 	    fprintf(f->output, "\n--%s\n", boundary);
-	    fprintf(f->output, "Content-type: text/html\n\n");
+	    fputs("Content-type: text/html\n\n", f->output);
 	    if (base64_body)
-	      fprintf(f->output, "Content-Transfer-Encoding: base64\n");
+	      fputs("Content-Transfer-Encoding: base64\n", f->output);
 	  }
 	  removeCR(item->email->htmlbody);
 	  if (base64_body)
@@ -5415,11 +5436,11 @@ pst_decode(const char *dir, int desc)
 	item->current_attach = item->attach;
 	while (item->current_attach != NULL) {
 	  if (item->current_attach->data == NULL) {
-	    cli_dbgmsg("main: Data of attachment is NULL!. Size is supposed to be %i\n", item->current_attach->size);
+	    cli_dbgmsg("pst_decode: Data of attachment is NULL!. Size is supposed to be %i\n", item->current_attach->size);
 	  }
 	    if (item->current_attach->data != NULL) {
 	      if ((enc = base64_encode ((const unsigned char *)item->current_attach->data, item->current_attach->size)) == NULL) {
-		cli_errmsg("main: ERROR base64_encode returned NULL. Must have failed\n");
+		cli_errmsg("pst_decode: ERROR base64_encode returned NULL. Must have failed\n");
 		item->current_attach = item->current_attach->next;
 		continue;
 	      }
@@ -5431,56 +5452,55 @@ pst_decode(const char *dir, int desc)
 	      } else {
 		fprintf(f->output, "Content-type: %s\n", item->current_attach->mimetype);
 	      }
-	      fprintf(f->output, "Content-transfer-encoding: base64\n");
-	      if (item->current_attach->filename2 == NULL) {
-		fprintf(f->output, "Content-Disposition: inline\n\n");
-	      } else {
+	      fputs("Content-transfer-encoding: base64\n", f->output);
+	      if (item->current_attach->filename2 == NULL)
+		fputs("Content-Disposition: inline\n\n", f->output);
+	      else
 		fprintf(f->output, "Content-Disposition: attachment; filename=\"%s\"\n\n",
 			item->current_attach->filename2);
-	      }
 	    }
 	    if (item->current_attach->data != NULL) {
 		fputs(enc, f->output);
 		free(enc);
 	    } else
 	      pst_attach_to_file_base64(&pstfile, item->current_attach, f->output);
-	    fprintf(f->output, "\n\n");
+	    fputs("\n\n", f->output);
 	  item->current_attach = item->current_attach->next;
 	  attach_num++;
 	}
 	  if (boundary)
 	    fprintf(f->output, "\n--%s--\n", boundary);
-	  fprintf(f->output, "\n\n");
+	    fputs("\n\n", f->output);
 	// }}}2
       } else if (item->type == PST_TYPE_JOURNAL) {
 	// Process Journal item {{{2
 	// deal with journal items
 	f->email_count++;
 
-	cli_dbgmsg("main: Processing Journal Entry\n");
+	cli_dbgmsg("pst_decode: Processing Journal Entry\n");
 	if (f->type != PST_TYPE_JOURNAL) {
-	  cli_dbgmsg("main: I have a journal entry, but folder isn't specified as a journal type. Processing...\n");
+	  cli_dbgmsg("pst_decode: I have a journal entry, but folder isn't specified as a journal type. Processing...\n");
 	}
 
 	/*	if (item->type != PST_TYPE_JOURNAL) {
-	  printf("main: I have an item with journal info, but it's type is \"%s\" \n. Processing...\n",
+	  printf("pst_decode: I have an item with journal info, but it's type is \"%s\" \n. Processing...\n",
 		      item->ascii_type));
 	}*/
-	fprintf(f->output, "BEGIN:VJOURNAL\n");
+	fputs("BEGIN:VJOURNAL\n", f->output);
 	if (item->email->subject != NULL)
 	  fprintf(f->output, "SUMMARY:%s\n", rfc2426_escape(item->email->subject->subj));
 	if (item->email->body != NULL)
 	  fprintf(f->output, "DESCRIPTION:%s\n", rfc2426_escape(item->email->body));
 	if (item->journal->start != NULL)
 	  fprintf(f->output, "DTSTART;VALUE=DATE-TIME:%s\n", rfc2445_datetime_format(item->journal->start));
-	fprintf(f->output, "END:VJOURNAL\n\n");
+	fputs("END:VJOURNAL\n\n", f->output);
 	// }}}2
       } else if (item->type == PST_TYPE_APPOINTMENT) {
 	// Process Calendar Appointment item {{{2
 	// deal with Calendar appointments
 	f->email_count++;
 
-	fprintf(f->output, "BEGIN:VEVENT\n");
+	fputs("BEGIN:VEVENT\n", f->output);
 	if (item->create_date != NULL)
 	  fprintf(f->output, "CREATED:%s\n", rfc2445_datetime_format(item->create_date));
 	if (item->modify_date != NULL)
@@ -5498,14 +5518,14 @@ pst_decode(const char *dir, int desc)
 	if (item->appointment != NULL) {
 	  switch (item->appointment->showas) {
 	  case PST_FREEBUSY_TENTATIVE:
-	    fprintf(f->output, "STATUS:TENTATIVE\n");
+	    fputs("STATUS:TENTATIVE\n", f->output);
 	    break;
 	  case PST_FREEBUSY_FREE:
 	    // mark as transparent and as confirmed
-	    fprintf(f->output, "TRANSP:TRANSPARENT\n");
+	    fputs("TRANSP:TRANSPARENT\n", f->output);
 	  case PST_FREEBUSY_BUSY:
 	  case PST_FREEBUSY_OUT_OF_OFFICE:
-	    fprintf(f->output, "STATUS:CONFIRMED\n");
+	    fputs("STATUS:CONFIRMED\n", f->output);
 	    break;
 	  }
 	  switch (item->appointment->label) {
@@ -5533,16 +5553,16 @@ pst_decode(const char *dir, int desc)
 	    fprintf(f->output, "CATEGORIES:PHONE-CALL\n"); break;
 	  }
 	}
-	fprintf(f->output, "END:VEVENT\n\n");
+	fputs("END:VEVENT\n\n", f->output);
 	// }}}2
       } else {
 	f->skip_count++;
-	cli_errmsg("main: Unknown item type. %i. Ascii1=\"%s\"\n",
+	cli_errmsg("pst_decode: Unknown item type. %i. Ascii1=\"%s\"\n",
 		   item->type, item->ascii_type);
       }
     } else {
       f->skip_count++;
-      cli_errmsg("main: A NULL item was seen\n");
+      cli_errmsg("pst_decode: A NULL item was seen\n");
     }
 
     if (boundary) {
