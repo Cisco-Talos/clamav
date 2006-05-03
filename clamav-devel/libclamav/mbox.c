@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.294 2006/05/03 09:36:40 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.295 2006/05/03 15:41:44 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -196,7 +196,7 @@ static	int	rfc1341(message *m, const char *dir);
 #endif
 static	bool	usefulHeader(int commandNumber, const char *cmd);
 static	char	*getline_from_mbox(char *buffer, size_t len, FILE *fin);
-static	bool	mailStart(const char *line);
+static	bool	isBounceStart(const char *line);
 
 static	void	checkURLs(message *m, const char *dir);
 #ifdef	WITH_CURL
@@ -673,6 +673,9 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 				}
 				messageSetEncoding(m, "base64");
 
+				messageSetCTX(m, ctx);
+				fileblobSetCTX(fb, ctx);
+
 				lastline = 0;
 				do {
 					int length = 0, datalen;
@@ -809,6 +812,7 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 					return CL_EMEM;
 				}
 				messageSetEncoding(m, "quoted-printable");
+				messageSetCTX(m, ctx);
 
 				line = NULL;
 
@@ -1074,6 +1078,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 	segv = signal(SIGSEGV, sigsegv);
 #endif
 
+	retcode = CL_SUCCESS;
 	/*
 	 * Is it a UNIX style mbox with more than one
 	 * mail message, or just a single mail message?
@@ -1120,6 +1125,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 
 		lastLineWasEmpty = FALSE;
 		messagenumber = 1;
+		messageSetCTX(m, ctx);
 
 		do {
 			cli_chomp(buffer);
@@ -1133,13 +1139,22 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 					messageReset(m);
 					continue;
 				}
+				messageSetCTX(body, ctx);
 				messageDestroy(m);
-				if(messageGetBody(body))
-					if(!parseEmailBody(body, NULL, dir, rfc821, subtype, ctx)) {
+				if(messageGetBody(body)) {
+					int rc = parseEmailBody(body, NULL, dir, rfc821, subtype, ctx);
+					if(rc == 0) {
 						messageReset(body);
 						m = body;
 						continue;
+					} else if(rc == 3) {
+						cli_dbgmsg("Message number %d is infected\n",
+							messagenumber);
+						retcode = CL_VIRUS;
+						m = body = NULL;
+						break;
 					}
+				}
 				/*
 				 * Starting a new message, throw away all the
 				 * information about the old one. It would
@@ -1150,6 +1165,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 				 */
 				m = body;
 				messageReset(body);
+				messageSetCTX(body, ctx);
 
 				cli_dbgmsg("Finished processing message\n");
 			} else
@@ -1170,9 +1186,12 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 
 		fclose(fd);
 
-		cli_dbgmsg("Extract attachments from email %d\n", messagenumber);
-		body = parseEmailHeaders(m, rfc821);
-		messageDestroy(m);
+		if(retcode == CL_SUCCESS) {
+			cli_dbgmsg("Extract attachments from email %d\n", messagenumber);
+			body = parseEmailHeaders(m, rfc821);
+		}
+		if(m)
+			messageDestroy(m);
 	} else {
 		/*
 		 * It's a single message, parse the headers then the body
@@ -1198,15 +1217,21 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 		fclose(fd);
 	}
 
-	retcode = CL_SUCCESS;
-
 	if(body) {
 		/*
 		 * Write out the last entry in the mailbox
 		 */
-		if(messageGetBody(body))
-			if(!parseEmailBody(body, NULL, dir, rfc821, subtype, ctx))
-				retcode = CL_EFORMAT;
+		if((retcode == CL_SUCCESS) && messageGetBody(body)) {
+			messageSetCTX(body, ctx);
+			switch(parseEmailBody(body, NULL, dir, rfc821, subtype, ctx)) {
+				case 0:
+					retcode = CL_EFORMAT;
+					break;
+				case 3:
+					retcode = CL_VIRUS;
+					break;
+			}
+		}
 
 		/*
 		 * Tidy up and quit
@@ -1720,6 +1745,7 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
  *	0 for fail
  *	1 for success, attachments saved
  *	2 for success, attachments not saved
+ *	3 for virus found
  */
 static int	/* success or fail */
 parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, cli_ctx *ctx)
@@ -1730,6 +1756,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 	const char *cptr;
 	message *mainMessage;
 	fileblob *fb;
+	bool infected = FALSE;
 
 	cli_dbgmsg("in parseEmailBody\n");
 
@@ -1899,6 +1926,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					multiparts--;
 					continue;
 				}
+				messageSetCTX(aMessage, ctx);
 
 				cli_dbgmsg("Now read in part %d\n", multiparts);
 
@@ -2327,8 +2355,13 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 								messageSetEncoding(mainMessage, "x-bunhex");
 								fb = messageToFileblob(mainMessage, dir);
 
-								if(fb)
+								if(fb) {
+									if(fileblobContainsVirus(fb)) {
+										infected = TRUE;
+										rc = 3;
+									}
 									fileblobDestroy(fb);
+								}
 							}
 							if(mainMessage != messageIn)
 								messageDestroy(mainMessage);
@@ -2339,8 +2372,13 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 								messageSetEncoding(aMessage, "x-binhex");
 								fb = messageToFileblob(aMessage, dir);
 
-								if(fb)
+								if(fb) {
+									if(fileblobContainsVirus(fb)) {
+										infected = TRUE;
+										rc = 3;
+									}
 									fileblobDestroy(fb);
+								}
 								assert(aMessage == messages[i]);
 								messageReset(messages[i]);
 							}
@@ -2455,8 +2493,15 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						messageDestroy(messages[i]);
 						messages[i] = NULL;
 						if(body) {
+							messageSetCTX(body, ctx);
 							rc = parseEmailBody(body, NULL, dir, rfc821Table, subtypeTable, ctx);
+							if(messageContainsVirus(body))
+								infected = TRUE;
 							messageDestroy(body);
+						}
+						if(infected) {
+							rc = 3;
+							break;
 						}
 #endif
 						continue;
@@ -2496,12 +2541,21 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					} else {
 						fb = messageToFileblob(aMessage, dir);
 
-						if(fb)
+						if(fb) {
+							if(fileblobContainsVirus(fb))
+								infected = TRUE;
 							fileblobDestroy(fb);
+						}
 					}
 					assert(aMessage == messages[i]);
-					messageDestroy(messages[i]);
+					if(messageContainsVirus(aMessage))
+						infected = TRUE;
+					messageDestroy(aMessage);
 					messages[i] = NULL;
+					if(infected) {
+						rc = 3;
+						break;
+					}
 				}
 
 				/* rc = parseEmailBody(NULL, NULL, dir, rfc821Table, subtypeTable, ctx); */
@@ -2545,10 +2599,11 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				messageDestroy(mainMessage);
 
 			if(aText && (textIn == NULL)) {
-				if((fb = fileblobCreate()) != NULL) {
+				if((!infected) && (fb = fileblobCreate()) != NULL) {
 					cli_dbgmsg("Save non mime and/or text/plain part\n");
 					fileblobSetFilename(fb, dir, "textpart");
 					/*fileblobAddData(fb, "Received: by clamd (textpart)\n", 30);*/
+					fileblobSetCTX(fb, ctx);
 					(void)textToFileblob(aText, fb);
 
 					fileblobDestroy(fb);
@@ -2584,6 +2639,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				message *m = parseEmailHeaders(mainMessage, rfc821Table);
 				if(m) {
 					cli_dbgmsg("Decode rfc822");
+
+					messageSetCTX(m, ctx);
 
 					if(mainMessage && (mainMessage != messageIn)) {
 						messageDestroy(mainMessage);
@@ -2667,7 +2724,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			if(l == NULL)
 				continue;
 
-			if(!mailStart(lineGetData(l)))
+			if(!isBounceStart(lineGetData(l)))
 				continue;
 
 			/*
@@ -2733,6 +2790,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				break;
 			cli_dbgmsg("Save non mime part bounce message\n");
 			fileblobSetFilename(fb, dir, "bounce");
+			fileblobSetCTX(fb, ctx);
 			fileblobAddData(fb, (unsigned char *)"Received: by clamd (bounce)\n", 28);
 
 			inheader = TRUE;
@@ -2757,7 +2815,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				l = t->t_line;
 				if((!inheader) && l) {
 					s = lineGetData(l);
-					if(mailStart(s)) {
+					if(isBounceStart(s)) {
 						cli_dbgmsg("Found the start of another bounce candidate (%s)\n", s);
 						break;
 					}
@@ -2853,6 +2911,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			if(t && ((fb = fileblobCreate()) != NULL)) {
 				cli_dbgmsg("Found a bounce message\n");
 				fileblobSetFilename(fb, dir, "bounce");
+				fileblobSetCTX(fb, ctx);
 				if(textToFileblob(start, fb) == NULL)
 					cli_dbgmsg("Nothing new to save in the bounce message");
 				else
@@ -2883,6 +2942,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					cli_dbgmsg("Found a bounce message with no header at '%s'\n",
 						lineGetData(t_line->t_line));
 					fileblobSetFilename(fb, dir, "bounce");
+					fileblobSetCTX(fb, ctx);
 					fileblobAddData(fb,
 						(const unsigned char *)"Received: by clamd (bounce)\n",
 						28);
@@ -2924,6 +2984,9 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 
 	if(messages)
 		free(messages);
+
+	if((rc == CL_SUCCESS) && infected)
+		rc = CL_VIRUS;
 
 	cli_dbgmsg("parseEmailBody() returning %d\n", rc);
 
@@ -4221,8 +4284,11 @@ getline_from_mbox(char *buffer, size_t len, FILE *fin)
 	return ret;
 }
 
+/*
+ * Is this line a candidate for the start of a bounce message?
+ */
 static bool
-mailStart(const char *line)
+isBounceStart(const char *line)
 {
 	if(line == NULL)
 		return FALSE;

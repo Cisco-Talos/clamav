@@ -29,9 +29,12 @@ typedef struct message {
 	char	**mimeArguments;
 	char	*mimeDispositionType;	/* probably attachment */
 	text	*body_first, *body_last;
+	cli_ctx	*ctx;
 
 	char	base64_1, base64_2, base64_3;
 	int	base64chars;
+	int	isInfected : 1;
+
 	/*
 	 * Markers for the start of various non MIME messages that could
 	 * be included within this message
@@ -73,5 +76,7 @@ const	text	*encodingLine(const message *m);
 void	messageClearMarkers(message *m);
 unsigned char	*decodeLine(message *m, encoding_type enctype, const char *line, unsigned char *buf, size_t buflen);
 int	isuuencodebegin(const char *line);
+void	messageSetCTX(message *m, cli_ctx *ctx);
+int	messageContainsVirus(const message *m);
 
 #endif	/*_MESSAGE_H*/

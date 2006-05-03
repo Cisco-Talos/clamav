@@ -35,7 +35,7 @@
  *	cli_mbox decode it
  * TODO: Remove the vcard handling
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.17 2006/05/02 15:20:12 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.18 2006/05/03 15:41:43 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -54,6 +54,8 @@ static	char	const	rcsid[] = "$Id: pst.c,v 1.17 2006/05/02 15:20:12 nigelhorne Ex
 #include "others.h"
 
 #include "pst.h"
+
+#include "blob.h"
 
 #define	DWORD	unsigned int
 
@@ -453,9 +455,9 @@ static	char	*my_stristr(const char *haystack, const char *needle);
 int
 cli_pst(const char *dir, int desc)
 {
-	cli_warnmsg("PST files not yet supported\n");
-	return CL_EFORMAT;
-	/*return pst_decode(dir, desc);*/
+	/*cli_warnmsg("PST files not yet supported\n");
+	return CL_EFORMAT;*/
+	return pst_decode(dir, desc);
 }
 
 static const char *
@@ -4609,16 +4611,21 @@ struct file_ll {
 #define C_TIME_SIZE 500
 
 // char *check_filename(char *fname) {{{1
-char *check_filename(char *fname) {
-  char *t = fname;
-  if (t == NULL) {
-    return fname;
-  }
+static char *
+check_filename(char *fname)
+{
+	/*char *t = fname;*/
+	if(fname == NULL)
+		return fname;
+
+#if	0
   while ((t = strpbrk(t, "/\\:")) != NULL) {
     // while there are characters in the second string that we don't want
     *t = '_'; //replace them with an underscore
   }
-  return fname;
+#endif
+	sanitiseName(fname);
+	return fname;
 }
 
 static int

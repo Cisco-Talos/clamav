@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.45 2006/05/03 09:36:40 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.46 2006/05/03 15:41:44 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -461,20 +461,17 @@ fileblobAddData(fileblob *fb, const unsigned char *data, size_t len)
 	assert(data != NULL);
 
 	if(fb->fp) {
-#if	0
-		extern cli_ctx *current_ctx;
+		if(fb->isInfected)	/* pretend all was written */
+			return 0;
+		if(fb->ctx) {
+			if(fb->ctx->scanned)
+				*fb->ctx->scanned += len / CL_COUNT_PRECISION;
 
-		if(current_ctx) {
-			if(current_ctx->scanned)
-			    *current_ctx->scanned += len / CL_COUNT_PRECISION;
-
-			if(cli_scanbuff((char *) data, len, current_ctx->virname, current_ctx->engine, 0) == CL_VIRUS) {
-				cli_dbgmsg("found %s\n", *current_ctx->virname);
-			    /*ret = CL_VIRUS;
-			    break;*/
+			if((len > 5) && (cli_scanbuff((char *)data, len, fb->ctx->virname, fb->ctx->engine, 0) == CL_VIRUS)) {
+				cli_dbgmsg("found %s\n", *fb->ctx->virname);
+				fb->isInfected = 1;
 			}
 		}
-#endif
 
 		if(fwrite(data, len, 1, fb->fp) != 1) {
 			cli_errmsg("fileblobAddData: Can't write %u bytes to temporary file %s: %s\n", len, fb->b.name, strerror(errno));
@@ -490,6 +487,18 @@ const char *
 fileblobGetFilename(const fileblob *fb)
 {
 	return blobGetFilename(&(fb->b));
+}
+
+void
+fileblobSetCTX(fileblob *fb, cli_ctx *ctx)
+{
+	fb->ctx = ctx;
+}
+
+int
+fileblobContainsVirus(const fileblob *fb)
+{
+	return fb->isInfected ? TRUE : FALSE;
 }
 
 /*
