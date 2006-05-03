@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.166 2006/05/03 09:36:40 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.167 2006/05/03 15:41:44 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -83,7 +83,7 @@ static	const	char	*messageGetArgument(const message *m, int arg);
 /*
  * http://oopweb.com/CPP/Documents/FunctionPointers/Volume/CCPP/callback/callback.html
  */
-static	void	*messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), void (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(const text *, void *));
+static	void	*messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), void (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(const text *, void *), void (*setCTX)(void *, cli_ctx *));
 static	int	usefulArg(const char *arg);
 static	void	messageDedup(message *m);
 static	char	*rfc2231(const char *in);
@@ -1008,7 +1008,7 @@ messageClean(message *m)
  * last item that was exported. That's sufficient for now.
  */
 static void *
-messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), void (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(const text *, void *))
+messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), void (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(const text *, void *), void(*setCTX)(void *, cli_ctx *))
 {
 	void *ret;
 	const text *t_line;
@@ -1026,6 +1026,9 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		return NULL;
 
 	cli_dbgmsg("messageExport: numberOfEncTypes == %d\n", m->numberOfEncTypes);
+
+	if(setCTX && m->ctx)
+		(*setCTX)(ret, m->ctx);
 
 	if((t_line = binhexBegin(m)) != NULL) {
 		unsigned char byte;
@@ -1514,7 +1517,7 @@ fileblob *
 messageToFileblob(message *m, const char *dir)
 {
 	cli_dbgmsg("messageToFileblob\n");
-	return messageExport(m, dir, (void *)fileblobCreate, (void *)fileblobDestroy, (void *)fileblobSetFilename, (void *)fileblobAddData, (void *)textToFileblob);
+	return messageExport(m, dir, (void *)fileblobCreate, (void *)fileblobDestroy, (void *)fileblobSetFilename, (void *)fileblobAddData, (void *)textToFileblob, (void *)fileblobSetCTX);
 }
 
 /*
@@ -1524,7 +1527,7 @@ messageToFileblob(message *m, const char *dir)
 blob *
 messageToBlob(message *m)
 {
-	return messageExport(m, NULL, (void *)blobCreate, (void *)blobDestroy, (void *)blobSetFilename, (void *)blobAddData, (void *)textToBlob);
+	return messageExport(m, NULL, (void *)blobCreate, (void *)blobDestroy, (void *)blobSetFilename, (void *)blobAddData, (void *)textToBlob, NULL);
 }
 
 /*
@@ -2205,6 +2208,18 @@ usefulArg(const char *arg)
 		return 0;
 	}
 	return 1;
+}
+
+void
+messageSetCTX(message *m, cli_ctx *ctx)
+{
+	m->ctx = ctx;
+}
+
+int
+messageContainsVirus(const message *m)
+{
+	return m->isInfected ? TRUE : FALSE;
 }
 
 /*

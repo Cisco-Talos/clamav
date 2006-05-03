@@ -52,14 +52,18 @@ void	blobGrow(blob *b, size_t len);
 typedef	struct fileblob {
 	FILE	*fp;
 	blob	b;
-	int	isNotEmpty;
+	int	isNotEmpty : 1;
+	int	isInfected : 1;
+	cli_ctx	*ctx;
 } fileblob;
 
 fileblob	*fileblobCreate(void);
 void	fileblobDestroy(fileblob *fb);
 void	fileblobSetFilename(fileblob *fb, const char *dir, const char *filename);
 const	char	*fileblobGetFilename(const fileblob *fb);
+void	fileblobSetCTX(fileblob *fb, cli_ctx *ctx);
 int	fileblobAddData(fileblob *fb, const unsigned char *data, size_t len);
+int	fileblobContainsVirus(const fileblob *fb);
 void	sanitiseName(char *name);
 
 /* Maximum filenames under various systems */
