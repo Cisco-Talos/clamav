@@ -35,7 +35,7 @@
  *	cli_mbox decode it
  * TODO: Remove the vcard handling
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.19 2006/05/03 15:42:53 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.20 2006/05/03 19:02:13 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -56,14 +56,11 @@ static	char	const	rcsid[] = "$Id: pst.c,v 1.19 2006/05/03 15:42:53 nigelhorne Ex
 #include "pst.h"
 
 #ifdef	C_SOLARIS
-int
-cli_pst(const char *dir, int desc)
-{
-	cli_warnmsg("PST files not yet supported\n");
-	return CL_EFORMAT;
-}
-#else
+typedef	unsigned	int	u_int32_t;
+typedef	unsigned	short	u_int16_t;
+#endif
 
+#include "mbox.h"
 #include "blob.h"
 
 #define	DWORD	unsigned int
@@ -5629,4 +5626,3 @@ pst_decode(const char *dir, int desc)
 
 	return pst_close(&pstfile);
 }
-#endif
