@@ -1,3 +1,7 @@
+Wed May  3 10:35:40 BST 2006 (njh)
+----------------------------------
+  * libclamav/scanners.c:	Pass full CTX into the mbox code
+
 Tue May  2 16:21:06 BST 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Reduce bounce false positives
