@@ -45,8 +45,6 @@
 
 extern short cli_leavetemps_flag;
 
-extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME */
-
 #include "clamav.h"
 #include "others.h"
 #include "scanners.h"
@@ -97,6 +95,7 @@ extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME *
 
 #define MAX_MAIL_RECURSION  15
 
+extern int cli_mbox(const char *dir, int desc, cli_ctx *ctx); /* FIXME */
 static int cli_scanfile(const char *filename, cli_ctx *ctx);
 
 /*
@@ -1513,7 +1512,7 @@ static int cli_scanmail(int desc, cli_ctx *ctx)
     /*
      * Extract the attachments into the temporary directory
      */
-    if((ret = cli_mbox(dir, desc, ctx->options))) {
+    if((ret = cli_mbox(dir, desc, ctx))) {
 	if(!cli_leavetemps_flag)
 	    cli_rmdirs(dir);
 	free(dir);

@@ -17,6 +17,9 @@
  *  MA 02110-1301, USA.
  *
  * $Log: text.c,v $
+ * Revision 1.17  2006/05/03 09:36:40  nigelhorne
+ * Pass full ctx into the mbox code
+ *
  * Revision 1.16  2006/04/09 19:59:28  kojm
  * update GPL headers with new address for FSF
  *
@@ -58,7 +61,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: text.c,v 1.16 2006/04/09 19:59:28 kojm Exp $";
+static	char	const	rcsid[] = "$Id: text.c,v 1.17 2006/05/03 09:36:40 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -84,11 +87,11 @@ static	char	const	rcsid[] = "$Id: text.c,v 1.16 2006/04/09 19:59:28 kojm Exp $";
 #include <assert.h>
 #include <stdio.h>
 
+#include "others.h"
 #include "line.h"
 #include "mbox.h"
 #include "blob.h"
 #include "text.h"
-#include "others.h"
 
 static	text	*textCopy(const text *t_head);
 static	void	addToFileblob(const line_t *line, void *arg);

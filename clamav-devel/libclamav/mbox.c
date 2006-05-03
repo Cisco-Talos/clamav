@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.293 2006/05/02 15:19:24 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.294 2006/05/03 09:36:40 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -54,16 +54,16 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.293 2006/05/02 15:19:24 nigelhorne 
 #include <pthread.h>
 #endif
 
+#include "others.h"
+#include "defaults.h"
+#include "str.h"
+#include "filetypes.h"
 #include "table.h"
 #include "mbox.h"
 #include "blob.h"
 #include "line.h"
 #include "text.h"
 #include "message.h"
-#include "others.h"
-#include "defaults.h"
-#include "str.h"
-#include "filetypes.h"
 #include "uuencode.h"
 
 #ifdef	CL_DEBUG
@@ -176,11 +176,11 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 					 * of EICAR within bounces, which don't metter
 					 */
 
-static	int	cli_parse_mbox(const char *dir, int desc, unsigned int options);
+static	int	cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx);
 static	message	*parseEmailFile(FILE *fin, const table_t *rfc821Table, const char *firstLine, const char *dir);
 static	message	*parseEmailHeaders(const message *m, const table_t *rfc821Table);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
-static	int	parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, unsigned int options);
+static	int	parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, cli_ctx *ctx);
 static	int	boundaryStart(const char *line, const char *boundary);
 static	int	endOfMessage(const char *line, const char *boundary);
 static	int	initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
@@ -375,7 +375,7 @@ static	void	free_map(void);
  * FIXME:	Doesn't catch all phishes
  */
 int
-cli_mbox(const char *dir, int desc, unsigned int options)
+cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 {
 	char *start, *ptr, *line;
 	const char *last, *p, *q;
@@ -401,7 +401,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 #ifdef	NW_MAX_FILE_SIZE
 	if(size > NW_MAX_FILE_SIZE)
-		return cli_parse_mbox(dir, desc, options);
+		return cli_parse_mbox(dir, desc, ctx);
 #endif
 
 	/*cli_warnmsg("NEW_WORLD is new code - use at your own risk.\n");*/
@@ -505,7 +505,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			munmap(start, size);
 
 		free_map();
-		return cli_parse_mbox(dir, desc, options);
+		return cli_parse_mbox(dir, desc, ctx);
 #endif
 	}
 
@@ -546,14 +546,14 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			else
 				cli_dbgmsg("cli_mbox: unknown encoder, type %d\n", type);
 			if(type == CL_TYPE_MAIL)
-				return cli_parse_mbox(dir, desc, options);
+				return cli_parse_mbox(dir, desc, ctx);
 			cli_dbgmsg("Unknown filetype %d, return CLEAN\n", type);
 			return CL_CLEAN;
 		}
 
 		/* The message could be a plain text phish */
-		if((type == CL_TYPE_MAIL) && (!(options&CL_DB_NOPHISHING)))
-			return cli_parse_mbox(dir, desc, options);
+		if((type == CL_TYPE_MAIL) && (!(ctx->options&CL_DB_NOPHISHING)))
+			return cli_parse_mbox(dir, desc, ctx);
 		cli_dbgmsg("cli_mbox: I believe it's plain text which must be clean\n");
 		return CL_CLEAN;
 	}
@@ -883,7 +883,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 	cli_dbgmsg("New world - don't know what to do - fall back to old world\n");
 	/* Fall back for now */
 	lseek(desc, 0L, SEEK_SET);
-	return cli_parse_mbox(dir, desc, options);
+	return cli_parse_mbox(dir, desc, ctx);
 }
 
 static void
@@ -961,13 +961,13 @@ free_map(void)
 
 #else	/*!NEW_WORLD*/
 int
-cli_mbox(const char *dir, int desc, unsigned int options)
+cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 {
 	if(dir == NULL) {
 		cli_warnmsg("cli_mbox called with NULL dir\n");
 		return CL_ENULLARG;
 	}
-	return cli_parse_mbox(dir, desc, options);
+	return cli_parse_mbox(dir, desc, ctx);
 }
 #endif
 
@@ -987,7 +987,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
  *	e.g. \0Content-Type: application/binary;
  */
 static int
-cli_parse_mbox(const char *dir, int desc, unsigned int options)
+cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 {
 	int retcode, i;
 	message *body;
@@ -1135,7 +1135,7 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 				}
 				messageDestroy(m);
 				if(messageGetBody(body))
-					if(!parseEmailBody(body, NULL, dir, rfc821, subtype, options)) {
+					if(!parseEmailBody(body, NULL, dir, rfc821, subtype, ctx)) {
 						messageReset(body);
 						m = body;
 						continue;
@@ -1205,7 +1205,7 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 		 * Write out the last entry in the mailbox
 		 */
 		if(messageGetBody(body))
-			if(!parseEmailBody(body, NULL, dir, rfc821, subtype, options))
+			if(!parseEmailBody(body, NULL, dir, rfc821, subtype, ctx))
 				retcode = CL_EFORMAT;
 
 		/*
@@ -1722,7 +1722,7 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
  *	2 for success, attachments not saved
  */
 static int	/* success or fail */
-parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, unsigned int options)
+parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, cli_ctx *ctx)
 {
 	message **messages;	/* parts of a multipart message */
 	int inMimeHead, i, rc = 1, htmltextPart, multiparts = 0;
@@ -1784,7 +1784,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			break;
 		case TEXT:
 			/* text/plain has been preprocessed as no encoding */
-			if((options&CL_SCAN_MAILURL) && (subtype == HTML))
+			if((ctx->options&CL_SCAN_MAILURL) && (subtype == HTML))
 				checkURLs(mainMessage, dir);
 			break;
 		case MULTIPART:
@@ -2220,7 +2220,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				if(htmltextPart == -1)
 					cli_dbgmsg("No HTML code found to be scanned");
 				else {
-					rc = parseEmailBody(aMessage, aText, dir, rfc821Table, subtypeTable, options);
+					rc = parseEmailBody(aMessage, aText, dir, rfc821Table, subtypeTable, ctx);
 					if(rc == 1) {
 						assert(aMessage == messages[htmltextPart]);
 						messageDestroy(aMessage);
@@ -2388,7 +2388,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 									free(filename);
 								}
 							} else {
-								if(options&CL_SCAN_MAILURL)
+								if(ctx->options&CL_SCAN_MAILURL)
 									if(tableFind(subtypeTable, cptr) == HTML)
 										checkURLs(aMessage, dir);
 								messageAddArgument(aMessage, "filename=mixedtextportion");
@@ -2455,7 +2455,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						messageDestroy(messages[i]);
 						messages[i] = NULL;
 						if(body) {
-							rc = parseEmailBody(body, NULL, dir, rfc821Table, subtypeTable, options);
+							rc = parseEmailBody(body, NULL, dir, rfc821Table, subtypeTable, ctx);
 							messageDestroy(body);
 						}
 #endif
@@ -2472,13 +2472,13 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							 * The headers were parsed when reading in the
 							 * whole multipart section
 							 */
-							rc = parseEmailBody(aMessage, aText, dir, rfc821Table, subtypeTable, options);
+							rc = parseEmailBody(aMessage, aText, dir, rfc821Table, subtypeTable, ctx);
 							cli_dbgmsg("Finished recursion\n");
 							assert(aMessage == messages[i]);
 							messageDestroy(messages[i]);
 							messages[i] = NULL;
 						} else {
-							rc = parseEmailBody(NULL, NULL, dir, rfc821Table, subtypeTable, options);
+							rc = parseEmailBody(NULL, NULL, dir, rfc821Table, subtypeTable, ctx);
 							if(mainMessage && (mainMessage != messageIn))
 								messageDestroy(mainMessage);
 							mainMessage = NULL;
@@ -2504,7 +2504,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					messages[i] = NULL;
 				}
 
-				/* rc = parseEmailBody(NULL, NULL, dir, rfc821Table, subtypeTable, options); */
+				/* rc = parseEmailBody(NULL, NULL, dir, rfc821Table, subtypeTable, ctx); */
 				break;
 			case SIGNED:
 			case PARALLEL:
@@ -2520,7 +2520,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				if(htmltextPart == -1)
 					htmltextPart = 0;
 
-				rc = parseEmailBody(messages[htmltextPart], aText, dir, rfc821Table, subtypeTable, options);
+				rc = parseEmailBody(messages[htmltextPart], aText, dir, rfc821Table, subtypeTable, ctx);
 				break;
 			case ENCRYPTED:
 				rc = 0;
@@ -2591,7 +2591,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					} else
 						messageReset(mainMessage);
 					if(messageGetBody(m))
-						rc = parseEmailBody(m, NULL, dir, rfc821Table, subtypeTable, options);
+						rc = parseEmailBody(m, NULL, dir, rfc821Table, subtypeTable, ctx);
 
 					messageDestroy(m);
 				}

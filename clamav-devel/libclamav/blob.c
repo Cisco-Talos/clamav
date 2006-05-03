@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.44 2006/04/09 19:59:27 kojm Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.45 2006/05/03 09:36:40 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -34,9 +34,10 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.44 2006/04/09 19:59:27 kojm Exp $";
 #include <sys/types.h>
 #endif
 
+#include "others.h"
 #include "mbox.h"
 #include "blob.h"
-#include "others.h"
+#include "matcher.h"
 
 #ifndef	CL_DEBUG
 #define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -460,6 +461,21 @@ fileblobAddData(fileblob *fb, const unsigned char *data, size_t len)
 	assert(data != NULL);
 
 	if(fb->fp) {
+#if	0
+		extern cli_ctx *current_ctx;
+
+		if(current_ctx) {
+			if(current_ctx->scanned)
+			    *current_ctx->scanned += len / CL_COUNT_PRECISION;
+
+			if(cli_scanbuff((char *) data, len, current_ctx->virname, current_ctx->engine, 0) == CL_VIRUS) {
+				cli_dbgmsg("found %s\n", *current_ctx->virname);
+			    /*ret = CL_VIRUS;
+			    break;*/
+			}
+		}
+#endif
+
 		if(fwrite(data, len, 1, fb->fp) != 1) {
 			cli_errmsg("fileblobAddData: Can't write %u bytes to temporary file %s: %s\n", len, fb->b.name, strerror(errno));
 			return -1;
