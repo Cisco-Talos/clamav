@@ -35,7 +35,7 @@
  *	cli_mbox decode it
  * TODO: Remove the vcard handling
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.21 2006/05/03 19:24:50 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.22 2006/05/03 21:14:56 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -53,6 +53,11 @@ static	char	const	rcsid[] = "$Id: pst.c,v 1.21 2006/05/03 19:24:50 nigelhorne Ex
 #include "clamav.h"
 #include "cltypes.h"
 #include "others.h"
+
+#ifdef	C_SOLARIS	/* should be in cltypes.h */
+typedef	uint16_t	u_int16_t;
+typedef	uint32_t	u_int32_t;
+#endif
 
 #include "pst.h"
 
