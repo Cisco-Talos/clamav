@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.295 2006/05/03 15:41:44 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.296 2006/05/04 08:34:02 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1079,6 +1079,8 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 #endif
 
 	retcode = CL_SUCCESS;
+	body = NULL;
+
 	/*
 	 * Is it a UNIX style mbox with more than one
 	 * mail message, or just a single mail message?
@@ -2790,8 +2792,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				break;
 			cli_dbgmsg("Save non mime part bounce message\n");
 			fileblobSetFilename(fb, dir, "bounce");
-			fileblobSetCTX(fb, ctx);
 			fileblobAddData(fb, (unsigned char *)"Received: by clamd (bounce)\n", 28);
+			fileblobSetCTX(fb, ctx);
 
 			inheader = TRUE;
 			topofbounce = NULL;
