@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.298 2006/05/04 12:44:59 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.299 2006/05/04 17:44:29 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1093,7 +1093,8 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 	 * message is stopped, and giving a better indication of which message
 	 * within the mailbox is infected
 	 */
-	if((strncmp(buffer, "From ", 5) == 0) && isalnum(buffer[5])) {
+	/*if((strncmp(buffer, "From ", 5) == 0) && isalnum(buffer[5])) {*/
+	if(strncmp(buffer, "From ", 5) == 0) {
 		/*
 		 * Have been asked to check a UNIX style mbox file, which
 		 * may contain more than one e-mail message to decode
@@ -1133,7 +1134,8 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 
 		do {
 			cli_chomp(buffer);
-			if(lastLineWasEmpty && (strncmp(buffer, "From ", 5) == 0) && isalnum(buffer[5])) {
+			/*if(lastLineWasEmpty && (strncmp(buffer, "From ", 5) == 0) && isalnum(buffer[5])) {*/
+			if(lastLineWasEmpty && (strncmp(buffer, "From ", 5) == 0)) {
 				cli_dbgmsg("Deal with email number %d\n", messagenumber++);
 				/*
 				 * End of a message in the mail box
@@ -4298,10 +4300,10 @@ isBounceStart(const char *line)
 		return FALSE;
 	if(*line == '\0')
 		return FALSE;
-	if((strncmp(line, "From ", 5) == 0) && !isalnum(line[5]))
+	/*if((strncmp(line, "From ", 5) == 0) && !isalnum(line[5]))
 		return FALSE;
 	if((strncmp(line, ">From ", 6) == 0) && !isalnum(line[6]))
-		return FALSE;
+		return FALSE;*/
 	if(cli_filetype(line, strlen(line)) != CL_TYPE_MAIL)
 		return FALSE;
 
