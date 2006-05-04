@@ -52,8 +52,8 @@ void	blobGrow(blob *b, size_t len);
 typedef	struct fileblob {
 	FILE	*fp;
 	blob	b;
-	int	isNotEmpty : 1;
-	int	isInfected : 1;
+	unsigned	int	isNotEmpty : 1;
+	unsigned	int	isInfected : 1;
 	cli_ctx	*ctx;
 } fileblob;
 
