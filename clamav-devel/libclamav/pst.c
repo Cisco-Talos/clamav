@@ -35,7 +35,7 @@
  *	cli_mbox decode it
  * TODO: Remove the vcard handling
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.23 2006/05/04 08:29:05 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.24 2006/05/04 12:45:45 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -5373,7 +5373,7 @@ pst_decode(const char *dir, int desc)
 		    boundary);
 	  } else if (item->email->htmlbody && item->email->body) {
 	    // else if we have an html and text body then tell it so
-	    fprintf(f->output, "Content-type: multipart/alternate;\n\tboundary=\"%s\"\n",
+	    fprintf(f->output, "Content-type: multipart/alternative;\n\tboundary=\"%s\"\n",
 		    boundary);
 	  } else if (item->email->htmlbody) {
 	    fputs("Content-type: text/html\n", f->output);
