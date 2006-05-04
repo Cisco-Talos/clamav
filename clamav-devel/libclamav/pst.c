@@ -35,7 +35,7 @@
  *	cli_mbox decode it
  * TODO: Remove the vcard handling
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.22 2006/05/03 21:14:56 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.23 2006/05/04 08:29:05 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -5316,7 +5316,7 @@ pst_decode(const char *dir, int desc)
 	}
 
 	if (item->email->header != NULL) {
-	    char *soh = NULL;  // real start of headers.
+	    char *soh;  // real start of headers.
 	  // some of the headers we get from the file are not properly defined.
 	  // they can contain some email stuff too. We will cut off the header
 	  // when we see a \n\n or \r\n\r\n
@@ -5330,10 +5330,14 @@ pst_decode(const char *dir, int desc)
 	    *temp = '\0';
 	  }
 
-	    // don't put rubbish in if we are doing seperate
-	    fprintf(f->output, "From \"%s\" %s\n", item->email->outlook_sender_name, c_time);
-	    soh = skip_header_prologue(item->email->header);
-	    fprintf(f->output, "%s\n\n", soh);
+		/* don't put rubbish in if we are doing seperate */
+		soh = skip_header_prologue(item->email->header);
+		if(strncmp(soh, "X-From_: ", 9) == 0) {
+			fputs("From ", f->output);
+			soh += 9;
+		} else
+			fprintf(f->output, "From \"%s\" %s\n", item->email->outlook_sender_name, c_time);
+		fprintf(f->output, "%s\n\n", soh);
 	} else {
 	  //make up our own header!
 	    // don't want this first line for this mode
@@ -5342,7 +5346,8 @@ pst_decode(const char *dir, int desc)
 	    } else {
 	      temp = (char *)"(readpst_null)";
 	    }
-	    fprintf(f->output, "From \"%s\" %s\n", temp, c_time);
+	    /*fprintf(f->output, "From \"%s\" %s\n", temp, c_time);*/
+	    fprintf(f->output, "From %s %s\n", temp, c_time);
 	  if ((temp = item->email->outlook_sender) == NULL)
 	    temp = (char *)"";
 	  fprintf(f->output, "From: \"%s\" <%s>\n", item->email->outlook_sender_name, temp);
