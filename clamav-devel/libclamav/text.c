@@ -17,6 +17,9 @@
  *  MA 02110-1301, USA.
  *
  * $Log: text.c,v $
+ * Revision 1.18  2006/05/04 10:37:03  nigelhorne
+ * Speed up scanning of clean files
+ *
  * Revision 1.17  2006/05/03 09:36:40  nigelhorne
  * Pass full ctx into the mbox code
  *
@@ -61,7 +64,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: text.c,v 1.17 2006/05/03 09:36:40 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: text.c,v 1.18 2006/05/04 10:37:03 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -267,7 +270,8 @@ textToFileblob(const text *t, fileblob *fb)
 
 		if(fb == NULL)
 			return NULL;
-	}
+	} else
+		fb->ctx = NULL;	/* no need to scan */
 
 	return textIterate(t, addToFileblob, fb);
 }

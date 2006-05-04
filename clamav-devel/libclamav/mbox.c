@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.296 2006/05/04 08:34:02 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.297 2006/05/04 10:37:02 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -734,6 +734,8 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 						free(bigbuf);
 
 					if(datalen < 0)
+						break;
+					if(fileblobContainsVirus(fb))
 						break;
 
 					if((b64size > 0) && (*ptr == '\r')) {
@@ -2797,7 +2799,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 
 			inheader = TRUE;
 			topofbounce = NULL;
-			for(;;) {
+			do {
 				l = t->t_line;
 
 				if(l == NULL) {
@@ -2822,7 +2824,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						break;
 					}
 				}
-			}
+			} while(!fileblobContainsVirus(fb));
 
 			fileblobDestroy(fb);
 			if(topofbounce)
@@ -2913,7 +2915,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			if(t && ((fb = fileblobCreate()) != NULL)) {
 				cli_dbgmsg("Found a bounce message\n");
 				fileblobSetFilename(fb, dir, "bounce");
-				fileblobSetCTX(fb, ctx);
+				/*fileblobSetCTX(fb, ctx);*/
 				if(textToFileblob(start, fb) == NULL)
 					cli_dbgmsg("Nothing new to save in the bounce message");
 				else
@@ -2944,11 +2946,11 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					cli_dbgmsg("Found a bounce message with no header at '%s'\n",
 						lineGetData(t_line->t_line));
 					fileblobSetFilename(fb, dir, "bounce");
-					fileblobSetCTX(fb, ctx);
 					fileblobAddData(fb,
 						(const unsigned char *)"Received: by clamd (bounce)\n",
 						28);
 
+					/*fileblobSetCTX(fb, ctx);*/
 					fb = textToFileblob(t_line, fb);
 
 					fileblobDestroy(fb);
