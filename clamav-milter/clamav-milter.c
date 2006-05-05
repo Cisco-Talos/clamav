@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.238 2006/05/05 12:15:21 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.239 2006/05/05 12:28:19 nigelhorne Exp $";
 
 #define	CM_VERSION	"devel-050506"
 
@@ -2565,7 +2565,7 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 	 * Lines starting with From are changed to >From, to
 	 *	avoid FP matches in the scanning code, which will speed it up
 	 */
-	if(cli_memstr((char *)bodyp, len, "\nFrom ", 6)) {
+	if((len >= 6) && cli_memstr((char *)bodyp, len, "\nFrom ", 6)) {
 		const char *ptr = bodyp;
 		int left = len;
 
@@ -2578,16 +2578,16 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 		do
 			if(*ptr == '\n') {
 				if(strncmp(ptr, "\nFrom ", 6) == 0) {
-					nbytes += clamfi_send(privdata, "\n>From ", 7);
+					nbytes += clamfi_send(privdata, 7, "\n>From ");
 					ptr += 7;
 					left -= 6;
 				} else {
-					nbytes += clamfi_send(privdata, "\n", 1);
+					nbytes += clamfi_send(privdata, 1, "\n");
 					ptr++;
 					left--;
 				}
 			} else {
-				nbytes += clamfi_send(privdata, *ptr++, 1);
+				nbytes += clamfi_send(privdata, 1, ptr++);
 				left--;
 			}
 		while(left > 0);
