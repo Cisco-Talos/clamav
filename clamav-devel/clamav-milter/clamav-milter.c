@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.237 2006/05/05 11:22:42 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.238 2006/05/05 12:15:21 nigelhorne Exp $";
 
 #define	CM_VERSION	"devel-050506"
 
@@ -2578,7 +2578,7 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 		do
 			if(*ptr == '\n') {
 				if(strncmp(ptr, "\nFrom ", 6) == 0) {
-					nbytes += clamfi_send(privdata, 7, "\n>From ");
+					nbytes += clamfi_send(privdata, "\n>From ", 7);
 					ptr += 7;
 					left -= 6;
 				} else {
