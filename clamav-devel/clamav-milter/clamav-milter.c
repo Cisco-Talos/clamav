@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.236 2006/04/23 13:00:49 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.237 2006/05/05 11:22:42 nigelhorne Exp $";
 
-#define	CM_VERSION	"devel-230406"
+#define	CM_VERSION	"devel-050506"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -474,7 +474,7 @@ static void
 help(void)
 {
 	printf("\n\tclamav-milter version %s\n", CM_VERSION);
-	puts("\tCopyright (C) 2004 Nigel Horne <njh@despammed.com>\n");
+	puts("\tCopyright (C) 2006 Nigel Horne <njh@clamav.net>\n");
 
 	puts(_("\t--advisory\t\t-A\tFlag viruses rather than deleting them."));
 	puts(_("\t--bounce\t\t-b\tSend a failure message to the sender."));
@@ -2561,7 +2561,39 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 	if(len == 0)	/* unlikely */
 		return SMFIS_CONTINUE;
 
-	nbytes = clamfi_send(privdata, len, (char *)bodyp);
+	/*
+	 * Lines starting with From are changed to >From, to
+	 *	avoid FP matches in the scanning code, which will speed it up
+	 */
+	if(cli_memstr((char *)bodyp, len, "\nFrom ", 6)) {
+		const char *ptr = bodyp;
+		int left = len;
+
+		nbytes = 0;
+
+		/*
+		 * FIXME: sending one byte at a time down a socket is
+		 *	inefficient
+		 */
+		do
+			if(*ptr == '\n') {
+				if(strncmp(ptr, "\nFrom ", 6) == 0) {
+					nbytes += clamfi_send(privdata, 7, "\n>From ");
+					ptr += 7;
+					left -= 6;
+				} else {
+					nbytes += clamfi_send(privdata, "\n", 1);
+					ptr++;
+					left--;
+				}
+			} else {
+				nbytes += clamfi_send(privdata, *ptr++, 1);
+				left--;
+			}
+		while(left > 0);
+	} else
+		nbytes = clamfi_send(privdata, len, (char *)bodyp);
+
 	if(streamMaxLength > 0L) {
 		if(privdata->numBytes > streamMaxLength) {
 			if(use_syslog) {
