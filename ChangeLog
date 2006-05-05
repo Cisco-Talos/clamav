@@ -1,3 +1,7 @@
+Fri May  5 12:23:23 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	Create fewer bounce message FPs
+
 Wed May  3 10:35:40 BST 2006 (njh)
 ----------------------------------
   * libclamav/scanners.c:	Pass full CTX into the mbox code
