@@ -35,7 +35,7 @@
  *	cli_mbox decode it
  * TODO: Remove the vcard handling
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.24 2006/05/04 12:45:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.25 2006/05/08 08:55:13 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -578,8 +578,6 @@ fileTimeToUnixTime(const FILETIME *filetime, DWORD *remainder)
 #define FILE_SIZE_POINTER 0xA8
 #define INDEX_POINTER 0xC4
 #define SECOND_POINTER 0xBC
-#define INDEX_DEPTH 0x4C
-#define SECOND_DEPTH 0x5C
 // the encryption setting could be at 0x1CC. Will require field testing
 #define ENC_OFFSET 0x1CD
 // says the type of index we have
