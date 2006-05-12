@@ -1,3 +1,10 @@
+Fri May 12 18:10:03 BST 2006 (njh)
+----------------------------------
+  * docs/man/clamav-milter.8:	Be explicit about what is a LAN machine
+  * libclamav/pst.c:		rfc2426_escape is now thread safe
+  * libclamav/message.c:	RFC2231 messages from thunderbird now handled
+  					better
+
 Fri May  5 12:23:23 BST 2006 (njh)
 ----------------------------------
   * clamav-milter:	Create fewer bounce message FPs
