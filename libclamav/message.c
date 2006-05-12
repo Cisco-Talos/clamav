@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.167 2006/05/03 15:41:44 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.168 2006/05/12 17:12:46 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -401,6 +401,8 @@ messageAddArgument(message *m, const char *arg)
 	if(*arg == '\0')
 		/* Empty argument? Probably a broken mail client... */
 		return;
+
+	cli_dbgmsg("messageAddArgument, arg='%s'\n", arg);
 
 	if(!usefulArg(arg))
 		return;
@@ -2310,9 +2312,24 @@ rfc2231(const char *in)
 {
 	const char *ptr;
 	char *ret, *out;
-	enum { LANGUAGE, CHARSET, CONTENTS } field = LANGUAGE;
+	enum { LANGUAGE, CHARSET, CONTENTS } field;
 
-	ptr = strstr(in, "*=");
+	if(strstr(in, "*0*=") != NULL) {
+		cli_warnmsg("RFC2231 parameter continuations are not yet handled\n");
+		return strdup(in);
+	}
+
+	ptr = strstr(in, "*0=");
+	if(ptr != NULL)
+		/*
+		 * Parameter continuation, with no continuation
+		 * Thunderbird 1.5 (and possibly other versions) does this
+		 */
+		field = CONTENTS;
+	else {
+		ptr = strstr(in, "*=");
+		field = LANGUAGE;
+	}
 
 	if(ptr == NULL)	/* quick return */
 		return strdup(in);
@@ -2324,46 +2341,54 @@ rfc2231(const char *in)
 	if(ret == NULL)
 		return NULL;
 
+	/*
+	 * memcpy(out, in, (ptr - in));
+	 * out = &out[ptr - in];
+	 * in = ptr;
+	 */
 	for(out = ret; in != ptr; in++)
 		*out++ = *in;
 
 	*out++ = '=';
 
+	while(*ptr++ != '=')
+		;
+
 	/*
 	 * We don't do anything with the language and character set, just skip
 	 * over them!
 	 */
-	while(*in) {
+	while(*ptr) {
 		switch(field) {
 			case LANGUAGE:
-				if(*in == '\'')
+				if(*ptr == '\'')
 					field = CHARSET;
 				break;
 			case CHARSET:
-				if(*in == '\'')
+				if(*ptr == '\'')
 					field = CONTENTS;
 				break;
 			case CONTENTS:
-				if(*in == '%') {
+				if(*ptr == '%') {
 					unsigned char byte;
 
-					if((*++in == '\0') || (*in == '\n'))
+					if((*++ptr == '\0') || (*ptr == '\n'))
 						break;
 
-					byte = hex(*in);
+					byte = hex(*ptr);
 
-					if((*++in == '\0') || (*in == '\n')) {
+					if((*++ptr == '\0') || (*ptr == '\n')) {
 						*out++ = byte;
 						break;
 					}
 
 					byte <<= 4;
-					byte += hex(*in);
+					byte += hex(*ptr);
 					*out++ = byte;
 				} else
-					*out++ = *in;
+					*out++ = *ptr;
 		}
-		if(*in++ == '\0')
+		if(*ptr++ == '\0')
 			/*
 			 * Incorrect message that has just one character after
 			 * a '%'.
