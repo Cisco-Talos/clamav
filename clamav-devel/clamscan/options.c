@@ -109,7 +109,7 @@ int main(int argc, char **argv)
 	    {"no-mail", 0, 0, 0},
 	    {"mail-follow-urls", 0, 0, 0},
 	    {"no-phishing", 0, 0, 0},
-	    {"no-algo", 0, 0, 0},
+	    {"no-algorithmic", 0, 0, 0},
 	    {"unzip", 2, 0, 0},
 	    {"unrar", 2, 0, 0},
 	    {"unace", 2, 0, 0}, /* not used */
