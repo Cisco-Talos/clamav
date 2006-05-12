@@ -106,6 +106,10 @@ the scanning.
 Also scan messages sent from LAN. You probably want this especially if
 your LAN is populated by machines running Windows or DOS.
 .TP
+Machines with IP addresses within the ranges 192.168.0.0/16, 10.0.0.0/24,
+172.16.0.0/20 and 169.254.0.0/16 are defined as 'local'. Messages from
+other machines are always scanned.
+.TP
 \fB-M, \-\-freshclam-monitor\fR
 When not running in external mode, this option tells clamav\-milter how
 often to check that the virus database has been updated, probably by
