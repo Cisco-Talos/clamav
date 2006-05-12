@@ -1,3 +1,7 @@
+Fri May 12 19:35:41 CEST 2006 (tk)
+----------------------------------
+  * libclamav/scanners.c: fix zero allocation reported by Sergey Svishchev
+
 Fri May 12 18:10:03 BST 2006 (njh)
 ----------------------------------
   * docs/man/clamav-milter.8:	Be explicit about what is a LAN machine

@@ -985,8 +985,11 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
 			break;
 		}
 		free(fullname);
-		cli_dbgmsg("VBADir: Decompress WM project '%s' macro:%d key:%d\n", vba_project->name[i], i, vba_project->key[i]);
-		data = (unsigned char *) wm_decrypt_macro(fd, vba_project->offset[i], vba_project->length[i], vba_project->key[i]);
+		cli_dbgmsg("VBADir: Decompress WM project '%s' macro:%d key:%d length:%d\n", vba_project->name[i], i, vba_project->key[i], vba_project->length[i]);
+		if(vba_project->length[i])
+		    data = (unsigned char *) wm_decrypt_macro(fd, vba_project->offset[i], vba_project->length[i], vba_project->key[i]);
+		else
+		    data = NULL;
 		close(fd);
 		
 		if(!data) {
