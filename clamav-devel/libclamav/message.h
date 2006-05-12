@@ -33,7 +33,7 @@ typedef struct message {
 
 	char	base64_1, base64_2, base64_3;
 	int	base64chars;
-	int	isInfected : 1;
+	unsigned	int	isInfected : 1;
 
 	/*
 	 * Markers for the start of various non MIME messages that could
