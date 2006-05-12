@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.240 2006/05/05 12:31:55 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.241 2006/05/12 17:15:39 nigelhorne Exp $";
 
-#define	CM_VERSION	"devel-050506"
+#define	CM_VERSION	"devel-120506"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -38,7 +38,7 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.240 2006/05/05 12:31:55 ni
 #include "../libclamav/others.h"
 #include "strrcpy.h"
 #include "clamav.h"
-#include "../libclamav/table.h"
+#include "table.h"
 #include "network.h"
 
 #ifndef	CL_DEBUG
@@ -2319,7 +2319,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 		}
 		n_children++;
 
-		cli_dbgmsg(_(">n_children = %d\n"), n_children);
+		cli_dbgmsg(">n_children = %d\n", n_children);
 		pthread_mutex_unlock(&n_children_mutex);
 
 		if(child_timeout && (rc == ETIMEDOUT)) {
