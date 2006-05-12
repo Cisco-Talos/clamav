@@ -203,7 +203,7 @@ int scanmanager(const struct optstruct *opt)
 #endif
     }
 
-    if(optl(opt, "no-algo"))
+    if(optl(opt, "no-algorithmic"))
 	options &= ~CL_SCAN_ALGO;
     else
 	options |= CL_SCAN_ALGO;

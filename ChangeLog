@@ -1,3 +1,8 @@
+Fri May 12 20:04:05 CEST 2006 (tk)
+----------------------------------
+  * clamscan: s/no-algo/no-algorithmic
+  * clamd: s/ScanAlgo/AlgorithmicDetection
+
 Fri May 12 19:35:41 CEST 2006 (tk)
 ----------------------------------
   * libclamav/scanners.c: fix zero allocation reported by Sergey Svishchev

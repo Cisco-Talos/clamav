@@ -233,7 +233,7 @@ void help(void)
     mprintf("\n");
     mprintf("    --no-mail                            Disable mail file support\n");
     mprintf("    --no-phishing                        Disable phishing detection\n");
-    mprintf("    --no-algo                            Disable algorithmic detection\n");
+    mprintf("    --no-algorithmic                     Disable algorithmic detection\n");
     mprintf("    --no-pe                              Disable PE analysis\n");
     mprintf("    --no-ole2                            Disable OLE2 support\n");
     mprintf("    --no-html                            Disable HTML support\n");

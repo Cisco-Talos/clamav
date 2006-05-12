@@ -326,7 +326,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, const struc
 	logg("Archive support disabled.\n");
     }
 
-    if(cfgopt(copt, "ScanAlgo")->enabled) {
+    if(cfgopt(copt, "AlgorithmicDetection")->enabled) {
 	logg("Algorithmic detection enabled.\n");
 	options |= CL_SCAN_ALGO;
     } else {
