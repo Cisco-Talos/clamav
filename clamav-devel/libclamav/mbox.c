@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.299 2006/05/04 17:44:29 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.300 2006/05/12 21:02:40 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -173,7 +173,7 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 
 /*#define	SCAN_UNENCODED_BOUNCES	/*
 					 * Slows things down a lot and only catches unencoded copies
-					 * of EICAR within bounces, which don't metter
+					 * of EICAR within bounces, which don't matter
 					 */
 
 static	int	cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx);
