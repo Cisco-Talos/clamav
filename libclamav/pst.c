@@ -27,15 +27,13 @@
  * Notice that this code has yet to be sanitised, and audited. Use at your
  *	peril
  * FIXME: lots of memory leaks on error returns
- * FIXME: rfc*_datetime_format routines are not thread safe
- * FIXME: valgrind has a field day on this code :-(
  *
  * TODO: This code works by converting into an mbox - it would be better to
  *	save the attachments directly rather than encode to base64, then have
  *	cli_mbox decode it
  * TODO: Remove the vcard handling
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.25 2006/05/08 08:55:13 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.26 2006/05/12 17:11:28 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -445,7 +443,7 @@ static	size_t	_pst_ff_getID2block(pst_file *pf, u_int32_t id2, pst_index2_ll *id
 static	size_t _pst_ff_getID2data(pst_file *pf, pst_index_ll *ptr, struct holder *h);
 static	size_t _pst_ff_compile_ID(pst_file *pf, u_int32_t id, struct holder *h, int32_t size);
 
-size_t	pst_fwrite(const void*ptr, size_t size, size_t nmemb, FILE*stream);
+static	size_t	pst_fwrite(const void*ptr, size_t size, size_t nmemb, FILE*stream);
 char * _pst_wide_to_single(char *wt, int32_t size);
 static	unsigned	char	*lzfu_decompress(const unsigned char* rtfcomp, size_t *nbytes);
 
@@ -455,7 +453,7 @@ static	const	struct	tm	*fileTimeToStructTM(const FILETIME *filetime);
 static	int	pst_decode(const char *dir, int desc);
 static	char	*base64_encode(const unsigned char *data, size_t size);
 static	int	chr_count(const char *str, char x);
-static	const	char	*rfc2426_escape(const char *str);
+static	const	char	*rfc2426_escape(const char *str, char **buf);
 static	size_t	write_email_body(FILE *f, const char *body);
 static	char	*my_stristr(const char *haystack, const char *needle);
 
@@ -1101,7 +1099,7 @@ _pst_build_id_ptr(pst_file *pf, int32_t offset, int32_t depth, int32_t start_val
     }
     if (buf) free (buf);
     return 2;
-  } else {
+  }
     // this is then probably a table of offsets to more tables.
     cli_dbgmsg("Reading Table Items\n");
 
@@ -1183,10 +1181,6 @@ _pst_build_id_ptr(pst_file *pf, int32_t offset, int32_t depth, int32_t start_val
     if (buf) free (buf);
     cli_dbgmsg("End of table of pointers\n");
     return 3;
-  }
-  cli_dbgmsg("ERROR ** Shouldn't be here!\n");
-
-  return 1;
 }
 
 #define DESC_BLOCK_SIZE 520
@@ -4514,15 +4508,14 @@ _pst_ff_compile_ID(pst_file *pf, u_int32_t id, struct holder *h, int32_t size)
   return size;
 }
 
-size_t pst_fwrite(const void*ptr, size_t size, size_t nmemb, FILE*stream) {
-  size_t r;
-  if (ptr != NULL)
-    r = fwrite(ptr, size, nmemb, stream);
-  else {
-    r = 0;
-    cli_warnmsg("An attempt to write a NULL Pointer was made\n");
-  }
-  return r;
+static size_t
+pst_fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
+{
+	if (ptr == NULL) {
+		cli_warnmsg("An attempt to write a NULL Pointer was made\n");
+		return 0;
+	}
+	return fwrite(ptr, size, nmemb, stream);
 }
 
 char * _pst_wide_to_single(char *wt, int32_t size) {
@@ -4647,26 +4640,26 @@ chr_count(const char *str, char x)
 }
 
 static const char *
-rfc2426_escape(const char *str)
+rfc2426_escape(const char *str, char **buf)
 {
-	static char* buf = NULL;
 	const char *a;
 	char *b;
 	int x, y, z;
 
 	if(str == NULL)
-		return NULL;
+		return "";
 
 	/* calculate space required to escape all the following characters */
 	x = strlen(str) +(y=(chr_count(str, ',')*2) + (chr_count(str, '\\')*2) + (chr_count(str, ';')*2) + (chr_count(str, '\n')*2));
 	z = chr_count(str, '\r');
 
-	if (y == 0 && z == 0) /* there isn't any extra space required */
+	if (y == 0 && z == 0)
+		/* there isn't any extra space required */
 		return str;
 
-	buf = (char *)cli_realloc(buf, x + 1 - z);
+	*buf = (char *)cli_realloc(*buf, x + 1 - z);
 	a = str;
-	b = buf;
+	b = *buf;
 
 	while(*a != '\0') {
 		switch(*a) {
@@ -4691,7 +4684,7 @@ rfc2426_escape(const char *str)
 	}
 	*b = '\0';
 
-	return buf;
+	return *buf;
 }
 
 /* my_stristr varies from strstr in that its searches are case-insensitive */
@@ -4719,21 +4712,21 @@ my_stristr(const char *haystack, const char *needle)
 }
 
 static const char *
-rfc2445_datetime_format(FILETIME *ft)
+rfc2445_datetime_format(FILETIME *ft, char *buffer, size_t len)
 {
-	static char *buffer = NULL;
 	const struct tm *stm = NULL;
-	if (buffer == NULL)
-		buffer = cli_malloc(30); // should be enough
+
 	stm = fileTimeToStructTM(ft);
-	if (strftime(buffer, 30, "%Y%m%dT%H%M%SZ", stm)==0) {
-		cli_dbgmsg("Problem occured formatting date\n");
+	if (strftime(buffer, len, "%Y%m%dT%H%M%SZ", stm)==0) {
+		cli_warnmsg("RFC2445: Problem occured formatting date\n");
 		return NULL;
 	}
 	return buffer;
 }
 
-char *removeCR (char *c) {
+static char *
+removeCR(char *c)
+{
   // converts /r/n to /n
   char *a, *b;
   a = b = c;
@@ -4792,16 +4785,13 @@ char *skip_header_prologue(char *headers) {
 }
 
 static const char *
-rfc2425_datetime_format(const FILETIME *ft)
+rfc2425_datetime_format(const FILETIME *ft, char *buffer, size_t len)
 {
-	static char *buffer = NULL;
 	const struct tm *stm = NULL;
-	if (buffer == NULL)
-		buffer = cli_malloc(30); // should be enough for the date as defined below
 
 	stm = fileTimeToStructTM(ft);
 	//Year[4]-Month[2]-Day[2] Hour[2]:Min[2]:Sec[2]
-	if(strftime(buffer, 30, "%Y-%m-%dT%H:%M:%SZ", stm) == 0) {
+	if(strftime(buffer, len, "%Y-%m-%dT%H:%M:%SZ", stm) == 0) {
 		cli_errmsg("Problem occured formatting date\n");
 		return NULL;
 	}
@@ -4931,6 +4921,8 @@ pst_decode(const char *dir, int desc)
 	pst_desc_ll *d_ptr;
 	struct file_ll  *f, *head;
 	char *enc = NULL;	/* base64 encoded attachment */
+	char rfc2445buffer[30], rfc2425buffer[30];
+	char *rfc2426ptr;
 
 	x = pst_open(&pstfile, desc);
 	if(x != CL_SUCCESS)
@@ -5030,6 +5022,8 @@ pst_decode(const char *dir, int desc)
     }*/
   d_ptr = d_ptr->child; // do the children of TOPF
 
+	rfc2426ptr = NULL;
+
   while (d_ptr != NULL) {
     if (d_ptr->desc == NULL) {
       cli_warnmsg("pst_decode: item's desc record is NULL\n");
@@ -5078,6 +5072,8 @@ pst_decode(const char *dir, int desc)
 	    sprintf(temp, "%s%08d", f->name, x);
 	    if (x == 99999999) {
 	      cli_errmsg("pst_decode: Why can I not create a folder %s? I have tried %i extensions...\n", f->name, x);
+	      if(rfc2426ptr)
+	      	free(rfc2426ptr);
 	      return(5);
 	    }
 	    fclose(f->output);
@@ -5095,6 +5091,8 @@ pst_decode(const char *dir, int desc)
 	  if ((f->output = fopen(filename, "w")) == NULL) {
 	    cli_errmsg("pst_decode: Could not open file \"%s\" for write\n", f->name);
 	    free(filename);
+	      if(rfc2426ptr)
+	      	free(rfc2426ptr);
 	    return CL_ETMPFILE;
 	  }
 	    free(filename);
@@ -5122,115 +5120,115 @@ pst_decode(const char *dir, int desc)
 	// Desc Name <email@address>\n
 	f->email_count++;
 
-	if (item->contact == NULL) { // this is an incorrect situation. Inform user
-	  cli_errmsg("pst_decode: ERROR. This contact has not been fully parsed. one of the pre-requisties is NULL\n");
-	} else {
 	  if (contact_mode == CMODE_VCARD) {
 	    // the specification I am following is (hopefully) RFC2426 vCard Mime Directory Profile
 	    fputs("BEGIN:VCARD\n", f->output);
-	    fprintf(f->output, "FN:%s\n", rfc2426_escape(item->contact->fullname));
+	    fprintf(f->output, "FN:%s\n", rfc2426_escape(item->contact->fullname, &rfc2426ptr));
+	    /*
+	     * FIXME: if more than one string here need to be esacaped,
+	     *	the wrong values will get fprinted
+	     */
 	    fprintf(f->output, "N:%s;%s;%s;%s;%s\n",
-		    rfc2426_escape((item->contact->surname==NULL?"":item->contact->surname)),
-		    rfc2426_escape((item->contact->first_name==NULL?"":item->contact->first_name)),
-		    rfc2426_escape((item->contact->middle_name==NULL?"":item->contact->middle_name)),
-		    rfc2426_escape((item->contact->display_name_prefix==NULL?"":item->contact->display_name_prefix)),
-		    rfc2426_escape((item->contact->suffix==NULL?"":item->contact->suffix)));
+		    rfc2426_escape(item->contact->surname, &rfc2426ptr),
+		    rfc2426_escape(item->contact->first_name, &rfc2426ptr),
+		    rfc2426_escape(item->contact->middle_name, &rfc2426ptr),
+		    rfc2426_escape(item->contact->display_name_prefix, &rfc2426ptr),
+		    rfc2426_escape(item->contact->suffix, &rfc2426ptr));
 	    if (item->contact->nickname != NULL)
-	      fprintf(f->output, "NICKNAME:%s\n", rfc2426_escape(item->contact->nickname));
+	      fprintf(f->output, "NICKNAME:%s\n", rfc2426_escape(item->contact->nickname, &rfc2426ptr));
 	    if (item->contact->address1 != NULL)
-	      fprintf(f->output, "EMAIL:%s\n", rfc2426_escape(item->contact->address1));
+	      fprintf(f->output, "EMAIL:%s\n", rfc2426_escape(item->contact->address1, &rfc2426ptr));
 	    if (item->contact->address2 != NULL)
-	      fprintf(f->output, "EMAIL:%s\n", rfc2426_escape(item->contact->address2));
+	      fprintf(f->output, "EMAIL:%s\n", rfc2426_escape(item->contact->address2, &rfc2426ptr));
 	    if (item->contact->address3 != NULL)
-	      fprintf(f->output, "EMAIL:%s\n", rfc2426_escape(item->contact->address3));
+	      fprintf(f->output, "EMAIL:%s\n", rfc2426_escape(item->contact->address3, &rfc2426ptr));
 	    if (item->contact->birthday != NULL)
-	      fprintf(f->output, "BDAY:%s\n", rfc2425_datetime_format(item->contact->birthday));
+	      fprintf(f->output, "BDAY:%s\n", rfc2425_datetime_format(item->contact->birthday, rfc2425buffer, sizeof(rfc2425buffer)));
 	    if (item->contact->home_address != NULL) {
 	      fprintf(f->output, "ADR;TYPE=home:%s;%s;%s;%s;%s;%s;%s\n",
-		      rfc2426_escape((item->contact->home_po_box!=NULL?item->contact->home_po_box:"")),
+		      rfc2426_escape(item->contact->home_po_box, &rfc2426ptr),
 		      "", // extended Address
-		      rfc2426_escape((item->contact->home_street!=NULL?item->contact->home_street:"")),
-		      rfc2426_escape((item->contact->home_city!=NULL?item->contact->home_city:"")),
-		      rfc2426_escape((item->contact->home_state!=NULL?item->contact->home_state:"")),
-		      rfc2426_escape((item->contact->home_postal_code!=NULL?item->contact->home_postal_code:"")),
-		      rfc2426_escape((item->contact->home_country!=NULL?item->contact->home_country:"")));
-	      fprintf(f->output, "LABEL;TYPE=home:%s\n", rfc2426_escape(item->contact->home_address));
+		      rfc2426_escape(item->contact->home_street, &rfc2426ptr),
+		      rfc2426_escape(item->contact->home_city, &rfc2426ptr),
+		      rfc2426_escape(item->contact->home_state, &rfc2426ptr),
+		      rfc2426_escape(item->contact->home_postal_code, &rfc2426ptr),
+		      rfc2426_escape(item->contact->home_country, &rfc2426ptr));
+	      fprintf(f->output, "LABEL;TYPE=home:%s\n", rfc2426_escape(item->contact->home_address, &rfc2426ptr));
 	    }
 	    if (item->contact->business_address != NULL) {
 	      fprintf(f->output, "ADR;TYPE=work:%s;%s;%s;%s;%s;%s;%s\n",
-		      rfc2426_escape((item->contact->business_po_box!=NULL?item->contact->business_po_box:"")),
+		      rfc2426_escape(item->contact->business_po_box, &rfc2426ptr),
 		      "", // extended Address
-		      rfc2426_escape((item->contact->business_street!=NULL?item->contact->business_street:"")),
-		      rfc2426_escape((item->contact->business_city!=NULL?item->contact->business_city:"")),
-		      rfc2426_escape((item->contact->business_state!=NULL?item->contact->business_state:"")),
-		      rfc2426_escape((item->contact->business_postal_code!=NULL?item->contact->business_postal_code:"")),
-		      rfc2426_escape((item->contact->business_country!=NULL?item->contact->business_country:"")));
-	      fprintf(f->output, "LABEL;TYPE=work:%s\n", rfc2426_escape(item->contact->business_address));
+		      rfc2426_escape(item->contact->business_street, &rfc2426ptr),
+		      rfc2426_escape(item->contact->business_city, &rfc2426ptr),
+		      rfc2426_escape(item->contact->business_state, &rfc2426ptr),
+		      rfc2426_escape(item->contact->business_postal_code, &rfc2426ptr),
+		      rfc2426_escape(item->contact->business_country, &rfc2426ptr));
+	      fprintf(f->output, "LABEL;TYPE=work:%s\n", rfc2426_escape(item->contact->business_address, &rfc2426ptr));
 	    }
 	    if (item->contact->other_address != NULL) {
 	      fprintf(f->output, "ADR;TYPE=postal:%s;%s;%s;%s;%s;%s;%s\n",
-		      rfc2426_escape((item->contact->other_po_box!=NULL?item->contact->business_po_box:"")),
-		      "", // extended Address
-		      rfc2426_escape((item->contact->other_street!=NULL?item->contact->other_street:"")),
-		      rfc2426_escape((item->contact->other_city!=NULL?item->contact->other_city:"")),
-		      rfc2426_escape((item->contact->other_state!=NULL?item->contact->other_state:"")),
-		      rfc2426_escape((item->contact->other_postal_code!=NULL?item->contact->other_postal_code:"")),
-		      rfc2426_escape((item->contact->other_country!=NULL?item->contact->other_country:"")));
-	      fprintf(f->output, "ADR;TYPE=postal:%s\n", rfc2426_escape(item->contact->other_address));
+		      rfc2426_escape(item->contact->business_po_box, &rfc2426ptr),
+		      "", // extended Addres
+		      rfc2426_escape(item->contact->other_street, &rfc2426ptr),
+		      rfc2426_escape(item->contact->other_city, &rfc2426ptr),
+		      rfc2426_escape(item->contact->other_state, &rfc2426ptr),
+		      rfc2426_escape(item->contact->other_postal_code, &rfc2426ptr),
+		      rfc2426_escape(item->contact->other_country, &rfc2426ptr));
+	      fprintf(f->output, "ADR;TYPE=postal:%s\n", rfc2426_escape(item->contact->other_address, &rfc2426ptr));
 	    }
 	    if (item->contact->business_fax != NULL)
-	      fprintf(f->output, "TEL;TYPE=work,fax:%s\n", rfc2426_escape(item->contact->business_fax));
+	      fprintf(f->output, "TEL;TYPE=work,fax:%s\n", rfc2426_escape(item->contact->business_fax, &rfc2426ptr));
 	    if (item->contact->business_phone != NULL)
-	      fprintf(f->output, "TEL;TYPE=work,voice:%s\n", rfc2426_escape(item->contact->business_phone));
+	      fprintf(f->output, "TEL;TYPE=work,voice:%s\n", rfc2426_escape(item->contact->business_phone, &rfc2426ptr));
 	    if (item->contact->business_phone2 != NULL)
-	      fprintf(f->output, "TEL;TYPE=work,voice:%s\n", rfc2426_escape(item->contact->business_phone2));
+	      fprintf(f->output, "TEL;TYPE=work,voice:%s\n", rfc2426_escape(item->contact->business_phone2, &rfc2426ptr));
 	    if (item->contact->car_phone != NULL)
-	      fprintf(f->output, "TEL;TYPE=car,voice:%s\n", rfc2426_escape(item->contact->car_phone));
+	      fprintf(f->output, "TEL;TYPE=car,voice:%s\n", rfc2426_escape(item->contact->car_phone, &rfc2426ptr));
 	    if (item->contact->home_fax != NULL)
-	      fprintf(f->output, "TEL;TYPE=home,fax:%s\n", rfc2426_escape(item->contact->home_fax));
+	      fprintf(f->output, "TEL;TYPE=home,fax:%s\n", rfc2426_escape(item->contact->home_fax, &rfc2426ptr));
 	    if (item->contact->home_phone != NULL)
-	      fprintf(f->output, "TEL;TYPE=home,voice:%s\n", rfc2426_escape(item->contact->home_phone));
+	      fprintf(f->output, "TEL;TYPE=home,voice:%s\n", rfc2426_escape(item->contact->home_phone, &rfc2426ptr));
 	    if (item->contact->home_phone2 != NULL)
-	      fprintf(f->output, "TEL;TYPE=home,voice:%s\n", rfc2426_escape(item->contact->home_phone2));
+	      fprintf(f->output, "TEL;TYPE=home,voice:%s\n", rfc2426_escape(item->contact->home_phone2, &rfc2426ptr));
 	    if (item->contact->isdn_phone != NULL)
-	      fprintf(f->output, "TEL;TYPE=isdn:%s\n", rfc2426_escape(item->contact->isdn_phone));
+	      fprintf(f->output, "TEL;TYPE=isdn:%s\n", rfc2426_escape(item->contact->isdn_phone, &rfc2426ptr));
 	    if (item->contact->mobile_phone != NULL)
-	      fprintf(f->output, "TEL;TYPE=cell,voice:%s\n", rfc2426_escape(item->contact->mobile_phone));
+	      fprintf(f->output, "TEL;TYPE=cell,voice:%s\n", rfc2426_escape(item->contact->mobile_phone, &rfc2426ptr));
 	    if (item->contact->other_phone != NULL)
-	      fprintf(f->output, "TEL;TYPE=msg:%s\n", rfc2426_escape(item->contact->other_phone));
+	      fprintf(f->output, "TEL;TYPE=msg:%s\n", rfc2426_escape(item->contact->other_phone, &rfc2426ptr));
 	    if (item->contact->pager_phone != NULL)
-	      fprintf(f->output, "TEL;TYPE=pager:%s\n", rfc2426_escape(item->contact->pager_phone));
+	      fprintf(f->output, "TEL;TYPE=pager:%s\n", rfc2426_escape(item->contact->pager_phone, &rfc2426ptr));
 	    if (item->contact->primary_fax != NULL)
-	      fprintf(f->output, "TEL;TYPE=fax,pref:%s\n", rfc2426_escape(item->contact->primary_fax));
+	      fprintf(f->output, "TEL;TYPE=fax,pref:%s\n", rfc2426_escape(item->contact->primary_fax, &rfc2426ptr));
 	    if (item->contact->primary_phone != NULL)
-	      fprintf(f->output, "TEL;TYPE=phone,pref:%s\n", rfc2426_escape(item->contact->primary_phone));
+	      fprintf(f->output, "TEL;TYPE=phone,pref:%s\n", rfc2426_escape(item->contact->primary_phone, &rfc2426ptr));
 	    if (item->contact->radio_phone != NULL)
-	      fprintf(f->output, "TEL;TYPE=pcs:%s\n", rfc2426_escape(item->contact->radio_phone));
+	      fprintf(f->output, "TEL;TYPE=pcs:%s\n", rfc2426_escape(item->contact->radio_phone, &rfc2426ptr));
 	    if (item->contact->telex != NULL)
-	      fprintf(f->output, "TEL;TYPE=bbs:%s\n", rfc2426_escape(item->contact->telex));
+	      fprintf(f->output, "TEL;TYPE=bbs:%s\n", rfc2426_escape(item->contact->telex, &rfc2426ptr));
 	    if (item->contact->job_title != NULL)
-	      fprintf(f->output, "TITLE:%s\n", rfc2426_escape(item->contact->job_title));
+	      fprintf(f->output, "TITLE:%s\n", rfc2426_escape(item->contact->job_title, &rfc2426ptr));
 	    if (item->contact->profession != NULL)
-	      fprintf(f->output, "ROLE:%s\n", rfc2426_escape(item->contact->profession));
+	      fprintf(f->output, "ROLE:%s\n", rfc2426_escape(item->contact->profession, &rfc2426ptr));
 	    if (item->contact->assistant_name != NULL || item->contact->assistant_phone != NULL) {
 	      fputs("AGENT:BEGIN:VCARD\n", f->output);
 	      if (item->contact->assistant_name != NULL)
-		fprintf(f->output, "FN:%s\n", rfc2426_escape(item->contact->assistant_name));
+		fprintf(f->output, "FN:%s\n", rfc2426_escape(item->contact->assistant_name, &rfc2426ptr));
 	      if (item->contact->assistant_phone != NULL)
-		fprintf(f->output, "TEL:%s\n", rfc2426_escape(item->contact->assistant_phone));
+		fprintf(f->output, "TEL:%s\n", rfc2426_escape(item->contact->assistant_phone, &rfc2426ptr));
 		fputs("END:VCARD\n\n", f->output);
 	    }
 	    if (item->contact->company_name != NULL)
-	      fprintf(f->output, "ORG:%s\n", rfc2426_escape(item->contact->company_name));
+	      fprintf(f->output, "ORG:%s\n", rfc2426_escape(item->contact->company_name, &rfc2426ptr));
 	    if (item->comment != NULL)
-	      fprintf(f->output, "NOTE:%s\n", rfc2426_escape(item->comment));
+	      fprintf(f->output, "NOTE:%s\n", rfc2426_escape(item->comment, &rfc2426ptr));
 
 	    fputs("VERSION: 3.0\n", f->output);
 	    fputs("END:VCARD\n\n", f->output);
 	  } else {
 	    fprintf(f->output, "%s <%s>\n", item->contact->fullname, item->contact->address1);
 	  }
-	}
 	// }}}2
       } else if (item->email != NULL &&
 		 (item->type == PST_TYPE_NOTE || item->type == PST_TYPE_REPORT)) {
@@ -5505,11 +5503,11 @@ pst_decode(const char *dir, int desc)
 	}*/
 	fputs("BEGIN:VJOURNAL\n", f->output);
 	if (item->email->subject != NULL)
-	  fprintf(f->output, "SUMMARY:%s\n", rfc2426_escape(item->email->subject->subj));
+	  fprintf(f->output, "SUMMARY:%s\n", rfc2426_escape(item->email->subject->subj, &rfc2426ptr));
 	if (item->email->body != NULL)
-	  fprintf(f->output, "DESCRIPTION:%s\n", rfc2426_escape(item->email->body));
+	  fprintf(f->output, "DESCRIPTION:%s\n", rfc2426_escape(item->email->body, &rfc2426ptr));
 	if (item->journal->start != NULL)
-	  fprintf(f->output, "DTSTART;VALUE=DATE-TIME:%s\n", rfc2445_datetime_format(item->journal->start));
+	  fprintf(f->output, "DTSTART;VALUE=DATE-TIME:%s\n", rfc2445_datetime_format(item->journal->start, rfc2445buffer, sizeof(rfc2445buffer)));
 	fputs("END:VJOURNAL\n\n", f->output);
 	// }}}2
       } else if (item->type == PST_TYPE_APPOINTMENT) {
@@ -5519,19 +5517,19 @@ pst_decode(const char *dir, int desc)
 
 	fputs("BEGIN:VEVENT\n", f->output);
 	if (item->create_date != NULL)
-	  fprintf(f->output, "CREATED:%s\n", rfc2445_datetime_format(item->create_date));
+	  fprintf(f->output, "CREATED:%s\n", rfc2445_datetime_format(item->create_date, rfc2445buffer, sizeof(rfc2445buffer)));
 	if (item->modify_date != NULL)
-	  fprintf(f->output, "LAST-MOD:%s\n", rfc2445_datetime_format(item->modify_date));
+	  fprintf(f->output, "LAST-MOD:%s\n", rfc2445_datetime_format(item->modify_date, rfc2445buffer, sizeof(rfc2445buffer)));
 	if (item->email != NULL && item->email->subject != NULL)
-	  fprintf(f->output, "SUMMARY:%s\n", rfc2426_escape(item->email->subject->subj));
+	  fprintf(f->output, "SUMMARY:%s\n", rfc2426_escape(item->email->subject->subj, &rfc2426ptr));
 	if (item->email != NULL && item->email->body != NULL)
-	  fprintf(f->output, "DESCRIPTION:%s\n", rfc2426_escape(item->email->body));
+	  fprintf(f->output, "DESCRIPTION:%s\n", rfc2426_escape(item->email->body, &rfc2426ptr));
 	if (item->appointment != NULL && item->appointment->start != NULL)
-	  fprintf(f->output, "DTSTART;VALUE=DATE-TIME:%s\n", rfc2445_datetime_format(item->appointment->start));
+	  fprintf(f->output, "DTSTART;VALUE=DATE-TIME:%s\n", rfc2445_datetime_format(item->appointment->start, rfc2445buffer, sizeof(rfc2445buffer)));
 	if (item->appointment != NULL && item->appointment->end != NULL)
-	  fprintf(f->output, "DTEND;VALUE=DATE-TIME:%s\n", rfc2445_datetime_format(item->appointment->end));
+	  fprintf(f->output, "DTEND;VALUE=DATE-TIME:%s\n", rfc2445_datetime_format(item->appointment->end, rfc2445buffer, sizeof(rfc2445buffer)));
 	if (item->appointment != NULL && item->appointment->location != NULL)
-	  fprintf(f->output, "LOCATION:%s\n", rfc2426_escape(item->appointment->location));
+	  fprintf(f->output, "LOCATION:%s\n", rfc2426_escape(item->appointment->location, &rfc2426ptr));
 	if (item->appointment != NULL) {
 	  switch (item->appointment->showas) {
 	  case PST_FREEBUSY_TENTATIVE:
@@ -5615,6 +5613,9 @@ pst_decode(const char *dir, int desc)
       skip_child = 0;
 
   }
+
+      if(rfc2426ptr)
+	free(rfc2426ptr);
 
 	//  fclose(pstfile.fp);
 	while (f != NULL) {
