@@ -744,7 +744,7 @@ int cli_decode_ole_object(int fd, const char *dir)
 	}
 	fullname = cli_malloc(strlen(dir) + 18);
 	sprintf(fullname, "%s/_clam_ole_object", dir);
-	ofd = open(fullname, O_WRONLY|O_CREAT|O_TRUNC, 0600);
+	ofd = open(fullname, O_RDWR|O_CREAT|O_TRUNC, 0600);
 	free(fullname);
         if (ofd < 0) {
 		return -1;
