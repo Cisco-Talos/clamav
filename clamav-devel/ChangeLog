@@ -1,3 +1,7 @@
+Sat May 13 18:14:57 CEST 2006 (tk)
+----------------------------------
+  * libclamav/vba_extract.c: decode_ole_object: return readable file descriptor
+
 Fri May 12 20:04:05 CEST 2006 (tk)
 ----------------------------------
   * clamscan: s/no-algo/no-algorithmic
