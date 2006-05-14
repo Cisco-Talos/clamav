@@ -205,7 +205,7 @@ int main(int argc, char **argv)
 
 	    case 'c':
 		free(confdir);
-		confdir = optarg;
+		confdir = strdup(optarg);
 		break;
 
 	    case 'h':
@@ -239,5 +239,6 @@ int main(int argc, char **argv)
 	return 1;
     }
 
+    free(confdir);
     return 0;
 }
