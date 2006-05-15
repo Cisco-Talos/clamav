@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002, 2003 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,10 +20,13 @@
 #ifndef __OPTIONS_H
 #define __OPTIONS_H
 
+#define _GNU_SOURCE
+#include "getopt.h"
+
 struct optnode {
-    char optchar;
+    char optshort;
+    char *optlong;
     char *optarg;
-    char *optname;
     struct optnode *next;
 };
 
@@ -32,16 +35,16 @@ struct optstruct {
     char *filename;
 };
 
-int optc(const struct optstruct *opt, char ch);
-int optl(const struct optstruct *opt, const char *optname);
-void register_char_option(struct optstruct *opt, char ch, const char *longname);
-void register_long_option(struct optstruct *opt, const char *optname);
-char *getargc(const struct optstruct *opt, char ch);
-char *getfirstargc(const struct optstruct *opt, char ch, struct optnode **optnode);
-char *getnextargc(struct optnode **optnode, char ch);
-char *getargl(const struct optstruct *opt, const char *optname);
-char *getfirstargl(const struct optstruct *opt, const char *optname, struct optnode **optnode);
-char *getnextargl(struct optnode **optnode, const char *optname);
-void free_opt(struct optstruct *opt);
+void opt_free(struct optstruct *opt);
+
+struct optstruct *opt_parse(int argc, char * const *argv, const char *getopt_short, const struct option *options_long, const char **accepted_long);
+
+int opt_check(const struct optstruct *opt, char *optlong);
+
+char *opt_arg(const struct optstruct *opt, char *optlong);
+
+char *opt_firstarg(const struct optstruct *opt, const char *optlong, const struct optnode **optnode);
+
+char *opt_nextarg(const struct optnode **optnode, const char *optlong);
 
 #endif

@@ -38,11 +38,6 @@ int checkfile(const char *filename, const struct cl_node *root, const struct cl_
 
 int checkstdin(const struct cl_node *root, const struct cl_limits *limits, int options);
 
-#ifdef CLAMSCAN_THREADS
- int thr_exitno, thr_pid;
- void thr_exit(int sig);
-#endif
-
 int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struct passwd *user, const struct optstruct *opt);
 
 void move_infected(const char *filename, const struct optstruct *opt);

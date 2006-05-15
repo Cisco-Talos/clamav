@@ -77,7 +77,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 #ifdef HAVE_RESOLV_H
     dnsdbinfo = cfgopt(copt, "DNSDatabaseInfo")->strarg;
 
-    if(optl(opt, "no-dns")) {
+    if(opt_check(opt, "no-dns")) {
 	dnsreply = NULL;
     } else {
 	if((dnsreply = txtquery(dnsdbinfo, &ttl))) {
@@ -139,8 +139,8 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
     }
 #endif /* HAVE_RESOLV_H */
 
-    if(optl(opt, "local-address")) {
-        localip = getargl(opt, "local-address");
+    if(opt_check(opt, "local-address")) {
+        localip = opt_arg(opt, "local-address");
     } else if((cpt = cfgopt(copt, "LocalIPAddress"))->enabled) {
 	localip = cpt->strarg;
     }
@@ -183,8 +183,8 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	}
 
 #ifdef BUILD_CLAMD
-	if(optl(opt, "daemon-notify")) {
-		const char *clamav_conf = getargl(opt, "daemon-notify");
+	if(opt_check(opt, "daemon-notify")) {
+		const char *clamav_conf = opt_arg(opt, "daemon-notify");
 	    if(!clamav_conf)
 		clamav_conf = CONFDIR"/clamd.conf";
 
@@ -194,13 +194,13 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	}
 #endif
 
-	if(optl(opt, "on-update-execute"))
-	    arg = getargl(opt, "on-update-execute");
+	if(opt_check(opt, "on-update-execute"))
+	    arg = opt_arg(opt, "on-update-execute");
 	else if((cpt = cfgopt(copt, "OnUpdateExecute"))->enabled)
 	    arg = cpt->strarg;
 
 	if(arg) {
-	    if(optc(opt, 'd'))
+	    if(opt_check(opt, "daemon"))
 		execute("OnUpdateExecute", arg);
             else
 		system(arg);
@@ -208,8 +208,8 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
     }
 
     if(outdated) {
-	if(optl(opt, "on-outdated-execute"))
-	    arg = getargl(opt, "on-outdated-execute");
+	if(opt_check(opt, "on-outdated-execute"))
+	    arg = opt_arg(opt, "on-outdated-execute");
 	else if((cpt = cfgopt(copt, "OnOutdatedExecute"))->enabled)
 	    arg = cpt->strarg;
 
@@ -227,7 +227,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 		free(buffer);
 	    }
 
-	    if(optc(opt, 'd'))
+	    if(opt_check(opt, "daemon"))
 		execute("OnOutdatedExecute", cmd);
 	    else
 		system(cmd);

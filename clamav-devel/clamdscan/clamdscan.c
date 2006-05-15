@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -37,53 +37,65 @@
 #include "output.h"
 #include "misc.h"
 
+#include "clamscan_opt.h"
+
 void help(void);
 
 short printinfected = 0;
 
 extern int notremoved, notmoved;
 
-
-void clamscan(struct optstruct *opt)
+int main(int argc, char **argv)
 {
 	int ds, dms, ret, infected;
 	struct timeval t1, t2;
 	struct timezone tz;
 	time_t starttime;
+	struct optstruct *opt;
+	char *clamdscan_accepted[] = { "help", "version", "verbose", "quiet",
+				  "stdout", "log", "move", "remove",
+				  "config-file", "no-summary",
+				  "disable-summary", NULL };
 
 
-    /* initialize some important variables */
+    opt = opt_parse(argc, argv, clamscan_shortopt, clamscan_longopt, clamdscan_accepted);
+    if(!opt) {
+	mprintf("!Can't parse the command line\n");
+	return 2;
+    }
 
-    if(optc(opt, 'v')) {
+    if(opt_check(opt, "verbose")) {
 	mprintf_verbose = 1;
 	logg_verbose = 1;
     }
 
-    if(optl(opt, "quiet"))
+    if(opt_check(opt, "quiet"))
 	mprintf_quiet = 1;
 
-    if(optl(opt, "stdout"))
+    if(opt_check(opt, "stdout"))
 	mprintf_stdout = 1;
 
-    if(optc(opt, 'V')) {
+    if(opt_check(opt, "version")) {
 	print_version();
+	opt_free(opt);
 	exit(0);
     }
 
-    if(optc(opt, 'h')) {
-	free_opt(opt);
+    if(opt_check(opt, "help")) {
+	opt_free(opt);
     	help();
     }
 
-    if(optc(opt, 'i'))
+    if(opt_check(opt, "infected"))
 	printinfected = 1;
 
     /* initialize logger */
 
-    if(optc(opt, 'l')) {
-	logg_file = getargc(opt, 'l');
+    if(opt_check(opt, "log")) {
+	logg_file = opt_arg(opt, "log");
 	if(logg("--------------------------------------\n")) {
 	    mprintf("!Problem with internal logger.\n");
+	    opt_free(opt);
 	    exit(2);
 	}
     } else 
@@ -97,8 +109,8 @@ void clamscan(struct optstruct *opt)
 
     ret = client(opt, &infected);
 
-/* Implement STATUS in clamd */
-    if(!optl(opt, "disable-summary") && !optl(opt, "no-summary")) {
+    /* TODO: Implement STATUS in clamd */
+    if(!opt_check(opt, "disable-summary") && !opt_check(opt, "no-summary")) {
 	gettimeofday(&t2, &tz);
 	ds = t2.tv_sec - t1.tv_sec;
 	dms = t2.tv_usec - t1.tv_usec;
@@ -115,6 +127,7 @@ void clamscan(struct optstruct *opt)
 	logg("Time: %d.%3.3d sec (%d m %d s)\n", ds, dms/1000, ds/60, ds%60);
     }
 
+    opt_free(opt);
     exit(ret);
 }
 
@@ -137,6 +150,7 @@ void help(void)
     mprintf("    --remove                           Remove infected files. Be careful!\n");
     mprintf("    --move=DIRECTORY                   Move infected files into DIRECTORY\n");
     mprintf("    --config-file=FILE                 Read configuration from FILE.\n");
+    mprintf("    --infected            -i             Only print infected files\n");
     mprintf("    --no-summary                       Disable summary at end of scanning\n");
     mprintf("\n");
 

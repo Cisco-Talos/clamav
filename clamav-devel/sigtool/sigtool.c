@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -71,29 +71,60 @@ int listdir(const char *dirname);
 void listsigs(struct optstruct *opt);
 
 
-void sigtool(struct optstruct *opt)
+int main(int argc, char **argv)
 {
+        struct optstruct *opt;
+	const char *short_options = "hvVb:i:u:l::";
+	static struct option long_options[] = {
+	    {"help", 0, 0, 'h'},
+	    {"quiet", 0, 0, 0},
+	    {"debug", 0, 0, 0},
+	    {"verbose", 0, 0, 'v'},
+	    {"stdout", 0, 0, 0},
+	    {"version", 0, 0, 'V'},
+	    {"tempdir", 1, 0, 0},
+	    {"hex-dump", 0, 0, 0},
+	    {"md5", 0, 0, 0},
+	    {"html-normalise", 1, 0, 0},
+	    {"build", 1, 0, 'b'},
+	    {"server", 1, 0, 0},
+	    {"unpack", 1, 0, 'u'},
+	    {"unpack-current", 1, 0, 0},
+	    {"info", 1, 0, 'i'},
+	    {"list-sigs", 2, 0, 'l'},
+	    {"vba", 1, 0 ,0},
+	    {"vba-hex", 1, 0, 0},
+	    {0, 0, 0, 0}
+    	};
 
-    if(optl(opt, "quiet"))
+
+    opt = opt_parse(argc, argv, short_options, long_options, NULL);
+    if(!opt) {
+	mprintf("!Can't parse the command line\n");
+	return 1;
+    }
+
+    if(opt_check(opt, "quiet"))
 	mprintf_quiet = 1;
 
-    if(optl(opt, "stdout"))
+    if(opt_check(opt, "stdout"))
 	mprintf_stdout = 1;
 
-    if(optl(opt, "debug"))
+    if(opt_check(opt, "debug"))
 	cl_debug();
 
-    if(optc(opt, 'V')) {
+    if(opt_check(opt, "version")) {
 	print_version();
+	opt_free(opt);
 	exit(0);
     }
 
-    if(optc(opt, 'h')) {
-	free_opt(opt);
+    if(opt_check(opt, "help")) {
+	opt_free(opt);
     	help();
     }
 
-    if(optl(opt, "hex-dump")) {
+    if(opt_check(opt, "hex-dump")) {
 	    char buffer[FILEBUFF];
 	    int bytes;
 	    char *pt;
@@ -104,7 +135,7 @@ void sigtool(struct optstruct *opt)
 	    free(pt);
 	}
 
-    } else if(optl(opt, "md5")) {
+    } else if(opt_check(opt, "md5")) {
 	    char *md5, *filename;
 	    int i;
 	    struct stat sb;
@@ -137,11 +168,12 @@ void sigtool(struct optstruct *opt)
 	    free(md5);
 	}
 
-    } else if(optl(opt, "html-normalise")) {
+    } else if(opt_check(opt, "html-normalise")) {
 	    int fd;
 
-	if((fd = open(getargl(opt, "html-normalise"), O_RDONLY)) == -1) {
-	    logg("Can't open file %s\n", getargl(opt, "html-normalise"));
+	if((fd = open(opt_arg(opt, "html-normalise"), O_RDONLY)) == -1) {
+	    logg("Can't open file %s\n", opt_arg(opt, "html-normalise"));
+	    opt_free(opt);
 	    exit(1);
 	}
 
@@ -149,48 +181,52 @@ void sigtool(struct optstruct *opt)
 
 	close(fd);
 
-    } else if(optc(opt, 'b')) {
-	if(!optl(opt, "server")) {
+    } else if(opt_check(opt, "build")) {
+	if(!opt_check(opt, "server")) {
 	    logg("!--server is required in this mode\n");
+	    opt_free(opt);
 	    exit(10);
 	}
 
 	build(opt);
 
-    } else if(optc(opt, 'u')) {
+    } else if(opt_check(opt, "unpack")) {
 
 	unpack(opt);
 
-    } else if(optl(opt, "unpack-current")) {
+    } else if(opt_check(opt, "unpack-current")) {
 
 	unpack(opt);
 
-    } else if(optc(opt, 'i')) {
+    } else if(opt_check(opt, "info")) {
 
 	cvdinfo(opt);
 
-    } else if(optc(opt, 'l')) {
+    } else if(opt_check(opt, "list-sigs")) {
 
 	listsigs(opt);
 
-    } else if(optl(opt, "vba") || optl(opt, "vba-hex")) {
+    } else if(opt_check(opt, "vba") || opt_check(opt, "vba-hex")) {
             int fd, hex_output=0;
 	    char *dir;
 
 
-	if (optl(opt, "vba-hex"))
+	if (opt_check(opt, "vba-hex"))
 		hex_output = 1;
  
         /* generate the temporary directory */
         dir = cli_gentemp(NULL);
         if(mkdir(dir, 0700)) {
             logg("vba dump: Can't create temporary directory %s\n", dir);
-            return;
+	    free(dir);
+	    opt_free(opt);
+            return 1;
         }
 
-        if((fd = open(getargl(opt, "vba"), O_RDONLY)) == -1) {
-	    if((fd = open(getargl(opt, "vba-hex"), O_RDONLY)) == -1) {
-        	logg("Can't open file %s\n", getargl(opt, "vba"));
+        if((fd = open(opt_arg(opt, "vba"), O_RDONLY)) == -1) {
+	    if((fd = open(opt_arg(opt, "vba-hex"), O_RDONLY)) == -1) {
+        	logg("Can't open file %s\n", opt_arg(opt, "vba"));
+		opt_free(opt);
         	exit(1);
 	    }
         }
@@ -199,7 +235,8 @@ void sigtool(struct optstruct *opt)
             cli_rmdirs(dir);
             free(dir);
 	    close(fd);
-            return;
+	    opt_free(opt);
+            return 1;
         }
 
 	close(fd);
@@ -249,11 +286,13 @@ int build(struct optstruct *opt)
 
     if(stat("COPYING", &foo) == -1) {
 	logg("COPYING file not found in current working directory.\n");
+	opt_free(opt);
 	exit(1);
     }
 
     if(stat("main.db", &foo) == -1 && stat("daily.db", &foo) == -1 && stat("main.hdb", &foo) == -1 && stat("daily.hdb", &foo) == -1 && stat("main.ndb", &foo) == -1 && stat("daily.ndb", &foo) == -1 && stat("main.zmd", &foo) == -1 && stat("main.rmd", &foo) == -1 && stat("daily.zmd", &foo) == -1 && stat("daily.rmd", &foo) == -1) {
 	logg("Virus database not found in current working directory.\n");
+	opt_free(opt);
 	exit(1);
     }
 
@@ -261,6 +300,7 @@ int build(struct optstruct *opt)
 
     if((ret = cl_loaddbdir(".", &root, &no))) {
 	logg("!Can't load database: %s\n", cl_strerror(ret));
+	opt_free(opt);
 	exit(1);
     }
 
@@ -277,6 +317,7 @@ int build(struct optstruct *opt)
 	    logg("!Signatures in database: %d. Loaded: %d.\n", realno, no);
 	    logg("Please check the current directory and remove unnecessary databases\n");
 	    logg("or install the latest ClamAV version.\n");
+	    opt_free(opt);
 	    exit(1);
 	}
     }
@@ -286,6 +327,7 @@ int build(struct optstruct *opt)
     switch(fork()) {
 	case -1:
 	    logg("!Can't fork.\n");
+	    opt_free(opt);
 	    exit(1);
 	case 0:
 	    {
@@ -294,6 +336,7 @@ int build(struct optstruct *opt)
 		execv("/bin/tar", args);
 		logg("!Can't execute tar\n");
 		perror("tar");
+		opt_free(opt);
 		exit(1);
 	    }
 	default:
@@ -302,17 +345,20 @@ int build(struct optstruct *opt)
 
     if(stat(tarfile, &foo) == -1) {
 	logg("!Can't generate tar file.\n");
+	opt_free(opt);
 	exit(1);
     }
 
     if((tar = fopen(tarfile, "rb")) == NULL) {
 	logg("!Can't open file %s\n", tarfile);
+	opt_free(opt);
 	exit(1);
     }
 
     gzfile = cli_gentemp(".");
     if((gz = gzopen(gzfile, "wb")) == NULL) {
 	logg("!Can't open file %s to write.\n", gzfile);
+	opt_free(opt);
 	exit(1);
     }
 
@@ -328,7 +374,7 @@ int build(struct optstruct *opt)
 
     /* try to read cvd header of old database */
     dbdir = freshdbdir();
-    sprintf(buffer, "%s/%s", dbdir, getargc(opt, 'b'));
+    sprintf(buffer, "%s/%s", dbdir, opt_arg(opt, "build"));
     free(dbdir);
     if((oldcvd = cl_cvdhead(buffer)) == NULL)
 	logg("^CAN'T READ CVD HEADER OF CURRENT DATABASE %s\n", buffer);
@@ -385,9 +431,10 @@ int build(struct optstruct *opt)
     pt = cli_md5stream(fd, buffer);
     fclose(fd);
     free(pt);
-    if(!(pt = getdsig(getargl(opt, "server"), smbuff, buffer))) {
+    if(!(pt = getdsig(opt_arg(opt, "server"), smbuff, buffer))) {
 	logg("No digital signature - no CVD file...\n");
 	unlink(gzfile);
+	opt_free(opt);
 	exit(1);
     }
 
@@ -408,10 +455,11 @@ int build(struct optstruct *opt)
 
     /* build the final database */
 
-    pt = getargc(opt, 'b');
+    pt = opt_arg(opt, "build");
     if((cvd = fopen(pt, "wb")) == NULL) {
 	logg("!Can't write the final database %s\n", pt);
 	unlink(gzfile);
+	opt_free(opt);
 	exit(1);
     }
 
@@ -419,6 +467,7 @@ int build(struct optstruct *opt)
 
     if((tar = fopen(gzfile, "rb")) == NULL) {
 	logg("!Can't open file %s for reading.\n", gzfile);
+	opt_free(opt);
 	exit(1);
     }
 
@@ -443,9 +492,10 @@ void cvdinfo(struct optstruct *opt)
 	char *pt;
 	int ret;
 
-    pt = getargc(opt, 'i');
+    pt = opt_arg(opt, "info");
     if((cvd = cl_cvdhead(pt)) == NULL) {
 	logg("!Can't read/parse CVD header from %s\n", pt);
+	opt_free(opt);
 	exit(1);
     }
 
@@ -541,17 +591,18 @@ int unpack(struct optstruct *opt)
 	int fd;
 	char *name, *dbdir;
 
-    if(optl(opt, "unpack-current")) {
+    if(opt_check(opt, "unpack-current")) {
 	dbdir = freshdbdir();
-	name = mcalloc(strlen(dbdir) + strlen(getargl(opt, "unpack-current")) + 2, sizeof(char));
-	sprintf(name, "%s/%s", dbdir, getargl(opt, "unpack-current"));
+	name = mcalloc(strlen(dbdir) + strlen(opt_arg(opt, "unpack-current")) + 2, sizeof(char));
+	sprintf(name, "%s/%s", dbdir, opt_arg(opt, "unpack-current"));
 	free(dbdir);
     } else
-	name = strdup(getargc(opt, 'u'));
+	name = strdup(opt_arg(opt, "unpack"));
 
     if((fd = open(name, O_RDONLY|O_BINARY)) == -1) {
 	logg("!Can't open CVD file %s\n", name);
 	free(name);
+	opt_free(opt);
 	exit(1);
     }
 
@@ -561,10 +612,12 @@ int unpack(struct optstruct *opt)
     if(cli_untgz(fd, ".")) {
 	logg("!Can't unpack file.\n");
 	close(fd);
+	opt_free(opt);
 	exit(1);
     }
 
     close(fd);
+    opt_free(opt);
     exit(0);
 }
 
@@ -791,7 +844,7 @@ void listsigs(struct optstruct *opt)
 
     mprintf_stdout = 1;
 
-    if((name = getargc(opt, 'l'))) {
+    if((name = opt_arg(opt, "list-sigs"))) {
 	ret = listdb(name);
     } else {
 	dbdir = freshdbdir();
@@ -799,6 +852,7 @@ void listsigs(struct optstruct *opt)
 	free(dbdir);
     }
 
+    opt_free(opt);
     ret ? exit(1) : exit(0);
 }
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -80,7 +80,7 @@ static int dsresult(int sockd, const struct optstruct *opt)
 	if(strstr(buff, "FOUND\n")) {
 	    infected++;
 	    logg("%s", buff);
-	    if(optl(opt, "move")) {
+	    if(opt_check(opt, "move")) {
 		/* filename: Virus FOUND */
 		if((pt = strrchr(buff, ':'))) {
 		    *pt = 0;
@@ -89,7 +89,7 @@ static int dsresult(int sockd, const struct optstruct *opt)
 		    mprintf("@Broken data format. File not moved.\n");
 		}
 
-	    } else if(optl(opt, "remove")) {
+	    } else if(opt_check(opt, "remove")) {
 		if(!(pt = strrchr(buff, ':'))) {
 		    mprintf("@Broken data format. File not removed.\n");
 		} else {
@@ -316,7 +316,7 @@ static int dconnect(const struct optstruct *opt)
 	struct sockaddr_in server2;
 	struct hostent *he;
 	struct cfgstruct *copt, *cpt;
-	const char *clamav_conf = getargl(opt, "config-file");
+	const char *clamav_conf = opt_arg(opt, "config-file");
 	int sockd;
 
 
@@ -496,9 +496,9 @@ void move_infected(const char *filename, const struct optstruct *opt)
 	struct utimbuf ubuf;
 
 
-    if(!(movedir = getargl(opt, "move"))) {
+    if(!(movedir = opt_arg(opt, "move"))) {
         /* Should never reach here */
-        logg("^getargc() returned NULL\n");
+        logg("^opt_arg() returned NULL\n");
         notmoved++;
         return;
     }

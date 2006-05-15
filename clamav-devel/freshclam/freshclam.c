@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -93,8 +93,7 @@ static void writepid(char *pidfile) {
     umask(old_umask);
 }
 
-
-int freshclam(struct optstruct *opt)
+int main(int argc, char **argv)
 {
 	int ret = 52;
 	char *newdir, *cfgfile;
@@ -107,14 +106,48 @@ int freshclam(struct optstruct *opt)
 	struct passwd *user;
 #endif
 	struct stat statbuf;
+	struct optstruct *opt;
+	const char *short_options = "hvdp:Vl:c:u:a:";
+	static struct option long_options[] = {
+	    {"help", 0, 0, 'h'},
+	    {"quiet", 0, 0, 0},
+	    {"verbose", 0, 0, 'v'},
+	    {"debug", 0, 0, 0},
+	    {"version", 0, 0, 'V'},
+	    {"datadir", 1, 0, 0},
+	    {"log", 1, 0, 'l'},
+	    {"log-verbose", 0, 0, 0}, /* not used */
+	    {"stdout", 0, 0, 0},
+	    {"daemon", 0, 0, 'd'},
+	    {"pid", 1, 0, 'p'},
+	    {"user", 1, 0, 'u'}, /* not used */
+	    {"config-file", 1, 0, 0},
+	    {"no-dns", 0, 0, 0},
+	    {"checks", 1, 0, 'c'},
+	    {"http-proxy", 1, 0, 0},
+	    {"local-address", 1, 0, 'a'},
+	    {"proxy-user", 1, 0, 0},
+	    {"daemon-notify", 2, 0, 0},
+	    {"on-update-execute", 1, 0, 0},
+	    {"on-error-execute", 1, 0, 0},
+	    {"on-outdated-execute", 1, 0, 0},
+	    {0, 0, 0, 0}
+    	};
 
-    if(optc(opt, 'h')) {
-	free_opt(opt);
+
+    opt = opt_parse(argc, argv, short_options, long_options, NULL);
+    if(!opt) {
+	mprintf("!Can't parse the command line\n");
+	return 40;
+    }
+
+    if(opt_check(opt, "help")) {
+	opt_free(opt);
     	help();
     }
 
     /* parse the config file */
-    if((cfgfile = getargl(opt, "config-file"))) {
+    if((cfgfile = opt_arg(opt, "config-file"))) {
 	copt = getcfg(cfgfile, 1);
     } else {
 	/* TODO: force strict permissions on freshclam.conf */
@@ -124,20 +157,23 @@ int freshclam(struct optstruct *opt)
 
     if(!copt) {
 	logg("!Can't parse the config file %s\n", cfgfile);
+	opt_free(opt);
 	return 56;
     }
 
-    if(optl(opt, "http-proxy") || optl(opt, "proxy-user"))
+    if(opt_check(opt, "http-proxy") || opt_check(opt, "proxy-user"))
 	logg("WARNING: Proxy settings are now only configurable in the config file.\n");
 
     if(cfgopt(copt, "HTTPProxyPassword")->enabled) {
 	if(stat(cfgfile, &statbuf) == -1) {
 	    logg("^Can't stat %s (critical error)\n", cfgfile);
+	    opt_free(opt);
 	    return 56;
 	}
 #ifndef C_CYGWIN
 	if(statbuf.st_mode & (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH)) {
 	    logg("^Insecure permissions (for HTTPProxyPassword): %s must have no more than 0700 permissions.\n", cfgfile);
+	    opt_free(opt);
 	    return 56;
 	}
 #endif
@@ -145,8 +181,8 @@ int freshclam(struct optstruct *opt)
 
 #if !defined(C_CYGWIN)  && !defined(C_OS2)
     /* freshclam shouldn't work with root privileges */
-    if(optc(opt, 'u')) {
-	unpuser = getargc(opt, 'u');
+    if(opt_check(opt, "user")) {
+	unpuser = opt_arg(opt, "user");
     } else if((cpt = cfgopt(copt, "DatabaseOwner"))->enabled) {
 	unpuser = cpt->strarg;
     } else {
@@ -189,19 +225,19 @@ int freshclam(struct optstruct *opt)
 
     /* initialize some important variables */
 
-    if(optl(opt, "debug") || cfgopt(copt, "Debug")->enabled)
+    if(opt_check(opt, "debug") || cfgopt(copt, "Debug")->enabled)
 	cl_debug();
 
-    if(optc(opt, 'v'))
+    if(opt_check(opt, "verbose"))
 	mprintf_verbose = 1;
 
-    if(optl(opt, "quiet"))
+    if(opt_check(opt, "quiet"))
 	mprintf_quiet = 1;
 
-    if(optl(opt, "stdout"))
+    if(opt_check(opt, "stdout"))
 	mprintf_stdout = 1;
 
-    if(optc(opt, 'V')) {
+    if(opt_check(opt, "version")) {
 	print_version();
 	exit(0);
     }
@@ -211,8 +247,8 @@ int freshclam(struct optstruct *opt)
     if(cfgopt(copt, "LogVerbose")->enabled)
 	logg_verbose = 1;
 
-    if(optc(opt, 'l')) {
-	logg_file = getargc(opt, 'l');
+    if(opt_check(opt, "log")) {
+	logg_file = opt_arg(opt, "log");
 	if(logg("#--------------------------------------\n")) {
 	    mprintf("!Problem with internal logger.\n");
 	    exit(62);
@@ -243,8 +279,8 @@ int freshclam(struct optstruct *opt)
 #endif
 
     /* change the current working directory */
-    if(optl(opt, "datadir"))
-	newdir = getargl(opt, "datadir");
+    if(opt_check(opt, "datadir"))
+	newdir = opt_arg(opt, "datadir");
     else
 	newdir = cfgopt(copt, "DatabaseDirectory")->strarg;
 
@@ -255,15 +291,15 @@ int freshclam(struct optstruct *opt)
 	logg("*Current working dir is %s\n", newdir);
 
 
-    if(optc(opt, 'd')) {
+    if(opt_check(opt, "daemon")) {
 	    int bigsleep, checks;
 	    time_t now, wakeup;
 
 	memset(&sigact, 0, sizeof(struct sigaction));
 	sigact.sa_handler = daemon_sighandler;
 
-	if(optc(opt, 'c'))
-	    checks = atoi(getargc(opt, 'c'));
+	if(opt_check(opt, "checks"))
+	    checks = atoi(opt_arg(opt, "checks"));
 	else
 	    checks = cfgopt(copt, "Checks")->numarg;
 
@@ -272,7 +308,7 @@ int freshclam(struct optstruct *opt)
 	    exit(41);
 	}
 
-	if(!cfgopt(copt, "DNSDatabaseInfo")->enabled || optl(opt, "no-dns")) {
+	if(!cfgopt(copt, "DNSDatabaseInfo")->enabled || opt_check(opt, "no-dns")) {
 	    if(checks > 50) {
 		logg("^Number of checks must be between 1 and 50.\n");
 		exit(41);
@@ -286,8 +322,8 @@ int freshclam(struct optstruct *opt)
 	    daemonize();
         }
 
-	if (optc(opt, 'p')) {
-	    pidfile = getargc(opt, 'p');
+	if(opt_check(opt, "pid")) {
+	    pidfile = opt_arg(opt, "pid");
 	} else if ((cpt = cfgopt(copt, "PidFile"))->enabled) {
 	    pidfile = cpt->strarg;
 	}
@@ -310,8 +346,8 @@ int freshclam(struct optstruct *opt)
             if(ret > 1) {
 		    const char *arg = NULL;
 
-	        if(optl(opt, "on-error-execute"))
-		    arg = getargl(opt, "on-error-execute");
+	        if(opt_check(opt, "on-error-execute"))
+		    arg = opt_arg(opt, "on-error-execute");
 		else if((cpt = cfgopt(copt, "OnErrorExecute"))->enabled)
 		    arg = cpt->strarg;
 
@@ -346,9 +382,9 @@ int freshclam(struct optstruct *opt)
     } else
 	ret = download(copt, opt);
 
-    if(optl(opt, "on-error-execute")) {
+    if(opt_check(opt, "on-error-execute")) {
 	if(ret > 1)
-	    system(getargl(opt, "on-error-execute"));
+	    system(opt_arg(opt, "on-error-execute"));
 
     } else if((cpt = cfgopt(copt, "OnErrorExecute"))->enabled) {
 	if(ret > 1)
@@ -358,6 +394,7 @@ int freshclam(struct optstruct *opt)
         unlink(pidfile);
     }
 
+    opt_free(opt);
     return(ret);
 }
 

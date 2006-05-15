@@ -28,7 +28,7 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "options.h"
+#include "clamscan_opt.h"
 #include "others.h"
 #include "shared.h"
 #include "manager.h"
@@ -37,6 +37,7 @@
 #include "misc.h"
 
 #include "output.h"
+#include "options.h"
 
 #ifdef C_LINUX
 #include <sys/resource.h>
@@ -47,27 +48,35 @@ void help(void);
 struct s_info claminfo;
 short recursion = 0, printinfected = 0, bell = 0;
 
-int clamscan(struct optstruct *opt)
+int main(int argc, char **argv)
 {
 	int ds, dms, ret;
 	double mb;
 	struct timeval t1, t2;
 	struct timezone tz;
+	struct optstruct *opt;
+	const char *pt;
 
-    /* initialize some important variables */
 
-    if(optc(opt, 'v')) {
+    opt = opt_parse(argc, argv, clamscan_shortopt, clamscan_longopt, NULL);
+    if(!opt) {
+	mprintf("!Can't parse the command line\n");
+	return 40;
+    }
+
+    if(opt_check(opt, "verbose")) {
 	mprintf_verbose = 1;
 	logg_verbose = 1;
     }
 
-    if(optl(opt, "quiet"))
+    if(opt_check(opt, "quiet"))
 	mprintf_quiet = 1;
 
-    if(optl(opt, "stdout"))
+    if(opt_check(opt, "stdout"))
 	mprintf_stdout = 1;
 
-    if(optl(opt, "debug")) {
+
+    if(opt_check(opt, "debug")) {
 #if defined(C_LINUX)
 	    /* njh@bandsman.co.uk: create a dump if needed */
 	    struct rlimit rlim;
@@ -79,82 +88,96 @@ int clamscan(struct optstruct *opt)
 	cl_debug(); /* enable debug messages */
     }
 
-    if(optc(opt, 'V')) {
+    if(opt_check(opt, "version")) {
+	opt_free(opt);
 	print_version();
 	return 0;
     }
 
-    if(optc(opt, 'h')) {
-	free_opt(opt);
+    if(opt_check(opt, "help")) {
+	opt_free(opt);
     	help();
+	return 0;
     }
 
-    /* check other options */
-
-    if(optc(opt, 'r'))
+    if(opt_check(opt, "recursive"))
 	recursion = 1;
 
-    if(optc(opt, 'i'))
+    if(opt_check(opt, "infected"))
 	printinfected = 1;
 
-    if(optl(opt, "bell"))
+    if(opt_check(opt, "bell"))
 	bell = 1;
 
-    if(optl(opt, "tempdir"))
-	cl_settempdir(getargl(opt, "tempdir"), 0);
+    if(opt_check(opt, "tempdir"))
+	cl_settempdir(opt_arg(opt, "tempdir"), 0);
 
-    if(optl(opt, "leave-temps"))
+    if(opt_check(opt, "leave-temps"))
 	cl_settempdir(NULL, 1);
 
     /* initialize logger */
-
-    if(optc(opt, 'l')) {
-	logg_file = getargc(opt, 'l');
+    if(opt_check(opt, "logger")) {
+	logg_file = opt_arg(opt, "logger");
 	if(logg("#\n-------------------------------------------------------------------------------\n\n")) {
 	    mprintf("!Problem with internal logger.\n");
+	    opt_free(opt);
 	    return 62;
 	}
     } else 
 	logg_file = NULL;
 
-    /* we need some pre-checks */
-    if(optl(opt, "max-space"))
-	if(!strchr(getargl(opt, "max-space"), 'M') && !strchr(getargl(opt, "max-space"), 'm'))
-	    if(!isnumb(getargl(opt, "max-space"))) {
-		logg("!--max-space requires natural number.\n");
+
+    /* validate some numerical options */
+
+    if(opt_check(opt, "max-space")) {
+	pt = opt_arg(opt, "max-space");
+	if(!strchr(pt, 'M') && !strchr(pt, 'm')) {
+	    if(!isnumb(pt)) {
+		logg("!--max-space requires a natural number\n");
+		opt_free(opt);
 		return 40;
 	    }
+	}
+    }
 
-    if(optl(opt, "max-files"))
-	if(!isnumb(getargl(opt, "max-files"))) {
-	    logg("!--max-files requires natural number.\n");
+    if(opt_check(opt, "max-files")) {
+	if(!isnumb(opt_arg(opt, "max-files"))) {
+	    logg("!--max-files requires a natural number\n");
+	    opt_free(opt);
 	    return 40;
 	}
+    }
 
-    if(optl(opt, "max-recursion"))
-	if(!isnumb(getargl(opt, "max-recursion"))) {
-	    logg("!--max-recursion requires natural number.\n");
+    if(opt_check(opt, "max-recursion")) {
+	if(!isnumb(opt_arg(opt, "max-recursion"))) {
+	    logg("!--max-recursion requires a natural number\n");
+	    opt_free(opt);
 	    return 40;
 	}
+    }
 
-    if(optl(opt, "max-dir-recursion"))
-	if(!isnumb(getargl(opt, "max-dir-recursion"))) {
-	    logg("!--max-dir-recursion requires natural number.\n");
+    if(opt_check(opt, "max-dir-recursion")) {
+	if(!isnumb(opt_arg(opt, "max-dir-recursion"))) {
+	    logg("!--max-dir-recursion requires a natural number\n");
+	    opt_free(opt);
 	    return 40;
 	}
+    }
 
-    if(optl(opt, "max-ratio"))
-	if(!isnumb(getargl(opt, "max-ratio"))) {
-	    logg("!--max-ratio requires natural number.\n");
+    if(opt_check(opt, "max-ratio")) {
+	if(!isnumb(opt_arg(opt, "max-ratio"))) {
+	    logg("!--max-ratio requires a natural number\n");
+	    opt_free(opt);
 	    return 40;
 	}
+    }
 
     memset(&claminfo, 0, sizeof(struct s_info));
 
     gettimeofday(&t1, &tz);
     ret = scanmanager(opt);
 
-    if(!optl(opt, "disable-summary") && !optl(opt, "no-summary")) {
+    if(!opt_check(opt, "disable-summary") && !opt_check(opt, "no-summary")) {
 	gettimeofday(&t2, &tz);
 	ds = t2.tv_sec - t1.tv_sec;
 	dms = t2.tv_usec - t1.tv_usec;
@@ -162,7 +185,7 @@ int clamscan(struct optstruct *opt)
 	dms += (dms < 0) ? (1000000):(0);
 	logg("\n----------- SCAN SUMMARY -----------\n");
 	logg("Known viruses: %d\n", claminfo.signs);
-	if(optl(opt, "hwaccel"))
+	if(opt_check(opt, "hwaccel"))
 	    logg("Engine version: %s [hwaccel]\n", cl_retver());
 	else
 	    logg("Engine version: %s\n", cl_retver());
@@ -177,14 +200,10 @@ int clamscan(struct optstruct *opt)
 	}
 	mb = claminfo.blocks * (CL_COUNT_PRECISION / 1024) / 1024.0;
 	logg("Data scanned: %2.2lf MB\n", mb);
-/*
-	mprintf("I/O buffer size: %d bytes\n", SCANBUFF);
-	    logg("I/O buffer size: %d bytes\n", SCANBUFF);
-*/
-
 	logg("Time: %d.%3.3d sec (%d m %d s)\n", ds, dms/1000, ds/60, ds%60);
     }
 
+    opt_free(opt);
     return ret;
 }
 
@@ -262,6 +281,4 @@ void help(void)
     mprintf("    --tar[=FULLPATH]                     Enable support for .tar files\n");
     mprintf("    --deb[=FULLPATH to ar]               Enable support for .deb files\n");
     mprintf("    --tgz[=FULLPATH]                     Enable support for .tar.gz, .tgz files\n\n");
-
-    exit(0);
 }
