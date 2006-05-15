@@ -53,27 +53,27 @@ int treewalk(const char *dirname, struct cl_node *root, const struct passwd *use
 	char *argument;
 
 
-    if(optl(opt, "exclude-dir")) {
-	argument = getfirstargl(opt, "exclude-dir", &optnode);
+    if(opt_check(opt, "exclude-dir")) {
+	argument = opt_firstarg(opt, "exclude-dir", &optnode);
 	while(argument) {
 	    if(match_regex(dirname, argument) == 1) {
 		if(!printinfected)
 		    logg("%s: Excluded\n", dirname);
 		return 0;
 	    }
-	    argument = getnextargl(&optnode, "exclude-dir");
+	    argument = opt_nextarg(&optnode, "exclude-dir");
 	}
     }
 
-   if(optl(opt, "include-dir")) {
+   if(opt_check(opt, "include-dir")) {
 	included = 0;
-	argument = getfirstargl(opt, "include-dir", &optnode);
+	argument = opt_firstarg(opt, "include-dir", &optnode);
 	while(argument && !included) {
 	    if(match_regex(dirname, argument) == 1) {
 		included = 1;
 		break;
 	    }
-	    argument = getnextargl(&optnode, "include");
+	    argument = opt_nextarg(&optnode, "include");
 	}
 
 	if(!included) {
@@ -83,8 +83,8 @@ int treewalk(const char *dirname, struct cl_node *root, const struct passwd *use
 	}
     }
 
-    if(optl(opt, "max-dir-recursion"))
-        maxdepth = atoi(getargl(opt, "max-dir-recursion"));
+    if(opt_check(opt, "max-dir-recursion"))
+        maxdepth = atoi(opt_arg(opt, "max-dir-recursion"));
     else
         maxdepth = 15;
 

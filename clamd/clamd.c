@@ -63,7 +63,7 @@ short debug_mode = 0, logok = 0;
 
 short foreground = 0;
 
-void clamd(struct optstruct *opt)
+int main(int argc, char **argv)
 {
 	struct cfgstruct *copt, *cpt;
         struct passwd *user;
@@ -76,19 +76,34 @@ void clamd(struct optstruct *opt)
 #ifdef C_LINUX
 	struct stat sb;
 #endif
+	struct optstruct *opt;
+	const char *short_options = "hc:V";
 
-    /* initialize some important variables */
+	static struct option long_options[] = {
+	    {"help", 0, 0, 'h'},
+	    {"config-file", 1, 0, 'c'},
+	    {"version", 0, 0, 'V'},
+	    {"debug", 0, 0, 0},
+	    {0, 0, 0, 0}
+    	};
 
-    if(optc(opt, 'V')) {
+
+    opt = opt_parse(argc, argv, short_options, long_options, NULL);
+    if(!opt) {
+	mprintf("!Can't parse the command line\n");
+	return 1;
+    }
+
+    if(opt_check(opt, "version")) {
 	print_version();
 	exit(0);
     }
 
-    if(optc(opt, 'h')) {
+    if(opt_check(opt, "help")) {
     	help();
     }
 
-    if(optl(opt, "debug")) {
+    if(opt_check(opt, "debug")) {
 #if defined(C_LINUX)
 	    /* njh@bandsman.co.uk: create a dump if needed */
 	    struct rlimit rlim;
@@ -102,8 +117,8 @@ void clamd(struct optstruct *opt)
     }
 
     /* parse the config file */
-    if(optc(opt, 'c'))
-	cfgfile = getargc(opt, 'c');
+    if(opt_check(opt, "config-file"))
+	cfgfile = opt_arg(opt, "config-file");
     else
 	cfgfile = CONFDIR"/clamd.conf";
 

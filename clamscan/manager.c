@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -81,27 +81,27 @@ int scanmanager(const struct optstruct *opt)
     }
 #endif
 
-    if(optl(opt, "unzip") || optl(opt, "unrar") || optl(opt, "arj") ||
-       optl(opt, "unzoo") || optl(opt, "jar") || optl(opt, "lha") ||
-       optl(opt, "tar") || optl(opt, "tgz") || optl(opt, "deb"))
+    if(opt_check(opt, "unzip") || opt_check(opt, "unrar") || opt_check(opt, "arj") ||
+       opt_check(opt, "unzoo") || opt_check(opt, "jar") || opt_check(opt, "lha") ||
+       opt_check(opt, "tar") || opt_check(opt, "tgz") || opt_check(opt, "deb"))
 	    compression = 1;
 
 
-    if(optl(opt, "hwaccel"))
+    if(opt_check(opt, "hwaccel"))
 	dboptions |= CL_DB_HWACCEL;
 
-    if(optl(opt, "no-phishing"))
+    if(opt_check(opt, "no-phishing"))
 	dboptions |= CL_DB_NOPHISHING;
 
-    if(optl(opt, "dev-ac-only")) {
+    if(opt_check(opt, "dev-ac-only")) {
 	dboptions |= CL_DB_ACONLY;
 
-	if(optl(opt, "dev-ac-depth"))
-	    cli_ac_setdepth(atoi(getargl(opt, "dev-ac-depth")));
+	if(opt_check(opt, "dev-ac-depth"))
+	    cli_ac_setdepth(atoi(opt_arg(opt, "dev-ac-depth")));
     }
 
-    if(optc(opt, 'd')) {
-	if((ret = cl_load(getargc(opt, 'd'), &trie, &claminfo.signs, dboptions))) {
+    if(opt_check(opt, "database")) {
+	if((ret = cl_load(opt_arg(opt, "database"), &trie, &claminfo.signs, dboptions))) {
 	    logg("^%s\n", cl_strerror(ret));
 	    return 50;
 	}
@@ -131,9 +131,9 @@ int scanmanager(const struct optstruct *opt)
 
     limits = (struct cl_limits *) calloc(1, sizeof(struct cl_limits));
 
-    if(optl(opt, "max-space")) {
+    if(opt_check(opt, "max-space")) {
 	char *cpy, *ptr;
-	ptr = getargl(opt, "max-space");
+	ptr = opt_arg(opt, "max-space");
 	if(tolower(ptr[strlen(ptr) - 1]) == 'm') {
 	    cpy = mcalloc(strlen(ptr), sizeof(char));
 	    strncpy(cpy, ptr, strlen(ptr) - 1);
@@ -144,58 +144,58 @@ int scanmanager(const struct optstruct *opt)
     } else
 	limits->maxfilesize = 10485760;
 
-    if(optl(opt, "max-files"))
-	limits->maxfiles = atoi(getargl(opt, "max-files"));
+    if(opt_check(opt, "max-files"))
+	limits->maxfiles = atoi(opt_arg(opt, "max-files"));
     else
         limits->maxfiles = 500;
 
-    if(optl(opt, "max-recursion"))
-        limits->maxreclevel = atoi(getargl(opt, "max-recursion"));
+    if(opt_check(opt, "max-recursion"))
+        limits->maxreclevel = atoi(opt_arg(opt, "max-recursion"));
     else
         limits->maxreclevel = 8;
 
-    if(optl(opt, "max-ratio"))
-        limits->maxratio = atoi(getargl(opt, "max-ratio"));
+    if(opt_check(opt, "max-ratio"))
+        limits->maxratio = atoi(opt_arg(opt, "max-ratio"));
     else
         limits->maxratio = 250;
 
     /* set options */
 
-    if(optl(opt, "disable-archive") || optl(opt, "no-archive"))
+    if(opt_check(opt, "disable-archive") || opt_check(opt, "no-archive"))
 	options &= ~CL_SCAN_ARCHIVE;
     else
 	options |= CL_SCAN_ARCHIVE;
 
-    if(optl(opt, "detect-broken"))
+    if(opt_check(opt, "detect-broken"))
 	options |= CL_SCAN_BLOCKBROKEN;
 
-    if(optl(opt, "block-encrypted"))
+    if(opt_check(opt, "block-encrypted"))
 	options |= CL_SCAN_BLOCKENCRYPTED;
 
-    if(optl(opt, "block-max"))
+    if(opt_check(opt, "block-max"))
 	options |= CL_SCAN_BLOCKMAX;
 
-    if(optl(opt, "no-pe"))
+    if(opt_check(opt, "no-pe"))
 	options &= ~CL_SCAN_PE;
     else
 	options |= CL_SCAN_PE;
 
-    if(optl(opt, "no-ole2"))
+    if(opt_check(opt, "no-ole2"))
 	options &= ~CL_SCAN_OLE2;
     else
 	options |= CL_SCAN_OLE2;
 
-    if(optl(opt, "no-html"))
+    if(opt_check(opt, "no-html"))
 	options &= ~CL_SCAN_HTML;
     else
 	options |= CL_SCAN_HTML;
 
-    if(optl(opt, "no-mail")) {
+    if(opt_check(opt, "no-mail")) {
 	options &= ~CL_SCAN_MAIL;
     } else {
 	options |= CL_SCAN_MAIL;
 
-	if(optl(opt, "mail-follow-urls"))
+	if(opt_check(opt, "mail-follow-urls"))
 #ifdef WITH_CURL
 	    options |= CL_SCAN_MAILURL;
 #else
@@ -203,7 +203,7 @@ int scanmanager(const struct optstruct *opt)
 #endif
     }
 
-    if(optl(opt, "no-algorithmic"))
+    if(opt_check(opt, "no-algorithmic"))
 	options &= ~CL_SCAN_ALGO;
     else
 	options |= CL_SCAN_ALGO;
@@ -318,27 +318,27 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	    }
 #endif    
 
-    if(optl(opt, "exclude")) {
-	argument = getfirstargl(opt, "exclude", &optnode);
+    if(opt_check(opt, "exclude")) {
+	argument = opt_firstarg(opt, "exclude", &optnode);
 	while(argument) {
 	    if(match_regex(filename, argument) == 1) {
 		if(!printinfected)
 		    logg("%s: Excluded\n", filename);
 		return 0;
 	    }
-	    argument = getnextargl(&optnode, "exclude");
+	    argument = opt_nextarg(&optnode, "exclude");
 	}
     }
 
-   if(optl(opt, "include")) {
+   if(opt_check(opt, "include")) {
 	included = 0;
-	argument = getfirstargl(opt, "include", &optnode);
+	argument = opt_firstarg(opt, "include", &optnode);
 	while(argument && !included) {
 	    if(match_regex(filename, argument) == 1) {
 		included = 1;
 		break;
 	    }
-	    argument = getnextargl(&optnode, "include");
+	    argument = opt_nextarg(&optnode, "include");
 	}
 
 	if(!included) {
@@ -373,14 +373,14 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
     if((cli_strbcasestr(filename, ".zip") || cli_strbcasestr(filename, ".rar")) && (options & CL_SCAN_ARCHIVE)) {
 	/* try to use internal archivers */
 	if((ret = checkfile(filename, root, limits, options, 1)) == CL_VIRUS) {
-	    if(optl(opt, "remove")) {
+	    if(opt_check(opt, "remove")) {
 		if(unlink(filename)) {
 		    logg("%s: Can't remove\n", filename);
 		    claminfo.notremoved++;
 		} else {
 		    logg("%s: Removed\n", filename);
 		}
-	    } else if (optl(opt, "move"))
+	    } else if (opt_check(opt, "move"))
 		move_infected(filename, opt);
 
 	    return 1;
@@ -396,16 +396,16 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	printclean = 0;
     }
 
-    if((cli_strbcasestr(filename, ".zip") && optl(opt, "unzip"))
-    || (cli_strbcasestr(filename, ".rar") && optl(opt, "unrar"))
-    || (cli_strbcasestr(filename, ".arj") && optl(opt, "arj"))
-    || (cli_strbcasestr(filename, ".zoo") && optl(opt, "unzoo"))
-    || (cli_strbcasestr(filename, ".jar") && optl(opt, "jar"))
-    || (cli_strbcasestr(filename, ".lzh") && optl(opt, "lha"))
-    || (cli_strbcasestr(filename, ".tar") && optl(opt, "tar"))
-    || (cli_strbcasestr(filename, ".deb") && optl(opt, "deb"))
+    if((cli_strbcasestr(filename, ".zip") && opt_check(opt, "unzip"))
+    || (cli_strbcasestr(filename, ".rar") && opt_check(opt, "unrar"))
+    || (cli_strbcasestr(filename, ".arj") && opt_check(opt, "arj"))
+    || (cli_strbcasestr(filename, ".zoo") && opt_check(opt, "unzoo"))
+    || (cli_strbcasestr(filename, ".jar") && opt_check(opt, "jar"))
+    || (cli_strbcasestr(filename, ".lzh") && opt_check(opt, "lha"))
+    || (cli_strbcasestr(filename, ".tar") && opt_check(opt, "tar"))
+    || (cli_strbcasestr(filename, ".deb") && opt_check(opt, "deb"))
     || ((cli_strbcasestr(filename, ".tar.gz") || cli_strbcasestr(filename, ".tgz")) 
-	 && (optl(opt, "tgz") || optl(opt, "deb"))) ) {
+	 && (opt_check(opt, "tgz") || opt_check(opt, "deb"))) ) {
 
 	/* check permissions */
 	switch(checkaccess(filename, UNPUSER, R_OK)) {
@@ -437,14 +437,14 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
     }
 
     if((ret = checkfile(filename, root, limits, options, printclean)) == CL_VIRUS) {
-	if(optl(opt, "remove")) {
+	if(opt_check(opt, "remove")) {
 	    if(unlink(filename)) {
 		logg("%s: Can't remove\n", filename);
 		claminfo.notremoved++;
 	    } else {
 		logg("%s: Removed\n", filename);
 	    }
-	} else if (optl(opt, "move"))
+	} else if (opt_check(opt, "move"))
             move_infected(filename, opt);
     }
     return ret;
@@ -502,7 +502,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	 */
 	args[4] = (char *) filename;
 
-	if((userprg = getargl(opt, "unzip")))
+	if((userprg = opt_arg(opt, "unzip")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("unzip", args, gendir, user, opt);
@@ -510,7 +510,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
     } else if(cli_strbcasestr(filename, ".rar")) { 
 	char *args[] = { "unrar", "x", "-p-", "-y", NULL, NULL };
 	args[4] = (char *) filename;
-	if((userprg = getargl(opt, "unrar")))
+	if((userprg = opt_arg(opt, "unrar")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("unrar", args, gendir, user, opt);
@@ -518,7 +518,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
     } else if(cli_strbcasestr(filename, ".arj")) { 
         char *args[] = { "arj", "x","-y", NULL, NULL };
 	args[3] = (char *) filename;
-        if((userprg = getargl(opt, "arj")))
+        if((userprg = opt_arg(opt, "arj")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("arj", args, gendir, user, opt);
@@ -526,7 +526,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
     } else if(cli_strbcasestr(filename, ".zoo")) { 
 	char *args[] = { "unzoo", "-x","-j","./", NULL, NULL };
 	args[4] = (char *) filename;
-	if((userprg = getargl(opt, "unzoo")))
+	if((userprg = opt_arg(opt, "unzoo")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("unzoo", args, gendir, user, opt);
@@ -534,7 +534,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
     } else if(cli_strbcasestr(filename, ".jar")) { 
 	char *args[] = { "unzip", "-P", "clam", "-o", NULL, NULL };
 	args[4] = (char *) filename;
-	if((userprg = getargl(opt, "jar")))
+	if((userprg = opt_arg(opt, "jar")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("unzip", args, gendir, user, opt);
@@ -542,7 +542,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
     } else if(cli_strbcasestr(filename, ".lzh")) { 
 	char *args[] = { "lha", "xf", NULL, NULL };
 	args[2] = (char *) filename;
-	if((userprg = getargl(opt, "lha")))
+	if((userprg = opt_arg(opt, "lha")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("lha", args, gendir, user, opt);
@@ -550,7 +550,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
     } else if(cli_strbcasestr(filename, ".tar")) { 
 	char *args[] = { "tar", "-xpvf", NULL, NULL };
 	args[2] = (char *) filename;
-	if((userprg = getargl(opt, "tar")))
+	if((userprg = opt_arg(opt, "tar")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("tar", args, gendir, user, opt);
@@ -558,7 +558,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
     } else if(cli_strbcasestr(filename, ".deb")) { 
 	char *args[] = { "ar", "x", NULL, NULL };
 	args[2] = (char *) filename;
-	if((userprg = getargl(opt, "deb")))
+	if((userprg = opt_arg(opt, "deb")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("ar", args, gendir, user, opt);
@@ -566,7 +566,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
     } else if((cli_strbcasestr(filename, ".tar.gz") || cli_strbcasestr(filename, ".tgz"))) {
 	char *args[] = { "tar", "-zxpvf", NULL, NULL };
 	args[2] = (char *) filename;
-	if((userprg = getargl(opt, "tgz")))
+	if((userprg = opt_arg(opt, "tgz")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("tar", args, gendir, user, opt);
@@ -584,7 +584,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
     }
 
     /* remove the directory  - as clamav */
-    if(!optl(opt, "leave-temps"))
+    if(!opt_check(opt, "leave-temps"))
 	clamav_rmdirs(gendir);
 
     /* free gendir - it's not necessary now */
@@ -600,14 +600,14 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	     * raw archive.
 	     */
 	    if((ret = checkfile(filename, root, limits, 0, 0)) == CL_VIRUS) {
-		if(optl(opt, "remove")) {
+		if(opt_check(opt, "remove")) {
 		    if(unlink(filename)) {
 			logg("%s: Can't remove\n", filename);
 			claminfo.notremoved++;
 		    } else {
 			logg("%s: Removed\n", filename);
 		    }
-		} else if (optl(opt, "move"))
+		} else if (opt_check(opt, "move"))
 		    move_infected(filename, opt);
 	    }
 	    return ret;
@@ -617,14 +617,14 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	    /* no viruses found in archive, we scan just in case a raw file
 	     */
 	    if((ret = checkfile(filename, root, limits, 0, 1)) == CL_VIRUS) {
-		if(optl(opt, "remove")) {
+		if(opt_check(opt, "remove")) {
 		    if(unlink(filename)) {
 			logg("%s: Can't remove\n", filename);
 			claminfo.notremoved++;
 		    } else {
 			logg("%s: Removed\n", filename);
 		    }
-		} else if (optl(opt, "move"))
+		} else if (opt_check(opt, "move"))
 		    move_infected(filename, opt);
 	    }
 	    return ret;
@@ -634,14 +634,14 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	    if(bell)
 		fprintf(stderr, "\007");
 
-	    if(optl(opt, "remove")) {
+	    if(opt_check(opt, "remove")) {
 		if(unlink(filename)) {
 		    logg("%s: Can't remove\n", filename);
 		    claminfo.notremoved++;
 		} else {
 		    logg("%s: Removed\n", filename);
 		}
-	    } else if (optl(opt, "move"))
+	    } else if (opt_check(opt, "move"))
 		move_infected(filename, opt);
 
 	    return 1;
@@ -714,14 +714,14 @@ int scandenied(const char *filename, struct cl_node *root, const struct passwd *
     if((ret = treewalk(gendir, root, user, opt, limits, options, 1)) == 1) {
 	logg("(Real infected archive: %s)\n", filename);
 
-	if(optl(opt, "remove")) {
+	if(opt_check(opt, "remove")) {
 	    if(unlink(filename)) {
 		logg("%s: Can't remove\n", filename);
 		claminfo.notremoved++;
 	    } else {
 	        logg("%s: Removed\n", filename);
 	    }
-	} else if (optl(opt, "move"))
+	} else if (opt_check(opt, "move"))
 	    move_infected(filename, opt);
     }
 
@@ -841,14 +841,14 @@ int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struc
 	struct s_du n;
 
 
-    if(optl(opt, "max-files"))
-	maxfiles = atoi(getargl(opt, "max-files"));
+    if(opt_check(opt, "max-files"))
+	maxfiles = atoi(opt_arg(opt, "max-files"));
     else
 	maxfiles = 0;
 
-    if(optl(opt, "max-space")) {
+    if(opt_check(opt, "max-space")) {
 	    char *cpy, *ptr;
-	ptr = getargl(opt, "max-space");
+	ptr = opt_arg(opt, "max-space");
 	if(tolower(ptr[strlen(ptr) - 1]) == 'm') { /* megabytes */
 	    cpy = mcalloc(strlen(ptr), sizeof(char));
 	    strncpy(cpy, ptr, strlen(ptr) - 1);
@@ -949,15 +949,15 @@ void move_infected(const char *filename, const struct optstruct *opt)
 	struct utimbuf ubuf;
 
 
-    if(!(movedir = getargl(opt, "move"))) {
+    if(!(movedir = opt_arg(opt, "move"))) {
         /* Should never reach here */
-        logg("^getargc() returned NULL\n", filename);
+        logg("!opt_arg() returned NULL\n", filename);
         claminfo.notmoved++;
         return;
     }
 
     if(access(movedir, W_OK|X_OK) == -1) {
-        logg("^error moving file '%s': cannot write to '%s': %s\n", filename, movedir, strerror(errno));
+        logg("!Can't move file '%s': cannot write to '%s': %s\n", filename, movedir, strerror(errno));
         claminfo.notmoved++;
         return;
     }
@@ -968,12 +968,12 @@ void move_infected(const char *filename, const struct optstruct *opt)
     movefilename_size = sizeof(char) * (strlen(movedir) + strlen(tmp) + sizeof(numext) + 2);
 
     if(!(movefilename = mmalloc(movefilename_size))) {
-        logg("^Memory allocation error\n");
+        logg("!mmalloc() failed\n");
 	exit(71);
     }
 
     if(!(strrcpy(movefilename, movedir))) {
-        logg("^strrcpy() returned NULL\n");
+        logg("!strrcpy() returned NULL\n");
         claminfo.notmoved++;
         free(movefilename);
         return;
@@ -982,7 +982,7 @@ void move_infected(const char *filename, const struct optstruct *opt)
     strcat(movefilename, "/");
 
     if(!(strcat(movefilename, tmp))) {
-        logg("^strcat() returned NULL\n");
+        logg("!strcat() returned NULL\n");
         claminfo.notmoved++;
         free(movefilename);
         return;
@@ -1017,7 +1017,7 @@ void move_infected(const char *filename, const struct optstruct *opt)
 
     if(rename(filename, movefilename) == -1) {
 	if(filecopy(filename, movefilename) == -1) {
-	    logg("^cannot move '%s' to '%s': %s\n", filename, movefilename, strerror(errno));
+	    logg("!Can't move '%s' to '%s': %s\n", filename, movefilename, strerror(errno));
 	    claminfo.notmoved++;
 	    free(movefilename);
 	    return;
@@ -1033,7 +1033,7 @@ void move_infected(const char *filename, const struct optstruct *opt)
 	utime(movefilename, &ubuf);
 
 	if(unlink(filename)) {
-	    logg("^cannot unlink '%s': %s\n", filename, strerror(errno));
+	    logg("!Can't unlink '%s': %s\n", filename, strerror(errno));
 	    claminfo.notremoved++;            
 	    free(movefilename);
 	    return;

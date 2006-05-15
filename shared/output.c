@@ -70,14 +70,12 @@ pthread_mutex_t logg_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 FILE *logg_fd = NULL;
 
-short int logg_verbose = 0, logg_lock = 1, logg_time = 0;
+short int logg_verbose = 0, logg_lock = 1, logg_time = 0, logg_foreground = 1;
 int logg_size = 0;
 const char *logg_file = NULL;
 #if defined(USE_SYSLOG) && !defined(C_AIX)
 short logg_syslog;
 #endif
-
-short foreground;
 
 short int mprintf_disabled = 0, mprintf_verbose = 0, mprintf_quiet = 0,
 	  mprintf_stdout = 0;
@@ -228,7 +226,7 @@ int logg(const char *str, ...)
     }
 #endif
 
-    if(foreground) {
+    if(logg_foreground) {
 	_(str);
         vsnprintf(vbuff, 1024, str, argsout);
 	vbuff[1024] = 0;

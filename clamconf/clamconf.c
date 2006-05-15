@@ -206,11 +206,13 @@ int main(int argc, char **argv)
 	    case 'c':
 		free(confdir);
 		confdir = strdup(optarg);
+		printf("LONG: %s, %c, idx: %d\n", long_options[opt_index].name, ret, opt_index);
 		break;
 
 	    case 'h':
 		help();
 		free(confdir);
+		printf("LONG: %s, %c, idx: %d\n", long_options[opt_index].name, ret, opt_index);
 		exit(0);
 
     	    default:

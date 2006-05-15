@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+#  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -33,8 +33,8 @@ clamd_SOURCES = \
     $(top_srcdir)/shared/misc.h \
     $(top_srcdir)/shared/network.c \
     $(top_srcdir)/shared/network.h \
-    options.c \
-    options.h \
+    $(top_srcdir)/shared/options.c \
+    $(top_srcdir)/shared/options.h \
     clamd.c \
     tcpserver.c \
     tcpserver.h \

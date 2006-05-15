@@ -30,10 +30,10 @@ freshclam_SOURCES = \
     $(top_srcdir)/shared/memory.h \
     $(top_srcdir)/shared/misc.c \
     $(top_srcdir)/shared/misc.h \
+    $(top_srcdir)/shared/options.c \
+    $(top_srcdir)/shared/options.h \
     freshclam.c \
     freshclam.h \
-    options.c \
-    options.h \
     manager.c \
     manager.h \
     defaults.h \
