@@ -1,6 +1,8 @@
 /*
- * Based on libpst version 0.5.1, written by Dave Smith, dave.s at earthcorp.com
+ * Based on libpst version 0.5.1, written by Dave Smith dave.s at earthcorp.com
  *	http://alioth.debian.org/projects/libpst/
+ * Now maintained by Joseph Nahmias <joe at nahmias.net>
+ *
  * For copyright information on that code, refer to libpst
  *
  * Portions Copyright (C) 2006 Nigel Horne <njh@bandsman.co.uk>
@@ -32,8 +34,9 @@
  *	save the attachments directly rather than encode to base64, then have
  *	cli_mbox decode it
  * TODO: Remove the vcard handling
+ * FIXME: The code does little error checking of OOM scenarios
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.26 2006/05/12 17:11:28 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.27 2006/05/15 10:14:54 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -5073,7 +5076,7 @@ pst_decode(const char *dir, int desc)
 	    if (x == 99999999) {
 	      cli_errmsg("pst_decode: Why can I not create a folder %s? I have tried %i extensions...\n", f->name, x);
 	      if(rfc2426ptr)
-	      	free(rfc2426ptr);
+		free(rfc2426ptr);
 	      return(5);
 	    }
 	    fclose(f->output);
@@ -5092,7 +5095,7 @@ pst_decode(const char *dir, int desc)
 	    cli_errmsg("pst_decode: Could not open file \"%s\" for write\n", f->name);
 	    free(filename);
 	      if(rfc2426ptr)
-	      	free(rfc2426ptr);
+		free(rfc2426ptr);
 	    return CL_ETMPFILE;
 	  }
 	    free(filename);
