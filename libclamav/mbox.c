@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.300 2006/05/12 21:02:40 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.301 2006/05/16 20:16:38 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1268,6 +1268,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 {
 	bool inHeader = TRUE;
 	bool contMarker = FALSE;
+	bool bodyIsEmpty = TRUE;
 	bool lastWasBlank = FALSE, lastBodyLineWasBlank = FALSE;
 	message *ret;
 	bool anyHeadersFound = FALSE;
@@ -1355,6 +1356,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 
 					cli_dbgmsg("End of header information\n");
 					inHeader = FALSE;
+					bodyIsEmpty = TRUE;
 				} else
 					contMarker = FALSE;
 			} else {
@@ -1460,6 +1462,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 			 * Fast track visa to uudecode.
 			 * TODO: binhex, yenc
 			 */
+			bodyIsEmpty = FALSE;
 			if(uudecodeFile(ret, line, dir, fin) < 0)
 				if(messageAddStr(ret, line) < 0)
 					break;
@@ -1470,8 +1473,22 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 					continue;
 				}
 				lastBodyLineWasBlank = TRUE;
-			} else
+			} else {
+				if(bodyIsEmpty) {
+					/*
+					 * Broken message: new line in the
+					 * middle of the headers, so the first
+					 * line of the body is in fact
+					 * the last lines of the header
+					 */
+					if(strncmp(line, "Message-Id: ", 12) == 0)
+						continue;
+					if(strncmp(line, "Date: ", 6) == 0)
+						continue;
+				}
+				bodyIsEmpty = FALSE;
 				lastBodyLineWasBlank = FALSE;
+			}
 
 			if(messageAddStr(ret, line) < 0)
 				break;
