@@ -67,14 +67,14 @@ int	fileblobContainsVirus(const fileblob *fb);
 void	sanitiseName(char *name);
 
 /* Maximum filenames under various systems */
-#ifndef NAME_MAX        /* e.g. Linux */
-# ifdef MAXNAMELEN      /* e.g. Solaris */
-#   define      NAME_MAX        MAXNAMELEN
+#ifndef NAME_MAX	/* e.g. Linux */
+# ifdef MAXNAMELEN	/* e.g. Solaris */
+#   define	NAME_MAX	MAXNAMELEN
 # else
-#   ifdef       FILENAME_MAX    /* e.g. SCO */
-#     define    NAME_MAX        FILENAME_MAX
+#   ifdef	FILENAME_MAX	/* e.g. SCO */
+#	define	NAME_MAX	FILENAME_MAX
 #   else
-#     define    NAME_MAX        256
+#	define	NAME_MAX	256
 #   endif
 # endif
 #endif
