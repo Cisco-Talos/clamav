@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.168 2006/05/12 17:12:46 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.169 2006/05/18 11:31:57 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -955,6 +955,11 @@ messageIsEncoding(message *m)
 	static const char binhex[] = "(This file must be converted with BinHex 4.0)";
 	const char *line = lineGetData(m->body_last->t_line);
 
+	/* not enough matches to warrant this test */
+	/*if(lineGetRefCount(m->body_last->t_line) > 1) {
+		return;
+	}*/
+
 	if((m->encoding == NULL) &&
 	   (strncasecmp(line, encoding, sizeof(encoding) - 1) == 0) &&
 	   (strstr(line, "7bit") == NULL))
@@ -1028,9 +1033,6 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		return NULL;
 
 	cli_dbgmsg("messageExport: numberOfEncTypes == %d\n", m->numberOfEncTypes);
-
-	if(setCTX && m->ctx)
-		(*setCTX)(ret, m->ctx);
 
 	if((t_line = binhexBegin(m)) != NULL) {
 		unsigned char byte;
@@ -1287,6 +1289,9 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 				len, l);
 			len = l;
 		}
+		if(setCTX && m->ctx)
+			(*setCTX)(ret, m->ctx);
+
 		(*addData)(ret, &data[byte], len);
 
 		blobDestroy(tmp);
@@ -1326,6 +1331,9 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		if(m->numberOfEncTypes == 0)
 			return exportText(messageGetBody(m), ret);
 	}
+
+	if(setCTX && m->ctx)
+		(*setCTX)(ret, m->ctx);
 
 	for(i = 0; i < m->numberOfEncTypes; i++) {
 		encoding_type enctype = m->encodingTypes[i];
