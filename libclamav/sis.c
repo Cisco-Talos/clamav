@@ -41,8 +41,9 @@
 #undef HAVE_MMAP
 #endif
 
-#include "cltypes.h"
 #include "clamav.h"
+#include "scanners.h"
+#include "cltypes.h"
 #include "sis.h"
 
 #define EC32(x) le32_to_host(x) /* Convert little endian to host */
@@ -343,7 +344,7 @@ int cli_scansis(int desc, cli_ctx *ctx)
 	struct sis_file_hdr6 file_hdr6;
 	uint8_t release = 0, compressed, ifile = 0;
 	uint16_t opts, nlangs, *langrecs, nfiles;
-	uint32_t recp, frecord, n;
+	uint32_t frecord, n;
 	size_t length;
 	char *mfile = NULL, *langs, *dir;
 	struct stat sb;

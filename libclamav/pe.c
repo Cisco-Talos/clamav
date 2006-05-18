@@ -490,7 +490,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    return CL_CLEAN;
 	}
 
-	strncpy(sname, section_hdr[i].Name, 8);
+	strncpy(sname, (char *) section_hdr[i].Name, 8);
 	sname[8] = 0;
 	cli_dbgmsg("Section %d\n", i);
 	cli_dbgmsg("Section name: %s\n", sname);
@@ -627,7 +627,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
    if(polipos && !dll && !pe_plus && nsections > 2 && nsections < 13 && e_lfanew <= 0x800 && (EC16(optional_hdr32.Subsystem) == 2 || EC16(optional_hdr32.Subsystem) == 3) && EC16(file_hdr.Machine) == 0x14c && optional_hdr32.SizeOfStackReserve >= 0x80000) {
 		uint32_t remaining = EC32(section_hdr[0].SizeOfRawData);
 		uint32_t chunk = sizeof(buff);
-		uint32_t val, shift, raddr, curroff, total = 0;
+		uint32_t val, shift, raddr, total = 0;
 		const char *jpt;
 		struct offset_list *offlist = NULL, *offnode;
 
@@ -898,7 +898,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    default: /* Everything gone wrong */
 			cli_dbgmsg("FSG: Unpacking failed\n");
 			close(ndesc);
-			unlink(tempfile); // It's empty anyway
+			unlink(tempfile); /* It's empty anyway */
 			free(tempfile);
 			free(src);
 			free(dest);
@@ -1101,7 +1101,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    default: /* Everything gone wrong */
 			cli_dbgmsg("FSG: Unpacking failed\n");
 			close(ndesc);
-			unlink(tempfile); // It's empty anyway
+			unlink(tempfile); /* It's empty anyway */
 			free(tempfile);
 			free(src);
 			free(dest);
@@ -1306,7 +1306,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    default: /* Everything gone wrong */
 			cli_dbgmsg("FSG: Unpacking failed\n");
 			close(ndesc);
-			unlink(tempfile); // It's empty anyway
+			unlink(tempfile); /* It's empty anyway */
 			free(tempfile);
 			free(src);
 			free(dest);
@@ -1323,14 +1323,14 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 	    /* UPX support */
 
-	    strncpy(sname, section_hdr[i].Name, 8);
+	    strncpy(sname, (char *) section_hdr[i].Name, 8);
 	    sname[8] = 0;
 	    cli_dbgmsg("UPX: Section %d name: %s\n", i, sname);
-	    strncpy(sname, section_hdr[i + 1].Name, 8);
+	    strncpy(sname, (char *) section_hdr[i + 1].Name, 8);
 	    sname[8] = 0;
 	    cli_dbgmsg("UPX: Section %d name: %s\n", i + 1, sname);
 
-	    if(strncmp(section_hdr[i].Name, "UPX0", 4) || strncmp(section_hdr[i + 1].Name, "UPX1", 4))
+	    if(strncmp((char *) section_hdr[i].Name, "UPX0", 4) || strncmp((char *) section_hdr[i + 1].Name, "UPX1", 4))
 		cli_dbgmsg("UPX: Possibly hacked UPX section headers\n");
 
 	    /* we assume (i + 1) is UPX1 */
@@ -1769,7 +1769,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 {
 	uint16_t e_magic; /* DOS signature ("MZ") */
 	uint32_t e_lfanew; /* address of new exe header */
-	uint32_t min, max;
+	uint32_t min = 0, max = 0;
 	struct pe_image_file_hdr file_hdr;
 	struct pe_image_optional_hdr32 optional_hdr32;
 	struct pe_image_optional_hdr64 optional_hdr64;

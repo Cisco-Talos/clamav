@@ -325,9 +325,9 @@ int cli_validatesig(unsigned short target, unsigned short ftype, const char *off
 int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short ftype, struct cli_matched_type **ftoffset)
 {
  	char *buffer, *buff, *endbl, *pt;
-	int ret = CL_CLEAN, *gpartcnt, *tpartcnt, type = CL_CLEAN, i, tid = 0, bytes;
+	int ret = CL_CLEAN, *gpartcnt = NULL, *tpartcnt = NULL, type = CL_CLEAN, i, tid = 0, bytes;
 	unsigned int buffersize, length, maxpatlen, shift = 0;
-	unsigned long int *gpartoff, *tpartoff, offset = 0;
+	unsigned long int *gpartoff = NULL, *tpartoff = NULL, offset = 0;
 	MD5_CTX md5ctx;
 	unsigned char digest[16];
 	struct cli_md5_node *md5_node;

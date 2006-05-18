@@ -28,6 +28,8 @@
 #include <system.h>
 #include <qtm.h>
 
+#include "others.h"
+
 /* Quantum decompressor bitstream reading macros
  *
  * STORE_BITS        stores bitstream state in qtmd_stream structure

@@ -20,6 +20,8 @@
 #include <system.h>
 #include <lzx.h>
 
+#include "others.h"
+
 /* Microsoft's LZX document and their implementation of the
  * com.ms.util.cab Java package do not concur.
  *
