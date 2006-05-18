@@ -255,7 +255,7 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     if(new->alt)
 	free(hex);
 
-    return 0;
+    return CL_SUCCESS;
 }
 
 int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, unsigned short type, char *offset, unsigned short target)
@@ -436,14 +436,11 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	}
     }
 
-    return 0;
+    return CL_SUCCESS;
 }
 
 static int cli_initengine(struct cl_engine **engine, unsigned int options)
 {
-	struct cli_matcher *root;
-	int i, ret;
-
 
     if(!*engine) {
 	cli_dbgmsg("Initializing the engine structure\n");
@@ -464,7 +461,7 @@ static int cli_initengine(struct cl_engine **engine, unsigned int options)
 	}
     }
 
-    return 0;
+    return CL_SUCCESS;
 }
 
 static int cli_initroots(struct cl_engine *engine, unsigned int options)
@@ -505,7 +502,7 @@ static int cli_initroots(struct cl_engine *engine, unsigned int options)
 	}
     }
 
-    return 0;
+    return CL_SUCCESS;
 }
 
 static int cli_loaddb(FILE *fd, struct cl_engine **engine, unsigned int *signo, unsigned int options)
@@ -565,7 +562,7 @@ static int cli_loaddb(FILE *fd, struct cl_engine **engine, unsigned int *signo, 
     if(signo)
 	*signo += line;
 
-    return 0;
+    return CL_SUCCESS;
 }
 
 static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo, unsigned short sdb, unsigned int options)
@@ -711,7 +708,7 @@ static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	cli_dbgmsg("*** Self protection mechanism activated.\n");
     }
 
-    return 0;
+    return CL_SUCCESS;
 }
 
 static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo, unsigned short fp, unsigned int options)
@@ -799,7 +796,7 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
     if(signo)
 	*signo += line;
 
-    return 0;
+    return CL_SUCCESS;
 }
 
 static int cli_loadmd(FILE *fd, struct cl_engine **engine, unsigned int *signo, int type, unsigned int options)
@@ -970,7 +967,7 @@ static int cli_loadmd(FILE *fd, struct cl_engine **engine, unsigned int *signo, 
     if(signo)
 	*signo += (line - comments);
 
-    return 0;
+    return CL_SUCCESS;
 }
 
 #ifdef HAVE_HWACCEL
@@ -1148,7 +1145,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigne
     }
 
     closedir(dd);
-    return 0;
+    return CL_SUCCESS;
 }
 
 int cl_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo) {
@@ -1262,7 +1259,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
     }
 
     closedir(dd);
-    return 0;
+    return CL_SUCCESS;
 }
 
 int cl_statchkdir(const struct cl_stat *dbstat)
@@ -1344,7 +1341,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
     }
 
     closedir(dd);
-    return 0;
+    return CL_SUCCESS;
 }
 
 int cl_statfree(struct cl_stat *dbstat)
@@ -1375,12 +1372,12 @@ int cl_statfree(struct cl_stat *dbstat)
 	return CL_ENULLARG;
     }
 
-    return 0;
+    return CL_SUCCESS;
 }
 
 void cl_free(struct cl_engine *engine)
 {
-	int i, ret;
+	int i;
 	struct cli_md5_node *md5pt, *md5h;
 	struct cli_meta_node *metapt, *metah;
 	struct cli_matcher *root;
@@ -1475,7 +1472,7 @@ int cl_build(struct cl_engine *engine)
 	    cli_ac_buildtrie(root);
     /* FIXME: check return values of cli_ac_buildtree */
 
-    return 0;
+    return CL_SUCCESS;
 }
 
 struct cl_engine *cl_dup(struct cl_engine *engine)

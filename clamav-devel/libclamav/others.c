@@ -396,7 +396,6 @@ static char *cli_gentempname(const char *dir)
         const char *mdir;
 	unsigned char salt[16 + 32];
 	int i;
-	struct stat foo;
 
     if(!dir) {
 	if((mdir = getenv("TMPDIR")) == NULL)

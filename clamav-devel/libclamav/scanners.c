@@ -55,14 +55,18 @@ extern short cli_leavetemps_flag;
 #include "ole2_extract.h"
 #include "vba_extract.h"
 #include "msexpand.h"
+#include "mbox.h"
 #include "chmunpack.h"
 #include "pe.h"
+#include "elf.h"
 #include "filetypes.h"
 #include "htmlnorm.h"
 #include "untar.h"
 #include "special.h"
 #include "binhex.h"
+/* #include "uuencode.h" */
 #include "tnef.h"
+#include "pst.h"
 #include "sis.h"
 #include "pdf.h"
 
@@ -95,22 +99,11 @@ extern short cli_leavetemps_flag;
 
 #define MAX_MAIL_RECURSION  15
 
-extern int cli_mbox(const char *dir, int desc, cli_ctx *ctx); /* FIXME */
 static int cli_scanfile(const char *filename, cli_ctx *ctx);
-
-/*
-#ifdef CL_THREAD_SAFE
-static void cli_unlock_mutex(void *mtx)
-{
-    cli_dbgmsg("Pthread cancelled. Unlocking mutex.\n");
-    pthread_mutex_unlock(mtx);
-}
-#endif
-*/
 
 static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 {
-	int fd, ret = CL_CLEAN;
+	int ret = CL_CLEAN;
 	unsigned int files = 0;
 	rar_metadata_t *metadata, *metadata_tmp;
 	struct cli_meta_node *mdata;
@@ -270,8 +263,7 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	ZZIP_DIRENT zdirent;
 	ZZIP_FILE *zfp;
 	FILE *tmp = NULL;
-	char *tmpname;
-	char *buff;
+	char *tmpname = NULL, *buff;
 	int fd, bytes, ret = CL_CLEAN;
 	unsigned long int size = 0;
 	unsigned int files = 0, encrypted;

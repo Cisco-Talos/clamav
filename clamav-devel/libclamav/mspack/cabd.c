@@ -37,6 +37,8 @@
 #include <system.h>
 #include <cab.h>
 
+#include "others.h"
+
 /* Notes on compliance with cabinet specification:
  *
  * One of the main changes between cabextract 0.6 and libmspack's cab
@@ -1242,7 +1244,7 @@ static int cabd_sys_read(struct mspack_file *file, void *buffer, int bytes) {
   struct mscab_decompressor_p *this = (struct mscab_decompressor_p *) file;
   unsigned char *buf = (unsigned char *) buffer;
   struct mspack_system *sys = this->system;
-  int avail, todo, outlen, ignore_cksum;
+  int avail, todo, outlen = 0, ignore_cksum;
 
   ignore_cksum = this->param[MSCABD_PARAM_FIXMSZIP] &&
     ((this->d->comp_type & cffoldCOMPTYPE_MASK) == cffoldCOMPTYPE_MSZIP);

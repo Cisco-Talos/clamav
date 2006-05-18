@@ -4,7 +4,7 @@
  *  http://www-sr.informatik.uni-tuebingen.de/~buehler/AC/AC.html
  *  Thanks to Kurt Huwig for pointing me to this page.
  *
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -84,7 +84,7 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
     pattern->next = pos->list;
     pos->list = pattern;
 
-    return 0;
+    return CL_SUCCESS;
 }
 
 static int cli_enqueue(struct nodelist **bfs, struct cli_ac_node *n)
@@ -100,7 +100,7 @@ static int cli_enqueue(struct nodelist **bfs, struct cli_ac_node *n)
     new->next = *bfs;
     new->node = n;
     *bfs = new;
-    return 0;
+    return CL_SUCCESS;
 }
 
 static struct cli_ac_node *cli_dequeue(struct nodelist **bfs)
@@ -164,19 +164,18 @@ static int cli_maketrans(struct cli_matcher *root)
 	    }
 	}
     }
-    return 0;
+    return CL_SUCCESS;
 }
 
 int cli_ac_buildtrie(struct cli_matcher *root)
 {
-	int ret;
 
     if(!root)
 	return CL_EMALFDB;
 
     if(!root->ac_root) {
-	cli_dbgmsg("Pattern matcher not initialised\n");
-	return 0;
+	cli_dbgmsg("AC pattern matcher not initialised\n");
+	return CL_SUCCESS;
     }
 
     return cli_maketrans(root);
