@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.301 2006/05/16 20:16:38 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.302 2006/05/18 11:30:09 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -383,7 +383,7 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 	struct stat statb;
 	message *m;
 	fileblob *fb;
-	int ret = 0;
+	int ret = CL_SUCCESS;
 	int wasAlloced;
 	struct scanlist *scanlist, *scanelem;
 
@@ -735,8 +735,10 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 
 					if(datalen < 0)
 						break;
-					if(fileblobContainsVirus(fb))
+					if(fileblobContainsVirus(fb)) {
+						ret = CL_VIRUS;
 						break;
+					}
 
 					if((b64size > 0) && (*ptr == '\r')) {
 						b64start = ++ptr;
@@ -762,7 +764,7 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 				if(fb)
 					fileblobDestroy(fb);
 				else
-					ret = -1;
+					ret = CL_EIO;
 
 				messageDestroy(m);
 				free(line);
@@ -858,10 +860,12 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 				fb = messageToFileblob(m, dir);
 				messageDestroy(m);
 
-				if(fb)
+				if(fb) {
+					if(fileblobContainsVirus(fb))
+						ret = CL_VIRUS;
 					fileblobDestroy(fb);
-				else
-					ret = -1;
+				} else
+					ret = CL_EIO;
 			}
 		}
 	}
@@ -883,8 +887,8 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 	 * FIXME: Need to run cl_scandir() here and return that value
 	 */
 	cli_dbgmsg("cli_mbox: ret = %d\n", ret);
-	if(ret == 0)
-		return CL_SUCCESS;
+	if((ret == CL_SUCCESS) || (ret == CL_VIRUS))
+		return ret;
 
 	cli_dbgmsg("New world - don't know what to do - fall back to old world\n");
 	/* Fall back for now */
