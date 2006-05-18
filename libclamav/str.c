@@ -34,13 +34,16 @@
 
 static int cli_hex2int(int c)
 {
-	int l = tolower(c);
+	int l;
 
-    if (!isascii(l))
+    if(!isascii(c))
     	return -1;
-    if (isdigit(l))
-	return l - '0';
-    if ((l >= 'a') && (l <= 'f'))
+
+    if(isdigit(c))
+	return c - '0';
+
+    l = tolower(c);
+    if((l >= 'a') && (l <= 'f'))
 	return l + 10 - 'a';
 
     cli_errmsg("hex2int() translation problem (%d)\n", l);
