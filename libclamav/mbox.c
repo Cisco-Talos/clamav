@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.302 2006/05/18 11:30:09 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.303 2006/05/19 09:56:12 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -4264,7 +4264,7 @@ getline_from_mbox(char *buffer, size_t len, FILE *fin)
 		return NULL;
 
 	if((len == 0) || (buffer == NULL)) {
-		cli_errmsg("Invalid call to getline_from_mbox(). Report to bugs@clamav.net\n");
+		cli_errmsg("Invalid call to getline_from_mbox(): refer to http://www.clamav.net/bugs.html#pagestart\n");
 		return NULL;
 	}
 
