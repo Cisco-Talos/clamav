@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.47 2006/05/19 09:56:12 njh Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.48 2006/05/19 11:02:12 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -36,7 +36,6 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.47 2006/05/19 09:56:12 njh Exp $";
 
 #include "others.h"
 #include "mbox.h"
-#include "blob.h"
 #include "matcher.h"
 
 #ifndef	CL_DEBUG

@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.303 2006/05/19 09:56:12 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.304 2006/05/19 11:02:12 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -58,13 +58,7 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.303 2006/05/19 09:56:12 njh Exp $";
 #include "defaults.h"
 #include "str.h"
 #include "filetypes.h"
-#include "table.h"
 #include "mbox.h"
-#include "blob.h"
-#include "line.h"
-#include "text.h"
-#include "message.h"
-#include "uuencode.h"
 
 #ifdef	CL_DEBUG
 #if __GLIBC__ == 2 && __GLIBC_MINOR__ >= 1
@@ -383,7 +377,7 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 	struct stat statb;
 	message *m;
 	fileblob *fb;
-	int ret = CL_SUCCESS;
+	int ret = 0;
 	int wasAlloced;
 	struct scanlist *scanlist, *scanelem;
 
@@ -735,10 +729,8 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 
 					if(datalen < 0)
 						break;
-					if(fileblobContainsVirus(fb)) {
-						ret = CL_VIRUS;
+					if(fileblobContainsVirus(fb))
 						break;
-					}
 
 					if((b64size > 0) && (*ptr == '\r')) {
 						b64start = ++ptr;
@@ -764,7 +756,7 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 				if(fb)
 					fileblobDestroy(fb);
 				else
-					ret = CL_EIO;
+					ret = -1;
 
 				messageDestroy(m);
 				free(line);
@@ -860,12 +852,10 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 				fb = messageToFileblob(m, dir);
 				messageDestroy(m);
 
-				if(fb) {
-					if(fileblobContainsVirus(fb))
-						ret = CL_VIRUS;
+				if(fb)
 					fileblobDestroy(fb);
-				} else
-					ret = CL_EIO;
+				else
+					ret = -1;
 			}
 		}
 	}
@@ -887,8 +877,8 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 	 * FIXME: Need to run cl_scandir() here and return that value
 	 */
 	cli_dbgmsg("cli_mbox: ret = %d\n", ret);
-	if((ret == CL_SUCCESS) || (ret == CL_VIRUS))
-		return ret;
+	if(ret == 0)
+		return CL_SUCCESS;
 
 	cli_dbgmsg("New world - don't know what to do - fall back to old world\n");
 	/* Fall back for now */
@@ -4264,7 +4254,7 @@ getline_from_mbox(char *buffer, size_t len, FILE *fin)
 		return NULL;
 
 	if((len == 0) || (buffer == NULL)) {
-		cli_errmsg("Invalid call to getline_from_mbox(): refer to http://www.clamav.net/bugs.html#pagestart\n");
+		cli_errmsg("Invalid call to getline_from_mbox(). Report to bugs@clamav.net\n");
 		return NULL;
 	}
 

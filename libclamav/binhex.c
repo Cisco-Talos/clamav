@@ -18,6 +18,9 @@
  *
  * Change History:
  * $Log: binhex.c,v $
+ * Revision 1.19  2006/05/19 11:02:12  njh
+ * Just include mbox.h
+ *
  * Revision 1.18  2006/04/09 19:59:27  kojm
  * update GPL headers with new address for FSF
  *
@@ -70,7 +73,7 @@
  * First draft of binhex.c
  *
  */
-static	char	const	rcsid[] = "$Id: binhex.c,v 1.18 2006/04/09 19:59:27 kojm Exp $";
+static	char	const	rcsid[] = "$Id: binhex.c,v 1.19 2006/05/19 11:02:12 njh Exp $";
 
 #include "clamav.h"
 
@@ -100,11 +103,8 @@ static	char	const	rcsid[] = "$Id: binhex.c,v 1.18 2006/04/09 19:59:27 kojm Exp $
 #include <memory.h>
 #include <sys/stat.h>
 #include "others.h"
-#include "line.h"
+
 #include "mbox.h"
-#include "table.h"
-#include "blob.h"
-#include "text.h"
 #include "binhex.h"
 
 int

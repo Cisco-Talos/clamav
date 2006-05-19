@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.169 2006/05/18 11:31:57 njh Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.170 2006/05/19 11:02:12 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -49,13 +49,9 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.169 2006/05/18 11:31:57 njh Exp 
 #include "others.h"
 #include "str.h"
 #include "filetypes.h"
-
-#include "line.h"
-#include "mbox.h"
-#include "table.h"
-#include "blob.h"
-#include "text.h"
 #include "strrcpy.h"
+
+#include "mbox.h"
 
 /* required for AIX and Tru64 */
 #ifdef TRUE

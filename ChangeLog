@@ -1,3 +1,7 @@
+Fri May 19 12:02:28 BST 2006 (njh)
+----------------------------------
+  libclamav:	Mbox related files now only need to include mbox.h
+
 Fri May 19 10:56:48 BST 2006 (njh)
 ---------------------------------
   * various:	Refer to the webpage for submitting bug reports, not just an
