@@ -25,7 +25,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.34 2006/05/19 09:56:12 njh Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.35 2006/05/19 11:02:12 njh Exp $";
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -33,11 +33,9 @@ static	char	const	rcsid[] = "$Id: tnef.c,v 1.34 2006/05/19 09:56:12 njh Exp $";
 #include "cltypes.h"
 #include "clamav.h"
 #include "others.h"
-#include "tnef.h"
-#if	CL_DEBUG
+
 #include "mbox.h"
-#endif
-#include "blob.h"
+#include "tnef.h"
 
 static	int	tnef_message(FILE *fp, uint16_t type, uint16_t tag, int32_t length, off_t fsize);
 static	int	tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, int32_t length, const char *dir, fileblob **fbref, off_t fsize);

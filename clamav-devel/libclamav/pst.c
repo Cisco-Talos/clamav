@@ -36,7 +36,7 @@
  * TODO: Remove the vcard handling
  * FIXME: The code does little error checking of OOM scenarios
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.27 2006/05/15 10:14:54 njh Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.28 2006/05/19 11:02:12 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -63,7 +63,6 @@ typedef	uint32_t	u_int32_t;
 #include "pst.h"
 
 #include "mbox.h"
-#include "blob.h"
 
 #define	DWORD	unsigned int
 

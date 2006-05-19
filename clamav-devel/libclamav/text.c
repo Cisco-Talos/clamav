@@ -17,6 +17,9 @@
  *  MA 02110-1301, USA.
  *
  * $Log: text.c,v $
+ * Revision 1.19  2006/05/19 11:02:12  njh
+ * Just include mbox.h
+ *
  * Revision 1.18  2006/05/04 10:37:03  nigelhorne
  * Speed up scanning of clean files
  *
@@ -64,7 +67,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: text.c,v 1.18 2006/05/04 10:37:03 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: text.c,v 1.19 2006/05/19 11:02:12 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -91,10 +94,8 @@ static	char	const	rcsid[] = "$Id: text.c,v 1.18 2006/05/04 10:37:03 nigelhorne E
 #include <stdio.h>
 
 #include "others.h"
-#include "line.h"
+
 #include "mbox.h"
-#include "blob.h"
-#include "text.h"
 
 static	text	*textCopy(const text *t_head);
 static	void	addToFileblob(const line_t *line, void *arg);

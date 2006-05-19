@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: uuencode.c,v 1.3 2006/04/09 19:59:28 kojm Exp $";
+static	char	const	rcsid[] = "$Id: uuencode.c,v 1.4 2006/05/19 11:02:12 njh Exp $";
 
 #include "clamav.h"
 
@@ -29,13 +29,10 @@ static	char	const	rcsid[] = "$Id: uuencode.c,v 1.3 2006/04/09 19:59:28 kojm Exp 
 #include <memory.h>
 #include <sys/stat.h>
 #include "others.h"
-#include "mbox.h"
-#include "blob.h"
-#include "line.h"
-#include "text.h"
-#include "message.h"
-#include "uuencode.h"
 #include "str.h"
+
+#include "mbox.h"
+#include "uuencode.h"
 
 /* Maximum line length according to RFC821 */
 #define	RFC2821LENGTH	1000

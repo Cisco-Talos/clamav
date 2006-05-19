@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.49 2006/04/11 20:25:40 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.50 2006/05/19 11:02:12 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -47,11 +47,8 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.49 2006/04/11 20:25:40 nigelhorne Ex
 #include <zlib.h>
 #endif
 
-#include "table.h"
 #include "mbox.h"
-#include "blob.h"
 #include "pdf.h"
-#include "md5.h"
 
 static	int	flatedecode(const unsigned char *buf, size_t len, int fout, const cli_ctx *ctx);
 static	int	ascii85decode(const char *buf, size_t len, unsigned char *output);

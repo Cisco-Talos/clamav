@@ -38,5 +38,12 @@ typedef enum {
 #define UNIX
 #endif
 
+#include "table.h"
+#include "blob.h"
+#include "line.h"
+#include "text.h"
+#include "message.h"
+#include "uuencode.h"
+
 size_t	strstrip(char *s);	/* remove trailing white space */
 int	cli_mbox(const char *dir, int desc, cli_ctx *ctx);
