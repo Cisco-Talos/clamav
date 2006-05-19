@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.241 2006/05/12 17:15:39 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.242 2006/05/19 09:54:05 njh Exp $";
 
 #define	CM_VERSION	"devel-120506"
 
@@ -515,7 +515,7 @@ help(void)
 	puts(_("\t--debug-level=n\t\t-x n\tSets the debug level to 'n'."));
 #endif
 	puts(_("\nFor more information type \"man clamav-milter\"."));
-	puts(_("Report bugs to bugs@clamav.net."));
+	puts(_("For bug reports, please refer to http://www.clamav.net/bugs.html#pagestart"));
 }
 
 int
@@ -4477,6 +4477,7 @@ setsubject(SMFICTX *ctx, const char *virusname)
  * TODO: gethostbyname_r is non-standard so different operating
  * systems do it in different ways. Need more examples
  * Perhaps we could use res_search()?
+ * Perhaps we could use http://www.chiark.greenend.org.uk/~ian/adns/
  *
  * Returns 0 for success
  */
