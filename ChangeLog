@@ -1,3 +1,9 @@
+Mon May 22 18:27:09 CEST 2006 (tk)
+----------------------------------
+  * libclamav/unzip.[ch]: new files
+  * libclamav/zziplib: remove all files
+  * libclamav: use new zip module
+
 Fri May 19 12:02:28 BST 2006 (njh)
 ----------------------------------
   libclamav:	Mbox related files now only need to include mbox.h

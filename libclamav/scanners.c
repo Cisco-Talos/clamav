@@ -72,7 +72,7 @@ extern short cli_leavetemps_flag;
 
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>
-#include <zzip.h>
+#include "unzip.h"
 #endif
 
 #ifdef HAVE_BZLIB_H
@@ -259,9 +259,9 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 #ifdef HAVE_ZLIB_H
 static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 {
-	ZZIP_DIR *zdir;
-	ZZIP_DIRENT zdirent;
-	ZZIP_FILE *zfp;
+	zip_dir *zdir;
+	zip_dirent zdirent;
+	zip_file *zfp;
 	FILE *tmp = NULL;
 	char *tmpname = NULL, *buff;
 	int fd, bytes, ret = CL_CLEAN;
@@ -269,16 +269,14 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	unsigned int files = 0, encrypted;
 	struct stat source;
 	struct cli_meta_node *mdata;
-	zzip_error_t err;
+	int err;
+	uint8_t swarning = 0;
 
 
     cli_dbgmsg("in scanzip()\n");
 
-    if(sfx_offset)
-	lseek(desc, sfx_offset, SEEK_SET);
-
-    if((zdir = zzip_dir_fdopen(dup(desc), &err)) == NULL) {
-	cli_dbgmsg("Zip: zzip_dir_fdopen() return code: %d\n", err);
+    if((zdir = zip_dir_open(desc, sfx_offset, &err)) == NULL) {
+	cli_dbgmsg("Zip: zip_dir_open() return code: %d\n", err);
 	/* no return with CL_EZIP due to password protected zips */
 	return CL_CLEAN;
     }
@@ -287,11 +285,11 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 
     if(!(buff = (char *) cli_malloc(FILEBUFF))) {
 	cli_dbgmsg("Zip: unable to malloc(%d)\n", FILEBUFF);
-	zzip_dir_close(zdir);
+	zip_dir_close(zdir);
 	return CL_EMEM;
     }
 
-    while(zzip_dir_read(zdir, &zdirent)) {
+    while(zip_dir_read(zdir, &zdirent)) {
 	files++;
 
 	if(files == 1 && sfx_check) {
@@ -301,8 +299,8 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 		*sfx_check = zdirent.d_crc32;
 	}
 
-	if(!zdirent.d_name || !strlen(zdirent.d_name)) { /* Mimail fix */
-	    cli_dbgmsg("Zip: strlen(zdirent.d_name) == %d\n", strlen(zdirent.d_name));
+	if(!zdirent.d_name) {
+	    cli_dbgmsg("Zip: zdirent.d_name == NULL\n", strlen(zdirent.d_name));
 	    *ctx->virname = "Suspect.Zip";
 	    ret = CL_VIRUS;
 	    break;
@@ -375,7 +373,6 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    continue;
 	}
 
-	/* work-around for problematic zips (zziplib crashes with them) */
 	if(zdirent.d_csize <= 0 || zdirent.st_size < 0) {
 	    cli_dbgmsg("Zip: Malformed archive detected.\n");
 	    *ctx->virname = "Suspect.Zip";
@@ -425,27 +422,36 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    }
 	}
 
-	if((zfp = zzip_file_open(zdir, zdirent.d_name, 0, zdirent.d_off)) == NULL) {
-	    cli_dbgmsg("Zip: Can't open file %s\n", zdirent.d_name);
-	    ret = CL_EZIP;
-	    break;
+	if((zfp = zip_file_open(zdir, zdirent.d_name, zdirent.d_off)) == NULL) {
+	    if(zdir->errcode == CL_ESUPPORT) {
+		ret = CL_ESUPPORT;
+		if(!swarning) {
+		    cli_warnmsg("Not supported compression method in one or more files\n");
+		    swarning = 1;
+		    continue;
+		}
+	    } else {
+		cli_dbgmsg("Zip: Can't open file %s\n", zdirent.d_name);
+		ret = CL_EZIP;
+		break;
+	    }
 	}
 
 	/* generate temporary file and get its descriptor */
 	if((tmpname = cli_gentempstream(NULL, &tmp)) == NULL) {
 	    cli_dbgmsg("Zip: Can't generate tmpfile().\n");
-	    zzip_file_close(zfp);
+	    zip_file_close(zfp);
 	    ret = CL_ETMPFILE;
 	    break;
 	}
 
 	size = 0;
-	while((bytes = zzip_file_read(zfp, buff, FILEBUFF)) > 0) {
+	while((bytes = zip_file_read(zfp, buff, FILEBUFF)) > 0) {
 	    size += bytes;
 	    if(fwrite(buff, 1, bytes, tmp) != (size_t) bytes) {
 		cli_dbgmsg("Zip: Can't write to file.\n");
-		zzip_file_close(zfp);
-		zzip_dir_close(zdir);
+		zip_file_close(zfp);
+		zip_dir_close(zdir);
 		fclose(tmp);
 		if(!cli_leavetemps_flag)
 		    unlink(tmpname);
@@ -455,7 +461,7 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    }
 	}
 
-	zzip_file_close(zfp);
+	zip_file_close(zfp);
 
 	if(!encrypted && size != zdirent.st_size) {
 	    cli_dbgmsg("Zip: Incorrectly decompressed (%d != %d)\n", size, zdirent.st_size);
@@ -464,7 +470,7 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	}
 
 	if(fflush(tmp) != 0) {
-	    cli_dbgmsg("Zip: fflush() failed: %s\n", strerror(errno));
+	    cli_dbgmsg("Zip: fflush() failed\n");
 	    ret = CL_EFSYNC;
 	    break;
 	}
@@ -483,7 +489,7 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    break;
 	}
 
-	if (tmp) {
+	if(tmp) {
 	    fclose(tmp);
 	    if(!cli_leavetemps_flag)
 		unlink(tmpname);
@@ -492,8 +498,8 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	}
     }
 
-    zzip_dir_close(zdir);
-    if (tmp) {
+    zip_dir_close(zdir);
+    if(tmp) {
 	fclose(tmp);
 	if(!cli_leavetemps_flag)
 	    unlink(tmpname);

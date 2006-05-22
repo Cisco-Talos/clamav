@@ -196,6 +196,8 @@ const char *cl_strerror(int clerror)
 	    return "Input/Output error";
 	case CL_EFORMAT:
 	    return "Bad format or broken data";
+	case CL_ESUPPORT:
+	    return "Not supported data format";
 	case CL_EHWINIT:
 	    return "Hardware initialization failure";
 	case CL_EHWLOAD:

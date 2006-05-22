@@ -64,10 +64,11 @@ extern "C"
 #define CL_EDSIG	-11 /* digital signature verification error */
 #define CL_EIO		-12 /* general I/O error */
 #define CL_EFORMAT	-13 /* bad format or broken file */
+#define CL_ESUPPORT	-14 /* not supported data format */
 
-#define CL_EHWINIT	-14 /* hardware initialization failed */
-#define	CL_EHWLOAD	-15 /* error loading hardware database */
-#define CL_EHWIO	-16 /* general hardware I/O error */
+#define CL_EHWINIT	-15 /* hardware initialization failed */
+#define	CL_EHWLOAD	-16 /* error loading hardware database */
+#define CL_EHWIO	-17 /* general hardware I/O error */
 
 
 /* db options */

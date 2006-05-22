@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+#  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 #  MA 02110-1301, USA.
 
 
-INCLUDES = -I$(top_srcdir) -I@srcdir@/zziplib -I@srcdir@/mspack -I@srcdir@/unrar
+INCLUDES = -I$(top_srcdir) -I@srcdir@/mspack -I@srcdir@/unrar
 
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@
 
@@ -50,22 +50,6 @@ libclamav_la_SOURCES = \
 	scanners.h \
 	filetypes.c \
 	filetypes.h \
-	zziplib/zzip-conf.h \
-	zziplib/zzip-config.h \
-	zziplib/zzip-dir.c \
-	zziplib/zzip-err.c \
-	zziplib/zzip-file.c \
-	zziplib/zzip-file.h \
-	zziplib/zzip-info.c \
-	zziplib/zzip-io.c \
-	zziplib/zzip-io.h \
-	zziplib/zzip-stat.c \
-	zziplib/zzip-zip.c \
-	zziplib/zzip.h \
-	zziplib/zzipformat.h \
-	zziplib/zziplib.h \
-	zziplib/strc.c \
-	zziplib/strc.h \
 	blob.c \
 	blob.h \
 	mbox.c \
@@ -116,6 +100,8 @@ libclamav_la_SOURCES = \
 	line.h \
 	untar.c \
 	untar.h \
+	unzip.c \
+	unzip.h \
 	special.c \
 	special.h \
 	binhex.c \
