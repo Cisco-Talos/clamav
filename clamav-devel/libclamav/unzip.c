@@ -429,12 +429,12 @@ zip_file *zip_file_open(zip_dir *dir, const char *name, int d_off)
 		case ZIP_METHOD_IMPLODED_DCL:
 		case ZIP_METHOD_BZIP2:
 		case ZIP_METHOD_AES:
-		    cli_dbgmsg("Unzip: zip_file_open: Not supported compression method (%d)\n");
+		    cli_dbgmsg("Unzip: zip_file_open: Not supported compression method (%d)\n", hdr->d_compr);
 		    dir->errcode = CL_ESUPPORT;
 		    return NULL;
 
 		default:
-		    cli_errmsg("Unzip: zip_file_read: Unknown compression method (%d)\n", fp->method);
+		    cli_errmsg("Unzip: zip_file_read: Unknown compression method (%d)\n", hdr->d_compr);
 		    dir->errcode = CL_EFORMAT;
 		    return NULL;
             }
