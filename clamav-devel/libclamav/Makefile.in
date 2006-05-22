@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 #
-#  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+#  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -79,15 +79,14 @@ LTLIBRARIES = $(lib_LTLIBRARIES)
 libclamav_la_DEPENDENCIES =
 am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	md5.lo others.lo readdb.lo cvd.lo dsig.lo str.lo scanners.lo \
-	filetypes.lo zzip-dir.lo zzip-err.lo zzip-file.lo zzip-info.lo \
-	zzip-io.lo zzip-stat.lo zzip-zip.lo strc.lo blob.lo mbox.lo \
-	message.lo snprintf.lo strrcpy.lo table.lo text.lo \
-	ole2_extract.lo vba_extract.lo msexpand.lo pe.lo cabd.lo \
-	lzxd.lo mszipd.lo qtmd.lo system.lo upx.lo htmlnorm.lo \
-	chmunpack.lo rebuildpe.lo petite.lo fsg.lo line.lo untar.lo \
-	special.lo binhex.lo is_tar.lo tnef.lo unrar15.lo unrarvm.lo \
-	unrar.lo unrarfilter.lo unrarppm.lo unrar20.lo unrarcmd.lo \
-	pdf.lo spin.lo yc.lo elf.lo sis.lo uuencode.lo pst.lo
+	filetypes.lo blob.lo mbox.lo message.lo snprintf.lo strrcpy.lo \
+	table.lo text.lo ole2_extract.lo vba_extract.lo msexpand.lo \
+	pe.lo cabd.lo lzxd.lo mszipd.lo qtmd.lo system.lo upx.lo \
+	htmlnorm.lo chmunpack.lo rebuildpe.lo petite.lo fsg.lo line.lo \
+	untar.lo unzip.lo special.lo binhex.lo is_tar.lo tnef.lo \
+	unrar15.lo unrarvm.lo unrar.lo unrarfilter.lo unrarppm.lo \
+	unrar20.lo unrarcmd.lo pdf.lo spin.lo yc.lo elf.lo sis.lo \
+	uuencode.lo pst.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -215,7 +214,7 @@ target_alias = @target_alias@
 target_cpu = @target_cpu@
 target_os = @target_os@
 target_vendor = @target_vendor@
-INCLUDES = -I$(top_srcdir) -I@srcdir@/zziplib -I@srcdir@/mspack -I@srcdir@/unrar
+INCLUDES = -I$(top_srcdir) -I@srcdir@/mspack -I@srcdir@/unrar
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 include_HEADERS = clamav.h
@@ -244,22 +243,6 @@ libclamav_la_SOURCES = \
 	scanners.h \
 	filetypes.c \
 	filetypes.h \
-	zziplib/zzip-conf.h \
-	zziplib/zzip-config.h \
-	zziplib/zzip-dir.c \
-	zziplib/zzip-err.c \
-	zziplib/zzip-file.c \
-	zziplib/zzip-file.h \
-	zziplib/zzip-info.c \
-	zziplib/zzip-io.c \
-	zziplib/zzip-io.h \
-	zziplib/zzip-stat.c \
-	zziplib/zzip-zip.c \
-	zziplib/zzip.h \
-	zziplib/zzipformat.h \
-	zziplib/zziplib.h \
-	zziplib/strc.c \
-	zziplib/strc.h \
 	blob.c \
 	blob.h \
 	mbox.c \
@@ -310,6 +293,8 @@ libclamav_la_SOURCES = \
 	line.h \
 	untar.c \
 	untar.h \
+	unzip.c \
+	unzip.h \
 	special.c \
 	special.h \
 	binhex.c \
@@ -454,7 +439,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/special.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/str.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strrcpy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/system.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/table.Plo@am__quote@
@@ -468,17 +452,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrarppm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrarvm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/untar.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unzip.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/upx.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/uuencode.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vba_extract.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yc.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/zzip-dir.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/zzip-err.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/zzip-file.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/zzip-info.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/zzip-io.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/zzip-stat.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/zzip-zip.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -500,62 +478,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
-
-zzip-dir.lo: zziplib/zzip-dir.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT zzip-dir.lo -MD -MP -MF "$(DEPDIR)/zzip-dir.Tpo" -c -o zzip-dir.lo `test -f 'zziplib/zzip-dir.c' || echo '$(srcdir)/'`zziplib/zzip-dir.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/zzip-dir.Tpo" "$(DEPDIR)/zzip-dir.Plo"; else rm -f "$(DEPDIR)/zzip-dir.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='zziplib/zzip-dir.c' object='zzip-dir.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o zzip-dir.lo `test -f 'zziplib/zzip-dir.c' || echo '$(srcdir)/'`zziplib/zzip-dir.c
-
-zzip-err.lo: zziplib/zzip-err.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT zzip-err.lo -MD -MP -MF "$(DEPDIR)/zzip-err.Tpo" -c -o zzip-err.lo `test -f 'zziplib/zzip-err.c' || echo '$(srcdir)/'`zziplib/zzip-err.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/zzip-err.Tpo" "$(DEPDIR)/zzip-err.Plo"; else rm -f "$(DEPDIR)/zzip-err.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='zziplib/zzip-err.c' object='zzip-err.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o zzip-err.lo `test -f 'zziplib/zzip-err.c' || echo '$(srcdir)/'`zziplib/zzip-err.c
-
-zzip-file.lo: zziplib/zzip-file.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT zzip-file.lo -MD -MP -MF "$(DEPDIR)/zzip-file.Tpo" -c -o zzip-file.lo `test -f 'zziplib/zzip-file.c' || echo '$(srcdir)/'`zziplib/zzip-file.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/zzip-file.Tpo" "$(DEPDIR)/zzip-file.Plo"; else rm -f "$(DEPDIR)/zzip-file.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='zziplib/zzip-file.c' object='zzip-file.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o zzip-file.lo `test -f 'zziplib/zzip-file.c' || echo '$(srcdir)/'`zziplib/zzip-file.c
-
-zzip-info.lo: zziplib/zzip-info.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT zzip-info.lo -MD -MP -MF "$(DEPDIR)/zzip-info.Tpo" -c -o zzip-info.lo `test -f 'zziplib/zzip-info.c' || echo '$(srcdir)/'`zziplib/zzip-info.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/zzip-info.Tpo" "$(DEPDIR)/zzip-info.Plo"; else rm -f "$(DEPDIR)/zzip-info.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='zziplib/zzip-info.c' object='zzip-info.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o zzip-info.lo `test -f 'zziplib/zzip-info.c' || echo '$(srcdir)/'`zziplib/zzip-info.c
-
-zzip-io.lo: zziplib/zzip-io.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT zzip-io.lo -MD -MP -MF "$(DEPDIR)/zzip-io.Tpo" -c -o zzip-io.lo `test -f 'zziplib/zzip-io.c' || echo '$(srcdir)/'`zziplib/zzip-io.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/zzip-io.Tpo" "$(DEPDIR)/zzip-io.Plo"; else rm -f "$(DEPDIR)/zzip-io.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='zziplib/zzip-io.c' object='zzip-io.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o zzip-io.lo `test -f 'zziplib/zzip-io.c' || echo '$(srcdir)/'`zziplib/zzip-io.c
-
-zzip-stat.lo: zziplib/zzip-stat.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT zzip-stat.lo -MD -MP -MF "$(DEPDIR)/zzip-stat.Tpo" -c -o zzip-stat.lo `test -f 'zziplib/zzip-stat.c' || echo '$(srcdir)/'`zziplib/zzip-stat.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/zzip-stat.Tpo" "$(DEPDIR)/zzip-stat.Plo"; else rm -f "$(DEPDIR)/zzip-stat.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='zziplib/zzip-stat.c' object='zzip-stat.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o zzip-stat.lo `test -f 'zziplib/zzip-stat.c' || echo '$(srcdir)/'`zziplib/zzip-stat.c
-
-zzip-zip.lo: zziplib/zzip-zip.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT zzip-zip.lo -MD -MP -MF "$(DEPDIR)/zzip-zip.Tpo" -c -o zzip-zip.lo `test -f 'zziplib/zzip-zip.c' || echo '$(srcdir)/'`zziplib/zzip-zip.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/zzip-zip.Tpo" "$(DEPDIR)/zzip-zip.Plo"; else rm -f "$(DEPDIR)/zzip-zip.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='zziplib/zzip-zip.c' object='zzip-zip.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o zzip-zip.lo `test -f 'zziplib/zzip-zip.c' || echo '$(srcdir)/'`zziplib/zzip-zip.c
-
-strc.lo: zziplib/strc.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT strc.lo -MD -MP -MF "$(DEPDIR)/strc.Tpo" -c -o strc.lo `test -f 'zziplib/strc.c' || echo '$(srcdir)/'`zziplib/strc.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/strc.Tpo" "$(DEPDIR)/strc.Plo"; else rm -f "$(DEPDIR)/strc.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='zziplib/strc.c' object='strc.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o strc.lo `test -f 'zziplib/strc.c' || echo '$(srcdir)/'`zziplib/strc.c
 
 cabd.lo: mspack/cabd.c
 @am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cabd.lo -MD -MP -MF "$(DEPDIR)/cabd.Tpo" -c -o cabd.lo `test -f 'mspack/cabd.c' || echo '$(srcdir)/'`mspack/cabd.c; \
