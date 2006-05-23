@@ -1,3 +1,8 @@
+Tue May 23 21:51:37 CEST 2006 (acab)
+------------------------------------
+  * libclamav/upx.c: Improved UPX unpacking capabilities and geneal cleanup
+                     Patch by Andrey J. Melnikoff
+
 Mon May 22 18:27:09 CEST 2006 (tk)
 ----------------------------------
   * libclamav/unzip.[ch]: new files
