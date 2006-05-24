@@ -70,9 +70,9 @@
 "
 
 #if WORDS_BIGENDIAN == 0
-#define CLI_READLE32(x) *(int32_t *)(x)
+#define CLI_READLE32(x) (*(int32_t *)(x))
 #else
-#define CLI_READLE32(x) ((*x) >> 24) | ((*(x+1) & 0x00FF0000) >> 8) | \
+#define CLI_READLE32(x) (((*x) >> 24) | ((*(x+1) & 0x00FF0000) >> 8) | \
 			    ((*(x+2) & 0x0000FF00) << 8) | (*(x) << 24))
 #endif
 
