@@ -70,7 +70,7 @@ typedef struct {
 #define le16_to_host(v)	(v)
 #define le32_to_host(v)	(v)
 #define le64_to_host(v)	(v)
-#define	be16_to_host(v)	((v >> 8) | (v << 8))
+#define	be16_to_host(v)	((v >> 8) | (v & 0xFF << 8))
 #define	be32_to_host(v)	((v >> 24) | ((v & 0x00FF0000) >> 8) | \
 				((v & 0x0000FF00) << 8) | (v << 24))
 #define be64_to_host(v)	((v >> 56) | ((v & 0x00FF000000000000LL) >> 40) | \
@@ -81,7 +81,7 @@ typedef struct {
 				((v & 0x000000000000FF00LL) << 40) | \
 				(v << 56))
 #else
-#define	le16_to_host(v)	((v >> 8) | (v << 8))
+#define	le16_to_host(v)	((v >> 8) | (v & 0xFF << 8))
 #define	le32_to_host(v)	((v >> 24) | ((v & 0x00FF0000) >> 8) | \
 				((v & 0x0000FF00) << 8) | (v << 24))
 #define le64_to_host(v)	((v >> 56) | ((v & 0x00FF000000000000LL) >> 40) | \
