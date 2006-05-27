@@ -222,7 +222,7 @@ static int upx_find_ep(char *src, uint32_t ssize, uint32_t upx1, uint32_t ep)
     /* Shift to decompressor start */
     src += (ep - upx1);
         
-    for (i = 0xC0; i != len - 6; i++){
+    for (i = 0xC0; i != len - 10; i++){
 	if ((CLI_READLE32(src+i) & 0x0000FFFF) == 0x0000BE8D){
 	    cli_dbgmsg("UPX: found at %p, off: %x val: %08x\n", src+i+6, i+6, CLI_READLE32(src+i+6));
 	    if (CLI_READLE32(src+i+6) == 0xC009078B){
