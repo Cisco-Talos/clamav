@@ -428,8 +428,8 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 		if(!swarning) {
 		    cli_warnmsg("Not supported compression method in one or more files\n");
 		    swarning = 1;
-		    continue;
 		}
+		continue;
 	    } else {
 		cli_dbgmsg("Zip: Can't open file %s\n", zdirent.d_name);
 		ret = CL_EZIP;

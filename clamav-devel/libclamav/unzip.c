@@ -343,11 +343,18 @@ int zip_dir_read(zip_dir *dir, zip_dirent *d)
 
 int zip_file_close(zip_file *fp)
 {
-	zip_dir *dir = fp->dir;
+	zip_dir *dir;
+
+
+    if(!fp) {
+	cli_errmsg("Unzip: zip_file_close: fp == NULL\n");
+	return CL_ENULLARG;
+    }
 
     if(fp->method)
         inflateEnd(&fp->d_stream);
 
+    dir = fp->dir;
     if(fp->buf32k) {
         if(!dir->cache.buf32k)
 	    dir->cache.buf32k = fp->buf32k;
