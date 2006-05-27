@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.170 2006/05/19 11:02:12 njh Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.171 2006/05/27 14:35:13 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1381,7 +1381,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 				 * system. Treat as plain/text, which means we'll still scan
 				 * for funnies outside of the uuencoded portion.
 				 */
-				cli_dbgmsg("messageExport: treat uuencode as text/plain");
+				cli_dbgmsg("messageExport: treat uuencode as text/plain\n");
 				enctype = m->encodingTypes[i] = NOENCODING;
 			}
 			filename = (char *)messageFindArgument(m, "filename");

@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.50 2006/05/19 11:02:12 njh Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.51 2006/05/27 14:32:47 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -266,7 +266,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		if(streamend == NULL) {
 			streamend = cli_pmemstr(streamstart, len, "endstream\r", 10);
 			if(streamend == NULL) {
-				cli_dbgmsg("No endstream");
+				cli_dbgmsg("No endstream\n");
 				break;
 			}
 		}
@@ -276,7 +276,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		streamlen = (int)(streamend - streamstart) + 1;
 
 		if(streamlen == 0) {
-			cli_dbgmsg("Empty stream");
+			cli_dbgmsg("Empty stream\n");
 			continue;
 		}
 
