@@ -216,7 +216,7 @@ static int upx_find_ep(char *src, uint32_t ssize, uint32_t upx1, uint32_t ep)
 
     /* Verify decompressor length. Avoid crashing on multiple 
      * compressed files. exe packed by UPX and PEC. */
-    if (!CLI_ISCONTAINED(src, ssize, src + ep - upx1, len))
+    if (!CLI_ISCONTAINED(src, ssize, src + ep - upx1 + 0xc0, len))
 	return -1;
 
     /* Shift to decompressor start */
