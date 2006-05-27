@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.305 2006/05/27 14:29:54 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.306 2006/05/27 14:35:13 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2263,7 +2263,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						}
 
 				if(htmltextPart == -1)
-					cli_dbgmsg("No HTML code found to be scanned");
+					cli_dbgmsg("No HTML code found to be scanned\n");
 				else {
 					rc = parseEmailBody(aMessage, aText, dir, rfc821Table, subtypeTable, ctx);
 					if(rc == 1) {
@@ -2405,7 +2405,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							/*
 							 * No plain text version
 							 */
-							cli_dbgmsg("No plain text alternative");
+							cli_dbgmsg("No plain text alternative\n");
 						break;
 					case TEXT:
 						dtype = messageGetDispositionType(aMessage);
@@ -2930,7 +2930,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				fileblobSetFilename(fb, dir, "bounce");
 				/*fileblobSetCTX(fb, ctx);*/
 				if(textToFileblob(start, fb) == NULL)
-					cli_dbgmsg("Nothing new to save in the bounce message");
+					cli_dbgmsg("Nothing new to save in the bounce message\n");
 				else
 					rc = 1;
 				fileblobDestroy(fb);
