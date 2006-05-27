@@ -1,3 +1,8 @@
+Sat May 27 16:23:43 CEST 2006 (tk)
+----------------------------------
+  * libclamav/others.h: ?e16_to_host macros were promoting 16-bit values to 24
+			Patch by Andy Fiddaman <clam*fiddaman.net>
+
 Sat May 27 13:50:42 CEST 2006 (tk)
 ----------------------------------
   * libclamav/scanners.c: fix logic bug in new code
