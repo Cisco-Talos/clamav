@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.304 2006/05/19 11:02:12 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.305 2006/05/27 14:29:54 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2655,7 +2655,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			   (strcasecmp(mimeSubtype, "delivery-status") == 0)) {
 				message *m = parseEmailHeaders(mainMessage, rfc821Table);
 				if(m) {
-					cli_dbgmsg("Decode rfc822");
+					cli_dbgmsg("Decode rfc822\n");
 
 					messageSetCTX(m, ctx);
 
