@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.306 2006/05/27 14:35:13 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.307 2006/05/28 09:30:00 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1494,7 +1494,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 			case CONTENT_TRANSFER_ENCODING:
 			case CONTENT_DISPOSITION:
 			case CONTENT_TYPE:
-				cli_dbgmsg("parseEmailHeaders: Fullline unparsed '%s'\n", fullline);
+				cli_dbgmsg("parseEmailFile: Fullline unparsed '%s'\n", fullline);
 		}
 		free(fullline);
 	}
@@ -1531,6 +1531,7 @@ static message *
 parseEmailHeaders(const message *m, const table_t *rfc821)
 {
 	bool inHeader = TRUE;
+	bool bodyIsEmpty = TRUE;
 	const text *t;
 	message *ret;
 	bool anyHeadersFound = FALSE;
@@ -1562,11 +1563,12 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 				 * the header and the start of the text
 				 */
 				cli_dbgmsg("End of header information\n");
-				inHeader = FALSE;
 				if(!anyHeadersFound) {
 					cli_dbgmsg("Nothing interesting in the header\n");
 					break;
 				}
+				inHeader = FALSE;
+				bodyIsEmpty = TRUE;
 			} else {
 				char *ptr;
 				const char *qptr;
@@ -1651,10 +1653,30 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 				free(fullline);
 				fullline = NULL;
 			}
-		} else
+		} else {
+			if(bodyIsEmpty) {
+				if(buffer == NULL)
+					/* throw away leading blank lines */
+					continue;
+				cli_dbgmsg("bodyIsEmpty, check \"%s\"\n", buffer);
+				/*
+				 * Broken message: new line in the
+				 * middle of the headers, so the first
+				 * line of the body is in fact
+				 * the last lines of the header
+				 */
+				if(strncmp(buffer, "Message-Id: ", 12) == 0)
+					continue;
+				if(strncmp(buffer, "Date: ", 6) == 0)
+					continue;
+				bodyIsEmpty = FALSE;
+			}
+			/*if(t->t_line && isuuencodebegin(t->t_line))
+				puts("FIXME: add fast visa here");*/
 			/*cli_dbgmsg("Add line to body '%s'\n", buffer);*/
 			if(messageAddLine(ret, t->t_line) < 0)
 				break;
+		}
 	}
 
 	if(fullline) {
@@ -4254,7 +4276,7 @@ getline_from_mbox(char *buffer, size_t len, FILE *fin)
 		return NULL;
 
 	if((len == 0) || (buffer == NULL)) {
-		cli_errmsg("Invalid call to getline_from_mbox(). Report to bugs@clamav.net\n");
+		cli_errmsg("Invalid call to getline_from_mbox(). Refer to http://www.clamav.net/bugs.html#pagestart\n");
 		return NULL;
 	}
 
@@ -4294,7 +4316,7 @@ getline_from_mbox(char *buffer, size_t len, FILE *fin)
 		return NULL;
 	}
 	if(len == 1)
-		/* over flows will have appear on separate lines */
+		/* overflows will have appeared on separate lines */
 		cli_dbgmsg("getline_from_mbox: buffer overflow stopped - line recovered\n");
 	*buffer = '\0';
 
