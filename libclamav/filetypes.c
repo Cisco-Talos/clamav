@@ -116,7 +116,7 @@ static const struct cli_magic_s cli_magic[] = {
     /* Others */
 
     {0,  "\320\317\021\340\241\261\032\341", 8, "OLE2 container", CL_TYPE_MSOLE2},
-    {0,  "%%PDF-",			 5, "PDF document", CL_TYPE_PDF},
+    {0,  "\%PDF-",			 5, "PDF document", CL_TYPE_PDF},
     {0,  "\266\271\254\256\376\377\377\377", 8, "CryptFF", CL_TYPE_CRYPTFF},
 
     /* Ignored types */
@@ -126,7 +126,7 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "OggS",                         4, "Ogg Stream",         CL_TYPE_DATA},
     {0,  "ID3",				 3, "MP3",		  CL_TYPE_DATA},
     {0,  "\377\373\220",		 3, "MP3",		  CL_TYPE_DATA},
-    {0,  "%%!PS-Adobe-",		11, "PostScript",	  CL_TYPE_DATA},
+    {0,  "\%!PS-Adobe-",		11, "PostScript",	  CL_TYPE_DATA},
     {0,  "\060\046\262\165\216\146\317", 7, "WMA/WMV/ASF",	  CL_TYPE_DATA},
     {0,  ".RMF" ,			 4, "Real Media File",	  CL_TYPE_DATA},
 
