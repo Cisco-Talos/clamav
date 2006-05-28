@@ -1,3 +1,7 @@
+Sun May 28 10:30:18 BST 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Extra patch similar to Tue May 16 21:15:25 BST 2006
+
 Sun May 28 00:42:05 CEST 2006 (acab)
 ------------------------------------
   * libclamav/upx.c: Fixed upx bug in find_ep reported by Sven
