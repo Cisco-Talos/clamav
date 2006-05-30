@@ -1,3 +1,8 @@
+Tue May 30 15:45:24 CEST 2006 (tk)
+----------------------------------
+  * libclamav/others.h: add missing brackets to some endian macros, spotted
+			by Trog
+
 Tue May 30 14:49:39 CEST 2006 (tk)
 ----------------------------------
   * libclamav/unzip.c: improve __zip_find_disk_trailer, try to detect proper
