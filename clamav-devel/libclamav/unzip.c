@@ -175,6 +175,7 @@ int __zip_parse_root_directory(int fd, struct zip_disk_trailer *trailer, zip_dir
 	uint32_t u_rootsize = EC32(trailer->z_rootsize);  
 	uint32_t u_rootseek = EC32(trailer->z_rootseek) + start;
         uint16_t u_extras, u_comment, u_namlen, u_flags;
+	char *pt;
 
 
     if(fstat(fd, &sb) == -1) {
@@ -256,8 +257,12 @@ int __zip_parse_root_directory(int fd, struct zip_disk_trailer *trailer, zip_dir
 	    break;
 	}
 
-	hdr->d_reclen = (uint16_t) (sizeof(zip_dir_hdr) + u_namlen + 1);
+	pt = (char *) hdr + sizeof(zip_dir_hdr) + u_namlen + 1;
+	pt += ((long) pt) & 1;
+	pt += ((long) pt) & 2;
+	hdr->d_reclen = (uint16_t) (pt - (char *) hdr);
 	p_reclen = &hdr->d_reclen;
+
 	hdr = (zip_dir_hdr *) ((char *) hdr + hdr->d_reclen);
     }
 

@@ -1,3 +1,7 @@
+Tue May 30 17:18:15 CEST 2006 (tk)
+----------------------------------
+  * libclamav/unzip.c: fix alignment problem on SPARC reported by Andy Fiddaman
+
 Tue May 30 15:45:24 CEST 2006 (tk)
 ----------------------------------
   * libclamav/others.h: add missing brackets to some endian macros, spotted
