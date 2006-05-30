@@ -1,3 +1,9 @@
+Tue May 30 14:49:39 CEST 2006 (tk)
+----------------------------------
+  * libclamav/unzip.c: improve __zip_find_disk_trailer, try to detect proper
+		       shift for offset of start of central directory in SFX
+		       files. Thanks to Sven for test files.
+
 Sun May 28 10:30:18 BST 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Extra patch similar to Tue May 16 21:15:25 BST 2006

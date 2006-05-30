@@ -41,7 +41,7 @@
 struct zip_file_header
 {
 #   define ZIP_FILE_HEADER_MAGIC 0x04034b50
-    unsigned char   z_magic[4];	    /* local file header signature */
+    uint32_t	    z_magic;	    /* local file header signature */
     uint16_t	    z_version;	    /* version needed to extract */
     uint16_t	    z_flags;	    /* general purpose bit flag */
     uint16_t	    z_compr;	    /* compression method */
@@ -71,7 +71,7 @@ struct zip_file_trailer
 struct zip_root_dirent
 {
 #   define ZIP_ROOT_DIRENT_MAGIC 0x02014b50
-    unsigned char   z_magic[4];	    /* central file header signature */
+    uint32_t	    z_magic;	    /* central file header signature */
     uint16_t	    z_version1;	    /* version made by */
     uint16_t	    z_version2;	    /* version needed to extract */
     uint16_t	    z_flags;	    /* general purpose bit flag */
@@ -98,7 +98,7 @@ struct zip_root_dirent
 struct zip_disk_trailer
 {
 #   define	    ZIP_DISK_TRAILER_MAGIC 0x06054b50
-    unsigned char   z_magic[4];		/* end of central dir signature */
+    uint32_t	    z_magic;		/* end of central dir signature */
     uint16_t	    z_disk;		/* number of this disk */
     uint16_t	    z_finaldisk;	/* number of the disk with the start
 					 * of the central dir

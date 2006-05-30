@@ -44,7 +44,7 @@
 
 #define __sizeof(X) ((ssize_t)(sizeof(X)))
 
-#define ZIPBUFSIZ   512
+#define ZIPBUFSIZ   1024
 #define ZIP32K	    32768
 
 inline static void __fixup_rootseek(off_t offset_of_trailer, struct zip_disk_trailer *trailer)
@@ -55,10 +55,13 @@ inline static void __fixup_rootseek(off_t offset_of_trailer, struct zip_disk_tra
 	    trailer->z_rootseek = (uint32_t) (offset_of_trailer -  EC32(trailer->z_rootsize)); 
 }
 
-int __zip_find_disk_trailer(int fd, off_t filesize, struct zip_disk_trailer *trailer, off_t start)
+int __zip_find_disk_trailer(int fd, off_t filesize, struct zip_disk_trailer *trailer, off_t *start)
 {
 	char *buf, *end, *tail;
-	off_t offset = 0, bufsize = 0, pagesize = ZIPBUFSIZ;
+	off_t offset = 0, bufsize;
+	struct zip_root_dirent dirent;
+	uint32_t u_rootseek, shift = 0;
+	int i;
 
 
     if(!trailer) {
@@ -71,37 +74,33 @@ int __zip_find_disk_trailer(int fd, off_t filesize, struct zip_disk_trailer *tra
 	return CL_EFORMAT;
     }
 
-    if(!(buf = cli_malloc(2 * ZIPBUFSIZ)))
+    if(!(buf = cli_malloc(ZIPBUFSIZ)))
 	return CL_EMEM;
 
     offset = filesize;
     while(1) {
 
-	if(offset <= start) {
-	     cli_warnmsg("Unzip: __zip_find_disk_trailer: Central directory not found\n");
+	if(offset <= 0) {
+	     cli_dbgmsg("Unzip: __zip_find_disk_trailer: Central directory not found\n");
 	     free(buf);
 	     return CL_EFORMAT;
 	}
 
-	if(offset == filesize && filesize > pagesize)
-	    offset -= pagesize;
+	if(offset >= ZIPBUFSIZ) {
+	    if(offset == filesize)
+		offset -= ZIPBUFSIZ;
+	    else
+		offset -= ZIPBUFSIZ - 4;
 
-	if(offset < pagesize) {
-	    bufsize = offset + pagesize;
-	    offset = 0;
-
+	    bufsize = ZIPBUFSIZ;
 	} else {
-	    offset -= pagesize;
-	    bufsize = 2 * pagesize;
-	    if(offset & (pagesize - 1)) {
-		pagesize -= offset & (pagesize - 1);
-		offset += pagesize;
-		bufsize -= pagesize; 
-	    }    
-	}
+	    if(filesize < ZIPBUFSIZ)
+		bufsize = offset;
+	    else
+		bufsize = ZIPBUFSIZ;
 
-	if(offset + bufsize > filesize)
-	    bufsize = filesize - offset;
+	    offset = 0;
+	}
 
         if(lseek(fd, offset, SEEK_SET) < 0) {
 	    cli_errmsg("Unzip: __zip_find_disk_trailer: Can't lseek descriptor %d\n", fd);
@@ -110,7 +109,7 @@ int __zip_find_disk_trailer(int fd, off_t filesize, struct zip_disk_trailer *tra
 	}
 
         if(read(fd, buf, (size_t) bufsize) < (ssize_t) bufsize) {
-	    cli_errmsg("unzip: __zip_find_disk_trailer: Can't read %d bytes\n", bufsize);
+	    cli_errmsg("Unzip: __zip_find_disk_trailer: Can't read %d bytes\n", bufsize);
 	    free(buf);
 	    return CL_EIO;
 	}
@@ -125,8 +124,37 @@ int __zip_find_disk_trailer(int fd, off_t filesize, struct zip_disk_trailer *tra
 		    trailer->z_comment = 0; 
 		}
 		__fixup_rootseek(offset + tail - buf, trailer);
-		free(buf);
-		return CL_SUCCESS;
+
+		u_rootseek = EC32(trailer->z_rootseek);
+		if(u_rootseek > filesize) {
+		    cli_dbgmsg("Unzip: __zip_find_disk_trailer: u_rootseek > filesize, continue search\n");
+		    continue;
+		}
+
+		for(i = 0; i < 2; i++) {
+		    if(u_rootseek + shift + sizeof(dirent) < filesize) {
+			if(lseek(fd, u_rootseek + shift, SEEK_SET) < 0) {
+			    cli_errmsg("Unzip: __zip_find_disk_trailer: Can't lseek descriptor %d\n", fd);
+			    free(buf);
+			    return CL_EIO;
+			}
+
+			if(read(fd, &dirent, sizeof(dirent)) < __sizeof(dirent)) {
+			    cli_errmsg("Unzip: __zip_find_disk_trailer: Can't read %d bytes\n", bufsize);
+			    free(buf);
+			    return CL_EIO;
+			}
+
+			if(EC32(dirent.z_magic) == ZIP_ROOT_DIRENT_MAGIC) {
+			    cli_dbgmsg("Unzip: __zip_find_disk_trailer: found file header at %u, shift %u\n", u_rootseek + shift, shift);
+			    free(buf);
+			    *start = shift;
+			    return CL_SUCCESS;
+			}
+
+			shift = *start;
+		    }
+		}
 	    }
 	}
     }
@@ -271,7 +299,7 @@ static int __zip_dir_parse(zip_dir *dir, off_t start)
 	return CL_EIO;
     }
 
-    if((ret = __zip_find_disk_trailer(dir->fd, sb.st_size, &trailer, start)))
+    if((ret = __zip_find_disk_trailer(dir->fd, sb.st_size, &trailer, &start)))
 	return ret;
 
     if((ret = __zip_parse_root_directory(dir->fd, &trailer, &dir->hdr0, start)))
