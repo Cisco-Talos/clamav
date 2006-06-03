@@ -1381,6 +1381,10 @@ void cl_free(struct cl_engine *engine)
 	struct cli_md5_node *md5pt, *md5h;
 	struct cli_meta_node *metapt, *metah;
 	struct cli_matcher *root;
+#ifdef HAVE_HWACCEL
+	int ret;
+#endif
+
 
     if(!engine) {
 	cli_errmsg("cl_free: engine == NULL\n");

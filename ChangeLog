@@ -1,3 +1,7 @@
+Sat Jun  3 23:54:51 CEST 2006 (tk)
+----------------------------------
+  * libclamav/matcher.c: add support for new hardware acceleration library
+
 Tue May 30 17:18:15 CEST 2006 (tk)
 ----------------------------------
   * libclamav/unzip.c: fix alignment problem on SPARC reported by Andy Fiddaman
