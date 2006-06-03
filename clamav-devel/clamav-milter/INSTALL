@@ -316,6 +316,33 @@ Various tips will go here, for example
 	define(`confMILTER_LOG_LEVEL',`22')
 Running in the foreground, valgrind, LogSyslog, LogVerbose, LogFile etc.
 
+5.1. Patches
+
+Patches are welcome, but they must be against the latest CVS version and adhere
+to the coding style of clamav-milter. Most of this style is based on K&R.
+
+Use the tab key, not space key, to indent.
+
+Except for functions, braces always go on the same line as the condition.
+
+Don't leave to chance, or your knowledge of presedence, use brackets to
+highten the readablity.
+
+Choose variable names sensibly, don't use Hungarian style.
+
+The code is ANSI C, not C++, remember that when thinking of comment formats,
+location of declarations, etc.
+
+Patches which use 'goto' will never, ever, be accepted.
+
+Use the design of your code as comments.
+
+Test your patches and document the tests when submitting, e.g. different
+hardware, operating systems, test tools such as valgrind, compilers (gcc, icc,
+Sun's cc).
+
+Function names appear at the start of lines (I use ctags).
+
 6. TODO
 
 There are several ideas marked as TODO in the source code. If anyone has
