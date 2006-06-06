@@ -1,3 +1,7 @@
+Tue Jun  6 21:54:37 BST 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	NEW_WORLD: wasn't detecting all phishes
+
 Tue Jun  6 16:36:40 BST 2006 (njh)
 ----------------------------------
   * clamav-milter:	Corrected the semantics of the failure to deliver
