@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.242 2006/05/19 09:54:05 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.243 2006/06/06 15:36:17 njh Exp $";
 
-#define	CM_VERSION	"devel-120506"
+#define	CM_VERSION	"devel-060606"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2562,6 +2562,10 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 		return SMFIS_CONTINUE;
 
 	/*
+	 * TODO:
+	 *	If not in external mode, call cli_scanbuff here
+	 */
+	/*
 	 * Lines starting with From are changed to >From, to
 	 *	avoid FP matches in the scanning code, which will speed it up
 	 */
@@ -3125,7 +3129,7 @@ clamfi_eom(SMFICTX *ctx)
 
 					for(to = privdata->to; *to; to++)
 						fprintf(sendmail, "\t%s\n", *to);
-					fprintf(sendmail, _("contained %s and has not been delivered.\n"), virusname);
+					fprintf(sendmail, _("contained %s and has not been accepted for delivery.\n"), virusname);
 
 					if(quarantine_dir != NULL)
 						fprintf(sendmail, _("\nThe message in question has been quarantined as %s\n"), privdata->filename);
