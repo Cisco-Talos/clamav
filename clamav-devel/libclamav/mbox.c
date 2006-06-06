@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.309 2006/06/06 20:53:50 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.310 2006/06/06 21:22:00 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -163,7 +163,7 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
  */
 #define	PARTIAL_DIR
 
-#define	NEW_WORLD
+/*#define	NEW_WORLD*/
 
 /*#define	SCAN_UNENCODED_BOUNCES	*//*
 					 * Slows things down a lot and only catches unencoded copies
