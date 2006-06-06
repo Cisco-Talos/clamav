@@ -1,3 +1,8 @@
+Tue Jun  6 16:36:40 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	Corrected the semantics of the failure to deliver
+				email message
+
 Sat Jun  3 23:54:51 CEST 2006 (tk)
 ----------------------------------
   * libclamav/matcher.c: add support for new hardware acceleration library
@@ -61,7 +66,7 @@ Fri May 19 12:02:28 BST 2006 (njh)
 Fri May 19 10:56:48 BST 2006 (njh)
 ---------------------------------
   * various:	Refer to the webpage for submitting bug reports, not just an
-  			email address
+			email address
 
 Thu May 18 13:25:58 CEST 2006 (tk)
 ----------------------------------
@@ -74,7 +79,7 @@ Thu May 18 12:00:23 CEST 2006 (tk)
 Tue May 16 21:15:25 BST 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Some HTML.Phishing.Bank-426 were getting through,
-  				based on help from Sven
+				based on help from Sven
 
 Mon May 15 20:23:30 CEST 2006 (tk)
 ----------------------------------
@@ -100,7 +105,7 @@ Fri May 12 18:10:03 BST 2006 (njh)
   * docs/man/clamav-milter.8:	Be explicit about what is a LAN machine
   * libclamav/pst.c:		rfc2426_escape is now thread safe
   * libclamav/message.c:	RFC2231 messages from thunderbird now handled
-  					better
+					better
 
 Fri May  5 12:23:23 BST 2006 (njh)
 ----------------------------------
