@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.307 2006/05/28 09:30:00 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.308 2006/06/06 16:57:00 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -165,7 +165,7 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 
 /*#define	NEW_WORLD*/
 
-/*#define	SCAN_UNENCODED_BOUNCES	/*
+/*#define	SCAN_UNENCODED_BOUNCES	*//*
 					 * Slows things down a lot and only catches unencoded copies
 					 * of EICAR within bounces, which don't matter
 					 */
@@ -2491,12 +2491,15 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 									 * encodingLine won't have been set if the message
 									 * itself has been encoded
 									 */
-									cli_dbgmsg("No encoding line found in the multipart/message\n");
+									cli_dbgmsg("Unencoded multipart/message will not be scanned\n");
 									assert(aMessage == messages[i]);
 									messageDestroy(messages[i]);
 									messages[i] = NULL;
 									continue;
 								}
+								/* FALLTHROUGH */
+							default:
+								cli_dbgmsg("Encoded multipart/message will be scanned\n");
 						}
 #endif
 #if	0
