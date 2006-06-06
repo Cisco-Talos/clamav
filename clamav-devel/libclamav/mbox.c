@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.308 2006/06/06 16:57:00 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.309 2006/06/06 20:53:50 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -163,7 +163,7 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
  */
 #define	PARTIAL_DIR
 
-/*#define	NEW_WORLD*/
+#define	NEW_WORLD
 
 /*#define	SCAN_UNENCODED_BOUNCES	*//*
 					 * Slows things down a lot and only catches unencoded copies
@@ -545,10 +545,18 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 			return CL_CLEAN;
 		}
 
-		/* The message could be a plain text phish */
-		if((type == CL_TYPE_MAIL) && (!(ctx->options&CL_DB_NOPHISHING)))
+		/*
+		 * The message could be a plain text phish
+		 * FIXME: Can't get to the option whether we are looking for
+		 *	phishes or not, so assume we are, this slows things a
+		 *	lot
+		 * Should be
+		 *	if((type == CL_TYPE_MAIL) && (!(no-phishing))
+		 */
+		if(type == CL_TYPE_MAIL)
 			return cli_parse_mbox(dir, desc, ctx);
-		cli_dbgmsg("cli_mbox: I believe it's plain text which must be clean\n");
+		cli_dbgmsg("cli_mbox: I believe it's plain text (type == %d) which must be clean\n",
+			type);
 		return CL_CLEAN;
 	}
 	free_map();
@@ -676,10 +684,11 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 					char *newline, *equal;
 					unsigned char *bigbuf, *data;
 					unsigned char smallbuf[1024];
+					const char *cptr;
 
 					/*printf("%ld: ", b64size); fflush(stdout);*/
 
-					for(ptr = b64start; b64size && (*ptr != '\n') && (*ptr != '\r'); ptr++) {
+					for(cptr = b64start; b64size && (*cptr != '\n') && (*cptr != '\r'); cptr++) {
 						length++;
 						--b64size;
 					}
@@ -732,12 +741,12 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 					if(fileblobContainsVirus(fb))
 						break;
 
-					if((b64size > 0) && (*ptr == '\r')) {
-						b64start = ++ptr;
+					if((b64size > 0) && (*cptr == '\r')) {
+						b64start = ++cptr;
 						--b64size;
 					}
-					if((b64size > 0) && (*ptr == '\n')) {
-						b64start = ++ptr;
+					if((b64size > 0) && (*cptr == '\n')) {
+						b64start = ++cptr;
 						--b64size;
 					}
 					if(lastline)
@@ -815,10 +824,11 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 				do {
 					int length = 0;
 					char *newline;
+					const char *cptr;
 
 					/*printf("%ld: ", quotedsize); fflush(stdout);*/
 
-					for(ptr = quotedstart; quotedsize && (*ptr != '\n') && (*ptr != '\r'); ptr++) {
+					for(cptr = quotedstart; quotedsize && (*cptr != '\n') && (*cptr != '\r'); cptr++) {
 						length++;
 						--quotedsize;
 					}
@@ -838,12 +848,12 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 					if(messageAddStr(m, line) < 0)
 						break;
 
-					if((quotedsize > 0) && (*ptr == '\r')) {
-						quotedstart = ++ptr;
+					if((quotedsize > 0) && (*cptr == '\r')) {
+						quotedstart = ++cptr;
 						--quotedsize;
 					}
-					if((quotedsize > 0) && (*ptr == '\n')) {
-						quotedstart = ++ptr;
+					if((quotedsize > 0) && (*cptr == '\n')) {
+						quotedstart = ++cptr;
 						--quotedsize;
 					}
 				} while(quotedsize > 0L);
