@@ -664,6 +664,8 @@ int cli_scansis(int desc, cli_ctx *ctx)
 #else /* HAVE_MMAP */
 
 #include "clamav.h"
+#include "others.h"
+#include "sis.h"
 
 int cli_scansis(int desc, cli_ctx *ctx)
 {
