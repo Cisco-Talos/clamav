@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.171 2006/05/27 14:35:13 njh Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.172 2006/06/07 12:27:44 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2051,9 +2051,9 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
 			return out;
 
 		cli_dbgmsg("base64chars = %d (%c %c %c)\n", m->base64chars,
-			cb1 ? cb1 : '@',
-			cb2 ? cb2 : '@',
-			cb3 ? cb3 : '@');
+			isalnum(cb1) ? cb1 : '@',
+			isalnum(cb2) ? cb2 : '@',
+			isalnum(cb3) ? cb3 : '@');
 
 		m->base64chars--;
 		b1 = cb1;
