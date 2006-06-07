@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.310 2006/06/06 21:22:00 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.311 2006/06/07 12:28:49 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -298,6 +298,8 @@ static	pthread_mutex_t	tables_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef	NEW_WORLD
 
+#include "matcher.h"
+
 #undef	PARTIAL_DIR
 
 #if HAVE_MMAP
@@ -335,6 +337,7 @@ static struct map {
 	struct	map	*next;
 } *map, *tail;
 
+static	int	save_text(cli_ctx *ctx, const char *dir, const char *start, size_t len);
 static	void	create_map(const char *begin, const char *end);
 static	void	add_to_map(const char *offset, const char *word);
 static	const	char	*find_in_map(const char *offset, const char *word);
@@ -365,8 +368,6 @@ static	void	free_map(void);
  * TODO: Add support for systems without mmap()
  *
  * TODO: partial_dir fall through
- *
- * FIXME:	Doesn't catch all phishes
  */
 int
 cli_mbox(const char *dir, int desc, cli_ctx *ctx)
@@ -377,7 +378,7 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 	struct stat statb;
 	message *m;
 	fileblob *fb;
-	int ret = 0;
+	int ret = CL_CLEAN;
 	int wasAlloced;
 	struct scanlist *scanlist, *scanelem;
 
@@ -516,9 +517,24 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 				break;
 			}
 
-		if((!anyHeadersFound) && find_in_map(start, "\nbegin "))
+		if((!anyHeadersFound) &&
+		   ((p = find_in_map(start, "\nbegin ")) != NULL) &&
+		   (isuuencodebegin(++p)))
 			/* uuencoded part */
 			hasuuencode = TRUE;
+		else {
+			cli_dbgmsg("Nothing encoded, looking for a text part to save\n");
+			ret = save_text(ctx, dir, start, size);
+			if(wasAlloced)
+				free(start);
+			else
+				munmap(start, size);
+
+			free_map();
+			if(ret != CL_EFORMAT)
+				return ret;
+			ret = CL_CLEAN;
+		}
 
 		free_map();
 
@@ -536,15 +552,17 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 		if(anyHeadersFound || hasuuencode) {
 			/* TODO: reduce the number of falls through here */
 			if(hasuuencode)
-				cli_dbgmsg("New world - fall back to old uudecoder, type %d\n", type);
+				/* TODO: fast track visa */
+				cli_warnmsg("New world - fall back to old uudecoder\n");
 			else
-				cli_dbgmsg("cli_mbox: unknown encoder, type %d\n", type);
+				cli_warnmsg("cli_mbox: unknown encoder, type %d\n", type);
 			if(type == CL_TYPE_MAIL)
 				return cli_parse_mbox(dir, desc, ctx);
 			cli_dbgmsg("Unknown filetype %d, return CLEAN\n", type);
 			return CL_CLEAN;
 		}
 
+#if	0	/* I don't believe this is needed any more */
 		/*
 		 * The message could be a plain text phish
 		 * FIXME: Can't get to the option whether we are looking for
@@ -555,12 +573,11 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 		 */
 		if(type == CL_TYPE_MAIL)
 			return cli_parse_mbox(dir, desc, ctx);
+#endif
 		cli_dbgmsg("cli_mbox: I believe it's plain text (type == %d) which must be clean\n",
 			type);
 		return CL_CLEAN;
 	}
-	free_map();
-
 #if	0
 	if(wasAlloced) {
 		const char *max = NULL;
@@ -640,6 +657,7 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 
 				cli_dbgmsg("cli_mbox: decoding %ld base64 bytes\n", b64size);
 				if((fb = fileblobCreate()) == NULL) {
+					free_map();
 					if(wasAlloced)
 						free(start);
 					else
@@ -649,7 +667,8 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 				}
 
 				tmpfilename = cli_gentemp(dir);
-				if(tmpfilename == 0) {
+				if(tmpfilename == NULL) {
+					free_map();
 					if(wasAlloced)
 						free(start);
 					else
@@ -665,6 +684,7 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 
 				m = messageCreate();
 				if(m == NULL) {
+					free_map();
 					if(wasAlloced)
 						free(start);
 					else
@@ -809,6 +829,7 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 
 				m = messageCreate();
 				if(m == NULL) {
+					free_map();
 					if(wasAlloced)
 						free(start);
 					else
@@ -871,6 +892,18 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 	}
 	scanelem = scanlist;
 
+	/*
+	 * There could be a phish in the plain text part, so save that
+	 * FIXME: Can't get to the option whether we are looking for
+	 *	phishes or not, so assume we are, this slows things a
+	 *	lot
+	 * Should be
+	 *	if((type == CL_TYPE_MAIL) && (!(no-phishing))
+	 */
+	ret = save_text(ctx, dir, start, size);
+
+	free_map();
+
 	while(scanelem) {
 		struct scanlist *n = scanelem->next;
 
@@ -887,13 +920,82 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 	 * FIXME: Need to run cl_scandir() here and return that value
 	 */
 	cli_dbgmsg("cli_mbox: ret = %d\n", ret);
-	if(ret == 0)
-		return CL_SUCCESS;
+	if(ret != CL_EFORMAT)
+		return ret;
 
-	cli_dbgmsg("New world - don't know what to do - fall back to old world\n");
+	cli_warnmsg("New world - don't know what to do - fall back to old world\n");
 	/* Fall back for now */
 	lseek(desc, 0L, SEEK_SET);
 	return cli_parse_mbox(dir, desc, ctx);
+}
+
+/*
+ * Save a text part - it could contain phish or jscript
+ */
+static int
+save_text(cli_ctx *ctx, const char *dir, const char *start, size_t len)
+{
+	const char *p;
+
+	if((p = find_in_map(start, "\n\n")) || (p = find_in_map(start, "\r\n\r\n"))) {
+		const char *q;
+		fileblob *fb;
+		char *tmpfilename;
+
+		if(((q = find_in_map(start, "base64")) == NULL) &&
+		   ((q = find_in_map(start, "quoted_printable")) == NULL)) {
+			cli_dbgmsg("It's all plain text!\n");
+			if(*p == '\r')
+				p += 4;
+			else
+				p += 2;
+			len -= (p - start);
+		} else if(((q = find_in_map(p, "\nFrom ")) == NULL) &&
+		   ((q = find_in_map(p, "base64")) == NULL) &&
+		   ((q = find_in_map(p, "quoted-printable")) == NULL))
+			cli_dbgmsg("Can't find end of plain text - assume it's all\n");
+		else
+			len = (size_t)(q - p);
+
+		if(len < 5) {
+			cli_dbgmsg("save_text: Too small\n");
+			return CL_EFORMAT;
+		}
+		if(ctx->scanned)
+			*ctx->scanned += len / CL_COUNT_PRECISION;
+
+		/*
+		 * This doesn't work, cli_scanbuff isn't designed to be used
+		 *	in this way. It gets the "filetype" wrong and then
+		 *	doesn't scan correctly
+		 */
+		if(cli_scanbuff((char *)p, len, ctx->virname, ctx->engine, 0) == CL_VIRUS) {
+			cli_dbgmsg("save_text: found %s\n", *ctx->virname);
+			return CL_VIRUS;
+		}
+
+		fb = fileblobCreate();
+		if(fb == NULL)
+			return CL_EMEM;
+
+		tmpfilename = cli_gentemp(dir);
+
+		if(tmpfilename == NULL) {
+			fileblobDestroy(fb);
+			return CL_ETMPFILE;
+		}
+		cli_dbgmsg("save plain bit to %s, %u bytes\n",
+			tmpfilename, len);
+
+		fileblobSetFilename(fb, dir, tmpfilename);
+		free(tmpfilename);
+
+		(void)fileblobAddData(fb, (const unsigned char *)p, len);
+		fileblobDestroy(fb);
+		return CL_SUCCESS;
+	}
+	cli_dbgmsg("No text part found to save\n");
+	return CL_EFORMAT;
 }
 
 static void
@@ -906,7 +1008,9 @@ create_map(const char *begin, const char *end)
 		{	"base64",		6	},
 		{	"quoted-printable",	16	},
 		{	"\nbegin ",		7	},
-		{	"\nFrom ",		7	},
+		{	"\nFrom ",		6	},
+		{	"\n\n",			2	},
+		{	"\r\n\r\n",		4	},
 		{	NULL,			0	}
 	};
 
