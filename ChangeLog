@@ -1,3 +1,7 @@
+Wed Jun  7 13:29:22 BST 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	NEW_WORLD: Fast phish detection.
+
 Wed Jun  7 12:11:55 CEST 2006 (tk)
 ----------------------------------
   * libclamav/sis.c: fix compilation error on Cygwin, reported by NJH
