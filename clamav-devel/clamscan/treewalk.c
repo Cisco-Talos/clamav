@@ -40,6 +40,7 @@
 #include "defaults.h"
 #include "memory.h"
 #include "output.h"
+#include "misc.h"
 
 int treewalk(const char *dirname, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options, unsigned int depth)
 {
@@ -133,65 +134,6 @@ int treewalk(const char *dirname, struct cl_node *root, const struct passwd *use
     else
 	return 0;
 
-}
-
-int rmdirs(const char *dirname)
-{
-	DIR *dd;
-	struct dirent *dent;
-	struct stat maind, statbuf;
-	char *fname;
-
-    if((dd = opendir(dirname)) != NULL) {
-	while(stat(dirname, &maind) != -1) {
-	    if(!rmdir(dirname)) break;
-	    if(errno != ENOTEMPTY && errno != EEXIST && errno != EBADF) {
-		logg("^Can't remove temporary directory %s: %s\n", dirname, strerror(errno));
-		closedir(dd);
-		return 0;
-	    }
-
-	    while((dent = readdir(dd))) {
-#ifndef C_INTERIX
-		if(dent->d_ino)
-#endif
-		{
-		    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
-			fname = mcalloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
-			sprintf(fname, "%s/%s", dirname, dent->d_name);
-
-			/* stat the file */
-			if(lstat(fname, &statbuf) != -1) {
-			    if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
-				if(rmdir(fname) == -1) { /* can't be deleted */
-				    if(errno == EACCES) {
-					logg("^Can't remove some temporary directories due to access problem.\n");
-					closedir(dd);
-					return 0;
-				    }
-				    rmdirs(fname);
-				}
-			    } else
-				unlink(fname);
-			}
-
-			free(fname);
-		    }
-		}
-	    }
-
-	    rewinddir(dd);
-
-	}
-
-    } else { 
-	if(!printinfected)
-	    logg("%s: Can't open directory.\n", dirname);
-	return 53;
-    }
-
-    closedir(dd);
-    return 0;
 }
 
 int clamav_rmdirs(const char *dir)

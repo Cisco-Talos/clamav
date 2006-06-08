@@ -28,8 +28,10 @@
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #include <fcntl.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include "clamav.h"
 #include "cfgparser.h"
@@ -148,6 +150,62 @@ int filecopy(const char *src, const char *dest)
 
 #endif
 
+}
+
+int rmdirs(const char *dirname)
+{
+	DIR *dd;
+	struct dirent *dent;
+	struct stat maind, statbuf;
+	char *fname;
+
+
+    if((dd = opendir(dirname)) != NULL) {
+	while(stat(dirname, &maind) != -1) {
+	    if(!rmdir(dirname)) break;
+	    if(errno != ENOTEMPTY && errno != EEXIST && errno != EBADF) {
+		closedir(dd);
+		return 0;
+	    }
+
+	    while((dent = readdir(dd))) {
+#ifndef C_INTERIX
+		if(dent->d_ino)
+#endif
+		{
+		    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
+			fname = mcalloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
+			sprintf(fname, "%s/%s", dirname, dent->d_name);
+
+			/* stat the file */
+			if(lstat(fname, &statbuf) != -1) {
+			    if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
+				if(rmdir(fname) == -1) { /* can't be deleted */
+				    if(errno == EACCES) {
+					closedir(dd);
+					free(fname);
+					return 0;
+				    }
+				    rmdirs(fname);
+				}
+			    } else
+				unlink(fname);
+			}
+
+			free(fname);
+		    }
+		}
+	    }
+
+	    rewinddir(dd);
+	}
+
+    } else { 
+	return 1;
+    }
+
+    closedir(dd);
+    return 0;
 }
 
 int isnumb(const char *str)
