@@ -380,14 +380,15 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short 
 
     if(cli_untgz(dup(fileno(fs)), dir)) {
 	cli_errmsg("cli_cvdload(): Can't unpack CVD file.\n");
+	free(dir);
 	return CL_ECVDEXTR;
     }
 
     /* load extracted directory */
-    cl_load(dir, engine, signo, options);
+    ret = cl_load(dir, engine, signo, options);
 
     cli_rmdirs(dir);
     free(dir);
 
-    return 0;
+    return ret;
 }
