@@ -32,7 +32,6 @@ struct s_du {
 
 int treewalk(const char *dirname, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options, unsigned int depth);
 
-int rmdirs(const char *dirname);
 int clamav_rmdirs(const char *dir);
 int fixperms(const char *dirname);
 int du(const char *dirname, struct s_du *n);
