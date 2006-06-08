@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2003 - 2006 Tomasz Kojm <tkojm@clamav.net>
  *
  *  untgz() is based on public domain minitar utility by Charles G. Waldman
  *
@@ -244,22 +244,22 @@ struct cl_cvd *cl_cvdparse(const char *head)
 
 struct cl_cvd *cl_cvdhead(const char *file)
 {
-	FILE *fd;
+	FILE *fs;
 	char head[513];
 	int i;
 
-    if((fd = fopen(file, "rb")) == NULL) {
+    if((fs = fopen(file, "rb")) == NULL) {
 	cli_dbgmsg("Can't open CVD file %s\n", file);
 	return NULL;
     }
 
-    if((i = fread(head, 1, 512, fd)) != 512) {
+    if((i = fread(head, 1, 512, fs)) != 512) {
 	cli_dbgmsg("Short read (%d) while reading CVD head from %s\n", i, file);
-	fclose(fd);
+	fclose(fs);
 	return NULL;
     }
 
-    fclose(fd);
+    fclose(fs);
 
     head[512] = 0;
     for(i = 511; i > 0 && (head[i] == ' ' || head[i] == 10); head[i] = 0, i--);
@@ -276,14 +276,14 @@ void cl_cvdfree(struct cl_cvd *cvd)
     free(cvd);
 }
 
-static int cli_cvdverify(FILE *fd, struct cl_cvd *cvdpt)
+static int cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt)
 {
 	struct cl_cvd *cvd;
 	char *md5, head[513];
 	int i;
 
-    fseek(fd, 0, SEEK_SET);
-    if(fread(head, 1, 512, fd) != 512) {
+    fseek(fs, 0, SEEK_SET);
+    if(fread(head, 1, 512, fs) != 512) {
 	cli_dbgmsg("Can't read CVD head from stream\n");
 	return CL_ECVD;
     }
@@ -297,7 +297,7 @@ static int cli_cvdverify(FILE *fd, struct cl_cvd *cvdpt)
     if(cvdpt)
 	memcpy(cvdpt, cvd, sizeof(struct cl_cvd));
 
-    md5 = cli_md5stream(fd, NULL);
+    md5 = cli_md5stream(fs, NULL);
     cli_dbgmsg("MD5(.tar.gz) = %s\n", md5);
 
     if(strncmp(md5, cvd->md5, 32)) {
@@ -323,26 +323,25 @@ static int cli_cvdverify(FILE *fd, struct cl_cvd *cvdpt)
 
 int cl_cvdverify(const char *file)
 {
-	FILE *fd;
+	FILE *fs;
 	int ret;
 
-    if((fd = fopen(file, "rb")) == NULL) {
+    if((fs = fopen(file, "rb")) == NULL) {
 	cli_errmsg("Can't open CVD file %s\n", file);
 	return CL_EOPEN;
     }
 
-    ret = cli_cvdverify(fd, NULL);
-    fclose(fd);
+    ret = cli_cvdverify(fs, NULL);
+    fclose(fs);
 
     return ret;
 }
 
-int cli_cvdload(FILE *fd, struct cl_engine **engine, unsigned int *signo, short warn, unsigned int options)
+int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short warn, unsigned int options)
 {
-        char *dir, *tmp, *buffer;
+        char *dir;
 	struct cl_cvd cvd;
-	int bytes, ret;
-	FILE *tmpd;
+	int ret;
 	time_t stime;
 
 
@@ -350,7 +349,7 @@ int cli_cvdload(FILE *fd, struct cl_engine **engine, unsigned int *signo, short 
 
     /* verify */
 
-    if((ret = cli_cvdverify(fd, &cvd)))
+    if((ret = cli_cvdverify(fs, &cvd)))
 	return ret;
 
     if(cvd.stime && warn) {
@@ -370,66 +369,19 @@ int cli_cvdload(FILE *fd, struct cl_engine **engine, unsigned int *signo, short 
 	cli_warnmsg("********************************************************\n");
     }
 
-    fseek(fd, 512, SEEK_SET);
+    fseek(fs, 512, SEEK_SET);
 
     dir = cli_gentemp(NULL);
     if(mkdir(dir, 0700)) {
 	cli_errmsg("cli_cvdload():  Can't create temporary directory %s\n", dir);
+	free(dir);
 	return CL_ETMPDIR;
     }
 
-    /* 
-    if(cli_untgz(fileno(fd), dir)) {
+    if(cli_untgz(dup(fileno(fs)), dir)) {
 	cli_errmsg("cli_cvdload(): Can't unpack CVD file.\n");
 	return CL_ECVDEXTR;
     }
-    */
-
-    /* FIXME: it seems there is some problem with current position indicator
-     * after gzdopen() call in cli_untgz(). Temporarily we need this wrapper:
-     */
-
-	    /* start */
-
-	    tmp = cli_gentemp(NULL);
-	    if((tmpd = fopen(tmp, "wb+")) == NULL) {
-		cli_errmsg("Can't create temporary file %s\n", tmp);
-		free(dir);
-		free(tmp);
-		return CL_ETMPFILE;
-	    }
-
-	    if(!(buffer = (char *) cli_malloc(FILEBUFF))) {
-		free(dir);
-		free(tmp);
-		fclose(tmpd);
-		return CL_EMEM;
-	    }
-
-	    while((bytes = fread(buffer, 1, FILEBUFF, fd)) > 0)
-		fwrite(buffer, 1, bytes, tmpd);
-
-	    free(buffer);
-
-	    fflush(tmpd);
-	    fseek(tmpd, 0L, SEEK_SET);
-
-	    if(cli_untgz(fileno(tmpd), dir)) {
-		perror("cli_untgz");
-		cli_errmsg("cli_cvdload(): Can't unpack CVD file.\n");
-		cli_rmdirs(dir);
-		free(dir);
-		fclose(tmpd);
-		unlink(tmp);
-		free(tmp);
-		return CL_ECVDEXTR;
-	    }
-
-	    fclose(tmpd);
-	    unlink(tmp);
-	    free(tmp);
-
-	    /* end */
 
     /* load extracted directory */
     cl_load(dir, engine, signo, options);
