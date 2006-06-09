@@ -588,7 +588,6 @@ char *getdsig(const char *host, const char *user, const char *data)
 
 int unpack(struct optstruct *opt)
 {
-	int fd;
 	char *name, *dbdir;
 
     if(opt_check(opt, "unpack-current")) {
@@ -599,24 +598,14 @@ int unpack(struct optstruct *opt)
     } else
 	name = strdup(opt_arg(opt, "unpack"));
 
-    if((fd = open(name, O_RDONLY|O_BINARY)) == -1) {
-	logg("!Can't open CVD file %s\n", name);
+    if(cvd_unpack(name, ".") == -1) {
+	logg("!Can't unpack CVD file %s\n", name);
 	free(name);
 	opt_free(opt);
 	exit(1);
     }
 
     free(name);
-    lseek(fd, 512, SEEK_SET);
-
-    if(cli_untgz(fd, ".")) {
-	logg("!Can't unpack file.\n");
-	close(fd);
-	opt_free(opt);
-	exit(1);
-    }
-
-    close(fd);
     opt_free(opt);
     exit(0);
 }
