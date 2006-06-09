@@ -27,5 +27,6 @@ void print_version(void);
 int filecopy(const char *src, const char *dest);
 int isnumb(const char *str);
 int rmdirs(const char *dirname);
+int cvd_unpack(const char *cvd, const char *destdir);
 
 #endif

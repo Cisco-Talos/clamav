@@ -38,6 +38,8 @@
 #include "memory.h"
 #include "output.h"
 
+#include "../libclamav/cvd.h"
+
 
 char *freshdbdir(void)
 {
@@ -119,7 +121,7 @@ int filecopy(const char *src, const char *dest)
 	    return -1;
 	case 0:
 	    execl("/usr/bin/ditto", "ditto", "--rsrc", src, dest, NULL);
-	    perror("execv(ditto)");
+	    perror("execl(ditto)");
 	    break;
 	default:
 	    wait(NULL);
@@ -217,4 +219,23 @@ int isnumb(const char *str)
     }
 
     return 1;
+}
+
+int cvd_unpack(const char *cvd, const char *destdir)
+{
+	int fd;
+
+
+    if((fd = open(cvd, O_RDONLY)) == -1)
+	return -1;
+
+    if(lseek(fd, 512, SEEK_SET) == -1) {
+	close(fd);
+	return -1;
+    }
+
+    if(cli_untgz(fd, destdir) == -1) /* cli_untgz() will close fd */
+	return -1;
+
+    return 0;
 }

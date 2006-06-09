@@ -1,3 +1,15 @@
+Fri Jun  9 12:29:15 CEST 2006 (tk)
+----------------------------------
+  * shared/misc.c: add cvd_unpack()
+
+Thu Jun  8 20:00:52 CEST 2006 (tk)
+----------------------------------
+  * move rmdirs() from clamscan/treewalk.c to shared/misc.c
+
+Thu Jun  8 19:00:12 CEST 2006 (tk)
+----------------------------------
+  * libclamav/cvd.c: cleanup
+
 Wed Jun  7 13:29:22 BST 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	NEW_WORLD: Fast phish detection.
