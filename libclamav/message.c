@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.172 2006/06/07 12:27:44 njh Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.173 2006/06/11 14:31:40 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1058,6 +1058,10 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		 * Decode BinHex4. First create a temporary blob which contains
 		 * the encoded message. Then decode that blob to the target
 		 * blob, free the temporary blob and return the target one
+		 *
+		 * FIXME: EICAR isn't detected: should create 3 files in fork
+		 *	format: .info, .data and .rsrc. This is needed for
+		 *	position dependant detection such as EICAR
 		 *
 		 * See RFC1741
 		 */
