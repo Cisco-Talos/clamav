@@ -1,3 +1,7 @@
+Mon Jun 12 10:56:52 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	Fix bug in code from 5/5/06
+
 Fri Jun  9 12:29:15 CEST 2006 (tk)
 ----------------------------------
   * shared/misc.c: add cvd_unpack()
