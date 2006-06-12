@@ -1,3 +1,7 @@
+Mon Jun 12 14:24:35 BST 2006 (njh)
+----------------------------------
+  * libclamav/message.c:	Better detection of binhex encoded EICAR
+
 Mon Jun 12 10:56:52 BST 2006 (njh)
 ----------------------------------
   * clamav-milter:	Fix bug in code from 5/5/06

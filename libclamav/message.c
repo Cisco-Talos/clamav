@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.173 2006/06/11 14:31:40 njh Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.174 2006/06/12 13:24:06 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1032,7 +1032,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 
 	if((t_line = binhexBegin(m)) != NULL) {
 		unsigned char byte;
-		unsigned long newlen = 0L, len, l;
+		unsigned long newlen = 0L, len, dataforklen, resourceforklen, l;
 		unsigned char *data;
 		char *ptr;
 		int bytenumber;
@@ -1267,13 +1267,18 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		/*
 		 * Set len to be the data fork length
 		 */
-		len = ((data[byte] << 24) & 0xFF000000) |
+		dataforklen = ((data[byte] << 24) & 0xFF000000) |
 		      ((data[byte + 1] << 16) & 0xFF0000) |
 		      ((data[byte + 2] << 8) & 0xFF00) |
 		      (data[byte + 3] & 0xFF);
 
-		cli_dbgmsg("Filename = '%s', data fork length = %lu bytes\n",
-			filename, len);
+		resourceforklen = ((data[byte + 4] << 24) & 0xFF000000) |
+		      ((data[byte + 5] << 16) & 0xFF0000) |
+		      ((data[byte + 6] << 8) & 0xFF00) |
+		      (data[byte + 7] & 0xFF);
+
+		cli_dbgmsg("Filename = '%s', data fork length = %lu, resource fork length = %lu bytes\n",
+			filename, dataforklen, resourceforklen);
 
 		free((char *)filename);
 
@@ -1284,15 +1289,15 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 
 		l = blobGetDataSize(tmp) - byte;
 
-		if(l < len) {
+		if(l < dataforklen) {
 			cli_warnmsg("Corrupt BinHex file, claims it is %lu bytes long in a message of %lu bytes\n",
-				len, l);
-			len = l;
+				dataforklen, l);
+			dataforklen = l;
 		}
 		if(setCTX && m->ctx)
 			(*setCTX)(ret, m->ctx);
 
-		(*addData)(ret, &data[byte], len);
+		(*addData)(ret, &data[byte], dataforklen);
 
 		blobDestroy(tmp);
 
