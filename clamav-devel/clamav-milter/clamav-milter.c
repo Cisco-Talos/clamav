@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.244 2006/06/12 09:56:07 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.245 2006/06/12 09:57:43 njh Exp $";
 
-#define	CM_VERSION	"devel-060606"
+#define	CM_VERSION	"devel-120606"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
