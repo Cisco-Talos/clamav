@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.243 2006/06/06 15:36:17 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.244 2006/06/12 09:56:07 njh Exp $";
 
 #define	CM_VERSION	"devel-060606"
 
@@ -80,7 +80,7 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.243 2006/06/06 15:36:17 nj
 #endif
 
 #ifdef	C_LINUX
-#include <sys/sendfile.h>
+#include <sys/sendfile.h>	/* FIXME: use sendfile on BSD not Linux */
 #include <libintl.h>
 #include <locale.h>
 
@@ -2579,7 +2579,7 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 		 * FIXME: sending one byte at a time down a socket is
 		 *	inefficient
 		 */
-		do
+		do {
 			if(*ptr == '\n') {
 				if(strncmp(ptr, "\nFrom ", 6) == 0) {
 					nbytes += clamfi_send(privdata, 7, "\n>From ");
@@ -2594,7 +2594,11 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 				nbytes += clamfi_send(privdata, 1, ptr++);
 				left--;
 			}
-		while(left > 0);
+			if(left < 6) {
+				nbytes += clamfi_send(privdata, left, ptr);
+				break;
+			}
+		} while(left > 0);
 	} else
 		nbytes = clamfi_send(privdata, len, (char *)bodyp);
 
@@ -4290,6 +4294,9 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 
 /*
  * Keep the infected file in quarantine, return success (0) or failure
+ *
+ * It's quicker if the quarantine directory is on the same filesystem
+ *	as the temporary directory
  */
 static int
 qfile(struct privdata *privdata, const char *sendmailId, const char *virusname)
@@ -4415,7 +4422,6 @@ move(const char *oldfile, const char *newfile)
 	close(in);
 	if(ret < 0) {
 		/* fall back if sendfile fails, which shouldn't happen */
-		perror(newfile);
 		close(out);
 		unlink(newfile);
 
@@ -5181,6 +5187,10 @@ print_trace(void)
  * Return:	<0 invalid
  *		=0 valid
  *		>0 unknown
+ *
+ * You wouldn't believe the amount of time I used to waste chasing bug reports
+ *	from people who's sendmail.cf didn't tally with the arguments given to
+ *	clamav-milter before I put this check in!
  */
 static int
 verifyIncomingSocketName(const char *sockName)
