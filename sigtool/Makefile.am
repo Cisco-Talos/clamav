@@ -31,6 +31,8 @@ sigtool_SOURCES = \
     $(top_srcdir)/shared/misc.h \
     $(top_srcdir)/shared/options.c \
     $(top_srcdir)/shared/options.h \
+    $(top_srcdir)/shared/cdiff.c \
+    $(top_srcdir)/shared/cdiff.h \
     vba.c \
     vba.h \
     sigtool.c
