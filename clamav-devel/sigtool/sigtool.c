@@ -47,6 +47,7 @@
 #include "shared/output.h"
 #include "shared/cfgparser.h"
 #include "shared/misc.h"
+#include "shared/cdiff.h"
 
 #include "libclamav/cvd.h"
 #include "libclamav/others.h"
@@ -805,6 +806,20 @@ static int vbadump(struct optstruct *opt)
     return 0;
 }
 
+static int runcdiff(struct optstruct *opt)
+{
+	int fd, ret;
+
+
+    if((fd = open(opt_arg(opt, "run-cdiff"), O_RDONLY)) == -1)
+	return -1;
+
+    ret = cdiff_apply(fd);
+    close(fd);
+
+    return ret;
+}
+
 void help(void)
 {
     mprintf("\n");
@@ -829,6 +844,8 @@ void help(void)
     mprintf("    --list-sigs[=FILE]     -l[FILE]        List signature names\n");
     mprintf("    --vba=FILE                             Extract VBA/Word6 macro code\n");
     mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
+    mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
+    mprintf("    --run-cdiff=FILE       -r FILE         Execute update script FILE in cwd\n");
     mprintf("\n");
 
     return;
@@ -838,7 +855,7 @@ int main(int argc, char **argv)
 {
 	int ret = 1;
         struct optstruct *opt;
-	const char *short_options = "hvVb:i:u:l::";
+	const char *short_options = "hvVb:i:u:l::r:";
 	static struct option long_options[] = {
 	    {"help", 0, 0, 'h'},
 	    {"quiet", 0, 0, 0},
@@ -858,6 +875,7 @@ int main(int argc, char **argv)
 	    {"list-sigs", 2, 0, 'l'},
 	    {"vba", 1, 0 ,0},
 	    {"vba-hex", 1, 0, 0},
+	    {"run-cdiff", 1, 0, 'r'},
 	    {0, 0, 0, 0}
     	};
 
@@ -906,6 +924,8 @@ int main(int argc, char **argv)
 	ret = listsigs(opt);
     else if(opt_check(opt, "vba") || opt_check(opt, "vba-hex"))
 	ret = vbadump(opt);
+    else if(opt_check(opt, "run-cdiff"))
+	ret = runcdiff(opt);
     else
 	help();
 

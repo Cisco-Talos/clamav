@@ -1,3 +1,7 @@
+Thu Jun 15 15:55:08 CEST 2006 (tk)
+----------------------------------
+  * sigtool/sigtool.c: new option --run-cdiff
+
 Thu Jun 15 15:03:55 CEST 2006 (tk)
 ----------------------------------
   * shared/cdiff.[ch]: new files (interpreter for scripted database updates)
