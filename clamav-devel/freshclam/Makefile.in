@@ -72,9 +72,9 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_freshclam_OBJECTS = output.$(OBJEXT) cfgparser.$(OBJEXT) \
 	getopt.$(OBJEXT) memory.$(OBJEXT) misc.$(OBJEXT) \
-	options.$(OBJEXT) freshclam.$(OBJEXT) manager.$(OBJEXT) \
-	notify.$(OBJEXT) dns.$(OBJEXT) execute.$(OBJEXT) \
-	cdiff.$(OBJEXT)
+	options.$(OBJEXT) cdiff.$(OBJEXT) freshclam.$(OBJEXT) \
+	manager.$(OBJEXT) notify.$(OBJEXT) dns.$(OBJEXT) \
+	execute.$(OBJEXT)
 freshclam_OBJECTS = $(am_freshclam_OBJECTS)
 freshclam_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
@@ -220,6 +220,8 @@ freshclam_SOURCES = \
     $(top_srcdir)/shared/misc.h \
     $(top_srcdir)/shared/options.c \
     $(top_srcdir)/shared/options.h \
+    $(top_srcdir)/shared/cdiff.c \
+    $(top_srcdir)/shared/cdiff.h \
     freshclam.c \
     freshclam.h \
     manager.c \
@@ -230,9 +232,7 @@ freshclam_SOURCES = \
     dns.c \
     dns.h \
     execute.c \
-    execute.h \
-    cdiff.c \
-    cdiff.h
+    execute.h
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 all: all-am
@@ -423,6 +423,20 @@ options.obj: $(top_srcdir)/shared/options.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/options.c' object='options.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o options.obj `if test -f '$(top_srcdir)/shared/options.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/options.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/options.c'; fi`
+
+cdiff.o: $(top_srcdir)/shared/cdiff.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cdiff.o -MD -MP -MF "$(DEPDIR)/cdiff.Tpo" -c -o cdiff.o `test -f '$(top_srcdir)/shared/cdiff.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/cdiff.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/cdiff.Tpo" "$(DEPDIR)/cdiff.Po"; else rm -f "$(DEPDIR)/cdiff.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/cdiff.c' object='cdiff.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cdiff.o `test -f '$(top_srcdir)/shared/cdiff.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/cdiff.c
+
+cdiff.obj: $(top_srcdir)/shared/cdiff.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cdiff.obj -MD -MP -MF "$(DEPDIR)/cdiff.Tpo" -c -o cdiff.obj `if test -f '$(top_srcdir)/shared/cdiff.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/cdiff.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/cdiff.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/cdiff.Tpo" "$(DEPDIR)/cdiff.Po"; else rm -f "$(DEPDIR)/cdiff.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/cdiff.c' object='cdiff.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cdiff.obj `if test -f '$(top_srcdir)/shared/cdiff.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/cdiff.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/cdiff.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
