@@ -32,6 +32,8 @@ freshclam_SOURCES = \
     $(top_srcdir)/shared/misc.h \
     $(top_srcdir)/shared/options.c \
     $(top_srcdir)/shared/options.h \
+    $(top_srcdir)/shared/cdiff.c \
+    $(top_srcdir)/shared/cdiff.h \
     freshclam.c \
     freshclam.h \
     manager.c \
@@ -42,7 +44,9 @@ freshclam_SOURCES = \
     dns.c \
     dns.h \
     execute.c \
-    execute.h
+    execute.h \
+    cdiff.c \
+    cdiff.h
 
 DEFS = @DEFS@ -DCL_NOTHREADS
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
