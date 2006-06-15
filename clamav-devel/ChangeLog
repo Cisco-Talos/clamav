@@ -1,3 +1,7 @@
+Thu Jun 15 13:57:38 CEST 2006 (tk)
+----------------------------------
+  * sigtool/sigtool.c: major cleanup
+
 Mon Jun 12 14:24:35 BST 2006 (njh)
 ----------------------------------
   * libclamav/message.c:	Better detection of binhex encoded EICAR
