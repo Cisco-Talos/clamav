@@ -1420,9 +1420,11 @@ void cl_free(struct cl_engine *engine)
 	    cli_ac_free(root);
 	    if(!engine->root[i]->ac_only)
 		cli_bm_free(root);
+	    free(root);
 	}
     }
 
+    free(engine->root);
     if(engine->md5_hlist) {
 	for(i = 0; i < 256; i++) {
 	    md5pt = engine->md5_hlist[i];

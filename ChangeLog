@@ -1,3 +1,8 @@
+Fri Jun 16 16:03:45 CEST 2006 (tk)
+----------------------------------
+  * libclamav/readdb.c: fix small memory leak in cl_free()
+			Patch by Török Edvin <edwintorok*gmail.com>
+
 Fri Jun 16 11:16:35 CEST 2006 (tk)
 ----------------------------------
   * libclamav/cvd.c: cli_cvdload: make sure fd is properly lseek'ed
