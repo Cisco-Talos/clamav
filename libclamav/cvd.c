@@ -29,6 +29,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include <zlib.h>
 #include <time.h>
 
@@ -341,7 +342,7 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short 
 {
         char *dir;
 	struct cl_cvd cvd;
-	int ret;
+	int ret, fd;
 	time_t stime;
 
 
@@ -369,16 +370,26 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short 
 	cli_warnmsg("********************************************************\n");
     }
 
-    fseek(fs, 512, SEEK_SET);
+    if((fd = dup(fileno(fs))) == -1) {
+	cli_errmsg("cli_cvdload(): Can't duplicate descriptor %d\n", fileno(fs));
+	return CL_EIO;
+    }
+
+    if(lseek(fd, 512, SEEK_SET) == -1) {
+	cli_errmsg("cli_cvdload(): Can't lseek descriptor %d\n", fd);
+	close(fd);
+	return CL_EIO;
+    }
 
     dir = cli_gentemp(NULL);
     if(mkdir(dir, 0700)) {
-	cli_errmsg("cli_cvdload():  Can't create temporary directory %s\n", dir);
+	cli_errmsg("cli_cvdload(): Can't create temporary directory %s\n", dir);
 	free(dir);
+	close(fd);
 	return CL_ETMPDIR;
     }
 
-    if(cli_untgz(dup(fileno(fs)), dir)) {
+    if(cli_untgz(fd, dir)) {
 	cli_errmsg("cli_cvdload(): Can't unpack CVD file.\n");
 	free(dir);
 	return CL_ECVDEXTR;
