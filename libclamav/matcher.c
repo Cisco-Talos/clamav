@@ -395,7 +395,7 @@ static int cli_checkfp(int fd, const struct cl_engine *engine)
     return 0;
 }
 
-int cli_validatesig(unsigned short target, unsigned short ftype, const char *offstr, unsigned long int fileoff, int desc, const char *virname)
+int cli_validatesig(unsigned short ftype, const char *offstr, unsigned long int fileoff, int desc, const char *virname)
 {
 
     if(offstr && desc != -1) {

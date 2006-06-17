@@ -207,7 +207,7 @@ int yc_decrypt(char *fbuf, unsigned int filesize, struct pe_image_section_hdr *s
 	   name == 0x6164722E || /* .rda */
 	   name == 0x6164692E || /* .ida */
 	   name == 0x736C742E || /* .tls */
-	   (name&0xffff == 0x4379) || /* yC */
+	   ((name&0xffff) == 0x4379) || /* yC */
 	   EC32(sections[i].PointerToRawData) == 0 ||
 	   EC32(sections[i].SizeOfRawData) == 0 ) continue;
       cli_dbgmsg("yC: decrypting sect%d\n",i); 

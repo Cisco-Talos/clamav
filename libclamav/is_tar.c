@@ -5,7 +5,7 @@
  * Public Domain version written 26 Aug 1985 John Gilmore (ihnp4!hoptoad!gnu).
  *
  * @(#)list.c 1.18 9/23/86 Public Domain - gnu
- * $Id: is_tar.c,v 1.1 2005/03/22 21:26:25 kojm Exp $
+ * $Id: is_tar.c,v 1.2 2006/06/17 21:00:44 tkojm Exp $
  *
  * Comments changed and some code/comments reformatted
  * for file command by Ian Darwin.
@@ -32,7 +32,7 @@ static int from_oct(int digs, char *where);
  *	1 for old UNIX tar file,
  *	2 for Unix Std (POSIX) tar file.
  */
-int is_tar(unsigned char *buf, int nbytes)
+int is_tar(unsigned char *buf, unsigned int nbytes)
 {
 	union record *header = (union record *)buf;
 	int	i;

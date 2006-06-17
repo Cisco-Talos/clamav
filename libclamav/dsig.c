@@ -75,17 +75,26 @@ static char *cli_decodesig(const char *sig, int plainlen, mpz_t e, mpz_t n)
     mpz_init(c);
 
     for(i = 0; i < siglen; i++) {
-	if((dec = cli_ndecode(sig[i])) < 0)
+	if((dec = cli_ndecode(sig[i])) < 0) {
+	    mpz_clear(r);
+	    mpz_clear(c);
 	    return NULL;
+	}
 
 	mpz_set_ui(r, dec);
 	mpz_mul_2exp(r, r, 6 * i);
 	mpz_add(c, c, r);
     }
 
-    mpz_init(p);
-    decoded = (char *) calloc(plainlen + 1, sizeof(char));
+    decoded = (char *) cli_calloc(plainlen + 1, sizeof(char));
+    if(!decoded) {
+	cli_errmsg("cli_decodesig: Can't allocate memory\n");
+	mpz_clear(r);
+	mpz_clear(c);
+	return NULL;
+    }
 
+    mpz_init(p);
     mpz_powm(p, c, e, n); /* plain = cipher^e mod n */
     mpz_clear(c);
 

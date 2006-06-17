@@ -124,9 +124,9 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
 	    *start++ = 0;
 
 	    new->alt++;
-	    new->altn = (unsigned short int *) realloc(new->altn, new->alt * sizeof(unsigned short int));
+	    new->altn = (unsigned short int *) cli_realloc(new->altn, new->alt * sizeof(unsigned short int));
 	    new->altn[new->alt - 1] = 0;
-	    new->altc = (char **) realloc(new->altc, new->alt * sizeof(char *));
+	    new->altc = (char **) cli_realloc(new->altc, new->alt * sizeof(char *));
 	    new->altc[new->alt - 1] = NULL;
 
 	    for(i = 0; i < strlen(pt); i++)
@@ -391,7 +391,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	}
 
     } else {
-	bm_new = (struct cli_bm_patt *) calloc(1, sizeof(struct cli_bm_patt));
+	bm_new = (struct cli_bm_patt *) cli_calloc(1, sizeof(struct cli_bm_patt));
 	if(!bm_new)
 	    return CL_EMEM;
 
@@ -802,7 +802,7 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 static int cli_loadmd(FILE *fd, struct cl_engine **engine, unsigned int *signo, int type, unsigned int options)
 {
 	char buffer[FILEBUFF], *pt;
-	int line = 0, comments = 0, ret = 0;
+	int line = 0, comments = 0, ret = 0, crc32;
 	struct cli_meta_node *new;
 
 
@@ -892,11 +892,12 @@ static int cli_loadmd(FILE *fd, struct cl_engine **engine, unsigned int *signo, 
 	    if(!strcmp(pt, "*")) {
 		new->crc32 = 0;
 	    } else {
-		new->crc32 = cli_hex2num(pt);
-		if(new->crc32 == -1) {
+		crc32 = cli_hex2num(pt);
+		if(crc32 == -1) {
 		    ret = CL_EMALFDB;
 		    break;
 		}
+		new->crc32 = (unsigned int) crc32;
 	    }
 	    free(pt);
 	}
@@ -1249,7 +1250,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
                 fname = cli_calloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
 		sprintf(fname, "%s/%s", dirname, dent->d_name);
 #if defined(C_INTERIX) || defined(C_OS2)
-		dbstat->statdname[dbstat->no - 1] = (char *) calloc(strlen(dent->d_name) + 1, sizeof(char));
+		dbstat->statdname[dbstat->no - 1] = (char *) cli_calloc(strlen(dent->d_name) + 1, sizeof(char));
 		strcpy(dbstat->statdname[dbstat->no - 1], dent->d_name);
 #endif
 		stat(fname, &dbstat->stattab[dbstat->no - 1]);

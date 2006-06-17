@@ -294,7 +294,7 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
 			else
 			    t = ftype;
 
-			if((fd == -1 && !t) || !cli_validatesig(pt->target, t, pt->offset, offset + position, fd, pt->virname)) {
+			if((fd == -1 && !t) || !cli_validatesig(t, pt->offset, offset + position, fd, pt->virname)) {
 			    pt = pt->next;
 			    continue;
 			}

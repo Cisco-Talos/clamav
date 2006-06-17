@@ -241,7 +241,7 @@ static void *read_header(int fd, header_type hdr_type)
 	case MAIN_HEAD: {
 		main_header_t *main_hdr;
 		
-		main_hdr = (main_header_t *) malloc(sizeof(main_header_t));
+		main_hdr = (main_header_t *) cli_malloc(sizeof(main_header_t));
 		if (!main_hdr) {
 			return NULL;
 		}
@@ -257,7 +257,7 @@ static void *read_header(int fd, header_type hdr_type)
 	case FILE_HEAD: {
 		file_header_t *file_hdr;
 		
-		file_hdr = (file_header_t *) malloc(sizeof(file_header_t));
+		file_hdr = (file_header_t *) cli_malloc(sizeof(file_header_t));
 		if (!file_hdr) {
 			return NULL;
 		}
@@ -320,7 +320,7 @@ static file_header_t *read_block(int fd, header_type hdr_type)
 	cli_dbgmsg("Pack Size: %u\n", file_header->pack_size);
 	cli_dbgmsg("UnPack Version: 0x%.2x\n", file_header->unpack_ver);
 	cli_dbgmsg("Pack Method: 0x%.2x\n", file_header->method);
-	file_header->filename = (unsigned char *) malloc(file_header->name_size+1);
+	file_header->filename = (unsigned char *) cli_malloc(file_header->name_size+1);
 	if (!file_header->filename) {
 		free(file_header);
 		return NULL;
@@ -884,7 +884,7 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 			cli_dbgmsg("ERROR: vm_codesize=0x%x\n", vm_codesize);
 			return FALSE;
 		}
-		vm_code = (unsigned char *) malloc(vm_codesize);
+		vm_code = (unsigned char *) cli_malloc(vm_codesize);
 		for (i=0 ; i < vm_codesize ; i++) {
 			vm_code[i] = rarvm_getbits(&rarvm_input) >> 8;
 			rarvm_addbits(&rarvm_input, 8);
@@ -898,13 +898,13 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 	
 	static_size = filter->prg.static_size;
 	if (static_size > 0 && static_size < VM_GLOBALMEMSIZE) {
-		stack_filter->prg.static_data = malloc(static_size);
+		stack_filter->prg.static_data = cli_malloc(static_size);
 		memcpy(stack_filter->prg.static_data, filter->prg.static_data, static_size);
 	}
 	
 	if (stack_filter->prg.global_size < VM_FIXEDGLOBALSIZE) {
 		free(stack_filter->prg.global_data);
-		stack_filter->prg.global_data = malloc(VM_FIXEDGLOBALSIZE);
+		stack_filter->prg.global_data = cli_malloc(VM_FIXEDGLOBALSIZE);
 		memset(stack_filter->prg.global_data, 0, VM_FIXEDGLOBALSIZE);
 		stack_filter->prg.global_size = VM_FIXEDGLOBALSIZE;
 	}
@@ -958,7 +958,7 @@ static int read_vm_code(unpack_data_t *unpack_data, int fd)
 		length = getbits(unpack_data);
 		addbits(unpack_data, 16);
 	}
-	vmcode = (unsigned char *) malloc(length + 2);
+	vmcode = (unsigned char *) cli_malloc(length + 2);
 	rar_dbgmsg("VM code length: %d\n", length);
 	if (!vmcode) {
 		return FALSE;
@@ -1004,7 +1004,7 @@ static int read_vm_code_PPM(unpack_data_t *unpack_data, int fd)
 		}
 		length = b1*256 + b2;
 	}
-	vmcode = (unsigned char *) malloc(length + 2);
+	vmcode = (unsigned char *) cli_malloc(length + 2);
 	rar_dbgmsg("VM PPM code length: %d\n", length);
 	if (!vmcode) {
 		return FALSE;
@@ -1317,7 +1317,7 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 	if (!is_rar_archive(fd)) {
 		return FALSE;
 	}
-	unpack_data = malloc(sizeof(unpack_data_t));
+	unpack_data = cli_malloc(sizeof(unpack_data_t));
 	unpack_data->rarvm_data.mem = NULL;
 	unpack_data->old_filter_lengths = NULL;
 	unpack_data->PrgStack.array = unpack_data->Filters.array = NULL;
@@ -1373,7 +1373,7 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 		if (!file_header) {
 			break;
 		}
-		new_metadata = malloc(sizeof(rar_metadata_t));
+		new_metadata = cli_malloc(sizeof(rar_metadata_t));
 		if (!new_metadata) {
 			break;
 		}

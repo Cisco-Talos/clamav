@@ -49,7 +49,7 @@ typedef struct rar_metadata_tag
 	uint32_t pack_size;
 	uint32_t unpack_size;
 	uint32_t crc;
-	int encrypted;
+	unsigned int encrypted;
 	uint8_t method;
 	unsigned char *filename;
 	struct rar_metadata_tag *next;
