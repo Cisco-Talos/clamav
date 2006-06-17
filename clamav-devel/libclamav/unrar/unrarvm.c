@@ -195,7 +195,7 @@ uint32_t rar_crc(uint32_t start_crc, void *addr, uint32_t size)
 
 int rarvm_init(rarvm_data_t *rarvm_data)
 {
-	rarvm_data->mem = (uint8_t *) malloc(RARVM_MEMSIZE+4);
+	rarvm_data->mem = (uint8_t *) cli_malloc(RARVM_MEMSIZE+4);
 	init_crc();
 	if (!rarvm_data->mem) {
 		return FALSE;
@@ -1066,7 +1066,7 @@ void rarvm_prepare(rarvm_data_t *rarvm_data, rarvm_input_t *rarvm_input, unsigne
 		if (data_flag & 0x8000) {
 			int data_size = rarvm_read_data(rarvm_input)+1;
 			rar_dbgmsg("data_size=%d\n", data_size);
-			prg->static_data = malloc(data_size);
+			prg->static_data = cli_malloc(data_size);
 			for (i=0 ; rarvm_input->in_addr < code_size && i < data_size ; i++) {
 				prg->static_size++;
 				prg->static_data = realloc(prg->static_data, prg->static_size);

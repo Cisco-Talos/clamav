@@ -227,7 +227,7 @@ cli_file_t cli_filetype(const char *buf, size_t buflen)
     return ascii ? CL_TYPE_UNKNOWN_TEXT : CL_TYPE_UNKNOWN_DATA;
 }
 
-int is_tar(unsigned char *buf, int nbytes);
+int is_tar(unsigned char *buf, unsigned int nbytes);
 
 cli_file_t cli_filetype2(int desc)
 {

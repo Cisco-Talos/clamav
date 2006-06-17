@@ -111,7 +111,7 @@ static int sub_allocator_start_sub_allocator(sub_allocator_t *sub_alloc, int sa_
 	}
 	sub_allocator_stop_sub_allocator(sub_alloc);
 	alloc_size = t/FIXED_UNIT_SIZE*UNIT_SIZE+UNIT_SIZE;
-	if ((sub_alloc->heap_start = (uint8_t *) malloc(alloc_size)) == NULL) {
+	if ((sub_alloc->heap_start = (uint8_t *) cli_malloc(alloc_size)) == NULL) {
 		cli_dbgmsg("sub_alloc start failed\n");
 		return FALSE;
 	}

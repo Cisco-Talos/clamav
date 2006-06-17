@@ -115,7 +115,7 @@ static struct mspack_file *msp_open(struct mspack_system *this,
   default: return NULL;
   }
 
-  if ((fh = malloc(sizeof(struct mspack_file_p)))) {
+  if ((fh = cli_malloc(sizeof(struct mspack_file_p)))) {
     fh->name = filename;
     fh->desc = 0;
     if ((fh->fh = fopen(filename, fmode))) return (struct mspack_file *) fh;
@@ -138,7 +138,7 @@ static struct mspack_file *msp_dopen(struct mspack_system *this,
   default: return NULL;
   }
 
-  if ((fh = malloc(sizeof(struct mspack_file_p)))) {
+  if ((fh = cli_malloc(sizeof(struct mspack_file_p)))) {
     fh->name = "descriptor";
     fh->desc = desc;
     if ((fh->fh = fdopen(desc, fmode))) return (struct mspack_file *) fh;
@@ -213,7 +213,7 @@ static void msp_msg(struct mspack_file *file, char *format, ...) {
 static void *msp_alloc(struct mspack_system *this, size_t bytes) {
 #ifdef DEBUG
   /* make uninitialised data obvious */
-  char *buf = malloc(bytes + 8);
+  char *buf = cli_malloc(bytes + 8);
   if (buf) memset(buf, 0xDC, bytes);
   *((size_t *)buf) = bytes;
   return &buf[8];

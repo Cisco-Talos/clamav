@@ -126,13 +126,13 @@ int __zip_find_disk_trailer(int fd, off_t filesize, struct zip_disk_trailer *tra
 		__fixup_rootseek(offset + tail - buf, trailer);
 
 		u_rootseek = EC32(trailer->z_rootseek);
-		if(u_rootseek > filesize) {
+		if(u_rootseek > (uint32_t) filesize) {
 		    cli_dbgmsg("Unzip: __zip_find_disk_trailer: u_rootseek > filesize, continue search\n");
 		    continue;
 		}
 
 		for(i = 0; i < 2; i++) {
-		    if(u_rootseek + shift + sizeof(dirent) < filesize) {
+		    if(u_rootseek + shift + sizeof(dirent) < (uint32_t) filesize) {
 			if(lseek(fd, u_rootseek + shift, SEEK_SET) < 0) {
 			    cli_errmsg("Unzip: __zip_find_disk_trailer: Can't lseek descriptor %d\n", fd);
 			    free(buf);
@@ -169,7 +169,7 @@ int __zip_parse_root_directory(int fd, struct zip_disk_trailer *trailer, zip_dir
 	struct zip_root_dirent dirent, *d;
 	zip_dir_hdr *hdr, *hdr0;
 	uint16_t *p_reclen = NULL, entries;
-	off_t offset;
+	uint32_t offset;
 	struct stat sb;
 	uint16_t u_entries  = EC16(trailer->z_entries);   
 	uint32_t u_rootsize = EC32(trailer->z_rootsize);  
@@ -183,7 +183,7 @@ int __zip_parse_root_directory(int fd, struct zip_disk_trailer *trailer, zip_dir
 	return CL_EIO;
     }
 
-    if(u_rootsize > sb.st_size) {
+    if(u_rootsize > (uint32_t) sb.st_size) {
 	cli_errmsg("Unzip: __zip_parse_root_directory: Incorrect root size\n");
 	return CL_EFORMAT;
     }
@@ -452,7 +452,7 @@ zip_file *zip_file_open(zip_dir *dir, const char *name, int d_off)
     while(1) {
 	hdr_name = hdr->d_name;
 
-        if(!strcmp(hdr_name, name) && (d_off == -1 || d_off == hdr->d_off)) {
+        if(!strcmp(hdr_name, name) && (d_off == -1 || (uint32_t) d_off == hdr->d_off)) {
 	    switch (hdr->d_compr) {
 		case ZIP_METHOD_STORED:
 		case ZIP_METHOD_DEFLATED:

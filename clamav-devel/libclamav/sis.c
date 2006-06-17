@@ -73,7 +73,7 @@ static char *langcodes[] = {
 static char *sis_utf16_decode(const char *str, uint32_t length)
 {
 	char *decoded;
-	int i, j;
+	uint32_t i, j;
 
 
     if(!length || length % 2) {
@@ -305,7 +305,7 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 	    return CL_EIO;
 	} 
 
-	if(cli_writen(desc, buff, filelen) != filelen) {
+	if((uint32_t) cli_writen(desc, buff, filelen) != filelen) {
 	    cli_errmsg("SIS: sis_extract_simple: Can't write %d bytes to %s\n", filelen, fname);
 	    free(subdir);
 	    free(fname);

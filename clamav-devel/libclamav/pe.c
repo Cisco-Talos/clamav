@@ -1641,7 +1641,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
 
 	lseek(desc, 0, SEEK_SET);
-	if(read(desc, spinned, fsize) != fsize) {
+	if((size_t) read(desc, spinned, fsize) != fsize) {
 	    cli_dbgmsg("PESpin: Can't read %d bytes\n", fsize);
 	    free(spinned);
 	    free(section_hdr);
@@ -1707,7 +1707,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	  }
 
 	  lseek(desc, 0, SEEK_SET);
-	  if(read(desc, spinned, fsize) != fsize) {
+	  if((size_t) read(desc, spinned, fsize) != fsize) {
 	    cli_dbgmsg("yC: Can't read %d bytes\n", fsize);
 	    free(spinned);
 	    free(section_hdr);

@@ -190,7 +190,7 @@ int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virnam
 		    if(p->target || p->offset) {
 			off = offset + i - BM_MIN_LENGTH + BM_BLOCK_SIZE;
 
-			if((fd == -1 && !ftype) || !cli_validatesig(p->target, ftype, p->offset, off, fd, p->virname)) {
+			if((fd == -1 && !ftype) || !cli_validatesig(ftype, p->offset, off, fd, p->virname)) {
 			    p = p->next;
 			    continue;
 			}

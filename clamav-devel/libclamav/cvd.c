@@ -57,7 +57,11 @@ int cli_untgz(int fd, const char *destdir)
 	return -1;
     }
 
-    fullname = (char *) calloc(sizeof(char), strlen(destdir) + 100 + 5);
+    fullname = (char *) cli_calloc(sizeof(char), strlen(destdir) + 100 + 5);
+    if(!fullname) {
+	cli_errmsg("cli_untgz: Can't allocate memory for fullname\n");
+	return -1;
+    }
 
     while(1) {
 
@@ -175,6 +179,10 @@ struct cl_cvd *cl_cvdparse(const char *head)
     }
 
     cvd = (struct cl_cvd *) cli_calloc(1, sizeof(struct cl_cvd));
+    if(!cvd) {
+	cli_errmsg("cl_cvdparse: Can't allocate memory for cvd\n");
+	return NULL;
+    }
 
     if(!(cvd->time = cli_strtok(head, 1, ":"))) {
 	cli_errmsg("CVD -> Can't extract time from header.\n");

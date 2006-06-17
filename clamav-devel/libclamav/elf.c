@@ -191,7 +191,7 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 
     shoff = EC32(file_hdr.e_shoff);
     cli_dbgmsg("ELF: Section header table offset: %d\n", shoff);
-    if(lseek(desc, shoff, SEEK_SET) != shoff) {
+    if((uint32_t) lseek(desc, shoff, SEEK_SET) != shoff) {
 	/* Possibly broken end of file */
         if(DETECT_BROKEN) {
 	    if(ctx->virname)
@@ -353,7 +353,7 @@ int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
     }
 
     shoff = EC32(file_hdr.e_shoff);
-    if(lseek(desc, shoff, SEEK_SET) != shoff) {
+    if((uint32_t) lseek(desc, shoff, SEEK_SET) != shoff) {
 	/* Possibly broken end of file */
 	return -1;
     }

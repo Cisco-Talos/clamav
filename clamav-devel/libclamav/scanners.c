@@ -330,16 +330,16 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    if(mdata->encrypted != encrypted)
 		continue;
 
-	    if(mdata->crc32 && mdata->crc32 != (unsigned int) zdirent.d_crc32)
+	    if(mdata->crc32 && mdata->crc32 != zdirent.d_crc32)
 		continue;
 
-	    if(mdata->csize > 0 && mdata->csize != zdirent.d_csize)
+	    if(mdata->csize > 0 && (uint32_t) mdata->csize != zdirent.d_csize)
 		continue;
 
-	    if(mdata->size >= 0 && mdata->size != zdirent.st_size)
+	    if(mdata->size >= 0 && (uint32_t) mdata->size != zdirent.st_size)
 		continue;
 
-	    if(mdata->method >= 0 && mdata->method != (unsigned int) zdirent.d_compr)
+	    if(mdata->method >= 0 && (uint16_t) mdata->method != zdirent.d_compr)
 		continue;
 
 	    if(mdata->fileno && mdata->fileno != files)
@@ -373,8 +373,8 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    continue;
 	}
 
-	if(zdirent.d_csize <= 0 || zdirent.st_size < 0) {
-	    cli_dbgmsg("Zip: Malformed archive detected.\n");
+	if(!zdirent.d_csize) {
+	    cli_dbgmsg("Zip: Malformed file (d_csize == 0 but st_size != 0)\n");
 	    *ctx->virname = "Suspect.Zip";
 	    ret = CL_VIRUS;
 	    break;
@@ -1313,8 +1313,8 @@ static int cli_scanjpeg(int desc, const char **virname)
 
 static int cli_scancryptff(int desc, cli_ctx *ctx)
 {
-	int ret = CL_CLEAN, i, ndesc;
-	unsigned int length;
+	int ret = CL_CLEAN, ndesc;
+	unsigned int length, i;
 	unsigned char *src = NULL, *dest = NULL;
 	char *tempfile;
 	struct stat sb;
