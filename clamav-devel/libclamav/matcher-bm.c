@@ -132,6 +132,7 @@ void cli_bm_free(struct cli_matcher *root)
 int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cli_matcher *root, unsigned long int offset, unsigned short ftype, int fd)
 {
 	unsigned int i, j, shift, off, found = 0;
+	int idxtest;
 	uint16_t idx;
 	struct cli_bm_patt *p;
 	const char *bp;
@@ -167,6 +168,14 @@ int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virnam
 		    continue;
 		}
 #endif
+
+		idxtest = MIN (p->length, length - off ) - 1;
+		if(idxtest >= 0) {
+		    if(bp[idxtest] != p->pattern[idxtest]) {
+			p = p->next;
+			continue;
+		    }
+		}
 
 		found = 1;
 		for(j = 0; j < p->length && off < length; j++, off++) {

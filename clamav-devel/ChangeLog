@@ -1,3 +1,8 @@
+Sat Jun 17 21:17:20 CEST 2006 (tk)
+----------------------------------
+  * libclamav/matcher-bm.c: minor optimization patch (~7% speed up) from
+			    Christophe Poujol <christophe.poujol*atosorigin.com>
+
 Fri Jun 16 16:03:45 CEST 2006 (tk)
 ----------------------------------
   * libclamav/readdb.c: fix small memory leak in cl_free()
