@@ -319,7 +319,13 @@ Running in the foreground, valgrind, LogSyslog, LogVerbose, LogFile etc.
 5.1. Patches
 
 Patches are welcome, but they must be against the latest CVS version and adhere
-to the coding style of clamav-milter. Most of this style is based on K&R.
+to the coding style of clamav-milter. Coding style is religious, everyone
+believes theirs is great and all others are fine.
+
+This is my coding style, live with it. You don't want me in a bad mood because
+I can't read your code when I'm deciding if your code should be incorporated.
+
+Most of this style is based on K&R.
 
 Use the tab key, not space key, to indent.
 
@@ -342,6 +348,9 @@ hardware, operating systems, test tools such as valgrind, compilers (gcc, icc,
 Sun's cc).
 
 Function names appear at the start of lines (I use ctags).
+
+Document your changes. If you add, remove, or change functionality you will
+need to update the manual page and possibly the usage message as well.
 
 6. TODO
 
