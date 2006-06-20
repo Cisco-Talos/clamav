@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.174 2006/06/12 13:24:06 njh Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.175 2006/06/20 16:54:31 tkojm Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -49,7 +49,6 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.174 2006/06/12 13:24:06 njh Exp 
 #include "others.h"
 #include "str.h"
 #include "filetypes.h"
-#include "strrcpy.h"
 
 #include "mbox.h"
 
@@ -1848,9 +1847,9 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 		case EIGHTBIT:
 		default:	/* unknown encoding type - try our best */
 			if(line)	/* empty line? */
-				buf = (unsigned char *)strrcpy((char *)buf, line);
+				buf = (unsigned char *)cli_strrcpy((char *)buf, line);
 			/* Put the new line back in */
-			return (unsigned char *)strrcpy((char *)buf, "\n");
+			return (unsigned char *)cli_strrcpy((char *)buf, "\n");
 
 		case QUOTEDPRINTABLE:
 			if(line == NULL) {	/* empty line */

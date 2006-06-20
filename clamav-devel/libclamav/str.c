@@ -331,3 +331,16 @@ const char *cli_memstr(const char *haystack, int hs, const char *needle, int ns)
 
     return NULL;
 }
+
+char *cli_strrcpy(char *dest, const char *source) /* by NJH */
+{
+
+    if(!dest || !source) {
+	cli_errmsg("cli_strrcpy: NULL argument\n");
+	return NULL;
+    }
+
+    while((*dest++ = *source++));
+
+    return --dest;
+}

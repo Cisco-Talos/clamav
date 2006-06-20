@@ -1,3 +1,7 @@
+Tue Jun 20 18:49:10 CEST 2006 (tk)
+----------------------------------
+  * libclamav/strrcpy.[ch]: remove files; move strrcpy() into str.c
+
 Sat Jun 17 22:57:37 CEST 2006 (tk)
 ----------------------------------
   * libclamav: minor code cleanup
