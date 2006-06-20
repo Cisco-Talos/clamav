@@ -1,5 +1,6 @@
 /*
  *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  cli_strrcpy(): Copyright (C) 2002 Nigel Horne <njh@bandsman.co.uk>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
