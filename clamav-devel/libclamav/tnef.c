@@ -25,7 +25,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.35 2006/05/19 11:02:12 njh Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.36 2006/06/20 19:36:33 njh Exp $";
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -148,7 +148,7 @@ cli_tnef(const char *dir, int desc)
 			case LVL_ATTACHMENT:
 				cli_dbgmsg("TNEF - found attachment\n");
 				if(tnef_attachment(fp, type, tag, length, dir, &fb, fsize) != 0) {
-					cli_errmsg("Error reading TNEF message\n");
+					cli_errmsg("Error reading TNEF attachment\n");
 					ret = CL_EFORMAT;
 					alldone = 1;
 				}
@@ -270,7 +270,7 @@ tnef_message(FILE *fp, uint16_t type, uint16_t tag, int32_t length, off_t fsize)
 	/*cli_dbgmsg("%lu %lu\n", (long)(offset + length), ftell(fp));*/
 
 	if(!CLI_ISCONTAINED2(0, fsize, (off_t)offset, (off_t)length)) {
-		cli_errmsg("TNEF: Incorrect length field\n");
+		cli_errmsg("TNEF: Incorrect length field in tnef_message\n");
 		return -1;
 	}
 	if(fseek(fp, offset + length, SEEK_SET) < 0)
@@ -350,7 +350,7 @@ tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, int32_t length, const cha
 	/*cli_dbgmsg("%lu %lu\n", (long)(offset + length), ftell(fp));*/
 
 	if(!CLI_ISCONTAINED2(0, fsize, (off_t)offset, (off_t)length)) {
-		cli_errmsg("TNEF: Incorrect length field\n");
+		cli_errmsg("TNEF: Incorrect length field in tnef_attachment\n");
 		return -1;
 	}
 	if(fseek(fp, (long)(offset + length), SEEK_SET) < 0)	/* shouldn't be needed */

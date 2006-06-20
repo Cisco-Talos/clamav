@@ -1,3 +1,7 @@
+Tue Jun 20 20:37:21 BST 2006 (njh)
+----------------------------------
+  * libclamv/tnef.c:	Better indication of where an error was trapped
+
 Tue Jun 20 18:49:10 CEST 2006 (tk)
 ----------------------------------
   * libclamav/strrcpy.[ch]: remove files; move strrcpy() into str.c
