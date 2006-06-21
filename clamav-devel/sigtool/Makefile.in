@@ -74,7 +74,7 @@ am_sigtool_OBJECTS = output.$(OBJEXT) getopt.$(OBJEXT) \
 	options.$(OBJEXT) cdiff.$(OBJEXT) vba.$(OBJEXT) \
 	sigtool.$(OBJEXT)
 sigtool_OBJECTS = $(am_sigtool_OBJECTS)
-sigtool_DEPENDENCIES = $(top_builddir)/clamscan/others.o
+sigtool_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -114,6 +114,8 @@ CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DBDIR = @DBDIR@
+
+#sigtool_LDADD = $(top_builddir)/clamscan/others.o 
 DEFS = @DEFS@ -DCL_NOTHREADS
 DEPDIR = @DEPDIR@
 ECHO = @ECHO@
@@ -224,7 +226,6 @@ sigtool_SOURCES = \
     vba.h \
     sigtool.c
 
-sigtool_LDADD = $(top_builddir)/clamscan/others.o 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 all: all-am
 

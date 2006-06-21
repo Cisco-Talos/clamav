@@ -1,3 +1,8 @@
+Wed Jun 21 21:06:06 CEST 2006 (tk)
+----------------------------------
+  * sigtool/sigtool.c: use getpass() replacement in getdsig(), thanks to
+		       Luca Gibelli <luca*clamav.net>
+
 Wed Jun 21 09:55:54 BST 2006 (njh)
 ----------------------------------
   * clamav-milter.c:	Fix compilation error introduced by strrcpy move
