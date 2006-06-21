@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.245 2006/06/12 09:57:43 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.246 2006/06/21 08:54:17 njh Exp $";
 
 #define	CM_VERSION	"devel-120606"
 
@@ -36,7 +36,6 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.245 2006/06/12 09:57:43 nj
 #include "target.h"
 #include "str.h"
 #include "../libclamav/others.h"
-#include "strrcpy.h"
 #include "clamav.h"
 #include "table.h"
 #include "network.h"
@@ -1208,6 +1207,8 @@ main(int argc, char **argv)
 		/*
 		 * FIXME: Allow connection to remote servers by TCP/IP whilst
 		 * connecting to the localserver via a UNIX domain socket
+		 *
+		 * FIXME: Should error if the --servers argument is given
 		 */
 		numServers = 1;
 	} else if(((cpt = cfgopt(copt, "TCPSocket")) != NULL) && cpt->enabled) {
@@ -1317,6 +1318,10 @@ main(int argc, char **argv)
 			cli_errmsg(_("Can't find any clamd servers\n"));
 			cli_errmsg(_("Check your entry for TCPSocket in %s\n"),
 				cfgfile);
+			if(use_syslog) {
+				syslog(LOG_ERR, _("Can't find any clamd server"));
+				closelog();
+			}
 			return EX_CONFIG;
 		}
 #endif
@@ -1762,9 +1767,27 @@ pingServer(int serverNumber)
 			return 0;
 		}
 		if(connect(sock, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
-			perror("connect");
-			close(sock);
-			return 0;
+			/*
+			 * During startup there is a race condition: clamd can
+			 * start and fork, then rc will start clamav-milter
+			 * before clamd has run accept(2), so we fail to
+			 * connect. In case this is the situation here, we wait
+			 * for a couple of seconds and try again. The sync() is
+			 * because during startup the machine won't be doing
+			 * much for most of the time, so we may as well do
+			 * something constructive!
+			 */
+			sync();
+			sleep(2);
+			if(connect(sock, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
+				char *hostname = cli_strtok(serverHostNames,
+					serverNumber, ":");
+
+				perror(hostname ? hostname : "connect");
+				close(sock);
+				free(hostname);
+				return 0;
+			}
 		}
 	}
 
