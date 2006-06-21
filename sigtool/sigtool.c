@@ -40,6 +40,10 @@
 #include <sys/wait.h>
 #include <dirent.h>
 
+#ifdef HAVE_TERMIOS_H
+#include <termios.h>
+#endif
+
 #include "vba.h"
 
 #include "shared/options.h"
@@ -158,9 +162,12 @@ static unsigned int countlines(const char *filename)
 
 static char *getdsig(const char *host, const char *user, const char *data)
 {
-	char buff[256], cmd[128], *pass, *pt;
+	char buff[256], cmd[128], pass[30], *pt;
         struct sockaddr_in server;
 	int sockd, bread, len;
+#ifdef HAVE_TERMIOS_H
+	struct termios old, new;
+#endif
 
 
 #ifdef PF_INET
@@ -185,7 +192,42 @@ static char *getdsig(const char *host, const char *user, const char *data)
     }
 
     memset(cmd, 0, sizeof(cmd));
-    pass = getpass("Password:");
+
+    fflush(stdin);
+    mprintf("Password: ");
+
+#ifdef HAVE_TERMIOS_H
+    if(tcgetattr(0, &old)) {
+	logg("!getdsig: tcgetattr() failed\n", host);
+	close(sockd);
+	return NULL;
+    }
+    new = old;
+    new.c_lflag &= ~ECHO;
+    if(tcsetattr(0, TCSAFLUSH, &new)) {
+	logg("!getdsig: tcsetattr() failed\n", host);
+	close(sockd);
+	return NULL;
+    }
+#endif
+
+    if(fgets(pass, sizeof(pass), stdin)) {
+	cli_chomp(pass);
+    } else {
+	logg("!getdsig: Can't get password\n");
+	close(sockd);
+	return NULL;
+    }
+
+#ifdef HAVE_TERMIOS_H
+    if(tcsetattr(0, TCSAFLUSH, &old)) {
+	logg("!getdsig: tcsetattr() failed\n", host);
+	close(sockd);
+	return NULL;
+    }
+#endif
+    mprintf("\n");
+
     snprintf(cmd, sizeof(cmd) - 16, "ClamSign:%s:%s:", user, pass);
     len = strlen(cmd);
     pt = cmd + len;

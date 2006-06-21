@@ -37,7 +37,7 @@ sigtool_SOURCES = \
     vba.h \
     sigtool.c
 
-sigtool_LDADD = $(top_builddir)/clamscan/others.o 
+#sigtool_LDADD = $(top_builddir)/clamscan/others.o 
 
 DEFS = @DEFS@ -DCL_NOTHREADS
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
