@@ -47,7 +47,6 @@
 #include "treewalk.h"
 #include "shared.h"
 #include "str.h"
-#include "strrcpy.h"
 #include "memory.h"
 #include "output.h"
 #include "misc.h"
@@ -972,8 +971,8 @@ void move_infected(const char *filename, const struct optstruct *opt)
 	exit(71);
     }
 
-    if(!(strrcpy(movefilename, movedir))) {
-        logg("!strrcpy() returned NULL\n");
+    if(!(cli_strrcpy(movefilename, movedir))) {
+        logg("!cli_strrcpy() returned NULL\n");
         claminfo.notmoved++;
         free(movefilename);
         return;
