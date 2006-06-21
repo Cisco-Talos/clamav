@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.246 2006/06/21 08:54:17 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.247 2006/06/21 09:09:59 njh Exp $";
 
-#define	CM_VERSION	"devel-120606"
+#define	CM_VERSION	"devel-210606"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3028,8 +3028,8 @@ clamfi_eom(SMFICTX *ctx)
 					}
 					ptr = strchr(err, '\0');
 				}
-				ptr = strrcpy(ptr, " ");
-				ptr = strrcpy(ptr, *to);
+				ptr = cli_strrcpy(ptr, " ");
+				ptr = cli_strrcpy(ptr, *to);
 			}
 			(void)strcpy(ptr, "\n");
 
