@@ -1,3 +1,7 @@
+Wed Jun 21 09:55:54 BST 2006 (njh)
+----------------------------------
+  * clamav-milter.c:	Fix compilation error introduced by strrcpy move
+
 Tue Jun 20 20:37:21 BST 2006 (njh)
 ----------------------------------
   * libclamv/tnef.c:	Better indication of where an error was trapped
