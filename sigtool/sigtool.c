@@ -263,11 +263,61 @@ static char *getdsig(const char *host, const char *user, const char *data)
     return strdup(pt);
 }
 
+static int writeinfo(const char *db, unsigned int ver)
+{
+	FILE *fh;
+	int i;
+	struct stat sb;
+	char file[32], *md5;
+	char *extlist[] = { "db", "fp", "hdb", "ndb", "rmd", "zmd", "sdb", NULL };
+
+
+    snprintf(file, sizeof(file), "%s.info", db);
+    if(stat(file, &sb) != -1) {
+	if(unlink(file) == -1) {
+	    logg("!writeinfo: Can't unlink %s\n", file);
+	    return -1;
+	}
+    }
+
+    if(!(fh = fopen(file, "w"))) {
+	logg("!writeinfo: Can't create file %s\n", file);
+	return -1;
+    }
+
+    if(fprintf(fh, "%s:%u\n", db, ver) < 0) {
+	logg("!writeinfo: Can't write to info file\n");
+	fclose(fh);
+	return -1;
+    }
+
+    for(i = 0; extlist[i]; i++) {
+	snprintf(file, sizeof(file), "%s.%s", db, extlist[i]);
+	if(stat(file, &sb) != -1) {
+	    if(!(md5 = cli_md5file(file))) {
+		logg("!writeinfo: Can't generate MD5 checksum for %s\n", file);
+		fclose(fh);
+		return -1;
+	    }
+	    if(fprintf(fh, "%s.%s:%s\n", db, extlist[i], md5) < 0) {
+		logg("!writeinfo: Can't write to info file\n");
+		fclose(fh);
+		free(md5);
+		return -1;
+	    }
+	    free(md5);
+	}
+    }
+
+    fclose(fh);
+    return 0;
+}
+
 static int build(struct optstruct *opt)
 {
-	int ret, itmp;
+	int ret;
 	size_t bytes;
-	unsigned int sigs = 0, lines = 0;
+	unsigned int sigs = 0, lines = 0, version;
 	struct stat foo;
 	char buffer[FILEBUFF], *tarfile, *gzfile, header[513],
 	     smbuff[30], *pt, *dbdir;
@@ -276,7 +326,7 @@ static int build(struct optstruct *opt)
 	gzFile *gz;
 	time_t timet;
 	struct tm *brokent;
-	struct cl_cvd *oldcvd = NULL;
+	struct cl_cvd *oldcvd;
 
 
     if(!opt_check(opt, "server")) {
@@ -292,6 +342,7 @@ static int build(struct optstruct *opt)
     if(stat("main.db", &foo) == -1 && stat("daily.db", &foo) == -1 &&
        stat("main.hdb", &foo) == -1 && stat("daily.hdb", &foo) == -1 &&
        stat("main.ndb", &foo) == -1 && stat("daily.ndb", &foo) == -1 &&
+       stat("main.sdb", &foo) == -1 && stat("daily.sdb", &foo) == -1 &&
        stat("main.zmd", &foo) == -1 && stat("daily.zmd", &foo) == -1 &&
        stat("main.rmd", &foo) == -1 && stat("daily.rmd", &foo) == -1)
     {
@@ -315,6 +366,7 @@ static int build(struct optstruct *opt)
 	lines = countlines("main.db") + countlines("daily.db") +
 		countlines("main.hdb") + countlines("daily.hdb") +
 		countlines("main.ndb") + countlines("daily.ndb") +
+		countlines("main.sdb") + countlines("daily.sdb") +
 		countlines("main.zmd") + countlines("daily.zmd") +
 		countlines("main.rmd") + countlines("daily.rmd") +
 		countlines("main.fp") + countlines("daily.fp");
@@ -325,6 +377,35 @@ static int build(struct optstruct *opt)
 	    logg("!build: or install the latest ClamAV version.\n");
 	    return -1;
 	}
+    }
+
+    /* try to read cvd header of current database */
+    dbdir = freshdbdir();
+    snprintf(buffer, sizeof(buffer), "%s/%s", dbdir, opt_arg(opt, "build"));
+    free(dbdir);
+    if(!(oldcvd = cl_cvdhead(buffer))) {
+	logg("^build: CAN'T READ CVD HEADER OF CURRENT DATABASE %s\n", buffer);
+	sleep(3);
+    }
+
+    if(oldcvd) {
+	version = oldcvd->version + 1;
+	cl_cvdfree(oldcvd);
+    } else {
+	fflush(stdin);
+	logg("Version number: ");
+	scanf("%u", &version);
+    }
+
+    pt = opt_arg(opt, "build");
+    if(strstr(pt, "main"))
+	pt = "main";
+    else
+	pt = "daily";
+
+    if(writeinfo(pt, version) == -1) {
+	logg("!build: Can't generate info file\n");
+	return -1;
     }
 
     if(!(tarfile = cli_gentemp("."))) {
@@ -341,9 +422,10 @@ static int build(struct optstruct *opt)
 	    {
 		char *args[] = { "tar", "-cvf", NULL, "COPYING", "main.db",
 				 "daily.db", "main.hdb", "daily.hdb",
-				 "main.ndb", "daily.ndb", "main.zmd",
-				 "daily.zmd", "main.rmd", "daily.rmd",
-				 "main.fp", "daily.fp", NULL };
+				 "main.ndb", "daily.ndb", "main.sdb",
+				 "daily.sdb", "main.zmd", "daily.zmd",
+				 "main.rmd", "daily.rmd", "main.fp",
+				 "daily.fp", "daily.info", "main.info", NULL };
 		args[2] = tarfile;
 		execv("/bin/tar", args);
 		logg("!build: Can't execute tar\n");
@@ -398,15 +480,6 @@ static int build(struct optstruct *opt)
     unlink(tarfile);
     free(tarfile);
 
-    /* try to read cvd header of current database */
-    dbdir = freshdbdir();
-    snprintf(buffer, sizeof(buffer), "%s/%s", dbdir, opt_arg(opt, "build"));
-    free(dbdir);
-    if((oldcvd = cl_cvdhead(buffer)) == NULL) {
-	logg("^build: CAN'T READ CVD HEADER OF CURRENT DATABASE %s\n", buffer);
-	sleep(3);
-    }
-
     /* build header */
     strcpy(header, "ClamAV-VDB:");
 
@@ -418,14 +491,7 @@ static int build(struct optstruct *opt)
     strcat(header, smbuff);
 
     /* increment version number by one */
-    if(oldcvd) {
-	sprintf(smbuff, ":%d:", oldcvd->version + 1);
-    } else {
-	fflush(stdin);
-	logg("Version number: ");
-	scanf("%d", &itmp);
-	sprintf(smbuff, "%d:", itmp);
-    }
+    sprintf(smbuff, ":%d:", version);
     strcat(header, smbuff);
 
     /* number of signatures */
@@ -625,6 +691,7 @@ static int listdir(const char *dirname)
 	    (cli_strbcasestr(dent->d_name, ".db")  ||
 	     cli_strbcasestr(dent->d_name, ".hdb") ||
 	     cli_strbcasestr(dent->d_name, ".ndb") ||
+	     cli_strbcasestr(dent->d_name, ".sdb") ||
 	     cli_strbcasestr(dent->d_name, ".zmd") ||
 	     cli_strbcasestr(dent->d_name, ".rmd") ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
@@ -762,7 +829,7 @@ static int listdb(const char *filename)
 	    free(start);
 	}
 
-    } else if(cli_strbcasestr(filename, ".ndb") || cli_strbcasestr(filename, ".zmd") || cli_strbcasestr(filename, ".rmd")) {
+    } else if(cli_strbcasestr(filename, ".ndb") || cli_strbcasestr(filename, ".sdb") || cli_strbcasestr(filename, ".zmd") || cli_strbcasestr(filename, ".rmd")) {
 
 	while(fgets(buffer, FILEBUFF, fd)) {
 	    line++;
