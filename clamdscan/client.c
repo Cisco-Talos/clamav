@@ -47,7 +47,6 @@
 #include "output.h"
 #include "misc.h"
 #include "str.h"
-#include "strrcpy.h" /* libclamav */
 
 #ifdef PF_INET
 # define SOCKET_INET	PF_INET
@@ -526,8 +525,8 @@ void move_infected(const char *filename, const struct optstruct *opt)
 	exit(2);
     }
 
-    if(!(strrcpy(movefilename, movedir))) {
-        logg("^strrcpy() returned NULL\n");
+    if(!(cli_strrcpy(movefilename, movedir))) {
+        logg("^cli_strrcpy() returned NULL\n");
         notmoved++;
         free(movefilename);
         return;
