@@ -182,17 +182,6 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 	    break;
 	}
 
-	if(count > 0) {
-	    if((hret = sn_sigscan_resultget(resulthandle, 0, virname, &offset)) < 0) {
-		cli_errmsg("cli_scanbuff: can't get hardware match result: %d\n", hret);
-		sn_sigscan_resultfree(resulthandle);
-		return CL_EHWIO;
-	    } else {
-		cli_dbgmsg("cli_scanbuff: hardware match %s at %u\n", *virname, offset);
-		ret = CL_VIRUS;
-	    }
-	}
-
 	if((hret = sn_sigscan_resultfree(resulthandle)) < 0) {
 	    cli_errmsg("cli_scanbuff: can't free results: %d\n", ret);
 	    return CL_EHWIO;
