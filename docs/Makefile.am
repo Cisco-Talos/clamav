@@ -16,5 +16,5 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-EXTRA_DIST = clamdoc.pdf man clamav-mirror-howto.pdf signatures.pdf clamdoc.tex clam.eps html
+EXTRA_DIST = html man clamdoc.pdf clamdoc.tex clamav-mirror-howto.pdf signatures.pdf signatures.tex clam.eps
 man_MANS = man/clamscan.1 man/freshclam.1 man/sigtool.1 man/clamd.8 man/clamd.conf.5 man/clamdscan.1 man/clamav-milter.8 man/freshclam.conf.5

@@ -1,3 +1,7 @@
+Fri Jun 23 00:01:16 CEST 2006 (tk)
+----------------------------------
+  * docs/signatures.pdf: update
+
 Thu Jun 22 11:14:25 CEST 2006 (tk)
 ----------------------------------
   * sigtool/sigtool.c: create db.info file and include it in CVD
