@@ -1,6 +1,8 @@
 Sun Jun 25 14:29:22 CEST 2006 (tk)
 ----------------------------------
   * libclamav/matcher-ac.c: fix possible false matches of alternatives
+			    Problem reported by Nicolas Riendeau
+			    <knightr*istop.com>
 
 Fri Jun 23 00:01:16 CEST 2006 (tk)
 ----------------------------------
