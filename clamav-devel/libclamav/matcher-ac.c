@@ -227,7 +227,7 @@ inline static int cli_findpos(const char *buffer, unsigned int depth, unsigned i
 {
 	unsigned int bufferpos = offset + depth;
 	unsigned int postfixend = offset + length;
-	unsigned int i, j, alt = 0, found = 0;
+	unsigned int i, j, alt = 0, found;
 
 
     if(bufferpos >= length)
@@ -239,6 +239,7 @@ inline static int cli_findpos(const char *buffer, unsigned int depth, unsigned i
 	    return 0;
 
 	if(pattern->pattern[i] == CLI_ALT) {
+	    found = 0;
 	    for(j = 0; j < pattern->altn[alt]; j++) {
 		if(pattern->altc[alt][j] == buffer[bufferpos])
 		    found = 1;
