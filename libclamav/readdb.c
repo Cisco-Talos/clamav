@@ -76,8 +76,16 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
 	struct cli_ac_patt *new;
 	char *pt, *hex;
 	int virlen, ret, error = 0;
-	unsigned int i;
+	unsigned int i, j, wprefix = 0;
 
+#define FREE_ALT			\
+    if(new->alt) {			\
+	free(new->altn);		\
+	for(i = 0; i < new->alt; i++)	\
+	    free(new->altc[i]);		\
+	free(new->altc);		\
+	free(hex);			\
+    }
 
     if((new = (struct cli_ac_patt *) cli_calloc(1, sizeof(struct cli_ac_patt))) == NULL)
 	return CL_EMEM;
@@ -172,14 +180,7 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
 	free(hexcpy);
 
 	if(error) {
-	    free(hexnew);
-	    if(new->alt) {
-		free(new->altn);
-		for(i = 0; i < new->alt; i++)
-		    if(new->altc[i])
-			free(new->altc[i]);
-		free(new->altc);
-	    }
+	    FREE_ALT;
 	    free(new);
 	    return CL_EMALFDB;
 	}
@@ -187,23 +188,53 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     } else
 	hex = (char *) hexsig;
 
-
-    new->length = strlen(hex) / 2;
-
-    if(new->length > root->maxpatlen)
-	root->maxpatlen = new->length;
-
     if((new->pattern = cli_hex2si(hex)) == NULL) {
-	if(new->alt) {
-	    free(new->altn);
-	    for(i = 0; i < new->alt; i++)
-		free(new->altc[i]);
-	    free(new->altc);
-	    free(hex);
-	}
+	FREE_ALT;
 	free(new);
 	return CL_EMALFDB;
     }
+
+    new->length = strlen(hex) / 2;
+
+    for(i = 0; i < AC_DEFAULT_DEPTH; i++) {
+	if(new->pattern[i] == CLI_IGN || new->pattern[i] == CLI_ALT) {
+	    wprefix = 1;
+	    break;
+	}
+    }
+
+    if(wprefix) {
+	for(; i < new->length - AC_DEFAULT_DEPTH + 1; i++) {
+	    wprefix = 0;
+	    for(j = i; j < i + AC_DEFAULT_DEPTH; j++) {
+		if(new->pattern[j] == CLI_IGN || new->pattern[j] == CLI_ALT) {
+		    wprefix = 1;
+		    break;
+		}
+	    }
+	    if(!wprefix)
+		break;
+	}
+
+	if(wprefix) {
+	    FREE_ALT;
+	    free(new->pattern);
+	    free(new);
+	    return CL_EMALFDB;
+	}
+
+	new->prefix = new->pattern;
+	new->prefix_length = i;
+	new->pattern = &new->prefix[i];
+	new->length -= i;
+
+	for(i = 0; i < new->prefix_length; i++)
+	    if(new->prefix[i] == CLI_ALT)
+		new->alt_pattern++;
+    }
+
+    if(new->length > root->maxpatlen)
+	root->maxpatlen = new->length;
 
     if((pt = strstr(virname, "(Clam)")))
 	virlen = strlen(virname) - strlen(pt) - 1;
@@ -211,27 +242,21 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
 	virlen = strlen(virname);
 
     if(virlen <= 0) {
-	free(new->pattern);
-	if(new->alt) {
-	    free(new->altn);
-	    for(i = 0; i < new->alt; i++)
-		free(new->altc[i]);
-	    free(new->altc);
-	    free(hex);
-	}
+	if(new->prefix)
+	    free(new->prefix);
+	else
+	    free(new->pattern);
+	FREE_ALT;
 	free(new);
 	return CL_EMALFDB;
     }
 
     if((new->virname = cli_calloc(virlen + 1, sizeof(char))) == NULL) {
-	free(new->pattern);
-	if(new->alt) {
-	    free(new->altn);
-	    for(i = 0; i < new->alt; i++)
-		free(new->altc[i]);
-	    free(new->altc);
-	    free(hex);
-	}
+	if(new->prefix)
+	    free(new->prefix);
+	else
+	    free(new->pattern);
+	FREE_ALT;
 	free(new);
 	return CL_EMEM;
     }
@@ -239,15 +264,12 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     strncpy(new->virname, virname, virlen);
 
     if((ret = cli_ac_addpatt(root, new))) {
-	free(new->pattern);
+	if(new->prefix)
+	    free(new->prefix);
+	else
+	    free(new->pattern);
 	free(new->virname);
-	if(new->alt) {
-	    free(new->altn);
-	    for(i = 0; i < new->alt; i++)
-		free(new->altc[i]);
-	    free(new->altc);
-	    free(hex);
-	}
+	FREE_ALT;
 	free(new);
 	return ret;
     }

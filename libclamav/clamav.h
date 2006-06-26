@@ -110,11 +110,11 @@ struct cli_bm_patt {
 };
 
 struct cli_ac_patt {
-    short int *pattern;
-    unsigned int length, mindist, maxdist;
+    short int *pattern, *prefix;
+    unsigned int length, mindist, maxdist, prefix_length;
     char *virname, *offset;
     const char *viralias;
-    unsigned short int sigid, parts, partno, alt, *altn;
+    unsigned short int sigid, parts, partno, alt, *altn, alt_pattern;
     unsigned short type, target;
     char **altc;
     struct cli_ac_patt *next;
