@@ -190,7 +190,10 @@ static void cli_freepatt(struct cli_ac_patt *list)
     handler = list;
 
     while(handler) {
-	free(handler->pattern);
+	if(handler->prefix)
+	    free(handler->prefix);
+	else
+	    free(handler->pattern);
 	free(handler->virname);
 	if(handler->offset && (!handler->sigid || handler->partno == 1))
 	    free(handler->offset);
@@ -227,8 +230,12 @@ inline static int cli_findpos(const char *buffer, unsigned int depth, unsigned i
 {
 	unsigned int bufferpos = offset + depth;
 	unsigned int postfixend = offset + length;
-	unsigned int i, j, alt = 0, found;
+	unsigned int i, j, alt = pattern->alt_pattern, found;
 
+
+    if(pattern->prefix)
+	if(pattern->prefix_length > offset)
+	    return 0;
 
     if(bufferpos >= length)
 	bufferpos %= length;
@@ -256,6 +263,30 @@ inline static int cli_findpos(const char *buffer, unsigned int depth, unsigned i
 
 	if(bufferpos == length)
 	    bufferpos = 0;
+    }
+
+    if(pattern->prefix) {
+	alt = 0;
+	bufferpos = offset - pattern->prefix_length;
+
+	for(i = 0; i < pattern->prefix_length; i++) {
+
+	    if(pattern->prefix[i] == CLI_ALT) {
+		found = 0;
+		for(j = 0; j < pattern->altn[alt]; j++) {
+		    if(pattern->altc[alt][j] == buffer[bufferpos])
+			found = 1;
+		}
+
+		if(!found)
+		    return 0;
+		alt++;
+
+	    } else if(pattern->prefix[i] != CLI_IGN && (char) pattern->prefix[i] != buffer[bufferpos])
+		return 0;
+
+	    bufferpos++;
+	}
     }
 
     return 1;
@@ -295,7 +326,7 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
 			else
 			    t = ftype;
 
-			if((fd == -1 && !t) || !cli_validatesig(t, pt->offset, offset + position, fd, pt->virname)) {
+			if((fd == -1 && !t) || !cli_validatesig(t, pt->offset, offset + position - pt->prefix_length, fd, pt->virname)) {
 			    pt = pt->next;
 			    continue;
 			}
@@ -305,11 +336,11 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
 			if(partcnt[pt->sigid] + 1 == pt->partno) {
 			    dist = 1;
 			    if(pt->maxdist)
-				if(offset + i - partoff[pt->sigid] > pt->maxdist)
+				if((offset + i - pt->prefix_length) - partoff[pt->sigid] > pt->maxdist)
 				    dist = 0;
 
 			    if(dist && pt->mindist)
-				if(offset + i - partoff[pt->sigid] < pt->mindist)
+				if((offset + i - pt->prefix_length) - partoff[pt->sigid] < pt->mindist)
 				    dist = 0;
 
 			    if(dist) {
@@ -319,7 +350,7 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
 				    if(pt->type) {
 					if(otfrec) {
 					    if(pt->type > type || pt->type >= CL_TYPE_SFX) {
-						cli_dbgmsg("Matched signature for file type %s at %d\n", pt->virname, offset + position);
+						cli_dbgmsg("Matched signature for file type %s at %d\n", pt->virname, offset + position - pt->prefix_length);
 						type = pt->type;
 						if(ftoffset && (!*ftoffset || (*ftoffset)->cnt < SFX_MAX_TESTS) && ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) {
 						    if(!(tnode = cli_calloc(1, sizeof(struct cli_matched_type)))) {
@@ -328,7 +359,7 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
 						    }
 
 						    tnode->type = type;
-						    tnode->offset = offset + position;
+						    tnode->offset = offset + position - pt->prefix_length;
 
 						    if(*ftoffset)
 							tnode->cnt = (*ftoffset)->cnt + 1;
@@ -355,7 +386,7 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
 			if(pt->type) {
 			    if(otfrec) {
 				if(pt->type > type || pt->type >= CL_TYPE_SFX) {
-				    cli_dbgmsg("Matched signature for file type %s at %d\n", pt->virname, offset + position);
+				    cli_dbgmsg("Matched signature for file type %s at %d\n", pt->virname, offset + position - pt->prefix_length);
 				    type = pt->type;
 				    if(ftoffset && (!*ftoffset ||(*ftoffset)->cnt < SFX_MAX_TESTS) && ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) {
 					if(!(tnode = cli_calloc(1, sizeof(struct cli_matched_type)))) {
@@ -363,7 +394,7 @@ int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virnam
 					    return CL_EMEM;
 					}
 					tnode->type = type;
-					tnode->offset = offset + position;
+					tnode->offset = offset + position - pt->prefix_length;
 
 					if(*ftoffset)
 					    tnode->cnt = (*ftoffset)->cnt + 1;
