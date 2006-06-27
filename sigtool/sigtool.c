@@ -929,6 +929,212 @@ static int runcdiff(struct optstruct *opt)
     return ret;
 }
 
+static int compare(const char *oldpath, const char *newpath, FILE *diff)
+{
+	FILE *old, *new;
+	char obuff[1024], nbuff[1024], *pt, *omd5, *nmd5;
+	unsigned int line = 0;
+
+
+    if(!(new = fopen(newpath, "r"))) {
+	mprintf("!compare: Can't open file %s for reading\n", newpath);
+	return -1;
+    }
+
+    if((omd5 = cli_md5file(oldpath))) {
+	if(!(nmd5 = cli_md5file(newpath))) {
+	    mprintf("!compare: Can't get MD5 checksum of %s\n", newpath);
+	    free(omd5);
+	    return -1;
+	}
+	if(!strcmp(omd5, nmd5)) {
+	    free(omd5);
+	    free(nmd5);
+	    return 0;
+	}
+	free(omd5);
+	free(nmd5);
+    }
+
+    fprintf(diff, "OPEN %s\n", newpath);
+
+    old = fopen(oldpath, "r");
+
+    while(fgets(nbuff, sizeof(nbuff), new)) {
+	line++;
+	cli_chomp(nbuff);
+
+	if(!old) {
+	    fprintf(diff, "ADD %s\n", nbuff);
+	} else {
+	    if(fgets(obuff, sizeof(obuff), old)) {
+		cli_chomp(obuff);
+		if(!strcmp(nbuff, obuff)) {
+		    continue;
+		} else {
+		    /* TODO: Improve/add detection of DEL, XCHG */
+		    if(!strncmp(nbuff, obuff, 5)) {
+			obuff[8] = 0;
+			if((pt = strchr(obuff, ' ')))
+			    *pt = 0;
+			fprintf(diff, "XCHG %u %s %s\n", line, obuff, nbuff);
+		    }
+		}
+	    } else {
+		fclose(old);
+		old = NULL;
+		fprintf(diff, "ADD %s\n", nbuff);
+	    }
+	}
+    }
+
+    if(old)
+	fclose(old);
+    fprintf(diff, "CLOSE\n");
+    return 0;
+}
+
+static int makediff(struct optstruct *opt)
+{
+	FILE *diff;
+	DIR *dd;
+	struct dirent *dent;
+	char *odir, *ndir, opath[1024], name[32];
+	struct cl_cvd *cvd;
+	unsigned int oldver, newver;
+
+
+    if(!opt->filename) {
+	mprintf("!makediff: --diff requires two arguments\n");
+	return -1;
+    }
+
+    if(!(cvd = cl_cvdhead(opt->filename))) {
+	mprintf("!makediff: Can't read CVD header from %s\n", opt->filename);
+	return -1;
+    }
+    newver = cvd->version;
+    free(cvd);
+
+    if(!(cvd = cl_cvdhead(opt_arg(opt, "diff")))) {
+	mprintf("!makediff: Can't read CVD header from %s\n", opt_arg(opt, "diff"));
+	return -1;
+    }
+    oldver = cvd->version;
+    free(cvd);
+
+    if(oldver + 1 != newver) {
+	mprintf("!makediff: The old CVD must be %u\n", newver - 1);
+	return -1;
+    }
+
+    odir = cli_gentemp(NULL);
+    if(!odir) {
+	mprintf("!makediff: Can't generate temporary name for odir\n");
+	return -1;
+    }
+
+    if(mkdir(odir, 0700) == -1) {
+	mprintf("!makediff: Can't create directory %s\n", odir);
+	free(odir);
+	return -1;
+    }
+
+    if(cvd_unpack(opt_arg(opt, "diff"), odir) == -1) {
+	mprintf("!makediff: Can't unpack CVD file %s\n", opt_arg(opt, "diff"));
+	rmdirs(odir);
+	free(odir);
+	return -1;
+    }
+
+    ndir = cli_gentemp(NULL);
+    if(!ndir) {
+	mprintf("!makediff: Can't generate temporary name for ndir\n");
+	rmdirs(odir);
+	free(odir);
+	return -1;
+    }
+
+    if(mkdir(ndir, 0700) == -1) {
+	mprintf("!makediff: Can't create directory %s\n", ndir);
+	free(ndir);
+	rmdirs(odir);
+	free(odir);
+	return -1;
+    }
+
+    if(cvd_unpack(opt->filename, ndir) == -1) {
+	mprintf("!makediff: Can't unpack CVD file %s\n", opt->filename);
+	rmdirs(odir);
+	rmdirs(ndir);
+	free(odir);
+	free(ndir);
+	return -1;
+    }
+
+    if(strstr(opt->filename, "main"))
+	snprintf(name, sizeof(name), "main-%u.cdiff", newver);
+    else
+	snprintf(name, sizeof(name), "daily-%u.cdiff", newver);
+
+    if(!(diff = fopen(name, "w"))) {
+        mprintf("!makediff: Can't open %s for writing\n", name);
+	rmdirs(odir);
+	rmdirs(ndir);
+	free(odir);
+	free(ndir);
+	return -1;
+    }
+
+    if(chdir(ndir) == -1) {
+	mprintf("!makediff: Can't chdir to %s\n", ndir);
+	rmdirs(odir);
+	rmdirs(ndir);
+	free(odir);
+	free(ndir);
+	fclose(diff);
+	return -1;
+    }
+
+    if((dd = opendir(ndir)) == NULL) {
+        mprintf("!makediff: Can't open directory %s\n", ndir);
+	rmdirs(odir);
+	rmdirs(ndir);
+	free(odir);
+	free(ndir);
+	fclose(diff);
+	return -1;
+    }
+
+    while((dent = readdir(dd))) {
+#ifndef C_INTERIX
+	if(dent->d_ino)
+#endif
+	{
+	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, ".."))
+		continue;
+
+	    snprintf(opath, sizeof(opath), "%s/%s", odir, dent->d_name);
+	    if(compare(opath, dent->d_name, diff) == -1) {
+		rmdirs(odir);
+		rmdirs(ndir);
+		free(odir);
+		free(ndir);
+		fclose(diff);
+		unlink(name);
+		return -1;
+	    }
+	}
+    }
+
+    fclose(diff);
+    rmdirs(odir);
+    rmdirs(ndir);
+    free(odir);
+    free(ndir);
+    return 0;
+}
+
 void help(void)
 {
     mprintf("\n");
@@ -954,6 +1160,7 @@ void help(void)
     mprintf("    --vba=FILE                             Extract VBA/Word6 macro code\n");
     mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
     mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
+    mprintf("    --diff=OLD NEW         -d OLD NEW      Create diff for OLD and NEW CVDs\n");
     mprintf("    --run-cdiff=FILE       -r FILE         Execute update script FILE in cwd\n");
     mprintf("\n");
 
@@ -964,7 +1171,7 @@ int main(int argc, char **argv)
 {
 	int ret = 1;
         struct optstruct *opt;
-	const char *short_options = "hvVb:i:u:l::r:";
+	const char *short_options = "hvVb:i:u:l::r:d:";
 	static struct option long_options[] = {
 	    {"help", 0, 0, 'h'},
 	    {"quiet", 0, 0, 0},
@@ -984,6 +1191,7 @@ int main(int argc, char **argv)
 	    {"list-sigs", 2, 0, 'l'},
 	    {"vba", 1, 0 ,0},
 	    {"vba-hex", 1, 0, 0},
+	    {"diff", 1, 0, 'd'},
 	    {"run-cdiff", 1, 0, 'r'},
 	    {0, 0, 0, 0}
     	};
@@ -1033,6 +1241,8 @@ int main(int argc, char **argv)
 	ret = listsigs(opt);
     else if(opt_check(opt, "vba") || opt_check(opt, "vba-hex"))
 	ret = vbadump(opt);
+    else if(opt_check(opt, "diff"))
+	ret = makediff(opt);
     else if(opt_check(opt, "run-cdiff"))
 	ret = runcdiff(opt);
     else
