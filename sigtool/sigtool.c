@@ -69,7 +69,7 @@ static int hexdump(void)
     while((bytes = read(0, buffer, FILEBUFF)) > 0) {
 	pt = cli_str2hex(buffer, bytes);
 	if(write(1, pt, 2 * bytes) == -1) {
-	    logg("!hexdump: Can't write to stdout\n");
+	    mprintf("!hexdump: Can't write to stdout\n");
 	    free(pt);
 	    return -1;
 	}
@@ -92,17 +92,17 @@ static int md5sig(struct optstruct *opt)
     if(opt->filename) {
 	for(i = 0; (filename = cli_strtok(opt->filename, i, "\t")); i++) {
 	    if(stat(filename, &sb) == -1) {
-		logg("!md5sig: Can't access file %s\n", filename);
+		mprintf("!md5sig: Can't access file %s\n", filename);
 		perror("md5sig");
 		free(filename);
 		return -1;
 	    } else {
 		if((sb.st_mode & S_IFMT) == S_IFREG) {
 		    if((md5 = cli_md5file(filename))) {
-			logg("%s:%d:%s\n", md5, sb.st_size, filename);
+			mprintf("%s:%d:%s\n", md5, sb.st_size, filename);
 			free(md5);
 		    } else {
-			logg("!md5sig: Can't generate MD5 checksum for %s\n", filename);
+			mprintf("!md5sig: Can't generate MD5 checksum for %s\n", filename);
 			free(filename);
 			return -1;
 		    }
@@ -115,10 +115,10 @@ static int md5sig(struct optstruct *opt)
     } else { /* stream */
 	md5 = cli_md5stream(stdin, NULL);
 	if(!md5) {
-	    logg("!md5sig: Can't generate MD5 checksum for input stream\n");
+	    mprintf("!md5sig: Can't generate MD5 checksum for input stream\n");
 	    return -1;
 	}
-	logg("%s\n", md5);
+	mprintf("%s\n", md5);
 	free(md5);
     }
 
@@ -131,7 +131,7 @@ static int htmlnorm(struct optstruct *opt)
 
 
     if((fd = open(opt_arg(opt, "html-normalise"), O_RDONLY)) == -1) {
-	logg("!htmlnorm: Can't open file %s\n", opt_arg(opt, "html-normalise"));
+	mprintf("!htmlnorm: Can't open file %s\n", opt_arg(opt, "html-normalise"));
 	return -1;
     }
 
@@ -176,7 +176,7 @@ static char *getdsig(const char *host, const char *user, const char *data)
     if((sockd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 #endif
 	perror("socket()");
-	logg("!getdsig: Can't create socket\n");
+	mprintf("!getdsig: Can't create socket\n");
 	return NULL;
     }
 
@@ -187,7 +187,7 @@ static char *getdsig(const char *host, const char *user, const char *data)
     if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) < 0) {
         close(sockd);
 	perror("connect()");
-	logg("!getdsig: Can't connect to ClamAV Signing Service at %s\n", host);
+	mprintf("!getdsig: Can't connect to ClamAV Signing Service at %s\n", host);
 	return NULL;
     }
 
@@ -198,14 +198,14 @@ static char *getdsig(const char *host, const char *user, const char *data)
 
 #ifdef HAVE_TERMIOS_H
     if(tcgetattr(0, &old)) {
-	logg("!getdsig: tcgetattr() failed\n", host);
+	mprintf("!getdsig: tcgetattr() failed\n", host);
 	close(sockd);
 	return NULL;
     }
     new = old;
     new.c_lflag &= ~ECHO;
     if(tcsetattr(0, TCSAFLUSH, &new)) {
-	logg("!getdsig: tcsetattr() failed\n", host);
+	mprintf("!getdsig: tcsetattr() failed\n", host);
 	close(sockd);
 	return NULL;
     }
@@ -214,14 +214,14 @@ static char *getdsig(const char *host, const char *user, const char *data)
     if(fgets(pass, sizeof(pass), stdin)) {
 	cli_chomp(pass);
     } else {
-	logg("!getdsig: Can't get password\n");
+	mprintf("!getdsig: Can't get password\n");
 	close(sockd);
 	return NULL;
     }
 
 #ifdef HAVE_TERMIOS_H
     if(tcsetattr(0, TCSAFLUSH, &old)) {
-	logg("!getdsig: tcsetattr() failed\n", host);
+	mprintf("!getdsig: tcsetattr() failed\n", host);
 	close(sockd);
 	return NULL;
     }
@@ -235,7 +235,7 @@ static char *getdsig(const char *host, const char *user, const char *data)
     len += 16;
 
     if(write(sockd, cmd, len) < 0) {
-	logg("!getdsig: Can't write to socket\n");
+	mprintf("!getdsig: Can't write to socket\n");
 	close(sockd);
 	memset(cmd, 0, len);
 	memset(pass, 0, strlen(pass));
@@ -248,12 +248,12 @@ static char *getdsig(const char *host, const char *user, const char *data)
 
     if((bread = read(sockd, buff, sizeof(buff))) > 0) {
 	if(!strstr(buff, "Signature:")) {
-	    logg("!getdsig: Error generating digital signature\n");
-	    logg("!getdsig: Answer from remote server: %s\n", buff);
+	    mprintf("!getdsig: Error generating digital signature\n");
+	    mprintf("!getdsig: Answer from remote server: %s\n", buff);
 	    close(sockd);
 	    return NULL;
 	} else {
-	    logg("Signature received (length = %d)\n", strlen(buff) - 10);
+	    mprintf("Signature received (length = %d)\n", strlen(buff) - 10);
 	}
     }
 
@@ -275,18 +275,18 @@ static int writeinfo(const char *db, unsigned int ver)
     snprintf(file, sizeof(file), "%s.info", db);
     if(stat(file, &sb) != -1) {
 	if(unlink(file) == -1) {
-	    logg("!writeinfo: Can't unlink %s\n", file);
+	    mprintf("!writeinfo: Can't unlink %s\n", file);
 	    return -1;
 	}
     }
 
     if(!(fh = fopen(file, "w"))) {
-	logg("!writeinfo: Can't create file %s\n", file);
+	mprintf("!writeinfo: Can't create file %s\n", file);
 	return -1;
     }
 
     if(fprintf(fh, "%s:%u\n", db, ver) < 0) {
-	logg("!writeinfo: Can't write to info file\n");
+	mprintf("!writeinfo: Can't write to info file\n");
 	fclose(fh);
 	return -1;
     }
@@ -295,12 +295,12 @@ static int writeinfo(const char *db, unsigned int ver)
 	snprintf(file, sizeof(file), "%s.%s", db, extlist[i]);
 	if(stat(file, &sb) != -1) {
 	    if(!(md5 = cli_md5file(file))) {
-		logg("!writeinfo: Can't generate MD5 checksum for %s\n", file);
+		mprintf("!writeinfo: Can't generate MD5 checksum for %s\n", file);
 		fclose(fh);
 		return -1;
 	    }
 	    if(fprintf(fh, "%s.%s:%s\n", db, extlist[i], md5) < 0) {
-		logg("!writeinfo: Can't write to info file\n");
+		mprintf("!writeinfo: Can't write to info file\n");
 		fclose(fh);
 		free(md5);
 		return -1;
@@ -330,12 +330,12 @@ static int build(struct optstruct *opt)
 
 
     if(!opt_check(opt, "server")) {
-	logg("!build: --server is required for --build\n");
+	mprintf("!build: --server is required for --build\n");
 	return -1;
     }
 
     if(stat("COPYING", &foo) == -1) {
-	logg("!build: COPYING file not found in current working directory.\n");
+	mprintf("!build: COPYING file not found in current working directory.\n");
 	return -1;
     }
 
@@ -346,23 +346,23 @@ static int build(struct optstruct *opt)
        stat("main.zmd", &foo) == -1 && stat("daily.zmd", &foo) == -1 &&
        stat("main.rmd", &foo) == -1 && stat("daily.rmd", &foo) == -1)
     {
-	logg("!build: No virus database file  found in current directory\n");
+	mprintf("!build: No virus database file  found in current directory\n");
 	return -1;
     }
 
     cl_debug(); /* enable debug messages in libclamav */
 
     if((ret = cl_loaddbdir(".", &root, &sigs))) {
-	logg("!build: Can't load database: %s\n", cl_strerror(ret));
+	mprintf("!build: Can't load database: %s\n", cl_strerror(ret));
 	return -1;
     } else {
 	cl_free(root);
     }
 
     if(!sigs) {
-	logg("!build: There are no signatures in database files\n");
+	mprintf("!build: There are no signatures in database files\n");
     } else {
-	logg("Signatures: %d\n", sigs);
+	mprintf("Signatures: %d\n", sigs);
 	lines = countlines("main.db") + countlines("daily.db") +
 		countlines("main.hdb") + countlines("daily.hdb") +
 		countlines("main.ndb") + countlines("daily.ndb") +
@@ -372,9 +372,9 @@ static int build(struct optstruct *opt)
 		countlines("main.fp") + countlines("daily.fp");
 
 	if(lines != sigs) {
-	    logg("!build: Signatures in database: %d, loaded by libclamav: %d\n", lines, sigs);
-	    logg("!build: Please check the current directory and remove unnecessary databases\n");
-	    logg("!build: or install the latest ClamAV version.\n");
+	    mprintf("!build: Signatures in database: %d, loaded by libclamav: %d\n", lines, sigs);
+	    mprintf("!build: Please check the current directory and remove unnecessary databases\n");
+	    mprintf("!build: or install the latest ClamAV version.\n");
 	    return -1;
 	}
     }
@@ -384,7 +384,7 @@ static int build(struct optstruct *opt)
     snprintf(buffer, sizeof(buffer), "%s/%s", dbdir, opt_arg(opt, "build"));
     free(dbdir);
     if(!(oldcvd = cl_cvdhead(buffer))) {
-	logg("^build: CAN'T READ CVD HEADER OF CURRENT DATABASE %s\n", buffer);
+	mprintf("^build: CAN'T READ CVD HEADER OF CURRENT DATABASE %s\n", buffer);
 	sleep(3);
     }
 
@@ -393,7 +393,7 @@ static int build(struct optstruct *opt)
 	cl_cvdfree(oldcvd);
     } else {
 	fflush(stdin);
-	logg("Version number: ");
+	mprintf("Version number: ");
 	scanf("%u", &version);
     }
 
@@ -404,18 +404,18 @@ static int build(struct optstruct *opt)
 	pt = "daily";
 
     if(writeinfo(pt, version) == -1) {
-	logg("!build: Can't generate info file\n");
+	mprintf("!build: Can't generate info file\n");
 	return -1;
     }
 
     if(!(tarfile = cli_gentemp("."))) {
-	logg("!build: Can't generate temporary name for tarfile\n");
+	mprintf("!build: Can't generate temporary name for tarfile\n");
 	return -1;
     }
 
     switch(fork()) {
 	case -1:
-	    logg("!build: Can't fork.\n");
+	    mprintf("!build: Can't fork.\n");
 	    free(tarfile);
 	    return -1;
 	case 0:
@@ -428,7 +428,7 @@ static int build(struct optstruct *opt)
 				 "daily.fp", "daily.info", "main.info", NULL };
 		args[2] = tarfile;
 		execv("/bin/tar", args);
-		logg("!build: Can't execute tar\n");
+		mprintf("!build: Can't execute tar\n");
 		perror("tar");
 		free(tarfile);
 		return -1;
@@ -438,26 +438,26 @@ static int build(struct optstruct *opt)
     }
 
     if(stat(tarfile, &foo) == -1) {
-	logg("!build: Tar archive was not created\n");
+	mprintf("!build: Tar archive was not created\n");
 	free(tarfile);
 	return -1;
     }
 
     if((tar = fopen(tarfile, "rb")) == NULL) {
-	logg("!build: Can't open file %s\n", tarfile);
+	mprintf("!build: Can't open file %s\n", tarfile);
 	free(tarfile);
 	return -1;
     }
 
     if(!(gzfile = cli_gentemp("."))) {
-	logg("!build: Can't generate temporary name for gzfile\n");
+	mprintf("!build: Can't generate temporary name for gzfile\n");
 	free(tarfile);
 	fclose(tar);
 	return -1;
     }
 
     if((gz = gzopen(gzfile, "wb")) == NULL) {
-	logg("!build: Can't open file %s to write.\n", gzfile);
+	mprintf("!build: Can't open file %s to write.\n", gzfile);
 	free(tarfile);
 	fclose(tar);
 	free(gzfile);
@@ -466,7 +466,7 @@ static int build(struct optstruct *opt)
 
     while((bytes = fread(buffer, 1, FILEBUFF, tar)) > 0) {
 	if(!gzwrite(gz, buffer, bytes)) {
-	    logg("!build: Can't gzwrite to %s\n", gzfile);
+	    mprintf("!build: Can't gzwrite to %s\n", gzfile);
 	    fclose(tar);
 	    gzclose(gz);
 	    free(tarfile);
@@ -504,7 +504,7 @@ static int build(struct optstruct *opt)
 
     /* MD5 */
     if(!(pt = cli_md5file(gzfile))) {
-	logg("!build: Can't generate MD5 checksum for gzfile\n");
+	mprintf("!build: Can't generate MD5 checksum for gzfile\n");
 	unlink(gzfile);
 	free(gzfile);
 	return -1;
@@ -515,11 +515,11 @@ static int build(struct optstruct *opt)
 
     /* ask for builder name */
     fflush(stdin);
-    logg("Builder name: ");
+    mprintf("Builder name: ");
     if(fgets(smbuff, sizeof(smbuff), stdin)) {
 	cli_chomp(smbuff);
     } else {
-	logg("!build: Can't get builder name\n");
+	mprintf("!build: Can't get builder name\n");
 	unlink(gzfile);
 	free(gzfile);
 	return -1;
@@ -527,14 +527,14 @@ static int build(struct optstruct *opt)
 
     /* digital signature */
     if(!(tar = fopen(gzfile, "rb"))) {
-	logg("!build: Can't open file %s for reading\n", gzfile);
+	mprintf("!build: Can't open file %s for reading\n", gzfile);
 	unlink(gzfile);
 	free(gzfile);
 	return -1;
     }
 
     if(!(pt = cli_md5stream(tar, (unsigned char *) buffer))) {
-	logg("!build: Can't generate MD5 checksum for %s\n", gzfile);
+	mprintf("!build: Can't generate MD5 checksum for %s\n", gzfile);
 	unlink(gzfile);
 	free(gzfile);
 	return -1;
@@ -543,7 +543,7 @@ static int build(struct optstruct *opt)
     rewind(tar);
 
     if(!(pt = getdsig(opt_arg(opt, "server"), smbuff, buffer))) {
-	logg("!build: Can't get digital signature from remote server\n");
+	mprintf("!build: Can't get digital signature from remote server\n");
 	unlink(gzfile);
 	free(gzfile);
 	fclose(tar);
@@ -566,7 +566,7 @@ static int build(struct optstruct *opt)
     /* build the final database */
     pt = opt_arg(opt, "build");
     if(!(cvd = fopen(pt, "wb"))) {
-	logg("!build: Can't create final database %s\n", pt);
+	mprintf("!build: Can't create final database %s\n", pt);
 	unlink(gzfile);
 	free(gzfile);
 	fclose(tar);
@@ -574,7 +574,7 @@ static int build(struct optstruct *opt)
     }
 
     if(fwrite(header, 1, 512, cvd) != 512) {
-	logg("!build: Can't write to %s\n", pt);
+	mprintf("!build: Can't write to %s\n", pt);
 	fclose(cvd);
 	fclose(tar);
 	unlink(pt);
@@ -588,7 +588,7 @@ static int build(struct optstruct *opt)
 	    fclose(tar);
 	    fclose(cvd);
 	    unlink(pt);
-	    logg("!build: Can't write to %s\n", gzfile);
+	    mprintf("!build: Can't write to %s\n", gzfile);
 	    unlink(gzfile);
 	    free(gzfile);
 	    return -1;
@@ -598,12 +598,12 @@ static int build(struct optstruct *opt)
     fclose(tar);
     fclose(cvd);
     if(unlink(gzfile) == -1) {
-	logg("^build: Can't unlink %s\n", gzfile);
+	mprintf("^build: Can't unlink %s\n", gzfile);
 	return -1;
     }
     free(gzfile);
 
-    logg("Database %s created\n", pt);
+    mprintf("Database %s created\n", pt);
 
     return 0;
 }
@@ -622,7 +622,7 @@ static int unpack(struct optstruct *opt)
 	name = strdup(opt_arg(opt, "unpack"));
 
     if(cvd_unpack(name, ".") == -1) {
-	logg("!unpack: Can't unpack CVD file %s\n", name);
+	mprintf("!unpack: Can't unpack CVD file %s\n", name);
 	free(name);
 	return -1;
     }
@@ -640,29 +640,29 @@ static int cvdinfo(struct optstruct *opt)
 
     pt = opt_arg(opt, "info");
     if((cvd = cl_cvdhead(pt)) == NULL) {
-	logg("!cvdinfo: Can't read/parse CVD header of %s\n", pt);
+	mprintf("!cvdinfo: Can't read/parse CVD header of %s\n", pt);
 	return -1;
     }
 
     pt = strchr(cvd->time, '-');
     *pt = ':';
-    logg("Build time: %s\n", cvd->time);
-    logg("Version: %d\n", cvd->version);
-    logg("Signatures: %d\n", cvd->sigs);
-    logg("Functionality level: %d\n", cvd->fl);
-    logg("Builder: %s\n", cvd->builder);
-    logg("MD5: %s\n", cvd->md5);
-    logg("Digital signature: %s\n", cvd->dsig);
+    mprintf("Build time: %s\n", cvd->time);
+    mprintf("Version: %d\n", cvd->version);
+    mprintf("Signatures: %d\n", cvd->sigs);
+    mprintf("Functionality level: %d\n", cvd->fl);
+    mprintf("Builder: %s\n", cvd->builder);
+    mprintf("MD5: %s\n", cvd->md5);
+    mprintf("Digital signature: %s\n", cvd->dsig);
 
 #ifndef HAVE_GMP
-    logg("^Digital signature support not compiled in.\n");
+    mprintf("^Digital signature support not compiled in.\n");
 #endif
 
     pt = opt_arg(opt, "info");
     if((ret = cl_cvdverify(pt)))
-	logg("!cvdinfo: Verification: %s\n", cl_strerror(ret));
+	mprintf("!cvdinfo: Verification: %s\n", cl_strerror(ret));
     else
-	logg("Verification OK.\n");
+	mprintf("Verification OK.\n");
 
     cl_cvdfree(cvd);
     return 0;
@@ -678,7 +678,7 @@ static int listdir(const char *dirname)
 
 
     if((dd = opendir(dirname)) == NULL) {
-        logg("!listdir: Can't open directory %s\n", dirname);
+        mprintf("!listdir: Can't open directory %s\n", dirname);
         return -1;
     }
 
@@ -699,14 +699,14 @@ static int listdir(const char *dirname)
 		dbfile = (char *) mcalloc(strlen(dent->d_name) + strlen(dirname) + 2, sizeof(char));
 
 		if(!dbfile) {
-		    logg("!listdir: Can't allocate memory for dbfile\n");
+		    mprintf("!listdir: Can't allocate memory for dbfile\n");
 		    closedir(dd);
 		    return -1;
 		}
 		sprintf(dbfile, "%s/%s", dirname, dent->d_name);
 
 		if(listdb(dbfile) == -1) {
-		    logg("!listdb: Error listing database %s\n", dbfile);
+		    mprintf("!listdb: Error listing database %s\n", dbfile);
 		    free(dbfile);
 		    closedir(dd);
 		    return -1;
@@ -729,12 +729,12 @@ static int listdb(const char *filename)
 
 
     if((fd = fopen(filename, "rb")) == NULL) {
-	logg("!listdb: Can't open file %s\n", filename);
+	mprintf("!listdb: Can't open file %s\n", filename);
 	return -1;
     }
 
     if(!(buffer = (char *) mcalloc(FILEBUFF, 1))) {
-	logg("!listdb: Can't allocate memory for buffer\n");
+	mprintf("!listdb: Can't allocate memory for buffer\n");
 	fclose(fd);
 	return -1;
     }
@@ -756,18 +756,18 @@ static int listdb(const char *filename)
 #endif
 
 	if(!(dir = cli_gentemp(tmpdir))) {
-	    logg("!listdb: Can't generate temporary name\n");
+	    mprintf("!listdb: Can't generate temporary name\n");
 	    return -1;
 	}
 
 	if(mkdir(dir, 0700)) {
-	    logg("!listdb: Can't create temporary directory %s\n", dir);
+	    mprintf("!listdb: Can't create temporary directory %s\n", dir);
 	    free(dir);
 	    return -1;
 	}
 
 	if(cvd_unpack(filename, dir) == -1) {
-	    logg("!listdb: Can't unpack CVD file %s\n", filename);
+	    mprintf("!listdb: Can't unpack CVD file %s\n", filename);
 	    rmdirs(dir);
 	    free(dir);
 	    return -1;
@@ -775,7 +775,7 @@ static int listdb(const char *filename)
 
 	/* list extracted directory */
 	if(listdir(dir) == -1) {
-	    logg("!listdb: Can't unpack CVD file %s\n", filename);
+	    mprintf("!listdb: Can't unpack CVD file %s\n", filename);
 	    rmdirs(dir);
 	    free(dir);
 	    return -1;
@@ -793,7 +793,7 @@ static int listdb(const char *filename)
 	    line++;
 	    pt = strchr(buffer, '=');
 	    if(!pt) {
-		logg("!listdb: Malformed pattern line %d (file %s)\n", line, filename);
+		mprintf("!listdb: Malformed pattern line %d (file %s)\n", line, filename);
 		fclose(fd);
 		free(buffer);
 		return -1;
@@ -805,7 +805,7 @@ static int listdb(const char *filename)
 	    if((pt = strstr(start, " (Clam)")))
 		*pt = 0;
 
-	    logg("%s\n", start);
+	    mprintf("%s\n", start);
 	}
 
     } else if(cli_strbcasestr(filename, ".hdb")) { /* hash database */
@@ -816,7 +816,7 @@ static int listdb(const char *filename)
 	    start = cli_strtok(buffer, 2, ":");
 
 	    if(!start) {
-		logg("!listdb: Malformed pattern line %d (file %s)\n", line, filename);
+		mprintf("!listdb: Malformed pattern line %d (file %s)\n", line, filename);
 		fclose(fd);
 		free(buffer);
 		return -1;
@@ -825,7 +825,7 @@ static int listdb(const char *filename)
 	    if((pt = strstr(start, " (Clam)")))
 		*pt = 0;
 
-	    logg("%s\n", start);
+	    mprintf("%s\n", start);
 	    free(start);
 	}
 
@@ -837,7 +837,7 @@ static int listdb(const char *filename)
 	    start = cli_strtok(buffer, 0, ":");
 
 	    if(!start) {
-		logg("!listdb: Malformed pattern line %d (file %s)\n", line, filename);
+		mprintf("!listdb: Malformed pattern line %d (file %s)\n", line, filename);
 		fclose(fd);
 		free(buffer);
 		return -1;
@@ -846,7 +846,7 @@ static int listdb(const char *filename)
 	    if((pt = strstr(start, " (Clam)")))
 		*pt = 0;
 
-	    logg("%s\n", start);
+	    mprintf("%s\n", start);
 	    free(start);
 	}
     }
@@ -887,7 +887,7 @@ static int vbadump(struct optstruct *opt)
  
     if((fd = open(opt_arg(opt, "vba"), O_RDONLY)) == -1) {
 	if((fd = open(opt_arg(opt, "vba-hex"), O_RDONLY)) == -1) {
-	    logg("!vbadump: Can't open file %s\n", opt_arg(opt, "vba"));
+	    mprintf("!vbadump: Can't open file %s\n", opt_arg(opt, "vba"));
 	    return -1;
 	}
     }
@@ -895,7 +895,7 @@ static int vbadump(struct optstruct *opt)
     /* generate the temporary directory */
     dir = cli_gentemp(NULL);
     if(mkdir(dir, 0700)) {
-	logg("!vbadump: Can't create temporary directory %s\n", dir);
+	mprintf("!vbadump: Can't create temporary directory %s\n", dir);
 	free(dir);
 	close(fd);
         return -1;
