@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.312 2006/06/28 16:06:07 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.313 2006/06/28 21:07:36 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -187,11 +187,18 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 					 * of EICAR within bounces, which don't matter
 					 */
 
+typedef	struct	mbox_ctx {
+	const	char	*dir;
+	const	table_t	*rfc821Table;
+	const	table_t	*subtypeTable;
+	cli_ctx	*ctx;
+} mbox_ctx;
+
 static	int	cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx);
 static	message	*parseEmailFile(FILE *fin, const table_t *rfc821Table, const char *firstLine, const char *dir);
 static	message	*parseEmailHeaders(const message *m, const table_t *rfc821Table);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
-static	int	parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, cli_ctx *ctx);
+static	int	parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx);
 static	int	boundaryStart(const char *line, const char *boundary);
 static	int	endOfMessage(const char *line, const char *boundary);
 static	int	initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
@@ -209,6 +216,7 @@ static	bool	usefulHeader(int commandNumber, const char *cmd);
 static	char	*getline_from_mbox(char *buffer, size_t len, FILE *fin);
 static	bool	isBounceStart(const char *line);
 static	bool	binhexMessage(const char *dir, message *message);
+static	message	*do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx *mctx, message *messageIn, text **tptr);
 
 static	void	checkURLs(message *m, const char *dir);
 #ifdef	WITH_CURL
@@ -1127,6 +1135,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 	message *body;
 	FILE *fd;
 	char buffer[RFC2821LENGTH + 1];
+	mbox_ctx mctx;
 #ifdef HAVE_BACKTRACE
 	void (*segv)(int);
 #endif
@@ -1211,6 +1220,11 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 	retcode = CL_SUCCESS;
 	body = NULL;
 
+	mctx.dir = dir;
+	mctx.rfc821Table = rfc821;
+	mctx.subtypeTable = subtype;
+	mctx.ctx = ctx;
+
 	/*
 	 * Is it a UNIX style mbox with more than one
 	 * mail message, or just a single mail message?
@@ -1276,7 +1290,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 				messageSetCTX(body, ctx);
 				messageDestroy(m);
 				if(messageGetBody(body)) {
-					int rc = parseEmailBody(body, NULL, dir, rfc821, subtype, ctx);
+					int rc = parseEmailBody(body, NULL, &mctx);
 					if(rc == 0) {
 						messageReset(body);
 						m = body;
@@ -1357,7 +1371,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 		 */
 		if((retcode == CL_SUCCESS) && messageGetBody(body)) {
 			messageSetCTX(body, ctx);
-			switch(parseEmailBody(body, NULL, dir, rfc821, subtype, ctx)) {
+			switch(parseEmailBody(body, NULL, &mctx)) {
 				case 0:
 					retcode = CL_EFORMAT;
 					break;
@@ -1921,12 +1935,11 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
  *	3 for virus found
  */
 static int	/* success or fail */
-parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, cli_ctx *ctx)
+parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 {
 	message **messages;	/* parts of a multipart message */
 	int inMimeHead, i, rc = 1, htmltextPart, multiparts = 0;
 	text *aText;
-	const char *cptr;
 	message *mainMessage;
 	fileblob *fb;
 	bool infected = FALSE;
@@ -1953,7 +1966,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 		mimeSubtype = messageGetMimeSubtype(mainMessage);
 
 		/* pre-process */
-		subtype = tableFind(subtypeTable, mimeSubtype);
+		subtype = tableFind(mctx->subtypeTable, mimeSubtype);
 		if((mimeType == TEXT) && (subtype == PLAIN)) {
 			/*
 			 * This is effectively no encoding, notice that we
@@ -1983,8 +1996,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			break;
 		case TEXT:
 			/* text/plain has been preprocessed as no encoding */
-			if((ctx->options&CL_SCAN_MAILURL) && (subtype == HTML))
-				checkURLs(mainMessage, dir);
+			if((mctx->ctx->options&CL_SCAN_MAILURL) && (subtype == HTML))
+				checkURLs(mainMessage, mctx->dir);
 			break;
 		case MULTIPART:
 			cli_dbgmsg("Content-type 'multipart' handler\n");
@@ -2030,7 +2043,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					 * TODO: check yEnc
 					 */
 					if(binhexBegin(mainMessage) == t_line) {
-						if(binhexMessage(dir, mainMessage)) {
+						if(binhexMessage(mctx->dir, mainMessage)) {
 							/* virus found */
 							rc = 3;
 							break;
@@ -2096,7 +2109,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					multiparts--;
 					continue;
 				}
-				messageSetCTX(aMessage, ctx);
+				messageSetCTX(aMessage, mctx->ctx);
 
 				cli_dbgmsg("Now read in part %d\n", multiparts);
 
@@ -2153,7 +2166,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						 * Content-Type: application/octet-stream;
 						 * Content-Transfer-Encoding: base64
 						 */
-						parseEmailHeader(aMessage, line, rfc821Table);
+						parseEmailHeader(aMessage, line, mctx->rfc821Table);
 
 						while(isspace((int)*line))
 							line++;
@@ -2313,7 +2326,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						cli_dbgmsg("Multipart %d: About to parse folded header '%s'\n",
 							multiparts, fullline);
 
-						parseEmailHeader(aMessage, fullline, rfc821Table);
+						parseEmailHeader(aMessage, fullline, mctx->rfc821Table);
 						free(fullline);
 					} else if(endOfMessage(line, boundary)) {
 						/*
@@ -2348,7 +2361,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			 * Preprocess. Anything special to be done before
 			 * we handle the multiparts?
 			 */
-			switch(tableFind(subtypeTable, mimeSubtype)) {
+			switch(tableFind(mctx->subtypeTable, mimeSubtype)) {
 				case KNOWBOT:
 					/* TODO */
 					cli_dbgmsg("multipart/knowbot parsed as multipart/mixed for now\n");
@@ -2388,7 +2401,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			 *	message *messages[multiparts]
 			 * Let's decide what to do with them all
 			 */
-			switch(tableFind(subtypeTable, mimeSubtype)) {
+			switch(tableFind(mctx->subtypeTable, mimeSubtype)) {
 			case RELATED:
 				cli_dbgmsg("Multipart related handler\n");
 				/*
@@ -2418,7 +2431,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				if(htmltextPart == -1)
 					cli_dbgmsg("No HTML code found to be scanned\n");
 				else {
-					rc = parseEmailBody(aMessage, aText, dir, rfc821Table, subtypeTable, ctx);
+					rc = parseEmailBody(aMessage, aText, mctx);
 					if(rc == 1) {
 						assert(aMessage == messages[htmltextPart]);
 						messageDestroy(aMessage);
@@ -2497,230 +2510,16 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 
 				cli_dbgmsg("Mixed message with %d parts\n", multiparts);
 				for(i = 0; i < multiparts; i++) {
-					bool addToText = FALSE;
-					const char *dtype;
-#ifndef	SAVE_TO_DISC
-					message *body;
-#endif
-
-					aMessage = messages[i];
-
-					if(aMessage == NULL)
-						continue;
-
-					cli_dbgmsg("Mixed message part %d is of type %d\n",
-						i, messageGetMimeType(aMessage));
-
-					switch(messageGetMimeType(aMessage)) {
-					case APPLICATION:
-					case AUDIO:
-					case IMAGE:
-					case VIDEO:
-						break;
-					case NOMIME:
-						cli_dbgmsg("No mime headers found in multipart part %d\n", i);
-						if(mainMessage) {
-							if(binhexBegin(aMessage)) {
-								cli_dbgmsg("Found binhex message in multipart/mixed mainMessage\n");
-
-								if(binhexMessage(dir, mainMessage)) {
-									infected = TRUE;
-									rc = 3;
-								}
-							}
-							if(mainMessage != messageIn)
-								messageDestroy(mainMessage);
-							mainMessage = NULL;
-						} else if(aMessage) {
-							if(binhexBegin(aMessage)) {
-								cli_dbgmsg("Found binhex message in multipart/mixed non mime part\n");
-								if(binhexMessage(dir, aMessage)) {
-									infected = TRUE;
-									rc = 3;
-								}
-								assert(aMessage == messages[i]);
-								messageReset(messages[i]);
-							}
-						}
-						addToText = TRUE;
-						if(messageGetBody(aMessage) == NULL)
-							/*
-							 * No plain text version
-							 */
-							cli_dbgmsg("No plain text alternative\n");
-						break;
-					case TEXT:
-						dtype = messageGetDispositionType(aMessage);
-						cli_dbgmsg("Mixed message text part disposition \"%s\"\n",
-							dtype);
-						if(strcasecmp(dtype, "attachment") == 0)
-							break;
-						if((*dtype == '\0') || (strcasecmp(dtype, "inline") == 0)) {
-							if(mainMessage && (mainMessage != messageIn))
-								messageDestroy(mainMessage);
-							mainMessage = NULL;
-							cptr = messageGetMimeSubtype(aMessage);
-							cli_dbgmsg("Mime subtype \"%s\"\n", cptr);
-							if((tableFind(subtypeTable, cptr) == PLAIN) &&
-								  (messageGetEncoding(aMessage) == NOENCODING)) {
-								char *filename;
-								/*
-								 * Strictly speaking
-								 * a text/plain part is
-								 * not an attachment. We
-								 * pretend it is so that
-								 * we can decode and
-								 * scan it
-								 */
-								filename = (char *)messageFindArgument(aMessage, "filename");
-								if(filename == NULL)
-									filename = (char *)messageFindArgument(aMessage, "name");
-
-								if(filename == NULL) {
-									cli_dbgmsg("Adding part to main message\n");
-									addToText = TRUE;
-								} else {
-									cli_dbgmsg("Treating %s as attachment\n",
-										filename);
-									free(filename);
-								}
-							} else {
-								if(ctx->options&CL_SCAN_MAILURL)
-									if(tableFind(subtypeTable, cptr) == HTML)
-										checkURLs(aMessage, dir);
-								messageAddArgument(aMessage, "filename=mixedtextportion");
-							}
-						} else {
-							cli_dbgmsg("Text type %s is not supported\n", dtype);
-							continue;
-						}
-						break;
-					case MESSAGE:
-						/* Content-Type: message/rfc822 */
-						cli_dbgmsg("Found message inside multipart (encoding type %d)\n",
-							messageGetEncoding(aMessage));
-#ifndef	SCAN_UNENCODED_BOUNCES
-						switch(messageGetEncoding(aMessage)) {
-							case NOENCODING:
-							case EIGHTBIT:
-							case BINARY:
-								if(encodingLine(aMessage) == NULL) {
-									/*
-									 * This means that the message has no attachments
-									 * The test for messageGetEncoding is needed since
-									 * encodingLine won't have been set if the message
-									 * itself has been encoded
-									 */
-									cli_dbgmsg("Unencoded multipart/message will not be scanned\n");
-									assert(aMessage == messages[i]);
-									messageDestroy(messages[i]);
-									messages[i] = NULL;
-									continue;
-								}
-								/* FALLTHROUGH */
-							default:
-								cli_dbgmsg("Encoded multipart/message will be scanned\n");
-						}
-#endif
-#if	0
-						messageAddStrAtTop(aMessage,
-							"Received: by clamd (message/rfc822)");
-#endif
-#ifdef	SAVE_TO_DISC
-						/*
-						 * Save this embedded message
-						 * to a temporary file
-						 */
-						saveTextPart(aMessage, dir);
-						assert(aMessage == messages[i]);
-						messageDestroy(messages[i]);
-						messages[i] = NULL;
-#else
-						/*
-						 * Scan in memory, faster but
-						 * is open to DoS attacks when
-						 * many nested levels are
-						 * involved.
-						 */
-						body = parseEmailHeaders(aMessage, rfc821Table, TRUE);
-						/*
-						 * We've fininished with the
-						 * original copy of the message,
-						 * so throw that away and
-						 * deal with the encapsulated
-						 * message as a message.
-						 * This can save a lot of memory
-						 */
-						assert(aMessage == messages[i]);
-						messageDestroy(messages[i]);
-						messages[i] = NULL;
-						if(body) {
-							messageSetCTX(body, ctx);
-							rc = parseEmailBody(body, NULL, dir, rfc821Table, subtypeTable, ctx);
-							if(messageContainsVirus(body))
-								infected = TRUE;
-							messageDestroy(body);
-						}
-						if(infected) {
-							rc = 3;
-							break;
-						}
-#endif
-						continue;
-					case MULTIPART:
-						/*
-						 * It's a multi part within a multi part
-						 * Run the message parser on this bit, it won't
-						 * be an attachment
-						 */
-						cli_dbgmsg("Found multipart inside multipart\n");
-						if(aMessage) {
-							/*
-							 * The headers were parsed when reading in the
-							 * whole multipart section
-							 */
-							rc = parseEmailBody(aMessage, aText, dir, rfc821Table, subtypeTable, ctx);
-							cli_dbgmsg("Finished recursion\n");
-							assert(aMessage == messages[i]);
-							messageDestroy(messages[i]);
-							messages[i] = NULL;
-						} else {
-							rc = parseEmailBody(NULL, NULL, dir, rfc821Table, subtypeTable, ctx);
-							if(mainMessage && (mainMessage != messageIn))
-								messageDestroy(mainMessage);
-							mainMessage = NULL;
-						}
-						continue;
-					default:
-						cli_warnmsg("Only text and application attachments are supported, type = %d\n",
-							messageGetMimeType(aMessage));
-						continue;
-					}
-
-					if(addToText) {
-						cli_dbgmsg("Adding to non mime-part\n");
-						aText = textAdd(aText, messageGetBody(aMessage));
-					} else {
-						fb = messageToFileblob(aMessage, dir);
-
-						if(fb) {
-							if(fileblobContainsVirus(fb))
-								infected = TRUE;
-							fileblobDestroy(fb);
-						}
-					}
-					assert(aMessage == messages[i]);
-					if(messageContainsVirus(aMessage))
+					mainMessage = do_multipart(mainMessage,
+						messages, i, &rc, mctx,
+						messageIn, &aText);
+					if(rc == 3) {
 						infected = TRUE;
-					messageDestroy(aMessage);
-					messages[i] = NULL;
-					if(infected) {
-						rc = 3;
 						break;
 					}
 				}
 
-				/* rc = parseEmailBody(NULL, NULL, dir, rfc821Table, subtypeTable, ctx); */
+				/* rc = parseEmailBody(NULL, NULL, mctx); */
 				break;
 			case SIGNED:
 			case PARALLEL:
@@ -2736,7 +2535,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				if(htmltextPart == -1)
 					htmltextPart = 0;
 
-				rc = parseEmailBody(messages[htmltextPart], aText, dir, rfc821Table, subtypeTable, ctx);
+				rc = parseEmailBody(messages[htmltextPart], aText, mctx);
 				break;
 			case ENCRYPTED:
 				rc = 0;
@@ -2763,9 +2562,9 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			if(aText && (textIn == NULL)) {
 				if((!infected) && (fb = fileblobCreate()) != NULL) {
 					cli_dbgmsg("Save non mime and/or text/plain part\n");
-					fileblobSetFilename(fb, dir, "textpart");
+					fileblobSetFilename(fb, mctx->dir, "textpart");
 					/*fileblobAddData(fb, "Received: by clamd (textpart)\n", 30);*/
-					fileblobSetCTX(fb, ctx);
+					fileblobSetCTX(fb, mctx->ctx);
 					(void)textToFileblob(aText, fb);
 
 					fileblobDestroy(fb);
@@ -2798,11 +2597,11 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			rc = 0;
 			if((strcasecmp(mimeSubtype, "rfc822") == 0) ||
 			   (strcasecmp(mimeSubtype, "delivery-status") == 0)) {
-				message *m = parseEmailHeaders(mainMessage, rfc821Table);
+				message *m = parseEmailHeaders(mainMessage, mctx->rfc821Table);
 				if(m) {
 					cli_dbgmsg("Decode rfc822\n");
 
-					messageSetCTX(m, ctx);
+					messageSetCTX(m, mctx->ctx);
 
 					if(mainMessage && (mainMessage != messageIn)) {
 						messageDestroy(mainMessage);
@@ -2810,7 +2609,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					} else
 						messageReset(mainMessage);
 					if(messageGetBody(m))
-						rc = parseEmailBody(m, NULL, dir, rfc821Table, subtypeTable, ctx);
+						rc = parseEmailBody(m, NULL, mctx);
 
 					messageDestroy(m);
 				}
@@ -2822,7 +2621,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			} else if(strcasecmp(mimeSubtype, "partial") == 0) {
 #ifdef	PARTIAL_DIR
 				/* RFC1341 message split over many emails */
-				if(rfc1341(mainMessage, dir) >= 0)
+				if(rfc1341(mainMessage, mctx->dir) >= 0)
 					rc = 1;
 #else
 				cli_warnmsg("Partial message received from MUA/MTA - message cannot be scanned\n");
@@ -2847,7 +2646,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			if((strcasecmp(cptr, "octet-stream") == 0) ||
 			   (strcasecmp(cptr, "x-msdownload") == 0)) {*/
 			{
-				fb = messageToFileblob(mainMessage, dir);
+				fb = messageToFileblob(mainMessage, mctx->dir);
 
 				if(fb) {
 					cli_dbgmsg("Saving main message as attachment\n");
@@ -2951,9 +2750,9 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			if((fb = fileblobCreate()) == NULL)
 				break;
 			cli_dbgmsg("Save non mime part bounce message\n");
-			fileblobSetFilename(fb, dir, "bounce");
+			fileblobSetFilename(fb, mctx->dir, "bounce");
 			fileblobAddData(fb, (unsigned char *)"Received: by clamd (bounce)\n", 28);
-			fileblobSetCTX(fb, ctx);
+			fileblobSetCTX(fb, mctx->ctx);
 
 			inheader = TRUE;
 			topofbounce = NULL;
@@ -3003,7 +2802,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 	 */
 	cli_dbgmsg("%d multiparts found\n", multiparts);
 	for(i = 0; i < multiparts; i++) {
-		fb = messageToFileblob(messages[i], dir);
+		fb = messageToFileblob(messages[i], mctx->dir);
 
 		if(fb) {
 			cli_dbgmsg("Saving multipart %d\n", i);
@@ -3049,7 +2848,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				if(cli_strtokbuf(txt, 0, ":", cmd) == NULL)
 					continue;
 
-				switch(tableFind(rfc821Table, cmd)) {
+				switch(tableFind(mctx->rfc821Table, cmd)) {
 					case CONTENT_TRANSFER_ENCODING:
 						if((strstr(txt, "7bit") == NULL) &&
 						   (strstr(txt, "8bit") == NULL))
@@ -3072,7 +2871,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			}
 			if(t && ((fb = fileblobCreate()) != NULL)) {
 				cli_dbgmsg("Found a bounce message\n");
-				fileblobSetFilename(fb, dir, "bounce");
+				fileblobSetFilename(fb, mctx->dir, "bounce");
 				/*fileblobSetCTX(fb, ctx);*/
 				if(textToFileblob(start, fb) == NULL)
 					cli_dbgmsg("Nothing new to save in the bounce message\n");
@@ -3103,7 +2902,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				if((fb = fileblobCreate()) != NULL) {
 					cli_dbgmsg("Found a bounce message with no header at '%s'\n",
 						lineGetData(t_line->t_line));
-					fileblobSetFilename(fb, dir, "bounce");
+					fileblobSetFilename(fb, mctx->dir, "bounce");
 					fileblobAddData(fb,
 						(const unsigned char *)"Received: by clamd (bounce)\n",
 						28);
@@ -3129,7 +2928,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				/*
 				 * TODO: May be better to save aText
 				 */
-				saveTextPart(mainMessage, dir);
+				saveTextPart(mainMessage, mctx->dir);
 				if(mainMessage != messageIn) {
 					messageDestroy(mainMessage);
 					mainMessage = NULL;
@@ -4508,4 +4307,229 @@ binhexMessage(const char *dir, message *m)
 		cli_errmsg("Couldn't decode binhex file to %s\n", dir);
 
 	return infected;
+}
+
+/*
+ * Handle the ith element of a number of multiparts, e.g. multipart/alternative
+ */
+static message *
+do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx *mctx, message *messageIn, text **tptr)
+{
+	bool addToText = FALSE;
+	const char *dtype;
+#ifndef	SAVE_TO_DISC
+	message *body;
+#endif
+	message *aMessage = messages[i];
+
+	if(aMessage == NULL)
+		return mainMessage;
+
+	cli_dbgmsg("Mixed message part %d is of type %d\n",
+		i, messageGetMimeType(aMessage));
+
+	switch(messageGetMimeType(aMessage)) {
+		case APPLICATION:
+		case AUDIO:
+		case IMAGE:
+		case VIDEO:
+			break;
+		case NOMIME:
+			cli_dbgmsg("No mime headers found in multipart part %d\n", i);
+			if(mainMessage) {
+				if(binhexBegin(aMessage)) {
+					cli_dbgmsg("Found binhex message in multipart/mixed mainMessage\n");
+
+					if(binhexMessage(mctx->dir, mainMessage))
+						*rc = 3;
+				}
+				if(mainMessage != messageIn)
+					messageDestroy(mainMessage);
+				mainMessage = NULL;
+			} else if(aMessage) {
+				if(binhexBegin(aMessage)) {
+					cli_dbgmsg("Found binhex message in multipart/mixed non mime part\n");
+					if(binhexMessage(mctx->dir, aMessage))
+						*rc = 3;
+					assert(aMessage == messages[i]);
+					messageReset(messages[i]);
+				}
+			}
+			addToText = TRUE;
+			if(messageGetBody(aMessage) == NULL)
+				/*
+				 * No plain text version
+				 */
+				cli_dbgmsg("No plain text alternative\n");
+			break;
+		case TEXT:
+			dtype = messageGetDispositionType(aMessage);
+			cli_dbgmsg("Mixed message text part disposition \"%s\"\n",
+				dtype);
+			if(strcasecmp(dtype, "attachment") == 0)
+				break;
+			if((*dtype == '\0') || (strcasecmp(dtype, "inline") == 0)) {
+				const char *cptr;
+
+				if(mainMessage && (mainMessage != messageIn))
+					messageDestroy(mainMessage);
+				mainMessage = NULL;
+				cptr = messageGetMimeSubtype(aMessage);
+				cli_dbgmsg("Mime subtype \"%s\"\n", cptr);
+				if((tableFind(mctx->subtypeTable, cptr) == PLAIN) &&
+					  (messageGetEncoding(aMessage) == NOENCODING)) {
+					char *filename;
+					/*
+					 * Strictly speaking
+					 * a text/plain part is
+					 * not an attachment. We
+					 * pretend it is so that
+					 * we can decode and
+					 * scan it
+					 */
+					filename = (char *)messageFindArgument(aMessage, "filename");
+					if(filename == NULL)
+						filename = (char *)messageFindArgument(aMessage, "name");
+
+					if(filename == NULL) {
+						cli_dbgmsg("Adding part to main message\n");
+						addToText = TRUE;
+					} else {
+						cli_dbgmsg("Treating %s as attachment\n",
+							filename);
+						free(filename);
+					}
+				} else {
+					if(mctx->ctx->options&CL_SCAN_MAILURL)
+						if(tableFind(mctx->subtypeTable, cptr) == HTML)
+							checkURLs(aMessage,
+								mctx->dir);
+					messageAddArgument(aMessage,
+						"filename=mixedtextportion");
+				}
+				break;
+			}
+			cli_dbgmsg("Text type %s is not supported\n", dtype);
+			return mainMessage;
+		case MESSAGE:
+			/* Content-Type: message/rfc822 */
+			cli_dbgmsg("Found message inside multipart (encoding type %d)\n",
+				messageGetEncoding(aMessage));
+#ifndef	SCAN_UNENCODED_BOUNCES
+			switch(messageGetEncoding(aMessage)) {
+				case NOENCODING:
+				case EIGHTBIT:
+				case BINARY:
+					if(encodingLine(aMessage) == NULL) {
+						/*
+						 * This means that the message
+						 * has no attachments
+						 *
+						 * The test for
+						 * messageGetEncoding is needed
+						 * since encodingLine won't have
+						 * been set if the message
+						 * itself has been encoded
+						 */
+						cli_dbgmsg("Unencoded multipart/message will not be scanned\n");
+						assert(aMessage == messages[i]);
+						messageDestroy(messages[i]);
+						messages[i] = NULL;
+						return mainMessage;
+					}
+					/* FALLTHROUGH */
+				default:
+					cli_dbgmsg("Encoded multipart/message will be scanned\n");
+			}
+#endif
+#if	0
+			messageAddStrAtTop(aMessage,
+				"Received: by clamd (message/rfc822)");
+#endif
+#ifdef	SAVE_TO_DISC
+			/*
+			 * Save this embedded message
+			 * to a temporary file
+			 */
+			saveTextPart(aMessage, mctx->dir);
+			assert(aMessage == messages[i]);
+			messageDestroy(messages[i]);
+			messages[i] = NULL;
+#else
+			/*
+			 * Scan in memory, faster but
+			 * is open to DoS attacks when
+			 * many nested levels are
+			 * involved.
+			 */
+			body = parseEmailHeaders(aMessage, mctx->rfc821Table,
+				TRUE);
+			/*
+			 * We've fininished with the
+			 * original copy of the message,
+			 * so throw that away and
+			 * deal with the encapsulated
+			 * message as a message.
+			 * This can save a lot of memory
+			 */
+			assert(aMessage == messages[i]);
+			messageDestroy(messages[i]);
+			messages[i] = NULL;
+			if(body) {
+				messageSetCTX(body, ctx);
+				rc = parseEmailBody(body, NULL, mctx);
+				if(messageContainsVirus(body))
+					*rc = 3;
+				messageDestroy(body);
+			}
+#endif
+			return mainMessage;
+		case MULTIPART:
+			/*
+			 * It's a multi part within a multi part
+			 * Run the message parser on this bit, it won't
+			 * be an attachment
+			 */
+			cli_dbgmsg("Found multipart inside multipart\n");
+			if(aMessage) {
+				/*
+				 * The headers were parsed when reading in the
+				 * whole multipart section
+				 */
+				*rc = parseEmailBody(aMessage, *tptr, mctx);
+				cli_dbgmsg("Finished recursion\n");
+				assert(aMessage == messages[i]);
+				messageDestroy(messages[i]);
+				messages[i] = NULL;
+			} else {
+				*rc = parseEmailBody(NULL, NULL, mctx);
+				if(mainMessage && (mainMessage != messageIn))
+					messageDestroy(mainMessage);
+				mainMessage = NULL;
+			}
+			return mainMessage;
+		default:
+			cli_warnmsg("Only text and application attachments are supported, type = %d\n",
+				messageGetMimeType(aMessage));
+			return mainMessage;
+	}
+
+	if(addToText) {
+		cli_dbgmsg("Adding to non mime-part\n");
+		*tptr = textAdd(*tptr, messageGetBody(aMessage));
+	} else {
+		fileblob *fb = messageToFileblob(aMessage, mctx->dir);
+
+		if(fb) {
+			if(fileblobContainsVirus(fb))
+				*rc = 3;
+			fileblobDestroy(fb);
+		}
+	}
+	if(messageContainsVirus(aMessage))
+		*rc = 3;
+	messageDestroy(aMessage);
+	messages[i] = NULL;
+
+	return mainMessage;
 }
