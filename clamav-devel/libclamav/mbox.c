@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.311 2006/06/07 12:28:49 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.312 2006/06/28 16:06:07 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -98,7 +98,7 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 #define	SAVE_TO_DISC	/* multipart/message are saved in a temporary file */
 
 /*
- * Code does exist to run FOLLORURLS on systems without libcurl, however that
+ * Code does exist to run FOLLOWURLS on systems without libcurl, however that
  * is not recommended so it is not compiled by default
  *
  * On Solaris, when using the GNU C compiler, the clamAV build system uses the
@@ -138,6 +138,23 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
  * Needs curl >= 7.11 (I've heard that 7.9 can cause crashes and I have seen
  *	7.10 segfault, later versions can be flakey as well)
  * untested)
+ *
+ * Even 7.15 crashes, valgrind shows this:
+ *	==2835== Warning: client switching stacks?  SP change: 0xBEB0FD2C --> 0xD0678F0
+*	==2835==          to suppress, use: --max-stackframe=1314225092 or greater
+
+ *	==2835== Invalid write of size 4
+ *	==2835==    at 0x40F67BD: Curl_resolv (in /usr/lib/libcurl.so.3.0.0)
+ *	==2835==  Address 0xD0678F4 is on thread 1's stack
+ *	==2835== Can't extend stack to 0xD067390 during signal delivery for thread 1:
+ *	==2835==   no stack segment
+ *	==2835==
+ *	==2835== Process terminating with default action of signal 11 (SIGSEGV)
+ *	==2835==  Access not within mapped region at address 0xD067390
+ *	==2835==    at 0x40F67BD: Curl_resolv (in /usr/lib/libcurl.so.3.0.0)
+ *
+ * This bug has been reported upstream, however they claim that the bug
+ *	does not exist :-(
  */
 #if     (LIBCURL_VERSION_NUM < 0x070B00)
 #undef	WITH_CURL	/* also undef FOLLOWURLS? */
@@ -191,6 +208,7 @@ static	int	rfc1341(message *m, const char *dir);
 static	bool	usefulHeader(int commandNumber, const char *cmd);
 static	char	*getline_from_mbox(char *buffer, size_t len, FILE *fin);
 static	bool	isBounceStart(const char *line);
+static	bool	binhexMessage(const char *dir, message *message);
 
 static	void	checkURLs(message *m, const char *dir);
 #ifdef	WITH_CURL
@@ -368,6 +386,8 @@ static	void	free_map(void);
  * TODO: Add support for systems without mmap()
  *
  * TODO: partial_dir fall through
+ *
+ * FIXME: Some EICAR gets through
  */
 int
 cli_mbox(const char *dir, int desc, cli_ctx *ctx)
@@ -1953,9 +1973,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			cli_dbgmsg("Changing message/rfc822-headers to text/rfc822-headers\n");
 			mimeType = NOMIME;
 			messageSetMimeSubtype(mainMessage, "");
-		}
-
-		cli_dbgmsg("mimeType = %d\n", mimeType);
+		} else
+			cli_dbgmsg("mimeType = %d\n", mimeType);
 
 		switch(mimeType) {
 		case NOMIME:
@@ -2011,12 +2030,10 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					 * TODO: check yEnc
 					 */
 					if(binhexBegin(mainMessage) == t_line) {
-						if(messageGetEncoding(mainMessage) == NOENCODING) {
-							messageSetEncoding(mainMessage, "x-binhex");
-							fb = messageToFileblob(mainMessage, dir);
-
-							if(fb)
-								fileblobDestroy(fb);
+						if(binhexMessage(dir, mainMessage)) {
+							/* virus found */
+							rc = 3;
+							break;
 						}
 					} else if(encodingLine(mainMessage) == t_line->t_next) {
 						/*
@@ -2505,15 +2522,10 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						if(mainMessage) {
 							if(binhexBegin(aMessage)) {
 								cli_dbgmsg("Found binhex message in multipart/mixed mainMessage\n");
-								messageSetEncoding(mainMessage, "x-bunhex");
-								fb = messageToFileblob(mainMessage, dir);
 
-								if(fb) {
-									if(fileblobContainsVirus(fb)) {
-										infected = TRUE;
-										rc = 3;
-									}
-									fileblobDestroy(fb);
+								if(binhexMessage(dir, mainMessage)) {
+									infected = TRUE;
+									rc = 3;
 								}
 							}
 							if(mainMessage != messageIn)
@@ -2522,15 +2534,9 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						} else if(aMessage) {
 							if(binhexBegin(aMessage)) {
 								cli_dbgmsg("Found binhex message in multipart/mixed non mime part\n");
-								messageSetEncoding(aMessage, "x-binhex");
-								fb = messageToFileblob(aMessage, dir);
-
-								if(fb) {
-									if(fileblobContainsVirus(fb)) {
-										infected = TRUE;
-										rc = 3;
-									}
-									fileblobDestroy(fb);
+								if(binhexMessage(dir, aMessage)) {
+									infected = TRUE;
+									rc = 3;
 								}
 								assert(aMessage == messages[i]);
 								messageReset(messages[i]);
@@ -3006,7 +3012,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 		}
 	}
 
-	if(mainMessage) {
+	if(mainMessage && (rc != 3)) {
 		/*
 		 * Look for uu-encoded main file
 		 */
@@ -3112,7 +3118,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				/*
 				 * Save the entire text portion,
 				 * since it it may be an HTML file with
-				 * a JavaScript virus
+				 * a JavaScript virus or a phish
 				 */
 				saveIt = TRUE;
 			else
@@ -3141,8 +3147,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 	if(messages)
 		free(messages);
 
-	if((rc == CL_SUCCESS) && infected)
-		rc = CL_VIRUS;
+	if((rc != 0) && infected)
+		rc = 3;
 
 	cli_dbgmsg("parseEmailBody() returning %d\n", rc);
 
@@ -4474,4 +4480,32 @@ isBounceStart(const char *line)
 			return FALSE;
 	}
 	return TRUE;
+}
+
+/*
+ * Extract a binhexEncoded message, return if it's found to be infected as we
+ *	extract it
+ */
+static bool
+binhexMessage(const char *dir, message *m)
+{
+	bool infected = FALSE;
+	fileblob *fb;
+
+	if(messageGetEncoding(m) == NOENCODING)
+		messageSetEncoding(m, "x-binhex");
+
+	fb = messageToFileblob(m, dir);
+
+	if(fb) {
+		if(fileblobContainsVirus(fb))
+			infected = TRUE;
+
+		cli_dbgmsg("Binhex file decoded to %s\n",
+			fileblobGetFilename(fb));
+		fileblobDestroy(fb);
+	} else
+		cli_errmsg("Couldn't decode binhex file to %s\n", dir);
+
+	return infected;
 }
