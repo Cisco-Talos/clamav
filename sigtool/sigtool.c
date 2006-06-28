@@ -263,7 +263,7 @@ static char *getdsig(const char *host, const char *user, const char *data)
     return strdup(pt);
 }
 
-static int writeinfo(const char *db, unsigned int ver)
+static int writeinfo(const char *db, const char *header)
 {
 	FILE *fh;
 	int i;
@@ -285,8 +285,8 @@ static int writeinfo(const char *db, unsigned int ver)
 	return -1;
     }
 
-    if(fprintf(fh, "%s:%u\n", db, ver) < 0) {
-	mprintf("!writeinfo: Can't write to info file\n");
+    if(fprintf(fh, "%s\n", header) < 0) {
+	mprintf("!writeinfo: Can't write to %s\n", file);
 	fclose(fh);
 	return -1;
     }
@@ -317,10 +317,10 @@ static int build(struct optstruct *opt)
 {
 	int ret;
 	size_t bytes;
-	unsigned int sigs = 0, lines = 0, version;
+	unsigned int sigs = 0, lines = 0, version, real_header;
 	struct stat foo;
 	char buffer[FILEBUFF], *tarfile, *gzfile, header[513],
-	     smbuff[30], *pt, *dbdir;
+	     smbuff[30], builder[32], *pt, *dbdir;
         struct cl_node *root = NULL;
 	FILE *tar, *cvd;
 	gzFile *gz;
@@ -397,16 +397,60 @@ static int build(struct optstruct *opt)
 	scanf("%u", &version);
     }
 
+    strcpy(header, "ClamAV-VDB:");
+
+    /* time */
+    time(&timet);
+    brokent = localtime(&timet);
+    setlocale(LC_TIME, "C");
+    strftime(smbuff, sizeof(smbuff), "%d %b %Y %H-%M %z", brokent);
+    strcat(header, smbuff);
+
+    /* version */
+    sprintf(smbuff, ":%d:", version);
+    strcat(header, smbuff);
+
+    /* number of signatures */
+    sprintf(smbuff, "%d:", sigs);
+    strcat(header, smbuff);
+
+    /* functionality level */
+    sprintf(smbuff, "%d:", cl_retflevel());
+    strcat(header, smbuff);
+
+    real_header = strlen(header);
+
+    /* add fake MD5 and dsig (for writeinfo) */
+    strcat(header, "X:X:");
+
+    /* ask for builder name */
+    fflush(stdin);
+    mprintf("Builder name: ");
+    if(fgets(builder, sizeof(builder), stdin)) {
+	cli_chomp(builder);
+    } else {
+	mprintf("!build: Can't get builder name\n");
+	return -1;
+    }
+
+    /* add builder */
+    strcat(header, builder);
+
+    /* add current time */
+    sprintf(header + strlen(header), ":%d", (int) timet);
+
     pt = opt_arg(opt, "build");
     if(strstr(pt, "main"))
 	pt = "main";
     else
 	pt = "daily";
 
-    if(writeinfo(pt, version) == -1) {
+    if(writeinfo(pt, header) == -1) {
 	mprintf("!build: Can't generate info file\n");
 	return -1;
     }
+
+    header[real_header] = 0;
 
     if(!(tarfile = cli_gentemp("."))) {
 	mprintf("!build: Can't generate temporary name for tarfile\n");
@@ -480,28 +524,6 @@ static int build(struct optstruct *opt)
     unlink(tarfile);
     free(tarfile);
 
-    /* build header */
-    strcpy(header, "ClamAV-VDB:");
-
-    /* time */
-    time(&timet);
-    brokent = localtime(&timet);
-    setlocale(LC_TIME, "C");
-    strftime(smbuff, sizeof(smbuff), "%d %b %Y %H-%M %z", brokent);
-    strcat(header, smbuff);
-
-    /* increment version number by one */
-    sprintf(smbuff, ":%d:", version);
-    strcat(header, smbuff);
-
-    /* number of signatures */
-    sprintf(smbuff, "%d:", sigs);
-    strcat(header, smbuff);
-
-    /* functionality level */
-    sprintf(smbuff, "%d:", cl_retflevel());
-    strcat(header, smbuff);
-
     /* MD5 */
     if(!(pt = cli_md5file(gzfile))) {
 	mprintf("!build: Can't generate MD5 checksum for gzfile\n");
@@ -512,18 +534,6 @@ static int build(struct optstruct *opt)
     strcat(header, pt);
     free(pt);
     strcat(header, ":");
-
-    /* ask for builder name */
-    fflush(stdin);
-    mprintf("Builder name: ");
-    if(fgets(smbuff, sizeof(smbuff), stdin)) {
-	cli_chomp(smbuff);
-    } else {
-	mprintf("!build: Can't get builder name\n");
-	unlink(gzfile);
-	free(gzfile);
-	return -1;
-    }
 
     /* digital signature */
     if(!(tar = fopen(gzfile, "rb"))) {
@@ -542,7 +552,7 @@ static int build(struct optstruct *opt)
     free(pt);
     rewind(tar);
 
-    if(!(pt = getdsig(opt_arg(opt, "server"), smbuff, buffer))) {
+    if(!(pt = getdsig(opt_arg(opt, "server"), builder, buffer))) {
 	mprintf("!build: Can't get digital signature from remote server\n");
 	unlink(gzfile);
 	free(gzfile);
@@ -554,7 +564,7 @@ static int build(struct optstruct *opt)
     strcat(header, ":");
 
     /* add builder */
-    strcat(header, smbuff);
+    strcat(header, builder);
 
     /* add current time */
     sprintf(header + strlen(header), ":%d", (int) timet);

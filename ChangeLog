@@ -1,3 +1,8 @@
+Wed Jun 28 15:06:08 CEST 2006 (tk)
+----------------------------------
+  * sigtool/sigtool.c: include CVD header (without MD5 and digital signature)
+		       at the top of db.info file
+
 Wed Jun 28 00:00:50 CEST 2006 (tk)
 ----------------------------------
   * sigtool: --diff: initial version of update script generator
