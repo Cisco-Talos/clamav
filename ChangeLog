@@ -1,3 +1,7 @@
+Thu Jun 29 19:42:01 CEST 2006 (acab)
+  * libclamav: Revert old UPX code due to bugs
+               Add algorithmic detection of Win32.Kriz
+
 Wed Jun 28 17:16:06 BST 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Code tidy

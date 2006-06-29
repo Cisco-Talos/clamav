@@ -69,16 +69,9 @@
 \x63\x6C\x61\x6D\x61\x76\x2E\x6E\x65\x74\x0D\x0A\x24\x00\x00\x00\
 "
 
-#if WORDS_BIGENDIAN == 0
-#define CLI_READLE32(x) (*(int32_t *)(x))
-#else
-#define CLI_READLE32(x) (((*x) >> 24) | ((*(x+1) & 0x00FF0000) >> 8) | \
-			    ((*(x+2) & 0x0000FF00) << 8) | (*(x) << 24))
-#endif
-
 /* PE from UPX */
 
-static int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32_t upx0, uint32_t upx1, uint32_t magic)
+int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32_t upx0, uint32_t upx1, uint32_t magic)
 {
   char *imports, *sections, *pehdr, *newbuf;
   int sectcnt, upd=1;
@@ -88,7 +81,7 @@ static int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32
   if((dst == NULL) || (src == NULL))
     return 0;
 
-  imports = dst + CLI_READLE32(src + ep - upx1 + magic);
+  imports = dst + cli_readint32(src + ep - upx1 + magic);
 
   realstuffsz = imports-dst;
   
@@ -98,7 +91,7 @@ static int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32
   }
   
   pehdr = imports;
-  while (CLI_ISCONTAINED(dst, *dsize,  pehdr, 8) && CLI_READLE32(pehdr)) {
+  while (CLI_ISCONTAINED(dst, *dsize,  pehdr, 8) && cli_readint32(pehdr)) {
     pehdr+=8;
     while(CLI_ISCONTAINED(dst, *dsize,  pehdr, 2) && *pehdr) {
       pehdr++;
@@ -114,24 +107,13 @@ static int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32
     cli_dbgmsg("UPX: sections out of bounds - giving up rebuild\n");
     return 0;
   }
-
-  if ( CLI_READLE32(pehdr) != 0x4550 ) {
-    cli_dbgmsg("UPX: OOPS: no magic for PE - scanning\n");
-    while (CLI_ISCONTAINED(dst, *dsize,  pehdr, 2) && 
-	    CLI_READLE32(pehdr) != 0x4550) {
-	pehdr+=2;
-	while (CLI_ISCONTAINED(dst, *dsize,  pehdr, 2) && *pehdr)
-	    pehdr++;
-	pehdr++;
-    }
-  }
   
-  if (!CLI_ISCONTAINED(dst, *dsize,  pehdr, 0xf8)){
-    cli_dbgmsg("UPX: Magic for PE - not found, aborting!\n");
+  if ( cli_readint32(pehdr) != 0x4550 ) {
+    cli_dbgmsg("UPX: No magic for PE - giving up rebuild\n");
     return 0;
   }
   
-  if (! CLI_READLE32(pehdr+0x38)) {
+  if (! cli_readint32(pehdr+0x38)) {
     cli_dbgmsg("UPX: Cant align to a NULL bound - giving up rebuild\n");
     return 0;
   }
@@ -150,9 +132,9 @@ static int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32
   }
   
   for (upd = 0; upd <sectcnt ; upd++) {
-    uint32_t vsize=CLI_READLE32(sections+8)-1;
-    uint32_t rsize=CLI_READLE32(sections+16);
-    uint32_t urva=CLI_READLE32(sections+12);
+    uint32_t vsize=cli_readint32(sections+8)-1;
+    uint32_t rsize=cli_readint32(sections+16);
+    uint32_t urva=cli_readint32(sections+12);
     
     vsize=(((vsize/0x1000)+1)*0x1000); /* FIXME: get bounds from header */
     
@@ -169,7 +151,7 @@ static int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32
     }
     
     /* Am i been fooled? There are better ways ;) */
-    if ( rsize+4 < vsize && CLI_READLE32(dst+urva-upx0+rsize) ) {
+    if ( rsize+4 < vsize && cli_readint32(dst+urva-upx0+rsize) ) {
       cli_dbgmsg("UPX: Am i been fooled? - giving up rebuild\n", upd);
       return 0;
     }
@@ -192,7 +174,7 @@ static int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32
   memcpy(newbuf+0xd0, pehdr,0xf8+0x28*sectcnt);
   sections = pehdr+0xf8;
   for (upd = 0; upd <sectcnt ; upd++) {
-    memcpy(newbuf+CLI_READLE32(sections+20), dst+CLI_READLE32(sections+12)-upx0, CLI_READLE32(sections+16));
+    memcpy(newbuf+cli_readint32(sections+20), dst+cli_readint32(sections+12)-upx0, cli_readint32(sections+16));
     sections+=0x28;
   }
 
@@ -207,32 +189,6 @@ static int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32
   return 1;
 }
 
-static int upx_find_ep(char *src, uint32_t ssize, uint32_t upx1, uint32_t ep)
-{
-    int32_t len;
-    int i;
-
-    len = ssize - (ep - upx1);
-
-    /* Verify decompressor length. Avoid crashing on multiple 
-     * compressed files. exe packed by UPX and PEC. */
-    if (!CLI_ISCONTAINED(src, ssize, src + ep - upx1 + 0xc0, len))
-	return -1;
-
-    /* Shift to decompressor start */
-    src += (ep - upx1);
-        
-    for (i = 0xC0; i != len - 10; i++){
-	if ((CLI_READLE32(src+i) & 0x0000FFFF) == 0x0000BE8D){
-	    cli_dbgmsg("UPX: found at %p, off: %x val: %08x\n", src+i+6, i+6, CLI_READLE32(src+i+6));
-	    if (CLI_READLE32(src+i+6) == 0xC009078B){
-		return i+2;
-	    }
-	}
-    }
-    cli_dbgmsg("UPX: upx_find_ep %p, %d - FAILED!\n", src, len);
-    return -1;
-}
 
 /* [doubleebx] */
 
@@ -244,7 +200,7 @@ static int doubleebx(char *src, int32_t *myebx, int *scur, int ssize)
   if ( !(oldebx & 0x7fffffff)) {
     if (! CLI_ISCONTAINED(src, ssize, src+*scur, 4))
       return -1;
-    oldebx = CLI_READLE32(src+*scur);
+    oldebx = cli_readint32(src+*scur);
     *myebx = oldebx*2+1;
     *scur+=4;
   }
@@ -327,9 +283,11 @@ int upx_inflate2b(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
     dcur+=backsize;
   }
 
-  scur = upx_find_ep(src, ssize, upx1, ep);
-  if (scur != -1)
-    return pefromupx (src, dst, dsize, ep, upx0, upx1, scur);
+
+  if ( ep - upx1 + 0x108 <= ssize-5  &&    /* Wondering how we got so far?! */
+       src[ep - upx1 + 0x106] == '\x8d' && /* lea edi, ...                  */
+       src[ep - upx1 + 0x107] == '\xbe' )  /* ... [esi + offset]          */
+    return pefromupx (src, dst, dsize, ep, upx0, upx1, 0x108);
 
   cli_dbgmsg("UPX: bad magic for 2b\n");
   return 0;
@@ -415,10 +373,12 @@ int upx_inflate2d(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
     dcur+=backsize;
   }
 
-  scur = upx_find_ep(src, ssize, upx1, ep);
-  if (scur != -1)
-    return pefromupx (src, dst, dsize, ep, upx0, upx1, scur);
-
+  if ( ep - upx1 + 0x124 <= ssize-5 ) {   /* Wondering how we got so far?! */
+    if ( src[ep - upx1 + 0x11a] == '\x8d' && src[ep - upx1 + 0x11b] == '\xbe' )
+      return pefromupx (src, dst, dsize, ep, upx0, upx1, 0x11c);
+    if ( src[ep - upx1 + 0x122] == '\x8d' && src[ep - upx1 + 0x123] == '\xbe' )
+      return pefromupx (src, dst, dsize, ep, upx0, upx1, 0x124);
+  }
   cli_dbgmsg("UPX: bad magic for 2d\n");
   return 0;
 }
@@ -512,10 +472,12 @@ int upx_inflate2e(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
     dcur+=backsize;
   }
 
-  scur = upx_find_ep(src, ssize, upx1, ep);
-  if (scur != -1)
-    return pefromupx (src, dst, dsize, ep, upx0, upx1, scur);
-
+  if ( ep - upx1 + 0x130 <= ssize-5 ) {   /* Wondering how we got so far?! */
+    if ( src[ep - upx1 + 0x126] == '\x8d' && src[ep - upx1 + 0x127] == '\xbe' )
+      return pefromupx (src, dst, dsize, ep, upx0, upx1, 0x128);
+    if ( src[ep - upx1 + 0x12e] == '\x8d' && src[ep - upx1 + 0x12f] == '\xbe' )
+      return pefromupx (src, dst, dsize, ep, upx0, upx1, 0x130);
+  }
   cli_dbgmsg("UPX: bad magic for 2e\n");
   return 0;
 }

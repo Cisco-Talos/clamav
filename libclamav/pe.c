@@ -87,6 +87,30 @@ static uint32_t cli_rawaddr(uint32_t rva, struct pe_image_section_hdr *shp, uint
     return rva - EC32(shp[i].VirtualAddress) + EC32(shp[i].PointerToRawData);
 }
 
+static void xckriz(char **opcode, int *len, int checksize, int reg) {
+	while(*len>6) {
+		if (**opcode>='\x48' && **opcode<='\x4f' && **opcode!='\x4c') {
+			if ((char)(**opcode-reg)=='\x48') break;
+			(*len)--;
+			(*opcode)++;
+			continue;
+		}
+		if (**opcode>='\xb8' && **opcode<='\xbf' && **opcode!='\xbc') {
+			if (checksize && cli_readint32(*opcode+1)==0x0fd2) break;
+			(*len)-=5;
+			(*opcode)+=5;
+			continue;
+		}
+		if (**opcode=='\x81') {
+			(*len)-=6;
+			(*opcode)+=6;
+			continue;
+		}
+		break;
+	}
+}
+
+
 /*
 static int cli_ddump(int desc, int offset, int size, const char *file)
 {
@@ -587,6 +611,67 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    return CL_VIRUS;
 		}
 	    }
+	}
+    }
+
+    /* Kriz */
+    if(SCAN_ALGO && CLI_ISCONTAINED(EC32(section_hdr[nsections - 1].PointerToRawData), EC32(section_hdr[nsections - 1].SizeOfRawData), ep, 0x0fd2)) {
+	cli_dbgmsg("in kriz\n");
+	lseek(desc, ep, SEEK_SET);
+	if(read(desc, buff, 200) == 200) {
+		while (1) {
+			char *krizpos=buff+3;
+			char *krizmov, *krizxor;
+			int krizleft = 200-3;
+			int krizrega,krizregb;
+
+			if (buff[1]!='\x9c' || buff[2]!='\x60') break; /* EP+1 */
+			xckriz(&krizpos, &krizleft, 0, 8);
+			if (krizleft < 6 || *krizpos!='\xe8' || krizpos[2] || krizpos[3] || krizpos[4]) break; /* call DELTA */
+			krizleft-=5+(unsigned char)krizpos[1];
+			if (krizleft < 2) break;
+			krizpos+=5+(unsigned char)krizpos[1];
+			if (*krizpos<'\x58' || *krizpos>'\x5f' || *krizpos=='\x5c') break; /* pop DELTA */
+			krizrega=*krizpos-'\x58';
+			cli_dbgmsg("kriz: pop delta using %d\n", krizrega);
+			krizpos+=1;
+			krizleft-=1;
+			xckriz(&krizpos, &krizleft, 1, 8);
+			if (krizleft <6 || *krizpos<'\xb8' || *krizpos>'\xbf' || *krizpos=='\xbc' || cli_readint32(krizpos+1)!=0x0fd2) break;
+			krizregb=*krizpos-'\xb8';
+			if (krizrega==krizregb) break;
+			cli_dbgmsg("kriz: using %d for size\n", krizregb);
+			krizpos+=5;
+			krizleft-=5;
+			krizmov = krizpos;
+			xckriz(&krizpos, &krizleft, 0, 8);
+			krizxor=krizpos;
+			if (krizleft && *krizpos=='\x3e') {
+				/* strip ds: */
+				krizpos++;
+				krizleft--;
+			}
+			if (krizleft<8 || *krizpos!='\x80' || (char)(krizpos[1]-krizrega)!='\xb0') {
+				cli_dbgmsg("kriz: bogus opcode or register\n");
+				break;
+			}
+			krizpos+=7;
+			krizleft-=7;
+			xckriz(&krizpos, &krizleft, 0, krizrega);
+			if (! krizleft || (char)(*krizpos-krizrega)!='\x48') break; /* dec delta */
+			krizpos++;
+			krizleft--;
+			cli_dbgmsg("kriz: dec delta found\n");
+			xckriz(&krizpos, &krizleft, 0, krizregb);
+                        if (krizleft <4 || (char)(*krizpos-krizregb)!='\x48' || krizpos[1]!='\x75') break; /* dec size + jne loop */
+			if (krizpos+3+(int)krizpos[2]<krizmov || krizpos+3+(int)krizpos[2]>krizxor) {
+				cli_dbgmsg("kriz: jmp back out of range (%d>%d>%d)\n", krizmov-(krizpos+3), (int)krizpos[2], krizxor-(krizpos+3));
+				break;
+			}
+			*ctx->virname = "Win32.Kriz";
+			free(section_hdr);
+			return CL_VIRUS;
+		}
 	}
     }
 
