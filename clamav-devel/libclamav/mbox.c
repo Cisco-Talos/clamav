@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.314 2006/07/01 16:17:35 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.315 2006/07/01 21:03:36 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2862,8 +2862,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 			if(t && ((fb = fileblobCreate()) != NULL)) {
 				cli_dbgmsg("Found a bounce message\n");
 				fileblobSetFilename(fb, mctx->dir, "bounce");
-				/*fileblobSetCTX(fb, ctx);*/
-				if(textToFileblob(start, fb, 0) == NULL)
+				/*fileblobSetCTX(fb, mctx->ctx);*/
+				if(textToFileblob(start, fb, 1) == NULL)
 					cli_dbgmsg("Nothing new to save in the bounce message\n");
 				else
 					rc = 1;
@@ -2898,7 +2898,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 						28);
 
 					/*fileblobSetCTX(fb, ctx);*/
-					fb = textToFileblob(t_line, fb, 0);
+					fb = textToFileblob(t_line, fb, 1);
 
 					fileblobDestroy(fb);
 				}
@@ -2913,9 +2913,6 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 
 			if(saveIt) {
 				cli_dbgmsg("Saving text part to scan\n");
-				/*
-				 * TODO: May be better to save aText
-				 */
 				saveTextPart(mainMessage, mctx->dir);
 				if(mainMessage != messageIn) {
 					messageDestroy(mainMessage);
