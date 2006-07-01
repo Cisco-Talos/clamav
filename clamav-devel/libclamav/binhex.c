@@ -18,6 +18,9 @@
  *
  * Change History:
  * $Log: binhex.c,v $
+ * Revision 1.20  2006/07/01 03:47:50  njh
+ * Don't loop if binhex runs out of memory
+ *
  * Revision 1.19  2006/05/19 11:02:12  njh
  * Just include mbox.h
  *
@@ -73,7 +76,7 @@
  * First draft of binhex.c
  *
  */
-static	char	const	rcsid[] = "$Id: binhex.c,v 1.19 2006/05/19 11:02:12 njh Exp $";
+static	char	const	rcsid[] = "$Id: binhex.c,v 1.20 2006/07/01 03:47:50 njh Exp $";
 
 #include "clamav.h"
 
@@ -188,6 +191,8 @@ cli_binhex(const char *dir, int desc)
 		cli_errmsg("No binhex line found\n");
 		return CL_EFORMAT;
 	}
+	
+	/* similar to binhexMessage */
 	messageSetEncoding(m, "x-binhex");
 
 	fb = messageToFileblob(m, dir);
@@ -200,6 +205,6 @@ cli_binhex(const char *dir, int desc)
 
 	if(fb)
 		return CL_CLEAN;	/* a lie - but it gets things going */
-	return CL_EOPEN;
+	return CL_EIO;
 #endif
 }

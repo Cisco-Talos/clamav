@@ -1,3 +1,9 @@
+Sat Jul  1 04:49:32 BST 2006 (njh)
+----------------------------------
+  * libclamav:	Large binhex files were not being handled gracefully. Tidied
+  			the handling code. Note that large binhex are not
+			currently decoded
+
 Thu Jun 29 19:42:01 CEST 2006 (acab)
   * libclamav: Revert old UPX code due to bugs
                Add algorithmic detection of Win32.Kriz

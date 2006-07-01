@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.175 2006/06/20 16:54:31 tkojm Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.176 2006/07/01 03:47:50 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1053,6 +1053,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		/* 70-7f */	0x3d,0x3e,0x3f,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
 		};
 
+		cli_dbgmsg("messageExport: decode binhex\n");
 		/*
 		 * Decode BinHex4. First create a temporary blob which contains
 		 * the encoded message. Then decode that blob to the target

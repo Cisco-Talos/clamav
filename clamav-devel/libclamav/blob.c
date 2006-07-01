@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.49 2006/06/08 10:13:12 njh Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.50 2006/07/01 03:47:50 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -297,14 +297,17 @@ blobcmp(const blob *b1, const blob *b2)
 	return memcmp(blobGetData(b1), blobGetData(b2), s1);
 }
 
-void
+/*
+ * Return clamav return code
+ */
+int
 blobGrow(blob *b, size_t len)
 {
 	assert(b != NULL);
 	assert(b->magic == BLOBCLASS);
 
 	if(len == 0)
-		return;
+		return CL_SUCCESS;
 
 	if(b->isClosed) {
 		/*
@@ -329,6 +332,8 @@ blobGrow(blob *b, size_t len)
 			b->data = ptr;
 		}
 	}
+
+	return (b->data) ? CL_SUCCESS : CL_EMEM;
 }
 
 fileblob *
