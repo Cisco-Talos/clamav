@@ -17,6 +17,9 @@
  *  MA 02110-1301, USA.
  *
  * $Log: text.c,v $
+ * Revision 1.20  2006/07/01 03:47:50  njh
+ * Don't loop if binhex runs out of memory
+ *
  * Revision 1.19  2006/05/19 11:02:12  njh
  * Just include mbox.h
  *
@@ -67,7 +70,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: text.c,v 1.19 2006/05/19 11:02:12 njh Exp $";
+static	char	const	rcsid[] = "$Id: text.c,v 1.20 2006/07/01 03:47:50 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -233,6 +236,7 @@ blob *
 textToBlob(const text *t, blob *b)
 {
 	size_t s;
+	blob *bin;
 
 	if(t == NULL)
 		return NULL;
@@ -251,7 +255,12 @@ textToBlob(const text *t, blob *b)
 			return NULL;
 	}
 
-	blobGrow(b, s);
+	bin = b;
+	if(blobGrow(b, s) != CL_SUCCESS) {
+		if(bin == NULL)
+			blobDestroy(b);
+		return NULL;
+	}
 
 	(void)textIterate(t, addToBlob, b);
 
