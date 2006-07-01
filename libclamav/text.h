@@ -17,6 +17,9 @@
  *  MA 02110-1301, USA.
  *
  * $Log: text.h,v $
+ * Revision 1.9  2006/07/01 16:17:35  njh
+ * Added destroy flag
+ *
  * Revision 1.8  2006/04/09 19:59:28  kojm
  * update GPL headers with new address for FSF
  *
@@ -48,5 +51,5 @@ void	textDestroy(text *t_head);
 text	*textClean(text *t_head);
 text	*textAdd(text *t_head, const text *t);
 text	*textAddMessage(text *aText, message *aMessage);
-blob	*textToBlob(const text *t, blob *b);
-fileblob	*textToFileblob(const text *t, fileblob *fb);
+blob	*textToBlob(text *t, blob *b, int destroy);
+fileblob	*textToFileblob(text *t, fileblob *fb, int destroy);

@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.50 2006/07/01 03:47:50 njh Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.51 2006/07/01 16:17:35 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -172,7 +172,8 @@ blobAddData(blob *b, const unsigned char *data, size_t len)
 	if(len >= (size_t)pagesize)
 		growth = ((len / pagesize) + 1) * pagesize;
 
-	/*printf("len %u, growth = %u\n", len, growth);*/
+	/*cli_dbgmsg("blobGrow: b->size %lu, b->len %lu, len %lu, growth = %u\n",
+		b->size, b->len, len, growth);*/
 
 	if(b->data == NULL) {
 		assert(b->len == 0);
