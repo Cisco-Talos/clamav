@@ -17,6 +17,9 @@
  *  MA 02110-1301, USA.
  *
  * $Log: text.c,v $
+ * Revision 1.22  2006/07/01 21:03:36  njh
+ * Better use of destroy mode
+ *
  * Revision 1.21  2006/07/01 16:17:35  njh
  * Added destroy flag
  *
@@ -73,7 +76,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: text.c,v 1.21 2006/07/01 16:17:35 njh Exp $";
+static	char	const	rcsid[] = "$Id: text.c,v 1.22 2006/07/01 21:03:36 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -284,6 +287,11 @@ textToBlob(text *t, blob *b, int destroy)
 
 	(void)textIterate(t, addToBlob, b, destroy);
 
+	if(destroy && t->t_next) {
+		textDestroy(t->t_next);
+		t->t_next = NULL;
+	}
+
 	blobClose(b);
 
 	return b;
@@ -303,7 +311,12 @@ textToFileblob(text *t, fileblob *fb, int destroy)
 	} else
 		fb->ctx = NULL;	/* no need to scan */
 
-	return textIterate(t, addToFileblob, fb, destroy);
+	fb = textIterate(t, addToFileblob, fb, destroy);
+	if(destroy && t->t_next) {
+		textDestroy(t->t_next);
+		t->t_next = NULL;
+	}
+	return fb;
 }
 
 static void
