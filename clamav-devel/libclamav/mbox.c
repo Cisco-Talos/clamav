@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.313 2006/06/28 21:07:36 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.314 2006/07/01 16:17:35 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -196,7 +196,7 @@ typedef	struct	mbox_ctx {
 
 static	int	cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx);
 static	message	*parseEmailFile(FILE *fin, const table_t *rfc821Table, const char *firstLine, const char *dir);
-static	message	*parseEmailHeaders(const message *m, const table_t *rfc821Table);
+static	message	*parseEmailHeaders(message *m, const table_t *rfc821Table);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
 static	int	parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx);
 static	int	boundaryStart(const char *line, const char *boundary);
@@ -215,7 +215,7 @@ static	int	rfc1341(message *m, const char *dir);
 static	bool	usefulHeader(int commandNumber, const char *cmd);
 static	char	*getline_from_mbox(char *buffer, size_t len, FILE *fin);
 static	bool	isBounceStart(const char *line);
-static	bool	binhexMessage(const char *dir, message *message);
+static	bool	binhexMessage(const char *dir, message *m);
 static	message	*do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx *mctx, message *messageIn, text **tptr);
 
 static	void	checkURLs(message *m, const char *dir);
@@ -908,7 +908,7 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 				} while(quotedsize > 0L);
 
 				free(line);
-				fb = messageToFileblob(m, dir);
+				fb = messageToFileblob(m, dir, 1);
 				messageDestroy(m);
 
 				if(fb)
@@ -1676,7 +1676,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
  * TODO: remove the duplication with parseEmailFile
  */
 static message *
-parseEmailHeaders(const message *m, const table_t *rfc821)
+parseEmailHeaders(message *m, const table_t *rfc821)
 {
 	bool inHeader = TRUE;
 	bool bodyIsEmpty = TRUE;
@@ -1937,28 +1937,25 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 static int	/* success or fail */
 parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 {
-	message **messages;	/* parts of a multipart message */
-	int inMimeHead, i, rc = 1, htmltextPart, multiparts = 0;
-	text *aText;
-	message *mainMessage;
+	int rc = 1;
+	text *aText = textIn;
+	message *mainMessage = messageIn;
 	fileblob *fb;
 	bool infected = FALSE;
 
 	cli_dbgmsg("in parseEmailBody\n");
 
-	aText = textIn;
-	messages = NULL;
-	mainMessage = messageIn;
-
 	/* Anything left to be parsed? */
 	if(mainMessage && (messageGetBody(mainMessage) != NULL)) {
 		mime_type mimeType;
-		int subtype, inhead;
+		int subtype, inhead, htmltextPart, inMimeHead, i;
 		const char *mimeSubtype, *boundary;
 		char *protocol;
 		const text *t_line;
 		/*bool isAlternative;*/
 		message *aMessage;
+		int multiparts = 0;
+		message **messages = NULL;	/* parts of a multipart message */
 
 		cli_dbgmsg("Parsing mail file\n");
 
@@ -2565,7 +2562,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 					fileblobSetFilename(fb, mctx->dir, "textpart");
 					/*fileblobAddData(fb, "Received: by clamd (textpart)\n", 30);*/
 					fileblobSetCTX(fb, mctx->ctx);
-					(void)textToFileblob(aText, fb);
+					(void)textToFileblob(aText, fb, 0);
 
 					fileblobDestroy(fb);
 				}
@@ -2646,7 +2643,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 			if((strcasecmp(cptr, "octet-stream") == 0) ||
 			   (strcasecmp(cptr, "x-msdownload") == 0)) {*/
 			{
-				fb = messageToFileblob(mainMessage, mctx->dir);
+				fb = messageToFileblob(mainMessage, mctx->dir, 1);
 
 				if(fb) {
 					cli_dbgmsg("Saving main message as attachment\n");
@@ -2670,6 +2667,9 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 			cli_warnmsg("Message received with unknown mime encoding");
 			break;
 		}
+
+		if(messages)
+			free(messages);
 	}
 
 	if(aText && (textIn == NULL)) {
@@ -2800,26 +2800,16 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 	 * No attachments - scan the text portions, often files
 	 * are hidden in HTML code
 	 */
-	cli_dbgmsg("%d multiparts found\n", multiparts);
-	for(i = 0; i < multiparts; i++) {
-		fb = messageToFileblob(messages[i], mctx->dir);
-
-		if(fb) {
-			cli_dbgmsg("Saving multipart %d\n", i);
-
-			fileblobDestroy(fb);
-		}
-	}
-
 	if(mainMessage && (rc != 3)) {
 		/*
 		 * Look for uu-encoded main file
 		 */
-		const text *t_line;
+		text *t_line;
 
 		if((encodingLine(mainMessage) != NULL) &&
 			  ((t_line = bounceBegin(mainMessage)) != NULL)) {
-			const text *t, *start;
+			text *t, *start;
+
 			/*
 			 * Attempt to save the original (unbounced)
 			 * message - clamscan will find that in the
@@ -2873,7 +2863,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 				cli_dbgmsg("Found a bounce message\n");
 				fileblobSetFilename(fb, mctx->dir, "bounce");
 				/*fileblobSetCTX(fb, ctx);*/
-				if(textToFileblob(start, fb) == NULL)
+				if(textToFileblob(start, fb, 0) == NULL)
 					cli_dbgmsg("Nothing new to save in the bounce message\n");
 				else
 					rc = 1;
@@ -2908,20 +2898,18 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 						28);
 
 					/*fileblobSetCTX(fb, ctx);*/
-					fb = textToFileblob(t_line, fb);
+					fb = textToFileblob(t_line, fb, 0);
 
 					fileblobDestroy(fb);
 				}
 				saveIt = FALSE;
-			} else if(multiparts == 0)
+			} else
 				/*
 				 * Save the entire text portion,
 				 * since it it may be an HTML file with
 				 * a JavaScript virus or a phish
 				 */
 				saveIt = TRUE;
-			else
-				saveIt = FALSE;
 
 			if(saveIt) {
 				cli_dbgmsg("Saving text part to scan\n");
@@ -2938,13 +2926,10 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 			}
 		}
 	} else
-		rc = (multiparts) ? 1 : 2;	/* anything saved? */
+		rc = 2;	/* nothing saved */
 
 	if(mainMessage && (mainMessage != messageIn))
 		messageDestroy(mainMessage);
-
-	if(messages)
-		free(messages);
 
 	if((rc != 0) && infected)
 		rc = 3;
@@ -3411,7 +3396,7 @@ saveTextPart(message *m, const char *dir)
 	fileblob *fb;
 
 	messageAddArgument(m, "filename=textportion");
-	if((fb = messageToFileblob(m, dir)) != NULL) {
+	if((fb = messageToFileblob(m, dir, 0)) != NULL) {
 		/*
 		 * Save main part to scan that
 		 */
@@ -3581,7 +3566,7 @@ rfc2047(const char *in)
 				messageSetEncoding(m, "base64");
 				break;
 		}
-		b = messageToBlob(m);
+		b = messageToBlob(m, 1);
 		len = blobGetDataSize(b);
 		cli_dbgmsg("Decoded as '%*.*s'\n", len, len, blobGetData(b));
 		memcpy(pout, blobGetData(b), len);
@@ -3673,7 +3658,7 @@ rfc1341(message *m, const char *dir)
 		free(oldfilename);
 	}
 
-	if((fb = messageToFileblob(m, pdir)) == NULL) {
+	if((fb = messageToFileblob(m, pdir, 0)) == NULL) {
 		free(id);
 		free(number);
 		return -1;
@@ -3805,7 +3790,7 @@ rfc1341(message *m, const char *dir)
 static void
 checkURLs(message *m, const char *dir)
 {
-	blob *b = messageToBlob(m);
+	blob *b = messageToBlob(m, 0);
 	size_t len;
 	table_t *t;
 	int i, n;
@@ -4294,7 +4279,7 @@ binhexMessage(const char *dir, message *m)
 	if(messageGetEncoding(m) == NOENCODING)
 		messageSetEncoding(m, "x-binhex");
 
-	fb = messageToFileblob(m, dir);
+	fb = messageToFileblob(m, dir, 0);
 
 	if(fb) {
 		if(fileblobContainsVirus(fb))
@@ -4518,7 +4503,7 @@ do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx 
 		cli_dbgmsg("Adding to non mime-part\n");
 		*tptr = textAdd(*tptr, messageGetBody(aMessage));
 	} else {
-		fileblob *fb = messageToFileblob(aMessage, mctx->dir);
+		fileblob *fb = messageToFileblob(aMessage, mctx->dir, 1);
 
 		if(fb) {
 			if(fileblobContainsVirus(fb))

@@ -18,6 +18,9 @@
  *
  * Change History:
  * $Log: binhex.c,v $
+ * Revision 1.21  2006/07/01 16:17:35  njh
+ * Added destroy flag
+ *
  * Revision 1.20  2006/07/01 03:47:50  njh
  * Don't loop if binhex runs out of memory
  *
@@ -76,7 +79,7 @@
  * First draft of binhex.c
  *
  */
-static	char	const	rcsid[] = "$Id: binhex.c,v 1.20 2006/07/01 03:47:50 njh Exp $";
+static	char	const	rcsid[] = "$Id: binhex.c,v 1.21 2006/07/01 16:17:35 njh Exp $";
 
 #include "clamav.h"
 
@@ -195,7 +198,7 @@ cli_binhex(const char *dir, int desc)
 	/* similar to binhexMessage */
 	messageSetEncoding(m, "x-binhex");
 
-	fb = messageToFileblob(m, dir);
+	fb = messageToFileblob(m, dir, 1);
 	if(fb) {
 		cli_dbgmsg("Binhex file decoded to %s\n", fileblobGetFilename(fb));
 		fileblobDestroy(fb);
@@ -205,6 +208,6 @@ cli_binhex(const char *dir, int desc)
 
 	if(fb)
 		return CL_CLEAN;	/* a lie - but it gets things going */
-	return CL_EIO;
+	return CL_EIO;	/* probably CL_EMEM, but we can't tell at this layer */
 #endif
 }

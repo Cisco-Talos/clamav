@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.176 2006/07/01 03:47:50 njh Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.177 2006/07/01 16:17:35 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -78,7 +78,7 @@ static	const	char	*messageGetArgument(const message *m, int arg);
 /*
  * http://oopweb.com/CPP/Documents/FunctionPointers/Volume/CCPP/callback/callback.html
  */
-static	void	*messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), void (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(const text *, void *), void (*setCTX)(void *, cli_ctx *));
+static	void	*messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), void (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(text *, void *, int), void (*setCTX)(void *, cli_ctx *), int destroy_text);
 static	int	usefulArg(const char *arg);
 static	void	messageDedup(message *m);
 static	char	*rfc2231(const char *in);
@@ -983,8 +983,8 @@ messageIsEncoding(message *m)
  * Returns a pointer to the body of the message. Note that it does NOT return
  * a copy of the data
  */
-const text *
-messageGetBody(const message *m)
+text *
+messageGetBody(message *m)
 {
 	assert(m != NULL);
 	return m->body_first;
@@ -1010,10 +1010,10 @@ messageClean(message *m)
  * last item that was exported. That's sufficient for now.
  */
 static void *
-messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), void (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(const text *, void *), void(*setCTX)(void *, cli_ctx *))
+messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), void (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(text *, void *, int), void(*setCTX)(void *, cli_ctx *), int destroy_text)
 {
 	void *ret;
-	const text *t_line;
+	text *t_line;
 	char *filename;
 	int i;
 
@@ -1069,8 +1069,17 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		      (t_line->t_line == NULL))
 			;
 
-		tmp = textToBlob(t_line, NULL);
+		tmp = textToBlob(t_line, NULL,
+			((m->numberOfEncTypes == 1) && (m->encodingTypes[0] == BINHEX)) ? destroy_text : 0);
+
 		if(tmp == NULL) {
+			/*
+			 * FIXME: We've probably run out of memory during the
+			 * text to blob.
+			 * TODO: if m->numberOfEncTypes == 1 we could delete
+			 * the text object as we decode it
+			 */
+			cli_warnmsg("Couldn't start binhex parser\n");
 			(*destroy)(ret);
 			return NULL;
 		}
@@ -1334,7 +1343,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			free((char *)filename);
 
 		if(m->numberOfEncTypes == 0)
-			return exportText(messageGetBody(m), ret);
+			return exportText(messageGetBody(m), ret, destroy_text);
 	}
 
 	if(setCTX && m->ctx)
@@ -1432,7 +1441,12 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			/*
 			 * Fast copy
 			 */
-			(void)exportText(t_line, ret);
+			if(i == m->numberOfEncTypes - 1) {
+				/* last one */
+				(void)exportText(t_line, ret, destroy_text);
+				break;
+			}
+			(void)exportText(t_line, ret, 0);
 			continue;
 		}
 
@@ -1529,10 +1543,17 @@ base64Flush(message *m, unsigned char *buf)
  * The caller must free the returned fileblob
  */
 fileblob *
-messageToFileblob(message *m, const char *dir)
+messageToFileblob(message *m, const char *dir, int destroy)
 {
+	fileblob *fb;
+
 	cli_dbgmsg("messageToFileblob\n");
-	return messageExport(m, dir, (void *)fileblobCreate, (void *)fileblobDestroy, (void *)fileblobSetFilename, (void *)fileblobAddData, (void *)textToFileblob, (void *)fileblobSetCTX);
+	fb = messageExport(m, dir, (void *)fileblobCreate, (void *)fileblobDestroy, (void *)fileblobSetFilename, (void *)fileblobAddData, (void *)textToFileblob, (void *)fileblobSetCTX, destroy);
+	if(destroy && m->body_first) {
+		textDestroy(m->body_first);
+		m->body_first = m->body_last = NULL;
+	}
+	return fb;
 }
 
 /*
@@ -1540,9 +1561,15 @@ messageToFileblob(message *m, const char *dir)
  * The caller must free the returned blob
  */
 blob *
-messageToBlob(message *m)
+messageToBlob(message *m, int destroy)
 {
-	return messageExport(m, NULL, (void *)blobCreate, (void *)blobDestroy, (void *)blobSetFilename, (void *)blobAddData, (void *)textToBlob, NULL);
+	blob *b = messageExport(m, NULL, (void *)blobCreate, (void *)blobDestroy, (void *)blobSetFilename, (void *)blobAddData, (void *)textToBlob, NULL, destroy);
+
+	if(destroy && m->body_first) {
+		textDestroy(m->body_first);
+		m->body_first = m->body_last = NULL;
+	}
+	return b;
 }
 
 /*
@@ -1728,8 +1755,8 @@ messageToText(message *m)
 	return first;
 }
 
-const text *
-yEncBegin(const message *m)
+text *
+yEncBegin(message *m)
 {
 	return m->yenc;
 }
@@ -1738,8 +1765,8 @@ yEncBegin(const message *m)
  * Scan to find the BINHEX message (if any)
  */
 #if	0
-static const text *
-binhexBegin(const message *m)
+const text *
+binhexBegin(message *m)
 {
 	const text *t_line;
 
@@ -1750,8 +1777,8 @@ binhexBegin(const message *m)
 	return NULL;
 }
 #else
-const text *
-binhexBegin(const message *m)
+text *
+binhexBegin(message *m)
 {
 	return m->binhex;
 }
@@ -1762,8 +1789,8 @@ binhexBegin(const message *m)
  * even a convention, so don't expect this to be foolproof
  */
 #if	0
-const text *
-bounceBegin(const message *m)
+text *
+bounceBegin(message *m)
 {
 	const text *t_line;
 
@@ -1774,8 +1801,8 @@ bounceBegin(const message *m)
 	return NULL;
 }
 #else
-const text *
-bounceBegin(const message *m)
+text *
+bounceBegin(message *m)
 {
 	return m->bounce;
 }
@@ -1806,8 +1833,8 @@ messageIsAllText(const message *m)
 	return 1;
 }
 #else
-const text *
-encodingLine(const message *m)
+text *
+encodingLine(message *m)
 {
 	return m->encoding;
 }
