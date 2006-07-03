@@ -1,3 +1,7 @@
+Mon Jul  3 13:09:27 BST 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Multiparts now only create an array when needed
+
 Sat Jul  1 22:04:04 BST 2006 (njh)
 ----------------------------------
   * libclamav:	More freeing memory earlier

@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.316 2006/07/03 09:19:15 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.317 2006/07/03 12:08:55 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2085,18 +2085,25 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 			inMimeHead = 0;
 
 			/*
+			 * Re-read this variable in case mimeSubtype has changed
+			 */
+			subtype = tableFind(mctx->subtypeTable, mimeSubtype);
+
+			/*
 			 * Parse the mainMessage object and create an array
 			 * of objects called messages, one for each of the
-			 * multiparts that mainMessage contains
-			 *
-			 * TODO: The array is probably no longer needed, we can
-			 * export to file each time around the loop rather than
-			 * add to the array
+			 * multiparts that mainMessage contains.
 			 *
 			 * This looks like parseEmailHeaders() - maybe there's
 			 * some duplication of code to be cleaned up
+			 *
+			 * We need to create an array rather than just
+			 * save each part as it is found because not all
+			 * elements will need scanning, and we don't yet know
+			 * which of those elements it will be, except in
+			 * the case of mixed, when all parts need to be scanned.
 			 */
-			for(multiparts = 0; t_line; multiparts++) {
+			for(multiparts = 0; t_line && !infected; multiparts++) {
 				int lines = 0;
 				message **m;
 
@@ -2133,7 +2140,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 					 * throw away by mistake if the MIME
 					 * encoding information is incorrect
 					 */
-					if(binhexBegin(mainMessage) == NULL) {
+					if(mainMessage &&
+					   (binhexBegin(mainMessage) == NULL)) {
 						messageDestroy(aMessage);
 						--multiparts;
 					}
@@ -2350,10 +2358,34 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 					}
 				} while((t_line = t_line->t_next) != NULL);
 
-				messageClean(aMessage);
-
 				cli_dbgmsg("Part %d has %d lines\n",
 					multiparts, lines);
+
+				/*
+				 * Only save in the array of messages if some
+				 * decision will be taken on whether to scan.
+				 * If all parts will be scanned then save to
+				 * file straight away
+				 */
+				switch(subtype) {
+					case MIXED:
+					case ALTERNATIVE:
+					case REPORT:
+					case DIGEST:
+					case APPLEDOUBLE:
+					case KNOWBOT:
+					case -1:
+						mainMessage = do_multipart(mainMessage,
+							messages, multiparts,
+							&rc, mctx, messageIn,
+							&aText);
+						--multiparts;
+						if(rc == 3)
+							infected = TRUE;
+						break;
+					default:
+						messageClean(aMessage);
+				}
 			}
 
 			free((char *)boundary);
@@ -2362,7 +2394,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 			 * Preprocess. Anything special to be done before
 			 * we handle the multiparts?
 			 */
-			switch(tableFind(mctx->subtypeTable, mimeSubtype)) {
+			switch(subtype) {
 				case KNOWBOT:
 					/* TODO */
 					cli_dbgmsg("multipart/knowbot parsed as multipart/mixed for now\n");
@@ -2387,13 +2419,18 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 				mainMessage = NULL;
 			}
 
-			if(multiparts == 0) {
+			cli_dbgmsg("The message has %d parts\n", multiparts);
+
+			if(((multiparts == 0) || infected) && (aText == NULL)) {
 				if(messages)
 					free(messages);
-				return 2;	/* Nothing to do */
+				/*
+				 * FIXME: we could return 2 here when we have
+				 * saved stuff earlier
+				 */
+				return (rc == 3) ? 3 : 2;	/* Nothing to do */
 			}
 
-			cli_dbgmsg("The message has %d parts\n", multiparts);
 			cli_dbgmsg("Find out the multipart type (%s)\n", mimeSubtype);
 
 			/*
