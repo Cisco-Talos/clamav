@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.315 2006/07/01 21:03:36 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.316 2006/07/03 09:19:15 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -206,7 +206,7 @@ static	int	getTextPart(message *const messages[], size_t size);
 static	size_t	strip(char *buf, int len);
 static	bool	continuationMarker(const char *line);
 static	int	parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg);
-static	void	saveTextPart(message *m, const char *dir);
+static	void	saveTextPart(message *m, const char *dir, int destroy_text);
 static	char	*rfc2047(const char *in);
 static	char	*rfc822comments(const char *in, char *out);
 #ifdef	PARTIAL_DIR
@@ -2089,6 +2089,10 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 			 * of objects called messages, one for each of the
 			 * multiparts that mainMessage contains
 			 *
+			 * TODO: The array is probably no longer needed, we can
+			 * export to file each time around the loop rather than
+			 * add to the array
+			 *
 			 * This looks like parseEmailHeaders() - maybe there's
 			 * some duplication of code to be cleaned up
 			 */
@@ -2562,7 +2566,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 					fileblobSetFilename(fb, mctx->dir, "textpart");
 					/*fileblobAddData(fb, "Received: by clamd (textpart)\n", 30);*/
 					fileblobSetCTX(fb, mctx->ctx);
-					(void)textToFileblob(aText, fb, 0);
+					(void)textToFileblob(aText, fb, 1);
 
 					fileblobDestroy(fb);
 				}
@@ -2913,7 +2917,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 
 			if(saveIt) {
 				cli_dbgmsg("Saving text part to scan\n");
-				saveTextPart(mainMessage, mctx->dir);
+				saveTextPart(mainMessage, mctx->dir, 1);
 				if(mainMessage != messageIn) {
 					messageDestroy(mainMessage);
 					mainMessage = NULL;
@@ -3388,12 +3392,12 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
  * Save the text portion of the message
  */
 static void
-saveTextPart(message *m, const char *dir)
+saveTextPart(message *m, const char *dir, int destroy_text)
 {
 	fileblob *fb;
 
 	messageAddArgument(m, "filename=textportion");
-	if((fb = messageToFileblob(m, dir, 0)) != NULL) {
+	if((fb = messageToFileblob(m, dir, destroy_text)) != NULL) {
 		/*
 		 * Save main part to scan that
 		 */
@@ -4433,7 +4437,7 @@ do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx 
 			 * Save this embedded message
 			 * to a temporary file
 			 */
-			saveTextPart(aMessage, mctx->dir);
+			saveTextPart(aMessage, mctx->dir, 1);
 			assert(aMessage == messages[i]);
 			messageDestroy(messages[i]);
 			messages[i] = NULL;
