@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.177 2006/07/01 16:17:35 njh Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.178 2006/07/03 09:19:15 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1504,6 +1504,10 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			/*if(enctype == BASE64)
 				if(strchr(line, '='))
 					break;*/
+			if(line && destroy_text && (i == m->numberOfEncTypes - 1)) {
+				lineUnlink(t_line->t_line);
+				t_line->t_line = NULL;
+			}
 
 		} while((t_line = t_line->t_next) != NULL);
 
