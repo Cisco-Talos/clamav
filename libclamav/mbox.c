@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.317 2006/07/03 12:08:55 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.318 2006/07/04 08:38:53 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -215,7 +215,8 @@ static	int	rfc1341(message *m, const char *dir);
 static	bool	usefulHeader(int commandNumber, const char *cmd);
 static	char	*getline_from_mbox(char *buffer, size_t len, FILE *fin);
 static	bool	isBounceStart(const char *line);
-static	bool	binhexMessage(const char *dir, message *m);
+static	bool	exportBinhexMessage(const char *dir, message *m);
+static	int	exportBounceMessage(text *start, const mbox_ctx *ctx);
 static	message	*do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx *mctx, message *messageIn, text **tptr);
 
 static	void	checkURLs(message *m, const char *dir);
@@ -1994,6 +1995,11 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 		case TEXT:
 			/* text/plain has been preprocessed as no encoding */
 			if((mctx->ctx->options&CL_SCAN_MAILURL) && (subtype == HTML))
+				/*
+				 * It would be better to save and scan the
+				 * file and only checkURLs if it's found to be
+				 * clean
+				 */
 				checkURLs(mainMessage, mctx->dir);
 			break;
 		case MULTIPART:
@@ -2001,7 +2007,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 			boundary = messageFindArgument(mainMessage, "boundary");
 
 			if(boundary == NULL) {
-				cli_warnmsg("Multipart MIME message contains no boundaries\n");
+				cli_warnmsg("Multipart MIME message contains no boundary header\n");
 				/* Broken e-mail message */
 				mimeType = NOMIME;
 				/*
@@ -2040,9 +2046,10 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 					 * TODO: check yEnc
 					 */
 					if(binhexBegin(mainMessage) == t_line) {
-						if(binhexMessage(mctx->dir, mainMessage)) {
+						if(exportBinhexMessage(mctx->dir, mainMessage)) {
 							/* virus found */
 							rc = 3;
+							infected = TRUE;
 							break;
 						}
 					} else if(encodingLine(mainMessage) == t_line->t_next) {
@@ -2063,7 +2070,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 			while((t_line = t_line->t_next) != NULL);
 
 			if(t_line == NULL) {
-				cli_dbgmsg("Multipart MIME message contains no boundary lines\n");
+				cli_dbgmsg("Multipart MIME message contains no boundary lines (%s)\n",
+					boundary);
 				/*
 				 * Free added by Thomas Lamy
 				 * <Thomas.Lamy@in-online.net>
@@ -2842,75 +2850,15 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 	 * are hidden in HTML code
 	 */
 	if(mainMessage && (rc != 3)) {
+		text *t_line;
+
 		/*
 		 * Look for uu-encoded main file
 		 */
-		text *t_line;
-
 		if((encodingLine(mainMessage) != NULL) &&
-			  ((t_line = bounceBegin(mainMessage)) != NULL)) {
-			text *t, *start;
-
-			/*
-			 * Attempt to save the original (unbounced)
-			 * message - clamscan will find that in the
-			 * directory and call us again (with any luck)
-			 * having found an e-mail message to handle.
-			 *
-			 * This finds a lot of false positives, the
-			 * search that a content type is in the
-			 * bounce (i.e. it's after the bounce header)
-			 * helps a bit.
-			 *
-			 * messageAddLine
-			 * optimisation could help here, but needs
-			 * careful thought, do it with line numbers
-			 * would be best, since the current method in
-			 * messageAddLine of checking encoding first
-			 * must remain otherwise non bounce messages
-			 * won't be scanned
-			 */
-			for(t = start = t_line; t; t = t->t_next) {
-				char cmd[RFC2821LENGTH + 1];
-				const char *txt = lineGetData(t->t_line);
-
-				if(txt == NULL)
-					continue;
-				if(cli_strtokbuf(txt, 0, ":", cmd) == NULL)
-					continue;
-
-				switch(tableFind(mctx->rfc821Table, cmd)) {
-					case CONTENT_TRANSFER_ENCODING:
-						if((strstr(txt, "7bit") == NULL) &&
-						   (strstr(txt, "8bit") == NULL))
-							break;
-						continue;
-					case CONTENT_DISPOSITION:
-						break;
-					case CONTENT_TYPE:
-						if(strstr(txt, "text/plain") != NULL)
-							t = NULL;
-						break;
-					default:
-						if(strcasecmp(cmd, "From") == 0)
-							start = t_line;
-						else if(strcasecmp(cmd, "Received") == 0)
-							start = t_line;
-						continue;
-				}
-				break;
-			}
-			if(t && ((fb = fileblobCreate()) != NULL)) {
-				cli_dbgmsg("Found a bounce message\n");
-				fileblobSetFilename(fb, mctx->dir, "bounce");
-				/*fileblobSetCTX(fb, mctx->ctx);*/
-				if(textToFileblob(start, fb, 1) == NULL)
-					cli_dbgmsg("Nothing new to save in the bounce message\n");
-				else
-					rc = 1;
-				fileblobDestroy(fb);
-			} else
-				cli_dbgmsg("Not found a bounce message\n");
+		   ((t_line = bounceBegin(mainMessage)) != NULL)) {
+			if(exportBounceMessage(t_line, mctx))
+				rc = 1;
 		} else {
 			bool saveIt;
 
@@ -2921,7 +2869,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 				 * content encoding statement don't
 				 * bother saving to scan, it's safe
 				 */
-				saveIt = (encodingLine(mainMessage) != NULL);
+				saveIt = (bool)(encodingLine(mainMessage) != NULL);
 			else if((t_line = encodingLine(mainMessage)) != NULL) {
 				/*
 				 * Some bounces include the message
@@ -4309,7 +4257,7 @@ isBounceStart(const char *line)
  *	extract it
  */
 static bool
-binhexMessage(const char *dir, message *m)
+exportBinhexMessage(const char *dir, message *m)
 {
 	bool infected = FALSE;
 	fileblob *fb;
@@ -4330,6 +4278,80 @@ binhexMessage(const char *dir, message *m)
 		cli_errmsg("Couldn't decode binhex file to %s\n", dir);
 
 	return infected;
+}
+
+/*
+ * Locate any bounce message and extract it. Return 1 if anything found
+ */
+static int
+exportBounceMessage(text *start, const mbox_ctx *mctx)
+{
+	int rc = 0;
+	text *t;
+	fileblob *fb;
+
+	/*
+	 * Attempt to save the original (unbounced)
+	 * message - clamscan will find that in the
+	 * directory and call us again (with any luck)
+	 * having found an e-mail message to handle.
+	 *
+	 * This finds a lot of false positives, the
+	 * search that a content type is in the
+	 * bounce (i.e. it's after the bounce header)
+	 * helps a bit.
+	 *
+	 * messageAddLine
+	 * optimisation could help here, but needs
+	 * careful thought, do it with line numbers
+	 * would be best, since the current method in
+	 * messageAddLine of checking encoding first
+	 * must remain otherwise non bounce messages
+	 * won't be scanned
+	 */
+	for(t = start; t; t = t->t_next) {
+		char cmd[RFC2821LENGTH + 1];
+		const char *txt = lineGetData(t->t_line);
+
+		if(txt == NULL)
+			continue;
+		if(cli_strtokbuf(txt, 0, ":", cmd) == NULL)
+			continue;
+
+		switch(tableFind(mctx->rfc821Table, cmd)) {
+			case CONTENT_TRANSFER_ENCODING:
+				if((strstr(txt, "7bit") == NULL) &&
+				   (strstr(txt, "8bit") == NULL))
+					break;
+				continue;
+			case CONTENT_DISPOSITION:
+				break;
+			case CONTENT_TYPE:
+				if(strstr(txt, "text/plain") != NULL)
+					t = NULL;
+				break;
+			default:
+				if(strcasecmp(cmd, "From") == 0)
+					start = t;
+				else if(strcasecmp(cmd, "Received") == 0)
+					start = t;
+				continue;
+		}
+		break;
+	}
+	if(t && ((fb = fileblobCreate()) != NULL)) {
+		cli_dbgmsg("Found a bounce message\n");
+		fileblobSetFilename(fb, mctx->dir, "bounce");
+		/*fileblobSetCTX(fb, mctx->ctx);*/
+		if(textToFileblob(start, fb, 1) == NULL)
+			cli_dbgmsg("Nothing new to save in the bounce message\n");
+		else
+			rc = 1;
+		fileblobDestroy(fb);
+	} else
+		cli_dbgmsg("Not found a bounce message\n");
+
+	return rc;
 }
 
 /*
@@ -4363,7 +4385,7 @@ do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx 
 				if(binhexBegin(aMessage)) {
 					cli_dbgmsg("Found binhex message in multipart/mixed mainMessage\n");
 
-					if(binhexMessage(mctx->dir, mainMessage))
+					if(exportBinhexMessage(mctx->dir, mainMessage))
 						*rc = 3;
 				}
 				if(mainMessage != messageIn)
@@ -4372,7 +4394,7 @@ do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx 
 			} else if(aMessage) {
 				if(binhexBegin(aMessage)) {
 					cli_dbgmsg("Found binhex message in multipart/mixed non mime part\n");
-					if(binhexMessage(mctx->dir, aMessage))
+					if(exportBinhexMessage(mctx->dir, aMessage))
 						*rc = 3;
 					assert(aMessage == messages[i]);
 					messageReset(messages[i]);
