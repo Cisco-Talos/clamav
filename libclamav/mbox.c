@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.318 2006/07/04 08:38:53 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.319 2006/07/08 19:55:28 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1448,10 +1448,6 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 				inHeader = FALSE;
 			}
 		}
-		if(boundary) {
-			free(boundary);
-			boundary = NULL;
-		}
 		if(inHeader) {
 			cli_dbgmsg("parseEmailFile: check '%s' contMarker %d fullline %p\n",
 				buffer ? buffer : "", (int)contMarker, fullline);
@@ -1481,7 +1477,8 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 						free(fullline);
 						fullline = NULL;
 					}
-					if((boundary = (char *)messageFindArgument(ret, "boundary")) != NULL) {
+					if(boundary ||
+					   ((boundary = (char *)messageFindArgument(ret, "boundary")) != NULL)) {
 						lastWasBlank = TRUE;
 						continue;
 					}
@@ -1637,6 +1634,9 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 				break;
 		}
 	} while(getline_from_mbox(buffer, sizeof(buffer) - 1, fin) != NULL);
+
+	if(boundary)
+		free(boundary);
 
 	if(fullline) {
 		if(*fullline) switch(commandNumber) {
@@ -2939,6 +2939,8 @@ boundaryStart(const char *line, const char *boundary)
 
 	if(line == NULL)
 		return 0;	/* empty line */
+	if(boundary == NULL)
+		return 0;
 
 	/*cli_dbgmsg("boundaryStart: line = '%s' boundary = '%s'\n", line, boundary);*/
 
