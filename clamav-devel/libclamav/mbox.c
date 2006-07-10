@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.319 2006/07/08 19:55:28 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.320 2006/07/10 15:07:32 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1537,6 +1537,16 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 						default:
 							if(!anyHeadersFound)
 								anyHeadersFound = usefulHeader(commandNumber, cmd);
+							/*
+							 * Enable this line to
+							 * find
+							 * HTML.Phishing.Bank-566
+							 * Disable to find
+							 * HTML.Phishing.Bank-28
+							 * FIXME: This shouldn't
+							 * be either/or
+							 */
+							/*contMarker = continuationMarker(line);*/
 							continue;
 					}
 					fullline = strdup(line);
