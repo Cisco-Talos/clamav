@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.320 2006/07/10 15:07:32 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.321 2006/07/10 18:24:50 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3168,6 +3168,7 @@ strstrip(char *s)
 static bool
 continuationMarker(const char *line)
 {
+#if	0
 	const char *ptr;
 
 	if(line == NULL)
@@ -3196,6 +3197,7 @@ continuationMarker(const char *line)
 			default:
 				return FALSE;
 		}
+#endif
 
 	return FALSE;
 }
