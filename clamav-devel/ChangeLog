@@ -1,3 +1,8 @@
+Mon Jul 10 19:40:59 BST 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Some HTML.Phishing.Bank-566 were not being found, bug
+  				reported by Sven
+
 Sat Jul  8 20:57:31 BST 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Optimized the loop reading in the file
