@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.247 2006/06/21 09:09:59 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.248 2006/07/11 15:25:26 njh Exp $";
 
 #define	CM_VERSION	"devel-210606"
 
@@ -82,6 +82,7 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.247 2006/06/21 09:09:59 nj
 #include <sys/sendfile.h>	/* FIXME: use sendfile on BSD not Linux */
 #include <libintl.h>
 #include <locale.h>
+#include <resolv.h>
 
 #define	gettext_noop(s)	s
 #define	_(s)	gettext(s)
@@ -195,6 +196,7 @@ static const struct cidr_net {
 	{ PACKADDR( 10,   0,   0,   0), MAKEMASK(24) },	/*    10.0.0.0/24 */
 	{ PACKADDR(172,  16,   0,   0), MAKEMASK(20) },	/*  172.16.0.0/20 */
 	{ PACKADDR(169,  254,  0,   0), MAKEMASK(16) },	/* 169.254.0.0/16 */
+	{ 0, 0 },	/* space to put one more via -I addr */
 	{ 0, 0 }
 };
 
@@ -205,8 +207,8 @@ struct	privdata {
 	char	*from;	/* Who sent the message */
 	char	*subject;	/* Original subject */
 	char	*sender;	/* Secretary - often used in mailing lists */
-	char	*helo;		/* The HELO string */
 	char	**to;	/* Who is the message going to */
+	char	*ip;	/* IP address of the other end */
 	int	numTo;	/* Number of people the message is going to */
 #ifndef	SESSION
 	int	cmdSocket;	/*
@@ -285,6 +287,7 @@ static	char	clamav_version[VERSION_LENGTH + 1];
 static	int	fflag = 0;	/* force a scan, whatever */
 static	int	oflag = 0;	/* scan messages from our machine? */
 static	int	lflag = 0;	/* scan messages from our site? */
+static	int	Iflag = 0;	/* Added an IP addr to localNets? */
 static	const	char	*progname;	/* our name - usually clamav-milter */
 
 /* Variables for --external */
@@ -445,6 +448,10 @@ static	const	char	*whitelistFile;	/*
 static	const	char	*sendmailCF;	/* location of sendmail.cf to verify */
 static	const	char	*pidfile;
 
+static	table_t	*blacklist;	/* never freed */
+static	int	blacklist_time;	/* How long to blacklist an IP */
+static	pthread_mutex_t	blacklist_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 #ifdef	CL_DEBUG
 #if __GLIBC__ == 2 && __GLIBC_MINOR__ >= 1
 #define HAVE_BACKTRACE
@@ -464,7 +471,10 @@ static	void	print_trace(void);
 
 static	int	verifyIncomingSocketName(const char *sockName);
 static	int	isWhitelisted(const char *emailaddress);
+static	int	isBlacklisted(const char *ip_address);
 static	void	logger(const char *mess);
+static	void	mx(void);
+static	void	resolve(const char *host);
 
 short	logg_time, logg_lock, logok;
 int	logg_size;
@@ -476,6 +486,7 @@ help(void)
 	puts("\tCopyright (C) 2006 Nigel Horne <njh@clamav.net>\n");
 
 	puts(_("\t--advisory\t\t-A\tFlag viruses rather than deleting them."));
+	puts(_("\t--blacklist=time\t-k\tTime (in seconds) to blacklist an IP."));
 	puts(_("\t--bounce\t\t-b\tSend a failure message to the sender."));
 	puts(_("\t--broadcast\t\t-B [IFACE]\tBroadcast to a network manager when a virus is found."));
 	puts(_("\t--config-file=FILE\t-c FILE\tRead configuration from FILE."));
@@ -490,6 +501,7 @@ help(void)
 	puts(_("\t--force-scan\t\t-f\tForce scan all messages (overrides (-o and -l)."));
 	puts(_("\t--help\t\t\t-h\tThis message."));
 	puts(_("\t--headers\t\t-H\tInclude original message headers in the report."));
+	puts(_("\t--ignore IPaddr\t\t-I IPaddr\tAdd IPaddr to LAN IP list (see --local)."));
 	puts(_("\t--local\t\t\t-l\tScan messages sent from machines on our LAN."));
 	puts(_("\t--max-childen\t\t-m\tMaximum number of concurrent scans."));
 	puts(_("\t--outgoing\t\t-o\tScan outgoing messages from this machine."));
@@ -556,6 +568,7 @@ main(int argc, char **argv)
 	if(setrlimit(RLIMIT_CORE, &rlim) < 0)
 		perror("setrlimit");
 #endif
+
 	/*
 	 * Temporarily enter guessed value into version, will
 	 * be overwritten later by the value returned by clamd
@@ -578,10 +591,12 @@ main(int argc, char **argv)
 
 	for(;;) {
 		int opt_index = 0;
+		struct cidr_net *net;
+		struct in_addr ignoreIP;
 #ifdef	CL_DEBUG
-		const char *args = "a:AbB:c:CdDefF:lLm:M:nNop:PqQ:hHs:St:T:U:VwW:x:0:";
+		const char *args = "a:AbB:c:CdDefF:I:k:lLm:M:nNop:PqQ:hHs:St:T:U:VwW:x:0:";
 #else
-		const char *args = "a:AbB:c:CdDefF:lLm:M:nNop:PqQ:hHs:St:T:U:VwW:0:";
+		const char *args = "a:AbB:c:CdDefF:I:k:lLm:M:nNop:PqQ:hHs:St:T:U:VwW:0:";
 #endif
 
 		static struct option long_options[] = {
@@ -628,7 +643,13 @@ main(int argc, char **argv)
 				"help", 0, NULL, 'h'
 			},
 			{
+ 				"ignore", 1, NULL, 'I'
+ 			},
+			{
 				"pidfile", 1, NULL, 'i'
+			},
+			{
+				"blacklist", 1, NULL, 'k'
 			},
 			{
 				"local", 0, NULL, 'l'
@@ -754,6 +775,32 @@ main(int argc, char **argv)
 			case 'i':	/* pidfile */
 				pidfile = optarg;
 				break;
+			case 'k':	/* blacklist time */
+				blacklist_time = atoi(optarg);
+				break;
+			case 'I':	/* --ignore, -I hostname */
+				/*
+				 * Based on patch by jpd@louisiana.edu
+				 */
+				if(Iflag) {
+ 					fprintf(stderr,
+						_("%s: %s, -I may only be given once"),
+							argv[0], optarg);
+ 					return EX_USAGE;
+				}
+				if(!inet_aton(optarg, &ignoreIP)) {
+ 					fprintf(stderr,
+						_("%s: Cannot convert -I%s to IPaddr"),
+							argv[0], optarg);
+ 					return EX_USAGE;
+ 				}
+                                for(net = (struct cidr_net *)localNets; net->base; net++)
+					;
+				/* TODO: allow netmasks */
+				net->base = ntohl(ignoreIP.s_addr);
+				net->mask = ntohl(0xffffffffU);
+ 				Iflag++;
+ 				break;
 			case 'l':	/* scan mail from the lan */
 				lflag++;
 				break;
@@ -878,7 +925,7 @@ main(int argc, char **argv)
 	 * Sanity checks on the clamav configuration file
 	 */
 	if(cfgfile == NULL) {
-		cfgfile = cli_malloc(strlen(CONFDIR) + 12);
+		cfgfile = cli_malloc(strlen(CONFDIR) + 12);	/* leak */
 		sprintf(cfgfile, "%s/clamd.conf", CONFDIR);
 	}
 	if((copt = getcfg(cfgfile, 1)) == NULL) {
@@ -1639,6 +1686,13 @@ main(int argc, char **argv)
 #endif
 	}
 
+	if(blacklist_time) {
+		mx();
+		if(blacklist)
+			/* We must never blacklist ourself */
+			tableInsert(blacklist, "127.0.0.1", 0);
+	}
+
 	cli_dbgmsg("Started: %s\n", clamav_version);
 #ifdef	SESSION
 	pthread_mutex_unlock(&version_mutex);
@@ -1767,19 +1821,26 @@ pingServer(int serverNumber)
 			return 0;
 		}
 		if(connect(sock, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
-			/*
-			 * During startup there is a race condition: clamd can
-			 * start and fork, then rc will start clamav-milter
-			 * before clamd has run accept(2), so we fail to
-			 * connect. In case this is the situation here, we wait
-			 * for a couple of seconds and try again. The sync() is
-			 * because during startup the machine won't be doing
-			 * much for most of the time, so we may as well do
-			 * something constructive!
-			 */
-			sync();
-			sleep(2);
-			if(connect(sock, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
+			int is_connected = 0;
+
+			if(errno == ECONNREFUSED) {
+				/*
+				 * During startup there is a race condition:
+				 * clamd can start and fork, then rc will start
+				 * clamav-milter before clamd has run accept(2),
+				 * so we fail to connect.
+				 * In case this is the situation here, we wait
+				 * for a couple of seconds and try again. The
+				 * sync() is because during startup the machine
+				 * won't be doing much for most of the time, so
+				 * we may as well do something constructive!
+				 */
+				sync();
+				sleep(2);
+				if(connect(sock, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) >= 0)
+					is_connected = 1;
+			}
+			if(!is_connected) {
 				char *hostname = cli_strtok(serverHostNames,
 					serverNumber, ":");
 
@@ -1952,6 +2013,14 @@ findServer(void)
 	for(i = 0, server = servers; i < numServers; i++, server++) {
 		int sock;
 
+		if(((i + j) % numServers) >= numServers)
+			/* "can't happen" */
+			if(use_syslog) {
+				syslog(LOG_ERR, "FindServer: looking for %d from %d - report to bugs@clamav.net\n",
+					(i + j) % numServers, numServers);
+				return 0;
+			}
+
 		server->sin_family = AF_INET;
 		server->sin_port = (in_port_t)htons(tcpSocket);
 		server->sin_addr.s_addr = serverIPs[(i + j) % numServers];
@@ -2059,6 +2128,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	char ip[INET_ADDRSTRLEN];	/* IPv4 only */
 #endif
 	const char *remoteIP;
+	struct privdata *privdata;
 
 	if(quitting)
 		return cl_error;
@@ -2224,7 +2294,37 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 			return SMFIS_REJECT;
 		}
 	}
-	return SMFIS_CONTINUE;
+	if(isBlacklisted(remoteIP)) {
+		if(use_syslog)
+			syslog(LOG_NOTICE, "Rejected email from blacklisted IP %s",
+				remoteIP);
+		/*
+		 * TODO: Option to greylist rather than blacklist, by sending
+		 *	a try again code
+		 */
+		smfi_setreply(ctx, "550", "5.7.1", _("Your IP is blacklisted"));
+		broadcast(_("Blacklisted IP detected"));
+		return SMFIS_REJECT;
+	}
+	if(smfi_getpriv(ctx) != NULL) {
+		/* More than one MAIL FROM command, "can't happen" */
+		cli_warnmsg("clamfi_connect: called more than once\n");
+		return SMFIS_TEMPFAIL;
+	}
+
+	privdata = (struct privdata *)cli_calloc(1, sizeof(struct privdata));
+	if(privdata == NULL)
+		return cl_error;
+
+	if(smfi_setpriv(ctx, privdata) == MI_SUCCESS) {
+		if(blacklist_time)
+			privdata->ip = strdup(remoteIP);
+		return SMFIS_CONTINUE;
+	}
+
+	clamfi_free(privdata);
+
+	return cl_error;
 }
 
 /*
@@ -2262,15 +2362,19 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			mailaddr = "<>";
 		}
 	}
-	if(smfi_getpriv(ctx) != NULL) {
-		/* More than one MAIL FROM command, "can't happen" */
-		cli_warnmsg("clamfi_envfrom: called more than once\n");
-		return SMFIS_CONTINUE;
-	}
+	privdata = smfi_getpriv(ctx);
 
-	privdata = (struct privdata *)cli_calloc(1, sizeof(struct privdata));
-	if(privdata == NULL)
-		return cl_error;
+	if(privdata == NULL) {
+		/* More than one message on this connection */
+		privdata = (struct privdata *)cli_calloc(1, sizeof(struct privdata));
+		if(privdata == NULL)
+			return cl_error;
+
+		if(smfi_setpriv(ctx, privdata) != MI_SUCCESS) {
+			free(privdata);
+			return cl_error;
+		}
+	}
 
 	if(max_children > 0) {
 		int rc = 0;
@@ -2300,9 +2404,12 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 					n_children, max_children);
 
 			if(dont_wait) {
-				free(privdata);
 				pthread_mutex_unlock(&n_children_mutex);
 				smfi_setreply(ctx, "451", "4.3.2", _("AV system temporarily overloaded - please try later"));
+				if(privdata->ip)
+					free(privdata->ip);
+				free(privdata);
+				smfi_setpriv(ctx, NULL);
 				return SMFIS_TEMPFAIL;
 			}
 			/*
@@ -2371,12 +2478,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 	if(hflag)
 		privdata->headers = header_list_new();
 
-	if(smfi_setpriv(ctx, privdata) == MI_SUCCESS)
-		return SMFIS_CONTINUE;
-
-	clamfi_free(privdata);
-
-	return cl_error;
+	return SMFIS_CONTINUE;
 }
 
 #ifdef	CL_DEBUG
@@ -2593,7 +2695,7 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 	 *	avoid FP matches in the scanning code, which will speed it up
 	 */
 	if((len >= 6) && cli_memstr((char *)bodyp, len, "\nFrom ", 6)) {
-		const char *ptr = bodyp;
+		const char *ptr = (const char *)bodyp;
 		int left = len;
 
 		nbytes = 0;
@@ -3285,6 +3387,19 @@ clamfi_eom(SMFICTX *ctx)
 		snprintf(reject, sizeof(reject) - 1, _("virus %s detected by ClamAV - http://www.clamav.net"), virusname);
 		smfi_setreply(ctx, (char *)privdata->rejectCode, "5.7.1", reject);
 		broadcast(mess);
+
+		if(privdata->ip) {
+			pthread_mutex_lock(&blacklist_mutex);
+			/*
+			 * FIXME: should be able to update here, otherwise we
+			 * can't reblacklist an entry that has timed out
+			 */
+			(void)tableInsert(blacklist, privdata->ip,
+				(int)time((time_t *)0));
+			pthread_mutex_unlock(&blacklist_mutex);
+			free(privdata->ip);
+			privdata->ip = NULL;
+		}
 	} else if((strstr(mess, "OK") == NULL) && (strstr(mess, "Empty file") == NULL)) {
 		if(!nflag)
 			smfi_addheader(ctx, "X-Virus-Status", _("Unknown"));
@@ -3407,6 +3522,11 @@ clamfi_free(struct privdata *privdata)
 			}
 			free(privdata->filename);
 			privdata->filename = NULL;
+		}
+
+		if(privdata->ip) {
+			free(privdata->ip);
+			privdata->ip = NULL;
 		}
 
 		if(privdata->from) {
@@ -5283,7 +5403,7 @@ verifyIncomingSocketName(const char *sockName)
 static int
 isWhitelisted(const char *emailaddress)
 {
-	static table_t *whitelist;
+	static table_t *whitelist;	/* never freed */
 
 	cli_dbgmsg("isWhitelisted %s\n", emailaddress);
 
@@ -5302,11 +5422,18 @@ isWhitelisted(const char *emailaddress)
 		if(fin == NULL) {
 			perror(whitelistFile);
 			if(use_syslog)
-				syslog(LOG_ERR, _("Can't open white-list file %s"),
+				syslog(LOG_ERR, _("Can't open whitelist file %s"),
 					whitelistFile);
 			return 0;
 		}
 		whitelist = tableCreate();
+
+		if(whitelist == NULL) {
+			if(use_syslog)
+				syslog(LOG_ERR, _("Can't create whitelist table"));
+			fclose(fin);
+			return 0;
+		}
 
 		while(fgets(buf, sizeof(buf), fin) != NULL) {
 			/* comment line? */
@@ -5327,6 +5454,64 @@ isWhitelisted(const char *emailaddress)
 		 */
 		return 1;
 
+	return 0;
+}
+
+/*
+ * Blacklist IP addresses that send malware. Often in the phishing world, one
+ * phish is quickly followed by another. IP addresses are blacklisted for one
+ * minute. We can't blacklist for longer since DHCP means we could hit innocent
+ * parties, and in theory malware could go through a smart host and affect
+ * innocent parties
+ *
+ * Note that sites which can't be blacklisted will have their timestamp set
+ * to 0, since that can never be less than blacklist_time seconds from now
+ */
+static int
+isBlacklisted(const char *ip_address)
+{
+	time_t t, now;
+
+	if(blacklist_time == 0)
+		/* Blacklisting not being used */
+		return 0;
+
+	cli_dbgmsg("isBlacklisted %s\n", ip_address);
+
+	if(isLocalAddr(inet_addr(ip_address)))
+		return 0;
+
+	time(&now);
+
+	pthread_mutex_lock(&blacklist_mutex);
+	if(blacklist == NULL) {
+		blacklist = tableCreate();
+
+		if(blacklist == NULL) {
+			if(use_syslog)
+				syslog(LOG_ERR, _("Can't create blacklist table"));
+			pthread_mutex_unlock(&blacklist_mutex);
+			return 0;
+		}
+		pthread_mutex_unlock(&blacklist_mutex);
+		return 0;
+	}
+	t = tableFind(blacklist, ip_address);
+	pthread_mutex_unlock(&blacklist_mutex);
+
+	if(t == (time_t)-1)
+		/* IP address is not blacklisted */
+		return 0;
+
+	if(t == (time_t)0)
+		/* IP cannot be blacklisted */
+		return 0;
+
+	if((now - t) < blacklist_time)
+		/* FIXME: should be able to renew the certificate */
+		return 1;
+
+	/* FIXME: should be able to remove the certificate */
 	return 0;
 }
 
@@ -5366,4 +5551,142 @@ logger(const char *mess)
 	if(fout != stderr)
 		fclose(fout);
 #endif
+}
+
+/*
+ * Determine our MX peers, they must never be blacklisted
+ * See RFC1034 for the definition of the record formats
+ */
+static void
+mx(void)
+{
+	const u_char *p, *end;
+	char name[MAXHOSTNAMELEN + 1];
+	u_char buf[BUFSIZ];
+	union {
+		HEADER h;
+		u_char	u[PACKETSZ];
+	} q;
+	const HEADER *hp;
+	int len, i;
+	u_short type, pref;
+	u_long ttl;
+
+	if(gethostname(name, sizeof(name)) < 0) {
+		perror("gethostname");
+		return;
+	}
+
+	if(blacklist == NULL) {
+		blacklist = tableCreate();
+
+		if(blacklist == NULL)
+			return;
+	}
+
+	len = res_query(name, C_IN, T_MX, (u_char *)&q, sizeof(q));
+	if(len < 0)
+		/* Host has no MX records */
+		return;
+
+	if((unsigned int)len > sizeof(q))
+		return;
+
+	hp = &(q.h);
+	p = q.u + HFIXEDSZ;
+	end = q.u + len;
+
+	for(i = ntohs(hp->qdcount); i--; p += len + QFIXEDSZ)
+		if((len = dn_skipname(p, end)) < 0)
+			return;
+
+	i = ntohs(hp->ancount);
+
+	while((--i >= 0) && (p < end)) {
+		long addr;
+
+		if((len = dn_expand(q.u, end, p, buf, sizeof(buf) - 1)) < 0)
+			break;
+		p += len;
+		GETSHORT(type, p);
+		p += INT16SZ;
+		GETLONG(ttl, p);
+		GETSHORT(len, p);
+		if(type != T_MX) {
+			p += len;
+			continue;
+		}
+		GETSHORT(pref, p);
+		if((len = dn_expand(q.u, end, p, buf, sizeof(buf) - 1)) < 0)
+			break;
+		p += len;
+		addr = inet_addr(buf);
+		if(addr != -1L) {
+			if(use_syslog)
+				syslog(LOG_INFO, "Won't blacklist %s", buf);
+			(void)tableInsert(blacklist, buf, 0);
+		} else
+			resolve(buf);
+	}
+}
+
+static void
+resolve(const char *host)
+{
+	const u_char *p, *end;
+	u_char buf[BUFSIZ];
+	union {
+		HEADER h;
+		u_char	u[PACKETSZ];
+	} q;
+	const HEADER *hp;
+	int len, i;
+	u_short type;
+	u_long ttl;
+
+	if((host == NULL) || (*host == '\0'))
+		return;
+
+	len = res_query(host, C_IN, T_A, (u_char *)&q, sizeof(q));
+	if(len < 0)
+		/* Host has no A records */
+		return;
+
+	if((unsigned int)len > sizeof(q))
+		return;
+
+	hp = &(q.h);
+	p = q.u + HFIXEDSZ;
+	end = q.u + len;
+
+	for(i = ntohs(hp->qdcount); i--; p += len + QFIXEDSZ)
+		if((len = dn_skipname(p, end)) < 0)
+			return;
+
+	i = ntohs(hp->ancount);
+
+	while((--i >= 0) && (p < end)) {
+		struct in_addr addr;
+		const char *ip;
+
+		if((len = dn_expand(q.u, end, p, buf, sizeof(buf) - 1)) < 0)
+			 return;
+		p += len;
+		GETSHORT(type, p);
+		p += INT16SZ;
+		GETLONG(ttl, p);
+		GETSHORT(len, p);
+		if(type != T_A) {
+			p += len;
+			continue;
+		}
+		memcpy(&addr, p, sizeof(struct in_addr));
+		p += 4;
+		ip = inet_ntoa(addr);
+		if(ip) {
+			if(use_syslog)
+				syslog(LOG_INFO, "Won't blacklist %s", ip);
+			(void)tableInsert(blacklist, ip, 0);
+		}
+	}
 }
