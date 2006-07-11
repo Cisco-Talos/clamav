@@ -1,7 +1,13 @@
+Tue Jul 11 16:26:46 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	Added -I flag based on an idea by
+				Dugal James P. <jpd*louisiana.edu>
+			Added first draft of blacklist support
+
 Mon Jul 10 19:40:59 BST 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Some HTML.Phishing.Bank-566 were not being found, bug
-  				reported by Sven
+				reported by Sven
 
 Sat Jul  8 20:57:31 BST 2006 (njh)
 ----------------------------------
