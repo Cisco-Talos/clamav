@@ -186,7 +186,7 @@ int rmdirs(const char *dirname)
 				    if(errno == EACCES) {
 					closedir(dd);
 					free(fname);
-					return 0;
+					return 1;
 				    }
 				    rmdirs(fname);
 				}
