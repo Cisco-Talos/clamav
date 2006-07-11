@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.248 2006/07/11 15:25:26 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.249 2006/07/11 17:46:30 njh Exp $";
 
 #define	CM_VERSION	"devel-210606"
 
@@ -3390,11 +3390,7 @@ clamfi_eom(SMFICTX *ctx)
 
 		if(privdata->ip) {
 			pthread_mutex_lock(&blacklist_mutex);
-			/*
-			 * FIXME: should be able to update here, otherwise we
-			 * can't reblacklist an entry that has timed out
-			 */
-			(void)tableInsert(blacklist, privdata->ip,
+			(void)tableUpdate(blacklist, privdata->ip,
 				(int)time((time_t *)0));
 			pthread_mutex_unlock(&blacklist_mutex);
 			free(privdata->ip);
@@ -5565,7 +5561,7 @@ mx(void)
 	u_char buf[BUFSIZ];
 	union {
 		HEADER h;
-		u_char	u[PACKETSZ];
+		u_char u[PACKETSZ];
 	} q;
 	const HEADER *hp;
 	int len, i;
@@ -5637,7 +5633,7 @@ resolve(const char *host)
 	u_char buf[BUFSIZ];
 	union {
 		HEADER h;
-		u_char	u[PACKETSZ];
+		u_char u[PACKETSZ];
 	} q;
 	const HEADER *hp;
 	int len, i;

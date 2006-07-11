@@ -15,6 +15,10 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
+ *
+ * TODO: Allow individual items to be updated or removed
+ *
+ * It is up to the caller to create a mutex for the table if needed
  */
 
 #if HAVE_CONFIG_H
@@ -92,7 +96,8 @@ tableInsert(table_t *table, const char *key, int value)
 }
 
 /*
- * Returns the value - -1 for not found
+ * Returns the value - -1 for not found. This means the value of a valid key
+ *	can't be -1 :-(
  */
 int
 tableFind(const table_t *table, const char *key)
@@ -127,4 +132,32 @@ tableFind(const table_t *table, const char *key)
 	}
 
 	return -1;	/* not found */
+}
+
+/*
+ * Change a value in the table. If the key isn't in the table insert it
+ * Returns -1 for error, otherwise the new value
+ */
+int
+tableUpdate(table_t *table, const char *key, int new_value)
+{
+	tableEntry *tableItem;
+
+	assert(table != NULL);
+
+	if(key == NULL)
+		return -1;	/* not treated as a fatal error */
+
+	if(table->tableHead == NULL)
+		/* not populated yet */
+		return tableInsert(table, key, new_value);
+
+	for(tableItem = table->tableHead; tableItem; tableItem = tableItem->next)
+		if(strcasecmp(tableItem->key, key) == 0) {
+			tableItem->value = new_value;
+			return new_value;
+		}
+
+	/* not found */
+	return tableInsert(table, key, new_value);
 }

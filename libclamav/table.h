@@ -34,4 +34,5 @@ typedef struct table {
 struct	table	*tableCreate(void);
 void	tableDestroy(table_t *table);
 int	tableInsert(table_t *table, const char *key, int value);
+int	tableUpdate(table_t *table, const char *key, int new_value);
 int	tableFind(const table_t *table, const char *key);
