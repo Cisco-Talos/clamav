@@ -194,7 +194,7 @@ Then:
 
 You should have received a script to install into /etc/init.d as
 /etc/init.d/clamav-milter. Then:
-	
+
 	chmod 755 /etc/init.d/clamav-milter
 	cd /etc
 	ln init.d/clamav-milter rc2.d/S90clamav-milter
@@ -320,7 +320,7 @@ Running in the foreground, valgrind, LogSyslog, LogVerbose, LogFile etc.
 
 Patches are welcome, but they must be against the latest CVS version and adhere
 to the coding style of clamav-milter. Coding style is religious, everyone
-believes theirs is great and all others are fine.
+believes theirs is great and all others are rubbish.
 
 This is my coding style, live with it. You don't want me in a bad mood because
 I can't read your code when I'm deciding if your code should be incorporated.
