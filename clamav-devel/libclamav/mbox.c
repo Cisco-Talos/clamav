@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.322 2006/07/12 19:22:50 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.323 2006/07/12 21:21:25 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -217,6 +217,7 @@ static	bool	isBounceStart(const char *line);
 static	bool	exportBinhexMessage(const char *dir, message *m);
 static	int	exportBounceMessage(text *start, const mbox_ctx *ctx);
 static	message	*do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx *mctx, message *messageIn, text **tptr);
+static	int	count_quotes(const char *buf);
 
 static	void	checkURLs(message *m, const char *dir);
 #ifdef	WITH_CURL
@@ -1426,14 +1427,14 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 
 	strcpy(buffer, firstLine);
 	do {
-		char *line;
+		const char *line;
 
 		(void)cli_chomp(buffer);
 
-		line = buffer;
-
-		if(line[0] == '\0')
+		if(buffer[0] == '\0')
 			line = NULL;
+		else
+			line = buffer;
 
 		/*
 		 * Don't blank lines which are only spaces from headers,
@@ -1496,7 +1497,6 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 				bodyIsEmpty = TRUE;
 			} else {
 				char *ptr;
-				const char *qptr;
 				int lookahead;
 
 				if(fullline == NULL) {
@@ -1560,15 +1560,8 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 						continue;
 				}
 
-				if(line) {
-					int quotes = 0;
-					for(qptr = fullline; *qptr; qptr++)
-						if(*qptr == '\"')
-							quotes++;
-
-					if(quotes & 1)
-						continue;
-				}
+				if(line && (count_quotes(fullline) & 1))
+					continue;
 
 				ptr = rfc822comments(fullline, NULL);
 				if(ptr) {
@@ -1705,8 +1698,6 @@ parseEmailHeaders(message *m, const table_t *rfc821)
 				bodyIsEmpty = TRUE;
 			} else {
 				char *ptr;
-				const char *qptr;
-				int quotes;
 
 				if(fullline == NULL) {
 					char cmd[RFC2821LENGTH + 1];
@@ -1767,12 +1758,7 @@ parseEmailHeaders(message *m, const table_t *rfc821)
 					if(isblank(lineGetData(t->t_next->t_line)[0]))
 						continue;
 
-				quotes = 0;
-				for(qptr = fullline; *qptr; qptr++)
-					if(*qptr == '\"')
-						quotes++;
-
-				if(quotes & 1)
+				if(count_quotes(fullline) & 1)
 					continue;
 
 				ptr = rfc822comments(fullline, NULL);
@@ -2180,9 +2166,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 						inMimeHead = FALSE;
 						messageAddArgument(aMessage, line);
 					} else if(inhead) {	/* handling normal headers */
-						int quotes;
+						/*int quotes;*/
 						char *fullline, *ptr;
-						const char *qptr;
 						const text *next;
 
 						if(line == NULL) {
@@ -2269,10 +2254,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 						if(fullline == NULL)
 							fullline = strdup(line);
 
-						quotes = 0;
-						for(qptr = fullline; *qptr; qptr++)
-							if(*qptr == '\"')
-								quotes++;
+						/*quotes = count_quotes(fullline);*/
 
 						/*
 						 * Fold next lines to the end of this
@@ -2313,9 +2295,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 							fullline = ptr;
 							strcat(fullline, data);
 
-							/*for(qptr = data; *qptr; qptr++)
-								if(*qptr == '\"')
-									quotes++;*/
+							/*quotes = count_quotes(data);*/
 
 							t_line = next;
 							next = next->t_next;
@@ -4520,4 +4500,19 @@ do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx 
 	messages[i] = NULL;
 
 	return mainMessage;
+}
+
+/*
+ * Returns the number of quote characters in the given string
+ */
+static int
+count_quotes(const char *buf)
+{
+	int quotes = 0;
+
+	while(*buf)
+		if(*buf++ == '\"')
+			quotes++;
+
+	return quotes;
 }
