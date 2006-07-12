@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.249 2006/07/11 17:46:30 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.250 2006/07/12 07:25:43 njh Exp $";
 
 #define	CM_VERSION	"devel-210606"
 
@@ -48,9 +48,15 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.249 2006/07/11 17:46:30 nj
 #include <sysexits.h>
 #include <sys/stat.h>
 #include <syslog.h>
+#if	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#if	HAVE_STDINT_H
 #include <stdlib.h>
+#endif
+#if	HAVE_STRING_H
 #include <string.h>
+#endif
 #include <sys/wait.h>
 #include <assert.h>
 #include <sys/socket.h>
@@ -60,15 +66,21 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.249 2006/07/11 17:46:30 nj
 #include <sys/un.h>
 #include <stdarg.h>
 #include <errno.h>
+#if	HAVE_LIBMILTER_MFAPI_H
 #include <libmilter/mfapi.h>
+#endif
 #include <pthread.h>
 #include <sys/time.h>
 #include <signal.h>
+#if	HAVE_REGEX_H
 #include <regex.h>
+#endif
 #include <fcntl.h>
 #include <pwd.h>
 #include <grp.h>
+#if	HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
 
 #if HAVE_MMAP
 #if HAVE_SYS_MMAN_H
@@ -96,7 +108,9 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.249 2006/07/11 17:46:30 nj
 #endif
 
 #ifdef	WITH_TCPWRAP
+#if	HAVE_TCPD_H
 #include <tcpd.h>
+#endif
 
 int	allow_severity = LOG_DEBUG;
 int	deny_severity = LOG_NOTICE;
