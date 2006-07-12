@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.321 2006/07/10 18:24:50 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.322 2006/07/12 19:22:50 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -204,7 +204,6 @@ static	int	endOfMessage(const char *line, const char *boundary);
 static	int	initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
 static	int	getTextPart(message *const messages[], size_t size);
 static	size_t	strip(char *buf, int len);
-static	bool	continuationMarker(const char *line);
 static	int	parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg);
 static	void	saveTextPart(message *m, const char *dir, int destroy_text);
 static	char	*rfc2047(const char *in);
@@ -1410,7 +1409,6 @@ static message *
 parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const char *dir)
 {
 	bool inHeader = TRUE;
-	bool contMarker = FALSE;
 	bool bodyIsEmpty = TRUE;
 	bool lastWasBlank = FALSE, lastBodyLineWasBlank = FALSE;
 	message *ret;
@@ -1449,8 +1447,8 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 			}
 		}
 		if(inHeader) {
-			cli_dbgmsg("parseEmailFile: check '%s' contMarker %d fullline %p\n",
-				buffer ? buffer : "", (int)contMarker, fullline);
+			cli_dbgmsg("parseEmailFile: check '%s' fullline %p\n",
+				buffer ? buffer : "", fullline);
 			if(line && isspace(line[0])) {
 				char copy[sizeof(buffer)];
 
@@ -1485,20 +1483,17 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 				}
 			}
 			if((line == NULL) && (fullline == NULL)) {	/* empty line */
-				if(!contMarker) {
-					/*
-					 * A blank line signifies the end of
-					 * the header and the start of the text
-					 */
-					if(!anyHeadersFound)
-						/* Ignore the junk at the top */
-						continue;
+				/*
+				 * A blank line signifies the end of
+				 * the header and the start of the text
+				 */
+				if(!anyHeadersFound)
+					/* Ignore the junk at the top */
+					continue;
 
-					cli_dbgmsg("End of header information\n");
-					inHeader = FALSE;
-					bodyIsEmpty = TRUE;
-				} else
-					contMarker = FALSE;
+				cli_dbgmsg("End of header information\n");
+				inHeader = FALSE;
+				bodyIsEmpty = TRUE;
 			} else {
 				char *ptr;
 				const char *qptr;
@@ -1510,10 +1505,8 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 					/*
 					 * Continuation of line we're ignoring?
 					 */
-					if(isblank(line[0])) {
-						contMarker = continuationMarker(line);
+					if(isblank(line[0]))
 						continue;
-					}
 
 					/*
 					 * Is this a header we're interested in?
@@ -1537,16 +1530,6 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 						default:
 							if(!anyHeadersFound)
 								anyHeadersFound = usefulHeader(commandNumber, cmd);
-							/*
-							 * Enable this line to
-							 * find
-							 * HTML.Phishing.Bank-566
-							 * Disable to find
-							 * HTML.Phishing.Bank-28
-							 * FIXME: This shouldn't
-							 * be either/or
-							 */
-							/*contMarker = continuationMarker(line);*/
 							continue;
 					}
 					fullline = strdup(line);
@@ -1559,14 +1542,6 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 					fullline = ptr;
 					strcat(fullline, line);
 				}
-
-				if(line) {
-					contMarker = continuationMarker(line);
-
-					if(contMarker)
-						continue;
-				} else
-					contMarker = FALSE;
 
 				assert(fullline != NULL);
 
@@ -2202,12 +2177,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 							inhead = inMimeHead = 0;
 							continue;
 						}
-						/*
-						 * This may cause a trailing ';'
-						 * to be added if this test
-						 * fails - TODO: verify this
-						 */
-						inMimeHead = continuationMarker(line);
+						inMimeHead = FALSE;
 						messageAddArgument(aMessage, line);
 					} else if(inhead) {	/* handling normal headers */
 						int quotes;
@@ -3159,47 +3129,6 @@ strstrip(char *s)
 		return(0);
 
 	return(strip(s, strlen(s) + 1));
-}
-
-/*
- * Some broken email headers use ';' at the end of a line to continue
- * to the next line and don't add a leading white space on the next line
- */
-static bool
-continuationMarker(const char *line)
-{
-#if	0
-	const char *ptr;
-
-	if(line == NULL)
-		return FALSE;
-
-#ifdef	CL_DEBUG
-	cli_dbgmsg("continuationMarker(%s)\n", line);
-#endif
-
-	if(strlen(line) == 0)
-		return FALSE;
-
-	ptr = strchr(line, '\0');
-
-	assert(ptr != NULL);
-
-	while(ptr > line)
-		switch(*--ptr) {
-			case '\n':
-			case '\r':
-			case ' ':
-			case '\t':
-				continue;
-			case ';':
-				return TRUE;
-			default:
-				return FALSE;
-		}
-#endif
-
-	return FALSE;
 }
 
 static int
