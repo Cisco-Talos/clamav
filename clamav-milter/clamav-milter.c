@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.251 2006/07/12 15:36:48 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.252 2006/07/12 18:57:21 njh Exp $";
 
 #define	CM_VERSION	"devel-120706"
 
@@ -5638,7 +5638,7 @@ mx(void)
 {
 	const u_char *p, *end;
 	char name[MAXHOSTNAMELEN + 1];
-	u_char buf[BUFSIZ];
+	char buf[BUFSIZ];
 	union {
 		HEADER h;
 		u_char u[PACKETSZ];
@@ -5662,8 +5662,7 @@ mx(void)
 
 	len = res_query(name, C_IN, T_MX, (u_char *)&q, sizeof(q));
 	if(len < 0)
-		/* Host has no MX records */
-		return;
+		return;	/* Host has no MX records */
 
 	if((unsigned int)len > sizeof(q))
 		return;
@@ -5706,11 +5705,15 @@ mx(void)
 	}
 }
 
+/*
+ * If the MX record points to a name, we need to resolve that name. This routine
+ * does that
+ */
 static void
 resolve(const char *host)
 {
 	const u_char *p, *end;
-	u_char buf[BUFSIZ];
+	char buf[BUFSIZ];
 	union {
 		HEADER h;
 		u_char u[PACKETSZ];
@@ -5725,8 +5728,7 @@ resolve(const char *host)
 
 	len = res_query(host, C_IN, T_A, (u_char *)&q, sizeof(q));
 	if(len < 0)
-		/* Host has no A records */
-		return;
+		return;	/* Host has no A records */
 
 	if((unsigned int)len > sizeof(q))
 		return;
