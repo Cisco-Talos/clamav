@@ -23,9 +23,26 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.250 2006/07/12 07:25:43 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.251 2006/07/12 15:36:48 njh Exp $";
 
-#define	CM_VERSION	"devel-210606"
+#define	CM_VERSION	"devel-120706"
+
+/*#define	DONT_SCAN_BLACK_HOLES	/*
+				 * Don't scan emails to addresses set to
+				 * /dev/null in /etc/aliases
+				 *
+				 * Since sendmail calls its milters before it
+				 * looks in /etc/aliases we can spend time
+				 * looking for malware that's going to be
+				 * thrown away even if the message is clean.
+				 * Enable this #define to not scan these
+				 * messages.
+				 * Note that this needs -ldb to be added to
+				 * the link line, which isn't usually done.
+				 * You will also need the db4 SDK
+				 *
+				 * TODO: Handle virtusertable
+				 */
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -54,6 +71,9 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.250 2006/07/12 07:25:43 nj
 #if	HAVE_STDINT_H
 #include <stdlib.h>
 #endif
+#if	HAVE_MEMORY_H
+#include <memory.h>
+#endif
 #if	HAVE_STRING_H
 #include <string.h>
 #endif
@@ -80,6 +100,15 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.250 2006/07/12 07:25:43 nj
 #include <grp.h>
 #if	HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
+
+#ifdef	DONT_SCAN_BLACK_HOLES
+#include <db.h>
+
+#define	ALIASES	"/etc/aliases.db"	/* some use /etc/mail/aliases.db */
+
+typedef struct  __db    DB;
+static	DB *db;
 #endif
 
 #if HAVE_MMAP
@@ -988,6 +1017,19 @@ main(int argc, char **argv)
 #ifndef	CL_DEBUG
 	/* Save the fd for later, open while we can */
 	consolefd = open(console, O_WRONLY);
+#endif
+
+#ifdef	DONT_SCAN_BLACK_HOLES
+	if(db_create(&db, NULL, 0) == 0) {
+		int ret = db->open(db, NULL, ALIASES, NULL, DB_HASH,
+			DB_RDONLY, 0644);
+
+		if(ret != 0) {
+			perror(ALIASES);
+			return EX_OSFILE;
+		}
+	} else
+		db = NULL;
 #endif
 
 	if(getuid() == 0) {
@@ -2651,6 +2693,29 @@ clamfi_eoh(SMFICTX *ctx)
 		return cl_error;
 	}
 
+#ifdef	DONT_SCAN_BLACK_HOLES
+	for(to = privdata->to; *to; to++) {
+		DBT key, data;
+
+		memset(&key, '\0', sizeof(DBT));
+		memset(&data, '\0', sizeof(DBT));
+
+		key.data = (char *)*to;
+		key.size = strlen(key.data) + 1;
+
+		if(db->get(db, NULL, &key, &data, 0) == 0)
+			/* FIXME: The result may be aliased as well */
+			if(strcmp(data.data, "/dev/null") == 0)
+				continue;
+		break;
+	}
+	if(*to == NULL) {
+		/* All recipients map to /dev/null */
+		syslog(LOG_NOTICE, "discarded, since all recipients are /dev/null");
+		return SMFIS_DISCARD;
+	}
+#endif
+
 	/*
 	 * See if the e-mail is only going to members of the list
 	 * of users we don't scan for. If it is, don't scan, otherwise
@@ -2671,6 +2736,7 @@ clamfi_eoh(SMFICTX *ctx)
 			 * no need to check any further
 			 */
 			return SMFIS_CONTINUE;
+
 	/*
 	 * Didn't find a recipient who is not on the white list, so all
 	 * must be on the white list, so just accept the e-mail

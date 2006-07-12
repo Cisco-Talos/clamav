@@ -1,3 +1,7 @@
+Wed Jul 12 16:37:44 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	Added DONT_SCAN_BLACK_HOLES (off by default)
+
 Wed Jul 12 08:26:11 BST 2006 (njh)
 ----------------------------------
   * clamav-milter:	Better use of clamav-config.h
