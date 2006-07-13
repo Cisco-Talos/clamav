@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.252 2006/07/12 18:57:21 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.253 2006/07/13 07:59:22 njh Exp $";
 
 #define	CM_VERSION	"devel-120706"
 
@@ -41,7 +41,9 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.252 2006/07/12 18:57:21 nj
 				 * the link line, which isn't usually done.
 				 * You will also need the db4 SDK
 				 *
-				 * TODO: Handle virtusertable
+				 * TODO: Handle virtusertable, using
+				 * sendmail -bv should help that and remove the
+				 * db4 dependancy.
 				 */
 
 #if HAVE_CONFIG_H
