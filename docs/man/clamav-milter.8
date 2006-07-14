@@ -115,6 +115,7 @@ To avoid this, blacklisting does not last for ever. The recommended value is
 .TP
 Machines on the LAN, the local host, and machines that are our MX peers are
 never blacklisted.
+.TP
 \fB-l, \-\-local\fR
 Also scan messages sent from LAN. You probably want this especially if
 your LAN is populated by machines running Windows or DOS.
@@ -256,16 +257,30 @@ When neither \-\-force, \-\-local nor \-\-outgoing is given,
 this option intercepts incoming mails that incorrectly claim to be from the
 local domain.
 .TP
-\fB\-\-whitelist-file=FILE, \-W file
+\fB\-\-whitelist-file=FILE, \-W file\fR
 This option specifies a file which contains a list of e-mail addresses.
 E-mails sent to these addresses will NOT be checked.
 While this is not an Anti-Virus function, it is quite useful for some systems.
 The address given to the \-\-quarantine directive is always white-listed.
 .TP
-\fB\-\-sendmail-cf=FILE
+\fB\-\-sendmail-cf=FILE\fR
 When starting, clamav\-milter runs some sanity checks against the sendmail.cf
 file, usually in /etc/sendmail.cf or /etc/mail/sendmail.cf. This directive
 tells clamav\-milter where to find the sendmail.cf file.
+.TP
+\fB\-\-black-hole-mode\fR
+Since \fIsendmail\fR calls its milters before it looks in its alias and virtuser
+tables, clamav-milter can spend time looking for malware that's going to be
+thrown away even if the message is clean.
+.TP.
+Enable this to not scan these messages (in practice clamav\-milter will discard
+these messages so the message doesn't go further down the milter call chain).
+.TP
+Sadly, because these days sendmail \-bv only works as root,
+so this option is not compatible with the User directive in clamd.conf,
+which some may view as a security risk.
+Only enable this if your site has many addresses aliased to /dev/null.
+.TP
 .SH "BUGS"
 There is no support for IPv6.
 .SH "EXAMPLES"
