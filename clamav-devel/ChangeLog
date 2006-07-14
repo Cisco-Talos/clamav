@@ -1,3 +1,7 @@
+Sat Jul 15 00:15:17 CEST 2006 (tk)
+----------------------------------
+  * freshclam/manager.c: initial support for incremental updates
+
 Fri Jul 14 13:14:13 BST 2006 (njh)
 ----------------------------------
   * libclamav/table.c:	Added tableIterate
