@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.255 2006/07/14 14:42:45 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.256 2006/07/14 21:01:51 njh Exp $";
 
 #define	CM_VERSION	"devel-130706"
 
@@ -178,6 +178,9 @@ typedef	unsigned int	in_addr_t;
  * TODO: Load balancing, allow local machine to talk via UNIX domain socket.
  * TODO: allow each line in the whitelist file to specify a quarantine email
  *	address
+ * FIXME: The recent code (backlist and black-hole-mode) has introduced a
+ *	memory leak. Valgrind claims there isn't a leak, but ps claims there
+ *	is. Be warned.
  */
 
 struct header_node_t {
@@ -198,8 +201,6 @@ typedef struct header_list_struct *header_list_t;
  * Andy Fiddaman <clam@fiddaman.net> added 69.254.0.0/16
  *	(Microsoft default DHCP)
  * TODO: compare this with RFC1918
- *
- * TODO: read this table in from a file (clamd.conf?)
  */
 #define PACKADDR(a, b, c, d) (((uint32_t)(a) << 24) | ((b) << 16) | ((c) << 8) | (d))
 #define MAKEMASK(bits)	((uint32_t)(0xffffffff << (bits)))
@@ -678,8 +679,8 @@ main(int argc, char **argv)
 				"help", 0, NULL, 'h'
 			},
 			{
- 				"ignore", 1, NULL, 'I'
- 			},
+				"ignore", 1, NULL, 'I'
+			},
 			{
 				"pidfile", 1, NULL, 'i'
 			},
@@ -821,24 +822,24 @@ main(int argc, char **argv)
 				 * Based on patch by jpd@louisiana.edu
 				 */
 				if(Iflag) {
- 					fprintf(stderr,
+					fprintf(stderr,
 						_("%s: %s, -I may only be given once"),
 							argv[0], optarg);
- 					return EX_USAGE;
+					return EX_USAGE;
 				}
 				if(!inet_aton(optarg, &ignoreIP)) {
- 					fprintf(stderr,
+					fprintf(stderr,
 						_("%s: Cannot convert -I%s to IPaddr"),
 							argv[0], optarg);
- 					return EX_USAGE;
- 				}
-                                for(net = (struct cidr_net *)localNets; net->base; net++)
+					return EX_USAGE;
+				}
+				for(net = (struct cidr_net *)localNets; net->base; net++)
 					;
 				/* TODO: allow netmasks */
 				net->base = ntohl(ignoreIP.s_addr);
 				net->mask = ntohl(0xffffffffU);
- 				Iflag++;
- 				break;
+				Iflag++;
+				break;
 			case 'l':	/* scan mail from the lan */
 				lflag++;
 				break;
@@ -3103,7 +3104,7 @@ clamfi_eom(SMFICTX *ctx)
 
 	/*
 	 * TODO: it would be useful to add a header if mbox.c/FOLLOWURLS was
-	 *      exceeded
+	 * exceeded
 	 */
 	if(strstr(mess, "ERROR") != NULL) {
 		if(strstr(mess, "Size limit reached") != NULL) {
