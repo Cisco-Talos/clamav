@@ -17,6 +17,9 @@
  *  MA 02110-1301, USA.
  *
  * $Log: text.c,v $
+ * Revision 1.23  2006/07/14 12:13:08  njh
+ * Typo
+ *
  * Revision 1.22  2006/07/01 21:03:36  njh
  * Better use of destroy mode
  *
@@ -76,7 +79,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: text.c,v 1.22 2006/07/01 21:03:36 njh Exp $";
+static	char	const	rcsid[] = "$Id: text.c,v 1.23 2006/07/14 12:13:08 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -267,7 +270,7 @@ textToBlob(text *t, blob *b, int destroy)
 	}
 
 	if(blobGrow(b, s) != CL_SUCCESS) {
-		cli_warnmsg("Couldn't grow the blob we may be low on memory\n");
+		cli_warnmsg("Couldn't grow the blob: we may be low on memory\n");
 #if	0
 		if(!destroy) {
 			if(bin == NULL)
