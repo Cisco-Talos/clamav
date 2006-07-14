@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.254 2006/07/14 12:15:26 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.255 2006/07/14 14:42:45 njh Exp $";
 
 #define	CM_VERSION	"devel-130706"
 
@@ -2365,6 +2365,9 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		return SMFIS_TEMPFAIL;
 	}
 
+	if(blacklist_time == 0)
+		return SMFIS_CONTINUE;	/* allocate privdata per message */
+
 	privdata = (struct privdata *)cli_calloc(1, sizeof(struct privdata));
 	if(privdata == NULL)
 		return cl_error;
@@ -3525,11 +3528,9 @@ clamfi_abort(SMFICTX *ctx)
 static sfsistat
 clamfi_close(SMFICTX *ctx)
 {
-	struct privdata *privdata = (struct privdata *)smfi_getpriv(ctx);
-
 	cli_dbgmsg("clamfi_close\n");
-	if(privdata != NULL)
-		clamfi_cleanup(ctx);
+
+	clamfi_cleanup(ctx);
 
 	if(logVerbose)
 		syslog(LOG_DEBUG, "clamfi_close");
@@ -4858,8 +4859,8 @@ watchdog(void *a)
 			default:
 				perror("pthread_cond_timedwait");
 		}
-		cli_dbgmsg("watchdog wakes\n");
 		pthread_mutex_unlock(&watchdog_mutex);
+		cli_dbgmsg("watchdog wakes\n");
 
 		if(check_and_reload_database() != 0) {
 			smfi_stop();
@@ -4971,6 +4972,9 @@ watchdog(void *a)
 {
 	static pthread_mutex_t watchdog_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+	if((!blacklist_time) && external)
+		return NULL;	/* no need for this thread */
+
 	while(!quitting) {
 		struct timespec ts;
 		struct timeval tp;
@@ -4993,8 +4997,8 @@ watchdog(void *a)
 			default:
 				perror("pthread_cond_timedwait");
 		}
-		cli_dbgmsg("watchdog wakes\n");
 		pthread_mutex_unlock(&watchdog_mutex);
+		cli_dbgmsg("watchdog wakes\n");
 
 		/*
 		 * TODO: sanity check that if n_children == 0, that
