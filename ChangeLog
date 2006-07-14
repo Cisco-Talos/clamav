@@ -1,3 +1,7 @@
+Fri Jul 14 08:45:04 BST 2006 (njh)
+----------------------------------
+  * libclamav/table:	Added helper routines to delete items
+
 Wed Jul 12 16:37:44 BST 2006 (njh)
 ----------------------------------
   * clamav-milter:	Added DONT_SCAN_BLACK_HOLES (off by default)

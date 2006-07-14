@@ -57,7 +57,8 @@ tableDestroy(table_t *table)
 
 		assert(tableItem->key != NULL);
 
-		free(tableItem->key);
+		if(tableItem->key)
+			free(tableItem->key);
 		free(tableItem);
 
 		tableItem = tableNext;
@@ -78,6 +79,23 @@ tableInsert(table_t *table, const char *key, int value)
 		return (v == value) ? value : -1;	/* allow real dups */
 
 	assert(value != -1);	/* that would confuse us */
+
+	/*
+	 * Re-use deleted items
+	 */
+	if(table->flags&TABLE_HAS_DELETED_ENTRIES) {
+		tableEntry *tableItem;
+
+		for(tableItem = table->tableHead; tableItem; tableItem = tableItem->next)
+			if(tableItem->key == NULL) {
+				/* This item has been deleted */
+				tableItem->key = strdup(key);
+				tableItem->value = value;
+				return value;
+			}
+
+		table->flags &= ~TABLE_HAS_DELETED_ENTRIES;
+	}
 
 	if(table->tableHead == NULL)
 		table->tableLast = table->tableHead = (tableEntry *)cli_malloc(sizeof(tableEntry));
@@ -160,4 +178,48 @@ tableUpdate(table_t *table, const char *key, int new_value)
 
 	/* not found */
 	return tableInsert(table, key, new_value);
+}
+
+/*
+ * Remove an item from the table
+ */
+void
+tableRemove(table_t *table, const char *key)
+{
+	tableEntry *tableItem;
+
+	assert(table != NULL);
+
+	if(key == NULL)
+		return;	/* not treated as a fatal error */
+
+	if(table->tableHead == NULL)
+		/* not populated yet */
+		return;
+
+	for(tableItem = table->tableHead; tableItem; tableItem = tableItem->next)
+		if(strcasecmp(tableItem->key, key) == 0) {
+			free(tableItem->key);
+			tableItem->key = NULL;
+			table->flags |= TABLE_HAS_DELETED_ENTRIES;
+			/* don't break, duplicate keys are allowed */
+		}
+}
+
+void
+tableIterate(table_t *table, void(*callback)(char *key, int value))
+{
+	tableEntry *tableItem;
+
+	if(table == NULL)
+		return;
+
+	if(table->tableHead == NULL)
+		/* not populated yet */
+		return;
+
+	for(tableItem = table->tableHead; tableItem; tableItem = tableItem->next)
+		if(tableItem->key)	/* check leaf is not deleted */
+			(*callback)(tableItem->key, tableItem->value);
+
 }
