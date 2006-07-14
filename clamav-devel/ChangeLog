@@ -1,3 +1,8 @@
+Fri Jul 14 13:14:13 BST 2006 (njh)
+----------------------------------
+  * libclamav/table.c:	Added tableIterate
+  * clamav-milter:	Added black hole mode and IP blacklist support
+
 Fri Jul 14 08:45:04 BST 2006 (njh)
 ----------------------------------
   * libclamav/table:	Added helper routines to delete items

@@ -23,28 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.253 2006/07/13 07:59:22 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.254 2006/07/14 12:15:26 njh Exp $";
 
-#define	CM_VERSION	"devel-120706"
-
-/*#define	DONT_SCAN_BLACK_HOLES	/*
-				 * Don't scan emails to addresses set to
-				 * /dev/null in /etc/aliases
-				 *
-				 * Since sendmail calls its milters before it
-				 * looks in /etc/aliases we can spend time
-				 * looking for malware that's going to be
-				 * thrown away even if the message is clean.
-				 * Enable this #define to not scan these
-				 * messages.
-				 * Note that this needs -ldb to be added to
-				 * the link line, which isn't usually done.
-				 * You will also need the db4 SDK
-				 *
-				 * TODO: Handle virtusertable, using
-				 * sendmail -bv should help that and remove the
-				 * db4 dependancy.
-				 */
+#define	CM_VERSION	"devel-130706"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -102,15 +83,6 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.253 2006/07/13 07:59:22 nj
 #include <grp.h>
 #if	HAVE_SYS_PARAM_H
 #include <sys/param.h>
-#endif
-
-#ifdef	DONT_SCAN_BLACK_HOLES
-#include <db.h>
-
-#define	ALIASES	"/etc/aliases.db"	/* some use /etc/mail/aliases.db */
-
-typedef struct  __db    DB;
-static	DB *db;
 #endif
 
 #if HAVE_MMAP
@@ -317,6 +289,8 @@ static	void	setsubject(SMFICTX *ctx, const char *virusname);
 static	int	isLocalAddr(in_addr_t addr);
 static	void	clamdIsDown(void);
 static	void	*watchdog(void *a);
+static	int	check_and_reload_database(void);
+static	void	timeoutBlacklist(char *ip_address, int time_of_blacklist);
 static	int	logg_facility(const char *name);
 static	void	quit(void);
 static	void	broadcast(const char *mess);
@@ -492,6 +466,20 @@ static	const	char	*whitelistFile;	/*
 					 */
 static	const	char	*sendmailCF;	/* location of sendmail.cf to verify */
 static	const	char	*pidfile;
+static	int	black_hole_mode; /*
+				 * Since sendmail calls its milters before it
+				 * looks in /etc/aliases we can spend time
+				 * looking for malware that's going to be
+				 * thrown away even if the message is clean.
+				 * Enable this to not scan these messages.
+				 * Sadly, because these days sendmail -bv
+				 * only works as root, you can't use this with
+				 * the User directive, which some won't like
+				 *
+				 * TODO: Investigate
+				 *	smfi_getsymval(ctx, "{rcpt_addr}")
+				 * which also may contain the real target name
+				 */
 
 static	table_t	*blacklist;	/* never freed */
 static	int	blacklist_time;	/* How long to blacklist an IP */
@@ -520,6 +508,7 @@ static	int	isBlacklisted(const char *ip_address);
 static	void	logger(const char *mess);
 static	void	mx(void);
 static	void	resolve(const char *host);
+static	sfsistat	black_hole(const struct privdata *privdata);
 
 short	logg_time, logg_lock, logok;
 int	logg_size;
@@ -532,6 +521,7 @@ help(void)
 
 	puts(_("\t--advisory\t\t-A\tFlag viruses rather than deleting them."));
 	puts(_("\t--blacklist=time\t-k\tTime (in seconds) to blacklist an IP."));
+	puts(_("\t--black-hole-mode\t\tDon't scan messages aliased to /dev/null."));
 	puts(_("\t--bounce\t\t-b\tSend a failure message to the sender."));
 	puts(_("\t--broadcast\t\t-B [IFACE]\tBroadcast to a network manager when a virus is found."));
 	puts(_("\t--config-file=FILE\t-c FILE\tRead configuration from FILE."));
@@ -639,9 +629,9 @@ main(int argc, char **argv)
 		struct cidr_net *net;
 		struct in_addr ignoreIP;
 #ifdef	CL_DEBUG
-		const char *args = "a:AbB:c:CdDefF:I:k:lLm:M:nNop:PqQ:hHs:St:T:U:VwW:x:0:";
+		const char *args = "a:AbB:c:CdDefF:I:k:lLm:M:nNop:PqQ:hHs:St:T:U:VwW:x:0:1:2";
 #else
-		const char *args = "a:AbB:c:CdDefF:I:k:lLm:M:nNop:PqQ:hHs:St:T:U:VwW:0:";
+		const char *args = "a:AbB:c:CdDefF:I:k:lLm:M:nNop:PqQ:hHs:St:T:U:VwW:0:1:2";
 #endif
 
 		static struct option long_options[] = {
@@ -755,6 +745,9 @@ main(int argc, char **argv)
 			},
 			{
 				"version", 0, NULL, 'V'
+			},
+			{
+				"black-hole-mode", 0, NULL, '2'
 			},
 #ifdef	CL_DEBUG
 			{
@@ -904,6 +897,9 @@ main(int argc, char **argv)
 			case '1':	/* headers for the template file */
 				templateHeaders = optarg;
 				break;
+			case '2':
+				black_hole_mode++;
+				break;
 			case 'T':	/* time to wait for child to die */
 				child_timeout = atoi(optarg);
 				break;
@@ -1021,19 +1017,6 @@ main(int argc, char **argv)
 	consolefd = open(console, O_WRONLY);
 #endif
 
-#ifdef	DONT_SCAN_BLACK_HOLES
-	if(db_create(&db, NULL, 0) == 0) {
-		int ret = db->open(db, NULL, ALIASES, NULL, DB_HASH,
-			DB_RDONLY, 0644);
-
-		if(ret != 0) {
-			perror(ALIASES);
-			return EX_OSFILE;
-		}
-	} else
-		db = NULL;
-#endif
-
 	if(getuid() == 0) {
 		if(iface) {
 #ifdef	SO_BINDTODEVICE
@@ -1079,14 +1062,22 @@ main(int argc, char **argv)
 #endif
 			}
 
+			if(black_hole_mode && (user->pw_uid != 0)) {
+				fprintf(stderr, _("%s: You cannot use black hole mode unless you are root\n"),
+					argv[0]);
+				return EX_CONFIG;
+			}
+
 			setgid(user->pw_gid);
+
 			if(setuid(user->pw_uid) < 0)
 				perror(cpt->strarg);
 			else
 				cli_dbgmsg(_("Running as user %s (UID %d, GID %d)\n"),
 					cpt->strarg, user->pw_uid, user->pw_gid);
-		} else
+		} else if(!black_hole_mode)
 			fprintf(stderr, _("%s: running as root is not recommended (check \"User\" in %s)\n"), argv[0], cfgfile);
+
 	} else if(iface) {
 		fprintf(stderr, _("%s: Only root can set an interface for --broadcast\n"), argv[0]);
 		return EX_USAGE;
@@ -1638,11 +1629,7 @@ main(int argc, char **argv)
 		}
 	}
 
-#ifdef	SESSION
-	/* FIXME: add localSocket support to watchdog */
-	if((localSocket == NULL) || external)
-#endif
-		pthread_create(&tid, NULL, watchdog, NULL);
+	pthread_create(&tid, NULL, watchdog, NULL);
 
 	if(((cpt = cfgopt(copt, "PidFile")) != NULL) && cpt->enabled)
 		pidFile = cpt->strarg;
@@ -2362,10 +2349,18 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		 */
 		smfi_setreply(ctx, "550", "5.7.1", _("Your IP is blacklisted"));
 		broadcast(_("Blacklisted IP detected"));
+
+		/*
+		 * Keep them blacklisted
+		 */
+		pthread_mutex_lock(&blacklist_mutex);
+		(void)tableUpdate(blacklist, remoteIP, (int)time((time_t *)0));
+		pthread_mutex_unlock(&blacklist_mutex);
+
 		return SMFIS_REJECT;
 	}
 	if(smfi_getpriv(ctx) != NULL) {
-		/* More than one MAIL FROM command, "can't happen" */
+		/* More than one connection command, "can't happen" */
 		cli_warnmsg("clamfi_connect: called more than once\n");
 		return SMFIS_TEMPFAIL;
 	}
@@ -2380,7 +2375,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		return SMFIS_CONTINUE;
 	}
 
-	clamfi_free(privdata);
+	free(privdata);
 
 	return cl_error;
 }
@@ -2695,28 +2690,14 @@ clamfi_eoh(SMFICTX *ctx)
 		return cl_error;
 	}
 
-#ifdef	DONT_SCAN_BLACK_HOLES
-	for(to = privdata->to; *to; to++) {
-		DBT key, data;
+	if(black_hole_mode) {
+		sfsistat rc = black_hole(privdata);
 
-		memset(&key, '\0', sizeof(DBT));
-		memset(&data, '\0', sizeof(DBT));
-
-		key.data = (char *)*to;
-		key.size = strlen(key.data) + 1;
-
-		if(db->get(db, NULL, &key, &data, 0) == 0)
-			/* FIXME: The result may be aliased as well */
-			if(strcmp(data.data, "/dev/null") == 0)
-				continue;
-		break;
+		if(rc != SMFIS_CONTINUE) {
+			clamfi_cleanup(ctx);
+			return rc;
+		}
 	}
-	if(*to == NULL) {
-		/* All recipients map to /dev/null */
-		syslog(LOG_NOTICE, "discarded, since all recipients are /dev/null");
-		return SMFIS_DISCARD;
-	}
-#endif
 
 	/*
 	 * See if the e-mail is only going to members of the list
@@ -4853,8 +4834,6 @@ watchdog(void *a)
 {
 	static pthread_mutex_t watchdog_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-	assert((!external) || (sessions != NULL));
-
 	while(!quitting) {
 		unsigned int i;
 		struct timespec ts;
@@ -4882,32 +4861,11 @@ watchdog(void *a)
 		cli_dbgmsg("watchdog wakes\n");
 		pthread_mutex_unlock(&watchdog_mutex);
 
-		if(!external) {
-			/*
-			 * Re-load the database if needed
-			 */
-			switch(cl_statchkdir(&dbstat)) {
-				case 1:
-					cli_dbgmsg("Database has changed\n");
-					cl_statfree(&dbstat);
-					if(use_syslog)
-						syslog(LOG_WARNING, _("Loading new database"));
-					if(loadDatabase() != 0) {
-						smfi_stop();
-						cli_errmsg("Failed to load updated database\n");
-						return NULL;
-					}
-					break;
-				case 0:
-					cli_dbgmsg("Database has not changed\n");
-					break;
-				default:
-					smfi_stop();
-					cli_errmsg("Database error - %s is stopping\n", progname);
-					return NULL;
-			}
-			continue;
+		if(check_and_reload_database() != 0) {
+			smfi_stop();
+			return NULL;
 		}
+
 		i = 0;
 		session = sessions;
 		pthread_mutex_lock(&sstatus_mutex);
@@ -4990,6 +4948,13 @@ watchdog(void *a)
 		if(i == max_children)
 			clamdIsDown();
 		pthread_mutex_unlock(&sstatus_mutex);
+
+		/* Garbage collect IP addresses no longer blacklisted */
+		if(blacklist) {
+			pthread_mutex_lock(&blacklist_mutex);
+			tableIterate(blacklist, timeoutBlacklist);
+			pthread_mutex_unlock(&blacklist_mutex);
+		}
 	}
 	cli_dbgmsg("watchdog quits\n");
 	return NULL;
@@ -5005,9 +4970,6 @@ static void *
 watchdog(void *a)
 {
 	static pthread_mutex_t watchdog_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-	if(external)
-		return NULL;
 
 	while(!quitting) {
 		struct timespec ts;
@@ -5040,35 +5002,64 @@ watchdog(void *a)
 		 * thread-safe, since it's governed by a mutex that we can't
 		 * see, and there's no access to it via an approved method
 		 */
-
-		/*
-		 * Re-load the database.
-		 */
-		switch(cl_statchkdir(&dbstat)) {
-			case 1:
-				cli_dbgmsg("Database has changed\n");
-				cl_statfree(&dbstat);
-				if(use_syslog)
-					syslog(LOG_WARNING, _("Loading new database"));
-				if(loadDatabase() != 0) {
-					smfi_stop();
-					cli_errmsg("Failed to load updated database\n");
-					return NULL;
-				}
-				break;
-			case 0:
-				cli_dbgmsg("Database has not changed\n");
-				break;
-			default:
-				smfi_stop();
-				cli_errmsg("Database error - %s is stopping\n", progname);
-				return NULL;
+		if(check_and_reload_database() != 0) {
+			smfi_stop();
+			return NULL;
+		}
+		/* Garbage collect IP addresses no longer blacklisted */
+		if(blacklist) {
+			pthread_mutex_lock(&blacklist_mutex);
+			tableIterate(blacklist, timeoutBlacklist);
+			pthread_mutex_unlock(&blacklist_mutex);
 		}
 	}
 	cli_dbgmsg("watchdog quits\n");
 	return NULL;
 }
 #endif
+
+/*
+ * Check to see if the database needs to be reloaded
+ *	Return 0 for success
+ */
+static int
+check_and_reload_database(void)
+{
+	int rc;
+
+	if(external)
+		return 0;
+
+	switch(cl_statchkdir(&dbstat)) {
+		case 1:
+			cli_dbgmsg("Database has changed\n");
+			cl_statfree(&dbstat);
+			if(use_syslog)
+				syslog(LOG_WARNING, _("Loading new database"));
+			rc = loadDatabase();
+			if(rc != 0) {
+				cli_errmsg("Failed to load updated database\n");
+				return rc;
+			}
+			break;
+		case 0:
+			cli_dbgmsg("Database has not changed\n");
+			break;
+		default:
+			cli_errmsg("Database error - %s is stopping\n", progname);
+			return 1;
+	}
+	return 0;	/* all OK */
+}
+
+static void
+timeoutBlacklist(char *ip_address, int time_of_blacklist)
+{
+	if(time_of_blacklist == 0)	/* Must not blacklist this IP address */
+		return;
+	if((time((time_t *)0) - time_of_blacklist) > blacklist_time)
+		tableRemove(blacklist, ip_address);
+}
 
 static const struct {
 	const char *name;
@@ -5565,13 +5556,11 @@ isBlacklisted(const char *ip_address)
 	if(blacklist == NULL) {
 		blacklist = tableCreate();
 
-		if(blacklist == NULL) {
+		pthread_mutex_unlock(&blacklist_mutex);
+
+		if(blacklist == NULL)
 			if(use_syslog)
 				syslog(LOG_ERR, _("Can't create blacklist table"));
-			pthread_mutex_unlock(&blacklist_mutex);
-			return 0;
-		}
-		pthread_mutex_unlock(&blacklist_mutex);
 		return 0;
 	}
 	t = tableFind(blacklist, ip_address);
@@ -5585,8 +5574,7 @@ isBlacklisted(const char *ip_address)
 		/* IP cannot be blacklisted */
 		return 0;
 
-	if((now - t) < blacklist_time)
-		/* FIXME: should be able to renew the certificate */
+	if((now - t) <= blacklist_time)
 		return 1;
 
 	/* FIXME: should be able to remove the certificate */
@@ -5769,4 +5757,64 @@ resolve(const char *host)
 			(void)tableInsert(blacklist, ip, 0);
 		}
 	}
+}
+
+static sfsistat
+black_hole(const struct privdata *privdata)
+{
+	int must_scan;
+	char **to;
+
+	to = privdata->to;
+	must_scan = (*to) ? 0 : 1;
+
+	for(; *to; to++) {
+		char cmd[128];
+		FILE *sendmail;
+
+		snprintf(cmd, sizeof(cmd) - 1, "%s -bv \"%s\" < /dev/null 2>&1",
+			SENDMAIL_BIN, *to);
+
+		cli_dbgmsg("Calling %s\n", cmd);
+		sendmail = popen(cmd, "r");
+
+		if(sendmail) {
+			char buf[BUFSIZ];
+
+			while(fgets(buf, sizeof(buf), sendmail) != NULL) {
+				if(cli_chomp(buf) == 0)
+					continue;
+
+				cli_dbgmsg("sendmail output: %s\n", buf);
+
+				if(strstr(buf, "... deliverable: mailer ")) {
+					const char *p = strstr(buf, ", user ");
+
+					if(strcmp(&p[7], "/dev/null") != 0) {
+						must_scan = 1;
+						break;
+					}
+				}
+			}
+			pclose(sendmail);
+		} else if(use_syslog) {
+			syslog(LOG_WARNING, _("Can't execute '%s' to expand '%s'"),
+				cmd, *to);
+			must_scan = 1;
+		}
+		if(must_scan)
+			break;
+	}
+	if(!must_scan) {
+		/* All recipients map to /dev/null */
+		if(use_syslog) {
+			to = privdata->to;
+			if(*to)
+				syslog(LOG_NOTICE, "discarded, since all recipients (e.g. \"%s\") are /dev/null", *to);
+			else
+				syslog(LOG_NOTICE, "discarded, since all recipients are /dev/null");
+		}
+		return SMFIS_DISCARD;
+	}
+	return SMFIS_CONTINUE;
 }
