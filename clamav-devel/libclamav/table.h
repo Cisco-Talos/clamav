@@ -29,10 +29,15 @@ typedef	struct	tableEntry {
 typedef struct table {
 	tableEntry	*tableHead;
 	tableEntry	*tableLast;
+	unsigned	int	flags;
 } table_t;
+
+#define	TABLE_HAS_DELETED_ENTRIES	0x1
 
 struct	table	*tableCreate(void);
 void	tableDestroy(table_t *table);
 int	tableInsert(table_t *table, const char *key, int value);
 int	tableUpdate(table_t *table, const char *key, int new_value);
 int	tableFind(const table_t *table, const char *key);
+void	tableRemove(table_t *table, const char *key);
+void	tableIterate(table_t *table, void(*callback)(char *key, int value));
