@@ -141,7 +141,7 @@ tableFind(const table_t *table, const char *key)
 #ifdef	CL_DEBUG
 		cost++;
 #endif
-		if(strcasecmp(tableItem->key, key) == 0) {
+		if(tableItem->key && (strcasecmp(tableItem->key, key) == 0)) {
 #ifdef	CL_DEBUG
 			cli_dbgmsg("tableFind: Cost of '%s' = %d\n", key, cost);
 #endif
@@ -171,7 +171,7 @@ tableUpdate(table_t *table, const char *key, int new_value)
 		return tableInsert(table, key, new_value);
 
 	for(tableItem = table->tableHead; tableItem; tableItem = tableItem->next)
-		if(strcasecmp(tableItem->key, key) == 0) {
+		if(tableItem->key && (strcasecmp(tableItem->key, key) == 0)) {
 			tableItem->value = new_value;
 			return new_value;
 		}
@@ -198,7 +198,7 @@ tableRemove(table_t *table, const char *key)
 		return;
 
 	for(tableItem = table->tableHead; tableItem; tableItem = tableItem->next)
-		if(strcasecmp(tableItem->key, key) == 0) {
+		if(tableItem->key && (strcasecmp(tableItem->key, key) == 0)) {
 			free(tableItem->key);
 			tableItem->key = NULL;
 			table->flags |= TABLE_HAS_DELETED_ENTRIES;
@@ -221,5 +221,4 @@ tableIterate(table_t *table, void(*callback)(char *key, int value))
 	for(tableItem = table->tableHead; tableItem; tableItem = tableItem->next)
 		if(tableItem->key)	/* check leaf is not deleted */
 			(*callback)(tableItem->key, tableItem->value);
-
 }
