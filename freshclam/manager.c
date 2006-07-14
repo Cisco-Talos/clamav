@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
  *  HTTP/1.1 compliance by Arkadiusz Miskiewicz <misiek@pld.org.pl>
  *  Proxy support by Nigel Horne <njh@bandsman.co.uk>
  *  Proxy authorization support by Gernot Tenchio <g.tenchio@telco-tech.de>
@@ -41,422 +41,29 @@
 #include <clamav.h>
 #include <errno.h>
 
-#include "options.h"
 #include "defaults.h"
 #include "manager.h"
 #include "notify.h"
-#include "memory.h"
-#include "output.h"
-#include "misc.h"
-#include "../libclamav/others.h"
-#include "../libclamav/str.h" /* cli_strtok */
 #include "dns.h"
 #include "execute.h"
 
+#include "shared/options.h"
+#include "shared/cfgparser.h"
+#include "shared/output.h"
+#include "shared/misc.h"
+#include "shared/memory.h"
+#include "shared/cdiff.h"
 
+#include "libclamav/others.h"
+#include "libclamav/str.h"
+#include "libclamav/cvd.h"
 
-int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname)
-{
-	time_t currtime;
-	int ret, updated = 0, outdated = 0, signo = 0, ttl = -1;
-	char ipaddr[16], *dnsreply = NULL, *pt, *localip = NULL, *newver = NULL;
-	const char *arg = NULL;
-	struct cfgstruct *cpt;
-#ifdef HAVE_RESOLV_H
-	const char *dnsdbinfo;
+#ifndef	O_BINARY
+#define	O_BINARY	0
 #endif
 
-    time(&currtime);
-    logg("ClamAV update process started at %s", ctime(&currtime));
 
-#ifndef HAVE_GMP
-    logg("SECURITY WARNING: NO SUPPORT FOR DIGITAL SIGNATURES\n");
-    logg("See the FAQ at http://www.clamav.net/faq.html for an explanation.\n");
-#endif
-
-#ifdef HAVE_RESOLV_H
-    dnsdbinfo = cfgopt(copt, "DNSDatabaseInfo")->strarg;
-
-    if(opt_check(opt, "no-dns")) {
-	dnsreply = NULL;
-    } else {
-	if((dnsreply = txtquery(dnsdbinfo, &ttl))) {
-	    logg("*TTL: %d\n", ttl);
-
-	    if((pt = cli_strtok(dnsreply, 3, ":"))) {
-		    int rt;
-		    time_t ct;
-
-		rt = atoi(pt);
-		free(pt);
-		time(&ct);
-		if((int) ct - rt > 10800) {
-		    logg("^DNS record is older than 3 hours.\n");
-		    free(dnsreply);
-		    dnsreply = NULL;
-		}
-
-	    } else {
-		free(dnsreply);
-		dnsreply = NULL;
-	    }
-
-	    if(dnsreply) {
-		    int vwarning = 1;
-
-		if((pt = cli_strtok(dnsreply, 4, ":"))) {
-		    if(*pt == '0')
-			vwarning = 0;
-
-		    free(pt);
-		}
-
-		if((newver = cli_strtok(dnsreply, 0, ":"))) {
-
-		    logg("*Software version from DNS: %s\n", newver);
-
-		    if(vwarning && !strstr(cl_retver(), "devel") && !strstr(cl_retver(), "rc")) {
-			if(strcmp(cl_retver(), newver)) {
-			    logg("^Your ClamAV installation is OUTDATED!\n");
-			    logg("^Local version: %s Recommended version: %s\n", cl_retver(), pt);
-			    logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
-			    outdated = 1;
-			}
-		    }
-		}
-
-	    } else {
-		if(dnsreply) {
-		    free(dnsreply);
-		    dnsreply = NULL;
-		}
-	    }
-	}
-
-	if(!dnsreply) {
-	    logg("^Invalid DNS reply. Falling back to HTTP mode.\n");
-	}
-    }
-#endif /* HAVE_RESOLV_H */
-
-    if(opt_check(opt, "local-address")) {
-        localip = opt_arg(opt, "local-address");
-    } else if((cpt = cfgopt(copt, "LocalIPAddress"))->enabled) {
-	localip = cpt->strarg;
-    }
-
-    memset(ipaddr, 0, sizeof(ipaddr));
-
-    if((ret = downloaddb(DB1NAME, "main.cvd", hostname, ipaddr, &signo, copt, dnsreply, localip, outdated)) > 50) {
-	if(dnsreply)
-	    free(dnsreply);
-
-	if(newver)
-	    free(newver);
-
-	return ret;
-
-    } else if(ret == 0)
-	updated = 1;
-
-    /* if ipaddr[0] != 0 it will use it to connect to the web host */
-    if((ret = downloaddb(DB2NAME, "daily.cvd", hostname, ipaddr, &signo, copt, dnsreply, localip, outdated)) > 50) {
-	if(dnsreply)
-	    free(dnsreply);
-
-	if(newver)
-	    free(newver);
-
-	return ret;
-
-    } else if(ret == 0)
-	updated = 1;
-
-    if(dnsreply)
-	free(dnsreply);
-
-    if(updated) {
-	if(cfgopt(copt, "HTTPProxyServer")->enabled) {
-	    logg("Database updated (%d signatures) from %s\n", signo, hostname);
-	} else {
-	    logg("Database updated (%d signatures) from %s (IP: %s)\n", signo, hostname, ipaddr);
-	}
-
-#ifdef BUILD_CLAMD
-	if(opt_check(opt, "daemon-notify")) {
-		const char *clamav_conf = opt_arg(opt, "daemon-notify");
-	    if(!clamav_conf)
-		clamav_conf = CONFDIR"/clamd.conf";
-
-	    notify(clamav_conf);
-	} else if((cpt = cfgopt(copt, "NotifyClamd"))->enabled) {
-	    notify(cpt->strarg);
-	}
-#endif
-
-	if(opt_check(opt, "on-update-execute"))
-	    arg = opt_arg(opt, "on-update-execute");
-	else if((cpt = cfgopt(copt, "OnUpdateExecute"))->enabled)
-	    arg = cpt->strarg;
-
-	if(arg) {
-	    if(opt_check(opt, "daemon"))
-		execute("OnUpdateExecute", arg);
-            else
-		system(arg);
-	}
-    }
-
-    if(outdated) {
-	if(opt_check(opt, "on-outdated-execute"))
-	    arg = opt_arg(opt, "on-outdated-execute");
-	else if((cpt = cfgopt(copt, "OnOutdatedExecute"))->enabled)
-	    arg = cpt->strarg;
-
-	if(arg) {
-		char *cmd = strdup(arg);
-
-	    if((pt = strstr(cmd, "%v")) && newver && isdigit(*newver)) {
-		    char *buffer = (char *) mcalloc(strlen(cmd) + strlen(newver) + 10, sizeof(char));
-		*pt = 0; pt += 2;
-		strcpy(buffer, cmd);
-		strcat(buffer, newver);
-		strcat(buffer, pt);
-		free(cmd);
-		cmd = strdup(buffer);
-		free(buffer);
-	    }
-
-	    if(opt_check(opt, "daemon"))
-		execute("OnOutdatedExecute", cmd);
-	    else
-		system(cmd);
-
-	    free(cmd);
-	}
-    }
-
-    if(newver)
-	free(newver);
-
-    return updated ? 0 : 1;
-}
-
-int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, const char *dnsreply, char *localip, int outdated)
-{
-	struct cl_cvd *current, *remote;
-	struct cfgstruct *cpt;
-	int hostfd, nodb = 0, dbver = -1, ret, port = 0, ims = -1;
-	char  *tempname, ipaddr[16], *pt;
-	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL;
-	int flevel = cl_retflevel();
-
-
-    if((current = cl_cvdhead(localname)) == NULL)
-	nodb = 1;
-
-    if(!nodb && dnsreply) {
-	    int field = 0;
-
-	if(!strcmp(remotename, "main.cvd")) {
-	    field = 1;
-	} else if(!strcmp(remotename, "daily.cvd")) {
-	    field = 2;
-	} else {
-	    logg("^Unknown database name (%s) passed.\n", remotename);
-	}
-
-	if(field && (pt = cli_strtok(dnsreply, field, ":"))) {
-	    if(!isnumb(pt)) {
-		logg("^Broken database version in TXT record.\n");
-	    } else {
-		dbver = atoi(pt);
-		logg("*%s version from DNS: %d\n", remotename, dbver);
-	    }
-	    free(pt);
-	} else {
-	    logg("^Invalid DNS reply. Falling back to HTTP mode.\n");
-	}
-
-    }
-
-    /* Initialize proxy settings */
-    if((cpt = cfgopt(copt, "HTTPProxyServer"))->enabled) {
-	proxy = cpt->strarg;
-	if(strncasecmp(proxy, "http://", 7) == 0)
-	    proxy += 7;
-
-	if((cpt = cfgopt(copt, "HTTPProxyUsername"))->enabled) {
-	    user = cpt->strarg;
-	    if((cpt = cfgopt(copt, "HTTPProxyPassword"))->enabled) {
-		pass = cpt->strarg;
-	    } else {
-		logg("HTTPProxyUsername requires HTTPProxyPassword\n");
-		if(current)
-		    cl_cvdfree(current);
-		return 56;
-	    }
-	}
-
-	if((cpt = cfgopt(copt, "HTTPProxyPort"))->enabled)
-	    port = cpt->numarg;
-
-	logg("Connecting via %s\n", proxy);
-    }
-
-    if((cpt = cfgopt(copt, "HTTPUserAgent"))->enabled)
-	uas = cpt->strarg;
-
-    memset(ipaddr, 0, sizeof(ipaddr));
-
-    if(!nodb && dbver == -1) {
-	if(ip[0]) /* use ip to connect */
-	    hostfd = wwwconnect(ip, proxy, port, ipaddr, localip);
-	else
-	    hostfd = wwwconnect(hostname, proxy, port, ipaddr, localip);
-
-	if(hostfd < 0) {
-	    if(current)
-		cl_cvdfree(current);
-	    return 52;
-	} else {
-	    logg("*Connected to %s (IP: %s).\n", hostname, ipaddr);
-	    logg("*Trying to retrieve http://%s/%s\n", hostname, remotename);
-	}
-
-	if(!ip[0])
-	    strcpy(ip, ipaddr);
-
-	remote = remote_cvdhead(remotename, hostfd, hostname, proxy, user, pass, uas, &ims);
-
-	if(!nodb && !ims) {
-	    logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
-	    *signo += current->sigs;
-	    close(hostfd);
-	    cl_cvdfree(current);
-	    return 1;
-	}
-
-	if(!remote) {
-	    logg("^Can't read %s header from %s (IP: %s)\n", remotename, hostname, ipaddr);
-	    close(hostfd);
-	    if(current)
-		cl_cvdfree(current);
-	    return 58;
-	}
-
-	dbver = remote->version;
-	cl_cvdfree(remote);
-	close(hostfd);
-    }
-
-    if(!nodb && (current->version >= dbver)) {
-	logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
-
-	if(!outdated && flevel < current->fl) {
-	    /* display warning even for already installed database */
-	    logg("^Current functionality level = %d, recommended = %d\n", flevel, current->fl);
-	    logg("Please check if ClamAV tools are linked against proper version of libclamav\n");
-	    logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
-	}
-
-	*signo += current->sigs;
-	cl_cvdfree(current);
-	return 1;
-    }
-
-    if(current)
-	cl_cvdfree(current);
-
-    if(ipaddr[0]) {
-	/* use ipaddr in order to connect to the same mirror */
-	hostfd = wwwconnect(ipaddr, proxy, port, NULL, localip);
-    } else {
-	hostfd = wwwconnect(hostname, proxy, port, ipaddr, localip);
-	if(!ip[0])
-	    strcpy(ip, ipaddr);
-    }
-
-    if(hostfd < 0) {
-	if(ipaddr[0])
-	    logg("Connection with %s (IP: %s) failed.\n", hostname, ipaddr);
-	else
-	    logg("Connection with %s failed.\n", hostname);
-	return 52;
-    };
-
-    /* the temporary file is created in a directory owned by clamav so race
-     * conditions are not possible
-     */
-    tempname = cli_gentemp(".");
-
-    logg("*Retrieving http://%s/%s\n", hostname, remotename);
-    if((ret = get_database(remotename, hostfd, tempname, hostname, proxy, user, pass, uas))) {
-        logg("^Can't download %s from %s (IP: %s)\n", remotename, hostname, ipaddr);
-        unlink(tempname);
-        free(tempname);
-        close(hostfd);
-        return ret;
-    }
-
-    close(hostfd);
-
-    if((ret = cl_cvdverify(tempname))) {
-        logg("^Verification: %s\n", cl_strerror(ret));
-        unlink(tempname);
-        free(tempname);
-        return 54;
-    }
-
-    if((current = cl_cvdhead(tempname)) == NULL) {
-	logg("^Can't read CVD header of new %s database.\n", localname);
-	unlink(tempname);
-	free(tempname);
-	return 54;
-    }
-
-    if(current->version < dbver) {
-	logg("^Mirrors are not fully synchronized. Please try again later.\n");
-    	cl_cvdfree(current);
-	unlink(tempname);
-	free(tempname);
-	return 59;
-    }
-
-    if(!nodb && unlink(localname)) {
-	logg("^Can't unlink %s. Please fix it and try again.\n", localname);
-    	cl_cvdfree(current);
-	unlink(tempname);
-	free(tempname);
-	return 53;
-    } else {
-    	if(rename(tempname, localname) == -1) {
-    	    logg("^Can't rename %s to %s: %s\n", tempname, localname, strerror(errno));
-    	    if(errno == EEXIST) {
-    	        unlink(localname);
-    	        if(rename(tempname, localname) == -1)
-                   logg("^All attempts to rename the temporary file failed: %s\n", strerror(errno));
-            }
-        }
-    }
-
-    logg("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
-
-    if(flevel < current->fl) {
-	logg("^Your ClamAV installation is OUTDATED!\n");
-	logg("^Current functionality level = %d, recommended = %d\n", flevel, current->fl);
-	logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
-    }
-
-    *signo += current->sigs;
-    cl_cvdfree(current);
-    free(tempname);
-    return 0;
-}
-
-/* this function returns socket descriptor */
-/* proxy support finshed by njh@bandsman.co.uk */
-int wwwconnect(const char *server, const char *proxy, int pport, char *ip, char *localip)
+static int wwwconnect(const char *server, const char *proxy, int pport, char *ip, const char *localip)
 {
 	int socketfd = -1, port, i;
 	struct sockaddr_in name;
@@ -482,8 +89,8 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip, char 
 	return -1;
     }
 
-    if (localip) {
-	if ((he = gethostbyname(localip)) == NULL) {
+    if(localip) {
+	if((he = gethostbyname(localip)) == NULL) {
 	    char *herr;
 	    switch(h_errno) {
 	        case HOST_NOT_FOUND:
@@ -608,10 +215,79 @@ static int Rfc2822DateTime(char *buf, time_t mtime)
     return strftime(buf, 36, "%a, %d %b %Y %X GMT", time);
 }
 
-struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostname, const char *proxy, const char *user, const char *pass, const char *uas, int *ims)
+static unsigned int fmt_base64(char *dest, const char *src, unsigned int len)
 {
-	char cmd[512], head[513], buffer[FILEBUFF], *ch, *tmp;
-	int i, j, bread, cnt;
+	unsigned short bits = 0,temp = 0;
+	unsigned long written = 0;
+	unsigned int i;
+	const char base64[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+
+
+    for(i = 0; i < len; i++) {
+	temp <<= 8;
+	temp += src[i];
+	bits += 8;
+	while(bits > 6) {
+	    dest[written] = base64[((temp >> (bits - 6)) & 63)];
+	    written++;
+	    bits -= 6;
+	}
+    }
+
+    if(bits) {
+	temp <<= (6 - bits);
+	dest[written] = base64[temp & 63];
+	written++;
+    }
+
+    while(written & 3) {
+	dest[written] = '=';
+	written++;
+    }
+
+    return written;
+}
+
+static char *proxyauth(const char *user, const char *pass)
+{
+	int len;
+	char *buf, *userpass, *auth;
+
+
+    userpass = mmalloc(strlen(user) + strlen(pass) + 2);
+    if(!userpass) {
+	logg("!proxyauth: Can't allocate memory for 'userpass'\n");
+	return NULL;
+    }
+    sprintf(userpass, "%s:%s", user, pass);
+
+    buf = mmalloc((strlen(pass) + strlen(user)) * 2 + 4);
+    if(!buf) {
+	logg("!proxyauth: Can't allocate memory for 'buf'\n");
+	free(userpass);
+	return NULL;
+    }
+
+    len = fmt_base64(buf, userpass, strlen(userpass));
+    free(userpass);
+    buf[len] = '\0';
+    auth = mmalloc(strlen(buf) + 30);
+    if(!auth) {
+	logg("!proxyauth: Can't allocate memory for 'authorization'\n");
+	return NULL;
+    }
+
+    sprintf(auth, "Proxy-Authorization: Basic %s\r\n", buf);
+    free(buf);
+
+    return auth;
+}
+
+static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int *ims)
+{
+	char cmd[512], head[513], buffer[FILEBUFF], ipaddr[16], *ch, *tmp;
+	int bread, cnt, sd;
+	unsigned int i, j;
 	char *remotename = NULL, *authorization = NULL;
 	const char *agent;
 	struct cl_cvd *cvd;
@@ -621,26 +297,24 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
 
     if(proxy) {
         remotename = mmalloc(strlen(hostname) + 8);
+	if(!remotename) {
+	    logg("!remote_cvdhead: Can't allocate memory for 'remotename'\n");
+	    return NULL;
+	}
         sprintf(remotename, "http://%s", hostname);
 
-        if(user) {
-            int len;
-	    char *buf = mmalloc((strlen(pass) + strlen(user)) * 2 + 4);
-	    char *userpass = mmalloc(strlen(user) + strlen(pass) + 2);
-	    sprintf(userpass, "%s:%s", user, pass);
-            len=fmt_base64(buf,userpass,strlen(userpass));
-	    free(userpass);
-            buf[len]='\0';
-            authorization = mmalloc(strlen(buf) + 30);
-            sprintf(authorization, "Proxy-Authorization: Basic %s\r\n", buf);
-            free(buf);
-        }
+	if(user) {
+	    authorization = proxyauth(user, pass);
+	    if(!authorization)
+		return NULL;
+	}
     }
 
     if(stat(file, &sb) != -1 && sb.st_mtime < time(NULL)) {
 	Rfc2822DateTime(last_modified, sb.st_mtime);
     } else {
 	    time_t mtime = 1104119530;
+
 	Rfc2822DateTime(last_modified, mtime);
 	logg("*Assuming modification time in the past\n");
     }
@@ -654,49 +328,63 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
     else
 	agent = PACKAGE"/"VERSION;
 
-#ifdef	NO_SNPRINTF
-    sprintf(cmd, "GET %s/%s HTTP/1.1\r\n"
+    snprintf(cmd, sizeof(cmd),
+	"GET %s/%s HTTP/1.1\r\n"
 	"Host: %s\r\n%s"
 	"User-Agent: %s\r\n"
 	"Connection: close\r\n"
 	"Range: bytes=0-511\r\n"
         "If-Modified-Since: %s\r\n"
-        "\r\n", (remotename != NULL)?remotename:"", file, hostname, (authorization != NULL)?authorization:"", agent, last_modified);
-#else
-    snprintf(cmd, sizeof(cmd), "GET %s/%s HTTP/1.1\r\n"
-	"Host: %s\r\n%s"
-	"User-Agent: %s\r\n"
-	"Connection: close\r\n"
-	"Range: bytes=0-511\r\n"
-        "If-Modified-Since: %s\r\n"
-        "\r\n", (remotename != NULL)?remotename:"", file, hostname, (authorization != NULL)?authorization:"", agent, last_modified);
-#endif
-    write(socketfd, cmd, strlen(cmd));
+        "\r\n", (remotename != NULL) ? remotename : "", file, hostname, (authorization != NULL) ? authorization : "", agent, last_modified);
 
     free(remotename);
     free(authorization);
 
-    tmp = buffer;
-    cnt = FILEBUFF;
-    while ((bread = recv(socketfd, tmp, cnt, 0)) > 0) {
-	tmp+=bread;
-	cnt-=bread;
-	if (cnt <= 0) break;
+    memset(ipaddr, 0, sizeof(ipaddr));
+
+    if(ip[0]) /* use ip to connect */
+	sd = wwwconnect(ip, proxy, port, ipaddr, localip);
+    else
+	sd = wwwconnect(hostname, proxy, port, ipaddr, localip);
+
+    if(sd < 0) {
+	return NULL;
+    } else {
+	logg("*Connected to %s (IP: %s).\n", hostname, ipaddr);
+	logg("*Trying to retrieve CVD header of http://%s/%s\n", hostname, file);
     }
 
+    if(!ip[0])
+	strcpy(ip, ipaddr);
+
+    if(write(sd, cmd, strlen(cmd)) < 0) {
+	logg("!remote_cvdhead: write failed\n");
+	close(sd);
+	return NULL;
+    }
+
+    tmp = buffer;
+    cnt = FILEBUFF;
+    while((bread = recv(sd, tmp, cnt, 0)) > 0) {
+	tmp += bread;
+	cnt -= bread;
+	if(cnt <= 0)
+	    break;
+    }
+    close(sd);
+
     if(bread == -1) {
-	logg("^Error while reading CVD header of database from %s\n", hostname);
+	logg("!remote_cvdhead: Error while reading CVD header from %s\n", hostname);
 	return NULL;
     }
 
     if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
-	logg("^CVD file not found on remote server\n");
+	logg("!CVD file not found on remote server\n");
 	return NULL;
     }
 
     /* check whether the resource is up-to-date */
     if((strstr(buffer, "HTTP/1.1 304")) != NULL || (strstr(buffer, "HTTP/1.0 304")) != NULL) { 
-
 	*ims = 0;
 	logg("OK (IMS)\n");
 	return NULL;
@@ -707,75 +395,61 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
     i = 3;
     ch = buffer + i;
     while(i < sizeof(buffer)) {
-      if (*ch == '\n' && *(ch - 1) == '\r' && *(ch - 2) == '\n' && *(ch - 3) == '\r') {
+	if (*ch == '\n' && *(ch - 1) == '\r' && *(ch - 2) == '\n' && *(ch - 3) == '\r') {
+	    ch++;
+	    i++;
+	    break;
+	}
 	ch++;
 	i++;
-	break;
-      }
-      ch++;
-      i++;
     }
 
     if(sizeof(buffer) - i < 512) {
-	mprintf("@Malformed CVD header detected.\n");
+	logg("!remote_cvdhead: Malformed CVD header (too short)\n");
 	return NULL;
     }
 
     memset(head, 0, sizeof(head));
 
-    for (j=0; j<512; j++) {
-      if (!ch || (ch && !*ch) || (ch && !isprint(ch[j]))) {
-	logg("^Malformed CVD header detected.\n");
-	return NULL;
-      }
-      head[j] = ch[j];
+    for(j = 0; j < 512; j++) {
+	if(!ch || (ch && !*ch) || (ch && !isprint(ch[j]))) {
+	    logg("!remote_cvdhead: Malformed CVD header (bad chars)\n");
+	    return NULL;
+	}
+	head[j] = ch[j];
     }
 
-    if((cvd = cl_cvdparse(head)) == NULL)
-	logg("^Broken CVD header.\n");
+    if(!(cvd = cl_cvdparse(head)))
+	logg("!Malformed CVD header (can't parser)\n");
     else
 	logg("OK\n");
 
     return cvd;
 }
 
-int get_database(const char *dbfile, int socketfd, const char *file, const char *hostname, const char *proxy, const char *user, const char *pass, const char *uas)
+static int getfile(const char *srcfile, const char *destfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas)
 {
 	char cmd[512], buffer[FILEBUFF], *ch;
-	int bread, fd, i, totalsize = 0,  rot = 0, totaldownloaded = 0, percentage;
-	char *remotename = NULL, *authorization = NULL;
-	const char *rotation = "|/-\\", *agent, *headerline;
+	int bread, fd, totalsize = 0,  rot = 0, totaldownloaded = 0,
+	    percentage = 0, sd;
+	unsigned int i;
+	char *remotename = NULL, *authorization = NULL, *headerline, ipaddr[16];
+	const char *rotation = "|/-\\", *agent;
 
 
     if(proxy) {
         remotename = mmalloc(strlen(hostname) + 8);
+	if(!remotename) {
+	    logg("!getfile: Can't allocate memory for 'remotename'\n");
+	    return 75; /* FIXME */
+	}
         sprintf(remotename, "http://%s", hostname);
 
-        if(user) {
-            int len;
-	    char *buf = mmalloc((strlen(pass) + strlen(user)) * 2 + 4);
-	    char *userpass = mmalloc(strlen(user) + strlen(pass) + 2);
-	    sprintf(userpass, "%s:%s", user, pass);
-            len=fmt_base64(buf,userpass,strlen(userpass));
-	    free(userpass);
-            buf[len]='\0';
-            authorization = mmalloc(strlen(buf) + 30);
-            sprintf(authorization, "Proxy-Authorization: Basic %s\r\n", buf);
-            free(buf);
-        }
-    }
-
-#if defined(C_CYGWIN) || defined(C_OS2)
-    if((fd = open(file, O_WRONLY|O_CREAT|O_EXCL|O_BINARY, 0644)) == -1) {
-#else
-    if((fd = open(file, O_WRONLY|O_CREAT|O_EXCL, 0644)) == -1) {
-#endif
-	    char currdir[512];
-
-	getcwd(currdir, sizeof(currdir));
-	logg("^Can't create new file %s in %s\n", file, currdir);
-	logg("^The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
-	return 57;
+	if(user) {
+	    authorization = proxyauth(user, pass);
+	    if(!authorization)
+		return 75; /* FIXME */
+	}
     }
 
     if(uas)
@@ -783,111 +457,665 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
     else
 	agent = PACKAGE"/"VERSION;
 
-#ifdef NO_SNPRINTF
-    sprintf(cmd, "GET %s/%s HTTP/1.1\r\n"
-	     "Host: %s\r\n%s"
-	     "User-Agent: %s\r\n"
-	     "Cache-Control: no-cache\r\n"
-	     "Connection: close\r\n"
-	     "\r\n", (remotename != NULL)?remotename:"", dbfile, hostname, (authorization != NULL)?authorization:"", agent);
-#else
-    snprintf(cmd, sizeof(cmd), "GET %s/%s HTTP/1.1\r\n"
-	     "Host: %s\r\n%s"
-	     "User-Agent: %s\r\n"
-	     "Cache-Control: no-cache\r\n"
-	     "Connection: close\r\n"
-	     "\r\n", (remotename != NULL)?remotename:"", dbfile, hostname, (authorization != NULL)?authorization:"", agent);
-#endif
-    write(socketfd, cmd, strlen(cmd));
+    snprintf(cmd, sizeof(cmd),
+	"GET %s/%s HTTP/1.1\r\n"
+	"Host: %s\r\n%s"
+	"User-Agent: %s\r\n"
+	"Cache-Control: no-cache\r\n"
+	"Connection: close\r\n"
+	"\r\n", (remotename != NULL) ? remotename : "", srcfile, hostname, (authorization != NULL) ? authorization : "", agent);
 
-    free(remotename);
-    free(authorization);
+    memset(ipaddr, 0, sizeof(ipaddr));
 
-    /* read all the http headers */
+    if(ip[0]) /* use ip to connect */
+	sd = wwwconnect(ip, proxy, port, ipaddr, localip);
+    else
+	sd = wwwconnect(hostname, proxy, port, ipaddr, localip);
 
+    if(sd < 0) {
+	return 52;
+    } else {
+	logg("*Trying to download http://%s/%s (IP: %s)\n", hostname, srcfile, ipaddr);
+    }
+
+    if(!ip[0])
+	strcpy(ip, ipaddr);
+
+    if(write(sd, cmd, strlen(cmd)) < 0) {
+	logg("!getfile: Can't write to socket\n");
+	return 52;
+    }
+
+    if(remotename)
+	free(remotename);
+
+    if(authorization)
+	free(authorization);
+
+    /* read http headers */
     ch = buffer;
     i = 0;
-    while (1) {
-      /* recv one byte at a time, until we reach \r\n\r\n */
+    while(1) {
+	/* recv one byte at a time, until we reach \r\n\r\n */
+	if((i >= sizeof(buffer) - 1) || recv(sd, buffer + i, 1, 0) == -1) {
+	    logg("!getfile: Error while reading database from %s\n", hostname);
+	    return 52;
+	}
 
-      if((i >= sizeof(buffer)) || recv(socketfd, buffer + i, 1, 0) == -1) {
-        logg("^Error while reading database from %s\n", hostname);
-        close(fd);
-        unlink(file);
-        return 52;
-      }
-
-      if (i>2 && *ch == '\n' && *(ch - 1) == '\r' && *(ch - 2) == '\n' && *(ch - 3) == '\r') {
+	if(i > 2 && *ch == '\n' && *(ch - 1) == '\r' && *(ch - 2) == '\n' && *(ch - 3) == '\r') {
+	    i++;
+	    break;
+	}
+	ch++;
 	i++;
-	break;
-      }
-      ch++;
-      i++;
     }
 
     buffer[i] = 0;
 
     /* check whether the resource actually existed or not */
-
     if(strstr(buffer, "HTTP/1.1 404")) { 
-      logg("^%s not found on remote server\n", dbfile);
-      close(fd);
-      unlink(file);
-      return 58;
+	logg("!getfile: %s not found on remote server\n", srcfile);
+	close(sd);
+	return 58;
     }
 
     /* get size of resource */
     for(i = 0; (headerline = cli_strtok(buffer, i, "\n")); i++){
         if(strstr(headerline, "Content-Length:")) { 
-            totalsize = atoi(cli_strtok(headerline, 1, ": "));
+	    if((ch = cli_strtok(headerline, 1, ": "))) {
+		totalsize = atoi(ch);
+		free(ch);
+	    } else {
+		totalsize = 0;
+	    }
         }
+	free(headerline);
     }
 
-    /* receive body and write it to disk */
+    if((fd = open(destfile, O_WRONLY|O_CREAT|O_EXCL|O_BINARY, 0644)) == -1) {
+	    char currdir[512];
 
-    while((bread = read(socketfd, buffer, FILEBUFF))) {
-        write(fd, buffer, bread);
+	getcwd(currdir, sizeof(currdir));
+	logg("!getfile: Can't create new file %s in %s\n", destfile, currdir);
+	logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
+	close(sd);
+	return 57;
+    }
+
+    while((bread = read(sd, buffer, FILEBUFF))) {
+        if(write(fd, buffer, bread) != bread) {
+	    logg("getfile: Can't write %d bytes to %s\n", bread, destfile);
+	    unlink(destfile);
+	    close(fd);
+	    close(sd);
+	    return 57; /* FIXME */
+	}
+
         if(!mprintf_quiet) {
             if(totalsize > 0) {
-                totaldownloaded = totaldownloaded + bread;
-                percentage = (int)(100 * (float)totaldownloaded/totalsize);
-                mprintf("Downloading %s [%3i%%]\r", dbfile, percentage);
+                totaldownloaded += bread;
+                percentage = (int) (100 * (float) totaldownloaded / totalsize);
+                mprintf("Downloading %s [%3i%%]\r", srcfile, percentage);
             } else {
-                mprintf("Downloading %s [%c]\r", dbfile, rotation[rot]);
+                mprintf("Downloading %s [%c]\r", srcfile, rotation[rot]);
                 rot++;
                 rot %= 4;
             }
             fflush(stdout);
         }
     }
+    close(sd);
+    close(fd);
 
     if(totalsize > 0)
-        logg("Downloading %s [%i%]\n", dbfile, percentage);
+        logg("Downloading %s [%i%]\n", srcfile, percentage);
     else
-        logg("Downloading %s [*]\n", dbfile);
+        logg("Downloading %s [*]\n", srcfile);
 
-    close(fd);
     return 0;
 }
 
-const char base64[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+static int getcvd(const char *dbfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int nodb, int newver)
+{
+	char *tempname;
+	struct cl_cvd *cvd;
+	int ret;
 
-unsigned int fmt_base64(char* dest,const char* src,unsigned int len) {
-    register const unsigned char* s=(const unsigned char*) src;
-    unsigned short bits=0,temp=0;
-    unsigned long written=0,i;
-    for (i=0; i< len; ++i) {
-	temp<<=8; temp+=s[i]; bits+=8;
-	while (bits>6) {
-	    if (dest) dest[written]=base64[((temp>>(bits-6))&63)];
-	    ++written; bits-=6;
+
+    tempname = cli_gentemp(".");
+
+    logg("*Retrieving http://%s/%s\n", hostname, dbfile);
+    if((ret = getfile(dbfile, tempname, hostname, ip, localip, proxy, port, user, pass, uas))) {
+        logg("!Can't download %s from %s (IP: %s)\n", dbfile, hostname, ip);
+        unlink(tempname);
+        free(tempname);
+        return ret;
+    }
+
+    if((ret = cl_cvdverify(tempname))) {
+        logg("!Verification: %s\n", cl_strerror(ret));
+        unlink(tempname);
+        free(tempname);
+        return 54;
+    }
+
+    if(!(cvd = cl_cvdhead(tempname))) {
+	logg("!Can't read CVD header of new %s database.\n", dbfile);
+	unlink(tempname);
+	free(tempname);
+	return 54;
+    }
+
+    if(cvd->version < newver) {
+	logg("!Mirrors are not fully synchronized. Please try again later.\n");
+    	cl_cvdfree(cvd);
+	unlink(tempname);
+	free(tempname);
+	return 59;
+    }
+
+    if(!nodb && unlink(dbfile)) {
+	logg("!Can't unlink %s. Please fix it and try again.\n", dbfile);
+    	cl_cvdfree(cvd);
+	unlink(tempname);
+	free(tempname);
+	return 53;
+    } else {
+    	if(rename(tempname, dbfile) == -1) {
+    	    if(errno == EEXIST) {
+    	        unlink(dbfile);
+    	        if(rename(tempname, dbfile) == -1) {
+                   logg("!All attempts to rename the temporary file failed: %s\n", strerror(errno));
+		   return 57;
+		}
+            }
+        }
+    }
+
+    return 0;
+}
+
+static int chdir_inc(const char *dbname)
+{
+	struct stat sb;
+	char path[32], dbfile[32];
+
+
+    sprintf(path, "%s.inc", dbname);
+    sprintf(dbfile, "%s.cvd", dbname);
+
+    if(stat(path, &sb) == -1) {
+	if(mkdir(path, 0755) == -1) {
+	    logg("!chdir_inc: Can't create directory %s\n", path);
+	    return -1;
+	}
+
+	if(cvd_unpack(dbfile, path) == -1) {
+	    logg("!chdir_inc: Can't unpack %s into %s\n", path);
+	    rmdirs(path);
+	    return -1;
 	}
     }
-    if (bits) {
-	temp<<=(6-bits);
-	if (dest) dest[written]=base64[temp&63];
-	++written;
+
+    if(chdir(path) == -1) {
+	logg("!chdir_inc: Can't change directory to %s\n", path);
+	return -1;
     }
-    while (written&3) { if (dest) dest[written]='='; ++written; }
-    return written;
+
+    return 0;
 }
+
+static int getpatch(const char *dbname, int version, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas)
+{
+	char *tempname, patch[32], olddir[512];
+	int ret, fd;
+
+
+    if(!getcwd(olddir, sizeof(olddir))) {
+	logg("!getpatch: Can't get path of current working directory\n");
+	return 50; /* FIXME */
+    }
+
+    if(chdir_inc(dbname) == -1)
+	return 50;
+
+    tempname = cli_gentemp(".");
+    snprintf(patch, sizeof(patch), "%s-%d.cdiff", dbname, version);
+
+    logg("*Retrieving http://%s/%s\n", hostname, patch);
+    if((ret = getfile(patch, tempname, hostname, ip, localip, proxy, port, user, pass, uas))) {
+        logg("!getpatch: Can't download %s from %s (IP: %s)\n", patch, hostname, ip);
+        unlink(tempname);
+        free(tempname);
+	chdir(olddir);
+        return ret;
+    }
+
+    if((fd = open(tempname, O_RDONLY)) == -1) {
+	logg("!getpatch: Can't open %s for reading\n", tempname);
+        unlink(tempname);
+        free(tempname);
+	chdir(olddir);
+	return 55;
+    }
+
+    if(cdiff_apply(fd) == -1) {
+	logg("!getpatch: Can't apply patch\n");
+        unlink(tempname);
+        free(tempname);
+	chdir(olddir);
+	return 70; /* FIXME */
+    }
+
+    chdir(olddir);
+    return 0;
+}
+
+static struct cl_cvd *currentdb(const char *dbname)
+{
+	struct stat sb;
+	char path[512];
+	struct cl_cvd *cvd;
+	short inc = 0;
+
+
+    snprintf(path, sizeof(path), "%s.inc", dbname);
+    if(stat(path, &sb) != -1) {
+	snprintf(path, sizeof(path), "%s.inc/%s.info", dbname, dbname);
+	inc = 1;
+    } else
+	snprintf(path, sizeof(path), "%s.cvd", dbname);
+
+    cvd = cl_cvdhead(path);
+
+    return cvd;
+}
+
+int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, const char *dnsreply, char *localip, int outdated)
+{
+	struct cl_cvd *current, *remote;
+	struct cfgstruct *cpt;
+	int nodb = 0, currver, newver = -1, ret, port = 0, ims = -1, i;
+	char *pt, dbfile[32], dbinc[32];
+	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL;
+	int flevel = cl_retflevel();
+	struct stat sb;
+
+
+    snprintf(dbfile, sizeof(dbfile), "%s.cvd", dbname);
+    snprintf(dbinc, sizeof(dbinc), "%s.inc", dbname);
+
+    if(!(current = currentdb(dbname))) {
+	nodb = 1;
+	if(stat(dbinc, &sb) != -1) {
+	    logg("^Removing corrupted incremental directory %s\n", dbinc);
+	    if(rmdirs(dbinc)) {
+		logg("!Can't remove incremental directory\n");
+		return 53;
+	    }
+
+	    if(stat(dbfile, &sb) != -1) {
+		logg("^Removing obsolete %s\n", dbfile);
+		if(unlink(dbfile)) {
+		    logg("!Can't unlink %s\n", dbfile);
+		    return 53;
+		}
+	    }
+	}
+    }
+
+    if(!nodb && dnsreply) {
+	    int field = 0;
+
+	if(!strcmp(dbname, "main")) {
+	    field = 1;
+	} else if(!strcmp(dbname, "daily")) {
+	    field = 2;
+	} else {
+	    logg("!updatedb: Unknown database name (%s) passed.\n", dbname);
+	    cl_cvdfree(current);
+	    return 70;
+	}
+
+	if(field && (pt = cli_strtok(dnsreply, field, ":"))) {
+	    if(!isnumb(pt)) {
+		logg("^Broken database version in TXT record.\n");
+	    } else {
+		newver = atoi(pt);
+		logg("*%s version from DNS: %d\n", dbfile, newver);
+	    }
+	    free(pt);
+	} else {
+	    logg("^Invalid DNS reply. Falling back to HTTP mode.\n");
+	}
+    }
+
+    /* Initialize proxy settings */
+    if((cpt = cfgopt(copt, "HTTPProxyServer"))->enabled) {
+	proxy = cpt->strarg;
+	if(strncasecmp(proxy, "http://", 7) == 0)
+	    proxy += 7;
+
+	if((cpt = cfgopt(copt, "HTTPProxyUsername"))->enabled) {
+	    user = cpt->strarg;
+	    if((cpt = cfgopt(copt, "HTTPProxyPassword"))->enabled) {
+		pass = cpt->strarg;
+	    } else {
+		logg("HTTPProxyUsername requires HTTPProxyPassword\n");
+		if(current)
+		    cl_cvdfree(current);
+		return 56;
+	    }
+	}
+
+	if((cpt = cfgopt(copt, "HTTPProxyPort"))->enabled)
+	    port = cpt->numarg;
+
+	logg("Connecting via %s\n", proxy);
+    }
+
+    if((cpt = cfgopt(copt, "HTTPUserAgent"))->enabled)
+	uas = cpt->strarg;
+
+
+    if(!nodb && newver == -1) {
+
+	remote = remote_cvdhead(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, &ims);
+
+	if(!nodb && !ims) {
+	    logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", dbfile, current->version, current->sigs, current->fl, current->builder);
+	    *signo += current->sigs;
+	    cl_cvdfree(current);
+	    return 1;
+	}
+
+	if(!remote) {
+	    logg("^Can't read %s header from %s (IP: %s)\n", dbfile, hostname, ip);
+	    cl_cvdfree(current);
+	    return 58;
+	}
+
+	newver = remote->version;
+	cl_cvdfree(remote);
+    }
+
+    if(!nodb && (current->version >= newver)) {
+	logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", dbfile, current->version, current->sigs, current->fl, current->builder);
+
+	if(!outdated && flevel < current->fl) {
+	    /* display warning even for already installed database */
+	    logg("^Current functionality level = %d, recommended = %d\n", flevel, current->fl);
+	    logg("Please check if ClamAV tools are linked against proper version of libclamav\n");
+	    logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
+	}
+
+	*signo += current->sigs;
+	cl_cvdfree(current);
+	return 1;
+    }
+
+    currver = current->version;
+
+    if(current)
+	cl_cvdfree(current);
+
+    /*
+    if(ipaddr[0]) {
+	hostfd = wwwconnect(ipaddr, proxy, port, NULL, localip);
+    } else {
+	hostfd = wwwconnect(hostname, proxy, port, ipaddr, localip);
+	if(!ip[0])
+	    strcpy(ip, ipaddr);
+    }
+
+    if(hostfd < 0) {
+	if(ipaddr[0])
+	    logg("Connection with %s (IP: %s) failed.\n", hostname, ipaddr);
+	else
+	    logg("Connection with %s failed.\n", hostname);
+	return 52;
+    };
+    */
+
+    if(nodb) {
+	ret = getcvd(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, nodb, newver);
+	if(ret)
+	    return ret;
+
+    } else {
+	ret = 0;
+
+	for(i = currver + 1; i <= newver; i++) {
+	    ret = getpatch(dbname, i, hostname, ip, localip, proxy, port, user, pass, uas);
+	    if(ret) {
+		logg("^Removing incremental directory %s\n", dbinc);
+		rmdirs(dbinc);
+		break;
+	    }
+	}
+
+	if(ret) {
+	    logg("^Incremental update failed, downloading complete database\n");
+
+	    ret = getcvd(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, nodb, newver);
+	    if(ret)
+		return ret;
+	}
+    }
+
+    if(!(current = currentdb(dbname))) {
+	/* should never be reached */
+	logg("!Can't parse new database\n");
+	return 55; /* FIXME */
+    }
+
+    logg("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", dbfile, current->version, current->sigs, current->fl, current->builder);
+
+    if(flevel < current->fl) {
+	logg("^Your ClamAV installation is OUTDATED!\n");
+	logg("^Current functionality level = %d, recommended = %d\n", flevel, current->fl);
+	logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
+    }
+
+    *signo += current->sigs;
+    cl_cvdfree(current);
+    return 0;
+}
+
+int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname)
+{
+	time_t currtime;
+	int ret, updated = 0, outdated = 0, signo = 0;
+	unsigned int ttl;
+	char ipaddr[16], *dnsreply = NULL, *pt, *localip = NULL, *newver = NULL;
+	const char *arg = NULL;
+	struct cfgstruct *cpt;
+#ifdef HAVE_RESOLV_H
+	const char *dnsdbinfo;
+#endif
+
+    time(&currtime);
+    logg("ClamAV update process started at %s", ctime(&currtime));
+
+#ifndef HAVE_GMP
+    logg("SECURITY WARNING: NO SUPPORT FOR DIGITAL SIGNATURES\n");
+    logg("See the FAQ at http://www.clamav.net/faq.html for an explanation.\n");
+#endif
+
+#ifdef HAVE_RESOLV_H
+    dnsdbinfo = cfgopt(copt, "DNSDatabaseInfo")->strarg;
+
+    if(opt_check(opt, "no-dns")) {
+	dnsreply = NULL;
+    } else {
+	if((dnsreply = txtquery(dnsdbinfo, &ttl))) {
+	    logg("*TTL: %d\n", ttl);
+
+	    if((pt = cli_strtok(dnsreply, 3, ":"))) {
+		    int rt;
+		    time_t ct;
+
+		rt = atoi(pt);
+		free(pt);
+		time(&ct);
+		if((int) ct - rt > 10800) {
+		    logg("^DNS record is older than 3 hours.\n");
+		    free(dnsreply);
+		    dnsreply = NULL;
+		}
+
+	    } else {
+		free(dnsreply);
+		dnsreply = NULL;
+	    }
+
+	    if(dnsreply) {
+		    int vwarning = 1;
+
+		if((pt = cli_strtok(dnsreply, 4, ":"))) {
+		    if(*pt == '0')
+			vwarning = 0;
+
+		    free(pt);
+		}
+
+		if((newver = cli_strtok(dnsreply, 0, ":"))) {
+
+		    logg("*Software version from DNS: %s\n", newver);
+
+		    if(vwarning && !strstr(cl_retver(), "devel") && !strstr(cl_retver(), "rc")) {
+			if(strcmp(cl_retver(), newver)) {
+			    logg("^Your ClamAV installation is OUTDATED!\n");
+			    logg("^Local version: %s Recommended version: %s\n", cl_retver(), pt);
+			    logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
+			    outdated = 1;
+			}
+		    }
+		}
+
+	    } else {
+		if(dnsreply) {
+		    free(dnsreply);
+		    dnsreply = NULL;
+		}
+	    }
+	}
+
+	if(!dnsreply) {
+	    logg("^Invalid DNS reply. Falling back to HTTP mode.\n");
+	}
+    }
+#endif /* HAVE_RESOLV_H */
+
+    if(opt_check(opt, "local-address")) {
+        localip = opt_arg(opt, "local-address");
+    } else if((cpt = cfgopt(copt, "LocalIPAddress"))->enabled) {
+	localip = cpt->strarg;
+    }
+
+    memset(ipaddr, 0, sizeof(ipaddr));
+
+    if((ret = updatedb("main", hostname, ipaddr, &signo, copt, dnsreply, localip, outdated)) > 50) {
+	if(dnsreply)
+	    free(dnsreply);
+
+	if(newver)
+	    free(newver);
+
+	return ret;
+
+    } else if(ret == 0)
+	updated = 1;
+
+    /* if ipaddr[0] != 0 it will use it to connect to the web host */
+    if((ret = updatedb("daily", hostname, ipaddr, &signo, copt, dnsreply, localip, outdated)) > 50) {
+	if(dnsreply)
+	    free(dnsreply);
+
+	if(newver)
+	    free(newver);
+
+	return ret;
+
+    } else if(ret == 0)
+	updated = 1;
+
+    if(dnsreply)
+	free(dnsreply);
+
+    if(updated) {
+	if(cfgopt(copt, "HTTPProxyServer")->enabled) {
+	    logg("Database updated (%d signatures) from %s\n", signo, hostname);
+	} else {
+	    logg("Database updated (%d signatures) from %s (IP: %s)\n", signo, hostname, ipaddr);
+	}
+
+#ifdef BUILD_CLAMD
+	if(opt_check(opt, "daemon-notify")) {
+		const char *clamav_conf = opt_arg(opt, "daemon-notify");
+	    if(!clamav_conf)
+		clamav_conf = CONFDIR"/clamd.conf";
+
+	    notify(clamav_conf);
+	} else if((cpt = cfgopt(copt, "NotifyClamd"))->enabled) {
+	    notify(cpt->strarg);
+	}
+#endif
+
+	if(opt_check(opt, "on-update-execute"))
+	    arg = opt_arg(opt, "on-update-execute");
+	else if((cpt = cfgopt(copt, "OnUpdateExecute"))->enabled)
+	    arg = cpt->strarg;
+
+	if(arg) {
+	    if(opt_check(opt, "daemon"))
+		execute("OnUpdateExecute", arg);
+            else
+		system(arg);
+	}
+    }
+
+    if(outdated) {
+	if(opt_check(opt, "on-outdated-execute"))
+	    arg = opt_arg(opt, "on-outdated-execute");
+	else if((cpt = cfgopt(copt, "OnOutdatedExecute"))->enabled)
+	    arg = cpt->strarg;
+
+	if(arg) {
+		char *cmd = strdup(arg);
+
+	    if((pt = strstr(cmd, "%v")) && newver && isdigit(*newver)) {
+		    char *buffer = (char *) mcalloc(strlen(cmd) + strlen(newver) + 10, sizeof(char));
+
+		if(!buffer) {
+		    logg("!downloadmanager: Can't allocate memory for buffer\n");
+		    free(cmd);
+		    if(newver)
+			free(newver);
+		    return 0;
+		}
+
+		*pt = 0; pt += 2;
+		strcpy(buffer, cmd);
+		strcat(buffer, newver);
+		strcat(buffer, pt);
+		free(cmd);
+		cmd = strdup(buffer);
+		free(buffer);
+	    }
+
+	    if(opt_check(opt, "daemon"))
+		execute("OnOutdatedExecute", cmd);
+	    else
+		system(cmd);
+
+	    free(cmd);
+	}
+    }
+
+    if(newver)
+	free(newver);
+
+    return updated ? 0 : 1;
+}
+
