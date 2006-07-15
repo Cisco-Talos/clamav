@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.257 2006/07/15 08:09:01 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.258 2006/07/15 08:11:45 njh Exp $";
 
 #define	CM_VERSION	"devel-150706"
 
@@ -2375,7 +2375,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	t = tableFind(blacklist, remoteIP);
 	pthread_mutex_unlock(&blacklist_mutex);
 
-	if((t == -1) || (t == 0))
+	if(t == 0)
 		return SMFIS_CONTINUE;	/* this IP will never be blacklisted */
 
 	privdata = (struct privdata *)cli_calloc(1, sizeof(struct privdata));
