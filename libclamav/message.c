@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.178 2006/07/03 09:19:15 njh Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.179 2006/07/15 20:32:49 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1277,14 +1277,14 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		 * Set len to be the data fork length
 		 */
 		dataforklen = ((data[byte] << 24) & 0xFF000000) |
-		      ((data[byte + 1] << 16) & 0xFF0000) |
-		      ((data[byte + 2] << 8) & 0xFF00) |
-		      (data[byte + 3] & 0xFF);
+			((data[byte + 1] << 16) & 0xFF0000) |
+			((data[byte + 2] << 8) & 0xFF00) |
+			(data[byte + 3] & 0xFF);
 
 		resourceforklen = ((data[byte + 4] << 24) & 0xFF000000) |
-		      ((data[byte + 5] << 16) & 0xFF0000) |
-		      ((data[byte + 6] << 8) & 0xFF00) |
-		      (data[byte + 7] & 0xFF);
+			((data[byte + 5] << 16) & 0xFF0000) |
+			((data[byte + 6] << 8) & 0xFF00) |
+			(data[byte + 7] & 0xFF);
 
 		cli_dbgmsg("Filename = '%s', data fork length = %lu, resource fork length = %lu bytes\n",
 			filename, dataforklen, resourceforklen);
@@ -1911,8 +1911,19 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 						break;
 					}
 
-					byte <<= 4;
-					byte += hex(*line);
+					/*
+					 * Fix by Torok Edvin
+					 * <edwintorok@gmail.com>
+					 * Handle messages that use a broken
+					 * quoted-printable encoding of
+					 * href=\"http://, instead of =3D
+					 */
+					if(byte != '=') {
+						byte <<= 4;
+						byte += hex(*line);
+					} else
+						line -= 2;
+
 					*buf++ = byte;
 				} else
 					*buf++ = *line;
