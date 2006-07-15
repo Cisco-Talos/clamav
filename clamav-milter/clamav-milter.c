@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.256 2006/07/14 21:01:51 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.257 2006/07/15 08:09:01 njh Exp $";
 
-#define	CM_VERSION	"devel-130706"
+#define	CM_VERSION	"devel-150706"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -178,9 +178,9 @@ typedef	unsigned int	in_addr_t;
  * TODO: Load balancing, allow local machine to talk via UNIX domain socket.
  * TODO: allow each line in the whitelist file to specify a quarantine email
  *	address
- * FIXME: The recent code (backlist and black-hole-mode) has introduced a
+ * FIXME: The recent code (blacklist and black-hole-mode) has introduced a
  *	memory leak. Valgrind claims there isn't a leak, but ps claims there
- *	is. Be warned.
+ *	is. Be warned. It's much worse in blacklist mode.
  */
 
 struct header_node_t {
@@ -476,10 +476,11 @@ static	int	black_hole_mode; /*
 				 * Sadly, because these days sendmail -bv
 				 * only works as root, you can't use this with
 				 * the User directive, which some won't like
-				 *
-				 * TODO: Investigate
-				 *	smfi_getsymval(ctx, "{rcpt_addr}")
 				 * which also may contain the real target name
+				 *
+				 * smfi_getsymval(ctx, "{rcpt_addr}") only
+				 * handles virtuser, it doesn't also deref
+				 * the alias table, so it isn't any help
 				 */
 
 static	table_t	*blacklist;	/* never freed */
@@ -2173,6 +2174,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 #if	defined(HAVE_INET_NTOP) || defined(WITH_TCPWRAP)
 	char ip[INET_ADDRSTRLEN];	/* IPv4 only */
 #endif
+	int t;
 	const char *remoteIP;
 	struct privdata *privdata;
 
@@ -2368,6 +2370,13 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 
 	if(blacklist_time == 0)
 		return SMFIS_CONTINUE;	/* allocate privdata per message */
+
+	pthread_mutex_lock(&blacklist_mutex);
+	t = tableFind(blacklist, remoteIP);
+	pthread_mutex_unlock(&blacklist_mutex);
+
+	if((t == -1) || (t == 0))
+		return SMFIS_CONTINUE;	/* this IP will never be blacklisted */
 
 	privdata = (struct privdata *)cli_calloc(1, sizeof(struct privdata));
 	if(privdata == NULL)
@@ -5544,7 +5553,7 @@ isWhitelisted(const char *emailaddress)
 static int
 isBlacklisted(const char *ip_address)
 {
-	time_t t, now;
+	time_t t;
 
 	if(blacklist_time == 0)
 		/* Blacklisting not being used */
@@ -5554,8 +5563,6 @@ isBlacklisted(const char *ip_address)
 
 	if(isLocalAddr(inet_addr(ip_address)))
 		return 0;
-
-	time(&now);
 
 	pthread_mutex_lock(&blacklist_mutex);
 	if(blacklist == NULL) {
@@ -5579,7 +5586,7 @@ isBlacklisted(const char *ip_address)
 		/* IP cannot be blacklisted */
 		return 0;
 
-	if((now - t) <= blacklist_time)
+	if((time((time_t *)0) - t) <= blacklist_time)
 		return 1;
 
 	/* FIXME: should be able to remove the certificate */
@@ -5627,6 +5634,9 @@ logger(const char *mess)
 /*
  * Determine our MX peers, they must never be blacklisted
  * See RFC1034 for the definition of the record formats
+ *
+ * This is only ever called once, which is wrong, but the overheard of calling
+ * this from the watchdog isn't worth it
  */
 static void
 mx(void)
@@ -5654,6 +5664,9 @@ mx(void)
 		if(blacklist == NULL)
 			return;
 	}
+
+	if(res_init() < 0)
+		return;
 
 	len = res_query(name, C_IN, T_MX, (u_char *)&q, sizeof(q));
 	if(len < 0)
