@@ -1,3 +1,7 @@
+Sun Jul 16 21:42:58 CEST 2006 (acab)
+------------------------------------
+  * libclamav: added support for wwpack32 - not yet activated
+
 Sat Jul 15 21:33:22 BST 2006 (njh)
 ----------------------------------
   * libclamav/message.c:	Some HTML.Phishing.Bank-1 were getting through,
