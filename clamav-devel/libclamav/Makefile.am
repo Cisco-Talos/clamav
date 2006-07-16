@@ -92,6 +92,8 @@ libclamav_la_SOURCES = \
 	rebuildpe.h \
 	petite.c \
 	petite.h \
+	wwunpack.c \
+	wwunpack.h \
 	fsg.c \
 	fsg.h \
 	line.c \

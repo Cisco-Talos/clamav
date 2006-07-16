@@ -41,6 +41,9 @@
 #include "spin.h"
 #include "upx.h"
 #include "yc.h"
+#ifdef WWP32
+#include "wwunpack.h"
+#endif
 #include "scanners.h"
 #include "rebuildpe.h"
 #include "str.h"
@@ -374,7 +377,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     if(!pe_plus) { /* PE */
 
 	if(read(desc, &optional_hdr32, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32)) {
-	    cli_dbgmsg("Can't optional file header\n");
+	    cli_dbgmsg("Can't read optional file header\n");
 	    if(DETECT_BROKEN) {
 		if(ctx->virname)
 		    *ctx->virname = "Broken.Executable";
@@ -1557,8 +1560,10 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    free(src);
 	    free(section_hdr);
 
-	    if(!(tempfile = cli_gentemp(NULL)))
+	    if(!(tempfile = cli_gentemp(NULL))) {
+	        free(dest);
 		return CL_EMEM;
+	    }
 
 	    if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
 		cli_dbgmsg("UPX/FSG: Can't create file %s\n", tempfile);
@@ -1654,8 +1659,11 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		}
 	    }
 
-	    if(!(tempfile = cli_gentemp(NULL)))
-		return CL_EMEM;
+	    if(!(tempfile = cli_gentemp(NULL))) {
+	      free(dest);
+	      free(section_hdr);
+	      return CL_EMEM;
+	    }
 
 	    if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
 		cli_dbgmsg("Petite: Can't create file %s\n", tempfile);
@@ -1733,8 +1741,11 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    return CL_EIO;
 	}
 
-	if(!(tempfile = cli_gentemp(NULL)))
-	    return CL_EMEM;
+	if(!(tempfile = cli_gentemp(NULL))) {
+	  free(spinned);
+	  free(section_hdr);
+	  return CL_EMEM;
+	}
 
 	if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
 	    cli_dbgmsg("PESpin: Can't create file %s\n", tempfile);
@@ -1799,8 +1810,11 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    return CL_EIO;
 	  }
 
-	  if(!(tempfile = cli_gentemp(NULL)))
-	      return CL_EMEM;
+	  if(!(tempfile = cli_gentemp(NULL))) {
+	    free(spinned);
+	    free(section_hdr);
+	    return CL_EMEM;
+	  }
 
 	  if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
 	    cli_dbgmsg("yC: Can't create file %s\n", tempfile);
@@ -1843,6 +1857,130 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 	}
     }
+
+#ifdef WWP32
+    /* WWPack */
+
+    if(nsections > 1 &&
+       EC32(section_hdr[nsections-1].SizeOfRawData)>0x2b1 &&
+       EC32(optional_hdr32.AddressOfEntryPoint) == EC32(section_hdr[nsections - 1].VirtualAddress) &&
+       EC32(section_hdr[nsections - 1].VirtualAddress)+EC32(section_hdr[nsections - 1].SizeOfRawData) == max &&
+       memcmp(buff, "\x53\x55\x8b\xe8\x33\xdb\xeb", 7) == 0 &&
+       memcmp(buff+0x68, "\xe8\x00\x00\x00\x00\x58\x2d\x6d\x00\x00\x00\x50\x60\x33\xc9\x50\x58\x50\x50", 19) == 0)  {
+      uint32_t headsize=EC32(section_hdr[nsections - 1].PointerToRawData);
+      char *dest, *wwp;
+
+      for(i = 0 ; i < nsections-1; i++) {
+	uint32_t offset = cli_rawaddr(EC32(section_hdr[i].VirtualAddress), section_hdr, nsections, &err);
+	if (!err && offset<headsize) headsize=offset;
+      }
+      
+      dsize = max-min+headsize-EC32(section_hdr[nsections - 1].SizeOfRawData);
+
+      if(ctx->limits && ctx->limits->maxfilesize && dsize > ctx->limits->maxfilesize) {
+	cli_dbgmsg("WWPack: Size exceeded (dsize: %u, max: %lu)\n", dsize, ctx->limits->maxfilesize);
+	free(section_hdr);
+	if(BLOCKMAX) {
+	  *ctx->virname = "PE.WWPack.ExceededFileSize";
+	  return CL_VIRUS;
+	} else {
+	  return CL_CLEAN;
+	}
+      }
+
+      if((dest = (char *) cli_calloc(dsize, sizeof(char))) == NULL) {
+	cli_dbgmsg("WWPack: Can't allocate %d bytes\n", dsize);
+	free(section_hdr);
+	return CL_EMEM;
+      }
+      memset(dest, 0, dsize);
+
+      lseek(desc, 0, SEEK_SET);
+      if((size_t) read(desc, dest, headsize) != headsize) {
+	cli_dbgmsg("WWPack: Can't read %d bytes from headers\n", headsize);
+	free(dest);
+	free(section_hdr);
+	return CL_EIO;
+      }
+
+      for(i = 0 ; i < nsections-1; i++) {
+	if(section_hdr[i].SizeOfRawData) {
+	  uint32_t offset = cli_rawaddr(EC32(section_hdr[i].VirtualAddress), section_hdr, nsections, &err);
+	  
+	  if(err || lseek(desc, offset, SEEK_SET) == -1 || (unsigned int) read(desc, dest + headsize + EC32(section_hdr[i].VirtualAddress) - min, EC32(section_hdr[i].SizeOfRawData)) != EC32(section_hdr[i].SizeOfRawData)) {
+	    free(dest);
+	    free(section_hdr);
+	    return CL_EIO;
+	  }
+	}
+      }
+
+      if((wwp = (char *) cli_calloc(EC32(section_hdr[nsections - 1].SizeOfRawData), sizeof(char))) == NULL) {
+	cli_dbgmsg("WWPack: Can't allocate %d bytes\n", EC32(section_hdr[nsections - 1].SizeOfRawData));
+	free(dest);
+	free(section_hdr);
+	return CL_EMEM;
+      }
+
+      lseek(desc, EC32(section_hdr[nsections - 1].PointerToRawData), SEEK_SET);      
+      if((size_t) read(desc, wwp, EC32(section_hdr[nsections - 1].SizeOfRawData)) != EC32(section_hdr[nsections - 1].SizeOfRawData)) {
+	cli_dbgmsg("WWPack: Can't read %d bytes from wwpack sect\n", EC32(section_hdr[nsections - 1].SizeOfRawData));
+	free(dest);
+	free(wwp);
+	free(section_hdr);
+	return CL_EIO;
+      }
+
+      if (!wwunpack(dest, dsize, headsize, min, EC32(section_hdr[nsections-1].VirtualAddress),  e_lfanew, wwp, EC32(section_hdr[nsections - 1].SizeOfRawData), nsections-1)) {
+	
+	free(wwp);
+
+	if(!(tempfile = cli_gentemp(NULL)))
+	  return CL_EMEM;
+
+	if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+	  cli_dbgmsg("WWPack: Can't create file %s\n", tempfile);
+	  free(tempfile);
+	  free(dest);
+	  free(section_hdr);
+	  return CL_EIO;
+	}
+
+	if((unsigned int) write(ndesc, dest, dsize) != dsize) {
+	  cli_dbgmsg("UPX/FSG: Can't write %d bytes\n", dsize);
+	  close(ndesc);
+	  free(tempfile);
+	  free(dest);
+	  free(section_hdr);
+	  return CL_EIO;
+	}
+
+	free(dest);
+	cli_dbgmsg("WWPack: Unpacked and rebuilt executable saved in %s\n", tempfile);
+	fsync(ndesc);
+	lseek(ndesc, 0, SEEK_SET);
+
+	if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) {
+	  free(section_hdr);
+	  close(ndesc);
+	  if(!cli_leavetemps_flag)
+	    unlink(tempfile);
+	  free(tempfile);
+	  return CL_VIRUS;
+	}
+
+	close(ndesc);
+	if(!cli_leavetemps_flag)
+	  unlink(tempfile);
+	free(tempfile);
+      } else {
+	free(wwp);
+	free(dest);
+	cli_dbgmsg("WWPpack: Decompression failed\n");
+      }
+    }
+#endif
+
 
     /* to be continued ... */
 
