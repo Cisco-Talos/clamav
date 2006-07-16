@@ -19,10 +19,12 @@
 
 /*
 ** wwunpack.c
+**
 ** 09/07/2k6 - Campioni del mondo!!!
 ** 14/07/2k6 - RCE'ed + standalone sect unpacker
 ** 15/07/2k6 - Merge started
 ** 17/07/2k6 - Rebuild
+** 18/07/2k6 - Secured (well, hopefully...)
 **
 */
 
@@ -37,13 +39,14 @@
 /*
 ** TODO:
 **
-** use cli_readint32
-** add bound checks
+** review
 ** check eax vs al
+** check the missed samples
+** (check for dll's)
+** (have a look at older versions)
 **
 */
 
-#ifdef WWP32
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -62,7 +65,19 @@
 #include "others.h"
 #include "wwunpack.h"
 
-static void getbits(uint8_t X, uint32_t *eax, uint32_t *bitmap, uint8_t *bits, char **src) {
+#define VAALIGN(s) (((s)/0x1000+((s)%0x1000!=0))*0x1000)
+#define FIXVS(v, r) (VAALIGN((r>v)?r:v))
+
+
+static int getbitmap(uint32_t *bitmap, char **src, uint8_t *bits, char *buf, unsigned int size) {
+  if (! CLI_ISCONTAINED(buf, size, *src, 4)) return 1;
+  *bitmap=cli_readint32(*src);
+  *src+=4;
+  *bits=32;
+  return 0;
+}
+
+static int getbits(uint8_t X, uint32_t *eax, uint32_t *bitmap, uint8_t *bits, char **src, char *buf, unsigned int size) {
   *eax=*bitmap>>(32-X);
   if (*bits>X) {
     *bitmap<<=X;
@@ -70,21 +85,19 @@ static void getbits(uint8_t X, uint32_t *eax, uint32_t *bitmap, uint8_t *bits, c
   } else if (*bits<X) {
     X-=*bits;
     *eax>>=X;
-    *bitmap=*(uint32_t *)(*src);
-    *src+=4;
+    if (getbitmap(bitmap, src, bits, buf, size)) return 1;
     *eax<<=X;
     *eax|=*bitmap>>(32-X);
     *bitmap<<=X;
-    *bits=32-X;
+    *bits-=X;
   } else {
-    *bitmap=*(uint32_t *)(*src);
-    *src+=4;
-    *bits=32;
+    if (getbitmap(bitmap, src, bits, buf, size)) return 1;
   }
+  return 0;
 }
 
-
-static void wunpsect(char *src, char *dst) {
+static int wunpsect(char *packed, char *unpacked, unsigned int psize, unsigned int usize) {
+  char *src=packed, *dst=unpacked;
   uint32_t bitmap, eax;
   uint8_t bits;
   unsigned int lostbit, getmorestuff;
@@ -92,37 +105,36 @@ static void wunpsect(char *src, char *dst) {
   uint16_t backsize;
   uint8_t oal;
 
-  eax=bitmap=*(uint32_t *)src;
-  src+=4;
-  bits=32;
-
+  if (getbitmap(&bitmap, &src, &bits, packed, psize)) return 1;
+  eax=bitmap;
 
   while (1) {
     lostbit=bitmap>>31;
     bitmap<<=1;
     bits--;
     if (!lostbit && bits) {
+      if (!(CLI_ISCONTAINED(packed, psize, src, 1) && CLI_ISCONTAINED(unpacked, usize, dst, 1))) return 1;
       *dst++=*src++;
       continue;
     }
     
     if (!bits) {
-      eax=bitmap=*(uint32_t *)src;
-      bits=32;
-      src+=4;
+      if (getbitmap(&bitmap, &src, &bits, packed, psize)) return 1;
+      eax=bitmap;
       if (!lostbit) {
+	if (!(CLI_ISCONTAINED(packed, psize, src, 1) && CLI_ISCONTAINED(unpacked, usize, dst, 1))) return 1;
 	*dst++=*src++;
 	continue;
       }
     }
     
-    getbits(2, &eax, &bitmap, &bits, &src);
+    if (getbits(2, &eax, &bitmap, &bits, &src, packed, psize)) return 1;
     
     if ((eax&0xff)>=3) {
       /* 50ff - two_bytes */
       uint8_t fetchbits;
       
-      getbits(2, &eax, &bitmap, &bits, &src);
+      if (getbits(2, &eax, &bitmap, &bits, &src, packed, psize)) return 1;
       fetchbits=(eax&0xff)+5;
       eax--;
       if ((int16_t)(eax&0xffff)<=0) {
@@ -136,10 +148,11 @@ static void wunpsect(char *src, char *dst) {
 	backbytes-=0x9f;
       }
       /* 5125 */
-      getbits(fetchbits, &eax, &bitmap, &bits, &src);
+      if (getbits(fetchbits, &eax, &bitmap, &bits, &src, packed, psize)) return 1;
       if ((eax&0xffff)==0x1ff) break;
       eax&=0xffff;
       backbytes+=eax;
+      if (!(CLI_ISCONTAINED(unpacked, usize, dst-backbytes, 2) && CLI_ISCONTAINED(unpacked, usize, dst, 2))) return 1;
       *dst=*(dst-backbytes);
       dst++;
       *dst=*(dst-backbytes);
@@ -150,9 +163,9 @@ static void wunpsect(char *src, char *dst) {
     /* 5143 - more_backbytes */      
     oal=eax&0xff;
     getmorestuff=1;
-    /* FIXME: pushf */
+
     
-    getbits(3, &eax, &bitmap, &bits, &src);
+    if (getbits(3, &eax, &bitmap, &bits, &src, packed, psize)) return 1;
     if ((eax&0xff)<=3) {
       lostbit=0;
       if ((eax&0xff)==3) {
@@ -160,14 +173,12 @@ static void wunpsect(char *src, char *dst) {
 	lostbit=bitmap>>31;
 	bitmap<<=1;
 	bits--;
-	if (!bits) { 
-	  bitmap=*(uint32_t *)src;
-	  bits=32;
-	  src+=4;
+	if (!bits) {
+	  if (getbitmap(&bitmap, &src, &bits, packed, psize)) return 1; 
 	}
       }
       eax=eax+lostbit+5;
-      /* FIXME: jmp more_bb_commondock */
+      /* jmp more_bb_commondock */
     } else { /* >3 */
       /* 5160 - more_bb_morethan3 */
       if ((eax&0xff)==4) {
@@ -175,27 +186,25 @@ static void wunpsect(char *src, char *dst) {
 	lostbit=bitmap>>31;
 	bitmap<<=1;
 	bits--;
-	if (!bits) { 
-	  bitmap=*(uint32_t *)src;
-	  bits=32;
-	  src+=4;
+	if (!bits) {
+	  if (getbitmap(&bitmap, &src, &bits, packed, psize)) return 1;  
 	}
 	eax=eax+lostbit+6;
-	/* FIXME: jmp more_bb_commondock */
+	/* jmp more_bb_commondock */
       } else { /* !=4 */
 	eax+=7;
 	if ((eax&0xff)>=0x0d) {
 	  getmorestuff=0; /* jmp more_bb_PASTcommondock */
 	  if ((eax&0xff)==0x0d) {
 	    /* 5179  */
-	    getbits(0x0e, &eax, &bitmap, &bits, &src);
+	    if (getbits(0x0e, &eax, &bitmap, &bits, &src, packed, psize)) return 1;
 	    eax+=0x1fe1;
 	  } else {
 	    /* 516c */
-	    getbits(0x0f, &eax, &bitmap, &bits, &src);
+	    if (getbits(0x0f, &eax, &bitmap, &bits, &src, packed, psize)) return 1;
 	    eax+=0x5fe1;
 	  }
-	  /* FIXME: jmp more_bb_PASTcommondock */
+	  /* jmp more_bb_PASTcommondock */
 	} /* al >= 0d */
       } /* al != 4 */
     } /* >3 */
@@ -203,14 +212,14 @@ static void wunpsect(char *src, char *dst) {
     if (getmorestuff) {
       /* 5192 - more_bb_commondock */
       uint16_t bk=(1<<(eax&0xff))-0x1f;
-      getbits((eax&0xff), &eax, &bitmap, &bits, &src);
+      if (getbits((eax&0xff), &eax, &bitmap, &bits, &src, packed, psize)) return 1;
       eax+=bk;
     }
     
     /* 51a7 - more_bb_pastcommondock */
     eax&=0xffff;
     backbytes=eax;
-    backsize=3+(oal!=1); /* FIXME: move up and remove oal */
+    backsize=3+(oal!=1);
     
     if (oal<1) { /* overrides backsize */
       /* 51bb - more_bb_again */
@@ -219,10 +228,8 @@ static void wunpsect(char *src, char *dst) {
       lostbit=bitmap>>31;
       bitmap<<=1;
       bits--;
-      if (!bits) { 
-	bitmap=*(uint32_t *)src;
-	bits=32;
-	src+=4;
+      if (!bits) {
+	if (getbitmap(&bitmap, &src, &bits, packed, psize)) return 1;  
       }
       if (!lostbit) {
 	/* 51c2 */
@@ -230,26 +237,24 @@ static void wunpsect(char *src, char *dst) {
 	lostbit=bitmap>>31;
 	bitmap<<=1;
 	bits--;
-	if (!bits) { 
-	  bitmap=*(uint32_t *)src;
-	  bits=32;
-	  src+=4;
+	if (!bits) {
+	  if (getbitmap(&bitmap, &src, &bits, packed, psize)) return 1;   
 	}
 	eax=5+lostbit;
-	/* FIXME: jmp setsize_and_backcopy */
+	/* jmp setsize_and_backcopy */
       } else {
 	/* 51ce - more_bb_again_and_again */
-	getbits(3, &eax, &bitmap, &bits, &src);
+	if (getbits(3, &eax, &bitmap, &bits, &src, packed, psize)) return 1;
 	if (eax&0xff) {
 	  /* 51e6 */
 	  eax+=6;
-	  /* FIXME: jmp setsize_and_backcopy */
+	  /* jmp setsize_and_backcopy */
 	} else {
-	  getbits(4, &eax, &bitmap, &bits, &src);
+	  if (getbits(4, &eax, &bitmap, &bits, &src, packed, psize)) return 1;
 	  if (eax&0xff) {
 	    /* 51e4 */
 	    eax+=7+6;
-	    /* FIXME: jmp setsize_and_backcopy */
+	    /* jmp setsize_and_backcopy */
 	  } else {
 	    /* 51ea - OMGWTF */
 	    uint8_t c=4;
@@ -265,19 +270,17 @@ static void wunpsect(char *src, char *dst) {
 		lostbit=bitmap>>31;
 		bitmap<<=1;
 		bits--;
-		if (!bits) { 
-		  bitmap=*(uint32_t *)src;
-		  bits=32;
-		  src+=4;
+		if (!bits) {
+		  if (getbitmap(&bitmap, &src, &bits, packed, psize)) return 1;    
 		}
 		c++;
 		if (!lostbit) continue;
-		getbits(c, &eax, &bitmap, &bits, &src);
+		if (getbits(c, &eax, &bitmap, &bits, &src, packed, psize)) return 1;
 		d+=eax&0xff;
 		eax&=0xffffff00;
 		eax|=d&0xff;
 	      } else {
-		getbits(14, &eax, &bitmap, &bits, &src);
+		if (getbits(14, &eax, &bitmap, &bits, &src, packed, psize)) return 1;
 	      }
 	      break;
 	    } /* while */
@@ -289,13 +292,15 @@ static void wunpsect(char *src, char *dst) {
     }
 
     /* 521e - backcopy */
+    if (!(CLI_ISCONTAINED(unpacked, usize, dst-backbytes, backsize) && CLI_ISCONTAINED(unpacked, usize, dst, backsize))) return 1;
     while(backsize--){
       *dst=*(dst-backbytes);
       dst++;
     }
 
   } /* while true */
-  
+
+  return 0;
 }
 
 int wwunpack(char *exe, uint32_t exesz, uint32_t headsize, uint32_t min, uint32_t wwprva, uint32_t e_lfanew, char *wwp, uint32_t wwpsz, uint16_t sects) {
@@ -310,7 +315,7 @@ int wwunpack(char *exe, uint32_t exesz, uint32_t headsize, uint32_t min, uint32_
       cli_dbgmsg("WWPack: next chunk out ouf file, giving up.\n");
       return 1;
     }
-    if ((csize=cli_readint32(stuff+8)*4)!=cli_readint32(stuff+12)+4) {
+    if ((csize=cli_readint32(stuff+8)*4)!=(uint32_t)cli_readint32(stuff+12)+4) {
       cli_dbgmsg("WWPack: inconsistent/hacked data, go figure!\n");
       return 1;
     }
@@ -325,7 +330,11 @@ int wwunpack(char *exe, uint32_t exesz, uint32_t headsize, uint32_t min, uint32_
       return 1;
     }
     memcpy(packed, unpacked, csize);
-    wunpsect(packed, unpacked);
+    if (wunpsect(packed, unpacked, csize, exesz-(unpacked-exe))) {
+      free(packed);
+      cli_dbgmsg("WWPack: unpacking failed.\n");
+      return 1;
+    }
     free(packed);
     if (!stuff[16]) break;
     stuff+=17;
@@ -339,9 +348,6 @@ int wwunpack(char *exe, uint32_t exesz, uint32_t headsize, uint32_t min, uint32_
   cli_dbgmsg("WWPack: found OEP @%x\n", csize);
   cli_writeint32(stuff+0x28, csize);
 
-#define VAALIGN(s) (((s)/0x1000+((s)%0x1000!=0))*0x1000)
-#define FIXVS(v, r) (VAALIGN((r>v)?r:v))
-
   stuff+=0xf8;
   while (sects--) {
     uint32_t v=cli_readint32(stuff+8);
@@ -354,8 +360,5 @@ int wwunpack(char *exe, uint32_t exesz, uint32_t headsize, uint32_t min, uint32_
   }
   memset(stuff, 0, 0x28);
 
-  cli_dbgmsg("WWPack: Successfully rebuilt\n", csize);
   return 0;
 }
-
-#endif
