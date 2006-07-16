@@ -41,9 +41,7 @@
 #include "spin.h"
 #include "upx.h"
 #include "yc.h"
-#ifdef WWP32
 #include "wwunpack.h"
-#endif
 #include "scanners.h"
 #include "rebuildpe.h"
 #include "str.h"
@@ -1858,7 +1856,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
     }
 
-#ifdef WWP32
+
     /* WWPack */
 
     if(nsections > 1 &&
@@ -1870,7 +1868,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
       uint32_t headsize=EC32(section_hdr[nsections - 1].PointerToRawData);
       char *dest, *wwp;
 
-      for(i = 0 ; i < nsections-1; i++) {
+      for(i = 0 ; i < (unsigned int)nsections-1; i++) {
 	uint32_t offset = cli_rawaddr(EC32(section_hdr[i].VirtualAddress), section_hdr, nsections, &err);
 	if (!err && offset<headsize) headsize=offset;
       }
@@ -1903,7 +1901,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	return CL_EIO;
       }
 
-      for(i = 0 ; i < nsections-1; i++) {
+      for(i = 0 ; i < (unsigned int)nsections-1; i++) {
 	if(section_hdr[i].SizeOfRawData) {
 	  uint32_t offset = cli_rawaddr(EC32(section_hdr[i].VirtualAddress), section_hdr, nsections, &err);
 	  
@@ -1979,7 +1977,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	cli_dbgmsg("WWPpack: Decompression failed\n");
       }
     }
-#endif
 
 
     /* to be continued ... */
