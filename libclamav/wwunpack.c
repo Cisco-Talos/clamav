@@ -41,7 +41,6 @@
 **
 ** review
 ** check eax vs al
-** check the missed samples
 ** (check for dll's)
 ** (have a look at older versions)
 **
@@ -347,6 +346,10 @@ int wwunpack(char *exe, uint32_t exesz, uint32_t headsize, uint32_t min, uint32_
   csize=cli_readint32(wwp+0x295)+wwprva+0x299;
   cli_dbgmsg("WWPack: found OEP @%x\n", csize);
   cli_writeint32(stuff+0x28, csize);
+
+  csize=cli_readint32(stuff+0x50)-VAALIGN(wwpsz);
+  cli_writeint32(stuff+0x50, csize);
+
 
   stuff+=0xf8;
   while (sects--) {
