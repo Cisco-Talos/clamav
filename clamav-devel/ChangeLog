@@ -1,3 +1,8 @@
+Mon Jul 17 11:13:18 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	Added sanity check for --server when --external isn't
+				given
+
 Mon Jul 17 11:40:14 CEST 2006 (tk)
 ----------------------------------
   * freshclam/manager.c: fix NULL pointer dereference in new code, reported
