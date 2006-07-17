@@ -1,3 +1,8 @@
+Mon Jul 17 11:40:14 CEST 2006 (tk)
+----------------------------------
+  * freshclam/manager.c: fix NULL pointer dereference in new code, reported
+			 by Gianluigi Tiesi <sherpya*netfarm.it>
+
 Mon Jul 17 03:00:21 CEST 2006 (acab)
 ------------------------------------
   * libclamav/wwunpack.c: image size fixup 

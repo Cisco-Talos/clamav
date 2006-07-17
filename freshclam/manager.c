@@ -854,10 +854,11 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
 	return 1;
     }
 
-    currver = current->version;
 
-    if(current)
+    if(current) {
+	currver = current->version;
 	cl_cvdfree(current);
+    }
 
     /*
     if(ipaddr[0]) {
