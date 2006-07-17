@@ -935,8 +935,11 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    return CL_EMEM;
 		}
 
-		if(!(tempfile = cli_gentemp(NULL)))
+		if(!(tempfile = cli_gentemp(NULL))) {
+		    free(section_hdr);
+		    free(src);
 		    return CL_EMEM;
+		}
 
 		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
 		    cli_dbgmsg("FSG: Can't create file %s\n", tempfile);
@@ -1135,8 +1138,13 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		oldep = EC32(optional_hdr32.AddressOfEntryPoint) + 161 + 6 + cli_readint32(buff+163);
 		cli_dbgmsg("FSG: found old EP @%x\n", oldep);
 
-		if(!(tempfile = cli_gentemp(NULL)))
+		if(!(tempfile = cli_gentemp(NULL))) {
+		    free(section_hdr);
+		    free(src);
+		    free(dest);
+		    free(sections);
 		    return CL_EMEM;
+		}
 
 		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
 		    cli_dbgmsg("FSG: Can't create file %s\n", tempfile);
@@ -1340,8 +1348,13 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		oldep = EC32(optional_hdr32.AddressOfEntryPoint) + gp + 6 + cli_readint32(src+gp+2+oldep);
 		cli_dbgmsg("FSG: found old EP @%x\n", oldep);
 
-		if(!(tempfile = cli_gentemp(NULL)))
+		if(!(tempfile = cli_gentemp(NULL))) {
+		    free(section_hdr);
+		    free(src);
+		    free(dest);
+		    free(sections);
 		    return CL_EMEM;
+		}
 
 		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
 		    cli_dbgmsg("FSG: Can't create file %s\n", tempfile);
@@ -1933,8 +1946,11 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	
 	free(wwp);
 
-	if(!(tempfile = cli_gentemp(NULL)))
+	if(!(tempfile = cli_gentemp(NULL))) {
+	  free(dest);
+	  free(section_hdr);
 	  return CL_EMEM;
+	}
 
 	if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
 	  cli_dbgmsg("WWPack: Can't create file %s\n", tempfile);

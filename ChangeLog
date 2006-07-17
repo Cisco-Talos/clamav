@@ -1,3 +1,7 @@
+Mon Jul 17 12:15:41 CEST 2006 (tk)
+----------------------------------
+  * libclamav/pe.c: fix error path memory leaks
+
 Mon Jul 17 11:13:18 BST 2006 (njh)
 ----------------------------------
   * clamav-milter:	Added sanity check for --server when --external isn't
