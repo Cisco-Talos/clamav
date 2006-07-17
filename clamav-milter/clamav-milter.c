@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.259 2006/07/17 10:12:55 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.260 2006/07/17 15:53:33 njh Exp $";
 
 #define	CM_VERSION	"devel-170706"
 
@@ -84,6 +84,10 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.259 2006/07/17 10:12:55 nj
 #if	HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
+#if	HAVE_RESOLV_H
+#include <arpa/nameser.h>	/* for HEADER */
+#include <resolv.h>
+#endif
 
 #if HAVE_MMAP
 #if HAVE_SYS_MMAN_H
@@ -97,7 +101,6 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.259 2006/07/17 10:12:55 nj
 #include <sys/sendfile.h>	/* FIXME: use sendfile on BSD not Linux */
 #include <libintl.h>
 #include <locale.h>
-#include <resolv.h>
 
 #define	gettext_noop(s)	s
 #define	_(s)	gettext(s)
