@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.258 2006/07/15 08:11:45 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.259 2006/07/17 10:12:55 njh Exp $";
 
-#define	CM_VERSION	"devel-150706"
+#define	CM_VERSION	"devel-170706"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -167,20 +167,17 @@ typedef	unsigned int	in_addr_t;
  *	Having said that, with LogSysLog you can (on Linux) configure the system
  *	to get messages on the system console, see syslog.conf(5), also you
  *	can use wall(1) in the VirusEvent entry in clamd.conf
- * TODO: build with libclamav.so rather than libclamav.a
  * TODO: Decide action (bounce, discard, reject etc.) based on the virus
  *	found. Those with faked addresses, such as SCO.A want discarding,
  *	others could be bounced properly.
- * TODO: Encrypt mails sent to clamd to stop sniffers
+ * TODO: Encrypt mails sent to clamd to stop sniffers. Sending by UNIX domain
+ *	sockets is better
  * TODO: Test with IPv6
- * TODO: Files can be scanned with "SCAN" not "STREAM" if clamd is on the same
- *	machine when talking via INET domain socket.
  * TODO: Load balancing, allow local machine to talk via UNIX domain socket.
  * TODO: allow each line in the whitelist file to specify a quarantine email
  *	address
- * FIXME: The recent code (blacklist and black-hole-mode) has introduced a
- *	memory leak. Valgrind claims there isn't a leak, but ps claims there
- *	is. Be warned. It's much worse in blacklist mode.
+ * FIXME: The blacklist code may be leaky. Valgrind claims there isn't a leak,
+ *	but ps claims there is. Be warned.
  */
 
 struct header_node_t {
@@ -570,7 +567,7 @@ int
 main(int argc, char **argv)
 {
 	extern char *optarg;
-	int i, Bflag = 0;
+	int i, Bflag = 0, server = 0;
 	char *cfgfile = NULL;
 	const struct cfgstruct *cpt;
 	char version[VERSION_LENGTH + 1];
@@ -877,12 +874,7 @@ main(int argc, char **argv)
 				smfilter.xxfi_flags |= SMFIF_CHGHDRS|SMFIF_ADDRCPT|SMFIF_DELRCPT;
 				break;
 			case 's':	/* server running clamd */
-#ifdef	notdef	/* don't define - forces --external to be listed first :-( */
-				if(!external) {
-					fputs("--server can only be used with --external\n", stderr);
-					return EX_USAGE;
-				}
-#endif
+				server++;
 				serverHostNames = optarg;
 				break;
 			case 'F':	/* signature file */
@@ -935,7 +927,16 @@ main(int argc, char **argv)
 		}
 	}
 
-	/* FIXME: error if --servers and --external is not given */
+	/*
+	 * Check sanity of --external and --server arguments
+	 */
+	if(server && !external) {
+		fprintf(stderr,
+			"%s: --server can only be used with --external\n",
+			argv[0]);
+		return EX_USAGE;
+	}
+
 	/* TODO: support freshclam's daemon notify if --external is not given */
 
 	if(optind == argc) {
@@ -5650,8 +5651,6 @@ mx(void)
 	} q;
 	const HEADER *hp;
 	int len, i;
-	u_short type, pref;
-	u_long ttl;
 
 	if(gethostname(name, sizeof(name)) < 0) {
 		perror("gethostname");
@@ -5687,6 +5686,8 @@ mx(void)
 
 	while((--i >= 0) && (p < end)) {
 		long addr;
+		u_short type, pref;
+		u_long ttl;	/* unused */
 
 		if((len = dn_expand(q.u, end, p, buf, sizeof(buf) - 1)) < 0)
 			break;
@@ -5728,8 +5729,6 @@ resolve(const char *host)
 	} q;
 	const HEADER *hp;
 	int len, i;
-	u_short type;
-	u_long ttl;
 
 	if((host == NULL) || (*host == '\0'))
 		return;
@@ -5752,6 +5751,8 @@ resolve(const char *host)
 	i = ntohs(hp->ancount);
 
 	while((--i >= 0) && (p < end)) {
+		u_short type;
+		u_long ttl;
 		struct in_addr addr;
 		const char *ip;
 
@@ -5760,7 +5761,7 @@ resolve(const char *host)
 		p += len;
 		GETSHORT(type, p);
 		p += INT16SZ;
-		GETLONG(ttl, p);
+		GETLONG(ttl, p);	/* unused */
 		GETSHORT(len, p);
 		if(type != T_A) {
 			p += len;
