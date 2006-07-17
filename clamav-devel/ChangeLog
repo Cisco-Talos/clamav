@@ -1,3 +1,7 @@
+Mon Jul 17 16:54:05 BST 2006 (njh)
+----------------------------------
+ * clamav-milter:	Fix compilation error on NetBSD 2.0
+
 Mon Jul 17 12:15:41 CEST 2006 (tk)
 ----------------------------------
   * libclamav/pe.c: fix error path memory leaks
