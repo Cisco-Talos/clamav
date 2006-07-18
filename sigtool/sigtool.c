@@ -931,8 +931,10 @@ static int runcdiff(struct optstruct *opt)
 	int fd, ret;
 
 
-    if((fd = open(opt_arg(opt, "run-cdiff"), O_RDONLY)) == -1)
+    if((fd = open(opt_arg(opt, "run-cdiff"), O_RDONLY)) == -1) {
+	mprintf("!runcdiff: Can't open file %s\n", opt_arg(opt, "run-cdiff"));
 	return -1;
+    }
 
     ret = cdiff_apply(fd);
     close(fd);
@@ -1042,12 +1044,119 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
     return 0;
 }
 
+static int verifycdiff(const char *diff, const char *cvd)
+{
+	char *tempdir, cwd[512], buff[1024], info[32], *pt, *md5;
+	FILE *fh;
+	int ret = 0, fd;
+
+
+    tempdir = cli_gentemp(NULL);
+    if(!tempdir) {
+	mprintf("!verifycdiff: Can't generate temporary name for tempdir\n");
+	return -1;
+    }
+
+    if(mkdir(tempdir, 0700) == -1) {
+	mprintf("!verifycdiff: Can't create directory %s\n", tempdir);
+	free(tempdir);
+	return -1;
+    }
+
+    if(cvd_unpack(cvd, tempdir) == -1) {
+	mprintf("!verifycdiff: Can't unpack CVD file %s\n", cvd);
+	rmdirs(tempdir);
+	free(tempdir);
+	return -1;
+    }
+
+    if((fd = open(diff, O_RDONLY)) == -1) {
+	mprintf("!verifycdiff: Can't open diff file %s\n", diff);
+	rmdirs(tempdir);
+	free(tempdir);
+	return -1;
+    }
+
+    getcwd(cwd, sizeof(cwd));
+
+    if(chdir(tempdir) == -1) {
+	mprintf("!verifycdiff: Can't chdir to %s\n", tempdir);
+	rmdirs(tempdir);
+	free(tempdir);
+	close(fd);
+	return -1;
+    }
+
+    if(cdiff_apply(fd) == -1) {
+	mprintf("!verifycdiff: Can't apply %s\n", diff);
+	chdir(cwd);
+	rmdirs(tempdir);
+	free(tempdir);
+	close(fd);
+	return -1;
+    }
+    close(fd);
+
+    if(strstr(cvd, "main.cvd"))
+	strcpy(info, "main.info");
+    else
+	strcpy(info, "daily.info");
+
+    if(!(fh = fopen(info, "r"))) {
+	mprintf("!verifycdiff: Can't open %s\n", info);
+	chdir(cwd);
+	rmdirs(tempdir);
+	free(tempdir);
+	return -1;
+    }
+
+    fgets(buff, sizeof(buff), fh);
+
+    if(strncmp(buff, "ClamAV-VDB", 10)) {
+	mprintf("!verifycdiff: Incorrect info file %s\n", info);
+	chdir(cwd);
+	rmdirs(tempdir);
+	free(tempdir);
+	return -1;
+    }
+
+    while(fgets(buff, sizeof(buff), fh)) {
+	cli_chomp(buff);
+	if(!(pt = strchr(buff, ':'))) {
+	    mprintf("!verifycdiff: Incorrect format of %s\n", info);
+	    ret = -1;
+	    break;
+	}
+	*pt++ = 0;
+	if(!(md5 = cli_md5file(buff))) {
+	    mprintf("!verifycdiff: Can't generate MD5 for %s\n", buff);
+	    ret = -1;
+	    break;
+	}
+	if(strcmp(pt, md5)) {
+	    mprintf("!verifycdiff: %s has incorrect checksum\n", buff);
+	    ret = -1;
+	    break;
+	}
+    }
+
+    fclose(fh);
+    chdir(cwd);
+    rmdirs(tempdir);
+    free(tempdir);
+
+    if(!ret)
+	mprintf("Verification: %s correctly applies to %s\n", diff, cvd);
+
+    return ret;
+}
+
 static int makediff(struct optstruct *opt)
 {
 	FILE *diff;
 	DIR *dd;
 	struct dirent *dent;
-	char *odir, *ndir, opath[1024], name[32];
+	char *odir, *ndir, opath[1024], name[32], broken[32], cwd[512];
 	struct cl_cvd *cvd;
 	unsigned int oldver, newver;
 
@@ -1125,6 +1234,8 @@ static int makediff(struct optstruct *opt)
     else
 	snprintf(name, sizeof(name), "daily-%u.cdiff", newver);
 
+    getcwd(cwd, sizeof(cwd));
+
     if(!(diff = fopen(name, "w"))) {
         mprintf("!makediff: Can't open %s for writing\n", name);
 	rmdirs(odir);
@@ -1180,6 +1291,21 @@ static int makediff(struct optstruct *opt)
     rmdirs(ndir);
     free(odir);
     free(ndir);
+    mprintf("Generated diff file %s\n", name);
+
+    chdir(cwd);
+
+    if(verifycdiff(name, opt_arg(opt, "diff")) == -1) {
+	snprintf(broken, sizeof(broken), "%s.broken", name);
+	if(rename(name, broken)) {
+	    unlink(name);
+	    mprintf("!Generated file is incorrect, removed");
+	} else {
+	    mprintf("!Generated file is incorrect, renamed to %s\n", broken);
+	}
+	return -1;
+    }
+
     return 0;
 }
 
@@ -1210,6 +1336,7 @@ void help(void)
     mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
     mprintf("    --diff=OLD NEW         -d OLD NEW      Create diff for OLD and NEW CVDs\n");
     mprintf("    --run-cdiff=FILE       -r FILE         Execute update script FILE in cwd\n");
+    mprintf("    --verify-cdiff=DIFF CVD                Verify DIFF against CVD\n");
     mprintf("\n");
 
     return;
@@ -1241,6 +1368,7 @@ int main(int argc, char **argv)
 	    {"vba-hex", 1, 0, 0},
 	    {"diff", 1, 0, 'd'},
 	    {"run-cdiff", 1, 0, 'r'},
+	    {"verify-cdiff", 1, 0, 0},
 	    {0, 0, 0, 0}
     	};
 
@@ -1269,6 +1397,7 @@ int main(int argc, char **argv)
     if(opt_check(opt, "help")) {
 	opt_free(opt);
     	help();
+	return 0;
     }
 
     if(opt_check(opt, "hex-dump"))
@@ -1293,9 +1422,15 @@ int main(int argc, char **argv)
 	ret = makediff(opt);
     else if(opt_check(opt, "run-cdiff"))
 	ret = runcdiff(opt);
-    else
+    else if(opt_check(opt, "verify-cdiff")) {
+	if(!opt->filename) {
+	    mprintf("!makediff: --diff requires two arguments\n");
+	    ret = -1;
+	} else {
+	    ret = verifycdiff(opt_arg(opt, "verify-cdiff"), opt->filename);
+	}
+    } else
 	help();
-
 
     opt_free(opt);
     return ret ? 1 : 0;

@@ -1,3 +1,9 @@
+Tue Jul 18 17:54:42 CEST 2006 (tk)
+----------------------------------
+  * sigtool/sigtool.c: automatically verify patches created with --diff;
+		       new option --verify-cdiff for verification from command
+		       line
+
 Tue Jul 18 15:57:33 BST 2006 (njh)
 ----------------------------------
   * libclamav/message.c:	Fixed compilation warning messages
