@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.260 2006/07/17 15:53:33 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.261 2006/07/18 08:29:02 njh Exp $";
 
 #define	CM_VERSION	"devel-170706"
 
@@ -1247,6 +1247,11 @@ main(int argc, char **argv)
 				argv[0], cfgfile);
 			return EX_CONFIG;
 		}
+		if(server) {
+			fprintf(stderr, _("%s: You cannot use the --server option when using LocalSocket in %s\n"),
+				argv[0], cfgfile);
+			return EX_USAGE;
+		}
 		if(strncasecmp(port, "unix:", 5) == 0)
 			sockname = &port[5];
 		else if(strncasecmp(port, "local:", 6) == 0)
@@ -1309,8 +1314,6 @@ main(int argc, char **argv)
 		/*
 		 * FIXME: Allow connection to remote servers by TCP/IP whilst
 		 * connecting to the localserver via a UNIX domain socket
-		 *
-		 * FIXME: Should error if the --servers argument is given
 		 */
 		numServers = 1;
 	} else if(((cpt = cfgopt(copt, "TCPSocket")) != NULL) && cpt->enabled) {
@@ -2065,10 +2068,17 @@ findServer(void)
 		int sock;
 
 		if(((i + j) % numServers) >= numServers)
-			/* "can't happen" */
+			/*
+			 * FIXME: "can't happen" but for some reason, the line
+			 * server->sin_addr.s_addr =
+			 *	serverIPs[(i + j) % numServers];
+			 * gives occasional valgrind errors
+			 */
 			if(use_syslog) {
 				syslog(LOG_ERR, "FindServer: looking for %d from %d - report to bugs@clamav.net\n",
 					(i + j) % numServers, numServers);
+				free(servers);
+				free(socks);
 				return 0;
 			}
 
@@ -3149,7 +3159,7 @@ clamfi_eom(SMFICTX *ctx)
 		char **to, *virusname;
 
 		/*
-		 Remove the "FOUND" word, and the space before it
+		 * Remove the "FOUND" word, and the space before it
 		 */
 		*--ptr = '\0';
 
@@ -3855,7 +3865,6 @@ strrcpy(char *dest, const char *source)
 static long
 clamd_recv(int sock, char *buf, size_t len)
 {
-	fd_set rfds;
 	struct timeval tv;
 	long ret;
 
@@ -3870,13 +3879,15 @@ clamd_recv(int sock, char *buf, size_t len)
 		return ret;
 	}
 
-	FD_ZERO(&rfds);
-	FD_SET(sock, &rfds);
-
 	tv.tv_sec = readTimeout;
 	tv.tv_usec = 0;
 
 	for(;;) {
+		fd_set rfds;
+
+		FD_ZERO(&rfds);
+		FD_SET(sock, &rfds);
+
 		switch(select(sock + 1, &rfds, NULL, NULL, &tv)) {
 			case -1:
 				if(errno == EINTR)
@@ -5481,7 +5492,7 @@ verifyIncomingSocketName(const char *sockName)
 /*
  * If the given email address is whitelisted don't scan emails to them
  *
- * TODO: Allow regular expressions in the emails
+ * TODO: Allow regular expressions in the addresses
  * TODO: Syntax check the contents of the files
  * TODO: Allow emails of the form "name <address>"
  * TODO: Assume that if a '@' is missing from the address, that all emails
@@ -5593,7 +5604,11 @@ isBlacklisted(const char *ip_address)
 	if((time((time_t *)0) - t) <= blacklist_time)
 		return 1;
 
-	/* FIXME: should be able to remove the certificate */
+	/* remove the certificate */
+	pthread_mutex_unlock(&blacklist_mutex);
+	tableRemove(blacklist, ip_address);
+	pthread_mutex_unlock(&blacklist_mutex);
+
 	return 0;
 }
 
