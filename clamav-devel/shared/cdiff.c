@@ -31,6 +31,7 @@
 
 #include "shared/memory.h"
 #include "shared/misc.h"
+#include "shared/output.h"
 
 #include "libclamav/str.h"
 #include "libclamav/others.h"
@@ -531,15 +532,6 @@ int cdiff_apply(int fd)
 	    return -1;
 	}
 	free(tmp);
-
-	if((tmp = cdiff_token(line, commands[i].argc + 1))) {
-	    free(tmp);
-	    logg("!cdiff_apply: Too many arguments for %s at line %d\n", cmd_name, lines);
-	    free(cmd_name);
-	    fclose(fh);
-	    cdiff_ctx_free(&ctx);
-	    return -1;
-	}
 
 	if(cmd_handler(line, &ctx)) {
 	    logg("!cdiff_apply: Can't execute command %s at line %d\n", cmd_name, lines);
