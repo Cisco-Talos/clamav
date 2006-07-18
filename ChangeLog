@@ -1,3 +1,13 @@
+Tue Jul 18 15:57:33 BST 2006 (njh)
+----------------------------------
+  * libclamav/message.c:	Fixed compilation warning messages
+
+Tue Jul 18 09:30:03 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	Blacklist: remove IP addresses that have timedout as we
+				look them up (previously they were only cleaned in
+				the watchdog)
+
 Tue Jul 18 12:54:39 CEST 2006 (tk)
 ----------------------------------
   * sigtool/sigtool.c: --diff: detect removal of last lines
