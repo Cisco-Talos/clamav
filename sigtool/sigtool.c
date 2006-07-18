@@ -59,6 +59,7 @@
 #include "libclamav/ole2_extract.h"
 #include "libclamav/htmlnorm.h"
 
+#define MAX_DEL_LOOKAHEAD   50
 
 static int hexdump(void)
 {
@@ -942,8 +943,9 @@ static int runcdiff(struct optstruct *opt)
 static int compare(const char *oldpath, const char *newpath, FILE *diff)
 {
 	FILE *old, *new;
-	char obuff[1024], nbuff[1024], *pt, *omd5, *nmd5;
-	unsigned int line = 0;
+	char obuff[1024], nbuff[1024], tbuff[1024], *pt, *omd5, *nmd5;
+	unsigned int oline = 0, tline, found, i;
+	long opos;
 
 
     if(!(new = fopen(newpath, "r"))) {
@@ -971,23 +973,50 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
     old = fopen(oldpath, "r");
 
     while(fgets(nbuff, sizeof(nbuff), new)) {
-	line++;
 	cli_chomp(nbuff);
 
 	if(!old) {
 	    fprintf(diff, "ADD %s\n", nbuff);
 	} else {
 	    if(fgets(obuff, sizeof(obuff), old)) {
+		oline++;
 		cli_chomp(obuff);
 		if(!strcmp(nbuff, obuff)) {
 		    continue;
 		} else {
-		    /* TODO: Improve/add detection of DEL, XCHG */
-		    if(!strncmp(nbuff, obuff, 5)) {
-			obuff[8] = 0;
+		    tline = 0;
+		    found = 0;
+		    opos = ftell(old);
+		    while(fgets(tbuff, sizeof(tbuff), old)) {
+			tline++;
+			cli_chomp(tbuff);
+
+			if(tline > MAX_DEL_LOOKAHEAD)
+			    break;
+
+			if(!strcmp(tbuff, nbuff)) {
+			    found = 1;
+			    break;
+			}
+		    }
+		    fseek(old, opos, SEEK_SET);
+
+		    if(found) {
+			strncpy(tbuff, obuff, sizeof(tbuff));
+			for(i = 0; i < tline; i++) {
+			    tbuff[16] = 0;
+			    if((pt = strchr(tbuff, ' ')))
+				*pt = 0;
+			    fprintf(diff, "DEL %u %s\n", oline + i, tbuff);
+			    fgets(tbuff, sizeof(tbuff), old);
+			}
+			oline += tline;
+
+		    } else {
+			obuff[16] = 0;
 			if((pt = strchr(obuff, ' ')))
 			    *pt = 0;
-			fprintf(diff, "XCHG %u %s %s\n", line, obuff, nbuff);
+			fprintf(diff, "XCHG %u %s %s\n", oline, obuff, nbuff);
 		    }
 		}
 	    } else {
@@ -998,8 +1027,17 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 	}
     }
 
-    if(old)
+    if(old) {
+	while(fgets(obuff, sizeof(obuff), old)) {
+	    oline++;
+	    obuff[16] = 0;
+	    if((pt = strchr(obuff, ' ')))
+		*pt = 0;
+	    fprintf(diff, "DEL %u %s\n", oline, obuff);
+	}
 	fclose(old);
+    }
+
     fprintf(diff, "CLOSE\n");
     return 0;
 }
