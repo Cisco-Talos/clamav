@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.179 2006/07/15 20:32:49 njh Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.180 2006/07/18 14:56:04 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -75,9 +75,6 @@ static	unsigned	char	hex(char c);
 static	unsigned	char	base64(char c);
 static	unsigned	char	uudecode(char c);
 static	const	char	*messageGetArgument(const message *m, int arg);
-/*
- * http://oopweb.com/CPP/Documents/FunctionPointers/Volume/CCPP/callback/callback.html
- */
 static	void	*messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), void (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(text *, void *, int), void (*setCTX)(void *, cli_ctx *), int destroy_text);
 static	int	usefulArg(const char *arg);
 static	void	messageDedup(message *m);
@@ -1552,7 +1549,14 @@ messageToFileblob(message *m, const char *dir, int destroy)
 	fileblob *fb;
 
 	cli_dbgmsg("messageToFileblob\n");
-	fb = messageExport(m, dir, (void *)fileblobCreate, (void *)fileblobDestroy, (void *)fileblobSetFilename, (void *)fileblobAddData, (void *)textToFileblob, (void *)fileblobSetCTX, destroy);
+	fb = messageExport(m, dir,
+		(void *(*)(void))fileblobCreate,
+		(void(*)(void *))fileblobDestroy,
+		(void(*)(void *, const char *, const char *))fileblobSetFilename,
+		(void(*)(void *, const unsigned char *, size_t))fileblobAddData,
+		(void *(*)(text *, void *, int))textToFileblob,
+		(void(*)(void *, cli_ctx *))fileblobSetCTX,
+		destroy);
 	if(destroy && m->body_first) {
 		textDestroy(m->body_first);
 		m->body_first = m->body_last = NULL;
@@ -1567,7 +1571,14 @@ messageToFileblob(message *m, const char *dir, int destroy)
 blob *
 messageToBlob(message *m, int destroy)
 {
-	blob *b = messageExport(m, NULL, (void *)blobCreate, (void *)blobDestroy, (void *)blobSetFilename, (void *)blobAddData, (void *)textToBlob, NULL, destroy);
+	blob *b = messageExport(m, NULL,
+		(void *(*)(void))blobCreate,
+		(void(*)(void *))blobDestroy,
+		(void(*)(void *, const char *, const char *))blobSetFilename,
+		(void(*)(void *, const unsigned char *, size_t))blobAddData,
+		(void *(*)(text *, void *, int))textToBlob,
+		(void(*)(void *, cli_ctx *))NULL,
+		destroy);
 
 	if(destroy && m->body_first) {
 		textDestroy(m->body_first);
