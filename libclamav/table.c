@@ -55,8 +55,6 @@ tableDestroy(table_t *table)
 	while(tableItem) {
 		tableEntry *tableNext = tableItem->next;
 
-		assert(tableItem->key != NULL);
-
 		if(tableItem->key)
 			free(tableItem->key);
 		free(tableItem);
