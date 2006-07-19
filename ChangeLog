@@ -1,3 +1,9 @@
+Wed Jul 19 10:42:32 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	Use LogClean from clamd.conf, removed --dont-log-clean
+  			Started to use logg() functions from output.o
+			Improved load balancing
+
 Tue Jul 18 17:54:42 CEST 2006 (tk)
 ----------------------------------
   * sigtool/sigtool.c: automatically verify patches created with --diff;

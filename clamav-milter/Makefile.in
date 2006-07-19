@@ -71,13 +71,15 @@ am__installdirs = "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(man8dir)"
 sbinPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(sbin_PROGRAMS)
 am__clamav_milter_SOURCES_DIST = $(top_srcdir)/shared/cfgparser.c \
-	$(top_srcdir)/shared/cfgparser.h $(top_srcdir)/shared/getopt.c \
+	$(top_srcdir)/shared/cfgparser.h $(top_srcdir)/shared/output.c \
+	$(top_srcdir)/shared/output.h $(top_srcdir)/shared/getopt.c \
 	$(top_srcdir)/shared/getopt.h $(top_srcdir)/shared/memory.c \
 	$(top_srcdir)/shared/memory.h $(top_srcdir)/shared/misc.c \
 	$(top_srcdir)/shared/misc.h $(top_srcdir)/shared/network.c \
 	$(top_srcdir)/shared/network.h clamav-milter.c
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@am_clamav_milter_OBJECTS =  \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	cfgparser.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	output.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	getopt.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	memory.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	misc.$(OBJEXT) \
@@ -137,7 +139,6 @@ EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 FRESHCLAM_LIBS = @FRESHCLAM_LIBS@
 GETENT = @GETENT@
-GREP = @GREP@
 HAVE_MILTER_FALSE = @HAVE_MILTER_FALSE@
 HAVE_MILTER_TRUE = @HAVE_MILTER_TRUE@
 INSTALL_DATA = @INSTALL_DATA@
@@ -171,6 +172,8 @@ STRIP = @STRIP@
 TH_SAFE = @TH_SAFE@
 VERSION = @VERSION@
 ac_ct_CC = @ac_ct_CC@
+ac_ct_RANLIB = @ac_ct_RANLIB@
+ac_ct_STRIP = @ac_ct_STRIP@
 am__fastdepCC_FALSE = @am__fastdepCC_FALSE@
 am__fastdepCC_TRUE = @am__fastdepCC_TRUE@
 am__include = @am__include@
@@ -186,29 +189,23 @@ build_os = @build_os@
 build_vendor = @build_vendor@
 datadir = @datadir@
 datarootdir = @datarootdir@
-docdir = @docdir@
-dvidir = @dvidir@
 exec_prefix = @exec_prefix@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
 host_os = @host_os@
 host_vendor = @host_vendor@
-htmldir = @htmldir@
 includedir = @includedir@
 infodir = @infodir@
 install_sh = @install_sh@
 libdir = @libdir@
 libexecdir = @libexecdir@
-localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
 oldincludedir = @oldincludedir@
-pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
-psdir = @psdir@
 sbindir = @sbindir@
 sendmailprog = @sendmailprog@
 sharedstatedir = @sharedstatedir@
@@ -221,6 +218,8 @@ target_vendor = @target_vendor@
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@clamav_milter_SOURCES = \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/cfgparser.c \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/cfgparser.h \
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/output.c \
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/output.h \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/getopt.c \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/getopt.h \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/memory.c \
@@ -311,6 +310,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/memory.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/network.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/output.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -346,6 +346,20 @@ cfgparser.obj: $(top_srcdir)/shared/cfgparser.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/cfgparser.c' object='cfgparser.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cfgparser.obj `if test -f '$(top_srcdir)/shared/cfgparser.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/cfgparser.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/cfgparser.c'; fi`
+
+output.o: $(top_srcdir)/shared/output.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT output.o -MD -MP -MF "$(DEPDIR)/output.Tpo" -c -o output.o `test -f '$(top_srcdir)/shared/output.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/output.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/output.Tpo" "$(DEPDIR)/output.Po"; else rm -f "$(DEPDIR)/output.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/output.c' object='output.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o output.o `test -f '$(top_srcdir)/shared/output.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/output.c
+
+output.obj: $(top_srcdir)/shared/output.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT output.obj -MD -MP -MF "$(DEPDIR)/output.Tpo" -c -o output.obj `if test -f '$(top_srcdir)/shared/output.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/output.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/output.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/output.Tpo" "$(DEPDIR)/output.Po"; else rm -f "$(DEPDIR)/output.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/output.c' object='output.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o output.obj `if test -f '$(top_srcdir)/shared/output.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/output.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/output.c'; fi`
 
 getopt.o: $(top_srcdir)/shared/getopt.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT getopt.o -MD -MP -MF "$(DEPDIR)/getopt.Tpo" -c -o getopt.o `test -f '$(top_srcdir)/shared/getopt.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/getopt.c; \
