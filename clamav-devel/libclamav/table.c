@@ -80,28 +80,31 @@ tableInsert(table_t *table, const char *key, int value)
 
 	assert(value != -1);	/* that would confuse us */
 
-	/*
-	 * Re-use deleted items
-	 */
-	if(table->flags&TABLE_HAS_DELETED_ENTRIES) {
-		tableEntry *tableItem;
-
-		for(tableItem = table->tableHead; tableItem; tableItem = tableItem->next)
-			if(tableItem->key == NULL) {
-				/* This item has been deleted */
-				tableItem->key = strdup(key);
-				tableItem->value = value;
-				return value;
-			}
-
-		table->flags &= ~TABLE_HAS_DELETED_ENTRIES;
-	}
-
 	if(table->tableHead == NULL)
 		table->tableLast = table->tableHead = (tableEntry *)cli_malloc(sizeof(tableEntry));
-	else
+	else {
+		/*
+		 * Re-use deleted items
+		 */
+		if(table->flags&TABLE_HAS_DELETED_ENTRIES) {
+			tableEntry *tableItem;
+
+			assert(table->tableHead != NULL);
+
+			for(tableItem = table->tableHead; tableItem; tableItem = tableItem->next)
+				if(tableItem->key == NULL) {
+					/* This item has been deleted */
+					tableItem->key = strdup(key);
+					tableItem->value = value;
+					return value;
+				}
+
+			table->flags &= ~TABLE_HAS_DELETED_ENTRIES;
+		}
+
 		table->tableLast = table->tableLast->next =
 			(tableEntry *)cli_malloc(sizeof(tableEntry));
+	}
 
 	if(table->tableLast == NULL)
 		return -1;
@@ -129,9 +132,6 @@ tableFind(const table_t *table, const char *key)
 
 	if(key == NULL)
 		return -1;	/* not treated as a fatal error */
-
-	if(table->tableHead == NULL)
-		return -1;	/* not populated yet */
 
 #ifdef	CL_DEBUG
 	cost = 0;
@@ -166,10 +166,6 @@ tableUpdate(table_t *table, const char *key, int new_value)
 	if(key == NULL)
 		return -1;	/* not treated as a fatal error */
 
-	if(table->tableHead == NULL)
-		/* not populated yet */
-		return tableInsert(table, key, new_value);
-
 	for(tableItem = table->tableHead; tableItem; tableItem = tableItem->next)
 		if(tableItem->key && (strcasecmp(tableItem->key, key) == 0)) {
 			tableItem->value = new_value;
@@ -193,10 +189,6 @@ tableRemove(table_t *table, const char *key)
 	if(key == NULL)
 		return;	/* not treated as a fatal error */
 
-	if(table->tableHead == NULL)
-		/* not populated yet */
-		return;
-
 	for(tableItem = table->tableHead; tableItem; tableItem = tableItem->next)
 		if(tableItem->key && (strcasecmp(tableItem->key, key) == 0)) {
 			free(tableItem->key);
@@ -214,11 +206,7 @@ tableIterate(table_t *table, void(*callback)(char *key, int value))
 	if(table == NULL)
 		return;
 
-	if(table->tableHead == NULL)
-		/* not populated yet */
-		return;
-
 	for(tableItem = table->tableHead; tableItem; tableItem = tableItem->next)
-		if(tableItem->key)	/* check leaf is not deleted */
+		if(tableItem->key)	/* check node has not been deleted */
 			(*callback)(tableItem->key, tableItem->value);
 }
