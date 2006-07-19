@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.262 2006/07/19 09:44:06 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.263 2006/07/19 12:54:42 njh Exp $";
 
 #define	CM_VERSION	"devel-190706"
 
@@ -429,8 +429,9 @@ static	short	use_syslog = 0;
 				 * NOTE: first character of strings to logg():
 				 *	! Error
 				 *	^ Warning
-				 *	* Debug
-				 *	# or no special character Info
+				 *	* Verbose
+				 *	# Info, but not logged in foreground
+				 *	Default Info
 				 */
 static	const	char	*pidFile;
 static	int	logVerbose = 0;
@@ -518,8 +519,8 @@ static	void	mx(void);
 static	void	resolve(const char *host);
 static	sfsistat	black_hole(const struct privdata *privdata);
 
-short	logg_time, logg_lock;
-int	logg_size;
+extern	short	logg_time, logg_lock, logg_verbose, logg_foreground;
+extern	int	logg_size;
 
 static void
 help(void)
@@ -1192,14 +1193,17 @@ main(int argc, char **argv)
 	if(cfgopt(copt, "LogSyslog")->enabled) {
 		int fac = LOG_LOCAL6;
 
+		if(cfgopt(copt, "LogVerbose")->enabled) {
+			logg_verbose = 1;
 #ifdef	CL_DEBUG
-		if((debug_level >= 15) && cfgopt(copt, "LogVerbose")->enabled) {
-			logVerbose = 1;
+			if(debug_level >= 15) {
+				logVerbose = 1;
 #if	((SENDMAIL_VERSION_A > 8) || ((SENDMAIL_VERSION_A == 8) && (SENDMAIL_VERSION_B >= 13)))
-			smfi_setdbg(6);
+				smfi_setdbg(6);
+#endif
+			}
 #endif
 		}
-#endif
 		logg_syslog = use_syslog = 1;
 
 		if(((cpt = cfgopt(copt, "LogFacility")) != NULL) && cpt->enabled)
@@ -1363,6 +1367,12 @@ main(int argc, char **argv)
 		}
 #endif
 
+		if(numServers > max_children) {
+			fprintf(stderr, _("%1$s: --max-children (%2$d) is lower than the number of servers you have (%3$d)\n"),
+				argv[0], max_children, numServers);
+			return EX_CONFIG;
+		}
+
 		for(i = 0; i < numServers; i++) {
 #ifdef	MAXHOSTNAMELEN
 			char hostname[MAXHOSTNAMELEN + 1];
@@ -1498,7 +1508,9 @@ main(int argc, char **argv)
 	} else
 		tmpdir = NULL;
 
-	if(!cfgopt(copt, "Foreground")->enabled) {
+	if(cfgopt(copt, "Foreground")->enabled)
+		logg_foreground = 1;
+	else {
 #ifdef	CL_DEBUG
 		printf(_("When debugging it is recommended that you use Foreground mode in %s\n"), cfgfile);
 		puts(_("\tso that you can see all of the messages"));
@@ -1559,13 +1571,6 @@ main(int argc, char **argv)
 
 #endif	/*!CL_DEBUG*/
 
-		if(cfgopt(copt, "LogTime")->enabled)
-			logg_time = 1;
-		if(cfgopt(copt, "LogFileUnlock")->enabled)
-			logg_lock = 0;
-		if((cpt = cfgopt(copt, "LogFileMaxSize")) != NULL)
-			logg_size = cpt->numarg;
-
 #ifdef HAVE_SETPGRP
 #ifdef SETPGRP_VOID
 		setpgrp();
@@ -1579,8 +1584,17 @@ main(int argc, char **argv)
 #endif
 	}
 
-	if(cfgopt(copt, "LogClean")->enabled)
-		logClean = 1;
+	logg_lock = cfgopt(copt, "LogFileUnlock")->enabled;
+	logg_time = cfgopt(copt, "LogTime")->enabled;
+	logClean = cfgopt(copt, "LogClean")->enabled;
+	logg_size = cfgopt(copt, "LogFileMaxSize")->numarg;
+	logg_verbose = mprintf_verbose = cfgopt(copt, "LogVerbose")->enabled;
+
+	if(cfgopt(copt, "Debug")->enabled)
+		/*
+		 * enable debug messages in libclamav, --debug also does this
+		 */
+		cl_debug();
 
 	atexit(quit);
 
@@ -2057,7 +2071,7 @@ findServer(void)
 		 * Don't worry about no lock - it's doesn't matter if it's
 		 * not really accurate
 		 */
-		j = n_children;	/* look at the next free one */
+		j = n_children - 1;	/* look at the next free one */
 	} else
 		/*
 		 * cli_rndnum returns 0..(max-1) - the max argument is not
@@ -2068,8 +2082,9 @@ findServer(void)
 
 	for(i = 0, server = servers; i < numServers; i++, server++) {
 		int sock;
+		int server_index = (i + j) % numServers;
 
-		if(((i + j) % numServers) >= numServers) {
+		if(server_index >= numServers) {
 			/*
 			 * FIXME: "can't happen" but for some reason, the line
 			 * server->sin_addr.s_addr =
@@ -2077,7 +2092,7 @@ findServer(void)
 			 * gives occasional valgrind errors
 			 */
 			logg(_("!FindServer: looking for %1$d from %2$d - report to bugs@clamav.net\n"),
-				(i + j) % numServers, numServers);
+				server_index, numServers);
 			free(servers);
 			free(socks);
 			return 0;
@@ -2085,9 +2100,9 @@ findServer(void)
 
 		server->sin_family = AF_INET;
 		server->sin_port = (in_port_t)htons(tcpSocket);
-		server->sin_addr.s_addr = serverIPs[(i + j) % numServers];
+		server->sin_addr.s_addr = serverIPs[server_index];
 
-		logg("*findServer: try server %d\n", (i + j) % numServers);
+		logg("*findServer: try server %d\n", server_index);
 
 		sock = socks[i] = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -2107,11 +2122,11 @@ findServer(void)
 #ifdef	MAXHOSTNAMELEN
 			char hostname[MAXHOSTNAMELEN + 1];
 
-			cli_strtokbuf(serverHostNames, i, ":", hostname);
+			cli_strtokbuf(serverHostNames, server_index, ":", hostname);
 			if(strcmp(hostname, "127.0.0.1") == 0)
 				gethostname(hostname, sizeof(hostname));
 #else
-			char *hostname = cli_strtok(serverHostNames, i, ":");
+			char *hostname = cli_strtok(serverHostNames, server_index, ":");
 #endif
 			logg(_("^Check clamd server %s - it may be down\n"), hostname);
 			close(sock);
@@ -2163,7 +2178,7 @@ findServer(void)
 			const int s = (i + j) % numServers;
 
 			free(socks);
-			cli_dbgmsg(_("findServer: using server %d\n"), s);
+			logg("*findServer: use server %d\n", s);
 			return s;
 		}
 
@@ -2393,8 +2408,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		return cl_error;
 
 	if(smfi_setpriv(ctx, privdata) == MI_SUCCESS) {
-		if(blacklist_time)
-			privdata->ip = strdup(remoteIP);
+		privdata->ip = strdup(remoteIP);
 		return SMFIS_CONTINUE;
 	}
 
@@ -2900,10 +2914,6 @@ clamfi_eom(SMFICTX *ctx)
 		const char *virname;
 		unsigned long int scanned = 0L;
 
-		/*
-		 * TODO: consider using cl_scandesc and not using a temporary
-		 *	file from the mail being read in
-		 */
 		pthread_mutex_lock(&root_mutex);
 		privdata->root = cl_dup(root);
 		pthread_mutex_unlock(&root_mutex);
@@ -5507,7 +5517,7 @@ isBlacklisted(const char *ip_address)
 	if((time((time_t *)0) - t) <= blacklist_time)
 		return 1;
 
-	/* remove the certificate */
+	/* timedout: remove the IP from the blacklist */
 	pthread_mutex_unlock(&blacklist_mutex);
 	tableRemove(blacklist, ip_address);
 	pthread_mutex_unlock(&blacklist_mutex);
