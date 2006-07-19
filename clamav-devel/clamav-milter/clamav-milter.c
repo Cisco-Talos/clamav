@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.261 2006/07/18 08:29:02 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.262 2006/07/19 09:44:06 njh Exp $";
 
-#define	CM_VERSION	"devel-170706"
+#define	CM_VERSION	"devel-190706"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -36,6 +36,7 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.261 2006/07/18 08:29:02 nj
 #include "target.h"
 #include "str.h"
 #include "../libclamav/others.h"
+#include "output.h"
 #include "clamav.h"
 #include "table.h"
 #include "network.h"
@@ -292,7 +293,6 @@ static	void	clamdIsDown(void);
 static	void	*watchdog(void *a);
 static	int	check_and_reload_database(void);
 static	void	timeoutBlacklist(char *ip_address, int time_of_blacklist);
-static	int	logg_facility(const char *name);
 static	void	quit(void);
 static	void	broadcast(const char *mess);
 static	int	loadDatabase(void);
@@ -383,7 +383,7 @@ static	int	readTimeout = 0; /*
 				 * respond, see ReadTimeout in clamd.conf
 				 */
 static	long	streamMaxLength = -1;	/* StreamMaxLength from clamd.conf */
-static	int	logClean = 1;	/*
+static	int	logClean = 0;	/*
 				 * Add clean items to the log file
 				 */
 static	char	*signature = N_("-- \nScanned by ClamAv - http://www.clamav.net\n");
@@ -425,6 +425,13 @@ static	int	detect_forged_local_address;	/*
 				 * Requires that -o, -l or -f are NOT given
 				 */
 static	short	use_syslog = 0;
+				/*
+				 * NOTE: first character of strings to logg():
+				 *	! Error
+				 *	^ Warning
+				 *	* Debug
+				 *	# or no special character Info
+				 */
 static	const	char	*pidFile;
 static	int	logVerbose = 0;
 static	struct	cfgstruct	*copt;
@@ -507,12 +514,11 @@ static	void	print_trace(void);
 static	int	verifyIncomingSocketName(const char *sockName);
 static	int	isWhitelisted(const char *emailaddress);
 static	int	isBlacklisted(const char *ip_address);
-static	void	logger(const char *mess);
 static	void	mx(void);
 static	void	resolve(const char *host);
 static	sfsistat	black_hole(const struct privdata *privdata);
 
-short	logg_time, logg_lock, logok;
+short	logg_time, logg_lock;
 int	logg_size;
 
 static void
@@ -529,7 +535,6 @@ help(void)
 	puts(_("\t--config-file=FILE\t-c FILE\tRead configuration from FILE."));
 	puts(_("\t--debug\t\t\t-D\tPrint debug messages."));
 	puts(_("\t--detect-forged-local-address\t-L\tReject mails that claim to be from us."));
-	puts(_("\t--dont-log-clean\t-C\tDon't add an entry to syslog that a mail is clean."));
 	puts(_("\t--dont-scan-on-error\t-d\tPass e-mails through unscanned if a system error occurs."));
 	puts(_("\t--dont-wait\t\t\tAsk remote end to resend if max-children exceeded."));
 	puts(_("\t--external\t\t-e\tUse an external scanner (usually clamd)."));
@@ -631,9 +636,9 @@ main(int argc, char **argv)
 		struct cidr_net *net;
 		struct in_addr ignoreIP;
 #ifdef	CL_DEBUG
-		const char *args = "a:AbB:c:CdDefF:I:k:lLm:M:nNop:PqQ:hHs:St:T:U:VwW:x:0:1:2";
+		const char *args = "a:AbB:c:dDefF:I:k:lLm:M:nNop:PqQ:hHs:St:T:U:VwW:x:0:1:2";
 #else
-		const char *args = "a:AbB:c:CdDefF:I:k:lLm:M:nNop:PqQ:hHs:St:T:U:VwW:0:1:2";
+		const char *args = "a:AbB:c:dDefF:I:k:lLm:M:nNop:PqQ:hHs:St:T:U:VwW:0:1:2";
 #endif
 
 		static struct option long_options[] = {
@@ -654,9 +659,6 @@ main(int argc, char **argv)
 			},
 			{
 				"detect-forged-local-address", 0, NULL, 'L'
-			},
-			{
-				"dont-log-clean", 0, NULL, 'C'
 			},
 			{
 				"dont-scan-on-error", 0, NULL, 'd'
@@ -790,9 +792,6 @@ main(int argc, char **argv)
 				break;
 			case 'c':	/* where is clamd.conf? */
 				cfgfile = optarg;
-				break;
-			case 'C':	/* dont log clean */
-				logClean = 0;
 				break;
 			case 'd':	/* don't scan on error */
 				cl_error = SMFIS_ACCEPT;
@@ -1193,13 +1192,15 @@ main(int argc, char **argv)
 	if(cfgopt(copt, "LogSyslog")->enabled) {
 		int fac = LOG_LOCAL6;
 
-		if(cfgopt(copt, "LogVerbose")->enabled) {
+#ifdef	CL_DEBUG
+		if((debug_level >= 15) && cfgopt(copt, "LogVerbose")->enabled) {
 			logVerbose = 1;
 #if	((SENDMAIL_VERSION_A > 8) || ((SENDMAIL_VERSION_A == 8) && (SENDMAIL_VERSION_B >= 13)))
 			smfi_setdbg(6);
 #endif
 		}
-		use_syslog = 1;
+#endif
+		logg_syslog = use_syslog = 1;
 
 		if(((cpt = cfgopt(copt, "LogFacility")) != NULL) && cpt->enabled)
 			if((fac = logg_facility(cpt->strarg)) == -1) {
@@ -1212,7 +1213,7 @@ main(int argc, char **argv)
 		if(qflag)
 			fprintf(stderr, _("%s: (-q && !LogSyslog): warning - all interception message methods are off\n"),
 				argv[0]);
-		use_syslog = 0;
+		logg_syslog = use_syslog = 0;
 	}
 	/*
 	 * Get the outgoing socket details - the way to talk to clamd, unless
@@ -1347,7 +1348,7 @@ main(int argc, char **argv)
 			free(hostname);
 		}
 
-		cli_dbgmsg("numServers: %d\n", numServers);
+		logg("*numServers: %d\n", numServers);
 
 		serverIPs = (long *)cli_malloc(numServers * sizeof(long));
 		activeServers = 0;
@@ -1562,8 +1563,6 @@ main(int argc, char **argv)
 			logg_time = 1;
 		if(cfgopt(copt, "LogFileUnlock")->enabled)
 			logg_lock = 0;
-		if(cfgopt(copt, "LogClean")->enabled)
-			logok = 1;
 		if((cpt = cfgopt(copt, "LogFileMaxSize")) != NULL)
 			logg_size = cpt->numarg;
 
@@ -1579,6 +1578,9 @@ main(int argc, char **argv)
 #endif
 #endif
 	}
+
+	if(cfgopt(copt, "LogClean")->enabled)
+		logClean = 1;
 
 	atexit(quit);
 
@@ -2055,7 +2057,7 @@ findServer(void)
 		 * Don't worry about no lock - it's doesn't matter if it's
 		 * not really accurate
 		 */
-		j = n_children - 1;
+		j = n_children;	/* look at the next free one */
 	} else
 		/*
 		 * cli_rndnum returns 0..(max-1) - the max argument is not
@@ -2067,27 +2069,25 @@ findServer(void)
 	for(i = 0, server = servers; i < numServers; i++, server++) {
 		int sock;
 
-		if(((i + j) % numServers) >= numServers)
+		if(((i + j) % numServers) >= numServers) {
 			/*
 			 * FIXME: "can't happen" but for some reason, the line
 			 * server->sin_addr.s_addr =
 			 *	serverIPs[(i + j) % numServers];
 			 * gives occasional valgrind errors
 			 */
-			if(use_syslog) {
-				syslog(LOG_ERR, "FindServer: looking for %d from %d - report to bugs@clamav.net\n",
-					(i + j) % numServers, numServers);
-				free(servers);
-				free(socks);
-				return 0;
-			}
+			logg(_("!FindServer: looking for %1$d from %2$d - report to bugs@clamav.net\n"),
+				(i + j) % numServers, numServers);
+			free(servers);
+			free(socks);
+			return 0;
+		}
 
 		server->sin_family = AF_INET;
 		server->sin_port = (in_port_t)htons(tcpSocket);
 		server->sin_addr.s_addr = serverIPs[(i + j) % numServers];
 
-		cli_dbgmsg("findServer: try server %d\n",
-			(i + j) % numServers);
+		logg("*findServer: try server %d\n", (i + j) % numServers);
 
 		sock = socks[i] = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -2113,11 +2113,7 @@ findServer(void)
 #else
 			char *hostname = cli_strtok(serverHostNames, i, ":");
 #endif
-			cli_warnmsg(_("Check clamd server %s - it may be down\n"), hostname);
-			if(use_syslog)
-				syslog(LOG_WARNING,
-					_("Check clamd server %s - it may be down"),
-					hostname);
+			logg(_("^Check clamd server %s - it may be down\n"), hostname);
 			close(sock);
 #ifndef	MAXHOSTNAMELEN
 			free(hostname);
@@ -2418,10 +2414,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 	struct privdata *privdata;
 	const char *mailaddr = argv[0];
 
-	if(logVerbose)
-		syslog(LOG_DEBUG, "clamfi_envfrom: %s", argv[0]);
-
-	cli_dbgmsg("clamfi_envfrom: %s\n", argv[0]);
+	logg("*clamfi_envfrom: %s", argv[0]);
 
 	if(strcmp(argv[0], "<>") == 0) {
 		mailaddr = smfi_getsymval(ctx, "{mail_addr}");
@@ -2575,11 +2568,9 @@ static sfsistat
 clamfi_envrcpt(SMFICTX *ctx, char **argv)
 {
 	struct privdata *privdata = (struct privdata *)smfi_getpriv(ctx);
+	const char *to;
 
-	if(logVerbose)
-		syslog(LOG_DEBUG, "clamfi_envrcpt: %s", argv[0]);
-
-	cli_dbgmsg("clamfi_envrcpt: %s\n", argv[0]);
+	logg("*clamfi_envrcpt: %s\n", argv[0]);
 
 	if(privdata->to == NULL) {
 		privdata->to = cli_malloc(sizeof(char *) * 2);
@@ -2591,7 +2582,11 @@ clamfi_envrcpt(SMFICTX *ctx, char **argv)
 	if(privdata->to == NULL)
 		return cl_error;
 
-	privdata->to[privdata->numTo] = strdup(argv[0]);
+	to = smfi_getsymval(ctx, "{rcpt_addr}");
+	if(to == NULL)
+		to = argv[0];
+
+	privdata->to[privdata->numTo] = strdup(to);
 	privdata->to[++privdata->numTo] = NULL;
 
 	return SMFIS_CONTINUE;
@@ -2602,13 +2597,13 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 {
 	struct privdata *privdata = (struct privdata *)smfi_getpriv(ctx);
 
-	if(logVerbose)
-		syslog(LOG_DEBUG, "clamfi_header: %s: %s", headerf, headerv);
 #ifdef	CL_DEBUG
 	if(debug_level >= 9)
-		cli_dbgmsg("clamfi_header: %s: %s\n", headerf, headerv);
+		logg("*clamfi_header: %s: %s\n", headerf, headerv);
 	else
-		cli_dbgmsg("clamfi_header\n");
+		logg("*clamfi_header\n");
+#else
+	logg("*clamfi_header\n");
 #endif
 
 	/*
@@ -2796,6 +2791,10 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 		 */
 		do {
 			if(*ptr == '\n') {
+				/*
+				 * FIXME: doesn't work if the \nFrom straddles
+				 * multiple calls to clamfi_body
+				 */
 				if(strncmp(ptr, "\nFrom ", 6) == 0) {
 					nbytes += clamfi_send(privdata, 7, "\n>From ");
 					ptr += 6;
@@ -2915,19 +2914,15 @@ clamfi_eom(SMFICTX *ctx)
 		}
 		switch(cl_scanfile(privdata->filename, &virname, &scanned, privdata->root, &limits, options)) {
 			case CL_CLEAN:
-				if(logClean) {
-					snprintf(mess, sizeof(mess), "%s: OK", privdata->filename);
-					logger(mess);
-				}
+				if(logClean)
+					logg("#%s: OK", privdata->filename);
 				strcpy(mess, "OK");
 				break;
 			case CL_VIRUS:
-				snprintf(mess, sizeof(mess), "%s: %s FOUND", privdata->filename, virname);
-				logger(mess);
+				logg("#%s: %s FOUND", privdata->filename, virname);
 				break;
 			default:
-				snprintf(mess, sizeof(mess), "%s: %s ERROR", privdata->filename, cl_strerror(rc));
-				logger(mess);
+				logg("!%s: %s ERROR", privdata->filename, cl_strerror(rc));
 				break;
 		}
 		cl_free(privdata->root);
@@ -3552,12 +3547,9 @@ clamfi_abort(SMFICTX *ctx)
 static sfsistat
 clamfi_close(SMFICTX *ctx)
 {
-	cli_dbgmsg("clamfi_close\n");
+	logg("*clamfi_close\n");
 
 	clamfi_cleanup(ctx);
-
-	if(logVerbose)
-		syslog(LOG_DEBUG, "clamfi_close");
 
 	return SMFIS_CONTINUE;
 }
@@ -4800,10 +4792,7 @@ clamdIsDown(void)
 	time_t thistime, diff;
 	static pthread_mutex_t time_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-	cli_errmsg(_("No response from any clamd server - your AV system is not scanning emails\n"));
-
-	if(use_syslog)
-		syslog(LOG_ERR, _("No response from any clamd server - your AV system is not scanning emails"));
+	logg(_("!No response from any clamd server - your AV system is not scanning emails\n"));
 
 	time(&thistime);
 	pthread_mutex_lock(&time_mutex);
@@ -5090,88 +5079,6 @@ timeoutBlacklist(char *ip_address, int time_of_blacklist)
 		tableRemove(blacklist, ip_address);
 }
 
-static const struct {
-	const char *name;
-	int code;
-} facilitymap[] = {
-#ifdef LOG_AUTH
-	{ "LOG_AUTH",	LOG_AUTH },
-#endif
-#ifdef LOG_AUTHPRIV
-	{ "LOG_AUTHPRIV",	LOG_AUTHPRIV },
-#endif
-#ifdef LOG_CRON
-	{ "LOG_CRON",	LOG_CRON },
-#endif
-#ifdef LOG_DAEMON
-	{ "LOG_DAEMON",	LOG_DAEMON },
-#endif
-#ifdef LOG_FTP
-	{ "LOG_FTP",	LOG_FTP },
-#endif
-#ifdef LOG_KERN
-	{ "LOG_KERN",	LOG_KERN },
-#endif
-#ifdef LOG_LPR
-	{ "LOG_LPR",	LOG_LPR },
-#endif
-#ifdef LOG_MAIL
-	{ "LOG_MAIL",	LOG_MAIL },
-#endif
-#ifdef LOG_NEWS
-	{ "LOG_NEWS",	LOG_NEWS },
-#endif
-#ifdef LOG_AUTH
-	{ "LOG_AUTH",	LOG_AUTH },
-#endif
-#ifdef LOG_SYSLOG
-	{ "LOG_SYSLOG",	LOG_SYSLOG },
-#endif
-#ifdef LOG_USER
-	{ "LOG_USER",	LOG_USER },
-#endif
-#ifdef LOG_UUCP
-	{ "LOG_UUCP",	LOG_UUCP },
-#endif
-#ifdef LOG_LOCAL0
-	{ "LOG_LOCAL0",	LOG_LOCAL0 },
-#endif
-#ifdef LOG_LOCAL1
-	{ "LOG_LOCAL1",	LOG_LOCAL1 },
-#endif
-#ifdef LOG_LOCAL2
-	{ "LOG_LOCAL2",	LOG_LOCAL2 },
-#endif
-#ifdef LOG_LOCAL3
-	{ "LOG_LOCAL3",	LOG_LOCAL3 },
-#endif
-#ifdef LOG_LOCAL4
-	{ "LOG_LOCAL4",	LOG_LOCAL4 },
-#endif
-#ifdef LOG_LOCAL5
-	{ "LOG_LOCAL5",	LOG_LOCAL5 },
-#endif
-#ifdef LOG_LOCAL6
-	{ "LOG_LOCAL6",	LOG_LOCAL6 },
-#endif
-#ifdef LOG_LOCAL7
-	{ "LOG_LOCAL7",	LOG_LOCAL7 },
-#endif
-	{ NULL,		-1 }
-};
-
-static int
-logg_facility(const char *name)
-{
-	int i;
-
-	for(i = 0; facilitymap[i].name; i++)
-		if(strcasecmp(facilitymap[i].name, name) == 0)
-			return facilitymap[i].code;
-
-	return -1;
-}
-
 static void
 quit(void)
 {
@@ -5365,12 +5272,8 @@ loadDatabase(void)
 		syslog(LOG_INFO, _("ClamAV: Protecting against %u viruses"), signatures);
 	}
 	if(oldroot) {
-		char mess[128];
-
 		cl_free(oldroot);
-		sprintf(mess, "Database correctly reloaded (%u viruses)", signatures);
-		logger(mess);
-		cli_dbgmsg("Database updated\n");
+		logg("#Database correctly reloaded (%u viruses)", signatures);
 	} else
 		cli_dbgmsg("Database loaded\n");
 
@@ -5612,6 +5515,7 @@ isBlacklisted(const char *ip_address)
 	return 0;
 }
 
+#if	0
 static void
 logger(const char *mess)
 {
@@ -5649,6 +5553,7 @@ logger(const char *mess)
 		fclose(fout);
 #endif
 }
+#endif
 
 /*
  * Determine our MX peers, they must never be blacklisted
