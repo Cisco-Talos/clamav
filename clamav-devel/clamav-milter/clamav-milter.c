@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.263 2006/07/19 12:54:42 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.264 2006/07/20 00:41:11 njh Exp $";
 
 #define	CM_VERSION	"devel-190706"
 
@@ -227,7 +227,7 @@ struct	privdata {
 	char	*subject;	/* Original subject */
 	char	*sender;	/* Secretary - often used in mailing lists */
 	char	**to;	/* Who is the message going to */
-	char	*ip;	/* IP address of the other end */
+	char	ip[INET_ADDRSTRLEN];	/* IP address of the other end */
 	int	numTo;	/* Number of people the message is going to */
 #ifndef	SESSION
 	int	cmdSocket;	/*
@@ -398,8 +398,8 @@ static	int	debug_level = 0;
 
 static	pthread_mutex_t	n_children_mutex = PTHREAD_MUTEX_INITIALIZER;
 static	pthread_cond_t	n_children_cond = PTHREAD_COND_INITIALIZER;
-static	volatile	unsigned	int	n_children = 0;
-static	unsigned	int	max_children = 0;
+static	int	n_children = 0;
+static	int	max_children = 0;
 static	unsigned	int	freshclam_monitor = 10;	/*
 							 * how often, in
 							 * seconds, to scan for
@@ -441,7 +441,11 @@ static	in_port_t	tcpSocket;	/* milter->clamd comms */
 static	char	*port = NULL;	/* sendmail->milter comms */
 
 static	const	char	*serverHostNames = "127.0.0.1";
+#if	HAVE_IN_ADDR_T
+static	in_addr_t	*serverIPs;	/* IPv4 only */
+#else
 static	long	*serverIPs;	/* IPv4 only */
+#endif
 static	int	numServers;	/* number of elements in serverIPs array */
 
 #ifdef	SESSION
@@ -1287,8 +1291,12 @@ main(int argc, char **argv)
 
 		umask(077);
 
-		serverIPs = (long *)cli_malloc(sizeof(long));
+		serverIPs = (in_addr_t *)cli_malloc(sizeof(in_addr_t));
+#ifdef	INADDR_LOOPBACK
+		serverIPs[0] = INADDR_LOOPBACK;
+#else
 		serverIPs[0] = inet_addr("127.0.0.1");
+#endif
 
 #ifdef	SESSION
 		memset((char *)&server, 0, sizeof(struct sockaddr_un));
@@ -1354,7 +1362,7 @@ main(int argc, char **argv)
 
 		logg("*numServers: %d\n", numServers);
 
-		serverIPs = (long *)cli_malloc(numServers * sizeof(long));
+		serverIPs = (in_addr_t *)cli_malloc(numServers * sizeof(in_addr_t));
 		activeServers = 0;
 
 #ifdef	SESSION
@@ -1387,7 +1395,7 @@ main(int argc, char **argv)
 			 * Translate server's name to IP address
 			 */
 			serverIPs[i] = inet_addr(hostname);
-			if(serverIPs[i] == -1L) {
+			if(serverIPs[i] == INADDR_NONE) {
 				const struct hostent *h = gethostbyname(hostname);
 
 				if(h == NULL) {
@@ -1405,7 +1413,7 @@ main(int argc, char **argv)
 			else {
 				cli_warnmsg(_("Can't talk to clamd server %s on port %d\n"),
 					hostname, tcpSocket);
-				if(serverIPs[i] == (int)inet_addr("127.0.0.1")) {
+				if(serverIPs[i] == INADDR_LOOPBACK) {
 					if(cfgopt(copt, "TCPAddr")->enabled)
 						cli_warnmsg(_("Check the value for TCPAddr in %s\n"), cfgfile);
 				} else
@@ -1882,7 +1890,7 @@ pingServer(int serverNumber)
 		server.sin_port = (in_port_t)htons(tcpSocket);
 
 		assert(serverIPs != NULL);
-		assert(serverIPs[0] != -1L);
+		assert(serverIPs[0] != INADDR_NONE);
 
 		server.sin_addr.s_addr = serverIPs[serverNumber];
 
@@ -2083,20 +2091,6 @@ findServer(void)
 	for(i = 0, server = servers; i < numServers; i++, server++) {
 		int sock;
 		int server_index = (i + j) % numServers;
-
-		if(server_index >= numServers) {
-			/*
-			 * FIXME: "can't happen" but for some reason, the line
-			 * server->sin_addr.s_addr =
-			 *	serverIPs[(i + j) % numServers];
-			 * gives occasional valgrind errors
-			 */
-			logg(_("!FindServer: looking for %1$d from %2$d - report to bugs@clamav.net\n"),
-				server_index, numServers);
-			free(servers);
-			free(socks);
-			return 0;
-		}
 
 		server->sin_family = AF_INET;
 		server->sin_port = (in_port_t)htons(tcpSocket);
@@ -2408,7 +2402,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		return cl_error;
 
 	if(smfi_setpriv(ctx, privdata) == MI_SUCCESS) {
-		privdata->ip = strdup(remoteIP);
+		strcpy(privdata->ip, remoteIP);
 		return SMFIS_CONTINUE;
 	}
 
@@ -2493,8 +2487,6 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			if(dont_wait) {
 				pthread_mutex_unlock(&n_children_mutex);
 				smfi_setreply(ctx, "451", "4.3.2", _("AV system temporarily overloaded - please try later"));
-				if(privdata->ip)
-					free(privdata->ip);
 				free(privdata);
 				smfi_setpriv(ctx, NULL);
 				return SMFIS_TEMPFAIL;
@@ -3483,13 +3475,11 @@ clamfi_eom(SMFICTX *ctx)
 		smfi_setreply(ctx, (char *)privdata->rejectCode, "5.7.1", reject);
 		broadcast(mess);
 
-		if(privdata->ip) {
+		if(privdata->ip[0]) {
 			pthread_mutex_lock(&blacklist_mutex);
 			(void)tableUpdate(blacklist, privdata->ip,
 				(int)time((time_t *)0));
 			pthread_mutex_unlock(&blacklist_mutex);
-			free(privdata->ip);
-			privdata->ip = NULL;
 		}
 	} else if((strstr(mess, "OK") == NULL) && (strstr(mess, "Empty file") == NULL)) {
 		if(!nflag)
@@ -3608,11 +3598,6 @@ clamfi_free(struct privdata *privdata)
 			}
 			free(privdata->filename);
 			privdata->filename = NULL;
-		}
-
-		if(privdata->ip) {
-			free(privdata->ip);
-			privdata->ip = NULL;
 		}
 
 		if(privdata->from) {
@@ -4149,7 +4134,7 @@ connect2clamd(struct privdata *privdata)
 			freeServer = findServer();
 			if(freeServer < 0)
 				return 0;
-			assert(freeServer < (int)max_children);
+			assert(freeServer < (int)numServers);
 
 			server.sin_addr.s_addr = serverIPs[freeServer];
 
@@ -5525,46 +5510,6 @@ isBlacklisted(const char *ip_address)
 	return 0;
 }
 
-#if	0
-static void
-logger(const char *mess)
-{
-#ifdef	CL_DEBUG
-	puts(mess);
-#else
-	FILE *fout;
-
-	if(cfgopt(copt, "Foreground")->enabled)
-		fout = stderr;
-	else
-		fout = fopen(logFile, "a");
-
-	if(fout == NULL)
-		return;
-
-	if(logg_time) {
-#ifdef HAVE_CTIME_R
-		time_t currtime = time((time_t)0);
-		char buf[27];
-
-#ifdef HAVE_CTIME_R_3
-		ctime_r(&currtime, buf, sizeof(buf));
-#else
-		ctime_r(&currtime, buf);
-#endif
-		fprintf(fout, "%.*s -> %s\n", (int)strlen(buf) - 1, buf, mess);
-#else	/*!HAVE_CTIME_R*/
-		/* TODO */
-		fprintf(fout, "%s\n", mess);
-#endif
-	} else
-		fprintf(fout, "%s\n", mess);
-	if(fout != stderr)
-		fclose(fout);
-#endif
-}
-#endif
-
 /*
  * Determine our MX peers, they must never be blacklisted
  * See RFC1034 for the definition of the record formats
@@ -5618,7 +5563,7 @@ mx(void)
 	i = ntohs(hp->ancount);
 
 	while((--i >= 0) && (p < end)) {
-		long addr;
+		in_addr_t addr;
 		u_short type, pref;
 		u_long ttl;	/* unused */
 
@@ -5638,7 +5583,7 @@ mx(void)
 			break;
 		p += len;
 		addr = inet_addr(buf);
-		if(addr != -1L) {
+		if(addr != INADDR_NONE) {
 			if(use_syslog)
 				syslog(LOG_INFO, "Won't blacklist %s", buf);
 			(void)tableInsert(blacklist, buf, 0);
