@@ -1,3 +1,7 @@
+Thu Jul 20 01:56:10 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	Code tidy: more consistent use of in_addr_t
+
 Wed Jul 19 22:50:11 BST 2006 (njh)
 ----------------------------------
   * libclamav/table.c:	Removed code sanity check that is now invalid since
