@@ -1,3 +1,9 @@
+Fri Jul 21 19:18:08 BST 2006 (njh)
+----------------------------------
+  * libclamav/tnef.c:	Handle trailing newline at the end of winmail.dat,
+				bug reported by Menno Smits
+				<menno*netboxblue.com>
+
 Thu Jul 20 01:56:10 BST 2006 (njh)
 ----------------------------------
   * clamav-milter:	Code tidy: more consistent use of in_addr_t

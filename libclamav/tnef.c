@@ -25,7 +25,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.36 2006/06/20 19:36:33 njh Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.37 2006/07/21 18:16:28 njh Exp $";
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -374,8 +374,18 @@ tnef_header(FILE *fp, uint8_t *part, uint16_t *type, uint16_t *tag, int32_t *len
 	if(*part == (uint8_t)0)
 		return 0;
 
-	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1)
+	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1) {
+		if((*part == '\n') && feof(fp)) {
+			/*
+			 * trailing newline in the file, could be caused by
+			 * quoted-printable encoding in the source message
+			 * missing a final '='
+			 */
+			cli_dbgmsg("tnef_header: ignoring trailing newline\n");
+			return 0;
+		}
 		return -1;
+	}
 
 	i32 = host32(i32);
 	*tag = (uint16_t)(i32 & 0xFFFF);
