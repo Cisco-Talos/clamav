@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.264 2006/07/20 00:41:11 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.265 2006/07/22 11:07:01 njh Exp $";
 
-#define	CM_VERSION	"devel-190706"
+#define	CM_VERSION	"devel-220706"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -149,9 +149,13 @@ typedef	unsigned int	in_addr_t;
 #endif
 
 #define	VERSION_LENGTH	128
+#define	DEFAULT_TIMEOUT	120
 
 /* DO NOT ENABLE THIS, it is for my research only */
 /*#define	REPORT_PHISHING	"reportphishing@antiphishing.org"*/
+/*#define	REPORT_PHISHING	"reportphishing"	/* use aliases to forward to
+						 * antiphishing.org
+						 */
 
 /*#define	SESSION	/*
 		 * Keep one command connection open to clamd, otherwise a new
@@ -378,7 +382,7 @@ static	int	cl_error = SMFIS_TEMPFAIL; /*
 				 * an error. Patch from
 				 * Joe Talbott <josepht@cstone.net>
 				 */
-static	int	readTimeout = 0; /*
+static	int	readTimeout = DEFAULT_TIMEOUT; /*
 				 * number of seconds to wait for clamd to
 				 * respond, see ReadTimeout in clamd.conf
 				 */
@@ -1183,7 +1187,7 @@ main(int argc, char **argv)
 			return EX_CONFIG;
 		}
 	} else
-		readTimeout = 0;
+		readTimeout = DEFAULT_TIMEOUT;
 
 	if(((cpt = cfgopt(copt, "StreamMaxLength")) != NULL) && cpt->enabled) {
 		if(cpt->numarg < 0) {
@@ -2057,7 +2061,6 @@ findServer(void)
 	struct sockaddr_in *servers, *server;
 	int *socks, maxsock = 0, i, j;
 	fd_set rfds;
-	struct timeval tv;
 	int retval;
 
 	assert(tcpSocket != 0);
@@ -2141,13 +2144,16 @@ findServer(void)
 
 	free(servers);
 
-	tv.tv_sec = readTimeout;
-	tv.tv_usec = 0;
-
 	if(maxsock == 0)
 		retval = 0;
-	else
+	else {
+		struct timeval tv;
+
+		tv.tv_sec = readTimeout ? readTimeout : DEFAULT_TIMEOUT;
+		tv.tv_usec = 0;
+
 		retval = select(maxsock + 1, &rfds, NULL, NULL, &tv);
+	}
 
 	if(retval < 0)
 		perror("select");
@@ -3396,10 +3402,7 @@ clamfi_eom(SMFICTX *ctx)
 			for(to = privdata->to; *to; to++) {
 				smfi_delrcpt(ctx, *to);
 				smfi_addheader(ctx, "X-Original-To", *to);
-				free(*to);
 			}
-			free(privdata->to);
-			privdata->to = NULL;
 			if(smfi_addrcpt(ctx, REPORT_PHISHING) == MI_FAILURE) {
 				/* It's a remote site */
 				if(privdata->filename) {
@@ -3410,18 +3413,14 @@ clamfi_eom(SMFICTX *ctx)
 						if(use_syslog)
 							syslog(LOG_INFO, _("Reported phishing to %s"), REPORT_PHISHING);
 
+				} else {
+					logg(_("^Can't set anti-phish header\n"));
+					rc = (privdata->discard) ? SMFIS_DISCARD : SMFIS_REJECT;
 				}
-				if(use_syslog)
-					syslog(LOG_ERR, _("Can't set anti-phish header"));
-				else
-					cli_warnmsg(_("Can't set anti-phish header\n"));
-				rc = (privdata->discard) ? SMFIS_DISCARD : SMFIS_REJECT;
 			} else {
-				setsubject(ctx, "Phishing attempt trapped and redirected");
+				setsubject(ctx, "Phishing attempt trapped by ClamAV and redirected");
 
-				if(use_syslog)
-					syslog(LOG_DEBUG, "Redirected phish to %s", REPORT_PHISHING);
-				cli_dbgmsg("Redirected phish to %s\n", REPORT_PHISHING);
+				logg("Redirected phish to %s\n", REPORT_PHISHING);
 			}
 		} else
 #endif
@@ -3430,19 +3429,13 @@ clamfi_eom(SMFICTX *ctx)
 			for(to = privdata->to; *to; to++) {
 				smfi_delrcpt(ctx, *to);
 				smfi_addheader(ctx, "X-Original-To", *to);
-				free(*to);
 			}
-			free(privdata->to);
-			privdata->to = NULL;
 			/*
 			 * NOTE: on a closed relay this will not work
 			 * if the recipient is a remote address
 			 */
 			if(smfi_addrcpt(ctx, quarantine) == MI_FAILURE) {
-				if(use_syslog)
-					syslog(LOG_ERR, _("Can't set quarantine user %s"), quarantine);
-				else
-					cli_warnmsg(_("Can't set quarantine user %s\n"), quarantine);
+				logg(_("^Can't set quarantine user %s"), quarantine);
 				rc = (privdata->discard) ? SMFIS_DISCARD : SMFIS_REJECT;
 			} else {
 #ifdef	REPORT_PHISHING
@@ -3453,9 +3446,7 @@ clamfi_eom(SMFICTX *ctx)
 #endif
 					setsubject(ctx, virusname);
 
-				if(use_syslog)
-					syslog(LOG_DEBUG, "Redirected virus to %s", quarantine);
-				cli_dbgmsg("Redirected virus to %s\n", quarantine);
+				logg("Redirected virus to %s", quarantine);
 			}
 		} else if(advisory)
 			setsubject(ctx, virusname);
