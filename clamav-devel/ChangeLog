@@ -1,3 +1,8 @@
+Sat Jul 22 12:05:26 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	More consistent use of ReadTimeout in the load balancing
+				code
+
 Fri Jul 21 19:18:08 BST 2006 (njh)
 ----------------------------------
   * libclamav/tnef.c:	Handle trailing newline at the end of winmail.dat,
@@ -554,7 +559,7 @@ Wed Mar 22 13:14:52 CET 2006 (tk)
 Mon Mar 20 21:56:38 CET 2006 (acab)
 -----------------------------------
   * libclamav/fsg.c: fix wrong write size calculation (reported by Andrey J.
- 				Melnikoff (TEMHOTA) <temnota*kmv.ru>)
+				Melnikoff (TEMHOTA) <temnota*kmv.ru>)
 
 Sun Mar 19 21:49:19 CET 2006 (tk)
 ---------------------------------
@@ -653,7 +658,7 @@ Tue Jan 24 16:52:21 CET 2006 (tk)
 Mon Jan 23 17:09:26 CET 2006 (acab)
 -----------------------------------
   * libclamav:		Fixed more warnings
-  			Wrapped write()
+			Wrapped write()
 			Finalized yc emulator
 
 Mon Jan 23 12:12:07 CET 2006 (acab)
@@ -680,7 +685,7 @@ Sun Jan 15 16:43:36 CET 2006 (tk)
 Fri Jan 14 14:51:01 CET 2006 (acab)
 ---------------------------------
   * libclamav: added yC support
-  		thanks a lot to Ivan Zlatev <pumqara*gmail.com>
+		thanks a lot to Ivan Zlatev <pumqara*gmail.com>
   
 Fri Jan 13 14:53:45 CET 2006 (tk)
 ---------------------------------
