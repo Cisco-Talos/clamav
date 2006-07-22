@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.265 2006/07/22 11:07:01 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.266 2006/07/22 22:08:02 njh Exp $";
 
 #define	CM_VERSION	"devel-220706"
 
@@ -1399,7 +1399,11 @@ main(int argc, char **argv)
 			 * Translate server's name to IP address
 			 */
 			serverIPs[i] = inet_addr(hostname);
+#ifdef	INADDR_NONE
 			if(serverIPs[i] == INADDR_NONE) {
+#else
+			if(serverIPs[i] == (in_addr_t)-1) {
+#endif
 				const struct hostent *h = gethostbyname(hostname);
 
 				if(h == NULL) {
@@ -1894,7 +1898,11 @@ pingServer(int serverNumber)
 		server.sin_port = (in_port_t)htons(tcpSocket);
 
 		assert(serverIPs != NULL);
+#ifdef	INADDR_NONE
 		assert(serverIPs[0] != INADDR_NONE);
+#else
+		assert(serverIPs[0] != (in_addr_t)-1);
+#endif
 
 		server.sin_addr.s_addr = serverIPs[serverNumber];
 
@@ -5574,7 +5582,11 @@ mx(void)
 			break;
 		p += len;
 		addr = inet_addr(buf);
+#ifdef	INADDR_NONE
 		if(addr != INADDR_NONE) {
+#else
+		if(addr != (in_addr_t)-1) {
+#endif
 			if(use_syslog)
 				syslog(LOG_INFO, "Won't blacklist %s", buf);
 			(void)tableInsert(blacklist, buf, 0);
