@@ -1,3 +1,7 @@
+Sun Jul 23 20:13:46 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	Call res_close() and fix blacklist mutex
+
 Sun Jul 23 16:47:58 BST 2006 (njh)
 ---------------------------------
   * clamav-milter:	Report phishing code now fully enabled, added

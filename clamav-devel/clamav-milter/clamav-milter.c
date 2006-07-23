@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.269 2006/07/23 15:49:24 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.270 2006/07/23 19:13:10 njh Exp $";
 
 #define	CM_VERSION	"devel-230706"
 
@@ -5500,7 +5500,7 @@ isBlacklisted(const char *ip_address)
 		return 1;
 
 	/* timedout: remove the IP from the blacklist */
-	pthread_mutex_unlock(&blacklist_mutex);
+	pthread_mutex_lock(&blacklist_mutex);
 	tableRemove(blacklist, ip_address);
 	pthread_mutex_unlock(&blacklist_mutex);
 
@@ -5525,7 +5525,7 @@ mx(void)
 		u_char u[PACKETSZ];
 	} q;
 	const HEADER *hp;
-	int len, i;
+	int len, i, was_initialised;
 
 	if(gethostname(name, sizeof(name)) < 0) {
 		perror("gethostname");
@@ -5539,23 +5539,34 @@ mx(void)
 			return;
 	}
 
-	if(res_init() < 0)
+	was_initialised = _res.options & RES_INIT;
+
+	if((!was_initialised) && res_init() < 0)
 		return;
 
 	len = res_query(name, C_IN, T_MX, (u_char *)&q, sizeof(q));
-	if(len < 0)
+	if(len < 0) {
+		if(!was_initialised)
+			res_close();
 		return;	/* Host has no MX records */
+	}
 
-	if((unsigned int)len > sizeof(q))
+	if((unsigned int)len > sizeof(q)) {
+		if(!was_initialised)
+			res_close();
 		return;
+	}
 
 	hp = &(q.h);
 	p = q.u + HFIXEDSZ;
 	end = q.u + len;
 
 	for(i = ntohs(hp->qdcount); i--; p += len + QFIXEDSZ)
-		if((len = dn_skipname(p, end)) < 0)
+		if((len = dn_skipname(p, end)) < 0) {
+			if(!was_initialised)
+				res_close();
 			return;
+		}
 
 	i = ntohs(hp->ancount);
 
@@ -5591,6 +5602,8 @@ mx(void)
 		} else
 			resolve(buf);
 	}
+	if(!was_initialised)
+		res_close();
 }
 
 /*
