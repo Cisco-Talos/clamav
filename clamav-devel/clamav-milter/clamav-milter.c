@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.267 2006/07/23 09:23:02 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.268 2006/07/23 09:37:51 njh Exp $";
 
 #define	CM_VERSION	"devel-230706"
 
@@ -3418,7 +3418,9 @@ clamfi_eom(SMFICTX *ctx)
 				if(privdata->filename) {
 					char cmd[128];
 
-					snprintf(cmd, sizeof(cmd), "rmail %s < %s", REPORT_PHISHING, privdata->filename);
+					snprintf(cmd, sizeof(cmd), "mail -s %s %s < %s",
+						virusname, REPORT_PHISHING,
+						privdata->filename);
 					if(system(cmd) == 0)
 						if(use_syslog)
 							syslog(LOG_INFO, _("Reported phishing to %s"), REPORT_PHISHING);
