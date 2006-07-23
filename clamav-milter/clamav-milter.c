@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.266 2006/07/22 22:08:02 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.267 2006/07/23 09:23:02 njh Exp $";
 
-#define	CM_VERSION	"devel-220706"
+#define	CM_VERSION	"devel-230706"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2924,7 +2924,7 @@ clamfi_eom(SMFICTX *ctx)
 		privdata->root = cl_dup(root);
 		pthread_mutex_unlock(&root_mutex);
 		if(privdata->root == NULL) {
-			cli_errmsg("privdata->root == NULL\n");
+			logg("!privdata->root == NULL\n");
 			clamfi_cleanup(ctx);
 			return cl_error;
 		}
@@ -2935,10 +2935,12 @@ clamfi_eom(SMFICTX *ctx)
 				strcpy(mess, "OK");
 				break;
 			case CL_VIRUS:
-				logg("#%s: %s FOUND", privdata->filename, virname);
+				snprintf(mess, sizeof(mess), "%s: %s FOUND", privdata->filename, virname);
+				logg("#%s", mess);
 				break;
 			default:
-				logg("!%s: %s ERROR", privdata->filename, cl_strerror(rc));
+				snprintf(mess, sizeof(mess), "%s: %s ERROR", privdata->filename, cl_strerror(rc));
+				logg("!%s", mess);
 				break;
 		}
 		cl_free(privdata->root);
