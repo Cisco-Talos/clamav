@@ -1,3 +1,8 @@
+Sun Jul 23 16:47:58 BST 2006 (njh)
+---------------------------------
+  * clamav-milter:	Report phishing code now fully enabled, added
+				--report-phishing flag
+
 Sun Jul 23 10:23:34 BST 2006 (njh)
 ----------------------------------
   * clamav-milter:	Internal mode wasn't correctly logging

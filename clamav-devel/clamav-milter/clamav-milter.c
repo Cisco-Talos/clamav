@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.268 2006/07/23 09:37:51 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.269 2006/07/23 15:49:24 njh Exp $";
 
 #define	CM_VERSION	"devel-230706"
 
@@ -150,12 +150,6 @@ typedef	unsigned int	in_addr_t;
 
 #define	VERSION_LENGTH	128
 #define	DEFAULT_TIMEOUT	120
-
-/* DO NOT ENABLE THIS, it is for my research only */
-/*#define	REPORT_PHISHING	"reportphishing@antiphishing.org"*/
-/*#define	REPORT_PHISHING	"reportphishing"	/* use aliases to forward to
-						 * antiphishing.org
-						 */
 
 /*#define	SESSION	/*
 		 * Keep one command connection open to clamd, otherwise a new
@@ -476,6 +470,7 @@ static	pthread_cond_t	watchdog_cond = PTHREAD_COND_INITIALIZER;
 static	const	char	*postmaster = "postmaster";
 static	const	char	*from = "MAILER-DAEMON";
 static	int	quitting;
+static	const	char	*report;
 
 static	const	char	*whitelistFile;	/*
 					 * file containing destination email
@@ -562,7 +557,8 @@ help(void)
 	puts(_("\t--postmaster\t\t-p EMAIL\tPostmaster address [default=postmaster]."));
 	puts(_("\t--postmaster-only\t-P\tSend warnings only to the postmaster."));
 	puts(_("\t--quiet\t\t\t-q\tDon't send e-mail notifications of interceptions."));
-	puts(_("\t--quarantine=USER\t-Q EMAIL\tQuanrantine e-mail account."));
+	puts(_("\t--quarantine=USER\t-Q EMAIL\tQuarantine e-mail account."));
+	puts(_("\t--report-phish=EMAIL\t-r EMAIL\tReport phish to this email address."));
 	puts(_("\t--quarantine-dir=DIR\t-U DIR\tDirectory to store infected emails."));
 	puts(_("\t--server=SERVER\t\t-s SERVER\tHostname/IP address of server(s) running clamd (when using TCPsocket)."));
 	puts(_("\t--sendmail-cf=FILE\t\tLocation of the sendmail.cf file to verify"));
@@ -645,9 +641,9 @@ main(int argc, char **argv)
 		struct cidr_net *net;
 		struct in_addr ignoreIP;
 #ifdef	CL_DEBUG
-		const char *args = "a:AbB:c:dDefF:I:k:lLm:M:nNop:PqQ:hHs:St:T:U:VwW:x:0:1:2";
+		const char *args = "a:AbB:c:dDefF:I:k:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:x:0:1:2";
 #else
-		const char *args = "a:AbB:c:dDefF:I:k:lLm:M:nNop:PqQ:hHs:St:T:U:VwW:0:1:2";
+		const char *args = "a:AbB:c:dDefF:I:k:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:0:1:2";
 #endif
 
 		static struct option long_options[] = {
@@ -722,6 +718,9 @@ main(int argc, char **argv)
 			},
 			{
 				"quarantine", 1, NULL, 'Q',
+			},
+			{
+				"report-phishing", 1, NULL, 'r'
 			},
 			{
 				"quarantine-dir", 1, NULL, 'U',
@@ -883,6 +882,10 @@ main(int argc, char **argv)
 			case 'Q':	/* quarantine e-mail address */
 				quarantine = optarg;
 				smfilter.xxfi_flags |= SMFIF_CHGHDRS|SMFIF_ADDRCPT|SMFIF_DELRCPT;
+				break;
+			case 'r':	/* report phishing here */
+				/* e.g. reportphishing@antiphishing.org */
+				report = optarg;
 				break;
 			case 's':	/* server running clamd */
 				server++;
@@ -3406,25 +3409,22 @@ clamfi_eom(SMFICTX *ctx)
 			privdata->filename = NULL;
 		}
 
-#ifdef	REPORT_PHISHING
-		if((quarantine == NULL) && (!advisory) &&
+		if(report && (quarantine == NULL) && (!advisory) &&
 		   (strstr(virusname, "Phishing") != NULL)) {
 			for(to = privdata->to; *to; to++) {
 				smfi_delrcpt(ctx, *to);
 				smfi_addheader(ctx, "X-Original-To", *to);
 			}
-			if(smfi_addrcpt(ctx, REPORT_PHISHING) == MI_FAILURE) {
+			if(smfi_addrcpt(ctx, report) == MI_FAILURE) {
 				/* It's a remote site */
 				if(privdata->filename) {
 					char cmd[128];
 
 					snprintf(cmd, sizeof(cmd), "mail -s %s %s < %s",
-						virusname, REPORT_PHISHING,
+						virusname, report,
 						privdata->filename);
 					if(system(cmd) == 0)
-						if(use_syslog)
-							syslog(LOG_INFO, _("Reported phishing to %s"), REPORT_PHISHING);
-
+						logg(_("#Reported phishing to %s"), report);
 				} else {
 					logg(_("^Can't set anti-phish header\n"));
 					rc = (privdata->discard) ? SMFIS_DISCARD : SMFIS_REJECT;
@@ -3432,12 +3432,9 @@ clamfi_eom(SMFICTX *ctx)
 			} else {
 				setsubject(ctx, "Phishing attempt trapped by ClamAV and redirected");
 
-				logg("Redirected phish to %s\n", REPORT_PHISHING);
+				logg("Redirected phish to %s\n", report);
 			}
-		} else
-#endif
-
-		if(quarantine) {
+		} else if(quarantine) {
 			for(to = privdata->to; *to; to++) {
 				smfi_delrcpt(ctx, *to);
 				smfi_addheader(ctx, "X-Original-To", *to);
@@ -3450,13 +3447,10 @@ clamfi_eom(SMFICTX *ctx)
 				logg(_("^Can't set quarantine user %s"), quarantine);
 				rc = (privdata->discard) ? SMFIS_DISCARD : SMFIS_REJECT;
 			} else {
-#ifdef	REPORT_PHISHING
-				if(strstr(virusname, "Phishing") != NULL) {
-					(void)smfi_addrcpt(ctx, REPORT_PHISHING);
-					setsubject(ctx, "Blocked Phishing Attempt");
-				} else
-#endif
-					setsubject(ctx, virusname);
+				if(report &&
+				   strstr(virusname, "Phishing") != NULL)
+					(void)smfi_addrcpt(ctx, report);
+				setsubject(ctx, virusname);
 
 				logg("Redirected virus to %s", quarantine);
 			}
