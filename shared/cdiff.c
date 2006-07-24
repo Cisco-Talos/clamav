@@ -151,7 +151,6 @@ static char *cdiff_token(const char *line, unsigned int token)
 static int cdiff_cmd_open(const char *cmdstr, struct cdiff_ctx *ctx)
 {
 	char *db;
-	struct stat sb;
 	unsigned int i;
 
 
@@ -172,12 +171,6 @@ static int cdiff_cmd_open(const char *cmdstr, struct cdiff_ctx *ctx)
 	    free(db);
 	    return -1;
 	}
-    }
-
-    if(stat(db, &sb) == -1) {
-	logg("!cdiff_cmd_open: Can't stat database file %s\n", db);
-	free(db);
-	return -1;
     }
 
     ctx->open_db = db;
@@ -463,6 +456,8 @@ static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx)
 	    }
 	    add = add->next;
 	}
+
+	fclose(fh);
     }
 
     cdiff_ctx_free(ctx);
