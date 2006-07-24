@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.323 2006/07/12 21:21:25 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.324 2006/07/24 12:14:46 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -218,6 +218,7 @@ static	bool	exportBinhexMessage(const char *dir, message *m);
 static	int	exportBounceMessage(text *start, const mbox_ctx *ctx);
 static	message	*do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx *mctx, message *messageIn, text **tptr);
 static	int	count_quotes(const char *buf);
+static	bool	next_is_folded_header(const text *t);
 
 static	void	checkURLs(message *m, const char *dir);
 #ifdef	WITH_CURL
@@ -1747,16 +1748,9 @@ parseEmailHeaders(message *m, const table_t *rfc821)
 
 				assert(fullline != NULL);
 
-				if(t->t_next && (t->t_next->t_line != NULL))
-					/*
-					 * Section B.2 of RFC822 says TAB or
-					 * SPACE means a continuation of the
-					 * previous entry.
-					 *
-					 * Add all the arguments on the line
-					 */
-					if(isblank(lineGetData(t->t_next->t_line)[0]))
-						continue;
+				if(next_is_folded_header(t))
+					/* Add arguments to this line */
+					continue;
 
 				if(count_quotes(fullline) & 1)
 					continue;
@@ -1978,7 +1972,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 			boundary = messageFindArgument(mainMessage, "boundary");
 
 			if(boundary == NULL) {
-				cli_warnmsg("Multipart MIME message contains no boundary header\n");
+				cli_warnmsg("Multipart/%s MIME message contains no boundary header\n",
+					mimeSubtype);
 				/* Broken e-mail message */
 				mimeType = NOMIME;
 				/*
@@ -2076,7 +2071,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 			 * This looks like parseEmailHeaders() - maybe there's
 			 * some duplication of code to be cleaned up
 			 *
-			 * We need to create an array rather than just
+			 * We may need to create an array rather than just
 			 * save each part as it is found because not all
 			 * elements will need scanning, and we don't yet know
 			 * which of those elements it will be, except in
@@ -2168,7 +2163,6 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 					} else if(inhead) {	/* handling normal headers */
 						/*int quotes;*/
 						char *fullline, *ptr;
-						const text *next;
 
 						if(line == NULL) {
 							/*
@@ -2188,12 +2182,14 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 							 *
 							 * UEsDBAoAAAAAAACgPjJ2RHw676gAAO+oAABEAAAAbWFpbF90ZXh0LWluZm8udHh0ICAgICAgICAg
 							 */
-							next = t_line->t_next;
+							const text *next = t_line->t_next;
+
 							if(next && next->t_line) {
 								const char *data = lineGetData(next->t_line);
 
 								if((messageGetEncoding(aMessage) == NOENCODING) &&
-								   (messageGetMimeType(aMessage) == APPLICATION))
+								   (messageGetMimeType(aMessage) == APPLICATION) &&
+								   strstr(data, "base64")) {
 									/*
 									 * Handle this nightmare (note the blank
 									 * line in the header and the incorrect
@@ -2204,11 +2200,10 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 									 * r-Encoding: base64
 									 * Content-Disposition: attachment; filename="zipped_files.EXE"
 									 */
-									if(strstr(data, "base64")) {
-										messageSetEncoding(aMessage, "base64");
-										cli_dbgmsg("Ignoring fake end of headers\n");
-										continue;
-									}
+									messageSetEncoding(aMessage, "base64");
+									cli_dbgmsg("Ignoring fake end of headers\n");
+									continue;
+								}
 								if((strncmp(data, "Content", 7) == 0) ||
 								   (strncmp(data, "filename=", 9) == 0)) {
 									cli_dbgmsg("Ignoring fake end of headers\n");
@@ -2263,15 +2258,12 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 						 * Content-Type: application/octet-stream; name="foo
 						 * "
 						 */
-						next = t_line->t_next;
-						while(next && next->t_line) {
-							const char *data = lineGetData(next->t_line);
+						while(t_line && next_is_folded_header(t_line)) {
+							const char *data;
 
-							/*if((!isspace(data[0])) &&
-							   ((quotes & 1) == 0))
-								break;*/
-							if(!isspace(data[0]))
-								break;
+							t_line = t_line->t_next;
+
+							data = lineGetData(t_line->t_line);
 
 							if(data[1] == '\0') {
 								/*
@@ -2296,10 +2288,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 							strcat(fullline, data);
 
 							/*quotes = count_quotes(data);*/
-
-							t_line = next;
-							next = next->t_next;
 						}
+
 						cli_dbgmsg("Multipart %d: About to parse folded header '%s'\n",
 							multiparts, fullline);
 
@@ -4515,4 +4505,71 @@ count_quotes(const char *buf)
 			quotes++;
 
 	return quotes;
+}
+
+/*
+ * Will the next line be a folded header? See RFC2822 section 2.2.3
+ */
+static bool
+next_is_folded_header(const text *t)
+{
+	const text *next = t->t_next;
+	const char *data, *ptr;
+
+	if(next == NULL)
+		return FALSE;
+
+	if(next->t_line == NULL)
+		return FALSE;
+
+	data = lineGetData(next->t_line);
+
+	/*
+	 * Section B.2 of RFC822 says TAB or
+	 * SPACE means a continuation of the
+	 * previous entry.
+	 */
+	if(isblank(data[0]))
+		return TRUE;
+
+	if(strchr(data, '=') == NULL)
+		/*
+		 * Avoid false positives with
+		 *	Content-Type: text/html;
+		 *	Content-Transfer-Encoding: quoted-printable
+		 */
+		return FALSE;
+	
+	/*
+	 * Some are broken and don't fold headers lines
+	 * correctly as per section 2.2.3 of RFC2822.
+	 * Generally they miss the white space at
+	 * the start of the fold line:
+	 *	Content-Type: multipart/related;
+	 *	type="multipart/alternative";
+	 *	boundary="----=_NextPart_000_006A_01C6AC47.348CB550"
+	 * should read:
+	 *	Content-Type: multipart/related;
+	 *	 type="multipart/alternative";
+	 *	 boundary="----=_NextPart_000_006A_01C6AC47.348CB550"
+	 * Since we're a virus checker not an RFC
+	 * verifier we need to handle these
+	 */
+	data = lineGetData(t->t_line);
+
+	ptr = strchr(data, '\0');
+
+	while(--ptr > data)
+		switch(*ptr) {
+			case ';':
+				return TRUE;
+			case '\n':
+			case ' ':
+			case '\r':
+			case '\t':
+				continue;	/* white space at end of line */
+			default:
+				return FALSE;
+		}
+	return FALSE;
 }
