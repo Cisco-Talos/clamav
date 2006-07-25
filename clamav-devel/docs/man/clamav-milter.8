@@ -98,15 +98,15 @@ as clamd(8) running either on the local server or other server(s) to perform
 the scanning.
 .TP
 \fB\-k, \-\-blacklist-time=time\fR
-Tells the number in seconds to black list an IP address (IPv4 only). This
+Tells the number of seconds to black list an IP address (IPv4 only). This
 is especially useful with phishing which often send a number of emails one
 after the other.
 .TP
 Blacklisting speeds up scanning significantly, however it does have drawbacks
 since it is possible for a site to be incorrectly blacklisted because of DHCP
 or an unsafe smart-host.
-To avoid this, blacklisting does not last for ever. The recommended value is
-60.
+To avoid this, clamav-milter's blacklist does not last for ever.
+The recommended value is 60.
 .TP
 Machines on the LAN, the local host, and machines that are our MX peers are
 never blacklisted.
