@@ -1,3 +1,8 @@
+Tue Jul 25 08:30:12 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	Mention Castlecops in report-phish
+			Added sanity checks
+
 Mon Jul 24 21:05:20 CEST 2006 (tk)
 ----------------------------------
   * shared/cdiff.c: add missing fclose() in cdiff_cmd_close()
