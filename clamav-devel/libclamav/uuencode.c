@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: uuencode.c,v 1.4 2006/05/19 11:02:12 njh Exp $";
+static	char	const	rcsid[] = "$Id: uuencode.c,v 1.5 2006/07/25 15:09:45 njh Exp $";
 
 #include "clamav.h"
 
@@ -24,12 +24,18 @@ static	char	const	rcsid[] = "$Id: uuencode.c,v 1.4 2006/05/19 11:02:12 njh Exp $
 #include "clamav-config.h"
 #endif
 
+#ifdef	HAVE_STRINGS_H
 #include <strings.h>
+#endif
 #include <stdio.h>
 #include <memory.h>
 #include <sys/stat.h>
 #include "others.h"
 #include "str.h"
+
+#ifdef	C_WINDOWS
+#include <io.h>
+#endif
 
 #include "mbox.h"
 #include "uuencode.h"
@@ -135,4 +141,3 @@ uudecodeFile(message *m, const char *firstline, const char *dir, FILE *fin)
 
 	return 1;
 }
-
