@@ -118,7 +118,7 @@ void cdiff_ctx_free(struct cdiff_ctx *ctx)
     }
 }
 
-static char *cdiff_token(const char *line, unsigned int token)
+static char *cdiff_token(const char *line, unsigned int token, unsigned int last)
 {
 	unsigned int counter = 0, i, j;
 	char *buffer;
@@ -130,6 +130,9 @@ static char *cdiff_token(const char *line, unsigned int token)
 
     if(!line[i])
 	return NULL;
+
+    if(last)
+	return strdup(&line[i]);
 
     for(j = i; line[j]; j++)
 	if(line[j] == ' ')
@@ -154,7 +157,7 @@ static int cdiff_cmd_open(const char *cmdstr, struct cdiff_ctx *ctx)
 	unsigned int i;
 
 
-    if(!(db = cdiff_token(cmdstr, 1))) {
+    if(!(db = cdiff_token(cmdstr, 1, 1))) {
 	logg("!cdiff_cmd_open: Can't get first argument\n");
 	return -1;
     }
@@ -183,7 +186,7 @@ static int cdiff_cmd_add(const char *cmdstr, struct cdiff_ctx *ctx)
 	struct cdiff_node *new;
 
 
-    if(!(sig = cdiff_token(cmdstr, 1))) {
+    if(!(sig = cdiff_token(cmdstr, 1, 1))) {
 	logg("!cdiff_cmd_add: Can't get first argument\n");
 	return -1;
     }
@@ -213,14 +216,14 @@ static int cdiff_cmd_del(const char *cmdstr, struct cdiff_ctx *ctx)
 	unsigned int lineno;
 
 
-    if(!(arg = cdiff_token(cmdstr, 1))) {
+    if(!(arg = cdiff_token(cmdstr, 1, 0))) {
 	logg("!cdiff_cmd_del: Can't get first argument\n");
 	return -1;
     }
     lineno = (unsigned int) atoi(arg);
     free(arg);
 
-    if(!(arg = cdiff_token(cmdstr, 2))) {
+    if(!(arg = cdiff_token(cmdstr, 2, 1))) {
 	logg("!cdiff_cmd_del: Can't get second argument\n");
 	return -1;
     }
@@ -270,19 +273,19 @@ static int cdiff_cmd_xchg(const char *cmdstr, struct cdiff_ctx *ctx)
 	unsigned int lineno;
 
 
-    if(!(arg = cdiff_token(cmdstr, 1))) {
+    if(!(arg = cdiff_token(cmdstr, 1, 0))) {
 	logg("!cdiff_cmd_xchg: Can't get first argument\n");
 	return -1;
     }
     lineno = (unsigned int) atoi(arg);
     free(arg);
 
-    if(!(arg = cdiff_token(cmdstr, 2))) {
+    if(!(arg = cdiff_token(cmdstr, 2, 0))) {
 	logg("!cdiff_cmd_xchg: Can't get second argument\n");
 	return -1;
     }
 
-    if(!(arg2 = cdiff_token(cmdstr, 3))) {
+    if(!(arg2 = cdiff_token(cmdstr, 3, 1))) {
 	free(arg);
 	logg("!cdiff_cmd_xchg: Can't get second argument\n");
 	return -1;
@@ -496,7 +499,7 @@ int cdiff_apply(int fd)
 	if(line[0] == '#' || !strlen(line))
 	    continue;
 
-	cmd_name = cdiff_token(line, 0);
+	cmd_name = cdiff_token(line, 0, 0);
 	if(!cmd_name) {
 	    logg("!cdiff_apply: Problem parsing line %d\n", lines);
 	    fclose(fh);
@@ -519,7 +522,7 @@ int cdiff_apply(int fd)
 	    return -1;
 	}
 
-	if(!(tmp = cdiff_token(line, commands[i].argc))) {
+	if(!(tmp = cdiff_token(line, commands[i].argc, 1))) {
 	    logg("!cdiff_apply: Not enough arguments for %s at line %d\n", cmd_name, lines);
 	    free(cmd_name);
 	    fclose(fh);
