@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.270 2006/07/23 19:13:10 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.271 2006/07/25 07:29:39 njh Exp $";
 
-#define	CM_VERSION	"devel-230706"
+#define	CM_VERSION	"devel-250706"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1526,6 +1526,27 @@ main(int argc, char **argv)
 		}
 	} else
 		tmpdir = NULL;
+
+	if(report) {
+		if((quarantine_dir == NULL) && (tmpdir == NULL)) {
+			/*
+			 * Limitation: doesn't store message in a temporary
+			 * file, so we won't be able to use mail < file
+			 */
+			fprintf(stderr, "%s: when using --external, --report-phish cannot be used without either LocalSocket or --quarantine\n",
+				argv[0]);
+			return EX_USAGE;
+		}
+		if(lflag) {
+			/*
+			 * Naturally, if you attempt to scan the phish you've
+			 * just reported, it'll be blocked!
+			 */
+			fprintf(stderr, "%s: --report-phish cannot be used with --local\n",
+				argv[0]);
+			return EX_USAGE;
+		}
+	}
 
 	if(cfgopt(copt, "Foreground")->enabled)
 		logg_foreground = 1;
