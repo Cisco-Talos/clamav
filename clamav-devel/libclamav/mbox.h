@@ -27,7 +27,7 @@ typedef enum {
 } encoding_type;
 
 /* tk: shut up manager.c warning */
-#include <clamav.h>
+#include "clamav.h"
 
 /* classes supported by this system */
 typedef enum {
