@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.324 2006/07/24 12:14:46 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.325 2006/07/25 15:09:45 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -37,13 +37,19 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.324 2006/07/24 12:14:46 njh Exp $";
 #include <errno.h>
 #include <assert.h>
 #include <string.h>
+#ifdef	HAVE_STRINGS_H
 #include <strings.h>
+#endif
 #include <ctype.h>
 #include <time.h>
 #include <fcntl.h>
+#ifdef	HAVE_SYS_PARAM_H
 #include <sys/param.h>
-#include <clamav.h>
+#endif
+#include "clamav.h"
+#ifndef	C_WINDOWS
 #include <dirent.h>
+#endif
 #include <limits.h>
 
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
@@ -178,7 +184,9 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
  * more than one machine you must make sure that .../partial is on a shared
  * network filesystem
  */
+#ifndef	C_WINDOWS	/* TODO: when opendir() is done */
 #define	PARTIAL_DIR
+#endif
 
 /*#define	NEW_WORLD*/
 
@@ -3098,7 +3106,7 @@ strstrip(char *s)
 	if(s == (char *)NULL)
 		return(0);
 
-	return(strip(s, strlen(s) + 1));
+	return(strip(s, (int)strlen(s) + 1));
 }
 
 static int
@@ -4539,7 +4547,7 @@ next_is_folded_header(const text *t)
 		 *	Content-Transfer-Encoding: quoted-printable
 		 */
 		return FALSE;
-	
+
 	/*
 	 * Some are broken and don't fold headers lines
 	 * correctly as per section 2.2.3 of RFC2822.

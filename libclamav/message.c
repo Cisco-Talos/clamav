@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.180 2006/07/18 14:56:04 njh Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.181 2006/07/25 15:09:45 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -37,7 +37,9 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.180 2006/07/18 14:56:04 njh Exp 
 #endif
 #include <stdlib.h>
 #include <string.h>
+#ifdef	HAVE_STRINGS_H
 #include <strings.h>
+#endif
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -1028,7 +1030,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 
 	if((t_line = binhexBegin(m)) != NULL) {
 		unsigned char byte;
-		unsigned long newlen = 0L, len, dataforklen, resourceforklen, l;
+		size_t newlen = 0L, len, dataforklen, resourceforklen, l;
 		unsigned char *data;
 		char *ptr;
 		int bytenumber;
@@ -2506,8 +2508,8 @@ simil(const char *str1, const char *str2)
 {
 	LINK1 top = NULL;
 	unsigned int score = 0;
-	unsigned int common, total, len1;
-	unsigned int len2;
+	size_t common, total;
+	size_t len1, len2;
 	char ls1[MAX_PATTERN_SIZ], ls2[MAX_PATTERN_SIZ];
 	char *rs1 = NULL, *rs2 = NULL;
 	char *s1, *s2;
@@ -2541,7 +2543,7 @@ simil(const char *str1, const char *str2)
 		pop(&top, ls1);
 		common = compare(ls1, &rs1, ls2, &rs2);
 		if(common > 0) {
-			score += common;
+			score += (unsigned int)common;
 			len1 = strlen(ls1);
 			len2 = strlen(ls2);
 

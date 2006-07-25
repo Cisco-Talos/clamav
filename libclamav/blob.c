@@ -16,10 +16,14 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.51 2006/07/01 16:17:35 njh Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.52 2006/07/25 15:09:45 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
+#endif
+
+#ifdef	C_WINDOWS
+#include "stdafx.h"
 #endif
 
 #include <stdio.h>
@@ -28,7 +32,13 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.51 2006/07/01 16:17:35 njh Exp $";
 #include <errno.h>
 #include <fcntl.h>
 
+#ifdef	C_WINDOWS
+#include <io.h>
+#endif
+
+#if	HAVE_SYS_PARAM_H
 #include <sys/param.h>	/* for NAME_MAX */
+#endif
 
 #ifdef	C_DARWIN
 #include <sys/types.h>
@@ -48,7 +58,7 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.51 2006/07/01 16:17:35 njh Exp $";
 
 #include <assert.h>
 
-#ifdef	C_MINGW
+#if	defined(C_MINGW) || defined(C_WINDOWS)
 #include <windows.h>
 #endif
 
@@ -226,7 +236,7 @@ blobGetData(const blob *b)
 	return(b->data);
 }
 
-unsigned long
+size_t
 blobGetDataSize(const blob *b)
 {
 	assert(b != NULL);
@@ -278,7 +288,7 @@ blobClose(blob *b)
 int
 blobcmp(const blob *b1, const blob *b2)
 {
-	unsigned long s1, s2;
+	size_t s1, s2;
 
 	assert(b1 != NULL);
 	assert(b2 != NULL);
@@ -409,8 +419,11 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 	 * can return ETOOLONG even when the file name isn't too long
 	 */
 	snprintf(fullname, sizeof(fullname), "%s/clamavtmpXXXXXXXXXXXXX", dir);
+#elif	defined(C_WINDOWS)
+	sprintf_s(fullname, sizeof(fullname) - 1, "%s/%.*sXXXXXX", dir,
+		(int)(sizeof(fullname) - 9 - strlen(dir)), filename);
 #else
-	snprintf(fullname, sizeof(fullname) - 1, "%s/%.*sXXXXXX", dir,
+	sprintf(fullname, "%s/%.*sXXXXXX", dir,
 		(int)(sizeof(fullname) - 9 - strlen(dir)), filename);
 #endif
 
@@ -425,6 +438,18 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 		snprintf(fullname, sizeof(fullname), "%s/clamavtmpXXXXXXXXXXXXX", dir);
 		cli_dbgmsg("fileblobSetFilename: retry as mkstemp(%s)\n", fullname);
 		fd = mkstemp(fullname);
+	}
+#elif	defined(C_WINDOWS)
+	cli_dbgmsg("fileblobSetFilename: _mktemp_s(%s)\n", fullname);
+	fd = _mktemp_s(fullname, sizeof(fullname));
+	if((fd < 0) && (errno == EINVAL)) {
+		/*
+		 * This happens with some Linux flavours when (mis)handling
+		 * filenames with foreign characters
+		 */
+		sprintf_s(fullname, sizeof(fullname), "%s/clamavtmpXXXXXXXXXXXXX", dir);
+		cli_dbgmsg("fileblobSetFilename: retry as mkstemp(%s)\n", fullname);
+		fd = _mktemp_s(fullname, sizeof(fullname));
 	}
 #else
 	cli_dbgmsg("fileblobSetFilename: mktemp(%s)\n", fullname);
@@ -470,7 +495,7 @@ fileblobAddData(fileblob *fb, const unsigned char *data, size_t len)
 			return 0;
 		if(fb->ctx) {
 			if(fb->ctx->scanned)
-				*fb->ctx->scanned += len / CL_COUNT_PRECISION;
+				*fb->ctx->scanned += (unsigned long)len / CL_COUNT_PRECISION;
 
 			if((len > 5) && (cli_scanbuff((char *)data, len, fb->ctx->virname, fb->ctx->engine, 0) == CL_VIRUS)) {
 				cli_dbgmsg("fileblobAddData: found %s\n", *fb->ctx->virname);

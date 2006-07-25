@@ -26,8 +26,8 @@
 typedef struct blob {
 	char	*name;	/* filename */
 	unsigned	char	*data;	/* the stuff itself */
-	unsigned	long	len;	/* number of bytes of data so far */
-	unsigned	long	size;	/* number of bytes allocated to data so far */
+	size_t	len;	/* number of bytes of data so far */
+	size_t	size;	/* number of bytes allocated to data so far */
 	int	isClosed;
 #ifdef	CL_DEBUG
 	object_type	magic;	/* verify that this is a blob */
@@ -41,7 +41,7 @@ void	blobSetFilename(blob *b, const char *dir, const char *filename);
 const	char	*blobGetFilename(const blob *b);
 int	blobAddData(blob *b, const unsigned char *data, size_t len);
 unsigned char *blobGetData(const blob *b);
-unsigned	long	blobGetDataSize(const blob *b);
+size_t	blobGetDataSize(const blob *b);
 void	blobClose(blob *b);
 int	blobcmp(const blob *b1, const blob *b2);
 int	blobGrow(blob *b, size_t len);
