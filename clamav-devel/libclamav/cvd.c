@@ -256,22 +256,24 @@ struct cl_cvd *cl_cvdhead(const char *file)
 	FILE *fs;
 	char head[513];
 	int i;
+	unsigned int bread;
+
 
     if((fs = fopen(file, "rb")) == NULL) {
 	cli_dbgmsg("Can't open CVD file %s\n", file);
 	return NULL;
     }
 
-    if((i = fread(head, 1, 512, fs)) != 512) {
-	cli_dbgmsg("Short read (%d) while reading CVD head from %s\n", i, file);
+    if(!(bread = fread(head, 1, 512, fs))) {
+	cli_errmsg("Can't read CVD header of %s\n", file);
 	fclose(fs);
 	return NULL;
     }
 
     fclose(fs);
 
-    head[512] = 0;
-    for(i = 511; i > 0 && (head[i] == ' ' || head[i] == 10); head[i] = 0, i--);
+    head[bread] = 0;
+    for(i = bread - 1; i > 0 && (head[i] == ' ' || head[i] == '\n' || head[i] == '\r'); head[i] = 0, i--);
 
     return cl_cvdparse(head);
 }
