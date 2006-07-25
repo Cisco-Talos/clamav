@@ -254,7 +254,7 @@ struct cl_cvd *cl_cvdparse(const char *head)
 struct cl_cvd *cl_cvdhead(const char *file)
 {
 	FILE *fs;
-	char head[513];
+	char head[513], *pt;
 	int i;
 	unsigned int bread;
 
@@ -273,6 +273,9 @@ struct cl_cvd *cl_cvdhead(const char *file)
     fclose(fs);
 
     head[bread] = 0;
+    if((pt = strpbrk(head, "\n\r")))
+	*pt = 0;
+    
     for(i = bread - 1; i > 0 && (head[i] == ' ' || head[i] == '\n' || head[i] == '\r'); head[i] = 0, i--);
 
     return cl_cvdparse(head);
