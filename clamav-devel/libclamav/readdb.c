@@ -1022,12 +1022,17 @@ static int cli_loadhw(const char *filename, struct cl_engine **engine, unsigned 
 }
 #endif /* HAVE_HWACCEL */
 
+static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo, unsigned int options);
+
 static int cli_load(const char *filename, struct cl_engine **engine, unsigned int *signo, unsigned int options)
 {
 	FILE *fd;
 	int ret = CL_SUCCESS;
 	uint8_t skipped = 0;
 
+
+    if(cli_strbcasestr(filename, ".inc"))
+	return cli_loaddbdir(filename, engine, signo, options);
 
     if((fd = fopen(filename, "rb")) == NULL) {
 	cli_errmsg("cli_load(): Can't open file %s\n", filename);
@@ -1146,6 +1151,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigne
 	     cli_strbcasestr(dent->d_name, ".zmd")  ||
 	     cli_strbcasestr(dent->d_name, ".rmd")  ||
 	     cli_strbcasestr(dent->d_name, ".hw")  ||
+	     cli_strbcasestr(dent->d_name, ".inc")  ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbfile = (char *) cli_calloc(strlen(dent->d_name) + strlen(dirname) + 2, sizeof(char));
@@ -1261,6 +1267,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 
 	    cli_strbcasestr(dent->d_name, ".rmd")  || 
 	    cli_strbcasestr(dent->d_name, ".hw")   ||
+	    cli_strbcasestr(dent->d_name, ".inc")   ||
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbstat->no++;
@@ -1334,6 +1341,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 
 	    cli_strbcasestr(dent->d_name, ".rmd")  || 
 	    cli_strbcasestr(dent->d_name, ".hw")   ||
+	    cli_strbcasestr(dent->d_name, ".inc")   ||
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
                 fname = cli_calloc(strlen(dbstat->dir) + strlen(dent->d_name) + 2, sizeof(char));
