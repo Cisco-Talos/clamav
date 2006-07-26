@@ -740,7 +740,7 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
 {
 	struct cl_cvd *current, *remote;
 	struct cfgstruct *cpt;
-	int nodb = 0, currver, newver = -1, ret, port = 0, ims = -1, i;
+	int nodb = 0, currver = 0, newver = -1, ret, port = 0, ims = -1, i;
 	char *pt, dbfile[32], dbinc[32];
 	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL;
 	int flevel = cl_retflevel();
