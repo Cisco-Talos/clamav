@@ -22,6 +22,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.30  2006/07/26 09:39:08  njh
+ * Fix compilation error on Windows with MSVC
+ *
  * Revision 1.29  2006/04/09 19:59:28  kojm
  * update GPL headers with new address for FSF
  *
@@ -110,15 +113,19 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.29 2006/04/09 19:59:28 kojm Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.30 2006/07/26 09:39:08 njh Exp $";
 
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifdef	HAVE_SYS_PARAM_H
 #include <sys/param.h>	/* for NAME_MAX */
+#endif
 
 #include "clamav.h"
 #include "others.h"
@@ -176,7 +183,7 @@ cli_untar(const char *dir, int desc, unsigned int posix)
 			if(outfile) {
 				if(fclose(outfile)) {
 					cli_errmsg("cli_untar: cannot close file %s\n",
-					    fullname);
+						fullname);
 					return CL_EIO;
 				}
 				outfile = (FILE*)0;
@@ -301,13 +308,13 @@ cli_untar(const char *dir, int desc, unsigned int posix)
 			in_block = 1;
 			if((outfile = fdopen(fd, "wb")) == NULL) {
 				cli_errmsg("cli_untar: cannot create file %s\n",
-				    fullname);
+					fullname);
 				close(fd);
 				return CL_ETMPFILE;
 			}
 		} else { /* write or continue writing file contents */
 			const int nbytes = size>512? 512:size;
-			const int nwritten = fwrite(block, 1, (size_t)nbytes, outfile);
+			const int nwritten = (int)fwrite(block, 1, (size_t)nbytes, outfile);
 
 			if(nwritten != nbytes) {
 				cli_errmsg("cli_untar: only wrote %d bytes to file %s (out of disc space?)\n",
