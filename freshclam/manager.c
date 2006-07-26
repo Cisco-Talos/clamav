@@ -687,6 +687,7 @@ static int getpatch(const char *dbname, int version, const char *hostname, char 
         logg("!getpatch: Can't download %s from %s (IP: %s)\n", patch, hostname, ip);
         unlink(tempname);
         free(tempname);
+	unlink(patch);
 	chdir(olddir);
         return ret;
     }
@@ -695,18 +696,22 @@ static int getpatch(const char *dbname, int version, const char *hostname, char 
 	logg("!getpatch: Can't open %s for reading\n", tempname);
         unlink(tempname);
         free(tempname);
+	unlink(patch);
 	chdir(olddir);
 	return 55;
     }
 
     if(cdiff_apply(fd) == -1) {
 	logg("!getpatch: Can't apply patch\n");
+	close(fd);
         unlink(tempname);
         free(tempname);
+	unlink(patch);
 	chdir(olddir);
 	return 70; /* FIXME */
     }
 
+    close(fd);
     chdir(olddir);
     return 0;
 }
@@ -901,6 +906,8 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
 	    ret = getcvd(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, nodb, newver);
 	    if(ret)
 		return ret;
+	} else {
+	    unlink(dbfile);
 	}
     }
 
