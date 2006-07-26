@@ -36,13 +36,15 @@
  * TODO: Remove the vcard handling
  * FIXME: The code does little error checking of OOM scenarios
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.28 2006/05/19 11:02:12 njh Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.29 2006/07/26 18:45:32 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
 #endif
 
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -55,7 +57,7 @@ static	char	const	rcsid[] = "$Id: pst.c,v 1.28 2006/05/19 11:02:12 njh Exp $";
 #include "cltypes.h"
 #include "others.h"
 
-#ifdef	C_SOLARIS	/* should be in cltypes.h */
+#if	defined(C_SOLARIS) || defined(C_WINDOWS)	/* should be in cltypes.h */
 typedef	uint16_t	u_int16_t;
 typedef	uint32_t	u_int32_t;
 #endif
