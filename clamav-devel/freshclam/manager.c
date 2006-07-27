@@ -392,6 +392,12 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 	*ims = 1;
     }
 
+    if(!strstr(buffer, "HTTP/1.1 200") && !strstr(buffer, "HTTP/1.0 200") &&
+       !strstr(buffer, "HTTP/1.1 206") && !strstr(buffer, "HTTP/1.0 206")) {
+	logg("!Unknown response from remote server\n");
+	return NULL;
+    }
+
     i = 3;
     ch = buffer + i;
     while(i < sizeof(buffer)) {
@@ -517,6 +523,12 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	logg("!getfile: %s not found on remote server\n", srcfile);
 	close(sd);
 	return 58;
+    }
+
+    if(!strstr(buffer, "HTTP/1.1 200") && !strstr(buffer, "HTTP/1.0 200") &&
+       !strstr(buffer, "HTTP/1.1 206") && !strstr(buffer, "HTTP/1.0 206")) {
+	logg("!getfile: Unknown response from remote server\n");
+	return NULL;
     }
 
     /* get size of resource */
