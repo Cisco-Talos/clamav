@@ -314,14 +314,17 @@ static int writeinfo(const char *db, const char *header)
     return 0;
 }
 
+static int diffdirs(const char *old, const char *new, const char *patch);
+static int verifycdiff(const char *diff, const char *cvd, const char *incdir);
+
 static int build(struct optstruct *opt)
 {
-	int ret;
+	int ret, inc = 1;
 	size_t bytes;
 	unsigned int sigs = 0, lines = 0, version, real_header;
 	struct stat foo;
-	char buffer[FILEBUFF], *tarfile, *gzfile, header[513],
-	     smbuff[30], builder[32], *pt, *dbdir;
+	char buffer[FILEBUFF], *tarfile, *gzfile, header[513], smbuff[32],
+	     builder[32], *pt, *dbname, olddb[512], patch[32], broken[32];
         struct cl_node *root = NULL;
 	FILE *tar, *cvd;
 	gzFile *gz;
@@ -351,8 +354,6 @@ static int build(struct optstruct *opt)
 	return -1;
     }
 
-    cl_debug(); /* enable debug messages in libclamav */
-
     if((ret = cl_loaddbdir(".", &root, &sigs))) {
 	mprintf("!build: Can't load database: %s\n", cl_strerror(ret));
 	return -1;
@@ -381,10 +382,22 @@ static int build(struct optstruct *opt)
     }
 
     /* try to read cvd header of current database */
-    dbdir = freshdbdir();
-    snprintf(buffer, sizeof(buffer), "%s/%s", dbdir, opt_arg(opt, "build"));
-    free(dbdir);
-    if(!(oldcvd = cl_cvdhead(buffer))) {
+    dbname = opt_arg(opt, "build");
+    if(strstr(dbname, "main"))
+	dbname = "main";
+    else
+	dbname = "daily";
+
+    pt = freshdbdir();
+    snprintf(olddb, sizeof(olddb), "%s/%s.inc/%s.info", pt, dbname, dbname);
+    if(stat(olddb, &foo) == -1) {
+	inc = 0;
+	snprintf(olddb, sizeof(olddb), "%s/%s.cvd", pt, dbname);
+    }
+
+    free(pt);
+
+    if(!(oldcvd = cl_cvdhead(olddb))) {
 	mprintf("^build: CAN'T READ CVD HEADER OF CURRENT DATABASE %s\n", buffer);
 	sleep(3);
     }
@@ -440,13 +453,7 @@ static int build(struct optstruct *opt)
     /* add current time */
     sprintf(header + strlen(header), ":%d", (int) timet);
 
-    pt = opt_arg(opt, "build");
-    if(strstr(pt, "main"))
-	pt = "main";
-    else
-	pt = "daily";
-
-    if(writeinfo(pt, header) == -1) {
+    if(writeinfo(dbname, header) == -1) {
 	mprintf("!build: Can't generate info file\n");
 	return -1;
     }
@@ -472,6 +479,10 @@ static int build(struct optstruct *opt)
 				 "main.rmd", "daily.rmd", "main.fp",
 				 "daily.fp", "daily.info", "main.info", NULL };
 		args[2] = tarfile;
+		if(!opt_check(opt, "debug")) {
+		    close(1);
+		    close(2);
+		}
 		execv("/bin/tar", args);
 		mprintf("!build: Can't execute tar\n");
 		perror("tar");
@@ -616,19 +627,108 @@ static int build(struct optstruct *opt)
 
     mprintf("Database %s created\n", pt);
 
-    return 0;
+    /* generate patch */
+    mprintf("Generating cdiff...\n");
+    if(inc) {
+	pt = freshdbdir();
+	snprintf(olddb, sizeof(olddb), "%s/%s.inc", pt, dbname);
+	free(pt);
+    } else {
+	pt = freshdbdir();
+	snprintf(olddb, sizeof(olddb), "%s/%s.cvd", pt, dbname);
+	free(pt);
+
+	pt = cli_gentemp(NULL);
+	if(mkdir(pt, 0700)) {
+	    mprintf("!build: Can't create temporary directory %s\n", pt);
+	    return -1;
+	}
+	if(cvd_unpack(olddb, pt) == -1) {
+	    mprintf("!build: Can't unpack CVD file %s\n", olddb);
+	    rmdirs(pt);
+	    free(pt);
+	    return -1;
+	}
+	strncpy(olddb, pt, sizeof(olddb));
+    }
+
+    pt = cli_gentemp(NULL);
+    if(mkdir(pt, 0700)) {
+	mprintf("!build: Can't create temporary directory %s\n", pt);
+	free(pt);
+	if(!inc)
+	    rmdirs(olddb);
+	return -1;
+    }
+    if(cvd_unpack(opt_arg(opt, "build"), pt) == -1) {
+	mprintf("!build: Can't unpack CVD file %s\n", opt_arg(opt, "build"));
+	rmdirs(pt);
+	free(pt);
+	if(!inc)
+	    rmdirs(olddb);
+	return -1;
+    }
+
+    if(!strcmp(dbname, "main"))
+	snprintf(patch, sizeof(patch), "main-%u.cdiff", version);
+    else
+	snprintf(patch, sizeof(patch), "daily-%u.cdiff", version);
+
+    ret = diffdirs(olddb, pt, patch);
+
+    rmdirs(pt);
+    free(pt);
+
+    if(ret == -1) {
+	if(!inc)
+	    rmdirs(olddb);
+	return -1;
+    }
+
+    ret = verifycdiff(patch, NULL, olddb);
+
+    if(!inc)
+	rmdirs(olddb);
+
+    if(ret == -1) {
+	snprintf(broken, sizeof(broken), "%s.broken", patch);
+	if(rename(patch, broken)) {
+	    unlink(patch);
+	    mprintf("!Generated file is incorrect, removed");
+	} else {
+	    mprintf("!Generated file is incorrect, renamed to %s\n", broken);
+	}
+    }
+
+    return ret;
 }
 
 static int unpack(struct optstruct *opt)
 {
 	char *name, *dbdir;
+	struct stat sb;
 
 
     if(opt_check(opt, "unpack-current")) {
 	dbdir = freshdbdir();
-	name = mcalloc(strlen(dbdir) + strlen(opt_arg(opt, "unpack-current")) + 2, sizeof(char));
-	sprintf(name, "%s/%s", dbdir, opt_arg(opt, "unpack-current"));
+	name = mcalloc(strlen(dbdir) + strlen(opt_arg(opt, "unpack-current")) + 32, sizeof(char));
+	sprintf(name, "%s/%s.inc", dbdir, opt_arg(opt, "unpack-current"));
+	if(stat(name, &sb) != -1) {
+
+	    if(dircopy(name, ".") == -1) {
+		mprintf("!unpack: Can't copy incremental directory %s to local directory\n", name);
+		free(name);
+		free(dbdir);
+		return -1;
+	    }
+
+	    return 0;
+
+	} else {
+	    sprintf(name, "%s/%s.cvd", dbdir, opt_arg(opt, "unpack-current"));
+	}
 	free(dbdir);
+
     } else
 	name = strdup(opt_arg(opt, "unpack"));
 
@@ -1044,9 +1144,10 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
     return 0;
 }
 
-static int verifycdiff(const char *diff, const char *cvd)
+static int verifycdiff(const char *diff, const char *cvd, const char *incdir)
 {
-	char *tempdir, cwd[512], buff[1024], info[32], *pt, *md5;
+	char *tempdir, cwd[512], buff[1024], info[32], *md5, *pt;
+	const char *cpt;
 	FILE *fh;
 	int ret = 0, fd;
 
@@ -1063,11 +1164,20 @@ static int verifycdiff(const char *diff, const char *cvd)
 	return -1;
     }
 
-    if(cvd_unpack(cvd, tempdir) == -1) {
-	mprintf("!verifycdiff: Can't unpack CVD file %s\n", cvd);
-	rmdirs(tempdir);
-	free(tempdir);
-	return -1;
+    if(cvd) {
+	if(cvd_unpack(cvd, tempdir) == -1) {
+	    mprintf("!verifycdiff: Can't unpack CVD file %s\n", cvd);
+	    rmdirs(tempdir);
+	    free(tempdir);
+	    return -1;
+	}
+    } else {
+	if(dircopy(incdir, tempdir) == -1) {
+	    mprintf("!verifycdiff: Can't copy dir %s to %s\n", incdir, tempdir);
+	    rmdirs(tempdir);
+	    free(tempdir);
+	    return -1;
+	}
     }
 
     if((fd = open(diff, O_RDONLY)) == -1) {
@@ -1097,7 +1207,9 @@ static int verifycdiff(const char *diff, const char *cvd)
     }
     close(fd);
 
-    if(strstr(cvd, "main.cvd"))
+    cvd ? (cpt = cvd) : (cpt = incdir);
+
+    if(strstr(cpt, "main.cvd"))
 	strcpy(info, "main.info");
     else
 	strcpy(info, "daily.info");
@@ -1145,20 +1257,76 @@ static int verifycdiff(const char *diff, const char *cvd)
     rmdirs(tempdir);
     free(tempdir);
 
-    if(!ret)
-	mprintf("Verification: %s correctly applies to %s\n", diff, cvd);
+    if(!ret) {
+	if(cvd)
+	    mprintf("Verification: %s correctly applies to %s\n", diff, cvd);
+	else
+	    mprintf("Verification: %s correctly applies to the previous version\n");
+    }
 
     return ret;
 }
 
-static int makediff(struct optstruct *opt)
+static int diffdirs(const char *old, const char *new, const char *patch)
 {
 	FILE *diff;
 	DIR *dd;
 	struct dirent *dent;
-	char *odir, *ndir, opath[1024], name[32], broken[32], cwd[512];
+	char cwd[512], opath[1024];
+
+
+    getcwd(cwd, sizeof(cwd));
+
+    if(!(diff = fopen(patch, "w"))) {
+        mprintf("!diffdirs: Can't open %s for writing\n", patch);
+	return -1;
+    }
+
+    if(chdir(new) == -1) {
+	mprintf("!diffdirs: Can't chdir to %s\n", new);
+	fclose(diff);
+	return -1;
+    }
+
+    if((dd = opendir(new)) == NULL) {
+        mprintf("!diffdirs: Can't open directory %s\n", new);
+	fclose(diff);
+	return -1;
+    }
+
+    while((dent = readdir(dd))) {
+#ifndef C_INTERIX
+	if(dent->d_ino)
+#endif
+	{
+	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, ".."))
+		continue;
+
+	    snprintf(opath, sizeof(opath), "%s/%s", old, dent->d_name);
+	    if(compare(opath, dent->d_name, diff) == -1) {
+		fclose(diff);
+		unlink(patch);
+		closedir(dd);
+		return -1;
+	    }
+	}
+    }
+
+    closedir(dd);
+
+    fclose(diff);
+    mprintf("Generated cdiff file %s\n", patch);
+    chdir(cwd);
+
+    return 0;
+}
+
+static int makediff(struct optstruct *opt)
+{
+	char *odir, *ndir, name[32], broken[32];
 	struct cl_cvd *cvd;
 	unsigned int oldver, newver;
+	int ret;
 
 
     if(!opt->filename) {
@@ -1234,68 +1402,17 @@ static int makediff(struct optstruct *opt)
     else
 	snprintf(name, sizeof(name), "daily-%u.cdiff", newver);
 
-    getcwd(cwd, sizeof(cwd));
+    ret = diffdirs(odir, ndir, name);
 
-    if(!(diff = fopen(name, "w"))) {
-        mprintf("!makediff: Can't open %s for writing\n", name);
-	rmdirs(odir);
-	rmdirs(ndir);
-	free(odir);
-	free(ndir);
-	return -1;
-    }
-
-    if(chdir(ndir) == -1) {
-	mprintf("!makediff: Can't chdir to %s\n", ndir);
-	rmdirs(odir);
-	rmdirs(ndir);
-	free(odir);
-	free(ndir);
-	fclose(diff);
-	return -1;
-    }
-
-    if((dd = opendir(ndir)) == NULL) {
-        mprintf("!makediff: Can't open directory %s\n", ndir);
-	rmdirs(odir);
-	rmdirs(ndir);
-	free(odir);
-	free(ndir);
-	fclose(diff);
-	return -1;
-    }
-
-    while((dent = readdir(dd))) {
-#ifndef C_INTERIX
-	if(dent->d_ino)
-#endif
-	{
-	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, ".."))
-		continue;
-
-	    snprintf(opath, sizeof(opath), "%s/%s", odir, dent->d_name);
-	    if(compare(opath, dent->d_name, diff) == -1) {
-		rmdirs(odir);
-		rmdirs(ndir);
-		free(odir);
-		free(ndir);
-		fclose(diff);
-		unlink(name);
-		return -1;
-	    }
-	}
-    }
-
-    fclose(diff);
     rmdirs(odir);
     rmdirs(ndir);
     free(odir);
     free(ndir);
-    mprintf("Generated diff file %s\n", name);
 
-    chdir(cwd);
+    if(ret == -1)
+	return -1;
 
-    if(verifycdiff(name, opt_arg(opt, "diff")) == -1) {
+    if(verifycdiff(name, opt_arg(opt, "diff"), NULL) == -1) {
 	snprintf(broken, sizeof(broken), "%s.broken", name);
 	if(rename(name, broken)) {
 	    unlink(name);
@@ -1329,14 +1446,14 @@ void help(void)
     mprintf("    --build=NAME           -b NAME         build a CVD file\n");
     mprintf("    --server=ADDR                          ClamAV Signing Service address\n");
     mprintf("    --unpack=FILE          -u FILE         Unpack a CVD file\n");
-    mprintf("    --unpack-current=NAME                  Unpack local CVD\n");
+    mprintf("    --unpack-current=SHORTNAME             Unpack local CVD/INCDIR in cwd\n");
     mprintf("    --list-sigs[=FILE]     -l[FILE]        List signature names\n");
     mprintf("    --vba=FILE                             Extract VBA/Word6 macro code\n");
     mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
     mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
     mprintf("    --diff=OLD NEW         -d OLD NEW      Create diff for OLD and NEW CVDs\n");
     mprintf("    --run-cdiff=FILE       -r FILE         Execute update script FILE in cwd\n");
-    mprintf("    --verify-cdiff=DIFF CVD                Verify DIFF against CVD\n");
+    mprintf("    --verify-cdiff=DIFF CVD/INCDIR         Verify DIFF against CVD\n");
     mprintf("\n");
 
     return;
@@ -1371,7 +1488,6 @@ int main(int argc, char **argv)
 	    {"verify-cdiff", 1, 0, 0},
 	    {0, 0, 0, 0}
     	};
-
 
     opt = opt_parse(argc, argv, short_options, long_options, NULL);
     if(!opt) {
@@ -1424,10 +1540,13 @@ int main(int argc, char **argv)
 	ret = runcdiff(opt);
     else if(opt_check(opt, "verify-cdiff")) {
 	if(!opt->filename) {
-	    mprintf("!makediff: --diff requires two arguments\n");
+	    mprintf("!--verify-cdiff requires two arguments\n");
 	    ret = -1;
 	} else {
-	    ret = verifycdiff(opt_arg(opt, "verify-cdiff"), opt->filename);
+	    if(cli_strbcasestr(opt->filename, ".cvd"))
+		ret = verifycdiff(opt_arg(opt, "verify-cdiff"), opt->filename, NULL);
+	    else
+		ret = verifycdiff(opt_arg(opt, "verify-cdiff"), NULL, opt->filename);
 	}
     } else
 	help();
