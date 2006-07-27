@@ -1,3 +1,9 @@
+Thu Jul 27 14:21:01 CEST 2006 (tk)
+----------------------------------
+  * sigtool/sigtool.c: --build: automatically create and verify cdiff file
+		       --unpack-current, --verify-cdiff: add support for
+			 incremental directories
+
 Thu Jul 27 14:18:57 CEST 2006 (tk)
 ----------------------------------
   * shared/misc.c: add dircopy()
