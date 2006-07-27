@@ -101,6 +101,7 @@ void cdiff_ctx_free(struct cdiff_ctx *ctx)
 	ctx->add_start = ctx->add_start->next;
 	free(pt);
     }
+    ctx->add_last = NULL;
 
     while(ctx->del_start) {
 	free(ctx->del_start->str);
