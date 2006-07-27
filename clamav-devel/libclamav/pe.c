@@ -2070,6 +2070,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
     }
 
     if(!pe_plus) { /* PE */
+	cli_dbgmsg("File format: PE\n");
 
 	if(read(desc, &optional_hdr32, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32)) {
 	    cli_dbgmsg("Can't optional file header\n");
@@ -2077,6 +2078,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	}
 
     } else { /* PE+ */
+	cli_dbgmsg("File format: PE32+\n");
 
 	if(read(desc, &optional_hdr64, sizeof(struct pe_image_optional_hdr64)) != sizeof(struct pe_image_optional_hdr64)) {
 	    cli_dbgmsg("Can't optional file header\n");
