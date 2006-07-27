@@ -226,13 +226,13 @@ int dircopy(const char *src, const char *dest)
 
     if(stat(dest, &sb) == -1) {
 	if(mkdir(dest, 0700)) {
-	    mprintf("!dircopy: Can't create temporary directory %s\n", dest);
+	    /* mprintf("!dircopy: Can't create temporary directory %s\n", dest); */
 	    return -1;
 	}
     }
 
     if((dd = opendir(src)) == NULL) {
-        mprintf("!dircopy: Can't open directory %s\n", src);
+        /* mprintf("!dircopy: Can't open directory %s\n", src); */
         return -1;
     }
 
@@ -248,7 +248,7 @@ int dircopy(const char *src, const char *dest)
 	    snprintf(dpath, sizeof(dpath), "%s/%s", dest, dent->d_name);
 
 	    if(filecopy(spath, dpath) == -1) {
-		mprintf("!dircopy: Can't copy %s to %s\n", spath, dpath);
+		/* mprintf("!dircopy: Can't copy %s to %s\n", spath, dpath); */
 		rmdirs(dest);
 		closedir(dd);
 		return -1;
