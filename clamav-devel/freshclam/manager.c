@@ -724,6 +724,7 @@ static int getpatch(const char *dbname, int version, const char *hostname, char 
     }
 
     close(fd);
+    unlink(patch);
     chdir(olddir);
     return 0;
 }
