@@ -1,3 +1,8 @@
+Fri Jul 28 00:32:31 CEST 2006 (tk)
+----------------------------------
+  * freshclam/manager.c: better handling of status codes from remote servers
+			 Thanks to Luca and Nigel
+
 Thu Jul 27 14:21:01 CEST 2006 (tk)
 ----------------------------------
   * sigtool/sigtool.c: --build: automatically create and verify cdiff file
