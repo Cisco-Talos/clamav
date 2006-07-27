@@ -321,7 +321,7 @@ static int build(struct optstruct *opt)
 {
 	int ret, inc = 1;
 	size_t bytes;
-	unsigned int sigs = 0, lines = 0, version, real_header;
+	unsigned int sigs = 0, oldsigs = 0, lines = 0, version, real_header;
 	struct stat foo;
 	char buffer[FILEBUFF], *tarfile, *gzfile, header[513], smbuff[32],
 	     builder[32], *pt, *dbname, olddb[512], patch[32], broken[32];
@@ -364,7 +364,6 @@ static int build(struct optstruct *opt)
     if(!sigs) {
 	mprintf("!build: There are no signatures in database files\n");
     } else {
-	mprintf("Signatures: %d\n", sigs);
 	lines = countlines("main.db") + countlines("daily.db") +
 		countlines("main.hdb") + countlines("daily.hdb") +
 		countlines("main.ndb") + countlines("daily.ndb") +
@@ -404,12 +403,17 @@ static int build(struct optstruct *opt)
 
     if(oldcvd) {
 	version = oldcvd->version + 1;
+	oldsigs = oldcvd->sigs;
 	cl_cvdfree(oldcvd);
     } else {
 	fflush(stdin);
 	mprintf("Version number: ");
 	scanf("%u", &version);
     }
+
+    mprintf("Total sigs: %u\n", sigs);
+    if(sigs > oldsigs)
+	mprintf("New sigs: %u\n", sigs - oldsigs);
 
     strcpy(header, "ClamAV-VDB:");
 
@@ -1261,7 +1265,7 @@ static int verifycdiff(const char *diff, const char *cvd, const char *incdir)
 	if(cvd)
 	    mprintf("Verification: %s correctly applies to %s\n", diff, cvd);
 	else
-	    mprintf("Verification: %s correctly applies to the previous version\n");
+	    mprintf("Verification: %s correctly applies to the previous version\n", diff);
     }
 
     return ret;
