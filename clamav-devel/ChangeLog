@@ -1,3 +1,7 @@
+Thu Jul 27 14:18:57 CEST 2006 (tk)
+----------------------------------
+  * shared/misc.c: add dircopy()
+
 Wed Jul 26 17:00:59 CEST 2006 (tk)
 ----------------------------------
   * libclamav/readdb.c: add support for incremental directories
