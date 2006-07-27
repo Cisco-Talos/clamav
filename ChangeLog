@@ -1,3 +1,7 @@
+Fri Jul 28 01:08:01 CEST 2006 (tk)
+----------------------------------
+  * freshclam/manager.c: delete patch after applying
+
 Fri Jul 28 00:32:31 CEST 2006 (tk)
 ----------------------------------
   * freshclam/manager.c: better handling of status codes from remote servers
