@@ -1,3 +1,7 @@
+Fri Jul 28 19:47:39 CEST 2006 (tk)
+----------------------------------
+  * libclamav: fix a couple of typos in debug messages spotted by NJH
+
 Fri Jul 28 01:08:01 CEST 2006 (tk)
 ----------------------------------
   * freshclam/manager.c: delete patch after applying
