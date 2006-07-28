@@ -61,7 +61,7 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 	if(!next) {
 	    next = (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));
 	    if(!next) {
-		cli_dbgmsg("Unable to allocate pattern node (%d)\n", sizeof(struct cli_matcher));
+		cli_dbgmsg("Unable to allocate AC node (%d)\n", sizeof(struct cli_ac_node));
 		return CL_EMEM;
 	    }
 

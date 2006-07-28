@@ -393,7 +393,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
 	for(i = 1; i <= parts; i++) {
 	    if((pt = cli_strtok(hexsig, i - 1, "*")) == NULL) {
-		cli_errmsg("Can't extract part %d of partial signature.\n", i + 1);
+		cli_errmsg("Can't extract part %d of partial signature.\n", i);
 		return CL_EMALFDB;
 	    }
 
