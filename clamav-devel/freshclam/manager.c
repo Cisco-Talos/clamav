@@ -519,7 +519,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     buffer[i] = 0;
 
     /* check whether the resource actually existed or not */
-    if(strstr(buffer, "HTTP/1.1 404")) { 
+    if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
 	logg("!getfile: %s not found on remote server\n", srcfile);
 	close(sd);
 	return 58;
