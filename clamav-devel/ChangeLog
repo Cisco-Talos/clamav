@@ -1,3 +1,8 @@
+Sun Jul 30 11:09:22 BST 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Fixed (remote possibility) memory leak, reported
+				by Torok Edvin <edwintorok*gmail.com>
+
 Sun Jul 30 08:35:49 BST 2006 (njh)
 ---------------------------------
   * docs/man/clamav-milter.8:	Fix formatting errors and a typo
@@ -134,7 +139,7 @@ Mon Jul 17 11:40:14 CEST 2006 (tk)
 
 Mon Jul 17 03:00:21 CEST 2006 (acab)
 ------------------------------------
-  * libclamav/wwunpack.c: image size fixup 
+  * libclamav/wwunpack.c: image size fixup
 
 Mon Jul 17 01:17:40 CEST 2006 (acab)
 ------------------------------------
@@ -748,7 +753,7 @@ Fri Jan 14 14:51:01 CET 2006 (acab)
 ---------------------------------
   * libclamav: added yC support
 		thanks a lot to Ivan Zlatev <pumqara*gmail.com>
-  
+
 Fri Jan 13 14:53:45 CET 2006 (tk)
 ---------------------------------
   * libclamav/vba_extract.c: fix possible memory leak, reported by  Cesar
@@ -940,7 +945,7 @@ Sun Oct 30 18:46:36 CET 2005 (tk)
 
 Mon Oct 24 12:29:31 CEST 2005 (acab)
 ------------------------------------
-  * libclamav/pe.c: fixed possible infinite loop, reported by Christoph 
+  * libclamav/pe.c: fixed possible infinite loop, reported by Christoph
 
 Thu Oct 20 00:54:13 CEST 2005 (tk)
 ----------------------------------
