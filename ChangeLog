@@ -1,3 +1,8 @@
+Sun Jul 30 14:15:33 BST 2006 (njh)
+----------------------------------
+  * libclamav/message.c:	Improved handling of characters with the top
+			bit set
+
 Sun Jul 30 11:09:22 BST 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Fixed (remote possibility) memory leak, reported
