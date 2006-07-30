@@ -1,3 +1,7 @@
+Sun Jul 30 08:35:49 BST 2006 (njh)
+---------------------------------
+  * docs/man/clamav-milter.8:	Fix formatting errors and a typo
+
 Fri Jul 28 19:47:39 CEST 2006 (tk)
 ----------------------------------
   * libclamav: fix a couple of typos in debug messages spotted by NJH
