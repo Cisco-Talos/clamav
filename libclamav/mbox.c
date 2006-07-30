@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.326 2006/07/30 10:08:39 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.327 2006/07/30 12:39:01 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1309,7 +1309,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 						cli_dbgmsg("Message number %d is infected\n",
 							messagenumber);
 						retcode = CL_VIRUS;
-						m = body = NULL;
+						m = NULL;
 						break;
 					}
 				}
