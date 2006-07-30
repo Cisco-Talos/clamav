@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.325 2006/07/25 15:09:45 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.326 2006/07/30 10:08:39 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2388,8 +2388,13 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 			cli_dbgmsg("The message has %d parts\n", multiparts);
 
 			if(((multiparts == 0) || infected) && (aText == NULL)) {
-				if(messages)
+				if(messages) {
+					for(i = 0; i < multiparts; i++)
+						if(messages[i])
+							messageDestroy(messages[i]);
 					free(messages);
+				}
+
 				/*
 				 * FIXME: we could return 2 here when we have
 				 * saved stuff earlier
@@ -2675,8 +2680,11 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 			break;
 		}
 
-		if(messages)
+		if(messages) {
+			/* "can't happen" */
+			cli_warnmsg("messages != NULL, report to bugs@clamav.net\n");
 			free(messages);
+		}
 	}
 
 	if(aText && (textIn == NULL)) {
@@ -4423,10 +4431,8 @@ do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx 
 			messages[i] = NULL;
 #else
 			/*
-			 * Scan in memory, faster but
-			 * is open to DoS attacks when
-			 * many nested levels are
-			 * involved.
+			 * Scan in memory, faster but is open to DoS attacks
+			 * when many nested levels are involved.
 			 */
 			body = parseEmailHeaders(aMessage, mctx->rfc821Table,
 				TRUE);
@@ -4533,8 +4539,7 @@ next_is_folded_header(const text *t)
 	data = lineGetData(next->t_line);
 
 	/*
-	 * Section B.2 of RFC822 says TAB or
-	 * SPACE means a continuation of the
+	 * Section B.2 of RFC822 says TAB or SPACE means a continuation of the
 	 * previous entry.
 	 */
 	if(isblank(data[0]))
