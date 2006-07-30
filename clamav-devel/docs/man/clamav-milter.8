@@ -101,20 +101,20 @@ the scanning.
 Tells the number of seconds to black list an IP address (IPv4 only). This
 is especially useful with phishing which often send a number of emails one
 after the other.
-.TP
+.IP
 Blacklisting speeds up scanning significantly, however it does have drawbacks
 since it is possible for a site to be incorrectly blacklisted because of DHCP
 or an unsafe smart-host.
 To avoid this, clamav-milter's blacklist does not last for ever.
 The recommended value is 60.
-.TP
+.IP
 Machines on the LAN, the local host, and machines that are our MX peers are
 never blacklisted.
 .TP
 \fB-l, \-\-local\fR
 Also scan messages sent from LAN. You probably want this especially if
 your LAN is populated by machines running Windows or DOS.
-.TP
+.IP
 Machines with IP addresses within the ranges 192.168.0.0/16, 10.0.0.0/24,
 172.16.0.0/20 and 169.254.0.0/16 are defined as 'local'. Messages from
 other machines are always scanned.
@@ -271,11 +271,11 @@ tells clamav\-milter where to find the sendmail.cf file.
 Since \fIsendmail\fR calls its milters before it looks in its alias and virtuser
 tables, clamav-milter can spend time looking for malware that's going to be
 thrown away even if the message is clean.
-.TP
+.IP
 Enable this to not scan these messages (in practice clamav\-milter will discard
 these messages so the message doesn't go further down the milter call chain).
-.TP
-Sadly, because these days sendmail \-bv only works as root,
+.IP
+Sadly, these days sendmail \-bv only works as root,
 so this option is not compatible with the User directive in clamd.conf,
 which some may view as a security risk.
 Only enable this if your site has many addresses aliased to /dev/null.
