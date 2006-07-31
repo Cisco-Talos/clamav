@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.51 2006/05/27 14:32:47 njh Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.52 2006/07/31 09:18:12 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -24,12 +24,8 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.51 2006/05/27 14:32:47 njh Exp $";
 #include "clamav.h"
 #include "others.h"
 
-#if HAVE_MMAP
 #if HAVE_SYS_MMAN_H
 #include <sys/mman.h>
-#else /* HAVE_SYS_MMAN_H */
-#undef HAVE_MMAP
-#endif
 #endif
 
 #if HAVE_MMAP
@@ -85,7 +81,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	if(size <= 7)	/* doesn't even include the file header */
 		return CL_EFORMAT;
 
-	p = buf = mmap(NULL, size, PROT_READ, MAP_SHARED, desc, 0);
+	p = buf = mmap(NULL, size, PROT_READ, MAP_PRIVATE, desc, 0);
 	if(buf == MAP_FAILED)
 		return CL_EMEM;
 
