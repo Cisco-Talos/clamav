@@ -36,7 +36,7 @@
  * TODO: Remove the vcard handling
  * FIXME: The code does little error checking of OOM scenarios
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.29 2006/07/26 18:45:32 njh Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.30 2006/07/31 19:45:17 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -4985,7 +4985,7 @@ pst_decode(const char *dir, int desc)
     strcpy(temp, f->name);
     temp = check_filename(temp);
     x = 0;
-    while ((f->output = fopen(temp, "r")) != NULL) {
+    while ((f->output = fopen(temp, "rb")) != NULL) {
       x++;
       sprintf(temp, "%s%08d", f->name, x);
       if (x == 99999999) {
@@ -5003,7 +5003,7 @@ pst_decode(const char *dir, int desc)
     filename = cli_malloc(strlen(f->name) + strlen(dir) + 2);
     sprintf(filename, "%s/%s", dir, f->name);
 	cli_dbgmsg("PST: create %s\n", filename);
-    if ((f->output = fopen(filename, "w")) == NULL) {
+    if ((f->output = fopen(filename, "wb")) == NULL) {
       cli_errmsg("pst_decode: Could not open file \"%s\" for write\n", filename);
     free(filename);
 	return CL_ETMPFILE;
@@ -5071,7 +5071,7 @@ pst_decode(const char *dir, int desc)
 	  strcpy(temp, f->name);
 	  x = 0;
 	  temp = check_filename(temp);
-	  while ((f->output = fopen(temp, "r")) != NULL) {
+	  while ((f->output = fopen(temp, "rb")) != NULL) {
 	    x++;
 	    sprintf(temp, "%s%08d", f->name, x);
 	    if (x == 99999999) {
@@ -5092,7 +5092,7 @@ pst_decode(const char *dir, int desc)
 	  filename = cli_malloc(strlen(dir) + strlen(f->name) + 2);
 	  sprintf(filename, "%s/%s", dir, f->name);
 	cli_dbgmsg("PST: create %s\n", filename);
-	  if ((f->output = fopen(filename, "w")) == NULL) {
+	  if ((f->output = fopen(filename, "wb")) == NULL) {
 	    cli_errmsg("pst_decode: Could not open file \"%s\" for write\n", f->name);
 	    free(filename);
 	      if(rfc2426ptr)
