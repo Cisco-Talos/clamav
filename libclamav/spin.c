@@ -63,6 +63,7 @@
 #include "rebuildpe.h"
 #include "others.h"
 #include "spin.h"
+#include "packlibs.h"
 
 #define EC32(x) le32_to_host(x) /* Convert little endian to host */
 
@@ -127,150 +128,6 @@ static char exec86(uint8_t aelle, uint8_t cielle, char *curremu) {
   if ( len!=0x24 || curremu[len]!='\xaa' )
     cli_dbgmsg("spin: bad emucode\n"); /* FIXME: I should really give up here */
   return aelle;
-}
-
-
-static int doubledl(char **scur, uint8_t *mydlptr, char *buffer, int buffersize)
-{
-  unsigned char mydl = *mydlptr;
-  unsigned char olddl = mydl;
-
-  mydl*=2;
-  if ( !(olddl & 0x7f)) {
-    if ( *scur < buffer || *scur >= buffer+buffersize-1 )
-      return -1;
-    olddl = **scur;
-    mydl = olddl*2+1;
-    *scur=*scur + 1;
-  }
-  *mydlptr = mydl;
-  return (olddl>>7)&1;
-}
-
-
-static int unfsg(char *source, char *dest, int ssize, int dsize) {
-  uint8_t mydl=0x80;
-  uint32_t backbytes, backsize, oldback = 0;
-  char *csrc = source, *cdst = dest;
-  int oob, lostbit = 1;
-
-  /* I assume buffers size is >0 - No checking! */
-  *cdst++=*csrc++;
-
-  while ( 1 ) {
-    if ((oob=doubledl(&csrc, &mydl, source, ssize))) {
-      if (oob == -1)
-	return -1;
-      /* 164 */
-      backsize = 0;
-      if ((oob=doubledl(&csrc, &mydl, source, ssize))) {
-	if (oob == -1)
-	  return -1;
-	/* 16a */
-	backbytes = 0;
-	if ((oob=doubledl(&csrc, &mydl, source, ssize))) {
-	  if (oob == -1)
-	    return -1;
-	  /* 170 */
-	  lostbit = 1;
-	  backsize++;
-	  backbytes = 0x10;
-	  while ( backbytes < 0x100 ) {
-	    if ((oob=doubledl(&csrc, &mydl, source, ssize)) == -1)
-	      return -1;
-	    backbytes = backbytes*2+oob;
-	  }
-	  backbytes &= 0xff;
-	  if ( ! backbytes ) {
-	    if (cdst >= dest+dsize)
-	      return -1;
-	    *cdst++=0x00;
-	    continue;
-	  } else {
-	    /* repne movsb - FIXME dont remove for now */
-	  }
-	} else {
-	  /* 18f */
-	  if (csrc >= source+ssize)
-	    return -1;
-	  backbytes = *(unsigned char*)csrc;
-	  backsize = backsize * 2 + (backbytes & 1);
-	  backbytes = (backbytes & 0xff)>>1;
-	  csrc++;
-	  if (! backbytes)
-	    break;
-	  backsize+=2;
-	  oldback = backbytes;
-	  lostbit = 0;
-	}
-      } else {
-	/* 180 */
-	backsize = 1;
-	do {
-	  if ((oob=doubledl(&csrc, &mydl, source, ssize)) == -1)
-	    return -1;
-	  backsize = backsize*2+oob;
-	  if ((oob=doubledl(&csrc, &mydl, source, ssize)) == -1)
-	    return -1;
-	} while (oob);
-
-	backsize = backsize - 1 - lostbit;
-	if (! backsize) {
-	  /* 18a */
-	  backsize = 1;
-	  do {
-	    if ((oob=doubledl(&csrc, &mydl, source, ssize)) == -1)
-	      return -1;
-	    backsize = backsize*2+oob;
-	    if ((oob=doubledl(&csrc, &mydl, source, ssize)) == -1)
-	      return -1;
-	  } while (oob);
-
-	  backbytes = oldback;
-	} else {
-	  /* 198 */
-	  if (csrc >= source+ssize)
-	    return -1;
-	  backbytes = *(unsigned char*)csrc;
-	  backbytes += (backsize-1)<<8;
-	  backsize = 1;
-	  csrc++;
-	  do {
-	    if ((oob=doubledl(&csrc, &mydl, source, ssize)) == -1)
-	      return -1;
-	    backsize = backsize*2+oob;
-	    if ((oob=doubledl(&csrc, &mydl, source, ssize)) == -1)
-	      return -1;
-	  } while (oob);
-
-          if (backbytes >= 0x7d00)
-            backsize++;
-          if (backbytes >= 0x500)
-            backsize++;
-          if (backbytes <= 0x7f)
-            backsize += 2;
-
-	  oldback = backbytes;
-	}
-	lostbit = 0;
-      }
-      if ((backsize > (uint32_t)(dest + dsize - cdst)) || (backbytes > (uint32_t)(cdst - dest)))
-	return -1;
-      while(backsize--) {
-	*cdst=*(cdst-backbytes);
-	cdst++;
-      }
-
-    } else {
-      /* 15d */
-      if (cdst < dest || cdst >= dest+dsize || csrc < source || csrc >= source+ssize)
-	return -1;
-      *cdst++=*csrc++;
-      lostbit=1;
-    }
-  }
-
-  return 0;
 }
 
 
@@ -519,7 +376,7 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
        blobsz+=EC32(sections[j].VirtualSize);
        memset(sects[j], 0, EC32(sections[j].VirtualSize));
        cli_dbgmsg("spin: Growing sect%d: was %x will be %x\n", j, EC32(sections[j].SizeOfRawData), EC32(sections[j].VirtualSize));
-       if ( unfsg(src + EC32(sections[j].PointerToRawData), sects[j], EC32(sections[j].SizeOfRawData), EC32(sections[j].VirtualSize)) == -1 ) {
+       if ( cli_unfsg(src + EC32(sections[j].PointerToRawData), sects[j], EC32(sections[j].SizeOfRawData), EC32(sections[j].VirtualSize), NULL, NULL) == -1 ) {
 	 len++;
          cli_dbgmsg("spin: Unpack failure\n");
        }
@@ -560,7 +417,7 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
       if ( (curr=(char *)cli_malloc(EC32(sections[j].VirtualSize))) != NULL ) {
 	memcpy(curr, src + EC32(sections[j].PointerToRawData), key32 - EC32(sections[j].VirtualAddress)); /* Uncompressed part */
 	memset(curr + key32 - EC32(sections[j].VirtualAddress), 0, EC32(sections[j].VirtualSize) - (key32 - EC32(sections[j].VirtualAddress))); /* bzero */
-	if ( unfsg(src + EC32(sections[j].PointerToRawData) + key32 - EC32(sections[j].VirtualAddress), curr + key32 - EC32(sections[j].VirtualAddress), EC32(sections[j].SizeOfRawData) - (key32 - EC32(sections[j].VirtualAddress)), EC32(sections[j].VirtualSize) - (key32 - EC32(sections[j].VirtualAddress))) ) {
+	if ( cli_unfsg(src + EC32(sections[j].PointerToRawData) + key32 - EC32(sections[j].VirtualAddress), curr + key32 - EC32(sections[j].VirtualAddress), EC32(sections[j].SizeOfRawData) - (key32 - EC32(sections[j].VirtualAddress)), EC32(sections[j].VirtualSize) - (key32 - EC32(sections[j].VirtualAddress)), NULL, NULL) ) {
       
 	  free(curr);
 	  cli_dbgmsg("spin: Failed to grow resources, continuing anyway\n");
