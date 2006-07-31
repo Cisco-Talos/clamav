@@ -57,8 +57,8 @@ typedef	int	mode_t;
 
 #ifndef _WINSOCKAPI_	/* timeval is in winsock.h */
 struct timeval {
-    long tv_sec;
-    long tv_usec;
+	long	tv_sec;
+	long	tv_usec;
 };
 #endif	/* _WINSOCKAPI_ */
 
@@ -76,21 +76,21 @@ struct timeval {
 #endif
 
 struct DIR {
-  char    *dir_name;
-  int  just_opened;
-  unsigned int     find_file_handle;
-  void	*find_file_data;	/* LPWIN32_FIND_DATA */
+	char    *dir_name;
+	int	just_opened;
+	unsigned int     find_file_handle;
+	void	*find_file_data;	/* LPWIN32_FIND_DATA */
 };
-typedef struct DIR DIR;
-struct dirent
-{
-  char  d_name[NAME_MAX + 1];
+typedef struct	DIR	DIR;
+struct	dirent {
+	char  d_name[NAME_MAX + 1];
 };
 
-DIR	*opendir(const char	*dirname);
-struct dirent	*readdir  	(DIR		*dir);
-void		rewinddir 	(DIR		*dir);
-int		closedir  	(DIR		*dir);
+DIR	*opendir(const char *dirname);
+struct	dirent	*readdir(DIR *dir);
+int	readdir_r(DIR *dir, struct dirent *dirent, struct dirent **output);
+void	rewinddir(DIR *dir);
+int	closedir(DIR *dir);
 int	gettimeofday(struct timeval* tp, void* tz);
 
 #endif	/* C_WINDOWS */
