@@ -18,6 +18,9 @@
  *
  * Change History:
  * $Log: binhex.c,v $
+ * Revision 1.22  2006/07/31 09:19:52  njh
+ * Use MAP_PRIVATE
+ *
  * Revision 1.21  2006/07/01 16:17:35  njh
  * Added destroy flag
  *
@@ -79,7 +82,7 @@
  * First draft of binhex.c
  *
  */
-static	char	const	rcsid[] = "$Id: binhex.c,v 1.21 2006/07/01 16:17:35 njh Exp $";
+static	char	const	rcsid[] = "$Id: binhex.c,v 1.22 2006/07/31 09:19:52 njh Exp $";
 
 #include "clamav.h"
 
@@ -139,7 +142,7 @@ cli_binhex(const char *dir, int desc)
 	if(m == NULL)
 		return CL_EMEM;
 
-	start = buf = mmap(NULL, size, PROT_READ, MAP_SHARED, desc, 0);
+	start = buf = mmap(NULL, size, PROT_READ, MAP_PRIVATE, desc, 0);
 	if(buf == MAP_FAILED) {
 		messageDestroy(m);
 		return CL_EMEM;
