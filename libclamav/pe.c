@@ -138,7 +138,7 @@ static int cli_ddump(int desc, int offset, int size, const char *file)
 	return -1;
     }
 
-    while((bread = read(desc, buff, FILEBUFF)) > 0) {
+    while((bread = cli_readn(desc, buff, FILEBUFF)) > 0) {
 	if(sum + bread >= size) {
 	    if(write(ndesc, buff, size - sum) == -1) {
 		cli_dbgmsg("Can't write to file\n");
@@ -190,7 +190,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	size_t fsize;
 
 
-    if(read(desc, &e_magic, sizeof(e_magic)) != sizeof(e_magic)) {
+    if(cli_readn(desc, &e_magic, sizeof(e_magic)) != sizeof(e_magic)) {
 	cli_dbgmsg("Can't read DOS signature\n");
 	return CL_CLEAN;
     }
@@ -202,7 +202,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
     lseek(desc, 58, SEEK_CUR); /* skip to the end of the DOS header */
 
-    if(read(desc, &e_lfanew, sizeof(e_lfanew)) != sizeof(e_lfanew)) {
+    if(cli_readn(desc, &e_lfanew, sizeof(e_lfanew)) != sizeof(e_lfanew)) {
 	cli_dbgmsg("Can't read new header address\n");
 	/* truncated header? */
 	if(DETECT_BROKEN) {
@@ -226,7 +226,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	return CL_CLEAN;
     }
 
-    if(read(desc, &file_hdr, sizeof(struct pe_image_file_hdr)) != sizeof(struct pe_image_file_hdr)) {
+    if(cli_readn(desc, &file_hdr, sizeof(struct pe_image_file_hdr)) != sizeof(struct pe_image_file_hdr)) {
 	/* bad information in e_lfanew - probably not a PE file */
 	cli_dbgmsg("Can't read file header\n");
 	return CL_CLEAN;
@@ -374,7 +374,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
     if(!pe_plus) { /* PE */
 
-	if(read(desc, &optional_hdr32, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32)) {
+	if(cli_readn(desc, &optional_hdr32, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32)) {
 	    cli_dbgmsg("Can't read optional file header\n");
 	    if(DETECT_BROKEN) {
 		if(ctx->virname)
@@ -411,7 +411,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
     } else { /* PE+ */
 
-	if(read(desc, &optional_hdr64, sizeof(struct pe_image_optional_hdr64)) != sizeof(struct pe_image_optional_hdr64)) {
+	if(cli_readn(desc, &optional_hdr64, sizeof(struct pe_image_optional_hdr64)) != sizeof(struct pe_image_optional_hdr64)) {
 	    cli_dbgmsg("Can't optional file header\n");
 	    if(DETECT_BROKEN) {
 		if(ctx->virname)
@@ -503,7 +503,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
     for(i = 0; i < nsections; i++) {
 
-	if(read(desc, &section_hdr[i], sizeof(struct pe_image_section_hdr)) != sizeof(struct pe_image_section_hdr)) {
+	if(cli_readn(desc, &section_hdr[i], sizeof(struct pe_image_section_hdr)) != sizeof(struct pe_image_section_hdr)) {
 	    cli_dbgmsg("Can't read section header\n");
 	    cli_dbgmsg("Possibly broken PE file\n");
 	    free(section_hdr);
@@ -600,7 +600,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     /* W32.Parite.B */
     if(SCAN_ALGO && !dll && ep == EC32(section_hdr[nsections - 1].PointerToRawData)) {
 	lseek(desc, ep, SEEK_SET);
-	if(read(desc, buff, 4096) == 4096) {
+	if(cli_readn(desc, buff, 4096) == 4096) {
 		const char *pt = cli_memstr(buff, 4040, "\x47\x65\x74\x50\x72\x6f\x63\x41\x64\x64\x72\x65\x73\x73\x00", 15);
 	    if(pt) {
 		    uint32_t dw1, dw2;
@@ -619,7 +619,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     if(SCAN_ALGO && CLI_ISCONTAINED(EC32(section_hdr[nsections - 1].PointerToRawData), EC32(section_hdr[nsections - 1].SizeOfRawData), ep, 0x0fd2)) {
 	cli_dbgmsg("in kriz\n");
 	lseek(desc, ep, SEEK_SET);
-	if(read(desc, buff, 200) == 200) {
+	if(cli_readn(desc, buff, 200) == 200) {
 		while (1) {
 			char *krizpos=buff+3;
 			char *krizmov, *krizxor;
@@ -687,7 +687,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		int bw = rsize < 0x7000 ? rsize : 0x7000;
 
 	    lseek(desc, EC32(section_hdr[nsections - 1].PointerToRawData) + rsize - bw, SEEK_SET);
-	    if(read(desc, buff, 4096) == 4096) {
+	    if(cli_readn(desc, buff, 4096) == 4096) {
 		if(cli_memstr(buff, 4091, "\xe8\x2c\x61\x00\x00", 5)) {
 		    *ctx->virname = "W32.Magistr.A";
 		    free(section_hdr);
@@ -699,7 +699,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		int bw = rsize < 0x8000 ? rsize : 0x8000;
 
 	    lseek(desc, EC32(section_hdr[nsections - 1].PointerToRawData) + rsize - bw, SEEK_SET);
-	    if(read(desc, buff, 4096) == 4096) {
+	    if(cli_readn(desc, buff, 4096) == 4096) {
 		if(cli_memstr(buff, 4091, "\xe8\x04\x72\x00\x00", 5)) {
 		    *ctx->virname = "W32.Magistr.B";
 		    free(section_hdr);
@@ -833,7 +833,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    return CL_EIO;
 	}
 
-        if(read(desc, buff, 168) != 168) {
+        if(cli_readn(desc, buff, 168) != 168) {
 	    cli_dbgmsg("UPX/FSG: Can't read 168 bytes at 0x%x (%d)\n", ep, ep);
 	    cli_dbgmsg("UPX/FSG: Broken or not UPX/FSG compressed file\n");
             free(section_hdr);
@@ -878,7 +878,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		}
 
 		lseek(desc, EC32(section_hdr[i + 1].PointerToRawData), SEEK_SET);
-		if((unsigned int) read(desc, src, ssize) != ssize) {
+		if((unsigned int) cli_readn(desc, src, ssize) != ssize) {
 		    cli_dbgmsg("Can't read raw data of section %d\n", i);
 		    free(section_hdr);
 		    free(src);
@@ -1053,7 +1053,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    return CL_EMEM;
 		}
 
-		if(read(desc, support, gp) != gp) {
+		if(cli_readn(desc, support, gp) != gp) {
 		    cli_dbgmsg("Can't read %d bytes from padding area\n", gp); 
 		    free(section_hdr);
 		    free(support);
@@ -1120,7 +1120,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		}
 
 		lseek(desc, EC32(section_hdr[i + 1].PointerToRawData), SEEK_SET);
-		if((unsigned int) read(desc, src, ssize) != ssize) {
+		if((unsigned int) cli_readn(desc, src, ssize) != ssize) {
 		    cli_dbgmsg("Can't read raw data of section %d\n", i);
 		    free(section_hdr);
 		    free(sections);
@@ -1280,7 +1280,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    return CL_EMEM;
 		}
 
-		if(read(desc, support, gp) != gp) {
+		if(cli_readn(desc, support, gp) != gp) {
 		    cli_dbgmsg("Can't read %d bytes from padding area\n", gp); 
 		    free(section_hdr);
 		    free(support);
@@ -1328,7 +1328,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		}
 
 		lseek(desc, EC32(section_hdr[i + 1].PointerToRawData), SEEK_SET);
-		if((unsigned int) read(desc, src, ssize) != ssize) {
+		if((unsigned int) cli_readn(desc, src, ssize) != ssize) {
 		    cli_dbgmsg("Can't read raw data of section %d\n", i);
 		    free(section_hdr);
 		    free(sections);
@@ -1473,7 +1473,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    }
 
 	    lseek(desc, EC32(section_hdr[i + 1].PointerToRawData), SEEK_SET);
-	    if((unsigned int) read(desc, src, ssize) != ssize) {
+	    if((unsigned int) cli_readn(desc, src, ssize) != ssize) {
 		cli_dbgmsg("Can't read raw data of section %d\n", i);
 		free(section_hdr);
 		free(src);
@@ -1491,7 +1491,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		return CL_EIO;
 	    }
 
-	    if(read(desc, buff, 126) != 126) { /* i.e. 0x69 + 13 + 8 */
+	    if(cli_readn(desc, buff, 126) != 126) { /* i.e. 0x69 + 13 + 8 */
 		cli_dbgmsg("UPX: Can't read 126 bytes at 0x%x (%d)\n", ep, ep);
 		cli_dbgmsg("UPX/FSG: Broken or not UPX/FSG compressed file\n");
 		free(section_hdr);
@@ -1620,7 +1620,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     found = 2;
 
     lseek(desc, ep, SEEK_SET);
-    if(read(desc, buff, 200) != 200) {
+    if(cli_readn(desc, buff, 200) != 200) {
 	cli_dbgmsg("Can't read 200 bytes\n");
 	free(section_hdr);
 	return CL_EIO;
@@ -1662,7 +1662,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		if(section_hdr[i].SizeOfRawData) {
 			uint32_t offset = cli_rawaddr(EC32(section_hdr[i].VirtualAddress), section_hdr, nsections, &err);
 
-		    if(err || lseek(desc, offset, SEEK_SET) == -1 || (unsigned int) read(desc, dest + EC32(section_hdr[i].VirtualAddress) - min, EC32(section_hdr[i].SizeOfRawData)) != EC32(section_hdr[i].SizeOfRawData)) {
+		    if(err || lseek(desc, offset, SEEK_SET) == -1 || (unsigned int) cli_readn(desc, dest + EC32(section_hdr[i].VirtualAddress) - min, EC32(section_hdr[i].SizeOfRawData)) != EC32(section_hdr[i].SizeOfRawData)) {
 			free(section_hdr);
 			free(dest);
 			return CL_EIO;
@@ -1745,7 +1745,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
 
 	lseek(desc, 0, SEEK_SET);
-	if((size_t) read(desc, spinned, fsize) != fsize) {
+	if((size_t) cli_readn(desc, spinned, fsize) != fsize) {
 	    cli_dbgmsg("PESpin: Can't read %d bytes\n", fsize);
 	    free(spinned);
 	    free(section_hdr);
@@ -1814,7 +1814,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	  }
 
 	  lseek(desc, 0, SEEK_SET);
-	  if((size_t) read(desc, spinned, fsize) != fsize) {
+	  if((size_t) cli_readn(desc, spinned, fsize) != fsize) {
 	    cli_dbgmsg("yC: Can't read %d bytes\n", fsize);
 	    free(spinned);
 	    free(section_hdr);
@@ -1907,7 +1907,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
       memset(dest, 0, dsize);
 
       lseek(desc, 0, SEEK_SET);
-      if((size_t) read(desc, dest, headsize) != headsize) {
+      if((size_t) cli_readn(desc, dest, headsize) != headsize) {
 	cli_dbgmsg("WWPack: Can't read %d bytes from headers\n", headsize);
 	free(dest);
 	free(section_hdr);
@@ -1918,7 +1918,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	if(section_hdr[i].SizeOfRawData) {
 	  uint32_t offset = cli_rawaddr(EC32(section_hdr[i].VirtualAddress), section_hdr, nsections, &err);
 	  
-	  if(err || lseek(desc, offset, SEEK_SET) == -1 || (unsigned int) read(desc, dest + headsize + EC32(section_hdr[i].VirtualAddress) - min, EC32(section_hdr[i].SizeOfRawData)) != EC32(section_hdr[i].SizeOfRawData)) {
+	  if(err || lseek(desc, offset, SEEK_SET) == -1 || (unsigned int) cli_readn(desc, dest + headsize + EC32(section_hdr[i].VirtualAddress) - min, EC32(section_hdr[i].SizeOfRawData)) != EC32(section_hdr[i].SizeOfRawData)) {
 	    free(dest);
 	    free(section_hdr);
 	    return CL_EIO;
@@ -1934,7 +1934,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
       }
 
       lseek(desc, EC32(section_hdr[nsections - 1].PointerToRawData), SEEK_SET);      
-      if((size_t) read(desc, wwp, EC32(section_hdr[nsections - 1].SizeOfRawData)) != EC32(section_hdr[nsections - 1].SizeOfRawData)) {
+      if((size_t) cli_readn(desc, wwp, EC32(section_hdr[nsections - 1].SizeOfRawData)) != EC32(section_hdr[nsections - 1].SizeOfRawData)) {
 	cli_dbgmsg("WWPack: Can't read %d bytes from wwpack sect\n", EC32(section_hdr[nsections - 1].SizeOfRawData));
 	free(dest);
 	free(wwp);
@@ -2017,7 +2017,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 
     cli_dbgmsg("in cli_peheader\n");
 
-    if(read(desc, &e_magic, sizeof(e_magic)) != sizeof(e_magic)) {
+    if(cli_readn(desc, &e_magic, sizeof(e_magic)) != sizeof(e_magic)) {
 	cli_dbgmsg("Can't read DOS signature\n");
 	return -1;
     }
@@ -2029,7 +2029,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 
     lseek(desc, 58, SEEK_CUR); /* skip to the end of the DOS header */
 
-    if(read(desc, &e_lfanew, sizeof(e_lfanew)) != sizeof(e_lfanew)) {
+    if(cli_readn(desc, &e_lfanew, sizeof(e_lfanew)) != sizeof(e_lfanew)) {
 	cli_dbgmsg("Can't read new header address\n");
 	/* truncated header? */
 	return -1;
@@ -2047,7 +2047,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	return -1;
     }
 
-    if(read(desc, &file_hdr, sizeof(struct pe_image_file_hdr)) != sizeof(struct pe_image_file_hdr)) {
+    if(cli_readn(desc, &file_hdr, sizeof(struct pe_image_file_hdr)) != sizeof(struct pe_image_file_hdr)) {
 	/* bad information in e_lfanew - probably not a PE file */
 	cli_dbgmsg("Can't read file header\n");
 	return -1;
@@ -2072,7 +2072,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
     if(!pe_plus) { /* PE */
 	cli_dbgmsg("File format: PE\n");
 
-	if(read(desc, &optional_hdr32, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32)) {
+	if(cli_readn(desc, &optional_hdr32, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32)) {
 	    cli_dbgmsg("Can't optional file header\n");
 	    return -1;
 	}
@@ -2080,7 +2080,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
     } else { /* PE+ */
 	cli_dbgmsg("File format: PE32+\n");
 
-	if(read(desc, &optional_hdr64, sizeof(struct pe_image_optional_hdr64)) != sizeof(struct pe_image_optional_hdr64)) {
+	if(cli_readn(desc, &optional_hdr64, sizeof(struct pe_image_optional_hdr64)) != sizeof(struct pe_image_optional_hdr64)) {
 	    cli_dbgmsg("Can't optional file header\n");
 	    return -1;
 	}
@@ -2109,7 +2109,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 
     for(i = 0; i < peinfo->nsections; i++) {
 
-	if(read(desc, &section_hdr[i], sizeof(struct pe_image_section_hdr)) != sizeof(struct pe_image_section_hdr)) {
+	if(cli_readn(desc, &section_hdr[i], sizeof(struct pe_image_section_hdr)) != sizeof(struct pe_image_section_hdr)) {
 	    cli_dbgmsg("Can't read section header\n");
 	    cli_dbgmsg("Possibly broken PE file\n");
 	    free(section_hdr);
