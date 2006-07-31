@@ -84,6 +84,7 @@ opendir(const char *dirname)
 		free(ret->find_file_data);
 		free(ret->dir_name);
 		free(ret);
+
 		cli_warnmsg("Can't opendir(%s)\n", dirname);
 		return NULL;
 	}
@@ -130,7 +131,7 @@ readdir_r(DIR *dir, struct dirent *dirent, struct dirent **output)
 
 	if(dir->just_opened)
 		dir->just_opened = FALSE;
-	else if(!FindNextFile ((HANDLE)dir->find_file_handle, (LPWIN32_FIND_DATA) dir->find_file_data))
+	else if(!FindNextFile ((HANDLE)dir->find_file_handle, (LPWIN32_FIND_DATA)dir->find_file_data))
 		switch(GetLastError ()) {
 			case ERROR_NO_MORE_FILES:
 				*output = NULL;
@@ -155,7 +156,7 @@ rewinddir(DIR *dir)
 	if(dir == NULL)
 		return;
 
-	if(!FindClose ((HANDLE) dir->find_file_handle))
+	if(!FindClose((HANDLE)dir->find_file_handle))
 		cli_warnmsg("rewinddir(): FindClose() failed\n");
 
 	sprintf(mask, "%s\\*", dir->dir_name);
@@ -163,7 +164,7 @@ rewinddir(DIR *dir)
 	dir->find_file_handle = (unsigned int)FindFirstFile (mask,
 					  (LPWIN32_FIND_DATA)dir->find_file_data);
 
-	if(dir->find_file_handle == (unsigned int) INVALID_HANDLE_VALUE) {
+	if(dir->find_file_handle == (unsigned int)INVALID_HANDLE_VALUE) {
 		errno = EIO;
 		return;
 	}
@@ -251,4 +252,69 @@ send(SOCKET s, const char *buf ,int nbytes, int flags)
 {
 	cli_errmsg("send() not supported yet\n");
 	return -1;
+}
+
+static	HANDLE	h;	/* Not thread safe and only one mmap is supported at a time */
+
+caddr_t
+mmap(caddr_t address, size_t length, int protection, int flags, int fd, off_t offset)
+{
+	LPVOID addr;
+	
+	if(h) {
+		cli_errmsg("mmap: only one region may be mapped at a time\n");
+		return MAP_FAILED;
+	}
+	
+	if(flags != MAP_PRIVATE) {
+		cli_errmsg("mmap: only MAP_SHARED is supported\n");
+		return MAP_FAILED;
+	}
+	if(protection != PROT_READ) {
+		cli_errmsg("mmap: only PROT_READ is supported\n");
+		return MAP_FAILED;
+	}
+	
+	h = CreateFileMapping(_get_osfhandle(fd), NULL, PAGE_READONLY, 0, 0, NULL);
+	
+	if(h && (GetLastError() == ERROR_ALREADY_EXISTS)) {
+		cli_errmsg("mmap: ERROR_ALREADY_EXISTS\n");
+		CloseHandle(h); 
+		return MAP_FAILED;
+	}
+	if(h == NULL) {
+		cli_errmsg("mmap: CreateFileMapping failed - error %d\n",
+			GetLastError());
+		return MAP_FAILED;
+	}
+	if(GetLastError() == ERROR_ALREADY_EXISTS) {
+		cli_errmsg("mmap: ERROR_ALREADY_EXISTS\n");
+		CloseHandle(h); 
+		return MAP_FAILED;
+	}
+	/* FIXME hi DWORD (unsigned long) is 0, so this may not work on 64 bit machines */
+	addr = MapViewOfFile(h, FILE_MAP_READ, (DWORD)0,
+		((DWORD)address & 0xFFFFFFFF), length);
+		
+	if(addr == NULL) {
+		cli_errmsg("mmap failed - error %d\n", GetLastError());
+		CloseHandle(h);
+		return MAP_FAILED;
+	}
+	return (caddr_t)addr;
+}
+
+int
+munmap(caddr_t addr, int length)
+{
+	if(h == NULL) {
+		cli_warnmsg("munmap with no corresponding mmap\n");
+		return -1;
+	}
+	UnmapViewOfFile((LPCVOID)addr);
+	CloseHandle(h);
+	
+	h = NULL;
+	
+	return 0;
 }

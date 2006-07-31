@@ -32,10 +32,19 @@
 
 typedef	int	ssize_t;
 typedef	int	mode_t;
+typedef	char *	caddr_t;
+typedef	long	off_t;
 
 #define	X_OK	0
 #define	W_OK	2
 #define	R_OK	4
+
+#define	PROT_READ	1
+#define	MAP_PRIVATE	1
+#define	MAP_FAILED	(caddr_t)-1
+
+caddr_t	mmap(caddr_t address, size_t length, int protection, int flags, int fd, off_t offset);
+int	munmap(caddr_t addr, int length);
 
 #define	strcasecmp(s1, s2)	_stricmp(s1, s2)
 #define	strncasecmp(s1, s2, n)	_strnicmp(s1, s2, n)
