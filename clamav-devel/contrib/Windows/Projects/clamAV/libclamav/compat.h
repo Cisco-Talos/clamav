@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  *
- * Unix/Linux compatability for Windows
+ * Unix/Linux compatibility for Windows
  * Inspired by glib and the cygwin source code
  * Tested under Microsoft Visual Studio 2005
  */
