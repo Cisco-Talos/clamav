@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  *
- * Unix/Linux compatability for Windows
+ * Unix/Linux compatibility for Windows
  * Inspired by glib and the cygwin source code
  * Tested under Microsoft Visual Studio 2005
  */
@@ -78,7 +78,7 @@ opendir(const char *dirname)
 	sprintf(mask, "%s\\*", ret->dir_name);
 
 	ret->find_file_handle = (unsigned int)FindFirstFile(mask,
-				     (LPWIN32_FIND_DATA)ret->find_file_data);
+				    (LPWIN32_FIND_DATA)ret->find_file_data);
 
 	if(ret->find_file_handle == (unsigned int)INVALID_HANDLE_VALUE) {
 		free(ret->find_file_data);
@@ -115,7 +115,7 @@ readdir(DIR *dir)
 		}
 
 	strcpy(result.d_name, basename(((LPWIN32_FIND_DATA)dir->find_file_data)->cFileName));
-      
+
 	return &result;
 }
 
@@ -162,14 +162,14 @@ rewinddir(DIR *dir)
 	sprintf(mask, "%s\\*", dir->dir_name);
 
 	dir->find_file_handle = (unsigned int)FindFirstFile (mask,
-					  (LPWIN32_FIND_DATA)dir->find_file_data);
+					(LPWIN32_FIND_DATA)dir->find_file_data);
 
 	if(dir->find_file_handle == (unsigned int)INVALID_HANDLE_VALUE) {
 		errno = EIO;
 		return;
 	}
 	dir->just_opened = TRUE;
-}  
+}
 
 int
 closedir(DIR *dir)
@@ -178,11 +178,11 @@ closedir(DIR *dir)
 		return -1;
 
 	if(!FindClose((HANDLE)dir->find_file_handle)) {
-		  errno = EIO;
-		  return -1;
+		errno = EIO;
+		return -1;
 	}
 
- 	free(dir->dir_name);
+	free(dir->dir_name);
 	free(dir->find_file_data);
 	free(dir);
 
@@ -216,7 +216,7 @@ gettimeofday(struct timeval *tp, void *tz)
 		union {
 			unsigned long long ns100; /*time since 1 Jan 1601 in 100ns units */
 			FILETIME ft;
-		}  _now;
+		} _now;
 
 		GetSystemTimeAsFileTime(&_now.ft);
 		tp->tv_usec = (long)((_now.ns100 / 10ULL) % 1000000ULL );
@@ -260,12 +260,12 @@ caddr_t
 mmap(caddr_t address, size_t length, int protection, int flags, int fd, off_t offset)
 {
 	LPVOID addr;
-	
+
 	if(h) {
 		cli_errmsg("mmap: only one region may be mapped at a time\n");
 		return MAP_FAILED;
 	}
-	
+
 	if(flags != MAP_PRIVATE) {
 		cli_errmsg("mmap: only MAP_SHARED is supported\n");
 		return MAP_FAILED;
@@ -274,12 +274,12 @@ mmap(caddr_t address, size_t length, int protection, int flags, int fd, off_t of
 		cli_errmsg("mmap: only PROT_READ is supported\n");
 		return MAP_FAILED;
 	}
-	
+
 	h = CreateFileMapping(_get_osfhandle(fd), NULL, PAGE_READONLY, 0, 0, NULL);
-	
+
 	if(h && (GetLastError() == ERROR_ALREADY_EXISTS)) {
 		cli_errmsg("mmap: ERROR_ALREADY_EXISTS\n");
-		CloseHandle(h); 
+		CloseHandle(h);
 		return MAP_FAILED;
 	}
 	if(h == NULL) {
@@ -289,13 +289,13 @@ mmap(caddr_t address, size_t length, int protection, int flags, int fd, off_t of
 	}
 	if(GetLastError() == ERROR_ALREADY_EXISTS) {
 		cli_errmsg("mmap: ERROR_ALREADY_EXISTS\n");
-		CloseHandle(h); 
+		CloseHandle(h);
 		return MAP_FAILED;
 	}
 	/* FIXME hi DWORD (unsigned long) is 0, so this may not work on 64 bit machines */
 	addr = MapViewOfFile(h, FILE_MAP_READ, (DWORD)0,
 		((DWORD)address & 0xFFFFFFFF), length);
-		
+
 	if(addr == NULL) {
 		cli_errmsg("mmap failed - error %d\n", GetLastError());
 		CloseHandle(h);
@@ -313,8 +313,8 @@ munmap(caddr_t addr, int length)
 	}
 	UnmapViewOfFile((LPCVOID)addr);
 	CloseHandle(h);
-	
+
 	h = NULL;
-	
+
 	return 0;
 }
