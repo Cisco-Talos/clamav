@@ -1,3 +1,7 @@
+Mon Jul 31 18:24:36 CEST 2006 (acab)
+------------------------------------
+  * libclamav: better error handling in pespin
+
 Mon Jul 31 14:23:30 CEST 2006 (acab)
 ------------------------------------
   * libclamav: share aPLib code

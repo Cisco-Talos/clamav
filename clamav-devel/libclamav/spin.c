@@ -67,8 +67,9 @@
 
 #define EC32(x) le32_to_host(x) /* Convert little endian to host */
 
-static char exec86(uint8_t aelle, uint8_t cielle, char *curremu) {
+static char exec86(uint8_t aelle, uint8_t cielle, char *curremu, int *retval) {
   int len = 0;
+  *retval=0;
   while (len <0x24) {
     uint8_t opcode = curremu[len], support;
     len++;
@@ -122,11 +123,15 @@ static char exec86(uint8_t aelle, uint8_t cielle, char *curremu) {
         break;
 
       default:
-        cli_dbgmsg("Bogus opcode %x\n", opcode);
+        cli_dbgmsg("spin: bogus opcode %x\n", opcode);
+	*retval=1;
+	return aelle;
     }
   }
-  if ( len!=0x24 || curremu[len]!='\xaa' )
-    cli_dbgmsg("spin: bad emucode\n"); /* FIXME: I should really give up here */
+  if ( len!=0x24 || curremu[len]!='\xaa' ) {
+    cli_dbgmsg("spin: bad emucode\n");
+    *retval=1;
+  }
   return aelle;
 }
 
@@ -329,7 +334,12 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
     return 1;
   }
   while (len) {
-    *emu=exec86(*emu, len-- & 0xff, curr); /* unlame POLY1 */
+    int xcfailure=0;
+    *emu=exec86(*emu, len-- & 0xff, curr, &xcfailure); /* unlame POLY1 */
+    if (xcfailure) {
+      cli_dbgmsg("spin: cannot exec poly1\n");
+      return 1;
+    }
     emu++;
   }
 
@@ -350,7 +360,12 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
       }
 
       while (notthesamelen) {
-        *emu=exec86(*emu, notthesamelen-- & 0xff, curr);
+	int xcfailure=0;
+        *emu=exec86(*emu, notthesamelen-- & 0xff, curr, &xcfailure);
+	if (xcfailure) {
+	  cli_dbgmsg("spin: cannot exec section\n");
+	  return 1;
+	}
         emu++;
       }
     }

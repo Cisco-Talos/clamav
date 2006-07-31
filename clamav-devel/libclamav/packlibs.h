@@ -17,9 +17,9 @@
  *  MA 02110-1301, USA.
  */
 
-#ifndef __SPIN_H
-#define __SPIN_H
+#ifndef __PACKLIBS_H
+#define __PACKLIBS_H
 
-cli_unfsg(char *, char *, int, int, char **, char **);
+int cli_unfsg(char *, char *, int, int, char **, char **);
 
 #endif
