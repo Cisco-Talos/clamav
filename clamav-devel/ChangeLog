@@ -1,3 +1,7 @@
+Mon Jul 31 10:24:35 BST 2006 (njh)
+----------------------------------
+  * libclamav/pdf.c, binhex.c:	Fixed compilation error under MSVC
+
 Sun Jul 30 14:15:33 BST 2006 (njh)
 ----------------------------------
   * libclamav/message.c:	Improved handling of characters with the top
