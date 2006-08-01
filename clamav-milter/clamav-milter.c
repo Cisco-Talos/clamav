@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.271 2006/07/25 07:29:39 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.272 2006/08/01 07:32:41 njh Exp $";
 
-#define	CM_VERSION	"devel-250706"
+#define	CM_VERSION	"devel-010806"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1249,8 +1249,18 @@ main(int argc, char **argv)
 			return EX_CONFIG;
 		}
 #endif
-		if(loadDatabase() != 0)
-			return EX_CONFIG;
+		if(loadDatabase() != 0) {
+			/*
+			 * Handle the dont-scan-on-error option, which says
+			 * that we pass on emails, unscanned, if an error has
+			 * occurred
+			 */
+			if(cl_error != SMFIS_ACCEPT)
+				return EX_CONFIG;
+
+			fprintf(stderr, _("%s: No emails will be scanned"),
+				argv[0]);
+		}
 		numServers = 1;
 	} else if(((cpt = cfgopt(copt, "LocalSocket")) != NULL) && cpt->enabled) {
 #ifdef	SESSION
