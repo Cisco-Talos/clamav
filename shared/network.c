@@ -18,14 +18,28 @@
  *
  */
 
+#ifdef	_MSC_VER
+#include <windows.h>
+#include <winsock.h>
+#endif
+
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
 
 #include <stdio.h>
+
+#ifdef	HAVE_STRING_H
 #include <string.h>
+#endif
+
+#ifdef	HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+
+#ifndef	C_WINDOWS
 #include <netdb.h>
+#endif
 
 #ifdef  CL_THREAD_SAFE
 #include <pthread.h>
