@@ -44,7 +44,7 @@ typedef	long	off_t;
 #define	MAP_FAILED	(caddr_t)-1
 
 caddr_t	mmap(caddr_t address, size_t length, int protection, int flags, int fd, off_t offset);
-int	munmap(caddr_t addr, int length);
+int	munmap(caddr_t addr, size_t length);
 
 #define	strcasecmp(s1, s2)	_stricmp(s1, s2)
 #define	strncasecmp(s1, s2, n)	_strnicmp(s1, s2, n)

@@ -305,7 +305,7 @@ mmap(caddr_t address, size_t length, int protection, int flags, int fd, off_t of
 }
 
 int
-munmap(caddr_t addr, int length)
+munmap(caddr_t addr, size_t length)
 {
 	if(h == NULL) {
 		cli_warnmsg("munmap with no corresponding mmap\n");
