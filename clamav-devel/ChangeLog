@@ -1,3 +1,7 @@
+Tue Aug  1 12:23:43 CEST 2006 (acab)
+------------------------------------
+  * libclamav: includes cleanup (big thanks njh!)
+
 Tue Aug  1 08:33:09 BST 2006 (njh)
 ----------------------------------
   * clamav-milter:	Honour dont-scan-on-error if the database can't be

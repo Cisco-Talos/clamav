@@ -51,18 +51,13 @@
 #include "clamav-config.h"
 #endif
 
-#include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <string.h>
 
 #include "cltypes.h"
 #include "pe.h"
 #include "rebuildpe.h"
 #include "others.h"
-#include "spin.h"
 #include "packlibs.h"
 
 #define EC32(x) le32_to_host(x) /* Convert little endian to host */

@@ -48,11 +48,7 @@
 #include "clamav-config.h"
 #endif
 
-#include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <string.h>
 
 #include "cltypes.h"
@@ -285,7 +281,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
       packed += 0x10;
 
       /* Alloc 1 more struct */
-      if ( ! (tmpsct = realloc(usects, sizeof(struct SECTION) * (j+1))) ) {
+      if ( ! (tmpsct = cli_realloc(usects, sizeof(struct SECTION) * (j+1))) ) {
 	if (usects)
 	  free(usects);
 	return -1;
