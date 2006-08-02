@@ -916,7 +916,7 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
 	if(ret) {
 	    logg("^Incremental update failed, downloading complete database\n");
 
-	    ret = getcvd(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, nodb, newver);
+	    ret = getcvd(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, 1, newver);
 	    if(ret)
 		return ret;
 	} else {
