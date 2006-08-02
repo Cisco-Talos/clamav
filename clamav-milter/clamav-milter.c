@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.272 2006/08/01 07:32:41 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.273 2006/08/02 13:48:05 njh Exp $";
 
-#define	CM_VERSION	"devel-010806"
+#define	CM_VERSION	"devel-020806"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -4900,8 +4900,11 @@ watchdog(void *a)
 		cli_dbgmsg("watchdog wakes\n");
 
 		if(check_and_reload_database() != 0) {
-			smfi_stop();
-			return NULL;
+			if(cl_error != SMFIS_ACCEPT) {
+				smfi_stop();
+				return NULL;
+			}
+			logg(_("!No emails will be scanned"));
 		}
 
 		i = 0;
@@ -5044,8 +5047,11 @@ watchdog(void *a)
 		 * see, and there's no access to it via an approved method
 		 */
 		if(check_and_reload_database() != 0) {
-			smfi_stop();
-			return NULL;
+			if(cl_error != SMFIS_ACCEPT) {
+				smfi_stop();
+				return NULL;
+			}
+			logg(_("!No emails will be scanned"));
 		}
 		/* Garbage collect IP addresses no longer blacklisted */
 		if(blacklist) {
@@ -5073,21 +5079,19 @@ check_and_reload_database(void)
 
 	switch(cl_statchkdir(&dbstat)) {
 		case 1:
-			cli_dbgmsg("Database has changed\n");
+			logg("^Database has changed, loading updated database\n");
 			cl_statfree(&dbstat);
-			if(use_syslog)
-				syslog(LOG_WARNING, _("Loading new database"));
 			rc = loadDatabase();
 			if(rc != 0) {
-				cli_errmsg("Failed to load updated database\n");
+				logg("!Failed to load updated database\n");
 				return rc;
 			}
 			break;
 		case 0:
-			cli_dbgmsg("Database has not changed\n");
+			logg("Database has not changed\n");
 			break;
 		default:
-			cli_errmsg("Database error - %s is stopping\n", progname);
+			logg("Database error - %s is stopping\n", progname);
 			return 1;
 	}
 	return 0;	/* all OK */
@@ -5197,7 +5201,7 @@ loadDatabase(void)
 {
 	/*extern const char *cl_retdbdir(void);	/* FIXME: should be included */
 	int ret, v;
-	unsigned int signatures;
+	unsigned int signatures, dboptions;
 	time_t t;
 	char *daily, *ptr;
 	struct cl_cvd *d;
@@ -5263,19 +5267,26 @@ loadDatabase(void)
 
 	signatures = 0;
 	newroot = NULL;
-	ret = cl_loaddbdir(dbdir, &newroot, &signatures);
+	dboptions = 0;
+
+	if(!cfgopt(copt, "DetectPhishing")->enabled) {
+		dboptions |= CL_DB_NOPHISHING;
+		logg("Not loading phishing signatures.\n");
+	}
+
+	ret = cl_load(dbdir, &newroot, &signatures, dboptions);
 	if(ret != 0) {
-		cli_errmsg("%s\n", cl_strerror(ret));
+		logg("!%s\n", cl_strerror(ret));
 		return -1;
 	}
 	if(newroot == NULL) {
-		cli_errmsg("Can't initialize the virus database.\n");
+		logg("!Can't initialize the virus database.\n");
 		return -1;
 	}
 
 	ret = cl_build(newroot);
 	if(ret != 0) {
-		cli_errmsg("Database initialization error: %s\n", cl_strerror(ret));
+		logg("!Database initialization error: %s\n", cl_strerror(ret));
 		cl_free(newroot);
 		return -1;
 	}
@@ -5312,9 +5323,7 @@ sigsegv(int sig)
 	print_trace();
 #endif
 
-	if(use_syslog)
-		syslog(LOG_CRIT, "Segmentation fault :-( Bye..");
-	cli_errmsg("Segmentation fault :-( Bye..\n");
+	logg("!Segmentation fault :-( Bye..\n");
 
 	smfi_stop();
 }
