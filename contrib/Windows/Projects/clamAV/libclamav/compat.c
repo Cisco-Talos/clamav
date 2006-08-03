@@ -246,14 +246,6 @@ geteuid(void)
 	return 0;
 }
 
-/* TODO */
-int PASCAL
-send(SOCKET s, const char *buf ,int nbytes, int flags)
-{
-	cli_errmsg("send() not supported yet\n");
-	return -1;
-}
-
 static	HANDLE	h;	/* Not thread safe and only one mmap is supported at a time */
 
 caddr_t
