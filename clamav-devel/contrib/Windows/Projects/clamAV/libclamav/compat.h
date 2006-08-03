@@ -26,6 +26,8 @@
 
 #ifdef	C_WINDOWS
 
+#pragma warning(disable: 4996)      /* turn of warnings about depracated code */
+
 /*#include	"snprintf.h"*/
 
 #define	inline	/* it's too different in MSVC to bother */
