@@ -1,7 +1,7 @@
 /*
  *  Compilation: gcc -Wall ex1.c -o ex1 -lclamav
  *
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,13 +28,21 @@
 #include <fcntl.h>
 #include <clamav.h>
 
+/*
+ * Exit codes:
+ *  0: clean
+ *  1: infected
+ *  2: error
+ */
+
 int main(int argc, char **argv)
 {
-	int fd, ret, no = 0;
+	int fd, ret;
 	unsigned long int size = 0;
+	unsigned int sigs = 0;
 	long double mb;
 	const char *virname;
-	struct cl_node *root = NULL;
+	struct cl_engine *engine = NULL;
 	struct cl_limits limits;
 
 
@@ -49,19 +57,18 @@ int main(int argc, char **argv)
     }
 
     /* load all available databases from default directory */
-
-    if((ret = cl_loaddbdir(cl_retdbdir(), &root, &no))) {
-	printf("cl_loaddbdir: %s\n", cl_perror(ret));
+    if((ret = cl_load(cl_retdbdir(), &engine, &sigs, CL_DB_STDOPT))) {
+	printf("cl_loaddbdir: %s\n", cl_strerror(ret));
 	close(fd);
 	exit(2);
     }
 
-    printf("Loaded %d signatures.\n", no);
+    printf("Loaded %d signatures.\n", sigs);
 
     /* build engine */
-    if((ret = cl_build(root))) {
+    if((ret = cl_build(engine))) {
 	printf("Database initialization error: %s\n", cl_strerror(ret));;
-	cl_free(root);
+	cl_free(engine);
 	close(fd);
 	exit(2);
     }
@@ -69,24 +76,33 @@ int main(int argc, char **argv)
     /* set up archive limits */
     memset(&limits, 0, sizeof(struct cl_limits));
     limits.maxfiles = 1000; /* max files */
-    limits.maxfilesize = 10 * 1048576; /* maximal archived file size == 10 Mb */
-    limits.maxreclevel = 5; /* maximal recursion level */
-    limits.maxratio = 200; /* maximal compression ratio */
-    limits.archivememlim = 0; /* disable memory limit for bzip2 scanner */
+    limits.maxfilesize = 10 * 1048576; /* maximum size of archived/compressed
+					* file (files exceeding this limit
+					* will be ignored)
+					*/
+    limits.maxreclevel = 5; /* maximum recursion level */
+    limits.maxratio = 200; /* maximum compression ratio */
 
-    /* scan descriptor */
-    if((ret = cl_scandesc(fd, &virname, &size, root, &limits, CL_SCAN_STDOPT)) == CL_VIRUS)
+    /* scan file descriptor */
+    if((ret = cl_scandesc(fd, &virname, &size, engine, &limits, CL_SCAN_STDOPT)) == CL_VIRUS) {
 	printf("Virus detected: %s\n", virname);
-    else {
-	printf("No virus detected.\n");
-	if(ret != CL_CLEAN)
-	    printf("Error: %s\n", cl_perror(ret));
+    } else {
+	if(ret == CL_CLEAN) {
+	    printf("No virus detected.\n");
+	} else {
+	    printf("Error: %s\n", cl_strerror(ret));
+	    cl_free(engine);
+	    exit(2);
+	}
     }
     close(fd);
 
+    /* calculate size of scanned data */
     mb = size * (CL_COUNT_PRECISION / 1024) / 1024.0;
-    printf("Data scanned: %2.2Lf Mb\n", mb);
+    printf("Data scanned: %2.2Lf MB\n", mb);
 
-    cl_free(root);
+    /* free memory */
+    cl_free(engine);
+
     exit(ret == CL_VIRUS ? 1 : 0);
 }
