@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.273 2006/08/02 13:48:05 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.274 2006/08/03 08:32:14 njh Exp $";
 
-#define	CM_VERSION	"devel-020806"
+#define	CM_VERSION	"devel-030806"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -49,9 +49,6 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.273 2006/08/02 13:48:05 nj
 #include <sysexits.h>
 #include <sys/stat.h>
 #include <syslog.h>
-#if	HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 #if	HAVE_STDINT_H
 #include <stdlib.h>
 #endif
@@ -519,7 +516,9 @@ static	int	verifyIncomingSocketName(const char *sockName);
 static	int	isWhitelisted(const char *emailaddress);
 static	int	isBlacklisted(const char *ip_address);
 static	void	mx(void);
+#ifdef	HAVE_RESOLV_H
 static	void	resolve(const char *host);
+#endif
 static	sfsistat	black_hole(const struct privdata *privdata);
 
 extern	short	logg_time, logg_lock, logg_verbose, logg_foreground;
@@ -1538,6 +1537,11 @@ main(int argc, char **argv)
 		tmpdir = NULL;
 
 	if(report) {
+		if(!cfgopt(copt, "DetectPhishing")->enabled) {
+			fprintf(stderr, "%s: You have chosen --report, but DetectPhishing is off in %s\n",
+				argv[0], cfgfile);
+			return EX_USAGE;
+		}
 		if((quarantine_dir == NULL) && (tmpdir == NULL)) {
 			/*
 			 * Limitation: doesn't store message in a temporary
@@ -5547,6 +5551,7 @@ isBlacklisted(const char *ip_address)
 	return 0;
 }
 
+#ifdef	HAVE_RESOLV_H
 /*
  * Determine our MX peers, they must never be blacklisted
  * See RFC1034 for the definition of the record formats
@@ -5709,6 +5714,16 @@ resolve(const char *host)
 		}
 	}
 }
+#else	/*!HAVE_RESOLV_H */
+static void
+mx(void)
+{
+	logg(_("^MX peers will not be immune from being blacklisted"));
+
+	if(blacklist == NULL)
+		blacklist = tableCreate();
+}
+#endif	/* HAVE_RESOLV_H */
 
 static sfsistat
 black_hole(const struct privdata *privdata)
