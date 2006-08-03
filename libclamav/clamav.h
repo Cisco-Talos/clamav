@@ -76,6 +76,8 @@ extern "C"
 #define CL_DB_NOPHISHING	2
 #define CL_DB_ACONLY		4   /* for developers only */
 
+#define CL_DB_STDOPT		0
+
 /* scan options */
 #define CL_SCAN_RAW		0
 #define CL_SCAN_ARCHIVE		1
