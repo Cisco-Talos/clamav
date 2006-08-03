@@ -1,3 +1,7 @@
+Thu Aug  3 09:41:24 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	Now builds on machines without resolv.h
+
 Wed Aug  2 14:48:36 BST 2006 (njh)
 ----------------------------------
   * clamav-milter:	Honour DetectPhishing in clamd.conf
