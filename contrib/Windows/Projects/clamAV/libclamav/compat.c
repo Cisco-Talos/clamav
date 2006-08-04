@@ -229,19 +229,21 @@ gettimeofday(struct timeval *tp, void *tz)
 	return 0;
 }
 
-/* Windows has this in winsock.h, but including that breaks so many things */
-unsigned long PASCAL FAR
-ntohl(unsigned long x)
-{
-	return ((x & 0x000000ffU) << 24) |
-		((x & 0x0000ff00U) << 8) |
-		((x & 0x00ff0000U) >> 8) |
-		((x & 0xff000000U) >> 24);
-}
-
 /* TODO */
 int
 geteuid(void)
+{
+	return 0;
+}
+
+int
+getuid(void)
+{
+	return 0;
+}
+
+int
+getgid(void)
 {
 	return 0;
 }
@@ -254,6 +256,7 @@ mmap(caddr_t address, size_t length, int protection, int flags, int fd, off_t of
 	LPVOID addr;
 
 	if(h) {
+		/* FIXME */
 		cli_errmsg("mmap: only one region may be mapped at a time\n");
 		return MAP_FAILED;
 	}
@@ -308,5 +311,10 @@ munmap(caddr_t addr, size_t length)
 
 	h = NULL;
 
+	return 0;
+}
+
+int chown(const char *filename, short uid, short gid)
+{
 	return 0;
 }
