@@ -104,6 +104,10 @@ void	rewinddir(DIR *dir);
 int	closedir(DIR *dir);
 int	gettimeofday(struct timeval* tp, void* tz);
 
+#define	alarm(seconds)
+#define	sleep(seconds)	Sleep(seconds * 1000)
+#define	pause();
+
 #endif	/* C_WINDOWS */
 
 #endif	/* CLAMAV_COMPAT_H */
