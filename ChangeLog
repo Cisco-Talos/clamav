@@ -1,3 +1,8 @@
+Sat Aug  5 21:10:32 CEST 2006 (tk)
+----------------------------------
+  * libclamav/vba_extract.c: add another Office 2000 signature
+			     Thanks to Sergey Svishchev <svs*ropnet.ru>
+
 Thu Aug  3 09:41:24 BST 2006 (njh)
 ----------------------------------
   * clamav-milter:	Now builds on machines without resolv.h
