@@ -177,7 +177,7 @@ int rmdirs(const char *dirname)
 	    }
 
 	    while((dent = readdir(dd))) {
-#ifndef C_INTERIX
+#if   (!defined(C_CYGWIN)) && (!defined(C_INTERIX))
 		if(dent->d_ino)
 #endif
 		{
@@ -237,7 +237,7 @@ int dircopy(const char *src, const char *dest)
     }
 
     while((dent = readdir(dd))) {
-#ifndef C_INTERIX
+#if   (!defined(C_CYGWIN)) && (!defined(C_INTERIX))
 	if(dent->d_ino)
 #endif
 	{
