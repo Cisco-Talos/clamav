@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.274 2006/08/03 08:32:14 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.275 2006/08/06 17:35:30 njh Exp $";
 
-#define	CM_VERSION	"devel-030806"
+#define	CM_VERSION	"devel-060806"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -5204,10 +5204,9 @@ static int
 loadDatabase(void)
 {
 	/*extern const char *cl_retdbdir(void);	/* FIXME: should be included */
-	int ret, v;
+	int ret;
 	unsigned int signatures, dboptions;
-	time_t t;
-	char *daily, *ptr;
+	char *daily;
 	struct cl_cvd *d;
 	const struct cfgstruct *cpt;
 	struct cl_node *newroot, *oldroot;
@@ -5233,14 +5232,20 @@ loadDatabase(void)
 
 	d = cl_cvdhead(daily);
 
-	if(d == NULL) {
-		cli_errmsg("Can't find %s\n", daily);
-		free(daily);
-		return -1;
-	}
+	if(d) {
+		char *ptr;
+		time_t t = d->stime;
 
-	t = d->stime;
-	v = d->version;
+		snprintf(clamav_version, VERSION_LENGTH,
+			"ClamAV %s/%d/%s", VERSION, d->version, ctime(&t));
+
+		/* Remove ctime's trailing \n */
+		if((ptr = strchr(clamav_version, '\n')) != NULL)
+			*ptr = '\0';
+	} else
+		snprintf(clamav_version, VERSION_LENGTH,
+			"ClamAV version %s, clamav-milter version %s",
+			VERSION, CM_VERSION);
 
 	cl_cvdfree(d);
 	free(daily);
@@ -5263,12 +5268,6 @@ loadDatabase(void)
 	}
 	pthread_mutex_unlock(&version_mutex);
 #endif
-	snprintf(clamav_version, VERSION_LENGTH,
-		"ClamAV %s/%d/%s", VERSION, v, ctime(&t));
-	/* Remove ctime's trailing \n */
-	if((ptr = strchr(clamav_version, '\n')) != NULL)
-		*ptr = '\0';
-
 	signatures = 0;
 	newroot = NULL;
 	dboptions = 0;

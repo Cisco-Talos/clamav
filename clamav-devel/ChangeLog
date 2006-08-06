@@ -1,3 +1,8 @@
+Sun Aug  6 18:32:04 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	Guess the version information if daily.cvd doesn't
+				exist
+
 Sat Aug  5 21:10:32 CEST 2006 (tk)
 ----------------------------------
   * libclamav/vba_extract.c: add another Office 2000 signature
