@@ -177,6 +177,10 @@ int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32_t upx0
   /* CBA restoring the imports they'll look different from the originals anyway... */
   /* ...and yeap i miss the icon too :P */
 
+  if (foffset > *dsize) {
+    cli_dbgmsg("UPX: wrong raw size - giving up rebuild\n");
+    return 0;
+  }
   memcpy(dst, newbuf, foffset);
   *dsize = foffset;
   free(newbuf);
