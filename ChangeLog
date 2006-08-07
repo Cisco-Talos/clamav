@@ -1,3 +1,8 @@
+Mon Aug  7 17:06:41 CEST 2006 (acab)
+------------------------------------
+  * libclamav/upx.c:    Fix heap overflow in pefromupx()
+                        (discovered by Damian Put)
+
 Sun Aug  6 18:32:04 BST 2006 (njh)
 ----------------------------------
   * clamav-milter:	Guess the version information if daily.cvd doesn't
