@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 
     /* load all available databases from default directory */
     if((ret = cl_load(cl_retdbdir(), &engine, &sigs, CL_DB_STDOPT))) {
-	printf("cl_loaddbdir: %s\n", cl_strerror(ret));
+	printf("cl_load: %s\n", cl_strerror(ret));
 	close(fd);
 	exit(2);
     }
@@ -92,6 +92,7 @@ int main(int argc, char **argv)
 	} else {
 	    printf("Error: %s\n", cl_strerror(ret));
 	    cl_free(engine);
+	    close(fd);
 	    exit(2);
 	}
     }
