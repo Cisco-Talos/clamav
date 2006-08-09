@@ -1,3 +1,7 @@
+Wed Aug  9 14:09:34 CEST 2006 (tk)
+----------------------------------
+  * sigtool/sigtool.c: --list-sigs now supports incremental directories
+
 Mon Aug  7 17:06:41 CEST 2006 (acab)
 ------------------------------------
   * libclamav/upx.c:    Fix heap overflow in pefromupx()
