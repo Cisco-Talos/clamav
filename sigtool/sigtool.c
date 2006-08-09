@@ -809,6 +809,7 @@ static int listdir(const char *dirname)
 	     cli_strbcasestr(dent->d_name, ".sdb") ||
 	     cli_strbcasestr(dent->d_name, ".zmd") ||
 	     cli_strbcasestr(dent->d_name, ".rmd") ||
+	     cli_strbcasestr(dent->d_name, ".inc") ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbfile = (char *) mcalloc(strlen(dent->d_name) + strlen(dirname) + 2, sizeof(char));
@@ -842,6 +843,14 @@ static int listdb(const char *filename)
 	int line = 0;
 	const char *tmpdir;
 
+
+    if(cli_strbcasestr(filename, ".inc")) { /* incremental directory */
+	if(listdir(filename) == -1) {
+	    mprintf("!listdb: Can't list incremental directory %s\n", filename);
+	    return -1;
+	}
+	return 0;
+    }
 
     if((fd = fopen(filename, "rb")) == NULL) {
 	mprintf("!listdb: Can't open file %s\n", filename);
@@ -890,7 +899,7 @@ static int listdb(const char *filename)
 
 	/* list extracted directory */
 	if(listdir(dir) == -1) {
-	    mprintf("!listdb: Can't unpack CVD file %s\n", filename);
+	    mprintf("!listdb: Can't list directory %s\n", filename);
 	    rmdirs(dir);
 	    free(dir);
 	    return -1;
