@@ -1,3 +1,7 @@
+Fri Aug 11 16:09:46 CEST 2006 (tk)
+----------------------------------
+  * libclamav/vba_extract.c: revert incorrect patch from Sat Aug  5 21:10:32
+
 Fri Aug 11 15:49:24 CEST 2006 (tk)
 ----------------------------------
   * sigtool/sigtool.c: improve target detection in --verify-cdiff
