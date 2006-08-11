@@ -27,14 +27,14 @@ install:
 	$(mkinstalldirs) $(DESTDIR)$(DBINST)
 #	@test -f $(DESTDIR)$(DBINST)/main.cvd || $(INSTALL_DATA) $(srcdir)/main.cvd $(DESTDIR)$(DBINST)
 #	@test -f $(DESTDIR)$(DBINST)/daily.cvd || $(INSTALL_DATA) $(srcdir)/daily.cvd $(DESTDIR)$(DBINST)
-	@if test `id|sed -e 's/^.[^(]*(\([^)]*\)).*/\1/'` = "root" && test -n "${CLAMAVUSER}" && test -n "${CLAMAVGROUP}"; then \
-	    chmod 775 $(DESTDIR)$(DBINST); \
-	    chown ${CLAMAVUSER} $(DESTDIR)$(DBINST); \
-	    chgrp ${CLAMAVGROUP} $(DESTDIR)$(DBINST); \
-	    chmod 664 $(DESTDIR)$(DBINST)/main.cvd; \
-	    chown ${CLAMAVUSER} $(DESTDIR)$(DBINST)/main.cvd; \
-	    chgrp ${CLAMAVGROUP} $(DESTDIR)$(DBINST)/main.cvd; \
-	    chmod 664 $(DESTDIR)$(DBINST)/daily.cvd; \
-	    chown ${CLAMAVUSER} $(DESTDIR)$(DBINST)/daily.cvd; \
-	    chgrp ${CLAMAVGROUP} $(DESTDIR)$(DBINST)/daily.cvd; \
-	fi
+#	@if test `id|sed -e 's/^.[^(]*(\([^)]*\)).*/\1/'` = "root" && test -n "${CLAMAVUSER}" && test -n "${CLAMAVGROUP}"; then \
+#	    chmod 775 $(DESTDIR)$(DBINST); \
+#	    chown ${CLAMAVUSER} $(DESTDIR)$(DBINST); \
+#	    chgrp ${CLAMAVGROUP} $(DESTDIR)$(DBINST); \
+#	    chmod 664 $(DESTDIR)$(DBINST)/main.cvd; \
+#	    chown ${CLAMAVUSER} $(DESTDIR)$(DBINST)/main.cvd; \
+#	    chgrp ${CLAMAVGROUP} $(DESTDIR)$(DBINST)/main.cvd; \
+#	    chmod 664 $(DESTDIR)$(DBINST)/daily.cvd; \
+#	    chown ${CLAMAVUSER} $(DESTDIR)$(DBINST)/daily.cvd; \
+#	    chgrp ${CLAMAVGROUP} $(DESTDIR)$(DBINST)/daily.cvd; \
+#	fi
