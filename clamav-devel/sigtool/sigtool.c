@@ -1476,6 +1476,7 @@ int main(int argc, char **argv)
 {
 	int ret = 1;
         struct optstruct *opt;
+	struct stat sb;
 	const char *short_options = "hvVb:i:u:l::r:d:";
 	static struct option long_options[] = {
 	    {"help", 0, 0, 'h'},
@@ -1556,10 +1557,15 @@ int main(int argc, char **argv)
 	    mprintf("!--verify-cdiff requires two arguments\n");
 	    ret = -1;
 	} else {
-	    if(cli_strbcasestr(opt->filename, ".cvd"))
-		ret = verifycdiff(opt_arg(opt, "verify-cdiff"), opt->filename, NULL);
-	    else
-		ret = verifycdiff(opt_arg(opt, "verify-cdiff"), NULL, opt->filename);
+	    if(stat(opt->filename, &sb) == -1) {
+		mprintf("--verify-cdiff: Can't get status of %s\n", opt->filename);
+		ret = -1;
+	    } else {
+		if(S_ISDIR(sb.st_mode))
+		    ret = verifycdiff(opt_arg(opt, "verify-cdiff"), NULL, opt->filename);
+		else
+		    ret = verifycdiff(opt_arg(opt, "verify-cdiff"), opt->filename, NULL);
+	    }
 	}
     } else
 	help();
