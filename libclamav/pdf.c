@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.52 2006/07/31 09:18:12 njh Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.53 2006/08/11 21:10:58 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -181,6 +181,11 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 			break;
 
 		/*object_number = atoi(q);*/
+
+		/*
+		 * FIXME: this assumes sizeof(int) == sizeof(char *), which
+		 *	isn't true on 64 bits machines
+		 */
 		bytesleft -= (q - p);
 		p = q;
 
