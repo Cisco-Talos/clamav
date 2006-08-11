@@ -27,19 +27,35 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef	C_WINDOWS
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <dirent.h>
+#endif
 #include <time.h>
 #include <fcntl.h>
+#ifndef	C_WINDOWS
 #include <pwd.h>
+#endif
 #include <errno.h>
-#include <target.h>
+#include "target.h"
+#ifndef	C_WINDOWS
 #include <sys/time.h>
+#endif
+#ifdef	HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
+#ifdef	HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+#if	defined(_MSC_VER) && defined(_DEBUG)
+#include <crtdbg.h>
+#endif
 
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
@@ -114,7 +130,7 @@ void cli_dbgmsg(const char *str, ...)
     if(cli_debug_flag) {
 	    va_list args;
 	    int sz = sizeof("LibClamAV debug: ") - 1;
-	    char buff[256];
+	    char buff[BUFSIZ];
 
 	memcpy(buff, "LibClamAV debug: ", sz);
 	va_start(args, str);
@@ -315,7 +331,11 @@ void *cli_malloc(size_t size)
 	return NULL;
     }
 
+#if defined(_MSC_VER) && defined(_DEBUG)
+    alloc = _malloc_dbg(size, _NORMAL_BLOCK, __FILE__, __LINE__);
+#else
     alloc = malloc(size);
+#endif
 
     if(!alloc) {
 	cli_errmsg("cli_malloc(): Can't allocate memory (%u bytes).\n", size);
@@ -335,7 +355,11 @@ void *cli_calloc(size_t nmemb, size_t size)
 	return NULL;
     }
 
+#if defined(_MSC_VER) && defined(_DEBUG)
+    alloc = _calloc_dbg(nmemb, size, _NORMAL_BLOCK, __FILE__, __LINE__);
+#else
     alloc = calloc(nmemb, size);
+#endif
 
     if(!alloc) {
 	cli_errmsg("cli_calloc(): Can't allocate memory (%u bytes).\n", nmemb * size);
@@ -436,7 +460,11 @@ static char *cli_gentempname(const char *dir)
 	return NULL;
     }
 
-    sprintf(name, "%s/clamav-", mdir);
+#ifdef	C_WINDOWS
+	sprintf(name, "%s\\clamav-", mdir);
+#else
+	sprintf(name, "%s/clamav-", mdir);
+#endif
     strncat(name, tmp, 32);
     free(tmp);
 
@@ -498,6 +526,80 @@ char *cli_gentempstream(const char *dir, FILE **fs)
     return(name);
 }
 
+#ifdef	C_WINDOWS
+/*
+ * Windows doesn't allow you to delete a directory while it is still open
+ */
+int
+cli_rmdirs(const char *name)
+{
+	int rc;
+	struct stat statb;	
+	DIR *dd;
+	struct dirent *dent;
+#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
+	union {
+	    struct dirent d;
+	    char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
+	} result;
+#endif
+
+
+    if(stat(name, &statb) < 0) {
+	cli_warnmsg("Can't locate %s: %s\n", name, strerror(errno));
+	return -1;
+    }
+
+    if(!S_ISDIR(statb.st_mode)) {
+	if(unlink(name) < 0) {
+	    cli_warnmsg("Can't remove %s: %s\n", name, strerror(errno));
+	    return -1;
+	}
+	return 0;
+    }
+
+    if((dd = opendir(name)) == NULL)
+	return -1;
+
+    rc = 0;
+
+#ifdef HAVE_READDIR_R_3
+    while((readdir_r(dd, &result.d, &dent) == 0) && dent) {
+#elif defined(HAVE_READDIR_R_2)
+    while((dent = (struct dirent *)readdir_r(dd, &result.d)) != NULL) {
+#else
+    while((dent = readdir(dd)) != NULL) {
+#endif
+	    char *fname;
+
+	if(strcmp(dent->d_name, ".") == 0)
+	    continue;
+	if(strcmp(dent->d_name, "..") == 0)
+	    continue;
+
+	fname = cli_calloc(strlen(name) + strlen(dent->d_name) + 2, sizeof(char));
+	if(fname == NULL) {
+	    closedir(dd);
+	    return -1;
+	}
+
+	sprintf(fname, "%s\\%s", name, dent->d_name);
+	rc = cli_rmdirs(fname);
+	free(fname);
+	if(rc != 0)
+	    break;
+    }
+
+    closedir(dd);
+
+    if(rmdir(name) < 0) {
+	cli_errmsg("Can't remove temporary directory %s: %s\n", name, strerror(errno));
+	return -1;
+    }
+
+    return rc;	
+}
+#else
 int cli_rmdirs(const char *dirname)
 {
 	DIR *dd;
@@ -529,13 +631,22 @@ int cli_rmdirs(const char *dirname)
 #else
 	    while((dent = readdir(dd))) {
 #endif
-#ifndef C_INTERIX
+#if	(!defined(C_CYGWIN)) && (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
 		if(dent->d_ino)
 #endif
 		{
 		    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 			fname = cli_calloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
+			if(!fname) {
+			    closedir(dd);
+			    return -1;
+			}
+
+#ifdef	C_WINDOWS
+			sprintf(fname, "%s\\%s", dirname, dent->d_name);
+#else
 			sprintf(fname, "%s/%s", dirname, dent->d_name);
+#endif
 
 			/* stat the file */
 			if(lstat(fname, &statbuf) != -1) {
@@ -550,7 +661,8 @@ int cli_rmdirs(const char *dirname)
 				    cli_rmdirs(fname);
 				}
 			    } else
-				unlink(fname);
+				if(unlink(fname) < 0)
+				    cli_warnmsg("Couldn't remove %s: %s\n", fname, strerror(errno));
 			}
 
 			free(fname);
@@ -559,16 +671,16 @@ int cli_rmdirs(const char *dirname)
 	    }
 
 	    rewinddir(dd);
-
 	}
 
     } else { 
-	return 53;
+	return -1;
     }
 
     closedir(dd);
     return 0;
 }
+#endif
 
 /* Function: readn
         Try hard to read the requested number of bytes
