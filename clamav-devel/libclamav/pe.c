@@ -29,7 +29,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <time.h>
 
 #include "cltypes.h"
@@ -42,6 +44,7 @@
 #include "upx.h"
 #include "yc.h"
 #include "wwunpack.h"
+#include "suecrypt.h"
 #include "scanners.h"
 #include "rebuildpe.h"
 #include "str.h"
@@ -811,6 +814,82 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	return CL_CLEAN;
     }
 
+
+#ifdef CONFIG_EXPERIMENTAL
+    /* SUE */
+    
+    if(nsections > 2 && EC32(optional_hdr32.AddressOfEntryPoint) == EC32(section_hdr[nsections - 1].VirtualAddress) && EC32(section_hdr[nsections - 1].SizeOfRawData) > 0x350 && EC32(section_hdr[nsections - 1].SizeOfRawData) < 0x292+0x350+1000) {
+  
+      
+      char *sue=buff+0x74;
+      uint32_t key;
+      
+      if(lseek(desc, ep-4, SEEK_SET) == -1) {
+	cli_dbgmsg("SUE: lseek() failed - EP out of file\n");
+	free(section_hdr);
+	return CL_EIO;
+      }
+      if((unsigned int) cli_readn(desc, buff, EC32(section_hdr[nsections - 1].SizeOfRawData)+4) == EC32(section_hdr[nsections - 1].SizeOfRawData)+4) {
+	found=0;
+	while(CLI_ISCONTAINED(buff+4, EC32(section_hdr[nsections - 1].SizeOfRawData), sue, 4*3)) {
+	  if((cli_readint32(sue)^cli_readint32(sue+4))==0x5c41090e && (cli_readint32(sue)^cli_readint32(sue+8))==0x021e0145) {
+	    found=1;
+	    key=(cli_readint32(sue)^0x6e72656b);
+	    break;
+	  }
+	  sue++;
+	}
+	cli_dbgmsg("SUE: key(%x) found @%x\n", key, sue-buff);
+	if (found && CLI_ISCONTAINED(buff, EC32(section_hdr[nsections - 1].SizeOfRawData), sue-0x74, 0xbe) &&
+	    (sue=sudecrypt(desc, fsize, section_hdr, nsections-1, sue, key, cli_readint32(buff), e_lfanew))) {
+	  if(!(tempfile = cli_gentemp(NULL))) {
+	    free(sue);
+	    free(section_hdr);
+	    return CL_EMEM;
+	  }
+	  
+	  if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+	    cli_dbgmsg("sue: Can't create file %s\n", tempfile);
+	    free(tempfile);
+	    free(sue);
+	    free(section_hdr);
+	    return CL_EIO;
+	  }
+	  
+	  if((unsigned int) write(ndesc, sue, ep) != ep) {
+	    cli_dbgmsg("sue: Can't write %d bytes\n", ep);
+	    close(ndesc);
+	    free(tempfile);
+	    free(sue);
+	    free(section_hdr);
+	    return CL_EIO;
+	  }
+
+	  free(sue);
+	  if (cli_leavetemps_flag)
+	    cli_dbgmsg("SUE: Decrypted executable saved in %s\n", tempfile);
+	  else
+	    cli_dbgmsg("SUE: Executable decrypted\n");
+	  fsync(ndesc);
+	  lseek(ndesc, 0, SEEK_SET);
+
+	  if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) {
+	    free(section_hdr);
+	    close(ndesc);
+	    if(!cli_leavetemps_flag)
+	      unlink(tempfile);
+	    free(tempfile);
+	    return CL_VIRUS;
+	  }
+	  close(ndesc);
+	  if(!cli_leavetemps_flag)
+	    unlink(tempfile);
+	  free(tempfile);
+	}
+      }
+
+    }
+#endif
 
     /* UPX & FSG support */
 
@@ -1961,7 +2040,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
 
 	if((unsigned int) write(ndesc, dest, dsize) != dsize) {
-	  cli_dbgmsg("UPX/FSG: Can't write %d bytes\n", dsize);
+	  cli_dbgmsg("WWPack: Can't write %d bytes\n", dsize);
 	  close(ndesc);
 	  free(tempfile);
 	  free(dest);
@@ -1970,7 +2049,11 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
 
 	free(dest);
-	cli_dbgmsg("WWPack: Unpacked and rebuilt executable saved in %s\n", tempfile);
+	if (cli_leavetemps_flag)
+	  cli_dbgmsg("WWPack: Unpacked and rebuilt executable saved in %s\n", tempfile);
+	else
+	  cli_dbgmsg("WWPack: Unpacked and rebuilt executable\n");
+
 	fsync(ndesc);
 	lseek(ndesc, 0, SEEK_SET);
 
