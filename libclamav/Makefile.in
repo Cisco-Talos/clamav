@@ -82,9 +82,9 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	filetypes.lo blob.lo mbox.lo message.lo snprintf.lo table.lo \
 	text.lo ole2_extract.lo vba_extract.lo msexpand.lo pe.lo \
 	cabd.lo lzxd.lo mszipd.lo qtmd.lo system.lo upx.lo htmlnorm.lo \
-	chmunpack.lo rebuildpe.lo petite.lo wwunpack.lo packlibs.lo \
-	fsg.lo line.lo untar.lo unzip.lo special.lo binhex.lo \
-	is_tar.lo tnef.lo unrar15.lo unrarvm.lo unrar.lo \
+	chmunpack.lo rebuildpe.lo petite.lo wwunpack.lo suecrypt.lo \
+	packlibs.lo fsg.lo line.lo untar.lo unzip.lo special.lo \
+	binhex.lo is_tar.lo tnef.lo unrar15.lo unrarvm.lo unrar.lo \
 	unrarfilter.lo unrarppm.lo unrar20.lo unrarcmd.lo pdf.lo \
 	spin.lo yc.lo elf.lo sis.lo uuencode.lo pst.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
@@ -293,6 +293,8 @@ libclamav_la_SOURCES = \
 	petite.h \
 	wwunpack.c \
 	wwunpack.h \
+	suecrypt.c \
+	suecrypt.h \
 	packlibs.c \
 	packlibs.h \
 	fsg.c \
@@ -448,6 +450,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/special.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/str.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/suecrypt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/system.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/table.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/text.Plo@am__quote@
