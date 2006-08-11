@@ -1067,8 +1067,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.2  2006/08/11 13:22:51  njh
-   * Corrected orientation, was new->old, is now old->new
+   * Revision 1.3  2006/08/11 15:07:42  njh
+   * Fixed crashes on error returns
    *
 -  * Revision 1.22  2006/07/31 09:19:52  njh
 -  * Use MAP_PRIVATE
@@ -1082,7 +1082,7 @@
    * First draft of binhex.c
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.2 2006/08/11 13:22:51 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.3 2006/08/11 15:07:42 njh Exp $";
   
   #include "clamav.h"
   
@@ -1090,7 +1090,7 @@
    * First draft of binhex.c
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.2 2006/08/11 13:22:51 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.3 2006/08/11 15:07:42 njh Exp $";
   
   #include "clamav.h"
   
@@ -1729,8 +1729,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.2  2006/08/11 13:22:51  njh
-   * Corrected orientation, was new->old, is now old->new
+   * Revision 1.3  2006/08/11 15:07:42  njh
+   * Fixed crashes on error returns
    *
 -  * Revision 1.30  2006/07/26 09:39:08  njh
 -  * Fix compilation error on Windows with MSVC
@@ -1744,7 +1744,7 @@
    * First draft
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.2 2006/08/11 13:22:51 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.3 2006/08/11 15:07:42 njh Exp $";
   
   #include <stdio.h>
   #include <errno.h>
@@ -1752,7 +1752,7 @@
    * First draft
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.2 2006/08/11 13:22:51 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.3 2006/08/11 15:07:42 njh Exp $";
   
   #include <stdio.h>
   #include <errno.h>
@@ -1811,7 +1811,7 @@
    * TODO: Remove the vcard handling
    * FIXME: The code does little error checking of OOM scenarios
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.2 2006/08/11 13:22:51 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.3 2006/08/11 15:07:42 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"	/* must come first */
@@ -1819,7 +1819,7 @@
    * TODO: Remove the vcard handling
    * FIXME: The code does little error checking of OOM scenarios
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.2 2006/08/11 13:22:51 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.3 2006/08/11 15:07:42 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"	/* must come first */
@@ -1830,7 +1830,7 @@
    *  along with this program; if not, write to the Free Software
    *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.2 2006/08/11 13:22:51 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.3 2006/08/11 15:07:42 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1838,7 +1838,7 @@
    *  along with this program; if not, write to the Free Software
    *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.2 2006/08/11 13:22:51 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.3 2006/08/11 15:07:42 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1910,7 +1910,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.2 2006/08/11 13:22:51 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.3 2006/08/11 15:07:42 njh Exp $";
   
   #include "clamav.h"
   
@@ -1918,7 +1918,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.2 2006/08/11 13:22:51 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.3 2006/08/11 15:07:42 njh Exp $";
   
   #include "clamav.h"
   
@@ -2844,163 +2844,6 @@
   	}
   
   	if(logg_size) {
-*** /home/njh/src/clamav-devel/./freshclam/manager.c	2006-08-02 14:48:27.000000000 +0100
---- ./freshclam/manager.c	2006-08-04 16:23:26.000000000 +0100
-***************
-*** 20,25 ****
---- 20,29 ----
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
-   */
-+ #ifdef	_MSC_VER
-+ #include <windows.h>
-+ #include <winsock.h>
-+ #endif
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
-***************
-*** 27,40 ****
---- 31,50 ----
-  
-  #include <stdio.h>
-  #include <stdlib.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  #include <string.h>
-  #include <ctype.h>
-+ #ifndef	C_WINDOWS
-  #include <netinet/in.h>
-  #include <netdb.h>
-+ #endif
-  #include <sys/types.h>
-+ #ifndef	C_WINDOWS
-  #include <sys/socket.h>
-  #include <sys/time.h>
-+ #endif
-  #include <time.h>
-  #include <fcntl.h>
-  #include <sys/stat.h>
-***************
-*** 142,148 ****
---- 152,160 ----
-  		else
-  			port = 8080;
-  
-+ #ifndef	C_WINDOWS
-  		endservent();
-+ #endif
-  #else
-  		port = 8080;
-  #endif
-***************
-*** 357,363 ****
-      if(!ip[0])
-  	strcpy(ip, ipaddr);
-  
-!     if(write(sd, cmd, strlen(cmd)) < 0) {
-  	logg("!remote_cvdhead: write failed\n");
-  	close(sd);
-  	return NULL;
---- 369,375 ----
-      if(!ip[0])
-  	strcpy(ip, ipaddr);
-  
-!     if(send(sd, cmd, strlen(cmd), 0) < 0) {
-  	logg("!remote_cvdhead: write failed\n");
-  	close(sd);
-  	return NULL;
-***************
-*** 371,377 ****
---- 383,393 ----
-  	if(cnt <= 0)
-  	    break;
-      }
-+ #ifdef	C_WINDOWS
-+ 	closesocket(sd);
-+ #else
-      close(sd);
-+ #endif
-  
-      if(bread == -1) {
-  	logg("!remote_cvdhead: Error while reading CVD header from %s\n", hostname);
-***************
-*** 487,493 ****
-      if(!ip[0])
-  	strcpy(ip, ipaddr);
-  
-!     if(write(sd, cmd, strlen(cmd)) < 0) {
-  	logg("!getfile: Can't write to socket\n");
-  	return 52;
-      }
---- 503,509 ----
-      if(!ip[0])
-  	strcpy(ip, ipaddr);
-  
-!     if(send(sd, cmd, strlen(cmd), 0) < 0) {
-  	logg("!getfile: Can't write to socket\n");
-  	return 52;
-      }
-***************
-*** 521,527 ****
---- 537,547 ----
-      /* check whether the resource actually existed or not */
-      if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
-  	logg("!getfile: %s not found on remote server\n", srcfile);
-+ #ifdef	C_WINDOWS
-+ 	closesocket(sd);
-+ #else
-  	close(sd);
-+ #endif
-  	return 58;
-      }
-  
-***************
-*** 554,565 ****
-  	return 57;
-      }
-  
-!     while((bread = read(sd, buffer, FILEBUFF))) {
-          if(write(fd, buffer, bread) != bread) {
-  	    logg("getfile: Can't write %d bytes to %s\n", bread, destfile);
-  	    unlink(destfile);
-  	    close(fd);
-- 	    close(sd);
-  	    return 57; /* FIXME */
-  	}
-  
---- 574,589 ----
-  	return 57;
-      }
-  
-!     while((bread = recv(sd, buffer, FILEBUFF, 0))) {
-          if(write(fd, buffer, bread) != bread) {
-  	    logg("getfile: Can't write %d bytes to %s\n", bread, destfile);
-  	    unlink(destfile);
-+ #ifdef	C_WINDOWS
-+ 		closesocket(sd);
-+ #else
-+ 		close(sd);
-+ #endif
-  	    close(fd);
-  	    return 57; /* FIXME */
-  	}
-  
-***************
-*** 576,582 ****
---- 600,610 ----
-              fflush(stdout);
-          }
-      }
-+ #ifdef	C_WINDOWS
-+ 	closesocket(sd);
-+ #else
-      close(sd);
-+ #endif
-      close(fd);
-  
-      if(totalsize > 0)
 *** /home/njh/src/clamav-devel/./freshclam/notify.c	2006-04-09 20:59:27.000000000 +0100
 --- ./freshclam/notify.c	2006-08-04 14:59:36.000000000 +0100
 ***************
@@ -3508,6 +3351,177 @@
   }
   
   void help(void)
+*** /home/njh/src/clamav-devel/./freshclam/manager.c	2006-08-02 14:48:27.000000000 +0100
+--- ./freshclam/manager.c	2006-08-11 14:50:54.000000000 +0100
+***************
+*** 20,25 ****
+--- 20,29 ----
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
++ #ifdef	_MSC_VER
++ #include <windows.h>
++ #include <winsock.h>
++ #endif
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+***************
+*** 27,40 ****
+--- 31,50 ----
+  
+  #include <stdio.h>
+  #include <stdlib.h>
++ #ifdef	HAVE_UNISTD_H
+  #include <unistd.h>
++ #endif
+  #include <string.h>
+  #include <ctype.h>
++ #ifndef	C_WINDOWS
+  #include <netinet/in.h>
+  #include <netdb.h>
++ #endif
+  #include <sys/types.h>
++ #ifndef	C_WINDOWS
+  #include <sys/socket.h>
+  #include <sys/time.h>
++ #endif
+  #include <time.h>
+  #include <fcntl.h>
+  #include <sys/stat.h>
+***************
+*** 142,148 ****
+--- 152,160 ----
+  		else
+  			port = 8080;
+  
++ #ifndef	C_WINDOWS
+  		endservent();
++ #endif
+  #else
+  		port = 8080;
+  #endif
+***************
+*** 177,183 ****
+--- 189,199 ----
+  		break;
+  	}
+          logg("^Can't get information about %s: %s\n", hostpt, herr);
++ #ifdef	C_WINDOWS        
++ 	closesocket(socketfd);
++ #else
+  	close(socketfd);
++ #endif
+  	return -1;
+      }
+  
+***************
+*** 357,363 ****
+      if(!ip[0])
+  	strcpy(ip, ipaddr);
+  
+!     if(write(sd, cmd, strlen(cmd)) < 0) {
+  	logg("!remote_cvdhead: write failed\n");
+  	close(sd);
+  	return NULL;
+--- 373,379 ----
+      if(!ip[0])
+  	strcpy(ip, ipaddr);
+  
+!     if(send(sd, cmd, strlen(cmd), 0) < 0) {
+  	logg("!remote_cvdhead: write failed\n");
+  	close(sd);
+  	return NULL;
+***************
+*** 371,377 ****
+--- 387,397 ----
+  	if(cnt <= 0)
+  	    break;
+      }
++ #ifdef	C_WINDOWS
++ 	closesocket(sd);
++ #else
+      close(sd);
++ #endif
+  
+      if(bread == -1) {
+  	logg("!remote_cvdhead: Error while reading CVD header from %s\n", hostname);
+***************
+*** 487,493 ****
+      if(!ip[0])
+  	strcpy(ip, ipaddr);
+  
+!     if(write(sd, cmd, strlen(cmd)) < 0) {
+  	logg("!getfile: Can't write to socket\n");
+  	return 52;
+      }
+--- 507,513 ----
+      if(!ip[0])
+  	strcpy(ip, ipaddr);
+  
+!     if(send(sd, cmd, strlen(cmd), 0) < 0) {
+  	logg("!getfile: Can't write to socket\n");
+  	return 52;
+      }
+***************
+*** 521,527 ****
+--- 541,551 ----
+      /* check whether the resource actually existed or not */
+      if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
+  	logg("!getfile: %s not found on remote server\n", srcfile);
++ #ifdef	C_WINDOWS
++ 	closesocket(sd);
++ #else
+  	close(sd);
++ #endif
+  	return 58;
+      }
+  
+***************
+*** 554,565 ****
+  	return 57;
+      }
+  
+!     while((bread = read(sd, buffer, FILEBUFF))) {
+          if(write(fd, buffer, bread) != bread) {
+  	    logg("getfile: Can't write %d bytes to %s\n", bread, destfile);
+  	    unlink(destfile);
+  	    close(fd);
+- 	    close(sd);
+  	    return 57; /* FIXME */
+  	}
+  
+--- 578,593 ----
+  	return 57;
+      }
+  
+!     while((bread = recv(sd, buffer, FILEBUFF, 0))) {
+          if(write(fd, buffer, bread) != bread) {
+  	    logg("getfile: Can't write %d bytes to %s\n", bread, destfile);
+  	    unlink(destfile);
++ #ifdef	C_WINDOWS
++ 		closesocket(sd);
++ #else
++ 		close(sd);
++ #endif
+  	    close(fd);
+  	    return 57; /* FIXME */
+  	}
+  
+***************
+*** 576,582 ****
+--- 604,614 ----
+              fflush(stdout);
+          }
+      }
++ #ifdef	C_WINDOWS
++ 	closesocket(sd);
++ #else
+      close(sd);
++ #endif
+      close(fd);
+  
+      if(totalsize > 0)
 *** /home/njh/src/clamav-devel/./clamd/clamd.c	2006-05-15 19:30:18.000000000 +0100
 --- ./clamd/clamd.c	2006-08-04 10:38:10.000000000 +0100
 ***************
