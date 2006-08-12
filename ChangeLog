@@ -1,3 +1,8 @@
+Sat Aug 12 23:16:05 CEST 2006 (tk)
+----------------------------------
+  * sigtool/sigtool.c: build(): redirect stdout and stderr to /dev/null before
+		       calling /bin/tar
+
 Fri Aug 11 19:37:24 CEST 2006 (acab)
 ------------------------------------
   * libclamav: add support for SUE decryption (disabled)
