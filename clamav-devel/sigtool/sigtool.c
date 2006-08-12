@@ -319,7 +319,7 @@ static int verifycdiff(const char *diff, const char *cvd, const char *incdir);
 
 static int build(struct optstruct *opt)
 {
-	int ret, inc = 1;
+	int ret, inc = 1, dn;
 	size_t bytes;
 	unsigned int sigs = 0, oldsigs = 0, lines = 0, version, real_header;
 	struct stat foo;
@@ -484,8 +484,15 @@ static int build(struct optstruct *opt)
 				 "daily.fp", "daily.info", "main.info", NULL };
 		args[2] = tarfile;
 		if(!opt_check(opt, "debug")) {
-		    close(1);
-		    close(2);
+		    if((dn = open("/dev/null", O_WRONLY)) == -1) {
+			mprintf("^Cannot open /dev/null\n");
+			close(1);
+			close(2);
+		    } else {
+			dup2(dn, 1);
+			dup2(dn, 2);
+			close(dn);
+		    }
 		}
 		execv("/bin/tar", args);
 		mprintf("!build: Can't execute tar\n");
