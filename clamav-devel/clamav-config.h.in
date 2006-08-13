@@ -21,6 +21,9 @@
 /* enable debugging */
 #undef CL_DEBUG
 
+/* enable experimental code */
+#undef CL_EXPERIMENTAL
+
 /* thread safe */
 #undef CL_THREAD_SAFE
 

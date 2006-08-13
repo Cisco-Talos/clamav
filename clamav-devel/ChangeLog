@@ -1,3 +1,7 @@
+Sun Aug 13 22:13:45 CEST 2006 (tk)
+----------------------------------
+  * configure: add --enable-experimental switch
+
 Sun Aug 13 21:41:59 CEST 2006 (tk)
 ----------------------------------
   * shared/cdiff.c: add support for command MOVE
