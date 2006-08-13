@@ -1,3 +1,7 @@
+Sun Aug 13 21:41:59 CEST 2006 (tk)
+----------------------------------
+  * shared/cdiff.c: add support for command MOVE
+
 Sat Aug 12 23:16:05 CEST 2006 (tk)
 ----------------------------------
   * sigtool/sigtool.c: build(): redirect stdout and stderr to /dev/null before

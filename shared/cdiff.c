@@ -62,6 +62,7 @@ static int cdiff_cmd_add(const char *cmdstr, struct cdiff_ctx *ctx);
 static int cdiff_cmd_del(const char *cmdstr, struct cdiff_ctx *ctx);
 static int cdiff_cmd_xchg(const char *cmdstr, struct cdiff_ctx *ctx);
 static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx);
+static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx);
 
 static struct cdiff_cmd commands[] = {
     /* OPEN db_name */
@@ -80,7 +81,7 @@ static struct cdiff_cmd commands[] = {
     { "CLOSE", 0, &cdiff_cmd_close },
 
     /* MOVE src_db dst_db start_line first_16b end_line first_16b */
-    /* { "MOVE", 6, &cdiff_cmd_move }, */
+    { "MOVE", 6, &cdiff_cmd_move },
 
     { NULL, 0, NULL }
 };
@@ -363,7 +364,7 @@ static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx)
 	}
 
 	if(!(tmpfh = fopen(tmp, "w"))) {
-	    logg("!cdiff_cmd_close: Can't open file %s for reading\n", tmp);
+	    logg("!cdiff_cmd_close: Can't open file %s for writing\n", tmp);
 	    fclose(fh);
 	    free(tmp);
 	    return -1;
@@ -465,6 +466,207 @@ static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx)
     }
 
     cdiff_ctx_free(ctx);
+
+    return 0;
+}
+
+static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx)
+{
+	unsigned int lines = 0, start_line, end_line;
+	char *arg, *srcdb, *dstdb, *tmpdb, line[1024], *start_str, *end_str;
+	FILE *src, *dst, *tmp;
+
+
+    if(ctx->open_db) {
+	logg("!cdiff_cmd_move: Database %s is still open\n", ctx->open_db);
+	return -1;
+    }
+
+    if(!(arg = cdiff_token(cmdstr, 3, 0))) {
+	logg("!cdiff_cmd_move: Can't get third argument\n");
+	return -1;
+    }
+    start_line = atoi(arg);
+    free(arg);
+
+    if(!(arg = cdiff_token(cmdstr, 5, 0))) {
+	logg("!cdiff_cmd_move: Can't get fifth argument\n");
+	return -1;
+    }
+    end_line = atoi(arg);
+    free(arg);
+
+    if(end_line < start_line) {
+	logg("!cdiff_cmd_move: end_line < start_line\n");
+	return -1;
+    }
+
+    if(!(start_str = cdiff_token(cmdstr, 4, 0))) {
+	logg("!cdiff_cmd_move: Can't get fourth argument\n");
+	return -1;
+    }
+
+    if(!(end_str = cdiff_token(cmdstr, 6, 0))) {
+	logg("!cdiff_cmd_move: Can't get sixth argument\n");
+	free(start_str);
+	return -1;
+    }
+
+    if(!(srcdb = cdiff_token(cmdstr, 1, 0))) {
+	logg("!cdiff_cmd_move: Can't get first argument\n");
+	free(start_str);
+	free(end_str);
+	return -1;
+    }
+
+    if(!(src = fopen(srcdb, "r"))) {
+	logg("!cdiff_cmd_move: Can't open %s for reading\n", srcdb);
+	free(start_str);
+	free(end_str);
+	free(srcdb);
+	return -1;
+    }
+
+    if(!(dstdb = cdiff_token(cmdstr, 2, 0))) {
+	logg("!cdiff_cmd_move: Can't get second argument\n");
+	free(start_str);
+	free(end_str);
+	free(srcdb);
+	fclose(src);
+	return -1;
+    }
+
+    if(!(dst = fopen(dstdb, "a"))) {
+	logg("!cdiff_cmd_move: Can't open %s for appending\n", dstdb);
+	free(start_str);
+	free(end_str);
+	free(srcdb);
+	fclose(src);
+	free(dstdb);
+	return -1;
+    }
+
+    if(!(tmpdb = cli_gentemp("."))) {
+	logg("!cdiff_cmd_move: Can't generate temporary name\n");
+	free(start_str);
+	free(end_str);
+	free(srcdb);
+	fclose(src);
+	free(dstdb);
+	fclose(dst);
+	return -1;
+    }
+
+    if(!(tmp = fopen(tmpdb, "w"))) {
+	logg("!cdiff_cmd_move: Can't open file %s for writing\n", tmpdb);
+	free(start_str);
+	free(end_str);
+	free(srcdb);
+	fclose(src);
+	free(dstdb);
+	fclose(dst);
+	free(tmpdb);
+	return -1;
+    }
+
+    while(fgets(line, sizeof(line), src)) {
+	lines++;
+
+	if(lines == start_line) {
+	    if(strncmp(line, start_str, strlen(start_str))) {
+		free(start_str);
+		free(end_str);
+		free(srcdb);
+		fclose(src);
+		free(dstdb);
+		fclose(dst);
+		fclose(tmp);
+		unlink(tmpdb);
+		free(tmpdb);
+		logg("!cdiff_cmd_close: Can't apply MOVE due to conflict at line %d\n", lines);
+		return -1;
+	    }
+
+	    do {
+		if(fputs(line, dst) == EOF) {
+		    free(start_str);
+		    free(end_str);
+		    free(srcdb);
+		    fclose(src);
+		    fclose(dst);
+		    fclose(tmp);
+		    unlink(tmpdb);
+		    free(tmpdb);
+		    logg("!cdiff_cmd_move: Can't write to %s\n", dstdb);
+		    free(dstdb);
+		    return -1;
+		}
+	    } while((lines < end_line) && fgets(line, sizeof(line), src) && lines++);
+
+	    fclose(dst);
+	    free(dstdb);
+	    dstdb = NULL;
+	    free(start_str);
+
+	    if(strncmp(line, end_str, strlen(end_str))) {
+		free(end_str);
+		free(srcdb);
+		fclose(src);
+		fclose(tmp);
+		unlink(tmpdb);
+		free(tmpdb);
+		logg("!cdiff_cmd_close: Can't apply MOVE due to conflict at line %d\n", lines);
+		return -1;
+	    }
+
+	    free(end_str);
+	    continue;
+	}
+
+	if(fputs(line, tmp) == EOF) {
+	    free(srcdb);
+	    fclose(src);
+	    fclose(tmp);
+	    unlink(tmpdb);
+	    logg("!cdiff_cmd_move: Can't write to %s\n", tmpdb);
+	    free(tmpdb);
+	    return -1;
+	}
+    }
+
+    fclose(src);
+    fclose(tmp);
+
+    if(dstdb) {
+	fclose(dst);
+	free(start_str);
+	free(end_str);
+	unlink(tmpdb);
+	free(tmpdb);
+	logg("!cdiff_cmd_move: No data was moved from %s to %s\n", srcdb, dstdb);
+	free(srcdb);
+	free(dstdb);
+	return -1;
+    }
+
+    if(unlink(srcdb) == -1) {
+	logg("!cdiff_cmd_move: Can't unlink %s\n", srcdb);
+	free(srcdb);
+	unlink(tmpdb);
+	free(tmpdb);
+	return -1;
+    }
+
+    if(rename(tmpdb, srcdb) == -1) {
+	logg("!cdiff_cmd_move: Can't rename %s to %s\n", tmpdb, srcdb);
+	free(srcdb);
+	unlink(tmpdb);
+	free(tmpdb);
+	return -1;
+    }
+
+    free(srcdb);
+    free(tmpdb);
 
     return 0;
 }
