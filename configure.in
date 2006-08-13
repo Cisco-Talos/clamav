@@ -291,6 +291,14 @@ if test "$enable_debug" = "yes"; then
   AC_DEFINE(CL_DEBUG,1,[enable debugging])
 fi
 
+AC_ARG_ENABLE(experimental,
+[  --enable-experimental	enable experimental code],
+enable_experimental=$enableval, enable_experimental="no")
+
+if test "$enable_experimental" = "yes"; then
+  AC_DEFINE(CL_EXPERIMENTAL,1,[enable experimental code])
+fi
+
 AC_ARG_ENABLE(bigstack,
 [  --enable-bigstack	  increase thread stack size],
 enable_bigstack=$enableval, enable_bigstack="no")
