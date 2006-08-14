@@ -97,286 +97,10 @@
   	file_buff.length = 0;
   	
   	if (!file_buff.fd) {
-*** /home/njh/src/clamav-devel/./libclamav/others.c	2006-05-22 17:44:11.000000000 +0100
---- ./libclamav/others.c	2006-08-03 13:40:56.000000000 +0100
+*** /home/njh/src/clamav-devel/./libclamav/others.c	2006-08-11 20:39:24.000000000 +0100
+--- ./libclamav/others.c	2006-08-11 21:10:46.000000000 +0100
 ***************
-*** 27,45 ****
-  #include <string.h>
-  #include <stdlib.h>
-  #include <ctype.h>
-  #include <unistd.h>
-  #include <sys/types.h>
-  #include <sys/stat.h>
-  #include <sys/wait.h>
-  #include <sys/time.h>
-  #include <dirent.h>
-  #include <time.h>
-  #include <fcntl.h>
-  #include <pwd.h>
-  #include <errno.h>
-! #include <target.h>
-  #include <sys/time.h>
-  #include <sys/param.h>
-  
-  #ifdef CL_THREAD_SAFE
-  #  include <pthread.h>
---- 27,61 ----
-  #include <string.h>
-  #include <stdlib.h>
-  #include <ctype.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  #include <sys/types.h>
-  #include <sys/stat.h>
-+ #ifndef	C_WINDOWS
-  #include <sys/wait.h>
-  #include <sys/time.h>
-  #include <dirent.h>
-+ #endif
-  #include <time.h>
-  #include <fcntl.h>
-+ #ifndef	C_WINDOWS
-  #include <pwd.h>
-+ #endif
-  #include <errno.h>
-! #include "target.h"
-! #ifndef	C_WINDOWS
-  #include <sys/time.h>
-+ #endif
-+ #ifdef	HAVE_SYS_PARAM_H
-  #include <sys/param.h>
-+ #endif
-+ #ifdef	HAVE_MALLOC_H
-+ #include <malloc.h>
-+ #endif
-+ #if	defined(_MSC_VER) && defined(_DEBUG)
-+ #include <crtdbg.h>
-+ #endif
-  
-  #ifdef CL_THREAD_SAFE
-  #  include <pthread.h>
-***************
-*** 114,120 ****
-      if(cli_debug_flag) {
-  	    va_list args;
-  	    int sz = sizeof("LibClamAV debug: ") - 1;
-! 	    char buff[256];
-  
-  	memcpy(buff, "LibClamAV debug: ", sz);
-  	va_start(args, str);
---- 130,136 ----
-      if(cli_debug_flag) {
-  	    va_list args;
-  	    int sz = sizeof("LibClamAV debug: ") - 1;
-! 	    char buff[BUFSIZ];
-  
-  	memcpy(buff, "LibClamAV debug: ", sz);
-  	va_start(args, str);
-***************
-*** 315,321 ****
---- 331,341 ----
-  	return NULL;
-      }
-  
-+ #if	defined(_MSC_VER) && defined(_DEBUG)
-+ 	alloc = _malloc_dbg(size, _NORMAL_BLOCK, __FILE__, __LINE__);
-+ #else
-      alloc = malloc(size);
-+ #endif
-  
-      if(!alloc) {
-  	cli_errmsg("cli_malloc(): Can't allocate memory (%u bytes).\n", size);
-***************
-*** 335,341 ****
---- 355,365 ----
-  	return NULL;
-      }
-  
-+ #if	defined(_MSC_VER) && defined(_DEBUG)
-+ 	alloc = _calloc_dbg(nmemb, size, _NORMAL_BLOCK, __FILE__, __LINE__);
-+ #else
-      alloc = calloc(nmemb, size);
-+ #endif
-  
-      if(!alloc) {
-  	cli_errmsg("cli_calloc(): Can't allocate memory (%u bytes).\n", nmemb * size);
-***************
-*** 436,442 ****
-  	return NULL;
-      }
-  
-!     sprintf(name, "%s/clamav-", mdir);
-      strncat(name, tmp, 32);
-      free(tmp);
-  
---- 460,470 ----
-  	return NULL;
-      }
-  
-! #ifdef	C_WINDOWS
-! 	sprintf(name, "%s\\clamav-", mdir);
-! #else
-! 	sprintf(name, "%s/clamav-", mdir);
-! #endif
-      strncat(name, tmp, 32);
-      free(tmp);
-  
-***************
-*** 498,503 ****
---- 526,602 ----
-      return(name);
-  }
-  
-+ #ifdef	C_WINDOWS
-+ /*
-+  * Windows doesn't allow you to delete a directory while it is still open
-+  */
-+ int
-+ cli_rmdirs(const char *name)
-+ {
-+ 	int rc;
-+ 	struct stat statb;	
-+ 	DIR *dd;
-+ 	struct dirent *dent;
-+ #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-+ 	union {
-+ 		struct dirent d;
-+ 		char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
-+ 	} result;
-+ #endif
-+ 	
-+ 	if(stat(name, &statb) < 0) {
-+ 		cli_warnmsg("Can't locate %s: %s\n", name, strerror(errno));
-+ 		return 0;
-+ 	}
-+ 		
-+ 	if(!S_ISDIR(statb.st_mode)) {
-+ 		if(unlink(name) < 0) {
-+ 			cli_warnmsg("Can't remove %s: %s\n", name, strerror(errno));
-+ 			return -1;
-+ 		}
-+ 		return 0;
-+ 	}
-+ 	
-+ 	if((dd = opendir(name)) == NULL)
-+ 		return 53;	/* magic number */
-+ 		
-+ 	rc = 0;
-+ 		
-+ #ifdef HAVE_READDIR_R_3
-+ 	while((readdir_r(dd, &result.d, &dent) == 0) && dent) {
-+ #elif defined(HAVE_READDIR_R_2)
-+ 	while((dent = (struct dirent *)readdir_r(dd, &result.d)) != NULL) {
-+ #else
-+ 	while((dent = readdir(dd)) != NULL) {
-+ #endif
-+ 		char *fname;
-+ 		
-+ 		if(strcmp(dent->d_name, ".") == 0)
-+ 			continue;
-+ 		if(strcmp(dent->d_name, "..") == 0)
-+ 			continue;
-+ 			
-+ 		fname = cli_calloc(strlen(name) + strlen(dent->d_name) + 2, sizeof(char));
-+ 		if(fname == NULL)
-+ 			continue;
-+ 		sprintf(fname, "%s\\%s", name, dent->d_name);
-+ 		rc = cli_rmdirs(fname);
-+ 		free(fname);
-+ 		if(rc != 0)
-+ 			break;
-+ 	}
-+ 	
-+ 	closedir(dd);
-+ 	
-+ 	if(rmdir(name) < 0) {
-+ 		cli_errmsg("Can't remove temporary directory %s: %s\n",
-+ 			name, strerror(errno));
-+ 		return -1;
-+ 	}
-+ 	
-+ 	return rc;	
-+ }
-+ #else
-  int cli_rmdirs(const char *dirname)
-  {
-  	DIR *dd;
-***************
-*** 511,517 ****
-  	struct stat maind, statbuf;
-  	char *fname;
-  
-- 
-      chmod(dirname, 0700);
-      if((dd = opendir(dirname)) != NULL) {
-  	while(stat(dirname, &maind) != -1) {
---- 610,615 ----
-***************
-*** 529,541 ****
-  #else
-  	    while((dent = readdir(dd))) {
-  #endif
-! #ifndef C_INTERIX
-  		if(dent->d_ino)
-  #endif
-  		{
-  		    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
-  			fname = cli_calloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
-  			sprintf(fname, "%s/%s", dirname, dent->d_name);
-  
-  			/* stat the file */
-  			if(lstat(fname, &statbuf) != -1) {
---- 627,644 ----
-  #else
-  	    while((dent = readdir(dd))) {
-  #endif
-! #if	(!defined(C_CYGWIN)) && (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
-  		if(dent->d_ino)
-  #endif
-  		{
-  		    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
-  			fname = cli_calloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
-+ 
-+ #ifdef	C_WINDOWS
-+ 			sprintf(fname, "%s\\%s", dirname, dent->d_name);
-+ #else
-  			sprintf(fname, "%s/%s", dirname, dent->d_name);
-+ #endif
-  
-  			/* stat the file */
-  			if(lstat(fname, &statbuf) != -1) {
-***************
-*** 550,556 ****
-  				    cli_rmdirs(fname);
-  				}
-  			    } else
-! 				unlink(fname);
-  			}
-  
-  			free(fname);
---- 653,661 ----
-  				    cli_rmdirs(fname);
-  				}
-  			    } else
-! 				if(unlink(fname) < 0)
-! 					cli_warnmsg("Couldn't remove %s: %s\n",
-! 						fname, strerror(errno));
-  			}
-  
-  			free(fname);
-***************
-*** 569,574 ****
---- 674,680 ----
-      closedir(dd);
-      return 0;
-  }
-+ #endif
-  
-  /* Function: readn
-          Try hard to read the requested number of bytes
-***************
-*** 663,669 ****
+*** 775,781 ****
   	int s, d, bytes;
   
   
@@ -384,7 +108,7 @@
   	return -1;
   
       if((d = open(dest, O_CREAT|O_WRONLY|O_TRUNC|O_BINARY, S_IRWXU)) == -1) {
---- 769,775 ----
+--- 775,781 ----
   	int s, d, bytes;
   
   
@@ -720,8 +444,8 @@
   	bit_field|=(unsigned int)data[in_addr++] << 8;
   	bit_field|=(unsigned int)data[in_addr++] << 16;
   	bit_field|=(unsigned int)data[in_addr] << 24;
-*** /home/njh/src/clamav-devel/./libclamav/unrar/unrarppm.c	2006-06-17 22:00:44.000000000 +0100
---- ./libclamav/unrar/unrarppm.c	2006-07-26 11:03:00.000000000 +0100
+*** /home/njh/src/clamav-devel/./libclamav/unrar/unrarppm.c	2006-08-12 18:31:34.000000000 +0100
+--- ./libclamav/unrar/unrarppm.c	2006-08-14 10:21:50.000000000 +0100
 ***************
 *** 41,47 ****
   
@@ -1060,37 +784,85 @@
   
   #include "clamav.h"
   #include "others.h"
-*** /home/njh/src/clamav-devel/./libclamav/binhex.c	2006-07-31 10:19:52.000000000 +0100
---- ./libclamav/binhex.c	2006-07-31 09:38:32.000000000 +0100
+*** /home/njh/src/clamav-devel/./libclamav/mbox.c	2006-07-30 13:39:01.000000000 +0100
+--- ./libclamav/mbox.c	2006-08-11 21:05:12.000000000 +0100
 ***************
-*** 18,26 ****
+*** 16,22 ****
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+--- 16,22 ----
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+*** /home/njh/src/clamav-devel/./libclamav/blob.c	2006-07-31 20:31:08.000000000 +0100
+--- ./libclamav/blob.c	2006-08-11 21:05:12.000000000 +0100
+***************
+*** 16,22 ****
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+--- 16,22 ----
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+*** /home/njh/src/clamav-devel/./libclamav/binhex.c	2006-07-31 10:19:52.000000000 +0100
+--- ./libclamav/binhex.c	2006-08-11 21:05:12.000000000 +0100
+***************
+*** 18,25 ****
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.3  2006/08/11 15:07:42  njh
-   * Fixed crashes on error returns
+   * Revision 1.4  2006/08/14 10:02:05  njh
+   * Merge latest CVS to MSVC
    *
--  * Revision 1.22  2006/07/31 09:19:52  njh
--  * Use MAP_PRIVATE
--  *
+!  * Revision 1.22  2006/07/31 09:19:52  njh
+!  * Use MAP_PRIVATE
+   *
    * Revision 1.21  2006/07/01 16:17:35  njh
    * Added destroy flag
+--- 18,25 ----
    *
---- 18,23 ----
+   * Change History:
+   * $Log: patches,v $
+   * Revision 1.4  2006/08/14 10:02:05  njh
+   * Merge latest CVS to MSVC
+   *
+!  * Revision 1.1  2006/08/11 20:05:13  njh
+!  * First Draft
+   *
+   * Revision 1.21  2006/07/01 16:17:35  njh
+   * Added destroy flag
 ***************
 *** 82,88 ****
    * First draft of binhex.c
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.3 2006/08/11 15:07:42 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
   
   #include "clamav.h"
   
---- 79,85 ----
+--- 82,88 ----
    * First draft of binhex.c
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.3 2006/08/11 15:07:42 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
   
   #include "clamav.h"
   
@@ -1139,6 +911,40 @@
   {
   	int i, ascii = 1, len;
   
+*** /home/njh/src/clamav-devel/./libclamav/line.h	2006-04-09 20:59:27.000000000 +0100
+--- ./libclamav/line.h	2006-08-11 21:05:12.000000000 +0100
+***************
+*** 17,22 ****
+--- 17,25 ----
+   *  MA 02110-1301, USA.
+   *
+   * $Log: patches,v $
+   * Revision 1.4  2006/08/14 10:02:05  njh
+   * Merge latest CVS to MSVC
+   *
++  * Revision 1.1  2006/08/11 20:05:13  njh
++  * First Draft
++  *
+   * Revision 1.5  2006/04/09 19:59:27  kojm
+   * update GPL headers with new address for FSF
+   *
+*** /home/njh/src/clamav-devel/./libclamav/text.h	2006-07-01 17:17:35.000000000 +0100
+--- ./libclamav/text.h	2006-08-11 21:05:12.000000000 +0100
+***************
+*** 17,22 ****
+--- 17,25 ----
+   *  MA 02110-1301, USA.
+   *
+   * $Log: patches,v $
+   * Revision 1.4  2006/08/14 10:02:05  njh
+   * Merge latest CVS to MSVC
+   *
++  * Revision 1.1  2006/08/11 20:05:13  njh
++  * First Draft
++  *
+   * Revision 1.9  2006/07/01 16:17:35  njh
+   * Added destroy flag
+   *
 *** /home/njh/src/clamav-devel/./libclamav/filetypes.h	2006-04-24 17:28:05.000000000 +0100
 --- ./libclamav/filetypes.h	2006-07-28 13:53:10.000000000 +0100
 ***************
@@ -1172,6 +978,44 @@
   #include <time.h>
   #include <zlib.h>
   
+*** /home/njh/src/clamav-devel/./libclamav/is_tar.h	2005-03-22 21:26:25.000000000 +0000
+--- ./libclamav/is_tar.h	2006-08-11 21:05:12.000000000 +0100
+***************
+*** 5,11 ****
+   *
+   * Created 25 August 1985 by John Gilmore, ihnp4!hoptoad!gnu.
+   *
+!  * $Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $ # checkin only
+   */
+  
+  /*
+--- 5,11 ----
+   *
+   * Created 25 August 1985 by John Gilmore, ihnp4!hoptoad!gnu.
+   *
+!  * $Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $ # checkin only
+   */
+  
+  /*
+*** /home/njh/src/clamav-devel/./libclamav/is_tar.c	2006-06-17 22:00:44.000000000 +0100
+--- ./libclamav/is_tar.c	2006-08-11 21:05:12.000000000 +0100
+***************
+*** 5,11 ****
+   * Public Domain version written 26 Aug 1985 John Gilmore (ihnp4!hoptoad!gnu).
+   *
+   * @(#)list.c 1.18 9/23/86 Public Domain - gnu
+!  * $Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $
+   *
+   * Comments changed and some code/comments reformatted
+   * for file command by Ian Darwin.
+--- 5,11 ----
+   * Public Domain version written 26 Aug 1985 John Gilmore (ihnp4!hoptoad!gnu).
+   *
+   * @(#)list.c 1.18 9/23/86 Public Domain - gnu
+!  * $Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $
+   *
+   * Comments changed and some code/comments reformatted
+   * for file command by Ian Darwin.
 *** /home/njh/src/clamav-devel/./libclamav/clamav.h	2006-08-04 09:09:51.000000000 +0100
 --- ./libclamav/clamav.h	2006-08-04 17:30:48.000000000 +0100
 ***************
@@ -1186,22 +1030,10 @@
    
   #ifdef __cplusplus
   extern "C"
-*** /home/njh/src/clamav-devel/./libclamav/pe.c	2006-07-31 14:14:56.000000000 +0100
---- ./libclamav/pe.c	2006-07-31 20:42:36.000000000 +0100
+*** /home/njh/src/clamav-devel/./libclamav/pe.c	2006-08-11 20:39:24.000000000 +0100
+--- ./libclamav/pe.c	2006-08-11 20:43:10.000000000 +0100
 ***************
-*** 29,35 ****
---- 29,37 ----
-  #include <sys/stat.h>
-  #include <fcntl.h>
-  #include <sys/stat.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  #include <time.h>
-  
-  #include "cltypes.h"
-***************
-*** 132,138 ****
+*** 135,141 ****
   	return -1;
       }
   
@@ -1209,7 +1041,7 @@
   	cli_dbgmsg("Can't create file %s\n", file);
   	lseek(desc, pos, SEEK_SET);
   	return -1;
---- 134,140 ----
+--- 135,141 ----
   	return -1;
       }
   
@@ -1218,7 +1050,24 @@
   	lseek(desc, pos, SEEK_SET);
   	return -1;
 ***************
-*** 941,947 ****
+*** 848,854 ****
+  	    return CL_EMEM;
+  	  }
+  	  
+! 	  if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+  	    cli_dbgmsg("sue: Can't create file %s\n", tempfile);
+  	    free(tempfile);
+  	    free(sue);
+--- 848,854 ----
+  	    return CL_EMEM;
+  	  }
+  	  
+! 	  if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
+  	    cli_dbgmsg("sue: Can't create file %s\n", tempfile);
+  	    free(tempfile);
+  	    free(sue);
+***************
+*** 1020,1026 ****
   		    return CL_EMEM;
   		}
   
@@ -1226,7 +1075,7 @@
   		    cli_dbgmsg("FSG: Can't create file %s\n", tempfile);
   		    free(tempfile);
   		    free(section_hdr);
---- 943,949 ----
+--- 1020,1026 ----
   		    return CL_EMEM;
   		}
   
@@ -1235,7 +1084,7 @@
   		    free(tempfile);
   		    free(section_hdr);
 ***************
-*** 1146,1152 ****
+*** 1225,1231 ****
   		    return CL_EMEM;
   		}
   
@@ -1243,7 +1092,7 @@
   		    cli_dbgmsg("FSG: Can't create file %s\n", tempfile);
   		    free(tempfile);
   		    free(section_hdr);
---- 1148,1154 ----
+--- 1225,1231 ----
   		    return CL_EMEM;
   		}
   
@@ -1252,7 +1101,7 @@
   		    free(tempfile);
   		    free(section_hdr);
 ***************
-*** 1356,1362 ****
+*** 1435,1441 ****
   		    return CL_EMEM;
   		}
   
@@ -1260,7 +1109,7 @@
   		    cli_dbgmsg("FSG: Can't create file %s\n", tempfile);
   		    free(tempfile);
   		    free(section_hdr);
---- 1358,1364 ----
+--- 1435,1441 ----
   		    return CL_EMEM;
   		}
   
@@ -1269,7 +1118,7 @@
   		    free(tempfile);
   		    free(section_hdr);
 ***************
-*** 1576,1582 ****
+*** 1655,1661 ****
   		return CL_EMEM;
   	    }
   
@@ -1277,7 +1126,7 @@
   		cli_dbgmsg("UPX/FSG: Can't create file %s\n", tempfile);
   		free(tempfile);
   		free(dest);
---- 1578,1584 ----
+--- 1655,1661 ----
   		return CL_EMEM;
   	    }
   
@@ -1286,7 +1135,7 @@
   		free(tempfile);
   		free(dest);
 ***************
-*** 1676,1682 ****
+*** 1755,1761 ****
   	      return CL_EMEM;
   	    }
   
@@ -1294,7 +1143,7 @@
   		cli_dbgmsg("Petite: Can't create file %s\n", tempfile);
   		free(tempfile);
   		free(section_hdr);
---- 1678,1684 ----
+--- 1755,1761 ----
   	      return CL_EMEM;
   	    }
   
@@ -1303,7 +1152,7 @@
   		free(tempfile);
   		free(section_hdr);
 ***************
-*** 1758,1764 ****
+*** 1837,1843 ****
   	  return CL_EMEM;
   	}
   
@@ -1311,7 +1160,7 @@
   	    cli_dbgmsg("PESpin: Can't create file %s\n", tempfile);
   	    free(tempfile);
   	    free(spinned);
---- 1760,1766 ----
+--- 1837,1843 ----
   	  return CL_EMEM;
   	}
   
@@ -1320,7 +1169,7 @@
   	    free(tempfile);
   	    free(spinned);
 ***************
-*** 1827,1833 ****
+*** 1906,1912 ****
   	    return CL_EMEM;
   	  }
   
@@ -1328,7 +1177,7 @@
   	    cli_dbgmsg("yC: Can't create file %s\n", tempfile);
   	    free(tempfile);
   	    free(spinned);
---- 1829,1835 ----
+--- 1906,1912 ----
   	    return CL_EMEM;
   	  }
   
@@ -1337,7 +1186,7 @@
   	    free(tempfile);
   	    free(spinned);
 ***************
-*** 1952,1958 ****
+*** 2031,2037 ****
   	  return CL_EMEM;
   	}
   
@@ -1345,7 +1194,7 @@
   	  cli_dbgmsg("WWPack: Can't create file %s\n", tempfile);
   	  free(tempfile);
   	  free(dest);
---- 1954,1960 ----
+--- 2031,2037 ----
   	  return CL_EMEM;
   	}
   
@@ -1606,7 +1455,7 @@
   	if (ofd < 0) {
   		cli_errmsg("ERROR: failed to create file: %s\n", newname);
   		free(newname);
-*** /home/njh/src/clamav-devel/./libclamav/vba_extract.c	2006-08-06 18:46:48.000000000 +0100
+*** /home/njh/src/clamav-devel/./libclamav/vba_extract.c	2006-08-11 20:39:24.000000000 +0100
 --- ./libclamav/vba_extract.c	2006-08-07 19:05:26.000000000 +0100
 ***************
 *** 23,29 ****
@@ -1621,24 +1470,17 @@
   #include <sys/stat.h>
   #include <fcntl.h>
 ***************
-*** 75,81 ****
-  	{ { 0x5f, 0x00, 0x00, 0x01 }, "Office 97 SR1",          5, FALSE },
-  	{ { 0x65, 0x00, 0x00, 0x01 }, "Office 2000 alpha?",     6, FALSE },
-  	{ { 0x6b, 0x00, 0x00, 0x01 }, "Office 2000 beta?",      6, FALSE },
-! 	{ { 0x6c, 0x00, 0x00, 0x01 }, "Office 2000?",           6, FALSE },
-  	{ { 0x6d, 0x00, 0x00, 0x01 }, "Office 2000",            6, FALSE },
-  	{ { 0x6f, 0x00, 0x00, 0x01 }, "Office 2000",            6, FALSE },
-  	{ { 0x70, 0x00, 0x00, 0x01 }, "Office XP beta 1/2",     6, FALSE },
+*** 75,80 ****
 --- 77,83 ----
   	{ { 0x5f, 0x00, 0x00, 0x01 }, "Office 97 SR1",          5, FALSE },
   	{ { 0x65, 0x00, 0x00, 0x01 }, "Office 2000 alpha?",     6, FALSE },
   	{ { 0x6b, 0x00, 0x00, 0x01 }, "Office 2000 beta?",      6, FALSE },
-! 	/*{ { 0x6c, 0x00, 0x00, 0x01 }, "Office 2000?",           6, FALSE },*/
++ 	/*{ { 0x6c, 0x00, 0x00, 0x01 }, "Office 2000?",           6, FALSE },*/
   	{ { 0x6d, 0x00, 0x00, 0x01 }, "Office 2000",            6, FALSE },
   	{ { 0x6f, 0x00, 0x00, 0x01 }, "Office 2000",            6, FALSE },
   	{ { 0x70, 0x00, 0x00, 0x01 }, "Office XP beta 1/2",     6, FALSE },
 ***************
-*** 265,271 ****
+*** 264,270 ****
   		return NULL;
   	}
   	sprintf(fullname, "%s/_VBA_PROJECT", dir);
@@ -1655,7 +1497,7 @@
           if (fd == -1) {
                   cli_dbgmsg("Can't open %s\n", fullname);
 ***************
-*** 745,751 ****
+*** 744,750 ****
   	}
   	fullname = cli_malloc(strlen(dir) + 18);
   	sprintf(fullname, "%s/_clam_ole_object", dir);
@@ -1672,7 +1514,7 @@
           if (ofd < 0) {
   		return -1;
 ***************
-*** 815,821 ****
+*** 814,820 ****
   	}
   	sprintf(fullname, "%s/ppt%.8lx.doc", dir, lseek(fd, 0, SEEK_CUR));
   	
@@ -1689,7 +1531,7 @@
           if (ofd == -1) {
                   cli_dbgmsg("ppt_unlzw Open outfile failed\n");
 ***************
-*** 947,953 ****
+*** 946,952 ****
   		return NULL;
   	}
   	sprintf(fullname, "%s/PowerPoint Document", dir);
@@ -1706,7 +1548,7 @@
   	if (fd == -1) {
   		cli_dbgmsg("Open  PowerPoint Document failed\n");
 ***************
-*** 1530,1536 ****
+*** 1529,1535 ****
   		return NULL;
   	}
   	sprintf(fullname, "%s/WordDocument", dir);
@@ -1723,36 +1565,46 @@
   	if (fd == -1) {
   		cli_dbgmsg("Open WordDocument failed\n");
 *** /home/njh/src/clamav-devel/./libclamav/untar.c	2006-07-26 10:39:08.000000000 +0100
---- ./libclamav/untar.c	2006-07-26 10:25:12.000000000 +0100
+--- ./libclamav/untar.c	2006-08-11 21:05:12.000000000 +0100
 ***************
-*** 22,30 ****
+*** 22,29 ****
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.3  2006/08/11 15:07:42  njh
-   * Fixed crashes on error returns
+   * Revision 1.4  2006/08/14 10:02:05  njh
+   * Merge latest CVS to MSVC
    *
--  * Revision 1.30  2006/07/26 09:39:08  njh
--  * Fix compilation error on Windows with MSVC
--  *
+!  * Revision 1.30  2006/07/26 09:39:08  njh
+!  * Fix compilation error on Windows with MSVC
+   *
    * Revision 1.29  2006/04/09 19:59:28  kojm
    * update GPL headers with new address for FSF
+--- 22,29 ----
    *
---- 22,27 ----
+   * Change History:
+   * $Log: patches,v $
+   * Revision 1.4  2006/08/14 10:02:05  njh
+   * Merge latest CVS to MSVC
+   *
+!  * Revision 1.1  2006/08/11 20:05:13  njh
+!  * First Draft
+   *
+   * Revision 1.29  2006/04/09 19:59:28  kojm
+   * update GPL headers with new address for FSF
 ***************
 *** 113,119 ****
    * First draft
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.3 2006/08/11 15:07:42 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
   
   #include <stdio.h>
   #include <errno.h>
---- 110,116 ----
+--- 113,119 ----
    * First draft
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.3 2006/08/11 15:07:42 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
   
   #include <stdio.h>
   #include <errno.h>
@@ -1765,7 +1617,7 @@
   					return CL_EIO;
   				}
   				outfile = (FILE*)0;
---- 180,186 ----
+--- 183,189 ----
   			if(outfile) {
   				if(fclose(outfile)) {
   					cli_errmsg("cli_untar: cannot close file %s\n",
@@ -1782,7 +1634,7 @@
   				close(fd);
   				return CL_ETMPFILE;
   			}
---- 305,311 ----
+--- 308,314 ----
   			in_block = 1;
   			if((outfile = fdopen(fd, "wb")) == NULL) {
   				cli_errmsg("cli_untar: cannot create file %s\n",
@@ -1804,14 +1656,31 @@
   #include <string.h>
   
   #if HAVE_CONFIG_H
-*** /home/njh/src/clamav-devel/./libclamav/pst.c	2006-07-31 20:45:17.000000000 +0100
---- ./libclamav/pst.c	2006-07-31 20:44:18.000000000 +0100
+*** /home/njh/src/clamav-devel/./libclamav/untar.h	2006-04-09 20:59:28.000000000 +0100
+--- ./libclamav/untar.h	2006-08-11 21:05:12.000000000 +0100
+***************
+*** 18,23 ****
+--- 18,26 ----
+   *
+   * Change History:
+   * $Log: patches,v $
+   * Revision 1.4  2006/08/14 10:02:05  njh
+   * Merge latest CVS to MSVC
+   *
++  * Revision 1.1  2006/08/11 20:05:13  njh
++  * First Draft
++  *
+   * Revision 1.4  2006/04/09 19:59:28  kojm
+   * update GPL headers with new address for FSF
+   *
+*** /home/njh/src/clamav-devel/./libclamav/pst.c	2006-08-12 15:21:21.000000000 +0100
+--- ./libclamav/pst.c	2006-08-11 21:05:12.000000000 +0100
 ***************
 *** 36,42 ****
    * TODO: Remove the vcard handling
    * FIXME: The code does little error checking of OOM scenarios
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.3 2006/08/11 15:07:42 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"	/* must come first */
@@ -1819,29 +1688,82 @@
    * TODO: Remove the vcard handling
    * FIXME: The code does little error checking of OOM scenarios
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.3 2006/08/11 15:07:42 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"	/* must come first */
-*** /home/njh/src/clamav-devel/./libclamav/pdf.c	2006-07-31 10:18:12.000000000 +0100
---- ./libclamav/pdf.c	2006-07-31 10:06:58.000000000 +0100
 ***************
-*** 15,21 ****
-   *  along with this program; if not, write to the Free Software
-   *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-   */
-! static	char	const	rcsid[] = "$Id: patches,v 1.3 2006/08/11 15:07:42 njh Exp $";
+*** 438,444 ****
+  static	pst_index_ll	*_pst_getID2(pst_index2_ll * ptr, u_int32_t id);
+  pst_desc_ll * _pst_getDptr(pst_file *pf, u_int32_t id);
+  static	size_t _pst_read_block_size(pst_file *pf, int32_t offset, size_t size, char ** buf, int32_t do_enc, unsigned char is_index);
+! static int32_t _pst_decrypt(unsigned char *buf, size_t size, int32_t type);
+  static int32_t _pst_getAtPos(FILE* fp, int32_t pos, void *buf, u_int32_t size);
+  int32_t _pst_get (FILE *fp, void *buf, u_int32_t size);
+  size_t	_pst_ff_getIDblock_dec(pst_file *pf, u_int32_t id, unsigned char **b);
+--- 438,444 ----
+  static	pst_index_ll	*_pst_getID2(pst_index2_ll * ptr, u_int32_t id);
+  pst_desc_ll * _pst_getDptr(pst_file *pf, u_int32_t id);
+  static	size_t _pst_read_block_size(pst_file *pf, int32_t offset, size_t size, char ** buf, int32_t do_enc, unsigned char is_index);
+! int32_t _pst_decrypt(unsigned char *buf, size_t size, int32_t type);
+  static int32_t _pst_getAtPos(FILE* fp, int32_t pos, void *buf, u_int32_t size);
+  int32_t _pst_get (FILE *fp, void *buf, u_int32_t size);
+  size_t	_pst_ff_getIDblock_dec(pst_file *pf, u_int32_t id, unsigned char **b);
+***************
+*** 4274,4299 ****
+    return size;
+  }
   
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
---- 15,21 ----
-   *  along with this program; if not, write to the Free Software
-   *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-   */
-! static	char	const	rcsid[] = "$Id: patches,v 1.3 2006/08/11 15:07:42 njh Exp $";
+! static int32_t
+! _pst_decrypt(unsigned char *buf, size_t size, int32_t type)
+! {
+! 	if (buf == NULL)
+! 		return -1;
+! 
+! 	if (type == PST_COMP_ENCRYPT) {
+! 		size_t x = 0;
   
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
+! 		while (x < size) {
+! 			unsigned char y = buf[x];
+! 			/*cli_dbgmsg("Transposing %#hhx to %#hhx [%#x]\n", buf[x], comp_enc[y], y);*/
+! 			buf[x] = comp_enc[y]; // transpose from encrypt array
+! 			x++;
+! 		}
+! 	} else {
+! 		cli_warnmsg("Unknown encryption: %i. Cannot decrypt\n", type);
+! 		return -1;
+! 	}
+! 	return 0;
+  }
+  
+  static int32_t
+--- 4274,4299 ----
+    return size;
+  }
+  
+! int32_t _pst_decrypt(unsigned char *buf, size_t size, int32_t type) {
+!   size_t x = 0;
+!   unsigned char y;
+!   if (buf == NULL) {
+!     return -1;
+!   }
+  
+!   if (type == PST_COMP_ENCRYPT) {
+!     x = 0;
+!     while (x < size) {
+!       y = buf[x];
+!       /*cli_dbgmsg("Transposing %#hhx to %#hhx [%#x]\n", buf[x], comp_enc[y], y);*/
+!       buf[x] = comp_enc[y]; // transpose from encrypt array
+!       x++;
+!     }
+!   } else {
+!     cli_warnmsg("Unknown encryption: %i. Cannot decrypt\n", type);
+!     return -1;
+!   }
+!   return 0;
+  }
+  
+  static int32_t
 *** /home/njh/src/clamav-devel/./libclamav/unzip.c	2006-06-17 22:00:44.000000000 +0100
 --- ./libclamav/unzip.c	2006-07-26 10:56:26.000000000 +0100
 ***************
@@ -1903,14 +1825,33 @@
   int cli_ac_buildtrie(struct cli_matcher *root);
   void cli_ac_free(struct cli_matcher *root);
   void cli_ac_setdepth(unsigned int depth);
-*** /home/njh/src/clamav-devel/./libclamav/uuencode.c	2006-07-31 20:38:20.000000000 +0100
---- ./libclamav/uuencode.c	2006-07-31 20:37:20.000000000 +0100
+*** /home/njh/src/clamav-devel/./libclamav/message.c	2006-08-08 08:33:49.000000000 +0100
+--- ./libclamav/message.c	2006-08-11 21:05:12.000000000 +0100
 ***************
 *** 16,22 ****
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.3 2006/08/11 15:07:42 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+--- 16,22 ----
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+*** /home/njh/src/clamav-devel/./libclamav/uuencode.c	2006-07-31 20:38:20.000000000 +0100
+--- ./libclamav/uuencode.c	2006-08-11 21:05:12.000000000 +0100
+***************
+*** 16,22 ****
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
   
   #include "clamav.h"
   
@@ -1918,10 +1859,147 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.3 2006/08/11 15:07:42 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
   
   #include "clamav.h"
   
+*** /home/njh/src/clamav-devel/./libclamav/line.c	2006-04-09 20:59:27.000000000 +0100
+--- ./libclamav/line.c	2006-08-11 21:05:12.000000000 +0100
+***************
+*** 17,22 ****
+--- 17,25 ----
+   *  MA 02110-1301, USA.
+   *
+   * $Log: patches,v $
+   * Revision 1.4  2006/08/14 10:02:05  njh
+   * Merge latest CVS to MSVC
+   *
++  * Revision 1.1  2006/08/11 20:05:13  njh
++  * First Draft
++  *
+   * Revision 1.10  2006/04/09 19:59:27  kojm
+   * update GPL headers with new address for FSF
+   *
+***************
+*** 49,55 ****
+   *
+   */
+  
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+--- 52,58 ----
+   *
+   */
+  
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+*** /home/njh/src/clamav-devel/./libclamav/text.c	2006-07-14 13:13:08.000000000 +0100
+--- ./libclamav/text.c	2006-08-11 21:05:12.000000000 +0100
+***************
+*** 17,22 ****
+--- 17,25 ----
+   *  MA 02110-1301, USA.
+   *
+   * $Log: patches,v $
+   * Revision 1.4  2006/08/14 10:02:05  njh
+   * Merge latest CVS to MSVC
+   *
++  * Revision 1.1  2006/08/11 20:05:13  njh
++  * First Draft
++  *
+   * Revision 1.23  2006/07/14 12:13:08  njh
+   * Typo
+   *
+***************
+*** 79,85 ****
+   *
+   */
+  
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+--- 82,88 ----
+   *
+   */
+  
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+*** /home/njh/src/clamav-devel/./libclamav/binhex.h	2006-04-09 20:59:27.000000000 +0100
+--- ./libclamav/binhex.h	2006-08-11 21:05:12.000000000 +0100
+***************
+*** 18,23 ****
+--- 18,26 ----
+   *
+   * Change History:
+   * $Log: patches,v $
+   * Revision 1.4  2006/08/14 10:02:05  njh
+   * Merge latest CVS to MSVC
+   *
++  * Revision 1.1  2006/08/11 20:05:13  njh
++  * First Draft
++  *
+   * Revision 1.4  2006/04/09 19:59:27  kojm
+   * update GPL headers with new address for FSF
+   *
+*** /home/njh/src/clamav-devel/./libclamav/tnef.c	2006-07-22 14:31:22.000000000 +0100
+--- ./libclamav/tnef.c	2006-08-11 21:05:12.000000000 +0100
+***************
+*** 25,31 ****
+  #include "clamav-config.h"
+  #endif
+  
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+  
+  #include <stdio.h>
+  #include <fcntl.h>
+--- 25,31 ----
+  #include "clamav-config.h"
+  #endif
+  
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+  
+  #include <stdio.h>
+  #include <fcntl.h>
+*** /home/njh/src/clamav-devel/./libclamav/pdf.c	2006-08-11 22:10:58.000000000 +0100
+--- ./libclamav/pdf.c	2006-08-11 21:38:54.000000000 +0100
+***************
+*** 15,21 ****
+   *  along with this program; if not, write to the Free Software
+   *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+--- 15,21 ----
+   *  along with this program; if not, write to the Free Software
+   *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+***************
+*** 181,191 ****
+  			break;
+  
+  		/*object_number = atoi(q);*/
+- 
+- 		/*
+- 		 * FIXME: this assumes sizeof(int) == sizeof(char *), which
+- 		 *	isn't true on 64 bits machines
+- 		 */
+  		bytesleft -= (q - p);
+  		p = q;
+  
+--- 181,186 ----
 *** /home/njh/src/clamav-devel/./clamscan/clamscan.c	2006-05-15 19:30:18.000000000 +0100
 --- ./clamscan/clamscan.c	2006-08-04 10:38:10.000000000 +0100
 ***************
@@ -2456,6 +2534,139 @@
   
   /* Comment out all this code if we are using the GNU C Library, and are not
      actually compiling the library itself.  This code is part of the GNU C
+*** /home/njh/src/clamav-devel/./shared/cdiff.c	2006-08-14 10:17:45.000000000 +0100
+--- ./shared/cdiff.c	2006-08-14 10:20:26.000000000 +0100
+***************
+*** 27,33 ****
+--- 27,35 ----
+  #include <ctype.h>
+  #include <sys/types.h>
+  #include <sys/stat.h>
++ #ifdef	HAVE_UNISTD_H
+  #include <unistd.h>
++ #endif
+  
+  #include "shared/memory.h"
+  #include "shared/misc.h"
+***************
+*** 352,358 ****
+  
+      if(del || xchg) {
+  
+! 	if(!(fh = fopen(ctx->open_db, "r"))) {
+  	    logg("!cdiff_cmd_close: Can't open file %s for reading\n", ctx->open_db);
+  	    return -1;
+  	}
+--- 354,360 ----
+  
+      if(del || xchg) {
+  
+! 	if(!(fh = fopen(ctx->open_db, "rb"))) {
+  	    logg("!cdiff_cmd_close: Can't open file %s for reading\n", ctx->open_db);
+  	    return -1;
+  	}
+***************
+*** 363,369 ****
+  	    return -1;
+  	}
+  
+! 	if(!(tmpfh = fopen(tmp, "w"))) {
+  	    logg("!cdiff_cmd_close: Can't open file %s for writing\n", tmp);
+  	    fclose(fh);
+  	    free(tmp);
+--- 365,371 ----
+  	    return -1;
+  	}
+  
+! 	if(!(tmpfh = fopen(tmp, "wb"))) {
+  	    logg("!cdiff_cmd_close: Can't open file %s for writing\n", tmp);
+  	    fclose(fh);
+  	    free(tmp);
+***************
+*** 448,454 ****
+  
+      if(add) {
+  
+! 	if(!(fh = fopen(ctx->open_db, "a"))) {
+  	    logg("!cdiff_cmd_close: Can't open file %s for appending\n", ctx->open_db);
+  	    return -1;
+  	}
+--- 450,456 ----
+  
+      if(add) {
+  
+! 	if(!(fh = fopen(ctx->open_db, "ab"))) {
+  	    logg("!cdiff_cmd_close: Can't open file %s for appending\n", ctx->open_db);
+  	    return -1;
+  	}
+***************
+*** 519,525 ****
+  	return -1;
+      }
+  
+!     if(!(src = fopen(srcdb, "r"))) {
+  	logg("!cdiff_cmd_move: Can't open %s for reading\n", srcdb);
+  	free(start_str);
+  	free(end_str);
+--- 521,527 ----
+  	return -1;
+      }
+  
+!     if(!(src = fopen(srcdb, "rb"))) {
+  	logg("!cdiff_cmd_move: Can't open %s for reading\n", srcdb);
+  	free(start_str);
+  	free(end_str);
+***************
+*** 536,542 ****
+  	return -1;
+      }
+  
+!     if(!(dst = fopen(dstdb, "a"))) {
+  	logg("!cdiff_cmd_move: Can't open %s for appending\n", dstdb);
+  	free(start_str);
+  	free(end_str);
+--- 538,544 ----
+  	return -1;
+      }
+  
+!     if(!(dst = fopen(dstdb, "ab"))) {
+  	logg("!cdiff_cmd_move: Can't open %s for appending\n", dstdb);
+  	free(start_str);
+  	free(end_str);
+***************
+*** 557,563 ****
+  	return -1;
+      }
+  
+!     if(!(tmp = fopen(tmpdb, "w"))) {
+  	logg("!cdiff_cmd_move: Can't open file %s for writing\n", tmpdb);
+  	free(start_str);
+  	free(end_str);
+--- 559,565 ----
+  	return -1;
+      }
+  
+!     if(!(tmp = fopen(tmpdb, "wb"))) {
+  	logg("!cdiff_cmd_move: Can't open file %s for writing\n", tmpdb);
+  	free(start_str);
+  	free(end_str);
+***************
+*** 686,692 ****
+  	return -1;
+      }
+  
+!     if(!(fh = fdopen(desc, "r"))) {
+  	logg("!cdiff_apply: fdopen() failed for descriptor %d\n", desc);
+  	close(desc);
+  	return -1;
+--- 688,694 ----
+  	return -1;
+      }
+  
+!     if(!(fh = fdopen(desc, "rb"))) {
+  	logg("!cdiff_apply: fdopen() failed for descriptor %d\n", desc);
+  	close(desc);
+  	return -1;
 *** /home/njh/src/clamav-devel/./shared/network.h	2006-04-09 20:59:28.000000000 +0100
 --- ./shared/network.h	2006-07-31 14:59:30.000000000 +0100
 ***************
@@ -2645,88 +2856,6 @@
   	return -1;
   
       if(lseek(fd, 512, SEEK_SET) == -1) {
-*** /home/njh/src/clamav-devel/./shared/cdiff.c	2006-07-27 14:12:42.000000000 +0100
---- ./shared/cdiff.c	2006-08-04 15:16:32.000000000 +0100
-***************
-*** 27,33 ****
---- 27,35 ----
-  #include <ctype.h>
-  #include <sys/types.h>
-  #include <sys/stat.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  
-  #include "shared/memory.h"
-  #include "shared/misc.h"
-***************
-*** 351,357 ****
-  
-      if(del || xchg) {
-  
-! 	if(!(fh = fopen(ctx->open_db, "r"))) {
-  	    logg("!cdiff_cmd_close: Can't open file %s for reading\n", ctx->open_db);
-  	    return -1;
-  	}
---- 353,359 ----
-  
-      if(del || xchg) {
-  
-! 	if(!(fh = fopen(ctx->open_db, "rb"))) {
-  	    logg("!cdiff_cmd_close: Can't open file %s for reading\n", ctx->open_db);
-  	    return -1;
-  	}
-***************
-*** 362,368 ****
-  	    return -1;
-  	}
-  
-! 	if(!(tmpfh = fopen(tmp, "w"))) {
-  	    logg("!cdiff_cmd_close: Can't open file %s for reading\n", tmp);
-  	    fclose(fh);
-  	    free(tmp);
---- 364,370 ----
-  	    return -1;
-  	}
-  
-! 	if(!(tmpfh = fopen(tmp, "wb"))) {
-  	    logg("!cdiff_cmd_close: Can't open file %s for reading\n", tmp);
-  	    fclose(fh);
-  	    free(tmp);
-***************
-*** 447,453 ****
-  
-      if(add) {
-  
-! 	if(!(fh = fopen(ctx->open_db, "a"))) {
-  	    logg("!cdiff_cmd_close: Can't open file %s for appending\n", ctx->open_db);
-  	    return -1;
-  	}
---- 449,455 ----
-  
-      if(add) {
-  
-! 	if(!(fh = fopen(ctx->open_db, "ab"))) {
-  	    logg("!cdiff_cmd_close: Can't open file %s for appending\n", ctx->open_db);
-  	    return -1;
-  	}
-***************
-*** 484,490 ****
-  	return -1;
-      }
-  
-!     if(!(fh = fdopen(desc, "r"))) {
-  	logg("!cdiff_apply: fdopen() failed for descriptor %d\n", desc);
-  	close(desc);
-  	return -1;
---- 486,492 ----
-  	return -1;
-      }
-  
-!     if(!(fh = fdopen(desc, "rb"))) {
-  	logg("!cdiff_apply: fdopen() failed for descriptor %d\n", desc);
-  	close(desc);
-  	return -1;
 *** /home/njh/src/clamav-devel/./shared/output.c	2006-05-15 19:30:18.000000000 +0100
 --- ./shared/output.c	2006-08-11 11:04:58.000000000 +0100
 ***************
@@ -3670,163 +3799,6 @@
   #endif
 + #endif
   }
-*** /home/njh/src/clamav-devel/./clamd/scanner.c	2006-04-09 20:59:26.000000000 +0100
---- ./clamd/scanner.c	2006-08-03 16:36:36.000000000 +0100
-***************
-*** 16,21 ****
---- 16,26 ----
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
-   */
-+  
-+ #ifdef	_MSC_VER
-+ #include <windows.h>
-+ #include <winsock.h>
-+ #endif
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
-***************
-*** 24,41 ****
---- 29,54 ----
-  #include <stdio.h>
-  #include <stdlib.h>
-  #include <string.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  #include <errno.h>
-  #include <sys/stat.h>
-  #include <sys/types.h>
-+ #ifndef	C_WINDOWS
-  #include <sys/time.h>
-  #include <sys/wait.h>
-+ #endif
-+ #ifdef	HAVE_SYS_PARAM_H
-  #include <sys/param.h>
-+ #endif
-+ #ifndef	C_WINDOWS
-  #include <dirent.h>
-  #include <sys/socket.h>
-  #include <netinet/in.h>
-  #include <arpa/inet.h>
-  #include <netdb.h>
-+ #endif
-  #include <clamav.h>
-  #include <pthread.h>
-  
-***************
-*** 124,130 ****
-  		closedir(dd);
-  		return 1;
-  	    }
-! #ifndef C_INTERIX
-  	    if(dent->d_ino)
-  #endif
-  	    {
---- 137,143 ----
-  		closedir(dd);
-  		return 1;
-  	    }
-! #if	(!defined(C_CYGWIN)) && (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
-  	    if(dent->d_ino)
-  #endif
-  	    {
-***************
-*** 213,222 ****
---- 226,237 ----
-      }
-  
-      switch(sb.st_mode & S_IFMT) {
-+ #ifdef	S_IFLNK
-  	case S_IFLNK:
-  	    if(!cfgopt(copt, "FollowFileSymlinks")->enabled)
-  		break;
-  	    /* else go to the next case */
-+ #endif
-  	case S_IFREG: 
-  	    if(sb.st_size == 0) { /* empty file */
-  		mdprintf(odesc, "%s: Empty file\n", filename);
-***************
-*** 344,350 ****
-  	    continue;
-  
-  	if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1)
-! 	    close(sockfd);
-  	else
-  	    bound = 1;
-      }
---- 359,369 ----
-  	    continue;
-  
-  	if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1)
-! #ifdef	C_WINDOWS
-! 		closesocket(sockfd);
-! #else
-! 		close(sockfd);
-! #endif
-  	else
-  	    bound = 1;
-      }
-***************
-*** 391,398 ****
---- 410,422 ----
-  
-      if ((tmpname = cli_gentempdesc(NULL, &tmpd)) == NULL) {
-  	shutdown(sockfd, 2);
-+ #ifdef	C_WINDOWS
-+ 	closesocket(sockfd);
-+ 	closesocket(acceptd);
-+ #else
-  	close(sockfd);
-  	close(acceptd);
-+ #endif
-  	mdprintf(odesc, "tempfile() failed. ERROR\n");
-  	logg("!ScanStream %d: Can't create temporary file.\n", port);
-  	return -1;
-***************
-*** 403,417 ****
---- 427,450 ----
-      btread = sizeof(buff);
-  
-      while((retval = poll_fd(acceptd, timeout)) == 1) {
-+ #if	defined(C_WINDOWS) || defined(C_BEOS)
-+ 	bread = recv(acceptd, buff, btread, 0);
-+ #else
-  	bread = read(acceptd, buff, btread);
-+ #endif
-  	if(bread <= 0)
-  	    break;
-  	size += bread;
-  
-  	if(writen(tmpd, buff, bread) != bread) {
-  	    shutdown(sockfd, 2);
-+ #ifdef	C_WINDOWS
-+ 		closesocket(sockfd);
-+ 		closesocket(acceptd);
-+ #else
-  	    close(sockfd);
-  	    close(acceptd);
-+ #endif
-  	    mdprintf(odesc, "Temporary file -> write ERROR\n");
-  	    logg("!ScanStream %d: Can't write to temporary file.\n", port);
-  	    close(tmpd);
-***************
-*** 453,460 ****
---- 486,498 ----
-  	unlink(tmpname);
-      free(tmpname);
-  
-+ #ifdef	C_WINDOWS
-+ 	closesocket(acceptd);
-+ 	closesocket(sockfd);
-+ #else
-      close(acceptd);
-      close(sockfd);
-+ #endif
-  
-      if(ret == CL_VIRUS) {
-  	mdprintf(odesc, "stream: %s FOUND\n", virname);
 *** /home/njh/src/clamav-devel/./clamd/others.h	2006-04-09 20:59:26.000000000 +0100
 --- ./clamd/others.h	2006-08-03 14:33:50.000000000 +0100
 ***************
@@ -4456,6 +4428,232 @@
   #ifndef C_OS2
       if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
   	if(unlink(cpt->strarg) == -1)
+*** /home/njh/src/clamav-devel/./clamd/scanner.c	2006-04-09 20:59:26.000000000 +0100
+--- ./clamd/scanner.c	2006-08-14 09:19:12.000000000 +0100
+***************
+*** 16,21 ****
+--- 16,26 ----
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
++  
++ #ifdef	_MSC_VER
++ #include <windows.h>
++ #include <winsock.h>
++ #endif
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+***************
+*** 24,41 ****
+--- 29,54 ----
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <string.h>
++ #ifdef	HAVE_UNISTD_H
+  #include <unistd.h>
++ #endif
+  #include <errno.h>
+  #include <sys/stat.h>
+  #include <sys/types.h>
++ #ifndef	C_WINDOWS
+  #include <sys/time.h>
+  #include <sys/wait.h>
++ #endif
++ #ifdef	HAVE_SYS_PARAM_H
+  #include <sys/param.h>
++ #endif
++ #ifndef	C_WINDOWS
+  #include <dirent.h>
+  #include <sys/socket.h>
+  #include <netinet/in.h>
+  #include <arpa/inet.h>
+  #include <netdb.h>
++ #endif
+  #include <clamav.h>
+  #include <pthread.h>
+  
+***************
+*** 124,130 ****
+  		closedir(dd);
+  		return 1;
+  	    }
+! #ifndef C_INTERIX
+  	    if(dent->d_ino)
+  #endif
+  	    {
+--- 137,143 ----
+  		closedir(dd);
+  		return 1;
+  	    }
+! #if	(!defined(C_CYGWIN)) && (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
+  	    if(dent->d_ino)
+  #endif
+  	    {
+***************
+*** 213,222 ****
+--- 226,237 ----
+      }
+  
+      switch(sb.st_mode & S_IFMT) {
++ #ifdef	S_IFLNK
+  	case S_IFLNK:
+  	    if(!cfgopt(copt, "FollowFileSymlinks")->enabled)
+  		break;
+  	    /* else go to the next case */
++ #endif
+  	case S_IFREG: 
+  	    if(sb.st_size == 0) { /* empty file */
+  		mdprintf(odesc, "%s: Empty file\n", filename);
+***************
+*** 344,350 ****
+  	    continue;
+  
+  	if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1)
+! 	    close(sockfd);
+  	else
+  	    bound = 1;
+      }
+--- 359,369 ----
+  	    continue;
+  
+  	if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1)
+! #ifdef	C_WINDOWS
+! 		closesocket(sockfd);
+! #else
+! 		close(sockfd);
+! #endif
+  	else
+  	    bound = 1;
+      }
+***************
+*** 356,368 ****
+      if(!bound && !portscan) {
+  	logg("!ScanStream: Can't find any free port.\n");
+  	mdprintf(odesc, "Can't find any free port. ERROR\n");
+  	close(sockfd);
+  	return -1;
+      } else {
+  	listen(sockfd, 1);
+  	if(mdprintf(odesc, "PORT %d\n", port) <= 0) {
+  	    logg("!ScanStream: error transmitting port.\n");
+! 	    close(sockfd);
+  	    return -1;
+  	}
+      }
+--- 375,395 ----
+      if(!bound && !portscan) {
+  	logg("!ScanStream: Can't find any free port.\n");
+  	mdprintf(odesc, "Can't find any free port. ERROR\n");
++ #ifdef	C_WINDOWS
++ 	closesocket(sockfd);
++ #else		
+  	close(sockfd);
++ #endif	
+  	return -1;
+      } else {
+  	listen(sockfd, 1);
+  	if(mdprintf(odesc, "PORT %d\n", port) <= 0) {
+  	    logg("!ScanStream: error transmitting port.\n");
+! #ifdef	C_WINDOWS
+! 		closesocket(sockfd);
+! #else		
+! 		close(sockfd);
+! #endif	
+  	    return -1;
+  	}
+      }
+***************
+*** 371,387 ****
+--- 398,426 ----
+  	case 0: /* timeout */
+  	    mdprintf(odesc, "Accept timeout. ERROR\n");
+  	    logg("!ScanStream %d: accept timeout.\n", port);
++ #ifdef	C_WINDOWS
++ 		closesocket(sockfd);
++ #else			    
+  	    close(sockfd);
++ #endif	    
+  	    return -1;
+  	case -1:
+  	    mdprintf(odesc, "Accept poll. ERROR\n");
+  	    logg("!ScanStream %d: accept poll failed.\n", port);
++ #ifdef	C_WINDOWS
++ 		closesocket(sockfd);
++ #else			    
+  	    close(sockfd);
++ #endif	
+  	    return -1;
+      }
+  
+      if((acceptd = accept(sockfd, NULL, NULL)) == -1) {
++ #ifdef	C_WINDOWS
++ 	closesocket(sockfd);
++ #else		
+  	close(sockfd);
++ #endif	
+  	mdprintf(odesc, "accept() ERROR\n");
+  	logg("!ScanStream %d: accept() failed.\n", port);
+  	return -1;
+***************
+*** 391,398 ****
+--- 430,442 ----
+  
+      if ((tmpname = cli_gentempdesc(NULL, &tmpd)) == NULL) {
+  	shutdown(sockfd, 2);
++ #ifdef	C_WINDOWS
++ 	closesocket(sockfd);
++ 	closesocket(acceptd);
++ #else
+  	close(sockfd);
+  	close(acceptd);
++ #endif
+  	mdprintf(odesc, "tempfile() failed. ERROR\n");
+  	logg("!ScanStream %d: Can't create temporary file.\n", port);
+  	return -1;
+***************
+*** 403,417 ****
+--- 447,470 ----
+      btread = sizeof(buff);
+  
+      while((retval = poll_fd(acceptd, timeout)) == 1) {
++ #if	defined(C_WINDOWS) || defined(C_BEOS)
++ 	bread = recv(acceptd, buff, btread, 0);
++ #else
+  	bread = read(acceptd, buff, btread);
++ #endif
+  	if(bread <= 0)
+  	    break;
+  	size += bread;
+  
+  	if(writen(tmpd, buff, bread) != bread) {
+  	    shutdown(sockfd, 2);
++ #ifdef	C_WINDOWS
++ 		closesocket(sockfd);
++ 		closesocket(acceptd);
++ #else
+  	    close(sockfd);
+  	    close(acceptd);
++ #endif
+  	    mdprintf(odesc, "Temporary file -> write ERROR\n");
+  	    logg("!ScanStream %d: Can't write to temporary file.\n", port);
+  	    close(tmpd);
+***************
+*** 453,460 ****
+--- 506,518 ----
+  	unlink(tmpname);
+      free(tmpname);
+  
++ #ifdef	C_WINDOWS
++ 	closesocket(acceptd);
++ 	closesocket(sockfd);
++ #else
+      close(acceptd);
+      close(sockfd);
++ #endif
+  
+      if(ret == CL_VIRUS) {
+  	mdprintf(odesc, "stream: %s FOUND\n", virname);
 *** /home/njh/src/clamav-devel/./clamdscan/clamdscan.c	2006-05-15 19:30:18.000000000 +0100
 --- ./clamdscan/clamdscan.c	2006-08-04 11:37:50.000000000 +0100
 ***************
@@ -4943,7 +5141,7 @@
   		if (strcmp (dent->d_name, ".") && strcmp (dent->d_name, "..")) {
   		    /* build the full name */
   		    fname = calloc (strlen (dirname) + strlen (dent->d_name) + 2, sizeof (char));
-*** /home/njh/src/clamav-devel/./sigtool/sigtool.c	2006-08-09 14:15:48.000000000 +0100
+*** /home/njh/src/clamav-devel/./sigtool/sigtool.c	2006-08-13 17:01:45.000000000 +0100
 --- ./sigtool/sigtool.c	2006-08-04 13:50:52.000000000 +0100
 ***************
 *** 16,22 ****
@@ -4995,7 +5193,50 @@
   #ifdef HAVE_TERMIOS_H
   #include <termios.h>
 ***************
-*** 798,804 ****
+*** 319,325 ****
+  
+  static int build(struct optstruct *opt)
+  {
+! 	int ret, inc = 1, dn;
+  	size_t bytes;
+  	unsigned int sigs = 0, oldsigs = 0, lines = 0, version, real_header;
+  	struct stat foo;
+--- 328,334 ----
+  
+  static int build(struct optstruct *opt)
+  {
+! 	int ret, inc = 1;
+  	size_t bytes;
+  	unsigned int sigs = 0, oldsigs = 0, lines = 0, version, real_header;
+  	struct stat foo;
+***************
+*** 484,498 ****
+  				 "daily.fp", "daily.info", "main.info", NULL };
+  		args[2] = tarfile;
+  		if(!opt_check(opt, "debug")) {
+! 		    if((dn = open("/dev/null", O_WRONLY)) == -1) {
+! 			mprintf("^Cannot open /dev/null\n");
+! 			close(1);
+! 			close(2);
+! 		    } else {
+! 			dup2(dn, 1);
+! 			dup2(dn, 2);
+! 			close(dn);
+! 		    }
+  		}
+  		execv("/bin/tar", args);
+  		mprintf("!build: Can't execute tar\n");
+--- 493,500 ----
+  				 "daily.fp", "daily.info", "main.info", NULL };
+  		args[2] = tarfile;
+  		if(!opt_check(opt, "debug")) {
+! 		    close(1);
+! 		    close(2);
+  		}
+  		execv("/bin/tar", args);
+  		mprintf("!build: Can't execute tar\n");
+***************
+*** 805,811 ****
       }
   
       while((dent = readdir(dd))) {
@@ -5012,7 +5253,7 @@
   #endif
   	{
 ***************
-*** 809,815 ****
+*** 816,822 ****
   	     cli_strbcasestr(dent->d_name, ".sdb") ||
   	     cli_strbcasestr(dent->d_name, ".zmd") ||
   	     cli_strbcasestr(dent->d_name, ".rmd") ||
@@ -5022,7 +5263,7 @@
   		dbfile = (char *) mcalloc(strlen(dent->d_name) + strlen(dirname) + 2, sizeof(char));
 --- 818,823 ----
 ***************
-*** 844,857 ****
+*** 851,864 ****
   	const char *tmpdir;
   
   
@@ -5039,7 +5280,7 @@
   	return -1;
 --- 852,857 ----
 ***************
-*** 899,905 ****
+*** 906,912 ****
   
   	/* list extracted directory */
   	if(listdir(dir) == -1) {
@@ -5056,7 +5297,7 @@
   	    free(dir);
   	    return -1;
 ***************
-*** 1308,1314 ****
+*** 1315,1321 ****
       }
   
       while((dent = readdir(dd))) {
@@ -5072,3 +5313,41 @@
   	if(dent->d_ino)
   #endif
   	{
+***************
+*** 1483,1489 ****
+  {
+  	int ret = 1;
+          struct optstruct *opt;
+- 	struct stat sb;
+  	const char *short_options = "hvVb:i:u:l::r:d:";
+  	static struct option long_options[] = {
+  	    {"help", 0, 0, 'h'},
+--- 1476,1481 ----
+***************
+*** 1564,1578 ****
+  	    mprintf("!--verify-cdiff requires two arguments\n");
+  	    ret = -1;
+  	} else {
+! 	    if(stat(opt->filename, &sb) == -1) {
+! 		mprintf("--verify-cdiff: Can't get status of %s\n", opt->filename);
+! 		ret = -1;
+! 	    } else {
+! 		if(S_ISDIR(sb.st_mode))
+! 		    ret = verifycdiff(opt_arg(opt, "verify-cdiff"), NULL, opt->filename);
+! 		else
+! 		    ret = verifycdiff(opt_arg(opt, "verify-cdiff"), opt->filename, NULL);
+! 	    }
+  	}
+      } else
+  	help();
+--- 1556,1565 ----
+  	    mprintf("!--verify-cdiff requires two arguments\n");
+  	    ret = -1;
+  	} else {
+! 	    if(cli_strbcasestr(opt->filename, ".cvd"))
+! 		ret = verifycdiff(opt_arg(opt, "verify-cdiff"), opt->filename, NULL);
+! 	    else
+! 		ret = verifycdiff(opt_arg(opt, "verify-cdiff"), NULL, opt->filename);
+  	}
+      } else
+  	help();
