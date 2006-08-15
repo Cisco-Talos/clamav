@@ -1,3 +1,7 @@
+Wed Aug 16 00:41:30 CEST 2006 (tk)
+----------------------------------
+  * freshclam/manager.c: correctly remove patches after applying
+
 Tue Aug 15 16:07:11 BST 2006 (njh)
 ----------------------------------
   * libclamav/pdf.c:	Windows fix: handle more than 26 temporary files in
