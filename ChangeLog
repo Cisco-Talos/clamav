@@ -1,3 +1,8 @@
+Tue Aug 15 16:07:11 BST 2006 (njh)
+----------------------------------
+  * libclamav/pdf.c:	Windows fix: handle more than 26 temporary files in
+				a temporary directory
+
 Sun Aug 13 22:13:45 CEST 2006 (tk)
 ----------------------------------
   * configure: add --enable-experimental switch
