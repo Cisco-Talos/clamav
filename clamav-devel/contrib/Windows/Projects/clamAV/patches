@@ -791,7 +791,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -799,7 +799,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -810,7 +810,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -818,7 +818,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -829,8 +829,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.4  2006/08/14 10:02:05  njh
-   * Merge latest CVS to MSVC
+   * Revision 1.5  2006/08/15 10:06:39  njh
+   * Handle Windows format filename in ole2_extract.c
    *
 !  * Revision 1.22  2006/07/31 09:19:52  njh
 !  * Use MAP_PRIVATE
@@ -841,8 +841,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.4  2006/08/14 10:02:05  njh
-   * Merge latest CVS to MSVC
+   * Revision 1.5  2006/08/15 10:06:39  njh
+   * Handle Windows format filename in ole2_extract.c
    *
 !  * Revision 1.1  2006/08/11 20:05:13  njh
 !  * First Draft
@@ -854,7 +854,7 @@
    * First draft of binhex.c
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #include "clamav.h"
   
@@ -862,7 +862,7 @@
    * First draft of binhex.c
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #include "clamav.h"
   
@@ -919,8 +919,8 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.4  2006/08/14 10:02:05  njh
-   * Merge latest CVS to MSVC
+   * Revision 1.5  2006/08/15 10:06:39  njh
+   * Handle Windows format filename in ole2_extract.c
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -936,8 +936,8 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.4  2006/08/14 10:02:05  njh
-   * Merge latest CVS to MSVC
+   * Revision 1.5  2006/08/15 10:06:39  njh
+   * Handle Windows format filename in ole2_extract.c
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -985,7 +985,7 @@
    *
    * Created 25 August 1985 by John Gilmore, ihnp4!hoptoad!gnu.
    *
-!  * $Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $ # checkin only
+!  * $Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $ # checkin only
    */
   
   /*
@@ -993,7 +993,7 @@
    *
    * Created 25 August 1985 by John Gilmore, ihnp4!hoptoad!gnu.
    *
-!  * $Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $ # checkin only
+!  * $Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $ # checkin only
    */
   
   /*
@@ -1004,7 +1004,7 @@
    * Public Domain version written 26 Aug 1985 John Gilmore (ihnp4!hoptoad!gnu).
    *
    * @(#)list.c 1.18 9/23/86 Public Domain - gnu
-!  * $Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $
+!  * $Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $
    *
    * Comments changed and some code/comments reformatted
    * for file command by Ian Darwin.
@@ -1012,7 +1012,7 @@
    * Public Domain version written 26 Aug 1985 John Gilmore (ihnp4!hoptoad!gnu).
    *
    * @(#)list.c 1.18 9/23/86 Public Domain - gnu
-!  * $Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $
+!  * $Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $
    *
    * Comments changed and some code/comments reformatted
    * for file command by Ian Darwin.
@@ -1411,50 +1411,6 @@
   	return CL_EOPEN;
   
       ret = cl_scandesc(fd, virname, scanned, engine, limits, options);
-*** /home/njh/src/clamav-devel/./libclamav/ole2_extract.c	2006-04-09 20:59:27.000000000 +0100
---- ./libclamav/ole2_extract.c	2006-07-31 20:43:16.000000000 +0100
-***************
-*** 30,39 ****
-  #include <fcntl.h>
-  #include <stdio.h>
-  #include <string.h>
-  #include <unistd.h>
-  #include <ctype.h>
-  #include <stdlib.h>
-! #include <clamav.h>
-  
-  #if HAVE_MMAP
-  #if HAVE_SYS_MMAN_H
---- 30,41 ----
-  #include <fcntl.h>
-  #include <stdio.h>
-  #include <string.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  #include <ctype.h>
-  #include <stdlib.h>
-! #include "clamav.h"
-  
-  #if HAVE_MMAP
-  #if HAVE_SYS_MMAN_H
-***************
-*** 605,611 ****
-  	sprintf(newname, "%s/%s", dir, name);
-  	free(name);
-  
-! 	ofd = open(newname, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
-  	if (ofd < 0) {
-  		cli_errmsg("ERROR: failed to create file: %s\n", newname);
-  		free(newname);
---- 607,613 ----
-  	sprintf(newname, "%s/%s", dir, name);
-  	free(name);
-  
-! 	ofd = open(newname, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
-  	if (ofd < 0) {
-  		cli_errmsg("ERROR: failed to create file: %s\n", newname);
-  		free(newname);
 *** /home/njh/src/clamav-devel/./libclamav/vba_extract.c	2006-08-11 20:39:24.000000000 +0100
 --- ./libclamav/vba_extract.c	2006-08-07 19:05:26.000000000 +0100
 ***************
@@ -1571,8 +1527,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.4  2006/08/14 10:02:05  njh
-   * Merge latest CVS to MSVC
+   * Revision 1.5  2006/08/15 10:06:39  njh
+   * Handle Windows format filename in ole2_extract.c
    *
 !  * Revision 1.30  2006/07/26 09:39:08  njh
 !  * Fix compilation error on Windows with MSVC
@@ -1583,8 +1539,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.4  2006/08/14 10:02:05  njh
-   * Merge latest CVS to MSVC
+   * Revision 1.5  2006/08/15 10:06:39  njh
+   * Handle Windows format filename in ole2_extract.c
    *
 !  * Revision 1.1  2006/08/11 20:05:13  njh
 !  * First Draft
@@ -1596,7 +1552,7 @@
    * First draft
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #include <stdio.h>
   #include <errno.h>
@@ -1604,7 +1560,7 @@
    * First draft
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #include <stdio.h>
   #include <errno.h>
@@ -1664,8 +1620,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.4  2006/08/14 10:02:05  njh
-   * Merge latest CVS to MSVC
+   * Revision 1.5  2006/08/15 10:06:39  njh
+   * Handle Windows format filename in ole2_extract.c
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -1680,7 +1636,7 @@
    * TODO: Remove the vcard handling
    * FIXME: The code does little error checking of OOM scenarios
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"	/* must come first */
@@ -1688,7 +1644,7 @@
    * TODO: Remove the vcard handling
    * FIXME: The code does little error checking of OOM scenarios
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"	/* must come first */
@@ -1832,7 +1788,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1840,7 +1796,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1851,7 +1807,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #include "clamav.h"
   
@@ -1859,7 +1815,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #include "clamav.h"
   
@@ -1871,8 +1827,8 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.4  2006/08/14 10:02:05  njh
-   * Merge latest CVS to MSVC
+   * Revision 1.5  2006/08/15 10:06:39  njh
+   * Handle Windows format filename in ole2_extract.c
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -1885,7 +1841,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1893,7 +1849,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1905,8 +1861,8 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.4  2006/08/14 10:02:05  njh
-   * Merge latest CVS to MSVC
+   * Revision 1.5  2006/08/15 10:06:39  njh
+   * Handle Windows format filename in ole2_extract.c
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -1919,7 +1875,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1927,7 +1883,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1939,8 +1895,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.4  2006/08/14 10:02:05  njh
-   * Merge latest CVS to MSVC
+   * Revision 1.5  2006/08/15 10:06:39  njh
+   * Handle Windows format filename in ole2_extract.c
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -1955,7 +1911,7 @@
   #include "clamav-config.h"
   #endif
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #include <stdio.h>
   #include <fcntl.h>
@@ -1963,7 +1919,7 @@
   #include "clamav-config.h"
   #endif
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #include <stdio.h>
   #include <fcntl.h>
@@ -1974,7 +1930,7 @@
    *  along with this program; if not, write to the Free Software
    *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1982,7 +1938,7 @@
    *  along with this program; if not, write to the Free Software
    *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.4 2006/08/14 10:02:05 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -2000,6 +1956,93 @@
   		p = q;
   
 --- 181,186 ----
+*** /home/njh/src/clamav-devel/./libclamav/ole2_extract.c	2006-04-09 20:59:27.000000000 +0100
+--- ./libclamav/ole2_extract.c	2006-08-15 10:14:26.000000000 +0100
+***************
+*** 30,39 ****
+  #include <fcntl.h>
+  #include <stdio.h>
+  #include <string.h>
+  #include <unistd.h>
+  #include <ctype.h>
+  #include <stdlib.h>
+! #include <clamav.h>
+  
+  #if HAVE_MMAP
+  #if HAVE_SYS_MMAN_H
+--- 30,41 ----
+  #include <fcntl.h>
+  #include <stdio.h>
+  #include <string.h>
++ #ifdef	HAVE_UNISTD_H
+  #include <unistd.h>
++ #endif
+  #include <ctype.h>
+  #include <stdlib.h>
+! #include "clamav.h"
+  
+  #if HAVE_MMAP
+  #if HAVE_SYS_MMAN_H
+***************
+*** 135,141 ****
+  	j=0;
+  	/* size-2 to ignore trailing NULL */
+  	for (i=0 ; i < size-2; i+=2) {
+! 		if (isprint(name[i])) {
+  			newname[j++] = name[i];
+  		} else {
+  			if (name[i] < 10 && name[i] >= 0) {
+--- 137,143 ----
+  	j=0;
+  	/* size-2 to ignore trailing NULL */
+  	for (i=0 ; i < size-2; i+=2) {
+! 		if((!(name[i]&0x80)) && isprint(name[i])) {
+  			newname[j++] = name[i];
+  		} else {
+  			if (name[i] < 10 && name[i] >= 0) {
+***************
+*** 587,594 ****
+  #ifdef  C_DARWIN
+                          *newname &= '\177';
+  #endif
+! #if     defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32) || defined(C_OS2)
+!                         if(strchr("/*?<>|\"+=,;: ", *newname))
+  #else
+                          if(*newname == '/')
+  #endif
+--- 589,596 ----
+  #ifdef  C_DARWIN
+                          *newname &= '\177';
+  #endif
+! #if     defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32) || defined(C_OS2) || defined(C_WINDOWS)
+!                         if(strchr("/*?<>|\"+=,;:\\ ", *newname))
+  #else
+                          if(*newname == '/')
+  #endif
+***************
+*** 602,611 ****
+  		free(name);
+  		return FALSE;
+  	}
+  	sprintf(newname, "%s/%s", dir, name);
+  	free(name);
+  
+! 	ofd = open(newname, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
+  	if (ofd < 0) {
+  		cli_errmsg("ERROR: failed to create file: %s\n", newname);
+  		free(newname);
+--- 604,614 ----
+  		free(name);
+  		return FALSE;
+  	}
++ 
+  	sprintf(newname, "%s/%s", dir, name);
+  	free(name);
+  
+! 	ofd = open(newname, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
+  	if (ofd < 0) {
+  		cli_errmsg("ERROR: failed to create file: %s\n", newname);
+  		free(newname);
 *** /home/njh/src/clamav-devel/./clamscan/clamscan.c	2006-05-15 19:30:18.000000000 +0100
 --- ./clamscan/clamscan.c	2006-08-04 10:38:10.000000000 +0100
 ***************
@@ -3481,7 +3524,7 @@
   
   void help(void)
 *** /home/njh/src/clamav-devel/./freshclam/manager.c	2006-08-02 14:48:27.000000000 +0100
---- ./freshclam/manager.c	2006-08-11 14:50:54.000000000 +0100
+--- ./freshclam/manager.c	2006-08-15 08:49:16.000000000 +0100
 ***************
 *** 20,25 ****
 --- 20,29 ----
@@ -3651,6 +3694,23 @@
       close(fd);
   
       if(totalsize > 0)
+***************
+*** 920,926 ****
+  	    if(ret)
+  		return ret;
+  	} else {
+! 	    unlink(dbfile);
+  	}
+      }
+  
+--- 952,958 ----
+  	    if(ret)
+  		return ret;
+  	} else {
+! 		unlink(dbfile);
+  	}
+      }
+  
 *** /home/njh/src/clamav-devel/./clamd/clamd.c	2006-05-15 19:30:18.000000000 +0100
 --- ./clamd/clamd.c	2006-08-04 10:38:10.000000000 +0100
 ***************
