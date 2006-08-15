@@ -699,7 +699,6 @@ static int getpatch(const char *dbname, int version, const char *hostname, char 
         logg("!getpatch: Can't download %s from %s (IP: %s)\n", patch, hostname, ip);
         unlink(tempname);
         free(tempname);
-	unlink(patch);
 	chdir(olddir);
         return ret;
     }
@@ -708,7 +707,6 @@ static int getpatch(const char *dbname, int version, const char *hostname, char 
 	logg("!getpatch: Can't open %s for reading\n", tempname);
         unlink(tempname);
         free(tempname);
-	unlink(patch);
 	chdir(olddir);
 	return 55;
     }
@@ -718,13 +716,13 @@ static int getpatch(const char *dbname, int version, const char *hostname, char 
 	close(fd);
         unlink(tempname);
         free(tempname);
-	unlink(patch);
 	chdir(olddir);
 	return 70; /* FIXME */
     }
 
     close(fd);
-    unlink(patch);
+    unlink(tempname);
+    free(tempname);
     chdir(olddir);
     return 0;
 }
