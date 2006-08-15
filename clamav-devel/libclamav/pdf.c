@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.53 2006/08/11 21:10:58 njh Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.54 2006/08/15 15:06:25 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -43,6 +43,10 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.53 2006/08/11 21:10:58 njh Exp $";
 #include <zlib.h>
 #endif
 
+#ifdef	C_WINDOWS
+#include <io.h>
+#endif
+
 #include "mbox.h"
 #include "pdf.h"
 
@@ -68,7 +72,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	int rc = CL_CLEAN;
 	struct table *md5table;
 
-	cli_dbgmsg("in cli_pdf()\n");
+	cli_dbgmsg("in cli_pdf(%s)\n", dir);
 
 	if(fstat(desc, &statb) < 0)
 		return CL_EOPEN;
@@ -181,11 +185,6 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 			break;
 
 		/*object_number = atoi(q);*/
-
-		/*
-		 * FIXME: this assumes sizeof(int) == sizeof(char *), which
-		 *	isn't true on 64 bits machines
-		 */
 		bytesleft -= (q - p);
 		p = q;
 
@@ -284,8 +283,22 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		snprintf(fullname, sizeof(fullname), "%s/pdfXXXXXX", dir);
 #if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN)
 		fout = mkstemp(fullname);
-#else
-		(void)mktemp(fullname);
+#elif	defined(C_WINDOWS)
+		if(_mktemp(fullname) == NULL) {
+			/* mktemp only allows 26 files */
+			char *name = cli_gentemp(dir);
+			if(name == NULL)
+				fout = -1;
+			else {
+				strcpy(fullname, name);
+				free(name);
+				fout = open(fullname,
+					O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
+			}
+		} else
+			fout = open(fullname, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
+#else	
+		mktemp(fullname);
 		fout = open(fullname, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
 #endif
 
