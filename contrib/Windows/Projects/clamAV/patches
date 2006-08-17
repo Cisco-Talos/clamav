@@ -564,71 +564,6 @@
   
   #ifndef MIN
   #define MIN(a, b)	(((a) < (b)) ? (a) : (b))
-*** /home/njh/src/clamav-devel/./libclamav/chmunpack.c	2006-04-09 20:59:27.000000000 +0100
---- ./libclamav/chmunpack.c	2006-07-31 20:43:48.000000000 +0100
-***************
-*** 27,33 ****
---- 27,35 ----
-  #include <sys/types.h>
-  #include <sys/stat.h>
-  #include <fcntl.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  #include <string.h>
-  
-  #if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK)
-***************
-*** 831,837 ****
-  	mf_in.name = strdup("input");
-  	
-  	snprintf(filename, 1024, "%s/clamav-unchm.bin", dirname);
-! 	mf_out.desc = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
-  	if (!mf_out.desc) {
-  		cli_dbgmsg("open failed\n", filename);
-  		free(mf_in.name);
---- 833,839 ----
-  	mf_in.name = strdup("input");
-  	
-  	snprintf(filename, 1024, "%s/clamav-unchm.bin", dirname);
-! 	mf_out.desc = open(filename, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
-  	if (!mf_out.desc) {
-  		cli_dbgmsg("open failed\n", filename);
-  		free(mf_in.name);
-***************
-*** 920,926 ****
-  	mf_out.fh = NULL;
-  	
-  	/* Reopen the file for reading */
-! 	mf_out.desc = open(filename, O_RDONLY);
-  	if (mf_out.desc < 0) {
-  		cli_dbgmsg("re-open output failed\n");
-  		goto abort;
---- 922,928 ----
-  	mf_out.fh = NULL;
-  	
-  	/* Reopen the file for reading */
-! 	mf_out.desc = open(filename, O_RDONLY|O_BINARY);
-  	if (mf_out.desc < 0) {
-  		cli_dbgmsg("re-open output failed\n");
-  		goto abort;
-***************
-*** 942,948 ****
-  		}
-  		
-  		snprintf(filename, 1024, "%s/%d-%llu.chm", dirname, count, entry->offset);
-! 		ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
-  		if (ofd < 0) {
-  			entry = entry->next;
-  			continue;
---- 944,950 ----
-  		}
-  		
-  		snprintf(filename, 1024, "%s/%d-%llu.chm", dirname, count, entry->offset);
-! 		ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
-  		if (ofd < 0) {
-  			entry = entry->next;
-  			continue;
 *** /home/njh/src/clamav-devel/./libclamav/readdb.c	2006-07-28 18:51:14.000000000 +0100
 --- ./libclamav/readdb.c	2006-08-03 13:40:38.000000000 +0100
 ***************
@@ -791,7 +726,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -799,26 +734,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
-*** /home/njh/src/clamav-devel/./libclamav/blob.c	2006-07-31 20:31:08.000000000 +0100
---- ./libclamav/blob.c	2006-08-11 21:05:12.000000000 +0100
-***************
-*** 16,22 ****
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
-   */
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
---- 16,22 ----
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
-   */
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -829,8 +745,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.5  2006/08/15 10:06:39  njh
-   * Handle Windows format filename in ole2_extract.c
+   * Revision 1.6  2006/08/17 17:27:01  njh
+   * MSVC has the pack pragma
    *
 !  * Revision 1.22  2006/07/31 09:19:52  njh
 !  * Use MAP_PRIVATE
@@ -841,8 +757,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.5  2006/08/15 10:06:39  njh
-   * Handle Windows format filename in ole2_extract.c
+   * Revision 1.6  2006/08/17 17:27:01  njh
+   * MSVC has the pack pragma
    *
 !  * Revision 1.1  2006/08/11 20:05:13  njh
 !  * First Draft
@@ -854,7 +770,7 @@
    * First draft of binhex.c
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
   
   #include "clamav.h"
   
@@ -862,7 +778,7 @@
    * First draft of binhex.c
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
   
   #include "clamav.h"
   
@@ -919,8 +835,8 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.5  2006/08/15 10:06:39  njh
-   * Handle Windows format filename in ole2_extract.c
+   * Revision 1.6  2006/08/17 17:27:01  njh
+   * MSVC has the pack pragma
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -936,8 +852,8 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.5  2006/08/15 10:06:39  njh
-   * Handle Windows format filename in ole2_extract.c
+   * Revision 1.6  2006/08/17 17:27:01  njh
+   * MSVC has the pack pragma
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -985,7 +901,7 @@
    *
    * Created 25 August 1985 by John Gilmore, ihnp4!hoptoad!gnu.
    *
-!  * $Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $ # checkin only
+!  * $Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $ # checkin only
    */
   
   /*
@@ -993,7 +909,7 @@
    *
    * Created 25 August 1985 by John Gilmore, ihnp4!hoptoad!gnu.
    *
-!  * $Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $ # checkin only
+!  * $Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $ # checkin only
    */
   
   /*
@@ -1004,7 +920,7 @@
    * Public Domain version written 26 Aug 1985 John Gilmore (ihnp4!hoptoad!gnu).
    *
    * @(#)list.c 1.18 9/23/86 Public Domain - gnu
-!  * $Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $
+!  * $Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $
    *
    * Comments changed and some code/comments reformatted
    * for file command by Ian Darwin.
@@ -1012,7 +928,7 @@
    * Public Domain version written 26 Aug 1985 John Gilmore (ihnp4!hoptoad!gnu).
    *
    * @(#)list.c 1.18 9/23/86 Public Domain - gnu
-!  * $Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $
+!  * $Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $
    *
    * Comments changed and some code/comments reformatted
    * for file command by Ian Darwin.
@@ -1527,8 +1443,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.5  2006/08/15 10:06:39  njh
-   * Handle Windows format filename in ole2_extract.c
+   * Revision 1.6  2006/08/17 17:27:01  njh
+   * MSVC has the pack pragma
    *
 !  * Revision 1.30  2006/07/26 09:39:08  njh
 !  * Fix compilation error on Windows with MSVC
@@ -1539,8 +1455,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.5  2006/08/15 10:06:39  njh
-   * Handle Windows format filename in ole2_extract.c
+   * Revision 1.6  2006/08/17 17:27:01  njh
+   * MSVC has the pack pragma
    *
 !  * Revision 1.1  2006/08/11 20:05:13  njh
 !  * First Draft
@@ -1552,7 +1468,7 @@
    * First draft
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
   
   #include <stdio.h>
   #include <errno.h>
@@ -1560,7 +1476,7 @@
    * First draft
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
   
   #include <stdio.h>
   #include <errno.h>
@@ -1620,8 +1536,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.5  2006/08/15 10:06:39  njh
-   * Handle Windows format filename in ole2_extract.c
+   * Revision 1.6  2006/08/17 17:27:01  njh
+   * MSVC has the pack pragma
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -1636,7 +1552,7 @@
    * TODO: Remove the vcard handling
    * FIXME: The code does little error checking of OOM scenarios
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"	/* must come first */
@@ -1644,7 +1560,7 @@
    * TODO: Remove the vcard handling
    * FIXME: The code does little error checking of OOM scenarios
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"	/* must come first */
@@ -1720,48 +1636,6 @@
   }
   
   static int32_t
-*** /home/njh/src/clamav-devel/./libclamav/unzip.c	2006-06-17 22:00:44.000000000 +0100
---- ./libclamav/unzip.c	2006-07-26 10:56:26.000000000 +0100
-***************
-*** 31,39 ****
-  #include <zlib.h>
-  #include <sys/types.h>
-  #include <sys/stat.h>
-  #include <unistd.h>
-  #include <fcntl.h>
-- #include <unistd.h>
-  
-  #include "clamav.h"
-  #include "others.h"
---- 31,40 ----
-  #include <zlib.h>
-  #include <sys/types.h>
-  #include <sys/stat.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  #include <fcntl.h>
-  
-  #include "clamav.h"
-  #include "others.h"
-*** /home/njh/src/clamav-devel/./libclamav/unzip.h	2006-05-30 14:00:04.000000000 +0100
---- ./libclamav/unzip.h	2006-07-26 10:57:52.000000000 +0100
-***************
-*** 34,39 ****
---- 34,46 ----
-  
-  #include "cltypes.h"
-  
-+ #ifndef HAVE_ATTRIB_PACKED
-+ #define __attribute__(x)
-+ #endif
-+ 
-+ #ifdef HAVE_PRAGMA_PACK
-+ #pragma pack(1)
-+ #endif
-  
-  /******** Zip format structures *********/
-  
 *** /home/njh/src/clamav-devel/./libclamav/matcher-ac.h	2006-04-09 20:59:27.000000000 +0100
 --- ./libclamav/matcher-ac.h	2006-07-28 13:54:20.000000000 +0100
 ***************
@@ -1788,7 +1662,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1796,7 +1670,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1807,7 +1681,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
   
   #include "clamav.h"
   
@@ -1815,7 +1689,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
   
   #include "clamav.h"
   
@@ -1827,8 +1701,8 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.5  2006/08/15 10:06:39  njh
-   * Handle Windows format filename in ole2_extract.c
+   * Revision 1.6  2006/08/17 17:27:01  njh
+   * MSVC has the pack pragma
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -1841,7 +1715,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1849,7 +1723,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1861,8 +1735,8 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.5  2006/08/15 10:06:39  njh
-   * Handle Windows format filename in ole2_extract.c
+   * Revision 1.6  2006/08/17 17:27:01  njh
+   * MSVC has the pack pragma
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -1875,7 +1749,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1883,7 +1757,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1895,8 +1769,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.5  2006/08/15 10:06:39  njh
-   * Handle Windows format filename in ole2_extract.c
+   * Revision 1.6  2006/08/17 17:27:01  njh
+   * MSVC has the pack pragma
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -1911,7 +1785,7 @@
   #include "clamav-config.h"
   #endif
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
   
   #include <stdio.h>
   #include <fcntl.h>
@@ -1919,43 +1793,10 @@
   #include "clamav-config.h"
   #endif
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
   
   #include <stdio.h>
   #include <fcntl.h>
-*** /home/njh/src/clamav-devel/./libclamav/pdf.c	2006-08-11 22:10:58.000000000 +0100
---- ./libclamav/pdf.c	2006-08-11 21:38:54.000000000 +0100
-***************
-*** 15,21 ****
-   *  along with this program; if not, write to the Free Software
-   *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-   */
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
---- 15,21 ----
-   *  along with this program; if not, write to the Free Software
-   *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-   */
-! static	char	const	rcsid[] = "$Id: patches,v 1.5 2006/08/15 10:06:39 njh Exp $";
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
-***************
-*** 181,191 ****
-  			break;
-  
-  		/*object_number = atoi(q);*/
-- 
-- 		/*
-- 		 * FIXME: this assumes sizeof(int) == sizeof(char *), which
-- 		 *	isn't true on 64 bits machines
-- 		 */
-  		bytesleft -= (q - p);
-  		p = q;
-  
---- 181,186 ----
 *** /home/njh/src/clamav-devel/./libclamav/ole2_extract.c	2006-04-09 20:59:27.000000000 +0100
 --- ./libclamav/ole2_extract.c	2006-08-15 10:14:26.000000000 +0100
 ***************
@@ -2043,6 +1884,151 @@
   	if (ofd < 0) {
   		cli_errmsg("ERROR: failed to create file: %s\n", newname);
   		free(newname);
+*** /home/njh/src/clamav-devel/./libclamav/blob.c	2006-07-31 20:31:08.000000000 +0100
+--- ./libclamav/blob.c	2006-08-15 14:27:26.000000000 +0100
+***************
+*** 16,22 ****
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+--- 16,22 ----
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+*** /home/njh/src/clamav-devel/./libclamav/pdf.c	2006-08-15 16:06:25.000000000 +0100
+--- ./libclamav/pdf.c	2006-08-15 16:04:36.000000000 +0100
+***************
+*** 15,21 ****
+   *  along with this program; if not, write to the Free Software
+   *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+--- 15,21 ----
+   *  along with this program; if not, write to the Free Software
+   *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+*** /home/njh/src/clamav-devel/./libclamav/unzip.h	2006-05-30 14:00:04.000000000 +0100
+--- ./libclamav/unzip.h	2006-08-17 17:35:12.000000000 +0100
+***************
+*** 34,39 ****
+--- 34,46 ----
+  
+  #include "cltypes.h"
+  
++ #ifndef HAVE_ATTRIB_PACKED
++ #define __attribute__(x)
++ #endif
++ 
++ #ifdef HAVE_PRAGMA_PACK
++ #pragma pack(1)
++ #endif
+  
+  /******** Zip format structures *********/
+  
+*** /home/njh/src/clamav-devel/./libclamav/chmunpack.c	2006-04-09 20:59:27.000000000 +0100
+--- ./libclamav/chmunpack.c	2006-08-17 17:35:12.000000000 +0100
+***************
+*** 27,33 ****
+--- 27,35 ----
+  #include <sys/types.h>
+  #include <sys/stat.h>
+  #include <fcntl.h>
++ #ifdef	HAVE_UNISTD_H
+  #include <unistd.h>
++ #endif
+  #include <string.h>
+  
+  #if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK)
+***************
+*** 831,837 ****
+  	mf_in.name = strdup("input");
+  	
+  	snprintf(filename, 1024, "%s/clamav-unchm.bin", dirname);
+! 	mf_out.desc = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
+  	if (!mf_out.desc) {
+  		cli_dbgmsg("open failed\n", filename);
+  		free(mf_in.name);
+--- 833,839 ----
+  	mf_in.name = strdup("input");
+  	
+  	snprintf(filename, 1024, "%s/clamav-unchm.bin", dirname);
+! 	mf_out.desc = open(filename, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
+  	if (!mf_out.desc) {
+  		cli_dbgmsg("open failed\n", filename);
+  		free(mf_in.name);
+***************
+*** 920,926 ****
+  	mf_out.fh = NULL;
+  	
+  	/* Reopen the file for reading */
+! 	mf_out.desc = open(filename, O_RDONLY);
+  	if (mf_out.desc < 0) {
+  		cli_dbgmsg("re-open output failed\n");
+  		goto abort;
+--- 922,928 ----
+  	mf_out.fh = NULL;
+  	
+  	/* Reopen the file for reading */
+! 	mf_out.desc = open(filename, O_RDONLY|O_BINARY);
+  	if (mf_out.desc < 0) {
+  		cli_dbgmsg("re-open output failed\n");
+  		goto abort;
+***************
+*** 942,948 ****
+  		}
+  		
+  		snprintf(filename, 1024, "%s/%d-%llu.chm", dirname, count, entry->offset);
+! 		ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
+  		if (ofd < 0) {
+  			entry = entry->next;
+  			continue;
+--- 944,950 ----
+  		}
+  		
+  		snprintf(filename, 1024, "%s/%d-%llu.chm", dirname, count, entry->offset);
+! 		ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
+  		if (ofd < 0) {
+  			entry = entry->next;
+  			continue;
+*** /home/njh/src/clamav-devel/./libclamav/unzip.c	2006-06-17 22:00:44.000000000 +0100
+--- ./libclamav/unzip.c	2006-08-17 17:39:14.000000000 +0100
+***************
+*** 31,39 ****
+  #include <zlib.h>
+  #include <sys/types.h>
+  #include <sys/stat.h>
+  #include <unistd.h>
+  #include <fcntl.h>
+- #include <unistd.h>
+  
+  #include "clamav.h"
+  #include "others.h"
+--- 31,40 ----
+  #include <zlib.h>
+  #include <sys/types.h>
+  #include <sys/stat.h>
++ #ifdef	HAVE_UNISTD_H
+  #include <unistd.h>
++ #endif
+  #include <fcntl.h>
+  
+  #include "clamav.h"
+  #include "others.h"
 *** /home/njh/src/clamav-devel/./clamscan/clamscan.c	2006-05-15 19:30:18.000000000 +0100
 --- ./clamscan/clamscan.c	2006-08-04 10:38:10.000000000 +0100
 ***************
@@ -3523,8 +3509,8 @@
   }
   
   void help(void)
-*** /home/njh/src/clamav-devel/./freshclam/manager.c	2006-08-02 14:48:27.000000000 +0100
---- ./freshclam/manager.c	2006-08-15 08:49:16.000000000 +0100
+*** /home/njh/src/clamav-devel/./freshclam/manager.c	2006-08-17 15:23:26.000000000 +0100
+--- ./freshclam/manager.c	2006-08-17 15:23:06.000000000 +0100
 ***************
 *** 20,25 ****
 --- 20,29 ----
@@ -3695,7 +3681,34 @@
   
       if(totalsize > 0)
 ***************
-*** 920,926 ****
+*** 703,709 ****
+          return ret;
+      }
+  
+!     if((fd = open(tempname, O_RDONLY)) == -1) {
+  	logg("!getpatch: Can't open %s for reading\n", tempname);
+          unlink(tempname);
+          free(tempname);
+--- 735,741 ----
+          return ret;
+      }
+  
+!     if((fd = open(tempname, O_RDONLY|O_BINARY)) == -1) {
+  	logg("!getpatch: Can't open %s for reading\n", tempname);
+          unlink(tempname);
+          free(tempname);
+***************
+*** 716,721 ****
+--- 748,754 ----
+  	close(fd);
+          unlink(tempname);
+          free(tempname);
++ 	unlink(patch);
+  	chdir(olddir);
+  	return 70; /* FIXME */
+      }
+***************
+*** 918,924 ****
   	    if(ret)
   		return ret;
   	} else {
@@ -3703,7 +3716,7 @@
   	}
       }
   
---- 952,958 ----
+--- 951,957 ----
   	    if(ret)
   		return ret;
   	} else {
