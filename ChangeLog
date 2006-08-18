@@ -1,3 +1,8 @@
+Fri Aug 18 15:40:30 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	Handle load balancing better when one machine of the
+				cluster is down
+
 Wed Aug 16 00:41:30 CEST 2006 (tk)
 ----------------------------------
   * freshclam/manager.c: correctly remove patches after applying

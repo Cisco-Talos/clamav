@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.276 2006/08/07 06:44:52 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.277 2006/08/18 14:40:18 njh Exp $";
 
-#define	CM_VERSION	"devel-070806"
+#define	CM_VERSION	"devel-180806"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2105,7 +2105,7 @@ static int
 findServer(void)
 {
 	struct sockaddr_in *servers, *server;
-	int *socks, maxsock = 0, i, j;
+	int *socks, maxsock = -1, i, j;
 	fd_set rfds;
 	int retval;
 
@@ -2116,6 +2116,8 @@ findServer(void)
 		return 0;
 
 	servers = (struct sockaddr_in *)cli_calloc(numServers, sizeof(struct sockaddr_in));
+	if(servers == NULL)
+		return 0;
 	socks = (int *)cli_malloc(numServers * sizeof(int));
 
 	FD_ZERO(&rfds);
@@ -2190,9 +2192,10 @@ findServer(void)
 
 	free(servers);
 
-	if(maxsock == 0)
+	if(maxsock == -1) {
+		logg(_("^Couldn't establish a connection to any clamd server\n"));
 		retval = 0;
-	else {
+	} else {
 		struct timeval tv;
 
 		tv.tv_sec = readTimeout ? readTimeout : DEFAULT_TIMEOUT;
@@ -2229,9 +2232,7 @@ findServer(void)
 		}
 
 	free(socks);
-	cli_dbgmsg(_("findServer: No response from any server\n"));
-	if(use_syslog)
-		syslog(LOG_WARNING, _("findServer: No response from any server"));
+	logg(_("^findServer: No response from any server\n"));
 	return 0;
 }
 #endif
@@ -2436,7 +2437,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	if(smfi_getpriv(ctx) != NULL) {
 		/* More than one connection command, "can't happen" */
 		cli_warnmsg("clamfi_connect: called more than once\n");
-		return SMFIS_TEMPFAIL;
+		return cl_error;
 	}
 
 	if(blacklist_time == 0)
@@ -5245,6 +5246,7 @@ loadDatabase(void)
 
 		cl_cvdfree(d);
 	} else
+		/* TODO: use dbdir/daily.inc/daily.info */
 		snprintf(clamav_version, VERSION_LENGTH,
 			"ClamAV version %s, clamav-milter version %s",
 			VERSION, CM_VERSION);
