@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.277 2006/08/18 14:40:18 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.278 2006/08/19 21:35:11 njh Exp $";
 
-#define	CM_VERSION	"devel-180806"
+#define	CM_VERSION	"devel-190806"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -5236,9 +5236,16 @@ loadDatabase(void)
 	if(d) {
 		char *ptr;
 		time_t t = d->stime;
+#ifdef	HAVE_CTIME_R_2
+		char buf[26];
 
 		snprintf(clamav_version, VERSION_LENGTH,
+			"ClamAV %s/%d/%s", VERSION, d->version,
+			ctime_r(&t, buf));
+#else
+		snprintf(clamav_version, VERSION_LENGTH,
 			"ClamAV %s/%d/%s", VERSION, d->version, ctime(&t));
+#endif
 
 		/* Remove ctime's trailing \n */
 		if((ptr = strchr(clamav_version, '\n')) != NULL)

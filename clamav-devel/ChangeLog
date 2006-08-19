@@ -1,3 +1,9 @@
+Sat Aug 19 22:37:28 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	Use HAVE_CTIME_R_2 for older daily.cvd files -
+				interim implementation of a patch suggestion by
+				Mark Pizzolato
+
 Fri Aug 18 15:40:30 BST 2006 (njh)
 ----------------------------------
   * clamav-milter:	Handle load balancing better when one machine of the
