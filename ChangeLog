@@ -1,3 +1,7 @@
+Sun Aug 20 20:43:44 BST 2006 (njh)
+----------------------------------
+  * libclamav/untar.c:	Ensure a file is open before closing on error return
+
 Sat Aug 19 22:37:28 BST 2006 (njh)
 ----------------------------------
   * clamav-milter:	Use HAVE_CTIME_R_2 for older daily.cvd files -
