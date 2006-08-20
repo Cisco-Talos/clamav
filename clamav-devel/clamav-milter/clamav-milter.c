@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.278 2006/08/19 21:35:11 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.279 2006/08/20 09:20:27 njh Exp $";
 
 #define	CM_VERSION	"devel-190806"
 
@@ -5093,7 +5093,7 @@ check_and_reload_database(void)
 			}
 			break;
 		case 0:
-			logg("Database has not changed\n");
+			logg("*Database has not changed\n");
 			break;
 		default:
 			logg("Database error - %s is stopping\n", progname);
