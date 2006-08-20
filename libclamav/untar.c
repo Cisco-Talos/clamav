@@ -22,6 +22,9 @@
  *
  * Change History:
  * $Log: untar.c,v $
+ * Revision 1.31  2006/08/20 19:42:02  njh
+ * Fix error return
+ *
  * Revision 1.30  2006/07/26 09:39:08  njh
  * Fix compilation error on Windows with MSVC
  *
@@ -113,7 +116,7 @@
  * First draft
  *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.30 2006/07/26 09:39:08 njh Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.31 2006/08/20 19:42:02 njh Exp $";
 
 #include <stdio.h>
 #include <errno.h>
@@ -257,7 +260,8 @@ cli_untar(const char *dir, int desc, unsigned int posix)
 			size = octal(osize);
 			if(size < 0) {
 				cli_errmsg("Invalid size in tar header\n");
-				fclose(outfile);
+				if(outfile)
+					fclose(outfile);
 				return CL_EFORMAT;
 			}
 			cli_dbgmsg("cli_untar: size = %d\n", size);
@@ -319,7 +323,8 @@ cli_untar(const char *dir, int desc, unsigned int posix)
 			if(nwritten != nbytes) {
 				cli_errmsg("cli_untar: only wrote %d bytes to file %s (out of disc space?)\n",
 					nwritten, fullname);
-				fclose(outfile);
+				if(outfile)
+					fclose(outfile);
 				return CL_EIO;
 			}
 			size -= nbytes;
