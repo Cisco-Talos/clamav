@@ -1,3 +1,7 @@
+Wed Aug 23 07:54:15 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	--report-phish didn't work with --quarantine-dir
+
 Sun Aug 20 20:43:44 BST 2006 (njh)
 ----------------------------------
   * libclamav/untar.c:	Ensure a file is open before closing on error return
