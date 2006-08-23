@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.279 2006/08/20 09:20:27 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.280 2006/08/23 06:52:53 njh Exp $";
 
-#define	CM_VERSION	"devel-190806"
+#define	CM_VERSION	"devel-230806"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2387,9 +2387,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 
 	if((!lflag) && isLocalAddr(inet_addr(remoteIP))) {
 #ifdef	CL_DEBUG
-		if(use_syslog)
-			syslog(LOG_DEBUG, _("clamfi_connect: not scanning local messages"));
-		cli_dbgmsg(_("clamfi_connect: not scanning local messages\n"));
+		logg(_("*clamfi_connect: not scanning local messages\n"));
 #endif
 		return SMFIS_ACCEPT;
 	}
@@ -2402,13 +2400,12 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		char me[MAXHOSTNAMELEN + 1];
 
 		if(gethostname(me, sizeof(me) - 1) < 0) {
-			if(use_syslog)
-				syslog(LOG_WARNING, _("clamfi_connect: gethostname failed"));
+			logg(_("^clamfi_connect: gethostname failed"));
 			return SMFIS_CONTINUE;
 		}
+		logg("*me '%s' hostname '%s'\n", me, hostname);
 		if(strcasecmp(hostname, me) == 0) {
-			if(use_syslog)
-				syslog(LOG_NOTICE, _("Rejected email falsely claiming to be from here"));
+			logg(_("^Rejected email falsely claiming to be from here"));
 			smfi_setreply(ctx, "550", "5.7.1", _("You have claimed to be me, but you are not"));
 			broadcast(_("Forged local address detected"));
 			return SMFIS_REJECT;
@@ -2617,7 +2614,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 static sfsistat
 clamfi_helo(SMFICTX *ctx, char *helostring)
 {
-	cli_dbgmsg("HELO '%s'\n", helostring);
+	logg("HELO '%s'\n", helostring);
 
 	return SMFIS_CONTINUE;
 }
@@ -2745,6 +2742,8 @@ clamfi_eoh(SMFICTX *ctx)
 			return cl_error;
 		}
 
+#if	0
+	/* Mailing lists often say our own posts are from us */
 	if(detect_forged_local_address && privdata->from &&
 	   (!privdata->sender) && !isWhitelisted(privdata->from)) {
 		char me[MAXHOSTNAMELEN + 1];
@@ -2765,6 +2764,7 @@ clamfi_eoh(SMFICTX *ctx)
 			return SMFIS_REJECT;
 		}
 	}
+#endif
 
 	if(clamfi_send(privdata, 1, "\n") != 1) {
 		clamfi_cleanup(ctx);
@@ -3435,16 +3435,6 @@ clamfi_eom(SMFICTX *ctx)
 				syslog(LOG_WARNING, _("Can't execute '%s' to send virus notice"), cmd);
 		}
 
-		if(quarantine_dir) {
-			/*
-			 * Cleanup filename here otherwise clamfi_free() will
-			 * delete the file that we wish to keep because it
-			 * is infected
-			 */
-			free(privdata->filename);
-			privdata->filename = NULL;
-		}
-
 		if(report && (quarantine == NULL) && (!advisory) &&
 		   (strstr(virusname, "Phishing") != NULL)) {
 			for(to = privdata->to; *to; to++) {
@@ -3499,6 +3489,16 @@ clamfi_eom(SMFICTX *ctx)
 				rc = SMFIS_REJECT;	/* Delete the e-mail */
 		} else
 			rc = SMFIS_DISCARD;
+
+		if(quarantine_dir) {
+			/*
+			 * Cleanup filename here otherwise clamfi_free() will
+			 * delete the file that we wish to keep because it
+			 * is infected
+			 */
+			free(privdata->filename);
+			privdata->filename = NULL;
+		}
 
 		/*
 		 * Don't drop the message if it's been forwarded to a
