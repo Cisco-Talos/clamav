@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.282 2006/08/25 13:09:58 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.283 2006/08/25 14:39:06 njh Exp $";
 
 #define	CM_VERSION	"devel-250806"
 
@@ -175,8 +175,6 @@ typedef	unsigned int	in_addr_t;
  * TODO: Load balancing, allow local machine to talk via UNIX domain socket.
  * TODO: allow each line in the whitelist file to specify a quarantine email
  *	address
- * FIXME: The blacklist code may be leaky. Valgrind claims there isn't a leak,
- *	but ps claims there is. Be warned.
  */
 
 struct header_node_t {
@@ -2167,9 +2165,9 @@ findServer(void)
 		if(sock < 0) {
 			perror("socket");
 			do {
+				pthread_join(tids[i], NULL);
 				if(socks[i].sock >= 0)
 					close(socks[i].sock);
-				pthread_join(tids[i], NULL);
 			} while(--i >= 0);
 			free(socks);
 			free(servers);
@@ -2182,9 +2180,9 @@ findServer(void)
 		if(pthread_create(&tids[i], NULL, try_server, &socks[i]) != 0) {
 			perror("pthread_create");
 			do {
+				pthread_join(tids[i], NULL);
 				if(socks[i].sock >= 0)
 					close(socks[i].sock);
-				pthread_join(tids[i], NULL);
 			} while(--i >= 0);
 			free(socks);
 			free(servers);
@@ -2468,21 +2466,21 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		}
 		logg("*me '%s' hostname '%s'\n", me, hostname);
 		if(strcasecmp(hostname, me) == 0) {
-			logg(_("^Rejected email falsely claiming to be from here"));
+			logg(_("Rejected connexion falsely claiming to be from here\n"));
 			smfi_setreply(ctx, "550", "5.7.1", _("You have claimed to be me, but you are not"));
 			broadcast(_("Forged local address detected"));
 			return SMFIS_REJECT;
 		}
 	}
 	if(isBlacklisted(remoteIP)) {
-		if(use_syslog)
-			syslog(LOG_NOTICE, "Rejected email from blacklisted IP %s",
-				remoteIP);
+		logg("Rejected connexion from blacklisted IP %s\n", remoteIP);
+
 		/*
 		 * TODO: Option to greylist rather than blacklist, by sending
 		 *	a try again code
+		 * TODO: state *which* virus
 		 */
-		smfi_setreply(ctx, "550", "5.7.1", _("Your IP is blacklisted"));
+		smfi_setreply(ctx, "550", "5.7.1", _("Your IP is blacklisted because your machine is infected with a virus"));
 		broadcast(_("Blacklisted IP detected"));
 
 		/*
@@ -3584,7 +3582,9 @@ clamfi_eom(SMFICTX *ctx)
 		smfi_setreply(ctx, (char *)privdata->rejectCode, "5.7.1", reject);
 		broadcast(mess);
 
-		if(privdata->ip[0]) {
+		if(blacklist_time && privdata->ip[0]) {
+			logg(_("Will black list %d for %d seconds because of %s\n"),
+				privdata->ip, blacklist_time, virusname);
 			pthread_mutex_lock(&blacklist_mutex);
 			(void)tableUpdate(blacklist, privdata->ip,
 				(int)time((time_t *)0));
