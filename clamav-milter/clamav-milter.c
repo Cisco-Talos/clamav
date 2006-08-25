@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.283 2006/08/25 14:39:06 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.284 2006/08/25 14:50:09 njh Exp $";
 
 #define	CM_VERSION	"devel-250806"
 
@@ -3583,7 +3583,7 @@ clamfi_eom(SMFICTX *ctx)
 		broadcast(mess);
 
 		if(blacklist_time && privdata->ip[0]) {
-			logg(_("Will black list %d for %d seconds because of %s\n"),
+			logg(_("Will blacklist %s for %d seconds because of %s\n"),
 				privdata->ip, blacklist_time, virusname);
 			pthread_mutex_lock(&blacklist_mutex);
 			(void)tableUpdate(blacklist, privdata->ip,
