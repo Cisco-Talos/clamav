@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.280 2006/08/23 06:52:53 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.281 2006/08/25 10:21:54 njh Exp $";
 
-#define	CM_VERSION	"devel-230806"
+#define	CM_VERSION	"devel-250806"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -252,6 +252,13 @@ struct	privdata {
 static	int		createSession(unsigned int s);
 #else
 static	int		pingServer(int serverNumber);
+static	void		*try_server(void *var);
+struct	try_server_struct {
+	int	sock;
+	int	rc;
+	struct	sockaddr_in *server;
+	int	server_index;
+};
 #endif
 static	int		findServer(void);
 static	sfsistat	clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr);
@@ -520,6 +527,7 @@ static	void	mx(void);
 static	void	resolve(const char *host);
 #endif
 static	sfsistat	black_hole(const struct privdata *privdata);
+static	int	useful_header(const char *cmd);
 
 extern	short	logg_time, logg_lock, logg_verbose, logg_foreground;
 extern	int	logg_size;
@@ -2105,9 +2113,11 @@ static int
 findServer(void)
 {
 	struct sockaddr_in *servers, *server;
-	int *socks, maxsock = -1, i, j;
+	int maxsock, i, j;
 	fd_set rfds;
 	int retval;
+	pthread_t *tids;
+	struct try_server_struct *socks;
 
 	assert(tcpSocket != 0);
 	assert(numServers > 0);
@@ -2118,9 +2128,7 @@ findServer(void)
 	servers = (struct sockaddr_in *)cli_calloc(numServers, sizeof(struct sockaddr_in));
 	if(servers == NULL)
 		return 0;
-	socks = (int *)cli_malloc(numServers * sizeof(int));
-
-	FD_ZERO(&rfds);
+	socks = (struct try_server_struct *)cli_malloc(numServers * sizeof(struct try_server_struct));
 
 	if(max_children > 0) {
 		assert(n_children > 0);
@@ -2139,6 +2147,11 @@ findServer(void)
 		 */
 		j = cli_rndnum(numServers);
 
+	tids = cli_malloc(numServers * sizeof(pthread_t));
+
+	for(i = 0; i < numServers; i++)
+		socks[i].sock = -1;
+
 	for(i = 0, server = servers; i < numServers; i++, server++) {
 		int sock;
 		int server_index = (i + j) % numServers;
@@ -2149,45 +2162,53 @@ findServer(void)
 
 		logg("*findServer: try server %d\n", server_index);
 
-		sock = socks[i] = socket(AF_INET, SOCK_STREAM, 0);
+		sock = socks[i].sock = socket(AF_INET, SOCK_STREAM, 0);
 
 		if(sock < 0) {
 			perror("socket");
-			do
-				if(socks[i] >= 0)
-					close(socks[i]);
-			while(--i >= 0);
+			do {
+				if(socks[i].sock >= 0)
+					close(socks[i].sock);
+				pthread_join(tids[i], NULL);
+			} while(--i >= 0);
 			free(socks);
 			free(servers);
 			return 0;	/* Use the first server on failure */
 		}
 
-		if((connect(sock, (struct sockaddr *)server, sizeof(struct sockaddr)) < 0) ||
-		   (send(sock, "PING\n", 5, 0) < 5)) {
-#ifdef	MAXHOSTNAMELEN
-			char hostname[MAXHOSTNAMELEN + 1];
+		socks[i].server = server;
+		socks[i].server_index = server_index;
 
-			cli_strtokbuf(serverHostNames, server_index, ":", hostname);
-			if(strcmp(hostname, "127.0.0.1") == 0)
-				gethostname(hostname, sizeof(hostname));
-#else
-			char *hostname = cli_strtok(serverHostNames, server_index, ":");
-#endif
-			logg(_("^Check clamd server %s - it may be down\n"), hostname);
-			close(sock);
-#ifndef	MAXHOSTNAMELEN
-			free(hostname);
-#endif
-			broadcast(_("Check clamd server - it may be down\n"));
-			socks[i] = -1;
-			continue;
+		if(pthread_create(&tids[i], NULL, try_server, &socks[i]) != 0) {
+			perror("pthread_create");
+			do {
+				if(socks[i].sock >= 0)
+					close(socks[i].sock);
+				pthread_join(tids[i], NULL);
+			} while(--i >= 0);
+			free(socks);
+			free(servers);
+			return 0;	/* Use the first server on failure */
 		}
+	}
 
-		shutdown(sock, SHUT_WR);
+	maxsock = -1;
+	FD_ZERO(&rfds);
 
-		FD_SET(sock, &rfds);
-		if(sock > maxsock)
-			maxsock = sock;
+	for(i = 0; i < numServers; i++) {
+		struct try_server_struct *rc;
+
+		pthread_join(tids[i], &rc);
+		assert(rc->sock == socks[i].sock);
+		if(rc->rc == 0) {
+			close(rc->sock);
+			socks[i].sock = -1;
+		} else {
+			shutdown(rc->sock, SHUT_WR);
+			FD_SET(rc->sock, &rfds);
+			if(rc->sock > maxsock)
+				maxsock = rc->sock;
+		}
 	}
 
 	free(servers);
@@ -2208,8 +2229,8 @@ findServer(void)
 		perror("select");
 
 	for(i = 0; i < numServers; i++)
-		if(socks[i] >= 0)
-			close(socks[i]);
+		if(socks[i].sock >= 0)
+			close(socks[i].sock);
 
 	if(retval == 0) {
 		free(socks);
@@ -2217,13 +2238,12 @@ findServer(void)
 		return 0;
 	} else if(retval < 0) {
 		free(socks);
-		if(use_syslog)
-			syslog(LOG_ERR, _("findServer: select failed"));
+		logg(_("^findServer: select failed (maxsock = %d)\n"), maxsock);
 		return 0;
 	}
 
 	for(i = 0; i < numServers; i++)
-		if((socks[i] >= 0) && (FD_ISSET(socks[i], &rfds))) {
+		if((socks[i].sock >= 0) && (FD_ISSET(socks[i].sock, &rfds))) {
 			const int s = (i + j) % numServers;
 
 			free(socks);
@@ -2234,6 +2254,49 @@ findServer(void)
 	free(socks);
 	logg(_("^findServer: No response from any server\n"));
 	return 0;
+}
+
+/*
+ * Connecting to remote servers can take some time, so let's connect to
+ *	them in parallel. This routine is started as a thread
+ */
+static void *
+try_server(void *var)
+{
+	struct try_server_struct *s = (struct try_server_struct *)var;
+	int sock = s->sock;
+	struct sockaddr *server = (struct sockaddr *)s->server;
+	int server_index = s->server_index;
+
+	logg("*try_server: sock %d\n", sock);
+
+	if(connect(sock, server, sizeof(struct sockaddr)) < 0) {
+		perror("connect");
+		s->rc = 0;
+	} else if(send(sock, "PING\n", 5, 0) < 5) {
+		perror("send");
+		s->rc = 0;
+	} else
+		s->rc = 1;
+
+	if(s->rc == 0) {
+#ifdef	MAXHOSTNAMELEN
+		char hostname[MAXHOSTNAMELEN + 1];
+
+		cli_strtokbuf(serverHostNames, server_index, ":", hostname);
+		if(strcmp(hostname, "127.0.0.1") == 0)
+			gethostname(hostname, sizeof(hostname));
+#else
+		char *hostname = cli_strtok(serverHostNames, server_index, ":");
+#endif
+		logg(_("^Check clamd server %s - it may be down\n"), hostname);
+#ifndef	MAXHOSTNAMELEN
+		free(hostname);
+#endif
+		broadcast(_("Check clamd server - it may be down\n"));
+	}
+
+	return var;
 }
 #endif
 
@@ -2472,7 +2535,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 	struct privdata *privdata;
 	const char *mailaddr = argv[0];
 
-	logg("*clamfi_envfrom: %s", argv[0]);
+	logg("*clamfi_envfrom: %s\n", argv[0]);
 
 	if(strcmp(argv[0], "<>") == 0) {
 		mailaddr = smfi_getsymval(ctx, "{mail_addr}");
@@ -2657,29 +2720,15 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 	if(debug_level >= 9)
 		logg("*clamfi_header: %s: %s\n", headerf, headerv);
 	else
-		logg("*clamfi_header\n");
+		logg("*clamfi_header: %s\n", headerf);
 #else
-	logg("*clamfi_header\n");
+	logg("*clamfi_header: %s\n", headerf);
 #endif
 
 	/*
 	 * The DATA instruction from SMTP (RFC2821) must have been sent
 	 */
 	privdata->rejectCode = "554";
-
-	if(privdata->dataSocket == -1)
-		/*
-		 * First header - make connection with clamd
-		 */
-		if(!connect2clamd(privdata)) {
-			clamfi_cleanup(ctx);
-			return cl_error;
-		}
-
-	if(clamfi_send(privdata, 0, "%s: %s\n", headerf, headerv) <= 0) {
-		clamfi_cleanup(ctx);
-		return cl_error;
-	}
 
 	if(hflag)
 		header_list_add(privdata->headers, headerf, headerv);
@@ -2706,6 +2755,25 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 			free(privdata->sender);
 		if(headerv)
 			privdata->sender = strdup(headerv);
+	}
+
+	if(!useful_header(headerf)) {
+		logg("*Discarded the header\n");
+		return SMFIS_CONTINUE;
+	}
+
+	if(privdata->dataSocket == -1)
+		/*
+		 * First header - make connection with clamd
+		 */
+		if(!connect2clamd(privdata)) {
+			clamfi_cleanup(ctx);
+			return cl_error;
+		}
+
+	if(clamfi_send(privdata, 0, "%s: %s\n", headerf, headerv) <= 0) {
+		clamfi_cleanup(ctx);
+		return cl_error;
 	}
 
 	return SMFIS_CONTINUE;
@@ -5443,6 +5511,7 @@ verifyIncomingSocketName(const char *sockName)
  * TODO: Allow regular expressions in the addresses
  * TODO: Syntax check the contents of the files
  * TODO: Allow emails of the form "name <address>"
+ * TODO: Allow emails not of the form "<address>"
  * TODO: Assume that if a '@' is missing from the address, that all emails
  *	to that domain are to be whitelisted
  */
@@ -5792,4 +5861,24 @@ black_hole(const struct privdata *privdata)
 		return SMFIS_DISCARD;
 	}
 	return SMFIS_CONTINUE;
+}
+
+/* See also libclamav/mbox.c */
+static int
+useful_header(const char *cmd)
+{
+	if(strcasecmp(cmd, "From") == 0)
+		return 1;
+	if(strcasecmp(cmd, "Received") == 0)
+		return 1;
+	if(strcasecmp(cmd, "Content-Type") == 0)
+		return 1;
+	if(strcasecmp(cmd, "Content-Transfer-Encoding") == 0)
+		return 1;
+	if(strcasecmp(cmd, "Content-Disposition") == 0)
+		return 1;
+	if(strcasecmp(cmd, "De") == 0)
+		return 1;
+
+	return 0;
 }
