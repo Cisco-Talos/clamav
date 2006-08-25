@@ -250,13 +250,13 @@ int main(int argc, char **argv)
     if(opt_check(opt, "log")) {
 	logg_file = opt_arg(opt, "log");
 	if(logg("#--------------------------------------\n")) {
-	    mprintf("!Problem with internal logger.\n");
+	    mprintf("!Problem with internal logger (--log=%s).\n", logg_file);
 	    exit(62);
 	}
     } else if((cpt = cfgopt(copt, "UpdateLogFile"))->enabled) {
 	logg_file = cpt->strarg; 
 	if(logg("#--------------------------------------\n")) {
-	    mprintf("!Problem with internal logger.\n");
+	    mprintf("!Problem with internal logger (UpdateLogFile = %s).\n", logg_file);
 	    exit(62);
 	}
     } else
