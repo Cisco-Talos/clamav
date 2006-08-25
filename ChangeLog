@@ -1,3 +1,9 @@
+Fri Aug 25 21:23:59 CEST 2006 (tk)
+----------------------------------
+  * freshclam/manager.c: "Cache-Control: no-cache" is now disabled by default.
+			 If you're behind a broken proxy you can recompile
+			 freshclam with --enable-no-cache.
+
 Fri Aug 25 15:39:17 BST 2006 (njh)
 ----------------------------------
   * clamav-milter:	Tidy. Today's work seems to have removed the memory
