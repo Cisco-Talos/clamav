@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.327 2006/07/30 12:39:01 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.328 2006/08/25 10:10:13 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -4066,6 +4066,7 @@ print_trace(int use_syslog)
 }
 #endif
 
+/* See also clamav-milter */
 static bool
 usefulHeader(int commandNumber, const char *cmd)
 {
@@ -4077,9 +4078,9 @@ usefulHeader(int commandNumber, const char *cmd)
 		default:
 			if(strcasecmp(cmd, "From") == 0)
 				return TRUE;
-			else if(strcasecmp(cmd, "Received") == 0)
+			if(strcasecmp(cmd, "Received") == 0)
 				return TRUE;
-			else if(strcasecmp(cmd, "De") == 0)
+			if(strcasecmp(cmd, "De") == 0)
 				return TRUE;
 	}
 
