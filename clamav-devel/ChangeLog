@@ -1,3 +1,8 @@
+Fri Aug 25 14:11:05 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	Fix a problem with multiple messages on the same
+				connexion introduced earlier today
+
 Fri Aug 25 11:22:24 BST 2006 (njh)
 ----------------------------------
   * clamav-milter:	Start a separate thread for each load balancing server
