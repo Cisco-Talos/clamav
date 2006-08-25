@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.281 2006/08/25 10:21:54 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.282 2006/08/25 13:09:58 njh Exp $";
 
 #define	CM_VERSION	"devel-250806"
 
@@ -2514,6 +2514,12 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	if(privdata == NULL)
 		return cl_error;
 
+#ifdef	SESSION
+	privdata->dataSocket = -1;
+#else
+	privdata->dataSocket = privdata->cmdSocket = -1;
+#endif
+
 	if(smfi_setpriv(ctx, privdata) == MI_SUCCESS) {
 		strcpy(privdata->ip, remoteIP);
 		return SMFIS_CONTINUE;
@@ -2560,9 +2566,16 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 	if(privdata == NULL) {
 		/* More than one message on this connection */
+		/* FIXME: if the last one sent a virus we should blacklist */
 		privdata = (struct privdata *)cli_calloc(1, sizeof(struct privdata));
 		if(privdata == NULL)
 			return cl_error;
+
+#ifdef	SESSION
+		privdata->dataSocket = -1;
+#else
+		privdata->dataSocket = privdata->cmdSocket = -1;
+#endif
 
 		if(smfi_setpriv(ctx, privdata) != MI_SUCCESS) {
 			free(privdata);
@@ -2652,11 +2665,6 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			cli_dbgmsg(_("Timeout waiting for a child to die\n"));
 		}
 	}
-
-	privdata->dataSocket = -1;	/* 0.4 */
-#ifndef	SESSION
-	privdata->cmdSocket = -1;	/* 0.4 */
-#endif
 
 	/*
 	 * Rejection is via 550 until DATA is received. We know that
@@ -3903,11 +3911,11 @@ clamfi_send(struct privdata *privdata, size_t len, const char *format, ...)
 #ifdef HAVE_STRERROR_R
 					char buf[32];
 					strerror_r(errno, buf, sizeof(buf));
-					syslog(LOG_ERR,
-						_("write failure (%u bytes) to clamd: %s"),
+					logg(_("!write failure (%u bytes) to clamd: %s\n"),
 						len, buf);
 #else
-					syslog(LOG_ERR, _("write failure (%u bytes) to clamd: %s"), len, strerror(errno));
+					logg(_("!write failure (%u bytes) to clamd: %s\n"),
+						len, strerror(errno));
 #endif
 				}
 				checkClamd();
