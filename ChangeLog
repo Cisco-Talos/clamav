@@ -1,3 +1,11 @@
+Fri Aug 25 11:22:24 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	Start a separate thread for each load balancing server
+				that is being queried
+			When not in internal mode, don't send headers to clamd
+				that it will discard (cf usefulHeaders() in
+				libclamav/mbox.c)
+
 Wed Aug 23 07:54:15 BST 2006 (njh)
 ----------------------------------
   * clamav-milter:	--report-phish didn't work with --quarantine-dir
