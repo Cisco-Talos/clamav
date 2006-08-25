@@ -467,7 +467,9 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	"GET %s/%s HTTP/1.1\r\n"
 	"Host: %s\r\n%s"
 	"User-Agent: %s\r\n"
+#ifdef FRESHCLAM_NO_CACHE
 	"Cache-Control: no-cache\r\n"
+#endif
 	"Connection: close\r\n"
 	"\r\n", (remotename != NULL) ? remotename : "", srcfile, hostname, (authorization != NULL) ? authorization : "", agent);
 

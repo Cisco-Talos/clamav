@@ -84,6 +84,9 @@
 /* file i/o buffer size */
 #undef FILEBUFF
 
+/* use "Cache-Control: no-cache" in freshclam */
+#undef FRESHCLAM_NO_CACHE
+
 /* access rights in msghdr */
 #undef HAVE_ACCRIGHTS_IN_MSGHDR
 
