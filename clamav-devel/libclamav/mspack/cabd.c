@@ -685,12 +685,16 @@ static struct mscabd_cabinet *cabd_dsearch(struct mscab_decompressor *base,
   off_t filelen;
   char *filename = "descriptor";
 
-  if (!base) return NULL;
+  if (!base) {
+      close(desc);
+      return NULL;
+  }
   sys = this->system;
 
   /* allocate a search buffer */
   search_buf = sys->alloc(sys, (size_t) this->param[MSCABD_PARAM_SEARCHBUF]);
   if (!search_buf) {
+    close(desc);
     this->error = MSPACK_ERR_NOMEMORY;
     return NULL;
   }
@@ -724,6 +728,7 @@ static struct mscabd_cabinet *cabd_dsearch(struct mscab_decompressor *base,
 
   /* free the search buffer */
   sys->free(search_buf);
+  close(desc);
 
   return (struct mscabd_cabinet *) cab;
 }

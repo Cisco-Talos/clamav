@@ -1,3 +1,7 @@
+Sat Aug 26 23:41:08 CEST 2006 (tk)
+----------------------------------
+  * libclamav/mspack: fix double close of file descriptor, patch from NJH
+
 Fri Aug 25 21:23:59 CEST 2006 (tk)
 ----------------------------------
   * freshclam/manager.c: "Cache-Control: no-cache" is now disabled by default.
