@@ -140,8 +140,8 @@ static struct mspack_file *msp_dopen(struct mspack_system *this,
 
   if ((fh = cli_malloc(sizeof(struct mspack_file_p)))) {
     fh->name = "descriptor";
-    fh->desc = desc;
-    if ((fh->fh = fdopen(desc, fmode))) return (struct mspack_file *) fh;
+    fh->desc = dup(desc);
+    if ((fh->fh = fdopen(fh->desc, fmode))) return (struct mspack_file *) fh;
     free(fh);
   }
   return NULL;
