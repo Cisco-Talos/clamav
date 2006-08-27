@@ -1,3 +1,9 @@
+Sun Aug 27 10:52:55 BST 2006 (njh)
+----------------------------------
+  * libclamav/blob.c:	Don't use % in filenames on Windows, since cmd.exe
+				uses that to start environment variables
+			Reported by Nico <tbb*hideout.ath.cx>
+
 Sat Aug 26 23:41:08 CEST 2006 (tk)
 ----------------------------------
   * libclamav/mspack: fix double close of file descriptor, patch from NJH
