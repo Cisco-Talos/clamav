@@ -46,6 +46,7 @@
 #include "notify.h"
 #include "dns.h"
 #include "execute.h"
+#include "nonblock.h"
 
 #include "shared/options.h"
 #include "shared/cfgparser.h"
@@ -63,7 +64,7 @@
 #endif
 
 
-static int wwwconnect(const char *server, const char *proxy, int pport, char *ip, const char *localip)
+static int wwwconnect(const char *server, const char *proxy, int pport, char *ip, const char *localip, int ctimeout)
 {
 	int socketfd = -1, port, i;
 	struct sockaddr_in name;
@@ -195,7 +196,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	name.sin_addr = *((struct in_addr *) host->h_addr_list[i]);
 	name.sin_port = htons(port);
 
-	if(connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in)) == -1) {
+	if(wait_connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in), ctimeout) == -1) {
 	    logg("Can't connect to port %d of host %s (IP: %s)\n", port, hostpt, ipaddr);
 	    continue;
 	} else {
@@ -283,7 +284,7 @@ static char *proxyauth(const char *user, const char *pass)
     return auth;
 }
 
-static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int *ims)
+static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int *ims, int ctimeout, int rtimeout)
 {
 	char cmd[512], head[513], buffer[FILEBUFF], ipaddr[16], *ch, *tmp;
 	int bread, cnt, sd;
@@ -343,9 +344,9 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
     memset(ipaddr, 0, sizeof(ipaddr));
 
     if(ip[0]) /* use ip to connect */
-	sd = wwwconnect(ip, proxy, port, ipaddr, localip);
+	sd = wwwconnect(ip, proxy, port, ipaddr, localip, ctimeout);
     else
-	sd = wwwconnect(hostname, proxy, port, ipaddr, localip);
+	sd = wwwconnect(hostname, proxy, port, ipaddr, localip, ctimeout);
 
     if(sd < 0) {
 	return NULL;
@@ -365,7 +366,7 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 
     tmp = buffer;
     cnt = FILEBUFF;
-    while((bread = recv(sd, tmp, cnt, 0)) > 0) {
+    while((bread = wait_recv(sd, tmp, cnt, 0, rtimeout)) > 0) {
 	tmp += bread;
 	cnt -= bread;
 	if(cnt <= 0)
@@ -433,7 +434,7 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
     return cvd;
 }
 
-static int getfile(const char *srcfile, const char *destfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas)
+static int getfile(const char *srcfile, const char *destfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int ctimeout, int rtimeout)
 {
 	char cmd[512], buffer[FILEBUFF], *ch;
 	int bread, fd, totalsize = 0,  rot = 0, totaldownloaded = 0,
@@ -476,9 +477,9 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     memset(ipaddr, 0, sizeof(ipaddr));
 
     if(ip[0]) /* use ip to connect */
-	sd = wwwconnect(ip, proxy, port, ipaddr, localip);
+	sd = wwwconnect(ip, proxy, port, ipaddr, localip, ctimeout);
     else
-	sd = wwwconnect(hostname, proxy, port, ipaddr, localip);
+	sd = wwwconnect(hostname, proxy, port, ipaddr, localip, ctimeout);
 
     if(sd < 0) {
 	return 52;
@@ -505,7 +506,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     i = 0;
     while(1) {
 	/* recv one byte at a time, until we reach \r\n\r\n */
-	if((i >= sizeof(buffer) - 1) || recv(sd, buffer + i, 1, 0) == -1) {
+	if((i >= sizeof(buffer) - 1) || wait_recv(sd, buffer + i, 1, 0, rtimeout) == -1) {
 	    logg("!getfile: Error while reading database from %s\n", hostname);
 	    return 52;
 	}
@@ -556,7 +557,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	return 57;
     }
 
-    while((bread = read(sd, buffer, FILEBUFF))) {
+    while((bread = wait_recv(sd, buffer, FILEBUFF, 0, rtimeout)) > 0) {
         if(write(fd, buffer, bread) != bread) {
 	    logg("getfile: Can't write %d bytes to %s\n", bread, destfile);
 	    unlink(destfile);
@@ -589,7 +590,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     return 0;
 }
 
-static int getcvd(const char *dbfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int nodb, int newver)
+static int getcvd(const char *dbfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int nodb, int newver, int ctimeout, int rtimeout)
 {
 	char *tempname;
 	struct cl_cvd *cvd;
@@ -599,7 +600,7 @@ static int getcvd(const char *dbfile, const char *hostname, char *ip, const char
     tempname = cli_gentemp(".");
 
     logg("*Retrieving http://%s/%s\n", hostname, dbfile);
-    if((ret = getfile(dbfile, tempname, hostname, ip, localip, proxy, port, user, pass, uas))) {
+    if((ret = getfile(dbfile, tempname, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout))) {
         logg("!Can't download %s from %s (IP: %s)\n", dbfile, hostname, ip);
         unlink(tempname);
         free(tempname);
@@ -679,7 +680,7 @@ static int chdir_inc(const char *dbname)
     return 0;
 }
 
-static int getpatch(const char *dbname, int version, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas)
+static int getpatch(const char *dbname, int version, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int ctimeout, int rtimeout)
 {
 	char *tempname, patch[32], olddir[512];
 	int ret, fd;
@@ -697,7 +698,7 @@ static int getpatch(const char *dbname, int version, const char *hostname, char 
     snprintf(patch, sizeof(patch), "%s-%d.cdiff", dbname, version);
 
     logg("*Retrieving http://%s/%s\n", hostname, patch);
-    if((ret = getfile(patch, tempname, hostname, ip, localip, proxy, port, user, pass, uas))) {
+    if((ret = getfile(patch, tempname, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout))) {
         logg("!getpatch: Can't download %s from %s (IP: %s)\n", patch, hostname, ip);
         unlink(tempname);
         free(tempname);
@@ -758,6 +759,7 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
 	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL;
 	int flevel = cl_retflevel();
 	struct stat sb;
+	int ctimeout, rtimeout;
 
 
     snprintf(dbfile, sizeof(dbfile), "%s.cvd", dbname);
@@ -835,10 +837,12 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
     if((cpt = cfgopt(copt, "HTTPUserAgent"))->enabled)
 	uas = cpt->strarg;
 
+    ctimeout = cfgopt(copt, "ConnectTimeout")->numarg;
+    rtimeout = cfgopt(copt, "ReceiveTimeout")->numarg;
 
     if(!nodb && newver == -1) {
 
-	remote = remote_cvdhead(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, &ims);
+	remote = remote_cvdhead(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, &ims, ctimeout, rtimeout);
 
 	if(!nodb && !ims) {
 	    logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", dbfile, current->version, current->sigs, current->fl, current->builder);
@@ -897,7 +901,7 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
     */
 
     if(nodb) {
-	ret = getcvd(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, nodb, newver);
+	ret = getcvd(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, nodb, newver, ctimeout, rtimeout);
 	if(ret)
 	    return ret;
 
@@ -905,7 +909,7 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
 	ret = 0;
 
 	for(i = currver + 1; i <= newver; i++) {
-	    ret = getpatch(dbname, i, hostname, ip, localip, proxy, port, user, pass, uas);
+	    ret = getpatch(dbname, i, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout);
 	    if(ret) {
 		logg("^Removing incremental directory %s\n", dbinc);
 		rmdirs(dbinc);
@@ -916,7 +920,7 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
 	if(ret) {
 	    logg("^Incremental update failed, downloading complete database\n");
 
-	    ret = getcvd(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, 1, newver);
+	    ret = getcvd(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, 1, newver, ctimeout, rtimeout);
 	    if(ret)
 		return ret;
 	} else {

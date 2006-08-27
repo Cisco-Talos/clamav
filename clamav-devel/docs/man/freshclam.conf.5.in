@@ -121,6 +121,16 @@ Default: disabled
 Execute this command after a database update has failed.
 .br 
 Default: disabled
+.TP
+\fBConnectTimeout\fR
+Timeout in seconds when connecting to database server.
+.br 
+Default: 10
+.TP
+\fBReceiveTimeout\fR
+Timeout in seconds when reading from database server.
+.br 
+Default: 30
 .SH "NOTE"
 While not reasonable, any configuration option from clamd.conf(5) may be given.
 .SH "FILES"
