@@ -74,7 +74,7 @@ am_freshclam_OBJECTS = output.$(OBJEXT) cfgparser.$(OBJEXT) \
 	getopt.$(OBJEXT) memory.$(OBJEXT) misc.$(OBJEXT) \
 	options.$(OBJEXT) cdiff.$(OBJEXT) freshclam.$(OBJEXT) \
 	manager.$(OBJEXT) notify.$(OBJEXT) dns.$(OBJEXT) \
-	execute.$(OBJEXT)
+	execute.$(OBJEXT) nonblock.$(OBJEXT)
 freshclam_OBJECTS = $(am_freshclam_OBJECTS)
 freshclam_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
@@ -232,7 +232,9 @@ freshclam_SOURCES = \
     dns.c \
     dns.h \
     execute.c \
-    execute.h
+    execute.h \
+    nonblock.c \
+    nonblock.h
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 all: all-am
@@ -315,6 +317,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/manager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/memory.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nonblock.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/notify.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/options.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/output.Po@am__quote@

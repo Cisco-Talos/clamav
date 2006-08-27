@@ -1,3 +1,8 @@
+Sun Aug 27 19:48:17 CEST 2006 (tk)
+----------------------------------
+  * freshclam: apply timeout patch from Everton da Silva Marques
+	       <everton*lab.ipaccess.diveo.net.br>
+
 Sun Aug 27 10:52:55 BST 2006 (njh)
 ----------------------------------
   * libclamav/blob.c:	Don't use % in filenames on Windows, since cmd.exe
