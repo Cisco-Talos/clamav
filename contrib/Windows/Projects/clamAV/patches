@@ -97,6 +97,25 @@
   	file_buff.length = 0;
   	
   	if (!file_buff.fd) {
+*** /home/njh/src/clamav-devel/./libclamav/blob.c	2006-08-27 10:51:31.000000000 +0100
+--- ./libclamav/blob.c	2006-08-28 11:55:52.000000000 +0100
+***************
+*** 16,22 ****
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+--- 16,22 ----
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
 *** /home/njh/src/clamav-devel/./libclamav/others.c	2006-08-11 20:39:24.000000000 +0100
 --- ./libclamav/others.c	2006-08-11 21:10:46.000000000 +0100
 ***************
@@ -719,14 +738,14 @@
   
   #include "clamav.h"
   #include "others.h"
-*** /home/njh/src/clamav-devel/./libclamav/mbox.c	2006-07-30 13:39:01.000000000 +0100
---- ./libclamav/mbox.c	2006-08-11 21:05:12.000000000 +0100
+*** /home/njh/src/clamav-devel/./libclamav/mbox.c	2006-08-25 11:10:13.000000000 +0100
+--- ./libclamav/mbox.c	2006-08-25 12:14:46.000000000 +0100
 ***************
 *** 16,22 ****
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -734,7 +753,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -745,8 +764,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.6  2006/08/17 17:27:01  njh
-   * MSVC has the pack pragma
+   * Revision 1.7  2006/08/28 18:29:23  njh
+   * Add the patches for nonblock.c
    *
 !  * Revision 1.22  2006/07/31 09:19:52  njh
 !  * Use MAP_PRIVATE
@@ -757,8 +776,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.6  2006/08/17 17:27:01  njh
-   * MSVC has the pack pragma
+   * Revision 1.7  2006/08/28 18:29:23  njh
+   * Add the patches for nonblock.c
    *
 !  * Revision 1.1  2006/08/11 20:05:13  njh
 !  * First Draft
@@ -770,7 +789,7 @@
    * First draft of binhex.c
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
   
   #include "clamav.h"
   
@@ -778,7 +797,7 @@
    * First draft of binhex.c
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
   
   #include "clamav.h"
   
@@ -835,8 +854,8 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.6  2006/08/17 17:27:01  njh
-   * MSVC has the pack pragma
+   * Revision 1.7  2006/08/28 18:29:23  njh
+   * Add the patches for nonblock.c
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -852,8 +871,8 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.6  2006/08/17 17:27:01  njh
-   * MSVC has the pack pragma
+   * Revision 1.7  2006/08/28 18:29:23  njh
+   * Add the patches for nonblock.c
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -901,7 +920,7 @@
    *
    * Created 25 August 1985 by John Gilmore, ihnp4!hoptoad!gnu.
    *
-!  * $Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $ # checkin only
+!  * $Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $ # checkin only
    */
   
   /*
@@ -909,7 +928,7 @@
    *
    * Created 25 August 1985 by John Gilmore, ihnp4!hoptoad!gnu.
    *
-!  * $Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $ # checkin only
+!  * $Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $ # checkin only
    */
   
   /*
@@ -920,7 +939,7 @@
    * Public Domain version written 26 Aug 1985 John Gilmore (ihnp4!hoptoad!gnu).
    *
    * @(#)list.c 1.18 9/23/86 Public Domain - gnu
-!  * $Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $
+!  * $Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $
    *
    * Comments changed and some code/comments reformatted
    * for file command by Ian Darwin.
@@ -928,7 +947,7 @@
    * Public Domain version written 26 Aug 1985 John Gilmore (ihnp4!hoptoad!gnu).
    *
    * @(#)list.c 1.18 9/23/86 Public Domain - gnu
-!  * $Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $
+!  * $Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $
    *
    * Comments changed and some code/comments reformatted
    * for file command by Ian Darwin.
@@ -1436,84 +1455,40 @@
   	free(fullname);
   	if (fd == -1) {
   		cli_dbgmsg("Open WordDocument failed\n");
-*** /home/njh/src/clamav-devel/./libclamav/untar.c	2006-07-26 10:39:08.000000000 +0100
---- ./libclamav/untar.c	2006-08-11 21:05:12.000000000 +0100
+*** /home/njh/src/clamav-devel/./libclamav/untar.c	2006-08-20 20:42:02.000000000 +0100
+--- ./libclamav/untar.c	2006-08-20 20:47:28.000000000 +0100
 ***************
-*** 22,29 ****
+*** 22,27 ****
+--- 22,30 ----
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.6  2006/08/17 17:27:01  njh
-   * MSVC has the pack pragma
+   * Revision 1.7  2006/08/28 18:29:23  njh
+   * Add the patches for nonblock.c
    *
-!  * Revision 1.30  2006/07/26 09:39:08  njh
-!  * Fix compilation error on Windows with MSVC
++  * Revision 1.2  2006/08/20 19:47:28  njh
++  * Fix error return
++  *
+   * Revision 1.31  2006/08/20 19:42:02  njh
+   * Fix error return
    *
-   * Revision 1.29  2006/04/09 19:59:28  kojm
-   * update GPL headers with new address for FSF
---- 22,29 ----
-   *
-   * Change History:
-   * $Log: patches,v $
-   * Revision 1.6  2006/08/17 17:27:01  njh
-   * MSVC has the pack pragma
-   *
-!  * Revision 1.1  2006/08/11 20:05:13  njh
-!  * First Draft
-   *
-   * Revision 1.29  2006/04/09 19:59:28  kojm
-   * update GPL headers with new address for FSF
 ***************
-*** 113,119 ****
+*** 116,122 ****
    * First draft
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
   
   #include <stdio.h>
   #include <errno.h>
---- 113,119 ----
+--- 119,125 ----
    * First draft
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
   
   #include <stdio.h>
   #include <errno.h>
-***************
-*** 183,189 ****
-  			if(outfile) {
-  				if(fclose(outfile)) {
-  					cli_errmsg("cli_untar: cannot close file %s\n",
-! 						fullname);
-  					return CL_EIO;
-  				}
-  				outfile = (FILE*)0;
---- 183,189 ----
-  			if(outfile) {
-  				if(fclose(outfile)) {
-  					cli_errmsg("cli_untar: cannot close file %s\n",
-! 					    fullname);
-  					return CL_EIO;
-  				}
-  				outfile = (FILE*)0;
-***************
-*** 308,314 ****
-  			in_block = 1;
-  			if((outfile = fdopen(fd, "wb")) == NULL) {
-  				cli_errmsg("cli_untar: cannot create file %s\n",
-! 					fullname);
-  				close(fd);
-  				return CL_ETMPFILE;
-  			}
---- 308,314 ----
-  			in_block = 1;
-  			if((outfile = fdopen(fd, "wb")) == NULL) {
-  				cli_errmsg("cli_untar: cannot create file %s\n",
-! 				    fullname);
-  				close(fd);
-  				return CL_ETMPFILE;
-  			}
 *** /home/njh/src/clamav-devel/./libclamav/msexpand.c	2006-04-09 20:59:27.000000000 +0100
 --- ./libclamav/msexpand.c	2006-07-26 10:23:16.000000000 +0100
 ***************
@@ -1536,8 +1511,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.6  2006/08/17 17:27:01  njh
-   * MSVC has the pack pragma
+   * Revision 1.7  2006/08/28 18:29:23  njh
+   * Add the patches for nonblock.c
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -1552,7 +1527,7 @@
    * TODO: Remove the vcard handling
    * FIXME: The code does little error checking of OOM scenarios
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"	/* must come first */
@@ -1560,7 +1535,7 @@
    * TODO: Remove the vcard handling
    * FIXME: The code does little error checking of OOM scenarios
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"	/* must come first */
@@ -1655,25 +1630,6 @@
   int cli_ac_buildtrie(struct cli_matcher *root);
   void cli_ac_free(struct cli_matcher *root);
   void cli_ac_setdepth(unsigned int depth);
-*** /home/njh/src/clamav-devel/./libclamav/message.c	2006-08-08 08:33:49.000000000 +0100
---- ./libclamav/message.c	2006-08-11 21:05:12.000000000 +0100
-***************
-*** 16,22 ****
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
-   */
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
---- 16,22 ----
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
-   */
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
 *** /home/njh/src/clamav-devel/./libclamav/uuencode.c	2006-07-31 20:38:20.000000000 +0100
 --- ./libclamav/uuencode.c	2006-08-11 21:05:12.000000000 +0100
 ***************
@@ -1681,7 +1637,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
   
   #include "clamav.h"
   
@@ -1689,7 +1645,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
   
   #include "clamav.h"
   
@@ -1701,8 +1657,8 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.6  2006/08/17 17:27:01  njh
-   * MSVC has the pack pragma
+   * Revision 1.7  2006/08/28 18:29:23  njh
+   * Add the patches for nonblock.c
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -1715,7 +1671,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1723,7 +1679,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1735,8 +1691,8 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.6  2006/08/17 17:27:01  njh
-   * MSVC has the pack pragma
+   * Revision 1.7  2006/08/28 18:29:23  njh
+   * Add the patches for nonblock.c
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -1749,7 +1705,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1757,7 +1713,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1769,8 +1725,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.6  2006/08/17 17:27:01  njh
-   * MSVC has the pack pragma
+   * Revision 1.7  2006/08/28 18:29:23  njh
+   * Add the patches for nonblock.c
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -1785,7 +1741,7 @@
   #include "clamav-config.h"
   #endif
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
   
   #include <stdio.h>
   #include <fcntl.h>
@@ -1793,7 +1749,7 @@
   #include "clamav-config.h"
   #endif
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
   
   #include <stdio.h>
   #include <fcntl.h>
@@ -1884,25 +1840,6 @@
   	if (ofd < 0) {
   		cli_errmsg("ERROR: failed to create file: %s\n", newname);
   		free(newname);
-*** /home/njh/src/clamav-devel/./libclamav/blob.c	2006-07-31 20:31:08.000000000 +0100
---- ./libclamav/blob.c	2006-08-15 14:27:26.000000000 +0100
-***************
-*** 16,22 ****
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
-   */
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
---- 16,22 ----
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
-   */
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
 *** /home/njh/src/clamav-devel/./libclamav/pdf.c	2006-08-15 16:06:25.000000000 +0100
 --- ./libclamav/pdf.c	2006-08-15 16:04:36.000000000 +0100
 ***************
@@ -1910,7 +1847,7 @@
    *  along with this program; if not, write to the Free Software
    *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1918,7 +1855,7 @@
    *  along with this program; if not, write to the Free Software
    *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.6 2006/08/17 17:27:01 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -2714,10 +2651,10 @@
   
   int r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
   
-*** /home/njh/src/clamav-devel/./shared/cfgparser.c	2006-05-12 19:07:19.000000000 +0100
---- ./shared/cfgparser.c	2006-08-01 17:37:54.000000000 +0100
+*** /home/njh/src/clamav-devel/./shared/cfgparser.c	2006-08-28 11:15:54.000000000 +0100
+--- ./shared/cfgparser.c	2006-08-28 11:17:04.000000000 +0100
 ***************
-*** 132,138 ****
+*** 134,140 ****
   	}
       }
   
@@ -2725,7 +2662,7 @@
   	/* do not print error message here! */
   	freecfg(copt);
   	return NULL;
---- 132,138 ----
+--- 134,140 ----
   	}
       }
   
@@ -3181,8 +3118,8 @@
   	}
 + #endif
   }
-*** /home/njh/src/clamav-devel/./freshclam/freshclam.c	2006-08-11 09:38:12.000000000 +0100
---- ./freshclam/freshclam.c	2006-08-11 11:05:08.000000000 +0100
+*** /home/njh/src/clamav-devel/./freshclam/freshclam.c	2006-08-27 10:52:45.000000000 +0100
+--- ./freshclam/freshclam.c	2006-08-27 11:01:42.000000000 +0100
 ***************
 *** 16,22 ****
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
@@ -3322,35 +3259,6 @@
       /* freshclam shouldn't work with root privileges */
       if(opt_check(opt, "user")) {
   	unpuser = opt_arg(opt, "user");
-***************
-*** 250,262 ****
-      if(opt_check(opt, "log")) {
-  	logg_file = opt_arg(opt, "log");
-  	if(logg("#--------------------------------------\n")) {
-! 	    mprintf("!Problem with internal logger (--log=%s).\n", logg_file);
-  	    exit(62);
-  	}
-      } else if((cpt = cfgopt(copt, "UpdateLogFile"))->enabled) {
-  	logg_file = cpt->strarg; 
-  	if(logg("#--------------------------------------\n")) {
-! 	    mprintf("!Problem with internal logger (UpdateLogFile = %s.\n", logg_file);
-  	    exit(62);
-  	}
-      } else
---- 276,288 ----
-      if(opt_check(opt, "log")) {
-  	logg_file = opt_arg(opt, "log");
-  	if(logg("#--------------------------------------\n")) {
-! 	    mprintf("!Problem with internal logger.\n");
-  	    exit(62);
-  	}
-      } else if((cpt = cfgopt(copt, "UpdateLogFile"))->enabled) {
-  	logg_file = cpt->strarg; 
-  	if(logg("#--------------------------------------\n")) {
-! 	    mprintf("!Problem with internal logger.\n");
-  	    exit(62);
-  	}
-      } else
 ***************
 *** 290,302 ****
 --- 316,344 ----
@@ -3509,8 +3417,8 @@
   }
   
   void help(void)
-*** /home/njh/src/clamav-devel/./freshclam/manager.c	2006-08-17 15:23:26.000000000 +0100
---- ./freshclam/manager.c	2006-08-17 15:23:06.000000000 +0100
+*** /home/njh/src/clamav-devel/./freshclam/manager.c	2006-08-28 11:15:54.000000000 +0100
+--- ./freshclam/manager.c	2006-08-28 19:06:24.000000000 +0100
 ***************
 *** 20,25 ****
 --- 20,29 ----
@@ -3548,8 +3456,8 @@
   #include <fcntl.h>
   #include <sys/stat.h>
 ***************
-*** 142,148 ****
---- 152,160 ----
+*** 143,149 ****
+--- 153,161 ----
   		else
   			port = 8080;
   
@@ -3560,12 +3468,12 @@
   		port = 8080;
   #endif
 ***************
-*** 177,183 ****
---- 189,199 ----
+*** 178,184 ****
+--- 190,200 ----
   		break;
   	}
           logg("^Can't get information about %s: %s\n", hostpt, herr);
-+ #ifdef	C_WINDOWS        
++ #ifdef	C_WINDOWS
 + 	closesocket(socketfd);
 + #else
   	close(socketfd);
@@ -3574,7 +3482,7 @@
       }
   
 ***************
-*** 357,363 ****
+*** 358,366 ****
       if(!ip[0])
   	strcpy(ip, ipaddr);
   
@@ -3582,17 +3490,25 @@
   	logg("!remote_cvdhead: write failed\n");
   	close(sd);
   	return NULL;
---- 373,379 ----
+      }
+  
+--- 374,386 ----
       if(!ip[0])
   	strcpy(ip, ipaddr);
   
 !     if(send(sd, cmd, strlen(cmd), 0) < 0) {
   	logg("!remote_cvdhead: write failed\n");
++ #ifdef	C_WINDOWS
++ 	closesocket(sd);
++ #else
   	close(sd);
++ #endif
   	return NULL;
+      }
+  
 ***************
-*** 371,377 ****
---- 387,397 ----
+*** 372,378 ****
+--- 392,402 ----
   	if(cnt <= 0)
   	    break;
       }
@@ -3605,7 +3521,7 @@
       if(bread == -1) {
   	logg("!remote_cvdhead: Error while reading CVD header from %s\n", hostname);
 ***************
-*** 487,493 ****
+*** 490,496 ****
       if(!ip[0])
   	strcpy(ip, ipaddr);
   
@@ -3613,7 +3529,7 @@
   	logg("!getfile: Can't write to socket\n");
   	return 52;
       }
---- 507,513 ----
+--- 514,520 ----
       if(!ip[0])
   	strcpy(ip, ipaddr);
   
@@ -3622,53 +3538,8 @@
   	return 52;
       }
 ***************
-*** 521,527 ****
---- 541,551 ----
-      /* check whether the resource actually existed or not */
-      if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
-  	logg("!getfile: %s not found on remote server\n", srcfile);
-+ #ifdef	C_WINDOWS
-+ 	closesocket(sd);
-+ #else
-  	close(sd);
-+ #endif
-  	return 58;
-      }
-  
-***************
-*** 554,565 ****
-  	return 57;
-      }
-  
-!     while((bread = read(sd, buffer, FILEBUFF))) {
-          if(write(fd, buffer, bread) != bread) {
-  	    logg("getfile: Can't write %d bytes to %s\n", bread, destfile);
-  	    unlink(destfile);
-  	    close(fd);
-- 	    close(sd);
-  	    return 57; /* FIXME */
-  	}
-  
---- 578,593 ----
-  	return 57;
-      }
-  
-!     while((bread = recv(sd, buffer, FILEBUFF, 0))) {
-          if(write(fd, buffer, bread) != bread) {
-  	    logg("getfile: Can't write %d bytes to %s\n", bread, destfile);
-  	    unlink(destfile);
-+ #ifdef	C_WINDOWS
-+ 		closesocket(sd);
-+ #else
-+ 		close(sd);
-+ #endif
-  	    close(fd);
-  	    return 57; /* FIXME */
-  	}
-  
-***************
-*** 576,582 ****
---- 604,614 ----
+*** 579,585 ****
+--- 603,613 ----
               fflush(stdout);
           }
       }
@@ -3681,7 +3552,7 @@
   
       if(totalsize > 0)
 ***************
-*** 703,709 ****
+*** 706,712 ****
           return ret;
       }
   
@@ -3689,7 +3560,7 @@
   	logg("!getpatch: Can't open %s for reading\n", tempname);
           unlink(tempname);
           free(tempname);
---- 735,741 ----
+--- 734,740 ----
           return ret;
       }
   
@@ -3697,33 +3568,6 @@
   	logg("!getpatch: Can't open %s for reading\n", tempname);
           unlink(tempname);
           free(tempname);
-***************
-*** 716,721 ****
---- 748,754 ----
-  	close(fd);
-          unlink(tempname);
-          free(tempname);
-+ 	unlink(patch);
-  	chdir(olddir);
-  	return 70; /* FIXME */
-      }
-***************
-*** 918,924 ****
-  	    if(ret)
-  		return ret;
-  	} else {
-! 	    unlink(dbfile);
-  	}
-      }
-  
---- 951,957 ----
-  	    if(ret)
-  		return ret;
-  	} else {
-! 		unlink(dbfile);
-  	}
-      }
-  
 *** /home/njh/src/clamav-devel/./clamd/clamd.c	2006-05-15 19:30:18.000000000 +0100
 --- ./clamd/clamd.c	2006-08-04 10:38:10.000000000 +0100
 ***************
