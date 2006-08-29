@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.284 2006/08/25 14:50:09 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.285 2006/08/29 07:19:03 njh Exp $";
 
 #define	CM_VERSION	"devel-250806"
 
@@ -2628,11 +2628,8 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			 */
 			gettimeofday(&now, &tz);
 			do {
-				if(use_syslog)
-					/* LOG_INFO */
-					syslog(LOG_NOTICE,
-						_("n_children %u: waiting %d seconds for some to exit"),
-						n_children, child_timeout);
+				logg(_("n_children %d: waiting %d seconds for some to exit"),
+					n_children, child_timeout);
 
 				if(child_timeout == 0) {
 					pthread_cond_wait(&n_children_cond, &n_children_mutex);
@@ -2644,11 +2641,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 					rc = pthread_cond_timedwait(&n_children_cond, &n_children_mutex, &timeout);
 				}
 			} while((n_children >= max_children) && (rc != ETIMEDOUT));
-			if(use_syslog)
-				/* LOG_INFO */
-				syslog(LOG_NOTICE,
-					_("Finished waiting, n_children = %u"),
-						n_children);
+			logg(_("Finished waiting, n_children = %d"), n_children);
 		}
 		n_children++;
 
