@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.183 2006/07/31 07:07:40 njh Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.184 2006/08/29 07:41:59 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2414,8 +2414,9 @@ rfc2231(const char *in)
 	 * out = &out[ptr - in];
 	 * in = ptr;
 	 */
-	for(out = ret; in != ptr; in++)
-		*out++ = *in;
+	out = ret;
+	while(in != ptr)
+		*out++ = *in++;
 
 	*out++ = '=';
 
