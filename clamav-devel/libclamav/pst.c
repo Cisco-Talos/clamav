@@ -36,7 +36,7 @@
  * TODO: Remove the vcard handling
  * FIXME: The code does little error checking of OOM scenarios
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.30 2006/07/31 19:45:17 njh Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.31 2006/08/29 07:44:12 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -438,7 +438,7 @@ pst_index_ll * _pst_getID(pst_file* pf, u_int32_t id);
 static	pst_index_ll	*_pst_getID2(pst_index2_ll * ptr, u_int32_t id);
 pst_desc_ll * _pst_getDptr(pst_file *pf, u_int32_t id);
 static	size_t _pst_read_block_size(pst_file *pf, int32_t offset, size_t size, char ** buf, int32_t do_enc, unsigned char is_index);
-int32_t _pst_decrypt(unsigned char *buf, size_t size, int32_t type);
+static int32_t _pst_decrypt(unsigned char *buf, size_t size, int32_t type);
 static int32_t _pst_getAtPos(FILE* fp, int32_t pos, void *buf, u_int32_t size);
 int32_t _pst_get (FILE *fp, void *buf, u_int32_t size);
 size_t	_pst_ff_getIDblock_dec(pst_file *pf, u_int32_t id, unsigned char **b);
@@ -4274,26 +4274,26 @@ _pst_read_block_size(pst_file *pf, int32_t offset, size_t size, char ** buf, int
   return size;
 }
 
-int32_t _pst_decrypt(unsigned char *buf, size_t size, int32_t type) {
-  size_t x = 0;
-  unsigned char y;
-  if (buf == NULL) {
-    return -1;
-  }
+static int32_t
+_pst_decrypt(unsigned char *buf, size_t size, int32_t type)
+{
+	if (buf == NULL)
+		return -1;
 
-  if (type == PST_COMP_ENCRYPT) {
-    x = 0;
-    while (x < size) {
-      y = buf[x];
-      /*cli_dbgmsg("Transposing %#hhx to %#hhx [%#x]\n", buf[x], comp_enc[y], y);*/
-      buf[x] = comp_enc[y]; // transpose from encrypt array
-      x++;
-    }
-  } else {
-    cli_warnmsg("Unknown encryption: %i. Cannot decrypt\n", type);
-    return -1;
-  }
-  return 0;
+	if (type == PST_COMP_ENCRYPT) {
+		size_t x = 0;
+
+		while (x < size) {
+			unsigned char y = buf[x];
+			/*cli_dbgmsg("Transposing %#hhx to %#hhx [%#x]\n", buf[x], comp_enc[y], y);*/
+			buf[x] = comp_enc[y]; // transpose from encrypt array
+			x++;
+		}
+	} else {
+		cli_warnmsg("Unknown encryption: %i. Cannot decrypt\n", type);
+		return -1;
+	}
+	return 0;
 }
 
 static int32_t
