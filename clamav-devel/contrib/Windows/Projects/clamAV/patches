@@ -104,7 +104,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -112,7 +112,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -745,7 +745,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -753,7 +753,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -764,8 +764,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.7  2006/08/28 18:29:23  njh
-   * Add the patches for nonblock.c
+   * Revision 1.8  2006/08/30 14:48:28  njh
+   * Add even more patches for nonblock.c
    *
 !  * Revision 1.22  2006/07/31 09:19:52  njh
 !  * Use MAP_PRIVATE
@@ -776,8 +776,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.7  2006/08/28 18:29:23  njh
-   * Add the patches for nonblock.c
+   * Revision 1.8  2006/08/30 14:48:28  njh
+   * Add even more patches for nonblock.c
    *
 !  * Revision 1.1  2006/08/11 20:05:13  njh
 !  * First Draft
@@ -789,7 +789,7 @@
    * First draft of binhex.c
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
   
   #include "clamav.h"
   
@@ -797,7 +797,7 @@
    * First draft of binhex.c
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
   
   #include "clamav.h"
   
@@ -854,8 +854,8 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.7  2006/08/28 18:29:23  njh
-   * Add the patches for nonblock.c
+   * Revision 1.8  2006/08/30 14:48:28  njh
+   * Add even more patches for nonblock.c
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -871,8 +871,8 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.7  2006/08/28 18:29:23  njh
-   * Add the patches for nonblock.c
+   * Revision 1.8  2006/08/30 14:48:28  njh
+   * Add even more patches for nonblock.c
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -920,7 +920,7 @@
    *
    * Created 25 August 1985 by John Gilmore, ihnp4!hoptoad!gnu.
    *
-!  * $Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $ # checkin only
+!  * $Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $ # checkin only
    */
   
   /*
@@ -928,7 +928,7 @@
    *
    * Created 25 August 1985 by John Gilmore, ihnp4!hoptoad!gnu.
    *
-!  * $Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $ # checkin only
+!  * $Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $ # checkin only
    */
   
   /*
@@ -939,7 +939,7 @@
    * Public Domain version written 26 Aug 1985 John Gilmore (ihnp4!hoptoad!gnu).
    *
    * @(#)list.c 1.18 9/23/86 Public Domain - gnu
-!  * $Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $
+!  * $Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $
    *
    * Comments changed and some code/comments reformatted
    * for file command by Ian Darwin.
@@ -947,7 +947,7 @@
    * Public Domain version written 26 Aug 1985 John Gilmore (ihnp4!hoptoad!gnu).
    *
    * @(#)list.c 1.18 9/23/86 Public Domain - gnu
-!  * $Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $
+!  * $Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $
    *
    * Comments changed and some code/comments reformatted
    * for file command by Ian Darwin.
@@ -1463,8 +1463,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.7  2006/08/28 18:29:23  njh
-   * Add the patches for nonblock.c
+   * Revision 1.8  2006/08/30 14:48:28  njh
+   * Add even more patches for nonblock.c
    *
 +  * Revision 1.2  2006/08/20 19:47:28  njh
 +  * Fix error return
@@ -1477,7 +1477,7 @@
    * First draft
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
   
   #include <stdio.h>
   #include <errno.h>
@@ -1485,7 +1485,7 @@
    * First draft
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
   
   #include <stdio.h>
   #include <errno.h>
@@ -1511,8 +1511,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.7  2006/08/28 18:29:23  njh
-   * Add the patches for nonblock.c
+   * Revision 1.8  2006/08/30 14:48:28  njh
+   * Add even more patches for nonblock.c
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -1520,14 +1520,14 @@
    * Revision 1.4  2006/04/09 19:59:28  kojm
    * update GPL headers with new address for FSF
    *
-*** /home/njh/src/clamav-devel/./libclamav/pst.c	2006-08-12 15:21:21.000000000 +0100
---- ./libclamav/pst.c	2006-08-11 21:05:12.000000000 +0100
+*** /home/njh/src/clamav-devel/./libclamav/pst.c	2006-08-29 08:44:12.000000000 +0100
+--- ./libclamav/pst.c	2006-08-29 08:44:40.000000000 +0100
 ***************
 *** 36,42 ****
    * TODO: Remove the vcard handling
    * FIXME: The code does little error checking of OOM scenarios
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"	/* must come first */
@@ -1535,82 +1535,10 @@
    * TODO: Remove the vcard handling
    * FIXME: The code does little error checking of OOM scenarios
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"	/* must come first */
-***************
-*** 438,444 ****
-  static	pst_index_ll	*_pst_getID2(pst_index2_ll * ptr, u_int32_t id);
-  pst_desc_ll * _pst_getDptr(pst_file *pf, u_int32_t id);
-  static	size_t _pst_read_block_size(pst_file *pf, int32_t offset, size_t size, char ** buf, int32_t do_enc, unsigned char is_index);
-! static int32_t _pst_decrypt(unsigned char *buf, size_t size, int32_t type);
-  static int32_t _pst_getAtPos(FILE* fp, int32_t pos, void *buf, u_int32_t size);
-  int32_t _pst_get (FILE *fp, void *buf, u_int32_t size);
-  size_t	_pst_ff_getIDblock_dec(pst_file *pf, u_int32_t id, unsigned char **b);
---- 438,444 ----
-  static	pst_index_ll	*_pst_getID2(pst_index2_ll * ptr, u_int32_t id);
-  pst_desc_ll * _pst_getDptr(pst_file *pf, u_int32_t id);
-  static	size_t _pst_read_block_size(pst_file *pf, int32_t offset, size_t size, char ** buf, int32_t do_enc, unsigned char is_index);
-! int32_t _pst_decrypt(unsigned char *buf, size_t size, int32_t type);
-  static int32_t _pst_getAtPos(FILE* fp, int32_t pos, void *buf, u_int32_t size);
-  int32_t _pst_get (FILE *fp, void *buf, u_int32_t size);
-  size_t	_pst_ff_getIDblock_dec(pst_file *pf, u_int32_t id, unsigned char **b);
-***************
-*** 4274,4299 ****
-    return size;
-  }
-  
-! static int32_t
-! _pst_decrypt(unsigned char *buf, size_t size, int32_t type)
-! {
-! 	if (buf == NULL)
-! 		return -1;
-! 
-! 	if (type == PST_COMP_ENCRYPT) {
-! 		size_t x = 0;
-  
-! 		while (x < size) {
-! 			unsigned char y = buf[x];
-! 			/*cli_dbgmsg("Transposing %#hhx to %#hhx [%#x]\n", buf[x], comp_enc[y], y);*/
-! 			buf[x] = comp_enc[y]; // transpose from encrypt array
-! 			x++;
-! 		}
-! 	} else {
-! 		cli_warnmsg("Unknown encryption: %i. Cannot decrypt\n", type);
-! 		return -1;
-! 	}
-! 	return 0;
-  }
-  
-  static int32_t
---- 4274,4299 ----
-    return size;
-  }
-  
-! int32_t _pst_decrypt(unsigned char *buf, size_t size, int32_t type) {
-!   size_t x = 0;
-!   unsigned char y;
-!   if (buf == NULL) {
-!     return -1;
-!   }
-  
-!   if (type == PST_COMP_ENCRYPT) {
-!     x = 0;
-!     while (x < size) {
-!       y = buf[x];
-!       /*cli_dbgmsg("Transposing %#hhx to %#hhx [%#x]\n", buf[x], comp_enc[y], y);*/
-!       buf[x] = comp_enc[y]; // transpose from encrypt array
-!       x++;
-!     }
-!   } else {
-!     cli_warnmsg("Unknown encryption: %i. Cannot decrypt\n", type);
-!     return -1;
-!   }
-!   return 0;
-  }
-  
-  static int32_t
 *** /home/njh/src/clamav-devel/./libclamav/matcher-ac.h	2006-04-09 20:59:27.000000000 +0100
 --- ./libclamav/matcher-ac.h	2006-07-28 13:54:20.000000000 +0100
 ***************
@@ -1630,6 +1558,25 @@
   int cli_ac_buildtrie(struct cli_matcher *root);
   void cli_ac_free(struct cli_matcher *root);
   void cli_ac_setdepth(unsigned int depth);
+*** /home/njh/src/clamav-devel/./libclamav/message.c	2006-08-29 08:41:59.000000000 +0100
+--- ./libclamav/message.c	2006-08-29 08:44:40.000000000 +0100
+***************
+*** 16,22 ****
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+--- 16,22 ----
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
 *** /home/njh/src/clamav-devel/./libclamav/uuencode.c	2006-07-31 20:38:20.000000000 +0100
 --- ./libclamav/uuencode.c	2006-08-11 21:05:12.000000000 +0100
 ***************
@@ -1637,7 +1584,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
   
   #include "clamav.h"
   
@@ -1645,7 +1592,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
   
   #include "clamav.h"
   
@@ -1657,8 +1604,8 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.7  2006/08/28 18:29:23  njh
-   * Add the patches for nonblock.c
+   * Revision 1.8  2006/08/30 14:48:28  njh
+   * Add even more patches for nonblock.c
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -1671,7 +1618,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1679,7 +1626,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1691,8 +1638,8 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.7  2006/08/28 18:29:23  njh
-   * Add the patches for nonblock.c
+   * Revision 1.8  2006/08/30 14:48:28  njh
+   * Add even more patches for nonblock.c
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -1705,7 +1652,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1713,7 +1660,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1725,8 +1672,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.7  2006/08/28 18:29:23  njh
-   * Add the patches for nonblock.c
+   * Revision 1.8  2006/08/30 14:48:28  njh
+   * Add even more patches for nonblock.c
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -1741,7 +1688,7 @@
   #include "clamav-config.h"
   #endif
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
   
   #include <stdio.h>
   #include <fcntl.h>
@@ -1749,7 +1696,7 @@
   #include "clamav-config.h"
   #endif
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
   
   #include <stdio.h>
   #include <fcntl.h>
@@ -1847,7 +1794,7 @@
    *  along with this program; if not, write to the Free Software
    *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1855,7 +1802,7 @@
    *  along with this program; if not, write to the Free Software
    *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.7 2006/08/28 18:29:23 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -2939,8 +2886,8 @@
   	}
   
   	if(logg_size) {
-*** /home/njh/src/clamav-devel/./freshclam/notify.c	2006-04-09 20:59:27.000000000 +0100
---- ./freshclam/notify.c	2006-08-04 14:59:36.000000000 +0100
+*** /home/njh/src/clamav-devel/./freshclam/notify.c	2006-08-30 13:43:32.000000000 +0100
+--- ./freshclam/notify.c	2006-08-30 13:53:52.000000000 +0100
 ***************
 *** 16,21 ****
 --- 16,25 ----
@@ -3005,7 +2952,16 @@
   	socktype = "UNIX";
   	server.sun_family = AF_UNIX;
 ***************
-*** 71,77 ****
+*** 66,81 ****
+  
+  	if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
+  #ifdef	C_WINDOWS
+! 		closesocket(sockfd);
+  #else
+! 	    close(sockd);
+  #endif
+  	    logg("^Clamd was NOT notified: Can't connect to clamd through %s\n", cpt->strarg);
+  	    perror("connect()");
   	    return 1;
   	}
   
@@ -3013,7 +2969,16 @@
   
   	socktype = "TCP";
   #ifdef PF_INET
---- 82,90 ----
+--- 77,94 ----
+  
+  	if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
+  #ifdef	C_WINDOWS
+! 		closesocket(sockd);
+  #else
+! 		close(sockd);
+  #endif
+  	    logg("^Clamd was NOT notified: Can't connect to clamd through %s\n", cpt->strarg);
+  	    perror("connect()");
   	    return 1;
   	}
   
@@ -3024,39 +2989,89 @@
   	socktype = "TCP";
   #ifdef PF_INET
 ***************
-*** 111,117 ****
-  	return 1;
-      }
+*** 104,112 ****
   
-!     if(write(sockd, "RELOAD", 6) < 0) {
-  	logg("^Clamd was NOT notified: Could not write to %s socket\n", socktype);
-  	perror("write()");
-  	close(sockd);
---- 124,130 ----
-  	return 1;
-      }
+  	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
+  #ifdef	C_WINDOWS
+! 		closesocket(sockfd);
+  #else
+! 	    close(sockd);
+  #endif
+  	    logg("^Clamd was NOT notified: Can't connect to clamd on %s:%d\n",
+  		    inet_ntoa(server2.sin_addr), ntohs(server2.sin_port));
+--- 117,125 ----
   
-!     if(send(sockd, "RELOAD", 6, 0) < 0) {
-  	logg("^Clamd was NOT notified: Could not write to %s socket\n", socktype);
-  	perror("write()");
-  	close(sockd);
+  	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
+  #ifdef	C_WINDOWS
+! 		closesocket(sockd);
+  #else
+! 		close(sockd);
+  #endif
+  	    logg("^Clamd was NOT notified: Can't connect to clamd on %s:%d\n",
+  		    inet_ntoa(server2.sin_addr), ntohs(server2.sin_port));
 ***************
-*** 120,126 ****
+*** 123,152 ****
+  	logg("^Clamd was NOT notified: Could not write to %s socket\n", socktype);
+  	perror("write()");
+  #ifdef	C_WINDOWS
+! 		closesocket(sockfd);
+  #else
+! 	    close(sockd);
+  #endif
+  	return 1;
+      }
   
       /* TODO: Handle timeout */
       memset(buff, 0, sizeof(buff));
-!     if((bread = read(sockd, buff, sizeof(buff))) > 0)
+!     if((bread = recv(sockd, buff, sizeof(buff)), 0) > 0)
   	if(!strstr(buff, "RELOADING")) {
   	    logg("^Clamd was NOT notified: Unknown answer from clamd: '%s'\n", buff);
-  	    close(sockd);
---- 133,139 ----
+  #ifdef	C_WINDOWS
+! 		closesocket(sockfd);
+  #else
+! 	    close(sockd);
+  #endif
+  	    return 1;
+  	}
+  
+  #ifdef	C_WINDOWS
+! 		closesocket(sockfd);
+  #else
+! 	    close(sockd);
+  #endif
+      logg("Clamd successfully notified about the update.\n");
+      return 0;
+--- 136,165 ----
+  	logg("^Clamd was NOT notified: Could not write to %s socket\n", socktype);
+  	perror("write()");
+  #ifdef	C_WINDOWS
+! 		closesocket(sockd);
+  #else
+! 		close(sockd);
+  #endif
+  	return 1;
+      }
   
       /* TODO: Handle timeout */
       memset(buff, 0, sizeof(buff));
 !     if((bread = recv(sockd, buff, sizeof(buff), 0)) > 0)
   	if(!strstr(buff, "RELOADING")) {
   	    logg("^Clamd was NOT notified: Unknown answer from clamd: '%s'\n", buff);
-  	    close(sockd);
+  #ifdef	C_WINDOWS
+! 		closesocket(sockd);
+  #else
+! 		close(sockd);
+  #endif
+  	    return 1;
+  	}
+  
+  #ifdef	C_WINDOWS
+! 	closesocket(sockd);
+  #else
+! 	close(sockd);
+  #endif
+      logg("Clamd successfully notified about the update.\n");
+      return 0;
 *** /home/njh/src/clamav-devel/./freshclam/execute.c	2006-04-09 20:59:27.000000000 +0100
 --- ./freshclam/execute.c	2006-08-04 15:59:36.000000000 +0100
 ***************
@@ -3417,8 +3432,8 @@
   }
   
   void help(void)
-*** /home/njh/src/clamav-devel/./freshclam/manager.c	2006-08-28 11:15:54.000000000 +0100
---- ./freshclam/manager.c	2006-08-28 19:06:24.000000000 +0100
+*** /home/njh/src/clamav-devel/./freshclam/manager.c	2006-08-30 13:46:13.000000000 +0100
+--- ./freshclam/manager.c	2006-08-30 13:52:44.000000000 +0100
 ***************
 *** 20,25 ****
 --- 20,29 ----
@@ -3468,60 +3483,58 @@
   		port = 8080;
   #endif
 ***************
-*** 178,184 ****
---- 190,200 ----
-  		break;
-  	}
-          logg("^Can't get information about %s: %s\n", hostpt, herr);
-+ #ifdef	C_WINDOWS
-+ 	closesocket(socketfd);
-+ #else
-  	close(socketfd);
-+ #endif
+*** 181,187 ****
+  #ifdef	C_WINDOWS
+  	closesocket(socketfd);
+  #else
+! 	close(socketd);
+  #endif
   	return -1;
       }
-  
+--- 193,199 ----
+  #ifdef	C_WINDOWS
+  	closesocket(socketfd);
+  #else
+! 	close(socketfd);
+  #endif
+  	return -1;
+      }
 ***************
-*** 358,366 ****
-      if(!ip[0])
-  	strcpy(ip, ipaddr);
-  
-!     if(write(sd, cmd, strlen(cmd)) < 0) {
-  	logg("!remote_cvdhead: write failed\n");
-  	close(sd);
-  	return NULL;
-      }
-  
---- 374,386 ----
-      if(!ip[0])
-  	strcpy(ip, ipaddr);
-  
-!     if(send(sd, cmd, strlen(cmd), 0) < 0) {
-  	logg("!remote_cvdhead: write failed\n");
-+ #ifdef	C_WINDOWS
-+ 	closesocket(sd);
-+ #else
-  	close(sd);
-+ #endif
-  	return NULL;
-      }
-  
+*** 211,217 ****
+  #ifdef	C_WINDOWS
+  	closesocket(socketfd);
+  #else
+! 	close(socketd);
+  #endif
+      return -2;
+  }
+--- 223,229 ----
+  #ifdef	C_WINDOWS
+  	closesocket(socketfd);
+  #else
+! 	close(socketfd);
+  #endif
+      return -2;
+  }
 ***************
-*** 372,378 ****
---- 392,402 ----
-  	if(cnt <= 0)
-  	    break;
-      }
-+ #ifdef	C_WINDOWS
-+ 	closesocket(sd);
-+ #else
-      close(sd);
-+ #endif
+*** 387,393 ****
+  #ifdef	C_WINDOWS
+  	closesocket(sd);
+  #else
+! 	close(sd);
+  #endif
   
       if(bread == -1) {
-  	logg("!remote_cvdhead: Error while reading CVD header from %s\n", hostname);
+--- 399,405 ----
+  #ifdef	C_WINDOWS
+  	closesocket(sd);
+  #else
+!     close(sd);
+  #endif
+  
+      if(bread == -1) {
 ***************
-*** 490,496 ****
+*** 506,512 ****
       if(!ip[0])
   	strcpy(ip, ipaddr);
   
@@ -3529,7 +3542,7 @@
   	logg("!getfile: Can't write to socket\n");
   	return 52;
       }
---- 514,520 ----
+--- 518,524 ----
       if(!ip[0])
   	strcpy(ip, ipaddr);
   
@@ -3538,21 +3551,38 @@
   	return 52;
       }
 ***************
-*** 579,585 ****
---- 603,613 ----
-              fflush(stdout);
-          }
-      }
+*** 573,579 ****
+--- 585,595 ----
+  	getcwd(currdir, sizeof(currdir));
+  	logg("!getfile: Can't create new file %s in %s\n", destfile, currdir);
+  	logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
 + #ifdef	C_WINDOWS
 + 	closesocket(sd);
 + #else
-      close(sd);
+  	close(sd);
 + #endif
+  	return 57;
+      }
+  
+***************
+*** 606,612 ****
+  #ifdef	C_WINDOWS
+  	closesocket(sd);
+  #else
+! 	close(sd);
+  #endif
       close(fd);
   
-      if(totalsize > 0)
+--- 622,628 ----
+  #ifdef	C_WINDOWS
+  	closesocket(sd);
+  #else
+!     close(sd);
+  #endif
+      close(fd);
+  
 ***************
-*** 706,712 ****
+*** 734,740 ****
           return ret;
       }
   
@@ -3560,7 +3590,7 @@
   	logg("!getpatch: Can't open %s for reading\n", tempname);
           unlink(tempname);
           free(tempname);
---- 734,740 ----
+--- 750,756 ----
           return ret;
       }
   
@@ -3568,6 +3598,22 @@
   	logg("!getpatch: Can't open %s for reading\n", tempname);
           unlink(tempname);
           free(tempname);
+*** /home/njh/src/clamav-devel/./freshclam/nonblock.c	2006-08-28 19:14:22.000000000 +0100
+--- ./freshclam/nonblock.c	2006-08-30 14:09:46.000000000 +0100
+***************
+*** 110,116 ****
+--- 110,120 ----
+  
+  	/* Launch (possibly) non-blocking connect() request */
+  	if (connect(sock, addr, addrlen)) {
++ #ifdef	C_WINDOWS
++ 		int e = WSAGetLastError();
++ #else
+  		int e = errno;
++ #endif
+  #ifdef NONBLOCK_DEBUG
+  		logg("DEBUG %s %s: connect(): fd=%d errno=%d: %s\n",
+  		     __FILE__, __PRETTY_FUNCTION__,
 *** /home/njh/src/clamav-devel/./clamd/clamd.c	2006-05-15 19:30:18.000000000 +0100
 --- ./clamd/clamd.c	2006-08-04 10:38:10.000000000 +0100
 ***************
