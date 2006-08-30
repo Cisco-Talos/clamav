@@ -57,7 +57,6 @@
 #include "misc.h"
 
 void help(void);
-void daemonize(void);
 
 short debug_mode = 0, logok = 0;
 
@@ -278,11 +277,12 @@ int main(int argc, char **argv)
 	exit(1);
     }
 
-
     /* fork into background */
-    if(!cfgopt(copt, "Foreground")->enabled)
+    if(!cfgopt(copt, "Foreground")->enabled) {
 	daemonize();
-    else
+	if(!debug_mode)
+	    chdir("/");
+    } else
         foreground = 1;
 
     if(tcpsock)
@@ -295,6 +295,7 @@ int main(int argc, char **argv)
 
     logg_close();
     freecfg(copt);
+    return ret;
 }
 
 void help(void)
@@ -312,32 +313,3 @@ void help(void)
     exit(0);
 }
 
-void daemonize(void)
-{
-	int i;
-
-
-#ifdef C_OS2
-    return;
-#else
-
-    if((i = open("/dev/null", O_WRONLY)) == -1) {
-	logg("!Cannot open /dev/null. Only use Debug if Foreground is enabled.\n");
-	for(i = 0; i <= 2; i++)
-	    close(i);
-
-    } else {
-	close(0);
-	dup2(i, 1);
-	dup2(i, 2);
-    }
-
-    if(!debug_mode)
-	chdir("/");
-
-    if(fork())
-	exit(0);
-
-    setsid();
-#endif
-}

@@ -20,7 +20,7 @@
 #ifndef __NOTIFY_H
 #define __NOTIFY_H
 
-#include "cfgparser.h"
+#include "shared/cfgparser.h"
 
 int notify(const char *cfgfile);
 

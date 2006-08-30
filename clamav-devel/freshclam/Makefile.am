@@ -35,10 +35,8 @@ freshclam_SOURCES = \
     $(top_srcdir)/shared/cdiff.c \
     $(top_srcdir)/shared/cdiff.h \
     freshclam.c \
-    freshclam.h \
     manager.c \
     manager.h \
-    defaults.h \
     notify.c \
     notify.h \
     dns.c \

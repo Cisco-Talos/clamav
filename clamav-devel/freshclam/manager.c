@@ -531,7 +531,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     if(!strstr(buffer, "HTTP/1.1 200") && !strstr(buffer, "HTTP/1.0 200") &&
        !strstr(buffer, "HTTP/1.1 206") && !strstr(buffer, "HTTP/1.0 206")) {
 	logg("!getfile: Unknown response from remote server\n");
-	return NULL;
+	return 58;
     }
 
     /* get size of resource */

@@ -32,8 +32,9 @@
 #include <resolv.h>
 #include <sys/types.h>
 
-#include "memory.h"
-#include "output.h"
+#include "shared/memory.h"
+#include "shared/output.h"
+
 #include "dns.h"
 
 #ifndef PACKETSZ

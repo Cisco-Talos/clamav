@@ -38,7 +38,7 @@
 #include <clamav.h>
 #include <errno.h>
 
-#include "output.h"
+#include "shared/output.h"
 
 #ifndef timercmp
 # define timercmp(a, b, cmp)          \

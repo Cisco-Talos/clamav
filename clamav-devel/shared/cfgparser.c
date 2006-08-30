@@ -26,11 +26,11 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "cfgparser.h"
-#include "memory.h"
-#include "misc.h"
+#include "shared/cfgparser.h"
+#include "shared/memory.h"
+#include "shared/misc.h"
 
-#include "../libclamav/str.h"
+#include "libclamav/str.h"
 
 struct cfgoption cfg_options[] = {
     {"LogFile",	OPT_STR, -1, NULL, 0, OPT_CLAMD},
@@ -90,7 +90,7 @@ struct cfgoption cfg_options[] = {
     {"ClamukoExcludePath", OPT_STR, 0, NULL, 0, OPT_CLAMD},
     {"ClamukoMaxFileSize", OPT_COMPSIZE, 5242880, NULL, 0, OPT_CLAMD},
     {"ClamukoScanArchive", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
-    {"DatabaseOwner", OPT_STR, -1, NULL, 0, OPT_FRESHCLAM},
+    {"DatabaseOwner", OPT_STR, -1, CLAMAVUSER, 0, OPT_FRESHCLAM},
     {"Checks", OPT_NUM, 12, NULL, 0, OPT_FRESHCLAM},
     {"UpdateLogFile", OPT_STR, -1, NULL, 0, OPT_FRESHCLAM},
     {"DNSDatabaseInfo", OPT_STR, -1, "current.cvd.clamav.net", 0, OPT_FRESHCLAM},
