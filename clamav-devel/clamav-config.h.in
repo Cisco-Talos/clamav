@@ -362,3 +362,6 @@
 
 /* Define to `long int' if <sys/types.h> does not define. */
 #undef off_t
+
+/* Define to "int" if <sys/socket.h> does not define. */
+#undef socklen_t

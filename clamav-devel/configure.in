@@ -1,6 +1,7 @@
 dnl
 dnl   Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
 dnl   gethostbyname_r and readdir_r checks (c) COPYRIGHT MIT 1995
+dnl   socklen_t check (c) Alexander V. Lukyanov <lav@yars.free.net>
 dnl
 dnl   This program is free software; you can redistribute it and/or modify
 dnl   it under the terms of the GNU General Public License as published by
@@ -865,6 +866,48 @@ if test "$ac_cv_func_ctime_r" = "yes"; then
     ])
 
     AC_MSG_RESULT([yes, and it takes $ac_cv_ctime_args arguments])
+fi
+
+dnl Determine socklen_t type. Code from lftp.
+AC_MSG_CHECKING(for socklen_t)
+AC_CACHE_VAL(ac_cv_socklen_t,
+[
+    ac_cv_socklen_t=no
+    AC_TRY_COMPILE([
+	#include <sys/types.h>
+        #include <sys/socket.h>
+    ],
+    [
+	socklen_t len;
+        getpeername(0,0,&len);
+    ],
+    [
+	ac_cv_socklen_t=yes
+    ])
+])
+AC_MSG_RESULT($ac_cv_socklen_t)
+    if test $ac_cv_socklen_t = no; then
+    AC_MSG_CHECKING(for socklen_t equivalent)
+    AC_CACHE_VAL(ac_cv_socklen_t_equiv,
+    [
+	ac_cv_socklen_t_equiv=int
+        for t in int size_t unsigned long "unsigned long"; do
+	    AC_TRY_COMPILE([
+		#include <sys/types.h>
+		#include <sys/socket.h>
+	    ],
+            [
+		$t len;
+		getpeername(0,0,&len);
+            ],
+            [
+		ac_cv_socklen_t_equiv="$t"
+		break
+            ])
+	done
+    ])
+    AC_MSG_RESULT($ac_cv_socklen_t_equiv)
+    AC_DEFINE_UNQUOTED(socklen_t, $ac_cv_socklen_t_equiv, [Define to "int" if <sys/socket.h> does not define.])
 fi
 
 dnl Check for clamav in /etc/passwd
