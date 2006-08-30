@@ -1,3 +1,7 @@
+Wed Aug 30 23:20:42 CEST 2006 (tk)
+----------------------------------
+  * configure: check for socklen_t and define it if needed
+
 Sun Aug 27 19:48:17 CEST 2006 (tk)
 ----------------------------------
   * freshclam: apply timeout patch from Everton da Silva Marques
