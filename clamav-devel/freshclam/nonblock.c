@@ -16,6 +16,12 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#include "nonblock.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -32,7 +38,6 @@
 #include <clamav.h>
 #include <errno.h>
 
-#include "nonblock.h"
 #include "output.h"
 
 #ifndef timercmp
