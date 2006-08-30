@@ -19,6 +19,12 @@
 #ifndef __NONBLOCK_H
 #define __NONBLOCK_H
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#include <sys/socket.h>
+
 /*
 	wait_connect(): wrapper for connect(), with explicit 'secs' timeout
 */
