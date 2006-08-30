@@ -1,3 +1,7 @@
+Thu Aug 31 00:37:10 CEST 2006 (tk)
+----------------------------------
+  * freshclam: minor code cleanup
+
 Wed Aug 30 23:20:42 CEST 2006 (tk)
 ----------------------------------
   * configure: check for socklen_t and define it if needed

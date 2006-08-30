@@ -289,3 +289,28 @@ int cvd_unpack(const char *cvd, const char *destdir)
 
     return 0;
 }
+
+void daemonize(void)
+{
+	int i;
+
+#ifdef C_OS2
+    return;
+#else
+
+    if((i = open("/dev/null", O_WRONLY)) == -1) {
+	for(i = 0; i <= 2; i++)
+	    close(i);
+
+    } else {
+	close(0);
+	dup2(i, 1);
+	dup2(i, 2);
+    }
+
+    if(fork())
+	exit(0);
+
+    setsid();
+#endif
+}

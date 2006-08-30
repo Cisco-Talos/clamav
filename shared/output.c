@@ -93,7 +93,7 @@ int mdprintf(int desc, const char *str, ...)
     if(bytes == -1)
 	return bytes;
 
-    if(bytes >= sizeof(buff))
+    if(bytes >= (int) sizeof(buff))
 	bytes = sizeof(buff) - 1;
 
     return send(desc, buff, bytes, 0);

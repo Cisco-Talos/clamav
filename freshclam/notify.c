@@ -33,9 +33,8 @@
 #include <netdb.h>
 #include <string.h>
 
-#include "others.h"
-#include "cfgparser.h"
-#include "output.h"
+#include "shared/cfgparser.h"
+#include "shared/output.h"
 
 int notify(const char *cfgfile)
 {

@@ -27,9 +27,9 @@
 #include <string.h>
 #include <errno.h>
 
-#include "defaults.h"
-#include "freshclam.h"
-#include "output.h"
+#include "shared/output.h"
+
+#define MAX_CHILDREN 5
 
 int active_children;
 
@@ -37,7 +37,7 @@ void execute( const char *type, const char *text )
 {
 	pid_t pid;
 
-	if ( active_children<CL_MAX_CHILDREN )
+	if ( active_children<MAX_CHILDREN )
 	switch( pid=fork() ) {
 	case 0:
 		if ( -1==system(text) )
