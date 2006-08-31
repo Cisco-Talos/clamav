@@ -50,6 +50,10 @@
 #include "str.h"
 #include "execs.h"
 
+#ifndef	O_BINARY
+#define	O_BINARY	0
+#endif
+
 #define IMAGE_DOS_SIGNATURE	    0x5a4d	    /* MZ */
 #define IMAGE_DOS_SIGNATURE_OLD	    0x4d5a          /* ZM */
 #define IMAGE_NT_SIGNATURE	    0x00004550
@@ -135,7 +139,7 @@ static int cli_ddump(int desc, int offset, int size, const char *file)
 	return -1;
     }
 
-    if((ndesc = open(file, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+    if((ndesc = open(file, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
 	cli_dbgmsg("Can't create file %s\n", file);
 	lseek(desc, pos, SEEK_SET);
 	return -1;
@@ -848,7 +852,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    return CL_EMEM;
 	  }
 	  
-	  if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+	  if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
 	    cli_dbgmsg("sue: Can't create file %s\n", tempfile);
 	    free(tempfile);
 	    free(sue);
@@ -1020,7 +1024,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    return CL_EMEM;
 		}
 
-		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
 		    cli_dbgmsg("FSG: Can't create file %s\n", tempfile);
 		    free(tempfile);
 		    free(section_hdr);
@@ -1225,7 +1229,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    return CL_EMEM;
 		}
 
-		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
 		    cli_dbgmsg("FSG: Can't create file %s\n", tempfile);
 		    free(tempfile);
 		    free(section_hdr);
@@ -1435,7 +1439,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    return CL_EMEM;
 		}
 
-		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
 		    cli_dbgmsg("FSG: Can't create file %s\n", tempfile);
 		    free(tempfile);
 		    free(section_hdr);
@@ -1655,7 +1659,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		return CL_EMEM;
 	    }
 
-	    if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+	    if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
 		cli_dbgmsg("UPX/FSG: Can't create file %s\n", tempfile);
 		free(tempfile);
 		free(dest);
@@ -1755,7 +1759,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	      return CL_EMEM;
 	    }
 
-	    if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+	    if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
 		cli_dbgmsg("Petite: Can't create file %s\n", tempfile);
 		free(tempfile);
 		free(section_hdr);
@@ -1837,7 +1841,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	  return CL_EMEM;
 	}
 
-	if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+	if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
 	    cli_dbgmsg("PESpin: Can't create file %s\n", tempfile);
 	    free(tempfile);
 	    free(spinned);
@@ -1906,7 +1910,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    return CL_EMEM;
 	  }
 
-	  if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+	  if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
 	    cli_dbgmsg("yC: Can't create file %s\n", tempfile);
 	    free(tempfile);
 	    free(spinned);
@@ -2031,7 +2035,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	  return CL_EMEM;
 	}
 
-	if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+	if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
 	  cli_dbgmsg("WWPack: Can't create file %s\n", tempfile);
 	  free(tempfile);
 	  free(dest);
