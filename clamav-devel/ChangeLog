@@ -1,3 +1,7 @@
+Thu Aug 31 21:43:09 CEST 2006 (tk)
+----------------------------------
+  * libclamav/unrar: improve error handling
+
 Thu Aug 31 14:49:42 BST 2006 (njh)
 ----------------------------------
   * libclamav/pe.c:	Added Windows support (with permission from ACAB)
