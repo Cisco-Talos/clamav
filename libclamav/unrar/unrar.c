@@ -648,7 +648,10 @@ static int read_tables(int fd, unpack_data_t *unpack_data)
 	if (bit_field & 0x8000) {
 		unpack_data->unp_block_type = BLOCK_PPM;
 		rar_dbgmsg("Calling ppm_decode_init\n");
-		ppm_decode_init(&unpack_data->ppm_data, fd, unpack_data, &unpack_data->ppm_esc_char);
+		if(!ppm_decode_init(&unpack_data->ppm_data, fd, unpack_data, &unpack_data->ppm_esc_char)) {
+		    cli_dbgmsg("unrar: read_tables: ppm_decode_init failed\n");
+		    return FALSE;
+		}
 		return(TRUE);
 	}
 	unpack_data->unp_block_type = BLOCK_LZ;
@@ -1439,7 +1442,7 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 				cli_dbgmsg("Computed File CRC: 0x%x\n", unpack_data->unp_crc^0xffffffff);
 				if (unpack_data->unp_crc != 0xffffffff) {
 					if (file_header->file_crc != (unpack_data->unp_crc^0xffffffff)) {
-						cli_warnmsg("RAR CRC error. Please send file to trog@clamav.net");
+						cli_warnmsg("RAR CRC error. Please report the bug at https://bugs.clamav.net/\n");
 					}
 				}
 			}

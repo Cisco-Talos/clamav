@@ -374,7 +374,7 @@ static void update(struct see2_context_tag *see2_cont)
 	}
 }
 
-static void restart_model_rare(ppm_data_t *ppm_data)
+static int restart_model_rare(ppm_data_t *ppm_data)
 {
 	int i, k, m;
 	static const uint16_t init_bin_esc[] = {
@@ -388,11 +388,19 @@ static void restart_model_rare(ppm_data_t *ppm_data)
 	ppm_data->init_rl=-(ppm_data->max_order < 12 ? ppm_data->max_order:12)-1;
 	ppm_data->min_context = ppm_data->max_context =
 		(struct ppm_context *) sub_allocator_alloc_context(&ppm_data->sub_alloc);
+	if(!ppm_data->min_context) {
+	    cli_errmsg("unrar: restart_model_rare: sub_allocator_alloc_context failed\n");
+	    return -1;
+	}
 	ppm_data->min_context->suffix = NULL;
 	ppm_data->order_fall = ppm_data->max_order;
 	ppm_data->min_context->con_ut.u.summ_freq = (ppm_data->min_context->num_stats=256)+1;
 	ppm_data->found_state = ppm_data->min_context->con_ut.u.stats=
 		(struct state_tag *)sub_allocator_alloc_units(&ppm_data->sub_alloc, 256/2);
+	if(!ppm_data->found_state) {
+	    cli_errmsg("unrar: restart_model_rare: sub_allocator_alloc_units failed\n");
+	    return -1;
+	}
 	for (ppm_data->run_length = ppm_data->init_rl, ppm_data->prev_success=i=0; i < 256 ; i++) {
 		ppm_data->min_context->con_ut.u.stats[i].symbol = i;
 		ppm_data->min_context->con_ut.u.stats[i].freq = 1;
@@ -411,16 +419,21 @@ static void restart_model_rare(ppm_data_t *ppm_data)
 			see2_init(&ppm_data->see2cont[i][k], 5*i+10);
 		}
 	}
+
+	return 0;
 }
 	
-static void start_model_rare(ppm_data_t *ppm_data, int max_order)
+static int start_model_rare(ppm_data_t *ppm_data, int max_order)
 {
-	int i, k, m, step;
+	int i, k, m, step, ret;
 	
 	ppm_data->esc_count = 1;
 	ppm_data->max_order = max_order;
 	
-	restart_model_rare(ppm_data);
+	if((ret = restart_model_rare(ppm_data))) {
+	    cli_dbgmsg("unrar: start_model_rare: restart_model_rare failed\n");
+	    return ret;
+	}
 	
 	ppm_data->ns2bsindx[0] = 2*0;
 	ppm_data->ns2bsindx[1] = 2*1;
@@ -441,6 +454,7 @@ static void start_model_rare(ppm_data_t *ppm_data, int max_order)
 	memset(ppm_data->hb2flag, 0, 0x40);
 	memset(ppm_data->hb2flag+0x40, 0x08, 0x100-0x40);
 	ppm_data->dummy_sse2cont.shift = PERIOD_BITS;
+	return 0;
 }
 
 	
@@ -599,11 +613,12 @@ NO_LOOP:
 	return pc;
 }
 
-static void update_model(ppm_data_t *ppm_data)
+static int update_model(ppm_data_t *ppm_data)
 {
 	struct state_tag fs, *p;
 	struct ppm_context *pc, *successor;
 	unsigned int ns1, ns, cf, sf, s0;
+	int ret;
 	
 	rar_dbgmsg("in update_model\n");
 	fs = *ppm_data->found_state;
@@ -635,7 +650,7 @@ static void update_model(ppm_data_t *ppm_data)
 		if (!ppm_data->min_context) {
 			goto RESTART_MODEL;
 		}
-		return;
+		return 0;
 	}
 	*ppm_data->sub_alloc.ptext++ = fs.symbol;
 	successor = (struct ppm_context *) ppm_data->sub_alloc.ptext;
@@ -697,11 +712,15 @@ static void update_model(ppm_data_t *ppm_data)
 		pc->num_stats = ++ns1;
 	}
 	ppm_data->max_context = ppm_data->min_context = fs.successor;
-	return;
+	return 0;
 	
 RESTART_MODEL:
-	restart_model_rare(ppm_data);
+	if((ret = restart_model_rare(ppm_data))) {
+	    cli_dbgmsg("unrar: update_model: restart_model_rare: failed\n");
+	    return ret;
+	}
 	ppm_data->esc_count = 0;
+	return 0;
 }
 
 static void update1(ppm_data_t *ppm_data, struct state_tag *p, struct ppm_context *context)
@@ -928,8 +947,14 @@ int ppm_decode_init(ppm_data_t *ppm_data, int fd, unpack_data_t *unpack_data, in
 			sub_allocator_stop_sub_allocator(&ppm_data->sub_alloc);
 			return FALSE;
 		}
-		sub_allocator_start_sub_allocator(&ppm_data->sub_alloc, MaxMB+1);
-		start_model_rare(ppm_data, max_order);
+		if(!sub_allocator_start_sub_allocator(&ppm_data->sub_alloc, MaxMB+1)) {
+		    sub_allocator_stop_sub_allocator(&ppm_data->sub_alloc);
+		    return FALSE;
+		}
+		if(start_model_rare(ppm_data, max_order) < 0) {
+		    sub_allocator_stop_sub_allocator(&ppm_data->sub_alloc);
+		    return FALSE;
+		}
 	}
 	rar_dbgmsg("ppm_decode_init done: %d\n", ppm_data->min_context != NULL);
 	return (ppm_data->min_context != NULL);
@@ -974,7 +999,11 @@ int ppm_decode_char(ppm_data_t *ppm_data, int fd, unpack_data_t *unpack_data)
 	if (!ppm_data->order_fall && (uint8_t *) ppm_data->found_state->successor > ppm_data->sub_alloc.ptext) {
 		ppm_data->min_context = ppm_data->max_context = ppm_data->found_state->successor;
 	} else {
-		update_model(ppm_data);
+		if(update_model(ppm_data)) {
+		    cli_dbgmsg("unrar: ppm_decode_char: update_model failed\n");
+		    return -1;
+		}
+
 		if (ppm_data->esc_count == 0) {
 			clear_mask(ppm_data);
 		}
