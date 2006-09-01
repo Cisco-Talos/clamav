@@ -22,6 +22,9 @@
 /* enable debugging */
 /* #undef CL_DEBUG */
 
+/* enable debugging */
+/* #undef CL_DEBUG */
+
 /* thread safe */
 #define CL_THREAD_SAFE 1
 
@@ -88,6 +91,9 @@
 
 /* file i/o buffer size */
 #define FILEBUFF 8192
+
+/* use "Cache-Control: no-cache" in freshclam */
+/* #undef FRESHCLAM_NO_CACHE */
 
 /* access rights in msghdr */
 /* #undef HAVE_ACCRIGHTS_IN_MSGHDR */
@@ -182,7 +188,7 @@
 /* #define HAVE_POLL_H 1 */
 
 /* "pragma pack" */
-/* #undef HAVE_PRAGMA_PACK */
+#define	HAVE_PRAGMA_PACK	1
 
 /* readdir_r takes 2 arguments */
 /* #undef HAVE_READDIR_R_2 1
@@ -287,7 +293,7 @@
 #define PACKAGE "clamav"
 
 /* Define to the address where bug reports for this package should be sent. */
-#define PACKAGE_BUGREPORT ""
+#define PACKAGE_BUGREPORT "bugs@clamav.net"
 
 /* Define to the full name of this package. */
 #define PACKAGE_NAME ""
@@ -338,7 +344,7 @@
 /* #define USE_SYSLOG 1 */
 
 /* Version number of package */
-#define VERSION "devel-20060725"
+#define VERSION "devel-20060901"
 
 /* use libcurl in mbox code */
 /* #define WITH_CURL 1 */
@@ -366,6 +372,9 @@
 
 /* Define to `long int' if <sys/types.h> does not define. */
 /* #undef off_t */
+
+/* Define to "int" if <sys/socket.h> does not define. */
+typedef	int	socklen_t;
 
 #ifdef	C_WINDOWS
 #include "compat.h"
