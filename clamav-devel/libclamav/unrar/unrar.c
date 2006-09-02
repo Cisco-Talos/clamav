@@ -818,8 +818,12 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 			return FALSE;
 		}	
 		unpack_data->old_filter_lengths_size++;
-		unpack_data->old_filter_lengths = (int *) realloc(unpack_data->old_filter_lengths,
+		unpack_data->old_filter_lengths = (int *) cli_realloc(unpack_data->old_filter_lengths,
 				sizeof(int) * unpack_data->old_filter_lengths_size);
+		if(!unpack_data->old_filter_lengths) {
+		    cli_dbgmsg("unrar: add_vm_code: cli_realloc failed for unpack_data->old_filter_lengths\n");
+		    return FALSE;
+		}
 		unpack_data->old_filter_lengths[unpack_data->old_filter_lengths_size-1] = 0;
 		filter->exec_count = 0;
 	} else {
@@ -888,12 +892,19 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 			return FALSE;
 		}
 		vm_code = (unsigned char *) cli_malloc(vm_codesize);
+		if(!vm_code) {
+		    cli_dbgmsg("unrar: add_vm_code: cli_malloc failed for vm_code\n");
+		    return FALSE;
+		}
 		for (i=0 ; i < vm_codesize ; i++) {
 			vm_code[i] = rarvm_getbits(&rarvm_input) >> 8;
 			rarvm_addbits(&rarvm_input, 8);
 		}
-		rarvm_prepare(&unpack_data->rarvm_data, &rarvm_input, &vm_code[0],
-					vm_codesize, &filter->prg);
+		if(!rarvm_prepare(&unpack_data->rarvm_data, &rarvm_input, &vm_code[0], vm_codesize, &filter->prg)) {
+		    cli_dbgmsg("unrar: add_vm_code: rarvm_prepare failed\n");
+		    free(vm_code);
+		    return FALSE;
+		}
 		free(vm_code);
 	}
 	stack_filter->prg.alt_cmd = &filter->prg.cmd.array[0];
@@ -902,12 +913,20 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 	static_size = filter->prg.static_size;
 	if (static_size > 0 && static_size < VM_GLOBALMEMSIZE) {
 		stack_filter->prg.static_data = cli_malloc(static_size);
+		if(!stack_filter->prg.static_data) {
+		    cli_dbgmsg("unrar: add_vm_code: cli_malloc failed for stack_filter->prg.static_data\n");
+		    return FALSE;
+		}
 		memcpy(stack_filter->prg.static_data, filter->prg.static_data, static_size);
 	}
 	
 	if (stack_filter->prg.global_size < VM_FIXEDGLOBALSIZE) {
 		free(stack_filter->prg.global_data);
 		stack_filter->prg.global_data = cli_malloc(VM_FIXEDGLOBALSIZE);
+		if(!stack_filter->prg.global_data) {
+		    cli_dbgmsg("unrar: add_vm_code: cli_malloc failed for stack_filter->prg.global_data\n");
+		    return FALSE;
+		}
 		memset(stack_filter->prg.global_data, 0, VM_FIXEDGLOBALSIZE);
 		stack_filter->prg.global_size = VM_FIXEDGLOBALSIZE;
 	}
@@ -932,8 +951,12 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 		cur_size = stack_filter->prg.global_size;
 		if (cur_size < data_size+VM_FIXEDGLOBALSIZE) {
 			stack_filter->prg.global_size += data_size+VM_FIXEDGLOBALSIZE-cur_size;
-			stack_filter->prg.global_data = realloc(stack_filter->prg.global_data,
+			stack_filter->prg.global_data = cli_realloc(stack_filter->prg.global_data,
 				stack_filter->prg.global_size);
+			if(!stack_filter->prg.global_data) {
+			    cli_dbgmsg("unrar: add_vm_code: cli_realloc failed for stack_filter->prg.global_data\n");
+			    return FALSE;
+			}
 		}
 		global_data = &stack_filter->prg.global_data[VM_FIXEDGLOBALSIZE];
 		for (i=0 ; i< data_size ; i++) {
@@ -1321,6 +1344,10 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 		return FALSE;
 	}
 	unpack_data = cli_malloc(sizeof(unpack_data_t));
+	if(!unpack_data) {
+	    cli_dbgmsg("unrar: cli_unrar: cli_malloc failed for unpack_data\n");
+	    return FALSE;
+	}
 	unpack_data->rarvm_data.mem = NULL;
 	unpack_data->old_filter_lengths = NULL;
 	unpack_data->PrgStack.array = unpack_data->Filters.array = NULL;

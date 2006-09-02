@@ -48,7 +48,7 @@ void rar_cmd_array_reset(rar_cmd_array_t *cmd_a)
 int rar_cmd_array_add(rar_cmd_array_t *cmd_a, int num)
 {
 	cmd_a->num_items += num;
-	cmd_a->array = (struct rarvm_prepared_command *) realloc(cmd_a->array,
+	cmd_a->array = (struct rarvm_prepared_command *) cli_realloc(cmd_a->array,
 			cmd_a->num_items * sizeof(struct rarvm_prepared_command));
 	if (cmd_a->array == NULL) {
 		return FALSE;
