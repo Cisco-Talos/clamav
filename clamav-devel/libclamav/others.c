@@ -89,6 +89,11 @@ static pthread_mutex_t cli_gentempname_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define	O_BINARY	0
 #endif
 
+#ifdef        C_WINDOWS
+#undef        P_tmpdir
+#define       P_tmpdir        "C:\\WINDOWS\\TEMP"
+#endif
+
 #define CL_FLEVEL 8 /* don't touch it */
 
 short cli_debug_flag = 0, cli_leavetemps_flag = 0;
@@ -775,7 +780,7 @@ int cli_filecopy(const char *src, const char *dest)
 	int s, d, bytes;
 
 
-    if((s = open(src, O_RDONLY)) == -1)
+    if((s = open(src, O_RDONLY|O_BINARY)) == -1)
 	return -1;
 
     if((d = open(dest, O_CREAT|O_WRONLY|O_TRUNC|O_BINARY, S_IRWXU)) == -1) {

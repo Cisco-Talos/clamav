@@ -1,3 +1,7 @@
+Sat Sep  2 20:56:52 CEST 2006 (tk)
+----------------------------------
+  * libclamav/others.c: apply VS2005 fix from NJH
+
 Sat Sep  2 20:16:26 CEST 2006 (tk)
 ----------------------------------
   * libclamav/unrar: more bugfixes
