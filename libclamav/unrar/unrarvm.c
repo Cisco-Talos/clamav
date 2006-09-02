@@ -882,7 +882,7 @@ static int rarvm_execute_code(rarvm_data_t *rarvm_data,
 	}
 }
 
-void rarvm_execute(rarvm_data_t *rarvm_data, struct rarvm_prepared_program *prg)
+int rarvm_execute(rarvm_data_t *rarvm_data, struct rarvm_prepared_program *prg)
 {
 	unsigned int global_size, static_size, new_pos, new_size, data_size;
 	struct rarvm_prepared_command *prepared_code;
@@ -923,10 +923,16 @@ void rarvm_execute(rarvm_data_t *rarvm_data, struct rarvm_prepared_program *prg)
 		(unsigned int *)&rarvm_data->mem[VM_GLOBALMEMADDR+0x30]),VM_GLOBALMEMSIZE);
 	if (data_size != 0) {
 		prg->global_size += data_size+VM_FIXEDGLOBALSIZE;
-		prg->global_data = realloc(prg->global_data, prg->global_size);
+		prg->global_data = cli_realloc(prg->global_data, prg->global_size);
+		if(!prg->global_data) {
+		    cli_dbgmsg("unrar: rarvm_execute: cli_realloc failed for prg->global_data\n");
+		    return FALSE;
+		}
 		memcpy(prg->global_data, &rarvm_data->mem[VM_GLOBALMEMADDR],
 				data_size+VM_FIXEDGLOBALSIZE);
 	}
+
+	return TRUE;
 }
 
 void rarvm_decode_arg(rarvm_data_t *rarvm_data, rarvm_input_t *rarvm_input,
@@ -1025,7 +1031,7 @@ void rarvm_optimize(struct rarvm_prepared_program *prg)
 	}
 }
 
-void rarvm_prepare(rarvm_data_t *rarvm_data, rarvm_input_t *rarvm_input, unsigned char *code,
+int rarvm_prepare(rarvm_data_t *rarvm_data, rarvm_input_t *rarvm_input, unsigned char *code,
 		int code_size, struct rarvm_prepared_program *prg)
 {
 	unsigned char xor_sum;
@@ -1067,9 +1073,17 @@ void rarvm_prepare(rarvm_data_t *rarvm_data, rarvm_input_t *rarvm_input, unsigne
 			int data_size = rarvm_read_data(rarvm_input)+1;
 			rar_dbgmsg("data_size=%d\n", data_size);
 			prg->static_data = cli_malloc(data_size);
+			if(!prg->static_data) {
+			    cli_dbgmsg("unrar: rarvm_prepare: cli_malloc failed for prg->static_data\n");
+			    return FALSE;
+			}
 			for (i=0 ; rarvm_input->in_addr < code_size && i < data_size ; i++) {
 				prg->static_size++;
-				prg->static_data = realloc(prg->static_data, prg->static_size);
+				prg->static_data = cli_realloc(prg->static_data, prg->static_size);
+				if(!prg->static_data) {
+				    cli_dbgmsg("unrar: rarvm_prepare: cli_realloc failed for prg->static_data\n");
+				    return FALSE;
+				}
 				prg->static_data[i] = rarvm_getbits(rarvm_input) >> 8;
 				rarvm_addbits(rarvm_input, 8);
 			}
@@ -1151,4 +1165,6 @@ void rarvm_prepare(rarvm_data_t *rarvm_data, rarvm_input_t *rarvm_input, unsigne
 	if (code_size!=0) {
 		rarvm_optimize(prg);
 	}
+
+	return TRUE;
 }

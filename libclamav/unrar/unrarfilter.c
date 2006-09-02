@@ -52,7 +52,7 @@ void rar_filter_array_reset(rar_filter_array_t *filter_a)
 int rar_filter_array_add(rar_filter_array_t *filter_a, int num)
 {
 	filter_a->num_items += num;
-	filter_a->array = (struct UnpackFilter **) realloc(filter_a->array,
+	filter_a->array = (struct UnpackFilter **) cli_realloc(filter_a->array,
 			filter_a->num_items * sizeof(struct UnpackFilter **));
 	if (filter_a->array == NULL) {
 		filter_a->num_items=0;

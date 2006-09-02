@@ -111,10 +111,10 @@ unsigned int rarvm_getbits(rarvm_input_t *rarvm_input);
 void rarvm_addbits(rarvm_input_t *rarvm_input, int bits);
 int rarvm_init(rarvm_data_t *rarvm_data);
 void rarvm_free(rarvm_data_t *rarvm_data);
-void rarvm_prepare(rarvm_data_t *rarvm_data, rarvm_input_t *rarvm_input, unsigned char *code,
+int rarvm_prepare(rarvm_data_t *rarvm_data, rarvm_input_t *rarvm_input, unsigned char *code,
 		int code_size, struct rarvm_prepared_program *prg);
 void rarvm_set_memory(rarvm_data_t *rarvm_data, unsigned int pos, uint8_t *data, unsigned int data_size);
-void rarvm_execute(rarvm_data_t *rarvm_data, struct rarvm_prepared_program *prg);
+int rarvm_execute(rarvm_data_t *rarvm_data, struct rarvm_prepared_program *prg);
 void rarvm_set_value(int byte_mode, unsigned int *addr, unsigned int value);
 unsigned int rarvm_read_data(rarvm_input_t *rarvm_input);
 uint32_t rar_crc(uint32_t start_crc, void *addr, uint32_t size);
