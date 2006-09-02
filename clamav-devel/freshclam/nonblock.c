@@ -72,8 +72,7 @@ static int connect_error(int sock)
 	getsockopt(sock, SOL_SOCKET, SO_ERROR, &optval, &optlen);
 
 	if (optval) {
-		logg("%s %s: getsockopt(SO_ERROR): fd=%d error=%d: %s\n",
-		     __FILE__, __PRETTY_FUNCTION__,
+		logg("connect_error: getsockopt(SO_ERROR): fd=%d error=%d: %s\n",
 		     sock, optval, strerror(optval));
 	}
 
@@ -97,8 +96,7 @@ static int nonblock_connect(int sock, const struct sockaddr *addr, socklen_t add
 	if (connect(sock, addr, addrlen)) {
 		int e = errno;
 #ifdef NONBLOCK_DEBUG
-		logg("DEBUG %s %s: connect(): fd=%d errno=%d: %s\n",
-		     __FILE__, __PRETTY_FUNCTION__,
+		logg("DEBUG nonblock_connect: connect(): fd=%d errno=%d: %s\n",
 		     sock, e, strerror(e));
 #endif
 		switch (e) {
@@ -108,8 +106,7 @@ static int nonblock_connect(int sock, const struct sockaddr *addr, socklen_t add
 		case EISCONN:
 			return 0; /* connected */
 		default:
-			logg("%s %s: connect(): fd=%d errno=%d: %s\n",
-			     __FILE__, __PRETTY_FUNCTION__,
+			logg("nonblock_connect: connect(): fd=%d errno=%d: %s\n",
 			     sock, e, strerror(e));
 			return -1; /* failed */
 		}
@@ -129,8 +126,7 @@ static int nonblock_connect(int sock, const struct sockaddr *addr, socklen_t add
 		/* Force timeout if we ran out of time */
 		gettimeofday(&now, 0);
 		if (timercmp(&now, &timeout, >)) {
-			logg("%s %s: connect timing out (%d secs)\n",
-			     __FILE__, __PRETTY_FUNCTION__,
+			logg("nonblock_connect: connect timing out (%d secs)\n",
 			     secs);
 			break; /* failed */
 		}
@@ -144,8 +140,7 @@ static int nonblock_connect(int sock, const struct sockaddr *addr, socklen_t add
 
 		n = select(numfd, 0, &fds, 0, &wait);
 		if (n < 0) {
-			logg("%s %s: select() failure %d: errno=%d: %s\n",
-			     __FILE__, __PRETTY_FUNCTION__,
+			logg("nonblock_connect: select() failure %d: errno=%d: %s\n",
 			     select_failures, errno, strerror(errno));
 			if (--select_failures >= 0)
 				continue; /* keep waiting */
@@ -153,9 +148,7 @@ static int nonblock_connect(int sock, const struct sockaddr *addr, socklen_t add
 		}
 
 #ifdef NONBLOCK_DEBUG
-		logg("DEBUG %s %s: select = %d\n",
-		     __FILE__, __PRETTY_FUNCTION__,
-		     n);
+		logg("DEBUG nonblock_connect: select = %d\n", n);
 #endif
 
 		if (n) {
@@ -164,8 +157,7 @@ static int nonblock_connect(int sock, const struct sockaddr *addr, socklen_t add
 
 		/* Select returned, but there is no work to do... */
 		if (--bogus_loops < 0) {
-			logg("%s %s: giving up due to excessive bogus loops\n",
-			     __FILE__, __PRETTY_FUNCTION__);
+			logg("nonblock_connect: giving up due to excessive bogus loops\n");
 			break; /* failed */
 		}
 
@@ -198,9 +190,7 @@ static ssize_t nonblock_recv(int sock, void *buf, size_t len, int flags, int sec
 		/* Force timeout if we ran out of time */
 		gettimeofday(&now, 0);
 		if (timercmp(&now, &timeout, >)) {
-			logg("%s %s: recv timing out (%d secs)\n",
-			     __FILE__, __PRETTY_FUNCTION__,
-			     secs);
+			logg("nonblock_recv: recv timing out (%d secs)\n", secs);
 			break; /* failed */
 		}
 
@@ -213,8 +203,7 @@ static ssize_t nonblock_recv(int sock, void *buf, size_t len, int flags, int sec
 
 		n = select(numfd, &fds, 0, 0, &wait);
 		if (n < 0) {
-			logg("%s %s: select() failure %d: errno=%d: %s\n",
-			     __FILE__, __PRETTY_FUNCTION__,
+			logg("nonblock_recv: select() failure %d: errno=%d: %s\n",
 			     select_failures, errno, strerror(errno));
 			if (--select_failures >= 0)
 				continue; /* keep waiting */
@@ -227,8 +216,7 @@ static ssize_t nonblock_recv(int sock, void *buf, size_t len, int flags, int sec
 
 		/* Select returned, but there is no work to do... */
 		if (--bogus_loops < 0) {
-			logg("%s %s: giving up due to excessive bogus loops\n",
-			     __FILE__, __PRETTY_FUNCTION__);
+			logg("nonblock_recv: giving up due to excessive bogus loops\n");
 			break; /* failed */
 		}
 
@@ -243,13 +231,11 @@ static long nonblock_fcntl(int sock)
 
 	fcntl_flags = fcntl(sock, F_GETFL, 0);
 	if (fcntl_flags == -1) {
-		logg("%s %s: saving: fcntl(%d, F_GETFL): errno=%d: %s\n",
-		     __FILE__, __PRETTY_FUNCTION__,
+		logg("nonblock_fcntl: saving: fcntl(%d, F_GETFL): errno=%d: %s\n",
 		     sock, errno, strerror(errno));
 	}
 	else if (fcntl(sock, F_SETFL, fcntl_flags | O_NONBLOCK)) {
-		logg("%s %s: fcntl(%d, F_SETFL, O_NONBLOCK): errno=%d: %s\n",
-		     __FILE__, __PRETTY_FUNCTION__,
+		logg("nonblock_fcntl: fcntl(%d, F_SETFL, O_NONBLOCK): errno=%d: %s\n",
 		     sock, errno, strerror(errno));
 	}
 
@@ -260,8 +246,7 @@ static void restore_fcntl(int sock, long fcntl_flags)
 {
 	if (fcntl_flags != -1) {
 		if (fcntl(sock, F_SETFL, fcntl_flags)) {
-			logg("%s %s: restoring: fcntl(%d, F_SETFL): errno=%d: %s\n",
-			     __FILE__, __PRETTY_FUNCTION__,
+			logg("restore_fcntl: restoring: fcntl(%d, F_SETFL): errno=%d: %s\n",
 			     sock, errno, strerror(errno));
 		}
 	}
