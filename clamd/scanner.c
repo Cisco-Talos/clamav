@@ -253,6 +253,7 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_node 
     if(!ret)
 	mdprintf(odesc, "%s: OK\n", filename);
 
+    mdprintf(odesc, "\n"); /* Terminate response with a blank line boundary */
     return ret;
 }
 

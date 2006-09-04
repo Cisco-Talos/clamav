@@ -53,27 +53,14 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
 	struct cfgstruct *cpt;
 
 
-    retval = poll_fd(desc, timeout);
-    switch (retval) {
-    case 0: /* timeout */
+    bread = readsock(desc, buff, sizeof(buff)-1, '\n', timeout, 0, 1);
+    if(bread == -2) /* timeout */
 	return -2;
-    case -1:
-	mdprintf(desc, "ERROR\n");
-	logg("!Command: poll_fd failed.\n");
+    if(bread == 0) /* Connection closed */
 	return -1;
-    }
-
-    while((bread = readsock(desc, buff, 1024)) == -1 && errno == EINTR);
-
-    if(bread == 0) {
-	/* Connection closed */
-	return -1;
-    }
-
     if(bread < 0) {
-	logg("!Command parser: read() failed.\n");
-	/* at least try to display this error message */
-	/* mdprintf(desc, "ERROR: Command parser: read() failed.\n"); */
+	mdprintf(desc, "ERROR\n");
+	logg("!Command: readsock() failed.\n");
 	return -1;
     }
 

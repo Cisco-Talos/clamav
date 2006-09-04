@@ -1,3 +1,11 @@
+Tue Sep  5 00:23:26 CEST 2006 (tk)
+----------------------------------
+  * clamd: all commands can be now prefixed with the letter 'n' (eg. nSCAN) to
+	   to indicate that they will be delimited by a new line character
+	   (which assures that the complete command and its entire argument
+	   will be processed as a single command)
+	   Patch from Mark Pizzolato <clamav-devel*subscriptions.pizzolato.net>
+
 Mon Sep  4 21:06:52 CEST 2006 (tk)
 ----------------------------------
   * libclamav/unrar/unrarvm.c: fix possible crash reported by Sven
