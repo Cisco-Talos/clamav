@@ -903,6 +903,10 @@ int rarvm_execute(rarvm_data_t *rarvm_data, struct rarvm_prepared_program *prg)
 	rarvm_data->Flags = 0;
 	
 	prepared_code=prg->alt_cmd ? prg->alt_cmd : &prg->cmd.array[0];
+	if(!prepared_code) {
+	    cli_dbgmsg("unrar: rarvm_execute: prepared_code == NULL\n");
+	    return FALSE;
+	}
 	if (!rarvm_execute_code(rarvm_data, prepared_code, prg->cmd_count)) {
 		prepared_code[0].op_code = VM_RET;
 	}

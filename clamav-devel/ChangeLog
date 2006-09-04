@@ -1,3 +1,7 @@
+Mon Sep  4 21:06:52 CEST 2006 (tk)
+----------------------------------
+  * libclamav/unrar/unrarvm.c: fix possible crash reported by Sven
+
 Sat Sep  2 20:56:52 CEST 2006 (tk)
 ----------------------------------
   * libclamav/others.c: apply VS2005 fix from NJH
