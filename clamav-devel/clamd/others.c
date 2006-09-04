@@ -303,14 +303,27 @@ int writen(int fd, void *buff, unsigned int count)
     return count;
 }
 
-/* Submitted by Richard Lyons <frob-clamav*webcentral.com.au> */
-
-#if defined(HAVE_RECVMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN) && !defined(C_OS2) && !defined(INCOMPLETE_CMSG)
-
-int readsock(int sockfd, char *buf, size_t size)
+/* FD Support Submitted by Richard Lyons <frob-clamav*webcentral.com.au> */
+/*
+   This procedure does timed clamd command and delimited input processing.  
+   It is complex for several reasons:
+       1) FD commands are delivered on Unix domain sockets via recvnsg() on platforms which can do this.  
+          These command messages are accompanied by a single byte of data which is a NUL character.
+       2) Newline delimited commands are indicated by a command which is prefixed by an 'n' character.  
+          This character serves to indicate that the command will contain a newline which will cause
+          command data to be read until the command input buffer is full or a newline is encountered.
+          Once the delimiter is encountered, the data is returned without the prefixing 'n' byte.
+       3) Legacy clamd clients presented commands which may or may not have been delimited by a newline.
+          If a command happens to be delimted by a newline, then only that command (and its newline) is
+          read and passed back, otherwise, all data read (in a single read) which fits in the specified
+          buffer will be returned.
+*/
+int readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeout_sec, int force_delim, int read_command)
 {
 	int fd;
 	ssize_t n;
+	size_t boff = 0;
+	char *pdelim;
 	struct msghdr msg;
 	struct iovec iov[1];
 #ifdef HAVE_CONTROL_IN_MSGHDR
@@ -323,45 +336,117 @@ int readsock(int sockfd, char *buf, size_t size)
 	struct cmsghdr *cmsg;
 	char tmp[CMSG_SPACE(sizeof(fd))];
 #endif
+	time_t starttime, timenow;
 
-    iov[0].iov_base = buf;
-    iov[0].iov_len = size;
-    memset(&msg, 0, sizeof(msg));
-    msg.msg_iov = iov;
-    msg.msg_iovlen = 1;
+    time(&starttime);
+    while(1) {
+	time(&timenow);
+	switch(poll_fd(sockfd, (timeout_sec && ((timeout_sec-(timenow-starttime)) > 0)) ? timeout_sec-(timenow-starttime) : 0)) {
+	    case 0: /* timeout */
+		return -2;
+	    case -1:
+		if(errno == EINTR)
+		    continue;
+		return -1;
+	}
+	break;
+    }
+    n = recv(sockfd, buf, size, MSG_PEEK);
+    if(read_command) {
+    	if((n >= 1) && (buf[0] == 0)) { /* FD message */
+	    iov[0].iov_base = buf;
+	    iov[0].iov_len = size;
+	    memset(&msg, 0, sizeof(msg));
+	    msg.msg_iov = iov;
+	    msg.msg_iovlen = 1;
 #ifdef HAVE_ACCRIGHTS_IN_MSGHDR
-    msg.msg_accrights = (caddr_t)&fd;
-    msg.msg_accrightslen = sizeof(fd);
+	    msg.msg_accrights = (caddr_t)&fd;
+	    msg.msg_accrightslen = sizeof(fd);
 #endif
 #ifdef HAVE_CONTROL_IN_MSGHDR
-    msg.msg_control = tmp;
-    msg.msg_controllen = sizeof(tmp);
+	    msg.msg_control = tmp;
+	    msg.msg_controllen = sizeof(tmp);
 #endif
-    fd = -1;
-    if ((n = recvmsg(sockfd, &msg, 0)) <= 0)
-	return n;
-    errno = EBADF;
-    if (n != 1 || buf[0] != 0)
-	return !strncmp(buf, CMD12, strlen(CMD12)) ? -1 : n;
+#if defined(HAVE_RECVMSG) && !defined(C_OS2) && !defined(INCOMPLETE_CMSG)
+	    n = recvmsg(sockfd, &msg, 0);
+#else
+	    n = recv(sockfd, buf, size, 0);
+#endif
+	    if (n <= 0)
+		return n;
+	    errno = EBADF;
 #ifdef HAVE_ACCRIGHTS_IN_MSGHDR
-    if (msg.msg_accrightslen != sizeof(fd))
-	return -1;
+	    if(msg.msg_accrightslen != sizeof(fd))
+		return -1;
 #endif
 #ifdef HAVE_CONTROL_IN_MSGHDR
-    cmsg = CMSG_FIRSTHDR(&msg);
-    if (cmsg == NULL)
-	return -1;
-    if (cmsg->cmsg_type != SCM_RIGHTS)
-	return -1;
-    if (cmsg->cmsg_len != CMSG_LEN(sizeof(fd)))
-	return -1;
-    fd = *(int *)CMSG_DATA(cmsg);
+	    cmsg = CMSG_FIRSTHDR(&msg);
+	    if(cmsg == NULL)
+		return -1;
+	    if(cmsg->cmsg_type != SCM_RIGHTS)
+		return -1;
+	    if(cmsg->cmsg_len != CMSG_LEN(sizeof(fd)))
+		return -1;
+	    fd = *(int *)CMSG_DATA(cmsg);
 #endif
-    if (fd < 0)
-	return -1;
-    n = snprintf(buf, size, "FD %d", fd);
-    if (n >= size)
-	return -1;
+	    if(fd < 0)
+		return -1;
+	    n = snprintf(buf, size, "FD %d", fd);
+	    if(n >= size)
+		return -1;
+	    return n;
+	}
+	if((n >= 1) && (buf[0] == 'n')) { /* Newline delimited command */
+	    force_delim = 1;
+	    delim = '\n';
+	}
+    }
+    while(boff < size) {
+	if(force_delim) {
+	    pdelim = memchr(buf, delim, n+boff);
+	    if(pdelim) {
+		n = recv(sockfd, buf+boff, pdelim-buf+1-boff, 0);
+		break;
+	    } else {
+		n = recv(sockfd, buf+boff, n, 0);
+		if((boff+n) == size)
+		    break;
+		boff += n;
+	    }
+	} else {
+	    pdelim = memchr(buf, delim, n+boff);
+	    if(pdelim)
+		n = recv(sockfd, buf+boff, pdelim-buf+1-boff, 0);
+	    else
+		n = recv(sockfd, buf+boff, size-boff, 0);
+	    break;
+	}
+	while(1) {
+	    time(&timenow);
+	    switch(poll_fd(sockfd, ((timeout_sec-(timenow-starttime)) > 0) ? timeout_sec-(timenow-starttime) : 0)) {
+		case 0: /* timeout */
+		    return -2;
+		case -1:
+		    if(errno == EINTR)
+			continue;
+		    return -1;
+	    }
+	    break;
+	}
+        n = recv(sockfd, buf+boff, size-boff, MSG_PEEK);
+	if(n < 0)
+	    return -1;
+	if(n == 0)
+	    break;
+    }
+    n += boff;
+    if(read_command) {
+	if((n >= 1) && (buf[0] == 'n')) { /* Need to strip leading 'n' from command to attain standard command */
+	    --n;
+	    memcpy(buf, buf+1, n);
+	    buf[n] = '\0';
+	}
+	return !strncmp(buf, "FD", 2) ? -1 : n; /* an explicit FD command is invalid */
+    }
     return n;
 }
-#endif

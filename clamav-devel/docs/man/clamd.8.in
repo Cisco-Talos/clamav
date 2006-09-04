@@ -12,6 +12,8 @@ The daemon listens for incoming connections on Unix or TCP socket and scans file
 .SH "COMMANDS"
 .LP 
 clamd recognizes the following commands:
+
+Note: It's recommended to prefix clamd commands with the letter \fBn\fR (eg. nSCAN) to indicate that the command will be delimited by a newline character and that clamd should continue reading command data until a newline is read. The newline delimiter assures that the complete command and its entire argument will be processed as a single command.
 .TP 
 \fBPING\fR
 Check the server's state. It should reply with "PONG".
