@@ -97,46 +97,8 @@
   	file_buff.length = 0;
   	
   	if (!file_buff.fd) {
-*** /home/njh/src/clamav-devel/./libclamav/blob.c	2006-08-27 10:51:31.000000000 +0100
---- ./libclamav/blob.c	2006-08-28 11:55:52.000000000 +0100
-***************
-*** 16,22 ****
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
-   */
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
---- 16,22 ----
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
-   */
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
-*** /home/njh/src/clamav-devel/./libclamav/others.c	2006-08-11 20:39:24.000000000 +0100
---- ./libclamav/others.c	2006-08-11 21:10:46.000000000 +0100
-***************
-*** 775,781 ****
-  	int s, d, bytes;
-  
-  
-!     if((s = open(src, O_RDONLY)) == -1)
-  	return -1;
-  
-      if((d = open(dest, O_CREAT|O_WRONLY|O_TRUNC|O_BINARY, S_IRWXU)) == -1) {
---- 775,781 ----
-  	int s, d, bytes;
-  
-  
-!     if((s = open(src, O_RDONLY|O_BINARY)) == -1)
-  	return -1;
-  
-      if((d = open(dest, O_CREAT|O_WRONLY|O_TRUNC|O_BINARY, S_IRWXU)) == -1) {
 *** /home/njh/src/clamav-devel/./libclamav/cvd.c	2006-07-25 17:52:00.000000000 +0100
---- ./libclamav/cvd.c	2006-07-27 16:53:22.000000000 +0100
+--- ./libclamav/cvd.c	2006-09-02 21:10:50.000000000 +0100
 ***************
 *** 29,36 ****
   #include <sys/types.h>
@@ -206,213 +168,44 @@
   
       cli_rmdirs(dir);
       free(dir);
-*** /home/njh/src/clamav-devel/./libclamav/unrar/unrarfilter.c	2006-06-17 22:00:44.000000000 +0100
---- ./libclamav/unrar/unrarfilter.c	2006-07-26 10:30:34.000000000 +0100
+*** /home/njh/src/clamav-devel/./libclamav/blob.c	2006-08-27 10:51:31.000000000 +0100
+--- ./libclamav/blob.c	2006-08-28 11:55:52.000000000 +0100
 ***************
-*** 1,100 ****
-! /*
-!  *  Extract RAR archives
-!  *
-!  *  Copyright (C) 2005 trog@uncon.org
-!  *
-!  *  This code is based on the work of Alexander L. Roshal
-!  *
-!  *  This program is free software; you can redistribute it and/or modify
-!  *  it under the terms of the GNU General Public License as published by
-!  *  the Free Software Foundation; either version 2 of the License, or
-!  *  (at your option) any later version.
-!  *
-!  *  This program is distributed in the hope that it will be useful,
-!  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  *  GNU General Public License for more details.
-!  *
-!  *  You should have received a copy of the GNU General Public License
-!  *  along with this program; if not, write to the Free Software
-!  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-!  *  MA 02110-1301, USA.
-!  */
-! 
-! #include <unistd.h>
-! 
-! #include "unrar.h"
+*** 16,22 ****
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+--- 16,22 ----
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+*** /home/njh/src/clamav-devel/./libclamav/unrar/unrarfilter.c	2006-09-04 09:17:48.000000000 +0100
+--- ./libclamav/unrar/unrarfilter.c	2006-09-04 09:19:02.000000000 +0100
+***************
+*** 20,27 ****
+--- 20,33 ----
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
++ #if HAVE_CONFIG_H
++ #include "clamav-config.h"
++ #endif
+  
++ 
++ #ifdef	HAVE_UNISTD_H
+  #include <unistd.h>
++ #endif
+  
+  #include "unrar.h"
   #include "unrarfilter.h"
-  
-  void rar_filter_array_init(rar_filter_array_t *filter_a)
-  {
-  	filter_a->array = NULL;
-  	filter_a->num_items = 0;
-! }
-  
-  void rar_filter_array_reset(rar_filter_array_t *filter_a)
-! {
-! 	int i;
-  	
-  	if (!filter_a) {
-  		return;
-! 	}
-! 	for (i=0 ; i < filter_a->num_items ; i++) {
-! 		rar_filter_delete(filter_a->array[i]);
-  	}
-  	if (filter_a->array) {
-  		free(filter_a->array);
-  	}
-  	filter_a->array = NULL;
-! 	filter_a->num_items = 0;
-  }
-  
-  int rar_filter_array_add(rar_filter_array_t *filter_a, int num)
-  {
-  	filter_a->num_items += num;
-! 	filter_a->array = (struct UnpackFilter **) realloc(filter_a->array,
-! 			filter_a->num_items * sizeof(struct UnpackFilter **));
-! 	if (filter_a->array == NULL) {
-! 		filter_a->num_items=0;
-! 		return FALSE;
-! 	}
-! 	filter_a->array[filter_a->num_items-1] = NULL;
-  	return TRUE;
-  }
-! 
-! struct UnpackFilter *rar_filter_new(void)
-! {
-! 	struct UnpackFilter *filter;
-! 	
-! 	filter = (struct UnpackFilter *) cli_malloc(sizeof(struct UnpackFilter));
-! 	if (!filter) {
-! 		return NULL;
-! 	}
-! 	filter->block_start = 0;
-!   	filter->block_length = 0;
-!   	filter->exec_count = 0;
-!   	filter->next_window = 0;
-!   	
-!    	rar_cmd_array_init(&filter->prg.cmd);
-! 	filter->prg.global_data = NULL;
-! 	filter->prg.static_data = NULL;
-! 	filter->prg.global_size = filter->prg.static_size = 0;
-! 	filter->prg.filtered_data = NULL;
-! 	filter->prg.filtered_data_size = 0;
-!   	return filter;
-! }
-! 
-! void rar_filter_delete(struct UnpackFilter *filter)
-! {
-! 	if (!filter) {
-! 		return;
-! 	}
-! 	if (filter->prg.global_data) {
-! 		free(filter->prg.global_data);
-! 	}
-! 	if (filter->prg.static_data) {
-! 		free(filter->prg.static_data);
-! 	}
-! 	rar_cmd_array_reset(&filter->prg.cmd);
-! 	free(filter);
-! }
---- 1,102 ----
-! /*
-!  *  Extract RAR archives
-!  *
-!  *  Copyright (C) 2005 trog@uncon.org
-!  *
-!  *  This code is based on the work of Alexander L. Roshal
-!  *
-!  *  This program is free software; you can redistribute it and/or modify
-!  *  it under the terms of the GNU General Public License as published by
-!  *  the Free Software Foundation; either version 2 of the License, or
-!  *  (at your option) any later version.
-!  *
-!  *  This program is distributed in the hope that it will be useful,
-!  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  *  GNU General Public License for more details.
-!  *
-!  *  You should have received a copy of the GNU General Public License
-!  *  along with this program; if not, write to the Free Software
-!  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-!  *  MA 02110-1301, USA.
-!  */
-! 
-! #ifdef	HAVE_UNISTD_H
-! #include <unistd.h>
-! #endif
-! 
-! #include "unrar.h"
-  #include "unrarfilter.h"
-  
-  void rar_filter_array_init(rar_filter_array_t *filter_a)
-  {
-  	filter_a->array = NULL;
-  	filter_a->num_items = 0;
-! }
-  
-  void rar_filter_array_reset(rar_filter_array_t *filter_a)
-! {
-! 	int i;
-  	
-  	if (!filter_a) {
-  		return;
-! 	}
-! 	for (i=0 ; i < filter_a->num_items ; i++) {
-! 		rar_filter_delete(filter_a->array[i]);
-  	}
-  	if (filter_a->array) {
-  		free(filter_a->array);
-  	}
-  	filter_a->array = NULL;
-! 	filter_a->num_items = 0;
-  }
-  
-  int rar_filter_array_add(rar_filter_array_t *filter_a, int num)
-  {
-  	filter_a->num_items += num;
-! 	filter_a->array = (struct UnpackFilter **) realloc(filter_a->array,
-! 			filter_a->num_items * sizeof(struct UnpackFilter **));
-! 	if (filter_a->array == NULL) {
-! 		filter_a->num_items=0;
-! 		return FALSE;
-! 	}
-! 	filter_a->array[filter_a->num_items-1] = NULL;
-  	return TRUE;
-  }
-! 
-! struct UnpackFilter *rar_filter_new(void)
-! {
-! 	struct UnpackFilter *filter;
-! 	
-! 	filter = (struct UnpackFilter *) cli_malloc(sizeof(struct UnpackFilter));
-! 	if (!filter) {
-! 		return NULL;
-! 	}
-! 	filter->block_start = 0;
-!   	filter->block_length = 0;
-!   	filter->exec_count = 0;
-!   	filter->next_window = 0;
-!   	
-!    	rar_cmd_array_init(&filter->prg.cmd);
-! 	filter->prg.global_data = NULL;
-! 	filter->prg.static_data = NULL;
-! 	filter->prg.global_size = filter->prg.static_size = 0;
-! 	filter->prg.filtered_data = NULL;
-! 	filter->prg.filtered_data_size = 0;
-!   	return filter;
-! }
-! 
-! void rar_filter_delete(struct UnpackFilter *filter)
-! {
-! 	if (!filter) {
-! 		return;
-! 	}
-! 	if (filter->prg.global_data) {
-! 		free(filter->prg.global_data);
-! 	}
-! 	if (filter->prg.static_data) {
-! 		free(filter->prg.static_data);
-! 	}
-! 	rar_cmd_array_reset(&filter->prg.cmd);
-! 	free(filter);
-! }
 *** /home/njh/src/clamav-devel/./libclamav/unrar/unrar.h	2006-06-17 22:00:44.000000000 +0100
 --- ./libclamav/unrar/unrar.h	2006-07-26 10:49:26.000000000 +0100
 ***************
@@ -444,8 +237,8 @@
   typedef struct main_header_tag
   {
   	uint16_t head_crc __attribute__ ((packed));
-*** /home/njh/src/clamav-devel/./libclamav/unrar/unrarvm.c	2006-06-17 22:00:44.000000000 +0100
---- ./libclamav/unrar/unrarvm.c	2006-07-26 10:59:34.000000000 +0100
+*** /home/njh/src/clamav-devel/./libclamav/unrar/unrarvm.c	2006-09-05 09:36:01.000000000 +0100
+--- ./libclamav/unrar/unrarvm.c	2006-09-05 09:36:24.000000000 +0100
 ***************
 *** 319,325 ****
   {
@@ -463,10 +256,10 @@
   	bit_field|=(unsigned int)data[in_addr++] << 8;
   	bit_field|=(unsigned int)data[in_addr++] << 16;
   	bit_field|=(unsigned int)data[in_addr] << 24;
-*** /home/njh/src/clamav-devel/./libclamav/unrar/unrarppm.c	2006-08-12 18:31:34.000000000 +0100
---- ./libclamav/unrar/unrarppm.c	2006-08-14 10:21:50.000000000 +0100
+*** /home/njh/src/clamav-devel/./libclamav/unrar/unrarppm.c	2006-09-01 08:52:58.000000000 +0100
+--- ./libclamav/unrar/unrarppm.c	2006-09-01 08:53:54.000000000 +0100
 ***************
-*** 41,47 ****
+*** 41,50 ****
   
   const unsigned int UNIT_SIZE=sizeof(struct ppm_context);
   const unsigned int FIXED_UNIT_SIZE=12;
@@ -474,23 +267,29 @@
   const int INTERVAL=1 << 7, BIN_SCALE=1 << 14, MAX_FREQ=124;
   const unsigned int TOP=1 << 24, BOT=1 << 15;
   
---- 41,54 ----
+  /************* Start of Allocator code block ********************/
+  
+  static void sub_allocator_init(sub_allocator_t *sub_alloc)
+--- 41,57 ----
   
   const unsigned int UNIT_SIZE=sizeof(struct ppm_context);
   const unsigned int FIXED_UNIT_SIZE=12;
-! 
-! #ifdef	_MSC_VER
-! #define	MAX_O	64
-! #else
-! const	int	MAX_O = 64;
-! #endif
-! 
 ! const int INT_BITS=7, PERIOD_BITS=7, TOT_BITS=14;
   const int INTERVAL=1 << 7, BIN_SCALE=1 << 14, MAX_FREQ=124;
   const unsigned int TOP=1 << 24, BOT=1 << 15;
   
-*** /home/njh/src/clamav-devel/./libclamav/unrar/unrar.c	2006-06-17 22:00:44.000000000 +0100
---- ./libclamav/unrar/unrar.c	2006-07-26 11:06:12.000000000 +0100
++ #ifdef	_MSC_VER
++ #define	MAX_O	64
++ #else
++ const int	MAX_O = 64;
++ #endif
++ 
++ 
+  /************* Start of Allocator code block ********************/
+  
+  static void sub_allocator_init(sub_allocator_t *sub_alloc)
+*** /home/njh/src/clamav-devel/./libclamav/unrar/unrar.c	2006-09-04 09:20:04.000000000 +0100
+--- ./libclamav/unrar/unrar.c	2006-09-04 09:20:32.000000000 +0100
 ***************
 *** 29,35 ****
 --- 29,37 ----
@@ -745,7 +544,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -753,7 +552,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -764,8 +563,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.8  2006/08/30 14:48:28  njh
-   * Add even more patches for nonblock.c
+   * Revision 1.9  2006/09/05 12:45:22  njh
+   * Fix to clamdscan crash and clamd nSCAN feature
    *
 !  * Revision 1.22  2006/07/31 09:19:52  njh
 !  * Use MAP_PRIVATE
@@ -776,8 +575,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.8  2006/08/30 14:48:28  njh
-   * Add even more patches for nonblock.c
+   * Revision 1.9  2006/09/05 12:45:22  njh
+   * Fix to clamdscan crash and clamd nSCAN feature
    *
 !  * Revision 1.1  2006/08/11 20:05:13  njh
 !  * First Draft
@@ -789,7 +588,7 @@
    * First draft of binhex.c
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
   
   #include "clamav.h"
   
@@ -797,7 +596,7 @@
    * First draft of binhex.c
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
   
   #include "clamav.h"
   
@@ -854,8 +653,8 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.8  2006/08/30 14:48:28  njh
-   * Add even more patches for nonblock.c
+   * Revision 1.9  2006/09/05 12:45:22  njh
+   * Fix to clamdscan crash and clamd nSCAN feature
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -871,8 +670,8 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.8  2006/08/30 14:48:28  njh
-   * Add even more patches for nonblock.c
+   * Revision 1.9  2006/09/05 12:45:22  njh
+   * Fix to clamdscan crash and clamd nSCAN feature
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -920,7 +719,7 @@
    *
    * Created 25 August 1985 by John Gilmore, ihnp4!hoptoad!gnu.
    *
-!  * $Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $ # checkin only
+!  * $Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $ # checkin only
    */
   
   /*
@@ -928,7 +727,7 @@
    *
    * Created 25 August 1985 by John Gilmore, ihnp4!hoptoad!gnu.
    *
-!  * $Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $ # checkin only
+!  * $Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $ # checkin only
    */
   
   /*
@@ -939,7 +738,7 @@
    * Public Domain version written 26 Aug 1985 John Gilmore (ihnp4!hoptoad!gnu).
    *
    * @(#)list.c 1.18 9/23/86 Public Domain - gnu
-!  * $Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $
+!  * $Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $
    *
    * Comments changed and some code/comments reformatted
    * for file command by Ian Darwin.
@@ -947,7 +746,7 @@
    * Public Domain version written 26 Aug 1985 John Gilmore (ihnp4!hoptoad!gnu).
    *
    * @(#)list.c 1.18 9/23/86 Public Domain - gnu
-!  * $Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $
+!  * $Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $
    *
    * Comments changed and some code/comments reformatted
    * for file command by Ian Darwin.
@@ -965,178 +764,6 @@
    
   #ifdef __cplusplus
   extern "C"
-*** /home/njh/src/clamav-devel/./libclamav/pe.c	2006-08-11 20:39:24.000000000 +0100
---- ./libclamav/pe.c	2006-08-11 20:43:10.000000000 +0100
-***************
-*** 135,141 ****
-  	return -1;
-      }
-  
-!     if((ndesc = open(file, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
-  	cli_dbgmsg("Can't create file %s\n", file);
-  	lseek(desc, pos, SEEK_SET);
-  	return -1;
---- 135,141 ----
-  	return -1;
-      }
-  
-!     if((ndesc = open(file, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
-  	cli_dbgmsg("Can't create file %s\n", file);
-  	lseek(desc, pos, SEEK_SET);
-  	return -1;
-***************
-*** 848,854 ****
-  	    return CL_EMEM;
-  	  }
-  	  
-! 	  if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
-  	    cli_dbgmsg("sue: Can't create file %s\n", tempfile);
-  	    free(tempfile);
-  	    free(sue);
---- 848,854 ----
-  	    return CL_EMEM;
-  	  }
-  	  
-! 	  if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
-  	    cli_dbgmsg("sue: Can't create file %s\n", tempfile);
-  	    free(tempfile);
-  	    free(sue);
-***************
-*** 1020,1026 ****
-  		    return CL_EMEM;
-  		}
-  
-! 		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
-  		    cli_dbgmsg("FSG: Can't create file %s\n", tempfile);
-  		    free(tempfile);
-  		    free(section_hdr);
---- 1020,1026 ----
-  		    return CL_EMEM;
-  		}
-  
-! 		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
-  		    cli_dbgmsg("FSG: Can't create file %s\n", tempfile);
-  		    free(tempfile);
-  		    free(section_hdr);
-***************
-*** 1225,1231 ****
-  		    return CL_EMEM;
-  		}
-  
-! 		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
-  		    cli_dbgmsg("FSG: Can't create file %s\n", tempfile);
-  		    free(tempfile);
-  		    free(section_hdr);
---- 1225,1231 ----
-  		    return CL_EMEM;
-  		}
-  
-! 		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
-  		    cli_dbgmsg("FSG: Can't create file %s\n", tempfile);
-  		    free(tempfile);
-  		    free(section_hdr);
-***************
-*** 1435,1441 ****
-  		    return CL_EMEM;
-  		}
-  
-! 		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
-  		    cli_dbgmsg("FSG: Can't create file %s\n", tempfile);
-  		    free(tempfile);
-  		    free(section_hdr);
---- 1435,1441 ----
-  		    return CL_EMEM;
-  		}
-  
-! 		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
-  		    cli_dbgmsg("FSG: Can't create file %s\n", tempfile);
-  		    free(tempfile);
-  		    free(section_hdr);
-***************
-*** 1655,1661 ****
-  		return CL_EMEM;
-  	    }
-  
-! 	    if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
-  		cli_dbgmsg("UPX/FSG: Can't create file %s\n", tempfile);
-  		free(tempfile);
-  		free(dest);
---- 1655,1661 ----
-  		return CL_EMEM;
-  	    }
-  
-! 	    if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
-  		cli_dbgmsg("UPX/FSG: Can't create file %s\n", tempfile);
-  		free(tempfile);
-  		free(dest);
-***************
-*** 1755,1761 ****
-  	      return CL_EMEM;
-  	    }
-  
-! 	    if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
-  		cli_dbgmsg("Petite: Can't create file %s\n", tempfile);
-  		free(tempfile);
-  		free(section_hdr);
---- 1755,1761 ----
-  	      return CL_EMEM;
-  	    }
-  
-! 	    if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
-  		cli_dbgmsg("Petite: Can't create file %s\n", tempfile);
-  		free(tempfile);
-  		free(section_hdr);
-***************
-*** 1837,1843 ****
-  	  return CL_EMEM;
-  	}
-  
-! 	if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
-  	    cli_dbgmsg("PESpin: Can't create file %s\n", tempfile);
-  	    free(tempfile);
-  	    free(spinned);
---- 1837,1843 ----
-  	  return CL_EMEM;
-  	}
-  
-! 	if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
-  	    cli_dbgmsg("PESpin: Can't create file %s\n", tempfile);
-  	    free(tempfile);
-  	    free(spinned);
-***************
-*** 1906,1912 ****
-  	    return CL_EMEM;
-  	  }
-  
-! 	  if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
-  	    cli_dbgmsg("yC: Can't create file %s\n", tempfile);
-  	    free(tempfile);
-  	    free(spinned);
---- 1906,1912 ----
-  	    return CL_EMEM;
-  	  }
-  
-! 	  if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
-  	    cli_dbgmsg("yC: Can't create file %s\n", tempfile);
-  	    free(tempfile);
-  	    free(spinned);
-***************
-*** 2031,2037 ****
-  	  return CL_EMEM;
-  	}
-  
-! 	if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
-  	  cli_dbgmsg("WWPack: Can't create file %s\n", tempfile);
-  	  free(tempfile);
-  	  free(dest);
---- 2031,2037 ----
-  	  return CL_EMEM;
-  	}
-  
-! 	if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
-  	  cli_dbgmsg("WWPack: Can't create file %s\n", tempfile);
-  	  free(tempfile);
-  	  free(dest);
 *** /home/njh/src/clamav-devel/./libclamav/scanners.c	2006-06-17 22:00:44.000000000 +0100
 --- ./libclamav/scanners.c	2006-07-31 20:42:08.000000000 +0100
 ***************
@@ -1463,8 +1090,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.8  2006/08/30 14:48:28  njh
-   * Add even more patches for nonblock.c
+   * Revision 1.9  2006/09/05 12:45:22  njh
+   * Fix to clamdscan crash and clamd nSCAN feature
    *
 +  * Revision 1.2  2006/08/20 19:47:28  njh
 +  * Fix error return
@@ -1477,7 +1104,7 @@
    * First draft
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
   
   #include <stdio.h>
   #include <errno.h>
@@ -1485,7 +1112,7 @@
    * First draft
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
   
   #include <stdio.h>
   #include <errno.h>
@@ -1511,8 +1138,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.8  2006/08/30 14:48:28  njh
-   * Add even more patches for nonblock.c
+   * Revision 1.9  2006/09/05 12:45:22  njh
+   * Fix to clamdscan crash and clamd nSCAN feature
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -1527,7 +1154,7 @@
    * TODO: Remove the vcard handling
    * FIXME: The code does little error checking of OOM scenarios
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"	/* must come first */
@@ -1535,7 +1162,7 @@
    * TODO: Remove the vcard handling
    * FIXME: The code does little error checking of OOM scenarios
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"	/* must come first */
@@ -1565,7 +1192,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1573,7 +1200,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1584,7 +1211,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
   
   #include "clamav.h"
   
@@ -1592,7 +1219,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
   
   #include "clamav.h"
   
@@ -1604,8 +1231,8 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.8  2006/08/30 14:48:28  njh
-   * Add even more patches for nonblock.c
+   * Revision 1.9  2006/09/05 12:45:22  njh
+   * Fix to clamdscan crash and clamd nSCAN feature
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -1618,7 +1245,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1626,7 +1253,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1638,8 +1265,8 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.8  2006/08/30 14:48:28  njh
-   * Add even more patches for nonblock.c
+   * Revision 1.9  2006/09/05 12:45:22  njh
+   * Fix to clamdscan crash and clamd nSCAN feature
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -1652,7 +1279,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1660,7 +1287,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1672,8 +1299,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.8  2006/08/30 14:48:28  njh
-   * Add even more patches for nonblock.c
+   * Revision 1.9  2006/09/05 12:45:22  njh
+   * Fix to clamdscan crash and clamd nSCAN feature
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
 +  * First Draft
@@ -1688,7 +1315,7 @@
   #include "clamav-config.h"
   #endif
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
   
   #include <stdio.h>
   #include <fcntl.h>
@@ -1696,7 +1323,7 @@
   #include "clamav-config.h"
   #endif
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
   
   #include <stdio.h>
   #include <fcntl.h>
@@ -1794,7 +1421,7 @@
    *  along with this program; if not, write to the Free Software
    *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1802,7 +1429,7 @@
    *  along with this program; if not, write to the Free Software
    *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.8 2006/08/30 14:48:28 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.9 2006/09/05 12:45:22 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -2018,216 +1645,6 @@
       return ret;
   }
   
-*** /home/njh/src/clamav-devel/./clamscan/manager.c	2006-06-21 18:04:28.000000000 +0100
---- ./clamscan/manager.c	2006-08-06 21:16:54.000000000 +0100
-***************
-*** 30,40 ****
---- 30,48 ----
-  #include <ctype.h>
-  #include <sys/stat.h>
-  #include <sys/types.h>
-+ #ifdef	C_WINDOWS
-+ #include <sys/utime.h>
-+ #else
-  #include <sys/wait.h>
-  #include <utime.h>
-+ #endif
-+ #ifdef	HAVE_INITGROUPS
-  #include <grp.h>
-+ #endif
-  #include <fcntl.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  #include <sys/types.h>
-  #include <signal.h>
-  #include <clamav.h>
-***************
-*** 69,77 ****
-  	struct stat sb;
-  	char *fullpath = NULL, cwd[1024];
-  
-- 
-  /* njh@bandsman.co.uk: BeOS */
-! #if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_BEOS)
-      if(!geteuid()) {
-  	if((user = getpwnam(UNPUSER)) == NULL) {
-  	    logg("^Can't get information about user "UNPUSER"\n");
---- 77,84 ----
-  	struct stat sb;
-  	char *fullpath = NULL, cwd[1024];
-  
-  /* njh@bandsman.co.uk: BeOS */
-! #if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_BEOS) && !defined(C_WINDOWS)
-      if(!geteuid()) {
-  	if((user = getpwnam(UNPUSER)) == NULL) {
-  	    logg("^Can't get information about user "UNPUSER"\n");
-***************
-*** 353,364 ****
---- 360,373 ----
-  	return 0;
-      }
-  
-+ #ifndef	C_WINDOWS
-      if(geteuid())
-  	if(checkaccess(filename, NULL, R_OK) != 1) {
-  	    if(!printinfected)
-  		logg("%s: Access denied\n", filename);
-  	    return 0;
-  	}
-+ #endif
-  
-      claminfo.files++;
-  
-***************
-*** 488,494 ****
-  	exit(63); /* critical */
-      }
-  
-! #ifndef C_OS2
-      if(user)
-  	chown(gendir, user->pw_uid, user->pw_gid);
-  #endif
---- 497,504 ----
-  	exit(63); /* critical */
-      }
-  
-! #if	(!defined(C_OS2)) && (!defined(C_WINDOWS))
-! 	/* FIXME: do the correct native windows way */
-      if(user)
-  	chown(gendir, user->pw_uid, user->pw_gid);
-  #endif
-***************
-*** 703,709 ****
-  
-      fixperms(gendir);
-  
-! #ifndef C_OS2
-      if(user) {
-  	chown(gendir, user->pw_uid, user->pw_gid);
-  	chown(tmpfile, user->pw_uid, user->pw_gid);
---- 713,719 ----
-  
-      fixperms(gendir);
-  
-! #if	(!defined(C_OS2)) && (!defined(C_WINDOWS))
-      if(user) {
-  	chown(gendir, user->pw_uid, user->pw_gid);
-  	chown(tmpfile, user->pw_uid, user->pw_gid);
-***************
-*** 746,752 ****
-  
-      logg("*Scanning %s\n", filename);
-  
-!     if((fd = open(filename, O_RDONLY)) == -1) {
-  	logg("^Can't open file %s\n", filename);
-  	return 54;
-      }
---- 756,762 ----
-  
-      logg("*Scanning %s\n", filename);
-  
-!     if((fd = open(filename, O_RDONLY|O_BINARY)) == -1) {
-  	logg("^Can't open file %s\n", filename);
-  	return 54;
-      }
-***************
-*** 799,804 ****
---- 809,821 ----
-  	return 63;
-      }
-  
-+ #ifdef	C_WINDOWS
-+ 	if(setmode(fileno(stdin), O_BINARY) < 0) {
-+ 		logg("^Can't set binary mode on stdin\n");
-+ 		return 63;
-+ 	}
-+ #endif
-+ 
-      while((ret = fread(buff, 1, FILEBUFF, stdin)))
-  	fwrite(buff, 1, ret, fs);
-  
-***************
-*** 833,838 ****
---- 850,863 ----
-   * 0 -> OK
-   */
-  
-+ #ifdef	C_WINDOWS
-+ int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struct passwd *user, const struct optstruct *opt)
-+ {
-+ 	/* TODO: use spamvp(P_WAIT, prog, args); */
-+ 	cli_errmsg("clamav_unpack is not supported under Windows yet\n");
-+ 	return -1;
-+ }
-+ #else
-  int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struct passwd *user, const struct optstruct *opt)
-  {
-  	pid_t pid;
-***************
-*** 863,869 ****
-  	case -1:
-  	    return -1;
-  	case 0:
-! #ifndef C_CYGWIN
-  	    if(!geteuid() && user) {
-  
-  #ifdef HAVE_SETGROUPS
---- 888,894 ----
-  	case -1:
-  	    return -1;
-  	case 0:
-! #if	(!defined(C_CYGWIN)) && (!defined(C_WINDOWS))
-  	    if(!geteuid() && user) {
-  
-  #ifdef HAVE_SETGROUPS
-***************
-*** 939,951 ****
-  
-      return 0;
-  }
-  
-  void move_infected(const char *filename, const struct optstruct *opt)
-  {
-  	char *movedir, *movefilename, *tmp, numext[4 + 1];
-  	struct stat fstat, mfstat;
-  	int n, len, movefilename_size;
-! 	struct utimbuf ubuf;
-  
-  
-      if(!(movedir = opt_arg(opt, "move"))) {
---- 964,977 ----
-  
-      return 0;
-  }
-+ #endif
-  
-  void move_infected(const char *filename, const struct optstruct *opt)
-  {
-  	char *movedir, *movefilename, *tmp, numext[4 + 1];
-  	struct stat fstat, mfstat;
-  	int n, len, movefilename_size;
-! 	struct _utimbuf ubuf;
-  
-  
-      if(!(movedir = opt_arg(opt, "move"))) {
-***************
-*** 1023,1029 ****
-  	}
-  
-  	chmod(movefilename, fstat.st_mode);
-! #ifndef C_OS2
-  	chown(movefilename, fstat.st_uid, fstat.st_gid);
-  #endif
-  
---- 1049,1055 ----
-  	}
-  
-  	chmod(movefilename, fstat.st_mode);
-! #if	(!defined(C_OS2)) && (!defined(C_WINDOWS))
-  	chown(movefilename, fstat.st_uid, fstat.st_gid);
-  #endif
-  
 *** /home/njh/src/clamav-devel/./clamscan/manager.h	2006-05-15 19:30:18.000000000 +0100
 --- ./clamscan/manager.h	2006-07-26 14:31:40.000000000 +0100
 ***************
@@ -2419,6 +1836,281 @@
   	    if(dent->d_ino)
   #endif
   	    {
+*** /home/njh/src/clamav-devel/./clamscan/manager.c	2006-06-21 18:04:28.000000000 +0100
+--- ./clamscan/manager.c	2006-09-01 11:57:42.000000000 +0100
+***************
+*** 30,40 ****
+--- 30,48 ----
+  #include <ctype.h>
+  #include <sys/stat.h>
+  #include <sys/types.h>
++ #ifdef	C_WINDOWS
++ #include <sys/utime.h>
++ #else
+  #include <sys/wait.h>
+  #include <utime.h>
++ #endif
++ #ifdef	HAVE_INITGROUPS
+  #include <grp.h>
++ #endif
+  #include <fcntl.h>
++ #ifdef	HAVE_UNISTD_H
+  #include <unistd.h>
++ #endif
+  #include <sys/types.h>
+  #include <signal.h>
+  #include <clamav.h>
+***************
+*** 57,62 ****
+--- 65,75 ----
+  dev_t procdev;
+  #endif
+  
++ #ifdef	C_WINDOWS
++ #undef	P_tmpdir
++ 
++ #define	P_tmpdir	"C:\\WINDOWS\\TEMP"
++ #endif
+  
+  int scanmanager(const struct optstruct *opt)
+  {
+***************
+*** 69,77 ****
+  	struct stat sb;
+  	char *fullpath = NULL, cwd[1024];
+  
+- 
+  /* njh@bandsman.co.uk: BeOS */
+! #if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_BEOS)
+      if(!geteuid()) {
+  	if((user = getpwnam(UNPUSER)) == NULL) {
+  	    logg("^Can't get information about user "UNPUSER"\n");
+--- 82,89 ----
+  	struct stat sb;
+  	char *fullpath = NULL, cwd[1024];
+  
+  /* njh@bandsman.co.uk: BeOS */
+! #if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_BEOS) && !defined(C_WINDOWS)
+      if(!geteuid()) {
+  	if((user = getpwnam(UNPUSER)) == NULL) {
+  	    logg("^Can't get information about user "UNPUSER"\n");
+***************
+*** 353,364 ****
+--- 365,378 ----
+  	return 0;
+      }
+  
++ #ifndef	C_WINDOWS
+      if(geteuid())
+  	if(checkaccess(filename, NULL, R_OK) != 1) {
+  	    if(!printinfected)
+  		logg("%s: Access denied\n", filename);
+  	    return 0;
+  	}
++ #endif
+  
+      claminfo.files++;
+  
+***************
+*** 469,475 ****
+      tmpdir = getenv("TMPDIR");
+  
+      if(tmpdir == NULL)
+! #ifdef P_tmpdir
+  	tmpdir = P_tmpdir;
+  #else
+  	tmpdir = "/tmp";
+--- 483,489 ----
+      tmpdir = getenv("TMPDIR");
+  
+      if(tmpdir == NULL)
+! #ifdef	P_tmpdir
+  	tmpdir = P_tmpdir;
+  #else
+  	tmpdir = "/tmp";
+***************
+*** 488,494 ****
+  	exit(63); /* critical */
+      }
+  
+! #ifndef C_OS2
+      if(user)
+  	chown(gendir, user->pw_uid, user->pw_gid);
+  #endif
+--- 502,509 ----
+  	exit(63); /* critical */
+      }
+  
+! #if	(!defined(C_OS2)) && (!defined(C_WINDOWS))
+! 	/* FIXME: do the correct native windows way */
+      if(user)
+  	chown(gendir, user->pw_uid, user->pw_gid);
+  #endif
+***************
+*** 667,673 ****
+      tmpdir = getenv("TMPDIR");
+  
+      if(tmpdir == NULL)
+! #ifdef P_tmpdir
+  	tmpdir = P_tmpdir;
+  #else
+  	tmpdir = "/tmp";
+--- 682,688 ----
+      tmpdir = getenv("TMPDIR");
+  
+      if(tmpdir == NULL)
+! #ifdef	P_tmpdir
+  	tmpdir = P_tmpdir;
+  #else
+  	tmpdir = "/tmp";
+***************
+*** 703,709 ****
+  
+      fixperms(gendir);
+  
+! #ifndef C_OS2
+      if(user) {
+  	chown(gendir, user->pw_uid, user->pw_gid);
+  	chown(tmpfile, user->pw_uid, user->pw_gid);
+--- 718,724 ----
+  
+      fixperms(gendir);
+  
+! #if	(!defined(C_OS2)) && (!defined(C_WINDOWS))
+      if(user) {
+  	chown(gendir, user->pw_uid, user->pw_gid);
+  	chown(tmpfile, user->pw_uid, user->pw_gid);
+***************
+*** 746,752 ****
+  
+      logg("*Scanning %s\n", filename);
+  
+!     if((fd = open(filename, O_RDONLY)) == -1) {
+  	logg("^Can't open file %s\n", filename);
+  	return 54;
+      }
+--- 761,767 ----
+  
+      logg("*Scanning %s\n", filename);
+  
+!     if((fd = open(filename, O_RDONLY|O_BINARY)) == -1) {
+  	logg("^Can't open file %s\n", filename);
+  	return 54;
+      }
+***************
+*** 781,787 ****
+      tmpdir = getenv("TMPDIR");
+  
+      if(tmpdir == NULL)
+! #ifdef P_tmpdir
+  	tmpdir = P_tmpdir;
+  #else
+  	tmpdir = "/tmp";
+--- 796,802 ----
+      tmpdir = getenv("TMPDIR");
+  
+      if(tmpdir == NULL)
+! #ifdef	P_tmpdir
+  	tmpdir = P_tmpdir;
+  #else
+  	tmpdir = "/tmp";
+***************
+*** 799,804 ****
+--- 814,826 ----
+  	return 63;
+      }
+  
++ #ifdef	C_WINDOWS
++ 	if(setmode(fileno(stdin), O_BINARY) < 0) {
++ 		logg("^Can't set binary mode on stdin\n");
++ 		return 63;
++ 	}
++ #endif
++ 
+      while((ret = fread(buff, 1, FILEBUFF, stdin)))
+  	fwrite(buff, 1, ret, fs);
+  
+***************
+*** 833,838 ****
+--- 855,868 ----
+   * 0 -> OK
+   */
+  
++ #ifdef	C_WINDOWS
++ int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struct passwd *user, const struct optstruct *opt)
++ {
++ 	/* TODO: use spamvp(P_WAIT, prog, args); */
++ 	cli_errmsg("clamav_unpack is not supported under Windows yet\n");
++ 	return -1;
++ }
++ #else
+  int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struct passwd *user, const struct optstruct *opt)
+  {
+  	pid_t pid;
+***************
+*** 863,869 ****
+  	case -1:
+  	    return -1;
+  	case 0:
+! #ifndef C_CYGWIN
+  	    if(!geteuid() && user) {
+  
+  #ifdef HAVE_SETGROUPS
+--- 893,899 ----
+  	case -1:
+  	    return -1;
+  	case 0:
+! #if	(!defined(C_CYGWIN)) && (!defined(C_WINDOWS))
+  	    if(!geteuid() && user) {
+  
+  #ifdef HAVE_SETGROUPS
+***************
+*** 939,951 ****
+  
+      return 0;
+  }
+  
+  void move_infected(const char *filename, const struct optstruct *opt)
+  {
+  	char *movedir, *movefilename, *tmp, numext[4 + 1];
+  	struct stat fstat, mfstat;
+  	int n, len, movefilename_size;
+! 	struct utimbuf ubuf;
+  
+  
+      if(!(movedir = opt_arg(opt, "move"))) {
+--- 969,982 ----
+  
+      return 0;
+  }
++ #endif
+  
+  void move_infected(const char *filename, const struct optstruct *opt)
+  {
+  	char *movedir, *movefilename, *tmp, numext[4 + 1];
+  	struct stat fstat, mfstat;
+  	int n, len, movefilename_size;
+! 	struct _utimbuf ubuf;
+  
+  
+      if(!(movedir = opt_arg(opt, "move"))) {
+***************
+*** 1023,1029 ****
+  	}
+  
+  	chmod(movefilename, fstat.st_mode);
+! #ifndef C_OS2
+  	chown(movefilename, fstat.st_uid, fstat.st_gid);
+  #endif
+  
+--- 1054,1060 ----
+  	}
+  
+  	chmod(movefilename, fstat.st_mode);
+! #if	(!defined(C_OS2)) && (!defined(C_WINDOWS))
+  	chown(movefilename, fstat.st_uid, fstat.st_gid);
+  #endif
+  
 *** /home/njh/src/clamav-devel/./shared/memory.c	2006-04-09 20:59:28.000000000 +0100
 --- ./shared/memory.c	2006-07-26 15:44:20.000000000 +0100
 ***************
@@ -2598,8 +2290,8 @@
   
   int r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
   
-*** /home/njh/src/clamav-devel/./shared/cfgparser.c	2006-08-28 11:15:54.000000000 +0100
---- ./shared/cfgparser.c	2006-08-28 11:17:04.000000000 +0100
+*** /home/njh/src/clamav-devel/./shared/cfgparser.c	2006-08-31 08:57:48.000000000 +0100
+--- ./shared/cfgparser.c	2006-08-31 08:58:04.000000000 +0100
 ***************
 *** 134,140 ****
   	}
@@ -2617,8 +2309,8 @@
   	/* do not print error message here! */
   	freecfg(copt);
   	return NULL;
-*** /home/njh/src/clamav-devel/./shared/misc.c	2006-08-06 18:46:48.000000000 +0100
---- ./shared/misc.c	2006-08-03 11:12:14.000000000 +0100
+*** /home/njh/src/clamav-devel/./shared/misc.c	2006-08-31 08:58:51.000000000 +0100
+--- ./shared/misc.c	2006-08-31 09:21:20.000000000 +0100
 ***************
 *** 23,34 ****
 --- 23,38 ----
@@ -2639,11 +2331,10 @@
   #include <ctype.h>
   #include <errno.h>
 ***************
-*** 135,145 ****
-  	int s, d, bytes, ret;
+*** 136,145 ****
   	struct stat sb;
   
-! 
+  
 !     if((s = open(src, O_RDONLY)) == -1)
   	return -1;
   
@@ -2651,9 +2342,9 @@
   	close(s);
   	return -1;
       }
---- 139,148 ----
-  	int s, d, bytes, ret;
+--- 140,149 ----
   	struct stat sb;
+  
   
 !     if((s = open(src, O_RDONLY|O_BINARY)) == -1)
   	return -1;
@@ -2662,16 +2353,6 @@
   	close(s);
   	return -1;
       }
-***************
-*** 148,153 ****
---- 151,157 ----
-  	write(d, buffer, bytes);
-  
-      close(s);
-+ 
-      /* njh@bandsman.co.uk: check result of close for NFS file */
-      ret = close(d);
-  
 ***************
 *** 177,189 ****
   	    }
@@ -2691,7 +2372,7 @@
   	    }
   
   	    while((dent = readdir(dd))) {
-! #if	(!defined(C_CYGWIN)) && (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
+! #if   (!defined(C_CYGWIN)) && (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
   		if(dent->d_ino)
   #endif
   		{
@@ -2706,26 +2387,6 @@
   			/* stat the file */
   			if(lstat(fname, &statbuf) != -1) {
 ***************
-*** 197,204 ****
-  				    rmdirs(fname);
-  				}
-  			    } else
-! 				unlink(fname);
-! 			}
-  
-  			free(fname);
-  		    }
---- 205,213 ----
-  				    rmdirs(fname);
-  				}
-  			    } else
-! 				if(unlink(fname) < 0)
-! 					cli_warnmsg("Couldn't remove %s: %s\n",
-! 						fname, strerror(errno));			}
-  
-  			free(fname);
-  		    }
-***************
 *** 237,243 ****
       }
   
@@ -2734,24 +2395,14 @@
   	if(dent->d_ino)
   #endif
   	{
---- 246,252 ----
+--- 245,251 ----
       }
   
       while((dent = readdir(dd))) {
-! #if	(!defined(C_INTERIX)) && (!defined(C_CYGWIN)) && (!defined(C_WINDOWS))
+! #if   (!defined(C_CYGWIN)) && (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
   	if(dent->d_ino)
   #endif
   	{
-***************
-*** 259,265 ****
-      closedir(dd);
-      return 0;
-  }
-- 
-  int isnumb(const char *str)
-  {
-      while(*str) {
---- 268,273 ----
 ***************
 *** 276,282 ****
   	int fd;
@@ -2769,43 +2420,42 @@
   	return -1;
   
       if(lseek(fd, 512, SEEK_SET) == -1) {
-*** /home/njh/src/clamav-devel/./shared/output.c	2006-05-15 19:30:18.000000000 +0100
---- ./shared/output.c	2006-08-11 11:04:58.000000000 +0100
 ***************
-*** 17,22 ****
---- 17,27 ----
+*** 294,300 ****
+  {
+  	int i;
+  
+! #ifdef C_OS2
+      return;
+  #else
+  
+--- 302,308 ----
+  {
+  	int i;
+  
+! #if	defined(C_OS2) || defined(C_WINDOWS)
+      return;
+  #else
+  
+*** /home/njh/src/clamav-devel/./shared/output.c	2006-08-31 09:03:18.000000000 +0100
+--- ./shared/output.c	2006-08-31 09:23:58.000000000 +0100
+***************
+*** 16,21 ****
+--- 16,26 ----
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-  
-+ #ifdef	_MSC_VER
++ #ifdef        _MSC_VER
 + #include <windows.h>
 + #include <winsock.h>
 + #endif
 + 
+  
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
-  #endif
 ***************
-*** 30,47 ****
-  #include <stdlib.h>
-  #include <string.h>
-  #include <ctype.h>
-  #include <unistd.h>
-  #include <fcntl.h>
-  #include <time.h>
-  #include <sys/stat.h>
-  #include <errno.h>
-  #include <sys/time.h>
-  #include <sys/socket.h>
-  #if HAVE_SYS_TYPES_H
-  #include <sys/types.h>
-  #endif
-  
-! #if defined(USE_SYSLOG) && !defined(C_AIX)
-  #include <syslog.h>
-  #endif
-  
---- 35,58 ----
+*** 30,42 ****
+--- 35,51 ----
   #include <stdlib.h>
   #include <string.h>
   #include <ctype.h>
@@ -2813,9 +2463,7 @@
   #include <unistd.h>
 + #endif
   #include <fcntl.h>
-+ #ifndef	C_WINDOWS
   #include <time.h>
-+ #endif
   #include <sys/stat.h>
   #include <errno.h>
 + #ifndef	C_WINDOWS
@@ -2825,25 +2473,20 @@
   #if HAVE_SYS_TYPES_H
   #include <sys/types.h>
   #endif
-  
-! #if defined(USE_SYSLOG) && !defined(C_AIX) && !defined(C_WINDOWS)
-  #include <syslog.h>
-  #endif
-  
 ***************
 *** 122,128 ****
---- 133,141 ----
+--- 131,139 ----
   int logg(const char *str, ...)
   {
   	va_list args, argscpy, argsout;
-+ #ifndef	C_WINDOWS	/* TODO */
++ #ifdef	F_WRLCK
   	struct flock fl;
 + #endif
   	char *pt, *timestr, vbuff[1025];
   	time_t currtime;
   	struct stat sb;
 ***************
-*** 140,154 ****
+*** 140,146 ****
       if(logg_file) {
   	if(!logg_fd) {
   	    old_umask = umask(0037);
@@ -2851,15 +2494,7 @@
   		umask(old_umask);
   #ifdef CL_THREAD_SAFE
   		pthread_mutex_unlock(&logg_mutex);
-  #endif
-! 		printf("ERROR: Can't open %s in append mode (check permissions!).\n", logg_file);
-  		return -1;
-  	    } else umask(old_umask);
-  
-  	    if(logg_lock) {
-  		memset(&fl, 0, sizeof(fl));
-  		fl.l_type = F_WRLCK;
---- 153,168 ----
+--- 151,157 ----
       if(logg_file) {
   	if(!logg_fd) {
   	    old_umask = umask(0037);
@@ -2867,18 +2502,19 @@
   		umask(old_umask);
   #ifdef CL_THREAD_SAFE
   		pthread_mutex_unlock(&logg_mutex);
-  #endif
-! 		printf("ERROR: Can't open %s in append mode (check permissions!).\n", logg_file);		
+***************
+*** 149,154 ****
+--- 160,166 ----
   		return -1;
   	    } else umask(old_umask);
   
-+ #ifndef	C_WINDOWS
++ #ifdef	F_WRLCK
   	    if(logg_lock) {
   		memset(&fl, 0, sizeof(fl));
   		fl.l_type = F_WRLCK;
 ***************
 *** 159,164 ****
---- 173,179 ----
+--- 171,177 ----
   		    return -1;
   		}
   	    }
@@ -2886,15 +2522,15 @@
   	}
   
   	if(logg_size) {
-*** /home/njh/src/clamav-devel/./freshclam/notify.c	2006-08-30 13:43:32.000000000 +0100
---- ./freshclam/notify.c	2006-08-30 13:53:52.000000000 +0100
+*** /home/njh/src/clamav-devel/./freshclam/manager.c	2006-08-31 08:48:37.000000000 +0100
+--- ./freshclam/manager.c	2006-08-31 16:24:52.000000000 +0100
 ***************
-*** 16,21 ****
---- 16,25 ----
+*** 20,25 ****
+--- 20,29 ----
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-+ #ifdef	_MSC_VER
++ #ifdef        _MSC_VER
 + #include <windows.h>
 + #include <winsock.h>
 + #endif
@@ -2902,181 +2538,8 @@
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
 ***************
-*** 24,36 ****
---- 28,44 ----
-  #ifdef BUILD_CLAMD
-  
-  #include <stdio.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  #include <sys/types.h>
-+ #ifndef	C_WINDOWS
-  #include <sys/socket.h>
-  #include <sys/un.h>
-  #include <netinet/in.h>
-  #include <arpa/inet.h>
-  #include <netdb.h>
-+ #endif
-  #include <string.h>
-  
-  #include "others.h"
-***************
-*** 40,46 ****
---- 48,56 ----
-  int notify(const char *cfgfile)
-  {
-  	char buff[20];
-+ #ifndef	C_WINDOWS
-  	struct sockaddr_un server;
-+ #endif
-          struct sockaddr_in server2;
-  	struct hostent *he;
-  	struct cfgstruct *copt, *cpt;
-***************
-*** 52,58 ****
-  	logg("^Clamd was NOT notified: Can't find or parse configuration file %s\n", cfgfile);
-  	return 1;
-      }
-! 
-      if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
-  	socktype = "UNIX";
-  	server.sun_family = AF_UNIX;
---- 62,69 ----
-  	logg("^Clamd was NOT notified: Can't find or parse configuration file %s\n", cfgfile);
-  	return 1;
-      }
-!     
-! #ifndef	C_WINDOWS
-      if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
-  	socktype = "UNIX";
-  	server.sun_family = AF_UNIX;
-***************
-*** 66,81 ****
-  
-  	if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
-  #ifdef	C_WINDOWS
-! 		closesocket(sockfd);
-  #else
-! 	    close(sockd);
-  #endif
-  	    logg("^Clamd was NOT notified: Can't connect to clamd through %s\n", cpt->strarg);
-  	    perror("connect()");
-  	    return 1;
-  	}
-  
-!     } else if((cpt = cfgopt(copt, "TCPSocket"))->enabled) {
-  
-  	socktype = "TCP";
-  #ifdef PF_INET
---- 77,94 ----
-  
-  	if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
-  #ifdef	C_WINDOWS
-! 		closesocket(sockd);
-  #else
-! 		close(sockd);
-  #endif
-  	    logg("^Clamd was NOT notified: Can't connect to clamd through %s\n", cpt->strarg);
-  	    perror("connect()");
-  	    return 1;
-  	}
-  
-!     } else
-! #endif
-!     if((cpt = cfgopt(copt, "TCPSocket"))->enabled) {
-  
-  	socktype = "TCP";
-  #ifdef PF_INET
-***************
-*** 104,112 ****
-  
-  	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
-  #ifdef	C_WINDOWS
-! 		closesocket(sockfd);
-  #else
-! 	    close(sockd);
-  #endif
-  	    logg("^Clamd was NOT notified: Can't connect to clamd on %s:%d\n",
-  		    inet_ntoa(server2.sin_addr), ntohs(server2.sin_port));
---- 117,125 ----
-  
-  	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
-  #ifdef	C_WINDOWS
-! 		closesocket(sockd);
-  #else
-! 		close(sockd);
-  #endif
-  	    logg("^Clamd was NOT notified: Can't connect to clamd on %s:%d\n",
-  		    inet_ntoa(server2.sin_addr), ntohs(server2.sin_port));
-***************
-*** 123,152 ****
-  	logg("^Clamd was NOT notified: Could not write to %s socket\n", socktype);
-  	perror("write()");
-  #ifdef	C_WINDOWS
-! 		closesocket(sockfd);
-  #else
-! 	    close(sockd);
-  #endif
-  	return 1;
-      }
-  
-      /* TODO: Handle timeout */
-      memset(buff, 0, sizeof(buff));
-!     if((bread = recv(sockd, buff, sizeof(buff)), 0) > 0)
-  	if(!strstr(buff, "RELOADING")) {
-  	    logg("^Clamd was NOT notified: Unknown answer from clamd: '%s'\n", buff);
-  #ifdef	C_WINDOWS
-! 		closesocket(sockfd);
-  #else
-! 	    close(sockd);
-  #endif
-  	    return 1;
-  	}
-  
-  #ifdef	C_WINDOWS
-! 		closesocket(sockfd);
-  #else
-! 	    close(sockd);
-  #endif
-      logg("Clamd successfully notified about the update.\n");
-      return 0;
---- 136,165 ----
-  	logg("^Clamd was NOT notified: Could not write to %s socket\n", socktype);
-  	perror("write()");
-  #ifdef	C_WINDOWS
-! 		closesocket(sockd);
-  #else
-! 		close(sockd);
-  #endif
-  	return 1;
-      }
-  
-      /* TODO: Handle timeout */
-      memset(buff, 0, sizeof(buff));
-!     if((bread = recv(sockd, buff, sizeof(buff), 0)) > 0)
-  	if(!strstr(buff, "RELOADING")) {
-  	    logg("^Clamd was NOT notified: Unknown answer from clamd: '%s'\n", buff);
-  #ifdef	C_WINDOWS
-! 		closesocket(sockd);
-  #else
-! 		close(sockd);
-  #endif
-  	    return 1;
-  	}
-  
-  #ifdef	C_WINDOWS
-! 	closesocket(sockd);
-  #else
-! 	close(sockd);
-  #endif
-      logg("Clamd successfully notified about the update.\n");
-      return 0;
-*** /home/njh/src/clamav-devel/./freshclam/execute.c	2006-04-09 20:59:27.000000000 +0100
---- ./freshclam/execute.c	2006-08-04 15:59:36.000000000 +0100
-***************
-*** 23,29 ****
---- 23,31 ----
+*** 27,40 ****
+--- 31,50 ----
   
   #include <stdio.h>
   #include <stdlib.h>
@@ -3084,57 +2547,220 @@
   #include <unistd.h>
 + #endif
   #include <string.h>
-  #include <errno.h>
-  
+  #include <ctype.h>
++ #ifndef	C_WINDOWS
+  #include <netinet/in.h>
+  #include <netdb.h>
++ #endif
+  #include <sys/types.h>
++ #ifndef	C_WINDOWS
+  #include <sys/socket.h>
+  #include <sys/time.h>
++ #endif
+  #include <time.h>
+  #include <fcntl.h>
+  #include <sys/stat.h>
 ***************
-*** 31,42 ****
-  #include "freshclam.h"
-  #include "output.h"
+*** 63,68 ****
+--- 73,82 ----
+  #define	O_BINARY	0
+  #endif
   
-  int active_children;
-  
-  void execute( const char *type, const char *text )
-  {
-! 	pid_t pid;
-! 
-  	if ( active_children<CL_MAX_CHILDREN )
-  	switch( pid=fork() ) {
-  	case 0:
---- 33,56 ----
-  #include "freshclam.h"
-  #include "output.h"
-  
-+ #ifdef	C_WINDOWS
-+ #include <process.h>
++ #ifndef	C_WINDOWS
++ #define	closesocket(s)	close(s)
 + #endif
 + 
-  int active_children;
   
-  void execute( const char *type, const char *text )
+  static int wwwconnect(const char *server, const char *proxy, int pport, char *ip, const char *localip, int ctimeout)
   {
-! #ifdef	C_WINDOWS
-! 	if(active_children < CL_MAX_CHILDREN) {
-! 		if(spawnlp(P_NOWAIT, text, text, NULL) == -1) {
-! 			logg("^%s: couldn't execute \"%s\".\n", type, text);
-! 			return;
-! 		}
-! 		active_children++;
-! 	} else
-! 		logg("^%s: already %d processes active.\n", type, active_children);
-! #else
-  	if ( active_children<CL_MAX_CHILDREN )
-  	switch( pid=fork() ) {
-  	case 0:
 ***************
-*** 55,58 ****
---- 69,73 ----
-  	{
-  		logg("^%s: already %d processes active.\n", type, active_children);
-  	}
+*** 143,149 ****
+--- 157,165 ----
+  		else
+  			port = 8080;
+  
++ #ifndef	C_WINDOWS
+  		endservent();
 + #endif
+  #else
+  		port = 8080;
+  #endif
+***************
+*** 178,184 ****
+  		break;
+  	}
+          logg("^Can't get information about %s: %s\n", hostpt, herr);
+! 	close(socketfd);
+  	return -1;
+      }
+  
+--- 194,200 ----
+  		break;
+  	}
+          logg("^Can't get information about %s: %s\n", hostpt, herr);
+! 	closesocket(socketfd);
+  	return -1;
+      }
+  
+***************
+*** 204,210 ****
+  	}
+      }
+  
+!     close(socketfd);
+      return -2;
   }
-*** /home/njh/src/clamav-devel/./freshclam/freshclam.c	2006-08-27 10:52:45.000000000 +0100
---- ./freshclam/freshclam.c	2006-08-27 11:01:42.000000000 +0100
+  
+--- 220,226 ----
+  	}
+      }
+  
+!     closesocket(socketfd);
+      return -2;
+  }
+  
+***************
+*** 358,366 ****
+      if(!ip[0])
+  	strcpy(ip, ipaddr);
+  
+!     if(write(sd, cmd, strlen(cmd)) < 0) {
+  	logg("!remote_cvdhead: write failed\n");
+! 	close(sd);
+  	return NULL;
+      }
+  
+--- 374,382 ----
+      if(!ip[0])
+  	strcpy(ip, ipaddr);
+  
+!     if(send(sd, cmd, strlen(cmd), 0) < 0) {
+  	logg("!remote_cvdhead: write failed\n");
+! 	closesocket(sd);
+  	return NULL;
+      }
+  
+***************
+*** 372,378 ****
+  	if(cnt <= 0)
+  	    break;
+      }
+!     close(sd);
+  
+      if(bread == -1) {
+  	logg("!remote_cvdhead: Error while reading CVD header from %s\n", hostname);
+--- 388,394 ----
+  	if(cnt <= 0)
+  	    break;
+      }
+!     closesocket(sd);
+  
+      if(bread == -1) {
+  	logg("!remote_cvdhead: Error while reading CVD header from %s\n", hostname);
+***************
+*** 490,496 ****
+      if(!ip[0])
+  	strcpy(ip, ipaddr);
+  
+!     if(write(sd, cmd, strlen(cmd)) < 0) {
+  	logg("!getfile: Can't write to socket\n");
+  	return 52;
+      }
+--- 506,512 ----
+      if(!ip[0])
+  	strcpy(ip, ipaddr);
+  
+!     if(send(sd, cmd, strlen(cmd), 0) < 0) {
+  	logg("!getfile: Can't write to socket\n");
+  	return 52;
+      }
+***************
+*** 524,530 ****
+      /* check whether the resource actually existed or not */
+      if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
+  	logg("!getfile: %s not found on remote server\n", srcfile);
+! 	close(sd);
+  	return 58;
+      }
+  
+--- 540,546 ----
+      /* check whether the resource actually existed or not */
+      if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
+  	logg("!getfile: %s not found on remote server\n", srcfile);
+! 	closesocket(sd);
+  	return 58;
+      }
+  
+***************
+*** 553,559 ****
+  	getcwd(currdir, sizeof(currdir));
+  	logg("!getfile: Can't create new file %s in %s\n", destfile, currdir);
+  	logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
+! 	close(sd);
+  	return 57;
+      }
+  
+--- 569,575 ----
+  	getcwd(currdir, sizeof(currdir));
+  	logg("!getfile: Can't create new file %s in %s\n", destfile, currdir);
+  	logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
+! 	closesocket(sd);
+  	return 57;
+      }
+  
+***************
+*** 562,568 ****
+  	    logg("getfile: Can't write %d bytes to %s\n", bread, destfile);
+  	    unlink(destfile);
+  	    close(fd);
+! 	    close(sd);
+  	    return 57; /* FIXME */
+  	}
+  
+--- 578,584 ----
+  	    logg("getfile: Can't write %d bytes to %s\n", bread, destfile);
+  	    unlink(destfile);
+  	    close(fd);
+! 	    closesocket(sd);
+  	    return 57; /* FIXME */
+  	}
+  
+***************
+*** 579,585 ****
+              fflush(stdout);
+          }
+      }
+!     close(sd);
+      close(fd);
+  
+      if(totalsize > 0)
+--- 595,601 ----
+              fflush(stdout);
+          }
+      }
+!     closesocket(sd);
+      close(fd);
+  
+      if(totalsize > 0)
+***************
+*** 706,712 ****
+          return ret;
+      }
+  
+!     if((fd = open(tempname, O_RDONLY)) == -1) {
+  	logg("!getpatch: Can't open %s for reading\n", tempname);
+          unlink(tempname);
+          free(tempname);
+--- 722,728 ----
+          return ret;
+      }
+  
+!     if((fd = open(tempname, O_RDONLY|O_BINARY)) == -1) {
+  	logg("!getpatch: Can't open %s for reading\n", tempname);
+          unlink(tempname);
+          free(tempname);
+*** /home/njh/src/clamav-devel/./freshclam/freshclam.c	2006-08-31 08:47:02.000000000 +0100
+--- ./freshclam/freshclam.c	2006-08-31 16:25:48.000000000 +0100
 ***************
 *** 16,22 ****
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
@@ -3149,7 +2775,7 @@
    *  MA 02110-1301, USA.
    */
 ! #ifdef	_MSC_VER
-! #include <windows.h>
+! #include <winsock.h>
 ! #endif
   
   #if HAVE_CONFIG_H
@@ -3181,8 +2807,39 @@
   #if defined(USE_SYSLOG) && !defined(C_AIX)
   #include <syslog.h>
 ***************
-*** 57,75 ****
---- 65,93 ----
+*** 53,76 ****
+  static short terminate = 0;
+  extern int active_children;
+  
+! static short foreground = 1;
+  
+  static void daemon_sighandler(int sig) {
+  
+      switch(sig) {
+  	case SIGCHLD:
+  	    waitpid(-1, NULL, WNOHANG);
+  	    active_children--;
+  	    break;
+  
+  	case SIGALRM:
+  	case SIGUSR1:
+! 	    terminate = -1;
+  	    break;
+  
+  	case SIGHUP:
+  	    terminate = -2;
+  	    break;
+  
+  	default:
+  	    terminate = 1;
+--- 61,96 ----
+  static short terminate = 0;
+  extern int active_children;
+  
+! void	help(void);
+! 
+! short foreground = 1;
+  
   static void daemon_sighandler(int sig) {
   
       switch(sig) {
@@ -3195,12 +2852,12 @@
   
 + #ifdef	SIGALRM
   	case SIGALRM:
++ 		terminate = -1;
++ 	    break;
 + #endif
 + #ifdef	SIGUSR1
   	case SIGUSR1:
-+ #endif
-+ #if	defined(SIGALRM) || defined(SIGUSR1)
-  	    terminate = -1;
+! 		terminate = -1;
   	    break;
 + #endif
   
@@ -3213,35 +2870,183 @@
   	default:
   	    terminate = 1;
 ***************
-*** 99,106 ****
---- 117,126 ----
+*** 80,90 ****
+      return;
+  }
+  
+! static void writepid(char *pidfile)
+! {
+  	FILE *fd;
+  	int old_umask;
+- 
+      old_umask = umask(0006);
+      if((fd = fopen(pidfile, "w")) == NULL) {
+  	logg("!Can't save PID to file %s: %s\n", pidfile, strerror(errno));
+--- 100,109 ----
+      return;
+  }
+  
+! 
+! static void writepid(char *pidfile) {
+  	FILE *fd;
+  	int old_umask;
+      old_umask = umask(0006);
+      if((fd = fopen(pidfile, "w")) == NULL) {
+  	logg("!Can't save PID to file %s: %s\n", pidfile, strerror(errno));
+***************
+*** 95,184 ****
+      umask(old_umask);
+  }
+  
+- void help(void)
+- {
+-     mprintf_stdout = 1;
+- 
+-     mprintf("\n");
+-     mprintf("                   Clam AntiVirus: freshclam  "VERSION"\n");
+-     mprintf("    (C) 2002 - 2005 ClamAV Team - http://www.clamav.net/team.html\n\n");
+- 
+-     mprintf("    --help               -h              show help\n");
+-     mprintf("    --version            -V              print version number and exit\n");
+-     mprintf("    --verbose            -v              be verbose\n");
+-     mprintf("    --debug                              enable debug messages\n");
+-     mprintf("    --quiet                              only output error messages\n");
+-     mprintf("    --stdout                             write to stdout instead of stderr\n");
+-     mprintf("\n");
+-     mprintf("    --config-file=FILE                   read configuration from FILE.\n");
+-     mprintf("    --log=FILE           -l FILE         log into FILE\n");
+-     mprintf("    --daemon             -d              run in daemon mode\n");
+-     mprintf("    --pid=FILE           -p FILE         save daemon's pid in FILE\n");
+-     mprintf("    --user=USER          -u USER         run as USER\n");
+-     mprintf("    --no-dns                             force old non-DNS verification method\n");
+-     mprintf("    --checks=#n          -c #n           number of checks per day, 1 <= n <= 50\n");
+-     mprintf("    --datadir=DIRECTORY                  download new databases into DIRECTORY\n");
+- #ifdef BUILD_CLAMD
+-     mprintf("    --daemon-notify[=/path/clamd.conf]   send RELOAD command to clamd\n");
+- #endif
+-     mprintf("    --local-address=IP   -a IP           bind to IP for HTTP downloads\n");
+-     mprintf("    --on-update-execute=COMMAND          execute COMMAND after successful update\n");
+-     mprintf("    --on-error-execute=COMMAND           execute COMMAND if errors occured\n");
+-     mprintf("    --on-outdated-execute=COMMAND        execute COMMAND when software is outdated\n");
+- 
+-     mprintf("\n");
+- }
+- 
+- int download(const struct cfgstruct *copt, const struct optstruct *opt)
+- {
+- 	int ret = 0, try = 0, maxattempts = 0;
+- 	struct cfgstruct *cpt;
+- 
+- 
+-     maxattempts = cfgopt(copt, "MaxAttempts")->numarg;
+-     logg("*Max retries == %d\n", maxattempts);
+- 
+-     if(!(cpt = cfgopt(copt, "DatabaseMirror"))->enabled) {
+- 	logg("^You must specify at least one database mirror.\n");
+- 	return 56;
+-     } else {
+- 
+- 	while(cpt) {
+- 	    ret = downloadmanager(copt, opt, cpt->strarg);
+- 	    alarm(0);
+- 
+- 	    if(ret == 52 || ret == 54 || ret == 58 || ret == 59) {
+- 		if(try < maxattempts - 1) {
+- 		    logg("Trying again in 5 secs...\n");
+- 		    try++;
+- 		    sleep(5);
+- 		    continue;
+- 		} else {
+- 		    logg("Giving up on %s...\n", cpt->strarg);
+- 		    cpt = (struct cfgstruct *) cpt->nextarg;
+- 		    if(!cpt) {
+- 			logg("^Update failed. Your network may be down or none of the mirrors listed in freshclam.conf is working.\n");
+- 		    }
+- 		    try = 0;
+- 		}
+- 
+- 	    } else {
+- 		return ret;
+- 	    }
+- 	}
+-     }
+- 
+-     return ret;
+- }
+- 
+  int main(int argc, char **argv)
+  {
+  	int ret = 52;
   	char *newdir, *cfgfile;
   	char *pidfile = NULL;
   	struct cfgstruct *copt, *cpt;
-+ #ifndef	C_WINDOWS
-  	struct sigaction sigact;
-  	struct sigaction oldact;
-+ #endif
-  #if !defined(C_CYGWIN)  && !defined(C_OS2)
+! 	struct sigaction sigact, oldact;
+! #if !defined(C_CYGWIN)  && !defined(C_OS2)
   	char *unpuser;
   	struct passwd *user;
-***************
-*** 134,139 ****
---- 154,165 ----
-  	    {0, 0, 0, 0}
-      	};
+  #endif
+--- 114,130 ----
+      umask(old_umask);
+  }
   
-+ #ifdef	C_WINDOWS
+  int main(int argc, char **argv)
+  {
+  	int ret = 52;
+  	char *newdir, *cfgfile;
+  	char *pidfile = NULL;
+  	struct cfgstruct *copt, *cpt;
+! #ifndef	C_WINDOWS
+! 	struct sigaction sigact;
+! 	struct sigaction oldact;
+! #endif
+! #if !defined(C_CYGWIN)  && !defined(C_OS2) && !defined(C_WINDOWS)
+  	char *unpuser;
+  	struct passwd *user;
+  #endif
+***************
+*** 219,233 ****
+      }
+  
+      if(opt_check(opt, "help")) {
+-     	help();
+- 	opt_free(opt);
+- 	return 0;
+-     }
+- 
+-     if(opt_check(opt, "version")) {
+- 	print_version();
+  	opt_free(opt);
+! 	return 0;
+      }
+  
+      /* parse the config file */
+--- 165,172 ----
+      }
+  
+      if(opt_check(opt, "help")) {
+  	opt_free(opt);
+!     	help();
+      }
+  
+      /* parse the config file */
+***************
+*** 244,249 ****
+--- 183,195 ----
+  	opt_free(opt);
+  	return 56;
+      }
++ #ifdef        C_WINDOWS
 + 	if(!pthread_win32_process_attach_np()) {
 + 		mprintf("!Can't start the win32 pthreads layer\n");
 + 		return 1;
 + 	}
 + #endif
++ 
   
-      opt = opt_parse(argc, argv, short_options, long_options, NULL);
-      if(!opt) {
+      if(opt_check(opt, "http-proxy") || opt_check(opt, "proxy-user"))
+  	logg("WARNING: Proxy settings are now only configurable in the config file.\n");
 ***************
-*** 170,176 ****
+*** 254,260 ****
   	    opt_free(opt);
   	    return 56;
   	}
@@ -3249,131 +3054,267 @@
   	if(statbuf.st_mode & (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH)) {
   	    logg("^Insecure permissions (for HTTPProxyPassword): %s must have no more than 0700 permissions.\n", cfgfile);
   	    opt_free(opt);
---- 196,202 ----
+--- 200,206 ----
   	    opt_free(opt);
   	    return 56;
   	}
-! #if	(!defined(C_CYGWIN)) && (!defined(C_WINDOWS))
+! #if	!defined(C_CYGWIN) && !defined(C_WINDOWS)
   	if(statbuf.st_mode & (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH)) {
   	    logg("^Insecure permissions (for HTTPProxyPassword): %s must have no more than 0700 permissions.\n", cfgfile);
   	    opt_free(opt);
 ***************
-*** 179,185 ****
+*** 263,310 ****
   #endif
       }
   
 ! #if !defined(C_CYGWIN)  && !defined(C_OS2)
       /* freshclam shouldn't work with root privileges */
-      if(opt_check(opt, "user")) {
+!     if(opt_check(opt, "user"))
   	unpuser = opt_arg(opt, "user");
---- 205,211 ----
+!     else
+! 	unpuser = cfgopt(copt, "DatabaseOwner")->strarg;
+  
+      if(!geteuid()) {
+  	if((user = getpwnam(unpuser)) == NULL) {
+  	    logg("^Can't get information about user %s.\n", unpuser);
+! 	    opt_free(opt);
+! 	    return 60;
+  	}
+  
+  	if(cfgopt(copt, "AllowSupplementaryGroups")->enabled) {
+  #ifdef HAVE_INITGROUPS
+  	    if(initgroups(unpuser, user->pw_gid)) {
+  		logg("^initgroups() failed.\n");
+! 		opt_free(opt);
+! 		return 61;
+  	    }
+  #endif
+  	} else {
+  #ifdef HAVE_SETGROUPS
+  	    if(setgroups(1, &user->pw_gid)) {
+  		logg("^setgroups() failed.\n");
+! 		opt_free(opt);
+! 		return 61;
+  	    }
+  #endif
+  	}
+  
+  	if(setgid(user->pw_gid)) {
+  	    logg("^setgid(%d) failed.\n", (int) user->pw_gid);
+! 	    opt_free(opt);
+! 	    return 61;
+  	}
+  
+  	if(setuid(user->pw_uid)) {
+  	    logg("^setuid(%d) failed.\n", (int) user->pw_uid);
+! 	    opt_free(opt);
+! 	    return 61;
+  	}
+      }
+  #endif
+--- 209,254 ----
   #endif
       }
   
-! #if !defined(C_CYGWIN) && !defined(C_OS2) && (!defined(C_WINDOWS))
+! #if !defined(C_CYGWIN)  && !defined(C_OS2) && !defined(C_WINDOWS)
       /* freshclam shouldn't work with root privileges */
-      if(opt_check(opt, "user")) {
+!     if(opt_check(opt, "user")) {
   	unpuser = opt_arg(opt, "user");
+!     } else if((cpt = cfgopt(copt, "DatabaseOwner"))->enabled) {
+! 	unpuser = cpt->strarg;
+!     } else {
+! 	unpuser = UNPUSER;
+!     }
+  
+      if(!geteuid()) {
+  	if((user = getpwnam(unpuser)) == NULL) {
+  	    logg("^Can't get information about user %s.\n", unpuser);
+! 	    exit(60); /* this is critical problem, so we just exit here */
+  	}
+  
+  	if(cfgopt(copt, "AllowSupplementaryGroups")->enabled) {
+  #ifdef HAVE_INITGROUPS
+  	    if(initgroups(unpuser, user->pw_gid)) {
+  		logg("^initgroups() failed.\n");
+! 		exit(61);
+  	    }
+  #endif
+  	} else {
+  #ifdef HAVE_SETGROUPS
+  	    if(setgroups(1, &user->pw_gid)) {
+  		logg("^setgroups() failed.\n");
+! 		exit(61);
+  	    }
+  #endif
+  	}
+  
+  	if(setgid(user->pw_gid)) {
+  	    logg("^setgid(%d) failed.\n", (int) user->pw_gid);
+! 	    exit(61);
+  	}
+  
+  	if(setuid(user->pw_uid)) {
+  	    logg("^setuid(%d) failed.\n", (int) user->pw_uid);
+! 	    exit(61);
+  	}
+      }
+  #endif
 ***************
-*** 290,302 ****
---- 316,344 ----
+*** 323,328 ****
+--- 267,277 ----
+      if(opt_check(opt, "stdout"))
+  	mprintf_stdout = 1;
+  
++     if(opt_check(opt, "version")) {
++ 	print_version();
++ 	exit(0);
++     }
++ 
+      /* initialize logger */
+  
+      if(cfgopt(copt, "LogVerbose")->enabled)
+***************
+*** 332,346 ****
+  	logg_file = opt_arg(opt, "log");
+  	if(logg("#--------------------------------------\n")) {
+  	    mprintf("!Problem with internal logger (--log=%s).\n", logg_file);
+! 	    opt_free(opt);
+! 	    return 62;
+  	}
+      } else if((cpt = cfgopt(copt, "UpdateLogFile"))->enabled) {
+  	logg_file = cpt->strarg; 
+  	if(logg("#--------------------------------------\n")) {
+  	    mprintf("!Problem with internal logger (UpdateLogFile = %s).\n", logg_file);
+! 	    opt_free(opt);
+! 	    return 62;
+  	}
+      } else
+  	logg_file = NULL;
+--- 281,293 ----
+  	logg_file = opt_arg(opt, "log");
+  	if(logg("#--------------------------------------\n")) {
+  	    mprintf("!Problem with internal logger (--log=%s).\n", logg_file);
+! 	    exit(62);
+  	}
+      } else if((cpt = cfgopt(copt, "UpdateLogFile"))->enabled) {
+  	logg_file = cpt->strarg; 
+  	if(logg("#--------------------------------------\n")) {
+  	    mprintf("!Problem with internal logger (UpdateLogFile = %s).\n", logg_file);
+! 	    exit(62);
+  	}
+      } else
+  	logg_file = NULL;
+***************
+*** 352,359 ****
+  	if((cpt = cfgopt(copt, "LogFacility"))->enabled) {
+  	    if((fac = logg_facility(cpt->strarg)) == -1) {
+  		mprintf("!LogFacility: %s: No such facility.\n", cpt->strarg);
+! 		opt_free(opt);
+! 		return 62;
+  	    }
+  	}
+  
+--- 299,305 ----
+  	if((cpt = cfgopt(copt, "LogFacility"))->enabled) {
+  	    if((fac = logg_facility(cpt->strarg)) == -1) {
+  		mprintf("!LogFacility: %s: No such facility.\n", cpt->strarg);
+! 		exit(62);
+  	    }
+  	}
+  
+***************
+*** 370,380 ****
+  
+      if(chdir(newdir)) {
+  	logg("Can't change dir to %s\n", newdir);
+! 	opt_free(opt);
+! 	return 50;
+      } else
+  	logg("*Current working dir is %s\n", newdir);
+  
+      if(opt_check(opt, "daemon")) {
+  	    int bigsleep, checks;
+  	    time_t now, wakeup;
+--- 316,335 ----
+  
+      if(chdir(newdir)) {
+  	logg("Can't change dir to %s\n", newdir);
+! 	exit(50);
       } else
   	logg("*Current working dir is %s\n", newdir);
   
 + #ifdef	C_WINDOWS
 + 	{
 + 		WSADATA wsaData;
-+ 		
++ 
 + 		if(WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR) {
 + 			logg("!Error at WSAStartup(): %d\n", WSAGetLastError());
 + 			return 1;
 + 		}
 + 	}
-+ #endif
-  
-      if(opt_check(opt, "daemon")) {
-+ #ifdef	C_WINDOWS
-+ 	logg("*daemon mode not supported under Windows\n");
-+ 	return 1;
 + #else
+      if(opt_check(opt, "daemon")) {
   	    int bigsleep, checks;
   	    time_t now, wakeup;
-  
-+ #ifndef	C_WINDOWS
-  	memset(&sigact, 0, sizeof(struct sigaction));
-  	sigact.sa_handler = daemon_sighandler;
-+ #endif
-  
-  	if(opt_check(opt, "checks"))
-  	    checks = atoi(opt_arg(opt, "checks"));
 ***************
-*** 335,344 ****
---- 377,391 ----
+*** 389,403 ****
   
-  	logg("#freshclam daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
-  
-+ #ifdef	C_WINDOWS
-+ 	signal(SIGINT, SIG_IGN);
-+ 	signal(SIGTERM, SIG_IGN);
-+ #else
-  	sigaction(SIGTERM, &sigact, NULL);
-  	sigaction(SIGHUP, &sigact, NULL);
-  	sigaction(SIGINT, &sigact, NULL);
-          sigaction(SIGCHLD, &sigact, NULL);
-+ #endif
-  
-  	while(!terminate) {
-  	    ret = download(copt, opt);
-***************
-*** 356,363 ****
---- 403,414 ----
-  	    }
-  
-  	    logg("#--------------------------------------\n");
-+ #ifdef	SIGALRM
-  	    sigaction(SIGALRM, &sigact, &oldact);
-+ #endif
-+ #ifdef	SIGUSR1
-  	    sigaction(SIGUSR1, &sigact, &oldact);
-+ #endif
-  	    time(&wakeup);
-  	    wakeup += bigsleep;
-  	    alarm(bigsleep);
-***************
-*** 375,384 ****
-  		logg_close();
-  	    }
-  
-  	    sigaction(SIGALRM, &oldact, NULL);
-  	    sigaction(SIGUSR1, &oldact, NULL);
+  	if(checks <= 0) {
+  	    logg("^Number of checks must be a positive integer.\n");
+! 	    opt_free(opt);
+! 	    return 41;
   	}
-! 
+  
+  	if(!cfgopt(copt, "DNSDatabaseInfo")->enabled || opt_check(opt, "no-dns")) {
+  	    if(checks > 50) {
+  		logg("^Number of checks must be between 1 and 50.\n");
+! 		opt_free(opt);
+! 		return 41;
+  	    }
+  	}
+  
+--- 344,356 ----
+  
+  	if(checks <= 0) {
+  	    logg("^Number of checks must be a positive integer.\n");
+! 	    exit(41);
+  	}
+  
+  	if(!cfgopt(copt, "DNSDatabaseInfo")->enabled || opt_check(opt, "no-dns")) {
+  	    if(checks > 50) {
+  		logg("^Number of checks must be between 1 and 50.\n");
+! 		exit(41);
+  	    }
+  	}
+  
+***************
+*** 406,412 ****
+  	if(!cfgopt(copt, "Foreground")->enabled) {
+              foreground = 0;
+  	    daemonize();
+- 	    mprintf_disabled = 1;
+          }
+  
+  	if(opt_check(opt, "pid")) {
+--- 359,364 ----
+***************
+*** 467,472 ****
+--- 419,425 ----
+  	}
+  
       } else
++ #endif	/*C_WINDOWS*/
   	ret = download(copt, opt);
   
---- 426,439 ----
-  		logg_close();
-  	    }
-  
-+ #ifdef	SIGALRM
-  	    sigaction(SIGALRM, &oldact, NULL);
-+ #endif
-+ #ifdef	SIGUSR1
-  	    sigaction(SIGUSR1, &oldact, NULL);
-+ #endif
-  	}
-! #endif	/* C_WINDOWS */
-      } else
-  	ret = download(copt, opt);
-  
+      if(opt_check(opt, "on-error-execute")) {
 ***************
-*** 395,400 ****
---- 450,465 ----
+*** 482,486 ****
+--- 435,526 ----
       }
   
       opt_free(opt);
-+     
-+ #ifdef	C_WINDOWS
++ 
++ #ifdef        C_WINDOWS
 + 	WSACleanup();
 + 
 + 	if(!pthread_win32_process_detach_np()) {
@@ -3384,72 +3325,114 @@
 + 
       return(ret);
   }
-  
-***************
-*** 436,447 ****
-  	    }
-  	}
-      }
-! 
-      return ret;
-  }
-  
-  void daemonize(void)
-  {
-  	int i;
-  
-      for(i = 0; i < 3; i++)
---- 501,518 ----
-  	    }
-  	}
-      }
-!     
-      return ret;
-  }
-  
 + 
-  void daemonize(void)
-  {
++ int download(const struct cfgstruct *copt, const struct optstruct *opt)
++ {
++ 	int ret = 0, try = 0, maxattempts = 0;
++ 	struct cfgstruct *cpt;
 + 
-+ #if	defined(C_OS2) || defined(C_WINDOWS)
-+ 	fputs("This platform requires Foreground mode\n", stderr);
-+     return;
-+ #else
-  	int i;
-  
-      for(i = 0; i < 3; i++)
-***************
-*** 452,459 ****
---- 523,533 ----
-      if(fork())
-  	exit(0);
-  
-+ #ifdef	HAVE_SETSID
-      setsid();
++ 
++     maxattempts = cfgopt(copt, "MaxAttempts")->numarg;
++     logg("*Max retries == %d\n", maxattempts);
++ 
++     if(!(cpt = cfgopt(copt, "DatabaseMirror"))->enabled) {
++ 	logg("^You must specify at least one database mirror.\n");
++ 	return 56;
++     } else {
++ 
++ 	while(cpt) {
++ 	    ret = downloadmanager(copt, opt, cpt->strarg);
++ 	    alarm(0);
++ 
++ 	    if(ret == 52 || ret == 54 || ret == 58 || ret == 59) {
++ 		if(try < maxattempts - 1) {
++ 		    logg("Trying again in 5 secs...\n");
++ 		    try++;
++ 		    sleep(5);
++ 		    continue;
++ 		} else {
++ 		    logg("Giving up on %s...\n", cpt->strarg);
++ 		    cpt = (struct cfgstruct *) cpt->nextarg;
++ 		    if(!cpt) {
++ 			logg("^Update failed. Your network may be down or none of the mirrors listed in freshclam.conf is working.\n");
++ 		    }
++ 		    try = 0;
++ 		}
++ 
++ 	    } else {
++ 		return ret;
++ 	    }
++ 	}
++     }
++ 
++     return ret;
++ }
++ 
++ void help(void)
++ {
++     mprintf_stdout = 1;
++ 
++     mprintf("\n");
++     mprintf("                   Clam AntiVirus: freshclam  "VERSION"\n");
++     mprintf("    (C) 2002 - 2005 ClamAV Team - http://www.clamav.net/team.html\n\n");
++ 
++     mprintf("    --help               -h              show help\n");
++     mprintf("    --version            -V              print version number and exit\n");
++     mprintf("    --verbose            -v              be verbose\n");
++     mprintf("    --debug                              enable debug messages\n");
++     mprintf("    --quiet                              only output error messages\n");
++     mprintf("    --stdout                             write to stdout instead of stderr\n");
++     mprintf("\n");
++     mprintf("    --config-file=FILE                   read configuration from FILE.\n");
++     mprintf("    --log=FILE           -l FILE         log into FILE\n");
++     mprintf("    --daemon             -d              run in daemon mode\n");
++     mprintf("    --pid=FILE           -p FILE         save daemon's pid in FILE\n");
++     mprintf("    --user=USER          -u USER         run as USER\n");
++     mprintf("    --no-dns                             force old non-DNS verification method\n");
++     mprintf("    --checks=#n          -c #n           number of checks per day, 1 <= n <= 50\n");
++     mprintf("    --datadir=DIRECTORY                  download new databases into DIRECTORY\n");
++ #ifdef BUILD_CLAMD
++     mprintf("    --daemon-notify[=/path/clamd.conf]   send RELOAD command to clamd\n");
 + #endif
-      mprintf_disabled = 1;
-+ #endif
-  }
-  
-  void help(void)
-*** /home/njh/src/clamav-devel/./freshclam/manager.c	2006-08-30 13:46:13.000000000 +0100
---- ./freshclam/manager.c	2006-08-30 13:52:44.000000000 +0100
++     mprintf("    --local-address=IP   -a IP           bind to IP for HTTP downloads\n");
++     mprintf("    --on-update-execute=COMMAND          execute COMMAND after successful update\n");
++     mprintf("    --on-error-execute=COMMAND           execute COMMAND if errors occured\n");
++     mprintf("    --on-outdated-execute=COMMAND        execute COMMAND when software is outdated\n");
++ 
++     mprintf("\n");
++     exit(0);
++ }
+*** /home/njh/src/clamav-devel/./freshclam/nonblock.c	2006-09-04 09:24:59.000000000 +0100
+--- ./freshclam/nonblock.c	2006-09-04 10:29:12.000000000 +0100
 ***************
-*** 20,25 ****
---- 20,29 ----
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
+*** 15,20 ****
+--- 15,23 ----
+   *  along with this program; if not, write to the Free Software
+   *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
    */
 + #ifdef	_MSC_VER
-+ #include <windows.h>
 + #include <winsock.h>
 + #endif
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
 ***************
-*** 27,40 ****
---- 31,50 ----
+*** 24,37 ****
+  
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <unistd.h>
+  #include <string.h>
+  #include <ctype.h>
+  #include <netinet/in.h>
+  #include <netdb.h>
+  #include <sys/types.h>
+! #include <sys/socket.h>
+  #include <sys/time.h>
+  #include <time.h>
+  #include <fcntl.h>
+  #include <sys/stat.h>
+--- 27,46 ----
   
   #include <stdio.h>
   #include <stdlib.h>
@@ -3463,334 +3446,284 @@
   #include <netdb.h>
 + #endif
   #include <sys/types.h>
-+ #ifndef	C_WINDOWS
-  #include <sys/socket.h>
+! /*#include <sys/socket.h>	/* in nonblock.h */
+! #ifndef	C_WINDOWS
   #include <sys/time.h>
 + #endif
   #include <time.h>
   #include <fcntl.h>
   #include <sys/stat.h>
 ***************
-*** 143,149 ****
---- 153,161 ----
-  		else
-  			port = 8080;
+*** 40,45 ****
+--- 49,64 ----
   
+  #include "shared/output.h"
+  
++ #if	(!defined(EALREADY)) && (defined(WSAEALREADY))
++ #define EALREADY	WSAEALREADY
++ #endif
++ #if	(!defined(EINPROGRESS)) && (defined(WSAEINPROGRESS))
++ #define EINPROGRESS	WSAEINPROGRESS
++ #endif
++ #if	(!defined(EISCONN)) && (defined(WSAEISCONN))
++ #define EISCONN	WSAEISCONN
++ #endif
++ 
+  #ifndef timercmp
+  # define timercmp(a, b, cmp)          \
+    (((a)->tv_sec == (b)->tv_sec) ?     \
+***************
+*** 227,232 ****
+--- 246,252 ----
+  
+  static long nonblock_fcntl(int sock)
+  {
++ #ifdef	F_GETFL
+  	long fcntl_flags; /* Save fcntl() flags */
+  
+  	fcntl_flags = fcntl(sock, F_GETFL, 0);
+***************
+*** 240,255 ****
+--- 260,280 ----
+  	}
+  
+  	return fcntl_flags;
++ #else
++ 	return 0;
++ #endif
+  }
+  
+  static void restore_fcntl(int sock, long fcntl_flags)
+  {
++ #ifdef	F_SETFL
+  	if (fcntl_flags != -1) {
+  		if (fcntl(sock, F_SETFL, fcntl_flags)) {
+  			logg("restore_fcntl: restoring: fcntl(%d, F_SETFL): errno=%d: %s\n",
+  			     sock, errno, strerror(errno));
+  		}
+  	}
++ #endif
+  }
+  
+  /*
+*** /home/njh/src/clamav-devel/./freshclam/nonblock.h	2006-09-04 09:24:02.000000000 +0100
+--- ./freshclam/nonblock.h	2006-09-04 09:35:10.000000000 +0100
+***************
+*** 24,30 ****
+--- 24,32 ----
+  #endif
+  
+  #include <sys/types.h>
 + #ifndef	C_WINDOWS
-  		endservent();
+  #include <sys/socket.h>
 + #endif
-  #else
-  		port = 8080;
-  #endif
-***************
-*** 181,187 ****
-  #ifdef	C_WINDOWS
-  	closesocket(socketfd);
-  #else
-! 	close(socketd);
-  #endif
-  	return -1;
-      }
---- 193,199 ----
-  #ifdef	C_WINDOWS
-  	closesocket(socketfd);
-  #else
-! 	close(socketfd);
-  #endif
-  	return -1;
-      }
-***************
-*** 211,217 ****
-  #ifdef	C_WINDOWS
-  	closesocket(socketfd);
-  #else
-! 	close(socketd);
-  #endif
-      return -2;
-  }
---- 223,229 ----
-  #ifdef	C_WINDOWS
-  	closesocket(socketfd);
-  #else
-! 	close(socketfd);
-  #endif
-      return -2;
-  }
-***************
-*** 387,393 ****
-  #ifdef	C_WINDOWS
-  	closesocket(sd);
-  #else
-! 	close(sd);
-  #endif
   
-      if(bread == -1) {
---- 399,405 ----
-  #ifdef	C_WINDOWS
-  	closesocket(sd);
-  #else
-!     close(sd);
-  #endif
-  
-      if(bread == -1) {
+  /*
+  	wait_connect(): wrapper for connect(), with explicit 'secs' timeout
+*** /home/njh/src/clamav-devel/./freshclam/execute.c	2006-08-31 08:38:17.000000000 +0100
+--- ./freshclam/execute.c	2006-08-31 09:18:22.000000000 +0100
 ***************
-*** 506,512 ****
-      if(!ip[0])
-  	strcpy(ip, ipaddr);
+*** 23,31 ****
+--- 23,36 ----
   
-!     if(write(sd, cmd, strlen(cmd)) < 0) {
-  	logg("!getfile: Can't write to socket\n");
-  	return 52;
-      }
---- 518,524 ----
-      if(!ip[0])
-  	strcpy(ip, ipaddr);
-  
-!     if(send(sd, cmd, strlen(cmd), 0) < 0) {
-  	logg("!getfile: Can't write to socket\n");
-  	return 52;
-      }
-***************
-*** 573,579 ****
---- 585,595 ----
-  	getcwd(currdir, sizeof(currdir));
-  	logg("!getfile: Can't create new file %s in %s\n", destfile, currdir);
-  	logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
+  #include <stdio.h>
+  #include <stdlib.h>
++ #ifdef	HAVE_UNISTD_H
+  #include <unistd.h>
++ #endif
+  #include <string.h>
+  #include <errno.h>
 + #ifdef	C_WINDOWS
-+ 	closesocket(sd);
-+ #else
-  	close(sd);
++ #include <process.h>
 + #endif
-  	return 57;
-      }
+  
+  #include "shared/output.h"
   
 ***************
-*** 606,612 ****
-  #ifdef	C_WINDOWS
-  	closesocket(sd);
-  #else
-! 	close(sd);
-  #endif
-      close(fd);
+*** 35,40 ****
+--- 40,55 ----
   
---- 622,628 ----
-  #ifdef	C_WINDOWS
-  	closesocket(sd);
-  #else
-!     close(sd);
-  #endif
-      close(fd);
-  
-***************
-*** 734,740 ****
-          return ret;
-      }
-  
-!     if((fd = open(tempname, O_RDONLY)) == -1) {
-  	logg("!getpatch: Can't open %s for reading\n", tempname);
-          unlink(tempname);
-          free(tempname);
---- 750,756 ----
-          return ret;
-      }
-  
-!     if((fd = open(tempname, O_RDONLY|O_BINARY)) == -1) {
-  	logg("!getpatch: Can't open %s for reading\n", tempname);
-          unlink(tempname);
-          free(tempname);
-*** /home/njh/src/clamav-devel/./freshclam/nonblock.c	2006-08-28 19:14:22.000000000 +0100
---- ./freshclam/nonblock.c	2006-08-30 14:09:46.000000000 +0100
-***************
-*** 110,116 ****
---- 110,120 ----
-  
-  	/* Launch (possibly) non-blocking connect() request */
-  	if (connect(sock, addr, addrlen)) {
-+ #ifdef	C_WINDOWS
-+ 		int e = WSAGetLastError();
+  void execute( const char *type, const char *text )
+  {
++ #ifdef        C_WINDOWS
++ 	if(active_children < MAX_CHILDREN) {
++ 		if(spawnlp(P_NOWAIT, text, text, NULL) == -1) {
++ 			logg("^%s: couldn't execute \"%s\".\n", type, text);
++ 			return;
++ 		}
++ 			active_children++;
++ 	} else
++ 		logg("^%s: already %d processes active.\n", type, active_children);
 + #else
-  		int e = errno;
+  	pid_t pid;
+  
+  	if ( active_children<MAX_CHILDREN )
+***************
+*** 55,58 ****
+--- 70,74 ----
+  	{
+  		logg("^%s: already %d processes active.\n", type, active_children);
+  	}
 + #endif
-  #ifdef NONBLOCK_DEBUG
-  		logg("DEBUG %s %s: connect(): fd=%d errno=%d: %s\n",
-  		     __FILE__, __PRETTY_FUNCTION__,
-*** /home/njh/src/clamav-devel/./clamd/clamd.c	2006-05-15 19:30:18.000000000 +0100
---- ./clamd/clamd.c	2006-08-04 10:38:10.000000000 +0100
+  }
+*** /home/njh/src/clamav-devel/./freshclam/notify.c	2006-08-31 08:53:35.000000000 +0100
+--- ./freshclam/notify.c	2006-08-31 09:26:34.000000000 +0100
 ***************
 *** 16,21 ****
---- 16,25 ----
+--- 16,26 ----
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-+ #ifdef	_MSC_VER
++ #ifdef        _MSC_VER
 + #include <windows.h>
 + #include <winsock.h>
 + #endif
++ 
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
 ***************
-*** 24,37 ****
---- 28,47 ----
+*** 24,45 ****
+--- 29,60 ----
+  #ifdef BUILD_CLAMD
+  
   #include <stdio.h>
-  #include <stdlib.h>
-  #include <string.h>
 + #ifdef	HAVE_UNISTD_H
   #include <unistd.h>
 + #endif
-+ #ifndef	C_WINDOWS
-  #include <sys/time.h>
-+ #endif
   #include <sys/types.h>
-  #include <sys/stat.h>
-  #include <fcntl.h>
-  #include <time.h>
 + #ifndef	C_WINDOWS
-  #include <pwd.h>
-  #include <grp.h>
+  #include <sys/socket.h>
+  #include <sys/un.h>
+  #include <netinet/in.h>
+  #include <arpa/inet.h>
+  #include <netdb.h>
 + #endif
-  #include <clamav.h>
+  #include <string.h>
   
-  #if defined(USE_SYSLOG) && !defined(C_AIX)
-***************
-*** 88,93 ****
---- 98,110 ----
-      	};
+  #include "shared/cfgparser.h"
+  #include "shared/output.h"
   
-  
-+ #ifdef	C_WINDOWS
-+ 	if(!pthread_win32_process_attach_np()) {
-+ 		mprintf("!Can't start the win32 pthreads layer\n");
-+ 		return 1;
-+ 	}
++ #ifndef	C_WINDOWS
++ #define	closesocket(s)	close(s)
 + #endif
 + 
-      opt = opt_parse(argc, argv, short_options, long_options, NULL);
-      if(!opt) {
-  	mprintf("!Can't parse the command line\n");
+  int notify(const char *cfgfile)
+  {
+  	char buff[20];
++ #ifndef	C_WINDOWS
+  	struct sockaddr_un server;
++ #endif
+          struct sockaddr_in server2;
+  	struct hostent *he;
+  	struct cfgstruct *copt, *cpt;
 ***************
-*** 130,136 ****
-      umask(0);
+*** 52,57 ****
+--- 67,73 ----
+  	return 1;
+      }
   
-      /* drop privileges */
-! #ifndef C_OS2
-      if(geteuid() == 0 && (cpt = cfgopt(copt, "User"))->enabled) {
-  	if((user = getpwnam(cpt->strarg)) == NULL) {
-  	    fprintf(stderr, "ERROR: Can't get information about user %s.\n", cpt->strarg);
---- 147,153 ----
-      umask(0);
-  
-      /* drop privileges */
-! #if	(!defined(C_OS2)) && (!defined(C_WINDOWS))
-      if(geteuid() == 0 && (cpt = cfgopt(copt, "User"))->enabled) {
-  	if((user = getpwnam(cpt->strarg)) == NULL) {
-  	    fprintf(stderr, "ERROR: Can't get information about user %s.\n", cpt->strarg);
++ #ifndef	C_WINDOWS
+      if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
+  	socktype = "UNIX";
+  	server.sun_family = AF_UNIX;
 ***************
-*** 285,292 ****
-      else
-          foreground = 1;
+*** 64,76 ****
+  	}
   
-!     if(tcpsock)
-! 	lsockets[nlsockets++] = tcpserver(copt, root);
+  	if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
+! 	    close(sockd);
+  	    logg("^Clamd was NOT notified: Can't connect to clamd through %s\n", cpt->strarg);
+  	    perror("connect()");
+  	    return 1;
+  	}
   
-      if(localsock)
-  	lsockets[nlsockets++] = localserver(copt, root);
---- 302,319 ----
-      else
-          foreground = 1;
+!     } else if((cpt = cfgopt(copt, "TCPSocket"))->enabled) {
   
-! 
-!     if(tcpsock) {
-! #ifdef	C_WINDOWS
-! 		WSADATA wsaData;
-! 		
-! 		if(WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR) {
-! 			logg("!Error at WSAStartup(): %d\n", WSAGetLastError());
-! 			return -1;
-! 		}
+  	socktype = "TCP";
+  #ifdef PF_INET
+--- 80,94 ----
+  	}
+  
+  	if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
+! 	    closesocket(sockd);
+  	    logg("^Clamd was NOT notified: Can't connect to clamd through %s\n", cpt->strarg);
+  	    perror("connect()");
+  	    return 1;
+  	}
+  
+!     } else
 ! #endif
-! 		lsockets[nlsockets++] = tcpserver(copt, root);
-! 	}
+!     if((cpt = cfgopt(copt, "TCPSocket"))->enabled) {
   
-      if(localsock)
-  	lsockets[nlsockets++] = localserver(copt, root);
+  	socktype = "TCP";
+  #ifdef PF_INET
 ***************
-*** 295,300 ****
---- 322,337 ----
+*** 98,104 ****
   
-      logg_close();
-      freecfg(copt);
-+     
-+ #ifdef	C_WINDOWS
-+ 	if(tcpsock)
-+ 		WSACleanup();
-+ 
-+ 	if(!pthread_win32_process_detach_np()) {
-+ 		mprintf("!Can't stop the win32 pthreads layer\n");
-+ 		return 1;
-+ 	}
-+ #endif
+  
+  	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
+! 	    close(sockd);
+  	    logg("^Clamd was NOT notified: Can't connect to clamd on %s:%d\n",
+  		    inet_ntoa(server2.sin_addr), ntohs(server2.sin_port));
+  	    perror("connect()");
+--- 116,122 ----
+  
+  
+  	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
+! 	    closesocket(sockd);
+  	    logg("^Clamd was NOT notified: Can't connect to clamd on %s:%d\n",
+  		    inet_ntoa(server2.sin_addr), ntohs(server2.sin_port));
+  	    perror("connect()");
+***************
+*** 110,132 ****
+  	return 1;
+      }
+  
+!     if(write(sockd, "RELOAD", 6) < 0) {
+  	logg("^Clamd was NOT notified: Could not write to %s socket\n", socktype);
+  	perror("write()");
+! 	close(sockd);
+  	return 1;
+      }
+  
+      /* TODO: Handle timeout */
+      memset(buff, 0, sizeof(buff));
+!     if((bread = read(sockd, buff, sizeof(buff))) > 0)
+  	if(!strstr(buff, "RELOADING")) {
+  	    logg("^Clamd was NOT notified: Unknown answer from clamd: '%s'\n", buff);
+! 	    close(sockd);
+  	    return 1;
+  	}
+  
+!     close(sockd);
+      logg("Clamd successfully notified about the update.\n");
+      return 0;
   }
+--- 128,150 ----
+  	return 1;
+      }
   
-  void help(void)
-***************
-*** 317,323 ****
-  	int i;
+!     if(send(sockd, "RELOAD", 6, 0) < 0) {
+  	logg("^Clamd was NOT notified: Could not write to %s socket\n", socktype);
+  	perror("write()");
+! 	closesocket(sockd);
+  	return 1;
+      }
   
+      /* TODO: Handle timeout */
+      memset(buff, 0, sizeof(buff));
+!     if((bread = recv(sockd, buff, sizeof(buff), 0)) > 0)
+  	if(!strstr(buff, "RELOADING")) {
+  	    logg("^Clamd was NOT notified: Unknown answer from clamd: '%s'\n", buff);
+! 	    closesocket(sockd);
+  	    return 1;
+  	}
   
-! #ifdef C_OS2
-      return;
-  #else
-  
---- 354,361 ----
-  	int i;
-  
-  
-! #if	defined(C_OS2) || defined(C_WINDOWS)
-! 	fputs("This platform requires Foreground mode\n", stderr);
-      return;
-  #else
-  
-***************
-*** 338,343 ****
---- 376,383 ----
-      if(fork())
-  	exit(0);
-  
-+ #ifdef	HAVE_SETSID
-      setsid();
-  #endif
-+ #endif
+!     closesocket(sockd);
+      logg("Clamd successfully notified about the update.\n");
+      return 0;
   }
-*** /home/njh/src/clamav-devel/./clamd/others.h	2006-04-09 20:59:26.000000000 +0100
---- ./clamd/others.h	2006-08-03 14:33:50.000000000 +0100
-***************
-*** 33,42 ****
-  void virusaction(const char *filename, const char *virname, const struct cfgstruct *copt);
-  int writen(int fd, void *buff, unsigned int count);
-  
-! #if defined(HAVE_RECVMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN) && !defined(C_OS2) && !defined(INCOMPLETE_CMSG)
-  int readsock(int sockfd, char *buf, size_t size);
-  #else
-  #define	readsock	read
-  #endif
-  
-  #endif
---- 33,46 ----
-  void virusaction(const char *filename, const char *virname, const struct cfgstruct *copt);
-  int writen(int fd, void *buff, unsigned int count);
-  
-! #if defined(HAVE_RECVMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN) && !defined(C_OS2) && !defined(INCOMPLETE_CMSG) && !defined(C_WINDOWS)
-  int readsock(int sockfd, char *buf, size_t size);
-  #else
-+ #ifdef	C_WINDOWS
-+ #define	readsock(sockfd, buf, size)	recv(sockfd, buf, size, 0)
-+ #else
-  #define	readsock	read
-  #endif
-+ #endif
-  
-  #endif
 *** /home/njh/src/clamav-devel/./clamd/server.h	2006-04-09 20:59:26.000000000 +0100
 --- ./clamd/server.h	2006-08-04 10:25:18.000000000 +0100
 ***************
@@ -3889,39 +3822,6 @@
   	pthread_mutex_init(&(threadpool->pool_mutex), NULL);
   	if (pthread_cond_init(&(threadpool->pool_cond), NULL) != 0) {
   		free(threadpool);
-*** /home/njh/src/clamav-devel/./clamd/session.c	2006-04-09 20:59:26.000000000 +0100
---- ./clamd/session.c	2006-08-03 14:36:06.000000000 +0100
-***************
-*** 16,21 ****
---- 16,26 ----
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
-   */
-+  
-+ #ifdef	_MSC_VER
-+ #include <windows.h>
-+ #include <winsock.h>
-+ #endif
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
-***************
-*** 24,33 ****
---- 29,42 ----
-  #include <stdio.h>
-  #include <stdlib.h>
-  #include <string.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  #include <sys/types.h>
-+ #ifndef	C_WINDOWS
-  #include <sys/socket.h>
-  #include <sys/time.h>
-+ #endif
-  #include <pthread.h>
-  #include <time.h>
-  #include <signal.h>
 *** /home/njh/src/clamav-devel/./clamd/localserver.c	2006-04-09 20:59:26.000000000 +0100
 --- ./clamd/localserver.c	2006-08-01 09:19:14.000000000 +0100
 ***************
@@ -4004,145 +3904,6 @@
       memset((char *) &server, 0, sizeof(server));
       server.sin_family = AF_INET;
       server.sin_port = htons(cfgopt(copt, "TCPSocket")->numarg);
-*** /home/njh/src/clamav-devel/./clamd/others.c	2006-04-10 10:59:51.000000000 +0100
---- ./clamd/others.c	2006-08-03 16:47:56.000000000 +0100
-***************
-*** 16,21 ****
---- 16,26 ----
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
-   */
-+  
-+ #ifdef	_MSC_VER
-+ #include <windows.h>
-+ #include <winsock.h>
-+ #endif
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
-***************
-*** 25,45 ****
-  #include <stdarg.h>
-  #include <stdlib.h>
-  #include <string.h>
-  #include <unistd.h>
-  #include <fcntl.h>
-  #include <time.h>
-  #include <sys/stat.h>
-  #include <errno.h>
-  #include <sys/time.h>
-  #include <sys/wait.h>
-! 
-  
-  #if HAVE_SYS_PARAM_H
-  #include <sys/param.h>
-  #endif
-  
-  #include <sys/socket.h>
-  #include <sys/ioctl.h>
-  
-  #if HAVE_SYS_TYPES_H
-  #include <sys/types.h>
---- 30,55 ----
-  #include <stdarg.h>
-  #include <stdlib.h>
-  #include <string.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  #include <fcntl.h>
-  #include <time.h>
-  #include <sys/stat.h>
-  #include <errno.h>
-+ #ifndef	C_WINDOWS
-  #include <sys/time.h>
-  #include <sys/wait.h>
-! #endif
-  
-  #if HAVE_SYS_PARAM_H
-  #include <sys/param.h>
-  #endif
-  
-+ #ifndef	C_WINDOWS
-  #include <sys/socket.h>
-  #include <sys/ioctl.h>
-+ #endif
-  
-  #if HAVE_SYS_TYPES_H
-  #include <sys/types.h>
-***************
-*** 77,82 ****
---- 87,105 ----
-  #define ENV_FILE  "CLAM_VIRUSEVENT_FILENAME"
-  #define ENV_VIRUS "CLAM_VIRUSEVENT_VIRUSNAME"
-  
-+ #ifdef	C_WINDOWS
-+ /*
-+  * It's probably meaningless here, so I doubt I'll ever do it
-+  */
-+ void
-+ virusaction(const char *filename, const char *virname, const struct cfgstruct *copt)
-+ {
-+ 	if(!(cfgopt(copt, "VirusEvent")->enabled))
-+ 		return;
-+ 		
-+ 	logg("^VirusAction is not supported on this platform.\n");
-+ }
-+ #else
-  void virusaction(const char *filename, const char *virname, const struct cfgstruct *copt)
-  {
-  	pid_t pid;
-***************
-*** 130,135 ****
---- 153,159 ----
-  	logg("!VirusAction: fork failed.\n");
-      }
-  }
-+ #endif
-  
-  int poll_fds(int *fds, int nfds, int timeout_sec)
-  {
-***************
-*** 180,188 ****
---- 204,214 ----
-  	int maxfd = 0;
-  
-      for (i=0; i<nfds; i++) {
-+ #ifndef	C_WINDOWS
-  	if (fds[i] >= DEFAULT_FD_SETSIZE) {
-  	    return -1;
-  	}
-+ #endif
-  	if (fds[i] > maxfd)
-  	    maxfd = fds[i];
-      }
-***************
-*** 200,205 ****
---- 226,232 ----
-  	    if (errno == EINTR) {
-  		continue;
-  	    }
-+ 	    perror("select");
-  	    return -1;
-  	}
-  	if ((nfds>1) && (retval>0)) {
-***************
-*** 305,311 ****
-  
-  /* Submitted by Richard Lyons <frob-clamav*webcentral.com.au> */
-  
-! #if defined(HAVE_RECVMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN) && !defined(C_OS2) && !defined(INCOMPLETE_CMSG)
-  
-  int readsock(int sockfd, char *buf, size_t size)
-  {
---- 332,338 ----
-  
-  /* Submitted by Richard Lyons <frob-clamav*webcentral.com.au> */
-  
-! #if defined(HAVE_RECVMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN) && !defined(C_OS2) && !defined(INCOMPLETE_CMSG) && !defined(C_WINDOWS)
-  
-  int readsock(int sockfd, char *buf, size_t size)
-  {
 *** /home/njh/src/clamav-devel/./clamd/thrmgr.h	2006-08-04 17:48:25.000000000 +0100
 --- ./clamd/thrmgr.h	2006-07-31 17:03:38.000000000 +0100
 ***************
@@ -4391,15 +4152,14 @@
   #ifndef C_OS2
       if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
   	if(unlink(cpt->strarg) == -1)
-*** /home/njh/src/clamav-devel/./clamd/scanner.c	2006-04-09 20:59:26.000000000 +0100
---- ./clamd/scanner.c	2006-08-14 09:19:12.000000000 +0100
+*** /home/njh/src/clamav-devel/./clamd/clamd.c	2006-08-31 08:29:09.000000000 +0100
+--- ./clamd/clamd.c	2006-08-31 10:04:52.000000000 +0100
 ***************
 *** 16,21 ****
---- 16,26 ----
+--- 16,25 ----
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-+  
 + #ifdef	_MSC_VER
 + #include <windows.h>
 + #include <winsock.h>
@@ -4408,8 +4168,244 @@
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
 ***************
-*** 24,41 ****
---- 29,54 ----
+*** 24,37 ****
+--- 28,47 ----
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <string.h>
++ #ifdef	HAVE_UNISTD_H
+  #include <unistd.h>
++ #endif
++ #ifndef	C_WINDOWS
+  #include <sys/time.h>
++ #endif
+  #include <sys/types.h>
+  #include <sys/stat.h>
+  #include <fcntl.h>
+  #include <time.h>
++ #ifndef	C_WINDOWS
+  #include <pwd.h>
+  #include <grp.h>
++ #endif
+  #include <clamav.h>
+  
+  #if defined(USE_SYSLOG) && !defined(C_AIX)
+***************
+*** 86,91 ****
+--- 96,109 ----
+  	    {0, 0, 0, 0}
+      	};
+  
++ #ifdef	C_WINDOWS
++ 	if(!pthread_win32_process_attach_np()) {
++ 		mprintf("!Can't start the win32 pthreads layer\n");
++ 		return 1;
++ 	}
++ #endif
++ 
++ 
+  
+      opt = opt_parse(argc, argv, short_options, long_options, NULL);
+      if(!opt) {
+***************
+*** 129,135 ****
+      umask(0);
+  
+      /* drop privileges */
+! #ifndef C_OS2
+      if(geteuid() == 0 && (cpt = cfgopt(copt, "User"))->enabled) {
+  	if((user = getpwnam(cpt->strarg)) == NULL) {
+  	    fprintf(stderr, "ERROR: Can't get information about user %s.\n", cpt->strarg);
+--- 147,153 ----
+      umask(0);
+  
+      /* drop privileges */
+! #if	(!defined(C_OS2)) && (!defined(C_WINDOWS))
+      if(geteuid() == 0 && (cpt = cfgopt(copt, "User"))->enabled) {
+  	if((user = getpwnam(cpt->strarg)) == NULL) {
+  	    fprintf(stderr, "ERROR: Can't get information about user %s.\n", cpt->strarg);
+***************
+*** 285,292 ****
+      } else
+          foreground = 1;
+  
+!     if(tcpsock)
+! 	lsockets[nlsockets++] = tcpserver(copt, root);
+  
+      if(localsock)
+  	lsockets[nlsockets++] = localserver(copt, root);
+--- 303,319 ----
+      } else
+          foreground = 1;
+  
+! 	if(tcpsock) {
+! #ifdef	C_WINDOWS
+! 		WSADATA wsaData;
+! 
+! 		if(WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR) {
+! 			logg("!Error at WSAStartup(): %d\n", WSAGetLastError());
+! 			return -1;
+! 		}
+! #endif
+!                lsockets[nlsockets++] = tcpserver(copt, root);
+!        }
+  
+      if(localsock)
+  	lsockets[nlsockets++] = localserver(copt, root);
+***************
+*** 295,300 ****
+--- 322,337 ----
+  
+      logg_close();
+      freecfg(copt);
++ 
++ #ifdef        C_WINDOWS
++ 	if(tcpsock)
++ 		WSACleanup();
++ 	if(!pthread_win32_process_detach_np()) {
++ 		mprintf("!Can't stop the win32 pthreads layer\n");
++ 		return 1;
++ 	}
++ #endif
++ 
+      return ret;
+  }
+  
+*** /home/njh/src/clamav-devel/./clamd/others.c	2006-09-05 11:00:19.000000000 +0100
+--- ./clamd/others.c	2006-09-05 12:15:32.000000000 +0100
+***************
+*** 16,21 ****
+--- 16,25 ----
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
++ #ifdef	_MSC_VER
++ #include <windows.h>
++ #include <winsock.h>
++ #endif
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+***************
+*** 25,45 ****
+--- 29,55 ----
+  #include <stdarg.h>
+  #include <stdlib.h>
+  #include <string.h>
++ #ifdef	HAVE_UNISTD_H
+  #include <unistd.h>
++ #endif
+  #include <fcntl.h>
+  #include <time.h>
+  #include <sys/stat.h>
+  #include <errno.h>
++ #ifndef	C_WINDOWS
+  #include <sys/time.h>
+  #include <sys/wait.h>
++ #endif
+  
+  
+  #if HAVE_SYS_PARAM_H
+  #include <sys/param.h>
+  #endif
+  
++ #ifndef	C_WINDOWS
+  #include <sys/socket.h>
+  #include <sys/ioctl.h>
++ #endif
+  
+  #if HAVE_SYS_TYPES_H
+  #include <sys/types.h>
+***************
+*** 77,82 ****
+--- 87,100 ----
+  #define ENV_FILE  "CLAM_VIRUSEVENT_FILENAME"
+  #define ENV_VIRUS "CLAM_VIRUSEVENT_VIRUSNAME"
+  
++ #ifdef	C_WINDOWS
++ void
++ virusaction(const char *filename, const char *virname, const struct cfgstruct *copt)
++ {
++ 	if(cfgopt(copt, "VirusEvent")->enabled)
++ 		logg("^VirusAction is not supported on this platform.\n");
++ }
++ #else
+  void virusaction(const char *filename, const char *virname, const struct cfgstruct *copt)
+  {
+  	pid_t pid;
+***************
+*** 130,135 ****
+--- 148,154 ----
+  	logg("!VirusAction: fork failed.\n");
+      }
+  }
++ #endif
+  
+  int poll_fds(int *fds, int nfds, int timeout_sec)
+  {
+***************
+*** 303,308 ****
+--- 322,338 ----
+      return count;
+  }
+  
++ #ifdef	C_WINDOWS
++ /*
++  * Too many dependancies on Unix style for this to be portable.
++  * TODO: investigate other non *nix operating systems that this code also doesn't support
++  */
++ int
++ readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeout_sec, int force_delim, int read_command)
++ {
++ 	return recv(sockfd, buf, size, 0);
++ }
++ #else
+  /* FD Support Submitted by Richard Lyons <frob-clamav*webcentral.com.au> */
+  /*
+     This procedure does timed clamd command and delimited input processing.  
+***************
+*** 450,452 ****
+--- 480,483 ----
+      }
+      return n;
+  }
++ #endif
+*** /home/njh/src/clamav-devel/./clamd/session.c	2006-09-05 11:02:11.000000000 +0100
+--- ./clamd/session.c	2006-09-05 12:16:22.000000000 +0100
+***************
+*** 24,33 ****
+--- 24,37 ----
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <string.h>
++ #ifdef	HAVE_UNISTD_H
+  #include <unistd.h>
++ #endif
+  #include <sys/types.h>
++ #ifndef	C_WINDOWS
+  #include <sys/socket.h>
+  #include <sys/time.h>
++ #endif
+  #include <pthread.h>
+  #include <time.h>
+  #include <signal.h>
+*** /home/njh/src/clamav-devel/./clamd/scanner.c	2006-09-05 11:01:24.000000000 +0100
+--- ./clamd/scanner.c	2006-09-05 13:07:56.000000000 +0100
+***************
+*** 16,21 ****
+--- 16,24 ----
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
++ #ifdef	_MSC_VER
++ #include <winsock.h>
++ #endif
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+***************
+*** 24,33 ****
+--- 27,39 ----
   #include <stdio.h>
   #include <stdlib.h>
   #include <string.h>
@@ -4422,13 +4418,10 @@
 + #ifndef	C_WINDOWS
   #include <sys/time.h>
   #include <sys/wait.h>
-+ #endif
-+ #ifdef	HAVE_SYS_PARAM_H
   #include <sys/param.h>
-+ #endif
-+ #ifndef	C_WINDOWS
-  #include <dirent.h>
-  #include <sys/socket.h>
+***************
+*** 36,41 ****
+--- 42,48 ----
   #include <netinet/in.h>
   #include <arpa/inet.h>
   #include <netdb.h>
@@ -4445,17 +4438,17 @@
   	    if(dent->d_ino)
   #endif
   	    {
---- 137,143 ----
+--- 131,137 ----
   		closedir(dd);
   		return 1;
   	    }
-! #if	(!defined(C_CYGWIN)) && (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
+! #if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS))
   	    if(dent->d_ino)
   #endif
   	    {
 ***************
 *** 213,222 ****
---- 226,237 ----
+--- 220,231 ----
       }
   
       switch(sb.st_mode & S_IFMT) {
@@ -4468,155 +4461,6 @@
   	case S_IFREG: 
   	    if(sb.st_size == 0) { /* empty file */
   		mdprintf(odesc, "%s: Empty file\n", filename);
-***************
-*** 344,350 ****
-  	    continue;
-  
-  	if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1)
-! 	    close(sockfd);
-  	else
-  	    bound = 1;
-      }
---- 359,369 ----
-  	    continue;
-  
-  	if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1)
-! #ifdef	C_WINDOWS
-! 		closesocket(sockfd);
-! #else
-! 		close(sockfd);
-! #endif
-  	else
-  	    bound = 1;
-      }
-***************
-*** 356,368 ****
-      if(!bound && !portscan) {
-  	logg("!ScanStream: Can't find any free port.\n");
-  	mdprintf(odesc, "Can't find any free port. ERROR\n");
-  	close(sockfd);
-  	return -1;
-      } else {
-  	listen(sockfd, 1);
-  	if(mdprintf(odesc, "PORT %d\n", port) <= 0) {
-  	    logg("!ScanStream: error transmitting port.\n");
-! 	    close(sockfd);
-  	    return -1;
-  	}
-      }
---- 375,395 ----
-      if(!bound && !portscan) {
-  	logg("!ScanStream: Can't find any free port.\n");
-  	mdprintf(odesc, "Can't find any free port. ERROR\n");
-+ #ifdef	C_WINDOWS
-+ 	closesocket(sockfd);
-+ #else		
-  	close(sockfd);
-+ #endif	
-  	return -1;
-      } else {
-  	listen(sockfd, 1);
-  	if(mdprintf(odesc, "PORT %d\n", port) <= 0) {
-  	    logg("!ScanStream: error transmitting port.\n");
-! #ifdef	C_WINDOWS
-! 		closesocket(sockfd);
-! #else		
-! 		close(sockfd);
-! #endif	
-  	    return -1;
-  	}
-      }
-***************
-*** 371,387 ****
---- 398,426 ----
-  	case 0: /* timeout */
-  	    mdprintf(odesc, "Accept timeout. ERROR\n");
-  	    logg("!ScanStream %d: accept timeout.\n", port);
-+ #ifdef	C_WINDOWS
-+ 		closesocket(sockfd);
-+ #else			    
-  	    close(sockfd);
-+ #endif	    
-  	    return -1;
-  	case -1:
-  	    mdprintf(odesc, "Accept poll. ERROR\n");
-  	    logg("!ScanStream %d: accept poll failed.\n", port);
-+ #ifdef	C_WINDOWS
-+ 		closesocket(sockfd);
-+ #else			    
-  	    close(sockfd);
-+ #endif	
-  	    return -1;
-      }
-  
-      if((acceptd = accept(sockfd, NULL, NULL)) == -1) {
-+ #ifdef	C_WINDOWS
-+ 	closesocket(sockfd);
-+ #else		
-  	close(sockfd);
-+ #endif	
-  	mdprintf(odesc, "accept() ERROR\n");
-  	logg("!ScanStream %d: accept() failed.\n", port);
-  	return -1;
-***************
-*** 391,398 ****
---- 430,442 ----
-  
-      if ((tmpname = cli_gentempdesc(NULL, &tmpd)) == NULL) {
-  	shutdown(sockfd, 2);
-+ #ifdef	C_WINDOWS
-+ 	closesocket(sockfd);
-+ 	closesocket(acceptd);
-+ #else
-  	close(sockfd);
-  	close(acceptd);
-+ #endif
-  	mdprintf(odesc, "tempfile() failed. ERROR\n");
-  	logg("!ScanStream %d: Can't create temporary file.\n", port);
-  	return -1;
-***************
-*** 403,417 ****
---- 447,470 ----
-      btread = sizeof(buff);
-  
-      while((retval = poll_fd(acceptd, timeout)) == 1) {
-+ #if	defined(C_WINDOWS) || defined(C_BEOS)
-+ 	bread = recv(acceptd, buff, btread, 0);
-+ #else
-  	bread = read(acceptd, buff, btread);
-+ #endif
-  	if(bread <= 0)
-  	    break;
-  	size += bread;
-  
-  	if(writen(tmpd, buff, bread) != bread) {
-  	    shutdown(sockfd, 2);
-+ #ifdef	C_WINDOWS
-+ 		closesocket(sockfd);
-+ 		closesocket(acceptd);
-+ #else
-  	    close(sockfd);
-  	    close(acceptd);
-+ #endif
-  	    mdprintf(odesc, "Temporary file -> write ERROR\n");
-  	    logg("!ScanStream %d: Can't write to temporary file.\n", port);
-  	    close(tmpd);
-***************
-*** 453,460 ****
---- 506,518 ----
-  	unlink(tmpname);
-      free(tmpname);
-  
-+ #ifdef	C_WINDOWS
-+ 	closesocket(acceptd);
-+ 	closesocket(sockfd);
-+ #else
-      close(acceptd);
-      close(sockfd);
-+ #endif
-  
-      if(ret == CL_VIRUS) {
-  	mdprintf(odesc, "stream: %s FOUND\n", virname);
 *** /home/njh/src/clamav-devel/./clamdscan/clamdscan.c	2006-05-15 19:30:18.000000000 +0100
 --- ./clamdscan/clamdscan.c	2006-08-04 11:37:50.000000000 +0100
 ***************
@@ -4747,7 +4591,7 @@
   }
   
 *** /home/njh/src/clamav-devel/./clamdscan/client.c	2006-06-22 08:37:14.000000000 +0100
---- ./clamdscan/client.c	2006-08-04 12:06:38.000000000 +0100
+--- ./clamdscan/client.c	2006-09-05 13:21:20.000000000 +0100
 ***************
 *** 16,37 ****
 --- 16,46 ----
@@ -4783,8 +4627,21 @@
   
   #ifdef HAVE_SYS_UIO_H
 ***************
+*** 48,53 ****
+--- 57,66 ----
+  #include "misc.h"
+  #include "str.h"
+  
++ #ifndef	C_WINDOWS
++ #define	closesocket(s)	close(s)
++ #endif
++ 
+  #ifdef PF_INET
+  # define SOCKET_INET	PF_INET
+  #else
+***************
 *** 59,64 ****
---- 68,137 ----
+--- 72,141 ----
   void move_infected(const char *filename, const struct optstruct *opt);
   int notremoved = 0, notmoved = 0;
   
@@ -4867,7 +4724,7 @@
   #endif
   	logg("^Can't open descriptor for reading.\n");
   	return -1;
---- 139,148 ----
+--- 143,152 ----
   	FILE *fd;
   
   
@@ -4892,7 +4749,7 @@
   
   static int dsfile(int sockd, const char *filename, const struct optstruct *opt)
   {
---- 184,196 ----
+--- 188,200 ----
   	}
       }
   
@@ -4915,7 +4772,7 @@
   	logg("^Can't write to the socket.\n");
   	free(scancmd);
   	return -1;
---- 201,207 ----
+--- 205,211 ----
       scancmd = mcalloc(strlen(filename) + 20, sizeof(char));
       sprintf(scancmd, "CONTSCAN %s", filename);
   
@@ -4925,7 +4782,7 @@
   	return -1;
 ***************
 *** 311,317 ****
---- 385,393 ----
+--- 389,397 ----
   
   static int dconnect(const struct optstruct *opt)
   {
@@ -4937,7 +4794,7 @@
   	struct cfgstruct *copt, *cpt;
 ***************
 *** 327,338 ****
---- 403,417 ----
+--- 407,421 ----
   	return -1;
       }
   
@@ -4962,7 +4819,7 @@
   
   	if((sockd = socket(SOCKET_INET, SOCK_STREAM, 0)) < 0) {
   	    perror("socket()");
---- 430,446 ----
+--- 434,450 ----
   	    return -1;
   	}
   
@@ -4982,7 +4839,7 @@
   	    perror("socket()");
 ***************
 *** 373,379 ****
---- 462,472 ----
+--- 466,476 ----
   	}
   
   	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
@@ -4995,8 +4852,25 @@
   	    logg("^Can't connect to clamd.\n");
   	    return -1;
 ***************
+*** 413,419 ****
+  	else
+  	    errors++;
+  
+! 	close(sockd);
+  
+  #if defined(ENABLE_FD_PASSING) && defined(HAVE_SENDMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN)
+      } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
+--- 510,516 ----
+  	else
+  	    errors++;
+  
+! 	closesocket(sockd);
+  
+  #if defined(ENABLE_FD_PASSING) && defined(HAVE_SENDMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN)
+      } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
+***************
 *** 471,477 ****
---- 564,575 ----
+--- 568,579 ----
   			else
   			    errors++;
   
@@ -5011,7 +4885,7 @@
   		    default:
 ***************
 *** 492,498 ****
---- 590,598 ----
+--- 594,602 ----
   	char *movedir, *movefilename, *tmp, numext[4 + 1];
   	struct stat fstat, mfstat;
   	int n, len, movefilename_size;
@@ -5023,7 +4897,7 @@
       if(!(movedir = opt_arg(opt, "move"))) {
 ***************
 *** 577,585 ****
---- 677,687 ----
+--- 681,691 ----
   	chmod(movefilename, fstat.st_mode);
   	chown(movefilename, fstat.st_uid, fstat.st_gid);
   
