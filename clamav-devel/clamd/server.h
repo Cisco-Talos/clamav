@@ -21,8 +21,10 @@
 #define __SERVER_H
 
 #include <time.h>
-#include <clamav.h>
 #include <pthread.h>
+
+#include "libclamav/clamav.h"
+#include "shared/cfgparser.h"
 
 struct thrarg {
     int sid;

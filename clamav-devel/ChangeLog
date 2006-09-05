@@ -1,3 +1,7 @@
+Tue Sep  5 22:43:26 CEST 2006 (tk)
+----------------------------------
+  * clamd: code cleanup
+
 Tue Sep  5 00:23:26 CEST 2006 (tk)
 ----------------------------------
   * clamd: all commands can be now prefixed with the letter 'n' (eg. nSCAN) to

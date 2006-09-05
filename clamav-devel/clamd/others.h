@@ -25,7 +25,7 @@
 #endif
 
 #include <stdlib.h>
-#include "cfgparser.h"
+#include "shared/cfgparser.h"
 
 int poll_fds(int *fds, int nfds, int timeout_sec);
 int poll_fd(int fd, int timeout_sec);

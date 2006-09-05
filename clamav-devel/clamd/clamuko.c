@@ -29,14 +29,16 @@
 #include <sys/stat.h>
 #include <signal.h>
 #include <pthread.h>
-#include <clamav.h>
+
+#include "libclamav/clamav.h"
+
+#include "shared/cfgparser.h"
+#include "shared/output.h"
 
 #include "server.h"
 #include "others.h"
-#include "cfgparser.h"
 #include "dazukoio.h"
 #include "clamuko.h"
-#include "output.h"
 
 struct dazuko_access *acc;
 
