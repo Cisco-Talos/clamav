@@ -17,15 +17,16 @@
  *  MA 02110-1301, USA.
  */
 
+#include <stdio.h>
 #include <pthread.h>
 #include <time.h>
 #include <errno.h>
 
-#include "thrmgr.h"
+#include "shared/memory.h"
+#include "shared/output.h"
 
+#include "thrmgr.h"
 #include "others.h"
-#include "memory.h"
-#include "output.h"
 
 #define FALSE (0)
 #define TRUE (1)

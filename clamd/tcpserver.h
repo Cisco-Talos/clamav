@@ -20,9 +20,8 @@
 #ifndef __TCPSERVER_H
 #define __TCPSERVER_H
 
-#include "options.h"
-#include "cfgparser.h"
+#include "shared/cfgparser.h"
 
-int tcpserver(const struct cfgstruct *copt, struct cl_node *root);
+int tcpserver(const struct cfgstruct *copt);
 
 #endif

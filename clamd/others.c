@@ -33,7 +33,6 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 
-
 #if HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
@@ -68,11 +67,12 @@
 #endif /* HAVE_POLL_H */
 #endif /* HAVE_POLL */
 
-#include "memory.h"
-#include "cfgparser.h"
+#include "shared/memory.h"
+#include "shared/cfgparser.h"
+#include "shared/output.h"
+
 #include "session.h"
 #include "others.h"
-#include "output.h"
 
 #define ENV_FILE  "CLAM_VIRUSEVENT_FILENAME"
 #define ENV_VIRUS "CLAM_VIRUSEVENT_VIRUSNAME"
@@ -139,8 +139,14 @@ int poll_fds(int *fds, int nfds, int timeout_sec)
 	struct pollfd poll_1[1];
 	struct pollfd *poll_data = poll_1;
 
-    if (nfds>1)
-	poll_data = malloc(nfds*sizeof(*poll_data));
+    if (nfds>1) {
+	poll_data = mmalloc(nfds*sizeof(*poll_data));
+	if(!poll_data) {
+	    logg("!poll_fds: Can't allocate memory for poll_data\n");
+	    return -1;
+	}
+    }
+
     for (i=0; i<nfds; i++) {
 	poll_data[i].fd = fds[i];
 	poll_data[i].events = POLLIN;
@@ -392,7 +398,7 @@ int readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeou
 	    if(fd < 0)
 		return -1;
 	    n = snprintf(buf, size, "FD %d", fd);
-	    if(n >= size)
+	    if((size_t) n >= size)
 		return -1;
 	    return n;
 	}

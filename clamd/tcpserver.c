@@ -27,21 +27,23 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <clamav.h>
 #include <errno.h>
 #include <netdb.h>
 
-#include "options.h"
-#include "cfgparser.h"
+#include "libclamav/clamav.h"
+
+#include "shared/options.h"
+#include "shared/cfgparser.h"
+#include "shared/output.h"
+#include "shared/network.h"
+
 #include "others.h"
 #include "server.h"
-#include "output.h"
 
-int tcpserver(const struct cfgstruct *copt, struct cl_node *root)
+int tcpserver(const struct cfgstruct *copt)
 {
 	struct sockaddr_in server;
 	int sockfd, backlog;
-	struct cfgstruct *cpt;
 	struct cfgstruct *taddr;
 	struct hostent he;
 	char *estr, buf[1024];
@@ -54,7 +56,7 @@ int tcpserver(const struct cfgstruct *copt, struct cl_node *root)
     if((taddr = cfgopt(copt, "TCPAddr"))->enabled) {
 	if(r_gethostbyname(taddr->strarg, &he, buf, sizeof(buf)) == -1) {
 	    logg("!r_gethostbyname(%s) error: %s\n", taddr->strarg, strerror(errno));
-	    exit(1);
+	    return -1;
 	}
 	server.sin_addr = *(struct in_addr *) he.h_addr_list[0];
     } else
@@ -64,7 +66,7 @@ int tcpserver(const struct cfgstruct *copt, struct cl_node *root)
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
 	estr = strerror(errno);
 	logg("!socket() error: %s\n", estr);
-	exit(1);
+	return -1;
     }
 
     if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (void *) &true, sizeof(true)) == -1) {
@@ -74,7 +76,8 @@ int tcpserver(const struct cfgstruct *copt, struct cl_node *root)
     if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1) {
 	estr = strerror(errno);
 	logg("!bind() error: %s\n", estr);
-	exit(1);
+	close(sockfd);
+	return -1;
     } else {
 	if(taddr->enabled)
 	    logg("Bound to address %s on tcp port %d\n", taddr->strarg, cfgopt(copt, "TCPSocket")->numarg);
@@ -88,7 +91,8 @@ int tcpserver(const struct cfgstruct *copt, struct cl_node *root)
     if(listen(sockfd, backlog) == -1) {
 	estr = strerror(errno);
 	logg("!listen() error: %s\n", estr);
-	exit(1);
+	close(sockfd);
+	return -1;
     }
 
     return sockfd;

@@ -20,6 +20,8 @@
 #ifndef __LOCALSERVER_H
 #define __LOCALSERVER_H
 
-int localserver(const struct cfgstruct *copt, struct cl_node *root);
+#include "shared/cfgparser.h"
+
+int localserver(const struct cfgstruct *copt);
 
 #endif

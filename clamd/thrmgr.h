@@ -38,7 +38,7 @@ typedef struct work_queue_tag {
 typedef enum {
 	POOL_INVALID,
 	POOL_VALID,
-	POOL_EXIT,
+	POOL_EXIT
 } pool_state_t;
 
 typedef struct threadpool_tag {

@@ -33,24 +33,25 @@
 #include <signal.h>
 #include <errno.h>
 
-#include "cfgparser.h"
+#include "libclamav/clamav.h"
+#include "libclamav/str.h"
+
+#include "shared/cfgparser.h"
+#include "shared/memory.h"
+#include "shared/output.h"
+
 #include "others.h"
 #include "scanner.h"
 #include "server.h"
 #include "clamuko.h"
 #include "session.h"
-#include "str.h" /* libclamav */
-#include "clamav.h"
-#include "output.h"
-#include "memory.h"
 
 static pthread_mutex_t ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int command(int desc, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt, int timeout)
 {
 	char buff[1025];
-	int bread, opt, retval;
-	struct cfgstruct *cpt;
+	int bread, opt;
 
 
     bread = readsock(desc, buff, sizeof(buff)-1, '\n', timeout, 0, 1);
@@ -135,7 +136,7 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
     } else if(!strncmp(buff, CMD12, strlen(CMD12))) { /* FD */
 	    int fd = atoi(buff + strlen(CMD12) + 1);
 
-	scanfd(fd, NULL, root, limits, options, copt, desc, 0);
+	scanfd(fd, NULL, root, limits, options, copt, desc);
 	close(fd); /* FIXME: should we close it here? */
 
     } else {

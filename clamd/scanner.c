@@ -36,7 +36,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <clamav.h>
 #include <pthread.h>
 
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
@@ -44,15 +43,17 @@
 #include <stddef.h>
 #endif
 
-#include "cfgparser.h"
+#include "libclamav/clamav.h"
+#include "libclamav/others.h"
+
+#include "shared/cfgparser.h"
+#include "shared/memory.h"
+#include "shared/output.h"
+
 #include "others.h"
 #include "scanner.h"
-#include "memory.h"
 #include "shared.h"
-#include "output.h"
 #include "network.h"
-
-#include "../libclamav/others.h"
 
 #ifdef C_LINUX
 dev_t procdev; /* /proc device */
@@ -97,9 +98,9 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 	} result;
 #endif
 	struct stat statbuf;
-	struct cfgstruct *cpt;
 	char *fname;
-	int ret = 0, scanret = 0, maxdirrec = 0;
+	int ret = 0, scanret = 0;
+	unsigned int maxdirrec = 0;
 
 
     maxdirrec = cfgopt(copt, "MaxDirectoryRecursion")->numarg;
@@ -196,7 +197,8 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 int scan(const char *filename, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt, int odesc, short contscan)
 {
 	struct stat sb;
-	int ret = 0, reclev = 0;
+	int ret = 0;
+	unsigned int reclev = 0;
 	const char *virname;
 
 
@@ -257,7 +259,7 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_node 
     return ret;
 }
 
-int scanfd(const int fd, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt, int odesc, short contscan)
+int scanfd(const int fd, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt, int odesc)
 {
 	int ret;
 	const char *virname;

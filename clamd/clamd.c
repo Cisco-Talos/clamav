@@ -32,7 +32,6 @@
 #include <time.h>
 #include <pwd.h>
 #include <grp.h>
-#include <clamav.h>
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
 #include <syslog.h>
@@ -42,25 +41,39 @@
 #include <sys/resource.h>
 #endif
 
-#include "options.h"
-#include "cfgparser.h"
-#include "others.h"
-/* Fixes gcc warning */
-#include "../libclamav/others.h"
+#include "target.h"
+
+#include "libclamav/clamav.h"
+#include "libclamav/others.h"
+
+#include "shared/memory.h"
+#include "shared/output.h"
+#include "shared/options.h"
+#include "shared/cfgparser.h"
+#include "shared/misc.h"
+
+#include "server.h"
 #include "tcpserver.h"
 #include "localserver.h"
 #include "others.h"
-#include "memory.h"
-#include "output.h"
 #include "shared.h"
-#include "target.h"
-#include "misc.h"
 
-void help(void);
 
 short debug_mode = 0, logok = 0;
-
 short foreground = 0;
+
+void help(void)
+{
+    printf("\n");
+    printf("                      Clam AntiVirus Daemon "VERSION"\n");
+    printf("    (C) 2002 - 2005 ClamAV Team - http://www.clamav.net/team.html\n\n");
+
+    printf("    --help                   -h             Show this help.\n");
+    printf("    --version                -V             Show version number.\n");
+    printf("    --debug                                 Enable debug mode.\n");
+    printf("    --config-file=FILE       -c FILE        Read configuration from FILE.\n\n");
+
+}
 
 int main(int argc, char **argv)
 {
@@ -69,7 +82,8 @@ int main(int argc, char **argv)
 	time_t currtime;
 	struct cl_node *root = NULL;
 	const char *dbdir, *cfgfile;
-	int ret, virnum = 0, tcpsock = 0, localsock = 0;
+	int ret, tcpsock = 0, localsock = 0;
+	unsigned int sigs = 0;
 	int lsockets[2], nlsockets = 0;
 	unsigned int dboptions = 0;
 #ifdef C_LINUX
@@ -95,11 +109,14 @@ int main(int argc, char **argv)
 
     if(opt_check(opt, "version")) {
 	print_version();
-	exit(0);
+	opt_free(opt);
+	return 0;
     }
 
     if(opt_check(opt, "help")) {
     	help();
+	opt_free(opt);
+	return 0;
     }
 
     if(opt_check(opt, "debug")) {
@@ -112,7 +129,6 @@ int main(int argc, char **argv)
 	    perror("setrlimit");
 #endif
 	debug_mode = 1;
-
     }
 
     /* parse the config file */
@@ -123,8 +139,10 @@ int main(int argc, char **argv)
 
     if((copt = getcfg(cfgfile, 1)) == NULL) {
 	fprintf(stderr, "ERROR: Can't open/parse the config file %s\n", cfgfile);
-	exit(1);
+	opt_free(opt);
+	return 1;
     }
+    opt_free(opt);
 
     umask(0);
 
@@ -134,7 +152,9 @@ int main(int argc, char **argv)
 	if((user = getpwnam(cpt->strarg)) == NULL) {
 	    fprintf(stderr, "ERROR: Can't get information about user %s.\n", cpt->strarg);
 	    logg("!Can't get information about user %s.\n", cpt->strarg);
-	    exit(1);
+	    logg_close();
+	    freecfg(copt);
+	    return 1;
 	}
 
 	if(cfgopt(copt, "AllowSupplementaryGroups")->enabled) {
@@ -142,7 +162,9 @@ int main(int argc, char **argv)
 	    if(initgroups(cpt->strarg, user->pw_gid)) {
 		fprintf(stderr, "ERROR: initgroups() failed.\n");
 		logg("!initgroups() failed.\n");
-		exit(1);
+		logg_close();
+		freecfg(copt);
+		return 1;
 	    }
 #else
 	    logg("AllowSupplementaryGroups: initgroups() not supported.\n");
@@ -152,7 +174,9 @@ int main(int argc, char **argv)
 	    if(setgroups(1, &user->pw_gid)) {
 		fprintf(stderr, "ERROR: setgroups() failed.\n");
 		logg("!setgroups() failed.\n");
-		exit(1);
+		logg_close();
+		freecfg(copt);
+		return 1;
 	    }
 #endif
 	}
@@ -160,13 +184,17 @@ int main(int argc, char **argv)
 	if(setgid(user->pw_gid)) {
 	    fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int) user->pw_gid);
 	    logg("!setgid(%d) failed.\n", (int) user->pw_gid);
-	    exit(1);
+	    logg_close();
+	    freecfg(copt);
+	    return 1;
 	}
 
 	if(setuid(user->pw_uid)) {
 	    fprintf(stderr, "ERROR: setuid(%d) failed.\n", (int) user->pw_uid);
 	    logg("!setuid(%d) failed.\n", (int) user->pw_uid);
-	    exit(1);
+	    logg_close();
+	    freecfg(copt);
+	    return 1;
 	}
 
 	logg("Running as user %s (UID %d, GID %d)\n", user->pw_name, user->pw_uid, user->pw_gid);
@@ -174,7 +202,6 @@ int main(int argc, char **argv)
 #endif
 
     /* initialize logger */
-
     logg_lock = cfgopt(copt, "LogFileUnlock")->enabled;
     logg_time = cfgopt(copt, "LogTime")->enabled;
     logok = cfgopt(copt, "LogClean")->enabled;
@@ -188,12 +215,16 @@ int main(int argc, char **argv)
 	logg_file = cpt->strarg;
 	if(strlen(logg_file) < 2 || (logg_file[0] != '/' && logg_file[0] != '\\' && logg_file[1] != ':')) {
 	    fprintf(stderr, "ERROR: LogFile requires full path.\n");
-	    exit(1);
+	    logg_close();
+	    freecfg(copt);
+	    return 1;
 	}
 	time(&currtime);
-	if(logg("+++ Started at %s", ctime(&currtime))) {
+	if(logg("#+++ Started at %s", ctime(&currtime))) {
 	    fprintf(stderr, "ERROR: Problem with internal logger. Please check the permissions on the %s file.\n", logg_file);
-	    exit(1);
+	    logg_close();
+	    freecfg(copt);
+	    return 1;
 	}
     } else
 	logg_file = NULL;
@@ -204,8 +235,10 @@ int main(int argc, char **argv)
 
 	cpt = cfgopt(copt, "LogFacility");
 	if((fac = logg_facility(cpt->strarg)) == -1) {
-	    fprintf(stderr, "ERROR: LogFacility: %s: No such facility.\n", cpt->strarg);
-	    exit(1);
+	    logg("!LogFacility: %s: No such facility.\n", cpt->strarg);
+	    logg_close();
+	    freecfg(copt);
+	    return 1;
 	}
 
 	openlog("clamd", LOG_PID, fac);
@@ -213,14 +246,12 @@ int main(int argc, char **argv)
     }
 #endif
 
-    logg("clamd daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
+    logg("#clamd daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
 
     if(logg_size)
-	logg("Log file size limited to %d bytes.\n", logg_size);
+	logg("#Log file size limited to %d bytes.\n", logg_size);
     else
-	logg("Log file size limit disabled.\n");
-
-    logg("*Verbose logging activated.\n");
+	logg("#Log file size limit disabled.\n");
 
 #ifdef C_LINUX
     procdev = 0;
@@ -237,9 +268,10 @@ int main(int argc, char **argv)
 	localsock = 1;
 
     if(!tcpsock && !localsock) {
-	fprintf(stderr, "ERROR: You must select server type (local/tcp).\n");
-	logg("!Please select server type (local/TCP).\n");
-	exit(1);
+	logg("!Please define server type (local and/or TCP).\n");
+	logg_close();
+	freecfg(copt);
+	return 1;
     }
 
     /* set the temporary dir */
@@ -251,30 +283,33 @@ int main(int argc, char **argv)
 
     /* load the database(s) */
     dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
-    logg("Reading databases from %s\n", dbdir);
+    logg("#Reading databases from %s\n", dbdir);
 
     if(!cfgopt(copt, "DetectPhishing")->enabled) {
 	dboptions |= CL_DB_NOPHISHING;
 	logg("Not loading phishing signatures.\n");
     }
 
-    if((ret = cl_load(dbdir, &root, &virnum, dboptions))) {
-	fprintf(stderr, "ERROR: %s\n", cl_strerror(ret));
+    if((ret = cl_load(dbdir, &root, &sigs, dboptions))) {
 	logg("!%s\n", cl_strerror(ret));
-	exit(1);
+	logg_close();
+	freecfg(copt);
+	return 1;
     }
 
     if(!root) {
-	fprintf(stderr, "ERROR: Database initialization error.\n");
 	logg("!Database initialization error.\n");
-	exit(1);
+	logg_close();
+	freecfg(copt);
+	return 1;
     }
 
-    logg("Protecting against %d viruses.\n", virnum);
+    logg("#Loaded %d signatures.\n", sigs);
     if((ret = cl_build(root)) != 0) {
-	fprintf(stderr, "ERROR: Database initialization error: %s\n", cl_strerror(ret));;
 	logg("!Database initialization error: %s\n", cl_strerror(ret));;
-	exit(1);
+	logg_close();
+	freecfg(copt);
+	return 1;
     }
 
     /* fork into background */
@@ -285,31 +320,32 @@ int main(int argc, char **argv)
     } else
         foreground = 1;
 
-    if(tcpsock)
-	lsockets[nlsockets++] = tcpserver(copt, root);
+    if(tcpsock) {
+	lsockets[nlsockets] = tcpserver(copt);
+	if(lsockets[nlsockets] == -1) {
+	    logg_close();
+	    freecfg(copt);
+	    return 1;
+	}
+	nlsockets++;
+    }
 
-    if(localsock)
-	lsockets[nlsockets++] = localserver(copt, root);
+    if(localsock) {
+	lsockets[nlsockets] = localserver(copt);
+	if(lsockets[nlsockets] == -1) {
+	    logg_close();
+	    freecfg(copt);
+	    if(tcpsock)
+		close(lsockets[0]);
+	    return 1;
+	}
+	nlsockets++;
+    }
 
     ret = acceptloop_th(lsockets, nlsockets, root, copt);
 
     logg_close();
     freecfg(copt);
+
     return ret;
 }
-
-void help(void)
-{
-
-    printf("\n");
-    printf("                      Clam AntiVirus Daemon "VERSION"\n");
-    printf("    (C) 2002 - 2005 ClamAV Team - http://www.clamav.net/team.html\n\n");
-
-    printf("    --help                   -h             Show this help.\n");
-    printf("    --version                -V             Show version number.\n");
-    printf("    --debug                                 Enable debug mode.\n");
-    printf("    --config-file=FILE       -c FILE        Read configuration from FILE.\n\n");
-
-    exit(0);
-}
-

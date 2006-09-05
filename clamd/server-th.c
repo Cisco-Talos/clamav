@@ -31,16 +31,18 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <clamav.h>
+
+#include "libclamav/clamav.h"
+
+#include "shared/memory.h"
+#include "shared/output.h"
 
 #include "server.h"
 #include "thrmgr.h"
 #include "session.h"
 #include "clamuko.h"
 #include "others.h"
-#include "memory.h"
 #include "shared.h"
-#include "output.h"
 
 #define BUFFSIZE 1024
 #define FALSE (0)
@@ -69,7 +71,6 @@ void scanner_thread(void *arg)
 	client_conn_t *conn = (client_conn_t *) arg;
 	sigset_t sigset;
 	int ret, timeout, i, session=FALSE;
-	struct cfgstruct *cpt;
 
 
     /* ignore all signals */
@@ -160,8 +161,8 @@ void sighandler_th(int sig)
 static struct cl_node *reload_db(struct cl_node *root, const struct cfgstruct *copt, int do_check)
 {
 	const char *dbdir;
-	int virnum=0, retval;
-	struct cfgstruct *cpt;
+	int retval;
+	unsigned int sigs = 0;
 	static struct cl_stat *dbstat=NULL;
 	unsigned int dboptions = 0;
 
@@ -203,7 +204,7 @@ static struct cl_node *reload_db(struct cl_node *root, const struct cfgstruct *c
 	logg("Not loading phishing signatures.\n");
     }
 
-    if((retval = cl_load(dbdir, &root, &virnum, dboptions))) {
+    if((retval = cl_load(dbdir, &root, &sigs, dboptions))) {
 	logg("!reload db failed: %s\n", cl_strerror(retval));
 	exit(-1);
     }
@@ -218,7 +219,7 @@ static struct cl_node *reload_db(struct cl_node *root, const struct cfgstruct *c
 	cl_strerror(retval));
 	exit(-1);
     }
-    logg("Database correctly reloaded (%d viruses)\n", virnum);
+    logg("Database correctly reloaded (%d signatures)\n", sigs);
 
     return root;
 }
