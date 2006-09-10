@@ -1,3 +1,7 @@
+Sun Sep 10 22:40:20 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	Fix possible underrun in load balanced configurations
+
 Tue Sep  5 22:43:26 CEST 2006 (tk)
 ----------------------------------
   * clamd: code cleanup
