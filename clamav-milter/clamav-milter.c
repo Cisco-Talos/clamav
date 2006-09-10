@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.285 2006/08/29 07:19:03 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.286 2006/09/10 21:39:49 njh Exp $";
 
-#define	CM_VERSION	"devel-250806"
+#define	CM_VERSION	"devel-100906"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2137,6 +2137,8 @@ findServer(void)
 		 * not really accurate
 		 */
 		j = n_children - 1;	/* look at the next free one */
+		if(j < 0)
+			j = 0;
 	} else
 		/*
 		 * cli_rndnum returns 0..(max-1) - the max argument is not
