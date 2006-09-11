@@ -274,6 +274,11 @@ Mark archives as viruses (e.g RAR.ExceededFileSize, Zip.ExceededFilesLimit) if A
 .br 
 Default: disabled
 .TP 
+\fBHardwareAcceleration\fR
+Enable support for Sensory Networks' NodalCore hardware accelerator.
+.br
+Default: disabled
+.TP 
 \fBClamukoScanOnAccess\fR
 Enable Clamuko. Dazuko (/dev/dazuko) must be configured and running.
 .br 

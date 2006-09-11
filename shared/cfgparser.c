@@ -82,6 +82,7 @@ struct cfgoption cfg_options[] = {
     {"AllowSupplementaryGroups", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
     {"SelfCheck", OPT_NUM, 1800, NULL, 0, OPT_CLAMD},
     {"VirusEvent", OPT_FULLSTR, -1, NULL, 0, OPT_CLAMD},
+    {"HardwareAcceleration", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"ClamukoScanOnAccess", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"ClamukoScanOnOpen", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"ClamukoScanOnClose", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},

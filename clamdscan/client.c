@@ -58,6 +58,7 @@
 
 void move_infected(const char *filename, const struct optstruct *opt);
 int notremoved = 0, notmoved = 0;
+static int hwaccel = 0;
 
 static int dsresult(int sockd, const struct optstruct *opt)
 {
@@ -118,14 +119,14 @@ static int dsresult(int sockd, const struct optstruct *opt)
     return infected ? infected : (waserror ? -1 : 0);
 }
 
-static int dsfile(int sockd, const char *filename, const struct optstruct *opt)
+static int dsfile(int sockd, const char *scantype, const char *filename, const struct optstruct *opt)
 {
 	int ret;
 	char *scancmd;
 
 
     scancmd = mcalloc(strlen(filename) + 20, sizeof(char));
-    sprintf(scancmd, "CONTSCAN %s", filename);
+    sprintf(scancmd, "%s %s", scantype, filename);
 
     if(write(sockd, scancmd, strlen(scancmd)) <= 0) {
 	logg("^Can't write to the socket.\n");
@@ -341,6 +342,7 @@ static int dconnect(const struct optstruct *opt)
 	if((sockd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 	    perror("socket()");
 	    logg("^Can't create the socket.\n");
+	    freecfg(copt);
 	    return -1;
 	}
 
@@ -348,6 +350,7 @@ static int dconnect(const struct optstruct *opt)
 	    close(sockd);
 	    perror("connect()");
 	    logg("^Can't connect to clamd.\n");
+	    freecfg(copt);
 	    return -1;
 	}
 
@@ -356,6 +359,7 @@ static int dconnect(const struct optstruct *opt)
 	if((sockd = socket(SOCKET_INET, SOCK_STREAM, 0)) < 0) {
 	    perror("socket()");
 	    logg("^Can't create the socket.\n");
+	    freecfg(copt);
 	    return -1;
 	}
 
@@ -367,6 +371,7 @@ static int dconnect(const struct optstruct *opt)
 		close(sockd);
 		perror("gethostbyname()");
 		logg("^Can't lookup clamd hostname.\n");
+		freecfg(copt);
 		return -1;
 	    }
 	    server2.sin_addr = *(struct in_addr *) he->h_addr_list[0];
@@ -376,13 +381,22 @@ static int dconnect(const struct optstruct *opt)
 	    close(sockd);
 	    perror("connect()");
 	    logg("^Can't connect to clamd.\n");
+	    freecfg(copt);
 	    return -1;
 	}
 
     } else {
 	logg("^Clamd is not configured properly.\n");
+	freecfg(copt);
 	return -1;
     }
+
+#ifdef HAVE_HWACCEL
+    if(cfgopt(copt, "HardwareAcceleration")->enabled)
+	hwaccel = 1;
+#endif
+
+    freecfg(copt);
 
     return sockd;
 }
@@ -392,12 +406,20 @@ int client(const struct optstruct *opt, int *infected)
 	char cwd[200], *fullpath;
 	int sockd, ret, errors = 0;
 	struct stat sb;
+	const char *scantype;
 
 
     *infected = 0;
 
-    /* parse argument list */
+    /* TODO: add a cmdline option to allow using MULTISCAN on systems
+     * without hardware accelerators (but with multiple CPUs)
+     */
+    if(hwaccel)
+	scantype = "MULTISCAN";
+    else
+	scantype = "CONTSCAN";
 
+    /* parse argument list */
     if(opt->filename == NULL || strlen(opt->filename) == 0) {
 	/* scan current directory */
 	if(!getcwd(cwd, 200)) {
@@ -408,7 +430,7 @@ int client(const struct optstruct *opt, int *infected)
 	if((sockd = dconnect(opt)) < 0)
 	    return 2;
 
-	if((ret = dsfile(sockd, cwd, opt)) >= 0)
+	if((ret = dsfile(sockd, scantype, cwd, opt)) >= 0)
 	    *infected += ret;
 	else
 	    errors++;
@@ -466,7 +488,7 @@ int client(const struct optstruct *opt, int *infected)
 			if((sockd = dconnect(opt)) < 0)
 			    return 2;
 
-			if((ret = dsfile(sockd, fullpath, opt)) >= 0)
+			if((ret = dsfile(sockd, scantype, fullpath, opt)) >= 0)
 			    *infected += ret;
 			else
 			    errors++;

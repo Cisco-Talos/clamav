@@ -36,6 +36,9 @@ Scan a file or directory (recursively) with archive support disabled. A full pat
 \fBCONTSCAN file/directory\fR
 Scan a file or directory (recursively) with archive support enabled and continue scanning even when virus is found. A full path is required.
 .TP 
+\fBMULTISCAN file/directory\fR
+Scan directories with multiple threads.
+.TP 
 \fBSTREAM\fR
 Scan stream \- on this command clamd will return "PORT number" and you can connect to that port and send a data to scan.
 .SH "OPTIONS"
