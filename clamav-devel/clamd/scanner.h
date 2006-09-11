@@ -31,4 +31,6 @@ int scanfd(const int fd, unsigned long int *scanned, const struct cl_node *root,
 
 int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt);
 
+int checksymlink(const char *path);
+
 #endif

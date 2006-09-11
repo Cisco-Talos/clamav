@@ -281,6 +281,14 @@ int main(int argc, char **argv)
     if(cfgopt(copt, "LeaveTemporaryFiles")->enabled)
 	cl_settempdir(NULL, 1);
 
+    /* fork into background */
+    if(!cfgopt(copt, "Foreground")->enabled) {
+	daemonize();
+	if(!debug_mode)
+	    chdir("/");
+    } else
+        foreground = 1;
+
     /* load the database(s) */
     dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
     logg("#Reading databases from %s\n", dbdir);
@@ -288,6 +296,15 @@ int main(int argc, char **argv)
     if(!cfgopt(copt, "DetectPhishing")->enabled) {
 	dboptions |= CL_DB_NOPHISHING;
 	logg("Not loading phishing signatures.\n");
+    }
+
+    if(!cfgopt(copt, "HardwareAcceleration")->enabled) {
+#ifdef HAVE_HWACCEL
+	dboptions |= CL_DB_HWACCEL;
+	logg("Enabling support for hardware acceleration.\n");
+#else
+	logg("^Support for hardware acceleration not compiled in.\n");
+#endif
     }
 
     if((ret = cl_load(dbdir, &root, &sigs, dboptions))) {
@@ -311,14 +328,6 @@ int main(int argc, char **argv)
 	freecfg(copt);
 	return 1;
     }
-
-    /* fork into background */
-    if(!cfgopt(copt, "Foreground")->enabled) {
-	daemonize();
-	if(!debug_mode)
-	    chdir("/");
-    } else
-        foreground = 1;
 
     if(tcpsock) {
 	lsockets[nlsockets] = tcpserver(copt);
