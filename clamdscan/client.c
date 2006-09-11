@@ -406,18 +406,10 @@ int client(const struct optstruct *opt, int *infected)
 	char cwd[200], *fullpath;
 	int sockd, ret, errors = 0;
 	struct stat sb;
-	const char *scantype;
+	const char *scantype = "CONTSCAN";
 
 
     *infected = 0;
-
-    /* TODO: add a cmdline option to allow using MULTISCAN on systems
-     * without hardware accelerators (but with multiple CPUs)
-     */
-    if(hwaccel)
-	scantype = "MULTISCAN";
-    else
-	scantype = "CONTSCAN";
 
     /* parse argument list */
     if(opt->filename == NULL || strlen(opt->filename) == 0) {
@@ -429,6 +421,12 @@ int client(const struct optstruct *opt, int *infected)
 
 	if((sockd = dconnect(opt)) < 0)
 	    return 2;
+
+	/* TODO: add a cmdline option to allow using MULTISCAN on systems
+	 * without hardware accelerators (but with multiple CPUs)
+	 */
+	if(hwaccel)
+	    scantype = "MULTISCAN";
 
 	if((ret = dsfile(sockd, scantype, cwd, opt)) >= 0)
 	    *infected += ret;
@@ -487,6 +485,9 @@ int client(const struct optstruct *opt, int *infected)
 		    case S_IFDIR:
 			if((sockd = dconnect(opt)) < 0)
 			    return 2;
+
+			if(hwaccel)
+			    scantype = "MULTISCAN";
 
 			if((ret = dsfile(sockd, scantype, fullpath, opt)) >= 0)
 			    *infected += ret;
