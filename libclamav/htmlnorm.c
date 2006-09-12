@@ -47,7 +47,12 @@
 #include "others.h"
 #include "htmlnorm.h"
 
+#ifdef CL_EXPERIMENTAL
+#include "mbox.h"
+#endif
+
 #define HTML_STR_LENGTH 1024
+#define MAX_TAG_CONTENTS_LENGTH HTML_STR_LENGTH
 
 typedef enum {
     HTML_BAD_STATE,
@@ -307,6 +312,16 @@ static void html_tag_arg_add(tag_arguments_t *tags,
 	if (!tags->value) {
 		goto abort;
 	}
+#ifdef CL_EXPERIMENTAL
+	if(tags->scanContents) {
+		tags->contents= (blob **) cli_realloc(tags->contents,
+				tags->count*sizeof(*tags->contents));
+		if(!tags->contents) {
+			goto abort;
+		}
+		tags->contents[tags->count-1]=NULL;
+	}
+#endif
 	tags->tag[tags->count-1] = strdup(tag);
 	if (value) {
 		if (*value == '"') {
@@ -333,6 +348,12 @@ abort:
 		if (tags->value) {
 			free(tags->value[i]);
 		}
+#ifdef CL_EXPERIMENTAL
+		if(tags->contents) {
+			if(tags->contents[i])
+				blobDestroy(tags->contents[i]);
+		}
+#endif
 	}
 	if (tags->tag) {
 		free(tags->tag);
@@ -340,6 +361,11 @@ abort:
 	if (tags->value) {
 		free(tags->value);
 	}
+#ifdef CL_EXPERIMENTAL
+	if (tags->contents)
+		free(tags->contents);
+	tags->contents=NULL;
+#endif
 	tags->tag = tags->value = NULL;
 	tags->count = 0;	
 	return;
@@ -375,6 +401,11 @@ void html_tag_arg_free(tag_arguments_t *tags)
 		if (tags->value[i]) {
 			free(tags->value[i]);
 		}
+#ifdef CL_EXPERIMENTAL
+		if(tags->contents)
+			if (tags->contents[i])
+				blobDestroy(tags->contents[i]);
+#endif
 	}
 	if (tags->tag) {
 		free(tags->tag);
@@ -382,14 +413,59 @@ void html_tag_arg_free(tag_arguments_t *tags)
 	if (tags->value) {
 		free(tags->value);
 	}
+#ifdef CL_EXPERIMENTAL
+	if(tags->contents)
+		free(tags->contents);
+	tags->contents = NULL;
+#endif
 	tags->tag = tags->value = NULL;
 	tags->count = 0;
 }
 
+#ifdef CL_EXPERIMENTAL
+/**
+ * this is used for img, and iframe tags. If they are inside an <a href> tag, then set the contents of the image|iframe to the real URL.
+ */
+static inline void html_tag_set_inahref(tag_arguments_t *tags,int idx,int in_ahref)
+{
+	char x[]="";
+	tags->contents[idx-1]=blobCreate();
+	blobAddData(tags->contents[idx-1],tags->value[in_ahref-1],strlen(tags->value[in_ahref-1]));
+	blobAddData(tags->contents[idx-1],x,1);
+	blobClose(tags->contents[idx-1]);
+}
+
+/**
+ * the displayed text for an <a href> tag
+ */
+static inline void html_tag_contents_append(tag_arguments_t *tags,int idx,const unsigned char* begin,const unsigned char *end)
+{
+	if(begin<end) {
+		blobAddData(tags->contents[idx-1],begin,end-begin);
+	}
+}
+
+
+static inline void html_tag_contents_done(tag_arguments_t *tags,int idx)
+{
+	char x[]="";
+	blobAddData(tags->contents[idx-1],x,1);/*append NULL character*/
+	blobClose(tags->contents[idx-1]);
+}
+
+static inline void html_tag_contents_length_check(tag_arguments_t *tags,int* idx)
+{
+	if (blobGetDataSize(tags->contents[*idx-1])>MAX_TAG_CONTENTS_LENGTH) {
+		html_tag_contents_done(tags,*idx);
+		*idx=0;/*in_ahref=0;*/
+	}
+}
+#endif
+
 static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag_arguments_t *hrefs)
 {
 	int fd_tmp, tag_length, tag_arg_length, binary;
-	int retval=FALSE, escape, value, hex, tag_val_length, table_pos, in_script=FALSE;
+	int retval=FALSE, escape, value, hex, tag_val_length=0, table_pos, in_script=FALSE;
 	FILE *stream_in;
 	html_state state=HTML_NORM, next_state=HTML_BAD_STATE;
 	char filename[1024], tag[HTML_STR_LENGTH+1], tag_arg[HTML_STR_LENGTH+1];
@@ -400,6 +476,13 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	unsigned long length;
 	file_buff_t *file_buff_o1, *file_buff_o2, *file_buff_script;
 	file_buff_t *file_tmp_o1;
+#ifdef CL_EXPERIMENTAL
+	int in_ahref=0;/* index of <a> tag, whose contents we are parsing. Indexing starts from 1, 0 means outside of <a>*/
+	unsigned char* href_contents_begin=NULL;/*beginning of the next portion of <a> contents*/
+	unsigned char* ptrend=NULL;/*end of <a> contents*/
+	unsigned char* in_form_action = NULL;/* the action URL of the current <form> tag, if any*/
+	tag_args.scanContents=0;/* do we need to store the contents of <a></a>?*/
+#endif
 
 	if (!m_area) {
 		if (fd < 0) {
@@ -421,6 +504,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	tag_args.count = 0;
 	tag_args.tag = NULL;
 	tag_args.value = NULL;
+#ifdef CL_EXPERIMENTAL
+	tag_args.contents = NULL;
+#endif
 	
 	if (dirname) {
 		snprintf(filename, 1024, "%s/rfc2397", dirname);
@@ -498,6 +584,10 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 		
 	ptr = line = cli_readline(stream_in, m_area, 8192);
 	while (line) {
+#ifdef CL_EXPERIMENTAL
+		if(href_contents_begin)
+			href_contents_begin=ptr;/*start of a new line, last line already appended to contents see below*/
+#endif
 		while (*ptr && isspace(*ptr)) {
 			ptr++;
 		}
@@ -542,10 +632,21 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				break;
 			case HTML_NORM:
 				if (*ptr == '<') {
+#ifdef CL_EXPERIMENTAL
+					ptrend=ptr-1; /* for use by scanContents */
+#endif
 					html_output_c(file_buff_o1, file_buff_o2, '<');
 					if (in_script) {
 						html_output_c(file_buff_script, NULL, '<');
 					}
+#ifdef CL_EXPERIMENTAL
+					if(hrefs && hrefs->scanContents && in_ahref && href_contents_begin) {
+						/*append this text portion to the contents of <a>*/
+						html_tag_contents_append(hrefs,in_ahref,href_contents_begin,ptr);
+						html_tag_contents_length_check(hrefs,&in_ahref);
+						href_contents_begin=NULL;/*We just encountered another tag inside <a>, so skip it*/
+					}
+#endif
 					ptr++;
 					state = HTML_SKIP_WS;
 					tag_length=0;
@@ -815,6 +916,21 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						in_script=FALSE;
 						html_output_c(file_buff_script, NULL, '\n');
 					}
+#ifdef CL_EXPERIMENTAL
+					if (hrefs && hrefs->scanContents && in_ahref) {
+						if(strcmp(tag,"/a") == 0) {
+							html_tag_contents_done(hrefs,in_ahref);
+							in_ahref=0;/* we are no longer inside an <a href>
+							nesting <a> tags not supported, and shouldn't be supported*/
+						}
+						href_contents_begin=ptr;
+					}
+					if (strcmp(tag, "/form") == 0)  {
+					if (in_form_action)
+						free(in_form_action);
+						in_form_action = NULL;
+					}
+#endif
 				} else if (strcmp(tag, "script") == 0) {
 					arg_value = html_tag_arg_value(&tag_args, "language");
 					if (arg_value && (strcasecmp(arg_value, "jscript.encode") == 0)) {
@@ -830,26 +946,130 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					}
 					html_output_tag(file_buff_script, tag, &tag_args);
 				} else if (hrefs) {
+#ifdef CL_EXPERIMENTAL
+					if(in_ahref && !href_contents_begin)
+						href_contents_begin=ptr;
+#endif
 					if (strcmp(tag, "a") == 0) {
 						arg_value = html_tag_arg_value(&tag_args, "href");
 						if (arg_value && strlen(arg_value) > 0) {
+#ifdef CL_EXPERIMENTAL
+							if (hrefs->scanContents) {
+								const unsigned char* arg_value_title = html_tag_arg_value(&tag_args,"title");
+								/*beginning of an <a> tag*/
+								if (in_ahref)
+									/*we encountered nested <a> tags, pretend previous closed*/
+									if (href_contents_begin) {
+										html_tag_contents_append(hrefs,in_ahref,
+											href_contents_begin,ptrend);
+										/*add pending contents between tags*/
+										html_tag_contents_done(hrefs,in_ahref);
+										in_ahref=0;
+										}
+								if (arg_value_title) {
+									/* title is a 'displayed link'*/
+									html_tag_arg_add(hrefs,"href_title",arg_value_title);
+									hrefs->contents[hrefs->count-1]=blobCreate();
+									html_tag_contents_append(hrefs,hrefs->count,arg_value,
+										arg_value+strlen(arg_value));
+									html_tag_contents_done(hrefs,hrefs->count);
+								}
+								if (in_form_action) {
+									/* form action is the real URL, and href is the 'displayed' */
+									html_tag_arg_add(hrefs,"form",arg_value);
+									hrefs->contents[hrefs->count-1] =  blobCreate();
+									html_tag_contents_append(hrefs, hrefs->count, in_form_action,
+											in_form_action + strlen(in_form_action));
+									html_tag_contents_done(hrefs,hrefs->count);
+								}
+							}
+#endif
 							html_tag_arg_add(hrefs, "href", arg_value);
+#ifdef CL_EXPERIMENTAL
+							if (hrefs->scanContents) {
+								in_ahref=hrefs->count; /* index of this tag (counted from 1) */
+								href_contents_begin=ptr;/* contents begin after <a ..> ends */
+								hrefs->contents[hrefs->count-1]=blobCreate();
+							}
+#endif
 						}
+#ifdef CL_EXPERIMENTAL
+					} else if (strcmp(tag,"form") == 0 && hrefs->scanContents) {
+						const unsigned char* arg_action_value = html_tag_arg_value(&tag_args,"action");
+						if (arg_action_value)
+							in_form_action = strdup(arg_action_value);
+#endif
 					} else if (strcmp(tag, "img") == 0) {
 						arg_value = html_tag_arg_value(&tag_args, "src");
 						if (arg_value && strlen(arg_value) > 0) {
 							html_tag_arg_add(hrefs, "src", arg_value);
+#ifdef CL_EXPERIMENTAL
+							if(hrefs->scanContents && in_ahref)
+								/* "contents" of an img tag, is the URL of its parent <a> tag */
+								html_tag_set_inahref(hrefs,hrefs->count,in_ahref);
+							if (in_form_action) {
+								/* form action is the real URL, and href is the 'displayed' */
+								html_tag_arg_add(hrefs,"form",arg_value);
+								hrefs->contents[hrefs->count-1] =  blobCreate();
+								html_tag_contents_append(hrefs, hrefs->count, in_form_action,
+										in_form_action + strlen(in_form_action));
+								html_tag_contents_done(hrefs,hrefs->count);
+							}
+#endif
 						}
 						arg_value = html_tag_arg_value(&tag_args, "dynsrc");
 						if (arg_value && strlen(arg_value) > 0) {
 							html_tag_arg_add(hrefs, "dynsrc", arg_value);
+#ifdef CL_EXPERIMENTAL
+							if(hrefs->scanContents && in_ahref)
+								/* see above */
+								html_tag_set_inahref(hrefs,hrefs->count,in_ahref);
+							if (in_form_action) {
+								/* form action is the real URL, and href is the 'displayed' */
+								html_tag_arg_add(hrefs,"form",arg_value);
+								hrefs->contents[hrefs->count-1] =  blobCreate();
+								html_tag_contents_append(hrefs, hrefs->count, in_form_action,
+										in_form_action + strlen(in_form_action));
+								html_tag_contents_done(hrefs,hrefs->count);
+							}
+#endif
 						}
 					} else if (strcmp(tag, "iframe") == 0) {
 						arg_value = html_tag_arg_value(&tag_args, "src");
 						if (arg_value && strlen(arg_value) > 0) {
 							html_tag_arg_add(hrefs, "iframe", arg_value);
+#ifdef CL_EXPERIMENTAL
+							if(hrefs->scanContents && in_ahref)
+								/* see above */
+								html_tag_set_inahref(hrefs,hrefs->count,in_ahref);
+							if (in_form_action) {
+								/* form action is the real URL, and href is the 'displayed' */
+								html_tag_arg_add(hrefs,"form",arg_value);
+								hrefs->contents[hrefs->count-1] =  blobCreate();
+								html_tag_contents_append(hrefs, hrefs->count, in_form_action,
+										in_form_action + strlen(in_form_action));
+								html_tag_contents_done(hrefs,hrefs->count);
+							}
 						}
-					}						
+					} else if (strcmp(tag,"area") == 0) {
+						arg_value = html_tag_arg_value(&tag_args,"href");
+						if (arg_value && strlen(arg_value) > 0) {
+							html_tag_arg_add(hrefs, "area", arg_value);
+							if(hrefs->scanContents && in_ahref)
+								/* see above */
+								html_tag_set_inahref(hrefs,hrefs->count,in_ahref);
+							if (in_form_action) {
+								/* form action is the real URL, and href is the 'displayed' */
+								html_tag_arg_add(hrefs,"form",arg_value);
+								hrefs->contents[hrefs->count-1] =  blobCreate();
+								html_tag_contents_append(hrefs, hrefs->count, in_form_action,
+									in_form_action + strlen(in_form_action));
+								html_tag_contents_done(hrefs,hrefs->count);
+							}
+#endif
+						}						
+					}
+					/* TODO:imagemaps can have urls too */
 				}
 				html_tag_arg_free(&tag_args);
 				break;
@@ -871,6 +1091,11 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					ptr++;
 				} else if (*ptr == ';') {
 					html_output_c(file_buff_o1, file_buff_o2, value);
+#ifdef CL_EXPERIMENTAL
+					if (tag_val_length < HTML_STR_LENGTH) {
+					tag_val[tag_val_length++] = value; /* store encoded values too */
+					}
+#endif
 					state = next_state;
 					next_state = HTML_BAD_STATE;
 					ptr++;
@@ -1155,12 +1380,24 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				break;	
 			}
 		}
+#ifdef CL_EXPERIMENTAL
+		if(hrefs && hrefs->scanContents && in_ahref && href_contents_begin)
+			/* end of line, append contents now, resume on next line */
+			html_tag_contents_append(hrefs,in_ahref,href_contents_begin,ptr-1);
+		ptrend = NULL;
+#endif
 		free(line);
 		ptr = line = cli_readline(stream_in, m_area, 8192);
 	}
 	
 	retval = TRUE;
 abort:
+#ifdef CL_EXPERIMENTAL
+	if (in_form_action)
+		free(in_form_action);
+	if (in_ahref) /* tag not closed, force closing */
+		html_tag_contents_done(hrefs,in_ahref);
+#endif
 	html_tag_arg_free(&tag_args);
 	if (!m_area) {
 		fclose(stream_in);
