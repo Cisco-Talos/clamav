@@ -21,24 +21,34 @@
 #include "clamav-config.h"
 #endif
 
+#ifdef	_MSC_VER
+#include <winsock.h>
+#endif
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <fcntl.h>
 #include <time.h>
 #include <sys/stat.h>
 #include <errno.h>
+#ifndef	C_WINDOWS
 #include <sys/time.h>
 #include <sys/wait.h>
+#endif
 
 #if HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
 
+#ifndef	C_WINDOWS
 #include <sys/socket.h>
 #include <sys/ioctl.h>
+#endif
 
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -76,6 +86,15 @@
 
 #define ENV_FILE  "CLAM_VIRUSEVENT_FILENAME"
 #define ENV_VIRUS "CLAM_VIRUSEVENT_VIRUSNAME"
+
+#ifdef	C_WINDOWS
+void virusaction(const char *filename, const char *virname, const struct cfgstruct *copt)
+{
+    if(cfgopt(copt, "VirusEvent")->enabled)
+	logg("^VirusEvent is not supported on this platform");	/* Yet */
+}
+
+#else
 
 void virusaction(const char *filename, const char *virname, const struct cfgstruct *copt)
 {
@@ -130,6 +149,7 @@ void virusaction(const char *filename, const char *virname, const struct cfgstru
 	logg("!VirusAction: fork failed.\n");
     }
 }
+#endif /* C_WINDOWS */
 
 int poll_fds(int *fds, int nfds, int timeout_sec)
 {
@@ -186,9 +206,11 @@ int poll_fds(int *fds, int nfds, int timeout_sec)
 	int maxfd = 0;
 
     for (i=0; i<nfds; i++) {
+#ifndef	C_WINDOWS
 	if (fds[i] >= DEFAULT_FD_SETSIZE) {
 	    return -1;
 	}
+#endif
 	if (fds[i] > maxfd)
 	    maxfd = fds[i];
     }
@@ -262,9 +284,11 @@ int is_fd_connected(int fd)
 	struct timeval tv;
 	char buff[1];
 
+#ifndef	C_WINDOWS
     if (fd >= DEFAULT_FD_SETSIZE) {
         return 1;
     }
+#endif
 
     FD_ZERO(&rfds);
     FD_SET(fd, &rfds);
@@ -309,6 +333,16 @@ int writen(int fd, void *buff, unsigned int count)
     return count;
 }
 
+#ifdef	C_WINDOWS
+/*
+ * The code is non-portable, please send patches to NJH
+ */
+int
+readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeout_sec, int force_delim, int read_command)
+{
+	return recv(sockfd, buf, size, 0);
+}
+#else
 /* FD Support Submitted by Richard Lyons <frob-clamav*webcentral.com.au> */
 /*
    This procedure does timed clamd command and delimited input processing.  
@@ -456,3 +490,4 @@ int readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeou
     }
     return n;
 }
+#endif

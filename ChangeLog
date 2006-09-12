@@ -1,3 +1,7 @@
+Tue Sep 12 22:52:14 CEST 2006 (tk)
+----------------------------------
+  * clamd: apply w32 patches from NJH
+
 Tue Sep 12 21:59:17 CEST 2006 (acab)
 ------------------------------------
   * libclamav: Merge of the related part of the phishing module from
