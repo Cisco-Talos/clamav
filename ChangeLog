@@ -1,3 +1,7 @@
+Wed Sep 13 00:35:57 CEST 2006 (tk)
+----------------------------------
+  * configure: add -lresolv to CLAMAV_MILTER_LIBS, patch from Stephen Gran
+
 Wed Sep 13 00:03:30 CEST 2006 (acab)
 ------------------------------------
   * libclamav: Merge of the html normaliser part of the phishing module from
