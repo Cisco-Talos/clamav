@@ -161,7 +161,7 @@ if test $want_dns = yes; then
     if test -z "$resolv_lib"; then
 	AC_CHECK_LIB(resolv, dn_expand, resolv_lib="-lresolv",)
     fi
-    AC_CHECK_HEADER(resolv.h,[FRESHCLAM_LIBS="$FRESHCLAM_LIBS $resolv_lib"; AC_DEFINE(HAVE_RESOLV_H,1,have resolv.h)], AC_MSG_WARN([****** DNS support disabled]))
+    AC_CHECK_HEADER(resolv.h,[FRESHCLAM_LIBS="$FRESHCLAM_LIBS $resolv_lib"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS $resolv_lib"; AC_DEFINE(HAVE_RESOLV_H,1,have resolv.h)], AC_MSG_WARN([****** DNS support disabled]))
 fi
 
 AC_ARG_ENABLE(clamuko,
