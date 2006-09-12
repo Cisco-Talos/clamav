@@ -1,3 +1,9 @@
+Tue Sep 12 21:59:17 CEST 2006 (acab)
+------------------------------------
+  * libclamav: Merge of the related part of the phishing module from
+               Torok Edvin <edwintorok*gmail.com>
+	       Part of the Google Summer of Code program
+
 Tue Sep 12 20:42:04 CEST 2006 (acab)
 ------------------------------------
   * sigtool: Merge of the related part of the phishing module from
