@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  */
+
+#ifdef CL_EXPERIMENTAL
+
 #ifndef _PHISH_DOMAINCHECK_DB_H
 #define _PHISH_DOMAINCHECK_DB_H
 
@@ -29,5 +32,7 @@ void domainlist_done(void);
 void domainlist_cleanup(void);
 int is_domainlist_ok(void);
 int domainlist_match(const char* real_url,const char* display_url,int hostOnly,unsigned short* flags);
+
+#endif
 
 #endif

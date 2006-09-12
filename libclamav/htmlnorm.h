@@ -23,8 +23,10 @@
 typedef struct tag_arguments_tag
 {
         int count;
+	int scanContents;
         unsigned char **tag;
         unsigned char **value;
+	struct blob   **contents; 
 } tag_arguments_t;
 
 int html_normalise_mem(unsigned char *in_buff, off_t in_size, const char *dirname, tag_arguments_t *hrefs);

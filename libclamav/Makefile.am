@@ -142,6 +142,14 @@ libclamav_la_SOURCES = \
 	uuencode.c \
 	uuencode.h \
 	pst.c \
-	pst.h
+	pst.h \
+	phishcheck.c \
+	phishcheck.h \
+	phish_domaincheck_db.c \
+	phish_domaincheck_db.h \
+	phish_whitelist.c \
+	phish_whitelist.h \
+	regex_list.c \
+	regex_list.h
 
 lib_LTLIBRARIES = libclamav.la

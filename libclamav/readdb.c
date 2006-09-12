@@ -42,10 +42,8 @@
 #include "defaults.h"
 
 #ifdef CL_EXPERIMENTAL
-/*
 #include "phish_whitelist.h"
 #include "phish_domaincheck_db.h"
-*/
 #endif
 
 
@@ -1094,7 +1092,6 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
 #endif
 	    skipped = 1;
 #ifdef CL_EXPERIMENTAL
-/*
     } else if(cli_strbcasestr(filename, ".wdb")) {
 	if(!(options & CL_SCAN_NOPHISHING))
 	    ret = cli_loadwdb(fd, options);
@@ -1105,7 +1102,6 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
 	    ret = cli_loadpdb(fd, options);
 	else
 	    skipped = 1;
-*/
 #endif
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
@@ -1172,10 +1168,8 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigne
 	     cli_strbcasestr(dent->d_name, ".zmd")  ||
 	     cli_strbcasestr(dent->d_name, ".rmd")  ||
 #ifdef CL_EXPERIMENTAL
-/*
 	     cli_strbcasestr(dent->d_name, ".pdb")  ||
 	     cli_strbcasestr(dent->d_name, ".wdb")  ||
-*/
 #endif
 	     cli_strbcasestr(dent->d_name, ".hw")  ||
 	     cli_strbcasestr(dent->d_name, ".inc")  ||
@@ -1294,10 +1288,8 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 
 	    cli_strbcasestr(dent->d_name, ".rmd")  || 
 #ifdef CL_EXPERIMENTAL
-/*
 	    cli_strbcasestr(dent->d_name, ".pdb")  ||
 	    cli_strbcasestr(dent->d_name, ".wdb")  ||
-*/
 #endif
 	    cli_strbcasestr(dent->d_name, ".hw")   ||
 	    cli_strbcasestr(dent->d_name, ".inc")   ||
@@ -1374,10 +1366,8 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 
 	    cli_strbcasestr(dent->d_name, ".rmd")  || 
 #ifdef CL_EXPERIMENTAL
-/*
 	    cli_strbcasestr(dent->d_name, ".pdb")  ||
 	    cli_strbcasestr(dent->d_name, ".wdb")  ||
-*/
 #endif
 	    cli_strbcasestr(dent->d_name, ".hw")   ||
 	    cli_strbcasestr(dent->d_name, ".inc")   ||
