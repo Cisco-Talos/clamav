@@ -481,7 +481,12 @@ static int build(struct optstruct *opt)
 				 "main.ndb", "daily.ndb", "main.sdb",
 				 "daily.sdb", "main.zmd", "daily.zmd",
 				 "main.rmd", "daily.rmd", "main.fp",
-				 "daily.fp", "daily.info", "main.info", NULL };
+				 "daily.fp", "daily.info", "main.info",
+#ifdef CL_EXPERIMENTAL
+				 /* TODO: add support for main.[wp]db */
+				 "daily.wdb","daily.pdb",
+#endif
+				 NULL };
 		args[2] = tarfile;
 		if(!opt_check(opt, "debug")) {
 		    if((dn = open("/dev/null", O_WRONLY)) == -1) {

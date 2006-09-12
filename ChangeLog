@@ -1,3 +1,10 @@
+Tue Sep 12 20:42:04 CEST 2006 (acab)
+------------------------------------
+  * sigtool: Merge of the related part of the phishing module from
+             Torok Edvin <edwintorok*gmail.com>
+             Part of the Google Summer of Code program
+  * libclamav: Initial merge of the phishing module - inactive
+
 Tue Sep 12 01:04:39 CEST 2006 (tk)
 ----------------------------------
   * clamd, clamdscan: add support for hardware acceleration

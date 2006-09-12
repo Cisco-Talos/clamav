@@ -41,6 +41,14 @@
 #include "str.h"
 #include "defaults.h"
 
+#ifdef CL_EXPERIMENTAL
+/*
+#include "phish_whitelist.h"
+#include "phish_domaincheck_db.h"
+*/
+#endif
+
+
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #include <limits.h>
 #include <stddef.h>
@@ -1085,7 +1093,20 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
 	else
 #endif
 	    skipped = 1;
-
+#ifdef CL_EXPERIMENTAL
+/*
+    } else if(cli_strbcasestr(filename, ".wdb")) {
+	if(!(options & CL_SCAN_NOPHISHING))
+	    ret = cli_loadwdb(fd, options);
+	else
+	    skipped = 1;
+    } else if(cli_strbcasestr(filename, ".pdb")) {
+	if(!(options & CL_SCAN_NOPHISHING))
+	    ret = cli_loadpdb(fd, options);
+	else
+	    skipped = 1;
+*/
+#endif
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
 	ret = cli_loaddb(fd, engine, signo, options);
@@ -1150,6 +1171,12 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigne
 	     cli_strbcasestr(dent->d_name, ".sdb")  ||
 	     cli_strbcasestr(dent->d_name, ".zmd")  ||
 	     cli_strbcasestr(dent->d_name, ".rmd")  ||
+#ifdef CL_EXPERIMENTAL
+/*
+	     cli_strbcasestr(dent->d_name, ".pdb")  ||
+	     cli_strbcasestr(dent->d_name, ".wdb")  ||
+*/
+#endif
 	     cli_strbcasestr(dent->d_name, ".hw")  ||
 	     cli_strbcasestr(dent->d_name, ".inc")  ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
@@ -1266,6 +1293,12 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".sdb")  || 
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 
 	    cli_strbcasestr(dent->d_name, ".rmd")  || 
+#ifdef CL_EXPERIMENTAL
+/*
+	    cli_strbcasestr(dent->d_name, ".pdb")  ||
+	    cli_strbcasestr(dent->d_name, ".wdb")  ||
+*/
+#endif
 	    cli_strbcasestr(dent->d_name, ".hw")   ||
 	    cli_strbcasestr(dent->d_name, ".inc")   ||
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
@@ -1340,6 +1373,12 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".sdb")  || 
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 
 	    cli_strbcasestr(dent->d_name, ".rmd")  || 
+#ifdef CL_EXPERIMENTAL
+/*
+	    cli_strbcasestr(dent->d_name, ".pdb")  ||
+	    cli_strbcasestr(dent->d_name, ".wdb")  ||
+*/
+#endif
 	    cli_strbcasestr(dent->d_name, ".hw")   ||
 	    cli_strbcasestr(dent->d_name, ".inc")   ||
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
