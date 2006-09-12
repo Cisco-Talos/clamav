@@ -1,3 +1,7 @@
+Wed Sep 13 00:50:40 CEST 2006 (tk)
+----------------------------------
+  * shared/cfgparser.c: fix error path leaks, patch from Mark Pizzolato
+
 Wed Sep 13 00:35:57 CEST 2006 (tk)
 ----------------------------------
   * configure: add -lresolv to CLAMAV_MILTER_LIBS, patch from Stephen Gran

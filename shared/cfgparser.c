@@ -169,12 +169,15 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 				    if(verbose)
 					fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires string argument.\n", line, name);
 				    fclose(fs);
+				    free(name);
 				    freecfg(copt);
 				    return NULL;
 				}
 				if(regcfg(&copt, name, arg, -1, pt->multiple) < 0) {
 				    fprintf(stderr, "ERROR: Can't register new options (not enough memory)\n");
 				    fclose(fs);
+				    free(name);
+				    free(arg);
 				    freecfg(copt);
 				    return NULL;
 				}
@@ -185,17 +188,20 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 				    if(verbose)
 					fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires string argument.\n", line, name);
 				    fclose(fs);
+				    free(name);
 				    freecfg(copt);
 				    return NULL;
 				}
 				free(arg);
 				arg = strstr(buff, " ");
 				arg = strdup(++arg);
-				if((c = strpbrk(arg, "\n\r")))
+				if((arg) && (c = strpbrk(arg, "\n\r")))
 				    *c = '\0';
-				if(regcfg(&copt, name, arg, -1, pt->multiple) < 0) {
+				if((!arg) || (regcfg(&copt, name, arg, -1, pt->multiple) < 0)) {
 				    fprintf(stderr, "ERROR: Can't register new options (not enough memory)\n");
 				    fclose(fs);
+				    free(name);
+				    free(arg);
 				    freecfg(copt);
 				    return NULL;
 				}
@@ -205,14 +211,17 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 				    if(verbose)
 					fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires numerical argument.\n", line, name);
 				    fclose(fs);
+				    free(name);
+				    free(arg);
 				    freecfg(copt);
 				    return NULL;
 				}
 				if(regcfg(&copt, name, NULL, atoi(arg), pt->multiple) < 0) {
 				    fprintf(stderr, "ERROR: Can't register new options (not enough memory)\n");
 				    fclose(fs);
-				    freecfg(copt);
+				    free(name);
 				    free(arg);
+				    freecfg(copt);
 				    return NULL;
 				}
 				free(arg);
@@ -222,6 +231,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 				    if(verbose)
 					fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires argument.\n", line, name);
 				    fclose(fs);
+				    free(name);
 				    freecfg(copt);
 				    return NULL;
 				}
@@ -233,6 +243,8 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 					if(verbose)
 					    fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires numerical (raw/K/M) argument.\n", line, name);
 					fclose(fs);
+					free(name);
+					free(arg);
 					freecfg(copt);
 					return NULL;
 				    }
@@ -246,6 +258,8 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 					if(verbose)
 					    fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires numerical (raw/K/M) argument.\n", line, name);
 					fclose(fs);
+					free(name);
+					free(arg);
 					freecfg(copt);
 					return NULL;
 				    }
@@ -255,6 +269,8 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 				if(regcfg(&copt, name, NULL, calc, pt->multiple) < 0) {
 				    fprintf(stderr, "ERROR: Can't register new options (not enough memory)\n");
 				    fclose(fs);
+				    free(name);
+				    free(arg);
 				    freecfg(copt);
 				    return NULL;
 				}
@@ -265,6 +281,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 				    if(verbose)
 					fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires boolean argument.\n", line, name);
 				    fclose(fs);
+				    free(name);
 				    freecfg(copt);
 				    return NULL;
 				}
@@ -277,6 +294,8 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 				    if(verbose)
 					fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires boolean argument.\n", line, name);
 				    fclose(fs);
+				    free(name);
+				    free(arg);
 				    freecfg(copt);
 				    return NULL;
 				}
@@ -284,6 +303,8 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 				if(regcfg(&copt, name, NULL, val, pt->multiple) < 0) {
 				    fprintf(stderr, "ERROR: Can't register new options (not enough memory)\n");
 				    fclose(fs);
+				    free(name);
+				    free(arg);
 				    freecfg(copt);
 				    return NULL;
 				}
@@ -291,6 +312,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 			    default:
 				if(verbose)
 				    fprintf(stderr, "ERROR: Parse error at line %d: Option %s is of unknown type %d\n", line, name, pt->argtype);
+				fclose(fs);
 				free(name);
 				free(arg);
 				freecfg(copt);
@@ -304,6 +326,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 	    if(!found) {
 		if(verbose)
 		    fprintf(stderr, "ERROR: Parse error at line %d: Unknown option %s.\n", line, name);
+		free(name);
 		fclose(fs);
 		freecfg(copt);
 		return NULL;
