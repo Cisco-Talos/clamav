@@ -38,6 +38,15 @@
 #include "server.h"
 #include "output.h"
 
+#ifdef        C_WINDOWS
+int localserver(const struct cfgstruct *copt, struct cl_node *root)
+{
+    logg("!Localserver is not supported on this platform");
+    return -1;
+}
+
+#else
+
 int localserver(const struct cfgstruct *copt)
 {
 	struct sockaddr_un server;
@@ -103,3 +112,4 @@ int localserver(const struct cfgstruct *copt)
 
     return sockfd;
 }
+#endif /* C_WINDOWS */

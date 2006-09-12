@@ -21,7 +21,10 @@
 #define __THRMGR_H__
 
 #include <pthread.h>
+
+#ifndef C_WINDOWS
 #include <sys/time.h>
+#endif
 
 typedef struct work_item_tag {
 	struct work_item_tag *next;

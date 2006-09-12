@@ -21,13 +21,20 @@
 #include "clamav-config.h"
 #endif
 
+#ifdef	_MSC_VER
+#include <winsock.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifndef	C_WINDOWS
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <sys/param.h>
@@ -36,6 +43,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#endif
 #include <pthread.h>
 
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
@@ -57,6 +65,10 @@
 
 #ifdef C_LINUX
 dev_t procdev; /* /proc device */
+#endif
+
+#ifndef	C_WINDOWS
+#define	closesocket(s)	close(s)
 #endif
 
 /* Maximum filenames under various systems - njh */
@@ -125,7 +137,7 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 		closedir(dd);
 		return 1;
 	    }
-#ifndef C_INTERIX
+#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS)) && (!defined(C_CYGWIN))
 	    if(dent->d_ino)
 #endif
 	    {
@@ -215,10 +227,12 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_node 
     }
 
     switch(sb.st_mode & S_IFMT) {
+#ifdef	S_IFLNK
 	case S_IFLNK:
 	    if(!cfgopt(copt, "FollowFileSymlinks")->enabled)
 		break;
 	    /* else go to the next case */
+#endif
 	case S_IFREG: 
 	    if(sb.st_size == 0) { /* empty file */
 		mdprintf(odesc, "%s: Empty file\n", filename);
@@ -347,7 +361,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	    continue;
 
 	if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1)
-	    close(sockfd);
+	    closesocket(sockfd);
 	else
 	    bound = 1;
     }
@@ -406,15 +420,15 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
     btread = sizeof(buff);
 
     while((retval = poll_fd(acceptd, timeout)) == 1) {
-	bread = read(acceptd, buff, btread);
+	bread = recv(acceptd, buff, btread, 0);
 	if(bread <= 0)
 	    break;
 	size += bread;
 
 	if(writen(tmpd, buff, bread) != bread) {
 	    shutdown(sockfd, 2);
-	    close(sockfd);
-	    close(acceptd);
+	    closesocket(sockfd);
+	    closesocket(acceptd);
 	    mdprintf(odesc, "Temporary file -> write ERROR\n");
 	    logg("!ScanStream %d: Can't write to temporary file.\n", port);
 	    close(tmpd);
@@ -456,8 +470,8 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	unlink(tmpname);
     free(tmpname);
 
-    close(acceptd);
-    close(sockfd);
+    closesocket(acceptd);
+    closesocket(sockfd);
 
     if(ret == CL_VIRUS) {
 	mdprintf(odesc, "stream: %s FOUND\n", virname);

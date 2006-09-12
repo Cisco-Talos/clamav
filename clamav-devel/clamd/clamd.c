@@ -21,17 +21,25 @@
 #include "clamav-config.h"
 #endif
 
+#ifdef	_MSC_VER
+#include <winsock.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #include <sys/time.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <time.h>
+#ifndef	C_WINDOWS
 #include <pwd.h>
 #include <grp.h>
+#endif
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
 #include <syslog.h>
@@ -100,6 +108,12 @@ int main(int argc, char **argv)
 	    {0, 0, 0, 0}
     	};
 
+#ifdef C_WINDOWS
+    if(!pthread_win32_process_attach_np()) {
+	mprintf("!Can't start the win32 pthreads layer\n");
+        return 1;
+    }
+#endif
 
     opt = opt_parse(argc, argv, short_options, long_options, NULL);
     if(!opt) {
@@ -147,7 +161,7 @@ int main(int argc, char **argv)
     umask(0);
 
     /* drop privileges */
-#ifndef C_OS2
+#if (!defined(C_OS2)) && (!defined(C_WINDOWS))
     if(geteuid() == 0 && (cpt = cfgopt(copt, "User"))->enabled) {
 	if((user = getpwnam(cpt->strarg)) == NULL) {
 	    fprintf(stderr, "ERROR: Can't get information about user %s.\n", cpt->strarg);
@@ -188,6 +202,7 @@ int main(int argc, char **argv)
 	    freecfg(copt);
 	    return 1;
 	}
+
 
 	if(setuid(user->pw_uid)) {
 	    fprintf(stderr, "ERROR: setuid(%d) failed.\n", (int) user->pw_uid);
@@ -330,6 +345,16 @@ int main(int argc, char **argv)
     }
 
     if(tcpsock) {
+#ifdef C_WINDOWS
+	    WSADATA wsaData;
+
+	if(WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR) {
+	    logg("!Error at WSAStartup(): %d\n", WSAGetLastError());
+	    logg_close();
+	    freecfg(copt);
+	    return 1;
+	}
+#endif
 	lsockets[nlsockets] = tcpserver(copt);
 	if(lsockets[nlsockets] == -1) {
 	    logg_close();
@@ -352,6 +377,18 @@ int main(int argc, char **argv)
     }
 
     ret = acceptloop_th(lsockets, nlsockets, root, copt);
+
+#ifdef C_WINDOWS
+    if(tcpsock)
+	WSACleanup();
+
+    if(!pthread_win32_process_detach_np()) {
+	logg("!Can't stop the win32 pthreads layer\n");
+	logg_close();
+	freecfg(copt);
+	return 1;
+    }
+#endif
 
     logg_close();
     freecfg(copt);

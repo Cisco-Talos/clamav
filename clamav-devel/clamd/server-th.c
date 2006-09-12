@@ -22,6 +22,10 @@
 #include "clamav-config.h"
 #endif
 
+#ifdef	_MSC_VER
+#include <winsock.h>
+#endif
+
 #include <pthread.h>
 #include <errno.h>
 #include <signal.h>
@@ -29,8 +33,12 @@
 #include <string.h>
 #include <time.h>
 #include <sys/types.h>
+#ifndef	C_WINDOWS
 #include <sys/socket.h>
+#endif
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 #include "libclamav/clamav.h"
 
@@ -44,9 +52,17 @@
 #include "others.h"
 #include "shared.h"
 
+#ifndef	C_WINDOWS
+#define	closesocket(s)	close(s)
+#endif
+
 #define BUFFSIZE 1024
+#ifndef	FALSE
 #define FALSE (0)
+#endif
+#ifndef	TRUE
 #define TRUE (1)
+#endif
 
 int progexit = 0;
 pthread_mutex_t exit_mutex;
@@ -69,13 +85,17 @@ typedef struct client_conn_tag {
 void scanner_thread(void *arg)
 {
 	client_conn_t *conn = (client_conn_t *) arg;
+#ifndef	C_WINDOWS
 	sigset_t sigset;
+#endif
 	int ret, timeout, i, session=FALSE;
 
 
+#ifndef	C_WINDOWS
     /* ignore all signals */
     sigfillset(&sigset);
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
+#endif
 
     timeout = cfgopt(conn->copt, "ReadTimeout")->numarg;
     if(!timeout)
@@ -93,7 +113,7 @@ void scanner_thread(void *arg)
 		progexit = 1;
 		for(i = 0; i < conn->nsockets; i++) {
 		    shutdown(conn->socketds[i], 2);
-		    close(conn->socketds[i]);
+		    closesocket(conn->socketds[i]);
 		}
 		pthread_mutex_unlock(&exit_mutex);
 		break;
@@ -126,7 +146,7 @@ void scanner_thread(void *arg)
 	}
     } while (session);
 
-    close(conn->sd);
+    closesocket(conn->sd);
     cl_free(conn->root);
     free(conn);
     return;
@@ -145,13 +165,17 @@ void sighandler_th(int sig)
 	    _exit(11); /* probably not reached at all */
 	    break; /* not reached */
 
+#ifdef	SIGHUP
 	case SIGHUP:
 	    sighup = 1;
 	    break;
+#endif
 
+#ifdef	SIGUSR2
 	case SIGUSR2:
 	    reload = 1;
 	    break;
+#endif
 
 	default:
 	    break; /* Take no action on other signals - e.g. SIGPIPE */
@@ -229,11 +253,15 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, const struc
 	int new_sd, max_threads, i;
 	unsigned int options = 0;
 	threadpool_t *thr_pool;
+#ifndef	C_WINDOWS
 	struct sigaction sigact;
+#endif
 	mode_t old_umask;
 	struct cl_limits limits;
 	pthread_attr_t thattr;
+#ifndef	C_WINDOWS
 	sigset_t sigset;
+#endif
 	client_conn_t *client_conn;
 	struct cfgstruct *cpt;
 #ifdef HAVE_STRERROR_R
@@ -253,7 +281,10 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, const struc
 	pthread_attr_t clamuko_attr;
 	struct thrarg *tharg = NULL; /* shut up gcc */
 #endif
+
+#ifndef	C_WINDOWS
 	memset(&sigact, 0, sizeof(struct sigaction));
+#endif
 
     /* save the PID */
     mainpid = getpid();
@@ -402,6 +433,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, const struc
 	logg("Clamuko is not available.\n");
 #endif
 
+#ifndef	C_WINDOWS
     /* set up signal handling */
     sigfillset(&sigset);
     sigdelset(&sigset, SIGINT);
@@ -430,6 +462,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, const struc
 	sigaddset(&sigact.sa_mask, SIGHUP);
 	sigaction(SIGSEGV, &sigact, NULL);
     }
+#endif
 
 #if defined(C_BIGSTACK) || defined(C_BSD)
     /*
@@ -565,7 +598,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, const struc
 	shutdown(socketds[i], 2);
     logg("*Closing the main socket%s.\n", (nsockets > 1) ? "s" : "");
     for (i = 0; i < nsockets; i++)
-	close(socketds[i]);
+	closesocket(socketds[i]);
 #ifndef C_OS2
     if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
 	if(unlink(cpt->strarg) == -1)

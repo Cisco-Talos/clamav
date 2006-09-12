@@ -21,18 +21,27 @@
 #include "clamav-config.h"
 #endif
 
+#ifdef	_MSC_VER
+#include <winsock.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <sys/types.h>
+#ifndef	C_WINDOWS
 #include <dirent.h>
 #include <sys/socket.h>
 #include <sys/time.h>
+#endif
 #include <pthread.h>
 #include <time.h>
 #include <signal.h>
 #include <errno.h>
+#include <stddef.h>
 
 #include "libclamav/clamav.h"
 #include "libclamav/str.h"
@@ -65,13 +74,17 @@ void multiscanfile(void *arg)
 {
 	struct multi_tag *tag = (struct multi_tag *) arg;
 	const char *virname;
+#ifndef	C_WINDOWS
         sigset_t sigset;
+#endif
 	int ret;
 
 
+#ifndef	C_WINDOWS
     /* ignore all signals */
     sigfillset(&sigset);
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
+#endif
 
     ret = cl_scanfile(tag->fname, &virname, NULL, tag->root, tag->limits, tag->options);
 
@@ -136,7 +149,7 @@ static int multiscan(const char *dirname, const struct cl_node *root, const stru
 		return -1;
 	    }
 
-#ifndef C_INTERIX
+#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS)) && (!defined(C_CYGWIN))
 	    if(dent->d_ino)
 #endif
 	    {
@@ -189,8 +202,10 @@ static int multiscan(const char *dirname, const struct cl_node *root, const stru
 					return -1;
 				    }
 
+#ifndef C_WINDOWS
 				    while(!multi_pool->thr_idle) /* non-critical */
 					usleep(200);
+#endif
 				}
 			    }
 			}

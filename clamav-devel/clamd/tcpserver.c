@@ -21,14 +21,22 @@
 #include "clamav-config.h"
 #endif
 
+#ifdef	_MSC_VER
+#include <winsock.h>
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
+#ifndef	C_WINDOWS
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#endif
 #include <errno.h>
+#ifndef	C_WINDOWS
 #include <netdb.h>
+#endif
 
 #include "libclamav/clamav.h"
 
