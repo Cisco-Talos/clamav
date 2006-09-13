@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.329 2006/09/13 17:43:57 acab Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.330 2006/09/13 21:37:49 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -129,9 +129,16 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 				 */
 #endif
 
+#if defined(FOLLOWURLS) || defined(CL_EXPERIMENTAL)
+#include "htmlnorm.h"
+#endif
+
+#ifdef CL_EXPERIMENTAL
+#include "phishcheck.h"
+#endif
+
 #ifdef	FOLLOWURLS
 
-#include "htmlnorm.h"
 
 #ifdef	WITH_CURL	/* Set in configure */
 /*
@@ -228,7 +235,14 @@ static	message	*do_multipart(message *mainMessage, message **messages, int i, in
 static	int	count_quotes(const char *buf);
 static	bool	next_is_folded_header(const text *t);
 
-static	void	checkURLs(message *m, mbox_ctx* mctx,int *rc,int is_html);
+static	void	checkURLs(message *m, mbox_ctx *mctx,int *rc,int is_html);
+
+#ifdef CL_EXPERIMENTAL
+static	void	do_checkURLs(message *m, const char *dir,tag_arguments_t* hrefs);
+static	blob*	getHrefs(message* m,tag_arguments_t* hrefs);
+static	void	hrefs_done(blob *b,tag_arguments_t* hrefs);
+#endif
+
 #ifdef	WITH_CURL
 struct arg {
 	const char *url;
@@ -378,6 +392,8 @@ static	void	create_map(const char *begin, const char *end);
 static	void	add_to_map(const char *offset, const char *word);
 static	const	char	*find_in_map(const char *offset, const char *word);
 static	void	free_map(void);
+
+
 
 /*
  * This could be the future. Instead of parsing and decoding it just decodes.
@@ -1595,7 +1611,13 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 					break;
 		} else {
 			if(line == NULL) {
-				if(lastBodyLineWasBlank) {
+				/*
+				 * Although this would save time and RAM, some
+				 * phish signatures have been built which need
+				 * the blank lines
+				 */
+				if(lastBodyLineWasBlank &&
+				  (messageGetMimeType(ret) != TEXT)) {
 					cli_dbgmsg("Ignoring consecutive blank lines in the body\n");
 					continue;
 				}
@@ -1916,7 +1938,9 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 	message *mainMessage = messageIn;
 	fileblob *fb;
 	bool infected = FALSE;
-
+#ifdef CL_EXPERIMENTAL
+	const int doPhishingScan = !(mctx->ctx->options&CL_SCAN_NOPHISHING); /* || (mctx->ctx->options&CL_SCAN_PHISHING_GA_TRAIN) || (mctx->ctx->options&CL_SCAN_PHISHING_GA);  kept here for the GA MERGE */
+#endif
 	cli_dbgmsg("in parseEmailBody\n");
 
 	/* Anything left to be parsed? */
@@ -1964,16 +1988,29 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 		case NOMIME:
 			cli_dbgmsg("Not a mime encoded message\n");
 			aText = textAddMessage(aText, mainMessage);
+#ifdef CL_EXPERIMENTAL
+			if(!doPhishingScan) /*else: fall-through: some phishing mails claim they are text/plain, when they are indeed html*/
+#endif
 			break;
 		case TEXT:
 			/* text/plain has been preprocessed as no encoding */
+#ifdef CL_EXPERIMENTAL
+			if(subtype==HTML || doPhishingScan) {
+#else
 			if((mctx->ctx->options&CL_SCAN_MAILURL) && (subtype == HTML))
+#endif
 				/*
 				 * It would be better to save and scan the
 				 * file and only checkURLs if it's found to be
 				 * clean
 				 */
-				checkURLs(mainMessage, mctx, &rc, 1);
+				checkURLs(mainMessage, mctx, &rc,subtype==HTML);/* there might be html sent without subtype html too,
+													so scan them for phishing too*/
+#ifdef CL_EXPERIMENTAL
+				if(rc==3)
+				infected=TRUE;
+			}
+#endif
 			break;
 		case MULTIPART:
 			cli_dbgmsg("Content-type 'multipart' handler\n");
@@ -3701,9 +3738,234 @@ rfc1341(message *m, const char *dir)
 }
 #endif
 
+#ifdef CL_EXPERIMENTAL
+static void
+hrefs_done(blob *b, tag_arguments_t *hrefs)
+{
+	if(b)
+		blobDestroy(b);
+	html_tag_arg_free(hrefs);
+}
+
+/*
+ * This used to be part of checkURLs, split out, because phishingScan needs it
+ * too, and phishingScan might be used in situations where checkURLs is
+ * disabled (see ifdef)
+ */
+static blob *
+getHrefs(message *m, tag_arguments_t *hrefs)
+{
+	blob *b = messageToBlob(m,0);
+	size_t len;
+
+	if(b == NULL)
+		return NULL;
+
+	len = blobGetDataSize(b);
+
+	if(len == 0) {
+		blobDestroy(b);
+		return NULL;
+	}
+
+	/* TODO: make this size customisable */
+	if(len > 100*1024) {
+		cli_warnmsg("Viruses pointed to by URL not scanned in large message\n");
+		blobDestroy(b);
+		return NULL;
+	}
+
+	blobClose(b);
+
+	hrefs->count = 0;
+	hrefs->tag = hrefs->value = NULL;
+	hrefs->contents = NULL;
+
+	cli_dbgmsg("checkURLs: calling html_normalise_mem\n");
+	if(!html_normalise_mem(blobGetData(b), len, NULL, hrefs)) {
+		blobDestroy(b);
+		return NULL;
+	}
+	cli_dbgmsg("checkURLs: html_normalise_mem returned\n");
+
+	/* TODO: Do we need to call remove_html_comments? */
+	return b;
+}
+
+static void
+checkURLs(message *mainMessage, mbox_ctx *mctx, int *rc, int is_html)
+{
+       tag_arguments_t hrefs;
+       blob *b;
+
+       hrefs.scanContents = (!(mctx->ctx->options&CL_SCAN_NOPHISHING)); /* aCaB: stripped GA related stuff */
+
+#if    (!defined(FOLLOWURLS)) || (FOLLOWURLS <= 0)
+       if(!hrefs.scanContents)
+	       /*
+		* Don't waste time extracting hrefs (parsing html), nobody
+		* will need it
+		*/
+		return;
+#endif
+
+       hrefs.count = 0;
+       hrefs.tag = hrefs.value = NULL;
+       hrefs.contents = NULL;
+
+       b = getHrefs(mainMessage, &hrefs);
+       if(b) {
+	       if(!(mctx->ctx->options&CL_SCAN_NOPHISHING)) {
+		       if(phishingScan(mainMessage,mctx->dir,mctx->ctx,&hrefs) == CL_VIRUS) {
+			       mainMessage->isInfected = TRUE;
+			       *rc = 3;
+			       cli_dbgmsg("PH:Phishing found\n");
+		       }
+	       }
+	       if(is_html && mctx->ctx->options&CL_SCAN_MAILURL)
+		       do_checkURLs(mainMessage, mctx->dir,&hrefs);
+       }
+       hrefs_done(b,&hrefs);
+}
+
 #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
 static void
-checkURLs(message *m, mbox_ctx* mctx,int *rc,int is_html)
+do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs)
+{
+	table_t *t;
+	int i, n;
+#if	defined(WITH_CURL) && defined(CL_THREAD_SAFE)
+	pthread_t tid[FOLLOWURLS];
+	struct arg args[FOLLOWURLS];
+#endif
+
+	t = tableCreate();
+	if(t == NULL)
+		return;
+
+	n = 0;
+
+	for(i = 0; i < hrefs->count; i++) {
+		const char *url = (const char *)hrefs->value[i];
+
+		/*
+		 * TODO: If it's an image source, it'd be nice to note beacons
+		 *	where width="0" height="0", which needs support from
+		 *	the HTML normalise code
+		 */
+		if(strncasecmp("http://", url, 7) == 0) {
+			char *ptr;
+#ifdef	WITH_CURL
+#ifndef	CL_THREAD_SAFE
+			struct arg arg;
+#endif
+
+#else	/*!WITH_CURL*/
+#ifdef	CL_THREAD_SAFE
+			static pthread_mutex_t system_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
+			struct stat statb;
+			char cmd[512];
+#endif	/*WITH_CURL*/
+			char name[NAME_MAX + 1];
+
+			if(tableFind(t, url) == 1) {
+				cli_dbgmsg("URL %s already downloaded\n", url);
+				continue;
+			}
+			/*
+			 * What about foreign character spoofing?
+			 * It would be useful be able to check if url
+			 *	is the same as the text displayed, e.g.
+			 *	<a href="http://dodgy.biz">www.paypal.com</a>
+			 *	but that needs support from HTML normalise
+			 */
+			if(strchr(url, '%') && strchr(url, '@'))
+				cli_warnmsg("Possible URL spoofing attempt noticed, but not yet handled (%s)\n", url);
+
+			if(n == FOLLOWURLS) {
+				cli_warnmsg("URL %s will not be scanned\n", url);
+				break;
+			}
+
+			(void)tableInsert(t, url, 1);
+			cli_dbgmsg("Downloading URL %s to be scanned\n", url);
+			strncpy(name, url, sizeof(name) - 1);
+			name[sizeof(name) - 1] = '\0';
+			for(ptr = name; *ptr; ptr++)
+				if(*ptr == '/')
+					*ptr = '_';
+
+#ifdef	WITH_CURL
+#ifdef	CL_THREAD_SAFE
+			args[n].dir = dir;
+			args[n].url = url;
+			args[n].filename = strdup(name);
+			pthread_create(&tid[n], NULL, getURL, &args[n]);
+#else
+			arg.url = url;
+			arg.dir = dir;
+			arg.filename = name;
+			getURL(&arg);
+#endif
+
+#else	/*!WITH_CURL*/
+			cli_warnmsg("The use of mail-follow-urls without CURL being installed is deprecated\n");
+			/*
+			 * TODO: maximum size and timeouts
+			 */
+			len = sizeof(cmd) - 26 - strlen(dir) - strlen(name);
+#ifdef	CL_DEBUG
+			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 \"%.*s\" >%s/%s", len, url, dir, name);
+#else
+			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 \"%.*s\" >%s/%s 2>/dev/null", len, url, dir, name);
+#endif
+			cmd[sizeof(cmd) - 1] = '\0';
+
+			cli_dbgmsg("%s\n", cmd);
+#ifdef	CL_THREAD_SAFE
+			pthread_mutex_lock(&system_mutex);
+#endif
+			system(cmd);
+#ifdef	CL_THREAD_SAFE
+			pthread_mutex_unlock(&system_mutex);
+#endif
+			snprintf(cmd, sizeof(cmd), "%s/%s", dir, name);
+			if(stat(cmd, &statb) >= 0)
+				if(statb.st_size == 0) {
+					cli_warnmsg("URL %s failed to download\n", url);
+					/*
+					 * Don't bother scanning an empty file
+					 */
+					(void)unlink(cmd);
+				}
+#endif
+			++n;
+		}
+	}
+	tableDestroy(t);
+
+#if	defined(WITH_CURL) && defined(CL_THREAD_SAFE)
+	assert(n <= FOLLOWURLS);
+	cli_dbgmsg("checkURLs: waiting for %d thread(s) to finish\n", n);
+	while(--n >= 0) {
+		pthread_join(tid[n], NULL);
+		free(args[n].filename);
+	}
+#endif
+}
+#else
+static void
+do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs)
+{
+}
+#endif
+
+#else	/*!CL_EXPERIMENTAL*/
+
+#if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
+static void
+checkURLs(message *m, mbox_ctx *mctx, int* rc, int is_html)
 {
 	blob *b = messageToBlob(m, 0);
 	size_t len;
@@ -3866,6 +4128,16 @@ checkURLs(message *m, mbox_ctx* mctx,int *rc,int is_html)
 	html_tag_arg_free(&hrefs);
 }
 
+#else
+
+static void
+checkURLs(message *m, mbox_ctx *mctx, int* rc, int is_html)
+{
+}
+#endif
+#endif /* ! CL_EXPERIMENTAL */
+
+#if defined(FOLLOWURLS) && (FOLLOWURLS>0)
 /*
  * Includes some Win32 patches by Gianluigi Tiesi <sherpya@netfarm.it>
  *
@@ -4020,14 +4292,7 @@ getURL(struct arg *arg)
 	return NULL;
 }
 #endif
-
-#else
-static void
-checkURLs(message *m, mbox_ctx* mctx,int *rc,int is_html)
-{
-}
 #endif
-
 #ifdef HAVE_BACKTRACE
 static void
 sigsegv(int sig)
@@ -4377,7 +4642,7 @@ do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx 
 				} else {
 					if(mctx->ctx->options&CL_SCAN_MAILURL)
 						if(tableFind(mctx->subtypeTable, cptr) == HTML)
-							checkURLs(aMessage, mctx, &rc, 1);
+							checkURLs(aMessage, mctx, rc, 1);
 					messageAddArgument(aMessage,
 						"filename=mixedtextportion");
 				}

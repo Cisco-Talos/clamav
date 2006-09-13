@@ -1,3 +1,8 @@
+Wed Sep 13 22:38:22 BST 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Committed ACAB's merge of Edvin's Phish code,
+  			configure --enable-experimental to use it.
+
 Wed Sep 13 19:41:20 CEST 2006 (acab)
 ------------------------------------
   * libclamav/mbox.c: checkURLs reprototyped to prepare the merge of the
