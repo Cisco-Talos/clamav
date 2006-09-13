@@ -1,3 +1,12 @@
+Thu Sep 14 00:35:56 CEST 2006 (acab)
+------------------------------------
+  * docs: Added preliminary documentation related to Edvin phishing module.
+          Big thanks to Google for the SoC, to Edvin for the very good
+	  work and finally to paste.debian.org for helping with the merge!
+
+  * libclamav: Using CL_EXPERIMENTAL instead of CONFIG_EXPERIMENTAL
+               in suecrypt decryptor
+
 Wed Sep 13 22:38:22 BST 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Committed ACAB's merge of Edvin's Phish code,

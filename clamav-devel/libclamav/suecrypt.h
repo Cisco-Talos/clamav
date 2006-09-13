@@ -17,7 +17,7 @@
  *  MA 02110-1301, USA.
  */
 
-#ifdef CONFIG_EXPERIMENTAL
+#ifdef CL_EXPERIMENTAL
 #ifndef __UNSUE_H
 #define __UNSUE_H
 
