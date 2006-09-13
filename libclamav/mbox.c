@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.328 2006/08/25 10:10:13 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.329 2006/09/13 17:43:57 acab Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -228,7 +228,7 @@ static	message	*do_multipart(message *mainMessage, message **messages, int i, in
 static	int	count_quotes(const char *buf);
 static	bool	next_is_folded_header(const text *t);
 
-static	void	checkURLs(message *m, const char *dir);
+static	void	checkURLs(message *m, mbox_ctx* mctx,int *rc,int is_html);
 #ifdef	WITH_CURL
 struct arg {
 	const char *url;
@@ -1973,7 +1973,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 				 * file and only checkURLs if it's found to be
 				 * clean
 				 */
-				checkURLs(mainMessage, mctx->dir);
+				checkURLs(mainMessage, mctx, &rc, 1);
 			break;
 		case MULTIPART:
 			cli_dbgmsg("Content-type 'multipart' handler\n");
@@ -3703,7 +3703,7 @@ rfc1341(message *m, const char *dir)
 
 #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
 static void
-checkURLs(message *m, const char *dir)
+checkURLs(message *m, mbox_ctx* mctx,int *rc,int is_html)
 {
 	blob *b = messageToBlob(m, 0);
 	size_t len;
@@ -3807,13 +3807,13 @@ checkURLs(message *m, const char *dir)
 
 #ifdef	WITH_CURL
 #ifdef	CL_THREAD_SAFE
-			args[n].dir = dir;
+			args[n].dir = mctx->dir;
 			args[n].url = url;
 			args[n].filename = strdup(name);
 			pthread_create(&tid[n], NULL, getURL, &args[n]);
 #else
 			arg.url = url;
-			arg.dir = dir;
+			arg.dir = mctx->dir;
 			arg.filename = name;
 			getURL(&arg);
 #endif
@@ -3823,11 +3823,11 @@ checkURLs(message *m, const char *dir)
 			/*
 			 * TODO: maximum size and timeouts
 			 */
-			len = sizeof(cmd) - 26 - strlen(dir) - strlen(name);
+			len = sizeof(cmd) - 26 - strlen(mctx->dir) - strlen(name);
 #ifdef	CL_DEBUG
-			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 \"%.*s\" >%s/%s", len, url, dir, name);
+			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 \"%.*s\" >%s/%s", len, url, mctx->dir, name);
 #else
-			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 \"%.*s\" >%s/%s 2>/dev/null", len, url, dir, name);
+			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 \"%.*s\" >%s/%s 2>/dev/null", len, url, mctx->dir, name);
 #endif
 			cmd[sizeof(cmd) - 1] = '\0';
 
@@ -3839,7 +3839,7 @@ checkURLs(message *m, const char *dir)
 #ifdef	CL_THREAD_SAFE
 			pthread_mutex_unlock(&system_mutex);
 #endif
-			snprintf(cmd, sizeof(cmd), "%s/%s", dir, name);
+			snprintf(cmd, sizeof(cmd), "%s/%s", mctx->dir, name);
 			if(stat(cmd, &statb) >= 0)
 				if(statb.st_size == 0) {
 					cli_warnmsg("URL %s failed to download\n", url);
@@ -4023,7 +4023,7 @@ getURL(struct arg *arg)
 
 #else
 static void
-checkURLs(message *m, const char *dir)
+checkURLs(message *m, mbox_ctx* mctx,int *rc,int is_html)
 {
 }
 #endif
@@ -4377,8 +4377,7 @@ do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx 
 				} else {
 					if(mctx->ctx->options&CL_SCAN_MAILURL)
 						if(tableFind(mctx->subtypeTable, cptr) == HTML)
-							checkURLs(aMessage,
-								mctx->dir);
+							checkURLs(aMessage, mctx, &rc, 1);
 					messageAddArgument(aMessage,
 						"filename=mixedtextportion");
 				}

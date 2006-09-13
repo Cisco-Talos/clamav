@@ -1,3 +1,8 @@
+Wed Sep 13 19:41:20 CEST 2006 (acab)
+------------------------------------
+  * libclamav/mbox.c: checkURLs reprototyped to prepare the merge of the
+                      phishing module
+
 Wed Sep 13 17:46:06 CEST 2006 (tk)
 ----------------------------------
   * freshclam/dns.c: try to handle broken dns servers (such as in SpeedTouch
