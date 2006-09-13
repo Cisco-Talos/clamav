@@ -84,6 +84,9 @@
 /* file i/o buffer size */
 #undef FILEBUFF
 
+/* enable workaround for broken DNS servers */
+#undef FRESHCLAM_DNS_FIX
+
 /* use "Cache-Control: no-cache" in freshclam */
 #undef FRESHCLAM_NO_CACHE
 

@@ -1482,6 +1482,7 @@ Optional Features:
   --disable-clamav	  disable test for clamav user/group
   --enable-debug	  enable debug code
   --enable-no-cache	  use "Cache-Control: no-cache" in freshclam
+  --enable-dns-fix	  enable workaround for broken DNS servers (as in SpeedTouch 510)
   --enable-experimental	enable experimental code
   --enable-bigstack	  increase thread stack size
   --disable-gethostbyname_r	  disable support for gethostbyname_r
@@ -5882,7 +5883,7 @@ test "x$enable_libtool_lock" != xno && enable_libtool_lock=yes
 case $host in
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5885 "configure"' > conftest.$ac_ext
+  echo '#line 5886 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -6515,7 +6516,7 @@ chmod -w .
 save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -o out/conftest2.$ac_objext"
 compiler_c_o=no
-if { (eval echo configure:6518: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
+if { (eval echo configure:6519: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
   # The compiler can only warn and ignore the option if not recognized
   # So say no if there are warnings
   if test -s out/conftest.err; then
@@ -8551,7 +8552,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 8554 "configure"
+#line 8555 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -8649,7 +8650,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 8652 "configure"
+#line 8653 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13170,6 +13171,22 @@ if test "$enable_nocache" = "yes"; then
 
 cat >>confdefs.h <<\_ACEOF
 #define FRESHCLAM_NO_CACHE 1
+_ACEOF
+
+fi
+
+# Check whether --enable-dns-fix was given.
+if test "${enable_dns_fix+set}" = set; then
+  enableval=$enable_dns_fix; enable_dnsfix=$enableval
+else
+  enable_dnsfix="no"
+fi
+
+
+if test "$enable_dnsfix" = "yes"; then
+
+cat >>confdefs.h <<\_ACEOF
+#define FRESHCLAM_DNS_FIX 1
 _ACEOF
 
 fi

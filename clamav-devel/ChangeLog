@@ -1,3 +1,10 @@
+Wed Sep 13 17:46:06 CEST 2006 (tk)
+----------------------------------
+  * freshclam/dns.c: try to handle broken dns servers (such as in SpeedTouch
+		     510), the workaround must be enabled during installation
+		     Patch from Arnold Metselaar <arnold.metselaar*planet.nl>
+  * configure: new --enable-dns-fix switch
+
 Wed Sep 13 00:50:40 CEST 2006 (tk)
 ----------------------------------
   * shared/cfgparser.c: fix error path leaks, patch from Mark Pizzolato
