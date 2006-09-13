@@ -17,6 +17,9 @@
  *  MA 02110-1301, USA.
  *
  * $Log: text.c,v $
+ * Revision 1.24  2006/09/13 20:53:50  njh
+ * Added debug
+ *
  * Revision 1.23  2006/07/14 12:13:08  njh
  * Typo
  *
@@ -79,7 +82,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: text.c,v 1.23 2006/07/14 12:13:08 njh Exp $";
+static	char	const	rcsid[] = "$Id: text.c,v 1.24 2006/09/13 20:53:50 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -307,12 +310,17 @@ textToFileblob(text *t, fileblob *fb, int destroy)
 	assert(t != NULL);
 
 	if(fb == NULL) {
+		cli_dbgmsg("textToFileBlob, destroy = %d\n", destroy);
 		fb = fileblobCreate();
 
 		if(fb == NULL)
 			return NULL;
-	} else
+	} else {
+		cli_dbgmsg("textToFileBlob to %s, destroy = %d\n",
+			fileblobGetFilename(fb), destroy);
+
 		fb->ctx = NULL;	/* no need to scan */
+	}
 
 	fb = textIterate(t, addToFileblob, fb, destroy);
 	if(destroy && t->t_next) {
