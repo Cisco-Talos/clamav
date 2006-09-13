@@ -45,7 +45,7 @@
 **
 */
 
-#ifdef CONFIG_EXPERIMENTAL
+#ifdef CL_EXPERIMENTAL
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif

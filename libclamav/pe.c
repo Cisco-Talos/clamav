@@ -819,7 +819,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     }
 
 
-#ifdef CONFIG_EXPERIMENTAL
+#ifdef CL_EXPERIMENTAL
     /* SUE */
     
     if(nsections > 2 && EC32(optional_hdr32.AddressOfEntryPoint) == EC32(section_hdr[nsections - 1].VirtualAddress) && EC32(section_hdr[nsections - 1].SizeOfRawData) > 0x350 && EC32(section_hdr[nsections - 1].SizeOfRawData) < 0x292+0x350+1000) {

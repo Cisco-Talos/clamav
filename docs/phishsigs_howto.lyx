@@ -1,0 +1,943 @@
+#LyX 1.4.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 245
+\begin_document
+\begin_header
+\textclass article
+\language english
+\inputencoding auto
+\fontscheme pslatex
+\graphics default
+\paperfontsize default
+\spacing single
+\papersize a4paper
+\use_geometry false
+\use_amsmath 1
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+Phishing signatures creation HOWTO
+\end_layout
+
+\begin_layout Author
+Török Edwin
+\end_layout
+
+\begin_layout Section
+Database file format
+\end_layout
+
+\begin_layout Standard
+The database file format is common for the whitelist (.wdb), and domainlist
+ (.pdb), and it consists of (multiple) lines of form:
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Flags\InsetSpace ~
+RealURL\InsetSpace ~
+DisplayedURL
+\end_layout
+
+\begin_layout Itemize
+Where 
+\noun on
+Flags
+\noun default
+ is:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+an (optional) character : 
+\end_layout
+
+\begin_deeper
+\begin_layout Description
+R regex, has to match entire url, see section 
+\end_layout
+
+\begin_layout Description
+H has to match the host part of url only (a simple pattern, i.e.
+ it is matched literally)
+\end_layout
+
+\begin_layout Description
+no\InsetSpace ~
+character matches the entire url, but as a simple pattern (non-regex)
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+followed by an (optional) 3-digit hexadecimal number representing flags
+ that should be filtered.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+flag filtering only makes sense in .pdb files, (however clamav won't complain
+ if you put flags in .wdb files, it just won't use them)
+\end_layout
+
+\begin_layout Itemize
+for details on how to construct a flag number see section 
+\begin_inset LatexCommand \vref{sec:Flags}
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Itemize
+
+\noun on
+RealURL 
+\noun default
+is the URL the user is sent to
+\end_layout
+
+\begin_layout Itemize
+
+\noun on
+displayedURL
+\noun default
+ is the URL description displayed to the user, that is where it is 
+\emph on
+claimed
+\emph default
+ they are sent, the most obvious example is that of an html anchor (<a>tag):
+ its href attribute is the 
+\noun on
+realURL
+\noun default
+, and its contents is the 
+\noun on
+displayedURL
+\end_layout
+
+\begin_layout Itemize
+see section 
+\begin_inset LatexCommand \vref{sub:Extraction-of-realURL,}
+
+\end_inset
+
+ for more details on what 
+\noun on
+realURL/displayedURL
+\noun default
+ is
+\end_layout
+
+\begin_layout Standard
+Note: The spaces are mandatory, and empty lines are skipped.
+\end_layout
+
+\begin_layout Standard
+If any of the lines of daily.wdb/daily.pdb don't conform to the above file
+ format, the loading of the file shall fail, and whitelist/domainlist feature
+ will be disabled.
+ If the loading of the whitelist fails, the phishing checks will be disabled
+ entirely.
+\end_layout
+
+\begin_layout Standard
+Therefore it is important to test the daily.wdb/daily.pdb before packing it
+ into daily.cvd!
+\end_layout
+
+\begin_layout Subsection
+How matching works
+\end_layout
+
+\begin_layout Subsubsection
+RealURL, displayedURL concatenation
+\begin_inset LatexCommand \label{sub:RealURL,-displayedURL-concatenation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The phishing detection module processes pairs of realURL/displayedURL, and
+ the matching against daily.wdb/daily.pdb is done as follows: the realURL
+ is concatenated with a space, and with the displayedURL, then that 
+\emph on
+line 
+\emph default
+is matched against the lines in daily.wdb/daily.pdb
+\end_layout
+
+\begin_layout Standard
+So if you have a line like
+\end_layout
+
+\begin_layout Standard
+
+\shape italic
+\InsetSpace ~
+www.google.ro\InsetSpace ~
+www.google.com
+\end_layout
+
+\begin_layout Standard
+and a href like: 
+\emph on
+<a href=
+\begin_inset Quotes erd
+\end_inset
+
+http://www.google.ro
+\begin_inset Quotes erd
+\end_inset
+
+>www.google.com</a>, 
+\emph default
+then it will match, but: 
+\emph on
+<a href=
+\begin_inset Quotes erd
+\end_inset
+
+http://images.google.com
+\begin_inset Quotes erd
+\end_inset
+
+>www.google.com</a>
+\emph default
+ will not match.
+\end_layout
+
+\begin_layout Standard
+If you use the 
+\series bold
+\noun on
+H
+\noun default
+ 
+\series default
+flag, then the 2nd href will match too.
+\end_layout
+
+\begin_layout Subsubsection
+What happens when a match is found
+\end_layout
+
+\begin_layout Standard
+In the case of the whitelist, a match means that the realURL/displayedURL
+ combination is considered 
+\noun on
+clean
+\noun default
+, and no further checks are performed on it.
+\end_layout
+
+\begin_layout Standard
+In the case of the domainlist, a match means that the realURL/displayedURL
+ is going to be checked for phishing attempts.
+ This is only done if you don't run clamav with the 
+\emph on
+alldomains
+\emph default
+ option (since then all urls are checked).
+ Furthermore you can restrict what checks are to be performed by specifying
+ the 3-digit hexnumber.
+\end_layout
+
+\begin_layout Subsubsection
+Extraction of 
+\noun on
+realURL
+\noun default
+, 
+\noun on
+displayedURL
+\noun default
+ from HTML tags
+\begin_inset LatexCommand \label{sub:Extraction-of-realURL,}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The html parser extracts pairs of 
+\noun on
+realURL
+\noun default
+/
+\noun on
+displayedURL
+\noun default
+ based on the following rules:
+\end_layout
+
+\begin_layout Description
+a (anchor) the 
+\emph on
+href
+\emph default
+ is the 
+\noun on
+realURL
+\noun default
+, its 
+\emph on
+contents
+\emph default
+ is the 
+\noun on
+displayedURL
+\end_layout
+
+\begin_deeper
+\begin_layout Description
+contents is the tag-stripped contents of the <a> tags, so for example <b>
+ tags are stripped (but not their contents)
+\end_layout
+
+\begin_layout Standard
+nesting another <a> tag withing an <a> tag (besides being invalid html)
+ is treated as a </a><a..
+\end_layout
+
+\end_deeper
+\begin_layout Description
+form the 
+\emph on
+action 
+\emph default
+attribute is the 
+\noun on
+realURL
+\noun default
+, and a nested <a> tag is the 
+\noun on
+displayedURL
+\end_layout
+
+\begin_layout Description
+img/area if nested within an
+\emph on
+ <a>
+\emph default
+ tag, the 
+\noun on
+realURL
+\noun default
+ is the 
+\emph on
+href
+\emph default
+ of the a tag, and the 
+\emph on
+src/dynsrc/area
+\emph default
+ is the 
+\noun on
+displayedURL
+\noun default
+ of the img 
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+if nested withing a 
+\emph on
+form
+\emph default
+ tag, then the action attribute of the 
+\emph on
+form
+\emph default
+ tag is the 
+\noun on
+realURL
+\noun default
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Description
+iframe if nested withing an 
+\emph on
+<a>
+\emph default
+ tag the 
+\emph on
+src
+\emph default
+ attribute is the displayedURL, and the 
+\emph on
+href
+\emph default
+ of its parent
+\emph on
+ a
+\emph default
+ tag is the 
+\noun on
+realURL
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+if nested withing a 
+\emph on
+form
+\emph default
+ tag, then the action attribute of the 
+\emph on
+form
+\emph default
+ tag is the 
+\noun on
+realURL
+\end_layout
+
+\end_deeper
+\begin_layout Subsection
+Simple patterns
+\begin_inset LatexCommand \label{sec:Simple-patterns}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Simple patterns are matched literally, i.e.
+ if you say: www.google.com, it is going to match www.google.com, and only that.
+ The .
+ character has no special meaning (see the section on regexes 
+\begin_inset LatexCommand \vref{sec:Regular-expressions}
+
+\end_inset
+
+ for how the .
+ character behaves there)
+\end_layout
+
+\begin_layout Subsection
+Regular expressions
+\begin_inset LatexCommand \label{sec:Regular-expressions}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+POSIX regular expressions are supported, and you can consider that internally
+ it is wrapped by 
+\emph on
+^
+\emph default
+, and 
+\emph on
+$.
+ 
+\emph default
+In other words, this means that the regular expression has to match the
+ entire concatenated (see section 
+\begin_inset LatexCommand \vref{sub:RealURL,-displayedURL-concatenation}
+
+\end_inset
+
+ for details on concatenation) url.
+\end_layout
+
+\begin_layout Standard
+It is recomended that you read section 
+\begin_inset LatexCommand \vref{sec:Introduction-to-regular}
+
+\end_inset
+
+ to learn how to write regular expressions, and then come back and read
+ this for hints.
+\end_layout
+
+\begin_layout Standard
+Be advised that clamav contains an internal, very basic regex matcher to
+ reduce the load on the regex matching core.
+ Thus it is recomended that you avoid using regex syntax not supported by
+ it at the very beginning of regexes (at least the first few characters).
+\end_layout
+
+\begin_layout Standard
+Currently the clamav regex matcher supports:
+\end_layout
+
+\begin_layout Itemize
+.
+ (dot) character
+\end_layout
+
+\begin_layout Itemize
+
+\backslash
+ (escaping special characters)
+\end_layout
+
+\begin_layout Itemize
+| (pipe) alternatives
+\end_layout
+
+\begin_layout Itemize
+[] (character classes)
+\end_layout
+
+\begin_layout Itemize
+() (paranthesis for grouping, but no group extraction is performed)
+\end_layout
+
+\begin_layout Itemize
+other non-special characters
+\end_layout
+
+\begin_layout Standard
+Thus the following are not supported:
+\end_layout
+
+\begin_layout Itemize
++ repetition
+\end_layout
+
+\begin_layout Itemize
+* repetition
+\end_layout
+
+\begin_layout Itemize
+{} repetition
+\end_layout
+
+\begin_layout Itemize
+backreferences
+\end_layout
+
+\begin_layout Itemize
+lookaround
+\end_layout
+
+\begin_layout Itemize
+other 
+\begin_inset Quotes eld
+\end_inset
+
+advanced
+\begin_inset Quotes erd
+\end_inset
+
+ features not listed in the supported list ;)
+\end_layout
+
+\begin_layout Standard
+This however shouldn't discourage you from using the 
+\begin_inset Quotes eld
+\end_inset
+
+not directly supported features 
+\begin_inset Quotes eld
+\end_inset
+
+, because if the internal engine encounters unsupported syntax, it passes
+ it on to the POSIX regex core (beginning from the first unsupported token,
+ everything before that is still processed by the internal matcher).
+ An example might make this more clear:
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+www
+\backslash
+.google
+\backslash
+.(com|ro|it) www
+\backslash
+.([a-zA-Z])+
+\backslash
+.google
+\backslash
+.com
+\end_layout
+
+\begin_layout Standard
+Everything till 
+\emph on
+([a-zA-Z])+
+\emph default
+ is processed internally, that paranthesis (and everything beyond) is processed
+ by the posix core.
+\end_layout
+
+\begin_layout Subsection
+Flags
+\begin_inset LatexCommand \label{sec:Flags}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Flags are a binary OR of the following numbers:
+\end_layout
+
+\begin_layout Description
+HOST_SUFFICIENT 1
+\end_layout
+
+\begin_layout Description
+DOMAIN_SUFFICIENT 2
+\end_layout
+
+\begin_layout Description
+DO_REVERSE_LOOKUP 4
+\end_layout
+
+\begin_layout Description
+CHECK_REDIR 8
+\end_layout
+
+\begin_layout Description
+CHECK_SSL 16 
+\end_layout
+
+\begin_layout Description
+CHECK_CLOAKING 32
+\end_layout
+
+\begin_layout Description
+CLEANUP_URL 64 
+\end_layout
+
+\begin_layout Description
+CHECK_DOMAIN_REVERSE 128 
+\end_layout
+
+\begin_layout Description
+CHECK_IMG_URL 256 
+\end_layout
+
+\begin_layout Description
+DOMAINLIST_REQUIRED 512 
+\end_layout
+
+\begin_layout Standard
+The names of the constants are self-explanatory.
+\end_layout
+
+\begin_layout Standard
+These constants are defined in libclamav/phishcheck.h, you can check there
+ for the latest flags.
+\end_layout
+
+\begin_layout Standard
+There is a default set of flags that are enabled, these are currently: (CLEANUP_
+URL|DOMAIN_SUFFICIENT|CHECK_SSL|CHECK_CLOAKING|DOMAINLIST_REQUIRED|CHECK_IMG_URL
+), ssl checking is performed only for a tags currently.
+\end_layout
+
+\begin_layout Standard
+You must decide for each line in the domainlist if you want to filter any
+ flags (that is you don't want certain checks to be done), and then calculate
+ the binary OR of those constants, and then convert it into a 3-digit hexnumber.
+ For example you devide that domain_sufficient shouldn't be used for ebay.com,
+ and you don't want to check images either, so you come up with this flag
+ number: 
+\begin_inset Formula $2|256\Rightarrow$
+\end_inset
+
+258
+\begin_inset Formula $(decimal)\Rightarrow102(hexadecimal)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+So you add this line to daily.wdb:
+\end_layout
+
+\begin_layout Standard
+R102\InsetSpace ~
+www.ebay.com\InsetSpace ~
+.+
+\end_layout
+
+\begin_layout Section
+Introduction to regular expressions
+\begin_inset LatexCommand \label{sec:Introduction-to-regular}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Recomended reading:
+\end_layout
+
+\begin_layout Itemize
+http://www.regular-expressions.info/quickstart.html
+\end_layout
+
+\begin_layout Itemize
+http://www.regular-expressions.info/tutorial.html
+\end_layout
+
+\begin_layout Itemize
+regex(7) man-page: http://www.tin.org/bin/man.cgi?section=7&topic=regex
+\end_layout
+
+\begin_layout Subsection
+Special characters
+\end_layout
+
+\begin_layout Description
+[ the opening square bracket - it marks the beginning of a character class,
+ see section
+\begin_inset LatexCommand \vref{sub:Character-classes}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+
+\backslash
+ the backslash - escapes special characters, see section 
+\begin_inset LatexCommand \vref{sub:Escaping}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+\i \^{ }
+ the caret - matches the beginning of a line (not needed in clamav regexes,
+ this is implied)
+\end_layout
+
+\begin_layout Description
+$ the dollar sign - matches the end of a line (not needed in clamav regexes,
+ this is implied)
+\end_layout
+
+\begin_layout Description
+\i \.{ }
+ the period or dot - matches 
+\emph on
+any
+\emph default
+ character
+\end_layout
+
+\begin_layout Description
+| the vertical bar or pipe symbol - matches either of the token on its left
+ and right side, see section
+\begin_inset LatexCommand \vref{sub:Alternation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+? the question mark - matches optionally the left-side token, see section
+\begin_inset LatexCommand \vref{sub:Optional-matching,-and}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+* the asterisk or star - matches 0 or more occurences of the left-side token,
+ see section 
+\begin_inset LatexCommand \vref{sub:Optional-matching,-and}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
++ the plus sign - matches 1 or more occurences of the left-side token, see
+ section 
+\begin_inset LatexCommand \vref{sub:Optional-matching,-and}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+( the opening round bracket - \i \c{m}
+arks beginning of a group, see section 
+\begin_inset LatexCommand \vref{sub:Groups}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+) the closing round bracket - marks end of a group, see section
+\begin_inset LatexCommand \vref{sub:Groups}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Character classes
+\begin_inset LatexCommand \label{sub:Character-classes}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Escaping
+\begin_inset LatexCommand \label{sub:Escaping}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Escaping has two purposes: 
+\end_layout
+
+\begin_layout Itemize
+it allows you to actually match the special characters themselves, for example
+ to match the literal 
+\emph on
++
+\emph default
+, you would write 
+\emph on
+
+\backslash
++
+\end_layout
+
+\begin_layout Itemize
+it also allows you to match non-printable characters, such as the tab (
+\emph on
+
+\backslash
+t
+\emph default
+), newline (
+\emph on
+
+\backslash
+n
+\emph default
+), ..
+\end_layout
+
+\begin_layout Standard
+However since non-printable characters are not valid inside an url, you
+ won't have a reason to use them.
+\end_layout
+
+\begin_layout Subsection
+Alternation
+\begin_inset LatexCommand \label{sub:Alternation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Optional matching, and repetition
+\begin_inset LatexCommand \label{sub:Optional-matching,-and}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Groups
+\begin_inset LatexCommand \label{sub:Groups}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Groups are usually used together with repetition, or alternation.
+ For example: 
+\emph on
+(com|it)+
+\emph default
+ means: match 1 or more repetitions of 
+\emph on
+com
+\emph default
+ or 
+\emph on
+it,
+\emph default
+ that is it matches: com, it, comcom, comcomcom, comit, itit, ititcom,...
+ you get the idea.
+\end_layout
+
+\begin_layout Standard
+Groups can also be used to extract substring, but this is not supported
+ by the clam engine, and not needed either in this case.
+\end_layout
+
+\begin_layout Section
+Hints and recomandations
+\end_layout
+
+\begin_layout Section
+Examples
+\end_layout
+
+\begin_layout Standard
+
+\end_layout
+
+\end_body
+\end_document
