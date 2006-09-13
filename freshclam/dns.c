@@ -44,7 +44,7 @@
 char *txtquery(const char *domain, unsigned int *ttl)
 {
 	unsigned char answer[PACKETSZ], host[128], *pt, *txt;
-	int len, exp, cttl, size, txtlen, type;
+	int len, exp, cttl, size, txtlen, type, qtype;
 
 
     if(res_init() < 0) {
@@ -55,9 +55,24 @@ char *txtquery(const char *domain, unsigned int *ttl)
     logg("*Querying %s\n", domain);
 
     memset(answer, 0, PACKETSZ);
-    if((len = res_query(domain, C_IN, T_TXT, answer, PACKETSZ)) < 0) {
+    qtype = T_TXT;
+    if((len = res_query(domain, C_IN, qtype, answer, PACKETSZ)) < 0) {
+#ifdef FRESHCLAM_DNS_FIX
+	/*  The DNS server in the SpeedTouch Alcatel 510 modem can't
+	 *  handle a TXT-query, but it can resolve an ANY-query to a
+	 *  TXT-record, so we try an ANY-query now.  The thing we try
+	 *  to resolve normally only has a TXT-record anyway.  
+	 */
+	memset(answer, 0, PACKETSZ);
+	qtype=T_ANY;
+	if((len = res_query(domain, C_IN, qtype, answer, PACKETSZ)) < 0) {
+	    logg("^Can't query %s\n", domain);
+	    return NULL;
+	}
+#else
 	logg("^Can't query %s\n", domain);
 	return NULL;
+#endif
     }
 
     pt = answer + sizeof(HEADER);
@@ -70,7 +85,7 @@ char *txtquery(const char *domain, unsigned int *ttl)
     pt += exp;
 
     GETSHORT(type, pt);
-    if(type != T_TXT) {
+    if(type != qtype) {
 	logg("^Broken DNS reply.\n");
 	return NULL;
     }
