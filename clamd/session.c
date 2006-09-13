@@ -202,8 +202,10 @@ static int multiscan(const char *dirname, const struct cl_node *root, const stru
 					return -1;
 				    }
 
-#ifndef C_WINDOWS
 				    while(!multi_pool->thr_idle) /* non-critical */
+#ifdef C_WINDOWS
+					Sleep(1);
+#else
 					usleep(200);
 #endif
 				}
