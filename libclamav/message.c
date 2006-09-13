@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.184 2006/08/29 07:41:59 njh Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.185 2006/09/13 20:55:02 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -857,8 +857,14 @@ messageAddStr(message *m, const char *data)
 	else {
 		assert(m->body_last != NULL);
 		if((data == NULL) && (m->body_last->t_line == NULL))
-			/* don't save two blank lines in sucession */
-			return 1;
+			/*
+			 * Although this would save time and RAM, some
+			 * phish signatures have been built which need the
+			 * blank lines
+			 */
+			if(messageGetMimeType(m) != TEXT)
+				/* don't save two blank lines in sucession */
+				return 1;
 
 		m->body_last->t_next = (text *)cli_malloc(sizeof(text));
 		if(m->body_last->t_next == NULL) {
@@ -1410,10 +1416,12 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 					messageAddArgument(m, "name=attachment");
 				} else if(enctype == NOENCODING)
 					/*
-					 * Some virus attachments don't say how they've
-					 * been encoded. We assume base64
+					 * Some virus attachments don't say how
+					 * they've been encoded. We assume
+					 * base64.
 					 *
-					 * FIXME: don't do this if it's a fall through from uuencode
+					 * FIXME: don't do this if it's a fall
+					 * through from uuencode
 					 */
 					messageSetEncoding(m, "base64");
 			}
