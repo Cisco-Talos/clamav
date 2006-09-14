@@ -1,6 +1,10 @@
+Thu Sep 14 21:07:43 CEST 2006 (tk)
+----------------------------------
+  * clamd: some database settings were being lost after reload
+
 Thu Sep 14 20:53:28 CEST 2006 (acab)
 ------------------------------------
-  * clmad: phishing merge complete!
+  * clamd: phishing merge complete!
 
 Thu Sep 14 19:36:25 CEST 2006 (acab)
 ------------------------------------
