@@ -48,6 +48,10 @@ struct cfgoption cfg_options[] = {
     {"ScanMail", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"MailFollowURLs", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"DetectPhishing", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
+#ifdef CL_EXPERIMENTAL
+    {"PhishingScanURLs",OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
+    {"PhishingScanAllDomains", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+#endif
     {"AlgorithmicDetection", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"ScanHTML", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"ScanOLE2", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},

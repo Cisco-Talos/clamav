@@ -252,6 +252,10 @@ void help(void)
     mprintf("\n");
     mprintf("    --no-mail                            Disable mail file support\n");
     mprintf("    --no-phishing                        Disable phishing detection\n");
+#ifdef CL_EXPERIMENTAL
+    mprintf("    --no-phishing-scan-urls              Disable url-based phishing detection\n");
+    mprintf("    --phish-scan-alldomains              Enable phishing detection for all domains (might lead to false positives!)\n");
+#endif
     mprintf("    --no-algorithmic                     Disable algorithmic detection\n");
     mprintf("    --no-pe                              Disable PE analysis\n");
     mprintf("    --no-ole2                            Disable OLE2 support\n");

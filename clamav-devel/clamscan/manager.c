@@ -92,6 +92,13 @@ int scanmanager(const struct optstruct *opt)
     if(opt_check(opt, "no-phishing"))
 	dboptions |= CL_DB_NOPHISHING;
 
+#ifdef CL_EXPERIMENTAL
+    if(opt_check(opt,"no-phishing-scan-urls"))
+	options |= CL_SCAN_NOPHISHING;
+    if(opt_check(opt,"phish-scan-alldomains"))
+	options |= CL_PHISH_NO_DOMAINLIST;
+#endif
+
     if(opt_check(opt, "dev-ac-only")) {
 	dboptions |= CL_DB_ACONLY;
 
