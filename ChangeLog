@@ -1,3 +1,7 @@
+Thu Sep 14 21:36:51 CEST 2006 (acab)
+------------------------------------
+  * docs: add phishing information to manpages
+
 Thu Sep 14 21:28:14 CEST 2006 (acab)
 ------------------------------------
   * contrib/phishing: Misc files related to the phishing code
