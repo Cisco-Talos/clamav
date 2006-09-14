@@ -1,3 +1,7 @@
+Thu Sep 14 10:01:21 BST 2006 (njh)
+----------------------------------
+  * libclamav:	Phixed some buffer underruns and NULL pointers
+
 Thu Sep 14 09:12:03 BST 2006 (trog)
 -----------------------------------
   * libclamav/unrar/unrar.c, unrar20.c, unrarppm.c: improve handling of
@@ -15,7 +19,7 @@ Thu Sep 14 00:35:56 CEST 2006 (acab)
 Wed Sep 13 22:38:22 BST 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Committed ACAB's merge of Edvin's Phish code,
-  			configure --enable-experimental to use it.
+			configure --enable-experimental to use it.
 
 Wed Sep 13 19:41:20 CEST 2006 (acab)
 ------------------------------------

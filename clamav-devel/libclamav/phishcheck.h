@@ -77,7 +77,6 @@ void free_if_needed(struct url_check* url);
 void get_host(struct string* dest,const char* URL,int isReal,int* phishy);
 int isCountryCode(const char* str);
 int isTLD(const char* str,int len);
-char* rfind(char* start,char c,size_t len);
 void get_domain(struct string* dest,struct string* host);
 int ip_reverse(struct url_check* urls,int isReal);
 void reverse_lookup(struct url_check* url,int isReal);
