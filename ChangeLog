@@ -1,3 +1,7 @@
+Thu Sep 14 19:07:21 CEST 2006 (acab)
+------------------------------------
+  * libclamav/mbox.c: Fixing a fragment of code left behind during the merge
+
 Thu Sep 14 10:01:21 BST 2006 (njh)
 ----------------------------------
   * libclamav:	Phixed some buffer underruns and NULL pointers
