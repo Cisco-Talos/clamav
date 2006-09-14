@@ -303,6 +303,13 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, const struc
     logg("*Listening daemon: PID: %d\n", getpid());
     max_threads = cfgopt(copt, "MaxThreads")->numarg;
 
+#ifdef CL_EXPERIMENTAL
+    if(!cfgopt(copt,"PhishingScanURLs")->enabled)
+	options |= CL_SCAN_NOPHISHING;
+    if(cfgopt(copt,"PhishingScanAllDomains")->enabled)
+	options |= CL_PHISH_NO_DOMAINLIST;
+#endif
+
     if(cfgopt(copt, "ScanArchive")->enabled || cfgopt(copt, "ClamukoScanArchive")->enabled) {
 
 	/* set up limits */
