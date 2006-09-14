@@ -229,6 +229,19 @@ With this option enabled ClamAV will try to detect phishing attempts.
 .br 
 Default: enabled
 .TP 
+\fBPhishingScanAllDomains\fR
+Use phishing detection for all domains (not just those listed in database).
+It is not recommended to turn this option on, it is meant for internal use.
+Requires --enable-experimntal configure option.
+.br
+Default: disabled
+.TP
+\fBPhishingScanURLs\fR
+Scan urls found in mails for phishing attempts.
+Requires --enable-experimental configure option.
+.br
+Default: enabled
+.TP
 \fBScanArchive\fR
 Enable archive scanning.
 .br 
