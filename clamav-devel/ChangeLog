@@ -1,3 +1,8 @@
+Fri Sep 15 00:52:48 CEST 2006 (tk)
+----------------------------------
+  * freshclam: fix compilation error on systems without SO_ERROR defined,
+	       patch from Everton Marques <everton.marques*gmail.com>
+
 Fri Sep 15 00:42:27 CEST 2006 (tk)
 ----------------------------------
   * clamd/server-th.c: minor cleanup

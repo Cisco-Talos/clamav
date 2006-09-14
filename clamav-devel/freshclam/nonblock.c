@@ -40,6 +40,8 @@
 
 #include "shared/output.h"
 
+#ifdef SO_ERROR
+
 #ifndef timercmp
 # define timercmp(a, b, cmp)          \
   (((a)->tv_sec == (b)->tv_sec) ?     \
@@ -290,3 +292,4 @@ ssize_t wait_recv(int sock, void *buf, size_t len, int flags, int secs)
 	return ret;
 }
 
+#endif /* SO_ERROR */
