@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.2  2006/09/14 08:59:37  njh
+ *  Fixed some NULL pointers
+ *
  *  Revision 1.1  2006/09/12 19:38:39  acab
  *  Phishing module merge - libclamav
  *
@@ -68,7 +71,7 @@
  *  Regex bracket handling update.
  *  Better regex paranthesized & alternate expression handling.
  *
- 
+
 case CL_PHISH_HOST_NOT_LISTED:
  return "Host not listed in .pdb -> not checked";*  Revision 1.19  2006/07/31 20:12:30  edwin
  *  Preliminary support for domain databases (domains to check by phishmodule)
@@ -128,16 +131,16 @@ case CL_PHISH_HOST_NOT_LISTED:
 
 #define PHISHY_USERNAME_IN_URL 1
 #define PHISHY_NUMERIC_IP      2
-#define REAL_IS_MAILTO         4
+#define REAL_IS_MAILTO		 4
 /* this is just a flag, so that the displayed url will be parsed as mailto too, for example
  * <a href='mailto:somebody@yahoo.com'>to:somebody@yahoo.com</a>*/
-#define DOMAIN_LISTED          8
-#define PHISHY_CLOAKED_NULL    16
-#define PHISHY_HEX_URL         32
+#define DOMAIN_LISTED		 8
+#define PHISHY_CLOAKED_NULL	16
+#define PHISHY_HEX_URL		32
 
 
 /*
-* Phishing design documentation, 
+* Phishing design documentation,
 (initially written at http://wiki.clamav.net/index.php/phishing_design as discussed with aCaB)
 
 *Warning*: if flag *--phish-scan-alldomains* (or equivalent clamd/clamav-milter config option) isn't given, then phishing scanning is done only for domains listed in daily.pdb.
@@ -212,6 +215,7 @@ For the Whitelist(.wdb)/Domainlist(.pdb) format see regex_list.c (search for Fla
  *
  */
 static char empty_string[]="";
+static	char	*rfind(const char *start, char c, size_t len);
 
 void url_check_init(struct url_check* urls)
 {
@@ -229,7 +233,7 @@ void url_check_init(struct url_check* urls)
 
 inline void string_free(struct string* str)
 {
-	for(;;){ 
+	for(;;){
 		str->refcount--;
 		if(!str->refcount) {
 			if(str->ref)/* don't free, this is a portion of another string */
@@ -240,7 +244,7 @@ inline void string_free(struct string* str)
 			}
 		}
 		else break;
-	} 
+	}
 }
 
 /* always use the string_assign when assigning to a string, this makes sure the old one's refcount is decremented*/
@@ -355,7 +359,7 @@ void get_host(struct string* dest,const char* URL,int isReal,int* phishy)
 			/* it is not required to use mailto: in the displayed url, they might use to:, or whatever */
 			end = URL+strlen(URL)+1;
 			start = URL + strcspn(URL,": ")+1;
-			if (start==end) 
+			if (start==end)
 				start = URL;
 			ismailto = 1;
 		}
@@ -371,14 +375,23 @@ void get_host(struct string* dest,const char* URL,int isReal,int* phishy)
 			else ismailto=2;/*no-protocol, might be mailto, @ is no problem*/
 		}
 	}
-	else start += 3;/* :// */
-	
-	if(!ismailto || !isReal) { 
-		const char* realhost;
+	else
+		start += 3;	/* :// */
+
+	if(!ismailto || !isReal) {
+		const char *realhost;
+
 		do {
-			end	 = start+strcspn(start,":/?");
+			end  = start + strcspn(start,":/?");
 			realhost = strchr(start,'@');
-			if(start!=end && realhost>end) realhost = NULL;/*don't check beyond end of hostname*/
+
+			if(realhost == NULL)
+				break;
+
+			if(start!=end && realhost>end)
+				/*don't check beyond end of hostname*/
+				realhost = NULL;
+
 			if(realhost) {
 				const char* tld = strrchr(realhost,'.');
 				if(tld && isTLD(tld,tld-realhost-1))
@@ -388,13 +401,13 @@ void get_host(struct string* dest,const char* URL,int isReal,int* phishy)
 			}
 		} while(realhost);/*skip over multiple @ characters, text following last @ character is the real host*/
 	}
-	else 
+	else
 	if (ismailto && isReal)
 		*phishy |= REAL_IS_MAILTO;
 
 	if(!end) {
 		end  = start+strcspn(start,":/?");/*especially important for mailto:somebody@yahoo.com?subject=...*/
-		if(!end) 
+		if(!end)
 			end  = start + strlen(start);
 	}
 
@@ -440,11 +453,17 @@ int isTLD(const char* str,int len)
 /*
  * memrchr isn't standard, so I use this
  */
-char* rfind(char* start,char c,size_t len)
+static char *
+rfind(const char *start, char c, size_t len)
 {
-	char* p;
-	for(p=start+len;p>=start && *p!=c;p--);
-	return p<start ? NULL : p;
+	const char *p;
+
+	if(start == NULL)
+		return NULL;
+
+	for(p = start + len; (p >= start) && (*p != c); p--)
+		;
+	return (p < start) ? NULL : p;
 }
 
 void get_domain(struct string* dest,struct string* host)
@@ -522,7 +541,7 @@ int isNumeric(const char* host)
 	/* 1.2.3.4 -> 7*/
 	/* 127.127.127.127 -> 15*/
 	if(len<7 || len>15)
-		return 0;	
+		return 0;
 	sscanf(host,"%d.%d.%d.%d%n",&a,&b,&c,&d,&n);
 	if(n==len)
 		if(a>=0 && a<=256 && b>=0 && b<=256 && c>=0 && c<=256 && d>=0 && d<=256)
@@ -545,13 +564,19 @@ static inline char hex2int(const unsigned char* src)
 }
 
 
-/* deletes @what from the string @begin. 
+/* deletes @what from the string @begin.
  * @what_len: length of @what, excluding the terminating \0 */
-static void str_hex_to_char(char** begin,const char** end)
+static void
+str_hex_to_char(char **begin, const char **end)
 {
-	char* sbegin = *begin;
-	const char* str_end = *end;
+	char *sbegin = *begin;
+	const char *str_end = *end;
+
 	assert(str_end>sbegin);
+
+	if(strlen(sbegin) <= 2)
+		return;
+
 	/* convert leading %xx*/
 	if (sbegin[0] == '%') {
 		sbegin[2] = hex2int((unsigned char*)sbegin+1);
@@ -570,30 +595,49 @@ static void str_hex_to_char(char** begin,const char** end)
 	}
 	*end = str_end;
 }
-/* deletes @what from the string @begin. 
- * @what_len: length of @what, excluding the terminating \0 */
-static void str_strip(char** begin,const char** end,const char* what,size_t what_len)
+
+/*
+ * deletes @what from the string @begin.
+ * @what_len: length of @what, excluding the terminating \0
+ */
+static void
+str_strip(char **begin, const char **end, const char *what, size_t what_len)
 {
-	char* sbegin = *begin;
-	const char* str_end = *end;
-	const char* str_end_what;
+	char *sbegin = *begin;
+	const char *str_end = *end;
+	const char *str_end_what;
 	size_t cmp_len = what_len;
-	assert(str_end>sbegin);
-	if(str_end < sbegin + what_len)
+
+	if(begin == NULL)
 		return;
+
+	assert(str_end > sbegin);
+
+	/*if(str_end < (sbegin + what_len))
+		return;*/
+	if(strlen(sbegin) < what_len)
+		return;
+
 	/* strip leading @what */
 	while(cmp_len && !strncmp(sbegin,what,cmp_len)) {
 		sbegin += what_len;
+
 		if(cmp_len > what_len)
 			cmp_len -= what_len;
-		else cmp_len = 0;
+		else
+			cmp_len = 0;
 	}
+
 	/* strip trailing @what */
-	str_end_what = str_end - what_len;
-	while(str_end_what>sbegin && !strncmp(str_end_what,what,what_len)) {
-		str_end -= what_len;
-		str_end_what -= what_len;
+	if(what_len <= strlen(str_end)) {
+		str_end_what = str_end - what_len;
+		while((str_end_what > sbegin) &&
+		      (strncmp(str_end_what, what, what_len) == 0)) {
+			str_end -= what_len;
+			str_end_what -= what_len;
+		}
 	}
+
 	*begin = sbegin++;
 	while(sbegin+what_len < str_end) {
 		while(sbegin+what_len<str_end && !strncmp(sbegin,what,what_len)) {
@@ -637,7 +681,7 @@ static inline void str_make_lowercase(char* str,size_t len)
 static inline void clear_msb(char* begin)
 {
 	for(;*begin;begin++)
-		*begin = fix32((*begin)&0x7f);	
+		*begin = fix32((*begin)&0x7f);
 }
 
 /*
@@ -653,48 +697,64 @@ static inline void clear_msb(char* begin)
  * <a href="www.yahoo.com">Check out yahoo.com</a>
  * Here we add a ., so we get: check.out.yahoo.com (it won't trigger)
  *
- * Rule for adding .: if substring from right contains dot, then add dot, otherwise strip space
+ * Rule for adding .: if substring from right contains dot, then add dot,
+ *	otherwise strip space
  *
  */
-static inline void str_fixup_spaces(char **begin,const char** end)
+static inline void
+str_fixup_spaces(char **begin, const char **end)
 {
-	char* space = strchr(*begin,' ');
+	char *space = strchr(*begin, ' ');
+
+	if(space == NULL)
+		return;
+
 	/* strip any number of spaces after / */
-	while(space>*begin && space[-1]=='/' && space[0]==' ' && space<*end) {
-		memmove(space,space+1,*end-space+1);
+	while((space > *begin) && (space[-1] == '/') && (space[0] == ' ') && (space < *end)) {
+		memmove(space, space+1, *end-space+1);
 		(*end)--;
 	}
 
-	for(space = rfind(*begin,' ',*end-*begin);space && space[0]!='.' && space<*end;space++) {}
+	for(space = rfind(*begin,' ',*end-*begin);space && space[0]!='.' && space<*end;space++)
+		;
 	if(space && space[0]=='.')
 		str_replace(*begin,*end,' ','.');
-	else 
+	else
 		str_strip(begin,end," ",1);
 }
 
 /* allocates memory */
-void cleanupURL(struct string* URL,int isReal)
+void
+cleanupURL(struct string *URL, int isReal)
 {
-	char* begin = URL->data;
-	const char* end;
+	char *begin = URL->data;
+	const char *end;
 	size_t len;
+
 	clear_msb(begin);
-/*	if(!URL->data)
+	/*if(begin == NULL)
 		return;*/
 	/*TODO: handle hex-encoded IPs*/
-	while(isspace(*begin)) begin++;
-	len=strlen(begin);
-	end = begin+len-1;
-	/*cli_dbgmsg("%d\n",end-begin);*/
-	if(begin>=end) {
+	while(isspace(*begin))
+		begin++;
+
+	len = strlen(begin);
+	if(len == 0) {
 		string_assign_null(URL);
 		return;
 	}
-	while(isspace(*end)) 
+
+	end = begin + len - 1;
+	/*cli_dbgmsg("%d %d\n", end-begin, len);*/
+	if(begin >= end) {
+		string_assign_null(URL);
+		return;
+	}
+	while(isspace(*end))
 		end--;
 	/*TODO: convert \ to /, and stuff like that*/
 	/* From mailscanner, my comments enclosed in {} */
-        if(!strncmp(begin,dotnet,dotnet_len) || !strncmp(begin,adonet,adonet_len) || !strncmp(begin,aspnet,aspnet_len))
+	if(!strncmp(begin,dotnet,dotnet_len) || !strncmp(begin,adonet,adonet_len) || !strncmp(begin,aspnet,aspnet_len))
 		string_assign_null(URL);
 	else {
 		size_t host_len;
@@ -758,7 +818,7 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 	if(is_phish_disabled())
 		return 0;
 	if(!hexinited) {
-		init_hextable(); 
+		init_hextable();
 		atexit(phishing_done);/*TODO: replace this with a proper phishing_done call from manager.c*/
 	}
 
@@ -857,25 +917,25 @@ static char* str_compose(const char* a,const char* b,const char* c)
 
 /*static const char* url_regex="^ *([[:alnum:]%_-]+:(//)?)?([[:alnum:]%_-]@)*[[:alnum:]%_-]+\\.([[:alnum:]%_-]+\\.)*[[:alnum:]_%-]+(/[[:alnum:];:@$=?&/.,%_-]+) *$";*/
 /* for urls, including mailto: urls, and (broken) http:www... style urls*/
-/* refer to: http://www.w3.org/Addressing/URL/5_URI_BNF.html 
+/* refer to: http://www.w3.org/Addressing/URL/5_URI_BNF.html
  * Modifications: don't allow empty domains/subdomains, such as www..com <- that is no url
  * So the 'safe' char class has been split up
  * */
 /* character classes */
-#define URI_alpha       "a-zA-Z"
-#define URI_digit       "0-9"
+#define URI_alpha	"a-zA-Z"
+#define URI_digit	"0-9"
 #define URI_safe_nodot  "-$_@&"
-#define URI_safe        "-$_@.&"
-#define URI_extra       "!*\"'(),"
+#define URI_safe	"-$_@.&"
+#define URI_extra	"!*\"'(),"
 #define URI_reserved    "=;/#?: "
 #define URI_national    "{}|[]\\^~"
 #define URI_punctuation "<>"
 
-#define URI_hex         "[0-9a-fA-f]"
+#define URI_hex		 "[0-9a-fA-f]"
 #define URI_escape      "%"URI_hex"{2}"
 #define URI_xalpha "([" URI_safe URI_alpha URI_digit  URI_extra "]|"URI_escape")" /* URI_safe has to be first, because it contains - */
 #define URI_xalpha_nodot "([" URI_safe_nodot URI_alpha URI_digit URI_extra "]|"URI_escape")"
- 
+
 #define URI_xalphas URI_xalpha"+"
 #define URI_xalphas_nodot URI_xalpha_nodot"*"
 
@@ -924,7 +984,7 @@ int isURL(const char* URL)
 		if(build_regex(&preg,url_regex,1))
 			return -1;
 	}
-	return URL ? !regexec(preg,URL,0,NULL,0) : 0; 
+	return URL ? !regexec(preg,URL,0,NULL,0) : 0;
 }
 
 int isNumericURL(const char* URL)
@@ -978,10 +1038,10 @@ enum phish_status url_get_host(struct url_check* url,struct url_check* host_url,
 	}
 	return CL_PHISH_NODECISION;
 }
-	
+
 
 void url_get_domain(struct url_check* url,struct url_check* domains)
-{		
+{
 	get_domain(&domains->realLink, &url->realLink);
 	get_domain(&domains->displayLink, &url->displayLink);
 	domains->flags	     = url->flags;
@@ -1095,7 +1155,7 @@ enum phish_status phishingCheck(struct url_check* urls)
 
 	if(urls->flags&CHECK_CLOAKING) {
 		/*Checks if URL is cloaked.
-		Should we check if it containts another http://, https://? 
+		Should we check if it containts another http://, https://?
 		No because we might get false positives from redirect services.*/
 		if(strstr(urls->realLink.data,"%00")) {
 			free_if_needed(&host_url);
@@ -1111,14 +1171,14 @@ enum phish_status phishingCheck(struct url_check* urls)
 		free_if_needed(&host_url);
 		return CL_PHISH_CLEAN;
 	}
-	
+
 	if(urls->flags&CHECK_SSL && isSSL(urls->displayLink.data) && !isSSL(urls->realLink.data)) {
 		free_if_needed(&host_url);
 		return CL_PHISH_SSL_SPOOF;
 	}
 
-	if((rc = url_get_host(urls,&host_url,DOMAIN_REAL,&phishy))) 
-	{	
+	if((rc = url_get_host(urls,&host_url,DOMAIN_REAL,&phishy)))
+	{
 		free_if_needed(&host_url);
 		return rc;
 	}
@@ -1128,7 +1188,7 @@ enum phish_status phishingCheck(struct url_check* urls)
 		return CL_PHISH_CLEAN_CID;
 	}
 
-	if(!isURL(urls->displayLink.data) && 
+	if(!isURL(urls->displayLink.data) &&
 			( (phishy&PHISHY_NUMERIC_IP && !isNumericURL(urls->displayLink.data)) ||
 			  !(phishy&PHISHY_NUMERIC_IP))) {
 		free_if_needed(&host_url);
@@ -1154,7 +1214,7 @@ enum phish_status phishingCheck(struct url_check* urls)
 			free_if_needed(&domain_url);
 		}
 
-		/*if(urls->flags&CHECK_REDIR) { 
+		/*if(urls->flags&CHECK_REDIR) {
 			//see where the realLink redirects, and compare that with the displayed Link
 			const uchar* redirectedURL  = getRedirectedURL(urls->realLink);
 			if(urls->needsfree)
