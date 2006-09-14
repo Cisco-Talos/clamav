@@ -247,7 +247,7 @@ static struct cl_node *reload_db(struct cl_node *root, unsigned int dboptions, c
 
 int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned int dboptions, const struct cfgstruct *copt)
 {
-	int new_sd, max_threads, i, ret;
+	int new_sd, max_threads, i, ret = 0;
 	unsigned int options = 0;
 	threadpool_t *thr_pool;
 #ifndef	C_WINDOWS
@@ -632,5 +632,5 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned in
     time(&current_time);
     logg("--- Stopped at %s", ctime(&current_time));
 
-    return 0;
+    return ret;
 }
