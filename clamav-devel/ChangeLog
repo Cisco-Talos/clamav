@@ -1,3 +1,7 @@
+Thu Sep 14 21:28:14 CEST 2006 (acab)
+------------------------------------
+  * contrib/phishing: Misc files related to the phishing code
+
 Thu Sep 14 21:07:43 CEST 2006 (tk)
 ----------------------------------
   * clamd: some database settings were being lost after reload

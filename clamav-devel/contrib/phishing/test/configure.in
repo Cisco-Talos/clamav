@@ -1,0 +1,32 @@
+#                                               -*- Autoconf -*-
+# Process this file with autoconf to produce a configure script.
+
+AC_PREREQ(2.60)
+AC_INIT()
+AC_CONFIG_SRCDIR([regex_list_test.c])
+AC_CONFIG_HEADER([test-config.h])
+AM_INIT_AUTOMAKE(phishtest,"`date +%Y%m%d`")
+
+# Checks for programs.
+AC_PROG_CC
+AC_PROG_LN_S
+AC_PROG_LIBTOOL
+AC_PROG_MAKE_SET
+
+if test ! -d "clam"; then
+	AC_CONFIG_LINKS([clam:$srcdir/clam])
+fi
+AC_CONFIG_SUBDIRS([./clam])
+# Checks for libraries.
+AM_PATH_CHECK()
+# Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS([stdlib.h])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+
+# Checks for library functions.
+AC_DEFINE_UNQUOTED(REGEXTEST_FILE,"$srcdir/regex_test.txt",[location of test file])
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
