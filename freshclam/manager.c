@@ -196,7 +196,11 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	name.sin_addr = *((struct in_addr *) host->h_addr_list[i]);
 	name.sin_port = htons(port);
 
+#ifdef SO_ERROR
 	if(wait_connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in), ctimeout) == -1) {
+#else
+	if(connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in)) == -1) {
+#endif
 	    logg("Can't connect to port %d of host %s (IP: %s)\n", port, hostpt, ipaddr);
 	    continue;
 	} else {
@@ -366,7 +370,11 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 
     tmp = buffer;
     cnt = FILEBUFF;
+#ifdef SO_ERROR
     while((bread = wait_recv(sd, tmp, cnt, 0, rtimeout)) > 0) {
+#else
+    while((bread = recv(sd, tmp, cnt, 0)) > 0) {
+#endif
 	tmp += bread;
 	cnt -= bread;
 	if(cnt <= 0)
@@ -506,7 +514,11 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     i = 0;
     while(1) {
 	/* recv one byte at a time, until we reach \r\n\r\n */
+#ifdef SO_ERROR
 	if((i >= sizeof(buffer) - 1) || wait_recv(sd, buffer + i, 1, 0, rtimeout) == -1) {
+#else
+	if((i >= sizeof(buffer) - 1) || recv(sd, buffer + i, 1, 0) == -1) {
+#endif
 	    logg("!getfile: Error while reading database from %s\n", hostname);
 	    return 52;
 	}
@@ -557,7 +569,11 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	return 57;
     }
 
+#ifdef SO_ERROR
     while((bread = wait_recv(sd, buffer, FILEBUFF, 0, rtimeout)) > 0) {
+#else
+    while((bread = recv(sd, buffer, FILEBUFF, 0)) > 0) {
+#endif
         if(write(fd, buffer, bread) != bread) {
 	    logg("getfile: Can't write %d bytes to %s\n", bread, destfile);
 	    unlink(destfile);
