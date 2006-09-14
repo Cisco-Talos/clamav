@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phish_whitelist.c,v $
+ *  Revision 1.2  2006/09/14 07:05:06  njh
+ *  Fix 'multiple main' definitions
+ *
  *  Revision 1.1  2006/09/12 19:38:39  acab
  *  Phishing module merge - libclamav
  *
@@ -80,6 +83,7 @@
 #include "regex_list.h"
 #include "matcher-ac.h"
 
+/*#define WHITELIST_TEST*/
 
 static struct regex_matcher whitelist_matcher;
 
@@ -114,7 +118,6 @@ void whitelist_done(void)
 	regex_list_done(&whitelist_matcher);
 }
 
-#define WHITELIST_TEST
 #ifdef WHITELIST_TEST
 int main(int argc,char* argv[])
 {
