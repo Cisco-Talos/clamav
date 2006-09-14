@@ -1,0 +1,9 @@
+R http://abc(def|fgh|ghi)j jj
+R http://69\.0\.241\.57/bCentral/L\.asp\?L=.* .*
+R http://go\.microsoft\.com/\?linkid=.+ https://register.microsoft.com/regsys/pic.asp?LCID=.+
+R http://216\.46\.253\.105/bCentral/L\.asp\?L=.+ .*
+R http://www\.bcentral\.it/.+ http://69\.0\.241\.57/bCentral/L\.asp?L=.+
+R http://[abcde].f.com jj
+R http://[abcde]+.f.net jj
+R108 http://zztest.com jj
+
