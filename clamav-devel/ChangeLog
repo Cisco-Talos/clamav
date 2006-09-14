@@ -1,3 +1,8 @@
+Thu Sep 14 09:12:03 BST 2006 (trog)
+-----------------------------------
+  * libclamav/unrar/unrar.c, unrar20.c, unrarppm.c: improve handling of
+		corrupted files.
+
 Thu Sep 14 00:35:56 CEST 2006 (acab)
 ------------------------------------
   * docs: Added preliminary documentation related to Edvin phishing module.
