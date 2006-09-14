@@ -1,3 +1,7 @@
+Thu Sep 14 19:36:25 CEST 2006 (acab)
+------------------------------------
+  * clamscan: added phishing module command line options
+
 Thu Sep 14 19:07:21 CEST 2006 (acab)
 ------------------------------------
   * libclamav/mbox.c: Fixing a fragment of code left behind during the merge
