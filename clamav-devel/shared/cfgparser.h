@@ -22,11 +22,12 @@
 
 #define LINE_LENGTH 1024
 
-#define OPT_STR 1 /* string argument */
+#define OPT_STR 1 /* string argument (space delimited) */
 #define OPT_NUM 2 /* numerical argument */
 #define OPT_COMPSIZE 3 /* convert kilobytes (k) and megabytes (m) to bytes */
 #define OPT_BOOL 4 /* boolean value */
 #define OPT_FULLSTR 5 /* string argument, but get a full line */
+#define OPT_QUOTESTR 6 /* string argument, (space delimited unless the argument starts with ' or ".  If the argument starts with a quote character, then the argument data is what appears between the starting quote character and the matching ending quote character.) */
 
 #define OPT_CLAMD 1
 #define OPT_FRESHCLAM 2
