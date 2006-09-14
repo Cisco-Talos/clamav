@@ -51,7 +51,7 @@ struct thrwarg {
     int options;
 };
 
-int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, const struct cfgstruct *copt);
+int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned int dboptions, const struct cfgstruct *copt);
 void sighandler(int sig);
 void sighandler_th(int sig);
 void daemonize(void);

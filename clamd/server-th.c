@@ -182,13 +182,12 @@ void sighandler_th(int sig)
     }
 }
 
-static struct cl_node *reload_db(struct cl_node *root, const struct cfgstruct *copt, int do_check)
+static struct cl_node *reload_db(struct cl_node *root, unsigned int dboptions, const struct cfgstruct *copt, int do_check)
 {
 	const char *dbdir;
 	int retval;
 	unsigned int sigs = 0;
 	static struct cl_stat *dbstat=NULL;
-	unsigned int dboptions = 0;
 
     if(do_check) {
 	if(dbstat == NULL) {
@@ -223,11 +222,6 @@ static struct cl_node *reload_db(struct cl_node *root, const struct cfgstruct *c
     memset(dbstat, 0, sizeof(struct cl_stat));
     cl_statinidir(dbdir, dbstat);
 
-    if(!cfgopt(copt, "DetectPhishing")->enabled) {
-	dboptions |= CL_DB_NOPHISHING;
-	logg("Not loading phishing signatures.\n");
-    }
-
     if((retval = cl_load(dbdir, &root, &sigs, dboptions))) {
 	logg("!reload db failed: %s\n", cl_strerror(retval));
 	exit(-1);
@@ -248,7 +242,7 @@ static struct cl_node *reload_db(struct cl_node *root, const struct cfgstruct *c
     return root;
 }
 
-int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, const struct cfgstruct *copt)
+int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned int dboptions, const struct cfgstruct *copt)
 {
 	int new_sd, max_threads, i;
 	unsigned int options = 0;
@@ -557,7 +551,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, const struc
 	if(selfchk) {
 	    time(&current_time);
 	    if((current_time - start_time) > (time_t)selfchk) {
-		if(reload_db(root, copt, TRUE)) {
+		if(reload_db(root, dboptions, copt, TRUE)) {
 		    pthread_mutex_lock(&reload_mutex);
 		    reload = 1;
 		    pthread_mutex_unlock(&reload_mutex);
@@ -569,7 +563,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, const struc
 	pthread_mutex_lock(&reload_mutex);
 	if(reload) {
 	    pthread_mutex_unlock(&reload_mutex);
-	    root = reload_db(root, copt, FALSE);
+	    root = reload_db(root, dboptions, copt, FALSE);
 	    pthread_mutex_lock(&reload_mutex);
 	    reload = 0;
 	    time(&reloaded_time);

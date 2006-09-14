@@ -376,7 +376,7 @@ int main(int argc, char **argv)
 	nlsockets++;
     }
 
-    ret = acceptloop_th(lsockets, nlsockets, root, copt);
+    ret = acceptloop_th(lsockets, nlsockets, root, dboptions, copt);
 
 #ifdef C_WINDOWS
     if(tcpsock)
