@@ -17,7 +17,7 @@ Fails to build on Linux/x86 with icc7.1 with -ipo (fails on libclamav.a - keeps 
 	icc -O2 -tpp7 -xiMKW -parallel -i_dynamic -w2 -march=pentium4 -mcpu=pentium4 clamav-milter.c...
 
 Tested with Electric Fence 2.2.2, and the bounds checking C compiler from
-	http://web.inter.nl.net/hcc/Haj.Ten.Brugge/
+	http://sourceforge.net/projects/boundschecking/
 
 Compiles OK on Linux/ppc (YDL2.3) with gcc2.95.4. Needs -lsmutil to link.
 	cc -O3 -pedantic -Wuninitialized -Wall -pipe -fomit-frame-pointer -ffast-math -finline-functions -funroll-loop -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o -lsmutil
