@@ -1,3 +1,7 @@
+Thu Sep 14 21:42:56 CEST 2006 (acab)
+------------------------------------
+  * etc/clamd.conf: add phishing config options
+
 Thu Sep 14 21:36:51 CEST 2006 (acab)
 ------------------------------------
   * docs: add phishing information to manpages
