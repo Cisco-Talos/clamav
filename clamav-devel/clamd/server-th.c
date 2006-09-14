@@ -70,6 +70,7 @@ int reload = 0;
 time_t reloaded_time = 0;
 pthread_mutex_t reload_mutex;
 int sighup = 0;
+static struct cl_stat *dbstat = NULL;
 
 typedef struct client_conn_tag {
     int sd;
@@ -160,11 +161,6 @@ void sighandler_th(int sig)
 	    progexit = 1;
 	    break;
 
-	case SIGSEGV:
-	    logg("Segmentation fault :-( Bye..\n");
-	    _exit(11); /* probably not reached at all */
-	    break; /* not reached */
-
 #ifdef	SIGHUP
 	case SIGHUP:
 	    sighup = 1;
@@ -182,13 +178,13 @@ void sighandler_th(int sig)
     }
 }
 
-static struct cl_node *reload_db(struct cl_node *root, unsigned int dboptions, const struct cfgstruct *copt, int do_check)
+static struct cl_node *reload_db(struct cl_node *root, unsigned int dboptions, const struct cfgstruct *copt, int do_check, int *ret)
 {
 	const char *dbdir;
 	int retval;
 	unsigned int sigs = 0;
-	static struct cl_stat *dbstat=NULL;
 
+    *ret = 0;
     if(do_check) {
 	if(dbstat == NULL) {
 	    logg("No stats for Database check - forcing reload\n");
@@ -215,6 +211,11 @@ static struct cl_node *reload_db(struct cl_node *root, unsigned int dboptions, c
 
     if(dbstat == NULL) {
 	dbstat = (struct cl_stat *) mmalloc(sizeof(struct cl_stat));
+	if(!dbstat) {
+	    logg("!Can't allocate memory for dbstat\n");
+	    *ret = 1;
+	    return NULL;
+	}
     } else {
 	cl_statfree(dbstat);
     }
@@ -224,18 +225,20 @@ static struct cl_node *reload_db(struct cl_node *root, unsigned int dboptions, c
 
     if((retval = cl_load(dbdir, &root, &sigs, dboptions))) {
 	logg("!reload db failed: %s\n", cl_strerror(retval));
-	exit(-1);
+	*ret = 1;
+	return NULL;
     }
 
     if(!root) {
-	logg("!load db failed: %s\n", cl_strerror(retval));
-	exit(-1);
+	logg("!reload db failed: %s\n", cl_strerror(retval));
+	*ret = 1;
+	return NULL;
     }
 
     if((retval = cl_build(root)) != 0) {
-	logg("!Database initialization error: can't build engine: %s\n",
-	cl_strerror(retval));
-	exit(-1);
+	logg("!Database initialization error: can't build engine: %s\n", cl_strerror(retval));
+	*ret = 1;
+	return NULL;
     }
     logg("Database correctly reloaded (%d signatures)\n", sigs);
 
@@ -244,7 +247,7 @@ static struct cl_node *reload_db(struct cl_node *root, unsigned int dboptions, c
 
 int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned int dboptions, const struct cfgstruct *copt)
 {
-	int new_sd, max_threads, i;
+	int new_sd, max_threads, i, ret;
 	unsigned int options = 0;
 	threadpool_t *thr_pool;
 #ifndef	C_WINDOWS
@@ -551,7 +554,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned in
 	if(selfchk) {
 	    time(&current_time);
 	    if((current_time - start_time) > (time_t)selfchk) {
-		if(reload_db(root, dboptions, copt, TRUE)) {
+		if(reload_db(root, dboptions, copt, TRUE, &ret)) {
 		    pthread_mutex_lock(&reload_mutex);
 		    reload = 1;
 		    pthread_mutex_unlock(&reload_mutex);
@@ -563,7 +566,13 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned in
 	pthread_mutex_lock(&reload_mutex);
 	if(reload) {
 	    pthread_mutex_unlock(&reload_mutex);
-	    root = reload_db(root, dboptions, copt, FALSE);
+	    root = reload_db(root, dboptions, copt, FALSE, &ret);
+	    if(ret) {
+		logg("Terminating because of a fatal error.");
+		if(new_sd >= 0)
+		    close(new_sd);
+		break;
+	    }
 	    pthread_mutex_lock(&reload_mutex);
 	    reload = 0;
 	    time(&reloaded_time);
@@ -593,7 +602,11 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned in
 	pthread_join(clamuko_pid, NULL);
     }
 #endif
-    cl_free(root);
+    if(root)
+	cl_free(root);
+
+    if(dbstat)
+	cl_statfree(dbstat);
     logg("*Shutting down the main socket%s.\n", (nsockets > 1) ? "s" : "");
     for (i = 0; i < nsockets; i++)
 	shutdown(socketds[i], 2);
@@ -616,7 +629,6 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned in
 	    logg("Pid file removed.\n");
     }
 
-    logg("Exiting (clean)\n");
     time(&current_time);
     logg("--- Stopped at %s", ctime(&current_time));
 
