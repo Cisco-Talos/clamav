@@ -1,3 +1,8 @@
+Fri Sep 15 00:07:02 CEST 2006 (tk)
+----------------------------------
+  * shared/cfgparser.c: add support for OPT_QUOTESTR and use it for file
+			directives, patch from Mark Pizzolato
+
 Thu Sep 14 22:06:52 CEST 2006 (acab)
 ------------------------------------
   * etc/clamd.conf: fix typo

@@ -47,6 +47,7 @@ void printopt(const struct cfgoption *opt, const struct cfgstruct *cpt)
     switch(opt->argtype) {
 	case OPT_STR:
 	case OPT_FULLSTR:
+	case OPT_QUOTESTR:
 	    printf("%s = \"%s\"\n", opt->name, cpt->strarg);
 	    break;
 	case OPT_NUM:

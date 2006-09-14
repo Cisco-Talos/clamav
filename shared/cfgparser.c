@@ -33,7 +33,7 @@
 #include "libclamav/str.h"
 
 struct cfgoption cfg_options[] = {
-    {"LogFile",	OPT_STR, -1, NULL, 0, OPT_CLAMD},
+    {"LogFile",	OPT_QUOTESTR, -1, NULL, 0, OPT_CLAMD},
     {"LogFileUnlock", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"LogFileMaxSize", OPT_COMPSIZE, 1048576, NULL, 0, OPT_CLAMD},
     {"LogTime", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
@@ -41,8 +41,8 @@ struct cfgoption cfg_options[] = {
     {"LogVerbose", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
     {"LogSyslog", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
     {"LogFacility", OPT_STR, -1, "LOG_LOCAL6", 0, OPT_CLAMD | OPT_FRESHCLAM},
-    {"PidFile", OPT_STR, -1, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
-    {"TemporaryDirectory", OPT_STR, -1, NULL, 0, OPT_CLAMD},
+    {"PidFile", OPT_QUOTESTR, -1, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
+    {"TemporaryDirectory", OPT_QUOTESTR, -1, NULL, 0, OPT_CLAMD},
     {"ScanPE", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"DetectBrokenExecutables", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"ScanMail", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
@@ -63,7 +63,7 @@ struct cfgoption cfg_options[] = {
     {"ArchiveLimitMemoryUsage", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"ArchiveBlockEncrypted", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"ArchiveBlockMax", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
-    {"DatabaseDirectory", OPT_STR, -1, DATADIR, 0, OPT_CLAMD | OPT_FRESHCLAM},
+    {"DatabaseDirectory", OPT_QUOTESTR, -1, DATADIR, 0, OPT_CLAMD | OPT_FRESHCLAM},
     {"TCPAddr", OPT_STR, -1, NULL, 0, OPT_CLAMD},
     {"TCPSocket", OPT_NUM, -1, NULL, 0, OPT_CLAMD},
     {"LocalSocket", OPT_STR, -1, NULL, 0, OPT_CLAMD},
@@ -91,13 +91,13 @@ struct cfgoption cfg_options[] = {
     {"ClamukoScanOnOpen", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"ClamukoScanOnClose", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"ClamukoScanOnExec", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
-    {"ClamukoIncludePath", OPT_STR, 0, NULL, 0, OPT_CLAMD},
-    {"ClamukoExcludePath", OPT_STR, 0, NULL, 0, OPT_CLAMD},
+    {"ClamukoIncludePath", OPT_QUOTESTR, 0, NULL, 0, OPT_CLAMD},
+    {"ClamukoExcludePath", OPT_QUOTESTR, 0, NULL, 0, OPT_CLAMD},
     {"ClamukoMaxFileSize", OPT_COMPSIZE, 5242880, NULL, 0, OPT_CLAMD},
     {"ClamukoScanArchive", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"DatabaseOwner", OPT_STR, -1, CLAMAVUSER, 0, OPT_FRESHCLAM},
     {"Checks", OPT_NUM, 12, NULL, 0, OPT_FRESHCLAM},
-    {"UpdateLogFile", OPT_STR, -1, NULL, 0, OPT_FRESHCLAM},
+    {"UpdateLogFile", OPT_QUOTESTR, -1, NULL, 0, OPT_FRESHCLAM},
     {"DNSDatabaseInfo", OPT_STR, -1, "current.cvd.clamav.net", 0, OPT_FRESHCLAM},
     {"DatabaseMirror", OPT_STR, -1, NULL, 1, OPT_FRESHCLAM},
     {"MaxAttempts", OPT_NUM, 3, NULL, 0, OPT_FRESHCLAM},
@@ -201,6 +201,43 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 				arg = strdup(++arg);
 				if((arg) && (c = strpbrk(arg, "\n\r")))
 				    *c = '\0';
+				if((!arg) || (regcfg(&copt, name, arg, -1, pt->multiple) < 0)) {
+				    fprintf(stderr, "ERROR: Can't register new options (not enough memory)\n");
+				    fclose(fs);
+				    free(name);
+				    free(arg);
+				    freecfg(copt);
+				    return NULL;
+				}
+				break;
+			    case OPT_QUOTESTR:
+				/* an ugly hack of the above case */
+				if(!arg) {
+				    if(verbose)
+					fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires string argument.\n", line, name);
+				    fclose(fs);
+				    free(name);
+				    freecfg(copt);
+				    return NULL;
+				}
+				if((*arg == '\'') || (*arg == '"')) {
+				    free(arg);
+				    c = strstr(buff, " ");
+				    arg = strdup(c+2);
+				    if(arg) {
+					if((c = strchr(arg, c[1])))
+					    *c = '\0';
+					else {
+					    if(verbose)
+						fprintf(stderr, "ERROR: Parse error at line %d: Option %s missing closing quote.\n", line, name);
+					    fclose(fs);
+					    free(name);
+					    free(arg);
+					    freecfg(copt);
+					    return NULL;
+					}
+				    }
+				}
 				if((!arg) || (regcfg(&copt, name, arg, -1, pt->multiple) < 0)) {
 				    fprintf(stderr, "ERROR: Can't register new options (not enough memory)\n");
 				    fclose(fs);
