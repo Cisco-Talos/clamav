@@ -285,7 +285,7 @@ int rar_unpack20(int fd, int solid, unpack_data_t *unpack_data)
 	unsigned char sddecode[]={0,4,8,16,32,64,128,192};
 	unsigned char sdbits[]={2,2,3,4,5,6,6,6};
 	unsigned int bits, distance;
-	int audio_number, number, length, dist_number, length_number;
+	int retval=TRUE, audio_number, number, length, dist_number, length_number;
 	
 	rar_dbgmsg("in rar_unpack20\n");
 
@@ -321,6 +321,7 @@ int rar_unpack20(int fd, int solid, unpack_data_t *unpack_data)
 				(struct Decode *)&unpack_data->MD[unpack_data->unp_cur_channel]);
 			if (audio_number == 256) {
 				if (!read_tables20(fd, unpack_data)) {
+					retval = FALSE;
 					break;
 				}
 				continue;
@@ -366,6 +367,7 @@ int rar_unpack20(int fd, int solid, unpack_data_t *unpack_data)
 		}
 		if (number == 269) {
 			if (!read_tables20(fd, unpack_data)) {
+				retval = FALSE;
 				break;
 			}
 			continue;
@@ -404,7 +406,9 @@ int rar_unpack20(int fd, int solid, unpack_data_t *unpack_data)
 			continue;
 		}
 	}
-	read_last_tables(fd, unpack_data);
-	unp_write_buf_old(unpack_data);
-	return TRUE;
+	if (retval) {
+		read_last_tables(fd, unpack_data);
+		unp_write_buf_old(unpack_data);
+	}
+	return retval;
 }

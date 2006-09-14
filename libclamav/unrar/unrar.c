@@ -395,7 +395,10 @@ int unp_read_buf(int fd, unpack_data_t *unpack_data)
 unsigned int rar_get_char(int fd, unpack_data_t *unpack_data)
 {
 	if (unpack_data->in_addr > MAX_BUF_SIZE-30) {
-		unp_read_buf(fd, unpack_data);
+		if (!unp_read_buf(fd, unpack_data)) {
+			cli_errmsg("rar_get_char: unp_read_buf FAILED\n");
+			return -1;
+		}
 	}
 	rar_dbgmsg("rar_get_char = %u\n", unpack_data->in_buf[unpack_data->in_addr]);
 	return(unpack_data->in_buf[unpack_data->in_addr++]);
@@ -1100,7 +1103,7 @@ static int rar_unpack29(int fd, int solid, unpack_data_t *unpack_data)
 	unsigned char sddecode[]={0,4,8,16,32,64,128,192};
 	unsigned char sdbits[]=  {2,2,3, 4, 5, 6,  6,  6};
 	unsigned int bits, distance;
-	int i, number, length, dist_number, low_dist, ch, next_ch;
+	int retval=TRUE, i, number, length, dist_number, low_dist, ch, next_ch;
 	int length_number, failed;
 
 	cli_dbgmsg("Offset: %ld\n", lseek(fd, 0, SEEK_CUR));
@@ -1124,6 +1127,7 @@ static int rar_unpack29(int fd, int solid, unpack_data_t *unpack_data)
 		rar_dbgmsg("UnpPtr = %d\n", unpack_data->unp_ptr);
 		if (unpack_data->in_addr > unpack_data->read_border) {
 			if (!unp_read_buf(fd, unpack_data)) {
+				retval = FALSE;
 				break;
 			}
 		}
@@ -1135,6 +1139,7 @@ static int rar_unpack29(int fd, int solid, unpack_data_t *unpack_data)
 			ch = ppm_decode_char(&unpack_data->ppm_data, fd, unpack_data);
 			rar_dbgmsg("PPM char: %d\n", ch);
 			if (ch == -1) {
+				retval = FALSE;
 				unpack_data->ppm_error = TRUE;
 				break;
 			}
@@ -1142,8 +1147,14 @@ static int rar_unpack29(int fd, int solid, unpack_data_t *unpack_data)
 				next_ch = ppm_decode_char(&unpack_data->ppm_data,
 							fd, unpack_data);
 				rar_dbgmsg("PPM next char: %d\n", next_ch);
+				if (next_ch == -1) {
+					retval = FALSE;
+					unpack_data->ppm_error = TRUE;
+					break;
+				}
 				if (next_ch == 0) {
 					if (!read_tables(fd, unpack_data)) {
+						retval = FALSE;
 						break;
 					}
 					continue;
@@ -1153,6 +1164,7 @@ static int rar_unpack29(int fd, int solid, unpack_data_t *unpack_data)
 				}
 				if (next_ch == 3) {
 					if (!read_vm_code_PPM(unpack_data, fd)) {
+						retval = FALSE;
 						break;
 					}
 					continue;
@@ -1176,6 +1188,7 @@ static int rar_unpack29(int fd, int solid, unpack_data_t *unpack_data)
 						}
 					}
 					if (failed) {
+						retval = FALSE;
 						break;
 					}
 					copy_string(unpack_data, length+32, distance+2);
@@ -1186,6 +1199,7 @@ static int rar_unpack29(int fd, int solid, unpack_data_t *unpack_data)
 								fd, unpack_data);
 					rar_dbgmsg("PPM length: %d\n", length);
 					if (length == -1) {
+						retval = FALSE;
 						break;
 					}
 					copy_string(unpack_data, length+4, 1);
@@ -1252,12 +1266,14 @@ static int rar_unpack29(int fd, int solid, unpack_data_t *unpack_data)
 			}
 			if (number == 256) {
 				if (!read_end_of_block(fd, unpack_data)) {
+					retval = FALSE;
 					break;
 				}
 				continue;
 			}
 			if (number == 257) {
 				if (!read_vm_code(unpack_data, fd)) {
+					retval = FALSE;
 					break;
 				}
 				continue;
@@ -1302,10 +1318,11 @@ static int rar_unpack29(int fd, int solid, unpack_data_t *unpack_data)
 	
 		}
 	}
-	unp_write_buf(unpack_data);
+	if (retval) {
+		unp_write_buf(unpack_data);
+	}
 	cli_dbgmsg("Finished length: %ld\n", unpack_data->written_size);
-	/*cli_writen(unpack_data->ofd, unpack_data->window, unpack_data->unp_ptr);*/
-	return TRUE;
+	return retval;
 }
 
 static int rar_unpack(int fd, int method, int solid, unpack_data_t *unpack_data)
@@ -1323,7 +1340,7 @@ static int rar_unpack(int fd, int method, int solid, unpack_data_t *unpack_data)
 		retval = rar_unpack29(fd, solid, unpack_data);
 		break;
 	default:
-		printf("ERROR: Unknown pack method: %d\n", method);
+		cli_errmsg("ERROR: Unknown RAR pack method: %d\n", method);
 		break;
 	}
 	return retval;
@@ -1332,7 +1349,7 @@ static int rar_unpack(int fd, int method, int solid, unpack_data_t *unpack_data)
 rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *limits)
 {
 	main_header_t *main_hdr;
-	int ofd;
+	int ofd, retval;
 	unsigned long file_count=1;
 	file_header_t *file_header;
 	unsigned char filename[1024];
@@ -1450,18 +1467,19 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 			}
 			unpack_data->ofd = ofd;
 			if (file_header->method == 0x30) {
+				cli_dbgmsg("Copying stored file (not packed)\n");
 				copy_file_data(fd, ofd, file_header->pack_size);
 			} else {
 				unpack_data->dest_unp_size = file_header->unpack_size;
 				if (file_header->unpack_ver <= 15) {
-					rar_unpack(fd, 15, (file_count>1) &&
+					retval = rar_unpack(fd, 15, (file_count>1) &&
 						((main_hdr->flags&MHD_SOLID)!=0), unpack_data);
 				} else {
 					if ((file_count == 1) && (file_header->flags & LHD_SOLID)) {
 						cli_warnmsg("RAR: First file can't be SOLID.\n");
 						break;
 					} else {
-						rar_unpack(fd, file_header->unpack_ver,
+						retval = rar_unpack(fd, file_header->unpack_ver,
 							file_header->flags & LHD_SOLID,	unpack_data);
 					}
 				}
@@ -1470,6 +1488,13 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 				if (unpack_data->unp_crc != 0xffffffff) {
 					if (file_header->file_crc != (unpack_data->unp_crc^0xffffffff)) {
 						cli_warnmsg("RAR CRC error. Please report the bug at https://bugs.clamav.net/\n");
+					}
+				}
+				if (!retval) {
+					cli_dbgmsg("Corrupt file detected\n");
+					if (file_header->flags & LHD_SOLID) {
+						cli_dbgmsg("SOLID archive, can't continue\n");
+						break;
 					}
 				}
 			}
