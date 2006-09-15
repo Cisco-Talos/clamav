@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.54 2006/08/15 15:06:25 njh Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.55 2006/09/15 18:07:34 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -643,7 +643,7 @@ cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns)
 }
 #else	/*!HAVE_MMAP*/
 int
-cli_pdf(const char *dir, int desc)
+cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 {
 	cli_warnmsg("File not decoded - PDF decoding needs mmap() (for now)\n");
 	return CL_CLEAN;
