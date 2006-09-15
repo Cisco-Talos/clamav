@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.3  2006/09/15 16:27:50  njh
+ *  Better way to find string length in str_strip
+ *
  *  Revision 1.2  2006/09/14 08:59:37  njh
  *  Fixed some NULL pointers
  *
@@ -215,7 +218,7 @@ For the Whitelist(.wdb)/Domainlist(.pdb) format see regex_list.c (search for Fla
  *
  */
 static char empty_string[]="";
-static	char	*rfind(const char *start, char c, size_t len);
+static	char	*rfind(char *start, char c, size_t len);
 
 void url_check_init(struct url_check* urls)
 {
@@ -454,9 +457,9 @@ int isTLD(const char* str,int len)
  * memrchr isn't standard, so I use this
  */
 static char *
-rfind(const char *start, char c, size_t len)
+rfind(char *start, char c, size_t len)
 {
-	const char *p;
+	char *p;
 
 	if(start == NULL)
 		return NULL;
@@ -629,7 +632,7 @@ str_strip(char **begin, const char **end, const char *what, size_t what_len)
 	}
 
 	/* strip trailing @what */
-	if(what_len <= strlen(str_end)) {
+	if(what_len <= (str_end - sbegin)) {
 		str_end_what = str_end - what_len;
 		while((str_end_what > sbegin) &&
 		      (strncmp(str_end_what, what, what_len) == 0)) {
