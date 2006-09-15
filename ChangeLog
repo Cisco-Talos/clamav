@@ -1,3 +1,8 @@
+Fri Sep 15 17:28:24 BST 2006 (njh)
+----------------------------------
+  * libclamav/phishcheck.c:	Better way to find length of data to be
+		scanned in str_strip() (reported by Edvin)
+
 Fri Sep 15 00:52:48 CEST 2006 (tk)
 ----------------------------------
   * freshclam: fix compilation error on systems without SO_ERROR defined,
