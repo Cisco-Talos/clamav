@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: regex_list.c,v $
+ *  Revision 1.2  2006/09/16 15:49:27  acab
+ *  phishing: fixed bugs and updated docs
+ *
  *  Revision 1.1  2006/09/12 19:38:39  acab
  *  Phishing module merge - libclamav
  *
@@ -232,9 +235,11 @@ int regex_list_match(struct regex_matcher* matcher,const char* real_url,const ch
 			return CL_EMEM;
 
 		strncpy(buffer,real_url,real_len);
-		buffer[real_len]=' ';
+		buffer[real_len]=hostOnly ? '\0' : ' ';
+		if(!hostOnly) {
 		strncpy(buffer+real_len+1,display_url,display_len);
 		buffer[buffer_len]=0;
+		}
 		cli_dbgmsg("Looking up in regex_list: %s\n");
 
 		rc = cli_ac_scanbuff(buffer,buffer_len,info,hostOnly ? matcher->root_hosts : matcher->root_urls,&partcnt,0,0,&partoff,0,-1,NULL);
@@ -359,7 +364,7 @@ int init_regex_list(struct regex_matcher* matcher)
  * although the name might be confusing, @pattern is not a regex!*/
 static int add_regex_list_element(struct cli_matcher* root,const char* pattern,char* info)
 {
-       int ret;
+       int ret,i;
        struct cli_ac_patt *new = cli_calloc(1,sizeof(*new));
        size_t len;
 
@@ -386,7 +391,8 @@ static int add_regex_list_element(struct cli_matcher* root,const char* pattern,c
 	       free(new);
 	       return CL_EMEM;
        }
-       strncpy((char*)new->pattern,(const char*)pattern,len);
+       for(i=0;i<len;i++)
+	       new->pattern[i]=pattern[i];/*new->pattern is short int* */
 
        new->virname = info;
        if((ret = cli_ac_addpatt(root,new))) {
@@ -462,7 +468,7 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 			return CL_EMALFDB;
 		}
 		pattern[0]='\0';
-		flags=buffer+1;
+		flags=strdup(buffer+1);
 		pattern++;
 		if(buffer[0] == 'R') {
 			if(( rc = add_pattern(matcher,(const unsigned char*)pattern,flags) ))
@@ -724,7 +730,7 @@ struct token_t
 	size_t len;
 	char   type;
 	union {
-		const unsigned char* start;
+		unsigned char* start;
 		char_bitmap_p        bitmap;
 	} u;
 };
@@ -740,7 +746,7 @@ static const unsigned char* getNextToken(const unsigned char* pat,struct token_t
 		case '\\':
 			token->type=TOKEN_CHAR;
 			token->u.start = ++pat;
-			if(islower(token->u.start)) {
+			if(islower(*token->u.start)) {
 				/* handle \n, \t, etc. */
 				char c;
 				if(snprintf(&c,1,"\%c",token->u.start)!=1)
@@ -1239,6 +1245,8 @@ static int match_node(struct tree_node* node,const unsigned char* c,size_t len,c
 	assert(c);
 	assert(info);
 
+	if(!node->u.children)
+		return MATCH_FAILED;/* tree empty */
 	*info = NULL;
 	len++;
 	c--;

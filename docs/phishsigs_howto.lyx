@@ -63,6 +63,16 @@ RealURL\InsetSpace ~
 DisplayedURL
 \end_layout
 
+\begin_layout Standard
+or:
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+H RealURL
+\end_layout
+
 \begin_layout Itemize
 Where 
 \noun on
@@ -82,7 +92,11 @@ R regex, has to match entire url, see section
 \end_layout
 
 \begin_layout Description
-H has to match the host part of url only (a simple pattern, i.e.
+H has to match the host part of 
+\noun on
+realURL 
+\noun default
+only (a simple pattern, i.e.
  it is matched literally)
 \end_layout
 
@@ -138,7 +152,8 @@ realURL
 \noun default
 , and its contents is the 
 \noun on
-displayedURL
+displayedURL.
+ 
 \end_layout
 
 \begin_layout Itemize
@@ -242,7 +257,23 @@ H
 \noun default
  
 \series default
-flag, then the 2nd href will match too.
+flag, then a line like:
+\end_layout
+
+\begin_layout Quote
+H paypal.com
+\end_layout
+
+\begin_layout Standard
+Will match <a href=
+\begin_inset Quotes erd
+\end_inset
+
+http://owned.com
+\begin_inset Quotes erd
+\end_inset
+
+>paypal.com</a>.
 \end_layout
 
 \begin_layout Subsubsection

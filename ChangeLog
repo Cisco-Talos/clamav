@@ -1,3 +1,8 @@
+Sat Sep 16 17:46:49 CEST 2006 (acab)
+------------------------------------
+  * phishing: fixed string truncation, crashes and updated relevant
+              documentation (patch from Edvin)
+
 Sat Sep 16 14:30:29 CEST 2006 (acab)
 ------------------------------------
   * libclamav/petite.h: fixed inconsistent function declaration.
