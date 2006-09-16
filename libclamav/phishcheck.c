@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.4  2006/09/16 05:39:54  njh
+ *  Tidied print statement
+ *
  *  Revision 1.3  2006/09/15 16:27:50  njh
  *  Better way to find string length in str_strip
  *
@@ -1110,9 +1113,12 @@ enum phish_status phishingCheck(struct url_check* urls)
 	const size_t cid_len = sizeof(cid)-1;
 	enum phish_status rc=CL_PHISH_NODECISION;
 	int phishy=0;
+
 	if(!urls->realLink.data)
 		return CL_PHISH_CLEAN;
-	cli_dbgmsg("\nPH:Checking url %s->%s \n",urls->realLink.data,urls->displayLink.data);
+
+	cli_dbgmsg("PH:Checking url %s->%s\n", urls->realLink.data,
+		urls->displayLink.data);
 
 	if(!strcmp(urls->realLink.data,urls->displayLink.data))
 		return CL_PHISH_CLEAN;/* displayed and real URL are identical -> clean */
