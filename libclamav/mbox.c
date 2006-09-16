@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.331 2006/09/14 17:08:41 acab Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.332 2006/09/16 08:30:55 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1989,9 +1989,10 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 			cli_dbgmsg("Not a mime encoded message\n");
 			aText = textAddMessage(aText, mainMessage);
 #ifdef CL_EXPERIMENTAL
-			if(!doPhishingScan) /*else: fall-through: some phishing mails claim they are text/plain, when they are indeed html*/
+			if(!doPhishingScan)
+				break;
+			/*else: fall-through: some phishing mails claim they are text/plain, when they are indeed html*/
 #endif
-			break;
 		case TEXT:
 			/* text/plain has been preprocessed as no encoding */
 #ifdef CL_EXPERIMENTAL
