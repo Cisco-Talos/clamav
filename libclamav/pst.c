@@ -36,7 +36,7 @@
  * TODO: Remove the vcard handling
  * FIXME: The code does little error checking of OOM scenarios
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.32 2006/09/11 16:40:22 njh Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.33 2006/09/16 20:22:21 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -1193,7 +1193,7 @@ int32_t _pst_build_desc_ptr (pst_file *pf, int32_t offset, int32_t depth, int32_
   struct _pst_table_ptr_struct table, table2;
   pst_desc desc_rec;
   pst_desc_ll *d_ptr=NULL, *d_par=NULL;
-  int32_t i = 0, y, prev_id=-1;
+  int32_t i = 0, prev_id=-1;
   char *buf = NULL, *bptr;
 
   struct _pst_d_ptr_ll {
@@ -1514,7 +1514,6 @@ int32_t _pst_build_desc_ptr (pst_file *pf, int32_t offset, int32_t depth, int32_
       return -1;
     }
 
-    y = 0;
     while(table.start != 0 /*&& y < 0x1F && table.start < end_val*/) {
 
       if (table2.start <= table.start) {
@@ -2071,7 +2070,7 @@ _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll *i2_head)
 }
 
 int32_t _pst_process(pst_num_array *list , pst_item *item) {
-  int32_t x, t;
+  int32_t x;
   int32_t next = 0;
   pst_item_attach *attach;
   pst_item_extra_field *ef;
@@ -2126,7 +2125,6 @@ int32_t _pst_process(pst_num_array *list , pst_item *item) {
 	MALLOC_EMAIL(item);
 	memcpy(&(item->email->importance), list->items[x]->data, sizeof(item->email->importance));
 	LE32_CPU(item->email->importance);
-	t = item->email->importance;
 	//	INC_CHECK_X();
 	break;
       case 0x001A: // PR_MESSAGE_CLASS Ascii type of messages - NOT FOLDERS
@@ -2177,7 +2175,6 @@ int32_t _pst_process(pst_num_array *list , pst_item *item) {
 	MALLOC_EMAIL(item);
 	memcpy(&(item->email->priority), list->items[x]->data, sizeof(item->email->priority));
 	LE32_CPU(item->email->priority);
-	t = item->email->priority;
 	//	INC_CHECK_X();
 	break;
       case 0x0029:// PR_READ_RECEIPT_REQUESTED
@@ -2212,7 +2209,6 @@ int32_t _pst_process(pst_num_array *list , pst_item *item) {
 	MALLOC_EMAIL(item);
 	memcpy(&(item->email->orig_sensitivity), list->items[x]->data, sizeof(item->email->orig_sensitivity));
 	LE32_CPU(item->email->orig_sensitivity);
-	t = item->email->orig_sensitivity;
 	//	INC_CHECK_X();
 	break;
       case 0x0036: // PR_SENSITIVITY
@@ -2225,7 +2221,6 @@ int32_t _pst_process(pst_num_array *list , pst_item *item) {
 	MALLOC_EMAIL(item);
 	memcpy(&(item->email->sensitivity), list->items[x]->data, sizeof(item->email->sensitivity));
 	LE32_CPU(item->email->sensitivity);
-	t = item->email->sensitivity;
 	//	INC_CHECK_X();
 	break;
       case 0x0037: // PR_SUBJECT raw subject
@@ -2854,7 +2849,6 @@ int32_t _pst_process(pst_num_array *list , pst_item *item) {
 	MOVE_NEXT(attach);
 	memcpy(&(attach->method), list->items[x]->data, sizeof(attach->method));
 	LE32_CPU(attach->method);
-	t = attach->method;
 	//INC_CHECK_X();
 	break;
       case 0x370B: // PR_RENDERING_POSITION
