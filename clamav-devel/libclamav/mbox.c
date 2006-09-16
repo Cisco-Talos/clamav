@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.333 2006/09/16 09:53:56 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.334 2006/09/16 10:38:17 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -235,7 +235,7 @@ static	message	*do_multipart(message *mainMessage, message **messages, int i, in
 static	int	count_quotes(const char *buf);
 static	bool	next_is_folded_header(const text *t);
 
-static	void	checkURLs(message *m, mbox_ctx *mctx,int *rc,int is_html);
+static	void	checkURLs(message *m, mbox_ctx *mctx,int *rc, int is_html);
 
 #ifdef CL_EXPERIMENTAL
 static	void	do_checkURLs(message *m, const char *dir,tag_arguments_t* hrefs);
@@ -1992,11 +1992,13 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 			if(!doPhishingScan)
 				break;
 			/*else: fall-through: some phishing mails claim they are text/plain, when they are indeed html*/
+#else
+			break;
 #endif
 		case TEXT:
 			/* text/plain has been preprocessed as no encoding */
 #ifdef CL_EXPERIMENTAL
-			if(subtype==HTML || doPhishingScan) {
+			if((subtype == HTML) || doPhishingScan) {
 #else
 			if((mctx->ctx->options&CL_SCAN_MAILURL) && (subtype == HTML))
 #endif
@@ -2005,11 +2007,14 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 				 * file and only checkURLs if it's found to be
 				 * clean
 				 */
-				checkURLs(mainMessage, mctx, &rc,subtype==HTML);/* there might be html sent without subtype html too,
-													so scan them for phishing too*/
+				checkURLs(mainMessage, mctx, &rc, (subtype == HTML));
 #ifdef CL_EXPERIMENTAL
+				/*
+				 * There might be html sent without subtype
+				 * html too, so scan them for phishing
+				 */
 				if(rc == 3)
-					infected=TRUE;
+					infected = TRUE;
 			}
 #endif
 			break;
@@ -4136,7 +4141,7 @@ checkURLs(message *m, mbox_ctx *mctx, int* rc, int is_html)
 {
 }
 #endif
-#endif /* ! CL_EXPERIMENTAL */
+#endif /* CL_EXPERIMENTAL */
 
 #if defined(FOLLOWURLS) && (FOLLOWURLS>0)
 /*
@@ -4641,12 +4646,9 @@ do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx 
 						free(filename);
 					}
 				} else {
-					const int is_html = tableFind(mctx->subtypeTable, cptr) == HTML;
-#ifdef CL_EXPERIMENTAL
 					if(mctx->ctx->options&CL_SCAN_MAILURL)
-						if(is_html)
-#endif
-							checkURLs(aMessage, mctx, rc, is_html);
+						if(tableFind(mctx->subtypeTable, cptr) == HTML)
+							checkURLs(aMessage, mctx, rc, 1);
 					messageAddArgument(aMessage,
 						"filename=mixedtextportion");
 				}
