@@ -1,3 +1,8 @@
+Sat Sep 16 10:54:30 BST 2006 (njh)
+----------------------------------
+  * libclamav/message.c:	Not all binhex messages were being decoded
+			in experimental mode
+
 Fri Sep 15 17:28:24 BST 2006 (njh)
 ----------------------------------
   * libclamav/phishcheck.c:	Better way to find length of data to be

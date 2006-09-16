@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.185 2006/09/13 20:55:02 njh Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.186 2006/09/16 09:53:56 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1315,9 +1315,11 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 
 		blobDestroy(tmp);
 
-		m->binhex = NULL;
+		if(destroy_text)
+			m->binhex = NULL;
 
-		if((m->numberOfEncTypes == 1) && (m->encodingTypes[0] == BINHEX)) {
+		if((m->numberOfEncTypes == 0) ||
+		   ((m->numberOfEncTypes == 1) && (m->encodingTypes[0] == BINHEX))) {
 			cli_dbgmsg("Finished exporting binhex file\n");
 			return ret;
 		}
@@ -1327,6 +1329,8 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		/*
 		 * Fast copy
 		 */
+		cli_dbgmsg("messageExport: Entering fast copy mode\n");
+
 		filename = (char *)messageFindArgument(m, "filename");
 		if(filename == NULL) {
 			filename = (char *)messageFindArgument(m, "name");
@@ -1581,7 +1585,11 @@ messageToFileblob(message *m, const char *dir, int destroy)
 blob *
 messageToBlob(message *m, int destroy)
 {
-	blob *b = messageExport(m, NULL,
+	blob *b;
+
+	cli_dbgmsg("messageToBlob\n");
+
+	b = messageExport(m, NULL,
 		(void *(*)(void))blobCreate,
 		(void(*)(void *))blobDestroy,
 		(void(*)(void *, const char *, const char *))blobSetFilename,
