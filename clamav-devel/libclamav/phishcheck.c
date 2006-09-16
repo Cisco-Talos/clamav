@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.6  2006/09/16 15:49:27  acab
+ *  phishing: fixed bugs and updated docs
+ *
  *  Revision 1.5  2006/09/16 05:59:14  njh
  *  Fixed compiler warning
  *
@@ -639,7 +642,7 @@ str_strip(char **begin, const char **end, const char *what, size_t what_len)
 
 	/* strip trailing @what */
 	if(what_len <= (size_t)(str_end - sbegin)) {
-		str_end_what = str_end - what_len;
+		str_end_what = str_end - what_len + 1;
 		while((str_end_what > sbegin) &&
 		      (strncmp(str_end_what, what, what_len) == 0)) {
 			str_end -= what_len;
@@ -648,8 +651,8 @@ str_strip(char **begin, const char **end, const char *what, size_t what_len)
 	}
 
 	*begin = sbegin++;
-	while(sbegin+what_len < str_end) {
-		while(sbegin+what_len<str_end && !strncmp(sbegin,what,what_len)) {
+	while(sbegin+what_len <= str_end) {
+		while(sbegin+what_len<=str_end && !strncmp(sbegin,what,what_len)) {
 			const char* src = sbegin+what_len;
 			/* move string */
 			memmove(sbegin,src,str_end-src+1);
