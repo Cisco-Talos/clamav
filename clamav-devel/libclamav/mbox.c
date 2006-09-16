@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.332 2006/09/16 08:30:55 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.333 2006/09/16 09:53:56 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2008,8 +2008,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 				checkURLs(mainMessage, mctx, &rc,subtype==HTML);/* there might be html sent without subtype html too,
 													so scan them for phishing too*/
 #ifdef CL_EXPERIMENTAL
-				if(rc==3)
-				infected=TRUE;
+				if(rc == 3)
+					infected=TRUE;
 			}
 #endif
 			break;
@@ -3823,8 +3823,8 @@ checkURLs(message *mainMessage, mbox_ctx *mctx, int *rc, int is_html)
 			       cli_dbgmsg("PH:Phishing found\n");
 		       }
 	       }
-	       if(is_html && mctx->ctx->options&CL_SCAN_MAILURL)
-		       do_checkURLs(mainMessage, mctx->dir,&hrefs);
+	       if(is_html && (mctx->ctx->options&CL_SCAN_MAILURL) && (*rc != 3))
+		       do_checkURLs(mainMessage, mctx->dir, &hrefs);
        }
        hrefs_done(b,&hrefs);
 }
