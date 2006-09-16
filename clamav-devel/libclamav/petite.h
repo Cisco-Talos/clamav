@@ -23,6 +23,6 @@
 #include "cltypes.h"
 #include "pe.h"
 
-int petite_inflate2x_1to9(char *buf, uint32_t minrva, int bufsz, struct pe_image_section_hdr *sections, int sectcount, uint32_t Imagebase, uint32_t pep, int desc, int version, uint32_t ResRva, uint32_t ResSize);
+int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_image_section_hdr *sections, unsigned int sectcount, uint32_t Imagebase, uint32_t pep, int desc, int version, uint32_t ResRva, uint32_t ResSize);
 
 #endif

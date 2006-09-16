@@ -1,3 +1,8 @@
+Sat Sep 16 14:30:29 CEST 2006 (acab)
+------------------------------------
+  * libclamav/petite.h: fixed inconsistent function declaration.
+                        (thanks njh!)
+
 Sat Sep 16 10:54:30 BST 2006 (njh)
 ----------------------------------
   * libclamav/message.c:	Not all binhex messages were being decoded
