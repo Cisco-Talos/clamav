@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.5  2006/09/16 05:59:14  njh
+ *  Fixed compiler warning
+ *
  *  Revision 1.4  2006/09/16 05:39:54  njh
  *  Tidied print statement
  *
@@ -635,7 +638,7 @@ str_strip(char **begin, const char **end, const char *what, size_t what_len)
 	}
 
 	/* strip trailing @what */
-	if(what_len <= (str_end - sbegin)) {
+	if(what_len <= (size_t)(str_end - sbegin)) {
 		str_end_what = str_end - what_len;
 		while((str_end_what > sbegin) &&
 		      (strncmp(str_end_what, what, what_len) == 0)) {
