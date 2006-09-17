@@ -1,12 +1,16 @@
+Sun Sep 17 10:41:24 BST 2006 (njh)
+----------------------------------
+  * docs:	Updated to latest version of the Phish Signatures documentation
+
 Sat Sep 16 17:46:49 CEST 2006 (acab)
 ------------------------------------
   * phishing: fixed string truncation, crashes and updated relevant
-              documentation (patch from Edvin)
+		documentation (patch from Edvin)
 
 Sat Sep 16 14:30:29 CEST 2006 (acab)
 ------------------------------------
   * libclamav/petite.h: fixed inconsistent function declaration.
-                        (thanks njh!)
+		(thanks njh!)
 
 Sat Sep 16 10:54:30 BST 2006 (njh)
 ----------------------------------
