@@ -63,16 +63,6 @@ RealURL\InsetSpace ~
 DisplayedURL
 \end_layout
 
-\begin_layout Standard
-or:
-\end_layout
-
-\begin_layout Standard
-
-\series bold
-H RealURL
-\end_layout
-
 \begin_layout Itemize
 Where 
 \noun on
@@ -92,11 +82,7 @@ R regex, has to match entire url, see section
 \end_layout
 
 \begin_layout Description
-H has to match the host part of 
-\noun on
-realURL 
-\noun default
-only (a simple pattern, i.e.
+H has to match the host part of url only (a simple pattern, i.e.
  it is matched literally)
 \end_layout
 
@@ -119,7 +105,7 @@ flag filtering only makes sense in .pdb files, (however clamav won't complain
 
 \begin_layout Itemize
 for details on how to construct a flag number see section 
-\begin_inset LatexCommand \vref{sec:Flags}
+\begin_inset LatexCommand \prettyref{sec:Flags}
 
 \end_inset
 
@@ -152,8 +138,7 @@ realURL
 \noun default
 , and its contents is the 
 \noun on
-displayedURL.
- 
+displayedURL
 \end_layout
 
 \begin_layout Itemize
@@ -184,6 +169,49 @@ If any of the lines of daily.wdb/daily.pdb don't conform to the above file
 \begin_layout Standard
 Therefore it is important to test the daily.wdb/daily.pdb before packing it
  into daily.cvd!
+\end_layout
+
+\begin_layout Subsubsection
+Example
+\end_layout
+
+\begin_layout Standard
+The following line:
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+R http://www
+\backslash
+.google
+\backslash
+.(com|ro|it) www
+\backslash
+.google
+\backslash
+.com
+\end_layout
+
+\begin_layout Standard
+Means: 
+\emph on
+\noun on
+R
+\emph default
+ 
+\noun default
+- this is a regex.
+ 
+\end_layout
+
+\begin_layout Standard
+Example of url pairs matching: http://www.google.com www.google.com, http://www.googl
+e.it www.google.com.
+\end_layout
+
+\begin_layout Standard
+Example of url pairs not matching: http://www.google.c0m www.google.com
 \end_layout
 
 \begin_layout Subsection
@@ -257,23 +285,7 @@ H
 \noun default
  
 \series default
-flag, then a line like:
-\end_layout
-
-\begin_layout Quote
-H paypal.com
-\end_layout
-
-\begin_layout Standard
-Will match <a href=
-\begin_inset Quotes erd
-\end_inset
-
-http://owned.com
-\begin_inset Quotes erd
-\end_inset
-
->paypal.com</a>.
+flag, then the 2nd href will match too.
 \end_layout
 
 \begin_layout Subsubsection
@@ -454,6 +466,150 @@ realURL
 \end_layout
 
 \end_deeper
+\begin_layout Subsubsection
+Example
+\end_layout
+
+\begin_layout Standard
+Consider this html file:
+\end_layout
+
+\begin_layout Quote
+
+\emph on
+<a href=
+\begin_inset Quotes erd
+\end_inset
+
+evilurl
+\begin_inset Quotes erd
+\end_inset
+
+>www.paypal.com</a>
+\end_layout
+
+\begin_layout Quote
+
+\emph on
+<a href=
+\begin_inset Quotes erd
+\end_inset
+
+evilurl2
+\begin_inset Quotes erd
+\end_inset
+
+ title=
+\begin_inset Quotes erd
+\end_inset
+
+www.ebay.com
+\begin_inset Quotes erd
+\end_inset
+
+>click here to sign in</a>
+\end_layout
+
+\begin_layout Quote
+
+\emph on
+<form action=
+\begin_inset Quotes erd
+\end_inset
+
+evilurl_form
+\begin_inset Quotes erd
+\end_inset
+
+>
+\end_layout
+
+\begin_layout Quote
+
+\emph on
+Please sign in to <a href=
+\begin_inset Quotes erd
+\end_inset
+
+cgi.ebay.com
+\begin_inset Quotes erd
+\end_inset
+
+>Ebay</a> using this form
+\end_layout
+
+\begin_layout Quote
+
+\emph on
+<input type='text' name='username'>Username</input>
+\end_layout
+
+\begin_layout Quote
+
+\emph on
+....
+\end_layout
+
+\begin_layout Quote
+
+\emph on
+</form>
+\end_layout
+
+\begin_layout Quote
+
+\emph on
+<a href=
+\begin_inset Quotes erd
+\end_inset
+
+evilurl
+\begin_inset Quotes erd
+\end_inset
+
+><img src=
+\begin_inset Quotes erd
+\end_inset
+
+images.paypal.com/secure.jpg
+\begin_inset Quotes erd
+\end_inset
+
+></a>
+\end_layout
+
+\begin_layout Standard
+The resulting 
+\noun on
+realURL/displayedURL
+\noun default
+ pairs will be (note that one tag can generate multiple pairs):
+\end_layout
+
+\begin_layout Itemize
+evilurl / www.paypal.com
+\end_layout
+
+\begin_layout Itemize
+evilurl2 / click here to sign in
+\end_layout
+
+\begin_layout Itemize
+evilurl2 / www.ebay.com
+\end_layout
+
+\begin_layout Itemize
+evilurl_form / cgi.ebay.com
+\end_layout
+
+\begin_layout Itemize
+cgi.ebay.com / Ebay
+\end_layout
+
+\begin_layout Itemize
+evilurl / image.paypal.com/secure.jpg
+\end_layout
+
 \begin_layout Subsection
 Simple patterns
 \begin_inset LatexCommand \label{sec:Simple-patterns}
@@ -465,14 +621,33 @@ Simple patterns
 
 \begin_layout Standard
 Simple patterns are matched literally, i.e.
- if you say: www.google.com, it is going to match www.google.com, and only that.
- The .
+ if you say: 
+\end_layout
+
+\begin_layout Quote
+www.google.com
+\end_layout
+
+\begin_layout Standard
+it is going to match 
+\emph on
+www.google.com
+\emph default
+, and only that.
+ The 
+\emph on
+.
+ (dot)
+\emph default
  character has no special meaning (see the section on regexes 
 \begin_inset LatexCommand \vref{sec:Regular-expressions}
 
 \end_inset
 
- for how the .
+ for how the 
+\emph on
+.(dot)
+\emph default
  character behaves there)
 \end_layout
 
@@ -611,13 +786,11 @@ www
 \backslash
 .google
 \backslash
-.(com|ro|it) www
-\backslash
-.([a-zA-Z])+
+.(com|ro|it) ([a-zA-Z])+
 \backslash
 .google
 \backslash
-.com
+.(com|ro|it)
 \end_layout
 
 \begin_layout Standard
@@ -627,6 +800,32 @@ Everything till
 \emph default
  is processed internally, that paranthesis (and everything beyond) is processed
  by the posix core.
+\end_layout
+
+\begin_layout Standard
+Examples of url pairs that match: 
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+www.google.ro images.google.ro
+\end_layout
+
+\begin_layout Itemize
+www.google.com images.google.ro
+\end_layout
+
+\begin_layout Standard
+Example of url pairs that don't match:
+\end_layout
+
+\begin_layout Itemize
+www.google.ro images1.google.ro
+\end_layout
+
+\begin_layout Itemize
+images.google.com image.google.com
 \end_layout
 
 \begin_layout Subsection
@@ -718,7 +917,7 @@ You must decide for each line in the domainlist if you want to filter any
 So you add this line to daily.wdb:
 \end_layout
 
-\begin_layout Standard
+\begin_layout Itemize
 R102\InsetSpace ~
 www.ebay.com\InsetSpace ~
 .+
@@ -956,6 +1155,196 @@ it,
 \begin_layout Standard
 Groups can also be used to extract substring, but this is not supported
  by the clam engine, and not needed either in this case.
+\end_layout
+
+\begin_layout Section
+How to create database files
+\end_layout
+
+\begin_layout Subsection
+How to create and maintain the whitelist (daily.wdb)
+\end_layout
+
+\begin_layout Standard
+If the phishing code claims that a certain mail is phishing, but its not,
+ you have 2 choices:
+\end_layout
+
+\begin_layout Itemize
+examine your rules daily.pdb, and fix them if necessary (see: section
+\begin_inset LatexCommand \vref{sub:How-to-create}
+
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Itemize
+add it to the whitelist (discussed here)
+\end_layout
+
+\begin_layout Standard
+Lets assume you are having problems because of links like this in a mail:
+\end_layout
+
+\begin_layout Quote
+<a href=
+\begin_inset Quotes erd
+\end_inset
+
+http://69.0.241.57/bCentral/L.asp?L=XXXXXXXX
+\begin_inset Quotes erd
+\end_inset
+
+>http://www.bcentral.it/</a>
+\end_layout
+
+\begin_layout Standard
+After investigating those sites further, you decide they are no threat,
+ and create a line like this in daily.wdb:
+\end_layout
+
+\begin_layout Quote
+R http://www
+\backslash
+.bcentral
+\backslash
+.it/.+ http://69
+\backslash
+.0
+\backslash
+.241
+\backslash
+.57/bCentral/L
+\backslash
+.asp?L=.+ 
+\end_layout
+
+\begin_layout Standard
+Note: urls like the above can be used to track unique mail recipients, and
+ thus know if somebody actually reads mails (so they can send more spam).
+ However since this site required no authentication information, it is safe
+ from a phishing point of view.
+\end_layout
+
+\begin_layout Subsection
+How to create and maintain the domainlist (daily.pdb)
+\begin_inset LatexCommand \label{sub:How-to-create}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+When not using --phish-scan-alldomains (production environments for example),
+ you need to decide which urls you are going to check.
+ 
+\end_layout
+
+\begin_layout Standard
+Although at a first glance it might seem a good idea to check everything,
+ it would produce false positives.
+ Particularly newsletters, ads, etc.
+ are likely to use URLs that look like phishing attempts.
+\end_layout
+
+\begin_layout Standard
+Lets assume that you've recently seen many phishing attempts claiming they
+ come from Paypal.
+ Thus you need to add paypal to daily.pdb:
+\end_layout
+
+\begin_layout Quote
+R .+ .+
+\backslash
+.paypal
+\backslash
+.com
+\end_layout
+
+\begin_layout Standard
+The above line will block (detect as phishing) mails that contain urls that
+ claim to lead to paypal, but they don't in fact.
+\end_layout
+
+\begin_layout Standard
+Be carefull not to create regexes that match a too broad range of urls though.
+\end_layout
+
+\begin_layout Subsection
+Dealing with false positives, and undetected phishing mails
+\end_layout
+
+\begin_layout Subsubsection
+False positives
+\end_layout
+
+\begin_layout Standard
+Whenever you see a false positive (mail that is detected as phishing, but
+ its not), you need to examine 
+\emph on
+why
+\emph default
+ clamav decided that its phishing.
+ You can do this easily by building clamav with debugging (./configure --enable-e
+xperimental --enable-debug), and then running a tool:
+\end_layout
+
+\begin_layout Quote
+$contrib/phishing/why.py phishing.eml
+\end_layout
+
+\begin_layout Standard
+This will show the url that triggers the phish verdict, and a reason why
+ that url is considered phishing attempt.
+\end_layout
+
+\begin_layout Standard
+Once you know the reason, you might need to modify daily.pdb (if one of yours
+ rules inthere are too broad), or you need to add the url to daily.wdb.
+ If you think the algorithm is incorrect, please file a bugreport on bugzilla.cla
+mav.net, including the output of 
+\emph on
+why.py
+\emph default
+.
+\end_layout
+
+\begin_layout Subsubsection
+Undetected phish mails
+\end_layout
+
+\begin_layout Standard
+Using why.py doesn't help here unfortunately (it will say: clean), so all
+ you can do is:
+\end_layout
+
+\begin_layout Quote
+$clamscan/clamscan --phish-scan-alldomains undetected.eml
+\end_layout
+
+\begin_layout Standard
+And see if the mail is detected, if yes, then you need to add an appropiate
+ line to daily.pdb (see section 
+\begin_inset LatexCommand \vref{sub:How-to-create}
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+If the mail is not detected, then try using:
+\end_layout
+
+\begin_layout Quote
+$clamscan/clamscan --debug undetected.eml|less
+\end_layout
+
+\begin_layout Address
+Then see what urls are being checked, see if any of them is in a whitelist,
+ see if all urls are detected, etc.
 \end_layout
 
 \begin_layout Section
