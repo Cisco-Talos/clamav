@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.334 2006/09/16 10:38:17 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.335 2006/09/17 11:56:26 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -4646,9 +4646,11 @@ do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx 
 						free(filename);
 					}
 				} else {
-					if(mctx->ctx->options&CL_SCAN_MAILURL)
-						if(tableFind(mctx->subtypeTable, cptr) == HTML)
-							checkURLs(aMessage, mctx, rc, 1);
+					const int is_html = (tableFind(mctx->subtypeTable, cptr) == HTML);
+					if((mctx->ctx->options&CL_SCAN_MAILURL) && is_html)
+						checkURLs(aMessage, mctx, rc, 1);
+					else if(!(mctx->ctx->options&CL_SCAN_NOPHISHING))
+						checkURLs(aMessage, mctx, rc, is_html);
 					messageAddArgument(aMessage,
 						"filename=mixedtextportion");
 				}
