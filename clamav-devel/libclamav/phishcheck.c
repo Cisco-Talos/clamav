@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.7  2006/09/18 17:10:07  njh
+ *  Fix compilation error on Solaris 10
+ *
  *  Revision 1.6  2006/09/16 15:49:27  acab
  *  phishing: fixed bugs and updated docs
  *
@@ -227,6 +230,8 @@ For the Whitelist(.wdb)/Domainlist(.pdb) format see regex_list.c (search for Fla
  *
  */
 static char empty_string[]="";
+static	inline	void string_init_c(struct string* dest,char* data);
+static	void	string_assign_null(struct string* dest);
 static	char	*rfind(char *start, char c, size_t len);
 
 void url_check_init(struct url_check* urls)
@@ -281,7 +286,7 @@ void string_assign_c(struct string* dest,char* data)
 /* same as above, but it doesn't free old string, use only for initialization
  * Doesn't allow NULL pointers, they are replaced by pointer to empty string
  * */
-inline void string_init_c(struct string* dest,char* data)
+static inline void string_init_c(struct string* dest,char* data)
 {
 	dest->refcount = 1;
 	dest->data = data ? data : empty_string;
@@ -301,7 +306,7 @@ inline void string_assign_dup(struct string* dest,const char* start,const char* 
 	dest->ref=NULL;
 }
 
-inline void string_assign_null(struct string* dest)
+static inline void string_assign_null(struct string* dest)
 {
 	string_free(dest);
 	dest->data=empty_string;
