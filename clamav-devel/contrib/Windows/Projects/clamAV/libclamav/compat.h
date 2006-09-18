@@ -26,7 +26,7 @@
 
 #ifdef	C_WINDOWS
 
-#pragma warning(disable: 4996)      /* turn of warnings about depracated code */
+#pragma warning(disable: 4996)	/* turn off warnings about depracated code */
 
 /*#include	"snprintf.h"*/
 
@@ -89,7 +89,7 @@ struct timeval {
 struct DIR {
 	char    *dir_name;
 	int	just_opened;
-	unsigned int     find_file_handle;
+	void	*find_file_handle;
 	void	*find_file_data;	/* LPWIN32_FIND_DATA */
 };
 typedef struct	DIR	DIR;

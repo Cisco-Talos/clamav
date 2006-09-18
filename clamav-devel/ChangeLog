@@ -1,3 +1,10 @@
+Mon Sep 18 14:41:10 BST 2006 (njh)
+----------------------------------
+ * contrib/Windows/Projects/clamAV/libclamav:	Fixed support for 64 bit in
+		the opendir code.
+		Added handler for more than one mmap area.
+		Patches from Mark Pizzolato
+
 Sun Sep 17 10:41:24 BST 2006 (njh)
 ----------------------------------
   * docs:	Updated to latest version of the Phish Signatures documentation
