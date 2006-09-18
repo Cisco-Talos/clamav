@@ -40,12 +40,17 @@
 #include <stdlib.h>
 #include <direct.h>
 #include <io.h>
+#include <pthread.h>
 
 static const char *basename (const char *file_name);
 
 /* Offset between 1/1/1601 and 1/1/1970 in 100 nanosec units */
 #define _W32_FT_OFFSET (116444736000000000ULL)
 
+/*
+ * Patches for 64 bit support in opendir by
+ *	Mark Pizzolato clamav-win32@subscriptions.pizzolato.net
+ */
 DIR *
 opendir(const char *dirname)
 {
@@ -77,10 +82,10 @@ opendir(const char *dirname)
 
 	sprintf(mask, "%s\\*", ret->dir_name);
 
-	ret->find_file_handle = (unsigned int)FindFirstFile(mask,
+	ret->find_file_handle = FindFirstFile(mask,
 				    (LPWIN32_FIND_DATA)ret->find_file_data);
 
-	if(ret->find_file_handle == (unsigned int)INVALID_HANDLE_VALUE) {
+	if(ret->find_file_handle == INVALID_HANDLE_VALUE) {
 		free(ret->find_file_data);
 		free(ret->dir_name);
 		free(ret);
@@ -131,8 +136,8 @@ readdir_r(DIR *dir, struct dirent *dirent, struct dirent **output)
 
 	if(dir->just_opened)
 		dir->just_opened = FALSE;
-	else if(!FindNextFile ((HANDLE)dir->find_file_handle, (LPWIN32_FIND_DATA)dir->find_file_data))
-		switch(GetLastError ()) {
+	else if(!FindNextFile((HANDLE)dir->find_file_handle, (LPWIN32_FIND_DATA)dir->find_file_data))
+		switch(GetLastError()) {
 			case ERROR_NO_MORE_FILES:
 				*output = NULL;
 				return -1;
@@ -161,10 +166,10 @@ rewinddir(DIR *dir)
 
 	sprintf(mask, "%s\\*", dir->dir_name);
 
-	dir->find_file_handle = (unsigned int)FindFirstFile (mask,
+	dir->find_file_handle = FindFirstFile (mask,
 					(LPWIN32_FIND_DATA)dir->find_file_data);
 
-	if(dir->find_file_handle == (unsigned int)INVALID_HANDLE_VALUE) {
+	if(dir->find_file_handle == INVALID_HANDLE_VALUE) {
 		errno = EIO;
 		return;
 	}
@@ -248,18 +253,25 @@ getgid(void)
 	return 0;
 }
 
-static	HANDLE	h;	/* Not thread safe and only one mmap is supported at a time */
+/*
+ * mmap patches for more than one map area by
+ *	Mark Pizzolato clamav-win32@subscriptions.pizzolato.net
+ */
+static pthread_mutex_t mmap_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static struct mmap_context {
+	struct mmap_context *link;
+	HANDLE h;
+	LPVOID view;
+	size_t length;
+} *mmaps = NULL;
 
 caddr_t
 mmap(caddr_t address, size_t length, int protection, int flags, int fd, off_t offset)
 {
 	LPVOID addr;
-
-	if(h) {
-		/* FIXME */
-		cli_errmsg("mmap: only one region may be mapped at a time\n");
-		return MAP_FAILED;
-	}
+	HANDLE h;
+	struct mmap_context *ctx;
 
 	if(flags != MAP_PRIVATE) {
 		cli_errmsg("mmap: only MAP_SHARED is supported\n");
@@ -269,14 +281,12 @@ mmap(caddr_t address, size_t length, int protection, int flags, int fd, off_t of
 		cli_errmsg("mmap: only PROT_READ is supported\n");
 		return MAP_FAILED;
 	}
-
-	h = CreateFileMapping(_get_osfhandle(fd), NULL, PAGE_READONLY, 0, 0, NULL);
-
-	if(h && (GetLastError() == ERROR_ALREADY_EXISTS)) {
-		cli_errmsg("mmap: ERROR_ALREADY_EXISTS\n");
-		CloseHandle(h);
+	if(address != NULL) {
+		cli_errmsg("mmap: only NULL map address is supported\n");
 		return MAP_FAILED;
 	}
+	h = CreateFileMapping((HANDLE)_get_osfhandle(fd), NULL, PAGE_READONLY, 0, 0, NULL);
+
 	if(h == NULL) {
 		cli_errmsg("mmap: CreateFileMapping failed - error %d\n",
 			GetLastError());
@@ -287,29 +297,62 @@ mmap(caddr_t address, size_t length, int protection, int flags, int fd, off_t of
 		CloseHandle(h);
 		return MAP_FAILED;
 	}
-	/* FIXME hi DWORD (unsigned long) is 0, so this may not work on 64 bit machines */
-	addr = MapViewOfFile(h, FILE_MAP_READ, (DWORD)0,
-		((DWORD)address & 0xFFFFFFFF), length);
+	addr = MapViewOfFile(h, FILE_MAP_READ,
+		(DWORD)0, ((DWORD)offset & 0xFFFFFFFF),
+		length);
 
 	if(addr == NULL) {
 		cli_errmsg("mmap failed - error %d\n", GetLastError());
 		CloseHandle(h);
 		return MAP_FAILED;
 	}
+	pthread_mutex_lock(&mmap_mutex);
+	ctx = cli_malloc(sizeof(*ctx));
+	if(NULL == ctx) {
+		pthread_mutex_unlock(&mmap_mutex);
+		cli_errmsg("mmap: can't create context block\n");
+		UnmapViewOfFile(addr);
+		CloseHandle(h);
+		return MAP_FAILED;
+	}
+	ctx->h = h;
+	ctx->view = addr;
+	ctx->length = length;
+	ctx->link = mmaps;
+	mmaps = ctx;
+	pthread_mutex_unlock(&mmap_mutex);
 	return (caddr_t)addr;
 }
 
 int
 munmap(caddr_t addr, size_t length)
 {
-	if(h == NULL) {
+	struct mmap_context *ctx, *lctx = NULL;
+
+	pthread_mutex_lock(&mmap_mutex);
+	for(ctx = mmaps; ctx && (ctx->view != addr); ) {
+		lctx = ctx;
+		ctx = ctx->link;
+	}
+	if(ctx == NULL) {
+		pthread_mutex_unlock(&mmap_mutex);
 		cli_warnmsg("munmap with no corresponding mmap\n");
 		return -1;
 	}
-	UnmapViewOfFile((LPCVOID)addr);
-	CloseHandle(h);
+	if(ctx->length != length) {
+		pthread_mutex_unlock(&mmap_mutex);
+		cli_warnmsg("munmap with incorrect length specified - partial munmap unsupported\n");
+		return -1;
+	}
+	if(NULL == lctx)
+		mmaps = ctx->link;
+	else
+		lctx->link = ctx->link;
+	pthread_mutex_unlock(&mmap_mutex);
 
-	h = NULL;
+	UnmapViewOfFile(ctx->view);
+	CloseHandle(ctx->h);
+	free(ctx);
 
 	return 0;
 }
