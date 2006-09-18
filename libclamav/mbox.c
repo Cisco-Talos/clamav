@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.335 2006/09/17 11:56:26 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.336 2006/09/18 16:58:39 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3867,6 +3867,7 @@ do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs)
 #endif
 
 #else	/*!WITH_CURL*/
+			size_t len;
 #ifdef	CL_THREAD_SAFE
 			static pthread_mutex_t system_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
