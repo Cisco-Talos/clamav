@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.8  2006/09/19 16:52:09  njh
+ *  Fixed inconsistency between phishcheck.c and phishcheck.h
+ *
  *  Revision 1.7  2006/09/18 17:10:07  njh
  *  Fix compilation error on Solaris 10
  *
@@ -246,9 +249,9 @@ void url_check_init(struct url_check* urls)
 
 /* string reference counting implementation,
  * so that: we don't have to keep in mind who allocated what, and when needs to be freed,
- * and thus we won't leek memory*/
+ * and thus we won't leak memory*/
 
-inline void string_free(struct string* str)
+void string_free(struct string* str)
 {
 	for(;;){
 		str->refcount--;
@@ -294,7 +297,7 @@ static inline void string_init_c(struct string* dest,char* data)
 }
 
 /* make a copy of the string between start -> end*/
-inline void string_assign_dup(struct string* dest,const char* start,const char* end)
+void string_assign_dup(struct string* dest,const char* start,const char* end)
 {
 	char*	    ret  = cli_malloc(end-start+1);
 	strncpy(ret,start,end-start);
@@ -324,7 +327,7 @@ void string_assign_ref(struct string* dest,struct string* ref,char* data)
 	dest->ref=ref;
 }
 
-inline void free_if_needed(struct url_check* url)
+void free_if_needed(struct url_check* url)
 {
 	string_free(&url->realLink);
 	string_free(&url->displayLink);
