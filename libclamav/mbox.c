@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.336 2006/09/18 16:58:39 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.337 2006/09/20 10:22:07 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -138,7 +138,6 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 #endif
 
 #ifdef	FOLLOWURLS
-
 
 #ifdef	WITH_CURL	/* Set in configure */
 /*
@@ -1941,6 +1940,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 #ifdef CL_EXPERIMENTAL
 	const int doPhishingScan = !(mctx->ctx->options&CL_SCAN_NOPHISHING); /* || (mctx->ctx->options&CL_SCAN_PHISHING_GA_TRAIN) || (mctx->ctx->options&CL_SCAN_PHISHING_GA);  kept here for the GA MERGE */
 #endif
+
 	cli_dbgmsg("in parseEmailBody\n");
 
 	/* Anything left to be parsed? */
@@ -3761,7 +3761,7 @@ hrefs_done(blob *b, tag_arguments_t *hrefs)
 static blob *
 getHrefs(message *m, tag_arguments_t *hrefs)
 {
-	blob *b = messageToBlob(m,0);
+	blob *b = messageToBlob(m, 0);
 	size_t len;
 
 	if(b == NULL)
@@ -3781,18 +3781,16 @@ getHrefs(message *m, tag_arguments_t *hrefs)
 		return NULL;
 	}
 
-	blobClose(b);
-
 	hrefs->count = 0;
 	hrefs->tag = hrefs->value = NULL;
 	hrefs->contents = NULL;
 
-	cli_dbgmsg("checkURLs: calling html_normalise_mem\n");
+	cli_dbgmsg("getHrefs: calling html_normalise_mem\n");
 	if(!html_normalise_mem(blobGetData(b), len, NULL, hrefs)) {
 		blobDestroy(b);
 		return NULL;
 	}
-	cli_dbgmsg("checkURLs: html_normalise_mem returned\n");
+	cli_dbgmsg("getHrefs: html_normalise_mem returned\n");
 
 	/* TODO: Do we need to call remove_html_comments? */
 	return b;
@@ -3972,7 +3970,7 @@ do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs)
 
 #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
 static void
-checkURLs(message *m, mbox_ctx *mctx, int* rc, int is_html)
+checkURLs(message *m, mbox_ctx *mctx, int *rc, int is_html)
 {
 	blob *b = messageToBlob(m, 0);
 	size_t len;
@@ -4001,7 +3999,6 @@ checkURLs(message *m, mbox_ctx *mctx, int* rc, int is_html)
 		return;
 	}
 
-	blobClose(b);
 	t = tableCreate();
 	if(t == NULL) {
 		blobDestroy(b);
@@ -4176,7 +4173,7 @@ getURL(struct arg *arg)
 	const char *filename = arg->filename;
 	char fout[NAME_MAX + 1];
 #ifdef	CURLOPT_ERRORBUFFER
-	char errorbuffer[CURL_ERROR_SIZE];
+	char errorbuffer[CURL_ERROR_SIZE + 1];
 #elif	(LIBCURL_VERSION_NUM >= 0x070C00)
 	CURLcode res = CURLE_OK;
 #endif
@@ -4201,19 +4198,19 @@ getURL(struct arg *arg)
 	/* easy isn't the word I'd use... */
 	curl = curl_easy_init();
 	if(curl == NULL) {
-		cli_errmsg("curl_easy_init failed");
+		cli_errmsg("curl_easy_init failed\n");
 		return NULL;
 	}
 
 	(void)curl_easy_setopt(curl, CURLOPT_USERAGENT, "www.clamav.net");
 
 	if(curl_easy_setopt(curl, CURLOPT_URL, url) != 0) {
-		cli_errmsg("%s: curl_easy_setopt failed", url);
+		cli_errmsg("%s: curl_easy_setopt failed\n", url);
 		curl_easy_cleanup(curl);
 		return NULL;
 	}
 
-	snprintf(fout, NAME_MAX, "%s/%s", dir, filename);
+	snprintf(fout, sizeof(fout) - 1, "%s/%s", dir, filename);
 
 	fp = fopen(fout, "wb");
 

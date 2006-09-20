@@ -1,3 +1,9 @@
+Wed Sep 20 11:22:56 BST 2006 (njh)
+----------------------------------
+ * libclamav:	Removed some multiple calls to blobClose() and added one
+			byte to arrays which other libraries may have offset
+			by one issues with
+
 Mon Sep 18 14:41:10 BST 2006 (njh)
 ----------------------------------
  * contrib/Windows/Projects/clamAV/libclamav:	Fixed support for 64 bit in
