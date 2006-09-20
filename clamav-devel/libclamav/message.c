@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.186 2006/09/16 09:53:56 njh Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.187 2006/09/20 10:22:07 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1579,7 +1579,7 @@ messageToFileblob(message *m, const char *dir, int destroy)
 }
 
 /*
- * Decode and transfer the contents of the message into a blob
+ * Decode and transfer the contents of the message into a closed blob
  * The caller must free the returned blob
  */
 blob *

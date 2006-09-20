@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.53 2006/08/27 09:51:31 njh Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.54 2006/09/20 10:22:07 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -249,7 +249,7 @@ blobClose(blob *b)
 	assert(b->magic == BLOBCLASS);
 
 	if(b->isClosed) {
-		cli_dbgmsg("Attempt to close a previously closed blob\n");
+		cli_warnmsg("Attempt to close a previously closed blob\n");
 		return;
 	}
 

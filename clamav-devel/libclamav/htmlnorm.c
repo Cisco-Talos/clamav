@@ -428,10 +428,9 @@ void html_tag_arg_free(tag_arguments_t *tags)
  */
 static inline void html_tag_set_inahref(tag_arguments_t *tags,int idx,int in_ahref)
 {
-	char x[]="";
 	tags->contents[idx-1]=blobCreate();
 	blobAddData(tags->contents[idx-1],tags->value[in_ahref-1],strlen(tags->value[in_ahref-1]));
-	blobAddData(tags->contents[idx-1],x,1);
+	blobAddData(tags->contents[idx-1], "",1);
 	blobClose(tags->contents[idx-1]);
 }
 
@@ -448,8 +447,8 @@ static inline void html_tag_contents_append(tag_arguments_t *tags,int idx,const 
 
 static inline void html_tag_contents_done(tag_arguments_t *tags,int idx)
 {
-	char x[]="";
-	blobAddData(tags->contents[idx-1],x,1);/*append NULL character*/
+	/* append NUL byte */
+	blobAddData(tags->contents[idx-1], "", 1);
 	blobClose(tags->contents[idx-1]);
 }
 
