@@ -1,7 +1,7 @@
 /*
  *  Extract RAR archives
  *
- *  Copyright (C) 2005 trog@uncon.org
+ *  Copyright (C) 2005-2006 trog@uncon.org
  *
  *  This code is based on the work of Alexander L. Roshal
  *
@@ -71,31 +71,32 @@ typedef struct rar_metadata_tag
 #define SIZEOF_BEEAHEAD 24
 #define SIZEOF_STREAMHEAD 26
 
-#define  MHD_VOLUME         0x0001
-#define  MHD_COMMENT        0x0002
-#define  MHD_LOCK           0x0004
-#define  MHD_SOLID          0x0008
-#define  MHD_PACK_COMMENT   0x0010
-#define  MHD_NEWNUMBERING   0x0010
-#define  MHD_AV             0x0020
-#define  MHD_PROTECT        0x0040
-#define  MHD_PASSWORD       0x0080
-#define  MHD_FIRSTVOLUME    0x0100
+#define MHD_VOLUME		0x0001
+#define MHD_COMMENT		0x0002
+#define MHD_LOCK		0x0004
+#define MHD_SOLID		0x0008
+#define MHD_PACK_COMMENT	0x0010
+#define MHD_NEWNUMBERING	0x0010
+#define MHD_AV			0x0020
+#define MHD_PROTECT		0x0040
+#define MHD_PASSWORD		0x0080
+#define MHD_FIRSTVOLUME		0x0100
+#define MHD_ENCRYPTVER		0x0200
 
-#define  LHD_SPLIT_BEFORE   0x0001
-#define  LHD_SPLIT_AFTER    0x0002
-#define  LHD_PASSWORD       0x0004
-#define  LHD_COMMENT        0x0008
-#define  LHD_SOLID          0x0010
+#define LHD_SPLIT_BEFORE	0x0001
+#define LHD_SPLIT_AFTER		0x0002
+#define LHD_PASSWORD		0x0004
+#define LHD_COMMENT		0x0008
+#define LHD_SOLID		0x0010
 
-#define  LONG_BLOCK         0x8000
+#define LONG_BLOCK         0x8000
 
-#define  NC                 299  /* alphabet = {0, 1, 2, ..., NC - 1} */
-#define  DC                 60
-#define  RC		    28
-#define  LDC		    17
-#define  BC		    20
-#define  HUFF_TABLE_SIZE    (NC+DC+RC+LDC)
+#define NC                 299  /* alphabet = {0, 1, 2, ..., NC - 1} */
+#define DC                 60
+#define RC		    28
+#define LDC		    17
+#define BC		    20
+#define HUFF_TABLE_SIZE    (NC+DC+RC+LDC)
 
 #define MAX_BUF_SIZE        32768
 #define MAXWINSIZE          0x400000
@@ -113,8 +114,8 @@ typedef struct main_header_tag
 	uint8_t head_type __attribute__ ((packed));
 	uint16_t flags __attribute__ ((packed));
 	uint16_t head_size __attribute__ ((packed));
-	uint16_t reserved __attribute__ ((packed));
-	uint32_t reserved1 __attribute__ ((packed));
+	uint16_t highposav __attribute__ ((packed));
+	uint32_t posav __attribute__ ((packed));
 } main_header_t;
 
 typedef struct file_header_tag

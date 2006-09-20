@@ -1,3 +1,8 @@
+Wed Sep 20 11:26:11 BST 2006 (trog)
+-----------------------------------
+  *libclamav/unrar/unrar.c, unrar.h, unrarppm.c, unrarvm.c: Update to align
+			with current RAR version.
+
 Wed Sep 20 11:22:56 BST 2006 (njh)
 ----------------------------------
  * libclamav:	Removed some multiple calls to blobClose() and added one

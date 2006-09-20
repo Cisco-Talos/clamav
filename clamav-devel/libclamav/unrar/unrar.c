@@ -1,7 +1,7 @@
 /*
  *  Extract RAR archives
  *
- *  Copyright (C) 2005 trog@uncon.org
+ *  Copyright (C) 2005-2006 trog@uncon.org
  *
  *  This code is based on the work of Alexander L. Roshal
  *
@@ -237,6 +237,8 @@ static void copy_string(unpack_data_t *unpack_data, unsigned int length, unsigne
 
 static void *read_header(int fd, header_type hdr_type)
 {
+	uint8_t encrypt_ver;
+
 	switch(hdr_type) {
 	case MAIN_HEAD: {
 		main_header_t *main_hdr;
@@ -252,6 +254,14 @@ static void *read_header(int fd, header_type hdr_type)
 		main_hdr->flags = rar_endian_convert_16(main_hdr->flags);
 		main_hdr->head_size = rar_endian_convert_16(main_hdr->head_size);
 		main_hdr->head_crc = rar_endian_convert_16(main_hdr->head_crc);
+		if (main_hdr->flags & MHD_ENCRYPTVER) {
+			cli_dbgmsg("RAR Encrypt version: %d\n", encrypt_ver);
+	                if (cli_readn(fd, &encrypt_ver, sizeof(uint8_t)) != sizeof(uint8_t)) {
+                        	free(main_hdr);
+                        	return NULL;
+			}
+                }
+
 		return main_hdr;
 		}
 	case FILE_HEAD: {
@@ -504,7 +514,8 @@ static void unp_write_buf(unpack_data_t *unpack_data)
 					next_filter = unpack_data->PrgStack.array[i+1];
 					if (next_filter==NULL ||
 							next_filter->block_start!=block_start ||
-							next_filter->block_length!=filtered_size) {
+							next_filter->block_length!=filtered_size ||
+							next_filter->next_window) {
 						break;
 					}
 					rarvm_set_memory(&unpack_data->rarvm_data, 0,
@@ -1355,7 +1366,7 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 	unsigned char filename[1024];
 	unpack_data_t *unpack_data;
 	rar_metadata_t *metadata=NULL, *metadata_tail=NULL, *new_metadata;
-	
+
 	cli_dbgmsg("in cli_unrar\n");
 	if (!is_rar_archive(fd)) {
 		return FALSE;
@@ -1370,7 +1381,7 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 	unpack_data->PrgStack.array = unpack_data->Filters.array = NULL;
 	unpack_data->PrgStack.num_items = unpack_data->Filters.num_items = 0;
 	unpack_data->unp_crc = 0xffffffff;
-	
+
 	/* unpack_init_data(FALSE, unpack_data); */
 	ppm_constructor(&unpack_data->ppm_data);
 	
@@ -1456,7 +1467,7 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 		if (file_header->flags & LHD_PASSWORD) {
 			cli_dbgmsg("PASSWORDed file: %s\n", file_header->filename);
 			metadata_tail->encrypted = TRUE;
-		} else if (file_header->unpack_size) {
+		} else /*if (file_header->unpack_size)*/ {
 			snprintf(filename, 1024, "%s/%lu.ura", dirname, file_count);
 			ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0600);
 			if (ofd < 0) {

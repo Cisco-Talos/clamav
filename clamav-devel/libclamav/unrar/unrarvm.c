@@ -1,7 +1,7 @@
 /*
  *  Extract RAR archives
  *
- *  Copyright (C) 2005 trog@uncon.org
+ *  Copyright (C) 2005-2006 trog@uncon.org
  *
  *  This code is based on the work of Alexander L. Roshal
  *
@@ -1067,6 +1067,7 @@ int rarvm_prepare(rarvm_data_t *rarvm_data, rarvm_input_t *rarvm_input, unsigned
 			cur_cmd->op1.data = filter_type;
 			cur_cmd->op1.addr = &cur_cmd->op1.data;
 			cur_cmd->op2.addr = &cur_cmd->op2.data;
+			cur_cmd->op1.type = cur_cmd->op2.type = VM_OPNONE;
 			code_size = 0;
 		}
 
@@ -1153,6 +1154,7 @@ int rarvm_prepare(rarvm_data_t *rarvm_data, rarvm_input_t *rarvm_input, unsigned
 	cur_cmd->op_code = VM_RET;
 	cur_cmd->op1.addr = &cur_cmd->op1.data;
 	cur_cmd->op2.addr = &cur_cmd->op2.data;
+	cur_cmd->op1.type = cur_cmd->op2.type = VM_OPNONE;
 	
 	for (i=0 ; i < prg->cmd_count ; i++) {
 		cmd = &prg->cmd.array[i];
