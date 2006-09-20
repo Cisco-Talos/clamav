@@ -40,10 +40,11 @@ static void rar_dbgmsg(){};
 #endif
 
 #define MAX(a,b)    (((a) > (b)) ? (a) : (b))
+#define MAX_O 64
 
 const unsigned int UNIT_SIZE=MAX(sizeof(struct ppm_context), sizeof(struct rar_mem_blk_tag));
 const unsigned int FIXED_UNIT_SIZE=12;
-const int INT_BITS=7, PERIOD_BITS=7, TOT_BITS=14, MAX_O=64;
+const int INT_BITS=7, PERIOD_BITS=7, TOT_BITS=14;
 const int INTERVAL=1 << 7, BIN_SCALE=1 << 14, MAX_FREQ=124;
 const unsigned int TOP=1 << 24, BOT=1 << 15;
 
