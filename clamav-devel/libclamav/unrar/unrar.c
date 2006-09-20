@@ -255,11 +255,11 @@ static void *read_header(int fd, header_type hdr_type)
 		main_hdr->head_size = rar_endian_convert_16(main_hdr->head_size);
 		main_hdr->head_crc = rar_endian_convert_16(main_hdr->head_crc);
 		if (main_hdr->flags & MHD_ENCRYPTVER) {
-			cli_dbgmsg("RAR Encrypt version: %d\n", encrypt_ver);
 	                if (cli_readn(fd, &encrypt_ver, sizeof(uint8_t)) != sizeof(uint8_t)) {
                         	free(main_hdr);
                         	return NULL;
 			}
+			cli_dbgmsg("RAR Encrypt version: %d\n", encrypt_ver);
                 }
 
 		return main_hdr;
