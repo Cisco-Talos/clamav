@@ -29,7 +29,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdio.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -44,7 +46,7 @@
 #include "others.h"
 #include "cltypes.h"
 
-#define int64to32(x) ((uint)(x))
+#define int64to32(x) ((unsigned int)(x))
 #define rar_endian_convert_16(v)	le16_to_host(v)
 #define rar_endian_convert_32(v)	le32_to_host(v)
 

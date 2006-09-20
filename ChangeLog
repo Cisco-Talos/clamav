@@ -1,6 +1,10 @@
+Wed Sep 20 14:03:49 BST 2006 (trog)
+-----------------------------------
+  * libclamav/unrar/unrar.c, unrarppm.c: portability changes
+
 Wed Sep 20 11:26:11 BST 2006 (trog)
 -----------------------------------
-  *libclamav/unrar/unrar.c, unrar.h, unrarppm.c, unrarvm.c: Update to align
+  * libclamav/unrar/unrar.c, unrar.h, unrarppm.c, unrarvm.c: Update to align
 			with current RAR version.
 
 Wed Sep 20 11:22:56 BST 2006 (njh)
