@@ -1,7 +1,7 @@
 /*
  *  Extract RAR archives
  *
- *  Copyright (C) 2005 trog@uncon.org
+ *  Copyright (C) 2005-2006 trog@uncon.org
  *
  *  This code is based on the work of Alexander L. Roshal
  *
@@ -39,14 +39,15 @@ static void cli_dbgmsg(){};
 static void rar_dbgmsg(){};
 #endif
 
-const unsigned int UNIT_SIZE=sizeof(struct ppm_context);
+#define MAX(a,b)    (((a) > (b)) ? (a) : (b))
+
+const unsigned int UNIT_SIZE=MAX(sizeof(struct ppm_context), sizeof(struct rar_mem_blk_tag));
 const unsigned int FIXED_UNIT_SIZE=12;
 const int INT_BITS=7, PERIOD_BITS=7, TOT_BITS=14, MAX_O=64;
 const int INTERVAL=1 << 7, BIN_SCALE=1 << 14, MAX_FREQ=124;
 const unsigned int TOP=1 << 24, BOT=1 << 15;
 
 /************* Start of Allocator code block ********************/
-
 static void sub_allocator_init(sub_allocator_t *sub_alloc)
 {
 	sub_alloc->sub_allocator_size = 0;
@@ -70,6 +71,11 @@ static void *sub_allocator_remove_node(sub_allocator_t *sub_alloc, int indx)
 static int sub_allocator_u2b(int nu)
 {
 	return UNIT_SIZE*nu;
+}
+
+static rar_mem_blk_t* sub_allocator_mbptr(rar_mem_blk_t* base_ptr, int items)
+{
+        return ((rar_mem_blk_t*) (((unsigned char *)(base_ptr)) + sub_allocator_u2b(items) ));
 }
 
 static void sub_allocator_split_block(sub_allocator_t *sub_alloc, void *pv,
@@ -186,19 +192,20 @@ static void sub_allocator_glue_free_blocks(sub_allocator_t *sub_alloc)
 	}
 	
 	for (p=s0.next ; p != &s0 ; p=p->next) {
-		while ((p1 = p+p->nu)->stamp == 0xFFFF && ((int)p->nu)+p1->nu < 0x10000) {
+		while ((p1 = sub_allocator_mbptr(p,p->nu))->stamp == 0xFFFF &&
+				((int)p->nu)+p1->nu < 0x10000) {
 			rar_mem_blk_remove(p1);
 			p->nu += p1->nu;
 		}
 	}
 	
 	while ((p=s0.next) != &s0) {
-		for (rar_mem_blk_remove(p), sz=p->nu; sz > 128; sz-=128, p+=128) {
+		for (rar_mem_blk_remove(p), sz=p->nu; sz > 128; sz-=128, p=sub_allocator_mbptr(p, 128)) {
 			sub_allocator_insert_node(sub_alloc, p, N_INDEXES-1);
 		}
 		if (sub_alloc->indx2units[i=sub_alloc->units2indx[sz-1]] != sz) {
 			k = sz-sub_alloc->indx2units[--i];
-			sub_allocator_insert_node(sub_alloc, p+(sz-k), k-1);
+			sub_allocator_insert_node(sub_alloc, sub_allocator_mbptr(p,sz-k), k-1);
 		}
 		sub_allocator_insert_node(sub_alloc, p, i);
 	}
@@ -969,6 +976,10 @@ int ppm_decode_char(ppm_data_t *ppm_data, int fd, unpack_data_t *unpack_data)
 		return -1;
 	}
 	if (ppm_data->min_context->num_stats != 1) {
+		if (ppm_data->min_context->con_ut.u.stats <= ppm_data->sub_alloc.ptext ||
+			ppm_data->min_context->con_ut.u.stats > ppm_data->sub_alloc.heap_end) {
+			return -1;
+		}
 		if (!ppm_decode_symbol1(ppm_data, ppm_data->min_context)) {
 			return -1;
 		}
