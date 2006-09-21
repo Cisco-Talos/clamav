@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.339 2006/09/21 14:42:06 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.340 2006/09/21 16:38:33 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -4214,6 +4214,408 @@ checkURLs(message *m, mbox_ctx *mctx, int* rc, int is_html)
  */
 #ifdef	WITH_CURL
 
+#ifdef	CL_EXPERIMENTAL
+/*
+ * Removing the reliance on libcurl
+ * Includes some of the freshclam hacks by Everton da Silva Marques
+ * everton.marques@gmail.com>
+ */
+#include <netdb.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <net/if.h>
+#include <arpa/inet.h>
+#include <ctype.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/time.h>
+#include <stdlib.h>
+
+#ifndef timercmp
+# define timercmp(a, b, cmp)          \
+  (((a)->tv_sec == (b)->tv_sec) ?     \
+   ((a)->tv_usec cmp (b)->tv_usec) :  \
+   ((a)->tv_sec cmp (b)->tv_sec))
+#endif /* timercmp */
+
+#ifndef timersub
+# define timersub(a, b, result)                       \
+  do {                                                \
+    (result)->tv_sec = (a)->tv_sec - (b)->tv_sec;     \
+    (result)->tv_usec = (a)->tv_usec - (b)->tv_usec;  \
+    if ((result)->tv_usec < 0) {                      \
+      --(result)->tv_sec;                             \
+      (result)->tv_usec += 1000000;                   \
+    }                                                 \
+  } while (0)
+#endif /* timersub */
+
+static long nonblock_fcntl(int sock);
+static void restore_fcntl(int sock, long fcntl_flags);
+static int nonblock_connect(int sock, const struct sockaddr *addr, socklen_t addrlen, int secs);
+static int connect_error(int sock);
+
+#define NONBLOCK_SELECT_MAX_FAILURES 3
+#define NONBLOCK_MAX_BOGUS_LOOPS     10
+static void *
+#ifdef	CL_THREAD_SAFE
+getURL(void *a)
+#else
+getURL(struct arg *arg)
+#endif
+{
+	FILE *fp;
+#ifdef	CL_THREAD_SAFE
+	struct arg *arg = (struct arg *)a;
+#endif
+	const char *url = arg->url;
+	const char *dir = arg->dir;
+	const char *filename = arg->filename;
+	char fout[NAME_MAX + 1];
+	const struct protoent *proto;
+	int sd, n;
+	struct sockaddr_in server;
+	in_addr_t ip;
+	char buf[BUFSIZ];
+	char site[BUFSIZ];
+	in_port_t port = 80;
+	int doingsite = 1;
+	char *ptr;
+	int flags;
+	const char *proxy;
+
+	snprintf(fout, sizeof(fout) - 1, "%s/%s", dir, filename);
+
+	cli_dbgmsg("Saving %s to %s\n", url, fout);
+	fp = fopen(fout, "wb");
+
+	if(fp == NULL) {
+		cli_errmsg("Can't open '%s' for writing", fout);
+		return NULL;
+	}
+	proxy = getenv("http_proxy");	/* FIXME: handle no_proxy */
+	if(proxy && *proxy) {
+		cli_dbgmsg("Getting %s via %s\n", url, proxy);
+		snprintf(buf, sizeof(buf) - 1,
+			"GET /%s HTTP/1.0\nHost: %s\nUser-Agent: www.clamav.net\n\n",
+			url, site);
+		if(strncasecmp(proxy, "http://", 7) != 0) {
+			cli_warnmsg("Unsupported proxy protocol\n");
+			fclose(fp);
+			return NULL;
+		}
+
+		proxy += 7;
+		ptr = site;
+		while(*proxy) {
+			if(doingsite && (*proxy == ':')) {
+				port = 0;
+				while(isdigit(*++proxy)) {
+					port *= 10;
+					port += *proxy - '0';
+				}
+				continue;
+			}
+			if(doingsite && (*proxy == '/')) {
+				doingsite = 0;
+				proxy++;
+				*ptr = '\0';
+				break;
+			}
+			*ptr++ = *proxy++;
+		}
+
+		memset((char *)&server, 0, sizeof(struct sockaddr_in));
+		server.sin_family = AF_INET;
+		server.sin_port = htons(port);
+
+		ip = inet_addr(site);
+#ifdef	INADDR_NONE
+		if(ip == INADDR_NONE) {
+#else
+		if(ip == (in_addr_t)-1) {
+#endif
+			const struct hostent *h = gethostbyname(site);
+
+			if(h == NULL) {
+				cli_dbgmsg("Unknown host %s\n", site);
+				fclose(fp);
+				return NULL;
+			}
+
+			memcpy((char *)&ip, h->h_addr, sizeof(ip));
+		}
+		server.sin_addr.s_addr = ip;
+
+		proto = getprotobyname("tcp");
+		if(proto == NULL) {
+			cli_warnmsg("Unknown prototol tcp, check /etc/protocols\n");
+			fclose(fp);
+			return NULL;
+		}
+		if((sd = socket(AF_INET, SOCK_STREAM, proto->p_proto)) < 0)
+			return NULL;
+		flags = nonblock_fcntl(sd);
+		if(nonblock_connect(sd, (struct sockaddr *)&server, sizeof(struct sockaddr_in), 5) < 0) {
+			close(sd);
+			fclose(fp);
+			return NULL;
+		}
+		restore_fcntl(sd, flags);
+
+		snprintf(buf, sizeof(buf) - 1,
+			"GET %s HTTP/1.0\nHost: %s\nUser-Agent: www.clamav.net\n\n",
+				url, site);
+	} else {
+		cli_dbgmsg("Getting %s\n", url);
+
+		if(strncasecmp(url, "http://", 7) != 0) {
+			cli_warnmsg("Unsupported protocol\n");
+			fclose(fp);
+			return NULL;
+		}
+
+		url += 7;
+		ptr = site;
+		while(*url) {
+			if(doingsite && (*url == ':')) {
+				port = 0;
+				while(isdigit(*++url)) {
+					port *= 10;
+					port += *url - '0';
+				}
+				continue;
+			}
+			if(doingsite && (*url == '/')) {
+				doingsite = 0;
+				url++;
+				*ptr = '\0';
+				break;
+			}
+			*ptr++ = *url++;
+		}
+
+		memset((char *)&server, 0, sizeof(struct sockaddr_in));
+		server.sin_family = AF_INET;
+		server.sin_port = htons(port);
+
+		ip = inet_addr(site);
+#ifdef	INADDR_NONE
+		if(ip == INADDR_NONE) {
+#else
+		if(ip == (in_addr_t)-1) {
+#endif
+			const struct hostent *h = gethostbyname(site);
+
+			if(h == NULL) {
+				cli_dbgmsg("Unknown host %s\n", site);
+				fclose(fp);
+				return NULL;
+			}
+
+			memcpy((char *)&ip, h->h_addr, sizeof(ip));
+		}
+		server.sin_addr.s_addr = ip;
+
+		proto = getprotobyname("tcp");
+		if(proto == NULL) {
+			cli_warnmsg("Unknown prototol tcp, check /etc/protocols\n");
+			fclose(fp);
+			return NULL;
+		}
+		if((sd = socket(AF_INET, SOCK_STREAM, proto->p_proto)) < 0) {
+			fclose(fp);
+			return NULL;
+		}
+		flags = nonblock_fcntl(sd);
+		if(nonblock_connect(sd, (struct sockaddr *)&server, sizeof(struct sockaddr_in), 5) < 0) {
+			close(sd);
+			fclose(fp);
+			return NULL;
+		}
+		restore_fcntl(sd, flags);
+
+		snprintf(buf, sizeof(buf) - 1,
+			"GET /%s HTTP/1.0\nHost: %s\nUser-Agent: www.clamav.net\n\n",
+			url, site);
+	}
+
+	if(send(sd, buf, strlen(buf), 0) < 0) {
+		close(sd);
+		fclose(fp);
+		return NULL;
+	}
+
+	shutdown(sd, SHUT_WR);
+
+	for(;;) {
+		fd_set set;
+		struct timeval tv;
+
+		FD_ZERO(&set);
+		FD_SET(sd, &set);
+
+		tv.tv_sec = 30;	/* FIXME: make this customisable */
+		tv.tv_usec = 0;
+
+		if(select(sd + 1, &set, NULL, NULL, &tv) < 0) {
+			if(errno == EINTR)
+				continue;
+			close(sd);
+			fclose(fp);
+			return NULL;
+		}
+		if(!FD_ISSET(sd, &set)) {
+			fclose(fp);
+			close(sd);
+			return NULL;
+		}
+		n = recv(sd, buf, BUFSIZ, 0);
+		if(n < 0) {
+			fclose(fp);
+			close(sd);
+			return NULL;
+		}
+		if(n == 0)
+			break;
+		if(fwrite(buf, n, 1, fp) != 1) {
+			cli_warnmsg("Error writing %d bytes to %s\n",
+				n, fout);
+			break;
+		}
+	}
+
+	fclose(fp);
+	close(sd);
+	return NULL;
+}
+
+static long
+nonblock_fcntl(int sock)
+{
+	long fcntl_flags;	/* Save fcntl() flags */
+
+	fcntl_flags = fcntl(sock, F_GETFL, 0);
+	if(fcntl_flags < 0)
+		cli_warnmsg("nonblock_fcntl: saving: fcntl(%d, F_GETFL): errno=%d: %s\n",
+			sock, errno, strerror(errno));
+	else if(fcntl(sock, F_SETFL, fcntl_flags | O_NONBLOCK))
+		cli_warnmsg("nonblock_fcntl: fcntl(%d, F_SETFL, O_NONBLOCK): errno=%d: %s\n",
+			sock, errno, strerror(errno));
+
+	return fcntl_flags;
+}
+
+static void
+restore_fcntl(int sock, long fcntl_flags)
+{
+	if (fcntl_flags != -1)
+		if (fcntl(sock, F_SETFL, fcntl_flags)) {
+			cli_warnmsg("restore_fcntl: restoring: fcntl(%d, F_SETFL): errno=%d: %s\n",
+				sock, errno, strerror(errno));
+		}
+}
+
+static int
+nonblock_connect(int sock, const struct sockaddr *addr, socklen_t addrlen, int secs)
+{
+	/* Max. of unexpected select() failures */
+	int select_failures = NONBLOCK_SELECT_MAX_FAILURES;
+	/* Max. of useless loops */
+	int bogus_loops = NONBLOCK_MAX_BOGUS_LOOPS;
+	struct timeval timeout;  /* When we should time out */
+	int numfd;		/* Highest fdset fd plus 1 */
+
+	/* Calculate into 'timeout' when we should time out */
+	gettimeofday(&timeout, 0);
+	timeout.tv_sec += secs;
+
+	/* Launch (possibly) non-blocking connect() request */
+	if(connect(sock, addr, addrlen)) {
+		int e = errno;
+		cli_dbgmsg("DEBUG nonblock_connect: connect(): fd=%d errno=%d: %s\n",
+			sock, e, strerror(e));
+		switch (e) {
+			case EALREADY:
+			case EINPROGRESS:
+				break; /* wait for connection */
+			case EISCONN:
+				return 0; /* connected */
+			default:
+				cli_warnmsg("nonblock_connect: connect(): fd=%d errno=%d: %s\n",
+					sock, e, strerror(e));
+				return -1; /* failed */
+		}
+	} else
+		return connect_error(sock);
+
+	numfd = sock + 1; /* Highest fdset fd plus 1 */
+
+	for (;;) {
+		fd_set fds;
+		struct timeval now;
+		struct timeval wait;
+		int n;
+
+		/* Force timeout if we ran out of time */
+		gettimeofday(&now, 0);
+		if (timercmp(&now, &timeout, >)) {
+			cli_warnmsg("connect timing out (%d secs)\n",
+				secs);
+			break; /* failed */
+		}
+
+		/* Calculate into 'wait' how long to wait */
+		timersub(&timeout, &now, &wait); /* wait = timeout - now */
+
+		/* Init fds with 'sock' as the only fd */
+		FD_ZERO(&fds);
+		FD_SET(sock, &fds);
+
+		n = select(numfd, 0, &fds, 0, &wait);
+		if (n < 0) {
+			cli_warnmsg("nonblock_connect: select() failure %d: errno=%d: %s\n",
+				select_failures, errno, strerror(errno));
+			if (--select_failures >= 0)
+				continue; /* keep waiting */
+			break; /* failed */
+		}
+
+		cli_dbgmsg("DEBUG nonblock_connect: select = %d\n", n);
+
+		if (n) {
+			return connect_error(sock);
+		}
+
+		/* Select returned, but there is no work to do... */
+		if (--bogus_loops < 0) {
+			cli_warnmsg("nonblock_connect: giving up due to excessive bogus loops\n");
+			break; /* failed */
+		}
+
+	} /* for loop: keep waiting */
+
+	return -1; /* failed */
+}
+
+static int
+connect_error(int sock)
+{
+	int optval;
+	socklen_t optlen;
+
+	optlen = sizeof(optval);
+	getsockopt(sock, SOL_SOCKET, SO_ERROR, &optval, &optlen);
+
+	if(optval)
+		cli_warnmsg("connect_error: getsockopt(SO_ERROR): fd=%d error=%d: %s\n",
+			sock, optval, strerror(optval));
+
+	return optval ? -1 : 0;
+}
+
+#else
+
 static	int	curl_has_segfaulted;
 /*
  * Inspite of numerious bug reports, curl is still buggy :-(
@@ -4352,6 +4754,7 @@ getURL(struct arg *arg)
 	signal(SIGSEGV, oldsegv);
 	return NULL;
 }
+#endif
 
 #endif
 #endif

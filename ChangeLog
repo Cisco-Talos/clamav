@@ -1,3 +1,8 @@
+Thu Sep 21 17:39:29 BST 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Experimental mode now no longer uses libcurl to
+				download referenced pages to be scanned
+
 Thu Sep 21 10:36:32 BST 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Handle segfaults in libcurl
