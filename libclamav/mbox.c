@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.338 2006/09/21 09:33:31 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.339 2006/09/21 14:42:06 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -169,7 +169,10 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
  *	==2835==    at 0x40F67BD: Curl_resolv (in /usr/lib/libcurl.so.3.0.0)
  *
  * This bug has been reported upstream, however they claim that the bug
- *	does not exist :-(
+ *	does not exist :-(. I have received reports that 7.15.5 suffers from the
+ *	same problem in Curl_resolv
+ *
+ * TODO: Drop curl and do it ourselves
  */
 #if     (LIBCURL_VERSION_NUM < 0x070B00)
 #undef	WITH_CURL	/* also undef FOLLOWURLS? */
@@ -247,6 +250,7 @@ static	void	hrefs_done(blob *b,tag_arguments_t* hrefs);
 
 #ifdef	WITH_CURL
 struct arg {
+	CURL *curl;
 	const char *url;
 	const char *dir;
 	char *filename;
@@ -1172,11 +1176,38 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 	char tmpfilename[16];
 	int tmpfd;
 #endif
+#ifdef	FOLLOWURLS
+	static int initialised = 0;
+#ifdef	CL_THREAD_SAFE
+	static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
+#endif
 
 #ifdef	NEW_WORLD
 	cli_dbgmsg("fall back to old world\n");
 #else
 	cli_dbgmsg("in mbox()\n");
+#endif
+
+#ifdef	FOLLOWURLS
+	if(ctx->options&CL_SCAN_MAILURL) {
+#ifdef	CL_THREAD_SAFE
+		pthread_mutex_lock(&init_mutex);
+#endif
+		if(!initialised) {
+			if(curl_global_init(CURL_GLOBAL_ALL) != 0) {
+#ifdef	CL_THREAD_SAFE
+				pthread_mutex_unlock(&init_mutex);
+#endif
+				cli_warnmsg("curl_global_init failed, disabling mail-follow-urls");
+				ctx->options &= ~CL_SCAN_MAILURL;
+			}
+			initialised = 1;
+		}
+#ifdef	CL_THREAD_SAFE
+		pthread_mutex_unlock(&init_mutex);
+#endif
+	}
 #endif
 
 	i = dup(desc);
@@ -3779,7 +3810,7 @@ getHrefs(message *m, tag_arguments_t *hrefs)
 
 	/* TODO: make this size customisable */
 	if(len > 100*1024) {
-		cli_warnmsg("Viruses pointed to by URL not scanned in large message\n");
+		cli_warnmsg("Viruses pointed to by URLs not scanned in large message\n");
 		blobDestroy(b);
 		return NULL;
 	}
@@ -3906,15 +3937,27 @@ do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs)
 
 #ifdef	WITH_CURL
 #ifdef	CL_THREAD_SAFE
+			args[n].curl = curl_easy_init();
+			if(args[n].curl == NULL) {
+				cli_errmsg("curl_easy_init failed\n");
+				continue;
+			}
 			args[n].dir = dir;
 			args[n].url = url;
 			args[n].filename = strdup(name);
 			pthread_create(&tid[n], NULL, getURL, &args[n]);
 #else
+			/* easy isn't the word I'd use... */
+			arg.curl = curl_easy_init();
+			if(arg.curl == NULL) {
+				cli_errmsg("curl_easy_init failed\n");
+				continue;
+			}
 			arg.url = url;
 			arg.dir = dir;
 			arg.filename = name;
 			getURL(&arg);
+			curl_easy_cleanup(arg.curl);
 #endif
 
 #else	/*!WITH_CURL*/
@@ -3959,6 +4002,7 @@ do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs)
 	while(--n >= 0) {
 		pthread_join(tid[n], NULL);
 		free(args[n].filename);
+		curl_easy_cleanup(args[n].curl);
 	}
 #endif
 }
@@ -4076,15 +4120,27 @@ checkURLs(message *m, mbox_ctx *mctx, int *rc, int is_html)
 
 #ifdef	WITH_CURL
 #ifdef	CL_THREAD_SAFE
+			args[n].curl = curl_easy_init();
+			if(args[n].curl == NULL) {
+				cli_errmsg("curl_easy_init failed\n");
+				continue;
+			}
 			args[n].dir = mctx->dir;
 			args[n].url = url;
 			args[n].filename = strdup(name);
 			pthread_create(&tid[n], NULL, getURL, &args[n]);
 #else
+			/* easy isn't the word I'd use... */
+			arg.curl = curl_easy_init();
+			if(arg.curl == NULL) {
+				cli_errmsg("curl_easy_init failed\n");
+				continue;
+			}
 			arg.url = url;
 			arg.dir = mctx->dir;
 			arg.filename = name;
 			getURL(&arg);
+			curl_easy_cleanup(arg.curl);
 #endif
 
 #else	/*!WITH_CURL*/
@@ -4130,6 +4186,7 @@ checkURLs(message *m, mbox_ctx *mctx, int *rc, int is_html)
 	while(--n >= 0) {
 		pthread_join(tid[n], NULL);
 		free(args[n].filename);
+		curl_easy_cleanup(args[n].curl);
 	}
 #endif
 	html_tag_arg_free(&hrefs);
@@ -4144,7 +4201,7 @@ checkURLs(message *m, mbox_ctx *mctx, int* rc, int is_html)
 #endif
 #endif /* CL_EXPERIMENTAL */
 
-#if defined(FOLLOWURLS) && (FOLLOWURLS>0)
+#if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
 /*
  * Includes some Win32 patches by Gianluigi Tiesi <sherpya@netfarm.it>
  *
@@ -4157,7 +4214,6 @@ checkURLs(message *m, mbox_ctx *mctx, int* rc, int is_html)
  */
 #ifdef	WITH_CURL
 
-#if	(LIBCURL_VERSION_NUM >= 0x070C00)
 static	int	curl_has_segfaulted;
 /*
  * Inspite of numerious bug reports, curl is still buggy :-(
@@ -4170,7 +4226,6 @@ curlsegv(int sig)
 	curl_has_segfaulted = 1;
 }
 
-#endif
 static void *
 #ifdef	CL_THREAD_SAFE
 getURL(void *a)
@@ -4178,76 +4233,47 @@ getURL(void *a)
 getURL(struct arg *arg)
 #endif
 {
-	CURL *curl;
 	FILE *fp;
 	struct curl_slist *headers;
-	static int initialised = 0;
 #ifdef	CL_THREAD_SAFE
-	static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 	struct arg *arg = (struct arg *)a;
 #endif
 	const char *url = arg->url;
 	const char *dir = arg->dir;
+	CURL *curl = arg->curl;
 	const char *filename = arg->filename;
 	char fout[NAME_MAX + 1];
+	void (*oldsegv)(int);
 #ifdef	CURLOPT_ERRORBUFFER
 	char errorbuffer[CURL_ERROR_SIZE + 1];
 #elif	(LIBCURL_VERSION_NUM >= 0x070C00)
-	void (*oldsegv)(int);
 	CURLcode res = CURLE_OK;
 #endif
-
-#ifdef	CL_THREAD_SAFE
-	pthread_mutex_lock(&init_mutex);
-#endif
-	if(!initialised) {
-		if(curl_global_init(CURL_GLOBAL_ALL) != 0) {
-#ifdef	CL_THREAD_SAFE
-			pthread_mutex_unlock(&init_mutex);
-#endif
-			cli_errmsg("curl_global_init failed");
-			return NULL;
-		}
-		initialised = 1;
-	}
-#ifdef	CL_THREAD_SAFE
-	pthread_mutex_unlock(&init_mutex);
-#endif
-
-	/* easy isn't the word I'd use... */
-	curl = curl_easy_init();
-	if(curl == NULL) {
-		cli_errmsg("curl_easy_init failed\n");
-		return NULL;
-	}
 
 	(void)curl_easy_setopt(curl, CURLOPT_USERAGENT, "www.clamav.net");
 
 	if(curl_easy_setopt(curl, CURLOPT_URL, url) != 0) {
 		cli_errmsg("%s: curl_easy_setopt failed\n", url);
-		curl_easy_cleanup(curl);
 		return NULL;
 	}
 
 	snprintf(fout, sizeof(fout) - 1, "%s/%s", dir, filename);
 
+	cli_dbgmsg("Saving %s to %s\n", url, fout);
 	fp = fopen(fout, "wb");
 
 	if(fp == NULL) {
 		cli_errmsg("Can't open '%s' for writing", fout);
-		curl_easy_cleanup(curl);
 		return NULL;
 	}
 #ifdef	CURLOPT_WRITEDATA
 	if(curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp) != 0) {
 		fclose(fp);
-		curl_easy_cleanup(curl);
 		return NULL;
 	}
 #else
 	if(curl_easy_setopt(curl, CURLOPT_FILE, fp) != 0) {
 		fclose(fp);
-		curl_easy_cleanup(curl);
 		return NULL;
 	}
 #endif
@@ -4268,7 +4294,14 @@ getURL(struct arg *arg)
 
 #ifdef  CL_THREAD_SAFE
 #ifdef	CURLOPT_DNS_USE_GLOBAL_CACHE
-	curl_easy_setopt(curl, CURLOPT_DNS_USE_GLOBAL_CACHE, 0);
+	/* Apparently this is depracated */
+	/*curl_easy_setopt(curl, CURLOPT_DNS_USE_GLOBAL_CACHE, 0);*/
+#endif
+#endif
+
+#ifdef  CL_THREAD_SAFE
+#ifdef	CURLOPT_NOSIGNAL
+	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 #endif
 #endif
 
@@ -4294,29 +4327,29 @@ getURL(struct arg *arg)
 	 * memory leak here in getaddrinfo(), see
 	 *	https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=139559
 	 */
+	curl_has_segfaulted = 0;
+	oldsegv = signal(SIGSEGV, curlsegv);
 #ifdef	CURLOPT_ERRORBUFFER
 	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errorbuffer);
 
 	if(curl_easy_perform(curl) != CURLE_OK)
 		cli_warnmsg("URL %s failed to download: %s\n", url, errorbuffer);
 #elif	(LIBCURL_VERSION_NUM >= 0x070C00)
-	oldsegv = signal(SIGSEGV, curlsegv);
-	curl_has_segfaulted = 0;
 	if((res = curl_easy_perform(curl)) != CURLE_OK)
 		cli_warnmsg("URL %s failed to download: %s\n", url,
 			curl_easy_strerror(res));
-	if(curl_has_segfaulted)
-		cli_warnmsg("Libcurl has segfaulted on '%s'\n", url);
-	signal(SIGSEGV, oldsegv);
 #else
 	if(curl_easy_perform(curl) != CURLE_OK)
 		cli_warnmsg("URL %s failed to download\n", url);
 #endif
 
 	fclose(fp);
-	curl_easy_cleanup(curl);
 	curl_slist_free_all(headers);
 
+	if(curl_has_segfaulted)
+		cli_warnmsg("Libcurl has segfaulted on '%s'\n", url);
+
+	signal(SIGSEGV, oldsegv);
 	return NULL;
 }
 
@@ -4429,13 +4462,14 @@ getline_from_mbox(char *buffer, size_t len, FILE *fin)
 
 	if(len == 0) {
 		/* the email probably breaks RFC821 */
-		cli_warnmsg("getline_from_mbox: buffer overflow stopped - line lost\n");
+		cli_warnmsg("getline_from_mbox: buffer overflow stopped, line lost\n");
 		return NULL;
 	}
+	*buffer = '\0';
+
 	if(len == 1)
 		/* overflows will have appeared on separate lines */
-		cli_dbgmsg("getline_from_mbox: buffer overflow stopped - line recovered\n");
-	*buffer = '\0';
+		cli_dbgmsg("getline_from_mbox: buffer overflow stopped, line recovered (%s)\n", ret);
 
 	return ret;
 }
@@ -4672,8 +4706,10 @@ do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx 
 					const int is_html = (tableFind(mctx->subtypeTable, cptr) == HTML);
 					if((mctx->ctx->options&CL_SCAN_MAILURL) && is_html)
 						checkURLs(aMessage, mctx, rc, 1);
+#ifdef	CL_EXPERIMENTAL
 					else if(!(mctx->ctx->options&CL_SCAN_NOPHISHING))
 						checkURLs(aMessage, mctx, rc, is_html);
+#endif
 					messageAddArgument(aMessage,
 						"filename=mixedtextportion");
 				}
