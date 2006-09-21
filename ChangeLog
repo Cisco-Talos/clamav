@@ -1,3 +1,7 @@
+Thu Sep 21 10:36:32 BST 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Handle segfaults in libcurl
+
 Thu Sep 21 08:46:43 BST 2006 (njh)
 ----------------------------------
   * clamav-milter:	Be more specific about the format of the whitelist file
