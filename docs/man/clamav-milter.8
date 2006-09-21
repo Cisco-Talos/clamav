@@ -261,6 +261,8 @@ This option specifies a file which contains a list of e-mail addresses.
 E-mails sent to these addresses will NOT be checked.
 While this is not an Anti-Virus function, it is quite useful for some systems.
 The address given to the \-\-quarantine directive is always white-listed.
+The file consists of a list of addresses, each address on a line enclosed
+in angle brackets (e.g. <foo@bar.com>).
 .TP
 \fB\-\-sendmail-cf=FILE\fR
 When starting, clamav\-milter runs some sanity checks against the sendmail.cf

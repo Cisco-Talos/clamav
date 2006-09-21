@@ -1,3 +1,7 @@
+Thu Sep 21 08:46:43 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	Be more specific about the format of the whitelist file
+
 Wed Sep 20 14:03:49 BST 2006 (trog)
 -----------------------------------
   * libclamav/unrar/unrar.c, unrarppm.c: portability changes
