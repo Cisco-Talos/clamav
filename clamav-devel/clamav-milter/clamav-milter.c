@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.286 2006/09/10 21:39:49 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.287 2006/09/21 07:46:17 njh Exp $";
 
 #define	CM_VERSION	"devel-100906"
 
@@ -5509,12 +5509,13 @@ verifyIncomingSocketName(const char *sockName)
 }
 
 /*
- * If the given email address is whitelisted don't scan emails to them
+ * If the given email address is whitelisted don't scan emails to them,
+ *	the addresses are in angle brackets e.g. <foo@bar.com>.
  *
  * TODO: Allow regular expressions in the addresses
  * TODO: Syntax check the contents of the files
  * TODO: Allow emails of the form "name <address>"
- * TODO: Allow emails not of the form "<address>"
+ * TODO: Allow emails not of the form "<address>", i.e. no angle brackets
  * TODO: Assume that if a '@' is missing from the address, that all emails
  *	to that domain are to be whitelisted
  */
