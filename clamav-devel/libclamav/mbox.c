@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.337 2006/09/20 10:22:07 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.338 2006/09/21 09:33:31 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -51,6 +51,7 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.337 2006/09/20 10:22:07 njh Exp $";
 #include <dirent.h>
 #endif
 #include <limits.h>
+#include <signal.h>
 
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #include <stddef.h>
@@ -67,6 +68,9 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.337 2006/09/20 10:22:07 njh Exp $";
 #include "mbox.h"
 
 #ifdef	CL_DEBUG
+
+#include <features.h>
+
 #if __GLIBC__ == 2 && __GLIBC_MINOR__ >= 1
 #define HAVE_BACKTRACE
 #endif
@@ -74,7 +78,6 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.337 2006/09/20 10:22:07 njh Exp $";
 
 #ifdef HAVE_BACKTRACE
 #include <execinfo.h>
-#include <signal.h>
 #include <syslog.h>
 
 static	void	sigsegv(int sig);
@@ -3806,10 +3809,10 @@ checkURLs(message *mainMessage, mbox_ctx *mctx, int *rc, int is_html)
 
 #if    (!defined(FOLLOWURLS)) || (FOLLOWURLS <= 0)
        if(!hrefs.scanContents)
-	       /*
-		* Don't waste time extracting hrefs (parsing html), nobody
-		* will need it
-		*/
+		/*
+		 * Don't waste time extracting hrefs (parsing html), nobody
+		 * will need it
+		 */
 		return;
 #endif
 
@@ -4153,6 +4156,21 @@ checkURLs(message *m, mbox_ctx *mctx, int* rc, int is_html)
  *	an issue here.
  */
 #ifdef	WITH_CURL
+
+#if	(LIBCURL_VERSION_NUM >= 0x070C00)
+static	int	curl_has_segfaulted;
+/*
+ * Inspite of numerious bug reports, curl is still buggy :-(
+ *	For a fuller explanation, read the long comment at the top, including
+ *	the valgrind evidence
+ */
+static void
+curlsegv(int sig)
+{
+	curl_has_segfaulted = 1;
+}
+
+#endif
 static void *
 #ifdef	CL_THREAD_SAFE
 getURL(void *a)
@@ -4175,6 +4193,7 @@ getURL(struct arg *arg)
 #ifdef	CURLOPT_ERRORBUFFER
 	char errorbuffer[CURL_ERROR_SIZE + 1];
 #elif	(LIBCURL_VERSION_NUM >= 0x070C00)
+	void (*oldsegv)(int);
 	CURLcode res = CURLE_OK;
 #endif
 
@@ -4281,9 +4300,14 @@ getURL(struct arg *arg)
 	if(curl_easy_perform(curl) != CURLE_OK)
 		cli_warnmsg("URL %s failed to download: %s\n", url, errorbuffer);
 #elif	(LIBCURL_VERSION_NUM >= 0x070C00)
+	oldsegv = signal(SIGSEGV, curlsegv);
+	curl_has_segfaulted = 0;
 	if((res = curl_easy_perform(curl)) != CURLE_OK)
 		cli_warnmsg("URL %s failed to download: %s\n", url,
 			curl_easy_strerror(res));
+	if(curl_has_segfaulted)
+		cli_warnmsg("Libcurl has segfaulted on '%s'\n", url);
+	signal(SIGSEGV, oldsegv);
 #else
 	if(curl_easy_perform(curl) != CURLE_OK)
 		cli_warnmsg("URL %s failed to download\n", url);
@@ -4295,6 +4319,7 @@ getURL(struct arg *arg)
 
 	return NULL;
 }
+
 #endif
 #endif
 #ifdef HAVE_BACKTRACE
