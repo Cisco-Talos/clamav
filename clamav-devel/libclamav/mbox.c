@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.340 2006/09/21 16:38:33 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.341 2006/09/22 08:17:25 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -4250,13 +4250,14 @@ checkURLs(message *m, mbox_ctx *mctx, int* rc, int is_html)
   } while (0)
 #endif /* timersub */
 
-static long nonblock_fcntl(int sock);
-static void restore_fcntl(int sock, long fcntl_flags);
-static int nonblock_connect(int sock, const struct sockaddr *addr, socklen_t addrlen, int secs);
-static int connect_error(int sock);
+static	long	nonblock_fcntl(int sock);
+static	void	restore_fcntl(int sock, long fcntl_flags);
+static	int	nonblock_connect(int sock, const struct sockaddr *addr, socklen_t addrlen, int secs);
+static	int	connect_error(int sock);
 
 #define NONBLOCK_SELECT_MAX_FAILURES 3
 #define NONBLOCK_MAX_BOGUS_LOOPS     10
+
 static void *
 #ifdef	CL_THREAD_SAFE
 getURL(void *a)
@@ -4272,13 +4273,14 @@ getURL(struct arg *arg)
 	const char *dir = arg->dir;
 	const char *filename = arg->filename;
 	char fout[NAME_MAX + 1];
-	const struct protoent *proto;
 	int sd, n;
 	struct sockaddr_in server;
 	in_addr_t ip;
 	char buf[BUFSIZ];
 	char site[BUFSIZ];
-	in_port_t port = 80;
+	in_port_t port;
+	static in_port_t default_port;
+	static int tcp;
 	int doingsite = 1;
 	char *ptr;
 	int flags;
@@ -4293,6 +4295,28 @@ getURL(struct arg *arg)
 		cli_errmsg("Can't open '%s' for writing", fout);
 		return NULL;
 	}
+
+	if(tcp == 0) {
+		const struct protoent *proto = getprotobyname("tcp");
+
+		if(proto == NULL) {
+			cli_warnmsg("Unknown prototol tcp, check /etc/protocols\n");
+			fclose(fp);
+			return NULL;
+		}
+		tcp = proto->p_proto;
+	}
+	if(default_port == 0) {
+		const struct servent *servent = getservbyname("http", "tcp");
+
+		if(servent)
+			default_port = (in_port_t)ntohs(servent->s_port);
+		else
+			default_port = 80;
+		endservent();
+	}
+	port = default_port;
+
 	proxy = getenv("http_proxy");	/* FIXME: handle no_proxy */
 	if(proxy && *proxy) {
 		cli_dbgmsg("Getting %s via %s\n", url, proxy);
@@ -4325,7 +4349,7 @@ getURL(struct arg *arg)
 			*ptr++ = *proxy++;
 		}
 
-		memset((char *)&server, 0, sizeof(struct sockaddr_in));
+		memset((char *)&server, '\0', sizeof(struct sockaddr_in));
 		server.sin_family = AF_INET;
 		server.sin_port = htons(port);
 
@@ -4347,13 +4371,7 @@ getURL(struct arg *arg)
 		}
 		server.sin_addr.s_addr = ip;
 
-		proto = getprotobyname("tcp");
-		if(proto == NULL) {
-			cli_warnmsg("Unknown prototol tcp, check /etc/protocols\n");
-			fclose(fp);
-			return NULL;
-		}
-		if((sd = socket(AF_INET, SOCK_STREAM, proto->p_proto)) < 0)
+		if((sd = socket(AF_INET, SOCK_STREAM, tcp)) < 0)
 			return NULL;
 		flags = nonblock_fcntl(sd);
 		if(nonblock_connect(sd, (struct sockaddr *)&server, sizeof(struct sockaddr_in), 5) < 0) {
@@ -4397,7 +4415,7 @@ getURL(struct arg *arg)
 
 		memset((char *)&server, 0, sizeof(struct sockaddr_in));
 		server.sin_family = AF_INET;
-		server.sin_port = htons(port);
+		server.sin_port = (in_port_t)htons(port);
 
 		ip = inet_addr(site);
 #ifdef	INADDR_NONE
@@ -4417,13 +4435,7 @@ getURL(struct arg *arg)
 		}
 		server.sin_addr.s_addr = ip;
 
-		proto = getprotobyname("tcp");
-		if(proto == NULL) {
-			cli_warnmsg("Unknown prototol tcp, check /etc/protocols\n");
-			fclose(fp);
-			return NULL;
-		}
-		if((sd = socket(AF_INET, SOCK_STREAM, proto->p_proto)) < 0) {
+		if((sd = socket(AF_INET, SOCK_STREAM, tcp)) < 0) {
 			fclose(fp);
 			return NULL;
 		}
@@ -4435,6 +4447,9 @@ getURL(struct arg *arg)
 		}
 		restore_fcntl(sd, flags);
 
+		/*
+		 * TODO: consider HTTP/1.1
+		 */
 		snprintf(buf, sizeof(buf) - 1,
 			"GET /%s HTTP/1.0\nHost: %s\nUser-Agent: www.clamav.net\n\n",
 			url, site);
@@ -4471,6 +4486,9 @@ getURL(struct arg *arg)
 			return NULL;
 		}
 		n = recv(sd, buf, BUFSIZ, 0);
+		/*
+		 * TODO: follow 301 and 302 (look for Location in the header)
+		 */
 		if(n < 0) {
 			fclose(fp);
 			close(sd);
@@ -4478,6 +4496,9 @@ getURL(struct arg *arg)
 		}
 		if(n == 0)
 			break;
+		/*
+		 * FIXME: Don't write the header
+		 */
 		if(fwrite(buf, n, 1, fp) != 1) {
 			cli_warnmsg("Error writing %d bytes to %s\n",
 				n, fout);
@@ -4583,9 +4604,8 @@ nonblock_connect(int sock, const struct sockaddr *addr, socklen_t addrlen, int s
 
 		cli_dbgmsg("DEBUG nonblock_connect: select = %d\n", n);
 
-		if (n) {
+		if(n)
 			return connect_error(sock);
-		}
 
 		/* Select returned, but there is no work to do... */
 		if (--bogus_loops < 0) {
