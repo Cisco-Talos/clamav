@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.341 2006/09/22 08:17:25 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.342 2006/09/22 12:59:17 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -4254,6 +4254,7 @@ static	long	nonblock_fcntl(int sock);
 static	void	restore_fcntl(int sock, long fcntl_flags);
 static	int	nonblock_connect(int sock, const struct sockaddr *addr, socklen_t addrlen, int secs);
 static	int	connect_error(int sock);
+static	int	my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
 
 #define NONBLOCK_SELECT_MAX_FAILURES 3
 #define NONBLOCK_MAX_BOGUS_LOOPS     10
@@ -4281,20 +4282,25 @@ getURL(struct arg *arg)
 	in_port_t port;
 	static in_port_t default_port;
 	static int tcp;
-	int doingsite = 1;
+	int doingsite;
 	char *ptr;
 	int flags;
 	const char *proxy;
 
+	if(strlen(url) > (sizeof(site) - 1)) {
+		cli_dbgmsg("Ignoring long URL \"%s\"\n", url);
+		return NULL;
+	}
+
 	snprintf(fout, sizeof(fout) - 1, "%s/%s", dir, filename);
 
-	cli_dbgmsg("Saving %s to %s\n", url, fout);
 	fp = fopen(fout, "wb");
 
 	if(fp == NULL) {
 		cli_errmsg("Can't open '%s' for writing", fout);
 		return NULL;
 	}
+	cli_dbgmsg("Saving %s to %s\n", url, fout);
 
 	if(tcp == 0) {
 		const struct protoent *proto = getprotobyname("tcp");
@@ -4317,20 +4323,20 @@ getURL(struct arg *arg)
 	}
 	port = default_port;
 
+	doingsite = 1;
+	ptr = site;
+
 	proxy = getenv("http_proxy");	/* FIXME: handle no_proxy */
 	if(proxy && *proxy) {
-		cli_dbgmsg("Getting %s via %s\n", url, proxy);
-		snprintf(buf, sizeof(buf) - 1,
-			"GET /%s HTTP/1.0\nHost: %s\nUser-Agent: www.clamav.net\n\n",
-			url, site);
 		if(strncasecmp(proxy, "http://", 7) != 0) {
 			cli_warnmsg("Unsupported proxy protocol\n");
 			fclose(fp);
 			return NULL;
 		}
 
+		cli_dbgmsg("Getting %s via %s\n", url, proxy);
+
 		proxy += 7;
-		ptr = site;
 		while(*proxy) {
 			if(doingsite && (*proxy == ':')) {
 				port = 0;
@@ -4341,49 +4347,11 @@ getURL(struct arg *arg)
 				continue;
 			}
 			if(doingsite && (*proxy == '/')) {
-				doingsite = 0;
 				proxy++;
-				*ptr = '\0';
 				break;
 			}
 			*ptr++ = *proxy++;
 		}
-
-		memset((char *)&server, '\0', sizeof(struct sockaddr_in));
-		server.sin_family = AF_INET;
-		server.sin_port = htons(port);
-
-		ip = inet_addr(site);
-#ifdef	INADDR_NONE
-		if(ip == INADDR_NONE) {
-#else
-		if(ip == (in_addr_t)-1) {
-#endif
-			const struct hostent *h = gethostbyname(site);
-
-			if(h == NULL) {
-				cli_dbgmsg("Unknown host %s\n", site);
-				fclose(fp);
-				return NULL;
-			}
-
-			memcpy((char *)&ip, h->h_addr, sizeof(ip));
-		}
-		server.sin_addr.s_addr = ip;
-
-		if((sd = socket(AF_INET, SOCK_STREAM, tcp)) < 0)
-			return NULL;
-		flags = nonblock_fcntl(sd);
-		if(nonblock_connect(sd, (struct sockaddr *)&server, sizeof(struct sockaddr_in), 5) < 0) {
-			close(sd);
-			fclose(fp);
-			return NULL;
-		}
-		restore_fcntl(sd, flags);
-
-		snprintf(buf, sizeof(buf) - 1,
-			"GET %s HTTP/1.0\nHost: %s\nUser-Agent: www.clamav.net\n\n",
-				url, site);
 	} else {
 		cli_dbgmsg("Getting %s\n", url);
 
@@ -4394,7 +4362,6 @@ getURL(struct arg *arg)
 		}
 
 		url += 7;
-		ptr = site;
 		while(*url) {
 			if(doingsite && (*url == ':')) {
 				port = 0;
@@ -4405,55 +4372,56 @@ getURL(struct arg *arg)
 				continue;
 			}
 			if(doingsite && (*url == '/')) {
-				doingsite = 0;
 				url++;
-				*ptr = '\0';
 				break;
 			}
 			*ptr++ = *url++;
 		}
-
-		memset((char *)&server, 0, sizeof(struct sockaddr_in));
-		server.sin_family = AF_INET;
-		server.sin_port = (in_port_t)htons(port);
-
-		ip = inet_addr(site);
-#ifdef	INADDR_NONE
-		if(ip == INADDR_NONE) {
-#else
-		if(ip == (in_addr_t)-1) {
-#endif
-			const struct hostent *h = gethostbyname(site);
-
-			if(h == NULL) {
-				cli_dbgmsg("Unknown host %s\n", site);
-				fclose(fp);
-				return NULL;
-			}
-
-			memcpy((char *)&ip, h->h_addr, sizeof(ip));
-		}
-		server.sin_addr.s_addr = ip;
-
-		if((sd = socket(AF_INET, SOCK_STREAM, tcp)) < 0) {
-			fclose(fp);
-			return NULL;
-		}
-		flags = nonblock_fcntl(sd);
-		if(nonblock_connect(sd, (struct sockaddr *)&server, sizeof(struct sockaddr_in), 5) < 0) {
-			close(sd);
-			fclose(fp);
-			return NULL;
-		}
-		restore_fcntl(sd, flags);
-
-		/*
-		 * TODO: consider HTTP/1.1
-		 */
-		snprintf(buf, sizeof(buf) - 1,
-			"GET /%s HTTP/1.0\nHost: %s\nUser-Agent: www.clamav.net\n\n",
-			url, site);
 	}
+	*ptr = '\0';
+
+	memset((char *)&server, '\0', sizeof(struct sockaddr_in));
+	server.sin_family = AF_INET;
+	server.sin_port = (in_port_t)htons(port);
+
+	ip = inet_addr(site);
+#ifdef	INADDR_NONE
+	if(ip == INADDR_NONE) {
+#else
+	if(ip == (in_addr_t)-1) {
+#endif
+		struct hostent h;
+		
+		if(my_r_gethostbyname(site, &h, buf, sizeof(buf)) != 0) {
+			cli_dbgmsg("Unknown host %s\n", site);
+			fclose(fp);
+			return NULL;
+		}
+
+		memcpy((char *)&ip, h.h_addr, sizeof(ip));
+	}
+	server.sin_addr.s_addr = ip;
+	if((sd = socket(AF_INET, SOCK_STREAM, tcp)) < 0) {
+		fclose(fp);
+		return NULL;
+	}
+	flags = nonblock_fcntl(sd);
+	if(nonblock_connect(sd, (struct sockaddr *)&server, sizeof(struct sockaddr_in), 5) < 0) {
+		close(sd);
+		fclose(fp);
+		return NULL;
+	}
+
+	restore_fcntl(sd, flags);
+	/*
+	 * TODO: consider HTTP/1.1
+	 */
+	if(proxy && *proxy)
+		snprintf(buf, sizeof(buf) - 1,
+			"GET %s HTTP/1.0\nUser-Agent: www.clamav.net\n\n", url);
+	else
+		snprintf(buf, sizeof(buf) - 1,
+			"GET /%s HTTP/1.0\nUser-Agent: www.clamav.net\n\n", url);
 
 	if(send(sd, buf, strlen(buf), 0) < 0) {
 		close(sd);
@@ -4509,6 +4477,62 @@ getURL(struct arg *arg)
 	fclose(fp);
 	close(sd);
 	return NULL;
+}
+
+/*
+ * Have a copy here because r_gethostbyname is in shared not libclamav :-(
+ */
+static int
+my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len)
+{
+#if	defined(HAVE_GETHOSTBYNAME_R_6)
+	/* e.g. Linux */
+	struct hostent *hp2;
+	int ret = -1;
+
+	if((hostname == NULL) || (hp == NULL))
+		return -1;
+	if(gethostbyname_r(hostname, hp, buf, len, &hp2, &ret) < 0)
+		return ret;
+#elif	defined(HAVE_GETHOSTBYNAME_R_5)
+	/* e.g. BSD, Solaris, Cygwin */
+	int ret = -1;
+
+	if((hostname == NULL) || (hp == NULL))
+		return -1;
+	if(gethostbyname_r(hostname, hp, buf, len, &ret) == NULL)
+		return ret;
+#elif	defined(HAVE_GETHOSTBYNAME_R_3)
+	/* e.g. HP/UX, AIX */
+	if((hostname == NULL) || (hp == NULL))
+		return -1;
+	if(gethostbyname_r(hostname, &hp, (struct hostent_data *)buf) < 0)
+		return h_errno;
+#else
+	/* Single thread the code */
+	struct hostent *hp2;
+#ifdef  CL_THREAD_SAFE
+	static pthread_mutex_t hostent_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
+	if((hostname == NULL) || (hp == NULL))
+		return -1;
+#ifdef  CL_THREAD_SAFE
+	pthread_mutex_lock(&hostent_mutex);
+#endif
+	if((hp2 = gethostbyname(hostname)) == NULL) {
+#ifdef  CL_THREAD_SAFE
+		pthread_mutex_unlock(&hostent_mutex);
+#endif
+		return h_errno;
+	}
+	memcpy(hp, hp2, sizeof(struct hostent));
+#ifdef  CL_THREAD_SAFE
+	pthread_mutex_unlock(&hostent_mutex);
+#endif
+
+#endif
+	return 0;
 }
 
 static long
