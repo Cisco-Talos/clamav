@@ -1,3 +1,7 @@
+Fri Sep 22 23:42:09 CEST 2006 (tk)
+----------------------------------
+  * libclamav/others.c: improve error handling in cli_rmdirs()
+
 Thu Sep 21 17:39:29 BST 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Experimental mode now no longer uses libcurl to

@@ -617,6 +617,7 @@ int cli_rmdirs(const char *dirname)
 #endif
 	struct stat maind, statbuf;
 	char *fname;
+	int ret;
 
 
     chmod(dirname, 0700);
@@ -626,7 +627,7 @@ int cli_rmdirs(const char *dirname)
 	    if(errno != ENOTEMPTY && errno != EEXIST && errno != EBADF) {
 		cli_errmsg("Can't remove temporary directory %s: %s\n", dirname, strerror(errno));
 		closedir(dd);
-		return 0;
+		return -1;
 	    }
 
 #ifdef HAVE_READDIR_R_3
@@ -661,13 +662,23 @@ int cli_rmdirs(const char *dirname)
 					cli_errmsg("Can't remove some temporary directories due to access problem.\n");
 					closedir(dd);
 					free(fname);
-					return 0;
+					return -1;
 				    }
-				    cli_rmdirs(fname);
+				    ret = cli_rmdirs(fname);
+				    if(ret) {
+					cli_warnmsg("Can't remove directory %s\n", fname);
+					free(fname);
+					closedir(dd);
+					return -1;
+				    }
 				}
 			    } else
-				if(unlink(fname) < 0)
+				if(unlink(fname) < 0) {
 				    cli_warnmsg("Couldn't remove %s: %s\n", fname, strerror(errno));
+				    free(fname);
+				    closedir(dd);
+				    return -1;
+				}
 			}
 
 			free(fname);
