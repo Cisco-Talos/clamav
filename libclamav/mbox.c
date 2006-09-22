@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.342 2006/09/22 12:59:17 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.343 2006/09/22 18:37:22 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -4282,7 +4282,7 @@ getURL(struct arg *arg)
 	in_port_t port;
 	static in_port_t default_port;
 	static int tcp;
-	int doingsite;
+	int doingsite, firstpacket;
 	char *ptr;
 	int flags;
 	const char *proxy;
@@ -4311,6 +4311,7 @@ getURL(struct arg *arg)
 			return NULL;
 		}
 		tcp = proto->p_proto;
+		endprotoent();
 	}
 	if(default_port == 0) {
 		const struct servent *servent = getservbyname("http", "tcp");
@@ -4391,8 +4392,10 @@ getURL(struct arg *arg)
 	if(ip == (in_addr_t)-1) {
 #endif
 		struct hostent h;
-		
-		if(my_r_gethostbyname(site, &h, buf, sizeof(buf)) != 0) {
+
+		if((my_r_gethostbyname(site, &h, buf, sizeof(buf)) != 0) ||
+		   (h.h_addr_list == NULL) ||
+		   (h.h_addr == NULL)) {
 			cli_dbgmsg("Unknown host %s\n", site);
 			fclose(fp);
 			return NULL;
@@ -4431,6 +4434,8 @@ getURL(struct arg *arg)
 
 	shutdown(sd, SHUT_WR);
 
+	firstpacket = 1;
+
 	for(;;) {
 		fd_set set;
 		struct timeval tv;
@@ -4454,9 +4459,7 @@ getURL(struct arg *arg)
 			return NULL;
 		}
 		n = recv(sd, buf, BUFSIZ, 0);
-		/*
-		 * TODO: follow 301 and 302 (look for Location in the header)
-		 */
+
 		if(n < 0) {
 			fclose(fp);
 			close(sd);
@@ -4464,6 +4467,27 @@ getURL(struct arg *arg)
 		}
 		if(n == 0)
 			break;
+		if(firstpacket) {
+			char *statusptr;
+
+			buf[n] = '\0';
+
+			statusptr = cli_strtok(buf, 1, " ");
+
+			if(statusptr) {
+				int status = atoi(statusptr);
+
+				cli_dbgmsg("HTTP status %d\n", status);
+
+				free(statusptr);
+			}
+			/*
+			 * TODO: follow 301 and 302
+			 * (look for Location in the header)
+			 */
+			firstpacket = 0;
+		}
+
 		/*
 		 * FIXME: Don't write the header
 		 */
@@ -4554,8 +4578,8 @@ nonblock_fcntl(int sock)
 static void
 restore_fcntl(int sock, long fcntl_flags)
 {
-	if (fcntl_flags != -1)
-		if (fcntl(sock, F_SETFL, fcntl_flags)) {
+	if(fcntl_flags != -1)
+		if(fcntl(sock, F_SETFL, fcntl_flags)) {
 			cli_warnmsg("restore_fcntl: restoring: fcntl(%d, F_SETFL): errno=%d: %s\n",
 				sock, errno, strerror(errno));
 		}
@@ -4568,7 +4592,7 @@ nonblock_connect(int sock, const struct sockaddr *addr, socklen_t addrlen, int s
 	int select_failures = NONBLOCK_SELECT_MAX_FAILURES;
 	/* Max. of useless loops */
 	int bogus_loops = NONBLOCK_MAX_BOGUS_LOOPS;
-	struct timeval timeout;  /* When we should time out */
+	struct timeval timeout;	/* When we should time out */
 	int numfd;		/* Highest fdset fd plus 1 */
 
 	/* Calculate into 'timeout' when we should time out */
@@ -4916,7 +4940,7 @@ getline_from_mbox(char *buffer, size_t len, FILE *fin)
 
 	if(len == 1)
 		/* overflows will have appeared on separate lines */
-		cli_dbgmsg("getline_from_mbox: buffer overflow stopped, line recovered (%s)\n", ret);
+		cli_dbgmsg("getline_from_mbox: buffer overflow stopped, line recovered\n");
 
 	return ret;
 }
