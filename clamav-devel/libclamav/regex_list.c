@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: regex_list.c,v $
+ *  Revision 1.3  2006/09/24 19:28:03  acab
+ *  fixes for type "R" regex handler
+ *
  *  Revision 1.2  2006/09/16 15:49:27  acab
  *  phishing: fixed bugs and updated docs
  *
@@ -748,10 +751,12 @@ static const unsigned char* getNextToken(const unsigned char* pat,struct token_t
 			token->u.start = ++pat;
 			if(islower(*token->u.start)) {
 				/* handle \n, \t, etc. */
+				char fmt[3] = {'\\',*token->u.start,'\0'};
 				char c;
-				if(snprintf(&c,1,"\%c",token->u.start)!=1)
+				if(snprintf(&c,1,fmt)!=1)
 					token->type=TOKEN_REGEX;
-				token->u.start=c;
+				else
+					*token->u.start=c;
 			}
 			token->len   = 1;
 			break;
@@ -1058,9 +1063,21 @@ static inline void tree_node_insert_nonbin(struct tree_node* node, struct tree_n
 		}
 	}
 	else {
-		node->u.children = cli_realloc(node->u.children,sizeof(node->u.children[0])*( node->op==OP_CUSTOMCLASS ? 2 : 1 ));
+		int idx = node->op==OP_CUSTOMCLASS ? 1 : 0;
 		if(node->u.children)
-			node->u.children[ node->op==OP_CUSTOMCLASS ? 1 : 0 ] = new;
+			if(node->u.children[idx]) {
+				node = node->u.children[idx];
+				while(node->next && !node->listend)
+					node = node->next;
+				node->listend = 0;
+				node->next = new;
+				new->listend=1;
+				return;
+			}
+		node->u.children = cli_realloc(node->u.children,sizeof(node->u.children[0])*(2));
+		if(node->u.children) {
+			node->u.children[idx] = new;
+		}
 	}
 }
 
@@ -1202,13 +1219,13 @@ static int add_pattern(struct regex_matcher* matcher,const unsigned char* pat,co
 			case TOKEN_REGEX:
 			case TOKEN_DONE: {
 						 struct leaf_info* leaf=cli_malloc(sizeof(*leaf));
-						 leaf->info=strdup(info);
+						 leaf->info=info;/*don't strdup, already done by caller*/
 						 if(token.type==TOKEN_REGEX) {
 							 int rc;
 							 struct tree_node* new;
 							 regex_t* preg;
 							 preg=cli_malloc(sizeof(*preg));
-							 rc = regcomp(preg,(const char*)token.u.start,bol?0:REG_NOTBOL);
+							 rc = regcomp(preg,(const char*)token.u.start,REG_EXTENDED|(bol?0:REG_NOTBOL));
 							 leaf->preg=preg;
 							 if(rc)
 								 return rc;
@@ -1369,7 +1386,11 @@ static int match_node(struct tree_node* node,const unsigned char* c,size_t len,c
 			}
 			if(!node || !node->next) /* reached root node, it has no next */
 				return MATCH_FAILED;
-			else node=node->next;
+			else {
+				c--;
+				len++;
+				node=node->next;
+			}
 		}
 	}
 	return MATCH_FAILED;
@@ -1428,7 +1449,7 @@ static void destroy_tree_internal(struct regex_matcher* matcher,struct tree_node
 				destroy_tree_internal(matcher,children[0]);		
 		}
 	}
-	if(node->next && !node->listend)
+	if(node->op!=OP_LEAF && node->next && !node->listend)
 		destroy_tree_internal(matcher,node->next);
 	if(node->u.children)
 		stack_push_once(&matcher->node_stack,(struct tree_node*)node->u.children);/* cast to make compiler happy, it isn't really a tree_node* */
