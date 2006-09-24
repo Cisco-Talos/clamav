@@ -1,3 +1,8 @@
+Sun Sep 24 21:24:07 CEST 2006 (acab)
+------------------------------------
+  * libclamav/regex_list.c: fixes for type "R" regex handler
+                            (patch from Edvin)
+
 Fri Sep 22 23:42:09 CEST 2006 (tk)
 ----------------------------------
   * libclamav/others.c: improve error handling in cli_rmdirs()
