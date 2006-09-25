@@ -1,3 +1,7 @@
+Mon Sep 25 19:28:02 BST 2006 (njh)
+----------------------------------
+  * libclamav/regex_list.c:	Corrected "R" regex handler
+
 Sun Sep 24 21:24:07 CEST 2006 (acab)
 ------------------------------------
   * libclamav/regex_list.c: fixes for type "R" regex handler
