@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: regex_list.c,v $
+ *  Revision 1.4  2006/09/25 18:27:00  njh
+ *  Fix handling of escaped characters
+ *
  *  Revision 1.3  2006/09/24 19:28:03  acab
  *  fixes for type "R" regex handler
  *
@@ -751,14 +754,16 @@ static const unsigned char* getNextToken(const unsigned char* pat,struct token_t
 			token->u.start = ++pat;
 			if(islower(*token->u.start)) {
 				/* handle \n, \t, etc. */
-				char fmt[3] = {'\\',*token->u.start,'\0'};
+				char fmt[3] = {'\\', '\0', '\0'};
 				char c;
+
+				fmt[1] = *token->u.start;
 				if(snprintf(&c,1,fmt)!=1)
 					token->type=TOKEN_REGEX;
 				else
 					*token->u.start=c;
 			}
-			token->len   = 1;
+			token->len = 1;
 			break;
 		case '|':
 			token->type=TOKEN_ALT;
