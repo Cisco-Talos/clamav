@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.9  2006/09/26 18:55:36  njh
+ *  Fixed portability issues
+ *
  *  Revision 1.8  2006/09/19 16:52:09  njh
  *  Fixed inconsistency between phishcheck.c and phishcheck.h
  *
@@ -118,20 +121,28 @@ case CL_PHISH_HOST_NOT_LISTED:
 #include <errno.h>
 #include <assert.h>
 #include <string.h>
+#ifdef	HAVE_STRINGS_H
 #include <strings.h>
+#endif
 #include <ctype.h>
 #include <limits.h>
 #include <clamav.h>
+#ifndef	C_WINDOWS
 #include <netdb.h>
 #include <netinet/in.h>
+#endif
 
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #include <stddef.h>
 #endif
 
 #include <sys/types.h>
+#ifndef	C_WINDOWS
 #include <sys/socket.h>
+#endif
+#ifdef	HAVE_REGEX_H
 #include <regex.h>
+#endif
 
 #include "others.h"
 #include "defaults.h"

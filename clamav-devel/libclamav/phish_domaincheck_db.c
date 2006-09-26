@@ -19,6 +19,12 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phish_domaincheck_db.c,v $
+ *  Revision 1.2  2006/09/26 18:55:36  njh
+ *  Fixed portability issues
+ *
+ *  Revision 1.1  2006/09/13 19:40:27  njh
+ *  First draft
+ *
  *  Revision 1.1  2006/09/12 19:38:39  acab
  *  Phishing module merge - libclamav
  *
@@ -58,15 +64,19 @@
 #include <errno.h>
 #include <assert.h>
 #include <string.h>
+#ifdef	HAVE_STRINGS_H
 #include <strings.h>
+#endif
 #include <ctype.h>
 
 #include <limits.h>
 #include "clamav.h"
 #include <sys/types.h>
 
+#ifdef	HAVE_REGEX_H
 /*#define USE_PCRE*/
 #include <regex.h>
+#endif
 
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #include <stddef.h>

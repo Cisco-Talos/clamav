@@ -19,6 +19,12 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phish_whitelist.c,v $
+ *  Revision 1.3  2006/09/26 18:55:36  njh
+ *  Fixed portability issues
+ *
+ *  Revision 1.2  2006/09/17 14:50:58  njh
+ *  Sync with latest CVS
+ *
  *  Revision 1.2  2006/09/14 07:05:06  njh
  *  Fix 'multiple main' definitions
  *
@@ -60,15 +66,19 @@
 #include <errno.h>
 #include <assert.h>
 #include <string.h>
+#ifdef	HAVE_STRINGS_H
 #include <strings.h>
+#endif
 #include <ctype.h>
 
 #include <limits.h>
 #include "clamav.h"
 #include <sys/types.h>
 
+#ifdef	HAVE_REGEX_H
 /*#define USE_PCRE*/
 #include <regex.h>
+#endif
 
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #include <stddef.h>

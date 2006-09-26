@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: regex_list.c,v $
+ *  Revision 1.5  2006/09/26 18:55:36  njh
+ *  Fixed portability issues
+ *
  *  Revision 1.4  2006/09/25 18:27:00  njh
  *  Fix handling of escaped characters
  *
@@ -107,14 +110,18 @@
 #include <errno.h>
 #include <assert.h>
 #include <string.h>
+#ifdef	HAVE_STRINGS_H
 #include <strings.h>
+#endif
 #include <ctype.h>
 
 #include <limits.h>
 #include <sys/types.h>
 
+#ifdef	HAVE_REGEX_H
 /*#define USE_PCRE*/
 #include <regex.h>
+#endif
 
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #include <stddef.h>
