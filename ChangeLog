@@ -1,3 +1,8 @@
+Tue Sep 26 17:42:17 BST 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Experimental curl removal: fix proxy handling and
+				honour 301/302
+
 Tue Sep 26 09:40:03 BST 2006 (trog)
 -----------------------------------
   * libclamav/unrar.c: Don't be so keen to report an error.
