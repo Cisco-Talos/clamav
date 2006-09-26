@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.343 2006/09/22 18:37:22 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.344 2006/09/26 16:41:47 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -251,7 +251,11 @@ static	void	hrefs_done(blob *b,tag_arguments_t* hrefs);
 #ifdef	WITH_CURL
 struct arg {
 	CURL *curl;
+#ifdef CL_EXPERIMENTAL
+	char *url;
+#else
 	const char *url;
+#endif
 	const char *dir;
 	char *filename;
 };
@@ -3943,7 +3947,7 @@ do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs)
 				continue;
 			}
 			args[n].dir = dir;
-			args[n].url = url;
+			args[n].url = strdup(url);
 			args[n].filename = strdup(name);
 			pthread_create(&tid[n], NULL, getURL, &args[n]);
 #else
@@ -3953,11 +3957,12 @@ do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs)
 				cli_errmsg("curl_easy_init failed\n");
 				continue;
 			}
-			arg.url = url;
+			arg.url = strdup(url);
 			arg.dir = dir;
 			arg.filename = name;
 			getURL(&arg);
 			curl_easy_cleanup(arg.curl);
+			free(arg.url);
 #endif
 
 #else	/*!WITH_CURL*/
@@ -4002,6 +4007,7 @@ do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs)
 	while(--n >= 0) {
 		pthread_join(tid[n], NULL);
 		free(args[n].filename);
+		free(args[n].url);
 		curl_easy_cleanup(args[n].curl);
 	}
 #endif
@@ -4256,8 +4262,8 @@ static	int	nonblock_connect(int sock, const struct sockaddr *addr, socklen_t add
 static	int	connect_error(int sock);
 static	int	my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
 
-#define NONBLOCK_SELECT_MAX_FAILURES 3
-#define NONBLOCK_MAX_BOGUS_LOOPS     10
+#define NONBLOCK_SELECT_MAX_FAILURES	3
+#define NONBLOCK_MAX_BOGUS_LOOPS	10
 
 static void *
 #ifdef	CL_THREAD_SAFE
@@ -4284,7 +4290,7 @@ getURL(struct arg *arg)
 	static int tcp;
 	int doingsite, firstpacket;
 	char *ptr;
-	int flags;
+	int flags, via_proxy;
 	const char *proxy;
 
 	if(strlen(url) > (sizeof(site) - 1)) {
@@ -4328,7 +4334,10 @@ getURL(struct arg *arg)
 	ptr = site;
 
 	proxy = getenv("http_proxy");	/* FIXME: handle no_proxy */
-	if(proxy && *proxy) {
+
+	via_proxy = (proxy && *proxy);
+
+	if(via_proxy) {
 		if(strncasecmp(proxy, "http://", 7) != 0) {
 			cli_warnmsg("Unsupported proxy protocol\n");
 			fclose(fp);
@@ -4419,12 +4428,14 @@ getURL(struct arg *arg)
 	/*
 	 * TODO: consider HTTP/1.1
 	 */
-	if(proxy && *proxy)
+	if(via_proxy)
 		snprintf(buf, sizeof(buf) - 1,
 			"GET %s HTTP/1.0\nUser-Agent: www.clamav.net\n\n", url);
 	else
 		snprintf(buf, sizeof(buf) - 1,
 			"GET /%s HTTP/1.0\nUser-Agent: www.clamav.net\n\n", url);
+
+	cli_dbgmsg("%s\n", buf);
 
 	if(send(sd, buf, strlen(buf), 0) < 0) {
 		close(sd);
@@ -4480,11 +4491,34 @@ getURL(struct arg *arg)
 				cli_dbgmsg("HTTP status %d\n", status);
 
 				free(statusptr);
+
+				if((status == 301) || (status == 302)) {
+					char *location;
+
+					location = strstr(buf, "\nLocation: ");
+
+					/*
+					 * FIXME: it may not be in this packet
+					 */
+					if(location) {
+						char *end;
+
+						fclose(fp);
+						close(sd);
+						unlink(fout);
+
+						location += 11;
+						free(arg->url);
+						end = location;
+						while(*end && (*end != '\n'))
+							end++;
+						*end = '\0';
+						arg->url = strdup(location);
+						cli_dbgmsg("Redirecting to %s\n", arg->url);
+						return getURL(arg);
+					}
+				}
 			}
-			/*
-			 * TODO: follow 301 and 302
-			 * (look for Location in the header)
-			 */
 			firstpacket = 0;
 		}
 
