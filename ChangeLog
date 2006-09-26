@@ -1,3 +1,8 @@
+Tue Sep 26 09:40:03 BST 2006 (trog)
+-----------------------------------
+  * libclamav/unrar.c: Don't be so keen to report an error.
+		Reported by: Gianluigi Tiesi
+
 Mon Sep 25 19:28:02 BST 2006 (njh)
 ----------------------------------
   * libclamav/regex_list.c:	Corrected "R" regex handler

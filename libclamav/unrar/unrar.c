@@ -1279,7 +1279,6 @@ static int rar_unpack29(int fd, int solid, unpack_data_t *unpack_data)
 			}
 			if (number == 256) {
 				if (!read_end_of_block(fd, unpack_data)) {
-					retval = FALSE;
 					break;
 				}
 				continue;
