@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.344 2006/09/26 16:41:47 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.345 2006/09/26 19:41:43 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -4478,6 +4478,10 @@ getURL(struct arg *arg)
 		}
 		if(n == 0)
 			break;
+
+		/*
+		 * FIXME: Handle header in more than one packet
+		 */
 		if(firstpacket) {
 			char *statusptr;
 
@@ -4497,9 +4501,6 @@ getURL(struct arg *arg)
 
 					location = strstr(buf, "\nLocation: ");
 
-					/*
-					 * FIXME: it may not be in this packet
-					 */
 					if(location) {
 						char *end;
 
@@ -4519,13 +4520,21 @@ getURL(struct arg *arg)
 					}
 				}
 			}
-			firstpacket = 0;
-		}
+			/*
+			 * Don't write the HTTP header
+			 */
+			ptr = strstr(buf, "\n\n");
+			if(ptr != NULL) {
+				ptr += 2;
+				n -= (int)(ptr - buf);
+			} else
+				ptr = buf;
 
-		/*
-		 * FIXME: Don't write the header
-		 */
-		if(fwrite(buf, n, 1, fp) != 1) {
+			firstpacket = 0;
+		} else
+			ptr = buf;
+
+		if(fwrite(ptr, n, 1, fp) != 1) {
 			cli_warnmsg("Error writing %d bytes to %s\n",
 				n, fout);
 			break;
