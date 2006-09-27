@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.287 2006/09/21 07:46:17 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.288 2006/09/27 16:38:39 njh Exp $";
 
-#define	CM_VERSION	"devel-100906"
+#define	CM_VERSION	"devel-270906"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1858,11 +1858,11 @@ createSession(unsigned int s)
 	server.sin_addr.s_addr = serverIPs[serverNumber];
 
 	session->sock = -1;
-	proto = getprotoentbyname("tcp");
+	proto = getprotobyname("tcp");
 	if(proto == NULL) {
 		fputs("Unknown prototol tcp, check /etc/protocols\n", stderr);
 		ret = -1;
-	} else if((fd = socket(AF_INET, SOCK_STREAM, p->p_proto)) < 0) {
+	} else if((fd = socket(AF_INET, SOCK_STREAM, proto->p_proto)) < 0) {
 		perror("socket");
 		ret = -1;
 	} else if(connect(fd, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
@@ -2643,7 +2643,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 					rc = pthread_cond_timedwait(&n_children_cond, &n_children_mutex, &timeout);
 				}
 			} while((n_children >= max_children) && (rc != ETIMEDOUT));
-			logg(_("Finished waiting, n_children = %d"), n_children);
+			logg(_("Finished waiting, n_children = %d\n"), n_children);
 		}
 		n_children++;
 
@@ -3513,13 +3513,16 @@ clamfi_eom(SMFICTX *ctx)
 			if(smfi_addrcpt(ctx, report) == MI_FAILURE) {
 				/* It's a remote site */
 				if(privdata->filename) {
-					char cmd[128];
+					char cmd[1024];
 
-					snprintf(cmd, sizeof(cmd), "mail -s %s %s < %s",
+					snprintf(cmd, sizeof(cmd) - 1,
+						"mail -s \"%s\" %s < %s",
 						virusname, report,
 						privdata->filename);
 					if(system(cmd) == 0)
 						logg(_("#Reported phishing to %s"), report);
+					else
+						logg(_("^Couldn't report to %s\n"), report);
 				} else {
 					logg(_("^Can't set anti-phish header\n"));
 					rc = (privdata->discard) ? SMFIS_DISCARD : SMFIS_REJECT;
@@ -4654,8 +4657,7 @@ qfile(struct privdata *privdata, const char *sendmailId, const char *virusname)
 	if((mkdir(newname, 0700) < 0) && (errno != EEXIST)) {
 #endif
 		perror(newname);
-		if(use_syslog)
-			syslog(LOG_ERR, _("mkdir %s failed"), newname);
+		logg(_("!mkdir %s failed\n"), newname);
 		return -1;
 	}
 	sprintf(newname, "%s/%02d%02d%02d/%s.%s",
@@ -4670,7 +4672,7 @@ qfile(struct privdata *privdata, const char *sendmailId, const char *virusname)
 #ifdef	C_DARWIN
 		*ptr &= '\177';
 #endif
-#if	defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32) || defined(C_OS2)
+#if	defined(MSDOS) || defined(C_CYGWIN) || defined(C_WINDOWS) || defined(C_OS2)
 		if(strchr("/*?<>|\\\"+=,;:\t ", *ptr))
 #else
 		if(*ptr == '/')
@@ -4680,17 +4682,15 @@ qfile(struct privdata *privdata, const char *sendmailId, const char *virusname)
 	cli_dbgmsg("qfile move '%s' to '%s'\n", privdata->filename, newname);
 
 	if(move(privdata->filename, newname) < 0) {
-		if(use_syslog)
-			syslog(LOG_WARNING, _("Can't rename %1$s to %2$s"),
-				privdata->filename, newname);
+		logg(_("^Can't rename %1$s to %2$s\n"),
+			privdata->filename, newname);
 		free(newname);
 		return -1;
 	}
 	free(privdata->filename);
 	privdata->filename = newname;
 
-	if(use_syslog)
-		syslog(LOG_INFO, _("Email quarantined as %s"), newname);
+	logg(_("Email quarantined as %s\n"), newname);
 
 	return 0;
 }
