@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: regex_list.c,v $
+ *  Revision 1.6  2006/09/27 19:14:49  njh
+ *  Fix segfault on Solaris
+ *
  *  Revision 1.5  2006/09/26 18:55:36  njh
  *  Fixed portability issues
  *
@@ -250,10 +253,10 @@ int regex_list_match(struct regex_matcher* matcher,const char* real_url,const ch
 		strncpy(buffer,real_url,real_len);
 		buffer[real_len]=hostOnly ? '\0' : ' ';
 		if(!hostOnly) {
-		strncpy(buffer+real_len+1,display_url,display_len);
-		buffer[buffer_len]=0;
+			strncpy(buffer+real_len+1,display_url,display_len);
+			buffer[buffer_len]=0;
 		}
-		cli_dbgmsg("Looking up in regex_list: %s\n");
+		cli_dbgmsg("Looking up in regex_list: %s\n", buffer);
 
 		rc = cli_ac_scanbuff(buffer,buffer_len,info,hostOnly ? matcher->root_hosts : matcher->root_urls,&partcnt,0,0,&partoff,0,-1,NULL);
 		if(!rc && !hostOnly) 

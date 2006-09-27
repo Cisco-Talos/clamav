@@ -1,3 +1,7 @@
+Wed Sep 27 20:15:20 BST 2006 (njh)
+----------------------------------
+  * libclamav/regex_list.c:	Fix segfault on Solaris when running --debug
+
 Wed Sep 27 17:37:42 BST 2006 (njh)
 ----------------------------------
   * clamav-milter:	--report sometimes failed
