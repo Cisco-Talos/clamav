@@ -270,7 +270,7 @@ static int writeinfo(const char *db, const char *header)
 	int i;
 	struct stat sb;
 	char file[32], *md5;
-	char *extlist[] = { "db", "fp", "hdb", "mdb", "ndb", "rmd", "zmd", "sdb", NULL };
+	char *extlist[] = { "db", "fp", "hdb", "mdb", "ndb", "pdb", "rmd", "zmd", "sdb", NULL };
 
 
     snprintf(file, sizeof(file), "%s.info", db);
@@ -347,6 +347,7 @@ static int build(struct optstruct *opt)
        stat("main.hdb", &foo) == -1 && stat("daily.hdb", &foo) == -1 &&
        stat("main.mdb", &foo) == -1 && stat("daily.mdb", &foo) == -1 &&
        stat("main.ndb", &foo) == -1 && stat("daily.ndb", &foo) == -1 &&
+       stat("main.pdb", &foo) == -1 && stat("daily.pdb", &foo) == -1 &&
        stat("main.sdb", &foo) == -1 && stat("daily.sdb", &foo) == -1 &&
        stat("main.zmd", &foo) == -1 && stat("daily.zmd", &foo) == -1 &&
        stat("main.rmd", &foo) == -1 && stat("daily.rmd", &foo) == -1)
@@ -484,11 +485,8 @@ static int build(struct optstruct *opt)
 				 "daily.sdb", "main.zmd", "daily.zmd",
 				 "main.rmd", "daily.rmd", "main.fp",
 				 "daily.fp", "main.mdb", "daily.mdb",
-				 "daily.info", "main.info",
-#ifdef CL_EXPERIMENTAL
-				 /* TODO: add support for main.[wp]db */
-				 "daily.wdb","daily.pdb",
-#endif
+				 "daily.info", "main.info", "main.wdb",
+				 "daily.wdb", "main.pdb", "daily.pdb",
 				 NULL };
 		args[2] = tarfile;
 		if(!opt_check(opt, "debug")) {
