@@ -23,22 +23,30 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <string.h>
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef	C_WINDOWS
 #include <dirent.h>
+#endif
 #include <fcntl.h>
 #include <ctype.h>
 #include <errno.h>
 
-#include "clamav.h"
-#include "cfgparser.h"
-#include "memory.h"
-#include "output.h"
+#include "shared/cfgparser.h"
+#include "shared/memory.h"
+#include "shared/output.h"
 
-#include "../libclamav/cvd.h"
+#include "libclamav/clamav.h"
+#include "libclamav/cvd.h"
+
+#ifndef	O_BINARY
+#define	O_BINARY	0
+#endif
 
 
 char *freshdbdir(void)
@@ -136,10 +144,10 @@ int filecopy(const char *src, const char *dest)
 	struct stat sb;
 
 
-    if((s = open(src, O_RDONLY)) == -1)
+    if((s = open(src, O_RDONLY|O_BINARY)) == -1)
 	return -1;
 
-    if((d = open(dest, O_CREAT|O_WRONLY|O_TRUNC)) == -1) {
+    if((d = open(dest, O_CREAT|O_WRONLY|O_TRUNC|O_BINARY)) == -1) {
 	close(s);
 	return -1;
     }
@@ -177,13 +185,17 @@ int rmdirs(const char *dirname)
 	    }
 
 	    while((dent = readdir(dd))) {
-#if   (!defined(C_CYGWIN)) && (!defined(C_INTERIX))
+#if   (!defined(C_CYGWIN)) && (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
 		if(dent->d_ino)
 #endif
 		{
 		    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 			fname = mcalloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
+#ifdef	C_WINDOWS
+			sprintf(fname, "%s\\%s", dirname, dent->d_name);
+#else
 			sprintf(fname, "%s/%s", dirname, dent->d_name);
+#endif
 
 			/* stat the file */
 			if(lstat(fname, &statbuf) != -1) {
@@ -237,7 +249,7 @@ int dircopy(const char *src, const char *dest)
     }
 
     while((dent = readdir(dd))) {
-#if   (!defined(C_CYGWIN)) && (!defined(C_INTERIX))
+#if   (!defined(C_CYGWIN)) && (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
 	if(dent->d_ino)
 #endif
 	{
@@ -276,7 +288,7 @@ int cvd_unpack(const char *cvd, const char *destdir)
 	int fd;
 
 
-    if((fd = open(cvd, O_RDONLY)) == -1)
+    if((fd = open(cvd, O_RDONLY|O_BINARY)) == -1)
 	return -1;
 
     if(lseek(fd, 512, SEEK_SET) == -1) {
@@ -292,11 +304,12 @@ int cvd_unpack(const char *cvd, const char *destdir)
 
 void daemonize(void)
 {
-	int i;
-
-#ifdef C_OS2
+#if	defined(C_OS2) || defined(C_WINDOWS)
+	fputs("Background mode is not supported on your operating system\n", stderr);
     return;
 #else
+	int i;
+
 
     if((i = open("/dev/null", O_WRONLY)) == -1) {
 	for(i = 0; i <= 2; i++)
