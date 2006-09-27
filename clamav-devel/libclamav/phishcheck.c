@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.10  2006/09/27 14:23:14  njh
+ *  Ported to VS2005
+ *
  *  Revision 1.9  2006/09/26 18:55:36  njh
  *  Fixed portability issues
  *
@@ -345,6 +348,7 @@ void free_if_needed(struct url_check* url)
 }
 
 static int phish_disabled = 0;/* disabled due to fatal startup error */
+
 static int build_regex(regex_t** preg,const char* regex,int nosub)
 {
 	int rc;
@@ -352,11 +356,20 @@ static int build_regex(regex_t** preg,const char* regex,int nosub)
 	cli_dbgmsg("Compiling regex:%s\n",regex);
 	rc = regcomp(*preg,regex,REG_EXTENDED|REG_ICASE|(nosub ? REG_NOSUB :0));
 	if(rc) {
+	
+#ifdef	C_WINDOWS
+		cli_errmsg("Error in compiling regex, disabling phishing checks\n");
+#else
 		size_t buflen =	regerror(rc,*preg,NULL,0);
-		char*  errbuf = cli_malloc(buflen);
-		regerror(rc,*preg,errbuf,buflen);
-		cli_errmsg("Error in compiling regex:%s\nDisabling phishing checks\n",errbuf);
-		free(errbuf);
+		char *errbuf = cli_malloc(buflen);
+		
+		if(errbuf) {
+			regerror(rc,*preg,errbuf,buflen);
+			cli_errmsg("Error in compiling regex:%s\nDisabling phishing checks\n",errbuf);
+			free(errbuf);
+		} else
+			cli_errmsg("Error in compiling regex, disabling phishing checks\n");
+#endif
 		free(*preg);
 		*preg=NULL;
 		phish_disabled=1;
