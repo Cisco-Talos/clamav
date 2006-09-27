@@ -78,7 +78,7 @@ int r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t 
 	if(gethostbyname_r(hostname, &hp, (struct hostent_data *)buf) < 0)
 		return h_errno;
 #else
-	/* Single thread the code */
+	/* Single thread the code e.g. VS2005 */
 	struct hostent *hp2;
 #ifdef  CL_THREAD_SAFE
 	static pthread_mutex_t hostent_mutex = PTHREAD_MUTEX_INITIALIZER;
