@@ -23,7 +23,7 @@
 /* #undef CL_DEBUG */
 
 /* enable experimental code */
-/* #undef CL_EXPERIMENTAL 1 /*
+/* #define CL_EXPERIMENTAL 1 */
 
 /* thread safe */
 #define CL_THREAD_SAFE 1
@@ -158,10 +158,10 @@
 /* #define HAVE_INTTYPES_H 1 */
 
 /* in_addr_t is defined */
-#define HAVE_IN_ADDR_T 1
+/* #undef HAVE_IN_ADDR_T 1 */
 
 /* in_port_t is defined */
-#define HAVE_IN_PORT_T 1
+/* #define HAVE_IN_PORT_T 1 */
 
 /* Define to 1 if you have the <libmilter/mfapi.h> header file. */
 /* #undef HAVE_LIBMILTER_MFAPI_H */
@@ -350,7 +350,11 @@
 #define VERSION "devel-20060927"
 
 /* use libcurl in mbox code */
-/* #define WITH_CURL 1 */
+#ifdef	CL_EXPERIMENTAL
+#define WITH_CURL 1	/* A lie, since we're dropping curl, but it works */
+#else
+/* #undef WITH_CURL */
+#endif
 
 /* tcpwrappers support */
 /* #undef WITH_TCPWRAP */
