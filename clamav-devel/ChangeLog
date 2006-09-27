@@ -1,3 +1,7 @@
+Wed Sep 27 17:29:24 BST 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	 CL_EXPERIMENTAL now compiles under VS2005
+
 Wed Sep 27 15:26:45 BST 2006 (njh)
 ----------------------------------
   * libclamav:	Ported the experimental anti-phish code to VS2005

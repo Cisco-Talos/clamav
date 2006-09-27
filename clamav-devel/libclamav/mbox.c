@@ -16,7 +16,11 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.345 2006/09/26 19:41:43 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.346 2006/09/27 16:28:48 njh Exp $";
+
+#ifdef	_MSC_VER
+#include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
+#endif
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -142,6 +146,44 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 
 #ifdef	FOLLOWURLS
 
+#ifdef	CL_EXPERIMENTAL	/* dropping curl support */
+
+#ifndef	C_WINDOWS
+#include <netdb.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <net/if.h>
+#include <arpa/inet.h>
+#endif
+#include <fcntl.h>
+#ifndef	C_WINDOWS
+#include <sys/time.h>
+#endif
+
+#ifndef HAVE_IN_PORT_T
+typedef	unsigned	short	in_port_t;
+#endif
+
+#ifndef HAVE_IN_ADDR_T
+typedef	unsigned	int	in_addr_t;
+#endif
+
+#if	(!defined(EALREADY)) && (defined(WSAEALREADY))
+#define EALREADY	WSAEALREADY
+#endif
+#if	(!defined(EINPROGRESS)) && (defined(WSAEINPROGRESS))
+#define EINPROGRESS	WSAEINPROGRESS
+#endif
+#if	(!defined(EISCONN)) && (defined(WSAEISCONN))
+#define EISCONN	WSAEISCONN
+#endif
+
+#ifndef	C_WINDOWS
+#define	closesocket(s)	close(s)
+#endif
+
+#else
+
 #ifdef	WITH_CURL	/* Set in configure */
 /*
  * To build with WITH_CURL:
@@ -182,6 +224,8 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 #error	"FOLLOWURLS without CURL is no longer supported"
 
 #endif	/*WITH_CURL*/
+
+#endif	/* CL_EXPERIMENTAL */
 
 #else	/*!FOLLOWURLS*/
 #undef	WITH_CURL
@@ -250,10 +294,10 @@ static	void	hrefs_done(blob *b,tag_arguments_t* hrefs);
 
 #ifdef	WITH_CURL
 struct arg {
-	CURL *curl;
 #ifdef CL_EXPERIMENTAL
 	char *url;
 #else
+	CURL *curl;
 	const char *url;
 #endif
 	const char *dir;
@@ -1180,7 +1224,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 	char tmpfilename[16];
 	int tmpfd;
 #endif
-#ifdef	FOLLOWURLS
+#if	defined(FOLLOWURLS) && (!defined(CL_EXPERIMENTAL))
 	static int initialised = 0;
 #ifdef	CL_THREAD_SAFE
 	static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -1193,7 +1237,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 	cli_dbgmsg("in mbox()\n");
 #endif
 
-#ifdef	FOLLOWURLS
+#if	defined(FOLLOWURLS) && (!defined(CL_EXPERIMENTAL))
 	if(ctx->options&CL_SCAN_MAILURL) {
 #ifdef	CL_THREAD_SAFE
 		pthread_mutex_lock(&init_mutex);
@@ -3824,7 +3868,7 @@ getHrefs(message *m, tag_arguments_t *hrefs)
 	hrefs->contents = NULL;
 
 	cli_dbgmsg("getHrefs: calling html_normalise_mem\n");
-	if(!html_normalise_mem(blobGetData(b), len, NULL, hrefs)) {
+	if(!html_normalise_mem(blobGetData(b), (off_t)len, NULL, hrefs)) {
 		blobDestroy(b);
 		return NULL;
 	}
@@ -3941,22 +3985,11 @@ do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs)
 
 #ifdef	WITH_CURL
 #ifdef	CL_THREAD_SAFE
-			args[n].curl = curl_easy_init();
-			if(args[n].curl == NULL) {
-				cli_errmsg("curl_easy_init failed\n");
-				continue;
-			}
 			args[n].dir = dir;
 			args[n].url = strdup(url);
 			args[n].filename = strdup(name);
 			pthread_create(&tid[n], NULL, getURL, &args[n]);
 #else
-			/* easy isn't the word I'd use... */
-			arg.curl = curl_easy_init();
-			if(arg.curl == NULL) {
-				cli_errmsg("curl_easy_init failed\n");
-				continue;
-			}
 			arg.url = strdup(url);
 			arg.dir = dir;
 			arg.filename = name;
@@ -4008,7 +4041,6 @@ do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs)
 		pthread_join(tid[n], NULL);
 		free(args[n].filename);
 		free(args[n].url);
-		curl_easy_cleanup(args[n].curl);
 	}
 #endif
 }
@@ -4226,17 +4258,6 @@ checkURLs(message *m, mbox_ctx *mctx, int* rc, int is_html)
  * Includes some of the freshclam hacks by Everton da Silva Marques
  * everton.marques@gmail.com>
  */
-#include <netdb.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <net/if.h>
-#include <arpa/inet.h>
-#include <ctype.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <sys/time.h>
-#include <stdlib.h>
-
 #ifndef timercmp
 # define timercmp(a, b, cmp)          \
   (((a)->tv_sec == (b)->tv_sec) ?     \
@@ -4280,9 +4301,18 @@ getURL(struct arg *arg)
 	const char *dir = arg->dir;
 	const char *filename = arg->filename;
 	char fout[NAME_MAX + 1];
-	int sd, n;
+#ifdef	C_WINDOWS
+	SOCKET sd;
+#else
+	int sd;
+#endif
+	int n;
 	struct sockaddr_in server;
+#ifdef	HAVE_IN_ADDR_T
 	in_addr_t ip;
+#else
+	int ip;
+#endif
 	char buf[BUFSIZ];
 	char site[BUFSIZ];
 	in_port_t port;
@@ -4317,7 +4347,9 @@ getURL(struct arg *arg)
 			return NULL;
 		}
 		tcp = proto->p_proto;
+#ifndef	C_WINDOWS
 		endprotoent();
+#endif
 	}
 	if(default_port == 0) {
 		const struct servent *servent = getservbyname("http", "tcp");
@@ -4326,7 +4358,9 @@ getURL(struct arg *arg)
 			default_port = (in_port_t)ntohs(servent->s_port);
 		else
 			default_port = 80;
+#ifndef	C_WINDOWS
 		endservent();
+#endif
 	}
 	port = default_port;
 
@@ -4419,7 +4453,7 @@ getURL(struct arg *arg)
 	}
 	flags = nonblock_fcntl(sd);
 	if(nonblock_connect(sd, (struct sockaddr *)&server, sizeof(struct sockaddr_in), 5) < 0) {
-		close(sd);
+		closesocket(sd);
 		fclose(fp);
 		return NULL;
 	}
@@ -4437,13 +4471,17 @@ getURL(struct arg *arg)
 
 	cli_dbgmsg("%s\n", buf);
 
-	if(send(sd, buf, strlen(buf), 0) < 0) {
-		close(sd);
+	if(send(sd, buf, (int)strlen(buf), 0) < 0) {
+		closesocket(sd);
 		fclose(fp);
 		return NULL;
 	}
 
+#ifdef	SHUT_WR
 	shutdown(sd, SHUT_WR);
+#else
+	shutdown(sd, 1);
+#endif
 
 	firstpacket = 1;
 
@@ -4460,20 +4498,20 @@ getURL(struct arg *arg)
 		if(select(sd + 1, &set, NULL, NULL, &tv) < 0) {
 			if(errno == EINTR)
 				continue;
-			close(sd);
+			closesocket(sd);
 			fclose(fp);
 			return NULL;
 		}
 		if(!FD_ISSET(sd, &set)) {
 			fclose(fp);
-			close(sd);
+			closesocket(sd);
 			return NULL;
 		}
 		n = recv(sd, buf, BUFSIZ, 0);
 
 		if(n < 0) {
 			fclose(fp);
-			close(sd);
+			closesocket(sd);
 			return NULL;
 		}
 		if(n == 0)
@@ -4505,7 +4543,7 @@ getURL(struct arg *arg)
 						char *end;
 
 						fclose(fp);
-						close(sd);
+						closesocket(sd);
 						unlink(fout);
 
 						location += 11;
@@ -4542,7 +4580,7 @@ getURL(struct arg *arg)
 	}
 
 	fclose(fp);
-	close(sd);
+	closesocket(sd);
 	return NULL;
 }
 
@@ -4576,7 +4614,7 @@ my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t l
 	if(gethostbyname_r(hostname, &hp, (struct hostent_data *)buf) < 0)
 		return h_errno;
 #else
-	/* Single thread the code */
+	/* Single thread the code e.g. VS2005 */
 	struct hostent *hp2;
 #ifdef  CL_THREAD_SAFE
 	static pthread_mutex_t hostent_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -4605,6 +4643,7 @@ my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t l
 static long
 nonblock_fcntl(int sock)
 {
+#ifdef	F_GETFL
 	long fcntl_flags;	/* Save fcntl() flags */
 
 	fcntl_flags = fcntl(sock, F_GETFL, 0);
@@ -4616,16 +4655,21 @@ nonblock_fcntl(int sock)
 			sock, errno, strerror(errno));
 
 	return fcntl_flags;
+#else
+	return 0L;
+#endif
 }
 
 static void
 restore_fcntl(int sock, long fcntl_flags)
 {
+#ifdef	F_SETFL
 	if(fcntl_flags != -1)
 		if(fcntl(sock, F_SETFL, fcntl_flags)) {
 			cli_warnmsg("restore_fcntl: restoring: fcntl(%d, F_SETFL): errno=%d: %s\n",
 				sock, errno, strerror(errno));
 		}
+#endif
 }
 
 static int
