@@ -739,11 +739,11 @@ static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
     return CL_SUCCESS;
 }
 
-static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo, unsigned short fp, unsigned int options)
+static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo, unsigned short mode, unsigned int options)
 {
 	char buffer[FILEBUFF], *pt;
 	int line = 0, ret = 0;
-	struct cli_md5_node *new;
+	struct cli_md5_node *new, *mpt, *last;
 
 
     if((ret = cli_initengine(engine, options))) {
@@ -761,7 +761,8 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	    break;
 	}
 
-	new->fp = fp;
+	if(mode == 1) /* fp */
+	    new->fp = 1;
 
 	if(!(pt = cli_strtok(buffer, 0, ":"))) {
 	    free(new);
@@ -796,17 +797,38 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 
 	new->viralias = cli_strtok(buffer, 3, ":"); /* aliases are optional */
 
-	if(!(*engine)->md5_hlist) {
-	    cli_dbgmsg("Initializing md5 list structure\n");
-	    (*engine)->md5_hlist = (struct cli_md5_node **) cli_calloc(256, sizeof(struct cli_md5_node *));
-	    if(!(*engine)->md5_hlist) {
-		ret = CL_EMEM;
-		break;
+	if(mode == 2) { /* section MD5 */
+	    if(!(*engine)->md5_sect) {
+		(*engine)->md5_sect = new;
+	    } else {
+		if(new->size < (*engine)->md5_sect->size) {
+		    new->next = (*engine)->md5_sect;
+		    (*engine)->md5_sect = new;
+		} else {
+		    mpt = (*engine)->md5_sect;
+		    while(mpt) {
+			last = mpt;
+			if((mpt->size < new->size) && (!mpt->next || new->size < mpt->next->size))
+			    break;
+			mpt = mpt->next;
+		    }
+		    new->next = last->next;
+		    last->next = new;
+		}
 	    }
-	}
+	} else {
+	    if(!(*engine)->md5_hlist) {
+		cli_dbgmsg("Initializing md5 list structure\n");
+		(*engine)->md5_hlist = (struct cli_md5_node **) cli_calloc(256, sizeof(struct cli_md5_node *));
+		if(!(*engine)->md5_hlist) {
+		    ret = CL_EMEM;
+		    break;
+		}
+	    }
 
-	new->next = (*engine)->md5_hlist[new->md5[0] & 0xff];
-	(*engine)->md5_hlist[new->md5[0] & 0xff] = new;
+	    new->next = (*engine)->md5_hlist[new->md5[0] & 0xff];
+	    (*engine)->md5_hlist[new->md5[0] & 0xff] = new;
+	}
     }
 
     if(!line) {
@@ -1065,6 +1087,9 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
     } else if(cli_strbcasestr(filename, ".fp")) {
 	ret = cli_loadhdb(fd, engine, signo, 1, options);
 
+    } else if(cli_strbcasestr(filename, ".mdb")) {
+	ret = cli_loadhdb(fd, engine, signo, 2, options);
+
     } else if(cli_strbcasestr(filename, ".ndb")) {
 	if(options & CL_DB_HWACCEL)
 	    skipped = 1;
@@ -1163,6 +1188,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigne
 	     cli_strbcasestr(dent->d_name, ".db3")  ||
 	     cli_strbcasestr(dent->d_name, ".hdb")  ||
 	     cli_strbcasestr(dent->d_name, ".fp")   ||
+	     cli_strbcasestr(dent->d_name, ".mdb")  ||
 	     cli_strbcasestr(dent->d_name, ".ndb")  ||
 	     cli_strbcasestr(dent->d_name, ".sdb")  ||
 	     cli_strbcasestr(dent->d_name, ".zmd")  ||
@@ -1283,6 +1309,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".db3")  || 
 	    cli_strbcasestr(dent->d_name, ".hdb")  || 
 	    cli_strbcasestr(dent->d_name, ".fp")   || 
+	    cli_strbcasestr(dent->d_name, ".mdb")  ||
 	    cli_strbcasestr(dent->d_name, ".ndb")  || 
 	    cli_strbcasestr(dent->d_name, ".sdb")  || 
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 
@@ -1361,6 +1388,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".db3")  || 
 	    cli_strbcasestr(dent->d_name, ".hdb")  || 
 	    cli_strbcasestr(dent->d_name, ".fp")   || 
+	    cli_strbcasestr(dent->d_name, ".mdb")  ||
 	    cli_strbcasestr(dent->d_name, ".ndb")  || 
 	    cli_strbcasestr(dent->d_name, ".sdb")  || 
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 

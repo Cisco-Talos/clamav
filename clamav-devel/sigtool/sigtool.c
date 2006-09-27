@@ -270,7 +270,7 @@ static int writeinfo(const char *db, const char *header)
 	int i;
 	struct stat sb;
 	char file[32], *md5;
-	char *extlist[] = { "db", "fp", "hdb", "ndb", "rmd", "zmd", "sdb", NULL };
+	char *extlist[] = { "db", "fp", "hdb", "mdb", "ndb", "rmd", "zmd", "sdb", NULL };
 
 
     snprintf(file, sizeof(file), "%s.info", db);
@@ -345,6 +345,7 @@ static int build(struct optstruct *opt)
 
     if(stat("main.db", &foo) == -1 && stat("daily.db", &foo) == -1 &&
        stat("main.hdb", &foo) == -1 && stat("daily.hdb", &foo) == -1 &&
+       stat("main.mdb", &foo) == -1 && stat("daily.mdb", &foo) == -1 &&
        stat("main.ndb", &foo) == -1 && stat("daily.ndb", &foo) == -1 &&
        stat("main.sdb", &foo) == -1 && stat("daily.sdb", &foo) == -1 &&
        stat("main.zmd", &foo) == -1 && stat("daily.zmd", &foo) == -1 &&
@@ -366,6 +367,7 @@ static int build(struct optstruct *opt)
     } else {
 	lines = countlines("main.db") + countlines("daily.db") +
 		countlines("main.hdb") + countlines("daily.hdb") +
+		countlines("main.mdb") + countlines("daily.mdb") +
 		countlines("main.ndb") + countlines("daily.ndb") +
 		countlines("main.sdb") + countlines("daily.sdb") +
 		countlines("main.zmd") + countlines("daily.zmd") +
@@ -481,7 +483,8 @@ static int build(struct optstruct *opt)
 				 "main.ndb", "daily.ndb", "main.sdb",
 				 "daily.sdb", "main.zmd", "daily.zmd",
 				 "main.rmd", "daily.rmd", "main.fp",
-				 "daily.fp", "daily.info", "main.info",
+				 "daily.fp", "main.mdb", "daily.mdb",
+				 "daily.info", "main.info",
 #ifdef CL_EXPERIMENTAL
 				 /* TODO: add support for main.[wp]db */
 				 "daily.wdb","daily.pdb",
@@ -817,6 +820,7 @@ static int listdir(const char *dirname)
 	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") &&
 	    (cli_strbcasestr(dent->d_name, ".db")  ||
 	     cli_strbcasestr(dent->d_name, ".hdb") ||
+	     cli_strbcasestr(dent->d_name, ".mdb") ||
 	     cli_strbcasestr(dent->d_name, ".ndb") ||
 	     cli_strbcasestr(dent->d_name, ".sdb") ||
 	     cli_strbcasestr(dent->d_name, ".zmd") ||
@@ -944,7 +948,7 @@ static int listdb(const char *filename)
 	    mprintf("%s\n", start);
 	}
 
-    } else if(cli_strbcasestr(filename, ".hdb")) { /* hash database */
+    } else if(cli_strbcasestr(filename, ".hdb") || cli_strbcasestr(filename, ".mdb")) { /* hash database */
 
 	while(fgets(buffer, FILEBUFF, fd)) {
 	    line++;

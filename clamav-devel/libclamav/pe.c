@@ -49,6 +49,7 @@
 #include "rebuildpe.h"
 #include "str.h"
 #include "execs.h"
+#include "md5.h"
 
 #ifndef	O_BINARY
 #define	O_BINARY	0
@@ -173,6 +174,49 @@ static int cli_ddump(int desc, int offset, int size, const char *file)
 }
 */
 
+static unsigned char *cli_md5sect(int fd, uint32_t offset, uint32_t size)
+{
+	size_t bread, sum = 0;
+	off_t pos;
+	char buff[FILEBUFF];
+	unsigned char *digest;
+	MD5_CTX md5ctx;
+
+
+    if((pos = lseek(fd, 0, SEEK_CUR)) == -1) {
+	cli_dbgmsg("cli_md5sect: Invalid descriptor %d\n", fd);
+	return NULL;
+    }
+
+    if(lseek(fd, offset, SEEK_SET) == -1) {
+	cli_dbgmsg("cli_md5sect: lseek() failed\n");
+	lseek(fd, pos, SEEK_SET);
+	return NULL;
+    }
+
+    digest = cli_calloc(16, sizeof(char));
+    if(!digest) {
+	cli_errmsg("cli_md5sect: Can't allocate memory for digest\n");
+	return NULL;
+    }
+
+    MD5_Init(&md5ctx);
+
+    while((bread = cli_readn(fd, buff, FILEBUFF)) > 0) {
+	if(sum + bread >= size) {
+	    MD5_Update(&md5ctx, buff, size - sum);
+	    break;
+	} else {
+	    MD5_Update(&md5ctx, buff, bread);
+	    sum += bread;
+	}
+    }
+
+    MD5_Final(digest, &md5ctx);
+    lseek(fd, pos, SEEK_SET);
+    return digest;
+}
+
 int cli_scanpe(int desc, cli_ctx *ctx)
 {
 	uint16_t e_magic; /* DOS signature ("MZ") */
@@ -185,9 +229,10 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	struct pe_image_optional_hdr32 optional_hdr32;
 	struct pe_image_optional_hdr64 optional_hdr64;
 	struct pe_image_section_hdr *section_hdr;
+	struct cli_md5_node *md5_sect;
 	struct stat sb;
 	char sname[9], buff[4096], *tempfile;
-	unsigned char *ubuff;
+	unsigned char *ubuff, *md5_dig;
 	ssize_t bytes;
 	unsigned int i, found, upx_success = 0, min = 0, max = 0, err, broken = 0;
 	unsigned int ssize = 0, dsize = 0, dll = 0, pe_plus = 0;
@@ -561,6 +606,31 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		return CL_VIRUS;
 	    }
 	    broken = 1;
+
+	} else {
+	    /* check MD5 section sigs */
+	    md5_sect = ctx->engine->md5_sect;
+	    while(md5_sect && md5_sect->size < EC32(section_hdr[i].SizeOfRawData))
+		md5_sect = md5_sect->next;
+
+	    if(md5_sect && md5_sect->size == EC32(section_hdr[i].SizeOfRawData)) {
+		md5_dig = cli_md5sect(desc, EC32(section_hdr[i].PointerToRawData), EC32(section_hdr[i].SizeOfRawData));
+		if(!md5_dig) {
+		    cli_errmsg("PE: Can't calculate MD5 for section %d\n", i);
+		} else {
+		    while(md5_sect && md5_sect->size == EC32(section_hdr[i].SizeOfRawData)) {
+			if(!strcmp(md5_dig, md5_sect->md5)) {
+			    if(ctx->virname)
+				*ctx->virname = md5_sect->virname;
+			    free(md5_dig);
+			    free(section_hdr);
+			    return CL_VIRUS;
+			}
+			md5_sect = md5_sect->next;
+		    }
+		    free(md5_dig);
+		}
+	    }
 	}
 
 	if(!i) {
@@ -583,6 +653,8 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
 
     }
+
+
 
     if(pe_plus)
 	ep = EC32(optional_hdr64.AddressOfEntryPoint);
