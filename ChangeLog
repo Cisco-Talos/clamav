@@ -1,3 +1,7 @@
+Wed Sep 27 12:20:38 CEST 2006 (tk)
+----------------------------------
+  * freshclam/dns.c: apply w32 support patch from Mark Pizzolato
+
 Wed Sep 27 09:32:40 CEST 2006 (tk)
 ----------------------------------
   * sigtool/sigtool.c: properly handle .pdb files

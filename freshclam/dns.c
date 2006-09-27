@@ -16,6 +16,9 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
+#ifdef	_MSC_VER
+#include <winsock.h>
+#endif
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -47,6 +50,7 @@ char *txtquery(const char *domain, unsigned int *ttl)
 	int len, exp, cttl, size, txtlen, type, qtype;
 
 
+    *ttl = 0;
     if(res_init() < 0) {
 	logg("^res_init failed\n");
 	return NULL;
@@ -106,7 +110,6 @@ char *txtquery(const char *domain, unsigned int *ttl)
 
     pt += INT16SZ; /* class */
     GETLONG(cttl, pt);
-    *ttl = cttl;
     GETSHORT(size, pt);
     txtlen = *pt;
 
@@ -121,6 +124,43 @@ char *txtquery(const char *domain, unsigned int *ttl)
     pt++;
     strncpy(txt, pt, txtlen);
     txt[txtlen] = 0;
+    *ttl = cttl;
+
+    return txt;
+}
+
+#elif defined(C_WINDOWS)
+
+/*
+ * Note: Needs to link with dnsapi.lib.  
+ * The dll behind this library is available from Windows 2000 onward.
+ * Written by Mark Pizzolato
+ */
+
+#include <string.h>
+#include <windows.h>
+#include <windns.h>
+#include "shared/memory.h"
+#include "shared/output.h"
+
+char *txtquery(const char *domain, unsigned int *ttl)
+{
+	PDNS_RECORD pDnsRecord;
+	char *txt = NULL;
+
+    *ttl = 0;
+    mprintf("*Querying %s\n", domain);
+
+   if(DnsQuery_UTF8(domain, DNS_TYPE_TEXT, DNS_QUERY_TREAT_AS_FQDN, NULL, &pDnsRecord, NULL) != 0)
+	return NULL;
+
+    if(pDnsRecord->Data.TXT.dwStringCount > 0) {
+	txt = mmalloc(strlen(pDnsRecord->Data.TXT.pStringArray[0]) + 1);
+	if(txt)
+	    strcpy(txt, pDnsRecord->Data.TXT.pStringArray[0]);
+	*ttl = pDnsRecord->dwTtl;
+    }
+    DnsRecordListFree(pDnsRecord, DnsFreeRecordList);
 
     return txt;
 }
@@ -129,6 +169,7 @@ char *txtquery(const char *domain, unsigned int *ttl)
 
 char *txtquery(const char *domain, unsigned int *ttl)
 {
+    *ttl = 1;  /* ttl of 1 combined with a NULL return distinguishes a failed lookup from DNS queries not being available */
     return NULL;
 }
 
