@@ -22,8 +22,8 @@
 /* enable debugging */
 /* #undef CL_DEBUG */
 
-/* enable debugging */
-/* #undef CL_DEBUG */
+/* enable experimental code */
+/* #undef CL_EXPERIMENTAL 1 /*
 
 /* thread safe */
 #define CL_THREAD_SAFE 1
@@ -91,6 +91,9 @@
 
 /* file i/o buffer size */
 #define FILEBUFF 8192
+
+/* enable workaround for broken DNS servers */
+/* #undef FRESHCLAM_DNS_FIX */
 
 /* use "Cache-Control: no-cache" in freshclam */
 /* #undef FRESHCLAM_NO_CACHE */
@@ -200,7 +203,7 @@
 #define HAVE_RECVMSG 1
 
 /* Define to 1 if you have the <regex.h> header file. */
-/* #define HAVE_REGEX_H 1 */
+#define HAVE_REGEX_H 1
 
 /* have resolv.h */
 /* #undef HAVE_RESOLV_H */
@@ -344,7 +347,7 @@
 /* #define USE_SYSLOG 1 */
 
 /* Version number of package */
-#define VERSION "devel-20060901"
+#define VERSION "devel-20060927"
 
 /* use libcurl in mbox code */
 /* #define WITH_CURL 1 */

@@ -314,6 +314,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\regex.c"
+				>
+			</File>
+			<File
 				RelativePath=".\regex_list.c"
 				>
 			</File>
@@ -681,6 +685,10 @@
 			</File>
 			<File
 				RelativePath=".\rebuildpe.h"
+				>
+			</File>
+			<File
+				RelativePath=".\regex.h"
 				>
 			</File>
 			<File
