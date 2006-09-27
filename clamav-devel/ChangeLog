@@ -1,3 +1,7 @@
+Wed Sep 27 12:48:06 CEST 2006 (tk)
+----------------------------------
+  * shared/misc.c: apply w32 patch from NJH
+
 Wed Sep 27 12:20:38 CEST 2006 (tk)
 ----------------------------------
   * freshclam/dns.c: apply w32 support patch from Mark Pizzolato
