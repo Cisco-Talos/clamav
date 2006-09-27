@@ -1,3 +1,7 @@
+Wed Sep 27 16:05:31 CEST 2006 (tk)
+----------------------------------
+  * freshclam/freshclam.c: apply w32 patch from NJH
+
 Wed Sep 27 12:48:06 CEST 2006 (tk)
 ----------------------------------
   * shared/misc.c: apply w32 patch from NJH

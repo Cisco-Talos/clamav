@@ -16,7 +16,9 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-
+#ifdef	_MSC_VER
+#include <winsock.h>
+#endif
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -24,17 +26,23 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <string.h>
 #include <errno.h>
 #include <signal.h>
 #include <time.h>
 #include <sys/types.h>
+#ifndef	C_WINDOWS
 #include <sys/wait.h>
+#endif
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifndef	C_WINDOWS
 #include <pwd.h>
 #include <grp.h>
+#endif
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
 #include <syslog.h>
@@ -58,19 +66,29 @@ static short foreground = 1;
 static void daemon_sighandler(int sig) {
 
     switch(sig) {
+#ifdef	SIGCHLD
 	case SIGCHLD:
 	    waitpid(-1, NULL, WNOHANG);
 	    active_children--;
 	    break;
+#endif
 
+#ifdef	SIGALRM
 	case SIGALRM:
-	case SIGUSR1:
-	    terminate = -1;
+		terminate = -1;
 	    break;
+#endif
+#ifdef	SIGUSR1
+	case SIGUSR1:
+		terminate = -1;
+	    break;
+#endif
 
+#ifdef	SIGHUP
 	case SIGHUP:
 	    terminate = -2;
 	    break;
+#endif
 
 	default:
 	    terminate = 1;
@@ -84,7 +102,6 @@ static void writepid(char *pidfile)
 {
 	FILE *fd;
 	int old_umask;
-
     old_umask = umask(0006);
     if((fd = fopen(pidfile, "w")) == NULL) {
 	logg("!Can't save PID to file %s: %s\n", pidfile, strerror(errno));
@@ -177,8 +194,11 @@ int main(int argc, char **argv)
 	char *newdir, *cfgfile;
 	char *pidfile = NULL;
 	struct cfgstruct *copt, *cpt;
-	struct sigaction sigact, oldact;
-#if !defined(C_CYGWIN)  && !defined(C_OS2)
+#ifndef	C_WINDOWS
+	struct sigaction sigact;
+	struct sigaction oldact;
+#endif
+#if !defined(C_CYGWIN)  && !defined(C_OS2) && !defined(C_WINDOWS)
 	char *unpuser;
 	struct passwd *user;
 #endif
@@ -245,6 +265,13 @@ int main(int argc, char **argv)
 	return 56;
     }
 
+#ifdef C_WINDOWS
+    if(!pthread_win32_process_attach_np()) {
+	mprintf("!Can't start the win32 pthreads layer\n");
+	return 63;
+    }
+#endif
+
     if(opt_check(opt, "http-proxy") || opt_check(opt, "proxy-user"))
 	logg("WARNING: Proxy settings are now only configurable in the config file.\n");
 
@@ -254,7 +281,8 @@ int main(int argc, char **argv)
 	    opt_free(opt);
 	    return 56;
 	}
-#ifndef C_CYGWIN
+
+#if !defined(C_CYGWIN) && !defined(C_WINDOWS)
 	if(statbuf.st_mode & (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH)) {
 	    logg("^Insecure permissions (for HTTPProxyPassword): %s must have no more than 0700 permissions.\n", cfgfile);
 	    opt_free(opt);
@@ -263,7 +291,7 @@ int main(int argc, char **argv)
 #endif
     }
 
-#if !defined(C_CYGWIN)  && !defined(C_OS2)
+#if !defined(C_CYGWIN)  && !defined(C_OS2) && !defined(C_WINDOWS)
     /* freshclam shouldn't work with root privileges */
     if(opt_check(opt, "user"))
 	unpuser = opt_arg(opt, "user");
@@ -375,12 +403,25 @@ int main(int argc, char **argv)
     } else
 	logg("*Current working dir is %s\n", newdir);
 
+#ifdef	C_WINDOWS
+    {
+	    WSADATA wsaData;
+
+	if(WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR) {
+	    logg("!Error at WSAStartup(): %d\n", WSAGetLastError());
+	    return 1;
+	}
+    }
+#endif
+
     if(opt_check(opt, "daemon")) {
 	    int bigsleep, checks;
+#ifndef	C_WINDOWS
 	    time_t now, wakeup;
 
 	memset(&sigact, 0, sizeof(struct sigaction));
 	sigact.sa_handler = daemon_sighandler;
+#endif
 
 	if(opt_check(opt, "checks"))
 	    checks = atoi(opt_arg(opt, "checks"));
@@ -422,10 +463,15 @@ int main(int argc, char **argv)
 
 	logg("#freshclam daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
 
+#ifdef	C_WINDOWS
+	signal(SIGINT, daemon_sighandler);
+	terminate = 0;
+#else
 	sigaction(SIGTERM, &sigact, NULL);
 	sigaction(SIGHUP, &sigact, NULL);
 	sigaction(SIGINT, &sigact, NULL);
         sigaction(SIGCHLD, &sigact, NULL);
+#endif
 
 	while(!terminate) {
 	    ret = download(copt, opt);
@@ -443,8 +489,16 @@ int main(int argc, char **argv)
 	    }
 
 	    logg("#--------------------------------------\n");
+#ifdef	SIGALRM
 	    sigaction(SIGALRM, &sigact, &oldact);
+#endif
+#ifdef	SIGUSR1
 	    sigaction(SIGUSR1, &sigact, &oldact);
+#endif
+
+#ifdef	C_WINDOWS
+	    sleep(bigsleep);
+#else   
 	    time(&wakeup);
 	    wakeup += bigsleep;
 	    alarm(bigsleep);
@@ -461,9 +515,14 @@ int main(int argc, char **argv)
 		terminate = 0;
 		logg_close();
 	    }
+#endif
 
+#ifdef	SIGALRM
 	    sigaction(SIGALRM, &oldact, NULL);
+#endif
+#ifdef	SIGUSR1
 	    sigaction(SIGUSR1, &oldact, NULL);
+#endif	    
 	}
 
     } else
@@ -482,5 +541,15 @@ int main(int argc, char **argv)
     }
 
     opt_free(opt);
+
+#ifdef C_WINDOWS
+    WSACleanup();
+
+    if(!pthread_win32_process_detach_np()) {
+	mprintf("!Can't stop the win32 pthreads layer\n");
+	return 63;
+    }
+#endif
+
     return(ret);
 }
