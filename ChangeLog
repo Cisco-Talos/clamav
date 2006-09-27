@@ -1,3 +1,7 @@
+Wed Sep 27 22:30:41 BST 2006 (njh)
+----------------------------------
+  * clamav-milter:	--report would cause phishes to pass through tagged
+
 Wed Sep 27 20:24:26 BST 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	CL_EXPERIMENTAL: No longer uses curl, or falls back to

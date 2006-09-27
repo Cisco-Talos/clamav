@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.288 2006/09/27 16:38:39 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.289 2006/09/27 21:30:17 njh Exp $";
 
 #define	CM_VERSION	"devel-270906"
 
@@ -3532,6 +3532,10 @@ clamfi_eom(SMFICTX *ctx)
 
 				logg("Redirected phish to %s\n", report);
 			}
+			if((!rejectmail) || privdata->discard)
+				rc = SMFIS_DISCARD;
+			else
+				rc = SMFIS_REJECT;
 		} else if(quarantine) {
 			for(to = privdata->to; *to; to++) {
 				smfi_delrcpt(ctx, *to);
