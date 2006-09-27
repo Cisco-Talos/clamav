@@ -170,6 +170,9 @@ struct cl_engine {
     /* MD5 */
     struct cli_md5_node **md5_hlist;
 
+    /* MD5 list for PE sections */
+    struct cli_md5_node *md5_sect;
+
     /* Zip metadata */
     struct cli_meta_node *zip_mlist;
 
