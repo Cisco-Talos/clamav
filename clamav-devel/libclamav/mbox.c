@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.346 2006/09/27 16:28:48 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.347 2006/09/27 19:23:44 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -110,6 +110,7 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 
 #define	SAVE_TO_DISC	/* multipart/message are saved in a temporary file */
 
+#ifndef CL_EXPERIMENTAL
 /*
  * Code does exist to run FOLLOWURLS on systems without libcurl, however that
  * is not recommended so it is not compiled by default
@@ -127,14 +128,15 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 #if	C_SOLARIS && __GNUC__
 #undef	WITH_CURL
 #endif
+#endif
 
-#ifdef	WITH_CURL
+/*#ifdef	WITH_CURL*/
 #define	FOLLOWURLS	5	/*
 				 * Maximum number of URLs scanned in a message
 				 * part. Helps to find Dialer.gen-45. If
 				 * not defined, don't check any URLs
 				 */
-#endif
+/*#endif*/
 
 #if defined(FOLLOWURLS) || defined(CL_EXPERIMENTAL)
 #include "htmlnorm.h"
@@ -292,9 +294,9 @@ static	blob*	getHrefs(message* m,tag_arguments_t* hrefs);
 static	void	hrefs_done(blob *b,tag_arguments_t* hrefs);
 #endif
 
-#ifdef	WITH_CURL
+#if	defined(CL_EXPERIMENTAL) || (!defined(WITH_CURL))
 struct arg {
-#ifdef CL_EXPERIMENTAL
+#ifdef	CL_EXPERIMENTAL
 	char *url;
 #else
 	CURL *curl;
@@ -3920,7 +3922,7 @@ do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs)
 {
 	table_t *t;
 	int i, n;
-#if	defined(WITH_CURL) && defined(CL_THREAD_SAFE)
+#ifdef	CL_THREAD_SAFE
 	pthread_t tid[FOLLOWURLS];
 	struct arg args[FOLLOWURLS];
 #endif
@@ -3941,19 +3943,9 @@ do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs)
 		 */
 		if(strncasecmp("http://", url, 7) == 0) {
 			char *ptr;
-#ifdef	WITH_CURL
 #ifndef	CL_THREAD_SAFE
 			struct arg arg;
 #endif
-
-#else	/*!WITH_CURL*/
-			size_t len;
-#ifdef	CL_THREAD_SAFE
-			static pthread_mutex_t system_mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
-			struct stat statb;
-			char cmd[512];
-#endif	/*WITH_CURL*/
 			char name[NAME_MAX + 1];
 
 			if(tableFind(t, url) == 1) {
@@ -3983,7 +3975,6 @@ do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs)
 				if(*ptr == '/')
 					*ptr = '_';
 
-#ifdef	WITH_CURL
 #ifdef	CL_THREAD_SAFE
 			args[n].dir = dir;
 			args[n].url = strdup(url);
@@ -3994,47 +3985,14 @@ do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs)
 			arg.dir = dir;
 			arg.filename = name;
 			getURL(&arg);
-			curl_easy_cleanup(arg.curl);
 			free(arg.url);
-#endif
-
-#else	/*!WITH_CURL*/
-			cli_warnmsg("The use of mail-follow-urls without CURL being installed is deprecated\n");
-			/*
-			 * TODO: maximum size and timeouts
-			 */
-			len = sizeof(cmd) - 26 - strlen(dir) - strlen(name);
-#ifdef	CL_DEBUG
-			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 \"%.*s\" >%s/%s", len, url, dir, name);
-#else
-			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 \"%.*s\" >%s/%s 2>/dev/null", len, url, dir, name);
-#endif
-			cmd[sizeof(cmd) - 1] = '\0';
-
-			cli_dbgmsg("%s\n", cmd);
-#ifdef	CL_THREAD_SAFE
-			pthread_mutex_lock(&system_mutex);
-#endif
-			system(cmd);
-#ifdef	CL_THREAD_SAFE
-			pthread_mutex_unlock(&system_mutex);
-#endif
-			snprintf(cmd, sizeof(cmd), "%s/%s", dir, name);
-			if(stat(cmd, &statb) >= 0)
-				if(statb.st_size == 0) {
-					cli_warnmsg("URL %s failed to download\n", url);
-					/*
-					 * Don't bother scanning an empty file
-					 */
-					(void)unlink(cmd);
-				}
 #endif
 			++n;
 		}
 	}
 	tableDestroy(t);
 
-#if	defined(WITH_CURL) && defined(CL_THREAD_SAFE)
+#ifdef	CL_THREAD_SAFE
 	assert(n <= FOLLOWURLS);
 	cli_dbgmsg("checkURLs: waiting for %d thread(s) to finish\n", n);
 	while(--n >= 0) {
@@ -4250,9 +4208,9 @@ checkURLs(message *m, mbox_ctx *mctx, int* rc, int is_html)
  *	download them for scanning. But that will hit performance so there is
  *	an issue here.
  */
-#ifdef	WITH_CURL
 
-#ifdef	CL_EXPERIMENTAL
+#if	defined(CL_EXPERIMENTAL) || (!defined(WITH_CURL))
+
 /*
  * Removing the reliance on libcurl
  * Includes some of the freshclam hacks by Everton da Silva Marques
@@ -4469,7 +4427,7 @@ getURL(struct arg *arg)
 		snprintf(buf, sizeof(buf) - 1,
 			"GET /%s HTTP/1.0\nUser-Agent: www.clamav.net\n\n", url);
 
-	cli_dbgmsg("%s\n", buf);
+	/*cli_dbgmsg("%s", buf);*/
 
 	if(send(sd, buf, (int)strlen(buf), 0) < 0) {
 		closesocket(sd);
@@ -4912,7 +4870,7 @@ getURL(struct arg *arg)
 #endif
 
 #endif
-#endif
+
 #ifdef HAVE_BACKTRACE
 static void
 sigsegv(int sig)

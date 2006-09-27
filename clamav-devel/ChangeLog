@@ -1,3 +1,8 @@
+Wed Sep 27 20:24:26 BST 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	CL_EXPERIMENTAL: No longer uses curl, or falls back to
+  				external programs when curl isn't installed
+
 Wed Sep 27 20:15:20 BST 2006 (njh)
 ----------------------------------
   * libclamav/regex_list.c:	Fix segfault on Solaris when running --debug
