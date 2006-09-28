@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.347 2006/09/27 19:23:44 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.348 2006/09/28 07:32:14 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -294,7 +294,7 @@ static	blob*	getHrefs(message* m,tag_arguments_t* hrefs);
 static	void	hrefs_done(blob *b,tag_arguments_t* hrefs);
 #endif
 
-#if	defined(CL_EXPERIMENTAL) || (!defined(WITH_CURL))
+#if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
 struct arg {
 #ifdef	CL_EXPERIMENTAL
 	char *url;
