@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.348 2006/09/28 07:32:14 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.349 2006/09/28 08:09:18 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -130,15 +130,15 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 #endif
 #endif
 
-/*#ifdef	WITH_CURL*/
+#if	defined(WITH_CURL) || defined(CL_EXPERIMENTAL)
 #define	FOLLOWURLS	5	/*
 				 * Maximum number of URLs scanned in a message
 				 * part. Helps to find Dialer.gen-45. If
 				 * not defined, don't check any URLs
 				 */
-/*#endif*/
+#endif
 
-#if defined(FOLLOWURLS) || defined(CL_EXPERIMENTAL)
+#ifdef	FOLLOWURLS
 #include "htmlnorm.h"
 #endif
 
