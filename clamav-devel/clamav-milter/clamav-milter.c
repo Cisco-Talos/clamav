@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.289 2006/09/27 21:30:17 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.290 2006/09/28 12:36:45 njh Exp $";
 
 #define	CM_VERSION	"devel-270906"
 
@@ -2598,17 +2598,10 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			struct timeval now;
 			struct timezone tz;
 
-			cli_dbgmsg((dont_wait) ?
+			logg((dont_wait) ?
 					_("hit max-children limit (%u >= %u)\n") :
 					_("hit max-children limit (%u >= %u): waiting for some to exit\n"),
 				n_children, max_children);
-
-			if(use_syslog)
-				syslog(LOG_NOTICE,
-					(dont_wait) ?
-						_("hit max-children limit (%u >= %u)") :
-						_("hit max-children limit (%u >= %u): waiting for some to exit"),
-					n_children, max_children);
 
 			if(dont_wait) {
 				pthread_mutex_unlock(&n_children_mutex);
@@ -3527,15 +3520,15 @@ clamfi_eom(SMFICTX *ctx)
 					logg(_("^Can't set anti-phish header\n"));
 					rc = (privdata->discard) ? SMFIS_DISCARD : SMFIS_REJECT;
 				}
+				if((!rejectmail) || privdata->discard)
+					rc = SMFIS_DISCARD;
+				else
+					rc = SMFIS_REJECT;
 			} else {
 				setsubject(ctx, "Phishing attempt trapped by ClamAV and redirected");
 
 				logg("Redirected phish to %s\n", report);
 			}
-			if((!rejectmail) || privdata->discard)
-				rc = SMFIS_DISCARD;
-			else
-				rc = SMFIS_REJECT;
 		} else if(quarantine) {
 			for(to = privdata->to; *to; to++) {
 				smfi_delrcpt(ctx, *to);
