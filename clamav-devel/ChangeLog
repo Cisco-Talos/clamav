@@ -1,3 +1,7 @@
+Fri Sep 29 17:38:31 CEST 2006 (tk)
+----------------------------------
+  * libclamav/readdb.c: fix error path double free, patch from Sven
+
 Thu Sep 28 08:32:45 BST 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Fix compilation error when --experimental is not

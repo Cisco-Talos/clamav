@@ -681,7 +681,6 @@ static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	    cli_dbgmsg("Not supported target type in signature for %s\n", virname);
 	    sigs--;
 	    free(virname);
-	    free(pt);
 	    continue;
 	}
 
