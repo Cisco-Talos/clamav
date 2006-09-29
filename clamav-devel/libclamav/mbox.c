@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.349 2006/09/28 08:09:18 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.350 2006/09/29 20:28:48 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -148,8 +148,6 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 
 #ifdef	FOLLOWURLS
 
-#ifdef	CL_EXPERIMENTAL	/* dropping curl support */
-
 #ifndef	C_WINDOWS
 #include <netdb.h>
 #include <sys/socket.h>
@@ -157,6 +155,13 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 #include <net/if.h>
 #include <arpa/inet.h>
 #endif
+
+#ifndef	C_WINDOWS
+#define	closesocket(s)	close(s)
+#endif
+
+#ifdef	CL_EXPERIMENTAL	/* dropping curl support */
+
 #include <fcntl.h>
 #ifndef	C_WINDOWS
 #include <sys/time.h>
@@ -178,10 +183,6 @@ typedef	unsigned	int	in_addr_t;
 #endif
 #if	(!defined(EISCONN)) && (defined(WSAEISCONN))
 #define EISCONN	WSAEISCONN
-#endif
-
-#ifndef	C_WINDOWS
-#define	closesocket(s)	close(s)
 #endif
 
 #else
