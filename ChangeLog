@@ -1,3 +1,8 @@
+Fri Sep 29 21:29:33 BST 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	More fix compilation error when --experimental is not
+				given
+
 Fri Sep 29 17:54:03 CEST 2006 (tk)
 ----------------------------------
   * libclamav/unzip.c: allow dir->fd to be 0 (bb#40)
