@@ -1,3 +1,7 @@
+Fri Sep 29 17:54:03 CEST 2006 (tk)
+----------------------------------
+  * libclamav/unzip.c: allow dir->fd to be 0 (bb#40)
+
 Fri Sep 29 17:38:31 CEST 2006 (tk)
 ----------------------------------
   * libclamav/readdb.c: fix error path double free, patch from Sven

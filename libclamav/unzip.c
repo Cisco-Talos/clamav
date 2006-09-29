@@ -438,7 +438,7 @@ zip_file *zip_file_open(zip_dir *dir, const char *name, int d_off)
         struct zip_file_header *hp;
  
 
-    if(!dir || dir->fd <= 0) {
+    if(!dir || dir->fd < 0) {
 	cli_errmsg("Unzip: zip_file_open: dir == NULL || dir->fd <= 0\n");
 	return NULL;
     }
