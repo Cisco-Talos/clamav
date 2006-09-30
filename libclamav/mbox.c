@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.350 2006/09/29 20:28:48 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.351 2006/09/30 17:28:36 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -4270,7 +4270,7 @@ getURL(struct arg *arg)
 #ifdef	HAVE_IN_ADDR_T
 	in_addr_t ip;
 #else
-	int ip;
+	unsigned int ip;
 #endif
 	char buf[BUFSIZ];
 	char site[BUFSIZ];
