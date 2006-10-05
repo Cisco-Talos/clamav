@@ -1,3 +1,7 @@
+Thu Oct  5 22:46:19 CEST 2006 (tk)
+----------------------------------
+  * libclamav/sis.c: fix handling of compressed multiple language files (bb#42)
+
 Fri Sep 29 21:29:33 BST 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	More fix compilation error when --experimental is not

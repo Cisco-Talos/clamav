@@ -252,7 +252,7 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 
 	if(compressed) {
 	    csize = (uLong) filelen;
-	    filelen = cli_readint32(mfile + offset + 24 + 8 * (i + 1));
+	    filelen = cli_readint32(mfile + offset + 24 + 4 * i + 8 * nlangs);
 	    osize = (uLongf) filelen;
 
 	    if(!osize) {
