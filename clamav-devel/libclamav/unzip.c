@@ -31,9 +31,10 @@
 #include <zlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <fcntl.h>
-#include <unistd.h>
 
 #include "clamav.h"
 #include "others.h"
