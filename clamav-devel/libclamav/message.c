@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.187 2006/09/20 10:22:07 njh Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.188 2006/10/06 21:33:33 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -73,9 +73,15 @@ typedef enum { FALSE = 0, TRUE = 1 } bool;
 static	void	messageIsEncoding(message *m);
 static unsigned char *decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast);
 static	void	sanitiseBase64(char *s);
+#ifdef	__GNUC__
+static	unsigned	char	hex(char c)	__attribute__((const));
+static	unsigned	char	base64(char c)	__attribute__((const));
+static	unsigned	char	uudecode(char c)	__attribute__((const));
+#else
 static	unsigned	char	hex(char c);
 static	unsigned	char	base64(char c);
 static	unsigned	char	uudecode(char c);
+#endif
 static	const	char	*messageGetArgument(const message *m, int arg);
 static	void	*messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), void (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(text *, void *, int), void (*setCTX)(void *, cli_ctx *), int destroy_text);
 static	int	usefulArg(const char *arg);
