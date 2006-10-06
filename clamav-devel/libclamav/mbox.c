@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.351 2006/09/30 17:28:36 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.352 2006/10/06 15:25:15 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -219,7 +219,7 @@ typedef	unsigned	int	in_addr_t;
  *
  * TODO: Drop curl and do it ourselves
  */
-#if     (LIBCURL_VERSION_NUM < 0x070B00)
+#if	(LIBCURL_VERSION_NUM < 0x070B00)
 #undef	WITH_CURL	/* also undef FOLLOWURLS? */
 #endif
 
@@ -2076,7 +2076,10 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 #ifdef CL_EXPERIMENTAL
 			if(!doPhishingScan)
 				break;
-			/*else: fall-through: some phishing mails claim they are text/plain, when they are indeed html*/
+			/*
+			 * Fall through: some phishing mails claim they are
+			 * text/plain, when they are in fact html
+			 */
 #else
 			break;
 #endif
@@ -2981,9 +2984,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 						28);
 
 					/*fileblobSetCTX(fb, ctx);*/
-					fb = textToFileblob(t_line, fb, 1);
-
-					fileblobDestroy(fb);
+					fileblobDestroy(textToFileblob(t_line, fb, 1));
 				}
 				saveIt = FALSE;
 			} else
@@ -3884,13 +3885,13 @@ getHrefs(message *m, tag_arguments_t *hrefs)
 static void
 checkURLs(message *mainMessage, mbox_ctx *mctx, int *rc, int is_html)
 {
-       tag_arguments_t hrefs;
-       blob *b;
+	tag_arguments_t hrefs;
+	blob *b;
 
-       hrefs.scanContents = (!(mctx->ctx->options&CL_SCAN_NOPHISHING)); /* aCaB: stripped GA related stuff */
+	hrefs.scanContents = (!(mctx->ctx->options&CL_SCAN_NOPHISHING)); /* aCaB: stripped GA related stuff */
 
 #if    (!defined(FOLLOWURLS)) || (FOLLOWURLS <= 0)
-       if(!hrefs.scanContents)
+	if(!hrefs.scanContents)
 		/*
 		 * Don't waste time extracting hrefs (parsing html), nobody
 		 * will need it
@@ -3898,23 +3899,23 @@ checkURLs(message *mainMessage, mbox_ctx *mctx, int *rc, int is_html)
 		return;
 #endif
 
-       hrefs.count = 0;
-       hrefs.tag = hrefs.value = NULL;
-       hrefs.contents = NULL;
+	hrefs.count = 0;
+	hrefs.tag = hrefs.value = NULL;
+	hrefs.contents = NULL;
 
-       b = getHrefs(mainMessage, &hrefs);
-       if(b) {
-	       if(!(mctx->ctx->options&CL_SCAN_NOPHISHING)) {
-		       if(phishingScan(mainMessage,mctx->dir,mctx->ctx,&hrefs) == CL_VIRUS) {
-			       mainMessage->isInfected = TRUE;
-			       *rc = 3;
-			       cli_dbgmsg("PH:Phishing found\n");
-		       }
-	       }
-	       if(is_html && (mctx->ctx->options&CL_SCAN_MAILURL) && (*rc != 3))
-		       do_checkURLs(mainMessage, mctx->dir, &hrefs);
-       }
-       hrefs_done(b,&hrefs);
+	b = getHrefs(mainMessage, &hrefs);
+	if(b) {
+		if(!(mctx->ctx->options&CL_SCAN_NOPHISHING)) {
+			if(phishingScan(mainMessage, mctx->dir, mctx->ctx, &hrefs) == CL_VIRUS) {
+				mainMessage->isInfected = TRUE;
+				*rc = 3;
+				cli_dbgmsg("PH:Phishing found\n");
+			}
+		}
+		if(is_html && (mctx->ctx->options&CL_SCAN_MAILURL) && (*rc != 3))
+			do_checkURLs(mainMessage, mctx->dir, &hrefs);
+	}
+	hrefs_done(b,&hrefs);
 }
 
 #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
@@ -4218,21 +4219,21 @@ checkURLs(message *m, mbox_ctx *mctx, int* rc, int is_html)
  * everton.marques@gmail.com>
  */
 #ifndef timercmp
-# define timercmp(a, b, cmp)          \
-  (((a)->tv_sec == (b)->tv_sec) ?     \
+# define timercmp(a, b, cmp)	  \
+  (((a)->tv_sec == (b)->tv_sec) ?	\
    ((a)->tv_usec cmp (b)->tv_usec) :  \
    ((a)->tv_sec cmp (b)->tv_sec))
 #endif /* timercmp */
 
 #ifndef timersub
-# define timersub(a, b, result)                       \
-  do {                                                \
-    (result)->tv_sec = (a)->tv_sec - (b)->tv_sec;     \
-    (result)->tv_usec = (a)->tv_usec - (b)->tv_usec;  \
-    if ((result)->tv_usec < 0) {                      \
-      --(result)->tv_sec;                             \
-      (result)->tv_usec += 1000000;                   \
-    }                                                 \
+# define timersub(a, b, result)	 \
+  do {				\
+	(result)->tv_sec = (a)->tv_sec - (b)->tv_sec;	\
+	(result)->tv_usec = (a)->tv_usec - (b)->tv_usec;  \
+	if ((result)->tv_usec < 0) {			\
+		--(result)->tv_sec;			 \
+		(result)->tv_usec += 1000000;		 \
+	}						 \
   } while (0)
 #endif /* timersub */
 
