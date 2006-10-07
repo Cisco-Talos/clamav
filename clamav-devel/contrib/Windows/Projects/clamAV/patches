@@ -108,7 +108,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.11 2006/09/27 14:28:13 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.12 2006/10/07 15:21:08 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -116,7 +116,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.11 2006/09/27 14:28:13 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.12 2006/10/07 15:21:08 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -351,25 +351,8 @@
   
   #ifndef MIN
   #define MIN(a, b)	(((a) < (b)) ? (a) : (b))
-*** /home/njh/src/clamav-devel/./libclamav/regex_list.c	2006-09-26 19:55:36.000000000 +0100
---- ./libclamav/regex_list.c	2006-09-26 19:54:00.000000000 +0100
-***************
-*** 19,27 ****
-   *  MA 02110-1301, USA.
-   *
-   *  $Log: patches,v $
-   *  Revision 1.11  2006/09/27 14:28:13  njh
-   *  Sync with latest CVS
-   *
--  *  Revision 1.5  2006/09/26 18:55:36  njh
--  *  Fixed portability issues
--  *
-   *  Revision 1.4  2006/09/25 18:27:00  njh
-   *  Fix handling of escaped characters
-   *
---- 19,24 ----
-*** /home/njh/src/clamav-devel/./libclamav/readdb.c	2006-09-27 10:11:32.000000000 +0100
---- ./libclamav/readdb.c	2006-09-27 10:12:02.000000000 +0100
+*** /home/njh/src/clamav-devel/./libclamav/readdb.c	2006-10-07 14:00:30.000000000 +0100
+--- ./libclamav/readdb.c	2006-10-07 15:52:34.000000000 +0100
 ***************
 *** 25,40 ****
   #include <stdlib.h>
@@ -414,40 +397,7 @@
   #include "matcher-bm.h"
   #include "others.h"
 ***************
-*** 42,49 ****
---- 50,59 ----
-  #include "defaults.h"
-  
-  #ifdef CL_EXPERIMENTAL
-+ /*
-  #include "phish_whitelist.h"
-  #include "phish_domaincheck_db.h"
-+ */
-  #endif
-  
-  
-***************
-*** 1117,1122 ****
---- 1127,1133 ----
-  #endif
-  	    skipped = 1;
-  #ifdef CL_EXPERIMENTAL
-+ /*
-      } else if(cli_strbcasestr(filename, ".wdb")) {
-  	if(!(options & CL_SCAN_NOPHISHING))
-  	    ret = cli_loadwdb(fd, options);
-***************
-*** 1127,1132 ****
---- 1138,1144 ----
-  	    ret = cli_loadpdb(fd, options);
-  	else
-  	    skipped = 1;
-+ */
-  #endif
-      } else {
-  	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
-***************
-*** 1178,1184 ****
+*** 1221,1227 ****
   #else
       while((dent = readdir(dd))) {
   #endif
@@ -455,29 +405,16 @@
   	if(dent->d_ino)
   #endif
   	{
---- 1190,1196 ----
+--- 1229,1235 ----
   #else
       while((dent = readdir(dd))) {
   #endif
-! #if	(!defined(C_CYGWIN)) && (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
+! #if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS)) && (!defined(C_CYGWIN))
   	if(dent->d_ino)
   #endif
   	{
 ***************
-*** 1194,1201 ****
---- 1206,1215 ----
-  	     cli_strbcasestr(dent->d_name, ".zmd")  ||
-  	     cli_strbcasestr(dent->d_name, ".rmd")  ||
-  #ifdef CL_EXPERIMENTAL
-+ /*
-  	     cli_strbcasestr(dent->d_name, ".pdb")  ||
-  	     cli_strbcasestr(dent->d_name, ".wdb")  ||
-+ */
-  #endif
-  	     cli_strbcasestr(dent->d_name, ".hw")  ||
-  	     cli_strbcasestr(dent->d_name, ".inc")  ||
-***************
-*** 1299,1305 ****
+*** 1342,1348 ****
   #else
       while((dent = readdir(dd))) {
   #endif
@@ -485,29 +422,16 @@
   	if(dent->d_ino)
   #endif
   	{
---- 1313,1319 ----
+--- 1350,1356 ----
   #else
       while((dent = readdir(dd))) {
   #endif
-! #if	(!defined(C_CYGWIN)) && (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
+! #if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS)) && (!defined(C_CYGWIN))
   	if(dent->d_ino)
   #endif
   	{
 ***************
-*** 1315,1322 ****
---- 1329,1338 ----
-  	    cli_strbcasestr(dent->d_name, ".zmd")  || 
-  	    cli_strbcasestr(dent->d_name, ".rmd")  || 
-  #ifdef CL_EXPERIMENTAL
-+ /*
-  	    cli_strbcasestr(dent->d_name, ".pdb")  ||
-  	    cli_strbcasestr(dent->d_name, ".wdb")  ||
-+ */
-  #endif
-  	    cli_strbcasestr(dent->d_name, ".hw")   ||
-  	    cli_strbcasestr(dent->d_name, ".inc")   ||
-***************
-*** 1378,1384 ****
+*** 1421,1427 ****
   #else
       while((dent = readdir(dd))) {
   #endif
@@ -515,27 +439,14 @@
   	if(dent->d_ino)
   #endif
   	{
---- 1394,1400 ----
+--- 1429,1435 ----
   #else
       while((dent = readdir(dd))) {
   #endif
-! #if	(!defined(C_CYGWIN)) && (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
+! #if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS)) && (!defined(C_CYGWIN))
   	if(dent->d_ino)
   #endif
   	{
-***************
-*** 1394,1401 ****
---- 1410,1419 ----
-  	    cli_strbcasestr(dent->d_name, ".zmd")  || 
-  	    cli_strbcasestr(dent->d_name, ".rmd")  || 
-  #ifdef CL_EXPERIMENTAL
-+ /*
-  	    cli_strbcasestr(dent->d_name, ".pdb")  ||
-  	    cli_strbcasestr(dent->d_name, ".wdb")  ||
-+ */
-  #endif
-  	    cli_strbcasestr(dent->d_name, ".hw")   ||
-  	    cli_strbcasestr(dent->d_name, ".inc")   ||
 *** /home/njh/src/clamav-devel/./libclamav/elf.c	2006-06-17 22:00:44.000000000 +0100
 --- ./libclamav/elf.c	2006-07-26 09:48:52.000000000 +0100
 ***************
@@ -602,7 +513,7 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.11  2006/09/27 14:28:13  njh
+   * Revision 1.12  2006/10/07 15:21:08  njh
    * Sync with latest CVS
    *
 !  * Revision 1.22  2006/07/31 09:19:52  njh
@@ -614,7 +525,7 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.11  2006/09/27 14:28:13  njh
+   * Revision 1.12  2006/10/07 15:21:08  njh
    * Sync with latest CVS
    *
 !  * Revision 1.1  2006/08/11 20:05:13  njh
@@ -627,7 +538,7 @@
    * First draft of binhex.c
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.11 2006/09/27 14:28:13 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.12 2006/10/07 15:21:08 njh Exp $";
   
   #include "clamav.h"
   
@@ -635,7 +546,7 @@
    * First draft of binhex.c
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.11 2006/09/27 14:28:13 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.12 2006/10/07 15:21:08 njh Exp $";
   
   #include "clamav.h"
   
@@ -692,7 +603,7 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.11  2006/09/27 14:28:13  njh
+   * Revision 1.12  2006/10/07 15:21:08  njh
    * Sync with latest CVS
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
@@ -709,7 +620,7 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.11  2006/09/27 14:28:13  njh
+   * Revision 1.12  2006/10/07 15:21:08  njh
    * Sync with latest CVS
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
@@ -718,27 +629,8 @@
    * Revision 1.9  2006/07/01 16:17:35  njh
    * Added destroy flag
    *
-*** /home/njh/src/clamav-devel/./libclamav/filetypes.h	2006-04-24 17:28:05.000000000 +0100
---- ./libclamav/filetypes.h	2006-07-28 13:53:10.000000000 +0100
-***************
-*** 70,76 ****
-      struct cli_matched_type *next;
-  };
-  
-! cli_file_t cli_filetype(const char *buf, size_t buflen);
-  cli_file_t cli_filetype2(int desc);
-  int cli_addtypesigs(struct cl_engine *engine);
-  
---- 70,76 ----
-      struct cli_matched_type *next;
-  };
-  
-! cli_file_t cli_filetype(const unsigned char *buf, size_t buflen);
-  cli_file_t cli_filetype2(int desc);
-  int cli_addtypesigs(struct cl_engine *engine);
-  
-*** /home/njh/src/clamav-devel/./libclamav/sis.c	2006-06-17 22:00:44.000000000 +0100
---- ./libclamav/sis.c	2006-07-31 09:45:28.000000000 +0100
+*** /home/njh/src/clamav-devel/./libclamav/sis.c	2006-10-06 10:45:15.000000000 +0100
+--- ./libclamav/sis.c	2006-10-06 22:35:56.000000000 +0100
 ***************
 *** 29,35 ****
 --- 29,37 ----
@@ -758,7 +650,7 @@
    *
    * Created 25 August 1985 by John Gilmore, ihnp4!hoptoad!gnu.
    *
-!  * $Id: patches,v 1.11 2006/09/27 14:28:13 njh Exp $ # checkin only
+!  * $Id: patches,v 1.12 2006/10/07 15:21:08 njh Exp $ # checkin only
    */
   
   /*
@@ -766,7 +658,7 @@
    *
    * Created 25 August 1985 by John Gilmore, ihnp4!hoptoad!gnu.
    *
-!  * $Id: patches,v 1.11 2006/09/27 14:28:13 njh Exp $ # checkin only
+!  * $Id: patches,v 1.12 2006/10/07 15:21:08 njh Exp $ # checkin only
    */
   
   /*
@@ -777,7 +669,7 @@
    * Public Domain version written 26 Aug 1985 John Gilmore (ihnp4!hoptoad!gnu).
    *
    * @(#)list.c 1.18 9/23/86 Public Domain - gnu
-!  * $Id: patches,v 1.11 2006/09/27 14:28:13 njh Exp $
+!  * $Id: patches,v 1.12 2006/10/07 15:21:08 njh Exp $
    *
    * Comments changed and some code/comments reformatted
    * for file command by Ian Darwin.
@@ -785,12 +677,12 @@
    * Public Domain version written 26 Aug 1985 John Gilmore (ihnp4!hoptoad!gnu).
    *
    * @(#)list.c 1.18 9/23/86 Public Domain - gnu
-!  * $Id: patches,v 1.11 2006/09/27 14:28:13 njh Exp $
+!  * $Id: patches,v 1.12 2006/10/07 15:21:08 njh Exp $
    *
    * Comments changed and some code/comments reformatted
    * for file command by Ian Darwin.
-*** /home/njh/src/clamav-devel/./libclamav/clamav.h	2006-09-27 10:11:32.000000000 +0100
---- ./libclamav/clamav.h	2006-09-27 10:12:02.000000000 +0100
+*** /home/njh/src/clamav-devel/./libclamav/clamav.h	2006-10-07 14:00:30.000000000 +0100
+--- ./libclamav/clamav.h	2006-10-07 15:48:56.000000000 +0100
 ***************
 *** 22,28 ****
 --- 22,30 ----
@@ -1020,7 +912,7 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.11  2006/09/27 14:28:13  njh
+   * Revision 1.12  2006/10/07 15:21:08  njh
    * Sync with latest CVS
    *
 +  * Revision 1.2  2006/08/20 19:47:28  njh
@@ -1034,7 +926,7 @@
    * First draft
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.11 2006/09/27 14:28:13 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.12 2006/10/07 15:21:08 njh Exp $";
   
   #include <stdio.h>
   #include <errno.h>
@@ -1042,7 +934,7 @@
    * First draft
    *
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.11 2006/09/27 14:28:13 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.12 2006/10/07 15:21:08 njh Exp $";
   
   #include <stdio.h>
   #include <errno.h>
@@ -1068,7 +960,7 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.11  2006/09/27 14:28:13  njh
+   * Revision 1.12  2006/10/07 15:21:08  njh
    * Sync with latest CVS
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
@@ -1084,7 +976,7 @@
    * TODO: Remove the vcard handling
    * FIXME: The code does little error checking of OOM scenarios
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.11 2006/09/27 14:28:13 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.12 2006/10/07 15:21:08 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"	/* must come first */
@@ -1092,7 +984,7 @@
    * TODO: Remove the vcard handling
    * FIXME: The code does little error checking of OOM scenarios
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.11 2006/09/27 14:28:13 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.12 2006/10/07 15:21:08 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"	/* must come first */
@@ -1235,7 +1127,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.11 2006/09/27 14:28:13 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.12 2006/10/07 15:21:08 njh Exp $";
   
   #include "clamav.h"
   
@@ -1243,7 +1135,7 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.11 2006/09/27 14:28:13 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.12 2006/10/07 15:21:08 njh Exp $";
   
   #include "clamav.h"
   
@@ -1255,7 +1147,7 @@
    *  MA 02110-1301, USA.
    *
    * $Log: patches,v $
-   * Revision 1.11  2006/09/27 14:28:13  njh
+   * Revision 1.12  2006/10/07 15:21:08  njh
    * Sync with latest CVS
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
@@ -1269,7 +1161,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.11 2006/09/27 14:28:13 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.12 2006/10/07 15:21:08 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1277,7 +1169,7 @@
    *
    */
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.11 2006/09/27 14:28:13 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.12 2006/10/07 15:21:08 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1289,7 +1181,7 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.11  2006/09/27 14:28:13  njh
+   * Revision 1.12  2006/10/07 15:21:08  njh
    * Sync with latest CVS
    *
 +  * Revision 1.1  2006/08/11 20:05:13  njh
@@ -1305,7 +1197,7 @@
   #include "clamav-config.h"
   #endif
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.11 2006/09/27 14:28:13 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.12 2006/10/07 15:21:08 njh Exp $";
   
   #include <stdio.h>
   #include <fcntl.h>
@@ -1313,61 +1205,10 @@
   #include "clamav-config.h"
   #endif
   
-! static	char	const	rcsid[] = "$Id: patches,v 1.11 2006/09/27 14:28:13 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.12 2006/10/07 15:21:08 njh Exp $";
   
   #include <stdio.h>
   #include <fcntl.h>
-*** /home/njh/src/clamav-devel/./libclamav/phish_domaincheck_db.c	2006-09-26 19:55:36.000000000 +0100
---- ./libclamav/phish_domaincheck_db.c	2006-09-26 19:36:22.000000000 +0100
-***************
-*** 19,27 ****
-   *  MA 02110-1301, USA.
-   *
-   *  $Log: patches,v $
-   *  Revision 1.11  2006/09/27 14:28:13  njh
-   *  Sync with latest CVS
-   *
--  *  Revision 1.2  2006/09/26 18:55:36  njh
--  *  Fixed portability issues
--  *
-   *  Revision 1.1  2006/09/13 19:40:27  njh
-   *  First draft
-   *
---- 19,24 ----
-*** /home/njh/src/clamav-devel/./libclamav/phish_whitelist.c	2006-09-26 19:55:36.000000000 +0100
---- ./libclamav/phish_whitelist.c	2006-09-26 19:36:22.000000000 +0100
-***************
-*** 19,27 ****
-   *  MA 02110-1301, USA.
-   *
-   *  $Log: patches,v $
-   *  Revision 1.11  2006/09/27 14:28:13  njh
-   *  Sync with latest CVS
-   *
--  *  Revision 1.3  2006/09/26 18:55:36  njh
--  *  Fixed portability issues
--  *
-   *  Revision 1.2  2006/09/17 14:50:58  njh
-   *  Sync with latest CVS
-   *
---- 19,24 ----
-*** /home/njh/src/clamav-devel/./libclamav/phishcheck.c	2006-09-27 15:23:14.000000000 +0100
---- ./libclamav/phishcheck.c	2006-09-27 15:22:11.000000000 +0100
-***************
-*** 19,27 ****
-   *  MA 02110-1301, USA.
-   *
-   *  $Log: patches,v $
-   *  Revision 1.11  2006/09/27 14:28:13  njh
-   *  Sync with latest CVS
-   *
--  *  Revision 1.10  2006/09/27 14:23:14  njh
--  *  Ported to VS2005
--  *
-   *  Revision 1.9  2006/09/26 18:55:36  njh
-   *  Fixed portability issues
-   *
---- 19,24 ----
 *** /home/njh/src/clamav-devel/./libclamav/ole2_extract.c	2006-04-09 20:59:27.000000000 +0100
 --- ./libclamav/ole2_extract.c	2006-08-15 10:14:26.000000000 +0100
 ***************
@@ -1462,7 +1303,7 @@
    *  along with this program; if not, write to the Free Software
    *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.11 2006/09/27 14:28:13 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.12 2006/10/07 15:21:08 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1470,7 +1311,7 @@
    *  along with this program; if not, write to the Free Software
    *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.11 2006/09/27 14:28:13 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.12 2006/10/07 15:21:08 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1557,30 +1398,6 @@
   		if (ofd < 0) {
   			entry = entry->next;
   			continue;
-*** /home/njh/src/clamav-devel/./libclamav/unzip.c	2006-06-17 22:00:44.000000000 +0100
---- ./libclamav/unzip.c	2006-08-17 17:39:14.000000000 +0100
-***************
-*** 31,39 ****
-  #include <zlib.h>
-  #include <sys/types.h>
-  #include <sys/stat.h>
-  #include <unistd.h>
-  #include <fcntl.h>
-- #include <unistd.h>
-  
-  #include "clamav.h"
-  #include "others.h"
---- 31,40 ----
-  #include <zlib.h>
-  #include <sys/types.h>
-  #include <sys/stat.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  #include <fcntl.h>
-  
-  #include "clamav.h"
-  #include "others.h"
 *** /home/njh/src/clamav-devel/./clamscan/manager.c	2006-09-15 13:27:22.000000000 +0100
 --- ./clamscan/manager.c	2006-09-15 13:26:54.000000000 +0100
 ***************
@@ -2152,6 +1969,25 @@
   	    if(dent->d_ino)
   #endif
   	    {
+*** /home/njh/src/clamav-devel/./shared/network.c	2006-09-27 17:24:10.000000000 +0100
+--- ./shared/network.c	2006-08-01 17:57:24.000000000 +0100
+***************
+*** 78,84 ****
+  	if(gethostbyname_r(hostname, &hp, (struct hostent_data *)buf) < 0)
+  		return h_errno;
+  #else
+! 	/* Single thread the code e.g. VS2005 */
+  	struct hostent *hp2;
+  #ifdef  CL_THREAD_SAFE
+  	static pthread_mutex_t hostent_mutex = PTHREAD_MUTEX_INITIALIZER;
+--- 78,84 ----
+  	if(gethostbyname_r(hostname, &hp, (struct hostent_data *)buf) < 0)
+  		return h_errno;
+  #else
+! 	/* Single thread the code */
+  	struct hostent *hp2;
+  #ifdef  CL_THREAD_SAFE
+  	static pthread_mutex_t hostent_mutex = PTHREAD_MUTEX_INITIALIZER;
 *** /home/njh/src/clamav-devel/./shared/memory.c	2006-04-09 20:59:28.000000000 +0100
 --- ./shared/memory.c	2006-07-26 15:44:20.000000000 +0100
 ***************
@@ -2732,6 +2568,65 @@
   
       if(opt_check(opt, "local-address")) {
           localip = opt_arg(opt, "local-address");
+*** /home/njh/src/clamav-devel/./freshclam/execute.c	2006-08-31 08:38:17.000000000 +0100
+--- ./freshclam/execute.c	2006-10-06 23:03:52.000000000 +0100
+***************
+*** 1,5 ****
+  /*
+!  *  By Per Jessen <per@computer.org>
+   *
+   *  This program is free software; you can redistribute it and/or modify
+   *  it under the terms of the GNU General Public License as published by
+--- 1,5 ----
+  /*
+!  *  By Per Jessen <per@computer.org> with changes by the ClamAV team
+   *
+   *  This program is free software; you can redistribute it and/or modify
+   *  it under the terms of the GNU General Public License as published by
+***************
+*** 23,31 ****
+--- 23,36 ----
+  
+  #include <stdio.h>
+  #include <stdlib.h>
++ #ifdef	HAVE_UNISTD_H
+  #include <unistd.h>
++ #endif
+  #include <string.h>
+  #include <errno.h>
++ #ifdef	C_WINDOWS
++ #include <process.h>
++ #endif
+  
+  #include "shared/output.h"
+  
+***************
+*** 35,40 ****
+--- 40,55 ----
+  
+  void execute( const char *type, const char *text )
+  {
++ #ifdef        C_WINDOWS
++ 	if(active_children < MAX_CHILDREN) {
++ 		if(spawnlp(P_DETACH, text, text, NULL) == -1) {
++ 			logg("^%s: couldn't execute \"%s\".\n", type, text);
++ 			return;
++ 		}
++ 		active_children++;	/* FIXME: this is never reduced */
++ 	} else
++ 		logg("^%s: already %d processes active.\n", type, active_children);
++ #else
+  	pid_t pid;
+  
+  	if ( active_children<MAX_CHILDREN )
+***************
+*** 55,58 ****
+--- 70,74 ----
+  	{
+  		logg("^%s: already %d processes active.\n", type, active_children);
+  	}
++ #endif
+  }
 *** /home/njh/src/clamav-devel/./freshclam/nonblock.c	2006-09-15 13:11:55.000000000 +0100
 --- ./freshclam/nonblock.c	2006-09-15 13:11:28.000000000 +0100
 ***************
@@ -2850,52 +2745,6 @@
   
   /*
   	wait_connect(): wrapper for connect(), with explicit 'secs' timeout
-*** /home/njh/src/clamav-devel/./freshclam/execute.c	2006-08-31 08:38:17.000000000 +0100
---- ./freshclam/execute.c	2006-08-31 09:18:22.000000000 +0100
-***************
-*** 23,31 ****
---- 23,36 ----
-  
-  #include <stdio.h>
-  #include <stdlib.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  #include <string.h>
-  #include <errno.h>
-+ #ifdef	C_WINDOWS
-+ #include <process.h>
-+ #endif
-  
-  #include "shared/output.h"
-  
-***************
-*** 35,40 ****
---- 40,55 ----
-  
-  void execute( const char *type, const char *text )
-  {
-+ #ifdef        C_WINDOWS
-+ 	if(active_children < MAX_CHILDREN) {
-+ 		if(spawnlp(P_NOWAIT, text, text, NULL) == -1) {
-+ 			logg("^%s: couldn't execute \"%s\".\n", type, text);
-+ 			return;
-+ 		}
-+ 			active_children++;
-+ 	} else
-+ 		logg("^%s: already %d processes active.\n", type, active_children);
-+ #else
-  	pid_t pid;
-  
-  	if ( active_children<MAX_CHILDREN )
-***************
-*** 55,58 ****
---- 70,74 ----
-  	{
-  		logg("^%s: already %d processes active.\n", type, active_children);
-  	}
-+ #endif
-  }
 *** /home/njh/src/clamav-devel/./freshclam/notify.c	2006-08-31 08:53:35.000000000 +0100
 --- ./freshclam/notify.c	2006-08-31 09:26:34.000000000 +0100
 ***************
