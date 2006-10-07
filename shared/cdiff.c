@@ -63,6 +63,7 @@ static int cdiff_cmd_del(const char *cmdstr, struct cdiff_ctx *ctx);
 static int cdiff_cmd_xchg(const char *cmdstr, struct cdiff_ctx *ctx);
 static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx);
 static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx);
+static int cdiff_cmd_unlink(const char *cmdstr, struct cdiff_ctx *ctx);
 
 static struct cdiff_cmd commands[] = {
     /* OPEN db_name */
@@ -82,6 +83,9 @@ static struct cdiff_cmd commands[] = {
 
     /* MOVE src_db dst_db start_line first_16b end_line first_16b */
     { "MOVE", 6, &cdiff_cmd_move },
+
+    /* UNLINK db_name */
+    { "UNLINK", 1, &cdiff_cmd_unlink },
 
     { NULL, 0, NULL }
 };
@@ -668,6 +672,40 @@ static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx)
     free(srcdb);
     free(tmpdb);
 
+    return 0;
+}
+
+static int cdiff_cmd_unlink(const char *cmdstr, struct cdiff_ctx *ctx)
+{
+	char *db;
+	unsigned int i;
+
+
+    if(ctx->open_db) {
+	logg("!cdiff_cmd_unlink: Database %s is still open\n", ctx->open_db);
+	return -1;
+    }
+
+    if(!(db = cdiff_token(cmdstr, 1, 1))) {
+	logg("!cdiff_cmd_unlink: Can't get first argument\n");
+	return -1;
+    }
+
+    for(i = 0; i < strlen(db); i++) {
+	if((db[i] != '.' && !isalnum(db[i])) || strchr("/\\", db[i])) {
+	    logg("!cdiff_cmd_unlink: Forbidden characters found in database name\n");
+	    free(db);
+	    return -1;
+	}
+    }
+
+    if(unlink(db) == -1) {
+	logg("!cdiff_cmd_unlink: Can't unlink %s\n", db);
+	free(db);
+	return -1;
+    }
+
+    free(db);
     return 0;
 }
 
