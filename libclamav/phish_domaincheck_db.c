@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phish_domaincheck_db.c,v $
+ *  Revision 1.3  2006/10/07 11:00:46  tkojm
+ *  make the experimental anti-phishing code more thread safe
+ *
  *  Revision 1.2  2006/09/26 18:55:36  njh
  *  Fixed portability issues
  *
@@ -91,13 +94,10 @@
 #include "regex_list.h"
 #include "matcher-ac.h"
 
-
-static struct regex_matcher domainlist_matcher;
-
-int domainlist_match(const char* real_url,const char* display_url,int hostOnly,unsigned short* flags)
+int domainlist_match(const struct cl_engine* engine,const char* real_url,const char* display_url,int hostOnly,unsigned short* flags)
 {
 	const char* info;
-	int rc = regex_list_match(&domainlist_matcher,real_url,display_url,hostOnly,&info);
+	int rc = engine->domainlist_matcher ? regex_list_match(engine->domainlist_matcher,real_url,display_url,hostOnly,&info) : 0;
 	if(rc && info && info[0]) {/*match successfull, and has custom flags*/
 		if(strlen(info)==3 && isxdigit(info[0]) && isxdigit(info[1]) && isxdigit(info[2])) {
 			unsigned short notwantedflags=0;
@@ -111,29 +111,38 @@ int domainlist_match(const char* real_url,const char* display_url,int hostOnly,u
 	return rc;
 }
 
-int init_domainlist(void)
+int init_domainlist(struct cl_engine* engine)
 {
-	return	init_regex_list(&domainlist_matcher);
+	if(engine) {
+		engine->domainlist_matcher = cli_malloc(sizeof(*engine->domainlist_matcher));
+		if(!engine->domainlist_matcher)
+			return CL_EMEM;
+		return init_regex_list(engine->domainlist_matcher);
+}
+	else
+		return CL_ENULLARG;
 }
 
-int is_domainlist_ok(void)
+int is_domainlist_ok(const struct cl_engine* engine)
 {
-	return is_regex_ok(&domainlist_matcher);
+	return (engine && engine->domainlist_matcher) ? is_regex_ok(engine->domainlist_matcher) : 1;
 }
 
-int cli_loadpdb(FILE* fd,unsigned int options)
+
+void domainlist_cleanup(const struct cl_engine* engine)
 {
-	return load_regex_matcher(&domainlist_matcher,fd,options);
+	if(engine && engine->domainlist_matcher) {
+		regex_list_cleanup(engine->domainlist_matcher);
+	}
 }
 
-void domainlist_cleanup(void)
+void domainlist_done(struct cl_engine* engine)
 {
-	regex_list_cleanup(&domainlist_matcher);
-}
-
-void domainlist_done(void)
-{
-	regex_list_done(&domainlist_matcher);
+	if(engine && engine->domainlist_matcher) {
+		regex_list_done(engine->domainlist_matcher);
+		free(engine->domainlist_matcher);
+		engine->domainlist_matcher = NULL;
+	}
 }
 
 #endif

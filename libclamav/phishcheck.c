@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.11  2006/10/07 11:00:46  tkojm
+ *  make the experimental anti-phishing code more thread safe
+ *
  *  Revision 1.10  2006/09/27 14:23:14  njh
  *  Ported to VS2005
  *
@@ -147,6 +150,8 @@ case CL_PHISH_HOST_NOT_LISTED:
 #include <regex.h>
 #endif
 
+#include <pthread.h>
+
 #include "others.h"
 #include "defaults.h"
 #include "str.h"
@@ -247,6 +252,7 @@ For the Whitelist(.wdb)/Domainlist(.pdb) format see regex_list.c (search for Fla
  *
  */
 static char empty_string[]="";
+
 static	inline	void string_init_c(struct string* dest,char* data);
 static	void	string_assign_null(struct string* dest);
 static	char	*rfind(char *start, char c, size_t len);
@@ -347,7 +353,6 @@ void free_if_needed(struct url_check* url)
 	string_free(&url->displayLink);
 }
 
-static int phish_disabled = 0;/* disabled due to fatal startup error */
 
 static int build_regex(regex_t** preg,const char* regex,int nosub)
 {
@@ -372,7 +377,7 @@ static int build_regex(regex_t** preg,const char* regex,int nosub)
 #endif
 		free(*preg);
 		*preg=NULL;
-		phish_disabled=1;
+		phish_disable("problem in compiling regex");
 		return 1;
 	}
 	return 0;
@@ -468,10 +473,6 @@ static const char cctld_regex[] = "^"iana_cctld"$";
 
 int isCountryCode(const char* str)
 {
-	if(!preg_cctld) {
-		if(build_regex(&preg_cctld,cctld_regex,1))
-			return -1;
-	}
 	return str ? !regexec(preg_cctld,str,0,NULL,0) : 0;
 }
 
@@ -484,10 +485,6 @@ int isTLD(const char* str,int len)
 		int rc;
 		strncpy(s,str,len);
 		s[len]='\0';
-		if(!preg_tld) {
-			if(build_regex(&preg_tld,tld_regex,1))
-				return -1;
-		}
 		rc = !regexec(preg_tld,s,0,NULL,0);
 		free(s);
 		return rc;
@@ -599,14 +596,9 @@ int isSSL(const char* URL)
 	return URL ? !strncmp(https,URL,sizeof(https)-1) : 0;
 }
 
-static int hexinited=0;
-static short int hextable[256];
-static inline char hex2int(const unsigned char* src)
-{
-	assert(hexinited);
-	return hextable[src[0]]<<4 | hextable[src[1]];
-}
 
+
+static inline char hex2int(const unsigned char* src);
 
 /* deletes @what from the string @begin.
  * @what_len: length of @what, excluding the terminating \0 */
@@ -828,29 +820,32 @@ void get_redirected_URL(struct string* URL)
 	returns redirected URL*/
 }
 
-static inline int is_phish_disabled(void)
+
+/* ---- runtime disable ------*/
+static int phish_disabled = 0;
+static pthread_mutex_t phish_disabled_lock = PTHREAD_MUTEX_INITIALIZER;
+
+void phish_disable(const char* reason)
 {
-	if (phish_disabled)
-		return 1;
-	else if (!is_whitelist_ok()) {
+	cli_warnmsg("Disabling phishing checks, reason:%s\n",reason);
+	pthread_mutex_lock(&phish_disabled_lock);
 		phish_disabled = 1;
-		return 1;
-	}
-	else return 0;
+	pthread_mutex_unlock(&phish_disabled_lock);
 }
 
-static void init_hextable(void)
+static inline int is_phish_disabled(const struct cl_engine* engine)
 {
-	unsigned char c;
-	memset(hextable,0,256);
-	for(c='0';c<='9';c++)
-		hextable[c] = c-'0';
-	for(c='a';c<='z';c++)
-		hextable[c] = 10+c-'a';
-	for(c='A';c<='Z';c++)
-		hextable[c] = 10+c-'A';
-	hexinited=1;
+	int rc;
+	if (!is_whitelist_ok(engine)) 
+		phish_disable("whitelist is not ok");
+	if (!is_domainlist_ok(engine))
+		phish_disable("domainlist is not ok");
+	pthread_mutex_lock(&phish_disabled_lock);
+	rc = phish_disabled;
+	pthread_mutex_unlock(&phish_disabled_lock);
+	return rc;
 }
+/* -------end runtime disable---------*/
 
 int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 {
@@ -859,12 +854,8 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 	const size_t href_text_len = sizeof(href_text);
 	const size_t src_text_len = sizeof(src_text);
 	int i;
-	if(is_phish_disabled())
+	if(is_phish_disabled(ctx->engine))
 		return 0;
-	if(!hexinited) {
-		init_hextable();
-		atexit(phishing_done);/*TODO: replace this with a proper phishing_done call from manager.c*/
-	}
 
 	*ctx->virname=NULL;
 	for(i=0;i<hrefs->count;i++)
@@ -893,8 +884,8 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 				urls.displayLink.data = url;
 			}
 
-			rc = phishingCheck(&urls);
-			if(phish_disabled)
+			rc = phishingCheck(ctx->engine,&urls);
+			if(is_phish_disabled(ctx->engine))
 				return 0;
 			free_if_needed(&urls);
 			cli_dbgmsg("Phishing scan result:%s\n",phishing_ret_toString(rc));
@@ -1015,28 +1006,89 @@ static char* str_compose(const char* a,const char* b,const char* c)
 
 /*Warning: take care when modifying this regex, it has been tweaked, and tuned, just don't break it please.
  * there is fragmentaddress1, and 2  to work around the ISO limitation of 509 bytes max length for string constants*/
-static char* url_regex = NULL;
 static const char numeric_url_regex[] = "^ *"URI_numeric_fragmentaddress" *$";
+static char* url_regex = NULL;
+
+static int hexinited=0;
+static short int hextable[256];
+
+static inline char hex2int(const unsigned char* src)
+{
+	assert(hexinited);
+	return hextable[src[0]]<<4 | hextable[src[1]];
+}
+
+static void free_regex(regex_t** p)
+{
+	if(p) {
+		if(*p) {
+			regfree(*p);
+			free(*p);
+			*p=NULL;
+		}
+	}
+}
+/* --------non-thread-safe functions--------*/
+static void init_hextable(void)
+{
+	unsigned char c;
+	memset(hextable,0,256);
+	for(c='0';c<='9';c++)
+		hextable[c] = c-'0';
+	for(c='a';c<='z';c++)
+		hextable[c] = 10+c-'a';
+	for(c='A';c<='Z';c++)
+		hextable[c] = 10+c-'A';
+	hexinited=1;
+}
+
+int phishing_init(engine)
+{
+	cli_dbgmsg("Initializing phishcheck module\n");
+	setup_matcher_engine();
+	if(build_regex(&preg_cctld,cctld_regex,1))
+		return -1;
+	if(build_regex(&preg_tld,tld_regex,1))
+		return -1;	
+	url_regex = str_compose("^ *("URI_fragmentaddress1,URI_fragmentaddress2,URI_fragmentaddress3"|"URI_CHECK_PROTOCOLS") *$");
+	if(build_regex(&preg,url_regex,1))
+		return -1;
+	if(build_regex(&preg_numeric,numeric_url_regex,1))
+		return -1;
+	init_hextable();
+	cli_dbgmsg("Phishcheck module initialized\n");
+	return 0;
+}
+
+
+void phishing_done(struct cl_engine* engine)
+{
+	cli_dbgmsg("Cleaning up phishcheck\n");
+	free_regex(&preg);
+	free_regex(&preg_cctld);
+	free_regex(&preg_tld);
+	free_regex(&preg_numeric);
+	if(url_regex)
+		free(url_regex);
+
+	whitelist_done(engine);
+	domainlist_done(engine);
+	matcher_engine_done();
+	cli_dbgmsg("Phishcheck cleaned up\n");
+}
+
+/* ---------------end of non-thread-safe function-----------*/
 /*
  * Only those URLs are identified as URLs for which phishing detection can be performed.
  * This means that no attempt is made to properly recognize 'cid:' URLs
  */
 int isURL(const char* URL)
 {
-	if(!preg) {
-		url_regex = str_compose("^ *("URI_fragmentaddress1,URI_fragmentaddress2,URI_fragmentaddress3"|"URI_CHECK_PROTOCOLS") *$");
-		if(build_regex(&preg,url_regex,1))
-			return -1;
-	}
 	return URL ? !regexec(preg,URL,0,NULL,0) : 0;
 }
 
 int isNumericURL(const char* URL)
 {
-	if(!preg_numeric) {
-		if(build_regex(&preg_numeric,numeric_url_regex,1))
-			return -1;
-	}
 	return URL ? !regexec(preg_numeric,URL,0,NULL,0) : 0;
 }
 
@@ -1115,36 +1167,15 @@ int isEncoded(const char* url)
 	return (cnt-1 >strlen(url)*7/10);/*more than 70% made up of &#;*/
 }
 
-static void free_regex(regex_t** p)
-{
-	if(p) {
-		if(*p) {
-			regfree(*p);
-			free(*p);
-			*p=NULL;
-		}
-	}
-}
 
-void phishing_done(void)
-{
-	free_regex(&preg);
-	free_regex(&preg_cctld);
-	free_regex(&preg_tld);
-	free_regex(&preg_numeric);
-	whitelist_done();
-	domainlist_done();
-	if(url_regex)
-		free(url_regex);
-}
 
-int whitelist_check(struct url_check* urls,int hostOnly)
+int whitelist_check(const struct cl_engine* engine,struct url_check* urls,int hostOnly)
 {
-	return whitelist_match(urls->realLink.data,urls->displayLink.data,hostOnly);
+	return whitelist_match(engine,urls->realLink.data,urls->displayLink.data,hostOnly);
 }
 
 /* urls can't contain null pointer, caller must ensure this */
-enum phish_status phishingCheck(struct url_check* urls)
+enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check* urls)
 {
 	struct url_check host_url;
 	const char cid[] = "cid:";
@@ -1166,10 +1197,10 @@ enum phish_status phishingCheck(struct url_check* urls)
 		return rc;/* URLs identical after cleanup */
 	}
 
-	if(whitelist_check(urls,0))
+	if(whitelist_check(engine,urls,0))
 		return CL_PHISH_WHITELISTED;/* if url is whitelist don't perform further checks */
 
-	if(urls->flags&DOMAINLIST_REQUIRED && domainlist_match(urls->realLink.data,urls->displayLink.data,0,&urls->flags))
+	if(urls->flags&DOMAINLIST_REQUIRED && domainlist_match(engine,urls->realLink.data,urls->displayLink.data,0,&urls->flags))
 		phishy |= DOMAIN_LISTED;
 	else {
 		/* although entire url is not listed, the host might be,
@@ -1184,14 +1215,14 @@ enum phish_status phishingCheck(struct url_check* urls)
 		return rc;
 	}
 
-	if(whitelist_check(&host_url,1)) {
+	if(whitelist_check(engine,&host_url,1)) {
 		free_if_needed(&host_url);
 		return CL_PHISH_HOST_WHITELISTED;
 	}
 
 	if(urls->flags&DOMAINLIST_REQUIRED) {
 		if(!(phishy&DOMAIN_LISTED)) {
-			if(domainlist_match(urls->displayLink.data,urls->realLink.data,1,&urls->flags))
+			if(domainlist_match(engine,urls->displayLink.data,urls->realLink.data,1,&urls->flags))
 				phishy |= DOMAIN_LISTED;
 			else {
 				free_if_needed(&host_url);

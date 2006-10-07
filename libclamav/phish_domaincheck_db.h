@@ -25,13 +25,11 @@
 #ifndef _PHISH_DOMAINCHECK_DB_H
 #define _PHISH_DOMAINCHECK_DB_H
 
-int cli_loadpdb(FILE* fd, unsigned int options);
-int build_domainlist(void);
-int init_domainlist(void);
-void domainlist_done(void);
-void domainlist_cleanup(void);
-int is_domainlist_ok(void);
-int domainlist_match(const char* real_url,const char* display_url,int hostOnly,unsigned short* flags);
+int init_domainlist(struct cl_engine* engine);
+void domainlist_done(struct cl_engine* engine);
+void domainlist_cleanup(const struct cl_engine* engine);
+int is_domainlist_ok(const struct cl_engine* engine);
+int domainlist_match(const struct cl_engine* engine,const char* real_url,const char* display_url,int hostOnly,unsigned short* flags);
 
 #endif
 

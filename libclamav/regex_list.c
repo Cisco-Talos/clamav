@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: regex_list.c,v $
+ *  Revision 1.7  2006/10/07 11:00:46  tkojm
+ *  make the experimental anti-phishing code more thread safe
+ *
  *  Revision 1.6  2006/09/27 19:14:49  njh
  *  Fix segfault on Solaris
  *
@@ -190,15 +193,47 @@ static struct std_classmap {
 	{"[:xdigit:]",XDIGIT}
 };
 
+static int cli_iswctype(const char c,const enum wctype_t type);
+
+/* -------------- NON_THREAD_SAFE BEGIN --------------*/
+/* Global variables and functions accessing them, not thread-safe!
+ * they should be called on application startup/shutdown once! */
 static const size_t std_class_cnt =  sizeof(std_class)/sizeof(std_class[0]);
 #define STD_CLASS_CNT sizeof(std_class)/sizeof(std_class[0])
 typedef char char_bitmap_t[32];
 static char_bitmap_p char_class_bitmap[STD_CLASS_CNT];
 static unsigned short int char_class[256];
+static int engine_ok = 0;
 
+void setup_matcher_engine(void)
+{
+	/*Set up std character classes*/
+	size_t i;
+	size_t j;
+	memset(char_class,0,256);
+	for(i=0;i<std_class_cnt;i++) {
+		enum wctype_t type = std_class[i].type;
+		char_class_bitmap[i]=cli_calloc(256>>3,1);
+		for(j=0;j<256;j++)
+			if(cli_iswctype(j,type)) {
+				char_class[j] |= 1<<i;
+				char_class_bitmap[i][j>>3] |= 1<<(j&0x07);
+			}
+	}	
+	engine_ok  = 1;
+}
+
+void matcher_engine_done(void)
+{
+	size_t i;
+	for(i=0;i<std_class_cnt;i++)
+			free(char_class_bitmap[i]);
+	engine_ok = 0;
+}
+
+
+/* -------------- NON_THREAD_SAFE END --------------*/
 /* Prototypes */
-static void setup_matcher_engine(void);
-static void matcher_engine_done(void);
 static int add_pattern(struct regex_matcher* matcher,const unsigned char* pat,const char* info);
 static int match_node(struct tree_node* node,const unsigned char* c,size_t len,const char** info);
 static void destroy_tree(struct regex_matcher* matcher);
@@ -236,6 +271,7 @@ int regex_list_match(struct regex_matcher* matcher,const char* real_url,const ch
 	assert(real_url);
 	assert(display_url);
 	assert(info);
+	assert(engine_ok);
 	if(!matcher->list_inited)
 		return 0;
 	assert(matcher->list_built);
@@ -328,9 +364,6 @@ static inline struct tree_node* stack_pop(struct node_stack* stack)
 int init_regex_list(struct regex_matcher* matcher)
 {
 	assert(matcher);
-	
-	setup_matcher_engine();
-
 	matcher->list_inited = 0;
 	matcher->root_hosts = (struct cli_matcher*) cli_calloc(1,sizeof(*matcher->root_hosts));
 	if(!matcher->root_hosts)
@@ -424,7 +457,6 @@ static int add_regex_list_element(struct cli_matcher* root,const char* pattern,c
 #ifndef NDEBUG
 void dump_tree(struct tree_node* root);
 #endif
-static int matcher_engine_refcount=0;
 
 static int build_regex_list(struct regex_matcher* matcher);
 /* Load patterns/regexes from file */
@@ -511,7 +543,6 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 		return CL_EMALFDB;
 	}
 	regex_list_cleanup(matcher);
-	matcher_engine_refcount++;
 	return CL_SUCCESS;
 }
 
@@ -665,7 +696,6 @@ void regex_list_done(struct regex_matcher* matcher)
 		matcher->list_loaded=0;
 	}
 	if(matcher->list_inited) {
-		matcher_engine_done();
 		matcher->list_inited=0;
 	}
 	stack_destroy(&matcher->node_stack);
@@ -708,38 +738,7 @@ static int cli_iswctype(const char c,const enum wctype_t type)
 	}
 }
 
-static int engine_inited=0;
 
-static void setup_matcher_engine(void)
-{
-	/*Set up std character classes*/
-	size_t i;
-	size_t j;
-	if(engine_inited)
-		return;
-	memset(char_class,0,256);
-	for(i=0;i<std_class_cnt;i++) {
-		enum wctype_t type = std_class[i].type;
-		char_class_bitmap[i]=cli_calloc(256>>3,1);
-		for(j=0;j<256;j++)
-			if(cli_iswctype(j,type)) {
-				char_class[j] |= 1<<i;
-				char_class_bitmap[i][j>>3] |= 1<<(j&0x07);
-			}
-	}	
-	engine_inited=1;
-}
-
-static void matcher_engine_done(void)
-{
-	size_t i;
-	matcher_engine_refcount--;
-	if(!matcher_engine_refcount) {
-		for(i=0;i<std_class_cnt;i++)
-			free(char_class_bitmap[i]);
-	}
-	engine_inited=0;
-}
 
 struct token_t
 {
