@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phish_domaincheck_db.c,v $
+ *  Revision 1.4  2006/10/07 13:55:01  tkojm
+ *  fix handlers
+ *
  *  Revision 1.3  2006/10/07 11:00:46  tkojm
  *  make the experimental anti-phishing code more thread safe
  *
@@ -114,7 +117,7 @@ int domainlist_match(const struct cl_engine* engine,const char* real_url,const c
 int init_domainlist(struct cl_engine* engine)
 {
 	if(engine) {
-		engine->domainlist_matcher = cli_malloc(sizeof(*engine->domainlist_matcher));
+		engine->domainlist_matcher = (struct regex_matcher *) cli_malloc(sizeof(struct regex_matcher));
 		if(!engine->domainlist_matcher)
 			return CL_EMEM;
 		return init_regex_list(engine->domainlist_matcher);
