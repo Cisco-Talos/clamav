@@ -1,3 +1,7 @@
+Sat Oct  7 17:13:40 CEST 2006 (tk)
+----------------------------------
+  * shared/cdiff.c: add support for UNLINK command
+
 Sat Oct  7 12:47:32 CEST 2006 (tk)
 ----------------------------------
   * libclamav: make the experimental anti-phishing code more thread safe,
