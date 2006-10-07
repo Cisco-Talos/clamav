@@ -1,3 +1,8 @@
+Sat Oct  7 12:47:32 CEST 2006 (tk)
+----------------------------------
+  * libclamav: make the experimental anti-phishing code more thread safe,
+	       patch from Edvin Torok <edwintorok*gmail.com>
+
 Thu Oct  5 22:46:19 CEST 2006 (tk)
 ----------------------------------
   * libclamav/sis.c: fix handling of compressed multiple language files (bb#42)

@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phish_whitelist.c,v $
+ *  Revision 1.4  2006/10/07 11:00:46  tkojm
+ *  make the experimental anti-phishing code more thread safe
+ *
  *  Revision 1.3  2006/09/26 18:55:36  njh
  *  Fixed portability issues
  *
@@ -93,78 +96,44 @@
 #include "regex_list.h"
 #include "matcher-ac.h"
 
-/*#define WHITELIST_TEST*/
-
-static struct regex_matcher whitelist_matcher;
-
-int whitelist_match(const char* real_url,const char* display_url,int hostOnly)
+int whitelist_match(const struct cl_engine* engine,const char* real_url,const char* display_url,int hostOnly)
 {
 	const char* info;/*unused*/
-	return	regex_list_match(&whitelist_matcher,real_url,display_url,hostOnly,&info);
+	return	engine->whitelist_matcher ? regex_list_match(engine->whitelist_matcher,real_url,display_url,hostOnly,&info) : 0;
 }
 
-int init_whitelist(void)
+int init_whitelist(struct cl_engine* engine)
 {
-	return	init_regex_list(&whitelist_matcher);
+	if(engine) {
+		engine->whitelist_matcher = cli_malloc(sizeof(*engine->whitelist_matcher));
+		if(!engine->whitelist_matcher)
+			return CL_EMEM;
+		return	init_regex_list(engine->whitelist_matcher);
+}
+	else
+		return CL_ENULLARG;
 }
 
-int is_whitelist_ok(void)
+int is_whitelist_ok(const struct cl_engine* engine)
 {
-	return is_regex_ok(&whitelist_matcher);
+	return (engine && engine->whitelist_matcher) ? is_regex_ok(engine->whitelist_matcher) : 1;
 }
 
-int cli_loadwdb(FILE* fd,unsigned int options)
+
+void whitelist_cleanup(const struct cl_engine* engine)
 {
-	return load_regex_matcher(&whitelist_matcher,fd,options);
+	if(engine && engine->whitelist_matcher) {
+		regex_list_cleanup(engine->whitelist_matcher);
+	}
 }
 
-void whitelist_cleanup(void)
+void whitelist_done(struct cl_engine* engine)
 {
-	regex_list_cleanup(&whitelist_matcher);
+	if(engine && engine->whitelist_matcher) {
+		regex_list_done(engine->whitelist_matcher);	
+		free(engine->whitelist_matcher);
+		engine->whitelist_matcher = NULL;
+	}
 }
-
-void whitelist_done(void)
-{
-	regex_list_done(&whitelist_matcher);
-}
-
-#ifdef WHITELIST_TEST
-int main(int argc,char* argv[])
-{
-/*	struct tree_node* root=tree_node_alloc(NULL,1);
-	const  char* info;
-	const  unsigned char test[]="tesxt";
-	setup_matcher();
-	root->op=OP_ROOT;
-	root->c=0;
-	root->next=NULL;
-	root->listend=1;
-	dump_tree(root);
-	add_pattern(&root,"test","1");
-	dump_tree(root);
-	add_pattern(&root,"tesv","2");
-	dump_tree(root);
-	add_pattern(&root,"tert","3");
-	dump_tree(root);
-	add_pattern(&root,"terr+","4");
-	dump_tree(root);
-	add_pattern(&root,"tes[xy]t","5");
-	dump_tree(root);
-	match_node(root,test,sizeof(test),&info);
-	destroy_tree(root);
-	if(info)
-		printf("%s\n",info);
-	else printf("not found\n");*/
-	/*FILE* f=fopen("w.wdb","r");
-	init_whitelist();
-	load_whitelist(f);
-	fclose(f);
-	dump_tree(root_regex);
-	build_whitelist();
-	printf("%d\n",whitelist_match("http://www.google.ro","http://www.google.me.ro",0));
-	whitelist_done();*/
-	return 0;
-}
-#endif
 
 #endif

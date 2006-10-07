@@ -25,13 +25,11 @@
 #ifndef _PHISH_WHITELIST_H
 #define _PHISH_WHITELIST_H
 
-int cli_loadwdb(FILE* fd, unsigned int options);
-int build_whitelist(void);
-int init_whitelist(void);
-void whitelist_done(void);
-void whitelist_cleanup(void);
-int is_whitelist_ok(void);
-int whitelist_match(const char* real_url,const char* display_url,int hostOnly);
+int init_whitelist(struct cl_engine* engine);
+void whitelist_done(struct cl_engine* engine);
+void whitelist_cleanup(const struct cl_engine* engine);
+int is_whitelist_ok(const struct cl_engine* engine);
+int whitelist_match(const struct cl_engine* engine, const char* real_url,const char* display_url,int hostOnly);
 
 #endif
 

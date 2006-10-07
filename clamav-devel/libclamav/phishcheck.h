@@ -61,9 +61,9 @@ struct url_check {
 };
 
 int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs);
-enum phish_status phishingCheck(struct url_check* urls);
+enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check* urls);
 
-int whitelist_check(struct url_check* urls,int hostOnly);
+int whitelist_check(const struct cl_engine* engine,struct url_check* urls,int hostOnly);
 void url_check_init(struct url_check* urls);
 void get_host(struct string* dest,const char* URL,int isReal,int* phishy);
 void string_free(struct string* str);
@@ -89,7 +89,13 @@ enum phish_status url_get_host(struct url_check* url,struct url_check* host_url,
 void url_get_domain(struct url_check* url,struct url_check* domains);
 enum phish_status phishy_map(int phishy,enum phish_status fallback);
 int isEncoded(const char* url);
-void phishing_done(void);
+
+void phish_disable(const char* reason);
+/* Global, non-thread-safe functions, call only once! */
+void phishint_init(struct cl_engine* engine);
+void phishing_done(struct cl_engine* engine);
+/* end of non-thread-safe functions */
+
 
 static inline int isPhishing(enum phish_status rc)
 {

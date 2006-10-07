@@ -48,6 +48,8 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 void regex_list_cleanup(struct regex_matcher* matcher);
 void regex_list_done(struct regex_matcher* matcher);
 int is_regex_ok(struct regex_matcher* matcher);
+
+void setup_matcher_engine(void);/* global, non thread-safe */
 #endif
 
 #endif

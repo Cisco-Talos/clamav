@@ -181,6 +181,10 @@ struct cl_engine {
 
     /* Hardware database handle */
     void *hwdb;
+
+    /* Phishing .pdb and .wdb databases*/
+    void *whitelist_matcher;
+    void *domainlist_matcher;
 };
 
 struct cl_limits {
