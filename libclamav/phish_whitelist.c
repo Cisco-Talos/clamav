@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phish_whitelist.c,v $
+ *  Revision 1.5  2006/10/07 13:55:01  tkojm
+ *  fix handlers
+ *
  *  Revision 1.4  2006/10/07 11:00:46  tkojm
  *  make the experimental anti-phishing code more thread safe
  *
@@ -105,7 +108,7 @@ int whitelist_match(const struct cl_engine* engine,const char* real_url,const ch
 int init_whitelist(struct cl_engine* engine)
 {
 	if(engine) {
-		engine->whitelist_matcher = cli_malloc(sizeof(*engine->whitelist_matcher));
+		engine->whitelist_matcher = (struct regex_matcher *) cli_malloc(sizeof(struct regex_matcher));
 		if(!engine->whitelist_matcher)
 			return CL_EMEM;
 		return	init_regex_list(engine->whitelist_matcher);
