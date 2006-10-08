@@ -19,7 +19,7 @@
  * Save the JavaScript embedded in an HTML file, then run the script, saving
  * the output in a file that is to be scanned, then remove the script file
  */
-static	char	const	rcsid[] = "$Id: js.c,v 1.3 2006/10/08 12:57:06 njh Exp $";
+static	char	const	rcsid[] = "$Id: js.c,v 1.4 2006/10/08 13:45:10 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -64,9 +64,10 @@ cli_scanjs(const char *dir, int desc)
 	char *buf;	/* start of memory mapped area */
 	const char *p;
 	long bytesleft;
-	int done_header;
+	int done_header, rc;
 	FILE *fout;
 	char script_filename[NAME_MAX + 1];
+	extern short cli_leavetemps_flag;
 
 	cli_dbgmsg("in cli_scanjs(%s)\n", dir);
 
@@ -95,14 +96,17 @@ cli_scanjs(const char *dir, int desc)
 	while(p < &buf[size]) {
 		const char *q = cli_pmemstr(p, bytesleft, "<script", 7);
 
-		if(q != NULL)
+		if(q == NULL)
 			/* TODO: full case independant search */
 			q = cli_pmemstr(p, bytesleft, "<SCRIPT", 7);
 
 		if(q == NULL)
 			break;
 
-		/* TODO: check language is javascript */
+		/*
+		 * TODO: check language is javascript
+		 * TODO: follow src if mail-follow-urls is set
+		 */
 
 		bytesleft -= (q - p);
 		p = q;
@@ -118,6 +122,8 @@ cli_scanjs(const char *dir, int desc)
 		bytesleft--;
 
 		while(bytesleft) {
+			char c;
+
 			if(*p == '<') {
 				p++;
 				if(--bytesleft == 0)
@@ -138,7 +144,13 @@ cli_scanjs(const char *dir, int desc)
 					}
 					break;
 				}
+				c = '<';
+			} else {
+				c = tolower(*p);
+				p++;
+				bytesleft--;
 			}
+
 			if(!done_header) {
 				int fd;
 
@@ -171,26 +183,44 @@ cli_scanjs(const char *dir, int desc)
 					munmap(buf, size);
 					return CL_ETMPFILE;
 				}
+				/*
+				 * FIXME: the script file could already contain
+				 *	main()
+				 */
 				fputs("function main()\n{\n", fout);
+				cli_dbgmsg("Saving javascript to %s\n",
+					script_filename);
 				done_header = 1;
 			}
-			putc(tolower(*p), fout);
-
-			p++;
-			bytesleft--;
+			putc(c, fout);
 		}
 	}
+
+	rc = CL_SUCCESS;
 
 	if(!done_header)
 		cli_dbgmsg("No javascript was detected\n");
 	else if(fout == NULL)
 		cli_errmsg("cli_scanjs: fout == NULL\n");
 	else {
+		/*JSInterpPtr interp = create_interp();*/
+
 		fputs("\n}\nmain();\n", fout);
 		fclose(fout);
-		/* TODO: NGS on the script file */
+
+		/*
+		 * Run NGS on the file
+		 */
+		/*
+		if(!js_eval_file(interp, script_filename)) {
+			cli_warnmsg("JS failed: %s\n", js_error_message(interp));
+			rc = CL_EIO;
+		}
+		js_destroy_interp(interp);*/
 	}
-	unlink(script_filename);
+
+	if(!cli_leavetemps_flag)
+		unlink(script_filename);
 
 	munmap(buf, size);
 	return CL_CLEAN;
