@@ -19,7 +19,7 @@
  * Save the JavaScript embedded in an HTML file, then run the script, saving
  * the output in a file that is to be scanned, then remove the script file
  */
-static	char	const	rcsid[] = "$Id: js.c,v 1.4 2006/10/08 13:45:10 njh Exp $";
+static	char	const	rcsid[] = "$Id: js.c,v 1.5 2006/10/08 13:56:51 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -29,13 +29,15 @@ static	char	const	rcsid[] = "$Id: js.c,v 1.4 2006/10/08 13:45:10 njh Exp $";
 
 #if	HAVE_MMAP
 
-#include "clamav.h"
-#include "others.h"
 #include <memory.h>
 #include <string.h>
 #include <limits.h>
 #include <errno.h>
 #include <ctype.h>
+
+#include "clamav.h"
+#include "others.h"
+#include "js.h"
 
 #if HAVE_SYS_MMAN_H
 #include <sys/mman.h>
@@ -203,7 +205,7 @@ cli_scanjs(const char *dir, int desc)
 	else if(fout == NULL)
 		cli_errmsg("cli_scanjs: fout == NULL\n");
 	else {
-		/*JSInterpPtr interp = create_interp();*/
+		JSInterpPtr interp;
 
 		fputs("\n}\nmain();\n", fout);
 		fclose(fout);
@@ -212,6 +214,8 @@ cli_scanjs(const char *dir, int desc)
 		 * Run NGS on the file
 		 */
 		/*
+		interp = create_interp();
+
 		if(!js_eval_file(interp, script_filename)) {
 			cli_warnmsg("JS failed: %s\n", js_error_message(interp));
 			rc = CL_EIO;
