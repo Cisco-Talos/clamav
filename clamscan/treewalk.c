@@ -74,7 +74,7 @@ int treewalk(const char *dirname, struct cl_node *root, const struct passwd *use
 		included = 1;
 		break;
 	    }
-	    argument = opt_nextarg(&optnode, "include");
+	    argument = opt_nextarg(&optnode, "include-dir");
 	}
 
 	if(!included) {
