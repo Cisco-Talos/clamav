@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.12  2006/10/08 18:55:15  tkojm
+ *  fix crash in phishing code on database reload (Edvin Torok)
+ *
  *  Revision 1.11  2006/10/07 11:00:46  tkojm
  *  make the experimental anti-phishing code more thread safe
  *
@@ -1068,8 +1071,10 @@ void phishing_done(struct cl_engine* engine)
 	free_regex(&preg_cctld);
 	free_regex(&preg_tld);
 	free_regex(&preg_numeric);
-	if(url_regex)
+	if(url_regex) {
 		free(url_regex);
+		url_regex = NULL;
+	}
 
 	whitelist_done(engine);
 	domainlist_done(engine);

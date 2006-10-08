@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: regex_list.c,v $
+ *  Revision 1.8  2006/10/08 18:55:15  tkojm
+ *  fix crash in phishing code on database reload (Edvin Torok)
+ *
  *  Revision 1.7  2006/10/07 11:00:46  tkojm
  *  make the experimental anti-phishing code more thread safe
  *
@@ -226,8 +229,12 @@ void setup_matcher_engine(void)
 void matcher_engine_done(void)
 {
 	size_t i;
-	for(i=0;i<std_class_cnt;i++)
+	for(i=0;i<std_class_cnt;i++) {
+		if(char_class_bitmap[i]) {
 			free(char_class_bitmap[i]);
+			char_class_bitmap[i] = NULL;
+		}
+	}
 	engine_ok = 0;
 }
 
