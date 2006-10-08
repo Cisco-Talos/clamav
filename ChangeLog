@@ -1,3 +1,7 @@
+Sun Oct  8 20:51:40 CEST 2006 (tk)
+----------------------------------
+  * libclamav: fix crash in phishing code on database reload (Edvin Torok)
+
 Sun Oct  8 13:57:33 BST 2006 (njh)
 ----------------------------------
   * libclamav/js.c:	Finished first draft of the extraction phase
