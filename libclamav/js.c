@@ -19,7 +19,7 @@
  * Save the JavaScript embedded in an HTML file, then run the script, saving
  * the output in a file that is to be scanned, then remove the script file
  */
-static	char	const	rcsid[] = "$Id: js.c,v 1.2 2006/10/08 11:05:12 njh Exp $";
+static	char	const	rcsid[] = "$Id: js.c,v 1.3 2006/10/08 12:57:06 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -27,15 +27,31 @@ static	char	const	rcsid[] = "$Id: js.c,v 1.2 2006/10/08 11:05:12 njh Exp $";
 
 #ifdef	CL_EXPERIMENTAL
 
+#if	HAVE_MMAP
+
 #include "clamav.h"
 #include "others.h"
 #include <memory.h>
 #include <string.h>
-
-#if	HAVE_MMAP
+#include <limits.h>
+#include <errno.h>
+#include <ctype.h>
 
 #if HAVE_SYS_MMAN_H
 #include <sys/mman.h>
+#endif
+
+/* Maximum filenames under various systems - njh */
+#ifndef	NAME_MAX	/* e.g. Linux */
+# ifdef	MAXNAMELEN	/* e.g. Solaris */
+#   define	NAME_MAX	MAXNAMELEN
+# else
+#   ifdef	FILENAME_MAX	/* e.g. SCO */
+#     define	NAME_MAX	FILENAME_MAX
+#   else
+#     define	NAME_MAX	256
+#   endif
+# endif
 #endif
 
 static	const	char	*cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns);
@@ -49,6 +65,8 @@ cli_scanjs(const char *dir, int desc)
 	const char *p;
 	long bytesleft;
 	int done_header;
+	FILE *fout;
+	char script_filename[NAME_MAX + 1];
 
 	cli_dbgmsg("in cli_scanjs(%s)\n", dir);
 
@@ -72,6 +90,7 @@ cli_scanjs(const char *dir, int desc)
 	p = buf;
 	bytesleft = size;
 	done_header = 0;
+	fout = NULL;
 
 	while(p < &buf[size]) {
 		const char *q = cli_pmemstr(p, bytesleft, "<script", 7);
@@ -120,16 +139,43 @@ cli_scanjs(const char *dir, int desc)
 					break;
 				}
 			}
-			/*
-			 * if(!done_header) {
-			 * 	EMIT
-			 *		function main()
-			 *		{
-			 *	END_EMIT
-			 *	done_header = true;
-			 * }
-			 */
-			/*putchar(tolower(*p));*/
+			if(!done_header) {
+				int fd;
+
+				snprintf(script_filename, sizeof(script_filename), "%s/jsXXXXXX", dir);
+#if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN)
+				fd = mkstemp(script_filename);
+				fout = fdopen(fd, "wb");
+				if(fout == NULL)
+					close(fd);
+#elif	defined(C_WINDOWS)
+				if(_mktemp(script_filename) == NULL) {
+					/* mktemp only allows 26 files */
+					char *name = cli_gentemp(dir);
+					if(name == NULL)
+						fout = NULL;
+					else {
+						strcpy(script_filename, name);
+						free(name);
+						fout = fopen(script_filename, "wb");
+					}
+				} else
+					fout = fopen(script_filename, "wb");
+#else
+				mktemp(script_filename);
+				fout = fopen(script_filename, "wb");
+#endif
+
+				if(fout == NULL) {
+					cli_errmsg("cli_scanjs: can't create temporary file %s: %s\n", script_filename, strerror(errno));
+					munmap(buf, size);
+					return CL_ETMPFILE;
+				}
+				fputs("function main()\n{\n", fout);
+				done_header = 1;
+			}
+			putc(tolower(*p), fout);
+
 			p++;
 			bytesleft--;
 		}
@@ -137,17 +183,14 @@ cli_scanjs(const char *dir, int desc)
 
 	if(!done_header)
 		cli_dbgmsg("No javascript was detected\n");
+	else if(fout == NULL)
+		cli_errmsg("cli_scanjs: fout == NULL\n");
 	else {
-		/*
-		 * EMIT
-		 *	}
-		 *
-		 *	main();
-		 * END_EMIT
-		 * Run NGS on the script file
-		 */
+		fputs("\n}\nmain();\n", fout);
+		fclose(fout);
+		/* TODO: NGS on the script file */
 	}
-	/* unlink the script file */
+	unlink(script_filename);
 
 	munmap(buf, size);
 	return CL_CLEAN;
