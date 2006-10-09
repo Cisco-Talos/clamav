@@ -24,7 +24,7 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/js.h,v $
- * $Id: js.h,v 1.1 2006/10/08 13:58:53 njh Exp $
+ * $Id: js.h,v 1.2 2006/10/09 15:52:19 njh Exp $
  */
 
 #ifndef JS_H
