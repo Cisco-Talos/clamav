@@ -25,10 +25,14 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.38 2006/07/22 13:31:22 njh Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.39 2006/10/09 09:20:29 njh Exp $";
 
 #include <stdio.h>
 #include <fcntl.h>
+
+#ifdef	HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #include "cltypes.h"
 #include "clamav.h"
