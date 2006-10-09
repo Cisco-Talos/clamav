@@ -1,3 +1,8 @@
+Mon Oct  9 10:09:27 BST 2006 (njh)
+----------------------------------
+  * libclamav/js.c:	Was trying to delete the script file even when it
+		hadn't been created
+
 Sun Oct  8 21:55:46 BST 2006 (njh)
 ----------------------------------
   * clamav-milter/INSTALL:	Documented integration with postfix, thanks
