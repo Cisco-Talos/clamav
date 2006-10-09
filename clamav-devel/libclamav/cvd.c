@@ -411,7 +411,6 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short 
 	free(dir);
 	return CL_ECVDEXTR;
     }
-    close(fd);
 
     /* load extracted directory */
     ret = cl_load(dir, engine, signo, options);
