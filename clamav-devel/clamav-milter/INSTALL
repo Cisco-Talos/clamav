@@ -297,12 +297,12 @@ your system (/proc/sys/kernel/threads-max), or decrease the value of
 
 2.7 Postfix
 
-Clamav-milter is designed only to work with Sendmail. I understand that postfix
-now has milter support, and I've heard that clamav-milter now runs with
-postfix, however it is not supported with that software and I do not know how
-much functionality works.
+Clamav-milter has only been designed to work with Sendmail. I understand that
+modern versions of Postfix have milter support, and I've heard that
+Clamav-milter runs with these versions of Postfix, however it is not supported
+with that software and I do not know how much functionality works.
 
-Try this to start clamav-milter:
+To start clamav-milter:
 
 	# clamav-milter --sendmail-cf= --max-children=2 \
 		--timeout=0 --pidfile=/var/run/clamav/clamav-milter \
