@@ -25,7 +25,9 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 #include "clamav.h"
 #include "others.h"
@@ -396,7 +398,7 @@ int cli_validatesig(unsigned short ftype, const char *offstr, unsigned long int 
 	}
 
 	if(fileoff != (unsigned long int) off) {
-	    cli_dbgmsg("Virus offset: %d, expected: %d (%s)\n", fileoff, off, virname);
+	    cli_dbgmsg("Virus offset: %ld, expected: %ld (%s)\n", fileoff, off, virname);
 	    return 0;
 	}
     }

@@ -70,7 +70,7 @@ struct cli_matched_type {
     struct cli_matched_type *next;
 };
 
-cli_file_t cli_filetype(const char *buf, size_t buflen);
+cli_file_t cli_filetype(const unsigned char *buf, size_t buflen);
 cli_file_t cli_filetype2(int desc);
 int cli_addtypesigs(struct cl_engine *engine);
 

@@ -26,12 +26,17 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifdef	HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
 #include <fcntl.h>
+#ifndef	C_WINDOWS
 #include <dirent.h>
 #include <netinet/in.h>
-
+#endif
 
 #if HAVE_MMAP
 #if HAVE_SYS_MMAN_H
@@ -42,6 +47,10 @@
 #endif
 
 #include <mspack.h>
+
+#ifndef	O_BINARY
+#define	O_BINARY	0
+#endif
 
 extern short cli_leavetemps_flag;
 
@@ -868,7 +877,7 @@ int cli_scandir(const char *dirname, cli_ctx *ctx)
 #else
 	while((dent = readdir(dd))) {
 #endif
-#ifndef C_INTERIX
+#if	(!defined(C_CYGWIN)) && (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
 	    if(dent->d_ino)
 #endif
 	    {
@@ -930,7 +939,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
 	for(i = 0; i < vba_project->count; i++) {
 	    fullname = (char *) cli_malloc(strlen(vba_project->dir) + strlen(vba_project->name[i]) + 2);
 	    sprintf(fullname, "%s/%s", vba_project->dir, vba_project->name[i]);
-	    fd = open(fullname, O_RDONLY);
+	    fd = open(fullname, O_RDONLY|O_BINARY);
 	    if(fd == -1) {
 		cli_dbgmsg("VBADir: Can't open file %s\n", fullname);
 		free(fullname);
@@ -975,7 +984,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
     	for (i = 0; i < vba_project->count; i++) {
 		fullname = (char *) cli_malloc(strlen(vba_project->dir) + strlen(vba_project->name[i]) + 2);
 		sprintf(fullname, "%s/%s", vba_project->dir, vba_project->name[i]);
-		fd = open(fullname, O_RDONLY);
+		fd = open(fullname, O_RDONLY|O_BINARY);
 		if(fd == -1) {
 			cli_dbgmsg("VBADir: Can't open file %s\n", fullname);
 			free(fullname);
@@ -1019,7 +1028,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
     /* Check directory for embedded OLE objects */
     fullname = (char *) cli_malloc(strlen(dirname) + 16);
     sprintf(fullname, "%s/_1_Ole10Native", dirname);
-    fd = open(fullname, O_RDONLY);
+    fd = open(fullname, O_RDONLY|O_BINARY);
     free(fullname);
     if (fd >= 0) {
     	ofd = cli_decode_ole_object(fd, dirname);
@@ -1040,7 +1049,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
 #else
 	while((dent = readdir(dd))) {
 #endif
-#ifndef C_INTERIX
+#if	(!defined(C_CYGWIN)) && (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
 	    if(dent->d_ino)
 #endif
 	    {
@@ -1088,7 +1097,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
 
     html_normalise_fd(desc, tempname, NULL);
     snprintf(fullname, 1024, "%s/comment.html", tempname);
-    fd = open(fullname, O_RDONLY);
+    fd = open(fullname, O_RDONLY|O_BINARY);
     if (fd >= 0) {
         ret = cli_scandesc(fd, ctx, 0, CL_TYPE_HTML, NULL);
 	close(fd);
@@ -1103,7 +1112,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
 
     if (ret == CL_CLEAN) {
 	snprintf(fullname, 1024, "%s/nocomment.html", tempname);
-	fd = open(fullname, O_RDONLY);
+	fd = open(fullname, O_RDONLY|O_BINARY);
 	if (fd >= 0) {
 	    ret = cli_scandesc(fd, ctx, 0, CL_TYPE_HTML, NULL);
 	    close(fd);
@@ -1119,7 +1128,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
 
     if (ret == CL_CLEAN) {
 	snprintf(fullname, 1024, "%s/script.html", tempname);
-	fd = open(fullname, O_RDONLY);
+	fd = open(fullname, O_RDONLY|O_BINARY);
 	if (fd >= 0) {
 	    ret = cli_scandesc(fd, ctx, 0, CL_TYPE_HTML, NULL);
 	    close(fd);
@@ -1357,7 +1366,7 @@ static int cli_scancryptff(int desc, cli_ctx *ctx)
     free(src);
 
     tempfile = cli_gentemp(NULL);
-    if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+    if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
 	cli_errmsg("CryptFF: Can't create file %s\n", tempfile);
 	free(dest);
 	free(tempfile);
@@ -1848,7 +1857,7 @@ static int cli_scanfile(const char *filename, cli_ctx *ctx)
 	int fd, ret;
 
     /* internal version of cl_scanfile with arec/mrec preserved */
-    if((fd = open(filename, O_RDONLY)) == -1)
+    if((fd = open(filename, O_RDONLY|O_BINARY)) == -1)
 	return CL_EOPEN;
 
     ret = cli_magic_scandesc(fd, ctx);
@@ -1862,7 +1871,7 @@ int cl_scanfile(const char *filename, const char **virname, unsigned long int *s
 	int fd, ret;
 
 
-    if((fd = open(filename, O_RDONLY)) == -1)
+    if((fd = open(filename, O_RDONLY|O_BINARY)) == -1)
 	return CL_EOPEN;
 
     ret = cl_scandesc(fd, virname, scanned, engine, limits, options);

@@ -20,8 +20,14 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
 
+
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 #include "unrar.h"
 #include "unrarfilter.h"

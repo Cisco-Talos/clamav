@@ -319,7 +319,7 @@ static unsigned int filter_itanium_getbits(unsigned char *data, int bit_pos, int
 {
 	int in_addr=bit_pos/8;
 	int in_bit=bit_pos&7;
-	unsigned int bit_field=(uint)data[in_addr++];
+	unsigned int bit_field=(unsigned int)data[in_addr++];
 	bit_field|=(unsigned int)data[in_addr++] << 8;
 	bit_field|=(unsigned int)data[in_addr++] << 16;
 	bit_field|=(unsigned int)data[in_addr] << 24;

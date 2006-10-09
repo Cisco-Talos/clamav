@@ -503,4 +503,5 @@ int rar_unpack15(int fd, int solid, unpack_data_t *unpack_data)
 		}
 	}
 	unp_write_buf_old(unpack_data);
+	return TRUE;
 }

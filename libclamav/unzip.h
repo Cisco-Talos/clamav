@@ -34,6 +34,13 @@
 
 #include "cltypes.h"
 
+#ifndef HAVE_ATTRIB_PACKED
+#define __attribute__(x)
+#endif
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 
 /******** Zip format structures *********/
 

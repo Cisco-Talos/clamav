@@ -17,13 +17,21 @@
  *  MA 02110-1301, USA.
  */
 
+#ifdef	_MSC_VER
+#include <windows.h>
+#endif
+
 #include "clamav-config.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifndef	C_WINDOWS
 #include <netinet/in.h>
+#endif
 #include <string.h>
 
 #include "clamav.h"

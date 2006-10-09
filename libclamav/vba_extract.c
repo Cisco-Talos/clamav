@@ -23,7 +23,9 @@
 
 #include <stdio.h>
 #include <string.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -39,6 +41,10 @@
 
 #include "vba_extract.h"
 #include "others.h"
+
+#ifndef	O_BINARY
+#define	O_BINARY	0
+#endif
 
 typedef struct vba_version_tag {
 	unsigned char signature[4];
@@ -264,7 +270,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 		return NULL;
 	}
 	sprintf(fullname, "%s/_VBA_PROJECT", dir);
-        fd = open(fullname, O_RDONLY);
+        fd = open(fullname, O_RDONLY|O_BINARY);
 
         if (fd == -1) {
                 cli_dbgmsg("Can't open %s\n", fullname);
@@ -744,7 +750,7 @@ int cli_decode_ole_object(int fd, const char *dir)
 	}
 	fullname = cli_malloc(strlen(dir) + 18);
 	sprintf(fullname, "%s/_clam_ole_object", dir);
-	ofd = open(fullname, O_RDWR|O_CREAT|O_TRUNC, 0600);
+	ofd = open(fullname, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, 0600);
 	free(fullname);
         if (ofd < 0) {
 		return -1;
@@ -814,7 +820,7 @@ static int ppt_unlzw(const char *dir, int fd, uint32_t length)
 	}
 	sprintf(fullname, "%s/ppt%.8lx.doc", dir, lseek(fd, 0, SEEK_CUR));
 	
-	ofd = open(fullname, O_WRONLY|O_CREAT|O_TRUNC, 0600);
+	ofd = open(fullname, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, 0600);
 	free(fullname);
         if (ofd == -1) {
                 cli_dbgmsg("ppt_unlzw Open outfile failed\n");
@@ -946,7 +952,7 @@ char *ppt_vba_read(const char *dir)
 		return NULL;
 	}
 	sprintf(fullname, "%s/PowerPoint Document", dir);
-	fd = open(fullname, O_RDONLY);
+	fd = open(fullname, O_RDONLY|O_BINARY);
 	free(fullname);
 	if (fd == -1) {
 		cli_dbgmsg("Open  PowerPoint Document failed\n");
@@ -1529,7 +1535,7 @@ vba_project_t *wm_dir_read(const char *dir)
 		return NULL;
 	}
 	sprintf(fullname, "%s/WordDocument", dir);
-	fd = open(fullname, O_RDONLY);
+	fd = open(fullname, O_RDONLY|O_BINARY);
 	free(fullname);
 	if (fd == -1) {
 		cli_dbgmsg("Open WordDocument failed\n");
