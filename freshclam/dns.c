@@ -154,7 +154,7 @@ char *txtquery(const char *domain, unsigned int *ttl)
    if(DnsQuery_UTF8(domain, DNS_TYPE_TEXT, DNS_QUERY_TREAT_AS_FQDN, NULL, &pDnsRecord, NULL) != 0)
 	return NULL;
 
-    if(pDnsRecord->Data.TXT.dwStringCount > 0) {
+    if((pDnsRecord->Data.TXT.dwStringCount > 0) && pDnsRecord->Data.TXT.pStringArray[0]) {
 	txt = mmalloc(strlen(pDnsRecord->Data.TXT.pStringArray[0]) + 1);
 	if(txt)
 	    strcpy(txt, pDnsRecord->Data.TXT.pStringArray[0]);
