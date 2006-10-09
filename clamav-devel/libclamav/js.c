@@ -19,7 +19,7 @@
  * Save the JavaScript embedded in an HTML file, then run the script, saving
  * the output in a file that is to be scanned, then remove the script file
  */
-static	char	const	rcsid[] = "$Id: js.c,v 1.8 2006/10/09 10:18:43 njh Exp $";
+static	char	const	rcsid[] = "$Id: js.c,v 1.9 2006/10/09 15:51:33 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -208,6 +208,8 @@ cli_scanjs(const char *dir, int desc)
 		}
 	}
 
+	munmap(buf, size);
+
 	rc = CL_SUCCESS;
 
 	if(!done_header)
@@ -220,23 +222,22 @@ cli_scanjs(const char *dir, int desc)
 
 		fclose(fout);
 
+#if	0
 		/*
 		 * Run NGS on the file
 		 */
-		/*
 		interp = create_interp();
 
 		if(!js_eval_file(interp, script_filename)) {
 			cli_warnmsg("JS failed: %s\n", js_error_message(interp));
 			rc = CL_EIO;
 		}
-		js_destroy_interp(interp);*/
+		js_destroy_interp(interp);
+#endif
 
 		if(!cli_leavetemps_flag)
 			unlink(script_filename);
 	}
-
-	munmap(buf, size);
 	return CL_CLEAN;
 }
 
@@ -280,7 +281,7 @@ cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns)
 
 	return NULL;
 }
-
+ 
 #else
 
 int
