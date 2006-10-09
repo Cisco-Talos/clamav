@@ -19,7 +19,7 @@
  * Save the JavaScript embedded in an HTML file, then run the script, saving
  * the output in a file that is to be scanned, then remove the script file
  */
-static	char	const	rcsid[] = "$Id: js.c,v 1.7 2006/10/09 09:22:11 njh Exp $";
+static	char	const	rcsid[] = "$Id: js.c,v 1.8 2006/10/09 10:18:43 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -188,13 +188,20 @@ cli_scanjs(const char *dir, int desc)
 					munmap(buf, size);
 					return CL_ETMPFILE;
 				}
-				/*
-				 * FIXME: the script file could already contain
-				 *	main()
-				 */
-				fputs("function main()\n{\n", fout);
 				cli_dbgmsg("Saving javascript to %s\n",
 					script_filename);
+
+				/*
+				 * Create a document object, on web pages it's
+				 *	used to send output to the browser
+				 */
+				fputs("function createDoc() {\n", fout);
+				fputs("\tfunction write(text) {\n", fout);
+				fputs("\t\tprint(text);\n", fout);
+				fputs("\t}\n", fout);
+				fputs("}\n", fout);
+				fputs("document = new createDoc();\n", fout);
+
 				done_header = 1;
 			}
 			putc(c, fout);
@@ -211,7 +218,6 @@ cli_scanjs(const char *dir, int desc)
 		extern short cli_leavetemps_flag;
 		JSInterpPtr interp;
 
-		fputs("\n}\nmain();\n", fout);
 		fclose(fout);
 
 		/*
