@@ -20,3 +20,5 @@
 #include "js/js.h"
 
 int	cli_scanjs(const char *dir, int desc);
+
+JSInterpPtr	create_interp(void);
