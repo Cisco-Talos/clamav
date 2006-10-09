@@ -29,9 +29,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
-#include <zlib.h>
+#endif
+#include "zlib.h"
 #include <time.h>
+#include <errno.h>
 
 #include "clamav.h"
 #include "others.h"
@@ -53,7 +56,7 @@ int cli_untgz(int fd, const char *destdir)
     cli_dbgmsg("in cli_untgz()\n");
 
     if((infile = gzdopen(fd, "rb")) == NULL) {
-	cli_errmsg("Can't gzdopen() descriptor %d\n", fd);
+	cli_errmsg("Can't gzdopen() descriptor %d, errno = %d\n", fd, errno);
 	return -1;
     }
 
@@ -403,10 +406,12 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short 
     }
 
     if(cli_untgz(fd, dir)) {
+	close(fd);
 	cli_errmsg("cli_cvdload(): Can't unpack CVD file.\n");
 	free(dir);
 	return CL_ECVDEXTR;
     }
+    close(fd);
 
     /* load extracted directory */
     ret = cl_load(dir, engine, signo, options);

@@ -25,7 +25,9 @@
 #define UNRAR_H 1
 
 #include <sys/types.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 /*	#define RAR_DEBUG */
 /*	#define RAR_HIGH_DEBUG */
@@ -107,6 +109,14 @@ typedef struct mark_header_tag
 {
 	unsigned char mark[SIZEOF_MARKHEAD];
 } mark_header_t;
+
+#ifndef HAVE_ATTRIB_PACKED
+#define __attribute__(x)
+#endif
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 
 typedef struct main_header_tag
 {

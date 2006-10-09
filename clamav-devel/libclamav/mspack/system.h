@@ -40,6 +40,7 @@ extern int mspack_sys_filelen(struct mspack_system *system,
 extern int mspack_valid_system(struct mspack_system *sys);
 
 /* inline memcmp() */
+#ifndef	C_WINDOWS
 static inline int memcmp(const void *s1, const void *s2, size_t n) {
   unsigned char *c1 = (unsigned char *) s1;
   unsigned char *c2 = (unsigned char *) s2;
@@ -54,5 +55,6 @@ static inline size_t strlen(const char *s) {
   while (*e) e++;
   return e - s;
 }
+#endif
 
 #endif

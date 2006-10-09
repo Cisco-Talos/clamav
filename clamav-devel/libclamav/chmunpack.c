@@ -27,7 +27,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <string.h>
 
 #if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK)
@@ -53,6 +55,10 @@
 
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
+#endif
+
+#ifndef	O_BINARY
+#define	O_BINARY	0
 #endif
 
 #define CHM_ITSF_MIN_LEN (0x60)
@@ -831,7 +837,7 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 	mf_in.name = strdup("input");
 	
 	snprintf(filename, 1024, "%s/clamav-unchm.bin", dirname);
-	mf_out.desc = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
+	mf_out.desc = open(filename, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
 	if (!mf_out.desc) {
 		cli_dbgmsg("open failed\n", filename);
 		free(mf_in.name);
@@ -920,7 +926,7 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 	mf_out.fh = NULL;
 	
 	/* Reopen the file for reading */
-	mf_out.desc = open(filename, O_RDONLY);
+	mf_out.desc = open(filename, O_RDONLY|O_BINARY);
 	if (mf_out.desc < 0) {
 		cli_dbgmsg("re-open output failed\n");
 		goto abort;
@@ -942,7 +948,7 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 		}
 		
 		snprintf(filename, 1024, "%s/%d-%llu.chm", dirname, count, entry->offset);
-		ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
+		ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
 		if (ofd < 0) {
 			entry = entry->next;
 			continue;

@@ -203,7 +203,7 @@ static char internat[256] = {
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1   /* 0xfX */
 };
 
-cli_file_t cli_filetype(const char *buf, size_t buflen)
+cli_file_t cli_filetype(const unsigned char *buf, size_t buflen)
 {
 	int i, ascii = 1, len;
 

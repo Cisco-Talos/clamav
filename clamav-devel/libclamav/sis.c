@@ -29,7 +29,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <time.h>
 #include <zlib.h>
 

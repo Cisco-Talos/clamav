@@ -29,7 +29,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 #include "clamav.h"
 #include "others.h"
@@ -292,7 +294,7 @@ inline static int cli_findpos(const char *buffer, unsigned int depth, unsigned i
     return 1;
 }
 
-int cli_ac_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cli_matcher *root, int *partcnt, unsigned short otfrec, unsigned long int offset, unsigned long int *partoff, unsigned short ftype, int fd, struct cli_matched_type **ftoffset)
+int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cli_matcher *root, int *partcnt, unsigned short otfrec, unsigned long int offset, unsigned long int *partoff, unsigned short ftype, int fd, struct cli_matched_type **ftoffset)
 {
 	struct cli_ac_node *current;
 	struct cli_ac_patt *pt;

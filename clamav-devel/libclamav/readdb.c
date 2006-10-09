@@ -25,16 +25,24 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifndef	C_WINDOWS
 #include <dirent.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef	HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
 #include <fcntl.h>
 
 #include "clamav.h"
 #include "cvd.h"
-#include "strings.h"
+#ifdef	HAVE_STRINGS_H
+#include <strings.h>
+#endif
 #include "matcher-ac.h"
 #include "matcher-bm.h"
 #include "others.h"
@@ -1221,7 +1229,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigne
 #else
     while((dent = readdir(dd))) {
 #endif
-#ifndef C_INTERIX
+#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS)) && (!defined(C_CYGWIN))
 	if(dent->d_ino)
 #endif
 	{
@@ -1342,7 +1350,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 #else
     while((dent = readdir(dd))) {
 #endif
-#ifndef C_INTERIX
+#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS)) && (!defined(C_CYGWIN))
 	if(dent->d_ino)
 #endif
 	{
@@ -1421,7 +1429,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 #else
     while((dent = readdir(dd))) {
 #endif
-#ifndef C_INTERIX
+#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS)) && (!defined(C_CYGWIN))
 	if(dent->d_ino)
 #endif
 	{

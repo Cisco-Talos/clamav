@@ -127,7 +127,9 @@ extern "C" {
 #endif
 
 #include <sys/types.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 /**
  * System self-test function, to ensure both library and calling program

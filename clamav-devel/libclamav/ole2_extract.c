@@ -30,10 +30,12 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <ctype.h>
 #include <stdlib.h>
-#include <clamav.h>
+#include "clamav.h"
 
 #if HAVE_MMAP
 #if HAVE_SYS_MMAN_H
@@ -56,6 +58,10 @@
 
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
+#endif
+
+#ifndef	O_BINARY
+#define	O_BINARY	0
 #endif
 
 typedef struct ole2_header_tag
@@ -135,7 +141,7 @@ static char *get_property_name(char *name, int size)
 	j=0;
 	/* size-2 to ignore trailing NULL */
 	for (i=0 ; i < size-2; i+=2) {
-		if (isprint(name[i])) {
+		if((!(name[i]&0x80)) && isprint(name[i])) {
 			newname[j++] = name[i];
 		} else {
 			if (name[i] < 10 && name[i] >= 0) {
@@ -587,8 +593,8 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 #ifdef  C_DARWIN
                         *newname &= '\177';
 #endif
-#if     defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32) || defined(C_OS2)
-                        if(strchr("/*?<>|\"+=,;: ", *newname))
+#if     defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32) || defined(C_OS2) || defined(C_WINDOWS)
+                        if(strchr("/*?<>|\"+=,;:\\ ", *newname))
 #else
                         if(*newname == '/')
 #endif
@@ -602,10 +608,11 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 		free(name);
 		return FALSE;
 	}
+
 	sprintf(newname, "%s/%s", dir, name);
 	free(name);
 
-	ofd = open(newname, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
+	ofd = open(newname, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
 	if (ofd < 0) {
 		cli_errmsg("ERROR: failed to create file: %s\n", newname);
 		free(newname);

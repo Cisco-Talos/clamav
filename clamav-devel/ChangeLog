@@ -1,3 +1,7 @@
+Mon Oct  9 17:20:57 CEST 2006 (tk)
+----------------------------------
+  * libclamav: apply w32 patches from NJH
+
 Mon Oct  9 11:19:20 BST 2006 (njh)
 ----------------------------------
   * libclamav/js.c:	Don't create a main() function

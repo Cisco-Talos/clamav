@@ -100,8 +100,13 @@ typedef struct {
 #define ROL(a,b) a = ( a << (b % (sizeof(a)<<3) ))  |  (a >> (  (sizeof(a)<<3)  -  (b % (sizeof(a)<<3 )) ) )
 #define ROR(a,b) a = ( a >> (b % (sizeof(a)<<3) ))  |  (a << (  (sizeof(a)<<3)  -  (b % (sizeof(a)<<3 )) ) )
 
+#ifndef	FALSE
 #define FALSE (0)
+#endif
+
+#ifndef	TRUE
 #define TRUE (1)
+#endif
 
 #ifndef MIN
 #define MIN(a, b)	(((a) < (b)) ? (a) : (b))
