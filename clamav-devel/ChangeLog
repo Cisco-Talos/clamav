@@ -1,3 +1,7 @@
+Mon Oct  9 11:19:20 BST 2006 (njh)
+----------------------------------
+  * libclamav/js.c:	Don't create a main() function
+
 Mon Oct  9 10:09:27 BST 2006 (njh)
 ----------------------------------
   * libclamav/js.c:	Was trying to delete the script file even when it
