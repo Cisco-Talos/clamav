@@ -1,3 +1,8 @@
+Tue Oct 10 00:13:59 CEST 2006 (tk)
+----------------------------------
+  * shared/cfgparser.c: use OPT_QUOTESTR instead of OPT_STR in all cases
+			Patch by Mark Pizzolato
+
 Mon Oct  9 17:20:57 CEST 2006 (tk)
 ----------------------------------
   * libclamav: apply w32 patches from NJH

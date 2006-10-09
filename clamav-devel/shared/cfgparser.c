@@ -40,7 +40,7 @@ struct cfgoption cfg_options[] = {
     {"LogClean", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"LogVerbose", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
     {"LogSyslog", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
-    {"LogFacility", OPT_STR, -1, "LOG_LOCAL6", 0, OPT_CLAMD | OPT_FRESHCLAM},
+    {"LogFacility", OPT_QUOTESTR, -1, "LOG_LOCAL6", 0, OPT_CLAMD | OPT_FRESHCLAM},
     {"PidFile", OPT_QUOTESTR, -1, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
     {"TemporaryDirectory", OPT_QUOTESTR, -1, NULL, 0, OPT_CLAMD},
     {"ScanPE", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
@@ -64,7 +64,7 @@ struct cfgoption cfg_options[] = {
     {"ArchiveBlockEncrypted", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"ArchiveBlockMax", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"DatabaseDirectory", OPT_QUOTESTR, -1, DATADIR, 0, OPT_CLAMD | OPT_FRESHCLAM},
-    {"TCPAddr", OPT_STR, -1, NULL, 0, OPT_CLAMD},
+    {"TCPAddr", OPT_QUOTESTR, -1, NULL, 0, OPT_CLAMD},
     {"TCPSocket", OPT_NUM, -1, NULL, 0, OPT_CLAMD},
     {"LocalSocket", OPT_QUOTESTR, -1, NULL, 0, OPT_CLAMD},
     {"MaxConnectionQueueLength", OPT_NUM, 15, NULL, 0, OPT_CLAMD},
@@ -82,7 +82,7 @@ struct cfgoption cfg_options[] = {
     {"Debug", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
     {"LeaveTemporaryFiles", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"FixStaleSocket", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
-    {"User", OPT_STR, -1, NULL, 0, OPT_CLAMD},
+    {"User", OPT_QUOTESTR, -1, NULL, 0, OPT_CLAMD},
     {"AllowSupplementaryGroups", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
     {"SelfCheck", OPT_NUM, 1800, NULL, 0, OPT_CLAMD},
     {"VirusEvent", OPT_FULLSTR, -1, NULL, 0, OPT_CLAMD},
@@ -95,22 +95,22 @@ struct cfgoption cfg_options[] = {
     {"ClamukoExcludePath", OPT_QUOTESTR, 0, NULL, 0, OPT_CLAMD},
     {"ClamukoMaxFileSize", OPT_COMPSIZE, 5242880, NULL, 0, OPT_CLAMD},
     {"ClamukoScanArchive", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
-    {"DatabaseOwner", OPT_STR, -1, CLAMAVUSER, 0, OPT_FRESHCLAM},
+    {"DatabaseOwner", OPT_QUOTESTR, -1, CLAMAVUSER, 0, OPT_FRESHCLAM},
     {"Checks", OPT_NUM, 12, NULL, 0, OPT_FRESHCLAM},
     {"UpdateLogFile", OPT_QUOTESTR, -1, NULL, 0, OPT_FRESHCLAM},
-    {"DNSDatabaseInfo", OPT_STR, -1, "current.cvd.clamav.net", 0, OPT_FRESHCLAM},
-    {"DatabaseMirror", OPT_STR, -1, NULL, 1, OPT_FRESHCLAM},
+    {"DNSDatabaseInfo", OPT_QUOTESTR, -1, "current.cvd.clamav.net", 0, OPT_FRESHCLAM},
+    {"DatabaseMirror", OPT_QUOTESTR, -1, NULL, 1, OPT_FRESHCLAM},
     {"MaxAttempts", OPT_NUM, 3, NULL, 0, OPT_FRESHCLAM},
-    {"HTTPProxyServer", OPT_STR, -1, NULL, 0, OPT_FRESHCLAM},
+    {"HTTPProxyServer", OPT_QUOTESTR, -1, NULL, 0, OPT_FRESHCLAM},
     {"HTTPProxyPort", OPT_NUM, -1, NULL, 0, OPT_FRESHCLAM},
-    {"HTTPProxyUsername", OPT_STR, -1, NULL, 0, OPT_FRESHCLAM},
-    {"HTTPProxyPassword", OPT_STR, -1, NULL, 0, OPT_FRESHCLAM},
+    {"HTTPProxyUsername", OPT_QUOTESTR, -1, NULL, 0, OPT_FRESHCLAM},
+    {"HTTPProxyPassword", OPT_QUOTESTR, -1, NULL, 0, OPT_FRESHCLAM},
     {"HTTPUserAgent", OPT_FULLSTR, -1, NULL, 0, OPT_FRESHCLAM},
     {"NotifyClamd", OPT_QUOTESTR, -1, NULL, 0, OPT_FRESHCLAM},
     {"OnUpdateExecute", OPT_FULLSTR, -1, NULL, 0, OPT_FRESHCLAM},
     {"OnErrorExecute", OPT_FULLSTR, -1, NULL, 0, OPT_FRESHCLAM},
     {"OnOutdatedExecute", OPT_FULLSTR, -1, NULL, 0, OPT_FRESHCLAM},
-    {"LocalIPAddress", OPT_STR, -1, NULL, 0, OPT_FRESHCLAM},
+    {"LocalIPAddress", OPT_QUOTESTR, -1, NULL, 0, OPT_FRESHCLAM},
     {"ConnectTimeout", OPT_NUM, 10, NULL, 0, OPT_FRESHCLAM},
     {"ReceiveTimeout", OPT_NUM, 30, NULL, 0, OPT_FRESHCLAM},
     {NULL, 0, 0, NULL, 0, 0}
@@ -169,6 +169,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 			found = 1;
 			switch(pt->argtype) {
 			    case OPT_STR:
+			    	/* deprecated.  Use OPT_QUOTESTR instead since it behaves like this, but supports quotes to allow values to contain whitespace */
 				if(!arg) {
 				    if(verbose)
 					fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires string argument.\n", line, name);
