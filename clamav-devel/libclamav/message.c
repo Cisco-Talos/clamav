@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.188 2006/10/06 21:33:33 njh Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.189 2006/10/10 21:28:00 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -54,21 +54,21 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.188 2006/10/06 21:33:33 njh Exp 
 
 #include "mbox.h"
 
-/* required for AIX and Tru64 */
-#ifdef TRUE
-#undef TRUE
-#endif
-#ifdef FALSE
-#undef FALSE
-#endif
-
 #ifndef isblank
 #define isblank(c)	(((c) == ' ') || ((c) == '\t'))
 #endif
 
 #define	RFC2045LENGTH	76	/* maximum number of characters on a line */
 
-typedef enum { FALSE = 0, TRUE = 1 } bool;
+#ifdef	C_LINUX	/* Others??? */
+#include <stdbool.h>
+#else
+#ifdef	FALSE
+typedef	unsigned	char	bool;
+#else
+typedef enum	{ FALSE = 0, TRUE = 1 } bool;
+#endif
+#endif
 
 static	void	messageIsEncoding(message *m);
 static unsigned char *decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast);
@@ -972,7 +972,7 @@ messageIsEncoding(message *m)
 		m->encoding = m->body_last;
 	else if((m->bounce == NULL) &&
 		(strncasecmp(line, "Received: ", 10) == 0) &&
-		(cli_filetype(line, strlen(line)) == CL_TYPE_MAIL))
+		(cli_filetype((const unsigned char *)line, strlen(line)) == CL_TYPE_MAIL))
 			m->bounce = m->body_last;
 		/* Not needed with fast track visa technology */
 	/*else if((m->uuencode == NULL) && isuuencodebegin(line))

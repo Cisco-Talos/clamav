@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.352 2006/10/06 15:25:15 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.353 2006/10/10 21:28:00 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -94,15 +94,15 @@ static	void	print_trace(int use_syslog);
 #define strtok_r(a,b,c)	strtok(a,b)
 #endif
 
-/* required for AIX and Tru64 */
-#ifdef TRUE
-#undef TRUE
-#endif
-#ifdef FALSE
-#undef FALSE
-#endif
-
+#ifdef	C_LINUX	/* Others??? */
+#include <stdbool.h>
+#else
+#ifdef	FALSE
+typedef	unsigned	char	bool;
+#else
 typedef enum	{ FALSE = 0, TRUE = 1 } bool;
+#endif
+#endif
 
 #ifndef isblank
 #define isblank(c)	(((c) == ' ') || ((c) == '\t'))
@@ -5006,7 +5006,7 @@ isBounceStart(const char *line)
 		return FALSE;
 	if((strncmp(line, ">From ", 6) == 0) && !isalnum(line[6]))
 		return FALSE;*/
-	if(cli_filetype(line, strlen(line)) != CL_TYPE_MAIL)
+	if(cli_filetype((const unsigned char *)line, strlen(line)) != CL_TYPE_MAIL)
 		return FALSE;
 
 	if((strncmp(line, "From ", 5) == 0) ||
