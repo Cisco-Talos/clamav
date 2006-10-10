@@ -24,11 +24,11 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/xmd5.c,v $
- * $Id: xmd5.c,v 1.1 2006/10/09 15:52:19 njh Exp $
+ * $Id: xmd5.c,v 1.2 2006/10/10 21:30:56 njh Exp $
  */
 
-#include "jsint.h"
-#include "md5.h"
+#include "js/jsint.h"
+#include "js/md5.h"
 
 /*
  * Types and definitions.

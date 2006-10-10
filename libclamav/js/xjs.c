@@ -24,11 +24,11 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/xjs.c,v $
- * $Id: xjs.c,v 1.1 2006/10/09 15:52:19 njh Exp $
+ * $Id: xjs.c,v 1.2 2006/10/10 21:30:56 njh Exp $
  */
 
-#include "js.h"
-#include "jsint.h"
+#include "js/js.h"
+#include "js/jsint.h"
 
 /*
  * Types and definitions.
