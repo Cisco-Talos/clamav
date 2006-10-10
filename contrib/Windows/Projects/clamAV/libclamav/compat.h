@@ -108,6 +108,12 @@ int	gettimeofday(struct timeval* tp, void* tz);
 #define	sleep(seconds)	Sleep(seconds * 1000)
 #define	pause();
 
+#ifdef	_DEBUG
+/* breaks mspack/qtmd.c :-( */
+/*#define	free(p)	_free_dbg(p, _NORMAL_BLOCK)*/
+#define	_CRTDBG_MAP_ALLOC 
+#endif
+
 #endif	/* C_WINDOWS */
 
 #endif	/* CLAMAV_COMPAT_H */
