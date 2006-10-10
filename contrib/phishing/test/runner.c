@@ -24,7 +24,6 @@
 #include <check.h>
 #include "urltest.h"
 #include "regex_list_test.h"
-#include "pdomain.h"
 
 static Suite* create_suite(void)
 {

@@ -25,6 +25,18 @@
 #ifndef _REGEX_LIST_H
 #define _REGEX_LIST_H
 
+
+
+#ifdef NDEBUG
+#define massert(x) (void)(0)
+#else
+/*debug version, massert enabled*/
+
+#define __massert_fail(expr,file,line) (void)cli_errmsg("Assertion failed at %s:%d\n %s\n",file,line,expr)
+
+#define massert(expr) ((void) ((expr) ? (void)0 : (__massert_fail (#expr,__FILE__,__LINE__))))
+#endif
+
 struct node_stack {
 	struct tree_node** data;
 	size_t capacity;
@@ -42,9 +54,9 @@ struct regex_matcher {
 	struct node_stack node_stack_alt;
 };
 
-int regex_list_match(struct regex_matcher* matcher,const char* real_url,const char* display_url,int hostOnly,const char** info);
+int regex_list_match(struct regex_matcher* matcher,const char* real_url,const char* display_url,int hostOnly,const char** info,int is_whitelist);
 int init_regex_list(struct regex_matcher* matcher);
-int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int options);
+int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int options,int is_whitelist);
 void regex_list_cleanup(struct regex_matcher* matcher);
 void regex_list_done(struct regex_matcher* matcher);
 int is_regex_ok(struct regex_matcher* matcher);

@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phish_domaincheck_db.c,v $
+ *  Revision 1.5  2006/10/10 23:51:49  tkojm
+ *  apply patches for the anti-phish code from Edwin
+ *
  *  Revision 1.4  2006/10/07 13:55:01  tkojm
  *  fix handlers
  *
@@ -48,7 +51,6 @@
  *
  */
 
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -68,7 +70,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <assert.h>
 #include <string.h>
 #ifdef	HAVE_STRINGS_H
 #include <strings.h>
@@ -100,7 +101,7 @@
 int domainlist_match(const struct cl_engine* engine,const char* real_url,const char* display_url,int hostOnly,unsigned short* flags)
 {
 	const char* info;
-	int rc = engine->domainlist_matcher ? regex_list_match(engine->domainlist_matcher,real_url,display_url,hostOnly,&info) : 0;
+	int rc = engine->domainlist_matcher ? regex_list_match(engine->domainlist_matcher,real_url,display_url,hostOnly,&info,0) : 0;
 	if(rc && info && info[0]) {/*match successfull, and has custom flags*/
 		if(strlen(info)==3 && isxdigit(info[0]) && isxdigit(info[1]) && isxdigit(info[2])) {
 			unsigned short notwantedflags=0;
@@ -121,7 +122,7 @@ int init_domainlist(struct cl_engine* engine)
 		if(!engine->domainlist_matcher)
 			return CL_EMEM;
 		return init_regex_list(engine->domainlist_matcher);
-}
+	}
 	else
 		return CL_ENULLARG;
 }
@@ -130,7 +131,6 @@ int is_domainlist_ok(const struct cl_engine* engine)
 {
 	return (engine && engine->domainlist_matcher) ? is_regex_ok(engine->domainlist_matcher) : 1;
 }
-
 
 void domainlist_cleanup(const struct cl_engine* engine)
 {

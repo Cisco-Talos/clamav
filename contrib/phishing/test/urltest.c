@@ -34,19 +34,21 @@ static struct url_test {
 /*static int url_tests_cnt = sizeof(url_tests)/sizeof(url_tests[0]);*/
 static int url_tests_i=-1;
 
+struct cl_engine engine;
 static void url_tests_setup(void)
 {
-		url_tests_i=0;
+	phishing_init(&engine);
+	url_tests_i=0;
 }
 
 static void url_tests_teardown(void)
 {
-	phishing_done();
+	phishing_done(&engine);
 }
 
 static int url_test_function(const char* input)
 {
-	return isURL(input);
+	return isURL(engine.phishcheck,input);
 }
 
 START_TEST(url_test_create)

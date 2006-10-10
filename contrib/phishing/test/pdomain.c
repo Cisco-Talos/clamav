@@ -24,6 +24,8 @@
 #include <stdio.h>
 #include <check.h>
 #include <test-config.h>
+#include <clamav.h>
+#include <clamav-config.h>
 #include "pdomain.h"
 #include <phish_domaincheck_db.h>
 #define FULLFLAG 0xFFFF
@@ -51,20 +53,23 @@ static struct regex_list_test {
 };
 /*static int regex_list_tests_cnt = sizeof(regex_list_tests)/sizeof(regex_list_tests[0]);*/
 static int regex_list_tests_i=-1;
+static struct cl_engine* engine;
 
 static void regex_list_tests_setup(void)
 {
-	FILE* f = fopen(REGEXTEST_FILE,"r");
-	fail_unless(f!=NULL);
-	cli_loadpdb(f,0);
-	fclose(f);
-	fail_unless(is_domainlist_ok());
+	int rc;
+	unsigned int signo;
+	engine=NULL;
+	rc = cl_loaddb(REGEXTEST_FILE,&engine,&signo);
+	fail_unless(rc==0,cl_strerror(rc));
+	fail_unless(is_domainlist_ok(engine));
 	regex_list_tests_i=0;
 }
 
 static void regex_list_tests_teardown(void)
 {
-	domainlist_done();
+	cl_free(engine);
+	engine=NULL;
 }
 
 
@@ -72,8 +77,8 @@ static int regex_list_test_function(const char* input1,const char* input2,const 
 {
 	unsigned short flags=FULLFLAG;
 	int rc;
-	fail_unless(is_domainlist_ok());
-	rc = domainlist_match(input1,input2,0,&flags);
+	fail_unless(is_domainlist_ok(engine));
+	rc = domainlist_match(engine,input1,input2,0,&flags);
 	fail_unless(flags == flag_expected);
 	return rc;
 }
