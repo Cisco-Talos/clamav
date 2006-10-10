@@ -1,3 +1,21 @@
+Wed Oct 11 01:05:37 CEST 2006 (tk)
+----------------------------------
+  * libclamav: apply patches for the anti-phish code from Edwin:
+    - use different signature types for .pdb and .wdb: 'R' for .pdb (regex
+      matching real+displayed URL), 'X' for .wdb (the same as 'R'), 'H' for
+      .wdb (matches displayed host), 'M' for .wdb (matches real+displayed host
+      with a simple pattern)
+    - new signature type 'M' for .wdb (matches real+displayed host with a
+      simple pattern)
+    - libclamav/regex_list.c: fix incorrect OP_CUSTOMCLASS handling in
+      char_insert
+    - use pre-generated tables, instead of runtime setup_matcher_engine/_done
+      and init_hextable
+    - contrib/phishing/test*: add auto-tests for character classes and escaped
+      characters
+    - add phishcheck struct to cl_engine
+    - other cleanups
+
 Tue Oct 10 00:13:59 CEST 2006 (tk)
 ----------------------------------
   * shared/cfgparser.c: use OPT_QUOTESTR instead of OPT_STR in all cases

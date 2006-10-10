@@ -55,7 +55,6 @@
 #include "regex_list.h"
 #endif
 
-
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #include <limits.h>
 #include <stddef.h>
@@ -497,11 +496,12 @@ static int cli_initengine(struct cl_engine **engine, unsigned int options)
 	    cli_errmsg("Can't allocate memory for roots!\n");
 	    return CL_EMEM;
 	}
-#ifdef CL_EXPERIMENTAL
-	if(rc =phishing_init(*engine))
-		return rc;
-#endif
     }
+
+#ifdef CL_EXPERIMENTAL
+    if(rc = phishing_init(*engine))
+	return rc;
+#endif
 
     return CL_SUCCESS;
 }
@@ -608,43 +608,61 @@ static int cli_loaddb(FILE *fd, struct cl_engine **engine, unsigned int *signo, 
 }
 
 #ifdef CL_EXPERIMENTAL
-static int cli_loadwdb(struct cl_engine** engine,FILE* fd,unsigned int options)
+static int cli_loadwdb(FILE *fd, struct cl_engine **engine, unsigned int options)
 {
 	int ret = 0;
 
-	if((ret = cli_initengine(engine, options))) {
-		cl_free(*engine);
-		return ret;
+
+    if((ret = cli_initengine(engine, options))) {
+	cl_free(*engine);
+	return ret;
+    }
+
+    if(!(*engine)->whitelist_matcher) {
+	if(ret = init_whitelist(*engine)) {
+	    phishing_done(*engine);
+	    cl_free(*engine);
+	    return ret;
 	}
+    }
 
-	if(!(*engine)->whitelist_matcher)
-		if(ret = init_whitelist(*engine)) {
-	            whitelist_done(*engine);
-		    cl_free(*engine);
-		    return ret;
-		}
+    if((ret = load_regex_matcher((*engine)->whitelist_matcher, fd, options, 1))) {
+	phishing_done(*engine);
+	cl_free(*engine);
+	return ret;
+    }
 
-	return load_regex_matcher((*engine)->whitelist_matcher,fd,options);
+    return CL_SUCCESS;
 }
 
-static int cli_loadpdb(struct cl_engine** engine,FILE* fd,unsigned int options)
+static int cli_loadpdb(FILE *fd, struct cl_engine **engine, unsigned int options)
 {
 	int ret = 0;
 
-	if((ret = cli_initengine(engine, options))) {
-		cl_free(*engine);
-		return ret;
-	}
 
-	if(!(*engine)->domainlist_matcher)
-		if(ret = init_domainlist(*engine)) {
-	            domainlist_done(*engine);
-		    cl_free(*engine);
-		    return ret;
-		}
-	return load_regex_matcher((*engine)->domainlist_matcher,fd,options);
+    if((ret = cli_initengine(engine, options))) {
+	cl_free(*engine);
+	return ret;
+    }
+
+    if(!(*engine)->domainlist_matcher) {
+	if(ret = init_domainlist(*engine)) {
+	    phishing_done(*engine);
+	    cl_free(*engine);
+	    return ret;
+	}
+    }
+
+    if((ret = load_regex_matcher((*engine)->domainlist_matcher, fd, options, 0))) {
+	phishing_done(*engine);
+	cl_free(*engine);
+	return ret;
+    }
+
+    return CL_SUCCESS;
 }
 #endif
+
 static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo, unsigned short sdb, unsigned int options)
 {
 	char buffer[FILEBUFF], *sig, *virname, *offset, *pt;
@@ -1170,12 +1188,12 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
 #ifdef CL_EXPERIMENTAL
     } else if(cli_strbcasestr(filename, ".wdb")) {
 	if(!(options & CL_SCAN_NOPHISHING))
-	    ret = cli_loadwdb(engine, fd, options);
+	    ret = cli_loadwdb(fd, engine, options);
 	else
 	    skipped = 1;
     } else if(cli_strbcasestr(filename, ".pdb")) {
 	if(!(options & CL_SCAN_NOPHISHING))
-	    ret = cli_loadpdb(engine, fd, options);
+	    ret = cli_loadpdb(fd, engine, options);
 	else
 	    skipped = 1;
 #endif
@@ -1601,7 +1619,7 @@ void cl_free(struct cl_engine *engine)
     }
 
 #ifdef CL_EXPERIMENTAL
-   phishing_done(engine);
+    phishing_done(engine);
 #endif
     free(engine);
 }

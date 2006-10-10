@@ -997,8 +997,11 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 #ifdef CL_EXPERIMENTAL
 					} else if (strcmp(tag,"form") == 0 && hrefs->scanContents) {
 						const unsigned char* arg_action_value = html_tag_arg_value(&tag_args,"action");
-						if (arg_action_value)
+						if (arg_action_value) {
+							if(in_form_action) 
+								free(in_form_action);							
 							in_form_action = strdup(arg_action_value);
+						}
 #endif
 					} else if (strcmp(tag, "img") == 0) {
 						arg_value = html_tag_arg_value(&tag_args, "src");

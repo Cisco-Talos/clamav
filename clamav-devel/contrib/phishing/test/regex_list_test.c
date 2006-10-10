@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <check.h>
 #include <test-config.h>
+#include <clamav-config.h>
 #include "regex_list_test.h"
 #include <regex_list.h>
 static struct regex_list_test {
@@ -44,7 +45,23 @@ static struct regex_list_test {
 	{"http://ae.f.net","jj",1},
 	{"http://cb.f.com","jj",0},
 	{"http://abcf","jj",0},
-	{"virus.zip","viiirii.zip",0}
+	{"virus.zip","viiirii.zip",0},
+	{"http://testalnum_m","jj",0},
+	{"http://testalnum0m","jj",1},
+	{"http://testalnumAm","jj",1},
+	{"http://testalnumzm","jj",1},
+	{"http://testdig9m","jj",1},
+	{"http://testdigam","jj",0},	
+	{"http://testdigAm","jj",0},
+	{"http://testpAm","jj",0},
+	{"http://testp m","jj",0},
+	{"http://testpzm","jj",0},
+	{"http://testpZm","jj",0},
+	{"http://testp,m","jj",1},
+	{"http://testpzm","jj",0},	
+	/*TODO: alpha, graph, space, blank, lower, upper, cntrl, print, xdigit */
+	{"http://testing\tme","jj",1},
+	{"http://testing\\tme","jj",0}
 };
 /*static int regex_list_tests_cnt = sizeof(regex_list_tests)/sizeof(regex_list_tests[0]);*/
 static int regex_list_tests_i=-1;

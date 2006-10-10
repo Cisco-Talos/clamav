@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phish_whitelist.c,v $
+ *  Revision 1.6  2006/10/10 23:51:49  tkojm
+ *  apply patches for the anti-phish code from Edwin
+ *
  *  Revision 1.5  2006/10/07 13:55:01  tkojm
  *  fix handlers
  *
@@ -70,7 +73,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <assert.h>
 #include <string.h>
 #ifdef	HAVE_STRINGS_H
 #include <strings.h>
@@ -102,7 +104,7 @@
 int whitelist_match(const struct cl_engine* engine,const char* real_url,const char* display_url,int hostOnly)
 {
 	const char* info;/*unused*/
-	return	engine->whitelist_matcher ? regex_list_match(engine->whitelist_matcher,real_url,display_url,hostOnly,&info) : 0;
+	return	engine->whitelist_matcher ? regex_list_match(engine->whitelist_matcher,real_url,display_url,hostOnly,&info,1) : 0;
 }
 
 int init_whitelist(struct cl_engine* engine)
@@ -112,7 +114,7 @@ int init_whitelist(struct cl_engine* engine)
 		if(!engine->whitelist_matcher)
 			return CL_EMEM;
 		return	init_regex_list(engine->whitelist_matcher);
-}
+	}
 	else
 		return CL_ENULLARG;
 }
@@ -121,7 +123,6 @@ int is_whitelist_ok(const struct cl_engine* engine)
 {
 	return (engine && engine->whitelist_matcher) ? is_regex_ok(engine->whitelist_matcher) : 1;
 }
-
 
 void whitelist_cleanup(const struct cl_engine* engine)
 {

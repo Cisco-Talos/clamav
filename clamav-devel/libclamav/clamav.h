@@ -184,6 +184,7 @@ struct cl_engine {
     /* Phishing .pdb and .wdb databases*/
     void *whitelist_matcher;
     void *domainlist_matcher;
+    void *phishcheck;
 };
 
 struct cl_limits {

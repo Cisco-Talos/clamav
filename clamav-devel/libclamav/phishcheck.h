@@ -22,6 +22,9 @@
 #ifndef _PHISH_CHECK_H
 #define _PHISH_CHECK_H
 
+#ifdef	HAVE_REGEX_H
+#include <regex.h>
+#endif
 
 #define CL_PHISH_BASE 100
 enum phish_status {CL_PHISH_NODECISION=0,CL_PHISH_CLEAN=CL_PHISH_BASE, CL_PHISH_CLEANUP_OK,CL_PHISH_HOST_OK, CL_PHISH_DOMAIN_OK,
@@ -54,6 +57,15 @@ struct string {
 	char* data;
 };
 
+struct phishcheck {
+	regex_t preg;
+	regex_t preg_tld;
+	regex_t preg_cctld;
+	regex_t preg_numeric;
+	char*    url_regex;
+	int      is_disabled;
+};
+
 struct url_check {
 	struct string realLink;
 	struct string displayLink;
@@ -65,34 +77,33 @@ enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check*
 
 int whitelist_check(const struct cl_engine* engine,struct url_check* urls,int hostOnly);
 void url_check_init(struct url_check* urls);
-void get_host(struct string* dest,const char* URL,int isReal,int* phishy);
 void string_free(struct string* str);
 void string_assign(struct string* dest,struct string* src);
 void string_assign_c(struct string* dest,char* data);
 void string_assign_dup(struct string* dest,const char* start,const char* end);
 void string_assign_ref(struct string* dest,struct string* ref,char* data);
 void free_if_needed(struct url_check* url);
-void get_host(struct string* dest,const char* URL,int isReal,int* phishy);
-int isCountryCode(const char* str);
-int isTLD(const char* str,int len);
-void get_domain(struct string* dest,struct string* host);
+void get_host(const struct phishcheck* pchk,struct string* dest,const char* URL,int isReal,int* phishy);
+int isCountryCode(const struct phishcheck* s,const char* str);
+int isTLD(const struct phishcheck* s,const char* str,int len);
+void get_domain(const struct phishcheck* pchk,struct string* dest,struct string* host);
 int ip_reverse(struct url_check* urls,int isReal);
 void reverse_lookup(struct url_check* url,int isReal);
 int isNumeric(const char* host);
 int isSSL(const char* URL);
 void cleanupURL(struct string* URL,int isReal);
 void get_redirected_URL(struct string* URL);
-int isURL(const char* URL);
+int isURL(const struct phishcheck* pchk,const char* URL);
 enum phish_status cleanupURLs(struct url_check* urls);
-int isNumericURL(const char* URL);
-enum phish_status url_get_host(struct url_check* url,struct url_check* host_url,int isReal,int* phishy);
-void url_get_domain(struct url_check* url,struct url_check* domains);
+int isNumericURL(const struct phishcheck* pchk, const char* URL);
+enum phish_status url_get_host(const struct phishcheck* pchk, struct url_check* url,struct url_check* host_url,int isReal,int* phishy);
+void url_get_domain(const struct phishcheck* pchk, struct url_check* url,struct url_check* domains);
 enum phish_status phishy_map(int phishy,enum phish_status fallback);
 int isEncoded(const char* url);
 
-void phish_disable(const char* reason);
+void phish_disable(struct cl_engine* engine,const char* reason);
 /* Global, non-thread-safe functions, call only once! */
-void phishint_init(struct cl_engine* engine);
+int phishing_init(struct cl_engine* engine);
 void phishing_done(struct cl_engine* engine);
 /* end of non-thread-safe functions */
 
