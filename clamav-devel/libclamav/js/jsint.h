@@ -24,7 +24,7 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/jsint.h,v $
- * $Id: jsint.h,v 1.1 2006/10/09 15:52:19 njh Exp $
+ * $Id: jsint.h,v 1.2 2006/10/11 10:54:41 njh Exp $
  */
 
 #ifndef JSINT_H
@@ -1768,7 +1768,7 @@ struct js_interp_st
 };
 
 /* Declaration for the JS compiler byte-code. */
-extern unsigned char js_compiler_bytecode[];
+extern const unsigned char js_compiler_bytecode[];
 extern unsigned int js_compiler_bytecode_len;
 
 #ifdef __cplusplus
