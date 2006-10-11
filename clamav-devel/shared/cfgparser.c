@@ -139,7 +139,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 	}
     }
 
-    if((fs = fopen(cfgfile, "r")) == NULL) {
+    if((fs = fopen(cfgfile, "rb")) == NULL) {
 	/* do not print error message here! */
 	freecfg(copt);
 	return NULL;
