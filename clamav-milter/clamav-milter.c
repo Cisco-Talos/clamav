@@ -2,7 +2,7 @@
  * clamav-milter.c
  *	.../clamav-milter/clamav-milter.c
  *
- *  Copyright (C) 2003-2006 Nigel Horne <njh@bandsman.co.uk>
+ *  Copyright (C) 2003- Nigel Horne <njh@bandsman.co.uk>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.290 2006/09/28 12:36:45 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.291 2006/10/13 14:42:15 njh Exp $";
 
-#define	CM_VERSION	"devel-270906"
+#define	CM_VERSION	"devel-131006"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -85,6 +85,9 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.290 2006/09/28 12:36:45 nj
 #if	HAVE_RESOLV_H
 #include <arpa/nameser.h>	/* for HEADER */
 #include <resolv.h>
+#endif
+#ifdef	HAVE_UNISTD_H
+#include <unistd.h>
 #endif
 
 #if HAVE_MMAP
@@ -178,13 +181,13 @@ typedef	unsigned int	in_addr_t;
  */
 
 struct header_node_t {
-	char *header;
-	struct header_node_t *next;
+	char	*header;
+	struct	header_node_t *next;
 };
 
 struct header_list_struct {
-	struct header_node_t *first;
-	struct header_node_t *last;
+	struct	header_node_t *first;
+	struct	header_node_t *last;
 };
 
 typedef struct header_list_struct *header_list_t;
@@ -2565,92 +2568,113 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 	privdata = smfi_getpriv(ctx);
 
 	if(privdata == NULL) {
-		/* More than one message on this connection */
-		/* FIXME: if the last one sent a virus we should blacklist */
 		privdata = (struct privdata *)cli_calloc(1, sizeof(struct privdata));
 		if(privdata == NULL)
 			return cl_error;
-
-#ifdef	SESSION
-		privdata->dataSocket = -1;
-#else
-		privdata->dataSocket = privdata->cmdSocket = -1;
-#endif
-
 		if(smfi_setpriv(ctx, privdata) != MI_SUCCESS) {
 			free(privdata);
 			return cl_error;
 		}
-	}
+		if(max_children > 0) {
+			int rc = 0;
 
-	if(max_children > 0) {
-		int rc = 0;
+			pthread_mutex_lock(&n_children_mutex);
 
-		pthread_mutex_lock(&n_children_mutex);
-
-		/*
-		 * Wait a while since sendmail doesn't like it if we
-		 * take too long replying. Effectively this means that
-		 * max_children is more of a hint than a rule
-		 */
-		if(n_children >= max_children) {
-			struct timespec timeout;
-			struct timeval now;
-			struct timezone tz;
-
-			logg((dont_wait) ?
-					_("hit max-children limit (%u >= %u)\n") :
-					_("hit max-children limit (%u >= %u): waiting for some to exit\n"),
-				n_children, max_children);
-
-			if(dont_wait) {
-				pthread_mutex_unlock(&n_children_mutex);
-				smfi_setreply(ctx, "451", "4.3.2", _("AV system temporarily overloaded - please try later"));
-				free(privdata);
-				smfi_setpriv(ctx, NULL);
-				return SMFIS_TEMPFAIL;
-			}
 			/*
-			 * Wait for an amount of time for a child to go
-			 *
-			 * Use pthread_cond_timedwait rather than
-			 * pthread_cond_wait since the sendmail which calls
-			 * us will have a timeout that we don't want to exceed,
-			 * stops sendmail getting fidgety.
-			 *
-			 * Patch from Damian Menscher <menscher@uiuc.edu> to
-			 * ensure it wakes up when a child goes away
+			 * Wait a while since sendmail doesn't like it if we
+			 * take too long replying. Effectively this means that
+			 * max_children is more of a hint than a rule
 			 */
-			gettimeofday(&now, &tz);
-			do {
-				logg(_("n_children %d: waiting %d seconds for some to exit"),
-					n_children, child_timeout);
+			if(n_children >= max_children) {
+				struct timespec timeout;
+				struct timeval now;
+				struct timezone tz;
 
-				if(child_timeout == 0) {
-					pthread_cond_wait(&n_children_cond, &n_children_mutex);
-					rc = 0;
-				} else {
-					timeout.tv_sec = now.tv_sec + child_timeout;
-					timeout.tv_nsec = 0;
+				logg((dont_wait) ?
+						_("hit max-children limit (%u >= %u)\n") :
+						_("hit max-children limit (%u >= %u): waiting for some to exit\n"),
+					n_children, max_children);
 
-					rc = pthread_cond_timedwait(&n_children_cond, &n_children_mutex, &timeout);
+				if(dont_wait) {
+					pthread_mutex_unlock(&n_children_mutex);
+					smfi_setreply(ctx, "451", "4.3.2", _("AV system temporarily overloaded - please try later"));
+					free(privdata);
+					smfi_setpriv(ctx, NULL);
+					return SMFIS_TEMPFAIL;
 				}
-			} while((n_children >= max_children) && (rc != ETIMEDOUT));
-			logg(_("Finished waiting, n_children = %d\n"), n_children);
-		}
-		n_children++;
+				/*
+				 * Wait for an amount of time for a child to go
+				 *
+				 * Use pthread_cond_timedwait rather than
+				 * pthread_cond_wait since the sendmail which
+				 * calls us will have a timeout that we don't
+				 * want to exceed, stops sendmail getting
+				 * fidgety.
+				 *
+				 * Patch from Damian Menscher
+				 * <menscher@uiuc.edu> to ensure it wakes up
+				 * when a child goes away
+				 */
+				gettimeofday(&now, &tz);
+				do {
+					logg(_("n_children %d: waiting %d seconds for some to exit"),
+						n_children, child_timeout);
 
-		cli_dbgmsg(">n_children = %d\n", n_children);
-		pthread_mutex_unlock(&n_children_mutex);
+					if(child_timeout == 0) {
+						pthread_cond_wait(&n_children_cond, &n_children_mutex);
+						rc = 0;
+					} else {
+						timeout.tv_sec = now.tv_sec + child_timeout;
+						timeout.tv_nsec = 0;
 
-		if(child_timeout && (rc == ETIMEDOUT)) {
-#ifdef	CL_DEBUG
-			if(use_syslog)
-				syslog(LOG_NOTICE, _("Timeout waiting for a child to die"));
-#endif
-			cli_dbgmsg(_("Timeout waiting for a child to die\n"));
+						rc = pthread_cond_timedwait(&n_children_cond, &n_children_mutex, &timeout);
+					}
+				} while((n_children >= max_children) && (rc != ETIMEDOUT));
+				logg(_("Finished waiting, n_children = %d\n"), n_children);
+			}
+			n_children++;
+
+			cli_dbgmsg(">n_children = %d\n", n_children);
+			pthread_mutex_unlock(&n_children_mutex);
+
+			if(child_timeout && (rc == ETIMEDOUT))
+				logg(_("*Timeout waiting for a child to die\n"));
 		}
+
+	} else {
+		/* More than one message on this connection */
+		char ip[INET_ADDRSTRLEN];
+
+		strcpy(ip, privdata->ip);
+		if(isBlacklisted(ip)) {
+			logg("Rejected email from blacklisted IP %s\n", ip);
+
+			/*
+			 * TODO: Option to greylist rather than blacklist, by sending
+			 *	a try again code
+			 * TODO: state *which* virus
+			 */
+			smfi_setreply(ctx, "550", "5.7.1", _("Your IP is blacklisted because your machine is infected with a virus"));
+			broadcast(_("Blacklisted IP detected"));
+
+			/*
+			 * Keep them blacklisted
+			 */
+			pthread_mutex_lock(&blacklist_mutex);
+			(void)tableUpdate(blacklist, ip, (int)time((time_t *)0));
+			pthread_mutex_unlock(&blacklist_mutex);
+
+			return SMFIS_REJECT;
+		}
+		memset(privdata, '\0', sizeof(struct privdata));
+		strcpy(privdata->ip, ip);
 	}
+
+#ifdef	SESSION
+	privdata->dataSocket = -1;
+#else
+	privdata->dataSocket = privdata->cmdSocket = -1;
+#endif
 
 	/*
 	 * Rejection is via 550 until DATA is received. We know that
@@ -3626,7 +3650,7 @@ clamfi_eom(SMFICTX *ctx)
 			}
 		}
 	}
-	clamfi_cleanup(ctx);
+	/*clamfi_cleanup(ctx);*/
 
 	return rc;
 }
