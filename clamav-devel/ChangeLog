@@ -1,3 +1,9 @@
+Fri Oct 13 15:42:43 BST 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Fix compilation warning on FreeBSD
+  * clamav-milter:	Fix compilation error on FreeBSD
+			Blacklist multiple emails in the same connexion
+
 Wed Oct 11 01:05:37 CEST 2006 (tk)
 ----------------------------------
   * libclamav: apply patches for the anti-phish code from Edwin:
