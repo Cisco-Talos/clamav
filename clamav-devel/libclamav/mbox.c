@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.353 2006/10/10 21:28:00 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.354 2006/10/13 13:43:40 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -56,6 +56,10 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.353 2006/10/10 21:28:00 njh Exp $";
 #endif
 #include <limits.h>
 #include <signal.h>
+
+#ifdef	HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #include <stddef.h>
