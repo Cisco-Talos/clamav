@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.189 2006/10/10 21:28:00 njh Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.190 2006/10/13 21:47:44 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -60,7 +60,7 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.189 2006/10/10 21:28:00 njh Exp 
 
 #define	RFC2045LENGTH	76	/* maximum number of characters on a line */
 
-#ifdef	C_LINUX	/* Others??? */
+#ifdef	C_LINUX	/* Others??? Old linux, e.g. Red Hat 5.2, doesn't have this */
 #include <stdbool.h>
 #else
 #ifdef	FALSE
