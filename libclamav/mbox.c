@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.354 2006/10/13 13:43:40 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.355 2006/10/13 21:47:44 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -98,7 +98,7 @@ static	void	print_trace(int use_syslog);
 #define strtok_r(a,b,c)	strtok(a,b)
 #endif
 
-#ifdef	C_LINUX	/* Others??? */
+#ifdef	C_LINUX	/* Others??? Old linux, e.g. Red Hat 5.2, doesn't have this */
 #include <stdbool.h>
 #else
 #ifdef	FALSE
