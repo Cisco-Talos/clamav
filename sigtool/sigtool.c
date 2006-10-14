@@ -58,6 +58,7 @@
 #include "libclamav/str.h"
 #include "libclamav/ole2_extract.h"
 #include "libclamav/htmlnorm.h"
+#include "libclamav/sha256.h"
 
 #define MAX_DEL_LOOKAHEAD   50
 
@@ -161,9 +162,9 @@ static unsigned int countlines(const char *filename)
     return lines;
 }
 
-static char *getdsig(const char *host, const char *user, const char *data)
+static char *getdsig(const char *host, const char *user, const char *data, unsigned int datalen, unsigned short mode)
 {
-	char buff[256], cmd[128], pass[30], *pt;
+	char buff[512], cmd[128], pass[30], *pt;
         struct sockaddr_in server;
 	int sockd, bread, len;
 #ifdef HAVE_TERMIOS_H
@@ -229,11 +230,15 @@ static char *getdsig(const char *host, const char *user, const char *data)
 #endif
     mprintf("\n");
 
-    snprintf(cmd, sizeof(cmd) - 16, "ClamSign:%s:%s:", user, pass);
+    if(mode == 1)
+	snprintf(cmd, sizeof(cmd) - datalen, "ClamSignPSS:%s:%s:", user, pass);
+    else
+	snprintf(cmd, sizeof(cmd) - datalen, "ClamSign:%s:%s:", user, pass);
+
     len = strlen(cmd);
     pt = cmd + len;
-    memcpy(pt, data, 16);
-    len += 16;
+    memcpy(pt, data, datalen);
+    len += datalen;
 
     if(write(sockd, cmd, len) < 0) {
 	mprintf("!getdsig: Can't write to socket\n");
@@ -254,7 +259,7 @@ static char *getdsig(const char *host, const char *user, const char *data)
 	    close(sockd);
 	    return NULL;
 	} else {
-	    mprintf("Signature received (length = %d)\n", strlen(buff) - 10);
+	   /* mprintf("Signature received (length = %d)\n", strlen(buff) - 10); */
 	}
     }
 
@@ -315,7 +320,122 @@ static int writeinfo(const char *db, const char *header)
 }
 
 static int diffdirs(const char *old, const char *new, const char *patch);
-static int verifycdiff(const char *diff, const char *cvd, const char *incdir);
+static int verifydiff(const char *diff, const char *cvd, const char *incdir);
+
+static int script2cdiff(const char *script, const char *builder, struct optstruct *opt)
+{
+	char *cdiff, *pt, buffer[FILEBUFF];
+	unsigned char digest[32];
+	SHA256_CTX ctx;
+	struct stat sb;
+	FILE *scripth, *cdiffh;
+	gzFile *gzh;
+	unsigned int ver, osize;
+	int bytes;
+
+
+    if(stat(script, &sb) == -1) {
+	mprintf("!script2diff: Can't stat file %s\n", script);
+	return -1;
+    }
+    osize = (unsigned int) sb.st_size;
+
+    cdiff = strdup(script);
+    pt = strstr(cdiff, ".script");
+    if(!pt) {
+	mprintf("!script2cdiff: Incorrect file name (no .script extension)\n");
+	free(cdiff);
+	return -1;
+    }
+    strcpy(pt, ".cdiff");
+
+    if(!(pt = strchr(script, '-'))) {
+	mprintf("!script2cdiff: Incorrect file name syntax\n");
+	free(cdiff);
+	return -1;
+    }
+    sscanf(++pt, "%u.script", &ver);
+
+    if(!(cdiffh = fopen(cdiff, "wb"))) {
+	mprintf("!script2cdiff: Can't open %s for writing\n", cdiff);
+	free(cdiff);
+	return -1;
+    }
+
+    if(fprintf(cdiffh, "ClamAV-Diff:%u:%u:", ver, osize) < 0) {
+	mprintf("!script2cdiff: Can't write to %s\n", cdiff);
+	fclose(cdiffh);
+	free(cdiff);
+	return -1;
+    }
+    fclose(cdiffh);
+
+    if(!(scripth = fopen(script, "rb"))) {
+	mprintf("!script2cdiff: Can't open file %s for reading\n", script);
+	unlink(cdiff);
+	free(cdiff);
+	return -1;
+    }
+
+    if(!(gzh = gzopen(cdiff, "ab"))) {
+	mprintf("!script2cdiff: Can't open file %s for appending\n", cdiff);
+	unlink(cdiff);
+	free(cdiff);
+	fclose(scripth);
+	return -1;
+    }
+
+    while((bytes = fread(buffer, 1, sizeof(buffer), scripth)) > 0) {
+	if(!gzwrite(gzh, buffer, bytes)) {
+	    mprintf("!script2cdiff: Can't gzwrite to %s\n", cdiff);
+	    unlink(cdiff);
+	    free(cdiff);
+	    fclose(scripth);
+	    gzclose(gzh);
+	    return -1;
+	}
+    }
+    fclose(scripth);
+    gzclose(gzh);
+
+    if(!(cdiffh = fopen(cdiff, "rb"))) {
+	mprintf("!script2cdiff: Can't open %s for reading/writing\n", cdiff);
+	unlink(cdiff);
+	free(cdiff);
+	return -1;
+    }
+
+    sha256_init(&ctx);
+
+    while((bytes = fread(buffer, 1, sizeof(buffer), cdiffh)))
+	sha256_update(&ctx, (unsigned char *) buffer, bytes);
+
+    fclose(cdiffh);
+    sha256_final(&ctx);
+    sha256_digest(&ctx, digest);
+
+    if(!(pt = getdsig(opt_arg(opt, "server"), builder, (char *) digest, 32, 1))) {
+	mprintf("!script2cdiff: Can't get digital signature from remote server\n");
+	unlink(cdiff);
+	free(cdiff);
+	return -1;
+    }
+
+    if(!(cdiffh = fopen(cdiff, "ab"))) {
+	mprintf("!script2cdiff: Can't open %s for appending\n", cdiff);
+	unlink(cdiff);
+	free(cdiff);
+	return -1;
+    }
+    fprintf(cdiffh, ":%s", pt);
+    free(pt);
+    fclose(cdiffh);
+
+    mprintf("Created %s\n", cdiff);
+    free(cdiff);
+
+    return 0;
+}
 
 static int build(struct optstruct *opt)
 {
@@ -581,7 +701,7 @@ static int build(struct optstruct *opt)
     free(pt);
     rewind(tar);
 
-    if(!(pt = getdsig(opt_arg(opt, "server"), builder, buffer))) {
+    if(!(pt = getdsig(opt_arg(opt, "server"), builder, buffer, 16, 0))) {
 	mprintf("!build: Can't get digital signature from remote server\n");
 	unlink(gzfile);
 	free(gzfile);
@@ -642,10 +762,9 @@ static int build(struct optstruct *opt)
     }
     free(gzfile);
 
-    mprintf("Database %s created\n", pt);
+    mprintf("Created %s\n", pt);
 
     /* generate patch */
-    mprintf("Generating cdiff...\n");
     if(inc) {
 	pt = freshdbdir();
 	snprintf(olddb, sizeof(olddb), "%s/%s.inc", pt, dbname);
@@ -687,9 +806,9 @@ static int build(struct optstruct *opt)
     }
 
     if(!strcmp(dbname, "main"))
-	snprintf(patch, sizeof(patch), "main-%u.cdiff", version);
+	snprintf(patch, sizeof(patch), "main-%u.script", version);
     else
-	snprintf(patch, sizeof(patch), "daily-%u.cdiff", version);
+	snprintf(patch, sizeof(patch), "daily-%u.script", version);
 
     ret = diffdirs(olddb, pt, patch);
 
@@ -702,7 +821,7 @@ static int build(struct optstruct *opt)
 	return -1;
     }
 
-    ret = verifycdiff(patch, NULL, olddb);
+    ret = verifydiff(patch, NULL, olddb);
 
     if(!inc)
 	rmdirs(olddb);
@@ -715,6 +834,8 @@ static int build(struct optstruct *opt)
 	} else {
 	    mprintf("!Generated file is incorrect, renamed to %s\n", broken);
 	}
+    } else {
+	ret = script2cdiff(patch, builder, opt);
     }
 
     return ret;
@@ -1053,17 +1174,29 @@ static int vbadump(struct optstruct *opt)
     return 0;
 }
 
-static int runcdiff(struct optstruct *opt)
+static int rundiff(struct optstruct *opt)
 {
 	int fd, ret;
+	unsigned short mode;
+	const char *diff;
 
 
-    if((fd = open(opt_arg(opt, "run-cdiff"), O_RDONLY)) == -1) {
-	mprintf("!runcdiff: Can't open file %s\n", opt_arg(opt, "run-cdiff"));
+    diff = opt_arg(opt, "run-cdiff");
+    if(strstr(diff, ".cdiff")) {
+	mode = 1;
+    } else if(strstr(diff, ".script")) {
+	mode = 0;
+    } else {
+	mprintf("!rundiff: Incorrect file name (no .cdiff/.script extension)\n");
 	return -1;
     }
 
-    ret = cdiff_apply(fd);
+    if((fd = open(diff, O_RDONLY)) == -1) {
+	mprintf("!rundiff: Can't open file %s\n", diff);
+	return -1;
+    }
+
+    ret = cdiff_apply(fd, mode);
     close(fd);
 
     return ret;
@@ -1171,36 +1304,46 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
     return 0;
 }
 
-static int verifycdiff(const char *diff, const char *cvd, const char *incdir)
+static int verifydiff(const char *diff, const char *cvd, const char *incdir)
 {
 	char *tempdir, cwd[512], buff[1024], info[32], *md5, *pt;
 	const char *cpt;
 	FILE *fh;
 	int ret = 0, fd;
+	unsigned short mode;
 
+
+    if(strstr(diff, ".cdiff")) {
+	mode = 1;
+    } else if(strstr(diff, ".script")) {
+	mode = 0;
+    } else {
+	mprintf("!verifydiff: Incorrect file name (no .cdiff/.script extension)\n");
+	return -1;
+    }
 
     tempdir = cli_gentemp(NULL);
     if(!tempdir) {
-	mprintf("!verifycdiff: Can't generate temporary name for tempdir\n");
+	mprintf("!verifydiff: Can't generate temporary name for tempdir\n");
 	return -1;
     }
 
     if(mkdir(tempdir, 0700) == -1) {
-	mprintf("!verifycdiff: Can't create directory %s\n", tempdir);
+	mprintf("!verifydiff: Can't create directory %s\n", tempdir);
 	free(tempdir);
 	return -1;
     }
 
     if(cvd) {
 	if(cvd_unpack(cvd, tempdir) == -1) {
-	    mprintf("!verifycdiff: Can't unpack CVD file %s\n", cvd);
+	    mprintf("!verifydiff: Can't unpack CVD file %s\n", cvd);
 	    rmdirs(tempdir);
 	    free(tempdir);
 	    return -1;
 	}
     } else {
 	if(dircopy(incdir, tempdir) == -1) {
-	    mprintf("!verifycdiff: Can't copy dir %s to %s\n", incdir, tempdir);
+	    mprintf("!verifydiff: Can't copy dir %s to %s\n", incdir, tempdir);
 	    rmdirs(tempdir);
 	    free(tempdir);
 	    return -1;
@@ -1208,7 +1351,7 @@ static int verifycdiff(const char *diff, const char *cvd, const char *incdir)
     }
 
     if((fd = open(diff, O_RDONLY)) == -1) {
-	mprintf("!verifycdiff: Can't open diff file %s\n", diff);
+	mprintf("!verifydiff: Can't open diff file %s\n", diff);
 	rmdirs(tempdir);
 	free(tempdir);
 	return -1;
@@ -1217,15 +1360,15 @@ static int verifycdiff(const char *diff, const char *cvd, const char *incdir)
     getcwd(cwd, sizeof(cwd));
 
     if(chdir(tempdir) == -1) {
-	mprintf("!verifycdiff: Can't chdir to %s\n", tempdir);
+	mprintf("!verifydiff: Can't chdir to %s\n", tempdir);
 	rmdirs(tempdir);
 	free(tempdir);
 	close(fd);
 	return -1;
     }
 
-    if(cdiff_apply(fd) == -1) {
-	mprintf("!verifycdiff: Can't apply %s\n", diff);
+    if(cdiff_apply(fd, mode) == -1) {
+	mprintf("!verifydiff: Can't apply %s\n", diff);
 	chdir(cwd);
 	rmdirs(tempdir);
 	free(tempdir);
@@ -1242,7 +1385,7 @@ static int verifycdiff(const char *diff, const char *cvd, const char *incdir)
 	strcpy(info, "daily.info");
 
     if(!(fh = fopen(info, "r"))) {
-	mprintf("!verifycdiff: Can't open %s\n", info);
+	mprintf("!verifydiff: Can't open %s\n", info);
 	chdir(cwd);
 	rmdirs(tempdir);
 	free(tempdir);
@@ -1252,7 +1395,7 @@ static int verifycdiff(const char *diff, const char *cvd, const char *incdir)
     fgets(buff, sizeof(buff), fh);
 
     if(strncmp(buff, "ClamAV-VDB", 10)) {
-	mprintf("!verifycdiff: Incorrect info file %s\n", info);
+	mprintf("!verifydiff: Incorrect info file %s\n", info);
 	chdir(cwd);
 	rmdirs(tempdir);
 	free(tempdir);
@@ -1262,18 +1405,18 @@ static int verifycdiff(const char *diff, const char *cvd, const char *incdir)
     while(fgets(buff, sizeof(buff), fh)) {
 	cli_chomp(buff);
 	if(!(pt = strchr(buff, ':'))) {
-	    mprintf("!verifycdiff: Incorrect format of %s\n", info);
+	    mprintf("!verifydiff: Incorrect format of %s\n", info);
 	    ret = -1;
 	    break;
 	}
 	*pt++ = 0;
 	if(!(md5 = cli_md5file(buff))) {
-	    mprintf("!verifycdiff: Can't generate MD5 for %s\n", buff);
+	    mprintf("!verifydiff: Can't generate MD5 for %s\n", buff);
 	    ret = -1;
 	    break;
 	}
 	if(strcmp(pt, md5)) {
-	    mprintf("!verifycdiff: %s has incorrect checksum\n", buff);
+	    mprintf("!verifydiff: %s has incorrect checksum\n", buff);
 	    ret = -1;
 	    break;
 	}
@@ -1342,7 +1485,7 @@ static int diffdirs(const char *old, const char *new, const char *patch)
     closedir(dd);
 
     fclose(diff);
-    mprintf("Generated cdiff file %s\n", patch);
+    mprintf("Generated diff file %s\n", patch);
     chdir(cwd);
 
     return 0;
@@ -1425,9 +1568,9 @@ static int makediff(struct optstruct *opt)
     }
 
     if(strstr(opt->filename, "main"))
-	snprintf(name, sizeof(name), "main-%u.cdiff", newver);
+	snprintf(name, sizeof(name), "main-%u.script", newver);
     else
-	snprintf(name, sizeof(name), "daily-%u.cdiff", newver);
+	snprintf(name, sizeof(name), "daily-%u.script", newver);
 
     ret = diffdirs(odir, ndir, name);
 
@@ -1439,7 +1582,7 @@ static int makediff(struct optstruct *opt)
     if(ret == -1)
 	return -1;
 
-    if(verifycdiff(name, opt_arg(opt, "diff"), NULL) == -1) {
+    if(verifydiff(name, opt_arg(opt, "diff"), NULL) == -1) {
 	snprintf(broken, sizeof(broken), "%s.broken", name);
 	if(rename(name, broken)) {
 	    unlink(name);
@@ -1565,7 +1708,7 @@ int main(int argc, char **argv)
     else if(opt_check(opt, "diff"))
 	ret = makediff(opt);
     else if(opt_check(opt, "run-cdiff"))
-	ret = runcdiff(opt);
+	ret = rundiff(opt);
     else if(opt_check(opt, "verify-cdiff")) {
 	if(!opt->filename) {
 	    mprintf("!--verify-cdiff requires two arguments\n");
@@ -1576,9 +1719,9 @@ int main(int argc, char **argv)
 		ret = -1;
 	    } else {
 		if(S_ISDIR(sb.st_mode))
-		    ret = verifycdiff(opt_arg(opt, "verify-cdiff"), NULL, opt->filename);
+		    ret = verifydiff(opt_arg(opt, "verify-cdiff"), NULL, opt->filename);
 		else
-		    ret = verifycdiff(opt_arg(opt, "verify-cdiff"), opt->filename, NULL);
+		    ret = verifydiff(opt_arg(opt, "verify-cdiff"), opt->filename, NULL);
 	    }
 	}
     } else

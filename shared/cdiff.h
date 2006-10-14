@@ -20,6 +20,6 @@
 #ifndef __CDIFF_H
 #define __CDIFF_H
 
-int cdiff_apply(int fd);
+int cdiff_apply(int fd, unsigned short mode);
 
 #endif

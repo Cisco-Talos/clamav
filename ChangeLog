@@ -1,3 +1,12 @@
+Sat Oct 14 23:09:12 CEST 2006 (tk)
+----------------------------------
+  * libclamav/dsig.c: new function cli_versigpss(): digital signature
+		      verification based on RSASSA-PSS with 2048 bit RSA
+		      key and SHA256 hash function
+  * libclamav/sha256.[ch]: new files (SHA256 implementation from mhash)
+  * sigtool/sigtool.c: genetate compressed and signed .cdiff files
+  * shared/cdiff.c: handle new .cdiff files
+
 Fri Oct 13 15:42:43 BST 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Fix compilation warning on FreeBSD

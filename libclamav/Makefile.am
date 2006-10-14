@@ -150,6 +150,8 @@ libclamav_la_SOURCES = \
 	phish_whitelist.c \
 	phish_whitelist.h \
 	regex_list.c \
-	regex_list.h
+	regex_list.h \
+	sha256.c \
+	sha256.h
 
 lib_LTLIBRARIES = libclamav.la

@@ -730,7 +730,7 @@ static int getpatch(const char *dbname, int version, const char *hostname, char 
 	return 55;
     }
 
-    if(cdiff_apply(fd) == -1) {
+    if(cdiff_apply(fd, 1) == -1) {
 	logg("!getpatch: Can't apply patch\n");
 	close(fd);
         unlink(tempname);

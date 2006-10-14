@@ -21,5 +21,6 @@
 #define __DSIG_H
 
 int cli_versig(const char *md5, const char *dsig);
+int cli_versigpss(const unsigned char *sha256, const char *dsig);
 
 #endif
