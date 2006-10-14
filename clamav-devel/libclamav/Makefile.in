@@ -87,7 +87,8 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	binhex.lo is_tar.lo tnef.lo unrar15.lo unrarvm.lo unrar.lo \
 	unrarfilter.lo unrarppm.lo unrar20.lo unrarcmd.lo pdf.lo \
 	spin.lo yc.lo elf.lo sis.lo uuencode.lo pst.lo phishcheck.lo \
-	phish_domaincheck_db.lo phish_whitelist.lo regex_list.lo
+	phish_domaincheck_db.lo phish_whitelist.lo regex_list.lo \
+	sha256.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -350,7 +351,9 @@ libclamav_la_SOURCES = \
 	phish_whitelist.c \
 	phish_whitelist.h \
 	regex_list.c \
-	regex_list.h
+	regex_list.h \
+	sha256.c \
+	sha256.h
 
 lib_LTLIBRARIES = libclamav.la
 all: all-am
@@ -458,6 +461,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rebuildpe.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regex_list.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scanners.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sha256.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sis.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/snprintf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/special.Plo@am__quote@

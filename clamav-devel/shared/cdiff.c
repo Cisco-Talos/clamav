@@ -32,11 +32,18 @@
 #include "shared/memory.h"
 #include "shared/misc.h"
 #include "shared/output.h"
+#include "shared/cdiff.h"
 
 #include "libclamav/str.h"
 #include "libclamav/others.h"
 #include "libclamav/cvd.h"
+#include "libclamav/sha256.h"
 
+#ifdef HAVE_GMP
+#include "libclamav/dsig.h"
+#endif
+
+#include "zlib.h"
 
 struct cdiff_node {
     unsigned int lineno;
@@ -383,7 +390,7 @@ static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx)
 		    fclose(tmpfh);
 		    unlink(tmp);
 		    free(tmp);
-		    logg("!cdiff_cmd_close: Can't apply DEL at line %d\n", lines);
+		    logg("!cdiff_cmd_close: Can't apply DEL at line %d of %s\n", lines, ctx->open_db);
 		    return -1;
 		}
 
@@ -397,7 +404,7 @@ static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx)
 		    fclose(tmpfh);
 		    unlink(tmp);
 		    free(tmp);
-		    logg("!cdiff_cmd_close: Can't apply XCHG at line %d\n", lines);
+		    logg("!cdiff_cmd_close: Can't apply XCHG at line %d of %s\n", lines, ctx->open_db);
 		    return -1;
 		}
 
@@ -709,83 +716,211 @@ static int cdiff_cmd_unlink(const char *cmdstr, struct cdiff_ctx *ctx)
     return 0;
 }
 
-int cdiff_apply(int fd)
+static int cdiff_execute(const char *cmdstr, struct cdiff_ctx *ctx)
+{
+	char *cmd_name, *tmp;
+	int (*cmd_handler)(const char *, struct cdiff_ctx *) = NULL;
+	unsigned int i;
+
+
+    cmd_name = cdiff_token(cmdstr, 0, 0);
+    if(!cmd_name) {
+	logg("!cdiff_apply: Problem parsing line\n");
+	return -1;
+    }
+
+    for(i = 0; commands[i].name; i++) {
+	if(!strcmp(commands[i].name, cmd_name)) {
+	    cmd_handler = commands[i].handler;
+	    break;
+	}
+    }
+
+    if(!cmd_handler) {
+	logg("!cdiff_apply: Unknown command %s\n", cmd_name);
+	free(cmd_name);
+	return -1;
+    }
+
+    if(!(tmp = cdiff_token(cmdstr, commands[i].argc, 1))) {
+	logg("!cdiff_apply: Not enough arguments for %s\n", cmd_name);
+	free(cmd_name);
+	return -1;
+    }
+    free(tmp);
+
+    if(cmd_handler(cmdstr, ctx)) {
+	logg("!cdiff_apply: Can't execute command %s\n", cmd_name);
+	free(cmd_name);
+	return -1;
+    }
+
+    free(cmd_name);
+    return 0;
+}
+
+int cdiff_apply(int fd, unsigned short mode)
 {
 	struct cdiff_ctx ctx;
 	FILE *fh;
-	char line[1024], *cmd_name, *tmp;
-	int (*cmd_handler)(const char *, struct cdiff_ctx *);
+	gzFile *gzh;
+	char line[1024], buff[FILEBUFF], *dsig = NULL;
 	unsigned int lines = 0, cmds = 0;
-	int i, desc;
+	int end, i;
+	struct stat sb;
+	int desc;
+#ifdef HAVE_GMP
+	SHA256_CTX sha256ctx;
+	unsigned char digest[32];
+	int sum, bread;
+#define DSIGBUFF 350
+#endif
 
+    memset(&ctx, 0, sizeof(ctx));
 
     if((desc = dup(fd)) == -1) {
 	logg("!cdiff_apply: Can't duplicate descriptor %d\n", fd);
 	return -1;
     }
 
-    if(!(fh = fdopen(desc, "r"))) {
-	logg("!cdiff_apply: fdopen() failed for descriptor %d\n", desc);
-	close(desc);
-	return -1;
-    }
+    if(mode == 1) { /* .cdiff */
 
-    memset(&ctx, 0, sizeof(ctx));
-
-    while(fgets(line, sizeof(line), fh)) {
-	lines++;
-	cli_chomp(line);
-	cmd_handler = NULL;
-
-	if(line[0] == '#' || !strlen(line))
-	    continue;
-
-	cmd_name = cdiff_token(line, 0, 0);
-	if(!cmd_name) {
-	    logg("!cdiff_apply: Problem parsing line %d\n", lines);
-	    fclose(fh);
-	    cdiff_ctx_free(&ctx);
+	if(lseek(desc, -DSIGBUFF, SEEK_END) == -1) {
+	    logg("!cdiff_apply: lseek(desc, %d, SEEK_END) failed\n", -DSIGBUFF);
+	    close(desc);
 	    return -1;
 	}
 
-	for(i = 0; commands[i].name; i++) {
-	    if(!strcmp(commands[i].name, cmd_name)) {
-		cmd_handler = commands[i].handler;
+	memset(line, 0, sizeof(line));
+	if(read(desc, line, DSIGBUFF) != DSIGBUFF) {
+	    logg("!cdiff_apply: Can't read %d bytes\n", DSIGBUFF);
+	    close(desc);
+	    return -1;
+	}
+
+	for(i = DSIGBUFF - 1; i >= 0; i--) {
+	    if(line[i] == ':') {
+		dsig = &line[i + 1];
 		break;
 	    }
 	}
 
-	if(!cmd_handler) {
-	    logg("!cdiff_apply: Unknown command %s at line %d\n", cmd_name, lines);
-	    free(cmd_name);
-	    fclose(fh);
-	    cdiff_ctx_free(&ctx);
+	if(!dsig) {
+	    logg("!cdiff_apply: No digital signature in cdiff file\n");
+	    close(desc);
 	    return -1;
 	}
 
-	if(!(tmp = cdiff_token(line, commands[i].argc, 1))) {
-	    logg("!cdiff_apply: Not enough arguments for %s at line %d\n", cmd_name, lines);
-	    free(cmd_name);
-	    fclose(fh);
-	    cdiff_ctx_free(&ctx);
+	if(fstat(desc, &sb) == -1) {
+	    logg("!cdiff_apply: Can't fstat file\n");
+	    close(desc);
 	    return -1;
 	}
-	free(tmp);
 
-	if(cmd_handler(line, &ctx)) {
-	    logg("!cdiff_apply: Can't execute command %s at line %d\n", cmd_name, lines);
-	    fclose(fh);
-	    free(cmd_name);
-	    cdiff_ctx_free(&ctx);
+	end = sb.st_size - (DSIGBUFF - i);
+	if(end < 0) {
+	    logg("!cdiff_apply: compressed data end offset < 0\n");
+	    close(desc);
 	    return -1;
-	} else {
-	    cmds++;
 	}
 
-	free(cmd_name);
+	if(lseek(desc, 0, SEEK_SET) == -1) {
+	    logg("!cdiff_apply: lseek(desc, 0, SEEK_SET) failed\n");
+	    close(desc);
+	    return -1;
+	}
+
+#ifdef HAVE_GMP
+	sha256_init(&sha256ctx);
+	sum = 0;
+	while((bread = read(desc, buff, FILEBUFF)) > 0) {
+	    if(sum + bread >= end) {
+		sha256_update(&sha256ctx, (unsigned char *) buff, end - sum);
+		break;
+	    } else {
+		sha256_update(&sha256ctx, (unsigned char *) buff, bread);
+	    }
+	    sum += bread;
+	}
+	sha256_final(&sha256ctx);
+	sha256_digest(&sha256ctx, digest);
+
+	if(cli_versigpss(digest, dsig)) {
+	    logg("!cdiff_apply: Incorrect digital signature\n");
+	    close(desc);
+	    return -1;
+	}
+#endif
+
+	if(lseek(desc, 0, SEEK_SET) == -1) {
+	    logg("!cdiff_apply: lseek(desc, 0, SEEK_SET) failed\n");
+	    close(desc);
+	    return -1;
+	}
+
+	i = 0;
+	while(read(desc, buff, 1) > 0)
+	    if(buff[0] == ':')
+		if(++i == 3)
+		    break;
+
+	if(i != 3) {
+	    logg("!cdiff_apply: Incorrect file format\n");
+	    close(desc);
+	    return -1;
+	}
+
+	if(!(gzh = gzdopen(desc, "rb"))) {
+	    logg("!cdiff_apply: Can't gzdopen descriptor %d\n", desc);
+	    close(desc);
+	    return -1;
+	}
+
+	while(gzgets(gzh, line, sizeof(line))) {
+	    lines++;
+	    cli_chomp(line);
+
+	    if(line[0] == '#' || !strlen(line))
+		continue;
+
+	    if(cdiff_execute(line, &ctx) == -1) {
+		logg("!cdiff_apply: Error executing command at line %d\n", lines);
+		cdiff_ctx_free(&ctx);
+		gzclose(gzh);
+		return -1;
+	    } else {
+		cmds++;
+	    }
+	}
+	gzclose(gzh);
+
+    } else { /* .script */
+
+	if(!(fh = fdopen(desc, "r"))) {
+	    logg("!cdiff_apply: fdopen() failed for descriptor %d\n", desc);
+	    close(desc);
+	    return -1;
+	}
+
+	while(fgets(line, sizeof(line), fh)) {
+	    lines++;
+	    cli_chomp(line);
+
+	    if(line[0] == '#' || !strlen(line))
+		continue;
+
+	    if(cdiff_execute(line, &ctx) == -1) {
+		logg("!cdiff_apply: Error executing command at line %d\n", lines);
+		cdiff_ctx_free(&ctx);
+		fclose(fh);
+		return -1;
+	    } else {
+		cmds++;
+	    }
+	}
+
+	fclose(fh);
     }
-
-    fclose(fh);
 
     if(ctx.open_db) {
 	logg("*cdiff_apply: File %s was not properly closed\n", ctx.open_db);
