@@ -499,7 +499,7 @@ static int cli_initengine(struct cl_engine **engine, unsigned int options)
     }
 
 #ifdef CL_EXPERIMENTAL
-    if(rc = phishing_init(*engine))
+    if((rc = phishing_init(*engine)))
 	return rc;
 #endif
 
@@ -619,7 +619,7 @@ static int cli_loadwdb(FILE *fd, struct cl_engine **engine, unsigned int options
     }
 
     if(!(*engine)->whitelist_matcher) {
-	if(ret = init_whitelist(*engine)) {
+	if((ret = init_whitelist(*engine))) {
 	    phishing_done(*engine);
 	    cl_free(*engine);
 	    return ret;
@@ -646,7 +646,7 @@ static int cli_loadpdb(FILE *fd, struct cl_engine **engine, unsigned int options
     }
 
     if(!(*engine)->domainlist_matcher) {
-	if(ret = init_domainlist(*engine)) {
+	if((ret = init_domainlist(*engine))) {
 	    phishing_done(*engine);
 	    cl_free(*engine);
 	    return ret;
