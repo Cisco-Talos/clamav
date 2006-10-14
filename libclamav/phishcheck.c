@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.14  2006/10/14 23:52:01  tkojm
+ *  code cleanup
+ *
  *  Revision 1.13  2006/10/10 23:51:49  tkojm
  *  apply patches for the anti-phish code from Edwin
  *
@@ -378,7 +381,8 @@ void string_free(struct string* str)
 			if(str->ref)/* don't free, this is a portion of another string */
 				str=str->ref;/* try to free that one*/
 			else {
-				free(str->data);
+				if(str->data)
+					free(str->data);
 				break;
 			}
 		}
@@ -416,9 +420,11 @@ static inline void string_init_c(struct string* dest,char* data)
 }
 
 /* make a copy of the string between start -> end*/
-void string_assign_dup(struct string* dest,const char* start,const char* end)
+int string_assign_dup(struct string* dest,const char* start,const char* end)
 {
 	char*	    ret  = cli_malloc(end-start+1);
+	if(!ret)
+		return CL_EMEM;
 	strncpy(ret,start,end-start);
 	ret[end-start]='\0';
 
@@ -426,6 +432,7 @@ void string_assign_dup(struct string* dest,const char* start,const char* end)
 	dest->data=ret;
 	dest->refcount=1;
 	dest->ref=NULL;
+	return CL_SUCCESS;
 }
 
 static inline void string_assign_null(struct string* dest)
@@ -470,21 +477,21 @@ static int build_regex(regex_t* preg,const char* regex,int nosub)
 			cli_errmsg("Error in compiling regex:%s\nDisabling phishing checks\n",errbuf);
 			free(errbuf);
 		} else
-			cli_errmsg("Error in compiling regex, disabling phishing checks\n");
+			cli_errmsg("Error in compiling regex, disabling phishing checks. Additionaly an Out-of-memory error was encountered while generating a detailed error message\n");
 #endif
 		return 1;
 	}
-	return 0;
+	return CL_SUCCESS;
 }
 
 /*static regex_t* host_preg = NULL;
 static const char* host_regex="cid:.+|mailto:(.+)|([[:alpha:]]+://)?(([^:/?]+@)+([^:/?]+)([:/?].+)?|([^@:/?]+)([:/?].+)?)"; <- this is slower than the function below
 */
 /* allocates memory */
-void get_host(const struct phishcheck* s,struct string* dest,const char* URL,int isReal,int* phishy)
+int get_host(const struct phishcheck* s,struct string* dest,const char* URL,int isReal,int* phishy)
 {
 	const char mailto[] = "mailto:";
-	int ismailto = 0;
+	int rc,ismailto = 0;
 	const char* start;
 	const char* end=NULL;
 	if(!URL) {
@@ -536,7 +543,10 @@ void get_host(const struct phishcheck* s,struct string* dest,const char* URL,int
 
 			if(realhost) {
 				const char* tld = strrchr(realhost,'.');
-				if(tld && isTLD(s,tld,tld-realhost-1))
+				rc = tld ? isTLD(s,tld,tld-realhost-1) : 0;
+				if(rc < 0)
+					return rc;
+				if(rc)
 					*phishy |= PHISHY_USERNAME_IN_URL;/* if the url contains a username that is there just to fool people,
 					like http://www.ebay.com@somevilplace.someevildomain.com/ */
 				start=realhost+1;/*skip the username*/
@@ -553,7 +563,8 @@ void get_host(const struct phishcheck* s,struct string* dest,const char* URL,int
 			end  = start + strlen(start);
 	}
 
-	string_assign_dup(dest,start,end);
+	if(rc = string_assign_dup(dest,start,end))
+		return rc;
 }
 
 int isCountryCode(const struct phishcheck* s,const char* str)
@@ -568,11 +579,14 @@ int isTLD(const struct phishcheck* pchk,const char* str,int len)
 	else {
 		char*	s  = cli_malloc(len+1);
 		int rc;
+
+		if(!s)
+			return CL_EMEM;
 		strncpy(s,str,len);
 		s[len]='\0';
 		rc = !regexec(&pchk->preg_tld,s,0,NULL,0);
 		free(s);
-		return rc;
+		return rc ? 1 : 0;
 	}
 }
 
@@ -689,7 +703,8 @@ str_hex_to_char(char **begin, const char **end)
 	char *sbegin = *begin;
 	const char *str_end = *end;
 
-	massert(str_end>sbegin);
+	if(str_end <= sbegin)
+		return;
 
 	if(strlen(sbegin) <= 2)
 		return;
@@ -725,10 +740,8 @@ str_strip(char **begin, const char **end, const char *what, size_t what_len)
 	const char *str_end_what;
 	size_t cmp_len = what_len;
 
-	if(begin == NULL)
+	if(begin == NULL || str_end <= sbegin)
 		return;
-
-	massert(str_end > sbegin);
 
 	/*if(str_end < (sbegin + what_len))
 		return;*/
@@ -831,7 +844,7 @@ str_fixup_spaces(char **begin, const char **end)
 }
 
 /* allocates memory */
-void
+int
 cleanupURL(struct string *URL, int isReal)
 {
 	char *begin = URL->data;
@@ -866,6 +879,8 @@ cleanupURL(struct string *URL, int isReal)
 	else {
 		size_t host_len;
 		char* host_begin;
+		int rc;
+
 		str_replace(begin,end,'\\','/');
 		str_strip(&begin,&end,"\"",1);
 		str_strip(&begin,&end,lt,lt_len);
@@ -880,7 +895,8 @@ cleanupURL(struct string *URL, int isReal)
 		/* convert %xx to real value */
 		str_hex_to_char(&begin,&end);
 		str_fixup_spaces(&begin,&end);
-		string_assign_dup(URL,begin,end+1);
+		if (rc = string_assign_dup(URL,begin,end+1))
+			return rc;
 		/*cli_dbgmsg("%p::%s\n",URL->data,URL->data);*/
 	}
 }
@@ -926,7 +942,11 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 				blobClose(hrefs->contents[i]);
 			}*/
 			string_init_c(&urls.displayLink,(char*)blobGetData(hrefs->contents[i]));
-			massert(!urls.displayLink.data[blobGetDataSize(hrefs->contents[i])-1]);
+
+			if (urls.displayLink.data[blobGetDataSize(hrefs->contents[i])-1]) {
+				cli_warnmsg("urls.displayLink.data[...]");
+				return CL_CLEAN;
+			}
 /*			massert(strlen(urls.displayLink.data) < blobGetDataSize(hrefs->contents[i]));*/
 			urls.realLink.refcount=-1;
 			urls.displayLink.refcount=-1;/*don't free these, caller will free*/
@@ -995,7 +1015,9 @@ static char* str_compose(const char* a,const char* b,const char* c)
 	const size_t b_len = strlen(b);
 	const size_t c_len = strlen(c);
 	const size_t r_len = a_len+b_len+c_len+1;
-	char* concated = malloc(r_len);
+	char* concated = cli_malloc(r_len);
+	if(!concated)
+		return NULL;
 	strncpy(concated,a,a_len);
 	strncpy(concated+a_len,b,b_len);
 	strncpy(concated+a_len+b_len,c,c_len);
@@ -1026,6 +1048,8 @@ int phishing_init(struct cl_engine* engine)
 	}
 	else {
 		pchk = engine->phishcheck;
+		if(!pchk)
+			return CL_ENULLARG;
 		if(!pchk->is_disabled) {
 			/* already initialized */
 			return CL_SUCCESS;
@@ -1123,7 +1147,7 @@ enum phish_status cleanupURLs(struct url_check* urls)
 	return CL_PHISH_NODECISION;
 }
 
-enum phish_status url_get_host(const struct phishcheck* pchk, struct url_check* url,struct url_check* host_url,int isReal,int* phishy)
+int url_get_host(const struct phishcheck* pchk, struct url_check* url,struct url_check* host_url,int isReal,int* phishy)
 {
 	struct string* host = isReal ? &host_url->realLink : &host_url->displayLink;
 	get_host(pchk, host, isReal ? url->realLink.data : url->displayLink.data, isReal, phishy);
@@ -1205,7 +1229,8 @@ enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check*
 		return CL_PHISH_CLEAN;/* displayed and real URL are identical -> clean */
 
 	if((rc = cleanupURLs(urls))) {
-		massert(!isPhishing(rc));/* not allowed to decide this is phishing */
+		if(isPhishing(rc))/* not allowed to decide this is phishing */
+			return CL_PHISH_CLEAN;
 		return rc;/* URLs identical after cleanup */
 	}
 
@@ -1223,7 +1248,8 @@ enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check*
 
 	if((rc = url_get_host(pchk, urls,&host_url,DOMAIN_DISPLAY,&phishy))) {
 		free_if_needed(&host_url);
-		massert(!isPhishing(rc));
+		if(isPhishing(rc))
+			return CL_PHISH_CLEAN;
 		return rc;
 	}
 

@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: regex_list.c,v $
+ *  Revision 1.10  2006/10/14 23:52:02  tkojm
+ *  code cleanup
+ *
  *  Revision 1.9  2006/10/10 23:51:49  tkojm
  *  apply patches for the anti-phish code from Edwin
  *
@@ -570,7 +573,7 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 		pattern[0]='\0';
 		flags = buffer+1;
 		pattern++;
-		if((buffer[0] == 'R' && !is_whitelist) || (buffer[0] == 'X' && !is_whitelist)) {/*regex*/
+		if((buffer[0] == 'R' && !is_whitelist) || (buffer[0] == 'X' && is_whitelist)) {/*regex*/
 			if(( rc = add_pattern(matcher,(const unsigned char*)pattern,flags) ))
 				return rc==CL_EMEM ? CL_EMEM : CL_EMALFDB;
 		}
@@ -740,13 +743,17 @@ void regex_list_done(struct regex_matcher* matcher)
 
 	regex_list_cleanup(matcher);
 	if(matcher->list_loaded) {
-		cli_ac_free(matcher->root_hosts);
-		free(matcher->root_hosts);
-		matcher->root_hosts=NULL;
+		if(matcher->root_hosts) {
+			cli_ac_free(matcher->root_hosts);
+			free(matcher->root_hosts);
+			matcher->root_hosts=NULL;
+		}
 
-		cli_ac_free(matcher->root_urls);
-		free(matcher->root_urls);
-		matcher->root_urls=NULL;
+		if(matcher->root_urls) {
+			cli_ac_free(matcher->root_urls);
+			free(matcher->root_urls);
+			matcher->root_urls=NULL;
+		}
 
 		matcher->list_built=0;
 		destroy_tree(matcher);
@@ -951,7 +958,7 @@ static const unsigned char* find_regex_start(const unsigned char* pat)
 		if(token.type!=TOKEN_REGEX) {
 			last = tmp;
 			lasttype = token.type;
-			if(token.type==TOKEN_BRACKET)
+			if(token.type==TOKEN_BRACKET && token.u.bitmap)
 				free(token.u.bitmap);
 			if(token.type==TOKEN_ALT || token.type==TOKEN_PAR_OPEN) {
 				/* save this position on stack, succesfully parsed till here*/
@@ -1233,6 +1240,8 @@ static int add_pattern(struct regex_matcher* matcher,const unsigned char* pat,co
 					if(charclass == std_class_cnt) {/*not a std char class*/
 						new->op = OP_CUSTOMCLASS;
 						new->u.children = cli_malloc(sizeof(new->u.children[0])*2);
+						if(!new->u.children)
+							return CL_EMEM;
 						new->u.bitmap[0] = token.u.bitmap;
 						new->u.bitmap[1] = NULL;
 						tree_node_insert_nonbin(node,new);
@@ -1259,17 +1268,23 @@ static int add_pattern(struct regex_matcher* matcher,const unsigned char* pat,co
 			case TOKEN_REGEX:
 			case TOKEN_DONE: {
 						 struct leaf_info* leaf=cli_malloc(sizeof(*leaf));
+						 if(!leaf)
+							 return CL_EMEM;
 						 leaf->info=strdup(info);
 						 if(token.type==TOKEN_REGEX) {
 							 int rc;
 							 struct tree_node* new;
 							 regex_t* preg;
 							 preg=cli_malloc(sizeof(*preg));
+							 if(!preg)
+								 return CL_EMEM;
 							 rc = regcomp(preg,(const char*)token.u.start,REG_EXTENDED|(bol?0:REG_NOTBOL));
 							 leaf->preg=preg;
 							 if(rc)
 								 return rc;
 							 new=cli_malloc(sizeof(*new));
+							 if(!new)
+								 return CL_EMEM;
 							 new->op=OP_LEAF;
 							 new->next=node;
 							 new->alternatives=0;
@@ -1511,7 +1526,8 @@ static void destroy_tree(struct regex_matcher* matcher)
 	destroy_tree_internal(matcher,matcher->root_regex);
 	while (matcher->node_stack.cnt) {
 		struct tree_node* node = stack_pop(&matcher->node_stack);
-		free(node);
+		if(node)
+			free(node);
 	}
 }
 #ifndef NDEBUG
