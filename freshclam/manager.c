@@ -638,7 +638,7 @@ static int getcvd(const char *dbfile, const char *hostname, char *ip, const char
     }
 
     if(cvd->version < newver) {
-	logg("!Mirrors are not fully synchronized. Please try again later.\n");
+	logg("^Mirror %s is not synchronized.\n", ip);
     	cl_cvdfree(cvd);
 	unlink(tempname);
 	free(tempname);
