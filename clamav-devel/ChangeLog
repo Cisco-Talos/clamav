@@ -1,3 +1,8 @@
+Sun Oct 15 01:56:34 CEST 2006 (tk)
+----------------------------------
+  * clamd: s/PhishingScanAllDomains/PhishingStrictURLCheck
+  * clamscan: s/--phish-scan-alldomains/--phishing-strict-url-check
+
 Sun Oct 15 01:49:55 CEST 2006 (tk)
 ----------------------------------
   * libclamav: anti-phish code cleanup (Edwin)
