@@ -773,8 +773,8 @@ int cdiff_apply(int fd, unsigned short mode)
 	SHA256_CTX sha256ctx;
 	unsigned char digest[32];
 	int sum, bread;
-#define DSIGBUFF 350
 #endif
+#define DSIGBUFF 350
 
     memset(&ctx, 0, sizeof(ctx));
 
