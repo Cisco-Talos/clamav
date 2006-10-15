@@ -58,7 +58,7 @@
 
 void move_infected(const char *filename, const struct optstruct *opt);
 int notremoved = 0, notmoved = 0;
-static int hwaccel = 0;
+static int ncore = 0;
 
 static int dsresult(int sockd, const struct optstruct *opt)
 {
@@ -391,9 +391,9 @@ static int dconnect(const struct optstruct *opt)
 	return -1;
     }
 
-#ifdef HAVE_HWACCEL
-    if(cfgopt(copt, "HardwareAcceleration")->enabled)
-	hwaccel = 1;
+#ifdef HAVE_NCORE
+    if(cfgopt(copt, "NodalCoreAcceleration")->enabled)
+	ncore = 1;
 #endif
 
     freecfg(copt);
@@ -425,7 +425,7 @@ int client(const struct optstruct *opt, int *infected)
 	/* TODO: add a cmdline option to allow using MULTISCAN on systems
 	 * without hardware accelerators (but with multiple CPUs)
 	 */
-	if(hwaccel)
+	if(ncore)
 	    scantype = "MULTISCAN";
 
 	if((ret = dsfile(sockd, scantype, cwd, opt)) >= 0)
@@ -486,7 +486,7 @@ int client(const struct optstruct *opt, int *infected)
 			if((sockd = dconnect(opt)) < 0)
 			    return 2;
 
-			if(hwaccel)
+			if(ncore)
 			    scantype = "MULTISCAN";
 
 			if((ret = dsfile(sockd, scantype, fullpath, opt)) >= 0)

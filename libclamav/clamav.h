@@ -71,7 +71,7 @@ extern "C"
 
 
 /* db options */
-#define CL_DB_HWACCEL		1
+#define CL_DB_NCORE		1
 #define CL_DB_NOPHISHING	2
 #define CL_DB_ACONLY		4   /* for developers only */
 
@@ -160,7 +160,7 @@ struct cli_matcher {
 
 struct cl_engine {
     unsigned int refcount; /* reference counter */
-    unsigned short hwaccel;
+    unsigned short ncore;
     unsigned short sdb;
 
     /* Roots table */

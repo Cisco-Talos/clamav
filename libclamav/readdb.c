@@ -78,7 +78,7 @@
 static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
-#ifdef HAVE_HWACCEL
+#ifdef HAVE_NCORE
 #include <sn_sigscan/sn_sigscan.h>
 #endif
 
@@ -1090,7 +1090,7 @@ static int cli_loadmd(FILE *fd, struct cl_engine **engine, unsigned int *signo, 
     return CL_SUCCESS;
 }
 
-#ifdef HAVE_HWACCEL
+#ifdef HAVE_NCORE
 static int cli_loadhw(const char *filename, struct cl_engine **engine, unsigned int *signo, unsigned int options)
 {
 	int ret = 0;
@@ -1102,22 +1102,22 @@ static int cli_loadhw(const char *filename, struct cl_engine **engine, unsigned 
     }
 
     if((ret = sn_sigscan_initdb(&(*engine)->hwdb)) < 0) {
-	cli_errmsg("hwaccel: error initializing the matcher: %d\n", ret);
+	cli_errmsg("ncore: error initializing the matcher: %d\n", ret);
 	cl_free(*engine);
 	return CL_EHWINIT;
     }
 
-    (*engine)->hwaccel = 1;
+    (*engine)->ncore = 1;
 
     if((ret = sn_sigscan_loaddb((*engine)->hwdb, filename, 0, signo)) < 0) {
-	cli_errmsg("hwaccel: can't load hardware database: %d\n", ret);
+	cli_errmsg("ncore: can't load hardware database: %d\n", ret);
 	cl_free(*engine);
 	return CL_EHWLOAD;
     }
 
     return CL_SUCCESS;
 }
-#endif /* HAVE_HWACCEL */
+#endif /* HAVE_NCORE */
 
 static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo, unsigned int options);
 
@@ -1137,7 +1137,7 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
     }
 
     if(cli_strbcasestr(filename, ".db")) {
-	if(options & CL_DB_HWACCEL)
+	if(options & CL_DB_NCORE)
 	    skipped = 1;
 	else
 	    ret = cli_loaddb(fd, engine, signo, options);
@@ -1160,14 +1160,14 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
 	ret = cli_loadhdb(fd, engine, signo, 2, options);
 
     } else if(cli_strbcasestr(filename, ".ndb")) {
-	if(options & CL_DB_HWACCEL)
+	if(options & CL_DB_NCORE)
 	    skipped = 1;
 	else
 	    ret = cli_loadndb(fd, engine, signo, 0, options);
 
     } else if(cli_strbcasestr(filename, ".sdb")) {
-	/* FIXME: Add support in hwaccel mode */
-	if(options & CL_DB_HWACCEL)
+	/* FIXME: Add support in ncore mode */
+	if(options & CL_DB_NCORE)
 	    skipped = 1;
 	else
 	    ret = cli_loadndb(fd, engine, signo, 1, options);
@@ -1179,8 +1179,8 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
 	ret = cli_loadmd(fd, engine, signo, 2, options);
 
     } else if(cli_strbcasestr(filename, ".hw")) {
-#ifdef HAVE_HWACCEL
-	if(options & CL_DB_HWACCEL)
+#ifdef HAVE_NCORE
+	if(options & CL_DB_NCORE)
 	    ret = cli_loadhw(filename, engine, signo, options);
 	else
 #endif
@@ -1538,7 +1538,7 @@ void cl_free(struct cl_engine *engine)
 	struct cli_md5_node *md5pt, *md5h;
 	struct cli_meta_node *metapt, *metah;
 	struct cli_matcher *root;
-#ifdef HAVE_HWACCEL
+#ifdef HAVE_NCORE
 	int ret;
 #endif
 
@@ -1564,8 +1564,8 @@ void cl_free(struct cl_engine *engine)
     pthread_mutex_unlock(&cli_ref_mutex);
 #endif
 
-#ifdef HAVE_HWACCEL
-    if(engine->hwaccel) {
+#ifdef HAVE_NCORE
+    if(engine->ncore) {
 	if((ret = sn_sigscan_closedb(engine->hwdb)) < 0) {
 	    cli_errmsg("cl_free: can't close hardware database: %d\n", ret);
 	}
