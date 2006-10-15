@@ -119,6 +119,7 @@ void thrmgr_destroy(threadpool_t *threadpool)
 	pthread_mutex_destroy(&(threadpool->pool_mutex));
 	pthread_cond_destroy(&(threadpool->pool_cond));
 	pthread_attr_destroy(&(threadpool->pool_attr));
+	free(threadpool->queue);
 	free(threadpool);
 	return;
 }
