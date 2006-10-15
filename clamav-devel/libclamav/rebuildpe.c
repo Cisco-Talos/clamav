@@ -122,8 +122,15 @@ char *rebuildpe(char *buffer, struct SECTION *sections, int sects, uint32_t base
   char *pefile=NULL, *curpe;
   struct IMAGE_PE_HEADER *fakepe;
 
+
+  if(sects > 90)
+    return NULL;
+
   for (i=0; i < sects; i++)
       datasize+=sections[i].rsz;
+
+  if(datasize > CLI_MAX_ALLOCATION)
+    return NULL;
 
   rawbase = 0x148+0x80+0x28*sects;
   if((pefile = (char *) cli_malloc(rawbase+datasize))) {
