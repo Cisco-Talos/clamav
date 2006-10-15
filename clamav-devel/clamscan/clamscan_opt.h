@@ -61,8 +61,8 @@ static struct option clamscan_longopt[] = {
     {"max-ratio", 1, 0, 0},
     {"max-recursion", 1, 0, 0},
     {"max-dir-recursion", 1, 0, 0},
-#ifdef HAVE_HWACCEL
-    {"hwaccel", 0, 0, 0},
+#ifdef HAVE_NCORE
+    {"ncore", 0, 0, 0},
 #endif
     {"disable-archive", 0, 0, 0},
     {"no-archive", 0, 0, 0},

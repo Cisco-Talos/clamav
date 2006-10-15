@@ -313,7 +313,7 @@ int main(int argc, char **argv)
 	logg("Not loading phishing signatures.\n");
     }
 
-    if(cfgopt(copt, "HardwareAcceleration")->enabled) {
+    if(cfgopt(copt, "NodalCoreAcceleration")->enabled) {
 #ifdef HAVE_HWACCEL
 	dboptions |= CL_DB_HWACCEL;
 	logg("Enabling support for hardware acceleration.\n");

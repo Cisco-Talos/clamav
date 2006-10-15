@@ -86,8 +86,8 @@ int scanmanager(const struct optstruct *opt)
 	    compression = 1;
 
 
-    if(opt_check(opt, "hwaccel"))
-	dboptions |= CL_DB_HWACCEL;
+    if(opt_check(opt, "ncore"))
+	dboptions |= CL_DB_NCORE;
 
     if(opt_check(opt, "no-phishing"))
 	dboptions |= CL_DB_NOPHISHING;

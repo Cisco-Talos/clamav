@@ -46,7 +46,7 @@ static int targettab[CL_TARGET_TABLE_SIZE] = { 0, CL_TYPE_MSEXE, CL_TYPE_MSOLE2,
 
 extern short cli_debug_flag;
 
-#ifdef HAVE_HWACCEL
+#ifdef HAVE_NCORE
 #include <sn_sigscan/sn_sigscan.h>
 #define HWBUFFSIZE 32768
 #endif
@@ -57,7 +57,7 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 	int ret = CL_CLEAN, i, tid = 0, *partcnt;
 	unsigned long int *partoff;
 	struct cli_matcher *groot, *troot = NULL;
-#ifdef HAVE_HWACCEL
+#ifdef HAVE_NCORE
 	void *streamhandle;
 	void *resulthandle;
 	uint32_t datamask[2] = { 0xffffffff, 0xffffffff };
@@ -72,8 +72,8 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 	return CL_ENULLARG;
     }
 
-#ifdef HAVE_HWACCEL
-    if(engine->hwaccel) {
+#ifdef HAVE_NCORE
+    if(engine->ncore) {
 	/* TODO: Setup proper data bitmask (need specs) */
 	if((hret = sn_sigscan_createstream(engine->hwdb, datamask, 2, &streamhandle)) < 0) {
 	    cli_errmsg("cli_scanbuff: can't create new hardware stream: %d\n", hret);
@@ -191,7 +191,7 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 
 	return ret;
     }
-#endif /* HAVE_HWACCEL */
+#endif /* HAVE_NCORE */
 
 
     groot = engine->root[0]; /* generic signatures */
@@ -416,7 +416,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	unsigned char digest[16];
 	struct cli_md5_node *md5_node;
 	struct cli_matcher *groot, *troot = NULL;
-#ifdef HAVE_HWACCEL
+#ifdef HAVE_NCORE
 	void *streamhandle;
 	void *resulthandle;
 	unsigned long long hoffset;
@@ -431,8 +431,8 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	return CL_ENULLARG;
     }
 
-#ifdef HAVE_HWACCEL
-    if(ctx->engine->hwaccel) {
+#ifdef HAVE_NCORE
+    if(ctx->engine->ncore) {
 	/* TODO: Setup proper data bitmask (need specs) */
 	if((hret = sn_sigscan_createstream(ctx->engine->hwdb, datamask, 2, &streamhandle)) < 0) {
 	    cli_errmsg("cli_scandesc: can't create new hardware stream: %d\n", hret);
@@ -621,7 +621,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	    return CL_EIO;
 	}
     }
-#endif /* HAVE_HWACCEL */
+#endif /* HAVE_NCORE */
 
 
     groot = ctx->engine->root[0]; /* generic signatures */

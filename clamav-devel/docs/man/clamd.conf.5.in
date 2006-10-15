@@ -287,7 +287,7 @@ Mark archives as viruses (e.g RAR.ExceededFileSize, Zip.ExceededFilesLimit) if A
 .br 
 Default: disabled
 .TP 
-\fBHardwareAcceleration\fR
+\fBNodalCoreAcceleration\fR
 Enable support for Sensory Networks' NodalCore hardware accelerator.
 .br
 Default: disabled

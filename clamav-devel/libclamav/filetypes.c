@@ -294,9 +294,9 @@ int cli_addtypesigs(struct cl_engine *engine)
 	    return CL_EMEM;
 	}
 
-	if(engine->hwaccel) {
+	if(engine->ncore) {
 	    /*
-	    cli_dbgmsg("cli_addtypesigs: AC depth 10 (hwaccel mode)\n");
+	    cli_dbgmsg("cli_addtypesigs: AC depth 10 (ncore mode)\n");
 	    cli_ac_setdepth(10);
 	    */
 	}
