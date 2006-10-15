@@ -812,12 +812,18 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 {
 	char buffer[FILEBUFF], *pt;
 	int line = 0, ret = 0;
+	unsigned int md5f = 0, sizef = 1;
 	struct cli_md5_node *new, *mpt, *last;
 
 
     if((ret = cli_initengine(engine, options))) {
 	cl_free(*engine);
 	return ret;
+    }
+
+    if(mode == 2) {
+	md5f = 1;
+	sizef = 0;
     }
 
     while(fgets(buffer, FILEBUFF, fd)) {
@@ -833,7 +839,7 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	if(mode == 1) /* fp */
 	    new->fp = 1;
 
-	if(!(pt = cli_strtok(buffer, 0, ":"))) {
+	if(!(pt = cli_strtok(buffer, md5f, ":"))) {
 	    free(new);
 	    ret = CL_EMALFDB;
 	    break;
@@ -848,7 +854,7 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	}
 	free(pt);
 
-	if(!(pt = cli_strtok(buffer, 1, ":"))) {
+	if(!(pt = cli_strtok(buffer, sizef, ":"))) {
 	    free(new->md5);
 	    free(new);
 	    ret = CL_EMALFDB;
