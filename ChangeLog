@@ -1,3 +1,8 @@
+Mon Oct 16 01:52:58 CEST 2006 (tk)
+----------------------------------
+  * libclamav/rebuildpe.c: fix possible heap overflow [IDEF1597]
+  * libclamav/chmunpack.c: fix possible crash [IDEF1736]
+
 Mon Oct 16 01:39:35 CEST 2006 (tk)
 ----------------------------------
   * freshclam: increase default ConnectTimeout to 30 secs
