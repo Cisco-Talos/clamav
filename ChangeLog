@@ -1,3 +1,7 @@
+Sun Oct 15 12:11:26 BST 2006 (njh)
+----------------------------------
+  * libclamav/untar.c:	Fix compilation warning on Linux
+
 Sun Oct 15 02:20:25 CEST 2006 (tk)
 ----------------------------------
   * clamd: s/HardwareAcceleration/NodalCoreAcceleration
