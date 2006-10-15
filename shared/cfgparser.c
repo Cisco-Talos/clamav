@@ -111,7 +111,7 @@ struct cfgoption cfg_options[] = {
     {"OnErrorExecute", OPT_FULLSTR, -1, NULL, 0, OPT_FRESHCLAM},
     {"OnOutdatedExecute", OPT_FULLSTR, -1, NULL, 0, OPT_FRESHCLAM},
     {"LocalIPAddress", OPT_QUOTESTR, -1, NULL, 0, OPT_FRESHCLAM},
-    {"ConnectTimeout", OPT_NUM, 10, NULL, 0, OPT_FRESHCLAM},
+    {"ConnectTimeout", OPT_NUM, 30, NULL, 0, OPT_FRESHCLAM},
     {"ReceiveTimeout", OPT_NUM, 30, NULL, 0, OPT_FRESHCLAM},
     {NULL, 0, 0, NULL, 0, 0}
 };
