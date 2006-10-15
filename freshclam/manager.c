@@ -925,6 +925,10 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
 	ret = 0;
 
 	for(i = currver + 1; i <= newver; i++) {
+	    /*
+	     * !!! FIXME !!!: Redesign this code to make more than one attempt
+	     *		      to download a single cdiff.
+	     */
 	    ret = getpatch(dbname, i, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout);
 	    if(ret) {
 		logg("^Removing incremental directory %s\n", dbinc);
