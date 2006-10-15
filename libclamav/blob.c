@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.55 2006/09/27 10:30:27 njh Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.56 2006/10/15 14:42:39 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -39,6 +39,10 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.55 2006/09/27 10:30:27 njh Exp $";
 
 #ifdef	C_DARWIN
 #include <sys/types.h>
+#endif
+
+#ifdef	HAVE_UNISTD_H
+#include <unistd.h>
 #endif
 
 #include "others.h"
@@ -440,7 +444,7 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 	cli_dbgmsg("fileblobSetFilename: _mktemp_s(%s)\n", fullname);
 	if(_mktemp_s(fullname, strlen(fullname) + 1) != 0) {
 		char *name;
-		
+
 		/* _mktemp_s only allows 26 files */
 		cli_dbgmsg("fileblobSetFilename: _mktemp_s(%s) failed: %s\n", fullname, strerror(errno));
 		name = cli_gentemp(dir);
