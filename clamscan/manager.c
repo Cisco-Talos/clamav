@@ -74,7 +74,7 @@ int scanmanager(const struct optstruct *opt)
 #if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_BEOS)
     if(!geteuid()) {
 	if((user = getpwnam(UNPUSER)) == NULL) {
-	    logg("^Can't get information about user "UNPUSER"\n");
+	    logg("!Can't get information about user "UNPUSER"\n");
 	    exit(60); /* this is critical problem, so we just exit here */
 	}
     }
@@ -108,7 +108,7 @@ int scanmanager(const struct optstruct *opt)
 
     if(opt_check(opt, "database")) {
 	if((ret = cl_load(opt_arg(opt, "database"), &trie, &claminfo.signs, dboptions))) {
-	    logg("^%s\n", cl_strerror(ret));
+	    logg("!%s\n", cl_strerror(ret));
 	    return 50;
 	}
 
@@ -116,7 +116,7 @@ int scanmanager(const struct optstruct *opt)
 	    char *dbdir = freshdbdir();
 
 	if((ret = cl_load(dbdir, &trie, &claminfo.signs, dboptions))) {
-	    logg("^%s\n", cl_strerror(ret));
+	    logg("!%s\n", cl_strerror(ret));
 	    free(dbdir);
 	    return 50;
 	}
@@ -124,12 +124,12 @@ int scanmanager(const struct optstruct *opt)
     }
 
     if(!trie) {
-	logg("^Can't initialize the virus database\n");
+	logg("!Can't initialize the virus database\n");
 	return 50;
     }
 
     if((ret = cl_build(trie)) != 0) {
-	logg("^Database initialization error: %s\n", cl_strerror(ret));;
+	logg("!Database initialization error: %s\n", cl_strerror(ret));;
 	return 50;
     }
 
@@ -225,7 +225,7 @@ int scanmanager(const struct optstruct *opt)
 
 	/* we need full path for some reasons (eg. archive handling) */
 	if(!getcwd(cwd, sizeof(cwd))) {
-	    logg("^Can't get absolute pathname of current working directory\n");
+	    logg("!Can't get absolute pathname of current working directory\n");
 	    ret = 57;
 	} else
 	    ret = scandirs(cwd, trie, user, opt, limits, options);
@@ -254,7 +254,7 @@ int scanmanager(const struct optstruct *opt)
 		if(compression && (thefilename[0] != '/' && thefilename[0] != '\\' && thefilename[1] != ':')) {
 		    /* we need to complete the path */
 		    if(!getcwd(cwd, sizeof(cwd))) {
-			logg("^Can't get absolute pathname of current working directory\n");
+			logg("!Can't get absolute pathname of current working directory\n");
 			free(limits);
 			return 57;
 		    } else {
@@ -279,7 +279,7 @@ int scanmanager(const struct optstruct *opt)
 			break;
 
 		    default:
-			logg("^Not supported file type (%s)\n", thefilename);
+			logg("!Not supported file type (%s)\n", thefilename);
 			ret = 52;
 		}
 
@@ -381,7 +381,7 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	if((ret = checkfile(filename, root, limits, options, 1)) == CL_VIRUS) {
 	    if(opt_check(opt, "remove")) {
 		if(unlink(filename)) {
-		    logg("%s: Can't remove\n", filename);
+		    logg("^%s: Can't remove\n", filename);
 		    claminfo.notremoved++;
 		} else {
 		    logg("%s: Removed\n", filename);
@@ -424,13 +424,13 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	    case 0: /* read access denied */
 		if(geteuid()) {
 		    if(!printinfected)
-			logg("%s: Access denied to archive\n", filename);
+			logg("^%s: Access denied to archive\n", filename);
 		} else {
 
 		    if(limits && limits->maxfilesize)
 			if(fileinfo(filename, 1) / 1024 > limits->maxfilesize) {
 			    if(!printinfected)
-				logg("%s: Archive too big\n", filename);
+				logg("^%s: Archive too big\n", filename);
 			    return 0;
 			}
 
@@ -445,7 +445,7 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
     if((ret = checkfile(filename, root, limits, options, printclean)) == CL_VIRUS) {
 	if(opt_check(opt, "remove")) {
 	    if(unlink(filename)) {
-		logg("%s: Can't remove\n", filename);
+		logg("^%s: Can't remove\n", filename);
 		claminfo.notremoved++;
 	    } else {
 		logg("%s: Removed\n", filename);
@@ -467,7 +467,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
     stat(filename, &statbuf);
 
     if(!S_ISREG(statbuf.st_mode)) {
-	logg("^Suspected archive %s is not a regular file\n", filename);
+	logg("^Suspect archive %s (not a regular file)\n", filename);
 	return 0; /* hmm ? */
     }
 
@@ -483,7 +483,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 #endif
 
     if(checkaccess(tmpdir, UNPUSER, W_OK) != 1) {
-	logg("^Can't write to the temporary directory\n");
+	logg("!Can't write to the temporary directory\n");
 	exit(64);
     }
 
@@ -491,7 +491,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 
     gendir = cli_gentemp(tmpdir);
     if(mkdir(gendir, 0700)) {
-	logg("^Can't create the temporary directory %s\n", gendir);
+	logg("!Can't create the temporary directory %s\n", gendir);
 	exit(63); /* critical */
     }
 
@@ -598,7 +598,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 
     switch(ret) {
 	case -1:
-	    logg("^Can't fork()\n");
+	    logg("!Can't fork()\n");
 	    exit(61); /* this is critical problem, so we just exit here */
 	case -2:
 	    logg("^Can't execute some unpacker. Check paths and permissions on the temporary directory\n");
@@ -608,7 +608,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	    if((ret = checkfile(filename, root, limits, 0, 0)) == CL_VIRUS) {
 		if(opt_check(opt, "remove")) {
 		    if(unlink(filename)) {
-			logg("%s: Can't remove\n", filename);
+			logg("^%s: Can't remove\n", filename);
 			claminfo.notremoved++;
 		    } else {
 			logg("%s: Removed\n", filename);
@@ -625,7 +625,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 	    if((ret = checkfile(filename, root, limits, 0, 1)) == CL_VIRUS) {
 		if(opt_check(opt, "remove")) {
 		    if(unlink(filename)) {
-			logg("%s: Can't remove\n", filename);
+			logg("^%s: Can't remove\n", filename);
 			claminfo.notremoved++;
 		    } else {
 			logg("%s: Removed\n", filename);
@@ -642,7 +642,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 
 	    if(opt_check(opt, "remove")) {
 		if(unlink(filename)) {
-		    logg("%s: Can't remove\n", filename);
+		    logg("^%s: Can't remove\n", filename);
 		    claminfo.notremoved++;
 		} else {
 		    logg("%s: Removed\n", filename);
@@ -665,7 +665,7 @@ int scandenied(const char *filename, struct cl_node *root, const struct passwd *
 
     stat(filename, &statbuf);
     if(!S_ISREG(statbuf.st_mode)) {
-	logg("^Suspected archive %s is not a regular file\n", filename);
+	logg("^Suspect archive %s (not a regular file)\n", filename);
 	return 0;
     }
 
@@ -682,7 +682,7 @@ int scandenied(const char *filename, struct cl_node *root, const struct passwd *
 
 
     if(checkaccess(tmpdir, UNPUSER, W_OK) != 1) {
-	logg("^Can't write to the temporary directory %s\n", tmpdir);
+	logg("!Can't write to the temporary directory %s\n", tmpdir);
 	exit(64);
     }
 
@@ -722,7 +722,7 @@ int scandenied(const char *filename, struct cl_node *root, const struct passwd *
 
 	if(opt_check(opt, "remove")) {
 	    if(unlink(filename)) {
-		logg("%s: Can't remove\n", filename);
+		logg("^%s: Can't remove\n", filename);
 		claminfo.notremoved++;
 	    } else {
 	        logg("%s: Removed\n", filename);
@@ -795,14 +795,14 @@ int checkstdin(const struct cl_node *root, const struct cl_limits *limits, int o
 #endif
 
     if(checkaccess(tmpdir, UNPUSER, W_OK) != 1) {
-	logg("^Can't write to temporary directory\n");
+	logg("!Can't write to temporary directory\n");
 	return 64;
     }
 
     file = cli_gentemp(tmpdir);
 
     if(!(fs = fopen(file, "wb"))) {
-	logg("^Can't open %s for writing\n", file);
+	logg("!Can't open %s for writing\n", file);
 	return 63;
     }
 
