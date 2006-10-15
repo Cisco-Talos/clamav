@@ -45,8 +45,8 @@ struct node_stack {
 
 struct regex_matcher {
 	struct cli_matcher* root_hosts;
-	struct cli_matcher* root_urls;
 	struct tree_node* root_regex;
+	size_t root_hosts_cnt;
 	int list_inited;
 	int list_loaded;
 	int list_built;
