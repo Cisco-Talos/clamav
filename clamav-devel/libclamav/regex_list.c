@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: regex_list.c,v $
+ *  Revision 1.11  2006/10/15 19:16:33  tkojm
+ *  allow loading multiple .pdb/.wdb files
+ *
  *  Revision 1.10  2006/10/14 23:52:02  tkojm
  *  code cleanup
  *
@@ -337,6 +340,7 @@ int regex_list_match(struct regex_matcher* matcher,const char* real_url,const ch
 		size_t display_len = strlen(display_url);
 		size_t buffer_len  = hostOnly ? real_len : real_len + display_len + 1;
 		char*  buffer = cli_malloc(buffer_len+1);
+		size_t i;
 		int partcnt,rc;
 		unsigned long int partoff;
 
@@ -351,7 +355,13 @@ int regex_list_match(struct regex_matcher* matcher,const char* real_url,const ch
 		}
 		cli_dbgmsg("Looking up in regex_list: %s\n", buffer);
 
-		rc = cli_ac_scanbuff(buffer,buffer_len,info,hostOnly ? matcher->root_hosts : matcher->root_urls,&partcnt,0,0,&partoff,0,-1,NULL);
+		if(hostOnly)
+			for(i = 0; i < matcher->root_hosts_cnt; i++) {
+				if(( rc = cli_ac_scanbuff((unsigned char*)buffer,buffer_len,info, &matcher->root_hosts[i] ,&partcnt,0,0,&partoff,0,-1,NULL) ))
+					break;
+			}
+		else
+			rc = 0;
 		if(!rc && !hostOnly) 
 			rc = match_node(matcher->root_regex,(unsigned char*)buffer,buffer_len,info) == MATCH_SUCCESS ? CL_VIRUS : CL_SUCCESS;
 		free(buffer);
@@ -417,6 +427,7 @@ static inline struct tree_node* stack_pop(struct node_stack* stack)
 /* Initializes @matcher, allocating necesarry substructures */
 int init_regex_list(struct regex_matcher* matcher)
 {
+	int rc;
 	/*
 	if(!engine_ok) {
 		cli_dbgmsg("Matcher engine not initialized\n");
@@ -426,45 +437,27 @@ int init_regex_list(struct regex_matcher* matcher)
 
 	massert(matcher);
 	matcher->list_inited = 0;
-	matcher->root_hosts = (struct cli_matcher*) cli_calloc(1,sizeof(*matcher->root_hosts));
-	if(!matcher->root_hosts)
-		return CL_EMEM;
-
-	matcher->root_hosts->ac_root =  (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));
-	if(!matcher->root_hosts->ac_root) {
-		free(matcher->root_hosts);
-		return CL_EMEM;
-	}
-
-	matcher->root_urls = (struct cli_matcher*) cli_calloc(1,sizeof(*matcher->root_hosts));
-	if(!matcher->root_urls) {
-		free(matcher->root_hosts->ac_root);
-		free(matcher->root_hosts);
-		return CL_EMEM;
-	}
-
-	matcher->root_urls->ac_root =  (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));
-	if(!matcher->root_urls->ac_root) {
-		free(matcher->root_hosts->ac_root);
-		free(matcher->root_hosts);
-		free(matcher->root_urls);
-		return CL_EMEM;
-	}
+ 	matcher->root_hosts_cnt = 0;
+ 	matcher->root_hosts = NULL;
+ 	matcher->root_hosts_cnt = 0;
 
 	matcher->root_regex = tree_root_alloc();
 	if(!matcher->root_regex) {
-		free(matcher->root_hosts->ac_root);
-		free(matcher->root_hosts);
-		free(matcher->root_urls->ac_root);
-		free(matcher->root_urls);
 		return CL_EMEM;
 	}
 
-	stack_init(&matcher->node_stack);
-	stack_init(&matcher->node_stack_alt);
+	if(( rc = stack_init(&matcher->node_stack) )) {
+		free(matcher->root_regex);
+		return rc;
+	}
+	if(( rc = stack_init(&matcher->node_stack_alt) )) {
+		free(matcher->root_regex);
+		stack_destroy(&matcher->node_stack);
+		return rc;
+	}
 
 	matcher->list_inited=1;
-	matcher->list_built=0;
+	matcher->list_built=1;/* its empty, but pretend its built, so that load_ will realloc root_hosts */
 	matcher->list_loaded=0;
 
 	return CL_SUCCESS;
@@ -525,10 +518,10 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 
 	if(matcher->list_inited==-1)
 		return CL_EMALFDB; /* already failed to load */
-	if(matcher->list_loaded) {
+/*	if(matcher->list_loaded) {
 		cli_warnmsg("Regex list has already been loaded, ignoring further requests for load\n");
 		return CL_SUCCESS;
-	}
+	}*/
 	if(!fd) {
 		cli_errmsg("Unable to load regex list (null file)\n");
 		return CL_EIO;
@@ -577,12 +570,26 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 			if(( rc = add_pattern(matcher,(const unsigned char*)pattern,flags) ))
 				return rc==CL_EMEM ? CL_EMEM : CL_EMALFDB;
 		}
-		else if(buffer[0] == 'H' && !is_whitelist) {/*matches displayed host*/
-			if(( rc = add_regex_list_element(matcher->root_hosts,pattern,flags) ))
-				return rc==CL_EMEM ? CL_EMEM : CL_EMALFDB;
+		else if( ( buffer[0] == 'H' && !is_whitelist) || (buffer[0] == 'M' && is_whitelist)) {/*matches displayed host*/
+ 			if(matcher->list_built) {
+ 				struct cli_matcher* old_hosts = matcher->root_hosts;
+ 				matcher->root_hosts_cnt++;
+ 
+ 				matcher->root_hosts = cli_realloc(matcher->root_hosts, matcher->root_hosts_cnt * sizeof(*matcher->root_hosts));
+ 				if(!matcher->root_hosts) {
+ 					matcher->root_hosts = old_hosts;/* according to manpage this must still be valid*/
+ 					return CL_EMEM;
 		} 
-		else if(buffer[0] == 'M' && is_whitelist) {/*matches real host <-> displayed host */							
-			if(( rc = add_regex_list_element(matcher->root_hosts,pattern,flags) ))
+ 				memset(&matcher->root_hosts[matcher->root_hosts_cnt-1], 0, sizeof(struct cli_matcher));
+ 				matcher->root_hosts[matcher->root_hosts_cnt-1].ac_root = cli_calloc(1, sizeof(struct cli_ac_node));
+ 				if(!matcher->root_hosts[matcher->root_hosts_cnt-1].ac_root) {
+ 					matcher->root_hosts_cnt--;
+ 					return CL_EMEM;
+ 				}
+ 				cli_dbgmsg("Increased number of root_hosts in regex_list.c\n");
+ 				matcher->list_built = 0;
+ 			}
+ 			if(( rc = add_regex_list_element(&matcher->root_hosts[matcher->root_hosts_cnt-1],pattern,flags) ))
 				return rc==CL_EMEM ? CL_EMEM : CL_EMALFDB;
 		}
 		else {
@@ -593,7 +600,8 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 		}
 	}
 	matcher->list_loaded = 1;
-	build_regex_list(matcher);
+	if(( rc = build_regex_list(matcher) ))
+		return rc;
 
 #ifndef NDEBUG
 /*			dump_tree(matcher->root_regex);*/
@@ -724,13 +732,14 @@ static void regex_list_dobuild(struct tree_node* called_from,struct tree_node* n
 /* Build the matcher list */
 static int build_regex_list(struct regex_matcher* matcher)
 {
+	int rc;
 	if(!matcher->list_inited || !matcher->list_loaded) {
 		cli_errmsg("Regex list not loaded!\n");
 		return -1;/*TODO: better error code */
 	}
 	cli_dbgmsg("Building regex list\n");
-	cli_ac_buildtrie(matcher->root_hosts);
-	cli_ac_buildtrie(matcher->root_urls);
+ 	if(( rc = cli_ac_buildtrie(&matcher->root_hosts[matcher->root_hosts_cnt-1]) ))
+ 			return rc;
 	matcher->list_built=1;
 
 	return CL_SUCCESS;
@@ -744,17 +753,14 @@ void regex_list_done(struct regex_matcher* matcher)
 	regex_list_cleanup(matcher);
 	if(matcher->list_loaded) {
 		if(matcher->root_hosts) {
-			cli_ac_free(matcher->root_hosts);
+			size_t i;
+			for(i=0;i<matcher->root_hosts_cnt;i++)
+				cli_ac_free(&matcher->root_hosts[i]);
 			free(matcher->root_hosts);
 			matcher->root_hosts=NULL;
 		}
 
-		if(matcher->root_urls) {
-			cli_ac_free(matcher->root_urls);
-			free(matcher->root_urls);
-			matcher->root_urls=NULL;
-		}
-
+		matcher->root_hosts_cnt=0;
 		matcher->list_built=0;
 		destroy_tree(matcher);
 		matcher->list_loaded=0;
@@ -1120,7 +1126,6 @@ static inline void tree_node_insert_nonbin(struct tree_node* node, struct tree_n
 				node->listend = 0;
 				node->next = new;
 				new->listend=1;
-				return;
 			}
 		node->u.children = cli_realloc(node->u.children,sizeof(node->u.children[0])*(2));
 		if(node->u.children) {
