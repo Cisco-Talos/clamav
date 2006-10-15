@@ -95,7 +95,7 @@ int scanmanager(const struct optstruct *opt)
 #ifdef CL_EXPERIMENTAL
     if(opt_check(opt,"no-phishing-scan-urls"))
 	options |= CL_SCAN_NOPHISHING;
-    if(opt_check(opt,"phish-scan-alldomains"))
+    if(opt_check(opt,"phishing-strict-url-check"))
 	options |= CL_PHISH_NO_DOMAINLIST;
 #endif
 
