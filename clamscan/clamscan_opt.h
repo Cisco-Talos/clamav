@@ -78,7 +78,7 @@ static struct option clamscan_longopt[] = {
     {"no-phishing", 0, 0, 0},
 #ifdef CL_EXPERIMENTAL
     {"no-phishing-scan-urls",0,0,0},
-    {"phish-scan-alldomains",0,0,0},
+    {"phishing-strict-url-check",0,0,0},
 #endif
     {"no-algorithmic", 0, 0, 0},
     {"unzip", 2, 0, 0},
