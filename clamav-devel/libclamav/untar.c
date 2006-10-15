@@ -19,104 +19,12 @@
  * Much of this code is based on minitar.c which is in the public domain.
  * Author: Charles G. Waldman (cgw@pgt.com),  Aug 4 1998
  * There are many tar files that this code cannot decode.
- *
- * Change History:
- * $Log: untar.c,v $
- * Revision 1.31  2006/08/20 19:42:02  njh
- * Fix error return
- *
- * Revision 1.30  2006/07/26 09:39:08  njh
- * Fix compilation error on Windows with MSVC
- *
- * Revision 1.29  2006/04/09 19:59:28  kojm
- * update GPL headers with new address for FSF
- *
- * Revision 1.28  2005/10/29 16:18:09  nigelhorne
- * Better error handler
- *
- * Revision 1.27  2005/09/01 21:03:46  nigelhorne
- * Added support for various GNU extensions
- *
- * Revision 1.26  2005/08/01 11:30:59  nigelhorne
- * Spelling fix
- *
- * Revision 1.25  2005/03/22 21:26:27  kojm
- * add support for old fashioned tar archives
- *
- * Revision 1.24  2005/03/20 18:34:18  nigelhorne
- * Minor tidy
- *
- * Revision 1.23  2005/03/20 09:09:25  nigelhorne
- * Consolidate NAME_MAX
- *
- * Revision 1.22  2005/03/10 08:52:10  nigelhorne
- * Tidy
- *
- * Revision 1.21  2005/02/16 22:19:21  nigelhorne
- * Check file close
- *
- * Revision 1.20  2005/02/13 22:25:41  kojm
- * do not try to continue if there's no space on device
- *
- * Revision 1.19  2004/12/16 15:34:57  nigelhorne
- * Tidy
- *
- * Revision 1.18  2004/11/20 13:15:46  nigelhorne
- * Better handling of false file type identification
- *
- * Revision 1.17  2004/10/27 06:36:38  nigelhorne
- * Handle type '1' files
- *
- * Revision 1.16  2004/10/20 12:21:11  nigelhorne
- * Print warning message about LongLink
- *
- * Revision 1.15  2004/10/16 16:08:46  nigelhorne
- * Handle empty files in the middle of archives
- *
- * Revision 1.14  2004/10/13 10:18:54  nigelhorne
- * Added a few extra file types
- *
- * Revision 1.13  2004/10/04 13:46:50  nigelhorne
- * Handle GNU tar files
- *
- * Revision 1.12  2004/10/04 10:53:15  nigelhorne
- * Handle tar files less than 512 bytes
- *
- * Revision 1.11  2004/10/01 13:50:47  nigelhorne
- * Minor code tidy
- *
- * Revision 1.10  2004/09/20 13:37:44  kojm
- * 0.80rc
- *
- * Revision 1.9  2004/09/14 10:29:31  nigelhorne
- * Fix compilation error on AIX and OSF
- *
- * Revision 1.8  2004/09/12 23:43:45  kojm
- * return with CL_EFORMAT instead of CL_EDSIG
- *
- * Revision 1.7  2004/09/12 19:51:59  nigelhorne
- * Now builds with --enable-debug
- *
- * Revision 1.6  2004/09/08 16:02:34  nigelhorne
- * fclose on error
- *
- * Revision 1.5  2004/09/06 14:16:48  nigelhorne
- * Added CYGWIN support
- *
- * Revision 1.4  2004/09/06 08:45:44  nigelhorne
- * Code Tidy
- *
- * Revision 1.3  2004/09/06 08:34:47  nigelhorne
- * Randomise extracted file names from tar file
- *
- * Revision 1.2  2004/09/05 18:58:21  nigelhorne
- * Extract files completed
- *
- * Revision 1.1  2004/09/05 15:28:10  nigelhorne
- * First draft
- *
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.31 2006/08/20 19:42:02 njh Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.32 2006/10/15 11:10:42 njh Exp $";
+
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
 
 #include <stdio.h>
 #include <errno.h>
