@@ -1499,7 +1499,7 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 				cli_dbgmsg("Computed File CRC: 0x%x\n", unpack_data->unp_crc^0xffffffff);
 				if (unpack_data->unp_crc != 0xffffffff) {
 					if (file_header->file_crc != (unpack_data->unp_crc^0xffffffff)) {
-						cli_warnmsg("RAR CRC error. Please report the bug at https://bugs.clamav.net/\n");
+						cli_warnmsg("RAR CRC error. Please report the bug at http://bugs.clamav.net/\n");
 					}
 				}
 				if (!retval) {
