@@ -1,3 +1,7 @@
+Mon Oct 16 03:13:21 CEST 2006 (tk)
+----------------------------------
+  * 0.90RC1 (released with JS and PST code removed)
+
 Mon Oct 16 01:52:58 CEST 2006 (tk)
 ----------------------------------
   * libclamav/rebuildpe.c: fix possible heap overflow [IDEF1597]
