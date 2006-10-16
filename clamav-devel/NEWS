@@ -1,10 +1,7 @@
-0.86rc1
+0.90RC1
 -------
 
-This release candidate introduces a number of bugfixes and cleanups.
-Possible descriptor leaks in archive unpackers and mishandling of fast track
-uuencoded files have been fixed in libclamav. Database reloading in
-clamav-milter has been improved.
+Release Candidate.
 
 --
 The ClamAV team (http://www.clamav.net/team.html)

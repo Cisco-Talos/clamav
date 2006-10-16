@@ -2,13 +2,175 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
-0.86rc1
+
+0.90RC1
 -------
 
-This release candidate introduces a number of bugfixes and cleanups.
-Possible descriptor leaks in archive unpackers and mishandling of fast track
-uuencoded files have been fixed in libclamav. Database reloading in
-clamav-milter has been improved.
+The first Release Candidate of the long awaited ClamAV 0.90 is ready for 
+general testing! This version introduces lots of new interesting features
+and marks a big step forward in the development of our antivirus engine.
+
+The most important change is the introduction of scripted updates.
+Instead of transferring the whole cvd file at each update, only the
+differences between the latest cvds and the previous versions will be
+transferred.
+
+In case the local copy of the latest cvd is corrupted or the scripted
+update fails for some reason, freshclam will fallback to the old method.
+Similarly to cvd files, scripted updates are compressed and digitally signed
+and are already being distributed. They will dramatically reduce traffic on
+our mirrors and will allow us to release even more updates in the future.
+
+Another noticeable change is the new configuration syntax: you can now turn
+single options on and off, the old crude hack of "DisableDefaultScanOptions"
+is no longer required.
+
+Cosmetic changes apart, the 0.9x series introduces lots of new code, but some
+parts are not compiled in by default because they are not ready for production
+systems yet. You are encouraged to pass the --enable-experimental flag to
+./configure when compiling ClamAV. If you find a bug, please take some time
+to report it on our bugzilla: http://bugs.clamav.net. Your help in testing the
+new code is really appreciated.
+
+The experimental code introduces many improvements in terms of detection 
+rate and performances. 
+
+RAR3, SIS and SFX archives support is finally available together with 
+new unpackers and decryptors: pespin, sue, yc, wwpack32 and others.
+Additionally, ClamAV now includes better mechanisms for scanning ELF, PDF
+and tar files.
+
+As part of the Google Summer of Code program, we have introduced support for
+a new phishing signatures format that has proved very effective in detecting
+phishing emails. The ClamAV phishing module allows better and more generic
+detection of phishing emails by searching for URLs in email messages, and 
+comparing the real site with the URL displayed to the user in the message. 
+
+On the performance side, support for the MULTISCAN command has been 
+implemented in clamd, allowing to scan multiple files simultaneously.
+Support for Sensory Networks NodalCore Acceleration
+(http://www.clamav.net/nodalcore/) in ClamAV is now available and will be
+compiled in if the ncore libraries are detected at compile time. NodalCore
+acceleration allows highly improved scan speeds on systems equipped with
+NodalCore cards.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
+
+0.88.5
+------
+
+This version fixes a crash in the CHM unpacker and a heap overflow in the
+function rebuilding PE files after unpacking.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
+
+0.88.4
+------
+
+This release fixes a possible heap overflow in the UPX code.
+
+See security information at: http://www.clamav.net/security/0.88.4.html
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
+0.88.3
+------
+
+This version fixes handling of large binhex files and multiple alternatives in
+virus signatures.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
+
+0.88.2
+------
+
+This release improves virus detection, fixes zip handling on 64-bit
+architectures and possible security problem in freshclam.
+
+Following the 0.88.1 release some portals and security related websites
+published incorrect information on security problems of 0.88. To avoid
+such incidents in the future, every new ClamAV package will be released
+together with detailed information about security bugs it fixes. Details
+for this version can be found here:
+
+    http://www.clamav.net/security/0.88.2.html
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
+
+0.88.1
+------
+
+This version fixes a number of minor bugs and provides code updates
+to improve virus detection.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
+
+0.88
+----
+
+A possible heap overflow in the UPX code has been fixed. General improvements
+include better zip and mail processing, and support for a self-protection mode.
+The security of the UPX, FSG and Petite modules has been improved, too.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
+0.87.1
+------
+
+This release includes major bugfixes for problems with handling TNEF
+attachments, cabinet files and FSG compressed executables.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
+0.87
+----
+
+This version fixes vulnerabilities in handling of UPX and FSG compressed
+executables. Support for PE files, Zip and Cabinet archives has been improved
+and other small bugfixes have been made. The new option "--on-outdated-execute"
+allows freshclam to run a command when system reports a new engine version.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
+
+0.86.2
+------
+
+Changes in this release include fixes for three possible integer overflows
+in libclamav, improved scanning of Cabinet and FSG compressed files, better
+database handling in clamav-milter, and others.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
+0.86.1
+------
+
+A possible crash in the libmspack's Quantum decompressor has been fixed.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
+0.86
+----
+
+This release introduces a number of bugfixes and cleanups. Possible descriptor
+leaks in archive unpackers and mishandling of fast track uuencoded files have
+been fixed in libclamav. Database reloading in clamav-milter has been improved.
 
 --
 The ClamAV team (http://www.clamav.net/team.html)
