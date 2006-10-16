@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.355 2006/10/13 21:47:44 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.356 2006/10/16 00:33:34 tkojm Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -2817,7 +2817,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 
 		if(messages) {
 			/* "can't happen" */
-			cli_warnmsg("messages != NULL, report to bugs@clamav.net\n");
+			cli_warnmsg("messages != NULL, report to http://bugs.clamav.net\n");
 			free(messages);
 		}
 	}

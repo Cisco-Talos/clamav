@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.56 2006/10/15 14:42:39 njh Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.57 2006/10/16 00:33:34 tkojm Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -384,7 +384,7 @@ fileblobDestroy(fileblob *fb)
 			cli_errmsg("fileblobDestroy: %s not saved: refer to http://www.clamav.net/bugs.html#pagestart\n", fb->b.name);
 			free(fb->b.name);
 		} else
-			cli_errmsg("fileblobDestroy: file not saved (%lu bytes): report to bugs@clamav.net\n", fb->b.len);
+			cli_errmsg("fileblobDestroy: file not saved (%lu bytes): report to http://bugs.clamav.net\n", fb->b.len);
 	}
 #ifdef	CL_DEBUG
 	fb->b.magic = INVALIDCLASS;
