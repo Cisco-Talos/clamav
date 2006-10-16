@@ -1,3 +1,7 @@
+Mon Oct 16 10:50:34 CEST 2006 (tk)
+----------------------------------
+  * libclamav/Makefile.am: add missing iana_tld.h
+
 Mon Oct 16 03:13:21 CEST 2006 (tk)
 ----------------------------------
   * 0.90RC1 (released with JS and PST code removed)
