@@ -49,6 +49,7 @@
 #endif
 
 
+/* TODO: add support for incremental directories */
 char *freshdbdir(void)
 {
 	struct cl_cvd *d1, *d2;
@@ -90,20 +91,24 @@ char *freshdbdir(void)
     return retdir;
 }
 
+/* TODO: add _proper_ support for incremental directories */
 void print_version(void)
 {
 	char *dbdir;
 	char *path;
 	struct cl_cvd *daily;
+	struct stat foo;
 
 
     dbdir = freshdbdir();
-    if(!(path = mmalloc(strlen(dbdir) + 11))) {
+    if(!(path = mmalloc(strlen(dbdir) + 30))) {
 	free(dbdir);
 	return;
     }
 
     sprintf(path, "%s/daily.cvd", dbdir);
+    if(stat(path, &foo) == -1)
+	sprintf(path, "%s/daily.inc/daily.info", dbdir);
     free(dbdir);
 
     if((daily = cl_cvdhead(path))) {
