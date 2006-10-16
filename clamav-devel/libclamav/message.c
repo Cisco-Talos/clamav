@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.190 2006/10/13 21:47:44 njh Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.191 2006/10/16 00:33:34 tkojm Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1690,7 +1690,7 @@ messageToText(message *m)
 				}
 				continue;
 			case UUENCODE:
-				cli_errmsg("messageToText: Unexpected attempt to handle uuencoded file - report to bugs@clamav.net\n");
+				cli_errmsg("messageToText: Unexpected attempt to handle uuencoded file - report to http://bugs.clamav.net\n");
 				if(first) {
 					last->t_next = NULL;
 					textDestroy(first);
