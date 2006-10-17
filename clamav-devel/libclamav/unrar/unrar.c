@@ -285,6 +285,21 @@ static void *read_header(int fd, header_type hdr_type)
 		file_hdr->name_size = rar_endian_convert_16(file_hdr->name_size);
 		return file_hdr;
 		}
+	case COMM_HEAD: {
+		comment_header_t *comment_hdr;
+
+		comment_hdr = (comment_header_t *) cli_malloc(sizeof(comment_header_t));
+		if (!comment_hdr) {
+			return NULL;
+		}
+		if (cli_readn(fd, comment_hdr, SIZEOF_COMMHEAD) != SIZEOF_COMMHEAD) {
+			free(comment_hdr);
+			return NULL;
+		}
+		comment_hdr->unpack_size = rar_endian_convert_16(comment_hdr->unpack_size);
+		comment_hdr->comm_crc = rar_endian_convert_16(comment_hdr->comm_crc);
+		return comment_hdr;
+		}
 	default:
 		cli_dbgmsg("ERROR: Unknown header type requested\n");
 		return NULL;
@@ -1367,6 +1382,7 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 	unsigned char filename[1024];
 	unpack_data_t *unpack_data;
 	rar_metadata_t *metadata=NULL, *metadata_tail=NULL, *new_metadata;
+	off_t offset;
 
 	cli_dbgmsg("in cli_unrar\n");
 	if (!is_rar_archive(fd)) {
@@ -1417,6 +1433,39 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 		free(unpack_data);
 		return metadata;
 	}
+	if (main_hdr->flags & MHD_COMMENT) {
+		comment_header_t *comment_header;
+		cli_dbgmsg("RAR main comment\n");
+		offset = lseek(fd, 0, SEEK_CUR);
+		cli_dbgmsg("Offset: %x\n", offset);
+		comment_header = read_header(fd, COMM_HEAD);
+		if (comment_header) {
+			cli_dbgmsg("Comment type: 0x%.2x\n", comment_header->head_type);
+			cli_dbgmsg("Head size: 0x%.4x\n", comment_header->head_size);
+			cli_dbgmsg("UnPack Size: 0x%.4x\n", comment_header->unpack_size);
+			cli_dbgmsg("UnPack Version: 0x%.2x\n", comment_header->unpack_ver);
+			cli_dbgmsg("Pack Method: 0x%.2x\n", comment_header->method);
+			snprintf(filename, 1024, "%s/main.cmt", dirname);
+			ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0600);
+			if (ofd < 0) {
+				free(comment_header);
+				cli_dbgmsg("ERROR: Failed to open output file\n");
+			} else {
+				if (comment_header->method == 0x30) {
+					cli_dbgmsg("Copying stored comment (not packed)\n");
+					copy_file_data(fd, ofd, comment_header->unpack_size);
+				} else {
+					unpack_data->ofd = ofd;
+					unpack_data->dest_unp_size = comment_header->unpack_size;
+                        		retval = rar_unpack(fd, comment_header->unpack_ver, FALSE, unpack_data);
+				}
+				close(ofd);
+			}
+			free(comment_header);
+		}
+		lseek(fd, offset, SEEK_SET);
+	}
+
 	if (main_hdr->head_size > SIZEOF_NEWMHD) {
 		if (!lseek(fd, main_hdr->head_size - SIZEOF_NEWMHD, SEEK_CUR)) {
 			free(main_hdr);
