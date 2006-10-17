@@ -147,6 +147,18 @@ typedef struct file_header_tag
 	off_t next_offset __attribute__ ((packed));
 } file_header_t;
 
+typedef struct comment_header_tag
+{
+	uint16_t head_crc __attribute__ ((packed));
+	uint8_t head_type __attribute__ ((packed));
+	uint16_t flags __attribute__ ((packed));
+	uint16_t head_size __attribute__ ((packed));
+	uint16_t unpack_size __attribute__ ((packed));
+	uint8_t unpack_ver __attribute__ ((packed));
+	uint8_t method __attribute__ ((packed));
+	uint16_t comm_crc __attribute__ ((packed));
+} comment_header_t;
+
 struct Decode
 {
   unsigned int MaxNum;
