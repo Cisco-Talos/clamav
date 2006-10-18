@@ -393,7 +393,8 @@ unsigned int getbits(unpack_data_t *unpack_data)
 int unp_read_buf(int fd, unpack_data_t *unpack_data)
 {
 	int data_size, retval;
-	 
+	unsigned int read_size;
+
 	data_size = unpack_data->read_top - unpack_data->in_addr;
 	if (data_size < 0) {
 		return FALSE;
@@ -410,9 +411,16 @@ int unp_read_buf(int fd, unpack_data_t *unpack_data)
 	} else {
 		data_size = unpack_data->read_top;
 	}
-	retval = cli_readn(fd, unpack_data->in_buf+data_size, (MAX_BUF_SIZE-data_size)&~0x0f);	
+	/* RAR2 depends on us only reading upto the end of the current compressed file */
+	if (unpack_data->pack_size < ((MAX_BUF_SIZE-data_size)&~0xf)) {
+		read_size = unpack_data->pack_size;
+	} else {
+		read_size = (MAX_BUF_SIZE-data_size)&~0xf;
+	}
+	retval = cli_readn(fd, unpack_data->in_buf+data_size, read_size);	
 	if (retval > 0) {
 		unpack_data->read_top += retval;
+		unpack_data->pack_size -= retval;
 	}
 	unpack_data->read_border = unpack_data->read_top - 30;
 
@@ -1457,6 +1465,7 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 				} else {
 					unpack_data->ofd = ofd;
 					unpack_data->dest_unp_size = comment_header->unpack_size;
+					unpack_data->pack_size = comment_header->head_size - SIZEOF_COMMHEAD;
                         		retval = rar_unpack(fd, comment_header->unpack_ver, FALSE, unpack_data);
 				}
 				close(ofd);
@@ -1568,6 +1577,7 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 				copy_file_data(fd, ofd, file_header->pack_size);
 			} else {
 				unpack_data->dest_unp_size = file_header->unpack_size;
+				unpack_data->pack_size = file_header->pack_size;
 				if (file_header->unpack_ver <= 15) {
 					retval = rar_unpack(fd, 15, (file_count>1) &&
 						((main_hdr->flags&MHD_SOLID)!=0), unpack_data);

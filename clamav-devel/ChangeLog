@@ -1,3 +1,7 @@
+Wed Oct 18 11:56:44 BST 2006 (trog)
+-----------------------------------
+  * libclamav/unrar/unrar.c,unrar.h: Fix decoding of some RAR2 files.
+
 Wed Oct 18 09:48:46 BST 2006 (trog)
 -----------------------------------
   * libclamav/unrar/unrar.c,unrar.h,unrar20.c,unrarfilter.c,unrarppm.c,unrarvm.c:
