@@ -29,7 +29,6 @@
 #include <unistd.h>
 #endif
 
-/*	#define RAR_DEBUG */
 /*	#define RAR_HIGH_DEBUG */
 
 struct unpack_data_tag;
@@ -144,6 +143,7 @@ typedef struct file_header_tag
 	uint16_t name_size __attribute__ ((packed));
 	uint32_t file_attr __attribute__ ((packed));
 	unsigned char *filename __attribute__ ((packed));
+	off_t start_offset __attribute__ ((packed));
 	off_t next_offset __attribute__ ((packed));
 } file_header_t;
 

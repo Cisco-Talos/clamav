@@ -1,3 +1,14 @@
+Wed Oct 18 09:48:46 BST 2006 (trog)
+-----------------------------------
+  * libclamav/unrar/unrar.c,unrar.h,unrar20.c,unrarfilter.c,unrarppm.c,unrarvm.c:
+		- Add O_BINARY support
+		- Clean up includes
+		- Extract per-file comments
+
+Tue Oct 17 14:11:32 BST 2006 (trog)
+-----------------------------------
+  * libclamav/unrar/unrar.c, unrar.h: extract main archive comment for scan
+
 Mon Oct 16 10:53:09 CEST 2006 (tk)
 ----------------------------------
   * 0.90RC1.1

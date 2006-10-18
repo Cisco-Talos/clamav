@@ -26,12 +26,7 @@
 
 #include "unrar.h"
 #include "unrarppm.h"
-
-#ifdef RAR_DEBUG
-#define cli_dbgmsg printf
-#else
-static void cli_dbgmsg(){};
-#endif
+#include "others.h"
 
 #ifdef RAR_HIGH_DEBUG
 #define rar_dbgmsg printf
