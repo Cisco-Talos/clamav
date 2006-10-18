@@ -21,14 +21,10 @@
  *  MA 02110-1301, USA.
  */
 
+#include <string.h>
+
 #include "unrar.h"
 #include "unrar20.h"
-
-#ifdef RAR_DEBUG
-#define cli_dbgmsg printf
-#else
-static void cli_dbgmsg(){};
-#endif
 
 #ifdef RAR_HIGH_DEBUG
 #define rar_dbgmsg printf
@@ -47,7 +43,7 @@ void unpack_init_data20(int solid, unpack_data_t *unpack_data)
 	}
 }
 
-static void copy_string20(unpack_data_t *unpack_data, int length, unsigned int distance)
+static void copy_string20(unpack_data_t *unpack_data, unsigned int length, unsigned int distance)
 {
 	unsigned int dest_ptr;
 	
@@ -309,7 +305,7 @@ int rar_unpack20(int fd, int solid, unpack_data_t *unpack_data)
 		if (unpack_data->in_addr > unpack_data->read_top-30) {
 			if (!unp_read_buf(fd, unpack_data)) {
 				cli_dbgmsg("unp_read_buf 2 failed\n");
-				return FALSE;
+				break;
 			}
 		}
 		if (((unpack_data->wr_ptr - unpack_data->unp_ptr) & MAXWINMASK) < 270 &&

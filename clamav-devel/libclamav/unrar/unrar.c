@@ -46,6 +46,10 @@
 #include "others.h"
 #include "cltypes.h"
 
+#ifndef O_BINARY
+#define O_BINARY        0
+#endif
+
 #define int64to32(x) ((unsigned int)(x))
 #define rar_endian_convert_16(v)	le16_to_host(v)
 #define rar_endian_convert_32(v)	le32_to_host(v)
@@ -320,6 +324,7 @@ static file_header_t *read_block(int fd, header_type hdr_type)
 			return NULL;
 		}
 		rar_dbgmsg(" head_size=%u\n", file_header->head_size);
+		file_header->start_offset = offset;
 		file_header->next_offset = offset + file_header->head_size;
 		if (file_header->flags & LONG_BLOCK) {
 			file_header->next_offset += file_header->pack_size;
@@ -359,12 +364,7 @@ static file_header_t *read_block(int fd, header_type hdr_type)
 	}
 	file_header->filename[file_header->name_size] = '\0';
 	cli_dbgmsg("Filename: %s\n", file_header->filename);
-	/* Move to the end of the header */
-	if (lseek(fd, offset+file_header->head_size, SEEK_SET) != offset+file_header->head_size) {
-		cli_dbgmsg("Seek failed: %ld\n", offset+file_header->head_size);
-		return NULL;
-	}
-	
+
 	return file_header;
 }
 
@@ -1446,7 +1446,7 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 			cli_dbgmsg("UnPack Version: 0x%.2x\n", comment_header->unpack_ver);
 			cli_dbgmsg("Pack Method: 0x%.2x\n", comment_header->method);
 			snprintf(filename, 1024, "%s/main.cmt", dirname);
-			ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0600);
+			ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, 0600);
 			if (ofd < 0) {
 				free(comment_header);
 				cli_dbgmsg("ERROR: Failed to open output file\n");
@@ -1513,13 +1513,49 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 				break;
 			}
 		}
+		if (file_header->flags & LHD_COMMENT) {
+			comment_header_t *comment_header;
 
+			cli_dbgmsg("File comment present\n");
+			comment_header = read_header(fd, COMM_HEAD);
+			if (comment_header) {
+				cli_dbgmsg("Comment type: 0x%.2x\n", comment_header->head_type);
+				cli_dbgmsg("Head size: 0x%.4x\n", comment_header->head_size);
+				cli_dbgmsg("UnPack Size: 0x%.4x\n", comment_header->unpack_size);
+				cli_dbgmsg("UnPack Version: 0x%.2x\n", comment_header->unpack_ver);
+				cli_dbgmsg("Pack Method: 0x%.2x\n", comment_header->method);
+
+				if ((comment_header->unpack_ver < 15) || (comment_header->unpack_ver > 29) ||
+						(comment_header->method > 0x30)) {
+					cli_dbgmsg("Can't process file comment - skipping\n");
+				} else {
+					snprintf(filename, 1024, "%s/%lu.cmt", dirname, file_count);
+					ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, 0600);
+					if (ofd < 0) {
+						free(comment_header);
+						cli_dbgmsg("ERROR: Failed to open output file\n");
+					} else {
+                	                        cli_dbgmsg("Copying file comment (not packed)\n");
+                        	                copy_file_data(fd, ofd, comment_header->unpack_size);
+						close(ofd);
+					}
+				}
+				free(comment_header);
+			}
+		}
+	        if (lseek(fd, file_header->start_offset+file_header->head_size, SEEK_SET) !=
+							file_header->start_offset+file_header->head_size) {
+        	        cli_dbgmsg("Seek failed: %ld\n", offset+file_header->head_size);
+			free(file_header->filename);
+			free(file_header);
+			break;
+        	}
 		if (file_header->flags & LHD_PASSWORD) {
 			cli_dbgmsg("PASSWORDed file: %s\n", file_header->filename);
 			metadata_tail->encrypted = TRUE;
 		} else /*if (file_header->unpack_size)*/ {
 			snprintf(filename, 1024, "%s/%lu.ura", dirname, file_count);
-			ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0600);
+			ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, 0600);
 			if (ofd < 0) {
 				free(file_header->filename);
 				free(file_header);
