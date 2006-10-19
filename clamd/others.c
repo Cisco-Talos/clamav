@@ -333,16 +333,6 @@ int writen(int fd, void *buff, unsigned int count)
     return count;
 }
 
-#ifdef	C_WINDOWS
-/*
- * The code is non-portable, please send patches to NJH
- */
-int
-readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeout_sec, int force_delim, int read_command)
-{
-	return recv(sockfd, buf, size, 0);
-}
-#else
 /* FD Support Submitted by Richard Lyons <frob-clamav*webcentral.com.au> */
 /*
    This procedure does timed clamd command and delimited input processing.  
@@ -490,4 +480,3 @@ int readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeou
     }
     return n;
 }
-#endif
