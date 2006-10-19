@@ -23,6 +23,6 @@
 #include "cltypes.h"
 #include "rebuildpe.h"
 
-int unspin(char *, int, struct pe_image_section_hdr *, int, uint32_t, int);
+int unspin(char *, int, struct pe_image_section_hdr *, int, uint32_t, int, cli_ctx *);
 
 #endif

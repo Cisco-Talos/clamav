@@ -1,3 +1,7 @@
+Thu Oct 19 20:27:06 CEST 2006 (acab)
+------------------------------------
+  * libclamav: obey limits in unspin - closes bug#81 (thanks Trog)
+
 Thu Oct 19 18:34:43 BST 2006 (njh)
 ----------------------------------
   * libclamav:	Added JavaScript scanning
