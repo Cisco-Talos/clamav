@@ -2715,7 +2715,7 @@ ac_config_headers="$ac_config_headers clamav-config.h"
 
 
 LC_CURRENT=1
-LC_REVISION=10
+LC_REVISION=30
 LC_AGE=0
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 
