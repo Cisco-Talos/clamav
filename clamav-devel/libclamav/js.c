@@ -19,7 +19,7 @@
  * Save the JavaScript embedded in an HTML file, then run the script, saving
  * the output in a file that is to be scanned, then remove the script file
  */
-static	char	const	rcsid[] = "$Id: js.c,v 1.9 2006/10/09 15:51:33 njh Exp $";
+static	char	const	rcsid[] = "$Id: js.c,v 1.10 2006/10/19 17:29:47 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -60,6 +60,7 @@ static	char	const	rcsid[] = "$Id: js.c,v 1.9 2006/10/09 15:51:33 njh Exp $";
 # endif
 #endif
 
+static	void	run_js(const char *filename, const char *dir);
 static	const	char	*cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns);
 
 int
@@ -70,9 +71,10 @@ cli_scanjs(const char *dir, int desc)
 	char *buf;	/* start of memory mapped area */
 	const char *p;
 	long bytesleft;
-	int done_header, rc;
+	int created_output, done_header, rc;
 	FILE *fout;
 	char script_filename[NAME_MAX + 1];
+	extern short cli_leavetemps_flag;
 
 	cli_dbgmsg("in cli_scanjs(%s)\n", dir);
 
@@ -95,7 +97,7 @@ cli_scanjs(const char *dir, int desc)
 
 	p = buf;
 	bytesleft = size;
-	done_header = 0;
+	created_output = done_header = 0;
 	fout = NULL;
 
 	while(p < &buf[size]) {
@@ -133,7 +135,7 @@ cli_scanjs(const char *dir, int desc)
 				p++;
 				if(--bytesleft == 0)
 					break;
-				if(*p == '!') {
+				if((*p == '!') && !done_header) {
 					while(bytesleft && (*p != '\n')) {
 						p++;
 						bytesleft--;
@@ -147,11 +149,21 @@ cli_scanjs(const char *dir, int desc)
 						p++;
 						bytesleft--;
 					}
+					if(fout) {
+						fclose(fout);
+						fout = NULL;
+						run_js(script_filename, dir);
+
+						if(!cli_leavetemps_flag)
+							unlink(script_filename);
+					}
+					done_header = 0;
 					break;
 				}
 				c = '<';
 			} else {
-				c = tolower(*p);
+				/*c = tolower(*p);*/
+				c = *p;
 				p++;
 				bytesleft--;
 			}
@@ -194,15 +206,22 @@ cli_scanjs(const char *dir, int desc)
 				/*
 				 * Create a document object, on web pages it's
 				 *	used to send output to the browser
+				 * FIXME: will create a file even if the script
+				 *	is empty, e.g. src is somewhere else
 				 */
 				fputs("function createDoc() {\n", fout);
 				fputs("\tfunction write(text) {\n", fout);
-				fputs("\t\tprint(text);\n", fout);
+				/*
+				 * Use System.print rather than print so that
+				 *	a new line is not appended
+				 */
+				fputs("\t\tSystem.print(text);\n", fout);
 				fputs("\t}\n", fout);
 				fputs("}\n", fout);
 				fputs("document = new createDoc();\n", fout);
 
 				done_header = 1;
+				created_output = 1;
 			}
 			putc(c, fout);
 		}
@@ -212,34 +231,62 @@ cli_scanjs(const char *dir, int desc)
 
 	rc = CL_SUCCESS;
 
-	if(!done_header)
+	if(!created_output)
 		cli_dbgmsg("No javascript was detected\n");
-	else if(fout == NULL)
-		cli_errmsg("cli_scanjs: fout == NULL\n");
-	else {
-		extern short cli_leavetemps_flag;
-		JSInterpPtr interp;
-
+	else if(fout) {
 		fclose(fout);
-
-#if	0
-		/*
-		 * Run NGS on the file
-		 */
-		interp = create_interp();
-
-		if(!js_eval_file(interp, script_filename)) {
-			cli_warnmsg("JS failed: %s\n", js_error_message(interp));
-			rc = CL_EIO;
-		}
-		js_destroy_interp(interp);
-#endif
+		run_js(script_filename, dir);
 
 		if(!cli_leavetemps_flag)
 			unlink(script_filename);
 	}
-	return CL_CLEAN;
+	return rc;
 }
+
+static void
+run_js(const char *filename, const char *dir)
+{
+	JSInterpPtr interp;
+	FILE *real_stdout, *temp_stdout;
+	char *outputfilename;
+
+	cli_dbgmsg("run_js(%s)\n", filename);
+
+	fflush(stdout);
+	real_stdout = stdout;
+	outputfilename = cli_gentemp(dir);
+	if(outputfilename) {
+		temp_stdout = fopen(outputfilename, "wb");
+		if(temp_stdout) {
+			cli_dbgmsg("Redirecting JS VM stdout to %s\n",
+				outputfilename);
+			stdout = temp_stdout;
+		}
+	} else
+		temp_stdout = NULL;
+
+	/*
+	 * Run NGS on the file
+	 */
+	interp = create_interp();
+
+	if(!js_eval_file(interp, filename)) {
+		cli_warnmsg("JS failed: %s\n", js_error_message(interp));
+		/*rc = CL_EIO;*/
+	}
+
+	js_destroy_interp(interp);
+
+	if(temp_stdout) {
+		fclose(temp_stdout);
+		stdout = real_stdout;
+	}
+}
+
+#include "js/compiler.c"
+#include "js/iostream.c"
+#include "js/js.c"
+#include "js/main.c"
 
 /* Copied from pdf.c :-( */
 /*
@@ -281,7 +328,7 @@ cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns)
 
 	return NULL;
 }
- 
+
 #else
 
 int
@@ -291,5 +338,14 @@ cli_scanjs(const char *dir, int desc)
 	return CL_CLEAN;
 }
 #endif	/*HAVE_MMAP*/
+
+#else	/*!CL_EXPERIMENTAL*/
+
+int
+cli_scanjs(const char *dir, int desc)
+{
+	cli_warnmsg("JS decoding files not yet supported\n");
+	return CL_EFORMAT;
+}
 
 #endif	/*CL_EXPERIMENTAL*/
