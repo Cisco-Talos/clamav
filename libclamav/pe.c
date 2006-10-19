@@ -1893,7 +1893,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
        memcmp(buff+4, "\xe8\x00\x00\x00\x00\x8b\x1c\x24\x83\xc3", 10) == 0)  {
 
 	char *spinned;
-	int spinres;
 	    
 	if(ctx->limits && ctx->limits->maxfilesize && fsize > ctx->limits->maxfilesize) {
 	    cli_dbgmsg("PEspin: Size exceeded (fsize: %u, max: %lu)\n", fsize, ctx->limits->maxfilesize);
