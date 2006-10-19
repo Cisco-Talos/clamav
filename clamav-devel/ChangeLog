@@ -1,3 +1,8 @@
+Thu Oct 19 13:50:18 CEST 2006 (tk)
+----------------------------------
+  * clamd/others.c: remove C_WINDOWS specific implementation of readsock (bb#68)
+		    Thanks to Mark Pizzolato
+
 Wed Oct 18 14:25:04 BST 2006 (trog)
 -----------------------------------
   * libclamav/unrar/unrarcmd.c: Add include and clean up.
