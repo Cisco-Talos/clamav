@@ -68,6 +68,13 @@ Time: 0.024 sec (0 m 0 s)
     them automatically loaded every time clamscan/clamd starts just copy them
     to the local virus database directory.
 
+    \subsection{MD5, PE section based}
+    You can create an MD5 signature for a specific section in a PE file.
+    Such signatures are stored in .mdb files in the following format:
+    \begin{verbatim}
+PESectionSize:MD5:MalwareName
+    \end{verbatim}
+
     \subsection{Hexadecimal signatures}
     ClamAV keeps viral fragments in hexadecimal format. If you don't know how
     to get a proper signature please try the MD5 method or submit your sample
@@ -175,16 +182,33 @@ virname:encrypted:filename:normal size:csize:crc32:cmethod:fileno:max depth
     \begin{itemize}
 	\item \emph{Worm} for Internet worms
 	\item \emph{Trojan} for backdoor programs
+	\item \emph{Adware} for adware
+	\item \emph{Flooder} for flooders
+        \item \emph{HTML} for HTML files
+        \item \emph{Email} for email messages
+        \item \emph{IRC} for IRC trojans
 	\item \emph{JS} for Java Script malware
+	\item \emph{PHP} for PHP malware
+	\item \emph{ASP} for ASP malware
 	\item \emph{VBS} for VBS malware
+	\item \emph{BAT} for BAT malware
 	\item \emph{W97M}, \emph{W2000M} for Word macro viruses
 	\item \emph{X97M}, \emph{X2000M} for Excel macro viruses
 	\item \emph{O97M}, \emph{O2000M} for general Office macro viruses
 	\item \emph{DoS} for Denial of Service attack software
+	\item \emph{DOS} for old DOS malware
 	\item \emph{Exploit} for popular exploits
 	\item \emph{VirTool} for virus construction kits
 	\item \emph{Dialer} for dialers
 	\item \emph{Joke} for hoaxes
+    \end{itemize}
+    Important rules of the naming convention:
+    \begin{itemize}
+	\item always use a -zippwd postfix in the malware name for signatures of	      type zmd,
+	\item always use a -rarpwd postfix in the malware name for signatures
+	      of type rmd,
+	\item only use alphanumeric characters, dash (-), dot (.), underscores
+	      (\_) in malware names, never use space, apostrophe or quote mark.
     \end{itemize}
 
     \section{Special files}
@@ -214,67 +238,6 @@ LibClamAV debug: FSG: found old EP @1554
 LibClamAV debug: FSG: Successfully decompressed
 LibClamAV debug: UPX/FSG: Decompressed data saved in /tmp/clamav-4eba73ff4050a26
     \end{verbatim}
-    And create a signature for \verb+/tmp/clamav-4eba73ff4050a26+
-
-    \section{Building CVD files - ClamAV maintainers only}
-    Run freshclam to check you're using the latest databases. Next enter
-    some \textbf{empty} temporary directory and execute the following command:
-    \begin{verbatim}
-sigtool --unpack-current daily.cvd
-    \end{verbatim}
-    This will unpack all databases from the current \emph{daily.cvd} database.
-    Add signatures to appropriate files and build the final CVD:
-    \begin{verbatim}
-sigtool --build daily.cvd --server SIGNING_SERVER
-    \end{verbatim}
-    where SIGNING\_SERVER is one of the ClamAV Signing Servers you have
-    access to. This command will automatically generate binary database with
-    a digital signature.
-    \begin{verbatim}
-LibClamAV debug: Loading databases from .
-LibClamAV debug: Loading ./daily.db
-LibClamAV debug: Loading ./daily.hdb
-LibClamAV debug: Initializing trie.
-Database properly parsed.
-Signatures: 183
-COPYING
-tar: main.db: Cannot stat: No such file or directory
-tar: main.hdb: Cannot stat: No such file or directory
-daily.db
-daily.hdb
-tar: Notes: Cannot stat: No such file or directory
-tar: Error exit delayed from previous errors
-Builder id: tkojm
-Password:
-Signature received (length = 171).
-Database daily.cvd created.
-    \end{verbatim}
-    Don't worry about "No such file or directory" \emph{tar} errors. Finally,
-    you should verify the new database with:
-    \begin{verbatim}
-zolw@localhost:/usr/local/share/clamav$ sigtool -i daily.cvd 
-Build time: 26 Aug 2004 22-41 +0200
-Version: 473
-# of signatures: 183
-Functionality level: 2
-Builder: tkojm
-MD5: 0e89235392c1a1142dda0d022f218903
-Digital signature: bWBCx3KO7rkdOQo+zTIZXKhGNvmEz5n/fTUsCEVrdFwhWr2gf5MjsmO7nF/4BdRV/qwXEHJtp0i/2g6awhqUFaO73bbH5f+zmuHy8h0wqYv6jhlIdeA8uh6DGQYBj7azyS9O/0+bXEvU1SutpL3rW8ireFky6zXKv5BVbhnZj9j
-Verification OK.
-    \end{verbatim}
-    Now you must update the main rsync server:
-    {\small
-    \begin{verbatim}
-rsync -tcz --stats --progress -e ssh daily.cvd clamupload@rsync1.clamav.net:public_html/
-ssh rsync1.clamav.net -i ~/.ssh/id_rsa -l clamavdb sleep 1
-    \end{verbatim}}
-    Please consult \cite{mirroring} for more information. After an update please
-    send a summary to \url{clamav-virusdb@lists.clamav.net}. Thanks!
-
-    \begin{thebibliography}{99}
-	\bibitem{mirroring}
-	    Luca Gibelli, \emph{Mirroring the Virus Database}\\
-	    \url{http://www.clamav.net/doc/mirrors}
-    \end{thebibliography}
+    and then create a signature for \verb+/tmp/clamav-4eba73ff4050a26+
 
 \end{document}
