@@ -155,7 +155,7 @@ static uint32_t summit (char *src, int size)
 }
 
 
-int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sectcnt, uint32_t nep, int desc) {
+int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sectcnt, uint32_t nep, int desc, cli_ctx *ctx) {
   char *curr, *emu, *ep, *spinned;
   char **sects;
   int blobsz=0, j;
@@ -371,6 +371,21 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
 
   bitmap = cli_readint32(ep+0x3061);
   bitman = bitmap;
+
+  if(ctx->limits && ctx->limits->maxfilesize) {
+    unsigned long int filesize = 0;
+    
+    for (j=0; j<sectcnt; j++) {
+      if (bitmap&1) {
+	if ( filesize > ctx->limits->maxfilesize || (uint32_t)EC32(sections[j].VirtualSize) > ctx->limits->maxfilesize - filesize ) return 2;
+	filesize += (uint32_t)EC32(sections[j].VirtualSize);
+      }
+      bitmap>>=1;
+    }
+    
+    bitmap = bitman;
+  }
+
   cli_dbgmsg("spin: Compression bitmap is %x\n", bitmap);
   if ( (sects= (char **) cli_malloc(sectcnt*sizeof(char *))) == NULL )
     return 1;
@@ -395,7 +410,7 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
       sects[j] = src + EC32(sections[j].PointerToRawData);
       cli_dbgmsg("spin: Not growing sect%d\n", j);
     }
-    bitmap = bitmap >>1 & 0x7fffffff;
+    bitmap>>=1;
   }
   
   cli_dbgmsg("spin: decompression complete\n");

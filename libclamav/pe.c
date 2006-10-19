@@ -1892,7 +1892,19 @@ int cli_scanpe(int desc, cli_ctx *ctx)
        EC32(optional_hdr32.AddressOfEntryPoint) < EC32(section_hdr[nsections - 1].VirtualAddress) + EC32(section_hdr[nsections - 1].SizeOfRawData) - 0x3217 - 4 &&
        memcmp(buff+4, "\xe8\x00\x00\x00\x00\x8b\x1c\x24\x83\xc3", 10) == 0)  {
 
-	    char *spinned;
+	char *spinned;
+	int spinres;
+	    
+	if(ctx->limits && ctx->limits->maxfilesize && fsize > ctx->limits->maxfilesize) {
+	    cli_dbgmsg("PEspin: Size exceeded (fsize: %u, max: %lu)\n", fsize, ctx->limits->maxfilesize);
+            free(section_hdr);
+	    if(BLOCKMAX) {
+		*ctx->virname = "PE.Pespin.ExceededFileSize";
+		return CL_VIRUS;
+	    } else {
+		return CL_CLEAN;
+	    }
+	}
 
 	if((spinned = (char *) cli_malloc(fsize)) == NULL) {
 	    free(section_hdr);
@@ -1921,36 +1933,47 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    return CL_EIO;
 	}
 
-	if(!unspin(spinned, fsize, section_hdr, nsections - 1, EC32(optional_hdr32.AddressOfEntryPoint), ndesc)) {
+	switch(unspin(spinned, fsize, section_hdr, nsections - 1, EC32(optional_hdr32.AddressOfEntryPoint), ndesc, ctx)) {
+	case 0:
 	    free(spinned);
-	    cli_dbgmsg("PESpin: Unpacked and rebuilt executable saved in %s\n", tempfile);
+	    if(cli_leavetemps_flag)
+		cli_dbgmsg("PESpin: Unpacked and rebuilt executable saved in %s\n", tempfile);
+	    else
+		cli_dbgmsg("PESpin: Unpacked and rebuilt executable\n");
 	    fsync(ndesc);
 	    lseek(ndesc, 0, SEEK_SET);
-
 	    if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) {
-		free(section_hdr);
 		close(ndesc);
-		if(!cli_leavetemps_flag) {
+		if(!cli_leavetemps_flag)
 		    unlink(tempfile);
-		    free(tempfile);
-		} else {
-		    free(tempfile);
-		}
+	        free(tempfile);
+		free(section_hdr);
 		return CL_VIRUS;
 	    }
-
-	} else {
+	    close(ndesc);
+   	    if(!cli_leavetemps_flag)
+		unlink(tempfile);
+	    break;
+	case 1:
 	    free(spinned);
-	    cli_dbgmsg("PESpin: Rebuilding failed\n");
-	}
-
-	close(ndesc);
-	if(!cli_leavetemps_flag) {
+	    close(ndesc);
 	    unlink(tempfile);
-	    free(tempfile);
-	} else {
-	    free(tempfile);
+	    cli_dbgmsg("PESpin: Rebuilding failed\n");
+	    break;
+	case 2:
+	    free(spinned);
+	    close(ndesc);
+	    unlink(tempfile);
+	    cli_dbgmsg("PESpin: Size exceeded\n");
+	    if(BLOCKMAX) {
+		free(tempfile);
+		free(section_hdr);
+		*ctx->virname = "PE.Pespin.ExceededFileSize";
+		return CL_VIRUS;
+	    }
 	}
+	free(tempfile);
+	
     }
 
 
