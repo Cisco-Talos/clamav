@@ -1,3 +1,7 @@
+Thu Oct 19 14:32:02 CEST 2006 (tk)
+----------------------------------
+  * docs/signatures.{pdf,tex}: update
+
 Thu Oct 19 13:50:18 CEST 2006 (tk)
 ----------------------------------
   * clamd/others.c: remove C_WINDOWS specific implementation of readsock (bb#68)
