@@ -1,3 +1,7 @@
+Thu Oct 19 14:54:49 CEST 2006 (tk)
+----------------------------------
+  * libclamav/other.h: increase CLI_MAX_ALLOCATION (bb#54)
+
 Thu Oct 19 14:32:02 CEST 2006 (tk)
 ----------------------------------
   * docs/signatures.{pdf,tex}: update
