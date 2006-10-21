@@ -19,11 +19,13 @@
  * Save the JavaScript embedded in an HTML file, then run the script, saving
  * the output in a file that is to be scanned, then remove the script file
  */
-static	char	const	rcsid[] = "$Id: js.c,v 1.10 2006/10/19 17:29:47 njh Exp $";
+static	char	const	rcsid[] = "$Id: js.c,v 1.11 2006/10/21 15:22:33 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
+
+#include "clamav.h"
 
 #ifdef	CL_EXPERIMENTAL
 
@@ -39,7 +41,6 @@ static	char	const	rcsid[] = "$Id: js.c,v 1.10 2006/10/19 17:29:47 njh Exp $";
 #include <unistd.h>
 #endif
 
-#include "clamav.h"
 #include "others.h"
 #include "js.h"
 
