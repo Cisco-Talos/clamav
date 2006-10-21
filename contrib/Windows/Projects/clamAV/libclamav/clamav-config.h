@@ -23,7 +23,7 @@
 /* #undef CL_DEBUG */
 
 /* enable experimental code */
-/* #define CL_EXPERIMENTAL 1 */
+/* #undef CL_EXPERIMENTAL */
 
 /* thread safe */
 #define CL_THREAD_SAFE 1
@@ -111,7 +111,7 @@
 /* #define HAVE_BZLIB_H 1 */
 
 /* ancillary data style fd pass */
-#define HAVE_CONTROL_IN_MSGHDR 1
+/* #undef HAVE_CONTROL_IN_MSGHDR 1 */
 
 #define	NO_STRTOK_R
 
@@ -347,7 +347,7 @@
 /* #define USE_SYSLOG 1 */
 
 /* Version number of package */
-#define VERSION "devel-20060927"
+#define VERSION "devel-20061021"
 
 /* use libcurl in mbox code */
 #ifdef	CL_EXPERIMENTAL

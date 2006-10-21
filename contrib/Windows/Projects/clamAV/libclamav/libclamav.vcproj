@@ -41,8 +41,8 @@
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="false"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\pthread&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\mspack&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\unrar&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav&quot;"
-				PreprocessorDefinitions="HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;PTW32_STATIC_LIB"
+				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\js&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\pthread&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\mspack&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\unrar&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav&quot;"
+				PreprocessorDefinitions="HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;PTW32_STATIC_LIB;_DEBUG"
 				StringPooling="true"
 				MinimalRebuild="true"
 				ExceptionHandling="0"
@@ -112,7 +112,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="false"
-				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\pthread&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\mspack&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\unrar&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav&quot;"
+				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\js&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\pthread&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\mspack&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\unrar&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav&quot;"
 				PreprocessorDefinitions="HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;PTW32_STATIC_LIB"
 				StringPooling="true"
 				ExceptionHandling="0"
@@ -234,6 +234,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\js.c"
+				>
+			</File>
+			<File
 				RelativePath=".\line.c"
 				>
 			</File>
@@ -326,6 +330,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\sha256.c"
+				>
+			</File>
+			<File
 				RelativePath=".\sis.c"
 				>
 			</File>
@@ -340,26 +348,6 @@
 			<File
 				RelativePath=".\spin.c"
 				>
-			</File>
-			<File
-				RelativePath=".\stdafx.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="1"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\str.c"
@@ -604,6 +592,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\js.h"
+				>
+			</File>
+			<File
 				RelativePath=".\libclamav.h"
 				>
 			</File>
@@ -697,6 +689,10 @@
 			</File>
 			<File
 				RelativePath=".\scanners.h"
+				>
+			</File>
+			<File
+				RelativePath=".\sha256.h"
 				>
 			</File>
 			<File
