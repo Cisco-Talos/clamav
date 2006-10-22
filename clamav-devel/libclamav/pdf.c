@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.55 2006/09/15 18:07:34 njh Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.56 2006/10/22 10:23:26 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -178,7 +178,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		char *md5digest;
 		size_t length, objlen, streamlen;
 		char fullname[NAME_MAX + 1];
-  
+
 		if(q == xrefstart)
 			break;
 		if(memcmp(q, "xref", 4) == 0)
@@ -235,6 +235,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		q = objstart;
 		while(q < streamstart) {
 			if(*q == '/') {	/* name object */
+				/*cli_dbgmsg("Name object %8.8s\n", q+1, q+1);*/
 				if(strncmp(++q, "Length ", 7) == 0) {
 					q += 7;
 					length = atoi(q);
@@ -243,8 +244,8 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 					q--;
 				} else if(strncmp(q, "FlateDecode", 11) == 0) {
 					is_flatedecode = 1;
-					q += 12;
-				} else if(strncmp(q, "ASCII85Decode", 12) == 0) {
+					q += 11;
+				} else if(strncmp(q, "ASCII85Decode", 13) == 0) {
 					is_ascii85decode = 1;
 					q += 13;
 				}
@@ -297,7 +298,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 			}
 		} else
 			fout = open(fullname, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
-#else	
+#else
 		mktemp(fullname);
 		fout = open(fullname, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
 #endif
@@ -308,7 +309,8 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 			break;
 		}
 
-		cli_dbgmsg("length %d, streamlen %d\n", length, streamlen);
+		cli_dbgmsg("length %d, streamlen %d isFlate %d isASCII85 %d\n",
+			length, streamlen, is_flatedecode, is_ascii85decode);
 
 #if	0
 		/* FIXME: this isn't right... */
@@ -585,6 +587,7 @@ pdf_nextobject(const char *ptr, size_t len)
 
 			case ' ':
 			case '\t':
+			case '[':	/* Start of an array object */
 			case '\v':
 			case '\f':
 				inobject = 0;

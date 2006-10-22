@@ -1,3 +1,7 @@
+Sun Oct 22 11:24:07 BST 2006 (njh)
+----------------------------------
+  * libclamav/pdf.c:	Handle ASCII85 encoded Flated objectes (bug#43)
+
 Thu Oct 19 20:33:15 CEST 2006 (acab)
 ------------------------------------
   * libclamav/pe.c: remove unused variable
