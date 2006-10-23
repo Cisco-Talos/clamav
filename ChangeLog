@@ -1,3 +1,7 @@
+Mon Oct 23 17:48:39 CEST 2006 (tk)
+----------------------------------
+  * libclamav: improve support for NodalCore SDK 3.3
+
 Sun Oct 22 11:24:07 BST 2006 (njh)
 ----------------------------------
   * libclamav/pdf.c:	Handle ASCII85 encoded Flated objectes (bug#43)

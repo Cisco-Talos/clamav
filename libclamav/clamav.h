@@ -178,8 +178,8 @@ struct cl_engine {
     /* RAR metadata */
     struct cli_meta_node *rar_mlist;
 
-    /* Hardware database handle */
-    void *hwdb;
+    /* NodalCore database handle */
+    void *ncdb;
 
     /* Phishing .pdb and .wdb databases*/
     void *whitelist_matcher;

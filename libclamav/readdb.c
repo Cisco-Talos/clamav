@@ -1097,9 +1097,10 @@ static int cli_loadmd(FILE *fd, struct cl_engine **engine, unsigned int *signo, 
 }
 
 #ifdef HAVE_NCORE
-static int cli_loadhw(const char *filename, struct cl_engine **engine, unsigned int *signo, unsigned int options)
+static int cli_loadncdb(const char *filename, struct cl_engine **engine, unsigned int *signo, unsigned int options)
 {
 	int ret = 0;
+	unsigned int newsigs = 0;
 
 
     if((ret = cli_initengine(engine, options))) {
@@ -1107,20 +1108,21 @@ static int cli_loadhw(const char *filename, struct cl_engine **engine, unsigned 
 	return ret;
     }
 
-    if((ret = sn_sigscan_initdb(&(*engine)->hwdb)) < 0) {
-	cli_errmsg("ncore: error initializing the matcher: %d\n", ret);
+    if((ret = sn_sigscan_initdb(&(*engine)->ncdb)) < 0) {
+	cli_errmsg("cli_loadncdb: error initializing the matcher: %d\n", ret);
 	cl_free(*engine);
 	return CL_EHWINIT;
     }
 
     (*engine)->ncore = 1;
 
-    if((ret = sn_sigscan_loaddb((*engine)->hwdb, filename, 0, signo)) < 0) {
-	cli_errmsg("ncore: can't load hardware database: %d\n", ret);
+    if((ret = sn_sigscan_loaddb((*engine)->ncdb, filename, 0, &newsigs)) < 0) {
+	cli_errmsg("cli_loadncdb: can't load hardware database: %d\n", ret);
 	cl_free(*engine);
 	return CL_EHWLOAD;
     }
 
+    *signo += newsigs;
     return CL_SUCCESS;
 }
 #endif /* HAVE_NCORE */
@@ -1184,10 +1186,10 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
     } else if(cli_strbcasestr(filename, ".rmd")) {
 	ret = cli_loadmd(fd, engine, signo, 2, options);
 
-    } else if(cli_strbcasestr(filename, ".hw")) {
+    } else if(cli_strbcasestr(filename, ".ncdb")) {
 #ifdef HAVE_NCORE
 	if(options & CL_DB_NCORE)
-	    ret = cli_loadhw(filename, engine, signo, options);
+	    ret = cli_loadncdb(filename, engine, signo, options);
 	else
 #endif
 	    skipped = 1;
@@ -1272,7 +1274,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigne
 	     cli_strbcasestr(dent->d_name, ".pdb")  ||
 	     cli_strbcasestr(dent->d_name, ".wdb")  ||
 #endif
-	     cli_strbcasestr(dent->d_name, ".hw")  ||
+	     cli_strbcasestr(dent->d_name, ".ncdb") ||
 	     cli_strbcasestr(dent->d_name, ".inc")  ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
 
@@ -1393,7 +1395,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".pdb")  ||
 	    cli_strbcasestr(dent->d_name, ".wdb")  ||
 #endif
-	    cli_strbcasestr(dent->d_name, ".hw")   ||
+	    cli_strbcasestr(dent->d_name, ".ncdb")  ||
 	    cli_strbcasestr(dent->d_name, ".inc")   ||
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
@@ -1472,7 +1474,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".pdb")  ||
 	    cli_strbcasestr(dent->d_name, ".wdb")  ||
 #endif
-	    cli_strbcasestr(dent->d_name, ".hw")   ||
+	    cli_strbcasestr(dent->d_name, ".ncdb")  ||
 	    cli_strbcasestr(dent->d_name, ".inc")   ||
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
@@ -1572,7 +1574,7 @@ void cl_free(struct cl_engine *engine)
 
 #ifdef HAVE_NCORE
     if(engine->ncore) {
-	if((ret = sn_sigscan_closedb(engine->hwdb)) < 0) {
+	if((ret = sn_sigscan_closedb(engine->ncdb)) < 0) {
 	    cli_errmsg("cl_free: can't close hardware database: %d\n", ret);
 	}
     }
