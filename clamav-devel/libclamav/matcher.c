@@ -75,7 +75,7 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 #ifdef HAVE_NCORE
     if(engine->ncore) {
 	/* TODO: Setup proper data bitmask (need specs) */
-	if((hret = sn_sigscan_createstream(engine->hwdb, datamask, 2, &streamhandle)) < 0) {
+	if((hret = sn_sigscan_createstream(engine->ncdb, datamask, 2, &streamhandle)) < 0) {
 	    cli_errmsg("cli_scanbuff: can't create new hardware stream: %d\n", hret);
 	    return CL_EHWIO;
 	}
@@ -133,7 +133,7 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 		sn_sigscan_resultfree(resulthandle);
 		return CL_EHWIO;
 	    }
-	    if(optionalsigdata) {
+	    if(optionalsigdata && strlen(optionalsigdata)) {
 		if((pt = cli_strtok(optionalsigdata, 1, ":"))) { /* max version */
 		    if(!isdigit(*pt)) {
 			free(pt);
@@ -434,7 +434,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 #ifdef HAVE_NCORE
     if(ctx->engine->ncore) {
 	/* TODO: Setup proper data bitmask (need specs) */
-	if((hret = sn_sigscan_createstream(ctx->engine->hwdb, datamask, 2, &streamhandle)) < 0) {
+	if((hret = sn_sigscan_createstream(ctx->engine->ncdb, datamask, 2, &streamhandle)) < 0) {
 	    cli_errmsg("cli_scandesc: can't create new hardware stream: %d\n", hret);
 	    return CL_EHWIO;
 	}
@@ -533,7 +533,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 		sn_sigscan_resultfree(resulthandle);
 		return CL_EHWIO;
 	    }
-	    if(optionalsigdata) {
+	    if(optionalsigdata && strlen(optionalsigdata)) {
 		if((pt = cli_strtok(optionalsigdata, 1, ":"))) { /* max version */
 		    if(!isdigit(*pt)) {
 			free(pt);
