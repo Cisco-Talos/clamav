@@ -32,6 +32,7 @@
 #include "others.h"
 #include "readdb.h"
 #include "matcher-ac.h"
+#include "str.h"
 
 struct cli_magic_s {
     size_t offset;
@@ -205,7 +206,7 @@ static char internat[256] = {
 
 cli_file_t cli_filetype(const unsigned char *buf, size_t buflen)
 {
-	int i, ascii = 1, len;
+	int i, text = 1, len;
 
 
     for(i = 0; cli_magic[i].magic; i++) {
@@ -220,26 +221,63 @@ cli_file_t cli_filetype(const unsigned char *buf, size_t buflen)
     buflen < 25 ? (len = buflen) : (len = 25);
     for(i = 0; i < len; i++)
 	if(!iscntrl(buf[i]) && !isprint(buf[i]) && !internat[buf[i] & 0xff]) {
-	    ascii = 0;
+	    text = 0;
 	    break;
 	}
 
-    return ascii ? CL_TYPE_UNKNOWN_TEXT : CL_TYPE_UNKNOWN_DATA;
+    return text ? CL_TYPE_UNKNOWN_TEXT : CL_TYPE_UNKNOWN_DATA;
 }
 
 int is_tar(unsigned char *buf, unsigned int nbytes);
 
-cli_file_t cli_filetype2(int desc)
+cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 {
-	char smallbuff[MAGIC_BUFFER_SIZE + 1];
+	char smallbuff[MAGIC_BUFFER_SIZE + 1], *decoded;
 	unsigned char *bigbuff;
-	int bread;
+	int bread, sret;
 	cli_file_t ret = CL_TYPE_UNKNOWN_DATA;
+	struct cli_matcher *root;
+	int *partcnt;
+	unsigned long int *partoff;
 
 
     memset(smallbuff, 0, sizeof(smallbuff));
     if((bread = read(desc, smallbuff, MAGIC_BUFFER_SIZE)) > 0)
 	ret = cli_filetype(smallbuff, bread);
+
+    if(engine && ret == CL_TYPE_UNKNOWN_TEXT) {
+	root = engine->root[0];
+	if(!root)
+	    return ret;
+
+	if((partcnt = (int *) cli_calloc(root->ac_partsigs + 1, sizeof(int))) == NULL) {
+	    cli_warnmsg("cli_filetype2(): unable to cli_calloc(%d, %d)\n", root->ac_partsigs + 1, sizeof(int));
+	    return ret;
+	}
+
+	if((partoff = (unsigned long int *) cli_calloc(root->ac_partsigs + 1, sizeof(unsigned long int))) == NULL) {
+	    cli_dbgmsg("cli_filetype2(): unable to cli_calloc(%d, %d)\n", root->ac_partsigs + 1, sizeof(unsigned long int));
+	    free(partcnt);
+	    return ret;
+	}
+
+	sret = cli_ac_scanbuff(smallbuff, bread, NULL, engine->root[0], partcnt, 1, 0, partoff, 0, -1, NULL);
+	if(sret >= CL_TYPENO) {
+	    ret = sret;
+	} else {
+	    memset(partcnt, 0, (root->ac_partsigs + 1) * sizeof(int));
+	    memset(partoff, 0, (root->ac_partsigs + 1) * sizeof(unsigned long int));
+	    decoded = cli_utf16toascii(smallbuff, bread);
+	    if(decoded) {
+		sret = cli_ac_scanbuff(decoded, strlen(decoded), NULL, engine->root[0], partcnt, 1, 0, partoff, 0, -1, NULL);
+		free(decoded);
+		if(sret == CL_TYPE_HTML)
+		    ret = CL_TYPE_HTML_UTF16;
+	    }
+	}
+	free(partcnt);
+	free(partoff);
+    }
 
     if(ret == CL_TYPE_UNKNOWN_DATA || ret == CL_TYPE_UNKNOWN_TEXT) {
 

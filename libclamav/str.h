@@ -27,6 +27,7 @@ short int *cli_hex2si(const char *hex);
 char *cli_hex2str(const char *hex);
 int cli_hex2num(const char *hex);
 char *cli_str2hex(const char *string, unsigned int len);
+char *cli_utf16toascii(const char *str, unsigned int length);
 char *cli_strtokbuf(const char *input, int fieldno, const char *delim, char *output);
 const char *cli_memstr(const char *haystack, int hs, const char *needle, int ns);
 char *cli_strrcpy(char *dest, const char *source);

@@ -23,7 +23,7 @@
 
 #include <sys/types.h>
 
-#define MAGIC_BUFFER_SIZE 50
+#define MAGIC_BUFFER_SIZE 256
 #define CL_TYPENO 500
 #define SFX_MAX_TESTS 10
 
@@ -53,6 +53,7 @@ typedef enum {
     CL_TYPE_PDF,
     CL_TYPE_UUENCODED,
     CL_TYPE_PST,	/* Microsoft Outlook binary email folder (.pst file) */
+    CL_TYPE_HTML_UTF16,
 
     /* bigger numbers have higher priority (in o-t-f detection) */
     CL_TYPE_HTML, /* on the fly */
@@ -71,7 +72,7 @@ struct cli_matched_type {
 };
 
 cli_file_t cli_filetype(const unsigned char *buf, size_t buflen);
-cli_file_t cli_filetype2(int desc);
+cli_file_t cli_filetype2(int desc, const struct cl_engine *engine);
 int cli_addtypesigs(struct cl_engine *engine);
 
 #endif
