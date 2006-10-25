@@ -116,8 +116,8 @@ int main(int argc, char **argv)
 	cl_settempdir(NULL, 1);
 
     /* initialize logger */
-    if(opt_check(opt, "logger")) {
-	logg_file = opt_arg(opt, "logger");
+    if(opt_check(opt, "log")) {
+	logg_file = opt_arg(opt, "log");
 	if(logg("#\n-------------------------------------------------------------------------------\n\n")) {
 	    mprintf("!Problem with internal logger.\n");
 	    opt_free(opt);
