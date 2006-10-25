@@ -1,3 +1,7 @@
+Wed Oct 25 18:03:34 CEST 2006 (tk)
+----------------------------------
+  * sigtool/sigtool.c: new option --utf16-decode
+
 Wed Oct 25 17:39:24 CEST 2006 (tk)
 ----------------------------------
   * libclamav: add support for UTF16 encoded HTML files,

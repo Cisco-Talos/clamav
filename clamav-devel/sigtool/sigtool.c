@@ -143,6 +143,52 @@ static int htmlnorm(struct optstruct *opt)
     return 0;
 }
 
+static int utf16decode(struct optstruct *opt)
+{
+	const char *fname;
+	char *newname, buff[512], *decoded;
+	int ret = CL_CLEAN, fd1, fd2, bytes;
+
+
+    fname = opt_arg(opt, "utf16-decode");
+    if((fd1 = open(fname, O_RDONLY)) == -1) {
+	mprintf("!utf16decode: Can't open file %s\n", fname);
+	return -1;
+    }
+
+    newname = malloc(strlen(fname) + 7);
+    sprintf(newname, "%s.ascii", fname);
+
+    if((fd2 = open(newname, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+	mprintf("!utf16decode: Can't create file %s\n", newname);
+	free(newname);
+	close(fd1);
+	return -1;
+    }
+
+    while((bytes = read(fd1, buff, sizeof(buff))) > 0) {
+	decoded = cli_utf16toascii(buff, bytes);
+	if(decoded) {
+	    if(write(fd2, decoded, strlen(decoded)) == -1) {
+		mprintf("!utf16decode: Can't write to file %s\n", newname);
+		free(decoded);
+		unlink(newname);
+		free(newname);
+		close(fd1);
+		close(fd2);
+		return -1;
+	    }
+	    free(decoded);
+	}
+    }
+
+    free(newname);
+    close(fd1);
+    close(fd2);
+
+    return 0;
+}
+
 static unsigned int countlines(const char *filename)
 {
 	FILE *fd;
@@ -1612,6 +1658,7 @@ void help(void)
     mprintf("    --md5 [FILES]                          generate MD5 checksum from stdin\n");
     mprintf("                                           or MD5 sigs for FILES\n");
     mprintf("    --html-normalise=FILE                  create normalised parts of HTML file\n");
+    mprintf("    --utf16-decode=FILE                    decode UTF16 encoded files\n");
     mprintf("    --info=FILE            -i FILE         print database information\n");
     mprintf("    --build=NAME           -b NAME         build a CVD file\n");
     mprintf("    --server=ADDR                          ClamAV Signing Service address\n");
@@ -1646,6 +1693,7 @@ int main(int argc, char **argv)
 	    {"hex-dump", 0, 0, 0},
 	    {"md5", 0, 0, 0},
 	    {"html-normalise", 1, 0, 0},
+	    {"utf16-decode", 1, 0, 0},
 	    {"build", 1, 0, 'b'},
 	    {"server", 1, 0, 0},
 	    {"unpack", 1, 0, 'u'},
@@ -1693,6 +1741,8 @@ int main(int argc, char **argv)
 	ret = md5sig(opt);
     else if(opt_check(opt, "html-normalise"))
 	ret = htmlnorm(opt);
+    else if(opt_check(opt, "utf16-decode"))
+	ret = utf16decode(opt);
     else if(opt_check(opt, "build"))
 	ret = build(opt);
     else if(opt_check(opt, "unpack"))
