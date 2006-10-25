@@ -78,6 +78,7 @@ extern short cli_leavetemps_flag;
 #include "pst.h"
 #include "sis.h"
 #include "pdf.h"
+#include "str.h"
 
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>
@@ -1154,6 +1155,50 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
     return ret;
 }
 
+static int cli_scanhtml_utf16(int desc, cli_ctx *ctx)
+{
+	char *tempname, buff[512], *decoded;
+	int ret = CL_CLEAN, fd, bytes;
+
+
+    cli_dbgmsg("in cli_scanhtml_utf16()\n");
+
+    tempname = cli_gentemp(NULL);
+    if((fd = open(tempname, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
+	cli_errmsg("cli_scanhtml_utf16: Can't create file %s\n", tempname);
+	free(tempname);
+	return CL_EIO;
+    }
+
+    while((bytes = read(desc, buff, sizeof(buff))) > 0) {
+	decoded = cli_utf16toascii(buff, bytes);
+	if(decoded) {
+	    if(write(fd, decoded, strlen(decoded)) == -1) {
+		cli_errmsg("cli_scanhtml_utf16: Can't write to file %s\n", tempname);
+		free(decoded);
+		unlink(tempname);
+		free(tempname);
+		close(fd);
+		return CL_EIO;
+	    }
+	    free(decoded);
+	}
+    }
+
+    fsync(fd);
+    lseek(fd, 0, SEEK_SET);
+    ret = cli_scanhtml(fd, ctx);
+    close(fd);
+
+    if(!cli_leavetemps_flag)
+	unlink(tempname);
+    else
+	cli_dbgmsg("cli_scanhtml_utf16: Decoded HTML data saved in %s\n", tempname);
+    free(tempname);
+
+    return ret;
+}
+
 static int cli_scanole2(int desc, cli_ctx *ctx)
 {
 	char *dir;
@@ -1672,7 +1717,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	}
 
     lseek(desc, 0, SEEK_SET);
-    type = cli_filetype2(desc);
+    type = cli_filetype2(desc, ctx->engine);
     lseek(desc, 0, SEEK_SET);
 
     if(type != CL_TYPE_DATA && ctx->engine->sdb) {
@@ -1714,6 +1759,16 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	case CL_TYPE_MSCAB:
 	    if(SCAN_ARCHIVE)
 		ret = cli_scanmscab(desc, ctx);
+	    break;
+
+	case CL_TYPE_HTML:
+	    if(SCAN_HTML)
+		ret = cli_scanhtml(desc, ctx);
+	    break;
+
+	case CL_TYPE_HTML_UTF16:
+	    if(SCAN_HTML)
+		ret = cli_scanhtml_utf16(desc, ctx);
 	    break;
 
 	case CL_TYPE_MAIL:

@@ -173,6 +173,33 @@ char *cli_str2hex(const char *string, unsigned int len)
     return hexstr;
 }
 
+char *cli_utf16toascii(const char *str, unsigned int length)
+{
+	char *decoded;
+	unsigned int i, j;
+
+
+    if(length < 2) {
+	cli_warnmsg("cli_utf16toascii: length < 2\n");
+	return NULL;
+    }
+
+    if(length % 2)
+	length--;
+
+    if(!(decoded = cli_calloc(length / 2 + 1, sizeof(char))))
+	return NULL;
+
+    for(i = 0, j = 0; i < length; i += 2, j++) {
+       decoded[j] = str[i + 1] << 4;
+       decoded[j] += str[i];
+       if(decoded[j] == '%')
+	   decoded[j] = '_';
+    }
+
+    return decoded;
+}
+
 int cli_strbcasestr(const char *haystack, const char *needle)
 {
 	char *pt = (char *) haystack;
