@@ -45,6 +45,7 @@
 #include "yc.h"
 #include "wwunpack.h"
 #include "suecrypt.h"
+#include "unsp.h"
 #include "scanners.h"
 #include "rebuildpe.h"
 #include "str.h"
@@ -67,6 +68,9 @@
 
 #define EC32(x) le32_to_host(x) /* Convert little endian to host */
 #define EC16(x) le16_to_host(x)
+/* lower and upper bondary alignment (size vs offset) */
+#define PEALIGN(o,a) (((a))?(((o)/(a))*(a)):(o))
+#define PESALIGN(o,a) (((a))?(((o)/(a)+((o)%(a)!=0))*(a)):(o))
 
 extern short cli_leavetemps_flag;
 
@@ -75,13 +79,13 @@ struct offset_list {
     struct offset_list *next;
 };
 
-static uint32_t cli_rawaddr(uint32_t rva, struct pe_image_section_hdr *shp, uint16_t nos, unsigned int *err)
+static uint32_t cli_rawaddr(uint32_t rva, struct pe_image_section_hdr *shp, uint16_t nos, unsigned int *err, uint32_t valign, uint32_t falign)
 {
 	int i, found = 0;
 
 
     for(i = 0; i < nos; i++) {
-	if(EC32(shp[i].VirtualAddress) <= rva && EC32(shp[i].VirtualAddress) + EC32(shp[i].SizeOfRawData) > rva) {
+      if(PEALIGN(EC32(shp[i].VirtualAddress), valign) <= rva && PEALIGN(EC32(shp[i].VirtualAddress), valign) + PESALIGN(EC32(shp[i].SizeOfRawData), falign) > rva) {
 	    found = 1;
 	    break;
 	}
@@ -93,7 +97,7 @@ static uint32_t cli_rawaddr(uint32_t rva, struct pe_image_section_hdr *shp, uint
     }
 
     *err = 0;
-    return rva - EC32(shp[i].VirtualAddress) + EC32(shp[i].PointerToRawData);
+    return rva - PEALIGN(EC32(shp[i].VirtualAddress), valign) + PEALIGN(EC32(shp[i].PointerToRawData), falign);
 }
 
 static void xckriz(char **opcode, int *len, int checksize, int reg) {
@@ -661,7 +665,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     else
 	ep = EC32(optional_hdr32.AddressOfEntryPoint);
 
-    if(ep >= min && !(ep = cli_rawaddr(ep, section_hdr, nsections, &err)) && err) {
+    if(ep >= min && !(ep = cli_rawaddr(ep, section_hdr, nsections, &err, 0, 0)) && err) {
 	cli_dbgmsg("Possibly broken PE file\n");
 	free(section_hdr);
 	if(DETECT_BROKEN) {
@@ -813,7 +817,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		}
 		val = cli_readint32(jpt + 1);
 		val += 5 + EC32(section_hdr[0].VirtualAddress) + total + shift;
-		raddr = cli_rawaddr(val, section_hdr, nsections, &err);
+		raddr = cli_rawaddr(val, section_hdr, nsections, &err, 0, 0);
 
 		if(!err && (raddr >= EC32(section_hdr[polipos].PointerToRawData) && raddr < EC32(section_hdr[polipos].PointerToRawData) + EC32(section_hdr[polipos].SizeOfRawData)) && (!offlist || (raddr != offlist->offset))) {
 		    offnode = (struct offset_list *) cli_malloc(sizeof(struct offset_list));
@@ -1815,7 +1819,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 	    for(i = 0 ; i < nsections; i++) {
 		if(section_hdr[i].SizeOfRawData) {
-			uint32_t offset = cli_rawaddr(EC32(section_hdr[i].VirtualAddress), section_hdr, nsections, &err);
+		  uint32_t offset = cli_rawaddr(EC32(section_hdr[i].VirtualAddress), section_hdr, nsections, &err, 0, 0);
 
 		    if(err || lseek(desc, offset, SEEK_SET) == -1 || (unsigned int) cli_readn(desc, dest + EC32(section_hdr[i].VirtualAddress) - min, EC32(section_hdr[i].SizeOfRawData)) != EC32(section_hdr[i].SizeOfRawData)) {
 			free(section_hdr);
@@ -1892,8 +1896,8 @@ int cli_scanpe(int desc, cli_ctx *ctx)
        EC32(optional_hdr32.AddressOfEntryPoint) < EC32(section_hdr[nsections - 1].VirtualAddress) + EC32(section_hdr[nsections - 1].SizeOfRawData) - 0x3217 - 4 &&
        memcmp(buff+4, "\xe8\x00\x00\x00\x00\x8b\x1c\x24\x83\xc3", 10) == 0)  {
 
-	char *spinned;
-	    
+	    char *spinned;
+
 	if(ctx->limits && ctx->limits->maxfilesize && fsize > ctx->limits->maxfilesize) {
 	    cli_dbgmsg("PEspin: Size exceeded (fsize: %u, max: %lu)\n", fsize, ctx->limits->maxfilesize);
             free(section_hdr);
@@ -2059,7 +2063,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
       char *dest, *wwp;
 
       for(i = 0 ; i < (unsigned int)nsections-1; i++) {
-	uint32_t offset = cli_rawaddr(EC32(section_hdr[i].VirtualAddress), section_hdr, nsections, &err);
+	uint32_t offset = cli_rawaddr(EC32(section_hdr[i].VirtualAddress), section_hdr, nsections, &err, 0, 0);
 	if (!err && offset<headsize) headsize=offset;
       }
       
@@ -2093,7 +2097,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
       for(i = 0 ; i < (unsigned int)nsections-1; i++) {
 	if(section_hdr[i].SizeOfRawData) {
-	  uint32_t offset = cli_rawaddr(EC32(section_hdr[i].VirtualAddress), section_hdr, nsections, &err);
+	  uint32_t offset = cli_rawaddr(EC32(section_hdr[i].VirtualAddress), section_hdr, nsections, &err, 0, 0);
 	  
 	  if(err || lseek(desc, offset, SEEK_SET) == -1 || (unsigned int) cli_readn(desc, dest + headsize + EC32(section_hdr[i].VirtualAddress) - min, EC32(section_hdr[i].SizeOfRawData)) != EC32(section_hdr[i].SizeOfRawData)) {
 	    free(dest);
@@ -2175,6 +2179,120 @@ int cli_scanpe(int desc, cli_ctx *ctx)
       }
     }
 
+#ifdef CL_EXPERIMENTAL
+    /* NsPack */
+
+    /* WATCH OUT: ep && buff destroyed!!! */
+    while (1) {
+      uint32_t eprva = EC32(optional_hdr32.AddressOfEntryPoint);
+      uint32_t start_of_stuff, ssize, dsize;
+      unsigned int nowinldr;
+      char *src, *dest;
+      FILE *asd;
+
+      ep = cli_rawaddr(eprva , section_hdr, nsections, &err, EC32(optional_hdr32.SectionAlignment), EC32(optional_hdr32.FileAlignment));
+      if (lseek(desc, ep, SEEK_SET)==-1) break;
+      if (cli_readn(desc, buff, 13)!=13) break;
+      if (*buff=='\xe9') { /* bitched headers */
+	eprva = cli_readint32(buff+1)+EC32(optional_hdr32.AddressOfEntryPoint)+5;
+	ep = cli_rawaddr(eprva, section_hdr, nsections, &err, EC32(optional_hdr32.SectionAlignment), EC32(optional_hdr32.FileAlignment));
+	if (lseek(desc, ep, SEEK_SET)==-1) break;
+	if (cli_readn(desc, buff, 24)!=24) break;
+      }
+
+      if (memcmp(buff, "\x9c\x60\xe8\x00\x00\x00\x00\x5d\xb8\x07\x00\x00\x00", 13)) break;
+
+      nowinldr = 0x54-cli_readint32(buff+17);
+      cli_dbgmsg("NsPack: Found *start_of_stuff @delta-%x\n", nowinldr);
+
+      if (lseek(desc, ep-nowinldr, SEEK_SET)==-1) break;
+      if (cli_readn(desc, buff, 4)!=4) break;
+      start_of_stuff=ep+cli_readint32(buff);
+      if (lseek(desc, start_of_stuff, SEEK_SET)==-1) break;
+      if (cli_readn(desc, buff, 20)!=20) break;
+      src = buff;
+      if (!cli_readint32(buff)) {
+	start_of_stuff+=4; /* FIXME: more to do */
+	src+=4;
+      }
+
+      ssize = cli_readint32(src+5)|0xff;
+      dsize = cli_readint32(src+9);
+
+      if(ctx->limits && ctx->limits->maxfilesize && (ssize > ctx->limits->maxfilesize || dsize > ctx->limits->maxfilesize)) {
+	cli_dbgmsg("NsPack: Size exceeded\n");
+	free(section_hdr);
+	if(BLOCKMAX) {
+	  *ctx->virname = "PE.NsPack.ExceededFileSize";
+	  return CL_VIRUS;
+	} else {
+	  return CL_CLEAN;
+	}
+      }
+
+      if ( !ssize || !dsize || dsize != (uint32_t)PESALIGN(EC32(section_hdr[0].VirtualSize), EC32(optional_hdr32.SectionAlignment))) break;
+      if (lseek(desc, start_of_stuff, SEEK_SET)==-1) break;
+      if (!(dest=cli_malloc(dsize))) break;
+      /* memset(dest, 0xfc, dsize); */
+
+      if (!(src=cli_malloc(ssize))) {
+	free(dest);
+	break;
+      }
+      /* memset(src, 0x00, ssize); */
+      cli_readn(desc, src, ssize);
+
+      eprva+=0x27a;
+      ep = cli_rawaddr(eprva, section_hdr, nsections, &err, EC32(optional_hdr32.SectionAlignment), EC32(optional_hdr32.FileAlignment));
+      if (lseek(desc, ep, SEEK_SET)==-1) break;
+      if (cli_readn(desc, buff, 5)!=5) break;
+      eprva=eprva+5+cli_readint32(buff+1);
+      cli_dbgmsg("NsPack: OEP = %08x\n", eprva);
+
+      if(!(tempfile = cli_gentemp(NULL))) {
+	free(src);
+	free(dest);
+	free(section_hdr);
+	return CL_EMEM;
+      }
+
+      if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
+	cli_dbgmsg("NsPack: Can't create file %s\n", tempfile);
+	free(tempfile);
+	free(src);
+	free(dest);
+	free(section_hdr);
+	return CL_EIO;
+      }
+
+      if (!unspack(src, dest, ctx, EC32(section_hdr[0].VirtualAddress), EC32(optional_hdr32.ImageBase), eprva, ndesc)) {
+	free(src);
+	free(dest);
+	if (cli_leavetemps_flag)
+	  cli_dbgmsg("NsPack: Unpacked and rebuilt executable saved in %s\n", tempfile);
+	else
+	  cli_dbgmsg("NsPack: Unpacked and rebuilt executable\n");
+	fsync(ndesc);
+	lseek(ndesc, 0, SEEK_SET);
+
+	if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) {
+	  free(section_hdr);
+	  close(ndesc);
+	  if(!cli_leavetemps_flag) unlink(tempfile);
+	  free(tempfile);
+	  return CL_VIRUS;
+	}
+      } else {
+	free(src);
+	free(dest);
+	cli_dbgmsg("NsPack: Unpacking failed\n");
+      }
+      close(ndesc);
+      if(!cli_leavetemps_flag) unlink(tempfile);
+      free(tempfile);
+      break;
+    }
+#endif /* CL_EXPERIMENTAL - NsPack */
 
     /* to be continued ... */
 
@@ -2320,7 +2438,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
     else
 	peinfo->ep = EC32(optional_hdr32.AddressOfEntryPoint);
 
-    if(peinfo->ep >= min && !(peinfo->ep = cli_rawaddr(peinfo->ep, section_hdr, peinfo->nsections, &err)) && err) {
+	if(peinfo->ep >= min && !(peinfo->ep = cli_rawaddr(peinfo->ep, section_hdr, peinfo->nsections, &err, 0, 0)) && err) {
 	cli_dbgmsg("Possibly broken PE file\n");
 	free(section_hdr);
 	free(peinfo->section);

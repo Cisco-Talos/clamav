@@ -96,6 +96,8 @@ libclamav_la_SOURCES = \
 	wwunpack.h \
 	suecrypt.c \
 	suecrypt.h \
+	unsp.c \
+	unsp.h \
 	packlibs.c \
 	packlibs.h \
 	fsg.c \

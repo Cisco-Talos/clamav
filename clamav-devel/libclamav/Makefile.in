@@ -83,12 +83,12 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	text.lo ole2_extract.lo vba_extract.lo msexpand.lo pe.lo \
 	cabd.lo lzxd.lo mszipd.lo qtmd.lo system.lo upx.lo htmlnorm.lo \
 	chmunpack.lo rebuildpe.lo petite.lo wwunpack.lo suecrypt.lo \
-	packlibs.lo fsg.lo line.lo untar.lo unzip.lo special.lo \
-	binhex.lo is_tar.lo tnef.lo unrar15.lo unrarvm.lo unrar.lo \
-	unrarfilter.lo unrarppm.lo unrar20.lo unrarcmd.lo pdf.lo \
-	spin.lo yc.lo elf.lo sis.lo uuencode.lo pst.lo phishcheck.lo \
-	phish_domaincheck_db.lo phish_whitelist.lo regex_list.lo \
-	sha256.lo
+	unsp.lo packlibs.lo fsg.lo line.lo untar.lo unzip.lo \
+	special.lo binhex.lo is_tar.lo tnef.lo unrar15.lo unrarvm.lo \
+	unrar.lo unrarfilter.lo unrarppm.lo unrar20.lo unrarcmd.lo \
+	pdf.lo spin.lo yc.lo elf.lo sis.lo uuencode.lo pst.lo \
+	phishcheck.lo phish_domaincheck_db.lo phish_whitelist.lo \
+	regex_list.lo sha256.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -297,6 +297,8 @@ libclamav_la_SOURCES = \
 	wwunpack.h \
 	suecrypt.c \
 	suecrypt.h \
+	unsp.c \
+	unsp.h \
 	packlibs.c \
 	packlibs.h \
 	fsg.c \
@@ -480,6 +482,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrarfilter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrarppm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrarvm.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unsp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/untar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unzip.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/upx.Plo@am__quote@
