@@ -1,3 +1,7 @@
+Wed Oct 25 04:30:36 CEST 2006 (acab)
+------------------------------------
+  * libclamav: add support for NsPack (--enable-experimental)
+  
 Mon Oct 23 17:48:39 CEST 2006 (tk)
 ----------------------------------
   * libclamav: improve support for NodalCore SDK 3.3
