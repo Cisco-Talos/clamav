@@ -314,8 +314,8 @@ int main(int argc, char **argv)
     }
 
     if(cfgopt(copt, "NodalCoreAcceleration")->enabled) {
-#ifdef HAVE_HWACCEL
-	dboptions |= CL_DB_HWACCEL;
+#ifdef HAVE_NCORE
+	dboptions |= CL_DB_NCORE;
 	logg("Enabling support for hardware acceleration.\n");
 #else
 	logg("^Support for hardware acceleration not compiled in.\n");
