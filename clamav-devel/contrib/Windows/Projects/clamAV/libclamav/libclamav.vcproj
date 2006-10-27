@@ -234,7 +234,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\js.c"
+				RelativePath=".\jscript.c"
 				>
 			</File>
 			<File
@@ -592,7 +592,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\js.h"
+				RelativePath=".\jscript.h"
 				>
 			</File>
 			<File

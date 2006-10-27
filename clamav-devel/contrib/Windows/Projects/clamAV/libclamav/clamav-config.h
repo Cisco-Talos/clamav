@@ -200,7 +200,7 @@
 #define HAVE_READDIR_R_3 1
 
 /* Define to 1 if you have the `recvmsg' function. */
-#define HAVE_RECVMSG 1
+/* #undef HAVE_RECVMSG */
 
 /* Define to 1 if you have the <regex.h> header file. */
 #define HAVE_REGEX_H 1
@@ -209,7 +209,7 @@
 /* #undef HAVE_RESOLV_H */
 
 /* Define to 1 if you have the `sendmsg' function. */
-#define HAVE_SENDMSG 1
+/* #undef HAVE_SENDMSG */
 
 /* Define to 1 if you have the `setgroups' function. */
 /* #define HAVE_SETGROUPS 1 */
@@ -347,7 +347,7 @@
 /* #define USE_SYSLOG 1 */
 
 /* Version number of package */
-#define VERSION "devel-20061021"
+#define VERSION "devel-20061027"
 
 /* use libcurl in mbox code */
 #ifdef	CL_EXPERIMENTAL

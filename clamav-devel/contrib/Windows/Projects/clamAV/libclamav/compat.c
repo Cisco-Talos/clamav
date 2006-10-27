@@ -56,7 +56,7 @@ opendir(const char *dirname)
 {
 	DIR *ret = cli_calloc(1, sizeof(DIR));
 	char mask[_MAX_PATH + 3];
-	size_t k;
+	size_t i, j;
 
 	if(ret == NULL)
 		return NULL;
@@ -76,9 +76,13 @@ opendir(const char *dirname)
 		return NULL;
 	}
 
-	k = strlen(dirname);
-	if(k && dirname[k - 1] == '\\')
-		ret->dir_name[--k] = '\0';
+	j = strlen(dirname);
+	for(i = 0; i < j; i++)
+		if(ret->dir_name[i] == '/')
+			ret->dir_name[i] = '\\';
+
+	if(j && dirname[j - 1] == '\\')
+		ret->dir_name[--j] = '\0';
 
 	sprintf(mask, "%s\\*", ret->dir_name);
 
