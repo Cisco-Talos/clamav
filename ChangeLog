@@ -1,3 +1,7 @@
+Fri Oct 27 15:06:53 BST 2006 (njh)
+----------------------------------
+ * libclamav/js.[ch]:	Renamed to jscript.[ch] at the request of TK
+
 Fri Oct 27 02:37:49 CEST 2006 (acab)
 ------------------------------------
   * libclamav/petite.c: sanity check the number of rebuilt sections
