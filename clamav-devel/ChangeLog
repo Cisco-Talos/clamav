@@ -1,3 +1,7 @@
+Fri Oct 27 02:37:49 CEST 2006 (acab)
+------------------------------------
+  * libclamav/petite.c: sanity check the number of rebuilt sections
+
 Wed Oct 25 18:03:34 CEST 2006 (tk)
 ----------------------------------
   * sigtool/sigtool.c: new option --utf16-decode
