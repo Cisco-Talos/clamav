@@ -199,8 +199,13 @@ PE stands for Portable Executable \- it's an executable file format used in all 
 .br 
 Default: enabled
 .TP 
+\fBScanELF\fR
+Executable and Linking Format is a standard format for UN*X executables. This option allows you to control the scanning of ELF files.
+.br 
+Default: enabled
+.TP 
 \fBDetectBrokenExecutables\fR
-With this option clamd will try to detect broken executables and mark them as Broken.Executable.
+With this option clamd will try to detect broken executables (both PE and ELF) and mark them as Broken.Executable.
 .br 
 Default: disabled
 .TP 

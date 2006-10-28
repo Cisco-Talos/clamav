@@ -1838,7 +1838,8 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    ret = cli_scancryptff(desc, ctx);
 	    break;
 
-	case CL_TYPE_ELF: /* TODO: Add ScanELF option */
+	case CL_TYPE_ELF:
+	    if(SCAN_ELF)
 		ret = cli_scanelf(desc, ctx);
 	    break;
 

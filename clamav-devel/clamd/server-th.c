@@ -372,14 +372,22 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned in
     if(cfgopt(copt, "ScanPE")->enabled) {
 	logg("Portable Executable support enabled.\n");
 	options |= CL_SCAN_PE;
+    } else {
+	logg("Portable Executable support disabled.\n");
+    }
 
+    if(cfgopt(copt, "ScanELF")->enabled) {
+	logg("ELF support enabled.\n");
+	options |= CL_SCAN_ELF;
+    } else {
+	logg("ELF support disabled.\n");
+    }
+
+    if(cfgopt(copt, "ScanPE")->enabled || cfgopt(copt, "ScanELF")->enabled) {
 	if(cfgopt(copt, "DetectBrokenExecutables")->enabled) {
 	    logg("Detection of broken executables enabled.\n");
 	    options |= CL_SCAN_BLOCKBROKEN;
 	}
-
-    } else {
-	logg("Portable Executable support disabled.\n");
     }
 
     if(cfgopt(copt, "ScanMail")->enabled) {

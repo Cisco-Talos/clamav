@@ -44,6 +44,7 @@ struct cfgoption cfg_options[] = {
     {"PidFile", OPT_QUOTESTR, -1, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
     {"TemporaryDirectory", OPT_QUOTESTR, -1, NULL, 0, OPT_CLAMD},
     {"ScanPE", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
+    {"ScanELF", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"DetectBrokenExecutables", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"ScanMail", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"MailFollowURLs", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
