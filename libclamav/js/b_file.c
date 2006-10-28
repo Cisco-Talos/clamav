@@ -24,7 +24,7 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/b_file.c,v $
- * $Id: b_file.c,v 1.1 2006/10/19 17:28:58 njh Exp $
+ * $Id: b_file.c,v 1.2 2006/10/28 11:27:44 njh Exp $
  */
 
 /*
@@ -63,6 +63,11 @@
  *   autoFlush	boolean		mutable
  *   bufferSize	integer		mutable
  */
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifdef	CL_EXPERIMENTAL
 
 #include "jsint.h"
 
@@ -1010,3 +1015,4 @@ js_builtin_File_new (JSVirtualMachine *vm, JSNode *result_return,
   /* Create the builtin. */
   js_vm_builtin_create (vm, result_return, n->u.vbuiltin->info, ictx);
 }
+#endif	/*CL_EXPERIMENTAL*/

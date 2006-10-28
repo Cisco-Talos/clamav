@@ -24,8 +24,13 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/bc.c,v $
- * $Id: bc.c,v 1.1 2006/10/19 17:28:58 njh Exp $
+ * $Id: bc.c,v 1.2 2006/10/28 11:27:44 njh Exp $
  */
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifdef	CL_EXPERIMENTAL
 
 #include "jsint.h"
 
@@ -222,3 +227,4 @@ js_bc_free (JSByteCode *bc)
   js_free (bc->sects);
   js_free (bc);
 }
+#endif	/*CL_EXPERIMENTAL*/

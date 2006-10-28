@@ -24,8 +24,13 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/dl_open.c,v $
- * $Id: dl_open.c,v 1.1 2006/10/21 22:54:22 njh Exp $
+ * $Id: dl_open.c,v 1.2 2006/10/28 11:27:44 njh Exp $
  */
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifdef	CL_EXPERIMENTAL
 
 #include "jsint.h"
 #include <dlfcn.h>
@@ -78,3 +83,4 @@ js_dl_sym (void *library, char *symbol, char *error_return,
 
   return sym;
 }
+#endif	/*CL_EXPERIMENTAL*/

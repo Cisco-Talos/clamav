@@ -24,12 +24,17 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/b_number.c,v $
- * $Id: b_number.c,v 1.1 2006/10/19 17:28:58 njh Exp $
+ * $Id: b_number.c,v 1.2 2006/10/28 11:27:44 njh Exp $
  */
 
 /*
  * Standard: ECMAScript-2.0.draft-22-Apr-98
  */
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifdef	CL_EXPERIMENTAL
 
 #include "jsint.h"
 
@@ -318,3 +323,4 @@ js_builtin_Number (JSVirtualMachine *vm)
   n = &vm->globals[js_vm_intern (vm, "Number")];
   js_vm_builtin_create (vm, n, info, NULL);
 }
+#endif	/*CL_EXPERIMENTAL*/
