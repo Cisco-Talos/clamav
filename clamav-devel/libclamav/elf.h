@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2005 - 2006 Tomasz Kojm <tkojm@clamav.net>
  *
  *  Header structures based on ELF: Executable and Linkable Format, Portable
  *  Formats Specification, Version 1.1
@@ -43,6 +43,17 @@ struct elf_file_hdr32 {
     uint16_t e_shentsize;
     uint16_t e_shnum;
     uint16_t e_shstrndx;
+};
+
+struct elf_program_hdr32 {
+    uint32_t p_type;
+    uint32_t p_offset;
+    uint32_t p_vaddr;
+    uint32_t p_paddr;
+    uint32_t p_filesz;
+    uint32_t p_memsz;
+    uint32_t p_flags;
+    uint32_t p_align;
 };
 
 struct elf_section_hdr32 {
