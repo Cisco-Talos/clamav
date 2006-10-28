@@ -1,3 +1,7 @@
+Sat Oct 28 17:33:06 CEST 2006 (tk)
+----------------------------------
+  * libclamav/regex_list.c: .pdb/.wdb files now use colon as delimiter
+
 Sat Oct 28 15:52:42 CEST 2006 (tk)
 ----------------------------------
   * libclamav/elf.c: make the code reentrant (closes bug#57)

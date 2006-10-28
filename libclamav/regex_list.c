@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: regex_list.c,v $
+ *  Revision 1.12  2006/10/28 15:34:40  tkojm
+ *  .pdb/.wdb files now use colon as delimiter
+ *
  *  Revision 1.11  2006/10/15 19:16:33  tkojm
  *  allow loading multiple .pdb/.wdb files
  *
@@ -348,7 +351,7 @@ int regex_list_match(struct regex_matcher* matcher,const char* real_url,const ch
 			return CL_EMEM;
 
 		strncpy(buffer,real_url,real_len);
-		buffer[real_len]= (!is_whitelist && hostOnly) ? '\0' : ' ';
+		buffer[real_len]= (!is_whitelist && hostOnly) ? '\0' : ':';
 		if(!hostOnly || is_whitelist) {
 			strncpy(buffer+real_len+1,display_url,display_len);
 			buffer[buffer_len]=0;
@@ -557,7 +560,7 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 		cli_chomp(buffer);
 		if(!*buffer)
 			continue;/* skip empty lines */
-		pattern = strchr(buffer,' ');
+		pattern = strchr(buffer,':');
 		if(!pattern) {
 			cli_errmsg("Malformed regex list line %d\n",line);
 			fatal_error(matcher);
