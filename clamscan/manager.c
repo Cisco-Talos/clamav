@@ -186,6 +186,11 @@ int scanmanager(const struct optstruct *opt)
     else
 	options |= CL_SCAN_PE;
 
+    if(opt_check(opt, "no-elf"))
+	options &= ~CL_SCAN_ELF;
+    else
+	options |= CL_SCAN_ELF;
+
     if(opt_check(opt, "no-ole2"))
 	options &= ~CL_SCAN_OLE2;
     else

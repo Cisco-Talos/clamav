@@ -1,3 +1,8 @@
+Sun Oct 29 00:00:10 CEST 2006 (tk)
+----------------------------------
+  * clamd: new directive ScanELF
+  * clamscan: new command line option --no-elf
+
 Sat Oct 28 22:44:46 CEST 2006 (tk)
 ----------------------------------
   * libclamav/elf.c: parse program headers and properly calculate file offset
