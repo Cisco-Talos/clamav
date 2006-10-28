@@ -1,3 +1,7 @@
+Sat Oct 28 14:54:00 CEST 2006 (tk)
+----------------------------------
+  * libclamav/others.h: include clamav.h (closes bug#101)
+
 Sat Oct 28 14:48:03 CEST 2006 (tk)
 ----------------------------------
   * clamd/session.c: MULTISCAN: handle inaccessible directories more gently
