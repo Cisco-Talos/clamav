@@ -1,3 +1,8 @@
+Sat Oct 28 14:48:03 CEST 2006 (tk)
+----------------------------------
+  * clamd/session.c: MULTISCAN: handle inaccessible directories more gently
+		     (closes bug#85)
+
 Sat Oct 28 11:25:40 BST 2006 (njh)
 ----------------------------------
  * libclamav/pst.c:	Moved to experimental mode

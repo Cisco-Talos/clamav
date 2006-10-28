@@ -217,7 +217,7 @@ static int multiscan(const char *dirname, const struct cl_node *root, const stru
 	}
 	closedir(dd);
     } else {
-	return -1;
+	return -2;
     }
 
     (*reclev)--;
