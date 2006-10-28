@@ -1,3 +1,8 @@
+Sat Oct 28 15:52:42 CEST 2006 (tk)
+----------------------------------
+  * libclamav/elf.c: make the code reentrant (closes bug#57)
+		     Reported by Robert Allerstorfer <roal*anet.at>
+
 Sat Oct 28 14:54:00 CEST 2006 (tk)
 ----------------------------------
   * libclamav/others.h: include clamav.h (closes bug#101)

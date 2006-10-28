@@ -37,19 +37,17 @@
 #include "clamav.h"
 #include "execs.h"
 
-static short need_conversion = 0;
-
-static inline uint16_t EC16(uint16_t v)
+static inline uint16_t EC16(uint16_t v, uint8_t c)
 {
-    if(!need_conversion)
+    if(!c)
 	return v;
     else
 	return ((v >> 8) + (v << 8));
 }
 
-static inline uint32_t EC32(uint32_t v)
+static inline uint32_t EC32(uint32_t v, uint8_t c)
 {
-    if(!need_conversion)
+    if(!c)
 	return v;
     else
 	return ((v >> 24) | ((v & 0x00FF0000) >> 8) | ((v & 0x0000FF00) << 8) | (v << 24));
@@ -61,6 +59,7 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 	struct elf_section_hdr32 *section_hdr;
 	uint16_t shnum, shentsize;
 	uint32_t entry, shoff, image;
+	uint8_t conv = 0;
 	int i;
 
     cli_dbgmsg("in cli_scanelf\n");
@@ -87,19 +86,19 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 	cli_dbgmsg("ELF: File is little-endian - conversion not required\n");
 #else
 	cli_dbgmsg("ELF: File is little-endian - data conversion enabled\n");
-	need_conversion = 1;
+	conv = 1;
 #endif
     } else {
 	image =  0x10000;
 #if WORDS_BIGENDIAN == 0
 	cli_dbgmsg("ELF: File is big-endian - data conversion enabled\n");
-	need_conversion = 1;
+	conv = 1;
 #else
 	cli_dbgmsg("ELF: File is big-endian - conversion not required\n");
 #endif
     }
 
-    switch(EC16(file_hdr.e_type)) {
+    switch(EC16(file_hdr.e_type, conv)) {
 	case 0x0: /* ET_NONE */
 	    cli_dbgmsg("ELF: File type: None\n");
 	    break;
@@ -116,10 +115,10 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 	    cli_dbgmsg("ELF: File type: Core\n");
 	    break;
 	default:
-	    cli_dbgmsg("ELF: File type: Unknown (%d)\n", EC16(file_hdr.e_type));
+	    cli_dbgmsg("ELF: File type: Unknown (%d)\n", EC16(file_hdr.e_type, conv));
     }
 
-    switch(EC16(file_hdr.e_machine)) {
+    switch(EC16(file_hdr.e_machine, conv)) {
 	/* Due to a huge list, we only include the most popular machines here */
 	case 0x0: /* EM_NONE */
 	    cli_dbgmsg("ELF: Machine type: None\n");
@@ -161,14 +160,14 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 	    cli_dbgmsg("ELF: Machine type: IA64\n");
 	    break;
 	default:
-	    cli_dbgmsg("ELF: Machine type: Unknown (%d)\n", EC16(file_hdr.e_machine));
+	    cli_dbgmsg("ELF: Machine type: Unknown (%d)\n", EC16(file_hdr.e_machine, conv));
     }
 
-    entry = EC32(file_hdr.e_entry);
+    entry = EC32(file_hdr.e_entry, conv);
     cli_dbgmsg("ELF: Entry point address: 0x%.8x\n", entry);
     cli_dbgmsg("ELF: Entry point offset: 0x%.8x (%d)\n", entry - image, entry - image);
 
-    shnum = EC16(file_hdr.e_shnum);
+    shnum = EC16(file_hdr.e_shnum, conv);
     cli_dbgmsg("ELF: Number of sections: %d\n", shnum);
     if(shnum > 256) {
 	cli_dbgmsg("ELF: Suspicious number of sections\n");
@@ -180,7 +179,7 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 	return CL_EFORMAT;
     }
 
-    shentsize = EC16(file_hdr.e_shentsize);
+    shentsize = EC16(file_hdr.e_shentsize, conv);
     if(shentsize != sizeof(struct elf_section_hdr32)) {
 	cli_dbgmsg("ELF: shentsize != sizeof(struct elf_section_hdr32)\n");
         if(DETECT_BROKEN) {
@@ -191,7 +190,7 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 	return CL_EFORMAT;
     }
 
-    shoff = EC32(file_hdr.e_shoff);
+    shoff = EC32(file_hdr.e_shoff, conv);
     cli_dbgmsg("ELF: Section header table offset: %d\n", shoff);
     if((uint32_t) lseek(desc, shoff, SEEK_SET) != shoff) {
 	/* Possibly broken end of file */
@@ -226,10 +225,10 @@ int cli_scanelf(int desc, cli_ctx *ctx)
         }
 
 	cli_dbgmsg("ELF: Section %d\n", i);
-	cli_dbgmsg("ELF: Section offset: %d\n", EC32(section_hdr[i].sh_offset));
-	cli_dbgmsg("ELF: Section size: %d\n", EC32(section_hdr[i].sh_size));
+	cli_dbgmsg("ELF: Section offset: %d\n", EC32(section_hdr[i].sh_offset, conv));
+	cli_dbgmsg("ELF: Section size: %d\n", EC32(section_hdr[i].sh_size, conv));
 
-	switch(EC32(section_hdr[i].sh_type)) {
+	switch(EC32(section_hdr[i].sh_type, conv)) {
 	    case 0x6: /* SHT_DYNAMIC */
 		cli_dbgmsg("ELF: Section type: Dynamic linking information\n");
 		break;
@@ -285,13 +284,13 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 		cli_dbgmsg("ELF: Section type: Unknown\n");
 	}
 
-	if(EC32(section_hdr[i].sh_flags) & 0x1) /* SHF_WRITE */
+	if(EC32(section_hdr[i].sh_flags, conv) & 0x1) /* SHF_WRITE */
 	    cli_dbgmsg("ELF: Section contains writable data\n");
 
-	if(EC32(section_hdr[i].sh_flags) & 0x2) /* SHF_ALLOC */
+	if(EC32(section_hdr[i].sh_flags, conv) & 0x2) /* SHF_ALLOC */
 	    cli_dbgmsg("ELF: Section occupies memory\n");
 
-	if(EC32(section_hdr[i].sh_flags) & 0x4) /* SHF_EXECINSTR */
+	if(EC32(section_hdr[i].sh_flags, conv) & 0x4) /* SHF_EXECINSTR */
 	    cli_dbgmsg("ELF: Section contains executable code\n");
 
 	cli_dbgmsg("------------------------------------\n");
@@ -307,6 +306,7 @@ int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
 	struct elf_section_hdr32 *section_hdr;
 	uint16_t shnum, shentsize;
 	uint32_t entry, shoff, image;
+	uint8_t conv = 0;
 	int i;
 
     cli_dbgmsg("in cli_elfheader\n");
@@ -330,31 +330,31 @@ int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
     if(file_hdr.e_ident[5] == 1) {
 	image =  0x8048000;
 #if WORDS_BIGENDIAN == 1
-	need_conversion = 1;
+	conv = 1;
 #endif
     } else {
 	image =  0x10000;
 #if WORDS_BIGENDIAN == 0
-	need_conversion = 1;
+	conv = 1;
 #endif
     }
 
-    entry = EC32(file_hdr.e_entry);
+    entry = EC32(file_hdr.e_entry, conv);
 
-    shnum = EC16(file_hdr.e_shnum);
+    shnum = EC16(file_hdr.e_shnum, conv);
     if(shnum > 256) {
 	cli_dbgmsg("ELF: Suspicious number of sections\n");
 	return -1;
     }
     elfinfo->nsections = shnum;
 
-    shentsize = EC16(file_hdr.e_shentsize);
+    shentsize = EC16(file_hdr.e_shentsize, conv);
     if(shentsize != sizeof(struct elf_section_hdr32)) {
 	cli_dbgmsg("ELF: shentsize != sizeof(struct elf_section_hdr32)\n");
 	return -1;
     }
 
-    shoff = EC32(file_hdr.e_shoff);
+    shoff = EC32(file_hdr.e_shoff, conv);
     if((uint32_t) lseek(desc, shoff, SEEK_SET) != shoff) {
 	/* Possibly broken end of file */
 	return -1;
@@ -380,9 +380,9 @@ int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
             return -1;
         }
 
-	elfinfo->section[i].rva = EC32(section_hdr[i].sh_addr);
-	elfinfo->section[i].raw = EC32(section_hdr[i].sh_offset);
-	elfinfo->section[i].rsz = EC32(section_hdr[i].sh_size);
+	elfinfo->section[i].rva = EC32(section_hdr[i].sh_addr, conv);
+	elfinfo->section[i].raw = EC32(section_hdr[i].sh_offset, conv);
+	elfinfo->section[i].rsz = EC32(section_hdr[i].sh_size, conv);
     }
 
     free(section_hdr);
