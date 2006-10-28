@@ -23,7 +23,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.292 2006/10/28 15:56:23 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.293 2006/10/28 16:12:49 njh Exp $";
 
 #define	CM_VERSION	"devel-281006"
 
@@ -3659,10 +3659,8 @@ clamfi_free(struct privdata *privdata, int keep)
 		if(privdata->body)
 			free(privdata->body);
 
-		if(privdata->dataSocket >= 0) {
+		if(privdata->dataSocket >= 0)
 			close(privdata->dataSocket);
-			privdata->dataSocket = -1;
-		}
 
 		if(privdata->filename != NULL) {
 			/*
@@ -3677,7 +3675,6 @@ clamfi_free(struct privdata *privdata, int keep)
 						privdata->filename);
 			}
 			free(privdata->filename);
-			privdata->filename = NULL;
 		}
 
 		if(privdata->from) {
@@ -3686,17 +3683,12 @@ clamfi_free(struct privdata *privdata, int keep)
 				cli_dbgmsg("Free privdata->from\n");
 #endif
 			free(privdata->from);
-			privdata->from = NULL;
 		}
 
-		if(privdata->subject) {
+		if(privdata->subject)
 			free(privdata->subject);
-			privdata->subject = NULL;
-		}
-		if(privdata->sender) {
+		if(privdata->sender)
 			free(privdata->sender);
-			privdata->sender = NULL;
-		}
 
 		if(privdata->to) {
 			char **to;
@@ -3713,7 +3705,6 @@ clamfi_free(struct privdata *privdata, int keep)
 				cli_dbgmsg("Free privdata->to\n");
 #endif
 			free(privdata->to);
-			privdata->to = NULL;
 		}
 
 		if(external) {
@@ -3762,7 +3753,6 @@ clamfi_free(struct privdata *privdata, int keep)
 						;
 #endif
 				close(privdata->cmdSocket);
-				privdata->cmdSocket = -1;
 			}
 #endif
 		} else if(privdata->root)
@@ -3784,9 +3774,10 @@ clamfi_free(struct privdata *privdata, int keep)
 		if(privdata->received)
 			free(privdata->received);
 
-		if(keep)
+		if(keep) {
 			memset(privdata, '\0', sizeof(struct privdata));
-		else
+			privdata->dataSocket = privdata->cmdSocket = -1;
+		} else
 			free(privdata);
 	}
 
