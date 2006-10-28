@@ -24,6 +24,8 @@
 #include <stdlib.h>
 #include "cltypes.h"
 
+#include "clamav.h"
+
 /*
  * CLI_ISCONTAINED(buf1, size1, buf2, size2) checks if buf2 is contained
  * within buf1.
