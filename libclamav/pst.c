@@ -36,11 +36,16 @@
  * TODO: Remove the vcard handling
  * FIXME: The code does little error checking of OOM scenarios
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.33 2006/09/16 20:22:21 njh Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.34 2006/10/28 10:25:23 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
 #endif
+
+#include "clamav.h"
+#include "others.h"
+
+#ifdef	CL_EXPERIMENTAL
 
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
@@ -53,9 +58,7 @@ static	char	const	rcsid[] = "$Id: pst.c,v 1.33 2006/09/16 20:22:21 njh Exp $";
 #include <limits.h>
 #include <time.h>
 
-#include "clamav.h"
 #include "cltypes.h"
-#include "others.h"
 
 #if	defined(C_SOLARIS) || defined(C_WINDOWS) || defined(_HPUX_SOURCE)
 typedef	uint16_t	u_int16_t;	/* should be in cltypes.h */
@@ -5629,3 +5632,14 @@ pst_decode(const char *dir, int desc)
 
 	return pst_close(&pstfile);
 }
+
+#else	/*!CL_EXPERIMENTAL*/
+
+int
+cli_pst(const char *dir, int desc)
+{
+	cli_warnmsg("PST files not yet supported\n");
+	return CL_EFORMAT;
+}
+
+#endif	/*CL_EXPERIMENTAL*/
