@@ -24,8 +24,13 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/heap.c,v $
- * $Id: heap.c,v 1.1 2006/10/19 17:28:58 njh Exp $
+ * $Id: heap.c,v 1.2 2006/10/28 11:27:44 njh Exp $
  */
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifdef	CL_EXPERIMENTAL
 
 #include "jsint.h"
 
@@ -584,3 +589,4 @@ js_vm_clear_heap (JSVirtualMachine *vm)
   /* Just sweep without marking. */
   sweep (vm);
 }
+#endif	/*CL_EXPERIMENTAL*/

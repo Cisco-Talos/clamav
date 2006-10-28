@@ -24,8 +24,13 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/mrgsort.c,v $
- * $Id: mrgsort.c,v 1.1 2006/10/21 22:54:22 njh Exp $
+ * $Id: mrgsort.c,v 1.2 2006/10/28 11:27:44 njh Exp $
  */
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifdef	CL_EXPERIMENTAL
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -117,3 +122,4 @@ mergesort_r (void *base, unsigned int number_of_elements,
 
   free (tmp);
 }
+#endif	/*CL_EXPERIMENTAL*/

@@ -24,8 +24,13 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/debug.c,v $
- * $Id: debug.c,v 1.1 2006/10/21 22:33:10 njh Exp $
+ * $Id: debug.c,v 1.2 2006/10/28 11:27:44 njh Exp $
  */
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifdef	CL_EXPERIMENTAL
 
 #include "jsint.h"
 
@@ -169,3 +174,4 @@ js_vm_stacktrace (JSVirtualMachine *vm, unsigned int num_frames)
       fp = fp->u.iptr;
     }
 }
+#endif	/*CL_EXPERIMENTAL*/

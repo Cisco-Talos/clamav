@@ -1,4 +1,9 @@
 #if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifdef	CL_EXPERIMENTAL
+#if HAVE_CONFIG_H
 #include "js/jsconfig.h"
 #endif
 
@@ -157,3 +162,4 @@ create_interp ()
 	return interp;
 }
 
+#endif	/*CL_EXPERIMENTAL*/

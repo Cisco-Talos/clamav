@@ -24,8 +24,13 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/r_pthrs.c,v $
- * $Id: r_pthrs.c,v 1.1 2006/10/19 17:28:58 njh Exp $
+ * $Id: r_pthrs.c,v 1.2 2006/10/28 11:27:44 njh Exp $
  */
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifdef	CL_EXPERIMENTAL
 
 #include "jsint.h"
 #include "rentrant.h"
@@ -127,3 +132,4 @@ js_drand48 (void *drand48_context, double *random_return)
 }
 
 #endif /* not DRAND48_R_WITH_DRAND48D */
+#endif	/*CL_EXPERIMENTAL*/

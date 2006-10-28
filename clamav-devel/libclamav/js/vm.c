@@ -24,8 +24,13 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/vm.c,v $
- * $Id: vm.c,v 1.1 2006/10/11 10:44:16 njh Exp $
+ * $Id: vm.c,v 1.2 2006/10/28 11:27:44 njh Exp $
  */
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifdef	CL_EXPERIMENTAL
 
 #include "jsint.h"
 
@@ -966,3 +971,4 @@ intern_builtins (JSVirtualMachine *vm)
   js_builtin_Object (vm);
   js_builtin_String (vm);
 }
+#endif	/*CL_EXPERIMENTAL*/

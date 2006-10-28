@@ -24,8 +24,13 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/js.c,v $
- * $Id: js.c,v 1.2 2006/10/10 21:30:56 njh Exp $
+ * $Id: js.c,v 1.3 2006/10/28 11:27:44 njh Exp $
  */
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifdef	CL_EXPERIMENTAL
 
 #include "js/js.h"
 #include "js/jsint.h"
@@ -1682,3 +1687,4 @@ iostream_iofunc (JSIOFunc func, void *context, int readp, int writep)
 
   return stream;
 }
+#endif	/*CL_EXPERIMENTAL*/

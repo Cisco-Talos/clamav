@@ -24,7 +24,7 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/b_system.c,v $
- * $Id: b_system.c,v 1.1 2006/10/19 17:28:58 njh Exp $
+ * $Id: b_system.c,v 1.2 2006/10/28 11:27:44 njh Exp $
  */
 
 /*
@@ -55,6 +55,11 @@
  *   stdin			file
  *   stdout			file
  */
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifdef	CL_EXPERIMENTAL
 
 #include "jsint.h"
 
@@ -519,3 +524,4 @@ js_builtin_System (JSVirtualMachine *vm)
   js_builtin_File_new (vm, &ctx->pstdin, "stdin", vm->s_stdin, 1);
   js_builtin_File_new (vm, &ctx->pstdout, "stdout", vm->s_stdout, 1);
 }
+#endif	/*CL_EXPERIMENTAL*/

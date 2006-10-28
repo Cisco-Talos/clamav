@@ -24,8 +24,13 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/xjs.c,v $
- * $Id: xjs.c,v 1.2 2006/10/10 21:30:56 njh Exp $
+ * $Id: xjs.c,v 1.3 2006/10/28 11:27:44 njh Exp $
  */
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifdef	CL_EXPERIMENTAL
 
 #include "js/js.h"
 #include "js/jsint.h"
@@ -458,3 +463,4 @@ js_ext_JS (JSInterpPtr interp)
 
   js_vm_builtin_create (vm, n, info, NULL);
 }
+#endif	/*CL_EXPERIMENTAL*/

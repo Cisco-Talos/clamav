@@ -1,3 +1,8 @@
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifdef	CL_EXPERIMENTAL
 const unsigned char js_compiler_bytecode[] = {
   0xc0, 0x01, 0x4a, 0x53, 0x00, 0x00, 0x00, 0x03,
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xef, 0x54,
@@ -11196,3 +11201,4 @@ const unsigned char js_compiler_bytecode[] = {
 };
 unsigned int js_compiler_bytecode_len = 89552;
 #define JS_COMPILER_BYTECODE_LEN 89552
+#endif	/*CL_EXPERIMENTAL*/

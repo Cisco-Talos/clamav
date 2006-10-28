@@ -22,9 +22,15 @@
  * MA 02111-1307, USA
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifdef	CL_EXPERIMENTAL
+
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/alloc.c,v $
- * $Id: alloc.c,v 1.2 2006/10/10 21:30:56 njh Exp $
+ * $Id: alloc.c,v 1.3 2006/10/28 11:27:44 njh Exp $
  */
 
 #include "js/jsint.h"
@@ -309,3 +315,4 @@ js_strdup (JSVirtualMachine *vm, const char *str)
 }
 
 #endif /* not JS_DEBUG_MEMORY_LEAKS */
+#endif	/*CL_EXPERIMENTAL*/

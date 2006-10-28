@@ -24,8 +24,13 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/iostream.c,v $
- * $Id: iostream.c,v 1.1 2006/10/11 10:44:16 njh Exp $
+ * $Id: iostream.c,v 1.2 2006/10/28 11:27:44 njh Exp $
  */
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifdef	CL_EXPERIMENTAL
 
 #include "jsint.h"
 
@@ -471,3 +476,4 @@ js_iostream_fill_buffer (JSIOStream *stream)
   if (stream->data_in_buf == 0)
     stream->at_eof = 1;
 }
+#endif	/*CL_EXPERIMENTAL*/

@@ -24,8 +24,13 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/b_date.c,v $
- * $Id: b_date.c,v 1.1 2006/10/19 17:28:58 njh Exp $
+ * $Id: b_date.c,v 1.2 2006/10/28 11:27:44 njh Exp $
  */
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifdef	CL_EXPERIMENTAL
 
 #include "jsint.h"
 #include "rentrant.h"
@@ -790,3 +795,4 @@ js_builtin_Date (JSVirtualMachine *vm)
       js_vm_builtin_create (vm, n, info, NULL);
     }
 }
+#endif	/*CL_EXPERIMENTAL*/

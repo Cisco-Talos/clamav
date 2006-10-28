@@ -24,10 +24,15 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/b_string.c,v $
- * $Id: b_string.c,v 1.1 2006/10/19 17:28:58 njh Exp $
+ * $Id: b_string.c,v 1.2 2006/10/28 11:27:44 njh Exp $
  */
 
 /* TODO: global method: String (obj) => string */
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifdef	CL_EXPERIMENTAL
 
 #include "jsint.h"
 
@@ -935,3 +940,4 @@ js_builtin_String (JSVirtualMachine *vm)
   n = &vm->globals[js_vm_intern (vm, "RegExp")];
   ctx->regexp_info = n->u.vbuiltin->info;
 }
+#endif	/*CL_EXPERIMENTAL*/
