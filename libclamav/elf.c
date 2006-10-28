@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2005 - 2006 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -53,14 +53,36 @@ static inline uint32_t EC32(uint32_t v, uint8_t c)
 	return ((v >> 24) | ((v & 0x00FF0000) >> 8) | ((v & 0x0000FF00) << 8) | (v << 24));
 }
 
+static uint32_t cli_rawaddr(uint32_t vaddr, struct elf_program_hdr32 *ph, uint16_t phnum, uint8_t conv, uint8_t *err)
+{
+	uint16_t i, found = 0;
+
+
+    for(i = 0; i < phnum; i++) {
+	if(EC32(ph[i].p_vaddr, conv) <= vaddr && EC32(ph[i].p_vaddr, conv) + EC32(ph[i].p_memsz, conv) > vaddr) {
+	    found = 1;
+	    break;
+	}
+    }
+
+    if(!found) {
+	*err = 1;
+	return 0;
+    }
+
+    *err = 0;
+    return vaddr - EC32(ph[i].p_vaddr, conv) + EC32(ph[i].p_offset, conv);
+}
+
 int cli_scanelf(int desc, cli_ctx *ctx)
 {
 	struct elf_file_hdr32 file_hdr;
 	struct elf_section_hdr32 *section_hdr;
-	uint16_t shnum, shentsize;
-	uint32_t entry, shoff, image;
-	uint8_t conv = 0;
-	int i;
+	struct elf_program_hdr32 *program_hdr;
+	uint16_t shnum, phnum, shentsize, phentsize;
+	uint32_t entry, fentry, shoff, phoff, i;
+	uint8_t conv = 0, err;
+
 
     cli_dbgmsg("in cli_scanelf\n");
 
@@ -81,7 +103,6 @@ int cli_scanelf(int desc, cli_ctx *ctx)
     }
 
     if(file_hdr.e_ident[5] == 1) {
-	image =  0x8048000;
 #if WORDS_BIGENDIAN == 0
 	cli_dbgmsg("ELF: File is little-endian - conversion not required\n");
 #else
@@ -89,7 +110,6 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 	conv = 1;
 #endif
     } else {
-	image =  0x10000;
 #if WORDS_BIGENDIAN == 0
 	cli_dbgmsg("ELF: File is big-endian - data conversion enabled\n");
 	conv = 1;
@@ -164,8 +184,92 @@ int cli_scanelf(int desc, cli_ctx *ctx)
     }
 
     entry = EC32(file_hdr.e_entry, conv);
-    cli_dbgmsg("ELF: Entry point address: 0x%.8x\n", entry);
-    cli_dbgmsg("ELF: Entry point offset: 0x%.8x (%d)\n", entry - image, entry - image);
+
+    /* Program headers */
+
+    phnum = EC16(file_hdr.e_phnum, conv);
+    cli_dbgmsg("ELF: Number of program headers: %d\n", phnum);
+    if(phnum > 128) {
+	cli_dbgmsg("ELF: Suspicious number of program headers\n");
+        if(DETECT_BROKEN) {
+	    if(ctx->virname)
+		*ctx->virname = "Broken.Executable";
+            return CL_VIRUS;
+        }
+	return CL_EFORMAT;
+    }
+
+    if(phnum && entry) {
+
+	phentsize = EC16(file_hdr.e_phentsize, conv);
+	if(phentsize != sizeof(struct elf_program_hdr32)) {
+	    cli_dbgmsg("ELF: phentsize != sizeof(struct elf_program_hdr32)\n");
+	    if(DETECT_BROKEN) {
+		if(ctx->virname)
+		    *ctx->virname = "Broken.Executable";
+		return CL_VIRUS;
+	    }
+	    return CL_EFORMAT;
+	}
+
+	phoff = EC32(file_hdr.e_phoff, conv);
+	cli_dbgmsg("ELF: Program header table offset: %d\n", phoff);
+	if((uint32_t) lseek(desc, phoff, SEEK_SET) != phoff) {
+	    if(DETECT_BROKEN) {
+		if(ctx->virname)
+		    *ctx->virname = "Broken.Executable";
+		return CL_VIRUS;
+	    }
+	    return CL_CLEAN;
+	}
+
+	program_hdr = (struct elf_program_hdr32 *) cli_calloc(phnum, phentsize);
+	if(!program_hdr) {
+	    cli_errmsg("ELF: Can't allocate memory for program headers\n");
+	    return CL_EMEM;
+	}
+
+	cli_dbgmsg("------------------------------------\n");
+
+	for(i = 0; i < phnum; i++) {
+
+	    if(read(desc, &program_hdr[i], sizeof(struct elf_program_hdr32)) != sizeof(struct elf_program_hdr32)) {
+		cli_dbgmsg("ELF: Can't read segment #%d\n", i);
+		cli_dbgmsg("ELF: Possibly broken ELF file\n");
+		free(program_hdr);
+		if(DETECT_BROKEN) {
+		    if(ctx->virname)
+			*ctx->virname = "Broken.Executable";
+		    return CL_VIRUS;
+		}
+		return CL_CLEAN;
+	    }
+
+	    cli_dbgmsg("ELF: Segment #%d\n", i);
+	    cli_dbgmsg("ELF: Segment type: 0x%x\n", EC32(program_hdr[i].p_type, conv));
+	    cli_dbgmsg("ELF: Segment offset: 0x%x\n", EC32(program_hdr[i].p_offset, conv));
+	    cli_dbgmsg("ELF: Segment virtual address: 0x%x\n", EC32(program_hdr[i].p_vaddr, conv));
+	    cli_dbgmsg("ELF: Segment real size: 0x%x\n", EC32(program_hdr[i].p_filesz, conv));
+	    cli_dbgmsg("ELF: Segment virtual size: 0x%x\n", EC32(program_hdr[i].p_memsz, conv));
+	    cli_dbgmsg("------------------------------------\n");
+	}
+
+	fentry = cli_rawaddr(entry, program_hdr, phnum, conv, &err);
+	free(program_hdr);
+	if(err) {
+	    cli_dbgmsg("ELF: Can't calculate file offset of entry point\n");
+	    if(DETECT_BROKEN) {
+		if(ctx->virname)
+		    *ctx->virname = "Broken.Executable";
+		return CL_VIRUS;
+	    }
+	    return CL_EFORMAT;
+	}
+	cli_dbgmsg("ELF: Entry point address: 0x%.8x\n", entry);
+	cli_dbgmsg("ELF: Entry point offset: 0x%.8x (%d)\n", fentry, fentry);
+    }
+
+    /* Sections */
 
     shnum = EC16(file_hdr.e_shnum, conv);
     cli_dbgmsg("ELF: Number of sections: %d\n", shnum);
@@ -304,10 +408,11 @@ int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
 {
 	struct elf_file_hdr32 file_hdr;
 	struct elf_section_hdr32 *section_hdr;
-	uint16_t shnum, shentsize;
-	uint32_t entry, shoff, image;
-	uint8_t conv = 0;
-	int i;
+	struct elf_program_hdr32 *program_hdr;
+	uint16_t shnum, phnum, shentsize, phentsize, i;
+	uint32_t entry, fentry = 0, shoff, phoff;
+	uint8_t conv = 0, err;
+
 
     cli_dbgmsg("in cli_elfheader\n");
 
@@ -328,18 +433,57 @@ int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
     }
 
     if(file_hdr.e_ident[5] == 1) {
-	image =  0x8048000;
 #if WORDS_BIGENDIAN == 1
 	conv = 1;
 #endif
     } else {
-	image =  0x10000;
 #if WORDS_BIGENDIAN == 0
 	conv = 1;
 #endif
     }
 
+    phnum = EC16(file_hdr.e_phnum, conv);
+    if(phnum > 128) {
+	cli_dbgmsg("ELF: Suspicious number of program headers\n");
+	return -1;
+    }
     entry = EC32(file_hdr.e_entry, conv);
+
+    if(phnum && entry) {
+	phentsize = EC16(file_hdr.e_phentsize, conv);
+	if(phentsize != sizeof(struct elf_program_hdr32)) {
+	    cli_dbgmsg("ELF: phentsize != sizeof(struct elf_program_hdr32)\n");
+	    return -1;
+	}
+
+	phoff = EC32(file_hdr.e_phoff, conv);
+	if((uint32_t) lseek(desc, phoff, SEEK_SET) != phoff) {
+	    return -1;
+	}
+
+	program_hdr = (struct elf_program_hdr32 *) cli_calloc(phnum, phentsize);
+	if(!program_hdr) {
+	    cli_errmsg("ELF: Can't allocate memory for program headers\n");
+	    return -1;
+	}
+
+	for(i = 0; i < phnum; i++) {
+	    if(read(desc, &program_hdr[i], sizeof(struct elf_program_hdr32)) != sizeof(struct elf_program_hdr32)) {
+		cli_dbgmsg("ELF: Can't read segment #%d\n", i);
+		free(program_hdr);
+		return -1;
+	    }
+	}
+
+	fentry = cli_rawaddr(entry, program_hdr, phnum, conv, &err);
+	free(program_hdr);
+	if(err) {
+	    cli_dbgmsg("ELF: Can't calculate file offset of entry point\n");
+	    return -1;
+	}
+    }
+
+    elfinfo->ep = fentry;
 
     shnum = EC16(file_hdr.e_shnum, conv);
     if(shnum > 256) {

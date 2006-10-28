@@ -1,3 +1,8 @@
+Sat Oct 28 22:44:46 CEST 2006 (tk)
+----------------------------------
+  * libclamav/elf.c: parse program headers and properly calculate file offset
+		     of entry point
+
 Sat Oct 28 16:56:51 BST 2006 (njh)
 ----------------------------------
   * clamav-milter:	Fix file descriptor leak when more than one email is
