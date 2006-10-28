@@ -23,9 +23,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.291 2006/10/13 14:42:15 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.292 2006/10/28 15:56:23 njh Exp $";
 
-#define	CM_VERSION	"devel-131006"
+#define	CM_VERSION	"devel-281006"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -275,7 +275,7 @@ static	sfsistat	clamfi_eom(SMFICTX *ctx);
 static	sfsistat	clamfi_abort(SMFICTX *ctx);
 static	sfsistat	clamfi_close(SMFICTX *ctx);
 static	void		clamfi_cleanup(SMFICTX *ctx);
-static	void		clamfi_free(struct privdata *privdata);
+static	void		clamfi_free(struct privdata *privdata, int free);
 static	int		clamfi_send(struct privdata *privdata, size_t len, const char *format, ...);
 static	long		clamd_recv(int sock, char *buf, size_t len);
 static	off_t		updateSigFile(void);
@@ -299,6 +299,8 @@ static	void	timeoutBlacklist(char *ip_address, int time_of_blacklist);
 static	void	quit(void);
 static	void	broadcast(const char *mess);
 static	int	loadDatabase(void);
+static	int	increment_connections(void);
+static	void	decrement_connections(void);
 
 #ifdef	SESSION
 static	pthread_mutex_t	version_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -1437,6 +1439,15 @@ main(int argc, char **argv)
 			}
 
 #ifndef	SESSION
+			if(serverIPs[i] == (int)inet_addr("127.0.0.1")) {
+				/*
+				 * Fudge to allow clamd to come up on
+				 * our local machine
+				 */
+				sync();
+				sleep(2);
+			}
+
 			if(pingServer(i))
 				activeServers++;
 			else {
@@ -2500,6 +2511,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	if(smfi_getpriv(ctx) != NULL) {
 		/* More than one connection command, "can't happen" */
 		cli_warnmsg("clamfi_connect: called more than once\n");
+		clamfi_cleanup(ctx);
 		return cl_error;
 	}
 
@@ -2575,72 +2587,12 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			free(privdata);
 			return cl_error;
 		}
-		if(max_children > 0) {
-			int rc = 0;
-
-			pthread_mutex_lock(&n_children_mutex);
-
-			/*
-			 * Wait a while since sendmail doesn't like it if we
-			 * take too long replying. Effectively this means that
-			 * max_children is more of a hint than a rule
-			 */
-			if(n_children >= max_children) {
-				struct timespec timeout;
-				struct timeval now;
-				struct timezone tz;
-
-				logg((dont_wait) ?
-						_("hit max-children limit (%u >= %u)\n") :
-						_("hit max-children limit (%u >= %u): waiting for some to exit\n"),
-					n_children, max_children);
-
-				if(dont_wait) {
-					pthread_mutex_unlock(&n_children_mutex);
-					smfi_setreply(ctx, "451", "4.3.2", _("AV system temporarily overloaded - please try later"));
-					free(privdata);
-					smfi_setpriv(ctx, NULL);
-					return SMFIS_TEMPFAIL;
-				}
-				/*
-				 * Wait for an amount of time for a child to go
-				 *
-				 * Use pthread_cond_timedwait rather than
-				 * pthread_cond_wait since the sendmail which
-				 * calls us will have a timeout that we don't
-				 * want to exceed, stops sendmail getting
-				 * fidgety.
-				 *
-				 * Patch from Damian Menscher
-				 * <menscher@uiuc.edu> to ensure it wakes up
-				 * when a child goes away
-				 */
-				gettimeofday(&now, &tz);
-				do {
-					logg(_("n_children %d: waiting %d seconds for some to exit"),
-						n_children, child_timeout);
-
-					if(child_timeout == 0) {
-						pthread_cond_wait(&n_children_cond, &n_children_mutex);
-						rc = 0;
-					} else {
-						timeout.tv_sec = now.tv_sec + child_timeout;
-						timeout.tv_nsec = 0;
-
-						rc = pthread_cond_timedwait(&n_children_cond, &n_children_mutex, &timeout);
-					}
-				} while((n_children >= max_children) && (rc != ETIMEDOUT));
-				logg(_("Finished waiting, n_children = %d\n"), n_children);
-			}
-			n_children++;
-
-			cli_dbgmsg(">n_children = %d\n", n_children);
-			pthread_mutex_unlock(&n_children_mutex);
-
-			if(child_timeout && (rc == ETIMEDOUT))
-				logg(_("*Timeout waiting for a child to die\n"));
+		if(!increment_connections()) {
+			smfi_setreply(ctx, "451", "4.3.2", _("AV system temporarily overloaded - please try later"));
+			free(privdata);
+			smfi_setpriv(ctx, NULL);
+			return SMFIS_TEMPFAIL;
 		}
-
 	} else {
 		/* More than one message on this connection */
 		char ip[INET_ADDRSTRLEN];
@@ -2650,8 +2602,8 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			logg("Rejected email from blacklisted IP %s\n", ip);
 
 			/*
-			 * TODO: Option to greylist rather than blacklist, by sending
-			 *	a try again code
+			 * TODO: Option to greylist rather than blacklist, by
+			 *	sending	a try again code
 			 * TODO: state *which* virus
 			 */
 			smfi_setreply(ctx, "550", "5.7.1", _("Your IP is blacklisted because your machine is infected with a virus"));
@@ -2666,7 +2618,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 			return SMFIS_REJECT;
 		}
-		memset(privdata, '\0', sizeof(struct privdata));
+		clamfi_free(privdata, 1);
 		strcpy(privdata->ip, ip);
 	}
 
@@ -3043,7 +2995,6 @@ clamfi_eom(SMFICTX *ctx)
 
 	if(!external) {
 		const char *virname;
-		unsigned long int scanned = 0L;
 
 		pthread_mutex_lock(&root_mutex);
 		privdata->root = cl_dup(root);
@@ -3053,7 +3004,7 @@ clamfi_eom(SMFICTX *ctx)
 			clamfi_cleanup(ctx);
 			return cl_error;
 		}
-		switch(cl_scanfile(privdata->filename, &virname, &scanned, privdata->root, &limits, options)) {
+		switch(cl_scanfile(privdata->filename, &virname, NULL, privdata->root, &limits, options)) {
 			case CL_CLEAN:
 				if(logClean)
 					logg("#%s: OK", privdata->filename);
@@ -3650,7 +3601,6 @@ clamfi_eom(SMFICTX *ctx)
 			}
 		}
 	}
-	/*clamfi_cleanup(ctx);*/
 
 	return rc;
 }
@@ -3666,6 +3616,7 @@ clamfi_abort(SMFICTX *ctx)
 	cli_dbgmsg("clamfi_abort\n");
 
 	clamfi_cleanup(ctx);
+	decrement_connections();
 
 	cli_dbgmsg("clamfi_abort returns\n");
 
@@ -3678,6 +3629,7 @@ clamfi_close(SMFICTX *ctx)
 	logg("*clamfi_close\n");
 
 	clamfi_cleanup(ctx);
+	decrement_connections();
 
 	return SMFIS_CONTINUE;
 }
@@ -3690,13 +3642,13 @@ clamfi_cleanup(SMFICTX *ctx)
 	cli_dbgmsg("clamfi_cleanup\n");
 
 	if(privdata) {
-		clamfi_free(privdata);
+		clamfi_free(privdata, 0);
 		smfi_setpriv(ctx, NULL);
 	}
 }
 
 static void
-clamfi_free(struct privdata *privdata)
+clamfi_free(struct privdata *privdata, int keep)
 {
 	cli_dbgmsg("clamfi_free\n");
 
@@ -3831,29 +3783,13 @@ clamfi_free(struct privdata *privdata)
 #endif
 		if(privdata->received)
 			free(privdata->received);
-		free(privdata);
+
+		if(keep)
+			memset(privdata, '\0', sizeof(struct privdata));
+		else
+			free(privdata);
 	}
 
-	if(max_children > 0) {
-		pthread_mutex_lock(&n_children_mutex);
-		cli_dbgmsg("clamfi_free: n_children = %d\n", n_children);
-		/*
-		 * Deliberately errs on the side of broadcasting too many times
-		 */
-		if(n_children > 0)
-			if(--n_children == 0) {
-				cli_dbgmsg("%s is idle\n", progname);
-				if(pthread_cond_broadcast(&watchdog_cond) < 0)
-					perror("pthread_cond_broadcast");
-			}
-#ifdef	CL_DEBUG
-		cli_dbgmsg("pthread_cond_broadcast\n");
-#endif
-		if(pthread_cond_broadcast(&n_children_cond) < 0)
-			perror("pthread_cond_broadcast");
-		cli_dbgmsg("<n_children = %d\n", n_children);
-		pthread_mutex_unlock(&n_children_mutex);
-	}
 	cli_dbgmsg("clamfi_free returns\n");
 }
 
@@ -4761,7 +4697,11 @@ move(const char *oldfile, const char *newfile)
 	ret = sendfile(out, in, &offset, statb.st_size);
 	close(in);
 	if(ret < 0) {
-		/* fall back if sendfile fails, which shouldn't happen */
+		/*
+		 * Fall back if sendfile fails, which will happen on Linux
+		 * 2.6 :-(. FreeBSD works correctly, so the ifdef should be
+		 * fixed
+		 */
 		close(out);
 		unlink(newfile);
 
@@ -5906,4 +5846,98 @@ useful_header(const char *cmd)
 		return 1;
 
 	return 0;
+}
+
+static int
+increment_connections(void)
+{
+	if(max_children > 0) {
+		int rc = 0;
+
+		pthread_mutex_lock(&n_children_mutex);
+
+		/*
+		 * Wait a while since sendmail doesn't like it if we
+		 * take too long replying. Effectively this means that
+		 * max_children is more of a hint than a rule
+		 */
+		if(n_children >= max_children) {
+			struct timespec timeout;
+			struct timeval now;
+			struct timezone tz;
+
+			logg((dont_wait) ?
+					_("hit max-children limit (%u >= %u)\n") :
+					_("hit max-children limit (%u >= %u): waiting for some to exit\n"),
+				n_children, max_children);
+
+			if(dont_wait) {
+				pthread_mutex_unlock(&n_children_mutex);
+				return 0;
+			}
+			/*
+			 * Wait for an amount of time for a child to go
+			 *
+			 * Use pthread_cond_timedwait rather than
+			 * pthread_cond_wait since the sendmail which
+			 * calls us will have a timeout that we don't
+			 * want to exceed, stops sendmail getting
+			 * fidgety.
+			 *
+			 * Patch from Damian Menscher
+			 * <menscher@uiuc.edu> to ensure it wakes up
+			 * when a child goes away
+			 */
+			gettimeofday(&now, &tz);
+			do {
+				logg(_("n_children %d: waiting %d seconds for some to exit"),
+					n_children, child_timeout);
+
+				if(child_timeout == 0) {
+					pthread_cond_wait(&n_children_cond, &n_children_mutex);
+					rc = 0;
+				} else {
+					timeout.tv_sec = now.tv_sec + child_timeout;
+					timeout.tv_nsec = 0;
+
+					rc = pthread_cond_timedwait(&n_children_cond, &n_children_mutex, &timeout);
+				}
+			} while((n_children >= max_children) && (rc != ETIMEDOUT));
+			logg(_("Finished waiting, n_children = %d\n"), n_children);
+		}
+		n_children++;
+
+		cli_dbgmsg(">n_children = %d\n", n_children);
+		pthread_mutex_unlock(&n_children_mutex);
+
+		if(child_timeout && (rc == ETIMEDOUT))
+			logg(_("*Timeout waiting for a child to die\n"));
+	}
+
+	return 1;
+}
+
+static void
+decrement_connections(void)
+{
+	if(max_children > 0) {
+		pthread_mutex_lock(&n_children_mutex);
+		cli_dbgmsg("decrement_connections: n_children = %d\n", n_children);
+		/*
+		 * Deliberately errs on the side of broadcasting too many times
+		 */
+		if(n_children > 0)
+			if(--n_children == 0) {
+				cli_dbgmsg("%s is idle\n", progname);
+				if(pthread_cond_broadcast(&watchdog_cond) < 0)
+					perror("pthread_cond_broadcast");
+			}
+#ifdef	CL_DEBUG
+		cli_dbgmsg("pthread_cond_broadcast\n");
+#endif
+		if(pthread_cond_broadcast(&n_children_cond) < 0)
+			perror("pthread_cond_broadcast");
+		cli_dbgmsg("<n_children = %d\n", n_children);
+		pthread_mutex_unlock(&n_children_mutex);
+	}
 }
