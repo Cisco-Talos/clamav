@@ -20,10 +20,11 @@
  *  MA 02110-1301, USA.
  *
  * Install into /usr/local/sbin/clamav-milter
+ * See http://www.elandsys.com/resources/sendmail/libmilter/overview.html
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.293 2006/10/28 16:12:49 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.294 2006/10/28 19:47:52 njh Exp $";
 
 #define	CM_VERSION	"devel-281006"
 
@@ -2340,6 +2341,12 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 			syslog(LOG_ERR, _("clamfi_connect: hostname is null"));
 		return cl_error;
 	}
+	if(smfi_getpriv(ctx) != NULL) {
+		/* More than one connection command, "can't happen" */
+		cli_warnmsg("clamfi_connect: called more than once\n");
+		clamfi_cleanup(ctx);
+		return cl_error;
+	}
 	if((hostaddr == NULL) || (&(((struct sockaddr_in *)(hostaddr))->sin_addr) == NULL))
 		/*
 		 * According to the sendmail API hostaddr is NULL if
@@ -2507,12 +2514,6 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		pthread_mutex_unlock(&blacklist_mutex);
 
 		return SMFIS_REJECT;
-	}
-	if(smfi_getpriv(ctx) != NULL) {
-		/* More than one connection command, "can't happen" */
-		cli_warnmsg("clamfi_connect: called more than once\n");
-		clamfi_cleanup(ctx);
-		return cl_error;
 	}
 
 	if(blacklist_time == 0)
