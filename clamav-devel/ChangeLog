@@ -1,3 +1,7 @@
+Sat Oct 28 11:25:40 BST 2006 (njh)
+----------------------------------
+ * libclamav/pst.c:	Moved to experimental mode
+
 Fri Oct 27 15:06:53 BST 2006 (njh)
 ----------------------------------
  * libclamav/js.[ch]:	Renamed to jscript.[ch] at the request of TK
