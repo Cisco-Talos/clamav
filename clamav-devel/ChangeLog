@@ -1,3 +1,7 @@
+Sun Oct 29 19:22:00 CET 2006 (tk)
+---------------------------------
+  * clamd/session.c: VERSION now prints details for daily.inc (closes bug#107)
+
 Sun Oct 29 16:33:01 CET 2006 (tk)
 ---------------------------------
   * shared/cdiff.c: make cdiff_apply() compatible with old zlib versions
