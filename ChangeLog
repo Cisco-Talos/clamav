@@ -1,3 +1,7 @@
+Sun Oct 29 20:12:26 CET 2006 (tk)
+---------------------------------
+  * shared/misc.c: freshdbdir now supports daily.inc
+
 Sun Oct 29 19:45:07 CET 2006 (tk)
 ---------------------------------
   * clamd: change stack size at the right place (closes bug#103)
