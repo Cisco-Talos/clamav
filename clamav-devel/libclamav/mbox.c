@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.356 2006/10/16 00:33:34 tkojm Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.357 2006/10/29 13:54:06 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -269,7 +269,7 @@ static	int	cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx);
 static	message	*parseEmailFile(FILE *fin, const table_t *rfc821Table, const char *firstLine, const char *dir);
 static	message	*parseEmailHeaders(message *m, const table_t *rfc821Table);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
-static	int	parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx);
+static	int	parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int recursion_level);
 static	int	boundaryStart(const char *line, const char *boundary);
 static	int	endOfMessage(const char *line, const char *boundary);
 static	int	initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
@@ -287,7 +287,7 @@ static	char	*getline_from_mbox(char *buffer, size_t len, FILE *fin);
 static	bool	isBounceStart(const char *line);
 static	bool	exportBinhexMessage(const char *dir, message *m);
 static	int	exportBounceMessage(text *start, const mbox_ctx *ctx);
-static	message	*do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx *mctx, message *messageIn, text **tptr);
+static	message	*do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx *mctx, message *messageIn, text **tptr, unsigned int recursion_level);
 static	int	count_quotes(const char *buf);
 static	bool	next_is_folded_header(const text *t);
 
@@ -1404,7 +1404,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 				messageSetCTX(body, ctx);
 				messageDestroy(m);
 				if(messageGetBody(body)) {
-					int rc = parseEmailBody(body, NULL, &mctx);
+					int rc = parseEmailBody(body, NULL, &mctx, 0);
 					if(rc == 0) {
 						messageReset(body);
 						m = body;
@@ -1485,7 +1485,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 		 */
 		if((retcode == CL_SUCCESS) && messageGetBody(body)) {
 			messageSetCTX(body, ctx);
-			switch(parseEmailBody(body, NULL, &mctx)) {
+			switch(parseEmailBody(body, NULL, &mctx, 0)) {
 				case 0:
 					retcode = CL_EFORMAT;
 					break;
@@ -2019,7 +2019,7 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
  *	3 for virus found
  */
 static int	/* success or fail */
-parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
+parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int recursion_level)
 {
 	int rc = 1;
 	text *aText = textIn;
@@ -2031,6 +2031,19 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 #endif
 
 	cli_dbgmsg("in parseEmailBody\n");
+
+	/*
+	 * FIXME: Using ArchiveMaxRecursion is not good since that is
+	 *	typically rather low (default = 8) and it would be better for
+	 *	this code to use a higher limit. Needs support in the cl_limits
+	 *	structure
+	 */
+	if(mctx->ctx->limits->maxreclevel)
+		if(recursion_level >= mctx->ctx->limits->maxreclevel) {
+			cli_warnmsg("parseEmailBody: hit maximum recursion level (%u)\n",
+				mctx->ctx->limits->maxreclevel);
+			return 2;
+		}
 
 	/* Anything left to be parsed? */
 	if(mainMessage && (messageGetBody(mainMessage) != NULL)) {
@@ -2479,7 +2492,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 						mainMessage = do_multipart(mainMessage,
 							messages, multiparts,
 							&rc, mctx, messageIn,
-							&aText);
+							&aText, recursion_level + 1);
 						--multiparts;
 						if(rc == 3)
 							infected = TRUE;
@@ -2575,7 +2588,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 				if(htmltextPart == -1)
 					cli_dbgmsg("No HTML code found to be scanned\n");
 				else {
-					rc = parseEmailBody(aMessage, aText, mctx);
+					rc = parseEmailBody(aMessage, aText, mctx, recursion_level + 1);
 					if(rc == 1) {
 						assert(aMessage == messages[htmltextPart]);
 						messageDestroy(aMessage);
@@ -2656,14 +2669,14 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 				for(i = 0; i < multiparts; i++) {
 					mainMessage = do_multipart(mainMessage,
 						messages, i, &rc, mctx,
-						messageIn, &aText);
+						messageIn, &aText, recursion_level + 1);
 					if(rc == 3) {
 						infected = TRUE;
 						break;
 					}
 				}
 
-				/* rc = parseEmailBody(NULL, NULL, mctx); */
+				/* rc = parseEmailBody(NULL, NULL, mctx, recursion_level + 1); */
 				break;
 			case SIGNED:
 			case PARALLEL:
@@ -2679,7 +2692,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 				if(htmltextPart == -1)
 					htmltextPart = 0;
 
-				rc = parseEmailBody(messages[htmltextPart], aText, mctx);
+				rc = parseEmailBody(messages[htmltextPart], aText, mctx, recursion_level + 1);
 				break;
 			case ENCRYPTED:
 				rc = 0;
@@ -2753,7 +2766,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx)
 					} else
 						messageReset(mainMessage);
 					if(messageGetBody(m))
-						rc = parseEmailBody(m, NULL, mctx);
+						rc = parseEmailBody(m, NULL, mctx, recursion_level + 1);
 
 					messageDestroy(m);
 				}
@@ -5138,7 +5151,7 @@ exportBounceMessage(text *start, const mbox_ctx *mctx)
  * Handle the ith element of a number of multiparts, e.g. multipart/alternative
  */
 static message *
-do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx *mctx, message *messageIn, text **tptr)
+do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx *mctx, message *messageIn, text **tptr, unsigned int recursion_level)
 {
 	bool addToText = FALSE;
 	const char *dtype;
@@ -5303,7 +5316,7 @@ do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx 
 			messages[i] = NULL;
 			if(body) {
 				messageSetCTX(body, ctx);
-				rc = parseEmailBody(body, NULL, mctx);
+				rc = parseEmailBody(body, NULL, mctx, recursion_level + 1);
 				if(messageContainsVirus(body))
 					*rc = 3;
 				messageDestroy(body);
@@ -5322,13 +5335,13 @@ do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx 
 				 * The headers were parsed when reading in the
 				 * whole multipart section
 				 */
-				*rc = parseEmailBody(aMessage, *tptr, mctx);
+				*rc = parseEmailBody(aMessage, *tptr, mctx, recursion_level + 1);
 				cli_dbgmsg("Finished recursion\n");
 				assert(aMessage == messages[i]);
 				messageDestroy(messages[i]);
 				messages[i] = NULL;
 			} else {
-				*rc = parseEmailBody(NULL, NULL, mctx);
+				*rc = parseEmailBody(NULL, NULL, mctx, recursion_level + 1);
 				if(mainMessage && (mainMessage != messageIn))
 					messageDestroy(mainMessage);
 				mainMessage = NULL;
