@@ -278,13 +278,17 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
 	    const char *dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
 	    char *path;
 	    struct cl_cvd *daily;
+	    struct stat foo;
 
-	if(!(path = mmalloc(strlen(dbdir) + 11))) {
+
+	if(!(path = mmalloc(strlen(dbdir) + 30))) {
 	    mdprintf(desc, "Memory allocation error - SHUTDOWN forced\n");
 	    return COMMAND_SHUTDOWN;
 	}
 
 	sprintf(path, "%s/daily.cvd", dbdir);
+	if(stat(path, &foo) == -1)
+	    sprintf(path, "%s/daily.inc/daily.info", dbdir);
 
 	if((daily = cl_cvdhead(path))) {
 		time_t t = (time_t) daily->stime;
