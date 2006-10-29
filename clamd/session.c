@@ -49,6 +49,7 @@
 #include "shared/cfgparser.h"
 #include "shared/memory.h"
 #include "shared/output.h"
+#include "shared/misc.h"
 
 #include "others.h"
 #include "scanner.h"

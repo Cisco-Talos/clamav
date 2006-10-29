@@ -57,6 +57,7 @@
 #include "shared/cfgparser.h"
 #include "shared/memory.h"
 #include "shared/output.h"
+#include "shared/misc.h"
 
 #include "others.h"
 #include "scanner.h"
@@ -69,17 +70,6 @@ dev_t procdev; /* /proc device */
 
 #ifndef	C_WINDOWS
 #define	closesocket(s)	close(s)
-#endif
-
-/* Maximum filenames under various systems - njh */
-#ifndef	NAME_MAX	/* e.g. Linux */
-# ifdef	MAXNAMELEN	/* e.g. Solaris */
-#   define	NAME_MAX	MAXNAMELEN
-# else
-#   ifdef	FILENAME_MAX	/* e.g. SCO */
-#     define	NAME_MAX	FILENAME_MAX
-#   endif
-# endif
 #endif
 
 int checksymlink(const char *path)
