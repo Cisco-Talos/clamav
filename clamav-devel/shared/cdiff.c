@@ -766,7 +766,8 @@ int cdiff_apply(int fd, unsigned short mode)
 	gzFile *gzh;
 	char line[1024], buff[FILEBUFF], *dsig = NULL;
 	unsigned int lines = 0, cmds = 0;
-	int end, i;
+	unsigned int difflen, diffremain;
+	int end, i, n;
 	struct stat sb;
 	int desc;
 #ifdef HAVE_GMP
@@ -859,12 +860,15 @@ int cdiff_apply(int fd, unsigned short mode)
 	}
 
 	i = 0;
-	while(read(desc, buff, 1) > 0)
-	    if(buff[0] == ':')
+	n = 0;
+	while(n < FILEBUFF - 1 && read(desc, &buff[n], 1) > 0) {
+	    if(buff[n++] == ':')
 		if(++i == 3)
 		    break;
+	}
+	buff[n] = 0;
 
-	if(i != 3) {
+	if(sscanf(buff, "ClamAV-Diff:%*u:%u:", &difflen) != 1) {
 	    logg("!cdiff_apply: Incorrect file format\n");
 	    close(desc);
 	    return -1;
@@ -876,7 +880,17 @@ int cdiff_apply(int fd, unsigned short mode)
 	    return -1;
 	}
 
-	while(gzgets(gzh, line, sizeof(line))) {
+	diffremain = difflen;
+	while(diffremain) {
+	    unsigned int bufsize = diffremain < sizeof(line) ? diffremain + 1 : sizeof(line);
+
+	    if(!gzgets(gzh, line, bufsize)) {
+		logg("!cdiff_apply: Premature EOF at line %d\n", lines + 1);
+		cdiff_ctx_free(&ctx);
+		gzclose(gzh);
+		return -1;
+	    }
+	    diffremain -= strlen(line);
 	    lines++;
 	    cli_chomp(line);
 

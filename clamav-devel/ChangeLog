@@ -1,3 +1,8 @@
+Sun Oct 29 16:33:01 CET 2006 (tk)
+---------------------------------
+  * shared/cdiff.c: make cdiff_apply() compatible with old zlib versions
+		    (closes bug#76), patch from Ian Abbott <abbotti*mev.co.uk>
+
 Sun Oct 29 16:10:08 CET 2006 (tk)
 ---------------------------------
   * clamd/others.c: fix compilation error under w32 (closes bug#68)
