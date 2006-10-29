@@ -40,20 +40,27 @@ static work_queue_t *work_queue_new(void)
 	work_queue_t *work_q;
 	
 	work_q = (work_queue_t *) mmalloc(sizeof(work_queue_t));
+	if (!work_q) {
+		return NULL;
+	}
 	
 	work_q->head = work_q->tail = NULL;
 	work_q->item_count = 0;
 	return work_q;
 }
 
-static void work_queue_add(work_queue_t *work_q, void *data)
+static int work_queue_add(work_queue_t *work_q, void *data)
 {
 	work_item_t *work_item;
 	
 	if (!work_q) {
-		return;
+		return FALSE;
 	}
 	work_item = (work_item_t *) mmalloc(sizeof(work_item_t));
+	if (!work_item) {
+		return FALSE;
+	}
+	
 	work_item->next = NULL;
 	work_item->data = data;
 	gettimeofday(&(work_item->time_queued), NULL);
@@ -66,7 +73,7 @@ static void work_queue_add(work_queue_t *work_q, void *data)
 		work_q->tail = work_item;
 		work_q->item_count++;
 	}
-	return;
+	return TRUE;
 }
 
 static void *work_queue_pop(work_queue_t *work_q)
@@ -133,6 +140,9 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void
 	}
 	
 	threadpool = (threadpool_t *) mmalloc(sizeof(threadpool_t));
+	if (!threadpool) {
+		return NULL;
+	}
 
 	threadpool->queue = work_queue_new();
 	if (!threadpool->queue) {
@@ -147,16 +157,25 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void
 	
 	pthread_mutex_init(&(threadpool->pool_mutex), NULL);
 	if (pthread_cond_init(&(threadpool->pool_cond), NULL) != 0) {
+		pthread_mutex_destroy(&(threadpool->pool_mutex));
+		free(threadpool->queue);
 		free(threadpool);
 		return NULL;
 	}
 		
 	if (pthread_attr_init(&(threadpool->pool_attr)) != 0) {
+		pthread_cond_destroy(&(threadpool->pool_cond));
+		pthread_mutex_destroy(&(threadpool->pool_mutex));
+		free(threadpool->queue);
 		free(threadpool);
 		return NULL;
 	}
 	
 	if (pthread_attr_setdetachstate(&(threadpool->pool_attr), PTHREAD_CREATE_DETACHED) != 0) {
+		pthread_attr_destroy(&(threadpool->pool_attr));
+		pthread_cond_destroy(&(threadpool->pool_cond));
+		pthread_mutex_destroy(&(threadpool->pool_mutex));
+		free(threadpool->queue);
 		free(threadpool);
 		return NULL;
 	}
@@ -247,7 +266,13 @@ int thrmgr_dispatch(threadpool_t *threadpool, void *user_data)
 		}
 		return FALSE;
 	}
-	work_queue_add(threadpool->queue, user_data);
+	if (!work_queue_add(threadpool->queue, user_data)) {
+		if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
+			logg("!Mutex unlock failed\n");
+			return FALSE;
+		}
+		return FALSE;
+	}
 
 	if ((threadpool->thr_idle == 0) &&
 			(threadpool->thr_alive < threadpool->thr_max)) {
