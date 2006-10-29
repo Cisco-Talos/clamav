@@ -15629,8 +15629,8 @@ then
 	{ echo "$as_me:$LINENO: checking for $clamav_user in /etc/passwd" >&5
 echo $ECHO_N "checking for $clamav_user in /etc/passwd... $ECHO_C" >&6; }
 	if test -r /etc/passwd; then
-	    clamavuser=`cat /etc/passwd|grep $clamav_user`
-	    clamavgroup=`cat /etc/group|grep $clamav_group`
+	    clamavuser=`cat /etc/passwd|grep ^"$clamav_user":`
+	    clamavgroup=`cat /etc/group|grep ^"$clamav_group":`
 	fi
     else
 	{ echo "$as_me:$LINENO: checking for $clamav_user using id" >&5
