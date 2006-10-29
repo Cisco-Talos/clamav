@@ -50,7 +50,7 @@ int treewalk(const char *dirname, struct cl_node *root, const struct passwd *use
 	char *fname;
 	int scanret = 0, included;
 	unsigned int maxdepth;
-	struct optnode *optnode;
+	const struct optnode *optnode;
 	char *argument;
 
 

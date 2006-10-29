@@ -33,7 +33,7 @@
 #include "output.h"
 
 
-static int register_option(struct optstruct *opt, const char *optlong, char optshort, const struct option *options_long, const char **accepted_long)
+static int register_option(struct optstruct *opt, const char *optlong, char optshort, const struct option *options_long, const char * const *accepted_long)
 {
 	struct optnode *newnode;
 	int i, found = 0;
@@ -123,7 +123,7 @@ void opt_free(struct optstruct *opt)
     free(opt);
 }
 
-struct optstruct *opt_parse(int argc, char * const *argv, const char *getopt_short, const struct option *options_long, const char **accepted_long)
+struct optstruct *opt_parse(int argc, char * const *argv, const char *getopt_short, const struct option *options_long, const char * const *accepted_long)
 {
 	int ret, opt_index, i, len;
 	struct optstruct *opt;
@@ -240,7 +240,7 @@ char *opt_arg(const struct optstruct *opt, char *optlong)
 
 char *opt_firstarg(const struct optstruct *opt, const char *optlong, const struct optnode **optnode)
 {
-	struct optnode *handler;
+	const struct optnode *handler;
 
     if(!opt) {
 	mprintf("!opt_firstarg: opt == NULL\n");
