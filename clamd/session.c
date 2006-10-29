@@ -172,6 +172,7 @@ static int multiscan(const char *dirname, const struct cl_node *root, const stru
 				closedir(dd);
 				return -1;
 			    }
+			    free(fname);
 			} else {
 			    if(S_ISREG(statbuf.st_mode) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 2) && cfgopt(copt, "FollowFileSymlinks")->enabled)) {
 
@@ -212,6 +213,8 @@ static int multiscan(const char *dirname, const struct cl_node *root, const stru
 				}
 			    }
 			}
+		    } else {
+			free(fname);
 		    }
 		}
 	    }
