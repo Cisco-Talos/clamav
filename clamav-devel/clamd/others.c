@@ -354,8 +354,10 @@ int readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeou
 	ssize_t n;
 	size_t boff = 0;
 	char *pdelim;
+#ifdef HAVE_RECVMSG
 	struct msghdr msg;
 	struct iovec iov[1];
+#endif
 #ifdef HAVE_CONTROL_IN_MSGHDR
 #ifndef CMSG_SPACE
 #define CMSG_SPACE(len)	    (_CMSG_ALIGN(sizeof(struct cmsghdr)) + _CMSG_ALIGN(len))
@@ -384,11 +386,13 @@ int readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeou
     n = recv(sockfd, buf, size, MSG_PEEK);
     if(read_command) {
     	if((n >= 1) && (buf[0] == 0)) { /* FD message */
+#ifdef HAVE_RECVMSG
 	    iov[0].iov_base = buf;
 	    iov[0].iov_len = size;
 	    memset(&msg, 0, sizeof(msg));
 	    msg.msg_iov = iov;
 	    msg.msg_iovlen = 1;
+#endif
 #ifdef HAVE_ACCRIGHTS_IN_MSGHDR
 	    msg.msg_accrights = (caddr_t)&fd;
 	    msg.msg_accrightslen = sizeof(fd);
