@@ -109,7 +109,7 @@ int __zip_find_disk_trailer(int fd, off_t filesize, struct zip_disk_trailer *tra
 	    return CL_EIO;
 	}
 
-        if(read(fd, buf, (size_t) bufsize) < (ssize_t) bufsize) {
+        if(cli_readn(fd, buf, (size_t) bufsize) < (ssize_t) bufsize) {
 	    cli_errmsg("Unzip: __zip_find_disk_trailer: Can't read %d bytes\n", bufsize);
 	    free(buf);
 	    return CL_EIO;
@@ -140,7 +140,7 @@ int __zip_find_disk_trailer(int fd, off_t filesize, struct zip_disk_trailer *tra
 			    return CL_EIO;
 			}
 
-			if(read(fd, &dirent, sizeof(dirent)) < __sizeof(dirent)) {
+			if(cli_readn(fd, &dirent, sizeof(dirent)) < __sizeof(dirent)) {
 			    cli_errmsg("Unzip: __zip_find_disk_trailer: Can't read %d bytes\n", bufsize);
 			    free(buf);
 			    return CL_EIO;
@@ -202,7 +202,7 @@ int __zip_parse_root_directory(int fd, struct zip_disk_trailer *trailer, zip_dir
             return CL_EIO;
 	}
 
-        if(read(fd, &dirent, sizeof(dirent)) < __sizeof(dirent)) {
+        if(cli_readn(fd, &dirent, sizeof(dirent)) < __sizeof(dirent)) {
 	    if(entries != u_entries) {
 		entries = 0;
 		break;
@@ -221,7 +221,13 @@ int __zip_parse_root_directory(int fd, struct zip_disk_trailer *trailer, zip_dir
 
         u_extras  = EC16(d->z_extras); 
         u_comment = EC16(d->z_comment); 
+
         u_namlen  = EC16(d->z_namlen); 
+	if(u_namlen > 1024) {
+	    cli_dbgmsg("Unzip: __zip_parse_root_directory: Entry %d name too long\n", entries);
+	    break;
+	}
+
 	u_flags   = EC16(d->z_flags);
 
         hdr->d_crc32 = EC32(d->z_crc32);
@@ -247,7 +253,11 @@ int __zip_parse_root_directory(int fd, struct zip_disk_trailer *trailer, zip_dir
 	    break;
 	}
 
-	read(fd, hdr->d_name, u_namlen);
+	if(cli_readn(fd, hdr->d_name, u_namlen) != u_namlen) {
+	    cli_dbgmsg("Unzip: __zip_parse_root_directory: Can't read name of entry %d\n", entries);
+	    break;
+	}
+
         hdr->d_name[u_namlen] = '\0'; 
         hdr->d_namlen = u_namlen;
 
@@ -513,7 +523,7 @@ zip_file *zip_file_open(zip_dir *dir, const char *name, int d_off)
 	    }
 
 	    hp = (void *) fp->buf32k;
-	    dataoff = read(dir->fd, (void *) hp, sizeof(struct zip_file_header));
+	    dataoff = cli_readn(dir->fd, (void *) hp, sizeof(struct zip_file_header));
 
 	    if(dataoff < __sizeof(struct zip_file_header)) {
 		cli_errmsg("Unzip: zip_file_open: Can't read zip header (only read %d bytes)\n", dataoff);
@@ -578,7 +588,7 @@ ssize_t zip_file_read(zip_file *fp, char *buf, size_t len)
     switch(fp->method) {
 
 	case ZIP_METHOD_STORED:
-	    bread = read(dir->fd, buf, l);
+	    bread = cli_readn(dir->fd, buf, l);
 	    if(bread > 0) {
 		fp->restlen -= bread;
 	    } else if(bread < 0) {
@@ -596,7 +606,7 @@ ssize_t zip_file_read(zip_file *fp, char *buf, size_t len)
 
 		if(fp->crestlen > 0 && fp->d_stream.avail_in == 0) {
 		    size_t cl = (fp->crestlen < ZIP32K ? fp->crestlen : ZIP32K);
-		    ssize_t i = read(dir->fd, fp->buf32k, cl);
+		    ssize_t i = cli_readn(dir->fd, fp->buf32k, cl);
 		    if(i <= 0) {
 			dir->errcode = CL_EIO;
 			cli_errmsg("Unzip: zip_file_read: Can't read %d bytes (read %d)\n", cl, i);
