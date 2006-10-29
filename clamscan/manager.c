@@ -314,7 +314,7 @@ int scanmanager(const struct optstruct *opt)
 int scanfile(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options)
 {
 	int ret, included, printclean = 1;
-	struct optnode *optnode;
+	const struct optnode *optnode;
 	char *argument;
 #ifdef C_LINUX
 	struct stat sb;

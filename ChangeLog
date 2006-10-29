@@ -1,9 +1,15 @@
+Sun Oct 29 14:55:20 CET 2006 (tk)
+---------------------------------
+  * shared/options.[ch]: fix 'const' declarations (closes bug#69)
+			 Thanks to Mark Pizzolato
+
 Sun Oct 29 13:54:38 GMT 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Honour maxarchivelevel when scanning email messages.
 			It would be better to have a separate limit for that
 			Bugzilla 104
 
+>>>>>>> 1.1568
 Sun Oct 29 14:40:14 CET 2006 (tk)
 ---------------------------------
   * clamd/session.c: NAME_MAX was not defined (closes bug#60)
