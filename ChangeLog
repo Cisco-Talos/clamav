@@ -1,3 +1,7 @@
+Sun Oct 29 16:10:08 CET 2006 (tk)
+---------------------------------
+  * clamd/others.c: fix compilation error under w32 (closes bug#68)
+
 Sun Oct 29 15:36:21 CET 2006 (tk)
 ---------------------------------
   * clamscan, clamdscan: new option --copy, patch from aCaB
