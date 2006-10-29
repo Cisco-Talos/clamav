@@ -391,7 +391,7 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 		} else {
 		    logg("%s: Removed\n", filename);
 		}
-	    } else if (opt_check(opt, "move"))
+	    } else if (opt_check(opt, "move") || opt_check(opt, "copy"))
 		move_infected(filename, opt);
 
 	    return 1;
@@ -455,7 +455,7 @@ int scanfile(const char *filename, struct cl_node *root, const struct passwd *us
 	    } else {
 		logg("%s: Removed\n", filename);
 	    }
-	} else if (opt_check(opt, "move"))
+	} else if (opt_check(opt, "move") || opt_check(opt, "copy"))
             move_infected(filename, opt);
     }
     return ret;
@@ -618,7 +618,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 		    } else {
 			logg("%s: Removed\n", filename);
 		    }
-		} else if (opt_check(opt, "move"))
+		} else if (opt_check(opt, "move") || opt_check(opt, "copy"))
 		    move_infected(filename, opt);
 	    }
 	    return ret;
@@ -635,7 +635,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 		    } else {
 			logg("%s: Removed\n", filename);
 		    }
-		} else if (opt_check(opt, "move"))
+		} else if (opt_check(opt, "move") || opt_check(opt, "copy"))
 		    move_infected(filename, opt);
 	    }
 	    return ret;
@@ -652,7 +652,7 @@ int scancompressed(const char *filename, struct cl_node *root, const struct pass
 		} else {
 		    logg("%s: Removed\n", filename);
 		}
-	    } else if (opt_check(opt, "move"))
+	    } else if (opt_check(opt, "move") || opt_check(opt, "copy"))
 		move_infected(filename, opt);
 
 	    return 1;
@@ -732,7 +732,7 @@ int scandenied(const char *filename, struct cl_node *root, const struct passwd *
 	    } else {
 	        logg("%s: Removed\n", filename);
 	    }
-	} else if (opt_check(opt, "move"))
+	} else if (opt_check(opt, "move") || opt_check(opt, "copy"))
 	    move_infected(filename, opt);
     }
 
@@ -957,10 +957,12 @@ void move_infected(const char *filename, const struct optstruct *opt)
 	char *movedir, *movefilename, *tmp, numext[4 + 1];
 	struct stat fstat, mfstat;
 	int n, len, movefilename_size;
+	int moveflag = opt_check(opt, "move");
 	struct utimbuf ubuf;
 
 
-    if(!(movedir = opt_arg(opt, "move"))) {
+    if((moveflag && !(movedir = opt_arg(opt, "move"))) ||
+	(!moveflag && !(movedir = opt_arg(opt, "copy")))) {
         /* Should never reach here */
         logg("!opt_arg() returned NULL\n", filename);
         claminfo.notmoved++;
@@ -968,7 +970,7 @@ void move_infected(const char *filename, const struct optstruct *opt)
     }
 
     if(access(movedir, W_OK|X_OK) == -1) {
-        logg("!Can't move file '%s': cannot write to '%s': %s\n", filename, movedir, strerror(errno));
+	logg("!Can't %s file '%s': cannot write to '%s': %s\n", (moveflag) ? "move" : "copy", filename, movedir, strerror(errno));
         claminfo.notmoved++;
         return;
     }
@@ -1026,9 +1028,9 @@ void move_infected(const char *filename, const struct optstruct *opt)
        }
     }
 
-    if(rename(filename, movefilename) == -1) {
+    if(!moveflag || rename(filename, movefilename) == -1) {
 	if(filecopy(filename, movefilename) == -1) {
-	    logg("!Can't move '%s' to '%s': %s\n", filename, movefilename, strerror(errno));
+	    logg("!Can't %s '%s' to '%s': %s\n", (moveflag) ? "move" : "copy", filename, movefilename, strerror(errno));
 	    claminfo.notmoved++;
 	    free(movefilename);
 	    return;
@@ -1043,7 +1045,7 @@ void move_infected(const char *filename, const struct optstruct *opt)
 	ubuf.modtime = fstat.st_mtime;
 	utime(movefilename, &ubuf);
 
-	if(unlink(filename)) {
+	if(moveflag && unlink(filename)) {
 	    logg("!Can't unlink '%s': %s\n", filename, strerror(errno));
 	    claminfo.notremoved++;            
 	    free(movefilename);
@@ -1051,7 +1053,7 @@ void move_infected(const char *filename, const struct optstruct *opt)
 	}
     }
 
-    logg("%s: moved to '%s'\n", filename, movefilename);
+    logg("%s: %s to '%s'\n", filename, (moveflag) ? "moved" : "copied", movefilename);
 
     free(movefilename);
 }

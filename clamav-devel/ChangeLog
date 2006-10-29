@@ -1,3 +1,7 @@
+Sun Oct 29 15:36:21 CET 2006 (tk)
+---------------------------------
+  * clamscan, clamdscan: new option --copy, patch from aCaB
+
 Sun Oct 29 15:06:21 CET 2006 (tk)
 ---------------------------------
   * clamd/thrmgr.c: fix possible memory leaks and improve handling of memory

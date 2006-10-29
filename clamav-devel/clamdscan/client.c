@@ -80,13 +80,13 @@ static int dsresult(int sockd, const struct optstruct *opt)
 	if(strstr(buff, "FOUND\n")) {
 	    infected++;
 	    logg("%s", buff);
-	    if(opt_check(opt, "move")) {
+	    if(opt_check(opt, "move") || opt_check(opt, "copy")) {
 		/* filename: Virus FOUND */
 		if((pt = strrchr(buff, ':'))) {
 		    *pt = 0;
 		    move_infected(buff, opt);
 		} else {
-		    mprintf("@Broken data format. File not moved.\n");
+		    mprintf("@Broken data format. File not %s.\n", opt_check(opt, "move") ? "moved" : "copied");
 		}
 
 	    } else if(opt_check(opt, "remove")) {
@@ -515,10 +515,12 @@ void move_infected(const char *filename, const struct optstruct *opt)
 	char *movedir, *movefilename, *tmp, numext[4 + 1];
 	struct stat fstat, mfstat;
 	int n, len, movefilename_size;
+	int moveflag = opt_check(opt, "move");
 	struct utimbuf ubuf;
 
 
-    if(!(movedir = opt_arg(opt, "move"))) {
+    if((moveflag && !(movedir = opt_arg(opt, "move"))) ||
+        (!moveflag && !(movedir = opt_arg(opt, "copy")))) {
         /* Should never reach here */
         logg("^opt_arg() returned NULL\n");
         notmoved++;
@@ -526,7 +528,7 @@ void move_infected(const char *filename, const struct optstruct *opt)
     }
 
     if(access(movedir, W_OK|X_OK) == -1) {
-        logg("^error moving file '%s': cannot write to '%s': %s\n", filename, movedir, strerror(errno));
+        logg("^error %s file '%s': cannot write to '%s': %s\n", (moveflag) ? "moving" : "copying", filename, movedir, strerror(errno));
         notmoved++;
         return;
     }
@@ -589,9 +591,9 @@ void move_infected(const char *filename, const struct optstruct *opt)
        }
     }
 
-    if(rename(filename, movefilename) == -1) {
+    if(!moveflag || rename(filename, movefilename) == -1) {
 	if(filecopy(filename, movefilename) == -1) {
-	    logg("^cannot move '%s' to '%s': %s\n", filename, movefilename, strerror(errno));
+	    logg("^cannot %s '%s' to '%s': %s\n", (moveflag) ? "move" : "copy", filename, movefilename, strerror(errno));
 	    notmoved++;
 	    free(movefilename);
 	    return;
@@ -604,7 +606,7 @@ void move_infected(const char *filename, const struct optstruct *opt)
 	ubuf.modtime = fstat.st_mtime;
 	utime(movefilename, &ubuf);
 
-	if(unlink(filename)) {
+	if(moveflag && unlink(filename)) {
 	    logg("^cannot unlink '%s': %s\n", filename, strerror(errno));
 	    notremoved++;            
 	    free(movefilename);
@@ -612,7 +614,7 @@ void move_infected(const char *filename, const struct optstruct *opt)
 	}
     }
 
-    logg("%s: moved to '%s'\n", filename, movefilename);
+    logg("%s: %s to '%s'\n", (moveflag)?"moved":"copied", filename, movefilename);
 
     free(movefilename);
 }
