@@ -48,24 +48,30 @@
 #define	O_BINARY	0
 #endif
 
-
-/* TODO: add support for incremental directories */
 char *freshdbdir(void)
 {
 	struct cl_cvd *d1, *d2;
 	struct cfgstruct *copt = NULL, *cpt;
+	struct stat foo;
 	const char *dbdir;
 	char *retdir;
+
 
     /* try to find fresh directory */
     dbdir = cl_retdbdir();
     if((copt = getcfg(CONFDIR"/clamd.conf", 0))) {
 	if((cpt = cfgopt(copt, "DatabaseDirectory"))->enabled || (cpt = cfgopt(copt, "DataDirectory"))->enabled) {
 	    if(strcmp(dbdir, cpt->strarg)) {
-		    char *daily = (char *) mmalloc(strlen(cpt->strarg) + strlen(dbdir) + 15);
+		    char *daily = (char *) mmalloc(strlen(cpt->strarg) + strlen(dbdir) + 30);
 		sprintf(daily, "%s/daily.cvd", cpt->strarg);
+		if(stat(daily, &foo) == -1)
+		    sprintf(daily, "%s/daily.inc/daily.info", cpt->strarg);
+
 		if((d1 = cl_cvdhead(daily))) {
 		    sprintf(daily, "%s/daily.cvd", dbdir);
+		    if(stat(daily, &foo) == -1)
+			sprintf(daily, "%s/daily.inc/daily.info", dbdir);
+
 		    if((d2 = cl_cvdhead(daily))) {
 			free(daily);
 			if(d1->version > d2->version)
@@ -91,7 +97,6 @@ char *freshdbdir(void)
     return retdir;
 }
 
-/* TODO: add _proper_ support for incremental directories */
 void print_version(void)
 {
 	char *dbdir;
