@@ -1,3 +1,7 @@
+Sun Oct 29 19:28:20 CET 2006 (tk)
+---------------------------------
+  * configure: make user/group check more precise (closes bug#41)
+
 Sun Oct 29 19:22:00 CET 2006 (tk)
 ---------------------------------
   * clamd/session.c: VERSION now prints details for daily.inc (closes bug#107)

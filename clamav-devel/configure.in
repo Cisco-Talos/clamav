@@ -926,8 +926,8 @@ then
     then
 	AC_MSG_CHECKING(for $clamav_user in /etc/passwd)
 	if test -r /etc/passwd; then
-	    clamavuser=`cat /etc/passwd|grep $clamav_user`
-	    clamavgroup=`cat /etc/group|grep $clamav_group`
+	    clamavuser=`cat /etc/passwd|grep ^"$clamav_user":`
+	    clamavgroup=`cat /etc/group|grep ^"$clamav_group":`
 	fi
     else
 	AC_MSG_CHECKING(for $clamav_user using id)
