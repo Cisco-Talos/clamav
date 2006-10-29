@@ -53,7 +53,7 @@ int main(int argc, char **argv)
 	time_t starttime;
 	struct optstruct *opt;
 	char *clamdscan_accepted[] = { "help", "version", "verbose", "quiet",
-				  "stdout", "log", "move", "remove",
+				  "stdout", "log", "move", "copy", "remove",
 				  "config-file", "no-summary",
 				  "disable-summary", NULL };
 
@@ -149,6 +149,7 @@ void help(void)
     mprintf("    --log=FILE          -l FILE        Save scan report in FILE\n");
     mprintf("    --remove                           Remove infected files. Be careful!\n");
     mprintf("    --move=DIRECTORY                   Move infected files into DIRECTORY\n");
+    mprintf("    --copy=DIRECTORY                   Copy infected files into DIRECTORY\n");
     mprintf("    --config-file=FILE                 Read configuration from FILE.\n");
     mprintf("    --infected            -i             Only print infected files\n");
     mprintf("    --no-summary                       Disable summary at end of scanning\n");

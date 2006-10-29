@@ -196,7 +196,7 @@ int main(int argc, char **argv)
 	    logg("Not removed: %d\n", claminfo.notremoved);
 	}
 	if(claminfo.notmoved) {
-	    logg("Not moved: %d\n", claminfo.notmoved);
+	    logg("Not %s: %d\n", opt_check(opt, "copy") ? "moved" : "copied", claminfo.notmoved);
 	}
 	mb = claminfo.blocks * (CL_COUNT_PRECISION / 1024) / 1024.0;
 	logg("Data scanned: %2.2lf MB\n", mb);
@@ -235,6 +235,7 @@ void help(void)
     mprintf("    --recursive           -r             Scan subdirectories recursively\n");
     mprintf("    --remove                             Remove infected files. Be careful!\n");
     mprintf("    --move=DIRECTORY                     Move infected files into DIRECTORY\n");
+    mprintf("    --copy=DIRECTORY                     Copy infected files into DIRECTORY\n");
 #ifdef HAVE_REGEX_H
     mprintf("    --exclude=REGEX                      Don't scan file names matching REGEX\n");
     mprintf("    --exclude-dir=REGEX                  Don't scan directories matching REGEX\n");

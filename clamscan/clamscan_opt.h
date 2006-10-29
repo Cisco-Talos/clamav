@@ -51,6 +51,7 @@ static struct option clamscan_longopt[] = {
     {"threads", 1, 0, 0},	    /* not used */
     {"one-virus", 0, 0, 0},	    /* not used */
     {"move", 1, 0, 0},
+    {"copy", 1, 0, 0},
     {"remove", 0, 0, 0},
     {"exclude", 1, 0, 0},
     {"exclude-dir", 1, 0, 0},
