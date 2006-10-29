@@ -134,6 +134,9 @@ void thrmgr_destroy(threadpool_t *threadpool)
 threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void *))
 {
 	threadpool_t *threadpool;
+#if defined(C_BIGSTACK) || defined(C_BSD)
+	size_t stacksize;
+#endif
 	
 	if (max_threads <= 0) {
 		return NULL;
@@ -179,6 +182,14 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void
 		free(threadpool);
 		return NULL;
 	}
+
+#if defined(C_BIGSTACK) || defined(C_BSD)
+	pthread_attr_getstacksize(&(threadpool->pool_attr), &stacksize);
+	stacksize = stacksize + 64 * 1024;
+	if (stacksize < 1048576) stacksize = 1048576; /* at least 1MB please */
+	logg("Set stacksize to %u\n", stacksize);
+	pthread_attr_setstacksize(&(threadpool->pool_attr), stacksize);
+#endif
 	threadpool->state = POOL_VALID;
 
 	return threadpool;

@@ -1,3 +1,8 @@
+Sun Oct 29 19:45:07 CET 2006 (tk)
+---------------------------------
+  * clamd: change stack size at the right place (closes bug#103)
+	   Patch from Jonathan Chen <jon+clamav*spock.org>
+
 Sun Oct 29 19:28:20 CET 2006 (tk)
 ---------------------------------
   * configure: make user/group check more precise (closes bug#41)
