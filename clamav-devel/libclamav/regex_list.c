@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: regex_list.c,v $
+ *  Revision 1.13  2006/10/30 17:53:03  tkojm
+ *  apply patch from Edvin reported by Luca
+ *
  *  Revision 1.12  2006/10/28 15:34:40  tkojm
  *  .pdb/.wdb files now use colon as delimiter
  *
@@ -741,7 +744,8 @@ static int build_regex_list(struct regex_matcher* matcher)
 		return -1;/*TODO: better error code */
 	}
 	cli_dbgmsg("Building regex list\n");
- 	if(( rc = cli_ac_buildtrie(&matcher->root_hosts[matcher->root_hosts_cnt-1]) ))
+	if(matcher->root_hosts)
+		if(( rc = cli_ac_buildtrie(&matcher->root_hosts[matcher->root_hosts_cnt-1]) ))
  			return rc;
 	matcher->list_built=1;
 
