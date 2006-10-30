@@ -3,12 +3,12 @@ here may not be available in binary packages.
 --
 
 
-0.90RC1
+0.90RC2
 -------
 
-The first Release Candidate of the long awaited ClamAV 0.90 is ready for 
-general testing! This version introduces lots of new interesting features
-and marks a big step forward in the development of our antivirus engine.
+The Release Candidate of the long awaited ClamAV 0.90 is ready for general
+testing! This version introduces lots of new interesting features and marks
+a big step forward in the development of our antivirus engine.
 
 The most important change is the introduction of scripted updates.
 Instead of transferring the whole cvd file at each update, only the
@@ -38,7 +38,8 @@ rate and performances.
 RAR3, SIS and SFX archives support is finally available together with 
 new unpackers and decryptors: pespin, sue, yc, wwpack32 and others.
 Additionally, ClamAV now includes better mechanisms for scanning ELF, PDF
-and tar files.
+and tar files. The email decoding has been improved to reduce both the memory
+requirements and the time taken to process attachments.
 
 As part of the Google Summer of Code program, we have introduced support for
 a new phishing signatures format that has proved very effective in detecting
@@ -53,6 +54,64 @@ Support for Sensory Networks NodalCore Acceleration
 compiled in if the ncore libraries are detected at compile time. NodalCore
 acceleration allows highly improved scan speeds on systems equipped with
 NodalCore cards.
+
+Detailed list of changes (to be finished):
+
+-) libclamav:
+  + New unpacker for RAR3, RAR2 and RAR1
+  + Support for RAR and Zip SFX archives
+  + Support for PE32+ (64-bit) executables
+  + Support for PE section based MD5 signatures (.mdb)
+  + ELF file parser
+  + Support for Sensory Networks' NodalCore hardware acceleration technology
+  + Advanced phishing detection module (experimental)
+  + Phishing detection can be disabled with CL_DB_NOPHISHING
+  + Signatures are stored in separate trees depending on their target type
+  + Algorithmic detection can be controlled with CL_SCAN_ALGO
+  + Support for obfuscators: SUE (experimental), Y0da Cryptor, CryptFF
+  + Support for unpackers: NsPack (experimental), wwpack32
+  + Support for SIS files (SybmianOS installer packages)
+  + Support for PDF files
+
+-) clamd:
+  + New config file parser:
+    * all options require arguments (options without args must be now followed
+      by boolean values: (yes, no), (1, 0), or (true, false)
+    * optional arguments (as in NotifyClamd) are no longer supported
+    * removed "DisableDefaultScanOptions" option (scan options can be
+      configured individually)
+  + TCP and local sockets can be operated simultaneously
+  + New command: MULTISCAN (scan directory with multiple threads)
+  + New option DetectPhishing
+  + New option AlgorithmicDetection
+  + New option NodalCore
+  + New option PhishingStrictURLCheck
+  + New option ScanELF
+
+-) clamav-milter:
+  + Black list mode: optionally black lists an IP for a configurable amount
+    of time
+  + Black hole mode: detects emails that will be discarded and refrains from
+    scanning them
+  + Reporting: ability to report phishing attempts to anti-phishing
+    organisations to help close the sites
+  + Improved load balancing for scanning with clusters
+
+-) clamscan:
+  + New options: --no-phishing, --no-algorithmic (disable phishing and
+    algorithmic detection respectively)
+  + New option: --ncore
+  + New option: --no-elf
+  + New option: --copy
+
+-) freshclam:
+  + interpreter for .cdiff files (scripted updates)
+  + new option HTTPUserAgent to force different User-Agent header
+
+-) sigtool:
+  + New option: --utf16-decode (decode UTF16 encoded files)
+  + New options: --diff, --run-cdiff, --verify-cdiff (update script management)
+
 
 --
 The ClamAV team (http://www.clamav.net/team.html)
