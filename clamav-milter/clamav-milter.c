@@ -24,9 +24,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.294 2006/10/28 19:47:52 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.295 2006/10/30 14:20:36 njh Exp $";
 
-#define	CM_VERSION	"devel-281006"
+#define	CM_VERSION	"devel-301006"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -5250,8 +5250,10 @@ loadDatabase(void)
 			dbdir = cl_retdbdir();
 	}
 
-	daily = cli_malloc(strlen(dbdir) + 11);
+	daily = cli_malloc(strlen(dbdir) + 22);
 	sprintf(daily, "%s/daily.cvd", dbdir);
+	if(access(daily, R_OK) < 0)
+		sprintf(daily, "%s/daily.inc/daily.info", dbdir);
 
 	cli_dbgmsg("loadDatabase: check %s for updates\n", daily);
 
