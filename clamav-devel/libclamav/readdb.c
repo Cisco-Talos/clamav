@@ -1405,8 +1405,15 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 		dbstat->statdname = (char **) realloc(dbstat->statdname, dbstat->no * sizeof(char *));
 #endif
 
-                fname = cli_calloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
-		sprintf(fname, "%s/%s", dirname, dent->d_name);
+                fname = cli_calloc(strlen(dirname) + strlen(dent->d_name) + 32, sizeof(char));
+		if(cli_strbcasestr(dent->d_name, ".inc")) {
+		    if(strstr(dent->d_name, "main"))
+			sprintf(fname, "%s/main.inc/main.info", dirname);
+		    else
+			sprintf(fname, "%s/daily.inc/daily.info", dirname);
+		} else {
+		    sprintf(fname, "%s/%s", dirname, dent->d_name);
+		}
 #if defined(C_INTERIX) || defined(C_OS2)
 		dbstat->statdname[dbstat->no - 1] = (char *) cli_calloc(strlen(dent->d_name) + 1, sizeof(char));
 		strcpy(dbstat->statdname[dbstat->no - 1], dent->d_name);
@@ -1478,8 +1485,15 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".inc")   ||
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
-                fname = cli_calloc(strlen(dbstat->dir) + strlen(dent->d_name) + 2, sizeof(char));
-		sprintf(fname, "%s/%s", dbstat->dir, dent->d_name);
+                fname = cli_calloc(strlen(dbstat->dir) + strlen(dent->d_name) + 32, sizeof(char));
+		if(cli_strbcasestr(dent->d_name, ".inc")) {
+		    if(strstr(dent->d_name, "main"))
+			sprintf(fname, "%s/main.inc/main.info", dbstat->dir);
+		    else
+			sprintf(fname, "%s/daily.inc/daily.info", dbstat->dir);
+		} else {
+		    sprintf(fname, "%s/%s", dbstat->dir, dent->d_name);
+		}
 		stat(fname, &sb);
 		free(fname);
 
