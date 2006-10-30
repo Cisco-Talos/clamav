@@ -1,3 +1,7 @@
+Mon Oct 30 19:29:36 CET 2006 (tk)
+---------------------------------
+  * 0.90RC2 (released with JS and PST code removed)
+
 Mon Oct 30 14:20:40 GMT 2006 (njh)
 ----------------------------------
   * clamav-milter:	Added support for daily.inc/daily.info (patch from TK)
