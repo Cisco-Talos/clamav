@@ -59,7 +59,7 @@ Detailed list of changes (to be finished):
 
 -) libclamav:
   + New unpacker for RAR3, RAR2 and RAR1
-  + Support for RAR and Zip SFX archives
+  + Support for RAR-SFX, Zip-SFX and CAB-SFX archives
   + Support for PE32+ (64-bit) executables
   + Support for PE section based MD5 signatures (.mdb)
   + ELF file parser
