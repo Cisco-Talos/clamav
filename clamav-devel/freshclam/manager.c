@@ -746,20 +746,21 @@ static int getpatch(const char *dbname, int version, const char *hostname, char 
     return 0;
 }
 
-static struct cl_cvd *currentdb(const char *dbname)
+static struct cl_cvd *currentdb(const char *dbname, unsigned int *inc)
 {
 	struct stat sb;
 	char path[512];
 	struct cl_cvd *cvd;
-	short inc = 0;
 
 
     snprintf(path, sizeof(path), "%s.inc", dbname);
     if(stat(path, &sb) != -1) {
 	snprintf(path, sizeof(path), "%s.inc/%s.info", dbname, dbname);
-	inc = 1;
-    } else
+	*inc = 1;
+    } else {
 	snprintf(path, sizeof(path), "%s.cvd", dbname);
+	*inc = 0;
+    }
 
     cvd = cl_cvdhead(path);
 
@@ -773,7 +774,7 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
 	int nodb = 0, currver = 0, newver = -1, ret, port = 0, ims = -1, i;
 	char *pt, dbfile[32], dbinc[32];
 	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL;
-	int flevel = cl_retflevel();
+	unsigned int flevel = cl_retflevel(), inc;
 	struct stat sb;
 	int ctimeout, rtimeout;
 
@@ -781,8 +782,9 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
     snprintf(dbfile, sizeof(dbfile), "%s.cvd", dbname);
     snprintf(dbinc, sizeof(dbinc), "%s.inc", dbname);
 
-    if(!(current = currentdb(dbname))) {
+    if(!(current = currentdb(dbname, &inc))) {
 	nodb = 1;
+	inc = 0;
 	if(stat(dbinc, &sb) != -1) {
 	    logg("^Removing corrupted incremental directory %s\n", dbinc);
 	    if(rmdirs(dbinc)) {
@@ -861,7 +863,7 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
 	remote = remote_cvdhead(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, &ims, ctimeout, rtimeout);
 
 	if(!nodb && !ims) {
-	    logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", dbfile, current->version, current->sigs, current->fl, current->builder);
+	    logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", inc ? dbinc : dbfile, current->version, current->sigs, current->fl, current->builder);
 	    *signo += current->sigs;
 	    cl_cvdfree(current);
 	    return 1;
@@ -878,7 +880,7 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
     }
 
     if(!nodb && (current->version >= newver)) {
-	logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", dbfile, current->version, current->sigs, current->fl, current->builder);
+	logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", inc ? dbinc : dbfile, current->version, current->sigs, current->fl, current->builder);
 
 	if(!outdated && flevel < current->fl) {
 	    /* display warning even for already installed database */
@@ -948,13 +950,13 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
 	}
     }
 
-    if(!(current = currentdb(dbname))) {
+    if(!(current = currentdb(dbname, &inc))) {
 	/* should never be reached */
 	logg("!Can't parse new database\n");
 	return 55; /* FIXME */
     }
 
-    logg("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", dbfile, current->version, current->sigs, current->fl, current->builder);
+    logg("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", inc ? dbinc : dbfile, current->version, current->sigs, current->fl, current->builder);
 
     if(flevel < current->fl) {
 	logg("^Your ClamAV installation is OUTDATED!\n");
