@@ -1111,7 +1111,7 @@ static int cli_loadncdb(const char *filename, struct cl_engine **engine, unsigne
     if((ret = sn_sigscan_initdb(&(*engine)->ncdb)) < 0) {
 	cli_errmsg("cli_loadncdb: error initializing the matcher: %d\n", ret);
 	cl_free(*engine);
-	return CL_EHWINIT;
+	return CL_ENCINIT;
     }
 
     (*engine)->ncore = 1;
@@ -1119,7 +1119,7 @@ static int cli_loadncdb(const char *filename, struct cl_engine **engine, unsigne
     if((ret = sn_sigscan_loaddb((*engine)->ncdb, filename, 0, &newsigs)) < 0) {
 	cli_errmsg("cli_loadncdb: can't load hardware database: %d\n", ret);
 	cl_free(*engine);
-	return CL_EHWLOAD;
+	return CL_ENCLOAD;
     }
 
     *signo += newsigs;
@@ -1353,7 +1353,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 
 
     if(dbstat) {
-	dbstat->no = 0;
+	dbstat->entries = 0;
 	dbstat->stattab = NULL;
 	dbstat->statdname = NULL;
 	dbstat->dir = strdup(dirname);
@@ -1399,10 +1399,10 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".inc")   ||
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
-		dbstat->no++;
-		dbstat->stattab = (struct stat *) realloc(dbstat->stattab, dbstat->no * sizeof(struct stat));
+		dbstat->entries++;
+		dbstat->stattab = (struct stat *) realloc(dbstat->stattab, dbstat->entries * sizeof(struct stat));
 #if defined(C_INTERIX) || defined(C_OS2)
-		dbstat->statdname = (char **) realloc(dbstat->statdname, dbstat->no * sizeof(char *));
+		dbstat->statdname = (char **) realloc(dbstat->statdname, dbstat->entries * sizeof(char *));
 #endif
 
                 fname = cli_calloc(strlen(dirname) + strlen(dent->d_name) + 32, sizeof(char));
@@ -1415,10 +1415,10 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 		    sprintf(fname, "%s/%s", dirname, dent->d_name);
 		}
 #if defined(C_INTERIX) || defined(C_OS2)
-		dbstat->statdname[dbstat->no - 1] = (char *) cli_calloc(strlen(dent->d_name) + 1, sizeof(char));
-		strcpy(dbstat->statdname[dbstat->no - 1], dent->d_name);
+		dbstat->statdname[dbstat->entries - 1] = (char *) cli_calloc(strlen(dent->d_name) + 1, sizeof(char));
+		strcpy(dbstat->statdname[dbstat->entries - 1], dent->d_name);
 #endif
-		stat(fname, &dbstat->stattab[dbstat->no - 1]);
+		stat(fname, &dbstat->stattab[dbstat->entries - 1]);
 		free(fname);
 	    }
 	}
@@ -1498,7 +1498,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 		free(fname);
 
 		found = 0;
-		for(i = 0; i < dbstat->no; i++)
+		for(i = 0; i < dbstat->entries; i++)
 #if defined(C_INTERIX) || defined(C_OS2)
 		    if(!strcmp(dbstat->statdname[i], dent->d_name)) {
 #else
@@ -1531,7 +1531,7 @@ int cl_statfree(struct cl_stat *dbstat)
 #if defined(C_INTERIX) || defined(C_OS2)
 	    int i;
 
-	for(i = 0;i < dbstat->no; i++) {
+	for(i = 0;i < dbstat->entries; i++) {
 	    free(dbstat->statdname[i]);
 	    dbstat->statdname[i] = NULL;
 	}
@@ -1541,7 +1541,7 @@ int cl_statfree(struct cl_stat *dbstat)
 
 	free(dbstat->stattab);
 	dbstat->stattab = NULL;
-	dbstat->no = 0;
+	dbstat->entries = 0;
 	if(dbstat->dir) {
 	    free(dbstat->dir);
 	    dbstat->dir = NULL;

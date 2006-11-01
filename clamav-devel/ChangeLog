@@ -1,3 +1,7 @@
+Wed Nov  1 17:03:54 CET 2006 (tk)
+---------------------------------
+  * libclamav: minor clamav.h (and related) cleanup
+
 Mon Oct 30 19:29:36 CET 2006 (tk)
 ---------------------------------
   * 0.90RC2 (released with JS and PST code removed)

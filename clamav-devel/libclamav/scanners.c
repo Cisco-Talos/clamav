@@ -492,11 +492,6 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    cli_dbgmsg("Zip: Infected with %s\n", *ctx->virname);
 	    ret = CL_VIRUS;
 	    break;
-	} else if(ret == CL_EMALFZIP) {
-	    cli_dbgmsg("Zip: Malformed Zip file, scanning stopped.\n");
-	    *ctx->virname = "Suspect.Zip";
-	    ret = CL_VIRUS;
-	    break;
 	}
 
 	if(tmp) {

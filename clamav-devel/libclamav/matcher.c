@@ -77,18 +77,18 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 	/* TODO: Setup proper data bitmask (need specs) */
 	if((hret = sn_sigscan_createstream(engine->ncdb, datamask, 2, &streamhandle)) < 0) {
 	    cli_errmsg("cli_scanbuff: can't create new hardware stream: %d\n", hret);
-	    return CL_EHWIO;
+	    return CL_ENCIO;
 	}
 
 	if((hret = sn_sigscan_writestream(streamhandle, buffer, length)) < 0) {
 	    cli_errmsg("cli_scanbuff: can't write %u bytes to hardware stream: %d\n", length, hret);
 	    sn_sigscan_closestream(streamhandle, &resulthandle);
-	    return CL_EHWIO;
+	    return CL_ENCIO;
 	}
 
 	if((hret = sn_sigscan_closestream(streamhandle, &resulthandle)) < 0) {
 	    cli_errmsg("cli_scanbuff: can't close hardware stream: %d\n", hret);
-	    return CL_EHWIO;
+	    return CL_ENCIO;
 	}
 
 	count = sn_sigscan_resultcount(resulthandle);
@@ -100,7 +100,7 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 	    if((hret = sn_sigscan_resultget_name(resulthandle, i, &matchname) < 0)) {
 		cli_errmsg("cli_scanbuff: sn_sigscan_resultget_name failed for result %d: %d\n", i, hret);
 		sn_sigscan_resultfree(resulthandle);
-		return CL_EHWIO;
+		return CL_ENCIO;
 	    }
 	    if(!matchname) {
 		cli_errmsg("cli_scanbuff: HW Result[%d]: Signature without name\n", i);
@@ -111,7 +111,7 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 	    if((hret = sn_sigscan_resultget_targettype(resulthandle, i, &targettype) < 0)) {
 		cli_errmsg("cli_scanbuff: sn_sigscan_resultget_targettype failed for result %d, signature %s: %d\n", i, matchname, hret);
 		sn_sigscan_resultfree(resulthandle);
-		return CL_EHWIO;
+		return CL_ENCIO;
 	    }
 	    if(targettype && targettab[targettype] != (int) ftype) {
 		cli_dbgmsg("cli_scanbuff: HW Result[%d]: %s: Target type: %d, expected: %d\n", i, matchname, targettab[targettype], ftype);
@@ -121,7 +121,7 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 	    if((hret = sn_sigscan_resultget_offsetstring(resulthandle, i, &offsetstring) < 0)) {
 		cli_errmsg("cli_scanbuff: sn_sigscan_resultget_offsetstring failed for result %d, signature %s: %d\n", i, matchname, hret);
 		sn_sigscan_resultfree(resulthandle);
-		return CL_EHWIO;
+		return CL_ENCIO;
 	    }
 	    if(offsetstring) {
 		cli_dbgmsg("cli_scanbuff: HW Result[%d]: %s: Offset based signature not supported in buffer mode\n", i, matchname);
@@ -131,7 +131,7 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 	    if((hret = sn_sigscan_resultget_extradata(resulthandle, i, &optionalsigdata) < 0)) {
 		cli_errmsg("cli_scanbuff: sn_sigscan_resultget_extradata failed for result %d, signature %s: %d\n", i, matchname, hret);
 		sn_sigscan_resultfree(resulthandle);
-		return CL_EHWIO;
+		return CL_ENCIO;
 	    }
 	    if(optionalsigdata && strlen(optionalsigdata)) {
 		if((pt = cli_strtok(optionalsigdata, 1, ":"))) { /* max version */
@@ -186,7 +186,7 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 
 	if((hret = sn_sigscan_resultfree(resulthandle)) < 0) {
 	    cli_errmsg("cli_scanbuff: can't free results: %d\n", ret);
-	    return CL_EHWIO;
+	    return CL_ENCIO;
 	}
 
 	return ret;
@@ -436,7 +436,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	/* TODO: Setup proper data bitmask (need specs) */
 	if((hret = sn_sigscan_createstream(ctx->engine->ncdb, datamask, 2, &streamhandle)) < 0) {
 	    cli_errmsg("cli_scandesc: can't create new hardware stream: %d\n", hret);
-	    return CL_EHWIO;
+	    return CL_ENCIO;
 	}
 
 	if(!(buffer = (char *) cli_calloc(HWBUFFSIZE, sizeof(char)))) {
@@ -456,7 +456,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	while((bytes = cli_readn(desc, buffer, HWBUFFSIZE)) > 0) {
 	    if((hret = sn_sigscan_writestream(streamhandle, buffer, bytes)) < 0) {
 		cli_errmsg("cli_scandesc: can't write to hardware stream: %d\n", hret);
-		ret = CL_EHWIO;
+		ret = CL_ENCIO;
 		break;
 	    } else {
 		if(ctx->scanned)
@@ -471,7 +471,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 
 	if((hret = sn_sigscan_closestream(streamhandle, &resulthandle)) < 0) {
 	    cli_errmsg("cli_scandesc: can't close hardware stream: %d\n", hret);
-	    return CL_EHWIO;
+	    return CL_ENCIO;
 	}
 
 	count = sn_sigscan_resultcount(resulthandle);
@@ -484,7 +484,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	    if((hret = sn_sigscan_resultget_name(resulthandle, i, &matchname) < 0)) {
 		cli_errmsg("cli_scandesc: sn_sigscan_resultget_name failed for result %d: %d\n", i, hret);
 		sn_sigscan_resultfree(resulthandle);
-		return CL_EHWIO;
+		return CL_ENCIO;
 	    }
 
 	    if(!matchname) {
@@ -496,7 +496,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	    if((hret = sn_sigscan_resultget_targettype(resulthandle, i, &targettype) < 0)) {
 		cli_errmsg("cli_scandesc: sn_sigscan_resultget_targettype failed for result %d, signature %s: %d\n", i, matchname, hret);
 		sn_sigscan_resultfree(resulthandle);
-		return CL_EHWIO;
+		return CL_ENCIO;
 	    }
 	    if(targettype && targettab[targettype] != (int) ftype) {
 		cli_dbgmsg("cli_scandesc: HW Result[%d]: %s: Target type: %d, expected: %d\n", i, matchname, targettab[targettype], ftype);
@@ -506,12 +506,12 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	    if((hret = sn_sigscan_resultget_offsetstring(resulthandle, i, &offsetstring) < 0)) {
 		cli_errmsg("cli_scandesc: sn_sigscan_resultget_offsetstring failed for result %d, signature %s: %d\n", i, matchname, hret);
 		sn_sigscan_resultfree(resulthandle);
-		return CL_EHWIO;
+		return CL_ENCIO;
 	    }
 	    if((hret = sn_sigscan_resultget_startoffset(resulthandle, i, &startoffset) < 0)) {
 		cli_errmsg("cli_scandesc: sn_sigscan_resultget_startoffset failed for result %d, signature %s: %d\n", i, matchname, hret);
 		sn_sigscan_resultfree(resulthandle);
-		return CL_EHWIO;
+		return CL_ENCIO;
 	    }
 	    if(offsetstring && strcmp(offsetstring, "*")) {
 		    long int off = cli_caloff(offsetstring, desc, ftype);
@@ -531,7 +531,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	    if((hret = sn_sigscan_resultget_extradata(resulthandle, i, &optionalsigdata) < 0)) {
 		cli_errmsg("cli_scandesc: sn_sigscan_resultget_extradata failed for result %d, signature %s: %d\n", i, matchname, hret);
 		sn_sigscan_resultfree(resulthandle);
-		return CL_EHWIO;
+		return CL_ENCIO;
 	    }
 	    if(optionalsigdata && strlen(optionalsigdata)) {
 		if((pt = cli_strtok(optionalsigdata, 1, ":"))) { /* max version */
@@ -586,7 +586,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 
 	if((hret = sn_sigscan_resultfree(resulthandle)) < 0) {
 	    cli_errmsg("cli_scandesc: can't free results: %d\n", ret);
-	    return CL_EHWIO;
+	    return CL_ENCIO;
 	}
 
 	if(ctx->engine->md5_hlist) {
