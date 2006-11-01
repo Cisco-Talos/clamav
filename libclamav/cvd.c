@@ -217,7 +217,7 @@ struct cl_cvd *cl_cvdparse(const char *head)
 	free(cvd);
 	return NULL;
     }
-    cvd->fl = (short int) atoi(pt);
+    cvd->fl = atoi(pt);
     free(pt);
 
     if(!(cvd->md5 = cli_strtok(head, 5, ":"))) {

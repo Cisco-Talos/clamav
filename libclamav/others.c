@@ -152,7 +152,7 @@ void cl_debug(void)
     cli_debug_flag = 1;
 }
 
-int cl_retflevel(void)
+unsigned int cl_retflevel(void)
 {
     return CL_FLEVEL;
 }
@@ -179,8 +179,6 @@ const char *cl_strerror(int clerror)
 	    return "RAR module failure";
 	case CL_EZIP:
 	    return "Zip module failure";
-	case CL_EMALFZIP:
-	    return "Malformed Zip detected";
 	case CL_EGZIP:
 	    return "GZip module failure";
 	case CL_EMSCOMP:
@@ -219,12 +217,12 @@ const char *cl_strerror(int clerror)
 	    return "Bad format or broken data";
 	case CL_ESUPPORT:
 	    return "Not supported data format";
-	case CL_EHWINIT:
-	    return "Hardware initialization failure";
-	case CL_EHWLOAD:
-	    return "Error loading hardware database";
-	case CL_EHWIO:
-	    return "Hardware accelerator Input/Output error";
+	case CL_ENCINIT:
+	    return "NodalCore initialization failure";
+	case CL_ENCLOAD:
+	    return "Error loading NodalCore database";
+	case CL_ENCIO:
+	    return "NodalCore accelerator Input/Output error";
 	default:
 	    return "Unknown error code";
     }
