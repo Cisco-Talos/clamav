@@ -385,10 +385,35 @@ void *cli_realloc(void *ptr, size_t size)
     alloc = realloc(ptr, size);
 
     if(!alloc) {
-	cli_errmsg("cli_realloc(): Can't re-allocate memory to %u byte.\n", size);
+	cli_errmsg("cli_realloc(): Can't re-allocate memory to %u bytes.\n", size);
 	perror("realloc_problem");
 	return NULL;
     } else return alloc;
+}
+
+char *cli_strdup(const char *s)
+{
+        char *alloc;
+
+
+    if(s == NULL) {
+        cli_errmsg("cli_strdup(): s == NULL. Please report to http://bugs.clamav.net\n");
+        return NULL;
+    }
+
+#if defined(_MSC_VER) && defined(_DEBUG)
+    alloc = _strdup_dbg(s, _NORMAL_BLOCK, __FILE__, __LINE__);
+#else
+    alloc = strdup(s);
+#endif
+
+    if(!alloc) {
+        cli_errmsg("cli_strdup(): Can't allocate memory (%u bytes).\n", strlen(s));
+        perror("strdup_problem");
+        return NULL;
+    }
+
+    return alloc;
 }
 
 unsigned int cli_rndnum(unsigned int max)
