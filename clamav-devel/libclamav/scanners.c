@@ -792,7 +792,7 @@ static int cli_scanszdd(int desc, cli_ctx *ctx)
     return ret;
 }
 
-static int cli_scanmscab(int desc, cli_ctx *ctx)
+static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
 {
 	struct mscab_decompressor *cabd = NULL;
 	struct mscabd_cabinet *base, *cab;
@@ -807,6 +807,9 @@ static int cli_scanmscab(int desc, cli_ctx *ctx)
 	cli_dbgmsg("MSCAB: Can't create libmspack CAB decompressor\n");
 	return CL_EMSCAB;
     }
+
+    if(sfx_offset)
+	lseek(desc, sfx_offset, SEEK_SET);
 
     if((base = cabd->dsearch(cabd, dup(desc))) == NULL) {
 	cli_dbgmsg("MSCAB: I/O error or no valid cabinets found\n");
@@ -1626,6 +1629,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 
 	    case CL_TYPE_RARSFX:
 	    case CL_TYPE_ZIPSFX:
+	    case CL_TYPE_CABSFX:
 		if(type == CL_TYPE_MSEXE) {
 		    if(SCAN_ARCHIVE) {
 			lastzip = lastrar = 0xdeadbeef;
@@ -1639,7 +1643,12 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 				cli_dbgmsg("ZIP-SFX signature found at %d\n", fpt->offset);
 				if((nret = cli_scanzip(desc, ctx, fpt->offset, &lastzip)) == CL_VIRUS)
 				    break;
+			    } else if(fpt->type == CL_TYPE_CABSFX) {
+				cli_dbgmsg("CAB-SFX signature found at %d\n", fpt->offset);
+				if((nret = cli_scanmscab(desc, ctx, fpt->offset)) == CL_VIRUS)
+				    break;
 			    }
+
 			    fpt = fpt->next;
 			}
 		    }
@@ -1753,7 +1762,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 	case CL_TYPE_MSCAB:
 	    if(SCAN_ARCHIVE)
-		ret = cli_scanmscab(desc, ctx);
+		ret = cli_scanmscab(desc, ctx, 0);
 	    break;
 
 	case CL_TYPE_HTML:

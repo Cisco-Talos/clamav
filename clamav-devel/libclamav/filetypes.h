@@ -60,7 +60,8 @@ typedef enum {
     CL_TYPE_MAIL,  /* magic + on the fly */
     CL_TYPE_SFX, /* foo SFX marker */
     CL_TYPE_ZIPSFX, /* on the fly */
-    CL_TYPE_RARSFX /* on the fly */
+    CL_TYPE_RARSFX, /* on the fly */
+    CL_TYPE_CABSFX
 
 } cli_file_t;
 

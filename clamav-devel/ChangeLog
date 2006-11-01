@@ -1,3 +1,8 @@
+Wed Nov  1 18:59:48 CET 2006 (tk)
+---------------------------------
+  * libclamav: add support for self-extracting MS Cabinet archives
+	       Thanks to Christoph for a nice bunch of test files.
+
 Wed Nov  1 17:03:54 CET 2006 (tk)
 ---------------------------------
   * libclamav: minor clamav.h (and related) cleanup
