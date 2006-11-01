@@ -1,3 +1,7 @@
+Wed Nov  1 19:15:57 CET 2006 (tk)
+---------------------------------
+  * libclamav/others.c: add cli_strdup(), thanks to NJH
+
 Wed Nov  1 18:59:48 CET 2006 (tk)
 ---------------------------------
   * libclamav: add support for self-extracting MS Cabinet archives
