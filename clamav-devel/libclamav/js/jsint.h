@@ -24,14 +24,14 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/jsint.h,v $
- * $Id: jsint.h,v 1.2 2006/10/11 10:54:41 njh Exp $
+ * $Id: jsint.h,v 1.3 2006/11/02 09:36:19 njh Exp $
  */
 
 #ifndef JSINT_H
 #define JSINT_H
 
 /* We have always jsconfig.h */
-#include <jsconfig.h>
+#include "jsconfig.h"
 
 #include <stdio.h>
 #include <assert.h>

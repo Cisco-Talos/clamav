@@ -1,3 +1,7 @@
+Thu Nov  2 09:36:06 GMT 2006 (njh)
+----------------------------------
+  * libclamav/js/jsint.h:	Fix compilatin error under FreeBSD6.1
+
 Thu Nov  2 00:20:36 CET 2006 (tk)
 ---------------------------------
   * freshclam/manager.c: make update messages more precise
