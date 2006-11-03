@@ -1,6 +1,10 @@
+Fri Nov  3 19:47:42 GMT 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Partial fix for bug 33
+
 Thu Nov  2 09:36:06 GMT 2006 (njh)
 ----------------------------------
-  * libclamav/js/jsint.h:	Fix compilatin error under FreeBSD6.1
+  * libclamav/js/jsint.h:	Fix compilation error under FreeBSD6.1
 
 Thu Nov  2 00:20:36 CET 2006 (tk)
 ---------------------------------
