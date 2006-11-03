@@ -24,7 +24,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.295 2006/10/30 14:20:36 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.296 2006/11/03 21:27:29 njh Exp $";
 
 #define	CM_VERSION	"devel-301006"
 
@@ -152,8 +152,8 @@ typedef	unsigned int	in_addr_t;
 #define	VERSION_LENGTH	128
 #define	DEFAULT_TIMEOUT	120
 
-/*#define	SESSION	/*
-		 * Keep one command connection open to clamd, otherwise a new
+/*#define	SESSION*/
+		/* Keep one command connection open to clamd, otherwise a new
 		 * command connection is created for each new email
 		 *
 		 * FIXME: When SESSIONS are open, freshclam can hang when
@@ -1275,7 +1275,7 @@ main(int argc, char **argv)
 		numServers = 1;
 	} else if(((cpt = cfgopt(copt, "LocalSocket")) != NULL) && cpt->enabled) {
 #ifdef	SESSION
-		struct sockaddr_un server;
+		struct sockaddr_un sun;
 #endif
 		char *sockname = NULL;
 
@@ -1327,9 +1327,9 @@ main(int argc, char **argv)
 #endif
 
 #ifdef	SESSION
-		memset((char *)&server, 0, sizeof(struct sockaddr_un));
-		server.sun_family = AF_UNIX;
-		strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
+		memset((char *)&sun, 0, sizeof(struct sockaddr_un));
+		sun.sun_family = AF_UNIX;
+		strncpy(sun.sun_path, localSocket, sizeof(sun.sun_path));
 
 		sessions = (struct session *)cli_malloc(sizeof(struct session));
 		if((sessions[0].sock = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
@@ -1340,7 +1340,7 @@ main(int argc, char **argv)
 				cfgfile);
 			return EX_CONFIG;
 		}
-		if(connect(sessions[0].sock, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
+		if(connect(sessions[0].sock, (struct sockaddr *)&sun, sizeof(struct sockaddr_un)) < 0) {
 			perror(localSocket);
 			return EX_UNAVAILABLE;
 		}
@@ -1876,7 +1876,7 @@ createSession(unsigned int s)
 	proto = getprotobyname("tcp");
 	if(proto == NULL) {
 		fputs("Unknown prototol tcp, check /etc/protocols\n", stderr);
-		ret = -1;
+		fd = ret = -1;
 	} else if((fd = socket(AF_INET, SOCK_STREAM, proto->p_proto)) < 0) {
 		perror("socket");
 		ret = -1;
@@ -3777,7 +3777,11 @@ clamfi_free(struct privdata *privdata, int keep)
 
 		if(keep) {
 			memset(privdata, '\0', sizeof(struct privdata));
+#ifdef	SESSION
+			privdata->dataSocket = -1;
+#else
 			privdata->dataSocket = privdata->cmdSocket = -1;
+#endif
 		} else
 			free(privdata);
 	}
