@@ -1,3 +1,7 @@
+Fri Nov  3 21:28:13 GMT 2006 (njh)
+----------------------------------
+  * clamav-milter:	Fix compilation error in session mode, bug 115
+
 Fri Nov  3 19:47:42 GMT 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Partial fix for bug 33
