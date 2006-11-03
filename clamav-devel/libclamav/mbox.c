@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.357 2006/10/29 13:54:06 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.358 2006/11/03 19:47:16 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -1672,6 +1672,14 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 					if(isblank(lookahead))
 						continue;
 				}
+
+				/*
+				 * Handle broken headers, where the next
+				 * line isn't indented by whitespace
+				 */
+				if(fullline[fulllinelength - 2] == ';')
+					/* Add arguments to this line */
+					continue;
 
 				if(line && (count_quotes(fullline) & 1))
 					continue;
