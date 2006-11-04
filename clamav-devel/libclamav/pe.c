@@ -412,9 +412,9 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     timestamp = (time_t) EC32(file_hdr.TimeDateStamp);
     cli_dbgmsg("TimeDateStamp: %s", ctime(&timestamp));
 
-    cli_dbgmsg("SizeOfOptionalHeader: %d\n", EC16(file_hdr.SizeOfOptionalHeader));
+    cli_dbgmsg("SizeOfOptionalHeader: %x\n", EC16(file_hdr.SizeOfOptionalHeader));
 
-    if(EC16(file_hdr.SizeOfOptionalHeader) != sizeof(struct pe_image_optional_hdr32)) {
+    if(EC16(file_hdr.SizeOfOptionalHeader) != sizeof(struct pe_image_optional_hdr32) && EC16(file_hdr.SizeOfOptionalHeader)!=0x148) {
 	if(EC16(file_hdr.SizeOfOptionalHeader) == sizeof(struct pe_image_optional_hdr64)) {
 	    pe_plus = 1;
 	} else {
@@ -438,6 +438,18 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		return CL_VIRUS;
 	    }
 	    return CL_CLEAN;
+	}
+	if (EC16(file_hdr.SizeOfOptionalHeader)==0x148) {
+	  cli_dbgmsg("Found long header\n");
+	  if (lseek(desc, (0x148-0xe0), SEEK_CUR)==-1) { /* Seek to the end of the long header */
+	    if(DETECT_BROKEN) {
+	      if(ctx->virname)
+		*ctx->virname = "Broken.Executable";
+	      return CL_VIRUS;
+	    }
+	    cli_dbgmsg("But the file is too short to fit it\n");
+	    return CL_CLEAN;
+	  }
 	}
 
 	if(EC16(optional_hdr32.Magic) != PE32_SIGNATURE) {
