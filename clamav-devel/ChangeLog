@@ -1,3 +1,6 @@
+Sun Nov  5 00:45:44 CET 2006 (acab)
+  * libclamav/pe.c:	add broken.executable checks on alignments
+
 Sun Nov  5 00:20:02 CET 2006 (acab)
   * libclamav/pe.c:     lseek fix for last commit
 
