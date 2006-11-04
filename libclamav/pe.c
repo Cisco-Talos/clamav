@@ -678,6 +678,11 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
     cli_dbgmsg("EntryPoint offset: 0x%x (%d)\n", ep, ep);
 
+    if(pe_plus) { /* Do not continue for PE32+ files */
+	free(section_hdr);
+	return CL_CLEAN;
+    }
+
     /* Attempt to detect some popular polymorphic viruses */
 
     /* W32.Parite.B */
@@ -793,7 +798,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     }
 
     /* W32.Polipos.A */
-   if(polipos && !dll && !pe_plus && nsections > 2 && nsections < 13 && e_lfanew <= 0x800 && (EC16(optional_hdr32.Subsystem) == 2 || EC16(optional_hdr32.Subsystem) == 3) && EC16(file_hdr.Machine) == 0x14c && optional_hdr32.SizeOfStackReserve >= 0x80000) {
+   if(polipos && !dll && nsections > 2 && nsections < 13 && e_lfanew <= 0x800 && (EC16(optional_hdr32.Subsystem) == 2 || EC16(optional_hdr32.Subsystem) == 3) && EC16(file_hdr.Machine) == 0x14c && optional_hdr32.SizeOfStackReserve >= 0x80000) {
 		uint32_t remaining = EC32(section_hdr[0].SizeOfRawData);
 		uint32_t chunk = sizeof(buff);
 		uint32_t val, shift, raddr, total = 0;
@@ -888,12 +893,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	free(section_hdr);
 	return CL_CLEAN;
     }
-
-    if(pe_plus) { /* Do not continue for PE32+ files */
-	free(section_hdr);
-	return CL_CLEAN;
-    }
-
 
 #ifdef CL_EXPERIMENTAL
     /* SUE */

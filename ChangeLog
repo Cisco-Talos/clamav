@@ -1,3 +1,7 @@
+Sat Nov  4 18:52:36 CET 2006 (acab)
+-----------------------------------
+  * libclamav/pe.c:	Move pe_plus return to a more convenient location
+
 Fri Nov  3 21:28:13 GMT 2006 (njh)
 ----------------------------------
   * clamav-milter:	Fix compilation error in session mode, bug 115
