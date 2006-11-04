@@ -507,6 +507,20 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr64.NumberOfRvaAndSizes));
     }
 
+    if (DETECT_BROKEN && (!(pe_plus?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment)) || (pe_plus?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment))%0x1000)) {
+      cli_dbgmsg("Bad virtual alignemnt\n");
+      if(ctx->virname)
+	*ctx->virname = "Broken.Executable";
+      return CL_VIRUS;
+    }
+
+    if (DETECT_BROKEN && (!(pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment)) || (pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment))%0x200)) {
+      cli_dbgmsg("Bad file alignemnt\n");
+      if(ctx->virname)
+	*ctx->virname = "Broken.Executable";
+      return CL_VIRUS;
+    }
+
     switch(pe_plus ? EC16(optional_hdr64.Subsystem) : EC16(optional_hdr32.Subsystem)) {
 	case 0:
 	    cli_dbgmsg("Subsystem: Unknown\n");
