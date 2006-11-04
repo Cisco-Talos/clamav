@@ -441,15 +441,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
 	if (EC16(file_hdr.SizeOfOptionalHeader)==0x148) {
 	  cli_dbgmsg("Found long header\n");
-	  if (lseek(desc, (0x148-0xe0), SEEK_CUR)==-1) { /* Seek to the end of the long header */
-	    if(DETECT_BROKEN) {
-	      if(ctx->virname)
-		*ctx->virname = "Broken.Executable";
-	      return CL_VIRUS;
-	    }
-	    cli_dbgmsg("But the file is too short to fit it\n");
-	    return CL_CLEAN;
-	  }
+	  lseek(desc, (0x148-0xe0), SEEK_CUR); /* Seek to the end of the long header */
 	}
 
 	if(EC16(optional_hdr32.Magic) != PE32_SIGNATURE) {

@@ -1,3 +1,6 @@
+Sun Nov  5 00:20:02 CET 2006 (acab)
+  * libclamav/pe.c:     lseek fix for last commit
+
 Sat Nov  4 23:57:14 CET 2006 (acab)
 -----------------------------------
   * libclamav/pe.c:	Handle long optional header
