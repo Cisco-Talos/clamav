@@ -280,7 +280,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
       thisrva=cli_readint32(packed+8); /* RVA of the original section */
       packed += 0x10;
 
-      if ( j >= 90 ) {
+      if ( j >= 99 ) {
 	cli_dbgmsg("Petite: maximum number of sections exceeded, giving up.\n");
 	free(usects);
 	return -1;
