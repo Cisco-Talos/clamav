@@ -619,46 +619,70 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 	cli_dbgmsg("------------------------------------\n");
 
-	if(!CLI_ISCONTAINED2(0, (uint32_t) fsize, EC32(section_hdr[i].PointerToRawData), EC32(section_hdr[i].SizeOfRawData)) || EC32(section_hdr[i].PointerToRawData) > fsize) {
-	    cli_dbgmsg("Possibly broken PE file - Section %d out of file (Offset@ %d, Rsize %d, Total filesize %d)\n", i, EC32(section_hdr[i].PointerToRawData), EC32(section_hdr[i].SizeOfRawData), fsize);
-	    if(DETECT_BROKEN) {
-		if(ctx->virname)
-		    *ctx->virname = "Broken.Executable";
-		free(section_hdr);
-		return CL_VIRUS;
-	    }
-	    broken = 1;
+	if (DETECT_BROKEN && EC32(section_hdr[i].VirtualAddress)%((pe_plus)?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment))) { /* Bad virtual alignment */
+	    cli_dbgmsg("VirtualAddress is misaligned\n");
+	    if(ctx->virname)
+	        *ctx->virname = "Broken.Executable";
+	    free(section_hdr);
+	    return CL_VIRUS;
+	}
 
-	} else {
-	    /* check MD5 section sigs */
-	    md5_sect = ctx->engine->md5_sect;
-	    while(md5_sect && md5_sect->size < EC32(section_hdr[i].SizeOfRawData))
-		md5_sect = md5_sect->next;
+	if (EC32(section_hdr[i].SizeOfRawData)) { /* Don't bother with virtual only sections */
+	    if(!CLI_ISCONTAINED2(0, (uint32_t) fsize, EC32(section_hdr[i].PointerToRawData), EC32(section_hdr[i].SizeOfRawData)) || EC32(section_hdr[i].PointerToRawData) > fsize) {
+	        cli_dbgmsg("Possibly broken PE file - Section %d out of file (Offset@ %d, Rsize %d, Total filesize %d)\n", i, EC32(section_hdr[i].PointerToRawData), EC32(section_hdr[i].SizeOfRawData), fsize);
+		  if(DETECT_BROKEN) {
+		      if(ctx->virname)
+			  *ctx->virname = "Broken.Executable";
+		      free(section_hdr);
+		      return CL_VIRUS;
+		  }
+		  broken = 1;
 
-	    if(md5_sect && md5_sect->size == EC32(section_hdr[i].SizeOfRawData)) {
-		md5_dig = cli_md5sect(desc, EC32(section_hdr[i].PointerToRawData), EC32(section_hdr[i].SizeOfRawData));
-		if(!md5_dig) {
-		    cli_errmsg("PE: Can't calculate MD5 for section %d\n", i);
-		} else {
-		    while(md5_sect && md5_sect->size == EC32(section_hdr[i].SizeOfRawData)) {
-			if(!strcmp(md5_dig, md5_sect->md5)) {
-			    if(ctx->virname)
-				*ctx->virname = md5_sect->virname;
-			    free(md5_dig);
-			    free(section_hdr);
-			    return CL_VIRUS;
+	    } else {
+	        /* check MD5 section sigs */
+	        md5_sect = ctx->engine->md5_sect;
+		while(md5_sect && md5_sect->size < EC32(section_hdr[i].SizeOfRawData))
+		    md5_sect = md5_sect->next;
+
+		if(md5_sect && md5_sect->size == EC32(section_hdr[i].SizeOfRawData)) {
+		    md5_dig = cli_md5sect(desc, EC32(section_hdr[i].PointerToRawData), EC32(section_hdr[i].SizeOfRawData));
+		    if(!md5_dig) {
+		        cli_errmsg("PE: Can't calculate MD5 for section %d\n", i);
+		    } else {
+		        while(md5_sect && md5_sect->size == EC32(section_hdr[i].SizeOfRawData)) {
+			    if(!strcmp(md5_dig, md5_sect->md5)) {
+			        if(ctx->virname)
+				    *ctx->virname = md5_sect->virname;
+				free(md5_dig);
+				free(section_hdr);
+				return CL_VIRUS;
+			    }
+			    md5_sect = md5_sect->next;
 			}
-			md5_sect = md5_sect->next;
+			free(md5_dig);
 		    }
-		    free(md5_dig);
 		}
 	    }
 	}
 
 	if(!i) {
+	    if (DETECT_BROKEN && EC32(section_hdr[i].VirtualAddress)!=((pe_plus)?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment))) { /* Bad first section RVA */
+	        cli_dbgmsg("First section is in the wrong place\n");
+	        if(ctx->virname)
+		    *ctx->virname = md5_sect->virname;
+		free(section_hdr);
+		return CL_VIRUS;
+	    }
 	    min = EC32(section_hdr[i].VirtualAddress);
 	    max = EC32(section_hdr[i].VirtualAddress) + EC32(section_hdr[i].SizeOfRawData);
 	} else {
+	    if (DETECT_BROKEN && EC32(section_hdr[i].VirtualAddress)-EC32(section_hdr[i-1].VirtualAddress)!=PESALIGN(EC32(section_hdr[i-1].VirtualSize), ((pe_plus)?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment)))) { /* No holes, no overlapping, no virtual disorder */
+	        cli_dbgmsg("Virtually misplaced section (wrong order, overlapping, non contiguous)\n");
+	        if(ctx->virname)
+		    *ctx->virname = md5_sect->virname;
+		free(section_hdr);
+		return CL_VIRUS;
+	    }
 	    if(EC32(section_hdr[i].VirtualAddress) < min)
 		min = EC32(section_hdr[i].VirtualAddress);
 
