@@ -1,7 +1,15 @@
+Sun Nov  5 02:25:39 CET 2006 (acab)
+-----------------------------------
+  * libclamav/pe.c:	RVA broken.executable checks
+  			skip checks on virtual-only sections (reported by
+			Andrey J. Melnikoff (TEMHOTA) <temnota * kmv.ru> )
+
 Sun Nov  5 00:45:44 CET 2006 (acab)
+-----------------------------------
   * libclamav/pe.c:	add broken.executable checks on alignments
 
 Sun Nov  5 00:20:02 CET 2006 (acab)
+-----------------------------------
   * libclamav/pe.c:     lseek fix for last commit
 
 Sat Nov  4 23:57:14 CET 2006 (acab)
