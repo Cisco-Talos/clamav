@@ -1,7 +1,6 @@
 /*
  *  Copyright (C) 2004 - 2006 Tomasz Kojm <tkojm@clamav.net>
- *
- *  With additions from aCaB <acab@clamav.net>
+ *			      aCaB <acab@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1820,8 +1819,9 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     found = 2;
 
     lseek(desc, ep, SEEK_SET);
-    if(cli_readn(desc, buff, 200) != 200) {
-	cli_dbgmsg("Can't read 200 bytes\n");
+    memset(buff, 0, sizeof(buff));
+    if(cli_readn(desc, buff, 200) == -1) {
+	cli_dbgmsg("cli_readn() failed\n");
 	free(section_hdr);
 	return CL_EIO;
     }
