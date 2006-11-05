@@ -1373,13 +1373,13 @@ static int cli_scancryptff(int desc, cli_ctx *ctx)
 
 
     if(fstat(desc, &sb) == -1) {
-	cli_errmsg("CryptFF: Can's fstat descriptor %d\n", desc);
+	cli_errmsg("CryptFF: Can't fstat descriptor %d\n", desc);
 	return CL_EIO;
     }
 
     /* Skip the CryptFF file header */
     if(lseek(desc, 0x10, SEEK_SET) < 0) {
-	cli_errmsg("CryptFF: Can's fstat descriptor %d\n", desc);
+	cli_errmsg("CryptFF: Can't lseek descriptor %d\n", desc);
 	return ret;
     }
 
@@ -1682,7 +1682,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 
     if(fstat(desc, &sb) == -1) {
-	cli_errmsg("Can's fstat descriptor %d\n", desc);
+	cli_errmsg("Can't fstat descriptor %d\n", desc);
 	return CL_EIO;
     }
 
