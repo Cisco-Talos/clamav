@@ -1,3 +1,7 @@
+Sun Nov  5 09:57:44 GMT 2006 (njh)
+----------------------------------
+  * clamav-milter:	Another go at bug 115
+
 Sun Nov  5 02:25:39 CET 2006 (acab)
 -----------------------------------
   * libclamav/pe.c:	RVA broken.executable checks

@@ -24,9 +24,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.296 2006/11/03 21:27:29 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.297 2006/11/05 09:56:41 njh Exp $";
 
-#define	CM_VERSION	"devel-301006"
+#define	CM_VERSION	"devel-051106"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -276,7 +276,7 @@ static	sfsistat	clamfi_eom(SMFICTX *ctx);
 static	sfsistat	clamfi_abort(SMFICTX *ctx);
 static	sfsistat	clamfi_close(SMFICTX *ctx);
 static	void		clamfi_cleanup(SMFICTX *ctx);
-static	void		clamfi_free(struct privdata *privdata, int free);
+static	void		clamfi_free(struct privdata *privdata, int keep);
 static	int		clamfi_send(struct privdata *privdata, size_t len, const char *format, ...);
 static	long		clamd_recv(int sock, char *buf, size_t len);
 static	off_t		updateSigFile(void);
@@ -1275,7 +1275,7 @@ main(int argc, char **argv)
 		numServers = 1;
 	} else if(((cpt = cfgopt(copt, "LocalSocket")) != NULL) && cpt->enabled) {
 #ifdef	SESSION
-		struct sockaddr_un sun;
+		struct sockaddr_un sockun;
 #endif
 		char *sockname = NULL;
 
@@ -1327,9 +1327,9 @@ main(int argc, char **argv)
 #endif
 
 #ifdef	SESSION
-		memset((char *)&sun, 0, sizeof(struct sockaddr_un));
-		sun.sun_family = AF_UNIX;
-		strncpy(sun.sun_path, localSocket, sizeof(sun.sun_path));
+		memset((char *)&sockun, 0, sizeof(struct sockaddr_un));
+		sockun.sun_family = AF_UNIX;
+		strncpy(sockun.sun_path, localSocket, sizeof(sockun.sun_path));
 
 		sessions = (struct session *)cli_malloc(sizeof(struct session));
 		if((sessions[0].sock = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
@@ -1340,7 +1340,7 @@ main(int argc, char **argv)
 				cfgfile);
 			return EX_CONFIG;
 		}
-		if(connect(sessions[0].sock, (struct sockaddr *)&sun, sizeof(struct sockaddr_un)) < 0) {
+		if(connect(sessions[0].sock, (struct sockaddr *)&sockun, sizeof(struct sockaddr_un)) < 0) {
 			perror(localSocket);
 			return EX_UNAVAILABLE;
 		}
