@@ -1,3 +1,8 @@
+Mon Nov  6 00:12:28 CET 2006 (tk)
+---------------------------------
+  * libclamav/scanners.c: fix some typos in debug messages, thanks to
+			  Christophe Jaillet
+
 Mon Nov  6 00:02:57 CET 2006 (tk)
 ---------------------------------
   * libclamav/matcher-ac.c: minor optimisation, thanks to Christophe Jaillet
