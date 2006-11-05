@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: regex_list.c,v $
+ *  Revision 1.14  2006/11/05 18:16:56  acab
+ *  Patch for bug 52 from Edvin
+ *
  *  Revision 1.13  2006/10/30 17:53:03  tkojm
  *  apply patch from Edvin reported by Luca
  *
@@ -344,10 +347,10 @@ int regex_list_match(struct regex_matcher* matcher,const char* real_url,const ch
 	{
 		size_t real_len    = strlen(real_url);
 		size_t display_len = strlen(display_url);
-		size_t buffer_len  = hostOnly ? real_len : real_len + display_len + 1;
+		size_t buffer_len  = (hostOnly && !is_whitelist) ? real_len : real_len + display_len + 1;
 		char*  buffer = cli_malloc(buffer_len+1);
 		size_t i;
-		int partcnt,rc;
+		int partcnt,rc = 0;
 		unsigned long int partoff;
 
 		if(!buffer)
