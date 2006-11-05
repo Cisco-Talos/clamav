@@ -250,8 +250,10 @@ inline static int cli_findpos(const char *buffer, unsigned int depth, unsigned i
 	if(pattern->pattern[i] == CLI_ALT) {
 	    found = 0;
 	    for(j = 0; j < pattern->altn[alt]; j++) {
-		if(pattern->altc[alt][j] == buffer[bufferpos])
+		if(pattern->altc[alt][j] == buffer[bufferpos]) {
 		    found = 1;
+		    break;
+		}
 	    }
 
 	    if(!found)
@@ -276,8 +278,10 @@ inline static int cli_findpos(const char *buffer, unsigned int depth, unsigned i
 	    if(pattern->prefix[i] == CLI_ALT) {
 		found = 0;
 		for(j = 0; j < pattern->altn[alt]; j++) {
-		    if(pattern->altc[alt][j] == buffer[bufferpos])
+		    if(pattern->altc[alt][j] == buffer[bufferpos]) {
 			found = 1;
+			break;
+		    }
 		}
 
 		if(!found)

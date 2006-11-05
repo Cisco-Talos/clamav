@@ -1,3 +1,7 @@
+Mon Nov  6 00:02:57 CET 2006 (tk)
+---------------------------------
+  * libclamav/matcher-ac.c: minor optimisation, thanks to Christophe Jaillet
+
 Sun Nov  5 19:11:28 CET 2006 (acab)
 -----------------------------------
   * libclamav/regex_list.c: apply patch from Edvin to:
