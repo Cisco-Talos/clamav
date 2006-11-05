@@ -1,3 +1,9 @@
+Sun Nov  5 15:08:09 CET 2006 (tk)
+---------------------------------
+  * libclamav/pe.c: don't report I/O error when EP is near (less than 200 bytes)
+		    to the end of file (fixes handling of RCryptor encrypted
+		    files and some infected execs)
+
 Sun Nov  5 09:57:44 GMT 2006 (njh)
 ----------------------------------
   * clamav-milter:	Another go at bug 115
