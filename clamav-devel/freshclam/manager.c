@@ -771,7 +771,8 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
 {
 	struct cl_cvd *current, *remote;
 	struct cfgstruct *cpt;
-	int nodb = 0, currver = 0, newver = -1, ret, port = 0, ims = -1, i;
+	unsigned int nodb = 0, currver = 0, newver = 0, port = 0, ims = 0, i;
+	int ret;
 	char *pt, dbfile[32], dbinc[32];
 	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL;
 	unsigned int flevel = cl_retflevel(), inc;
@@ -858,7 +859,7 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
     ctimeout = cfgopt(copt, "ConnectTimeout")->numarg;
     rtimeout = cfgopt(copt, "ReceiveTimeout")->numarg;
 
-    if(!nodb && newver == -1) {
+    if(!nodb && !newver) {
 
 	remote = remote_cvdhead(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, &ims, ctimeout, rtimeout);
 

@@ -1,3 +1,7 @@
+Tue Nov  7 18:59:20 CET 2006 (tk)
+---------------------------------
+  * freshclam/manager.c: fix signedness problem (closes bug#122)
+
 Mon Nov  6 00:12:28 CET 2006 (tk)
 ---------------------------------
   * libclamav/scanners.c: fix some typos in debug messages, thanks to
