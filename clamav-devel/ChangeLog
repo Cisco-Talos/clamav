@@ -1,3 +1,7 @@
+Thu Nov  9 09:27:31 GMT 2006 (njh)
+----------------------------------
+  * libclamav/jscript.c:	Fixed a memory leak
+
 Tue Nov  7 18:59:20 CET 2006 (tk)
 ---------------------------------
   * freshclam/manager.c: fix signedness problem (closes bug#122)
