@@ -649,7 +649,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		        cli_errmsg("PE: Can't calculate MD5 for section %d\n", i);
 		    } else {
 		        while(md5_sect && md5_sect->size == EC32(section_hdr[i].SizeOfRawData)) {
-			    if(!strcmp(md5_dig, md5_sect->md5)) {
+			    if(!memcmp(md5_dig, md5_sect->md5, 16)) {
 			        if(ctx->virname)
 				    *ctx->virname = md5_sect->virname;
 				free(md5_dig);

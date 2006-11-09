@@ -1,3 +1,7 @@
+Thu Nov  9 22:15:45 CET 2006 (tk)
+---------------------------------
+  * libclamav/pe.c: fix incorrect comparison, thanks to aCaB
+
 Thu Nov  9 09:27:31 GMT 2006 (njh)
 ----------------------------------
   * libclamav/jscript.c:	Fixed a memory leak
