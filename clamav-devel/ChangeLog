@@ -1,3 +1,7 @@
+Fri Nov 10 20:18:18 GMT 2006 (njh)
+----------------------------------
+  * libclamav:	Added portability to the JScript engine
+
 Thu Nov  9 22:15:45 CET 2006 (tk)
 ---------------------------------
   * libclamav/pe.c: fix incorrect comparison, thanks to aCaB
