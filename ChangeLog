@@ -1,3 +1,7 @@
+Fri Nov 10 20:36:09 GMT 2006 (njh)
+----------------------------------
+  * clamav-milter:	Added support for HAVE_CTIME_R_3, bug 123
+
 Fri Nov 10 20:18:18 GMT 2006 (njh)
 ----------------------------------
   * libclamav:	Added portability to the JScript engine
