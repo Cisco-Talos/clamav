@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.358 2006/11/03 19:47:16 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.359 2006/11/10 22:39:05 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -77,7 +77,9 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.358 2006/11/03 19:47:16 njh Exp $";
 
 #ifdef	CL_DEBUG
 
+#if	defined(C_LINUX) || defined(C_CYGWIN)
 #include <features.h>
+#endif
 
 #if __GLIBC__ == 2 && __GLIBC_MINOR__ >= 1
 #define HAVE_BACKTRACE
