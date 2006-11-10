@@ -18,7 +18,7 @@
  */
 
 #include "js/js.h"
+#include "js/jsint.h"
 
 int	cli_scanjs(const char *dir, int desc);
-
-JSInterpPtr	create_interp(void);
+JSInterpPtr	create_interp(JSIOFunc s_stdout);

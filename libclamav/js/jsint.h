@@ -24,7 +24,7 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/jsint.h,v $
- * $Id: jsint.h,v 1.3 2006/11/02 09:36:19 njh Exp $
+ * $Id: jsint.h,v 1.4 2006/11/10 20:17:43 njh Exp $
  */
 
 #ifndef JSINT_H
@@ -86,7 +86,7 @@
 
 #endif /* not WIN32 */
 
-#include <js.h>
+#include "js.h"
 
 #if __cplusplus
 extern "C" {

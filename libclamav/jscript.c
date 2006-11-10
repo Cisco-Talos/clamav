@@ -19,7 +19,7 @@
  * Save the JavaScript embedded in an HTML file, then run the script, saving
  * the output in a file that is to be scanned, then remove the script file
  */
-static	char	const	rcsid[] = "$Id: jscript.c,v 1.3 2006/11/09 09:27:18 njh Exp $";
+static	char	const	rcsid[] = "$Id: jscript.c,v 1.4 2006/11/10 20:17:16 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -61,7 +61,7 @@ static	char	const	rcsid[] = "$Id: jscript.c,v 1.3 2006/11/09 09:27:18 njh Exp $"
 # endif
 #endif
 
-static	void	run_js(const char *filename, const char *dir);
+static	int	run_js(const char *filename, const char *dir);
 static	const	char	*cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns);
 
 int
@@ -153,7 +153,7 @@ cli_scanjs(const char *dir, int desc)
 					if(fout) {
 						fclose(fout);
 						fout = NULL;
-						run_js(script_filename, dir);
+						(void)run_js(script_filename, dir);
 
 						if(!cli_leavetemps_flag)
 							unlink(script_filename);
@@ -236,54 +236,12 @@ cli_scanjs(const char *dir, int desc)
 		cli_dbgmsg("No javascript was detected\n");
 	else if(fout) {
 		fclose(fout);
-		run_js(script_filename, dir);
+		rc = run_js(script_filename, dir);
 
 		if(!cli_leavetemps_flag)
 			unlink(script_filename);
 	}
 	return rc;
-}
-
-static void
-run_js(const char *filename, const char *dir)
-{
-	JSInterpPtr interp;
-	FILE *real_stdout, *temp_stdout;
-	char *outputfilename;
-
-	cli_dbgmsg("run_js(%s)\n", filename);
-
-	fflush(stdout);
-	real_stdout = stdout;
-	outputfilename = cli_gentemp(dir);
-	if(outputfilename) {
-		temp_stdout = fopen(outputfilename, "wb");
-		if(temp_stdout) {
-			cli_dbgmsg("Redirecting JS VM stdout to %s\n",
-				outputfilename);
-			stdout = temp_stdout;
-		}
-	} else
-		temp_stdout = NULL;
-
-	/*
-	 * Run NGS on the file
-	 */
-	interp = create_interp();
-
-	if(!js_eval_file(interp, filename)) {
-		cli_warnmsg("JS failed: %s\n", js_error_message(interp));
-		/*rc = CL_EIO;*/
-	}
-
-	js_destroy_interp(interp);
-
-	if(temp_stdout) {
-		fclose(temp_stdout);
-		stdout = real_stdout;
-	}
-	if(outputfilename)
-		free(outputfilename);
 }
 
 #include "js/compiler.c"
@@ -292,6 +250,53 @@ run_js(const char *filename, const char *dir)
 #include "js/main.c"
 #include "js/debug.c"
 #include "js/crc32.c"
+
+static	FILE *fout;
+
+static	int
+write_to_fout(void *context, unsigned char *buf, unsigned int len)
+{
+	return (int)fwrite(buf, (size_t)len, 1, fout);
+}
+
+static int
+run_js(const char *filename, const char *dir)
+{
+	JSInterpPtr interp;
+	char *outputfilename;
+
+	cli_dbgmsg("run_js(%s)\n", filename);
+
+	outputfilename = cli_gentemp(dir);
+	if(outputfilename == NULL)
+		return CL_ETMPFILE;
+
+	fout = fopen(outputfilename, "wb");
+	if(fout == NULL) {
+		cli_warnmsg("Can't create %s\n", outputfilename);
+		free(outputfilename);
+		return CL_ETMPFILE;
+	}
+
+	cli_dbgmsg("Redirecting JS VM stdout to %s\n", outputfilename);
+	free(outputfilename);
+
+	/*
+	 * Run NGS on the file
+	 */
+	interp = create_interp(write_to_fout);
+
+	if(!js_eval_file(interp, filename)) {
+		cli_warnmsg("JS failed: %s\n", js_error_message(interp));
+		/*rc = CL_EIO;*/
+	}
+
+	js_destroy_interp(interp);
+
+	fclose(fout);
+
+	return CL_SUCCESS;
+}
 
 /* Copied from pdf.c :-( */
 /*
