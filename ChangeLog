@@ -1,3 +1,8 @@
+Fri Nov 10 22:41:11 GMT 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Fix compilation error when debug is enabled on BSD,
+  				bug 121
+
 Fri Nov 10 20:36:09 GMT 2006 (njh)
 ----------------------------------
   * clamav-milter:	Added support for HAVE_CTIME_R_3, bug 123
