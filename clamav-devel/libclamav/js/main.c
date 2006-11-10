@@ -85,7 +85,7 @@ show_events_hook (int event, void *context)
 
 
 JSInterpPtr
-create_interp ()
+create_interp(JSIOFunc s_stdout)
 {
 	JSInterpOptions options;
 	JSInterpPtr interp;
@@ -135,6 +135,8 @@ create_interp ()
 		options.hook = show_events_hook;
 		options.hook_operand_count_trigger = 1000000;
 	}
+
+	options.s_stdout = s_stdout;
 
 	interp = js_create_interp (&options);
 	if (interp == NULL) {
