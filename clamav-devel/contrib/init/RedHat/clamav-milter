@@ -4,8 +4,8 @@
 #
 # chkconfig: 2345 71 40
 #
-# description: clamav-milter is a daemon which hooks into sendmail and routes
-#              email messages to clamav
+# description: clamav-milter is a daemon which hooks into sendmail and routes \
+#              email messages for virus scanning with ClamAV
 # processname: clamav-milter
 # pidfile: /var/lock/subsys/clamav-milter
 
