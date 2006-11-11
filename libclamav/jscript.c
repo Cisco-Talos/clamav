@@ -18,8 +18,17 @@
  *
  * Save the JavaScript embedded in an HTML file, then run the script, saving
  * the output in a file that is to be scanned, then remove the script file
+ *
+ * FIXME:	Includes .c files here, which need to be separated out
+ * FIXME:	The js code probably only compiles on GCC.
+ * FIXME:	The js code needs re_compile_pattern, re_compile_fastmap,
+ *			re_search, which NetBSD, and probably other platforms
+ *			don't have
+ * TODO:	Test with real malware
+ * TODO:	Add mailfollowurls type feature
+ * TODO:	Check for vulnerabilities, leaks etc.
  */
-static	char	const	rcsid[] = "$Id: jscript.c,v 1.4 2006/11/10 20:17:16 njh Exp $";
+static	char	const	rcsid[] = "$Id: jscript.c,v 1.5 2006/11/11 17:18:10 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
