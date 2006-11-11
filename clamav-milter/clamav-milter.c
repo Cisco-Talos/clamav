@@ -24,7 +24,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.298 2006/11/10 20:35:56 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.299 2006/11/11 20:08:36 njh Exp $";
 
 #define	CM_VERSION	"devel-101106"
 
@@ -961,6 +961,13 @@ main(int argc, char **argv)
 			argv[0]);
 		return EX_USAGE;
 	}
+#ifdef	SESSION
+	if(!external) {
+		fprintf(stderr,
+			_("%s: SESSIONS mode requires --external\n"));
+		return EX_USAGE;
+	}
+#endif
 
 	/* TODO: support freshclam's daemon notify if --external is not given */
 
