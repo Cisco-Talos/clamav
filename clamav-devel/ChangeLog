@@ -1,3 +1,7 @@
+Sat Nov 11 20:09:07 GMT 2006 (njh)
+----------------------------------
+  * clamav-milter:	SESSIONS mode: force --external, bug 123
+
 Fri Nov 10 22:41:11 GMT 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Fix compilation error when debug is enabled on BSD,
