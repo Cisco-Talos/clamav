@@ -1,3 +1,8 @@
+Tue Nov 14 13:49:58 GMT 2006 (trog)
+-----------------------------------
+  * libclamav/ole2_extract.c: Fix Solaris endian issue. (bb#89)
+  * libclamav/unrar/unrar.c: Fix FD leak in error path (bb#133, thanks acab)
+
 Sat Nov 11 20:09:07 GMT 2006 (njh)
 ----------------------------------
   * clamav-milter:	SESSIONS mode: force --external, bug 123

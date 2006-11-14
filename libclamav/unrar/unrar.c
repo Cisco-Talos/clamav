@@ -1584,6 +1584,7 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 				} else {
 					if ((file_count == 1) && (file_header->flags & LHD_SOLID)) {
 						cli_warnmsg("RAR: First file can't be SOLID.\n");
+						close(ofd);
 						break;
 					} else {
 						retval = rar_unpack(fd, file_header->unpack_ver,
@@ -1601,6 +1602,7 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 					cli_dbgmsg("Corrupt file detected\n");
 					if (file_header->flags & LHD_SOLID) {
 						cli_dbgmsg("SOLID archive, can't continue\n");
+						close(ofd);
 						break;
 					}
 				}
