@@ -100,12 +100,12 @@ typedef struct ole2_header_tag
 typedef struct property_tag
 {
 	unsigned char name[64] __attribute__ ((packed));		/* in unicode */
-	int16_t name_size __attribute__ ((packed));
+	uint16_t name_size __attribute__ ((packed));
 	unsigned char type __attribute__ ((packed));			/* 1=dir 2=file 5=root */
 	unsigned char color __attribute__ ((packed));			/* black or red */
-	int32_t prev __attribute__ ((packed));
-	int32_t next __attribute__ ((packed));
-	int32_t child __attribute__ ((packed));
+	uint32_t prev __attribute__ ((packed));
+	uint32_t next __attribute__ ((packed));
+	uint32_t child __attribute__ ((packed));
 
 	unsigned char clsid[16] __attribute__ ((packed));
 	uint32_t user_flags __attribute__ ((packed));
@@ -114,8 +114,8 @@ typedef struct property_tag
 	uint32_t create_highdate __attribute__ ((packed));
 	uint32_t mod_lowdate __attribute__ ((packed));
 	uint32_t mod_highdate __attribute__ ((packed));
-	int32_t start_block __attribute__ ((packed));
-	int32_t size __attribute__ ((packed));
+	uint32_t start_block __attribute__ ((packed));
+	uint32_t size __attribute__ ((packed));
 	unsigned char reserved[4] __attribute__ ((packed));
 } property_t;
 
@@ -202,7 +202,7 @@ static void print_ole2_property(property_t *property)
 	default:
 		cli_dbgmsg(" u ");
 	}
-	cli_dbgmsg(" %d %x\n", property->size, property->user_flags);
+	cli_dbgmsg(" 0x%.8x 0x%.8x\n", property->size, property->user_flags);
 }
 
 static void print_ole2_header(ole2_header_t *hdr)
@@ -447,8 +447,9 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 	property_t prop_block[4];
 	int32_t index, current_block, i;
 	unsigned char *dirname;
+
 	current_block = hdr->prop_start;
-	
+
 	if ((prop_index < 0) || (rec_level > 100) || (*file_count > 100000)) {
 		return;
 	}
@@ -601,7 +602,6 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
                                 *newname = '_';
                 }
 	}
-
 
 	newname = (char *) cli_malloc(strlen(name) + strlen(dir) + 2);
 	if (!newname) {
