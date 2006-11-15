@@ -1,3 +1,10 @@
+Wed Nov 15 16:18:09 CET 2006 (tk)
+---------------------------------
+  * libclamav: + the AC matcher now keeps a track of partial matches to improve
+		 the accuracy of signatures with range wildcards
+	       + add cli_ac_initdata() and cli_ac_freedata()
+	       + fix some signedness warnings
+
 Tue Nov 14 13:49:58 GMT 2006 (trog)
 -----------------------------------
   * libclamav/ole2_extract.c: Fix Solaris endian issue. (bb#89)

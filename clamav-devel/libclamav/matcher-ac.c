@@ -63,14 +63,14 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 	if(!next) {
 	    next = (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));
 	    if(!next) {
-		cli_dbgmsg("Unable to allocate AC node (%d)\n", sizeof(struct cli_ac_node));
+		cli_errmsg("cli_ac_addpatt(): Unable to allocate AC node (%u bytes)\n", sizeof(struct cli_ac_node));
 		return CL_EMEM;
 	    }
 
 	    root->ac_nodes++;
 	    root->ac_nodetable = (struct cli_ac_node **) cli_realloc(root->ac_nodetable, (root->ac_nodes) * sizeof(struct cli_ac_node *));
 	    if(root->ac_nodetable == NULL) {
-		cli_dbgmsg("Unable to realloc nodetable (%d)\n", (root->ac_nodes) * sizeof(struct cli_matcher *));
+		cli_errmsg("cli_ac_addpatt(): Unable to realloc nodetable (%u bytes)\n", (root->ac_nodes) * sizeof(struct cli_matcher *));
 		return CL_EMEM;
 	    }
 	    root->ac_nodetable[root->ac_nodes - 1] = next;
@@ -95,7 +95,7 @@ static int cli_enqueue(struct nodelist **bfs, struct cli_ac_node *n)
 
     new = (struct nodelist *) cli_calloc(1, sizeof(struct nodelist));
     if (new == NULL) {
-	cli_dbgmsg("Unable to allocate node list (%d)\n", sizeof(struct nodelist));
+	cli_errmsg("cli_enqueue(): Unable to allocate node list (%u bytes)\n", sizeof(struct nodelist));
 	return CL_EMEM;
     }
 
@@ -176,7 +176,7 @@ int cli_ac_buildtrie(struct cli_matcher *root)
 	return CL_EMALFDB;
 
     if(!root->ac_root) {
-	cli_dbgmsg("AC pattern matcher not initialised\n");
+	cli_dbgmsg("cli_ac_buildtrie(): AC pattern matcher is not initialised\n");
 	return CL_SUCCESS;
     }
 
@@ -228,7 +228,7 @@ void cli_ac_free(struct cli_matcher *root)
 	free(root->ac_root);
 }
 
-inline static int cli_findpos(const char *buffer, unsigned int depth, unsigned int offset, unsigned int length, const struct cli_ac_patt *pattern)
+inline static int cli_findpos(const unsigned char *buffer, unsigned int depth, unsigned int offset, unsigned int length, const struct cli_ac_patt *pattern)
 {
 	unsigned int bufferpos = offset + depth;
 	unsigned int postfixend = offset + length;
@@ -260,7 +260,7 @@ inline static int cli_findpos(const char *buffer, unsigned int depth, unsigned i
 		return 0;
 	    alt++;
 
-	} else if(pattern->pattern[i] != CLI_IGN && (char) pattern->pattern[i] != buffer[bufferpos])
+	} else if(pattern->pattern[i] != CLI_IGN && (unsigned char) pattern->pattern[i] != buffer[bufferpos])
 	    return 0;
 
 	bufferpos++;
@@ -288,7 +288,7 @@ inline static int cli_findpos(const char *buffer, unsigned int depth, unsigned i
 		    return 0;
 		alt++;
 
-	    } else if(pattern->prefix[i] != CLI_IGN && (char) pattern->prefix[i] != buffer[bufferpos])
+	    } else if(pattern->prefix[i] != CLI_IGN && (unsigned char) pattern->prefix[i] != buffer[bufferpos])
 		return 0;
 
 	    bufferpos++;
@@ -298,27 +298,119 @@ inline static int cli_findpos(const char *buffer, unsigned int depth, unsigned i
     return 1;
 }
 
-int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cli_matcher *root, int *partcnt, unsigned short otfrec, unsigned long int offset, unsigned long int *partoff, unsigned short ftype, int fd, struct cli_matched_type **ftoffset)
+int cli_ac_initdata(struct cli_ac_data *data, unsigned int partsigs, unsigned int tracklen)
+{
+	unsigned int i, j;
+
+
+    if(!data) {
+	cli_errmsg("cli_ac_init(): data == NULL\n");
+	return CL_ENULLARG;
+    }
+
+    data->partsigs = partsigs;
+
+    if(!partsigs)
+	return CL_SUCCESS;
+
+    data->partcnt = (unsigned int *) cli_calloc(partsigs, sizeof(unsigned int));
+
+    if(!data->partcnt) {
+	cli_errmsg("cli_ac_init(): unable to cli_calloc(%u, %u)\n", partsigs, sizeof(unsigned int));
+	return CL_EMEM;
+    }
+
+    data->offcnt = (unsigned int *) cli_calloc(partsigs, sizeof(unsigned int));
+
+    if(!data->offcnt) {
+	cli_errmsg("cli_ac_init(): unable to cli_calloc(%u, %u)\n", partsigs, sizeof(unsigned int));
+	free(data->partcnt);
+	return CL_EMEM;
+    }
+
+    data->maxshift = (int *) cli_malloc(partsigs * sizeof(int));
+
+    if(!data->maxshift) {
+	cli_errmsg("cli_ac_init(): unable to cli_malloc(%u)\n", partsigs * sizeof(int));
+	free(data->partcnt);
+	free(data->offcnt);
+	return CL_EMEM;
+    }
+
+    memset(data->maxshift, -1, partsigs * sizeof(int));
+
+    data->partoff = (unsigned int **) cli_calloc(partsigs, sizeof(unsigned int *));
+
+    if(!data->partoff) {
+	cli_errmsg("cli_ac_init(): unable to cli_calloc(%u, %u)\n", partsigs, sizeof(unsigned int));
+	free(data->partcnt);
+	free(data->offcnt);
+	free(data->maxshift);
+	return CL_EMEM;
+    }
+
+    /* The number of multipart signatures is rather small so we already
+     * allocate the memory for all parts here instead of using a runtime
+     * allocation in cli_ac_scanbuff()
+     */
+
+    for(i = 0; i < partsigs; i++) {
+	data->partoff[i] = (unsigned int *) cli_calloc(tracklen, sizeof(unsigned int));
+
+	if(!data->partoff[i]) {
+	    for(j = 0; j < i; j++)
+		free(data->partoff[j]);
+
+	    free(data->partoff);
+	    free(data->partcnt);
+	    free(data->offcnt);
+	    free(data->maxshift);
+	    cli_errmsg("cli_ac_init(): unable to cli_calloc(%u, %u)\n", tracklen, sizeof(unsigned int));
+	    return CL_EMEM;
+	}
+    }
+
+    return CL_SUCCESS;
+}
+
+void cli_ac_freedata(struct cli_ac_data *data)
+{
+	unsigned int i;
+
+
+    if(data && data->partsigs) {
+	free(data->partcnt);
+	free(data->offcnt);
+	free(data->maxshift);
+
+	for(i = 0; i < data->partsigs; i++)
+	    free(data->partoff[i]);
+
+	free(data->partoff);
+    }
+}
+
+int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cli_matcher *root, struct cli_ac_data *mdata, unsigned short otfrec, unsigned long int offset, unsigned short ftype, int fd, struct cli_matched_type **ftoffset)
 {
 	struct cli_ac_node *current;
 	struct cli_ac_patt *pt;
-	int type = CL_CLEAN, dist, t;
-        unsigned int i, position;
+	int type = CL_CLEAN, t, j;
+        unsigned int i, position, idx, found, curroff;
 	struct cli_matched_type *tnode;
 
 
     if(!root->ac_root)
 	return CL_CLEAN;
 
-    if(!partcnt || !partoff) {
-	cli_dbgmsg("cli_ac_scanbuff(): partcnt == NULL || partoff == NULL\n");
+    if(!mdata) {
+	cli_errmsg("cli_ac_scanbuff(): mdata == NULL\n");
 	return CL_ENULLARG;
     }
 
     current = root->ac_root;
 
     for(i = 0; i < length; i++)  {
-	current = current->trans[(unsigned char) buffer[i] & 0xff];
+	current = current->trans[buffer[i] & 0xff];
 
 	if(current->islast) {
 	    position = i - ac_depth + 1;
@@ -326,46 +418,67 @@ int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char
 	    pt = current->list;
 	    while(pt) {
 		if(cli_findpos(buffer, ac_depth, position, length, pt)) {
+		    curroff = offset + position - pt->prefix_length;
+
 		    if((pt->offset || pt->target) && (!pt->sigid || pt->partno == 1)) {
 			if(ftype == CL_TYPE_UNKNOWN_TEXT)
 			    t = type;
 			else
 			    t = ftype;
 
-			if((fd == -1 && !t) || !cli_validatesig(t, pt->offset, offset + position - pt->prefix_length, fd, pt->virname)) {
+			if((fd == -1 && !t) || !cli_validatesig(t, pt->offset, curroff, fd, pt->virname)) {
 			    pt = pt->next;
 			    continue;
 			}
 		    }
 
 		    if(pt->sigid) { /* it's a partial signature */
-			if(partcnt[pt->sigid] + 1 == pt->partno) {
-			    dist = 1;
-			    if(pt->maxdist)
-				if((offset + i - pt->prefix_length) - partoff[pt->sigid] > pt->maxdist)
-				    dist = 0;
 
-			    if(dist && pt->mindist)
-				if((offset + i - pt->prefix_length) - partoff[pt->sigid] < pt->mindist)
-				    dist = 0;
+			if(mdata->partcnt[pt->sigid - 1] + 1 == pt->partno) {
+			    idx = mdata->offcnt[pt->sigid - 1];
+			    if(idx < AC_DEFAULT_TRACKLEN) {
+				mdata->partoff[pt->sigid - 1][idx] = curroff + pt->length;
 
-			    if(dist) {
-				partoff[pt->sigid] = offset + i + pt->length;
+				if(mdata->maxshift[pt->sigid - 1] == -1 || ((int) (mdata->partoff[pt->sigid - 1][idx] - mdata->partoff[pt->sigid - 1][0]) <= mdata->maxshift[pt->sigid - 1]))
+				    mdata->offcnt[pt->sigid - 1]++;
+			    }
 
-				if(++partcnt[pt->sigid] == pt->parts) { /* the last one */
+			} else if(mdata->partcnt[pt->sigid - 1] + 2 == pt->partno) {
+			    found = 0;
+			    for(j = mdata->offcnt[pt->sigid - 1] - 1; j >= 0; j--) {
+				found = 1;
+				if(pt->maxdist)
+				    if(curroff - mdata->partoff[pt->sigid - 1][j] > pt->maxdist)
+					found = 0;
+
+				if(found && pt->mindist)
+				    if(curroff - mdata->partoff[pt->sigid - 1][j] < pt->mindist)
+					found = 0;
+
+				if(found)
+				    break;
+			    }
+
+			    if(found) {
+				mdata->maxshift[pt->sigid - 1] = mdata->partoff[pt->sigid - 1][j] + pt->maxdist - curroff;
+
+				mdata->partoff[pt->sigid - 1][0] = curroff + pt->length;
+				mdata->offcnt[pt->sigid - 1] = 1;
+
+				if(++mdata->partcnt[pt->sigid - 1] + 1 == pt->parts) {
 				    if(pt->type) {
 					if(otfrec) {
 					    if(pt->type > type || pt->type >= CL_TYPE_SFX) {
-						cli_dbgmsg("Matched signature for file type %s at %d\n", pt->virname, offset + position - pt->prefix_length);
+						cli_dbgmsg("Matched signature for file type %s\n", pt->virname);
 						type = pt->type;
 						if(ftoffset && (!*ftoffset || (*ftoffset)->cnt < SFX_MAX_TESTS) && ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) {
 						    if(!(tnode = cli_calloc(1, sizeof(struct cli_matched_type)))) {
-							cli_errmsg("Can't alloc memory for new type node\n");
+							cli_errmsg("cli_ac_scanbuff(): Can't allocate memory for new type node\n");
 							return CL_EMEM;
 						    }
 
 						    tnode->type = type;
-						    tnode->offset = offset + position - pt->prefix_length;
+						    tnode->offset = -1; /* we don't remember the offset of the first part */
 
 						    if(*ftoffset)
 							tnode->cnt = (*ftoffset)->cnt + 1;
@@ -374,7 +487,6 @@ int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char
 
 						    tnode->next = *ftoffset;
 						    *ftoffset = tnode;
-
 						}
 					    }
 					}
@@ -392,15 +504,15 @@ int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char
 			if(pt->type) {
 			    if(otfrec) {
 				if(pt->type > type || pt->type >= CL_TYPE_SFX) {
-				    cli_dbgmsg("Matched signature for file type %s at %d\n", pt->virname, offset + position - pt->prefix_length);
+				    cli_dbgmsg("Matched signature for file type %s at %u\n", pt->virname, curroff);
 				    type = pt->type;
 				    if(ftoffset && (!*ftoffset ||(*ftoffset)->cnt < SFX_MAX_TESTS) && ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) {
 					if(!(tnode = cli_calloc(1, sizeof(struct cli_matched_type)))) {
-					    cli_errmsg("Can't alloc memory for new type node\n");
+					    cli_errmsg("cli_ac_scanbuff(): Can't allocate memory for new type node\n");
 					    return CL_EMEM;
 					}
 					tnode->type = type;
-					tnode->offset = offset + position - pt->prefix_length;
+					tnode->offset = curroff;
 
 					if(*ftoffset)
 					    tnode->cnt = (*ftoffset)->cnt + 1;

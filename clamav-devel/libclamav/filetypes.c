@@ -26,6 +26,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#ifdef	HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #include "clamav.h"
 #include "filetypes.h"
@@ -233,13 +236,11 @@ int is_tar(unsigned char *buf, unsigned int nbytes);
 
 cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 {
-	char smallbuff[MAGIC_BUFFER_SIZE + 1], *decoded;
-	unsigned char *bigbuff;
+	unsigned char smallbuff[MAGIC_BUFFER_SIZE + 1], *decoded, *bigbuff;
 	int bread, sret;
 	cli_file_t ret = CL_TYPE_UNKNOWN_DATA;
 	struct cli_matcher *root;
-	int *partcnt;
-	unsigned long int *partoff;
+	struct cli_ac_data mdata;
 
 
     memset(smallbuff, 0, sizeof(smallbuff));
@@ -251,33 +252,28 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 	if(!root)
 	    return ret;
 
-	if((partcnt = (int *) cli_calloc(root->ac_partsigs + 1, sizeof(int))) == NULL) {
-	    cli_warnmsg("cli_filetype2(): unable to cli_calloc(%d, %d)\n", root->ac_partsigs + 1, sizeof(int));
+	if(cli_ac_initdata(&mdata, root->ac_partsigs, AC_DEFAULT_TRACKLEN))
 	    return ret;
-	}
 
-	if((partoff = (unsigned long int *) cli_calloc(root->ac_partsigs + 1, sizeof(unsigned long int))) == NULL) {
-	    cli_dbgmsg("cli_filetype2(): unable to cli_calloc(%d, %d)\n", root->ac_partsigs + 1, sizeof(unsigned long int));
-	    free(partcnt);
-	    return ret;
-	}
+	sret = cli_ac_scanbuff(smallbuff, bread, NULL, engine->root[0], &mdata, 1, 0, 0, -1, NULL);
 
-	sret = cli_ac_scanbuff(smallbuff, bread, NULL, engine->root[0], partcnt, 1, 0, partoff, 0, -1, NULL);
+	cli_ac_freedata(&mdata);
+
 	if(sret >= CL_TYPENO) {
 	    ret = sret;
 	} else {
-	    memset(partcnt, 0, (root->ac_partsigs + 1) * sizeof(int));
-	    memset(partoff, 0, (root->ac_partsigs + 1) * sizeof(unsigned long int));
+	    if(cli_ac_initdata(&mdata, root->ac_partsigs, AC_DEFAULT_TRACKLEN))
+		return ret;
+
 	    decoded = cli_utf16toascii(smallbuff, bread);
 	    if(decoded) {
-		sret = cli_ac_scanbuff(decoded, strlen(decoded), NULL, engine->root[0], partcnt, 1, 0, partoff, 0, -1, NULL);
+		sret = cli_ac_scanbuff(decoded, strlen(decoded), NULL, engine->root[0], &mdata, 1, 0, 0, -1, NULL);
 		free(decoded);
 		if(sret == CL_TYPE_HTML)
 		    ret = CL_TYPE_HTML_UTF16;
 	    }
+	    cli_ac_freedata(&mdata);
 	}
-	free(partcnt);
-	free(partoff);
     }
 
     if(ret == CL_TYPE_UNKNOWN_DATA || ret == CL_TYPE_UNKNOWN_TEXT) {

@@ -52,10 +52,10 @@ extern short cli_debug_flag;
 #endif
 
 
-int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_engine *engine, unsigned short ftype)
+int cli_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cl_engine *engine, unsigned short ftype)
 {
-	int ret = CL_CLEAN, i, tid = 0, *partcnt;
-	unsigned long int *partoff;
+	int ret = CL_CLEAN, i, tid = 0;
+	struct cli_ac_data mdata;
 	struct cli_matcher *groot, *troot = NULL;
 #ifdef HAVE_NCORE
 	void *streamhandle;
@@ -209,43 +209,26 @@ int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, 
 
     if(troot) {
 
-	if((partcnt = (int *) cli_calloc(troot->ac_partsigs + 1, sizeof(int))) == NULL) {
-	    cli_dbgmsg("cli_scanbuff(): unable to cli_calloc(%d, %d)\n", troot->ac_partsigs + 1, sizeof(int));
-	    return CL_EMEM;
-	}
-
-	if((partoff = (unsigned long int *) cli_calloc(troot->ac_partsigs + 1, sizeof(unsigned long int))) == NULL) {
-	    cli_dbgmsg("cli_scanbuff(): unable to cli_calloc(%d, %d)\n", troot->ac_partsigs + 1, sizeof(unsigned long int));
-	    free(partcnt);
-	    return CL_EMEM;
-	}
+	if((ret = cli_ac_initdata(&mdata, troot->ac_partsigs, AC_DEFAULT_TRACKLEN)))
+	    return ret;
 
 	if(troot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, troot, 0, ftype, -1)) != CL_VIRUS)
-	    ret = cli_ac_scanbuff(buffer, length, virname, troot, partcnt, 0, 0, partoff, ftype, -1, NULL);
+	    ret = cli_ac_scanbuff(buffer, length, virname, troot, &mdata, 0, 0, ftype, -1, NULL);
 
-	free(partcnt);
-	free(partoff);
+	cli_ac_freedata(&mdata);
 
 	if(ret == CL_VIRUS)
 	    return ret;
     }
 
-    if((partcnt = (int *) cli_calloc(groot->ac_partsigs + 1, sizeof(int))) == NULL) {
-	cli_dbgmsg("cli_scanbuff(): unable to cli_calloc(%d, %d)\n", groot->ac_partsigs + 1, sizeof(int));
-	return CL_EMEM;
-    }
-
-    if((partoff = (unsigned long int *) cli_calloc(groot->ac_partsigs + 1, sizeof(unsigned long int))) == NULL) {
-	cli_dbgmsg("cli_scanbuff(): unable to cli_calloc(%d, %d)\n", groot->ac_partsigs + 1, sizeof(unsigned long int));
-	free(partcnt);
-	return CL_EMEM;
-    }
+    if((ret = cli_ac_initdata(&mdata, groot->ac_partsigs, AC_DEFAULT_TRACKLEN)))
+	return ret;
 
     if(groot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, groot, 0, ftype, -1)) != CL_VIRUS)
-	ret = cli_ac_scanbuff(buffer, length, virname, groot, partcnt, 0, 0, partoff, ftype, -1, NULL);
+	ret = cli_ac_scanbuff(buffer, length, virname, groot, &mdata, 0, 0, ftype, -1, NULL);
 
-    free(partcnt);
-    free(partoff);
+    cli_ac_freedata(&mdata);
+
     return ret;
 }
 
@@ -408,10 +391,11 @@ int cli_validatesig(unsigned short ftype, const char *offstr, unsigned long int 
 
 int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short ftype, struct cli_matched_type **ftoffset)
 {
- 	char *buffer, *buff, *endbl, *pt;
-	int ret = CL_CLEAN, *gpartcnt = NULL, *tpartcnt = NULL, type = CL_CLEAN, i, tid = 0, bytes;
+ 	unsigned char *buffer, *buff, *endbl, *upt;
+	int ret = CL_CLEAN, type = CL_CLEAN, i, tid = 0, bytes;
 	unsigned int buffersize, length, maxpatlen, shift = 0;
-	unsigned long int *gpartoff = NULL, *tpartoff = NULL, offset = 0;
+	unsigned long int offset = 0;
+	struct cli_ac_data gdata, tdata;
 	MD5_CTX md5ctx;
 	unsigned char digest[16];
 	struct cli_md5_node *md5_node;
@@ -423,6 +407,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	uint32_t datamask[2] = { 0xffffffff, 0xffffffff };
 	int count, hret;
 	off_t origoff;
+	char *pt;
 #endif
 
 
@@ -644,42 +629,17 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 
     /* prepare the buffer */
     buffersize = maxpatlen + SCANBUFF;
-    if(!(buffer = (char *) cli_calloc(buffersize, sizeof(char)))) {
+    if(!(buffer = (unsigned char *) cli_calloc(buffersize, sizeof(unsigned char)))) {
 	cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%d)\n", buffersize);
 	return CL_EMEM;
     }
 
-    if((gpartcnt = (int *) cli_calloc(groot->ac_partsigs + 1, sizeof(int))) == NULL) {
-	cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%d, %d)\n", groot->ac_partsigs + 1, sizeof(int));
-	free(buffer);
-	return CL_EMEM;
-    }
-
-    if((gpartoff = (unsigned long int *) cli_calloc(groot->ac_partsigs + 1, sizeof(unsigned long int))) == NULL) {
-	cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%d, %d)\n", groot->ac_partsigs + 1, sizeof(unsigned long int));
-	free(buffer);
-	free(gpartcnt);
-	return CL_EMEM;
-    }
+    if((ret = cli_ac_initdata(&gdata, groot->ac_partsigs, AC_DEFAULT_TRACKLEN)))
+	return ret;
 
     if(troot) {
-
-	if((tpartcnt = (int *) cli_calloc(troot->ac_partsigs + 1, sizeof(int))) == NULL) {
-	    cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%d, %d)\n", troot->ac_partsigs + 1, sizeof(int));
-	    free(buffer);
-	    free(gpartcnt);
-	    free(gpartoff);
-	    return CL_EMEM;
-	}
-
-	if((tpartoff = (unsigned long int *) cli_calloc(troot->ac_partsigs + 1, sizeof(unsigned long int))) == NULL) {
-	    cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%d, %d)\n", troot->ac_partsigs + 1, sizeof(unsigned long int));
-	    free(buffer);
-	    free(gpartcnt);
-	    free(gpartoff);
-	    free(tpartcnt);
-	    return CL_EMEM;
-	}
+	if((ret = cli_ac_initdata(&tdata, troot->ac_partsigs, AC_DEFAULT_TRACKLEN)))
+	    return ret;
     }
 
     if(ctx->engine->md5_hlist)
@@ -689,29 +649,27 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
     buff = buffer;
     buff += maxpatlen; /* pointer to read data block */
     endbl = buff + SCANBUFF - maxpatlen; /* pointer to the last block
-						* length of maxpatlen
-						*/
+					  * length of maxpatlen
+					  */
 
-    pt = buff;
+    upt = buff;
     while((bytes = cli_readn(desc, buff + shift, SCANBUFF - shift)) > 0) {
 
 	if(ctx->scanned)
 	    *ctx->scanned += bytes / CL_COUNT_PRECISION;
 
 	length = shift + bytes;
-	if(pt == buffer)
+	if(upt == buffer)
 	    length += maxpatlen;
 
 	if(troot) {
-	    if(troot->ac_only || (ret = cli_bm_scanbuff(pt, length, ctx->virname, troot, offset, ftype, desc)) != CL_VIRUS)
-		ret = cli_ac_scanbuff(pt, length, ctx->virname, troot, tpartcnt, otfrec, offset, tpartoff, ftype, desc, ftoffset);
+	    if(troot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, troot, offset, ftype, desc)) != CL_VIRUS)
+		ret = cli_ac_scanbuff(upt, length, ctx->virname, troot, &tdata, otfrec, offset, ftype, desc, ftoffset);
 
 	    if(ret == CL_VIRUS) {
 		free(buffer);
-		free(gpartcnt);
-		free(gpartoff);
-		free(tpartcnt);
-		free(tpartoff);
+		cli_ac_freedata(&gdata);
+		cli_ac_freedata(&tdata);
 
 		lseek(desc, 0, SEEK_SET);
 		if(cli_checkfp(desc, ctx->engine))
@@ -721,17 +679,14 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	    }
 	}
 
-	if(groot->ac_only || (ret = cli_bm_scanbuff(pt, length, ctx->virname, groot, offset, ftype, desc)) != CL_VIRUS)
-	    ret = cli_ac_scanbuff(pt, length, ctx->virname, groot, gpartcnt, otfrec, offset, gpartoff, ftype, desc, ftoffset);
+	if(groot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, groot, offset, ftype, desc)) != CL_VIRUS)
+	    ret = cli_ac_scanbuff(upt, length, ctx->virname, groot, &gdata, otfrec, offset, ftype, desc, ftoffset);
 
 	if(ret == CL_VIRUS) {
 	    free(buffer);
-	    free(gpartcnt);
-	    free(gpartoff);
-	    if(troot) {
-		free(tpartcnt);
-		free(tpartoff);
-	    }
+	    cli_ac_freedata(&gdata);
+	    if(troot)
+		cli_ac_freedata(&tdata);
 	    lseek(desc, 0, SEEK_SET);
 	    if(cli_checkfp(desc, ctx->engine))
 		return CL_CLEAN;
@@ -750,8 +705,8 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	    memmove(buffer, endbl, maxpatlen);
 	    offset += SCANBUFF;
 
-	    if(pt == buff) {
-		pt = buffer;
+	    if(upt == buff) {
+		upt = buffer;
 		offset -= maxpatlen;
 	    }
 
@@ -764,12 +719,9 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
     }
 
     free(buffer);
-    free(gpartcnt);
-    free(gpartoff);
-    if(troot) {
-	free(tpartcnt);
-	free(tpartoff);
-    }
+    cli_ac_freedata(&gdata);
+    if(troot)
+	cli_ac_freedata(&tdata);
 
     if(ctx->engine->md5_hlist) {
 	MD5_Final(digest, &md5ctx);

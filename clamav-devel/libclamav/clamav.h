@@ -104,7 +104,8 @@ extern "C"
 
 /* internal structures */
 struct cli_bm_patt {
-    char *pattern, *virname, *offset;
+    unsigned char *pattern;
+    char *virname, *offset;
     const char *viralias;
     unsigned int length;
     unsigned short target;
