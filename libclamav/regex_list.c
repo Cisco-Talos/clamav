@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: regex_list.c,v $
+ *  Revision 1.15  2006/11/15 15:26:54  tkojm
+ *  pattern matcher accuracy improvements
+ *
  *  Revision 1.14  2006/11/05 18:16:56  acab
  *  Patch for bug 52 from Edvin
  *
@@ -350,8 +353,8 @@ int regex_list_match(struct regex_matcher* matcher,const char* real_url,const ch
 		size_t buffer_len  = (hostOnly && !is_whitelist) ? real_len : real_len + display_len + 1;
 		char*  buffer = cli_malloc(buffer_len+1);
 		size_t i;
-		int partcnt,rc = 0;
-		unsigned long int partoff;
+		int rc = 0;
+		struct cli_ac_data mdata;
 
 		if(!buffer)
 			return CL_EMEM;
@@ -364,13 +367,18 @@ int regex_list_match(struct regex_matcher* matcher,const char* real_url,const ch
 		}
 		cli_dbgmsg("Looking up in regex_list: %s\n", buffer);
 
-		if(hostOnly)
+		if(hostOnly) {
+			if((rc = cli_ac_initdata(&mdata, 0, AC_DEFAULT_TRACKLEN)))
+				return rc;
+			rc = 0;
+
 			for(i = 0; i < matcher->root_hosts_cnt; i++) {
-				if(( rc = cli_ac_scanbuff((unsigned char*)buffer,buffer_len,info, &matcher->root_hosts[i] ,&partcnt,0,0,&partoff,0,-1,NULL) ))
+				if(( rc = cli_ac_scanbuff((unsigned char*)buffer,buffer_len,info, &matcher->root_hosts[i] ,&mdata,0,0,0,-1,NULL) ))
 					break;
 			}
-		else
+		} else
 			rc = 0;
+    
 		if(!rc && !hostOnly) 
 			rc = match_node(matcher->root_regex,(unsigned char*)buffer,buffer_len,info) == MATCH_SUCCESS ? CL_VIRUS : CL_SUCCESS;
 		free(buffer);

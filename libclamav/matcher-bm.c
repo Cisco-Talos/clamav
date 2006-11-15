@@ -32,15 +32,14 @@
 /* #define BM_TEST_OFFSET	5 */
 #define BM_BLOCK_SIZE	3
 
-#define HASH(a,b,c) 211 * (unsigned char) a + 37 * (unsigned char) b + (unsigned char) c
-#define DHASH(a,b,c) 211 * a + 37 * b + c
+#define HASH(a,b,c) (211 * a + 37 * b + c)
 
 
 int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern)
 {
 	int i;
 	uint16_t idx;
-	const char *pt = pattern->pattern;
+	const unsigned char *pt = pattern->pattern;
 	struct cli_bm_patt *prev, *next = NULL;
 
 
@@ -80,7 +79,7 @@ int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern)
 int cli_bm_init(struct cli_matcher *root)
 {
 	unsigned int i;
-	unsigned int size = DHASH(256, 256, 256);
+	unsigned int size = HASH(256, 256, 256);
 
 
     cli_dbgmsg("in cli_bm_init()\n");
@@ -104,7 +103,7 @@ void cli_bm_free(struct cli_matcher *root)
 {
 	struct cli_bm_patt *b1, *b2;
 	unsigned int i;
-	unsigned int size = DHASH(256, 256, 256);
+	unsigned int size = HASH(256, 256, 256);
 
 
     if(root->bm_shift)
@@ -129,14 +128,14 @@ void cli_bm_free(struct cli_matcher *root)
     }
 }
 
-int cli_bm_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cli_matcher *root, unsigned long int offset, unsigned short ftype, int fd)
+int cli_bm_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cli_matcher *root, unsigned long int offset, unsigned short ftype, int fd)
 {
 	unsigned int i, j, shift, off, found = 0;
 	int idxtest;
 	uint16_t idx;
 	struct cli_bm_patt *p;
-	const char *bp;
-	char prefix;
+	const unsigned char *bp;
+	unsigned char prefix;
 
 
     if(!root->bm_shift)
