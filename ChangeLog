@@ -1,3 +1,7 @@
+Sat Nov 18 00:51:08 CET 2006 (tk)
+---------------------------------
+  * libclamav/matcher.c: fix debug message (closes bb#144)
+
 Wed Nov 15 16:18:09 CET 2006 (tk)
 ---------------------------------
   * libclamav: + the AC matcher now keeps a track of partial matches to improve
