@@ -23,6 +23,7 @@
 #include "clamav.h"
 #include "matcher.h"
 #include "filetypes.h"
+#include "cltypes.h"
 
 #define AC_DEFAULT_DEPTH 2
 #define AC_DEFAULT_TRACKLEN 8
@@ -31,7 +32,8 @@ struct cli_ac_data {
     unsigned int partsigs;
     unsigned int *partcnt;
     unsigned int **partoff;
-    unsigned int *offcnt;
+    uint8_t *offcnt;
+    uint8_t *offidx;
     int *maxshift;
 };
 
