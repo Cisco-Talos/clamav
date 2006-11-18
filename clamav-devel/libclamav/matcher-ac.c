@@ -39,6 +39,7 @@
 #include "matcher-ac.h"
 #include "defaults.h"
 #include "filetypes.h"
+#include "cltypes.h"
 
 struct nodelist {
     struct cli_ac_node *node;
@@ -320,11 +321,20 @@ int cli_ac_initdata(struct cli_ac_data *data, unsigned int partsigs, unsigned in
 	return CL_EMEM;
     }
 
-    data->offcnt = (unsigned int *) cli_calloc(partsigs, sizeof(unsigned int));
+    data->offcnt = (uint8_t *) cli_calloc(partsigs, sizeof(uint8_t));
 
     if(!data->offcnt) {
-	cli_errmsg("cli_ac_init(): unable to cli_calloc(%u, %u)\n", partsigs, sizeof(unsigned int));
+	cli_errmsg("cli_ac_init(): unable to cli_calloc(%u, %u)\n", partsigs, sizeof(uint8_t));
 	free(data->partcnt);
+	return CL_EMEM;
+    }
+
+    data->offidx = (uint8_t *) cli_calloc(partsigs, sizeof(uint8_t));
+
+    if(!data->offidx) {
+	cli_errmsg("cli_ac_init(): unable to cli_calloc(%u, %u)\n", partsigs, sizeof(uint8_t));
+	free(data->partcnt);
+	free(data->offcnt);
 	return CL_EMEM;
     }
 
@@ -334,6 +344,7 @@ int cli_ac_initdata(struct cli_ac_data *data, unsigned int partsigs, unsigned in
 	cli_errmsg("cli_ac_init(): unable to cli_malloc(%u)\n", partsigs * sizeof(int));
 	free(data->partcnt);
 	free(data->offcnt);
+	free(data->offidx);
 	return CL_EMEM;
     }
 
@@ -345,6 +356,7 @@ int cli_ac_initdata(struct cli_ac_data *data, unsigned int partsigs, unsigned in
 	cli_errmsg("cli_ac_init(): unable to cli_calloc(%u, %u)\n", partsigs, sizeof(unsigned int));
 	free(data->partcnt);
 	free(data->offcnt);
+	free(data->offidx);
 	free(data->maxshift);
 	return CL_EMEM;
     }
@@ -364,6 +376,7 @@ int cli_ac_initdata(struct cli_ac_data *data, unsigned int partsigs, unsigned in
 	    free(data->partoff);
 	    free(data->partcnt);
 	    free(data->offcnt);
+	    free(data->offidx);
 	    free(data->maxshift);
 	    cli_errmsg("cli_ac_init(): unable to cli_calloc(%u, %u)\n", tracklen, sizeof(unsigned int));
 	    return CL_EMEM;
@@ -381,6 +394,7 @@ void cli_ac_freedata(struct cli_ac_data *data)
     if(data && data->partsigs) {
 	free(data->partcnt);
 	free(data->offcnt);
+	free(data->offidx);
 	free(data->maxshift);
 
 	for(i = 0; i < data->partsigs; i++)
@@ -395,7 +409,8 @@ int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char
 	struct cli_ac_node *current;
 	struct cli_ac_patt *pt;
 	int type = CL_CLEAN, t, j;
-        unsigned int i, position, idx, found, curroff;
+        unsigned int i, position, curroff;
+	uint8_t offnum, found;
 	struct cli_matched_type *tnode;
 
 
@@ -435,12 +450,20 @@ int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char
 		    if(pt->sigid) { /* it's a partial signature */
 
 			if(mdata->partcnt[pt->sigid - 1] + 1 == pt->partno) {
-			    idx = mdata->offcnt[pt->sigid - 1];
-			    if(idx < AC_DEFAULT_TRACKLEN) {
-				mdata->partoff[pt->sigid - 1][idx] = curroff + pt->length;
+			    offnum = mdata->offcnt[pt->sigid - 1];
+			    if(offnum < AC_DEFAULT_TRACKLEN) {
+				mdata->partoff[pt->sigid - 1][offnum] = curroff + pt->length;
 
-				if(mdata->maxshift[pt->sigid - 1] == -1 || ((int) (mdata->partoff[pt->sigid - 1][idx] - mdata->partoff[pt->sigid - 1][0]) <= mdata->maxshift[pt->sigid - 1]))
+				if(mdata->maxshift[pt->sigid - 1] == -1 || ((int) (mdata->partoff[pt->sigid - 1][offnum] - mdata->partoff[pt->sigid - 1][0]) <= mdata->maxshift[pt->sigid - 1]))
 				    mdata->offcnt[pt->sigid - 1]++;
+			    } else {
+				if(mdata->maxshift[pt->sigid - 1] == -1 || ((int) (curroff + pt->length - mdata->partoff[pt->sigid - 1][0]) <= mdata->maxshift[pt->sigid - 1])) {
+				    if(!(mdata->offidx[pt->sigid - 1] %= AC_DEFAULT_TRACKLEN))
+					mdata->offidx[pt->sigid - 1]++;
+
+				    mdata->partoff[pt->sigid - 1][mdata->offidx[pt->sigid - 1]] = curroff + pt->length;
+				    mdata->offidx[pt->sigid - 1]++;
+				}
 			    }
 
 			} else if(mdata->partcnt[pt->sigid - 1] + 2 == pt->partno) {

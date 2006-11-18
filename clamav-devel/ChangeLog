@@ -1,3 +1,8 @@
+Sat Nov 18 21:46:10 CET 2006 (tk)
+---------------------------------
+  * libclamav/matcher-ac.c: multipart signatures: give higher priority to new
+			    sub-matches
+
 Sat Nov 18 00:51:08 CET 2006 (tk)
 ---------------------------------
   * libclamav/matcher.c: fix debug message (closes bb#144)
