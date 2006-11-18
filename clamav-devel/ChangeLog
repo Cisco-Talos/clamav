@@ -1,3 +1,9 @@
+Sat Nov 18 22:44:37 GMT 2006 (njh)
+----------------------------------
+ * libclamav:	Don't implement the sleep function
+ 		Handle DoS attacks on the JS VM by adding a timeout guarding
+			against infinite loops
+
 Sat Nov 18 21:46:10 CET 2006 (tk)
 ---------------------------------
   * libclamav/matcher-ac.c: multipart signatures: give higher priority to new
