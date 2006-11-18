@@ -28,7 +28,7 @@
  * TODO:	Add mailfollowurls type feature
  * TODO:	Check for vulnerabilities, leaks etc.
  */
-static	char	const	rcsid[] = "$Id: jscript.c,v 1.5 2006/11/11 17:18:10 njh Exp $";
+static	char	const	rcsid[] = "$Id: jscript.c,v 1.6 2006/11/18 22:42:40 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -68,6 +68,16 @@ static	char	const	rcsid[] = "$Id: jscript.c,v 1.5 2006/11/11 17:18:10 njh Exp $"
 #     define	NAME_MAX	256
 #   endif
 # endif
+#endif
+
+#ifdef	CL_THREAD_SAFE
+#define	VM_TIMEOUT	5	/* In seconds: FIXME should be configurable */
+#endif
+
+#if	defined(VM_TIMEOUT) && (VM_TIMEOUT > 0)
+#include <pthread.h>
+#include <sys/time.h>
+#include <signal.h>
 #endif
 
 static	int	run_js(const char *filename, const char *dir);
@@ -268,6 +278,111 @@ write_to_fout(void *context, unsigned char *buf, unsigned int len)
 	return (int)fwrite(buf, (size_t)len, 1, fout);
 }
 
+#if	defined(VM_TIMEOUT) && (VM_TIMEOUT > 0)
+
+struct args {
+	const char *filename;
+	const char *dir;
+	pthread_cond_t	*cond;
+	int	result;
+};
+
+static void
+sigrecv(int sig)
+{
+	/* pthread_cond_broadcast(&cond); */
+	pthread_exit(NULL);	/* FIXME: interp isn't destroyed - mem leak? */
+}
+
+static void *
+js_thread(void *a)
+{
+	JSInterpPtr interp;
+	char *outputfilename;
+	struct args *args = (struct args *)a;
+	const char *dir = args->dir;
+	const char *filename = args->filename;
+
+	cli_dbgmsg("run_js(%s)\n", filename);
+
+	outputfilename = cli_gentemp(dir);
+	if(outputfilename == NULL) {
+		pthread_cond_broadcast(args->cond);
+		args->result = CL_ETMPFILE;
+		return NULL;
+	}
+
+	fout = fopen(outputfilename, "wb");
+	if(fout == NULL) {
+		pthread_cond_broadcast(args->cond);
+		cli_warnmsg("Can't create %s\n", outputfilename);
+		free(outputfilename);
+		args->result = CL_ETMPFILE;
+		return NULL;
+	}
+
+	cli_dbgmsg("Redirecting JS VM stdout to %s\n", outputfilename);
+	free(outputfilename);
+
+	/*
+	 * Run NGS on the file
+	 */
+	interp = create_interp(write_to_fout);
+
+	args->result = CL_EIO;	/* TODO: CL_TIMEOUT */
+
+	if(!js_eval_file(interp, filename)) {
+		cli_warnmsg("JS failed: %s\n", js_error_message(interp));
+		/*rc = CL_EIO;*/
+	}
+
+	if(pthread_cond_broadcast(args->cond) < 0)
+		perror("pthread_cond_broadcast");
+
+	js_destroy_interp(interp);
+
+	fclose(fout);
+
+	args->result = CL_SUCCESS;
+	return NULL;
+}
+
+static int
+run_js(const char *filename, const char *dir)
+{
+	struct args args;
+	pthread_t tid;
+	struct timespec ts;
+	struct timeval tp;
+	pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+	pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+	void (*oldkill)(int);
+
+	args.filename = filename;
+	args.dir = dir;
+	args.cond = &cond;
+
+	pthread_create(&tid, NULL, js_thread, &args);
+
+	gettimeofday(&tp, NULL);
+
+	ts.tv_sec = tp.tv_sec + VM_TIMEOUT;
+	ts.tv_nsec = tp.tv_usec * 1000;
+
+	oldkill = signal(SIGUSR1, sigrecv);
+	pthread_mutex_lock(&mutex);
+	if(pthread_cond_timedwait(&cond, &mutex, &ts) == ETIMEDOUT) {
+		cli_warnmsg("Run away javascript stopped after %d seconds\n",
+			VM_TIMEOUT);
+		pthread_kill(tid, SIGUSR1);
+	}
+	pthread_mutex_unlock(&mutex);
+	pthread_join(tid, NULL);
+	signal(SIGUSR1, oldkill);
+
+	return args.result;
+}
+#else
 static int
 run_js(const char *filename, const char *dir)
 {
@@ -306,6 +421,7 @@ run_js(const char *filename, const char *dir)
 
 	return CL_SUCCESS;
 }
+#endif
 
 /* Copied from pdf.c :-( */
 /*
