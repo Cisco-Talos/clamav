@@ -24,7 +24,7 @@
 
 /*
  * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/libclamav/js/b_system.c,v $
- * $Id: b_system.c,v 1.2 2006/10/28 11:27:44 njh Exp $
+ * $Id: b_system.c,v 1.3 2006/11/18 22:44:04 njh Exp $
  */
 
 /*
@@ -254,7 +254,7 @@ method (JSVirtualMachine *vm, JSBuiltinInfo *builtin_info,
       if (args[1].type != JS_INTEGER)
 	goto argument_type_error;
 
-      sleep (args[1].u.vinteger);
+      /*sleep (args[1].u.vinteger);*/
     }
   /* ********************************************************************** */
   else if (method == ctx->s_strerror)
@@ -299,7 +299,7 @@ method (JSVirtualMachine *vm, JSBuiltinInfo *builtin_info,
       if (args[1].type != JS_INTEGER)
 	goto argument_type_error;
 
-      usleep (args[1].u.vinteger);
+      /*usleep (args[1].u.vinteger);*/
     }
   /* ********************************************************************** */
   else
