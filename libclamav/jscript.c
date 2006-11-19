@@ -26,9 +26,10 @@
  *			don't have
  * TODO:	Test with real malware
  * TODO:	Add mailfollowurls type feature
- * TODO:	Check for vulnerabilities, leaks etc.
+ * TODO:	Check the NGS code for vulnerabilities, leaks etc.
+ * TODO:	Check the NGS code is thread safe
  */
-static	char	const	rcsid[] = "$Id: jscript.c,v 1.6 2006/11/18 22:42:40 njh Exp $";
+static	char	const	rcsid[] = "$Id: jscript.c,v 1.7 2006/11/19 08:29:14 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
