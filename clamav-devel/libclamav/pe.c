@@ -2436,6 +2436,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
     if(fstat(desc, &sb) == -1) {
 	cli_dbgmsg("fstat failed\n");
 	free(peinfo->section);
+	peinfo->section = NULL;
 	return -1;
     }
 
@@ -2444,6 +2445,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
     if(!section_hdr) {
 	cli_dbgmsg("Can't allocate memory for section headers\n");
 	free(peinfo->section);
+	peinfo->section = NULL;
 	return -1;
     }
 
@@ -2454,6 +2456,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	    cli_dbgmsg("Possibly broken PE file\n");
 	    free(section_hdr);
 	    free(peinfo->section);
+	    peinfo->section = NULL;
 	    return -1;
 	}
 
@@ -2483,6 +2486,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	cli_dbgmsg("Possibly broken PE file\n");
 	free(section_hdr);
 	free(peinfo->section);
+	peinfo->section = NULL;
 	return -1;
     }
 

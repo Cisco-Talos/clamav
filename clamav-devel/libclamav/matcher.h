@@ -20,16 +20,26 @@
 #ifndef __MATCHER_H
 #define __MATCHER_H
 
+#include <sys/types.h>
+
 #include "clamav.h"
 #include "filetypes.h"
 #include "others.h"
+#include "execs.h"
+#include "cltypes.h"
 
 #define CL_TARGET_TABLE_SIZE 7
+
+struct cli_target_info {
+    off_t fsize;
+    struct cli_exe_info exeinfo;
+    int8_t status; /* 0 == not initialised, 1 == initialised OK, -1 == error */
+};
 
 int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short ftype, struct cli_matched_type **ftoffset);
 
 int cli_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cl_engine *engine, unsigned short ftype);
 
-int cli_validatesig(unsigned short ftype, const char *offstr, unsigned long int fileoff, int desc, const char *virname);
+int cli_validatesig(unsigned short ftype, const char *offstr, off_t fileoff, struct cli_target_info *info, int desc, const char *virname);
 
 #endif

@@ -513,6 +513,8 @@ int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
     section_hdr = (struct elf_section_hdr32 *) cli_calloc(shnum, shentsize);
     if(!section_hdr) {
 	cli_errmsg("ELF: Can't allocate memory for section headers\n");
+	free(elfinfo->section);
+	elfinfo->section = NULL;
 	return -1;
     }
 
@@ -521,6 +523,7 @@ int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
 	if(read(desc, &section_hdr[i], sizeof(struct elf_section_hdr32)) != sizeof(struct elf_section_hdr32)) {
             free(section_hdr);
 	    free(elfinfo->section);
+	    elfinfo->section = NULL;
             return -1;
         }
 

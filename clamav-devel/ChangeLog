@@ -1,3 +1,7 @@
+Mon Nov 20 00:58:57 CET 2006 (tk)
+---------------------------------
+  * libclamav: cache target file info in pattern matchers
+
 Sat Nov 18 22:44:37 GMT 2006 (njh)
 ----------------------------------
  * libclamav:	Don't implement the sleep function

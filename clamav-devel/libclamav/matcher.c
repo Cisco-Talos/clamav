@@ -98,38 +98,38 @@ int cli_scanbuff(const unsigned char *buffer, unsigned int length, const char **
 		int targettype = 0;
 
 	    if((hret = sn_sigscan_resultget_name(resulthandle, i, &matchname) < 0)) {
-		cli_errmsg("cli_scanbuff: sn_sigscan_resultget_name failed for result %d: %d\n", i, hret);
+		cli_errmsg("cli_scanbuff: sn_sigscan_resultget_name failed for result %u: %d\n", i, hret);
 		sn_sigscan_resultfree(resulthandle);
 		return CL_ENCIO;
 	    }
 	    if(!matchname) {
-		cli_errmsg("cli_scanbuff: HW Result[%d]: Signature without name\n", i);
+		cli_errmsg("cli_scanbuff: HW Result[%u]: Signature without name\n", i);
 		sn_sigscan_resultfree(resulthandle);
 		return CL_EMALFDB;
 	    }
 
 	    if((hret = sn_sigscan_resultget_targettype(resulthandle, i, &targettype) < 0)) {
-		cli_errmsg("cli_scanbuff: sn_sigscan_resultget_targettype failed for result %d, signature %s: %d\n", i, matchname, hret);
+		cli_errmsg("cli_scanbuff: sn_sigscan_resultget_targettype failed for result %u, signature %s: %d\n", i, matchname, hret);
 		sn_sigscan_resultfree(resulthandle);
 		return CL_ENCIO;
 	    }
 	    if(targettype && targettab[targettype] != (int) ftype) {
-		cli_dbgmsg("cli_scanbuff: HW Result[%d]: %s: Target type: %d, expected: %d\n", i, matchname, targettab[targettype], ftype);
+		cli_dbgmsg("cli_scanbuff: HW Result[%u]: %s: Target type: %u, expected: %u\n", i, matchname, targettab[targettype], ftype);
 		continue;
 	    }
 
 	    if((hret = sn_sigscan_resultget_offsetstring(resulthandle, i, &offsetstring) < 0)) {
-		cli_errmsg("cli_scanbuff: sn_sigscan_resultget_offsetstring failed for result %d, signature %s: %d\n", i, matchname, hret);
+		cli_errmsg("cli_scanbuff: sn_sigscan_resultget_offsetstring failed for result %u, signature %s: %d\n", i, matchname, hret);
 		sn_sigscan_resultfree(resulthandle);
 		return CL_ENCIO;
 	    }
 	    if(offsetstring) {
-		cli_dbgmsg("cli_scanbuff: HW Result[%d]: %s: Offset based signature not supported in buffer mode\n", i, matchname);
+		cli_dbgmsg("cli_scanbuff: HW Result[%u]: %s: Offset based signature not supported in buffer mode\n", i, matchname);
 		continue;
 	    }
 
 	    if((hret = sn_sigscan_resultget_extradata(resulthandle, i, &optionalsigdata) < 0)) {
-		cli_errmsg("cli_scanbuff: sn_sigscan_resultget_extradata failed for result %d, signature %s: %d\n", i, matchname, hret);
+		cli_errmsg("cli_scanbuff: sn_sigscan_resultget_extradata failed for result %u, signature %s: %d\n", i, matchname, hret);
 		sn_sigscan_resultfree(resulthandle);
 		return CL_ENCIO;
 	    }
@@ -137,13 +137,13 @@ int cli_scanbuff(const unsigned char *buffer, unsigned int length, const char **
 		if((pt = cli_strtok(optionalsigdata, 1, ":"))) { /* max version */
 		    if(!isdigit(*pt)) {
 			free(pt);
-			cli_errmsg("cli_scanbuff: HW Result[%d]: %s: Incorrect optional signature data: %s\n", i, matchname, optionalsigdata);
+			cli_errmsg("cli_scanbuff: HW Result[%u]: %s: Incorrect optional signature data: %s\n", i, matchname, optionalsigdata);
 			sn_sigscan_resultfree(resulthandle);
 			return CL_EMALFDB;
 		    }
 
 		    if(atoi(pt) < cl_retflevel()) {
-			cli_dbgmsg("cli_scanbuff: HW Result[%d]: %s: Signature max flevel: %d, current: %d\n", i, matchname, atoi(pt), cl_retflevel());
+			cli_dbgmsg("cli_scanbuff: HW Result[%u]: %s: Signature max flevel: %u, current: %u\n", i, matchname, atoi(pt), cl_retflevel());
 			free(pt);
 			continue;
 		    }
@@ -152,13 +152,13 @@ int cli_scanbuff(const unsigned char *buffer, unsigned int length, const char **
 		    if((pt = cli_strtok(optionalsigdata, 0, ":"))) { /* min version */
 			if(!isdigit(*pt)) {
 			    free(pt);
-			    cli_errmsg("cli_scanbuff: HW Result[%d]: %s: Incorrect optional signature data: %s\n", i, matchname, optionalsigdata);
+			    cli_errmsg("cli_scanbuff: HW Result[%u]: %s: Incorrect optional signature data: %s\n", i, matchname, optionalsigdata);
 			    sn_sigscan_resultfree(resulthandle);
 			    return CL_EMALFDB;
 			}
 
 			if(atoi(pt) > cl_retflevel()) {
-			    cli_dbgmsg("cli_scanbuff: HW Result[%d]: %s: Signature required flevel: %d, current: %d\n", i, matchname, atoi(pt), cl_retflevel());
+			    cli_dbgmsg("cli_scanbuff: HW Result[%u]: %s: Signature required flevel: %u, current: %u\n", i, matchname, atoi(pt), cl_retflevel());
 			    free(pt);
 			    continue;
 			}
@@ -167,13 +167,13 @@ int cli_scanbuff(const unsigned char *buffer, unsigned int length, const char **
 
 		} else {
 		    if(!isdigit(*optionalsigdata)) {
-			cli_errmsg("cli_scanbuff: HW Result[%d]: %s: Incorrect optional signature data: %s\n", i, matchname, optionalsigdata);
+			cli_errmsg("cli_scanbuff: HW Result[%u]: %s: Incorrect optional signature data: %s\n", i, matchname, optionalsigdata);
 			sn_sigscan_resultfree(resulthandle);
 			return CL_EMALFDB;
 		    }
 
 		    if(atoi(optionalsigdata) > cl_retflevel()) {
-			cli_dbgmsg("cli_scandesc: HW Result[%d]: %s: Signature required flevel: %d, current: %d\n", i, matchname, atoi(optionalsigdata), cl_retflevel());
+			cli_dbgmsg("cli_scandesc: HW Result[%u]: %s: Signature required flevel: %u, current: %u\n", i, matchname, atoi(optionalsigdata), cl_retflevel());
 			continue;
 		    }
 		}
@@ -250,89 +250,101 @@ static struct cli_md5_node *cli_vermd5(const unsigned char *md5, const struct cl
     return NULL;
 }
 
-static long int cli_caloff(const char *offstr, int fd, unsigned short ftype)
+static off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, unsigned short ftype, int *ret)
 {
-	struct cli_exe_info exeinfo;
 	int (*einfo)(int, struct cli_exe_info *) = NULL;
-	long int offset = -1;
-	int n;
+	unsigned int n;
+	off_t pos, offset;
 
 
-    if(ftype == CL_TYPE_MSEXE)
-	einfo = cli_peheader;
-    else if(ftype == CL_TYPE_ELF)
-	einfo = cli_elfheader;
+    *ret = 0;
+
+    if(!strncmp(offstr, "EP", 2) || offstr[0] == 'S') {
+
+	if(info->status == -1) {
+	    *ret = -1;
+	    return 0;
+
+	} else if(!info->status) {
+
+	    if(ftype == CL_TYPE_MSEXE)
+		einfo = cli_peheader;
+	    else if(ftype == CL_TYPE_ELF)
+		einfo = cli_elfheader;
+
+	    if(einfo) {
+		if((pos = lseek(fd, 0, SEEK_CUR)) == -1) {
+		    cli_dbgmsg("Invalid descriptor\n");
+		    info->status = *ret = -1;
+		    return 0;
+		}
+
+		lseek(fd, 0, SEEK_SET);
+		if(einfo(fd, &info->exeinfo)) {
+		    lseek(fd, pos, SEEK_SET);
+		    info->status = *ret = -1;
+		    return 0;
+		}
+		lseek(fd, pos, SEEK_SET);
+		info->status = 1;
+	    }
+	}
+    }
 
     if(isdigit(offstr[0])) {
 	return atoi(offstr);
 
-    } else if(einfo && (!strncmp(offstr, "EP+", 3) || !strncmp(offstr, "EP-", 3))) {
-	if((n = lseek(fd, 0, SEEK_CUR)) == -1) {
-	    cli_dbgmsg("Invalid descriptor\n");
-	    return -1;
-	}
-	lseek(fd, 0, SEEK_SET);
-	if(einfo(fd, &exeinfo)) {
-	    lseek(fd, n, SEEK_SET);
-	    return -1;
-	}
-	free(exeinfo.section);
-	lseek(fd, n, SEEK_SET);
+    } else if(info->status == 1 && (!strncmp(offstr, "EP+", 3) || !strncmp(offstr, "EP-", 3))) {
 
 	if(offstr[2] == '+')
-	    return exeinfo.ep + atoi(offstr + 3);
+	    return info->exeinfo.ep + atoi(offstr + 3);
 	else
-	    return exeinfo.ep - atoi(offstr + 3);
+	    return info->exeinfo.ep - atoi(offstr + 3);
 
-    } else if(einfo && offstr[0] == 'S') {
-	if((n = lseek(fd, 0, SEEK_CUR)) == -1) {
-	    cli_dbgmsg("Invalid descriptor\n");
-	    return -1;
-	}
-	lseek(fd, 0, SEEK_SET);
-	if(einfo(fd, &exeinfo)) {
-	    lseek(fd, n, SEEK_SET);
-	    return -1;
-	}
-	lseek(fd, n, SEEK_SET);
+    } else if(info->status == 1 && offstr[0] == 'S') {
 
 	if(!strncmp(offstr, "SL", 2)) {
 
-	    if(sscanf(offstr, "SL+%ld", &offset) != 1) {
-		free(exeinfo.section);
-		return -1;
+	    if(sscanf(offstr, "SL+%lu", &offset) != 1) {
+		*ret = -1;
+		return 0;
 	    }
 
-	    offset += exeinfo.section[exeinfo.nsections - 1].raw;
+	    offset += info->exeinfo.section[info->exeinfo.nsections - 1].raw;
 
 	} else {
 
-	    if(sscanf(offstr, "S%d+%ld", &n, &offset) != 2) {
-		free(exeinfo.section);
-		return -1;
+	    if(sscanf(offstr, "S%u+%lu", &n, &offset) != 2) {
+		*ret = -1;
+		return 0;
 	    }
 
-	    if(n >= exeinfo.nsections) {
-		free(exeinfo.section);
-		return -1;
+	    if(n >= info->exeinfo.nsections) {
+		*ret = -1;
+		return 0;
 	    }
 
-	    offset += exeinfo.section[n].raw;
+	    offset += info->exeinfo.section[n].raw;
 	}
 
-	free(exeinfo.section);
 	return offset;
 
     } else if(!strncmp(offstr, "EOF-", 4)) {
 	    struct stat sb;
 
-	if(fstat(fd, &sb) == -1)
-	    return -1;
+	if(!info->fsize) {
+	    if(fstat(fd, &sb) == -1) {
+		info->status = *ret = -1;
+		return 0;
+	    }
+	    info->fsize = sb.st_size;
+	}
 
-	return sb.st_size - atoi(offstr + 4);
+	return info->fsize - atoi(offstr + 4);
     }
 
-    return -1;
+    *ret = -1;
+    return 0;
 }
 
 static int cli_checkfp(int fd, const struct cl_engine *engine)
@@ -369,19 +381,22 @@ static int cli_checkfp(int fd, const struct cl_engine *engine)
     return 0;
 }
 
-int cli_validatesig(unsigned short ftype, const char *offstr, unsigned long int fileoff, int desc, const char *virname)
+int cli_validatesig(unsigned short ftype, const char *offstr, off_t fileoff, struct cli_target_info *info, int desc, const char *virname)
 {
+	off_t offset;
+	int ret;
+
 
     if(offstr && desc != -1) {
-	    long int off = cli_caloff(offstr, desc, ftype);
+	offset = cli_caloff(offstr, info, desc, ftype, &ret);
 
-	if(off == -1) {
-	    cli_dbgmsg("Bad offset in signature (%s)\n", virname);
+	if(ret == -1) {
+	    cli_dbgmsg("cli_validatesig: Can't calculate offset for signature %s\n", virname);
 	    return 0;
 	}
 
-	if(fileoff != (unsigned long int) off) {
-	    cli_dbgmsg("Virus offset: %ld, expected: %ld (%s)\n", fileoff, off, virname);
+	if(fileoff != offset) {
+	    cli_dbgmsg("Signature offset: %lu, expected: %lu (%s)\n", fileoff, offset, virname);
 	    return 0;
 	}
     }
@@ -408,6 +423,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	int count, hret;
 	off_t origoff;
 	char *pt;
+	struct cli_target_info info;
 #endif
 
 
@@ -461,74 +477,93 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 
 	count = sn_sigscan_resultcount(resulthandle);
 
+	memset(&info, 0, sizeof(info));
+
 	for(i = 0; i < count; i++) {
 		const char *matchname = NULL, *offsetstring = NULL, *optionalsigdata = NULL;
 		unsigned long long startoffset = 0;
+		off_t offset;
 		int targettype = 0;
 
 	    if((hret = sn_sigscan_resultget_name(resulthandle, i, &matchname) < 0)) {
-		cli_errmsg("cli_scandesc: sn_sigscan_resultget_name failed for result %d: %d\n", i, hret);
+		cli_errmsg("cli_scandesc: sn_sigscan_resultget_name failed for result %u: %d\n", i, hret);
 		sn_sigscan_resultfree(resulthandle);
+		if(info.exeinfo.section)
+		    free(info.exeinfo.section);
 		return CL_ENCIO;
 	    }
 
 	    if(!matchname) {
-		cli_errmsg("cli_scandesc: HW Result[%d]: Signature without name\n", i);
+		cli_errmsg("cli_scandesc: HW Result[%u]: Signature without name\n", i);
 		sn_sigscan_resultfree(resulthandle);
+		if(info.exeinfo.section)
+		    free(info.exeinfo.section);
 		return CL_EMALFDB;
 	    }
 
 	    if((hret = sn_sigscan_resultget_targettype(resulthandle, i, &targettype) < 0)) {
-		cli_errmsg("cli_scandesc: sn_sigscan_resultget_targettype failed for result %d, signature %s: %d\n", i, matchname, hret);
+		cli_errmsg("cli_scandesc: sn_sigscan_resultget_targettype failed for result %u, signature %s: %d\n", i, matchname, hret);
 		sn_sigscan_resultfree(resulthandle);
+		if(info.exeinfo.section)
+		    free(info.exeinfo.section);
 		return CL_ENCIO;
 	    }
 	    if(targettype && targettab[targettype] != (int) ftype) {
-		cli_dbgmsg("cli_scandesc: HW Result[%d]: %s: Target type: %d, expected: %d\n", i, matchname, targettab[targettype], ftype);
+		cli_dbgmsg("cli_scandesc: HW Result[%u]: %s: Target type: %u, expected: %u\n", i, matchname, targettab[targettype], ftype);
 		continue;
 	    }
 
 	    if((hret = sn_sigscan_resultget_offsetstring(resulthandle, i, &offsetstring) < 0)) {
-		cli_errmsg("cli_scandesc: sn_sigscan_resultget_offsetstring failed for result %d, signature %s: %d\n", i, matchname, hret);
+		cli_errmsg("cli_scandesc: sn_sigscan_resultget_offsetstring failed for result %u, signature %s: %d\n", i, matchname, hret);
 		sn_sigscan_resultfree(resulthandle);
+		if(info.exeinfo.section)
+		    free(info.exeinfo.section);
 		return CL_ENCIO;
 	    }
 	    if((hret = sn_sigscan_resultget_startoffset(resulthandle, i, &startoffset) < 0)) {
-		cli_errmsg("cli_scandesc: sn_sigscan_resultget_startoffset failed for result %d, signature %s: %d\n", i, matchname, hret);
+		cli_errmsg("cli_scandesc: sn_sigscan_resultget_startoffset failed for result %u, signature %s: %d\n", i, matchname, hret);
 		sn_sigscan_resultfree(resulthandle);
+		if(info.exeinfo.section)
+		    free(info.exeinfo.section);
 		return CL_ENCIO;
 	    }
 	    if(offsetstring && strcmp(offsetstring, "*")) {
-		    long int off = cli_caloff(offsetstring, desc, ftype);
+		    off_t off = cli_caloff(offsetstring, &info, desc, ftype, &hret);
 
-		if(off == -1) {
-		    cli_dbgmsg("cli_scandesc: HW Result[%d]: %s: Bad offset in signature\n", i, matchname);
+		if(hret == -1) {
+		    cli_dbgmsg("cli_scandesc: HW Result[%u]: %s: Bad offset in signature\n", i, matchname);
 		    sn_sigscan_resultfree(resulthandle);
+		    if(info.exeinfo.section)
+			free(info.exeinfo.section);
 		    return CL_EMALFDB;
 		}
 
 		if(startoffset != (unsigned long long) off) {
-		    cli_dbgmsg("cli_scandesc: HW Result[%d]: %s: Virus offset: %Lu, expected: %ld\n", i, matchname, startoffset, off);
+		    cli_dbgmsg("cli_scandesc: HW Result[%u]: %s: Virus offset: %lu, expected: %lu\n", i, matchname, startoffset, off);
 		    continue;
 		}
 	    }
 
 	    if((hret = sn_sigscan_resultget_extradata(resulthandle, i, &optionalsigdata) < 0)) {
-		cli_errmsg("cli_scandesc: sn_sigscan_resultget_extradata failed for result %d, signature %s: %d\n", i, matchname, hret);
+		cli_errmsg("cli_scandesc: sn_sigscan_resultget_extradata failed for result %u, signature %s: %u\n", i, matchname, hret);
 		sn_sigscan_resultfree(resulthandle);
+		if(info.exeinfo.section)
+		    free(info.exeinfo.section);
 		return CL_ENCIO;
 	    }
 	    if(optionalsigdata && strlen(optionalsigdata)) {
 		if((pt = cli_strtok(optionalsigdata, 1, ":"))) { /* max version */
 		    if(!isdigit(*pt)) {
 			free(pt);
-			cli_errmsg("cli_scandesc: HW Result[%d]: %s: Incorrect optional signature data: %s\n", i, matchname, optionalsigdata);
+			cli_errmsg("cli_scandesc: HW Result[%u]: %s: Incorrect optional signature data: %s\n", i, matchname, optionalsigdata);
 			sn_sigscan_resultfree(resulthandle);
+			if(info.exeinfo.section)
+			    free(info.exeinfo.section);
 			return CL_EMALFDB;
 		    }
 
 		    if(atoi(pt) < cl_retflevel()) {
-			cli_dbgmsg("cli_scandesc: HW Result[%d]: %s: Signature max flevel: %d, current: %d\n", i, matchname, atoi(pt), cl_retflevel());
+			cli_dbgmsg("cli_scandesc: HW Result[%u]: %s: Signature max flevel: %u, current: %u\n", i, matchname, atoi(pt), cl_retflevel());
 			free(pt);
 			continue;
 		    }
@@ -537,13 +572,15 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 		    if((pt = cli_strtok(optionalsigdata, 0, ":"))) { /* min version */
 			if(!isdigit(*pt)) {
 			    free(pt);
-			    cli_errmsg("cli_scandesc: HW Result[%d]: %s: Incorrect optional signature data: %s\n", i, matchname, optionalsigdata);
+			    cli_errmsg("cli_scandesc: HW Result[%u]: %s: Incorrect optional signature data: %s\n", i, matchname, optionalsigdata);
 			    sn_sigscan_resultfree(resulthandle);
+			    if(info.exeinfo.section)
+				free(info.exeinfo.section);
 			    return CL_EMALFDB;
 			}
 
 			if(atoi(pt) > cl_retflevel()) {
-			    cli_dbgmsg("cli_scandesc: HW Result[%d]: %s: Signature required flevel: %d, current: %d\n", i, matchname, atoi(pt), cl_retflevel());
+			    cli_dbgmsg("cli_scandesc: HW Result[%u]: %s: Signature required flevel: %u, current: %u\n", i, matchname, atoi(pt), cl_retflevel());
 			    free(pt);
 			    continue;
 			}
@@ -552,13 +589,15 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 
 		} else {
 		    if(!isdigit(*optionalsigdata)) {
-			cli_errmsg("cli_scandesc: HW Result[%d]: %s: Incorrect optional signature data: %s\n", i, matchname, optionalsigdata);
+			cli_errmsg("cli_scandesc: HW Result[%u]: %s: Incorrect optional signature data: %s\n", i, matchname, optionalsigdata);
 			sn_sigscan_resultfree(resulthandle);
+			if(info.exeinfo.section)
+			    free(info.exeinfo.section);
 			return CL_EMALFDB;
 		    }
 
 		    if(atoi(optionalsigdata) > cl_retflevel()) {
-			cli_dbgmsg("cli_scandesc: HW Result[%d]: %s: Signature required flevel: %d, current: %d\n", i, matchname, atoi(optionalsigdata), cl_retflevel());
+			cli_dbgmsg("cli_scandesc: HW Result[%u]: %s: Signature required flevel: %u, current: %u\n", i, matchname, atoi(optionalsigdata), cl_retflevel());
 			continue;
 		    }
 		}
@@ -568,6 +607,9 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	    ret = CL_VIRUS;
 	    break;
 	}
+
+	if(info.exeinfo.section)
+	    free(info.exeinfo.section);
 
 	if((hret = sn_sigscan_resultfree(resulthandle)) < 0) {
 	    cli_errmsg("cli_scandesc: can't free results: %d\n", ret);
@@ -630,7 +672,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
     /* prepare the buffer */
     buffersize = maxpatlen + SCANBUFF;
     if(!(buffer = (unsigned char *) cli_calloc(buffersize, sizeof(unsigned char)))) {
-	cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%d)\n", buffersize);
+	cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%u)\n", buffersize);
 	return CL_EMEM;
     }
 
