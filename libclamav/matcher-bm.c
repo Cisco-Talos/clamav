@@ -136,6 +136,7 @@ int cli_bm_scanbuff(const unsigned char *buffer, unsigned int length, const char
 	struct cli_bm_patt *p;
 	const unsigned char *bp;
 	unsigned char prefix;
+	struct cli_target_info info;
 
 
     if(!root->bm_shift)
@@ -143,6 +144,8 @@ int cli_bm_scanbuff(const unsigned char *buffer, unsigned int length, const char
 
     if(length < BM_MIN_LENGTH)
 	return CL_CLEAN;
+
+    memset(&info, 0, sizeof(info));
 
     for(i = BM_MIN_LENGTH - BM_BLOCK_SIZE; i < length - BM_BLOCK_SIZE + 1; ) {
 	idx = HASH(buffer[i], buffer[i + 1], buffer[i + 2]);
@@ -189,7 +192,7 @@ int cli_bm_scanbuff(const unsigned char *buffer, unsigned int length, const char
 		    if(p->target || p->offset) {
 			off = offset + i - BM_MIN_LENGTH + BM_BLOCK_SIZE;
 
-			if((fd == -1 && !ftype) || !cli_validatesig(ftype, p->offset, off, fd, p->virname)) {
+			if((fd == -1 && !ftype) || !cli_validatesig(ftype, p->offset, off, &info, fd, p->virname)) {
 			    p = p->next;
 			    continue;
 			}
@@ -197,6 +200,9 @@ int cli_bm_scanbuff(const unsigned char *buffer, unsigned int length, const char
 
 		    if(virname)
 			*virname = p->virname;
+
+		    if(info.exeinfo.section)
+			free(info.exeinfo.section);
 
 		    return CL_VIRUS;
 		}
@@ -210,5 +216,8 @@ int cli_bm_scanbuff(const unsigned char *buffer, unsigned int length, const char
 	i += shift;
     }
 
-    return 0;
+    if(info.exeinfo.section)
+	free(info.exeinfo.section);
+
+    return CL_CLEAN;
 }

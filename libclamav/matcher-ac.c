@@ -412,6 +412,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char
         unsigned int i, position, curroff;
 	uint8_t offnum, found;
 	struct cli_matched_type *tnode;
+	struct cli_target_info info;
 
 
     if(!root->ac_root)
@@ -422,6 +423,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char
 	return CL_ENULLARG;
     }
 
+    memset(&info, 0, sizeof(info));
     current = root->ac_root;
 
     for(i = 0; i < length; i++)  {
@@ -441,7 +443,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char
 			else
 			    t = ftype;
 
-			if((fd == -1 && !t) || !cli_validatesig(t, pt->offset, curroff, fd, pt->virname)) {
+			if((fd == -1 && !t) || !cli_validatesig(t, pt->offset, curroff, &info, fd, pt->virname)) {
 			    pt = pt->next;
 			    continue;
 			}
@@ -497,6 +499,8 @@ int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char
 						if(ftoffset && (!*ftoffset || (*ftoffset)->cnt < SFX_MAX_TESTS) && ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) {
 						    if(!(tnode = cli_calloc(1, sizeof(struct cli_matched_type)))) {
 							cli_errmsg("cli_ac_scanbuff(): Can't allocate memory for new type node\n");
+							if(info.exeinfo.section)
+							    free(info.exeinfo.section);
 							return CL_EMEM;
 						    }
 
@@ -517,6 +521,8 @@ int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char
 					if(virname)
 					    *virname = pt->virname;
 
+					if(info.exeinfo.section)
+					    free(info.exeinfo.section);
 					return CL_VIRUS;
 				    }
 				}
@@ -532,6 +538,8 @@ int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char
 				    if(ftoffset && (!*ftoffset ||(*ftoffset)->cnt < SFX_MAX_TESTS) && ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) {
 					if(!(tnode = cli_calloc(1, sizeof(struct cli_matched_type)))) {
 					    cli_errmsg("cli_ac_scanbuff(): Can't allocate memory for new type node\n");
+					    if(info.exeinfo.section)
+						free(info.exeinfo.section);
 					    return CL_EMEM;
 					}
 					tnode->type = type;
@@ -551,6 +559,8 @@ int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char
 			    if(virname)
 				*virname = pt->virname;
 
+			    if(info.exeinfo.section)
+				free(info.exeinfo.section);
 			    return CL_VIRUS;
 			}
 		    }
@@ -562,6 +572,9 @@ int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char
 	    current = current->fail;
 	}
     }
+
+    if(info.exeinfo.section)
+	free(info.exeinfo.section);
 
     return otfrec ? type : CL_CLEAN;
 }
