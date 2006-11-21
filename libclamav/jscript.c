@@ -29,7 +29,7 @@
  * TODO:	Check the NGS code for vulnerabilities, leaks etc.
  * TODO:	Check the NGS code is thread safe
  */
-static	char	const	rcsid[] = "$Id: jscript.c,v 1.7 2006/11/19 08:29:14 njh Exp $";
+static	char	const	rcsid[] = "$Id: jscript.c,v 1.8 2006/11/21 10:46:00 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -375,6 +375,7 @@ run_js(const char *filename, const char *dir)
 	if(pthread_cond_timedwait(&cond, &mutex, &ts) == ETIMEDOUT) {
 		cli_warnmsg("Run away javascript stopped after %d seconds\n",
 			VM_TIMEOUT);
+		/* FIXME: should use pthread_cancel? */
 		pthread_kill(tid, SIGUSR1);
 	}
 	pthread_mutex_unlock(&mutex);
