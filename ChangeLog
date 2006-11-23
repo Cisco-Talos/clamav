@@ -1,3 +1,7 @@
+Thu Nov 23 09:47:13 GMT 2006 (njh)
+----------------------------------
+  * libclamav/jscript.c:	Improved the handling of runaway JS programs
+
 Thu Nov 23 01:05:30 CET 2006 (tk)
 ---------------------------------
   * libclamav: store db options in cl_engine for further reference,
@@ -10,7 +14,7 @@ Mon Nov 20 00:58:57 CET 2006 (tk)
 Sat Nov 18 22:44:37 GMT 2006 (njh)
 ----------------------------------
  * libclamav:	Don't implement the sleep function
- 		Handle DoS attacks on the JS VM by adding a timeout guarding
+		Handle DoS attacks on the JS VM by adding a timeout guarding
 			against infinite loops
 
 Sat Nov 18 21:46:10 CET 2006 (tk)
@@ -41,7 +45,7 @@ Sat Nov 11 20:09:07 GMT 2006 (njh)
 Fri Nov 10 22:41:11 GMT 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Fix compilation error when debug is enabled on BSD,
-  				bug 121
+				bug 121
 
 Fri Nov 10 20:36:09 GMT 2006 (njh)
 ----------------------------------
