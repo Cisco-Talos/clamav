@@ -1,3 +1,8 @@
+Thu Nov 23 01:05:30 CET 2006 (tk)
+---------------------------------
+  * libclamav: store db options in cl_engine for further reference,
+	       requested by Edvin (see bb#147)
+
 Mon Nov 20 00:58:57 CET 2006 (tk)
 ---------------------------------
   * libclamav: cache target file info in pattern matchers
