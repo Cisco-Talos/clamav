@@ -162,6 +162,7 @@ struct cl_engine {
     unsigned int refcount; /* reference counter */
     unsigned short ncore;
     unsigned short sdb;
+    unsigned int dboptions;
 
     /* Roots table */
     struct cli_matcher **root;

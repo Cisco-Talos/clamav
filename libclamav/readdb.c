@@ -477,7 +477,10 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
 static int cli_initengine(struct cl_engine **engine, unsigned int options)
 {
-    int rc;
+#ifdef CL_EXPERIMENTAL
+	int rc;
+#endif
+
 
     if(!*engine) {
 	cli_dbgmsg("Initializing the engine structure\n");
@@ -1320,6 +1323,8 @@ int cl_load(const char *path, struct cl_engine **engine, unsigned int *signo, un
 	cl_free(*engine);
 	return ret;
     }
+
+    (*engine)->dboptions = options;
 
     switch(sb.st_mode & S_IFMT) {
 	case S_IFREG: 
