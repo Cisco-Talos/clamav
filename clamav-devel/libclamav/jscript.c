@@ -29,7 +29,7 @@
  * TODO:	Check the NGS code for vulnerabilities, leaks etc.
  * TODO:	Check the NGS code is thread safe
  */
-static	char	const	rcsid[] = "$Id: jscript.c,v 1.8 2006/11/21 10:46:00 njh Exp $";
+static	char	const	rcsid[] = "$Id: jscript.c,v 1.9 2006/11/23 09:44:30 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -288,13 +288,6 @@ struct args {
 	int	result;
 };
 
-static void
-sigrecv(int sig)
-{
-	/* pthread_cond_broadcast(&cond); */
-	pthread_exit(NULL);	/* FIXME: interp isn't destroyed - mem leak? */
-}
-
 static void *
 js_thread(void *a)
 {
@@ -303,6 +296,7 @@ js_thread(void *a)
 	struct args *args = (struct args *)a;
 	const char *dir = args->dir;
 	const char *filename = args->filename;
+	int otype;
 
 	cli_dbgmsg("run_js(%s)\n", filename);
 
@@ -332,11 +326,17 @@ js_thread(void *a)
 
 	args->result = CL_EIO;	/* TODO: CL_TIMEOUT */
 
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &otype);
+
 	if(!js_eval_file(interp, filename)) {
 		cli_warnmsg("JS failed: %s\n", js_error_message(interp));
 		/*rc = CL_EIO;*/
 	}
 
+	/*
+	 * If a pthread_cancel() is issued exactly here, js_destroy_interp()
+	 * wouldn't be called, leading to a memory leak
+	 */
 	if(pthread_cond_broadcast(args->cond) < 0)
 		perror("pthread_cond_broadcast");
 
@@ -357,7 +357,6 @@ run_js(const char *filename, const char *dir)
 	struct timeval tp;
 	pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 	pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
-	void (*oldkill)(int);
 
 	args.filename = filename;
 	args.dir = dir;
@@ -370,17 +369,16 @@ run_js(const char *filename, const char *dir)
 	ts.tv_sec = tp.tv_sec + VM_TIMEOUT;
 	ts.tv_nsec = tp.tv_usec * 1000;
 
-	oldkill = signal(SIGUSR1, sigrecv);
 	pthread_mutex_lock(&mutex);
 	if(pthread_cond_timedwait(&cond, &mutex, &ts) == ETIMEDOUT) {
 		cli_warnmsg("Run away javascript stopped after %d seconds\n",
 			VM_TIMEOUT);
-		/* FIXME: should use pthread_cancel? */
-		pthread_kill(tid, SIGUSR1);
+		/*pthread_kill(tid, SIGUSR1);*/
+		if(pthread_cancel(tid) < 0)
+			perror("pthread_cancel");
 	}
 	pthread_mutex_unlock(&mutex);
 	pthread_join(tid, NULL);
-	signal(SIGUSR1, oldkill);
 
 	return args.result;
 }
