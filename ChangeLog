@@ -1,3 +1,8 @@
+Fri Nov 24 01:15:28 CET 2006 (tk)
+---------------------------------
+  * libclamav/matcher.c: minor code cleanup (bb#148), thanks to Christophe
+			 JAILLET <christophe.jaillet*wanadoo.fr>
+
 Thu Nov 23 09:47:13 GMT 2006 (njh)
 ----------------------------------
   * libclamav/jscript.c:	Improved the handling of runaway JS programs

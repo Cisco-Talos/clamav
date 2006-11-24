@@ -54,7 +54,7 @@ extern short cli_debug_flag;
 
 int cli_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cl_engine *engine, unsigned short ftype)
 {
-	int ret = CL_CLEAN, i, tid = 0;
+	int ret = CL_CLEAN, i;
 	struct cli_ac_data mdata;
 	struct cli_matcher *groot, *troot = NULL;
 #ifdef HAVE_NCORE
@@ -197,14 +197,12 @@ int cli_scanbuff(const unsigned char *buffer, unsigned int length, const char **
     groot = engine->root[0]; /* generic signatures */
 
     if(ftype) {
-	for(i = 0; i < CL_TARGET_TABLE_SIZE; i++) {
+	for(i = 1; i < CL_TARGET_TABLE_SIZE; i++) {
 	    if(targettab[i] == ftype) {
-		tid = i;
+		troot = engine->root[i];
 		break;
 	    }
 	}
-	if(tid)
-	    troot = engine->root[tid];
     }
 
     if(troot) {
@@ -407,7 +405,7 @@ int cli_validatesig(unsigned short ftype, const char *offstr, off_t fileoff, str
 int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short ftype, struct cli_matched_type **ftoffset)
 {
  	unsigned char *buffer, *buff, *endbl, *upt;
-	int ret = CL_CLEAN, type = CL_CLEAN, i, tid = 0, bytes;
+	int ret = CL_CLEAN, type = CL_CLEAN, i, bytes;
 	unsigned int buffersize, length, maxpatlen, shift = 0;
 	unsigned long int offset = 0;
 	struct cli_ac_data gdata, tdata;
@@ -654,14 +652,12 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
     groot = ctx->engine->root[0]; /* generic signatures */
 
     if(ftype) {
-	for(i = 0; i < CL_TARGET_TABLE_SIZE; i++) {
+	for(i = 1; i < CL_TARGET_TABLE_SIZE; i++) {
 	    if(targettab[i] == ftype) {
-		tid = i;
+		troot = ctx->engine->root[i];
 		break;
 	    }
 	}
-	if(tid)
-	    troot = ctx->engine->root[tid];
     }
 
     if(troot)
@@ -736,7 +732,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 		return CL_VIRUS;
 
 	} else if(otfrec && ret >= CL_TYPENO) {
-	    if(ret >= type)
+	    if(ret > type)
 		type = ret;
 	}
 
