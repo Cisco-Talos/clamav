@@ -2,7 +2,7 @@
 from popen2 import popen4;
 import sys;
 import os;
-out = popen4("clamscan/clamscan -d database --phish-scan-alldomains --debug "+sys.argv[1])[0]
+out = popen4("clamscan/clamscan -d database --phishing-strict-url-check --debug "+sys.argv[1])[0]
 lines = out.read().split("\n")
 PHISH_FOUND="Phishing found"
 URL_CHECK="Checking url"

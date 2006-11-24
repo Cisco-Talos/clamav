@@ -301,7 +301,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned in
 
 #ifdef CL_EXPERIMENTAL
     if(!cfgopt(copt,"PhishingScanURLs")->enabled)
-	options |= CL_SCAN_NOPHISHING;
+	dboptions |= CL_DB_NOPHISHING_URLS;
     if(cfgopt(copt,"PhishingStrictURLCheck")->enabled)
 	options |= CL_PHISH_NO_DOMAINLIST;
 #endif
