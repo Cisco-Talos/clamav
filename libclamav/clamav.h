@@ -71,6 +71,7 @@ extern "C"
 #define CL_DB_NCORE	    0x1
 #define CL_DB_NOPHISHING    0x2
 #define CL_DB_ACONLY	    0x4 /* WARNING: only for developers */
+#define CL_DB_NOPHISHING_URLS 0x8
 
 /* recommended db settings */
 #define CL_DB_STDOPT	    0x0
@@ -87,7 +88,6 @@ extern "C"
 #define CL_SCAN_MAILURL		0x80
 #define CL_SCAN_BLOCKMAX	0x100
 #define CL_SCAN_ALGO		0x200
-#define CL_SCAN_NOPHISHING      0x400
 #define CL_PHISH_NO_DOMAINLIST  0x800
 #define CL_SCAN_ELF		0x1000
 

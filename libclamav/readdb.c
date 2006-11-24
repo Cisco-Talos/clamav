@@ -478,7 +478,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 static int cli_initengine(struct cl_engine **engine, unsigned int options)
 {
 #ifdef CL_EXPERIMENTAL
-	int rc;
+	int ret;
 #endif
 
 
@@ -502,8 +502,9 @@ static int cli_initengine(struct cl_engine **engine, unsigned int options)
     }
 
 #ifdef CL_EXPERIMENTAL
-    if((rc = phishing_init(*engine)))
-	return rc;
+    if(!(options & CL_DB_NOPHISHING_URLS))
+	if((ret = phishing_init(*engine)))
+	    return ret;
 #endif
 
     return CL_SUCCESS;
@@ -1198,12 +1199,12 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
 	    skipped = 1;
 #ifdef CL_EXPERIMENTAL
     } else if(cli_strbcasestr(filename, ".wdb")) {
-	if(!(options & CL_SCAN_NOPHISHING))
+	if(!(options & CL_DB_NOPHISHING_URLS))
 	    ret = cli_loadwdb(fd, engine, options);
 	else
 	    skipped = 1;
     } else if(cli_strbcasestr(filename, ".pdb")) {
-	if(!(options & CL_SCAN_NOPHISHING))
+	if(!(options & CL_DB_NOPHISHING_URLS))
 	    ret = cli_loadpdb(fd, engine, options);
 	else
 	    skipped = 1;
