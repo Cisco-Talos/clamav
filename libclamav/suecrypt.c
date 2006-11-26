@@ -37,14 +37,6 @@
 ** (*) some versions or maybe only some samples
 */
 
-
-/*
-** TODO:
-**
-** needs performance tests
-**
-*/
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -64,9 +56,8 @@
 
 #define EC32(x) le32_to_host(x) /* Convert little endian to host */
 #define EC16(x) le16_to_host(x)
-#define VAALIGN(s) (((s)/0x1000+((s)%0x1000!=0))*0x1000)
 
-char *sudecrypt(int desc, size_t fsize, struct pe_image_section_hdr *section_hdr, uint16_t sects, char *buff, uint32_t bkey, uint32_t pkey, uint32_t e_lfanew) {
+char *sudecrypt(int desc, size_t fsize, struct cli_exe_section *sections, uint16_t sects, char *buff, uint32_t bkey, uint32_t pkey, uint32_t e_lfanew) {
   char *file, *hunk;
   uint32_t va,sz,key;
   int i, j;
@@ -110,8 +101,8 @@ char *sudecrypt(int desc, size_t fsize, struct pe_image_section_hdr *section_hdr
     if (!va) break;
     cli_dbgmsg("SUE: Hunk #%d RVA:%x size:%d\n", i, va, sz);
     for (j=0; j<sects; j++) {
-      if(!CLI_ISCONTAINED(EC32(section_hdr[j].VirtualAddress), EC32(section_hdr[j].SizeOfRawData), va, sz)) continue;
-      hunk=file+EC32(section_hdr[j].VirtualAddress)-va+EC32(section_hdr[j].PointerToRawData);
+      if(!CLI_ISCONTAINED(sections[j].rva, sections[j].rsz, va, sz)) continue;
+      hunk=file+sections[j].rva-va+sections[j].raw;
       while(sz>=4) {
 	cli_writeint32(hunk, cli_readint32(hunk)^key);
 	hunk+=4;

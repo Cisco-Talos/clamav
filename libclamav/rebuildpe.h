@@ -21,14 +21,8 @@
 #define __REBUILDPE_H
 
 #include "cltypes.h"
+#include "execs.h"
 
-struct SECTION {
-    uint32_t rva;
-    uint32_t vsz;
-    uint32_t raw;
-    uint32_t rsz;
-};
-
-char *rebuildpe(char *buffer, struct SECTION *sections, int sects, uint32_t base, uint32_t ep, uint32_t ResRva, uint32_t ResSize);
+int cli_rebuildpe(char *, struct cli_exe_section *, int, uint32_t, uint32_t, uint32_t, uint32_t, int);
 
 #endif

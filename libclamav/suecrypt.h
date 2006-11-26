@@ -24,7 +24,7 @@
 #include "cltypes.h"
 #include "rebuildpe.h"
 
-char *sudecrypt(int, size_t, struct pe_image_section_hdr *, uint16_t, char *, uint32_t, uint32_t, uint32_t);
+char *sudecrypt(int, size_t, struct cli_exe_section *, uint16_t, char *, uint32_t, uint32_t, uint32_t);
 
 #endif
 #endif

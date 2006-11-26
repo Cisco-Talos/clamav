@@ -21,6 +21,7 @@
 #define __YC_H
 
 #include "pe.h"
+#include "execs.h"
 #include "cltypes.h"
 
 int yc_decrypt(char *, unsigned int, struct pe_image_section_hdr *, unsigned int, uint32_t, int);

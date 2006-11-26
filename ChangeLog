@@ -1,3 +1,19 @@
+Sun Nov 26 23:04:20 CET 2006 (acab)
+-----------------------------------
+  * libclamav: New PE parsing model
+		- Accurate virtual and raw size and offset calculations
+		- Proper parsing of executables with
+		  weird/handcrafted/uncommon headers
+		- Proper handling (or skipping) of ghost sections at various
+		  places in the code
+		- Rebuild improvements for various unpackers
+		- Adjusted alignment on rebuilt executables
+		- Proper handling of out of sections offsets
+		- Broken exe detection now mimics the XPSP2 loader (*)
+		- Lots of misc improvements and fixes
+		(*) Except for SizeOfImage check which is still to be
+		implemented
+
 Fri Nov 24 02:01:48 CET 2006 (tk)
 ---------------------------------
   * libclamav: don't call phishing_init() if not needed (bb#147),
