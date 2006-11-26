@@ -1,3 +1,7 @@
+Sun Nov 26 23:28:59 CET 2006 (acab)
+-----------------------------------
+  * libclamav/pe.c: Stuff forgotten in my previous commit
+
 Sun Nov 26 23:04:20 CET 2006 (acab)
 -----------------------------------
   * libclamav: New PE parsing model
