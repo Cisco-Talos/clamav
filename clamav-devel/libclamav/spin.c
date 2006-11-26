@@ -57,6 +57,7 @@
 #include "cltypes.h"
 #include "pe.h"
 #include "rebuildpe.h"
+#include "execs.h"
 #include "others.h"
 #include "packlibs.h"
 
@@ -466,8 +467,8 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
   bitmap=bitman; /* save as a free() bitmap */
 
   if ( (ep = (char *) cli_malloc(blobsz)) != NULL ) {
-    struct SECTION *rebhlp;
-    if ( (rebhlp = (struct SECTION *) cli_malloc(sizeof(struct SECTION)*(sectcnt))) != NULL ) {
+    struct cli_exe_section *rebhlp;
+    if ( (rebhlp = (struct cli_exe_section *) cli_malloc(sizeof(struct cli_exe_section)*(sectcnt))) != NULL ) {
       char *to = ep;
       int retval = 0;
 
@@ -483,13 +484,7 @@ int unspin(char *src, int ssize, struct pe_image_section_hdr *sections, int sect
 	bitmap = bitmap >>1;
       }
 
-      if ( (to = rebuildpe(ep, rebhlp, sectcnt, 0x400000, 0x1000, 0, 0))) { /* can't be bothered fixing those values: the rebuilt exe is completely broken anyway. */
-	if (cli_writen(desc, to, 0x148+0x80+0x28*j+rebhlp[j-1].raw+rebhlp[j-1].rsz)==-1) {
-	  cli_dbgmsg("spin: Cannot write unpacked file\n");
-	  retval = 1;
-	}
-	free(to);
-      } else {
+      if (! cli_rebuildpe(ep, rebhlp, sectcnt, 0x400000, 0x1000, 0, 0, desc)) { /* can't be bothered fixing those values: the rebuilt exe is completely broken anyway. */
 	cli_dbgmsg("spin: Cannot write unpacked file\n");
 	retval = 1;
       }

@@ -47,7 +47,7 @@
 
 int unfsg_200(char *source, char *dest, int ssize, int dsize, uint32_t rva, uint32_t base, uint32_t ep, int file) {
   char *tsrc;
-  struct SECTION section; /* Yup, just one ;) */
+  struct cli_exe_section section; /* Yup, just one ;) */
   
   if ( cli_unfsg(source, dest, ssize, dsize, NULL, NULL) ) return -1;
   
@@ -55,13 +55,8 @@ int unfsg_200(char *source, char *dest, int ssize, int dsize, uint32_t rva, uint
   section.rsz = dsize;
   section.vsz = dsize;
   section.rva = rva;
-  if ( (tsrc = rebuildpe(dest, &section, 1, base, ep, 0, 0)) ) {
-    if (cli_writen(file, tsrc, 0x148+0x80+0x28+dsize)==-1) {
-      free(tsrc);
-      return 0;
-    }
-    free(tsrc);
-  } else {
+
+  if (!cli_rebuildpe(dest, &section, 1, base, ep, 0, 0, file)) {
     cli_dbgmsg("FSG: Rebuilding failed\n");
     return 0;
   }
@@ -69,7 +64,7 @@ int unfsg_200(char *source, char *dest, int ssize, int dsize, uint32_t rva, uint
 }
 
 
-int unfsg_133(char *source, char *dest, int ssize, int dsize, struct SECTION *sections, int sectcount, uint32_t base, uint32_t ep, int file) {
+int unfsg_133(char *source, char *dest, int ssize, int dsize, struct cli_exe_section *sections, int sectcount, uint32_t base, uint32_t ep, int file) {
   char *tsrc=source, *tdst=dest;
   int i, upd=1, offs=0, lastsz=dsize;
 
@@ -118,16 +113,9 @@ int unfsg_133(char *source, char *dest, int ssize, int dsize, struct SECTION *se
     cli_dbgmsg("FSG: .SECT%d RVA:%x VSize:%x ROffset: %x, RSize:% x\n", i, sections[i].rva, sections[i].vsz, sections[i].raw, sections[i].rsz);
   }
 
-  if ( (tsrc = rebuildpe(dest, sections, sectcount+1, base, ep, 0, 0)) ) {
-    if (cli_writen(file, tsrc, 0x148+0x80+0x28*(sectcount+1)+offs)==-1) {
-      free(tsrc);
-      return 0;
-    }
-    free(tsrc);
-  } else {
+  if (!cli_rebuildpe(dest, sections, sectcount+1, base, ep, 0, 0, file)) {
     cli_dbgmsg("FSG: Rebuilding failed\n");
     return 0;
   }
-
   return 1;
 }

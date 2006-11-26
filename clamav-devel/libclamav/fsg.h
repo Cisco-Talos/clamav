@@ -21,10 +21,10 @@
 #define __FSG_H
 
 #include "cltypes.h"
-#include "rebuildpe.h"
+#include "execs.h"
 
 int unfsg_200(char *, char *, int, int, uint32_t, uint32_t, uint32_t, int);
-int unfsg_133(char *, char *, int , int, struct SECTION *, int, uint32_t, uint32_t, int);
+int unfsg_133(char *, char *, int , int, struct cli_exe_section *, int, uint32_t, uint32_t, int);
 
 #endif
 

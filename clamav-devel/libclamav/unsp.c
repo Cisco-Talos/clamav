@@ -116,6 +116,7 @@ nsp1:00435A5A                 push    8000h
 #include "clamav.h"
 #include "others.h"
 #include "rebuildpe.h"
+#include "execs.h"
 #include "unsp.h"
 
 
@@ -126,7 +127,7 @@ uint32_t unspack(char *start_of_stuff, char *dest, cli_ctx *ctx, uint32_t rva, u
   uint16_t *table;
   char *dst = dest;
   char *src = start_of_stuff+0xd;
-  struct SECTION section;
+  struct cli_exe_section section;
   
   if (c>=0xe1) return 1;
 
@@ -162,14 +163,7 @@ uint32_t unspack(char *start_of_stuff, char *dest, cli_ctx *ctx, uint32_t rva, u
   section.rsz = dsize;
   section.vsz = dsize;
   section.rva = rva;
-  if ( (src = rebuildpe(dest, &section, 1, base, ep, 0, 0)) ) {
-    if (cli_writen(file, src, 0x148+0x80+0x28+dsize)!=-1) {
-      free(src);
-      return 0;
-    }
-    free(src);
-  }
-  return 1;
+  return !cli_rebuildpe(dest, &section, 1, base, ep, 0, 0, file);
 }
 
 

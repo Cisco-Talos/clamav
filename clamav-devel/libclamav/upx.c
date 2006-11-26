@@ -49,6 +49,9 @@
 #include "cltypes.h"
 #include "others.h"
 
+#define PEALIGN(o,a) (((a))?(((o)/(a))*(a)):(o))
+#define PESALIGN(o,a) (((a))?(((o)/(a)+((o)%(a)!=0))*(a)):(o))
+
 #define HEADERS "\
 \x4D\x5A\x90\x00\x02\x00\x00\x00\x04\x00\x0F\x00\xFF\xFF\x00\x00\
 \xB0\x00\x00\x00\x00\x00\x00\x00\x40\x00\x1A\x00\x00\x00\x00\x00\
@@ -71,7 +74,7 @@ int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32_t upx0
 {
   char *imports, *sections, *pehdr, *newbuf;
   int sectcnt, upd=1;
-  uint32_t realstuffsz;
+  uint32_t realstuffsz, valign;
   uint32_t foffset=0xd0+0xf8;
 
   if((dst == NULL) || (src == NULL))
@@ -109,7 +112,7 @@ int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32_t upx0
     return 0;
   }
   
-  if (! cli_readint32(pehdr+0x38)) {
+  if (!(valign=cli_readint32(pehdr+0x38))) {
     cli_dbgmsg("UPX: Cant align to a NULL bound - giving up rebuild\n");
     return 0;
   }
@@ -120,7 +123,7 @@ int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32_t upx0
     return 0;
   }
   
-  foffset+=0x28*sectcnt;
+  foffset = PESALIGN(foffset+0x28*sectcnt, valign);
   
   if (!CLI_ISCONTAINED(dst, *dsize, sections, 0x28*sectcnt)) {
     cli_dbgmsg("UPX: Not enough space for all sects - giving up rebuild\n");
@@ -128,11 +131,8 @@ int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32_t upx0
   }
   
   for (upd = 0; upd <sectcnt ; upd++) {
-    uint32_t vsize=cli_readint32(sections+8)-1;
-    uint32_t rsize=cli_readint32(sections+16);
-    uint32_t urva=cli_readint32(sections+12);
-    
-    vsize=(((vsize/0x1000)+1)*0x1000); /* FIXME: get bounds from header */
+    uint32_t vsize=PESALIGN(cli_readint32(sections+8), valign);
+    uint32_t urva=PEALIGN(cli_readint32(sections+12), valign);
     
     /* Within bounds ? */
     if (!CLI_ISCONTAINED(upx0, realstuffsz, urva, vsize)) {
@@ -140,28 +140,19 @@ int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32_t upx0
       return 0;
     }
     
-    /* Rsize -gt Vsize ? */
-    if ( rsize > vsize ) {
-      cli_dbgmsg("UPX: Raw size for sect %d is greater than virtual (%x / %x) - giving up rebuild\n", upd, rsize, vsize);
-      return 0;
-    }
-    
-    /* Am i been fooled? There are better ways ;) */
-    if ( rsize+4 < vsize && cli_readint32(dst+urva-upx0+rsize) ) {
-      cli_dbgmsg("UPX: Am i been fooled? - giving up rebuild\n", upd);
-      return 0;
-    }
-    
     cli_writeint32(sections+8, vsize);
+    cli_writeint32(sections+12, urva);
+    cli_writeint32(sections+16, vsize);
     cli_writeint32(sections+20, foffset);
-    foffset+=rsize;
+    foffset+=vsize;
     
     sections+=0x28;
   }
 
   cli_writeint32(pehdr+8, 0x4d414c43);
+  cli_writeint32(pehdr+0x3c, valign);
 
-  if (!(newbuf = (char *) cli_malloc(foffset))) {
+  if (!(newbuf = (char *) cli_calloc(foffset, sizeof(char)))) {
     cli_dbgmsg("UPX: malloc failed - giving up rebuild\n", upd);
     return 0;
   }
@@ -177,7 +168,7 @@ int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32_t upx0
   /* CBA restoring the imports they'll look different from the originals anyway... */
   /* ...and yeap i miss the icon too :P */
 
-  if (foffset > *dsize) {
+  if (foffset > *dsize + 8192) {
     cli_dbgmsg("UPX: wrong raw size - giving up rebuild\n");
     return 0;
   }

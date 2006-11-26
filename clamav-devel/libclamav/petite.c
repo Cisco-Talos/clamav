@@ -54,6 +54,7 @@
 #include "cltypes.h"
 #include "pe.h"
 #include "rebuildpe.h"
+#include "execs.h"
 #include "others.h"
 
 #define EC32(x) le32_to_host(x) /* Convert little endian to host */
@@ -81,7 +82,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
   char *packed = NULL;
   uint32_t thisrva=0, bottom = 0, enc_ep=0, irva=0, workdone=0, grown=0x355, skew=0x35;
   int j = 0, oob, mangled = 0, check4resources=0;
-  struct SECTION *usects = NULL;
+  struct cli_exe_section *usects = NULL;
   void *tmpsct = NULL;
 
   /*
@@ -111,7 +112,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
     if ( ! CLI_ISCONTAINED(buf, bufsz, packed, 4)) {
       if (usects)
 	free(usects);
-      return -1;
+      return 1;
     }
     srva = cli_readint32(packed);
 
@@ -120,7 +121,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
       int t, upd = 1;
 
       if ( j <= 0 ) /* Some non petite compressed files will get here */
-	return -1;
+	return 1;
     
       /* Select * from sections order by rva asc; */
       while ( upd ) {
@@ -202,10 +203,12 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
 	} else 
 	  workdone = 1;
 	enc_ep = pep+5+enc_ep;
-	if ( workdone == 1 )
+	if ( workdone == 1 ) {
 	  cli_dbgmsg("Petite: Old EP: %x\n", enc_ep);
-	else
-	  cli_dbgmsg("Petite: In troubles while attempting to decrypt old EP\n");
+	} else {
+	  enc_ep = usects[0].rva;
+	  cli_dbgmsg("Petite: In troubles while attempting to decrypt old EP, using bogus %x\n", enc_ep);
+	}
       }
 
       /* Let's compact data */
@@ -219,18 +222,13 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
       cli_dbgmsg("Petite: Sections dump:\n");
       for (t = 0; t < j ; t++)
 	cli_dbgmsg("Petite: .SECT%d RVA:%x VSize:%x ROffset: %x, RSize:% x\n", t, usects[t].rva, usects[t].vsz, usects[t].raw, usects[t].rsz);
-      if ( (ssrc = rebuildpe(buf, usects, j, Imagebase, enc_ep, ResRva, ResSize)) ) {
-	if (cli_writen(desc, ssrc, 0x148+0x80+0x28*j+usects[j-1].raw+usects[j-1].rsz)==-1) {
-	  free(ssrc);
-	  free(usects);
-	  return -1;
-	}
-	free(ssrc);
-      } else
+      if (! cli_rebuildpe(buf, usects, j, Imagebase, enc_ep, ResRva, ResSize, desc)) {
 	cli_dbgmsg("Petite: Rebuilding failed\n");
-
+	free(usects);
+	return 1;
+      }
       free(usects);
-      return workdone;
+      return 0;
     }
 
 
@@ -247,7 +245,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
       if ( ! CLI_ISCONTAINED(buf, bufsz, packed+4, 8) ) {
 	if (usects)
 	  free(usects);
-	return -1;
+	return 1;
       }
       /* Save the end of current packed section for later use */
       bottom = cli_readint32(packed+8) + 4;
@@ -257,7 +255,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
       if ( !CLI_ISCONTAINED(buf, bufsz, ssrc, size*4) || !CLI_ISCONTAINED(buf, bufsz, ddst, size*4) ) {
 	if (usects)
 	  free(usects);
-	return -1;
+	return 1;
       }
 
       /* Copy packed data to the end of the current packed section */
@@ -273,26 +271,26 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
       if ( ! CLI_ISCONTAINED(buf, bufsz, packed+4, 8)) {
 	if (usects)
 	  free(usects);
-	return -1;
+	return 1;
       }
 
       size = cli_readint32(packed+4); /* How many bytes to unpack */
       thisrva=cli_readint32(packed+8); /* RVA of the original section */
       packed += 0x10;
 
-      if ( j >= 99 ) {
+      if ( j >= 96 ) {
 	cli_dbgmsg("Petite: maximum number of sections exceeded, giving up.\n");
 	free(usects);
-	return -1;
+	return 1;
       }
       /* Alloc 1 more struct */
-      if ( ! (tmpsct = cli_realloc(usects, sizeof(struct SECTION) * (j+1))) ) {
+      if ( ! (tmpsct = cli_realloc(usects, sizeof(struct cli_exe_section) * (j+1))) ) {
 	if (usects)
 	  free(usects);
-	return -1;
+	return 1;
       }
 
-      usects = (struct SECTION *) tmpsct;
+      usects = (struct cli_exe_section *) tmpsct;
       /* Save section spex for later rebuilding */
       usects[j].rva = thisrva;
       usects[j].rsz = size;
@@ -352,7 +350,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
 
       if ( !CLI_ISCONTAINED(buf, bufsz, ssrc, 1) || !CLI_ISCONTAINED(buf, bufsz, ddst, 1)) {
 	free(usects);
-	return -1;
+	return 1;
       }
 
       size--;
@@ -365,12 +363,12 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
 	oob = doubledl(&ssrc, &mydl, buf, bufsz);
 	if ( oob == -1 ) {
 	  free(usects);
-	  return -1;
+	  return 1;
 	}
 	if (!oob) {
 	  if ( !CLI_ISCONTAINED(buf, bufsz, ssrc, 1) || !CLI_ISCONTAINED(buf, bufsz, ddst, 1) ) {
 	    free(usects);
-	    return -1;
+	    return 1;
 	  }
 	  *ddst++ = (char)((*ssrc++)^(size & 0xff));
 	  size--;
@@ -380,12 +378,12 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
 	  while (1) {
 	    if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 ) {
 	      free(usects);
-	      return -1;
+	      return 1;
 	    }
 	    backbytes = backbytes*2 + oob;
 	    if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 ) {
 	      free(usects);
-	      return -1;
+	      return 1;
 	    }
 	    if (!oob)
 	      break;
@@ -396,7 +394,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
 	    do {
 	      if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 ) {
 		free(usects);
-		return -1;
+		return 1;
 	      }
 	      backbytes = backbytes*2 + oob;
 	      backsize--;
@@ -411,12 +409,12 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
 
 	  if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 ) {
 	    free(usects);
-	    return -1;
+	    return 1;
 	  }
 	  backsize = backsize*2 + oob;
 	  if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 ) {
 	    free(usects);
-	    return -1;
+	    return 1;
 	  }
 	  backsize = backsize*2 + oob;
 	  if (!backsize) {
@@ -424,12 +422,12 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
 	    while (1) {
 	      if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 ) {
 		free(usects);
-		return -1;
+		return 1;
 	      }
 	      backsize = backsize*2 + oob;
 	      if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 ) {
 		free(usects);
-		return -1;
+		return 1;
 	      }
 	      if (!oob)
 		break;
@@ -440,7 +438,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
 	  size-=backsize;
 	  if(!CLI_ISCONTAINED(buf, bufsz, ddst, backsize) || !CLI_ISCONTAINED(buf, bufsz, ddst+backbytes, backsize)) {
 	    free(usects);
-	    return -1;
+	    return 1;
 	  }
 	  while(backsize--) {
 	    *ddst=*(ddst+backbytes);

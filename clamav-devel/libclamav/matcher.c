@@ -301,7 +301,7 @@ static off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd
 
     } else if(info->status == 1 && offstr[0] == 'S') {
 
-	if(!strncmp(offstr, "SL", 2)) {
+	if(!strncmp(offstr, "SL", 2) && info->exeinfo.section[info->exeinfo.nsections - 1].rsz) {
 
 	    if(sscanf(offstr, "SL+%lu", &offset) != 1) {
 		*ret = -1;
@@ -317,7 +317,7 @@ static off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd
 		return 0;
 	    }
 
-	    if(n >= info->exeinfo.nsections) {
+	    if(n >= info->exeinfo.nsections || !info->exeinfo.section[n].rsz) {
 		*ret = -1;
 		return 0;
 	    }
