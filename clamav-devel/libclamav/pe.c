@@ -631,6 +631,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	sname[8] = 0;
 	exe_sections[i].rva = PEALIGN(EC32(section_hdr[i].VirtualAddress), valign);
 	exe_sections[i].vsz = PESALIGN(EC32(section_hdr[i].VirtualSize), valign);
+	exe_sections[i].uvsz = EC32(section_hdr[i].VirtualSize);
 	exe_sections[i].raw = PEALIGN(EC32(section_hdr[i].PointerToRawData), falign);
 	exe_sections[i].rsz = PESALIGN(EC32(section_hdr[i].SizeOfRawData), falign);
 	if (exe_sections[i].rsz && fsize>exe_sections[i].raw && !CLI_ISCONTAINED(0, (uint32_t) fsize, exe_sections[i].raw, exe_sections[i].rsz))
@@ -856,7 +857,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    uint32_t rsize, vsize;
 
 	rsize = exe_sections[nsections - 1].rsz;
-	vsize = exe_sections[nsections - 1].vsz;
+	vsize = exe_sections[nsections - 1].uvsz;
 
 	if(rsize >= 0x612c && vsize >= 0x612c && ((vsize & 0xff) == 0xec)) {
 		int bw = rsize < 0x7000 ? rsize : 0x7000;
