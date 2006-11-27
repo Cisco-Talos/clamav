@@ -25,6 +25,7 @@
 struct cli_exe_section {
     uint32_t rva;
     uint32_t vsz;
+    uint32_t uvsz; /* unaligned vsz */
     uint32_t raw;
     uint32_t rsz;
 };
