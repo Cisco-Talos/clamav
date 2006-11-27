@@ -2547,12 +2547,6 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 
     if(!pe_plus) { /* PE */
 	cli_dbgmsg("File format: PE\n");
-
-	if(cli_readn(desc, &optional_hdr32, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32)) {
-	    cli_dbgmsg("Can't read optional file header\n");
-	    return -1;
-	}
-
 	if (EC16(file_hdr.SizeOfOptionalHeader)!=sizeof(struct pe_image_optional_hdr32)) {
 	    /* Seek to the end of the long header */
 	    lseek(desc, (EC16(file_hdr.SizeOfOptionalHeader)-sizeof(struct pe_image_optional_hdr32)), SEEK_CUR);

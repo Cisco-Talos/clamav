@@ -1,3 +1,7 @@
+Mon Nov 27 16:51:43 CET 2006 (acab)
+-----------------------------------
+  * libclamav/pe.c: Fix merge bug in new PE model
+
 Mon Nov 27 11:37:18 CET 2006 (tk)
 ---------------------------------
   * libclamav/pe.c: use unaligned section's virtual size in Magistr detection
