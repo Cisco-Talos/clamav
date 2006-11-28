@@ -111,6 +111,13 @@ The recommended value is 60.
 Machines on the LAN, the local host, and machines that are our MX peers are
 never blacklisted.
 .TP
+\fB\f-K, \-\-dont-blacklist=IP\fR
+Instructs clamav-milter to refrain from blacklisting an IP address. This
+is useful for sites that receive email from upstream servers that are either
+untrusted or have no virus. Without this option many false positives could
+occur. This scenario often happens when the upstream server belongs to an
+ISP that may not have AV software.
+.TP
 \fB-l, \-\-local\fR
 Also scan messages sent from LAN. You probably want this especially if
 your LAN is populated by machines running Windows or DOS.
