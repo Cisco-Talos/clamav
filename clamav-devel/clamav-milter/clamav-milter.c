@@ -24,9 +24,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.299 2006/11/11 20:08:36 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.300 2006/11/28 14:31:12 njh Exp $";
 
-#define	CM_VERSION	"devel-101106"
+#define	CM_VERSION	"devel-271106"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -550,6 +550,7 @@ help(void)
 	puts(_("\t--config-file=FILE\t-c FILE\tRead configuration from FILE."));
 	puts(_("\t--debug\t\t\t-D\tPrint debug messages."));
 	puts(_("\t--detect-forged-local-address\t-L\tReject mails that claim to be from us."));
+	puts(_("\t--dont-blacklist\t-K\tDon't blacklist a given IP."));
 	puts(_("\t--dont-scan-on-error\t-d\tPass e-mails through unscanned if a system error occurs."));
 	puts(_("\t--dont-wait\t\t\tAsk remote end to resend if max-children exceeded."));
 	puts(_("\t--external\t\t-e\tUse an external scanner (usually clamd)."));
@@ -593,6 +594,7 @@ main(int argc, char **argv)
 	extern char *optarg;
 	int i, Bflag = 0, server = 0;
 	char *cfgfile = NULL;
+	const char *wont_blacklist = NULL;
 	const struct cfgstruct *cpt;
 	char version[VERSION_LENGTH + 1];
 	pthread_t tid;
@@ -652,9 +654,9 @@ main(int argc, char **argv)
 		struct cidr_net *net;
 		struct in_addr ignoreIP;
 #ifdef	CL_DEBUG
-		const char *args = "a:AbB:c:dDefF:I:k:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:x:0:1:2";
+		const char *args = "a:AbB:c:dDefF:I:k:K:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:x:0:1:2";
 #else
-		const char *args = "a:AbB:c:dDefF:I:k:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:0:1:2";
+		const char *args = "a:AbB:c:dDefF:I:k:K:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:0:1:2";
 #endif
 
 		static struct option long_options[] = {
@@ -675,6 +677,9 @@ main(int argc, char **argv)
 			},
 			{
 				"detect-forged-local-address", 0, NULL, 'L'
+			},
+			{
+				"dont-blacklist", 1, NULL, 'K'
 			},
 			{
 				"dont-scan-on-error", 0, NULL, 'd'
@@ -835,6 +840,9 @@ main(int argc, char **argv)
 				break;
 			case 'k':	/* blacklist time */
 				blacklist_time = atoi(optarg);
+				break;
+			case 'K':	/* don't black list given IP */
+				wont_blacklist = optarg;
 				break;
 			case 'I':	/* --ignore, -I hostname */
 				/*
@@ -1843,6 +1851,11 @@ main(int argc, char **argv)
 		if(blacklist)
 			/* We must never blacklist ourself */
 			tableInsert(blacklist, "127.0.0.1", 0);
+
+		if(wont_blacklist) {
+			logg(_("^Won't blacklist %s\n"), wont_blacklist);
+			(void)tableInsert(blacklist, wont_blacklist, 0);
+		}
 	}
 
 	cli_dbgmsg("Started: %s\n", clamav_version);
@@ -2503,14 +2516,19 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		}
 	}
 	if(isBlacklisted(remoteIP)) {
-		logg("Rejected connexion from blacklisted IP %s\n", remoteIP);
+		char mess[128];
 
 		/*
 		 * TODO: Option to greylist rather than blacklist, by sending
 		 *	a try again code
 		 * TODO: state *which* virus
+		 * TODO: add optional list of IP addresses that won't be
+		 *	blacklisted
 		 */
-		smfi_setreply(ctx, "550", "5.7.1", _("Your IP is blacklisted because your machine is infected with a virus"));
+		logg("Rejected connexion from blacklisted IP %s\n", remoteIP);
+
+		snprintf(mess, sizeof(mess), _("%s is blacklisted because your machine is infected with a virus"), remoteIP);
+		smfi_setreply(ctx, "550", "5.7.1", mess);
 		broadcast(_("Blacklisted IP detected"));
 
 		/*

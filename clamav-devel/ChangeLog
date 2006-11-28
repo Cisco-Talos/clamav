@@ -1,3 +1,7 @@
+Tue Nov 28 14:31:58 GMT 2006 (njh)
+----------------------------------
+  * clamav-milter:	Added dont-blacklist=IP option
+
 Tue Nov 28 01:47:08 CET 2006 (tk)
 ---------------------------------
   * libclamav/pe.c: detect damaged infections of Magistr
