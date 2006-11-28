@@ -634,6 +634,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	exe_sections[i].uvsz = EC32(section_hdr[i].VirtualSize);
 	exe_sections[i].raw = PEALIGN(EC32(section_hdr[i].PointerToRawData), falign);
 	exe_sections[i].rsz = PESALIGN(EC32(section_hdr[i].SizeOfRawData), falign);
+	exe_sections[i].ursz = EC32(section_hdr[i].SizeOfRawData);
 	if (exe_sections[i].rsz && fsize>exe_sections[i].raw && !CLI_ISCONTAINED(0, (uint32_t) fsize, exe_sections[i].raw, exe_sections[i].rsz))
 	    exe_sections[i].rsz = fsize - exe_sections[i].raw;
 	
@@ -854,18 +855,22 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
     /* W32.Magistr.A/B */
     if(SCAN_ALGO && !dll && (EC32(section_hdr[nsections - 1].Characteristics) & 0x80000000)) {
-	    uint32_t rsize, vsize;
+	    uint32_t rsize, vsize, dam = 0;
 
-	rsize = exe_sections[nsections - 1].rsz;
 	vsize = exe_sections[nsections - 1].uvsz;
+	rsize = exe_sections[nsections - 1].rsz;
+	if(rsize < exe_sections[nsections - 1].ursz) {
+	    rsize = exe_sections[nsections - 1].ursz;
+	    dam = 1;
+	}
 
-	if(rsize >= 0x612c && vsize >= 0x612c && ((vsize & 0xff) == 0xec)) {
+	if(vsize >= 0x612c && rsize >= 0x612c && ((vsize & 0xff) == 0xec)) {
 		int bw = rsize < 0x7000 ? rsize : 0x7000;
 
 	    lseek(desc, exe_sections[nsections - 1].raw + rsize - bw, SEEK_SET);
 	    if(cli_readn(desc, buff, 4096) == 4096) {
 		if(cli_memstr(buff, 4091, "\xe8\x2c\x61\x00\x00", 5)) {
-		    *ctx->virname = "W32.Magistr.A";
+		    *ctx->virname = dam ? "W32.Magistr.A.dam" : "W32.Magistr.A";
 		    free(section_hdr);
 		    free(exe_sections);
 		    return CL_VIRUS;
@@ -878,7 +883,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    lseek(desc, exe_sections[nsections - 1].raw + rsize - bw, SEEK_SET);
 	    if(cli_readn(desc, buff, 4096) == 4096) {
 		if(cli_memstr(buff, 4091, "\xe8\x04\x72\x00\x00", 5)) {
-		    *ctx->virname = "W32.Magistr.B";
+		    *ctx->virname = dam ? "W32.Magistr.B.dam" : "W32.Magistr.B";
 		    free(section_hdr);
 		    free(exe_sections);
 		    return CL_VIRUS;
