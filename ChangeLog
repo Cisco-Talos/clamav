@@ -1,3 +1,8 @@
+Wed Nov 29 16:04:18 GMT 2006 (njh)
+----------------------------------
+  * libclamav/pst.c:	Handle "all day appointment flag" patch posted to
+  				the libpst mailing list
+
 Tue Nov 28 14:31:58 GMT 2006 (njh)
 ----------------------------------
   * clamav-milter:	Added dont-blacklist=IP option
@@ -323,7 +328,7 @@ Wed Oct 25 12:40:10 CEST 2006 (acab)
 Wed Oct 25 04:30:36 CEST 2006 (acab)
 ------------------------------------
   * libclamav: add support for NsPack (--enable-experimental)
-  
+
 Mon Oct 23 17:48:39 CEST 2006 (tk)
 ----------------------------------
   * libclamav: improve support for NodalCore SDK 3.3
