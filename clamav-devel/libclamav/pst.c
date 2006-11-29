@@ -36,7 +36,7 @@
  * TODO: Remove the vcard handling
  * FIXME: The code does little error checking of OOM scenarios
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.34 2006/10/28 10:25:23 njh Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.35 2006/11/29 16:03:57 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -3583,6 +3583,17 @@ int32_t _pst_process(pst_num_array *list , pst_item *item) {
 	  cli_dbgmsg("Anniversary\n"); break;
 	case PST_APP_LABEL_PHONE_CALL:
 	  cli_dbgmsg("Phone Call\n"); break;
+	}
+	break;
+      case 0x0821: // All day appointment flag
+	cli_dbgmsg("All day flag - "));
+	MALLOC_APPOINTMENT(item);
+	if(*(int16_t *)list->items[x]->data != 0) {
+		cli_dbgmsg("True\n");
+		item->appointement->all_day = 1;
+	} else {
+		cli_dbgmsg("False\n");
+		item->appointement->all_day = 0;
 	}
 	break;
       case 0x8234: // TimeZone as String
