@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.360 2006/11/24 22:23:16 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.361 2006/11/30 09:35:22 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -5311,8 +5311,8 @@ do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx 
 			 * Scan in memory, faster but is open to DoS attacks
 			 * when many nested levels are involved.
 			 */
-			body = parseEmailHeaders(aMessage, mctx->rfc821Table,
-				TRUE);
+			body = parseEmailHeaders(aMessage, mctx->rfc821Table);
+
 			/*
 			 * We've fininished with the
 			 * original copy of the message,
@@ -5325,8 +5325,8 @@ do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx 
 			messageDestroy(messages[i]);
 			messages[i] = NULL;
 			if(body) {
-				messageSetCTX(body, ctx);
-				rc = parseEmailBody(body, NULL, mctx, recursion_level + 1);
+				messageSetCTX(body, mctx->ctx);
+				*rc = parseEmailBody(body, NULL, mctx, recursion_level + 1);
 				if(messageContainsVirus(body))
 					*rc = 3;
 				messageDestroy(body);
