@@ -1,3 +1,7 @@
+Thu Nov 30 09:35:46 GMT 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Fix compilation errors when SAVE_TO_DISC is not defined
+
 Wed Nov 29 16:04:18 GMT 2006 (njh)
 ----------------------------------
   * libclamav/pst.c:	Handle "all day appointment flag" patch posted to
