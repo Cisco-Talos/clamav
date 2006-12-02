@@ -36,7 +36,7 @@
  * TODO: Remove the vcard handling
  * FIXME: The code does little error checking of OOM scenarios
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.35 2006/11/29 16:03:57 njh Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.36 2006/12/02 17:44:05 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -334,6 +334,7 @@ typedef struct _pst_item_appointment {
   char *timezonestring;
   int32_t showas;
   int32_t label;
+  unsigned int all_day:1;
 } pst_item_appointment;
 
 typedef struct _pst_item {
@@ -3586,14 +3587,14 @@ int32_t _pst_process(pst_num_array *list , pst_item *item) {
 	}
 	break;
       case 0x0821: // All day appointment flag
-	cli_dbgmsg("All day flag - "));
+	cli_dbgmsg("All day flag - ");
 	MALLOC_APPOINTMENT(item);
 	if(*(int16_t *)list->items[x]->data != 0) {
 		cli_dbgmsg("True\n");
-		item->appointement->all_day = 1;
+		item->appointment->all_day = 1;
 	} else {
 		cli_dbgmsg("False\n");
-		item->appointement->all_day = 0;
+		item->appointment->all_day = 0;
 	}
 	break;
       case 0x8234: // TimeZone as String
