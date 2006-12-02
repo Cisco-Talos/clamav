@@ -168,7 +168,7 @@
 /* Define to 1 if you have a working `mmap' system call. */
 #undef HAVE_MMAP
 
-/* hardware acceleration */
+/* Support for NodalCore acceleration */
 #undef HAVE_NCORE
 
 /* Define to 1 if you have the <ndir.h> header file. */

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2006 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,13 +17,18 @@
  *  MA 02110-1301, USA.
  */
 
-#ifndef __READDB_H
-#define __READDB_H
+#ifndef __MATCHER_NCORE_H
+#define __MATCHER_NCORE_H
 
 #include "clamav.h"
+#include "md5.h"
 
-int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, unsigned short type, char *offset, unsigned short target);
+int cli_ncore_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_engine *engine, unsigned short ftype, unsigned int *targettab);
 
-int cli_initengine(struct cl_engine **engine, unsigned int options);
+int cli_ncore_scandesc(int desc, cli_ctx *ctx, unsigned short ftype, int *cont, unsigned int *targettab, MD5_CTX *md5ctx);
+
+int cli_ncore_load(const char *filename, struct cl_engine **engine, unsigned int *signo, unsigned int options);
+
+void cli_ncore_unload(struct cl_engine *engine);
 
 #endif
