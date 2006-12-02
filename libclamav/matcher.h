@@ -27,6 +27,7 @@
 #include "others.h"
 #include "execs.h"
 #include "cltypes.h"
+#include "md5.h"
 
 #define CL_TARGET_TABLE_SIZE 7
 
@@ -41,5 +42,9 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 int cli_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cl_engine *engine, unsigned short ftype);
 
 int cli_validatesig(unsigned short ftype, const char *offstr, off_t fileoff, struct cli_target_info *info, int desc, const char *virname);
+
+struct cli_md5_node *cli_vermd5(const unsigned char *md5, const struct cl_engine *engine);
+
+off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, unsigned short ftype, int *ret);
 
 #endif

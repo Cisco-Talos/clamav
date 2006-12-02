@@ -79,7 +79,7 @@ static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 #ifdef HAVE_NCORE
-#include <sn_sigscan/sn_sigscan.h>
+#include "matcher-ncore.h"
 #endif
 
 
@@ -475,7 +475,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     return CL_SUCCESS;
 }
 
-static int cli_initengine(struct cl_engine **engine, unsigned int options)
+int cli_initengine(struct cl_engine **engine, unsigned int options)
 {
 #ifdef CL_EXPERIMENTAL
 	int ret;
@@ -712,7 +712,7 @@ static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 		break;
 	    }
 
-	    if(atoi(pt) > cl_retflevel()) {
+	    if((unsigned int) atoi(pt) > cl_retflevel()) {
 		cli_dbgmsg("Signature for %s not loaded (required f-level: %d)\n", virname, atoi(pt));
 		sigs--;
 		free(virname);
@@ -730,7 +730,7 @@ static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 		    break;
 		}
 
-		if(atoi(pt) < cl_retflevel()) {
+		if((unsigned int) atoi(pt) < cl_retflevel()) {
 		    sigs--;
 		    free(virname);
 		    free(pt);
@@ -1100,37 +1100,6 @@ static int cli_loadmd(FILE *fd, struct cl_engine **engine, unsigned int *signo, 
     return CL_SUCCESS;
 }
 
-#ifdef HAVE_NCORE
-static int cli_loadncdb(const char *filename, struct cl_engine **engine, unsigned int *signo, unsigned int options)
-{
-	int ret = 0;
-	unsigned int newsigs = 0;
-
-
-    if((ret = cli_initengine(engine, options))) {
-	cl_free(*engine);
-	return ret;
-    }
-
-    if((ret = sn_sigscan_initdb(&(*engine)->ncdb)) < 0) {
-	cli_errmsg("cli_loadncdb: error initializing the matcher: %d\n", ret);
-	cl_free(*engine);
-	return CL_ENCINIT;
-    }
-
-    (*engine)->ncore = 1;
-
-    if((ret = sn_sigscan_loaddb((*engine)->ncdb, filename, 0, &newsigs)) < 0) {
-	cli_errmsg("cli_loadncdb: can't load hardware database: %d\n", ret);
-	cl_free(*engine);
-	return CL_ENCLOAD;
-    }
-
-    *signo += newsigs;
-    return CL_SUCCESS;
-}
-#endif /* HAVE_NCORE */
-
 static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo, unsigned int options);
 
 static int cli_load(const char *filename, struct cl_engine **engine, unsigned int *signo, unsigned int options)
@@ -1193,7 +1162,7 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
     } else if(cli_strbcasestr(filename, ".ncdb")) {
 #ifdef HAVE_NCORE
 	if(options & CL_DB_NCORE)
-	    ret = cli_loadncdb(filename, engine, signo, options);
+	    ret = cli_ncore_load(filename, engine, signo, options);
 	else
 #endif
 	    skipped = 1;
@@ -1445,7 +1414,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	} result;
 #endif
 	struct stat sb;
-	int i, found;
+	unsigned int i, found;
 	char *fname;
 
 
@@ -1566,9 +1535,6 @@ void cl_free(struct cl_engine *engine)
 	struct cli_md5_node *md5pt, *md5h;
 	struct cli_meta_node *metapt, *metah;
 	struct cli_matcher *root;
-#ifdef HAVE_NCORE
-	int ret;
-#endif
 
 
     if(!engine) {
@@ -1593,11 +1559,8 @@ void cl_free(struct cl_engine *engine)
 #endif
 
 #ifdef HAVE_NCORE
-    if(engine->ncore) {
-	if((ret = sn_sigscan_closedb(engine->ncdb)) < 0) {
-	    cli_errmsg("cl_free: can't close hardware database: %d\n", ret);
-	}
-    }
+    if(engine->ncore)
+	cli_ncore_unload(engine);
 #endif
 
     for(i = 0; i < CL_TARGET_TABLE_SIZE; i++) {

@@ -141,15 +141,19 @@ fi
 
 AC_ARG_ENABLE(ncore,
 [  --disable-ncore	  disable support for NodalCore acceleration (default=auto)],
-want_ncore=$enableval, want_ncore="yes")
+want_ncore=$enableval, want_ncore="auto")
+
+if test "$want_ncore" = "auto"
+then
+    AC_CHECK_LIB(sn_sigscan, sn_sigscan_initdb, have_sigscan=yes,)
+    if test "$have_sigscan" = "yes"; then
+	want_ncore="yes"
+    fi
+fi
 
 if test "$want_ncore" = "yes"
 then
-    AC_CHECK_LIB(sn_sigscan, sn_sigscan_initdb, have_sigscan=yes,)
-    if test "$have_sigscan" = "yes"
-    then
-	AC_CHECK_HEADER(sn_sigscan/sn_sigscan.h,[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lsn_sigscan"; AC_DEFINE(HAVE_NCORE,1,hardware acceleration)], AC_MSG_WARN([****** hardware acceleration support disabled -- please install libsigscan-devel ]))
-    fi
+    AC_CHECK_HEADER(dlfcn.h,[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -ldl" ; AC_DEFINE(HAVE_NCORE,1,Support for NodalCore acceleration)], AC_MSG_WARN([****** NodalCore support disabled (no support for dlopen)]))
 fi
 
 AC_ARG_ENABLE(dns,

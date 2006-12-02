@@ -1,3 +1,9 @@
+Sat Dec  2 01:02:45 CET 2006 (tk)
+---------------------------------
+  * libclamav: reorganize the NodalCore code and add support for runtime
+	       detection and loading of the acceleration library; based on
+	       patch from Peter Duthie <peter.duthie*sensorynetworks.com>
+
 Thu Nov 30 09:35:46 GMT 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Fix compilation errors when SAVE_TO_DISC is not defined
