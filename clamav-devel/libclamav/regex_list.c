@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: regex_list.c,v $
+ *  Revision 1.16  2006/12/02 00:42:44  tkojm
+ *  add functionality level support for .pdb/.wdb files
+ *
  *  Revision 1.15  2006/11/15 15:26:54  tkojm
  *  pattern matcher accuracy improvements
  *
@@ -524,6 +527,52 @@ static int add_regex_list_element(struct cli_matcher* root,const char* pattern,c
        return CL_SUCCESS;
 }
 
+int functionality_level_check(char* line)
+{
+	char* ptmin;
+	char* ptmax;
+	size_t j;
+
+	ptmin = strrchr(line,':');
+	if(!ptmin) 
+		return CL_SUCCESS;
+	
+	ptmin++;
+
+	ptmax = strchr(ptmin,'-');
+	if(!ptmax) 
+		return CL_SUCCESS;/* there is no functionality level specified, so we're ok */
+	else {
+		int min, max;
+		ptmax++;
+		for(j=0;j<ptmax-ptmin-1;j++)
+			if(!isdigit(ptmin[j])) 
+				return CL_SUCCESS;/* not numbers, not functionality level */
+		for(j=0;j<strlen(ptmax);j++)
+			if(!isdigit(ptmax[j])) 
+				return CL_SUCCESS;/* see above */
+		ptmax[-1]='\0';
+		min = atoi(ptmin);
+		if(strlen(ptmax)==0)
+ 			max = INT_MAX; 		
+		else
+			max = atoi(ptmax);
+		if(min<0) min=0;
+		if(max<0) max=0;
+
+		if(min > cl_retflevel()) {
+			cli_dbgmsg("regex list line %s not loaded (required f-level: %d)\n",line,min);
+			return CL_EMALFDB; 
+		}
+
+		if(max < cl_retflevel()) 
+			return CL_EMALFDB;
+		ptmin[-1]='\0';
+		return CL_SUCCESS;
+	}		
+}
+
+
 /* Load patterns/regexes from file */
 int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int options,int is_whitelist)
 {
@@ -570,10 +619,14 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 	while(fgets(buffer,FILEBUFF,fd)) {
 		char* pattern;
 		char* flags;
-		line++;
 		cli_chomp(buffer);
 		if(!*buffer)
 			continue;/* skip empty lines */
+
+		if(functionality_level_check(buffer)) 
+			continue;
+
+		line++;
 		pattern = strchr(buffer,':');
 		if(!pattern) {
 			cli_errmsg("Malformed regex list line %d\n",line);
