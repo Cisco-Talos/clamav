@@ -1,3 +1,8 @@
+Sat Dec  2 01:41:27 CET 2006 (tk)
+---------------------------------
+  * libclamav/regex_list.c: add functionality level support for .pdb/.wdb files;
+			    patch from Edvin (bb#127)
+
 Sat Dec  2 01:02:45 CET 2006 (tk)
 ---------------------------------
   * libclamav: reorganize the NodalCore code and add support for runtime
