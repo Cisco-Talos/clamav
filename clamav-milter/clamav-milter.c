@@ -24,9 +24,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.300 2006/11/28 14:31:12 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.301 2006/12/02 15:17:02 njh Exp $";
 
-#define	CM_VERSION	"devel-271106"
+#define	CM_VERSION	"devel-021206"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1853,8 +1853,14 @@ main(int argc, char **argv)
 			tableInsert(blacklist, "127.0.0.1", 0);
 
 		if(wont_blacklist) {
-			logg(_("^Won't blacklist %s\n"), wont_blacklist);
-			(void)tableInsert(blacklist, wont_blacklist, 0);
+			const char *w;
+
+			i = 0;
+			while((w = cli_strtok(wont_blacklist, i++, ",")) != NULL) {
+				logg(_("^Won't blacklist %s\n"), w);
+				(void)tableInsert(blacklist, w, 0);
+				free(w);
+			}
 		}
 	}
 
@@ -5713,8 +5719,7 @@ mx(void)
 #else
 		if(addr != (in_addr_t)-1) {
 #endif
-			if(use_syslog)
-				syslog(LOG_INFO, "Won't blacklist %s", buf);
+			logg(_("^Won't blacklist %s\n"), buf);
 			(void)tableInsert(blacklist, buf, 0);
 		} else
 			resolve(buf);
@@ -5780,8 +5785,7 @@ resolve(const char *host)
 		p += 4;
 		ip = inet_ntoa(addr);
 		if(ip) {
-			if(use_syslog)
-				syslog(LOG_INFO, "Won't blacklist %s", ip);
+			logg(_("^Won't blacklist %s\n"), ip);
 			(void)tableInsert(blacklist, ip, 0);
 		}
 	}

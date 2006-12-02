@@ -1,3 +1,7 @@
+Sat Dec  2 15:17:47 GMT 2006 (njh)
+----------------------------------
+  * clamav-milter:	Allow more than one IP address to --dont-blacklist
+
 Sat Dec  2 01:41:27 CET 2006 (tk)
 ---------------------------------
   * libclamav/regex_list.c: add functionality level support for .pdb/.wdb files;
