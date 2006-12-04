@@ -756,7 +756,7 @@ int cli_decode_ole_object(int fd, const char *dir)
 		return -1;
 	}
 	ole_copy_file_data(fd, ofd, object_size);
-	lseek(0, ofd, SEEK_SET);
+	lseek(ofd, 0, SEEK_SET);
 	return ofd;
 }
 
