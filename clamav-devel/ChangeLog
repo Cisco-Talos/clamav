@@ -1,3 +1,7 @@
+Mon Dec  4 19:03:23 CET 2006 (acab)
+-----------------------------------
+  * libclamav/pe.c: fix newpe merge bugs (bb#171, bb#172)
+
 Mon Dec  4 14:17:47 CET 2006 (tk)
 ---------------------------------
   * freshclam/manager.c: add "-exp" to UserAgent string if compiled with
