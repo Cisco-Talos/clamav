@@ -1,3 +1,8 @@
+Mon Dec  4 14:17:47 CET 2006 (tk)
+---------------------------------
+  * freshclam/manager.c: add "-exp" to UserAgent string if compiled with
+			 --enable-experimental, requested by Luca
+
 Mon Dec  4 01:16:28 CET 2006 (tk)
 ---------------------------------
   * libclamav/vba_extract.c: fix lseek parameter order (bb#155)

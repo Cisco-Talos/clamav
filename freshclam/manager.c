@@ -331,7 +331,11 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
     if(uas)
 	agent = uas;
     else
+#ifdef CL_EXPERIMENTAL
+	agent = PACKAGE"/"VERSION"-exp";
+#else
 	agent = PACKAGE"/"VERSION;
+#endif
 
     snprintf(cmd, sizeof(cmd),
 	"GET %s/%s HTTP/1.1\r\n"
@@ -470,7 +474,11 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     if(uas)
 	agent = uas;
     else
+#ifdef CL_EXPERIMENTAL
+	agent = PACKAGE"/"VERSION"-exp";
+#else
 	agent = PACKAGE"/"VERSION;
+#endif
 
     snprintf(cmd, sizeof(cmd),
 	"GET %s/%s HTTP/1.1\r\n"
