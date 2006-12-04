@@ -254,7 +254,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	struct cli_exe_section *exe_sections;
 
 
-	cli_dbgmsg("%d\n", &optional_hdr32);
     if(cli_readn(desc, &e_magic, sizeof(e_magic)) != sizeof(e_magic)) {
 	cli_dbgmsg("Can't read DOS signature\n");
 	return CL_CLEAN;
