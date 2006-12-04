@@ -60,6 +60,9 @@
 #define PE32_SIGNATURE		    0x010b
 #define PE32P_SIGNATURE		    0x020b
 
+#define optional_hdr64 pe_opt.opt64
+#define optional_hdr32 pe_opt.opt32
+
 #define UPX_NRV2B "\x11\xdb\x11\xc9\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9\x11\xc9\x75\x20\x41\x01\xdb"
 #define UPX_NRV2D "\x83\xf0\xff\x74\x78\xd1\xf8\x89\xc5\xeb\x0b\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9"
 #define UPX_NRV2E "\xeb\x52\x31\xc9\x83\xe8\x03\x72\x11\xc1\xe0\x08\x8a\x06\x46\x83\xf0\xff\x74\x75\xd1\xf8\x89\xc5"
@@ -235,8 +238,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    struct pe_image_optional_hdr64 opt64;
 	    struct pe_image_optional_hdr32 opt32;
 	} pe_opt;
-	struct pe_image_optional_hdr64 optional_hdr64 = pe_opt.opt64;
-	struct pe_image_optional_hdr32 optional_hdr32 = pe_opt.opt32;
 	struct pe_image_section_hdr *section_hdr;
 	struct cli_md5_node *md5_sect;
 	struct stat sb;
@@ -253,6 +254,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	struct cli_exe_section *exe_sections;
 
 
+	cli_dbgmsg("%d\n", &optional_hdr32);
     if(cli_readn(desc, &e_magic, sizeof(e_magic)) != sizeof(e_magic)) {
 	cli_dbgmsg("Can't read DOS signature\n");
 	return CL_CLEAN;
@@ -717,7 +719,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    if (DETECT_BROKEN && EC32(section_hdr[i].VirtualAddress)!=valign) { /* Bad first section RVA */
 	        cli_dbgmsg("First section is in the wrong place\n");
 	        if(ctx->virname)
-		    *ctx->virname = md5_sect->virname;
+		    *ctx->virname = "Broken.Executable";
 		free(section_hdr);
 		free(exe_sections);
 		return CL_VIRUS;
@@ -728,7 +730,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    if (DETECT_BROKEN && EC32(section_hdr[i].VirtualAddress)-EC32(section_hdr[i-1].VirtualAddress)!= exe_sections[i-1].vsz) { /* No holes, no overlapping, no virtual disorder */
 	        cli_dbgmsg("Virtually misplaced section (wrong order, overlapping, non contiguous)\n");
 	        if(ctx->virname)
-		    *ctx->virname = md5_sect->virname;
+		    *ctx->virname = "Broken.Executable";
 		free(section_hdr);
 		free(exe_sections);
 		return CL_VIRUS;
@@ -2471,8 +2473,6 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	    struct pe_image_optional_hdr64 opt64;
 	    struct pe_image_optional_hdr32 opt32;
 	} pe_opt;
-	struct pe_image_optional_hdr64 optional_hdr64 = pe_opt.opt64;
-	struct pe_image_optional_hdr32 optional_hdr32 = pe_opt.opt32;
 	struct pe_image_section_hdr *section_hdr;
 	struct stat sb;
 	int i;
