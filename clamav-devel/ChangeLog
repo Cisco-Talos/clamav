@@ -1,3 +1,7 @@
+Mon Dec  4 19:08:27 CET 2006 (acab)
+-----------------------------------
+  * liblcalamv/pe.c: removed useless debug line
+
 Mon Dec  4 19:03:23 CET 2006 (acab)
 -----------------------------------
   * libclamav/pe.c: fix newpe merge bugs (bb#171, bb#172)
