@@ -1,3 +1,8 @@
+Mon Dec  4 01:04:30 CET 2006 (tk)
+---------------------------------
+  * libclamav: commit experimental code from Edvin for extracting embedded
+	       objects from RTF files
+
 Sat Dec  2 17:46:31 GMT 2006 (njh)
 ----------------------------------
   * libclamav/pst.c:	Fix compilation errors
