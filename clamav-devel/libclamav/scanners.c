@@ -80,6 +80,10 @@ extern short cli_leavetemps_flag;
 #include "pdf.h"
 #include "str.h"
 
+#ifdef CL_EXPERIMENTAL
+#include "rtf.h"
+#endif
+
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>
 #include "unzip.h"
@@ -1774,6 +1778,12 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    if(SCAN_HTML)
 		ret = cli_scanhtml_utf16(desc, ctx);
 	    break;
+
+#ifdef CL_EXPERIMENTAL
+	case CL_TYPE_RTF:
+	    ret = cli_scanrtf(desc, ctx);
+	    break;
+#endif
 
 	case CL_TYPE_MAIL:
 	    if(SCAN_MAIL)

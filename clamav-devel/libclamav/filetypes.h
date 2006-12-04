@@ -54,7 +54,9 @@ typedef enum {
     CL_TYPE_UUENCODED,
     CL_TYPE_PST,	/* Microsoft Outlook binary email folder (.pst file) */
     CL_TYPE_HTML_UTF16,
-
+#ifdef CL_EXPERIMENTAL
+    CL_TYPE_RTF,
+#endif
     /* bigger numbers have higher priority (in o-t-f detection) */
     CL_TYPE_HTML, /* on the fly */
     CL_TYPE_MAIL,  /* magic + on the fly */

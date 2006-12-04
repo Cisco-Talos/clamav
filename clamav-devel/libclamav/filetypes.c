@@ -123,6 +123,9 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "\%PDF-",			 5, "PDF document", CL_TYPE_PDF},
     {0,  "\266\271\254\256\376\377\377\377", 8, "CryptFF", CL_TYPE_CRYPTFF},
 
+#ifdef CL_EXPERIMENTAL  
+    {0,  "{\\rtf",                           5, "RTF", CL_TYPE_RTF}, 
+#endif    
     /* Ignored types */
 
     {0,  "\000\000\001\263",             4, "MPEG video stream",  CL_TYPE_DATA},
