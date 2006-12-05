@@ -1362,7 +1362,7 @@ static int rar_unpack29(int fd, int solid, unpack_data_t *unpack_data)
 
 static int rar_unpack(int fd, int method, int solid, unpack_data_t *unpack_data)
 {
-	int retval;
+	int retval = FALSE;
 	switch(method) {
 	case 15:
 		retval = rar_unpack15(fd, solid, unpack_data);

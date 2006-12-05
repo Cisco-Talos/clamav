@@ -1,3 +1,8 @@
+Tue Dec  5 03:18:06 CET 2006 (tk)
+---------------------------------
+  * libclamav/unrar/unrar.c: fix return value of rar_unpack() (bb#182)
+			     Thanks to Gianluigi Tiesi <sherpya*netfarm.it>
+
 Mon Dec  4 19:08:27 CET 2006 (acab)
 -----------------------------------
   * liblcalamv/pe.c: removed useless debug line
