@@ -24,9 +24,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.301 2006/12/02 15:17:02 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.302 2006/12/06 14:53:24 njh Exp $";
 
-#define	CM_VERSION	"devel-021206"
+#define	CM_VERSION	"devel-061206"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3202,7 +3202,8 @@ clamfi_eom(SMFICTX *ctx)
 				 */
 				struct hostent hostent;
 
-				if(r_gethostbyname(hostname, &hostent, buf, sizeof(buf)) == 0)
+				if((r_gethostbyname(hostname, &hostent, buf, sizeof(buf)) == 0) &&
+				   hostent.h_name)
 					strncpy(hostname, hostent.h_name, sizeof(hostname));
 			}
 

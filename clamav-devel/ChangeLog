@@ -1,3 +1,7 @@
+Wed Dec  6 14:53:39 GMT 2006 (njh)
+----------------------------------
+  * clamav-milter:	Improved handling of incorrect /etc/hosts files
+
 Tue Dec  5 03:18:06 CET 2006 (tk)
 ---------------------------------
   * libclamav/unrar/unrar.c: fix return value of rar_unpack() (bb#182)
