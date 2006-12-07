@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.191 2006/10/16 00:33:34 tkojm Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.192 2006/12/07 09:17:30 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2074,6 +2074,7 @@ sanitiseBase64(char *s)
 
 			for(p1 = s; p1[0] != '\0'; p1++)
 				p1[0] = p1[1];
+			--s;
 		}
 }
 
