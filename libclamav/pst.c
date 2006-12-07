@@ -36,7 +36,7 @@
  * TODO: Remove the vcard handling
  * FIXME: The code does little error checking of OOM scenarios
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.36 2006/12/02 17:44:05 njh Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.37 2006/12/07 11:06:24 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -1496,6 +1496,7 @@ int32_t _pst_build_desc_ptr (pst_file *pf, int32_t offset, int32_t depth, int32_
   } else {
     // hopefully a table of offsets to more tables
     if (_pst_read_block_size(pf, offset, DESC_BLOCK_SIZE, &buf, 0, 0) < DESC_BLOCK_SIZE) {
+      if(buf) free(buf);
       cli_dbgmsg("didn't read enough desc index. _pst_read_block_size returned less than requested\n");
       return -1;
     }
@@ -1578,11 +1579,13 @@ _pst_parse_item(pst_file *pf, pst_desc_ll *d_ptr)
 	}
 
 	if (d_ptr->desc == NULL) {
+		if(id2_head) _pst_free_id2(id2_head);
 		cli_errmsg("why is d_ptr->desc == NULL? I don't want to do anything else with this record\n");
 		return NULL;
 	}
 
 	if((list = _pst_parse_block(pf, d_ptr->desc->id, id2_head)) == NULL) {
+		if(id2_head) _pst_free_id2(id2_head);
 		cli_errmsg("_pst_parse_block() returned an error for d_ptr->desc->id [%#x]\n", d_ptr->desc->id);
 		return NULL;
 	}
@@ -1590,6 +1593,9 @@ _pst_parse_item(pst_file *pf, pst_desc_ll *d_ptr)
 	item = (pst_item*) cli_calloc(1, sizeof(pst_item));
 
 	if (_pst_process(list, item)) {
+		if(item) free(item);
+		if(list) _pst_free_list(list);
+		if(id2_head) _pst_free_id2(id2_head);
 		cli_dbgmsg("_pst_process() returned non-zero value. That is an error\n");
 		_pst_free_list(list);
 		return NULL;
@@ -1608,7 +1614,8 @@ _pst_parse_item(pst_file *pf, pst_desc_ll *d_ptr)
 
     cli_dbgmsg("ATTACHEMENT processing attachement\n");
     if ((list = _pst_parse_block(pf, id_ptr->id, id2_head)) == NULL) {
-	_pst_free_id2(id2_head);
+	if(item) free(item);
+	if(id2_head) _pst_free_id2(id2_head);
 	_pst_free_list(list);
 	cli_errmsg("error processing main attachment record\n");
 	return NULL;
@@ -1623,12 +1630,12 @@ _pst_parse_item(pst_file *pf, pst_desc_ll *d_ptr)
     item->current_attach = item->attach;
 
     if (_pst_process(list, item)) {
-	_pst_free_list(list);
-	_pst_free_id2(id2_head);
+      if( id2_head) _pst_free_id2(id2_head);
+      if(list) _pst_free_list(list);
       cli_errmsg("_pst_process() failed with attachments\n");
       return NULL;
     }
-    _pst_free_list(list);
+    if(list) _pst_free_list(list);
 
     // now we will have initial information of each attachment stored in item->attach...
     // we must now read the secondary record for each based on the id2 val associated with
@@ -1648,10 +1655,17 @@ _pst_parse_item(pst_file *pf, pst_desc_ll *d_ptr)
 	if (_pst_process(list, item)) {
 	  cli_dbgmsg("ERROR _pst_process() failed with an attachment\n");
 	  _pst_free_list(list);
+	  if(list) {
+		  pst_free_list(list);
+		  list = NULL;
+	  }
 	  attach = attach->next;
 	  continue;
 	}
-	_pst_free_list(list);
+	  if(list) {
+		  pst_free_list(list);
+		  list = NULL;
+	  }
 	if ((id_ptr = _pst_getID2(id2_head, attach->id2_val)) != NULL) {
 	  // id2_val has been updated to the ID2 value of the datablock containing the
 	  // attachment data
@@ -3817,6 +3831,7 @@ _pst_build_id2(pst_file *pf, pst_index_ll* list, pst_index2_ll* head_ptr) {
   pst_id2_assoc id2_rec;
   pst_index_ll *i_ptr = NULL;
   pst_index2_ll *i2_ptr = NULL;
+
   if (head_ptr != NULL) {
     head = head_ptr;
     while (head_ptr != NULL)
@@ -3824,9 +3839,9 @@ _pst_build_id2(pst_file *pf, pst_index_ll* list, pst_index2_ll* head_ptr) {
   }
   if (_pst_read_block_size(pf, list->offset, list->size, &buf, PST_NO_ENC,0) < list->size) {
     //an error occured in block read
-    cli_warnmsg("block read error occured. offset = %#x, size = %#x\n", list->offset, list->size);
     if(buf)
 	free(buf);
+    cli_warnmsg("block read error occured. offset = %#x, size = %#x\n", list->offset, list->size);
     return NULL;
   }
 
@@ -3835,9 +3850,9 @@ _pst_build_id2(pst_file *pf, pst_index_ll* list, pst_index2_ll* head_ptr) {
   LE16_CPU(block_head.count);
 
   if (block_head.type != 0x0002) { // some sort of constant?
-    cli_warnmsg("Unknown constant [%#x] at start of id2 values [offset %#x].\n", block_head.type, list->offset);
     if(buf)
 	free(buf);
+    cli_warnmsg("Unknown constant [%#x] at start of id2 values [offset %#x].\n", block_head.type, list->offset);
     return NULL;
   }
 

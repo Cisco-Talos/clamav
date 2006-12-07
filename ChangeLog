@@ -1,3 +1,7 @@
+Thu Dec  7 11:07:12 GMT 2006 (njh)
+----------------------------------
+  * libclamav/pst.c:		Incorporated upstream patches
+
 Thu Dec  7 09:18:58 GMT 2006 (njh)
 ----------------------------------
   * libclamav/message.c:	Handle consecutive errors in base64 decoding
@@ -59,7 +63,7 @@ Thu Nov 30 09:35:46 GMT 2006 (njh)
 Wed Nov 29 16:04:18 GMT 2006 (njh)
 ----------------------------------
   * libclamav/pst.c:	Handle "all day appointment flag" patch posted to
-  				the libpst mailing list
+				the libpst mailing list
 
 Tue Nov 28 14:31:58 GMT 2006 (njh)
 ----------------------------------
