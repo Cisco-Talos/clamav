@@ -36,7 +36,7 @@
  * TODO: Remove the vcard handling
  * FIXME: The code does little error checking of OOM scenarios
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.37 2006/12/07 11:06:24 njh Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.38 2006/12/07 16:05:15 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -904,7 +904,6 @@ pst_load_extended_attributes(pst_file *pf)
   pst_x_attrib xattrib;
   int32_t bptr = 0, bsize, hsize, tint, err=0, x;
   pst_x_attrib_ll *ptr, *p_head=NULL, *p_sh=NULL, *p_sh2=NULL;
-  char *wt;
 
   if ((p = _pst_getDptr(pf, 0x61)) == NULL) {
     cli_warnmsg("Cannot find DescID 0x61 for loading the Extended Attributes\n");
@@ -916,11 +915,12 @@ pst_load_extended_attributes(pst_file *pf)
 		list2 = NULL;
 
   if (p->desc == NULL) {
+    if(list2) _pst_free_id2(list2);
     cli_warnmsg("desc is NULL for item 0x61. Cannot load Extended Attributes\n");
     return 0;
   }
   if ((na = _pst_parse_block(pf, p->desc->id, list2)) == NULL) {
-	_pst_free_id2(list2);
+    if(list2) _pst_free_id2(list2);
     cli_warnmsg("Cannot process desc block for item 0x61. Not loading extended Attributes\n");
     return 0;
   }
@@ -938,8 +938,8 @@ pst_load_extended_attributes(pst_file *pf)
   }
 
 	if (buffer == NULL) {
-		_pst_free_list(na);
-		_pst_free_id2(list2);
+		if(na) _pst_free_list(na);
+		if(list2)_pst_free_id2(list2);
 
 		cli_warnmsg("No extended attributes buffer found. Not processing\n");
 		return 0;
@@ -963,6 +963,7 @@ pst_load_extended_attributes(pst_file *pf)
     if (xattrib.type & 0x0001) { // if the Bit 1 is set
       // pointer to Unicode field in buffer
       if (xattrib.extended < hsize) {
+	char *wt;
 	// copy the size of the header. It is 32 bit int
 	memcpy(&tint, &(headerbuffer[xattrib.extended]), sizeof(tint));
 	LE32_CPU(tint);
@@ -1011,8 +1012,8 @@ pst_load_extended_attributes(pst_file *pf)
     bptr += sizeof(xattrib);
   }
   pf->x_head = p_head;
-	_pst_free_list(na);
-	_pst_free_id2(list2);
+	if(list2) _pst_free_id2(list2);
+	if(na) _pst_free_list(na);
   return 1;
 }
 
