@@ -1,3 +1,7 @@
+Fri Dec  8 10:28:25 GMT 2006 (njh)
+----------------------------------
+  * libclamav/pst.c:		Another upstream patch
+
 Thu Dec  7 16:05:38 GMT 2006 (njh)
 ----------------------------------
   * libclamav/pst.c:		More upstream patches
