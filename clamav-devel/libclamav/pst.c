@@ -36,7 +36,7 @@
  * TODO: Remove the vcard handling
  * FIXME: The code does little error checking of OOM scenarios
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.38 2006/12/07 16:05:15 njh Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.39 2006/12/08 10:28:07 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -4216,7 +4216,6 @@ _pst_read_block_size(pst_file *pf, int32_t offset, size_t size, char ** buf, int
 
   if (*buf != NULL) {
     cli_dbgmsg("Freeing old memory\n");
-    free(*buf);
     *buf = (void *)cli_realloc(*buf, size + 1);
   } else
 	  *buf = (void*) cli_malloc(size+1); //plus one so that we can NULL terminate it later
