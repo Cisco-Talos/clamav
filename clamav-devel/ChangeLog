@@ -1,3 +1,7 @@
+Sat Dec  9 08:36:20 GMT 2006 (njh)
+----------------------------------
+  * libclamav/pst.c:		Fix typo in the recent patches
+
 Fri Dec  8 10:28:25 GMT 2006 (njh)
 ----------------------------------
   * libclamav/pst.c:		Another upstream patch
