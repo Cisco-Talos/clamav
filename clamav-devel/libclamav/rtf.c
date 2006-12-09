@@ -267,11 +267,19 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
 		return 0;
 
 	if(data->has_partial) {
-		outdata[out_cnt++] = data->partial | input[0];
+		for(i=0;i<len && !isxdigit(input[i]);i++)
+			;
+		if(i<len) {
+			outdata[out_cnt++] = data->partial | hextable[input[i++]];
+			data->has_partial = 0;
+		}
+		else
+			return 0;
 	}
+	else
+		i = 0;
 
-	data->has_partial = 0;
-	for(i=0;i<len;i++) {
+	for(;i<len;i++) {
 		if(isxdigit(input[i])) {
 				const unsigned char byte = hextable[ input[i++] ] << 4;
 				while(i<len && !isxdigit(input[i]))

@@ -1,3 +1,8 @@
+Sat Dec  9 16:37:18 CET 2006 (tk)
+---------------------------------
+  * libclamav/rtf.c: fix off-by-one error in hex decoder (bb#190),
+		     patch from Edvin
+
 Sat Dec  9 08:36:20 GMT 2006 (njh)
 ----------------------------------
   * libclamav/pst.c:		Fix typo in the recent patches
