@@ -36,7 +36,7 @@
  * TODO: Remove the vcard handling
  * FIXME: The code does little error checking of OOM scenarios
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.39 2006/12/08 10:28:07 njh Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.40 2006/12/09 08:36:01 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -1657,14 +1657,14 @@ _pst_parse_item(pst_file *pf, pst_desc_ll *d_ptr)
 	  cli_dbgmsg("ERROR _pst_process() failed with an attachment\n");
 	  _pst_free_list(list);
 	  if(list) {
-		  pst_free_list(list);
+		  _pst_free_list(list);
 		  list = NULL;
 	  }
 	  attach = attach->next;
 	  continue;
 	}
 	  if(list) {
-		  pst_free_list(list);
+		  _pst_free_list(list);
 		  list = NULL;
 	  }
 	if ((id_ptr = _pst_getID2(id2_head, attach->id2_val)) != NULL) {
