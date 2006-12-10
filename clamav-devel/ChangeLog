@@ -1,3 +1,7 @@
+Sun Dec 10 15:21:28 CET 2006 (acab)
+-----------------------------------
+  * libclamav: various memleaks fixes (thanks Edvin)
+
 Sat Dec  9 16:37:18 CET 2006 (tk)
 ---------------------------------
   * libclamav/rtf.c: fix off-by-one error in hex decoder (bb#190),

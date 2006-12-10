@@ -318,6 +318,7 @@ int wwunpack(char *exe, uint32_t exesz, uint32_t headsize, uint32_t min, uint32_
     }
     unpacked=exe+headsize+rva-min;
     if (!CLI_ISCONTAINED(exe, exesz, unpacked, csize)) {
+      free(packed);
       cli_dbgmsg("WWPack: packed data out of bounds, giving up.\n");
       return 1;
     }
