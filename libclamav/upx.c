@@ -170,6 +170,7 @@ int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32_t upx0
 
   if (foffset > *dsize + 8192) {
     cli_dbgmsg("UPX: wrong raw size - giving up rebuild\n");
+    free(newbuf);
     return 0;
   }
   memcpy(dst, newbuf, foffset);

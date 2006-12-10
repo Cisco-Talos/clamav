@@ -1206,6 +1206,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    free(section_hdr);
 		    free(exe_sections);
 		    free(src);
+		    free(dest);
 		    return CL_EMEM;
 		}
 
