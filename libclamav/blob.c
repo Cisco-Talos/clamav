@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.57 2006/10/16 00:33:34 tkojm Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.58 2006/12/11 11:51:14 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -500,7 +500,7 @@ fileblobAddData(fileblob *fb, const unsigned char *data, size_t len)
 			if(fb->ctx->scanned)
 				*fb->ctx->scanned += (unsigned long)len / CL_COUNT_PRECISION;
 
-			if((len > 5) && (cli_scanbuff((char *)data, (unsigned int)len, fb->ctx->virname, fb->ctx->engine, 0) == CL_VIRUS)) {
+			if((len > 5) && (cli_scanbuff(data, (unsigned int)len, fb->ctx->virname, fb->ctx->engine, 0) == CL_VIRUS)) {
 				cli_dbgmsg("fileblobAddData: found %s\n", *fb->ctx->virname);
 				fb->isInfected = 1;
 			}
