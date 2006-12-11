@@ -36,7 +36,7 @@
  * TODO: Remove the vcard handling
  * FIXME: The code does little error checking of OOM scenarios
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.40 2006/12/09 08:36:01 njh Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.41 2006/12/11 09:37:13 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -436,7 +436,7 @@ int32_t _pst_free_id2(pst_index2_ll * head);
 int32_t _pst_free_id (pst_index_ll *head);
 int32_t _pst_free_desc (pst_desc_ll *head);
 int32_t _pst_free_xattrib(pst_x_attrib_ll *x);
-int32_t _pst_getBlockOffset(char *buf, int32_t i_offset, int32_t offset, pst_block_offset *p);
+int32_t _pst_getBlockOffset(unsigned char *buf, int32_t i_offset, int32_t offset, pst_block_offset *p);
 pst_index2_ll * _pst_build_id2(pst_file *pf, pst_index_ll* list, pst_index2_ll* head_ptr);
 pst_index_ll * _pst_getID(pst_file* pf, u_int32_t id);
 static	pst_index_ll	*_pst_getID2(pst_index2_ll * ptr, u_int32_t id);
@@ -1756,7 +1756,7 @@ _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll *i2_head)
   if (block_hdr.type == 0xBCEC) { //type 1
     block_type = 1;
 
-    _pst_getBlockOffset((char *)buf, ind_ptr, block_hdr.offset, &block_offset);
+    _pst_getBlockOffset(buf, ind_ptr, block_hdr.offset, &block_offset);
     fr_ptr = block_offset.from;
 
     memcpy(&table_rec, &(buf[fr_ptr]), sizeof(table_rec));
@@ -1770,7 +1770,7 @@ _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll *i2_head)
       return NULL;
     }
 
-    _pst_getBlockOffset((char *)buf, ind_ptr, table_rec.value, &block_offset);
+    _pst_getBlockOffset(buf, ind_ptr, table_rec.value, &block_offset);
     list_start = fr_ptr = block_offset.from;
     to_ptr = block_offset.to;
     num_list = (to_ptr - fr_ptr)/sizeof(table_rec);
@@ -1779,7 +1779,7 @@ _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll *i2_head)
   } else if (block_hdr.type == 0x7CEC) { //type 2
     block_type = 2;
 
-    _pst_getBlockOffset((char *)buf, ind_ptr, block_hdr.offset, &block_offset);
+    _pst_getBlockOffset(buf, ind_ptr, block_hdr.offset, &block_offset);
     fr_ptr = block_offset.from; //now got pointer to "7C block"
     memset(&seven_c_blk, 0, sizeof(seven_c_blk));
     memcpy(&seven_c_blk, &(buf[fr_ptr]), sizeof(seven_c_blk));
@@ -1806,7 +1806,7 @@ _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll *i2_head)
     num_list = seven_c_blk.item_count;
     cli_dbgmsg("b5 offset = %#x\n", seven_c_blk.b_five_offset);
 
-    _pst_getBlockOffset((char *)buf, ind_ptr, seven_c_blk.b_five_offset, &block_offset);
+    _pst_getBlockOffset(buf, ind_ptr, seven_c_blk.b_five_offset, &block_offset);
     fr_ptr = block_offset.from;
     memcpy(&table_rec, &(buf[fr_ptr]), sizeof(table_rec));
     cli_dbgmsg("before convert %#x\n", table_rec.type);
@@ -1827,10 +1827,10 @@ _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll *i2_head)
 		return NULL;
 	}
 
-    _pst_getBlockOffset((char *)buf, ind_ptr, table_rec.value, &block_offset);
+    _pst_getBlockOffset(buf, ind_ptr, table_rec.value, &block_offset);
     num_recs = (block_offset.to - block_offset.from) / 6; // this will give the number of records in this block
 
-    _pst_getBlockOffset((char *)buf, ind_ptr, seven_c_blk.ind2_offset, &block_offset);
+    _pst_getBlockOffset(buf, ind_ptr, seven_c_blk.ind2_offset, &block_offset);
     ind2_ptr = block_offset.from;
   } else {
     cli_warnmsg("ERROR: Unknown block constant - %#X for id %#x\n", block_hdr.type, block_id);
@@ -1978,7 +1978,7 @@ _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll *i2_head)
 		na_ptr->items[x] = NULL;
 	    continue;
 	  }
-	  if (_pst_getBlockOffset((char *)buf, ind_ptr, table_rec.value, &block_offset)) {
+	  if (_pst_getBlockOffset(buf, ind_ptr, table_rec.value, &block_offset)) {
 	    cli_dbgmsg("failed to get block offset for table_rec.value of %#x\n",
 		  table_rec.value);
 	    na_ptr->count_item --; //we will be skipping a row
@@ -4113,7 +4113,9 @@ void _pst_freeItem(pst_item *item) {
   }
 }
 
-int32_t _pst_getBlockOffset(char *buf, int32_t i_offset, int32_t offset, pst_block_offset *p) {
+int32_t
+_pst_getBlockOffset(unsigned char *buf, int32_t i_offset, int32_t offset, pst_block_offset *p)
+{
   int32_t of1;
   if (p == NULL || buf == NULL || offset == 0) {
     cli_dbgmsg("p is NULL or buf is NULL or offset is 0 (%p, %p, %#x)\n", p, buf, offset);

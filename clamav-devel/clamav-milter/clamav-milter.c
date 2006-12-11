@@ -24,9 +24,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.302 2006/12/06 14:53:24 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.303 2006/12/11 09:36:02 njh Exp $";
 
-#define	CM_VERSION	"devel-061206"
+#define	CM_VERSION	"devel-111206"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1455,7 +1455,11 @@ main(int argc, char **argv)
 			}
 
 #ifndef	SESSION
-			if(serverIPs[i] == (int)inet_addr("127.0.0.1")) {
+#if	HAVE_IN_ADDR_T
+			if(serverIPs[i] == (in_addr_t)inet_addr("127.0.0.1")) {
+#else
+			if(serverIPs[i] == (long)inet_addr("127.0.0.1")) {
+#endif
 				/*
 				 * Fudge to allow clamd to come up on
 				 * our local machine
@@ -1853,7 +1857,7 @@ main(int argc, char **argv)
 			tableInsert(blacklist, "127.0.0.1", 0);
 
 		if(wont_blacklist) {
-			const char *w;
+			char *w;
 
 			i = 0;
 			while((w = cli_strtok(wont_blacklist, i++, ",")) != NULL) {
@@ -2239,7 +2243,7 @@ findServer(void)
 	for(i = 0; i < numServers; i++) {
 		struct try_server_struct *rc;
 
-		pthread_join(tids[i], &rc);
+		pthread_join(tids[i], (void **)&rc);
 		assert(rc->sock == socks[i].sock);
 		if(rc->rc == 0) {
 			close(rc->sock);
@@ -5303,7 +5307,7 @@ loadDatabase(void)
 
 #ifdef	HAVE_CTIME_R_2
 		snprintf(clamav_version, VERSION_LENGTH,
-			"ClamAV %s/%d/%s", VERSION, d->version,
+			"ClamAV %s/%u/%s", VERSION, d->version,
 			ctime_r(&t, buf));
 #else
 		snprintf(clamav_version, VERSION_LENGTH,
