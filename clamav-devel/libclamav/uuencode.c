@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: uuencode.c,v 1.7 2006/10/09 09:23:25 njh Exp $";
+static	char	const	rcsid[] = "$Id: uuencode.c,v 1.8 2006/12/11 11:55:11 njh Exp $";
 
 #include "clamav.h"
 
@@ -31,6 +31,9 @@ static	char	const	rcsid[] = "$Id: uuencode.c,v 1.7 2006/10/09 09:23:25 njh Exp $
 #include <stdio.h>
 #include <memory.h>
 #include <sys/stat.h>
+#ifdef	HAVE_STRINGS_H
+#include <strings.h>
+#endif
 #include "others.h"
 #include "str.h"
 
