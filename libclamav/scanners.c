@@ -314,7 +314,7 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	}
 
 	if(!zdirent.d_name) {
-	    cli_dbgmsg("Zip: zdirent.d_name == NULL\n", strlen(zdirent.d_name));
+	    cli_dbgmsg("Zip: zdirent.d_name == NULL\n");
 	    *ctx->virname = "Suspect.Zip";
 	    ret = CL_VIRUS;
 	    break;
