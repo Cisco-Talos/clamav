@@ -160,6 +160,11 @@ int scanmanager(const struct optstruct *opt)
     else
         limits->maxreclevel = 8;
 
+    if(opt_check(opt, "max-mail-recursion"))
+        limits->maxmailrec = atoi(opt_arg(opt, "max-mail-recursion"));
+    else
+        limits->maxmailrec = 64;
+
     if(opt_check(opt, "max-ratio"))
         limits->maxratio = atoi(opt_arg(opt, "max-ratio"));
     else

@@ -80,7 +80,8 @@ int main(int argc, char **argv)
 					* file (files exceeding this limit
 					* will be ignored)
 					*/
-    limits.maxreclevel = 5; /* maximum recursion level */
+    limits.maxreclevel = 5; /* maximum recursion level for archives */
+    limits.maxmailrec = 64; /* maximum recursion level for mail files */
     limits.maxratio = 200; /* maximum compression ratio */
 
     /* scan file descriptor */

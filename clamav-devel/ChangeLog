@@ -1,3 +1,9 @@
+Tue Dec 12 14:57:11 CET 2006 (tk)
+---------------------------------
+  * libclamav: add separate limit value for mail recursion level
+  * clamscan: new option --max-mail-recursion
+  * clamd: new option MailMaxRecursion
+
 Tue Dec 12 12:36:28 CET 2006 (tk)
 ---------------------------------
   * libclamav/scanners.c: fix debug message (bb#160), patch from
