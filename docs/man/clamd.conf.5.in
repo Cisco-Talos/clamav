@@ -228,6 +228,11 @@ Default: enabled
 If an email contains URLs ClamAV can download and scan them. \fBWARNING: This option may open your system to a DoS attack. Never use it on loaded servers.\fR
 .br 
 Default: disabled
+.TP
+\fBMailMaxRecursion\fR
+Recursion level limit for the mail scanner.
+.br
+Default: 64
 .TP 
 \fBDetectPhishing\fR
 With this option enabled ClamAV will try to detect phishing attempts.

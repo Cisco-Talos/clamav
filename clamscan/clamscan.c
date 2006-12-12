@@ -156,6 +156,14 @@ int main(int argc, char **argv)
 	}
     }
 
+    if(opt_check(opt, "max-mail-recursion")) {
+	if(!isnumb(opt_arg(opt, "max-mail-recursion"))) {
+	    logg("!--max-mail-recursion requires a natural number\n");
+	    opt_free(opt);
+	    return 40;
+	}
+    }
+
     if(opt_check(opt, "max-dir-recursion")) {
 	if(!isnumb(opt_arg(opt, "max-dir-recursion"))) {
 	    logg("!--max-dir-recursion requires a natural number\n");
@@ -275,9 +283,10 @@ void help(void)
     mprintf("                                         archived files\n");
     mprintf("    --max-files=#n                       Only extract first #n files from\n");
     mprintf("                                         archives\n");
-    mprintf("    --max-recursion=#n                   Maximum archive recursion level\n");
     mprintf("    --max-ratio=#n                       Maximum compression ratio limit\n");
+    mprintf("    --max-recursion=#n                   Maximum archive recursion level\n");
     mprintf("    --max-dir-recursion=#n               Maximum directory recursion level\n");
+    mprintf("    --max-mail-recursion=#n              Maximum mail recursion level\n");
     mprintf("    --unzip[=FULLPATH]                   Enable support for .zip files\n");
     mprintf("    --unrar[=FULLPATH]                   Enable support for .rar files\n");
     mprintf("    --arj[=FULLPATH]                     Enable support for .arj files\n");

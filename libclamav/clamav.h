@@ -189,10 +189,11 @@ struct cl_engine {
 };
 
 struct cl_limits {
-    unsigned int maxreclevel;	    /* maximum recursion level */
+    unsigned int maxreclevel;	    /* maximum recursion level for archives */
     unsigned int maxfiles;	    /* maximum number of files to be scanned
 				     * within a single archive
 				     */
+    unsigned int maxmailrec;	    /* maximum recursion level for mail files */
     unsigned int maxratio;	    /* maximum compression ratio */
     unsigned short archivememlim;   /* limit memory usage for some unpackers */
     unsigned long int maxfilesize;  /* compressed files larger than this limit
