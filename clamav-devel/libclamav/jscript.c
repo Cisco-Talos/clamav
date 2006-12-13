@@ -28,8 +28,13 @@
  * TODO:	Add mailfollowurls type feature
  * TODO:	Check the NGS code for vulnerabilities, leaks etc.
  * TODO:	Check the NGS code is thread safe
+ * TODO:	Test code such as
+ *	<script>
+ *		document.writeln("<script> function f() { ..the real worm code..
+ *			</script>"); f();
+ *	</script>
  */
-static	char	const	rcsid[] = "$Id: jscript.c,v 1.10 2006/11/23 09:46:50 njh Exp $";
+static	char	const	rcsid[] = "$Id: jscript.c,v 1.11 2006/12/13 15:25:34 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
