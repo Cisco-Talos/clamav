@@ -1,3 +1,8 @@
+Wed Dec 13 13:51:32 GMT 2006 (njh)
+----------------------------------
+  * libclamav/blob.c:	Fix a performance issue raised by Steve Basford,
+				steveb*newburydata.co.uk
+
 Tue Dec 12 14:57:11 CET 2006 (tk)
 ---------------------------------
   * libclamav: add separate limit value for mail recursion level
