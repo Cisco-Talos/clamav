@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.58 2006/12/11 11:51:14 njh Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.59 2006/12/13 13:50:51 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -62,6 +62,12 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.58 2006/12/11 11:51:14 njh Exp $";
 #if	defined(C_MINGW) || defined(C_WINDOWS)
 #include <windows.h>
 #endif
+
+#define	MAX_SCAN_SIZE	20*1024	/*
+				 * The performance benefit of scanning
+				 * early disappears on medium and
+				 * large sized files
+				 */
 
 blob *
 blobCreate(void)
@@ -466,7 +472,7 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 		return;
 	}
 
-	cli_dbgmsg("Saving attachment as %s\n", fullname);
+	cli_dbgmsg("Creating %s\n", fullname);
 
 	fb->fp = fdopen(fd, "wb");
 
@@ -494,17 +500,32 @@ fileblobAddData(fileblob *fb, const unsigned char *data, size_t len)
 	assert(data != NULL);
 
 	if(fb->fp) {
+#if	defined(MAX_SCAN_SIZE) && (MAX_SCAN_SIZE > 0)
+		const cli_ctx *ctx = fb->ctx;
+
 		if(fb->isInfected)	/* pretend all was written */
 			return 0;
-		if(fb->ctx) {
-			if(fb->ctx->scanned)
-				*fb->ctx->scanned += (unsigned long)len / CL_COUNT_PRECISION;
+		if(ctx) {
+			int do_scan = 1;
 
-			if((len > 5) && (cli_scanbuff(data, (unsigned int)len, fb->ctx->virname, fb->ctx->engine, 0) == CL_VIRUS)) {
-				cli_dbgmsg("fileblobAddData: found %s\n", *fb->ctx->virname);
-				fb->isInfected = 1;
+			if(ctx->limits)
+				if(fb->bytes_scanned >= ctx->limits->maxfilesize)
+					do_scan = 0;
+
+			if(fb->bytes_scanned > MAX_SCAN_SIZE)
+				do_scan = 0;
+			if(do_scan) {
+				if(ctx->scanned)
+					*ctx->scanned += (unsigned long)len / CL_COUNT_PRECISION;
+				fb->bytes_scanned += (unsigned long)len;
+
+				if((len > 5) && (cli_scanbuff(data, (unsigned int)len, ctx->virname, ctx->engine, 0) == CL_VIRUS)) {
+					cli_dbgmsg("fileblobAddData: found %s\n", *ctx->virname);
+					fb->isInfected = 1;
+				}
 			}
 		}
+#endif
 
 		if(fwrite(data, len, 1, fb->fp) != 1) {
 			cli_errmsg("fileblobAddData: Can't write %u bytes to temporary file %s: %s\n", len, fb->b.name, strerror(errno));
