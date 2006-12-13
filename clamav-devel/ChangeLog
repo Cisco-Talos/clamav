@@ -1,3 +1,7 @@
+Wed Dec 13 16:54:38 GMT 2006 (njh)
+----------------------------------
+  * clamav-milter:	Clarified the meaning of the --postmaster-only option
+
 Wed Dec 13 13:51:32 GMT 2006 (njh)
 ----------------------------------
   * libclamav/blob.c:	Fix a performance issue raised by Steve Basford,
