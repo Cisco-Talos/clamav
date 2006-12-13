@@ -24,7 +24,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.303 2006/12/11 09:36:02 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.304 2006/12/13 16:54:21 njh Exp $";
 
 #define	CM_VERSION	"devel-111206"
 
@@ -567,7 +567,7 @@ help(void)
 	puts(_("\t--noxheader\t\t-n\tSuppress X-Virus-Scanned/X-Virus-Status headers."));
 	puts(_("\t--pidfile=FILE\t\t-i FILE\tLocation of pidfile."));
 	puts(_("\t--postmaster\t\t-p EMAIL\tPostmaster address [default=postmaster]."));
-	puts(_("\t--postmaster-only\t-P\tSend warnings only to the postmaster."));
+	puts(_("\t--postmaster-only\t-P\tSend notifications only to the postmaster."));
 	puts(_("\t--quiet\t\t\t-q\tDon't send e-mail notifications of interceptions."));
 	puts(_("\t--quarantine=USER\t-Q EMAIL\tQuarantine e-mail account."));
 	puts(_("\t--report-phish=EMAIL\t-r EMAIL\tReport phish to this email address."));
