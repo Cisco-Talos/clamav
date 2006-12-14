@@ -54,6 +54,7 @@ typedef	struct fileblob {
 	blob	b;
 	unsigned	int	isNotEmpty : 1;
 	unsigned	int	isInfected : 1;
+	unsigned	long	bytes_scanned;
 	cli_ctx	*ctx;
 } fileblob;
 
