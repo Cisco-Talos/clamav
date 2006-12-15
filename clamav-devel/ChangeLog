@@ -1,3 +1,12 @@
+Fri Dec 15 22:38:41 CET 2006 (tk)
+---------------------------------
+  * libclamav/mspack: remove files
+  * libclamav/mspack.[ch]: cleaned and better adopted for libclamav code from
+			   libmspack
+  * libclamav/cab.[ch]: new cabinet file extractor
+  * libclamav/scanners.c: use new cabinet code
+  * libclamav/chmunpack.c: use new mspack module
+
 Wed Dec 13 16:54:38 GMT 2006 (njh)
 ----------------------------------
   * clamav-milter:	Clarified the meaning of the --postmaster-only option
