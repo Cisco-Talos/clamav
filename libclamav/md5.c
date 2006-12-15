@@ -1,6 +1,6 @@
 /*
  * This is an OpenSSL-compatible implementation of the RSA Data Security,
- * Inc. MD5 Message-Digest Algorithm.
+ * Inc. MD5 Message-Digest Algorithm (RFC 1321).
  *
  * Written by Solar Designer <solar at openwall.com> in 2001, and placed
  * in the public domain.  There's absolutely no warranty.
@@ -15,18 +15,16 @@
  * and avoid compile-time configuration.
  */
 
-#if HAVE_CONFIG_H
-#include "clamav-config.h"
-#endif
-
 #include <string.h>
+
 #include "md5.h"
 
 /*
  * The basic MD5 functions.
  *
- * F is optimized compared to its RFC 1321 definition just like in Colin
- * Plumb's implementation.
+ * F and G are optimized compared to their RFC 1321 definitions for
+ * architectures that lack an AND-NOT instruction, just like in Colin Plumb's
+ * implementation.
  */
 #define F(x, y, z)			((z) ^ ((x) & ((y) ^ (z))))
 #define G(x, y, z)			((y) ^ ((z) & ((x) ^ (y))))
@@ -45,11 +43,11 @@
  * SET reads 4 input bytes in little-endian byte order and stores them
  * in a properly aligned word in host byte order.
  *
- * The check for little-endian architectures which tolerate unaligned
+ * The check for little-endian architectures that tolerate unaligned
  * memory accesses is just an optimization.  Nothing will break if it
  * doesn't work.
  */
-#if defined(__i386__) || defined(__vax__)
+#if defined(__i386__) || defined(__x86_64__) || defined(__vax__)
 #define SET(n) \
 	(*(MD5_u32plus *)&ptr[(n) * 4])
 #define GET(n) \
@@ -67,7 +65,7 @@
 
 /*
  * This processes one or more 64-byte data blocks, but does NOT update
- * the bit counters.  There're no alignment requirements.
+ * the bit counters.  There are no alignment requirements.
  */
 static void *body(MD5_CTX *ctx, void *data, unsigned long size)
 {
