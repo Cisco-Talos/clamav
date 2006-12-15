@@ -46,8 +46,6 @@
 #endif
 #endif
 
-#include <mspack.h>
-
 #ifndef	O_BINARY
 #define	O_BINARY	0
 #endif
@@ -79,6 +77,8 @@ extern short cli_leavetemps_flag;
 #include "sis.h"
 #include "pdf.h"
 #include "str.h"
+#include "mspack.h"
+#include "cab.h"
 
 #ifdef CL_EXPERIMENTAL
 #include "rtf.h"
@@ -798,63 +798,56 @@ static int cli_scanszdd(int desc, cli_ctx *ctx)
 
 static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
 {
-	struct mscab_decompressor *cabd = NULL;
-	struct mscabd_cabinet *base, *cab;
-	struct mscabd_file *file;
 	char *tempname;
-	int ret = CL_CLEAN;
+	int ret;
+	unsigned int files = 0;
+	struct cab_archive cab;
+	struct cab_file *file;
 
 
     cli_dbgmsg("in cli_scanmscab()\n");
 
-    if((cabd = mspack_create_cab_decompressor(NULL)) == NULL) {
-	cli_dbgmsg("MSCAB: Can't create libmspack CAB decompressor\n");
-	return CL_EMSCAB;
-    }
+    if((ret = cab_open(desc, sfx_offset, &cab)))
+	return ret;
 
-    if(sfx_offset)
-	lseek(desc, sfx_offset, SEEK_SET);
+    for(file = cab.files; file; file = file->next) {
+	files++;
 
-    if((base = cabd->dsearch(cabd, dup(desc))) == NULL) {
-	cli_dbgmsg("MSCAB: I/O error or no valid cabinets found\n");
-	mspack_destroy_cab_decompressor(cabd);
-	return CL_EMSCAB;
-    }
-
-    for(cab = base; cab; cab = cab->next) {
-	for(file = cab->files; file; file = file->next) {
-
-	    if(ctx->limits && ctx->limits->maxfilesize && (file->length > (unsigned int) ctx->limits->maxfilesize)) {
-		cli_dbgmsg("MSCAB: %s: Size exceeded (%u, max: %lu)\n", file->filename, file->length, ctx->limits->maxfilesize);
-		if(BLOCKMAX) {
-		    *ctx->virname = "MSCAB.ExceededFileSize";
-		    cabd->close(cabd, base);
-		    mspack_destroy_cab_decompressor(cabd);
-		    return CL_VIRUS;
-		}
-		continue;
+	if(ctx->limits && ctx->limits->maxfilesize && (file->length > ctx->limits->maxfilesize)) {
+	    cli_dbgmsg("CAB: %s: Size exceeded (%u, max: %u)\n", file->name, file->length, ctx->limits->maxfilesize);
+	    if(BLOCKMAX) {
+		*ctx->virname = "CAB.ExceededFileSize";
+		cab_free(&cab);
+		return CL_VIRUS;
 	    }
-
-	    tempname = cli_gentemp(NULL);
-	    cli_dbgmsg("MSCAB: Extracting data to %s\n", tempname);
-	    if(cabd->extract(cabd, file, tempname)) {
-		cli_dbgmsg("MSCAB: libmscab error code: %d\n", cabd->last_error(cabd));
-	    } else {
-		ret = cli_scanfile(tempname, ctx);
-	    }
-	    if(!cli_leavetemps_flag)
-		unlink(tempname);
-	    free(tempname);
-	    if(ret == CL_VIRUS)
-		break;
+	    continue;
 	}
+
+	if(ctx->limits && ctx->limits->maxfiles && (files > ctx->limits->maxfiles)) {
+	    cli_dbgmsg("CAB: Files limit reached (max: %u)\n", ctx->limits->maxfiles);
+            cab_free(&cab);
+	    if(BLOCKMAX) {
+		*ctx->virname = "CAB.ExceededFilesLimit";
+		return CL_VIRUS;
+	    }
+	    return CL_CLEAN;
+	}
+
+	tempname = cli_gentemp(NULL);
+	cli_dbgmsg("CAB: Extracting file %s to %s\n, size %u", file->name, tempname, file->length);
+	if((ret = cab_extract(desc, file, tempname)))
+	    cli_dbgmsg("CAB: Failed to extract file: %s\n", cl_strerror(ret));
+	else
+	    ret = cli_scanfile(tempname, ctx);
+
+	if(!cli_leavetemps_flag)
+	    unlink(tempname);
+	free(tempname);
 	if(ret == CL_VIRUS)
 	    break;
     }
 
-    cabd->close(cabd, base);
-    mspack_destroy_cab_decompressor(cabd);
-
+    cab_free(&cab);
     return ret;
 }
 

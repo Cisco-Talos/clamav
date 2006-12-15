@@ -45,8 +45,7 @@
 #endif
 
 #include "others.h"
-#include "mspack/mspack.h"
-#include "mspack/lzx.h"
+#include "mspack.h"
 #include "cltypes.h"
 
 #ifndef HAVE_ATTRIB_PACKED
@@ -808,14 +807,6 @@ abort:
 #define CHM_SYS_CONTENT_NAME "::DataSpace/Storage/MSCompressed/Content"
 #define CHM_SYS_RESETTABLE_NAME "::DataSpace/Storage/MSCompressed/Transform/{7FC28940-9D31-11D0-9B27-00A0C91E9C7C}/InstanceData/ResetTable"
 
-struct mspack_file_p {
-  FILE *fh;
-  char *name;
-  int desc;
-};
-
-extern struct mspack_system *mspack_default_system;
-
 static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *itsf_hdr,
 				file_list_t *file_l, file_list_t *sys_file_l,
 				unsigned char *m_area, off_t m_length)
@@ -824,41 +815,18 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 	lzx_content_t *lzx_content=NULL;
 	lzx_reset_table_t *lzx_reset_table=NULL;
 	lzx_control_t *lzx_control=NULL;
-	int window_bits, count, length, ofd, retval=FALSE;
+	int window_bits, count, length, tmpfd, ofd, retval=FALSE;
 	uint64_t com_offset;
-	struct mspack_file_p mf_in, mf_out;
-	struct lzxd_stream * stream;
+	struct lzx_stream * stream;
 	unsigned char filename[1024];
 	
-	mf_in.desc = dup(fd);
-	if (mf_in.desc < 0) {
-		return FALSE;
-	}
-	mf_in.fh = fdopen(mf_in.desc, "r");
-	if (!mf_in.fh) {
-		close(mf_in.desc);
-		return FALSE;
-	}
-	mf_in.name = strdup("input");
-	
 	snprintf(filename, 1024, "%s/clamav-unchm.bin", dirname);
-	mf_out.desc = open(filename, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
-	if (!mf_out.desc) {
+	tmpfd = open(filename, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
+	if (!tmpfd) {
 		cli_dbgmsg("open failed\n", filename);
-		free(mf_in.name);
-		fclose(mf_in.fh);
 		return FALSE;
 	}
-	mf_out.fh = fdopen(mf_out.desc, "w");
-	if (!mf_out.fh) {
-		cli_dbgmsg("fdopen failed\n", filename);
-		free(mf_in.name);
-		fclose(mf_in.fh);
-		return FALSE;
-	}
-		
-	mf_out.name = strdup("output");
-	
+
 	entry = sys_file_l->next;
 	while (entry) {
 		if (strcmp(entry->name, CHM_SYS_CONTROL_NAME) == 0) {
@@ -914,25 +882,24 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 	com_offset = lzx_content->offset;
 	cli_dbgmsg("Compressed offset: %llu\n", com_offset);
 	
-	stream = lzxd_init(mspack_default_system, (struct mspack_file *) &mf_in, (struct mspack_file *) &mf_out, window_bits,
+	stream = lzx_init(fd, tmpfd, window_bits,
 			lzx_control->reset_interval / LZX_FRAME_SIZE,
-			4096, length);
+			4096, length, NULL, NULL);
 	lseek(fd, com_offset, SEEK_SET);
 	if (!stream) {
-		cli_dbgmsg("lzxd_init failed\n");
+		cli_dbgmsg("lzx_init failed\n");
 		goto abort;
 	}
 	
-	lzxd_decompress(stream, length);
-	lzxd_free(stream);
+	lzx_decompress(stream, length);
+	lzx_free(stream);
 	
 	entry = file_l->next;
-	fclose(mf_out.fh);
-	mf_out.fh = NULL;
+	close(tmpfd);
 	
 	/* Reopen the file for reading */
-	mf_out.desc = open(filename, O_RDONLY|O_BINARY);
-	if (mf_out.desc < 0) {
+	tmpfd = open(filename, O_RDONLY|O_BINARY);
+	if (tmpfd < 0) {
 		cli_dbgmsg("re-open output failed\n");
 		goto abort;
 	}
@@ -946,7 +913,7 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 			entry = entry->next;
 			continue;
 		}
-		if (lseek(mf_out.desc, entry->offset, SEEK_SET) != (off_t)entry->offset) {
+		if (lseek(tmpfd, entry->offset, SEEK_SET) != (off_t)entry->offset) {
 			cli_dbgmsg("seek in output failed\n");
 			entry = entry->next;
 			continue;
@@ -958,7 +925,7 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 			entry = entry->next;
 			continue;
 		}
-		if (chm_copy_file_data(mf_out.desc, ofd, entry->length) != entry->length) {
+		if (chm_copy_file_data(tmpfd, ofd, entry->length) != entry->length) {
 			cli_dbgmsg("failed to copy %lu bytes\n", entry->length);
 		}
 		
@@ -966,7 +933,7 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 		entry = entry->next;
 		count++;
 	}
-	close(mf_out.desc);
+	close(tmpfd);
 	retval = TRUE;
 	
 abort:
@@ -978,12 +945,6 @@ abort:
 	}
 	if (lzx_control) {
 		free(lzx_control);
-	}
-	free(mf_in.name);
-	fclose(mf_in.fh);
-	free(mf_out.name);
-	if (mf_out.fh) {
-		fclose(mf_out.fh);
 	}
 	return retval;
 }

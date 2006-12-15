@@ -17,7 +17,7 @@
 #  MA 02110-1301, USA.
 
 
-INCLUDES = -I$(top_srcdir) -I@srcdir@/mspack -I@srcdir@/unrar
+INCLUDES = -I$(top_srcdir) -I@srcdir@/unrar
 
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@
 
@@ -75,17 +75,6 @@ libclamav_la_SOURCES = \
 	msexpand.h \
 	pe.c \
 	pe.h \
-	mspack/cabd.c \
-	mspack/cab.h \
-	mspack/lzxd.c \
-	mspack/lzx.h \
-	mspack/mspack.h \
-	mspack/mszipd.c \
-	mspack/mszip.h \
-	mspack/qtmd.c \
-	mspack/qtm.h \
-	mspack/system.c \
-	mspack/system.h \
 	upx.c \
 	upx.h \
 	htmlnorm.c \
@@ -159,6 +148,10 @@ libclamav_la_SOURCES = \
 	regex_list.c \
 	regex_list.h \
 	sha256.c \
-	sha256.h
+	sha256.h \
+	mspack.c \
+	mspack.h \
+	cab.c \
+	cab.h
 
 lib_LTLIBRARIES = libclamav.la
