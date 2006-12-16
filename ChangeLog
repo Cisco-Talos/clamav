@@ -1,3 +1,7 @@
+Sat Dec 16 16:57:27 GMT 2006 (njh)
+----------------------------------
+  * libclamav/pst.c:	Fixed typo
+
 Sat Dec 16 00:47:04 CET 2006 (tk)
 ---------------------------------
   * libclamav/md5.c: updated version providing better performance on x86-64
@@ -268,7 +272,7 @@ Sun Nov  5 09:57:44 GMT 2006 (njh)
 Sun Nov  5 02:25:39 CET 2006 (acab)
 -----------------------------------
   * libclamav/pe.c:	RVA broken.executable checks
-  			skip checks on virtual-only sections (reported by
+			skip checks on virtual-only sections (reported by
 			Andrey J. Melnikoff (TEMHOTA) <temnota * kmv.ru> )
 
 Sun Nov  5 00:45:44 CET 2006 (acab)

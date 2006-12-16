@@ -36,7 +36,7 @@
  * TODO: Remove the vcard handling
  * FIXME: The code does little error checking of OOM scenarios
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.41 2006/12/11 09:37:13 njh Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.42 2006/12/16 16:57:01 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -3602,6 +3602,7 @@ int32_t _pst_process(pst_num_array *list , pst_item *item) {
 	}
 	break;
       case 0x0821: // All day appointment flag
+      case 0x0815: // All day appointment flag
 	cli_dbgmsg("All day flag - ");
 	MALLOC_APPOINTMENT(item);
 	if(*(int16_t *)list->items[x]->data != 0) {
@@ -5554,13 +5555,15 @@ pst_decode(const char *dir, int desc)
 	  fprintf(f->output, "SUMMARY:%s\n", rfc2426_escape(item->email->subject->subj, &rfc2426ptr));
 	if (item->email != NULL && item->email->body != NULL)
 	  fprintf(f->output, "DESCRIPTION:%s\n", rfc2426_escape(item->email->body, &rfc2426ptr));
-	if (item->appointment != NULL && item->appointment->start != NULL)
-	  fprintf(f->output, "DTSTART;VALUE=DATE-TIME:%s\n", rfc2445_datetime_format(item->appointment->start, rfc2445buffer, sizeof(rfc2445buffer)));
-	if (item->appointment != NULL && item->appointment->end != NULL)
-	  fprintf(f->output, "DTEND;VALUE=DATE-TIME:%s\n", rfc2445_datetime_format(item->appointment->end, rfc2445buffer, sizeof(rfc2445buffer)));
-	if (item->appointment != NULL && item->appointment->location != NULL)
-	  fprintf(f->output, "LOCATION:%s\n", rfc2426_escape(item->appointment->location, &rfc2426ptr));
 	if (item->appointment != NULL) {
+		if (item->appointment->start != NULL)
+			fprintf(f->output, "DTSTART;VALUE=DATE-TIME:%s\n", rfc2445_datetime_format(item->appointment->start, rfc2445buffer, sizeof(rfc2445buffer)));
+		if (item->appointment->end != NULL)
+			fprintf(f->output, "DTEND;VALUE=DATE-TIME:%s\n", rfc2445_datetime_format(item->appointment->end, rfc2445buffer, sizeof(rfc2445buffer)));
+		if (item->appointment->location != NULL)
+			fprintf(f->output, "LOCATION:%s\n", rfc2426_escape(item->appointment->location, &rfc2426ptr));
+		fprintf(f->output, "ALLDAY:%s\n", item->appointment->all_day ? "Yes" : "No");
+
 	  switch (item->appointment->showas) {
 	  case PST_FREEBUSY_TENTATIVE:
 	    fputs("STATUS:TENTATIVE\n", f->output);
