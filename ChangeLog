@@ -1,3 +1,7 @@
+Mon Dec 18 17:04:31 GMT 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Use limits.maxmailrec (patch from TK)
+
 Sat Dec 16 16:57:27 GMT 2006 (njh)
 ----------------------------------
   * libclamav/pst.c:	Fixed typo

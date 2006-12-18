@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.361 2006/11/30 09:35:22 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.362 2006/12/18 17:03:58 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -2042,16 +2042,10 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
 	cli_dbgmsg("in parseEmailBody\n");
 
-	/*
-	 * FIXME: Using ArchiveMaxRecursion is not good since that is
-	 *	typically rather low (default = 8) and it would be better for
-	 *	this code to use a higher limit. Needs support in the cl_limits
-	 *	structure
-	 */
-	if(mctx->ctx->limits->maxreclevel)
-		if(recursion_level >= mctx->ctx->limits->maxreclevel) {
+	if(mctx->ctx->limits->maxmailrec)
+		if(recursion_level >= mctx->ctx->limits->maxmailrec) {
 			cli_warnmsg("parseEmailBody: hit maximum recursion level (%u)\n",
-				mctx->ctx->limits->maxreclevel);
+				mctx->ctx->limits->maxmailrec);
 			return 2;
 		}
 
