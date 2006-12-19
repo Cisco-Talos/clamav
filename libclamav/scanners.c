@@ -834,8 +834,8 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
 	}
 
 	tempname = cli_gentemp(NULL);
-	cli_dbgmsg("CAB: Extracting file %s to %s\n, size %u", file->name, tempname, file->length);
-	if((ret = cab_extract(desc, file, tempname)))
+	cli_dbgmsg("CAB: Extracting file %s to %s, size %u\n", file->name, tempname, file->length);
+	if((ret = cab_extract(file, tempname)))
 	    cli_dbgmsg("CAB: Failed to extract file: %s\n", cl_strerror(ret));
 	else
 	    ret = cli_scanfile(tempname, ctx);

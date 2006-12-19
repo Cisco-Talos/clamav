@@ -540,10 +540,44 @@ static int cab_read(struct cab_file *file, unsigned char *buffer, int bytes)
     return bytes - todo;
 }
 
-int cab_extract(int fd, struct cab_file *file, const char *name)
+static int cab_unstore(struct cab_file *file, int bytes, uint8_t wflag)
+{
+	int todo;
+	unsigned char buff[4096];
+
+
+    todo = bytes;
+    while(1) {
+
+	if(todo <= (int) sizeof(buff)) {
+	    if(cab_read(file, buff, todo) == -1) {
+		cli_dbgmsg("cab_unstore: cab_read failed for descriptor %d\n", file->fd);
+		return CL_EIO;
+	    } else if(wflag && cli_writen(file->ofd, buff, todo) == -1) {
+		cli_dbgmsg("cab_unstore: Can't write to descriptor %d\n", file->ofd);
+		return CL_EIO;
+	    }
+	    break;
+
+	} else {
+	    if(cab_read(file, buff, sizeof(buff)) == -1) {
+		cli_dbgmsg("cab_unstore: cab_read failed for descriptor %d\n", file->fd);
+		return CL_EIO;
+	    } else if(wflag && cli_writen(file->ofd, buff, sizeof(buff)) == -1) {
+		cli_dbgmsg("cab_unstore: Can't write to descriptor %d\n", file->ofd);
+		return CL_EIO;
+	    }
+	    todo -= sizeof(buff);
+	}
+    }
+
+    return CL_SUCCESS;
+}
+
+int cab_extract(struct cab_file *file, const char *name)
 {
 	struct cab_folder *folder;
-	int ofd, ret;
+	int ret;
 
 
     if(!file || !name) {
@@ -556,7 +590,7 @@ int cab_extract(int fd, struct cab_file *file, const char *name)
 	return CL_ENULLARG;
     }
 
-    if(lseek(fd, file->folder->offset, SEEK_SET) == -1) {
+    if(lseek(file->fd, file->folder->offset, SEEK_SET) == -1) {
 	cli_errmsg("cab_extract: Can't lseek to %u\n", file->folder->offset);
 	return CL_EIO;
     }
@@ -567,18 +601,24 @@ int cab_extract(int fd, struct cab_file *file, const char *name)
 	return CL_EIO;
     }
 
-    ofd = open(name, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
-    if(ofd == -1) {
+    file->ofd = open(name, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
+    if(file->ofd == -1) {
 	cli_errmsg("cab_extract: Can't open file %s in write mode\n", name);
 	free(file->state);
 	return CL_EIO;
     }
 
-    /* initialize decompressors */
     switch(file->folder->cmethod & 0x000f) {
+	case 0x0000: /* STORE */
+	    if(file->offset)
+		cab_unstore(file, file->offset, 0);
+
+	    ret = cab_unstore(file, file->length, 1);
+	    break;
+
 	case 0x0001: /* MSZIP */
 	    cli_dbgmsg("CAB: Compression method: MSZIP\n");
-	    file->state->stream = (struct mszip_stream *) mszip_init(fd, ofd, 4096, 1, file, &cab_read);
+	    file->state->stream = (struct mszip_stream *) mszip_init(file->fd, file->ofd, 4096, 1, file, &cab_read);
 	    if(file->offset) {
 		((struct mszip_stream *) file->state->stream)->wflag = 0;
 		mszip_decompress(file->state->stream, file->offset);
@@ -590,8 +630,9 @@ int cab_extract(int fd, struct cab_file *file, const char *name)
 
 	case 0x0002: /* QUANTUM */
 	    cli_dbgmsg("CAB: Compression method: QUANTUM\n");
-	    file->state->stream = (struct qtm_stream *) qtm_init(fd, ofd, (int) (file->folder->cmethod >> 8) & 0x1f, 4096, file, &cab_read);
+	    file->state->stream = (struct qtm_stream *) qtm_init(file->fd, file->ofd, (int) (file->folder->cmethod >> 8) & 0x1f, 4096, file, &cab_read);
 	    if(file->offset) {
+		file->wflag = 0;
 		((struct qtm_stream *) file->state->stream)->wflag = 0;
 		qtm_decompress(file->state->stream, file->offset);
 		((struct qtm_stream *) file->state->stream)->wflag = 1;
@@ -602,7 +643,7 @@ int cab_extract(int fd, struct cab_file *file, const char *name)
 
 	case 0x0003: /* LZX */
 	    cli_dbgmsg("CAB: Compression method: LZX\n");
-	    file->state->stream = (struct lzx_stream *) lzx_init(fd, ofd, (int) (file->folder->cmethod >> 8) & 0x1f, 0, 4096, 0, file, &cab_read);
+	    file->state->stream = (struct lzx_stream *) lzx_init(file->fd, file->ofd, (int) (file->folder->cmethod >> 8) & 0x1f, 0, 4096, 0, file, &cab_read);
 	    if(file->offset) {
 		((struct lzx_stream *) file->state->stream)->wflag = 0;
 		lzx_decompress(file->state->stream, file->offset);
@@ -618,7 +659,7 @@ int cab_extract(int fd, struct cab_file *file, const char *name)
     }
 
     free(file->state);
-    close(ofd);
+    close(file->ofd);
 
     return ret;
 }
