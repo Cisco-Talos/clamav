@@ -1,3 +1,7 @@
+Tue Dec 19 15:41:35 GMT 2006 (njh)
+----------------------------------
+  * clamav-milter:	Use limits.maxmailrec (patch from TK)
+
 Mon Dec 18 17:04:31 GMT 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Use limits.maxmailrec (patch from TK)
