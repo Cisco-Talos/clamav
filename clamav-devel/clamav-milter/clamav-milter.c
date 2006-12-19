@@ -24,9 +24,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.304 2006/12/13 16:54:21 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.305 2006/12/19 15:41:16 njh Exp $";
 
-#define	CM_VERSION	"devel-111206"
+#define	CM_VERSION	"devel-191206"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1204,10 +1204,11 @@ main(int argc, char **argv)
 	 * If the --max-children flag isn't set, see if MaxThreads
 	 * is set in the config file
 	 */
-	if((max_children == 0) && ((cpt = cfgopt(copt, "MaxThreads")) != NULL) && cpt->enabled)
-		max_children = cpt->numarg;
+	if(max_children == 0)
+	if((max_children == 0) && ((cpt = cfgopt(copt, "MaxThreads")) != NULL))
+		max_children = cfgopt(copt, "MaxThreads")->numarg;
 
-	if(((cpt = cfgopt(copt, "ReadTimeout")) != NULL) && cpt->enabled) {
+	if((cpt = cfgopt(copt, "ReadTimeout")) != NULL) {
 		readTimeout = cpt->numarg;
 
 		if(readTimeout < 0) {
@@ -1215,19 +1216,18 @@ main(int argc, char **argv)
 				argv[0], cfgfile);
 			return EX_CONFIG;
 		}
-	} else
-		readTimeout = DEFAULT_TIMEOUT;
-
-	if(((cpt = cfgopt(copt, "StreamMaxLength")) != NULL) && cpt->enabled) {
-		if(cpt->numarg < 0) {
-			fprintf(stderr, _("%s: StreamMaxLength must not be negative in %s\n"),
-				argv[0], cfgfile);
-			return EX_CONFIG;
-		}
-		streamMaxLength = (long)cpt->numarg;
 	}
 
-	if(cfgopt(copt, "LogSyslog")->enabled) {
+	if((cpt = cfgopt(copt, "StreamMaxLength")) != NULL) {
+		streamMaxLength = (long)cpt->numarg;
+		if(streamMaxLength < 0L) {
+			fprintf(stderr, _("%s: StreamMaxLength must not be negative in %s\n"),
+			argv[0], cfgfile);
+			return EX_CONFIG;
+		}
+	}
+
+	if(((cpt = cfgopt(copt, "LogSyslog")) != NULL) && cpt->enabled) {
 		int fac = LOG_LOCAL6;
 
 		if(cfgopt(copt, "LogVerbose")->enabled) {
@@ -1718,6 +1718,9 @@ main(int argc, char **argv)
 			options |= CL_SCAN_HTML;
 
 		memset(&limits, '\0', sizeof(struct cl_limits));
+
+		if(((cpt = cfgopt(copt, "MailMaxRecursion")) != NULL) && cpt->enabled)
+			limits.maxmailrec = cpt->numarg;
 
 		if(cfgopt(copt, "ScanArchive")->enabled) {
 			options |= CL_SCAN_ARCHIVE;
@@ -5284,7 +5287,7 @@ loadDatabase(void)
 		 * First time through, find out in which directory the signature
 		 * databases are
 		 */
-		if(((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory"))) && cpt->enabled)
+		if((cpt = cfgopt(copt, "DatabaseDirectory")) && cpt->enabled)
 			dbdir = cpt->strarg;
 		else
 			dbdir = cl_retdbdir();
