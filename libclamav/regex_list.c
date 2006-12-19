@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: regex_list.c,v $
+ *  Revision 1.18  2006/12/19 20:47:45  tkojm
+ *  strict whitelisting
+ *
  *  Revision 1.17  2006/12/19 20:30:17  tkojm
  *  fix some compiler warnings
  *
@@ -356,7 +359,7 @@ int regex_list_match(struct regex_matcher* matcher,const char* real_url,const ch
 	{
 		size_t real_len    = strlen(real_url);
 		size_t display_len = strlen(display_url);
-		size_t buffer_len  = (hostOnly && !is_whitelist) ? real_len : real_len + display_len + 1;
+		size_t buffer_len  = (hostOnly && !is_whitelist) ? real_len : real_len + display_len + 1 + (is_whitelist ? 1 : 0);
 		char*  buffer = cli_malloc(buffer_len+1);
 		size_t i;
 		int rc = 0;
@@ -369,6 +372,8 @@ int regex_list_match(struct regex_matcher* matcher,const char* real_url,const ch
 		buffer[real_len]= (!is_whitelist && hostOnly) ? '\0' : ':';
 		if(!hostOnly || is_whitelist) {
 			strncpy(buffer+real_len+1,display_url,display_len);
+			if(is_whitelist) 
+				buffer[buffer_len - 1] = '/';
 			buffer[buffer_len]=0;
 		}
 		cli_dbgmsg("Looking up in regex_list: %s\n", buffer);
@@ -637,6 +642,20 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 		pattern[0]='\0';
 		flags = buffer+1;
 		pattern++;
+
+		if(is_whitelist) {
+			const size_t pattern_len = strlen(pattern);
+			if(pattern_len < FILEBUFF) {
+				pattern[pattern_len] = '/';
+				pattern[pattern_len+1] = '\0';
+			}
+			else {
+				cli_errmsg("Overlong regex line %d\n",line);
+				fatal_error(matcher);
+				return CL_EMALFDB;
+			}
+		}
+
 		if((buffer[0] == 'R' && !is_whitelist) || (buffer[0] == 'X' && is_whitelist)) {/*regex*/
 			if(( rc = add_pattern(matcher,(const unsigned char*)pattern,flags) ))
 				return rc==CL_EMEM ? CL_EMEM : CL_EMALFDB;

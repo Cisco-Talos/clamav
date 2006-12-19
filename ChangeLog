@@ -1,3 +1,7 @@
+Tue Dec 19 21:44:13 CET 2006 (tk)
+---------------------------------
+  * libclamav/regex_list.c: strict whitelisting (Edvin)
+
 Tue Dec 19 21:28:09 CET 2006 (tk)
 ---------------------------------
   * libclamav/phishcheck.c, regex_list.c: fix some compiler warnings, patch
