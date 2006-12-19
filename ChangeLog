@@ -1,3 +1,8 @@
+Tue Dec 19 21:28:09 CET 2006 (tk)
+---------------------------------
+  * libclamav/phishcheck.c, regex_list.c: fix some compiler warnings, patch
+					  from Edvin
+
 Tue Dec 19 21:13:23 CET 2006 (tk)
 ---------------------------------
   * libclamav/cab.c: extract stored files

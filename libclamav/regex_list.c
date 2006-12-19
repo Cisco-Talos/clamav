@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: regex_list.c,v $
+ *  Revision 1.17  2006/12/19 20:30:17  tkojm
+ *  fix some compiler warnings
+ *
  *  Revision 1.16  2006/12/02 00:42:44  tkojm
  *  add functionality level support for .pdb/.wdb files
  *
@@ -527,7 +530,7 @@ static int add_regex_list_element(struct cli_matcher* root,const char* pattern,c
        return CL_SUCCESS;
 }
 
-int functionality_level_check(char* line)
+static int functionality_level_check(char* line)
 {
 	char* ptmin;
 	char* ptmax;
@@ -543,9 +546,9 @@ int functionality_level_check(char* line)
 	if(!ptmax) 
 		return CL_SUCCESS;/* there is no functionality level specified, so we're ok */
 	else {
-		int min, max;
+		size_t min, max;
 		ptmax++;
-		for(j=0;j<ptmax-ptmin-1;j++)
+		for(j=0;j+ptmin+1 < ptmax;j++)
 			if(!isdigit(ptmin[j])) 
 				return CL_SUCCESS;/* not numbers, not functionality level */
 		for(j=0;j<strlen(ptmax);j++)
@@ -557,8 +560,6 @@ int functionality_level_check(char* line)
  			max = INT_MAX; 		
 		else
 			max = atoi(ptmax);
-		if(min<0) min=0;
-		if(max<0) max=0;
 
 		if(min > cl_retflevel()) {
 			cli_dbgmsg("regex list line %s not loaded (required f-level: %d)\n",line,min);

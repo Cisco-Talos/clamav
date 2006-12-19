@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.15  2006/12/19 20:30:17  tkojm
+ *  fix some compiler warnings
+ *
  *  Revision 1.14  2006/10/14 23:52:01  tkojm
  *  code cleanup
  *
@@ -496,7 +499,7 @@ int get_host(const struct phishcheck* s,struct string* dest,const char* URL,int 
 	const char* end=NULL;
 	if(!URL) {
 		string_assign_null(dest);
-		return;
+		return 0;
 	}
 	start = strstr(URL,"://");
 	if(!start) {
@@ -563,8 +566,9 @@ int get_host(const struct phishcheck* s,struct string* dest,const char* URL,int 
 			end  = start + strlen(start);
 	}
 
-	if(rc = string_assign_dup(dest,start,end))
+	if(( rc = string_assign_dup(dest,start,end) ))
 		return rc;
+	return 0;
 }
 
 int isCountryCode(const struct phishcheck* s,const char* str)
@@ -861,14 +865,14 @@ cleanupURL(struct string *URL, int isReal)
 	len = strlen(begin);
 	if(len == 0) {
 		string_assign_null(URL);
-		return;
+		return 0;
 	}
 
 	end = begin + len - 1;
 	/*cli_dbgmsg("%d %d\n", end-begin, len);*/
 	if(begin >= end) {
 		string_assign_null(URL);
-		return;
+		return 0;
 	}
 	while(isspace(*end))
 		end--;
@@ -895,10 +899,11 @@ cleanupURL(struct string *URL, int isReal)
 		/* convert %xx to real value */
 		str_hex_to_char(&begin,&end);
 		str_fixup_spaces(&begin,&end);
-		if (rc = string_assign_dup(URL,begin,end+1))
+		if (( rc = string_assign_dup(URL,begin,end+1) ))
 			return rc;
 		/*cli_dbgmsg("%p::%s\n",URL->data,URL->data);*/
 	}
+	return 0;
 }
 
 void get_redirected_URL(struct string* URL)
