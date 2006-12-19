@@ -1,3 +1,7 @@
+Tue Dec 19 21:13:23 CET 2006 (tk)
+---------------------------------
+  * libclamav/cab.c: extract stored files
+
 Tue Dec 19 15:41:35 GMT 2006 (njh)
 ----------------------------------
   * clamav-milter:	Use limits.maxmailrec (patch from TK)

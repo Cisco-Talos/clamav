@@ -52,6 +52,7 @@ struct cab_file {
     char *name;
     int error;
     int fd;
+    int ofd;
     struct cab_folder *folder;
     struct cab_file *next;
     struct cab_archive *cab;
@@ -67,7 +68,7 @@ struct cab_folder {
 };
 
 int cab_open(int fd, off_t offset, struct cab_archive *cab);
-int cab_extract(int fd, struct cab_file *file, const char *name);
+int cab_extract(struct cab_file *file, const char *name);
 void cab_free(struct cab_archive *cab);
 
 #endif
