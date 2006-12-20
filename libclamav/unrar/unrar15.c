@@ -22,6 +22,7 @@
  */
 
 #include "unrar.h"
+#include <string.h>
 
 #define STARTL1  2
 static unsigned int dec_l1[]={0x8000,0xa000,0xc000,0xd000,0xe000,0xea00,

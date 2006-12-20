@@ -28,6 +28,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #ifndef	C_WINDOWS
 #include <sys/socket.h>
 #include <netinet/in.h>

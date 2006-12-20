@@ -1,3 +1,8 @@
+Wed Dec 20 16:30:49 CET 2006 (acab)
+-----------------------------------
+  * clamd, libclamav: Fix implicit function declaration
+    reported by Stephen Gran <steve*lobefin.net>
+
 Wed Dec 20 14:56:12 GMT 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c, clamav-milter:	Fix compilation error from new clamav.h
