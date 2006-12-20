@@ -632,7 +632,6 @@ int cab_extract(struct cab_file *file, const char *name)
 	    cli_dbgmsg("CAB: Compression method: QUANTUM\n");
 	    file->state->stream = (struct qtm_stream *) qtm_init(file->fd, file->ofd, (int) (file->folder->cmethod >> 8) & 0x1f, 4096, file, &cab_read);
 	    if(file->offset) {
-		file->wflag = 0;
 		((struct qtm_stream *) file->state->stream)->wflag = 0;
 		qtm_decompress(file->state->stream, file->offset);
 		((struct qtm_stream *) file->state->stream)->wflag = 1;
