@@ -502,7 +502,7 @@ int cli_initengine(struct cl_engine **engine, unsigned int options)
     }
 
 #ifdef CL_EXPERIMENTAL
-    if(!(options & CL_DB_NOPHISHING_URLS))
+    if(options & CL_DB_PHISHING_URLS)
 	if((ret = phishing_init(*engine)))
 	    return ret;
 #endif
@@ -673,7 +673,7 @@ static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	struct cli_matcher *root;
 	int line = 0, sigs = 0, ret = 0;
 	unsigned short target;
-	unsigned int nophish = options & CL_DB_NOPHISHING;
+	unsigned int phish = options & CL_DB_PHISHING;
 
 
     if((ret = cli_initengine(engine, options))) {
@@ -692,7 +692,7 @@ static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	if(!strncmp(buffer, "Exploit.JPEG.Comment", 20)) /* temporary */
 	    continue;
 
-	if(nophish)
+	if(!phish)
 	    if(!strncmp(buffer, "HTML.Phishing", 13) || !strncmp(buffer, "Email.Phishing", 14))
 		continue;
 
@@ -1168,12 +1168,12 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
 	    skipped = 1;
 #ifdef CL_EXPERIMENTAL
     } else if(cli_strbcasestr(filename, ".wdb")) {
-	if(!(options & CL_DB_NOPHISHING_URLS))
+	if(options & CL_DB_PHISHING_URLS)
 	    ret = cli_loadwdb(fd, engine, options);
 	else
 	    skipped = 1;
     } else if(cli_strbcasestr(filename, ".pdb")) {
-	if(!(options & CL_DB_NOPHISHING_URLS))
+	if(options & CL_DB_PHISHING_URLS)
 	    ret = cli_loadpdb(fd, engine, options);
 	else
 	    skipped = 1;

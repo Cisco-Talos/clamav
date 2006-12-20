@@ -69,27 +69,27 @@ extern "C"
 
 /* db options */
 #define CL_DB_NCORE	    0x1
-#define CL_DB_NOPHISHING    0x2
+#define CL_DB_PHISHING	    0x2
 #define CL_DB_ACONLY	    0x4 /* WARNING: only for developers */
-#define CL_DB_NOPHISHING_URLS 0x8
+#define CL_DB_PHISHING_URLS 0x8
 
 /* recommended db settings */
-#define CL_DB_STDOPT	    0x0
+#define CL_DB_STDOPT	    CL_DB_PHISHING
 
 /* scan options */
-#define CL_SCAN_RAW		0x0
-#define CL_SCAN_ARCHIVE		0x1
-#define CL_SCAN_MAIL		0x2
-#define CL_SCAN_OLE2		0x4
-#define CL_SCAN_BLOCKENCRYPTED	0x8
-#define CL_SCAN_HTML		0x10
-#define CL_SCAN_PE		0x20
-#define CL_SCAN_BLOCKBROKEN	0x40
-#define CL_SCAN_MAILURL		0x80
-#define CL_SCAN_BLOCKMAX	0x100
-#define CL_SCAN_ALGO		0x200
-#define CL_PHISH_NO_DOMAINLIST  0x800
-#define CL_SCAN_ELF		0x1000
+#define CL_SCAN_RAW		    0x0
+#define CL_SCAN_ARCHIVE		    0x1
+#define CL_SCAN_MAIL		    0x2
+#define CL_SCAN_OLE2		    0x4
+#define CL_SCAN_BLOCKENCRYPTED	    0x8
+#define CL_SCAN_HTML		    0x10
+#define CL_SCAN_PE		    0x20
+#define CL_SCAN_BLOCKBROKEN	    0x40
+#define CL_SCAN_MAILURL		    0x80
+#define CL_SCAN_BLOCKMAX	    0x100
+#define CL_SCAN_ALGO		    0x200
+#define CL_SCAN_PHISHING_DOMAINLIST 0x800
+#define CL_SCAN_ELF		    0x1000
 
 /* recommended scan settings */
 #define CL_SCAN_STDOPT		(CL_SCAN_ARCHIVE | CL_SCAN_MAIL | CL_SCAN_OLE2 | CL_SCAN_HTML | CL_SCAN_PE | CL_SCAN_ALGO | CL_SCAN_ELF) 

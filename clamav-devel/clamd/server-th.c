@@ -300,10 +300,10 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned in
     max_threads = cfgopt(copt, "MaxThreads")->numarg;
 
 #ifdef CL_EXPERIMENTAL
-    if(!cfgopt(copt,"PhishingScanURLs")->enabled)
-	dboptions |= CL_DB_NOPHISHING_URLS;
+    if(cfgopt(copt,"PhishingScanURLs")->enabled)
+	dboptions |= CL_DB_PHISHING_URLS;
     if(cfgopt(copt,"PhishingStrictURLCheck")->enabled)
-	options |= CL_PHISH_NO_DOMAINLIST;
+	options |= CL_SCAN_PHISHING_DOMAINLIST;
 #endif
 
     if(cfgopt(copt, "ScanArchive")->enabled || cfgopt(copt, "ClamukoScanArchive")->enabled) {
