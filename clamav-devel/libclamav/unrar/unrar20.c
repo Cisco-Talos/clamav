@@ -23,6 +23,7 @@
 
 #include <string.h>
 
+#include "others.h"
 #include "unrar.h"
 #include "unrar20.h"
 
