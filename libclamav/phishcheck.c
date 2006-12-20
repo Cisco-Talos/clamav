@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.16  2006/12/20 01:23:50  tkojm
+ *  options cleanup
+ *
  *  Revision 1.15  2006/12/19 20:30:17  tkojm
  *  fix some compiler warnings
  *
@@ -939,8 +942,8 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 			urls.flags	 = strncmp((char*)hrefs->tag[i],href_text,href_text_len)? (CL_PHISH_ALL_CHECKS&~CHECK_SSL): CL_PHISH_ALL_CHECKS;
 			if (!(urls.flags&CHECK_IMG_URL) && !strncmp((char*)hrefs->tag[i],src_text,src_text_len))
 				continue;
-			if (ctx->options&CL_PHISH_NO_DOMAINLIST)
-				urls.flags &= ~DOMAINLIST_REQUIRED;
+			if (ctx->options&CL_SCAN_PHISHING_DOMAINLIST)
+				urls.flags |= DOMAINLIST_REQUIRED;
 			string_init_c(&urls.realLink,(char*)hrefs->value[i]);
 /*			if(!hrefs->contents[i]->isClosed) {
 				blobAddData(hrefs->contents[i],empty_string,1);

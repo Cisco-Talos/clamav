@@ -308,10 +308,10 @@ int main(int argc, char **argv)
     dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
     logg("#Reading databases from %s\n", dbdir);
 
-    if(!cfgopt(copt, "DetectPhishing")->enabled) {
-	dboptions |= CL_DB_NOPHISHING;
+    if(cfgopt(copt, "DetectPhishing")->enabled)
+	dboptions |= CL_DB_PHISHING;
+    else
 	logg("Not loading phishing signatures.\n");
-    }
 
     if(cfgopt(copt, "NodalCoreAcceleration")->enabled) {
 #ifdef HAVE_NCORE
