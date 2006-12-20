@@ -24,7 +24,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.305 2006/12/19 15:41:16 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.306 2006/12/20 14:55:17 njh Exp $";
 
 #define	CM_VERSION	"devel-191206"
 
@@ -5355,12 +5355,12 @@ loadDatabase(void)
 #endif
 	signatures = 0;
 	newroot = NULL;
-	dboptions = 0;
 
 	if(!cfgopt(copt, "DetectPhishing")->enabled) {
-		dboptions |= CL_DB_NOPHISHING;
 		logg("Not loading phishing signatures.\n");
-	}
+		dboptions = 0;
+	} else
+		dboptions = CL_DB_PHISHING;
 
 	ret = cl_load(dbdir, &newroot, &signatures, dboptions);
 	if(ret != 0) {

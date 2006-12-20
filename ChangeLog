@@ -1,3 +1,8 @@
+Wed Dec 20 14:56:12 GMT 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c, clamav-milter:	Fix compilation error from new clamav.h
+		(see below)
+
 Wed Dec 20 02:19:45 CET 2006 (tk)
 ---------------------------------
   * libclamav: options cleanup; requires additional changes in mbox.c and

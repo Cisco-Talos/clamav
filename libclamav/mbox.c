@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.362 2006/12/18 17:03:58 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.363 2006/12/20 14:55:17 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -2037,7 +2037,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 	fileblob *fb;
 	bool infected = FALSE;
 #ifdef CL_EXPERIMENTAL
-	const int doPhishingScan = !(mctx->ctx->engine->dboptions&CL_DB_NOPHISHING_URLS); /* || (mctx->ctx->options&CL_SCAN_PHISHING_GA_TRAIN) || (mctx->ctx->options&CL_SCAN_PHISHING_GA);  kept here for the GA MERGE */
+	const int doPhishingScan = mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS; /* || (mctx->ctx->options&CL_SCAN_PHISHING_GA_TRAIN) || (mctx->ctx->options&CL_SCAN_PHISHING_GA);  kept here for the GA MERGE */
 #endif
 
 	cli_dbgmsg("in parseEmailBody\n");
@@ -3909,7 +3909,8 @@ checkURLs(message *mainMessage, mbox_ctx *mctx, int *rc, int is_html)
 	tag_arguments_t hrefs;
 	blob *b;
 
-	hrefs.scanContents = (!(mctx->ctx->engine->dboptions&CL_DB_NOPHISHING_URLS)); /* aCaB: stripped GA related stuff */
+	/* aCaB: stripped GA related stuff */
+	hrefs.scanContents = mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS;
 
 #if    (!defined(FOLLOWURLS)) || (FOLLOWURLS <= 0)
 	if(!hrefs.scanContents)
@@ -5246,7 +5247,7 @@ do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx 
 					if((mctx->ctx->options&CL_SCAN_MAILURL) && is_html)
 						checkURLs(aMessage, mctx, rc, 1);
 #ifdef	CL_EXPERIMENTAL
-					else if(!(mctx->ctx->engine->dboptions&CL_DB_NOPHISHING_URLS))
+					else if(mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS)
 						checkURLs(aMessage, mctx, rc, is_html);
 #endif
 					messageAddArgument(aMessage,
