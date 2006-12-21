@@ -124,7 +124,8 @@ char *sudecrypt(int desc, size_t fsize, struct cli_exe_section *sections, uint16
   hunk[6]=sects&0xff;
   hunk[7]=sects>>8;
   cli_writeint32(hunk+0x28, va);
-  memset(hunk+0xf8+0x28*sects, 0, 0x28);
+  hunk+=0x18+(cli_readint32(hunk+0x14)&0xffff); /* size of PE + size of OPT */
+  memset(hunk+0x28*sects, 0, 0x28);
 
   return file;
 }

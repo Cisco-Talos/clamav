@@ -345,7 +345,7 @@ int wwunpack(char *exe, uint32_t exesz, uint32_t headsize, uint32_t min, uint32_
   cli_writeint32(stuff+0x50, csize);
 
 
-  stuff+=0xf8;
+  stuff+=0x18+(cli_readint32(stuff+0x14)&0xffff);
   while (sects--) {
     uint32_t v=cli_readint32(stuff+8);
     uint32_t r=cli_readint32(stuff+16);
