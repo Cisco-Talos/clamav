@@ -1,3 +1,7 @@
+Thu Dec 21 19:41:55 CET 2006 (acab)
+-----------------------------------
+  * sigtool: Remove duplicate help message (closes bb#203)
+
 Thu Dec 21 19:16:53 CET 2006 (acab)
 -----------------------------------
   * libclamav: Handle long opt headers in packers, just in case...
