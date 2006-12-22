@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.59 2006/12/13 13:50:51 njh Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.60 2006/12/22 08:13:46 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -569,7 +569,7 @@ sanitiseName(char *name)
 #endif
 		/* Also check for tab - "Heinz Martin" <Martin@hemag.ch> */
 #if	defined(MSDOS) || defined(C_CYGWIN) || defined(C_WINDOWS) || defined(C_OS2)
-		if(strchr("%/*?<>|\\\"+=,;:\t ", *name))
+		if(strchr("%/*?<>|\\\"+=,;:\t ~", *name))
 #else
 		if(*name == '/')
 #endif
