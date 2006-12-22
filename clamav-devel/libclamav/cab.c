@@ -173,7 +173,7 @@ void cab_free(struct cab_archive *cab)
 
 int cab_open(int fd, off_t offset, struct cab_archive *cab)
 {
-	unsigned int i, bscore = 0;
+	unsigned int i, bscore = 0, badname = 0;
 	struct cab_file *file, *lfile = NULL;
 	struct cab_folder *folder, *lfolder = NULL;
 	struct cab_hdr hdr;
@@ -272,7 +272,7 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	if(ret)
 	    return ret;
 	if(cab_chkname(pt))
-	    bscore++;
+	    badname = 1;
 	else
 	    cli_dbgmsg("CAB: Preceeding cabinet name: %s\n", pt);
 	free(pt);
@@ -281,7 +281,7 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	if(ret)
 	    return ret;
 	if(cab_chkname(pt))
-	    bscore++;
+	    badname = 1;
 	else
 	    cli_dbgmsg("CAB: Preceeding cabinet info: %s\n", pt);
 	free(pt);
@@ -293,7 +293,7 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	if(ret)
 	    return ret;
 	if(cab_chkname(pt))
-	    bscore++;
+	    badname = 1;
 	else
 	    cli_dbgmsg("CAB: Next cabinet name: %s\n", pt);
 	free(pt);
@@ -302,11 +302,12 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	if(ret)
 	    return ret;
 	if(cab_chkname(pt))
-	    bscore++;
+	    badname = 1;
 	else
 	    cli_dbgmsg("CAB: Next cabinet info: %s\n", pt);
 	free(pt);
     }
+    bscore += badname;
 
     if(bscore >= 4) {
 	cli_dbgmsg("CAB: bscore == %u, most likely a fake cabinet\n", bscore);
