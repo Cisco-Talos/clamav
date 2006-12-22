@@ -20,7 +20,7 @@
  * Author: Charles G. Waldman (cgw@pgt.com),  Aug 4 1998
  * There are many tar files that this code cannot decode.
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.32 2006/10/15 11:10:42 njh Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.33 2006/12/22 18:29:13 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -61,10 +61,11 @@ octal(const char *str)
 }
 
 int
-cli_untar(const char *dir, int desc, unsigned int posix)
+cli_untar(const char *dir, int desc, unsigned int posix, const struct cl_limits *limits)
 {
 	int size = 0;
 	int in_block = 0;
+	unsigned int files = 0;
 	char fullname[NAME_MAX + 1];
 	FILE *outfile = NULL;
 
@@ -103,6 +104,11 @@ cli_untar(const char *dir, int desc, unsigned int posix)
 			if(block[0] == '\0')	/* We're done */
 				break;
 
+			if(limits && limits->maxfiles && (files >= limits->maxfiles)) {
+				cli_dbgmsg("cli_untar: number of files exceeded %u\n", limits->maxfiles);
+				return CL_CLEAN;
+			}
+
 			/* Notice assumption that BLOCKSIZE > 262 */
 			if(posix) {
 				strncpy(magic, block+257, 5);
@@ -122,6 +128,7 @@ cli_untar(const char *dir, int desc, unsigned int posix)
 				case '0':	/* plain file */
 				case '\0':	/* plain file */
 				case '7':	/* contiguous file */
+					files++;
 					directory = 0;
 					break;
 				case '1':	/* Link to already archived file */
@@ -173,10 +180,15 @@ cli_untar(const char *dir, int desc, unsigned int posix)
 				return CL_EFORMAT;
 			}
 			cli_dbgmsg("cli_untar: size = %d\n", size);
+			if(limits && limits->maxfilesize && ((unsigned int)size > limits->maxfilesize)) {
+				cli_dbgmsg("cli_untar: size exceeded %d bytes\n", size);
+				skipEntry++;
+			}
 
 			if(skipEntry) {
 				const int nskip = (size % BLOCKSIZE || !size) ? size + BLOCKSIZE - (size % BLOCKSIZE) : size;
-				cli_dbgmsg("cli_untar: GNU extension, skipping entry\n");
+
+				cli_dbgmsg("cli_untar: skipping entry\n");
 				lseek(desc, nskip, SEEK_CUR);
 				continue;
 			}
