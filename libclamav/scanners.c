@@ -1246,7 +1246,7 @@ static int cli_scantar(int desc, cli_ctx *ctx, unsigned int posix)
 	return CL_ETMPDIR;
     }
 
-    if((ret = cli_untar(dir, desc, posix)))
+    if((ret = cli_untar(dir, desc, posix, ctx->limits)))
 	cli_dbgmsg("Tar: %s\n", cl_strerror(ret));
     else
 	ret = cli_scandir(dir, ctx);

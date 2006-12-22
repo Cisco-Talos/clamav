@@ -1,3 +1,7 @@
+Fri Dec 22 20:38:49 CET 2006 (acab)
+-----------------------------------
+  * libclamav/scanners.c: Missing argument in cli_untar
+
 Fri Dec 22 18:29:28 GMT 2006 (njh)
 ----------------------------------
   * libclamav/untar.[ch]:	Recommitting removed fix to bug 153
