@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.363 2006/12/20 14:55:17 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.364 2006/12/22 19:45:34 acab Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -3238,7 +3238,7 @@ strip(char *buf, int len)
 		return i;
 	ptr = &buf[--len];
 
-#if	defined(UNIX) || defined(C_LINUX) || defined(C_DARWIN)	/* watch - it may be in shared text area */
+#if	defined(UNIX) || defined(C_LINUX) || defined(C_DARWIN) || defined(C_KFREEBSD_GNU) /* watch - it may be in shared text area */
 	do
 		if(*ptr)
 			*ptr = '\0';
