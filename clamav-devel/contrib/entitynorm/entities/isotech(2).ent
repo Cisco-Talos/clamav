@@ -1,0 +1,202 @@
+
+<!--
+     File isotech.ent produced by the XSL script entities.xsl
+     from input data in unicode.xml.
+
+     Please report any errors to David Carlisle
+     via the public W3C list www-math@w3.org.
+
+     The numeric character values assigned to each entity
+     (should) match the Unicode assignments in Unicode 4.0.
+
+     Entity names in this file are derived from files carrying the
+     following notice:
+
+     (C) International Organization for Standardization 1991
+     Permission to copy in any form is granted for use with
+     conforming SGML systems and applications as defined in
+     ISO 8879, provided this notice is included in all copies.
+
+-->
+
+
+<!-- 
+     Version: $Id: isotech(2).ent,v 1.1 2006/12/26 16:17:01 tkojm Exp $
+
+       Public identifier: ISO 9573-13:1991//ENTITIES General Technical //EN//XML
+       System identifier: http://www.w3.org/2003/entities/iso9573-1991/isotech.ent
+
+     The public identifier should always be used verbatim.
+     The system identifier may be changed to suit local requirements.
+
+     Typical invocation:
+
+       <!ENTITY % isotech PUBLIC
+         "ISO 9573-13:1991//ENTITIES General Technical //EN//XML"
+         "http://www.w3.org/2003/entities/iso9573-1991/isotech.ent"
+       >
+       %isotech;
+
+-->
+
+<!ENTITY acd              "&#x0223F;" ><!--SINE WAVE -->
+<!ENTITY aleph            "&#x02135;" ><!--ALEF SYMBOL -->
+<!ENTITY And              "&#x02A53;" ><!--DOUBLE LOGICAL AND -->
+<!ENTITY and              "&#x02227;" ><!--LOGICAL AND -->
+<!ENTITY andand           "&#x02A55;" ><!--TWO INTERSECTING LOGICAL AND -->
+<!ENTITY andd             "&#x02A5C;" ><!--LOGICAL AND WITH HORIZONTAL DASH -->
+<!ENTITY andslope         "&#x02A58;" ><!--SLOPING LARGE AND -->
+<!ENTITY andv             "&#x02A5A;" ><!--LOGICAL AND WITH MIDDLE STEM -->
+<!ENTITY angrt            "&#x0221F;" ><!--RIGHT ANGLE -->
+<!ENTITY angsph           "&#x02222;" ><!--SPHERICAL ANGLE -->
+<!ENTITY angst            "&#x0212B;" ><!--ANGSTROM SIGN -->
+<!ENTITY ap               "&#x02248;" ><!--ALMOST EQUAL TO -->
+<!ENTITY apacir           "&#x02A6F;" ><!--ALMOST EQUAL TO WITH CIRCUMFLEX ACCENT -->
+<!ENTITY awconint         "&#x02233;" ><!--ANTICLOCKWISE CONTOUR INTEGRAL -->
+<!ENTITY awint            "&#x02A11;" ><!--ANTICLOCKWISE INTEGRATION -->
+<!ENTITY becaus           "&#x02235;" ><!--BECAUSE -->
+<!ENTITY bernou           "&#x0212C;" ><!--SCRIPT CAPITAL B -->
+<!ENTITY bne              "&#x0003D;&#x020E5;" ><!--EQUALS SIGN with reverse slash -->
+<!ENTITY bnequiv          "&#x02261;&#x020E5;" ><!--IDENTICAL TO with reverse slash -->
+<!ENTITY bNot             "&#x02AED;" ><!--REVERSED DOUBLE STROKE NOT SIGN -->
+<!ENTITY bnot             "&#x02310;" ><!--REVERSED NOT SIGN -->
+<!ENTITY bottom           "&#x022A5;" ><!--UP TACK -->
+<!ENTITY cap              "&#x02229;" ><!--INTERSECTION -->
+<!ENTITY Cconint          "&#x02230;" ><!--VOLUME INTEGRAL -->
+<!ENTITY cirfnint         "&#x02A10;" ><!--CIRCULATION FUNCTION -->
+<!ENTITY compfn           "&#x02218;" ><!--RING OPERATOR -->
+<!ENTITY cong             "&#x02245;" ><!--APPROXIMATELY EQUAL TO -->
+<!ENTITY Conint           "&#x0222F;" ><!--SURFACE INTEGRAL -->
+<!ENTITY conint           "&#x0222E;" ><!--CONTOUR INTEGRAL -->
+<!ENTITY ctdot            "&#x022EF;" ><!--MIDLINE HORIZONTAL ELLIPSIS -->
+<!ENTITY cup              "&#x0222A;" ><!--UNION -->
+<!ENTITY cwconint         "&#x02232;" ><!--CLOCKWISE CONTOUR INTEGRAL -->
+<!ENTITY cwint            "&#x02231;" ><!--CLOCKWISE INTEGRAL -->
+<!ENTITY cylcty           "&#x0232D;" ><!--CYLINDRICITY -->
+<!ENTITY disin            "&#x022F2;" ><!--ELEMENT OF WITH LONG HORIZONTAL STROKE -->
+<!ENTITY Dot              "&#x000A8;" ><!--DIAERESIS -->
+<!ENTITY DotDot           " &#x020DC;" ><!--COMBINING FOUR DOTS ABOVE -->
+<!ENTITY dsol             "&#x029F6;" ><!--SOLIDUS WITH OVERBAR -->
+<!ENTITY dtdot            "&#x022F1;" ><!--DOWN RIGHT DIAGONAL ELLIPSIS -->
+<!ENTITY dwangle          "&#x029A6;" ><!--OBLIQUE ANGLE OPENING UP -->
+<!ENTITY elinters         "&#x0FFFD;" ><!--REPLACEMENT CHARACTER -->
+<!ENTITY epar             "&#x022D5;" ><!--EQUAL AND PARALLEL TO -->
+<!ENTITY eparsl           "&#x029E3;" ><!--EQUALS SIGN AND SLANTED PARALLEL -->
+<!ENTITY equiv            "&#x02261;" ><!--IDENTICAL TO -->
+<!ENTITY eqvparsl         "&#x029E5;" ><!--IDENTICAL TO AND SLANTED PARALLEL -->
+<!ENTITY exist            "&#x02203;" ><!--THERE EXISTS -->
+<!ENTITY fltns            "&#x025B1;" ><!--WHITE PARALLELOGRAM -->
+<!ENTITY fnof             "&#x00192;" ><!--LATIN SMALL LETTER F WITH HOOK -->
+<!ENTITY forall           "&#x02200;" ><!--FOR ALL -->
+<!ENTITY fpartint         "&#x02A0D;" ><!--FINITE PART INTEGRAL -->
+<!ENTITY ge               "&#x02265;" ><!--GREATER-THAN OR EQUAL TO -->
+<!ENTITY hamilt           "&#x0210B;" ><!--SCRIPT CAPITAL H -->
+<!ENTITY iff              "&#x021D4;" ><!--LEFT RIGHT DOUBLE ARROW -->
+<!ENTITY iinfin           "&#x029DC;" ><!--INCOMPLETE INFINITY -->
+<!ENTITY imped            "&#x001B5;" ><!--LATIN CAPITAL LETTER Z WITH STROKE -->
+<!ENTITY infin            "&#x0221E;" ><!--INFINITY -->
+<!ENTITY infintie         "&#x029DD;" ><!--TIE OVER INFINITY -->
+<!ENTITY Int              "&#x0222C;" ><!--DOUBLE INTEGRAL -->
+<!ENTITY int              "&#x0222B;" ><!--INTEGRAL -->
+<!ENTITY intlarhk         "&#x02A17;" ><!--INTEGRAL WITH LEFTWARDS ARROW WITH HOOK -->
+<!ENTITY isin             "&#x02208;" ><!--ELEMENT OF -->
+<!ENTITY isindot          "&#x022F5;" ><!--ELEMENT OF WITH DOT ABOVE -->
+<!ENTITY isinE            "&#x022F9;" ><!--ELEMENT OF WITH TWO HORIZONTAL STROKES -->
+<!ENTITY isins            "&#x022F4;" ><!--SMALL ELEMENT OF WITH VERTICAL BAR AT END OF HORIZONTAL STROKE -->
+<!ENTITY isinsv           "&#x022F3;" ><!--ELEMENT OF WITH VERTICAL BAR AT END OF HORIZONTAL STROKE -->
+<!ENTITY isinv            "&#x02208;" ><!--ELEMENT OF -->
+<!ENTITY lagran           "&#x02112;" ><!--SCRIPT CAPITAL L -->
+<!ENTITY Lang             "&#x0300A;" ><!--LEFT DOUBLE ANGLE BRACKET -->
+<!ENTITY lang             "&#x02329;" ><!--LEFT-POINTING ANGLE BRACKET -->
+<!ENTITY lArr             "&#x021D0;" ><!--LEFTWARDS DOUBLE ARROW -->
+<!ENTITY lbbrk            "&#x03014;" ><!--LEFT TORTOISE SHELL BRACKET -->
+<!ENTITY le               "&#x02264;" ><!--LESS-THAN OR EQUAL TO -->
+<!ENTITY loang            "&#x03018;" ><!--LEFT WHITE TORTOISE SHELL BRACKET -->
+<!ENTITY lobrk            "&#x0301A;" ><!--LEFT WHITE SQUARE BRACKET -->
+<!ENTITY lopar            "&#x02985;" ><!--LEFT WHITE PARENTHESIS -->
+<!ENTITY lowast           "&#x02217;" ><!--ASTERISK OPERATOR -->
+<!ENTITY minus            "&#x02212;" ><!--MINUS SIGN -->
+<!ENTITY mnplus           "&#x02213;" ><!--MINUS-OR-PLUS SIGN -->
+<!ENTITY nabla            "&#x02207;" ><!--NABLA -->
+<!ENTITY ne               "&#x02260;" ><!--NOT EQUAL TO -->
+<!ENTITY nedot            "&#x02250;&#x00338;" ><!--APPROACHES THE LIMIT with slash -->
+<!ENTITY nhpar            "&#x02AF2;" ><!--PARALLEL WITH HORIZONTAL STROKE -->
+<!ENTITY ni               "&#x0220B;" ><!--CONTAINS AS MEMBER -->
+<!ENTITY nis              "&#x022FC;" ><!--SMALL CONTAINS WITH VERTICAL BAR AT END OF HORIZONTAL STROKE -->
+<!ENTITY nisd             "&#x022FA;" ><!--CONTAINS WITH LONG HORIZONTAL STROKE -->
+<!ENTITY niv              "&#x0220B;" ><!--CONTAINS AS MEMBER -->
+<!ENTITY Not              "&#x02AEC;" ><!--DOUBLE STROKE NOT SIGN -->
+<!ENTITY notin            "&#x02209;" ><!--NOT AN ELEMENT OF -->
+<!ENTITY notindot         "&#x022F5;&#x00338;" ><!--ELEMENT OF WITH DOT ABOVE with slash -->
+<!ENTITY notinE           "&#x022F9;&#x00338;" ><!--ELEMENT OF WITH TWO HORIZONTAL STROKES with slash -->
+<!ENTITY notinva          "&#x02209;" ><!--NOT AN ELEMENT OF -->
+<!ENTITY notinvb          "&#x022F7;" ><!--SMALL ELEMENT OF WITH OVERBAR -->
+<!ENTITY notinvc          "&#x022F6;" ><!--ELEMENT OF WITH OVERBAR -->
+<!ENTITY notni            "&#x0220C;" ><!--DOES NOT CONTAIN AS MEMBER -->
+<!ENTITY notniva          "&#x0220C;" ><!--DOES NOT CONTAIN AS MEMBER -->
+<!ENTITY notnivb          "&#x022FE;" ><!--SMALL CONTAINS WITH OVERBAR -->
+<!ENTITY notnivc          "&#x022FD;" ><!--CONTAINS WITH OVERBAR -->
+<!ENTITY nparsl           "&#x02AFD;&#x020E5;" ><!--DOUBLE SOLIDUS OPERATOR with reverse slash -->
+<!ENTITY npart            "&#x02202;&#x00338;" ><!--PARTIAL DIFFERENTIAL with slash -->
+<!ENTITY npolint          "&#x02A14;" ><!--LINE INTEGRATION NOT INCLUDING THE POLE -->
+<!ENTITY nvinfin          "&#x029DE;" ><!--INFINITY NEGATED WITH VERTICAL BAR -->
+<!ENTITY olcross          "&#x029BB;" ><!--CIRCLE WITH SUPERIMPOSED X -->
+<!ENTITY Or               "&#x02A54;" ><!--DOUBLE LOGICAL OR -->
+<!ENTITY or               "&#x02228;" ><!--LOGICAL OR -->
+<!ENTITY ord              "&#x02A5D;" ><!--LOGICAL OR WITH HORIZONTAL DASH -->
+<!ENTITY order            "&#x02134;" ><!--SCRIPT SMALL O -->
+<!ENTITY oror             "&#x02A56;" ><!--TWO INTERSECTING LOGICAL OR -->
+<!ENTITY orslope          "&#x02A57;" ><!--SLOPING LARGE OR -->
+<!ENTITY orv              "&#x02A5B;" ><!--LOGICAL OR WITH MIDDLE STEM -->
+<!ENTITY par              "&#x02225;" ><!--PARALLEL TO -->
+<!ENTITY parsl            "&#x02AFD;" ><!--DOUBLE SOLIDUS OPERATOR -->
+<!ENTITY part             "&#x02202;" ><!--PARTIAL DIFFERENTIAL -->
+<!ENTITY permil           "&#x02030;" ><!--PER MILLE SIGN -->
+<!ENTITY perp             "&#x022A5;" ><!--UP TACK -->
+<!ENTITY pertenk          "&#x02031;" ><!--PER TEN THOUSAND SIGN -->
+<!ENTITY phmmat           "&#x02133;" ><!--SCRIPT CAPITAL M -->
+<!ENTITY pointint         "&#x02A15;" ><!--INTEGRAL AROUND A POINT OPERATOR -->
+<!ENTITY Prime            "&#x02033;" ><!--DOUBLE PRIME -->
+<!ENTITY prime            "&#x02032;" ><!--PRIME -->
+<!ENTITY profalar         "&#x0232E;" ><!--ALL AROUND-PROFILE -->
+<!ENTITY profline         "&#x02312;" ><!--ARC -->
+<!ENTITY profsurf         "&#x02313;" ><!--SEGMENT -->
+<!ENTITY prop             "&#x0221D;" ><!--PROPORTIONAL TO -->
+<!ENTITY qint             "&#x02A0C;" ><!--QUADRUPLE INTEGRAL OPERATOR -->
+<!ENTITY qprime           "&#x02057;" ><!--QUADRUPLE PRIME -->
+<!ENTITY quatint          "&#x02A16;" ><!--QUATERNION INTEGRAL OPERATOR -->
+<!ENTITY radic            "&#x0221A;" ><!--SQUARE ROOT -->
+<!ENTITY Rang             "&#x0300B;" ><!--RIGHT DOUBLE ANGLE BRACKET -->
+<!ENTITY rang             "&#x0232A;" ><!--RIGHT-POINTING ANGLE BRACKET -->
+<!ENTITY rArr             "&#x021D2;" ><!--RIGHTWARDS DOUBLE ARROW -->
+<!ENTITY rbbrk            "&#x03015;" ><!--RIGHT TORTOISE SHELL BRACKET -->
+<!ENTITY roang            "&#x03019;" ><!--RIGHT WHITE TORTOISE SHELL BRACKET -->
+<!ENTITY robrk            "&#x0301B;" ><!--RIGHT WHITE SQUARE BRACKET -->
+<!ENTITY ropar            "&#x02986;" ><!--RIGHT WHITE PARENTHESIS -->
+<!ENTITY rppolint         "&#x02A12;" ><!--LINE INTEGRATION WITH RECTANGULAR PATH AROUND POLE -->
+<!ENTITY scpolint         "&#x02A13;" ><!--LINE INTEGRATION WITH SEMICIRCULAR PATH AROUND POLE -->
+<!ENTITY sim              "&#x0223C;" ><!--TILDE OPERATOR -->
+<!ENTITY simdot           "&#x02A6A;" ><!--TILDE OPERATOR WITH DOT ABOVE -->
+<!ENTITY sime             "&#x02243;" ><!--ASYMPTOTICALLY EQUAL TO -->
+<!ENTITY smeparsl         "&#x029E4;" ><!--EQUALS SIGN AND SLANTED PARALLEL WITH TILDE ABOVE -->
+<!ENTITY square           "&#x025A1;" ><!--WHITE SQUARE -->
+<!ENTITY squarf           "&#x025AA;" ><!--BLACK SMALL SQUARE -->
+<!ENTITY strns            "&#x000AF;" ><!--MACRON -->
+<!ENTITY sub              "&#x02282;" ><!--SUBSET OF -->
+<!ENTITY sube             "&#x02286;" ><!--SUBSET OF OR EQUAL TO -->
+<!ENTITY sup              "&#x02283;" ><!--SUPERSET OF -->
+<!ENTITY supe             "&#x02287;" ><!--SUPERSET OF OR EQUAL TO -->
+<!ENTITY tdot             " &#x020DB;" ><!--COMBINING THREE DOTS ABOVE -->
+<!ENTITY there4           "&#x02234;" ><!--THEREFORE -->
+<!ENTITY tint             "&#x0222D;" ><!--TRIPLE INTEGRAL -->
+<!ENTITY top              "&#x022A4;" ><!--DOWN TACK -->
+<!ENTITY topbot           "&#x02336;" ><!--APL FUNCTIONAL SYMBOL I-BEAM -->
+<!ENTITY topcir           "&#x02AF1;" ><!--DOWN TACK WITH CIRCLE BELOW -->
+<!ENTITY tprime           "&#x02034;" ><!--TRIPLE PRIME -->
+<!ENTITY utdot            "&#x022F0;" ><!--UP RIGHT DIAGONAL ELLIPSIS -->
+<!ENTITY uwangle          "&#x029A7;" ><!--OBLIQUE ANGLE OPENING DOWN -->
+<!ENTITY vangrt           "&#x0299C;" ><!--RIGHT ANGLE VARIANT WITH SQUARE -->
+<!ENTITY veeeq            "&#x0225A;" ><!--EQUIANGULAR TO -->
+<!ENTITY Verbar           "&#x02016;" ><!--DOUBLE VERTICAL LINE -->
+<!ENTITY wedgeq           "&#x02259;" ><!--ESTIMATES -->
+<!ENTITY xnis             "&#x022FB;" ><!--CONTAINS WITH VERTICAL BAR AT END OF HORIZONTAL STROKE -->

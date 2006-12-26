@@ -1,0 +1,37 @@
+#                                               -*- Autoconf -*-
+# Process this file with autoconf to produce a configure script.
+
+AC_PREREQ(2.60)
+AC_INIT
+AC_CONFIG_HEADER([test-config.h])
+AM_INIT_AUTOMAKE(fixdb,"`date +%Y%m%d`")
+
+# Checks for programs.
+
+AC_GNU_SOURCE
+AC_PROG_CC
+AC_PROG_LN_S
+AC_PROG_LIBTOOL
+AC_PROG_MAKE_SET
+
+
+# Checks for libraries.
+# Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS([stdlib.h])
+AC_CHECK_FUNCS([isascii])
+AC_CHECK_FUNCS([memset])
+AC_CHECK_FUNCS([regcomp]) 
+AC_CHECK_FUNCS([strchr]) 
+AC_CHECK_FUNCS([strdup]) 
+AC_FUNC_CLOSEDIR_VOID 
+AC_FUNC_MALLOC 
+AC_HEADER_DIRENT
+AC_TYPE_SIZE_T 
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+
+# Checks for library functions.
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT

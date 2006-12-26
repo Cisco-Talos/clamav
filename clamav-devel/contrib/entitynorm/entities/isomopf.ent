@@ -1,0 +1,67 @@
+
+<!--
+     File isomopf.ent produced by the XSL script entities.xsl
+     from input data in unicode.xml.
+
+     Please report any errors to David Carlisle
+     via the public W3C list www-math@w3.org.
+
+     The numeric character values assigned to each entity
+     (should) match the Unicode assignments in Unicode 4.0.
+
+     Entity names in this file are derived from files carrying the
+     following notice:
+
+     (C) International Organization for Standardization 1991
+     Permission to copy in any form is granted for use with
+     conforming SGML systems and applications as defined in
+     ISO 8879, provided this notice is included in all copies.
+
+-->
+
+
+<!-- 
+     Version: $Id: isomopf.ent,v 1.1 2006/12/26 16:17:01 tkojm Exp $
+
+       Public identifier: ISO 9573-13:1991//ENTITIES Math Alphabets: Open Face //EN//XML
+       System identifier: http://www.w3.org/2003/entities/iso9573-1991/isomopf.ent
+
+     The public identifier should always be used verbatim.
+     The system identifier may be changed to suit local requirements.
+
+     Typical invocation:
+
+       <!ENTITY % isomopf PUBLIC
+         "ISO 9573-13:1991//ENTITIES Math Alphabets: Open Face //EN//XML"
+         "http://www.w3.org/2003/entities/iso9573-1991/isomopf.ent"
+       >
+       %isomopf;
+
+-->
+
+<!ENTITY Aopf             "&#x1D538;" ><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL A -->
+<!ENTITY Bopf             "&#x1D539;" ><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL B -->
+<!ENTITY Copf             "&#x02102;" ><!--DOUBLE-STRUCK CAPITAL C -->
+<!ENTITY Dopf             "&#x1D53B;" ><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL D -->
+<!ENTITY Eopf             "&#x1D53C;" ><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL E -->
+<!ENTITY Fopf             "&#x1D53D;" ><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL F -->
+<!ENTITY Gopf             "&#x1D53E;" ><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL G -->
+<!ENTITY Hopf             "&#x0210D;" ><!--DOUBLE-STRUCK CAPITAL H -->
+<!ENTITY Iopf             "&#x1D540;" ><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL I -->
+<!ENTITY Jopf             "&#x1D541;" ><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL J -->
+<!ENTITY Kopf             "&#x1D542;" ><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL K -->
+<!ENTITY Lopf             "&#x1D543;" ><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL L -->
+<!ENTITY Mopf             "&#x1D544;" ><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL M -->
+<!ENTITY Nopf             "&#x02115;" ><!--DOUBLE-STRUCK CAPITAL N -->
+<!ENTITY Oopf             "&#x1D546;" ><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL O -->
+<!ENTITY Popf             "&#x02119;" ><!--DOUBLE-STRUCK CAPITAL P -->
+<!ENTITY Qopf             "&#x0211A;" ><!--DOUBLE-STRUCK CAPITAL Q -->
+<!ENTITY Ropf             "&#x0211D;" ><!--DOUBLE-STRUCK CAPITAL R -->
+<!ENTITY Sopf             "&#x1D54A;" ><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL S -->
+<!ENTITY Topf             "&#x1D54B;" ><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL T -->
+<!ENTITY Uopf             "&#x1D54C;" ><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL U -->
+<!ENTITY Vopf             "&#x1D54D;" ><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL V -->
+<!ENTITY Wopf             "&#x1D54E;" ><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL W -->
+<!ENTITY Xopf             "&#x1D54F;" ><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL X -->
+<!ENTITY Yopf             "&#x1D550;" ><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL Y -->
+<!ENTITY Zopf             "&#x02124;" ><!--DOUBLE-STRUCK CAPITAL Z -->

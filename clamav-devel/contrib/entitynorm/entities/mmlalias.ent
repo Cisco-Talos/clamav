@@ -1,0 +1,582 @@
+
+<!--
+     File mmlalias.ent produced by the XSL script entities.xsl
+     from input data in unicode.xml.
+
+     Please report any errors to David Carlisle
+     via the public W3C list www-math@w3.org.
+
+     The numeric character values assigned to each entity
+     (should) match the Unicode assignments in Unicode 4.0.
+
+     References to the VARIANT SELECTOR 1 character (&#x0FE00;)
+     should match the uses listed in Unicode Technical Report 25.
+
+-->
+
+
+<!-- 
+     Version: $Id: mmlalias.ent,v 1.1 2006/12/26 16:17:01 tkojm Exp $
+
+       
+       System identifier: http://www.w3.org/2003/entities/mathml/mmlalias.ent
+
+     The system identifier may be changed to suit local requirements.
+
+     Typical invocation:
+
+       <!ENTITY % mmlalias SYSTEM
+         "http://www.w3.org/2003/entities/mathml/mmlalias.ent"
+       >
+       %mmlalias;
+
+-->
+
+<!ENTITY angle            "&#x02220;" ><!--ANGLE -->
+<!ENTITY ApplyFunction    "&#x02061;" ><!--FUNCTION APPLICATION -->
+<!ENTITY approx           "&#x02248;" ><!--ALMOST EQUAL TO -->
+<!ENTITY approxeq         "&#x0224A;" ><!--ALMOST EQUAL OR EQUAL TO -->
+<!ENTITY Assign           "&#x02254;" ><!--COLON EQUALS -->
+<!ENTITY backcong         "&#x0224C;" ><!--ALL EQUAL TO -->
+<!ENTITY backepsilon      "&#x003F6;" ><!--GREEK REVERSED LUNATE EPSILON SYMBOL -->
+<!ENTITY backprime        "&#x02035;" ><!--REVERSED PRIME -->
+<!ENTITY backsim          "&#x0223D;" ><!--REVERSED TILDE -->
+<!ENTITY backsimeq        "&#x022CD;" ><!--REVERSED TILDE EQUALS -->
+<!ENTITY Backslash        "&#x02216;" ><!--SET MINUS -->
+<!ENTITY barwedge         "&#x02305;" ><!--PROJECTIVE -->
+<!ENTITY Because          "&#x02235;" ><!--BECAUSE -->
+<!ENTITY because          "&#x02235;" ><!--BECAUSE -->
+<!ENTITY Bernoullis       "&#x0212C;" ><!--SCRIPT CAPITAL B -->
+<!ENTITY between          "&#x0226C;" ><!--BETWEEN -->
+<!ENTITY bigcap           "&#x022C2;" ><!--N-ARY INTERSECTION -->
+<!ENTITY bigcirc          "&#x025EF;" ><!--LARGE CIRCLE -->
+<!ENTITY bigcup           "&#x022C3;" ><!--N-ARY UNION -->
+<!ENTITY bigodot          "&#x02A00;" ><!--N-ARY CIRCLED DOT OPERATOR -->
+<!ENTITY bigoplus         "&#x02A01;" ><!--N-ARY CIRCLED PLUS OPERATOR -->
+<!ENTITY bigotimes        "&#x02A02;" ><!--N-ARY CIRCLED TIMES OPERATOR -->
+<!ENTITY bigsqcup         "&#x02A06;" ><!--N-ARY SQUARE UNION OPERATOR -->
+<!ENTITY bigstar          "&#x02605;" ><!--BLACK STAR -->
+<!ENTITY bigtriangledown  "&#x025BD;" ><!--WHITE DOWN-POINTING TRIANGLE -->
+<!ENTITY bigtriangleup    "&#x025B3;" ><!--WHITE UP-POINTING TRIANGLE -->
+<!ENTITY biguplus         "&#x02A04;" ><!--N-ARY UNION OPERATOR WITH PLUS -->
+<!ENTITY bigvee           "&#x022C1;" ><!--N-ARY LOGICAL OR -->
+<!ENTITY bigwedge         "&#x022C0;" ><!--N-ARY LOGICAL AND -->
+<!ENTITY bkarow           "&#x0290D;" ><!--RIGHTWARDS DOUBLE DASH ARROW -->
+<!ENTITY blacklozenge     "&#x029EB;" ><!--BLACK LOZENGE -->
+<!ENTITY blacksquare      "&#x025AA;" ><!--BLACK SMALL SQUARE -->
+<!ENTITY blacktriangle    "&#x025B4;" ><!--BLACK UP-POINTING SMALL TRIANGLE -->
+<!ENTITY blacktriangledown "&#x025BE;" ><!--BLACK DOWN-POINTING SMALL TRIANGLE -->
+<!ENTITY blacktriangleleft "&#x025C2;" ><!--BLACK LEFT-POINTING SMALL TRIANGLE -->
+<!ENTITY blacktriangleright "&#x025B8;" ><!--BLACK RIGHT-POINTING SMALL TRIANGLE -->
+<!ENTITY bot              "&#x022A5;" ><!--UP TACK -->
+<!ENTITY boxminus         "&#x0229F;" ><!--SQUARED MINUS -->
+<!ENTITY boxplus          "&#x0229E;" ><!--SQUARED PLUS -->
+<!ENTITY boxtimes         "&#x022A0;" ><!--SQUARED TIMES -->
+<!ENTITY Breve            "&#x002D8;" ><!--BREVE -->
+<!ENTITY bullet           "&#x02022;" ><!--BULLET -->
+<!ENTITY Bumpeq           "&#x0224E;" ><!--GEOMETRICALLY EQUIVALENT TO -->
+<!ENTITY bumpeq           "&#x0224F;" ><!--DIFFERENCE BETWEEN -->
+<!ENTITY CapitalDifferentialD "&#x02145;" ><!--DOUBLE-STRUCK ITALIC CAPITAL D -->
+<!ENTITY Cayleys          "&#x0212D;" ><!--BLACK-LETTER CAPITAL C -->
+<!ENTITY Cedilla          "&#x000B8;" ><!--CEDILLA -->
+<!ENTITY CenterDot        "&#x000B7;" ><!--MIDDLE DOT -->
+<!ENTITY centerdot        "&#x000B7;" ><!--MIDDLE DOT -->
+<!ENTITY checkmark        "&#x02713;" ><!--CHECK MARK -->
+<!ENTITY circeq           "&#x02257;" ><!--RING EQUAL TO -->
+<!ENTITY circlearrowleft  "&#x021BA;" ><!--ANTICLOCKWISE OPEN CIRCLE ARROW -->
+<!ENTITY circlearrowright "&#x021BB;" ><!--CLOCKWISE OPEN CIRCLE ARROW -->
+<!ENTITY circledast       "&#x0229B;" ><!--CIRCLED ASTERISK OPERATOR -->
+<!ENTITY circledcirc      "&#x0229A;" ><!--CIRCLED RING OPERATOR -->
+<!ENTITY circleddash      "&#x0229D;" ><!--CIRCLED DASH -->
+<!ENTITY CircleDot        "&#x02299;" ><!--CIRCLED DOT OPERATOR -->
+<!ENTITY circledR         "&#x000AE;" ><!--REGISTERED SIGN -->
+<!ENTITY circledS         "&#x024C8;" ><!--CIRCLED LATIN CAPITAL LETTER S -->
+<!ENTITY CircleMinus      "&#x02296;" ><!--CIRCLED MINUS -->
+<!ENTITY CirclePlus       "&#x02295;" ><!--CIRCLED PLUS -->
+<!ENTITY CircleTimes      "&#x02297;" ><!--CIRCLED TIMES -->
+<!ENTITY ClockwiseContourIntegral "&#x02232;" ><!--CLOCKWISE CONTOUR INTEGRAL -->
+<!ENTITY CloseCurlyDoubleQuote "&#x0201D;" ><!--RIGHT DOUBLE QUOTATION MARK -->
+<!ENTITY CloseCurlyQuote  "&#x02019;" ><!--RIGHT SINGLE QUOTATION MARK -->
+<!ENTITY clubsuit         "&#x02663;" ><!--BLACK CLUB SUIT -->
+<!ENTITY coloneq          "&#x02254;" ><!--COLON EQUALS -->
+<!ENTITY complement       "&#x02201;" ><!--COMPLEMENT -->
+<!ENTITY complexes        "&#x02102;" ><!--DOUBLE-STRUCK CAPITAL C -->
+<!ENTITY Congruent        "&#x02261;" ><!--IDENTICAL TO -->
+<!ENTITY ContourIntegral  "&#x0222E;" ><!--CONTOUR INTEGRAL -->
+<!ENTITY Coproduct        "&#x02210;" ><!--N-ARY COPRODUCT -->
+<!ENTITY CounterClockwiseContourIntegral "&#x02233;" ><!--ANTICLOCKWISE CONTOUR INTEGRAL -->
+<!ENTITY CupCap           "&#x0224D;" ><!--EQUIVALENT TO -->
+<!ENTITY curlyeqprec      "&#x022DE;" ><!--EQUAL TO OR PRECEDES -->
+<!ENTITY curlyeqsucc      "&#x022DF;" ><!--EQUAL TO OR SUCCEEDS -->
+<!ENTITY curlyvee         "&#x022CE;" ><!--CURLY LOGICAL OR -->
+<!ENTITY curlywedge       "&#x022CF;" ><!--CURLY LOGICAL AND -->
+<!ENTITY curvearrowleft   "&#x021B6;" ><!--ANTICLOCKWISE TOP SEMICIRCLE ARROW -->
+<!ENTITY curvearrowright  "&#x021B7;" ><!--CLOCKWISE TOP SEMICIRCLE ARROW -->
+<!ENTITY dbkarow          "&#x0290F;" ><!--RIGHTWARDS TRIPLE DASH ARROW -->
+<!ENTITY ddagger          "&#x02021;" ><!--DOUBLE DAGGER -->
+<!ENTITY ddotseq          "&#x02A77;" ><!--EQUALS SIGN WITH TWO DOTS ABOVE AND TWO DOTS BELOW -->
+<!ENTITY Del              "&#x02207;" ><!--NABLA -->
+<!ENTITY DiacriticalAcute "&#x000B4;" ><!--ACUTE ACCENT -->
+<!ENTITY DiacriticalDot   "&#x002D9;" ><!--DOT ABOVE -->
+<!ENTITY DiacriticalDoubleAcute "&#x002DD;" ><!--DOUBLE ACUTE ACCENT -->
+<!ENTITY DiacriticalGrave "&#x00060;" ><!--GRAVE ACCENT -->
+<!ENTITY DiacriticalTilde "&#x002DC;" ><!--SMALL TILDE -->
+<!ENTITY Diamond          "&#x022C4;" ><!--DIAMOND OPERATOR -->
+<!ENTITY diamond          "&#x022C4;" ><!--DIAMOND OPERATOR -->
+<!ENTITY diamondsuit      "&#x02666;" ><!--BLACK DIAMOND SUIT -->
+<!ENTITY DifferentialD    "&#x02146;" ><!--DOUBLE-STRUCK ITALIC SMALL D -->
+<!ENTITY digamma          "&#x003DD;" ><!--GREEK SMALL LETTER DIGAMMA -->
+<!ENTITY div              "&#x000F7;" ><!--DIVISION SIGN -->
+<!ENTITY divideontimes    "&#x022C7;" ><!--DIVISION TIMES -->
+<!ENTITY doteq            "&#x02250;" ><!--APPROACHES THE LIMIT -->
+<!ENTITY doteqdot         "&#x02251;" ><!--GEOMETRICALLY EQUAL TO -->
+<!ENTITY DotEqual         "&#x02250;" ><!--APPROACHES THE LIMIT -->
+<!ENTITY dotminus         "&#x02238;" ><!--DOT MINUS -->
+<!ENTITY dotplus          "&#x02214;" ><!--DOT PLUS -->
+<!ENTITY dotsquare        "&#x022A1;" ><!--SQUARED DOT OPERATOR -->
+<!ENTITY doublebarwedge   "&#x02306;" ><!--PERSPECTIVE -->
+<!ENTITY DoubleContourIntegral "&#x0222F;" ><!--SURFACE INTEGRAL -->
+<!ENTITY DoubleDot        "&#x000A8;" ><!--DIAERESIS -->
+<!ENTITY DoubleDownArrow  "&#x021D3;" ><!--DOWNWARDS DOUBLE ARROW -->
+<!ENTITY DoubleLeftArrow  "&#x021D0;" ><!--LEFTWARDS DOUBLE ARROW -->
+<!ENTITY DoubleLeftRightArrow "&#x021D4;" ><!--LEFT RIGHT DOUBLE ARROW -->
+<!ENTITY DoubleLeftTee    "&#x02AE4;" ><!--VERTICAL BAR DOUBLE LEFT TURNSTILE -->
+<!ENTITY DoubleLongLeftArrow "&#x027F8;" ><!--LONG LEFTWARDS DOUBLE ARROW -->
+<!ENTITY DoubleLongLeftRightArrow "&#x027FA;" ><!--LONG LEFT RIGHT DOUBLE ARROW -->
+<!ENTITY DoubleLongRightArrow "&#x027F9;" ><!--LONG RIGHTWARDS DOUBLE ARROW -->
+<!ENTITY DoubleRightArrow "&#x021D2;" ><!--RIGHTWARDS DOUBLE ARROW -->
+<!ENTITY DoubleRightTee   "&#x022A8;" ><!--TRUE -->
+<!ENTITY DoubleUpArrow    "&#x021D1;" ><!--UPWARDS DOUBLE ARROW -->
+<!ENTITY DoubleUpDownArrow "&#x021D5;" ><!--UP DOWN DOUBLE ARROW -->
+<!ENTITY DoubleVerticalBar "&#x02225;" ><!--PARALLEL TO -->
+<!ENTITY DownArrow        "&#x02193;" ><!--DOWNWARDS ARROW -->
+<!ENTITY Downarrow        "&#x021D3;" ><!--DOWNWARDS DOUBLE ARROW -->
+<!ENTITY downarrow        "&#x02193;" ><!--DOWNWARDS ARROW -->
+<!ENTITY DownArrowUpArrow "&#x021F5;" ><!--DOWNWARDS ARROW LEFTWARDS OF UPWARDS ARROW -->
+<!ENTITY downdownarrows   "&#x021CA;" ><!--DOWNWARDS PAIRED ARROWS -->
+<!ENTITY downharpoonleft  "&#x021C3;" ><!--DOWNWARDS HARPOON WITH BARB LEFTWARDS -->
+<!ENTITY downharpoonright "&#x021C2;" ><!--DOWNWARDS HARPOON WITH BARB RIGHTWARDS -->
+<!ENTITY DownLeftVector   "&#x021BD;" ><!--LEFTWARDS HARPOON WITH BARB DOWNWARDS -->
+<!ENTITY DownRightVector  "&#x021C1;" ><!--RIGHTWARDS HARPOON WITH BARB DOWNWARDS -->
+<!ENTITY DownTee          "&#x022A4;" ><!--DOWN TACK -->
+<!ENTITY DownTeeArrow     "&#x021A7;" ><!--DOWNWARDS ARROW FROM BAR -->
+<!ENTITY drbkarow         "&#x02910;" ><!--RIGHTWARDS TWO-HEADED TRIPLE DASH ARROW -->
+<!ENTITY Element          "&#x02208;" ><!--ELEMENT OF -->
+<!ENTITY emptyset         "&#x02205;" ><!--EMPTY SET -->
+<!ENTITY eqcirc           "&#x02256;" ><!--RING IN EQUAL TO -->
+<!ENTITY eqcolon          "&#x02255;" ><!--EQUALS COLON -->
+<!ENTITY eqsim            "&#x02242;" ><!--MINUS TILDE -->
+<!ENTITY eqslantgtr       "&#x02A96;" ><!--SLANTED EQUAL TO OR GREATER-THAN -->
+<!ENTITY eqslantless      "&#x02A95;" ><!--SLANTED EQUAL TO OR LESS-THAN -->
+<!ENTITY EqualTilde       "&#x02242;" ><!--MINUS TILDE -->
+<!ENTITY Equilibrium      "&#x021CC;" ><!--RIGHTWARDS HARPOON OVER LEFTWARDS HARPOON -->
+<!ENTITY Exists           "&#x02203;" ><!--THERE EXISTS -->
+<!ENTITY expectation      "&#x02130;" ><!--SCRIPT CAPITAL E -->
+<!ENTITY ExponentialE     "&#x02147;" ><!--DOUBLE-STRUCK ITALIC SMALL E -->
+<!ENTITY exponentiale     "&#x02147;" ><!--DOUBLE-STRUCK ITALIC SMALL E -->
+<!ENTITY fallingdotseq    "&#x02252;" ><!--APPROXIMATELY EQUAL TO OR THE IMAGE OF -->
+<!ENTITY ForAll           "&#x02200;" ><!--FOR ALL -->
+<!ENTITY Fouriertrf       "&#x02131;" ><!--SCRIPT CAPITAL F -->
+<!ENTITY geq              "&#x02265;" ><!--GREATER-THAN OR EQUAL TO -->
+<!ENTITY geqq             "&#x02267;" ><!--GREATER-THAN OVER EQUAL TO -->
+<!ENTITY geqslant         "&#x02A7E;" ><!--GREATER-THAN OR SLANTED EQUAL TO -->
+<!ENTITY gg               "&#x0226B;" ><!--MUCH GREATER-THAN -->
+<!ENTITY ggg              "&#x022D9;" ><!--VERY MUCH GREATER-THAN -->
+<!ENTITY gnapprox         "&#x02A8A;" ><!--GREATER-THAN AND NOT APPROXIMATE -->
+<!ENTITY gneq             "&#x02A88;" ><!--GREATER-THAN AND SINGLE-LINE NOT EQUAL TO -->
+<!ENTITY gneqq            "&#x02269;" ><!--GREATER-THAN BUT NOT EQUAL TO -->
+<!ENTITY GreaterEqual     "&#x02265;" ><!--GREATER-THAN OR EQUAL TO -->
+<!ENTITY GreaterEqualLess "&#x022DB;" ><!--GREATER-THAN EQUAL TO OR LESS-THAN -->
+<!ENTITY GreaterFullEqual "&#x02267;" ><!--GREATER-THAN OVER EQUAL TO -->
+<!ENTITY GreaterLess      "&#x02277;" ><!--GREATER-THAN OR LESS-THAN -->
+<!ENTITY GreaterSlantEqual "&#x02A7E;" ><!--GREATER-THAN OR SLANTED EQUAL TO -->
+<!ENTITY GreaterTilde     "&#x02273;" ><!--GREATER-THAN OR EQUIVALENT TO -->
+<!ENTITY gtrapprox        "&#x02A86;" ><!--GREATER-THAN OR APPROXIMATE -->
+<!ENTITY gtrdot           "&#x022D7;" ><!--GREATER-THAN WITH DOT -->
+<!ENTITY gtreqless        "&#x022DB;" ><!--GREATER-THAN EQUAL TO OR LESS-THAN -->
+<!ENTITY gtreqqless       "&#x02A8C;" ><!--GREATER-THAN ABOVE DOUBLE-LINE EQUAL ABOVE LESS-THAN -->
+<!ENTITY gtrless          "&#x02277;" ><!--GREATER-THAN OR LESS-THAN -->
+<!ENTITY gtrsim           "&#x02273;" ><!--GREATER-THAN OR EQUIVALENT TO -->
+<!ENTITY gvertneqq        "&#x02269;&#x0FE00;" ><!--GREATER-THAN BUT NOT EQUAL TO - with vertical stroke -->
+<!ENTITY Hacek            "&#x002C7;" ><!--CARON -->
+<!ENTITY hbar             "&#x0210F;" ><!--PLANCK CONSTANT OVER TWO PI -->
+<!ENTITY heartsuit        "&#x02665;" ><!--BLACK HEART SUIT -->
+<!ENTITY HilbertSpace     "&#x0210B;" ><!--SCRIPT CAPITAL H -->
+<!ENTITY hksearow         "&#x02925;" ><!--SOUTH EAST ARROW WITH HOOK -->
+<!ENTITY hkswarow         "&#x02926;" ><!--SOUTH WEST ARROW WITH HOOK -->
+<!ENTITY hookleftarrow    "&#x021A9;" ><!--LEFTWARDS ARROW WITH HOOK -->
+<!ENTITY hookrightarrow   "&#x021AA;" ><!--RIGHTWARDS ARROW WITH HOOK -->
+<!ENTITY hslash           "&#x0210F;" ><!--PLANCK CONSTANT OVER TWO PI -->
+<!ENTITY HumpDownHump     "&#x0224E;" ><!--GEOMETRICALLY EQUIVALENT TO -->
+<!ENTITY HumpEqual        "&#x0224F;" ><!--DIFFERENCE BETWEEN -->
+<!ENTITY iiiint           "&#x02A0C;" ><!--QUADRUPLE INTEGRAL OPERATOR -->
+<!ENTITY iiint            "&#x0222D;" ><!--TRIPLE INTEGRAL -->
+<!ENTITY Im               "&#x02111;" ><!--BLACK-LETTER CAPITAL I -->
+<!ENTITY ImaginaryI       "&#x02148;" ><!--DOUBLE-STRUCK ITALIC SMALL I -->
+<!ENTITY imagline         "&#x02110;" ><!--SCRIPT CAPITAL I -->
+<!ENTITY imagpart         "&#x02111;" ><!--BLACK-LETTER CAPITAL I -->
+<!ENTITY Implies          "&#x021D2;" ><!--RIGHTWARDS DOUBLE ARROW -->
+<!ENTITY in               "&#x02208;" ><!--ELEMENT OF -->
+<!ENTITY integers         "&#x02124;" ><!--DOUBLE-STRUCK CAPITAL Z -->
+<!ENTITY Integral         "&#x0222B;" ><!--INTEGRAL -->
+<!ENTITY intercal         "&#x022BA;" ><!--INTERCALATE -->
+<!ENTITY Intersection     "&#x022C2;" ><!--N-ARY INTERSECTION -->
+<!ENTITY intprod          "&#x02A3C;" ><!--INTERIOR PRODUCT -->
+<!ENTITY InvisibleComma   "&#x02063;" ><!--INVISIBLE SEPARATOR -->
+<!ENTITY InvisibleTimes   "&#x02062;" ><!--INVISIBLE TIMES -->
+<!ENTITY langle           "&#x02329;" ><!--LEFT-POINTING ANGLE BRACKET -->
+<!ENTITY Laplacetrf       "&#x02112;" ><!--SCRIPT CAPITAL L -->
+<!ENTITY lbrace           "&#x0007B;" ><!--LEFT CURLY BRACKET -->
+<!ENTITY lbrack           "&#x0005B;" ><!--LEFT SQUARE BRACKET -->
+<!ENTITY LeftAngleBracket "&#x02329;" ><!--LEFT-POINTING ANGLE BRACKET -->
+<!ENTITY LeftArrow        "&#x02190;" ><!--LEFTWARDS ARROW -->
+<!ENTITY Leftarrow        "&#x021D0;" ><!--LEFTWARDS DOUBLE ARROW -->
+<!ENTITY leftarrow        "&#x02190;" ><!--LEFTWARDS ARROW -->
+<!ENTITY LeftArrowBar     "&#x021E4;" ><!--LEFTWARDS ARROW TO BAR -->
+<!ENTITY LeftArrowRightArrow "&#x021C6;" ><!--LEFTWARDS ARROW OVER RIGHTWARDS ARROW -->
+<!ENTITY leftarrowtail    "&#x021A2;" ><!--LEFTWARDS ARROW WITH TAIL -->
+<!ENTITY LeftCeiling      "&#x02308;" ><!--LEFT CEILING -->
+<!ENTITY LeftDoubleBracket "&#x0301A;" ><!--LEFT WHITE SQUARE BRACKET -->
+<!ENTITY LeftDownVector   "&#x021C3;" ><!--DOWNWARDS HARPOON WITH BARB LEFTWARDS -->
+<!ENTITY LeftFloor        "&#x0230A;" ><!--LEFT FLOOR -->
+<!ENTITY leftharpoondown  "&#x021BD;" ><!--LEFTWARDS HARPOON WITH BARB DOWNWARDS -->
+<!ENTITY leftharpoonup    "&#x021BC;" ><!--LEFTWARDS HARPOON WITH BARB UPWARDS -->
+<!ENTITY leftleftarrows   "&#x021C7;" ><!--LEFTWARDS PAIRED ARROWS -->
+<!ENTITY LeftRightArrow   "&#x02194;" ><!--LEFT RIGHT ARROW -->
+<!ENTITY Leftrightarrow   "&#x021D4;" ><!--LEFT RIGHT DOUBLE ARROW -->
+<!ENTITY leftrightarrow   "&#x02194;" ><!--LEFT RIGHT ARROW -->
+<!ENTITY leftrightarrows  "&#x021C6;" ><!--LEFTWARDS ARROW OVER RIGHTWARDS ARROW -->
+<!ENTITY leftrightharpoons "&#x021CB;" ><!--LEFTWARDS HARPOON OVER RIGHTWARDS HARPOON -->
+<!ENTITY leftrightsquigarrow "&#x021AD;" ><!--LEFT RIGHT WAVE ARROW -->
+<!ENTITY LeftTee          "&#x022A3;" ><!--LEFT TACK -->
+<!ENTITY LeftTeeArrow     "&#x021A4;" ><!--LEFTWARDS ARROW FROM BAR -->
+<!ENTITY leftthreetimes   "&#x022CB;" ><!--LEFT SEMIDIRECT PRODUCT -->
+<!ENTITY LeftTriangle     "&#x022B2;" ><!--NORMAL SUBGROUP OF -->
+<!ENTITY LeftTriangleEqual "&#x022B4;" ><!--NORMAL SUBGROUP OF OR EQUAL TO -->
+<!ENTITY LeftUpVector     "&#x021BF;" ><!--UPWARDS HARPOON WITH BARB LEFTWARDS -->
+<!ENTITY LeftVector       "&#x021BC;" ><!--LEFTWARDS HARPOON WITH BARB UPWARDS -->
+<!ENTITY leq              "&#x02264;" ><!--LESS-THAN OR EQUAL TO -->
+<!ENTITY leqq             "&#x02266;" ><!--LESS-THAN OVER EQUAL TO -->
+<!ENTITY leqslant         "&#x02A7D;" ><!--LESS-THAN OR SLANTED EQUAL TO -->
+<!ENTITY lessapprox       "&#x02A85;" ><!--LESS-THAN OR APPROXIMATE -->
+<!ENTITY lessdot          "&#x022D6;" ><!--LESS-THAN WITH DOT -->
+<!ENTITY lesseqgtr        "&#x022DA;" ><!--LESS-THAN EQUAL TO OR GREATER-THAN -->
+<!ENTITY lesseqqgtr       "&#x02A8B;" ><!--LESS-THAN ABOVE DOUBLE-LINE EQUAL ABOVE GREATER-THAN -->
+<!ENTITY LessEqualGreater "&#x022DA;" ><!--LESS-THAN EQUAL TO OR GREATER-THAN -->
+<!ENTITY LessFullEqual    "&#x02266;" ><!--LESS-THAN OVER EQUAL TO -->
+<!ENTITY LessGreater      "&#x02276;" ><!--LESS-THAN OR GREATER-THAN -->
+<!ENTITY lessgtr          "&#x02276;" ><!--LESS-THAN OR GREATER-THAN -->
+<!ENTITY lesssim          "&#x02272;" ><!--LESS-THAN OR EQUIVALENT TO -->
+<!ENTITY LessSlantEqual   "&#x02A7D;" ><!--LESS-THAN OR SLANTED EQUAL TO -->
+<!ENTITY LessTilde        "&#x02272;" ><!--LESS-THAN OR EQUIVALENT TO -->
+<!ENTITY ll               "&#x0226A;" ><!--MUCH LESS-THAN -->
+<!ENTITY llcorner         "&#x0231E;" ><!--BOTTOM LEFT CORNER -->
+<!ENTITY Lleftarrow       "&#x021DA;" ><!--LEFTWARDS TRIPLE ARROW -->
+<!ENTITY lmoustache       "&#x023B0;" ><!--UPPER LEFT OR LOWER RIGHT CURLY BRACKET SECTION -->
+<!ENTITY lnapprox         "&#x02A89;" ><!--LESS-THAN AND NOT APPROXIMATE -->
+<!ENTITY lneq             "&#x02A87;" ><!--LESS-THAN AND SINGLE-LINE NOT EQUAL TO -->
+<!ENTITY lneqq            "&#x02268;" ><!--LESS-THAN BUT NOT EQUAL TO -->
+<!ENTITY LongLeftArrow    "&#x027F5;" ><!--LONG LEFTWARDS ARROW -->
+<!ENTITY Longleftarrow    "&#x027F8;" ><!--LONG LEFTWARDS DOUBLE ARROW -->
+<!ENTITY longleftarrow    "&#x027F5;" ><!--LONG LEFTWARDS ARROW -->
+<!ENTITY LongLeftRightArrow "&#x027F7;" ><!--LONG LEFT RIGHT ARROW -->
+<!ENTITY Longleftrightarrow "&#x027FA;" ><!--LONG LEFT RIGHT DOUBLE ARROW -->
+<!ENTITY longleftrightarrow "&#x027F7;" ><!--LONG LEFT RIGHT ARROW -->
+<!ENTITY longmapsto       "&#x027FC;" ><!--LONG RIGHTWARDS ARROW FROM BAR -->
+<!ENTITY LongRightArrow   "&#x027F6;" ><!--LONG RIGHTWARDS ARROW -->
+<!ENTITY Longrightarrow   "&#x027F9;" ><!--LONG RIGHTWARDS DOUBLE ARROW -->
+<!ENTITY longrightarrow   "&#x027F6;" ><!--LONG RIGHTWARDS ARROW -->
+<!ENTITY looparrowleft    "&#x021AB;" ><!--LEFTWARDS ARROW WITH LOOP -->
+<!ENTITY looparrowright   "&#x021AC;" ><!--RIGHTWARDS ARROW WITH LOOP -->
+<!ENTITY LowerLeftArrow   "&#x02199;" ><!--SOUTH WEST ARROW -->
+<!ENTITY LowerRightArrow  "&#x02198;" ><!--SOUTH EAST ARROW -->
+<!ENTITY lozenge          "&#x025CA;" ><!--LOZENGE -->
+<!ENTITY lrcorner         "&#x0231F;" ><!--BOTTOM RIGHT CORNER -->
+<!ENTITY Lsh              "&#x021B0;" ><!--UPWARDS ARROW WITH TIP LEFTWARDS -->
+<!ENTITY lvertneqq        "&#x02268;&#x0FE00;" ><!--LESS-THAN BUT NOT EQUAL TO - with vertical stroke -->
+<!ENTITY maltese          "&#x02720;" ><!--MALTESE CROSS -->
+<!ENTITY mapsto           "&#x021A6;" ><!--RIGHTWARDS ARROW FROM BAR -->
+<!ENTITY measuredangle    "&#x02221;" ><!--MEASURED ANGLE -->
+<!ENTITY Mellintrf        "&#x02133;" ><!--SCRIPT CAPITAL M -->
+<!ENTITY MinusPlus        "&#x02213;" ><!--MINUS-OR-PLUS SIGN -->
+<!ENTITY mp               "&#x02213;" ><!--MINUS-OR-PLUS SIGN -->
+<!ENTITY multimap         "&#x022B8;" ><!--MULTIMAP -->
+<!ENTITY napprox          "&#x02249;" ><!--NOT ALMOST EQUAL TO -->
+<!ENTITY natural          "&#x0266E;" ><!--MUSIC NATURAL SIGN -->
+<!ENTITY naturals         "&#x02115;" ><!--DOUBLE-STRUCK CAPITAL N -->
+<!ENTITY nearrow          "&#x02197;" ><!--NORTH EAST ARROW -->
+<!ENTITY NegativeMediumSpace "&#x0200B;" ><!--ZERO WIDTH SPACE -->
+<!ENTITY NegativeThickSpace "&#x0200B;" ><!--ZERO WIDTH SPACE -->
+<!ENTITY NegativeThinSpace "&#x0200B;" ><!--ZERO WIDTH SPACE -->
+<!ENTITY NegativeVeryThinSpace "&#x0200B;" ><!--ZERO WIDTH SPACE -->
+<!ENTITY NestedGreaterGreater "&#x0226B;" ><!--MUCH GREATER-THAN -->
+<!ENTITY NestedLessLess   "&#x0226A;" ><!--MUCH LESS-THAN -->
+<!ENTITY nexists          "&#x02204;" ><!--THERE DOES NOT EXIST -->
+<!ENTITY ngeq             "&#x02271;" ><!--NEITHER GREATER-THAN NOR EQUAL TO -->
+<!ENTITY ngeqq            "&#x02267;&#x00338;" ><!--GREATER-THAN OVER EQUAL TO with slash -->
+<!ENTITY ngeqslant        "&#x02A7E;&#x00338;" ><!--GREATER-THAN OR SLANTED EQUAL TO with slash -->
+<!ENTITY ngtr             "&#x0226F;" ><!--NOT GREATER-THAN -->
+<!ENTITY nLeftarrow       "&#x021CD;" ><!--LEFTWARDS DOUBLE ARROW WITH STROKE -->
+<!ENTITY nleftarrow       "&#x0219A;" ><!--LEFTWARDS ARROW WITH STROKE -->
+<!ENTITY nLeftrightarrow  "&#x021CE;" ><!--LEFT RIGHT DOUBLE ARROW WITH STROKE -->
+<!ENTITY nleftrightarrow  "&#x021AE;" ><!--LEFT RIGHT ARROW WITH STROKE -->
+<!ENTITY nleq             "&#x02270;" ><!--NEITHER LESS-THAN NOR EQUAL TO -->
+<!ENTITY nleqq            "&#x02266;&#x00338;" ><!--LESS-THAN OVER EQUAL TO with slash -->
+<!ENTITY nleqslant        "&#x02A7D;&#x00338;" ><!--LESS-THAN OR SLANTED EQUAL TO with slash -->
+<!ENTITY nless            "&#x0226E;" ><!--NOT LESS-THAN -->
+<!ENTITY NonBreakingSpace "&#x000A0;" ><!--NO-BREAK SPACE -->
+<!ENTITY NotCongruent     "&#x02262;" ><!--NOT IDENTICAL TO -->
+<!ENTITY NotDoubleVerticalBar "&#x02226;" ><!--NOT PARALLEL TO -->
+<!ENTITY NotElement       "&#x02209;" ><!--NOT AN ELEMENT OF -->
+<!ENTITY NotEqual         "&#x02260;" ><!--NOT EQUAL TO -->
+<!ENTITY NotEqualTilde    "&#x02242;&#x00338;" ><!--MINUS TILDE with slash -->
+<!ENTITY NotExists        "&#x02204;" ><!--THERE DOES NOT EXIST -->
+<!ENTITY NotGreater       "&#x0226F;" ><!--NOT GREATER-THAN -->
+<!ENTITY NotGreaterEqual  "&#x02271;" ><!--NEITHER GREATER-THAN NOR EQUAL TO -->
+<!ENTITY NotGreaterFullEqual "&#x02266;&#x00338;" ><!--LESS-THAN OVER EQUAL TO with slash -->
+<!ENTITY NotGreaterGreater "&#x0226B;&#x00338;" ><!--MUCH GREATER THAN with slash -->
+<!ENTITY NotGreaterLess   "&#x02279;" ><!--NEITHER GREATER-THAN NOR LESS-THAN -->
+<!ENTITY NotGreaterSlantEqual "&#x02A7E;&#x00338;" ><!--GREATER-THAN OR SLANTED EQUAL TO with slash -->
+<!ENTITY NotGreaterTilde  "&#x02275;" ><!--NEITHER GREATER-THAN NOR EQUIVALENT TO -->
+<!ENTITY NotHumpDownHump  "&#x0224E;&#x00338;" ><!--GEOMETRICALLY EQUIVALENT TO with slash -->
+<!ENTITY NotLeftTriangle  "&#x022EA;" ><!--NOT NORMAL SUBGROUP OF -->
+<!ENTITY NotLeftTriangleEqual "&#x022EC;" ><!--NOT NORMAL SUBGROUP OF OR EQUAL TO -->
+<!ENTITY NotLess          "&#x0226E;" ><!--NOT LESS-THAN -->
+<!ENTITY NotLessEqual     "&#x02270;" ><!--NEITHER LESS-THAN NOR EQUAL TO -->
+<!ENTITY NotLessGreater   "&#x02278;" ><!--NEITHER LESS-THAN NOR GREATER-THAN -->
+<!ENTITY NotLessLess      "&#x0226A;&#x00338;" ><!--MUCH LESS THAN with slash -->
+<!ENTITY NotLessSlantEqual "&#x02A7D;&#x00338;" ><!--LESS-THAN OR SLANTED EQUAL TO with slash -->
+<!ENTITY NotLessTilde     "&#x02274;" ><!--NEITHER LESS-THAN NOR EQUIVALENT TO -->
+<!ENTITY NotPrecedes      "&#x02280;" ><!--DOES NOT PRECEDE -->
+<!ENTITY NotPrecedesEqual "&#x02AAF;&#x00338;" ><!--PRECEDES ABOVE SINGLE-LINE EQUALS SIGN with slash -->
+<!ENTITY NotPrecedesSlantEqual "&#x022E0;" ><!--DOES NOT PRECEDE OR EQUAL -->
+<!ENTITY NotReverseElement "&#x0220C;" ><!--DOES NOT CONTAIN AS MEMBER -->
+<!ENTITY NotRightTriangle "&#x022EB;" ><!--DOES NOT CONTAIN AS NORMAL SUBGROUP -->
+<!ENTITY NotRightTriangleEqual "&#x022ED;" ><!--DOES NOT CONTAIN AS NORMAL SUBGROUP OR EQUAL -->
+<!ENTITY NotSquareSubsetEqual "&#x022E2;" ><!--NOT SQUARE IMAGE OF OR EQUAL TO -->
+<!ENTITY NotSquareSupersetEqual "&#x022E3;" ><!--NOT SQUARE ORIGINAL OF OR EQUAL TO -->
+<!ENTITY NotSubset        "&#x02282;&#x020D2;" ><!--SUBSET OF with vertical line -->
+<!ENTITY NotSubsetEqual   "&#x02288;" ><!--NEITHER A SUBSET OF NOR EQUAL TO -->
+<!ENTITY NotSucceeds      "&#x02281;" ><!--DOES NOT SUCCEED -->
+<!ENTITY NotSucceedsEqual "&#x02AB0;&#x00338;" ><!--SUCCEEDS ABOVE SINGLE-LINE EQUALS SIGN with slash -->
+<!ENTITY NotSucceedsSlantEqual "&#x022E1;" ><!--DOES NOT SUCCEED OR EQUAL -->
+<!ENTITY NotSuperset      "&#x02283;&#x020D2;" ><!--SUPERSET OF with vertical line -->
+<!ENTITY NotSupersetEqual "&#x02289;" ><!--NEITHER A SUPERSET OF NOR EQUAL TO -->
+<!ENTITY NotTilde         "&#x02241;" ><!--NOT TILDE -->
+<!ENTITY NotTildeEqual    "&#x02244;" ><!--NOT ASYMPTOTICALLY EQUAL TO -->
+<!ENTITY NotTildeFullEqual "&#x02247;" ><!--NEITHER APPROXIMATELY NOR ACTUALLY EQUAL TO -->
+<!ENTITY NotTildeTilde    "&#x02249;" ><!--NOT ALMOST EQUAL TO -->
+<!ENTITY NotVerticalBar   "&#x02224;" ><!--DOES NOT DIVIDE -->
+<!ENTITY nparallel        "&#x02226;" ><!--NOT PARALLEL TO -->
+<!ENTITY nprec            "&#x02280;" ><!--DOES NOT PRECEDE -->
+<!ENTITY npreceq          "&#x02AAF;&#x00338;" ><!--PRECEDES ABOVE SINGLE-LINE EQUALS SIGN with slash -->
+<!ENTITY nRightarrow      "&#x021CF;" ><!--RIGHTWARDS DOUBLE ARROW WITH STROKE -->
+<!ENTITY nrightarrow      "&#x0219B;" ><!--RIGHTWARDS ARROW WITH STROKE -->
+<!ENTITY nshortmid        "&#x02224;" ><!--DOES NOT DIVIDE -->
+<!ENTITY nshortparallel   "&#x02226;" ><!--NOT PARALLEL TO -->
+<!ENTITY nsimeq           "&#x02244;" ><!--NOT ASYMPTOTICALLY EQUAL TO -->
+<!ENTITY nsubset          "&#x02282;&#x020D2;" ><!--SUBSET OF with vertical line -->
+<!ENTITY nsubseteq        "&#x02288;" ><!--NEITHER A SUBSET OF NOR EQUAL TO -->
+<!ENTITY nsubseteqq       "&#x02AC5;&#x00338;" ><!--SUBSET OF ABOVE EQUALS SIGN with slash -->
+<!ENTITY nsucc            "&#x02281;" ><!--DOES NOT SUCCEED -->
+<!ENTITY nsucceq          "&#x02AB0;&#x00338;" ><!--SUCCEEDS ABOVE SINGLE-LINE EQUALS SIGN with slash -->
+<!ENTITY nsupset          "&#x02283;&#x020D2;" ><!--SUPERSET OF with vertical line -->
+<!ENTITY nsupseteq        "&#x02289;" ><!--NEITHER A SUPERSET OF NOR EQUAL TO -->
+<!ENTITY nsupseteqq       "&#x02AC6;&#x00338;" ><!--SUPERSET OF ABOVE EQUALS SIGN with slash -->
+<!ENTITY ntriangleleft    "&#x022EA;" ><!--NOT NORMAL SUBGROUP OF -->
+<!ENTITY ntrianglelefteq  "&#x022EC;" ><!--NOT NORMAL SUBGROUP OF OR EQUAL TO -->
+<!ENTITY ntriangleright   "&#x022EB;" ><!--DOES NOT CONTAIN AS NORMAL SUBGROUP -->
+<!ENTITY ntrianglerighteq "&#x022ED;" ><!--DOES NOT CONTAIN AS NORMAL SUBGROUP OR EQUAL -->
+<!ENTITY nwarrow          "&#x02196;" ><!--NORTH WEST ARROW -->
+<!ENTITY oint             "&#x0222E;" ><!--CONTOUR INTEGRAL -->
+<!ENTITY OpenCurlyDoubleQuote "&#x0201C;" ><!--LEFT DOUBLE QUOTATION MARK -->
+<!ENTITY OpenCurlyQuote   "&#x02018;" ><!--LEFT SINGLE QUOTATION MARK -->
+<!ENTITY orderof          "&#x02134;" ><!--SCRIPT SMALL O -->
+<!ENTITY parallel         "&#x02225;" ><!--PARALLEL TO -->
+<!ENTITY PartialD         "&#x02202;" ><!--PARTIAL DIFFERENTIAL -->
+<!ENTITY pitchfork        "&#x022D4;" ><!--PITCHFORK -->
+<!ENTITY PlusMinus        "&#x000B1;" ><!--PLUS-MINUS SIGN -->
+<!ENTITY pm               "&#x000B1;" ><!--PLUS-MINUS SIGN -->
+<!ENTITY Poincareplane    "&#x0210C;" ><!--BLACK-LETTER CAPITAL H -->
+<!ENTITY prec             "&#x0227A;" ><!--PRECEDES -->
+<!ENTITY precapprox       "&#x02AB7;" ><!--PRECEDES ABOVE ALMOST EQUAL TO -->
+<!ENTITY preccurlyeq      "&#x0227C;" ><!--PRECEDES OR EQUAL TO -->
+<!ENTITY Precedes         "&#x0227A;" ><!--PRECEDES -->
+<!ENTITY PrecedesEqual    "&#x02AAF;" ><!--PRECEDES ABOVE SINGLE-LINE EQUALS SIGN -->
+<!ENTITY PrecedesSlantEqual "&#x0227C;" ><!--PRECEDES OR EQUAL TO -->
+<!ENTITY PrecedesTilde    "&#x0227E;" ><!--PRECEDES OR EQUIVALENT TO -->
+<!ENTITY preceq           "&#x02AAF;" ><!--PRECEDES ABOVE SINGLE-LINE EQUALS SIGN -->
+<!ENTITY precnapprox      "&#x02AB9;" ><!--PRECEDES ABOVE NOT ALMOST EQUAL TO -->
+<!ENTITY precneqq         "&#x02AB5;" ><!--PRECEDES ABOVE NOT EQUAL TO -->
+<!ENTITY precnsim         "&#x022E8;" ><!--PRECEDES BUT NOT EQUIVALENT TO -->
+<!ENTITY precsim          "&#x0227E;" ><!--PRECEDES OR EQUIVALENT TO -->
+<!ENTITY primes           "&#x02119;" ><!--DOUBLE-STRUCK CAPITAL P -->
+<!ENTITY Proportion       "&#x02237;" ><!--PROPORTION -->
+<!ENTITY Proportional     "&#x0221D;" ><!--PROPORTIONAL TO -->
+<!ENTITY propto           "&#x0221D;" ><!--PROPORTIONAL TO -->
+<!ENTITY quaternions      "&#x0210D;" ><!--DOUBLE-STRUCK CAPITAL H -->
+<!ENTITY questeq          "&#x0225F;" ><!--QUESTIONED EQUAL TO -->
+<!ENTITY rangle           "&#x0232A;" ><!--RIGHT-POINTING ANGLE BRACKET -->
+<!ENTITY rationals        "&#x0211A;" ><!--DOUBLE-STRUCK CAPITAL Q -->
+<!ENTITY rbrace           "&#x0007D;" ><!--RIGHT CURLY BRACKET -->
+<!ENTITY rbrack           "&#x0005D;" ><!--RIGHT SQUARE BRACKET -->
+<!ENTITY Re               "&#x0211C;" ><!--BLACK-LETTER CAPITAL R -->
+<!ENTITY realine          "&#x0211B;" ><!--SCRIPT CAPITAL R -->
+<!ENTITY realpart         "&#x0211C;" ><!--BLACK-LETTER CAPITAL R -->
+<!ENTITY reals            "&#x0211D;" ><!--DOUBLE-STRUCK CAPITAL R -->
+<!ENTITY ReverseElement   "&#x0220B;" ><!--CONTAINS AS MEMBER -->
+<!ENTITY ReverseEquilibrium "&#x021CB;" ><!--LEFTWARDS HARPOON OVER RIGHTWARDS HARPOON -->
+<!ENTITY ReverseUpEquilibrium "&#x0296F;" ><!--DOWNWARDS HARPOON WITH BARB LEFT BESIDE UPWARDS HARPOON WITH BARB RIGHT -->
+<!ENTITY RightAngleBracket "&#x0232A;" ><!--RIGHT-POINTING ANGLE BRACKET -->
+<!ENTITY RightArrow       "&#x02192;" ><!--RIGHTWARDS ARROW -->
+<!ENTITY Rightarrow       "&#x021D2;" ><!--RIGHTWARDS DOUBLE ARROW -->
+<!ENTITY rightarrow       "&#x02192;" ><!--RIGHTWARDS ARROW -->
+<!ENTITY RightArrowBar    "&#x021E5;" ><!--RIGHTWARDS ARROW TO BAR -->
+<!ENTITY RightArrowLeftArrow "&#x021C4;" ><!--RIGHTWARDS ARROW OVER LEFTWARDS ARROW -->
+<!ENTITY rightarrowtail   "&#x021A3;" ><!--RIGHTWARDS ARROW WITH TAIL -->
+<!ENTITY RightCeiling     "&#x02309;" ><!--RIGHT CEILING -->
+<!ENTITY RightDoubleBracket "&#x0301B;" ><!--RIGHT WHITE SQUARE BRACKET -->
+<!ENTITY RightDownVector  "&#x021C2;" ><!--DOWNWARDS HARPOON WITH BARB RIGHTWARDS -->
+<!ENTITY RightFloor       "&#x0230B;" ><!--RIGHT FLOOR -->
+<!ENTITY rightharpoondown "&#x021C1;" ><!--RIGHTWARDS HARPOON WITH BARB DOWNWARDS -->
+<!ENTITY rightharpoonup   "&#x021C0;" ><!--RIGHTWARDS HARPOON WITH BARB UPWARDS -->
+<!ENTITY rightleftarrows  "&#x021C4;" ><!--RIGHTWARDS ARROW OVER LEFTWARDS ARROW -->
+<!ENTITY rightleftharpoons "&#x021CC;" ><!--RIGHTWARDS HARPOON OVER LEFTWARDS HARPOON -->
+<!ENTITY rightrightarrows "&#x021C9;" ><!--RIGHTWARDS PAIRED ARROWS -->
+<!ENTITY rightsquigarrow  "&#x0219D;" ><!--RIGHTWARDS WAVE ARROW -->
+<!ENTITY RightTee         "&#x022A2;" ><!--RIGHT TACK -->
+<!ENTITY RightTeeArrow    "&#x021A6;" ><!--RIGHTWARDS ARROW FROM BAR -->
+<!ENTITY rightthreetimes  "&#x022CC;" ><!--RIGHT SEMIDIRECT PRODUCT -->
+<!ENTITY RightTriangle    "&#x022B3;" ><!--CONTAINS AS NORMAL SUBGROUP -->
+<!ENTITY RightTriangleEqual "&#x022B5;" ><!--CONTAINS AS NORMAL SUBGROUP OR EQUAL TO -->
+<!ENTITY RightUpVector    "&#x021BE;" ><!--UPWARDS HARPOON WITH BARB RIGHTWARDS -->
+<!ENTITY RightVector      "&#x021C0;" ><!--RIGHTWARDS HARPOON WITH BARB UPWARDS -->
+<!ENTITY risingdotseq     "&#x02253;" ><!--IMAGE OF OR APPROXIMATELY EQUAL TO -->
+<!ENTITY rmoustache       "&#x023B1;" ><!--UPPER RIGHT OR LOWER LEFT CURLY BRACKET SECTION -->
+<!ENTITY Rrightarrow      "&#x021DB;" ><!--RIGHTWARDS TRIPLE ARROW -->
+<!ENTITY Rsh              "&#x021B1;" ><!--UPWARDS ARROW WITH TIP RIGHTWARDS -->
+<!ENTITY searrow          "&#x02198;" ><!--SOUTH EAST ARROW -->
+<!ENTITY setminus         "&#x02216;" ><!--SET MINUS -->
+<!ENTITY ShortDownArrow   "&#x02193;" ><!--DOWNWARDS ARROW -->
+<!ENTITY ShortLeftArrow   "&#x02190;" ><!--LEFTWARDS ARROW -->
+<!ENTITY shortmid         "&#x02223;" ><!--DIVIDES -->
+<!ENTITY shortparallel    "&#x02225;" ><!--PARALLEL TO -->
+<!ENTITY ShortRightArrow  "&#x02192;" ><!--RIGHTWARDS ARROW -->
+<!ENTITY ShortUpArrow     "&#x02191;" ><!--UPWARDS ARROW -->
+<!ENTITY simeq            "&#x02243;" ><!--ASYMPTOTICALLY EQUAL TO -->
+<!ENTITY SmallCircle      "&#x02218;" ><!--RING OPERATOR -->
+<!ENTITY smallsetminus    "&#x02216;" ><!--SET MINUS -->
+<!ENTITY spadesuit        "&#x02660;" ><!--BLACK SPADE SUIT -->
+<!ENTITY Sqrt             "&#x0221A;" ><!--SQUARE ROOT -->
+<!ENTITY sqsubset         "&#x0228F;" ><!--SQUARE IMAGE OF -->
+<!ENTITY sqsubseteq       "&#x02291;" ><!--SQUARE IMAGE OF OR EQUAL TO -->
+<!ENTITY sqsupset         "&#x02290;" ><!--SQUARE ORIGINAL OF -->
+<!ENTITY sqsupseteq       "&#x02292;" ><!--SQUARE ORIGINAL OF OR EQUAL TO -->
+<!ENTITY Square           "&#x025A1;" ><!--WHITE SQUARE -->
+<!ENTITY SquareIntersection "&#x02293;" ><!--SQUARE CAP -->
+<!ENTITY SquareSubset     "&#x0228F;" ><!--SQUARE IMAGE OF -->
+<!ENTITY SquareSubsetEqual "&#x02291;" ><!--SQUARE IMAGE OF OR EQUAL TO -->
+<!ENTITY SquareSuperset   "&#x02290;" ><!--SQUARE ORIGINAL OF -->
+<!ENTITY SquareSupersetEqual "&#x02292;" ><!--SQUARE ORIGINAL OF OR EQUAL TO -->
+<!ENTITY SquareUnion      "&#x02294;" ><!--SQUARE CUP -->
+<!ENTITY Star             "&#x022C6;" ><!--STAR OPERATOR -->
+<!ENTITY straightepsilon  "&#x003F5;" ><!--GREEK LUNATE EPSILON SYMBOL -->
+<!ENTITY straightphi      "&#x003D5;" ><!--GREEK PHI SYMBOL -->
+<!ENTITY Subset           "&#x022D0;" ><!--DOUBLE SUBSET -->
+<!ENTITY subset           "&#x02282;" ><!--SUBSET OF -->
+<!ENTITY subseteq         "&#x02286;" ><!--SUBSET OF OR EQUAL TO -->
+<!ENTITY subseteqq        "&#x02AC5;" ><!--SUBSET OF ABOVE EQUALS SIGN -->
+<!ENTITY SubsetEqual      "&#x02286;" ><!--SUBSET OF OR EQUAL TO -->
+<!ENTITY subsetneq        "&#x0228A;" ><!--SUBSET OF WITH NOT EQUAL TO -->
+<!ENTITY subsetneqq       "&#x02ACB;" ><!--SUBSET OF ABOVE NOT EQUAL TO -->
+<!ENTITY succ             "&#x0227B;" ><!--SUCCEEDS -->
+<!ENTITY succapprox       "&#x02AB8;" ><!--SUCCEEDS ABOVE ALMOST EQUAL TO -->
+<!ENTITY succcurlyeq      "&#x0227D;" ><!--SUCCEEDS OR EQUAL TO -->
+<!ENTITY Succeeds         "&#x0227B;" ><!--SUCCEEDS -->
+<!ENTITY SucceedsEqual    "&#x02AB0;" ><!--SUCCEEDS ABOVE SINGLE-LINE EQUALS SIGN -->
+<!ENTITY SucceedsSlantEqual "&#x0227D;" ><!--SUCCEEDS OR EQUAL TO -->
+<!ENTITY SucceedsTilde    "&#x0227F;" ><!--SUCCEEDS OR EQUIVALENT TO -->
+<!ENTITY succeq           "&#x02AB0;" ><!--SUCCEEDS ABOVE SINGLE-LINE EQUALS SIGN -->
+<!ENTITY succnapprox      "&#x02ABA;" ><!--SUCCEEDS ABOVE NOT ALMOST EQUAL TO -->
+<!ENTITY succneqq         "&#x02AB6;" ><!--SUCCEEDS ABOVE NOT EQUAL TO -->
+<!ENTITY succnsim         "&#x022E9;" ><!--SUCCEEDS BUT NOT EQUIVALENT TO -->
+<!ENTITY succsim          "&#x0227F;" ><!--SUCCEEDS OR EQUIVALENT TO -->
+<!ENTITY SuchThat         "&#x0220B;" ><!--CONTAINS AS MEMBER -->
+<!ENTITY Sum              "&#x02211;" ><!--N-ARY SUMMATION -->
+<!ENTITY Superset         "&#x02283;" ><!--SUPERSET OF -->
+<!ENTITY SupersetEqual    "&#x02287;" ><!--SUPERSET OF OR EQUAL TO -->
+<!ENTITY Supset           "&#x022D1;" ><!--DOUBLE SUPERSET -->
+<!ENTITY supset           "&#x02283;" ><!--SUPERSET OF -->
+<!ENTITY supseteq         "&#x02287;" ><!--SUPERSET OF OR EQUAL TO -->
+<!ENTITY supseteqq        "&#x02AC6;" ><!--SUPERSET OF ABOVE EQUALS SIGN -->
+<!ENTITY supsetneq        "&#x0228B;" ><!--SUPERSET OF WITH NOT EQUAL TO -->
+<!ENTITY supsetneqq       "&#x02ACC;" ><!--SUPERSET OF ABOVE NOT EQUAL TO -->
+<!ENTITY swarrow          "&#x02199;" ><!--SOUTH WEST ARROW -->
+<!ENTITY Therefore        "&#x02234;" ><!--THEREFORE -->
+<!ENTITY therefore        "&#x02234;" ><!--THEREFORE -->
+<!ENTITY thickapprox      "&#x02248;" ><!--ALMOST EQUAL TO -->
+<!ENTITY thicksim         "&#x0223C;" ><!--TILDE OPERATOR -->
+<!ENTITY ThinSpace        "&#x02009;" ><!--THIN SPACE -->
+<!ENTITY Tilde            "&#x0223C;" ><!--TILDE OPERATOR -->
+<!ENTITY TildeEqual       "&#x02243;" ><!--ASYMPTOTICALLY EQUAL TO -->
+<!ENTITY TildeFullEqual   "&#x02245;" ><!--APPROXIMATELY EQUAL TO -->
+<!ENTITY TildeTilde       "&#x02248;" ><!--ALMOST EQUAL TO -->
+<!ENTITY toea             "&#x02928;" ><!--NORTH EAST ARROW AND SOUTH EAST ARROW -->
+<!ENTITY tosa             "&#x02929;" ><!--SOUTH EAST ARROW AND SOUTH WEST ARROW -->
+<!ENTITY triangle         "&#x025B5;" ><!--WHITE UP-POINTING SMALL TRIANGLE -->
+<!ENTITY triangledown     "&#x025BF;" ><!--WHITE DOWN-POINTING SMALL TRIANGLE -->
+<!ENTITY triangleleft     "&#x025C3;" ><!--WHITE LEFT-POINTING SMALL TRIANGLE -->
+<!ENTITY trianglelefteq   "&#x022B4;" ><!--NORMAL SUBGROUP OF OR EQUAL TO -->
+<!ENTITY triangleq        "&#x0225C;" ><!--DELTA EQUAL TO -->
+<!ENTITY triangleright    "&#x025B9;" ><!--WHITE RIGHT-POINTING SMALL TRIANGLE -->
+<!ENTITY trianglerighteq  "&#x022B5;" ><!--CONTAINS AS NORMAL SUBGROUP OR EQUAL TO -->
+<!ENTITY TripleDot        " &#x020DB;" ><!--COMBINING THREE DOTS ABOVE -->
+<!ENTITY twoheadleftarrow "&#x0219E;" ><!--LEFTWARDS TWO HEADED ARROW -->
+<!ENTITY twoheadrightarrow "&#x021A0;" ><!--RIGHTWARDS TWO HEADED ARROW -->
+<!ENTITY ulcorner         "&#x0231C;" ><!--TOP LEFT CORNER -->
+<!ENTITY Union            "&#x022C3;" ><!--N-ARY UNION -->
+<!ENTITY UnionPlus        "&#x0228E;" ><!--MULTISET UNION -->
+<!ENTITY UpArrow          "&#x02191;" ><!--UPWARDS ARROW -->
+<!ENTITY Uparrow          "&#x021D1;" ><!--UPWARDS DOUBLE ARROW -->
+<!ENTITY uparrow          "&#x02191;" ><!--UPWARDS ARROW -->
+<!ENTITY UpArrowDownArrow "&#x021C5;" ><!--UPWARDS ARROW LEFTWARDS OF DOWNWARDS ARROW -->
+<!ENTITY UpDownArrow      "&#x02195;" ><!--UP DOWN ARROW -->
+<!ENTITY Updownarrow      "&#x021D5;" ><!--UP DOWN DOUBLE ARROW -->
+<!ENTITY updownarrow      "&#x02195;" ><!--UP DOWN ARROW -->
+<!ENTITY UpEquilibrium    "&#x0296E;" ><!--UPWARDS HARPOON WITH BARB LEFT BESIDE DOWNWARDS HARPOON WITH BARB RIGHT -->
+<!ENTITY upharpoonleft    "&#x021BF;" ><!--UPWARDS HARPOON WITH BARB LEFTWARDS -->
+<!ENTITY upharpoonright   "&#x021BE;" ><!--UPWARDS HARPOON WITH BARB RIGHTWARDS -->
+<!ENTITY UpperLeftArrow   "&#x02196;" ><!--NORTH WEST ARROW -->
+<!ENTITY UpperRightArrow  "&#x02197;" ><!--NORTH EAST ARROW -->
+<!ENTITY upsilon          "&#x003C5;" ><!--GREEK SMALL LETTER UPSILON -->
+<!ENTITY UpTee            "&#x022A5;" ><!--UP TACK -->
+<!ENTITY UpTeeArrow       "&#x021A5;" ><!--UPWARDS ARROW FROM BAR -->
+<!ENTITY upuparrows       "&#x021C8;" ><!--UPWARDS PAIRED ARROWS -->
+<!ENTITY urcorner         "&#x0231D;" ><!--TOP RIGHT CORNER -->
+<!ENTITY varepsilon       "&#x003B5;" ><!--GREEK SMALL LETTER EPSILON -->
+<!ENTITY varkappa         "&#x003F0;" ><!--GREEK KAPPA SYMBOL -->
+<!ENTITY varnothing       "&#x02205;" ><!--EMPTY SET -->
+<!ENTITY varphi           "&#x003C6;" ><!--GREEK SMALL LETTER PHI -->
+<!ENTITY varpi            "&#x003D6;" ><!--GREEK PI SYMBOL -->
+<!ENTITY varpropto        "&#x0221D;" ><!--PROPORTIONAL TO -->
+<!ENTITY varrho           "&#x003F1;" ><!--GREEK RHO SYMBOL -->
+<!ENTITY varsigma         "&#x003C2;" ><!--GREEK SMALL LETTER FINAL SIGMA -->
+<!ENTITY varsubsetneq     "&#x0228A;&#x0FE00;" ><!--SUBSET OF WITH NOT EQUAL TO - variant with stroke through bottom members -->
+<!ENTITY varsubsetneqq    "&#x02ACB;&#x0FE00;" ><!--SUBSET OF ABOVE NOT EQUAL TO - variant with stroke through bottom members -->
+<!ENTITY varsupsetneq     "&#x0228B;&#x0FE00;" ><!--SUPERSET OF WITH NOT EQUAL TO - variant with stroke through bottom members -->
+<!ENTITY varsupsetneqq    "&#x02ACC;&#x0FE00;" ><!--SUPERSET OF ABOVE NOT EQUAL TO - variant with stroke through bottom members -->
+<!ENTITY vartheta         "&#x003D1;" ><!--GREEK THETA SYMBOL -->
+<!ENTITY vartriangleleft  "&#x022B2;" ><!--NORMAL SUBGROUP OF -->
+<!ENTITY vartriangleright "&#x022B3;" ><!--CONTAINS AS NORMAL SUBGROUP -->
+<!ENTITY Vee              "&#x022C1;" ><!--N-ARY LOGICAL OR -->
+<!ENTITY vee              "&#x02228;" ><!--LOGICAL OR -->
+<!ENTITY Vert             "&#x02016;" ><!--DOUBLE VERTICAL LINE -->
+<!ENTITY vert             "&#x0007C;" ><!--VERTICAL LINE -->
+<!ENTITY VerticalBar      "&#x02223;" ><!--DIVIDES -->
+<!ENTITY VerticalTilde    "&#x02240;" ><!--WREATH PRODUCT -->
+<!ENTITY VeryThinSpace    "&#x0200A;" ><!--HAIR SPACE -->
+<!ENTITY Wedge            "&#x022C0;" ><!--N-ARY LOGICAL AND -->
+<!ENTITY wedge            "&#x02227;" ><!--LOGICAL AND -->
+<!ENTITY wp               "&#x02118;" ><!--SCRIPT CAPITAL P -->
+<!ENTITY wr               "&#x02240;" ><!--WREATH PRODUCT -->
+<!ENTITY zeetrf           "&#x02128;" ><!--BLACK-LETTER CAPITAL Z -->

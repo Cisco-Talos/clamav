@@ -152,6 +152,12 @@ libclamav_la_SOURCES = \
 	mspack.c \
 	mspack.h \
 	cab.c \
-	cab.h
+	cab.h \
+	entconv.c \
+	entconv.h \
+	entitylist.h \
+	encoding_aliases.h \
+	hashtab.c \
+	hashtab.h
 
 lib_LTLIBRARIES = libclamav.la

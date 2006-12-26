@@ -1,0 +1,93 @@
+
+<!--
+     File isomfrk.ent produced by the XSL script entities.xsl
+     from input data in unicode.xml.
+
+     Please report any errors to David Carlisle
+     via the public W3C list www-math@w3.org.
+
+     The numeric character values assigned to each entity
+     (should) match the Unicode assignments in Unicode 4.0.
+
+     Entity names in this file are derived from files carrying the
+     following notice:
+
+     (C) International Organization for Standardization 1991
+     Permission to copy in any form is granted for use with
+     conforming SGML systems and applications as defined in
+     ISO 8879, provided this notice is included in all copies.
+
+-->
+
+
+<!-- 
+     Version: $Id: isomfrk.ent,v 1.1 2006/12/26 16:17:01 tkojm Exp $
+
+       Public identifier: ISO 9573-13:1991//ENTITIES Math Alphabets: Fraktur //EN//XML
+       System identifier: http://www.w3.org/2003/entities/iso9573-1991/isomfrk.ent
+
+     The public identifier should always be used verbatim.
+     The system identifier may be changed to suit local requirements.
+
+     Typical invocation:
+
+       <!ENTITY % isomfrk PUBLIC
+         "ISO 9573-13:1991//ENTITIES Math Alphabets: Fraktur //EN//XML"
+         "http://www.w3.org/2003/entities/iso9573-1991/isomfrk.ent"
+       >
+       %isomfrk;
+
+-->
+
+<!ENTITY Afr              "&#x1D504;" ><!--MATHEMATICAL FRAKTUR CAPITAL A -->
+<!ENTITY afr              "&#x1D51E;" ><!--MATHEMATICAL FRAKTUR SMALL A -->
+<!ENTITY Bfr              "&#x1D505;" ><!--MATHEMATICAL FRAKTUR CAPITAL B -->
+<!ENTITY bfr              "&#x1D51F;" ><!--MATHEMATICAL FRAKTUR SMALL B -->
+<!ENTITY Cfr              "&#x0212D;" ><!--BLACK-LETTER CAPITAL C -->
+<!ENTITY cfr              "&#x1D520;" ><!--MATHEMATICAL FRAKTUR SMALL C -->
+<!ENTITY Dfr              "&#x1D507;" ><!--MATHEMATICAL FRAKTUR CAPITAL D -->
+<!ENTITY dfr              "&#x1D521;" ><!--MATHEMATICAL FRAKTUR SMALL D -->
+<!ENTITY Efr              "&#x1D508;" ><!--MATHEMATICAL FRAKTUR CAPITAL E -->
+<!ENTITY efr              "&#x1D522;" ><!--MATHEMATICAL FRAKTUR SMALL E -->
+<!ENTITY Ffr              "&#x1D509;" ><!--MATHEMATICAL FRAKTUR CAPITAL F -->
+<!ENTITY ffr              "&#x1D523;" ><!--MATHEMATICAL FRAKTUR SMALL F -->
+<!ENTITY Gfr              "&#x1D50A;" ><!--MATHEMATICAL FRAKTUR CAPITAL G -->
+<!ENTITY gfr              "&#x1D524;" ><!--MATHEMATICAL FRAKTUR SMALL G -->
+<!ENTITY Hfr              "&#x0210C;" ><!--BLACK-LETTER CAPITAL H -->
+<!ENTITY hfr              "&#x1D525;" ><!--MATHEMATICAL FRAKTUR SMALL H -->
+<!ENTITY Ifr              "&#x02111;" ><!--BLACK-LETTER CAPITAL I -->
+<!ENTITY ifr              "&#x1D526;" ><!--MATHEMATICAL FRAKTUR SMALL I -->
+<!ENTITY Jfr              "&#x1D50D;" ><!--MATHEMATICAL FRAKTUR CAPITAL J -->
+<!ENTITY jfr              "&#x1D527;" ><!--MATHEMATICAL FRAKTUR SMALL J -->
+<!ENTITY Kfr              "&#x1D50E;" ><!--MATHEMATICAL FRAKTUR CAPITAL K -->
+<!ENTITY kfr              "&#x1D528;" ><!--MATHEMATICAL FRAKTUR SMALL K -->
+<!ENTITY Lfr              "&#x1D50F;" ><!--MATHEMATICAL FRAKTUR CAPITAL L -->
+<!ENTITY lfr              "&#x1D529;" ><!--MATHEMATICAL FRAKTUR SMALL L -->
+<!ENTITY Mfr              "&#x1D510;" ><!--MATHEMATICAL FRAKTUR CAPITAL M -->
+<!ENTITY mfr              "&#x1D52A;" ><!--MATHEMATICAL FRAKTUR SMALL M -->
+<!ENTITY Nfr              "&#x1D511;" ><!--MATHEMATICAL FRAKTUR CAPITAL N -->
+<!ENTITY nfr              "&#x1D52B;" ><!--MATHEMATICAL FRAKTUR SMALL N -->
+<!ENTITY Ofr              "&#x1D512;" ><!--MATHEMATICAL FRAKTUR CAPITAL O -->
+<!ENTITY ofr              "&#x1D52C;" ><!--MATHEMATICAL FRAKTUR SMALL O -->
+<!ENTITY Pfr              "&#x1D513;" ><!--MATHEMATICAL FRAKTUR CAPITAL P -->
+<!ENTITY pfr              "&#x1D52D;" ><!--MATHEMATICAL FRAKTUR SMALL P -->
+<!ENTITY Qfr              "&#x1D514;" ><!--MATHEMATICAL FRAKTUR CAPITAL Q -->
+<!ENTITY qfr              "&#x1D52E;" ><!--MATHEMATICAL FRAKTUR SMALL Q -->
+<!ENTITY Rfr              "&#x0211C;" ><!--BLACK-LETTER CAPITAL R -->
+<!ENTITY rfr              "&#x1D52F;" ><!--MATHEMATICAL FRAKTUR SMALL R -->
+<!ENTITY Sfr              "&#x1D516;" ><!--MATHEMATICAL FRAKTUR CAPITAL S -->
+<!ENTITY sfr              "&#x1D530;" ><!--MATHEMATICAL FRAKTUR SMALL S -->
+<!ENTITY Tfr              "&#x1D517;" ><!--MATHEMATICAL FRAKTUR CAPITAL T -->
+<!ENTITY tfr              "&#x1D531;" ><!--MATHEMATICAL FRAKTUR SMALL T -->
+<!ENTITY Ufr              "&#x1D518;" ><!--MATHEMATICAL FRAKTUR CAPITAL U -->
+<!ENTITY ufr              "&#x1D532;" ><!--MATHEMATICAL FRAKTUR SMALL U -->
+<!ENTITY Vfr              "&#x1D519;" ><!--MATHEMATICAL FRAKTUR CAPITAL V -->
+<!ENTITY vfr              "&#x1D533;" ><!--MATHEMATICAL FRAKTUR SMALL V -->
+<!ENTITY Wfr              "&#x1D51A;" ><!--MATHEMATICAL FRAKTUR CAPITAL W -->
+<!ENTITY wfr              "&#x1D534;" ><!--MATHEMATICAL FRAKTUR SMALL W -->
+<!ENTITY Xfr              "&#x1D51B;" ><!--MATHEMATICAL FRAKTUR CAPITAL X -->
+<!ENTITY xfr              "&#x1D535;" ><!--MATHEMATICAL FRAKTUR SMALL X -->
+<!ENTITY Yfr              "&#x1D51C;" ><!--MATHEMATICAL FRAKTUR CAPITAL Y -->
+<!ENTITY yfr              "&#x1D536;" ><!--MATHEMATICAL FRAKTUR SMALL Y -->
+<!ENTITY Zfr              "&#x02128;" ><!--BLACK-LETTER CAPITAL Z -->
+<!ENTITY zfr              "&#x1D537;" ><!--MATHEMATICAL FRAKTUR SMALL Z -->
