@@ -29,6 +29,12 @@ typedef struct tag_arguments_tag
 	struct blob   **contents; 
 } tag_arguments_t;
 
+typedef struct m_area_tag {
+	unsigned char *buffer;
+	off_t length;
+	off_t offset;
+} m_area_t;
+
 int html_normalise_mem(unsigned char *in_buff, off_t in_size, const char *dirname, tag_arguments_t *hrefs);
 int html_normalise_fd(int fd, const char *dirname, tag_arguments_t *hrefs);
 void html_tag_arg_free(tag_arguments_t *tags);

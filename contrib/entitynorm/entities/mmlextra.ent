@@ -1,0 +1,138 @@
+
+<!--
+     File mmlextra.ent produced by the XSL script entities.xsl
+     from input data in unicode.xml.
+
+     Please report any errors to David Carlisle
+     via the public W3C list www-math@w3.org.
+
+     The numeric character values assigned to each entity
+     (should) match the Unicode assignments in Unicode 4.0.
+
+-->
+
+
+<!-- 
+     Version: $Id: mmlextra.ent,v 1.1 2006/12/26 16:17:01 tkojm Exp $
+
+       
+       System identifier: http://www.w3.org/2003/entities/mathml/mmlextra.ent
+
+     The system identifier may be changed to suit local requirements.
+
+     Typical invocation:
+
+       <!ENTITY % mmlextra SYSTEM
+         "http://www.w3.org/2003/entities/mathml/mmlextra.ent"
+       >
+       %mmlextra;
+
+-->
+
+<!ENTITY af               "&#x02061;" ><!--FUNCTION APPLICATION -->
+<!ENTITY aopf             "&#x1D552;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL A -->
+<!ENTITY asympeq          "&#x0224D;" ><!--EQUIVALENT TO -->
+<!ENTITY bopf             "&#x1D553;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL B -->
+<!ENTITY copf             "&#x1D554;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL C -->
+<!ENTITY Cross            "&#x02A2F;" ><!--VECTOR OR CROSS PRODUCT -->
+<!ENTITY DD               "&#x02145;" ><!--DOUBLE-STRUCK ITALIC CAPITAL D -->
+<!ENTITY dd               "&#x02146;" ><!--DOUBLE-STRUCK ITALIC SMALL D -->
+<!ENTITY dopf             "&#x1D555;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL D -->
+<!ENTITY DownArrowBar     "&#x02913;" ><!--DOWNWARDS ARROW TO BAR -->
+<!ENTITY DownBreve        " &#x00311;" ><!--COMBINING INVERTED BREVE -->
+<!ENTITY DownLeftRightVector "&#x02950;" ><!--LEFT BARB DOWN RIGHT BARB DOWN HARPOON -->
+<!ENTITY DownLeftTeeVector "&#x0295E;" ><!--LEFTWARDS HARPOON WITH BARB DOWN FROM BAR -->
+<!ENTITY DownLeftVectorBar "&#x02956;" ><!--LEFTWARDS HARPOON WITH BARB DOWN TO BAR -->
+<!ENTITY DownRightTeeVector "&#x0295F;" ><!--RIGHTWARDS HARPOON WITH BARB DOWN FROM BAR -->
+<!ENTITY DownRightVectorBar "&#x02957;" ><!--RIGHTWARDS HARPOON WITH BARB DOWN TO BAR -->
+<!ENTITY ee               "&#x02147;" ><!--DOUBLE-STRUCK ITALIC SMALL E -->
+<!ENTITY EmptySmallSquare "&#x025FB;" ><!--WHITE MEDIUM SQUARE -->
+<!ENTITY EmptyVerySmallSquare "&#x025AB;" ><!--WHITE SMALL SQUARE -->
+<!ENTITY eopf             "&#x1D556;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL E -->
+<!ENTITY Equal            "&#x02A75;" ><!--TWO CONSECUTIVE EQUALS SIGNS -->
+<!ENTITY FilledSmallSquare "&#x025FC;" ><!--BLACK MEDIUM SQUARE -->
+<!ENTITY FilledVerySmallSquare "&#x025AA;" ><!--BLACK SMALL SQUARE -->
+<!ENTITY fopf             "&#x1D557;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL F -->
+<!ENTITY gopf             "&#x1D558;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL G -->
+<!ENTITY GreaterGreater   "&#x02AA2;" ><!--DOUBLE NESTED GREATER-THAN -->
+<!ENTITY Hat              "&#x0005E;" ><!--CIRCUMFLEX ACCENT -->
+<!ENTITY hopf             "&#x1D559;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL H -->
+<!ENTITY HorizontalLine   "&#x02500;" ><!--BOX DRAWINGS LIGHT HORIZONTAL -->
+<!ENTITY ic               "&#x02063;" ><!--INVISIBLE SEPARATOR -->
+<!ENTITY ii               "&#x02148;" ><!--DOUBLE-STRUCK ITALIC SMALL I -->
+<!ENTITY iopf             "&#x1D55A;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL I -->
+<!ENTITY it               "&#x02062;" ><!--INVISIBLE TIMES -->
+<!ENTITY jopf             "&#x1D55B;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL J -->
+<!ENTITY kopf             "&#x1D55C;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL K -->
+<!ENTITY larrb            "&#x021E4;" ><!--LEFTWARDS ARROW TO BAR -->
+<!ENTITY LeftDownTeeVector "&#x02961;" ><!--DOWNWARDS HARPOON WITH BARB LEFT FROM BAR -->
+<!ENTITY LeftDownVectorBar "&#x02959;" ><!--DOWNWARDS HARPOON WITH BARB LEFT TO BAR -->
+<!ENTITY LeftRightVector  "&#x0294E;" ><!--LEFT BARB UP RIGHT BARB UP HARPOON -->
+<!ENTITY LeftTeeVector    "&#x0295A;" ><!--LEFTWARDS HARPOON WITH BARB UP FROM BAR -->
+<!ENTITY LeftTriangleBar  "&#x029CF;" ><!--LEFT TRIANGLE BESIDE VERTICAL BAR -->
+<!ENTITY LeftUpDownVector "&#x02951;" ><!--UP BARB LEFT DOWN BARB LEFT HARPOON -->
+<!ENTITY LeftUpTeeVector  "&#x02960;" ><!--UPWARDS HARPOON WITH BARB LEFT FROM BAR -->
+<!ENTITY LeftUpVectorBar  "&#x02958;" ><!--UPWARDS HARPOON WITH BARB LEFT TO BAR -->
+<!ENTITY LeftVectorBar    "&#x02952;" ><!--LEFTWARDS HARPOON WITH BARB UP TO BAR -->
+<!ENTITY LessLess         "&#x02AA1;" ><!--DOUBLE NESTED LESS-THAN -->
+<!ENTITY lopf             "&#x1D55D;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL L -->
+<!ENTITY mapstodown       "&#x021A7;" ><!--DOWNWARDS ARROW FROM BAR -->
+<!ENTITY mapstoleft       "&#x021A4;" ><!--LEFTWARDS ARROW FROM BAR -->
+<!ENTITY mapstoup         "&#x021A5;" ><!--UPWARDS ARROW FROM BAR -->
+<!ENTITY MediumSpace      "&#x0205F;" ><!--MEDIUM MATHEMATICAL SPACE -->
+<!ENTITY mopf             "&#x1D55E;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL M -->
+<!ENTITY nbump            "&#x0224E;&#x00338;" ><!--GEOMETRICALLY EQUIVALENT TO with slash -->
+<!ENTITY nbumpe           "&#x0224F;&#x00338;" ><!--DIFFERENCE BETWEEN with slash -->
+<!ENTITY nesim            "&#x02242;&#x00338;" ><!--MINUS TILDE with slash -->
+<!ENTITY NewLine          "&#x0000A;" ><!--LINE FEED (LF) -->
+<!ENTITY NoBreak          "&#x02060;" ><!--WORD JOINER -->
+<!ENTITY nopf             "&#x1D55F;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL N -->
+<!ENTITY NotCupCap        "&#x0226D;" ><!--NOT EQUIVALENT TO -->
+<!ENTITY NotHumpEqual     "&#x0224F;&#x00338;" ><!--DIFFERENCE BETWEEN with slash -->
+<!ENTITY NotLeftTriangleBar "&#x029CF;&#x00338;" ><!--LEFT TRIANGLE BESIDE VERTICAL BAR with slash -->
+<!ENTITY NotNestedGreaterGreater "&#x02AA2;&#x00338;" ><!--DOUBLE NESTED GREATER-THAN with slash -->
+<!ENTITY NotNestedLessLess "&#x02AA1;&#x00338;" ><!--DOUBLE NESTED LESS-THAN with slash -->
+<!ENTITY NotRightTriangleBar "&#x029D0;&#x00338;" ><!--VERTICAL BAR BESIDE RIGHT TRIANGLE with slash -->
+<!ENTITY NotSquareSubset  "&#x0228F;&#x00338;" ><!--SQUARE IMAGE OF with slash -->
+<!ENTITY NotSquareSuperset "&#x02290;&#x00338;" ><!--SQUARE ORIGINAL OF with slash -->
+<!ENTITY NotSucceedsTilde "&#x0227F;&#x00338;" ><!--SUCCEEDS OR EQUIVALENT TO with slash -->
+<!ENTITY oopf             "&#x1D560;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL O -->
+<!ENTITY OverBar          "&#x000AF;" ><!--MACRON -->
+<!ENTITY OverBrace        "&#x0FE37;" ><!--PRESENTATION FORM FOR VERTICAL LEFT CURLY BRACKET -->
+<!ENTITY OverBracket      "&#x023B4;" ><!--TOP SQUARE BRACKET -->
+<!ENTITY OverParenthesis  "&#x0FE35;" ><!--PRESENTATION FORM FOR VERTICAL LEFT PARENTHESIS -->
+<!ENTITY planckh          "&#x0210E;" ><!--PLANCK CONSTANT -->
+<!ENTITY popf             "&#x1D561;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL P -->
+<!ENTITY Product          "&#x0220F;" ><!--N-ARY PRODUCT -->
+<!ENTITY qopf             "&#x1D562;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL Q -->
+<!ENTITY rarrb            "&#x021E5;" ><!--RIGHTWARDS ARROW TO BAR -->
+<!ENTITY RightDownTeeVector "&#x0295D;" ><!--DOWNWARDS HARPOON WITH BARB RIGHT FROM BAR -->
+<!ENTITY RightDownVectorBar "&#x02955;" ><!--DOWNWARDS HARPOON WITH BARB RIGHT TO BAR -->
+<!ENTITY RightTeeVector   "&#x0295B;" ><!--RIGHTWARDS HARPOON WITH BARB UP FROM BAR -->
+<!ENTITY RightTriangleBar "&#x029D0;" ><!--VERTICAL BAR BESIDE RIGHT TRIANGLE -->
+<!ENTITY RightUpDownVector "&#x0294F;" ><!--UP BARB RIGHT DOWN BARB RIGHT HARPOON -->
+<!ENTITY RightUpTeeVector "&#x0295C;" ><!--UPWARDS HARPOON WITH BARB RIGHT FROM BAR -->
+<!ENTITY RightUpVectorBar "&#x02954;" ><!--UPWARDS HARPOON WITH BARB RIGHT TO BAR -->
+<!ENTITY RightVectorBar   "&#x02953;" ><!--RIGHTWARDS HARPOON WITH BARB UP TO BAR -->
+<!ENTITY ropf             "&#x1D563;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL R -->
+<!ENTITY RoundImplies     "&#x02970;" ><!--RIGHT DOUBLE ARROW WITH ROUNDED HEAD -->
+<!ENTITY RuleDelayed      "&#x029F4;" ><!--RULE-DELAYED -->
+<!ENTITY sopf             "&#x1D564;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL S -->
+<!ENTITY Tab              "&#x00009;" ><!--CHARACTER TABULATION -->
+<!ENTITY ThickSpace       "&#x02009;&#x0200A;&#x0200A;" ><!--space of width 5/18 em -->
+<!ENTITY topf             "&#x1D565;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL T -->
+<!ENTITY UnderBar         " &#x00332;" ><!--COMBINING LOW LINE -->
+<!ENTITY UnderBrace       "&#x0FE38;" ><!--PRESENTATION FORM FOR VERTICAL RIGHT CURLY BRACKET -->
+<!ENTITY UnderBracket     "&#x023B5;" ><!--BOTTOM SQUARE BRACKET -->
+<!ENTITY UnderParenthesis "&#x0FE36;" ><!--PRESENTATION FORM FOR VERTICAL RIGHT PARENTHESIS -->
+<!ENTITY uopf             "&#x1D566;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL U -->
+<!ENTITY UpArrowBar       "&#x02912;" ><!--UPWARDS ARROW TO BAR -->
+<!ENTITY Upsilon          "&#x003A5;" ><!--GREEK CAPITAL LETTER UPSILON -->
+<!ENTITY VerticalLine     "&#x0007C;" ><!--VERTICAL LINE -->
+<!ENTITY VerticalSeparator "&#x02758;" ><!--LIGHT VERTICAL BAR -->
+<!ENTITY vopf             "&#x1D567;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL V -->
+<!ENTITY wopf             "&#x1D568;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL W -->
+<!ENTITY xopf             "&#x1D569;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL X -->
+<!ENTITY yopf             "&#x1D56A;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL Y -->
+<!ENTITY ZeroWidthSpace   "&#x0200B;" ><!--ZERO WIDTH SPACE -->
+<!ENTITY zopf             "&#x1D56B;" ><!--MATHEMATICAL DOUBLE-STRUCK SMALL Z -->

@@ -1,3 +1,8 @@
+Tue Dec 26 17:10:31 CET 2006 (tk)
+---------------------------------
+  * libclamav: add encoding and entity normalizer from Edwin (bb#145)
+  * contrib/entitynorm: e&e related tools
+
 Fri Dec 22 20:42:39 CET 2006 (acab)
 -----------------------------------
   * build system: various macroes updated (closes bb#209)

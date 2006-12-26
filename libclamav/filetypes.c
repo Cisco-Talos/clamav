@@ -38,6 +38,11 @@
 #include "matcher-ac.h"
 #include "str.h"
 
+#ifdef CL_EXPERIMENTAL
+#include "htmlnorm.h"
+#include "entconv.h"
+#endif
+
 struct cli_magic_s {
     size_t offset;
     const char *magic;
@@ -277,6 +282,45 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 		    ret = CL_TYPE_HTML_UTF16;
 	    }
 	    cli_ac_freedata(&mdata);
+
+#ifdef CL_EXPERIMENTAL
+	    if(ret != CL_TYPE_HTML_UTF16) {
+		    struct entity_conv conv;
+		    const size_t conv_size = 2*bread < 256 ? 256 : 2*bread;
+
+		if(init_entity_converter(&conv,UNKNOWN,conv_size) == 0) {
+			int end = 0;
+			m_area_t area;
+			area.buffer = (unsigned char *) smallbuff;
+			area.length = bread;
+			area.offset = 0;
+
+		    while(!end) {
+			if(cli_ac_initdata(&mdata, root->ac_partsigs, AC_DEFAULT_TRACKLEN))
+			    return ret;
+
+			decoded = (char*) encoding_norm_readline(&conv, NULL, &area, bread);
+
+			if(decoded) {
+			    sret = cli_ac_scanbuff(decoded, strlen(decoded), NULL, engine->root[0], &mdata, 1, 0, 0, -1, NULL);
+			    free(decoded);
+			    if(sret == CL_TYPE_HTML) {
+				ret = CL_TYPE_HTML;
+				end = 1;
+			    }
+			} else
+			    end = 1;
+
+			cli_ac_freedata(&mdata);
+		    }
+
+		    entity_norm_done(&conv);
+
+		} else {
+		    cli_warnmsg("cli_filetype2: Error initializing entity converter\n");
+		}
+	    }
+#endif /* CL_EXPERIMENTAL */
 	}
     }
 

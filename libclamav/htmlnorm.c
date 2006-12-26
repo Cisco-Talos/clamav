@@ -51,6 +51,7 @@
 
 #ifdef CL_EXPERIMENTAL
 #include "mbox.h"
+#include "entconv.h"
 #endif
 
 #define HTML_STR_LENGTH 1024
@@ -61,6 +62,9 @@ typedef enum {
     HTML_NORM,
     HTML_COMMENT,
     HTML_CHAR_REF,
+#ifdef CL_EXPERIMENTAL
+    HTML_ENTITY_REF_DECODE,
+#endif
     HTML_SKIP_WS,
     HTML_TRIM_WS,
     HTML_TAG,
@@ -88,11 +92,6 @@ typedef enum {
     NOT_QUOTED,
 } quoted_state;
 
-typedef struct m_area_tag {
-	unsigned char *buffer;
-	off_t length;
-	off_t offset;
-} m_area_t;
 
 #define HTML_FILE_BUFF_LEN 8192
 
@@ -157,7 +156,7 @@ int decrypt_tables[3][128] = {
        0x3B, 0x57, 0x22, 0x6D, 0x4D, 0x25, 0x28, 0x46, 0x4A, 0x32, 0x41, 0x3D, 0x5F, 0x4F, 0x42, 0x65}
 };
 
-static unsigned char *cli_readline(FILE *stream, m_area_t *m_area, unsigned int max_len)
+unsigned char *cli_readline(FILE *stream, m_area_t *m_area, unsigned int max_len)
 {
 	unsigned char *line, *ptr, *start, *end;
 	unsigned int line_len, count;
@@ -482,7 +481,14 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	unsigned char* href_contents_begin=NULL;/*beginning of the next portion of <a> contents*/
 	unsigned char* ptrend=NULL;/*end of <a> contents*/
 	unsigned char* in_form_action = NULL;/* the action URL of the current <form> tag, if any*/
+	struct entity_conv conv;
+	int rc;
+	unsigned char entity_val[HTML_STR_LENGTH+1];
+	size_t entity_val_length = 0;
+
 	tag_args.scanContents=0;/* do we need to store the contents of <a></a>?*/
+	if(( rc = init_entity_converter(&conv, UNKNOWN, 16384) ))
+		return rc;
 #endif
 
 	if (!m_area) {
@@ -511,7 +517,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	
 	if (dirname) {
 		snprintf(filename, 1024, "%s/rfc2397", dirname);
-		if (mkdir(filename, 0700)) {
+		if (mkdir(filename, 0700) && errno != EEXIST) {
 			file_buff_o1 = file_buff_o2 = file_buff_script = NULL;
 			goto abort;
 		}
@@ -582,8 +588,13 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	}
 	
 	binary = FALSE;
-		
+
+#ifdef CL_EXPERIMENTAL
+	ptr = line = encoding_norm_readline(&conv, stream_in, m_area, 8192);
+#else
 	ptr = line = cli_readline(stream_in, m_area, 8192);
+#endif
+
 	while (line) {
 #ifdef CL_EXPERIMENTAL
 		if(href_contents_begin)
@@ -946,6 +957,36 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						in_script = TRUE;
 					}
 					html_output_tag(file_buff_script, tag, &tag_args);
+#ifdef CL_EXPERIMENTAL					
+				} else if (strcmp(tag, "meta") == 0) {
+					const unsigned char* http_equiv = html_tag_arg_value(&tag_args, "http-equiv");
+					const unsigned char* http_content = html_tag_arg_value(&tag_args, "content");
+					if(http_equiv && http_content && strcasecmp(http_equiv,"content-type") == 0) {
+						const size_t len = strlen((const char*)http_content);
+						unsigned char* http_content2 = cli_malloc( len + 1);
+						unsigned char* charset;
+						size_t i;
+
+						if(!http_content2)
+							return CL_EMEM;
+						for(i = 0; i < strlen((const char*)http_content); i++)
+							http_content2[i] = tolower(http_content[i]);
+						http_content2[len] = '\0';
+						charset = (unsigned char*) strstr((char*)http_content2,"charset");
+						if(charset) {							
+							size_t length;
+							while(*charset && *charset != '=')
+								charset++;
+							charset++;/* skip = */
+							length = strcspn((const char*)charset," \"'");
+							charset[length] = '\0';
+							if(length)
+								process_encoding_set(&conv, charset, META);
+						}
+						free(http_content2);
+					}
+
+#endif
 				} else if (hrefs) {
 #ifdef CL_EXPERIMENTAL
 					if(in_ahref && !href_contents_begin)
@@ -956,7 +997,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						if (arg_value && strlen(arg_value) > 0) {
 #ifdef CL_EXPERIMENTAL
 							if (hrefs->scanContents) {
-								const unsigned char* arg_value_title = html_tag_arg_value(&tag_args,"title");
+								unsigned char* arg_value_title = html_tag_arg_value(&tag_args,"title");
 								/*beginning of an <a> tag*/
 								if (in_ahref)
 									/*we encountered nested <a> tags, pretend previous closed*/
@@ -1084,21 +1125,91 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					state = HTML_CHAR_REF_DECODE;
 					ptr++;
 				} else {
+#ifdef CL_EXPERIMENTAL
+					state = HTML_ENTITY_REF_DECODE;
+#else
 					html_output_c(file_buff_o1, file_buff_o2, '&');
+
 					state = next_state;
 					next_state = HTML_BAD_STATE;
+#endif					
 				}
 				break;
+#ifdef CL_EXPERIMENTAL	
+			case HTML_ENTITY_REF_DECODE:
+				if(*ptr == ';') {
+					size_t i;
+					unsigned char* normalized;
+					entity_val[entity_val_length] = '\0';
+					normalized = entity_norm(&conv, entity_val);
+					if(normalized) {
+						for(i=0; i < strlen(normalized); i++) {
+							const char c = tolower(normalized[i]);
+							html_output_c(file_buff_o1, file_buff_o2, c);
+							if (tag_val_length < HTML_STR_LENGTH) {
+								tag_val[tag_val_length++] = c;
+							}
+						}
+						free(normalized);
+					}
+					else {
+						html_output_c(file_buff_o1, file_buff_o2, '&');
+						for(i=0; i < entity_val_length; i++) {
+							const char c = tolower(entity_val[i]);
+							html_output_c(file_buff_o1, file_buff_o2, c);
+							if (tag_val_length < HTML_STR_LENGTH) {
+								tag_val[tag_val_length++] = c;
+							}
+						}
+						html_output_c(file_buff_o1, file_buff_o2, ';');
+					}
+					entity_val_length = 0;
+					state = next_state;
+					next_state = HTML_BAD_STATE;
+					ptr++;
+				}
+				else if ( (isalnum(*ptr) || *ptr=='_' || *ptr==':' || (*ptr=='-')) && entity_val_length < HTML_STR_LENGTH) {
+					entity_val[entity_val_length++] = *ptr++;
+				}
+				else {
+						/* entity too long, or not valid, dump it */
+						size_t i;
+						html_output_c(file_buff_o1, file_buff_o2, '&');
+						for(i=0; i < entity_val_length; i++) {
+							const char c = tolower(entity_val[i]);
+							html_output_c(file_buff_o1, file_buff_o2, c);
+							if (tag_val_length < HTML_STR_LENGTH) {
+								tag_val[tag_val_length++] = c;
+							}
+						}
+
+						state = next_state;
+						next_state = HTML_BAD_STATE;
+						entity_val_length = 0;
+				}
+				break;
+#endif
 			case HTML_CHAR_REF_DECODE:
 				if ((value==0) && ((*ptr == 'x') || (*ptr == 'X'))) {
 					hex=TRUE;
 					ptr++;
 				} else if (*ptr == ';') {
-					html_output_c(file_buff_o1, file_buff_o2, value);
 #ifdef CL_EXPERIMENTAL
 					if (tag_val_length < HTML_STR_LENGTH) {
 					tag_val[tag_val_length++] = value; /* store encoded values too */
 					}
+
+					if(value < 0x80)
+						html_output_c(file_buff_o1, file_buff_o2, tolower(value));
+					else {
+						unsigned char buff[10];
+						snprintf((char*)buff,9,"&#%d;",value);
+						buff[9] = '\0';
+						html_output_str(file_buff_o1, buff, strlen(buff));
+						html_output_str(file_buff_o2, buff, strlen(buff));
+					}
+#else
+					html_output_c(file_buff_o1, file_buff_o2, value);
 #endif
 					state = next_state;
 					next_state = HTML_BAD_STATE;
@@ -1391,9 +1502,33 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 		ptrend = NULL;
 #endif
 		free(line);
+#ifdef CL_EXPERIMENTAL
+		ptr = line = encoding_norm_readline(&conv, stream_in, m_area, 8192);
+#else
 		ptr = line = cli_readline(stream_in, m_area, 8192);
+#endif /* not CL_EXPERIMENTAL */
 	}
 	
+#ifdef CL_EXPERIMENTAL
+	{/* handle "unfinished" entitites */
+		size_t i;
+		unsigned char* normalized;
+		entity_val[entity_val_length] = '\0';
+		normalized = entity_norm(&conv, entity_val);
+		if(normalized) {
+			for(i=0; i < strlen(normalized); i++)
+				html_output_c(file_buff_o1, file_buff_o2, tolower(normalized[i]));
+						free(normalized);
+		}
+		else {
+			if(entity_val_length) {
+				html_output_c(file_buff_o1, file_buff_o2, '&');
+				for(i=0; i < entity_val_length; i++)
+					html_output_c(file_buff_o1, file_buff_o2, tolower(entity_val[i]));
+			}
+		}
+	}
+#endif
 	retval = TRUE;
 abort:
 #ifdef CL_EXPERIMENTAL
@@ -1401,6 +1536,7 @@ abort:
 		free(in_form_action);
 	if (in_ahref) /* tag not closed, force closing */
 		html_tag_contents_done(hrefs,in_ahref);
+	entity_norm_done(&conv);
 #endif
 	html_tag_arg_free(&tag_args);
 	if (!m_area) {
