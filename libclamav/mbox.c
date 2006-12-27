@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.364 2006/12/22 19:45:34 acab Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.365 2006/12/27 23:14:27 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -109,6 +109,13 @@ typedef	unsigned	char	bool;
 typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 #endif
 #endif
+
+typedef	enum {
+	FAIL,
+	OK,
+	OK_ATTACHMENTS_NOT_SAVED,
+	VIRUS
+} mbox_status;
 
 #ifndef isblank
 #define isblank(c)	(((c) == ' ') || ((c) == '\t'))
@@ -271,7 +278,7 @@ static	int	cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx);
 static	message	*parseEmailFile(FILE *fin, const table_t *rfc821Table, const char *firstLine, const char *dir);
 static	message	*parseEmailHeaders(message *m, const table_t *rfc821Table);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
-static	int	parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int recursion_level);
+static	mbox_status	parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int recursion_level);
 static	int	boundaryStart(const char *line, const char *boundary);
 static	int	endOfMessage(const char *line, const char *boundary);
 static	int	initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
@@ -289,16 +296,16 @@ static	char	*getline_from_mbox(char *buffer, size_t len, FILE *fin);
 static	bool	isBounceStart(const char *line);
 static	bool	exportBinhexMessage(const char *dir, message *m);
 static	int	exportBounceMessage(text *start, const mbox_ctx *ctx);
-static	message	*do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx *mctx, message *messageIn, text **tptr, unsigned int recursion_level);
+static	message	*do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, mbox_ctx *mctx, message *messageIn, text **tptr, unsigned int recursion_level);
 static	int	count_quotes(const char *buf);
 static	bool	next_is_folded_header(const text *t);
 
-static	void	checkURLs(message *m, mbox_ctx *mctx,int *rc, int is_html);
+static	void	checkURLs(message *m, mbox_ctx *mctx, mbox_status *rc, int is_html);
 
 #ifdef CL_EXPERIMENTAL
-static	void	do_checkURLs(message *m, const char *dir,tag_arguments_t* hrefs);
-static	blob*	getHrefs(message* m,tag_arguments_t* hrefs);
-static	void	hrefs_done(blob *b,tag_arguments_t* hrefs);
+static	void	do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs);
+static	blob	*getHrefs(message *m, tag_arguments_t *hrefs);
+static	void	hrefs_done(blob *b, tag_arguments_t *hrefs);
 #endif
 
 #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
@@ -1406,12 +1413,12 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 				messageSetCTX(body, ctx);
 				messageDestroy(m);
 				if(messageGetBody(body)) {
-					int rc = parseEmailBody(body, NULL, &mctx, 0);
-					if(rc == 0) {
+					mbox_status rc = parseEmailBody(body, NULL, &mctx, 0);
+					if(rc == FAIL) {
 						messageReset(body);
 						m = body;
 						continue;
-					} else if(rc == 3) {
+					} else if(rc == VIRUS) {
 						cli_dbgmsg("Message number %d is infected\n",
 							messagenumber);
 						retcode = CL_VIRUS;
@@ -1488,10 +1495,10 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 		if((retcode == CL_SUCCESS) && messageGetBody(body)) {
 			messageSetCTX(body, ctx);
 			switch(parseEmailBody(body, NULL, &mctx, 0)) {
-				case 0:
+				case FAIL:
 					retcode = CL_EFORMAT;
 					break;
-				case 3:
+				case VIRUS:
 					retcode = CL_VIRUS;
 					break;
 			}
@@ -2021,17 +2028,11 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
  * any headers. First time of calling it'll be
  * the whole message. Later it'll be parts of a multipart message
  * textIn is the plain text message being built up so far
- *
- * Returns:
- *	0 for fail
- *	1 for success, attachments saved
- *	2 for success, attachments not saved
- *	3 for virus found
  */
-static int	/* success or fail */
+static mbox_status
 parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int recursion_level)
 {
-	int rc = 1;
+	mbox_status rc = OK;
 	text *aText = textIn;
 	message *mainMessage = messageIn;
 	fileblob *fb;
@@ -2122,7 +2123,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				 * There might be html sent without subtype
 				 * html too, so scan them for phishing
 				 */
-				if(rc == 3)
+				if(rc == VIRUS)
 					infected = TRUE;
 			}
 #endif
@@ -2174,7 +2175,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 					if(binhexBegin(mainMessage) == t_line) {
 						if(exportBinhexMessage(mctx->dir, mainMessage)) {
 							/* virus found */
-							rc = 3;
+							rc = VIRUS;
 							infected = TRUE;
 							break;
 						}
@@ -2498,7 +2499,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 							&rc, mctx, messageIn,
 							&aText, recursion_level + 1);
 						--multiparts;
-						if(rc == 3)
+						if(rc == VIRUS)
 							infected = TRUE;
 						break;
 					default:
@@ -2550,8 +2551,10 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				/*
 				 * FIXME: we could return 2 here when we have
 				 * saved stuff earlier
+				 *
+				 * Nothing to do
 				 */
-				return (rc == 3) ? 3 : 2;	/* Nothing to do */
+				return (rc == VIRUS) ? VIRUS : OK_ATTACHMENTS_NOT_SAVED;
 			}
 
 			cli_dbgmsg("Find out the multipart type (%s)\n", mimeSubtype);
@@ -2593,7 +2596,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 					cli_dbgmsg("No HTML code found to be scanned\n");
 				else {
 					rc = parseEmailBody(aMessage, aText, mctx, recursion_level + 1);
-					if(rc == 1) {
+					if(rc == OK) {
 						assert(aMessage == messages[htmltextPart]);
 						messageDestroy(aMessage);
 						messages[htmltextPart] = NULL;
@@ -2674,7 +2677,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 					mainMessage = do_multipart(mainMessage,
 						messages, i, &rc, mctx,
 						messageIn, &aText, recursion_level + 1);
-					if(rc == 3) {
+					if(rc == VIRUS) {
 						infected = TRUE;
 						break;
 					}
@@ -2699,13 +2702,13 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				rc = parseEmailBody(messages[htmltextPart], aText, mctx, recursion_level + 1);
 				break;
 			case ENCRYPTED:
-				rc = 0;
+				rc = OK;
 				protocol = (char *)messageFindArgument(mainMessage, "protocol");
 				if(protocol) {
 					if(strcasecmp(protocol, "application/pgp-encrypted") == 0) {
 						/* RFC2015 */
 						cli_warnmsg("PGP encoded attachment not scanned\n");
-						rc = 2;
+						rc = OK_ATTACHMENTS_NOT_SAVED;
 					} else
 						cli_warnmsg("Unknown encryption protocol '%s' - if you believe this file contains a virus, submit it to www.clamav.net\n", protocol);
 					free(protocol);
@@ -2755,7 +2758,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 					cli_warnmsg("MIME type 'message' cannot be decoded\n");
 					break;
 			}
-			rc = 0;
+			rc = FAIL;
 			if((strcasecmp(mimeSubtype, "rfc822") == 0) ||
 			   (strcasecmp(mimeSubtype, "delivery-status") == 0)) {
 				message *m = parseEmailHeaders(mainMessage, mctx->rfc821Table);
@@ -2777,16 +2780,15 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				break;
 			} else if(strcasecmp(mimeSubtype, "disposition-notification") == 0) {
 				/* RFC 2298 - handle like a normal email */
-				rc = 1;
+				rc = OK;
 				break;
 			} else if(strcasecmp(mimeSubtype, "partial") == 0) {
 #ifdef	PARTIAL_DIR
 				/* RFC1341 message split over many emails */
 				if(rfc1341(mainMessage, mctx->dir) >= 0)
-					rc = 1;
+					rc = OK;
 #else
 				cli_warnmsg("Partial message received from MUA/MTA - message cannot be scanned\n");
-				rc = 0;
 #endif
 			} else if(strcasecmp(mimeSubtype, "external-body") == 0)
 				/* TODO */
@@ -2967,7 +2969,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 	 * No attachments - scan the text portions, often files
 	 * are hidden in HTML code
 	 */
-	if(mainMessage && (rc != 3)) {
+	if(mainMessage && (rc != VIRUS)) {
 		text *t_line;
 
 		/*
@@ -2976,7 +2978,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 		if((encodingLine(mainMessage) != NULL) &&
 		   ((t_line = bounceBegin(mainMessage)) != NULL)) {
 			if(exportBounceMessage(t_line, mctx))
-				rc = 1;
+				rc = OK;
 		} else {
 			bool saveIt;
 
@@ -3024,17 +3026,17 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 					mainMessage = NULL;
 				} else
 					messageReset(mainMessage);
-				rc = 1;
+				rc = OK;
 			}
 		}
 	} else
-		rc = 2;	/* nothing saved */
+		rc = OK_ATTACHMENTS_NOT_SAVED;	/* nothing saved */
 
 	if(mainMessage && (mainMessage != messageIn))
 		messageDestroy(mainMessage);
 
-	if((rc != 0) && infected)
-		rc = 3;
+	if((rc != FAIL) && infected)
+		rc = VIRUS;
 
 	cli_dbgmsg("parseEmailBody() returning %d\n", rc);
 
@@ -3102,16 +3104,16 @@ boundaryStart(const char *line, const char *boundary)
 	 * viruses in both types of mails
 	 */
 	if((strstr(ptr, boundary) != NULL) || (strstr(line, boundary) != NULL))
-		rc = 1;
+		rc = OK;
 	else if(*ptr++ != '-')
-		rc = 0;
+		rc = FAIL;
 	else
 		rc = (strcasecmp(ptr, boundary) == 0);
 
 	if(out)
 		free(out);
 
-	if(rc == 1)
+	if(rc == OK)
 		cli_dbgmsg("boundaryStart: found %s in %s\n", boundary, line);
 
 	return rc;
@@ -3238,7 +3240,7 @@ strip(char *buf, int len)
 		return i;
 	ptr = &buf[--len];
 
-#if	defined(UNIX) || defined(C_LINUX) || defined(C_DARWIN) || defined(C_KFREEBSD_GNU) /* watch - it may be in shared text area */
+#if	defined(UNIX) || defined(C_LINUX) || defined(C_DARWIN)	/* watch - it may be in shared text area */
 	do
 		if(*ptr)
 			*ptr = '\0';
@@ -3904,7 +3906,7 @@ getHrefs(message *m, tag_arguments_t *hrefs)
 }
 
 static void
-checkURLs(message *mainMessage, mbox_ctx *mctx, int *rc, int is_html)
+checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
 {
 	tag_arguments_t hrefs;
 	blob *b;
@@ -3927,14 +3929,14 @@ checkURLs(message *mainMessage, mbox_ctx *mctx, int *rc, int is_html)
 
 	b = getHrefs(mainMessage, &hrefs);
 	if(b) {
-		if(hrefs.scanContents /*!(mctx->ctx->engine->dboptions&CL_DB_NOPHISHING_URLS*/) {
+		if(hrefs.scanContents /*mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS*/) {
 			if(phishingScan(mainMessage, mctx->dir, mctx->ctx, &hrefs) == CL_VIRUS) {
 				mainMessage->isInfected = TRUE;
-				*rc = 3;
+				*rc = VIRUS;
 				cli_dbgmsg("PH:Phishing found\n");
 			}
 		}
-		if(is_html && (mctx->ctx->options&CL_SCAN_MAILURL) && (*rc != 3))
+		if(is_html && (mctx->ctx->options&CL_SCAN_MAILURL) && (*rc != VIRUS))
 			do_checkURLs(mainMessage, mctx->dir, &hrefs);
 	}
 	hrefs_done(b,&hrefs);
@@ -4037,7 +4039,7 @@ do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs)
 
 #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
 static void
-checkURLs(message *m, mbox_ctx *mctx, int *rc, int is_html)
+checkURLs(message *m, mbox_ctx *mctx, mbox_status *rc, int is_html)
 {
 	blob *b = messageToBlob(m, 0);
 	size_t len;
@@ -5108,8 +5110,8 @@ exportBounceMessage(text *start, const mbox_ctx *mctx)
 	 * won't be scanned
 	 */
 	for(t = start; t; t = t->t_next) {
-		char cmd[RFC2821LENGTH + 1];
 		const char *txt = lineGetData(t->t_line);
+		char cmd[RFC2821LENGTH + 1];
 
 		if(txt == NULL)
 			continue;
@@ -5156,7 +5158,7 @@ exportBounceMessage(text *start, const mbox_ctx *mctx)
  * Handle the ith element of a number of multiparts, e.g. multipart/alternative
  */
 static message *
-do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx *mctx, message *messageIn, text **tptr, unsigned int recursion_level)
+do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, mbox_ctx *mctx, message *messageIn, text **tptr, unsigned int recursion_level)
 {
 	bool addToText = FALSE;
 	const char *dtype;
