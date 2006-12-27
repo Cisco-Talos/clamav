@@ -62,6 +62,7 @@ static struct option clamscan_longopt[] = {
     {"max-ratio", 1, 0, 0},
     {"max-recursion", 1, 0, 0},
     {"max-dir-recursion", 1, 0, 0},
+    {"max-mail-recursion", 1, 0, 0},
 #ifdef HAVE_NCORE
     {"ncore", 0, 0, 0},
 #endif
