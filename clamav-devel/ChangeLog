@@ -1,3 +1,7 @@
+Wed Dec 27 23:14:57 GMT 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Code tidy
+
 Tue Dec 26 17:10:31 CET 2006 (tk)
 ---------------------------------
   * libclamav: add encoding and entity normalizer from Edwin (bb#145)
