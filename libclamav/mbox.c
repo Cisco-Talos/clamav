@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.365 2006/12/27 23:14:27 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.366 2006/12/27 23:18:49 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -2047,7 +2047,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 		if(recursion_level >= mctx->ctx->limits->maxmailrec) {
 			cli_warnmsg("parseEmailBody: hit maximum recursion level (%u)\n",
 				mctx->ctx->limits->maxmailrec);
-			return 2;
+			return OK_ATTACHMENTS_NOT_SAVED;
 		}
 
 	/* Anything left to be parsed? */
@@ -2702,7 +2702,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				rc = parseEmailBody(messages[htmltextPart], aText, mctx, recursion_level + 1);
 				break;
 			case ENCRYPTED:
-				rc = OK;
+				rc = FAIL;	/* Not yet handled */
 				protocol = (char *)messageFindArgument(mainMessage, "protocol");
 				if(protocol) {
 					if(strcasecmp(protocol, "application/pgp-encrypted") == 0) {
