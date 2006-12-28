@@ -1,11 +1,107 @@
-*** /home/njh/src/clamav-devel/./libclamav/mbox.c	2006-11-03 20:30:03.000000000 +0000
---- ./libclamav/mbox.c	2006-10-29 13:57:36.000000000 +0000
+*** /home/njh/src/clamav-devel/./libclamav/blob.c	2006-12-22 08:13:46.000000000 +0000
+--- ./libclamav/blob.c	2006-12-22 08:11:40.000000000 +0000
 ***************
 *** 16,22 ****
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+--- 16,22 ----
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+*** /home/njh/src/clamav-devel/./libclamav/message.c	2006-12-27 16:21:42.000000000 +0000
+--- ./libclamav/message.c	2006-12-13 13:20:52.000000000 +0000
+***************
+*** 677,685 ****
+  messageSetEncoding(message *m, const char *enctype)
+  {
+  	const struct encoding_map *e;
+! 	int i;
+  	char *type;
+- 
+  	assert(m != NULL);
+  	assert(enctype != NULL);
+  
+--- 677,684 ----
+  messageSetEncoding(message *m, const char *enctype)
+  {
+  	const struct encoding_map *e;
+! 	int i = 0;
+  	char *type;
+  	assert(m != NULL);
+  	assert(enctype != NULL);
+  
+***************
+*** 2534,2542 ****
+  	unsigned int score = 0;
+  	size_t common, total;
+  	size_t len1, len2;
+  	char *rs1 = NULL, *rs2 = NULL;
+  	char *s1, *s2;
+- 	char ls1[MAX_PATTERN_SIZ], ls2[MAX_PATTERN_SIZ];
+  
+  	if(strcasecmp(str1, str2) == 0)
+  		return 100;
+--- 2533,2541 ----
+  	unsigned int score = 0;
+  	size_t common, total;
+  	size_t len1, len2;
++ 	char ls1[MAX_PATTERN_SIZ], ls2[MAX_PATTERN_SIZ];
+  	char *rs1 = NULL, *rs2 = NULL;
+  	char *s1, *s2;
+  
+  	if(strcasecmp(str1, str2) == 0)
+  		return 100;
+***************
+*** 2596,2602 ****
+  static unsigned int
+  compare(char *ls1, char **rs1, char *ls2, char **rs2)
+  {
+! 	unsigned int common, maxchars = 0;
+  	bool some_similarity = FALSE;
+  	char *s1, *s2;
+  	char *maxs1 = NULL, *maxs2 = NULL, *maxe1 = NULL, *maxe2 = NULL;
+--- 2595,2601 ----
+  static unsigned int
+  compare(char *ls1, char **rs1, char *ls2, char **rs2)
+  {
+! 	unsigned int common, diff, maxchars = 0;
+  	bool some_similarity = FALSE;
+  	char *s1, *s2;
+  	char *maxs1 = NULL, *maxs2 = NULL, *maxe1 = NULL, *maxe2 = NULL;
+***************
+*** 2628,2634 ****
+  					while(tolower(*s1) == tolower(*s2));
+  
+  					if(common > maxchars) {
+! 						unsigned int diff = common - maxchars;
+  						maxchars = common;
+  						maxs1 = cs1;
+  						maxs2 = cs2;
+--- 2627,2633 ----
+  					while(tolower(*s1) == tolower(*s2));
+  
+  					if(common > maxchars) {
+! 						diff = common - maxchars;
+  						maxchars = common;
+  						maxs1 = cs1;
+  						maxs2 = cs2;
+*** /home/njh/src/clamav-devel/./libclamav/mbox.c	2006-12-27 23:20:11.000000000 +0000
+--- ./libclamav/mbox.c	2006-12-27 15:52:30.000000000 +0000
+***************
+*** 16,22 ****
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $";
   
   #ifdef	_MSC_VER
   #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -13,27 +109,736 @@
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $";
   
   #ifdef	_MSC_VER
   #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
 ***************
-*** 1673,1686 ****
-  						continue;
-  				}
+*** 110,122 ****
+  #endif
+  #endif
   
-- 				/*
-- 				 * Handle broken headers, where the next
-- 				 * line isn't indented by whitespace
-- 				 */
-- 				if(fullline[fulllinelength - 2] == ';')
-- 					/* Add arguments to this line */
-- 					continue;
+- typedef	enum {
+- 	FAIL,
+- 	OK,
+- 	OK_ATTACHMENTS_NOT_SAVED,
+- 	VIRUS
+- } mbox_status;
 - 
-  				if(line && (count_quotes(fullline) & 1))
-  					continue;
+  #ifndef isblank
+  #define isblank(c)	(((c) == ' ') || ((c) == '\t'))
+  #endif
+--- 110,115 ----
+***************
+*** 278,284 ****
+  static	message	*parseEmailFile(FILE *fin, const table_t *rfc821Table, const char *firstLine, const char *dir);
+  static	message	*parseEmailHeaders(message *m, const table_t *rfc821Table);
+  static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
+! static	mbox_status	parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int recursion_level);
+  static	int	boundaryStart(const char *line, const char *boundary);
+  static	int	endOfMessage(const char *line, const char *boundary);
+  static	int	initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
+--- 271,277 ----
+  static	message	*parseEmailFile(FILE *fin, const table_t *rfc821Table, const char *firstLine, const char *dir);
+  static	message	*parseEmailHeaders(message *m, const table_t *rfc821Table);
+  static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
+! static	int	parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int recursion_level);
+  static	int	boundaryStart(const char *line, const char *boundary);
+  static	int	endOfMessage(const char *line, const char *boundary);
+  static	int	initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
+***************
+*** 296,311 ****
+  static	bool	isBounceStart(const char *line);
+  static	bool	exportBinhexMessage(const char *dir, message *m);
+  static	int	exportBounceMessage(text *start, const mbox_ctx *ctx);
+! static	message	*do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, mbox_ctx *mctx, message *messageIn, text **tptr, unsigned int recursion_level);
+  static	int	count_quotes(const char *buf);
+  static	bool	next_is_folded_header(const text *t);
   
---- 1673,1678 ----
+! static	void	checkURLs(message *m, mbox_ctx *mctx, mbox_status *rc, int is_html);
+  
+  #ifdef CL_EXPERIMENTAL
+! static	void	do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs);
+! static	blob	*getHrefs(message *m, tag_arguments_t *hrefs);
+! static	void	hrefs_done(blob *b, tag_arguments_t *hrefs);
+  #endif
+  
+  #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
+--- 289,304 ----
+  static	bool	isBounceStart(const char *line);
+  static	bool	exportBinhexMessage(const char *dir, message *m);
+  static	int	exportBounceMessage(text *start, const mbox_ctx *ctx);
+! static	message	*do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx *mctx, message *messageIn, text **tptr, unsigned int recursion_level);
+  static	int	count_quotes(const char *buf);
+  static	bool	next_is_folded_header(const text *t);
+  
+! static	void	checkURLs(message *m, mbox_ctx *mctx,int *rc, int is_html);
+  
+  #ifdef CL_EXPERIMENTAL
+! static	void	do_checkURLs(message *m, const char *dir,tag_arguments_t* hrefs);
+! static	blob*	getHrefs(message* m,tag_arguments_t* hrefs);
+! static	void	hrefs_done(blob *b,tag_arguments_t* hrefs);
+  #endif
+  
+  #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
+***************
+*** 1413,1424 ****
+  				messageSetCTX(body, ctx);
+  				messageDestroy(m);
+  				if(messageGetBody(body)) {
+! 					mbox_status rc = parseEmailBody(body, NULL, &mctx, 0);
+! 					if(rc == FAIL) {
+  						messageReset(body);
+  						m = body;
+  						continue;
+! 					} else if(rc == VIRUS) {
+  						cli_dbgmsg("Message number %d is infected\n",
+  							messagenumber);
+  						retcode = CL_VIRUS;
+--- 1406,1417 ----
+  				messageSetCTX(body, ctx);
+  				messageDestroy(m);
+  				if(messageGetBody(body)) {
+! 					int rc = parseEmailBody(body, NULL, &mctx, 0);
+! 					if(rc == 0) {
+  						messageReset(body);
+  						m = body;
+  						continue;
+! 					} else if(rc == 3) {
+  						cli_dbgmsg("Message number %d is infected\n",
+  							messagenumber);
+  						retcode = CL_VIRUS;
+***************
+*** 1495,1504 ****
+  		if((retcode == CL_SUCCESS) && messageGetBody(body)) {
+  			messageSetCTX(body, ctx);
+  			switch(parseEmailBody(body, NULL, &mctx, 0)) {
+! 				case FAIL:
+  					retcode = CL_EFORMAT;
+  					break;
+! 				case VIRUS:
+  					retcode = CL_VIRUS;
+  					break;
+  			}
+--- 1488,1497 ----
+  		if((retcode == CL_SUCCESS) && messageGetBody(body)) {
+  			messageSetCTX(body, ctx);
+  			switch(parseEmailBody(body, NULL, &mctx, 0)) {
+! 				case 0:
+  					retcode = CL_EFORMAT;
+  					break;
+! 				case 3:
+  					retcode = CL_VIRUS;
+  					break;
+  			}
+***************
+*** 2028,2038 ****
+   * any headers. First time of calling it'll be
+   * the whole message. Later it'll be parts of a multipart message
+   * textIn is the plain text message being built up so far
+   */
+! static mbox_status
+  parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int recursion_level)
+  {
+! 	mbox_status rc;
+  	text *aText = textIn;
+  	message *mainMessage = messageIn;
+  	fileblob *fb;
+--- 2021,2037 ----
+   * any headers. First time of calling it'll be
+   * the whole message. Later it'll be parts of a multipart message
+   * textIn is the plain text message being built up so far
++  *
++  * Returns:
++  *	0 for fail
++  *	1 for success, attachments saved
++  *	2 for success, attachments not saved
++  *	3 for virus found
+   */
+! static int	/* success or fail */
+  parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int recursion_level)
+  {
+! 	int rc = 1;
+  	text *aText = textIn;
+  	message *mainMessage = messageIn;
+  	fileblob *fb;
+***************
+*** 2047,2053 ****
+  		if(recursion_level >= mctx->ctx->limits->maxmailrec) {
+  			cli_warnmsg("parseEmailBody: hit maximum recursion level (%u)\n",
+  				mctx->ctx->limits->maxmailrec);
+! 			return OK_ATTACHMENTS_NOT_SAVED;
+  		}
+  
+  	/* Anything left to be parsed? */
+--- 2046,2052 ----
+  		if(recursion_level >= mctx->ctx->limits->maxmailrec) {
+  			cli_warnmsg("parseEmailBody: hit maximum recursion level (%u)\n",
+  				mctx->ctx->limits->maxmailrec);
+! 			return 2;
+  		}
+  
+  	/* Anything left to be parsed? */
+***************
+*** 2064,2070 ****
+  
+  		cli_dbgmsg("Parsing mail file\n");
+  
+- 		rc = OK;
+  		mimeType = messageGetMimeType(mainMessage);
+  		mimeSubtype = messageGetMimeSubtype(mainMessage);
+  
+--- 2063,2068 ----
+***************
+*** 2124,2130 ****
+  				 * There might be html sent without subtype
+  				 * html too, so scan them for phishing
+  				 */
+! 				if(rc == VIRUS)
+  					infected = TRUE;
+  			}
+  #endif
+--- 2122,2128 ----
+  				 * There might be html sent without subtype
+  				 * html too, so scan them for phishing
+  				 */
+! 				if(rc == 3)
+  					infected = TRUE;
+  			}
+  #endif
+***************
+*** 2176,2182 ****
+  					if(binhexBegin(mainMessage) == t_line) {
+  						if(exportBinhexMessage(mctx->dir, mainMessage)) {
+  							/* virus found */
+! 							rc = VIRUS;
+  							infected = TRUE;
+  							break;
+  						}
+--- 2174,2180 ----
+  					if(binhexBegin(mainMessage) == t_line) {
+  						if(exportBinhexMessage(mctx->dir, mainMessage)) {
+  							/* virus found */
+! 							rc = 3;
+  							infected = TRUE;
+  							break;
+  						}
+***************
+*** 2500,2506 ****
+  							&rc, mctx, messageIn,
+  							&aText, recursion_level + 1);
+  						--multiparts;
+! 						if(rc == VIRUS)
+  							infected = TRUE;
+  						break;
+  					default:
+--- 2498,2504 ----
+  							&rc, mctx, messageIn,
+  							&aText, recursion_level + 1);
+  						--multiparts;
+! 						if(rc == 3)
+  							infected = TRUE;
+  						break;
+  					default:
+***************
+*** 2552,2561 ****
+  				/*
+  				 * FIXME: we could return 2 here when we have
+  				 * saved stuff earlier
+- 				 *
+- 				 * Nothing to do
+  				 */
+! 				return (rc == VIRUS) ? VIRUS : OK_ATTACHMENTS_NOT_SAVED;
+  			}
+  
+  			cli_dbgmsg("Find out the multipart type (%s)\n", mimeSubtype);
+--- 2550,2557 ----
+  				/*
+  				 * FIXME: we could return 2 here when we have
+  				 * saved stuff earlier
+  				 */
+! 				return (rc == 3) ? 3 : 2;	/* Nothing to do */
+  			}
+  
+  			cli_dbgmsg("Find out the multipart type (%s)\n", mimeSubtype);
+***************
+*** 2597,2603 ****
+  					cli_dbgmsg("No HTML code found to be scanned\n");
+  				else {
+  					rc = parseEmailBody(aMessage, aText, mctx, recursion_level + 1);
+! 					if(rc == OK) {
+  						assert(aMessage == messages[htmltextPart]);
+  						messageDestroy(aMessage);
+  						messages[htmltextPart] = NULL;
+--- 2593,2599 ----
+  					cli_dbgmsg("No HTML code found to be scanned\n");
+  				else {
+  					rc = parseEmailBody(aMessage, aText, mctx, recursion_level + 1);
+! 					if(rc == 1) {
+  						assert(aMessage == messages[htmltextPart]);
+  						messageDestroy(aMessage);
+  						messages[htmltextPart] = NULL;
+***************
+*** 2678,2684 ****
+  					mainMessage = do_multipart(mainMessage,
+  						messages, i, &rc, mctx,
+  						messageIn, &aText, recursion_level + 1);
+! 					if(rc == VIRUS) {
+  						infected = TRUE;
+  						break;
+  					}
+--- 2674,2680 ----
+  					mainMessage = do_multipart(mainMessage,
+  						messages, i, &rc, mctx,
+  						messageIn, &aText, recursion_level + 1);
+! 					if(rc == 3) {
+  						infected = TRUE;
+  						break;
+  					}
+***************
+*** 2703,2715 ****
+  				rc = parseEmailBody(messages[htmltextPart], aText, mctx, recursion_level + 1);
+  				break;
+  			case ENCRYPTED:
+! 				rc = FAIL;	/* Not yet handled */
+  				protocol = (char *)messageFindArgument(mainMessage, "protocol");
+  				if(protocol) {
+  					if(strcasecmp(protocol, "application/pgp-encrypted") == 0) {
+  						/* RFC2015 */
+  						cli_warnmsg("PGP encoded attachment not scanned\n");
+! 						rc = OK_ATTACHMENTS_NOT_SAVED;
+  					} else
+  						cli_warnmsg("Unknown encryption protocol '%s' - if you believe this file contains a virus, submit it to www.clamav.net\n", protocol);
+  					free(protocol);
+--- 2699,2711 ----
+  				rc = parseEmailBody(messages[htmltextPart], aText, mctx, recursion_level + 1);
+  				break;
+  			case ENCRYPTED:
+! 				rc = 0;
+  				protocol = (char *)messageFindArgument(mainMessage, "protocol");
+  				if(protocol) {
+  					if(strcasecmp(protocol, "application/pgp-encrypted") == 0) {
+  						/* RFC2015 */
+  						cli_warnmsg("PGP encoded attachment not scanned\n");
+! 						rc = 2;
+  					} else
+  						cli_warnmsg("Unknown encryption protocol '%s' - if you believe this file contains a virus, submit it to www.clamav.net\n", protocol);
+  					free(protocol);
+***************
+*** 2759,2765 ****
+  					cli_warnmsg("MIME type 'message' cannot be decoded\n");
+  					break;
+  			}
+! 			rc = FAIL;
+  			if((strcasecmp(mimeSubtype, "rfc822") == 0) ||
+  			   (strcasecmp(mimeSubtype, "delivery-status") == 0)) {
+  				message *m = parseEmailHeaders(mainMessage, mctx->rfc821Table);
+--- 2755,2761 ----
+  					cli_warnmsg("MIME type 'message' cannot be decoded\n");
+  					break;
+  			}
+! 			rc = 0;
+  			if((strcasecmp(mimeSubtype, "rfc822") == 0) ||
+  			   (strcasecmp(mimeSubtype, "delivery-status") == 0)) {
+  				message *m = parseEmailHeaders(mainMessage, mctx->rfc821Table);
+***************
+*** 2781,2795 ****
+  				break;
+  			} else if(strcasecmp(mimeSubtype, "disposition-notification") == 0) {
+  				/* RFC 2298 - handle like a normal email */
+! 				rc = OK;
+  				break;
+  			} else if(strcasecmp(mimeSubtype, "partial") == 0) {
+  #ifdef	PARTIAL_DIR
+  				/* RFC1341 message split over many emails */
+  				if(rfc1341(mainMessage, mctx->dir) >= 0)
+! 					rc = OK;
+  #else
+  				cli_warnmsg("Partial message received from MUA/MTA - message cannot be scanned\n");
+  #endif
+  			} else if(strcasecmp(mimeSubtype, "external-body") == 0)
+  				/* TODO */
+--- 2777,2792 ----
+  				break;
+  			} else if(strcasecmp(mimeSubtype, "disposition-notification") == 0) {
+  				/* RFC 2298 - handle like a normal email */
+! 				rc = 1;
+  				break;
+  			} else if(strcasecmp(mimeSubtype, "partial") == 0) {
+  #ifdef	PARTIAL_DIR
+  				/* RFC1341 message split over many emails */
+  				if(rfc1341(mainMessage, mctx->dir) >= 0)
+! 					rc = 1;
+  #else
+  				cli_warnmsg("Partial message received from MUA/MTA - message cannot be scanned\n");
++ 				rc = 0;
+  #endif
+  			} else if(strcasecmp(mimeSubtype, "external-body") == 0)
+  				/* TODO */
+***************
+*** 2970,2976 ****
+  	 * No attachments - scan the text portions, often files
+  	 * are hidden in HTML code
+  	 */
+! 	if(mainMessage && (rc != VIRUS)) {
+  		text *t_line;
+  
+  		/*
+--- 2967,2973 ----
+  	 * No attachments - scan the text portions, often files
+  	 * are hidden in HTML code
+  	 */
+! 	if(mainMessage && (rc != 3)) {
+  		text *t_line;
+  
+  		/*
+***************
+*** 2979,2985 ****
+  		if((encodingLine(mainMessage) != NULL) &&
+  		   ((t_line = bounceBegin(mainMessage)) != NULL)) {
+  			if(exportBounceMessage(t_line, mctx))
+! 				rc = OK;
+  		} else {
+  			bool saveIt;
+  
+--- 2976,2982 ----
+  		if((encodingLine(mainMessage) != NULL) &&
+  		   ((t_line = bounceBegin(mainMessage)) != NULL)) {
+  			if(exportBounceMessage(t_line, mctx))
+! 				rc = 1;
+  		} else {
+  			bool saveIt;
+  
+***************
+*** 3027,3043 ****
+  					mainMessage = NULL;
+  				} else
+  					messageReset(mainMessage);
+! 				rc = OK;
+  			}
+  		}
+  	} else
+! 		rc = OK_ATTACHMENTS_NOT_SAVED;	/* nothing saved */
+  
+  	if(mainMessage && (mainMessage != messageIn))
+  		messageDestroy(mainMessage);
+  
+! 	if((rc != FAIL) && infected)
+! 		rc = VIRUS;
+  
+  	cli_dbgmsg("parseEmailBody() returning %d\n", rc);
+  
+--- 3024,3040 ----
+  					mainMessage = NULL;
+  				} else
+  					messageReset(mainMessage);
+! 				rc = 1;
+  			}
+  		}
+  	} else
+! 		rc = 2;	/* nothing saved */
+  
+  	if(mainMessage && (mainMessage != messageIn))
+  		messageDestroy(mainMessage);
+  
+! 	if((rc != 0) && infected)
+! 		rc = 3;
+  
+  	cli_dbgmsg("parseEmailBody() returning %d\n", rc);
+  
+***************
+*** 3105,3120 ****
+  	 * viruses in both types of mails
+  	 */
+  	if((strstr(ptr, boundary) != NULL) || (strstr(line, boundary) != NULL))
+! 		rc = OK;
+  	else if(*ptr++ != '-')
+! 		rc = FAIL;
+  	else
+  		rc = (strcasecmp(ptr, boundary) == 0);
+  
+  	if(out)
+  		free(out);
+  
+! 	if(rc == OK)
+  		cli_dbgmsg("boundaryStart: found %s in %s\n", boundary, line);
+  
+  	return rc;
+--- 3102,3117 ----
+  	 * viruses in both types of mails
+  	 */
+  	if((strstr(ptr, boundary) != NULL) || (strstr(line, boundary) != NULL))
+! 		rc = 1;
+  	else if(*ptr++ != '-')
+! 		rc = 0;
+  	else
+  		rc = (strcasecmp(ptr, boundary) == 0);
+  
+  	if(out)
+  		free(out);
+  
+! 	if(rc == 1)
+  		cli_dbgmsg("boundaryStart: found %s in %s\n", boundary, line);
+  
+  	return rc;
+***************
+*** 3907,3913 ****
+  }
+  
+  static void
+! checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
+  {
+  	tag_arguments_t hrefs;
+  	blob *b;
+--- 3904,3910 ----
+  }
+  
+  static void
+! checkURLs(message *mainMessage, mbox_ctx *mctx, int *rc, int is_html)
+  {
+  	tag_arguments_t hrefs;
+  	blob *b;
+***************
+*** 3933,3943 ****
+  		if(hrefs.scanContents /*mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS*/) {
+  			if(phishingScan(mainMessage, mctx->dir, mctx->ctx, &hrefs) == CL_VIRUS) {
+  				mainMessage->isInfected = TRUE;
+! 				*rc = VIRUS;
+  				cli_dbgmsg("PH:Phishing found\n");
+  			}
+  		}
+! 		if(is_html && (mctx->ctx->options&CL_SCAN_MAILURL) && (*rc != VIRUS))
+  			do_checkURLs(mainMessage, mctx->dir, &hrefs);
+  	}
+  	hrefs_done(b,&hrefs);
+--- 3930,3940 ----
+  		if(hrefs.scanContents /*mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS*/) {
+  			if(phishingScan(mainMessage, mctx->dir, mctx->ctx, &hrefs) == CL_VIRUS) {
+  				mainMessage->isInfected = TRUE;
+! 				*rc = 3;
+  				cli_dbgmsg("PH:Phishing found\n");
+  			}
+  		}
+! 		if(is_html && (mctx->ctx->options&CL_SCAN_MAILURL) && (*rc != 3))
+  			do_checkURLs(mainMessage, mctx->dir, &hrefs);
+  	}
+  	hrefs_done(b,&hrefs);
+***************
+*** 4040,4046 ****
+  
+  #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
+  static void
+! checkURLs(message *m, mbox_ctx *mctx, mbox_status *rc, int is_html)
+  {
+  	blob *b = messageToBlob(m, 0);
+  	size_t len;
+--- 4037,4043 ----
+  
+  #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
+  static void
+! checkURLs(message *m, mbox_ctx *mctx, int *rc, int is_html)
+  {
+  	blob *b = messageToBlob(m, 0);
+  	size_t len;
+***************
+*** 5111,5118 ****
+  	 * won't be scanned
+  	 */
+  	for(t = start; t; t = t->t_next) {
+- 		const char *txt = lineGetData(t->t_line);
+  		char cmd[RFC2821LENGTH + 1];
+  
+  		if(txt == NULL)
+  			continue;
+--- 5108,5115 ----
+  	 * won't be scanned
+  	 */
+  	for(t = start; t; t = t->t_next) {
+  		char cmd[RFC2821LENGTH + 1];
++ 		const char *txt = lineGetData(t->t_line);
+  
+  		if(txt == NULL)
+  			continue;
+***************
+*** 5159,5165 ****
+   * Handle the ith element of a number of multiparts, e.g. multipart/alternative
+   */
+  static message *
+! do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, mbox_ctx *mctx, message *messageIn, text **tptr, unsigned int recursion_level)
+  {
+  	bool addToText = FALSE;
+  	const char *dtype;
+--- 5156,5162 ----
+   * Handle the ith element of a number of multiparts, e.g. multipart/alternative
+   */
+  static message *
+! do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx *mctx, message *messageIn, text **tptr, unsigned int recursion_level)
+  {
+  	bool addToText = FALSE;
+  	const char *dtype;
+*** /home/njh/src/clamav-devel/./libclamav/filetypes.h	2006-12-09 08:37:12.000000000 +0000
+--- ./libclamav/filetypes.h	2006-11-03 20:02:28.000000000 +0000
+***************
+*** 54,62 ****
+      CL_TYPE_UUENCODED,
+      CL_TYPE_PST,	/* Microsoft Outlook binary email folder (.pst file) */
+      CL_TYPE_HTML_UTF16,
+! #ifdef CL_EXPERIMENTAL
+!     CL_TYPE_RTF,
+! #endif
+      /* bigger numbers have higher priority (in o-t-f detection) */
+      CL_TYPE_HTML, /* on the fly */
+      CL_TYPE_MAIL,  /* magic + on the fly */
+--- 54,60 ----
+      CL_TYPE_UUENCODED,
+      CL_TYPE_PST,	/* Microsoft Outlook binary email folder (.pst file) */
+      CL_TYPE_HTML_UTF16,
+! 
+      /* bigger numbers have higher priority (in o-t-f detection) */
+      CL_TYPE_HTML, /* on the fly */
+      CL_TYPE_MAIL,  /* magic + on the fly */
+*** /home/njh/src/clamav-devel/./libclamav/scanners.c	2006-12-23 13:14:55.000000000 +0000
+--- ./libclamav/scanners.c	2006-12-20 08:29:52.000000000 +0000
+***************
+*** 1246,1252 ****
+  	return CL_ETMPDIR;
+      }
+  
+!     if((ret = cli_untar(dir, desc, posix, ctx->limits)))
+  	cli_dbgmsg("Tar: %s\n", cl_strerror(ret));
+      else
+  	ret = cli_scandir(dir, ctx);
+--- 1246,1252 ----
+  	return CL_ETMPDIR;
+      }
+  
+!     if((ret = cli_untar(dir, desc, posix)))
+  	cli_dbgmsg("Tar: %s\n", cl_strerror(ret));
+      else
+  	ret = cli_scandir(dir, ctx);
+*** /home/njh/src/clamav-devel/./libclamav/untar.c	2006-12-22 18:29:13.000000000 +0000
+--- ./libclamav/untar.c	2006-11-24 22:28:32.000000000 +0000
+***************
+*** 20,26 ****
+   * Author: Charles G. Waldman (cgw@pgt.com),  Aug 4 1998
+   * There are many tar files that this code cannot decode.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+--- 20,26 ----
+   * Author: Charles G. Waldman (cgw@pgt.com),  Aug 4 1998
+   * There are many tar files that this code cannot decode.
+   */
+! static	char	const	rcsid[] = "$Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $";
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+***************
+*** 61,71 ****
+  }
+  
+  int
+! cli_untar(const char *dir, int desc, unsigned int posix, const struct cl_limits *limits)
+  {
+  	int size = 0;
+  	int in_block = 0;
+- 	unsigned int files = 0;
+  	char fullname[NAME_MAX + 1];
+  	FILE *outfile = NULL;
+  
+--- 61,70 ----
+  }
+  
+  int
+! cli_untar(const char *dir, int desc, unsigned int posix)
+  {
+  	int size = 0;
+  	int in_block = 0;
+  	char fullname[NAME_MAX + 1];
+  	FILE *outfile = NULL;
+  
+***************
+*** 104,114 ****
+  			if(block[0] == '\0')	/* We're done */
+  				break;
+  
+- 			if(limits && limits->maxfiles && (files >= limits->maxfiles)) {
+- 				cli_dbgmsg("cli_untar: number of files exceeded %u\n", limits->maxfiles);
+- 				return CL_CLEAN;
+- 			}
+- 
+  			/* Notice assumption that BLOCKSIZE > 262 */
+  			if(posix) {
+  				strncpy(magic, block+257, 5);
+--- 103,108 ----
+***************
+*** 128,134 ****
+  				case '0':	/* plain file */
+  				case '\0':	/* plain file */
+  				case '7':	/* contiguous file */
+- 					files++;
+  					directory = 0;
+  					break;
+  				case '1':	/* Link to already archived file */
+--- 122,127 ----
+***************
+*** 180,194 ****
+  				return CL_EFORMAT;
+  			}
+  			cli_dbgmsg("cli_untar: size = %d\n", size);
+- 			if(limits && limits->maxfilesize && ((unsigned int)size > limits->maxfilesize)) {
+- 				cli_dbgmsg("cli_untar: size exceeded %d bytes\n", size);
+- 				skipEntry++;
+- 			}
+  
+  			if(skipEntry) {
+  				const int nskip = (size % BLOCKSIZE || !size) ? size + BLOCKSIZE - (size % BLOCKSIZE) : size;
+! 
+! 				cli_dbgmsg("cli_untar: skipping entry\n");
+  				lseek(desc, nskip, SEEK_CUR);
+  				continue;
+  			}
+--- 173,182 ----
+  				return CL_EFORMAT;
+  			}
+  			cli_dbgmsg("cli_untar: size = %d\n", size);
+  
+  			if(skipEntry) {
+  				const int nskip = (size % BLOCKSIZE || !size) ? size + BLOCKSIZE - (size % BLOCKSIZE) : size;
+! 				cli_dbgmsg("cli_untar: GNU extension, skipping entry\n");
+  				lseek(desc, nskip, SEEK_CUR);
+  				continue;
+  			}
+*** /home/njh/src/clamav-devel/./libclamav/untar.h	2006-12-22 18:29:13.000000000 +0000
+--- ./libclamav/untar.h	2006-11-24 22:28:32.000000000 +0000
+***************
+*** 18,26 ****
+   *
+   * Change History:
+   * $Log: patches,v $
+   * Revision 1.15  2006/12/28 09:31:53  njh
+   * Latest bug fixes for portability problems
+   *
+-  * Revision 1.5  2006/12/22 18:29:13  njh
+-  * Recommit fix for bug 153
+-  *
+   * Revision 1.4  2006/04/09 19:59:28  kojm
+   * update GPL headers with new address for FSF
+   *
+--- 18,23 ----
+***************
+*** 34,37 ****
+   * First draft
+   *
+   */
+! int cli_untar(const char *dir, int desc, unsigned int posix, const struct cl_limits *limits);
+--- 31,34 ----
+   * First draft
+   *
+   */
+! int cli_untar(const char *dir, int desc, unsigned int posix);
 *** /home/njh/src/clamav-devel/./libclamav/js/alloc.c	2006-10-28 12:33:45.000000000 +0100
 --- ./libclamav/js/alloc.c	2006-10-21 14:58:34.000000000 +0100
 ***************
@@ -49,7 +854,7 @@
 - 
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   #include "js/jsint.h"
@@ -59,7 +864,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   #include "js/jsint.h"
@@ -77,7 +882,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   /*
@@ -85,7 +890,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   /*
@@ -118,7 +923,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
 - #if HAVE_CONFIG_H
@@ -134,7 +939,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   #include "jsint.h"
@@ -154,7 +959,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -168,7 +973,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   #include "jsint.h"
@@ -187,7 +992,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   /*
@@ -195,7 +1000,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   /*
@@ -227,7 +1032,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -241,7 +1046,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   #include "jsint.h"
@@ -260,7 +1065,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -274,7 +1079,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   #include "jsint.h"
@@ -293,7 +1098,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   /*
@@ -301,7 +1106,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   /*
@@ -333,7 +1138,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -347,7 +1152,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   #include "jsint.h"
@@ -366,7 +1171,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -380,7 +1185,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   #include "jsint.h"
@@ -399,7 +1204,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   /*
@@ -417,7 +1222,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   /*
@@ -440,7 +1245,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -454,7 +1259,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   #include "jsint.h"
@@ -473,7 +1278,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -487,7 +1292,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   #include "jsint.h"
@@ -506,7 +1311,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   /* TODO: global method: String (obj) => string */
@@ -522,7 +1327,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   /* TODO: global method: String (obj) => string */
@@ -536,46 +1341,6 @@
   }
 - #endif	/*CL_EXPERIMENTAL*/
 --- 935,937 ----
-*** /home/njh/src/clamav-devel/./libclamav/js/b_system.c	2006-10-28 12:33:45.000000000 +0100
---- ./libclamav/js/b_system.c	2006-10-21 14:58:34.000000000 +0100
-***************
-*** 24,30 ****
-  
-  /*
-   * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
-   */
-  
-  /*
---- 24,30 ----
-  
-  /*
-   * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
-   */
-  
-  /*
-***************
-*** 55,65 ****
-   *   stdin			file
-   *   stdout			file
-   */
-- #if HAVE_CONFIG_H
-- #include "clamav-config.h"
-- #endif
-- 
-- #ifdef	CL_EXPERIMENTAL
-  
-  #include "jsint.h"
-  
---- 55,60 ----
-***************
-*** 524,527 ****
-    js_builtin_File_new (vm, &ctx->pstdin, "stdin", vm->s_stdin, 1);
-    js_builtin_File_new (vm, &ctx->pstdout, "stdout", vm->s_stdout, 1);
-  }
-- #endif	/*CL_EXPERIMENTAL*/
---- 519,521 ----
 *** /home/njh/src/clamav-devel/./libclamav/js/b_vm.c	2006-10-28 12:33:45.000000000 +0100
 --- ./libclamav/js/b_vm.c	2006-10-21 14:58:34.000000000 +0100
 ***************
@@ -583,7 +1348,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   /*
@@ -591,7 +1356,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   /*
@@ -643,7 +1408,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -657,7 +1422,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   #include "jsint.h"
@@ -676,7 +1441,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -690,7 +1455,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   #include "jsint.h"
@@ -709,7 +1474,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -723,7 +1488,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   #include "js/js.h"
@@ -735,27 +1500,6 @@
   }
 - #endif	/*CL_EXPERIMENTAL*/
 --- 1682,1684 ----
-*** /home/njh/src/clamav-devel/./libclamav/js/main.c	2006-10-28 12:33:45.000000000 +0100
---- ./libclamav/js/main.c	2006-10-21 14:58:34.000000000 +0100
-***************
-*** 1,9 ****
-  #if HAVE_CONFIG_H
-- #include "clamav-config.h"
-- #endif
-- 
-- #ifdef	CL_EXPERIMENTAL
-- #if HAVE_CONFIG_H
-  #include "js/jsconfig.h"
-  #endif
-  
---- 1,4 ----
-***************
-*** 162,165 ****
-  	return interp;
-  }
-  
-- #endif	/*CL_EXPERIMENTAL*/
---- 157,159 ----
 *** /home/njh/src/clamav-devel/./libclamav/js/object.c	2006-10-28 12:33:45.000000000 +0100
 --- ./libclamav/js/object.c	2006-10-21 14:58:34.000000000 +0100
 ***************
@@ -763,7 +1507,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -777,7 +1521,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   #include "jsint.h"
@@ -796,7 +1540,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -810,7 +1554,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   #include "jsint.h"
@@ -829,7 +1573,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -843,7 +1587,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   #include "jsint.h"
@@ -862,7 +1606,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -876,7 +1620,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   #include "jsint.h"
@@ -895,7 +1639,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -909,7 +1653,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   #include "jsint.h"
@@ -928,7 +1672,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -942,7 +1686,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   #include "jsint.h"
@@ -961,7 +1705,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -975,7 +1719,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
   #include "js/js.h"
@@ -994,7 +1738,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -1011,7 +1755,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $
+!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
    */
   
 ! #include "js/jsint.h"
@@ -1039,69 +1783,130 @@
   
   /* Define if you have the <unistd.h> header file.  */
 ! /* #undef HAVE_UNISTD_H 1 */
-*** /home/njh/src/clamav-devel/./libclamav/jscript.c	2006-10-27 15:06:35.000000000 +0100
---- ./libclamav/jscript.c	2006-10-21 16:11:38.000000000 +0100
+*** /home/njh/src/clamav-devel/./libclamav/jscript.c	2006-12-13 15:25:34.000000000 +0000
+--- ./libclamav/jscript.c	2006-11-24 20:52:14.000000000 +0000
 ***************
-*** 19,32 ****
-   * Save the JavaScript embedded in an HTML file, then run the script, saving
-   * the output in a file that is to be scanned, then remove the script file
+*** 28,40 ****
+   * TODO:	Add mailfollowurls type feature
+   * TODO:	Check the NGS code for vulnerabilities, leaks etc.
+   * TODO:	Check the NGS code is thread safe
+-  * TODO:	Test code such as
+-  *	<script>
+-  *		document.writeln("<script> function f() { ..the real worm code..
+-  *			</script>"); f();
+-  *	</script>
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
-  #endif
-  
-  #include "clamav.h"
-- #include "others.h"
-  
-  #ifdef	CL_EXPERIMENTAL
-  
---- 19,31 ----
-   * Save the JavaScript embedded in an HTML file, then run the script, saving
-   * the output in a file that is to be scanned, then remove the script file
+--- 28,35 ----
+   * TODO:	Add mailfollowurls type feature
+   * TODO:	Check the NGS code for vulnerabilities, leaks etc.
+   * TODO:	Check the NGS code is thread safe
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.14 2006/11/05 10:18:34 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
-  #endif
-  
-  #include "clamav.h"
-  
-  #ifdef	CL_EXPERIMENTAL
-  
+*** /home/njh/src/clamav-devel/./libclamav/cab.c	2006-12-27 15:51:09.000000000 +0000
+--- ./libclamav/cab.c	2006-12-20 08:29:52.000000000 +0000
 ***************
-*** 42,48 ****
-  #include <unistd.h>
-  #endif
+*** 173,179 ****
   
-! #include "jscript.h"
+  int cab_open(int fd, off_t offset, struct cab_archive *cab)
+  {
+! 	unsigned int i, bscore = 0, badname = 0;
+  	struct cab_file *file, *lfile = NULL;
+  	struct cab_folder *folder, *lfolder = NULL;
+  	struct cab_hdr hdr;
+--- 173,179 ----
   
-  #if HAVE_SYS_MMAN_H
-  #include <sys/mman.h>
---- 41,48 ----
-  #include <unistd.h>
-  #endif
-  
-! #include "others.h"
-! #include "js.h"
-  
-  #if HAVE_SYS_MMAN_H
-  #include <sys/mman.h>
+  int cab_open(int fd, off_t offset, struct cab_archive *cab)
+  {
+! 	unsigned int i, bscore = 0;
+  	struct cab_file *file, *lfile = NULL;
+  	struct cab_folder *folder, *lfolder = NULL;
+  	struct cab_hdr hdr;
 ***************
-*** 288,295 ****
-  #include "js/iostream.c"
-  #include "js/js.c"
-  #include "js/main.c"
-- #include "js/debug.c"
-- #include "js/crc32.c"
+*** 272,278 ****
+  	if(ret)
+  	    return ret;
+  	if(cab_chkname(pt))
+! 	    badname = 1;
+  	else
+  	    cli_dbgmsg("CAB: Preceeding cabinet name: %s\n", pt);
+  	free(pt);
+--- 272,278 ----
+  	if(ret)
+  	    return ret;
+  	if(cab_chkname(pt))
+! 	    bscore++;
+  	else
+  	    cli_dbgmsg("CAB: Preceeding cabinet name: %s\n", pt);
+  	free(pt);
+***************
+*** 281,287 ****
+  	if(ret)
+  	    return ret;
+  	if(cab_chkname(pt))
+! 	    badname = 1;
+  	else
+  	    cli_dbgmsg("CAB: Preceeding cabinet info: %s\n", pt);
+  	free(pt);
+--- 281,287 ----
+  	if(ret)
+  	    return ret;
+  	if(cab_chkname(pt))
+! 	    bscore++;
+  	else
+  	    cli_dbgmsg("CAB: Preceeding cabinet info: %s\n", pt);
+  	free(pt);
+***************
+*** 293,299 ****
+  	if(ret)
+  	    return ret;
+  	if(cab_chkname(pt))
+! 	    badname = 1;
+  	else
+  	    cli_dbgmsg("CAB: Next cabinet name: %s\n", pt);
+  	free(pt);
+--- 293,299 ----
+  	if(ret)
+  	    return ret;
+  	if(cab_chkname(pt))
+! 	    bscore++;
+  	else
+  	    cli_dbgmsg("CAB: Next cabinet name: %s\n", pt);
+  	free(pt);
+***************
+*** 302,313 ****
+  	if(ret)
+  	    return ret;
+  	if(cab_chkname(pt))
+! 	    badname = 1;
+  	else
+  	    cli_dbgmsg("CAB: Next cabinet info: %s\n", pt);
+  	free(pt);
+      }
+-     bscore += badname;
   
-  /* Copied from pdf.c :-( */
-  /*
---- 288,293 ----
-*** /home/njh/src/clamav-devel/./clamscan/manager.c	2006-10-29 14:49:55.000000000 +0000
---- ./clamscan/manager.c	2006-10-29 16:59:48.000000000 +0000
+      if(bscore >= 4) {
+  	cli_dbgmsg("CAB: bscore == %u, most likely a fake cabinet\n", bscore);
+--- 302,312 ----
+  	if(ret)
+  	    return ret;
+  	if(cab_chkname(pt))
+! 	    bscore++;
+  	else
+  	    cli_dbgmsg("CAB: Next cabinet info: %s\n", pt);
+  	free(pt);
+      }
+  
+      if(bscore >= 4) {
+  	cli_dbgmsg("CAB: bscore == %u, most likely a fake cabinet\n", bscore);
+*** /home/njh/src/clamav-devel/./clamscan/manager.c	2006-12-20 11:35:26.000000000 +0000
+--- ./clamscan/manager.c	2006-12-20 12:14:46.000000000 +0000
 ***************
 *** 30,40 ****
 --- 30,48 ----
@@ -1159,8 +1964,8 @@
   	if((user = getpwnam(UNPUSER)) == NULL) {
   	    logg("!Can't get information about user "UNPUSER"\n");
 ***************
-*** 365,376 ****
---- 377,390 ----
+*** 370,381 ****
+--- 382,395 ----
   	return 0;
       }
   
@@ -1176,7 +1981,7 @@
       claminfo.files++;
   
 ***************
-*** 481,487 ****
+*** 486,492 ****
       tmpdir = getenv("TMPDIR");
   
       if(tmpdir == NULL)
@@ -1184,7 +1989,7 @@
   	tmpdir = P_tmpdir;
   #else
   	tmpdir = "/tmp";
---- 495,501 ----
+--- 500,506 ----
       tmpdir = getenv("TMPDIR");
   
       if(tmpdir == NULL)
@@ -1193,7 +1998,7 @@
   #else
   	tmpdir = "/tmp";
 ***************
-*** 500,506 ****
+*** 505,511 ****
   	exit(63); /* critical */
       }
   
@@ -1201,7 +2006,7 @@
       if(user)
   	chown(gendir, user->pw_uid, user->pw_gid);
   #endif
---- 514,521 ----
+--- 519,526 ----
   	exit(63); /* critical */
       }
   
@@ -1211,24 +2016,7 @@
   	chown(gendir, user->pw_uid, user->pw_gid);
   #endif
 ***************
-*** 652,658 ****
-  		} else {
-  		    logg("%s: Removed\n", filename);
-  		}
-! 	    } else if (opt_check(opt, "move") || opt_check(opt, "copy"))
-  		move_infected(filename, opt);
-  
-  	    return 1;
---- 667,673 ----
-  		} else {
-  		    logg("%s: Removed\n", filename);
-  		}
-! 	    } else if (opt_check(opt, "move"))
-  		move_infected(filename, opt);
-  
-  	    return 1;
-***************
-*** 679,685 ****
+*** 684,690 ****
       tmpdir = getenv("TMPDIR");
   
       if(tmpdir == NULL)
@@ -1236,7 +2024,7 @@
   	tmpdir = P_tmpdir;
   #else
   	tmpdir = "/tmp";
---- 694,700 ----
+--- 699,705 ----
       tmpdir = getenv("TMPDIR");
   
       if(tmpdir == NULL)
@@ -1245,7 +2033,7 @@
   #else
   	tmpdir = "/tmp";
 ***************
-*** 715,721 ****
+*** 720,726 ****
   
       fixperms(gendir);
   
@@ -1253,7 +2041,7 @@
       if(user) {
   	chown(gendir, user->pw_uid, user->pw_gid);
   	chown(tmpfile, user->pw_uid, user->pw_gid);
---- 730,736 ----
+--- 735,741 ----
   
       fixperms(gendir);
   
@@ -1262,7 +2050,7 @@
   	chown(gendir, user->pw_uid, user->pw_gid);
   	chown(tmpfile, user->pw_uid, user->pw_gid);
 ***************
-*** 758,764 ****
+*** 763,769 ****
   
       logg("*Scanning %s\n", filename);
   
@@ -1270,7 +2058,7 @@
   	logg("^Can't open file %s\n", filename);
   	return 54;
       }
---- 773,779 ----
+--- 778,784 ----
   
       logg("*Scanning %s\n", filename);
   
@@ -1279,7 +2067,7 @@
   	return 54;
       }
 ***************
-*** 793,799 ****
+*** 798,804 ****
       tmpdir = getenv("TMPDIR");
   
       if(tmpdir == NULL)
@@ -1287,7 +2075,7 @@
   	tmpdir = P_tmpdir;
   #else
   	tmpdir = "/tmp";
---- 808,814 ----
+--- 813,819 ----
       tmpdir = getenv("TMPDIR");
   
       if(tmpdir == NULL)
@@ -1296,8 +2084,8 @@
   #else
   	tmpdir = "/tmp";
 ***************
-*** 811,816 ****
---- 826,838 ----
+*** 816,821 ****
+--- 831,843 ----
   	return 63;
       }
   
@@ -1312,8 +2100,8 @@
   	fwrite(buff, 1, ret, fs);
   
 ***************
-*** 845,850 ****
---- 867,880 ----
+*** 850,855 ****
+--- 872,885 ----
    * 0 -> OK
    */
   
@@ -1329,7 +2117,7 @@
   {
   	pid_t pid;
 ***************
-*** 875,881 ****
+*** 880,886 ****
   	case -1:
   	    return -1;
   	case 0:
@@ -1337,7 +2125,7 @@
   	    if(!geteuid() && user) {
   
   #ifdef HAVE_SETGROUPS
---- 905,911 ----
+--- 910,916 ----
   	case -1:
   	    return -1;
   	case 0:
@@ -1346,8 +2134,8 @@
   
   #ifdef HAVE_SETGROUPS
 ***************
-*** 951,956 ****
---- 981,987 ----
+*** 956,961 ****
+--- 986,992 ----
   
       return 0;
   }
@@ -1356,7 +2144,7 @@
   void move_infected(const char *filename, const struct optstruct *opt)
   {
 ***************
-*** 958,968 ****
+*** 963,969 ****
   	struct stat fstat, mfstat;
   	int n, len, movefilename_size;
   	int moveflag = opt_check(opt, "move");
@@ -1364,11 +2152,7 @@
   
   
       if((moveflag && !(movedir = opt_arg(opt, "move"))) ||
-! 	(!moveflag && !(movedir = opt_arg(opt, "copy")))) {
-          /* Should never reach here */
-          logg("!opt_arg() returned NULL\n", filename);
-          claminfo.notmoved++;
---- 989,999 ----
+--- 994,1000 ----
   	struct stat fstat, mfstat;
   	int n, len, movefilename_size;
   	int moveflag = opt_check(opt, "move");
@@ -1376,29 +2160,8 @@
   
   
       if((moveflag && !(movedir = opt_arg(opt, "move"))) ||
-!        (!moveflag && !(movedir = opt_arg(opt, "copy")))) {
-          /* Should never reach here */
-          logg("!opt_arg() returned NULL\n", filename);
-          claminfo.notmoved++;
 ***************
-*** 970,976 ****
-      }
-  
-      if(access(movedir, W_OK|X_OK) == -1) {
-! 	logg("!Can't %s file '%s': cannot write to '%s': %s\n", (moveflag) ? "move" : "copy", filename, movedir, strerror(errno));
-          claminfo.notmoved++;
-          return;
-      }
---- 1001,1007 ----
-      }
-  
-      if(access(movedir, W_OK|X_OK) == -1) {
-!         logg("!Can't %s file '%s': cannot write to '%s': %s\n", (moveflag) ? "move" : "copy", filename, movedir, strerror(errno));
-          claminfo.notmoved++;
-          return;
-      }
-***************
-*** 1037,1043 ****
+*** 1042,1048 ****
   	}
   
   	chmod(movefilename, fstat.st_mode);
@@ -1406,7 +2169,7 @@
   	chown(movefilename, fstat.st_uid, fstat.st_gid);
   #endif
   
---- 1068,1074 ----
+--- 1073,1079 ----
   	}
   
   	chmod(movefilename, fstat.st_mode);
@@ -1414,8 +2177,8 @@
   	chown(movefilename, fstat.st_uid, fstat.st_gid);
   #endif
   
-*** /home/njh/src/clamav-devel/./clamscan/clamscan.c	2006-10-29 17:02:07.000000000 +0000
---- ./clamscan/clamscan.c	2006-10-29 17:01:52.000000000 +0000
+*** /home/njh/src/clamav-devel/./clamscan/clamscan.c	2006-12-12 18:43:58.000000000 +0000
+--- ./clamscan/clamscan.c	2006-12-12 18:43:32.000000000 +0000
 ***************
 *** 24,32 ****
 --- 24,39 ----
@@ -1470,8 +2233,8 @@
   
       opt = opt_parse(argc, argv, clamscan_shortopt, clamscan_longopt, NULL);
 ***************
-*** 174,184 ****
---- 194,221 ----
+*** 182,192 ****
+--- 202,229 ----
   
       memset(&claminfo, 0, sizeof(struct s_info));
   
@@ -1501,8 +2264,8 @@
   	dms = t2.tv_usec - t1.tv_usec;
   	ds -= (dms < 0) ? (1):(0);
 ***************
-*** 204,209 ****
---- 241,254 ----
+*** 212,217 ****
+--- 249,262 ----
       }
   
       opt_free(opt);
@@ -1619,6 +2382,18 @@
   	    if(dent->d_ino)
   #endif
   	    {
+*** /home/njh/src/clamav-devel/./clamscan/clamscan_opt.h	2006-12-27 23:14:40.000000000 +0000
+--- ./clamscan/clamscan_opt.h	2006-10-29 17:00:22.000000000 +0000
+***************
+*** 62,68 ****
+      {"max-ratio", 1, 0, 0},
+      {"max-recursion", 1, 0, 0},
+      {"max-dir-recursion", 1, 0, 0},
+-     {"max-mail-recursion", 1, 0, 0},
+  #ifdef HAVE_NCORE
+      {"ncore", 0, 0, 0},
+  #endif
+--- 62,67 ----
 *** /home/njh/src/clamav-devel/./clamscan/treewalk.h	2006-06-08 21:00:50.000000000 +0100
 --- ./clamscan/treewalk.h	2006-07-26 15:36:44.000000000 +0100
 ***************
@@ -2050,8 +2825,8 @@
   
       if(!alloc) {
   	fprintf(stderr, "CRITICAL: Can't allocate memory (%ld bytes).\n", (long int) nmemb * size);
-*** /home/njh/src/clamav-devel/./freshclam/manager.c	2006-11-03 21:07:35.000000000 +0000
---- ./freshclam/manager.c	2006-11-03 20:05:46.000000000 +0000
+*** /home/njh/src/clamav-devel/./freshclam/manager.c	2006-12-09 08:42:20.000000000 +0000
+--- ./freshclam/manager.c	2006-12-09 08:42:02.000000000 +0000
 ***************
 *** 20,25 ****
 --- 20,29 ----
@@ -2148,7 +2923,7 @@
   }
   
 ***************
-*** 362,370 ****
+*** 366,374 ****
       if(!ip[0])
   	strcpy(ip, ipaddr);
   
@@ -2158,7 +2933,7 @@
   	return NULL;
       }
   
---- 378,386 ----
+--- 382,390 ----
       if(!ip[0])
   	strcpy(ip, ipaddr);
   
@@ -2169,7 +2944,7 @@
       }
   
 ***************
-*** 380,386 ****
+*** 384,390 ****
   	if(cnt <= 0)
   	    break;
       }
@@ -2177,7 +2952,7 @@
   
       if(bread == -1) {
   	logg("!remote_cvdhead: Error while reading CVD header from %s\n", hostname);
---- 396,402 ----
+--- 400,406 ----
   	if(cnt <= 0)
   	    break;
       }
@@ -2186,7 +2961,7 @@
       if(bread == -1) {
   	logg("!remote_cvdhead: Error while reading CVD header from %s\n", hostname);
 ***************
-*** 498,504 ****
+*** 506,512 ****
       if(!ip[0])
   	strcpy(ip, ipaddr);
   
@@ -2194,7 +2969,7 @@
   	logg("!getfile: Can't write to socket\n");
   	return 52;
       }
---- 514,520 ----
+--- 522,528 ----
       if(!ip[0])
   	strcpy(ip, ipaddr);
   
@@ -2203,7 +2978,7 @@
   	return 52;
       }
 ***************
-*** 536,542 ****
+*** 544,550 ****
       /* check whether the resource actually existed or not */
       if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
   	logg("!getfile: %s not found on remote server\n", srcfile);
@@ -2211,7 +2986,7 @@
   	return 58;
       }
   
---- 552,558 ----
+--- 560,566 ----
       /* check whether the resource actually existed or not */
       if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
   	logg("!getfile: %s not found on remote server\n", srcfile);
@@ -2220,7 +2995,7 @@
       }
   
 ***************
-*** 565,571 ****
+*** 573,579 ****
   	getcwd(currdir, sizeof(currdir));
   	logg("!getfile: Can't create new file %s in %s\n", destfile, currdir);
   	logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
@@ -2228,7 +3003,7 @@
   	return 57;
       }
   
---- 581,587 ----
+--- 589,595 ----
   	getcwd(currdir, sizeof(currdir));
   	logg("!getfile: Can't create new file %s in %s\n", destfile, currdir);
   	logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
@@ -2237,7 +3012,7 @@
       }
   
 ***************
-*** 578,584 ****
+*** 586,592 ****
   	    logg("getfile: Can't write %d bytes to %s\n", bread, destfile);
   	    unlink(destfile);
   	    close(fd);
@@ -2245,7 +3020,7 @@
   	    return 57; /* FIXME */
   	}
   
---- 594,600 ----
+--- 602,608 ----
   	    logg("getfile: Can't write %d bytes to %s\n", bread, destfile);
   	    unlink(destfile);
   	    close(fd);
@@ -2254,7 +3029,7 @@
   	}
   
 ***************
-*** 595,601 ****
+*** 603,609 ****
               fflush(stdout);
           }
       }
@@ -2262,7 +3037,7 @@
       close(fd);
   
       if(totalsize > 0)
---- 611,617 ----
+--- 619,625 ----
               fflush(stdout);
           }
       }
@@ -2271,7 +3046,7 @@
   
       if(totalsize > 0)
 ***************
-*** 722,728 ****
+*** 730,736 ****
           return ret;
       }
   
@@ -2279,7 +3054,7 @@
   	logg("!getpatch: Can't open %s for reading\n", tempname);
           unlink(tempname);
           free(tempname);
---- 738,744 ----
+--- 746,752 ----
           return ret;
       }
   
@@ -2288,7 +3063,7 @@
           unlink(tempname);
           free(tempname);
 ***************
-*** 927,936 ****
+*** 936,945 ****
   	ret = 0;
   
   	for(i = currver + 1; i <= newver; i++) {
@@ -2299,9 +3074,9 @@
   	    ret = getpatch(dbname, i, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout);
   	    if(ret) {
   		logg("^Removing incremental directory %s\n", dbinc);
---- 943,948 ----
+--- 952,957 ----
 ***************
-*** 977,985 ****
+*** 986,994 ****
   	char ipaddr[16], *dnsreply = NULL, *pt, *localip = NULL, *newver = NULL;
   	const char *arg = NULL;
   	struct cfgstruct *cpt;
@@ -2311,9 +3086,9 @@
   
       time(&currtime);
       logg("ClamAV update process started at %s", ctime(&currtime));
---- 989,995 ----
+--- 998,1004 ----
 ***************
-*** 989,995 ****
+*** 998,1004 ****
       logg("See the FAQ at http://www.clamav.net/faq.html for an explanation.\n");
   #endif
   
@@ -2321,9 +3096,9 @@
       dnsdbinfo = cfgopt(copt, "DNSDatabaseInfo")->strarg;
   
       if(opt_check(opt, "no-dns")) {
---- 999,1004 ----
+--- 1008,1013 ----
 ***************
-*** 1052,1058 ****
+*** 1061,1067 ****
   	    logg("^Invalid DNS reply. Falling back to HTTP mode.\n");
   	}
       }
@@ -2331,7 +3106,7 @@
   
       if(opt_check(opt, "local-address")) {
           localip = opt_arg(opt, "local-address");
---- 1061,1066 ----
+--- 1070,1075 ----
 *** /home/njh/src/clamav-devel/./freshclam/execute.c	2006-08-31 08:38:17.000000000 +0100
 --- ./freshclam/execute.c	2006-10-07 00:03:52.000000000 +0100
 ***************
@@ -2667,8 +3442,8 @@
       logg("Clamd successfully notified about the update.\n");
       return 0;
   }
-*** /home/njh/src/clamav-devel/./clamd/localserver.c	2006-09-13 18:50:46.000000000 +0100
---- ./clamd/localserver.c	2006-09-13 21:15:20.000000000 +0100
+*** /home/njh/src/clamav-devel/./clamd/localserver.c	2006-12-22 09:09:48.000000000 +0000
+--- ./clamd/localserver.c	2006-12-22 18:35:14.000000000 +0000
 ***************
 *** 24,32 ****
 --- 24,36 ----
@@ -2683,8 +3458,8 @@
   #include <sys/un.h>
 + #endif
   #include <errno.h>
-  
-  #include "libclamav/clamav.h"
+  #ifdef HAVE_UNISTD_H
+  #include <unistd.h>
 *** /home/njh/src/clamav-devel/./clamdscan/clamdscan.c	2006-10-29 17:09:34.000000000 +0000
 --- ./clamdscan/clamdscan.c	2006-10-29 14:50:54.000000000 +0000
 ***************
@@ -3252,3 +4027,15 @@
   
   #include "cfgparser.h"
   #define _GNU_SOURCE
+*** /home/njh/src/clamav-devel/./sigtool/sigtool.c	2006-12-22 08:28:52.000000000 +0000
+--- ./sigtool/sigtool.c	2006-11-05 10:16:14.000000000 +0000
+***************
+*** 1667,1672 ****
+--- 1667,1673 ----
+      mprintf("    --list-sigs[=FILE]     -l[FILE]        List signature names\n");
+      mprintf("    --vba=FILE                             Extract VBA/Word6 macro code\n");
+      mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
++     mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
+      mprintf("    --diff=OLD NEW         -d OLD NEW      Create diff for OLD and NEW CVDs\n");
+      mprintf("    --run-cdiff=FILE       -r FILE         Execute update script FILE in cwd\n");
+      mprintf("    --verify-cdiff=DIFF CVD/INCDIR         Verify DIFF against CVD\n");
