@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.366 2006/12/27 23:18:49 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.367 2006/12/28 15:07:55 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -2032,7 +2032,7 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 static mbox_status
 parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int recursion_level)
 {
-	mbox_status rc = OK;
+	mbox_status rc;
 	text *aText = textIn;
 	message *mainMessage = messageIn;
 	fileblob *fb;
@@ -2064,6 +2064,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
 		cli_dbgmsg("Parsing mail file\n");
 
+		rc = OK;
 		mimeType = messageGetMimeType(mainMessage);
 		mimeSubtype = messageGetMimeSubtype(mainMessage);
 
@@ -2179,7 +2180,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 							infected = TRUE;
 							break;
 						}
-					} else if(encodingLine(mainMessage) == t_line->t_next) {
+					} else if(t_line->t_next &&
+					          (encodingLine(mainMessage) == t_line->t_next)) {
 						/*
 						 * We look for the next line
 						 * since later on we'll skip
@@ -2189,7 +2191,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 						 * which it would have been in
 						 * an RFC compliant world
 						 */
-						cli_dbgmsg("Found MIME attachment before the first MIME section\n");
+						cli_dbgmsg("Found MIME attachment before the first MIME section \"%s\"\n",
+							lineGetData(t_line->t_next->t_line));
 						if(messageGetEncoding(mainMessage) == NOENCODING)
 							break;
 					}
