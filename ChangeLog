@@ -1,6 +1,11 @@
+Fri Dec 29 21:21:08 GMT 2006 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Set MIME.RecursionLimit when --max-mail-recursion is hit
+
 Thu Dec 28 15:09:37 GMT 2006 (njh)
 ----------------------------------
-  * libclamav/mbox.c:	Some HTML.Phishing.Bank-512 being found (bug 33)
+  * libclamav/mbox.c:	Some HTML.Phishing.Bank-512 were not being found
+				(bug 33)
 
 Wed Dec 27 23:14:57 GMT 2006 (njh)
 ----------------------------------

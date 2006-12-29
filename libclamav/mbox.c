@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.367 2006/12/28 15:07:55 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.368 2006/12/29 21:20:37 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -2044,10 +2044,14 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 	cli_dbgmsg("in parseEmailBody\n");
 
 	if(mctx->ctx->limits->maxmailrec)
-		if(recursion_level >= mctx->ctx->limits->maxmailrec) {
+		/*
+		 * This is approximate
+		 */
+		if(recursion_level > mctx->ctx->limits->maxmailrec) {
 			cli_warnmsg("parseEmailBody: hit maximum recursion level (%u)\n",
-				mctx->ctx->limits->maxmailrec);
-			return OK_ATTACHMENTS_NOT_SAVED;
+				recursion_level);
+			*mctx->ctx->virname = "MIME.RecursionLimit";
+			return VIRUS;
 		}
 
 	/* Anything left to be parsed? */
@@ -2500,7 +2504,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 						mainMessage = do_multipart(mainMessage,
 							messages, multiparts,
 							&rc, mctx, messageIn,
-							&aText, recursion_level + 1);
+							&aText, recursion_level);
 						--multiparts;
 						if(rc == VIRUS)
 							infected = TRUE;
@@ -5189,7 +5193,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 					cli_dbgmsg("Found binhex message in multipart/mixed mainMessage\n");
 
 					if(exportBinhexMessage(mctx->dir, mainMessage))
-						*rc = 3;
+						*rc = VIRUS;
 				}
 				if(mainMessage != messageIn)
 					messageDestroy(mainMessage);
@@ -5198,7 +5202,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 				if(binhexBegin(aMessage)) {
 					cli_dbgmsg("Found binhex message in multipart/mixed non mime part\n");
 					if(exportBinhexMessage(mctx->dir, aMessage))
-						*rc = 3;
+						*rc = VIRUS;
 					assert(aMessage == messages[i]);
 					messageReset(messages[i]);
 				}
@@ -5328,7 +5332,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 				messageSetCTX(body, mctx->ctx);
 				*rc = parseEmailBody(body, NULL, mctx, recursion_level + 1);
 				if(messageContainsVirus(body))
-					*rc = 3;
+					*rc = VIRUS;
 				messageDestroy(body);
 			}
 #endif
@@ -5371,12 +5375,12 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 
 		if(fb) {
 			if(fileblobContainsVirus(fb))
-				*rc = 3;
+				*rc = VIRUS;
 			fileblobDestroy(fb);
 		}
 	}
 	if(messageContainsVirus(aMessage))
-		*rc = 3;
+		*rc = VIRUS;
 	messageDestroy(aMessage);
 	messages[i] = NULL;
 
