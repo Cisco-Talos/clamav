@@ -1,3 +1,7 @@
+Sat Dec 30 12:01:41 GMT 2006 (njh)
+----------------------------------
+  * clamav-milter:	Fix typo in warning message
+
 Fri Dec 29 21:21:08 GMT 2006 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Set MIME.RecursionLimit when --max-mail-recursion is hit

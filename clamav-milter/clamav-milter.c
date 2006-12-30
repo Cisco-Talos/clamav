@@ -24,9 +24,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.306 2006/12/20 14:55:17 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.307 2006/12/30 12:01:23 njh Exp $";
 
-#define	CM_VERSION	"devel-191206"
+#define	CM_VERSION	"devel-301206"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -5931,7 +5931,7 @@ increment_connections(void)
 			 */
 			gettimeofday(&now, &tz);
 			do {
-				logg(_("n_children %d: waiting %d seconds for some to exit"),
+				logg(_("n_children %d: waiting %d seconds for some to exit\n"),
 					n_children, child_timeout);
 
 				if(child_timeout == 0) {
