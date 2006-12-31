@@ -297,50 +297,70 @@ static int iconv(iconv_t iconv_struct,char **inbuf, size_t *inbytesleft,
 			{
 				const size_t maxread  = *inbytesleft;
 				const size_t maxwrite = *outbytesleft;
-				uint16_t* out = (uint16_t*) output;
 				size_t j;
 				for(i=0,j=0 ; i < maxread && j < maxwrite;) {
 					if(input[i] < 0x7F)  {
-						out[j++] = input[i++];
+						output[j++] = 0;
+						output[j++] = input[i++];
 							}
 					else if( (input[i]&0xE0) == 0xC0 ) {
 						if ((input[i+1]&0xC0) == 0x80) {
 							/* 2 bytes long 110yyyyy zzzzzzzz -> 00000yyy yyzzzzzz*/
+							output[j++] = ((input[i] & 0x1F) >> 2) & 0x07;
 							output[j++] = ((input[i] & 0x1F) << 6) | (input[i+1] & 0x3F);
 						}
-						else
+						else {
 							cli_dbgmsg("invalid UTF8 character encountered\n");
+							break;
+						}
 						i+=2;
 					}
 					else if( (input[i]&0xE0) == 0xE0) {
 						if( (input[i+1]&0xC0) == 0x80 && (input[i+2]&0xC0) == 0x80) {
 							/* 3 bytes long 1110xxxx 10yyyyyy 10zzzzzzzz -> xxxxyyyy yyzzzzzz*/
-							output[j++] = ((input[i] & 0x0F) << 12) | ((input[i+1] & 0x3F)<<6) | (input[i+2] & 0x3F);
+							output[j++] = (input[i] << 4) | ((input[i+1] >> 2) & 0x0F);
+							output[j++] = (input[i+1] << 6) | (input[i+2] & 0x3F);
 						}
-						else
+						else {
 							cli_dbgmsg("invalid UTF8 character encountered\n");
+							break;
+						}
 						i+=3;
 					}
 					else if( (input[i]&0xF8) == 0xF0) {
 						if((input[i+1]&0xC0) == 0x80 && (input[i+2]&0xC0) == 0x80 && (input[i+3]&0xC0) == 0x80) {
 							/* 4 bytes long 11110www 10xxxxxx 10yyyyyy 10zzzzzz -> 000wwwxx xxxxyyyy yyzzzzzz*/
-							output[j++] = ((input[i] & 0x07) << 18) | ((input[i+1] & 0x3F)<<12) | ((input[i+2] & 0x3F) <<6) | (input[i+3] & 0x3F);
+							cli_dbgmsg("UTF8 character out of UTF16 range encountered");
+							output[j++] = 0xff;
+							output[j++] = 0xff;
+
+							/*out[j++] = ((input[i] & 0x07) << 2) | ((input[i+1] >> 4) & 0x3);
+							out[j++] = (input[i+1] << 4) | ((input[i+2] >> 2) & 0x0F);
+							out[j++] = (input[i+2] << 6) | (input[i+2] & 0x3F);*/
 						}
-						else
+						else {
 							cli_dbgmsg("invalid UTF8 character encountered\n");
+							break;
+						}
 						i+=4;
 					}
 					else {
-						i++;
 						cli_dbgmsg("invalid UTF8 character encountered\n");
+						break;
 					}							
 				}
 				*inbytesleft -= i;
 				*outbytesleft -= j;
 				*inbuf += i;
 				*outbuf += j;
-				if(*inbytesleft)
-					return E2BIG;
+				if(*inbytesleft && *outbytesleft) {
+					errno = EILSEQ;/* we had an early exit */
+					return -1;
+				}
+				if(*inbytesleft) {
+					errno = E2BIG;
+					return -1;
+				}
 				return 0;
 			}
 	}
@@ -349,8 +369,10 @@ static int iconv(iconv_t iconv_struct,char **inbuf, size_t *inbytesleft,
 	*inbytesleft  -= maxcopy;
 	*inbuf += maxcopy;
 	*outbuf += maxcopy;
-	if(*inbytesleft)
-		return E2BIG;
+	if(*inbytesleft) {
+		errno = E2BIG;
+		return -1;
+	}
 	return  0;
 }
 
@@ -671,8 +693,12 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 		iconv_close(iconv_struct);
 
 		if(rc==(size_t)-1 && errno != E2BIG) {
-				cli_dbgmsg("iconv error:%s, silently resuming\n",strerror(errno));
-				return cli_readline(NULL, &conv->tmp_area, maxlen);
+				cli_dbgmsg("iconv error:%s, silently resuming (%ld,%ld,%ld,%ld)\n",strerror(errno),out-conv->out_area.buffer,tmpbuff-conv->tmp_area.buffer,inleft,outleft);
+				/* output raw byte, and resume at next byte */
+				*out++ = 0;
+				*out++ = *tmpbuff++;
+				inleft--;
+/*				return cli_readline(NULL, &conv->norm_area, maxlen);*/
 		}
 
 		conv->tmp_area.length = inleft + (alignfix > 0 ? alignfix : 0);
