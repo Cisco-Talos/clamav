@@ -91,7 +91,7 @@ int __zip_find_disk_trailer(int fd, off_t filesize, struct zip_disk_trailer *tra
 	    if(offset == filesize)
 		offset -= ZIPBUFSIZ;
 	    else
-		offset -= ZIPBUFSIZ - 4;
+		offset -= ZIPBUFSIZ - sizeof(struct zip_disk_trailer);
 
 	    bufsize = ZIPBUFSIZ;
 	} else {
