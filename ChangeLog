@@ -1,3 +1,8 @@
+Wed Jan  3 13:35:06 CET 2007 (tk)
+---------------------------------
+  * libclamav/htmlnorm.c: fix possible reference to NULL pointer in
+			  experimental code (bb#140), patch from NJH
+
 Sun Dec 31 19:38:17 CET 2006 (tk)
 ---------------------------------
   * libclamav/unzip.c: improve detection of central directory (bb#33)

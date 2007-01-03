@@ -440,7 +440,7 @@ static inline void html_tag_set_inahref(tag_arguments_t *tags,int idx,int in_ahr
  */
 static inline void html_tag_contents_append(tag_arguments_t *tags,int idx,const unsigned char* begin,const unsigned char *end)
 {
-	if(begin<end) {
+	if(end && (begin<end)) {
 		blobAddData(tags->contents[idx-1],begin,end-begin);
 	}
 }
