@@ -36,7 +36,7 @@
  * TODO: Remove the vcard handling
  * FIXME: The code does little error checking of OOM scenarios
  */
-static	char	const	rcsid[] = "$Id: pst.c,v 1.42 2006/12/16 16:57:01 njh Exp $";
+static	char	const	rcsid[] = "$Id: pst.c,v 1.43 2007/01/05 14:45:08 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"	/* must come first */
@@ -2166,6 +2166,8 @@ int32_t _pst_process(pst_num_array *list , pst_item *item) {
 	  item->type = PST_TYPE_JOURNAL;
 	else if (strncasecmp("IPM.Appointment", item->ascii_type, 15) == 0)
 	  item->type = PST_TYPE_APPOINTMENT;
+	else if(strncasecmp("IPM.Task", item->ascii_type, 8) == 0)
+	  item->type = PST_TYPE_TASK;
 	else
 	  item->type = PST_TYPE_OTHER;
 

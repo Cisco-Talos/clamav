@@ -1,3 +1,7 @@
+Fri Jan  5 14:45:29 GMT 2007 (njh)
+----------------------------------
+  * libclamav/pst.c:	Commit fix from upstream detecting Outlook tasks
+
 Wed Jan  3 13:35:06 CET 2007 (tk)
 ---------------------------------
   * libclamav/htmlnorm.c: fix possible reference to NULL pointer in
