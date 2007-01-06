@@ -57,6 +57,7 @@
 
 #include "execute.h"
 #include "manager.h"
+#include "mirman.h"
 
 static short terminate = 0;
 extern int active_children;
@@ -142,6 +143,7 @@ void help(void)
     mprintf("    --on-update-execute=COMMAND          execute COMMAND after successful update\n");
     mprintf("    --on-error-execute=COMMAND           execute COMMAND if errors occured\n");
     mprintf("    --on-outdated-execute=COMMAND        execute COMMAND when software is outdated\n");
+    mprintf("    --list-mirrors                       print mirrors from mirrors.dat\n");
 
     mprintf("\n");
 }
@@ -174,7 +176,7 @@ int download(const struct cfgstruct *copt, const struct optstruct *opt)
 		    logg("Giving up on %s...\n", cpt->strarg);
 		    cpt = (struct cfgstruct *) cpt->nextarg;
 		    if(!cpt) {
-			logg("^Update failed. Your network may be down or none of the mirrors listed in freshclam.conf is working.\n");
+			logg("Update failed. Your network may be down or none of the mirrors listed in freshclam.conf is working. Check http://www.clamav.net/support/mirror-problem for possible reasons.\n");
 		    }
 		    try = 0;
 		}
@@ -203,6 +205,7 @@ int main(int argc, char **argv)
 	struct passwd *user;
 #endif
 	struct stat statbuf;
+	struct mirdat mdat;
 	struct optstruct *opt;
 	const char *short_options = "hvdp:Vl:c:u:a:";
 	static struct option long_options[] = {
@@ -228,6 +231,7 @@ int main(int argc, char **argv)
 	    {"on-update-execute", 1, 0, 0},
 	    {"on-error-execute", 1, 0, 0},
 	    {"on-outdated-execute", 1, 0, 0},
+	    {"list-mirrors", 0, 0, 0},
 	    {0, 0, 0, 0}
     	};
 
@@ -402,6 +406,17 @@ int main(int argc, char **argv)
 	return 50;
     } else
 	logg("*Current working dir is %s\n", newdir);
+
+
+    if(opt_check(opt, "list-mirrors")) {
+	if(mirman_read("mirrors.dat", &mdat) == -1) {
+	    printf("Can't read mirrors.dat\n");
+	    return 55;
+	}
+	mirman_list(&mdat);
+	mirman_free(&mdat);
+	return 0;
+    }
 
 #ifdef	C_WINDOWS
     {

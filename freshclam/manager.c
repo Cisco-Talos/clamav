@@ -47,6 +47,7 @@
 #include "dns.h"
 #include "execute.h"
 #include "nonblock.h"
+#include "mirman.h"
 
 #include "shared/options.h"
 #include "shared/cfgparser.h"
@@ -64,9 +65,9 @@
 #endif
 
 
-static int wwwconnect(const char *server, const char *proxy, int pport, char *ip, const char *localip, int ctimeout)
+static int wwwconnect(const char *server, const char *proxy, int pport, char *ip, const char *localip, int ctimeout, struct mirdat *mdat)
 {
-	int socketfd = -1, port, i;
+	int socketfd = -1, port, i, ret;
 	struct sockaddr_in name;
 	struct hostent *host;
 	char ipaddr[16];
@@ -187,6 +188,14 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	ia = (unsigned char *) host->h_addr_list[i];
 	sprintf(ipaddr, "%u.%u.%u.%u", ia[0], ia[1], ia[2], ia[3]);
 
+	if((ret = mirman_check(((struct in_addr *) ia)->s_addr, mdat))) {
+	    if(ret == 1)
+		logg("Ignoring mirror %s (due to previous errors)\n", ipaddr);
+	    else
+		logg("Ignoring mirror %s (too often connections with outdated version)\n", ipaddr);
+	    continue;
+	}
+
 	if(ip)
 	    strcpy(ip, ipaddr);
 
@@ -204,6 +213,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	    logg("Can't connect to port %d of host %s (IP: %s)\n", port, hostpt, ipaddr);
 	    continue;
 	} else {
+	    mdat->currip = ((struct in_addr *) ia)->s_addr;
 	    return socketfd;
 	}
     }
@@ -288,7 +298,7 @@ static char *proxyauth(const char *user, const char *pass)
     return auth;
 }
 
-static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int *ims, int ctimeout, int rtimeout)
+static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, unsigned int *ims, int ctimeout, int rtimeout, struct mirdat *mdat)
 {
 	char cmd[512], head[513], buffer[FILEBUFF], ipaddr[16], *ch, *tmp;
 	int bread, cnt, sd;
@@ -352,9 +362,9 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
     memset(ipaddr, 0, sizeof(ipaddr));
 
     if(ip[0]) /* use ip to connect */
-	sd = wwwconnect(ip, proxy, port, ipaddr, localip, ctimeout);
+	sd = wwwconnect(ip, proxy, port, ipaddr, localip, ctimeout, mdat);
     else
-	sd = wwwconnect(hostname, proxy, port, ipaddr, localip, ctimeout);
+	sd = wwwconnect(hostname, proxy, port, ipaddr, localip, ctimeout, mdat);
 
     if(sd < 0) {
 	return NULL;
@@ -388,11 +398,13 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 
     if(bread == -1) {
 	logg("!remote_cvdhead: Error while reading CVD header from %s\n", hostname);
+	mirman_update(mdat->currip, mdat, 1);
 	return NULL;
     }
 
     if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
 	logg("!CVD file not found on remote server\n");
+	mirman_update(mdat->currip, mdat, 1);
 	return NULL;
     }
 
@@ -400,6 +412,7 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
     if((strstr(buffer, "HTTP/1.1 304")) != NULL || (strstr(buffer, "HTTP/1.0 304")) != NULL) { 
 	*ims = 0;
 	logg("OK (IMS)\n");
+	mirman_update(mdat->currip, mdat, 0);
 	return NULL;
     } else {
 	*ims = 1;
@@ -408,6 +421,7 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
     if(!strstr(buffer, "HTTP/1.1 200") && !strstr(buffer, "HTTP/1.0 200") &&
        !strstr(buffer, "HTTP/1.1 206") && !strstr(buffer, "HTTP/1.0 206")) {
 	logg("!Unknown response from remote server\n");
+	mirman_update(mdat->currip, mdat, 1);
 	return NULL;
     }
 
@@ -425,6 +439,7 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 
     if(sizeof(buffer) - i < 512) {
 	logg("!remote_cvdhead: Malformed CVD header (too short)\n");
+	mirman_update(mdat->currip, mdat, 1);
 	return NULL;
     }
 
@@ -433,20 +448,24 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
     for(j = 0; j < 512; j++) {
 	if(!ch || (ch && !*ch) || (ch && !isprint(ch[j]))) {
 	    logg("!remote_cvdhead: Malformed CVD header (bad chars)\n");
+	    mirman_update(mdat->currip, mdat, 1);
 	    return NULL;
 	}
 	head[j] = ch[j];
     }
 
-    if(!(cvd = cl_cvdparse(head)))
-	logg("!Malformed CVD header (can't parser)\n");
-    else
+    if(!(cvd = cl_cvdparse(head))) {
+	logg("!Malformed CVD header (can't parse)\n");
+	mirman_update(mdat->currip, mdat, 1);
+    } else {
 	logg("OK\n");
+	mirman_update(mdat->currip, mdat, 0);
+    }
 
     return cvd;
 }
 
-static int getfile(const char *srcfile, const char *destfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int ctimeout, int rtimeout)
+static int getfile(const char *srcfile, const char *destfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int ctimeout, int rtimeout, struct mirdat *mdat)
 {
 	char cmd[512], buffer[FILEBUFF], *ch;
 	int bread, fd, totalsize = 0,  rot = 0, totaldownloaded = 0,
@@ -493,9 +512,9 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     memset(ipaddr, 0, sizeof(ipaddr));
 
     if(ip[0]) /* use ip to connect */
-	sd = wwwconnect(ip, proxy, port, ipaddr, localip, ctimeout);
+	sd = wwwconnect(ip, proxy, port, ipaddr, localip, ctimeout, mdat);
     else
-	sd = wwwconnect(hostname, proxy, port, ipaddr, localip, ctimeout);
+	sd = wwwconnect(hostname, proxy, port, ipaddr, localip, ctimeout, mdat);
 
     if(sd < 0) {
 	return 52;
@@ -527,7 +546,8 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 #else
 	if((i >= sizeof(buffer) - 1) || recv(sd, buffer + i, 1, 0) == -1) {
 #endif
-	    logg("!getfile: Error while reading database from %s\n", hostname);
+	    logg("!getfile: Error while reading database from %s (IP: %s)\n", hostname, ipaddr);
+	    mirman_update(mdat->currip, mdat, 1);
 	    return 52;
 	}
 
@@ -543,14 +563,16 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 
     /* check whether the resource actually existed or not */
     if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
-	logg("!getfile: %s not found on remote server\n", srcfile);
+	logg("!getfile: %s not found on remote server (IP: %s)\n", srcfile, ipaddr);
+	mirman_update(mdat->currip, mdat, 1);
 	close(sd);
 	return 58;
     }
 
     if(!strstr(buffer, "HTTP/1.1 200") && !strstr(buffer, "HTTP/1.0 200") &&
        !strstr(buffer, "HTTP/1.1 206") && !strstr(buffer, "HTTP/1.0 206")) {
-	logg("!getfile: Unknown response from remote server\n");
+	logg("!getfile: Unknown response from remote server (IP: %s)\n", ipaddr);
+	mirman_update(mdat->currip, mdat, 1);
 	return 58;
     }
 
@@ -611,10 +633,11 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     else
         logg("Downloading %s [*]\n", srcfile);
 
+    mirman_update(mdat->currip, mdat, 0);
     return 0;
 }
 
-static int getcvd(const char *dbfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int nodb, int newver, int ctimeout, int rtimeout)
+static int getcvd(const char *dbfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int nodb, unsigned int newver, int ctimeout, int rtimeout, struct mirdat *mdat)
 {
 	char *tempname;
 	struct cl_cvd *cvd;
@@ -624,8 +647,8 @@ static int getcvd(const char *dbfile, const char *hostname, char *ip, const char
     tempname = cli_gentemp(".");
 
     logg("*Retrieving http://%s/%s\n", hostname, dbfile);
-    if((ret = getfile(dbfile, tempname, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout))) {
-        logg("!Can't download %s from %s (IP: %s)\n", dbfile, hostname, ip);
+    if((ret = getfile(dbfile, tempname, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat))) {
+        logg("!Can't download %s from %s\n", dbfile, hostname);
         unlink(tempname);
         free(tempname);
         return ret;
@@ -704,7 +727,7 @@ static int chdir_inc(const char *dbname)
     return 0;
 }
 
-static int getpatch(const char *dbname, int version, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int ctimeout, int rtimeout)
+static int getpatch(const char *dbname, int version, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int ctimeout, int rtimeout, struct mirdat *mdat)
 {
 	char *tempname, patch[32], olddir[512];
 	int ret, fd;
@@ -722,8 +745,8 @@ static int getpatch(const char *dbname, int version, const char *hostname, char 
     snprintf(patch, sizeof(patch), "%s-%d.cdiff", dbname, version);
 
     logg("*Retrieving http://%s/%s\n", hostname, patch);
-    if((ret = getfile(patch, tempname, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout))) {
-        logg("!getpatch: Can't download %s from %s (IP: %s)\n", patch, hostname, ip);
+    if((ret = getfile(patch, tempname, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat))) {
+        logg("!getpatch: Can't download %s from %s\n", patch, hostname);
         unlink(tempname);
         free(tempname);
 	chdir(olddir);
@@ -775,7 +798,7 @@ static struct cl_cvd *currentdb(const char *dbname, unsigned int *inc)
     return cvd;
 }
 
-int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, const char *dnsreply, char *localip, int outdated)
+static int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, const char *dnsreply, char *localip, int outdated, struct mirdat *mdat)
 {
 	struct cl_cvd *current, *remote;
 	struct cfgstruct *cpt;
@@ -809,6 +832,8 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
 		}
 	    }
 	}
+    } else {
+	mdat->dbflevel = current->fl;
     }
 
     if(!nodb && dnsreply) {
@@ -869,7 +894,7 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
 
     if(!nodb && !newver) {
 
-	remote = remote_cvdhead(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, &ims, ctimeout, rtimeout);
+	remote = remote_cvdhead(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, &ims, ctimeout, rtimeout, mdat);
 
 	if(!nodb && !ims) {
 	    logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", inc ? dbinc : dbfile, current->version, current->sigs, current->fl, current->builder);
@@ -928,7 +953,7 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
     */
 
     if(nodb) {
-	ret = getcvd(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, nodb, newver, ctimeout, rtimeout);
+	ret = getcvd(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, nodb, newver, ctimeout, rtimeout, mdat);
 	if(ret)
 	    return ret;
 
@@ -940,7 +965,7 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
 	     * !!! FIXME !!!: Redesign this code to make more than one attempt
 	     *		      to download a single cdiff.
 	     */
-	    ret = getpatch(dbname, i, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout);
+	    ret = getpatch(dbname, i, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat);
 	    if(ret) {
 		logg("^Removing incremental directory %s\n", dbinc);
 		rmdirs(dbinc);
@@ -951,7 +976,7 @@ int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, con
 	if(ret) {
 	    logg("^Incremental update failed, downloading complete database\n");
 
-	    ret = getcvd(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, 1, newver, ctimeout, rtimeout);
+	    ret = getcvd(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, 1, newver, ctimeout, rtimeout, mdat);
 	    if(ret)
 		return ret;
 	} else {
@@ -986,6 +1011,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	char ipaddr[16], *dnsreply = NULL, *pt, *localip = NULL, *newver = NULL;
 	const char *arg = NULL;
 	struct cfgstruct *cpt;
+	struct mirdat mdat;
 #ifdef HAVE_RESOLV_H
 	const char *dnsdbinfo;
 #endif
@@ -1069,28 +1095,32 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	localip = cpt->strarg;
     }
 
+    mirman_read("mirrors.dat", &mdat);
+
     memset(ipaddr, 0, sizeof(ipaddr));
 
-    if((ret = updatedb("main", hostname, ipaddr, &signo, copt, dnsreply, localip, outdated)) > 50) {
+    if((ret = updatedb("main", hostname, ipaddr, &signo, copt, dnsreply, localip, outdated, &mdat)) > 50) {
 	if(dnsreply)
 	    free(dnsreply);
 
 	if(newver)
 	    free(newver);
 
+	mirman_write("mirrors.dat", &mdat);
 	return ret;
 
     } else if(ret == 0)
 	updated = 1;
 
     /* if ipaddr[0] != 0 it will use it to connect to the web host */
-    if((ret = updatedb("daily", hostname, ipaddr, &signo, copt, dnsreply, localip, outdated)) > 50) {
+    if((ret = updatedb("daily", hostname, ipaddr, &signo, copt, dnsreply, localip, outdated, &mdat)) > 50) {
 	if(dnsreply)
 	    free(dnsreply);
 
 	if(newver)
 	    free(newver);
 
+	mirman_write("mirrors.dat", &mdat);
 	return ret;
 
     } else if(ret == 0)
@@ -1098,6 +1128,8 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 
     if(dnsreply)
 	free(dnsreply);
+
+    mirman_write("mirrors.dat", &mdat);
 
     if(updated) {
 	if(cfgopt(copt, "HTTPProxyServer")->enabled) {
