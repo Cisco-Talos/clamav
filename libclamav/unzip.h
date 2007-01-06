@@ -205,4 +205,8 @@ ssize_t zip_file_read(zip_file *fp, char *buf, size_t len);
 int zip_file_close(zip_file *fp);
 int zip_dir_close(zip_dir *dir);
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack()
+#endif
+
 #endif /* __UNZIP_H */

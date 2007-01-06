@@ -322,4 +322,8 @@ void make_decode_tables(unsigned char *len_tab, struct Decode *decode, int size)
 void unp_write_buf_old(unpack_data_t *unpack_data);
 int decode_number(unpack_data_t *unpack_data, struct Decode *decode);
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack()
+#endif
+
 #endif
