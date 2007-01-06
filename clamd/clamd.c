@@ -308,7 +308,7 @@ int main(int argc, char **argv)
     dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
     logg("#Reading databases from %s\n", dbdir);
 
-    if(cfgopt(copt, "DetectPhishing")->enabled)
+    if(cfgopt(copt, "PhishingSignatures")->enabled)
 	dboptions |= CL_DB_PHISHING;
     else
 	logg("Not loading phishing signatures.\n");

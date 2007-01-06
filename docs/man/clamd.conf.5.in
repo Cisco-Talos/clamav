@@ -234,8 +234,8 @@ Recursion level limit for the mail scanner.
 .br
 Default: 64
 .TP 
-\fBDetectPhishing\fR
-With this option enabled ClamAV will try to detect phishing attempts.
+\fBPhishingSignatures\fR
+With this option enabled ClamAV will try to detect phishing attempts by using signatures.
 .br 
 Default: enabled
 .TP 

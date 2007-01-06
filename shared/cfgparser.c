@@ -49,7 +49,7 @@ struct cfgoption cfg_options[] = {
     {"ScanMail", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"MailFollowURLs", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"MailMaxRecursion", OPT_NUM, 64, NULL, 0, OPT_CLAMD},
-    {"DetectPhishing", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
+    {"PhishingSignatures", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
 #ifdef CL_EXPERIMENTAL
     {"PhishingScanURLs",OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"PhishingStrictURLCheck", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},

@@ -1,3 +1,8 @@
+Sat Jan  6 17:45:49 CET 2007 (tk)
+---------------------------------
+  * clamd: s/DetectPhishing/PhishingSignatures
+  * clamscan: s/--no-phishing/--no-phishing-sigs
+
 Sat Jan  6 17:22:30 CET 2007 (tk)
 ---------------------------------
   * libclamav: fix stack corruption on win32 (bb#201), patch from NJH
