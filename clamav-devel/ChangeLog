@@ -1,3 +1,7 @@
+Sat Jan  6 17:22:30 CET 2007 (tk)
+---------------------------------
+  * libclamav: fix stack corruption on win32 (bb#201), patch from NJH
+
 Sat Jan  6 16:57:23 CET 2007 (tk)
 ---------------------------------
   * freshclam: initial version of mirror manager; new option --list-mirrors
