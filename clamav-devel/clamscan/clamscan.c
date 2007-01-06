@@ -260,7 +260,7 @@ void help(void)
 #endif
     mprintf("\n");
     mprintf("    --no-mail                            Disable mail file support\n");
-    mprintf("    --no-phishing                        Disable signature-based phishing detection\n");
+    mprintf("    --no-phishing-sigs                   Disable signature-based phishing detection\n");
 #ifdef CL_EXPERIMENTAL
     mprintf("    --no-phishing-scan-urls              Disable url-based phishing detection\n");
     mprintf("    --phishing-strict-url-check          Enable phishing detection for all domains (might lead to false positives!)\n");
