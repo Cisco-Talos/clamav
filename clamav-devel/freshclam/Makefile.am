@@ -44,7 +44,9 @@ freshclam_SOURCES = \
     execute.c \
     execute.h \
     nonblock.c \
-    nonblock.h
+    nonblock.h \
+    mirman.c \
+    mirman.h
 
 DEFS = @DEFS@ -DCL_NOTHREADS
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav

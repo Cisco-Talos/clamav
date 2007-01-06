@@ -1,3 +1,7 @@
+Sat Jan  6 16:57:23 CET 2007 (tk)
+---------------------------------
+  * freshclam: initial version of mirror manager; new option --list-mirrors
+
 Fri Jan  5 14:45:29 GMT 2007 (njh)
 ----------------------------------
   * libclamav/pst.c:	Commit fix from upstream detecting Outlook tasks
