@@ -1,3 +1,7 @@
+Sun Jan  7 01:24:21 CET 2007 (tk)
+---------------------------------
+  * libclamav/unzip.c: improve handling of archives with unusual headers
+
 Sat Jan  6 17:45:49 CET 2007 (tk)
 ---------------------------------
   * clamd: s/DetectPhishing/PhishingSignatures
