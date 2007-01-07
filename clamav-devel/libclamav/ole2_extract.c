@@ -330,7 +330,7 @@ static int32_t ole2_get_next_xbat_block(int fd, ole2_header_t *hdr, int32_t curr
 		xbat_block_index--;
 	}
 
-	if (!ole2_read_block(fd, hdr, &bat, xbat[bat_blockno])) {
+	if (!ole2_read_block(fd, hdr, &bat, ole2_endian_convert_32(xbat[bat_blockno]))) {
 		return -1;
 	}
 

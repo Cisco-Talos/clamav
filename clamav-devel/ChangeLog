@@ -1,3 +1,8 @@
+Sun Jan  7 21:58:33 CET 2007 (tk)
+---------------------------------
+  * libclamav/ole2_extract: fix endian issue in ole2_get_next_xbat_block(),
+			    patch from Kei Choi <hanul93*naver.com> (bb#152)
+
 Sun Jan  7 21:48:22 CET 2007 (tk)
 ---------------------------------
   * libclamav: enable RTF extractor by default
