@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.192 2006/12/07 09:17:30 njh Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.193 2007/01/07 21:30:49 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -60,7 +60,7 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.192 2006/12/07 09:17:30 njh Exp 
 
 #define	RFC2045LENGTH	76	/* maximum number of characters on a line */
 
-#ifdef	C_LINUX	/* Others??? Old linux, e.g. Red Hat 5.2, doesn't have this */
+#ifdef	HAVE_STDBOOL_H
 #include <stdbool.h>
 #else
 #ifdef	FALSE
@@ -335,7 +335,7 @@ messageSetMimeSubtype(message *m, const char *subtype)
 	if(m->mimeSubtype)
 		free(m->mimeSubtype);
 
-	m->mimeSubtype = strdup(subtype);
+	m->mimeSubtype = cli_strdup(subtype);
 }
 
 const char *
@@ -365,7 +365,7 @@ messageSetDispositionType(message *m, const char *disptype)
 	while(*disptype && isspace((int)*disptype))
 		disptype++;
 	if(*disptype) {
-		m->mimeDispositionType = strdup(disptype);
+		m->mimeDispositionType = cli_strdup(disptype);
 		if(m->mimeDispositionType)
 			strstrip(m->mimeDispositionType);
 	} else
@@ -516,7 +516,7 @@ messageAddArguments(message *m, const char *s)
 			 * The field is in quotes, so look for the
 			 * closing quotes
 			 */
-			key = strdup(key);
+			key = cli_strdup(key);
 
 			if(key == NULL)
 				return;
@@ -539,7 +539,7 @@ messageAddArguments(message *m, const char *s)
 				continue;
 			}
 
-			data = strdup(cptr);
+			data = cli_strdup(cptr);
 
 			ptr = (data) ? strchr(data, '"') : NULL;
 			if(ptr == NULL) {
@@ -645,7 +645,7 @@ messageFindArgument(const message *m, const char *variable)
 			}
 			if((*++ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {
 				/* Remove any quote characters */
-				char *ret = strdup(++ptr);
+				char *ret = cli_strdup(++ptr);
 				char *p;
 
 				if(ret == NULL)
@@ -667,7 +667,7 @@ messageFindArgument(const message *m, const char *variable)
 				}
 				return ret;
 			}
-			return strdup(ptr);
+			return cli_strdup(ptr);
 		}
 	}
 	return NULL;
@@ -677,8 +677,9 @@ void
 messageSetEncoding(message *m, const char *enctype)
 {
 	const struct encoding_map *e;
-	int i = 0;
+	int i;
 	char *type;
+
 	assert(m != NULL);
 	assert(enctype != NULL);
 
@@ -1391,7 +1392,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			filename = (char *)lineGetData(t_line->t_line);
 
 			if((filename = strstr(filename, " name=")) != NULL) {
-				filename = strdup(&filename[6]);
+				filename = cli_strdup(&filename[6]);
 				if(filename) {
 					cli_chomp(filename);
 					strstrip(filename);
@@ -1525,7 +1526,6 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 				lineUnlink(t_line->t_line);
 				t_line->t_line = NULL;
 			}
-
 		} while((t_line = t_line->t_next) != NULL);
 
 		cli_dbgmsg("Exported %u bytes using enctype %d\n", size, enctype);
@@ -1981,7 +1981,7 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 				strcpy(base64buf, line);
 				copy = base64buf;
 			} else {
-				copy = strdup(line);
+				copy = cli_strdup(line);
 				if(copy == NULL)
 					break;
 			}
@@ -2407,7 +2407,7 @@ rfc2231(const char *in)
 
 	if(strstr(in, "*0*=") != NULL) {
 		cli_warnmsg("RFC2231 parameter continuations are not yet handled\n");
-		return strdup(in);
+		return cli_strdup(in);
 	}
 
 	ptr = strstr(in, "*0=");
@@ -2423,7 +2423,7 @@ rfc2231(const char *in)
 	}
 
 	if(ptr == NULL)	/* quick return */
-		return strdup(in);
+		return cli_strdup(in);
 
 	cli_dbgmsg("rfc2231 '%s'\n", in);
 
@@ -2493,7 +2493,7 @@ rfc2231(const char *in)
 	if(field != CONTENTS) {
 		free(ret);
 		cli_warnmsg("Invalid RFC2231 header: '%s'\n", in);
-		return strdup("");
+		return cli_strdup("");
 	}
 
 	*out = '\0';
@@ -2534,16 +2534,16 @@ simil(const char *str1, const char *str2)
 	unsigned int score = 0;
 	size_t common, total;
 	size_t len1, len2;
-	char ls1[MAX_PATTERN_SIZ], ls2[MAX_PATTERN_SIZ];
 	char *rs1 = NULL, *rs2 = NULL;
 	char *s1, *s2;
+	char ls1[MAX_PATTERN_SIZ], ls2[MAX_PATTERN_SIZ];
 
 	if(strcasecmp(str1, str2) == 0)
 		return 100;
 
-	if((s1 = strdup(str1)) == NULL)
+	if((s1 = cli_strdup(str1)) == NULL)
 		return OUT_OF_MEMORY;
-	if((s2 = strdup(str2)) == NULL) {
+	if((s2 = cli_strdup(str2)) == NULL) {
 		free(s1);
 		return OUT_OF_MEMORY;
 	}
@@ -2596,7 +2596,7 @@ simil(const char *str1, const char *str2)
 static unsigned int
 compare(char *ls1, char **rs1, char *ls2, char **rs2)
 {
-	unsigned int common, diff, maxchars = 0;
+	unsigned int common, maxchars = 0;
 	bool some_similarity = FALSE;
 	char *s1, *s2;
 	char *maxs1 = NULL, *maxs2 = NULL, *maxe1 = NULL, *maxe2 = NULL;
@@ -2628,7 +2628,7 @@ compare(char *ls1, char **rs1, char *ls2, char **rs2)
 					while(tolower(*s1) == tolower(*s2));
 
 					if(common > maxchars) {
-						diff = common - maxchars;
+						unsigned int diff = common - maxchars;
 						maxchars = common;
 						maxs1 = cs1;
 						maxs2 = cs2;
@@ -2661,7 +2661,7 @@ push(LINK1 *top, const char *string)
 
 	if((element = (LINK1)cli_malloc(sizeof(ELEMENT1))) == NULL)
 		return OUT_OF_MEMORY;
-	if((element->d1 = strdup(string)) == NULL)
+	if((element->d1 = cli_strdup(string)) == NULL)
 		return OUT_OF_MEMORY;
 	element->next = *top;
 	*top = element;

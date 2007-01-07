@@ -1,3 +1,7 @@
+Sun Jan  7 21:31:06 GMT 2007 (njh)
+----------------------------------
+  * libclamav:		Use HAVE_STDBOOL_H
+
 Sun Jan  7 21:58:33 CET 2007 (tk)
 ---------------------------------
   * libclamav/ole2_extract: fix endian issue in ole2_get_next_xbat_block(),

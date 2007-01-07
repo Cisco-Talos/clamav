@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.369 2006/12/30 17:10:08 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.370 2007/01/07 21:30:49 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -100,7 +100,7 @@ static	void	print_trace(int use_syslog);
 #define strtok_r(a,b,c)	strtok(a,b)
 #endif
 
-#ifdef	C_LINUX	/* Others??? Old linux, e.g. Red Hat 5.2, doesn't have this */
+#ifdef	HAVE_STDBOOL_H
 #include <stdbool.h>
 #else
 #ifdef	FALSE
@@ -299,6 +299,7 @@ static	int	exportBounceMessage(text *start, const mbox_ctx *ctx);
 static	message	*do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, mbox_ctx *mctx, message *messageIn, text **tptr, unsigned int recursion_level);
 static	int	count_quotes(const char *buf);
 static	bool	next_is_folded_header(const text *t);
+static	bool	newline_in_header(const char *line);
 
 static	void	checkURLs(message *m, mbox_ctx *mctx, mbox_status *rc, int is_html);
 
@@ -1654,7 +1655,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 								anyHeadersFound = usefulHeader(commandNumber, cmd);
 							continue;
 					}
-					fullline = strdup(line);
+					fullline = cli_strdup(line);
 					fulllinelength = strlen(line) + 1;
 				} else if(line != NULL) {
 					fulllinelength += strlen(line);
@@ -1735,12 +1736,10 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 					 * line of the body is in fact
 					 * the last lines of the header
 					 */
-					if(strncmp(line, "Message-Id: ", 12) == 0)
+					if(newline_in_header(line))
 						continue;
-					if(strncmp(line, "Date: ", 6) == 0)
-						continue;
+					bodyIsEmpty = FALSE;
 				}
-				bodyIsEmpty = FALSE;
 				lastBodyLineWasBlank = FALSE;
 			}
 
@@ -1810,17 +1809,17 @@ parseEmailHeaders(message *m, const table_t *rfc821)
 	ret = messageCreate();
 
 	for(t = messageGetBody(m); t; t = t->t_next) {
-		const char *buffer;
+		const char *line;
 
 		if(t->t_line)
-			buffer = lineGetData(t->t_line);
+			line = lineGetData(t->t_line);
 		else
-			buffer = NULL;
+			line = NULL;
 
 		if(inHeader) {
 			cli_dbgmsg("parseEmailHeaders: check '%s'\n",
-				buffer ? buffer : "");
-			if(buffer == NULL) {
+				line ? line : "");
+			if(line == NULL) {
 				/*
 				 * A blank line signifies the end of
 				 * the header and the start of the text
@@ -1841,15 +1840,15 @@ parseEmailHeaders(message *m, const table_t *rfc821)
 					/*
 					 * Continuation of line we're ignoring?
 					 */
-					if(isblank(buffer[0]))
+					if(isblank(line[0]))
 						continue;
 
 					/*
 					 * Is this a header we're interested in?
 					 */
-					if((strchr(buffer, ':') == NULL) ||
-					   (cli_strtokbuf(buffer, 0, ":", cmd) == NULL)) {
-						if(strncmp(buffer, "From ", 5) == 0)
+					if((strchr(line, ':') == NULL) ||
+					   (cli_strtokbuf(line, 0, ":", cmd) == NULL)) {
+						if(strncmp(line, "From ", 5) == 0)
 							anyHeadersFound = TRUE;
 						continue;
 					}
@@ -1870,15 +1869,15 @@ parseEmailHeaders(message *m, const table_t *rfc821)
 								anyHeadersFound = usefulHeader(commandNumber, cmd);
 							continue;
 					}
-					fullline = strdup(buffer);
-					fulllinelength = strlen(buffer) + 1;
-				} else if(buffer) {
-					fulllinelength += strlen(buffer);
+					fullline = cli_strdup(line);
+					fulllinelength = strlen(line) + 1;
+				} else if(line) {
+					fulllinelength += strlen(line);
 					ptr = cli_realloc(fullline, fulllinelength);
 					if(ptr == NULL)
 						continue;
 					fullline = ptr;
-					strcat(fullline, buffer);
+					strcat(fullline, line);
 				}
 
 				assert(fullline != NULL);
@@ -1904,25 +1903,22 @@ parseEmailHeaders(message *m, const table_t *rfc821)
 			}
 		} else {
 			if(bodyIsEmpty) {
-				if(buffer == NULL)
+				if(line == NULL)
 					/* throw away leading blank lines */
 					continue;
-				cli_dbgmsg("bodyIsEmpty, check \"%s\"\n", buffer);
 				/*
 				 * Broken message: new line in the
 				 * middle of the headers, so the first
 				 * line of the body is in fact
 				 * the last lines of the header
 				 */
-				if(strncmp(buffer, "Message-Id: ", 12) == 0)
-					continue;
-				if(strncmp(buffer, "Date: ", 6) == 0)
+				if(newline_in_header(line))
 					continue;
 				bodyIsEmpty = FALSE;
 			}
 			/*if(t->t_line && isuuencodebegin(t->t_line))
 				puts("FIXME: add fast visa here");*/
-			/*cli_dbgmsg("Add line to body '%s'\n", buffer);*/
+			/*cli_dbgmsg("Add line to body '%s'\n", line);*/
 			if(messageAddLine(ret, t->t_line) < 0)
 				break;
 		}
@@ -1986,7 +1982,7 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 	copy = rfc2047(line);
 	if(copy == NULL)
 		/* an RFC checker would return -1 here */
-		copy = strdup(line);
+		copy = cli_strdup(line);
 
 	tokenseparater[0] = *separater;
 	tokenseparater[1] = '\0';
@@ -2415,7 +2411,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
 						fullline = rfc822comments(line, NULL);
 						if(fullline == NULL)
-							fullline = strdup(line);
+							fullline = cli_strdup(line);
 
 						/*quotes = count_quotes(fullline);*/
 
@@ -3566,7 +3562,7 @@ rfc2047(const char *in)
 	size_t len;
 
 	if((strstr(in, "=?") == NULL) || (strstr(in, "?=") == NULL))
-		return strdup(in);
+		return cli_strdup(in);
 
 	cli_dbgmsg("rfc2047 '%s'\n", in);
 	out = cli_malloc(strlen(in) + 1);
@@ -3610,7 +3606,7 @@ rfc2047(const char *in)
 		if(*++in == '\0')
 			break;
 
-		enctext = strdup(in);
+		enctext = cli_strdup(in);
 		if(enctext == NULL) {
 			free(out);
 			out = NULL;
@@ -4010,11 +4006,11 @@ do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs)
 
 #ifdef	CL_THREAD_SAFE
 			args[n].dir = dir;
-			args[n].url = strdup(url);
-			args[n].filename = strdup(name);
+			args[n].url = cli_strdup(url);
+			args[n].filename = cli_strdup(name);
 			pthread_create(&tid[n], NULL, getURL, &args[n]);
 #else
-			arg.url = strdup(url);
+			arg.url = cli_strdup(url);
 			arg.dir = dir;
 			arg.filename = name;
 			getURL(&arg);
@@ -4156,7 +4152,7 @@ checkURLs(message *m, mbox_ctx *mctx, mbox_status *rc, int is_html)
 			}
 			args[n].dir = mctx->dir;
 			args[n].url = url;
-			args[n].filename = strdup(name);
+			args[n].filename = cli_strdup(name);
 			pthread_create(&tid[n], NULL, getURL, &args[n]);
 #else
 			/* easy isn't the word I'd use... */
@@ -4543,7 +4539,7 @@ getURL(struct arg *arg)
 						while(*end && (*end != '\n'))
 							end++;
 						*end = '\0';
-						arg->url = strdup(location);
+						arg->url = cli_strdup(location);
 						cli_dbgmsg("Redirecting to %s\n", arg->url);
 						return getURL(arg);
 					}
@@ -5465,5 +5461,23 @@ next_is_folded_header(const text *t)
 			default:
 				return FALSE;
 		}
+	return FALSE;
+}
+
+/*
+ * This routine is called on the first line of the body of
+ * an email to handle broken messages that have newlines
+ * in the middle of its headers
+ */
+static bool
+newline_in_header(const char *line)
+{
+	cli_dbgmsg("newline_in_header, check \"%s\"\n", line);
+
+	if(strncmp(line, "Message-Id: ", 12) == 0)
+		return TRUE;
+	if(strncmp(line, "Date: ", 6) == 0)
+		return TRUE;
+
 	return FALSE;
 }
