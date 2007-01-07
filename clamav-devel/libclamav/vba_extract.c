@@ -110,7 +110,7 @@ static char *get_unicode_name(char *name, int size, int is_mac)
                 return NULL;
         }
 
-        newname = (char *) cli_malloc(size*4);
+        newname = (char *) cli_malloc(size*7);
         if (!newname) {
                 return NULL;
         }
@@ -123,6 +123,15 @@ static char *get_unicode_name(char *name, int size, int is_mac)
                                 newname[j++] = '_';
                                 newname[j++] = name[i] + '0';
                         }
+			else {
+				const uint16_t x = (((uint16_t)name[i]) << 8) | name[i+1];
+				newname[j++] = '_';
+				newname[j++] = 'a'+((x&0xF));
+				newname[j++] = 'a'+((x>>4)&0xF);
+				newname[j++] = 'a'+((x>>8)&0xF);
+				newname[j++] = 'a'+((x>>16)&0xF);
+				newname[j++] = 'a'+((x>>24)&0xF);
+			}
                         newname[j++] = '_';
                 }
         }
