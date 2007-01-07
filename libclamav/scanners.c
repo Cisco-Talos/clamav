@@ -79,10 +79,7 @@ extern short cli_leavetemps_flag;
 #include "str.h"
 #include "mspack.h"
 #include "cab.h"
-
-#ifdef CL_EXPERIMENTAL
 #include "rtf.h"
-#endif
 
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>
@@ -1772,11 +1769,9 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 		ret = cli_scanhtml_utf16(desc, ctx);
 	    break;
 
-#ifdef CL_EXPERIMENTAL
 	case CL_TYPE_RTF:
 	    ret = cli_scanrtf(desc, ctx);
 	    break;
-#endif
 
 	case CL_TYPE_MAIL:
 	    if(SCAN_MAIL)

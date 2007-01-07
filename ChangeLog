@@ -1,3 +1,7 @@
+Sun Jan  7 21:48:22 CET 2007 (tk)
+---------------------------------
+  * libclamav: enable RTF extractor by default
+
 Sun Jan  7 21:38:01 CET 2007 (tk)
 ---------------------------------
   * libclamav: avoid unicode name collisions when scanning OLE2 containers,

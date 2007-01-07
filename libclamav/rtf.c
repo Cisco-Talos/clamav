@@ -21,8 +21,6 @@
 #include "clamav-config.h"
 #endif
 
-#ifdef CL_EXPERIMENTAL
-
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
@@ -665,5 +663,3 @@ int cli_scanrtf(int desc, cli_ctx *ctx)
 	SCAN_CLEANUP;
 	return ret;
 }
-
-#endif
