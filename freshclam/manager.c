@@ -573,6 +573,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
        !strstr(buffer, "HTTP/1.1 206") && !strstr(buffer, "HTTP/1.0 206")) {
 	logg("!getfile: Unknown response from remote server (IP: %s)\n", ipaddr);
 	mirman_update(mdat->currip, mdat, 1);
+	close(sd);
 	return 58;
     }
 
