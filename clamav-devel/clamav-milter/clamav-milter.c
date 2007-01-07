@@ -24,9 +24,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.307 2006/12/30 12:01:23 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.308 2007/01/07 16:45:59 njh Exp $";
 
-#define	CM_VERSION	"devel-301206"
+#define	CM_VERSION	"devel-070107"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1577,8 +1577,8 @@ main(int argc, char **argv)
 		tmpdir = NULL;
 
 	if(report) {
-		if(!cfgopt(copt, "DetectPhishing")->enabled) {
-			fprintf(stderr, "%s: You have chosen --report, but DetectPhishing is off in %s\n",
+		if(!cfgopt(copt, "PhishingSignatures")->enabled) {
+			fprintf(stderr, "%s: You have chosen --report, but PhishingSignatures is off in %s\n",
 				argv[0], cfgfile);
 			return EX_USAGE;
 		}
@@ -5356,7 +5356,7 @@ loadDatabase(void)
 	signatures = 0;
 	newroot = NULL;
 
-	if(!cfgopt(copt, "DetectPhishing")->enabled) {
+	if(!cfgopt(copt, "PhishingSignatures")->enabled) {
 		logg("Not loading phishing signatures.\n");
 		dboptions = 0;
 	} else
