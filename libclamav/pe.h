@@ -26,6 +26,7 @@
 #include "clamav.h"
 #include "execs.h"
 #include "others.h"
+#include "cltypes.h"
 
 struct pe_image_file_hdr {
     uint32_t Magic;
