@@ -196,7 +196,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	if(DETECT_ENCRYPTED && metadata->encrypted) {
 	    cli_dbgmsg("RAR: Encrypted files found in archive.\n");
 	    lseek(desc, 0, SEEK_SET);
-	    ret = cli_scandesc(desc, ctx, 0, 0, NULL);
+	    ret = cli_scandesc(desc, ctx, 0, 0, 0, NULL);
 	    if(ret < 0) {
 		break;
 	    } else if(ret != CL_VIRUS) {
@@ -400,7 +400,7 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	if(DETECT_ENCRYPTED && encrypted) {
 	    cli_dbgmsg("Zip: Encrypted files found in archive.\n");
 	    lseek(desc, 0, SEEK_SET);
-	    ret = cli_scandesc(desc, ctx, 0, 0, NULL);
+	    ret = cli_scandesc(desc, ctx, 0, 0, 0, NULL);
 	    if(ret < 0) {
 		break;
 	    } else if(ret != CL_VIRUS) {
@@ -1026,7 +1026,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
     if (fd >= 0) {
     	ofd = cli_decode_ole_object(fd, dirname);
 	if (ofd >= 0) {
-		ret = cli_scandesc(ofd, ctx, 0, 0, NULL);
+		ret = cli_scandesc(ofd, ctx, 0, 0, 0, NULL);
 		close(ofd);
 	}
 	close(fd);
@@ -1092,7 +1092,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
     snprintf(fullname, 1024, "%s/comment.html", tempname);
     fd = open(fullname, O_RDONLY|O_BINARY);
     if (fd >= 0) {
-        ret = cli_scandesc(fd, ctx, 0, CL_TYPE_HTML, NULL);
+        ret = cli_scandesc(fd, ctx, 0, CL_TYPE_HTML, 0, NULL);
 	close(fd);
     }
 
@@ -1107,7 +1107,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
 	snprintf(fullname, 1024, "%s/nocomment.html", tempname);
 	fd = open(fullname, O_RDONLY|O_BINARY);
 	if (fd >= 0) {
-	    ret = cli_scandesc(fd, ctx, 0, CL_TYPE_HTML, NULL);
+	    ret = cli_scandesc(fd, ctx, 0, CL_TYPE_HTML, 0, NULL);
 	    close(fd);
 	}
     }
@@ -1123,7 +1123,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
 	snprintf(fullname, 1024, "%s/script.html", tempname);
 	fd = open(fullname, O_RDONLY|O_BINARY);
 	if (fd >= 0) {
-	    ret = cli_scandesc(fd, ctx, 0, CL_TYPE_HTML, NULL);
+	    ret = cli_scandesc(fd, ctx, 0, CL_TYPE_HTML, 0, NULL);
 	    close(fd);
 	}
     }
@@ -1597,7 +1597,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 	return CL_EIO;
     }
 
-    if((ret = cli_scandesc(desc, ctx, ftrec, type, &ftoffset)) == CL_VIRUS) {
+    if((ret = cli_scandesc(desc, ctx, ftrec, type, 0, &ftoffset)) == CL_VIRUS) {
 	cli_dbgmsg("%s found in descriptor %d.\n", *ctx->virname, desc);
 	return CL_VIRUS;
 
@@ -1606,6 +1606,11 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 
     } else if(ret >= CL_TYPENO) {
 	lseek(desc, 0, SEEK_SET);
+
+	if((nret = cli_scandesc(desc, ctx, 0, ret, 1, NULL)) == CL_VIRUS) {
+	    cli_dbgmsg("%s found in descriptor %d when scanning file type %u\n", *ctx->virname, desc, ret);
+	    return CL_VIRUS;
+	}
 
 	ret == CL_TYPE_MAIL ? ctx->mrec++ : ctx->arec++;
 	switch(ret) {
@@ -1692,7 +1697,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
     if(!ctx->options) { /* raw mode (stdin, etc.) */
 	cli_dbgmsg("Raw mode: No support for special files\n");
-	if((ret = cli_scandesc(desc, ctx, 0, 0, NULL)) == CL_VIRUS)
+	if((ret = cli_scandesc(desc, ctx, 0, 0, 0, NULL)) == CL_VIRUS)
 	    cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, desc);
 	return ret;
     }

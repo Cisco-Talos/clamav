@@ -46,11 +46,11 @@
 #include "matcher-ncore.h"
 #endif
 
-static unsigned int targettab[CL_TARGET_TABLE_SIZE] = { 0, CL_TYPE_MSEXE, CL_TYPE_MSOLE2, CL_TYPE_HTML, CL_TYPE_MAIL, CL_TYPE_GRAPHICS, CL_TYPE_ELF };
+static cli_file_t targettab[CL_TARGET_TABLE_SIZE] = { 0, CL_TYPE_MSEXE, CL_TYPE_MSOLE2, CL_TYPE_HTML, CL_TYPE_MAIL, CL_TYPE_GRAPHICS, CL_TYPE_ELF };
 
 extern short cli_debug_flag;
 
-int cli_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cl_engine *engine, unsigned short ftype)
+int cli_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cl_engine *engine, cli_file_t ftype)
 {
 	int ret = CL_CLEAN, i;
 	struct cli_ac_data mdata;
@@ -121,7 +121,7 @@ struct cli_md5_node *cli_vermd5(const unsigned char *md5, const struct cl_engine
     return NULL;
 }
 
-off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, unsigned short ftype, int *ret)
+off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, cli_file_t ftype, int *ret)
 {
 	int (*einfo)(int, struct cli_exe_info *) = NULL;
 	unsigned int n;
@@ -252,7 +252,7 @@ static int cli_checkfp(int fd, const struct cl_engine *engine)
     return 0;
 }
 
-int cli_validatesig(unsigned short ftype, const char *offstr, off_t fileoff, struct cli_target_info *info, int desc, const char *virname)
+int cli_validatesig(cli_file_t ftype, const char *offstr, off_t fileoff, struct cli_target_info *info, int desc, const char *virname)
 {
 	off_t offset;
 	int ret;
@@ -275,7 +275,7 @@ int cli_validatesig(unsigned short ftype, const char *offstr, off_t fileoff, str
     return 1;
 }
 
-int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short ftype, struct cli_matched_type **ftoffset)
+int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, cli_file_t ftype, unsigned short ftonly, struct cli_matched_type **ftoffset)
 {
  	unsigned char *buffer, *buff, *endbl, *upt;
 	int ret = CL_CLEAN, type = CL_CLEAN, i, bytes;
@@ -285,7 +285,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	MD5_CTX md5ctx;
 	unsigned char digest[16];
 	struct cli_md5_node *md5_node;
-	struct cli_matcher *groot, *troot = NULL;
+	struct cli_matcher *groot = NULL, *troot = NULL;
 
 
     if(!ctx->engine) {
@@ -303,7 +303,8 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
     }
 #endif
 
-    groot = ctx->engine->root[0]; /* generic signatures */
+    if(!ftonly)
+	groot = ctx->engine->root[0]; /* generic signatures */
 
     if(ftype) {
 	for(i = 1; i < CL_TARGET_TABLE_SIZE; i++) {
@@ -314,10 +315,17 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	}
     }
 
-    if(troot)
-	maxpatlen = MAX(troot->maxpatlen, groot->maxpatlen);
-    else
-	maxpatlen = groot->maxpatlen;
+    if(ftonly) {
+	if(!troot)
+	    return CL_CLEAN;
+
+	maxpatlen = troot->maxpatlen;
+    } else {
+	if(troot)
+	    maxpatlen = MAX(troot->maxpatlen, groot->maxpatlen);
+	else
+	    maxpatlen = groot->maxpatlen;
+    }
 
     /* prepare the buffer */
     buffersize = maxpatlen + SCANBUFF;
@@ -326,7 +334,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	return CL_EMEM;
     }
 
-    if((ret = cli_ac_initdata(&gdata, groot->ac_partsigs, AC_DEFAULT_TRACKLEN)))
+    if(!ftonly && (ret = cli_ac_initdata(&gdata, groot->ac_partsigs, AC_DEFAULT_TRACKLEN)))
 	return ret;
 
     if(troot) {
@@ -334,9 +342,8 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	    return ret;
     }
 
-    if(ctx->engine->md5_hlist)
+    if(!ftonly && ctx->engine->md5_hlist)
 	MD5_Init(&md5ctx);
-
 
     buff = buffer;
     buff += maxpatlen; /* pointer to read data block */
@@ -360,7 +367,8 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 
 	    if(ret == CL_VIRUS) {
 		free(buffer);
-		cli_ac_freedata(&gdata);
+		if(!ftonly)
+		    cli_ac_freedata(&gdata);
 		cli_ac_freedata(&tdata);
 
 		lseek(desc, 0, SEEK_SET);
@@ -371,27 +379,29 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
 	    }
 	}
 
-	if(groot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, groot, offset, ftype, desc)) != CL_VIRUS)
-	    ret = cli_ac_scanbuff(upt, length, ctx->virname, groot, &gdata, otfrec, offset, ftype, desc, ftoffset);
+	if(!ftonly) {
+	    if(groot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, groot, offset, ftype, desc)) != CL_VIRUS)
+		ret = cli_ac_scanbuff(upt, length, ctx->virname, groot, &gdata, otfrec, offset, ftype, desc, ftoffset);
 
-	if(ret == CL_VIRUS) {
-	    free(buffer);
-	    cli_ac_freedata(&gdata);
-	    if(troot)
-		cli_ac_freedata(&tdata);
-	    lseek(desc, 0, SEEK_SET);
-	    if(cli_checkfp(desc, ctx->engine))
-		return CL_CLEAN;
-	    else
-		return CL_VIRUS;
+	    if(ret == CL_VIRUS) {
+		free(buffer);
+		cli_ac_freedata(&gdata);
+		if(troot)
+		    cli_ac_freedata(&tdata);
+		lseek(desc, 0, SEEK_SET);
+		if(cli_checkfp(desc, ctx->engine))
+		    return CL_CLEAN;
+		else
+		    return CL_VIRUS;
 
-	} else if(otfrec && ret >= CL_TYPENO) {
-	    if(ret > type)
-		type = ret;
+	    } else if(otfrec && ret >= CL_TYPENO) {
+		if(ret > type)
+		    type = ret;
+	    }
+
+	    if(ctx->engine->md5_hlist)
+		MD5_Update(&md5ctx, buff + shift, bytes);
 	}
-
-	if(ctx->engine->md5_hlist)
-	    MD5_Update(&md5ctx, buff + shift, bytes);
 
 	if(bytes + shift == SCANBUFF) {
 	    memmove(buffer, endbl, maxpatlen);
@@ -411,11 +421,12 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short f
     }
 
     free(buffer);
-    cli_ac_freedata(&gdata);
+    if(!ftonly)
+	cli_ac_freedata(&gdata);
     if(troot)
 	cli_ac_freedata(&tdata);
 
-    if(ctx->engine->md5_hlist) {
+    if(!ftonly && ctx->engine->md5_hlist) {
 	MD5_Final(digest, &md5ctx);
 
 	if((md5_node = cli_vermd5(digest, ctx->engine)) && !md5_node->fp) {

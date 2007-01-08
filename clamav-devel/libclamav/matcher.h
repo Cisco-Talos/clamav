@@ -37,14 +37,14 @@ struct cli_target_info {
     int8_t status; /* 0 == not initialised, 1 == initialised OK, -1 == error */
 };
 
-int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, unsigned short ftype, struct cli_matched_type **ftoffset);
+int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, cli_file_t ftype, unsigned short ftonly, struct cli_matched_type **ftoffset);
 
-int cli_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cl_engine *engine, unsigned short ftype);
+int cli_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cl_engine *engine, cli_file_t ftype);
 
-int cli_validatesig(unsigned short ftype, const char *offstr, off_t fileoff, struct cli_target_info *info, int desc, const char *virname);
+int cli_validatesig(cli_file_t ftype, const char *offstr, off_t fileoff, struct cli_target_info *info, int desc, const char *virname);
 
 struct cli_md5_node *cli_vermd5(const unsigned char *md5, const struct cl_engine *engine);
 
-off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, unsigned short ftype, int *ret);
+off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, cli_file_t ftype, int *ret);
 
 #endif

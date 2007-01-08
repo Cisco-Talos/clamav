@@ -23,6 +23,7 @@
 #include "cltypes.h"
 #include "matcher.h"
 #include "matcher-bm.h"
+#include "filetypes.h"
 
 /* TODO: Check prefix regularity and automatically transfer some signatures
  *	 to AC
@@ -128,7 +129,7 @@ void cli_bm_free(struct cli_matcher *root)
     }
 }
 
-int cli_bm_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cli_matcher *root, unsigned long int offset, unsigned short ftype, int fd)
+int cli_bm_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cli_matcher *root, unsigned long int offset, cli_file_t ftype, int fd)
 {
 	unsigned int i, j, shift, off, found = 0;
 	int idxtest;

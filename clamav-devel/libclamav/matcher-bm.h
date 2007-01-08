@@ -23,10 +23,11 @@
 #include "clamav.h"
 #include "matcher.h"
 #include "matcher-bm.h"
+#include "filetypes.h"
 
 int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern);
 int cli_bm_init(struct cli_matcher *root);
-int cli_bm_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cli_matcher *root, unsigned long int offset, unsigned short ftype, int fd);
+int cli_bm_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cli_matcher *root, unsigned long int offset, cli_file_t ftype, int fd);
 void cli_bm_free(struct cli_matcher *root);
 
 #endif

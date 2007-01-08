@@ -404,11 +404,11 @@ void cli_ac_freedata(struct cli_ac_data *data)
     }
 }
 
-int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cli_matcher *root, struct cli_ac_data *mdata, unsigned short otfrec, unsigned long int offset, unsigned short ftype, int fd, struct cli_matched_type **ftoffset)
+int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cli_matcher *root, struct cli_ac_data *mdata, unsigned short otfrec, unsigned long int offset, cli_file_t ftype, int fd, struct cli_matched_type **ftoffset)
 {
 	struct cli_ac_node *current;
 	struct cli_ac_patt *pt;
-	int type = CL_CLEAN, t, j;
+	int type = CL_CLEAN, j;
         unsigned int i, position, curroff;
 	uint8_t offnum, found;
 	struct cli_matched_type *tnode;
@@ -438,12 +438,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char
 		    curroff = offset + position - pt->prefix_length;
 
 		    if((pt->offset || pt->target) && (!pt->sigid || pt->partno == 1)) {
-			if(ftype == CL_TYPE_UNKNOWN_TEXT)
-			    t = type;
-			else
-			    t = ftype;
-
-			if((fd == -1 && !t) || !cli_validatesig(t, pt->offset, curroff, &info, fd, pt->virname)) {
+			if((fd == -1 && !ftype) || !cli_validatesig(ftype, pt->offset, curroff, &info, fd, pt->virname)) {
 			    pt = pt->next;
 			    continue;
 			}
