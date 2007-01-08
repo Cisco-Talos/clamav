@@ -1,3 +1,7 @@
+Mon Jan  8 22:41:21 CET 2007 (tk)
+---------------------------------
+  * libclamav/pe.h: add missing cltypes.h
+
 Mon Jan  8 20:43:14 CET 2007 (tk)
 ---------------------------------
   * libclamav: improve scanning of files whose types are detected on-the-fly
