@@ -52,8 +52,14 @@
 
 extern short cli_leavetemps_flag;
 
+#define DCONF_ARCH  ctx->dconf->archive
+#define DCONF_DOC   ctx->dconf->doc
+#define DCONF_MAIL  ctx->dconf->mail
+#define DCONF_OTHER ctx->dconf->other
+
 #include "clamav.h"
 #include "others.h"
+#include "dconf.h"
 #include "scanners.h"
 #include "matcher-ac.h"
 #include "matcher-bm.h"
@@ -1615,13 +1621,13 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 	ret == CL_TYPE_MAIL ? ctx->mrec++ : ctx->arec++;
 	switch(ret) {
 	    case CL_TYPE_HTML:
-		if(SCAN_HTML && type == CL_TYPE_UNKNOWN_TEXT)
+		if(SCAN_HTML && type == CL_TYPE_UNKNOWN_TEXT && (DCONF_DOC & DOC_CONF_HTML))
 		    if((nret = cli_scanhtml(desc, ctx)) == CL_VIRUS)
 			return CL_VIRUS;
 		break;
 
 	    case CL_TYPE_MAIL:
-		if(SCAN_MAIL && type == CL_TYPE_UNKNOWN_TEXT)
+		if(SCAN_MAIL && type == CL_TYPE_UNKNOWN_TEXT && (DCONF_MAIL & MAIL_CONF_MBOX))
 		    if((nret = cli_scanmail(desc, ctx)) == CL_VIRUS)
 			return CL_VIRUS;
 		break;
@@ -1634,15 +1640,15 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 			lastzip = lastrar = 0xdeadbeef;
 			fpt = ftoffset;
 			while(fpt) {
-			    if(fpt->type == CL_TYPE_RARSFX) {
+			    if(fpt->type == CL_TYPE_RARSFX && (DCONF_ARCH & ARCH_CONF_RAR)) {
 				cli_dbgmsg("RAR-SFX signature found at %d\n", fpt->offset);
 				if((nret = cli_scanrar(desc, ctx, fpt->offset, &lastrar)) == CL_VIRUS)
 				    break;
-			    } else if(fpt->type == CL_TYPE_ZIPSFX) {
+			    } else if(fpt->type == CL_TYPE_ZIPSFX && (DCONF_ARCH & ARCH_CONF_ZIP)) {
 				cli_dbgmsg("ZIP-SFX signature found at %d\n", fpt->offset);
 				if((nret = cli_scanzip(desc, ctx, fpt->offset, &lastzip)) == CL_VIRUS)
 				    break;
-			    } else if(fpt->type == CL_TYPE_CABSFX) {
+			    } else if(fpt->type == CL_TYPE_CABSFX && (DCONF_ARCH & ARCH_CONF_CAB)) {
 				cli_dbgmsg("CAB-SFX signature found at %d\n", fpt->offset);
 				if((nret = cli_scanmscab(desc, ctx, fpt->offset)) == CL_VIRUS)
 				    break;
@@ -1733,124 +1739,129 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
     switch(type) {
 	case CL_TYPE_RAR:
-	    if(SCAN_ARCHIVE)
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR))
 		ret = cli_scanrar(desc, ctx, 0, NULL);
 	    break;
 
 	case CL_TYPE_ZIP:
-	    if(SCAN_ARCHIVE)
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP))
 		ret = cli_scanzip(desc, ctx, 0, NULL);
 	    break;
 
 	case CL_TYPE_GZ:
-	    if(SCAN_ARCHIVE)
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_GZ))
 		ret = cli_scangzip(desc, ctx);
 	    break;
 
 	case CL_TYPE_BZ:
 #ifdef HAVE_BZLIB_H
-	    if(SCAN_ARCHIVE)
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_BZ))
 		ret = cli_scanbzip(desc, ctx);
 #endif
 	    break;
 
 	case CL_TYPE_MSSZDD:
-	    if(SCAN_ARCHIVE)
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_SZDD))
 		ret = cli_scanszdd(desc, ctx);
 	    break;
 
 	case CL_TYPE_MSCAB:
-	    if(SCAN_ARCHIVE)
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CAB))
 		ret = cli_scanmscab(desc, ctx, 0);
 	    break;
 
 	case CL_TYPE_HTML:
-	    if(SCAN_HTML)
+	    if(SCAN_HTML && (DCONF_DOC & DOC_CONF_HTML))
 		ret = cli_scanhtml(desc, ctx);
 	    break;
 
 	case CL_TYPE_HTML_UTF16:
-	    if(SCAN_HTML)
+	    if(SCAN_HTML && (DCONF_DOC & DOC_CONF_HTML))
 		ret = cli_scanhtml_utf16(desc, ctx);
 	    break;
 
 	case CL_TYPE_RTF:
-	    ret = cli_scanrtf(desc, ctx);
+	    if(DCONF_DOC & DOC_CONF_RTF)
+		ret = cli_scanrtf(desc, ctx);
 	    break;
 
 	case CL_TYPE_MAIL:
-	    if(SCAN_MAIL)
+	    if(SCAN_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX))
 		ret = cli_scanmail(desc, ctx);
 	    break;
 
 	case CL_TYPE_TNEF:
-	    if(SCAN_MAIL)
+	    if(SCAN_MAIL && (DCONF_MAIL & MAIL_CONF_TNEF))
 		ret = cli_scantnef(desc, ctx);
 	    break;
 
 	case CL_TYPE_UUENCODED:
+	    if(DCONF_OTHER & OTHER_CONF_UUENC)
 		ret = cli_scanuuencoded(desc, ctx);
 	    break;
 
 	case CL_TYPE_PST:
-	    if(SCAN_MAIL)
+	    if(SCAN_MAIL && (DCONF_MAIL & MAIL_CONF_PST))
 		ret = cli_scanpst(desc, ctx);
 	    break;
 
 	case CL_TYPE_MSCHM:
-	    if(SCAN_ARCHIVE)
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CHM))
 		ret = cli_scanmschm(desc, ctx);
 	    break;
 
 	case CL_TYPE_MSOLE2:
-	    if(SCAN_OLE2)
+	    if(SCAN_OLE2 && (DCONF_ARCH & ARCH_CONF_OLE2))
 		ret = cli_scanole2(desc, ctx);
 	    break;
 
 	case CL_TYPE_POSIX_TAR:
-	    if(SCAN_ARCHIVE)
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_TAR))
 		ret = cli_scantar(desc, ctx, 1);
 	    break;
 
 	case CL_TYPE_OLD_TAR:
-	    if(SCAN_ARCHIVE)
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_TAR))
 		ret = cli_scantar(desc, ctx, 0);
 	    break;
 
 	case CL_TYPE_BINHEX:
-	    if(SCAN_ARCHIVE)
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_BINHEX))
 		ret = cli_scanbinhex(desc, ctx);
 	    break;
 
 	case CL_TYPE_SCRENC:
-	    ret = cli_scanscrenc(desc, ctx);
+	    if(DCONF_OTHER & OTHER_CONF_SCRENC)
+		ret = cli_scanscrenc(desc, ctx);
 	    break;
 
 	case CL_TYPE_RIFF:
-	    if(SCAN_ALGO)
+	    if(SCAN_ALGO && (DCONF_OTHER & OTHER_CONF_RIFF))
 		ret = cli_scanriff(desc, ctx->virname);
 	    break;
 
 	case CL_TYPE_GRAPHICS:
-	    if(SCAN_ALGO)
+	    if(SCAN_ALGO && (DCONF_OTHER & OTHER_CONF_JPEG))
 		ret = cli_scanjpeg(desc, ctx->virname);
 	    break;
 
 	case CL_TYPE_PDF:
-	    if(SCAN_ARCHIVE)    /* you may wish to change this line */
+	    if(SCAN_ARCHIVE && (DCONF_DOC & DOC_CONF_PDF))    /* you may wish to change this line */
 		ret = cli_scanpdf(desc, ctx);
 	    break;
 
 	case CL_TYPE_CRYPTFF:
-	    ret = cli_scancryptff(desc, ctx);
+	    if(DCONF_OTHER & OTHER_CONF_CRYPTFF)
+		ret = cli_scancryptff(desc, ctx);
 	    break;
 
 	case CL_TYPE_ELF:
-	    if(SCAN_ELF)
+	    if(SCAN_ELF && ctx->dconf->elf)
 		ret = cli_scanelf(desc, ctx);
 	    break;
 
 	case CL_TYPE_SIS:
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_SIS))
 		ret = cli_scansis(desc, ctx);
 	    break;
 
@@ -1911,6 +1922,7 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     ctx.limits = limits;
     ctx.scanned = scanned;
     ctx.options = options;
+    ctx.dconf = (struct cli_dconf *) engine->dconf;
 
     return cli_magic_scandesc(desc, &ctx);
 }

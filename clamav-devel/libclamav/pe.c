@@ -54,6 +54,8 @@
 #define	O_BINARY	0
 #endif
 
+#define DCONF ctx->dconf->pe
+
 #define IMAGE_DOS_SIGNATURE	    0x5a4d	    /* MZ */
 #define IMAGE_DOS_SIGNATURE_OLD	    0x4d5a          /* ZM */
 #define IMAGE_NT_SIGNATURE	    0x00004550
@@ -692,7 +694,11 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    }
 	    
 	    /* check MD5 section sigs */
-	    md5_sect = ctx->engine->md5_sect;
+	    if(DCONF & PE_CONF_MD5SECT)
+		md5_sect = ctx->engine->md5_sect;
+	    else
+		md5_sect = NULL;
+
 	    while(md5_sect && md5_sect->size < exe_sections[i].rsz)
 	        md5_sect = md5_sect->next;
 
@@ -741,7 +747,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	        max = exe_sections[i].rva + exe_sections[i].rsz;
 	}
 
-	if(SCAN_ALGO && !strlen(sname)) {
+	if(SCAN_ALGO && (DCONF & PE_CONF_POLIPOS) && !strlen(sname)) {
 	    if(exe_sections[i].vsz > 40000 && exe_sections[i].vsz < 70000) {
 		if(EC32(section_hdr[i].Characteristics) == 0xe0000060) {
 		    polipos = i;
@@ -774,7 +780,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     /* Attempt to detect some popular polymorphic viruses */
 
     /* W32.Parite.B */
-    if(SCAN_ALGO && !dll && ep == exe_sections[nsections - 1].raw) {
+    if(SCAN_ALGO && (DCONF & PE_CONF_PARITE) && !dll && ep == exe_sections[nsections - 1].raw) {
 	lseek(desc, ep, SEEK_SET);
 	if(cli_readn(desc, buff, 4096) == 4096) {
 		const char *pt = cli_memstr(buff, 4040, "\x47\x65\x74\x50\x72\x6f\x63\x41\x64\x64\x72\x65\x73\x73\x00", 15);
@@ -793,7 +799,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     }
 
     /* Kriz */
-    if(SCAN_ALGO && CLI_ISCONTAINED(exe_sections[nsections - 1].raw, exe_sections[nsections - 1].rsz, ep, 0x0fd2)) {
+    if(SCAN_ALGO && (DCONF & PE_CONF_KRIZ) && CLI_ISCONTAINED(exe_sections[nsections - 1].raw, exe_sections[nsections - 1].rsz, ep, 0x0fd2)) {
 	cli_dbgmsg("in kriz\n");
 	lseek(desc, ep, SEEK_SET);
 	if(cli_readn(desc, buff, 200) == 200) {
@@ -855,7 +861,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     }
 
     /* W32.Magistr.A/B */
-    if(SCAN_ALGO && !dll && (EC32(section_hdr[nsections - 1].Characteristics) & 0x80000000)) {
+    if(SCAN_ALGO && (DCONF & PE_CONF_MAGISTR) && !dll && (EC32(section_hdr[nsections - 1].Characteristics) & 0x80000000)) {
 	    uint32_t rsize, vsize, dam = 0;
 
 	vsize = exe_sections[nsections - 1].uvsz;
@@ -986,11 +992,9 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
     }
 
-
-#ifdef CL_EXPERIMENTAL
     /* SUE */
     
-    if(nsections > 2 && vep == exe_sections[nsections - 1].rva && exe_sections[nsections - 1].rsz > 0x350 && exe_sections[nsections - 1].rsz < 0x292+0x350+1000) {
+    if((DCONF & PE_CONF_SUE) && nsections > 2 && vep == exe_sections[nsections - 1].rva && exe_sections[nsections - 1].rsz > 0x350 && exe_sections[nsections - 1].rsz < 0x292+0x350+1000) {
   
       
       char *sue=buff+0x74;
@@ -1066,17 +1070,18 @@ int cli_scanpe(int desc, cli_ctx *ctx)
       }
 
     }
-#endif
 
     /* UPX & FSG support */
 
     /* try to find the first section with physical size == 0 */
     found = 0;
-    for(i = 0; i < (unsigned int) nsections - 1; i++) {
-	if(!section_hdr[i].SizeOfRawData && section_hdr[i].VirtualSize && section_hdr[i + 1].SizeOfRawData && section_hdr[i + 1].VirtualSize) {
-	    found = 1;
-	    cli_dbgmsg("UPX/FSG: empty section found - assuming compression\n");
-	    break;
+    if(DCONF & (PE_CONF_UPX | PE_CONF_FSG)) {
+	for(i = 0; i < (unsigned int) nsections - 1; i++) {
+	    if(!section_hdr[i].SizeOfRawData && section_hdr[i].VirtualSize && section_hdr[i + 1].SizeOfRawData && section_hdr[i + 1].VirtualSize) {
+		found = 1;
+		cli_dbgmsg("UPX/FSG: empty section found - assuming compression\n");
+		break;
+	    }
 	}
     }
 
@@ -1098,7 +1103,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    return CL_CLEAN;
 	}
 
-	if(buff[0] == '\x87' && buff[1] == '\x25') {
+	if((DCONF & PE_CONF_FSG) && buff[0] == '\x87' && buff[1] == '\x25') {
 
 	    /* FSG v2.0 support - thanks to aCaB ! */
 
@@ -1270,7 +1275,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    }
 	}
 
- 	if(found && buff[0] == '\xbe' && cli_readint32(buff + 1) - EC32(optional_hdr32.ImageBase) < min) {
+ 	if(found && (DCONF & PE_CONF_FSG) && buff[0] == '\xbe' && cli_readint32(buff + 1) - EC32(optional_hdr32.ImageBase) < min) {
 
 	    /* FSG support - v. 1.33 (thx trog for the many samples) */
 
@@ -1493,7 +1498,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
 
 	/* FIXME: easy 2 hack */
- 	if(found && buff[0] == '\xbb' && cli_readint32(buff + 1) - EC32(optional_hdr32.ImageBase) < min && buff[5] == '\xbf' && buff[10] == '\xbe' && vep >= exe_sections[i + 1].rva && vep - exe_sections[i + 1].rva > exe_sections[i + 1].rva - 0xe0 ) {
+ 	if(found && (DCONF & PE_CONF_FSG) && buff[0] == '\xbb' && cli_readint32(buff + 1) - EC32(optional_hdr32.ImageBase) < min && buff[5] == '\xbf' && buff[10] == '\xbe' && vep >= exe_sections[i + 1].rva && vep - exe_sections[i + 1].rva > exe_sections[i + 1].rva - 0xe0 ) {
 
 	    /* FSG support - v. 1.31 */
 
@@ -1712,7 +1717,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
 
 
-	if(found) {
+	if(found && (DCONF & PE_CONF_UPX)) {
 
 	    /* UPX support */
 
@@ -1938,7 +1943,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    found = 1;
     }
 
-    if(found) {
+    if((DCONF & PE_CONF_PETITE) && found) {
 	cli_dbgmsg("Petite: v2.%d compression detected\n", found);
 
 	if(cli_readint32(buff + 0x80) == 0x163c988d) {
@@ -2029,7 +2034,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
     /* PESpin 1.1 */
 
-    if(nsections > 1 &&
+    if((DCONF & PE_CONF_PESPIN) && nsections > 1 &&
        vep >= EC32(section_hdr[nsections - 1].VirtualAddress) &&
        vep < EC32(section_hdr[nsections - 1].VirtualAddress) + EC32(section_hdr[nsections - 1].SizeOfRawData) - 0x3217 - 4 &&
        memcmp(buff+4, "\xe8\x00\x00\x00\x00\x8b\x1c\x24\x83\xc3", 10) == 0)  {
@@ -2127,7 +2132,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
     /* yC 1.3 */
 
-    if(nsections > 1 &&
+    if((DCONF & PE_CONF_YC) && nsections > 1 &&
        EC32(optional_hdr32.AddressOfEntryPoint) == EC32(section_hdr[nsections - 1].VirtualAddress) + 0x60 &&
        memcmp(buff, "\x55\x8B\xEC\x53\x56\x57\x60\xE8\x00\x00\x00\x00\x5D\x81\xED\x6C\x28\x40\x00\xB9\x5D\x34\x40\x00\x81\xE9\xC6\x28\x40\x00\x8B\xD5\x81\xC2\xC6\x28\x40\x00\x8D\x3A\x8B\xF7\x33\xC0\xEB\x04\x90\xEB\x01\xC2\xAC", 51) == 0)  {
 
@@ -2203,7 +2208,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
     /* WWPack */
 
-    if(nsections > 1 &&
+    if((DCONF & PE_CONF_WWPACK) && nsections > 1 &&
        exe_sections[nsections-1].raw>0x2b1 &&
        vep == exe_sections[nsections - 1].rva &&
        exe_sections[nsections - 1].rva + exe_sections[nsections - 1].rsz == max &&
@@ -2337,10 +2342,9 @@ int cli_scanpe(int desc, cli_ctx *ctx)
       }
     }
 
-#ifdef CL_EXPERIMENTAL
     /* NsPack */
 
-    while (1) {
+    while (DCONF & PE_CONF_NSPACK) {
       uint32_t eprva = vep;
       uint32_t start_of_stuff, ssize, dsize, rep = ep;
       unsigned int nowinldr;
@@ -2452,7 +2456,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
       free(tempfile);
       break;
     }
-#endif /* CL_EXPERIMENTAL - NsPack */
 
     /* to be continued ... */
 

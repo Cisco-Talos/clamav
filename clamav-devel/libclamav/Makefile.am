@@ -158,6 +158,8 @@ libclamav_la_SOURCES = \
 	entitylist.h \
 	encoding_aliases.h \
 	hashtab.c \
-	hashtab.h
+	hashtab.h \
+	dconf.c \
+	dconf.h
 
 lib_LTLIBRARIES = libclamav.la
