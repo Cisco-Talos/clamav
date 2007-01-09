@@ -25,6 +25,7 @@
 #include "cltypes.h"
 
 #include "clamav.h"
+#include "dconf.h"
 
 /*
  * CLI_ISCONTAINED(buf1, size1, buf2, size2) checks if buf2 is contained
@@ -55,6 +56,7 @@ typedef struct {
     unsigned int options;
     unsigned int arec;
     unsigned int mrec;
+    struct cli_dconf *dconf;
 } cli_ctx;
 
 #define SCAN_ARCHIVE	    (ctx->options & CL_SCAN_ARCHIVE)

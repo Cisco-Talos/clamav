@@ -186,6 +186,9 @@ struct cl_engine {
     void *whitelist_matcher;
     void *domainlist_matcher;
     void *phishcheck;
+
+    /* Dynamic configuration */
+    void *dconf;
 };
 
 struct cl_limits {

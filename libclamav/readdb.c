@@ -48,6 +48,7 @@
 #include "others.h"
 #include "str.h"
 #include "defaults.h"
+#include "dconf.h"
 
 #ifdef CL_EXPERIMENTAL
 #include "phish_whitelist.h"
@@ -497,6 +498,12 @@ int cli_initengine(struct cl_engine **engine, unsigned int options)
 	if(!(*engine)->root) {
 	    /* no need to free previously allocated memory here */
 	    cli_errmsg("Can't allocate memory for roots!\n");
+	    return CL_EMEM;
+	}
+
+	(*engine)->dconf = cli_dconf_init();
+	if(!(*engine)->dconf) {
+	    cli_errmsg("Can't initialize dynamic configuration\n");
 	    return CL_EMEM;
 	}
     }
@@ -1159,6 +1166,9 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
     } else if(cli_strbcasestr(filename, ".rmd")) {
 	ret = cli_loadmd(fd, engine, signo, 2, options);
 
+    } else if(cli_strbcasestr(filename, ".cfg")) {
+	ret = cli_dconf_load(fd, engine, options);
+
     } else if(cli_strbcasestr(filename, ".ncdb")) {
 #ifdef HAVE_NCORE
 	if(options & CL_DB_NCORE)
@@ -1243,6 +1253,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigne
 	     cli_strbcasestr(dent->d_name, ".sdb")  ||
 	     cli_strbcasestr(dent->d_name, ".zmd")  ||
 	     cli_strbcasestr(dent->d_name, ".rmd")  ||
+	     cli_strbcasestr(dent->d_name, ".cfg")  ||
 #ifdef CL_EXPERIMENTAL
 	     cli_strbcasestr(dent->d_name, ".pdb")  ||
 	     cli_strbcasestr(dent->d_name, ".wdb")  ||
@@ -1298,15 +1309,22 @@ int cl_load(const char *path, struct cl_engine **engine, unsigned int *signo, un
 
     switch(sb.st_mode & S_IFMT) {
 	case S_IFREG: 
-	    return cli_load(path, engine, signo, options);
+	    ret = cli_load(path, engine, signo, options);
+	    break;
 
 	case S_IFDIR:
-	    return cli_loaddbdir(path, engine, signo, options);
+	    ret = cli_loaddbdir(path, engine, signo, options);
+	    break;
 
 	default:
-	    cli_errmsg("cl_load(): Not supported database file type\n");
+	    cli_errmsg("cl_load(%s): Not supported database file type\n", path);
 	    return CL_EOPEN;
     }
+
+    if(ret == CL_SUCCESS)
+	cli_dconf_print((*engine)->dconf);
+
+    return ret;
 }
 
 const char *cl_retdbdir(void)
@@ -1366,6 +1384,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".sdb")  || 
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 
 	    cli_strbcasestr(dent->d_name, ".rmd")  || 
+	    cli_strbcasestr(dent->d_name, ".cfg")  ||
 #ifdef CL_EXPERIMENTAL
 	    cli_strbcasestr(dent->d_name, ".pdb")  ||
 	    cli_strbcasestr(dent->d_name, ".wdb")  ||
@@ -1452,6 +1471,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".sdb")  || 
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 
 	    cli_strbcasestr(dent->d_name, ".rmd")  || 
+	    cli_strbcasestr(dent->d_name, ".cfg")  ||
 #ifdef CL_EXPERIMENTAL
 	    cli_strbcasestr(dent->d_name, ".pdb")  ||
 	    cli_strbcasestr(dent->d_name, ".wdb")  ||
@@ -1563,16 +1583,19 @@ void cl_free(struct cl_engine *engine)
 	cli_ncore_unload(engine);
 #endif
 
-    for(i = 0; i < CL_TARGET_TABLE_SIZE; i++) {
-	if((root = engine->root[i])) {
-	    cli_ac_free(root);
-	    if(!engine->root[i]->ac_only)
-		cli_bm_free(root);
-	    free(root);
+    if(engine->root) {
+	for(i = 0; i < CL_TARGET_TABLE_SIZE; i++) {
+	    if((root = engine->root[i])) {
+		cli_ac_free(root);
+		if(!engine->root[i]->ac_only)
+		    cli_bm_free(root);
+		free(root);
+	    }
 	}
+
+	free(engine->root);
     }
 
-    free(engine->root);
     if(engine->md5_hlist) {
 	for(i = 0; i < 256; i++) {
 	    md5pt = engine->md5_hlist[i];
@@ -1612,6 +1635,10 @@ void cl_free(struct cl_engine *engine)
 #ifdef CL_EXPERIMENTAL
     phishing_done(engine);
 #endif
+
+    if(engine->dconf)
+	free(engine->dconf);
+
     free(engine);
 }
 
