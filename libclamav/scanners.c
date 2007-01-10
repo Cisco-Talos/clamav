@@ -1895,7 +1895,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	 * in raw mode. Now we will try to unpack them
 	 */
 	case CL_TYPE_MSEXE:
-	    if(SCAN_PE)
+	    if(SCAN_PE && ctx->dconf->pe)
 		ret = cli_scanpe(desc, ctx);
 	    break;
 
