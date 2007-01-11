@@ -41,8 +41,6 @@
 #include "clamav-config.h"
 #endif
 
-#ifdef CL_EXPERIMENTAL
-
 #include <sys/types.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -53,6 +51,7 @@
 #include "cltypes.h"
 #include "others.h"
 #include "pe.h"
+#include "suecrypt.h"
 
 #define EC32(x) le32_to_host(x) /* Convert little endian to host */
 #define EC16(x) le16_to_host(x)
@@ -129,4 +128,3 @@ char *sudecrypt(int desc, size_t fsize, struct cli_exe_section *sections, uint16
 
   return file;
 }
-#endif

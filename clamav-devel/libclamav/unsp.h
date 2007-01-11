@@ -17,7 +17,6 @@
  *  MA 02110-1301, USA.
  */
 
-#ifdef CL_EXPERIMENTAL
 #ifndef __UNSP_H
 #define __UNSP_H
 
@@ -46,5 +45,4 @@ uint32_t get_n_bits_from_tablesize(uint16_t *, struct UNSP *, uint32_t);
 uint32_t get_bb(uint16_t *, uint32_t, struct UNSP *);
 uint32_t get_bitmap(struct UNSP *, uint32_t);
 
-#endif
 #endif
