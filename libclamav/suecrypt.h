@@ -17,14 +17,12 @@
  *  MA 02110-1301, USA.
  */
 
-#ifdef CL_EXPERIMENTAL
 #ifndef __UNSUE_H
 #define __UNSUE_H
 
 #include "cltypes.h"
-#include "rebuildpe.h"
+#include "execs.h"
 
 char *sudecrypt(int, size_t, struct cli_exe_section *, uint16_t, char *, uint32_t, uint32_t, uint32_t);
 
-#endif
 #endif

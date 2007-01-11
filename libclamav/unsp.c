@@ -108,8 +108,6 @@ nsp1:00435A5A                 push    8000h
 #include "clamav-config.h"
 #endif
 
-#ifdef CL_EXPERIMENTAL
-
 #include <stdlib.h>
 
 #include "cltypes.h"
@@ -520,5 +518,3 @@ uint32_t get_bitmap(struct UNSP *read_struct, uint32_t bits) {
   }
   return retv;
 }
-
-#endif
