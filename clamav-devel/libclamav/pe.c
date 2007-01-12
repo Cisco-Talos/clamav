@@ -1097,6 +1097,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	if(lseek(desc, ep, SEEK_SET) == -1) {
 	    cli_dbgmsg("MEW: lseek() failed\n");
 	    free(section_hdr);
+	    free(exe_sections);
 	    return CL_EIO;
 	}
 
@@ -1104,6 +1105,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    cli_dbgmsg("MEW: Can't read at least 16 bytes at 0x%x (%d) %d\n", ep, ep, bytes);
 	    cli_dbgmsg("MEW: Broken or not compressed file\n");
             free(section_hdr);
+	    free(exe_sections);
 	    return CL_CLEAN;
 	}
 
@@ -1119,6 +1121,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		if(lseek(desc, fileoffset, SEEK_SET) == -1) {
 		    cli_dbgmsg("MEW: lseek() failed\n");
 		    free(section_hdr);
+		    free(exe_sections);
 		    return CL_EIO;
 		}
 
@@ -1133,25 +1136,27 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    cli_dbgmsg("MEW: Win9x compatibility was NOT set!\n");
 
 		/* is it always 0x1C and 0x21C or not */
-		if((offdiff = cli_readint32(buff+1) - EC32(optional_hdr32.ImageBase)) <= EC32(section_hdr[i + 1].VirtualAddress) || offdiff >= EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData) - 4)
+		if((offdiff = cli_readint32(buff+1) - EC32(optional_hdr32.ImageBase)) <= exe_sections[i + 1].rva || offdiff >= exe_sections[i + 1].rva + exe_sections[i + 1].raw - 4)
 		{
 		    cli_dbgmsg("MEW: ESI is not in proper section\n");
 		    break;
 		}
-		offdiff -= EC32(section_hdr[i + 1].VirtualAddress);
+		offdiff -= exe_sections[i + 1].rva;
 
-		if(lseek(desc, EC32(section_hdr[i + 1].PointerToRawData), SEEK_SET) == -1) {
+		if(lseek(desc, exe_sections[i + 1].raw, SEEK_SET) == -1) {
 		    cli_dbgmsg("MEW: lseek() failed\n"); /* ACAB: lseek won't fail here but checking doesn't hurt even */
 		    free(section_hdr);
+		    free(exe_sections);
 		    return CL_EIO;
 		}
-		ssize = EC32(section_hdr[i + 1].VirtualSize);
-		dsize = EC32(section_hdr[i].VirtualSize);
+		ssize = exe_sections[i + 1].vsz;
+		dsize = exe_sections[i].vsz;
 
 		cli_dbgmsg("MEW: ssize %08x dsize %08x offdiff: %08x\n", ssize, dsize, offdiff);
-		if(ctx->limits && ctx->limits->maxfilesize && (ssize + dsize > ctx->limits->maxfilesize || EC32(section_hdr[i + 1].SizeOfRawData) > ctx->limits->maxfilesize)) {
+		if(ctx->limits && ctx->limits->maxfilesize && (ssize + dsize > ctx->limits->maxfilesize || exe_sections[i + 1].rsz > ctx->limits->maxfilesize)) {
 		    cli_dbgmsg("MEW: Sizes exceeded (ssize: %u, dsize: %u, max: %lu)\n", ssize, dsize , ctx->limits->maxfilesize);
 		    free(section_hdr);
+		    free(exe_sections);
 		    if(BLOCKMAX) {
 			*ctx->virname = "PE.MEW.ExceededFileSize";
 			return CL_VIRUS;
@@ -1163,20 +1168,21 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		/* allocate needed buffer */
 		if (!(src = cli_calloc (ssize + dsize, sizeof(char)))) {
 		    free(section_hdr);
+		    free(exe_sections);
 		    return CL_EMEM;
 		}
-		cli_dbgmsg ("MY FUCKING src IS AT %x\n", src);
 
-		if (EC32(section_hdr[i + 1].SizeOfRawData) < offdiff + 12 || EC32(section_hdr[i + 1].SizeOfRawData) > ssize)
+		if (exe_sections[i + 1].rsz < offdiff + 12 || exe_sections[i + 1].rsz > ssize)
 		{
-		    cli_dbgmsg("MEW: Size mismatch: %08x\n", EC32(section_hdr[i + 1].SizeOfRawData));
+		    cli_dbgmsg("MEW: Size mismatch: %08x\n", exe_sections[i + 1].rsz);
 		    free(src);
 		    break;
 		}
 
-		if((bytes = read(desc, src + dsize, EC32(section_hdr[i + 1].SizeOfRawData))) != EC32(section_hdr[i + 1].SizeOfRawData)) {
-		    cli_dbgmsg("MEW: Can't read %d bytes [readed: %d]\n", EC32(section_hdr[i + 1].SizeOfRawData), bytes);
+		if((bytes = read(desc, src + dsize, exe_sections[i + 1].rsz)) != exe_sections[i + 1].rsz) {
+		    cli_dbgmsg("MEW: Can't read %d bytes [readed: %d]\n", exe_sections[i + 1].rsz, bytes);
 		    free(section_hdr);
+		    free(exe_sections);
 		    free(src);
 		    return CL_EIO;
 		}
@@ -1184,18 +1190,19 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		/* count offset to lzma proc, if lzma used, 0xe8 -> call */
 		if (buff[0x7b] == '\xe8')
 		{
-		    if (!CLI_ISCONTAINED(EC32(section_hdr[1].VirtualAddress), EC32(section_hdr[1].VirtualSize), cli_readint32(buff + 0x7c) + fileoffset + 0x80, 4))
+		    if (!CLI_ISCONTAINED(exe_sections[1].rva, exe_sections[1].vsz, cli_readint32(buff + 0x7c) + fileoffset + 0x80, 4))
 		    {
 			cli_dbgmsg("MEW: lzma proc out of bounds!\n");
 			free(src);
 			break; /* to next unpacker in chain */
 		    }
-		    uselzma = cli_readint32(buff + 0x7c) - (EC32(section_hdr[0].VirtualAddress) - fileoffset - 0x80);
+		    uselzma = cli_readint32(buff + 0x7c) - (exe_sections[0].rva - fileoffset - 0x80);
 		} else
 		    uselzma = 0;
 
 		if(!(tempfile = cli_gentemp(NULL))) {
 		    free(section_hdr);
+		    free(exe_sections);
 		    free(src);
 		    return CL_EMEM;
 		}
@@ -1203,11 +1210,12 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    cli_dbgmsg("MEW: Can't create file %s\n", tempfile);
 		    free(tempfile);
 		    free(section_hdr);
+		    free(exe_sections);
 		    free(src);
 		    return CL_EIO;
 		}
 		dest = src;
-		switch(unmew11(section_hdr, i, src, offdiff, ssize, dsize, EC32(optional_hdr32.ImageBase), EC32(section_hdr[0].VirtualAddress), uselzma, NULL, NULL, ndesc)) {
+		switch(unmew11(i, src, offdiff, ssize, dsize, EC32(optional_hdr32.ImageBase), exe_sections[0].rva, uselzma, NULL, NULL, ndesc)) {
 		    case 1: /* Everything OK */
 			cli_dbgmsg("MEW: Unpacked and rebuilt executable saved in %s\n", tempfile);
 			free(src);
@@ -1217,6 +1225,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 			cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
 			if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) {
 			    free(section_hdr);
+			    free(exe_sections);
 			    close(ndesc);
 			    if(!cli_leavetemps_flag)
 				unlink(tempfile);
@@ -1228,6 +1237,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 			    unlink(tempfile);
 			free(tempfile);
 			free(section_hdr);
+			free(exe_sections);
 			return CL_CLEAN;
 		    default: /* Everything gone wrong */
 			cli_dbgmsg("MEW: Unpacking failed\n");

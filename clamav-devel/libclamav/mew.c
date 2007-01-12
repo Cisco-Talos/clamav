@@ -335,7 +335,8 @@ uint32_t lzma_48631a (struct lzmastate *p, char **old_ecx, uint32_t *old_edx, ui
 	return 0;
 }
 
-int mew_lzma(struct pe_image_section_hdr *section_hdr, char *orgsource, char *buf, uint32_t size_sum, uint32_t vma, uint32_t special)
+//int mew_lzma(struct pe_image_section_hdr *section_hdr, char *orgsource, char *buf, uint32_t size_sum, uint32_t vma, uint32_t special)
+int mew_lzma(char *orgsource, char *buf, uint32_t size_sum, uint32_t vma, uint32_t special)
 {
 	uint32_t var08, var0C, var10, var14, var18, var20, var24, var28, var34;
 	struct lzmastate var40;
@@ -761,7 +762,8 @@ uint32_t lzma_upack_esi_54(struct lzmastate *p, uint32_t old_eax, uint32_t *old_
 }
 
 
-int unmew11(struct pe_image_section_hdr *section_hdr, int sectnum, char *src, int off, int ssize, int dsize, uint32_t base, uint32_t vadd, int uselzma, char **endsrc, char **enddst, int filedesc)
+//int unmew11(struct pe_image_section_hdr *section_hdr, int sectnum, char *src, int off, int ssize, int dsize, uint32_t base, uint32_t vadd, int uselzma, char **endsrc, char **enddst, int filedesc)
+int unmew11(int sectnum, char *src, int off, int ssize, int dsize, uint32_t base, uint32_t vadd, int uselzma, char **endsrc, char **enddst, int filedesc)
 {
 	uint32_t entry_point, newedi, loc_ds=dsize, loc_ss=ssize;
 	char *source = src + dsize + off; /*EC32(section_hdr[sectnum].VirtualSize) + off;*/
@@ -771,10 +773,7 @@ int unmew11(struct pe_image_section_hdr *section_hdr, int sectnum, char *src, in
 	struct cli_exe_section *section = NULL;
 	uint32_t vma = base + vadd, size_sum = ssize + dsize;
 
-	entry_point  = cli_readint32(source + 4); /* 2vGiM: ate these safe enough?
-						   * yup, if (EC32(section_hdr[i + 1].SizeOfRawData) < ...
-						   * ~line #879 in pe.c
-						   */
+	entry_point  = cli_readint32(source + 4);
 	newedi = cli_readint32(source + 8);
 	ledi = src + (newedi - vma);
 
@@ -846,13 +845,14 @@ int unmew11(struct pe_image_section_hdr *section_hdr, int sectnum, char *src, in
 			free(section);
 			return -1;
 		}
-		if(mew_lzma(&(section_hdr[sectnum]), src, f1+4, size_sum, vma, *(src + uselzma+8) == '\x50'))
+		//		if(mew_lzma(&(section_hdr[sectnum]), src, f1+4, size_sum, vma, *(src + uselzma+8) == '\x50'))
+		if(mew_lzma(src, f1+4, size_sum, vma, *(src + uselzma+8) == '\x50'))
 		{
 			free(section);
 			return -1;
 		}
 		loc_ds >>= 12; loc_ds <<= 12; loc_ds += 0x1000;
-		/* I have EP but no section's information, so I weren't sure what to do with that */ /* 2vGiM: sounds fair */
+
 		section = cli_calloc(1, sizeof(struct cli_exe_section));
 		section[0].raw = 0; section[0].rva = vadd;
 		section[0].rsz = section[0].vsz = dsize;
