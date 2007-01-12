@@ -299,12 +299,6 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned in
     logg("*Listening daemon: PID: %d\n", getpid());
     max_threads = cfgopt(copt, "MaxThreads")->numarg;
 
-#ifdef CL_EXPERIMENTAL
-    if(cfgopt(copt,"PhishingScanURLs")->enabled)
-	dboptions |= CL_DB_PHISHING_URLS;
-    if(cfgopt(copt,"PhishingStrictURLCheck")->enabled)
-	options |= CL_SCAN_PHISHING_DOMAINLIST;
-#endif
 
     if(cfgopt(copt, "ScanArchive")->enabled || cfgopt(copt, "ClamukoScanArchive")->enabled) {
 
@@ -421,6 +415,34 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned in
     } else {
 	logg("HTML support disabled.\n");
     }
+
+#ifdef CL_EXPERIMENTAL
+    if(cfgopt(copt,"PhishingScanURLs")->enabled) {
+
+	if(cfgopt(copt,"PhishingRestrictedScan")->enabled) {
+	    /* we don't scan urls from all domains, just those listed in
+	     * .pdb file. This is the safe default
+	     */
+	    options |= CL_SCAN_PHISHING_DOMAINLIST;
+	} else {
+	    /* This is a false positive prone option, since newsletters, etc.
+	     * often contain links that will be classified as phishing attempts,
+	     * even though the site they link to isn't a phish site.
+	     */
+	    logg("Phishing: Checking all URLs, regardless of domain (FP prone).\n");
+	}
+
+	if(cfgopt(copt,"PhishingAlwaysBlockCloak")->enabled) {
+	    options |= CL_SCAN_PHISHING_BLOCKCLOAK; 
+	    logg("Phishing: Always checking for cloaked urls\n");
+	}
+
+	if(cfgopt(copt,"PhishingAlwaysBlockSSLMismatch")->enabled) {
+	    options |= CL_SCAN_PHISHING_BLOCKSSL;
+	    logg("Phishing: Always checking for ssl mismatches\n");
+	}
+    }
+#endif /* CL_EXPERIMENTAL */
 
     selfchk = cfgopt(copt, "SelfCheck")->numarg;
     if(!selfchk) {

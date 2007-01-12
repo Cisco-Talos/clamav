@@ -263,7 +263,9 @@ void help(void)
     mprintf("    --no-phishing-sigs                   Disable signature-based phishing detection\n");
 #ifdef CL_EXPERIMENTAL
     mprintf("    --no-phishing-scan-urls              Disable url-based phishing detection\n");
-    mprintf("    --phishing-strict-url-check          Enable phishing detection for all domains (might lead to false positives!)\n");
+    mprintf("    --no-phishing-restrictedscan         Enable phishing detection for all domains (might lead to false positives!)\n");
+    mprintf("    --phishing-ssl                       Always block SSL mismatches in URLs (phishing module)\n");
+    mprintf("    --phishing-cloak                     Always block cloaked URLs (phishing module)\n");
 #endif
     mprintf("    --no-algorithmic                     Disable algorithmic detection\n");
     mprintf("    --no-pe                              Disable PE analysis\n");
