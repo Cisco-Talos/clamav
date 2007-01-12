@@ -1,3 +1,7 @@
+Fri Jan 12 22:03:53 CET 2007 (acab)
+-----------------------------------
+  * libclamav/mew: Cleanup. Now fully merged.
+
 Fri Jan 12 21:20:00 CET 2007 (acab)
 -----------------------------------
   * libclamav: Fix for cli_rebuildpe call in mew unpacker.
