@@ -1,3 +1,7 @@
+Fri Jan 12 18:35:02 CET 2007 (tk)
+---------------------------------
+  * libclamav/phishcheck.c: add img url link-type filtering (patch from Edwin)
+
 Fri Jan 12 18:18:43 CET 2007 (tk)
 ---------------------------------
   * libclamav: phishing patch from Edwin (closes bb#157, #174, #222, #224)

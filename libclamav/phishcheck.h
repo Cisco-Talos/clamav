@@ -48,6 +48,7 @@ enum phish_status {CL_PHISH_NODECISION=0,CL_PHISH_CLEAN=CL_PHISH_BASE, CL_PHISH_
 #define DOMAINLIST_REQUIRED  512
 /* img checking disabled by default */
 
+#define LINKTYPE_IMAGE     1
 
 #define CL_PHISH_ALL_CHECKS (CLEANUP_URL|DOMAIN_SUFFICIENT|CHECK_SSL|CHECK_CLOAKING|DOMAINLIST_REQUIRED|CHECK_IMG_URL)
 
@@ -72,6 +73,7 @@ struct url_check {
 	struct string displayLink;
 	unsigned short       flags;
 	unsigned short always_check_flags;
+	unsigned short       link_type;
 };
 
 int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs);

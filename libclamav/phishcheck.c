@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.18  2007/01/12 17:36:53  tkojm
+ *  add img url link-type filtering
+ *
  *  Revision 1.17  2007/01/12 17:29:09  tkojm
  *  phishing patch from Edwin (closes bb#157, #174, #222, #224)
  *
@@ -952,8 +955,12 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 			struct url_check urls;
 			enum phish_status rc;
 			urls.flags	 = strncmp((char*)hrefs->tag[i],href_text,href_text_len)? (CL_PHISH_ALL_CHECKS&~CHECK_SSL): CL_PHISH_ALL_CHECKS;
-			if (!(urls.flags&CHECK_IMG_URL) && !strncmp((char*)hrefs->tag[i],src_text,src_text_len))
+			urls.link_type   = 0;
+			if(!strncmp((char*)hrefs->tag[i],src_text,src_text_len)) {
+				if (!(urls.flags&CHECK_IMG_URL))
 				continue;
+				urls.link_type |= LINKTYPE_IMAGE; 
+			}
 			if (ctx->options&CL_SCAN_PHISHING_DOMAINLIST)
 				urls.flags |= DOMAINLIST_REQUIRED;
 			if (ctx->options & CL_SCAN_PHISHING_BLOCKSSL) {
@@ -1282,6 +1289,7 @@ enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check*
 		 * so defer phishing decisions till we know if host is listed*/
 	}
 
+	
 	url_check_init(&host_url);
 
 	if((rc = url_get_host(pchk, urls,&host_url,DOMAIN_DISPLAY,&phishy))) {
@@ -1301,6 +1309,10 @@ enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check*
 		}
 	}
 
+	/* link type filtering must occur after last domainlist_match */
+	if(urls->link_type & LINKTYPE_IMAGE && !(urls->flags&CHECK_IMG_URL))
+		return CL_PHISH_HOST_NOT_LISTED;/* its listed, but this link type is filtered */
+
 	if(urls->flags & DOMAINLIST_REQUIRED && !(phishy & DOMAIN_LISTED) ) {
 		urls->flags &= urls->always_check_flags;
 		if(!urls->flags) {
@@ -1313,7 +1325,7 @@ enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check*
 		/*Checks if URL is cloaked.
 		Should we check if it containts another http://, https://?
 		No because we might get false positives from redirect services.*/
-		if(strchr(urls->realLink.data,'\0x1')) {
+		if(strchr(urls->realLink.data,0x1)) {
 			free_if_needed(&host_url);
 			return CL_PHISH_CLOAKED_NULL;
 		}
