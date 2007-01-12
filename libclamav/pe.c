@@ -1165,6 +1165,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    free(section_hdr);
 		    return CL_EMEM;
 		}
+		cli_dbgmsg ("MY FUCKING src IS AT %x\n", src);
 
 		if (EC32(section_hdr[i + 1].SizeOfRawData) < offdiff + 12 || EC32(section_hdr[i + 1].SizeOfRawData) > ssize)
 		{

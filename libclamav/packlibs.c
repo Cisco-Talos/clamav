@@ -25,7 +25,6 @@
 #include "others.h"
 #include "execs.h"
 #include "pe.h"
-#include "rebuildpe.h"
 
 static int doubledl(char **scur, uint8_t *mydlptr, char *buffer, uint32_t buffersize)
 {
@@ -171,7 +170,7 @@ int cli_unfsg(char *source, char *dest, int ssize, int dsize, char **endsrc, cha
 }
 
 #ifdef CL_EXPERIMENTAL
-static int unmew(char *source, char *dest, int ssize, int dsize, char **endsrc, char **enddst) {
+int unmew(char *source, char *dest, int ssize, int dsize, char **endsrc, char **enddst) {
   uint8_t mydl=0x80;
   uint32_t myeax_backbytes, myecx_backsize, oldback = 0;
   char *csrc = source, *cdst = dest;
@@ -310,115 +309,4 @@ static int unmew(char *source, char *dest, int ssize, int dsize, char **endsrc, 
   return 0;
 }
 
-
-int unmew11(struct pe_image_section_hdr *section_hdr, int sectnum, char *src, int off, int ssize, int dsize, uint32_t base, uint32_t vadd, int uselzma, char **endsrc, char **enddst, int filedesc)
-{
-	uint32_t entry_point, newedi, loc_ds=dsize, loc_ss=ssize;
-	char *source = src + dsize + off; /*EC32(section_hdr[sectnum].VirtualSize) + off;*/
-	char *lesi = source + 12, *ledi;
-	char *f1, *f2;
-	int i;
-	struct cli_exe_section *section = NULL;
-	uint32_t vma = base + vadd, size_sum = ssize + dsize;
-
-	entry_point  = cli_readint32(source + 4); /* 2vGiM: ate these safe enough?
-						   * yup, if (EC32(section_hdr[i + 1].SizeOfRawData) < ...
-						   * ~line #879 in pe.c
-						   */
-	newedi = cli_readint32(source + 8);
-	ledi = src + (newedi - vma);
-
-	i = 0;
-	ssize -= 12;
-	while (1)
-	{
-  		cli_dbgmsg("MEW unpacking section %d (%08x->%08x)\n", i, lesi, ledi);
-		if (!CLI_ISCONTAINED(src, size_sum, lesi, 4) || !CLI_ISCONTAINED(src, size_sum, ledi, 4))
-		{
-			cli_dbgmsg("Possibly programmer error or hand-crafted PE file, report to clamav team\n");
-			return -1;
-		}
-		if (unmew(lesi, ledi, loc_ss, loc_ds, &f1, &f2))
-		{
-			free(section);
-			return -1;
-		}
-
-		/* we don't need last section in sections since this is information for fixing imptbl */
-		if (!CLI_ISCONTAINED(src, size_sum, f1, 4))
-		{
-			free(section);
-			return -1;
-		}
-
-		/* XXX */
-		loc_ss -= (f1+4-lesi);
-		loc_ds -= (f2-ledi);
-		ledi = src + (cli_readint32(f1) - vma);
-		lesi = f1+4;
-
-		if (!uselzma)
-		{
-			uint32_t val = f2 - src;
-			/* round-up to 4k boundary, I'm not sure of this XXX */
-			val >>= 12;
-			val <<= 12;
-			val += 0x1000;
-
-			/* eeevil XXX */
-			section = cli_realloc(section, (i+2)*sizeof(struct cli_exe_section));
-			section[0].raw = 0; section[0].rva = vadd;
-			section[i+1].raw = val;
-			section[i+1].rva = val + vadd;
-			section[i].rsz = section[i].vsz = i?val - section[i].raw:val;
-		}
-		i++;
-
-		if (!cli_readint32(f1))
-			break;
-	}
-
-	/* LZMA stuff */
-	if (uselzma) {
-		/* put everything in one section */
-		i = 1;
-		if (!CLI_ISCONTAINED(src, size_sum, src+uselzma+8, 1))
-		{
-			cli_dbgmsg("MEW: couldn't access lzma 'special' tag\n");
-			free(section);
-			return -1;
-		}
-		/* 0x50 -> push eax */
-		cli_dbgmsg("MEW: lzma %swas used, unpacking\n", (*(src + uselzma+8) == '\x50')?"special ":"");
-		if (!CLI_ISCONTAINED(src, size_sum, f1+4, 20 + 4 + 5))
-		{
-			cli_dbgmsg("MEW: lzma initialization data not available!\n");
-			free(section);
-			return -1;
-		}
-		if(mew_lzma(&(section_hdr[sectnum]), src, f1+4, size_sum, vma, *(src + uselzma+8) == '\x50'))
-		{
-			free(section);
-			return -1;
-		}
-		loc_ds >>= 12; loc_ds <<= 12; loc_ds += 0x1000;
-		/* I have EP but no section's information, so I weren't sure what to do with that */ /* 2vGiM: sounds fair */
-		section = cli_calloc(1, sizeof(struct cli_exe_section));
-		section[0].raw = 0; section[0].rva = vadd;
-		section[0].rsz = section[0].vsz = dsize;
-	}
-	if ((f1 = cli_rebuildpe(src, section, i, base, entry_point - base, 0, 0, filedesc)))
-	{
-		if (cli_writen(filedesc, f1, 0x148+0x80+0x28*i+dsize) == -1) {
-			free(f1);
-			return -1;
-		}
-	} else {
-		cli_dbgmsg("MEW: Rebuilding failed\n");
-		return -1;
-	}
-
-	return 1;
-}
 #endif
-

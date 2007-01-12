@@ -20,10 +20,17 @@
 #ifndef __PACKLIBS_H
 #define __PACKLIBS_H
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include "cltypes.h"
 #include "rebuildpe.h"
 
 int cli_unfsg(char *, char *, int, int, char **, char **);
-int unmew11(struct pe_image_section_hdr *, int, char *, int, int, int, uint32_t, uint32_t, int, char **, char **, int);
+
+#ifdef CL_EXPERIMENTAL
+int unmew(char *, char *, int, int, char **, char **);
+#endif
 
 #endif
