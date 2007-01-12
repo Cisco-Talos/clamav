@@ -39,7 +39,6 @@ static struct option clamscan_longopt[] = {
     {"leave-temps", 0, 0, 0},
     {"config-file", 1, 0, 0},	    /* clamdscan */
     {"database", 1, 0, 'd'},
-    {"whole-file", 0, 0, 'w'},	    /* not used */
     {"force", 0, 0, 0},
     {"recursive", 0, 0, 'r'},
     {"bell", 0, 0, 0},
@@ -47,9 +46,6 @@ static struct option clamscan_longopt[] = {
     {"no-summary", 0, 0, 0},
     {"infected", 0, 0, 'i'},
     {"log", 1, 0, 'l'},
-    {"log-verbose", 0, 0, 0},	    /* not used */
-    {"threads", 1, 0, 0},	    /* not used */
-    {"one-virus", 0, 0, 0},	    /* not used */
     {"move", 1, 0, 0},
     {"copy", 1, 0, 0},
     {"remove", 0, 0, 0},
@@ -75,7 +71,6 @@ static struct option clamscan_longopt[] = {
     {"no-elf", 0, 0, 0},
     {"no-ole2", 0, 0, 0},
     {"no-html", 0, 0, 0},
-    {"mbox", 0, 0, 'm'},	    /* not used */
     {"no-mail", 0, 0, 0},
     {"mail-follow-urls", 0, 0, 0},
     {"no-phishing-sigs", 0, 0, 0},
@@ -88,10 +83,7 @@ static struct option clamscan_longopt[] = {
     {"no-algorithmic", 0, 0, 0},
     {"unzip", 2, 0, 0},
     {"unrar", 2, 0, 0},
-    {"unace", 2, 0, 0},		    /* not used */
-    {"unarj", 2, 0, 0},		    /* not used */
     {"arj", 2, 0, 0},
-    {"zoo", 2, 0, 0},		    /* not used */
     {"unzoo", 2, 0, 0},
     {"lha", 2, 0, 0},
     {"jar", 2, 0, 0},
