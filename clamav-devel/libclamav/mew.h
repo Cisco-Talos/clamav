@@ -20,6 +20,11 @@
 #ifndef __MEW_H
 #define __MEW_H
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifdef CL_EXPERIMENTAL
 struct lzmastate {
 	char *p0;
 	uint32_t p1, p2;
@@ -30,9 +35,7 @@ int mew_lzma(struct pe_image_section_hdr *, char *, char *, uint32_t, uint32_t, 
 uint32_t lzma_upack_esi_00(struct lzmastate *, char *, char *, uint32_t);
 uint32_t lzma_upack_esi_50(struct lzmastate *, uint32_t, uint32_t, char **, char *, uint32_t *, char *, uint32_t);
 uint32_t lzma_upack_esi_54(struct lzmastate *, uint32_t, uint32_t *, char **, uint32_t *, char *, uint32_t);
-
+int unmew11(struct pe_image_section_hdr *, int, char *, int, int, int, uint32_t, uint32_t, int, char **, char **, int);
 #endif
 
-
-
-
+#endif
