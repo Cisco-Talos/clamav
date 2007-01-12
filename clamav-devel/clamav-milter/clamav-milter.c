@@ -24,9 +24,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.308 2007/01/07 16:45:59 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.309 2007/01/12 19:25:08 njh Exp $";
 
-#define	CM_VERSION	"devel-070107"
+#define	CM_VERSION	"devel-110107"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -324,6 +324,7 @@ static	struct	cl_limits	limits;
 static	struct	cl_stat	dbstat;
 static	int	options = CL_SCAN_STDOPT;
 
+#ifdef	BOUNCE
 static	int	bflag = 0;	/*
 				 * send a failure (bounce) message to the
 				 * sender. This probably isn't a good idea
@@ -332,6 +333,7 @@ static	int	bflag = 0;	/*
 				 * TODO: Perhaps we can have an option to
 				 * bounce outgoing mail, but not incoming?
 				 */
+#endif
 static	const	char	*iface;	/*
 				 * Broadcast a message when a virus is found,
 				 * this allows remote network management
@@ -545,7 +547,9 @@ help(void)
 	puts(_("\t--advisory\t\t-A\tFlag viruses rather than deleting them."));
 	puts(_("\t--blacklist=time\t-k\tTime (in seconds) to blacklist an IP."));
 	puts(_("\t--black-hole-mode\t\tDon't scan messages aliased to /dev/null."));
+#ifdef	BOUNCE
 	puts(_("\t--bounce\t\t-b\tSend a failure message to the sender."));
+#endif
 	puts(_("\t--broadcast\t\t-B [IFACE]\tBroadcast to a network manager when a virus is found."));
 	puts(_("\t--config-file=FILE\t-c FILE\tRead configuration from FILE."));
 	puts(_("\t--debug\t\t\t-D\tPrint debug messages."));
@@ -653,11 +657,19 @@ main(int argc, char **argv)
 		int opt_index = 0;
 		struct cidr_net *net;
 		struct in_addr ignoreIP;
+#ifdef	BOUNCE
 #ifdef	CL_DEBUG
 		const char *args = "a:AbB:c:dDefF:I:k:K:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:x:0:1:2";
 #else
 		const char *args = "a:AbB:c:dDefF:I:k:K:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:0:1:2";
 #endif
+#else	/*!BOUNCE*/
+#ifdef	CL_DEBUG
+		const char *args = "a:AB:c:dDefF:I:k:K:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:x:0:1:2";
+#else
+		const char *args = "a:AB:c:dDefF:I:k:K:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:0:1:2";
+#endif
+#endif	/*BOUNCE*/
 
 		static struct option long_options[] = {
 			{
@@ -666,9 +678,11 @@ main(int argc, char **argv)
 			{
 				"advisory", 0, NULL, 'A'
 			},
+#ifdef	BOUNCE
 			{
 				"bounce", 0, NULL, 'b'
 			},
+#endif
 			{
 				"broadcast", 2, NULL, 'B'
 			},
@@ -806,9 +820,11 @@ main(int argc, char **argv)
 			case 'A':
 				advisory++;
 				break;
+#ifdef	BOUNCE
 			case 'b':	/* bounce worms/viruses */
 				bflag++;
 				break;
+#endif
 			case 'B':	/* broadcast */
 				Bflag++;
 				if(optarg)
@@ -3400,10 +3416,12 @@ clamfi_eom(SMFICTX *ctx)
 					fprintf(sendmail, "From: %s\n", from);
 				else
 					fprintf(sendmail, "From: %s\n", privdata->from);
+#ifdef	BOUNCE
 				if(bflag && privdata->from) {
 					fprintf(sendmail, "To: %s\n", privdata->from);
 					fprintf(sendmail, "Cc: %s\n", postmaster);
 				} else
+#endif
 					fprintf(sendmail, "To: %s\n", postmaster);
 
 				if((!pflag) && privdata->to)
@@ -3461,9 +3479,13 @@ clamfi_eom(SMFICTX *ctx)
 					/*
 					 * Use our own hardcoded template
 					 */
+#ifdef	BOUNCE
 					if(bflag)
 						fputs(_("A message you sent to\n"), sendmail);
 					else if(pflag)
+#else
+					if(pflag)
+#endif
 						/*
 						 * The message is only going to
 						 * the postmaster, so include
