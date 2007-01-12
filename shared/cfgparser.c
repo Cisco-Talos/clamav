@@ -52,7 +52,11 @@ struct cfgoption cfg_options[] = {
     {"PhishingSignatures", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
 #ifdef CL_EXPERIMENTAL
     {"PhishingScanURLs",OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
-    {"PhishingStrictURLCheck", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    /* these are FP prone options, if default isn't used */
+    {"PhishingAlwaysBlockCloak", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"PhishingAlwaysBlockSSLMismatch", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"PhishingRestrictedScan", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
+    /* end of FP prone options */
 #endif
     {"AlgorithmicDetection", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"ScanHTML", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},

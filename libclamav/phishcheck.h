@@ -62,6 +62,7 @@ struct phishcheck {
 	regex_t preg_tld;
 	regex_t preg_cctld;
 	regex_t preg_numeric;
+	regex_t preg_hexurl;
 	char*    url_regex;
 	int      is_disabled;
 };
@@ -70,6 +71,7 @@ struct url_check {
 	struct string realLink;
 	struct string displayLink;
 	unsigned short       flags;
+	unsigned short always_check_flags;
 };
 
 int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs);

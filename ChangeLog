@@ -1,3 +1,14 @@
+Fri Jan 12 18:18:43 CET 2007 (tk)
+---------------------------------
+  * libclamav: phishing patch from Edwin (closes bb#157, #174, #222, #224)
+	         - add new tuning options to phishing code (--phishing-ssl,
+		   --phishing-cloak, PhishAlwaysBlockSSLMismatch,
+		   PhishAlwaysBlockCloak)
+		 - rename alldomains/stricturl option to PhishingRestrictedScan
+		 - update man pages for phishing options 
+		 - update clamd/clamscan/cfgparser for new phishing options
+		 - add log lines for non-default phishing options
+
 Tue Jan  9 21:04:03 CET 2007 (tk)
 ---------------------------------
   * libclamav: dynamic configuration support

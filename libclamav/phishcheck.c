@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.17  2007/01/12 17:29:09  tkojm
+ *  phishing patch from Edwin (closes bb#157, #174, #222, #224)
+ *
  *  Revision 1.16  2006/12/20 01:23:50  tkojm
  *  options cleanup
  *
@@ -268,6 +271,15 @@ For the Whitelist(.wdb)/Domainlist(.pdb) format see regex_list.c (search for Fla
 
 /* Constant strings and tables */ 
 static char empty_string[]="";
+
+#define ANY_CLOAK "(0[xX])?([a-fA-F0-9]+\\.?)+"
+#define CLOAK_REGEX_HEXURL "("ANY_CLOAK")?0[xX][a-fA-F0-9]+\\.?"ANY_CLOAK
+#define OCTAL_CLOAK "("ANY_CLOAK")?000[0-9]+\\.?"ANY_CLOAK
+#define DWORD_CLOAK "[0-9]{8,}"
+
+static const char cloaked_host_regex[] = "^(("CLOAK_REGEX_HEXURL")|("OCTAL_CLOAK")|("DWORD_CLOAK"))$";
+
+
 static const char tld_regex[] = "^"iana_tld"$";
 static const char cctld_regex[] = "^"iana_cctld"$";
 static const char dotnet[] = ".net";
@@ -944,6 +956,12 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 				continue;
 			if (ctx->options&CL_SCAN_PHISHING_DOMAINLIST)
 				urls.flags |= DOMAINLIST_REQUIRED;
+			if (ctx->options & CL_SCAN_PHISHING_BLOCKSSL) {
+				urls.always_check_flags |= CHECK_SSL;
+			}
+			if (ctx->options & CL_SCAN_PHISHING_BLOCKCLOAK) {
+				urls.always_check_flags |= CHECK_CLOAKING;
+			}
 			string_init_c(&urls.realLink,(char*)hrefs->value[i]);
 /*			if(!hrefs->contents[i]->isClosed) {
 				blobAddData(hrefs->contents[i],empty_string,1);
@@ -1035,7 +1053,10 @@ static char* str_compose(const char* a,const char* b,const char* c)
 
 static inline char hex2int(const unsigned char* src)
 {
-	return hextable[src[0]]<<4 | hextable[src[1]];
+	return (src[0] == '0' && src[1] == '0') ? 
+		0x1 :/* don't convert %00 to \0, use 0x1
+ 		      * this value is also used by cloak check*/
+		hextable[src[0]]<<4 | hextable[src[1]];
 }
 
 static void free_regex(regex_t* p)
@@ -1065,6 +1086,12 @@ int phishing_init(struct cl_engine* engine)
 	}
 
 	cli_dbgmsg("Initializing phishcheck module\n");
+
+	if(build_regex(&pchk->preg_hexurl,cloaked_host_regex,1)) {
+		free(pchk);
+		engine->phishcheck = NULL;
+		return CL_EFORMAT;
+	}
 
 	if(build_regex(&pchk->preg_cctld,cctld_regex,1)) {
 		free(pchk);
@@ -1106,6 +1133,7 @@ void phishing_done(struct cl_engine* engine)
 	cli_dbgmsg("Cleaning up phishcheck\n");
 	if(pchk && !pchk->is_disabled) {
 		free_regex(&pchk->preg);
+		free_regex(&pchk->preg_hexurl);
 		free_regex(&pchk->preg_cctld);
 		free_regex(&pchk->preg_tld);
 		free_regex(&pchk->preg_numeric);
@@ -1167,7 +1195,8 @@ int url_get_host(const struct phishcheck* pchk, struct url_check* url,struct url
 		string_free(host);
 		return CL_PHISH_TEXTURL;
 	}
-	if(isReal && (!strncmp(host->data,"0x",2) || !strncmp(host->data,"0X",2))) {
+	if(!regexec(&pchk->preg_hexurl,host->data,0,NULL,0)) {
+		/* use a regex here, so that we don't accidentally block 0xacab.net style hosts */
 		string_free(host);
 		return CL_PHISH_HEX_URL;
 	}
@@ -1216,6 +1245,7 @@ int whitelist_check(const struct cl_engine* engine,struct url_check* urls,int ho
 {
 	return whitelist_match(engine,urls->realLink.data,urls->displayLink.data,hostOnly);
 }
+
 
 /* urls can't contain null pointer, caller must ensure this */
 enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check* urls)
@@ -1267,17 +1297,23 @@ enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check*
 			if(domainlist_match(engine,urls->displayLink.data,urls->realLink.data,1,&urls->flags))
 				phishy |= DOMAIN_LISTED;
 			else {
+			}
+		}
+	}
+
+	if(urls->flags & DOMAINLIST_REQUIRED && !(phishy & DOMAIN_LISTED) ) {
+		urls->flags &= urls->always_check_flags;
+		if(!urls->flags) {
 				free_if_needed(&host_url);
 				return CL_PHISH_HOST_NOT_LISTED;
 			}
 		}
-	}
 
 	if(urls->flags&CHECK_CLOAKING) {
 		/*Checks if URL is cloaked.
 		Should we check if it containts another http://, https://?
 		No because we might get false positives from redirect services.*/
-		if(strstr(urls->realLink.data,"%00")) {
+		if(strchr(urls->realLink.data,'\0x1')) {
 			free_if_needed(&host_url);
 			return CL_PHISH_CLOAKED_NULL;
 		}
@@ -1286,6 +1322,7 @@ enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check*
 			return CL_PHISH_HEX_URL;
 		}
 	}
+
 
 	if(urls->displayLink.data[0]=='\0') {
 		free_if_needed(&host_url);
@@ -1297,10 +1334,20 @@ enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check*
 		return CL_PHISH_SSL_SPOOF;
 	}
 
+	if(!urls->flags&CHECK_CLOAKING && urls->flags & DOMAINLIST_REQUIRED && !(phishy&DOMAIN_LISTED) ) {
+		free_if_needed(&host_url);
+		return CL_PHISH_HOST_NOT_LISTED;
+	}
+
 	if((rc = url_get_host(pchk, urls,&host_url,DOMAIN_REAL,&phishy)))
 	{
 		free_if_needed(&host_url);
 		return rc;
+	}
+
+	if(urls->flags&DOMAINLIST_REQUIRED && !(phishy&DOMAIN_LISTED)) {
+		free_if_needed(&host_url);
+		return CL_PHISH_HOST_NOT_LISTED;
 	}
 
 	if(!strncmp(urls->displayLink.data,cid,cid_len))/* cid: image */{
