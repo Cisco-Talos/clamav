@@ -49,6 +49,9 @@
 #include "str.h"
 #include "execs.h"
 #include "md5.h"
+#ifdef CL_EXPERIMENTAL
+#include "mew.h"
+#endif
 
 #ifndef	O_BINARY
 #define	O_BINARY	0
@@ -1071,7 +1074,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
     }
 
-    /* UPX & FSG support */
+    /* UPX, FSG, MEW support */
 
     /* try to find the first section with physical size == 0 */
     found = 0;
@@ -1079,11 +1082,166 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	for(i = 0; i < (unsigned int) nsections - 1; i++) {
 	    if(!section_hdr[i].SizeOfRawData && section_hdr[i].VirtualSize && section_hdr[i + 1].SizeOfRawData && section_hdr[i + 1].VirtualSize) {
 		found = 1;
-		cli_dbgmsg("UPX/FSG: empty section found - assuming compression\n");
+		cli_dbgmsg("UPX/FSG/MEW: empty section found - assuming compression\n");
 		break;
 	    }
 	}
     }
+
+
+    /* MEW support */
+#ifdef CL_EXPERIMENTAL
+    if (found) {
+	uint32_t fileoffset;
+	/* Check EP for MEW */
+	if(lseek(desc, ep, SEEK_SET) == -1) {
+	    cli_dbgmsg("MEW: lseek() failed\n");
+	    free(section_hdr);
+	    return CL_EIO;
+	}
+
+        if((bytes = read(desc, buff, 25)) != 25 && bytes < 16) {
+	    cli_dbgmsg("MEW: Can't read at least 16 bytes at 0x%x (%d) %d\n", ep, ep, bytes);
+	    cli_dbgmsg("MEW: Broken or not compressed file\n");
+            free(section_hdr);
+	    return CL_CLEAN;
+	}
+
+	fileoffset = (vep + cli_readint32(buff + 1) + 5);
+	do {
+	    if (found && (buff[0] == '\xe9') && (fileoffset == 0x154 || fileoffset == 0x158))
+	    {
+		uint32_t offdiff, uselzma;
+
+		cli_dbgmsg ("MEW characteristics found: %08X + %08X + 5 = %08X\n", 
+			cli_readint32(buff + 1), vep, cli_readint32(buff + 1) + vep + 5);
+
+		if(lseek(desc, fileoffset, SEEK_SET) == -1) {
+		    cli_dbgmsg("MEW: lseek() failed\n");
+		    free(section_hdr);
+		    return CL_EIO;
+		}
+
+		if((bytes = read(desc, buff, 0xb0)) != 0xb0) {
+		    cli_dbgmsg("MEW: Can't read 0xb0 bytes at 0x%x (%d) %d\n", fileoffset, fileoffset, bytes);
+		    break;
+		}
+
+		if (fileoffset == 0x154) 
+		    cli_dbgmsg("MEW: Win9x compatibility was set!\n");
+		else
+		    cli_dbgmsg("MEW: Win9x compatibility was NOT set!\n");
+
+		/* is it always 0x1C and 0x21C or not */
+		if((offdiff = cli_readint32(buff+1) - EC32(optional_hdr32.ImageBase)) <= EC32(section_hdr[i + 1].VirtualAddress) || offdiff >= EC32(section_hdr[i + 1].VirtualAddress) + EC32(section_hdr[i + 1].SizeOfRawData) - 4)
+		{
+		    cli_dbgmsg("MEW: ESI is not in proper section\n");
+		    break;
+		}
+		offdiff -= EC32(section_hdr[i + 1].VirtualAddress);
+
+		if(lseek(desc, EC32(section_hdr[i + 1].PointerToRawData), SEEK_SET) == -1) {
+		    cli_dbgmsg("MEW: lseek() failed\n"); /* ACAB: lseek won't fail here but checking doesn't hurt even */
+		    free(section_hdr);
+		    return CL_EIO;
+		}
+		ssize = EC32(section_hdr[i + 1].VirtualSize);
+		dsize = EC32(section_hdr[i].VirtualSize);
+
+		cli_dbgmsg("MEW: ssize %08x dsize %08x offdiff: %08x\n", ssize, dsize, offdiff);
+		if(ctx->limits && ctx->limits->maxfilesize && (ssize + dsize > ctx->limits->maxfilesize || EC32(section_hdr[i + 1].SizeOfRawData) > ctx->limits->maxfilesize)) {
+		    cli_dbgmsg("MEW: Sizes exceeded (ssize: %u, dsize: %u, max: %lu)\n", ssize, dsize , ctx->limits->maxfilesize);
+		    free(section_hdr);
+		    if(BLOCKMAX) {
+			*ctx->virname = "PE.MEW.ExceededFileSize";
+			return CL_VIRUS;
+		    } else {
+			return CL_CLEAN;
+		    }
+		}
+
+		/* allocate needed buffer */
+		if (!(src = cli_calloc (ssize + dsize, sizeof(char)))) {
+		    free(section_hdr);
+		    return CL_EMEM;
+		}
+
+		if (EC32(section_hdr[i + 1].SizeOfRawData) < offdiff + 12 || EC32(section_hdr[i + 1].SizeOfRawData) > ssize)
+		{
+		    cli_dbgmsg("MEW: Size mismatch: %08x\n", EC32(section_hdr[i + 1].SizeOfRawData));
+		    free(src);
+		    break;
+		}
+
+		if((bytes = read(desc, src + dsize, EC32(section_hdr[i + 1].SizeOfRawData))) != EC32(section_hdr[i + 1].SizeOfRawData)) {
+		    cli_dbgmsg("MEW: Can't read %d bytes [readed: %d]\n", EC32(section_hdr[i + 1].SizeOfRawData), bytes);
+		    free(section_hdr);
+		    free(src);
+		    return CL_EIO;
+		}
+		cli_dbgmsg("MEW: %d (%08x) bytes read\n", bytes, bytes);
+		/* count offset to lzma proc, if lzma used, 0xe8 -> call */
+		if (buff[0x7b] == '\xe8')
+		{
+		    if (!CLI_ISCONTAINED(EC32(section_hdr[1].VirtualAddress), EC32(section_hdr[1].VirtualSize), cli_readint32(buff + 0x7c) + fileoffset + 0x80, 4))
+		    {
+			cli_dbgmsg("MEW: lzma proc out of bounds!\n");
+			free(src);
+			break; /* to next unpacker in chain */
+		    }
+		    uselzma = cli_readint32(buff + 0x7c) - (EC32(section_hdr[0].VirtualAddress) - fileoffset - 0x80);
+		} else
+		    uselzma = 0;
+
+		if(!(tempfile = cli_gentemp(NULL))) {
+		    free(section_hdr);
+		    free(src);
+		    return CL_EMEM;
+		}
+		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+		    cli_dbgmsg("MEW: Can't create file %s\n", tempfile);
+		    free(tempfile);
+		    free(section_hdr);
+		    free(src);
+		    return CL_EIO;
+		}
+		dest = src;
+		switch(unmew11(section_hdr, i, src, offdiff, ssize, dsize, EC32(optional_hdr32.ImageBase), EC32(section_hdr[0].VirtualAddress), uselzma, NULL, NULL, ndesc)) {
+		    case 1: /* Everything OK */
+			cli_dbgmsg("MEW: Unpacked and rebuilt executable saved in %s\n", tempfile);
+			free(src);
+			fsync(ndesc);
+			lseek(ndesc, 0, SEEK_SET);
+
+			cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
+			if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) {
+			    free(section_hdr);
+			    close(ndesc);
+			    if(!cli_leavetemps_flag)
+				unlink(tempfile);
+			    free(tempfile);
+			    return CL_VIRUS;
+			}
+			close(ndesc);
+			if(!cli_leavetemps_flag)
+			    unlink(tempfile);
+			free(tempfile);
+			free(section_hdr);
+			return CL_CLEAN;
+		    default: /* Everything gone wrong */
+			cli_dbgmsg("MEW: Unpacking failed\n");
+			close(ndesc);
+			unlink(tempfile); /* It's empty anyway */
+			free(tempfile);
+			free(src);
+			break;
+		}
+	    }
+	} while (0);
+    }
+#endif
+
+
 
     if(found) {
 

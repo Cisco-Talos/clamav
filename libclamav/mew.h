@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005 aCaB <acab@clamav.net>
+ *  Copyright (C) 2006 Michal 'GiM' Spadlinski http://gim.org.pl/
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,13 +17,22 @@
  *  MA 02110-1301, USA.
  */
 
-#ifndef __PACKLIBS_H
-#define __PACKLIBS_H
+#ifndef __MEW_H
+#define __MEW_H
 
-#include "cltypes.h"
-#include "rebuildpe.h"
+struct lzmastate {
+	char *p0;
+	uint32_t p1, p2;
+};
 
-int cli_unfsg(char *, char *, int, int, char **, char **);
-int unmew11(struct pe_image_section_hdr *, int, char *, int, int, int, uint32_t, uint32_t, int, char **, char **, int);
+int mew_lzma(struct pe_image_section_hdr *, char *, char *, uint32_t, uint32_t, uint32_t);
+
+uint32_t lzma_upack_esi_00(struct lzmastate *, char *, char *, uint32_t);
+uint32_t lzma_upack_esi_50(struct lzmastate *, uint32_t, uint32_t, char **, char *, uint32_t *, char *, uint32_t);
+uint32_t lzma_upack_esi_54(struct lzmastate *, uint32_t, uint32_t *, char **, uint32_t *, char *, uint32_t);
 
 #endif
+
+
+
+

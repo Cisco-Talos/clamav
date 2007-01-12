@@ -83,10 +83,10 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher-ncore.lo \
 	snprintf.lo table.lo text.lo ole2_extract.lo vba_extract.lo \
 	msexpand.lo pe.lo upx.lo htmlnorm.lo chmunpack.lo rebuildpe.lo \
 	petite.lo wwunpack.lo suecrypt.lo unsp.lo packlibs.lo fsg.lo \
-	line.lo untar.lo unzip.lo special.lo binhex.lo is_tar.lo \
-	tnef.lo unrar15.lo unrarvm.lo unrar.lo unrarfilter.lo \
-	unrarppm.lo unrar20.lo unrarcmd.lo pdf.lo spin.lo yc.lo elf.lo \
-	sis.lo uuencode.lo pst.lo phishcheck.lo \
+	mew.lo line.lo untar.lo unzip.lo special.lo binhex.lo \
+	is_tar.lo tnef.lo unrar15.lo unrarvm.lo unrar.lo \
+	unrarfilter.lo unrarppm.lo unrar20.lo unrarcmd.lo pdf.lo \
+	spin.lo yc.lo elf.lo sis.lo uuencode.lo pst.lo phishcheck.lo \
 	phish_domaincheck_db.lo phish_whitelist.lo regex_list.lo \
 	sha256.lo mspack.lo cab.lo entconv.lo hashtab.lo dconf.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
@@ -307,6 +307,8 @@ libclamav_la_SOURCES = \
 	packlibs.h \
 	fsg.c \
 	fsg.h \
+	mew.c \
+	mew.h \
 	line.c \
 	line.h \
 	untar.c \
@@ -466,6 +468,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mbox.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/md5.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/message.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mew.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msexpand.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mspack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ole2_extract.Plo@am__quote@
