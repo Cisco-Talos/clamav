@@ -34,6 +34,7 @@ extern "C"
 #define CL_CLEAN	0   /* no virus found */
 #define CL_VIRUS	1   /* virus(es) found */
 #define CL_SUCCESS	CL_CLEAN
+#define CL_BREAK	2
 
 #define CL_EMAXREC	-100 /* recursion limit exceeded */
 #define CL_EMAXSIZE	-101 /* size limit exceeded */
@@ -61,6 +62,7 @@ extern "C"
 #define CL_EIO		-123 /* general I/O error */
 #define CL_EFORMAT	-124 /* bad format or broken file */
 #define CL_ESUPPORT	-125 /* not supported data format */
+#define CL_EFOO		-126 /* fake error code */
 
 /* NodalCore */
 #define CL_ENCINIT	-200 /* NodalCore initialization failed */
