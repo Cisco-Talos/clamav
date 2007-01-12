@@ -1,7 +1,12 @@
+Fri Jan 12 19:25:21 GMT 2007 (njh)
+----------------------------------
+  * clamav-milter:	Remove -b option (enable BOUNCE compile time option
+				to re-enable the option)
+
 Fri Jan 12 18:51:33 CET 2007 (acab)
 -----------------------------------
   * libclamav: add MEW support from Michal Spadlinski <gim913 * gmail.com>
-  	       Part of the Google Summer of Code program
+	       Part of the Google Summer of Code program
 
 Fri Jan 12 18:35:02 CET 2007 (tk)
 ---------------------------------
@@ -14,7 +19,7 @@ Fri Jan 12 18:18:43 CET 2007 (tk)
 		   --phishing-cloak, PhishAlwaysBlockSSLMismatch,
 		   PhishAlwaysBlockCloak)
 		 - rename alldomains/stricturl option to PhishingRestrictedScan
-		 - update man pages for phishing options 
+		 - update man pages for phishing options
 		 - update clamd/clamscan/cfgparser for new phishing options
 		 - add log lines for non-default phishing options
 
