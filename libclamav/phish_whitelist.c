@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phish_whitelist.c,v $
+ *  Revision 1.7  2007/01/13 19:39:21  tkojm
+ *  phishing fixes (bb#157)
+ *
  *  Revision 1.6  2006/10/10 23:51:49  tkojm
  *  apply patches for the anti-phish code from Edwin
  *
@@ -104,6 +107,7 @@
 int whitelist_match(const struct cl_engine* engine,const char* real_url,const char* display_url,int hostOnly)
 {
 	const char* info;/*unused*/
+	cli_dbgmsg("Phishing: looking up in whitelist:%s:%s; hostonly:%d\n",real_url,display_url,hostOnly);
 	return	engine->whitelist_matcher ? regex_list_match(engine->whitelist_matcher,real_url,display_url,hostOnly,&info,1) : 0;
 }
 

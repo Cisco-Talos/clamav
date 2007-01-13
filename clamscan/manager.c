@@ -97,13 +97,13 @@ int scanmanager(const struct optstruct *opt)
 	dboptions |= CL_DB_PHISHING_URLS;
     if(!opt_check(opt,"no-phishing-restrictedscan")) {
 	/* not scanning all domains, check only URLs with domains from .pdb */
-	dboptions |= CL_SCAN_PHISHING_DOMAINLIST;
+	options |= CL_SCAN_PHISHING_DOMAINLIST;
     }
     if(opt_check(opt,"phishing-ssl")) {
-	   dboptions |= CL_SCAN_PHISHING_BLOCKSSL;
+	options |= CL_SCAN_PHISHING_BLOCKSSL;
     }
     if(opt_check(opt,"phishing-cloak")) {
-	    dboptions |= CL_SCAN_PHISHING_BLOCKCLOAK;
+	options |= CL_SCAN_PHISHING_BLOCKCLOAK;
     }
 #endif
 

@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.19  2007/01/13 19:39:21  tkojm
+ *  phishing fixes (bb#157)
+ *
  *  Revision 1.18  2007/01/12 17:36:53  tkojm
  *  add img url link-type filtering
  *
@@ -954,6 +957,7 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 		if(hrefs->contents[i]) {
 			struct url_check urls;
 			enum phish_status rc;
+			urls.always_check_flags = DOMAINLIST_REQUIRED;/* required to work correctly */
 			urls.flags	 = strncmp((char*)hrefs->tag[i],href_text,href_text_len)? (CL_PHISH_ALL_CHECKS&~CHECK_SSL): CL_PHISH_ALL_CHECKS;
 			urls.link_type   = 0;
 			if(!strncmp((char*)hrefs->tag[i],src_text,src_text_len)) {
@@ -1202,7 +1206,7 @@ int url_get_host(const struct phishcheck* pchk, struct url_check* url,struct url
 		string_free(host);
 		return CL_PHISH_TEXTURL;
 	}
-	if(!regexec(&pchk->preg_hexurl,host->data,0,NULL,0)) {
+	if(url->flags&CHECK_CLOAKING && !regexec(&pchk->preg_hexurl,host->data,0,NULL,0)) {
 		/* use a regex here, so that we don't accidentally block 0xacab.net style hosts */
 		string_free(host);
 		return CL_PHISH_HEX_URL;
@@ -1302,7 +1306,7 @@ enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check*
 
 	if(urls->flags&DOMAINLIST_REQUIRED) {
 		if(!(phishy&DOMAIN_LISTED)) {
-			if(domainlist_match(engine,urls->displayLink.data,urls->realLink.data,1,&urls->flags))
+			if(domainlist_match(engine,host_url.displayLink.data,host_url.realLink.data,1,&urls->flags))
 				phishy |= DOMAIN_LISTED;
 			else {
 			}
@@ -1451,6 +1455,8 @@ enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check*
 		free_if_needed(&host_url);
 	}/*HOST_SUFFICIENT*/
 	/*we failed to find a reason why the 2 URLs are different, this is definetely phishing*/
+	if(urls->flags&DOMAINLIST_REQUIRED && !(phishy&DOMAIN_LISTED))
+		return CL_PHISH_HOST_NOT_LISTED;
 	return phishy_map(phishy,CL_PHISH_NOMATCH);
 }
 
@@ -1494,6 +1500,8 @@ const char* phishing_ret_toString(enum phish_status rc)
 			return "Host not listed in .pdb -> not checked";
 		case CL_PHISH_CLEAN_CID:
 			return "Embedded image in mail -> clean";
+		case CL_PHISH_HEX_URL:
+			return "Embedded hex urls";
 		default:
 			return "Unknown return code";
 	}

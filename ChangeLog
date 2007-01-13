@@ -1,3 +1,7 @@
+Sat Jan 13 20:37:22 CET 2007 (tk)
+---------------------------------
+  * clamscan, libclamav: phishing fixes (bb#157)
+
 Sat Jan 13 17:55:25 CET 2007 (tk)
 ---------------------------------
   * libclamav, freshclam: add dbdir locking mechanism (closes bb#113, #143)
@@ -43,7 +47,6 @@ Fri Jan 12 18:51:33 CET 2007 (acab)
   * libclamav: add MEW support from Michal Spadlinski <gim913 * gmail.com>
 	       Part of the Google Summer of Code program
 
->>>>>>> 1.1692
 Fri Jan 12 18:35:02 CET 2007 (tk)
 ---------------------------------
   * libclamav/phishcheck.c: add img url link-type filtering (patch from Edwin)
