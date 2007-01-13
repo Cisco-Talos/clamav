@@ -1,3 +1,7 @@
+Sat Jan 13 13:33:53 CET 2007 (tk)
+---------------------------------
+  * libclamav/scanners.c: print temp filenames in cli_scanzip() (bb#138)
+
 Sat Jan 13 01:28:09 CET 2007 (tk)
 ---------------------------------
   * sigtool: ask for fl when building main.cvd
