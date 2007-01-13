@@ -49,6 +49,7 @@
 #include "str.h"
 #include "defaults.h"
 #include "dconf.h"
+#include "lockdb.h"
 
 #ifdef CL_EXPERIMENTAL
 #include "phish_whitelist.h"
@@ -59,19 +60,6 @@
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #include <limits.h>
 #include <stddef.h>
-#endif
-
-/* Maximum filenames under various systems - njh */
-#ifndef	NAME_MAX	/* e.g. Linux */
-# ifdef	MAXNAMELEN	/* e.g. Solaris */
-#   define	NAME_MAX	MAXNAMELEN
-# else
-#   ifdef	FILENAME_MAX	/* e.g. SCO */
-#     define	NAME_MAX	FILENAME_MAX
-#   else
-#     define	NAME_MAX	256
-#   endif
-# endif
 #endif
 
 #ifdef CL_THREAD_SAFE
@@ -1210,7 +1198,7 @@ int cl_loaddb(const char *filename, struct cl_engine **engine, unsigned int *sig
     return cli_load(filename, engine, signo, 0);
 }
 
-static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo, unsigned int options)
+static int cli_loaddbdir_l(const char *dirname, struct cl_engine **engine, unsigned int *signo, unsigned int options)
 {
 	DIR *dd;
 	struct dirent *dent;
@@ -1283,6 +1271,25 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigne
 
     closedir(dd);
     return CL_SUCCESS;
+}
+
+static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo, unsigned int options)
+{
+	int ret, try;
+
+
+    cli_dbgmsg("cli_loaddbdir: Acquiring dbdir lock\n");
+    while(cli_readlockdb(dirname, 0) == CL_ELOCKDB) {
+	sleep(5);
+	if(try++ > 24) {
+	    cli_errmsg("cl_load(): Unable to lock database directory: %s\n", dirname);
+	    return CL_ELOCKDB;
+	}
+    }
+
+    ret = cli_loaddbdir_l(dirname, engine, signo, options);
+    cli_unlockdb(dirname);
+    return ret;
 }
 
 int cl_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo) {

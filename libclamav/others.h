@@ -46,6 +46,17 @@
 
 #define CLI_MAX_ALLOCATION 184549376
 
+/* Maximum filenames under various systems - njh */
+#ifndef	NAME_MAX	/* e.g. Linux */
+# ifdef	MAXNAMELEN	/* e.g. Solaris */
+#   define	NAME_MAX	MAXNAMELEN
+# else
+#   ifdef	FILENAME_MAX	/* e.g. SCO */
+#     define	NAME_MAX	FILENAME_MAX
+#   endif
+# endif
+#endif
+
 /* internal clamav context */
 typedef struct {
     const char **virname;

@@ -55,6 +55,8 @@
 #include "shared/output.h"
 #include "shared/misc.h"
 
+#include "libclamav/lockdb.h"
+
 #include "execute.h"
 #include "manager.h"
 #include "mirman.h"
@@ -148,7 +150,7 @@ void help(void)
     mprintf("\n");
 }
 
-int download(const struct cfgstruct *copt, const struct optstruct *opt)
+int download(const struct cfgstruct *copt, const struct optstruct *opt, const char *datadir)
 {
 	int ret = 0, try = 0, maxattempts = 0;
 	struct cfgstruct *cpt;
@@ -161,7 +163,15 @@ int download(const struct cfgstruct *copt, const struct optstruct *opt)
 	logg("^You must specify at least one database mirror.\n");
 	return 56;
     } else {
-
+	while(cli_writelockdb(datadir, 0) == CL_ELOCKDB) {
+            logg("*Waiting to lock database directory: %s\n", datadir);
+	    sleep(5);
+	    if(++try > 12) {
+		logg("!Can't lock database directory: %s\n", datadir);
+		return 61; 
+	    }
+	}
+	try = 0;
 	while(cpt) {
 	    ret = downloadmanager(copt, opt, cpt->strarg);
 	    alarm(0);
@@ -182,9 +192,11 @@ int download(const struct cfgstruct *copt, const struct optstruct *opt)
 		}
 
 	    } else {
+		cli_unlockdb(datadir);
 		return ret;
 	    }
 	}
+	cli_unlockdb(datadir);
     }
 
     return ret;
@@ -489,7 +501,7 @@ int main(int argc, char **argv)
 #endif
 
 	while(!terminate) {
-	    ret = download(copt, opt);
+	    ret = download(copt, opt, newdir);
 
             if(ret > 1) {
 		    const char *arg = NULL;
@@ -541,7 +553,7 @@ int main(int argc, char **argv)
 	}
 
     } else
-	ret = download(copt, opt);
+	ret = download(copt, opt, newdir);
 
     if(opt_check(opt, "on-error-execute")) {
 	if(ret > 1)

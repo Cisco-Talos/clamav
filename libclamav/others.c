@@ -223,6 +223,8 @@ const char *cl_strerror(int clerror)
 	    return "Error loading NodalCore database";
 	case CL_ENCIO:
 	    return "NodalCore accelerator Input/Output error";
+	case CL_ELOCKDB:
+	    return "Unable to lock database directory";
 	default:
 	    return "Unknown error code";
     }

@@ -62,7 +62,7 @@ extern "C"
 #define CL_EIO		-123 /* general I/O error */
 #define CL_EFORMAT	-124 /* bad format or broken file */
 #define CL_ESUPPORT	-125 /* not supported data format */
-#define CL_EFOO		-126 /* fake error code */
+#define CL_ELOCKDB	-126 /* can't lock DB directory */
 
 /* NodalCore */
 #define CL_ENCINIT	-200 /* NodalCore initialization failed */
