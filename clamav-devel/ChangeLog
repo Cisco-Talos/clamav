@@ -1,3 +1,8 @@
+Sat Jan 13 00:59:01 CET 2007 (tk)
+---------------------------------
+  * libclamav: extract and scan RAR archives file-by-file (bb#141)
+	       Patch from Edwin
+
 Fri Jan 12 22:03:53 CET 2007 (acab)
 -----------------------------------
   * libclamav/mew: Cleanup. Now fully merged.
@@ -16,6 +21,7 @@ Fri Jan 12 18:51:33 CET 2007 (acab)
   * libclamav: add MEW support from Michal Spadlinski <gim913 * gmail.com>
 	       Part of the Google Summer of Code program
 
+>>>>>>> 1.1692
 Fri Jan 12 18:35:02 CET 2007 (tk)
 ---------------------------------
   * libclamav/phishcheck.c: add img url link-type filtering (patch from Edwin)

@@ -1381,25 +1381,25 @@ static int rar_unpack(int fd, int method, int solid, unpack_data_t *unpack_data)
 	return retval;
 }
 
-rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *limits)
+int cli_unrar_open(int fd, const char *dirname, rar_state_t* state)
 {
-	main_header_t *main_hdr;
 	int ofd, retval;
-	unsigned long file_count=1;
-	file_header_t *file_header;
 	unsigned char filename[1024];
 	unpack_data_t *unpack_data;
-	rar_metadata_t *metadata=NULL, *metadata_tail=NULL, *new_metadata;
+	main_header_t *main_hdr;
 	off_t offset;
 
 	cli_dbgmsg("in cli_unrar\n");
+	if(!state) {
+		return CL_ENULLARG;
+	}
 	if (!is_rar_archive(fd)) {
-		return FALSE;
+		return CL_EFORMAT;
 	}
 	unpack_data = cli_malloc(sizeof(unpack_data_t));
 	if(!unpack_data) {
 	    cli_dbgmsg("unrar: cli_unrar: cli_malloc failed for unpack_data\n");
-	    return FALSE;
+	    return CL_EMEM;
 	}
 	unpack_data->rarvm_data.mem = NULL;
 	unpack_data->old_filter_lengths = NULL;
@@ -1416,12 +1416,33 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 		init_filters(unpack_data);
 		unpack_free_data(unpack_data);
 		free(unpack_data);
-		return metadata;
+		return CL_ERAR;
 	}
 	cli_dbgmsg("Head CRC: %.4x\n", main_hdr->head_crc);
 	cli_dbgmsg("Head Type: %.2x\n", main_hdr->head_type);
 	cli_dbgmsg("Flags: %.4x\n", main_hdr->flags);
 	cli_dbgmsg("Head Size: %.4x\n", main_hdr->head_size);
+
+	snprintf(filename,1024,"%s/comments",dirname);
+	if(mkdir(filename,0700)) {
+		cli_dbgmsg("cli_unrar: Unable to create comment temporary directory\n");
+		free(main_hdr);
+		ppm_destructor(&unpack_data->ppm_data);
+		init_filters(unpack_data);
+		unpack_free_data(unpack_data);
+		free(unpack_data);
+		return CL_ETMPDIR;
+	}
+	state->comment_dir = cli_strdup(filename);
+	if(!state->comment_dir) {
+		free(main_hdr);
+		ppm_destructor(&unpack_data->ppm_data);
+		init_filters(unpack_data);
+		unpack_free_data(unpack_data);
+		free(unpack_data);
+		return CL_EMEM;
+	}
+
 	if ((main_hdr->flags & MHD_VOLUME) != 0) {
 		/* Part of a RAR VOLUME - Skip it */
 		cli_dbgmsg("RAR MUTIPART VOLUME - Skippng.\n");
@@ -1430,7 +1451,8 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 		init_filters(unpack_data);
 		unpack_free_data(unpack_data);
 		free(unpack_data);
-		return metadata;
+		free(state->comment_dir);
+		return CL_ESUPPORT;
         }
 
 	if (main_hdr->head_size < SIZEOF_NEWMHD) {
@@ -1439,7 +1461,8 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 		init_filters(unpack_data);
 		unpack_free_data(unpack_data);
 		free(unpack_data);
-		return metadata;
+		free(state->comment_dir);
+		return CL_EFORMAT;
 	}
 	if (main_hdr->flags & MHD_COMMENT) {
 		comment_header_t *comment_header;
@@ -1453,11 +1476,18 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 			cli_dbgmsg("UnPack Size: 0x%.4x\n", comment_header->unpack_size);
 			cli_dbgmsg("UnPack Version: 0x%.2x\n", comment_header->unpack_ver);
 			cli_dbgmsg("Pack Method: 0x%.2x\n", comment_header->method);
-			snprintf(filename, 1024, "%s/main.cmt", dirname);
+			snprintf(filename, 1024, "%s/main.cmt", state->comment_dir);
 			ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, 0600);
 			if (ofd < 0) {
 				free(comment_header);
 				cli_dbgmsg("ERROR: Failed to open output file\n");
+				free(main_hdr);
+				ppm_destructor(&unpack_data->ppm_data);
+				init_filters(unpack_data);
+				unpack_free_data(unpack_data);
+				free(unpack_data);
+				free(state->comment_dir);
+				return CL_EIO;
 			} else {
 				if (comment_header->method == 0x30) {
 					cli_dbgmsg("Copying stored comment (not packed)\n");
@@ -1482,17 +1512,35 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 			init_filters(unpack_data);
 			unpack_free_data(unpack_data);
 			free(unpack_data);
-			return metadata;
+			free(state->comment_dir);
+			return CL_EFORMAT; /* truncated? */
 		}
 	}
-	for (;;) {
-		file_header=read_block(fd, FILE_HEAD);
+
+	state->unpack_data = unpack_data;
+	state->main_hdr = main_hdr;
+	state->metadata_tail = state->metadata = NULL;
+	state->file_count = 1;
+	state->offset = offset;
+	state->fd = fd;
+
+	return CL_SUCCESS;
+}
+
+int cli_unrar_extract_next(rar_state_t* state,const char* dirname)
+{
+	int retval;
+	unsigned char filename[1024];
+	int ofd;
+
+	rar_metadata_t *new_metadata;
+	file_header_t *file_header = read_block(state->fd, FILE_HEAD);
 		if (!file_header) {
-			break;
+		return CL_BREAK;/* end of archive */
 		}
 		new_metadata = cli_malloc(sizeof(rar_metadata_t));
 		if (!new_metadata) {
-			break;
+		return CL_EMEM;
 		}
 		new_metadata->pack_size = file_header->pack_size;
 		new_metadata->unpack_size = file_header->unpack_size;
@@ -1501,32 +1549,17 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 		new_metadata->filename = strdup(file_header->filename);
 		new_metadata->next = NULL;
 		new_metadata->encrypted = FALSE;
-		if (metadata_tail == NULL) {
-			metadata_tail = metadata = new_metadata;
+	if (state->metadata_tail == NULL) {
+		state->metadata_tail = state->metadata = new_metadata;
 		} else {
-			metadata_tail->next = new_metadata;
-			metadata_tail = new_metadata;
-		}
-		if (limits) {
-			if (limits->maxratio && file_header->unpack_size && file_header->pack_size) {
-				if(file_header->unpack_size / file_header->pack_size >= limits->maxratio) {
-					free(file_header->filename);
-					free(file_header);
-					break;
-				}
-			}
-
-			if (limits->maxfilesize && (file_header->unpack_size > (unsigned int) limits->maxfilesize)) {
-				free(file_header->filename);
-				free(file_header);
-				break;
-			}
+		state->metadata_tail->next = new_metadata;
+		state->metadata_tail = new_metadata;
 		}
 		if (file_header->flags & LHD_COMMENT) {
 			comment_header_t *comment_header;
 
 			cli_dbgmsg("File comment present\n");
-			comment_header = read_header(fd, COMM_HEAD);
+		comment_header = read_header(state->fd, COMM_HEAD);
 			if (comment_header) {
 				cli_dbgmsg("Comment type: 0x%.2x\n", comment_header->head_type);
 				cli_dbgmsg("Head size: 0x%.4x\n", comment_header->head_size);
@@ -1538,63 +1571,62 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 						(comment_header->method > 0x30)) {
 					cli_dbgmsg("Can't process file comment - skipping\n");
 				} else {
-					snprintf(filename, 1024, "%s/%lu.cmt", dirname, file_count);
+				snprintf(filename, 1024, "%s/%lu.cmt", state->comment_dir, state->file_count);
 					ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, 0600);
 					if (ofd < 0) {
 						free(comment_header);
 						cli_dbgmsg("ERROR: Failed to open output file\n");
 					} else {
                 	                        cli_dbgmsg("Copying file comment (not packed)\n");
-                        	                copy_file_data(fd, ofd, comment_header->unpack_size);
+					copy_file_data(state->fd, ofd, comment_header->unpack_size);
 						close(ofd);
 					}
 				}
 				free(comment_header);
 			}
 		}
-	        if (lseek(fd, file_header->start_offset+file_header->head_size, SEEK_SET) !=
+	if (lseek(state->fd, file_header->start_offset+file_header->head_size, SEEK_SET) !=
 							file_header->start_offset+file_header->head_size) {
-        	        cli_dbgmsg("Seek failed: %ld\n", offset+file_header->head_size);
+		cli_dbgmsg("Seek failed: %ld\n", state->offset+file_header->head_size);
 			free(file_header->filename);
 			free(file_header);
-			break;
+		return CL_ERAR;
         	}
 		if (file_header->flags & LHD_PASSWORD) {
 			cli_dbgmsg("PASSWORDed file: %s\n", file_header->filename);
-			metadata_tail->encrypted = TRUE;
+		state->metadata_tail->encrypted = TRUE;
 		} else /*if (file_header->unpack_size)*/ {
-			snprintf(filename, 1024, "%s/%lu.ura", dirname, file_count);
-			ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, 0600);
+		snprintf(state->filename, 1024, "%s/%lu.ura", dirname, state->file_count);
+		ofd = open(state->filename, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, 0600);
 			if (ofd < 0) {
 				free(file_header->filename);
 				free(file_header);
 				cli_dbgmsg("ERROR: Failed to open output file\n");
-				continue;
+			return CL_EOPEN;
 			}
-			unpack_data->ofd = ofd;
+		state->unpack_data->ofd = ofd;
 			if (file_header->method == 0x30) {
 				cli_dbgmsg("Copying stored file (not packed)\n");
-				copy_file_data(fd, ofd, file_header->pack_size);
+			copy_file_data(state->fd, ofd, file_header->pack_size);
 			} else {
-				unpack_data->dest_unp_size = file_header->unpack_size;
-				unpack_data->pack_size = file_header->pack_size;
+			state->unpack_data->dest_unp_size = file_header->unpack_size;
+			state->unpack_data->pack_size = file_header->pack_size;
 				if (file_header->unpack_ver <= 15) {
-					retval = rar_unpack(fd, 15, (file_count>1) &&
-						((main_hdr->flags&MHD_SOLID)!=0), unpack_data);
+				retval = rar_unpack(state->fd, 15, (state->file_count>1) &&
+						((state->main_hdr->flags&MHD_SOLID)!=0), state->unpack_data);
 				} else {
-					if ((file_count == 1) && (file_header->flags & LHD_SOLID)) {
+				if ((state->file_count == 1) && (file_header->flags & LHD_SOLID)) {
 						cli_warnmsg("RAR: First file can't be SOLID.\n");
-						close(ofd);
-						break;
+					return CL_ERAR;
 					} else {
-						retval = rar_unpack(fd, file_header->unpack_ver,
-							file_header->flags & LHD_SOLID,	unpack_data);
+					retval = rar_unpack(state->fd, file_header->unpack_ver,
+							file_header->flags & LHD_SOLID,	state->unpack_data);
 					}
 				}
 				cli_dbgmsg("Expected File CRC: 0x%x\n", file_header->file_crc);
-				cli_dbgmsg("Computed File CRC: 0x%x\n", unpack_data->unp_crc^0xffffffff);
-				if (unpack_data->unp_crc != 0xffffffff) {
-					if (file_header->file_crc != (unpack_data->unp_crc^0xffffffff)) {
+			cli_dbgmsg("Computed File CRC: 0x%x\n", state->unpack_data->unp_crc^0xffffffff);
+			if (state->unpack_data->unp_crc != 0xffffffff) {
+				if (file_header->file_crc != (state->unpack_data->unp_crc^0xffffffff)) {
 						cli_warnmsg("RAR CRC error. Please report the bug at http://bugs.clamav.net/\n");
 					}
 				}
@@ -1602,34 +1634,31 @@ rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *l
 					cli_dbgmsg("Corrupt file detected\n");
 					if (file_header->flags & LHD_SOLID) {
 						cli_dbgmsg("SOLID archive, can't continue\n");
-						close(ofd);
-						break;
+					return CL_ERAR;
 					}
 				}
 			}
 		
-			close(ofd);
 		}
-		if (lseek(fd, file_header->next_offset, SEEK_SET) != file_header->next_offset) {
+	if (lseek(state->fd, file_header->next_offset, SEEK_SET) != file_header->next_offset) {
 			cli_dbgmsg("ERROR: seek failed: %ld\n", file_header->next_offset);
 			free(file_header->filename);
 			free(file_header);
-			free(main_hdr);
-			ppm_destructor(&unpack_data->ppm_data);
-			init_filters(unpack_data);
-			unpack_free_data(unpack_data);
-			free(unpack_data);
-			return metadata;
+			return CL_ERAR;
 		}
 		free(file_header->filename);
 		free(file_header);
-		unpack_free_data(unpack_data);
-		file_count++;
+	unpack_free_data(state->unpack_data);
+	state->file_count++;
+	return CL_SUCCESS;
 	}
-	ppm_destructor(&unpack_data->ppm_data);
-	free(main_hdr);
-	init_filters(unpack_data);
-	unpack_free_data(unpack_data);
-	free(unpack_data);
-	return metadata;
+
+void cli_unrar_close(rar_state_t* state)
+{
+	ppm_destructor(&state->unpack_data->ppm_data);
+	free(state->main_hdr);
+	init_filters(state->unpack_data);
+	unpack_free_data(state->unpack_data);
+	free(state->unpack_data);
+	free(state->comment_dir);
 }
