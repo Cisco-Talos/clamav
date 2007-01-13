@@ -1,3 +1,7 @@
+Sat Jan 13 01:28:09 CET 2007 (tk)
+---------------------------------
+  * sigtool: ask for fl when building main.cvd
+
 Sat Jan 13 01:01:40 CET 2007 (tk)
 ---------------------------------
   * clamdscan: add new option --multiscan, -m
