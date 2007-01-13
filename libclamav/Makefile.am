@@ -97,6 +97,8 @@ libclamav_la_SOURCES = \
 	fsg.h \
 	mew.c \
 	mew.h \
+	upack.c \
+	upack.h \
 	line.c \
 	line.h \
 	untar.c \
