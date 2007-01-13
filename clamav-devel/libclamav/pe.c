@@ -51,6 +51,7 @@
 #include "md5.h"
 #ifdef CL_EXPERIMENTAL
 #include "mew.h"
+#include "upack.h"
 #endif
 
 #ifndef	O_BINARY
@@ -253,7 +254,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	unsigned int ssize = 0, dsize = 0, dll = 0, pe_plus = 0;
 	int (*upxfn)(char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t) = NULL;
 	char *src = NULL, *dest = NULL;
-	int ndesc, ret = CL_CLEAN;
+	int ndesc, ret = CL_CLEAN, upack = 0;
 	size_t fsize;
 	uint32_t valign, falign;
 	struct cli_exe_section *exe_sections;
@@ -483,6 +484,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    lseek(desc, (EC16(file_hdr.SizeOfOptionalHeader)-sizeof(struct pe_image_optional_hdr32)), SEEK_CUR);
 	}
 
+	upack = (EC16(file_hdr.SizeOfOptionalHeader)==0x148);
 	vep = EC32(optional_hdr32.AddressOfEntryPoint);
 	cli_dbgmsg("File format: PE\n");
 
@@ -1250,13 +1252,13 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    }
 	} while (0);
     }
-#endif
 
 
-
+    if(found || upack) {
+#else
     if(found) {
-
-	/* Check EP for UPX vs. FSG */
+#endif
+	/* Check EP for UPX vs. FSG vs. Upack */
 	if(lseek(desc, ep, SEEK_SET) == -1) {
 	    cli_dbgmsg("UPX/FSG: lseek() failed\n");
 	    free(section_hdr);
@@ -1271,6 +1273,158 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    free(exe_sections);
 	    return CL_CLEAN;
 	}
+
+#ifdef CL_EXPERIMENTAL
+	/* Upack 0.39 produces 2 types of executables
+	 * 3 sections:           | 2 sections (one empty, I don't chech found if !upack, since it's in OR above):
+	 *   mov esi, value      |   pusha
+	 *   lodsd               |   call $+0x9
+	 *   push eax            |
+	 *
+	 * Upack 1.1/1.2 Beta produces [based on 2 samples (sUx) provided by aCaB]:
+	 * 2 sections
+	 *   mov esi, value
+	 *   loads
+	 *   mov edi, eax
+	 *
+	 * Upack unknown [sample 0297729]
+	 * 3 sections
+	 *   mov esi, value
+	 *   push [esi]
+	 *   jmp
+	 * 
+	 */
+	/* upack 0.39-3s + sample 0151477*/
+ 	if((upack && buff[0] == '\xbe' && cli_readint32(buff + 1) - EC32(optional_hdr32.ImageBase) > min && /* mov esi */
+				buff[5] == '\xad' && buff[6] == '\x50' && /* lodsd; push eax */
+				EC16(file_hdr.NumberOfSections) == 3) || /* 3 sections */
+			/* based on 0297729 sample from aCaB */
+			(upack && buff[0] == '\xbe' && cli_readint32(buff + 1) - EC32(optional_hdr32.ImageBase) > min && /* mov esi */
+			 buff[5] == '\xff' && buff[6] == '\x36' && /* push [esi] */
+			 EC16(file_hdr.NumberOfSections) == 3) ||
+			/* upack 0.39-2s */
+			(!upack && buff[0] == '\x60' && buff[1] == '\xe8' && cli_readint32(buff+2) == 0x9 && /* pusha; call+9 */
+			 EC16(file_hdr.NumberOfSections) == 2) || /* 2 sections */
+			/* upack 1.1/1.2, based on 2 samples */
+			(!upack && buff[0] == '\xbe' && cli_readint32(buff+1) - EC32(optional_hdr32.ImageBase) < min &&  /* mov esi */
+			 cli_readint32(buff + 1) - EC32(optional_hdr32.ImageBase) > 0 && 
+			 buff[5] == '\xad' && buff[6] == '\x8b' && buff[7] == '\xf8' && /* loads;  mov edi, eax */
+			 EC16(file_hdr.NumberOfSections) == 2)) { /* 2 sections */
+		uint32_t vma, off;
+		int a,b,c, file;
+
+		cli_dbgmsg("Upack characteristics found.\n");
+		a = EC32(section_hdr[0].VirtualSize);
+		b = EC32(section_hdr[1].VirtualSize);
+		if (upack) {
+			cli_dbgmsg("upack var set\n");
+			c = EC32(section_hdr[2].VirtualSize);
+			ssize = EC32(section_hdr[0].SizeOfRawData) + EC32(section_hdr[0].PointerToRawData);
+			off = EC32(section_hdr[0].VirtualAddress);
+			vma = EC32(optional_hdr32.ImageBase) + EC32(section_hdr[0].VirtualAddress);
+		} else {
+			cli_dbgmsg("upack var NOT set\n");
+			c = EC32(section_hdr[1].VirtualAddress);
+			ssize = EC32(section_hdr[1].PointerToRawData);
+			off = 0;
+			vma = EC32(section_hdr[1].VirtualAddress) - EC32(section_hdr[1].PointerToRawData);
+		}
+
+		dsize = a+b+c;
+		if (ctx->limits && ctx->limits->maxfilesize && (dsize > ctx->limits->maxfilesize || ssize > ctx->limits->maxfilesize || EC32(section_hdr[1].SizeOfRawData) > ctx->limits->maxfilesize))
+		{
+		    cli_dbgmsg("Upack: Sizes exceeded (a: %u, b: %u, c: %ux, max: %lu)\n", a, b, c, ctx->limits->maxfilesize);
+		    free(section_hdr);
+		    if(BLOCKMAX) {
+			*ctx->virname = "PE.Upack.ExceededFileSize";
+			return CL_VIRUS;
+		    } else {
+			return CL_CLEAN;
+		    }
+		}
+		/* these are unsigned so if vaddr - off < 0, it should be ok */
+		if (EC32(section_hdr[1].VirtualAddress) - off > dsize || EC32(section_hdr[1].VirtualAddress) - off > dsize - EC32(section_hdr[1].SizeOfRawData) || (upack && (EC32(section_hdr[2].VirtualAddress) - EC32(section_hdr[0].VirtualAddress) > dsize || EC32(section_hdr[2].VirtualAddress) - EC32(section_hdr[0].VirtualAddress) > dsize - ssize)) || ssize > dsize)
+		{
+		    cli_dbgmsg("Upack: probably malformed pe-header, skipping to next unpacker\n");
+		    goto skip_upack_and_go_to_next_unpacker; /* I didn't want to add additional do while + break, can it be this way ? */
+		}
+			
+		if((dest = (char *) cli_calloc(dsize, sizeof(char))) == NULL) {
+		    free(section_hdr);
+		    return CL_EMEM;
+		}
+		src = NULL;
+		cli_dbgmsg("Upack: min: %08x %08x max: %08x\n", dest, a+b+c, dest+a+b+c);
+	
+		lseek(desc, 0, SEEK_SET);
+		if(read(desc, dest, ssize) != ssize) { /* 2vGiM: i think this can be overflowed - should you check for ssize < dsize ?
+		                                        * yup, I think you're right, added above
+							*/
+		    cli_dbgmsg("Upack: Can't read raw data of section 0\n");
+		    free(section_hdr);
+		    free(dest);
+		    return CL_EIO;
+		}
+
+		if (upack)
+			memmove(dest + EC32(section_hdr[2].VirtualAddress) - EC32(section_hdr[0].VirtualAddress), dest, ssize);
+
+		lseek(desc, EC32(section_hdr[1].PointerToRawData), SEEK_SET);
+
+		if(read(desc, dest+EC32(section_hdr[1].VirtualAddress) - off, EC32(section_hdr[1].SizeOfRawData)) != EC32(section_hdr[1].SizeOfRawData)) {
+		    cli_dbgmsg("Upack: Can't read raw data of section 1\n");
+		    free(section_hdr);
+		    free(dest);
+		    return CL_EIO;
+		}
+
+		if(!(tempfile = cli_gentemp(NULL)))
+		    return CL_EMEM;
+
+		if((file = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+		    cli_dbgmsg("Upack: Can't create file %s\n", tempfile);
+		    free(tempfile);
+		    free(section_hdr);
+		    free(dest);
+		    return CL_EIO;
+		}
+
+		switch (unupack(upack, dest, dsize, buff, vma, ep, EC32(optional_hdr32.ImageBase), EC32(section_hdr[0].VirtualAddress), file))
+		{
+			case 1: /* Everything OK */
+				cli_dbgmsg("Upack: Unpacked and rebuilt executable saved in %s\n", tempfile);
+				free(dest);
+				fsync(file);
+				lseek(file, 0, SEEK_SET);
+
+				cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
+				if(cli_magic_scandesc(file, ctx) == CL_VIRUS) {
+					free(section_hdr);
+					close(file);
+					if(!cli_leavetemps_flag)
+						unlink(tempfile);
+					free(tempfile);
+					return CL_VIRUS;
+				}
+
+				close(file);
+				if(!cli_leavetemps_flag)
+					unlink(tempfile);
+				free(tempfile);
+				free(section_hdr);
+				return CL_CLEAN;
+
+			default: /* Everything gone wrong */
+				cli_dbgmsg("Upack: Unpacking failed\n");
+				close(file);
+				unlink(tempfile); /* It's empty anyway */
+				free(tempfile);
+				free(dest);
+				break;
+		}
+	}
+skip_upack_and_go_to_next_unpacker:
+#endif
 
 	if((DCONF & PE_CONF_FSG) && buff[0] == '\x87' && buff[1] == '\x25') {
 
