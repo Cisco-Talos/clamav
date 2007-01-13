@@ -1,3 +1,7 @@
+Sat Jan 13 01:01:40 CET 2007 (tk)
+---------------------------------
+  * clamdscan: add new option --multiscan, -m
+
 Sat Jan 13 00:59:01 CET 2007 (tk)
 ---------------------------------
   * libclamav: extract and scan RAR archives file-by-file (bb#141)

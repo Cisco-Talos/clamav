@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 	char *clamdscan_accepted[] = { "help", "version", "verbose", "quiet",
 				  "stdout", "log", "move", "copy", "remove",
 				  "config-file", "no-summary",
-				  "disable-summary", NULL };
+				  "disable-summary", "multiscan", NULL };
 
 
     opt = opt_parse(argc, argv, clamscan_shortopt, clamscan_longopt, clamdscan_accepted);
@@ -151,7 +151,8 @@ void help(void)
     mprintf("    --move=DIRECTORY                   Move infected files into DIRECTORY\n");
     mprintf("    --copy=DIRECTORY                   Copy infected files into DIRECTORY\n");
     mprintf("    --config-file=FILE                 Read configuration from FILE.\n");
-    mprintf("    --infected            -i             Only print infected files\n");
+    mprintf("    --multiscan           -m           Force MULTISCAN mode\n");
+    mprintf("    --infected            -i           Only print infected files\n");
     mprintf("    --no-summary                       Disable summary at end of scanning\n");
     mprintf("\n");
 
