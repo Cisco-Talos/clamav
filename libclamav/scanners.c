@@ -508,10 +508,15 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 
 	zip_file_close(zfp);
 
-	if(!encrypted && size != zdirent.st_size) {
-	    cli_dbgmsg("Zip: Incorrectly decompressed (%d != %d)\n", size, zdirent.st_size);
-	    ret = CL_EZIP;
-	    break;
+	if(!encrypted) {
+	    if(size != zdirent.st_size) {
+		cli_dbgmsg("Zip: Incorrectly decompressed (%d != %d)\n", size, zdirent.st_size);
+		ret = CL_EZIP;
+		break;
+
+	    } else {
+		cli_dbgmsg("Zip: File decompressed to %s\n", tmpname);
+	    }
 	}
 
 	if(fflush(tmp) != 0) {
