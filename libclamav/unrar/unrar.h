@@ -56,6 +56,7 @@ typedef struct rar_metadata_tag
 	struct rar_metadata_tag *next;
 } rar_metadata_t;
 
+
 #define SIZEOF_MARKHEAD 7
 #define SIZEOF_NEWMHD 13
 #define SIZEOF_NEWLHD 32
@@ -291,6 +292,18 @@ typedef struct unpack_data_tag
 	unsigned int ntopl[256], ntoplb[256], ntoplc[256];
 } unpack_data_t;
 
+typedef struct rar_state_tag {
+	rar_metadata_t *metadata;
+	rar_metadata_t *metadata_tail;
+	unpack_data_t *unpack_data;
+	main_header_t *main_hdr;
+	const char* comment_dir;
+	unsigned long file_count;
+	off_t offset;
+	int fd;
+	char  filename[1024];
+} rar_state_t;
+
 typedef enum
 {
 	ALL_HEAD=0,
@@ -312,7 +325,10 @@ enum BLOCK_TYPES
 	BLOCK_PPM
 };
 
-rar_metadata_t *cli_unrar(int fd, const char *dirname, const struct cl_limits *limits);
+
+int cli_unrar_extract_next(rar_state_t* state,const char* dirname);
+int cli_unrar_open(int fd, const char *dirname, rar_state_t* state);
+void cli_unrar_close(rar_state_t* state);
 unsigned int rar_get_char(int fd, unpack_data_t *unpack_data);
 void addbits(unpack_data_t *unpack_data, int bits);
 unsigned int getbits(unpack_data_t *unpack_data);

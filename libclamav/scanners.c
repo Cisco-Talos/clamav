@@ -118,13 +118,118 @@ extern short cli_leavetemps_flag;
 
 static int cli_scanfile(const char *filename, cli_ctx *ctx);
 
+static int cli_unrar_scanmetadata(int desc, rar_metadata_t *metadata, cli_ctx *ctx, unsigned int files, uint32_t* sfx_check)
+{
+	int ret = CL_SUCCESS;
+	struct cli_meta_node* mdata;
+
+
+    if(files == 1 && sfx_check) {
+	if(*sfx_check == metadata->crc)
+	    return CL_BREAK;/* break extract loop */
+	else
+	    *sfx_check = metadata->crc;
+    }
+
+    cli_dbgmsg("RAR: %s, crc32: 0x%x, encrypted: %d, compressed: %u, normal: %u, method: %d, ratio: %d (max: %d)\n",
+	metadata->filename, metadata->crc, metadata->encrypted, metadata->pack_size,
+	metadata->unpack_size, metadata->method,
+	metadata->pack_size ? ((unsigned int) metadata->unpack_size / (unsigned int) metadata->pack_size) : 0, ctx->limits ? ctx->limits->maxratio : 0);
+
+    /* Scan metadata */
+    mdata = ctx->engine->rar_mlist;
+    if(mdata) do {
+	if(mdata->encrypted != metadata->encrypted)
+	    continue;
+
+	if(mdata->crc32 && (unsigned int) mdata->crc32 != metadata->crc)
+	    continue;
+
+	if(mdata->csize > 0 && (unsigned int) mdata->csize != metadata->pack_size)
+	    continue;
+
+	if(mdata->size >= 0 && (unsigned int) mdata->size != metadata->unpack_size)
+	    continue;
+
+	if(mdata->method >= 0 && mdata->method != metadata->method)
+	    continue;
+
+	if(mdata->fileno && mdata->fileno != files)
+	    continue;
+
+	if(mdata->maxdepth && ctx->arec > mdata->maxdepth)
+	    continue;
+
+	/* TODO add support for regex */
+	/*if(mdata->filename && !strstr(zdirent.d_name, mdata->filename))*/
+	if(mdata->filename && strcmp((char *) metadata->filename, mdata->filename))
+	    continue;
+
+	break; /* matched */
+
+    } while((mdata = mdata->next));
+
+    if(mdata) {
+	*ctx->virname = mdata->virname;
+	return CL_VIRUS;	   
+    }
+
+    if(DETECT_ENCRYPTED && metadata->encrypted) {
+	cli_dbgmsg("RAR: Encrypted files found in archive.\n");
+	lseek(desc, 0, SEEK_SET);
+	ret = cli_scandesc(desc, ctx, 0, 0, 0, NULL);
+	if(ret != CL_VIRUS) {
+	    *ctx->virname = "Encrypted.RAR";
+	    return CL_VIRUS;
+	}
+    }
+
+/*
+    TROG - TODO: multi-volume files
+    if((rarlist->item.Flags & 0x03) != 0) {
+	cli_dbgmsg("RAR: Skipping %s (split)\n", rarlist->item.Name);
+	rarlist = rarlist->next;
+	continue;
+    }
+*/
+    if(ctx->limits) {
+	if(ctx->limits->maxratio && metadata->unpack_size && metadata->pack_size) {
+	    if((unsigned int) metadata->unpack_size / (unsigned int) metadata->pack_size >= ctx->limits->maxratio) {
+		cli_dbgmsg("RAR: Max ratio reached (normal: %u, compressed: %u, max: %ld)\n", metadata->unpack_size, metadata->pack_size, ctx->limits->maxratio);
+		*ctx->virname = "Oversized.RAR";
+		return CL_VIRUS;
+	    }
+	}
+
+	if(ctx->limits->maxfilesize && (metadata->unpack_size > ctx->limits->maxfilesize)) {
+	    cli_dbgmsg("RAR: %s: Size exceeded (%u, max: %lu)\n", metadata->filename, metadata->unpack_size, ctx->limits->maxfilesize);
+	    if(BLOCKMAX) {
+		*ctx->virname = "RAR.ExceededFileSize";
+		return CL_VIRUS;
+	    }
+	    return CL_SUCCESS;
+	}
+
+	if(ctx->limits->maxfiles && (files > ctx->limits->maxfiles)) {
+	    cli_dbgmsg("RAR: Files limit reached (max: %d)\n", ctx->limits->maxfiles);
+	    if(BLOCKMAX) {
+		*ctx->virname = "RAR.ExceededFilesLimit";
+		return CL_VIRUS;
+	    }
+	    return CL_BREAK;
+	}
+    }
+
+    return ret;
+}
+
 static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 {
 	int ret = CL_CLEAN;
 	unsigned int files = 0;
 	rar_metadata_t *metadata, *metadata_tmp;
-	struct cli_meta_node *mdata;
 	char *dir;
+	rar_state_t rar_state;
 
 
     cli_dbgmsg("in scanrar()\n");
@@ -140,127 +245,50 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
     if(sfx_offset)
 	lseek(desc, sfx_offset, SEEK_SET);
 
-    metadata = metadata_tmp = cli_unrar(desc, dir, ctx->limits);
-
-    if(cli_scandir(dir, ctx) == CL_VIRUS) {
-	    ret = CL_VIRUS;
-    } else while(metadata) {
-
-	files++;
-
-	if(files == 1 && sfx_check) {
-	    if(*sfx_check == metadata->crc)
-		break;
-	    else
-		*sfx_check = metadata->crc;
-	}
-
-	cli_dbgmsg("RAR: %s, crc32: 0x%x, encrypted: %d, compressed: %u, normal: %u, method: %d, ratio: %d (max: %d)\n",
-		metadata->filename, metadata->crc, metadata->encrypted, metadata->pack_size,
-		metadata->unpack_size, metadata->method,
-		metadata->pack_size ? ((unsigned int) metadata->unpack_size / (unsigned int) metadata->pack_size) : 0, ctx->limits ? ctx->limits->maxratio : 0);
-
-	/* Scan metadata */
-	mdata = ctx->engine->rar_mlist;
-	if(mdata) do {
-	    if(mdata->encrypted != metadata->encrypted)
-		continue;
-
-	    if(mdata->crc32 && (unsigned int) mdata->crc32 != metadata->crc)
-		continue;
-
-	    if(mdata->csize > 0 && (unsigned int) mdata->csize != metadata->pack_size)
-		continue;
-
-	    if(mdata->size >= 0 && (unsigned int) mdata->size != metadata->unpack_size)
-		continue;
-
-	    if(mdata->method >= 0 && mdata->method != metadata->method)
-		continue;
-
-	    if(mdata->fileno && mdata->fileno != files)
-		continue;
-
-	    if(mdata->maxdepth && ctx->arec > mdata->maxdepth)
-		continue;
-
-	    /* TODO add support for regex */
-	    /*if(mdata->filename && !strstr(zdirent.d_name, mdata->filename))*/
-	    if(mdata->filename && strcmp((char *) metadata->filename, mdata->filename))
-		continue;
-
-	    break; /* matched */
-
-	} while((mdata = mdata->next));
-
-	if(mdata) {
-	    *ctx->virname = mdata->virname;
-	    ret = CL_VIRUS;
-	    break;
-	}
-
-	if(DETECT_ENCRYPTED && metadata->encrypted) {
-	    cli_dbgmsg("RAR: Encrypted files found in archive.\n");
-	    lseek(desc, 0, SEEK_SET);
-	    ret = cli_scandesc(desc, ctx, 0, 0, 0, NULL);
-	    if(ret < 0) {
-		break;
-	    } else if(ret != CL_VIRUS) {
-		*ctx->virname = "Encrypted.RAR";
-		ret = CL_VIRUS;
-	    }
-	    break;
-	}
-
-/*
-	TROG - TODO: multi-volume files
-	if((rarlist->item.Flags & 0x03) != 0) {
-	    cli_dbgmsg("RAR: Skipping %s (split)\n", rarlist->item.Name);
-	    rarlist = rarlist->next;
-	    continue;
-	}
-*/
-	if(ctx->limits) {
-	    if(ctx->limits->maxratio && metadata->unpack_size && metadata->pack_size) {
-		if((unsigned int) metadata->unpack_size / (unsigned int) metadata->pack_size >= ctx->limits->maxratio) {
-		    cli_dbgmsg("RAR: Max ratio reached (normal: %u, compressed: %u, max: %ld)\n", metadata->unpack_size,
-		    		metadata->pack_size, ctx->limits->maxratio);
-		    *ctx->virname = "Oversized.RAR";
-		    ret = CL_VIRUS;
-		    break;
-		}
-	    }
-
-	    if(ctx->limits->maxfilesize && (metadata->unpack_size > (unsigned int) ctx->limits->maxfilesize)) {
-		cli_dbgmsg("RAR: %s: Size exceeded (%u, max: %lu)\n", metadata->filename,
-					metadata->unpack_size, ctx->limits->maxfilesize);
-		if(BLOCKMAX) {
-		    *ctx->virname = "RAR.ExceededFileSize";
-		    ret = CL_VIRUS;
-		    break;
-		}
-		metadata = metadata->next;
-		continue;
-	    }
-
-	    if(ctx->limits->maxfiles && (files > ctx->limits->maxfiles)) {
-		cli_dbgmsg("RAR: Files limit reached (max: %d)\n", ctx->limits->maxfiles);
-		if(BLOCKMAX) {
-		    *ctx->virname = "RAR.ExceededFilesLimit";
-		    ret = CL_VIRUS;
-		    break;
-		}
-		break;
-	    }
-	}
-
-	metadata = metadata->next;
+    if((ret = cli_unrar_open(desc, dir, &rar_state)) != CL_SUCCESS) {
+	if(!cli_leavetemps_flag)
+	    cli_rmdirs(dir);
+	free(dir);
+	cli_dbgmsg("RAR: Error: %s\n", cl_strerror(ret));
+	return ret;
     }
+
+    do {
+	int rc;
+	rar_state.unpack_data->ofd = -1;
+	ret = cli_unrar_extract_next(&rar_state,dir);
+	if(rar_state.unpack_data->ofd > 0) {
+	    lseek(rar_state.unpack_data->ofd,0,SEEK_SET);
+	    rc = cli_magic_scandesc(rar_state.unpack_data->ofd,ctx);
+	    close(rar_state.unpack_data->ofd);
+	    if(!cli_leavetemps_flag) 
+		unlink(rar_state.filename);
+	    if(rc == CL_VIRUS ) {
+		cli_dbgmsg("RAR: infected with %s\n",*ctx->virname);
+		ret = CL_VIRUS;
+		break;
+	    }
+	}
+
+	if(ret == CL_SUCCESS)
+	    ret = cli_unrar_scanmetadata(desc,rar_state.metadata, ctx, rar_state.file_count, sfx_check);
+
+    } while(ret == CL_SUCCESS);
+
+    if(ret == CL_BREAK)
+	ret = CL_CLEAN;
+
+    cli_unrar_close(&rar_state);
+    metadata = metadata_tmp = rar_state.metadata; 
+
+    if(cli_scandir(rar_state.comment_dir, ctx) == CL_VIRUS)
+	ret = CL_VIRUS;
 
     if(!cli_leavetemps_flag)
         cli_rmdirs(dir);
 
     free(dir);
+
     metadata = metadata_tmp;
     while (metadata) {
     	metadata_tmp = metadata->next;
