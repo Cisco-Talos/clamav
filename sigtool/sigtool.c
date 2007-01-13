@@ -487,7 +487,7 @@ static int build(struct optstruct *opt)
 {
 	int ret, inc = 1, dn;
 	size_t bytes;
-	unsigned int sigs = 0, oldsigs = 0, lines = 0, version, real_header;
+	unsigned int sigs = 0, oldsigs = 0, lines = 0, version, real_header, fl;
 	struct stat foo;
 	char buffer[FILEBUFF], *tarfile, *gzfile, header[513], smbuff[32],
 	     builder[32], *pt, *dbname, olddb[512], patch[32], broken[32];
@@ -542,10 +542,9 @@ static int build(struct optstruct *opt)
 		countlines("main.fp") + countlines("daily.fp");
 
 	if(lines != sigs) {
-	    mprintf("!build: Signatures in database: %d, loaded by libclamav: %d\n", lines, sigs);
-	    mprintf("!build: Please check the current directory and remove unnecessary databases\n");
-	    mprintf("!build: or install the latest ClamAV version.\n");
-	    return -1;
+	    mprintf("^build: Signatures in database: %d, loaded by libclamav: %d\n", lines, sigs);
+	    mprintf("^build: Please check the current directory and remove unnecessary databases\n");
+	    mprintf("^build: or install the latest ClamAV version.\n");
 	}
     }
 
@@ -602,7 +601,14 @@ static int build(struct optstruct *opt)
     strcat(header, smbuff);
 
     /* functionality level */
-    sprintf(smbuff, "%d:", cl_retflevel());
+    if(!strcmp(dbname, "main")) {
+	fflush(stdin);
+	mprintf("Functionality level: ");
+	scanf("%u", &fl);
+    } else {
+	fl = cl_retflevel();
+    }
+    sprintf(smbuff, "%u:", fl);
     strcat(header, smbuff);
 
     real_header = strlen(header);
