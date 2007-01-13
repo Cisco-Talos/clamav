@@ -411,6 +411,9 @@ int client(const struct optstruct *opt, int *infected)
 
     *infected = 0;
 
+    if(ncore || opt_check(opt, "multiscan"))
+	scantype = "MULTISCAN";
+
     /* parse argument list */
     if(opt->filename == NULL || strlen(opt->filename) == 0) {
 	/* scan current directory */
@@ -421,12 +424,6 @@ int client(const struct optstruct *opt, int *infected)
 
 	if((sockd = dconnect(opt)) < 0)
 	    return 2;
-
-	/* TODO: add a cmdline option to allow using MULTISCAN on systems
-	 * without hardware accelerators (but with multiple CPUs)
-	 */
-	if(ncore)
-	    scantype = "MULTISCAN";
 
 	if((ret = dsfile(sockd, scantype, cwd, opt)) >= 0)
 	    *infected += ret;
@@ -485,9 +482,6 @@ int client(const struct optstruct *opt, int *infected)
 		    case S_IFDIR:
 			if((sockd = dconnect(opt)) < 0)
 			    return 2;
-
-			if(ncore)
-			    scantype = "MULTISCAN";
 
 			if((ret = dsfile(sockd, scantype, fullpath, opt)) >= 0)
 			    *infected += ret;
