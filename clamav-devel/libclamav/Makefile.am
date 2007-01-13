@@ -164,6 +164,8 @@ libclamav_la_SOURCES = \
 	hashtab.c \
 	hashtab.h \
 	dconf.c \
-	dconf.h
+	dconf.h \
+	lockdb.c \
+	lockdb.h
 
 lib_LTLIBRARIES = libclamav.la
