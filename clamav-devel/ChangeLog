@@ -1,3 +1,8 @@
+Mon Jan 15 00:45:00 CET 2007 (tk)
+---------------------------------
+  * libclamav/readdb.c: cli_loaddbdir_l fixes (bb#228), thanks to
+			Gianluigi Tiesi <sherpya*netfarm.it>
+
 Sun Jan 14 20:34:07 CET 2007 (tk)
 ---------------------------------
   * freshclam/manager.c: better handling of scripted updates (bb#129)
