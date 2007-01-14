@@ -48,6 +48,8 @@
 #include "cltypes.h"
 #include "others.h"
 #include "ole2_extract.h"
+
+#include "mbox.h"
 #include "blob.h" /* sanitiseName() */
 
 #define ole2_endian_convert_16(v) le16_to_host(v)
