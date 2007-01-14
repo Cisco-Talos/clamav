@@ -48,6 +48,7 @@
 #include "cltypes.h"
 #include "others.h"
 #include "ole2_extract.h"
+#include "blob.h" /* sanitiseName() */
 
 #define ole2_endian_convert_16(v) le16_to_host(v)
 #define ole2_endian_convert_32(v) le32_to_host(v)
@@ -599,17 +600,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 		snprintf(name, 11, "%.10ld", i + (long int) prop);
 	} else {
 		/* Sanitize the file name */
-                for(newname = name; *newname; newname++) {
-#ifdef  C_DARWIN
-                        *newname &= '\177';
-#endif
-#if     defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32) || defined(C_OS2) || defined(C_WINDOWS)
-                        if(strchr("/*?<>|\"+=,;:\\ ", *newname))
-#else
-                        if(*newname == '/')
-#endif
-                                *newname = '_';
-                }
+		sanitiseName(name);
 	}
 
 	newname = (char *) cli_malloc(strlen(name) + strlen(dir) + 2);
