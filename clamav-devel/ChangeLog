@@ -1,3 +1,7 @@
+Sun Jan 14 20:34:07 CET 2007 (tk)
+---------------------------------
+  * freshclam/manager.c: better handling of scripted updates (bb#129)
+
 Sun Jan 14 14:23:44 CET 2007 (tk)
 ---------------------------------
   * libclamav/scanners.c: cli_scanhtml: don't normalise files larger than 10 MB
