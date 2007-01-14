@@ -1,3 +1,7 @@
+Sun Jan 14 14:01:42 CET 2007 (tk)
+---------------------------------
+  * libclamav/ole2_extract.c: use sanitiseName() (bb#207)
+
 Sat Jan 13 20:37:22 CET 2007 (tk)
 ---------------------------------
   * clamscan, libclamav: phishing fixes (bb#157)
