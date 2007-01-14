@@ -1116,13 +1116,27 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
 {
 	char *tempname, fullname[1024];
 	int ret=CL_CLEAN, fd;
+	struct stat sb;
 
 
     cli_dbgmsg("in cli_scanhtml()\n");
 
+    if(fstat(desc, &sb) == -1) {
+        cli_errmsg("cli_scanhtml: fstat() failed for descriptor %d\n", desc);
+	return CL_EIO;
+    }
+
+    /* Because HTML detection is FP-prone and html_normalise_fd() needs to
+     * mmap the file don't normalise files larger than 10 MB.
+     */
+    if(sb.st_size > 10485760) {
+	cli_dbgmsg("cli_scanhtml: exiting (file larger than 10 MB)\n");
+	return CL_CLEAN;
+    }
+
     tempname = cli_gentemp(NULL);
     if(mkdir(tempname, 0700)) {
-        cli_dbgmsg("ScanHTML -> Can't create temporary directory %s\n", tempname);
+        cli_errmsg("cli_scanhtml: Can't create temporary directory %s\n", tempname);
 	free(tempname);
         return CL_ETMPDIR;
     }

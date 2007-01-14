@@ -1,3 +1,7 @@
+Sun Jan 14 14:23:44 CET 2007 (tk)
+---------------------------------
+  * libclamav/scanners.c: cli_scanhtml: don't normalise files larger than 10 MB
+
 Sun Jan 14 14:01:42 CET 2007 (tk)
 ---------------------------------
   * libclamav/ole2_extract.c: use sanitiseName() (bb#207)
