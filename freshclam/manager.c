@@ -178,7 +178,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 		herr = "Unknown error";
 		break;
 	}
-        logg("^Can't get information about %s: %s\n", hostpt, herr);
+        logg("!Can't get information about %s: %s\n", hostpt, herr);
 	close(socketfd);
 	return -1;
     }
@@ -803,9 +803,9 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 {
 	struct cl_cvd *current, *remote;
 	struct cfgstruct *cpt;
-	unsigned int nodb = 0, currver = 0, newver = 0, port = 0, ims = 0, i;
+	unsigned int nodb = 0, currver = 0, newver = 0, port = 0, ims = 0, i, j;
 	int ret;
-	char *pt, dbfile[32], dbinc[32];
+	char *pt, dbfile[32], dbinc[32], *bacinc = NULL;
 	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL;
 	unsigned int flevel = cl_retflevel(), inc;
 	struct stat sb;
@@ -961,27 +961,54 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
     } else {
 	ret = 0;
 
-	for(i = currver + 1; i <= newver; i++) {
-	    /*
-	     * !!! FIXME !!!: Redesign this code to make more than one attempt
-	     *		      to download a single cdiff.
-	     */
-	    ret = getpatch(dbname, i, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat);
-	    if(ret) {
-		logg("^Removing incremental directory %s\n", dbinc);
-		rmdirs(dbinc);
-		break;
+	if(!access(dbinc, X_OK)) {
+	    if((bacinc = cli_gentemp("."))) {
+		if(dircopy(dbinc, bacinc) == -1) {
+		    free(bacinc);
+		    bacinc = NULL;
+		}
 	    }
 	}
 
+	for(i = currver + 1; i <= newver; i++) {
+	    for(j = 0; j < cfgopt(copt, "MaxAttempts")->numarg; j++) {
+		ret = getpatch(dbname, i, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat);
+		if(ret == 52 || ret == 58) {
+		    memset(ip, 0, 16);
+		    continue;
+		} else {
+		    break;
+		}
+	    }
+	    if(ret)
+		break;
+	}
+
 	if(ret) {
-	    logg("^Incremental update failed, downloading complete database\n");
+	    logg("^Incremental update failed, trying to download %s\n", dbfile);
 
 	    ret = getcvd(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, 1, newver, ctimeout, rtimeout, mdat);
-	    if(ret)
+	    if(ret) {
+		if(bacinc) {
+		    logg("*Restoring incremental directory %s from backup\n", dbinc);
+		    rmdirs(dbinc);
+		    rename(bacinc, dbinc);
+		    free(bacinc);
+		}
 		return ret;
+	    } else {
+		logg("*Removing incremental directory %s\n", dbinc);
+		rmdirs(dbinc);
+	    }
+
 	} else {
 	    unlink(dbfile);
+	}
+
+	if(bacinc) {
+	    logg("*Removing backup directory %s\n", bacinc);
+	    rmdirs(bacinc);
+	    free(bacinc);
 	}
     }
 
