@@ -1209,7 +1209,7 @@ static int cli_loaddbdir_l(const char *dirname, struct cl_engine **engine, unsig
 	} result;
 #endif
 	char *dbfile;
-	int ret;
+	int ret = CL_ESUPPORT;
 
 
     if((dd = opendir(dirname)) == NULL) {
@@ -1270,12 +1270,15 @@ static int cli_loaddbdir_l(const char *dirname, struct cl_engine **engine, unsig
     }
 
     closedir(dd);
-    return CL_SUCCESS;
+    if(ret == CL_ESUPPORT)
+	cli_errmsg("cli_loaddb(): No supported database files found in %s\n", dirname);
+
+    return ret;
 }
 
 static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo, unsigned int options)
 {
-	int ret, try;
+	int ret, try = 0;
 
 
     cli_dbgmsg("cli_loaddbdir: Acquiring dbdir lock\n");
