@@ -1,3 +1,7 @@
+Mon Jan 15 20:37:16 CET 2007 (tk)
+---------------------------------
+  * libclamav/lockdb.c: fix bounds errors (bb#237), patch from Edwin
+
 Mon Jan 15 01:38:46 CET 2007 (tk)
 ---------------------------------
   * freshclam/mirman.c: fix mirror access time printout on win32 (bb#221)
