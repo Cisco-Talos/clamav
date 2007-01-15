@@ -262,12 +262,12 @@ static void cli_lockname(char *lock_file, size_t lock_file_size, const char *dbd
 	    *c = '/';
 #endif
 	case '/':
-	    if(*(c-1) == '/') { /* compress imbedded // */
+	    if(c!=lock_file && *(c-1) == '/') { /* compress imbedded // */
 		--c;
-		strcpy(c, c+1);
-            } else if((*(c-2) == '/') && (*(c-1) == '.')) { /* compress imbedded /./ */
+		memmove(c, c+1,strlen(c+1)+1);
+            } else if(c > lock_file+1 && (*(c-2) == '/') && (*(c-1) == '.')) { /* compress imbedded /./ */
 		c -= 2;
-		strcpy(c, c+2);
+		memmove(c, c+2,strlen(c+2)+1);
             }
 	    break;
 #ifdef C_WINDOWS
