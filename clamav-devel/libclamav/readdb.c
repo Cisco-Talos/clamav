@@ -1278,11 +1278,11 @@ static int cli_loaddbdir_l(const char *dirname, struct cl_engine **engine, unsig
 
 static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo, unsigned int options)
 {
-	int ret, try = 0;
+	int ret, try = 0, lock;
 
 
     cli_dbgmsg("cli_loaddbdir: Acquiring dbdir lock\n");
-    while(cli_readlockdb(dirname, 0) == CL_ELOCKDB) {
+    while((lock = cli_readlockdb(dirname, 0)) == CL_ELOCKDB) {
 	sleep(5);
 	if(try++ > 24) {
 	    cli_errmsg("cl_load(): Unable to lock database directory: %s\n", dirname);
@@ -1291,7 +1291,9 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigne
     }
 
     ret = cli_loaddbdir_l(dirname, engine, signo, options);
-    cli_unlockdb(dirname);
+    if(lock == CL_SUCCESS)
+	cli_unlockdb(dirname);
+
     return ret;
 }
 

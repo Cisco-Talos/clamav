@@ -1,3 +1,9 @@
+Mon Jan 15 20:58:54 CET 2007 (tk)
+---------------------------------
+  * libclamav: make cli_lockdb() errors non critical (bb#232)
+	       To take full advantage of locking clamscan/clamd must have
+	       write access to the database directory.
+
 Mon Jan 15 20:37:16 CET 2007 (tk)
 ---------------------------------
   * libclamav/lockdb.c: fix bounds errors (bb#237), patch from Edwin

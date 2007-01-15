@@ -44,6 +44,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <errno.h>
 #else
 #include <windows.h>
 #endif
@@ -170,7 +171,7 @@ static int cli_lockdb(const char *dbdirpath, int wait, int writelock)
 	if(!lock) {
 	    cli_errmsg("cli_lockdb(): Can't allocate lock structure to lock Database Directory: %s\n", dbdirpath);
 	    pthread_mutex_unlock(&lock_mutex);
-	    return CL_ELOCKDB;
+	    return CL_EMEM;
 	}
 	lock->lock_link = dblocks;
 	strcpy(lock->lock_file, lock_file);
@@ -179,7 +180,7 @@ static int cli_lockdb(const char *dbdirpath, int wait, int writelock)
 	dblocks = lock;
     }
     if(lock->lock_type != -1) {
-	cli_errmsg("Database Directory: %s already %s locked\n", dbdirpath, (lock->lock_type? "write" : "read"));
+	cli_dbgmsg("Database Directory: %s already %s locked\n", dbdirpath, (lock->lock_type? "write" : "read"));
 	pthread_mutex_unlock(&lock_mutex);
 	return CL_ELOCKDB;
     }
@@ -189,10 +190,10 @@ static int cli_lockdb(const char *dbdirpath, int wait, int writelock)
 	if(-1 == (lock->lock_fd = open(lock->lock_file, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU|S_IRWXG|S_IROTH))) {
 	    if((writelock) ||
 	       (-1 == (lock->lock_fd = open(lock->lock_file, O_RDWR, 0)))) {
-		cli_errmsg("Can't %s Lock file for Database Directory: %s\n", (writelock ? "create" : "open"), dbdirpath);
+		cli_dbgmsg("Can't %s Lock file for Database Directory: %s\n", (writelock ? "create" : "open"), dbdirpath);
 		umask(old_mask);
 		pthread_mutex_unlock(&lock_mutex);
-		return CL_ELOCKDB;
+		return CL_EIO; /* or CL_EACCESS */
 	    }
 	}
 	umask(old_mask);
@@ -208,9 +209,9 @@ static int cli_lockdb(const char *dbdirpath, int wait, int writelock)
 	if(!(lock->lock_fd = CreateMutexA(&saAttr, TRUE, lock->lock_file))) {
 	    if((GetLastError() != ERROR_ACCESS_DENIED) || 
 	       (!(lock->lock_fd = OpenMutexA(MUTEX_MODIFY_STATE, FALSE, lock->lock_file)))) {
-		cli_errmsg("Can't Create Mutex Lock for Database Directory: %s\n", dbdirpath);
+		cli_dbgmsg("Can't Create Mutex Lock for Database Directory: %s\n", dbdirpath);
 		pthread_mutex_unlock(&lock_mutex);
-		return CL_ELOCKDB;
+		return CL_EIO;
 	    }
 	    LastError = ERROR_ALREADY_EXISTS;
 	}
@@ -226,8 +227,11 @@ static int cli_lockdb(const char *dbdirpath, int wait, int writelock)
     fl.l_type = (writelock ? F_WRLCK : F_RDLCK);
     if(fcntl(lock->lock_fd, ((wait) ? F_SETLKW : F_SETLK), &fl) == -1) {
 #ifndef C_WINDOWS
-	close(lock->lock_fd);
-	unlink(lock->lock_file);
+	if(errno != EACCES && errno != EAGAIN) {
+	    close(lock->lock_fd);
+	    unlink(lock->lock_file);
+	    return CL_EIO;
+	}
 #endif
 	return CL_ELOCKDB;
     }
