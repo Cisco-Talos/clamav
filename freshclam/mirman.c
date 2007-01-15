@@ -20,6 +20,10 @@
 #include "clamav-config.h"
 #endif
 
+#ifdef	C_WINDOWS
+#define	_USE_32BIT_TIME_T	/* FIXME: mirdat.atime assumes 32bit time_t */
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -174,7 +178,7 @@ void mirman_list(const struct mirdat *mdat)
 	printf("IP: %u.%u.%u.%u\n", ip[0], ip[1], ip[2], ip[3]);
 	printf("Successes: %u\n", mdat->mirtab[i].succ);
 	printf("Failures: %u\n", mdat->mirtab[i].fail);
-	printf("Last access: %s", ctime((time_t *) &mdat->mirtab[i].atime));
+	printf("Last access: %s", ctime((const time_t *)&mdat->mirtab[i].atime));
 	printf("Ignore: %s\n", mdat->mirtab[i].ignore ? "Yes" : "No");
 	if(i != mdat->num - 1)
 	    printf("-------------------------------------\n");
