@@ -131,9 +131,17 @@ int cli_unlockdb(const char *dbdirpath)
 #endif
 	cli_errmsg("Error Unlocking Database Directory %s\n", dbdirpath);
 	pthread_mutex_unlock(&lock_mutex);
+#ifndef C_WINDOWS
+	close(lock->lock_fd);
+	unlink(lock->lock_file);
+#endif
 	return CL_ELOCKDB;
     }
     lock->lock_type = -1;
+#ifndef C_WINDOWS
+    close(lock->lock_fd);
+    unlink(lock->lock_file);
+#endif
     pthread_mutex_unlock(&lock_mutex);
 
     return CL_SUCCESS;
@@ -216,9 +224,11 @@ static int cli_lockdb(const char *dbdirpath, int wait, int writelock)
 #ifndef C_WINDOWS
     memset(&fl, 0, sizeof(fl));
     fl.l_type = (writelock ? F_WRLCK : F_RDLCK);
-    cli_dbgmsg("przed fcntl: %d\n", lock->lock_fd);
     if(fcntl(lock->lock_fd, ((wait) ? F_SETLKW : F_SETLK), &fl) == -1) {
-	perror("FCNTL");
+#ifndef C_WINDOWS
+	close(lock->lock_fd);
+	unlink(lock->lock_file);
+#endif
 	return CL_ELOCKDB;
     }
 #else

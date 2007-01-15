@@ -1,3 +1,8 @@
+Mon Jan 15 01:16:40 CET 2007 (tk)
+---------------------------------
+  * libclamav/lockdb.c: improve lock files handling (bb#229), thanks to
+			Gianluigi Tiesi
+
 Mon Jan 15 00:45:00 CET 2007 (tk)
 ---------------------------------
   * libclamav/readdb.c: cli_loaddbdir_l fixes (bb#228), thanks to
