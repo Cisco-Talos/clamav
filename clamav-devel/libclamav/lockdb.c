@@ -134,6 +134,7 @@ int cli_unlockdb(const char *dbdirpath)
 	pthread_mutex_unlock(&lock_mutex);
 #ifndef C_WINDOWS
 	close(lock->lock_fd);
+	lock->lock_fd=-1;
 	unlink(lock->lock_file);
 #endif
 	return CL_ELOCKDB;
@@ -141,6 +142,7 @@ int cli_unlockdb(const char *dbdirpath)
     lock->lock_type = -1;
 #ifndef C_WINDOWS
     close(lock->lock_fd);
+    lock->lock_fd=-1;
     unlink(lock->lock_file);
 #endif
     pthread_mutex_unlock(&lock_mutex);
@@ -229,6 +231,7 @@ static int cli_lockdb(const char *dbdirpath, int wait, int writelock)
 #ifndef C_WINDOWS
 	if(errno != EACCES && errno != EAGAIN) {
 	    close(lock->lock_fd);
+	    lock->lock_fd=-1;
 	    unlink(lock->lock_file);
 	    return CL_EIO;
 	}
