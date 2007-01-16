@@ -513,6 +513,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned in
     time(&start_time);
 
     for(;;) {				
+	struct stat st_buf;
     	int socketd = socketds[0];
     	if(nsockets > 1) {
     	    int pollret = poll_fds(socketds, nsockets, -1);
@@ -522,6 +523,15 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned in
     		socketd = socketds[0]; /* on a poll error use the first socket */
     	    }
     	}    
+	if(fstat(socketd, &st_buf) == -1) {
+	    logg("!fstat(): socket descriptor gone\n");
+	    memmove(socketds, socketds + 1, sizeof(socketds[0]) * nsockets);
+	    nsockets--;
+	    if(!nsockets) {
+		logg("!Main socket gone: fatal\n");
+		break;
+	    }
+	}
 	new_sd = accept(socketd, NULL, NULL);
 	if((new_sd == -1) && (errno != EINTR)) {
 	    if(progexit) {
@@ -529,7 +539,8 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned in
 	    }
 	    /* very bad - need to exit or restart */
 #ifdef HAVE_STRERROR_R
-	    logg("!accept() failed: %s\n", strerror_r(errno, buff, BUFFSIZE));
+	    strerror_r(errno, buff, BUFFSIZE);
+	    logg("!accept() failed: %s\n", buff);
 #else
 	    logg("!accept() failed\n");
 #endif
