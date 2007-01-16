@@ -735,6 +735,8 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 				*norm++ = (unsigned char)u16;
 			}
 			else if (u16 == 160)  {/*nbsp*/
+				if(norm >= norm_end)
+					break;
 				*norm++ = 0x20;
 			}
 			else {

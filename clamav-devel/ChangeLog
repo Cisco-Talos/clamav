@@ -1,3 +1,7 @@
+Tue Jan 16 01:22:42 CET 2007 (tk)
+---------------------------------
+  * libclamav/entconv.c: fix memory corruption in experimental code (bb#227)
+
 Mon Jan 15 20:58:54 CET 2007 (tk)
 ---------------------------------
   * libclamav: make cli_lockdb() errors non critical (bb#232)
