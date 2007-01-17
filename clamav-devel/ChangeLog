@@ -1,3 +1,8 @@
+Wed Jan 17 20:50:45 GMT 2007 (njh)
+----------------------------------
+  * clamav-milter:	Fix -I core dump, reported by Dennis Peterson
+				<dennispe * inetnw.com>
+
 Tue Jan 16 14:09:12 CET 2007 (tk)
 ---------------------------------
   * libclamav/loaddb.c: fix close of wrong fd (bb#233), patch from Edwin
@@ -55,7 +60,7 @@ Sat Jan 13 17:55:25 CET 2007 (tk)
 Sat Jan 13 15:37:51 CET 2007 (acab)
 -----------------------------------
   * libclamav: add Upack support from Michal Spadlinski <gim913 * gmail.com>
-  	       Part of the Google Summer of Code program
+	       Part of the Google Summer of Code program
 
 Sat Jan 13 13:33:53 CET 2007 (tk)
 ---------------------------------

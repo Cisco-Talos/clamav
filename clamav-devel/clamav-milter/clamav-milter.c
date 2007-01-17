@@ -24,9 +24,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.309 2007/01/12 19:25:08 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.310 2007/01/17 20:50:10 njh Exp $";
 
-#define	CM_VERSION	"devel-110107"
+#define	CM_VERSION	"devel-170107"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -203,7 +203,7 @@ typedef struct header_list_struct *header_list_t;
 #define PACKADDR(a, b, c, d) (((uint32_t)(a) << 24) | ((b) << 16) | ((c) << 8) | (d))
 #define MAKEMASK(bits)	((uint32_t)(0xffffffff << (bits)))
 
-static const struct cidr_net {
+static struct cidr_net {	/* don't make this const because of -I flag */
 	uint32_t	base;
 	uint32_t	mask;
 } localNets[] = {
