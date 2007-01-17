@@ -29,6 +29,7 @@ RETVAL=0
 
 start() {
         echo -n "Starting clamav-milter: "
+	sleep 1	;# allow time for clamd to start
         LANG= daemon clamav-milter ${CLAMAV_FLAGS}
         RETVAL=$?
         echo
