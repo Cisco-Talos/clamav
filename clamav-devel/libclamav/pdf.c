@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.56 2006/10/22 10:23:26 njh Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.57 2007/01/19 19:47:54 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -171,7 +171,9 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	/*
 	 * The body section consists of a sequence of indirect objects
 	 */
-	while((p < xrefstart) && ((q = pdf_nextobject(p, bytesleft)) != NULL)) {
+	while((p < xrefstart) &&
+	      ((q = pdf_nextobject(p, bytesleft)) != NULL) &&
+	      (rc == CL_CLEAN)) {
 		int is_ascii85decode, is_flatedecode, fout, len;
 		/*int object_number, generation_number;*/
 		const char *objstart, *objend, *streamstart, *streamend;
@@ -361,8 +363,11 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 
 			if(zstat != Z_OK)
 				rc = CL_EZIP;
-		} else
+		} else {
+			cli_dbgmsg("cli_pdf: writing %u bytes from the stream\n",
+				streamlen);
 			cli_writen(fout, (char *)streamstart, streamlen);
+		}
 
 		close(fout);
 		md5digest = cli_md5file(fullname);
@@ -423,9 +428,7 @@ flatedecode(const unsigned char *buf, size_t len, int fout, const cli_ctx *ctx)
 					   (nbytes > (off_t) ctx->limits->maxfilesize)) {
 						cli_dbgmsg("cli_pdf: flatedecode size exceeded (%lu)\n", nbytes);
 						inflateEnd(&stream);
-#ifdef	notdef
 						*ctx->virname = "PDF.ExceededFileSize";
-#endif
 						return Z_DATA_ERROR;
 					}
 					stream.next_out = output;
@@ -436,9 +439,11 @@ flatedecode(const unsigned char *buf, size_t len, int fout, const cli_ctx *ctx)
 				break;
 			default:
 				if(stream.msg)
-					cli_warnmsg("Error \"%s\" inflating PDF attachment\n", stream.msg);
+					cli_warnmsg("After writing %u bytes, got error \"%s\" inflating PDF attachment\n",
+						nbytes, stream.msg);
 				else
-					cli_warnmsg("Error %d inflating PDF attachment\n", zstat);
+					cli_warnmsg("After writing %u bytes, got error %d inflating PDF attachment\n",
+						nbytes, zstat);
 				inflateEnd(&stream);
 				return zstat;
 		}
@@ -458,9 +463,7 @@ flatedecode(const unsigned char *buf, size_t len, int fout, const cli_ctx *ctx)
 	   ((stream.total_out / stream.total_in) > ctx->limits->maxratio)) {
 		cli_dbgmsg("cli_pdf: flatedecode Max ratio reached\n");
 		inflateEnd(&stream);
-#ifdef	notdef
 		*ctx->virname = "Oversized.PDF";
-#endif
 		return Z_DATA_ERROR;
 	}
 
