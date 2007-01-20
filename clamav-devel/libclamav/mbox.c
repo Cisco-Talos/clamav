@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.370 2007/01/07 21:30:49 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.371 2007/01/20 17:24:44 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -146,7 +146,9 @@ typedef	enum {
 #if	defined(WITH_CURL) || defined(CL_EXPERIMENTAL)
 #define	FOLLOWURLS	5	/*
 				 * Maximum number of URLs scanned in a message
-				 * part. Helps to find Dialer.gen-45. If
+				 * part. Helps to prevent Dialer.gen-45 and
+				 * Trojan.WinREG.Zapchast which are often
+				 * dispatched by emails which point to it. If
 				 * not defined, don't check any URLs
 				 */
 #endif
@@ -1281,6 +1283,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 		close(i);
 		return CL_EOPEN;
 	}
+	rewind(fd);	/* bug 240 */
 #ifdef	CL_DEBUG
 	/*
 	 * Copy the incoming mail for debugging, so that if it falls over
