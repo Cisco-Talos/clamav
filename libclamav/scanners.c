@@ -278,11 +278,12 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
     if(ret == CL_BREAK)
 	ret = CL_CLEAN;
 
-    cli_unrar_close(&rar_state);
     metadata = metadata_tmp = rar_state.metadata; 
 
     if(cli_scandir(rar_state.comment_dir, ctx) == CL_VIRUS)
 	ret = CL_VIRUS;
+
+    cli_unrar_close(&rar_state);
 
     if(!cli_leavetemps_flag)
         cli_rmdirs(dir);

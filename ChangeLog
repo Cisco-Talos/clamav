@@ -1,3 +1,7 @@
+Sat Jan 20 12:36:53 CET 2007 (tk)
+---------------------------------
+  * libclamav/scanners.c: cli_unrar_close() was being called too early
+
 Fri Jan 19 19:48:29 GMT 2007 (njh)
 ----------------------------------
   * libclamav/pdf.c:	Improved error messages
