@@ -366,7 +366,6 @@ static int mszip_inflate(struct mszip_stream *zip) {
 
     /* read in block type */
     MSZIP_READ_BITS(block_type, 2);
-    cli_dbgmsg("zip_inflate: block_type=%u last_block=%u\n", block_type, last_block);
 
     if (block_type == 0) {
       /* uncompressed block */
