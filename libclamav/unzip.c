@@ -176,13 +176,18 @@ int __zip_parse_root_directory(int fd, struct zip_disk_trailer *trailer, zip_dir
 	uint32_t u_rootsize = EC32(trailer->z_rootsize);  
 	uint32_t u_rootseek = EC32(trailer->z_rootseek) + start;
 	uint16_t u_extras, u_comment, u_namlen, u_flags;
-	uint8_t clone_entry;
+	unsigned int bfcnt;
 	char *pt;
 
 
     if(fstat(fd, &sb) == -1) {
 	cli_errmsg("Unzip: __zip_parse_root_directory: Can't fstat file descriptor %d\n", fd);
 	return CL_EIO;
+    }
+
+    if(!u_entries) {
+	cli_errmsg("Unzip: __zip_parse_root_directory: File contains no entries\n");
+	return CL_EFORMAT;
     }
 
     if(u_rootsize > (uint32_t) sb.st_size) {
@@ -197,7 +202,6 @@ int __zip_parse_root_directory(int fd, struct zip_disk_trailer *trailer, zip_dir
     hdr = hdr0;
 
     for(entries = u_entries, offset = 0; entries > 0; entries--) {
-	clone_entry = 0;
 
 	if(lseek(fd, u_rootseek + offset, SEEK_SET) < 0) {
 	    free(hdr0);
@@ -239,16 +243,20 @@ int __zip_parse_root_directory(int fd, struct zip_disk_trailer *trailer, zip_dir
         hdr->d_off   = EC32(d->z_off) + start;
 
         hdr->d_compr = EC16(d->z_compr);
+
+	bfcnt = 0;
 	if(!hdr->d_compr && hdr->d_csize != hdr->d_usize) {
 	    cli_warnmsg("Unzip: __zip_parse_root_directory: File claims to be stored but csize != usize\n");
-	    cli_dbgmsg("Unzip: __zip_parse_root_directory: Assuming method 'inflate'\n");
-	    hdr->d_compr = 8;
+	    cli_dbgmsg("Unzip: __zip_parse_root_directory: Also checking for method 'deflated'\n");
+	    hdr->d_bf[bfcnt] = ZIP_METHOD_DEFLATED;
+	    bfcnt++;
 	} else if(hdr->d_compr && hdr->d_csize == hdr->d_usize) {
 	    cli_dbgmsg("Unzip: __zip_parse_root_directory: File claims to be deflated but csize == usize\n");
-	    cli_dbgmsg("Unzip: __zip_parse_root_directory: Assuming method 'stored'\n");
-	    hdr->d_compr = 0;
-	    clone_entry = 1;
+	    cli_dbgmsg("Unzip: __zip_parse_root_directory: Also checking for method 'stored'\n");
+	    hdr->d_bf[bfcnt] = ZIP_METHOD_STORED;
+	    bfcnt++;
 	}
+	hdr->d_bf[bfcnt] = -1;
 
 	hdr->d_flags = u_flags;
 
@@ -280,18 +288,6 @@ int __zip_parse_root_directory(int fd, struct zip_disk_trailer *trailer, zip_dir
 
 	prev_hdr = hdr;
 	hdr = (zip_dir_hdr *) ((char *) hdr + hdr->d_reclen);
-
-	if(clone_entry) {
-	    hdr0 = (zip_dir_hdr *) cli_realloc(hdr0, u_rootsize + *p_reclen);
-	    if(!hdr0)
-		return CL_EMEM;
-	    memcpy((zip_dir_hdr *) hdr, (zip_dir_hdr *) prev_hdr, *p_reclen);
-	    hdr->d_compr = 8;
-	    if(u_namlen)
-		hdr->d_name[strlen(hdr->d_name) - 1]++;
-	    p_reclen = &hdr->d_reclen;
-	    hdr = (zip_dir_hdr *) ((char *) hdr + hdr->d_reclen);
-	}
     }
 
     if(p_reclen) {
@@ -560,6 +556,8 @@ zip_file *zip_file_open(zip_dir *dir, const char *name, int d_off)
 
             fp->usize = hdr->d_usize;
             fp->csize = hdr->d_csize;
+
+	    fp->bf = hdr->d_bf;
 
             ret = __zip_inflate_init(fp, hdr);
 

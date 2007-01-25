@@ -226,7 +226,6 @@ static int cli_unrar_scanmetadata(int desc, rar_metadata_t *metadata, cli_ctx *c
 static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 {
 	int ret = CL_CLEAN;
-	unsigned int files = 0;
 	rar_metadata_t *metadata, *metadata_tmp;
 	char *dir;
 	rar_state_t rar_state;
@@ -312,11 +311,11 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	char *tmpname = NULL, *buff;
 	int fd, bytes, ret = CL_CLEAN;
 	unsigned long int size = 0;
-	unsigned int files = 0, encrypted;
+	unsigned int files = 0, encrypted, bfcnt;
 	struct stat source;
 	struct cli_meta_node *mdata;
 	int err;
-	uint8_t swarning = 0;
+	uint8_t swarning = 0, fail, success;
 
 
     cli_dbgmsg("in scanzip()\n");
@@ -483,65 +482,86 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    }
 	}
 
-	/* generate temporary file and get its descriptor */
-	if((tmpname = cli_gentempstream(NULL, &tmp)) == NULL) {
-	    cli_dbgmsg("Zip: Can't generate tmpfile().\n");
-	    zip_file_close(zfp);
-	    ret = CL_ETMPFILE;
-	    break;
-	}
+	bfcnt = 0;
+	success = 0;
+	while(1) {
+	    fail = 0;
 
-	size = 0;
-	while((bytes = zip_file_read(zfp, buff, FILEBUFF)) > 0) {
-	    size += bytes;
-	    if(fwrite(buff, 1, bytes, tmp) != (size_t) bytes) {
-		cli_dbgmsg("Zip: Can't write to file.\n");
-		zip_file_close(zfp);
-		zip_dir_close(zdir);
+	    /* generate temporary file and get its descriptor */
+	    if((tmpname = cli_gentempstream(NULL, &tmp)) == NULL) {
+		cli_dbgmsg("Zip: Can't generate tmpfile().\n");
+		ret = CL_ETMPFILE;
+		break;
+	    }
+
+	    size = 0;
+	    while((bytes = zip_file_read(zfp, buff, FILEBUFF)) > 0) {
+		size += bytes;
+		if(fwrite(buff, 1, bytes, tmp) != (size_t) bytes) {
+		    cli_dbgmsg("Zip: Can't write to file.\n");
+		    ret = CL_EIO;
+		    break;
+		}
+	    }
+
+	    if(!encrypted) {
+		if(size != zdirent.st_size) {
+		    cli_dbgmsg("Zip: Incorrectly decompressed (%d != %d)\n", size, zdirent.st_size);
+		    if(zfp->bf[0] == -1) {
+			ret = CL_EZIP;
+			break;
+		    } else {
+			fail = 1;
+		    }
+		} else {
+		    cli_dbgmsg("Zip: File decompressed to %s\n", tmpname);
+		    success = 1;
+		}
+	    }
+
+	    if(!fail) {
+		if(fflush(tmp) != 0) {
+		    cli_dbgmsg("Zip: fflush() failed\n");
+		    ret = CL_EFSYNC;
+		    break;
+		}
+
+		fd = fileno(tmp);
+
+		lseek(fd, 0, SEEK_SET);
+
+		if((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS ) {
+		    cli_dbgmsg("Zip: Infected with %s\n", *ctx->virname);
+		    ret = CL_VIRUS;
+		    break;
+		}
+
+	    }
+
+	    if(tmp) {
 		fclose(tmp);
 		if(!cli_leavetemps_flag)
 		    unlink(tmpname);
 		free(tmpname);
-		free(buff);
-		return CL_EIO;
+		tmp = NULL;
 	    }
-	}
 
-	zip_file_close(zfp);
-
-	if(!encrypted) {
-	    if(size != zdirent.st_size) {
-		cli_dbgmsg("Zip: Incorrectly decompressed (%d != %d)\n", size, zdirent.st_size);
-		ret = CL_EZIP;
+	    if(zfp->bf[bfcnt] == -1)
 		break;
 
-	    } else {
-		cli_dbgmsg("Zip: File decompressed to %s\n", tmpname);
-	    }
+	    zfp->method = (uint16_t) zfp->bf[bfcnt];
+	    cli_dbgmsg("Zip: Brute force mode - checking compression method %u\n", zfp->method);
+	    bfcnt++;
+	}
+	zip_file_close(zfp);
+
+	if(!ret && !success) { /* brute-force decompression failed */
+	    cli_dbgmsg("Zip: All attempts to decompress file failed\n");
+	    ret = CL_EZIP;
 	}
 
-	if(fflush(tmp) != 0) {
-	    cli_dbgmsg("Zip: fflush() failed\n");
-	    ret = CL_EFSYNC;
+	if(ret) 
 	    break;
-	}
-
-	fd = fileno(tmp);
-
-	lseek(fd, 0, SEEK_SET);
-	if((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS ) {
-	    cli_dbgmsg("Zip: Infected with %s\n", *ctx->virname);
-	    ret = CL_VIRUS;
-	    break;
-	}
-
-	if(tmp) {
-	    fclose(tmp);
-	    if(!cli_leavetemps_flag)
-		unlink(tmpname);
-	    free(tmpname);
-	    tmp = NULL;
-	}
     }
 
     zip_dir_close(zdir);
