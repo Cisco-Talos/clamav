@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.57 2007/01/19 19:47:54 njh Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.58 2007/01/25 13:59:56 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -416,7 +416,7 @@ flatedecode(const unsigned char *buf, size_t len, int fout, const cli_ctx *ctx)
 	nbytes = 0;
 
 	for(;;) {
-		zstat = inflate(&stream, Z_NO_FLUSH);
+		zstat = inflate(&stream, Z_NO_FLUSH);	/* zlib */
 		switch(zstat) {
 			case Z_OK:
 				if(stream.avail_out == 0) {
@@ -439,10 +439,10 @@ flatedecode(const unsigned char *buf, size_t len, int fout, const cli_ctx *ctx)
 				break;
 			default:
 				if(stream.msg)
-					cli_warnmsg("After writing %u bytes, got error \"%s\" inflating PDF attachment\n",
+					cli_warnmsg("pdf: after writing %u bytes, got error \"%s\" inflating PDF attachment\n",
 						nbytes, stream.msg);
 				else
-					cli_warnmsg("After writing %u bytes, got error %d inflating PDF attachment\n",
+					cli_warnmsg("pdf: after writing %u bytes, got error %d inflating PDF attachment\n",
 						nbytes, zstat);
 				inflateEnd(&stream);
 				return zstat;
@@ -460,6 +460,7 @@ flatedecode(const unsigned char *buf, size_t len, int fout, const cli_ctx *ctx)
 
 	if(ctx->limits &&
 	   ctx->limits->maxratio &&
+	   BLOCKMAX &&
 	   ((stream.total_out / stream.total_in) > ctx->limits->maxratio)) {
 		cli_dbgmsg("cli_pdf: flatedecode Max ratio reached\n");
 		inflateEnd(&stream);
