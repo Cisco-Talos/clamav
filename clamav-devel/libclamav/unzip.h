@@ -147,6 +147,7 @@ struct __zip_file
 {
     struct __zip_dir *dir; 
     uint16_t method;
+    int16_t *bf;
     size_t restlen;
     size_t crestlen;
     size_t usize;
@@ -164,6 +165,7 @@ struct __zip_dir_hdr
     uint16_t    d_reclen;       /* next dir_hdr structure offset */
     uint16_t    d_namlen;       /* explicit namelen of d_name */
     uint16_t    d_compr;        /* compression type */
+    int16_t	d_bf[2];	/* compression type/brute force */
     uint16_t	d_flags;	/* general purpose flags */
     char        d_name[1];      /* actual name of the entry */
 };
