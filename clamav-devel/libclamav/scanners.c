@@ -555,7 +555,8 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	}
 	zip_file_close(zfp);
 
-	if(!ret && !success) { /* brute-force decompression failed */
+
+	if(!ret && !encrypted && !success) { /* brute-force decompression failed */
 	    cli_dbgmsg("Zip: All attempts to decompress file failed\n");
 	    ret = CL_EZIP;
 	}
