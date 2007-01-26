@@ -47,6 +47,8 @@
 
 #define EC32(x) le32_to_host(x) /* Convert little endian to host */
 #define CE32(x) be32_to_host(x) /* Convert big endian to host */
+#define PEALIGN(o,a) (((a))?(((o)/(a))*(a)):(o))
+#define PESALIGN(o,a) (((a))?(((o)/(a)+((o)%(a)!=0))*(a)):(o))
 
 /* modifies all parameters */
 /* northfox does this shitty way,
@@ -806,18 +808,27 @@ int unmew11(int sectnum, char *src, int off, int ssize, int dsize, uint32_t base
 
 		if (!uselzma)
 		{
-			uint32_t val = f2 - src;
-			/* round-up to 4k boundary, I'm not sure of this XXX */
-			val >>= 12;
-			val <<= 12;
-			val += 0x1000;
+			uint32_t val = PESALIGN(f2 - src, 0x1000);
+			void *newsect;
 
-			/* eeevil XXX */
-			section = cli_realloc(section, (i+2)*sizeof(struct cli_exe_section));
-			section[0].raw = 0; section[0].rva = vadd;
+			if (i && val < section[i].raw) {
+			  cli_dbgmsg("MEW: WTF - please report\n");
+			  free(section);
+			  return -1;
+			}
+
+			if (!(newsect=cli_realloc(section, (i+2)*sizeof(struct cli_exe_section)))) {
+			  cli_dbgmsg("MEW: Out of memory\n");
+			  free(section);
+			  return -1;
+			}
+
+			section = (struct cli_exe_section *)newsect;
+			section[0].raw = 0;
+			section[0].rva = vadd;
 			section[i+1].raw = val;
 			section[i+1].rva = val + vadd;
-			section[i].rsz = section[i].vsz = i?val - section[i].raw:val;
+			section[i].rsz = section[i].vsz = ((i)?(val - section[i].raw):val);
 		}
 		i++;
 
@@ -849,7 +860,7 @@ int unmew11(int sectnum, char *src, int off, int ssize, int dsize, uint32_t base
 			free(section);
 			return -1;
 		}
-		loc_ds >>= 12; loc_ds <<= 12; loc_ds += 0x1000;
+		loc_ds=PESALIGN(loc_ds, 0x1000);
 
 		section = cli_calloc(1, sizeof(struct cli_exe_section));
 		section[0].raw = 0; section[0].rva = vadd;
