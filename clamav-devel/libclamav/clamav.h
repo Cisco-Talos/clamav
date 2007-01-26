@@ -123,7 +123,7 @@ struct cli_ac_patt {
     const char *viralias;
     unsigned short int sigid, parts, partno, alt, *altn, alt_pattern;
     unsigned short type, target;
-    char **altc;
+    unsigned char **altc;
     struct cli_ac_patt *next;
 };
 

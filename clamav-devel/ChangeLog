@@ -1,3 +1,7 @@
+Fri Jan 26 20:46:30 CET 2007 (tk)
+---------------------------------
+  * libclamav/clamav.h: use 'unsigned char' for cli_ac_patt.altc
+
 Fri Jan 26 00:36:13 CET 2007 (tk)
 ---------------------------------
   * libclamav: improve scanning of handcrafted zip archives
