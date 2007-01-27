@@ -1,3 +1,8 @@
+Sat Jan 27 13:54:35 CET 2007 (acab)
+-----------------------------------
+  * libclamav/pe.c: fix debug message logic, fixed handling of non aligned raw
+  		    data
+
 Fri Jan 26 20:49:07 CET 2007 (acab)
 -----------------------------------
   * libclamav/mew.c: fix align logic, added some sanity checks
