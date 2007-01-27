@@ -474,8 +474,8 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    *ctx->virname = "Broken.Executable";
 		return CL_VIRUS;
 	    }
+	    cli_dbgmsg("9x compatibility mode\n");
 	}
-	cli_dbgmsg("9x compatibility mode\n");
     }
 
     if(!pe_plus) { /* PE */
@@ -628,7 +628,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     
     for(i = 0; falign!=0x200 && i<nsections; i++) {
 	/* file alignment fallback mode - blah */
-	if (section_hdr[i].SizeOfRawData && EC32(section_hdr[i].PointerToRawData)%falign && !(EC32(section_hdr[i].PointerToRawData)%0x200)) {
+	if (falign && section_hdr[i].SizeOfRawData && EC32(section_hdr[i].PointerToRawData)%falign && !(EC32(section_hdr[i].PointerToRawData)%0x200)) {
 	    cli_dbgmsg("Found misaligned section, using 0x200\n");
 	    falign = 0x200;
 	}
