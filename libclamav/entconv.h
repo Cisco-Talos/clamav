@@ -22,7 +22,7 @@
 
 #ifndef _ENTITIES_H
 #define _ENTITIES_H
-#include <stdint.h>
+#include "cltypes.h"
 
 #include "hashtab.h"
 
