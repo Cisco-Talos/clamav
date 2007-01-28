@@ -293,6 +293,7 @@ typedef struct unpack_data_tag
 } unpack_data_t;
 
 typedef struct rar_state_tag {
+	file_header_t* file_header;
 	rar_metadata_t *metadata;
 	rar_metadata_t *metadata_tail;
 	unpack_data_t *unpack_data;
@@ -327,6 +328,7 @@ enum BLOCK_TYPES
 
 
 int cli_unrar_extract_next(rar_state_t* state,const char* dirname);
+int cli_unrar_extract_next_prepare(rar_state_t* state,const char* dirname);
 int cli_unrar_open(int fd, const char *dirname, rar_state_t* state);
 void cli_unrar_close(rar_state_t* state);
 unsigned int rar_get_char(int fd, unpack_data_t *unpack_data);

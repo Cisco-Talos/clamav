@@ -192,12 +192,20 @@ static int cli_unrar_scanmetadata(int desc, rar_metadata_t *metadata, cli_ctx *c
 	continue;
     }
 */
+    return ret;
+}
+
+static int cli_unrar_checklimits(const cli_ctx *ctx, const rar_metadata_t *metadata, unsigned int files)
+{
     if(ctx->limits) {
 	if(ctx->limits->maxratio && metadata->unpack_size && metadata->pack_size) {
 	    if((unsigned int) metadata->unpack_size / (unsigned int) metadata->pack_size >= ctx->limits->maxratio) {
 		cli_dbgmsg("RAR: Max ratio reached (normal: %u, compressed: %u, max: %ld)\n", metadata->unpack_size, metadata->pack_size, ctx->limits->maxratio);
-		*ctx->virname = "Oversized.RAR";
-		return CL_VIRUS;
+		if(BLOCKMAX) {
+		    *ctx->virname = "Oversized.RAR";
+		    return CL_VIRUS;
+		}
+		return CL_EMAXSIZE;
 	    }
 	}
 
@@ -207,7 +215,7 @@ static int cli_unrar_scanmetadata(int desc, rar_metadata_t *metadata, cli_ctx *c
 		*ctx->virname = "RAR.ExceededFileSize";
 		return CL_VIRUS;
 	    }
-	    return CL_SUCCESS;
+	    return CL_EMAXSIZE;
 	}
 
 	if(ctx->limits->maxfiles && (files > ctx->limits->maxfiles)) {
@@ -216,11 +224,11 @@ static int cli_unrar_scanmetadata(int desc, rar_metadata_t *metadata, cli_ctx *c
 		*ctx->virname = "RAR.ExceededFilesLimit";
 		return CL_VIRUS;
 	    }
-	    return CL_BREAK;
+	    return CL_EMAXFILES;
 	}
     }
 
-    return ret;
+    return CL_SUCCESS;
 }
 
 static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
@@ -255,6 +263,16 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
     do {
 	int rc;
 	rar_state.unpack_data->ofd = -1;
+	ret = cli_unrar_extract_next_prepare(&rar_state,dir);
+	if(ret != CL_SUCCESS) 
+	    break;
+	ret = cli_unrar_checklimits(ctx, rar_state.metadata_tail, rar_state.file_count);
+	if(ret && ret != CL_VIRUS) {
+	    ret = CL_CLEAN;
+	    continue;
+	} else if(ret == CL_VIRUS) {
+	    break;
+	}
 	ret = cli_unrar_extract_next(&rar_state,dir);
 	if(rar_state.unpack_data->ofd > 0) {
 	    lseek(rar_state.unpack_data->ofd,0,SEEK_SET);

@@ -1527,26 +1527,25 @@ int cli_unrar_open(int fd, const char *dirname, rar_state_t* state)
 	return CL_SUCCESS;
 }
 
-int cli_unrar_extract_next(rar_state_t* state,const char* dirname)
+int cli_unrar_extract_next_prepare(rar_state_t* state,const char* dirname)
 {
-	int retval;
 	unsigned char filename[1024];
 	int ofd;
 
 	rar_metadata_t *new_metadata;
-	file_header_t *file_header = read_block(state->fd, FILE_HEAD);
-		if (!file_header) {
+	state->file_header = read_block(state->fd, FILE_HEAD);
+		if (!state->file_header) {
 		return CL_BREAK;/* end of archive */
 		}
 		new_metadata = cli_malloc(sizeof(rar_metadata_t));
 		if (!new_metadata) {
 		return CL_EMEM;
 		}
-		new_metadata->pack_size = file_header->pack_size;
-		new_metadata->unpack_size = file_header->unpack_size;
-		new_metadata->crc = file_header->file_crc;
-		new_metadata->method = file_header->method;
-		new_metadata->filename = strdup(file_header->filename);
+		new_metadata->pack_size = state->file_header->pack_size;
+		new_metadata->unpack_size = state->file_header->unpack_size;
+		new_metadata->crc = state->file_header->file_crc;
+		new_metadata->method = state->file_header->method;
+		new_metadata->filename = strdup(state->file_header->filename);
 		new_metadata->next = NULL;
 		new_metadata->encrypted = FALSE;
 	if (state->metadata_tail == NULL) {
@@ -1555,7 +1554,7 @@ int cli_unrar_extract_next(rar_state_t* state,const char* dirname)
 		state->metadata_tail->next = new_metadata;
 		state->metadata_tail = new_metadata;
 		}
-		if (file_header->flags & LHD_COMMENT) {
+		if (state->file_header->flags & LHD_COMMENT) {
 			comment_header_t *comment_header;
 
 			cli_dbgmsg("File comment present\n");
@@ -1585,54 +1584,62 @@ int cli_unrar_extract_next(rar_state_t* state,const char* dirname)
 				free(comment_header);
 			}
 		}
-	if (lseek(state->fd, file_header->start_offset+file_header->head_size, SEEK_SET) !=
-							file_header->start_offset+file_header->head_size) {
-		cli_dbgmsg("Seek failed: %ld\n", state->offset+file_header->head_size);
-			free(file_header->filename);
-			free(file_header);
+		return CL_SUCCESS;
+}
+
+int cli_unrar_extract_next(rar_state_t* state,const char* dirname)
+{
+	int ofd;
+	int retval;
+
+	if (lseek(state->fd, state->file_header->start_offset+state->file_header->head_size, SEEK_SET) !=
+							state->file_header->start_offset+state->file_header->head_size) {
+		cli_dbgmsg("Seek failed: %ld\n", state->offset+state->file_header->head_size);
+			free(state->file_header->filename);
+			free(state->file_header);
 		return CL_ERAR;
         	}
-		if (file_header->flags & LHD_PASSWORD) {
-			cli_dbgmsg("PASSWORDed file: %s\n", file_header->filename);
+		if (state->file_header->flags & LHD_PASSWORD) {
+			cli_dbgmsg("PASSWORDed file: %s\n", state->file_header->filename);
 		state->metadata_tail->encrypted = TRUE;
 		} else /*if (file_header->unpack_size)*/ {
 		snprintf(state->filename, 1024, "%s/%lu.ura", dirname, state->file_count);
 		ofd = open(state->filename, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, 0600);
 			if (ofd < 0) {
-				free(file_header->filename);
-				free(file_header);
+				free(state->file_header->filename);
+				free(state->file_header);
 				cli_dbgmsg("ERROR: Failed to open output file\n");
 			return CL_EOPEN;
 			}
 		state->unpack_data->ofd = ofd;
-			if (file_header->method == 0x30) {
+			if (state->file_header->method == 0x30) {
 				cli_dbgmsg("Copying stored file (not packed)\n");
-			copy_file_data(state->fd, ofd, file_header->pack_size);
+			copy_file_data(state->fd, ofd, state->file_header->pack_size);
 			} else {
-			state->unpack_data->dest_unp_size = file_header->unpack_size;
-			state->unpack_data->pack_size = file_header->pack_size;
-				if (file_header->unpack_ver <= 15) {
+			state->unpack_data->dest_unp_size = state->file_header->unpack_size;
+			state->unpack_data->pack_size = state->file_header->pack_size;
+				if (state->file_header->unpack_ver <= 15) {
 				retval = rar_unpack(state->fd, 15, (state->file_count>1) &&
 						((state->main_hdr->flags&MHD_SOLID)!=0), state->unpack_data);
 				} else {
-				if ((state->file_count == 1) && (file_header->flags & LHD_SOLID)) {
+				if ((state->file_count == 1) && (state->file_header->flags & LHD_SOLID)) {
 						cli_warnmsg("RAR: First file can't be SOLID.\n");
 					return CL_ERAR;
 					} else {
-					retval = rar_unpack(state->fd, file_header->unpack_ver,
-							file_header->flags & LHD_SOLID,	state->unpack_data);
+					retval = rar_unpack(state->fd, state->file_header->unpack_ver,
+							state->file_header->flags & LHD_SOLID,	state->unpack_data);
 					}
 				}
-				cli_dbgmsg("Expected File CRC: 0x%x\n", file_header->file_crc);
+				cli_dbgmsg("Expected File CRC: 0x%x\n", state->file_header->file_crc);
 			cli_dbgmsg("Computed File CRC: 0x%x\n", state->unpack_data->unp_crc^0xffffffff);
 			if (state->unpack_data->unp_crc != 0xffffffff) {
-				if (file_header->file_crc != (state->unpack_data->unp_crc^0xffffffff)) {
+				if (state->file_header->file_crc != (state->unpack_data->unp_crc^0xffffffff)) {
 						cli_warnmsg("RAR CRC error. Please report the bug at http://bugs.clamav.net/\n");
 					}
 				}
 				if (!retval) {
 					cli_dbgmsg("Corrupt file detected\n");
-					if (file_header->flags & LHD_SOLID) {
+					if (state->file_header->flags & LHD_SOLID) {
 						cli_dbgmsg("SOLID archive, can't continue\n");
 					return CL_ERAR;
 					}
@@ -1640,14 +1647,14 @@ int cli_unrar_extract_next(rar_state_t* state,const char* dirname)
 			}
 		
 		}
-	if (lseek(state->fd, file_header->next_offset, SEEK_SET) != file_header->next_offset) {
-			cli_dbgmsg("ERROR: seek failed: %ld\n", file_header->next_offset);
-			free(file_header->filename);
-			free(file_header);
+	if (lseek(state->fd, state->file_header->next_offset, SEEK_SET) != state->file_header->next_offset) {
+			cli_dbgmsg("ERROR: seek failed: %ld\n", state->file_header->next_offset);
+			free(state->file_header->filename);
+			free(state->file_header);
 			return CL_ERAR;
 		}
-		free(file_header->filename);
-		free(file_header);
+		free(state->file_header->filename);
+		free(state->file_header);
 	unpack_free_data(state->unpack_data);
 	state->file_count++;
 	return CL_SUCCESS;
