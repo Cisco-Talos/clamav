@@ -1,3 +1,7 @@
+Sun Jan 28 21:20:05 CET 2007 (tk)
+---------------------------------
+  * libclamav: improve handling of RAR archives, thanks to Edwin
+
 Sat Jan 27 13:54:35 CET 2007 (acab)
 -----------------------------------
   * libclamav/pe.c: fix debug message logic, fixed handling of non aligned raw
