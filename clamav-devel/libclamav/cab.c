@@ -366,6 +366,12 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 
     /* files */
     for(i = 0; i < cab->nfiles; i++) {
+	if(bscore > 10) {
+	    cab_free(cab);
+	    cli_dbgmsg("CAB: bscore == %u, most likely a fake cabinet\n", bscore);
+	    return CL_EFORMAT;
+	}
+
 	if(cli_readn(fd, &file_hdr, sizeof(file_hdr)) != sizeof(file_hdr)) {
 	    cli_errmsg("cab_open: Can't read file %u header\n", i);
 	    cab_free(cab);
@@ -414,7 +420,9 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	/* folder index */
 	if(fidx < 0xfffd) {
 	    if(fidx > cab->nfolders) {
-		cli_warnmsg("cab_open: File %s is not associated with any folder\n", file->name);
+		if(bscore < 3)
+		    cli_warnmsg("cab_open: File %s is not associated with any folder\n", file->name);
+		bscore++;
 		free(file->name);
 		free(file);
 		continue;
@@ -446,11 +454,6 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 
 	lfile = file;
 
-	if(bscore > 10) {
-	    cab_free(cab);
-	    cli_dbgmsg("CAB: bscore == %u, most likely a fake cabinet\n", bscore);
-	    return CL_EFORMAT;
-	}
     }
 
     return CL_SUCCESS;
