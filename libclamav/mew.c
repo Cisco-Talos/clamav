@@ -30,7 +30,6 @@
 #include "clamav-config.h"
 #endif
 
-#ifdef CL_EXPERIMENTAL
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -874,5 +873,3 @@ int unmew11(int sectnum, char *src, int off, int ssize, int dsize, uint32_t base
 
 	return 1;
 }
-
-#endif /* CL_EXPERIMENTAL */

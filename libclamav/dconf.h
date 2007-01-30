@@ -47,6 +47,8 @@ struct cli_dconf {
 #define PE_CONF_YC	    0x400
 #define PE_CONF_WWPACK	    0x800
 #define PE_CONF_NSPACK	    0x1000
+#define PE_CONF_MEW	    0x2000
+#define PE_CONF_UPACK	    0x4000
 
 /* Archive flags */
 #define ARCH_CONF_RAR	    0x1

@@ -27,7 +27,6 @@
 #include "clamav-config.h"
 #endif
 
-#ifdef CL_EXPERIMENTAL
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -39,6 +38,7 @@
 #include "pe.h"
 #include "rebuildpe.h"
 #include "others.h"
+#include "upack.h"
 #include "mew.h"
 
 #define EC32(x) le32_to_host(x) /* Convert little endian to host */
@@ -672,5 +672,3 @@ int unupack399(char *bs, uint32_t bl, uint32_t init_eax, char *init_ebx, uint32_
 
 	return 1;
 }
-
-#endif
