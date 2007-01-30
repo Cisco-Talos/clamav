@@ -36,12 +36,11 @@ clamscan_SOURCES = \
     clamscan_opt.h \
     others.c \
     others.h \
-    shared.h \
+    global.h \
     manager.c \
     manager.h \
     treewalk.c \
-    treewalk.h \
-    defaults.h
+    treewalk.h
 
 DEFS = @DEFS@ -DCL_NOTHREADS
 LIBS = $(top_builddir)/libclamav/libclamav.la @ADDITIONAL_LIBS@

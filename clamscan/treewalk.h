@@ -22,15 +22,14 @@
 
 #include <pwd.h>
 #include "libclamav/clamav.h"
-
-#include "options.h"
+#include "shared/options.h"
 
 struct s_du {
-    int files;
-    long int space; /* in kilobytes */
+    unsigned int files;
+    unsigned long int space; /* in kilobytes */
 };
 
-int treewalk(const char *dirname, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options, unsigned int depth);
+int treewalk(const char *dirname, struct cl_engine *engine, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, unsigned int options, unsigned int depth);
 
 int clamav_rmdirs(const char *dir);
 int fixperms(const char *dirname);

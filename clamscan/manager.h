@@ -20,26 +20,13 @@
 #ifndef __MANAGER_H
 #define __MANAGER_H
 
-#include "libclamav/clamav.h"
 #include <pwd.h>
-#include "options.h"
+
+#include "libclamav/clamav.h"
+#include "shared/options.h"
 
 int scanmanager(const struct optstruct *opt);
 
-int scanfile(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options);
-
-int scancompressed(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options);
-
-int scandenied(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options);
-
-int scandirs(const char *dirname, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options);
-
-int checkfile(const char *filename, const struct cl_node *root, const struct cl_limits *limits, int options, short printclean);
-
-int checkstdin(const struct cl_node *root, const struct cl_limits *limits, int options);
-
-int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struct passwd *user, const struct optstruct *opt);
-
-void move_infected(const char *filename, const struct optstruct *opt);
+int scanfile(const char *filename, struct cl_engine *engine, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, unsigned int options);
 
 #endif
