@@ -1,3 +1,8 @@
+Tue Jan 30 20:24:34 CET 2007 (tk)
+---------------------------------
+  * libclamav/dconf.c: enable sue, mew, upack and nspack (with agreement from
+		       aCaB)
+
 Tue Jan 30 20:16:39 CET 2007 (tk)
 ---------------------------------
   * libclamav: add mew and upack into dconf
