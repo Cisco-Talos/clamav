@@ -88,7 +88,7 @@ int main(int argc, char **argv)
 	struct cfgstruct *copt, *cpt;
         struct passwd *user;
 	time_t currtime;
-	struct cl_node *root = NULL;
+	struct cl_engine *engine = NULL;
 	const char *dbdir, *cfgfile;
 	int ret, tcpsock = 0, localsock = 0;
 	unsigned int sigs = 0;
@@ -329,14 +329,14 @@ int main(int argc, char **argv)
 #endif
     }
 
-    if((ret = cl_load(dbdir, &root, &sigs, dboptions))) {
+    if((ret = cl_load(dbdir, &engine, &sigs, dboptions))) {
 	logg("!%s\n", cl_strerror(ret));
 	logg_close();
 	freecfg(copt);
 	return 1;
     }
 
-    if(!root) {
+    if(!engine) {
 	logg("!Database initialization error.\n");
 	logg_close();
 	freecfg(copt);
@@ -344,7 +344,7 @@ int main(int argc, char **argv)
     }
 
     logg("#Loaded %d signatures.\n", sigs);
-    if((ret = cl_build(root)) != 0) {
+    if((ret = cl_build(engine)) != 0) {
 	logg("!Database initialization error: %s\n", cl_strerror(ret));;
 	logg_close();
 	freecfg(copt);
@@ -383,7 +383,7 @@ int main(int argc, char **argv)
 	nlsockets++;
     }
 
-    ret = acceptloop_th(lsockets, nlsockets, root, dboptions, copt);
+    ret = acceptloop_th(lsockets, nlsockets, engine, dboptions, copt);
 
 #ifdef C_WINDOWS
     if(tcpsock)

@@ -74,10 +74,10 @@ static struct cl_stat *dbstat = NULL;
 
 typedef struct client_conn_tag {
     int sd;
-    int options;
+    unsigned int options;
     const struct cfgstruct *copt;
-    struct cl_node *root;
-    time_t root_timestamp;
+    struct cl_engine *engine;
+    time_t engine_timestamp;
     const struct cl_limits *limits;
     int *socketds;
     int nsockets;
@@ -103,7 +103,7 @@ void scanner_thread(void *arg)
     	timeout = -1;
 
     do {
-    	ret = command(conn->sd, conn->root, conn->limits, conn->options, conn->copt, timeout);
+    	ret = command(conn->sd, conn->engine, conn->limits, conn->options, conn->copt, timeout);
 	if (ret < 0) {
 		break;
 	}
@@ -140,7 +140,7 @@ void scanner_thread(void *arg)
 	    }
 	    pthread_mutex_unlock(&exit_mutex);
 	    pthread_mutex_lock(&reload_mutex);
-	    if (conn->root_timestamp != reloaded_time) {
+	    if (conn->engine_timestamp != reloaded_time) {
 		session = FALSE;
 	    }
 	    pthread_mutex_unlock(&reload_mutex);
@@ -148,7 +148,7 @@ void scanner_thread(void *arg)
     } while (session);
 
     closesocket(conn->sd);
-    cl_free(conn->root);
+    cl_free(conn->engine);
     free(conn);
     return;
 }
@@ -178,7 +178,7 @@ void sighandler_th(int sig)
     }
 }
 
-static struct cl_node *reload_db(struct cl_node *root, unsigned int dboptions, const struct cfgstruct *copt, int do_check, int *ret)
+static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dboptions, const struct cfgstruct *copt, int do_check, int *ret)
 {
 	const char *dbdir;
 	int retval;
@@ -188,12 +188,12 @@ static struct cl_node *reload_db(struct cl_node *root, unsigned int dboptions, c
     if(do_check) {
 	if(dbstat == NULL) {
 	    logg("No stats for Database check - forcing reload\n");
-	    return root;
+	    return engine;
 	}
 
 	if(cl_statchkdir(dbstat) == 1) {
 	    logg("SelfCheck: Database modification detected. Forcing reload.\n");
-	    return root;
+	    return engine;
 	} else {
 	    logg("SelfCheck: Database status OK.\n");
 	    return NULL;
@@ -201,9 +201,9 @@ static struct cl_node *reload_db(struct cl_node *root, unsigned int dboptions, c
     }
 
     /* release old structure */
-    if(root) {
-	cl_free(root);
-	root = NULL;
+    if(engine) {
+	cl_free(engine);
+	engine = NULL;
     }
 
     dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
@@ -223,29 +223,29 @@ static struct cl_node *reload_db(struct cl_node *root, unsigned int dboptions, c
     memset(dbstat, 0, sizeof(struct cl_stat));
     cl_statinidir(dbdir, dbstat);
 
-    if((retval = cl_load(dbdir, &root, &sigs, dboptions))) {
+    if((retval = cl_load(dbdir, &engine, &sigs, dboptions))) {
 	logg("!reload db failed: %s\n", cl_strerror(retval));
 	*ret = 1;
 	return NULL;
     }
 
-    if(!root) {
+    if(!engine) {
 	logg("!reload db failed: %s\n", cl_strerror(retval));
 	*ret = 1;
 	return NULL;
     }
 
-    if((retval = cl_build(root)) != 0) {
+    if((retval = cl_build(engine)) != 0) {
 	logg("!Database initialization error: can't build engine: %s\n", cl_strerror(retval));
 	*ret = 1;
 	return NULL;
     }
     logg("Database correctly reloaded (%d signatures)\n", sigs);
 
-    return root;
+    return engine;
 }
 
-int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned int dboptions, const struct cfgstruct *copt)
+int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigned int dboptions, const struct cfgstruct *copt)
 {
 	int new_sd, max_threads, i, ret = 0;
 	unsigned int options = 0;
@@ -459,7 +459,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned in
 
 	tharg = (struct thrarg *) mmalloc(sizeof(struct thrarg));
 	tharg->copt = copt;
-	tharg->root = root;
+	tharg->engine = engine;
 	tharg->limits = &limits;
 	tharg->options = options;
 
@@ -560,8 +560,8 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned in
 		client_conn->sd = new_sd;
 		client_conn->options = options;
 		client_conn->copt = copt;
-		client_conn->root = cl_dup(root);
-		client_conn->root_timestamp = reloaded_time;
+		client_conn->engine = cl_dup(engine);
+		client_conn->engine_timestamp = reloaded_time;
 		client_conn->limits = &limits;
 		client_conn->socketds = socketds;
 		client_conn->nsockets = nsockets;
@@ -585,7 +585,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned in
 	if(selfchk) {
 	    time(&current_time);
 	    if((current_time - start_time) > (time_t)selfchk) {
-		if(reload_db(root, dboptions, copt, TRUE, &ret)) {
+		if(reload_db(engine, dboptions, copt, TRUE, &ret)) {
 		    pthread_mutex_lock(&reload_mutex);
 		    reload = 1;
 		    pthread_mutex_unlock(&reload_mutex);
@@ -597,7 +597,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned in
 	pthread_mutex_lock(&reload_mutex);
 	if(reload) {
 	    pthread_mutex_unlock(&reload_mutex);
-	    root = reload_db(root, dboptions, copt, FALSE, &ret);
+	    engine = reload_db(engine, dboptions, copt, FALSE, &ret);
 	    if(ret) {
 		logg("Terminating because of a fatal error.");
 		if(new_sd >= 0)
@@ -613,7 +613,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned in
 		logg("Stopping and restarting Clamuko.\n");
 		pthread_kill(clamuko_pid, SIGUSR1);
 		pthread_join(clamuko_pid, NULL);
-		tharg->root = root;
+		tharg->engine = engine;
 		pthread_create(&clamuko_pid, &clamuko_attr, clamukoth, tharg);
 	    }
 #endif
@@ -633,8 +633,8 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned in
 	pthread_join(clamuko_pid, NULL);
     }
 #endif
-    if(root)
-	cl_free(root);
+    if(engine)
+	cl_free(engine);
 
     if(dbstat)
 	cl_statfree(dbstat);

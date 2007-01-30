@@ -30,7 +30,7 @@ struct thrarg {
     int sid;
     int options;
     const struct cfgstruct *copt;
-    const struct cl_node *root;
+    const struct cl_engine *engine;
     const struct cl_limits *limits;
 };
 
@@ -45,13 +45,13 @@ struct thrsession {
 /* thread watcher arguments */
 struct thrwarg {
     int socketd;
-    struct cl_node **root;
+    struct cl_engine **engine;
     const struct cfgstruct *copt;
     const struct cl_limits *limits;
-    int options;
+    unsigned int options;
 };
 
-int acceptloop_th(int *socketds, int nsockets, struct cl_node *root, unsigned int dboptions, const struct cfgstruct *copt);
+int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigned int dboptions, const struct cfgstruct *copt);
 void sighandler(int sig);
 void sighandler_th(int sig);
 void daemonize(void);

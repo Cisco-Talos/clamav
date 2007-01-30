@@ -42,7 +42,7 @@
 #include "output.h"
 
 #ifdef        C_WINDOWS
-int localserver(const struct cfgstruct *copt, struct cl_node *root)
+int localserver(const struct cfgstruct *copt)
 {
     logg("!Localserver is not supported on this platform");
     return -1;

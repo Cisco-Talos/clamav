@@ -89,7 +89,7 @@ int checksymlink(const char *path)
 }
 
 /* :set nowrap, if you don't like this style ;)) */
-int dirscan(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt, int odesc, unsigned int *reclev, short contscan)
+int dirscan(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int odesc, unsigned int *reclev, short contscan)
 {
 	DIR *dd;
 	struct dirent *dent;
@@ -139,7 +139,7 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 		    /* stat the file */
 		    if(lstat(fname, &statbuf) != -1) {
 			if((S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 1) && cfgopt(copt, "FollowDirectorySymlinks")->enabled)) {
-			    if(dirscan(fname, virname, scanned, root, limits, options, copt, odesc, reclev, contscan) == 1) {
+			    if(dirscan(fname, virname, scanned, engine, limits, options, copt, odesc, reclev, contscan) == 1) {
 				free(fname);
 				closedir(dd);
 				return 1;
@@ -152,7 +152,7 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 				    scanret = CL_CLEAN;
 				else
 #endif
-				    scanret = cl_scanfile(fname, virname, scanned, root, limits, options);
+				    scanret = cl_scanfile(fname, virname, scanned, engine, limits, options);
 
 				if(scanret == CL_VIRUS) {
 
@@ -196,7 +196,7 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 
 }
 
-int scan(const char *filename, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt, int odesc, short contscan)
+int scan(const char *filename, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int odesc, short contscan)
 {
 	struct stat sb;
 	int ret = 0;
@@ -233,7 +233,7 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_node 
 		ret = CL_CLEAN;
 	    else
 #endif
-		ret = cl_scanfile(filename, &virname, scanned, root, limits, options);
+		ret = cl_scanfile(filename, &virname, scanned, engine, limits, options);
 
 	    if(ret == CL_VIRUS) {
 		mdprintf(odesc, "%s: %s FOUND\n", filename, virname);
@@ -249,7 +249,7 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_node 
 	    }
 	    break;
 	case S_IFDIR:
-	    ret = dirscan(filename, &virname, scanned, root, limits, options, copt, odesc, &reclev, contscan);
+	    ret = dirscan(filename, &virname, scanned, engine, limits, options, copt, odesc, &reclev, contscan);
 	    break;
 	default:
 	    mdprintf(odesc, "%s: Not supported file type. ERROR\n", filename);
@@ -263,7 +263,7 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_node 
     return ret;
 }
 
-int scanfd(const int fd, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt, int odesc)
+int scanfd(const int fd, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int odesc)
 {
 	int ret;
 	const char *virname;
@@ -279,7 +279,7 @@ int scanfd(const int fd, unsigned long int *scanned, const struct cl_node *root,
 
     snprintf(fdstr, sizeof(fdstr), "fd[%d]", fd);
 
-    ret = cl_scandesc(fd, &virname, scanned, root, limits, options);
+    ret = cl_scandesc(fd, &virname, scanned, engine, limits, options);
 
     if(ret == CL_VIRUS) {
 	mdprintf(odesc, "%s: %s FOUND\n", fdstr, virname);
@@ -297,7 +297,7 @@ int scanfd(const int fd, unsigned long int *scanned, const struct cl_node *root,
     return ret;
 }
 
-int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt)
+int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt)
 {
 	int ret, portscan = 1000, sockfd, port = 0, acceptd;
 	int tmpd, bread, retval, timeout, btread, min_port, max_port;
@@ -451,7 +451,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 
     if(retval == 1) {
 	lseek(tmpd, 0, SEEK_SET);
-	ret = cl_scandesc(tmpd, &virname, scanned, root, limits, options);
+	ret = cl_scandesc(tmpd, &virname, scanned, engine, limits, options);
     } else {
     	ret = -1;
     }
