@@ -169,7 +169,6 @@ int cli_unfsg(char *source, char *dest, int ssize, int dsize, char **endsrc, cha
   return 0;
 }
 
-#ifdef CL_EXPERIMENTAL
 int unmew(char *source, char *dest, int ssize, int dsize, char **endsrc, char **enddst) {
   uint8_t mydl=0x80;
   uint32_t myeax_backbytes, myecx_backsize, oldback = 0;
@@ -308,5 +307,3 @@ int unmew(char *source, char *dest, int ssize, int dsize, char **endsrc, char **
   *enddst = cdst;
   return 0;
 }
-
-#endif
