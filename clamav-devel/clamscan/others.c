@@ -16,9 +16,6 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  *
- *  Sat May 18 15:20:26 CEST 2002: included detectCpu() from Magnus Ekdahl
- *  Sat Jun 29 12:19:26 CEST 2002: fixed non386 detectCpu (Magnus Ekdahl)
- *
  */
 
 #if HAVE_CONFIG_H
@@ -45,7 +42,7 @@
 #include <regex.h>
 #endif
 
-#include "output.h"
+#include "shared/output.h"
 #include "others.h"
 
 int fileinfo(const char *filename, short i)

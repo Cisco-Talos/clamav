@@ -27,25 +27,23 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <time.h>
-
-#include "clamscan_opt.h"
-#include "others.h"
-#include "shared.h"
-#include "manager.h"
-#include "defaults.h"
-#include "treewalk.h"
-#include "misc.h"
-
-#include "output.h"
-#include "options.h"
-
 #ifdef C_LINUX
 #include <sys/resource.h>
 #endif
 
+#include "clamscan_opt.h"
+#include "others.h"
+#include "global.h"
+#include "manager.h"
+#include "treewalk.h"
+
+#include "shared/misc.h"
+#include "shared/output.h"
+#include "shared/options.h"
+
 void help(void);
 
-struct s_info claminfo;
+struct s_info info;
 short recursion = 0, printinfected = 0, bell = 0;
 
 int main(int argc, char **argv)
@@ -180,7 +178,7 @@ int main(int argc, char **argv)
 	}
     }
 
-    memset(&claminfo, 0, sizeof(struct s_info));
+    memset(&info, 0, sizeof(struct s_info));
 
     gettimeofday(&t1, &tz);
     ret = scanmanager(opt);
@@ -192,23 +190,23 @@ int main(int argc, char **argv)
 	ds -= (dms < 0) ? (1):(0);
 	dms += (dms < 0) ? (1000000):(0);
 	logg("\n----------- SCAN SUMMARY -----------\n");
-	logg("Known viruses: %d\n", claminfo.signs);
+	logg("Known viruses: %u\n", info.sigs);
 	if(opt_check(opt, "ncore"))
 	    logg("Engine version: %s [ncore]\n", cl_retver());
 	else
 	    logg("Engine version: %s\n", cl_retver());
-	logg("Scanned directories: %d\n", claminfo.dirs);
-	logg("Scanned files: %d\n", claminfo.files);
-	logg("Infected files: %d\n", claminfo.ifiles);
-	if(claminfo.notremoved) {
-	    logg("Not removed: %d\n", claminfo.notremoved);
+	logg("Scanned directories: %u\n", info.dirs);
+	logg("Scanned files: %u\n", info.files);
+	logg("Infected files: %u\n", info.ifiles);
+	if(info.notremoved) {
+	    logg("Not removed: %u\n", info.notremoved);
 	}
-	if(claminfo.notmoved) {
-	    logg("Not %s: %d\n", opt_check(opt, "copy") ? "moved" : "copied", claminfo.notmoved);
+	if(info.notmoved) {
+	    logg("Not %s: %u\n", opt_check(opt, "copy") ? "moved" : "copied", info.notmoved);
 	}
-	mb = claminfo.blocks * (CL_COUNT_PRECISION / 1024) / 1024.0;
+	mb = info.blocks * (CL_COUNT_PRECISION / 1024) / 1024.0;
 	logg("Data scanned: %2.2lf MB\n", mb);
-	logg("Time: %d.%3.3d sec (%d m %d s)\n", ds, dms/1000, ds/60, ds%60);
+	logg("Time: %u.%3.3u sec (%u m %u s)\n", ds, dms/1000, ds/60, ds%60);
     }
 
     opt_free(opt);

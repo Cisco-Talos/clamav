@@ -234,12 +234,11 @@ clamscan_SOURCES = \
     clamscan_opt.h \
     others.c \
     others.h \
-    shared.h \
+    global.h \
     manager.c \
     manager.h \
     treewalk.c \
-    treewalk.h \
-    defaults.h
+    treewalk.h
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 all: all-am

@@ -1,3 +1,7 @@
+Tue Jan 30 22:08:22 CET 2007 (tk)
+---------------------------------
+  * clamscan: code cleanup
+
 Tue Jan 30 20:24:34 CET 2007 (tk)
 ---------------------------------
   * libclamav/dconf.c: enable sue, mew, upack and nspack (with agreement from

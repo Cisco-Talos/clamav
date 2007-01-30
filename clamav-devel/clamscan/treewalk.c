@@ -32,17 +32,19 @@
 #include <dirent.h>
 #include <errno.h>
 
-#include "shared.h"
+#include "global.h"
 #include "manager.h"
 #include "others.h"
-#include "options.h"
 #include "treewalk.h"
-#include "defaults.h"
-#include "memory.h"
-#include "output.h"
-#include "misc.h"
 
-int treewalk(const char *dirname, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options, unsigned int depth)
+#include "shared/options.h"
+#include "shared/memory.h"
+#include "shared/output.h"
+#include "shared/misc.h"
+
+#include "libclamav/clamav.h"
+
+int treewalk(const char *dirname, struct cl_engine *engine, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, unsigned int options, unsigned int depth)
 {
 	DIR *dd;
 	struct dirent *dent;
@@ -92,7 +94,7 @@ int treewalk(const char *dirname, struct cl_node *root, const struct passwd *use
     if(depth > maxdepth)
 	return 0;
 
-    claminfo.dirs++;
+    info.dirs++;
     depth++;
 
     if((dd = opendir(dirname)) != NULL) {
@@ -109,11 +111,11 @@ int treewalk(const char *dirname, struct cl_node *root, const struct passwd *use
 		    /* stat the file */
 		    if(lstat(fname, &statbuf) != -1) {
 			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode) && recursion) {
-			    if(treewalk(fname, root, user, opt, limits, options, depth) == 1)
+			    if(treewalk(fname, engine, user, opt, limits, options, depth) == 1)
 				scanret++;
 			} else {
 			    if(S_ISREG(statbuf.st_mode))
-				scanret += scanfile(fname, root, user, opt, limits, options);
+				scanret += scanfile(fname, engine, user, opt, limits, options);
 			}
 		    }
 		    free(fname);
@@ -151,7 +153,7 @@ int clamav_rmdirs(const char *dir)
 	case 0:
 #ifndef C_CYGWIN
 	    if(!geteuid()) { 
-		if((user = getpwnam(UNPUSER)) == NULL)
+		if((user = getpwnam(CLAMAVUSER)) == NULL)
 		    return -3;
 
 #ifdef HAVE_SETGROUPS
@@ -182,7 +184,6 @@ int clamav_rmdirs(const char *dir)
 	    else
 		return -2;
     }
-
 }
 
 int fixperms(const char *dirname)
