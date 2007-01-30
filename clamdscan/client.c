@@ -40,7 +40,6 @@
 
 #include "others.h"
 #include "defaults.h"
-#include "shared.h"
 #include "options.h"
 #include "cfgparser.h"
 #include "memory.h"

@@ -31,13 +31,12 @@
 
 #include "options.h"
 #include "others.h"
-#include "shared.h"
 #include "defaults.h"
 #include "client.h"
 #include "output.h"
 #include "misc.h"
 
-#include "clamscan_opt.h"
+#include "clamscan/clamscan_opt.h"
 
 void help(void);
 
