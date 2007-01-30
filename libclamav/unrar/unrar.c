@@ -287,6 +287,18 @@ static void *read_header(int fd, header_type hdr_type)
 		file_hdr->unpack_size = rar_endian_convert_32(file_hdr->unpack_size);
 		file_hdr->file_crc = rar_endian_convert_32(file_hdr->file_crc);
 		file_hdr->name_size = rar_endian_convert_16(file_hdr->name_size);
+		if(file_hdr->flags & 0x100) {
+			if (cli_readn(fd, file_hdr + SIZEOF_NEWLHD, 8) != 8) {
+				free(file_hdr);
+				return NULL;
+			}
+			file_hdr->high_pack_size = rar_endian_convert_32(file_hdr->high_pack_size);
+			file_hdr->high_unpack_size = rar_endian_convert_32(file_hdr->high_unpack_size);
+		} else {
+			file_hdr->high_pack_size = 0;
+			file_hdr->high_unpack_size = 0;
+		}
+
 		return file_hdr;
 		}
 	case COMM_HEAD: {
@@ -1541,8 +1553,8 @@ int cli_unrar_extract_next_prepare(rar_state_t* state,const char* dirname)
 		if (!new_metadata) {
 		return CL_EMEM;
 		}
-		new_metadata->pack_size = state->file_header->pack_size;
-		new_metadata->unpack_size = state->file_header->unpack_size;
+		new_metadata->pack_size = state->file_header->high_pack_size * 0x100000000 + state->file_header->pack_size;
+		new_metadata->unpack_size = state->file_header->high_unpack_size * 0x100000000 + state->file_header->unpack_size;
 		new_metadata->crc = state->file_header->file_crc;
 		new_metadata->method = state->file_header->method;
 		new_metadata->filename = strdup(state->file_header->filename);

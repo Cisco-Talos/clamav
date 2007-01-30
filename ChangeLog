@@ -1,3 +1,7 @@
+Tue Jan 30 16:31:37 CET 2007 (tk)
+---------------------------------
+  * libclamav/unrar/unrar.c: properly handle metadata for large files
+
 Mon Jan 29 16:17:53 CET 2007 (tk)
 ---------------------------------
   * libclamav/cab.c: improve format scoring

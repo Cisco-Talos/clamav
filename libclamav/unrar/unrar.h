@@ -47,8 +47,8 @@ struct unpack_data_tag;
 
 typedef struct rar_metadata_tag
 {
-	uint32_t pack_size;
-	uint32_t unpack_size;
+	uint64_t pack_size;
+	uint64_t unpack_size;
 	uint32_t crc;
 	unsigned int encrypted;
 	uint8_t method;
@@ -143,6 +143,8 @@ typedef struct file_header_tag
 	uint8_t method __attribute__ ((packed));
 	uint16_t name_size __attribute__ ((packed));
 	uint32_t file_attr __attribute__ ((packed));
+	uint32_t high_pack_size __attribute__ ((packed));   /* optional */
+	uint32_t high_unpack_size __attribute__ ((packed)); /* optional */
 	unsigned char *filename __attribute__ ((packed));
 	off_t start_offset __attribute__ ((packed));
 	off_t next_offset __attribute__ ((packed));
