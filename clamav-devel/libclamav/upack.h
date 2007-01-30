@@ -24,8 +24,8 @@
 #include "clamav-config.h"
 #endif
 
-#ifdef CL_EXPERIMENTAL
+#include "cltypes.h"
+
 int unupack(int, char *, uint32_t, char *, uint32_t, uint32_t, uint32_t, uint32_t, int);
 
-#endif
 #endif

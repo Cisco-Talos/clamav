@@ -49,10 +49,8 @@
 #include "str.h"
 #include "execs.h"
 #include "md5.h"
-#ifdef CL_EXPERIMENTAL
 #include "mew.h"
 #include "upack.h"
-#endif
 
 #ifndef	O_BINARY
 #define	O_BINARY	0
@@ -484,7 +482,9 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    lseek(desc, (EC16(file_hdr.SizeOfOptionalHeader)-sizeof(struct pe_image_optional_hdr32)), SEEK_CUR);
 	}
 
-	upack = (EC16(file_hdr.SizeOfOptionalHeader)==0x148);
+	if(DCONF & PE_CONF_UPACK)
+	    upack = (EC16(file_hdr.SizeOfOptionalHeader)==0x148);
+
 	vep = EC32(optional_hdr32.AddressOfEntryPoint);
 	cli_dbgmsg("File format: PE\n");
 
@@ -1080,7 +1080,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
     /* try to find the first section with physical size == 0 */
     found = 0;
-    if(DCONF & (PE_CONF_UPX | PE_CONF_FSG)) {
+    if(DCONF & (PE_CONF_UPX | PE_CONF_FSG | PE_CONF_MEW)) {
 	for(i = 0; i < (unsigned int) nsections - 1; i++) {
 	    if(!section_hdr[i].SizeOfRawData && section_hdr[i].VirtualSize && section_hdr[i + 1].SizeOfRawData && section_hdr[i + 1].VirtualSize) {
 		found = 1;
@@ -1090,10 +1090,8 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
     }
 
-
     /* MEW support */
-#ifdef CL_EXPERIMENTAL
-    if (found) {
+    if (found && (DCONF & PE_CONF_MEW)) {
 	uint32_t fileoffset;
 	/* Check EP for MEW */
 	if(lseek(desc, ep, SEEK_SET) == -1) {
@@ -1253,11 +1251,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	} while (0);
     }
 
-
     if(found || upack) {
-#else
-    if(found) {
-#endif
 	/* Check EP for UPX vs. FSG vs. Upack */
 	if(lseek(desc, ep, SEEK_SET) == -1) {
 	    cli_dbgmsg("UPX/FSG: lseek() failed\n");
@@ -1274,7 +1268,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    return CL_CLEAN;
 	}
 
-#ifdef CL_EXPERIMENTAL
 	/* Upack 0.39 produces 2 types of executables
 	 * 3 sections:           | 2 sections (one empty, I don't chech found if !upack, since it's in OR above):
 	 *   mov esi, value      |   pusha
@@ -1424,7 +1417,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		}
 	}
 skip_upack_and_go_to_next_unpacker:
-#endif
 
 	if((DCONF & PE_CONF_FSG) && buff[0] == '\x87' && buff[1] == '\x25') {
 

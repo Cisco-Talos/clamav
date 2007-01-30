@@ -61,8 +61,12 @@ static struct dconf_module modules[] = {
 #ifdef CL_EXPERIMENTAL
     /* enable by default in experimental mode */
     { "PE",	    "NSPACK",	    PE_CONF_NSPACK,	    1 },
+    { "PE",	    "MEW",	    PE_CONF_MEW,	    1 },
+    { "PE",	    "UPACK",	    PE_CONF_UPACK,	    1 },
 #else
     { "PE",	    "NSPACK",	    PE_CONF_NSPACK,	    0 },
+    { "PE",	    "MEW",	    PE_CONF_MEW,	    0 },
+    { "PE",	    "UPACK",	    PE_CONF_UPACK,	    0 },
 #endif
 
     { "ELF",	    NULL,	    0x1,		    1 },

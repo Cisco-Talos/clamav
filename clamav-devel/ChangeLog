@@ -1,3 +1,7 @@
+Tue Jan 30 20:16:39 CET 2007 (tk)
+---------------------------------
+  * libclamav: add mew and upack into dconf
+
 Tue Jan 30 16:31:37 CET 2007 (tk)
 ---------------------------------
   * libclamav/unrar/unrar.c: properly handle metadata for large files
