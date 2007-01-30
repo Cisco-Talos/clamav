@@ -491,7 +491,7 @@ static int build(struct optstruct *opt)
 	struct stat foo;
 	char buffer[FILEBUFF], *tarfile, *gzfile, header[513], smbuff[32],
 	     builder[32], *pt, *dbname, olddb[512], patch[32], broken[32];
-        struct cl_node *root = NULL;
+        struct cl_engine *engine = NULL;
 	FILE *tar, *cvd;
 	gzFile *gz;
 	time_t timet;
@@ -522,11 +522,11 @@ static int build(struct optstruct *opt)
 	return -1;
     }
 
-    if((ret = cl_loaddbdir(".", &root, &sigs))) {
+    if((ret = cl_loaddbdir(".", &engine, &sigs))) {
 	mprintf("!build: Can't load database: %s\n", cl_strerror(ret));
 	return -1;
     } else {
-	cl_free(root);
+	cl_free(engine);
     }
 
     if(!sigs) {
