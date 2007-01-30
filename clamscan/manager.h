@@ -20,7 +20,7 @@
 #ifndef __MANAGER_H
 #define __MANAGER_H
 
-#include <clamav.h>
+#include "libclamav/clamav.h"
 #include <pwd.h>
 #include "options.h"
 

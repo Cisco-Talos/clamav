@@ -37,7 +37,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <signal.h>
-#include <clamav.h>
+#include "clamav.h"
 #include <errno.h>
 
 #include "defaults.h"

@@ -35,10 +35,10 @@
 #include <time.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include <clamav.h>
 #include <errno.h>
 
 #include "shared/output.h"
+#include "libclamav/clamav.h"
 
 #ifdef SO_ERROR
 

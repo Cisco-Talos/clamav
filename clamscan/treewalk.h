@@ -21,7 +21,7 @@
 #define __TREEWALK_H
 
 #include <pwd.h>
-#include <clamav.h>
+#include "libclamav/clamav.h"
 
 #include "options.h"
 

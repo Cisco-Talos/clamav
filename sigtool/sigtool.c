@@ -36,7 +36,6 @@
 #include <sys/un.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <clamav.h>
 #include <sys/wait.h>
 #include <dirent.h>
 
@@ -53,6 +52,7 @@
 #include "shared/misc.h"
 #include "shared/cdiff.h"
 
+#include "libclamav/clamav.h"
 #include "libclamav/cvd.h"
 #include "libclamav/others.h"
 #include "libclamav/str.h"
