@@ -48,26 +48,17 @@ static struct dconf_module modules[] = {
     { "PE",	    "MD5SECT",	    PE_CONF_MD5SECT,	    1 },
     { "PE",	    "UPX",	    PE_CONF_UPX,	    1 },
     { "PE",	    "FSG",	    PE_CONF_FSG,	    1 },
-#ifdef CL_EXPERIMENTAL
-    /* enable by default in experimental mode */
-    { "PE",	    "SUE",	    PE_CONF_SUE,	    1 },
-#else
-    { "PE",	    "SUE",	    PE_CONF_SUE,	    0 },
-#endif
+
+    { "PE",	    "SUE",	    PE_CONF_SUE,	    1 }, /* exp */
+
     { "PE",	    "PETITE",	    PE_CONF_PETITE,	    1 },
     { "PE",	    "PESPIN",	    PE_CONF_PESPIN,	    1 },
     { "PE",	    "YC",	    PE_CONF_YC,		    1 },
     { "PE",	    "WWPACK",	    PE_CONF_WWPACK,	    1 },
-#ifdef CL_EXPERIMENTAL
-    /* enable by default in experimental mode */
-    { "PE",	    "NSPACK",	    PE_CONF_NSPACK,	    1 },
-    { "PE",	    "MEW",	    PE_CONF_MEW,	    1 },
-    { "PE",	    "UPACK",	    PE_CONF_UPACK,	    1 },
-#else
-    { "PE",	    "NSPACK",	    PE_CONF_NSPACK,	    0 },
-    { "PE",	    "MEW",	    PE_CONF_MEW,	    0 },
-    { "PE",	    "UPACK",	    PE_CONF_UPACK,	    0 },
-#endif
+
+    { "PE",	    "NSPACK",	    PE_CONF_NSPACK,	    1 }, /* exp */
+    { "PE",	    "MEW",	    PE_CONF_MEW,	    1 }, /* exp */
+    { "PE",	    "UPACK",	    PE_CONF_UPACK,	    1 }, /* exp */
 
     { "ELF",	    NULL,	    0x1,		    1 },
 
