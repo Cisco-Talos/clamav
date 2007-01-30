@@ -199,8 +199,8 @@ static int cli_unrar_checklimits(const cli_ctx *ctx, const rar_metadata_t *metad
 {
     if(ctx->limits) {
 	if(ctx->limits->maxratio && metadata->unpack_size && metadata->pack_size) {
-	    if((unsigned int) metadata->unpack_size / (unsigned int) metadata->pack_size >= ctx->limits->maxratio) {
-		cli_dbgmsg("RAR: Max ratio reached (normal: %u, compressed: %u, max: %ld)\n", metadata->unpack_size, metadata->pack_size, ctx->limits->maxratio);
+	    if(metadata->unpack_size / metadata->pack_size >= ctx->limits->maxratio) {
+		cli_dbgmsg("RAR: Max ratio reached (normal: %Lu, compressed: %Lu, max: %u)\n", metadata->unpack_size, metadata->pack_size, ctx->limits->maxratio);
 		if(BLOCKMAX) {
 		    *ctx->virname = "Oversized.RAR";
 		    return CL_VIRUS;
@@ -210,7 +210,7 @@ static int cli_unrar_checklimits(const cli_ctx *ctx, const rar_metadata_t *metad
 	}
 
 	if(ctx->limits->maxfilesize && (metadata->unpack_size > ctx->limits->maxfilesize)) {
-	    cli_dbgmsg("RAR: %s: Size exceeded (%u, max: %lu)\n", metadata->filename, metadata->unpack_size, ctx->limits->maxfilesize);
+	    cli_dbgmsg("RAR: %s: Size exceeded (%Lu, max: %lu)\n", metadata->filename, metadata->unpack_size, ctx->limits->maxfilesize);
 	    if(BLOCKMAX) {
 		*ctx->virname = "RAR.ExceededFileSize";
 		return CL_VIRUS;
@@ -219,7 +219,7 @@ static int cli_unrar_checklimits(const cli_ctx *ctx, const rar_metadata_t *metad
 	}
 
 	if(ctx->limits->maxfiles && (files > ctx->limits->maxfiles)) {
-	    cli_dbgmsg("RAR: Files limit reached (max: %d)\n", ctx->limits->maxfiles);
+	    cli_dbgmsg("RAR: Files limit reached (max: %u)\n", ctx->limits->maxfiles);
 	    if(BLOCKMAX) {
 		*ctx->virname = "RAR.ExceededFilesLimit";
 		return CL_VIRUS;
