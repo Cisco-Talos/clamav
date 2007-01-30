@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.20  2007/01/30 18:29:21  tkojm
+ *  fix some includes
+ *
  *  Revision 1.19  2007/01/13 19:39:21  tkojm
  *  phishing fixes (bb#157)
  *
@@ -155,7 +158,7 @@ case CL_PHISH_HOST_NOT_LISTED:
 #endif
 #include <ctype.h>
 #include <limits.h>
-#include <clamav.h>
+#include "clamav.h"
 #ifndef	C_WINDOWS
 #include <netdb.h>
 #include <netinet/in.h>

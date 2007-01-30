@@ -38,7 +38,6 @@
 #include <time.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include <clamav.h>
 #include <errno.h>
 
 #include "defaults.h"
@@ -56,6 +55,7 @@
 #include "shared/memory.h"
 #include "shared/cdiff.h"
 
+#include "libclamav/clamav.h"
 #include "libclamav/others.h"
 #include "libclamav/str.h"
 #include "libclamav/cvd.h"
