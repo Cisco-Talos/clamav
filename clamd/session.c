@@ -64,10 +64,10 @@ extern int progexit;
 
 struct multi_tag {
     int sd;
-    int options;
+    unsigned int options;
     const struct cfgstruct *copt;
     char *fname;
-    const struct cl_node *root;
+    const struct cl_engine *engine;
     const struct cl_limits *limits;
 };
 
@@ -87,7 +87,7 @@ void multiscanfile(void *arg)
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
 #endif
 
-    ret = cl_scanfile(tag->fname, &virname, NULL, tag->root, tag->limits, tag->options);
+    ret = cl_scanfile(tag->fname, &virname, NULL, tag->engine, tag->limits, tag->options);
 
     if(ret == CL_VIRUS) {
 	mdprintf(tag->sd, "%s: %s FOUND\n", tag->fname, virname);
@@ -105,7 +105,7 @@ void multiscanfile(void *arg)
     return;
 }
 
-static int multiscan(const char *dirname, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt, int odesc, unsigned int *reclev, threadpool_t *multi_pool)
+static int multiscan(const char *dirname, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int odesc, unsigned int *reclev, threadpool_t *multi_pool)
 {
 	DIR *dd;
 	struct dirent *dent;
@@ -167,7 +167,7 @@ static int multiscan(const char *dirname, const struct cl_node *root, const stru
 		    /* stat the file */
 		    if(lstat(fname, &statbuf) != -1) {
 			if((S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 1) && cfgopt(copt, "FollowDirectorySymlinks")->enabled)) {
-			    if(multiscan(fname, root, limits, options, copt, odesc, reclev, multi_pool) == -1) {
+			    if(multiscan(fname, engine, limits, options, copt, odesc, reclev, multi_pool) == -1) {
 				free(fname);
 				closedir(dd);
 				return -1;
@@ -193,7 +193,7 @@ static int multiscan(const char *dirname, const struct cl_node *root, const stru
 				    scandata->options = options;
 				    scandata->copt = copt;
 				    scandata->fname = fname;
-				    scandata->root = root;
+				    scandata->engine = engine;
 				    scandata->limits = limits;
 				    if(!thrmgr_dispatch(multi_pool, scandata)) {
 					logg("!multiscan: thread dispatch failed for multi_pool (file %s)\n", fname);
@@ -228,7 +228,7 @@ static int multiscan(const char *dirname, const struct cl_node *root, const stru
     return 0;
 }
 
-int command(int desc, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt, int timeout)
+int command(int desc, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int timeout)
 {
 	char buff[1025];
 	int bread, opt;
@@ -249,13 +249,13 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
     cli_chomp(buff);
 
     if(!strncmp(buff, CMD1, strlen(CMD1))) { /* SCAN */
-	if(scan(buff + strlen(CMD1) + 1, NULL, root, limits, options, copt, desc, 0) == -2)
+	if(scan(buff + strlen(CMD1) + 1, NULL, engine, limits, options, copt, desc, 0) == -2)
 	    if(cfgopt(copt, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD2, strlen(CMD2))) { /* RAWSCAN */
 	opt = options & ~CL_SCAN_ARCHIVE;
-	if(scan(buff + strlen(CMD2) + 1, NULL, root, NULL, opt, copt, desc, 0) == -2)
+	if(scan(buff + strlen(CMD2) + 1, NULL, engine, NULL, opt, copt, desc, 0) == -2)
 	    if(cfgopt(copt, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
@@ -270,7 +270,7 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
 	mdprintf(desc, "PONG\n");
 
     } else if(!strncmp(buff, CMD6, strlen(CMD6))) { /* CONTSCAN */
-	if(scan(buff + strlen(CMD6) + 1, NULL, root, limits, options, copt, desc, 1) == -2)
+	if(scan(buff + strlen(CMD6) + 1, NULL, engine, limits, options, copt, desc, 1) == -2)
 	    if(cfgopt(copt, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
@@ -304,7 +304,7 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
 	free(path);
 
     } else if(!strncmp(buff, CMD8, strlen(CMD8))) { /* STREAM */
-	if(scanstream(desc, NULL, root, limits, options, copt) == CL_EMEM)
+	if(scanstream(desc, NULL, engine, limits, options, copt) == CL_EMEM)
 	    if(cfgopt(copt, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
@@ -320,7 +320,7 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
     } else if(!strncmp(buff, CMD12, strlen(CMD12))) { /* FD */
 	    int fd = atoi(buff + strlen(CMD12) + 1);
 
-	scanfd(fd, NULL, root, limits, options, copt, desc);
+	scanfd(fd, NULL, engine, limits, options, copt, desc);
 	close(fd); /* FIXME: should we close it here? */
 
     } else if(!strncmp(buff, CMD13, strlen(CMD13))) { /* MULTISCAN */
@@ -345,14 +345,14 @@ int command(int desc, const struct cl_node *root, const struct cl_limits *limits
 		return -1;
 	    }
 
-	    ret = multiscan(path, root, limits, options, copt, desc, &reclev, multi_pool);
+	    ret = multiscan(path, engine, limits, options, copt, desc, &reclev, multi_pool);
 	    thrmgr_destroy(multi_pool);
 
 	    if(ret < 0)
 		return -1;
 
 	} else {
-	    ret = cl_scanfile(path, &virname, NULL, root, limits, options);
+	    ret = cl_scanfile(path, &virname, NULL, engine, limits, options);
 
 	    if(ret == CL_VIRUS) {
 		mdprintf(desc, "%s: %s FOUND\n", path, virname);
