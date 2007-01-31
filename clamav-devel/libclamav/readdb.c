@@ -74,7 +74,7 @@ static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* TODO: clean up the code */
 
-static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, int sigid, int parts, int partno, unsigned short type, unsigned int mindist, unsigned int maxdist, char *offset, unsigned short target)
+static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, int sigid, int parts, int partno, unsigned short type, unsigned int mindist, unsigned int maxdist, const char *offset, unsigned short target)
 {
 	struct cli_ac_patt *new;
 	char *pt, *hex;
@@ -100,18 +100,26 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     new->mindist = mindist;
     new->maxdist = maxdist;
     new->target = target;
-    new->offset = offset;
+    if(offset) {
+	new->offset = cli_strdup(offset);
+	if(!new->offset)
+	    return CL_EMEM;
+    }
 
     if(strchr(hexsig, '(')) {
 	    char *hexcpy, *hexnew, *start, *h, *c;
 
 	if(!(hexcpy = strdup(hexsig))) {
+	    if(new->offset)
+		free(new->offset);
 	    free(new);
 	    return CL_EMEM;
 	}
 
 	if(!(hexnew = (char *) cli_calloc(strlen(hexsig) + 1, 1))) {
 	    free(hexcpy);
+	    if(new->offset)
+		free(new->offset);
 	    free(new);
 	    return CL_EMEM;
 	}
@@ -137,7 +145,7 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
 	    new->alt++;
 	    new->altn = (unsigned short int *) cli_realloc(new->altn, new->alt * sizeof(unsigned short int));
 	    new->altn[new->alt - 1] = 0;
-	    new->altc = (char **) cli_realloc(new->altc, new->alt * sizeof(char *));
+	    new->altc = (unsigned char **) cli_realloc(new->altc, new->alt * sizeof(char *));
 	    new->altc[new->alt - 1] = NULL;
 
 	    for(i = 0; i < strlen(pt); i++)
@@ -150,7 +158,7 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
 	    } else
 		new->altn[new->alt - 1]++;
 
-	    if(!(new->altc[new->alt - 1] = (char *) cli_calloc(new->altn[new->alt - 1], 1))) {
+	    if(!(new->altc[new->alt - 1] = (unsigned char *) cli_calloc(new->altn[new->alt - 1], 1))) {
 		error = 1;
 		break;
 	    }
@@ -184,6 +192,8 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
 
 	if(error) {
 	    FREE_ALT;
+	    if(new->offset)
+		free(new->offset);
 	    free(new);
 	    return CL_EMALFDB;
 	}
@@ -193,6 +203,8 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
 
     if((new->pattern = cli_hex2si(hex)) == NULL) {
 	FREE_ALT;
+	if(new->offset)
+	    free(new->offset);
 	free(new);
 	return CL_EMALFDB;
     }
@@ -221,6 +233,8 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
 
 	if(wprefix) {
 	    FREE_ALT;
+	    if(new->offset)
+		free(new->offset);
 	    free(new->pattern);
 	    free(new);
 	    return CL_EMALFDB;
@@ -250,6 +264,8 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
 	else
 	    free(new->pattern);
 	FREE_ALT;
+	if(new->offset)
+	    free(new->offset);
 	free(new);
 	return CL_EMALFDB;
     }
@@ -260,6 +276,8 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
 	else
 	    free(new->pattern);
 	FREE_ALT;
+	if(new->offset)
+	    free(new->offset);
 	free(new);
 	return CL_EMEM;
     }
@@ -273,6 +291,8 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
 	    free(new->pattern);
 	free(new->virname);
 	FREE_ALT;
+	if(new->offset)
+	    free(new->offset);
 	free(new);
 	return ret;
     }
@@ -283,7 +303,7 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     return CL_SUCCESS;
 }
 
-int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, unsigned short type, char *offset, unsigned short target)
+int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, unsigned short type, const char *offset, unsigned short target)
 {
 	struct cli_bm_patt *bm_new;
 	char *pt, *hexcpy, *start, *n;
@@ -420,7 +440,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	if(!bm_new)
 	    return CL_EMEM;
 
-	if(!(bm_new->pattern = cli_hex2str(hexsig))) {
+	if(!(bm_new->pattern = (unsigned char *) cli_hex2str(hexsig))) {
 	    free(bm_new);
 	    return CL_EMALFDB;
 	}
@@ -446,7 +466,14 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
 	strncpy(bm_new->virname, virname, virlen);
 
-	bm_new->offset = offset;
+	bm_new->offset = strdup(offset);
+	if(!bm_new->offset) {
+	    free(bm_new->pattern);
+	    free(bm_new->virname);
+	    free(bm_new);
+	    return CL_EMEM;
+	}
+
 	bm_new->target = target;
 
 	if(bm_new->length > root->maxpatlen)
@@ -781,6 +808,7 @@ static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	}
 
 	free(virname);
+	free(offset);
 	free(sig);
     }
 

@@ -22,7 +22,7 @@
 
 #include "clamav.h"
 
-int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, unsigned short type, char *offset, unsigned short target);
+int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, unsigned short type, const char *offset, unsigned short target);
 
 int cli_initengine(struct cl_engine **engine, unsigned int options);
 
