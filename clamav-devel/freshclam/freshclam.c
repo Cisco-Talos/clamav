@@ -421,7 +421,7 @@ int main(int argc, char **argv)
 
 
     if(opt_check(opt, "list-mirrors")) {
-	if(mirman_read("mirrors.dat", &mdat) == -1) {
+	if(mirman_read("mirrors.dat", &mdat, 1) == -1) {
 	    printf("Can't read mirrors.dat\n");
 	    return 55;
 	}

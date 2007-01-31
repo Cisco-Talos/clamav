@@ -31,13 +31,14 @@ struct mirdat_ip {
 };
 
 struct mirdat {
+    uint8_t active;
     unsigned int num;
     uint32_t currip;
     uint32_t dbflevel;
     struct mirdat_ip *mirtab;
 };
 
-int mirman_read(const char *file, struct mirdat *mdat);
+int mirman_read(const char *file, struct mirdat *mdat, uint8_t active);
 int mirman_check(uint32_t ip, struct mirdat *mdat);
 int mirman_update(uint32_t ip, struct mirdat *mdat, uint8_t broken);
 void mirman_list(const struct mirdat *mdat);

@@ -56,13 +56,16 @@ void mirman_free(struct mirdat *mdat)
     }
 }
 
-int mirman_read(const char *file, struct mirdat *mdat)
+int mirman_read(const char *file, struct mirdat *mdat, uint8_t active)
 {
 	struct mirdat_ip mip;
 	int fd, bread;
 
 
     memset(mdat, 0, sizeof(struct mirdat));
+
+    if(!(mdat->active = active))
+	return 0;
 
     if((fd = open(file, O_RDONLY|O_BINARY)) == -1)
 	return -1;
@@ -96,6 +99,9 @@ int mirman_check(uint32_t ip, struct mirdat *mdat)
 	unsigned int i, flevel = cl_retflevel();
 
 
+    if(!mdat->active)
+	return 0;
+
     for(i = 0; i < mdat->num; i++) {
 	if(mdat->mirtab[i].ip == ip) {
 
@@ -121,6 +127,9 @@ int mirman_update(uint32_t ip, struct mirdat *mdat, uint8_t broken)
 {
 	unsigned int i, found = 0;
 
+
+    if(!mdat->active)
+	return 0;
 
     for(i = 0; i < mdat->num; i++) {
 	if(mdat->mirtab[i].ip == ip) {

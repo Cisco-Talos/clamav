@@ -1123,7 +1123,10 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	localip = cpt->strarg;
     }
 
-    mirman_read("mirrors.dat", &mdat);
+    if(cfgopt(copt, "HTTPProxyServer")->enabled)
+	mirman_read("mirrors.dat", &mdat, 0);
+    else
+	mirman_read("mirrors.dat", &mdat, 1);
 
     memset(ipaddr, 0, sizeof(ipaddr));
 

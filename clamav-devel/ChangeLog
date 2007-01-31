@@ -1,3 +1,7 @@
+Wed Jan 31 14:21:36 CET 2007 (tk)
+---------------------------------
+  * freshclam: disable mirror manager when using proxy (bb#223)
+
 Tue Jan 30 22:25:36 CET 2007 (tk)
 ---------------------------------
   * clamd: minor code cleanup
