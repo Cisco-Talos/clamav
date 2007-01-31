@@ -3,7 +3,7 @@ here may not be available in binary packages.
 --
 
 
-0.90RC2
+0.90RC3
 -------
 
 The Release Candidate of the long awaited ClamAV 0.90 is ready for general
@@ -60,18 +60,28 @@ Detailed list of changes (to be finished):
 -) libclamav:
   + New unpacker for RAR3, RAR2 and RAR1
   + Support for RAR-SFX, Zip-SFX and CAB-SFX archives
+  + New PE parsing model:
+    - Accurate virtual and raw size and offset calculations
+    - Proper parsing of executables with weird/handcrafted/uncommon headers
+    - Proper handling (or skipping) of ghost sections at various places in the
+      code
+    - Rebuild improvements for various unpackers
+    - Adjusted alignment on rebuilt executables
+    - Proper handling of out of sections offsets
+    - Broken exe detection now mimics the XPSP2 loader
+    - Lots of misc improvements and fixes
   + Support for PE32+ (64-bit) executables
-  + Support for PE section based MD5 signatures (.mdb)
+  + Support for MD5 signatures based on PE sections (.mdb)
   + ELF file parser
   + Support for Sensory Networks' NodalCore hardware acceleration technology
   + Advanced phishing detection module (experimental)
-  + Phishing detection can be disabled with CL_DB_NOPHISHING
   + Signatures are stored in separate trees depending on their target type
   + Algorithmic detection can be controlled with CL_SCAN_ALGO
-  + Support for obfuscators: SUE (experimental), Y0da Cryptor, CryptFF
-  + Support for unpackers: NsPack (experimental), wwpack32
-  + Support for SIS files (SybmianOS installer packages)
-  + Support for PDF files
+  + Support for new obfuscators: SUE, Y0da Cryptor, CryptFF
+  + Support for new packers: NsPack, wwpack32, MEW, Upack
+  + Support for SIS files (SymbianOS packages)
+  + Support for PDF and RTF files
+  + New encoding and entity normalizer (experimental)
 
 -) clamd:
   + New config file parser:
@@ -96,6 +106,8 @@ Detailed list of changes (to be finished):
   + Reporting: ability to report phishing attempts to anti-phishing
     organisations to help close the sites
   + Improved load balancing for scanning with clusters
+  + Removed -b option (enable BOUNCE compile time option to re-enable the
+    option)
 
 -) clamscan:
   + New options: --no-phishing-sigs, --no-algorithmic (disable phishing and
@@ -105,8 +117,10 @@ Detailed list of changes (to be finished):
   + New option: --copy
 
 -) freshclam:
-  + interpreter for .cdiff files (scripted updates)
-  + new option HTTPUserAgent to force different User-Agent header
+  + Interpreter for .cdiff files (scripted updates)
+  + Initial version of mirror manager
+  + New option: --list-mirrors
+  + New option HTTPUserAgent to force different User-Agent header
 
 -) sigtool:
   + New option: --utf16-decode (decode UTF16 encoded files)
