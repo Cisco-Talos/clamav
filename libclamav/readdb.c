@@ -109,7 +109,7 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     if(strchr(hexsig, '(')) {
 	    char *hexcpy, *hexnew, *start, *h, *c;
 
-	if(!(hexcpy = strdup(hexsig))) {
+	if(!(hexcpy = cli_strdup(hexsig))) {
 	    if(new->offset)
 		free(new->offset);
 	    free(new);
@@ -316,7 +316,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
 	root->ac_partsigs++;
 
-	if(!(hexcpy = strdup(hexsig)))
+	if(!(hexcpy = cli_strdup(hexsig)))
 	    return CL_EMEM;
 
 	len = strlen(hexsig);
@@ -466,12 +466,14 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
 	strncpy(bm_new->virname, virname, virlen);
 
-	bm_new->offset = strdup(offset);
-	if(!bm_new->offset) {
-	    free(bm_new->pattern);
-	    free(bm_new->virname);
-	    free(bm_new);
-	    return CL_EMEM;
+	if(offset) {
+	    bm_new->offset = cli_strdup(offset);
+	    if(!bm_new->offset) {
+		free(bm_new->pattern);
+		free(bm_new->virname);
+		free(bm_new);
+		return CL_EMEM;
+	    }
 	}
 
 	bm_new->target = target;
@@ -1389,7 +1391,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	dbstat->entries = 0;
 	dbstat->stattab = NULL;
 	dbstat->statdname = NULL;
-	dbstat->dir = strdup(dirname);
+	dbstat->dir = cli_strdup(dirname);
     } else {
         cli_errmsg("cl_statdbdir(): Null argument passed.\n");
 	return CL_ENULLARG;

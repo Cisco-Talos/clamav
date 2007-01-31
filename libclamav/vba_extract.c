@@ -462,7 +462,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 		close(fd);
 		return NULL;
 	}
-	vba_project->dir = strdup(dir);
+	vba_project->dir = cli_strdup(dir);
 	vba_project->offset = (uint32_t *) cli_malloc (sizeof(uint32_t) *
 					record_count);
 	if (!vba_project->offset) {
@@ -1387,7 +1387,7 @@ static macro_extnames_t *wm_read_macro_extnames(int fd)
 				get_unicode_name(name_tmp, macro_extname->length*2, FALSE);
 			    free(name_tmp);
 			} else {
-			    macro_extname->extname = strdup("[no name]");
+			    macro_extname->extname = cli_strdup("[no name]");
 			    macro_extname->length = 10;
 			}
 		} else {
@@ -1408,7 +1408,7 @@ static macro_extnames_t *wm_read_macro_extnames(int fd)
 			    }
 			    macro_extname->extname[macro_extname->length] = '\0';
 			} else {
-			    macro_extname->extname = strdup("[no name]");
+			    macro_extname->extname = cli_strdup("[no name]");
 			    macro_extname->length = 10;
 			}
 		}
@@ -1635,7 +1635,7 @@ vba_project_t *wm_dir_read(const char *dir)
 			vba_project = NULL;
 			goto abort;
 		}
-		vba_project->dir = strdup(dir);
+		vba_project->dir = cli_strdup(dir);
 		vba_project->offset = (uint32_t *) cli_malloc(sizeof(uint32_t) *
 					macro_info->count);
 		if (!vba_project->offset) {
@@ -1668,7 +1668,7 @@ vba_project_t *wm_dir_read(const char *dir)
 		}
 		vba_project->count = macro_info->count;
 		for (i=0 ; i < macro_info->count ; i++) {
-			vba_project->name[i] = strdup("WordDocument");
+			vba_project->name[i] = cli_strdup("WordDocument");
 			vba_project->offset[i] = macro_info->macro_entry[i].offset;
 			vba_project->length[i] = macro_info->macro_entry[i].len;
 			vba_project->key[i] = macro_info->macro_entry[i].key;

@@ -292,7 +292,7 @@ static void html_tag_arg_set(tag_arguments_t *tags, char *tag, char *value)
 	for (i=0; i < tags->count; i++) {
 		if (strcmp(tags->tag[i], tag) == 0) {
 			free(tags->value[i]);
-			tags->value[i] = strdup(value);
+			tags->value[i] = cli_strdup(value);
 			return;
 		}
 	}
@@ -323,16 +323,16 @@ static void html_tag_arg_add(tag_arguments_t *tags,
 		tags->contents[tags->count-1]=NULL;
 	}
 #endif
-	tags->tag[tags->count-1] = strdup(tag);
+	tags->tag[tags->count-1] = cli_strdup(tag);
 	if (value) {
 		if (*value == '"') {
-			tags->value[tags->count-1] = strdup(value+1);
+			tags->value[tags->count-1] = cli_strdup(value+1);
 			len = strlen(value+1);
 			if (len > 0) {
 				tags->value[tags->count-1][len-1] = '\0';
 			}
 		} else {
-			tags->value[tags->count-1] = strdup(value);
+			tags->value[tags->count-1] = cli_strdup(value);
 		}
 	} else {
 		tags->value[tags->count-1] = NULL;
@@ -1041,7 +1041,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						if (arg_action_value) {
 							if(in_form_action) 
 								free(in_form_action);							
-							in_form_action = strdup(arg_action_value);
+							in_form_action = cli_strdup(arg_action_value);
 						}
 #endif
 					} else if (strcmp(tag, "img") == 0) {
