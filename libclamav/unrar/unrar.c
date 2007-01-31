@@ -288,7 +288,7 @@ static void *read_header(int fd, header_type hdr_type)
 		file_hdr->file_crc = rar_endian_convert_32(file_hdr->file_crc);
 		file_hdr->name_size = rar_endian_convert_16(file_hdr->name_size);
 		if(file_hdr->flags & 0x100) {
-			if (cli_readn(fd, file_hdr + SIZEOF_NEWLHD, 8) != 8) {
+			if (cli_readn(fd, (char *) file_hdr + SIZEOF_NEWLHD, 8) != 8) {
 				free(file_hdr);
 				return NULL;
 			}
