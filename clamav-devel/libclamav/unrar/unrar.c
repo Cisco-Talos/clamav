@@ -1557,7 +1557,7 @@ int cli_unrar_extract_next_prepare(rar_state_t* state,const char* dirname)
 		new_metadata->unpack_size = state->file_header->high_unpack_size * 0x100000000 + state->file_header->unpack_size;
 		new_metadata->crc = state->file_header->file_crc;
 		new_metadata->method = state->file_header->method;
-		new_metadata->filename = strdup(state->file_header->filename);
+		new_metadata->filename = cli_strdup(state->file_header->filename);
 		new_metadata->next = NULL;
 		new_metadata->encrypted = FALSE;
 	if (state->metadata_tail == NULL) {

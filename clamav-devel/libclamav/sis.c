@@ -211,7 +211,7 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 	    return CL_EMEM;
 	sprintf(subdir, "%s/%s", dir, typedir);
     } else {
-	if(!(subdir = strdup(dir)))
+	if(!(subdir = cli_strdup(dir)))
 	    return CL_EMEM;
     }
 
