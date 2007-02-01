@@ -24,14 +24,14 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdint.h>
 #include <string.h>
 
+#include "cltypes.h"
 #include "clamav.h"
 #include "others.h"
 #include "hashtab.h"
 
-static const size_t prime_list[] = 
+static const size_t prime_list[] =
 {
      53ul,         97ul,         193ul,       389ul,       769ul,
      1543ul,       3079ul,       6151ul,      12289ul,     24593ul,
