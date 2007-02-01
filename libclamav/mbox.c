@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.372 2007/01/25 13:59:56 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.373 2007/02/01 12:42:18 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -1096,7 +1096,7 @@ save_text(cli_ctx *ctx, const char *dir, const char *start, size_t len)
 		 *	in this way. It gets the "filetype" wrong and then
 		 *	doesn't scan correctly
 		 */
-		if(cli_scanbuff((char *)p, len, ctx->virname, ctx->engine, 0) == CL_VIRUS) {
+		if(cli_scanbuff((char *)p, len, ctx->virname, ctx->engine, CL_TYPE_UNKNOWN_DATA) == CL_VIRUS) {
 			cli_dbgmsg("save_text: found %s\n", *ctx->virname);
 			return CL_VIRUS;
 		}
