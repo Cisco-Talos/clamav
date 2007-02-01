@@ -47,6 +47,9 @@
 
 #define MAX_LINE 1024
 
+#ifndef EILSEQ
+#define EILSEQ 84
+#endif
 
 unsigned char* entity_norm(const struct entity_conv* conv,const unsigned char* entity)
 {
@@ -269,13 +272,13 @@ static int iconv(iconv_t iconv_struct,char **inbuf, size_t *inbytesleft,
 		case E_UTF16_LE:
 			{
 				for(i=0;i < maxcopy;i += 2) {
-					outbuf[i] = inbuf[i+1];
-					outbuf[i+1] = inbuf[i];
+					output[i] = input[i+1];
+					output[i+1] = input[i];
 				}
 				break;
 			}
 		case E_UTF16_BE:
-			memcpy(*outbuf,*inbuf,maxcopy);
+			memcpy(output,input,maxcopy);
 			break;
 		case E_UNKNOWN:
 		case E_OTHER:
