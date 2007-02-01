@@ -1,12 +1,16 @@
-Thu Feb  1 11:50:00 GMT 2007
+Thu Feb  1 12:42:56 GMT 2007 (njh)
+----------------------------------
+  * libclamav:	Remove some warnings from icc
+
+Thu Feb  1 11:50:00 GMT 2007 (njh)
 ----------------------------------
   * libclamav/hashtab.c:	Fix compilation error on earlier OpenBSDs
-  		(patch from Edwin)
+		(patch from Edwin)
 
 Thu Feb  1 08:02:50 GMT 2007 (njh)
 ----------------------------------
   * libclamav/entconv.c:	Fix compilation error on earlier OpenBSDs
-  		(patch from Edwin)
+		(patch from Edwin)
 
 Thu Feb  1 00:47:48 CET 2007 (tk)
 ---------------------------------
@@ -52,7 +56,7 @@ Sun Jan 28 21:20:05 CET 2007 (tk)
 Sat Jan 27 13:54:35 CET 2007 (acab)
 -----------------------------------
   * libclamav/pe.c: fix debug message logic, fixed handling of non aligned raw
-  		    data
+		    data
 
 Fri Jan 26 20:49:07 CET 2007 (acab)
 -----------------------------------
