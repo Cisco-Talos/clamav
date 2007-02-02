@@ -42,6 +42,5 @@ clamscan_SOURCES = \
     treewalk.c \
     treewalk.h
 
-DEFS = @DEFS@ -DCL_NOTHREADS
-LIBS = $(top_builddir)/libclamav/libclamav.la @ADDITIONAL_LIBS@
+LIBS = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav

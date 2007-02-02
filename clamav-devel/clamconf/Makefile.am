@@ -30,4 +30,4 @@ clamconf_SOURCES = \
     clamconf.c
 
 INCLUDES = -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
-LIBS = $(top_builddir)/libclamav/libclamav.la
+LIBS = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@
