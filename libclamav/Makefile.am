@@ -19,7 +19,7 @@
 
 INCLUDES = -I$(top_srcdir) -I@srcdir@/unrar
 
-libclamav_la_LIBADD = @LIBCLAMAV_LIBS@
+libclamav_la_LIBADD = @LIBCLAMAV_LIBS@ @THREAD_LIBS@
 
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 

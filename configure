@@ -883,7 +883,7 @@ CLAMD_LIBS
 CLAMAV_MILTER_LIBS
 FRESHCLAM_LIBS
 TH_SAFE
-ADDITIONAL_LIBS
+THREAD_LIBS
 BUILD_CLAMD_TRUE
 BUILD_CLAMD_FALSE
 HAVE_MILTER_TRUE
@@ -23023,7 +23023,7 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
     if test "$have_pthreads" = "yes"; then
-	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
+	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
 
 cat >>confdefs.h <<\_ACEOF
@@ -23035,8 +23035,6 @@ cat >>confdefs.h <<\_ACEOF
 #define _REENTRANT 1
 _ACEOF
 
-	CLAMD_LIBS="$CLAMD_LIBS -lpthread"
-	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
 	if test "$want_clamuko" = "yes"; then
 
 cat >>confdefs.h <<\_ACEOF
@@ -23044,7 +23042,6 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 	fi
-	CLAMSCAN_LIBS="$CLAMSCAN_LIBS -lpthread"
     fi
     case `uname -r` in
     1.*|2.0.*)
@@ -23063,7 +23060,7 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
     if test "$have_pthreads" = "yes"; then
-       LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
+       THREAD_LIBS="-lpthread"
        TH_SAFE="-thread-safe"
 
 cat >>confdefs.h <<\_ACEOF
@@ -23075,8 +23072,6 @@ cat >>confdefs.h <<\_ACEOF
 #define _REENTRANT 1
 _ACEOF
 
-       CLAMD_LIBS="$CLAMD_LIBS -lpthread"
-       CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
        if test "$want_clamuko" = "yes"; then
 
 cat >>confdefs.h <<\_ACEOF
@@ -23084,7 +23079,6 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
        fi
-       CLAMSCAN_LIBS="$CLAMSCAN_LIBS -lpthread"
     fi
     ;;
 cygwin*)
@@ -23099,7 +23093,7 @@ _ACEOF
 	fi
     fi
     if test "$have_pthreads" = "yes"; then
-	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
+	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
 
 cat >>confdefs.h <<\_ACEOF
@@ -23117,9 +23111,9 @@ _ACEOF
 solaris*)
     FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lresolv"
     if test "$have_pthreads" = "yes"; then
-	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
-	CLAMD_LIBS="$CLAMD_LIBS -lpthread -lresolv"
-	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread -lresolv"
+	THREAD_LIBS="-lpthread"
+	CLAMD_LIBS="$CLAMD_LIBS -lresolv"
+	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lresolv"
 	TH_SAFE="-thread-safe"
 
 cat >>confdefs.h <<\_ACEOF
@@ -23140,9 +23134,7 @@ _ACEOF
     ;;
 freebsd*)
     if test "$have_pthreads" = "yes"; then
-	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread -lc_r"
-	CLAMD_LIBS="$CLAMD_LIBS -pthread -lc_r"
-	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread -lc_r"
+	THREAD_LIBS="-lpthread -lc_r"
 	TH_SAFE="-thread-safe"
 
 cat >>confdefs.h <<\_ACEOF
@@ -23171,9 +23163,7 @@ _ACEOF
     ;;
 dragonfly*)
     if test "$have_pthreads" = "yes"; then
-	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread"
-	CLAMD_LIBS="$CLAMD_LIBS -pthread"
-	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread"
+	THREAD_LIBS="-pthread"
 	TH_SAFE="-thread-safe"
 
 cat >>confdefs.h <<\_ACEOF
@@ -23202,13 +23192,10 @@ _ACEOF
     ;;
 openbsd*)
     if test "$have_pthreads" = "yes"; then
-	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread"
 	if test "$use_cr" = "no"; then
-	    CLAMD_LIBS="$CLAMD_LIBS -pthread"
-	    CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread"
+	    THREAD_LIBS="-pthread"
 	else
-	    CLAMD_LIBS="$CLAMD_LIBS -pthread -lc_r"
-	    CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread -lc_r"
+	    THREAD_LIBS="-pthread -lc_r"
 	fi
 	TH_SAFE="-thread-safe"
 
@@ -23231,9 +23218,7 @@ _ACEOF
     ;;
 bsdi*)
     if test "$have_pthreads" = "yes"; then
-	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread"
-	CLAMD_LIBS="$CLAMD_LIBS -pthread"
-	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread"
+	THREAD_LIBS="-pthread"
 	TH_SAFE="-thread-safe"
 
 cat >>confdefs.h <<\_ACEOF
@@ -23255,9 +23240,7 @@ _ACEOF
     ;;
 netbsd*)
      if test "$have_pthreads" = "yes"; then
- 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
- 	CLAMD_LIBS="-lpthread"
- 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
+	THREAD_LIBS="-lpthread"
 
 cat >>confdefs.h <<\_ACEOF
 #define CL_THREAD_SAFE 1
@@ -23268,7 +23251,6 @@ cat >>confdefs.h <<\_ACEOF
 #define _REENTRANT 1
 _ACEOF
 
-	ADDITIONAL_LIBS="$LIBS -lpthread"
      fi
 
 cat >>confdefs.h <<\_ACEOF
@@ -23322,9 +23304,7 @@ os2*)
     CLAMD_LIBS="$CLAMD_LIBS -lsyslog"
     CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsyslog"
     if test "$have_pthreads" = "yes"; then
-	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
-	CLAMD_LIBS="$CLAMD_LIBS -lpthread"
-	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
+	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
 
 cat >>confdefs.h <<\_ACEOF
@@ -23347,9 +23327,7 @@ sco*)
                     ;;
 hpux*)
     if test "$have_pthreads" = "yes"; then
-	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
-	CLAMD_LIBS="$CLAMD_LIBS -lpthread"
-	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
+	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
 
 cat >>confdefs.h <<\_ACEOF
@@ -23370,9 +23348,7 @@ _ACEOF
     ;;
 aix*)
     if test "$have_pthreads" = "yes"; then
-	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
-	CLAMD_LIBS="$CLAMD_LIBS -lpthread"
-	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
+	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
 
 cat >>confdefs.h <<\_ACEOF
@@ -23412,9 +23388,7 @@ _ACEOF
     ;;
 irix*)
     if test "$have_pthreads" = "yes"; then
-	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
-	CLAMD_LIBS="$CLAMD_LIBS -lpthread"
-	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
+	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
 
 cat >>confdefs.h <<\_ACEOF
@@ -23445,7 +23419,7 @@ _ACEOF
 	fi
     fi
     if test "$have_pthreads" = "yes"; then
-	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lpthread"
+	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
 
 cat >>confdefs.h <<\_ACEOF
@@ -26674,7 +26648,7 @@ CLAMD_LIBS!$CLAMD_LIBS$ac_delim
 CLAMAV_MILTER_LIBS!$CLAMAV_MILTER_LIBS$ac_delim
 FRESHCLAM_LIBS!$FRESHCLAM_LIBS$ac_delim
 TH_SAFE!$TH_SAFE$ac_delim
-ADDITIONAL_LIBS!$ADDITIONAL_LIBS$ac_delim
+THREAD_LIBS!$THREAD_LIBS$ac_delim
 BUILD_CLAMD_TRUE!$BUILD_CLAMD_TRUE$ac_delim
 BUILD_CLAMD_FALSE!$BUILD_CLAMD_FALSE$ac_delim
 HAVE_MILTER_TRUE!$HAVE_MILTER_TRUE$ac_delim
