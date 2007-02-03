@@ -1,3 +1,7 @@
+Sat Feb  3 02:00:44 CET 2007 (tk)
+---------------------------------
+  * libclamav: s/CL_SCAN_ALGO/CL_SCAN_ALGORITHMIC/g
+
 Fri Feb  2 23:38:12 CET 2007 (tk)
 ---------------------------------
   * configure/make: minor cleanup and fix for bb#260

@@ -284,9 +284,9 @@ int scanmanager(const struct optstruct *opt)
     }
 
     if(opt_check(opt, "no-algorithmic"))
-	options &= ~CL_SCAN_ALGO;
+	options &= ~CL_SCAN_ALGORITHMIC;
     else
-	options |= CL_SCAN_ALGO;
+	options |= CL_SCAN_ALGORITHMIC;
 
 #ifdef C_LINUX
     procdev = (dev_t) 0;

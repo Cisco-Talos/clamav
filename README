@@ -76,7 +76,7 @@ Detailed list of changes (to be finished):
   + Support for Sensory Networks' NodalCore hardware acceleration technology
   + Advanced phishing detection module (experimental)
   + Signatures are stored in separate trees depending on their target type
-  + Algorithmic detection can be controlled with CL_SCAN_ALGO
+  + Algorithmic detection can be controlled with CL_SCAN_ALGORITHMIC
   + Support for new obfuscators: SUE, Y0da Cryptor, CryptFF
   + Support for new packers: NsPack, wwpack32, MEW, Upack
   + Support for SIS files (SymbianOS packages)

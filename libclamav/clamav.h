@@ -89,14 +89,14 @@ extern "C"
 #define CL_SCAN_BLOCKBROKEN	    0x40
 #define CL_SCAN_MAILURL		    0x80
 #define CL_SCAN_BLOCKMAX	    0x100
-#define CL_SCAN_ALGO		    0x200
+#define CL_SCAN_ALGORITHMIC	    0x200
 #define CL_SCAN_PHISHING_DOMAINLIST 0x400
 #define CL_SCAN_PHISHING_BLOCKSSL   0x800 /* ssl mismatches, not ssl by itself*/
 #define CL_SCAN_PHISHING_BLOCKCLOAK 0x1000
 #define CL_SCAN_ELF		    0x2000
 
 /* recommended scan settings */
-#define CL_SCAN_STDOPT		(CL_SCAN_ARCHIVE | CL_SCAN_MAIL | CL_SCAN_OLE2 | CL_SCAN_HTML | CL_SCAN_PE | CL_SCAN_ALGO | CL_SCAN_ELF) 
+#define CL_SCAN_STDOPT		(CL_SCAN_ARCHIVE | CL_SCAN_MAIL | CL_SCAN_OLE2 | CL_SCAN_HTML | CL_SCAN_PE | CL_SCAN_ALGORITHMIC | CL_SCAN_ELF) 
 
 /* aliases for backward compatibility */
 #define CL_RAW		CL_SCAN_RAW

@@ -357,7 +357,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 
     if(cfgopt(copt, "AlgorithmicDetection")->enabled) {
 	logg("Algorithmic detection enabled.\n");
-	options |= CL_SCAN_ALGO;
+	options |= CL_SCAN_ALGORITHMIC;
     } else {
 	logg("Algorithmic detection disabled.\n");
     }

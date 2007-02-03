@@ -76,7 +76,7 @@ typedef struct {
 #define SCAN_HTML	    (ctx->options & CL_SCAN_HTML)
 #define SCAN_PE		    (ctx->options & CL_SCAN_PE)
 #define SCAN_ELF	    (ctx->options & CL_SCAN_ELF)
-#define SCAN_ALGO 	    (ctx->options & CL_SCAN_ALGO)
+#define SCAN_ALGO 	    (ctx->options & CL_SCAN_ALGORITHMIC)
 #define DETECT_ENCRYPTED    (ctx->options & CL_SCAN_BLOCKENCRYPTED)
 #define BLOCKMAX	    (ctx->options & CL_SCAN_BLOCKMAX)
 #define DETECT_BROKEN	    (ctx->options & CL_SCAN_BLOCKBROKEN)
