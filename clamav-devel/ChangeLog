@@ -1,3 +1,8 @@
+Sun Feb  4 00:33:54 CET 2007 (tk)
+---------------------------------
+  * sigtool/sigtool.c: --build now allows to manually specify path to current
+		       CVD/inc with optional argument, requested by Luca
+
 Sat Feb  3 02:00:44 CET 2007 (tk)
 ---------------------------------
   * libclamav: s/CL_SCAN_ALGO/CL_SCAN_ALGORITHMIC/g
