@@ -555,17 +555,30 @@ static int build(struct optstruct *opt)
     else
 	dbname = "daily";
 
-    pt = freshdbdir();
-    snprintf(olddb, sizeof(olddb), "%s/%s.inc/%s.info", pt, dbname, dbname);
-    if(stat(olddb, &foo) == -1) {
-	inc = 0;
-	snprintf(olddb, sizeof(olddb), "%s/%s.cvd", pt, dbname);
+
+    if(opt->filename) {
+	if(cli_strbcasestr(opt->filename, ".cvd")) {
+	    strncpy(olddb, opt->filename, sizeof(olddb));
+	    inc = 0;
+	} else if(cli_strbcasestr(opt->filename, ".inc")) {
+	    snprintf(olddb, sizeof(olddb), "%s/%s.info", opt->filename, dbname);
+	} else {
+	    mprintf("!build: The optional argument points to neither CVD nor incremental directory\n");
+	    return -1;
+	}
+
+    } else {
+	pt = freshdbdir();
+	snprintf(olddb, sizeof(olddb), "%s/%s.inc/%s.info", pt, dbname, dbname);
+	if(stat(olddb, &foo) == -1) {
+	    inc = 0;
+	    snprintf(olddb, sizeof(olddb), "%s/%s.cvd", pt, dbname);
+	}
+	free(pt);
     }
 
-    free(pt);
-
     if(!(oldcvd = cl_cvdhead(olddb))) {
-	mprintf("^build: CAN'T READ CVD HEADER OF CURRENT DATABASE %s\n", buffer);
+	mprintf("^build: CAN'T READ CVD HEADER OF CURRENT DATABASE %s\n", olddb);
 	sleep(3);
     }
 
@@ -817,15 +830,21 @@ static int build(struct optstruct *opt)
     mprintf("Created %s\n", pt);
 
     /* generate patch */
-    if(inc) {
-	pt = freshdbdir();
-	snprintf(olddb, sizeof(olddb), "%s/%s.inc", pt, dbname);
-	free(pt);
+    if(opt->filename) {
+	strncpy(olddb, opt->filename, sizeof(olddb));
     } else {
-	pt = freshdbdir();
-	snprintf(olddb, sizeof(olddb), "%s/%s.cvd", pt, dbname);
-	free(pt);
+	if(inc) {
+	    pt = freshdbdir();
+	    snprintf(olddb, sizeof(olddb), "%s/%s.inc", pt, dbname);
+	    free(pt);
+	} else {
+	    pt = freshdbdir();
+	    snprintf(olddb, sizeof(olddb), "%s/%s.cvd", pt, dbname);
+	    free(pt);
+	}
+    }
 
+    if(!inc) {
 	pt = cli_gentemp(NULL);
 	if(mkdir(pt, 0700)) {
 	    mprintf("!build: Can't create temporary directory %s\n", pt);
@@ -1666,7 +1685,7 @@ void help(void)
     mprintf("    --html-normalise=FILE                  create normalised parts of HTML file\n");
     mprintf("    --utf16-decode=FILE                    decode UTF16 encoded files\n");
     mprintf("    --info=FILE            -i FILE         print database information\n");
-    mprintf("    --build=NAME           -b NAME         build a CVD file\n");
+    mprintf("    --build=NAME [cvd/inc] -b NAME         build a CVD file\n");
     mprintf("    --server=ADDR                          ClamAV Signing Service address\n");
     mprintf("    --unpack=FILE          -u FILE         Unpack a CVD file\n");
     mprintf("    --unpack-current=SHORTNAME             Unpack local CVD/INCDIR in cwd\n");
