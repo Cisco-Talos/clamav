@@ -1,3 +1,7 @@
+Sun Feb  4 17:58:16 CET 2007 (tk)
+---------------------------------
+  * libclamav: remove some warnings from gcc
+
 Sun Feb  4 00:33:54 CET 2007 (tk)
 ---------------------------------
   * sigtool/sigtool.c: --build now allows to manually specify path to current

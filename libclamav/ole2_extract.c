@@ -69,8 +69,8 @@
 
 typedef struct ole2_header_tag
 {
-	unsigned char magic[8] __attribute__ ((packed));		/* should be: 0xd0cf11e0a1b11ae1 */
-	unsigned char clsid[16] __attribute__ ((packed));
+	unsigned char magic[8];		/* should be: 0xd0cf11e0a1b11ae1 */
+	unsigned char clsid[16];
 	uint16_t minor_version __attribute__ ((packed));
 	uint16_t dll_version __attribute__ ((packed));
 	int16_t byte_order __attribute__ ((packed));			/* -2=intel */
@@ -102,15 +102,15 @@ typedef struct ole2_header_tag
 
 typedef struct property_tag
 {
-	unsigned char name[64] __attribute__ ((packed));		/* in unicode */
+	char name[64];		/* in unicode */
 	uint16_t name_size __attribute__ ((packed));
-	unsigned char type __attribute__ ((packed));			/* 1=dir 2=file 5=root */
-	unsigned char color __attribute__ ((packed));			/* black or red */
+	unsigned char type;		/* 1=dir 2=file 5=root */
+	unsigned char color;		/* black or red */
 	uint32_t prev __attribute__ ((packed));
 	uint32_t next __attribute__ ((packed));
 	uint32_t child __attribute__ ((packed));
 
-	unsigned char clsid[16] __attribute__ ((packed));
+	unsigned char clsid[16];
 	uint32_t user_flags __attribute__ ((packed));
 
 	uint32_t create_lowdate __attribute__ ((packed));
@@ -119,14 +119,14 @@ typedef struct property_tag
 	uint32_t mod_highdate __attribute__ ((packed));
 	uint32_t start_block __attribute__ ((packed));
 	uint32_t size __attribute__ ((packed));
-	unsigned char reserved[4] __attribute__ ((packed));
+	unsigned char reserved[4];
 } property_t;
 
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack()
 #endif
 
-unsigned char magic_id[] = { 0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1};
+static unsigned char magic_id[] = { 0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1};
 
 static char *get_property_name(char *name, int size)
 {
@@ -402,6 +402,7 @@ static int32_t ole2_get_sbat_data_block(int fd, ole2_header_t *hdr, void *buff, 
 
 /* Read the property tree.
    It is read as just an array rather than a tree */
+/*
 static void ole2_read_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 				int (*handler)(int fd, ole2_header_t *hdr, property_t *prop, const char *dir))
 {
@@ -443,7 +444,6 @@ static void ole2_read_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 			}
 		}
 		current_block = ole2_get_next_block_number(fd, hdr, current_block);
-		/* Loop detection */
 		if (++count > 100000) {
 			cli_dbgmsg("ERROR: loop detected\n");
 			return;
@@ -451,14 +451,15 @@ static void ole2_read_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 	}
 	return;
 }
+*/
 
 static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir, int32_t prop_index,
 				int (*handler)(int fd, ole2_header_t *hdr, property_t *prop, const char *dir),
-				int rec_level, int *file_count, const struct cl_limits *limits)
+				unsigned int rec_level, unsigned int *file_count, const struct cl_limits *limits)
 {
 	property_t prop_block[4];
 	int32_t index, current_block, i;
-	unsigned char *dirname;
+	char *dirname;
 
 	current_block = hdr->prop_start;
 
@@ -672,6 +673,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 	return TRUE;
 }
 
+#if !defined(HAVE_ATTRIB_PACKED) && !defined(HAVE_PRAGMA_PACK)
 static int ole2_read_header(int fd, ole2_header_t *hdr)
 {
 	int i;
@@ -731,13 +733,14 @@ static int ole2_read_header(int fd, ole2_header_t *hdr)
 	}
 	return TRUE;
 }
+#endif
 
 int cli_ole2_extract(int fd, const char *dirname, const struct cl_limits *limits)
 {
 	ole2_header_t hdr;
 	int hdr_size;
 	struct stat statbuf;
-	int file_count=0;
+	unsigned int file_count=0;
 	
 	cli_dbgmsg("in cli_ole2_extract()\n");
 	
@@ -795,7 +798,7 @@ int cli_ole2_extract(int fd, const char *dirname, const struct cl_limits *limits
 		return CL_EOLE2;
 	}
 
-	if (strncmp(hdr.magic, magic_id, 8) != 0) {
+	if (memcmp(hdr.magic, magic_id, 8) != 0) {
 		cli_dbgmsg("OLE2 magic failed!\n");
 #ifdef HAVE_MMAP
 		if (hdr.m_area != NULL) {

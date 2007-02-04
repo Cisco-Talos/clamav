@@ -444,7 +444,7 @@ static int rtf_object_end(struct rtf_state* state,cli_ctx* ctx)
 }
 
 
-static void rtf_action(struct rtf_state* state,long action, const char* tempname,cli_ctx* ctx)
+static void rtf_action(struct rtf_state* state,long action)
 {
 	switch(action) {
 		case RTF_OBJECT:
@@ -652,7 +652,7 @@ int cli_scanrtf(int desc, cli_ctx *ctx)
 						state.controlword[state.controlword_cnt] = '\0';
 						action = tableFind(actiontable, state.controlword);
 						if(action != -1)
-							rtf_action(&state,action, tempname, ctx);
+							rtf_action(&state,action);
 						state.parse_state = PARSE_MAIN;
 						break;
 					}

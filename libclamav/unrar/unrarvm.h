@@ -59,7 +59,7 @@ typedef enum rarvm_standard_filters {
 enum VM_Flags {
 	VM_FC=1,
 	VM_FZ=2,
-	VM_FS=0x80000000,
+	VM_FS=0x80000000
 };
 
 enum rarvm_op_type {
