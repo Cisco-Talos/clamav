@@ -124,7 +124,7 @@ struct cli_md5_node *cli_vermd5(const unsigned char *md5, const struct cl_engine
 off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, cli_file_t ftype, int *ret)
 {
 	int (*einfo)(int, struct cli_exe_info *) = NULL;
-	unsigned int n;
+	unsigned int n, val;
 	off_t pos, offset;
 
 
@@ -176,16 +176,16 @@ off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, cli_f
 
 	if(!strncmp(offstr, "SL", 2) && info->exeinfo.section[info->exeinfo.nsections - 1].rsz) {
 
-	    if(sscanf(offstr, "SL+%lu", &offset) != 1) {
+	    if(sscanf(offstr, "SL+%u", &val) != 1) {
 		*ret = -1;
 		return 0;
 	    }
 
-	    offset += info->exeinfo.section[info->exeinfo.nsections - 1].raw;
+	    offset = val + info->exeinfo.section[info->exeinfo.nsections - 1].raw;
 
 	} else {
 
-	    if(sscanf(offstr, "S%u+%lu", &n, &offset) != 2) {
+	    if(sscanf(offstr, "S%u+%u", &n, &val) != 2) {
 		*ret = -1;
 		return 0;
 	    }
@@ -195,7 +195,7 @@ off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, cli_f
 		return 0;
 	    }
 
-	    offset += info->exeinfo.section[n].raw;
+	    offset = val + info->exeinfo.section[n].raw;
 	}
 
 	return offset;
