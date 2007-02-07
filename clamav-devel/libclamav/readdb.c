@@ -1681,6 +1681,7 @@ void cl_free(struct cl_engine *engine)
     if(engine->dconf)
 	free(engine->dconf);
 
+    cli_freelocks();
     free(engine);
 }
 

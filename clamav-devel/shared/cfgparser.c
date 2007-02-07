@@ -138,7 +138,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 	if(!pt->name)
 	    break;
 
-	if(regcfg(&copt, strdup(pt->name), pt->strarg ? strdup(pt->strarg) : NULL, pt->numarg, pt->multiple) < 0) {
+	if(regcfg(&copt, pt->name, pt->strarg ? strdup(pt->strarg) : NULL, pt->numarg, pt->multiple) < 0) {
 	    fprintf(stderr, "ERROR: Can't register new options (not enough memory)\n");
 	    freecfg(copt);
 	    return NULL;
@@ -379,6 +379,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 		freecfg(copt);
 		return NULL;
 	    }
+	    free(name);
 	}
     }
 
@@ -444,7 +445,7 @@ static int regcfg(struct cfgstruct **copt, char *optname, char *strarg, int numa
     if(!newnode)
 	return -1;
 
-    newnode->optname = optname;
+    newnode->optname = optname ? strdup(optname) : NULL;
     newnode->nextarg = NULL;
     newnode->next = NULL;
     newnode->enabled = 0;
@@ -470,17 +471,25 @@ static int regcfg(struct cfgstruct **copt, char *optname, char *strarg, int numa
 
 		pt->nextarg = newnode;
 	    } else {
+		if(pt->strarg)
+		    free(pt->strarg);
 		pt->strarg = newnode->strarg;
 		pt->numarg = newnode->numarg;
 		pt->enabled = newnode->enabled;
+		if(newnode->optname)
+		    free(newnode->optname);
 		free(newnode);
 	    }
 	    return 3; /* registered additional argument */
 
 	} else {
+	    if(pt->strarg)
+		free(pt->strarg);
 	    pt->strarg = newnode->strarg;
 	    pt->numarg = newnode->numarg;
 	    pt->enabled = newnode->enabled;
+	    if(newnode->optname)
+		free(newnode->optname);
 	    free(newnode);
 	    return 2;
 	}
