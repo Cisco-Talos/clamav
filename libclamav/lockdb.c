@@ -95,6 +95,11 @@ int cli_unlockdb(const char *dbdirpath)
     return CL_SUCCESS;
 }
 
+int cli_freelocks(void)
+{
+	return CL_SUCCESS;
+}
+
 #else /* !DONT_LOCK_DBDIRS */
 
 int cli_readlockdb(const char *dbdirpath, int wait)
@@ -106,6 +111,29 @@ int cli_writelockdb(const char *dbdirpath, int wait)
 {
     return cli_lockdb(dbdirpath, wait, 1);
 }
+
+int cli_freelocks(void)
+{
+	struct dblock * lock, *nextlock, *usedlocks = NULL;
+
+	pthread_mutex_lock(&lock_mutex);
+	for(lock = dblocks; lock; lock = nextlock) {
+		/* there might be some locks in use, eg: during a db reload, a failure can lead 
+		 * to cl_free being called */
+		nextlock = lock->lock_link;
+		if(lock->lock_type != -1 && lock->lock_fd != -1) {
+			lock->lock_link = usedlocks;
+			usedlocks = lock;
+		}
+		else {
+			free(lock);
+		}
+	}
+	dblocks = usedlocks;
+	pthread_mutex_unlock(&lock_mutex);
+	return CL_SUCCESS;
+}
+
 
 int cli_unlockdb(const char *dbdirpath)
 {

@@ -23,5 +23,6 @@
 int cli_writelockdb(const char *dbdirpath, int wait);
 int cli_readlockdb(const char *dbdirpath, int wait);
 int cli_unlockdb(const char *dbdirpath);
+int cli_freelocks(void);
 
 #endif
