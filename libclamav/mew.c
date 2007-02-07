@@ -868,8 +868,9 @@ int unmew11(int sectnum, char *src, int off, int ssize, int dsize, uint32_t base
 	if (!cli_rebuildpe(src, section, i, base, entry_point - base, 0, 0, filedesc))
 	{
 		cli_dbgmsg("MEW: Rebuilding failed\n");
+		free(section);
 		return -1;
 	}
-
+	free(section);
 	return 1;
 }

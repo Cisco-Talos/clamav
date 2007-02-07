@@ -268,9 +268,14 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    break;
 	ret = cli_unrar_checklimits(ctx, rar_state.metadata_tail, rar_state.file_count);
 	if(ret && ret != CL_VIRUS) {
+	    free(rar_state.file_header->filename);
+	    free(rar_state.file_header);
 	    ret = CL_CLEAN;
 	    continue;
 	} else if(ret == CL_VIRUS) {
+	    /* needed since we didn't reach unrar_extract_next to clean this up*/
+	    free(rar_state.file_header->filename);
+	    free(rar_state.file_header);	   
 	    break;
 	}
 	ret = cli_unrar_extract_next(&rar_state,dir);
