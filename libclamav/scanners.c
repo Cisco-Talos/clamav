@@ -288,7 +288,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	}
 
 	if(ret == CL_SUCCESS)
-	    ret = cli_unrar_scanmetadata(desc,rar_state.metadata, ctx, rar_state.file_count, sfx_check);
+	    ret = cli_unrar_scanmetadata(desc,rar_state.metadata_tail, ctx, rar_state.file_count, sfx_check);
 
     } while(ret == CL_SUCCESS);
 
