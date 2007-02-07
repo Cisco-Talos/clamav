@@ -72,6 +72,7 @@ struct entity_conv {
 	m_area_t tmp_area;
 	m_area_t out_area;
 	m_area_t norm_area;
+	int      msg_zero_shown;
 };
 
 

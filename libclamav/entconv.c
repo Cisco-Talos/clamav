@@ -32,6 +32,11 @@
 #include <dirent.h>
 #include <errno.h>
 
+
+#ifdef CL_THREAD_SAFE
+#include <pthread.h>
+#endif
+
 #include "clamav.h"
 #include "others.h"
 #include "htmlnorm.h"
@@ -41,9 +46,9 @@
 
 #ifdef HAVE_ICONV_H
 #include <iconv.h>
-#else
-#include "encoding_aliases.h"
 #endif
+#include "encoding_aliases.h"
+
 
 #define MAX_LINE 1024
 
@@ -136,6 +141,7 @@ int init_entity_converter(struct entity_conv* conv,const unsigned char* encoding
 		}
 
 		conv->ht = &entities_htable;
+		conv->msg_zero_shown = 0;
 
 		return 0;
 	}
@@ -143,54 +149,56 @@ int init_entity_converter(struct entity_conv* conv,const unsigned char* encoding
 		return CL_ENULLARG;
 }
 
-#ifndef HAVE_ICONV_H
-
-typedef struct {
-	enum encodings encoding;
-	size_t size;
-} * iconv_t;
-
-static iconv_t iconv_open(const char *tocode, const char *fromcode)
+static size_t encoding_bytes(const unsigned char* fromcode, enum encodings* encoding)
 {
 	const unsigned char* from = (const unsigned char*) fromcode;
-	iconv_t iconv = cli_malloc(sizeof(*iconv));
-	if(!iconv)
-		return NULL;
-	iconv->encoding = E_OTHER;
-	iconv->size = 1;
-	/*TODO: check that tocode is UTF16BE */
 	/* special case for these unusual byteorders */
+	*encoding=E_OTHER;
 	if(from == UCS4_2143)
-		iconv->encoding = E_UCS4_2134;
+		*encoding = E_UCS4_2134;
 	else if (from == UCS4_3412)
-		iconv->encoding = E_UCS4_3412;
+		*encoding = E_UCS4_3412;
 	else {
-		struct element * e = hashtab_find(&aliases_htable,from,strlen(fromcode));
+		struct element * e = hashtab_find(&aliases_htable,from,strlen((const char*)fromcode));
 		if(e && e->key) {
-			iconv->encoding = e->data;
+			*encoding = e->data;
 		}
 	}
 
-	switch(iconv->encoding) {
+	switch(*encoding) {
 		case E_UCS4:
 		case E_UCS4_1234:
 		case E_UCS4_4321:
 		case E_UCS4_2134:
 		case E_UCS4_3412:
-			iconv->size = 4;
-			break;
+			return 4;
 		case E_UTF16:
 		case E_UTF16_BE:
 		case E_UTF16_LE:
-			iconv->size = 2;
-			break;
+			return 2;
 		case E_UTF8:
 		case E_UNKNOWN:
 		case E_OTHER:
 		default:
-			iconv->size = 1;
+			return 1;
 	}
+	}
+
+#ifndef HAVE_ICONV_H
+typedef struct {
+	enum encodings encoding;
+	size_t size;
+} * iconv_t;
+
+static iconv_t iconv_open(const char *tocode, const char* fromcode)
+{
+	iconv_t iconv = cli_malloc(sizeof(*iconv));
+	if(!iconv)
+		return NULL;
+	/* TODO: check that tocode is UTF16BE */
+	iconv->size = encoding_bytes(fromcode,&iconv->encoding);
 	return iconv;
+}
 }
 
 static int iconv_close(iconv_t cd)
@@ -379,6 +387,10 @@ static int iconv(iconv_t iconv_struct,char **inbuf, size_t *inbytesleft,
 	return  0;
 }
 
+#else
+
+
+
 #endif
 
 /* new iconv() version */
@@ -495,18 +507,20 @@ static unsigned char* normalize_encoding(const unsigned char* enc)
 	return norm;
 }
 
-static const char* encoding_name(unsigned char* encoding)
+static const unsigned char* encoding_name(unsigned char* encoding)
 {
 	if(!encoding)
-		return "ISO-8859-1";
+		return (const unsigned char*)"ISO-8859-1";
 	else
-		return (char*)encoding;
+		return encoding;
 }
-
-
 
 void process_encoding_set(struct entity_conv* conv,const unsigned char* encoding,enum encoding_priority prio)
 {
+	unsigned char *tmp_encoding;
+	enum encodings tmp;
+	size_t new_size,old_size;
+
 	cli_dbgmsg("Setting encoding for %x  to %s, priority: %d\n",conv, encoding, prio);
 	if(encoding == OTHER)
 		return;
@@ -514,8 +528,17 @@ void process_encoding_set(struct entity_conv* conv,const unsigned char* encoding
 		return;/* Content-type in header is highest priority, no overrides possible*/
 	if(conv->priority ==  BOM && prio == NOBOM_AUTODETECT)
 		return;
+
+	tmp_encoding = normalize_encoding(encoding);/* FIXME: better obey priorities*/
+	old_size = encoding_bytes(conv->encoding,&tmp);
+	new_size = encoding_bytes(tmp_encoding,&tmp);
+	if(old_size != new_size)  {
+		cli_dbgmsg("process_encoding_set: refusing to override encoding - new encoding size differs: %s(%ld) != %s(%ld)\n",conv->encoding,old_size,tmp_encoding,new_size);
+		free(tmp_encoding);
+		return;
+	}
 	free(conv->encoding);
-	conv->encoding = normalize_encoding(encoding);/* FIXME: better obey priorities*/
+	conv->encoding = tmp_encoding;
 	cli_dbgmsg("New encoding for %x:%s\n",conv,conv->encoding);
 	/* reset stream */
 }
@@ -595,23 +618,191 @@ static size_t read_raw(FILE *stream, m_area_t *m_area, unsigned int max_len, uns
 	}
 }
 
-static void output_first(struct entity_conv* conv,unsigned char** out, unsigned char** in)
+static void output_first(struct entity_conv* conv,unsigned char** out, unsigned char** in,size_t* inleft)
 {
 	if(conv->has_bom) {
 		switch(conv->enc_bytes) {
 			case 1:
-				if(conv->autodetected == UTF8) 
+				if(conv->autodetected == UTF8) {
 					*in += 3;
+					*inleft -= 3;
+				}
 				break;
 			case 2:
 				*in += 2;
+				*inleft -= 2;
 				break;
 			case 4:
 				*in += 4;
+				*inleft -= 4;
 				break;
 		}
 	}
 }
+
+/* sarge leaks on iconv_open/iconv_close, so lets not open/close so many times,
+ * just keep on each thread its own pool of iconvs*/
+
+struct iconv_cache {
+	iconv_t* tab;
+	size_t     len;
+	size_t   last;
+	struct   hashtable hashtab;
+};
+
+static void iconv_cache_init(struct iconv_cache* cache)
+{
+/*	cache->tab = NULL;
+	cache->len = 0;
+	cache->used = 0; - already done by memset*/
+	cli_dbgmsg("Initializing iconv pool:%p\n",cache);
+	hashtab_init(&cache->hashtab, 32);
+}
+
+static void iconv_cache_destroy(struct iconv_cache* cache)
+{
+	size_t i;
+	cli_dbgmsg("Destroying iconv pool:%p\n",cache);
+	for(i=0;i < cache->last;i++) {
+		cli_dbgmsg("closing iconv:%p\n",cache->tab[i]);
+		iconv_close(cache->tab[i]);
+	}
+	hashtab_clear(&cache->hashtab);
+	free(cache->hashtab.htable);
+	free(cache->tab);
+	free(cache);
+}
+
+
+#ifdef CL_THREAD_SAFE
+static pthread_key_t iconv_pool_tls_key;
+static pthread_once_t iconv_pool_tls_key_once = PTHREAD_ONCE_INIT;
+
+/* destructor called for all threads that exit via pthread_exit, or cancellation. Unfortunately that doesn't include
+ * the main thread, so we have to call this manually for the main thread.*/
+
+static int cache_atexit_registered = 0;
+
+static void iconv_pool_tls_instance_destroy(void* ptr)
+{
+	if(ptr) {
+		iconv_cache_destroy(ptr);
+	}
+}
+
+static void iconv_cache_cleanup_main(void)
+{
+	struct iconv_cache* cache = pthread_getspecific(iconv_pool_tls_key);
+	if(cache) {
+		iconv_pool_tls_instance_destroy(cache);
+		pthread_setspecific(iconv_pool_tls_key,NULL);
+	}
+	pthread_key_delete(iconv_pool_tls_key);
+}
+
+static void iconv_pool_tls_key_alloc(void)
+{
+	pthread_key_create(&iconv_pool_tls_key, iconv_pool_tls_instance_destroy);
+	if(!cache_atexit_registered) {
+		cli_dbgmsg("iconv:registering atexit\n");
+		if(atexit(iconv_cache_cleanup_main)) {
+			cli_dbgmsg("failed to register atexit\n");
+		}
+		cache_atexit_registered = 1;
+	}
+}
+
+static void init_iconv_pool_ifneeded(void)
+{
+	pthread_once(&iconv_pool_tls_key_once, iconv_pool_tls_key_alloc);
+}
+
+static inline struct iconv_cache* cache_get_tls_instance(void)
+{
+	struct iconv_cache* cache = pthread_getspecific(iconv_pool_tls_key);
+	if(!cache) {
+		cache = cli_calloc(1,sizeof(*cache));
+		if(!cache) {
+			cli_dbgmsg("!Out of memory allocating TLS iconv instance\n");
+			return NULL;
+		}
+		iconv_cache_init(cache);
+		pthread_setspecific(iconv_pool_tls_key, cache);
+	}
+	return cache;
+}
+
+#else
+
+static struct iconv_cache* global_iconv_cache = NULL;
+static int    iconv_global_inited = 0;
+
+
+static void iconv_cache_cleanup_main(void)
+{
+	iconv_cache_destroy(global_iconv_cache);
+}
+
+static inline void init_iconv_pool_ifneeded() 
+{
+	if(!iconv_global_inited) {
+		global_iconv_cache = cli_calloc(1,sizeof(*global_iconv_cache));
+		if(global_iconv_cache) {
+			iconv_cache_init(global_iconv_cache);
+			atexit(iconv_cache_cleanup_main);
+			iconv_global_inited = 1;
+		}
+	}
+}
+
+
+static inline struct iconv_cache* cache_get_tls_instance(void)
+{
+	return global_iconv_cache;
+}
+
+#endif
+
+static iconv_t iconv_open_cached(const unsigned char* fromcode)
+{
+	struct iconv_cache * cache;
+	size_t idx;
+	const size_t fromcode_len = strlen((const char*)fromcode);
+	struct element * e;
+
+	init_iconv_pool_ifneeded();
+	cache = cache_get_tls_instance();/* gets TLS iconv pool */
+	if(!cache) {
+		cli_dbgmsg("!Unable to get TLS iconv cache!\n");
+		errno = EINVAL;
+		return (iconv_t)-1;
+	}
+
+	e = hashtab_find(&cache->hashtab, fromcode, fromcode_len);
+	if(e && (e->data < 0 || (size_t)e->data > cache->len)) {
+		e = NULL;
+	}
+	if(e) {
+		return cache->tab[e->data];
+	}
+	cli_dbgmsg("iconv not found in cache, for encoding:%s\n",fromcode);
+	idx = cache->last++;
+	if(idx >= cache->len) {
+		cache->len += 16;
+		cache->tab = cli_realloc(cache->tab, cache->len*sizeof(cache->tab[0]));
+		if(!cache->tab) {
+			cli_dbgmsg("!Out of mem in iconv-pool\n");
+			errno = ENOMEM;
+			return (iconv_t)-1;
+		}
+	}
+
+	hashtab_insert(&cache->hashtab, fromcode, fromcode_len, idx);
+	cache->tab[idx] = iconv_open("UTF-16BE",(const char*)fromcode);
+	cli_dbgmsg("iconv_open(),for:%s -> %p\n",fromcode,(void*)cache->tab[idx]);
+	return cache->tab[idx];
+}
+
 
 /* tmp_m_area and conv->out_area are of size maxlen */
 unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in, m_area_t* in_m_area, const size_t maxlen)
@@ -638,7 +829,7 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 		size_t rc, inleft;
 		ssize_t i;
 
-		char alignfix;
+		signed char alignfix;
 
 		/* move whatever left in conv->tmp_area to beginning */
 		if(tmp_move)
@@ -654,16 +845,16 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 		conv->out_area.offset = 0;
 
 		tmpbuff = conv->tmp_area.buffer;
+		inleft = conv->tmp_area.length;
 		if(!conv->bom_cnt && conv->tmp_area.length >= 4) {/* detect Byte Order Mark */
 			memcpy( conv->bom, tmpbuff, 4);
 			process_bom(conv);
 			process_encoding_set(conv,conv->autodetected,conv->has_bom ? BOM : NOBOM_AUTODETECT);
-			output_first(conv,&out,&tmpbuff);
+			output_first(conv,&out,&tmpbuff,&inleft);
 			conv->bom_cnt++;
 		}
 
 		/* convert encoding conv->tmp_area. conv->out_area */
-		inleft = conv->tmp_area.length;
 		alignfix = inleft%4;/* iconv gives an error if we give him 3 bytes to convert, 
 				       and we are using ucs4, ditto for utf16, and 1 byte*/
 		inleft -= alignfix;
@@ -676,24 +867,30 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 			alignfix = -inleft;
 		}
 
-		iconv_struct = iconv_open("UTF-16BE",encoding_name(conv->encoding));
+		iconv_struct = iconv_open_cached(encoding_name(conv->encoding));
 
 		if(iconv_struct == (iconv_t)-1) {
 			cli_dbgmsg("Iconv init problem for encoding:%s, falling back to iso encoding!\n",encoding_name(conv->encoding));
+			/* message shown only once/file */
 			/* what can we do? just fall back for it being an ISO-8859-1 */
-			iconv_struct = iconv_open("UTF-16BE","ISO-8859-1");
+		        free(conv->encoding);
+			conv->encoding = (unsigned char*) cli_strdup("ISO-8859-1");
+			iconv_struct = iconv_open_cached(conv->encoding);
 			if(iconv_struct == (iconv_t)-1) {
 				cli_dbgmsg("fallback failed... bail out\n");
 				return cli_readline(NULL,&conv->tmp_area,maxlen);
 			}
 		}
 
-		if(inleft) /* iconv doesn't like inleft to be 0 */
+		if(inleft && outleft > conv->buffer_size/2 ) /* iconv doesn't like inleft to be 0 */ {
 			rc = iconv(iconv_struct, (char**) &tmpbuff,  &inleft, (char**) &out, &outleft);	
+		}
 		else
 			rc = 0;
 
-		iconv_close(iconv_struct);
+#if 0
+		 iconv_close(iconv_struct);/* - don't close, we are using a cached instance */
+#endif
 
 		if(rc==(size_t)-1 && errno != E2BIG) {
 				cli_dbgmsg("iconv error:%s, silently resuming (%ld,%ld,%ld,%ld)\n",strerror(errno),out-conv->out_area.buffer,tmpbuff-conv->tmp_area.buffer,inleft,outleft);
@@ -705,20 +902,31 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 		}
 
 		conv->tmp_area.length = inleft + (alignfix > 0 ? alignfix : 0);
-		conv->out_area.length = out - conv->out_area.buffer;
+		conv->out_area.length = out - conv->out_area.buffer - out_move;
 
 		conv->tmp_area.offset = tmpbuff - conv->tmp_area.buffer;
 		conv->tmp_area.length += conv->tmp_area.offset;
 
 
 		/* move whatever left in conv->norm_area to beginning */
-		if(norm_move)
+		if(norm_move) {
+			if(norm_move < conv->buffer_size/2) {
 			memmove(conv->norm_area.buffer, conv->norm_area.buffer + conv->norm_area.offset, norm_move);
 		conv->norm_area.offset = 0;
+				norm = conv->norm_area.buffer + norm_move;
+			}
+			else {
+				/* don't modify offset here */
+				norm = conv->norm_area.buffer + conv->norm_area.length;
+			}
+		}
+		else {
+			conv->norm_area.offset = 0;
+			norm = conv->norm_area.buffer;	
+		}
 
 		/* now do the real normalization */
 		out = conv->out_area.buffer;/* skip over utf16 bom, FIXME: check if iconv really outputted a BOM */
-		norm = conv->norm_area.buffer + norm_move;
 		norm_end = conv->norm_area.buffer + conv->buffer_size;
 		if(conv->out_area.length>0 && out[0] == 0xFF && out[1] == 0xFE)
 			i = 2;
@@ -727,10 +935,12 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 		for(; i < conv->out_area.length; i += 2) {
 			uint16_t u16 = ( ((uint16_t)out[i]) << 8 ) | out[i+1];
 			if(!u16) {
-				if(alignfix >= 0) /* if alignfix is negative, this 0 byte is on-purpose, its padding */
+				if(alignfix >= 0 && !conv->msg_zero_shown) /* if alignfix is negative, this 0 byte is on-purpose, its padding */ {
+					conv->msg_zero_shown = 1;
 					cli_dbgmsg("Skipping null character in html stream\n");
 			}
-			else if(u16 < 0x80) {
+			}
+			else if((u16 < 0x80 && u16 >= 0x20) || u16 == 0x0d || u16 == 0x0a) {
 				if(norm >= norm_end)
 					break;
 				if((unsigned char)u16 ==0)
@@ -753,6 +963,7 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 			}	
 		}
 		conv->out_area.offset = i; /* so that we can resume next time from here */
+
 		conv->norm_area.length = norm - conv->norm_area.buffer;
 /*
 		conv->norm_area.buffer[conv->buffer_size-1]=0;DONT DO THIS
