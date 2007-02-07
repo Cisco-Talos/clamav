@@ -1,3 +1,8 @@
+Wed Feb  7 18:11:32 CET 2007 (tk)
+---------------------------------
+  * libclamav: fix memory leaks in mew and unrar and use of uninitialized
+	       data in unrar, patch from Edwin
+
 Wed Feb  7 18:02:02 CET 2007 (tk)
 ---------------------------------
   * libclamav/scanners.c: fix metadata scan (bb#268), patch from Andy Fiddaman
