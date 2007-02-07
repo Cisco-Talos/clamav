@@ -23,7 +23,6 @@
 #define _ENCODING_ALIASES_H
 #include "clamav-config.h"
 
-#ifndef HAVE_ICONV_H
 
 #include <stdio.h>
 #include "hashtab.h"
@@ -89,5 +88,4 @@ const struct hashtable aliases_htable = {
 	aliases_htable_elements, 53, 25, 42
 };
 
-#endif
 #endif

@@ -1,3 +1,11 @@
+Wed Feb  7 17:20:12 CET 2007 (tk)
+---------------------------------
+  * libclamav: apply entconv patch from Edwin:
+		- workaround sarge libc leak using a per-thread cache
+		- normalize <0x20 chars too
+		- fix utf-16 double-decoding
+		- fix performance issue with some encodings
+
 Sun Feb  4 17:58:16 CET 2007 (tk)
 ---------------------------------
   * libclamav: remove some warnings from gcc
