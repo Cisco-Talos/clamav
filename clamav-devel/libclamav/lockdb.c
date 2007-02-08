@@ -231,7 +231,7 @@ static int cli_lockdb(const char *dbdirpath, int wait, int writelock)
 	umask(old_mask);
     }
 #else
-    if(!lock->lock_fd) {
+    if(lock->lock_fd != -1) {
 	/* Create a security descriptor which allows any process to acquire the Mutex */
 	InitializeSecurityDescriptor(&sdDesc, SECURITY_DESCRIPTOR_REVISION);
 	SetSecurityDescriptorDacl(&sdDesc, TRUE, NULL, FALSE);
