@@ -436,7 +436,7 @@ int unp_read_buf(int fd, unpack_data_t *unpack_data)
 	}
 	unpack_data->read_border = unpack_data->read_top - 30;
 	if(unpack_data->read_border < unpack_data->in_addr) {
-		const ssize_t fill = unpack_data->read_top + 30 < MAX_BUF_SIZE ? 30 : MAX_BUF_SIZE - unpack_data->read_top;
+		const ssize_t fill = ((unpack_data->read_top + 30) < MAX_BUF_SIZE) ? 30 : (MAX_BUF_SIZE - unpack_data->read_top);
 		if(fill)
 			memset(unpack_data->in_buf + unpack_data->read_top, 0, fill);
 	}
