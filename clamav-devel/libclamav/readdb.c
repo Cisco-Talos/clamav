@@ -1399,6 +1399,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 
     if((dd = opendir(dirname)) == NULL) {
         cli_errmsg("cl_statdbdir(): Can't open directory %s\n", dirname);
+	cl_statfree(dbstat);
         return CL_EOPEN;
     }
 
@@ -1436,12 +1437,33 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbstat->entries++;
-		dbstat->stattab = (struct stat *) realloc(dbstat->stattab, dbstat->entries * sizeof(struct stat));
+		dbstat->stattab = (struct stat *) cli_realloc(dbstat->stattab, dbstat->entries * sizeof(struct stat));
+		if(!dbstat->stattab) {
+		    /* FIXME: Minor error path memleak here. Change the
+		     * behaviour of cli_realloc() to free old block on error
+		     * (and review all calls to cli_realloc()).
+		     */
+		    cl_statfree(dbstat);
+		    closedir(dd);
+		    return CL_EMEM;
+		}
+
 #if defined(C_INTERIX) || defined(C_OS2)
-		dbstat->statdname = (char **) realloc(dbstat->statdname, dbstat->entries * sizeof(char *));
+		dbstat->statdname = (char **) cli_realloc(dbstat->statdname, dbstat->entries * sizeof(char *));
+		if(!dbstat->statdname) {
+		    cl_statfree(dbstat);
+		    closedir(dd);
+		    return CL_EMEM;
+		}
 #endif
 
                 fname = cli_calloc(strlen(dirname) + strlen(dent->d_name) + 32, sizeof(char));
+		if(!fname) {
+		    cl_statfree(dbstat);
+		    closedir(dd);
+		    return CL_EMEM;
+		}
+
 		if(cli_strbcasestr(dent->d_name, ".inc")) {
 		    if(strstr(dent->d_name, "main"))
 			sprintf(fname, "%s/main.inc/main.info", dirname);
@@ -1452,6 +1474,12 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 		}
 #if defined(C_INTERIX) || defined(C_OS2)
 		dbstat->statdname[dbstat->entries - 1] = (char *) cli_calloc(strlen(dent->d_name) + 1, sizeof(char));
+		if(!dbstat->statdname[dbstat->entries - 1]) {
+		    cl_statfree(dbstat);
+		    closedir(dd);
+		    return CL_EMEM;
+		}
+
 		strcpy(dbstat->statdname[dbstat->entries - 1], dent->d_name);
 #endif
 		stat(fname, &dbstat->stattab[dbstat->entries - 1]);
@@ -1523,6 +1551,11 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
                 fname = cli_calloc(strlen(dbstat->dir) + strlen(dent->d_name) + 32, sizeof(char));
+		if(!fname) {
+		    closedir(dd);
+		    return CL_EMEM;
+		}
+
 		if(cli_strbcasestr(dent->d_name, ".inc")) {
 		    if(strstr(dent->d_name, "main"))
 			sprintf(fname, "%s/main.inc/main.info", dbstat->dir);
@@ -1568,17 +1601,23 @@ int cl_statfree(struct cl_stat *dbstat)
 #if defined(C_INTERIX) || defined(C_OS2)
 	    int i;
 
-	for(i = 0;i < dbstat->entries; i++) {
-	    free(dbstat->statdname[i]);
-	    dbstat->statdname[i] = NULL;
+	if(dbstat->statdname) {
+	    for(i = 0; i < dbstat->entries; i++) {
+		if(dbstat->statdname[i])
+		    free(dbstat->statdname[i]);
+		dbstat->statdname[i] = NULL;
+	    }
+	    free(dbstat->statdname);
+	    dbstat->statdname = NULL;
 	}
-	free(dbstat->statdname);
-	dbstat->statdname = NULL;
 #endif
 
-	free(dbstat->stattab);
-	dbstat->stattab = NULL;
+	if(dbstat->stattab) {
+	    free(dbstat->stattab);
+	    dbstat->stattab = NULL;
+	}
 	dbstat->entries = 0;
+
 	if(dbstat->dir) {
 	    free(dbstat->dir);
 	    dbstat->dir = NULL;

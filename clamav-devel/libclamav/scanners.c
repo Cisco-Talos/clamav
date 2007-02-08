@@ -352,7 +352,7 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
     fstat(desc, &source);
 
     if(!(buff = (char *) cli_malloc(FILEBUFF))) {
-	cli_dbgmsg("Zip: unable to malloc(%d)\n", FILEBUFF);
+	cli_dbgmsg("Zip: unable to malloc(%u)\n", FILEBUFF);
 	zip_dir_close(zdir);
 	return CL_EMEM;
     }
@@ -740,8 +740,8 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
     }
     fd = fileno(tmp);
 
-    if(!(buff = (char *) malloc(FILEBUFF))) {
-	cli_dbgmsg("Bzip: Unable to malloc %d bytes.\n", FILEBUFF);
+    if(!(buff = (char *) cli_malloc(FILEBUFF))) {
+	cli_dbgmsg("Bzip: Unable to malloc %u bytes.\n", FILEBUFF);
 	fclose(tmp);
 	if(!cli_leavetemps_flag)
 	    unlink(tmpname);
@@ -961,6 +961,11 @@ int cli_scandir(const char *dirname, cli_ctx *ctx)
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
 		    fname = cli_calloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
+		    if(!fname) {
+			closedir(dd);
+			return CL_EMEM;
+		    }
+
 		    sprintf(fname, "%s/%s", dirname, dent->d_name);
 
 		    /* stat the file */
@@ -1015,6 +1020,10 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
 
 	for(i = 0; i < vba_project->count; i++) {
 	    fullname = (char *) cli_malloc(strlen(vba_project->dir) + strlen(vba_project->name[i]) + 2);
+	    if(!fullname) {
+		ret = CL_EMEM;
+		break;
+	    }
 	    sprintf(fullname, "%s/%s", vba_project->dir, vba_project->name[i]);
 	    fd = open(fullname, O_RDONLY|O_BINARY);
 	    if(fd == -1) {
@@ -1060,6 +1069,10 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
     } else if ((vba_project = (vba_project_t *) wm_dir_read(dirname))) {
     	for (i = 0; i < vba_project->count; i++) {
 		fullname = (char *) cli_malloc(strlen(vba_project->dir) + strlen(vba_project->name[i]) + 2);
+		if(!fullname) {
+		    ret = CL_EMEM;
+		    break;
+		}
 		sprintf(fullname, "%s/%s", vba_project->dir, vba_project->name[i]);
 		fd = open(fullname, O_RDONLY|O_BINARY);
 		if(fd == -1) {
@@ -1098,12 +1111,15 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
 	free(vba_project->dir);
 	free(vba_project);
     }
-			
+
     if(ret != CL_CLEAN)
     	return ret;
 
     /* Check directory for embedded OLE objects */
     fullname = (char *) cli_malloc(strlen(dirname) + 16);
+    if(!fullname)
+	return CL_EMEM;
+
     sprintf(fullname, "%s/_1_Ole10Native", dirname);
     fd = open(fullname, O_RDONLY|O_BINARY);
     free(fullname);
@@ -1133,6 +1149,10 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
 		    fname = cli_calloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
+		    if(!fname) {
+			ret = CL_EMEM;
+			break;
+		    }
 		    sprintf(fname, "%s/%s", dirname, dent->d_name);
 
 		    /* stat the file */
