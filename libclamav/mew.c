@@ -837,12 +837,13 @@ int unmew11(int sectnum, char *src, int off, int ssize, int dsize, uint32_t base
 
 	/* LZMA stuff */
 	if (uselzma) {
+		free(section);
+
 		/* put everything in one section */
 		i = 1;
 		if (!CLI_ISCONTAINED(src, size_sum, src+uselzma+8, 1))
 		{
 			cli_dbgmsg("MEW: couldn't access lzma 'special' tag\n");
-			free(section);
 			return -1;
 		}
 		/* 0x50 -> push eax */
@@ -850,18 +851,21 @@ int unmew11(int sectnum, char *src, int off, int ssize, int dsize, uint32_t base
 		if (!CLI_ISCONTAINED(src, size_sum, f1+4, 20 + 4 + 5))
 		{
 			cli_dbgmsg("MEW: lzma initialization data not available!\n");
-			free(section);
 			return -1;
 		}
 
 		if(mew_lzma(src, f1+4, size_sum, vma, *(src + uselzma+8) == '\x50'))
 		{
-			free(section);
 			return -1;
 		}
 		loc_ds=PESALIGN(loc_ds, 0x1000);
 
 		section = cli_calloc(1, sizeof(struct cli_exe_section));
+		if(!section) {
+			cli_dbgmsg("MEW: Out of memory\n");
+			return -1;
+		}
+
 		section[0].raw = 0; section[0].rva = vadd;
 		section[0].rsz = section[0].vsz = dsize;
 	}

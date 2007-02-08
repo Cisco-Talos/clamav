@@ -221,7 +221,11 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
     }
 
     memset(dbstat, 0, sizeof(struct cl_stat));
-    cl_statinidir(dbdir, dbstat);
+    if((retval = cl_statinidir(dbdir, dbstat))) {
+	logg("!cl_statinidir() failed: %s\n", cl_strerror(retval));
+	*ret = 1;
+	return NULL;
+    }
 
     if((retval = cl_load(dbdir, &engine, &sigs, dboptions))) {
 	logg("!reload db failed: %s\n", cl_strerror(retval));
