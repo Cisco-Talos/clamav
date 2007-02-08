@@ -49,8 +49,10 @@ AC_COMPILE_CHECK_SIZEOF(int)
 AC_COMPILE_CHECK_SIZEOF(long)
 AC_COMPILE_CHECK_SIZEOF(long long)
 
-AC_CHECK_LIB(socket, bind, [LIBS="$LIBS -lsocket"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsocket"; LDFLAGS="$LDFLAGS -lsocket"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsocket"; CLAMD_LIBS="$CLAMD_LIBS -lsocket"])
-AC_CHECK_LIB(nsl, gethostent, [LIBS="$LIBS -lnsl"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lnsl"; LDFLAGS="$LDFLAGS -lnsl"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lnsl"; CLAMD_LIBS="$CLAMD_LIBS -lnsl"])
+AC_CHECK_LIB(socket, bind, [LIBS="$LIBS -lsocket"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsocket"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsocket"; CLAMD_LIBS="$CLAMD_LIBS -lsocket"])
+AC_CHECK_LIB(nsl, gethostent, [LIBS="$LIBS -lnsl"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lnsl"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lnsl"; CLAMD_LIBS="$CLAMD_LIBS -lnsl"])
+
+AC_CHECK_LIB(iconv, libiconv_open, LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -liconv")
 
 AC_CHECK_FUNCS(poll setsid memcpy snprintf vsnprintf strerror_r strlcpy strlcat inet_ntop setgroups initgroups ctime_r mkstemp)
 AC_FUNC_MMAP
@@ -121,7 +123,6 @@ else
     fi
 
     if test "$ZLIB_HOME" != "/usr"; then
-	LDFLAGS="$LDFLAGS -L$ZLIB_HOME/lib"
 	CPPFLAGS="$CPPFLAGS -I$ZLIB_HOME/include"
 	AC_CHECK_LIB(z, inflateEnd, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -L$ZLIB_HOME/lib -lz"; AC_DEFINE(HAVE_ZLIB_H,1,zlib installed)], AC_MSG_ERROR(Please install zlib and zlib-devel packages))
     else
@@ -165,7 +166,7 @@ if test $want_dns = yes; then
     if test -z "$resolv_lib"; then
 	AC_CHECK_LIB(resolv, dn_expand, resolv_lib="-lresolv",)
     fi
-    AC_CHECK_HEADER(resolv.h,[FRESHCLAM_LIBS="$FRESHCLAM_LIBS $resolv_lib"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS $resolv_lib"; AC_DEFINE(HAVE_RESOLV_H,1,have resolv.h)], AC_MSG_WARN([****** DNS support disabled]))
+    AC_CHECK_HEADER(resolv.h,[FRESHCLAM_LIBS="$FRESHCLAM_LIBS $resolv_lib"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS $resolv_lib"; AC_DEFINE(HAVE_RESOLV_H,1,have resolv.h)], AC_MSG_WARN([****** DNS support disabled]), [#include <netinet/in.h>])
 fi
 
 AC_ARG_ENABLE(clamuko,
@@ -331,14 +332,6 @@ fi
 AC_ARG_WITH(dbdir, 
 [  --with-dbdir=path	  path to virus database directory],
 db_dir="$withval", db_dir="_default_")
-
-AC_ARG_WITH(db1, 
-[  --with-db1=name	  name of the main database (default=main.cvd)],
-AC_DEFINE_UNQUOTED(DB1NAME,"$withval",[Name of the main database]), AC_DEFINE(DB1NAME, "main.cvd",[Name of the main database]))
-
-AC_ARG_WITH(db2, 
-[  --with-db2=name	  name of the daily database (default=daily.cvd)],
-AC_DEFINE_UNQUOTED(DB2NAME,"$withval",[Name of the daily database]), AC_DEFINE(DB2NAME, "daily.cvd",[Name of the daily database]))
 
 dnl I had problems with $pkgdatadir thus these funny checks
 if test "$db_dir" = "_default_"
@@ -604,21 +597,17 @@ if test "$have_milter" = "yes"; then
     dnl Tom G. Christensen <tgc@statsbiblioteket.dk>
 
     dnl Check for libmilter and it's header files in the usual locations
-    save_LDFLAGS="$LDFLAGS"
     if test -d /usr/lib/libmilter ; then
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -L/usr/lib/libmilter"
     fi
-    LDFLAGS="$LDFLAGS -lmilter $CLAMAV_MILTER_LIBS"
     AC_CHECK_LIB(milter, mi_stop,[CLAMAV_MILTER_LIBS="-lmilter $CLAMAV_MILTER_LIBS"],[
 	dnl Older sendmails require libsm or libsmutil for support functions
 	AC_SEARCH_LIBS(strlcpy, [sm smutil], [test "$ac_cv_search_strlcpy" = "none required" || CLAMAV_MILTER_XLIB="$ac_cv_search_strlcpy"])
-	LDFLAGS="$save_LDFLAGS $CLAMAV_MILTER_LIBS $CLAMAV_MILTER_XLIB"
 	$as_unset ac_cv_lib_milter_mi_stop
 	AC_CHECK_LIB(milter, mi_stop,[CLAMAV_MILTER_LIBS="-lmilter $CLAMAV_MILTER_XLIB $CLAMAV_MILTER_LIBS"],[
 	    AC_MSG_ERROR([Cannot find libmilter])
 	])
     ])
-    LDFLAGS="$save_LDFLAGS"
     AC_CHECK_HEADERS(libmilter/mfapi.h,have_milter="yes",[
 	AC_MSG_ERROR([Please install mfapi.h from the sendmail distribution])
     ])
