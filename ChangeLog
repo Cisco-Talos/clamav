@@ -1,3 +1,7 @@
+Thu Feb  8 23:47:17 CET 2007 (acab)
+-----------------------------------
+  * libclamav/mew.c: fixed warnings and portability issues
+
 Thu Feb  8 23:41:16 CET 2007 (tk)
 ---------------------------------
   * libclamav/sis.c: improve scanning of handcrafted/broken files
