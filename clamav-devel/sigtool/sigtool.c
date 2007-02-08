@@ -321,7 +321,7 @@ static int writeinfo(const char *db, const char *header)
 	int i;
 	struct stat sb;
 	char file[32], *md5;
-	char *extlist[] = { "db", "fp", "hdb", "mdb", "ndb", "pdb", "rmd", "zmd", "sdb", NULL };
+	char *extlist[] = { "db", "fp", "hdb", "mdb", "ndb", "pdb", "rmd", "zmd", "sdb", "cfg", NULL };
 
 
     snprintf(file, sizeof(file), "%s.info", db);
@@ -672,6 +672,7 @@ static int build(struct optstruct *opt)
 				 "daily.fp", "main.mdb", "daily.mdb",
 				 "daily.info", "main.info", "main.wdb",
 				 "daily.wdb", "main.pdb", "daily.pdb",
+				 "main.cfg", "daily.cfg",
 				 NULL };
 		args[2] = tarfile;
 		if(!opt_check(opt, "debug")) {
