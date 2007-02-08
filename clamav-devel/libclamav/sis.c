@@ -126,6 +126,7 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 	case 0x02:
 	    cli_dbgmsg("SIS: File type: Component file\n");
 	    typedir = "component";
+	    get_dname = 0;
 	    break;
 	case 0x03:
 	    cli_dbgmsg("SIS: File type: Run file\n");
@@ -274,10 +275,11 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 		    free(fname);
 		    return CL_VIRUS;
 		}
-		free(subdir);
-		free(fname);
-		return CL_EFORMAT;
+		/* osize is not reliable so continue */
 	    }
+
+	    if((osize <= 3 * csize) || (ctx->limits && ctx->limits->maxfilesize && osize > ctx->limits->maxfilesize))
+		osize = 3 * csize;
 
 	    if(!(buff = cli_malloc((size_t) osize))) {
 		cli_errmsg("SIS: sis_extract_simple: Can't allocate decompression buffer\n");
@@ -292,6 +294,11 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 		free(subdir);
 		free(fname);
 		return CL_EIO;
+	    }
+
+	    if(osize != (uLongf) filelen) {
+		cli_dbgmsg("SIS: WARNING: Real original size: %u\n", osize);
+		filelen = (uint32_t) osize;
 	    }
 
 	} else {
