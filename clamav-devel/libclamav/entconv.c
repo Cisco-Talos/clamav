@@ -199,7 +199,6 @@ static iconv_t iconv_open(const char *tocode, const char* fromcode)
 	iconv->size = encoding_bytes(fromcode,&iconv->encoding);
 	return iconv;
 }
-}
 
 static int iconv_close(iconv_t cd)
 {
@@ -940,7 +939,7 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 					cli_dbgmsg("Skipping null character in html stream\n");
 			}
 			}
-			else if((u16 < 0x80 && u16 >= 0x20) || u16 == 0x0d || u16 == 0x0a) {
+			else if((u16 < 0x80 && u16 >= 0x20) || isspace(u16)) {
 				if(norm >= norm_end)
 					break;
 				if((unsigned char)u16 ==0)

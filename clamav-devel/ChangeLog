@@ -1,3 +1,7 @@
+Fri Feb  9 10:49:37 CET 2007 (tk)
+---------------------------------
+  * libclamav/entconv.c: fix whitespace normalization (bb#283), patch from Edwin
+
 Fri Feb  9 01:08:21 CET 2007 (acab)
 -----------------------------------
   * libclamav/upack: added sanity check, fixed some warnings and debug message
