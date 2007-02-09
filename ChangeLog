@@ -1,3 +1,8 @@
+Fri Feb  9 01:08:21 CET 2007 (acab)
+-----------------------------------
+  * libclamav/upack: added sanity check, fixed some warnings and debug message
+  cosmetic
+
 Fri Feb  9 00:41:31 CET 2007 (tk)
 ---------------------------------
   * libclamav/lockdb.c: fix db locking under win32 (bb#265)
