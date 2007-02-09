@@ -755,7 +755,7 @@ uint32_t lzma_upack_esi_54(struct lzmastate *p, uint32_t old_eax, uint32_t *old_
 	}
 	ret = loc_eax;
 	if (lzma_upack_esi_50(p, 1, *old_ecx, old_edx, *old_edx + (loc_eax << 2), &loc_eax, bs, bl) == 0xffffffff)
-		return -1;
+		return 0xffffffff;
 
 	*retval = ret + loc_eax;
 	return 0;

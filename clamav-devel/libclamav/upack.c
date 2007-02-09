@@ -163,7 +163,7 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 		{
 			if (!CLI_ISCONTAINED(dest, dsize, loc_esi+6, 10) || *(loc_esi+6) != '\xbe' || *(loc_esi+11) != '\xbf')
 				return -1;
-			if (cli_readint32(loc_esi + 7) < base || cli_readint32(loc_esi+7) > vma)
+			if ((uint32_t)cli_readint32(loc_esi + 7) < base || (uint32_t)cli_readint32(loc_esi+7) > vma)
 				return -1;
 			loc_edi = dest + (cli_readint32(loc_esi + 12) - vma);
 			loc_esi = dest + (cli_readint32(loc_esi + 7) - base);
@@ -199,7 +199,7 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 		for (j=0; j<4; j++, loc_edi+=4)
 		    cli_writeint32(loc_edi, (1));
 
-		for (j=0; j<count; j++, loc_edi+=4)
+		for (j=0; (unsigned int)j<count; j++, loc_edi+=4)
 		    cli_writeint32(loc_edi, 0x400);
 		
 		loc_edi = dest + cli_readint32(loc_esi + 0xc) - vma;
@@ -214,8 +214,8 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 			save3 = cli_readint32(loc_esi + 0x40);
 		}
 		/* begin end */
-		cli_dbgmsg("data initialized, before upack lzma call!\n");
-		if ((ret = unupack399(dest, dsize, 0, loc_ebx, 0, loc_edi, end_edi, shlsize, paddr)) == -1)
+		cli_dbgmsg("Upack: data initialized, before upack lzma call!\n");
+		if ((ret = (uint32_t)unupack399(dest, dsize, 0, loc_ebx, 0, loc_edi, end_edi, shlsize, paddr)) == 0xffffffff)
 			return -1;
 	/* alternative begin */
 	} else {
@@ -272,12 +272,12 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 			if (!CLI_ISCONTAINED(dest, dsize, loc_esi, 12))
 				return -1;
 
-			cli_dbgmsg("%08x %08x %08x %08x\n", loc_esi, dest, cli_readint32(loc_esi), base);
+			cli_dbgmsg("Upack: %08x %08x %08x %08x\n", loc_esi, dest, cli_readint32(loc_esi), base);
 			loc_ebx_u = loc_esi - (dest + cli_readint32(loc_esi) - base);
-			cli_dbgmsg("EBX: %08x\n", loc_ebx_u);
+			cli_dbgmsg("Upack: EBX: %08x\n", loc_ebx_u);
 			loc_esi += 4;
 			save2 = loc_edi = dest + cli_readint32(loc_esi) - base;
-			cli_dbgmsg("DEST: %08x, %08x\n", cli_readint32(loc_esi), cli_readint32(loc_esi) - base);
+			cli_dbgmsg("Upack: DEST: %08x, %08x\n", cli_readint32(loc_esi), cli_readint32(loc_esi) - base);
 			loc_esi += 4;
 			/* 2vGiM: j is signed. Is that really what you want? Will it cause problems with the following checks?
 			 * yes! this is wrong! how did you notice that?!
@@ -289,7 +289,7 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 				return -1;
 			}
 			loc_esi += 4;
-			cli_dbgmsg("ecx counter: %08x\n", j);
+			cli_dbgmsg("Upack: ecx counter: %08x\n", j);
 
 			if (!CLI_ISCONTAINED(dest, dsize, loc_esi, (j*4)) || !CLI_ISCONTAINED(dest, dsize, loc_edi, ((j+count)*4)))
 				return -1;
@@ -324,7 +324,7 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 			/* checked above, (...save2, 8) */
 			save_edi = loc_edi = dest + ((uint32_t)cli_readint32(loc_esi) - base);
 			loc_esi +=4;
-			cli_dbgmsg("before_fixing\n");
+			cli_dbgmsg("Upack: before_fixing\n");
 			/* fix values */
 			if (!CLI_ISCONTAINED(dest, dsize, loc_ebx-4, (12 + 4*4)) || !CLI_ISCONTAINED(dest, dsize, loc_esi+0x24, 4) || !CLI_ISCONTAINED(dest, dsize, loc_esi+0x40, 4))
 				return -1;
@@ -370,8 +370,8 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 			end_edi = dest + cli_readint32(loc_esi-0x28) - base; /* read checked above */
 			loc_esi = save_edi;
 		}
-		cli_dbgmsg("data initialized, before upack lzma call!\n");
-		if ((ret = unupack399(dest, dsize, loc_ecx, loc_ebx, loc_ecx, loc_edi, end_edi, shlsize, paddr)) == -1)
+		cli_dbgmsg("Upack: data initialized, before upack lzma call!\n");
+		if ((ret = (uint32_t)unupack399(dest, dsize, loc_ecx, loc_ebx, loc_ecx, loc_edi, end_edi, shlsize, paddr)) == 0xffffffff)
 			return -1;
 		if (upack_version == UPACK_399)
 			save3 = cli_readint32(loc_esi + 0x40);
@@ -381,12 +381,17 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 
 	/* let's fix calls */
 	loc_ecx = 0;
+	if (!CLI_ISCONTAINED(dest, dsize, alvalue, 1)) {
+		cli_dbgmsg("Upack: alvalue out of bounds\n");
+		return -1;
+	}
+
 	searchval = *alvalue&0xff;
 	cli_dbgmsg("Upack: loops: %08x search value: %02x\n", save3, searchval);
 	while(save3) {
 		if (!CLI_ISCONTAINED(dest, dsize, pushed_esi + loc_ecx, 1))
 		{
-			cli_dbgmsg("callfixerr %08x %08x = %08x, %08x\n", dest, dsize, dest+dsize, pushed_esi+loc_ecx);
+			cli_dbgmsg("Upack: callfixerr %08x %08x = %08x, %08x\n", dest, dsize, dest+dsize, pushed_esi+loc_ecx);
 			return -1;
 		}
 		if (pushed_esi[loc_ecx] == '\xe8' || pushed_esi[loc_ecx] == '\xe9')
@@ -395,7 +400,7 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 			loc_ecx++;
 			if (!CLI_ISCONTAINED(dest, dsize, adr, 4))
 			{
-				cli_dbgmsg("callfixerr\n");
+				cli_dbgmsg("Upack: callfixerr\n");
 				return -1;
 			}
 			if ((cli_readint32(adr)&0xff) != searchval)
@@ -462,7 +467,7 @@ int unupack399(char *bs, uint32_t bl, uint32_t init_eax, char *init_ebx, uint32_
 				eax_copy = loc_eax;
 				loc_edx = loc_ebx + 0xbc0;
 				state[5] = loc_ebp;
-				if (lzma_upack_esi_54(&p, loc_eax, &loc_ecx, &loc_edx, &temp, bs, bl) == -1)
+				if (lzma_upack_esi_54(&p, loc_eax, &loc_ecx, &loc_edx, &temp, bs, bl) == 0xffffffff)
 					return -1;
 				loc_ecx = 3;
 				jakas_kopia = temp;
@@ -472,7 +477,7 @@ int unupack399(char *bs, uint32_t bl, uint32_t init_eax, char *init_ebx, uint32_
 				loc_ecx = 0x40;
 				loc_eax <<= 6; /* ecx=0x40, mul cl */
 				loc_ebp8 = loc_ebx + ((loc_eax<<2) + 0x378);
-				if (lzma_upack_esi_50(&p, 1, loc_ecx, &loc_edx, loc_ebp8, &loc_eax, bs, bl) == -1)
+				if (lzma_upack_esi_50(&p, 1, loc_ecx, &loc_edx, loc_ebp8, &loc_eax, bs, bl) == 0xffffffff)
 					return -1;
 				loc_ebp = loc_eax;
 				if ((loc_eax&0xff) >= 4)
@@ -524,7 +529,7 @@ int unupack399(char *bs, uint32_t bl, uint32_t init_eax, char *init_ebx, uint32_
 					loc_eax <<= (loc_ecx&0xff);
 					loc_ebp8 = loc_edx;
 					temp_ebp = loc_ecx; loc_ecx = loc_eax; loc_eax = temp_ebp;
-					if (lzma_upack_esi_50(&p, 1, loc_ecx, &loc_edx, loc_ebp8, &loc_eax, bs, bl) == -1)
+					if (lzma_upack_esi_50(&p, 1, loc_ecx, &loc_edx, loc_ebp8, &loc_eax, bs, bl) == 0xffffffff)
 						return -1;
 					/* cdq, loc_edx = (loc_eax&0x80000000)?0xffffffff:0; */
 					loc_ecx = temp_ebp;
@@ -586,7 +591,7 @@ int unupack399(char *bs, uint32_t bl, uint32_t init_eax, char *init_ebx, uint32_
 				/* loc_48396a */
 				eax_copy = loc_eax;
 				loc_edx = loc_ebx + 0x778;
-				if (lzma_upack_esi_54(&p, loc_eax, &loc_ecx, &loc_edx, &temp, bs, bl) == -1)
+				if (lzma_upack_esi_54(&p, loc_eax, &loc_ecx, &loc_edx, &temp, bs, bl) == 0xffffffff)
 					return -1;
 				loc_eax = loc_ecx;
 				loc_ecx = temp;
@@ -646,7 +651,7 @@ int unupack399(char *bs, uint32_t bl, uint32_t init_eax, char *init_ebx, uint32_
 						{
 							loc_eax = (loc_eax&0xffff0000)|(loc_ah<<8)|loc_al;
 							/* loc_483918, loc_48391a */
-							if (lzma_upack_esi_50(&p, loc_eax, 0x100, &loc_edx, loc_ebp8, &loc_eax, bs, bl) == -1)
+							if (lzma_upack_esi_50(&p, loc_eax, 0x100, &loc_edx, loc_ebp8, &loc_eax, bs, bl) == 0xffffffff)
 								return -1;
 							break;
 						}
@@ -656,7 +661,7 @@ int unupack399(char *bs, uint32_t bl, uint32_t init_eax, char *init_ebx, uint32_
 			} else {
 				/* loc_48391a */
 				loc_ecx = (loc_ecx&0xffff00ff)|0x100;
-				if (lzma_upack_esi_50(&p, loc_eax, loc_ecx, &loc_edx, loc_ebp8, &loc_eax, bs, bl) == -1)
+				if (lzma_upack_esi_50(&p, loc_eax, loc_ecx, &loc_edx, loc_ebp8, &loc_eax, bs, bl) == 0xffffffff)
 					return -1;
 			}
 			/* loc_48391f */
