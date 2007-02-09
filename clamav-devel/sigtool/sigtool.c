@@ -298,18 +298,23 @@ static char *getdsig(const char *host, const char *user, const char *data, unsig
     memset(pass, 0, strlen(pass));
     memset(buff, 0, sizeof(buff));
 
-    if((bread = read(sockd, buff, sizeof(buff))) > 0) {
+    if((bread = cli_readn(sockd, buff, sizeof(buff))) > 0) {
 	if(!strstr(buff, "Signature:")) {
 	    mprintf("!getdsig: Error generating digital signature\n");
 	    mprintf("!getdsig: Answer from remote server: %s\n", buff);
 	    close(sockd);
 	    return NULL;
 	} else {
-	   /* mprintf("Signature received (length = %d)\n", strlen(buff) - 10); */
+	    mprintf("Signature received (length = %u)\n", strlen(buff) - 10);
 	}
+    } else {
+	mprintf("!getdsig: Communication error with remote server\n");
+	close(sockd);
+	return NULL;
     }
 
     close(sockd);
+
     pt = buff;
     pt += 10;
     return strdup(pt);
