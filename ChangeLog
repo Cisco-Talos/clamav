@@ -1,4 +1,9 @@
+Fri Feb  9 22:25:24 CET 2007 (tk)
+---------------------------------
+  * sigtool/sigtool.c: better handling of network errors
+
 Fri Feb  9 21:12:28 CET 2007 (acab)
+-----------------------------------
   * libclamav: Fix win32 compilation error in upack and mew - thanks Nigel
   
 Fri Feb  9 17:57:15 GMT 2007 (njh)
