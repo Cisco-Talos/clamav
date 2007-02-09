@@ -30,6 +30,9 @@
  * accesses.  So, a simple mutual exclusion mechanism will suffice for both 
  * the reader and writer locks on Windows.
  */
+#ifdef	_MSC_VER
+#include <windows.h>
+#endif
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -40,16 +43,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#ifndef C_WINDOWS
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <fcntl.h>
+#ifdef	HAVE_SYS_STAT_H
 #include <sys/stat.h>
-#include <errno.h>
-#else
-#include <windows.h>
 #endif
+#include <fcntl.h>
+#include <errno.h>
 
 #include "clamav.h"
 #include "others.h"
