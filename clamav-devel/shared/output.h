@@ -29,7 +29,12 @@
 
 int mdprintf(int desc, const char *str, ...);
 
+#ifdef __GNUC__
+int logg(const char *str, ...)      __attribute__((format(printf, 1, 2)));
+#else
 int logg(const char *str, ...);
+#endif
+
 void logg_close(void);
 extern short int logg_verbose, logg_lock, logg_time;
 extern int logg_size;
@@ -40,7 +45,12 @@ extern short logg_syslog;
 int logg_facility(const char *name);
 #endif
 
+#ifdef __GNUC__
+void mprintf(const char *str, ...) __attribute__((format(printf, 1, 2)));
+#else
 void mprintf(const char *str, ...);
+#endif
+
 extern short int mprintf_disabled, mprintf_verbose, mprintf_quiet, mprintf_stdout;
 
 #endif
