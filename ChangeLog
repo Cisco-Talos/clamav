@@ -1,3 +1,7 @@
+Sat Feb 10 01:04:59 CET 2007 (tk)
+---------------------------------
+  * sigtool/sigtool.c: add support for SIGNDUSER and SIGNDPASS (bb#252)
+
 Fri Feb  9 22:25:24 CET 2007 (tk)
 ---------------------------------
   * sigtool/sigtool.c: better handling of network errors
