@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.58 2007/01/25 13:59:56 njh Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.59 2007/02/10 11:21:40 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -632,7 +632,7 @@ cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns)
 	n = hs;
 
 	while((pt = memchr(hay, needle[0], n)) != NULL) {
-		n -= (int) pt - (int) hay;
+		n -= (size_t)(pt - hay);
 		if(n < ns)
 			break;
 
