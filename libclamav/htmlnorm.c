@@ -465,7 +465,7 @@ static inline void html_tag_contents_length_check(tag_arguments_t *tags,int* idx
 static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag_arguments_t *hrefs)
 {
 	int fd_tmp, tag_length, tag_arg_length, binary;
-	int retval=FALSE, escape, value, hex, tag_val_length=0, table_pos, in_script=FALSE;
+	int retval=FALSE, escape, value = 0, hex, tag_val_length=0, table_pos, in_script=FALSE;
 	FILE *stream_in;
 	html_state state=HTML_NORM, next_state=HTML_BAD_STATE;
 	char filename[1024], tag[HTML_STR_LENGTH+1], tag_arg[HTML_STR_LENGTH+1];
@@ -1199,8 +1199,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					tag_val[tag_val_length++] = value; /* store encoded values too */
 					}
 
-					if((value < 0x80 && value >= 0x20) || isspace((unsigned char) value))
-						html_output_c(file_buff_o1, file_buff_o2, tolower((unsigned char) value));
+					if((value < 0x80 && value >= 0x20) || (value >= 0 && value <= 0xff && isspace(value)))
+						html_output_c(file_buff_o1, file_buff_o2, tolower(value));
 					else {
 						unsigned char buff[10];
 						snprintf((char*)buff,9,"&#%d;",value);
