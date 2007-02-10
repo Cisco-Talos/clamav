@@ -1,3 +1,7 @@
+Sat Feb 10 17:47:36 CET 2007 (tk)
+---------------------------------
+  * configure.in: fix bb#267, patch from Edwin
+
 Sat Feb 10 15:44:33 CET 2007 (tk)
 ---------------------------------
   * freshclam/manager.c: don't blacklist mirrors for error 404
