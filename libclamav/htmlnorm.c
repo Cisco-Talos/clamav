@@ -1199,8 +1199,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					tag_val[tag_val_length++] = value; /* store encoded values too */
 					}
 
-					if((value < 0x80 && value >= 0x20) || isspace(value))
-						html_output_c(file_buff_o1, file_buff_o2, tolower(value));
+					if((value < 0x80 && value >= 0x20) || isspace((unsigned char) value))
+						html_output_c(file_buff_o1, file_buff_o2, tolower((unsigned char) value));
 					else {
 						unsigned char buff[10];
 						snprintf((char*)buff,9,"&#%d;",value);
