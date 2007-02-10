@@ -404,7 +404,7 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 
     if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
 	logg("!CVD file not found on remote server\n");
-	mirman_update(mdat->currip, mdat, 1);
+	/* mirman_update(mdat->currip, mdat, 1); */
 	return NULL;
     }
 
@@ -564,7 +564,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     /* check whether the resource actually existed or not */
     if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
 	logg("!getfile: %s not found on remote server (IP: %s)\n", srcfile, ipaddr);
-	mirman_update(mdat->currip, mdat, 1);
+	/* mirman_update(mdat->currip, mdat, 1); */
 	close(sd);
 	return 58;
     }
