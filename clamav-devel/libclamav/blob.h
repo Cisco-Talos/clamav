@@ -26,8 +26,8 @@
 typedef struct blob {
 	char	*name;	/* filename */
 	unsigned	char	*data;	/* the stuff itself */
-	size_t	len;	/* number of bytes of data so far */
-	size_t	size;	/* number of bytes allocated to data so far */
+	off_t	len;	/* number of bytes of data so far */
+	off_t	size;	/* number of bytes allocated to data so far */
 	int	isClosed;
 #ifdef	CL_DEBUG
 	object_type	magic;	/* verify that this is a blob */
