@@ -147,7 +147,7 @@ static int utf16decode(struct optstruct *opt)
 {
 	const char *fname;
 	char *newname, buff[512], *decoded;
-	int ret = CL_CLEAN, fd1, fd2, bytes;
+	int fd1, fd2, bytes;
 
 
     fname = opt_arg(opt, "utf16-decode");
@@ -218,6 +218,42 @@ static char *getdsig(const char *host, const char *user, const char *data, unsig
 #endif
 
 
+    if((pt = getenv("SIGNDPASS"))) {
+	strncpy(pass, pt, sizeof(pass));
+    } else {
+	fflush(stdin);
+	mprintf("Password: ");
+
+#ifdef HAVE_TERMIOS_H
+	if(tcgetattr(0, &old)) {
+	    mprintf("!getdsig: tcgetattr() failed\n");
+	    return NULL;
+	}
+	new = old;
+	new.c_lflag &= ~ECHO;
+	if(tcsetattr(0, TCSAFLUSH, &new)) {
+	    mprintf("!getdsig: tcsetattr() failed\n");
+	    return NULL;
+	}
+#endif
+
+	if(fgets(pass, sizeof(pass), stdin)) {
+	    cli_chomp(pass);
+	} else {
+	    mprintf("!getdsig: Can't get password\n");
+	    return NULL;
+	}
+
+#ifdef HAVE_TERMIOS_H
+	if(tcsetattr(0, TCSAFLUSH, &old)) {
+	    mprintf("!getdsig: tcsetattr() failed\n", host);
+	    memset(pass, 0, strlen(pass));
+	    return NULL;
+	}
+#endif
+	mprintf("\n");
+    }
+
 #ifdef PF_INET
     if((sockd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
 #else
@@ -225,6 +261,7 @@ static char *getdsig(const char *host, const char *user, const char *data, unsig
 #endif
 	perror("socket()");
 	mprintf("!getdsig: Can't create socket\n");
+	memset(pass, 0, strlen(pass));
 	return NULL;
     }
 
@@ -236,45 +273,10 @@ static char *getdsig(const char *host, const char *user, const char *data, unsig
         close(sockd);
 	perror("connect()");
 	mprintf("!getdsig: Can't connect to ClamAV Signing Service at %s\n", host);
+	memset(pass, 0, strlen(pass));
 	return NULL;
     }
-
     memset(cmd, 0, sizeof(cmd));
-
-    fflush(stdin);
-    mprintf("Password: ");
-
-#ifdef HAVE_TERMIOS_H
-    if(tcgetattr(0, &old)) {
-	mprintf("!getdsig: tcgetattr() failed\n", host);
-	close(sockd);
-	return NULL;
-    }
-    new = old;
-    new.c_lflag &= ~ECHO;
-    if(tcsetattr(0, TCSAFLUSH, &new)) {
-	mprintf("!getdsig: tcsetattr() failed\n", host);
-	close(sockd);
-	return NULL;
-    }
-#endif
-
-    if(fgets(pass, sizeof(pass), stdin)) {
-	cli_chomp(pass);
-    } else {
-	mprintf("!getdsig: Can't get password\n");
-	close(sockd);
-	return NULL;
-    }
-
-#ifdef HAVE_TERMIOS_H
-    if(tcsetattr(0, TCSAFLUSH, &old)) {
-	mprintf("!getdsig: tcsetattr() failed\n", host);
-	close(sockd);
-	return NULL;
-    }
-#endif
-    mprintf("\n");
 
     if(mode == 1)
 	snprintf(cmd, sizeof(cmd) - datalen, "ClamSignPSS:%s:%s:", user, pass);
@@ -527,7 +529,7 @@ static int build(struct optstruct *opt)
 	return -1;
     }
 
-    if((ret = cl_loaddbdir(".", &engine, &sigs))) {
+    if((ret = cl_load(".", &engine, &sigs, CL_DB_STDOPT))) {
 	mprintf("!build: Can't load database: %s\n", cl_strerror(ret));
 	return -1;
     } else {
@@ -634,14 +636,18 @@ static int build(struct optstruct *opt)
     /* add fake MD5 and dsig (for writeinfo) */
     strcat(header, "X:X:");
 
-    /* ask for builder name */
-    fflush(stdin);
-    mprintf("Builder name: ");
-    if(fgets(builder, sizeof(builder), stdin)) {
-	cli_chomp(builder);
+    if((pt = getenv("SIGNDUSER"))) {
+	strncpy(builder, pt, sizeof(builder));
     } else {
-	mprintf("!build: Can't get builder name\n");
-	return -1;
+	/* ask for builder name */
+	fflush(stdin);
+	mprintf("Builder name: ");
+	if(fgets(builder, sizeof(builder), stdin)) {
+	    cli_chomp(builder);
+	} else {
+	    mprintf("!build: Can't get builder name\n");
+	    return -1;
+	}
     }
 
     /* add builder */
