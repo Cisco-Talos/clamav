@@ -137,9 +137,24 @@ typedef struct bitset_tag
         unsigned long length;
 } bitset_t;
 
+#ifdef __GNUC__
+void cli_warnmsg(const char *str, ...) __attribute__((format(printf, 1, 2)));
+#else
 void cli_warnmsg(const char *str, ...);
+#endif
+
+#ifdef __GNUC__
+void cli_errmsg(const char *str, ...) __attribute__((format(printf, 1, 2)));
+#else
 void cli_errmsg(const char *str, ...);
+#endif
+
+#ifdef __GNUC__
+void cli_dbgmsg(const char *str, ...) __attribute__((format(printf, 1, 2)));
+#else
 void cli_dbgmsg(const char *str, ...);
+#endif
+
 void *cli_malloc(size_t nmemb);
 void *cli_calloc(size_t nmemb, size_t size);
 void *cli_realloc(void *ptr, size_t size);
