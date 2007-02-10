@@ -1,3 +1,7 @@
+Sat Feb 10 18:44:52 CET 2007 (tk)
+---------------------------------
+  * clamdscan/client.c: fix "clamdcan /" mode, reported by Luca
+
 Sat Feb 10 17:47:36 CET 2007 (tk)
 ---------------------------------
   * configure.in: fix bb#267, patch from Edwin

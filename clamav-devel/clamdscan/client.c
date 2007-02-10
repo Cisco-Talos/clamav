@@ -466,7 +466,7 @@ int client(const struct optstruct *opt, int *infected)
 		perror(fullpath);
 		errors++;
 	    } else {
-		if(strlen(fullpath) < 2 || (fullpath[0] != '/' && fullpath[0] != '\\' && fullpath[1] != ':')) {
+		if(strcmp(fullpath, "/") && (strlen(fullpath) < 2 || (fullpath[0] != '/' && fullpath[0] != '\\' && fullpath[1] != ':'))) {
 		    fullpath = abpath(thefilename);
 		    free(thefilename);
 
