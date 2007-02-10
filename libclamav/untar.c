@@ -20,7 +20,7 @@
  * Author: Charles G. Waldman (cgw@pgt.com),  Aug 4 1998
  * There are many tar files that this code cannot decode.
  */
-static	char	const	rcsid[] = "$Id: untar.c,v 1.33 2006/12/22 18:29:13 njh Exp $";
+static	char	const	rcsid[] = "$Id: untar.c,v 1.34 2007/02/10 14:21:46 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -223,7 +223,7 @@ cli_untar(const char *dir, int desc, unsigned int posix, const struct cl_limits 
 
 			if(fd < 0) {
 				cli_errmsg("Can't create temporary file %s: %s\n", fullname, strerror(errno));
-				cli_dbgmsg("%lu %d %d\n", suffixLen, sizeof(fullname), strlen(fullname));
+				cli_dbgmsg("%u %d %d\n", suffixLen, sizeof(fullname), strlen(fullname));
 				return CL_ETMPFILE;
 			}
 

@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.61 2007/02/01 12:42:18 njh Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.62 2007/02/10 14:21:46 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -198,7 +198,7 @@ blobAddData(blob *b, const unsigned char *data, size_t len)
 
 		b->size = growth;
 		b->data = cli_malloc(growth);
-	} else if(b->size < b->len + len) {
+	} else if(b->size < b->len + (off_t)len) {
 		unsigned char *p = cli_realloc(b->data, b->size + growth);
 
 		if(p == NULL)
@@ -271,7 +271,7 @@ blobClose(blob *b)
 		if(b->len == 0) {	/* Not likely */
 			free(b->data);
 			b->data = NULL;
-			cli_dbgmsg("blobClose: recovered all %u bytes\n",
+			cli_dbgmsg("blobClose: recovered all %lu bytes\n",
 				b->size);
 			b->size = 0;
 		} else {
@@ -280,7 +280,7 @@ blobClose(blob *b)
 			if(ptr == NULL)
 				return;
 
-			cli_dbgmsg("blobClose: recovered %u bytes from %u\n",
+			cli_dbgmsg("blobClose: recovered %lu bytes from %lu\n",
 				b->size - b->len, b->size);
 			b->size = b->len;
 			b->data = ptr;

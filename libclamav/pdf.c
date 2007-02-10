@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.59 2007/02/10 11:21:40 njh Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.60 2007/02/10 14:21:46 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -50,8 +50,8 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.59 2007/02/10 11:21:40 njh Exp $";
 #include "mbox.h"
 #include "pdf.h"
 
-static	int	flatedecode(const unsigned char *buf, size_t len, int fout, const cli_ctx *ctx);
-static	int	ascii85decode(const char *buf, size_t len, unsigned char *output);
+static	int	flatedecode(const unsigned char *buf, off_t len, int fout, const cli_ctx *ctx);
+static	int	ascii85decode(const char *buf, off_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
 static	const	char	*cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns);
@@ -390,7 +390,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 
 /* flate inflation - returns zlib status, e.g. Z_OK */
 static int
-flatedecode(const unsigned char *buf, size_t len, int fout, const cli_ctx *ctx)
+flatedecode(const unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 {
 	int zstat;
 	off_t nbytes;
@@ -439,10 +439,10 @@ flatedecode(const unsigned char *buf, size_t len, int fout, const cli_ctx *ctx)
 				break;
 			default:
 				if(stream.msg)
-					cli_warnmsg("pdf: after writing %u bytes, got error \"%s\" inflating PDF attachment\n",
+					cli_warnmsg("pdf: after writing %lu bytes, got error \"%s\" inflating PDF attachment\n",
 						nbytes, stream.msg);
 				else
-					cli_warnmsg("pdf: after writing %u bytes, got error %d inflating PDF attachment\n",
+					cli_warnmsg("pdf: after writing %lu bytes, got error %d inflating PDF attachment\n",
 						nbytes, zstat);
 				inflateEnd(&stream);
 				return zstat;
@@ -477,7 +477,7 @@ flatedecode(const unsigned char *buf, size_t len, int fout, const cli_ctx *ctx)
  * See http://www.piclist.com/techref/method/encode.htm (look for base85)
  */
 static int
-ascii85decode(const char *buf, size_t len, unsigned char *output)
+ascii85decode(const char *buf, off_t len, unsigned char *output)
 {
 	const char *ptr;
 	uint32_t sum = 0;
@@ -489,7 +489,7 @@ ascii85decode(const char *buf, size_t len, unsigned char *output)
 
 	ptr = buf;
 
-	cli_dbgmsg("cli_pdf: ascii85decode %u bytes\n", len);
+	cli_dbgmsg("cli_pdf: ascii85decode %lu bytes\n", len);
 
 	while(len > 0) {
 		int byte = (len--) ? (int)*ptr++ : EOF;

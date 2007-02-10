@@ -1,3 +1,8 @@
+Sat Feb 10 14:22:29 GMT 2007 (njh)
+----------------------------------
+  * libclamav:	Removed warnings introduced by the stricter argument checks
+	in others.h and output.h
+
 Sat Feb 10 14:38:20 CET 2007 (tk)
 ---------------------------------
   * libclamav/others.h, shared/output.h: try to check coding styles for output
@@ -18,7 +23,7 @@ Fri Feb  9 22:25:24 CET 2007 (tk)
 Fri Feb  9 21:12:28 CET 2007 (acab)
 -----------------------------------
   * libclamav: Fix win32 compilation error in upack and mew - thanks Nigel
-  
+ 
 Fri Feb  9 17:57:15 GMT 2007 (njh)
 ----------------------------------
   * libclamav/lockdb.c:	Fix compilation error, bug 234
