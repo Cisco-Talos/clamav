@@ -49,16 +49,16 @@
  */
 #if defined(__i386__) || defined(__x86_64__) || defined(__vax__)
 #define SET(n) \
-	(*(const MD5_u32plus *)&ptr[(n) * 4])
+	(*(const MD5_u32plus *)(&ptr[(n) * 4]))
 #define GET(n) \
 	SET(n)
 #else
 #define SET(n) \
 	(ctx->block[(n)] = \
 	(const MD5_u32plus)ptr[(n) * 4] | \
-	(const (MD5_u32plus)ptr[(n) * 4 + 1] << 8) | \
-	(const (MD5_u32plus)ptr[(n) * 4 + 2] << 16) | \
-	(const (MD5_u32plus)ptr[(n) * 4 + 3] << 24))
+	((const MD5_u32plus)ptr[(n) * 4 + 1] << 8) | \
+	((const MD5_u32plus)ptr[(n) * 4 + 2] << 16) | \
+	((const MD5_u32plus)ptr[(n) * 4 + 3] << 24))
 #define GET(n) \
 	(ctx->block[(n)])
 #endif
