@@ -196,7 +196,7 @@ struct optstruct *opt_parse(int argc, char * const *argv, const char *getopt_sho
     return opt;
 }
 
-int opt_check(const struct optstruct *opt, char *optlong)
+int opt_check(const struct optstruct *opt, const char *optlong)
 {
 	struct optnode *handler;
 
@@ -217,7 +217,7 @@ int opt_check(const struct optstruct *opt, char *optlong)
     return 0;
 }
 
-char *opt_arg(const struct optstruct *opt, char *optlong)
+char *opt_arg(const struct optstruct *opt, const char *optlong)
 {
 	struct optnode *handler;
 

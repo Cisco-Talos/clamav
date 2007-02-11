@@ -49,16 +49,16 @@
  */
 #if defined(__i386__) || defined(__x86_64__) || defined(__vax__)
 #define SET(n) \
-	(*(MD5_u32plus *)&ptr[(n) * 4])
+	(*(const MD5_u32plus *)&ptr[(n) * 4])
 #define GET(n) \
 	SET(n)
 #else
 #define SET(n) \
 	(ctx->block[(n)] = \
-	(MD5_u32plus)ptr[(n) * 4] | \
-	((MD5_u32plus)ptr[(n) * 4 + 1] << 8) | \
-	((MD5_u32plus)ptr[(n) * 4 + 2] << 16) | \
-	((MD5_u32plus)ptr[(n) * 4 + 3] << 24))
+	(const MD5_u32plus)ptr[(n) * 4] | \
+	(const (MD5_u32plus)ptr[(n) * 4 + 1] << 8) | \
+	(const (MD5_u32plus)ptr[(n) * 4 + 2] << 16) | \
+	(const (MD5_u32plus)ptr[(n) * 4 + 3] << 24))
 #define GET(n) \
 	(ctx->block[(n)])
 #endif
@@ -67,9 +67,9 @@
  * This processes one or more 64-byte data blocks, but does NOT update
  * the bit counters.  There are no alignment requirements.
  */
-static void *body(MD5_CTX *ctx, void *data, unsigned long size)
+static const void *body(MD5_CTX *ctx, const void *data, unsigned long size)
 {
-	unsigned char *ptr;
+	const unsigned char *ptr;
 	MD5_u32plus a, b, c, d;
 	MD5_u32plus saved_a, saved_b, saved_c, saved_d;
 
@@ -185,7 +185,7 @@ void MD5_Init(MD5_CTX *ctx)
 	ctx->hi = 0;
 }
 
-void MD5_Update(MD5_CTX *ctx, void *data, unsigned long size)
+void MD5_Update(MD5_CTX *ctx, const void *data, unsigned long size)
 {
 	MD5_u32plus saved_lo;
 	unsigned long used, free;
@@ -206,7 +206,7 @@ void MD5_Update(MD5_CTX *ctx, void *data, unsigned long size)
 		}
 
 		memcpy(&ctx->buffer[used], data, free);
-		data = (unsigned char *)data + free;
+		data = (const unsigned char *)data + free;
 		size -= free;
 		body(ctx, ctx->buffer, 64);
 	}

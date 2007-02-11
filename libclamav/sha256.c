@@ -70,7 +70,7 @@ static const uint32_t K[64] = {
 } while (0)
 
 #ifndef EXTRACT_UCHAR
-#define EXTRACT_UCHAR(p)  (*(unsigned char *)(p))
+#define EXTRACT_UCHAR(p)  (*(const unsigned char *)(p))
 #endif
 
 #define STRING2INT(s) ((((((EXTRACT_UCHAR(s) << 8)    \
@@ -79,7 +79,7 @@ static const uint32_t K[64] = {
 			 | EXTRACT_UCHAR(s+3))
 
 #ifndef EXTRACT_UCHAR
-#define EXTRACT_UCHAR(p)  (*(mutils_word8 *)(p))
+#define EXTRACT_UCHAR(p)  (*(const mutils_word8 *)(p))
 #endif
 
 #define STRING2INT(s) ((((((EXTRACT_UCHAR(s) << 8)    \

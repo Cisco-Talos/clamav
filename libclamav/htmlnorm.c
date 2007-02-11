@@ -83,13 +83,13 @@ typedef enum {
     HTML_RFC2397_DATA,
     HTML_RFC2397_FINISH,
     HTML_RFC2397_ESC,
-    HTML_ESCAPE_CHAR,
+    HTML_ESCAPE_CHAR
 } html_state;
 
 typedef enum {
     SINGLE_QUOTED,
     DOUBLE_QUOTED,
-    NOT_QUOTED,
+    NOT_QUOTED
 } quoted_state;
 
 
@@ -257,7 +257,7 @@ static void html_output_c(file_buff_t *fbuff1, file_buff_t *fbuff2, unsigned cha
 	}
 }
 
-static void html_output_str(file_buff_t *fbuff, unsigned char *str, int len)
+static void html_output_str(file_buff_t *fbuff, const unsigned char *str, int len)
 {
 	if (fbuff) {
 		if ((fbuff->length + len) >= HTML_FILE_BUFF_LEN) {
@@ -273,7 +273,7 @@ static void html_output_str(file_buff_t *fbuff, unsigned char *str, int len)
 	}
 }
 
-static char *html_tag_arg_value(tag_arguments_t *tags, char *tag)
+static char *html_tag_arg_value(tag_arguments_t *tags, const char *tag)
 {
 	int i;
 	
@@ -285,7 +285,7 @@ static char *html_tag_arg_value(tag_arguments_t *tags, char *tag)
 	return NULL;
 }
 
-static void html_tag_arg_set(tag_arguments_t *tags, char *tag, char *value)
+static void html_tag_arg_set(tag_arguments_t *tags, const char *tag, const char *value)
 {
 	int i;
 	
@@ -299,7 +299,7 @@ static void html_tag_arg_set(tag_arguments_t *tags, char *tag, char *value)
 	return;
 }
 static void html_tag_arg_add(tag_arguments_t *tags,
-		unsigned char *tag, unsigned char *value)
+		const unsigned char *tag, unsigned char *value)
 {
 	int len, i;
 	tags->count++;
@@ -614,6 +614,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				continue;
 			}
 			switch (state) {
+			case HTML_SPECIAL_CHAR:
+				cli_dbgmsg("Impossible, special_char can't occur here\n");
+				break;
 			case HTML_BAD_STATE:
 				/* An engine error has occurred */
 				cli_dbgmsg("HTML Engine Error\n");
@@ -962,25 +965,24 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					const unsigned char* http_equiv = html_tag_arg_value(&tag_args, "http-equiv");
 					const unsigned char* http_content = html_tag_arg_value(&tag_args, "content");
 					if(http_equiv && http_content && strcasecmp(http_equiv,"content-type") == 0) {
-						const size_t len = strlen((const char*)http_content);
+						size_t len = strlen((const char*)http_content);
 						unsigned char* http_content2 = cli_malloc( len + 1);
 						unsigned char* charset;
 						size_t i;
 
 						if(!http_content2)
 							return CL_EMEM;
-						for(i = 0; i < strlen((const char*)http_content); i++)
+						for(i = 0; i < len; i++)
 							http_content2[i] = tolower(http_content[i]);
 						http_content2[len] = '\0';
 						charset = (unsigned char*) strstr((char*)http_content2,"charset");
 						if(charset) {							
-							size_t length;
 							while(*charset && *charset != '=')
 								charset++;
 							charset++;/* skip = */
-							length = strcspn((const char*)charset," \"'");
-							charset[length] = '\0';
-							if(length)
+							len = strcspn((const char*)charset," \"'");
+							charset[len] = '\0';
+							if(len)
 								process_encoding_set(&conv, charset, META);
 						}
 						free(http_content2);

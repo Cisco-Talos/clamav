@@ -48,6 +48,7 @@
 
 #include "cltypes.h"
 #include "others.h"
+#include "upx.h"
 
 #define PEALIGN(o,a) (((a))?(((o)/(a))*(a)):(o))
 #define PESALIGN(o,a) (((a))?(((o)/(a)+((o)%(a)!=0))*(a)):(o))
@@ -70,7 +71,7 @@
 
 /* PE from UPX */
 
-int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32_t upx0, uint32_t upx1, uint32_t magic)
+static int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32_t upx0, uint32_t upx1, uint32_t magic)
 {
   char *imports, *sections, *pehdr, *newbuf;
   int sectcnt, upd=1;

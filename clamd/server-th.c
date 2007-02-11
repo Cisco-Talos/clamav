@@ -83,7 +83,7 @@ typedef struct client_conn_tag {
     int nsockets;
 } client_conn_t;
 
-void scanner_thread(void *arg)
+static void scanner_thread(void *arg)
 {
 	client_conn_t *conn = (client_conn_t *) arg;
 #ifndef	C_WINDOWS

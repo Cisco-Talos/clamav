@@ -297,10 +297,10 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 			if(cli_ac_initdata(&mdata, root->ac_partsigs, AC_DEFAULT_TRACKLEN))
 			    return ret;
 
-			decoded = (char*) encoding_norm_readline(&conv, NULL, &area, bread);
+			decoded =  encoding_norm_readline(&conv, NULL, &area, bread);
 
 			if(decoded) {
-			    sret = cli_ac_scanbuff(decoded, strlen(decoded), NULL, engine->root[0], &mdata, 1, 0, 0, -1, NULL);
+			    sret = cli_ac_scanbuff(decoded, strlen((const char *) decoded), NULL, engine->root[0], &mdata, 1, 0, 0, -1, NULL);
 			    free(decoded);
 			    if(sret == CL_TYPE_HTML) {
 				ret = CL_TYPE_HTML;

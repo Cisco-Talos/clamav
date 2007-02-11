@@ -93,7 +93,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 
     if(localip) {
 	if((he = gethostbyname(localip)) == NULL) {
-	    char *herr;
+	    const char *herr;
 	    switch(h_errno) {
 	        case HOST_NOT_FOUND:
 		    herr = "Host not found";
@@ -156,7 +156,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
     }
 
     if((host = gethostbyname(hostpt)) == NULL) {
-	char *herr;
+	const char *herr;
 	switch(h_errno) {
 	    case HOST_NOT_FOUND:
 		herr = "Host not found";

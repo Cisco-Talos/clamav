@@ -71,7 +71,7 @@ struct multi_tag {
     const struct cl_limits *limits;
 };
 
-void multiscanfile(void *arg)
+static void multiscanfile(void *arg)
 {
 	struct multi_tag *tag = (struct multi_tag *) arg;
 	const char *virname;

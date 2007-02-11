@@ -35,6 +35,7 @@
 
 #include "shared/cfgparser.h"
 #include "shared/output.h"
+#include "notify.h"
 
 int notify(const char *cfgfile)
 {

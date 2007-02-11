@@ -59,7 +59,7 @@ struct cdiff_ctx {
 };
 
 struct cdiff_cmd {
-    char *name;
+    const char *name;
     unsigned short argc;
     int (*handler)(const char *, struct cdiff_ctx *);
 };
@@ -97,7 +97,7 @@ static struct cdiff_cmd commands[] = {
     { NULL, 0, NULL }
 };
 
-void cdiff_ctx_free(struct cdiff_ctx *ctx)
+static void cdiff_ctx_free(struct cdiff_ctx *ctx)
 {
 	struct cdiff_node *pt;
 

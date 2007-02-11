@@ -31,7 +31,7 @@
 #ifdef RAR_HIGH_DEBUG
 #define rar_dbgmsg printf
 #else
-static void rar_dbgmsg(){};
+static void rar_dbgmsg(const char* fmt,...){}
 #endif
 
 #define MAX(a,b)    (((a) > (b)) ? (a) : (b))
@@ -164,7 +164,7 @@ static void rar_mem_blk_insertAt(rar_mem_blk_t *a, rar_mem_blk_t *p)
 	p->next = a->next->prev = a;
 }
 
-static int rar_mem_blk_remove(rar_mem_blk_t *a)
+static void rar_mem_blk_remove(rar_mem_blk_t *a)
 {
 	a->prev->next = a->next;
 	a->next->prev = a->prev;

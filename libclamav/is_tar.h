@@ -5,7 +5,7 @@
  *
  * Created 25 August 1985 by John Gilmore, ihnp4!hoptoad!gnu.
  *
- * $Id: is_tar.h,v 1.1 2005/03/22 21:26:25 kojm Exp $ # checkin only
+ * $Id: is_tar.h,v 1.2 2007/02/11 00:41:13 tkojm Exp $ # checkin only
  */
 
 /*
@@ -43,3 +43,5 @@ union record {
 
 /* The magic field is filled with this if uname and gname are valid. */
 #define	TMAGIC		"ustar  "	/* 7 chars and a null */
+
+int is_tar(unsigned char *buf, unsigned int nbytes);

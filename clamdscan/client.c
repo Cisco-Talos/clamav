@@ -46,6 +46,7 @@
 #include "output.h"
 #include "misc.h"
 #include "str.h"
+#include "client.h"
 
 #ifdef PF_INET
 # define SOCKET_INET	PF_INET

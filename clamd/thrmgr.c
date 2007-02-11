@@ -195,7 +195,7 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void
 	return threadpool;
 }
 
-void *thrmgr_worker(void *arg)
+static void *thrmgr_worker(void *arg)
 {
 	threadpool_t *threadpool = (threadpool_t *) arg;
 	void *job_data;

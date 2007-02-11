@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 	struct timezone tz;
 	time_t starttime;
 	struct optstruct *opt;
-	char *clamdscan_accepted[] = { "help", "version", "verbose", "quiet",
+	const char *clamdscan_accepted[] = { "help", "version", "verbose", "quiet",
 				  "stdout", "log", "move", "copy", "remove",
 				  "config-file", "no-summary",
 				  "disable-summary", "multiscan", NULL };

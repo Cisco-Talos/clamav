@@ -54,6 +54,7 @@
 
 #include "clamav.h"
 #include "others.h"
+#include "lockdb.h"
 
 #ifdef CL_THREAD_SAFE
 #include <pthread.h>

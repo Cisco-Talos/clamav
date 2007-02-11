@@ -50,10 +50,10 @@
 #include <sys/ioctl.h>
 #endif
 
-#if HAVE_SYS_TYPES_H
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#if HAVE_SYS_FILIO_H
+#ifdef HAVE_SYS_FILIO_H
 #include <sys/filio.h>
 #endif
 #ifdef HAVE_SYS_UIO_H

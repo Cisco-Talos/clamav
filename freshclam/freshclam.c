@@ -115,7 +115,7 @@ static void writepid(char *pidfile)
     umask(old_umask);
 }
 
-void help(void)
+static void help(void)
 {
     mprintf_stdout = 1;
 
@@ -150,7 +150,7 @@ void help(void)
     mprintf("\n");
 }
 
-int download(const struct cfgstruct *copt, const struct optstruct *opt, const char *datadir)
+static int download(const struct cfgstruct *copt, const struct optstruct *opt, const char *datadir)
 {
 	int ret = 0, try = 0, maxattempts = 0;
 	struct cfgstruct *cpt;
@@ -205,7 +205,7 @@ int download(const struct cfgstruct *copt, const struct optstruct *opt, const ch
 int main(int argc, char **argv)
 {
 	int ret = 52;
-	char *newdir, *cfgfile;
+	const char *newdir, *cfgfile;
 	char *pidfile = NULL;
 	struct cfgstruct *copt, *cpt;
 #ifndef	C_WINDOWS

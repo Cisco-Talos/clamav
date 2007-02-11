@@ -76,34 +76,9 @@ struct url_check {
 	unsigned short       link_type;
 };
 
+#ifdef _MESSAGE_H
 int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs);
-enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check* urls);
-
-int whitelist_check(const struct cl_engine* engine,struct url_check* urls,int hostOnly);
-void url_check_init(struct url_check* urls);
-void string_free(struct string* str);
-void string_assign(struct string* dest,struct string* src);
-void string_assign_c(struct string* dest,char* data);
-int string_assign_dup(struct string* dest,const char* start,const char* end);
-void string_assign_ref(struct string* dest,struct string* ref,char* data);
-void free_if_needed(struct url_check* url);
-int get_host(const struct phishcheck* pchk,struct string* dest,const char* URL,int isReal,int* phishy);
-int isCountryCode(const struct phishcheck* s,const char* str);
-int isTLD(const struct phishcheck* s,const char* str,int len);
-void get_domain(const struct phishcheck* pchk,struct string* dest,struct string* host);
-int ip_reverse(struct url_check* urls,int isReal);
-void reverse_lookup(struct url_check* url,int isReal);
-int isNumeric(const char* host);
-int isSSL(const char* URL);
-int cleanupURL(struct string* URL,int isReal);
-void get_redirected_URL(struct string* URL);
-int isURL(const struct phishcheck* pchk,const char* URL);
-enum phish_status cleanupURLs(struct url_check* urls);
-int isNumericURL(const struct phishcheck* pchk, const char* URL);
-int url_get_host(const struct phishcheck* pchk, struct url_check* url,struct url_check* host_url,int isReal,int* phishy);
-void url_get_domain(const struct phishcheck* pchk, struct url_check* url,struct url_check* domains);
-enum phish_status phishy_map(int phishy,enum phish_status fallback);
-int isEncoded(const char* url);
+#endif
 
 void phish_disable(struct cl_engine* engine,const char* reason);
 /* Global, non-thread-safe functions, call only once! */
@@ -142,7 +117,6 @@ static inline int isPhishing(enum phish_status rc)
 			return 1;
 	}
 }
-const char* phishing_ret_toString(enum phish_status rc);
 #endif
 
 #endif

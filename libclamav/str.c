@@ -200,7 +200,7 @@ char *cli_utf16toascii(const char *str, unsigned int length)
 
 int cli_strbcasestr(const char *haystack, const char *needle)
 {
-	char *pt = (char *) haystack;
+	const char *pt =  haystack;
 	int i, j;
 
     i = strlen(haystack);

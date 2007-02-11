@@ -50,8 +50,10 @@
 #include "defaults.h"
 #include "dconf.h"
 #include "lockdb.h"
+#include "readdb.h"
 
 #ifdef CL_EXPERIMENTAL
+#include "phishcheck.h"
 #include "phish_whitelist.h"
 #include "phish_domaincheck_db.h"
 #include "regex_list.h"

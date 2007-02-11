@@ -47,6 +47,7 @@
 #include "others.h"
 #include "mspack.h"
 #include "cltypes.h"
+#include "chmunpack.h"
 
 #ifndef HAVE_ATTRIB_PACKED
 #define __attribute__(x)
@@ -155,7 +156,7 @@ typedef struct lzx_content_tag {
 #define chm_endian_convert_64(x) le64_to_host(x)
 
 /* Read in a block of data from either the mmap area or the given fd */
-int chm_read_data(int fd, unsigned char *dest, off_t offset, off_t len,
+static int chm_read_data(int fd, unsigned char *dest, off_t offset, off_t len,
 			unsigned char *m_area, off_t m_length)
 {
 	if ((offset < 0) || (len < 0) || ((offset+len) < 0)) {
@@ -177,7 +178,7 @@ int chm_read_data(int fd, unsigned char *dest, off_t offset, off_t len,
 	return TRUE;
 }
 
-uint64_t chm_copy_file_data(int ifd, int ofd, uint64_t len)
+static uint64_t chm_copy_file_data(int ifd, int ofd, uint64_t len)
 {
 	unsigned char data[8192];
 	uint64_t count, rem;
