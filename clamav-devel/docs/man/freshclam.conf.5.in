@@ -84,6 +84,11 @@ Freshclam(1) tries every mirror this number of times before switching to the nex
 .br .
 Default: 3 (per mirror)
 .TP 
+\fBScriptedUpdates BOOL\fR
+With this option you can control scripted updates. It's highly recommended to keep it enabled.
+.br .
+Default: enabled
+.TP 
 \fBHTTPProxyServer STR\fR, \fBHTTPProxyPort NUM\fR
 Use given proxy server and TCP port for database downloads.
 .TP 

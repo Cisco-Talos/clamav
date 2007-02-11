@@ -788,10 +788,12 @@ static struct cl_cvd *currentdb(const char *dbname, unsigned int *inc)
     snprintf(path, sizeof(path), "%s.inc", dbname);
     if(stat(path, &sb) != -1) {
 	snprintf(path, sizeof(path), "%s.inc/%s.info", dbname, dbname);
-	*inc = 1;
+	if(inc)
+	    *inc = 1;
     } else {
 	snprintf(path, sizeof(path), "%s.cvd", dbname);
-	*inc = 0;
+	if(inc)
+	    *inc = 0;
     }
 
     cvd = cl_cvdhead(path);
@@ -953,6 +955,9 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
     };
     */
 
+    if(!cfgopt(copt, "ScriptedUpdates")->enabled)
+	nodb = 1;
+
     if(nodb) {
 	ret = getcvd(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, nodb, newver, ctimeout, rtimeout, mdat);
 	if(ret)
@@ -1012,11 +1017,14 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	}
     }
 
-    if(!(current = currentdb(dbname, &inc))) {
+    if(!(current = currentdb(dbname, NULL))) {
 	/* should never be reached */
 	logg("!Can't parse new database\n");
 	return 55; /* FIXME */
     }
+
+    if(nodb && inc)
+	rmdirs(dbinc);
 
     logg("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", inc ? dbinc : dbfile, current->version, current->sigs, current->fl, current->builder);
 

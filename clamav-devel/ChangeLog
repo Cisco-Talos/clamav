@@ -1,3 +1,7 @@
+Sun Feb 11 11:19:57 CET 2007 (tk)
+---------------------------------
+  * freshclam: add option ScriptedUpdates, requested by Luca
+
 Sun Feb 11 01:38:26 CET 2007 (tk)
 ---------------------------------
   * remove part of warnings from gcc, patch from Edwin
