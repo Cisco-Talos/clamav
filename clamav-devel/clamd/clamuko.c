@@ -42,7 +42,7 @@
 
 struct dazuko_access *acc;
 
-void clamuko_exit(int sig)
+static void clamuko_exit(int sig)
 {
 
     logg("*Clamuko: clamuko_exit(), signal %d\n", sig);

@@ -32,7 +32,7 @@
 #define _GNU_SOURCE
 #include "getopt.h"
 
-void printopt(const struct cfgoption *opt, const struct cfgstruct *cpt)
+static void printopt(const struct cfgoption *opt, const struct cfgstruct *cpt)
 {
     if(!cpt->enabled) {
 	printf("%s not set\n", opt->name);
@@ -65,7 +65,7 @@ void printopt(const struct cfgoption *opt, const struct cfgstruct *cpt)
     }
 }
 
-void printcfg(const char *cfgfile)
+static void printcfg(const char *cfgfile)
 {
 	const struct cfgoption *opt;
 	const struct cfgstruct *cpt;
@@ -167,7 +167,7 @@ void printcfg(const char *cfgfile)
     freecfg(cfg);
 }
 
-void help(void)
+static void help(void)
 {
     printf("\n");
     printf("             Clam AntiVirus: Configuration Tool "VERSION"\n");

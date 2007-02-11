@@ -63,7 +63,7 @@
 /* northfox does this shitty way,
  * this should be done with just a bswap
  */
-char *lzma_bswap_4861dc(struct lzmastate *p, char *old_edx)
+static char *lzma_bswap_4861dc(struct lzmastate *p, char *old_edx)
 {
 	/* dumb_dump_start
 	 *
@@ -98,7 +98,7 @@ char *lzma_bswap_4861dc(struct lzmastate *p, char *old_edx)
 	return p->p0;
 }
 
-uint32_t lzma_486248 (struct lzmastate *p, char **old_ecx, char *src, uint32_t size)
+static uint32_t lzma_486248 (struct lzmastate *p, char **old_ecx, char *src, uint32_t size)
 {
 	uint32_t loc_esi, loc_edi, loc_eax, loc_ecx, ret;
 	if (!CLI_ISCONTAINED(src, size, *old_ecx, 4) || !CLI_ISCONTAINED(src, size, p->p0, 1))
@@ -151,7 +151,7 @@ uint32_t lzma_486248 (struct lzmastate *p, char **old_ecx, char *src, uint32_t s
 
 }
 
-uint32_t lzma_48635C(uint8_t znaczek, char **old_ecx, struct lzmastate *p, uint32_t *retval, char *src, uint32_t size)
+static uint32_t lzma_48635C(uint8_t znaczek, char **old_ecx, struct lzmastate *p, uint32_t *retval, char *src, uint32_t size)
 {
 	uint32_t loc_esi = (znaczek&0xff) >> 7, /* msb */
 		loc_ebx, ret;
@@ -195,7 +195,7 @@ uint32_t lzma_48635C(uint8_t znaczek, char **old_ecx, struct lzmastate *p, uint3
 	return 0;
 }
 
-uint32_t lzma_4862e0 (struct lzmastate *p, char **old_ecx, uint32_t *old_edx, uint32_t *retval, char *src, uint32_t size)
+static uint32_t lzma_4862e0 (struct lzmastate *p, char **old_ecx, uint32_t *old_edx, uint32_t *retval, char *src, uint32_t size)
 {
 	uint32_t loc_ebx, loc_esi, stack_ecx, ret;
 	char *loc_edi;
@@ -228,7 +228,7 @@ uint32_t lzma_4862e0 (struct lzmastate *p, char **old_ecx, uint32_t *old_edx, ui
 }
 
 /* old_edx - write only */
-uint32_t lzma_4863da (uint32_t var0, struct lzmastate *p, char  **old_ecx, uint32_t *old_edx, uint32_t *retval, char *src, uint32_t size)
+static uint32_t lzma_4863da (uint32_t var0, struct lzmastate *p, char  **old_ecx, uint32_t *old_edx, uint32_t *retval, char *src, uint32_t size)
 {
 	uint32_t ret;
 	char *loc_esi = *old_ecx;
@@ -270,7 +270,7 @@ uint32_t lzma_4863da (uint32_t var0, struct lzmastate *p, char  **old_ecx, uint3
 	return 0;
 }
 
-uint32_t lzma_486204 (struct lzmastate *p, uint32_t old_edx, uint32_t *retval, char *src, uint32_t size)
+static uint32_t lzma_486204 (struct lzmastate *p, uint32_t old_edx, uint32_t *retval, char *src, uint32_t size)
 {
 	uint32_t loc_esi, loc_edi, loc_ebx, loc_eax;
 	char *loc_edx;
@@ -310,7 +310,7 @@ uint32_t lzma_486204 (struct lzmastate *p, uint32_t old_edx, uint32_t *retval, c
 	return 0;
 }
 
-uint32_t lzma_48631a (struct lzmastate *p, char **old_ecx, uint32_t *old_edx, uint32_t *retval, char *src, uint32_t size)
+static uint32_t lzma_48631a (struct lzmastate *p, char **old_ecx, uint32_t *old_edx, uint32_t *retval, char *src, uint32_t size)
 {
 	uint32_t copy1, copy2;
 	uint32_t loc_esi, loc_edi, ret;

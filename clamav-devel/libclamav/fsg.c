@@ -43,7 +43,7 @@
 #include "rebuildpe.h"
 #include "others.h"
 #include "packlibs.h"
-
+#include "fsg.h"
 
 int unfsg_200(char *source, char *dest, int ssize, int dsize, uint32_t rva, uint32_t base, uint32_t ep, int file) {
   char *tsrc;

@@ -56,7 +56,7 @@ inline static void __fixup_rootseek(off_t offset_of_trailer, struct zip_disk_tra
 	    trailer->z_rootseek = (uint32_t) (offset_of_trailer -  EC32(trailer->z_rootsize)); 
 }
 
-int __zip_find_disk_trailer(int fd, off_t filesize, struct zip_disk_trailer *trailer, off_t *start)
+static int __zip_find_disk_trailer(int fd, off_t filesize, struct zip_disk_trailer *trailer, off_t *start)
 {
 	char *buf, *end, *tail;
 	off_t offset = 0, bufsize;
@@ -165,7 +165,7 @@ int __zip_find_disk_trailer(int fd, off_t filesize, struct zip_disk_trailer *tra
     return CL_EFORMAT;
 }
 
-int __zip_parse_root_directory(int fd, struct zip_disk_trailer *trailer, zip_dir_hdr **hdr_return, off_t start)
+static int __zip_parse_root_directory(int fd, struct zip_disk_trailer *trailer, zip_dir_hdr **hdr_return, off_t start)
 {
 	struct zip_root_dirent dirent, *d;
 	zip_dir_hdr *hdr, *hdr0, *prev_hdr;

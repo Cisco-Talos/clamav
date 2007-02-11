@@ -40,6 +40,7 @@
 #include "others.h"
 #include "server.h"
 #include "output.h"
+#include "localserver.h"
 
 #ifdef        C_WINDOWS
 int localserver(const struct cfgstruct *copt)

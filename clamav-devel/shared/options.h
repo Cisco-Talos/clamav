@@ -39,9 +39,9 @@ void opt_free(struct optstruct *opt);
 
 struct optstruct *opt_parse(int argc, char * const *argv, const char *getopt_short, const struct option *options_long, const char * const *accepted_long);
 
-int opt_check(const struct optstruct *opt, char *optlong);
+int opt_check(const struct optstruct *opt, const char *optlong);
 
-char *opt_arg(const struct optstruct *opt, char *optlong);
+char *opt_arg(const struct optstruct *opt, const char *optlong);
 
 char *opt_firstarg(const struct optstruct *opt, const char *optlong, const struct optnode **optnode);
 

@@ -45,6 +45,8 @@
 #include <pthread.h>
 #endif
 
+#include "network.h"
+
 /*
  * TODO: gethostbyname_r is non-standard so different operating
  * systems do it in different ways. Need more examples

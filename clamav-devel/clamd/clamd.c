@@ -70,7 +70,7 @@
 short debug_mode = 0, logok = 0;
 short foreground = 0;
 
-void help(void)
+static void help(void)
 {
     printf("\n");
     printf("                      Clam AntiVirus Daemon "VERSION"\n");

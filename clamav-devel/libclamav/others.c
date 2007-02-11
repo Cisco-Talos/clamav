@@ -308,7 +308,7 @@ static char *cli_md5buff(const char *buffer, unsigned int len, unsigned char *di
 
 
     MD5_Init(&ctx);
-    MD5_Update(&ctx, (unsigned char *) buffer, len);
+    MD5_Update(&ctx, (const unsigned char *) buffer, len);
     MD5_Final(digest, &ctx);
 
     if(dig)
@@ -791,7 +791,7 @@ int32_t cli_readint32(const char *buff)
 	int32_t ret;
 
 #if WORDS_BIGENDIAN == 0
-    ret = *(int32_t *) buff;
+    ret = *(const int32_t *) buff;
 #else
     ret = buff[0] & 0xff;
     ret |= (buff[1] & 0xff) << 8;

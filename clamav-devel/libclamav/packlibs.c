@@ -25,6 +25,7 @@
 #include "others.h"
 #include "execs.h"
 #include "pe.h"
+#include "packlibs.h"
 
 static int doubledl(char **scur, uint8_t *mydlptr, char *buffer, uint32_t buffersize)
 {

@@ -97,7 +97,7 @@ struct cab_block_hdr
     uint16_t	cbUncomp;   /* number of uncompressed bytes */
 };
 
-char *cab_readstr(int fd, int *ret)
+static char *cab_readstr(int fd, int *ret)
 {
 	int i, bread, found = 0;
 	char buff[256], *str;
@@ -136,7 +136,7 @@ char *cab_readstr(int fd, int *ret)
     return str;
 }
 
-int cab_chkname(const char *name)
+static int cab_chkname(const char *name)
 {
 	size_t i, len = strlen(name);
 

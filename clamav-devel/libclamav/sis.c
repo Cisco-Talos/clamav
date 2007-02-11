@@ -53,7 +53,7 @@
 
 extern short cli_leavetemps_flag;
 
-static char *langcodes[] = {
+static const char *langcodes[] = {
     "",   "EN", "FR", "GE", "SP", "IT", "SW", "DA", "NO", "FI", "AM",
     "SF", "SG", "PO", "TU", "IC", "RU", "HU", "DU", "BL", "AU", "BG",
     "AS", "NZ", "IF", "CS", "SK", "PL", "SL", "TC", "HK", "ZH", "JA",

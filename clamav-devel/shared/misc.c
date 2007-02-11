@@ -43,6 +43,7 @@
 
 #include "libclamav/clamav.h"
 #include "libclamav/cvd.h"
+#include "shared/misc.h"
 
 #ifndef	O_BINARY
 #define	O_BINARY	0

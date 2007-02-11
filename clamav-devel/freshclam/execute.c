@@ -28,6 +28,7 @@
 #include <errno.h>
 
 #include "shared/output.h"
+#include "execute.h"
 
 #define MAX_CHILDREN 5
 

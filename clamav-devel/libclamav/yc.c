@@ -34,6 +34,7 @@
 #include "cltypes.h"
 #include "pe.h"
 #include "others.h"
+#include "yc.h"
 
 #define EC32(x) le32_to_host(x) /* Convert little endian to host */
 #define EC16(x) le16_to_host(x) /* Convert little endian to host */

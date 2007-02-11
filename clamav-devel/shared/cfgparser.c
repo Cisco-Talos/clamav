@@ -122,7 +122,7 @@ struct cfgoption cfg_options[] = {
     {NULL, 0, 0, NULL, 0, 0}
 };
 
-static int regcfg(struct cfgstruct **copt, char *optname, char *strarg, int numarg, short multiple);
+static int regcfg(struct cfgstruct **copt, const char *optname, char *strarg, int numarg, short multiple);
 
 struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 {
@@ -435,7 +435,7 @@ struct cfgstruct *cfgopt(const struct cfgstruct *copt, const char *optname)
     return NULL;
 }
 
-static int regcfg(struct cfgstruct **copt, char *optname, char *strarg, int numarg, short multiple)
+static int regcfg(struct cfgstruct **copt, const char *optname, char *strarg, int numarg, short multiple)
 {
 	struct cfgstruct *newnode, *pt;
 

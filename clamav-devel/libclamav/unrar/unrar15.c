@@ -22,6 +22,7 @@
  */
 
 #include "unrar.h"
+#include "unrar15.h"
 #include <string.h>
 
 #define STARTL1  2
@@ -423,7 +424,7 @@ static void long_lz(unpack_data_t *unpack_data)
 	if (distance <= 256) {
 		length += 8;
 	}
-	if (old_avr3 > 0xb0 || unpack_data->avr_plc >= 0x2a00 && old_avr2 < 0x40) {
+	if (old_avr3 > 0xb0 || (unpack_data->avr_plc >= 0x2a00 && old_avr2 < 0x40)) {
 		unpack_data->max_dist3 = 0x7f00;
 	} else {
 		unpack_data->max_dist3 = 0x2001;

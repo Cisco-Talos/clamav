@@ -56,6 +56,7 @@
 #include "rebuildpe.h"
 #include "execs.h"
 #include "others.h"
+#include "petite.h"
 
 #define EC32(x) le32_to_host(x) /* Convert little endian to host */
 

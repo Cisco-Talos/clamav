@@ -57,7 +57,7 @@
 #ifdef RAR_HIGH_DEBUG
 #define rar_dbgmsg printf
 #else
-static void rar_dbgmsg(){};
+static void rar_dbgmsg(const char* fmt,...){}
 #endif
 
 static void dump_tables(unpack_data_t *unpack_data)

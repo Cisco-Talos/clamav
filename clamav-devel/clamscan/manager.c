@@ -515,7 +515,7 @@ static void move_infected(const char *filename, const struct optstruct *opt)
     }
 
     if(!(tmp = strrchr(filename, '/')))
-	tmp = (char *) filename;
+	tmp = (const char *) filename;
 
     movefilename_size = sizeof(char) * (strlen(movedir) + strlen(tmp) + sizeof(numext) + 2);
 

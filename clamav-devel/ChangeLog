@@ -1,3 +1,7 @@
+Sun Feb 11 01:38:26 CET 2007 (tk)
+---------------------------------
+  * remove part of warnings from gcc, patch from Edwin
+
 Sat Feb 10 18:44:52 CET 2007 (tk)
 ---------------------------------
   * clamdscan/client.c: fix "clamdcan /" mode, reported by Luca

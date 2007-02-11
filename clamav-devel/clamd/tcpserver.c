@@ -50,6 +50,7 @@
 
 #include "others.h"
 #include "server.h"
+#include "tcpserver.h"
 
 int tcpserver(const struct cfgstruct *copt)
 {

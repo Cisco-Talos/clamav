@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.21  2007/02/11 00:41:13  tkojm
+ *  remove some gcc warnings
+ *
  *  Revision 1.20  2007/01/30 18:29:21  tkojm
  *  fix some includes
  *
@@ -296,6 +299,12 @@ static const char adonet[] = "ado.net";
 static const char aspnet[] = "asp.net";
 static const char lt[]="&lt;";
 static const char gt[]="&gt;";
+static const char cid[] = "cid:";
+static const char src_text[] = "src";
+static const char href_text[] = "href";
+static const size_t href_text_len = sizeof(href_text);
+static const size_t src_text_len = sizeof(src_text);
+static const size_t cid_len = sizeof(cid)-1;
 static const size_t dotnet_len = sizeof(dotnet)-1;
 static const size_t adonet_len = sizeof(adonet)-1;
 static const size_t aspnet_len = sizeof(aspnet)-1;
@@ -385,8 +394,11 @@ static	inline	void string_init_c(struct string* dest,char* data);
 static	void	string_assign_null(struct string* dest);
 static	char	*rfind(char *start, char c, size_t len);
 static inline char hex2int(const unsigned char* src);
+static int isTLD(const struct phishcheck* pchk,const char* str,int len);
+static enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check* urls);
+static const char* phishing_ret_toString(enum phish_status rc);
 
-void url_check_init(struct url_check* urls)
+static void url_check_init(struct url_check* urls)
 {
 	urls->realLink.refcount=0;
 	urls->realLink.data=empty_string;
@@ -400,7 +412,7 @@ void url_check_init(struct url_check* urls)
  * so that: we don't have to keep in mind who allocated what, and when needs to be freed,
  * and thus we won't leak memory*/
 
-void string_free(struct string* str)
+static void string_free(struct string* str)
 {
 	for(;;){
 		str->refcount--;
@@ -418,7 +430,7 @@ void string_free(struct string* str)
 }
 
 /* always use the string_assign when assigning to a string, this makes sure the old one's refcount is decremented*/
-void string_assign(struct string* dest,struct string* src)
+static void string_assign(struct string* dest,struct string* src)
 {
 	string_free(dest);
 	src->refcount++;
@@ -428,15 +440,7 @@ void string_assign(struct string* dest,struct string* src)
 }
 
 /* data will be freed when string freed */
-void string_assign_c(struct string* dest,char* data)
-{
-	string_free(dest);
-	dest->data=data;
-	dest->ref=NULL;
-	dest->refcount=1;
-}
-
-/* same as above, but it doesn't free old string, use only for initialization
+/* it doesn't free old string, use only for initialization
  * Doesn't allow NULL pointers, they are replaced by pointer to empty string
  * */
 static inline void string_init_c(struct string* dest,char* data)
@@ -447,7 +451,7 @@ static inline void string_init_c(struct string* dest,char* data)
 }
 
 /* make a copy of the string between start -> end*/
-int string_assign_dup(struct string* dest,const char* start,const char* end)
+static int string_assign_dup(struct string* dest,const char* start,const char* end)
 {
 	char*	    ret  = cli_malloc(end-start+1);
 	if(!ret)
@@ -471,7 +475,7 @@ static inline void string_assign_null(struct string* dest)
 }
 
 /* this string uses portion of another string*/
-void string_assign_ref(struct string* dest,struct string* ref,char* data)
+static void string_assign_ref(struct string* dest,struct string* ref,char* data)
 {
 	string_free(dest);
 	ref->refcount++;
@@ -480,7 +484,7 @@ void string_assign_ref(struct string* dest,struct string* ref,char* data)
 	dest->ref=ref;
 }
 
-void free_if_needed(struct url_check* url)
+static void free_if_needed(struct url_check* url)
 {
 	string_free(&url->realLink);
 	string_free(&url->displayLink);
@@ -515,7 +519,7 @@ static int build_regex(regex_t* preg,const char* regex,int nosub)
 static const char* host_regex="cid:.+|mailto:(.+)|([[:alpha:]]+://)?(([^:/?]+@)+([^:/?]+)([:/?].+)?|([^@:/?]+)([:/?].+)?)"; <- this is slower than the function below
 */
 /* allocates memory */
-int get_host(const struct phishcheck* s,struct string* dest,const char* URL,int isReal,int* phishy)
+static int get_host(const struct phishcheck* s,struct string* dest,const char* URL,int isReal,int* phishy)
 {
 	const char mailto[] = "mailto:";
 	int rc,ismailto = 0;
@@ -595,12 +599,12 @@ int get_host(const struct phishcheck* s,struct string* dest,const char* URL,int 
 	return 0;
 }
 
-int isCountryCode(const struct phishcheck* s,const char* str)
+static int isCountryCode(const struct phishcheck* s,const char* str)
 {
 	return str ? !regexec(&s->preg_cctld,str,0,NULL,0) : 0;
 }
 
-int isTLD(const struct phishcheck* pchk,const char* str,int len)
+static int isTLD(const struct phishcheck* pchk,const char* str,int len)
 {
 	if (!str)
 		return 0;
@@ -634,7 +638,7 @@ rfind(char *start, char c, size_t len)
 	return (p < start) ? NULL : p;
 }
 
-void get_domain(const struct phishcheck* pchk,struct string* dest,struct string* host)
+static void get_domain(const struct phishcheck* pchk,struct string* dest,struct string* host)
 {
 	char* domain;
 	char* tld = strrchr(host->data,'.');
@@ -702,7 +706,7 @@ void reverse_lookup(struct url_check* url,int isReal)
 	ip_reverse(url,isReal);
 }
 */
-int isNumeric(const char* host)
+static int isNumeric(const char* host)
 {
 	int len = strlen(host);
 	int a,b,c,d,n=0;
@@ -717,7 +721,7 @@ int isNumeric(const char* host)
 	return 0;
 }
 
-int isSSL(const char* URL)
+static int isSSL(const char* URL)
 {
 	const char https[]="https://";
 	return URL ? !strncmp(https,URL,sizeof(https)-1) : 0;
@@ -872,7 +876,7 @@ str_fixup_spaces(char **begin, const char **end)
 }
 
 /* allocates memory */
-int
+static int
 cleanupURL(struct string *URL, int isReal)
 {
 	char *begin = URL->data;
@@ -930,11 +934,6 @@ cleanupURL(struct string *URL, int isReal)
 	return 0;
 }
 
-void get_redirected_URL(struct string* URL)
-{
-	/*TODO: see if URL redirects sowhere, if so, then follow
-	returns redirected URL*/
-}
 
 /* ---- runtime disable ------*/
 void phish_disable(struct cl_engine* engine, const char* reason)
@@ -946,10 +945,6 @@ void phish_disable(struct cl_engine* engine, const char* reason)
 
 int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 {
-	const char src_text[]="src";
-	const char href_text[]="href";
-	const size_t href_text_len = sizeof(href_text);
-	const size_t src_text_len = sizeof(src_text);
 	int i;
 	struct phishcheck* pchk = (struct phishcheck*) ctx->engine->phishcheck;
 	if(!pchk || pchk->is_disabled)
@@ -1171,12 +1166,12 @@ void phishing_done(struct cl_engine* engine)
  * Only those URLs are identified as URLs for which phishing detection can be performed.
  * This means that no attempt is made to properly recognize 'cid:' URLs
  */
-int isURL(const struct phishcheck* pchk,const char* URL)
+static int isURL(const struct phishcheck* pchk,const char* URL)
 {
 	return URL ? !regexec(&pchk->preg,URL,0,NULL,0) : 0;
 }
 
-int isNumericURL(const struct phishcheck* pchk,const char* URL)
+static int isNumericURL(const struct phishcheck* pchk,const char* URL)
 {
 	return URL ? !regexec(&pchk->preg_numeric,URL,0,NULL,0) : 0;
 }
@@ -1184,7 +1179,7 @@ int isNumericURL(const struct phishcheck* pchk,const char* URL)
 /* Cleans up @urls
  * If URLs are identical after cleanup it will return CL_PHISH_CLEANUP_OK.
  * */
-enum phish_status cleanupURLs(struct url_check* urls)
+static enum phish_status cleanupURLs(struct url_check* urls)
 {
 	if(urls->flags&CLEANUP_URL) {
 		cleanupURL(&urls->realLink,1);
@@ -1197,7 +1192,7 @@ enum phish_status cleanupURLs(struct url_check* urls)
 	return CL_PHISH_NODECISION;
 }
 
-int url_get_host(const struct phishcheck* pchk, struct url_check* url,struct url_check* host_url,int isReal,int* phishy)
+static int url_get_host(const struct phishcheck* pchk, struct url_check* url,struct url_check* host_url,int isReal,int* phishy)
 {
 	struct string* host = isReal ? &host_url->realLink : &host_url->displayLink;
 	get_host(pchk, host, isReal ? url->realLink.data : url->displayLink.data, isReal, phishy);
@@ -1224,14 +1219,14 @@ int url_get_host(const struct phishcheck* pchk, struct url_check* url,struct url
 	return CL_PHISH_NODECISION;
 }
 
-void url_get_domain(const struct phishcheck* pchk, struct url_check* url,struct url_check* domains)
+static void url_get_domain(const struct phishcheck* pchk, struct url_check* url,struct url_check* domains)
 {
 	get_domain(pchk, &domains->realLink, &url->realLink);
 	get_domain(pchk, &domains->displayLink, &url->displayLink);
 	domains->flags = url->flags;
 }
 
-enum phish_status phishy_map(int phishy,enum phish_status fallback)
+static enum phish_status phishy_map(int phishy,enum phish_status fallback)
 {
 	if(phishy&PHISHY_USERNAME_IN_URL)
 		return CL_PHISH_CLOAKED_UIU;
@@ -1241,7 +1236,7 @@ enum phish_status phishy_map(int phishy,enum phish_status fallback)
 		return fallback;
 }
 
-int isEncoded(const char* url)
+static int isEncoded(const char* url)
 {
 	const char* start=url;
 	size_t cnt=0;
@@ -1255,18 +1250,16 @@ int isEncoded(const char* url)
 	return (cnt-1 >strlen(url)*7/10);/*more than 70% made up of &#;*/
 }
 
-int whitelist_check(const struct cl_engine* engine,struct url_check* urls,int hostOnly)
+static int whitelist_check(const struct cl_engine* engine,struct url_check* urls,int hostOnly)
 {
 	return whitelist_match(engine,urls->realLink.data,urls->displayLink.data,hostOnly);
 }
 
 
 /* urls can't contain null pointer, caller must ensure this */
-enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check* urls)
+static enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check* urls)
 {
 	struct url_check host_url;
-	const char cid[] = "cid:";
-	const size_t cid_len = sizeof(cid)-1;
 	enum phish_status rc=CL_PHISH_NODECISION;
 	int phishy=0;
 	const struct phishcheck* pchk = (const struct phishcheck*) engine->phishcheck;
@@ -1463,7 +1456,7 @@ enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check*
 	return phishy_map(phishy,CL_PHISH_NOMATCH);
 }
 
-const char* phishing_ret_toString(enum phish_status rc)
+static const char* phishing_ret_toString(enum phish_status rc)
 {
 	switch(rc) {
 		case CL_PHISH_CLEAN:

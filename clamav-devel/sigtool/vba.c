@@ -36,13 +36,13 @@
 typedef struct mac_token_tag
 {
     unsigned char token;
-    unsigned char *str;
+    const unsigned char *str;
 } mac_token_t;
 
 typedef struct mac_token2_tag
 {
     uint16_t token;
-    unsigned char *str;
+    const unsigned char *str;
 
 } mac_token2_t;
 

@@ -359,7 +359,7 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short 
         char *dir;
 	struct cl_cvd cvd;
 	int ret, fd;
-	time_t stime;
+	time_t s_time;
 
 
     cli_dbgmsg("in cli_cvdload()\n");
@@ -370,8 +370,8 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short 
 	return ret;
 
     if(cvd.stime && warn) {
-	time(&stime);
-	if((int) stime - cvd.stime > 604800) {
+	time(&s_time);
+	if((int) s_time - cvd.stime > 604800) {
 	    cli_warnmsg("**************************************************\n");
 	    cli_warnmsg("***  The virus database is older than 7 days.  ***\n");
 	    cli_warnmsg("***        Please update it IMMEDIATELY!       ***\n");

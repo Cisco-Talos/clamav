@@ -56,6 +56,7 @@
 
 #include "cltypes.h"
 #include "others.h"
+#include "wwunpack.h"
 
 #define VAALIGN(s) (((s)/0x1000+((s)%0x1000!=0))*0x1000)
 #define FIXVS(v, r) (VAALIGN((r>v)?r:v))
