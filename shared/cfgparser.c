@@ -107,6 +107,7 @@ struct cfgoption cfg_options[] = {
     {"DNSDatabaseInfo", OPT_QUOTESTR, -1, "current.cvd.clamav.net", 0, OPT_FRESHCLAM},
     {"DatabaseMirror", OPT_QUOTESTR, -1, NULL, 1, OPT_FRESHCLAM},
     {"MaxAttempts", OPT_NUM, 3, NULL, 0, OPT_FRESHCLAM},
+    {"ScriptedUpdates", OPT_BOOL, 1, NULL, 0, OPT_FRESHCLAM},
     {"HTTPProxyServer", OPT_QUOTESTR, -1, NULL, 0, OPT_FRESHCLAM},
     {"HTTPProxyPort", OPT_NUM, -1, NULL, 0, OPT_FRESHCLAM},
     {"HTTPProxyUsername", OPT_QUOTESTR, -1, NULL, 0, OPT_FRESHCLAM},
