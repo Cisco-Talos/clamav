@@ -144,11 +144,11 @@ MalwareName:TargetType:Offset:HexSignature[:MinEngineFunctionalityLevel:[Max]]
 	\item \verb#EP+n# = entry point plus n bytes (\verb#EP+0# if you
 	want to anchor to \verb+EP+)
 	\item \verb#EP-n# = entry point minus n bytes
-	\item \verb#Sx+n# = start of section's \verb+x+ (counted from 0)
+	\item \verb#Sx+n# = start of section \verb+x+'s (counted from 0)
 	data plus \verb+n+ bytes
-	\item \verb#Sx+n# = start of section's \verb+x+ data minus \verb+n+ bytes
+	\item \verb#Sx-n# = start of section \verb+x+'s data minus \verb+n+ bytes
 	\item \verb#SL+n# = start of last section plus \verb+n+ bytes
-	\item \verb#SL-n# = start of last section minux \verb+n+ bytes
+	\item \verb#SL-n# = start of last section minus \verb+n+ bytes
     \end{itemize}
     All signatures in the extended format must be placed in \verb+*.ndb+ files.
 
@@ -204,8 +204,8 @@ virname:encrypted:filename:normal size:csize:crc32:cmethod:fileno:max depth
     \end{itemize}
     Important rules of the naming convention:
     \begin{itemize}
-	\item always use a -zippwd postfix in the malware name for signatures of	      type zmd,
-	\item always use a -rarpwd postfix in the malware name for signatures
+	\item always use a -zippwd suffix in the malware name for signatures of	      type zmd,
+	\item always use a -rarpwd suffix in the malware name for signatures
 	      of type rmd,
 	\item only use alphanumeric characters, dash (-), dot (.), underscores
 	      (\_) in malware names, never use space, apostrophe or quote mark.
