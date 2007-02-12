@@ -282,7 +282,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, cli_file_t ftype
 	unsigned int buffersize, length, maxpatlen, shift = 0;
 	unsigned long int offset = 0;
 	struct cli_ac_data gdata, tdata;
-	MD5_CTX md5ctx;
+	cli_md5_ctx md5ctx;
 	unsigned char digest[16];
 	struct cli_md5_node *md5_node;
 	struct cli_matcher *groot = NULL, *troot = NULL;
@@ -343,7 +343,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, cli_file_t ftype
     }
 
     if(!ftonly && ctx->engine->md5_hlist)
-	MD5_Init(&md5ctx);
+	cli_md5_init(&md5ctx);
 
     buff = buffer;
     buff += maxpatlen; /* pointer to read data block */
@@ -400,7 +400,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, cli_file_t ftype
 	    }
 
 	    if(ctx->engine->md5_hlist)
-		MD5_Update(&md5ctx, buff + shift, bytes);
+		cli_md5_update(&md5ctx, buff + shift, bytes);
 	}
 
 	if(bytes + shift == SCANBUFF) {
@@ -427,7 +427,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, cli_file_t ftype
 	cli_ac_freedata(&tdata);
 
     if(!ftonly && ctx->engine->md5_hlist) {
-	MD5_Final(digest, &md5ctx);
+	cli_md5_final(digest, &md5ctx);
 
 	if((md5_node = cli_vermd5(digest, ctx->engine)) && !md5_node->fp) {
 		struct stat sb;

@@ -19,10 +19,10 @@ typedef struct {
 	MD5_u32plus a, b, c, d;
 	unsigned char buffer[64];
 	MD5_u32plus block[16];
-} MD5_CTX;
+} cli_md5_ctx;
 
-extern void MD5_Init(MD5_CTX *ctx);
-extern void MD5_Update(MD5_CTX *ctx, const void *data, unsigned long size);
-extern void MD5_Final(unsigned char *result, MD5_CTX *ctx);
+extern void cli_md5_init(cli_md5_ctx *ctx);
+extern void cli_md5_update(cli_md5_ctx *ctx, void *data, unsigned long size);
+extern void cli_md5_final(unsigned char *result, cli_md5_ctx *ctx);
 
 #endif

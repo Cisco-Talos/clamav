@@ -49,16 +49,16 @@
  */
 #if defined(__i386__) || defined(__x86_64__) || defined(__vax__)
 #define SET(n) \
-	(*(const MD5_u32plus *)(&ptr[(n) * 4]))
+	(*(MD5_u32plus *)&ptr[(n) * 4])
 #define GET(n) \
 	SET(n)
 #else
 #define SET(n) \
 	(ctx->block[(n)] = \
-	(const MD5_u32plus)ptr[(n) * 4] | \
-	((const MD5_u32plus)ptr[(n) * 4 + 1] << 8) | \
-	((const MD5_u32plus)ptr[(n) * 4 + 2] << 16) | \
-	((const MD5_u32plus)ptr[(n) * 4 + 3] << 24))
+	(MD5_u32plus)ptr[(n) * 4] | \
+	((MD5_u32plus)ptr[(n) * 4 + 1] << 8) | \
+	((MD5_u32plus)ptr[(n) * 4 + 2] << 16) | \
+	((MD5_u32plus)ptr[(n) * 4 + 3] << 24))
 #define GET(n) \
 	(ctx->block[(n)])
 #endif
@@ -67,9 +67,9 @@
  * This processes one or more 64-byte data blocks, but does NOT update
  * the bit counters.  There are no alignment requirements.
  */
-static const void *body(MD5_CTX *ctx, const void *data, unsigned long size)
+static void *body(cli_md5_ctx *ctx, void *data, unsigned long size)
 {
-	const unsigned char *ptr;
+	unsigned char *ptr;
 	MD5_u32plus a, b, c, d;
 	MD5_u32plus saved_a, saved_b, saved_c, saved_d;
 
@@ -174,7 +174,7 @@ static const void *body(MD5_CTX *ctx, const void *data, unsigned long size)
 	return ptr;
 }
 
-void MD5_Init(MD5_CTX *ctx)
+void cli_md5_init(cli_md5_ctx *ctx)
 {
 	ctx->a = 0x67452301;
 	ctx->b = 0xefcdab89;
@@ -185,7 +185,7 @@ void MD5_Init(MD5_CTX *ctx)
 	ctx->hi = 0;
 }
 
-void MD5_Update(MD5_CTX *ctx, const void *data, unsigned long size)
+void cli_md5_update(cli_md5_ctx *ctx, void *data, unsigned long size)
 {
 	MD5_u32plus saved_lo;
 	unsigned long used, free;
@@ -206,7 +206,7 @@ void MD5_Update(MD5_CTX *ctx, const void *data, unsigned long size)
 		}
 
 		memcpy(&ctx->buffer[used], data, free);
-		data = (const unsigned char *)data + free;
+		data = (unsigned char *)data + free;
 		size -= free;
 		body(ctx, ctx->buffer, 64);
 	}
@@ -219,7 +219,7 @@ void MD5_Update(MD5_CTX *ctx, const void *data, unsigned long size)
 	memcpy(ctx->buffer, data, size);
 }
 
-void MD5_Final(unsigned char *result, MD5_CTX *ctx)
+void cli_md5_final(unsigned char *result, cli_md5_ctx *ctx)
 {
 	unsigned long used, free;
 

@@ -1,3 +1,8 @@
+Mon Feb 12 11:44:21 CET 2007 (tk)
+---------------------------------
+  * libclamav/md5.c: revert problematic cleanup changes and rename functions
+		     to prevent possible namespace clashes with other libraries
+
 Sun Feb 11 11:19:57 CET 2007 (tk)
 ---------------------------------
   * freshclam: add option ScriptedUpdates, requested by Luca
