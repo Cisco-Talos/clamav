@@ -269,11 +269,16 @@ local domain.
 .TP
 \fB\-\-whitelist-file=FILE, \-W file\fR
 This option specifies a file which contains a list of e-mail addresses.
-E-mails sent to these addresses will NOT be checked.
+E-mails sent to or from these addresses will NOT be checked.
 While this is not an Anti-Virus function, it is quite useful for some systems.
-The address given to the \-\-quarantine directive is always white-listed.
+The address given to the \-\-quarantine directive is always whitelisted.
+.IP
 The file consists of a list of addresses, each address on a line enclosed
 in angle brackets (e.g. <foo@bar.com>).
+Optionally each line can start with the string \fITo:\fR or \fIFrom:\fR
+indicating if it is the sender or recipient that is to be whitelisted. If the
+field is missing, the default is \fITo\fR.
+Lines starting with #, : or ! are ignored.
 .TP
 \fB\-\-sendmail-cf=FILE\fR
 When starting, clamav\-milter runs some sanity checks against the sendmail.cf
