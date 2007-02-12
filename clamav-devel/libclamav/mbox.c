@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.373 2007/02/01 12:42:18 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.374 2007/02/12 20:46:08 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -138,7 +138,7 @@ typedef	enum {
  *  symbol				in file
  *  __floatdidf				/opt/sfw/lib/libcurl.s
  */
-#if	C_SOLARIS && __GNUC__
+#if	defined(C_SOLARIS) && defined(__GNUC__)
 #undef	WITH_CURL
 #endif
 #endif
@@ -465,8 +465,6 @@ static	void	create_map(const char *begin, const char *end);
 static	void	add_to_map(const char *offset, const char *word);
 static	const	char	*find_in_map(const char *offset, const char *word);
 static	void	free_map(void);
-
-
 
 /*
  * This could be the future. Instead of parsing and decoding it just decodes.
@@ -2061,8 +2059,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 	if(mainMessage && (messageGetBody(mainMessage) != NULL)) {
 		mime_type mimeType;
 		int subtype, inhead, htmltextPart, inMimeHead, i;
-		const char *mimeSubtype, *boundary;
-		char *protocol;
+		const char *mimeSubtype;
+		char *protocol, *boundary;
 		const text *t_line;
 		/*bool isAlternative;*/
 		message *aMessage;
@@ -2930,7 +2928,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				break;
 			cli_dbgmsg("Save non mime part bounce message\n");
 			fileblobSetFilename(fb, mctx->dir, "bounce");
-			fileblobAddData(fb, (unsigned char *)"Received: by clamd (bounce)\n", 28);
+			fileblobAddData(fb, (const unsigned char *)"Received: by clamd (bounce)\n", 28);
 			fileblobSetCTX(fb, mctx->ctx);
 
 			inheader = TRUE;
@@ -2945,9 +2943,9 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 					}
 				} else {
 					s = lineGetData(l);
-					fileblobAddData(fb, (unsigned char *)s, strlen(s));
+					fileblobAddData(fb, (const unsigned char *)s, strlen(s));
 				}
-				fileblobAddData(fb, (unsigned char *)"\n", 1);
+				fileblobAddData(fb, (const unsigned char *)"\n", 1);
 				lookahead = t->t_next;
 				if(lookahead == NULL)
 					break;
@@ -3061,7 +3059,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 static int
 boundaryStart(const char *line, const char *boundary)
 {
-	char *ptr, *out;
+	const char *ptr;
+	char *out;
 	int rc;
 	char buf[RFC2821LENGTH + 1];
 
@@ -3082,10 +3081,10 @@ boundaryStart(const char *line, const char *boundary)
 		out = NULL;
 		ptr = rfc822comments(line, buf);
 	} else
-		out = ptr = rfc822comments(line, NULL);
+		ptr = out = rfc822comments(line, NULL);
 
 	if(ptr == NULL)
-		ptr = (char *)line;
+		ptr = line;
 
 	if(*ptr++ != '-') {
 		if(out)
@@ -3645,7 +3644,8 @@ rfc2047(const char *in)
 		}
 		b = messageToBlob(m, 1);
 		len = blobGetDataSize(b);
-		cli_dbgmsg("Decoded as '%*.*s'\n", len, len, blobGetData(b));
+		cli_dbgmsg("Decoded as '%*.*s'\n", (int)len, (int)len,
+			blobGetData(b));
 		memcpy(pout, blobGetData(b), len);
 		blobDestroy(b);
 		messageDestroy(m);
@@ -3710,7 +3710,7 @@ rfc1341(message *m, const char *dir)
 		}
 		if(statb.st_mode & 077)
 			cli_warnmsg("Insecure partial directory %s (mode 0%o)\n",
-				pdir, statb.st_mode & 0777);
+				pdir, (int)(statb.st_mode & 0777));
 	}
 
 	number = (char *)messageFindArgument(m, "number");
@@ -3760,6 +3760,8 @@ rfc1341(message *m, const char *dir)
 			char outname[NAME_MAX + 1];
 			time_t now;
 
+			sanitiseName(id);
+
 			snprintf(outname, sizeof(outname) - 1, "%s/%s", dir, id);
 
 			cli_dbgmsg("outname: %s\n", outname);
@@ -3796,8 +3798,8 @@ rfc1341(message *m, const char *dir)
 					FILE *fin;
 					char buffer[BUFSIZ], fullname[NAME_MAX + 1];
 					int nblanks;
-					extern short cli_leavetemps_flag;
 					struct stat statb;
+					extern short cli_leavetemps_flag;
 
 #ifndef  C_CYGWIN
 					if(dent->d_ino == 0)

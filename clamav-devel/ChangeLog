@@ -1,3 +1,8 @@
+Mon Feb 12 20:46:27 GMT 2007 (njh)
+----------------------------------
+  * libclamav:		Fix various gcc warnings
+  * libclamav/mbox.c:	sanitise rfc1341 names
+
 Mon Feb 12 21:33:20 CET 2007 (tk)
 ---------------------------------
   * libclamav/phishcheck.c: fix hexurl regex (bb#288)
@@ -84,7 +89,7 @@ Fri Feb  9 22:25:24 CET 2007 (tk)
 Fri Feb  9 21:12:28 CET 2007 (acab)
 -----------------------------------
   * libclamav: Fix win32 compilation error in upack and mew - thanks Nigel
- 
+
 Fri Feb  9 17:57:15 GMT 2007 (njh)
 ----------------------------------
   * libclamav/lockdb.c:	Fix compilation error, bug 234

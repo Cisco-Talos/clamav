@@ -18,6 +18,9 @@
  *
  * Change History:
  * $Log: binhex.c,v $
+ * Revision 1.23  2007/02/12 20:46:08  njh
+ * Various tidy
+ *
  * Revision 1.22  2006/07/31 09:19:52  njh
  * Use MAP_PRIVATE
  *
@@ -82,7 +85,7 @@
  * First draft of binhex.c
  *
  */
-static	char	const	rcsid[] = "$Id: binhex.c,v 1.22 2006/07/31 09:19:52 njh Exp $";
+static	char	const	rcsid[] = "$Id: binhex.c,v 1.23 2007/02/12 20:46:08 njh Exp $";
 
 #include "clamav.h"
 
@@ -197,7 +200,7 @@ cli_binhex(const char *dir, int desc)
 		cli_errmsg("No binhex line found\n");
 		return CL_EFORMAT;
 	}
-	
+
 	/* similar to binhexMessage */
 	messageSetEncoding(m, "x-binhex");
 

@@ -17,6 +17,9 @@
  *  MA 02110-1301, USA.
  *
  * $Log: text.c,v $
+ * Revision 1.25  2007/02/12 20:46:09  njh
+ * Various tidy
+ *
  * Revision 1.24  2006/09/13 20:53:50  njh
  * Added debug
  *
@@ -82,7 +85,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: text.c,v 1.24 2006/09/13 20:53:50 njh Exp $";
+static	char	const	rcsid[] = "$Id: text.c,v 1.25 2007/02/12 20:46:09 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -349,9 +352,9 @@ addToBlob(const line_t *line, void *arg)
 	if(line) {
 		const char *l = lineGetData(line);
 
-		blobAddData(b, (unsigned char *)l, strlen(l));
+		blobAddData(b, (const unsigned char *)l, strlen(l));
 	}
-	blobAddData(b, (unsigned char *)"\n", 1);
+	blobAddData(b, (const unsigned char *)"\n", 1);
 }
 
 static void
@@ -362,9 +365,9 @@ addToFileblob(const line_t *line, void *arg)
 	if(line) {
 		const char *l = lineGetData(line);
 
-		fileblobAddData(fb, (unsigned char *)l, strlen(l));
+		fileblobAddData(fb, (const unsigned char *)l, strlen(l));
 	}
-	fileblobAddData(fb, (unsigned char *)"\n", 1);
+	fileblobAddData(fb, (const unsigned char *)"\n", 1);
 }
 
 static void *
