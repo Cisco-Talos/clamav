@@ -907,14 +907,14 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	    if(!(*engine)->md5_sect) {
 		(*engine)->md5_sect = new;
 	    } else {
-		if(new->size < (*engine)->md5_sect->size) {
+		if(new->size <= (*engine)->md5_sect->size) {
 		    new->next = (*engine)->md5_sect;
 		    (*engine)->md5_sect = new;
 		} else {
 		    mpt = (*engine)->md5_sect;
 		    while(mpt) {
 			last = mpt;
-			if((mpt->size > new->size) && (!mpt->next || new->size > mpt->next->size))
+			if(!mpt->next || new->size <= mpt->next->size)
 			    break;
 			mpt = mpt->next;
 		    }
