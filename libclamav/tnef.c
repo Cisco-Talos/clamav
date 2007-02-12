@@ -25,7 +25,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.40 2007/02/10 22:18:27 njh Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.41 2007/02/12 22:22:27 njh Exp $";
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -180,7 +180,7 @@ cli_tnef(const char *dir, int desc)
 					if(fout >= 0) {
 						int count;
 
-						cli_warnmsg("Saving dump to %s:  refer to http://www.clamav.net/bugs.html#pagestart\n", filename);
+						cli_warnmsg("Saving dump to %s:  refer to http://www.clamav.net/bugs\n", filename);
 
 						lseek(desc, 0L, SEEK_SET);
 						while((count = cli_readn(desc, buffer, sizeof(buffer))) > 0)

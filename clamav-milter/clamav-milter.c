@@ -24,7 +24,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.311 2007/02/12 15:01:50 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
 #define	CM_VERSION	"devel-120207"
 
@@ -244,7 +244,6 @@ struct	privdata {
 	long	numBytes;	/* Number of bytes sent so far */
 	char	*received;	/* keep track of received from */
 	const	char	*rejectCode;	/* 550 or 554? */
-	char	*messageID;	/* sendmailID */
 	int	discard;	/*
 				 * looks like the remote end is playing ping
 				 * pong with us
@@ -593,7 +592,7 @@ help(void)
 	puts(_("\t--debug-level=n\t\t-x n\tSets the debug level to 'n'."));
 #endif
 	puts(_("\nFor more information type \"man clamav-milter\"."));
-	puts(_("For bug reports, please refer to http://www.clamav.net/bugs.html#pagestart"));
+	puts(_("For bug reports, please refer to http://www.clamav.net/bugs"));
 }
 
 int
@@ -621,12 +620,12 @@ main(int argc, char **argv)
 #endif
 		clamfi_envfrom, /* envelope sender filter callback */
 		clamfi_envrcpt, /* envelope recipient filter callback */
-		clamfi_header, /* header filter callback */
-		clamfi_eoh, /* end of header callback */
-		clamfi_body, /* body filter callback */
-		clamfi_eom, /* end of message callback */
-		clamfi_abort, /* message aborted callback */
-		clamfi_close, /* connection cleanup callback */
+		clamfi_header,	/* header filter callback */
+		clamfi_eoh,	/* end of header callback */
+		clamfi_body,	/* body filter callback */
+		clamfi_eom,	/* end of message callback */
+		clamfi_abort,	/* message aborted callback */
+		clamfi_close,	/* connection cleanup callback */
 	};
 
 #if defined(CL_DEBUG) && defined(C_LINUX)
