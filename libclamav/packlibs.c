@@ -51,7 +51,7 @@ int cli_unfsg(char *source, char *dest, int ssize, int dsize, char **endsrc, cha
   char *csrc = source, *cdst = dest;
   int oob, lostbit = 1;
 
-  /* I assume buffers size is >0 - No checking! */
+  if (ssize<=0 || dsize<=0) return -1;
   *cdst++=*csrc++;
 
   while ( 1 ) {

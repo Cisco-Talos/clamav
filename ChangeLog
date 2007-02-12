@@ -1,3 +1,6 @@
+Mon Feb 12 22:08:15 CET 2007 (acab)
+  * libclamav/packlibs: fix possible heap overflow (thanks Edvin)
+
 Mon Feb 12 21:59:49 CET 2007 (tk)
 ---------------------------------
   * change some URLs to comply with the new website, thanks to Luca
