@@ -1,7 +1,10 @@
-0.90RC3
--------
+0.90
+----
 
-Release Candidate.
+The ClamAV team is proud to announce the long awaited ClamAV 0.90.
+This version introduces lots of new interesting features and marks
+a big step forward in the development of our antivirus engine.
+Please see README and ChangeLog for details.
 
 --
 The ClamAV team (http://www.clamav.net/team)
