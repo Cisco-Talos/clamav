@@ -1,3 +1,7 @@
+Mon Feb 12 21:33:20 CET 2007 (tk)
+---------------------------------
+  * libclamav/phishcheck.c: fix hexurl regex (bb#288)
+
 Mon Feb 12 21:09:38 CET 2007 (tk)
 ---------------------------------
   * libclamav/readdb.c: fix sorting of .mdb sigs

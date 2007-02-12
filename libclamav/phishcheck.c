@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.22  2007/02/12 20:34:31  tkojm
+ *  fix hexurl regex (bb#288)
+ *
  *  Revision 1.21  2007/02/11 00:41:13  tkojm
  *  remove some gcc warnings
  *
@@ -284,7 +287,7 @@ For the Whitelist(.wdb)/Domainlist(.pdb) format see regex_list.c (search for Fla
 /* Constant strings and tables */ 
 static char empty_string[]="";
 
-#define ANY_CLOAK "(0[xX])?([a-fA-F0-9]+\\.?)+"
+#define ANY_CLOAK "(((0[xX])?[a-fA-F0-9])+\\.?)+"
 #define CLOAK_REGEX_HEXURL "("ANY_CLOAK")?0[xX][a-fA-F0-9]+\\.?"ANY_CLOAK
 #define OCTAL_CLOAK "("ANY_CLOAK")?000[0-9]+\\.?"ANY_CLOAK
 #define DWORD_CLOAK "[0-9]{8,}"
