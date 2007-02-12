@@ -953,12 +953,15 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 			}
 			else {
 				char buff[10];
+				const int len = strlen(buff);
+
 				snprintf(buff,9,"&#%d;",u16);
 				buff[9] = '\0';
-				if(norm + strlen(buff) >= norm_end)
+				if((norm_end - norm) <= len)
+					/* prevent buffer overflow */
 					break;
-				strncpy((char*)norm, buff, strlen(buff));
-				norm += strlen(buff);
+				memcpy((char*)norm, buff, len);
+				norm += len;
 			}	
 		}
 		conv->out_area.offset = i; /* so that we can resume next time from here */
