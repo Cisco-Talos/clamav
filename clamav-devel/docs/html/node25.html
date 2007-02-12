@@ -1,0 +1,98 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 99.2beta8 (1.46)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Clamuko</TITLE>
+<META NAME="description" CONTENT="Clamuko">
+<META NAME="keywords" CONTENT="clamdoc">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v99.2beta8">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="clamdoc.css">
+
+<LINK REL="next" HREF="node26.html">
+<LINK REL="previous" HREF="node24.html">
+<LINK REL="up" HREF="node22.html">
+<LINK REL="next" HREF="node26.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html509"
+  HREF="node26.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html505"
+  HREF="node22.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html499"
+  HREF="node24.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html507"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html510"
+  HREF="node26.html">Output format</A>
+<B> Up:</B> <A NAME="tex2html506"
+  HREF="node22.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html500"
+  HREF="node24.html">Clamdscan</A>
+ &nbsp <B>  <A NAME="tex2html508"
+  HREF="node1.html">Contents</A></B> 
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00063000000000000000"></A><A NAME="clamuko"></A>
+<BR>
+Clamuko
+</H2>
+    Clamuko is a special thread in <code>clamd</code> that performs on-access
+    scanning under Linux and FreeBSD and shares internal virus database
+    with the daemon. <B>You must follow some important rules when
+    using it:</B>
+    
+<UL>
+<LI>Always stop the daemon cleanly - using the SHUTDOWN command or
+	      the
+<BR>
+SIGTERM signal. In other case you can lose access
+	      to protected files until the system is restarted.
+</LI>
+<LI>Never protect the directory your mail-scanner software
+	      uses for attachment unpacking. Access to all infected
+	      files will be automatically blocked and the scanner (including
+	      <code>clamd</code>!) will not be able to detect any viruses. In the
+	      result <B>all infected mails may be delivered.</B>
+    
+</LI>
+</UL>
+    For example, to protect the whole system add the following lines to
+    <code>clamd.conf</code>:
+    <PRE>
+	ClamukoScanOnAccess
+	ClamukoIncludePath /
+	ClamukoExcludePath /proc
+	ClamukoExcludePath /temporary/dir/of/your/mail/scanning/software
+</PRE>
+    You can also use clamuko to protect files on Samba/Netatalk but a far
+    more better and safe idea is to use the <B>samba-vscan</B> module.
+    NFS is not supported because Dazuko doesn't intercept NFS access calls.
+
+<P>
+<BR><HR>
+<ADDRESS>
+Tomasz Kojm
+2007-02-12
+</ADDRESS>
+</BODY>
+</HTML>
