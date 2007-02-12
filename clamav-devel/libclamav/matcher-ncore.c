@@ -298,7 +298,7 @@ int cli_ncore_scanbuff(const char *buffer, unsigned int length, const char **vir
     return ret;
 }
 
-int cli_ncore_scandesc(int desc, cli_ctx *ctx, unsigned short ftype, int *cont, unsigned int *targettab, MD5_CTX *md5ctx)
+int cli_ncore_scandesc(int desc, cli_ctx *ctx, unsigned short ftype, int *cont, unsigned int *targettab, cli_md5_ctx *md5ctx)
 {
 	void *streamhandle;
 	void *resulthandle;

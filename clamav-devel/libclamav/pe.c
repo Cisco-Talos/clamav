@@ -198,7 +198,7 @@ static unsigned int cli_md5sect(int fd, uint32_t offset, uint32_t size, unsigned
 	size_t bread, sum = 0;
 	off_t pos;
 	char buff[FILEBUFF];
-	MD5_CTX md5ctx;
+	cli_md5_ctx md5ctx;
 
 
     if((pos = lseek(fd, 0, SEEK_CUR)) == -1) {
@@ -212,19 +212,19 @@ static unsigned int cli_md5sect(int fd, uint32_t offset, uint32_t size, unsigned
 	return 0;
     }
 
-    MD5_Init(&md5ctx);
+    cli_md5_init(&md5ctx);
 
     while((bread = cli_readn(fd, buff, FILEBUFF)) > 0) {
 	if(sum + bread >= size) {
-	    MD5_Update(&md5ctx, buff, size - sum);
+	    cli_md5_update(&md5ctx, buff, size - sum);
 	    break;
 	} else {
-	    MD5_Update(&md5ctx, buff, bread);
+	    cli_md5_update(&md5ctx, buff, bread);
 	    sum += bread;
 	}
     }
 
-    MD5_Final(digest, &md5ctx);
+    cli_md5_final(digest, &md5ctx);
     lseek(fd, pos, SEEK_SET);
     return 1;
 }
