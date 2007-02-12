@@ -84,7 +84,7 @@ static int hexdump(void)
     return 0;
 }
 
-static int md5sig(struct optstruct *opt)
+static int md5sig(struct optstruct *opt, unsigned int mdb)
 {
 	char *md5, *filename;
 	int i;
@@ -101,7 +101,10 @@ static int md5sig(struct optstruct *opt)
 	    } else {
 		if((sb.st_mode & S_IFMT) == S_IFREG) {
 		    if((md5 = cli_md5file(filename))) {
-			mprintf("%s:%d:%s\n", md5, sb.st_size, filename);
+			if(mdb)
+			    mprintf("%d:%s:%s\n", sb.st_size, md5, filename);
+			else
+			    mprintf("%s:%d:%s\n", md5, sb.st_size, filename);
 			free(md5);
 		    } else {
 			mprintf("!md5sig: Can't generate MD5 checksum for %s\n", filename);
@@ -1694,6 +1697,7 @@ void help(void)
     mprintf("                                           string and print it on stdout\n");
     mprintf("    --md5 [FILES]                          generate MD5 checksum from stdin\n");
     mprintf("                                           or MD5 sigs for FILES\n");
+    mprintf("    --mdb [FILES]                          generate .mdb sigs\n");
     mprintf("    --html-normalise=FILE                  create normalised parts of HTML file\n");
     mprintf("    --utf16-decode=FILE                    decode UTF16 encoded files\n");
     mprintf("    --info=FILE            -i FILE         print database information\n");
@@ -1728,6 +1732,7 @@ int main(int argc, char **argv)
 	    {"tempdir", 1, 0, 0},
 	    {"hex-dump", 0, 0, 0},
 	    {"md5", 0, 0, 0},
+	    {"mdb", 0, 0, 0},
 	    {"html-normalise", 1, 0, 0},
 	    {"utf16-decode", 1, 0, 0},
 	    {"build", 1, 0, 'b'},
@@ -1774,7 +1779,9 @@ int main(int argc, char **argv)
     if(opt_check(opt, "hex-dump"))
 	ret = hexdump();
     else if(opt_check(opt, "md5"))
-	ret = md5sig(opt);
+	ret = md5sig(opt, 0);
+    else if(opt_check(opt, "mdb"))
+	ret = md5sig(opt, 1);
     else if(opt_check(opt, "html-normalise"))
 	ret = htmlnorm(opt);
     else if(opt_check(opt, "utf16-decode"))
