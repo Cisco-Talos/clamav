@@ -128,7 +128,7 @@ Detailed list of changes (to be finished):
 
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 
 0.88.5
@@ -138,7 +138,7 @@ This version fixes a crash in the CHM unpacker and a heap overflow in the
 function rebuilding PE files after unpacking.
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 
 0.88.4
@@ -146,10 +146,10 @@ The ClamAV team (http://www.clamav.net/team.html)
 
 This release fixes a possible heap overflow in the UPX code.
 
-See security information at: http://www.clamav.net/security/0.88.4.html
+See security information at: http://www.clamav.net/2006/08/07/security-fixes-in-0884
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 0.88.3
 ------
@@ -158,7 +158,7 @@ This version fixes handling of large binhex files and multiple alternatives in
 virus signatures.
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 
 0.88.2
@@ -173,10 +173,10 @@ such incidents in the future, every new ClamAV package will be released
 together with detailed information about security bugs it fixes. Details
 for this version can be found here:
 
-    http://www.clamav.net/security/0.88.2.html
+    http://www.clamav.net/2006/08/07/security-fixes-in-0884
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 
 0.88.1
@@ -186,7 +186,7 @@ This version fixes a number of minor bugs and provides code updates
 to improve virus detection.
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 
 0.88
@@ -197,7 +197,7 @@ include better zip and mail processing, and support for a self-protection mode.
 The security of the UPX, FSG and Petite modules has been improved, too.
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 0.87.1
 ------
@@ -206,7 +206,7 @@ This release includes major bugfixes for problems with handling TNEF
 attachments, cabinet files and FSG compressed executables.
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 0.87
 ----
@@ -217,7 +217,7 @@ and other small bugfixes have been made. The new option "--on-outdated-execute"
 allows freshclam to run a command when system reports a new engine version.
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 
 0.86.2
@@ -228,7 +228,7 @@ in libclamav, improved scanning of Cabinet and FSG compressed files, better
 database handling in clamav-milter, and others.
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 0.86.1
 ------
@@ -236,7 +236,7 @@ The ClamAV team (http://www.clamav.net/team.html)
 A possible crash in the libmspack's Quantum decompressor has been fixed.
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 0.86
 ----
@@ -246,7 +246,7 @@ leaks in archive unpackers and mishandling of fast track uuencoded files have
 been fixed in libclamav. Database reloading in clamav-milter has been improved.
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 0.85.1
 ------
@@ -256,7 +256,7 @@ one or more of which was empty, could crash libclamav has been fixed. Other
 minor bugfixes have been made.
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 0.85
 ----
@@ -265,7 +265,7 @@ Bugfixes in this release include correct signature offset calculation in large
 files, proper handling of encrypted zip archives, and others.
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 0.84
 ----
@@ -330,7 +330,7 @@ to provide hardware acceleration support for the Clam AntiVirus suite.
 Support for Sensory Networks' NodalCore acceleration in ClamAV will be
 available in version 0.90 of the software suite in Q3 2005. For more
 information please visit:
-http://www.clamav.net/partners/partner-sn.html
+http://www.clamav.net/partners/sensorynetworks
 http://www.sensorynetworks.com/
 
 
@@ -352,7 +352,7 @@ volunteered to design the whole line of products, including:
 By purchasing our merchandise, you contribute to the development of ClamAV.
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 
 0.83
@@ -363,7 +363,7 @@ exploit detector now only checks specific RIFF files. This version also fixes
 a stability problem of clamav-milter/clamd and improves e-mail scanning.
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 0.82
 ----
@@ -376,7 +376,7 @@ warning on non-standard zip archives created by ICEOWS, better proxy support
 in freshclam, and speed improvements.
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 
 0.81
@@ -473,7 +473,7 @@ Important note to clamdwatch users: please upgrade to the latest version
     + WRAVLib - a library for a-v integration with Mono/.NET applications
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 
 0.80
@@ -482,7 +482,7 @@ The ClamAV team (http://www.clamav.net/team.html)
 Stable version. Please read the release notes for the candidate versions below.
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 
 0.80rc4
@@ -493,7 +493,7 @@ faster base64 decoding, support for GNU tar files, updated on-access scanner,
 and others.
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 0.80rc3
 -------
@@ -640,7 +640,7 @@ project. Visit http://www.sourcewear.com and click on ClamAV logo!
 
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 0.75
 ----
@@ -669,7 +669,7 @@ CAB, CHM, UPX, HTML (normalisation), PowerPoint macros and can detect
 annoying e-mails with empty attachments generated by new Bagle variants.
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 0.74
 ----
@@ -696,7 +696,7 @@ and join the clamav-jp-users mailing list.
 
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 
 0.73
@@ -711,7 +711,7 @@ encourages users to help in testing new features:
 Thank you for using ClamAV !
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 0.72
 ----
@@ -722,7 +722,7 @@ functional since 0.70) was improved and a number of other improvements were
 made.
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 0.71
 ----
@@ -770,7 +770,7 @@ the noteworthy changes include:
 
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 
 
 
@@ -842,7 +842,7 @@ please help us and test CVS snapshots from time to time.
 
 We are happy to announce new programs with support for ClamAV (all of them
 have been reviewed by our team - more info in the documentation and
-on our website: http://www.clamav.net/3rdparty.html):
+on our website: http://www.clamav.net/download/third-party-tools):
 
     + ClamWin - a GUI for Windows (!)
     + KlamAV - a collection of GUI tools for using ClamAV on KDE
@@ -865,7 +865,7 @@ on our website: http://www.clamav.net/3rdparty.html):
     + Local Area Security - a Live CD Linux distribution
 
 --
-The ClamAV team (http://www.clamav.net/team.html)
+The ClamAV team (http://www.clamav.net/team)
 April 17, 2004
 
 
@@ -989,7 +989,7 @@ newsletter (Volume #9, January 2004: http://www.affero.net/nl/dec03.html).
 Affero is a great rate-donate system and its mission is to bring a culture
 of patronage to the Internet. Currently we only accept donations via Affero.
 You can also help us and promote our project by adding the ClamAV logo to
-your home page. Look at http://www.clamav.net/donate.html for more information.
+your home page. Look at http://www.clamav.net/donate for more information.
 
 
 We would like to thank our donors:

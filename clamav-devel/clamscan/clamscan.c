@@ -220,7 +220,7 @@ void help(void)
 
     mprintf("\n");
     mprintf("                       Clam AntiVirus Scanner "VERSION"\n");
-    mprintf("    (C) 2002 - 2005 ClamAV Team - http://www.clamav.net/team.html\n\n");
+    mprintf("      (C) 2002 - 2007 ClamAV Team - http://www.clamav.net/team\n\n");
 
     mprintf("    --help                -h             Print this help screen\n");
     mprintf("    --version             -V             Print version number\n");

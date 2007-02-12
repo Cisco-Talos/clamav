@@ -121,7 +121,7 @@ static void help(void)
 
     mprintf("\n");
     mprintf("                   Clam AntiVirus: freshclam  "VERSION"\n");
-    mprintf("    (C) 2002 - 2005 ClamAV Team - http://www.clamav.net/team.html\n\n");
+    mprintf("    (C) 2002 - 2007 ClamAV Team - http://www.clamav.net/team\n\n");
 
     mprintf("    --help               -h              show help\n");
     mprintf("    --version            -V              print version number and exit\n");

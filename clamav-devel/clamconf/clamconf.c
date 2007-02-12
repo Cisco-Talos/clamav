@@ -171,7 +171,7 @@ static void help(void)
 {
     printf("\n");
     printf("             Clam AntiVirus: Configuration Tool "VERSION"\n");
-    printf("      (C) 2006 ClamAV Team - http://www.clamav.net/team.html\n\n");
+    printf("         (C) 2006 - 2007 ClamAV Team - http://www.clamav.net/team\n\n");
 
     printf("    --help                 -h              show help\n");
     printf("    --config-dir DIR       -c DIR          search for config files in DIR\n");

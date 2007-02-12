@@ -74,7 +74,7 @@ static void help(void)
 {
     printf("\n");
     printf("                      Clam AntiVirus Daemon "VERSION"\n");
-    printf("    (C) 2002 - 2005 ClamAV Team - http://www.clamav.net/team.html\n\n");
+    printf("    (C) 2002 - 2007 ClamAV Team - http://www.clamav.net/team\n\n");
 
     printf("    --help                   -h             Show this help.\n");
     printf("    --version                -V             Show version number.\n");
