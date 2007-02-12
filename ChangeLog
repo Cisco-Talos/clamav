@@ -1,3 +1,7 @@
+Mon Feb 12 20:27:01 CET 2007 (tk)
+---------------------------------
+  * sigtool/sigtool.c: add --mdb option, requested by Christoph
+
 Mon Feb 12 20:10:23 CET 2007 (tk)
 ---------------------------------
   * shared/options.c: fix bb#254
