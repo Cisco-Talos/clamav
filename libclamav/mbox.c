@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.375 2007/02/12 22:22:27 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.376 2007/02/12 23:34:24 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -4752,6 +4752,7 @@ nonblock_connect(int sock, const struct sockaddr *addr, socklen_t addrlen, int s
 static int
 connect_error(int sock)
 {
+#ifdef	SO_ERROR
 	int optval;
 	socklen_t optlen;
 
@@ -4763,6 +4764,9 @@ connect_error(int sock)
 			sock, optval, strerror(optval));
 
 	return optval ? -1 : 0;
+#else
+	return 0;
+#endif
 }
 
 #else
