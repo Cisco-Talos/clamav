@@ -1,5 +1,4 @@
-.\" Manual page created by Tomasz Kojm, 20020629
-.TH "sigtool" "1" "December 19, 2004" "Tomasz Kojm" "Clam AntiVirus"
+.TH "sigtool" "1" "February 12, 2007" "ClamAV 0.90" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 sigtool \- signature and database management tool
@@ -8,8 +7,7 @@ sigtool \- signature and database management tool
 sigtool [options]
 .SH "DESCRIPTION"
 .LP 
-sigtool can be used to generate MD5 checksums, convert data 
-into hexadecimal format, and build/unpack CVD databases. It's  also to verify digital signatures of databases and list virus signature names.
+sigtool can be used to generate MD5 checksums, convert data into hexadecimal format, list virus signatures and build/unpack/test/verify CVD databases and update scripts.
 .SH "OPTIONS"
 .LP 
 
@@ -24,7 +22,7 @@ Print version number and exit.
 Be quiet \- output only error messages.
 .TP 
 \fB\-\-stdout\fR
-Write all messages (except for libclamav output) to the standard output (stdout).
+Write all messages to stdout.
 .TP 
 \fB\-\-hex\-dump\fR
 Read data from stdin and write hex string to stdout.
@@ -35,12 +33,14 @@ Generate MD5 checksum from stdin or MD5 sigs for FILES.
 \fB\-\-html\-normalise=FILE\fR
 Create normalised HTML files comment.html, nocomment.html, and script.html in current working directory.
 .TP 
+\fB\-\-utf16\-decode=FILE\fR
+Decode UTF16 encoded data.
+.TP 
 \fB\-\-vba=FILE\fR
 Extract VBA/Word6 macros from given MS Office document.
 .TP 
 \fB\-\-vba\-hex=FILE\fR
-Extract Word6 macros from given MS Office document, and
-display the corresponding hex values.
+Extract Word6 macros from given MS Office document and display the corresponding hex values.
 .TP 
 \fB\-i, \-\-info\fR
 Print a CVD information and verify MD5 and a digital signature.
@@ -49,13 +49,22 @@ Print a CVD information and verify MD5 and a digital signature.
 Build a CVD file. \-s, \-\-server is required.
 .TP 
 \fB\-\-server\fR
-ClamAV Signing Service address (for virus database developers only).
+ClamAV Signing Service address (for virus database maintainers only).
 .TP 
-\fB\-\-unpack, \-u\fR
-Unpack a selected CVD file to a current directory.
+\fB\-\-unpack FILE, \-u FILE\fR
+Unpack FILE (CVD) to a current directory.
 .TP 
 \fB\-\-unpack\-current\fR
-Unpack a local CVD file to a current directory.
+Unpack a local CVD file (main or daily) to current directory.
+.TP 
+\fB\-\-diff=OLD NEW, \-d OLD NEW\fR
+Create a diff file for OLD and NEW CVDs/INCDIRs.
+.TP 
+\fB\-\-run\-cdiff=FILE, \-r FILE\fR
+Execute update script FILE in current directory.
+.TP 
+\fB\-\-verify\-cdiff=FILE, \-r FILE\fR
+Verify DIFF against CVD/INCDIR.
 .TP 
 \fB\-l, \-\-list\-sigs\fR
 List signature names.
