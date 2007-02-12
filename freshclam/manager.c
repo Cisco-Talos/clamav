@@ -923,7 +923,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	    /* display warning even for already installed database */
 	    logg("^Current functionality level = %d, recommended = %d\n", flevel, current->fl);
 	    logg("Please check if ClamAV tools are linked against proper version of libclamav\n");
-	    logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
+	    logg("DON'T PANIC! Read http://www.clamav.net/support/faq\n");
 	}
 
 	*signo += current->sigs;
@@ -1033,7 +1033,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
     if(flevel < current->fl) {
 	logg("^Your ClamAV installation is OUTDATED!\n");
 	logg("^Current functionality level = %d, recommended = %d\n", flevel, current->fl);
-	logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
+	logg("DON'T PANIC! Read http://www.clamav.net/support/faq\n");
     }
 
     *signo += current->sigs;
@@ -1059,7 +1059,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 
 #ifndef HAVE_GMP
     logg("SECURITY WARNING: NO SUPPORT FOR DIGITAL SIGNATURES\n");
-    logg("See the FAQ at http://www.clamav.net/faq.html for an explanation.\n");
+    logg("See the FAQ at http://www.clamav.net/support/faq for an explanation.\n");
 #endif
 
 #ifdef HAVE_RESOLV_H
@@ -1107,7 +1107,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 			if(strcmp(cl_retver(), newver)) {
 			    logg("^Your ClamAV installation is OUTDATED!\n");
 			    logg("^Local version: %s Recommended version: %s\n", cl_retver(), pt);
-			    logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
+			    logg("DON'T PANIC! Read http://www.clamav.net/support/faq\n");
 			    outdated = 1;
 			}
 		    }

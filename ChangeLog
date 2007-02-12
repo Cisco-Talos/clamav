@@ -1,3 +1,7 @@
+Mon Feb 12 21:59:49 CET 2007 (tk)
+---------------------------------
+  * change some URLs to comply with the new website, thanks to Luca
+
 Mon Feb 12 20:46:27 GMT 2007 (njh)
 ----------------------------------
   * libclamav:		Fix various gcc warnings
