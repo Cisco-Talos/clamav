@@ -24,9 +24,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.310 2007/01/17 20:50:10 njh Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.311 2007/02/12 15:01:50 njh Exp $";
 
-#define	CM_VERSION	"devel-170107"
+#define	CM_VERSION	"devel-120207"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -48,9 +48,11 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.310 2007/01/17 20:50:10 nj
 
 #include <stdio.h>
 #include <sysexits.h>
+#ifdef	HAVE_SYS_STAT_H
 #include <sys/stat.h>
+#endif
 #include <syslog.h>
-#if	HAVE_STDINT_H
+#if	HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
 #if	HAVE_MEMORY_H
@@ -90,6 +92,7 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.310 2007/01/17 20:50:10 nj
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <ctype.h>
 
 #if HAVE_MMAP
 #if HAVE_SYS_MMAN_H
@@ -177,8 +180,9 @@ typedef	unsigned int	in_addr_t;
  *	sockets is better
  * TODO: Test with IPv6
  * TODO: Load balancing, allow local machine to talk via UNIX domain socket.
- * TODO: allow each line in the whitelist file to specify a quarantine email
+ * TODO: allow each To: line in the whitelist file to specify a quarantine email
  *	address
+ * TODO: optionally use zlib to compress data sent to remote hosts
  */
 
 struct header_node_t {
@@ -211,7 +215,7 @@ static struct cidr_net {	/* don't make this const because of -I flag */
 	{ PACKADDR(192, 168,   0,   0), MAKEMASK(16) },	/* 192.168.0.0/16 */
 	{ PACKADDR( 10,   0,   0,   0), MAKEMASK(24) },	/*    10.0.0.0/24 */
 	{ PACKADDR(172,  16,   0,   0), MAKEMASK(20) },	/*  172.16.0.0/20 */
-	{ PACKADDR(169,  254,  0,   0), MAKEMASK(16) },	/* 169.254.0.0/16 */
+	{ PACKADDR(169, 254,   0,   0), MAKEMASK(16) },	/* 169.254.0.0/16 */
 	{ 0, 0 },	/* space to put one more via -I addr */
 	{ 0, 0 }
 };
@@ -526,7 +530,7 @@ static	void	print_trace(void);
 #endif
 
 static	int	verifyIncomingSocketName(const char *sockName);
-static	int	isWhitelisted(const char *emailaddress);
+static	int	isWhitelisted(const char *emailaddress, int to);
 static	int	isBlacklisted(const char *ip_address);
 static	void	mx(void);
 #ifdef	HAVE_RESOLV_H
@@ -2613,6 +2617,11 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 	logg("*clamfi_envfrom: %s\n", argv[0]);
 
+	if(isWhitelisted(argv[0], 0)) {
+		logg(_("*clamfi_envfrom: ignoring whitelisted message"));
+		return SMFIS_ACCEPT;
+	}
+
 	if(strcmp(argv[0], "<>") == 0) {
 		mailaddr = smfi_getsymval(ctx, "{mail_addr}");
 		if(mailaddr == NULL)
@@ -2838,7 +2847,7 @@ clamfi_eoh(SMFICTX *ctx)
 #if	0
 	/* Mailing lists often say our own posts are from us */
 	if(detect_forged_local_address && privdata->from &&
-	   (!privdata->sender) && !isWhitelisted(privdata->from)) {
+	   (!privdata->sender) && !isWhitelisted(privdata->from, 1)) {
 		char me[MAXHOSTNAMELEN + 1];
 		const char *ptr;
 
@@ -2887,7 +2896,7 @@ clamfi_eoh(SMFICTX *ctx)
 	 * ENDFOR
 	 */
 	for(to = privdata->to; *to; to++)
-		if(!isWhitelisted(*to))
+		if(!isWhitelisted(*to, 1))
 			/*
 			 * This recipient is not on the whitelist,
 			 * no need to check any further
@@ -2898,11 +2907,7 @@ clamfi_eoh(SMFICTX *ctx)
 	 * Didn't find a recipient who is not on the white list, so all
 	 * must be on the white list, so just accept the e-mail
 	 */
-	if(use_syslog)
-		syslog(LOG_NOTICE, _("clamfi_eoh: ignoring whitelisted message"));
-#ifdef	CL_DEBUG
-	cli_dbgmsg(_("clamfi_eoh: ignoring whitelisted message\n"));
-#endif
+	logg(_("*clamfi_enveoh: ignoring whitelisted message"));
 	clamfi_cleanup(ctx);
 
 	return SMFIS_ACCEPT;
@@ -5546,9 +5551,10 @@ verifyIncomingSocketName(const char *sockName)
  *	to that domain are to be whitelisted
  */
 static int
-isWhitelisted(const char *emailaddress)
+isWhitelisted(const char *emailaddress, int to)
 {
-	static table_t *whitelist;	/* never freed */
+	static table_t *to_whitelist, *from_whitelist;	/* never freed */
+	table_t *table;
 
 	cli_dbgmsg("isWhitelisted %s\n", emailaddress);
 
@@ -5558,7 +5564,7 @@ isWhitelisted(const char *emailaddress)
 	if(quarantine && (strcasecmp(quarantine, emailaddress) == 0))
 		return 1;
 
-	if((whitelist == NULL) && whitelistFile) {
+	if((to_whitelist == NULL) && whitelistFile) {
 		FILE *fin;
 		char buf[BUFSIZ + 1];
 
@@ -5571,16 +5577,26 @@ isWhitelisted(const char *emailaddress)
 					whitelistFile);
 			return 0;
 		}
-		whitelist = tableCreate();
+		to_whitelist = tableCreate();
+		from_whitelist = tableCreate();
 
-		if(whitelist == NULL) {
+		if((to_whitelist == NULL) || (from_whitelist == NULL)) {
 			if(use_syslog)
 				syslog(LOG_ERR, _("Can't create whitelist table"));
+			if(to_whitelist) {
+				tableDestroy(to_whitelist);
+				to_whitelist = NULL;
+			} else {
+				tableDestroy(from_whitelist);
+				from_whitelist = NULL;
+			}
 			fclose(fin);
 			return 0;
 		}
 
 		while(fgets(buf, sizeof(buf), fin) != NULL) {
+			const char *ptr;
+
 			/* comment line? */
 			switch(buf[0]) {
 				case '#':
@@ -5588,12 +5604,33 @@ isWhitelisted(const char *emailaddress)
 				case ':':
 					continue;
 			}
-			if(cli_chomp(buf) > 0)
-				(void)tableInsert(whitelist, buf, 1);
+			if(cli_chomp(buf) > 0) {
+				if((ptr = strchr(buf, ':')) != NULL) {
+					do
+						ptr++;
+					while(*ptr && isspace(*ptr));
+
+					if(*ptr == '\0') {
+						logg("*Ignoring bad line '%s'\n",
+							buf);
+						continue;
+					}
+				} else
+					ptr = buf;
+
+				if(strncasecmp(buf, "From:", 5) == 0)
+					table = from_whitelist;
+				else
+					table = to_whitelist;
+
+				(void)tableInsert(table, ptr, 1);
+			}
 		}
 		fclose(fin);
 	}
-	if(whitelist && (tableFind(whitelist, emailaddress) == 1))
+	table = (to) ? to_whitelist : from_whitelist;
+
+	if(table && (tableFind(table, emailaddress) == 1))
 		/*
 		 * This recipient is on the whitelist
 		 */
