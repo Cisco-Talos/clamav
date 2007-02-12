@@ -1,0 +1,87 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 99.2beta8 (1.46)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>CVD format</TITLE>
+<META NAME="description" CONTENT="CVD format">
+<META NAME="keywords" CONTENT="clamdoc">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v99.2beta8">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="clamdoc.css">
+
+<LINK REL="next" HREF="node49.html">
+<LINK REL="previous" HREF="node43.html">
+<LINK REL="up" HREF="node29.html">
+<LINK REL="next" HREF="node49.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html813"
+  HREF="node49.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html809"
+  HREF="node29.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html803"
+  HREF="node47.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html811"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html814"
+  HREF="node49.html">Contributors</A>
+<B> Up:</B> <A NAME="tex2html810"
+  HREF="node29.html">LibClamAV</A>
+<B> Previous:</B> <A NAME="tex2html804"
+  HREF="node47.html">Example</A>
+ &nbsp <B>  <A NAME="tex2html812"
+  HREF="node1.html">Contents</A></B> 
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00076000000000000000">
+CVD format</A>
+</H2>
+    CVD (ClamAV Virus Database) is a digitally signed tarball containing
+    one or more databases. The header is a 512-bytes long string with colon
+    separated fields:
+    <PRE>
+ClamAV-VDB:build time:version:number of signatures:functionality
+level required:MD5 checksum:digital signature:builder name:build time (sec)
+</PRE>
+    <code>sigtool --info</code> displays detailed information on CVD files:
+    <PRE>
+zolw@localhost:/usr/local/share/clamav$ sigtool -i daily.cvd 
+Build time: 11 Feb 2007 19-28 +0000
+Version: 2553
+# of signatures: 6063
+Functionality level: 9
+Builder: ccordes
+D5: 7f337b409249e11dea3effb04dd352f2
+Digital signature: 6Ybd2eeDHBAs8raaEwmayqzoa5ysGDNnQ5Cc89mS2VCm1jRXZP
+ke/itmkTyYQTc/rgJc2uQPr+NvzvUxRpsniwoyZ/gIkPniCLnqVCYOOytwtmirivbrV8j
+0kzxb9nHd+5UQqj/Z3rLbS7T5HCbRX3uE0JX1tAo642Gq9ACH9Fc
+Verification OK.
+</PRE>
+
+<P>
+<BR><HR>
+<ADDRESS>
+Tomasz Kojm
+2007-02-12
+</ADDRESS>
+</BODY>
+</HTML>
