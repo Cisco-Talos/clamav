@@ -1,3 +1,7 @@
+Mon Feb 12 21:09:38 CET 2007 (tk)
+---------------------------------
+  * libclamav/readdb.c: fix sorting of .mdb sigs
+
 Mon Feb 12 20:27:01 CET 2007 (tk)
 ---------------------------------
   * sigtool/sigtool.c: add --mdb option, requested by Christoph

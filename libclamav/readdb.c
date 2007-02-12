@@ -914,7 +914,7 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 		    mpt = (*engine)->md5_sect;
 		    while(mpt) {
 			last = mpt;
-			if((mpt->size < new->size) && (!mpt->next || new->size < mpt->next->size))
+			if((mpt->size > new->size) && (!mpt->next || new->size > mpt->next->size))
 			    break;
 			mpt = mpt->next;
 		    }
