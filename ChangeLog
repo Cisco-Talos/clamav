@@ -1,3 +1,7 @@
+Mon Feb 12 14:58:57 CET 2007 (tk)
+---------------------------------
+  * docs/signatures.pdf: fix some typos (bb#285), thanks to Aeriana
+
 Mon Feb 12 13:48:46 CET 2007 (tk)
 ---------------------------------
   * docs: new clamdoc tex/pdf/html
