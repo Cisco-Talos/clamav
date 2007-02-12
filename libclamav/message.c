@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.194 2007/02/10 14:21:46 njh Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.195 2007/02/12 20:46:09 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -510,20 +510,20 @@ messageAddArguments(message *m, const char *s)
 			continue;
 
 		if(*cptr == '"') {
-			char *ptr;
+			char *ptr, *kcopy;
 
 			/*
 			 * The field is in quotes, so look for the
 			 * closing quotes
 			 */
-			key = cli_strdup(key);
+			kcopy = cli_strdup(key);
 
-			if(key == NULL)
+			if(kcopy == NULL)
 				return;
 
-			ptr = strchr(key, '=');
+			ptr = strchr(kcopy, '=');
 			if(ptr == NULL)
-				ptr = strchr(key, ':');
+				ptr = strchr(kcopy, ':');
 			*ptr = '\0';
 
 			string = strchr(++cptr, '"');
@@ -534,8 +534,8 @@ messageAddArguments(message *m, const char *s)
 			} else
 				string++;
 
-			if(!usefulArg(key)) {
-				free((char *)key);
+			if(!usefulArg(kcopy)) {
+				free(kcopy);
 				continue;
 			}
 
@@ -557,18 +557,18 @@ messageAddArguments(message *m, const char *s)
 				cli_dbgmsg("Can't parse header \"%s\" - if you believe this file contains a virus, submit it to www.clamav.net\n", s);
 				if(data)
 					free(data);
-				free((char *)key);
+				free(kcopy);
 				return;
 			}
 
 			*ptr = '\0';
 
-			field = cli_realloc((char *)key, strlen(key) + strlen(data) + 2);
+			field = cli_realloc(kcopy, strlen(kcopy) + strlen(data) + 2);
 			if(field) {
 				strcat(field, "=");
 				strcat(field, data);
 			} else
-				free((char *)key);
+				free(kcopy);
 			free(data);
 		} else {
 			size_t len;
@@ -614,7 +614,7 @@ messageGetArgument(const message *m, int arg)
  * Find a MIME variable from the header and return a COPY to the value of that
  * variable. The caller must free the copy
  */
-const char *
+char *
 messageFindArgument(const message *m, const char *variable)
 {
 	int i;
@@ -632,8 +632,8 @@ messageFindArgument(const message *m, const char *variable)
 		if((ptr == NULL) || (*ptr == '\0'))
 			continue;
 #ifdef	CL_DEBUG
-		cli_dbgmsg("messageFindArgument: compare %d bytes of %s with %s\n",
-			len, variable, ptr);
+		cli_dbgmsg("messageFindArgument: compare %lu bytes of %s with %s\n",
+			(unsigned long)len, variable, ptr);
 #endif
 		if(strncasecmp(ptr, variable, len) == 0) {
 			ptr = &ptr[len];
@@ -1222,7 +1222,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 						blobAddData(u, &c, 1);
 					} else {
 #ifdef	CL_DEBUG
-						cli_dbgmsg("uncompress HQX7 at 0x%06x: %d repetitive bytes\n", l, count);
+						cli_dbgmsg("uncompress HQX7 at 0x%06lu: %d repetitive bytes\n", l, count);
 #endif
 						blobGrow(u, count);
 						while(--count > 0)
@@ -1385,13 +1385,15 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		 * Find the filename to decode
 		 */
 		if(((enctype == YENCODE) && yEncBegin(m)) || ((i == 0) && yEncBegin(m))) {
+			const char *f;
+
 			/*
 			 * TODO: handle multipart yEnc encoded files
 			 */
 			t_line = yEncBegin(m);
-			filename = (char *)lineGetData(t_line->t_line);
+			f = lineGetData(t_line->t_line);
 
-			if((filename = strstr(filename, " name=")) != NULL) {
+			if((filename = strstr(f, " name=")) != NULL) {
 				filename = cli_strdup(&filename[6]);
 				if(filename) {
 					cli_chomp(filename);
@@ -1528,7 +1530,8 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			}
 		} while((t_line = t_line->t_next) != NULL);
 
-		cli_dbgmsg("Exported %u bytes using enctype %d\n", size, enctype);
+		cli_dbgmsg("Exported %lu bytes using enctype %d\n",
+			(unsigned long)size, enctype);
 
 		/* Verify we have nothing left to flush out */
 		if(m->base64chars) {
@@ -2387,7 +2390,7 @@ messageDedup(message *m)
 		}
 	}
 
-	cli_dbgmsg("messageDedup reclaimed %u bytes\n", saved);
+	cli_dbgmsg("messageDedup reclaimed %lu bytes\n", (unsigned long)saved);
 	m->dedupedThisFar = t1;
 }
 

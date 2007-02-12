@@ -17,6 +17,9 @@
  *  MA 02110-1301, USA.
  *
  * $Log: line.c,v $
+ * Revision 1.11  2007/02/12 20:46:08  njh
+ * Various tidy
+ *
  * Revision 1.10  2006/04/09 19:59:27  kojm
  * update GPL headers with new address for FSF
  *
@@ -49,7 +52,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: line.c,v 1.10 2006/04/09 19:59:27 kojm Exp $";
+static	char	const	rcsid[] = "$Id: line.c,v 1.11 2007/02/12 20:46:08 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -110,7 +113,9 @@ lineGetData(const line_t *line)
 {
 	return line ? line->l_str : NULL;
 }
+
 #else
+
 line_t *
 lineCreate(const char *data)
 {

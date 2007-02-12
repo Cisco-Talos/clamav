@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: pdf.c,v 1.60 2007/02/10 14:21:46 njh Exp $";
+static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -50,7 +50,7 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.60 2007/02/10 14:21:46 njh Exp $";
 #include "mbox.h"
 #include "pdf.h"
 
-static	int	flatedecode(const unsigned char *buf, off_t len, int fout, const cli_ctx *ctx);
+static	int	flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx);
 static	int	ascii85decode(const char *buf, off_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
@@ -89,7 +89,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	if(buf == MAP_FAILED)
 		return CL_EMEM;
 
-	cli_dbgmsg("cli_pdf: scanning %lu bytes\n", size);
+	cli_dbgmsg("cli_pdf: scanning %lu bytes\n", (unsigned long)size);
 
 	/* Lines are terminated by \r, \n or both */
 
@@ -355,7 +355,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 					if(zstat != Z_OK)
 						rc = CL_EZIP;
 				} else
-					cli_writen(fout, (char *)streamstart, streamlen);
+					cli_writen(fout, (const char *)streamstart, streamlen);
 			}
 			free(tmpbuf);
 		} else if(is_flatedecode) {
@@ -364,9 +364,9 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 			if(zstat != Z_OK)
 				rc = CL_EZIP;
 		} else {
-			cli_dbgmsg("cli_pdf: writing %u bytes from the stream\n",
-				streamlen);
-			cli_writen(fout, (char *)streamstart, streamlen);
+			cli_dbgmsg("cli_pdf: writing %lu bytes from the stream\n",
+				(unsigned long)streamlen);
+			cli_writen(fout, (const char *)streamstart, streamlen);
 		}
 
 		close(fout);
@@ -390,7 +390,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 
 /* flate inflation - returns zlib status, e.g. Z_OK */
 static int
-flatedecode(const unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
+flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 {
 	int zstat;
 	off_t nbytes;
@@ -402,7 +402,7 @@ flatedecode(const unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 	stream.zalloc = (alloc_func)Z_NULL;
 	stream.zfree = (free_func)Z_NULL;
 	stream.opaque = (void *)NULL;
-	stream.next_in = (unsigned char *)buf;
+	stream.next_in = (Bytef *)buf;
 	stream.avail_in = len;
 	stream.next_out = output;
 	stream.avail_out = sizeof(output);
@@ -540,7 +540,8 @@ ascii85decode(const char *buf, off_t len, unsigned char *output)
 			len = 0;
 			break;
 		} else if(!isspace(byte)) {
-			cli_warnmsg("ascii85Decode: invalid character 0x%x, len %lu\n", byte & 0xFF, len);
+			cli_warnmsg("ascii85Decode: invalid character 0x%x, len %lu\n",
+				byte & 0xFF, (unsigned long)len);
 			return -1;
 		}
 	}

@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.62 2007/02/10 14:21:46 njh Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.63 2007/02/12 20:46:08 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -272,7 +272,7 @@ blobClose(blob *b)
 			free(b->data);
 			b->data = NULL;
 			cli_dbgmsg("blobClose: recovered all %lu bytes\n",
-				b->size);
+				(unsigned long)b->size);
 			b->size = 0;
 		} else {
 			unsigned char *ptr = cli_realloc(b->data, b->len);
@@ -281,7 +281,8 @@ blobClose(blob *b)
 				return;
 
 			cli_dbgmsg("blobClose: recovered %lu bytes from %lu\n",
-				b->size - b->len, b->size);
+				(unsigned long)(b->size - b->len),
+				(unsigned long)b->size);
 			b->size = b->len;
 			b->data = ptr;
 		}
@@ -390,7 +391,8 @@ fileblobDestroy(fileblob *fb)
 			cli_errmsg("fileblobDestroy: %s not saved: refer to http://www.clamav.net/bugs.html#pagestart\n", fb->b.name);
 			free(fb->b.name);
 		} else
-			cli_errmsg("fileblobDestroy: file not saved (%lu bytes): report to http://bugs.clamav.net\n", fb->b.len);
+			cli_errmsg("fileblobDestroy: file not saved (%lu bytes): report to http://bugs.clamav.net\n",
+				(unsigned long)fb->b.len);
 	}
 #ifdef	CL_DEBUG
 	fb->b.magic = INVALIDCLASS;
@@ -468,7 +470,8 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 
 	if(fd < 0) {
 		cli_errmsg("Can't create temporary file %s: %s\n", fullname, strerror(errno));
-		cli_dbgmsg("%d %d\n", sizeof(fullname), strlen(fullname));
+		cli_dbgmsg("%lu %lu\n", (unsigned long)sizeof(fullname),
+			(unsigned long)strlen(fullname));
 		return;
 	}
 
@@ -478,7 +481,8 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 
 	if(fb->fp == NULL) {
 		cli_errmsg("Can't create file %s: %s\n", fullname, strerror(errno));
-		cli_dbgmsg("%d %d\n", sizeof(fullname), strlen(fullname));
+		cli_dbgmsg("%lu %lu\n", (unsigned long)sizeof(fullname),
+			(unsigned long)strlen(fullname));
 		close(fd);
 
 		return;
@@ -528,7 +532,8 @@ fileblobAddData(fileblob *fb, const unsigned char *data, size_t len)
 #endif
 
 		if(fwrite(data, len, 1, fb->fp) != 1) {
-			cli_errmsg("fileblobAddData: Can't write %u bytes to temporary file %s: %s\n", len, fb->b.name, strerror(errno));
+			cli_errmsg("fileblobAddData: Can't write %lu bytes to temporary file %s: %s\n",
+				(unsigned long)len, fb->b.name, strerror(errno));
 			return -1;
 		}
 		fb->isNotEmpty = 1;
